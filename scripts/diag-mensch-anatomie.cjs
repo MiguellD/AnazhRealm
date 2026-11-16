@@ -658,13 +658,18 @@ const urteileKleid = (so, m) =>
 
 // DIE HAND DER MENGE (w28-satz-hand): der Satz trägt die Hand des nahen Leibs. Am Ofen derselbe Leib (der Mann im Hemd, im
 // Pullover und im Poncho, die Frau im Pullover — die langen Ärmel nennen den Ellbogen, unter dem die Hand hängt) nah (L0: die
-// Hand-Haut am Gelenk) und in der Menge (L2: die Ecken mit dem stärksten Gewicht am Gelenk der Hand),
-// je Hand entlang des Unterarms: die Länge über das Handgelenk hinaus und jenseits der Naht zum Unterarm (ab einem Fünftel der
-// nahen Länge — dort hängt nah die Haut des Arms über der Hand, fern die Naht des Gusses) die Breite und die Dicke, als
-// Abweichung der Menge in %. Bis w28-satz-hand erbte die Hand der Menge die Zone des Ärmels (foundry-core `__mengenPrims`):
-// die Faust neben der offenen Hand (Vorlage der Siedlung im Pullover: Dicke +36 %, Breite +22…+26 %, Länge +11…+13 %).
+// Hand-Haut am Gelenk) und in der Menge (L2: die Dreiecke, deren Ecken mehrheitlich am Gelenk der Hand hängen), je Hand entlang
+// des Unterarms: die Länge über das Handgelenk hinaus und jenseits der Naht zum Unterarm (ab einem Fünftel der nahen Länge —
+// dort hängt nah die Haut des Arms über der Hand, fern die Naht des Gusses) die BEDECKTE FLÄCHE von vorn (die Ebene der
+// Handfläche: die Lücken der Finger, der Daumen) und von der Seite (die flache Hand), als Abweichung der Menge in %. Die
+// Ausdehnung allein unterscheidet die Faust nicht von der offenen Hand: der Klumpen füllt denselben Kasten (das Dorf im Poncho:
+// Länge +2,7 %, Breite +1,4 %, Dicke −2,2 % — im Bild die Faust). Bis w28-satz-hand erbte die Hand der Menge zudem die Zone des
+// Ärmels (foundry-core `__mengenPrims`), wo ein Oberteil den Ellbogen nennt.
 // Der Täter: `{ kern }` (der Kern, mit dem der Ofen gießt).
-const HAND_MENGE_SOLL = { laenge: 10, breite: 10, dicke: 10 }; // höchstens so viel % über der nahen Hand (die Länge auch darunter)
+// das Band je Maß in % gegen die nahe Hand: der Klumpen (die Faust: +24…+42 % Fläche) liegt über ihm, die zerfallenen Finger
+// (ohne Verrundung und Zuschlag auf dem Raster der Menge: −51…−61 %) unter ihm; 20 % der Hand sind bei 9 m 1–2 Bildpunkte
+const HAND_MENGE_SOLL = { laenge: [-20, 20], vorn: [-20, 10], seite: [-20, 10] };
+const HAND_MENGE_ZELLE = 0.004; // E, das Raster der bedeckten Fläche (die Hand misst ~0,46 E)
 const messeHandMenge = (so, taeter = {}, K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore) => {
     const KC = so.__koerperCore;
     const m = {};
@@ -672,41 +677,70 @@ const messeHandMenge = (so, taeter = {}, K = taeter.kern ? taeter.kern(so.__koer
         const netze = (lod, g = so.BAKERS_BY_KIND.koerper(K, "mensch", 1, lod, { dials })) => Object.assign(KC.gussNetze(g, false), { namen: g.userData.__skelett.skinJoints }); // prettier-ignore
         const [nah, fern] = [netze(0), netze(2)];
         for (const sd of ["1", "-1"]) {
+            // die Dreiecke der Hand im Raum des Unterarms: [s entlang, w quer in der Handfläche, t durch sie] je Ecke
             const hand = (N) => {
                 const [W, E] = [N.lage("hand" + sd), N.lage("elbow" + sd)];
-                const a = (([x, y, z], l = Math.hypot(x, y, z)) => [x / l, y / l, z / l])([W[0] - E[0], W[1] - E[1], W[2] - E[2]]);
-                const w = (([x, y, z], l = Math.hypot(x, y, z)) => [x / l, y / l, z / l])([a[1], -a[0], 0]); // a × z
+                const nz = ([x, y, z], l = Math.hypot(x, y, z)) => [x / l, y / l, z / l];
+                const a = nz([W[0] - E[0], W[1] - E[1], W[2] - E[2]]);
+                const w = nz([a[1], -a[0], 0]); // a × z
                 const t = [a[1] * w[2] - a[2] * w[1], a[2] * w[0] - a[0] * w[2], a[0] * w[1] - a[1] * w[0]];
-                const P = [];
+                const T = [];
                 for (const n of N) {
+                    const ecke = (i) => [a, w, t].map((ax) => ax.reduce((s, c, d) => s + c * (n.P[3 * i + d] - W[d]), 0));
+                    const I = n.I || Array.from({ length: n.P.length / 3 }, (_, i) => i);
                     // die geskinnte Hülle (die Menge) zählt ihre Ecken am stärksten Gewicht, die starre (nah) an ihrem Gelenk
+                    let amGelenk = null;
                     if (n.haut) {
-                        const [si, sw, namen] = [n.o.geometry.attributes.skinIndex, n.o.geometry.attributes.skinWeight, N.namen];
-                        for (let i = 0; i < si.count; i++) {
+                        const [si, sw] = [n.o.geometry.attributes.skinIndex, n.o.geometry.attributes.skinWeight];
+                        amGelenk = (i) => {
                             let [b, bw] = [0, -1];
                             for (let k = 0; k < 4; k++) if (sw.getComponent(i, k) > bw) [bw, b] = [sw.getComponent(i, k), si.getComponent(i, k)];
-                            if (namen[b] === "hand" + sd) P.push([n.P[3 * i], n.P[3 * i + 1], n.P[3 * i + 2]]);
-                        }
-                    } else if (n.j === "hand" + sd && n.k === "haut") for (let i = 0; i < n.P.length; i += 3) P.push([n.P[i], n.P[i + 1], n.P[i + 2]]);
+                            return N.namen[b] === "hand" + sd;
+                        };
+                    } else if (!(n.j === "hand" + sd && n.k === "haut")) continue;
+                    for (let f = 0; f < I.length; f += 3) {
+                        const ix = [I[f], I[f + 1], I[f + 2]];
+                        if (amGelenk && ix.filter(amGelenk).length < 2) continue;
+                        T.push(ix.map(ecke));
+                    }
                 }
-                return P.map((p) => [0, 1, 2].map((k) => [a, w, t][k].reduce((s, c, d) => s + c * (p[d] - W[d]), 0)));
+                return T;
             };
             const [hn, hf] = [hand(nah), hand(fern)];
-            const L = (h) => Math.max(0, ...h.map((q) => q[0]));
+            const L = (T) => Math.max(0, ...T.flat().map((q) => q[0]));
             const s0 = 0.2 * L(hn);
-            const quer = (h, k, x = h.filter((q) => q[0] >= s0).map((q) => q[k])) => (x.length ? Math.max(...x) - Math.min(...x) : 0);
+            // die bedeckte Fläche jenseits von s0 in der Ebene (s, k): die Zellen, deren Mitte in einem Dreieck liegt
+            const flaeche = (T, k, c = HAND_MENGE_ZELLE) => {
+                const zellen = new Set();
+                for (const d of T) {
+                    const [p, q, r] = d.map((e) => [e[0], e[k]]);
+                    const det = (q[0] - p[0]) * (r[1] - p[1]) - (r[0] - p[0]) * (q[1] - p[1]);
+                    if (!det) continue;
+                    const [u0, u1] = [Math.max(s0, Math.min(p[0], q[0], r[0])), Math.max(p[0], q[0], r[0])];
+                    const [v0, v1] = [Math.min(p[1], q[1], r[1]), Math.max(p[1], q[1], r[1])];
+                    for (let i = Math.floor(u0 / c); i * c <= u1; i++)
+                        for (let j = Math.floor(v0 / c); j * c <= v1; j++) {
+                            const [x, y] = [(i + 0.5) * c, (j + 0.5) * c];
+                            if (x < s0) continue;
+                            const l1 = ((q[0] - x) * (r[1] - y) - (r[0] - x) * (q[1] - y)) / det;
+                            const l2 = ((r[0] - x) * (p[1] - y) - (p[0] - x) * (r[1] - y)) / det;
+                            if (l1 >= 0 && l2 >= 0 && l1 + l2 <= 1) zellen.add(i * 4096 + j);
+                        }
+                }
+                return zellen.size * c * c;
+            };
             const pct = (f, n) => (n > 0 ? +(((f - n) / n) * 100).toFixed(1) : null);
-            m[`${wer}${sd === "1" ? "R" : "L"}`] = { laenge: pct(L(hf), L(hn)), breite: pct(quer(hf, 1), quer(hn, 1)), dicke: pct(quer(hf, 2), quer(hn, 2)), ecken: hf.length };
+            m[`${wer}${sd === "1" ? "R" : "L"}`] = { laenge: pct(L(hf), L(hn)), vorn: pct(flaeche(hf, 1), flaeche(hn, 1)), seite: pct(flaeche(hf, 2), flaeche(hn, 2)), dreiecke: hf.length }; // prettier-ignore
         }
     }
     return m;
 };
 const urteileHandMenge = (m) =>
     Object.entries(m).flatMap(([wer, x]) => [
-        ...(x.ecken < 8 ? [`menge.hand ${wer} ohne Hand (${x.ecken} Ecken am Gelenk)`] : []),
-        ...["laenge", "breite", "dicke"]
-            .filter((k) => !(x[k] <= HAND_MENGE_SOLL[k]) || (k === "laenge" && !(x[k] >= -HAND_MENGE_SOLL[k])))
-            .map((k) => `menge.hand ${wer} ${k} ${x[k]} % gegen die nahe Hand (Soll ${k === "laenge" ? "±" : "≤ +"}${HAND_MENGE_SOLL[k]} %)`),
+        ...(x.dreiecke < 8 ? [`menge.hand ${wer} ohne Hand (${x.dreiecke} Dreiecke am Gelenk)`] : []),
+        ...["laenge", "vorn", "seite"]
+            .filter((k) => !(x[k] >= HAND_MENGE_SOLL[k][0] && x[k] <= HAND_MENGE_SOLL[k][1]))
+            .map((k) => `menge.hand ${wer} ${k} ${x[k]} % gegen die nahe Hand (Soll ${HAND_MENGE_SOLL[k][0]} … +${HAND_MENGE_SOLL[k][1]} %)`),
     ]);
 
 // DER KANON (w28-leib-kanon, koerper-core `leibKanon`, die Bänder LEIB_SOLL.kanon): am Ofen L0 nackt der Mann (gender 1) und die Frau
@@ -1179,7 +1213,7 @@ if (SELBSTTEST) {
     pruefe("KL3 die Hose ohne die Linie ihres Bunds (der gezackte Rand der Haut-Region) wird erkannt", zonen((z) => (z.bund ? { bund: null } : {})), /^kleid\.\w+ bundEben .* > /, "kleid"); // prettier-ignore
     pruefe("KL4 der Poncho ohne Weite (ein zweiter Pullover) wird im Guss erkannt", zonen(() => ({ weite: null })), /^kleid\.tracht ponchoWeiter .* < /, "kleid"); // prettier-ignore
     pruefe("KL5 der Poncho ohne Weite wird im Satz der Menge erkannt (die Menge liest dasselbe Gesetz)", zonen(() => ({ weite: null })), /^kleid\.tracht ponchoMengeWeiter .* < /, "kleidMenge"); // prettier-ignore
-    pruefe("HM1 der Ärmel, der die Hand schluckt (die Zone des Oberteils nennt die Hand: die Faust), wird im Satz der Menge erkannt", { kern: (K) => ({ ...K, kleidZonen: (d) => (K.kleidZonen(d) || []).map((z) => ((z.teile || []).includes("elbow1") ? { ...z, teile: [...z.teile, "hand1", "hand-1"] } : z)) }) }, /^menge.hand (frau)?[pP]ullover[RL] dicke /, "handMenge"); // prettier-ignore
+    pruefe("HM1 der Ärmel, der die Hand schluckt (die Zone des Oberteils nennt die Hand: die Faust), wird im Satz der Menge erkannt", { kern: (K) => ({ ...K, kleidZonen: (d) => (K.kleidZonen(d) || []).map((z) => ((z.teile || []).includes("elbow1") ? { ...z, teile: [...z.teile, "hand1", "hand-1"] } : z)) }) }, /^menge.hand (frau)?[pP]ullover[RL] (vorn|seite) /, "handMenge"); // prettier-ignore
     // DER SCHUH: (KL6) dreifach dick (der Ballon am Fuß), (KL7) ohne Auflage (ein Zehntel der Dicke: der Schuh liegt in der
     // Haut), (KL8) ohne die Linie seines Schafts (sie liegt über jeder Form: der Rand sind die Ohren über den Knöcheln), (KL9, am
     // Guss) die Sohle um die Dicke unter dem Fuß (der Schuh vor Gelände H5: sie steht im Boden)
@@ -1328,7 +1362,7 @@ const ms = messeStand(so);
 zeige(Object.fromEntries(ms.map((r, i) => ["innenStand" + i, r.innenStand])));
 const mkl = messeKleid(so);
 const mhm = messeHandMenge(so);
-console.log("  menge.hand (Satz gegen die nahe Hand, %):", Object.entries(mhm).map(([w, x]) => `${w} L ${x.laenge} B ${x.breite} D ${x.dicke}`).join(" · ")); // prettier-ignore
+console.log("  menge.hand (Satz gegen die nahe Hand, %):", Object.entries(mhm).map(([w, x]) => `${w} L ${x.laenge} vorn ${x.vorn} Seite ${x.seite}`).join(" · ")); // prettier-ignore
 const mka = messeKalotte(so);
 const mgr = messeGrob(so);
 const mof = messeOrbitaFrau(so);
