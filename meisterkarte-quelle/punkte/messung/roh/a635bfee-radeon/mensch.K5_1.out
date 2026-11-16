@@ -5,9 +5,9 @@ node scripts/diag-kreatur-takt.cjs --werkbank $W --proben begegnung
 
 ===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
 
-  ✅ begegnung {"wer":"rathaus/rathaus #952","furcht":1,"zuS":[0.283,0,0,0],"amEreignis":74,"imBild":[true,true,true,true],"dMin":[2,1.44,1.44,1.834],"beruehrt":[0,0,0,0]}
+  ✅ begegnung {"wer":"rathaus/rathaus #952","furcht":1,"zuS":[0.283,0,0,0],"amEreignis":73,"imBild":[true,true,true,true],"dMin":[2,1.44,1.44,1.834],"beruehrt":[0,0,0,0]}
 
-  (49 s)
+  (34 s)
 
 ✅ GRÜN — begegnung
 

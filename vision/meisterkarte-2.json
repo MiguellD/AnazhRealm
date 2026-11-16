@@ -4646,10 +4646,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 2,
+    "heute": 3,
     "kern": 7,
     "kernDazu": 7,
-    "anteilHeute": 0.3,
+    "anteilHeute": 0.5,
     "anteilKern": 1.2
    },
    "perspektiven": [
@@ -5701,6 +5701,7 @@
        "umfang": "10² Bewohner ohne Wort",
        "tiefe": "Kopf-Zuwendung, Ausweichen, Furcht-Abstand",
        "preis": "P · Begegnung 3 m",
+       "klasse": "Ort",
        "richter": "Zuwendung ≤ 0,5 s, Berührung 0"
       },
       {
@@ -5746,7 +5747,7 @@
        "richter": "Zeitreise 1300 ↔ 2020: Anachronismen ≤ 0,01, Faktentreue ≥ 0,95 über 1 000"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Zuwendung 0,267 s, Berührung 0 an der Radeon (mensch.K5), Preis in der Szene unbelegt; Kreaturen-Gedächtnis mit lokalem qwen3:4b (stamm/feld-nexus.js:1281) bricht 0 Download",
@@ -8163,6 +8164,7 @@
        "umfang": "8 Rollen am Werk",
        "tiefe": "steht zur Werkzeit am Werk",
        "preis": "P · Dorf zur Werkzeit",
+       "klasse": "Ort",
        "richter": "Schmiede 10 Uhr besetzt / 2 Uhr leer"
       },
       {
@@ -12855,6 +12857,7 @@
        "umfang": "Zellen-Wasser ohne Impuls",
        "tiefe": "gegrabene Grube unter dem Pegel füllt sich",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Grube unter dem Pegel gegraben füllt sich im Bild, beide Geräte"
       },
       {
@@ -16675,7 +16678,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 14,
+  "heute": 15,
   "davonKopplungen": 33,
   "kern": 13,
   "kernDazu": 13,
