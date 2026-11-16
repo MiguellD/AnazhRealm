@@ -612,7 +612,7 @@ async function menschBuehnen() {
         // Die Achsen des Baus trägt nah der Knochen, fern der Punkt: sie stehen im Vergleich am Kanon (ihr Leser: gate:mensch-anatomie
         // `leser.menge`). Bis hier stand der Satz am Punkt des eigenen Genoms, schmal gegossen, und der Leib an der nächsten Gestalt:
         // Taille bis 39 %, Schulter bis 17,5 % neben dem Leib (40 Bewohner, Ofen).
-        const gestalt = { n: 0, gestalten: 0, max: 0, wer: "", mass: "", je: [0, 0, 0] };
+        const gestalt = { n: 0, gestalten: 0, max: 0, wer: "", mass: "", je: [0, 0, 0], hoehe: null };
         const gestaltMessen = () => {
             const Z = S.satz;
             const kc = window.__koerperCore;
@@ -655,6 +655,7 @@ async function menschBuehnen() {
             };
             // der nahe Leib je Gestalt: die Hüllen mit Skelett (ohne Haar und Auge), am Kanon ihrer Breite
             const nah = new Map();
+            const scheitel = [];
             // (die Vorlage des Ofens, aus der `_buildHumanGroup` jeden nahen Leib dieser Gestalt stellt — gelesen, nie gegossen)
             S.gestalten.forEach((G, gi) => {
                 const da = A._tierOfenMemo && A._tierOfenMemo.get(G.keys[0]);
@@ -665,9 +666,21 @@ async function menschBuehnen() {
                     if (!o.isSkinnedMesh || !o.geometry.index || /hair|haar|eye|iris|pupil|cornea|brow|braue|lash/i.test(kl)) return;
                     dreiecke(o.geometry.attributes.position.array, o.geometry.index.array, T3);
                 });
-                if (T3.length) nah.set(gi, masse(T3));
+                if (!T3.length) return;
+                // DIE EINE HÖHE DES BILDS (w28-gestalt-norm): der Ofen gießt den nahen Leib in der Höhe SEINER Gestalt (`dK.height`,
+                // Kopf 5,07…5,62 E), der Satz steht in der Höhe der Vorlage, seine Matrix trägt die Größe — die Scheiben des Maßes
+                // liegen am Kanon, also steht der nahe Leib hier am Kanon wie der Satz. Unnormiert maß die Linse den Maßstab mit.
+                // Täter (Selbsttest): der nahe Leib bleibt in der Höhe seiner Gestalt
+                const k = hat("bewohner-gestalt-hoehe") ? 1 : 1 / G.dK.height;
+                for (const t of T3) for (const p of t) for (let d = 0; d < 3; d++) p[d] *= k;
+                da.root.updateMatrixWorld(true);
+                scheitel.push(da.teile.head.getWorldPosition(new T.Vector3()).y * k);
+                nah.set(gi, masse(T3));
             });
             gestalt.gestalten = nah.size;
+            // das Kopf-Gelenk der nahen Leiber am Kanon (5,33 E): die Spanne über die Gestalten in % — am Kanon bleibt der Bau der
+            // Knochen (gemessen 0,79 % über 8 Gestalten), in der Höhe ihrer Gestalt stehen ihre Größen darin (4,11 %)
+            if (scheitel.length) gestalt.hoehe = q3(((Math.max(...scheitel) - Math.min(...scheitel)) / Math.min(...scheitel)) * 100);
             // die Achsen des Baus am Kanon (der Punkt seiner Gestalt: sie gießt im Kanon des Skeletts), jede andere aus der Zeile des Bewohners
             const kanon = S.gestalten.map((G) => kc.leibRaumPunkt(G.dK));
             const bau = kc.LEIB_RAUM.achsen.map((a) => kc.BAU_GESETZ.achsen.some((q) => q.achse === a.achse));
@@ -1040,9 +1053,15 @@ function menschUrteil(name, z, soll) {
         // Menge (Kante 0,21 E) fehlt die Ecke unter dem Arm, die Anlage (koerper armAnlage) drückt die Ecken vorn und hinten nicht
         // ein — eine Runde Entspannung tauscht Taille gegen Hüfte (Ofen, 40 Bewohner: Taille Median 7,4 → 5,5 %, Hüfte 2,8 → 8,5 %)
         const GESTALT_SOLL = [5, 5, 5];
+        const GESTALT_HOEHE_SOLL = 2;
         soll(
             gs.n >= 10 && gs.gestalten >= 2 && gs.je.length === 3 && gs.je.every((x, k) => x <= GESTALT_SOLL[k]),
             `die Gestalt des Stands im Satz: ${gs.max} % zum nahen Leib an ${gs.wer || "—"} (${gs.mass || "—"}; bedeckte Breite je Körperhöhe; ${gs.n} im Satz, ${gs.gestalten} Gestalten mit nahem Leib; Schulter · Taille · Hüfte höchstens ${gs.je.join(" · ")} %, Soll ≤ ${GESTALT_SOLL.join(" · ")} %, Ziel 5 % je Maß)`
+        );
+        // beide Seiten des Maßes in EINER Höhe: am Kanon tragen die nahen Leiber aller Gestalten denselben Scheitel
+        soll(
+            gs.hoehe !== null && gs.hoehe <= GESTALT_HOEHE_SOLL,
+            `die Höhe des nahen Leibs im Maß der Gestalt: das Kopf-Gelenk streut ${gs.hoehe} % über ${gs.gestalten} Gestalten (Soll ≤ ${GESTALT_HOEHE_SOLL} %: der nahe Leib steht am Kanon wie der Satz)`
         );
         soll(
             b.n >= 10 && b.quote >= 0.9 && b.sektorMax <= 0.5,
@@ -1092,6 +1111,7 @@ module.exports = {
             ["bewohner-gleiten", /der Satz gleitet/],
             ["bewohner-haltung", /die Haltung des Stands im Satz/],
             ["bewohner-gestalt", /die Gestalt des Stands im Satz/],
+            ["bewohner-gestalt-hoehe", /die Höhe des nahen Leibs im Maß der Gestalt/],
             ["bewohner-grund", /der Stand nach dem Gang/],
             ["bewohner-nord", /der Blick der Stehenden/],
             ["bewohner-daheim", /ohne Platz/],
