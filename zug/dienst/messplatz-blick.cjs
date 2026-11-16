@@ -27,7 +27,15 @@ const UHR = require("./messplatz-uhr.cjs");
 const REPO = "MiguellD/AnazhRealm";
 const API = `https://api.github.com/repos/${REPO}`;
 const ROH = `https://raw.githubusercontent.com/${REPO}`;
-const TOKEN = process.env.TOKEN || "";
+// DAS TOKEN HOLT DER BLICK SELBST (16.11.: `node messplatz-blick.cjs --kurz` fragte ohne die Hülle .sh ANONYM — 60 Rufe je Stunde
+// und IP, ab 19:41 jede Abfrage HTTP 403, die Kopf-Zeilen blind, während die API mit Token 4929 von 5000 frei hatte). Dieselbe Quelle
+// wie messplatz-blick.sh, ci.sh und zug-dienst.sh: git credential (ohne Rückfrage am Terminal).
+const TOKEN = process.env.TOKEN || (() => {
+    try {
+        const o = require("child_process").execFileSync("git", ["credential", "fill"], { input: "protocol=https\nhost=github.com\n\n", encoding: "utf8", windowsHide: true, timeout: 15000, stdio: ["pipe", "pipe", "ignore"], env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } });
+        return (o.match(/^password=(.*)$/m) || [])[1] || "";
+    } catch (_e) { return ""; }
+})();
 const args = process.argv.slice(2);
 const KURZ = args.includes("--kurz");
 const SELBSTTEST = args.includes("--selbsttest"), EINMAL = args.includes("--einmal") || KURZ || SELBSTTEST;
