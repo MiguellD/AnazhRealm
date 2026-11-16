@@ -3,17 +3,17 @@
   "fenster": 104,
   "r0": {
    "lagS": 0,
-   "r": 0.729867419662212,
+   "r": 0.6605027154434976,
    "n": 104,
-   "cvX": 0.27714215813385157,
-   "cvY": 0.48582839226078045
+   "cvX": 0.24198697144758965,
+   "cvY": 0.6257071988469467
   },
   "stand": {
    "ctx": "running",
    "enabled": true,
    "um": true,
-   "paare": 8,
-   "steht": true
+   "paare": 6,
+   "steht": false
   }
  },
  "orte": [
@@ -32,7 +32,7 @@
    "fall": -999,
    "regen": -999,
    "glut": -999,
-   "vogel": -42.7,
+   "vogel": -36.3,
    "grille": -999
   },
   "fahrend": {
@@ -43,7 +43,7 @@
    "fall": -999,
    "regen": -999,
    "glut": -999,
-   "vogel": -41.3,
+   "vogel": -43.2,
    "grille": -999
   },
   "dorf": {
@@ -54,7 +54,7 @@
    "fall": -999,
    "regen": -999,
    "glut": -27.2,
-   "vogel": -41.6,
+   "vogel": -42.7,
    "grille": -999
   },
   "glutArm": {
@@ -65,32 +65,32 @@
    "fall": -999,
    "regen": -999,
    "glut": -15.2,
-   "vogel": -39.9,
+   "vogel": -39.1,
    "grille": -999
   }
  },
  "leiber": {
   "wiese": {
-   "gehoert": 15,
-   "gezeichnet": 15
+   "gehoert": 17,
+   "gezeichnet": 17
   },
   "wieseOhneLeib": {
    "gehoert": 0,
    "gezeichnet": 0
   },
   "fahrend": {
-   "gehoert": 20,
-   "gezeichnet": 20
+   "gehoert": 18,
+   "gezeichnet": 18
   },
   "dorf": {
    "gehoert": 15,
    "gezeichnet": 15
   },
   "glutArm": {
-   "gehoert": 18,
-   "gezeichnet": 18
+   "gehoert": 15,
+   "gezeichnet": 15
   }
  },
  "rot": [],
- "sek": 64.6
+ "sek": 55.4
 }

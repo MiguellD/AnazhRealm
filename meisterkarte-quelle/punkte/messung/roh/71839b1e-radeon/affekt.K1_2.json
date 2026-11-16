@@ -15,8 +15,8 @@
     "delta": -0.12,
     "ertrag": -0.12,
     "stimme": "vogel",
-    "db": -4.69,
-    "s": 0.217,
+    "db": -4.66,
+    "s": 0.267,
     "nachbar": 0
    },
    "toeten": {
@@ -24,8 +24,8 @@
     "delta": -0.03,
     "ertrag": -0.03,
     "stimme": "vogel",
-    "db": -1.19,
-    "s": 0.133,
+    "db": -1.14,
+    "s": 0.433,
     "nachbar": 0
    },
    "pflegen": {
@@ -34,7 +34,7 @@
     "ertrag": 0.25,
     "stimme": "vogel",
     "db": 9,
-    "s": 0.383,
+    "s": 0.583,
     "nachbar": 0
    },
    "ruhe": {
@@ -43,7 +43,7 @@
     "ertrag": 0.25,
     "stimme": "vogel",
     "db": 9,
-    "s": 0.483,
+    "s": 0.35,
     "nachbar": 0
    }
   },
@@ -61,8 +61,8 @@
     "delta": -0.12,
     "ertrag": -0.12,
     "stimme": "grille",
-    "db": -4.74,
-    "s": 0.133,
+    "db": -4.62,
+    "s": 0.333,
     "nachbar": 0
    },
    "toeten": {
@@ -70,8 +70,8 @@
     "delta": -0.03,
     "ertrag": -0.03,
     "stimme": "grille",
-    "db": -1.19,
-    "s": 0.133,
+    "db": -1.09,
+    "s": 0.8,
     "nachbar": 0
    },
    "pflegen": {
@@ -79,8 +79,8 @@
     "delta": 0.25,
     "ertrag": 0.25,
     "stimme": "grille",
-    "db": 9,
-    "s": 0.233,
+    "db": 8.41,
+    "s": 1.417,
     "nachbar": 0
    },
    "ruhe": {
@@ -88,8 +88,8 @@
     "delta": 0.2463,
     "ertrag": 0.25,
     "stimme": "grille",
-    "db": 9,
-    "s": 0.4,
+    "db": 8.66,
+    "s": 1.067,
     "nachbar": 0
    }
   },
@@ -105,61 +105,51 @@
     {
      "neu": 1,
      "op": "deposit_life",
-     "delta": 0.1084,
-     "ertrag": 0.1084,
+     "delta": 0.0735,
+     "ertrag": 0.0735,
      "stimme": "vogel",
-     "db": 4.11,
-     "s": 0.467,
+     "db": 2.74,
+     "s": 0.6,
      "nachbar": 0
     },
     {
      "neu": 1,
      "op": "deposit_life",
-     "delta": -0.0309,
+     "delta": -0.021,
      "ertrag": 0,
      "stimme": "vogel",
-     "db": -1.18,
-     "s": 0.433,
+     "db": -0.69,
+     "s": 1.617,
      "nachbar": 0
     },
     {
      "neu": 1,
      "op": "deposit_life",
-     "delta": -0.0206,
+     "delta": -0.014,
      "ertrag": 0,
      "stimme": "vogel",
-     "db": -0.79,
-     "s": 0.4,
+     "db": -0.51,
+     "s": 0.817,
      "nachbar": 0
     },
     {
      "neu": 1,
      "op": "deposit_life",
-     "delta": -0.0137,
+     "delta": -0.0093,
      "ertrag": 0,
      "stimme": "vogel",
-     "db": -0.52,
-     "s": 0.45,
+     "db": -0.31,
+     "s": 1.5,
      "nachbar": 0
     },
     {
      "neu": 1,
      "op": "deposit_life",
-     "delta": -0.0091,
+     "delta": -0.0062,
      "ertrag": 0,
      "stimme": "vogel",
-     "db": -0.35,
-     "s": 0.3,
-     "nachbar": 0
-    },
-    {
-     "neu": 1,
-     "op": "deposit_life",
-     "delta": -0.0061,
-     "ertrag": 0,
-     "stimme": "vogel",
-     "db": -0.24,
-     "s": 0.3,
+     "db": -0.22,
+     "s": 1.133,
      "nachbar": 0
     },
     {
@@ -168,8 +158,8 @@
      "delta": -0.0041,
      "ertrag": 0,
      "stimme": "vogel",
-     "db": -0.16,
-     "s": 0.25,
+     "db": -0.15,
+     "s": 0.667,
      "nachbar": 0
     },
     {
@@ -179,7 +169,7 @@
      "ertrag": 0,
      "stimme": "vogel",
      "db": -0.1,
-     "s": 0.367,
+     "s": 1,
      "nachbar": 0
     },
     {
@@ -188,8 +178,8 @@
      "delta": -0.0018,
      "ertrag": 0,
      "stimme": "vogel",
-     "db": -0.07,
-     "s": 0.533,
+     "db": -0.06,
+     "s": 1.433,
      "nachbar": 0
     },
     {
@@ -198,8 +188,18 @@
      "delta": -0.0012,
      "ertrag": 0,
      "stimme": "vogel",
-     "db": -0.05,
-     "s": 0.25,
+     "db": -0.04,
+     "s": 1,
+     "nachbar": 0
+    },
+    {
+     "neu": 1,
+     "op": "deposit_life",
+     "delta": -0.0008,
+     "ertrag": 0,
+     "stimme": "vogel",
+     "db": 0,
+     "s": 1.667,
      "nachbar": 0
     }
    ]
