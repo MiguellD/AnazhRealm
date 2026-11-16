@@ -2098,6 +2098,47 @@
     // prettier-ignore
     function _baseFor(o,role,kol){ const b=_colFor(role,kol), f=o.userData&&o.userData.__fuge; if(!f||(M[role]&&M[role].map)) return b;   // FUGEN-TON (Flächen-Stufe, kartenlos): Stein-Anteil × Stein-Ton + Rest × Fugen-Ton — der Mittelton, den der Verband aus der Ferne zeigt
   const m2=_colFor(_roleByMat.get(f.mat)||'lehm',kol), a=f.anteil; return [b[0]*a+m2[0]*(1-a), b[1]*a+m2[1]*(1-a), b[2]*a+m2[2]*(1-a)]; }
+    // DER INNEN-STOFF (w28-innenlicht): die Außenseite einer Holzwand ist von Sonne und Wetter gebräunt (die Rollen-Farbe der
+    // Kultur), die Innenseite derselben Balken bleibt hell, die gescheuerte Diele heller. EINE Zahl je Kultur, aus ihrem eigenen
+    // `holz` (dieselbe Tönung wie `tintM`): der Farbton des Holzes, seine lineare Helle × `frisch` in das Band des unverwitterten
+    // Holzes geklemmt (Wand 0,25–0,35, Diele 0,25–0,40). Gezeichnet = gelesen: der Bake der Stufe 0 färbt jede Fläche einer
+    // Holz-Rolle, die in einen Körper mit Decke schaut (`innenAn`: der Punkt `tiefe` vor der Fläche liegt im Grundriss unter
+    // der Decke, `geoms.__decken`), das Raum-Licht liest dieselbe Zahl (`raumVon`), der Innenkörper der fernen Stufen auch
+    // (`_innenFaktor`). Putz, Gefach, Stein und Lehm sind innen, was sie außen sind.
+    var INNEN_HOLZ = { frisch: 2.2, anstrich: 0.35, wand: [0.25, 0.35], diele: [0.25, 0.4], dieleMal: 1.15, tiefe: 0.45, rollen: { blockholz: "wand", holz: "wand", stamm: "wand", boden: "diele" } };
+    function innenTon(role, kol) {
+        var art = INNEN_HOLZ.rollen[role];
+        if (!art) return null;
+        var h = _colFor("holz", kol); // das ROHE Holz der Kultur: ihr Balken; ist er Anstrich (Falunrot: Grün/Rot unter `anstrich`), ihr Stamm — der graue Stamm ist Wetter, kein Innen-Ton
+        if (h[1] < INNEN_HOLZ.anstrich * h[0] && kol && kol.stamm != null) h = _colFor("stamm", kol);
+        var l = Math.max(1e-4, 0.2126 * h[0] + 0.7152 * h[1] + 0.0722 * h[2]),
+            b = INNEN_HOLZ[art],
+            k = Math.min(b[1], Math.max(b[0], l * INNEN_HOLZ.frisch * (art === "diele" ? INNEN_HOLZ.dieleMal : 1))) / l;
+        return [0, 1, 2].map(function (i) {
+            return Math.round(Math.min(1, h[i] * k) * 65536) / 65536;
+        });
+    }
+    // die Fläche am Ende von P/N (Bake-Koordinaten, `inv` führt sie in den Rahmen des Hauses) schaut in einen Körper mit Decke
+    function innenAn(P, N, rows, inv) {
+        var i = P.length - 3,
+            t = INNEN_HOLZ.tiefe,
+            a = [P[i], P[i + 1], P[i + 2]],
+            q = [a[0] + N[i] * t, a[1] + N[i + 1] * t, a[2] + N[i + 2] * t];
+        if (inv) {
+            var e = inv.elements,
+            m = function (v) {
+                return [e[0] * v[0] + e[4] * v[1] + e[8] * v[2] + e[12], e[1] * v[0] + e[5] * v[1] + e[9] * v[2] + e[13], e[2] * v[0] + e[6] * v[1] + e[10] * v[2] + e[14]];
+            };
+            a = m(a);
+            q = m(q);
+        }
+        if (!(a[1] > -0.25)) return false;
+        for (var k = 0; k < rows.length; k++) {
+            var r = rows[k];
+            if (q[0] > r[0] && q[0] < r[1] && q[2] > r[2] && q[2] < r[3] && q[1] < r[4] && a[0] > r[0] - 0.02 && a[0] < r[1] + 0.02 && a[2] > r[2] - 0.02 && a[2] < r[3] + 0.02) return true;
+        }
+        return false;
+    }
     // prettier-ignore
     function bakeHaus(g,kol,geoms){
   const live=new Set(); g.traverse(o=>{ if(o.userData&&(o.userData.door||o.userData.window)) o.traverse(d=>live.add(d)); });
@@ -2145,6 +2186,7 @@
     const role=_roleByMat.get(o.material)||'holz', G=geoms[role]||(geoms[role]={pos:[],nrm:[],col:[],idx:[],uv:[],vo:0});
     const pa=o.geometry.attributes.position, na=o.geometry.attributes.normal, ca=o.geometry.attributes.color;
     const e=o.matrixWorld.elements, base=_baseFor(o,role,kol), nv=pa.count;
+    const inT=(geoms.__decken&&geoms.__decken.length&&INNEN_HOLZ.rollen[role])?innenTon(role,kol):null, inV=inT?new THREE.Matrix4().copy(g.matrixWorld).invert():null;   // DER INNEN-STOFF (w28-innenlicht): nur wo der Bau seine Decken nennt (Stufe 0)
     let wy0=1e9,wy1=-1e9; for(let v=0;v<nv;v++){ const q=e[1]*pa.getX(v)+e[5]*pa.getY(v)+e[9]*pa.getZ(v)+e[13]; if(q<wy0)wy0=q; if(q>wy1)wy1=q; }
     const aoAn=(wy1-wy0)<=4.2;                                                                // AO-PANEEL-GATE: Kontakt-AO nur auf kleinen, geerdeten Meshes — auf vollhohen Wandpaneelen malt die Vertex-Interpolation SÄGEZÄHNE über die Quad-Diagonalen (GESEHEN in nah_voll)
     for(let v=0;v<nv;v++){ const x=pa.getX(v),y=pa.getY(v),z=pa.getZ(v);
@@ -2153,7 +2195,8 @@
       if(na){ const a=na.getX(v),b=na.getY(v),c=na.getZ(v); G.nrm.push(e[0]*a+e[4]*b+e[8]*c, e[1]*a+e[5]*b+e[9]*c, e[2]*a+e[6]*b+e[10]*c); } else G.nrm.push(0,1,0);
       const tr=ca?ca.getX(v):1, tg=ca?ca.getY(v):1, tb=ca?ca.getZ(v):1;
       const namp=NOISEAMP[role]||0, nz=namp? (1+namp*(_noise01(G.pos[G.pos.length-3]*1.7, wy*1.7, G.pos[G.pos.length-1]*1.7)*2-1)) : 1;   // MATERIAL-ILLUSION: Welt-Hash → jede Fläche atmet, deterministisch über Rebakes
-      G.col.push(base[0]*tr*ao*nz, base[1]*tg*ao*nz, base[2]*tb*ao*nz);                       // AO-REAKTIVIERUNG: ao war GEMESSEN tot (berechnet, nie multipliziert) — das Kontakt-AO-Gesetz war stadtweit stumm
+      const bF=(inT&&innenAn(G.pos,G.nrm,geoms.__decken,inV))?inT:base;                        // innen der unverwitterte Ton der Kultur (`innenTon`)
+      G.col.push(bF[0]*tr*ao*nz, bF[1]*tg*ao*nz, bF[2]*tb*ao*nz);                       // AO-REAKTIVIERUNG: ao war GEMESSEN tot (berechnet, nie multipliziert) — das Kontakt-AO-Gesetz war stadtweit stumm
       const wx3=G.pos[G.pos.length-3], wz3=G.pos[G.pos.length-1], nay=na?Math.abs(na.getY(v)):1;   // WELT-UV-GESETZ: Kachelung aus der Weltlage (0.5/m) — Texturen laufen stetig über Bauteilgrenzen
       if(nay>0.6) G.uv.push(wx3*0.5, wz3*0.5); else { const nax=na?Math.abs(na.getX(v)):0; G.uv.push((nax>0.5?wz3:wx3)*0.5, wy*0.5); } }
     const ix=o.geometry.index; if(ix){ for(let v=0;v<ix.count;v++) G.idx.push(G.vo+ix.getX(v)); } else { for(let v=0;v<nv;v++) G.idx.push(G.vo+v); }
@@ -2452,7 +2495,7 @@
     var INNEN_DAEMMER = 0.92;
     function _innenFaktor(B, raum) {
         var pu = _colFor("putz", B.p.col),
-            ra = B.wandTon || _colFor(raum || "putz", B.p.col);
+            ra = innenTon(raum, B.p.col) || B.wandTon || _colFor(raum || "putz", B.p.col);
         return [0, 1, 2].map(function (i) {
             return (ra[i] * INNEN_DAEMMER) / Math.max(1e-4, pu[i]);
         });
@@ -5423,7 +5466,7 @@
         var A = H.annexDoors || [];
         for (var j = 0; j < A.length; j++)
             o.push({ cx: (A[j].x0 + A[j].x1) / 2, cy: (A[j].y0 + A[j].y1) / 2, cz: A[j].z, w: A[j].x1 - A[j].x0, h: A[j].y1 - A[j].y0, perp: "z", glas: 0 });
-        return { oeffnungen: o, glas: 1 - materials().glas.opacity, wand: _helle(_colFor(f.raum, kol)), boden: _helle(_colFor("boden", kol)) };
+        return { oeffnungen: o, glas: 1 - materials().glas.opacity, wand: _helle(innenTon(f.raum, kol) || _colFor(f.raum, kol)), boden: _helle(innenTon("boden", kol) || _colFor("boden", kol)) };
     }
     function _anKoerper(m, y, o) {
         var k = RAUM_LICHT.kante,
@@ -5472,7 +5515,7 @@
         var y0 = isFinite(m.y0) ? m.y0 : 0,
             h = y - y0,
             rund = m.art === "rund" && m.rad > 0,
-            S = [0, 0, 0, 0];
+            S = [0, 0, 0, 0, 0];
         if (!(h > 0) || !raum) return S;
         var A = rund ? Math.PI * m.rad * m.rad : (m.x1 - m.x0) * (m.z1 - m.z0),
             U = rund ? 2 * Math.PI * m.rad : 2 * (m.x1 - m.x0 + (m.z1 - m.z0)),
@@ -5496,6 +5539,9 @@
             S[s] += o.w * o.h * (o.glas ? raum.glas : 1);
         }
         var k = R / ((wand + boden) * (1 - R));
+        // DAS FELD DES MESSERS (Zahl 11): der Anteil der Öffnungen an der Oberfläche des Raums × Durchlass — was ein mittelnder
+        // Lichtmesser im Raum neben dem Raum-Licht sieht (derselbe Term ohne Rückwurf). Leser: `_raumBlendeTakt` des Wirts.
+        S[4] = Math.round(Math.min(1, (S[0] + S[1] + S[2] + S[3]) / (wand + boden)) * RAUM_LICHT.raster) / RAUM_LICHT.raster;
         for (i = 0; i < 4; i++) S[i] = Math.round(Math.min(1, S[i] * k) * RAUM_LICHT.raster) / RAUM_LICHT.raster;
         return S;
     }
@@ -11756,6 +11802,11 @@
         hausParams: hausParams,
         massBau: massBau,
         grundVon: grundVon, // das Grund-Datum (S4) — die Linse liest es wie die Welt
+        raumVon: raumVon,
+
+        innenTon: innenTon,
+        innenAn: innenAn,
+        INNEN_HOLZ: INNEN_HOLZ,
         deckenZeile: deckenZeile, // die Decken samt Raum-Licht (w28-innenlicht) — die Linse rechnet daran ihre Mutanten
         RAUM_LICHT: RAUM_LICHT,
         slotPlan: slotPlan, // das gesetzte Haus als Ein-Slot-Plan (bauen.K2) — der Wirt rechnet daraus den Plan v2 und legt dessen Erdbau

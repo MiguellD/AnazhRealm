@@ -2309,11 +2309,15 @@ class AnazhRealm_stoff_material {
         const H = U.dachHuelle.value;
         if (x < H.x || x > H.z || z < H.y || z > H.w || y > U.dachOben.value) return null;
         let raum = null;
+        const P = (this._dachWahl && this._dachWahl.platz) || [];
+        this._raumFeldAmAuge = 0;
         U.dachLage.forEach((L, i) => {
             const [l, m] = [L.value, U.dachMass[i].value];
             const [dx, dz] = [x - l.x, z - l.y];
-            if (Math.abs(dx * l.z - dz * l.w) <= m.x && Math.abs(dx * l.w + dz * l.z) <= m.y && y <= m.z)
+            if (Math.abs(dx * l.z - dz * l.w) <= m.x && Math.abs(dx * l.w + dz * l.z) <= m.y && y <= m.z) {
+                if (!(m.w <= raum)) this._raumFeldAmAuge = P[i] ? P[i].feld : 0; // das Feld des Messers (fachwerk `raumSonne` Zahl 5) der helleren Decke
                 raum = Math.max(raum == null ? 0 : raum, m.w);
+            }
         });
         return raum;
     }
@@ -2323,12 +2327,13 @@ class AnazhRealm_stoff_material {
     // Körpers, hier in die Welt gedreht) — q = E der Sonne senkrecht gegen E des Himmels waagrecht, `s` die Richtung zur Sonne.
     // Der EINE Umgebungs-Term (`_raumHimmel`) und die Kamera (`_raumAmAuge`) lesen die Summe; der Raum lebt mit der Uhr.
     // Ein Kasten ohne Haus-Hülle bleibt 1. Leser der Summe je Platz: die Linse (`_dachWahl.platz[i].licht`).
-    _raumSonneTakt(q, s) {
+    _raumSonneTakt(q, s, g) {
         const U = this.state.atmoUniforms;
         const P = this._dachWahl && this._dachWahl.platz;
         if (!U || !U.dachMass || !P) return;
         P.forEach((d, i) => {
-            let licht = d.raum;
+            // der Kasten ohne Haus-Hülle ist kein Raum (1); sonst sieht die Öffnung oben den Himmel, unten den Boden (g)
+            let licht = d.sonne ? d.raum * (1 + g) : d.raum;
             if (d.sonne && q > 0 && s) {
                 const [sx, sz] = [s.x * d.co - s.z * d.si, s.x * d.si + s.z * d.co];
                 const S = d.sonne;
@@ -2426,7 +2431,8 @@ class AnazhRealm_stoff_material {
                     ez: ((z1 - z0) / 2) * k,
                     y: fuss + y * k,
                     raum: Number.isFinite(raum) ? raum : 1,
-                    sonne: sonne.length === 4 ? sonne : null,
+                    sonne: sonne.length >= 4 ? sonne : null,
+                    feld: Number.isFinite(sonne[4]) ? sonne[4] : 0,
                     name: `${e.type || e.kind || "bau"}@${Math.round(e.position.x)},${Math.round(e.position.z)}#${j}`,
                 });
             }

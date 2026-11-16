@@ -1964,9 +1964,18 @@ class AnazhRealm_bild_himmel {
         const lu = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
         const hi = w0 && so0 ? lu(w0) - lu(so0) : 0;
         // q: E der Sonne senkrecht zu ihr gegen E des Himmels auf der waagrechten Karte (die Lesung dieses Takts)
+        // g: der Boden vor dem Haus gegen den Himmel — die untere Hälfte der Öffnung sieht den Boden im Licht der Stunde. Die Quelle
+        // ist der Boden der EINEN Atmosphäre (`rueckstrahlLeser.atmo`, schatten.K4: die Umgebung nach unten × das Licht jetzt, eine
+        // Strahldichte — × π ihre Bestrahlung), nicht der gezeichnete Boden im Bild: der hängt am Blick, und im Raum läse er die Diele.
+        // Gemessen (GTX, Mittag, Start-Dorf): Atmosphäre 0,254 × π gegen Himmel 1,33 → g 0,60 (der gezeichnete Boden 0,428: 1,01).
+        const RL = st.rueckstrahlLeser;
+        const bo = RL ? RL.atmo.value : null;
+        const g = bo && hi > 0 ? Math.min(2, Math.max(0, (Math.PI * lu([bo.x, bo.y, bo.z])) / hi)) : 0;
+        st.raumBoden = g;
         this._raumSonneTakt(
             dl && hi > 0 ? (lu([dl.color.r, dl.color.g, dl.color.b]) * dl.intensity) / hi : 0,
-            this._belichtungRichtung
+            this._belichtungRichtung,
+            g
         );
         const D = this._raumAmAuge();
         const w = this._belichtungGelesen ? this._belichtungE : null; // ohne Lesung des Himmels hält die Blende ihr Ziel am Raum allein
@@ -1977,7 +1986,10 @@ class AnazhRealm_bild_himmel {
         // in der Höhle): darunter fällt der Raum mit seinem Licht — der Raum ohne Öffnung bleibt dunkel, kein Rest-Licht brennt aus
         const B = AnazhRealm.BELICHTUNG;
         const tief = B.stufen[B.stufen.length - 1][1] / (1 - B.steigung);
-        const ziel = D == null ? 0 : Math.max(tief, Math.log2(Math.max(1e-9, D * himmel)));
+        // DER MESSER IM RAUM mittelt, was in seinem Feld liegt: das Licht des Raums UND seine Öffnungen (`_raumFeldAmAuge`, der
+        // Anteil der Öffnungen an der Oberfläche × Durchlass) — die Belichtung hält die Öffnung lesbar, der Raum ohne Öffnung misst nur sich
+        const ziel =
+            D == null ? 0 : Math.max(tief, Math.log2(Math.max(1e-9, (D + (this._raumFeldAmAuge || 0)) * himmel)));
         const p = st.camera && st.camera.position;
         const o = this._raumBlendeOrt || (this._raumBlendeOrt = new THREE.Vector3(NaN, NaN, NaN));
         const sprung = !p || !(o.distanceTo(p) <= R.sprungM);
