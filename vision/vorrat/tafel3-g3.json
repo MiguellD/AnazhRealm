@@ -18,6 +18,15 @@
         "stand": "ganz"
     },
     {
+        "station": "karte2.erleben.kopplung.bild#1",
+        "leiter": "erleben.kopplung.bild",
+        "sprosse": 1,
+        "richter": "gleich",
+        "klasse": "Ort",
+        "grund": "KOPPLUNG_PROBE (stationen/g3.js, neu, allein, mutiert, 90 s): am Messort genesis der steilste Hang in 2 km mit freier Sicht (Gelände-Gesetz `hoehe`), der Weg 2 000 → 50 m in 40 Schritten zu 50 m mit je 30 Takten des Spiels und EINER Aufnahme; die Leuchtdichte der 15-m-Scheibe um das Ziel (Tonkurve zurück, ÷ Belichtung wie kugel.js) und die Marke (Chunk ↔ Ring am Ziel, Stufen der Bauten, Laub-Radius). Urteil STRENGER als der Richter: an jedem Schritt Sprung ≤ 5 % (jeder Stufenwechsel liegt an einem Schritt), gültig mit ≥ 1 markiertem Wechsel. Klasse Ort: Sicht bis 2 km am Hang, kein Stadt-Umfang.",
+        "stand": "ganz"
+    },
+    {
         "station": "karte2.erleben.bild.flaeche#1",
         "leiter": "erleben.bild.flaeche",
         "sprosse": 1,

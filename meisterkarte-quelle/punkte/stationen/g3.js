@@ -1015,6 +1015,51 @@ const AUGE_PROBE = {
         ],
     }),
 };
+// DER GANG AUF DEN HANG (Karte 2 erleben.kopplung.bild S 1): am Messort genesis das Ziel — unter zwölf Azimuten in 2 km um den
+// Spieler der steilste Hang (Gefälle über ± 10 m aus dem Gelände-Gesetz `hoehe`), den die Sicht von fünf Punkten des Wegs (2 000 ·
+// 1 500 · 1 000 · 500 · 100 m) frei trifft —, dann der Weg darauf zu: 2 000 → 50 m in Schritten zu 50 m, je Schritt der Spieler am
+// Boden, 30 Takte des Spiels (`_gameLoopTick`: Stufen-Wahl, Ring, Chunks, Streu), das Auge 1,7 m auf das Ziel, EINE Aufnahme. Die
+// Leuchtdichte des Zielfensters: die Pixel in der Scheibe von 15 m Radius um das Ziel (im Bild projiziert, dieselbe Welt-Fläche je
+// Schritt), sRGB → linear, die Tonkurve PBR Neutral zurück und ÷ Belichtung wie kugel.js, ihr Mittel. Die Marke des Stufenwechsels je
+// Schritt: ob ein gezeichneter Chunk das Ziel trägt (`_chunkDecktRing`, sonst der Fern-Ring), die Stufen der Bauten binnen 200 m um das
+// Ziel (`_lodLevel`, wie pop.js) und der Laub-Radius.
+const KOPPLUNG_TEXT =
+    "const st = r.state, rend = st.renderer, cam = st.camera, A = r.constructor; window.__buehne({});" +
+    " const W = 1920, H = 1080, FERN = 2000, NAH = 50, SCHRITT = 50, FLECK = 15; const merk = [cam.position.clone(), cam.quaternion.clone(), cam.fov, st.playerMesh.visible], P0 = st.playerMesh.position.clone();" +
+    " const GK = globalThis.__gelaendeCore, LG = r._gelaende(), h = (x, z) => GK.hoehe(LG, x, z, false);" +
+    " const frei = (ax, az, bx, bz) => { const ya = h(ax, az) + 1.7, yb = h(bx, bz) + 1; for (let i = 1; i < 24; i++) { const f = i / 24; if (h(ax + (bx - ax) * f, az + (bz - az) * f) > ya + (yb - ya) * f) return false; } return true; };" +
+    " let ziel = null; const kand = [];" +
+    " for (let a = 0; a < 12; a++) { const dx = Math.cos((a * Math.PI) / 6), dz = Math.sin((a * Math.PI) / 6), tx = P0.x + dx * FERN, tz = P0.z + dz * FERN;" +
+    " const g = Math.hypot(h(tx + 10, tz) - h(tx - 10, tz), h(tx, tz + 10) - h(tx, tz - 10)) / 20; const sieht = [2000, 1500, 1000, 500, 100].every((d) => frei(tx - dx * d, tz - dz * d, tx, tz));" +
+    " kand.push([a, +g.toFixed(3), sieht]); if (sieht && (!ziel || g > ziel.g)) ziel = { x: tx, z: tz, dx, dz, g }; }" +
+    " if (!ziel) return { ende: 'kein Ziel', kand }; const ty = h(ziel.x, ziel.z), zielV = new T.Vector3(ziel.x, ty, ziel.z), pm = st.playerMesh.position;" +
+    " const srgb = (v) => ((v /= 255), v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)), SC = 0.8 - 0.04, DD = 1 - SC;" +
+    " const invNeutral = (y) => { const ymin = Math.min(...y), ymax = Math.max(...y); let k = 1; if (ymax >= SC) { const np = Math.min(ymax, 0.9995); k = ((DD * DD) / (1 - np) - DD + SC) / np; } const yu = y.map((v) => v * k), um = ymin * k; const off = um < 0.04 ? (() => { const xm = Math.sqrt(um / 6.25); return xm - 6.25 * xm * xm; })() : 0.04; return yu.map((v) => v + off); };" +
+    " const marke = () => { let bau = 0; for (const e of st.architectures || []) if (e && e._lodLevel != null && e.position && Math.hypot(e.position.x - ziel.x, e.position.z - ziel.z) < 200) bau += e._lodLevel * 7 + (e._lodBandLevel | 0); return [typeof r._chunkDecktRing === 'function' ? !!r._chunkDecktRing(ziel.x, ziel.z) : null, bau, st.foliageRadius != null ? +st.foliageRadius.toFixed(1) : null].join('|'); };" +
+    " const schritte = []; rend.setAnimationLoop(null); st.playerMesh.visible = false;" +
+    " try { for (let d = FERN; d >= NAH; d -= SCHRITT) { const px = ziel.x - ziel.dx * d, pz = ziel.z - ziel.dz * d, py = h(px, pz); pm.set(px, py + 0.05, pz);" +
+    " for (let t = 0; t < 30; t++) (r._gameLoopTick(performance.now()), await new Promise((ok) => setTimeout(ok, 5)));" +
+    " cam.fov = A.KAM_FOV_GRAD; cam.updateProjectionMatrix(); cam.position.set(px, py + 1.7, pz); cam.lookAt(ziel.x, ty + 1, ziel.z); cam.updateMatrixWorld(true);" +
+    " const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: 'messung' })).u8, belicht = rend.toneMappingExposure, c = zielV.clone().project(cam);" +
+    " const cx = ((c.x + 1) / 2) * W, cy = ((1 - c.y) / 2) * H, rp = (FLECK / Math.hypot(px - ziel.x, py + 1.7 - ty, pz - ziel.z)) * (H / 2) / Math.tan((cam.fov * Math.PI) / 360); let s = 0, n = 0;" +
+    " for (let y = Math.max(0, Math.floor(cy - rp)); y < Math.min(H, Math.ceil(cy + rp)); y++) for (let x = Math.max(0, Math.floor(cx - rp)); x < Math.min(W, Math.ceil(cx + rp)); x++) { if ((x - cx) ** 2 + (y - cy) ** 2 > rp * rp) continue; const i = (y * W + x) * 4, l = invNeutral([srgb(u8[i]), srgb(u8[i + 1]), srgb(u8[i + 2])]); s += (0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]) / belicht; n++; }" +
+    " schritte.push({ d, Y: n ? +(s / n).toFixed(5) : null, px: n, marke: marke() }); } }" +
+    " finally { pm.copy(P0); cam.fov = merk[2]; cam.updateProjectionMatrix(); cam.position.copy(merk[0]); cam.quaternion.copy(merk[1]); cam.updateMatrixWorld(true); st.playerMesh.visible = merk[3]; }" +
+    " return { ende: 'ok', ziel: [+ziel.x.toFixed(1), +ty.toFixed(1), +ziel.z.toFixed(1)], gefaelle: +ziel.g.toFixed(3), kand, schritte, uhr: st.timeOfDay, wetter: st.weather };";
+// DER DECKEL (geschätzt, ungemessen an der Karte): 40 Schritte zu 30 Takten (je ~0,7 s) und EINER Aufnahme 1920 × 1080, dazu die Wahl
+// des Ziels (≈ 1 500 Rufe `hoehe`) — 90 s
+const KOPPLUNG_PROBE = {
+    sek: 90,
+    mutiert: true,
+    befehl: befehlDer({
+        name: "karte2.erleben.kopplung.bild#1",
+        schritte: [
+            { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+            { name: "umstellen", args: ["umstellen", "--ort", "genesis", "--sicht", "ego"], muss: true },
+            { name: "gang", args: ["eval", KOPPLUNG_TEXT], ms: 900000 },
+        ],
+    }),
+};
 // ───────── DIE NEUN (p3-stationen-g3, 01.11.): schatten.K2 · K3 · K4 · K5 · licht.K4 · ferne.K3 · K4 · lod.K4 · vegetation.K3 ─────────
 // Bis hierher standen sie in `fehlt` (Spike w4-stationen-a am main 94c079cb: was dem Spiel fehlt, beim Namen) und zählten 0 ungemessen.
 // Jetzt misst EINE Probe der Sitzung alle neun im Ausgabe-Pfad (`__ausgabeAufnahme`, satz „messung“) der warmen Welt am Ort dorf (die
@@ -3069,6 +3114,70 @@ const stationen = [
         })(),
         pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "phyto-core.js"],
         quelle: "KARTE2 erleben.bild.auge S1 = zeitliche Pixel-Varianz in ruhenden Bildbereichen ≤ 1 % der Fläche über Schwelle",
+    },
+    // KARTE 2 erleben.kopplung.bild S 1 — KOPPLUNG_PROBE (oben). Richter: „Gang 2 km auf einen Hang: Leuchtdichte des Zielfensters springt
+    // an keinem Stufenwechsel > 5 %“. Die Marke kennt nicht jede Stufe des Spiels (der Ring teilt sich, die Streu blendet) — darum urteilt
+    // die Station STRENGER als der Richter: an JEDEM Schritt |Y ÷ Y_vorher − 1| ≤ 5 % (jeder Stufenwechsel liegt an einem Schritt); die
+    // Sprünge an markierten Wechseln stehen getrennt in der Zahl. Gültig nur mit ≥ 30 Schritten, deren Fenster ≥ 50 Pixel trägt, einem Hang
+    // (Gefälle ≥ 0,1) und mindestens EINEM markierten Wechsel am Ziel (sonst prüfte der Gang keinen).
+    {
+        kriterium: "karte2.erleben.kopplung.bild",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: KOPPLUNG_PROBE,
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            const k = j.schritte && j.schritte.gang;
+            const e = k && k.json && k.json.ergebnis;
+            if (!e || e.ende !== "ok") return { gruen: false, zahl: "kein Gang (" + String((e && (e.ende + " " + JSON.stringify(e.kand || ""))) || (k && k.rest) || "").slice(-200) + ")" };
+            const S = (e.schritte || []).filter((s) => Number.isFinite(s.Y) && s.Y > 0 && s.px >= 50);
+            const sp = [];
+            for (let i = 1; i < S.length; i++) sp.push({ d: S[i].d, q: Math.abs(S[i].Y / S[i - 1].Y - 1), wechsel: S[i].marke !== S[i - 1].marke });
+            const max = (a) => (a.length ? Math.max(...a.map((x) => x.q)) : null);
+            const [mW, mR] = [max(sp.filter((x) => x.wechsel)), max(sp.filter((x) => !x.wechsel))];
+            const nW = sp.filter((x) => x.wechsel).length;
+            const gueltig = S.length >= 30 && S.length === (e.schritte || []).length && e.gefaelle >= 0.1 && nW >= 1;
+            const gruen = hw && gueltig && sp.every((x) => x.q <= 0.05);
+            const pz = (x) => (x == null ? "—" : (100 * x).toFixed(1) + " %");
+            const schlimm = sp.reduce((a, x) => (!a || x.q > a.q ? x : a), null);
+            return {
+                gruen,
+                zahl:
+                    (gruen ? "✅" : "❌") + " größter Sprung an markierten Stufenwechseln " + pz(mW) + " (" + nW + " Wechsel) · an den übrigen Schritten " + pz(mR) + " (Soll an jedem ≤ 5 %)" +
+                    (schlimm ? " · der größte bei " + schlimm.d + " m" : "") + " · " + S.length + "/" + (e.schritte || []).length + " Schritte mit Fenster · Gefälle " + e.gefaelle + " · Ziel " + (e.ziel || []).join("/") +
+                    (gueltig ? "" : " · UNGÜLTIG") + " · " + (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        proben: (() => {
+            const gang = (f = () => 1, o = {}) => {
+                const schritte = [];
+                for (let d = 2000, i = 0; d >= 50; d -= 50, i++) schritte.push({ d, Y: +(0.12 * f(d, i)).toFixed(5), px: Math.round(90 + 200000 / d), marke: (d > 300 ? "false" : "true") + "|0|" + (d > 120 ? 120 : 140) });
+                return { ende: "ok", ziel: [1830.2, 64.1, -410.7], gefaelle: 0.31, kand: [], schritte, uhr: 0.5003, wetter: "sunny", ...o };
+            };
+            const lauf = (e, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ({ adapter: ad, schritte: { fenster: { exit: 0 }, umstellen: { exit: 0 }, gang: { exit: 0, json: { ergebnis: e } } }, dateien: {} });
+            const ruhig = (d) => 1 + (2000 - d) / 2000 * 0.04;
+            return [
+                { name: "der Ring weicht dem Chunk bei 300 m, das Laub bei 120 m: kein Sprung über 0,1 %", j: lauf(gang(ruhig)), gruen: true },
+                { name: "der Chunk springt bei 300 m um 12 %", j: lauf(gang((d) => ruhig(d) * (d <= 300 ? 1.12 : 1))), gruen: false },
+                { name: "ein Sprung von 6 % ohne Marke (der Ring teilt sich bei 800 m)", j: lauf(gang((d) => ruhig(d) * (d <= 800 ? 1.06 : 1))), gruen: false },
+                { name: "MUTANTE kein Stufenwechsel am Ziel (der Gang prüfte keinen)", j: lauf(gang(ruhig, { schritte: gang(ruhig).schritte.map((s) => ({ ...s, marke: "false|0|120" })) })), gruen: false },
+                { name: "kein Hang (Gefälle 0,04)", j: lauf(gang(ruhig, { gefaelle: 0.04 })), gruen: false },
+                { name: "das Fenster verschwindet hinter einem Hügel (Schritte ohne Pixel)", j: lauf(gang(ruhig, { schritte: gang(ruhig).schritte.map((s, i) => (i > 20 && i < 26 ? { ...s, px: 0, Y: null } : s)) })), gruen: false },
+                { name: "kein Ziel mit freier Sicht", j: lauf({ ende: "kein Ziel", kand: [[0, 0.2, false]] }), gruen: false },
+                { name: "swiftshader", j: lauf(gang(ruhig), "[linse-gpu] google/swiftshader (Probe)"), gruen: false },
+                { name: "die Folge brach", j: { adapter: "[linse-gpu] amd/rdna-3 (Probe)", schritte: {}, fehler: "umstellen: Exit 1" }, gruen: false },
+            ];
+        })(),
+        pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "phyto-core.js", "stamm/bild-himmel.js"],
+        quelle: "KARTE2 erleben.kopplung.bild S1 = Gang 2 km auf einen Hang: Leuchtdichte des Zielfensters springt an keinem Stufenwechsel > 5 %",
     },
     {
         kriterium: "material.K2",
