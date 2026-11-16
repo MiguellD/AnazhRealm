@@ -1184,12 +1184,18 @@ async function rolleSeite(o) {
     const vorn = (d) => ({ x: pm.x + v.x * d, z: pm.z + v.z * d });
     const boden = (q) => r.getTerrainHeightAt(q.x, q.z);
     const kam = (q, h = 1) => ({ kamera: [pm.x - v.x * 6, boden(pm) + 4, pm.z - v.z * 6], ziel: [q.x, boden(q) + h, q.z] });
+    // der Ort trägt das Werk nicht immer (ein Baum, ein Hang): wie das Bildpaar ein paar Orte um den Wunsch, der erste, der trägt
     const werk = (name, q) => {
         const bp = st.blueprints[name];
         if (!bp) return null;
-        const lauf = r.dslRun(["spawn_blueprint", name, ["at", q.x, boden(q), q.z], r._werkSame(bp, name, null), null, r._studioStampFor(name) || null, 0], { source: "spieler" });
-        const e = lauf.log.find((x) => x.event === "spawned_blueprint" && x.id != null);
-        return (e && st.architectures.find((a) => a && a.id === e.id)) || null;
+        for (const [dx, dz] of [[0, 0], [2, 0], [-2, 0], [0, 2], [0, -2], [3, 3]]) {
+            const p = { x: q.x + dx, z: q.z + dz };
+            const lauf = r.dslRun(["spawn_blueprint", name, ["at", p.x, boden(p), p.z], r._werkSame(bp, name, null), null, r._studioStampFor(name) || null, 0], { source: "spieler" });
+            const e = lauf.log.find((x) => x.event === "spawned_blueprint" && x.id != null);
+            const E = e && st.architectures.find((a) => a && a.id === e.id);
+            if (E) return E;
+        }
+        return null;
     };
     const s = o.schritt;
     if (s === "an") {
@@ -1239,8 +1245,9 @@ async function rolleSeite(o) {
         if (!E) return { fehler: "kein Wagen " + o.name + " am Ort" };
         R.wagen = E;
         R.p0 = [E.position.x, E.position.z];
-        const k = kam(q);
-        pm.set(pm.x + v.x * 3, boden(vorn(3)) + r.constructor.PLAYER_FOOT_OFFSET, pm.z + v.z * 3); // 2 m vor dem Wagen, der Blick auf ihn
+        const k = kam({ x: E.position.x, z: E.position.z });
+        const f = { x: E.position.x - v.x * 2, z: E.position.z - v.z * 2 }; // 2 m vor dem Wagen, der Blick auf ihn
+        pm.set(f.x, boden(f) + r.constructor.PLAYER_FOOT_OFFSET, f.z);
         return { ...k, id: E.id };
     }
     if (s === "sitzt") return { sitzt: st.player.mountedArch === (R.wagen && R.wagen.id) };
