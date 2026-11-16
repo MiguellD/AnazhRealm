@@ -272,6 +272,7 @@ class AnazhRealm_gelaende_kollision {
         const fest = AnazhRealm._huelleVon(huelle, "fest", "fachwerk:__huelle");
         if (!fest || !fest.length) return;
         entry._hausHuelle = huelle;
+        this._dachWahl = null; // die Hülle trägt die Decken des Hauses: der Dach-Pool wählt neu (w28-innenlicht — bis hier erst nach `dachSchrittM` Weg)
         if (alt && JSON.stringify(alt.teile) === JSON.stringify(huelle.teile)) return;
         const pr = this._foundryPresetForEntry(entry);
         const ws = pr ? this._foundryWorldScaleMatrix(pr) : null;
