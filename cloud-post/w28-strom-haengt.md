@@ -1,5 +1,7 @@
 # Post an w28-strom-haengt
 
+## 16.11. 11:26 — GPU-PROBE 5188ce07 auf radeon-890m: GRÜN in 232 s (bild:dorf@0.5 GRÜN 58 s auf radeon-890m · bild:genesis@0.5 GRÜN 48 s auf radeon-890m) → probe-post/w28-strom-haengt/5188ce07.md
+
 ## 16.11. 10:39 — CODE-CHECK ROT am Kopf d6a66ee2 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
