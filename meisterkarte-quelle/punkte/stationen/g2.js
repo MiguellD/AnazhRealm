@@ -3180,14 +3180,27 @@ async function partnerSitzungProbe(r, T, o, G) {
         }
     // die Bilder schießt der Lauf (WP.sitzung) NACH der Probe — je Ort braucht das Bild seine Welt:
     // je Bild ruft der Lauf `window.__vorBild(...vor)` (dieselbe Seite: stehen + 3 s Takt)
+    const kamera = (x, z) => [x, y(x, z + 10) + 3, z + 10, x, y(x, z), z].map(r3);
+    // DIE BESTÄUBER IM KEGEL DES BILDS (w28-blueten-bild): alle Bestäuber zeichnet EIN Pool (`bestaeuberPool`, tier:bestaeuber) —
+    // die Objekte der Maske zählen ihn als 1, gleich ob einer fliegt oder vierzig (Radeon 15e855bb: 1/0/1/0/0/1/1). Gezählt wird
+    // jeder Gast des Pools (`_bestaeuberListe`) im Kegel der Kamera des Bilds und auf dem Kreis von 12 m um die Mitte; die Pixel der
+    // Klasse im Bild bezeugen, dass sie gezeichnet sind.
     window.__vorBild = async (x, z) => {
         await stehen(x, z);
         zug(180);
-        return r3(s.spielZeit);
+        const [px, py, pz, lx, ly, lz] = kamera(x, z);
+        const c = new THREE.PerspectiveCamera(r.state.camera.fov, 16 / 9, 0.1, 100);
+        c.position.set(px, py, pz);
+        c.lookAt(lx, ly, lz);
+        c.updateMatrixWorld();
+        const F = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse));
+        const v = new THREE.Vector3();
+        const bestaeuber = (r._bestaeuberListe || []).filter((b) => Math.hypot(b.x - x, b.z - z) <= 12 && F.containsPoint(v.set(b.x, b.y, b.z))).length;
+        return { zeit: r3(s.spielZeit), bestaeuber };
     };
     return {
         orte,
-        bilder: orte.map(([x, z]) => ({ vor: [x, z], kamera: [x, y(x, z + 10) + 3, z + 10, x, y(x, z), z].map(r3), klasse: "^tier:bestaeuber|blume" })),
+        bilder: orte.map(([x, z]) => ({ vor: [x, z], kamera: kamera(x, z), klasse: "^tier:bestaeuber|blume" })),
     };
 }
 // das Urteil (luftwasser.K4#1, die Karten-Hälfte): ≥ 6 Orte mit Bild, Bestäuber im Bild an ihnen, r(Bestäuber-Objekte, Blüten-Pixel) ≥ 0,5
@@ -3197,7 +3210,12 @@ function partnerUrteil(e) {
     if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
     const B = (e.bilder || []).filter((b) => b.klassen && !b.fehler);
     const summe = (b, re, f) => Object.entries(b.klassen).filter(([k]) => re.test(k)).reduce((a, [, v]) => a + ((v && v[f]) || 0), 0);
-    const be = B.map((b) => summe(b, /^tier:bestaeuber/, "objekte"));
+    // die Bestäuber: die Gäste des Pools im Kegel des Bilds (`__vorBild` → b.vor.bestaeuber), nie die Objekte der Maske (EIN Pool
+    // zählt dort 1); die Pixel der Klasse bezeugen sie im Bild
+    const ohneKegel = B.filter((b) => !(b.vor && Number.isFinite(b.vor.bestaeuber))).length;
+    if (ohneKegel) return { gruen: false, zahl: B.length + " Bilder, " + ohneKegel + " ohne die Bestäuber im Kegel (vor.bestaeuber fehlt — die Objekte der Maske zählen den Pool als 1)" };
+    const be = B.map((b) => b.vor.bestaeuber);
+    const bp = B.map((b) => summe(b, /^tier:bestaeuber/, "pixel"));
     const bl = B.map((b) => summe(b, /blume/, "pixel"));
     const korr = (a, b) => {
         const n = a.length;
@@ -3211,11 +3229,11 @@ function partnerUrteil(e) {
     const rot = [];
     if (B.length < 6) rot.push(B.length + " Bilder (Soll ≥ 6 Orte)" + (e.bilder || []).filter((b) => b.fehler).map((b) => ": " + b.fehler).slice(0, 1).join(""));
     if (!bl.some((n) => n > 0)) rot.push("keine Blumen-Klasse im Bild");
-    if (!be.some((n) => n > 0)) rot.push("kein Bestäuber im Bild");
+    if (!be.some((n) => n > 0) || !bp.some((n) => n > 0)) rot.push("kein Bestäuber im Bild");
     if (!(r !== null && r >= 0.5)) rot.push("r " + r + " < 0,5");
     return {
         gruen: !rot.length,
-        zahl: B.length + " Orte im Bild, Bestäuber (Objekte) " + be.join("/") + ", Blüten (Pixel) " + bl.join("/") + ", r " + r + " (Soll ≥ 0,5)" + (rot.length ? " · ROT " + rot.join(", ") : ""),
+        zahl: B.length + " Orte im Bild, Bestäuber (im Kegel) " + be.join("/") + " (Pixel " + bp.join("/") + "), Blüten (Pixel) " + bl.join("/") + ", r " + r + " (Soll ≥ 0,5)" + (rot.length ? " · ROT " + rot.join(", ") : ""),
     };
 }
 // DER DECKEL (Radeon a996d0ae, 15.11.): 60 s rissen vor dem ersten Bild — neun Stände und neun Bilder in voller Puffer-Größe (die Klasse)
@@ -6265,7 +6283,19 @@ const stationen = [
         zeit: false,
         minuten: 4,
         urteil: (j, lauf) => partnerUrteil(WP.zeile(j, lauf, "partner")),
-        pfad: ["stamm/vegetation-*.js", "stamm/kreatur-*.js", "stamm/feld-*.js", "stamm/dirigent-*.js", "stamm/bild-*.js", "tetrapoda-core.js", "phyto-core.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
+        // die Zeilen der Radeon (Blüten-Pixel und Bestäuber-Objekte 15e855bb) und die beiden blinden Formen beim Namen
+        proben: (() => {
+            const px = [1104, 422, 1560, 867, 3243, 1262, 606];
+            const bild = (i, kegel, alt) => ({ datei: "p" + i + ".png", fehler: null, vor: alt === "objekte" ? undefined : { zeit: 1, bestaeuber: kegel }, klassen: Object.assign(alt === "maske" ? {} : { "streuNah:blume": { pixel: px[i], objekte: 8 } }, kegel ? { "tier:bestaeuber": { pixel: 3 * kegel, objekte: 1 } } : {}) }); // prettier-ignore
+            const zeile = (f) => "WELTPROBE partner " + JSON.stringify({ orte: px.map(() => [0, 0]), bilder: px.map((_, i) => f(i)) });
+            return [
+                { name: "mehr Blüten, mehr Gäste im Kegel", stdout: zeile((i) => bild(i, Math.round(px[i] / 300))), gruen: true, zahl: /r 0\.\d+ \(Soll/ },
+                { name: "die Gäste ohne die Blüten", stdout: zeile((i) => bild(i, [3, 4, 0, 5, 1, 2, 6][i])), gruen: false, zahl: /ROT r -?[\d.]+ < 0,5/ },
+                { name: "die blinde Maske (die Takt-Wache fehlt: keine Blumen-Klasse, Radeon 105c9bd3)", stdout: zeile((i) => bild(i, Math.round(px[i] / 300), "maske")), gruen: false, zahl: /keine Blumen-Klasse im Bild/ },
+                { name: "die Objekte der Maske als Bestäuber (EIN Pool zählt 1, kein Kegel)", stdout: zeile((i) => bild(i, [1, 0, 1, 0, 0, 1, 1][i], "objekte")), gruen: false, zahl: /vor\.bestaeuber fehlt/ },
+            ];
+        })(),
+        pfad: ["stamm/vegetation-*.js", "stamm/kreatur-*.js", "stamm/feld-*.js", "stamm/dirigent-*.js", "stamm/bild-*.js", "tetrapoda-core.js", "phyto-core.js", "scripts/werkbank.cjs", "scripts/lib/abnahme-urteil.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "1 = die Dichte der Bestäuber korreliert mit dem Blüten-Anteil am Ort (r ≥ 0,5)",
     },
     {
