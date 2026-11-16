@@ -3973,7 +3973,7 @@
         // aus einer eingefrorenen Donor-Substanz. buildInstance byte-unberührt.
         const D = derive(P);
         const VMAX_REF = 10; // GT-Eich-Anker: vmax_GT≈16 / Host-Vier-Rad-Cap 1.6
-        return {
+        const satz = {
             // SITZ — der vordere seatRow-Anker (frontCx = cowlX − 0.72; Ober-
             // kante der Sitzfläche ySill + 0.11 + 0.055; Fahrerseite z −0.4).
             sitz: { x: D.cowlX - 0.72, y: P.fahrhoehe + 0.18 + 0.165, z: -0.4 },
@@ -4084,6 +4084,16 @@
             // N8 (rein additiv) — die Probefahrt-Kamera reist mit (s. FAHR.kamera).
             kamera: FAHR.kamera,
         };
+        // DIE EINSPUR-FAHRT (w28-motorrad-kern, rein additiv; ohne einspur derselbe Satz): der Fahrer sitzt in der Mittelebene
+        // auf der Sitzfläche der Ableitung (der Leib setzt sein Gesäß darauf), und der Satz trägt `einspur`: der Aufbau legt
+        // sich in die Kurve (fahrStand: tan φ = a_quer / g = v² / (g · r)), statt sich wie der Wagen hinauszuwanken. Die
+        // Bremse bleibt das Reifen-Gesetz (der Reibkreis begrenzt sie schon auf μ · g: 100 → 0 km/h 35,5 m, ∝ v² / μ).
+        if (P.einspur) {
+            const E = einspurAbleiten(P);
+            satz.sitz = { x: E.hipX + 0.05, y: P.sitzhoehe + 0.015, z: 0 };
+            satz.einspur = { neigung: true };
+        }
+        return satz;
     }
 
     // ══ WELLE L (06.10., rein additiv — Praezedenz: exportDrive) — DER EINE FAHR-SCHRITT ══
@@ -4219,6 +4229,7 @@
             wasser: fahrWasser(a, d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte),
             luft: fahrLuft(a, d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte), // wetter.K5 (rein additiv): die Flanke im Wind, dieselbe Masse
             reifen: fahrReifen(zs), // K1 (rein additiv): die Kurve mit Spitze je Achse
+            einspur: !!(d.einspur && d.einspur.neigung), // w28-motorrad-kern: der Aufbau legt sich in die Kurve
         };
     }
     // DAS REIFEN-GESETZ eines Fahr-Satzes (K1, FAHR.reifen): B·D je Achse aus der Spitze der Vorderachse auf dem Bezugs-Boden und
@@ -4398,7 +4409,12 @@
             const aL = Math.max(-G.aPitchMax, Math.min(G.aPitchMax, z.aLong || 0));
             const aQ = Math.max(-G.aLatMax, Math.min(G.aLatMax, z.aLat || 0));
             fahrFeder(z, "fNick", aL * (G.cgH / G.L) * G.pitchGain, G.k, G.cd, dt, S.nickMax);
-            fahrFeder(z, "fWank", aQ * (G.cgH / G.W) * G.rollGain, G.k, G.cd, dt, S.nickMax);
+            // das Einspur legt sich in die Kurve (tan φ = a_quer / g, zur Innenseite: fWank < 0 bei a_quer nach links), der Wagen
+            // wankt hinaus (die Feder)
+            if (G.einspur) {
+                z.fWank = -Math.atan(aQ / G.g);
+                z.fWankV = 0;
+            } else fahrFeder(z, "fWank", aQ * (G.cgH / G.W) * G.rollGain, G.k, G.cd, dt, S.nickMax);
             const mH = -Math.abs(aL) * G.heaveA - Math.abs(z.vlong) * G.heaveV;
             fahrFeder(z, "fHub", mH, G.k * G.heaveKMul, G.cd * G.heaveCMul, dt, S.hubMax);
         }

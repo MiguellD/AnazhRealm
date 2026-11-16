@@ -2826,7 +2826,10 @@ async function probeLeben(expected) {
                 let unten = Infinity;
                 // die Hülle des Kerns im Rahmen des Wagens (vor dem Durchlauf: Rahmen und Stationen)
                 const fzgH = r._fahrzeugGesetzFor(e);
-                const hu = fzgH?.drive?.huelle ? fzgH.drive.huelle : null;
+                // das Einspur (exportDrive.einspur) ist offen: der Reiter sitzt AUF der Maschine, keine Kabine, kein Dach — seine
+                // Probe sind Sitz, Anker und Blick (w28-motorrad-kern; bis hier maß L9 ihn an der Kabine eines Wagens)
+                const offen = !!fzgH?.drive?.einspur;
+                const hu = fzgH?.drive?.huelle && !offen ? fzgH.drive.huelle : null;
                 const scH = Number.isFinite(e.scale) ? e.scale : 1;
                 const thH = Number.isFinite(e.rotationY) ? e.rotationY : 0;
                 const basisH = e.position.y - 0.5;
@@ -2946,7 +2949,7 @@ async function probeLeben(expected) {
                 reiter.push({
                     typ,
                     oben: +(oben - basis).toFixed(3),
-                    dach: d?.huelle && Number.isFinite(d.huelle.yRoof) ? +(d.huelle.yRoof * sc).toFixed(3) : null,
+                    dach: d?.huelle && !offen && Number.isFinite(d.huelle.yRoof) ? +(d.huelle.yRoof * sc).toFixed(3) : null,
                     schenkel: +(unten - basis).toFixed(3),
                     sitz: sitz ? +(sitz.y * sc).toFixed(3) : null,
                     ankerL: sitz ? +(lx - sitz.x * sc).toFixed(3) : null,

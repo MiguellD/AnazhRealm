@@ -271,10 +271,54 @@ function pruefe(rezept, kultur, mutiere) {
     return { out, eng };
 }
 
+// DIE EINSPUR-FAHRT (Stufe 2, derselbe Fahr-Schritt wie die Welt: exportDrive → fahrGesetz → fahrSchritt, den
+// koerper-fahrt `_wagenLage` als entry._rideKurvenRoll liest): in der stehenden Kurve legt sich der Aufbau ZUR INNENSEITE
+// (fWank · a_quer < 0) um φ = atan(v² / (g · r)) (± 1,5°), der Sitz liegt in der Mittelebene auf Sitzhöhe, und 100 → 0 km/h
+// bremst in 30–50 m (das Reifen-Gesetz, ∝ v² / μ). ROT nennt Rezept und Gesetz.
+function fahrt(id) {
+    const P = Object.assign({}, VC.PRESETS[id].s, VC.PRESETS[id].fx);
+    const d = VC.exportDrive(P),
+        G = VC.fahrGesetz(d),
+        eben = () => 0,
+        roh = [];
+    if (!G) return { id, roh: ["kein Fahr-Gesetz"] };
+    let z = VC.fahrZustand(0, 0, 0);
+    VC.fahrStand(z, G, eben, 0);
+    for (let i = 0; i < 5400 && z.speed < 60 / 3.6; i++) VC.fahrSchritt(z, { throttle: 1 }, G, eben, 1 / 60);
+    for (let i = 0; i < 240; i++) VC.fahrSchritt(z, { throttle: 0.35, steer: 0.5 }, G, eben, 1 / 60);
+    const r = z.speed / Math.max(1e-6, Math.abs(z.yawRate || 0)),
+        soll = Math.atan((z.speed * z.speed) / (G.g * r)),
+        ist = z.fWank || 0,
+        grad = (w) => ((w * 180) / Math.PI).toFixed(1);
+    if (!(ist * (z.aLat || 0) < 0)) roh.push(`wankt hinaus (${grad(ist)}° bei a_quer ${(z.aLat || 0).toFixed(1)})`);
+    if (Math.abs(Math.abs(ist) - soll) > (1.5 * Math.PI) / 180)
+        roh.push(`Neigung ${grad(Math.abs(ist))}° ≠ atan(v²/gr) ${grad(soll)}°`);
+    if (!d.sitz || d.sitz.z !== 0 || !(Math.abs(d.sitz.y - P.sitzhoehe) < 0.05))
+        roh.push(`Sitz ${JSON.stringify(d.sitz)} nicht auf der Mittelebene in Sitzhöhe`);
+    z = VC.fahrZustand(0, 0, 0);
+    VC.fahrStand(z, G, eben, 0);
+    for (let i = 0; i < 5400 && z.speed < 100 / 3.6; i++) VC.fahrSchritt(z, { throttle: 1 }, G, eben, 1 / 60);
+    const x0 = z.x;
+    for (let i = 0; i < 3000 && z.vlong > 0.05; i++) VC.fahrSchritt(z, { brake: 1 }, G, eben, 1 / 60);
+    const weg = Math.abs(z.x - x0);
+    if (!(weg >= 30 && weg <= 50)) roh.push(`Bremsweg 100 → 0 ${weg.toFixed(1)} m außerhalb 30–50 m`);
+    return {
+        id,
+        roh,
+        text: `${id} φ ${grad(Math.abs(ist))}°/${grad(soll)}° r ${r.toFixed(0)} m · 100→0 ${weg.toFixed(1)} m`,
+    };
+}
+
 const t0 = Date.now();
 const REZEPTE = Object.keys(VC.PRESETS).filter((id) => VC.PRESETS[id].fx && VC.PRESETS[id].fx.einspur);
 const KULTUREN = Object.keys(VC.EINSPUR_KULTUR);
 if (process.argv.includes("--selbsttest")) {
+    // die Fahrt eines Wagens (der wankt hinaus, sein Sitz liegt neben der Mitte) MUSS ROT „wankt hinaus" nennen
+    const wagen = fahrt("gt");
+    if (!wagen.roh.some((x) => x.startsWith("wankt hinaus"))) {
+        console.log(`SELBSTTEST ROT: die Fahrt des Wagens gt meldet kein „wankt hinaus" (${wagen.roh.join(" · ")})`);
+        process.exit(1);
+    }
     // die Kette der Zweiarm-Kombination 30 mm nach innen (in den Arm): das Gate MUSS chain×swing beim Namen nennen
     const r = pruefe("motorrad_naked", "klinge", (g) =>
         g.traverse((o) => {
@@ -287,7 +331,7 @@ if (process.argv.includes("--selbsttest")) {
     const rot = r.out.find((x) => x.paar === "chain×swing" && x.urteil === "SCHNITT");
     const sauber = pruefe("motorrad_naked", "klinge").out.length === 0;
     console.log(
-        `SELBSTTEST ${rot && sauber ? "GRUEN" : "ROT"}: verschobene Kette → ${rot ? "SCHNITT chain×swing (motorrad_naked×klinge)" : "nicht erkannt"}, unverschoben ${sauber ? "frei" : "NICHT frei"} (${((Date.now() - t0) / 1000).toFixed(1)} s)`
+        `SELBSTTEST ${rot && sauber ? "GRUEN" : "ROT"}: verschobene Kette → ${rot ? "SCHNITT chain×swing (motorrad_naked×klinge)" : "nicht erkannt"}, unverschoben ${sauber ? "frei" : "NICHT frei"}; der Wagen gt in der Fahrt → wankt hinaus (${((Date.now() - t0) / 1000).toFixed(1)} s)`
     );
     process.exit(rot && sauber ? 0 : 1);
 }
@@ -311,4 +355,10 @@ for (const x of alle) console.log(`  ${x.urteil} ${x.rezept}×${x.kultur} ${x.pa
 console.log(
     `EINSPUR-SCHNITT ${alle.length ? "ROT" : "GRUEN"}: ${frei}/${REZEPTE.length * KULTUREN.length} Kombinationen frei über ${POSES.length} Feder-Posen · ${schnitte} Schnitte / ${kontakte} Kontakte · ${RULES.length} Paare · engste Stelle ${(eng.d * 1000).toFixed(2)} mm (${eng.wo}) · ${((Date.now() - t0) / 1000).toFixed(1)} s`
 );
-process.exit(alle.length ? 1 : 0);
+const fahrten = REZEPTE.map(fahrt),
+    fahrRot = fahrten.filter((f) => f.roh.length);
+for (const f of fahrRot) console.log(`  FAHRT ROT ${f.id}: ${f.roh.join(" · ")}`);
+console.log(
+    `EINSPUR-FAHRT ${fahrRot.length ? "ROT" : "GRUEN"}: ${fahrten.length - fahrRot.length}/${fahrten.length} legen sich ein · ${fahrten.map((f) => f.text).join(" · ")}`
+);
+process.exit(alle.length || fahrRot.length ? 1 : 0);

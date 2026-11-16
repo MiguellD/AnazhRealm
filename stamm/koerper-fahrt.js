@@ -595,6 +595,13 @@ class AnazhRealm_koerper_fahrt {
         const fx = ort.achseX ? Math.cos(th) : Math.sin(th);
         const fz = ort.achseX ? -Math.sin(th) : Math.cos(th);
         hips.rotation.y = Math.atan2(fx, fz) - group.rotation.y;
+        // DER REITER LEGT SICH MIT (w28-motorrad-kern): auf dem Einspur dreht der Leib um die Fahrt-Achse wie der Aufbau
+        // (`_rittMeshPose`: Gelände- + Kurven-Wank um die Bug-Achse, Drehpunkt die Rad-Ebene); der Wagen-Reiter bleibt aufrecht
+        const wank = ort.neigt
+            ? (Number.isFinite(entry._rideRoll) ? entry._rideRoll : 0) +
+              (Number.isFinite(entry._rideKurvenRoll) ? entry._rideKurvenRoll : 0)
+            : 0;
+        if (ort.neigt) hips.rotation.z = wank;
         hips.position.copy(rig._sitzBasis);
         this._leibMatrix(group);
         // das Hüftgelenk (Mitte beider) auf den Anker: waagerecht der Anker im Rahmen des Gefährts, senkrecht die
@@ -605,10 +612,14 @@ class AnazhRealm_koerper_fahrt {
         rig.legR.hip.getWorldPosition(v.b);
         v.a.add(v.b).multiplyScalar(0.5); // das Hüftgelenk jetzt (Welt)
         const sitzH = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
+        // der Anker im geneigten Rahmen (Wank um die Bug-Achse x, Höhe über der Rad-Ebene); ohne Wank derselbe Punkt
+        const ay = ort.y + L.leib.gesaess,
+            oy = wank ? ay * Math.cos(wank) - ort.z * Math.sin(wank) : ay,
+            oz = wank ? ay * Math.sin(wank) + ort.z * Math.cos(wank) : ort.z;
         v.z.set(
-            entry.position.x + Math.cos(th) * ort.x + Math.sin(th) * ort.z,
-            group.position.y + ort.y - sitzH + L.leib.gesaess,
-            entry.position.z - Math.sin(th) * ort.x + Math.cos(th) * ort.z
+            entry.position.x + Math.cos(th) * ort.x + Math.sin(th) * oz,
+            wank ? group.position.y + oy - sitzH : group.position.y + ort.y - sitzH + L.leib.gesaess,
+            entry.position.z - Math.sin(th) * ort.x + Math.cos(th) * oz
         ); // das Ziel (Welt)
         hips.parent.worldToLocal(v.a);
         hips.parent.worldToLocal(v.z);
@@ -619,6 +630,7 @@ class AnazhRealm_koerper_fahrt {
     _sitzLageLoesen(rig) {
         if (rig._sitzBasis) rig.hips.position.copy(rig._sitzBasis);
         rig.hips.rotation.y = 0;
+        if (rig._sitzLage && rig._sitzLage.ort && rig._sitzLage.ort.neigt) rig.hips.rotation.z = 0; // der Wank des Einspurs
         rig._sitzLage = null;
     }
 
@@ -662,6 +674,8 @@ class AnazhRealm_koerper_fahrt {
                 lehneMax: F.sitzLehneMaxRad,
                 kopfFrei: F.kopfFreiraumM,
                 achseX,
+                // das Einspur (exportDrive.einspur): der Reiter legt sich mit dem Aufbau in die Kurve (`_sitzLage`)
+                neigt: !!(d.einspur && d.einspur.neigung),
             };
         }
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
