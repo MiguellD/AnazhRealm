@@ -2248,7 +2248,7 @@ class AnazhRealm_stoff_material {
     // Standard-Programme Σ 9,49 → 8,97 s, die GPU-Zeit je Bild gleich (gpu-bank an der Wiese 12,05–12,48 ↔ 12,22–12,35 ms). VOR der
     // Schleife steht, was jeder Platz liest und nur EINMAL entsteht (in der Fn auf dem Stapel, `toVar`): die Lage und die Normale des
     // Blicks (r184 baut eine Variable dort, wo sie zuerst gebaut wird — in der Schleife liefe die Normale des Stoffs je Platz neu)
-    // und der Faktor des Wurfs. Die Werte des Platzes wählt der Zähler über eine Kette von `select` (`_jePlatz`, dieselben Uniforms,
+    // und der Faktor des Wurfs. Die Werte des Platzes wählt der Zähler über EINE Kette von Zweigen (`_jePlatz`, dieselben Uniforms,
     // EIN Schreiber `_leuchtTakt`) — als Reihe im Speicher des Fragments (`array(...).toVar()`, der Zähler als Index) verdoppelte die
     // Schleife die GPU-Zeit je Bild (12,3 → 23,9 ms), als Uniform-Reihe (`uniformArray`) kostete sie +0,7–1,0 ms GPU und +0,45 ms
     // CPU. NICHT als Schleife: die fünf Punkte des Kaskaden-Filters (`_schattenFilter`) — eine Schleife mit Abtastung kostete
@@ -2262,12 +2262,12 @@ class AnazhRealm_stoff_material {
             const wurf = W.faktor.toVar();
             const summe = Te.vec3(0).toVar();
             Te.Loop(atmo.lichtLage.length, ({ i: k }) => {
-                const platz = {
-                    lage: AnazhRealm._jePlatz(Te, atmo.lichtLage, k),
-                    farbe: AnazhRealm._jePlatz(Te, atmo.lichtFarbe, k),
-                    ersatz: AnazhRealm._jePlatz(Te, atmo.lichtErsatz, k),
-                    kern: AnazhRealm._jePlatz(Te, atmo.lichtKern, k),
-                };
+                const [lage, farbe, ersatz, kern] = AnazhRealm._jePlatz(
+                    Te,
+                    [atmo.lichtLage, atmo.lichtFarbe, atmo.lichtErsatz, atmo.lichtKern],
+                    k
+                );
+                const platz = { lage, farbe, ersatz, kern };
                 summe.addAssign(
                     this._lichtPlatz(Te, platz, himmel).mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
                 );
@@ -2276,13 +2276,21 @@ class AnazhRealm_stoff_material {
         })();
     }
 
-    // DIE WAHL DES PLATZES (die Schleifen der Pools): das Glied `k` (der Zähler der Schleife) einer Reihe von Uniforms als Kette
-    // von `select` — der Zähler ist in jedem Fragment derselbe, die Zweige laufen gleich; KEINE Reihe im Speicher des Fragments
-    // (`array(...).toVar()` mit dem Zähler als Index: gpu-bank GTX 1050 an der Wiese 12,28 → 23,87 ms je Bild).
-    static _jePlatz(T, reihe, k) {
-        let w = reihe[reihe.length - 1];
-        for (let j = reihe.length - 2; j >= 0; j--) w = T.select(k.equal(j), reihe[j], w);
-        return w;
+    // DIE WAHL DES PLATZES (die Schleifen der Pools): die Glieder `k` (der Zähler der Schleife) ALLER Reihen eines Platzes in
+    // EINER Kette von Zweigen — der Zähler ist in jedem Fragment derselbe, die Zweige laufen gleich; KEINE Reihe im Speicher des
+    // Fragments (`array(...).toVar()` mit dem Zähler als Index: gpu-bank GTX 1050 an der Wiese 12,28 → 23,87 ms je Bild). Bis
+    // w28-innenlicht trug jede Reihe ihre eigene Kette von `select` (r184 schreibt je `select` eine Variable und ein if/else):
+    // der Dach-Pool des Raum-Lichts stand mit 2 × 7 Zweigen und 16 Variablen je Seite im Boden-Programm (S0: 97 524 → 104 680
+    // Zeichen, die Ratsche riss). → je Reihe EINE Variable, in der Reihe von `reihen`.
+    static _jePlatz(T, reihen, k) {
+        const n = reihen[0].length;
+        const v = reihen.map((r) => r[n - 1].toVar());
+        let kette = null;
+        for (let j = 0; j < n - 1; j++) {
+            const nimm = () => reihen.forEach((r, a) => v[a].assign(r[j]));
+            kette = kette ? kette.ElseIf(k.equal(j), nimm) : T.If(k.equal(j), nimm);
+        }
+        return v;
     }
 
     // DAS GESETZ EINES PLATZES (K11, der Rumpf der Schleife des Pools): `platz` = { lage, farbe, ersatz, kern } — Knoten des Platzes

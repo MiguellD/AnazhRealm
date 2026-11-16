@@ -27,8 +27,7 @@ class AnazhRealm_stoff_dach {
             T.If(drin, () => {
                 const unter = T.float(0).toVar();
                 T.Loop(U.dachLage.length, ({ i: k }) => {
-                    const L = AnazhRealm._jePlatz(T, U.dachLage, k);
-                    const M = AnazhRealm._jePlatz(T, U.dachMass, k);
+                    const [L, M] = AnazhRealm._jePlatz(T, [U.dachLage, U.dachMass], k);
                     const d = p.xz.sub(L.xy);
                     const lx = d.x.mul(L.z).sub(d.y.mul(L.w)).abs();
                     const lz = d.x.mul(L.w).add(d.y.mul(L.z)).abs();
@@ -65,8 +64,7 @@ class AnazhRealm_stoff_dach {
             T.If(drin, () => {
                 const raum = T.float(-1).toVar();
                 T.Loop(U.dachLage.length, ({ i: k }) => {
-                    const L = AnazhRealm._jePlatz(T, U.dachLage, k);
-                    const M = AnazhRealm._jePlatz(T, U.dachMass, k);
+                    const [L, M] = AnazhRealm._jePlatz(T, [U.dachLage, U.dachMass], k);
                     const d = p.xz.sub(L.xy);
                     const lx = d.x.mul(L.z).sub(d.y.mul(L.w)).abs();
                     const lz = d.x.mul(L.w).add(d.y.mul(L.z)).abs();
@@ -76,7 +74,10 @@ class AnazhRealm_stoff_dach {
                 anteil.assign(T.select(raum.greaterThanEqual(0), raum, T.float(1)));
             });
             return anteil;
-        })();
+        })().toVar();
+        // EINMAL je Programm: r184 baut Bestrahlung und Spiegelung der Umgebung in je einem eigenen Cache (`CacheNode`) — ohne das
+        // Wort `global` stand die Schleife des Dach-Pools zweimal im Text jedes beleuchteten Programms
+        this._raumHimmelK.global = true;
         return this._raumHimmelK;
     }
 
