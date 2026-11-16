@@ -4726,12 +4726,22 @@
         var klasse = gelenke.map(function (g) {
             return g === "torso" || g === "mensch" ? 1 : /^(arm|elbow|hand)1$/.test(g) ? 2 : /^(arm|elbow|hand)-1$/.test(g) ? 3 : 0;
         });
+        // (w28-gestalt, der Leib der Menge ist EIN Netz mit Hand und Schuh: die Hand ist kein Ärmel — eine Ecke über 0,5 Hand-Gewicht
+        // misst die Hülle des Arms nicht (nah ist die Hand ein eigenes starres Netz, nie Hülle))
+        var istHand = gelenke.map(function (g) {
+            return /^hand-?1$/.test(g);
+        });
         huellen.forEach(function (h) {
             h.kl = new Uint8Array(h.n);
+            h.hd = new Uint8Array(h.n);
             for (var i = 0; i < h.n; i++) {
-                var w = [0, 0, 0, 0];
-                for (var k = 4 * i; k < 4 * i + 4; k++) w[klasse[h.si[k]]] += h.sw[k];
+                var w = [0, 0, 0, 0], wh = 0;
+                for (var k = 4 * i; k < 4 * i + 4; k++) {
+                    w[klasse[h.si[k]]] += h.sw[k];
+                    if (istHand[h.si[k]]) wh += h.sw[k];
+                }
                 h.kl[i] = w[1] > 0.5 ? 1 : w[2] > 0.5 ? 2 : w[3] > 0.5 ? 3 : 0;
+                h.hd[i] = wh > 0.5 ? 1 : 0;
             }
         });
         var laenge = function (x, y, z) {
@@ -4789,7 +4799,7 @@
             };
             var huelle = 0;
             huellen.forEach(function (h) {
-                for (var i = 0; i < h.n; i++) if (h.kl[i] === Z.kl && Z.f(h.pos, 3 * i) >= 1) huelle = Math.max(huelle, hoehe(E, h.pos[3 * i], h.pos[3 * i + 1], h.pos[3 * i + 2], 1));
+                for (var i = 0; i < h.n; i++) if (h.kl[i] === Z.kl && !h.hd[i] && Z.f(h.pos, 3 * i) >= 1) huelle = Math.max(huelle, hoehe(E, h.pos[3 * i], h.pos[3 * i + 1], h.pos[3 * i + 2], 1));
             });
             Z.soll = huelle + A.spalt;
             seiten.push(Z);

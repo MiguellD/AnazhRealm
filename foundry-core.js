@@ -7152,6 +7152,21 @@ function __mengenPrims(kern, B, dials, matFuer, gelenkVon, vox) {
     });
     B.character.updateMatrixWorld(true);
     const prims = __tierPrims(B.character, B.character, () => true, vox, MM.blend, gelenkVon, MM.klassen, true);
+    // DIE HAUT LIEGT ÜBER DEN TRÄGERN (w28-gestalt, koerper MENSCH_GESTALT.leibHaut.dicke — dieselbe Zahl wie die Haut der nahen
+    // Stufe, `__leibHaut`): Rumpf, Hals und Glieder tragen sie, Kopf, Hände und Füße nicht (ihre Haut ist ihr Primitiv). Der
+    // Relief-Leser setzt sie voraus (koerper `leibRelief`: „der Guss steht überall um leibHaut.dicke über den Trägern“ — sein
+    // Band um den Schnitt des Rumpfs, das Dach, das um sie sinkt). Bis hier goss die Menge die nackten Träger: die Wand des
+    // Rumpfs lag unter dem Band und trat nicht auf ihren Schnitt, das Dach sank um die Dicke unter seinen Träger.
+    const LH = (kern.MENSCH_GESTALT || {}).leibHaut;
+    if (!LH || !(LH.dicke >= 0)) throw new Error("MENGEN-LEIB: MENSCH_GESTALT.leibHaut.dicke fehlt (fail-closed)");
+    const ohneHaut = ["head", "hand1", "hand-1", "ankle1", "ankle-1"].map((nm) => B.parts[nm]).filter(Boolean);
+    for (const p of prims) {
+        let frei = true;
+        for (let c = p.node; c && frei; c = c.parent) if (ohneHaut.includes(c)) frei = false;
+        if (!frei) continue;
+        p.auf += LH.dicke;
+        p.ext += LH.dicke;
+    }
     // die Höhlen der Augen (Klasse socket) formen nichts: sie sind ein Ton der Haut wie in der Kopf-Haut der Nah-Stufe
     const hoehlen = __tierPrims(B.character, B.character, () => true, vox, MM.blend, gelenkVon, ["socket"], true);
     const platz = new Map();
@@ -9370,6 +9385,60 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // DER LEIB DER MENGE (mensch.K4): EINE Hülle; seine Sohle ist die Unterkante der Füße, beschuht oder bloß (Gelände H5)
         if (menge) {
             mengenLeib = __mengenLeib(kern, B, dials, matFuer, animAhnH, skinJoints, fern, zeilenZiel);
+            // DAS KLEID DER MENGE LIEGT ÜBER SEINER HAUT (w28-gestalt — derselbe Vertrag wie der Stoff aus der Haut der nahen Stufe,
+            // `__lage` · `__hebung`): je Ecke ihr Weg von ihrer Haut = die Auflage ihrer Zone (Dicke und Weite, dieselbe Rechnung wie
+            // `__mengenPrims`) längs ihrer Normale; der Relief-Leser liest an der Haut darunter und trägt den Stoff mit. Bis hier
+            // las er die Hülle der Menge als nackte Haut: der Ärmel trat auf das Profil des nackten Arms, die Flanke hielt die Luft
+            // der Ruhe (koerper `_armLuft`: der Stoff beider Seiten) zum Arm frei, die nah der Stoff füllt — der Rumpf des Satzes
+            // stand schmal mit einer Lücke zum Arm, der nahe Leib breit mit anliegendem Arm.
+            {
+                const mg = mengenLeib.mesh.geometry,
+                    mp = mg.attributes.position.array,
+                    mi = mg.index.array,
+                    mz = mengenLeib.zone,
+                    mn = mp.length / 3;
+                if (!mz || mz.length !== mi.length / 3) throw new Error("MENGEN-LEIB: die Zone je Fläche fehlt — das Kleid läse neben seiner Haut (fail-closed)");
+                const um = mengenLeib.zonen.map((z) => (z.weite ? (mengenLeib.prims.find((q) => q.teil === z.weite.um) || {}).c || null : null));
+                const aufAn = (zi, x, y, z) => {
+                    const Z = mengenLeib.zonen[zi],
+                        u = um[zi];
+                    return Z.dicke + (u ? Z.weite.mehr * Math.min(1, Math.max(0, (Math.hypot(x - u[0], y - u[1], z - u[2]) - Z.weite.ab) / (Z.weite.bis - Z.weite.ab))) : 0);
+                };
+                const dkE = new Float32Array(mn).fill(Infinity),
+                    nE = new Float32Array(mn * 3);
+                for (let f = 0; f < mz.length; f++) {
+                    const e = [mi[3 * f], mi[3 * f + 1], mi[3 * f + 2]];
+                    const ax = mp[3 * e[1]] - mp[3 * e[0]], ay = mp[3 * e[1] + 1] - mp[3 * e[0] + 1], az = mp[3 * e[1] + 2] - mp[3 * e[0] + 2]; // prettier-ignore
+                    const bx = mp[3 * e[2]] - mp[3 * e[0]], by = mp[3 * e[2] + 1] - mp[3 * e[0] + 1], bz = mp[3 * e[2] + 2] - mp[3 * e[0] + 2]; // prettier-ignore
+                    const nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx; // prettier-ignore
+                    for (const v of e) {
+                        nE[3 * v] += nx;
+                        nE[3 * v + 1] += ny;
+                        nE[3 * v + 2] += nz;
+                        // (eine Ecke an der Grenze zweier Zonen trägt die kleinere Auflage: die Haut am Saum hebt nichts)
+                        dkE[v] = Math.min(dkE[v], mz[f] >= 2 ? aufAn(mz[f] - 2, mp[3 * v], mp[3 * v + 1], mp[3 * v + 2]) : 0);
+                    }
+                }
+                let lageMax = 0;
+                const heb = new Float32Array(mn * 3),
+                    msi = mg.attributes.skinIndex.array,
+                    msw = mg.attributes.skinWeight.array;
+                let lageRumpf = 0;
+                for (let v = 0; v < mn; v++) {
+                    const l = Math.hypot(nE[3 * v], nE[3 * v + 1], nE[3 * v + 2]),
+                        d = dkE[v] < Infinity && l > 0 ? dkE[v] : 0;
+                    for (let c = 0; c < 3; c++) heb[3 * v + c] = d > 0 ? (nE[3 * v + c] / l) * d : 0;
+                    if (d > lageMax) lageMax = d;
+                    let wr = 0;
+                    for (let c = 4 * v; c < 4 * v + 4; c++) if (skinJoints[msi[c]] === "torso" || skinJoints[msi[c]] === "mensch") wr += msw[c];
+                    if (wr > 0.5 && d > lageRumpf) lageRumpf = d;
+                }
+                if (lageMax > 0) {
+                    mengenLeib.mesh.userData.__lage = lageMax;
+                    mengenLeib.mesh.userData.__lageRumpf = lageRumpf; // EIN Netz, viele Kleider: die Anlage (koerper armAnlage) liest die Lage an den Rumpf-Ecken, nie die des Schuhs
+                    mengenLeib.mesh.userData.__hebung = heb;
+                }
+            }
             {
                 const vox = fern ? MENSCH_MENGE.voxFern : MENSCH_MENGE.vox;
                 const leibVon = (d2) => {
@@ -10132,7 +10201,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         const anlage = [];
         B.character.traverse((m) => {
             const a = m.isMesh && !m.userData.__nichtGiessen && m.userData.__huelle && m.geometry.attributes;
-            if (a && a.skinIndex) anlage.push({ m, pos: a.position.array, idx: m.geometry.index.array, si: a.skinIndex.array, sw: a.skinWeight.array, n: a.position.count, lage: m.userData.__lage || 0 }); // prettier-ignore
+            if (a && a.skinIndex) anlage.push({ m, pos: a.position.array, idx: m.geometry.index.array, si: a.skinIndex.array, sw: a.skinWeight.array, n: a.position.count, lage: m.userData.__lageRumpf != null ? m.userData.__lageRumpf : m.userData.__lage || 0 }); // prettier-ignore
         });
         if (kern.armAnlage(B, anlage, skinJoints))
             for (const h of anlage) {
