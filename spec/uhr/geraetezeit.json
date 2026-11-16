@@ -23,6 +23,7 @@
   "koerper-core": "messung tuchTakt:2",
   "signaling-server": "netz handleClientMessage logLine",
   "bau-buch": "speicher applyOpToPart applyWorkshopProcessToPart",
+  "bild-himmel": "laden _raumBlendeTakt",
   "bild-kosten": "laden _augeWegJetzt · messung _configureRenderer:2 · frist _knotenRate:4",
   "bild-sicht": "laden _spiegelFeldTakt",
   "dienst": "messung _analogZensus _weltFeldEintrag · frist _handBauErlaubt:2 _weltBakeErlaubt:2 _weltBakeSchuld _weltBakeWecker _weltLeibTakt _weltPlatzTakt · ki _kiRegung _kiRuhe llmCall:2 · anzeige _spielerSagt logError · laden _weltFeldAktiv:2 _weltSchwundTakt · speicher journalAppend",

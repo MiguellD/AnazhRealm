@@ -2105,7 +2105,7 @@
     // Holz-Rolle, die in einen Körper mit Decke schaut (`innenAn`: der Punkt `tiefe` vor der Fläche liegt im Grundriss unter
     // der Decke, `geoms.__decken`), das Raum-Licht liest dieselbe Zahl (`raumVon`), der Innenkörper der fernen Stufen auch
     // (`_innenFaktor`). Putz, Gefach, Stein und Lehm sind innen, was sie außen sind.
-    var INNEN_HOLZ = { frisch: 2.2, anstrich: 0.35, wandM: 0.2, hautM: 0.04, wand: [0.25, 0.35], diele: [0.25, 0.4], dieleMal: 1.15, tiefe: 0.45, rollen: { blockholz: "wand", holz: "wand", stamm: "wand", boden: "diele" } };
+    var INNEN_HOLZ = { frisch: 2.2, anstrich: 0.35, wandM: 0.2, hautM: 0.04, einwaerts: 0.1, wand: [0.25, 0.35], diele: [0.25, 0.4], dieleMal: 1.15, tiefe: 0.45, rollen: { blockholz: "wand", holz: "wand", stamm: "wand", boden: "diele" } };
     function innenTon(role, kol) {
         var art = INNEN_HOLZ.rollen[role];
         if (!art) return null;
@@ -2119,7 +2119,7 @@
         });
     }
     // die Fläche am Ende von P/N (Bake-Koordinaten, `inv` führt sie in den Rahmen des Hauses) schaut in einen Körper mit Decke
-    function innenAn(P, N, rows, inv, liegt) {
+    function innenAn(P, N, rows, inv, liegt, frei) {
         var i = P.length - 3,
             t = INNEN_HOLZ.tiefe,
             a = [P[i], P[i + 1], P[i + 2]],
@@ -2136,21 +2136,37 @@
         for (var k = 0; k < rows.length; k++) {
             var r = rows[k];
             if (!(q[0] > r[0] && q[0] < r[1] && q[2] > r[2] && q[2] < r[3] && q[1] < r[4] && a[0] > r[0] - 0.02 && a[0] < r[1] + 0.02 && a[2] > r[2] - 0.02 && a[2] < r[3] + 0.02)) continue;
-            // IN DER WANDDICKE (eine Kante des Grundrisses näher als `wandM`) ist eine stehende Fläche nur innen, wenn sie von einer
-            // dieser Kanten EINWÄRTS schaut: Balken-Flanke und Laibung gehören der Außenhaut (Außen bleibt byte-gleich).
-            var n = [(q[0] - a[0]) / t, (q[1] - a[1]) / t, (q[2] - a[2]) / t],
+            // IN DER WAND (eine Kante des Grundrisses näher als `wandM`) ist innen nur, was von einer dieser Kanten EINWÄRTS schaut
+            // (auch das runde Blockholz: seine Normale trägt den Einwärts-Anteil) und hinter der Haut liegt (`hautM`: Blatt, Laden).
+            // Flanke, Laibung und Balken-Oberseite gehen durch die Wand — sie bleiben, was sie außen sind (Außen byte-gleich).
+            // Die Diele (`liegt`) reicht an die Wand; ein Teil, das aus der Wand in den Raum reicht (`frei`, `innenFrei`: Zwischenwand,
+            // Deckenbalken), ist ganz innen.
+            var n = [(q[0] - a[0]) / t, 0, (q[2] - a[2]) / t],
                 w = INNEN_HOLZ.wandM,
-                rand = a[0] - r[0] < w || r[1] - a[0] < w || a[2] - r[2] < w || r[3] - a[2] < w;
-            if (!rand) return true;
-            if (Math.abs(n[1]) > 0.5) {
-                if (liegt) return true; // die Diele reicht bis an die Wand; Ober- und Unterseite eines Balkens in der Wand nicht
-                continue;
-            }
-            var v = INNEN_HOLZ.hautM, // was näher als `hautM` an der Kante einwärts schaut, ist Blatt und Laden der Außenhaut
+                e = INNEN_HOLZ.einwaerts,
                 d = [a[0] - r[0], r[1] - a[0], a[2] - r[2], r[3] - a[2]];
-            if (Math.min(d[0], d[1], d[2], d[3]) > v && ((d[0] < w && n[0] > 0.3) || (d[1] < w && n[0] < -0.3) || (d[2] < w && n[2] > 0.3) || (d[3] < w && n[2] < -0.3))) return true;
+            if (liegt || frei || Math.min(d[0], d[1], d[2], d[3]) >= w) return true;
+            if (Math.min(d[0], d[1], d[2], d[3]) > INNEN_HOLZ.hautM && ((d[0] < w && n[0] > e) || (d[1] < w && n[0] < -e) || (d[2] < w && n[2] > e) || (d[3] < w && n[2] < -e))) return true;
         }
         return false;
+    }
+    // ein Teil (seine Ecken `pa`, `M` führt sie in den Rahmen des Hauses) steht NICHT ganz in der Wanddicke EINER Kante eines Körpers
+    function innenFrei(pa, M, rows) {
+        var e = M.elements, x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, w = INNEN_HOLZ.wandM;
+        for (var v = 0; v < pa.count; v++) {
+            var x = pa.getX(v), y = pa.getY(v), z = pa.getZ(v),
+                hx = e[0] * x + e[4] * y + e[8] * z + e[12],
+                hz = e[2] * x + e[6] * y + e[10] * z + e[14];
+            if (hx < x0) x0 = hx;
+            if (hx > x1) x1 = hx;
+            if (hz < z0) z0 = hz;
+            if (hz > z1) z1 = hz;
+        }
+        for (var k = 0; k < rows.length; k++) {
+            var r = rows[k];
+            if (x1 - r[0] < w || r[1] - x0 < w || z1 - r[2] < w || r[3] - z0 < w) return false;
+        }
+        return true;
     }
     // prettier-ignore
     function bakeHaus(g,kol,geoms){
@@ -2200,6 +2216,7 @@
     const pa=o.geometry.attributes.position, na=o.geometry.attributes.normal, ca=o.geometry.attributes.color;
     const e=o.matrixWorld.elements, base=_baseFor(o,role,kol), nv=pa.count;
     const inT=(geoms.__decken&&geoms.__decken.length&&INNEN_HOLZ.rollen[role])?innenTon(role,kol):null, inV=inT?new THREE.Matrix4().copy(g.matrixWorld).invert():null;   // DER INNEN-STOFF (w28-innenlicht): nur wo der Bau seine Decken nennt (Stufe 0)
+    const inF=inT?innenFrei(pa,new THREE.Matrix4().multiplyMatrices(inV,o.matrixWorld),geoms.__decken):false;   // das Teil reicht aus der Wand in den Raum (`innenFrei`)
     let wy0=1e9,wy1=-1e9; for(let v=0;v<nv;v++){ const q=e[1]*pa.getX(v)+e[5]*pa.getY(v)+e[9]*pa.getZ(v)+e[13]; if(q<wy0)wy0=q; if(q>wy1)wy1=q; }
     const aoAn=(wy1-wy0)<=4.2;                                                                // AO-PANEEL-GATE: Kontakt-AO nur auf kleinen, geerdeten Meshes — auf vollhohen Wandpaneelen malt die Vertex-Interpolation SÄGEZÄHNE über die Quad-Diagonalen (GESEHEN in nah_voll)
     for(let v=0;v<nv;v++){ const x=pa.getX(v),y=pa.getY(v),z=pa.getZ(v);
@@ -2208,7 +2225,7 @@
       if(na){ const a=na.getX(v),b=na.getY(v),c=na.getZ(v); G.nrm.push(e[0]*a+e[4]*b+e[8]*c, e[1]*a+e[5]*b+e[9]*c, e[2]*a+e[6]*b+e[10]*c); } else G.nrm.push(0,1,0);
       const tr=ca?ca.getX(v):1, tg=ca?ca.getY(v):1, tb=ca?ca.getZ(v):1;
       const namp=NOISEAMP[role]||0, nz=namp? (1+namp*(_noise01(G.pos[G.pos.length-3]*1.7, wy*1.7, G.pos[G.pos.length-1]*1.7)*2-1)) : 1;   // MATERIAL-ILLUSION: Welt-Hash → jede Fläche atmet, deterministisch über Rebakes
-      const bF=(inT&&innenAn(G.pos,G.nrm,geoms.__decken,inV,role==="boden"))?inT:base;                        // innen der unverwitterte Ton der Kultur (`innenTon`)
+      const bF=(inT&&innenAn(G.pos,G.nrm,geoms.__decken,inV,role==="boden",inF))?inT:base;                        // innen der unverwitterte Ton der Kultur (`innenTon`)
       G.col.push(bF[0]*tr*ao*nz, bF[1]*tg*ao*nz, bF[2]*tb*ao*nz);                       // AO-REAKTIVIERUNG: ao war GEMESSEN tot (berechnet, nie multipliziert) — das Kontakt-AO-Gesetz war stadtweit stumm
       const wx3=G.pos[G.pos.length-3], wz3=G.pos[G.pos.length-1], nay=na?Math.abs(na.getY(v)):1;   // WELT-UV-GESETZ: Kachelung aus der Weltlage (0.5/m) — Texturen laufen stetig über Bauteilgrenzen
       if(nay>0.6) G.uv.push(wx3*0.5, wz3*0.5); else { const nax=na?Math.abs(na.getX(v)):0; G.uv.push((nax>0.5?wz3:wx3)*0.5, wy*0.5); } }
@@ -11819,6 +11836,7 @@
 
         innenTon: innenTon,
         innenAn: innenAn,
+        innenFrei: innenFrei,
         INNEN_HOLZ: INNEN_HOLZ,
         deckenZeile: deckenZeile, // die Decken samt Raum-Licht (w28-innenlicht) — die Linse rechnet daran ihre Mutanten
         RAUM_LICHT: RAUM_LICHT,

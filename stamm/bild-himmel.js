@@ -1949,7 +1949,8 @@ class AnazhRealm_bild_himmel {
     // unter offenem Himmel: 0) × der Anteil des Himmels am gemessenen Licht (`_belichtungSonne`, die Lesung dieses Takts); die
     // Blende folgt ihm mit τ = `RAUM.blendeS` in Stufen (ins Helle `RAUM.blendeHellS`, das Auge schließt schneller, als es sich öffnet; kein Sprung an der
     // Schwelle, kein Pumpen: EIN Tiefpass erster Ordnung, er schwingt nicht über), auf der Wanduhr (auf 0,25 s gekappt). Ein Sprung des Auges über `RAUM.sprungM` in
-    // einem Takt nimmt das Ziel sofort — die Sonde, das Wort, die Ankunft lesen nie die Blende des Orts von vorher.
+    // einem Takt nimmt das Ziel sofort — die Sonde, das Wort, die Ankunft lesen nie die Blende des Orts von vorher. Die Gerätezeit
+    // (spec/uhr/geraetezeit.json, Grund `laden`): ein Gang zum Fixpunkt, sein Ende ist dasselbe — auch unter der Bühne, die die Bild-Uhr hält.
     _raumBlendeTakt() {
         const st = this.state;
         const R = AnazhRealm.RAUM;
