@@ -1,0 +1,59 @@
+{
+ "sha": "77a9095fcee506f43e2d5d342634103a1d5dd8e4",
+ "geraet": "gtx",
+ "zeit": "2026-11-16T19:18:10.491Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {},
+ "ungemessen": {
+  "gelaende.K4#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 43931239198/2 echt' nach 2706 s Warten) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 43931239198/2 echt' nach 2706 s Warten) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-16T19:18:10.487Z",
+   "abdruck": "b52bbcc194d7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 43931239198/2 echt' nach 2706 s Warten) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 43931239198/2 echt' nach 2706 s Warten) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-16T19:18:10.490Z",
+   "abdruck": "8bb8c00acffc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.preis.zugang#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 43931239198/2 echt' nach 2706 s Warten) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 43931239198/2 echt' nach 2706 s Warten) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-16T19:18:10.491Z",
+   "abdruck": "60ba3483a3d1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-16T18:33:02.984Z",
+  "ordner": "sitzung-20261116-193302",
+  "port": 7804,
+  "warten": 45.13,
+  "grundstellungS": [],
+  "proben": 0,
+  "freigaben": [],
+  "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'ci-runner 43931239198/2 echt' nach 2706 s Warten) — ungemessen",
+  "minuten": 45.13
+ }
+}
