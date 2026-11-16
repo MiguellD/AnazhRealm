@@ -480,28 +480,40 @@ hauptLauf(async () => {
         res.fpPanoLaeufe = fp8 ? fp8.panoLaeufe : 0;
         res.fpTexOk = !!(fp8?.tex && fp8.tex.image.width === P8.az && fp8.tex.image.height === P8.rad);
         res.fpSichtbar = !!(fp8 && fp8.mesh.visible === true);
+        // DAS GESETZ AN DER MASCHE DES TEXELS (w28-feld-fuss): das Feld nennt dem Gesetz die Weite seiner Masche (die Wurzel ihrer
+        // Fläche: Azimut-Breite am Radius × radiale Zeile) und liest die Ebenen des Netzes, die sie trägt (gelaende-core
+        // `netzStufe`); die Reihe an der Naht fragt wie der Ring, ohne Fuß. Die Erwartung stellt DIESELBE Frage — die Linse
+        // rechnet die Masche selbst (eine eigene Erwartung, wie die Worker-Linse `diag-worker-dichte`), nie aus dem Faden.
+        // Daneben dieselben Texel gegen das GANZE Netz (`fpWorstGanz`): die Zahl ist der Preis der Stufe im Bild (Rinnen der
+        // 100-m-Ebene, die keine Masche von 418–934 m zeigt) und der Konsum-Beweis — läse das Feld seine Masche nicht, wäre sie 0.
         let fpWorst = -1;
+        let fpWorstGanz = -1;
         if (fp8 && fp8.laeufe >= 1) {
             fpWorst = 0;
+            fpWorstGanz = 0;
             const F8 = AnazhRealm.FERN_RING;
             const rMin8 = F8.schalen[F8.schalen.length - 1].aussen;
+            const hr8 = (P8.rMaxM - rMin8) / (2 * P8.rad);
             const wl8 = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
             for (let k = 0; k < 40; k++) {
                 const ix = (k * 37) % P8.az;
                 const iy = (k * 11) % P8.rad;
                 const rr = rMin8 + ((iy + 0.5) / P8.rad) * (P8.rMaxM - rMin8);
                 const aa = ((ix + 0.5) / P8.az - 0.5) * 2 * Math.PI;
-                const law8 = r._terrainMacroSurfaceY(
-                    fp8.anchorX + Math.cos(aa) * rr,
-                    fp8.anchorZ + Math.sin(aa) * rr,
-                    false
-                );
-                const want8 = law8 < wl8 ? wl8 : law8;
-                const d8 = Math.abs(fp8.daten[(iy * P8.az + ix) * 4] - want8);
+                const x8 = fp8.anchorX + Math.cos(aa) * rr;
+                const z8 = fp8.anchorZ + Math.sin(aa) * rr;
+                const masche8 = rr - rMin8 < 2 * hr8 ? 0 : Math.sqrt(4 * ((Math.PI * rr) / P8.az) * hr8);
+                const ist8 = fp8.daten[(iy * P8.az + ix) * 4];
+                const law8 = globalThis.__gelaendeCore.hoehe(r._gelaende(), x8, z8, false, undefined, masche8);
+                const d8 = Math.abs(ist8 - (law8 < wl8 ? wl8 : law8));
                 if (d8 > fpWorst) fpWorst = d8;
+                const ganz8 = r._terrainMacroSurfaceY(x8, z8, false);
+                const g8 = Math.abs(ist8 - (ganz8 < wl8 ? wl8 : ganz8));
+                if (g8 > fpWorstGanz) fpWorstGanz = g8;
             }
         }
         res.fpWorst = fpWorst;
+        res.fpWorstGanz = fpWorstGanz;
         // Die ECHTE Render-Probe (der Null-Renderer der Seite zeichnet nie):
         try {
             const szene8 = new THREE.Scene();
@@ -1560,9 +1572,14 @@ hauptLauf(async () => {
         `laeufe=${out.fpLaeufe} pano=${out.fpPanoLaeufe}`
     );
     check(
-        "8: Texel-Höhen == f64-Gesetz im Seh-Band (≤ 0.5 m bis 40 km, Wasser flach auf wl)",
+        "8: Texel-Höhen == f64-Gesetz AN DER MASCHE DES TEXELS im Seh-Band (≤ 0.5 m bis 40 km, Wasser flach auf wl)",
         out.fpWorst >= 0 && out.fpWorst <= 0.5,
-        `worst=${Number.isFinite(out.fpWorst) ? out.fpWorst.toFixed(4) : out.fpWorst}`
+        `worst=${Number.isFinite(out.fpWorst) ? out.fpWorst.toFixed(4) : out.fpWorst} m · gegen das ganze Netz ${Number.isFinite(out.fpWorstGanz) ? out.fpWorstGanz.toFixed(2) : out.fpWorstGanz} m (der Preis der Stufe)`
+    );
+    check(
+        "8 SELBSTTEST: dieselben Texel gegen das GANZE Netz (die Frage ohne Masche) fallen rot — das Feld liest die Stufe seiner Masche",
+        out.fpWorstGanz > 0.5,
+        `ohne Masche worst=${Number.isFinite(out.fpWorstGanz) ? out.fpWorstGanz.toFixed(2) : out.fpWorstGanz} m (> 0.5)`
     );
     check(
         "8: die ECHTE Render-Probe trifft — der Fullscreen-Raymarch zeichnet Horizont-Pixel",
