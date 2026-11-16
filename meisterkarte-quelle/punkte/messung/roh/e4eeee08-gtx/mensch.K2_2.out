@@ -84,12 +84,12 @@ node "$SK/b64png.cjs" "$B-platz.txt" "$B-platz-8uhr-third.png"
 
 ===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
 
-  ✅ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"tagTakt":0,"haeuser":17,"sollSumme":77,"leiber":77,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":34,"third":35},"nahLeiber":4,"planGleich":true,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.035,"wegLeib":453.5},"haltung":{"n":73,"mit":70,"maxGrad":0.015,"wer":"pfarrhaus/pfarrhaus #16036 (abend: sad)","je":{"pwalk":0,"sad":0.015,"idle":0,"showcase":0},"ruheGrad":0},"blick":{"n":198,"quote":0.99,"sektorMax":0.146},"ohnePlatz":0,"ohnePlatzWer":[],"stapel":[],"imStueck":[],"haendlerFehlt":[],"staende":0,"huellen":17,"wege":{"wandN":0,"wand":[],"durch":171,"tuer":171,"falsch":[],"aufWeg":0.968,"sprungN":0,"wegeMin":4,"wegeMax":8,"streckeMin":130,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1232,"maxM":1.826,"ueberN":0,"ueber":[]}}
+  ✅ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"tagTakt":0,"haeuser":17,"sollSumme":77,"leiber":77,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":34,"third":35},"nahLeiber":4,"planGleich":true,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.035,"wegLeib":453.4},"haltung":{"n":73,"mit":70,"maxGrad":0.015,"wer":"pfarrhaus/pfarrhaus #16036 (abend: sad)","je":{"pwalk":0,"sad":0.015,"idle":0,"showcase":0},"ruheGrad":0},"blick":{"n":198,"quote":0.99,"sektorMax":0.146},"ohnePlatz":0,"ohnePlatzWer":[],"stapel":[],"imStueck":[],"haendlerFehlt":[],"staende":0,"huellen":17,"wege":{"wandN":0,"wand":[],"durch":171,"tuer":171,"falsch":[],"aufWeg":0.968,"sprungN":0,"wegeMin":4,"wegeMax":8,"streckeMin":130,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1232,"maxM":1.826,"ueberN":0,"ueber":[]}}
 
-  (74 s)
+  (80 s)
 
 ✅ GRÜN — bewohner
-{"uhr":0.3333,"tod":0.3333,"sicht":"third","stand":[-65.9,-173],"platz":[-53.5,-173],"leiber":2,"imBild":0,"gehendImBild":0,"fps":22.4,"takte":0,"version":"18.546.301"}
+{"uhr":0.3333,"tod":0.3333,"sicht":"third","stand":[-65.9,-173],"platz":[-53.5,-173],"leiber":2,"imBild":0,"gehendImBild":0,"fps":19,"takte":0,"version":"18.546.301"}
 
 --- stderr ---
 tr: warning: an unescaped backslash at end of string is not portable
