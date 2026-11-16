@@ -12,9 +12,11 @@
 //   (b) TIEFE — der Direktpfad zeichnet mit Tiefe (`renderer.depth`, und die nahe Kiste deckt die ferne: die Bild-Mitte
 //       ist rot), die Post-Kette ohne (die Leinwand trägt keine Tiefe, auch keine GPU-Textur nach einem Ausflug).
 //   (c) SHADER — das erzeugte Fragment der Ausgabe (scripts/lib/shader-kosten.cjs): höchstens 9 unbedingte Abtastungen
-//       (Bloom samt Mitte), mindestens 24 in Zweigen (Godrays 20 + lokaler Kontrast 4 hinter ihrer Stärke).
+//       (Bloom samt Mitte), mindestens 5 in Zweigen (der Godray-Schacht 1 + lokaler Kontrast 4 hinter ihrer Stärke).
 //   (d) GODRAYS — mit der Sonne im Bild trägt der Zweig: das Bild mit Godrays weicht von dem ohne ab (über dem Rausch-Boden
-//       zweier gleicher Aufnahmen).
+//       zweier gleicher Aufnahmen). DER SCHACHT (`_godrayStufe`, w28-lichtschacht): der Marsch ist ein eigener Pass — er
+//       zeichnet mit der Sonne im Bild, ohne Stärke nie, und sein Fragment tastet je Schritt die Farbe UND lädt die Tiefe (die
+//       Himmels-Maske).
 //   (f) SAUM — auf UNGERADER Leinwand (321×241) liest jedes Pixel den Block des Abbilds, der es enthält: ein schräger
 //       schwarzer Pfahl steht im Wasser, je Zeile das Wasser-Pixel links an seiner Kante mit Abbild und mit r184s Tiefe.
 //   (e) WASSER — das Wasser über einem hellen Grund (0,3 m) liest das Tiefen-Abbild wie r184s Viewport-Tiefe: bei festen
@@ -49,7 +51,7 @@ const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
 const N_FRAMES = 4;
-const BUDGET_AUSGABE = { unbedingtMax: 9, zweigMin: 24 };
+const BUDGET_AUSGABE = { unbedingtMax: 9, zweigMin: 5 };
 // Die Godrays ändern mit der Sonne im Bild mindestens so viele Pixel (% des Bildes, je Pixel ≥ 4/255 in einem Kanal) —
 // sie sitzen um die Sonne.
 const GODRAY_MIN_PCT = 2;
@@ -259,6 +261,18 @@ function urteil(z) {
         v.push(
             `GODRAY-LAGE: der Marsch zielt auf ${lg.ziel}, die Sonne steht im Bild bei ${lg.sonne} (screenUV) — die Lage im Schirm ist nicht die des Passes (\`_schirmUV\`)`
         );
+    // DER SCHACHT (w28-lichtschacht, `_godrayStufe`): mit der Sonne im Bild zeichnet der Pass, ohne Stärke nie; sein Fragment tastet
+    // je Schritt die Farbe und lädt die Tiefe
+    const sc = g.schacht || {};
+    if (!(sc.laeufeMit > 0))
+        v.push(`GODRAY-SCHACHT: mit der Sonne im Bild lief der Pass ${sc.laeufeMit}× — die Ausgabe liest ein stehendes Ziel`);
+    if (sc.laeufeOhne !== 0) v.push(`GODRAY-SCHACHT: ohne Stärke lief der Pass ${sc.laeufeOhne}× — er tastet, ohne zu zeigen`);
+    const sk = z.schacht;
+    if (!sk) v.push("GODRAY-SCHACHT: kein Fragment des Passes gefunden (die Linse ist blind)");
+    else if (!(sc.schritte > 0 && sk.proben >= sc.schritte && sk.ladungen >= sc.schritte))
+        v.push(
+            `GODRAY-SCHACHT: ${sk.proben} Farb-Abtastungen und ${sk.ladungen} Tiefen-Ladungen je Texel bei ${sc.schritte} Schritten — je Schritt fehlt die Farbe oder die Himmels-Maske`
+        );
     return v;
 }
 
@@ -266,7 +280,7 @@ function selbsttest() {
     const fehler = SK.selbsttest().map((s) => "Shader-Kosten-Linse: " + s);
     const ausgabe = {
         einstieg: "main",
-        abtastungen: { gesamt: 33, unbedingt: 9, zweig: 24, schleife: 0 },
+        abtastungen: { gesamt: 14, unbedingt: 9, zweig: 5, schleife: 0 },
         schleifen: 0,
         rauschen: 0,
     };
@@ -299,7 +313,14 @@ function selbsttest() {
         ],
         gpuFehler: [],
         ausgabe,
-        godray: { staerke: 0.6, aenderungPct: 14, rauschenPct: 0, lage: { ziel: [0.52, 0.31], sonne: [0.51, 0.33] } },
+        godray: {
+            staerke: 0.6,
+            aenderungPct: 14,
+            rauschenPct: 0,
+            lage: { ziel: [0.52, 0.31], sonne: [0.51, 0.33] },
+            schacht: { schritte: 20, laeufeMit: 6, laeufeOhne: 0 },
+        },
+        schacht: { einstieg: "main", proben: 20, ladungen: 20 },
         buehne: { boden: 90.3, wasserY: 147.1, eisNull: 157.1 },
         wasser: {
             umgehaengt: [1, 1],
@@ -361,6 +382,11 @@ function selbsttest() {
         ["Godray-Lage gespiegelt (Dachfuge)", ["godray.lage", { ziel: [0.52, 0.69], sonne: [0.51, 0.33] }], /GODRAY-LAGE: der Marsch zielt auf 0\.52,0\.69/],
         ["Godray-Lage an der Mitte (blind)", ["godray.lage", { ziel: [0.5, 0.5], sonne: [0.5, 0.52] }], /GODRAY-LAGE: .*zu nah an der Bildmitte/],
         ["Godray-Lage ungemessen", ["godray.lage"], /GODRAY-LAGE: nicht gemessen/],
+        // w28-lichtschacht: der Marsch als eigener Pass — er läuft nur mit Stärke und liest je Schritt Farbe und Tiefe
+        ["Godray-Schacht tastet ohne Stärke", ["godray.schacht.laeufeOhne=", 2], /GODRAY-SCHACHT: ohne Stärke lief der Pass 2×/],
+        ["Godray-Schacht steht", ["godray.schacht.laeufeMit=", 0], /GODRAY-SCHACHT: mit der Sonne im Bild lief der Pass 0×/],
+        ["Godray-Schacht ohne Himmels-Maske", ["schacht.ladungen=", 0], /GODRAY-SCHACHT: 20 Farb-Abtastungen und 0 Tiefen-Ladungen/],
+        ["Godray-Schacht ungemessen", ["schacht"], /GODRAY-SCHACHT: kein Fragment des Passes/],
         ["Grading schneidet dunkles Licht ab", ["dunkel", { luma1: 0, luma4: 0 }], /DUNKEL: .*schneidet dunkles Licht ab/],
         ["Grading hängt an der Belichtung", ["dunkel", { luma1: 12, luma4: 7 }], /DUNKEL: .*hängt an der Belichtung/],
         ["Dunkel-Probe fehlt", ["dunkel"], /DUNKEL: die Probe lief nicht/],
@@ -763,16 +789,30 @@ function buehne(nFrames, nachtLicht) {
                         n++;
                 return +((100 * n) / (a.length / 4)).toFixed(2);
             };
+            // DER SCHACHT (`_godrayStufe`): seine Läufe mit und ohne Stärke, sein Fragment mit der Sonne im Bild
+            const stufe = st.godrayUniforms && st.godrayUniforms.stufe;
+            const laeufe = () => (stufe ? stufe.laeufe : NaN);
+            const l0 = laeufe();
             const mit1 = await bild(1);
             const staerke = st.godrayUniforms ? st.godrayUniforms.strength.value : null;
             const mit2 = await bild(1);
+            const progG = await window.__shaderKosten({ frames: 1 });
+            const schachtProg = progG.find((p) => p.programm === "post:godray");
+            const l1 = laeufe();
             const ohne = await bild(0);
+            const l2 = laeufe();
             const ziel = st.godrayUniforms ? st.godrayUniforms.sunScreenPos.value : null;
             aus.godray = {
                 staerke: staerke == null ? null : +staerke.toFixed(3),
                 aenderungPct: diff(mit1, ohne),
                 rauschenPct: diff(mit1, mit2),
                 lage: { ziel: ziel ? [+ziel.x.toFixed(3), +ziel.y.toFixed(3)] : null, sonne: hellste(ohne) },
+                schacht: {
+                    schritte: r.constructor.GODRAY ? r.constructor.GODRAY.schritte : null,
+                    laeufeMit: l1 - l0,
+                    laeufeOhne: l2 - l1,
+                    wgsl: schachtProg ? schachtProg.fragment : null,
+                },
             };
             // (h) DAS DUNKEL: eine flache, unbeleuchtete Fläche ohne Luft füllt das Bild (die Bühne verborgen, Godrays aus),
             // zweimal mit demselben belichteten Licht — Belichtung 1 mit 0,05, Belichtung 4 mit 0,0125 —, gemessen im Ausgabe-Pfad.
@@ -964,9 +1004,13 @@ function zugangProbe() {
                 `Wasser über dem Grund: Abbild ${JSON.stringify(out.wasser.abbild)} · r184-Tiefe ${JSON.stringify(out.wasser.r184)} · ` +
                     `Abbild wieder ${JSON.stringify(out.wasser.zurueck)} · ohne Grund ${JSON.stringify(out.wasser.ohneGrund)} · umgehängt ${JSON.stringify(out.wasser.umgehaengt)}`
             );
+        const sw = out.godray && out.godray.schacht ? out.godray.schacht.wgsl : null;
+        out.schacht = sw ? SK.wgslKosten(sw) : null;
+        if (out.godray && out.godray.schacht) delete out.godray.schacht.wgsl;
         if (out.godray)
             log(
-                `Godrays mit der Sonne im Bild: Stärke ${out.godray.staerke} · ${out.godray.aenderungPct} % der Pixel geändert (Rausch-Boden ${out.godray.rauschenPct} %) · Lage: Marsch-Ziel ${out.godray.lage && out.godray.lage.ziel} ↔ Scheibe ${out.godray.lage && out.godray.lage.sonne} (screenUV)`
+                `Godrays mit der Sonne im Bild: Stärke ${out.godray.staerke} · ${out.godray.aenderungPct} % der Pixel geändert (Rausch-Boden ${out.godray.rauschenPct} %) · Lage: Marsch-Ziel ${out.godray.lage && out.godray.lage.ziel} ↔ Scheibe ${out.godray.lage && out.godray.lage.sonne} (screenUV) · ` +
+                    `Schacht: ${JSON.stringify(out.godray.schacht)}, Fragment ${out.schacht ? `${out.schacht.proben} Proben · ${out.schacht.ladungen} Ladungen` : "fehlt"}`
             );
     } catch (e) {
         out = { error: fehlerText(e) };
@@ -979,7 +1023,7 @@ function zugangProbe() {
     console.log(
         `\n✅ GRÜN — fünf Wege durch die Weiche ohne Fehler (mit der Drift ohne r184s Abschied), der Direktpfad zeichnet mit Tiefe, die Post-Kette ohne Leinwand-Tiefe und ohne Rahmen-Ziel; ` +
             `die Ausgabe tastet unbedingt ${a.unbedingt}×, ${a.zweig}× nur hinter ihrer Stärke; die Godrays tragen mit der Sonne im Bild ` +
-            `(${out.godray.aenderungPct} % der Pixel gegen ${out.godray.rauschenPct} % Rauschen); das Wasser liest das Tiefen-Abbild wie r184s Tiefe ` +
+            `(${out.godray.aenderungPct} % der Pixel gegen ${out.godray.rauschenPct} % Rauschen), ihr Schacht lief ${out.godray.schacht.laeufeMit}× mit und 0× ohne Stärke; das Wasser liest das Tiefen-Abbild wie r184s Tiefe ` +
             `(${JSON.stringify(out.wasser.abbild)} gegen ${JSON.stringify(out.wasser.r184)}, ohne Grund ${JSON.stringify(out.wasser.ohneGrund)}); ` +
             `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4, die Nacht ${out.dunkel.lumaNacht}); der Zugang aus ohne Farbsicht-Knoten, der Himmel bleibt.`
     );
