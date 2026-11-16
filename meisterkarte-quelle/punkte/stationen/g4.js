@@ -2983,7 +2983,9 @@ const alle = [
             if (!j || !j.teilen) return { gruen: false, zahl: "kein Bildpaar in der Ausgabe der Probe (Exit " + lauf.exit + ") · " + ad };
             const ja = PAAR_WERKE.filter((w) => paarGleich(j.teilen[w]));
             return {
-                gruen: hw && lauf.exit === 0 && ja.length === PAAR_WERKE.length,
+                // DER EXIT GEHÖRT DER GETEILTEN PROBE (16.11., Radeon fe885d9d Lauf 2: 2/2 Werke gleich, ROT an „Exit 1“ — die URTEILS-WACHE
+                // der Probe hob den Exit an der Pflug-Welt des Zwillings schutz#1): jedes Urteil liest nur seine Felder, jedes in Zahlen
+                gruen: hw && ja.length === PAAR_WERKE.length,
                 zahl: ja.length + "/" + PAAR_WERKE.length + " Werke: Original ↔ Import an derselben Kamera gleich · " + PAAR_WERKE.map((w) => w + " " + paarZahl(j.teilen[w])).join(" · ") + " · " + ad,
             };
         },
@@ -2993,6 +2995,7 @@ const alle = [
             { name: "das Werk steht nicht im Bild (blind gleich)", j: paarRoh({ bank_sitzbank: { praesenz: 0.002 } }), stdout: PAAR_KARTE, gruen: false },
             { name: "der Import steht nicht", j: paarRoh({ bank_sitzbank: { fehler: "empfangeWerk bank_sitzbank: steht_nicht:bank_sitzbank", diff: undefined } }), stdout: PAAR_KARTE, gruen: false },
             { name: "swiftshader", j: paarRoh(), stdout: "[linse-gpu] google/swiftshader", gruen: false },
+            { name: "der Zwilling schutz ROT (Exit 1 der URTEILS-WACHE), die eigenen Werke gleich", j: paarRoh({}, {}, {}, {}, { pflug: { ok: true, neu: true, welt: "feind-pflug-x", zeile: "", stand: false, diff: undefined } }), stdout: PAAR_KARTE, exit: 1, gruen: true },
         ],
         pfad: PAAR_PFAD,
         quelle: "KARTE2 erleben.schoepfen.teilen S1 = Export/Import: Bildpaar an gleicher Pose gleich",
@@ -3020,7 +3023,7 @@ const alle = [
             const s = j.schutz && j.schutz.faelle;
             const codes = s ? PAAR_FREMD.filter((k) => s[k] && s[k].ok === false && s[k].zeile).length + "/" + PAAR_FREMD.length : "–";
             return {
-                gruen: hw && lauf.exit === 0 && ja.length === PAAR_WELT.length,
+                gruen: hw && ja.length === PAAR_WELT.length, // der Exit gehört der geteilten Probe (wie teilen)
                 zahl:
                     ja.length + "/" + PAAR_WELT.length + " feindliche Welten am Welt-Tor abgewiesen, die eigene Welt im Bild gleich (Werk " + (w.werk || "–") + " " + (Number.isFinite(w.praesenz) ? (100 * w.praesenz).toFixed(1) + " % des Bilds" : "–") + ") · " +
                     PAAR_WELT.map((k) => { const f = w.faelle[k]; return k + " " + (!f ? "nicht gelaufen" : (f.neu ? "EINGETRETEN (Seite neu, Welt " + f.welt + ")" : f.ok ? "EINGETRETEN" : "abgewiesen") + (f.neu || f.stand ? "" : " STAND VERÄNDERT") + (f.neu || f.zeile ? "" : " OHNE ZEILE") + (Number.isFinite(f.diff) ? " Δ " + (100 * f.diff).toFixed(2) + " %" : "")); }).join(" · ") + // prettier-ignore

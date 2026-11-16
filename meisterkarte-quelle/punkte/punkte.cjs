@@ -654,7 +654,7 @@ function probenUrteil(stationen) {
             let u;
             try {
                 // eine Rohdatei-Probe (j): das Urteil liest das JSON an {AUS} wie im Lauf (bauen.K1#2: ein Werk, das nicht steht, ROT)
-                u = st.urteil(p.j || null, { exit: 0, stdout: p.stdout || "", stderr: "" });
+                u = st.urteil(p.j || null, { exit: p.exit != null ? p.exit : 0, stdout: p.stdout || "", stderr: "" }); // p.exit: der Exit des Laufs, sonst 0
             } catch (e) {
                 u = { gruen: null, zahl: "Urteil warf: " + e.message };
             }
