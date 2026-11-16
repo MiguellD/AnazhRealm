@@ -208,7 +208,7 @@ class AnazhRealm_werkstatt_hof {
             .sort()
             .map((m) => m + have[m])
             .join(",");
-        return (
+        return AnazhRealm._zeichenSig(
             Object.keys(bps).join("|") +
             "#" +
             matSig +

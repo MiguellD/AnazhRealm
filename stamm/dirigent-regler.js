@@ -16,8 +16,7 @@ class AnazhRealm_dirigent_regler {
             this.state.fps = fps;
             this.state._fpsFrames = 0;
             this.state._fpsElapsed = 0;
-            const fpsDiv = typeof document !== "undefined" ? document.getElementById("fps") : null;
-            if (fpsDiv) fpsDiv.innerText = this._t("kern.fps", { fps });
+            this._fpsSchreib();
             // Leise Konsole: die Zahl lebt im HUD (#fps) + perf-Overlay; geloggt wird nur ein ECHTER Einbruch
             // (> 30 % unter die laufende Referenz, gedrosselt via Referenz-Reset).
             const ref = this._fpsLogRef || fps;
@@ -27,6 +26,12 @@ class AnazhRealm_dirigent_regler {
             // EWMA-Referenz (träge, Instanz-Feld wie _editSaveTimer — nicht serialisiert).
             this._fpsLogRef = ref * 0.9 + fps * 0.1;
         }
+    }
+
+    // die FPS-Zeile (#fps) aus dem letzten Fenster: der 1-s-Takt und der Wechsel der Sprache (`_spracheSetzen`) schreiben sie
+    _fpsSchreib() {
+        const fpsDiv = typeof document !== "undefined" ? document.getElementById("fps") : null;
+        if (fpsDiv && this.state && this.state.fps != null) fpsDiv.innerText = this._t("kern.fps", { fps: this.state.fps });
     }
 
     // ===== DER PERFORMANCE-REGELKREIS (der Nexus WERTET seine Last) ===
