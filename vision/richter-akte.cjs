@@ -5,7 +5,12 @@
 // Probe: die Bilder, die die Sitzung unter ihrem Namen zapfte UND deren Wanduhr zwischen Beginn und Ende der Probe liegt. Fehlt der
 // Strom im Fenster (weniger als MIN_BILDER Bilder), entsteht KEINE Akte — nie ein Preis aus fremder Zeit.
 //
-//   akten({ station, eintrag, bilder, von, bis, sha, geraet, karte, tafel, referenz, posten }) → [{ datei, akte } | { kein: true, sprosse, grund }]
+//   akten({ station, probe, eintrag, bilder, von, bis, sha, geraet, karte, tafel, referenz, posten }) → [{ datei, akte } | { kein: true, sprosse, grund }]
+//
+// DIE ZWILLINGE EINES LAUFS (16.11., Fund g6: pflicht.E#1 und karte2.same.preis.bytes#1 sind zweite Urteile auf einem bestehenden
+// Lauf): die Sitzung fährt eine Probe-Gruppe EINMAL, ihr Strom und ihr Preis-Lauf tragen den Namen des Laufs (`probe`, der erste der
+// Gruppe). Jede Station der Gruppe urteilt auf DIESEM Lauf — ihr Preis ist das Stück desselben Laufs (R3: Umfang, Tiefe, Preis in
+// derselben Fahrt). Ohne `probe` ist die Station selbst der Lauf.
 //
 // DIE LAST AM PREIS (der Schöpfer 11.11.: nie Ruhe erzwingen, Messung relativ). Die Sitzung fährt vor und nach dem Preis-Lauf die
 // Referenzfahrt der Punkte-Maschine (punkte.cjs referenzFahrt · referenzBericht, Umfeld „sitzung“ — kein zweiter Messer); ihr Bericht
@@ -30,8 +35,12 @@ const MIN_BILDER = 30;
 // Loop des Spiels zeigt. Darum fährt die Sitzung nach jeder Probe, der die Tafel eine Sprosse gibt, noch im Fenster der Probe, unter
 // ihrem Namen und an ihrer Pose den Loop des Spiels (`/lauf` der Werkbank) PREIS_S Sekunden: das ist der Preis derselben Fahrt.
 const PREIS_S = 20;
-const brauchtPreisLauf = (station, tafel) =>
-    (tafel || JSON.parse(fs.readFileSync(TAFEL, "utf8"))).zeilen.some((z) => z.station === station && z.richter === "gleich");
+// station: ein Name oder die Namen ALLER Stationen eines Laufs (die Zwillinge einer Probe-Gruppe) — der Lauf braucht den Preis, sobald
+// irgendeine von ihnen eine „gleich“-Zeile trägt
+const brauchtPreisLauf = (station, tafel) => {
+    const namen = new Set([].concat(station));
+    return (tafel || JSON.parse(fs.readFileSync(TAFEL, "utf8"))).zeilen.some((z) => namen.has(z.station) && z.richter === "gleich");
+};
 
 // dasselbe p95 wie der Kopf des Stroms (punkte.cjs p95Von): Rang floor(0,95 · n) der sortierten Werte
 const p95 = (a) => {
@@ -113,7 +122,7 @@ function akten(o) {
         let sp = null;
         for (const g of karte.gruppen) for (const L of g.kriterien) if (L.id === z.leiter) sp = L.sprossen.find((s) => s.nr === z.sprosse);
         if (!sp) throw new Error("richter-tafel: " + wo + " steht nicht in der Karte");
-        const preis = preisImFenster(o.bilder || [], o.station, o.von, o.bis, o.stueck);
+        const preis = preisImFenster(o.bilder || [], o.probe || o.station, o.von, o.bis, o.stueck);
         if (preis.leer) {
             aus.push({ kein: true, sprosse: wo, grund: preis.ohneStueck
                 ? "der Preis-Lauf nannte sein Stück nicht (kein Ergebnis von `/lauf`) — keine Akte, nie ein Fenster daneben"
@@ -135,6 +144,7 @@ function akten(o) {
             datum: new Date(o.bis).toISOString(),
             soll: sp.richter,
             station: o.station,
+            ...(o.probe && o.probe !== o.station ? { lauf: o.probe } : {}),
             geraete: [{ geraet, richter: { wert: String(e.zahl || ""), urteil: e.gruen ? "GRÜN" : "ROT", ...(Array.isArray(e.mass) ? { mass: e.mass } : {}) }, preis }],
         };
         aus.push({ datei: `${z.leiter}.${z.sprosse}.${String(o.sha).slice(0, 8)}-${o.geraet}.json`, akte });
