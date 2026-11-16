@@ -210,7 +210,7 @@ function gattungMarke(g){gattungAktiv=g||gattungAktiv;document.querySelectorAll(
    ihre Maße (Masse, Spannweite, Streckung), der Flügelschlag mit der Frequenz aus Pennycuicks Allometrie (vogelSchlagHz),
    stehend auf dem Fuß (fussY) oder im Schlag; zwei Instanz-Gefäße (Keil + rund) wie im Spiel, keine eigene Gestalt. */
 var vogel=null,vogelSitzt=false;
-function vogelWeg(){if(!vogel)return;[vogel.keil,vogel.rund].forEach(function(m){scene.remove(m);m.geometry.dispose();m.material.dispose();});vogel=null;controls.minDistance=3*MJ;}
+function vogelWeg(){if(!vogel)return;[vogel.keil,vogel.rund].forEach(function(m){scene.remove(m);m.geometry.dispose();m.material.dispose();});vogel=null;controls.minDistance=3*MJ;controls.target.set(0,0,0);camera.position.set(6*MJ,2*MJ,7*MJ);}
 function vogelBauen(art){
   disposeAnimal();vogelWeg();var VG=__tetrapodaCore.VOGEL_GESETZ,A=VG.leib.arten[art];
   function gefaess(geo){var m=new THREE.InstancedMesh(geo,new THREE.MeshStandardMaterial({roughness:0.82,metalness:0}),256);m.castShadow=true;m.frustumCulled=false;for(var i=0;i<256;i++)m.setColorAt(i,new THREE.Color(1,1,1));scene.add(m);return m;}
