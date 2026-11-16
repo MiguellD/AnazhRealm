@@ -811,14 +811,23 @@ const TAG_PRUEFE =
 // Bildhälfte derselben Aufnahme die Punkt-Quellen — ein Pixel, das seine acht Nachbarn überragt (bei Gleichstand zählt der erste),
 // ≥ 8 Luma über dem Mittel seines Rings im Abstand 3 (16 Pixel) und dieser Ring flach (Spanne ≤ 6 Luma: keine Kante, kein Laub);
 // daneben als Lesewert die Grenzgröße des Stern-Felds (`starFieldUniforms.grenze`). Das Urteil steht in der Station, nie hier.
+// STERN IST, WAS DAS STERNFELD ZEICHNET (16.11., Radeon 71839b1e: am Taghimmel zählte die Probe 5–10 Punkte, das Feld zeichnete dort
+// nicht — Wolkenkanten, Laub, der Mond): dieselbe Uhr ein zweites Mal ohne das Feld (aus der Szene genommen, dieselbe ruhige Aufnahme),
+// gezählt wird das Bild der Differenz mit − ohne (`sterne`); `punkte` ist die rohe Zahl des Bilds mit Feld, der Beleg des Vergleichs.
+// Zeichnet das Feld nicht (unsichtbar, oder ungebaut, solange die Welt keinen Stern zeigt), ist mit = ohne und `sterne` 0; soll es
+// zeigen und fehlt, steht keine Zahl (null: ROT beim Namen).
 const TAG_STERNE = [
     "warm: +(s[1] / Math.max(s[3], 1e-9)).toFixed(3),",
     "warm: +(s[1] / Math.max(s[3], 1e-9)).toFixed(3),\n" +
-        "                    sterne: ((b) => { const L = (x, y) => luma709(b, (y * W + x) * 4); let n = 0;" +
+        "                    ...(await (async (b) => { const zaehle = (L) => { let n = 0;" +
         " for (let y = 3; y < (H >> 1) - 3; y++) for (let x = 3; x < W - 3; x++) { const c = L(x, y); let top = true;" +
         " for (let dy = -1; dy <= 1 && top; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const v = L(x + dx, y + dy); if (v > c || (v === c && (dy < 0 || (!dy && dx < 0)))) { top = false; break; } }" +
         " if (!top) continue; let lo = 1e9, hi = -1, sr = 0; for (let k = 0; k < 16; k++) { const a = (k * Math.PI) / 8, v = L(x + Math.round(3 * Math.cos(a)), y + Math.round(3 * Math.sin(a))); sr += v; lo = Math.min(lo, v); hi = Math.max(hi, v); }" +
-        " if (c - sr / 16 >= 8 && hi - lo <= 6) n++; } return n; })(u8),\n" +
+        " if (c - sr / 16 >= 8 && hi - lo <= 6) n++; } return n; };" +
+        " const mit = (x, y) => luma709(b, (y * W + x) * 4); const punkte = zaehle(mit); const sf = st.starField;" +
+        " if (!sf || !sf.visible || !sf.parent) return { sterne: sf || !r._sterneZeigen ? 0 : null, punkte };" +
+        " const par = sf.parent; par.remove(sf); let o; try { o = (await (window.__aufnahmeRuhig || window.__ausgabeAufnahme)(W, H, 1, { satz: \"messung\" })).u8; } finally { par.add(sf); }" +
+        " return { sterne: zaehle((x, y) => Math.max(0, mit(x, y) - luma709(o, (y * W + x) * 4))), punkte }; })(u8)),\n" +
         "                    grenze: st.starFieldUniforms && st.starFieldUniforms.grenze ? +st.starFieldUniforms.grenze.value.toFixed(2) : null,",
 ];
 const TAG_LINSE = {
@@ -3582,7 +3591,8 @@ const stationen = [
                 const e = (z) => Math.log2(z.Y / mittag.Y);
                 const sp = alle.slice(1).reduce((b, z, i) => (Math.abs(e(z) - e(alle[i])) > b[0] ? [Math.abs(e(z) - e(alle[i])), alle[i].uhr + "→" + z.uhr] : b), [0, "—"]);
                 const sprungOk = sp[0] <= 0.1;
-                const ohne = alle.filter((z) => typeof z.sterne !== "number").length;
+                // ohne Zahl ist auch die Zahl ohne den Vergleich mit ↔ ohne Sternfeld (`punkte` fehlt: die Probe zählte jeden Lichtpunkt)
+                const ohne = alle.filter((z) => typeof z.sterne !== "number" || typeof z.punkte !== "number").length;
                 const max = (a) => (a.length ? Math.max(...a.map((z) => z.sterne)) : NaN);
                 const tag = alle.filter((z) => z.sonne >= 10), hell = alle.filter((z) => z.sonne >= -3), dunkel = alle.filter((z) => z.sonne <= -18);
                 const dz = dunkel.map((z) => z.sterne).sort((a, b) => a - b), nMed = dz.length ? dz[dz.length >> 1] : NaN, nMin = dz.length ? dz[0] : NaN;
@@ -3608,16 +3618,21 @@ const stationen = [
             const ad = "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null }) + "\n";
             const sonne = (u) => +(60 * Math.sin(2 * Math.PI * (u - 0.25))).toFixed(2);
             const grenzStern = (s) => (s >= -3 ? 0 : s <= -18 ? 40 : Math.round(40 * ((-3 - s) / 15) ** 2));
-            const zeile = (u, st) => ({ uhr: u, sonne: sonne(u), Y: 0.2 * 2 ** (1.5 * (Math.sin(2 * Math.PI * (u - 0.25)) - 1)), sterne: st(sonne(u)) });
-            const ort = (st = grenzStern) => ({
-                zeilen: Array.from({ length: 100 }, (_, i) => zeile(i / 100, st)),
-                fein: Array.from({ length: 60 }, (_, i) => zeile(+(0.7 + 0.001 * (i + 1)).toFixed(3), st)),
+            // `punkte` die rohe Zahl des Bilds mit Feld (die Probe zählt daneben die Differenz mit − ohne Sternfeld); `pt` Lichtpunkte am
+            // Tag, die keine Sterne sind (Wolkenkante, Laub)
+            const zeile = (u, st, pt) => ({ uhr: u, sonne: sonne(u), Y: 0.2 * 2 ** (1.5 * (Math.sin(2 * Math.PI * (u - 0.25)) - 1)), sterne: st(sonne(u)), punkte: st(sonne(u)) + (pt && sonne(u) >= 10 ? pt : 0) });
+            const ort = (st = grenzStern, pt = 0) => ({
+                zeilen: Array.from({ length: 100 }, (_, i) => zeile(i / 100, st, pt)),
+                fein: Array.from({ length: 60 }, (_, i) => zeile(+(0.7 + 0.001 * (i + 1)).toFixed(3), st, pt)),
             });
             const welt = (o = {}) => ({ genesis: ort(), wiese: ort(), "genesis:third": ort(), "wiese:third": ort(), ...o });
             const sprung = welt();
             sprung["wiese:third"].zeilen[30].Y *= 1.2;
             const ohne = welt();
             for (const z of ohne.genesis.zeilen) delete z.sterne;
+            // die Probe bis 16.11.: sie zählte jeden Lichtpunkt des Himmels, ohne das Bild ohne Sternfeld daneben
+            const roh = welt();
+            for (const z of roh.wiese.zeilen.concat(roh.wiese.fein)) delete z.punkte;
             return [
                 { name: "vier Kurven stetig, Sterne nach der Grenzgröße", stdout: ad, j: welt(), gruen: true },
                 { name: "ohne Third", stdout: ad, j: { genesis: ort(), wiese: ort() }, gruen: false },
@@ -3625,6 +3640,8 @@ const stationen = [
                 { name: "zwei Punkte im Mittagshimmel", stdout: ad, j: welt({ wiese: ort((s) => (s >= 10 ? 2 : grenzStern(s))) }), gruen: false },
                 { name: "die Sterne nach der Uhr, nicht nach der Grenzgröße (alle mit dem Untergang)", stdout: ad, j: welt({ genesis: ort((s) => (s < 0 ? 40 : 0)) }), gruen: false },
                 { name: "die Probe ohne Sternzahl", stdout: ad, j: ohne, gruen: false },
+                { name: "sieben Lichtpunkte am Taghimmel, die das Sternfeld nicht zeichnet", stdout: ad, j: welt({ wiese: ort(grenzStern, 7) }), gruen: true },
+                { name: "die Sternzahl ohne den Vergleich mit ↔ ohne Sternfeld", stdout: ad, j: roh, gruen: false },
                 { name: "der Weg weicht ab", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ rot: "Uhr 0.25 weicht ab" }) + "\n", j: welt(), gruen: false },
             ];
         })(),
