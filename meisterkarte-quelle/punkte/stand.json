@@ -5377,7 +5377,7 @@
   },
   "karte2.mensch.fahrzeug.medium": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.medium#1 radeon: Konsum seit der Messung geändert (R6: vehicle-core.js) · karte2.mensch.fahrzeug.medium#1 gtx: ROT: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ❌ nass ÷ trocken Gras 1,00×, Weg 1,00× (Soll ≥ 1,3) · ❌ Bild während der Fahrt p95 2366,60 ms (Soll ≤ 33), größtes 4091,60 ms, 48 Bilder (Soll ≥ 240) · Exit 0 · [linse-gpu] nvidia/pascal an 4167e10c",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.fahrzeug.medium#1 radeon: Station seit der Messung geändert · karte2.mensch.fahrzeug.medium#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.medium#1",
@@ -5385,19 +5385,18 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: vehicle-core.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
      "id": "karte2.mensch.fahrzeug.medium#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ❌ nass ÷ trocken Gras 1,00×, Weg 1,00× (Soll ≥ 1,3) · ❌ Bild während der Fahrt p95 2366,60 ms (Soll ≤ 33), größtes 4091,60 ms, 48 Bilder (Soll ≥ 240) · Exit 0 · [linse-gpu] nvidia/pascal",
-     "sha": "4167e10c05fd3401ba5fcad6cbd7b25b19a0323e",
-     "grund": "ROT: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ❌ nass ÷ trocken Gras 1,00×, Weg 1,00× (Soll ≥ 1,3) · ❌ Bild während der Fahrt p95 2366,60 ms (Soll ≤ 33), größtes 4091,60 ms, 48 Bilder (Soll ≥ 240) · Exit 0 · [linse-gpu] nvidia/pascal",
-     "r6": "konsum",
+     "zahl": null,
+     "sha": null,
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true,
      "beide": true
     }
    ]
@@ -5692,26 +5691,26 @@
   },
   "karte2.planet.kopplung.bahn-klima": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.bahn-klima#1 radeon: ROT: Gipfel -3880.4/198.937/-3745.6, 166 freie Punkte 77.048–199.209 m über dem Meer · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.127 aus 166, Falsch null aus 0) · fruehling Bild 79.771 m · Gesetz 102 m (Versatz -106, Treffer 0.066 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · herbst Bild 180.942 m · Gesetz 144.787 m (Versatz -24, Treffer 0.02 aus 99, Falsch 0 aus 55) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, fruehling folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht, herbst folgt dem Gesetz nicht · [linse-gpu] amd/rdna-3 an 77e079ae · karte2.planet.kopplung.bahn-klima#1 gtx: ROT: Gipfel -3880.4/198.937/-3745.6, 166 freie Punkte 77.048–199.209 m über dem Meer · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · fruehling Bild 79.771 m · Gesetz 102 m (Versatz -106, Treffer 0.066 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · herbst Bild 180.942 m · Gesetz 144.787 m (Versatz -24, Treffer 0.02 aus 99, Falsch 0 aus 55) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, fruehling folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht, herbst folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal an 77e079ae",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.bahn-klima#1 radeon: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.bahn-klima#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Gipfel -3880.4/198.937/-3745.6, 166 freie Punkte 77.048–199.209 m über dem Meer · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.127 aus 166, Falsch null aus 0) · fruehling Bild 79.771 m · Gesetz 102 m (Versatz -106, Treffer 0.066 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · herbst Bild 180.942 m · Gesetz 144.787 m (Versatz -24, Treffer 0.02 aus 99, Falsch 0 aus 55) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, fruehling folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht, herbst folgt dem Gesetz nicht · [linse-gpu] amd/rdna-3",
-     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
-     "grund": "ROT: Gipfel -3880.4/198.937/-3745.6, 166 freie Punkte 77.048–199.209 m über dem Meer · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.127 aus 166, Falsch null aus 0) · fruehling Bild 79.771 m · Gesetz 102 m (Versatz -106, Treffer 0.066 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · herbst Bild 180.942 m · Gesetz 144.787 m (Versatz -24, Treffer 0.02 aus 99, Falsch 0 aus 55) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, fruehling folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht, herbst folgt dem Gesetz nicht · [linse-gpu] amd/rdna-3",
-     "r6": "konsum",
+     "zahl": null,
+     "sha": null,
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true,
      "beide": true
     },
     {
      "id": "karte2.planet.kopplung.bahn-klima#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Gipfel -3880.4/198.937/-3745.6, 166 freie Punkte 77.048–199.209 m über dem Meer · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · fruehling Bild 79.771 m · Gesetz 102 m (Versatz -106, Treffer 0.066 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · herbst Bild 180.942 m · Gesetz 144.787 m (Versatz -24, Treffer 0.02 aus 99, Falsch 0 aus 55) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, fruehling folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht, herbst folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal",
-     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
-     "grund": "ROT: Gipfel -3880.4/198.937/-3745.6, 166 freie Punkte 77.048–199.209 m über dem Meer · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · fruehling Bild 79.771 m · Gesetz 102 m (Versatz -106, Treffer 0.066 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · herbst Bild 180.942 m · Gesetz 144.787 m (Versatz -24, Treffer 0.02 aus 99, Falsch 0 aus 55) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, fruehling folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht, herbst folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal",
-     "r6": "konsum",
+     "zahl": null,
+     "sha": null,
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true,
      "beide": true
     }
    ]
@@ -5879,26 +5878,26 @@
   },
   "karte2.planet.wetter.klimazonen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.klimazonen#1 radeon: ROT: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.127 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht · [linse-gpu] amd/rdna-3 an 77e079ae · karte2.planet.wetter.klimazonen#1 gtx: ROT: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal an 77e079ae",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.klimazonen#1 radeon: Station seit der Messung geändert · karte2.planet.wetter.klimazonen#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.wetter.klimazonen#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.127 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht · [linse-gpu] amd/rdna-3",
-     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
-     "grund": "ROT: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.127 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht · [linse-gpu] amd/rdna-3",
-     "r6": "konsum",
+     "zahl": null,
+     "sha": null,
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true,
      "beide": true
     },
     {
      "id": "karte2.planet.wetter.klimazonen#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal",
-     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
-     "grund": "ROT: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal",
-     "r6": "konsum",
+     "zahl": null,
+     "sha": null,
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true,
      "beide": true
     }
    ]
@@ -5983,7 +5982,7 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js) · karte2.same.kopplung.kaskade#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.kaskade#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
@@ -5991,9 +5990,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -6002,16 +6000,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     }
    ]
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.stoerung#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js) · karte2.same.kopplung.stoerung#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.stoerung#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.stoerung#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
@@ -6019,9 +6016,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -6030,9 +6026,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6065,7 +6060,7 @@
   },
   "karte2.same.physik.verformung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.verformung#1 radeon: ungemessen (R10) · karte2.same.physik.verformung#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, stamm/daten.js)",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.verformung#1 radeon: ungemessen (R10) · karte2.same.physik.verformung#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.verformung#1",
@@ -6083,9 +6078,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, stamm/daten.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6282,7 +6276,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 170,
+  "konsum": 159,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6453,10 +6447,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 167
+  "ohne": 178
  },
  "kopfVoll": "b56817704c3f9b0efcf4fd52d1331756ea5edef2",
- "zeit": "2026-11-16T22:50:33.125Z",
+ "zeit": "2026-11-16T23:01:51.690Z",
  "vorher": "b5681770",
  "bilanz": {
   "gewinn": [],
