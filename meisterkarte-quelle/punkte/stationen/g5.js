@@ -3329,7 +3329,7 @@ const ULTI_K4_PROBEN = (() => {
 // Die Staffel: „beides und Bewegungs-Komfort (FOV, Kopfwackeln, Unschärfe aus)“. EIN Lauf (headless, swiftshader): eine Werkbank an der
 // Weiche ({PORT}+20000, kienspan) am Genesis-Ort, dann die Wand (Ü) der Klang-Linse mit eigenem Boot (die Untertitel, wie Staffel 1).
 //  (F) DIE FARBSICHT (`zugangFarbe`): am Blick der Ankunft (Ego, Fenster 640 × 360) die Teilung des AUSGABE-Bilds nach den Gruppen
-//      ZUGANG_KLASSEN (Gras · Boden/Weg · Bau · Fels · Laub · Wasser; je Gruppe ein Schuss ohne sie, `__klassenTeilung` wie `werkbank bild
+//      ZUGANG_KLASSEN (Gras · Boden/Weg · Bau · Fels · Laub · Wasser; je Gruppe ein Schuss ohne sie, `__wirkungTeilung` (bis 299dc349 `__klassenTeilung`, byte-gleich) wie `werkbank bild
 //      --klasse` — dessen 1920 × 1080 mit 15 Teil-Klassen trug swiftshader nicht in 30 min), dann dasselbe Bild mit `state.zugang.farbsicht`
 //      „deuteranopie“ (der Spieler-Wert, den das Menü schreibt). Je Grenze zweier Gruppen
 //      im Bild (≥ ZUGANG_GRENZE_N Paare von Nachbar-Pixeln) die Farbe beider Seiten 2 px von der Kante (die Fläche, nie die gemischte
@@ -3406,7 +3406,7 @@ function zugangGrenzen(u8, teil, namen, W, H, gruppen, sim) {
     return aus;
 }
 // DIE TEILUNG IN DER SEITE (r = Welt, T = THREE): am Blick der Ankunft (Ego, die Pipelines stehen schon) das Ausgabe-Bild ganz und je
-// Gruppe ohne sie (`__ausgabeAufnahme`, der Takt der Nah-Sätze ruht wie in `werkbank bild --klasse`), die Teilung `__klassenTeilung`
+// Gruppe ohne sie (`__ausgabeAufnahme`, der Takt der Nah-Sätze ruht wie in `werkbank bild --klasse`), die Teilung `__wirkungTeilung`
 // (Schwelle 18) — dann dasselbe Bild mit der Farbsicht „deuteranopie“. Rückgabe: Gruppen, Schirm, Teilung und beide Bilder (base64).
 async function zugangFarbe(r, T, gruppen) {
     const st = r.state;
@@ -3442,7 +3442,7 @@ async function zugangFarbe(r, T, gruppen) {
         const G = await schuss([]);
         const Os = [];
         for (const l of je) Os.push(await schuss(l));
-        const { teil } = window.__klassenTeilung(G, Os, W, H, 18);
+        const { teil } = window.__wirkungTeilung(G, Os, W, H, 18);
         st.zugang.farbsicht = "deuteranopie";
         const D = await schuss([]);
         return { gruppen: gk, objekte: je.map((l) => l.length), W, H, teil: b64(teil), aus: b64(G), deutan: b64(D) };
