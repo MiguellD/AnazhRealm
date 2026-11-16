@@ -1,5 +1,5 @@
 {
- "kopf": "e4eeee08",
+ "kopf": "a635bfee",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -3576,7 +3576,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +118)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +119)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3612,7 +3612,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +118)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +119)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3622,7 +3622,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +118)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +119)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -4277,7 +4277,7 @@
      "gruen": true,
      "zahl": "ego (first) 5 Sichtungen in 601 Spiel-s (wesen 414 px 51 m 378 s · wesen 314 px 50 m 378 s · wesen 212 px 68 m 423 s · wesen 222 px 62 m 428 s · wesen 377 px 53 m 437 s), 625 Prüfungen, 50 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 4 Sichtungen in 601 Spiel-s (baer 218 px 46 m 343 s · wesen 1182 px 17 m 510 s · wesen 213 px 80 m 560 s · wesen 333 px 70 m 581 s), 625 Prüfungen, 49 Masken, Bestand bis 20, im Blick erschienen 0",
      "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs +11) — zuletzt an 71839b1e: Deckel 76 s gerissen: Stille seit 15 s nach 79.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) in Teil 1/5 — beendet, UNGEMESSEN (zuletzt: KREIS-ego EXIT=0 (62.8 s Wanduhr, Zeitraf",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-sicht.js) — zuletzt an 71839b1e: Deckel 76 s gerissen: Stille seit 15 s nach 79.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) in Teil 1/5 — beendet, UNGEMESSEN (zuletzt: KREIS-ego EXIT=0 (62.8 s Wanduhr, Zeitraf",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -4640,7 +4640,7 @@
      "gruen": true,
      "zahl": "Krone sommer 104169 px · winter 2254 px · fruehling 76363 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
      "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs, stamm/bild-sicht.js)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -4953,7 +4953,7 @@
      "gruen": true,
      "zahl": "6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet",
      "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs, stamm/koerper-fahrt.js)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs, stamm/gelaende-chunks.js +1)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -4964,7 +4964,7 @@
      "gruen": true,
      "zahl": "6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet",
      "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs, stamm/koerper-fahrt.js)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs, stamm/gelaende-chunks.js +1)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -5001,7 +5001,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, index.html, scripts/lib/abnahme-urteil.cjs +14) · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an e4eeee08: Last: Referenz f 1,303 (Faden 1,163 · alle Kerne 1,219 · Stoß in der Station 3,64 Kerne fremd → 1,303; vor 103,1/293 ms, nach 107,5/287,9 ms, Ruhe 92,4/240,3 ms seit 2026-11-16) · fremd: git.exe -c co",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Konsum seit der Messung geändert (R6: gelaende-core.js, index.html, scripts/lib/abnahme-urteil.cjs +15) · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an e4eeee08: Last: Referenz f 1,303 (Faden 1,163 · alle Kerne 1,219 · Stoß in der Station 3,64 Kerne fremd → 1,303; vor 103,1/293 ms, nach 107,5/287,9 ms, Ruhe 92,4/240,3 ms seit 2026-11-16) · fremd: git.exe -c co",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -5009,7 +5009,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, index.html, scripts/lib/abnahme-urteil.cjs +14)",
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, index.html, scripts/lib/abnahme-urteil.cjs +15)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -5322,8 +5322,8 @@
   ],
   "ohne": 93
  },
- "kopfVoll": "e4eeee086ca78f20b27ae87e12761508215fca34",
- "zeit": "2026-11-16T10:42:50.469Z",
+ "kopfVoll": "a635bfee2a64f47cdc7d1786b5a9fb09bd10b978",
+ "zeit": "2026-11-16T11:20:03.202Z",
  "vorher": "e4eeee08",
  "bilanz": {
   "gewinn": [],
