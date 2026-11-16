@@ -97,5 +97,115 @@
   "messgroesse": "Wind-Bus-Pegel ↔ Luma-Varianz wie windLauf; Wagen-Abstände aus stamm/klang.js:1096-1114 (nah, d2)",
   "preisRisiko": "Heap am Dorf; der Stadt-Teil mit Wagen ist ungemessen",
   "gpuMin": 8, "bau": "M", "sicher": 0.5
+ },
+ {
+  "leiter": "erleben.klang.stimme", "sprosse": 1, "klasse": "B",
+  "richter": "F0 und Formanten am Abgriff gegen Peterson-Barney-Tafel ±15 % nach Leibmaßen",
+  "hat": "Menschen sprechen nicht aus Gesetz (der Begleiter über speechSynthesis, stamm/werkstatt-hud.js:71-89, zählt nach R4 nicht); das Gesetz einer Stimme aus dem Leib gibt es nur für Tiere: tierRufPuffer, Sägezahn-Glottis + zwei Formanten ∝ 1/L (klang-core.js:1226-1241, f0 ∝ L^−exponent :495) (gelesen).",
+  "station": "keine (affekt.K4 misst die Dialog-Box, nicht eine Stimme)",
+  "fehlt": "eine Menschen-Stimme aus dem Leib (Kind, Frau, Mann), die im Spiel murmelt oder ruft, und ein Richter F0/F1/F2 gegen Peterson-Barney.",
+  "rezept": "Bau M: tierRufPuffer (klang-core.js:1230) um eine Vokal-Tafel (F1/F2 je Vokal) und die Vokaltrakt-Länge aus den Leibmaßen erweitern (Kern additiv, Byte-Beweis), Bewohner murmeln über den Ruf-Weg (_tierRuf, stamm/klang.js). Richter nach K4_PROBE (stationen/g6.js:472): je Leib-Klasse F0/F1/F2 per LPC am Abgriff gegen die Tafel ±15 %.",
+  "messgroesse": "Bau setzt an tierRufPuffer klang-core.js:1230-1241 (f0, f1, f2 aus L)",
+  "preisRisiko": "Heap am Dorf (die Bewohner stehen im Dorf)",
+  "gpuMin": 3, "bau": "M", "sicher": 0.65
+ },
+ {
+  "leiter": "erleben.klang.musik", "sprosse": 1, "klasse": "R",
+  "richter": "Hörer-Blindtest: Stimmung der Szene aus der Musik erkannt ≥ 70 %; am Abgriff keine Wiederholung in 10 min",
+  "hat": "Die Musik liest das Feld (Valenz → Tonart, Erregung → Tempo/Dichte; 22 Genre-Tafeln klang-core.js:96-117, Duck und Schichten) und ist im Spiel hörbar; 185 Phrasen, 0 wiederholt in 600 s am OfflineAudioContext (gelesen).",
+  "station": "affekt.K5#2 (headless, MUSIK2_BEFEHL, grün an d3708675) — trägt die Wiederholungs-Hälfte headless; der Hörer-Blindtest ist nirgends",
+  "fehlt": "der Blindtest (Panel oder geeichter Valenz-Klassifikator am Abgriff der Sitzung) und die 10-min-Wiederholung in der Sitzung beider Geräte statt headless.",
+  "rezept": "musik2Lauf (stationen/g2.js:5129) als Probe in die Sitzung heben (Muster h.skript wie landschaftLauf, stationen/g6.js:481), Abgriff aufnehmen. Für den Blindtest je Szene (Feld-Valenz ±) 20 Clips am Abgriff schneiden und einem Panel bzw. einem Klassifikator auf Chroma/Tempo vorlegen.",
+  "messgroesse": "Chroma/Tempo am Abgriff (affektK5Lauf, stationen/g2.js:5118); Feld-Valenz auraAt am Spieler (stamm/klang.js _lofiWorldField)",
+  "preisRisiko": "keines erkennbar (10 min Abgriff je Gerät)",
+  "gpuMin": 11, "bau": "M", "sicher": 0.4
+ },
+ {
+  "leiter": "erleben.klang.getuemmel", "sprosse": 1, "klasse": "F",
+  "richter": "Spitzen ≤ 0 dBFS über 10 min; Duck 8–12 dB bei Stimme",
+  "hat": "Die Spitzen-Wand hinter dem Master (stamm/klang.js:25-26, bis −6 dBFS linear, weich gegen −1 dBFS; Kennlinie klang-core.js:421), Stimmen-Deckel 7 (klang-core.js:417), Duck Schritt 8,51 · Ruf 10 dB am Abgriff (gelesen).",
+  "station": "affekt.K5#2 (headless, Duck gemessen) + klang.K5#2 (Sitzung, GTX 2d5f4146 0 Aussetzer in 28 s, Radeon ungemessen) — keine misst Spitzen über 10 min",
+  "fehlt": "die Spitzen-Messung über 10 min am Abgriff der Sitzung und die Duck-Messung dort statt headless, an beiden Geräten.",
+  "rezept": "Die taktSeite von klang.K5#2 (stationen/g6.js:536ff) um einen Spitzen-Zähler am Master-Abgriff (max |x| je Block, in dBFS) verlängern und den Gang auf 10 min (oder die Staffel verdichtet) legen; die Duck-Messung von musik2 (stationen/g2.js:5129) im selben Lauf.",
+  "messgroesse": "max |Sample| am Master nach der Spitzen-Wand (stamm/klang.js:25); Duck am Musik-Bus",
+  "preisRisiko": "keines erkennbar; Kosten 10 GPU-Minuten je Gerät",
+  "gpuMin": 11, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "erleben.kopplung.emergenz", "sprosse": 1, "klasse": "B",
+  "richter": "Bildpaar am selben Ort mit/ohne Wölfe nach 6 Spielstunden: Jungwuchs sichtbar dünner über ≥ 8 Saaten",
+  "hat": "Die Kaskade läuft als Zahl: _kreaturFrass legt den Fraß negativ ins Leben-Feld (stamm/kreatur-leben.js:2177-2183, tetrapoda-core.js:2161-2167); sichtbarer Jungwuchs entsteht nur aus Taten (Brand/Fällen, _sukzession stamm/vegetation-wiese.js:2098-2111) — kein Leser der Vegetation liest das Leben-Feld (Grep in stamm/vegetation-*.js: 0) (gelesen).",
+  "station": "oekologie.K1#2 (headless, Jungwuchs −0,279 über 8 Saaten an d3708675) — Zahl, nie Bild",
+  "fehlt": "ein Leser, der den verbissenen Jungwuchs zeichnet (Dichte der Nah-Streu/Busch aus dem Fraß), und ein Raffer-Bildpaar am Gerät.",
+  "rezept": "Bau M: _nahStreuKachel (stamm/vegetation-wiese.js:1284) liest die Äsung der Zelle (das Feld, in das _kreaturFrass schreibt) als Dichte des Busch-/Jungwuchs-Anteils. Richter: Raffer 6 h am Wolfs-Revier mit/ohne Wölfe, Bildpaar, Grün-Pixel-Dichte des Unterwuchses über 8 Saaten (Muster oekologie.K4#2 wertLauf mit Gegenlauf, stationen/g2.js:5432).",
+  "messgroesse": "Bau setzt an _nahStreuKachel stamm/vegetation-wiese.js:1284 (Leser) und _kreaturFrass stamm/kreatur-leben.js:2177 (Schreiber)",
+  "preisRisiko": "keines erkennbar; Raffer 6 h × 8 Saaten kostet Zeit",
+  "gpuMin": 12, "bau": "M", "sicher": 0.5
+ },
+ {
+  "leiter": "erleben.kopplung.wahrnehmung", "sprosse": 1, "klasse": "R",
+  "richter": "Gegenlauf Witterung aus → Jagderfolg fällt",
+  "hat": "Der Wolf jagt über das Geruch-Feld mit Wind (_creatureScentHuntDir stamm/kreatur-verhalten.js:178-207, Reichweite VG.jagd.scentRangeM :199, Aufruf :3312), Tier und Spieler nach EINEM Gesetz; nur im Modus pfad (gelesen).",
+  "station": "keine mit Gegenlauf Witterung aus (Grep ohneWitterung/scentOff in scripts/, stamm/kreatur-*: 0); nächste: oekologie.K4#2 (Sitzung beider Geräte, Rudel mit Gegenlauf)",
+  "fehlt": "ein Richter in der Sitzung: Jagd mit Witterung gegen Jagd mit scentRangeM 0, Risse/Bisse je Zeit.",
+  "rezept": "Muster oekologie.K4#2 (stationen/g2.js:5432, wertLauf rudel mit Gegenlauf, mutiert): Rudel + Beute-Herde, 10 min Kreatur-Uhr, einmal echt, einmal VG.jagd.scentRangeM = 0; Zahl der Risse (_kreaturRiss, stamm/kreatur-leben.js:2190) beider Läufe.",
+  "messgroesse": "Zahl der Risse/_creatureCombatDeath(…, \"jagd\") je Lauf (stamm/kreatur-leben.js:2190-2193); Mutation VG.jagd.scentRangeM (stamm/kreatur-verhalten.js:199)",
+  "preisRisiko": "keines erkennbar (Mess-Wiese)",
+  "gpuMin": 3, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "erleben.kopplung.bild", "sprosse": 1, "klasse": "R",
+  "richter": "Gang 2 km auf einen Hang: Leuchtdichte des Zielfensters springt an keinem Stufenwechsel > 5 %",
+  "hat": "Fern-Ring und Feld-Pass zeichnen das Gelände mit Luft (stamm/gelaende-fern.js, Luft stamm/bild-himmel.js:1388); ein Gang mit Stufenwechseln wird heute nur über 4 m auf Pop-Pixel gemessen (gelesen).",
+  "station": "licht.K3#1 (probe, GTX 8efb6318 grün 0,93–1,03, Radeon ungemessen) vergleicht Karte und Fern-Ring statisch; lod.K2#1 (probe beider Geräte) misst Pop im 4-m-Gang",
+  "fehlt": "ein Gang (oder Teleport-Treppe) über 2 km auf einen Hang mit der Leuchtdichte eines festen Zielfensters je Schritt und der Marke des Stufenwechsels.",
+  "rezept": "Muster lod.K2 pop.js (stationen/g3.js:3297, markiert Stufen-Wechsel je Schritt): Ziel-Hang in 2 km, Schritte bis 50 m, je Schritt Mittel-Luma eines Fensters um den Zielpunkt; Sprung zwischen Folge-Schritten an markierten Wechseln ≤ 5 %. Derselbe Lauf trägt erleben.bild.ferne S2 (gleicher Richter-Kern).",
+  "messgroesse": "Luma eines Zielfensters je Schritt, Stufen-Marke wie pop.js (Koordination bericht/2910-lod-k5/pop.js)",
+  "preisRisiko": "keines erkennbar, außer der Hang liegt hinter dem Dorf (Heap)",
+  "gpuMin": 4, "bau": "M", "sicher": 0.55
+ },
+ {
+  "leiter": "erleben.kopplung.klang", "sprosse": 1, "klasse": "B",
+  "richter": "Regenklang je Dachstoff unterscheidbar; Regenstärke im Bild ↔ Pegel r ≥ 0,9",
+  "hat": "Regen klingt als EINE Textur aus dem rain-Kanal, unter Kronen heller (klang-core.js:459-460); ein Dachstoff geht nicht ein — die Raum-Strahlen kennen „das Dach“ nur als Höhe (stamm/klang.js:613, :683-684) (gelesen).",
+  "station": "klang.K2#2 (headless, Regen r 1,00 an d3708675) — die r-Hälfte headless, keine Stoff-Hälfte",
+  "fehlt": "ein Regenklang, der den Stoff der Fläche über/neben dem Ohr liest (Stroh, Ziegel, Holz, Blech), und beide Hälften in der Sitzung.",
+  "rezept": "Bau M: der Dach-Strahl (k 0) in _raumStrahlen (stamm/klang.js:613-684) meldet den Stoff des getroffenen Baus; die Regen-Textur (klang-core.js:460) färbt Filter und Körnung nach der Stoff-Zeile. Richter: unter 3 Dächern Spektralschwerpunkt getrennt ≥ 300 Hz (Muster K4_PROBE, stationen/g6.js:472) und r Regen-Bild ↔ Pegel wie klang.K2#2 in der Sitzung.",
+  "messgroesse": "Bau setzt an _raumStrahlen stamm/klang.js:613-684 (Dach) und regen-Textur klang-core.js:459-460",
+  "preisRisiko": "Heap am Dorf (Dächer stehen im Dorf)",
+  "gpuMin": 4, "bau": "M", "sicher": 0.55
+ },
+ {
+  "leiter": "erleben.kopplung.geteilter-sinn", "sprosse": 1, "klasse": "R",
+  "richter": "Tat von A → Bildpaar am Ort bei B zeigt dieselbe Spur",
+  "hat": "Das Netz trägt Akte zwischen Spielern: ein DSL-Programm oder ein Feld-Akt eines Peers läuft bei B mit seiner Welt-Uhr (_p2pMsgDsl stamm/netz-p2p.js:1886-1913; Stimme :1413-1423) (gelesen; ob jede Tat-Art — Fällen, Brand, Bau — so reist, ungelesen).",
+  "station": "keine (tore.K4 ohne Station)",
+  "fehlt": "eine Fahrt mit zwei echten Geräten (Radeon = A, GTX = B) in einem Raum derselben Saat und ein Bildpaar-Richter am Ort der Tat bei B.",
+  "rezept": "A fällt einen Baum (Tat faellen), B steht 20 m davor; B schießt vor/nach, Differenz im Tat-Fenster gegen den Gegenlauf ohne A. Muster lod.K1-Spielgang-Schuss (stationen/g3.js:3142); der Zwei-Geräte-Rahmen ist neu (Signal-Raum stamm/netz-p2p.js:92).",
+  "messgroesse": "Bild-Differenz am Tat-Ort bei B; Akt-Eingang _p2pMsgDsl stamm/netz-p2p.js:1886",
+  "preisRisiko": "keines erkennbar; Netz-Rahmen über zwei Häuser (Laptop + OMEN) ist der Aufwand",
+  "gpuMin": 5, "bau": "M", "sicher": 0.4
+ },
+ {
+  "leiter": "erleben.kopplung.ein-ereignis", "sprosse": 1, "klasse": "R",
+  "richter": "20 Feuer: Versatz Bild ↔ Abgriff ≤ 50 ms, Quellort am Abgriff ±10° zur Glut, 100 %",
+  "hat": "Glut im Bild, Licht auf dem Boden (Pool, stamm/bild-schatten.js:383) und das Knistern der nächsten Glut mit Panorama aus der Kamera (_glutAmOhr stamm/klang.js:359-369, _umweltPanorama :347-357) (gelesen).",
+  "station": "keine über beide Kanäle; klang.K3#1 (headless) misst ILD der Glut in 1,5/3/6 m, landschaft#1 den Glut-Pegel auf Armlänge",
+  "fehlt": "ein Richter, der an 20 Feuern den Zeitversatz Zünden/Bild ↔ Knistern/Abgriff und den Winkel aus dem Pan gegen die Lage der Glut im Bild misst.",
+  "rezept": "Muster landschaftLauf glutArm (stationen/g6.js:481-533): an 20 Glut-Einträgen nacheinander, Kamera unter Winkel, Pan am Abgriff → Winkel, gegen Bild-Winkel; Versatz über Zünden eines Feuers (Brand-Tat) Bild-Luma-Anstieg ↔ Pegel-Anstieg.",
+  "messgroesse": "Pan der Glut (stamm/klang.js:356) am Abgriff, Glut-Lage aus _blockerMit(\"glut\") (stamm/klang.js:364)",
+  "preisRisiko": "Heap am Dorf (die Feuer stehen im Dorf)",
+  "gpuMin": 5, "bau": "M", "sicher": 0.45
+ },
+ {
+  "leiter": "erleben.kopplung.epoche-ganz", "sprosse": 1, "klasse": "R",
+  "richter": "24 Zufallsuhren: 0 Widersprüche zwischen Sonnenstand, Klangbild (Chor, Grillen, Verkehr) und Bewohnertag",
+  "hat": "Die Uhr treibt Licht, Grillen (Dolbear aus der Temperatur, klang-core.js:396/:483), Vogel-Gesetz mit Morgenchor (klang-core.js:473), Verkehr im Ohr (stamm/klang.js:1092) und den Bewohnertag (Beleg §9.K2; Anker im Stamm nicht gelesen) (gelesen).",
+  "station": "keine über die Kanäle; klang.K1#2 (headless) hört Nacht → Grille, Vogel −∞",
+  "fehlt": "ein Richter, der an 24 Uhren Sonnenhöhe, die Pegel von Chor/Grille/Verkehr und den Zustand der Bewohner liest und Widersprüche zählt.",
+  "rezept": "Muster landschaftLauf (stationen/g6.js:481): Uhr je Zufallszahl setzen, Zensus der Quellen am Ohr (Vogel, Grille, Verkehr) plus Sonnenhöhe und Bewohner-Zustände (wach/schlafend/arbeitend) lesen; Widerspruchs-Tafel (Grille bei Sonne > 10°, Chor nachts, Verkehr bei schlafender Stadt).",
+  "messgroesse": "Zensus-Mischung __klangW.mischung (stationen/g6.js:516) + Sonnenstand der Seite + Bewohner-Zustand",
+  "preisRisiko": "Heap am Dorf",
+  "gpuMin": 6, "bau": "M", "sicher": 0.45
  }
 ]
