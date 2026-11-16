@@ -53,9 +53,10 @@ const BUDGET_AUSGABE = { unbedingtMax: 9, zweigMin: 24 };
 // Die Godrays ändern mit der Sonne im Bild mindestens so viele Pixel (% des Bildes, je Pixel ≥ 4/255 in einem Kanal) —
 // sie sitzen um die Sonne.
 const GODRAY_MIN_PCT = 2;
-// Die Lage: der Marsch zielt höchstens 0,08 (screenUV) neben die Scheibe; die Sonne steht dafür mehr als 0,08 neben der Bildmitte
-// (der Blick 0,2 rad unter ihr) — an der Mitte fiele die gespiegelte Lage mit der wahren zusammen.
-const GODRAY_LAGE_MAX = 0.08;
+// Die Lage: der Marsch zielt höchstens 0,12 (screenUV) neben die Scheibe — gemessen (swiftshader, w28-lichtschacht) 0,058 mit
+// `_schirmUV`, 0,32 gespiegelt (main 9c9c9bd3: Ziel 0,5/0,632 ↔ Scheibe 0,487/0,311); die Sonne steht dafür mehr als 0,08 neben
+// der Bildmitte (der Blick 0,2 rad unter ihr) — an der Mitte fiele die gespiegelte Lage mit der wahren zusammen.
+const GODRAY_LAGE_MAX = 0.12;
 const GODRAY_LAGE_MITTE = 0.08;
 // Das Wasser über dem Grund (unten im Bild, Mittel je Kanal in 8 bit): mit dem Tiefen-Abbild höchstens WASSER_TOL von
 // r184s Viewport-Tiefe entfernt; zweimal das Abbild höchstens WASSER_RAUSCHEN; ohne Grund mindestens WASSER_TIEFE_MIN
