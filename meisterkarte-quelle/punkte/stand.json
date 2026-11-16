@@ -5851,7 +5851,7 @@
   },
   "karte2.planet.wasser.kreislauf": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wasser.kreislauf#1 radeon: ungemessen (R10) · karte2.planet.wasser.kreislauf#1 gtx: ROT: Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145491 → 381682 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.367 ↔ 1.033 Spielstunden (×2.81, Erd-Band 1.62–2.06; Schwerpunkt 1.367 ↔ 2.087) · Bilanz 2.101 / 2.344 (Soll 0,9–1,1; 3.8 ↔ 8.1 / 19.2 ↔ 45 m³) · [linse-gpu] nvidia/pascal an 4167e10c",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wasser.kreislauf#1 radeon: ungemessen (R10) · karte2.planet.wasser.kreislauf#1 gtx: ROT: Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145491 → 381682 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.367 ↔ 1.06 Spielstunden (×2.89, Erd-Band 1.62–2.06; Schwerpunkt 1.354 ↔ 2.101) · Bilanz 2.092 / 2.334 (Soll 0,9–1,1; 3.8 ↔ 8 / 19.2 ↔ 44.8 m³) · [linse-gpu] nvidia/pascal an 77e079ae",
    "stationen": [
     {
      "id": "karte2.planet.wasser.kreislauf#1",
@@ -5867,9 +5867,9 @@
      "id": "karte2.planet.wasser.kreislauf#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145491 → 381682 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.367 ↔ 1.033 Spielstunden (×2.81, Erd-Band 1.62–2.06; Schwerpunkt 1.367 ↔ 2.087) · Bilanz 2.101 / 2.344 (Soll 0,9–1,1; 3.8 ↔ 8.1 / 19.2 ↔ 45 m³) · [linse-gpu] nvidia/pascal",
-     "sha": "4167e10c05fd3401ba5fcad6cbd7b25b19a0323e",
-     "grund": "ROT: Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145491 → 381682 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.367 ↔ 1.033 Spielstunden (×2.81, Erd-Band 1.62–2.06; Schwerpunkt 1.367 ↔ 2.087) · Bilanz 2.101 / 2.344 (Soll 0,9–1,1; 3.8 ↔ 8.1 / 19.2 ↔ 45 m³) · [linse-gpu] nvidia/pascal",
+     "zahl": "Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145491 → 381682 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.367 ↔ 1.06 Spielstunden (×2.89, Erd-Band 1.62–2.06; Schwerpunkt 1.354 ↔ 2.101) · Bilanz 2.092 / 2.334 (Soll 0,9–1,1; 3.8 ↔ 8 / 19.2 ↔ 44.8 m³) · [linse-gpu] nvidia/pascal",
+     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
+     "grund": "ROT: Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145491 → 381682 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.367 ↔ 1.06 Spielstunden (×2.89, Erd-Band 1.62–2.06; Schwerpunkt 1.354 ↔ 2.101) · Bilanz 2.092 / 2.334 (Soll 0,9–1,1; 3.8 ↔ 8 / 19.2 ↔ 44.8 m³) · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     }
@@ -5981,7 +5981,7 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, stamm/bild-himmel.js +3) · karte2.same.kopplung.kaskade#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, stamm/bild-himmel.js +3) · karte2.same.kopplung.kaskade#1 gtx: ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +164 Pixel (Soll ≥ 200; 20 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild +39 (Soll ≤ 20) · [linse-gpu] nvidia/pascal an 77e079ae",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
@@ -5998,17 +5998,17 @@
      "id": "karte2.same.kopplung.kaskade#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "trocken nach 60 s 1 brennende Zellen, Flammen im Bild +164 Pixel (Soll ≥ 200; 20 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild +39 (Soll ≤ 20) · [linse-gpu] nvidia/pascal",
+     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
+     "grund": "ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +164 Pixel (Soll ≥ 200; 20 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild +39 (Soll ≤ 20) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.stoerung#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.stoerung#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.stoerung#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.stoerung#1 gtx: ROT: Herd -312,-1080: Luma der Zelle vor 0.024 → nach 0.032 (÷ 1.333, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 77e079ae",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
@@ -6024,10 +6024,10 @@
      "id": "karte2.same.kopplung.stoerung#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "Herd -312,-1080: Luma der Zelle vor 0.024 → nach 0.032 (÷ 1.333, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
+     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
+     "grund": "ROT: Herd -312,-1080: Luma der Zelle vor 0.024 → nach 0.032 (÷ 1.333, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6275,7 +6275,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 148,
+  "konsum": 150,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6446,10 +6446,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 189
+  "ohne": 187
  },
  "kopfVoll": "4167e10c05fd3401ba5fcad6cbd7b25b19a0323e",
- "zeit": "2026-11-16T21:45:20.815Z",
+ "zeit": "2026-11-16T22:01:28.425Z",
  "vorher": "4167e10c",
  "bilanz": {
   "gewinn": [],
