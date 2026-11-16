@@ -2570,6 +2570,7 @@
         spalt: 0.02, // die Anlage: so weit (E, ~6 mm, zwei Luft-Breiten des Tuch-Gesetzes) liegt die gewichene Rumpf-Hülle über dem Arm
         rand: 0.3, // so weit (E, ~8,5 cm, längs der Fläche) entspannt sich das Gewebe um die gewichenen Ecken
         entspannen: 16, // Runden der Entspannung
+        ringe: 2, // so viele Kanten fasst die Reichweite `rand` mindestens, damit sich Gewebe entspannt (w28-gestalt: ein gröberes Netz — der Leib der Menge, Kante 0,21 E gegen 0,05–0,10 E der nahen Stufen — trägt zwischen der gewichenen Ecke und dem Rand der Reichweite keine Fläche; das Mittel seiner Nachbarn zog dort die Flanke zur Mitte des Rumpfs, 0,13–0,17 E statt 0,06 E)
         bisRad: 1.2, // höchstens so weit (rad) spreizt die Schulter
         ellbogenRad: 0.3, // der Tragewinkel des Ellbogens höchstens (rad, ~17°)
         stellen: 14, // Halbierungen je Winkel
@@ -4881,8 +4882,17 @@
                     weit[w] = dw;
                 }
             }
+            // die mittlere Kante des Gewebes (Rumpf-Ecken im Umkreis) gegen die Reichweite: ARM_RUHE.ringe
+            var kS = 0, kN = 0;
+            for (z = 0; z < frei.length; z++)
+                for (k = 0; k < nb[(v = frei[z])].length; k++) {
+                    if (h.kl[(w = nb[v][k])] !== 1) continue;
+                    kS += laenge(h.pos[3 * w] - h.pos[3 * v], h.pos[3 * w + 1] - h.pos[3 * v + 1], h.pos[3 * w + 2] - h.pos[3 * v + 2]);
+                    kN++;
+                }
+            var runden = kN && (kS / kN) * A.ringe > A.rand ? 0 : A.entspannen;
             var neu = new Float64Array(3 * h.n);
-            for (var r = 0; r < A.entspannen; r++) {
+            for (var r = 0; r < runden; r++) {
                 for (z = 0; z < frei.length; z++) {
                     var m = [0, 0, 0], n = 0, L = rand[(v = frei[z])] || nb[v];
                     for (k = 0; k < L.length; k++) {
