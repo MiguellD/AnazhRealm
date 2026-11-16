@@ -1844,9 +1844,15 @@ async function neunSeite(r, T, C, kammSaum) {
         });
         // ───── schatten.K5 — nachts wirft das Feuer ─────
         await teil("schatten.K5", async () => {
-            const qs = (r._blockerMit("licht") || [])
-                .filter((e) => e && e.position && r._lichtDatum(e))
-                .map((e) => ({ e, d: Math.hypot(e.position.x - P0.x, e.position.z - P0.z) }))
+            // DER ORT DES LICHTS AUS DER EINEN QUELLE (vorrat3-stationen-g3, Fund des Nachtbild-Arbeiters): die Leuchtquellen und ihr
+            // Welt-Ort liest die Probe aus `_leuchtQuellen` — derselbe Ruf, aus dem der Licht-Pool wählt und `lichtLage` schreibt
+            // (stamm/dirigent-kern.js `_leuchtTakt`) —, nie mehr nachgerechnet (bis hierher `position.y − 0,5 + hoeheM × Skala` als
+            // Zwilling: hebt das Spiel das Licht der Schmiede, stand die Probe am alten Ort). Die Uhr der Bühne zuerst auf Mitternacht:
+            // `_leuchtQuellen` nennt nur, was jetzt brennt — gemessen wird ohnehin um Mitternacht (stellPose)
+            window.__buehne({ uhr: C.mitternacht });
+            const qs = (r._leuchtQuellen(P0.x, P0.y, P0.z, C.feuerM) || [])
+                .filter((o) => o && o.id && o.id.position && r._lichtDatum(o.id) && Number.isFinite(o.y))
+                .map((o) => ({ e: o.id, ort: new T.Vector3(o.x, o.y, o.z), d: Math.hypot(o.x - P0.x, o.z - P0.z) }))
                 .filter((q) => q.d <= C.feuerM)
                 .sort((p, q) => p.d - q.d);
             if (!qs.length) throw new Error("keine Leuchtquelle des LICHT_GESETZ im Umkreis " + C.feuerM + " m");
@@ -1861,9 +1867,7 @@ async function neunSeite(r, T, C, kammSaum) {
             // Punkt selbst wächst. Von der Seite (3 m quer, 2,6 m hoch) stand das Auge im Schilf um den Glutbrunnen (GTX b4bb2f62), jeder Halm
             // deckte Boden und Pfosten
             const posen = [];
-            for (const { e: q, d: abM } of qs) {
-                const Lq = r._lichtDatum(q), sk = Number.isFinite(q.scale) && q.scale > 0 ? q.scale : 1;
-                const Q = new T.Vector3(q.position.x, q.position.y - 0.5 + (Lq.hoeheM || 0) * sk, q.position.z);
+            for (const { e: q, ort: Q, d: abM } of qs) {
                 const zuP = new T.Vector3(P0.x - Q.x, 0, P0.z - Q.z).normalize();
                 for (const w of [0, 90, -90, 180, 45, -45, 135, -135]) {
                     const d = zuP.clone().applyAxisAngle(OBEN, (w * Math.PI) / 180);
@@ -1917,9 +1921,12 @@ async function neunSeite(r, T, C, kammSaum) {
                 const dL = [30, -30].flatMap((w) => rs.flatMap((e) => [-0.05, 0, 0.05].map((u) => pt(dir.clone().applyAxisAngle(OBEN, (w * Math.PI) / 180), e, u))));
                 const pfZ = PF.clone().setY(gy + 1.99);
                 const lage = [];
-                // das Plättchen liegt 8 cm NEBEN dem Punkt (quer, 4 cm): der Schuss mit Zeichen ist zugleich der Schuss mit Pfosten — gemessen wird
-                // der Pixel des Punkts, gesehen ist der Boden daneben
-                const nb = (p) => [p.x + 0.08 * dir.z, p.z - 0.08 * dir.x];
+                // DIE MARKE MISST NIE MIT (vorrat3-stationen-g3, Fund des Nachtbild-Arbeiters): bis hierher lag das Plättchen 8 cm quer NEBEN
+                // seinem Punkt und der Schuss mit Zeichen war zugleich der Mess-Schuss mit Pfosten — die Punkte stehen aber 5 cm auseinander:
+                // die Marke des Punkts +5 cm lag bei −3 cm (Fläche ±2 cm), auf dem Punkt −5 cm und 1 cm neben dem Punkt 0 — 8 der 12
+                // Schatten-Punkte lasen Marken-Grün statt Boden. Jetzt sitzt das Plättchen AUF seinem Punkt (die Sicht prüft den Punkt
+                // selbst), und gemessen wird ein eigener Schuss mit Pfosten OHNE Zeichen
+                const nb = (p) => [p.x, p.z];
                 for (const p of [...dS, ...dL]) for (const [dx, dz] of [[-0.02, -0.02], [0.02, -0.02], [0.02, 0.02], [-0.02, -0.02], [0.02, 0.02], [-0.02, 0.02]]) lage.push(nb(p)[0] + dx, p.y + 0.005, nb(p)[1] + dz);
                 for (const [u, v] of [[-0.05, -0.05], [0.05, -0.05], [0.05, 0.05], [-0.05, -0.05], [0.05, 0.05], [-0.05, 0.05]]) lage.push(pfZ.x + u, pfZ.y, pfZ.z + v);
                 zeichen.geometry.setAttribute("position", new T.Float32BufferAttribute(lage, 3));
@@ -1931,6 +1938,7 @@ async function neunSeite(r, T, C, kammSaum) {
                 [pf.visible, zeichen.visible] = [true, true];
                 const mark = await schuss();
                 zeichen.visible = false;
+                const mit = await schuss();
                 const neben = (p) => new T.Vector3(nb(p)[0], p.y, nb(p)[1]);
                 const sS = dS.filter((p) => gruenPx(mark, neben(p))), sL = dL.filter((p) => gruenPx(mark, neben(p)));
                 const sicht = Math.min(sS.length / dS.length, sL.length / dL.length), pfosten = gruenPx(mark, pfZ);
@@ -1938,7 +1946,7 @@ async function neunSeite(r, T, C, kammSaum) {
                 // werden alle vier hier, nie nach der Schleife: dort stand die Kamera an der LETZTEN Pose, und die Rückfall-Wahl (keine
                 // Pose ruhig) las ihre Bilder an fremden Pixeln, mit und ohne Pfosten fast gleich (Radeon 03300ec8, 77265b04, 53b2fc7a:
                 // Kontrast 2,6423, Kontrolle 2,6433; die Posen selbst maßen 1,54 · 4,00 · 5,81 bei Kontrolle 1,569 · 0,553 · 1,566)
-                const [s0, l0, s1, l1] = [probeL(ohne, dS), probeL(ohne, dL), probeL(mark, dS), probeL(mark, dL)];
+                const [s0, l0, s1, l1] = [probeL(ohne, dS), probeL(ohne, dL), probeL(mit, dS), probeL(mit, dL)];
                 const kontrolle = s0.L > 0 && l0.L > 0 ? l0.L / s0.L : null;
                 // die Wahl (w28-station-mass): zuerst die Pose, deren Boden das Auge sieht (≥ die Hälfte der Plättchen), dann Pfosten im Blick
                 // und ruhige Kontrolle — an der Laterne der Ankunft maß die erste ruhige Pose ohne einen gesehenen Messpunkt
