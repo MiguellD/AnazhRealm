@@ -796,7 +796,7 @@ async function paarSeite(o) {
         }
         return { halt: P.halt };
     }
-    if (s === "zurueck") return (st.weatherEffectTime = P.halt), 1;
+    if (s === "zurueck") return P.halt !== undefined && (st.weatherEffectTime = P.halt), 1; // nach einem Eintritt ist die Seite neu: kein Halt zum Zurückgeben
     if (s === "original") {
         const bp = st.blueprints[o.name];
         if (!bp) return { fehler: "kein Bauplan " + o.name };
@@ -1025,8 +1025,8 @@ const k4Fachwerk = (j) => {
 };
 // ───────── DER TAKT AN DER ANKUNFT (Karte 2: erleben.sinn.takt S 1, vorrat3-stationen-g4) ─────────
 // 10 Minuten Spielgang am Grund der Sitzung (die Ankunft ihrer Welt), die Schleife des Spiels läuft wie im Spiel. DER GANG je Minute
-// (fest, keine Wahl): 20 s gehen (die echte Taste W über CDP, kein Zeiger), 10 s umsehen (die Gier einmal um 360°), 20 s gehen in die
-// neue Richtung, 10 s stehen. DIE ZÄHLUNG je Bild der Seite (requestAnimationFrame, die Frage des Spiels `_kreaturImBlick` am Frustum
+// (fest, keine Wahl): 20 s gehen (die echte Taste W über CDP, kein Zeiger), 10 s umsehen (die Gier um 450°: rundum und eine
+// Vierteldrehung weiter), 20 s gehen in die neue Richtung, 10 s stehen — je Minute eine Seite eines Quadrats um die Ankunft. DIE ZÄHLUNG je Bild der Seite (requestAnimationFrame, die Frage des Spiels `_kreaturImBlick` am Frustum
 // des Vor-Takts): eine Tat im Buch der Wertung (`state.taten`, `_tatWerten` — ohne Ort oder mit Ort im Blick) · ein Tier im Blick, das
 // in die Flucht wechselt (`userData._motionZustand` „flucht“) · eine Zeile der Stimme des Felds (`_stimme.t`, `_feldStimme`) · ein
 // Eintrag im Tagebuch der Welt (`worldJournal.entries`). TOT ist die Minute, in der nichts davon geschah; GRÜN bei ≤ 50 % toter
@@ -1068,7 +1068,7 @@ async function taktSeite(o) {
         await new Promise((ok) => {
             const dreh = () => {
                 const k = Math.min(1, (performance.now() - t0) / o.ms);
-                st.yaw = y0 + 2 * Math.PI * k;
+                st.yaw = y0 + 2.5 * Math.PI * k; // einmal rundum und eine Vierteldrehung weiter: der Gang läuft ein Quadrat um die Ankunft
                 k < 1 ? requestAnimationFrame(dreh) : ok();
             };
             requestAnimationFrame(dreh);
@@ -1100,19 +1100,27 @@ async function probeTakt(H) {
     H.beimAbbau(() => seite({ schritt: "aus" }));
     H.beimAbbau(() => page.keyboard.up("KeyW"));
     const j = (H.teil = { adapter: ad, soll: S, an: await seite({ schritt: "an" }), minuten: [] });
+    // die Lebenszeichen der Probe (punkte.cjs STILLE_S): je 10 s eine Zeile
+    const warte = async (ms, was) => {
+        for (let t = 0; t < ms; t += 10000) {
+            await H.schlaf(Math.min(10000, ms - t));
+            H.zeile("Takt: " + was);
+        }
+    };
     for (let n = 0; n < S.minuten; n++) {
         if (H.rest() < 64) {
             H.fristRiss("Minute " + (n + 1) + " und die folgenden ausgelassen");
             break;
         }
         await page.keyboard.down("KeyW");
-        await H.schlaf(20000);
+        await warte(20000, "gehen");
         await page.keyboard.up("KeyW");
         await seite({ schritt: "umsehen", ms: 10000 });
+        H.zeile("Takt: umgesehen");
         await page.keyboard.down("KeyW");
-        await H.schlaf(20000);
+        await warte(20000, "gehen");
         await page.keyboard.up("KeyW");
-        await H.schlaf(10000);
+        await warte(10000, "stehen");
         const m = await seite({ schritt: "minute" });
         const tot = !(m.taten + m.tiere + m.stimme + m.tagebuch > 0);
         j.minuten.push({ ...m, tot });
@@ -1151,6 +1159,211 @@ const TAKT_PFAD = [
     "stamm/dirigent-*.js",
     "index.html",
     "scripts/werkbank.cjs",
+    "scripts/lib/welt-boot.cjs",
+];
+
+// ───────── DIE ROLLE: VIER VERB-GRUPPEN ÄNDERN DIE WELT (Karte 2: erleben.spieler.rolle S 1, vorrat3-stationen-g4) ─────────
+// In der warmen Welt der Sitzung, die Schleife des Spiels läuft. Je Gruppe ein Ort vor dem Spieler und EINE Kamera dahinter (6 m
+// zurück, 4 m hoch, Blick auf den Ort): zwei Schüsse vor der Tat (der Rausch-Boden, `/bild` wie das Bildpaar), die Tat, ein Schuss
+// danach — SICHTBAR heißt: Δ über dem doppelten Rausch-Boden plus 0,1 % der Leinwand. Die Weltänderung je Gruppe am Feld der Welt:
+//   gehen    ein Tier (spawnCreatureAt, die Seele „wesen“ — „hirsch“ ist keine Seele, die Absage wäre laut) 16 m voraus, der Spieler geht auf es zu (die echte Taste W, ≤ 8 s): es wechselt in die Flucht
+//            (`_motionZustand` „flucht“, je Bild gelesen; `_creatureWarinessSpieler`)
+//   bauen    das Werk der Bank (`spawn_blueprint` mit Same und Stempel, Quelle „spieler“, wie das Bildpaar) 10 m voraus: ein Werk mehr
+//   fahren   der Wagen der Werkstatt (WERKE.GT der Linse) 5 m voraus, der Spieler 2 m davor: E (die echte Taste, Aufstieg),
+//            W ≤ 5 s, E — der Wagen steht ≥ 10 m weiter
+//   kämpfen  ein Wesen in Reichweite der Klinge, der Hieb (`_beginPlayerSwing`, der Ruf des Klicks — die Probe klickt nie: kein
+//            Zeiger-Fang), ≤ 2 s Schleife: seine hp sinken
+// Die 15 min des Richters sind Obergrenze; die Probe endet je Gruppe bei der ersten Änderung. GRÜN bei 4/4 Gruppen mit Änderung UND Bild.
+const ROLLE_SOLL = { faktor: 2, rand: 0.001, schwelle: 24, w: 640, h: 360, fov: 50, fahrM: 10, gehenS: 8, fahrS: 5, kampfS: 2 };
+const ROLLE_GRUPPEN = ["gehen", "bauen", "fahren", "kaempfen"];
+async function rolleSeite(o) {
+    const r = window.anazhRealm, st = r.state;
+    const R = (window.__rolle ||= {});
+    const pm = st.playerMesh.position;
+    const v = r._blickVorn(st.yaw, 0);
+    const vorn = (d) => ({ x: pm.x + v.x * d, z: pm.z + v.z * d });
+    const boden = (q) => r.getTerrainHeightAt(q.x, q.z);
+    const kam = (q, h = 1) => ({ kamera: [pm.x - v.x * 6, boden(pm) + 4, pm.z - v.z * 6], ziel: [q.x, boden(q) + h, q.z] });
+    const werk = (name, q) => {
+        const bp = st.blueprints[name];
+        if (!bp) return null;
+        const lauf = r.dslRun(["spawn_blueprint", name, ["at", q.x, boden(q), q.z], r._werkSame(bp, name, null), null, r._studioStampFor(name) || null, 0], { source: "spieler" });
+        const e = lauf.log.find((x) => x.event === "spawned_blueprint" && x.id != null);
+        return (e && st.architectures.find((a) => a && a.id === e.id)) || null;
+    };
+    const s = o.schritt;
+    if (s === "an") {
+        R.halt = st.weatherEffectTime;
+        st.weatherEffectTime = 0; // der Halt der Messung (probeVerben): unter ihm setzt die Werk-Sprache nichts
+        r.setTimeOfDay(0.5, "human"), r._setWeather("sunny", "human"), (st.weatherTransition = null);
+        return 1;
+    }
+    if (s === "zurueck") {
+        if (st.player.mountedArch != null) r.dismountArchitecture();
+        if (R.halt !== undefined) st.weatherEffectTime = R.halt;
+        R.an = false;
+        return 1;
+    }
+    if (s === "gehenAn") {
+        const q = vorn(16);
+        const c = r.spawnCreatureAt(q.x, boden(q), q.z, "happy", o.seele, { absage: (g) => (R.absage = g) });
+        if (!c) return { fehler: "kein Tier am Ort (spawnCreatureAt " + o.seele + ": " + R.absage + ")" };
+        Object.assign(R, { tier: c, flucht: false, an: true });
+        const blick = () => {
+            if (!R.an) return;
+            if (c.userData && c.userData._motionZustand === "flucht") R.flucht = true;
+            requestAnimationFrame(blick);
+        };
+        requestAnimationFrame(blick);
+        return { ...kam(q), d: +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(2) };
+    }
+    if (s === "gehenNach") {
+        const c = R.tier;
+        R.an = false;
+        return { flucht: R.flucht, d: +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(2), zustand: (c.userData && c.userData._motionZustand) || null };
+    }
+    if (s === "bauenAn") {
+        R.q = vorn(10);
+        R.n0 = st.architectures.filter(Boolean).length;
+        return kam(R.q);
+    }
+    if (s === "bauen") {
+        const E = werk(o.name, R.q);
+        if (!E) return { fehler: "kein Werk " + o.name + " am Ort" };
+        await window.__gebautNach("das Werk " + E.type, { fertig: () => !!(E.mesh && E.mesh.parent) || !!(E.instFoundry || (E.instSlots && E.instSlots.length)), bau: () => {} });
+        return { id: E.id, n: st.architectures.filter(Boolean).length - R.n0 };
+    }
+    if (s === "fahrenAn") {
+        const q = vorn(5);
+        const E = werk(o.name, q);
+        if (!E) return { fehler: "kein Wagen " + o.name + " am Ort" };
+        R.wagen = E;
+        R.p0 = [E.position.x, E.position.z];
+        const k = kam(q);
+        pm.set(pm.x + v.x * 3, boden(vorn(3)) + r.constructor.PLAYER_FOOT_OFFSET, pm.z + v.z * 3); // 2 m vor dem Wagen, der Blick auf ihn
+        return { ...k, id: E.id };
+    }
+    if (s === "sitzt") return { sitzt: st.player.mountedArch === (R.wagen && R.wagen.id) };
+    if (s === "fahrenNach") {
+        if (st.player.mountedArch != null) r.dismountArchitecture();
+        const p = R.wagen.position;
+        return { m: +Math.hypot(p.x - R.p0[0], p.z - R.p0[1]).toFixed(2) };
+    }
+    if (s === "kampfAn") {
+        const q = vorn(0.5 * r._kampfBladeReach() + 0.5);
+        const c = r.spawnCreatureAt(q.x, boden(q), q.z, "happy", "wesen", { absage: (g) => (R.absage = g) });
+        if (!c) return { fehler: "kein Wesen in Reichweite (spawnCreatureAt: " + R.absage + ")" };
+        R.ziel = c;
+        R.hp0 = c.userData.hp;
+        st.player.stamina = st.player.staminaMax;
+        return { ...kam(q), hp: R.hp0 };
+    }
+    if (s === "hieb") return { schwung: r._beginPlayerSwing() !== false };
+    if (s === "kampfNach") return { hp: R.ziel.userData.hp, hp0: R.hp0 };
+    return { fehler: "kein Schritt " + s };
+}
+async function probeRolle(H) {
+    const { page } = await H.verbinde();
+    const ad = await page.evaluate(async () => {
+        const a = navigator.gpu && (await navigator.gpu.requestAdapter());
+        const i = (a && a.info) || {};
+        return a ? (i.vendor || "?") + "/" + (i.architecture || "?") : "kein Adapter";
+    });
+    console.log("[linse-gpu] " + ad);
+    const S = H.seite.SOLL;
+    const seite = (o) => page.evaluate(H.seite.rolleSeite, o);
+    const { WERKE } = H.linse("scripts/diag-werkstatt-weg.cjs", ["WERKE"]);
+    await H.ereignisStrom(page);
+    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t)));
+    H.beimAbbau(() => page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null)));
+    await seite({ schritt: "an" });
+    H.beimAbbau(() => seite({ schritt: "zurueck" }));
+    H.beimAbbau(() => page.keyboard.up("KeyW"));
+    const AB = require(H.path.resolve("scripts/lib/abnahme-urteil.cjs"));
+    const schuss = async (k, name) => {
+        const datei = String(H.AUS).replace(/\.json$/i, "") + "-rolle-" + name + ".png";
+        const b = await H.wb("/bild", { px: k.kamera[0], py: k.kamera[1], pz: k.kamera[2], lx: k.ziel[0], ly: k.ziel[1], lz: k.ziel[2], w: S.w, h: S.h, fov: S.fov, wahl: "0", datei }, 90000);
+        if (!b || !b.datei || !H.fs.existsSync(b.datei)) throw new Error("/bild " + name + ": " + JSON.stringify(b).slice(0, 200));
+        return AB.pngLesen(H.fs.readFileSync(b.datei));
+    };
+    const diff = (A, B) => AB.bildRauschen(A.u8, B.u8, A.W, A.H, S.schwelle).anteil;
+    const j = (H.teil = { adapter: ad, soll: S, gruppen: {} });
+    for (const g of H.seite.GRUPPEN) {
+        if (H.rest() < 25) {
+            j.gruppen[g] = { fehler: "Frist der Probe vor der Gruppe (" + H.sek() + " s)" };
+            continue;
+        }
+        const z = (j.gruppen[g] = {});
+        try {
+            const an = await seite({ schritt: { gehen: "gehenAn", bauen: "bauenAn", fahren: "fahrenAn", kaempfen: "kampfAn" }[g], seele: "wesen", name: g === "fahren" ? WERKE.GT : "bank_sitzbank" });
+            if (an.fehler) throw new Error(an.fehler);
+            const A = await schuss(an, g + "-vor");
+            z.rausch = diff(A, await schuss(an, g + "-vor-2"));
+            const t0 = Date.now();
+            if (g === "gehen") {
+                await page.keyboard.down("KeyW");
+                while (Date.now() - t0 < S.gehenS * 1000 && !(await page.evaluate(() => window.__rolle.flucht))) await H.schlaf(250);
+                await page.keyboard.up("KeyW");
+                z.welt = await seite({ schritt: "gehenNach" });
+                z.aenderung = z.welt.flucht === true;
+            } else if (g === "bauen") {
+                z.welt = await seite({ schritt: "bauen", name: "bank_sitzbank" });
+                if (z.welt.fehler) throw new Error(z.welt.fehler);
+                z.aenderung = z.welt.n >= 1;
+            } else if (g === "fahren") {
+                await page.keyboard.press("KeyE");
+                await H.schlaf(500);
+                z.sitzt = (await seite({ schritt: "sitzt" })).sitzt;
+                if (z.sitzt) {
+                    await page.keyboard.down("KeyW");
+                    await H.schlaf(S.fahrS * 1000);
+                    await page.keyboard.up("KeyW");
+                    await page.keyboard.press("KeyE");
+                }
+                z.welt = await seite({ schritt: "fahrenNach" });
+                z.aenderung = z.sitzt === true && z.welt.m >= S.fahrM;
+            } else {
+                z.welt = await seite({ schritt: "hieb" });
+                await H.schlaf(S.kampfS * 1000);
+                Object.assign(z.welt, await seite({ schritt: "kampfNach" }));
+                z.aenderung = z.welt.schwung === true && Number.isFinite(z.welt.hp) && z.welt.hp < z.welt.hp0;
+            }
+            z.sek = +((Date.now() - t0) / 1000).toFixed(1);
+            z.diff = diff(A, await schuss(an, g + "-nach"));
+        } catch (e) {
+            z.fehler = String((e && e.message) || e).slice(0, 300);
+            await page.keyboard.up("KeyW").catch(() => {});
+        }
+        console.log(`  ${rolleSichtbar(z, S) && z.aenderung ? "✅" : "❌"} ${g}: Änderung ${z.aenderung ? "ja" : "NEIN"} ${JSON.stringify(z.welt || {})} · Δ Bild ${z.diff} · Rauschen ${z.rausch}${z.fehler ? " — " + z.fehler : ""} · ${H.sek()} s`);
+    }
+    return j;
+    function rolleSichtbar(z, S) {
+        return [z.rausch, z.diff].every(Number.isFinite) && z.diff > S.faktor * z.rausch + S.rand;
+    }
+}
+const ROLLE_PROBE = { ...probeBefehl(probeRolle, 90, { SOLL: JSON.stringify(ROLLE_SOLL), GRUPPEN: JSON.stringify(ROLLE_GRUPPEN), rolleSeite }), mutiert: true };
+const rolleSichtbar = (z, S = ROLLE_SOLL) => !!z && !z.fehler && [z.rausch, z.diff].every(Number.isFinite) && z.diff > S.faktor * z.rausch + S.rand;
+const rolleRoh = (o = {}) => ({
+    adapter: "amd/rdna-3",
+    soll: ROLLE_SOLL,
+    gruppen: Object.fromEntries(ROLLE_GRUPPEN.map((g) => [g, { rausch: 0.0004, diff: 0.03, aenderung: true, welt: {}, ...(o[g] || {}) }])),
+});
+const ROLLE_PFAD = [
+    "stamm/kreatur-*.js",
+    "stamm/kampf.js",
+    "stamm/koerper-*.js",
+    "stamm/feld-dsl.js",
+    "stamm/werkstatt-*.js",
+    "stamm/studio-*.js",
+    "stamm/bau-*.js",
+    "stamm/dirigent-*.js",
+    "index.html",
+    "foundry-core.js",
+    "foundry-bruecke.js",
+    "vehicle-core.js",
+    "scripts/werkbank.cjs",
+    "scripts/diag-werkstatt-weg.cjs",
+    "scripts/lib/abnahme-urteil.cjs",
     "scripts/lib/welt-boot.cjs",
 ];
 
@@ -2826,6 +3039,42 @@ const alle = [
         ],
         pfad: TAKT_PFAD,
         quelle: "KARTE2 erleben.sinn.takt S1 = Anteil toter Minuten ≤ 50 %",
+    },
+    // erleben.spieler.rolle S 1 (vorrat3-stationen-g4): je Verb-Gruppe (gehen · bauen · fahren · kämpfen) eine Weltänderung am Feld der
+    // Welt (Tier flieht · Werk steht · Wagen ≥ 10 m · hp sinken) UND das Bildpaar vor/nach an derselben Kamera sichtbar (ROLLE_PROBE)
+    {
+        kriterium: "karte2.erleben.spieler.rolle",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: ROLLE_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const { ad, hw } = PAAR_HW(lauf.stdout);
+            const G = (j && j.gruppen) || null;
+            if (!G) return { gruen: false, zahl: "keine Verb-Gruppe in der Ausgabe der Probe (Exit " + lauf.exit + ") · " + ad };
+            const ja = ROLLE_GRUPPEN.filter((g) => G[g] && G[g].aenderung === true && rolleSichtbar(G[g]));
+            return {
+                gruen: hw && lauf.exit === 0 && ja.length === ROLLE_GRUPPEN.length,
+                zahl:
+                    ja.length + "/" + ROLLE_GRUPPEN.length + " Verb-Gruppen ändern die Welt sichtbar · " +
+                    ROLLE_GRUPPEN.map((g) => { const z = G[g]; return g + " " + (!z ? "nicht gelaufen" : z.fehler ? String(z.fehler).slice(0, 80) : (z.aenderung ? "Änderung" : "OHNE ÄNDERUNG") + " Δ " + (Number.isFinite(z.diff) ? (100 * z.diff).toFixed(2) + " %" : "–") + " (Rauschen " + (Number.isFinite(z.rausch) ? (100 * z.rausch).toFixed(2) + " %" : "–") + ")"); }).join(" · ") + // prettier-ignore
+                    " · " + ad,
+            };
+        },
+        proben: [
+            { name: "gesund: vier Gruppen ändern die Welt, jedes Paar sichtbar", j: rolleRoh(), stdout: PAAR_KARTE, gruen: true },
+            { name: "das Tier flieht nicht", j: rolleRoh({ gehen: { aenderung: false } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "der Wagen fährt, das Bild bleibt im Rauschen", j: rolleRoh({ fahren: { diff: 0.0009 } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "der Hieb trifft nicht (die Gruppe warf)", j: rolleRoh({ kaempfen: { fehler: "kein Wesen in Reichweite (spawnCreatureAt: obergrenze)", diff: undefined } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "eine Gruppe fehlt (die Frist)", j: { ...rolleRoh(), gruppen: { ...rolleRoh().gruppen, bauen: undefined } }, stdout: PAAR_KARTE, gruen: false },
+            { name: "swiftshader", j: rolleRoh(), stdout: "[linse-gpu] google/swiftshader", gruen: false },
+        ],
+        pfad: ROLLE_PFAD,
+        quelle: "KARTE2 erleben.spieler.rolle S1 = 15 min je Verb-Gruppe: ≥ 1 sichtbare Weltänderung (Werk steht, Tier flieht, Fahrzeug fährt), Bildpaar vorher/nachher",
     },
 ];
 
