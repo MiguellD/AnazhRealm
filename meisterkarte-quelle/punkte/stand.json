@@ -5055,7 +5055,7 @@
   },
   "karte2.leben.oeko.netz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.oeko.netz#1 radeon: ungemessen (R10) — zuletzt an fe885d9d: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · karte2.leben.oeko.netz#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.oeko.netz#1 radeon: ungemessen (R10) — zuletzt an fe885d9d: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · karte2.leben.oeko.netz#1 gtx: ungemessen (R10) — zuletzt an fe885d9d: Deckel 139 s gerissen: Stille seit 138.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "karte2.leben.oeko.netz#1",
@@ -5073,7 +5073,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an fe885d9d: Deckel 139 s gerissen: Stille seit 138.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true,
      "beide": true
     }
@@ -5911,7 +5911,7 @@
   "ohne": 116
  },
  "kopfVoll": "9fa4015eeb45db7006048415f37cd4f7f055c690",
- "zeit": "2026-11-16T15:56:59.325Z",
+ "zeit": "2026-11-16T16:14:35.605Z",
  "vorher": "9fa4015e",
  "bilanz": {
   "gewinn": [],

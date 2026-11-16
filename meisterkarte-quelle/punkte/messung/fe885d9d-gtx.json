@@ -1,7 +1,7 @@
 {
  "sha": "fe885d9de1ae25cb5b5caf0e929dd71bdcfeaedb",
  "geraet": "gtx",
- "zeit": "2026-11-16T15:48:01.635Z",
+ "zeit": "2026-11-16T16:07:15.704Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "gelaende.K4#2": {
@@ -795,84 +795,114 @@
   "kb7e3d0f7721a": "nVVdb5swFP0veVxHHT4cPqQ+OKVaO7VSIu1le7u2r4GGQGRDmTLtv08QSAOkqjS/INA9vuccn2v+LA4gdpDg7aspi0W0+LL4ujDwhpZB/Yb69tUsosVSeECDiJ0WYYzdt2VCZ4fKEJlBYu00QlVrK0eOxa3oYJ7nScSIfLYawZ7Y3d1HW1awq/odndBFhGidMPYyRuQZJ8ALSPdo1brCLO8htggQMCLNA2s2hGyIT9bNHJpzlKVVgcIByKXjuxBNC2uTAEcLatU164vVauU7bi81iNnm9axu3TBGmodpRw6FHDNVLlBldy4/zMXJDLCy8qwwQ08hKXedd3vnqqSGxjoCpjnqHhSsqHTtgegUoPLamFGTwJXUCSJCQjKpTdBkIq2sgy7fj5yHjm9DdMXh5FBb6pIJcA4Bn/qbAhYJ6jEH36PCi8jvGd8d7FGDVUDal4ZL13f4KHKPcy5DsvZYGDFAucOpt/o8rYSQ+OMtx25Q6XF3mJv/X08/15N2eWd9Z9LQLJA89NWUP3ts2h3ioH1Jzp+Dx9POcXLRZjtpYkSa6f1YklJUwjJ6njtgUpCorV1pqnP10rFdXPUGxIRtGWMbL54i38UMc85XSxpcaAkIe5ydvilV1YBGKznUPRA9pD6NGHuaFVew3w8ihIMBvXouV5JrqnZUL+ktfYfSLmXJBwk7DbZ1xCwfQL4QtovR/Qub6n/TsLeAJzpTasgxp0KF18auwbyyeFkOV2Ko5Kq1yiXF2S07YOzpUlXsLb89/9puJ2Jjt7mit+tQ6mogTvlqqbxIvXVX9bT6iDrHBEf+tKkHGZFGnfgcA8Y2fn9LqZtRQI+zYz1m2DpXmNoM0Q59GfbRHvNtUO84FLvBY1vZQp4OdsPi9pF8/3GzJjE5zcFZOds0jD2s2f3pXbS57Kw+oCAHXaqsvaBJCrVJIa9Gv8dTSY2K15gW2AakysoCi/eqv/8A"
  },
  "sitzung": {
-  "start": "2026-11-16T15:23:23.317Z",
-  "ordner": "sitzung-20261116-162323",
+  "start": "2026-11-16T16:06:41.898Z",
+  "ordner": "sitzung-20261116-170641",
   "port": 7804,
-  "warten": 18.05,
-  "bootS": 6.9,
-  "grundstellungS": [
-   0.1,
-   0.1,
-   4.3
-  ],
-  "proben": 4,
+  "warten": 0.01,
+  "bootS": 6.8,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "karte2.same.kopplung.stoerung#1",
-    "s": 26.3,
-    "takte": 653,
+    "ort": null,
+    "vor": "karte2.leben.oeko.netz#1",
+    "s": 24.8,
+    "takte": 780,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "karte2.same.kopplung.ereignis#1",
-    "s": 0.8,
-    "takte": 67,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "genesis",
-    "vor": "mensch.K1#1",
-    "s": 13.4,
-    "takte": 617,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.leben.tiere.verhalten#1",
-    "s": 15.1,
-    "takte": 632,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "karte2.leben.tiere.verhalten#1",
-    "wege": "wege +5 [-115.5,-246.4,3.8,-128.3/446] [-116.4,-244.6,8.4,-120.4/22] [-116.6,-234.8,9.9,-118.6/4] …",
-    "s": 4.3
-   }
-  ],
-  "wanderung": [
-   {
-    "probe": "mensch.K1#1",
-    "ort": "genesis",
-    "m": 185.18,
-    "dreh": 3.189
-   }
-  ],
-  "ciBlicke": 5,
+  "wegeTueren": [],
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 8652,
-   "frameP95": 33.34,
-   "taktP95": 12.97,
-   "vramMax": 172.9,
-   "seiten": 2,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 372,
-   "luecken": 15,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "ortImDeckel": [
+    {
+     "probe": "karte2.leben.oeko.netz#1",
+     "m": 401,
+     "ringVor": 4,
+     "ringMin": 4
+    }
+   ],
+   "zapfen": 54,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 539.7,
-  "minuten": 27.14
+  "fahrtS": 173.1,
+  "minuten": 2.97
+ },
+ "ungemessen": {
+  "karte2.leben.oeko.netz#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 138.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 2.32,
+   "grund": "Deckel 139 s gerissen: Stille seit 138.7 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 139.2,
+   "fremd": {
+    "s": 143.1,
+    "takte": 66,
+    "fremdS": 213.72,
+    "kerne": 1.494,
+    "fensterKerne": 1.819,
+    "namen": [
+     [
+      "node scripts/diag-haus-fern.cjs",
+      154.22
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      21.73
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      12.7
+     ]
+    ],
+    "dienerS": 30.55,
+    "diener": [
+     [
+      "dwm.exe",
+      12.53
+     ],
+     [
+      "System",
+      9.56
+     ]
+    ],
+    "geraetS": 40.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.11
+     ],
+     [
+      "svchost.exe",
+      16.33
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.67
+     ]
+    ],
+    "eigenS": 182.56,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-16T16:07:15.704Z",
+   "abdruck": "5faf632bd4b3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
