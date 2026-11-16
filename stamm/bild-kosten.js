@@ -1528,6 +1528,104 @@ class AnazhRealm_bild_kosten {
         }
     }
 
+    // DER LICHTSCHACHT (w28-lichtschacht): die Godrays als EIGENER Pass in `GODRAY.skala` der Ausgabe. Der Radial-Marsch
+    // (GPU Gems 3, Kap. 13; Unreal zeichnet seine Licht-Schächte ebenso verkleinert) läuft je Texel des kleinen Ziels, die Ausgabe
+    // liest ihn EINMAL bilinear. Jeder Schritt liest die VOLLE Farbe der Kette und die Szenen-Tiefe (die Kronen-Lücke bleibt
+    // Quelle) — weniger sind nur die Strahlen je Bild, und der bilineare Zug glättet den Versatz der Nachbar-Texel (das Korn an
+    // der Strahlen-Kante). Bis hier lief der Marsch je Ausgabe-Pixel im Fragment der Ausgabe: mit der Himmels-Maske 20 Farb- und
+    // 20 Tiefen-Abtastungen, durch den Versatz je Pixel ohne Nachbarschaft im Cache (GTX 1060, Wiese 17 Uhr, Stärke 0,8, je 48
+    // Frames an/aus: p50 +4,16 ms; main 9c9c9bd3 mit 20 festen Farb-Abtastungen +0,62 ms).
+    // DER ZUG: die Stufe ist ein Knoten der Kette, ihr `updateBefore` zeichnet je Frame — ihr Bau baut das Bild der Kette VOR
+    // sich (`farbe.build`: r184 reiht `updateBefore` in der Folge der Bauten, erst die zeitliche Auflösung, dann der Schacht).
+    // Sie zeichnet nur mit Stärke (bei 0 tastet sie nie; die Ausgabe liest sie im Zweig der Stärke, `nurBeiStaerke`).
+    // DAS MASS: das Ziel folgt der Ausgabe × Skala; ein neues Maß legt es an und gibt ihm eine neue Generation (r184 bindet eine
+    // Textur neu, wenn ihre Generation nicht die gebundene ist — wie die Ziele der zeitlichen Auflösung, gate:vendor-anker).
+    // Bild und Tiefe liest der Pass als schlichte Texturen: ihre Pass-Knoten im Stoff des Schachts bauten ihre Pässe ein zweites Mal.
+    _godrayStufe(pp, farbe, tiefe, u, istWelt) {
+        const T = THREE.TSL;
+        const Quad = pp && pp._quadMesh && pp._quadMesh.constructor;
+        if (typeof Quad !== "function" || typeof THREE.TempNode !== "function" || !THREE.NodeUpdateType)
+            throw new Error("GODRAY-STUFE: Quad der Post-Kette, TempNode oder NodeUpdateType fehlt (Vendor-Drift)");
+        const { Fn, float, vec2, vec4, texture, screenUV, smoothstep, luminance, fract, dot } = T;
+        const realm = this;
+        const ziel = new THREE.RenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false });
+        ziel.name = ziel.texture.name = "godray:schacht";
+        ziel.texture.minFilter = ziel.texture.magFilter = THREE.LinearFilter;
+        ziel.texture.generateMipmaps = false;
+        // das Bild der Kette: die zeitliche Auflösung wechselt ihr Ziel je Frame, der Wert folgt ihm (`updateBefore`)
+        const bild = texture(farbe.value);
+        const tief = texture(tiefe.value);
+        const N = AnazhRealm.GODRAY.schritte;
+        const mat = new THREE.MeshBasicNodeMaterial();
+        mat.name = "godray:schacht";
+        mat.fog = false;
+        mat.depthTest = false;
+        mat.depthWrite = false;
+        mat.fragmentNode = Fn(() => {
+            const delta = u.godraySun.sub(screenUV); // Texel → Sonne (screenUV)
+            // der Versatz des Texels (interleaved gradient noise): die N Abtastungen einer scharfen Quelle legen keine N Kopien
+            const versatz = fract(
+                float(52.9829189).mul(fract(dot(T.screenCoordinate.xy, vec2(0.06711056, 0.00583715))))
+            );
+            let summe = null;
+            for (let i = 0; i < N; i++) {
+                const uvI = screenUV.add(delta.mul(u.godrayDensity.mul(versatz.add(i).div(N))));
+                const cI = bild.sample(uvI).rgb;
+                const mI = smoothstep(u.godrayThreshold, u.godrayThreshold.add(float(0.2)), luminance(cI)).mul(
+                    istWelt(tief, uvI).select(float(0), float(1))
+                );
+                const sI = cI.mul(mI).mul(float(Math.pow(0.96, i) / N)); // der Beitrag klingt mit 0,96^i ab
+                summe = summe ? summe.add(sI) : sI;
+            }
+            return vec4(summe, 1);
+        })();
+        const quad = new Quad(mat);
+        quad.name = "godray:schacht";
+        class GodrayStufe extends THREE.TempNode {
+            constructor() {
+                super("vec3");
+                this.updateBeforeType = THREE.NodeUpdateType.FRAME;
+                this.ziel = ziel;
+                this.quad = quad;
+                this.laeufe = 0;
+                this._generation = 0;
+            }
+            updateBefore(frame) {
+                if (u.godrayStrength.value === 0) return;
+                const r = frame.renderer;
+                const sch = realm._schirm();
+                const k = AnazhRealm.GODRAY.skala;
+                const w = Math.max(1, Math.round(sch.breite * k)),
+                    h = Math.max(1, Math.round(sch.hoehe * k));
+                if (ziel.width !== w || ziel.height !== h) {
+                    ziel.setSize(w, h);
+                    r.initRenderTarget(ziel);
+                    r._textures.get(ziel.texture).generation = "godray:" + ++this._generation;
+                }
+                bild.value = farbe.value;
+                const vor = r.getRenderTarget(),
+                    mrt = r.getMRT(),
+                    rof = r.getRenderObjectFunction(),
+                    autoClear = r.autoClear;
+                r.setMRT(null);
+                r.setRenderObjectFunction(null);
+                r.autoClear = true;
+                r.setRenderTarget(ziel);
+                quad.render(r);
+                r.setRenderTarget(vor);
+                r.setMRT(mrt);
+                r.setRenderObjectFunction(rof);
+                r.autoClear = autoClear;
+                this.laeufe++;
+            }
+            setup(builder) {
+                farbe.build(builder);
+                return texture(ziel.texture).sample(screenUV).rgb;
+            }
+        }
+        return new GodrayStufe();
+    }
+
     // DIE ZEITLICHE HOCHSKALIERUNG (K50, TAAU): die Szene rendert in der EINEN Szenen-Skala (`_szeneSkalaWirk`, der
     // Szenen-Pass `setResolutionScale`), die zeitliche Auflösung löst auf die AUSGABE-Auflösung auf. Die Kamera springt je Frame
     // um einen Halton-Versatz in EINGANGS-Pixeln (die Folge des Knotens, `setViewOffset` mit der Eingangs-Größe), jedes
@@ -2263,22 +2361,25 @@ class AnazhRealm_bild_kosten {
             }
             const bloom = acc.mul(u.bloomStrength);
 
-            // --- GODRAYS: radialer Light-Shaft-March (GPU-Gems-3). Je Pixel N feste Schritte Richtung
-            // Sonnen-Screen-Position; nur sehr helle Himmels-Lücken tragen bei → Occlusion durch Blatt/Berg
-            // gratis, ohne Depth-Buffer. UNROLLT (der JS-Loop akkumuliert TSL-Nodes, kein Shader-Loop); der
-            // Beitrag klingt mit 0.96^i ab. Stärke 0 → der Zweig fällt, keine Abtastung (`nurBeiStaerke`).
-            const GN = 20;
-            const gDelta = u.godraySun.sub(screenUV); // Vektor Pixel → Sonne (Screen-UV)
-            let gacc = null;
-            for (let i = 0; i < GN; i++) {
-                const uvI = screenUV.add(gDelta.mul(u.godrayDensity.mul(float(i / GN))));
-                const cI = bild(uvI);
-                const mI = smoothstep(u.godrayThreshold, u.godrayThreshold.add(float(0.2)), luminance(cI));
-                const wI = Math.pow(0.96, i) * (1 / GN); // JS-Skalar-Gewicht
-                const srcI = cI.mul(mI).mul(float(wI));
-                gacc = gacc ? gacc.add(srcI) : srcI;
-            }
-            const godray = nurBeiStaerke(gacc.mul(u.godrayStrength), u.godrayStrength);
+            // DIE EINE HIMMELS-MASKE (die Szenen-Tiefe): wo sie über der Himmels-Schwelle des Spiegels steht (0,99999, `bild-sicht`),
+            // zeichnete nur der Himmel (`_himmelImUnendlichen`: Kuppel, Sterne, Sonne und Mond auf Tiefe 1). Die Godrays nehmen nur
+            // dort ihre Quelle (`_godrayStufe`), die Farbsicht wirkt nur daneben (unten) — beide lesen sie über diese EINE Regel.
+            const szenenTiefe = scenePass.getTextureNode("depth");
+            const istWelt = (tiefe, uv) => {
+                const gr = vec2(tiefe.size());
+                return tiefe.load(uv.mul(gr).floor().clamp(vec2(0), gr.sub(1))).r.lessThan(float(0.99999));
+            };
+
+            // --- GODRAYS: der radiale Light-Shaft-March (GPU-Gems-3) als EIGENER Pass in `GODRAY.skala` der Ausgabe
+            // (`_godrayStufe`): je Texel N Schritte zur Sonnen-Lage (`_schirmUV`, y nach unten wie `screenUV`), Quelle nur der HELLE
+            // HIMMEL, jeder Schritt um den Versatz des Texels verschoben; die Ausgabe liest ihn EINMAL bilinear, im Zweig der Stärke.
+            // DIE DACHFUGE (w28-lichtschacht, GTX 6f3c713d, Raum 17 Uhr): bis hier lief der Marsch zur an der Bildmitte
+            // gespiegelten Sonne, jedes helle Pixel war Quelle (das Fenster mit Haus und Weg dahinter) und die 20 Schritte lagen
+            // fest — vom Fenster stieg eine Treppe gestapelter Kopien an die Decke (Mittel der hellen Pixel 0,6741, ohne Godrays
+            // 0,0752, das Rohbild der Szene 0,0617).
+            const godrayStufe = this._godrayStufe(pp, sceneColor, szenenTiefe, u, istWelt);
+            this.state.godrayUniforms.stufe = godrayStufe;
+            const godray = nurBeiStaerke(godrayStufe.mul(u.godrayStrength), u.godrayStrength);
 
             // --- DIE FOTO-KETTE (F1): das Bild, wie die Kamera es sieht — kein Spiel-Filter dazwischen. Bis F1 trug die Kette vier:
             // Sättigung 1,18, Kontrast 1,06 um 0,5, das Entgrauen (grauer Pixel warm angehoben, ein Pflaster gegen graue Albedo) und
@@ -2328,12 +2429,7 @@ class AnazhRealm_bild_kosten {
             // (`_himmelImUnendlichen`: Kuppel, Sterne, Sonne und Mond auf Tiefe 1 — die Sonne rastert ihre 1 eine Spur darunter,
             // gate:post-kette 80 Pixel unter Deuteranopie) — dort wirkt Δ nie. Deut und Prot trafen das Blau nie (e · Himmelsblau
             // < 0), die Tritanopie (e = 0,859 (B − G)) traf genau es (OMEN Ego RGB 71,6/93,1/104,5 → 59,1/85,2/105,2).
-            const szenenTiefe = scenePass.getTextureNode("depth");
-            const tiefenGr = vec2(szenenTiefe.size());
-            const welt = szenenTiefe
-                .load(screenUV.mul(tiefenGr).floor().clamp(vec2(0), tiefenGr.sub(1)))
-                .r.lessThan(float(0.99999))
-                .select(float(1), float(0));
+            const welt = istWelt(szenenTiefe, screenUV).select(float(1), float(0));
             const farbsichtDelta = u.farbSchub.mul(TSL.dot(u.farbFehler, gesehen).max(0).mul(welt));
             u.ausgabe = { aus: graded, farbsicht: gesehen.add(farbsichtDelta).max(vec3(0, 0, 0)) };
 
@@ -2841,6 +2937,9 @@ AnazhRealm.ZEIT_GAMMA_RUHE = 1.25;
 // relativ (Δz/z: 0,4 m auf 20 m — Blatt vor Blatt zählt); das Gedächtnis folgt ihr mit `rate` je Frame; zwischen `an[0]` und
 // `an[1]` löst es die Klemme, voll nur in Ruhe (unter `ruhePx` Ausgabe-Pixeln Bewegung je Frame).
 AnazhRealm.FLACKER = Object.freeze({ kante: 0.02, rate: 0.125, an: Object.freeze([0.3, 0.6]), ruhePx: 2 });
+// DER LICHTSCHACHT (`_godrayStufe`, w28-lichtschacht): der Radial-Marsch der Godrays läuft in `skala` × Ausgabe (je Achse), mit
+// `schritte` Abtastungen von Farbe und Tiefe je Texel; die Ausgabe liest ihn bilinear.
+AnazhRealm.GODRAY = Object.freeze({ skala: 0.25, schritte: 20 });
 // Der Kamera-Sprung der zeitlichen Auflösung (K68, `_traaReprojektion`): weiter in EINEM Frame beginnt die Geschichte neu und
 // läuft als Mittel an — der Wagen bei 200 km/h und 15 fps legt 3,7 m je Frame zurück, ein Tor oder ein Umsetzen viele Meter.
 AnazhRealm.ZEIT_SPRUNG_M = 6;

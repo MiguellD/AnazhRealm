@@ -7160,9 +7160,16 @@ function __mengenPrims(kern, B, dials, matFuer, gelenkVon, vox) {
     const LH = (kern.MENSCH_GESTALT || {}).leibHaut;
     if (!LH || !(LH.dicke >= 0)) throw new Error("MENGEN-LEIB: MENSCH_GESTALT.leibHaut.dicke fehlt (fail-closed)");
     const ohneHaut = ["head", "hand1", "hand-1", "ankle1", "ankle-1"].map((nm) => B.parts[nm]).filter(Boolean);
+    // DIE HAND WÄCHST NICHT ÜBER IHRE GESTALT (w28-satz-hand): Handfläche, Finger und Daumen tragen keinen Dicken-Zuschlag des
+    // Rasters (`TIER_HAUT.minDicke`, der dünne Glieder der Tiere auf grobem Raster hält). Ihre Finger liegen unter dem Raster der
+    // Menge; der Zuschlag hob jeden auf 0,75 vox, sie flossen zu EINEM Klumpen in der Ausdehnung der offenen Hand — die Faust des
+    // Satzes neben der offenen Hand des nahen Leibs (das Dorf im Poncho: bedeckte Fläche von vorn +36…+40 %, von der Seite
+    // +24…+42 %, gate:mensch-anatomie `menge.hand`).
+    const haende = ["hand1", "hand-1"].map((nm) => B.parts[nm]).filter(Boolean);
     for (const p of prims) {
-        let frei = true;
-        for (let c = p.node; c && frei; c = c.parent) if (ohneHaut.includes(c)) frei = false;
+        let [frei, hand] = [true, false];
+        for (let c = p.node; c; c = c.parent) [frei, hand] = [frei && !ohneHaut.includes(c), hand || haende.includes(c)];
+        if (hand) [p.ext, p.auf] = [p.ext - p.auf, 0];
         if (!frei) continue;
         p.auf += LH.dicke;
         p.ext += LH.dicke;
@@ -7178,10 +7185,15 @@ function __mengenPrims(kern, B, dials, matFuer, gelenkVon, vox) {
     for (const nm of Object.keys(B.parts)) if (B.parts[nm] && !teilVon.has(B.parts[nm])) teilVon.set(B.parts[nm], nm);
     const gruppen = new Set();
     for (const z of zonen) for (const t of z.teile || []) if (B.parts[t] && !B.parts[t].isMesh) gruppen.add(t);
+    // DIE HAND GEHÖRT SICH SELBST (w28-satz-hand): der Weg eines Primitivs zu seinem Teil endet an der Hand — Handfläche, Finger
+    // und Daumen tragen den Teil „hand“, nie den Ärmel, unter dessen Gelenk die Hand im Baum hängt (wie nah: die Hand-Haut ist ein
+    // eigener Guss, der Stoff aus der Haut endet am Handgelenk). Bis hier erbte die Hand die Zone des Ellbogens, sobald ein
+    // Oberteil ihn nennt (der Pullover der Vorlage): der Ärmel goss die Hand als Stoff, die Faust des Satzes neben der offenen
+    // Hand des nahen Leibs (Ofen, Vorlage der Siedlung 0x51ed: Dicke +36 %, Breite +22…+26 %, Länge +11…+13 %).
     for (const p of prims) {
         p.teil = teilVon.has(p.node) ? teilVon.get(p.node) : null;
         // (eine Form nur des bloßen Fußes — die Fessel, koerper MENSCH_GESTALT.fuss — trägt den Teil des nächsten benannten: das Bein)
-        for (let c = p.node.userData.__nurBloss ? null : p.node.parent; p.teil === null && c; c = c.parent) if (gruppen.has(teilVon.get(c))) p.teil = teilVon.get(c);
+        for (let c = p.node.userData.__nurBloss ? null : p.node.parent; p.teil === null && c; c = c.parent) if (gruppen.has(teilVon.get(c)) || haende.includes(c)) p.teil = teilVon.get(c);
     }
     const benannt = prims.filter((p) => p.teil !== null);
     for (const p of prims) {
