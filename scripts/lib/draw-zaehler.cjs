@@ -792,10 +792,11 @@ function geburtZensus() {
     return aus;
 }
 // DAS URTEIL EINER RUNDE: `stand` = [Start, nach Runde 1, nach Runde 2] an derselben Pose, je { heapMB, geometries, zensus,
-// geburt, bildMax }. ROT: Heap Runde 2 − Runde 1 > 5 MB · die Geometrien des Renderers wachsen (beim Namen ihrer Geburts-Stelle) ·
+// geburt, bildMax, halter }. ROT: Heap Runde 2 − Runde 1 > 5 MB · die Geometrien des Renderers wachsen (beim Namen ihrer Geburts-Stelle) ·
+// ein Typed-Halter (`heapHalter`, Pfad Tiefe 3) wächst um ≥ 1 MB (wenige schwere Einträge, die Hydro-Kachel: 1 MB je Eintrag) ·
 // ein Behälter wächst von Runde 1 zu Runde 2 (beim Namen und der Zeile seiner Anlage, `anlage(pfad)`) · ein Bild der Runde über
 // 101 ms. Die Tafel trägt jeden Wachser mit Start → Runde 1 → Runde 2.
-const RUNDE = { heapMB: 5, bildMs: 101, wachsMin: 16, wachsAnteil: 0.05 };
+const RUNDE = { heapMB: 5, bildMs: 101, wachsMin: 16, wachsAnteil: 0.05, halterMB: 1 };
 function rundenUrteil({ name, stand }, anlage) {
     const [s, a, b] = stand;
     const f = [];
@@ -809,6 +810,10 @@ function rundenUrteil({ name, stand }, anlage) {
         t.anlage = anlage(t.name);
         f.push(`${name}: ${t.name} (${t.anlage}) ${t.start} → ${t.r1} → ${t.r2}`);
     }
+    const mb = (x, k) => new Map(x.halter || []).get(k) || 0;
+    for (const [k, x] of b.halter || [])
+        if (x - mb(a, k) >= RUNDE.halterMB)
+            f.push(`${name}: Halter ${k} (${anlage(k)}) ${mb(s, k).toFixed(1)} → ${mb(a, k).toFixed(1)} → ${x.toFixed(1)} MB`);
     if (b.geometries > a.geometries) {
         const g = Object.entries(b.geburt)
             .map(([k, e]) => [k, e.gezaehlt - ((a.geburt[k] && a.geburt[k].gezaehlt) || 0), e])
@@ -828,7 +833,7 @@ function rundenUrteil({ name, stand }, anlage) {
 // Gedächtnisses samt Anlage und bei der Geburts-Stelle; dieselbe Welt mit Räumung nach Abstand ist GRÜN.
 function rundenSelbsttest() {
     const fahrt = (mutant) => {
-        const r = { state: { ring: new Map(), memo: new Map() }, _tritt: new Map() };
+        const r = { state: { ring: new Map(), memo: new Map(), kacheln: new Map() }, _tritt: new Map() };
         let geom = 10;
         const geburt = {};
         const stand = [];
@@ -840,9 +845,13 @@ function rundenSelbsttest() {
                 r.state.memo.set(zelle, 1);
                 if (!mutant && Math.abs(zelle - 39) > 4) (r._tritt.delete(zelle + ":0"), r.state.memo.delete(zelle));
             }
+            // die Kachel der Fernreise (1 MB je Eintrag, zwei je Runde): geräumt bleibt die am Start
+            for (const k of [runde * 2, runde * 2 + 1]) r.state.kacheln.set(k, new Float32Array(262144));
+            if (!mutant) for (const k of r.state.kacheln.keys()) if (k > 0) r.state.kacheln.delete(k);
             if (mutant && runde) geburt["stamm/gelaende-fern.js:741"] = { gezaehlt: 8 * runde, lebend: 8 * runde, verwaist: 0 };
             geom = 10 + (mutant ? 8 * runde : 0);
-            stand.push({ heapMB: 300, geometries: geom, zensus: behaelterZensus(r), geburt: { ...geburt }, bildMax: 40 });
+            const halter = heapHalter(r, 3).map(([k, x]) => [k, x / 1048576]);
+            stand.push({ heapMB: 300, geometries: geom, zensus: behaelterZensus(r), geburt: { ...geburt }, bildMax: 40, halter });
         }
         return rundenUrteil({ name: "a", stand }, (k) => (k === "r._tritt" ? "stamm/siedlung-wege.js:1014" : "?")).f.join(" | ");
     };
@@ -850,7 +859,7 @@ function rundenSelbsttest() {
     const gruen = fahrt(false);
     if (gruen) f.push("die geräumte Runde ist rot: " + gruen);
     const rot = fahrt(true);
-    if (!/r\._tritt \(stamm\/siedlung-wege\.js:1014\) 40 → 80 → 120/.test(rot) || !/geometries 10 → 18 → 26 — Geburt: stamm\/gelaende-fern\.js:741 \+8/.test(rot))
+    if (!/r\._tritt \(stamm\/siedlung-wege\.js:1014\) 40 → 80 → 120/.test(rot) || !/geometries 10 → 18 → 26 — Geburt: stamm\/gelaende-fern\.js:741 \+8/.test(rot) || !/Halter r\.state\.kacheln \(\?\) 2\.0 → 4\.0 → 6\.0 MB/.test(rot))
         f.push("der Mutant ist nicht rot beim Namen: " + (rot || "GRÜN"));
     return f;
 }

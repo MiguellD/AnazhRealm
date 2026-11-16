@@ -54,7 +54,7 @@ class AnazhRealm_gelaende_fern {
         if (this.state.waterSourceCols) for (const key of drop) this.state.waterSourceCols.delete(key);
         if (this.state.waterCABand) for (const key of drop) this.state.waterCABand.delete(key);
         if (this.state.waterCapJ) for (const key of drop) this.state.waterCapJ.delete(key);
-        this._saatGeht(pcx, pcz, ringRadius, bleibt, span);
+        this._saatGeht(pcx, pcz, ringRadius, bleibt, span, vcx, vcz);
     }
 
     // DIE SAAT GEHT MIT IHREM CHUNK (Naht N2 des Gesetzes „der Speicher folgt dem Blick“; Preis des Orts, Schnitt 2): verlässt ein
@@ -72,7 +72,7 @@ class AnazhRealm_gelaende_fern {
     // (`_bauFrist("abraeumen")`, je Takt mindestens `SAAT_GEHT_MIN`); er bleibt gepflanzt (`voxelPopulatedChunks`), bis sein letzter
     // Wurf fiel — sein Boden sät ihn nicht doppelt. Kehrt er vorher in den Saum, geht er zu Ende und sät neu. Bis hier fiel jeder
     // Wurf im Bild des Abräumens, nach der Frist (Teleport: 87 Abbauten 64,1 ms im Bild von 124,3 ms). → die Zahl der Abbauten.
-    _saatGeht(pcx, pcz, R, bleibt, span) {
+    _saatGeht(pcx, pcz, R, bleibt, span, vcx = pcx, vcz = pcz) {
         const st = this.state;
         const P = st.voxelPopulatedChunks;
         const G = this._saatGehend || (this._saatGehend = new Map());
@@ -118,7 +118,23 @@ class AnazhRealm_gelaende_fern {
                 if (e._ausGesetz === true && e.feldWurf === true) G.get(k).weg.push(e);
                 else bleiben.push(e);
             }
-            this._saatGedaechtnisGeht(geht, span, bleiben);
+            // das behaltene Gebiet: der Saum (Ring + 2 um den Spieler, der Ring um den Vorlauf) und je Gedächtnis seine Reichweite
+            const ueber = (a0, a1, b0, b1) => a0 <= b1 && b0 <= a1;
+            const behalten = (x0, z0, x1, z1, rw) => {
+                const [c0, c1, d0, d1] = [
+                    Math.floor(x0 / span),
+                    Math.ceil(x1 / span) - 1,
+                    Math.floor(z0 / span),
+                    Math.ceil(z1 / span) - 1,
+                ];
+                const p = st.playerMesh && st.playerMesh.position;
+                return (
+                    (ueber(c0, c1, pcx - R - 2, pcx + R + 2) && ueber(d0, d1, pcz - R - 2, pcz + R + 2)) ||
+                    (ueber(c0, c1, vcx - R, vcx + R) && ueber(d0, d1, vcz - R, vcz + R)) ||
+                    (rw > 0 && !!p && ueber(x0, x1, p.x - rw, p.x + rw) && ueber(z0, z1, p.z - rw, p.z + rw))
+                );
+            };
+            this._saatGedaechtnisGeht(geht, span, bleiben, behalten);
         }
         if (!G.size) return n;
         const frist = this._bauFrist("abraeumen");
@@ -151,16 +167,24 @@ class AnazhRealm_gelaende_fern {
     }
 
     // DAS REGISTER DER ZELL-GEDÄCHTNISSE (Schnitt 2 „der Speicher folgt dem Blick“; Gegner Speicher F2 F3, Runden-Zensus 16.11.):
-    // jedes Gedächtnis mit Zell-Schlüssel meldet sich bei seiner Anlage HIER an — Name, Karte (Map oder Set), Zellmaß (m je Zelle,
-    // oder eine Funktion der Schicht vor „:“) — und bekommt seine Karte zurück; eine neue Karte desselben Namens (ein neuer Stand)
-    // ersetzt die alte. Der Schlüssel ist „[schicht:]i,j[,…]“, die Zelle (i, j) hat die Mitte ((i + ½)·m, (j + ½)·m). Angemeldet:
-    // die Marke der Streu und ihr Lookup (`scatterPromoted`, `scatterLookup`), die Antworten des Freistands (`_freistandMemo`), der
-    // Pegel des Chunks (`_pegelOrte`), das flüchtige Gedächtnis der Tritte (`_trittSchwach` — den Pfad trägt der Stand). Die Darts
-    // der Wald-Zellen (`_forestDartMemo`) melden sich NICHT an: ihr EINER Räumer ist die Schranke (`_forestDartRaum`,
-    // WALD_PLAN.zellen, die fernsten zuerst) — die Streu liest den Plan bis an ihren Horizont (`SCATTER.outerM`), weit jenseits
-    // des Saums der Saat (gate:kreatur-takt schwarm: die Krone s:tree:74,0 ohne Scheitel, als die Saat ihn mitnahm).
-    _zellGedaechtnis(name, karte, mass) {
-        (this._zellGedaechtnisse || (this._zellGedaechtnisse = new Map())).set(name, { karte, mass });
+    // jedes Gedächtnis mit Zell-Schlüssel meldet sich bei seiner Anlage HIER an — Name, Karte (Map oder Set), Zelle (das Maß m je
+    // Zelle; { m, ab } für ein Raster mit Ursprung; oder eine Funktion der Schicht vor „:“), Reichweite seiner Leser (m um den
+    // Spieler, Zahl oder Funktion) und sein Abschied (`geht(schluessel)`, die Folgen im Faden) — und bekommt seine Karte zurück; eine
+    // neue Karte desselben Namens (ein neuer Stand) ersetzt die alte. Der Schlüssel ist „[schicht:]i,j[,…]“, die Zelle (i, j) das
+    // Rechteck [i·m + ab, (i + 1)·m + ab). Angemeldet: die Marke der Streu und ihr Lookup (`scatterPromoted`, `scatterLookup`), die
+    // Antworten des Freistands (`_freistandMemo`), der Pegel des Chunks (`_pegelOrte`), das flüchtige Gedächtnis der Tritte
+    // (`_trittSchwach` — den Pfad trägt der Stand), die Platten-Treffer des Bodens (`_chunkIdbHitByKey`), die Hydro-Kacheln und
+    // ihre Bestellungen (`hydroTiles`, `_hydroBestellt`). Die Darts der Wald-Zellen (`_forestDartMemo`) melden sich NICHT an: ihr
+    // EINER Räumer ist die Schranke (`_forestDartRaum`, WALD_PLAN.zellen, die fernsten zuerst) — die Streu liest den Plan bis an
+    // ihren Horizont (`SCATTER.outerM`), weit jenseits des Saums der Saat (gate:kreatur-takt schwarm: die Krone s:tree:74,0 ohne
+    // Scheitel, als die Saat ihn mitnahm).
+    _zellGedaechtnis(name, karte, zelle, reichweite = 0, geht = null) {
+        (this._zellGedaechtnisse || (this._zellGedaechtnisse = new Map())).set(name, {
+            karte,
+            zelle,
+            reichweite,
+            geht,
+        });
         return karte;
     }
 
@@ -170,25 +194,44 @@ class AnazhRealm_gelaende_fern {
     // rechnet sein Leser aus dem Samen neu. Bis hier räumte jeder Halter in eigener Schleife mit eigener Lesart seines Schlüssels —
     // ein Gedächtnis ohne Schleife wuchs mit dem Weg (Radeon 15.11.: Tritte 4 814 → 31 919, Marken 98 → 422, Freistand
     // 2 375 → 9 298, Pegel 312 → 669; die Marke vom ersten Besuch hielt die Wiederkehr: 6 von 46 Glutbrunnen der Wiese fehlten).
-    _saatGedaechtnisGeht(geht, span, bleiben) {
+    // EINE ZELLE GRÖSSER ALS EIN CHUNK (die Hydro-Kachel, 2 km) geht erst, wenn KEIN Teil von ihr mehr im behaltenen Gebiet liegt
+    // (`behalten`: der Saum und die Reichweite ihrer Leser) und ein gehender Chunk in ihr lag; eine kleinere geht mit dem Chunk
+    // ihrer Mitte. Die Kachel jenseits bestellt der nächste Bau neu (`_ensureHydroTilesAround`).
+    _saatGedaechtnisGeht(geht, span, bleiben, behalten) {
         const st = this.state;
         const halten = new Set();
         for (const e of bleiben) {
             const bp = st.blueprints && st.blueprints[e.type];
             if (bp && bp._isGrown) halten.add(this._scatterCellKeyAt(e.position.x, e.position.z, "tree"));
         }
-        for (const { karte, mass } of (this._zellGedaechtnisse || new Map()).values()) {
+        const chunks = [...geht].map((k) => k.split(",").map(Number));
+        for (const { karte, zelle, reichweite, geht: abschied } of (this._zellGedaechtnisse || new Map()).values()) {
             if (!karte || !karte.size) continue;
+            const rw = typeof reichweite === "function" ? reichweite.call(this) : reichweite;
+            const fiel = [];
             for (const k of karte instanceof Map ? karte.keys() : karte) {
                 if (halten.has(k)) continue;
                 const a = k.indexOf(":") + 1;
                 const b = k.indexOf(",", a);
-                const c = k.indexOf(",", b + 1);
-                const m = typeof mass === "function" ? mass(k.slice(0, Math.max(0, a - 1))) : mass;
-                const x = (+k.slice(a, b) + 0.5) * m;
-                const z = (+k.slice(b + 1, c < 0 ? k.length : c) + 0.5) * m;
-                if (geht.has(Math.floor(x / span) + "," + Math.floor(z / span))) karte.delete(k);
+                const c = b < 0 ? -1 : k.indexOf(",", b + 1);
+                const i = b < 0 ? NaN : +k.slice(a, b);
+                const j = b < 0 ? NaN : +k.slice(b + 1, c < 0 ? k.length : c);
+                if (!Number.isFinite(i) || !Number.isFinite(j)) continue; // kein Zell-Schlüssel (die Heimat „heim“)
+                const Z = typeof zelle === "function" ? zelle.call(this, k.slice(0, Math.max(0, a - 1))) : zelle;
+                const m = typeof Z === "number" ? Z : Z.m;
+                const ab = typeof Z === "number" ? 0 : Z.ab;
+                const [x0, z0] = [i * m + ab, j * m + ab];
+                if (m <= span) {
+                    if (!geht.has(Math.floor((x0 + m / 2) / span) + "," + Math.floor((z0 + m / 2) / span))) continue;
+                } else if (
+                    behalten(x0, z0, x0 + m, z0 + m, rw) ||
+                    !chunks.some(([cx, cz]) => cx * span < x0 + m && x0 < (cx + 1) * span && cz * span < z0 + m && z0 < (cz + 1) * span) // prettier-ignore
+                )
+                    continue;
+                karte.delete(k);
+                fiel.push(k);
             }
+            if (abschied && fiel.length) abschied.call(this, fiel);
         }
     }
 

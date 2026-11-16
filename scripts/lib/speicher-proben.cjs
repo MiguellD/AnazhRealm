@@ -29,6 +29,7 @@ async function wegFahrt({ umstellen, rufe }) {
         }
         await rufe("/lauf", { sek: 30, ein: 30 });
         const puf = await rufe("/puffer", { top: 12 });
+        const halter = await ev("return __heapHalter(r, 3).filter(([, b]) => b >= 131072).map(([k, b]) => [k, +(b / 1048576).toFixed(2)]);"); // prettier-ignore
         const h = await rufe("/eval", { code: "return __heapHalter(r, 3).filter(([, b]) => b >= 131072).map(([k, b]) => [k, +(b / 1048576).toFixed(2)]);" }); // prettier-ignore
         weg.push({ pose, x, z, sek: Math.round((Date.now() - t) / 1000), heap_mb: puf.heapMB, vram_mb: puf.vram && puf.vram.mb, halter: h.ergebnis || [] }); // prettier-ignore
         console.log(`${pose}: nach GC Heap ${puf.heapMB} MB · VRAM ${puf.vram && puf.vram.mb} MB`);
@@ -44,14 +45,22 @@ async function wegFahrt({ umstellen, rufe }) {
 // DIE RUNDE DES SPEICHERS (`werkbank runde`; Schnitt 2, Auftrag 16.11.): dieselbe Runde zweimal, nach jeder an der START-Pose
 // zwei GC (`/puffer`): Heap, `renderer.info.memory.geometries`, der Behälter-Zensus (`__behaelterZensus`) und die Geburt der
 // Geometrien (`__geburtLinse`, eingesetzt vor der Start-Lesung). (a) Wiese · Wiese-Ost · Dorf · West · Wiese (die Posen der
-// Ratsche des Wegs); (b) Platz → jedes Haus des Start-Dorfs bis zu seiner Stufe 0 → Platz (Genesis, Ego). Der Bild-Strom zählt
-// je rAF bei laufendem Loop, nie im Umstellen und nie im GC. Ein Bildpaar Start ↔ Rückkehr an derselben Kamera. → { text, gruen }
-const BILD_STROM = `window.__rb = { max: 0, n: 0, ueber: 0 }; window.__rbZaehlt = false;
+// Ratsche des Wegs); (b) Platz → jedes Haus des Start-Dorfs bis zu seiner Stufe 0 → Platz (Genesis, Ego); (reise) Wiese → zwei
+// ferne Orte → Wiese, die Würfe der Fluss-Probe gelaende.K4#2 (±6 km, je ≥ 1,5 km auseinander, ihre Saat): Runde 1 die ersten
+// zwei, Runde 2 die nächsten zwei — was mit dem WEG wächst (die Hydro-Kachel je Ort), wächst von Runde zu Runde. Der Bild-Strom
+// zählt je rAF bei laufendem Loop, nie im Umstellen und nie im GC, daneben die längste Aufgabe der Seite (longtask). Ein Bildpaar
+// Start ↔ Rückkehr an derselben Kamera. → { text, gruen }
+const BILD_STROM = `window.__rb = { max: 0, n: 0, ueber: 0, lang: 0 }; window.__rbZaehlt = false;
+try { new PerformanceObserver((l) => { if (window.__rbZaehlt) for (const e of l.getEntries()) if (e.duration > window.__rb.lang) window.__rb.lang = e.duration; }).observe({ type: "longtask" }); } catch (_e) {}
 if (!window.__rbAn) { window.__rbAn = 1; let last = 0; const f = (t) => { if (window.__rbZaehlt && last) { const d = t - last, B = window.__rb; B.n++; if (d > B.max) B.max = d; if (d > 100) B.ueber++; } last = window.__rbZaehlt ? t : 0; requestAnimationFrame(f); }; requestAnimationFrame(f); }`;
 const EINSCHWINGEN = `__loop(true); window.__rbZaehlt = true; const t0 = performance.now(); const raf = () => new Promise((f) => requestAnimationFrame(f));
 for (let k = 0; k < 120 && performance.now() - t0 < 90000; ) { await raf(); const o = typeof __einschwingOffen === "function" ? __einschwingOffen(r) : null; k = o && Object.keys(o).length ? 0 : k + 1; }
 for (const t1 = performance.now(); performance.now() - t1 < 5000; ) await raf();
 return +((performance.now() - t0) / 1000).toFixed(1);`;
+// die Würfe der Fluss-Probe (gelaende.K4#2, `treibtSitzungProbe`): dieselbe Saat, dieselbe Spanne, derselbe Abstand
+const REISE = `const z = window.__phytoCore.mulberry32(0x51ed270b), o = [];
+for (let v = 0; v < 400 && o.length < 4; v++) { const [x, y] = [z() * 12000 - 6000, z() * 12000 - 6000]; if (!o.some(([a, b]) => Math.hypot(a - x, b - y) < 1500)) o.push([+x.toFixed(1), +y.toFixed(1)]); }
+return o;`;
 const HALT = `window.__rbZaehlt = false; __loop(false); return window.__rb;`;
 const HAEUSER = `const st = r.state, pm = st.playerMesh, raf = () => new Promise((f) => requestAnimationFrame(f));
 const stell = (x, y, z) => { pm.position.set(x, y, z); st._fieldVy = 0; if (st.playerVel && st.playerVel.setValue) st.playerVel.setValue(0, 0, 0); if (st._fixedSimPos) st._fixedSimPos.copy(pm.position); };
@@ -117,7 +126,7 @@ async function rundeFahrt({ umstellen, rufe }) {
     const datei = path.resolve(opt("--datei") || path.join("artifacts", "profiband", "runde.json"));
     const ordner = path.dirname(datei);
     fs.mkdirSync(ordner, { recursive: true });
-    const nur = opt("--nur"); // a | b
+    const nur = opt("--nur"); // a | b | reise
     const ev = async (code) => {
         const o = await rufe("/eval", { code });
         if (o && o.fehler) throw new Error("runde: " + o.fehler);
@@ -127,7 +136,7 @@ async function rundeFahrt({ umstellen, rufe }) {
     const stand = async (bildMax) => {
         const puf = await rufe("/puffer", { top: 12 });
         const z = await ev("return { geometries: r.state.renderer.info.memory.geometries, zensus: __behaelterZensus(r), geburt: __geburtZensus(), ort: r.state.playerMesh.position.toArray().map((x) => +x.toFixed(1)) };"); // prettier-ignore
-        return Object.assign({ heapMB: puf.heapMB, vramMB: puf.vram && puf.vram.mb, bildMax: bildMax ? bildMax.max : 0, bilder: bildMax ? bildMax.n : 0, ueber100: bildMax ? bildMax.ueber : 0 }, z); // prettier-ignore
+        return Object.assign({ heapMB: puf.heapMB, vramMB: puf.vram && puf.vram.mb, bildMax: bildMax ? bildMax.max : 0, bilder: bildMax ? bildMax.n : 0, ueber100: bildMax ? bildMax.ueber : 0, langeAufgabe: bildMax ? Math.round(bildMax.lang) : 0, halter }, z); // prettier-ignore
     };
     const kamera = () =>
         ev("const p = r.state.playerMesh.position, y = (x, z) => r._voxelSurfaceY(x, z); return [p.x, y(p.x, p.z) + 1.7, p.z, p.x + 24, y(p.x + 24, p.z + 6) + 1.2, p.z + 6];"); // prettier-ignore
@@ -156,10 +165,20 @@ async function rundeFahrt({ umstellen, rufe }) {
             name: "b",
             start: () => geh({ ort: "genesis", sicht: "ego" }),
             runde: async () => {
-                await ev("window.__rb = { max: 0, n: 0, ueber: 0 }; return 1;");
+                await ev("window.__rb = { max: 0, n: 0, ueber: 0, lang: 0 }; return 1;");
                 const h = await ev(HAEUSER);
                 await ev(EINSCHWINGEN);
                 return h;
+            },
+        },
+        {
+            name: "reise",
+            start: () => geh({ x: posen[0].x, z: posen[0].z }),
+            runde: async (i) => {
+                const orte = (await ev(REISE)).slice(2 * i, 2 * i + 2);
+                for (const [x, z] of orte) await geh({ x, z });
+                await geh({ x: posen[0].x, z: posen[0].z });
+                return { orte };
             },
         },
     ].filter((x) => !nur || x.name === nur);
@@ -177,10 +196,10 @@ async function rundeFahrt({ umstellen, rufe }) {
         const b0 = await bild(k, R.name + "-start");
         const was = [];
         for (let i = 0; i < 2; i++) {
-            await ev("window.__rb = { max: 0, n: 0, ueber: 0 }; return 1;");
-            was.push(await R.runde());
+            await ev("window.__rb = { max: 0, n: 0, ueber: 0, lang: 0 }; return 1;");
+            was.push(await R.runde(i));
             s.push(await stand(await ev(HALT)));
-            console.log(`runde ${R.name}${i + 1}: Heap ${s[i + 1].heapMB} MB · geometries ${s[i + 1].geometries} · größtes Bild ${s[i + 1].bildMax.toFixed(1)} ms`); // prettier-ignore
+            console.log(`runde ${R.name}${i + 1}: Heap ${s[i + 1].heapMB} MB · geometries ${s[i + 1].geometries} · größtes Bild ${s[i + 1].bildMax.toFixed(1)} ms · längste Aufgabe ${s[i + 1].langeAufgabe} ms`); // prettier-ignore
         }
         const b2 = await bild(k, R.name + "-rueckkehr");
         const paar = bildPaar(b0, b2);

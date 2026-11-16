@@ -280,8 +280,7 @@ class AnazhRealm_gelaende_boden {
     // (Kalt-Boot 168 ms headless). → Promise<Hydrosphäre | null> (null: eine neuere Welt kam ihr zuvor).
     _worldgenComputeAndBuildHydrosphere() {
         this._hydroWelt = (this._hydroWelt | 0) + 1;
-        this._hydroBestellt = new Map();
-        this.state.hydroTiles = new Map();
+        this._hydroKacheln();
         this.state.hydrosphere = null;
         this.state.voxelWorkerWorldgenSynced = false;
         this._computeHydroBand();
@@ -311,7 +310,7 @@ class AnazhRealm_gelaende_boden {
     // (`_bruchMelden`); kommt der Faden über den Blob-Weg, wartet die Bestellung auf ihn.
     // → das Versprechen der Region (eine schon bestellte gibt ihres zurück; null, wenn eine neuere Welt ihr zuvorkam).
     _hydroBestellen(key, origin) {
-        const B = this._hydroBestellt || (this._hydroBestellt = new Map());
+        const B = this._hydroBestellt || this._hydroKacheln().bestellt;
         const da = B.get(key);
         if (da) return da.zusage;
         const welt = this._hydroWelt | 0;
@@ -605,7 +604,7 @@ class AnazhRealm_gelaende_boden {
         const r1x = Math.floor((x + r + half) / size);
         const r0z = Math.floor((z - r + half) / size);
         const r1z = Math.floor((z + r + half) / size);
-        if (!this.state.hydroTiles) this.state.hydroTiles = new Map();
+        if (!this.state.hydroTiles) this._hydroKacheln();
         let fehlt = 0;
         for (let rx = r0x; rx <= r1x; rx++) {
             for (let rz = r0z; rz <= r1z; rz++) {
@@ -617,6 +616,47 @@ class AnazhRealm_gelaende_boden {
             }
         }
         return fehlt;
+    }
+
+    // DIE KACHELN FOLGEN DEM BLICK (w28-speicher-ring; Koordinator 16.11.: `state.hydroTiles` 4,4 → 48,5 MB in der Dreier-Fahrt,
+    // die Fluss-Orte der K4-Probe ±6 km): die Kacheln und ihre Bestellungen sind Zell-Gedächtnisse des EINEN Registers
+    // (`_zellGedaechtnis`, Zelle = die Kachel, `HYDROSPHERE.regionSize`, um die Hälfte versetzt wie `_ensureHydroTilesAround`) —
+    // BEIDE fallen, das erfüllte Versprechen der Bestellung hielt die Kachel sonst ein zweites Mal. Eine Kachel geht erst, wenn
+    // kein Teil von ihr mehr in der Reichweite ihrer Leser liegt (`_hydroReichweite`); ihr Abschied (`_hydroGeht`) nimmt sie
+    // aus jedem Faden und rechnet das Band neu. Der nächste Bau bestellt sie neu. Geleert wird beides mit jeder Welt.
+    _hydroKacheln() {
+        const size = AnazhRealm.HYDROSPHERE.regionSize;
+        const Z = { m: size, ab: -size / 2 };
+        this._hydroBestellt = this._zellGedaechtnis("_hydroBestellt", new Map(), Z, this._hydroReichweite);
+        this.state.hydroTiles = this._zellGedaechtnis(
+            "hydroTiles",
+            new Map(),
+            Z,
+            this._hydroReichweite,
+            this._hydroGeht
+        );
+        return { bestellt: this._hydroBestellt, kacheln: this.state.hydroTiles };
+    }
+    // DIE REICHWEITE DER KACHEL-LESER um den Spieler (m): der Takt der Wache (Ring + ½ Chunk + 300 m), das Fern-Wasser
+    // (`_ensureFarWaterSheet`: Ring + 2,5 Chunks, mindestens `FAR_WATER.maxRadius`), die Streu bis an ihren Horizont samt
+    // Region und Polster (`_scatterRegion`), der Wald-Plan an ihrem Rand (`_forestCellDarts`: Urteil + 1 Zelle). Der Fern-Ring
+    // bestellt keine Kachel (jenseits trägt er den Meeresspiegel) — er liest, was diese Reichweite hält.
+    _hydroReichweite() {
+        const span = this._voxelChunkConfig(0).span;
+        const R = this._voxelChunkConfig().ringRadius;
+        const S = AnazhRealm.SCATTER;
+        return Math.max(
+            (R + 0.5) * span + 300,
+            (R + 2.5) * span,
+            AnazhRealm.FAR_WATER.maxRadius,
+            S.outerM + S.regionM / 2 + 16 + (AnazhRealm.WALD_PLAN.urteil + 1) * AnazhRealm.FOREST.cell
+        );
+    }
+    // Der Abschied der gefallenen Kacheln: jeder Faden lässt sie (`hydro-geht`, der EINE Sender in der Reihe des Zustands), das
+    // globale Band folgt den Kacheln, die bleiben.
+    _hydroGeht(schluessel) {
+        this._voxelZustandPost({ type: "hydro-geht", keys: schluessel });
+        this._computeHydroBand();
     }
 
     // DIE WAHRHEIT VOR DEM BAU (Karte hydro-faden): die Heimat steht und jede Kachel um den Chunk (cx, cz) samt 64 m Polster

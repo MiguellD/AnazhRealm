@@ -73,7 +73,7 @@
 //   node scripts/werkbank.cjs band [--ort <id>] [--datei f.json] [--proben n] [--cap sek]
 //                                                           DIE BAND-LINSE gegen Haushalt und Ratsche des Orts (spec/profiband/, scripts/lib/band-urteil.cjs)
 //   node scripts/werkbank.cjs weg [--datei f.json] [--ratsche r.json]   DER WEG DES SPEICHERS: Heap nach GC je Pose der Ratsche, Urteil H8 (scripts/lib/speicher-proben.cjs)
-//   node scripts/werkbank.cjs runde [--datei f.json] [--nur a|b]   DIE RUNDE DES SPEICHERS: dieselbe Runde zweimal, Zensus an der Start-Pose
+//   node scripts/werkbank.cjs runde [--datei f.json] [--nur a|b|reise]   DIE RUNDE DES SPEICHERS: dieselbe Runde zweimal (reise: je Runde zwei ferne Orte), Zensus an der Start-Pose
 //   node scripts/werkbank.cjs ratsche [--ort <id>] <band-*.json | messfolge-*.json …> [--nur vram] [--neu]
 //                                                           DIE RATSCHE aus ≥ 4 Läufen eines Orts × Geräts × Sicht; `--neu` der Re-Mint (nur Node)
 //   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE nach `start --gpu-fehler` (scripts/lib/gpu-fehler.cjs)

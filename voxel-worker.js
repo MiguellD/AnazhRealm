@@ -143,6 +143,11 @@ function nachricht(e) {
                     a.transfer
                 );
             }
+        } else if (msg.type === "hydro-geht") {
+            // DIE KACHELN FOLGEN DEM BLICK (w28-speicher-ring): was der Haupt-Faden aus seinem Register der Zell-Gedächtnisse
+            // fallen ließ (`_hydroGeht`), lässt jeder Faden an derselben Stelle seiner Reihe — das Band folgt den bleibenden
+            for (const key of msg.keys || []) if (state.hydroTiles) state.hydroTiles.delete(key);
+            hydroBandNeu();
         } else if (msg.type === "hydro-an") {
             // DIE REGIONEN AN EINEN NEBEN-FADEN: ein Faden, der nach einer Bestellung geboren wurde, rechnete sie nicht — dieser
             // Faden reicht ihm jede, die er trägt (alle Bestellungen vor dem Port stehen hier schon), je eine Kopie per Transfer.
@@ -1719,6 +1724,10 @@ function hydroRegion(key, origin) {
 function hydroSetzen(key, h) {
     if (key === "heim") state.hydrosphere = h;
     else (state.hydroTiles || (state.hydroTiles = new Map())).set(key, h);
+    hydroBandNeu();
+}
+// das globale Band über alle Regionen, die der Faden trägt (gelaende-core `hydroBand`, derselbe Rechner wie `_computeHydroBand`)
+function hydroBandNeu() {
     const regionen = [state.hydrosphere].concat(state.hydroTiles ? [...state.hydroTiles.values()] : []);
     state.hydroBand = G.hydroBand(typeof state.waterLevel === "number" ? state.waterLevel : 0, regionen);
 }
