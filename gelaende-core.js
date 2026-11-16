@@ -1851,13 +1851,24 @@
         };
     }
 
-    function wildnisY(L, x, z, mitDetail, aus) {
+    // DIE STUFE DES FRAGERS (w28-feld-fuss): ein Frager nennt die Weite seiner Masche `fuss` (m, die Wurzel ihrer Fläche) und
+    // liest die Ebenen des Netzes, die sie tragen kann — eine Ebene der Kante S_k formt Rinnen im Abstand S_k, und eine Masche
+    // trägt sie bis fuss ≤ NETZ_TRAGT · S_k; darüber liest sie Alias, kein Tal (das Feld der Ferne, Maschen 418–934 m, las die
+    // 100-m-Ebene: 463 636 Knoten und 3,1 s je Bild für Rinnen, die keine seiner Maschen zeigt). Die Ebene 0 (die Höhe
+    // ENTSTEHT dort) trägt jeder. Ohne `fuss` (jeder Frager am Ort: Dichte, Ring, Gitter, Linsen) gilt das ganze Netz, bit-gleich.
+    const NETZ_TRAGT = 2.5;
+    function netzStufe(N, fuss) {
+        let k = N.ebenen - 1;
+        if (fuss > 0) while (k > 0 && N.S[k] * NETZ_TRAGT < fuss) k--;
+        return k;
+    }
+    function wildnisY(L, x, z, mitDetail, aus, fuss) {
         const N = netzFuer(L);
         const n = L.noise;
         const base = N.base;
         const gf = grossform(N, x, z);
         const mess = { steil: 0, nah: 1, hang: 0, schutt: 0 };
-        let h = flaeche(N, N.ebenen - 1, x, z, gf, mess);
+        let h = flaeche(N, netzStufe(N, fuss), x, z, gf, mess);
         if (aus) {
             aus.hang = mess.hang;
             aus.schutt = mess.schutt;
@@ -2805,8 +2816,8 @@
     // jede Spalte der Dichte drei Gänge über ihre Liste (am Messort stadt 123 Splats: das Feld des stehenden Spielers 0,35 →
     // 0,73 ms je Takt).
     const ERDBAU_GANG = { flaeche: false };
-    function hoehe(L, x, z, mitDetail = true, aus) {
-        let h = hoeheGrund(L, x, z, mitDetail, aus);
+    function hoehe(L, x, z, mitDetail = true, aus, fuss) {
+        let h = hoeheGrund(L, x, z, mitDetail, aus, fuss);
         if (aus) aus.wand = 0;
         // der Erdbau der Orte (K10) liegt als letzter Term auf allem: der Ort vor dem Hang
         const E = L.erdbau;
@@ -2822,11 +2833,11 @@
     }
     // DIE HÖHE UNTER DEM ERDBAU (K66): die Terme des Erbguts allein — `hoehe` legt den Erdbau als letzten Term darauf. Leser:
     // `hoehe`, die Wand des Erdbaus (`erdbauWand`: was der Erdbau bewegt).
-    function hoeheGrund(L, x, z, mitDetail, aus) {
+    function hoeheGrund(L, x, z, mitDetail, aus, fuss) {
         const T = L.erbgut.terme;
         const t0 = T[0];
         if (aus) aus.hang = aus.schutt = 0;
-        let h = t0.art === "wildnis" ? wildnisY(L, x, z, mitDetail, aus) : termY(t0, 0, x, z, L);
+        let h = t0.art === "wildnis" ? wildnisY(L, x, z, mitDetail, aus, fuss) : termY(t0, 0, x, z, L);
         for (let i = 1; i < T.length; i++) {
             const h2 = termY(T[i], h, x, z, L);
             if (aus && h2 !== h) aus.hang = aus.schutt = 0;

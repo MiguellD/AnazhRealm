@@ -4758,6 +4758,8 @@ function fernAuftrag(msg) {
     if (msg.art === "feld") {
         const daten = new Float32Array(n * 4);
         let hMax = -Infinity;
+        if (!(msg.naht > 0) || !(msg.hr > 0) || !(msg.azN > 0))
+            throw new Error("Fern-Feld: die Masche des Felds fehlt (naht · hr · azN)");
         const fuss = { ax: msg.ax, az: msg.az, ht: 0, hr: msg.hr };
         const t = new Float32Array(8);
         const tj = new Float32Array(8);
@@ -4777,8 +4779,15 @@ function fernAuftrag(msg) {
         for (let k = 0; k < n; k++) {
             const px = p[k * 2];
             const pz = p[k * 2 + 1];
+            // DIE MASCHE DES TEXELS (w28-feld-fuss): das Feld nennt dem Gesetz die Weite seiner Masche (die Wurzel ihrer
+            // Fläche: Azimut-Breite am Radius × radiale Zeile, 418 m an 8 km … 934 m an 40 km) — der Kern liest die Ebenen
+            // des Netzes, die sie trägt (gelaende-core `netzStufe`). Die Reihe AN DER NAHT (ihre Mitte näher als eine
+            // Zeile am Rand des Rings, `msg.naht`) fragt wie der Ring, ohne Fuß: beide Seiten tragen dort dieselbe Zahl.
+            const dist = Math.hypot(px - msg.ax, pz - msg.az);
+            fuss.ht = (Math.PI * dist) / msg.azN;
+            const masche = dist - msg.naht < 2 * msg.hr ? 0 : Math.sqrt(4 * fuss.ht * msg.hr);
             // die Höhe und der Schutt in f32, wie das Feld sie trägt
-            const law = Math.fround(G.hoehe(state, px, pz, false, aus));
+            const law = Math.fround(G.hoehe(state, px, pz, false, aus, masche));
             const s = Math.fround(fernSchuttVon(aus));
             const wet = fernNass(px, pz, law, wl, nass);
             const y = wet ? nass.spiegel : nass.y;
@@ -4786,7 +4795,6 @@ function fernAuftrag(msg) {
             let g = R[1];
             let b = R[2];
             if (!wet) {
-                fuss.ht = (Math.PI * Math.hypot(px - msg.ax, pz - msg.az)) / msg.azN;
                 fernFarbeTeile(px, y, pz, t, fuss, undefined, s, tj);
                 r = kanal(0, sai.r);
                 g = kanal(1, sai.g);

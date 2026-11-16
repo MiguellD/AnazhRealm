@@ -2300,9 +2300,11 @@ class AnazhRealm_bild_sicht {
         // die Präsenz des Laubs (w21-laub-jahr-fern): das Dach des Felds fällt wie Ring und Boden (`kroneImJahr` im Faden)
         const praesenz = this._fernPraesenz();
         const schnee = this._schneeGilt(); // der Faden färbt mit dem Versatz der Schneegrenze, den er trägt
-        // die Masche des Texels: Azimut-Breite am Radius (im Faden je Texel), die radiale Zeile des Felds
+        // die Masche des Texels: Azimut-Breite am Radius (im Faden je Texel), die radiale Zeile des Felds, die Naht zum Ring
         const hr = (P.rMaxM - rMin) / (2 * P.rad);
-        this._fernAuftrag("feld", { punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, saison, praesenz }, [punkte.buffer])
+        this._fernAuftrag("feld", { punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, naht: rMin, saison, praesenz }, [
+            punkte.buffer,
+        ])
             .then((antwort) => {
                 if (this.state.feldPass !== fp || fp.gen !== gen) return;
                 fp.flug = false;
