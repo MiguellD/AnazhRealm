@@ -644,13 +644,19 @@ class AnazhRealm_gelaende_boden {
     _hydroReichweite() {
         const span = this._voxelChunkConfig(0).span;
         const R = this._voxelChunkConfig().ringRadius;
-        const S = AnazhRealm.SCATTER;
         return Math.max(
             (R + 0.5) * span + 300,
             (R + 2.5) * span,
             AnazhRealm.FAR_WATER.maxRadius,
-            S.outerM + S.regionM / 2 + 16 + (AnazhRealm.WALD_PLAN.urteil + 1) * AnazhRealm.FOREST.cell
+            this._streuReichweite()
         );
+    }
+    // DER HORIZONT DER STREU um den Spieler (m): ihre Regionen bis `SCATTER.outerM` samt halber Region und Polster
+    // (`_scatterRegion`), der Wald-Plan an ihrem Rand (`_forestCellDarts`: Urteil + 1 Zelle) — so weit lesen Streu-Marke,
+    // Lookup und Freistand ihre Zellen.
+    _streuReichweite() {
+        const S = AnazhRealm.SCATTER;
+        return S.outerM + S.regionM / 2 + 16 + (AnazhRealm.WALD_PLAN.urteil + 1) * AnazhRealm.FOREST.cell;
     }
     // Der Abschied der gefallenen Kacheln: jeder Faden lässt sie (`hydro-geht`, der EINE Sender in der Reihe des Zustands), das
     // globale Band folgt den Kacheln, die bleiben.

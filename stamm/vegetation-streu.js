@@ -111,8 +111,11 @@ class AnazhRealm_vegetation_streu {
     // Doppel-Tree). Snapshot-getragen — die Promotion überlebt den Reload.
     _ensureScatterPromotedSet() {
         if (!this.state.scatterPromoted || !(this.state.scatterPromoted instanceof Set)) {
-            this.state.scatterPromoted = this._zellGedaechtnis("scatterPromoted", new Set(), (s) =>
-                this._streuZelleM(s)
+            this.state.scatterPromoted = this._zellGedaechtnis(
+                "scatterPromoted",
+                new Set(),
+                (s) => this._streuZelleM(s),
+                this._streuReichweite
             );
         }
         return this.state.scatterPromoted;
@@ -158,7 +161,12 @@ class AnazhRealm_vegetation_streu {
     // kann die Promotion die Cell nicht zur Form-Identität auflösen.
     _ensureScatterLookup() {
         if (!this.state.scatterLookup || !(this.state.scatterLookup instanceof Map)) {
-            this.state.scatterLookup = this._zellGedaechtnis("scatterLookup", new Map(), (s) => this._streuZelleM(s));
+            this.state.scatterLookup = this._zellGedaechtnis(
+                "scatterLookup",
+                new Map(),
+                (s) => this._streuZelleM(s),
+                this._streuReichweite
+            );
         }
         return this.state.scatterLookup;
     }

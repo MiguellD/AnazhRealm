@@ -194,10 +194,11 @@ class AnazhRealm_gelaende_fern {
     // rechnet sein Leser aus dem Samen neu. Bis hier räumte jeder Halter in eigener Schleife mit eigener Lesart seines Schlüssels —
     // ein Gedächtnis ohne Schleife wuchs mit dem Weg (Radeon 15.11.: Tritte 4 814 → 31 919, Marken 98 → 422, Freistand
     // 2 375 → 9 298, Pegel 312 → 669; die Marke vom ersten Besuch hielt die Wiederkehr: 6 von 46 Glutbrunnen der Wiese fehlten).
-    // EINE ZELLE GRÖSSER ALS EIN CHUNK (die Hydro-Kachel, 2 km) geht erst, wenn KEIN Teil von ihr mehr im behaltenen Gebiet liegt
-    // (`behalten`: der Saum und die Reichweite ihrer Leser) — auch eine, die ein ferner Leser bestellte, ohne dass dort je ein
-    // Chunk stand (die Fluss-Probe gelaende.K4#2 wirft bis zu 400 Orte ±6 km: 38 → 48 Kacheln blieben, b0a670d7); eine kleinere geht
-    // mit dem Chunk ihrer Mitte. Die Kachel jenseits bestellt der nächste Bau neu (`_ensureHydroTilesAround`).
+    // JEDE ZELLE, von der kein Teil mehr im behaltenen Gebiet liegt (`behalten`: der Saum und die Reichweite ihrer Leser), geht
+    // ebenso — auch eine, die ein ferner Leser legte, ohne dass dort je ein Chunk stand (die Fluss-Probe gelaende.K4#2 wirft bis
+    // zu 400 Orte ±6 km: 38 → 48 Hydro-Kacheln blieben am b0a670d7, der Pegel 124 → 156 Chunks in der Runde reise am 7c4a3f82).
+    // Eine Zelle größer als ein Chunk (die Hydro-Kachel, 2 km) geht NUR so; eine kleinere auch mit dem Chunk ihrer Mitte. Die
+    // Kachel jenseits bestellt der nächste Bau neu (`_ensureHydroTilesAround`).
     _saatGedaechtnisGeht(geht, span, bleiben, behalten) {
         const st = this.state;
         const halten = new Set();
@@ -221,9 +222,8 @@ class AnazhRealm_gelaende_fern {
                 const m = typeof Z === "number" ? Z : Z.m;
                 const ab = typeof Z === "number" ? 0 : Z.ab;
                 const [x0, z0] = [i * m + ab, j * m + ab];
-                if (m <= span) {
-                    if (!geht.has(Math.floor((x0 + m / 2) / span) + "," + Math.floor((z0 + m / 2) / span))) continue;
-                } else if (behalten(x0, z0, x0 + m, z0 + m, rw)) continue;
+                const mitte = Math.floor((x0 + m / 2) / span) + "," + Math.floor((z0 + m / 2) / span);
+                if (!(m <= span && geht.has(mitte)) && behalten(x0, z0, x0 + m, z0 + m, rw)) continue;
                 karte.delete(k);
                 fiel.push(k);
             }

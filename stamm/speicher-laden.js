@@ -386,13 +386,19 @@ class AnazhRealm_speicher_laden {
         this.state.scatterPromoted = this._zellGedaechtnis(
             "scatterPromoted",
             new Set(Array.isArray(promoviert) ? promoviert : []),
-            (s) => this._streuZelleM(s)
+            (s) => this._streuZelleM(s),
+            this._streuReichweite
         );
         // Scatter-Counters + Lookup-Buffer beim Welt-Wechsel resetten; sie bauen sich beim Stream neu.
         // Nicht persistiert (Session-Tatsache, kein Welt-Erbgut).
         if (!ort) {
             this.state.scatterCounters = { tree: 0, under: 0, stone: 0 };
-            this.state.scatterLookup = this._zellGedaechtnis("scatterLookup", new Map(), (s) => this._streuZelleM(s));
+            this.state.scatterLookup = this._zellGedaechtnis(
+                "scatterLookup",
+                new Map(),
+                (s) => this._streuZelleM(s),
+                this._streuReichweite
+            );
         }
         // Migration: das Legacy-"private" wird zur kanonischen 4-Stufen-Form "privat"; unbekannte Werte
         // (Müll/Zukunft) fallen still auf den sicheren Default "privat".
