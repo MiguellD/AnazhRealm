@@ -3471,7 +3471,11 @@ const stationen = [
     // mehr). Je Stoff des Richters die Albedo der Welt-Seite im Bild (W, lineare Rec.-709-Luma, an der 18-%-Karte geeicht) gegen EINEN
     // Tabellenwert, |W − Tafel| ≤ 0,05 — nie das breite Band der Klasse (BAENDER), nie Welt/Labor. Die Zeilen der Tafel: Gras → `gras`
     // (die Albedo-Tafel trägt am Kopf KEINE: `laub` ist das Eichen-Laub, ein Ersatz wäre ein Zwilling — ROT beim Namen, bis die Tafel
-    // eine Wiesen-Zeile misst), Erde → `boden`, Fels → `fels`, Holz → `rinde` (das Holz der Welt im Bild: Stamm und Äste; das Holz des
+    // eine Wiesen-Zeile misst), Erde → `erde` (16.11., Koordinator: NACKTE Erde — die Fläche der Palette-Zeile `dirt`, foundry-core.js
+    // PORTAL_GROUND, an einem Weg oder Acker, gefunden über das Register des Spiels; bis hier las sie `boden`, den Wald-Boden der festen
+    // Stelle −48,23/−19,44 = LAUBSTREU `lit` (Gesetz Y 0,1128), die gegen nackte Erde 0,17 selbst am Gesetz ROT stünde; das Soll fällt nie
+    // auf die Streu. Die Tafel am Kopf trägt `erde` noch nicht — ROT „keine Zeile der Tafel“ beim Namen; Laubstreu ist kein Stoff der
+    // Sprosse und bekommt keine Zeile), Fels → `fels`, Holz → `rinde` (das Holz der Welt im Bild: Stamm und Äste; das Holz des
     // Hauses steht in `haus` mit Putz und Dach gemischt), Haut → `haut`. Die Werte stehen IM Urteil (der Abdruck liest seinen Text): Gras
     // 0,25 und nackte Erde 0,17 (die Albedo-Tafel typischer Oberflächen, Wikipedia „Albedo“: grünes Gras 0,25, nackter Boden 0,17 —
     // dieselbe Tafel, die BAENDER für die Nadel nennt), Fels 0,20 und Holz 0,095 als MITTE des Bands der Karte (Fels 0,10–0,30 PSU EARTH 103, Rinde 0,07–0,12 aaaa — ein Einzelwert
@@ -3496,7 +3500,7 @@ const stationen = [
             const echt = !!j.adapter && !soft.test(j.adapter) && !!j.welt && j.welt.echt === true;
             const TAFEL = [
                 ["Gras", "gras", 0.25],
-                ["Erde", "boden", 0.17],
+                ["Erde", "erde", 0.17],
                 ["Fels", "fels", 0.2],
                 ["Holz", "rinde", 0.095],
                 ["Haut", "haut", 0.0717],
@@ -3515,6 +3519,7 @@ const stationen = [
             const mit = (o = {}) => {
                 const k = JSON.parse(JSON.stringify(K1_ROH.neu));
                 k.zeilen.push({ id: "gras", L: 0.24, W: 0.24, v: 1, band: [0.15, 0.26], bandOk: true, inBand: true });
+                k.zeilen.push({ id: "erde", L: 0.17, W: 0.17, v: 1 });
                 for (const [id, w] of Object.entries(o)) {
                     const z = k.zeilen.find((x) => x.id === id);
                     if (w == null) k.zeilen = k.zeilen.filter((x) => x !== z);
@@ -3523,14 +3528,15 @@ const stationen = [
                 return k;
             };
             return [
-                { name: "fünf Stoffe am Tafelwert (gras 0,24 · boden 0,15 · fels 0,24 · rinde 0,0807 · haut 0,0604)", j: mit({ boden: 0.15, fels: 0.24 }), gruen: true },
-                { name: "die Messung am Zweig w24-rueckfall-fell 8c5d944c: keine Gras-Zeile, Waldboden 0,0876, Fels 0,2547", j: K1_ROH.neu, gruen: false },
-                { name: "MUTANTE Gras fehlt, der Rest am Tafelwert", j: mit({ gras: null, boden: 0.15, fels: 0.24 }), gruen: false },
-                { name: "Erde 0,0876 (Waldboden, Δ −0,082)", j: mit({ fels: 0.24 }), gruen: false },
-                { name: "Fels 0,2547 (Δ +0,055)", j: mit({ boden: 0.15 }), gruen: false },
-                { name: "Holz 0,16 (Δ +0,065)", j: mit({ boden: 0.15, fels: 0.24, rinde: 0.16 }), gruen: false },
-                { name: "Haut 0,13 (Δ +0,058)", j: mit({ boden: 0.15, fels: 0.24, haut: 0.13 }), gruen: false },
-                { name: "swiftshader", j: { ...mit({ boden: 0.15, fels: 0.24 }), adapter: "[linse-gpu] google/swiftshader" }, gruen: false },
+                { name: "fünf Stoffe am Tafelwert (gras 0,24 · erde 0,15 · fels 0,24 · rinde 0,0807 · haut 0,0604)", j: mit({ erde: 0.15, fels: 0.24 }), gruen: true },
+                { name: "die Messung am Zweig w24-rueckfall-fell 8c5d944c: keine Gras-Zeile, keine Erde-Zeile, Fels 0,2547", j: K1_ROH.neu, gruen: false },
+                { name: "MUTANTE Gras fehlt, der Rest am Tafelwert", j: mit({ gras: null, erde: 0.15, fels: 0.24 }), gruen: false },
+                { name: "MUTANTE die Laubstreu als Erde (vor 16.11.): keine Zeile erde, boden am Gesetz lit 0,1128", j: mit({ erde: null, boden: 0.1128, fels: 0.24 }), gruen: false },
+                { name: "Erde 0,0741 (die Pfad-Erde am Gesetz dirt, Δ −0,096)", j: mit({ erde: 0.0741, fels: 0.24 }), gruen: false },
+                { name: "Fels 0,2547 (Δ +0,055)", j: mit({ erde: 0.15 }), gruen: false },
+                { name: "Holz 0,16 (Δ +0,065)", j: mit({ erde: 0.15, fels: 0.24, rinde: 0.16 }), gruen: false },
+                { name: "Haut 0,13 (Δ +0,058)", j: mit({ erde: 0.15, fels: 0.24, haut: 0.13 }), gruen: false },
+                { name: "swiftshader", j: { ...mit({ erde: 0.15, fels: 0.24 }), adapter: "[linse-gpu] google/swiftshader" }, gruen: false },
                 { name: "die Folge brach", j: { fehler: "ALBEDO-TAFEL ROT: keine Seite" }, gruen: false },
             ];
         })(),
