@@ -56,7 +56,7 @@
   },
   "abstand": 10.57,
   "gestalt": [
-   "baum_eiche 1064"
+   "baum_eiche 1065"
   ],
   "gezeichnet": true
  },
@@ -78,7 +78,7 @@
   "h": 1080,
   "mittel": 27.5,
   "sigma": 24.6,
-  "schwarz": 0.0138,
+  "schwarz": 0.0137,
   "weiss": 0
  },
  "ok": true,
@@ -98,8 +98,8 @@
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 2203,
-   "wechsel": 1162063
+   "ms": 2144,
+   "wechsel": 1161887
   },
   "rinde": null,
   "toene": [
