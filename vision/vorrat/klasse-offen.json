@@ -11,8 +11,8 @@
  "stand": {
   "karte": "vision/meisterkarte-2.json",
   "ersteSprossen": 253,
-  "gesetzt": 195,
-  "offen": 24
+  "gesetzt": 197,
+  "offen": 22
  },
  "offen": [
   {
@@ -46,14 +46,6 @@
    "preis": "P · Schlüssel ≤ 10 kB",
    "richter": "Küstenlinie gegen das Höhenmodell: mittlerer Lagefehler ≤ 5 km; Ortskundige wählen die Region aus 10 Kandidaten an 3 Ego-Bildern ≥ 70 %",
    "grund": "Region 10⁴ km² (wie platten) UND der Erd-Schlüssel ≤ 10 kB: die Spalte Bytes der Zeile Ort verlangt 0 über das Skript, erst Planet und Welten zählt den Erd-Schlüssel mit"
-  },
-  {
-   "leiter": "planet.kosmos.welten",
-   "sprosse": 1,
-   "umfang": "Heimat + 1 Fremdwelt",
-   "preis": "P an BEIDEN Welten",
-   "richter": "Licht-Bilanz an der Kugel 5–12,5 an beiden Welten; Fremdwelt-Mittag: Zenit nicht blau",
-   "grund": "„Heimat + 1 Fremdwelt“, Preis an BEIDEN Welten: die Zeile Planet und Welten („jede Welt“) oder Ort je Welt — zwei Lesarten, die Schwellen (Ankunft ≤ 5 s je Welt) unterscheiden sich"
   },
   {
    "leiter": "planet.kosmos.eigengesetz",
@@ -184,14 +176,6 @@
    "grund": "„1 Gebirge“, Luv/Lee an der Kammlinie: ein Gebirgszug misst über die Sicht von 1 km hinaus, Größe ungenannt"
   },
   {
-   "leiter": "erleben.kopplung.bild",
-   "sprosse": 1,
-   "umfang": "2 Phänomene",
-   "preis": "P",
-   "richter": "Gang 2 km auf einen Hang: Leuchtdichte des Zielfensters springt an keinem Stufenwechsel > 5 %",
-   "grund": "Gang 2 km auf einen Hang, Leuchtdichte nah ↔ fern: Spanne 1–20 km, Ort oder Stadt"
-  },
-  {
    "leiter": "same.kopplung.erdsaat",
    "sprosse": 1,
    "umfang": "1 Ort, 1 Ereignis-Typ",
@@ -232,6 +216,18 @@
    "sprosse": 1,
    "klasse": "Ort",
    "grund": "Ort — zwei Orte (Wiese, Genesis), keine Stadt; die 8 km Sicht trägt jede Wiese des Spiels, also auch jede Sprosse der Klasse Ort — die Sicht beschreibt den Schirm, nicht eine größere Szene (karte2.same.entfaltung.schirm#1, vorrat3-stationen)"
+  },
+  {
+   "leiter": "planet.kosmos.welten",
+   "sprosse": 1,
+   "klasse": "Ort",
+   "grund": "Ort — „Heimat + 1 Fremdwelt“: zwei Orte (je Welt eine Kugel-Reihe binnen 60 m am Spieler), die Regel: dieselbe Probe an N Orten bleibt Ort; die Zeile Planet und Welten nennt „jede Welt, jede Zeit“, nicht eine Fremdwelt; der Sprung durchs Tor ist der Sprung ≤ 5 s, der in jeder Klasse gilt (karte2.planet.kosmos.welten#1, vorrat3-stationen)"
+  },
+  {
+   "leiter": "erleben.kopplung.bild",
+   "sprosse": 1,
+   "klasse": "Ort",
+   "grund": "Ort — der Gang 2 km auf EINEN Hang, keine Siedlung im Umfang, die Zeile Stadt verlangt „Stadt“ oder Siedlungen; wie planet.wasser.kreislauf (Region 2 km) und das Vorbild planet.wetter.lagen (karte2.erleben.kopplung.bild#1, vorrat3-stationen)"
   }
  ]
 }

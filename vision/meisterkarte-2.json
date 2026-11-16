@@ -2231,6 +2231,7 @@
        "umfang": "Heimat + 1 Fremdwelt",
        "tiefe": "eigene Schwere, eigener Himmel",
        "preis": "P an BEIDEN Welten",
+       "klasse": "Ort",
        "richter": "Licht-Bilanz an der Kugel 5–12,5 an beiden Welten; Fremdwelt-Mittag: Zenit nicht blau"
       },
       {
@@ -16015,6 +16016,7 @@
        "umfang": "2 Phänomene",
        "tiefe": "Luft dunstet Relief; Gelände ändert seine Helligkeit nah ↔ fern nicht",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Gang 2 km auf einen Hang: Leuchtdichte des Zielfensters springt an keinem Stufenwechsel > 5 %"
       },
       {

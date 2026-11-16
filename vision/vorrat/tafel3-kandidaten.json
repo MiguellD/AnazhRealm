@@ -1,9 +1,9 @@
 {
  "lesart": "Die Tafel-Vorschläge der Welle vorrat3-stationen (sechs tafel3-gN.json), je Zeile das Urteil des Integrators: gesetzt (in vision/richter-tafel.json, richter gleich — der Richter der Sprosse in vision/meisterkarte-2.json wörtlich gegen das Urteil der Station gelesen, Umfang · Schwelle · beide Geräte) · halb (der Bauer nannte sie halb, der fehlende Schnitt steht im Grund) · abgelehnt (der Bauer nannte sie ganz, der Richter deckt sie nicht ganz — Grund beim Namen) · schon (steht bereits in der Tafel). Nichts davon ist am Fenster gemessen.",
  "zahl": {
-  "gesetzt": 18,
-  "halb": 11,
-  "abgelehnt": 2,
+  "gesetzt": 20,
+  "halb": 12,
+  "abgelehnt": 3,
   "schon": 1
  },
  "zeilen": [
@@ -182,6 +182,50 @@
    "richterKarte": "Bestand je Revier über 3 Spielstunden im Band, im Fenster",
    "klasse": "Ort",
    "grund": "vom Bauer halb, bestätigt: Urteil oekologie.K2#1 wörtlich (Gesamtbestand des Tals); offen „Bestand JE REVIER im Band über 3 Spielstunden“: die Zeile kaskade trägt je Region nur das Mittel der Stunden 2–6 (bestand.nahrung[j].grund). Spiel-Schnitt: scripts/diag-kreatur-leben.cjs buehne(\"kaskade\") schreibt z.orte je Region und Spielstunde (min/max der 8 Regionen über die Stunden 2–8) in die Zeile; die Station urteilt dann je Revier min ≥ ⅓ und max ≤ 3 × Mittel"
+  },
+  {
+   "station": "karte2.planet.kosmos.welten#1",
+   "leiter": "planet.kosmos.welten",
+   "sprosse": 1,
+   "bauer": "g3",
+   "vorschlag": "ganz",
+   "urteil": "gesetzt",
+   "richterKarte": "Licht-Bilanz an der Kugel 5–12,5 an beiden Welten; Fremdwelt-Mittag: Zenit nicht blau",
+   "klasse": "Ort",
+   "grund": "Richter wörtlich gegen das Urteil der Station gelesen: Umfang, Schwelle und beide Geräte gedeckt · Klasse Ort in der Karte gesetzt (aus vision/vorrat/klasse-offen.json aufgelöst, Grund dort unter aufgeloest)"
+  },
+  {
+   "station": "karte2.erleben.bild.auge#1",
+   "leiter": "erleben.bild.auge",
+   "sprosse": 1,
+   "bauer": "g3",
+   "vorschlag": "ganz",
+   "urteil": "abgelehnt",
+   "richterKarte": "zeitliche Pixel-Varianz in ruhenden Bildbereichen ≤ 1 % der Fläche über Schwelle",
+   "klasse": "Ort",
+   "grund": "Umfang „Gehen“ nicht gemessen: AUGE_PROBE steht (Mess-Wiese, Ego, zwei gleiche Läufe des Loops im Stand) — Flimmern und Treppenkriechen an Kanten, Laub und Schatten (die Tiefe der Sprosse) entstehen mit der Bewegung der Kamera; im Stand misst die Station den Determinismus des Loops, nicht das Gehen. Schwelle (≤ 1 % der ruhenden Fläche über Schwelle) sonst wörtlich. Fehlt: derselbe Vergleich unter einem festen Gang (zwei gleiche Läufe desselben Kamera-Wegs, ruhend = Bild für Bild gleich zwischen den Läufen)."
+  },
+  {
+   "station": "karte2.erleben.kopplung.bild#1",
+   "leiter": "erleben.kopplung.bild",
+   "sprosse": 1,
+   "bauer": "g3",
+   "vorschlag": "ganz",
+   "urteil": "gesetzt",
+   "richterKarte": "Gang 2 km auf einen Hang: Leuchtdichte des Zielfensters springt an keinem Stufenwechsel > 5 %",
+   "klasse": "Ort",
+   "grund": "Richter wörtlich gegen das Urteil der Station gelesen: Umfang, Schwelle und beide Geräte gedeckt · Klasse Ort in der Karte gesetzt (aus vision/vorrat/klasse-offen.json aufgelöst, Grund dort unter aufgeloest)"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#1",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 1,
+   "bauer": "g3",
+   "vorschlag": "halb",
+   "urteil": "halb",
+   "richterKarte": "Halbschattenbreite gegen Abstand im Band; Albedo im Bild ±0,05 gegen Tabellenwert für Gras, Erde, Fels, Holz, Haut",
+   "klasse": "Ort",
+   "grund": "vom Bauer halb, bestätigt: halb: die Albedo-Hälfte urteilt wörtlich (|W − Tafel| ≤ 0,05 je Stoff auf ALBEDO_K1), aber (1) die Albedo-Tafel des Spiels trägt keine Zeile gras — der Spiel-Schnitt: spec/farbe/albedo-tafel.json + scripts/lib/albedo-tafel.cjs (die Zeilen-Liste der Welt-Seite, `probeAlbedo` liest sie) eine Zeile gras am Wiesen-Gras der Mess-Wiese, an main fe885d9d fehlt sie (13 Zeilen, keine gras); (2) die Halbschatten-Hälfte misst schatten.K1#2 in eigener Probe (Bühne, mutiert) — EINE Akte je Sprosse verlangt beide Hälften in EINER Probe; die Folge müsste ALBEDO_K1 (probeBefehl, Seiten-Probe) und `licht --kontakt --zuwachs` an der Bühne in einem Lauf fahren."
   },
   {
    "station": "karte2.erleben.schoepfen.schutz#1",
