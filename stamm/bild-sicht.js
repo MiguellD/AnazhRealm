@@ -306,11 +306,13 @@ class AnazhRealm_bild_sicht {
     // SPIEGEL.drift, wandert das Fenster; stehen neue Kronen darin, backt die Nachlese es neu. Ein Auftrag fliegt zur Zeit und
     // nur, wenn der Worker keinen Chunk baut (das Streamen hat Vorrang, Lehre 13) und das erste Weltbild steht (die Ankunft
     // trägt keinen Spiegel); seine Antwort trägt der nächste Takt ein (`_spiegelFeldEintrag`) — ein Bild der ruhenden Welt
-    // (die Bühne, eine Linse, die Werkbank zwischen Befehlen) bäckt nichts und sieht keine Antwort landen.
+    // (die Bühne, eine Linse, die Werkbank zwischen Befehlen) bäckt nichts und sieht keine Antwort landen. Bestellt wird nur,
+    // wenn der Faden den Stand trägt (`_voxelFadenTraegt`, das EINE Prädikat): bis w28-strom-haengt fragte der Takt den Ack
+    // und bestellte auch bei ausgehängtem Faden — die Bestellung gebar einen Zwilling, der fortan den Boden trug.
     _spiegelFeldTakt() {
         const st = this.state;
         const rend = st.renderer;
-        if (!st._weltbildDa || !st.camera || !rend || rend._isHeadlessNull || !st.voxelWorkerReady) return;
+        if (!st._weltbildDa || !st.camera || !rend || rend._isHeadlessNull || !this._voxelFadenTraegt()) return;
         const K = AnazhRealm.SPIEGEL;
         const S = this._spiegelFeld();
         const ant = S.antwort;
