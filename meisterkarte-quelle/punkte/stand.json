@@ -4857,7 +4857,7 @@
   },
   "breite.siedlung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: breite.siedlung#1 radeon: ungemessen (R10) — zuletzt an fe885d9d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „5“: der Läufer ersetzt den Platzhalter SEK) · breite.siedlung#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: breite.siedlung#1 radeon: ungemessen (R10) — zuletzt an fe885d9d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „5“: der Läufer ersetzt den Platzhalter SEK) · breite.siedlung#1 gtx: ungemessen (R10) — zuletzt an e4eeee08: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
    "stationen": [
     {
      "id": "breite.siedlung#1",
@@ -4874,7 +4874,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an e4eeee08: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
      "ungemessen": true
     }
    ]
@@ -5920,7 +5920,7 @@
   "ohne": 113
  },
  "kopfVoll": "77a9095fcee506f43e2d5d342634103a1d5dd8e4",
- "zeit": "2026-11-16T18:12:24.079Z",
+ "zeit": "2026-11-16T18:18:14.461Z",
  "vorher": "77a9095f",
  "bilanz": {
   "gewinn": [],
