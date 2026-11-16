@@ -2504,10 +2504,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 2,
+    "heute": 3,
     "kern": 1,
     "kernDazu": 1,
-    "anteilHeute": 1.4,
+    "anteilHeute": 2.1,
     "anteilKern": 0.6
    },
    "perspektiven": [
@@ -3450,7 +3450,7 @@
        "richter": "≥ 50 % der fremden Saaten mit bewohntem Lebensraum ohne Erd-Gegenstück; 0 % bewohnte Zonen ohne Energiequelle"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "1 von 15: der Bach-Kolk mit Forellen am Strömungsschatten — headless, Preis an der Fisch-Pose nie gemessen; Uferflora teils; das Meer ist Höhe und Wasserkörper, kein Lebensraum.",
@@ -16675,11 +16675,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 8,
+  "heute": 9,
   "davonKopplungen": 33,
   "kern": 17,
   "kernDazu": 17,
-  "anteilHeute": 0.5,
+  "anteilHeute": 0.6,
   "anteilKern": 0.8,
   "kapitel": 7,
   "perspektiven": 42,
