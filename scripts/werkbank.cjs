@@ -2694,6 +2694,19 @@ async function starte() {
                 };
                 if (req.url === "/puffer")
                     return send(await pufferStand(false, Number(b.top) || 30));
+                // DIE CPU-SPIEGEL DER GPU-PUFFER (heap-zensus.cjs `spiegel`): nach zwei GC je Erzeuger, was als CPU-Kopie neben
+                // seinem GPU-Puffer lebt — dynamisch, mit Leser (Wache), leserfrei; `modus frei` der Spike an einer Klasse
+                if (req.url === "/heap-spiegel") {
+                    const Z = require("./lib/heap-zensus.cjs");
+                    const o = await page.evaluate(Z.spiegel, { modus: b.modus, klasse: b.klasse, top: Number(b.top) || 30 });
+                    const cdp = await page.target().createCDPSession();
+                    for (let i = 0; i < 2; i++) await cdp.send("HeapProfiler.collectGarbage");
+                    const u = await cdp.send("Runtime.getHeapUsage");
+                    await cdp.detach();
+                    const m = (x) => +(x / 1048576).toFixed(1);
+                    Object.assign(o, { heapMB: m(u.usedSize + (u.backingStorageSize || 0)), jsMB: m(u.usedSize), typedMB: m(u.backingStorageSize || 0) });
+                    return send(Object.assign(o, { tafel: Z.spiegelTafel(o) }));
+                }
                 // DER HEAP-ZENSUS NACH ERZEUGER: nach zwei GC die lebenden Bytes je Allokations-Stelle und je Besteller im Spiel
                 if (req.url === "/heap-zensus") {
                     if (!heapCdp) throw new Error("heap-zensus braucht `start --heap-zensus` (das Sampling muss den Boot erleben)");
@@ -3735,6 +3748,13 @@ hauptLauf(async () => {
         console.log(JSON.stringify(o, null, 1));
         endeMit(o.urteil && !o.urteil.length ? "GANG GRÜN" : "GANG ROT", o.urteil && !o.urteil.length);
     } else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
+    else if (cmd === "heap-spiegel") {
+        // `heap-spiegel [--modus zaehlen|wache|frei] [--klasse <präfix>] [--top n] [--datei <txt>]` (heap-zensus.cjs `spiegel`)
+        o = await rufe("/heap-spiegel", { modus: opt("--modus", "zaehlen"), klasse: opt("--klasse"), top: opt("--top") });
+        if (!o || o.fehler || !o.tafel) endeMit(o);
+        if (opt("--datei")) fs.writeFileSync(opt("--datei"), JSON.stringify(o, null, 1) + "\n");
+        endeMit(o.tafel + (o.frei ? "\nFREI " + JSON.stringify(o.frei) : "") + (o.wache != null ? "\nWACHE " + o.wache : ""), true);
+    }
     else if (cmd === "heap-zensus") {
         // `heap-zensus [--top n] [--datei <txt>]` an einer Sitzung `start --heap-zensus`; `--selbsttest` ohne Welt
         if (SELBST) selbsttestEnde(require("./lib/heap-zensus.cjs").selbsttest(), "Stelle auf three, Besteller aufs Spiel");

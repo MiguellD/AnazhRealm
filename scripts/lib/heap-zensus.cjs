@@ -92,4 +92,209 @@ function selbsttest() {
     return f;
 }
 
-module.exports = { verdichten, selbsttest };
+// DIE CPU-SPIEGEL DER GPU-PUFFER (w28-heap-spiegel, `werkbank heap-spiegel`): jedes Typed Array, das `array` eines schon
+// hochgeladenen Attributs ist (`renderer.info.memoryMap` + `backend.get(a).buffer`), EINMAL je ArrayBuffer, beim Erzeuger
+// (`_taeterKlasse` der Szene, `ruhend:` der Foundry-Cache, sonst `verwaist:`). Läuft in der SEITE (selbst-enthalten).
+//   modus "zaehlen" — die Tafel: Erzeuger · MB · dynamisch (usage Dynamic oder Version gewachsen seit der Wache) · mit Leser
+//                     (seit der Wache las ein Rahmen außerhalb der harmlosen Vendor-Stellen `.array`) · LESERFREI
+//   modus "wache"   — `.array` jedes gespiegelten Puffers wird ein Accessor, der jeden Leser beim Rahmen bucht (Stapel)
+//   modus "frei"    — der Spike: die Spiegel des Erzeugers `klasse` (ohne dynamische) fallen auf ein leeres Array
+//                     desselben Typs (der Vendor liest danach nur `constructor`/`BYTES_PER_ELEMENT`); die Hüllen vorher berechnet
+function spiegel(o) {
+    o = o || {};
+    const r = window.anazhRealm,
+        st = r.state,
+        rend = st.renderer,
+        be = rend && rend.backend,
+        reg = rend && rend.info && rend.info.memoryMap;
+    if (!be || !reg) return { fehler: "kein renderer.info.memoryMap" };
+    const W = window.__spiegel || (window.__spiegel = { lese: new Map(), version: new Map(), frei: new Set(), still: false });
+    W.still = true;
+    // die Stellen, die nach dem Upload nur Typ und Breite lesen — kein Leser des Inhalts: der Pipeline-Bau, das Speicher-Buch,
+    // der Draw (das Index-Format aus dem Array-Typ) und die Index-Wache des Stamms (`byteLength` gegen den GPU-Puffer,
+    // stoff-instanz.js `_indexWacheDraw`; den Bereich liest sie nur im Verdacht)
+    const HARMLOS = /\b(createShaderVertexBuffers|_getVertexFormat|getVertexFormat|_getAttributeMemorySize|getAttributeMemorySize|destroyAttribute|draw|drawIndexed|setIndexBuffer|_indexWacheDraw|P\.draw)\b/;
+    const halter = new Map(),
+        geos = new Map();
+    const merke = (a, n, g) => {
+        if (!a) return;
+        const b = a.isInterleavedBufferAttribute ? a.data : a;
+        if (!halter.has(b)) halter.set(b, n);
+        if (g) (geos.get(b) || geos.set(b, new Set()).get(b)).add(g);
+    };
+    const geo = (g, n) => {
+        if (!g || !g.attributes) return;
+        for (const k in g.attributes) merke(g.attributes[k], n, g);
+        if (g.index) merke(g.index, n, g);
+    };
+    let klasseVon;
+    try {
+        klasseVon = (x) => r._taeterKlasse(x);
+        klasseVon(st.scene);
+    } catch {
+        klasseVon = (x) => x.name || x.type;
+    }
+    st.scene.traverse((x) => {
+        if (!x.geometry && !x.isInstancedMesh) return;
+        const n = "szene:" + klasseVon(x);
+        geo(x.geometry, n);
+        const q = x.__instanzQuelle || x;
+        if (q.isInstancedMesh) for (const a of [q.instanceMatrix, q.instanceColor]) merke(a, n + "|instanz");
+        for (const ro of x.__renderObjekte || []) if (ro.attributes) for (const a of ro.attributes) merke(a, n);
+    });
+    const cache = r._foundry && r._foundry.cache;
+    if (cache)
+        for (const [key, g] of cache) {
+            if (!g || typeof g !== "object") continue;
+            const n = "ruhend:" + String(key).split(/[|:#@]/)[0];
+            for (const ch of g.children || []) geo(ch.geometry, n);
+            const fl = g._foundryFlat;
+            if (fl && Array.isArray(fl.leaves))
+                for (const lf of fl.leaves) {
+                    geo(lf.geom, n);
+                    geo(lf._schattenGeom, n);
+                }
+        }
+    // die gespiegelten Puffer: hochgeladen (GPU-Puffer da) UND ein Typed Array am Attribut
+    const liste = [];
+    const gesehenAB = new Set();
+    for (const [a, v] of reg) {
+        if (!a || a.isTexture || !v || !/ttributes$/.test(v.type || "")) continue;
+        const b = a.isInterleavedBufferAttribute ? a.data : a;
+        const d = be.get(b);
+        if (!d || !d.buffer) continue;
+        const arr = b.array;
+        if (!ArrayBuffer.isView(arr) || !arr.byteLength) continue;
+        const ab = arr.buffer;
+        const neu = !gesehenAB.has(ab);
+        gesehenAB.add(ab);
+        const name = halter.get(b) || "verwaist:" + (v.type === "indexAttributes" ? "index" : v.type === "storageAttributes" ? "speicher" : "vertex");
+        liste.push({ b, a, ab, typ: v.type, name, bytes: neu ? ab.byteLength : 0 });
+    }
+    const DYN = 35048; // DynamicDrawUsage
+    const dynB = (b) => b.usage === DYN || (W.version.has(b) && b.version > W.version.get(b));
+    const leserB = (b) => {
+        const buch = W.lese.get(b);
+        return !!buch && [...buch.stellen.keys()].some((s) => !s.startsWith("harmlos:"));
+    };
+    // DAS URTEIL JE ARRAYBUFFER: liegen mehrere Attribute als Sicht auf EINEM Puffer (die Sätze der Siedlung), hält jede Sicht
+    // den ganzen Puffer — er ist dynamisch / gelesen, sobald EINE seiner Sichten es ist, und fällt nur, wenn ALLE fallen
+    const abDyn = new Set(),
+        abLeser = new Set();
+    for (const e of liste) {
+        if (dynB(e.b)) abDyn.add(e.ab);
+        if (leserB(e.b)) abLeser.add(e.ab);
+    }
+    const dyn = (b) => dynB(b);
+    const modus = o.modus || "zaehlen";
+    let antwort = {};
+    if (modus === "wache") {
+        let n = 0;
+        for (const { b } of liste) {
+            W.version.set(b, b.version);
+            if (W.lese.has(b)) continue;
+            const eigen = Object.getOwnPropertyDescriptor(b, "array");
+            if (!eigen || !("value" in eigen)) continue;
+            let wert = eigen.value;
+            const buch = { n: 0, stellen: new Map() };
+            W.lese.set(b, buch);
+            Object.defineProperty(b, "array", {
+                configurable: true,
+                enumerable: true,
+                get() {
+                    if (!W.still) {
+                        buch.n++;
+                        if (buch.n <= 40) {
+                            const alt = Error.stackTraceLimit;
+                            Error.stackTraceLimit = 40;
+                            const s = (new Error().stack || "").split("\n").slice(2);
+                            Error.stackTraceLimit = alt;
+                            const spiel = s.find((z) => !/\/vendor\//.test(z) && /\.js/.test(z));
+                            const v0 = s.find((z) => /\/vendor\//.test(z)) || s[0] || "?";
+                            // harmlos ist, wessen UNMITTELBARER Leser nur Typ und Breite nimmt (s[0], der Rahmen am Getter)
+                            const k = (HARMLOS.test(s[0] || "") ? "harmlos:" : "") + (spiel || "vendor " + v0).trim().replace(/^at /, "").replace(/\?v=[^:]*/, "").replace(/https?:\/\/[^/]+\//, "");
+                            buch.stellen.set(k, (buch.stellen.get(k) || 0) + 1);
+                        }
+                    }
+                    return wert;
+                },
+                set(x) {
+                    wert = x;
+                },
+            });
+            n++;
+        }
+        antwort = { wache: n };
+    }
+    if (modus === "frei") {
+        const pre = String(o.klasse || "");
+        let n = 0,
+            bytes = 0,
+            huellen = 0;
+        // ein Puffer des Erzeugers fällt nur ganz: alle seine Sichten (auch die eines anderen Erzeugers) ohne Dynamik und Leser
+        const abFrei = new Set(liste.filter((e) => pre && e.name.split("|")[0] === pre && !abDyn.has(e.ab) && !abLeser.has(e.ab)).map((e) => e.ab));
+        for (const e of liste) {
+            const { b } = e;
+            if (!abFrei.has(e.ab) || W.frei.has(b)) continue;
+            for (const g of geos.get(b) || []) {
+                if (!g.boundingBox) (g.computeBoundingBox(), huellen++);
+                if (!g.boundingSphere) (g.computeBoundingSphere(), huellen++);
+            }
+            bytes += e.bytes;
+            b.array = new b.array.constructor(0);
+            W.frei.add(b);
+            n++;
+        }
+        antwort = { frei: { klasse: pre, puffer: n, mb: +(bytes / 1048576).toFixed(2), huellen } };
+    }
+    // die Tafel je Erzeuger (die Klasse bis zum ersten `|`)
+    const je = new Map();
+    let summe = 0;
+    for (const e of liste) {
+        const k = e.name.split("|")[0];
+        const z = je.get(k) || { k, mb: 0, dyn: 0, leser: 0, frei: 0, n: 0, stellen: new Map() };
+        const buch = W.lese.get(e.b);
+        z.n++;
+        z.mb += e.bytes;
+        summe += e.bytes;
+        if (abDyn.has(e.ab)) z.dyn += e.bytes;
+        else if (abLeser.has(e.ab)) z.leser += e.bytes;
+        else z.frei += e.bytes;
+        if (buch) for (const [s, c] of buch.stellen) z.stellen.set(s, (z.stellen.get(s) || 0) + c);
+        je.set(k, z);
+    }
+    const mb = (x) => +(x / 1048576).toFixed(2);
+    const zeilen = [...je.values()]
+        .sort((p, q) => q.mb - p.mb)
+        .map((z) => ({
+            erzeuger: z.k,
+            n: z.n,
+            mb: mb(z.mb),
+            dyn: mb(z.dyn),
+            leser: mb(z.leser),
+            leserfrei: mb(z.frei),
+            stellen: [...z.stellen].sort((p, q) => q[1] - p[1]).slice(0, 4).map(([s, c]) => c + "× " + s.slice(0, 150)),
+        }));
+    W.still = false;
+    return Object.assign(antwort, {
+        gespiegeltMB: mb(summe),
+        leserfreiMB: +zeilen.reduce((s, z) => s + z.leserfrei, 0).toFixed(2),
+        dynMB: +zeilen.reduce((s, z) => s + z.dyn, 0).toFixed(2),
+        leserMB: +zeilen.reduce((s, z) => s + z.leser, 0).toFixed(2),
+        wacheSeit: W.lese.size,
+        zeilen: zeilen.slice(0, o.top || 30),
+    });
+}
+
+function spiegelTafel(o) {
+    const z = (o.zeilen || []).map(
+        (x) => `${String(x.mb).padStart(8)} ${String(x.dyn).padStart(8)} ${String(x.leser).padStart(8)} ${String(x.leserfrei).padStart(9)}  ${String(x.n).padStart(5)}  ${x.erzeuger}${x.stellen.length ? "\n" + x.stellen.map((s) => "            ↳ " + s).join("\n") : ""}`
+    );
+    return [
+        `CPU-SPIEGEL DER GPU-PUFFER — Heap nach GC ${o.heapMB} MB (JS ${o.jsMB} + Typed ${o.typedMB}) · gespiegelt ${o.gespiegeltMB} MB · dynamisch ${o.dynMB} · mit Leser ${o.leserMB} · LESERFREI ${o.leserfreiMB} MB (Wache an ${o.wacheSeit} Puffern)`,
+        `      MB     dyn.   Leser  LESERFREI      n  Erzeuger`,
+        ...z,
+    ].join("\n");
+}
+
+module.exports = { verdichten, selbsttest, spiegel, spiegelTafel };
