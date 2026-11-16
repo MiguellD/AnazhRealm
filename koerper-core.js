@@ -5172,6 +5172,19 @@
         // `haltung: false` (die Wache, der Fahrer am Steuer) stehen neutral. Bis hier schrieb der Wirt den Akt und las ihn nie:
         // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
         haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad" }),
+        // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
+        // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
+        // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
+        // Platz über seine Sekunden), wird jeder Akt der Muße drinnen (`drinnen`: der Morgengang, der Besuch, der Mittagstisch,
+        // der Abend) — er bleibt daheim; die Arbeit geht weiter (der Händler unter seinem Stand, die Wache, der Fahrer am
+        // Steuer). Die Tafel des Wetters (phyto WX_GESETZ.rain): klar 0 · nebel 0 · bewoelkt 0,12 · regen 0,6 · sturm 1 — bei
+        // Wolken bleibt jeder draußen, bei Regen und Sturm jeder drinnen. Bis hier kannte der Tag kein Wetter: im Sturm stand
+        // der Markt mittags so voll wie in der Sonne.
+        regen: Object.freeze({
+            ab: 0.3,
+            streuH: 0.15,
+            drinnen: Object.freeze(["morgen", "besuch", "mittag", "abend"]),
+        }),
     });
     // DIE HALTUNG ZUM AKT (TAGES_GESETZ.haltung): der Name des Profils der Bewegung oder null (neutral)
     function tagesHaltung(akt, rolle) {
@@ -5276,8 +5289,9 @@
     // seiner Bindung stellt (`tagesBindung`; ohne Werk ist der Hof das Werk, ohne Platz das Heim der Platz, ohne Mittagstisch isst er
     // daheim, ohne Treff sitzt er vor seiner Tür, ohne Besuch kein Besuch). Liefert { ort, wo, akt, drinnen } — ort ist einer
     // der gereichten Orte, wo sein Name, akt eines von schlaf · morgen · besuch · arbeit · mittag · abend; drinnen = der Mensch
-    // ist in seinem Haus (an der Tür ungezeichnet).
-    function tagesPlan(same, rolle, stunde, orte) {
+    // ist in seinem Haus (an der Tür ungezeichnet). nass = der Regen am Ort (0–1, der Kanal `rain` des Wetter-Felds; ohne ihn
+    // trocken): über der Schwelle des Menschen (TAGES_GESETZ.regen) bleibt er bei jedem Akt der Muße daheim.
+    function tagesPlan(same, rolle, stunde, orte, nass) {
         var G = TAGES_GESETZ;
         var R = G.rollen[rolle] || {};
         var h = (((Number(stunde) - (R.versatzH || 0)) % 24) + 24) % 24;
@@ -5292,7 +5306,11 @@
         var ruhe = (R.ruhe || G.ruhe) + j("ruhe");
         var heim = orte.heim,
             besuch = orte.besuch;
+        var W = G.regen,
+            regen = nass > 0 && nass >= W.ab + (_tagZahl(same, "regen") * 2 - 1) * W.streuH;
         var aus = function (wo, akt, drinnen) {
+            if (regen && !drinnen && W.drinnen.indexOf(akt) >= 0)
+                return { ort: heim, wo: "heim", akt: akt, drinnen: true };
             return { ort: orte[wo] || heim, wo: orte[wo] ? wo : "heim", akt: akt, drinnen: !!drinnen };
         };
         var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;

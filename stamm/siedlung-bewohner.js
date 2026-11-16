@@ -2121,12 +2121,14 @@ class AnazhRealm_siedlung_bewohner {
 
     // DAS SOLL DER STUNDE (mensch.K2): der Plan des Gesetzes (koerper-core `tagesPlan`) aus dem Samen, der Rolle seines
     // Hauses und den Orten seiner Bindung (`_bewohnerListe`) — drinnen ist das Ziel die Tür. Liefert { ziel, drinnen, akt }. Leser: das Ziel
-    // (`_bewohnerZiel`), die Wende (`_bewohnerWende`).
+    // (`_bewohnerZiel`), die Wende (`_bewohnerWende`). DER REGEN (mensch.kopplung.leben): das Gesetz liest den Regen, der fällt —
+    // den Kanal `rain` des EINEN Wetter-Felds der Welt (`_weatherFieldFor`: das Wort am Spieler samt seinem Übergang, wie Himmel,
+    // Tropfen und Nässe ihn lesen); je planH liest jeder seinen Plan neu (`_tickBewohner`), so leert der Regen den Platz.
     _bewohnerSoll(b, stunde) {
         const KC = window.__koerperCore;
         if (!KC || typeof KC.tagesPlan !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesPlan");
         const o = b.orte;
-        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o);
+        const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, this._weatherFieldFor().rain);
         return { ziel: soll.drinnen ? o.tuer : soll.ort, drinnen: soll.drinnen, akt: soll.akt };
     }
 
