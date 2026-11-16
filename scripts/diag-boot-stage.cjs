@@ -189,13 +189,19 @@ function PROGRAMM_PROBE(matrixQuelle) {
         const roh = G[art];
         if (typeof roh !== "function") continue;
         G[art] = function (d) {
+            // je Pipeline ihre Zeit (ms seit Navigation): bestellt, und bereit (asynchron: das Versprechen löst; synchron: der Ruf kehrt)
+            const zeile = [];
             try {
                 const name = String((d && d.label) || "?").replace(/^renderPipeline_/, "");
-                P.liste.push([name, texte.get(d.vertex.module) || "?", (d.fragment && texte.get(d.fragment.module)) || "–", (matrix.get(d.vertex.module) || 0) + ((d.fragment && matrix.get(d.fragment.module)) || 0)]);
+                P.liste.push(zeile);
+                zeile.push(name, texte.get(d.vertex.module) || "?", (d.fragment && texte.get(d.fragment.module)) || "–", (matrix.get(d.vertex.module) || 0) + ((d.fragment && matrix.get(d.fragment.module)) || 0), Math.round(performance.now()), null);
             } catch (e) {
                 P.fehler = String(e && e.message);
             }
-            return roh.call(this, d);
+            const aus = roh.call(this, d);
+            if (aus && typeof aus.then === "function") aus.then(() => (zeile[5] = Math.round(performance.now())), () => {});
+            else zeile[5] = Math.round(performance.now());
+            return aus;
         };
     }
 }
@@ -561,7 +567,18 @@ async function kaltLauf() {
         // das Laden der Seite (Navigation und Ressourcen, Seiten-Uhr): HTML da, die Skripte da, DOM bereit
         const nav = performance.getEntriesByType("navigation")[0] || {};
         const skripte = performance.getEntriesByType("resource").filter((e) => e.initiatorType === "script");
+        // jeder Stoff der Welt-Szene beim Träger: Stoff-Id (das Etikett der Pipeline trägt sie) → Zahl der Objekte, Kette des ersten
+        const stoffe = {};
+        try {
+            st.scene.traverse((o) => {
+                for (const m of [].concat(o.material || [])) {
+                    const e = (stoffe[m.id] = stoffe[m.id] || { art: m.type, name: m.name || "", n: 0, kette: "" });
+                    if (!e.n++) for (let p = o, i = 0; p && i < 5; p = p.parent, i++) e.kette += (i ? " < " : "") + (p.name || p.type) + (p.isInstancedMesh ? "[" + p.count + "]" : "");
+                }
+            });
+        } catch {}
         return Object.assign({}, window.__kalt, {
+            stoffe,
             laden: {
                 html: Math.round(nav.responseEnd || 0),
                 skripte: Math.round(Math.max(0, ...skripte.map((e) => e.responseEnd))),
