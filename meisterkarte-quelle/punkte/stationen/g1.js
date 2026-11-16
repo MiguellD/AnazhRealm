@@ -1587,24 +1587,45 @@ async function lavaSitzungProbe(r, T, o) {
             return { fehler: "der Guss steht nicht (Taten " + n0 + " → " + wm.taten.length + "): " + JSON.stringify((guss && guss.log) || []).slice(0, 200) };
         await window.__weltStehtNach(takt, 900);
         aus.glutBild = await schuss("glut");
+        // DIE WELTZEIT LÄUFT NUR VOR (16.11., Radeon am 77a9095f: erstarrt R/G 3,673 — `setTimeOfDay(0.5)` spulte die Uhr auf die Stunde des
+        // Gusses zurück, `_lavaAt` las das Alter 0 und das Gesetz glühte wieder). Je Schritt eine Sekunde eines Tags von 1 min (24 min Welt),
+        // bis das Gesetz des Kerns die Decke DUNKEL nennt (`lava`: glut 0 unter dem Draper-Punkt 798 K, mit Stein-Zeile und Luft ~3,9 h),
+        // höchstens 60 Schritte (ein Tag); dann im Gang der Uhr vorwärts bis zum nächsten Mittag — dasselbe Licht wie das Glut-Bild.
         Object.assign(st, { dayLengthMinutes: 1, _uhrSpielZeit: st.spielZeit });
+        const h0 = r._weltStunde();
         aus.ab = -1;
-        for (let k = 1; k <= 15 && aus.ab < 0; k++) (st.spielZeit += 1), r.tickDayNight(k), (r._lavaAt(p.x, p.z) || {}).erstarrt && (aus.ab = k);
-        [st.dayLengthMinutes, st._uhrSpielZeit] = alt;
-        r.setTimeOfDay(0.5, "regler");
+        aus.dunkelNach = -1;
+        for (let k = 1; k <= 60 && aus.dunkelNach < 0; k++) {
+            st.spielZeit += 1;
+            r.tickDayNight(k);
+            const l = r._lavaAt(p.x, p.z) || {};
+            if (l.erstarrt && aus.ab < 0) aus.ab = k;
+            if (l.glut === 0) aus.dunkelNach = k;
+        }
+        aus.dunkelH = r3(r._weltStunde() - h0);
+        const bisMittag = (((0.5 - st.timeOfDay) % 1) + 1) % 1;
+        if (bisMittag > 0) (st.spielZeit += bisMittag * 60), r.tickDayNight(61);
+        st.dayLengthMinutes = alt[0];
+        st._uhrSpielZeit = st.spielZeit;
         await window.__weltStehtNach(takt, 900);
         aus.erstarrtBild = await schuss("erstarrt");
+        aus.dunkelGlut = r3((r._lavaAt(p.x, p.z) || { glut: null }).glut);
+        aus.schussH = r3(r._weltStunde() - h0);
         Object.assign(aus, { ort: [p.x, p.z].map(Math.round), kamera: kamera.map((v) => Math.round(v * 10) / 10), roi });
         return aus;
     } finally {
-        [st.dayLengthMinutes, st._uhrSpielZeit] = alt;
+        // die Uhr bleibt, wo die Probe sie vorwärts stellte: der Anker auf der Spielzeit von jetzt (der alte Anker ließe sie im nächsten
+        // Takt um die geschrittenen Sekunden im Tag der Welt noch einmal springen)
+        st.dayLengthMinutes = alt[0];
+        st._uhrSpielZeit = st.spielZeit;
         st.perfRegulator = regler;
         st.weatherEffectTime = halt;
     }
 }
 const LAVA_SITZUNG = { befehl: weltSitzungBefehl([["lava", lavaSitzungProbe]], [freiePose]), sek: 60, mutiert: true };
 // das Urteil: GLUT rot im Bild (R/G ≥ 2 im Ausschnitt), ERSTARRT grau (R/G ≤ 1,25) und dunkler als die Glut, erstarrt binnen 15 Schritten,
-// der Stoff darunter Stein, beide Bilder ohne Fehler, eine echte Karte
+// DUNKEL nach dem Gesetz binnen eines Tags (glut 0) und im Schuss noch dunkel (kein Rückspulen), der Stoff darunter Stein, beide Bilder
+// ohne Fehler, eine echte Karte
 function lavaUrteil(j, lauf) {
     const { ad, hw } = adapterEcht(lauf && lauf.stdout);
     const e = weltZeile(j, lauf, "lava");
@@ -1615,9 +1636,11 @@ function lavaUrteil(j, lauf) {
     const [g, s] = [e.glutBild || {}, e.erstarrtBild || {}];
     if (bilder < 2 || !e.glutBild || !e.erstarrtBild) return { gruen: false, zahl: "Bilder " + bilder + "/2 (glut, erstarrt) · " + ad };
     return {
-        gruen: hw && e.gegossen === true && g.rg >= 2 && e.ab >= 1 && s.rg <= 1.25 && s.luma < g.luma && /stein|basalt|fels/i.test(String(s.stoff)),
+        gruen: hw && e.gegossen === true && g.rg >= 2 && e.ab >= 1 && e.ab <= 15 && e.dunkelNach >= 1 && e.dunkelGlut === 0 && s.rg <= 1.25 && s.luma < g.luma &&
+            /stein|basalt|fels/i.test(String(s.stoff)),
         zahl: "Guss " + (e.ort || []).join(",") + (e.gegossen ? "" : " (KEIN Guss)") + ": Glut R/G " + g.rg + " (Soll ≥ 2), Luma " + g.luma + ", glut-Achse " + g.glut +
-            " · erstarrt nach " + e.ab + " Schritten (Soll 1–15): R/G " + s.rg + " (Soll ≤ 1,25), Luma " + s.luma + ", Stoff " + s.stoff + " · " + ad,
+            " · erstarrt nach " + e.ab + " Schritten (Soll 1–15) · dunkel nach dem Gesetz nach " + e.dunkelNach + " Schritten = " + e.dunkelH + " h Welt (Soll 1–60), Schuss bei " +
+            e.schussH + " h, Gesetz-glut " + e.dunkelGlut + " (Soll 0): R/G " + s.rg + " (Soll ≤ 1,25), Luma " + s.luma + ", Stoff " + s.stoff + " · " + ad,
     };
 }
 const LAVA_ROH = {
@@ -1626,7 +1649,11 @@ const LAVA_ROH = {
     gegossen: true,
     glutBild: { rgb: [0.9, 0.2, 0.05], luma: 0.34, rg: 4.5, glut: 1, stoff: "lava" },
     ab: 4,
+    dunkelNach: 10,
+    dunkelH: 4,
     erstarrtBild: { rgb: [0.05, 0.05, 0.05], luma: 0.05, rg: 1.02, glut: 0, stoff: "stein" },
+    dunkelGlut: 0,
+    schussH: 24.2,
     ort: [100, -200],
     kamera: [90, 6, -195, 100, 0, -200],
     roi: [430, 240, 530, 300],
@@ -5075,6 +5102,8 @@ module.exports = [
             { name: "kein Stein unter dem Guss", stdout: lavaRoh((x) => ((x.erstarrtBild.stoff = "gras"), x)), gruen: false },
             { name: "ein Bild fehlt", stdout: lavaRoh((x) => ((x.schuesse = x.schuesse.slice(0, 1)), x)), gruen: false },
             { name: "swiftshader", stdout: lavaRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+            { name: "nie dunkel nach dem Gesetz (glut > 0 nach 24 h)", stdout: lavaRoh((x) => ((x.dunkelNach = -1), x)), gruen: false },
+            { name: "zurückgespult: das Gesetz glüht noch im Schuss", stdout: lavaRoh((x) => ((x.dunkelGlut = 0.8), x)), gruen: false },
         ],
         pfad: ["gelaende-core.js", "stamm/gelaende-*.js", "stamm/bild-*.js", "stamm/dirigent-*.js", "stamm/feld-*.js", "stamm/stoff-*.js", "scripts/werkbank.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
