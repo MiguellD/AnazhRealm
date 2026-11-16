@@ -1249,8 +1249,9 @@ const ANKUNFT_KALT = {
 };
 // VIER KALT-BOOTS (Karte 2, same.preis.ankunft S1: „t(Kontrolle) von außen, ≥ 4 Kalt-Boots je Gerät“, Preis ≤ 60 s): viermal die Herkunft
 // leer und die Seite neu (H.lade kalt, derselbe Weg wie ANKUNFT_KALT), je Boot die Kontrolle von außen der Kalt-Zeile wörtlich (LEIB_WEG:
-// die gehaltene Taste W trägt den Leib ≥ KONTROLLE_M, die Uhr ab der Navigation). Kein Schuss, keine Ruhe: die Tiefe der Sprosse ist
-// „Bild erscheint, Welt teilweise“. Ein Boot ohne Kontrolle steht mit tK 0 in der Liste und reißt das Urteil beim Namen.
+// die gehaltene Taste W trägt den Leib ≥ KONTROLLE_M, die Uhr ab der Navigation). Die Tiefe der Sprosse 1 ist „Bild erscheint, Welt
+// teilweise“: ihr Urteil liest nur die Kontrolle (Schuss und Ruhe je Boot trägt Sprosse 2, unten). Ein Boot ohne Kontrolle steht mit tK 0
+// in der Liste und reißt das Urteil beim Namen.
 // DER NETZ-MITSCHNITT JE KALT-BOOT (Karte 2 same.preis.bytes S1 „Netz-Mitschnitt des Kalt-Boots an beiden Geräten“, Preis ≤ 50 MB roh):
 // derselbe Zähler wie foundryFadenLog (stationen/g4.js:43-51 — requestWillBeSent + loadingFinished je Ziel, autoAttach auf Worker),
 // hier über den GANZEN Kalt-Boot: ab vor der Navigation bis das Netz nach der Kontrolle ruht (keine offene Anfrage, 2 s nichts
@@ -1326,8 +1327,20 @@ async function netzMitschnitt(page) {
         },
     };
 }
+// DAS GANZE BILD JE KALT-BOOT (Karte 2 same.preis.ankunft S2 „t(Kontrolle) + Bild-Diff gegen 60 s Ruhe, ≥ 4 Boots je Gerät“, Preis ≤ 20 s,
+// vorrat3-stationen-g6): je Boot, was ankunft.K2 an EINEM Boot misst (probeAnkunft in sitzung-seite.js, dieselben Glieder der Linse) —
+// an der Kontrolle der offene Bedarf im Bild (`_weltbildFehlt`) und der Schuss des Ausgabe-Pfads (SCHUSS 960×540), dann die Ruhe der
+// Foundry (RUHE, das Ereignis, auf das die 60 s warteten; höchstens RUHE_MS wie ankunft.K2) und derselbe Schuss an derselben Pose: die
+// Lücke je Kachel (`lueckeKacheln`, das Maximum urteilt). Die Ruhe teilt sich die Frist mit den Boots danach (je REST_S); kappt die Frist
+// sie, steht `gekappt` am Boot und das Bild ist nicht ganz (ROT beim Namen, nie still grün). Die Zahlen stehen IN der Funktion: ihr Text
+// reist als argv der Probe (probeBefehl), nichts außerhalb.
 async function probeAnkunftVier(H) {
-    const L = H.linse("scripts/diag-boot-stage.cjs", ["LEIB_WEG", "KONTROLLE_M", "KONTROLLE_DRUECKE"]);
+    const { fs, path } = H;
+    const RUHE_MS = 40000, REST_S = 30;
+    const L = H.linse("scripts/diag-boot-stage.cjs", ["LEIB_WEG", "KONTROLLE_M", "KONTROLLE_DRUECKE", "SCHUSS", "RUHE", "lueckeKacheln"]);
+    const { pngLesen } = require(path.resolve("scripts/lib/abnahme-urteil.cjs"));
+    const { AUSGABE_INSTALL } = require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
+    const { pngDatei } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const { page } = await H.verbinde();
     const j = (H.teil = { kalt: [] });
     for (let n = 1; n <= 4; n++) {
@@ -1344,9 +1357,38 @@ async function probeAnkunftVier(H) {
                 if (netz.kontrolle) netz.kontrolle();
             }
         await page.keyboard.up("KeyW");
+        const boot = { tK, druecke };
+        if (tK) {
+            try {
+                boot.offen = await page.evaluate(() => window.anazhRealm._weltbildFehlt());
+                await page.evaluate(AUSGABE_INSTALL);
+                const a = await page.evaluate(L.SCHUSS, 960, 540, false);
+                const fa = H.AUS + "-boot" + n + ".png", fb = H.AUS + "-boot" + n + "-ruhe.png";
+                pngDatei(fa, a.png);
+                const tr = Date.now();
+                const ruheMs = Math.min(RUHE_MS, (H.rest() - 6 - REST_S * (4 - n)) * 1000);
+                const lk = ruheMs > 0 ? await H.binnen(page.evaluate(L.RUHE), ruheMs, null) : null;
+                const b = await page.evaluate(L.SCHUSS, 960, 540, false);
+                pngDatei(fb, b.png);
+                const K = L.lueckeKacheln(...[fa, fb].map((f) => pngLesen(fs.readFileSync(f))));
+                boot.bild = { luecke: K.luecke, kachel: K.kachel, mittel: K.mittel, ruheS: +((Date.now() - tr) / 1000).toFixed(1), ruhe: !!lk, gekappt: !lk && ruheMs < RUHE_MS };
+                Object.assign(
+                    boot,
+                    await page.evaluate(() => ({
+                        weltbildDa: Math.round(window.anazhRealm.state._weltbildDa),
+                        ohne: (window.anazhRealm.state.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
+                    }))
+                );
+            } catch (e) {
+                boot.bildFehler = String((e && e.message) || e).split("\n")[0].slice(0, 160);
+            }
+        }
         if (netz.ruhe) await netz.ruhe(H);
         const nz = netz.schluss ? await netz.schluss() : { fehler: ["kein Mitschnitt: " + netz.kaputt] };
-        j.kalt.push({ tK, druecke, netz: nz });
+        boot.netz = nz;
+        j.kalt.push(boot);
+        if (boot.bild) H.zeile("Kalt-Boot " + n + ": Lücke " + (100 * boot.bild.luecke).toFixed(2) + " % (Kachel " + boot.bild.kachel + ") nach " + boot.bild.ruheS + " s " + (boot.bild.ruhe ? "bis zur Ruhe der Foundry" : boot.bild.gekappt ? "OHNE Ruhe (die Frist der Boots danach kappte sie)" : "OHNE Ruhe der Foundry") + ", offen im Bild " + ((boot.offen || []).join(" · ") || "nichts"));
+        else if (boot.bildFehler) H.zeile("Kalt-Boot " + n + ": das Bild brach: " + boot.bildFehler);
         const mb = (b) => (b / 1e6).toFixed(2) + " MB";
         const nzt = nz.roh == null ? "ohne Mitschnitt" : mb(nz.roh) + " roh, " + mb(nz.draht) + " Draht, " + nz.n + " Anfragen (" + nz.offen + " offen), " + nz.ziele + " Ziele (" + nz.worker + " Worker)" + (nz.ruht ? "" : ", das Netz ruhte nicht");
         H.zeile("Kalt-Boot " + n + ": t(Kontrolle) " + (tK ? (tK / 1000).toFixed(2) + " s" : "—") + " von außen · Netz " + nzt + (nz.fehler.length ? " · " + nz.fehler.join(" | ") : ""));
@@ -1359,8 +1401,28 @@ async function probeAnkunftVier(H) {
     H.zeile("die Welt der Werkbank zurück: " + JSON.stringify(j.zurueck));
     return j;
 }
-const ANKUNFT_VIER = { ...probeBefehl(probeAnkunftVier, 120, { netz: netzMitschnitt }), mutiert: true };
+// DER DECKEL (vorrat3-stationen-g6): vier Boots samt Ruhe und zwei Schüssen je Boot — 4 × (≤ 17 s Boot + ≤ 40 s Ruhe + ~4 s Schüsse und
+// Netz-Ruhe) + /reload ≈ 260 s; bis hier 120 s für vier Boots ohne Bild (gemessen 7,0–8,85 s je Boot, Radeon 105c9bd3)
+const ANKUNFT_VIER = { ...probeBefehl(probeAnkunftVier, 330, { netz: netzMitschnitt }), mutiert: true };
 const ANKUNFT_VIER_SOLL_MS = 60000;
+// DAS URTEIL VON same.preis.ankunft S2: je Boot die Kontrolle kalt mit ganzem Bild (kaltKontrolle, die Lesart von ankunft.K1/K2: Lücke
+// ≤ 2 % gegen die Ruhe der Foundry, nichts offen im Bild, kein halbes Weltbild) ≤ 20 s — ≥ 4 Boots, jeder ganz, beide Geräte
+const ANKUNFT_ZWEI_SOLL_MS = 20000;
+const zweiUrteil = (j, lauf) => {
+    const { ad, hw } = HW(String(lauf.stdout || ""));
+    const kalt = j && Array.isArray(j.kalt) ? j.kalt : [];
+    const je = kalt.map((b, i) => {
+        const k = b.bildFehler ? { t: null, grund: "das Bild brach: " + b.bildFehler } : kaltKontrolle(b, lauf);
+        const wer = "Boot " + (i + 1) + ": ";
+        if (k.t == null) return { ok: false, z: wer + k.grund + (b.bild && b.bild.gekappt ? " (die Ruhe kappte die Frist)" : "") };
+        return { ok: k.t <= ANKUNFT_ZWEI_SOLL_MS, z: wer + (k.t / 1000).toFixed(2) + " s, Lücke " + (100 * b.bild.luecke).toFixed(2) + " %" };
+    });
+    const ok = je.filter((x) => x.ok).length;
+    return {
+        gruen: hw && kalt.length >= 4 && ok === kalt.length,
+        zahl: kalt.length + " Kalt-Boots, " + ok + " ganz (≤ 2 % Lücke gegen die Ruhe, nichts offen) in ≤ " + ANKUNFT_ZWEI_SOLL_MS / 1000 + " s: " + (je.map((x) => x.z).join(" | ") || "keiner") + " · " + ad,
+    };
+};
 const vierUrteil = (j, lauf) => {
     const { ad, hw } = HW(String(lauf.stdout || ""));
     const k = (j && Array.isArray(j.kalt) ? j.kalt : []).map((x) => x.tK);
@@ -1801,6 +1863,16 @@ async function pbProbe(art, aus) {
             await B("stadt-voll", "third");
             await Z("stadt-voll-third-steht", S);
         }, ["band:stadt-voll-ego", "stadt-voll-ego-steht", "band:stadt-voll-third", "stadt-voll-third-steht"]);
+        // DER PREIS STEHT AN DER WIESE (vorrat3-stationen-g6; Fund der Welle 2 in tafel-kandidaten.json: der Preis-Lauf der Sitzung misst
+        // an der Pose, an der die Probe den Spieler lässt — bis hier stadt-voll Third, die Akte von same.entfaltung.schirm S1 „Wiese und
+        // Genesis“ trug den Preis der Stadt): zuletzt zurück an die Wiese in Ego, außerhalb der Uhr des Gangs (EIN Umstellen, keine Zelle);
+        // bricht es, steht der Ort beim Namen in `sonst.preisOrt` und das Urteil von schirm S1 ist ROT
+        try {
+            await U("wiese", "ego");
+            sonst.preisOrt = "wiese-ego";
+        } catch (e) {
+            sonst.preisOrt = "brach: " + String((e && e.message) || e).split("\n")[0].slice(0, 160);
+        }
     }
     // ── DER STROM: alle Bilder der Sitzung bis hierher ──
     await zelle(null);
@@ -1887,7 +1959,21 @@ async function pbProbe(art, aus) {
             } catch (x) {
                 gang = ["gangUrteil warf: " + String((x && x.message) || x).slice(0, 160)];
             }
+            // DIE HEAP-KURVE (Karte 2 same.preis.ausdauer S1 „Spielgang am Stück mit Heap-Kurve“, vorrat3-stationen-g6): je Block des Stroms
+            // der Strecke EIN Punkt (Wanduhr, Heap der Seite, wie der Zapfen ihn las — ohne Aufräumen), die Steigung als Ausgleichsgerade in
+            // MB/min; daneben die zwei Stände nach dem Collector (heap). Ohne Heap im Strom bleibt die Kurve leer (n 0) und das Urteil ROT
+            const kurve = [];
+            for (const b of strecke)
+                if (Number.isFinite(b.heap) && Number.isFinite(b.wand) && (!kurve.length || kurve[kurve.length - 1][2] !== b.block)) kurve.push([b.wand, b.heap, b.block]);
+            let heapKurve = { n: kurve.length };
+            if (kurve.length >= 2) {
+                const t0k = kurve[0][0], xs = kurve.map((p) => (p[0] - t0k) / 60000), ys = kurve.map((p) => p[1]);
+                const mx = xs.reduce((s, x) => s + x, 0) / xs.length, my = ys.reduce((s, y) => s + y, 0) / ys.length;
+                const sxx = xs.reduce((s, x) => s + (x - mx) * (x - mx), 0), sxy = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0);
+                heapKurve = { n: kurve.length, min: +xs[xs.length - 1].toFixed(2), steigung: sxx > 0 ? +(sxy / sxx).toFixed(2) : null, von: ys[0], bis: ys[ys.length - 1], max: Math.max(...ys) };
+            }
             Object.assign(zus.dauer, {
+                heapKurve,
                 minuten: +((e.wert.zeit - a.wert.zeit) / 60000).toFixed(2), seiten: seiten.length, proben: [...new Set(strecke.map((b) => b.probe))].length,
                 last: zahlen(strecke), weg: Math.round(weg), gegangen: Math.round(gegangen), fahren: strecke.some((b) => b.sattel === 1),
                 nachtImStrom: strecke.some((b) => b.uhr != null && (b.uhr < 0.05 || b.uhr > 0.95)),
@@ -2147,6 +2233,24 @@ const pflichtEProben = () => [
     { name: "Mutante bewegt 60 ms, Stand 20 ms", stdout: pbRoh({ zelle: (n, c) => (c.frame = PB_STEHT.includes(n) ? 20 : 60) }), gruen: true },
     { name: "Mutante die Stand-Zelle Wiese Third trug die Uhr nicht", stdout: pbRoh({ ohne: ["wiese-third-steht"], offen: ["wiese-third-steht"] }), gruen: false },
 ];
+// KARTE 2 same.entfaltung.schirm S1 (Umfang „Wiese und Genesis, Sicht 8 km“, Preis „P stehend“, Richter „Frame p95 je Gerät, Wiese und
+// Genesis, Ego und Third“; vorrat3-stationen-g6): dieselben vier Stand-Zellen wie pflicht.E#1 auf demselben Lauf, die Schwelle aber die der
+// Karte — P der Klasse Ort, p95 ≤ 34 ms (die Takte des Schirms: 2 bei 60 Hz = 33,33 ms; PFLICHT E hält 33 und risse an der VSync-Kante).
+// Die Zahl nennt den Ort, an dem der Preis-Lauf danach steht (`sonst.preisOrt`, das Ende des Gangs an der Wiese)
+const SCHIRM_S1 = [{ zellen: PB_STEHT, wort: "Bild-p95", soll: 34, feld: (z) => z.frame }];
+function schirmUrteil(lauf) {
+    const u = pbRichter(lauf, { regeln: SCHIRM_S1 });
+    const z = pbZus(lauf, "gang");
+    return { gruen: u.gruen, zahl: u.zahl + " · Preis-Ort " + ((z && z.sonst && z.sonst.preisOrt) || "ungenannt") };
+}
+const schirmProben = () => [
+    ...pbProben("E#1"),
+    { name: "Mutante Wiese Ego steht Bild-p95 33,4 ms (zwei Takte bei 60 Hz)", stdout: pbRoh({ zelle: (n, c) => n === "wiese-ego-steht" && (c.frame = 33.4) }), gruen: true },
+    { name: "Mutante Genesis Third steht Bild-p95 34,5 ms", stdout: pbRoh({ zelle: (n, c) => n === "genesis-third-steht" && (c.frame = 34.5) }), gruen: false },
+    { name: "Mutante bewegt 60 ms, Stand 20 ms", stdout: pbRoh({ zelle: (n, c) => (c.frame = PB_STEHT.includes(n) ? 20 : 60) }), gruen: true },
+    { name: "Mutante die Stand-Zelle Wiese Third trug die Uhr nicht", stdout: pbRoh({ ohne: ["wiese-third-steht"], offen: ["wiese-third-steht"] }), gruen: false },
+    { name: "Mutante Genesis Ego steht im Sturm (Wetter gedreht)", stdout: pbRoh({ zelle: (n, c, w) => n === "genesis-ego-steht" && (w.wache = "ROT") }), gruen: false },
+];
 // der Pflicht-Richter C im Band (pflicht.C#2): Roh GRÜN; die Stadt ohne Wagen am Steuer, ihre Stand-Zelle 34 ms, ihr Band nicht
 // eingeschwungen, die Stadt ohne Uhr und Software-Adapter ROT beim Namen
 const PB_C_REGELN = [
@@ -2213,6 +2317,58 @@ const PB_PROBEN_DAUER = [
     ["Mutante der Aufnehmer warf", (d, s) => (s.fehler = 3), false],
     ["Mutante Software-Adapter", () => {}, false, "[linse-gpu] google/swiftshader"],
 ].map(([name, m, gruen, adapter]) => ({ name, stdout: k5Roh(m, adapter), gruen }));
+// KARTE 2 same.preis.ausdauer S1 (Umfang „1 min Spielgang“, Tiefe „kein Absturz, volles Bild“, Preis „Heap-Steigung ≤ 50 MB/min an beiden
+// Geräten“, Richter „Spielgang am Stück mit Heap-Kurve“; vorrat3-stationen-g6): derselbe Dauer-Lauf wie profiband.K5 (PB_PROBE_DAUER) —
+// der Strom zwischen dem Stand des Anfangs und dem des Endes in EINER Seite (am Stück, kein Neuladen, der Aufnehmer ohne Wurf), ≥ 1 min;
+// die Heap-Kurve des Stroms (heapKurve: ≥ AUSDAUER_S1.punkte Blöcke über ≥ 1 min) UND die Steigung der zwei Stände nach dem Collector je
+// ≤ 50 MB/min; das volle Bild: beide Anker-Fenster unter Regler voll. Was erst Sprosse 2/3 verlangt (Drift, 5 km, Tor, Nacht), urteilt
+// hier nicht
+const AUSDAUER_S1 = { min: 1, steigung: 50, punkte: 10 };
+function ausdauerRichter(lauf) {
+    const { ad, hw } = HW(String(lauf.stdout || ""));
+    const z = pbZus(lauf, "dauer");
+    if (!z) return { gruen: false, zahl: "keine Zeile PROFIBAND der Dauer (Exit " + lauf.exit + ") · " + ad };
+    const d = z.dauer || {}, k = d.heapKurve || {}, rot = [];
+    const [ha, he] = Array.isArray(d.heap) ? d.heap : [];
+    const gc = d.minuten > 0 && Number.isFinite(ha) && Number.isFinite(he) ? +((he - ha) / d.minuten).toFixed(1) : NaN;
+    if (d.minuten == null) rot.push("kein Spielgang zwischen den Marken (Anfang " + (d.anfang ? "da" : "fehlt") + ", Ende " + (d.ende ? "da" : "fehlt") + ")");
+    else {
+        if (d.seiten !== 1) rot.push(d.seiten + " Seiten zwischen Anfang und Ende (neu geladen — nie am Stück)");
+        if (!(d.minuten >= AUSDAUER_S1.min)) rot.push(d.minuten + " min am Stück < " + AUSDAUER_S1.min);
+        if (!(k.n >= AUSDAUER_S1.punkte && k.min >= AUSDAUER_S1.min && Number.isFinite(k.steigung))) rot.push("Heap-Kurve blind (" + (k.n || 0) + " Punkte über " + (k.min || 0) + " min)");
+        else if (!(k.steigung <= AUSDAUER_S1.steigung)) rot.push("Heap-Kurve steigt " + k.steigung + " MB/min > " + AUSDAUER_S1.steigung);
+        if (!(gc <= AUSDAUER_S1.steigung)) rot.push("Heap nach dem Collector " + ha + " → " + he + " MB: " + gc + " MB/min > " + AUSDAUER_S1.steigung);
+        const an = d.anker || {};
+        if (!(an.a && an.b && an.a.voll >= 0.99 && an.b.voll >= 0.99)) rot.push("volles Bild: die Anker-Fenster nicht beide unter Regler voll (" + (an.laeufe || 0) + " Fenster)");
+    }
+    if (z.strom.fehler || z.strom.verloren) rot.push("der Aufnehmer warf " + z.strom.fehler + " · verlor " + z.strom.verloren + " Bilder");
+    if (!hw) rot.push("Adapter: " + ad);
+    return {
+        gruen: rot.length === 0,
+        zahl: "Spielgang " + d.minuten + " min in " + d.seiten + " Seite(n) · Heap-Kurve " + (k.n || 0) + " Punkte, " + (k.von == null ? "?" : k.von) + " → " + (k.bis == null ? "?" : k.bis) +
+            " MB (max " + (k.max == null ? "?" : k.max) + "), Steigung " + (k.steigung == null ? "?" : k.steigung) + " MB/min · nach dem Collector " + gc + " MB/min (Soll je ≤ " + AUSDAUER_S1.steigung + ") · " + ad +
+            (rot.length ? " — ROT " + rot.length + ": " + rot.slice(0, 6).join(" | ") : ""),
+    };
+}
+const ausdauerProben = () => {
+    const kurve = (o = {}) => (d) => (d.heapKurve = { n: 1340, min: 22.3, steigung: 0.8, von: 301.2, bis: 333.0, max: 402.7, ...o });
+    const mit = (...m) => (d, s) => m.forEach((f) => f(d, s));
+    return [
+        ["Roh (22,4 min am Stück, Kurve +0,8 MB/min, nach GC +0,8)", kurve(), true],
+        ["Mutante 1,06 min, +185 MB/min (der Beleg der Radeon)", mit(kurve({ n: 64, min: 1.05, steigung: 183.4, von: 290, bis: 486 }), (d) => Object.assign(d, { minuten: 1.06, heap: [290.1, 486.2] })), false],
+        ["Mutante die Kurve steigt 61 MB/min (nach GC flach)", kurve({ steigung: 61 }), false],
+        ["Mutante nach GC +60 MB/min (die Kurve flach)", mit(kurve(), (d) => (d.heap = [300, 1644])), false],
+        ["Mutante die Kurve blind (3 Punkte)", kurve({ n: 3 }), false],
+        ["Mutante kein Heap im Strom", (d) => (d.heapKurve = { n: 0 }), false],
+        ["Mutante 0,6 min am Stück", mit(kurve({ min: 0.6 }), (d) => (d.minuten = 0.6)), false],
+        ["Mutante neu geladen zwischen Anfang und Ende", mit(kurve(), (d) => (d.seiten = 2)), false],
+        ["Mutante Anker unter Regler frei (nicht das volle Bild)", mit(kurve(), (d) => (d.anker.b.voll = 0)), false],
+        ["Mutante der Aufnehmer warf", mit(kurve(), (d, s) => (s.fehler = 3)), false],
+        ["Mutante kein Anfang (die Glätte fuhr nicht)", (d) => Object.assign(d, { anfang: false, minuten: undefined }), false],
+        ["Mutante Weg 4,6 km, nie Nacht (Sprosse 3 — hier nicht geurteilt)", mit(kurve(), (d) => Object.assign(d, { weg: 4600, nachtImStrom: false, nacht: { nacht: 0.5, mittag: 0.5 } })), true],
+        ["Mutante Software-Adapter", kurve(), false, "[linse-gpu] google/swiftshader"],
+    ].map(([name, m, gruen, adapter]) => ({ name, stdout: k5Roh(m, adapter), gruen }));
+};
 // die drei Proben (die Zwillinge teilen je EINE: gleiche Probe, ein Lauf); Ziel der Gruppe ≤ 90 s: glaette ~16 + gang ~60 + dauer ~14.
 // DIE DECKEL NACH IHRER MESSUNG (w4-fehlt-acht, Radeon eich3–6 4f098fa6 … 1f17e7d1 am selben Abdruck): glaette 27,6 · 27,0 · 27,0 · 28,8 s
 // → 29 s, dauer 36,0 · 22,8 · 29,4 · 30,6 s → 37 s (die Messung trägt Minuten auf zwei Stellen: 36,0 heißt bis 36,3 s; vorher je
@@ -3261,6 +3417,40 @@ module.exports = [
         pfad: [...ANKUNFT_PFAD, "save-server.js"],
         quelle: "KARTE2 same.preis.ankunft S1 = t(Kontrolle) von außen, ≥ 4 Kalt-Boots je Gerät",
     },
+    // KARTE 2 same.preis.ankunft S2 (Tiefe „Bild ganz, ≤ 2 % Lücke“, Preis „≤ 20 s kalt an beiden Geräten“; vorrat3-stationen-g6): derselbe
+    // Lauf (ANKUNFT_VIER, kein zweiter Boot) — je Kalt-Boot der Schuss an der Kontrolle gegen denselben Schuss nach der Ruhe der Foundry
+    // (zweiUrteil über kaltKontrolle); ein Boot ohne ganzes Bild, über 20 s oder weniger als vier Boots sind ROT beim Namen
+    {
+        kriterium: "karte2.same.preis.ankunft",
+        karte2: true,
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: ANKUNFT_VIER,
+        gpu: true,
+        zeit: true,
+        minuten: 6,
+        urteil: zweiUrteil,
+        proben: (() => {
+            const ad = "[linse-gpu] amd/rdna-3 (Probe)";
+            const boot = (tK, o = {}) => ({ tK, druecke: 3, weltbildDa: tK - 300, offen: [], ohne: [], bild: { luecke: 0.004, kachel: 0.011, mittel: 0.002, ruheS: 12.4, ruhe: true, gekappt: false }, ...o });
+            const vier = (o) => ({ kalt: [boot(8800), boot(9100), boot(8600), o || boot(9400)] });
+            return [
+                { name: "vier Boots 8,6–9,4 s, je Lücke 0,4 % nach der Ruhe", j: vier(), stdout: ad, gruen: true },
+                { name: "ein Boot Lücke 3 %", j: vier(boot(9400, { bild: { luecke: 0.03, kachel: 0.08, mittel: 0.01, ruheS: 12, ruhe: true } })), stdout: ad, gruen: false },
+                { name: "ein Boot ohne Ruhe der Foundry", j: vier(boot(9400, { bild: { luecke: 0.001, kachel: 0.002, mittel: 0.0, ruheS: 40, ruhe: false } })), stdout: ad, gruen: false },
+                { name: "ein Boot, dem die Frist die Ruhe kappte", j: vier(boot(9400, { bild: { luecke: 0.001, kachel: 0.002, mittel: 0.0, ruheS: 9, ruhe: false, gekappt: true } })), stdout: ad, gruen: false },
+                { name: "ein Boot 21 s (ganz)", j: vier(boot(21000)), stdout: ad, gruen: false },
+                { name: "ein Boot mit offenem Bedarf im Bild", j: vier(boot(9400, { offen: ["streu"] })), stdout: ad, gruen: false },
+                { name: "ein halbes Weltbild", j: vier(boot(9400, { ohne: ["Das erste Weltbild steht ohne Wald"] })), stdout: ad, gruen: false },
+                { name: "ein Boot ohne Bild (der Schuss brach)", j: vier({ tK: 9400, druecke: 3, bildFehler: "Execution context was destroyed" }), stdout: ad, gruen: false },
+                { name: "ein Boot ohne Kontrolle", j: vier({ tK: 0, druecke: 30 }), stdout: ad, gruen: false },
+                { name: "drei Boots (die Frist nahm den vierten)", j: { kalt: vier().kalt.slice(0, 3) }, stdout: ad, gruen: false },
+                { name: "swiftshader", j: vier(), stdout: "[linse-gpu] google/swiftshader", gruen: false },
+            ];
+        })(),
+        pfad: [...ANKUNFT_PFAD, "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/abnahme-urteil.cjs", "save-server.js"],
+        quelle: "KARTE2 same.preis.ankunft S2 = t(Kontrolle) + Bild-Diff gegen 60 s Ruhe, ≥ 4 Boots je Gerät",
+    },
     // KARTE 2 same.preis.bytes S1 (Umfang „eine Welt“, Tiefe „Gesetz statt Assets“, Preis „≤ 50 MB roh über das Netz, kein Installer“):
     // derselbe Lauf wie same.preis.ankunft#1 (ANKUNFT_VIER, kein zweiter Boot) — je Kalt-Boot der Netz-Mitschnitt (netzMitschnitt) über
     // Seite und Worker; jeder Boot mit Kontrolle, ganz mitgeschnitten (Network an jedem Ziel, mindestens ein Worker, nichts offen am
@@ -3706,6 +3896,22 @@ module.exports = [
         quelle: "PFLICHT-OFFEN E = Frame p95 ≤ 33 ms in jeder Stand-Zelle (Wiese und Genesis × Ego und Third) an beiden Geräten",
     },
     {
+        // KARTE 2 same.entfaltung.schirm S1 (schirmUrteil oben): dieselbe Gang-Probe — ein Urteil mehr auf demselben Lauf, keine GPU-Minute
+        kriterium: "karte2.same.entfaltung.schirm",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: PB_PROBE_GANG,
+        gpu: true,
+        zeit: true,
+        minuten: 1,
+        urteil: (j, lauf) => schirmUrteil(lauf),
+        pfad: PB_PFAD,
+        proben: schirmProben(),
+        quelle: "KARTE2 same.entfaltung.schirm S1 = Frame p95 je Gerät, Wiese und Genesis, Ego und Third",
+    },
+    {
         // DER RICHTER VON PFLICHT-OFFEN C IM BAND ohne Punkte (w28-station-quelle): das Profi-Band trägt die Last der belebten Stadt —
         // der Gang der Sitzung stellt stadt-voll (nH 300, haushalt.json) in Ego und Third: je Band (Haushalt, Ratsche, gpu-bank,
         // eingeschwungen) und Stand-Fenster (Bild-p95 ≤ 33 ms, Belegung p95 ≤ 5,8 ms), dazu ≥ 20 fahrende Wagen mit dem Bewohner am
@@ -3831,6 +4037,22 @@ module.exports = [
         pfad: PB_PFAD,
         proben: PB_PROBEN_DAUER,
         quelle: "2 = an beiden",
+    },
+    {
+        // KARTE 2 same.preis.ausdauer S1 (ausdauerRichter oben): derselbe Dauer-Lauf, ein Urteil mehr — keine GPU-Minute
+        kriterium: "karte2.same.preis.ausdauer",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: PB_PROBE_DAUER,
+        gpu: true,
+        zeit: true,
+        minuten: 0.3,
+        urteil: (j, lauf) => ausdauerRichter(lauf),
+        pfad: PB_PFAD,
+        proben: ausdauerProben(),
+        quelle: "KARTE2 same.preis.ausdauer S1 = Spielgang am Stück mit Heap-Kurve",
     },
 
     // ─────────────────────────────── Klang K1 · K2 · K4 · K5 ───────────────────────────────
@@ -4878,6 +5100,12 @@ require("./mass.cjs").massAn(module.exports, {
         const k = (j && Array.isArray(j.kalt) ? j.kalt : []).map((x) => x.tK).filter((t) => t > 0);
         return k.length ? [{ wort: "t(Kontrolle) kalt max s", wert: Math.max(...k) / 1000, soll: ANKUNFT_VIER_SOLL_MS / 1000 }] : [];
     },
+    // S2: die Zeit nur über Boots, deren Bild ganz war (sonst ist t eine untere Schranke: die Lücke hebt die Last nie) — die Lücke selbst ist
+    // ein Bild-Maß ohne geeichtes k und steht im Urteil
+    "karte2.same.preis.ankunft#2": (j, lauf) => {
+        const k = (j && Array.isArray(j.kalt) ? j.kalt : []).filter((b) => !b.bildFehler && kaltKontrolle(b, lauf).t != null).map((b) => b.tK);
+        return k.length ? [{ wort: "t(Kontrolle) kalt max s (Bild ganz)", wert: Math.max(...k) / 1000, soll: ANKUNFT_ZWEI_SOLL_MS / 1000 }] : [];
+    },
     "ankunft.K3#1": (j, lauf) => warmMass(lauf),
     "ankunft.K5#1": (j, lauf) => spurMass(spurVon(j || kaltJ(lauf), lauf)),
     "ankunft.K2#1": "die Lücke des Bilds zur Kontrolle gegen die Ruhe der Foundry — ein Bild-Maß, das die Last nicht linear dehnt (kein geeichtes k)",
@@ -4898,6 +5126,7 @@ require("./mass.cjs").massAn(module.exports, {
     "profiband.K1#1": pbMassDesUrteils,
     "profiband.K1#2": pbMassDesUrteils,
     "pflicht.E#1": pbMassDesUrteils,
+    "karte2.same.entfaltung.schirm#1": pbMassDesUrteils,
     "pflicht.C#2": pbMassDesUrteils,
     "profiband.K2#1": pbMassDesUrteils,
     "profiband.K2#2": pbMassDesUrteils,
@@ -4907,6 +5136,14 @@ require("./mass.cjs").massAn(module.exports, {
     "profiband.K4#2": (j, lauf) => k4Mass(lauf, 2),
     "profiband.K5#1": (j, lauf) => k5Mass(lauf),
     "profiband.K5#2": (j, lauf) => k5Mass(lauf),
+    // die Minuten am Stück (die Last verlängert sie nur) und die Steigung der Heap-Kurve — der Heap hängt an keiner Wanduhr: fest
+    "karte2.same.preis.ausdauer#1": (j, lauf) => {
+        const z = pbZus(lauf, "dauer"), d = (z && z.dauer) || {}, k = d.heapKurve || {};
+        if (!z || d.minuten == null) return [];
+        const m = [{ wort: "am Stück min", wert: d.minuten, soll: AUSDAUER_S1.min, richtung: "≥", fest: true }];
+        if (Number.isFinite(k.steigung)) m.push({ wort: "Heap-Kurve MB/min", wert: k.steigung, soll: AUSDAUER_S1.steigung, fest: true });
+        return m;
+    },
     "klang.K2#1": "die Korrelation r von Bild und Ohr — ein Maß ohne geeichtes k",
     "karte2.erleben.klang.landschaft#1": "die Korrelation r von Bild und Ohr und Pegel je Ort — Maße ohne geeichtes k",
     "klang.K5#2": (j) => {

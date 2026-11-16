@@ -423,8 +423,10 @@ function fahrtSumme(stationen, geraet) {
 // bis 15.11. 3: mit vier neuen Stationen der Karte 2 fielen liste, run und buchen an BEIDEN Geräten (5 499 s > 5 400); je Landung fährt
 // ohnehin nur die Tafel (--nur). 16.11. 4 → 5: die sieben neuen Läufe der Welle vorrat2-stationen (Σ 585 s: verhalten 180, stoerung 90,
 // oeko 90, teilen 75, ereignis 60, wetter-welt 45, physik 45) hoben die Fahrt von 6 619 auf 7 204 s (Radeon) über 4 × 1 740 s.
-// Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (96 Läufe × 120 s > 5 Teile)
-const FAHRT_TEILE_MAX = 5;
+// 16.11. 5 → 6: die Welle vorrat3-stationen (g1 +780 s: pfad 300, laeufe 180, schnee-jahr 150, kreislauf 90, seil 60; g4 +775 s:
+// takt 640, rolle 90, Paar +45; g2/g5/g6 Sitzungs-Proben, g3 +200 s) hob die Radeon-Fahrt auf 9 314 s (vor g3) über 5 × 1 740 s.
+// Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (108 Läufe × 120 s > 6 Teile)
+const FAHRT_TEILE_MAX = 6;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
 function fahrtUrteil(stationen) {
     return GERAETE.filter((g) => g !== "headless").flatMap((g) => {
@@ -441,6 +443,117 @@ function fahrtUrteil(stationen) {
 const zeileLaenge = (argv) => argv.reduce((n, a) => n + a.length + 3 + (a.match(/["\\]/g) || []).length, 0);
 const RUMPF_ZEILE_MAX = 30000;
 const RUMPF_LADER = 'eval(require("fs").readFileSync(process.env.PUNKTE_RUMPF, "utf8"))';
+// DER BASH-RUMPF (16.11., Radeon fe885d9d, Paar-Fahrt der Welle 2): die Git-bash (bash 5.3, x86_64-pc-cygwin) liest das Skript hinter
+// `-c` nur bis 8 191 Bytes — der Rest fällt still weg, gleich ob node oder bash sie startet (nachgestellt: ein Kommentar von 8 192 Bytes
+// vor `echo ok` druckt nichts, 8 187 druckt „ok“). siedlung.K4#2 maß 9 094 Bytes, seit die Welle 2 Gegen-Orte in ORT, UHR und STAND
+// trug: der Schnitt fiel in das Hochkomma von STAND („line 20: unexpected EOF while looking for matching `''“), die Probe endete nach UHR,
+// das Urteil las „Ring undefined“ — und mit ihr drei Zwillinge der Karte 2; siedlung.K2 stand mit 8 236 Bytes eine Welle davor. Über
+// BASH_RUMPF_MAX liegt das Skript neben der Ausgabe der Station, und `-c` trägt nur seinen Lader: `.` liest es in DERSELBEN Shell — $0,
+// $1 …, `exit` und `trap … EXIT` wie unter `-c`, auf jedem Betriebssystem dieselbe Regel.
+const BASH_RUMPF_MAX = 8000;
+const BASH_RUMPF_LADER = '. "$PUNKTE_RUMPF_SH"';
+// DIE FRIST EINER PROBE ist {SEK} − 6 s (stationen/sitzung-seite.js `FRIST_S`): ein SEK ≤ 6 ist kein Deckel, die Probe bricht vor ihrer
+// ersten Zeile („@@ PROBE-FEHLER der Deckel des Laufs fehlt“)
+const SEK_RAND_S = 6;
+
+// DIE LINSE BEFEHL TRÄGT (16.11., Koordinator nach der Paar-Fahrt der Welle 2 an der Radeon fe885d9d: 60 Minuten Fenster verbrannten an
+// Befehlen, die nie tragen konnten — drei Zwillinge von siedlung.K4#2 am Schnitt der Git-bash nach 8 191 Bytes, vier Proben am Rest der
+// Fahrt mit SEK 2–5). Ohne Fenster: je Station der Befehl genau so, wie der Läufer ihn startet (fahreGruppe: `ersetze` mit dem kleinsten
+// SEK, den der Läufer ihr geben kann; über BASH_RUMPF_MAX der Rumpf als Datei), dann (a) kein unersetzter Platzhalter `{…}` und kein
+// SEK ≤ SEK_RAND_S, (b) der bash-Teil besteht `bash -n` mit DERSELBEN Git-bash wie der Lauf (der Schnitt nach 8 191 Bytes erscheint
+// so, wie ihn die Probe erlebt), der `node -e`-Teil den Parser von node (vm.Script, dasselbe Urteil wie `node --check`, ohne 85 Starts).
+// `regel` stellt den Läufer VOR der Heilung nach (der Selbsttest beweist ROT am Täter): bashRumpf false, sitzGrenze () => ({ sekMin: 1 }).
+// Leser: selbsttest (der Fall BEFEHL TRÄGT; allein: `selbsttest --nur befehl-traegt`).
+// je Git-bash, Art (Datei oder hinter -c) und Skript das Urteil von bash -n EINMAL je Prozess: der Läufer vor der Heilung prüft nur
+// die Skripte neu, die er anders startet
+const BASH_N_GEPRUEFT = new Map();
+async function befehlTraegt(stationen, regel = {}) {
+    const vm = require("vm");
+    const bashRumpf = regel.bashRumpf !== false;
+    const grenze = regel.sitzGrenze || ((st) => sitzStartGrenze(st, "radeon", FAHRT_MAX_S));
+    const bash = regel.bash || findeBash();
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "punkte-befehl-"));
+    const rot = [];
+    const zeile = (text, n) => String(String(text).split("\n")[n - 1] || "").trim().slice(0, 90);
+    const jeSkript = new Map();
+    for (const st of stationen) {
+        const id = schluessel(st);
+        const sek = st.probe ? grenze(st).sekMin : Math.max(120, Math.ceil(st.minuten * 60 * 2));
+        const ctx = { port: 7704, aus: path.join(tmp, "roh", "station.json"), baum: path.join(os.homedir(), "punkte-baum"), koord: KOORD, sek };
+        const tpl = befehlVon(st);
+        const argv = tpl.map((a) => ersetze(String(a), ctx));
+        for (const a of [...argv, ...Object.values(st.env || {}).map((v) => ersetze(String(v), ctx))]) {
+            const m = /(?<!\$)\{[A-ZÄÖÜ][A-ZÄÖÜ0-9_]*\}/.exec(a);
+            if (m) {
+                const n = a.slice(0, m.index).split("\n").length;
+                rot.push(id + " · Zeile " + n + ": unersetzter Platzhalter " + m[0] + " — " + zeile(a, n));
+            }
+        }
+        if (tpl.some((a) => String(a).includes("{SEK}")) && !(sek > SEK_RAND_S))
+            rot.push(id + " · SEK " + sek + " ≤ " + SEK_RAND_S + " s: so startet sie der Läufer am Rest der Fahrt, die Frist der Probe ({SEK} − " + SEK_RAND_S + " s) fehlt");
+        if (argv[0] === "node" && argv[1] === "-e") {
+            try {
+                new vm.Script(argv[2], { filename: "node-e" });
+            } catch (e) {
+                const n = Number((/node-e:(\d+)/.exec(String(e.stack)) || [])[1]) || 0;
+                rot.push(id + " · Zeile " + n + ": node --check " + String(e.message).split("\n")[0] + " — " + zeile(argv[2], n));
+            }
+        }
+        if (argv[0] === "bash" && argv[1] === "-c") {
+            if (!jeSkript.has(argv[2])) jeSkript.set(argv[2], []);
+            jeSkript.get(argv[2]).push(id);
+        }
+    }
+    if (jeSkript.size && !bash) rot.push("keine Git-bash gefunden (PUNKTE_BASH) — bash -n ungeprüft");
+    // je Skript: über BASH_RUMPF_MAX startet der Läufer es (mit Rumpf) als Datei, sonst hinter -c. Bis BASH_RUMPF_MAX liest bash hinter
+    // -c dasselbe wie aus der Datei — diese Skripte prüft EIN `bash -n` über EINE Datei (je Skript ein Funktionsrumpf). Einzeln startet nur ein Skript über BASH_RUMPF_MAX hinter -c —
+    // genau so, wie der Läufer vor dem Rumpf es startete (Windows startet je Prozess 0,3–0,6 s, 31 einzeln rissen die 20 s)
+    const bashN = (args) => new Promise((ok) => {
+        const p = spawn(bash, args, { stdio: ["ignore", "ignore", "pipe"], windowsHide: true });
+        let e = "";
+        p.stderr.on("data", (d) => (e += d));
+        p.on("close", (c) => ok(c === 0 && !e.trim() ? null : e.trim() || "Exit " + c));
+        p.on("error", (x) => ok(String(x.message)));
+    });
+    const melde = (text, ids, err, n) => {
+        for (const id of ids) rot.push(id + " · Zeile " + n + ": bash -n " + err.split("\n")[0].slice(0, 160) + (n ? " — " + zeile(text, n) : "") + " (" + Buffer.byteLength(text) + " Bytes)");
+    };
+    const skripte = bash ? [...jeSkript.entries()] : [];
+    const einzeln = skripte.filter(([text]) => !bashRumpf && Buffer.byteLength(text) > BASH_RUMPF_MAX);
+    let nr = 0;
+    // EIN bash -n über die Gruppe; ROT halbiert sie (ein offenes Hochkomma verschluckt alles bis zum nächsten — die Zeile des Fehlers
+    // nennt dann nie das Skript), bis das eine Skript allein in seiner Datei steht und seine eigene Zeile nennt
+    const gruppe = async (g) => {
+        if (!g.length) return;
+        const schl = bash + "\0datei\0" + g.map(([t]) => t).join("\0");
+        if (!BASH_N_GEPRUEFT.has(schl)) {
+            const f = path.join(tmp, "gruppe-" + nr++ + ".sh");
+            fs.writeFileSync(f, g.length === 1 ? g[0][0] : g.map(([text], i) => "punkte_skript_" + i + "() {\n" + text + "\n}\n").join(""));
+            BASH_N_GEPRUEFT.set(schl, await bashN(["-n", f.split(path.sep).join("/")]));
+        }
+        const err = BASH_N_GEPRUEFT.get(schl);
+        if (!err) return;
+        if (g.length === 1) return melde(g[0][0], g[0][1], err.replace(/^.*?gruppe-\d+\.sh: /, ""), Number((/line (\d+)/.exec(err) || [])[1]) || 0);
+        const h = Math.ceil(g.length / 2);
+        await Promise.all([gruppe(g.slice(0, h)), gruppe(g.slice(h))]);
+    };
+    await gruppe(skripte.filter((s) => !einzeln.includes(s)));
+    for (const [text, ids] of einzeln) {
+        const schl = bash + "\0-c\0" + text;
+        const err = BASH_N_GEPRUEFT.has(schl) ? BASH_N_GEPRUEFT.get(schl) : await bashN(["-n", "-c", text]);
+        BASH_N_GEPRUEFT.set(schl, err);
+        if (err) melde(text, ids, err, Number((/line (\d+)/.exec(err) || [])[1]) || 0);
+    }
+    fs.rmSync(tmp, { recursive: true, force: true });
+    return { rot, stationen: stationen.length, bash: jeSkript.size };
+}
+// DIE GRENZE DES STARTS in der Sitzung (die EINE Regel für fahreSitzung und die Linse BEFEHL TRÄGT): eine Probe startet erst, wenn
+// der Rest der Fahrt restMin trägt — dann ist ihr kleinster SEK ihr Grund-Deckel (sekMin); ein Grund über der halben Fahrt kappt am
+// Rest bis auf 1 s (nur Fahrten des Selbsttests)
+function sitzStartGrenze(st, geraet, fahrtMaxS) {
+    const g = grundDeckel(st, geraet), bedarfS = g * teileVon(st);
+    return bedarfS <= fahrtMaxS / 2 ? { bedarfS, restMin: bedarfS + ZWISCHEN_S, sekMin: g } : { bedarfS, restMin: 0, sekMin: 1 };
+}
 function ladeStationen(dir = path.join(DIR, "stationen"), teil = "liste") {
     const alle = [];
     for (const g of GRUPPEN) {
@@ -541,7 +654,7 @@ function probenUrteil(stationen) {
             let u;
             try {
                 // eine Rohdatei-Probe (j): das Urteil liest das JSON an {AUS} wie im Lauf (bauen.K1#2: ein Werk, das nicht steht, ROT)
-                u = st.urteil(p.j || null, { exit: 0, stdout: p.stdout || "", stderr: "" });
+                u = st.urteil(p.j || null, { exit: p.exit != null ? p.exit : 0, stdout: p.stdout || "", stderr: "" }); // p.exit: der Exit des Laufs, sonst 0
             } catch (e) {
                 u = { gruen: null, zahl: "Urteil warf: " + e.message };
             }
@@ -1737,6 +1850,11 @@ function fahreGruppeEinmal(sts, ctx) {
             env.PUNKTE_RUMPF = ctx.aus + ".rumpf.js";
             fs.writeFileSync(env.PUNKTE_RUMPF, argv[2]);
             argv[2] = RUMPF_LADER;
+        }
+        if (argv[0] === "bash" && argv[1] === "-c" && typeof argv[2] === "string" && Buffer.byteLength(argv[2]) > BASH_RUMPF_MAX) {
+            env.PUNKTE_RUMPF_SH = (ctx.aus + ".rumpf.sh").split(path.sep).join("/");
+            fs.writeFileSync(env.PUNKTE_RUMPF_SH, argv[2]);
+            argv[2] = BASH_RUMPF_LADER;
         }
         let exe;
         if (argv[0] === "node") exe = process.execPath;
@@ -3555,6 +3673,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         return ja;
     };
     let zuruecksetzen = false, abbruch = false, gerissen = null, grundDa = null, grundWege = null;
+    const aufgeschoben = []; // die Proben, deren Grund-Deckel der Rest der Fahrt nicht trug (offen, die Fortsetzung misst sie)
     // DIE AUFFÜLLUNG DER RUHE (die Ablage der Fahrten): mit der Welt der Sitzung, ehe die erste Zeit-Probe misst
     // (auch vor dem Preis-Lauf der Meisterkarte 2: seine Referenz urteilt gegen dieselbe Ruhe)
     if (gruppen.some(istZeit) || gruppen.some((g) => karte2PreisLauf(g))) await referenzAuffuellen("sitzung");
@@ -3597,6 +3716,21 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         if (gerissen) {
             kopf.offen.push(...g.map(schluessel));
             await melde(g, g.map(() => ohne("die Fahrt riss " + fahrtMaxS + " s (" + gerissen + ") — offen, UNGEMESSEN", true)), null, new Date().toISOString());
+            continue;
+        }
+        // DER REST TRÄGT DEN GRUND NICHT (16.11., Radeon fe885d9d: breite.siedlung#1 fuhr mit {SEK} 5, same.preis.ankunft#1 mit 2 — der
+        // Rest der Fahrt kappte den Deckel unter jeden Sinn, die Probe sagte „PROBE-FEHLER der Deckel des Laufs fehlt“ und stand
+        // UNGEMESSEN, nie offen, nie in der Fortsetzung): eine Probe startet nur, wenn der Rest ihren Grund-Deckel (je Teil) und den Weg
+        // davor (ZWISCHEN_S: Grundstellung, Ort) trägt — sonst ist sie offen beim Namen „die Fahrt riss“, und die Fortsetzung misst sie in
+        // einer neuen Sitzung; die Proben nach ihr fahren weiter, wenn ihr Grund in den Rest passt. Ein Grund über der halben Fahrt (nur
+        // im Selbsttest: Fahrten von 8–12 s) bleibt wie bisher am Rest gekappt — ihn trüge auch keine Fortsetzung
+        const { bedarfS, restMin } = sitzStartGrenze(g[0], ctx.geraet, fahrtMaxS);
+        if (restS() < restMin) {
+            const r = Math.max(0, Math.floor(restS()));
+            aufgeschoben.push(schluessel(g[0]));
+            kopf.offen.push(...g.map(schluessel));
+            console.log("  SITZUNG der Rest der Fahrt " + r + " s trägt " + schluessel(g[0]) + " nicht (Grund-Deckel " + bedarfS + " s + " + ZWISCHEN_S + " s davor) — offen für die Fortsetzung");
+            await melde(g, g.map(() => ohne("die Fahrt riss " + fahrtMaxS + " s (der Rest " + r + " s unter dem Grund-Deckel " + bedarfS + " s von " + schluessel(g[0]) + ") — offen, UNGEMESSEN", true)), null, new Date().toISOString());
             continue;
         }
         if (!tot && zuruecksetzen) {
@@ -3810,6 +3944,9 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         console.log("  SITZUNG " + kopf.grund);
     } else if (tot && kopf.offen.length) {
         kopf.grund = (kopf.grund || "die Welt trägt nicht mehr: " + tot) + " — offen: " + kopf.offen.join(", ");
+        console.log("  SITZUNG " + kopf.grund);
+    } else if (aufgeschoben.length) {
+        kopf.grund = "die Fahrt riss " + fahrtMaxS + " s am Grund-Deckel von " + aufgeschoben.join(", ") + " — offen: " + kopf.offen.join(", ");
         console.log("  SITZUNG " + kopf.grund);
     } else delete kopf.offen;
     console.log("  SITZUNG Fahrt " + kopf.fahrtS + " s (Soll ≤ " + fahrtMaxS + " s) · " + kopf.proben + " Proben · Grundstellung " + kopf.grundstellungS.length + "×");
@@ -5677,6 +5814,34 @@ async function selbsttest(o = {}) {
     deckelGelernt = { radeon: {}, gtx: {}, headless: {} }; // ebenso ohne die gelernten Deckel der echten Mess-Dateien (grundDeckel)
     pruef("FORMAT echte Stationen gegen src/gN.js", echt.fehler.length === 0 && echt.stationen.length > 0,
         echt.stationen.length + " Stationen, " + echt.fehlt.length + " fehlt, " + echt.fehler.length + " Fehler" + (echt.fehler.length ? ": " + echt.fehler.join(" | ") : ""));
+    // (1b) BEFEHL TRÄGT (befehlTraegt, 16.11.): jede echte Station startet einen Befehl, der trägt — und der Läufer VOR der Heilung
+    // (`-c` ohne Rumpf-Datei, SEK am Rest der Fahrt bis 1 s) ist ROT an den Tätern der Paar-Fahrt fe885d9d: drei Zwillinge von
+    // siedlung.K4#2 am Schnitt der Git-bash, vier Proben mit SEK 2–5
+    {
+        const t0 = Date.now();
+        const jetzt = await befehlTraegt(echt.stationen);
+        const vorher = await befehlTraegt(echt.stationen, { bashRumpf: false, sitzGrenze: () => ({ sekMin: 1 }) });
+        // die Mutanten der Linse selbst: ein offenes Hochkomma mitten unter gesunden Skripten, ein Platzhalter, den niemand ersetzt,
+        // ein node -e, das nie parst — je ROT an seiner Station und Zeile; das gesunde Skript daneben bleibt GRÜN
+        const m = (id, befehl) => ({ kriterium: id, staffel: 1, minuten: 1, befehl });
+        const mut = await befehlTraegt([m("m.gesund", ["bash", "-c", "echo a\necho b"]), m("m.zitat", ["bash", "-c", "echo a\necho 'b\necho c"]), m("m.gesund2", ["bash", "-c", "echo d"]),
+            m("m.platz", ["bash", "-c", "echo {AUS}\necho {AUSGABE}"]), m("m.node", ["node", "-e", "const a = 1;\nconst = 2;"])]);
+        const mutOk = ["m.zitat#1 · Zeile 2", "m.platz#1 · Zeile 2", "m.node#1 · Zeile 2"].every((p) => mut.rot.some((z) => z.startsWith(p))) && mut.rot.length === 3;
+        const s = ((Date.now() - t0) / 1000).toFixed(1);
+        const taeter = ["karte2.mensch.kopplung.antwort#1", "karte2.mensch.zeit.kausal#1", "karte2.mensch.zeit.palimpsest#1", "breite.siedlung#1", "karte2.mensch.stadt.vertikal#1", "karte2.same.preis.ankunft#1", "karte2.same.preis.bytes#1"];
+        const verfehlt = taeter.filter((id) => !vorher.rot.some((z) => z.startsWith(id + " · ")));
+        for (const z of jetzt.rot) console.log("    ROT " + z);
+        pruef("BEFEHL TRÄGT: " + jetzt.stationen + " Stationen (" + jetzt.bash + " bash-Skripte) so gestartet, wie der Läufer sie startet — kein Platzhalter, kein SEK ≤ " + SEK_RAND_S + ", bash -n und node -e tragen; der Läufer vor der Heilung ROT an " + taeter.length + " Tätern (" + s + " s)",
+            jetzt.rot.length === 0 && verfehlt.length === 0 && vorher.rot.length > 0 && mutOk && Number(s) <= 20,
+            "jetzt ROT " + jetzt.rot.length + " · vorher ROT " + vorher.rot.length + (verfehlt.length ? " · vorher NICHT rot: " + verfehlt.join(", ") : "") + " · Mutanten " + (mutOk ? "ROT an Station und Zeile" : JSON.stringify(mut.rot)) + " · " + s + " s");
+        if (o.nur === "befehl-traegt") {
+            const sek = vorher.rot.filter((z) => / · SEK \d+ ≤ /.test(z));
+            for (const z of vorher.rot.filter((z) => !sek.includes(z) || taeter.some((id) => z.startsWith(id + " · ")))) console.log("    vorher " + z);
+            console.log("    vorher SEK ≤ " + SEK_RAND_S + " an " + sek.length + " Proben der Sitzung: " + sek.map((z) => z.split(" · ")[0]).join(", "));
+            fs.rmSync(tmp, { recursive: true, force: true });
+            return fall.every((f) => f.ok) ? 0 : 1;
+        }
+    }
     // (1d) DER ABDRUCK TRÄGT, WAS DIE MESSUNG ERZEUGT (das Gesetz der Fremd-Last, Koordinator 10.11.: „nie, wie die Maschine ihr Ergebnis
     // unter Last liest“): das Maß einer Zeit-Station (mass, ohneMass) ändert nicht, was sie misst — ihr Abdruck bleibt Byte für Byte, mit,
     // ohne und mit anderem Maß; ein geänderter Befehl der Probe und ein geändertes Urteil machen die Messung weiterhin alt (die Mutanten)
@@ -5951,6 +6116,13 @@ async function selbsttest(o = {}) {
     // mit ihrem Prozess (am alten Läufer: close nach 20,5 s, exit nach 0,46 s)
     e = await fahreStation({ ...st0, befehl: ["bash", "-c", "( sleep 20 ) & echo '{\"n\": 0}' > \"$1\"", "enkel", "{AUS}"], urteil: lies }, ctx("enkel"));
     pruef("LÄUFER ein Enkel mit dem Rohr hält die Station nicht (Ende am Prozess, nie am Rohr)", e.gruen === true && e.minuten < 0.25, JSON.stringify(e));
+    // DER BASH-RUMPF (16.11., siedlung.K4#2 „line 20: unexpected EOF“): ein Skript von 12 000 Bytes, dessen Hochkomma über die 8 191 Bytes
+    // reicht, die `-c` der Git-bash trägt, fährt ganz — $0, $1 und `exit` wie unter `-c`; die Mutante ist der alte Läufer (das Skript als
+    // Argument: abgeschnitten, Exit 2, keine Ausgabe)
+    const bashLang = "set -u\n: '" + "x".repeat(12000) + "'\n[ \"$0\" = bash-rumpf ] && echo '{\"n\": 0}' > \"$1\"; exit 0";
+    e = await fahreStation({ ...st0, befehl: ["bash", "-c", bashLang, "bash-rumpf", "{AUS}"], urteil: lies }, ctx("bash-rumpf"));
+    pruef("LÄUFER ein bash-Skript über 8 191 Bytes fährt als Datei — dasselbe $0 und $1, dasselbe exit",
+        e.gruen === true && e.exit === 0 && fs.existsSync(path.join(tmp, "bash-rumpf.json.rumpf.sh")), JSON.stringify(e));
     e = await fahreStation({ ...st0, env: { LINSE_GPU: "hardware" }, befehl: ["node", "-e", "console.log(process.env.LINSE_GPU)"], urteil: (j, l) => ({ gruen: true, zahl: l.stdout.trim() || "leer" }) }, ctx("karte"));
     const e2 = await fahreStation({ ...st0, befehl: ["node", "-e", "console.log(process.env.LINSE_GPU)"], urteil: (j, l) => ({ gruen: l.stdout.trim() === "software", zahl: l.stdout.trim() || "leer" }) }, ctx("soft"));
     pruef("LÄUFER headless fährt LINSE_GPU=software, nie die Karte", e.gruen === false && /LINSE_GPU=software/.test(e.grund) && e2.gruen === true, JSON.stringify([e, e2]));

@@ -39,6 +39,26 @@
   { "station": "luftwasser.K3#1", "leiter": "leben.wasser.lebensraeume", "sprosse": 1, "richter": "gleich" },
   { "station": "gelaende.K4#2", "leiter": "planet.wasser.stroemung", "sprosse": 1, "richter": "gleich" },
   { "station": "breite.siedlung#1", "leiter": "mensch.stadt.form", "sprosse": 1, "richter": "gleich" },
-  { "station": "karte2.erleben.spieler.praesenz#1", "leiter": "erleben.spieler.praesenz", "sprosse": 1, "richter": "gleich" }
+  { "station": "karte2.erleben.spieler.praesenz#1", "leiter": "erleben.spieler.praesenz", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.same.physik.verformung#1", "leiter": "same.physik.verformung", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.planet.kopplung.bahn-klima#1", "leiter": "planet.kopplung.bahn-klima", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.planet.wetter.klimazonen#1", "leiter": "planet.wetter.klimazonen", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.planet.wasser.kreislauf#1", "leiter": "planet.wasser.kreislauf", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.planet.relief.grossform#1", "leiter": "planet.relief.grossform", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.same.gedaechtnis.pfad#1", "leiter": "same.gedaechtnis.pfad", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.leben.kopplung.leben-formt-planet#1", "leiter": "leben.kopplung.leben-formt-planet", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.mensch.menge.bevoelkerung#1", "leiter": "mensch.menge.bevoelkerung", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.erleben.kopplung.wahrnehmung#1", "leiter": "erleben.kopplung.wahrnehmung", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.leben.tiere.masse#1", "leiter": "leben.tiere.masse", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.mensch.menge.kollektiv#1", "leiter": "mensch.menge.kollektiv", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.erleben.schoepfen.schutz#1", "leiter": "erleben.schoepfen.schutz", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.erleben.spieler.rolle#1", "leiter": "erleben.spieler.rolle", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.erleben.schoepfen.teilen#1", "leiter": "erleben.schoepfen.teilen", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.mensch.macht.wehrbau#1", "leiter": "mensch.macht.wehrbau", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.mensch.fahrzeug.medium#1", "leiter": "mensch.fahrzeug.medium", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.same.entfaltung.schirm#1", "leiter": "same.entfaltung.schirm", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.same.preis.ausdauer#1", "leiter": "same.preis.ausdauer", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.planet.kosmos.welten#1", "leiter": "planet.kosmos.welten", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.erleben.kopplung.bild#1", "leiter": "erleben.kopplung.bild", "sprosse": 1, "richter": "gleich" }
  ]
 }

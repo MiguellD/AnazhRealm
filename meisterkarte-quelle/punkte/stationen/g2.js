@@ -859,8 +859,83 @@ function rudelGefuehl(r, T, o) {
     return aus;
 }
 
+// DIE WITTERUNG FÜHRT DEN JÄGER (Karte 2 erleben.kopplung.wahrnehmung S1, vorrat3-stationen-g2), in der Seite der Werkbank an der
+// Mess-Wiese über den Lauf `wertLauf` (art „rudel“: die Szene, dann ihr Gegenlauf o.gegen): je Jagd ein Kitz (Hirsch, bodySize 0,6)
+// und vier Wölfe 25 m um es, verbunden zum Rudel (`_kreaturVerbinden`), der Spieler 150 m fern und ruhig, im pfad; der echte
+// Kreatur-Takt je 1/60 s (Stoß, Leib-Kontakte, `updateCreatures` — der Takt der Kreatur-Linse, wie jagdkreis die Quote misst) bis
+// zum Riss (das Kitz liegt unter den Leichnamen) oder 90 Spiel-Sekunden. Der Wolf findet Beute NUR über die Witterung
+// (`_creatureScentHuntDir`: der Leib in jagd.scentRangeM, der Wind trägt `_scentAt`); der Gegenlauf setzt die Reichweite der
+// Witterung im Gesetz auf 0 (das Memo des Verhaltens-Gesetzes, wie der Täter jagd-mager der Linse), sonst dieselben Jagden an
+// denselben Orten. Gezählt: Jagden mit Hetze, Risse, die Sekunde jedes Risses; die Szene räumt ihre Tiere und das Gesetz
+function witterungJagd(r, T, o) {
+    const s = r.state, pm = s.playerMesh.position, A = r.constructor;
+    if (s.renderer && s.renderer.setAnimationLoop) s.renderer.setAnimationLoop(null);
+    window.__buehne();
+    s.weatherEffectTime = 0;
+    r._loopNexusUpdate = () => {};
+    s.worldRules = [];
+    s.perfRegulator = false;
+    r.setGameMode("pfad");
+    r.setCameraMode(o.sicht || "first");
+    const raeumen = () => { for (const c of [...s.creatures, ...(s.leichname || [])]) r.removeCreature(c); };
+    raeumen();
+    s.faunaLifecycle.lastTick = 1e12;
+    s.maxCreatures = Math.max(s.maxCreatures || 0, 12);
+    A._verhaltenGesetz();
+    const V0 = A._verhaltenGesetzMemo;
+    if (!V0 || !V0.jagd) return { fehler: "kein Memo des Verhaltens-Gesetzes", gegen: !!o.gegen };
+    if (o.gegen) A._verhaltenGesetzMemo = Object.assign({}, V0, { jagd: Object.assign({}, V0.jagd, { scentRangeM: 0 }) });
+    const aus = { gegen: !!o.gegen, sicht: s.cameraMode, scentRangeM: A._verhaltenGesetz().jagd.scentRangeM, n: 0, jagden: 0, risse: 0, rissS: [], dauer: 0, opfer: 0 };
+    const dt = 1 / 60;
+    try {
+        for (let i = 0; i < 8; i++) {
+            s.creatureAnimationTime = 100;
+            r._creatureAiFrame = 0;
+            s.emotionField = undefined;
+            const w = (2 * Math.PI * i) / 8;
+            let ort = null;
+            for (let k = 0; k < 12 && !ort; k++) {
+                const x = o.x - 60 + Math.cos(w) * (80 + 4 * k), z = o.z + 40 + Math.sin(w) * (80 + 4 * k);
+                if (r._landAt(x, z) && r._landAt(x + 25, z) && r._landAt(x - 25, z)) ort = { x, y: r._voxelSurfaceY(x, z), z };
+            }
+            if (!ort) continue;
+            pm.set(ort.x + 150, r._voxelSurfaceY(ort.x + 150, ort.z + 20) + 1.8, ort.z + 20);
+            const beute = r.spawnCreatureAt(ort.x, ort.y, ort.z, "happy", "wesen", { precise: true, bodySize: 0.6 });
+            if (!beute) return Object.assign(aus, { fehler: "Spawn wesen" });
+            beute.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+            const woelfe = [];
+            for (let j = 0; j < 4; j++) {
+                const a = Math.PI + (j - 1.5) * 0.5 + i * 0.7, x = ort.x + Math.cos(a) * 25, z = ort.z + Math.sin(a) * 25;
+                const c = r.spawnCreatureAt(x, r._voxelSurfaceY(x, z), z, "happy", "wolf", { precise: true, bodySize: 1 });
+                if (!c) return Object.assign(aus, { fehler: "Spawn wolf" });
+                c.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                woelfe.push(c);
+            }
+            r._kreaturVerbinden(woelfe);
+            aus.n++;
+            let hetze = false;
+            let k = 0;
+            for (; k < 5400; k++) {
+                if (s.player.emotions) Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 });
+                r._kreaturStossSchritt(dt);
+                r._leibKontakte();
+                r.updateCreatures(dt);
+                if (woelfe.some((c) => c.userData._motionZustand === "hetzen")) hetze = true;
+                if ((s.leichname || []).includes(beute)) { aus.risse++; aus.rissS.push(+(k * dt).toFixed(1)); break; }
+            }
+            if (hetze) aus.jagden++;
+            aus.dauer = +(aus.dauer + k * dt).toFixed(1);
+            raeumen();
+        }
+    } finally {
+        A._verhaltenGesetzMemo = V0;
+        raeumen();
+    }
+    return aus;
+}
+
 // Der Lauf (im Spiel-Baum, cwd): EINE Werkbank an der Weiche (`[linse-gpu]` nennt die Karte) an der Mess-Wiese, Port {PORT}+20000;
-// art „wert": der Wert-Gang zur Uhr 12 und 22 Uhr (die Wiese hat dann 13,8 °C — um Mitternacht schweigen die Grillen unter
+// art „wert“: der Wert-Gang zur Uhr 12 und 22 Uhr (die Wiese hat dann 13,8 °C — um Mitternacht schweigen die Grillen unter
 // tStumm 12 °C, Dolbear), je Ego und Third; art „rudel": je Sicht der Lauf im pfad und sein Gegenlauf. Je Ergebnis eine Zeile
 // „WERT-GANG {…}" bzw. „RUDEL-GEFUEHL {…}", alle in {AUS}.
 // IN DER SITZUNG (29.10.): „wert" läuft die Diagonale — 12 Uhr in Ego, 22 Uhr in Third (Tag und Nacht, Ego und Third: jede Spalte
@@ -1710,17 +1785,25 @@ async function platzAcht(r, T) {
     cam.updateMatrixWorld(true);
     const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     const auge = cam.getWorldPosition(new T.Vector3());
+    const augeImHaus = r._imGrundriss(auge.x, auge.z, 0) === "haus";
+    // DIE AUSFÄLLE BEIM NAMEN (vorrat3-heiler, Radeon fe885d9d: das Bild um 8 Uhr zeigt Menschen, die Zählung sagte 0 von 77): je
+    // Stand der Grund, an dem er aus der Zählung fällt — drinnen · ungezeichnet · außer Bild · verdeckt —, und die Kamera der Zählung
     let imBild = 0, gehend = 0, alle = 0, mitLeib = 0;
+    const aus = { drinnen: 0, ungezeichnet: 0, ausserBild: 0, verdeckt: 0 };
     for (const b of leiber()) {
         alle++;
         if (b.userData.rig) mitLeib++;
-        if (!gez(b)) continue;
+        if (b.userData._drinnen) { aus.drinnen++; continue; }
+        if (!gez(b)) { aus.ungezeichnet++; continue; }
         const brust = new T.Vector3(b.position.x, b.position.y + 0.4, b.position.z);
-        if (!fr.containsPoint(brust)) continue;
+        if (!fr.containsPoint(brust)) { aus.ausserBild++; continue; }
         const d = auge.distanceTo(brust);
-        let frei = true;
-        for (let t = 0.6; t < d - 0.6 && frei; t += 0.5) { const k = t / d; if (r._imGrundriss(auge.x + (brust.x - auge.x) * k, auge.z + (brust.z - auge.z) * k, 0) === "haus") frei = false; }
-        if (!frei) continue;
+        // DIE SICHTLINIE BEGINNT VOR DEM EIGENEN GRUNDRISS (Radeon fe885d9d: 35 von 35 im Frustum „verdeckt“, das Bild zeigte Menschen):
+        // steht das Auge der Third-Kamera über einem Hausgrundriss (2,9 m hinter dem Spieler am Platzrand), lag jede Linie ab 0,6 m
+        // „im Haus“ — gezählt wird ein Haus erst, nachdem die Linie den Grundriss unter dem Auge verlassen hat
+        let frei = true, raus = !augeImHaus;
+        for (let t = 0.6; t < d - 0.6 && frei; t += 0.5) { const k = t / d, h = r._imGrundriss(auge.x + (brust.x - auge.x) * k, auge.z + (brust.z - auge.z) * k, 0) === "haus"; if (!raus) raus = !h; else if (h) frei = false; }
+        if (!frei) { aus.verdeckt++; continue; }
         imBild++;
         const a = p0.get(b);
         if (a && Math.hypot(b.position.x - a.x, b.position.z - a.z) >= 0.5) gehend++;
@@ -1729,7 +1812,7 @@ async function platzAcht(r, T) {
     let b64 = "";
     for (let i = 0; i < u8.length; i += 0x8000) b64 += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
     b64 = btoa(b64);
-    return { b64, uhr: UHR_T, tod: +s.timeOfDay.toFixed(4), sicht: s.cameraMode, stand: [+stand.x.toFixed(1), +stand.z.toFixed(1)], platz: [+pc.x.toFixed(1), +pc.z.toFixed(1)], leiber: alle, mitLeib, imBild, gehendImBild: gehend, fps, takte, version: A.VERSION };
+    return { b64, uhr: UHR_T, tod: +s.timeOfDay.toFixed(4), sicht: s.cameraMode, stand: [+stand.x.toFixed(1), +stand.z.toFixed(1)], platz: [+pc.x.toFixed(1), +pc.z.toFixed(1)], leiber: alle, mitLeib, imBild, gehendImBild: gehend, aus, auge: auge.toArray().map((v) => +v.toFixed(1)), augeImHaus, fps, takte, version: A.VERSION };
 }
 
 // DIE PROBE BEWOHNER IN DER SITZUNG (mensch.K1#1 und mensch.K2#2, Zwillinge: EIN Lauf, zwei Urteile) am GENESIS-ORT, dem Ort des
@@ -1765,6 +1848,200 @@ const BEWOHNER_SITZUNG = { sek: 90, befehl: [
     ].join("\n"),
 ] };
 
+// DIE ZÄHLUNG DES DORFS (Karte 2 mensch.menge.bevoelkerung S1, vorrat3-stationen-g2): 20 Stichproben (Ort × Uhr) im Bild gegen
+// den Soll-Plan. Die ORTE sind die Ziele des Gesetzes selbst: je Uhr das Soll jedes Bewohners des Start-Dorfs (`_bewohnerSoll`,
+// der Plan der Stunde aus koerper `tagesPlan` — drinnen ist das Ziel die Tür), die fünf Ziel-Punkte, an denen über die Uhren die
+// meisten stehen sollen (je ≥ R_M auseinander). Die UHREN liegen zwischen den Wenden des Tags (koerper TAGES_GESETZ: wach 6,5,
+// Werk 8–17, Ruhe 22, je ±0,5 h): 3 Uhr (alle drinnen — am Ort steht niemand), 10 und 15 Uhr (am Werk), 20 Uhr (der Abend).
+// Je Uhr die Uhr am Regler des Spielers und das EINE Warten wie platzAcht (`__gebautNach`: jeder angekommen, jeder Leib draußen
+// mit Feld), je Ort ein Stand der Third-Kamera 9–17 m vom Ort mit freiem Blick auf ihn (die Abnahme ohne Pixel wie platzAcht),
+// 2 Spiel-Sekunden im Takt des Spiels, dann gezählt im Frustum der Spiel-Kamera: SOLL = die Bewohner, deren Ziel der Stunde
+// dieser Ort ist und die nicht drinnen sind; IST = die Stände (Hülle mit `_feldLageVon` und `heim`, derselbe Filter wie
+// platzAcht), gezeichnet und nicht drinnen, die Brust im Frustum, die Sichtlinie frei von Hausgrundrissen, ≤ R_M vom Ort und
+// ihm näher als jedem anderen Ziel der Stunde; FEHLT = ein Bewohner des Solls ohne gezeichneten Stand ≤ R_M am Ort; DOPPELT =
+// ein Bewohner mit zwei Hüllen in der Szene oder zwei Bewohner mit einem Samen
+async function dorfZaehlung(r, T) {
+    const UHREN = [3, 10, 15, 20], ORTE_N = 5, R_M = 10;
+    const s = r.state, wm = s.worldMeta, pm = s.playerMesh.position, A = r.constructor;
+    const zelle = wm.settlementCells && wm.settlementCells.start;
+    if (!zelle) return { fehler: "kein Start-Dorf" };
+    s.renderer.setAnimationLoop(null);
+    if (s.cameraMode !== "third") r.setCameraMode("third");
+    const cam = s.camera;
+    const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+    const offen = () => { const o = r._weltOffen(); return !o.leute && !o.leiber; };
+    const dorf = () => [...(r._bewohnerSiedlungen || new Map()).values()].filter((S) => Array.isArray(S.liste) && S.liste.length).sort((a, b) => Math.hypot(a.ox - zelle.x, a.oz - zelle.z) - Math.hypot(b.ox - zelle.x, b.oz - zelle.z))[0];
+    await window.__gebautNach("das Start-Dorf der Zählung", { fertig: () => !!dorf() && offen() });
+    const S = dorf();
+    if (!S) return { fehler: "keine Bewohner im Start-Dorf" };
+    const L = S.liste;
+    const schl = (p) => Math.round(p.x * 10) + "|" + Math.round(p.z * 10);
+    const zielVon = (b, h) => { const z = r._bewohnerSoll(b, h); return z.drinnen || !z.ziel ? null : z.ziel; };
+    const summe = new Map();
+    for (const h of UHREN) for (const b of L) { const z = zielVon(b, h); if (!z) continue; const e = summe.get(schl(z)) || { x: z.x, z: z.z, n: 0 }; e.n++; summe.set(schl(z), e); }
+    const orte = [];
+    for (const e of [...summe.values()].sort((a, b) => b.n - a.n)) if (orte.length < ORTE_N && orte.every((o) => Math.hypot(o.x - e.x, o.z - e.z) >= R_M)) orte.push(e);
+    if (orte.length < ORTE_N) return { fehler: "nur " + orte.length + " Orte mit Soll im Start-Dorf", bewohner: L.length };
+    const mess = async () => { await window.__seitenTakt(); await window.__seitenTakt(); const p = cam.getWorldPosition(pm.clone()); const d = cam.getWorldDirection(pm.clone()); return { p, d, h: Math.atan2(d.x, d.z), v: Math.asin(Math.max(-1, Math.min(1, d.y))) }; };
+    const imFrustum = (x, y, z) => { cam.updateMatrixWorld(true); const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)); return fr.containsPoint(new T.Vector3(x, y, z)); };
+    const stelle = async (q, ziel) => {
+        pm.set(q.x, r.getTerrainHeightAt(q.x, q.z) + A.PLAYER_FOOT_OFFSET, q.z);
+        if (s._fixedSimPos) s._fixedSimPos.copy(pm);
+        const zy = r.getTerrainHeightAt(ziel.x, ziel.z) + 0.9;
+        for (let it = 0; it < 4; it++) {
+            const m0 = await mess();
+            const dx = ziel.x - m0.p.x, dy = zy - m0.p.y, dz = ziel.z - m0.p.z;
+            const hz = Math.atan2(dx, dz), vz = Math.atan2(dy, Math.hypot(dx, dz));
+            const y0 = s.yaw, p0 = s.pitch;
+            s.yaw = y0 + 0.1; const m1 = await mess(); const sy = Math.sign(wrap(m1.h - m0.h)) || 1;
+            s.yaw = y0; s.pitch = p0 + 0.05; const m2 = await mess(); const sp = Math.sign(m2.v - m0.v) || 1;
+            s.yaw = y0 + sy * wrap(hz - m0.h); s.pitch = p0 + sp * (vz - m0.v);
+        }
+        await mess();
+        const frei = !window.__abnahmeUrteil(window.__abnahmeMessen({})).rot.some((f) => !f.feld.startsWith("bild."));
+        return frei && imFrustum(ziel.x, zy, ziel.z);
+    };
+    const leiber = () => s.scene.children.filter((o) => o && o.userData && o.userData._feldLageVon && o.userData.heim != null);
+    const gez = (g) => !!g && !g.userData._drinnen && (g.visible || g.userData._satz === true || !!(r._kzBesitztFeld && r._kzBesitztFeld(g)));
+    const samenDoppelt = L.length - new Set(L.map((b) => b.seed)).size;
+    const proben = [];
+    let doppelt = 0;
+    for (const h of UHREN) {
+        r.setTimeOfDay(h / 24, "regler");
+        const takte = await window.__gebautNach("die Zählung um " + h + " Uhr", { fertig: offen });
+        const ziele = new Map();
+        for (const b of L) { const z = zielVon(b, h); if (z) ziele.set(schl(z), z); }
+        for (let oi = 0; oi < orte.length; oi++) {
+            const O = orte[oi], ok = schl(O);
+            let stand = null;
+            for (const d of [9, 13, 17]) { for (let w = 0; w < 8 && !stand; w++) { const a = (w * Math.PI) / 4, q = { x: O.x + Math.cos(a) * d, z: O.z + Math.sin(a) * d }; const g = r._imGrundriss(q.x, q.z, 0.5); if (g !== "haus" && g !== "bau" && r._landAt(q.x, q.z) && (await stelle(q, O))) stand = q; } if (stand) break; }
+            let uhr = performance.now();
+            for (let k = 0; k < Math.round(2 / A.TAKT_DECKEL_S); k++) { uhr += A.TAKT_DECKEL_S * 1000; r._gameLoopTick(uhr); await window.sleep(); }
+            cam.updateMatrixWorld(true);
+            const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+            const auge = cam.getWorldPosition(new T.Vector3());
+            const je = new Map();
+            let ist = 0;
+            const amOrt = new Set();
+            for (const g of leiber()) {
+                const b = g.userData._feldLageVon.b;
+                je.set(b, (je.get(b) || 0) + 1);
+                if (!gez(g)) continue;
+                const dO = Math.hypot(g.position.x - O.x, g.position.z - O.z);
+                if (dO > R_M) continue;
+                let naechst = true;
+                for (const [kz, z] of ziele) if (kz !== ok && Math.hypot(g.position.x - z.x, g.position.z - z.z) < dO) naechst = false;
+                if (!naechst) continue;
+                amOrt.add(b);
+                const brust = new T.Vector3(g.position.x, g.position.y + 0.4, g.position.z);
+                if (!fr.containsPoint(brust)) continue;
+                const dA = auge.distanceTo(brust);
+                let frei = true, raus = r._imGrundriss(auge.x, auge.z, 0) !== "haus"; // wie platzAcht: ab dem Rand des Grundrisses unter dem Auge
+                for (let t = 0.6; t < dA - 0.6 && frei; t += 0.5) { const f = t / dA, h = r._imGrundriss(auge.x + (brust.x - auge.x) * f, auge.z + (brust.z - auge.z) * f, 0) === "haus"; if (!raus) raus = !h; else if (h) frei = false; }
+                if (frei) ist++;
+            }
+            doppelt = Math.max(doppelt, [...je.values()].filter((n) => n > 1).length);
+            const sollL = L.filter((b) => { const z = zielVon(b, h); return z && schl(z) === ok; });
+            const fehlt = sollL.filter((b) => !amOrt.has(b)).length;
+            proben.push({ uhr: h, ort: oi, tod: +s.timeOfDay.toFixed(4), soll: sollL.length, ist, fehlt, imBild: !!stand, stand: stand ? [+stand.x.toFixed(1), +stand.z.toFixed(1)] : null, takte });
+        }
+    }
+    return { bewohner: L.length, orte: orte.map((o) => [+o.x.toFixed(1), +o.z.toFixed(1), o.n]), rM: R_M, samenDoppelt, doppelt, sicht: s.cameraMode, proben, version: A.VERSION };
+}
+// DIE ZEUGEN DER TAT (Karte 2 mensch.menge.kollektiv S1, vorrat3-stationen-g2): der Spieler geht um 10 Uhr (Uhr am Regler) in Third
+// längs der langen Achse des Dorfplatzes des Start-Dorfs durch die Menge (1,4 m/s, im Takt des Spiels, nach dem EINEN Warten wie
+// platzAcht), je Bewohner draußen sein kleinster Abstand zum Spieler; dann an der Platzmitte DIE TAT: er schlägt ein Kitz
+// (`damageCreature`, source player — der EINE Schadens-Weg ruft `_bewohnerZeuge`: wer draußen ≤ BEWOHNER.zeugeM steht, erinnert die
+// Gewalt und lässt ihm mehr Raum, `_bewohnerSpielerAbstand`); die Zeugen sind die Bewohner draußen ≤ zeugeM am Opfer in diesem
+// Augenblick. Dann derselbe Gang noch einmal. Gezählt je Zeuge der kleinste Abstand vor und nach der Tat, ihr Median, dazu die
+// erinnerte Furcht der Zeugen vor und nach dem Schlag (Lesewert)
+async function zeugenGang(r, T) {
+    const UHR = 10 / 24, V = 1.4;
+    const s = r.state, wm = s.worldMeta, pm = s.playerMesh.position, A = r.constructor;
+    const zelle = wm.settlementCells && wm.settlementCells.start;
+    if (!zelle) return { fehler: "kein Start-Dorf" };
+    const plan = [...(r._ortPlaene || new Map()).values()].find((v) => v && v.ort && Math.abs(v.ort.x - zelle.x) < 0.5 && Math.abs(v.ort.z - zelle.z) < 0.5);
+    if (!plan) return { fehler: "kein Plan" };
+    const pz = plan.platz, pc = { x: plan.ort.x + pz.cx, z: plan.ort.z + pz.cz };
+    const lang = (pz.phi || 0) + (pz.ex >= pz.ez ? 0 : Math.PI / 2);
+    const ux = -Math.cos(lang), uz = Math.sin(lang);
+    const half = Math.max(6, Math.min(15, Math.max(pz.ex, pz.ez) - 1));
+    s.renderer.setAnimationLoop(null);
+    r.setTimeOfDay(UHR, "regler");
+    if (s.cameraMode !== "third") r.setCameraMode("third");
+    const offen = () => { const o = r._weltOffen(); return !o.leute && !o.leiber; };
+    const dorf = () => [...(r._bewohnerSiedlungen || new Map()).values()].filter((S) => Array.isArray(S.liste) && S.liste.length).sort((a, b) => Math.hypot(a.ox - zelle.x, a.oz - zelle.z) - Math.hypot(b.ox - zelle.x, b.oz - zelle.z))[0];
+    await window.__gebautNach("der Gang durch den Platz", { fertig: () => !!dorf() && offen() });
+    const S = dorf();
+    if (!S) return { fehler: "keine Bewohner im Start-Dorf" };
+    const L = S.liste;
+    let uhr = performance.now();
+    const takt = async () => { uhr += A.TAKT_DECKEL_S * 1000; r._gameLoopTick(uhr); await window.sleep(); };
+    const ruhe = async (sek) => { for (let k = 0; k < Math.round(sek / A.TAKT_DECKEL_S); k++) await takt(); };
+    const stelle = (x, z) => { pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z); if (s._fixedSimPos) s._fixedSimPos.copy(pm); };
+    const gang = async () => {
+        const min = new Map();
+        const n = Math.max(1, Math.round((2 * half) / V / A.TAKT_DECKEL_S));
+        for (let k = 0; k <= n; k++) {
+            const t = -half + (2 * half * k) / n;
+            stelle(pc.x + ux * t, pc.z + uz * t);
+            await takt();
+            for (const b of L) {
+                if (!b.leib || b.drinnen) continue;
+                const d = Math.hypot(b.leib.position.x - pm.x, b.leib.position.z - pm.z);
+                if (!(min.get(b) <= d)) min.set(b, d);
+            }
+        }
+        return min;
+    };
+    stelle(pc.x - ux * half, pc.z - uz * half);
+    await ruhe(2);
+    const vor = await gang();
+    stelle(pc.x, pc.z);
+    await ruhe(1);
+    const fx = pm.x + ux * 2, fz = pm.z + uz * 2;
+    const opfer = r.spawnCreatureAt(fx, r._voxelSurfaceY(fx, fz), fz, "happy", "wesen", { precise: true, bodySize: 0.6 });
+    if (!opfer) return { fehler: "Spawn des Opfers" };
+    const R2 = A.BEWOHNER.zeugeM ** 2;
+    const zeugen = L.filter((b) => b.leib && !b.drinnen && (b.leib.position.x - opfer.position.x) ** 2 + (b.leib.position.z - opfer.position.z) ** 2 < R2);
+    const furcht0 = zeugen.map((b) => r._kreaturFurchtErinnert(b.leib));
+    const tat = r.damageCreature(opfer, 9999, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z } });
+    const furcht1 = zeugen.map((b) => r._kreaturFurchtErinnert(b.leib));
+    stelle(pc.x - ux * half, pc.z - uz * half);
+    await ruhe(2);
+    const nach = await gang();
+    for (const c of [...s.creatures, ...(s.leichname || [])]) if (c === opfer) r.removeCreature(c);
+    const med = (a) => { const v = [...a].sort((x, y) => x - y); return v.length ? +(v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2).toFixed(3) : null; };
+    const paare = zeugen.filter((b) => vor.has(b) && nach.has(b)).map((b) => [+vor.get(b).toFixed(2), +nach.get(b).toFixed(2)]);
+    return { zeugen: zeugen.length, paare, vorMedian: med(paare.map((p) => p[0])), nachMedian: med(paare.map((p) => p[1])), furcht: [med(furcht0), med(furcht1)], tat: !!(tat && tat.ok), halbM: half, uhr: UHR, tod: +s.timeOfDay.toFixed(4), sicht: s.cameraMode, version: A.VERSION };
+}
+const ZEUGEN_GANG = { sek: 90, mutiert: true, befehl: [
+    "bash",
+    "-c",
+    [
+        "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+        "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+        ADAPTER_ZEILE,
+        "node scripts/werkbank.cjs umstellen --ort genesis > \"$B-umstellen.txt\" 2>&1",
+        "node scripts/werkbank.cjs eval 'return await (" + knapp(zeugenGang) + ")(r, T);' > \"$B-zeugen.txt\" 2>&1",
+        "node -e 'const t = require(\"fs\").readFileSync(process.argv[1], \"utf8\"); let e = null; try { e = JSON.parse(t.slice(t.indexOf(\"{\"))); } catch (x) {} " +
+            "console.log(\"ZEUGEN \" + JSON.stringify(e && e.ergebnis ? e.ergebnis : { fehler: String((e && e.fehler) || t.trim().split(\"\\n\").pop() || \"ohne Antwort\").replace(/\\s+/g, \" \").slice(0, 300) }))' \"$B-zeugen.txt\"",
+    ].join("\n"),
+] };
+const DORF_ZAEHLUNG = { sek: 150, mutiert: true, befehl: [
+    "bash",
+    "-c",
+    [
+        "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+        "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+        ADAPTER_ZEILE,
+        "node scripts/werkbank.cjs umstellen --ort genesis > \"$B-umstellen.txt\" 2>&1",
+        "node scripts/werkbank.cjs eval 'return await (" + knapp(dorfZaehlung) + ")(r, T);' > \"$B-zaehlung.txt\" 2>&1",
+        "node -e 'const t = require(\"fs\").readFileSync(process.argv[1], \"utf8\"); let e = null; try { e = JSON.parse(t.slice(t.indexOf(\"{\"))); } catch (x) {} " +
+            "console.log(\"ZAEHLUNG \" + JSON.stringify(e && e.ergebnis ? e.ergebnis : { fehler: String((e && e.fehler) || t.trim().split(\"\\n\").pop() || \"ohne Antwort\").replace(/\\s+/g, \" \").slice(0, 300) }))' \"$B-zaehlung.txt\"",
+    ].join("\n"),
+] };
+
 // ───────── DIE KREATUR-LINSE IM FENSTER (Karte 2, vorrat2-stationen-g2) ─────────
 // Die Proben der Kreatur-Linse fahren unverändert in der Welt der Sitzung: `diag-kreatur-takt --werkbank $W --proben …` ruft
 // dieselbe Seiten-Funktion (KREATUR_PROBEN_SRC) über `/eval` der Werkbank — der echte Takt der Tiere (updateCreatures,
@@ -1772,8 +2049,10 @@ const BEWOHNER_SITZUNG = { sek: 90, befehl: [
 // WÖRTLICH (tiere.K4#2 und tiere.K2#1, oekologie.K1#1/#2 und K2#1), nur ihr Ort wechselt ins Fenster, dazu der Adapter der Sitzung.
 // kaskade: EIN Lauf für drei Sprossen (leben.oeko.netz · leben.oeko.dynamik · leben.tiere.lebenszyklus, Zwillinge): je Saat der
 // Grundlauf 8 Spielstunden und fünf Szenarien zu 6, 8 Saaten; die Probe stellt den Spieler ganze Regionen westlich der Ankunft
-// (das Tal der Wildnis) und räumt die Tiere — sie mutiert. Headless 350 s (DAUER_S): der Preis im Fenster ist ungemessen.
-const KASKADE_SITZUNG = { sek: 90, mutiert: true, befehl: [
+// (das Tal der Wildnis) und räumt die Tiere — sie mutiert. Headless 350 s (DAUER_S). DER DECKEL FOLGT DER DAUER (16.11., Radeon
+// fe885d9d: „Deckel 90 s gerissen“ an allen drei Sprossen, die Probe hing nicht — sie rechnet in EINEM `/eval` ohne Zeile, bis sie
+// fertig ist, und 90 s trugen ein Viertel ihrer gemessenen Dauer): der Grund-Deckel ist die Dauer headless × 1,2.
+const KASKADE_SITZUNG = { sek: 420, mutiert: true, befehl: [
     "bash",
     "-c",
     [
@@ -1809,12 +2088,21 @@ const VERHALTEN_BUDGET = (j, lauf) => {
     const tr = t.truenke || [];
     const durst = tr.length >= 12 && tr.every((n) => n >= 1) && t.amWasser === tr.reduce((a, b) => a + b, 0) && t.durstAus === 0;
     const ruhe = t.ruhe[0] >= 1000 && t.ruhe[1] < 0.03 * t.ruhe[0];
+    // der Umfang „4 Gattungen“ (vorrat3-stationen-g2): je Gattung des Solls ein gemessenes Budget, vier Gattungen
+    const gattungen = Object.keys(t.soll || {}).filter((g) => t.budget[g]).length;
     return {
-        gruen: je.length >= 12 && je.every((x) => x.ok) && durst && ruhe,
+        gruen: gattungen >= 4 && je.length >= 12 && je.every((x) => x.ok) && durst && ruhe,
         zahl:
-            "Budget " + je.map((x) => (x.ok ? "" : "✗ ") + x.t).join(" · ") + " · Trünke " + tr.join(",") + " (am Wasser " + t.amWasser +
+            gattungen + " Gattungen · Budget " + je.map((x) => (x.ok ? "" : "✗ ") + x.t).join(" · ") + " · Trünke " + tr.join(",") + " (am Wasser " + t.amWasser +
             ", Durst aus " + t.durstAus + ") · Ruhe bewegt " + t.ruhe[1] + "/" + t.ruhe[0],
     };
+};
+// DER UMFANG DER HERDE (karte2.leben.tiere.masse S1, „10 Glieder: Rudel, Kahlwild“): in jedem der drei Ego-Schüsse der Serie von
+// tiere.K1#2 (herdeHang, j.serie) stehen ≥ 10 Glieder im Pulk — neben dem Urteil von tiere.K1#2, das ≥ 3 verlangt
+const HERDE_ZEHN = (j) => {
+    const S = (j && j.serie) || [];
+    const n = S.map((x) => (x && x.pulk && !x.pulk.fehler ? x.pulk.glieder : 0));
+    return { gruen: S.length === 3 && n.every((g) => g >= 10), zahl: "Glieder im Pulk je Schuss " + (n.join("/") || "keine Serie") + " (Umfang ≥ 10)" };
 };
 // DIE PROBEN der Kreatur-Linse im Fenster: die Zeilen in der Form der Linse (`  ✅ <probe> {…}`), die Zahlen der headless-Läufe
 // (kaskade d3708675: hirsche +0,448 [0,321; 0,536], jungwuchs −0,279 [−0,325; −0,194], Stunde 8 gegen 2 0,35–1,35×, 17 932 Hungertode
@@ -1871,6 +2159,7 @@ const KREATUR_FENSTER_PROBEN = (() => {
             { name: "das Rudel reißt 6/60 (unter 20 %)", stdout: verhalten(budget(), jagd((z) => (z.riss.quote.rudel.risse = 6))), gruen: false },
             { name: "die Beute ohne Leib (HP 1)", stdout: verhalten(budget(), jagd((z) => (z.riss.quote.rudel.hp0 = 1))), gruen: false },
             { name: "Durst aus trinkt", stdout: verhalten(budget((t) => (t.durstAus = 3)), jagd()), gruen: false },
+            { name: "drei Gattungen (der Bär ohne Budget)", stdout: verhalten(budget((t) => delete t.budget.bear), jagd()), gruen: false },
             { name: "der zweite Teil fehlt (kein jagdkreis)", stdout: verhalten(budget(), ""), gruen: false },
             { name: "swiftshader", stdout: soft(verhalten(budget(), jagd())).replace(ad, "[linse-gpu] google/swiftshader"), gruen: false },
         ],
@@ -4620,6 +4909,227 @@ const stationen = [
         ],
         quelle: "KARTE2 mensch.menge.bild S1 = ≥ 10 Menschen, ≥ 3 gehend",
     },
+    // KARTE 2 mensch.menge.bevoelkerung S1 (Umfang „10² (ein Dorf)“, Tiefe „Tag als Funktion der Uhr, 4–10 Wege“, Preis „P ·
+    // Dorfplatz“; vorrat3-stationen-g2): die Zählung des Start-Dorfs (`dorfZaehlung` oben, eigene Probe DORF_ZAEHLUNG am Genesis-Ort)
+    // an 5 Orten × 4 Uhren. GRÜN: 20 Stichproben, je Stichprobe der Ort im Bild der Third-Kamera und |Ist − Soll| ≤ 0,1 × Soll (Soll 0
+    // verlangt Ist 0) und kein Bewohner des Solls fehlt; kein Bewohner doppelt (Hülle, Same); Σ Soll ≥ 20 (die Zählung ist nicht leer);
+    // der Adapter der Sitzung eine Karte. Das Preis-Stück fährt an der Pose der letzten Stichprobe (20 Uhr, ein Ort des Dorfs)
+    {
+        kriterium: "karte2.mensch.menge.bevoelkerung",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: DORF_ZAEHLUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const { ad, hw } = hwSitzung(lauf.stdout);
+            const z = jsonZeile(lauf.stdout, /^ZAEHLUNG /);
+            if (!z) return { gruen: false, zahl: "keine Zeile ZAEHLUNG (Exit " + lauf.exit + ") · " + ad };
+            if (z.fehler) return { gruen: false, zahl: "Zählung: " + z.fehler + " · " + ad };
+            const P = Array.isArray(z.proben) ? z.proben : [];
+            const je = P.map((p) => ({ p, ok: p.imBild === true && Math.abs(p.ist - p.soll) <= 0.1 * p.soll && p.fehlt === 0 }));
+            const sollSumme = P.reduce((a, p) => a + p.soll, 0);
+            const paare = new Set(P.map((p) => p.uhr + "@" + p.ort)).size;
+            const uhren = new Set(P.map((p) => p.uhr)).size;
+            const orte = new Set(P.map((p) => p.ort)).size;
+            const gruen =
+                hw && z.sicht === "third" && z.bewohner >= 10 && paare >= 20 && uhren >= 4 && orte >= 5 && sollSumme >= 20 &&
+                je.every((x) => x.ok) && z.doppelt === 0 && z.samenDoppelt === 0;
+            const rot = je.filter((x) => !x.ok).map((x) => x.p.uhr + " Uhr Ort " + x.p.ort + " Ist " + x.p.ist + "/Soll " + x.p.soll + (x.p.fehlt ? ", fehlt " + x.p.fehlt : "") + (x.p.imBild ? "" : ", Ort nicht im Bild"));
+            return {
+                gruen,
+                zahl:
+                    z.bewohner + " Bewohner, " + paare + " Stichproben (" + orte + " Orte × " + uhren + " Uhren), Σ Soll " + sollSumme + " · " +
+                    (rot.length ? "✗ " + rot.join(" · ") : "jede Stichprobe ±10 %, niemand fehlt") + " · doppelt " + z.doppelt + " Hüllen / " +
+                    z.samenDoppelt + " Samen · " + z.sicht + " · " + ad,
+            };
+        },
+        proben: (() => {
+            const ad = "[linse-gpu] amd/rdna-3 (Probe)";
+            const roh = (f = () => {}) => {
+                const proben = [];
+                for (const uhr of [3, 10, 15, 20])
+                    for (let ort = 0; ort < 5; ort++) {
+                        const soll = uhr === 3 ? 0 : [12, 7, 5, 4, 3][ort];
+                        proben.push({ uhr, ort, tod: +(uhr / 24).toFixed(4), soll, ist: soll, fehlt: 0, imBild: true, stand: [10.5, -30.2], takte: 40 });
+                    }
+                const z = { bewohner: 77, orte: [[20.2, -31.7, 34], [5, -12, 21], [40, -2, 15], [-8, 22, 12], [31, 30, 9]], rM: 10, samenDoppelt: 0, doppelt: 0, sicht: "third", proben, version: "V18.546.305" };
+                f(z);
+                return ad + "\nZAEHLUNG " + JSON.stringify(z);
+            };
+            return [
+                { name: "20 Stichproben, jede gleich dem Soll", stdout: roh(), gruen: true },
+                { name: "am Werk 10 Uhr 10 statt 12 (−17 %)", stdout: roh((z) => (z.proben[5].ist = 10)), gruen: false },
+                { name: "einer zu viel an einem Ort mit Soll 3", stdout: roh((z) => (z.proben[19].ist = 4)), gruen: false },
+                { name: "um 3 Uhr steht einer am Ort (Soll 0)", stdout: roh((z) => (z.proben[0].ist = 1)), gruen: false },
+                { name: "ein Bewohner fehlt am Ort (Ist stimmt durch einen Fremden)", stdout: roh((z) => (z.proben[6].fehlt = 1)), gruen: false },
+                { name: "ein Bewohner mit zwei Hüllen", stdout: roh((z) => (z.doppelt = 1)), gruen: false },
+                { name: "zwei Bewohner mit einem Samen", stdout: roh((z) => (z.samenDoppelt = 1)), gruen: false },
+                { name: "der Ort nicht im Bild", stdout: roh((z) => (z.proben[12].imBild = false)), gruen: false },
+                { name: "19 Stichproben", stdout: roh((z) => z.proben.pop()), gruen: false },
+                { name: "die Zählung leer (Σ Soll 0)", stdout: roh((z) => z.proben.forEach((p) => (p.soll = p.ist = 0))), gruen: false },
+                { name: "Ego statt Third", stdout: roh((z) => (z.sicht = "first")), gruen: false },
+                { name: "die Probe fand die Orte nicht", stdout: ad + "\nZAEHLUNG " + JSON.stringify({ fehler: "nur 3 Orte mit Soll im Start-Dorf", bewohner: 77 }), gruen: false },
+                { name: "swiftshader", stdout: roh().replace(ad, "[linse-gpu] google/swiftshader"), gruen: false },
+                { name: "der Adapter ungenannt", stdout: roh().replace(ad, "[linse-gpu] ungenannt"), gruen: false },
+            ];
+        })(),
+        pfad: [
+            "stamm/siedlung-*.js",
+            "stamm/koerper-*.js",
+            "stamm/stoff-instanz.js",
+            "stamm/studio-bruecke.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/daten.js",
+            "koerper-core.js",
+            "fachwerk-core.js",
+            "foundry-bruecke.js",
+            "save-server.js",
+            "scripts/werkbank.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "KARTE2 mensch.menge.bevoelkerung S1 = Zählung im Bild an 20 Stichproben (Ort × Uhr): Körper am Ort gegen den Soll-Plan ±10 %; niemand fehlt, niemand steht doppelt",
+    },
+    // KARTE 2 leben.tiere.masse S1 (Umfang „10 Glieder: Rudel, Kahlwild“, Tiefe „Kohäsion wandernd ≥ 0,9, Flucht ≥ 0,8, Ausrichtung
+    // Φ ≥ 0,8“, Preis „P · Ego auf 40 m“; vorrat3-stationen-g2): der Zwilling von tiere.K1#2 (EIN Lauf herdeHang: die Probe herde am
+    // Kreatur-Takt und die drei Ego-Schüsse der fliehenden Herde am Hang, der erste 40–50 m) — das Urteil von tiere.K1#2 WÖRTLICH
+    // (IM_FENSTER unten: Kohäsion, Φ, EIN Fleck je Schuss) und dazu der Umfang: in jedem Schuss ≥ 10 Glieder im Pulk. Der Wurf gibt
+    // heute höchstens 7 (Kahlwild [3, 7], tetrapoda-core.js:289): bis zu jenem Schnitt im Kern ist die Station ROT „Glieder < 10“
+    {
+        kriterium: "karte2.leben.tiere.masse",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: null, // die Probe von tiere.K1#2 (unten zugewiesen, derselbe Abdruck)
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: null, // IM_FENSTER (unten): tiere.K1#2 und HERDE_ZEHN
+        proben: null,
+        pfad: null,
+        quelle: "KARTE2 leben.tiere.masse S1 = Herde flieht als EIN Pulk im Bild",
+    },
+    // KARTE 2 erleben.kopplung.wahrnehmung S1 (Umfang „Geruch führt den Jäger zur Beute“, Tiefe „Wind trägt Witterung“, Preis „P“;
+    // vorrat3-stationen-g2): `witterungJagd` (oben) über `wertLauf` an der Mess-Wiese — acht Jagden des Rudels auf ein Kitz mit der
+    // Witterung des Gesetzes, dieselben acht mit jagd.scentRangeM 0. GRÜN: beide Läufe acht Jagden, der Lauf mit Witterung reißt
+    // ≥ 2 (die Jagd findet statt), der Gegenlauf reißt weniger (der Jagderfolg fällt), die Reichweite steht im Lauf > 0 und im
+    // Gegenlauf 0, der Adapter der Sitzung eine Karte
+    {
+        kriterium: "karte2.erleben.kopplung.wahrnehmung",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: { sek: 60, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(witterungJagd)], mutiert: true },
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const { ad, hw } = hwSitzung(lauf.stdout);
+            const L = zeilenVon(lauf, "RUDEL-GEFUEHL");
+            const a = L.find((x) => !x.gegen), g = L.find((x) => x.gegen);
+            if (!a || !g) return { gruen: false, zahl: "Läufe " + L.length + "/2 (Exit " + lauf.exit + ") · " + ad };
+            const f = [a, g].find((x) => x.fehler);
+            if (f) return { gruen: false, zahl: (f.gegen ? "Gegenlauf: " : "Lauf: ") + f.fehler + " · " + ad };
+            const q = (x) => x.risse + "/" + x.n + " Risse (" + x.jagden + " Jagden mit Hetze" + (x.rissS.length ? ", bei " + x.rissS.join("/") + " s" : "") + ")";
+            return {
+                gruen: hw && a.n >= 8 && g.n === a.n && a.scentRangeM > 0 && g.scentRangeM === 0 && a.risse >= 2 && g.risse < a.risse,
+                zahl: "mit Witterung " + a.scentRangeM + " m: " + q(a) + " · Witterung aus (" + g.scentRangeM + " m): " + q(g) + " · " + a.sicht + " · " + ad,
+            };
+        },
+        proben: (() => {
+            const ad = "[linse-gpu] nvidia/pascal (Probe)";
+            const z = (o) => "RUDEL-GEFUEHL " + JSON.stringify({ gegen: false, sicht: "first", scentRangeM: 50, n: 8, jagden: 8, risse: 6, rissS: [12.4, 9.8, 15.1, 11, 20.3, 8.7], dauer: 300, opfer: 0, ...o });
+            const roh = (a = {}, g = {}) => ad + "\n" + z(a) + "\n" + z({ gegen: true, scentRangeM: 0, jagden: 0, risse: 0, rissS: [], dauer: 720, ...g });
+            return [
+                { name: "mit Witterung 6/8, ohne 0/8", stdout: roh(), gruen: true },
+                { name: "der Gegenlauf reißt genauso (die Witterung führt nicht)", stdout: roh({}, { risse: 6, jagden: 8, rissS: [12, 10, 15, 11, 20, 9] }), gruen: false },
+                { name: "der Lauf reißt nur einmal (die Jagd findet kaum statt)", stdout: roh({ risse: 1, rissS: [30] }, {}), gruen: false },
+                { name: "der Gegenlauf trägt die Witterung noch (50 m)", stdout: roh({}, { scentRangeM: 50 }), gruen: false },
+                { name: "sieben Jagden im Gegenlauf", stdout: roh({}, { n: 7 }), gruen: false },
+                { name: "ohne Gegenlauf", stdout: ad + "\n" + z({}), gruen: false },
+                { name: "die Szene fand kein Memo", stdout: roh({ fehler: "kein Memo des Verhaltens-Gesetzes" }), gruen: false },
+                { name: "swiftshader", stdout: roh().replace(ad, "[linse-gpu] google/swiftshader"), gruen: false },
+            ];
+        })(),
+        pfad: [...KREATUR, "stamm/feld-sprache.js", "save-server.js", "scripts/werkbank.cjs", "scripts/lib/welt-orte.cjs", "scripts/lib/welt-boot.cjs"],
+        quelle: "KARTE2 erleben.kopplung.wahrnehmung S1 = Gegenlauf Witterung aus → Jagderfolg fällt",
+    },
+    // KARTE 2 mensch.menge.kollektiv S1 (Umfang „Umstehende einer Szene“, Tiefe „nach Gewalt fliehen sie“, Preis „P · Platz“;
+    // vorrat3-stationen-g2): `zeugenGang` (oben, eigene Probe ZEUGEN_GANG am Genesis-Ort) — derselbe Gang längs des Dorfplatzes vor
+    // und nach der Tat. GRÜN: die Tat traf (damageCreature ok), ≥ 5 Zeugen mit Abstand in beiden Gängen, der Median ihres kleinsten
+    // Abstands nach der Tat > vorher, ihre erinnerte Furcht stieg mit dem Schlag (die Ursache, nicht der Lauf der Uhr), Third, der
+    // Adapter der Sitzung eine Karte. Das Preis-Stück fährt an der Pose am Ende des zweiten Gangs (am Rand des Platzes)
+    {
+        kriterium: "karte2.mensch.menge.kollektiv",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: ZEUGEN_GANG,
+        gpu: true,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const { ad, hw } = hwSitzung(lauf.stdout);
+            const z = jsonZeile(lauf.stdout, /^ZEUGEN /);
+            if (!z) return { gruen: false, zahl: "keine Zeile ZEUGEN (Exit " + lauf.exit + ") · " + ad };
+            if (z.fehler) return { gruen: false, zahl: "Zeugen-Gang: " + z.fehler + " · " + ad };
+            const n = Array.isArray(z.paare) ? z.paare.length : 0;
+            const f = Array.isArray(z.furcht) ? z.furcht : [];
+            const weiter = n >= 5 && z.nachMedian > z.vorMedian;
+            const furcht = f[1] > (f[0] || 0);
+            const gruen = hw && z.sicht === "third" && z.tat === true && weiter && furcht;
+            return {
+                gruen,
+                zahl:
+                    z.zeugen + " Zeugen, " + n + " in beiden Gängen · Abstand-Median vorher " + z.vorMedian + " m → nachher " + z.nachMedian + " m" +
+                    (weiter ? "" : n < 5 ? " ✗ < 5 Zeugen" : " ✗ nicht weiter") + " · Furcht " + f[0] + " → " + f[1] + (furcht ? "" : " ✗ stieg nicht") +
+                    (z.tat ? "" : " · ✗ die Tat traf nicht") + " · " + z.sicht + " · " + ad,
+            };
+        },
+        proben: (() => {
+            const ad = "[linse-gpu] amd/rdna-3 (Probe)";
+            const roh = (f = () => {}) => {
+                const z = { zeugen: 7, paare: [[1.2, 2.1], [1.6, 2.4], [2.3, 2.9], [3.1, 3.4], [0.9, 2.2], [4.0, 4.6], [2.8, 3.0]], vorMedian: 2.3, nachMedian: 2.9, furcht: [0, 0.42], tat: true, halbM: 12, uhr: 0.4167, tod: 0.4171, sicht: "third", version: "V18.546.305" };
+                f(z);
+                return ad + "\nZEUGEN " + JSON.stringify(z);
+            };
+            return [
+                { name: "7 Zeugen weichen nach der Tat weiter", stdout: roh(), gruen: true },
+                { name: "nach der Tat gleich nah", stdout: roh((z) => (z.nachMedian = z.vorMedian)), gruen: false },
+                { name: "nach der Tat näher", stdout: roh((z) => (z.nachMedian = 1.9)), gruen: false },
+                { name: "4 Zeugen", stdout: roh((z) => (z.paare = z.paare.slice(0, 4))), gruen: false },
+                { name: "die Furcht stieg nicht (der Abstand aus dem Lauf der Uhr)", stdout: roh((z) => (z.furcht = [0, 0])), gruen: false },
+                { name: "die Tat traf nicht", stdout: roh((z) => (z.tat = false)), gruen: false },
+                { name: "Ego statt Third", stdout: roh((z) => (z.sicht = "first")), gruen: false },
+                { name: "kein Start-Dorf", stdout: ad + "\nZEUGEN " + JSON.stringify({ fehler: "kein Start-Dorf" }), gruen: false },
+                { name: "swiftshader", stdout: roh().replace(ad, "[linse-gpu] google/swiftshader"), gruen: false },
+                { name: "der Adapter ungenannt", stdout: roh().replace(ad, "[linse-gpu] ungenannt"), gruen: false },
+            ];
+        })(),
+        pfad: [
+            "stamm/siedlung-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/koerper-*.js",
+            "stamm/stoff-instanz.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/daten.js",
+            "koerper-core.js",
+            "fachwerk-core.js",
+            "save-server.js",
+            "scripts/werkbank.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "KARTE2 mensch.menge.kollektiv S1 = Abstand nach der Tat > vorher",
+    },
     // KARTE 2 leben.tiere.verhalten S1 (Tiefe „Zeitbudget ±20 % am Ethogramm; Riss-Quote Rudel gegen Hirsch 20–40 % (MacNulty)“):
     // tagesbudget und jagdkreis der Kreatur-Linse im Fenster (VERHALTEN_SITZUNG, zwei Teile). Das Budget urteilt wie tiere.K4#2 (je
     // Gattung und Tätigkeit ±20 % am Ethogramm, was die Gattung nicht tut ≤ 0,01; ≥ 12 Paare; Trinken aus Durst, der Gegenlauf „Durst
@@ -6765,11 +7275,47 @@ for (const [k2, quellen] of Object.entries({
     "karte2.leben.oeko.netz": ["oekologie.K1#1"],
     "karte2.leben.oeko.dynamik": ["oekologie.K1#2"],
     "karte2.leben.tiere.lebenszyklus": ["oekologie.K2#1"],
+    "karte2.leben.tiere.masse": ["tiere.K1#2", HERDE_ZEHN],
 })) {
     const st = stationen.find((s) => s.kriterium === k2 && s.staffel === 1);
-    const fn = quellen.map((q) => (typeof q === "function" ? q : stationen.find((s) => s.kriterium + "#" + s.staffel === q && s.geraet === "headless").urteil));
+    // die Quelle: die headless-Station des Schlüssels, sonst die eine Station des Schlüssels (tiere.K1#2 misst selbst im Fenster)
+    const von = (q) => stationen.find((s) => s.kriterium + "#" + s.staffel === q && s.geraet === "headless") || stationen.find((s) => s.kriterium + "#" + s.staffel === q);
+    const fn = quellen.map((q) => (typeof q === "function" ? q : von(q).urteil));
     st.urteil = imFenster(...fn);
 }
+// der Zwilling von tiere.K1#2 (karte2.leben.tiere.masse): dieselbe Probe, derselbe Pfad, seine Proben mit dem Adapter der Sitzung
+// und dem Umfang (≥ 10 Glieder je Schuss) — die Roh-Zeile herde und die Serie wie tiere.K1#2 sie liest
+(() => {
+    const st = stationen.find((s) => s.kriterium === "karte2.leben.tiere.masse");
+    const K1 = stationen.find((s) => s.kriterium === "tiere.K1" && s.staffel === 2);
+    st.probe = K1.probe;
+    st.pfad = K1.pfad;
+    const ad = "[linse-gpu] nvidia/pascal (Probe)";
+    const herde = (o = {}) => ({
+        verband: { wander: { mittel: 0.94, n: 10, fluchtAnteil: 0 }, flucht: { fluchtMittel: 0.86, fluchtMin: 0.71, fluchtAnteil: 0.42, n: 10 } },
+        ausrichtung: { takte: 140, mittel: 0.88 },
+        alarm: { letzterS: 0.6, zweiteHand: 3 },
+        id: { fluchtS: [4.2, 3.8], bruch: null },
+        fremdN: 6,
+        fluchtWegM: 41,
+        ...o,
+    });
+    const serie = (n = [10, 10, 10]) => ({
+        szene: { hang: { neigung: 21, x: 260, z: -120 }, fluchtBei: 28 },
+        serie: n.map((g, i) => ({ abstand: [44, 36, 30][i], glieder: g, fliehen: g, pulk: { glieder: g, sichtbar: g, flecken: 1, pixel: 3100 } })),
+    });
+    const roh = (z = herde()) => ad + "\n  ✅ herde     " + JSON.stringify(z);
+    st.proben = [
+        { name: "zehn Glieder fliehen als EIN Pulk, (a)–(d) grün", stdout: roh(), j: serie(), gruen: true },
+        { name: "der Wurf von heute: 7 Glieder (Kahlwild [3, 7])", stdout: roh(), j: serie([7, 7, 7]), gruen: false },
+        { name: "zwei Flecken im zweiten Schuss", stdout: roh(), j: ((s) => ((s.serie[1].pulk.flecken = 2), s))(serie()), gruen: false },
+        { name: "der erste Schuss 55 m (über 50)", stdout: roh(), j: ((s) => ((s.serie[0].abstand = 55), s))(serie()), gruen: false },
+        { name: "Kohäsion auf der Flucht 0,7", stdout: roh(herde({ verband: { wander: { mittel: 0.94, n: 10, fluchtAnteil: 0 }, flucht: { fluchtMittel: 0.7, fluchtMin: 0.5, fluchtAnteil: 0.42, n: 10 } } })), j: serie(), gruen: false },
+        { name: "Φ 0,6", stdout: roh(herde({ ausrichtung: { takte: 140, mittel: 0.6 } })), j: serie(), gruen: false },
+        { name: "ohne Zeile herde", stdout: ad, j: serie(), gruen: false },
+        { name: "swiftshader", stdout: roh().replace(ad, "[linse-gpu] google/swiftshader"), j: serie(), gruen: false },
+    ];
+})();
 
 module.exports = stationen;
 module.exports.fehlt = fehlt;
