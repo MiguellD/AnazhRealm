@@ -5,29 +5,29 @@
    "ego/gehen": {
     "n": 15,
     "fehlt": 0,
-    "p50": 51,
-    "p95": 61.9,
-    "max": 61.9,
-    "eingabe": 0.6,
+    "p50": 45.1,
+    "p95": 61.4,
+    "max": 61.4,
+    "eingabe": 0.7,
     "hoerer": 0.1,
-    "kette": 19.3,
-    "kurve": 26.4,
-    "takte": 6
+    "kette": 28.4,
+    "kurve": 0,
+    "takte": 5
    },
    "third/gehen": {
     "n": 15,
     "fehlt": 0,
-    "p50": 42,
-    "p95": 62.8,
-    "max": 62.8,
+    "p50": 42.5,
+    "p95": 66.4,
+    "max": 66.4,
     "eingabe": 0.6,
     "hoerer": 0,
-    "kette": 31.1,
+    "kette": 26.5,
     "kurve": 0,
-    "takte": 5
+    "takte": 4
    }
   },
-  "bildMs": 33.33,
+  "bildMs": 32.97,
   "urteil": "ROT"
  },
  "fuss": {

@@ -81,7 +81,7 @@ code = code || 3;
 }
 console.log("@@PUNKTE@@ PROBE " + uhr() + " s · Exit " + code);
 process.exit(code);
-})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\105c9bd3-radeon\karte2.erleben.spieler.praesenz_1.json 7804 420 async function praesenzSeite(H) {
+})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\105c9bd3-radeon\karte2.erleben.spieler.praesenz_1.json 7804 761 async function praesenzSeite(H) {
 const K2 = H.quelle("scripts/diag-koerper-stand.cjs", ["K8_UMFANG", "eignerKarte", "gezeichnet", "rollen"]);
 const D = H.quelle("scripts/diag-kamera-laub.cjs", ["ORTE", "LEIB_R", "GANG", "leibInstall", "leibWiese", "leibGang"]);
 const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
@@ -167,19 +167,19 @@ console.log("PRAESENZ " + JSON.stringify(P));
 return 0;
 }
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ ZEIT taste 22.5 s
-@@PUNKTE@@ ZEIT fuss 56.6 s
-@@PUNKTE@@ ZEIT third 254.8 s
-@@PUNKTE@@ ZEIT ego wiese-gehen 0 von 240 263.7 s
-@@PUNKTE@@ ZEIT ego wiese-laufen 0 von 240 267.8 s
-@@PUNKTE@@ ZEIT ego hang-gehen 0 von 240 274.0 s
-@@PUNKTE@@ ZEIT ego hang-laufen 0 von 240 277.5 s
-@@PUNKTE@@ ZEIT kamera 277.5 s
-PRAESENZ {"fehlt":[],"latenz":{"reihen":{"ego/gehen":{"n":15,"fehlt":0,"p50":51,"p95":61.9,"max":61.9,"eingabe":0.6,"hoerer":0.1,"kette":19.3,"kurve":26.4,"takte":6},"third/gehen":{"n":15,"fehlt":0,"p50":42,"p95":62.8,"max":62.8,"eingabe":0.6,"hoerer":0,"kette":31.1,"kurve":0,"takte":5}},"bildMs":33.33,"urteil":"ROT"},"fuss":{"wiese":{"neig":0,"fuss":{"p95":0.9,"n":200},"falllinie":{"p95":0.4,"n":200}},"hang":{"neig":24.4,"fuss":{"p95":1,"n":200},"falllinie":{"p95":0.8,"n":200}}},"kamera":{"anker":{"haus":2,"fels":8,"baum":35},"err":null,"gaenge":["stamm","fels","haus","innen","innen-sprint","steil","steil-sprint"],"hangOrt":[-532.694803998486,-852.0248676214696,-0.7209050814895401],"third":{"bilder":7580,"fels":0,"wer":[]},"thirdS":140,"ego":{"bilder":960,"fels":0,"wer":[],"ms":17735.999999999985,"orte":["wiese-gehen","wiese-laufen","hang-gehen","hang-laufen"]},"gangS":157.7}}
-@@PUNKTE@@ PROBE 277.5 s · Exit 0
+@@PUNKTE@@ ZEIT taste 24.1 s
+@@PUNKTE@@ ZEIT fuss 55.5 s
+@@PUNKTE@@ ZEIT third 231.2 s
+@@PUNKTE@@ ZEIT ego wiese-gehen 0 von 240 239.8 s
+@@PUNKTE@@ ZEIT ego wiese-laufen 0 von 240 243.2 s
+@@PUNKTE@@ ZEIT ego hang-gehen 0 von 240 248.9 s
+@@PUNKTE@@ ZEIT ego hang-laufen 0 von 240 252.3 s
+@@PUNKTE@@ ZEIT kamera 252.3 s
+PRAESENZ {"fehlt":[],"latenz":{"reihen":{"ego/gehen":{"n":15,"fehlt":0,"p50":45.1,"p95":61.4,"max":61.4,"eingabe":0.7,"hoerer":0.1,"kette":28.4,"kurve":0,"takte":5},"third/gehen":{"n":15,"fehlt":0,"p50":42.5,"p95":66.4,"max":66.4,"eingabe":0.6,"hoerer":0,"kette":26.5,"kurve":0,"takte":4}},"bildMs":32.97,"urteil":"ROT"},"fuss":{"wiese":{"neig":0,"fuss":{"p95":0.9,"n":200},"falllinie":{"p95":0.4,"n":200}},"hang":{"neig":24.4,"fuss":{"p95":1,"n":200},"falllinie":{"p95":0.8,"n":200}}},"kamera":{"anker":{"haus":2,"fels":8,"baum":35},"err":null,"gaenge":["stamm","fels","haus","innen","innen-sprint","steil","steil-sprint"],"hangOrt":[-532.694803998486,-852.0248676214696,-0.7209050814895401],"third":{"bilder":7580,"fels":0,"wer":[]},"thirdS":140,"ego":{"bilder":960,"fels":0,"wer":[],"ms":17735.999999999985,"orte":["wiese-gehen","wiese-laufen","hang-gehen","hang-laufen"]},"gangS":157.7}}
+@@PUNKTE@@ PROBE 252.3 s · Exit 0
 
 --- stderr ---
-❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: PRAESENZ {"fehlt":[],"latenz":{"reihen":{"ego/gehen":{"n":15,"fehlt":0,"p50":51,"p95":61.9,"max":61.9,"eingabe":0.6,"hoerer":0.1,"kette":19.3,"kurve":26.4,"takte":6},"third/gehen":{"n":15,"fehlt":0,"p50":42,"p95":62.8,"max":62.8,"eingabe":0.6,"hoerer":0,"kette":31.1,"kurve":0,"takte":5}},"bildMs":33 (Exit wird 1; ein Vermerk heißt nie ROT/❌)
+❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: PRAESENZ {"fehlt":[],"latenz":{"reihen":{"ego/gehen":{"n":15,"fehlt":0,"p50":45.1,"p95":61.4,"max":61.4,"eingabe":0.7,"hoerer":0.1,"kette":28.4,"kurve":0,"takte":5},"third/gehen":{"n":15,"fehlt":0,"p50":42.5,"p95":66.4,"max":66.4,"eingabe":0.6,"hoerer":0,"kette":26.5,"kurve":0,"takte":4}},"bildMs":3 (Exit wird 1; ein Vermerk heißt nie ROT/❌)
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
