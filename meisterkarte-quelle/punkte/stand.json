@@ -5138,7 +5138,7 @@
   },
   "karte2.leben.kopplung.leben-formt-planet": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.leben-formt-planet#1 radeon: ungemessen (R10) · karte2.leben.kopplung.leben-formt-planet#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.leben-formt-planet#1 radeon: ungemessen (R10) · karte2.leben.kopplung.leben-formt-planet#1 gtx: ROT: nach 100 Gängen (Soll 100): Gras im Bild Weg 1454851 → 1071239 px, daneben 1581654 → 1581540 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.677 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] nvidia/pascal an b5681770",
    "stationen": [
     {
      "id": "karte2.leben.kopplung.leben-formt-planet#1",
@@ -5154,10 +5154,10 @@
      "id": "karte2.leben.kopplung.leben-formt-planet#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "nach 100 Gängen (Soll 100): Gras im Bild Weg 1454851 → 1071239 px, daneben 1581654 → 1581540 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.677 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] nvidia/pascal",
+     "sha": "b56817704c3f9b0efcf4fd52d1331756ea5edef2",
+     "grund": "ROT: nach 100 Gängen (Soll 100): Gras im Bild Weg 1454851 → 1071239 px, daneben 1581654 → 1581540 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.677 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6282,7 +6282,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 169,
+  "konsum": 170,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6453,10 +6453,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 168
+  "ohne": 167
  },
  "kopfVoll": "b56817704c3f9b0efcf4fd52d1331756ea5edef2",
- "zeit": "2026-11-16T22:44:25.305Z",
+ "zeit": "2026-11-16T22:50:33.125Z",
  "vorher": "b5681770",
  "bilanz": {
   "gewinn": [],
