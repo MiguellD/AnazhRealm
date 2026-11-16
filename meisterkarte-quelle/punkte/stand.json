@@ -4900,7 +4900,7 @@
   },
   "karte2.erleben.bild.flaeche": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.bild.flaeche#1 radeon: ungemessen (R10) — zuletzt an fe885d9d: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: ❌ Gras (gras) keine Zeile der Tafel gegen 0.25 · ❌ Erde (boden) keine Zeile der Tafel gegen 0.17 · ❌ Fels (fels) keine Zeile der · karte2.erleben.bild.flaeche#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.bild.flaeche#1 radeon: ungemessen (R10) · karte2.erleben.bild.flaeche#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.erleben.bild.flaeche#1",
@@ -4908,7 +4908,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an fe885d9d: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: ❌ Gras (gras) keine Zeile der Tafel gegen 0.25 · ❌ Erde (boden) keine Zeile der Tafel gegen 0.17 · ❌ Fels (fels) keine Zeile der",
+     "grund": "ungemessen (R10)",
      "ungemessen": true,
      "beide": true
     },
@@ -6447,8 +6447,8 @@
   "ohne": 193
  },
  "kopfVoll": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
- "zeit": "2026-11-16T20:34:14.716Z",
- "vorher": "05254c4c",
+ "zeit": "2026-11-16T20:40:13.660Z",
+ "vorher": "77e079ae",
  "bilanz": {
   "gewinn": [],
   "fall": [],
