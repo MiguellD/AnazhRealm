@@ -3602,7 +3602,7 @@
      "gruen": true,
      "zahl": "Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.68 % (Soll ≤ 1; Rauschen ohne Neuladen 0.21 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal",
      "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs +16) — zuletzt an 3e4f99cd: Last: Referenz f 1,314 (Faden 1,314 · alle Kerne 1,295; vor 110,1/256,2 ms, nach 124,4/312,2 ms, Ruhe 94,7/241 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --u",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/gelaende-chunks.js) — zuletzt an 3e4f99cd: Last: Referenz f 1,314 (Faden 1,314 · alle Kerne 1,295; vor 110,1/256,2 ms, nach 124,4/312,2 ms, Ruhe 94,7/241 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --u",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -4916,7 +4916,7 @@
      "gruen": true,
      "zahl": "✅ Wind r 0.85 bei Lag 0 (n 104, CV Bild 0.29 / Ohr 0.49, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -41.5 dB aus 15 Leibern (15 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2",
      "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs +21)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/gelaende-chunks.js, stamm/gelaende-kollision.js, stamm/siedlung-bewohner.js +2)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -5329,7 +5329,7 @@
   "ohne": 89
  },
  "kopfVoll": "f204ffde74ccf033a9b232969dc3bd1557ab1c8a",
- "zeit": "2026-11-16T13:15:46.206Z",
+ "zeit": "2026-11-16T13:23:52.173Z",
  "vorher": "f204ffde",
  "bilanz": {
   "gewinn": [],
