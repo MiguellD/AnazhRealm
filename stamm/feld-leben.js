@@ -3781,7 +3781,6 @@ AnazhRealm.SETZ_VERB = Object.freeze({
     gepraegt: "steht",
     gewachsen: "waechst",
     erschienen: "erscheint",
-    gerufen: "erscheint",
 });
 // DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·
 // Hain/Wald/Gruppe · am Wasser | hier/vor mir.
