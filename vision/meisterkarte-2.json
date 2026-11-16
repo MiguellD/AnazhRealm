@@ -14778,10 +14778,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 0,
+    "heute": 1,
     "kern": 2,
     "kernDazu": 2,
-    "anteilHeute": 0,
+    "anteilHeute": 0.4,
     "anteilKern": 0.9
    },
    "perspektiven": [
@@ -15064,7 +15064,7 @@
        "richter": "Dachneigung ↔ Schneelast r ≥ 0,5; Innenhof, Stelzen, Windturm ≥ 3× häufiger in ihrer Klimazone"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 1,
      "kernSprossen": [
       3
@@ -15076,7 +15076,9 @@
       "wetter.K5",
       "licht.K5"
      ],
-     "heuteSprossen": []
+     "heuteSprossen": [
+      1
+     ]
     },
     {
      "id": "planet.kopplung.stadtklima",
@@ -16883,11 +16885,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 21,
+  "heute": 22,
   "davonKopplungen": 33,
   "kern": 10,
   "kernDazu": 10,
-  "anteilHeute": 1.1,
+  "anteilHeute": 1.2,
   "anteilKern": 0.4,
   "kapitel": 7,
   "perspektiven": 42,
