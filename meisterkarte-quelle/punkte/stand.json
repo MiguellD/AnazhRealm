@@ -4919,7 +4919,7 @@
   },
   "karte2.erleben.spieler.praesenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) — zuletzt an 105c9bd3: Last: Referenz f 1,681 (Faden 1,019 · alle Kerne 1,146 · Stoß in der Station 16,33 Kerne fremd → 1,681; vor 106/303,2 ms, nach 104,5/307,6 ms, Ruhe 104/268,5 ms seit 2026-11-15) · fremd: Claude.exe -- · karte2.erleben.spieler.praesenz#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) — zuletzt an 105c9bd3: Last: Referenz f 1,681 (Faden 1,019 · alle Kerne 1,146 · Stoß in der Station 16,33 Kerne fremd → 1,681; vor 106/303,2 ms, nach 104,5/307,6 ms, Ruhe 104/268,5 ms seit 2026-11-15) · fremd: Claude.exe -- · karte2.erleben.spieler.praesenz#1 gtx: ungemessen (R10) — zuletzt an e4eeee08: Last: Referenz f 1,236 (Faden 1,049 · alle Kerne 1,157 · Stoß in der Station 2,83 Kerne fremd → 1,236; vor 94,4/278 ms, nach 96,9/261 ms, Ruhe 92,4/240,3 ms seit 2026-11-16) · fremd: git.exe -c core.q",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.praesenz#1",
@@ -4937,7 +4937,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an e4eeee08: Last: Referenz f 1,236 (Faden 1,049 · alle Kerne 1,157 · Stoß in der Station 2,83 Kerne fremd → 1,236; vor 94,4/278 ms, nach 96,9/261 ms, Ruhe 92,4/240,3 ms seit 2026-11-16) · fremd: git.exe -c core.q",
      "ungemessen": true,
      "beide": true
     }
@@ -5323,7 +5323,7 @@
   "ohne": 93
  },
  "kopfVoll": "e4eeee086ca78f20b27ae87e12761508215fca34",
- "zeit": "2026-11-16T10:21:42.979Z",
+ "zeit": "2026-11-16T10:42:50.469Z",
  "vorher": "e4eeee08",
  "bilanz": {
   "gewinn": [],
