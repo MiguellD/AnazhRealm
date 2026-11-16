@@ -2218,175 +2218,6 @@ class AnazhRealm_stoff_material {
         return this._naesseHimmelK;
     }
 
-    // DIE HIMMELS-SICHT DES REGENS am Welt-Ort `p`: 1 unter offenem Himmel, 0 unter einer Decke des Dach-Pools — je Platz die
-    // Decke eines Baus (Mitte xz, Gier cos/sin; halbe Kanten, Oberkante y), ein Ort darunter und im Grundriss der Decke liegt
-    // unter ihr. Leser: die Nässe der Stoffe (`_naesseHimmel`, je Fragment) und die Schliere des Regens (`_ensureRainSystem`,
-    // je Schliere: unter der Decke fällt kein Regen — bis dahin fiel er durch jedes Dach, gate:naesse:echt sah ihn am Haus des
-    // Dorfs auf der Trasse: 27 Regen-Punkte innen).
-    // DIE PLÄTZE SIND EINE SCHLEIFE (w28-baum-programm, wie der Licht-Pool `_lichtPoolTerm`): die Decken laufen über `T.Loop` je
-    // Platz, ihre Werte wählt der Zähler (`_jePlatz`: dieselben Uniforms, EIN Schreiber `_dachTakt`) — dieselbe Rechnung in derselben
-    // Reihenfolge (das Maximum beginnt bei 0), nur nicht ausgeschrieben: acht Plätze standen in jedem beleuchteten Programm.
-    // Die Schleife steht im Zweig der Hülle (`If`), wie zuvor die Plätze: draußen zahlt kein Fragment sie.
-    _offenerHimmel(T, p) {
-        const U = this._ensureAtmoUniforms();
-        // DIE HÜLLE DES POOLS (naesse-kosten): die Plätze prüft nur ein Ort im Kasten um alle Decken und unter ihrer höchsten
-        // Oberkante (`dachHuelle`/`dachOben`, `_dachTakt`) — draußen steht er unter offenem Himmel, ohne Decke ist der Kasten leer.
-        // Gemessen GTX in EINER Welt (Wiese Ego, Regen 10 min, gpu-bank): der Pool kostete jedes nasse Fragment +0,54 ms je Bild,
-        // auch ohne ein Dach im Umkreis; das Gesetz selbst +0,05
-        const H = U.dachHuelle;
-        const drin = p.x
-            .greaterThanEqual(H.x)
-            .and(p.x.lessThanEqual(H.z))
-            .and(p.z.greaterThanEqual(H.y))
-            .and(p.z.lessThanEqual(H.w))
-            .and(p.y.lessThanEqual(U.dachOben));
-        return T.Fn(() => {
-            const offen = T.float(1).toVar();
-            T.If(drin, () => {
-                const unter = T.float(0).toVar();
-                T.Loop(U.dachLage.length, ({ i: k }) => {
-                    const L = AnazhRealm._jePlatz(T, U.dachLage, k);
-                    const M = AnazhRealm._jePlatz(T, U.dachMass, k);
-                    const d = p.xz.sub(L.xy);
-                    const lx = d.x.mul(L.z).sub(d.y.mul(L.w)).abs();
-                    const lz = d.x.mul(L.w).add(d.y.mul(L.z)).abs();
-                    unter.assign(unter.max(T.step(lx, M.x).mul(T.step(lz, M.y)).mul(T.step(p.y, M.z))));
-                });
-                offen.assign(T.float(1).sub(unter));
-            });
-            return offen;
-        })();
-    }
-
-    // DIE DECKE ÜBER DEM AUGE (je Takt, einmal auf der CPU — Lehre 14): dieselbe Regel wie `_offenerHimmel`, am Ort des Auges aus
-    // den Werten des Dach-Pools (EIN Schreiber `_dachTakt`). Leser: der Rückstrahl (`_rueckstrahlZeichne`) — steht das Auge
-    // unter einer Decke, trägt keine Umgebung den Boden des offenen Himmels. Bis dahin fragte jedes Fragment des Boden-Stoffs
-    // den Pool ein zweites Mal (8 Plätze ausgeschrieben): die Prüfbühne S0 zählte 101 063 Zeichen WGSL > 100 000.
-    _augeUnterDach() {
-        const st = this.state;
-        const U = st.atmoUniforms;
-        const e = st.camera && st.camera.matrixWorld.elements;
-        if (!e || !U || !U.dachLage) return false;
-        const [x, y, z] = [e[12], e[13], e[14]];
-        const H = U.dachHuelle.value;
-        if (x < H.x || x > H.z || z < H.y || z > H.w || y > U.dachOben.value) return false;
-        return U.dachLage.some((L, i) => {
-            const [l, m] = [L.value, U.dachMass[i].value];
-            const [dx, dz] = [x - l.x, z - l.y];
-            return Math.abs(dx * l.z - dz * l.w) <= m.x && Math.abs(dx * l.w + dz * l.z) <= m.y && y <= m.z;
-        });
-    }
-
-    // DER DACH-POOL (EIN Schreiber, aus `_naesseTakt`): die Decken der Bauten, die dem Auge am nächsten stehen (im
-    // `dachUmkreisM`, die nächsten `NAESSE.dachPlaetze`), neu gewählt nach `dachSchrittM` Weg des Auges, einem neuen Stand der
-    // Grundrisse oder einer neuen Decke (`_dachKastenSetzen`). Die Decken eines Hauses trägt seine Hülle (`__huelle.decken`,
-    // fachwerk `deckenZeile`: je Körper mit Raum sein Grundriss bis zur Traufe, haus-lokal über `position.y − 0,5` wie die
-    // Kollision) — jede ein Platz; die eines Baus ohne Haus-Hülle sein Kasten (`_dachKasten`). Ein leerer Platz hat die Kanten 0.
-    // DAS GESETZBUCH NENNT SEINE DECKEN (w18-innen-licht, siedlung.K1#2): bis hier riet der Pool sie aus den Solids (die höchste
-    // Box mit der halben Fläche der größten, 0,5 m über der Hülle) — das Gesetzbuch teilt jedes Obergeschoss am Treppenloch, und
-    // der Anbau trägt keine Solid-Box: 11 der 18 Häuser des Start-Dorfs hatten die Diele des Erdgeschosses als Decke, jeder
-    // Anbau keine; ihr Inneres stand unter offenem Himmel, der Regen fiel hinein, und der Rückstrahl (schatten.K4) legte den
-    // gemessenen Dielenboden unter jede Fläche des Raums (haus_schwarzwald 16036, swiftshader, Innen-Blick 0,0062 → 0,0137).
-    _dachTakt() {
-        const st = this.state;
-        const N = AnazhRealm.NAESSE;
-        const auge = st.camera && st.camera.position;
-        const stand = this._grundrissStand();
-        const w = this._dachWahl;
-        if (!auge || (w && w.stand === stand && Math.hypot(auge.x - w.x, auge.z - w.z) < N.dachSchrittM)) return;
-        this._dachWahl = { stand, x: auge.x, z: auge.z };
-        const decken = [];
-        for (const e of st.architectures || []) {
-            const hu = e._hausHuelle;
-            if (!(hu || e._dachKasten) || !e.position) continue;
-            if (Math.hypot(e.position.x - auge.x, e.position.z - auge.z) > N.dachUmkreisM) continue;
-            const k = hu ? (Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1) : e._dachKasten.k;
-            const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
-            const [co, si] = [Math.cos(ry), Math.sin(ry)];
-            // je Decke [x0, x1, z0, z1, y] haus-lokal; der Kasten als dieselbe Zeile (seine Mitte, halbe Kanten, Oberkante)
-            const kasten = !hu && e._dachKasten;
-            const zeilen = hu
-                ? hu.decken || []
-                : [
-                      [
-                          kasten.c[0] - kasten.h[0],
-                          kasten.c[0] + kasten.h[0],
-                          kasten.c[2] - kasten.h[2],
-                          kasten.c[2] + kasten.h[2],
-                          kasten.c[1] + kasten.h[1],
-                      ],
-                  ];
-            const fuss = e.position.y + (hu ? -0.5 : kasten.dy);
-            for (const [x0, x1, z0, z1, y] of zeilen) {
-                const [cx, cz] = [(x0 + x1) / 2, (z0 + z1) / 2];
-                const x = e.position.x + (cx * co + cz * si) * k;
-                const z = e.position.z + (cz * co - cx * si) * k;
-                decken.push({
-                    d: Math.hypot(x - auge.x, z - auge.z),
-                    x,
-                    z,
-                    co,
-                    si,
-                    ex: ((x1 - x0) / 2) * k,
-                    ez: ((z1 - z0) / 2) * k,
-                    y: fuss + y * k,
-                });
-            }
-        }
-        decken.sort((a, b) => a.d - b.d);
-        const U = this._ensureAtmoUniforms();
-        // die Hülle des Pools: der achsparallele Kasten um alle gewählten Decken (je Decke ihr gedrehter Grundriss) und die höchste
-        // Oberkante — leer (min > max) ohne Decke; `_naesseHimmel` prüft die Plätze nur darin
-        const h = [Infinity, Infinity, -Infinity, -Infinity, -1e6];
-        for (let i = 0; i < U.dachLage.length; i++) {
-            const d = decken[i];
-            U.dachLage[i].value.set(d ? d.x : 0, d ? d.z : 0, d ? d.co : 1, d ? d.si : 0);
-            U.dachMass[i].value.set(d ? d.ex : 0, d ? d.ez : 0, d ? d.y : -1e6, 0);
-            if (!d) continue;
-            const hx = Math.abs(d.co) * d.ex + Math.abs(d.si) * d.ez;
-            const hz = Math.abs(d.si) * d.ex + Math.abs(d.co) * d.ez;
-            h[0] = Math.min(h[0], d.x - hx);
-            h[1] = Math.min(h[1], d.z - hz);
-            h[2] = Math.max(h[2], d.x + hx);
-            h[3] = Math.max(h[3], d.z + hz);
-            h[4] = Math.max(h[4], d.y);
-        }
-        if (h[0] > h[2]) h.splice(0, 4, 1, 1, -1, -1);
-        U.dachHuelle.value.set(h[0], h[1], h[2], h[3]);
-        U.dachOben.value = h[4];
-    }
-
-    // DIE DECKE OHNE HAUS-HÜLLE (wetter.K2, beim Platz der Studio-Gestalt `_archInstanceAdd`): ein Bau der `NAESSE.dachArten`
-    // (Marktstand · Brunnen · Tor) trägt keine Hülle mit Decke, seine Form schließt oben über ihrem Grundriss (die Plane, das
-    // Schindeldach, das Gewölbe) — seine Decke ist der Kasten der gezeichneten Teile im Raum des Eintrags (`leaf.localMatrix` ×
-    // Geometrie-Kasten, die Welt-Matrix `_archEntryWorldMatrix`: Skala und 0,5 m unter der Lage), einmal je Eintrag (null: ohne Dach).
-    _dachKastenSetzen(entry, leaves) {
-        const preset = this._foundryPresetForEntry(entry);
-        const rec = preset && this._foundry && this._foundry.recipes ? this._foundry.recipes[preset] : null;
-        const arten = AnazhRealm.NAESSE.dachArten;
-        if (!rec) return; // das Buch ist kalt: der nächste Platz fragt wieder
-        if (!(arten.includes(preset) || arten.includes(rec.kind))) {
-            entry._dachKasten = null; // kein Dach: nie wieder gefragt
-            return;
-        }
-        const b = new THREE.Box3();
-        const t = new THREE.Box3();
-        for (const lf of leaves || []) {
-            const g = lf && lf.geom;
-            if (!g || !g.attributes || !g.attributes.position) continue;
-            if (!g.boundingBox) g.computeBoundingBox();
-            t.copy(g.boundingBox);
-            if (lf.localMatrix) t.applyMatrix4(lf.localMatrix);
-            b.union(t);
-        }
-        if (b.isEmpty()) return;
-        const k = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
-        const c = b.getCenter(new THREE.Vector3());
-        const h = b.getSize(new THREE.Vector3()).multiplyScalar(0.5);
-        entry._dachKasten = { c: c.toArray(), h: h.toArray(), k, dy: -0.5 };
-        this._dachWahl = null;
-    }
-
     // DER LICHT-POOL ALS TERM (K11) — DAS EINE PUNKTLICHT-GESETZ des Stamms (jede Leuchtquelle und das Licht des Auges): je
     // Platz ein Zweig mit dem Abfall des Gesetzes (fachwerk `lichtAbfall`, K11b: (1 − (d/R)⁴)² · (d² + k²)^(−abfall/2); den
     // Bezug in 1 m, (1 + k²)^(abfall/2), trägt die Stärke des Platzes, `_leuchtTakt`), die Stärke schon durch LEGACY_LICHT
@@ -2417,7 +2248,7 @@ class AnazhRealm_stoff_material {
     // Standard-Programme Σ 9,49 → 8,97 s, die GPU-Zeit je Bild gleich (gpu-bank an der Wiese 12,05–12,48 ↔ 12,22–12,35 ms). VOR der
     // Schleife steht, was jeder Platz liest und nur EINMAL entsteht (in der Fn auf dem Stapel, `toVar`): die Lage und die Normale des
     // Blicks (r184 baut eine Variable dort, wo sie zuerst gebaut wird — in der Schleife liefe die Normale des Stoffs je Platz neu)
-    // und der Faktor des Wurfs. Die Werte des Platzes wählt der Zähler über eine Kette von `select` (`_jePlatz`, dieselben Uniforms,
+    // und der Faktor des Wurfs. Die Werte des Platzes wählt der Zähler über EINE Kette von Zweigen (`_jePlatz`, dieselben Uniforms,
     // EIN Schreiber `_leuchtTakt`) — als Reihe im Speicher des Fragments (`array(...).toVar()`, der Zähler als Index) verdoppelte die
     // Schleife die GPU-Zeit je Bild (12,3 → 23,9 ms), als Uniform-Reihe (`uniformArray`) kostete sie +0,7–1,0 ms GPU und +0,45 ms
     // CPU. NICHT als Schleife: die fünf Punkte des Kaskaden-Filters (`_schattenFilter`) — eine Schleife mit Abtastung kostete
@@ -2431,12 +2262,12 @@ class AnazhRealm_stoff_material {
             const wurf = W.faktor.toVar();
             const summe = Te.vec3(0).toVar();
             Te.Loop(atmo.lichtLage.length, ({ i: k }) => {
-                const platz = {
-                    lage: AnazhRealm._jePlatz(Te, atmo.lichtLage, k),
-                    farbe: AnazhRealm._jePlatz(Te, atmo.lichtFarbe, k),
-                    ersatz: AnazhRealm._jePlatz(Te, atmo.lichtErsatz, k),
-                    kern: AnazhRealm._jePlatz(Te, atmo.lichtKern, k),
-                };
+                const [lage, farbe, ersatz, kern] = AnazhRealm._jePlatz(
+                    Te,
+                    [atmo.lichtLage, atmo.lichtFarbe, atmo.lichtErsatz, atmo.lichtKern],
+                    k
+                );
+                const platz = { lage, farbe, ersatz, kern };
                 summe.addAssign(
                     this._lichtPlatz(Te, platz, himmel).mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
                 );
@@ -2445,13 +2276,21 @@ class AnazhRealm_stoff_material {
         })();
     }
 
-    // DIE WAHL DES PLATZES (die Schleifen der Pools): das Glied `k` (der Zähler der Schleife) einer Reihe von Uniforms als Kette
-    // von `select` — der Zähler ist in jedem Fragment derselbe, die Zweige laufen gleich; KEINE Reihe im Speicher des Fragments
-    // (`array(...).toVar()` mit dem Zähler als Index: gpu-bank GTX 1050 an der Wiese 12,28 → 23,87 ms je Bild).
-    static _jePlatz(T, reihe, k) {
-        let w = reihe[reihe.length - 1];
-        for (let j = reihe.length - 2; j >= 0; j--) w = T.select(k.equal(j), reihe[j], w);
-        return w;
+    // DIE WAHL DES PLATZES (die Schleifen der Pools): die Glieder `k` (der Zähler der Schleife) ALLER Reihen eines Platzes in
+    // EINER Kette von Zweigen — der Zähler ist in jedem Fragment derselbe, die Zweige laufen gleich; KEINE Reihe im Speicher des
+    // Fragments (`array(...).toVar()` mit dem Zähler als Index: gpu-bank GTX 1050 an der Wiese 12,28 → 23,87 ms je Bild). Bis
+    // w28-innenlicht trug jede Reihe ihre eigene Kette von `select` (r184 schreibt je `select` eine Variable und ein if/else):
+    // der Dach-Pool des Raum-Lichts stand mit 2 × 7 Zweigen und 16 Variablen je Seite im Boden-Programm (S0: 97 524 → 104 680
+    // Zeichen, die Ratsche riss). → je Reihe EINE Variable, in der Reihe von `reihen`.
+    static _jePlatz(T, reihen, k) {
+        const n = reihen[0].length;
+        const v = reihen.map((r) => r[n - 1].toVar());
+        let kette = null;
+        for (let j = 0; j < n - 1; j++) {
+            const nimm = () => reihen.forEach((r, a) => v[a].assign(r[j]));
+            kette = kette ? kette.ElseIf(k.equal(j), nimm) : T.If(k.equal(j), nimm);
+        }
+        return v;
     }
 
     // DAS GESETZ EINES PLATZES (K11, der Rumpf der Schleife des Pools): `platz` = { lage, farbe, ersatz, kern } — Knoten des Platzes
