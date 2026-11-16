@@ -1,0 +1,38 @@
+[
+    {
+        "station": "karte2.same.physik.verformung#1",
+        "leiter": "same.physik.verformung",
+        "sprosse": 1,
+        "richter": "gleich",
+        "klasse": "Ort",
+        "grund": "Richter „Flegel schwingt am Leib des Spielers, Seillänge im Bild ±2 %, beide Geräte“: SEIL_SITZUNG (stationen/g1.js seilBildProbe um die byte-gleiche seilProbe von physik.K4#1) in der warmen Sitzung an der Mess-Wiese — der Flegel der Schmiede in der Hand, 1,5 s Gang, 180 Takte Schwung; die Länge LÄNGS der gezeichneten Seil-Teile vom Anker des Gesetzes (größte ≤ 1,02 × kleinste), Schwung ≥ 0,05 m, jedes Teil sichtbar im Kegel der Kamera in ≥ 90 % der Takte, ein Schuss je Flegel; radeon + gtx, swiftshader ROT. Klasse Ort: die Mess-Wiese, ein Leib.",
+        "stand": "ganz"
+    },
+    {
+        "station": "karte2.planet.kopplung.bahn-klima#1",
+        "leiter": "planet.kopplung.bahn-klima",
+        "sprosse": 1,
+        "richter": "gleich",
+        "klasse": "Ort",
+        "grund": "Richter „Schneelinie wandert über das Jahr im Bild“: SCHNEE_JAHR (stationen/g1.js schneeJahrSitzungProbe) — der höchste Grund binnen 6 km um die Mess-Wiese, eine Kamera 420 m vor ihm, je Saison (winter · frühling · sommer · herbst, das Wort des Spielers, mittags, die Welt steht nach dem Neubau im Band) EIN Schuss; je freiem Punkt des Hangs das Pixel weiß/nicht weiß. GRÜN: in jeder der vier Saisons die Linie des Bilds (10. Perzentil der weißen Höhen) ±30 m an der Linie des Schnee-Gesetzes (Treffer ≥ 0,6, Falsch ≤ 0,1) UND Sommer − Winter ≥ 100 m; radeon + gtx, swiftshader ROT. Klasse Ort: Sicht ≤ 1 km.",
+        "stand": "ganz"
+    },
+    {
+        "station": "karte2.planet.wetter.klimazonen#1",
+        "leiter": "planet.wetter.klimazonen",
+        "sprosse": 1,
+        "richter": "gleich",
+        "klasse": "Ort",
+        "grund": "Richter „Temperatur am Meer 18/−4 °C, Schneegrenze folgt der Saison“: derselbe Lauf SCHNEE_JAHR (Zwilling von bahn-klima, 0 s in der Gruppe) — `_temperaturAt(waterLevel)` unter klarem Himmel, Tagesmittel über 24 Stunden zur Sommer- und Winter-Mitte (Soll 18 ± 0,5 / −4 ± 0,5 °C), und die Schneegrenze im Bild folgt der Saison (Winter und Sommer am Gesetz, Sommer − Winter ≥ 100 m); radeon + gtx, swiftshader ROT.",
+        "stand": "ganz"
+    },
+    {
+        "station": "karte2.planet.wasser.kreislauf#1",
+        "leiter": "planet.wasser.kreislauf",
+        "sprosse": 1,
+        "richter": "gleich",
+        "klasse": "Ort",
+        "grund": "Richter „Pegel nach Sturm im Bild; Scheitel-Verzug gegen Einzugsgebiet im Erd-Band; Regen × Fläche ↔ ΔVolumen ±10 %“: KREISLAUF_SITZUNG (stationen/g1.js kreislaufSitzungProbe) — die Ganglinie von wetter.K3#2 in der warmen Sitzung (zwei Bäche um den Bach der Mess-Wiese, A-Verhältnis ≥ 4, 10 s Niesel als Wort, 12 Spielstunden gegen denselben Lauf ohne Niesel), dazu der SCHEITEL hinter dem Schwerpunkt des Regens; danach das Bildpaar am Bach trocken / nach 20 min Sturm (Klassen des gezeichneten Wassers). GRÜN: Bach +≥ 0,15 m und Wasser-Pixel ×≥ 1,05; Scheitel-Verhältnis im Erd-Band A-Verhältnis^0,3…0,45 (Snyder mit Hack); Bilanz je Bach 0,9–1,1; radeon + gtx, swiftshader ROT. Das Erd-Band ist die Lesart dieser Station (Snyder t ∝ (L·Lc)^0,3, Hack L ∝ A^0,6) — setzt der Koordinator ein anderes, ist die Zeile halb.",
+        "stand": "ganz"
+    }
+]
