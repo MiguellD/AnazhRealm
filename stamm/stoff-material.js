@@ -2318,6 +2318,32 @@ class AnazhRealm_stoff_material {
         return raum;
     }
 
+    // DER RÜCKSTRAHL DER SONNE IM RAUM (je Takt, EIN Schreiber der vierten Zahl von `dachMass`): das Raum-Licht eines Platzes ist
+    // D (der Himmel, fachwerk `raumLicht`) + q × Σ Seite × max(0, n_Seite · Sonne) (fachwerk `raumSonne`: die vier Seiten des
+    // Körpers, hier in die Welt gedreht) — q = E der Sonne senkrecht gegen E des Himmels waagrecht, `s` die Richtung zur Sonne.
+    // Der EINE Umgebungs-Term (`_raumHimmel`) und die Kamera (`_raumAmAuge`) lesen die Summe; der Raum lebt mit der Uhr.
+    // Ein Kasten ohne Haus-Hülle bleibt 1. Leser der Summe je Platz: die Linse (`_dachWahl.platz[i].licht`).
+    _raumSonneTakt(q, s) {
+        const U = this.state.atmoUniforms;
+        const P = this._dachWahl && this._dachWahl.platz;
+        if (!U || !U.dachMass || !P) return;
+        P.forEach((d, i) => {
+            let licht = d.raum;
+            if (d.sonne && q > 0 && s) {
+                const [sx, sz] = [s.x * d.co - s.z * d.si, s.x * d.si + s.z * d.co];
+                const S = d.sonne;
+                licht +=
+                    q *
+                    (S[0] * Math.max(0, sx) +
+                        S[1] * Math.max(0, -sx) +
+                        S[2] * Math.max(0, sz) +
+                        S[3] * Math.max(0, -sz));
+            }
+            d.licht = Math.min(1, licht);
+            U.dachMass[i].value.w = d.licht;
+        });
+    }
+
     // DIE DECKE ÜBER DEM AUGE (je Takt, einmal auf der CPU — Lehre 14): dieselbe Regel wie `_offenerHimmel`, am Ort des Auges aus
     // den Werten des Dach-Pools (EIN Schreiber `_dachTakt`). Leser: der Rückstrahl (`_rueckstrahlZeichne`) — steht das Auge
     // unter einer Decke, trägt keine Umgebung den Boden des offenen Himmels. Bis dahin fragte jedes Fragment des Boden-Stoffs
@@ -2377,7 +2403,7 @@ class AnazhRealm_stoff_material {
                       ],
                   ];
             const fuss = e.position.y + (hu ? -0.5 : kasten.dy);
-            for (const [j, [x0, x1, z0, z1, y, raum]] of zeilen.entries()) {
+            for (const [j, [x0, x1, z0, z1, y, raum, ...sonne]] of zeilen.entries()) {
                 // DAS RAUM-LICHT DER DECKE (w28-innenlicht): die sechste Zahl der Zeile des Gesetzbuchs (fachwerk `raumLicht`);
                 // der Kasten ohne Haus-Hülle (Marktstand, Brunnen, Tor) ist eine offene Halle, kein Raum: 1. Eine Hülle ohne die
                 // Zahl ist ein Bruch beim Namen — ihr Raum stünde still im vollen Himmel.
@@ -2400,6 +2426,7 @@ class AnazhRealm_stoff_material {
                     ez: ((z1 - z0) / 2) * k,
                     y: fuss + y * k,
                     raum: Number.isFinite(raum) ? raum : 1,
+                    sonne: sonne.length === 4 ? sonne : null,
                     name: `${e.type || e.kind || "bau"}@${Math.round(e.position.x)},${Math.round(e.position.z)}#${j}`,
                 });
             }
@@ -2409,7 +2436,19 @@ class AnazhRealm_stoff_material {
         // DER DECKEL DES POOLS BEIM NAMEN (w28-innenlicht): eine Decke im Umkreis ohne Platz steht mit ihrem Raum im vollen
         // Himmel — die Wahl nennt sie (Leser: die Linse siedlung.K1 am Markt, `_dachWahl.raus`)
         this._dachWahl.im = decken.slice(0, U.dachLage.length).map((d) => d.name);
+        this._dachWahl.platz = decken.slice(0, U.dachLage.length);
         this._dachWahl.raus = decken.slice(U.dachLage.length).map((d) => `${d.name} (${d.d.toFixed(1)} m)`);
+        // … und steht das Auge unter einer Decke ohne Platz, ist ihr Raum still hell: der Bruch nennt sie (einmal je Decke)
+        for (const d of decken.slice(U.dachLage.length)) {
+            const [dx, dz] = [auge.x - d.x, auge.z - d.z];
+            if (Math.abs(dx * d.co - dz * d.si) > d.ex || Math.abs(dx * d.si + dz * d.co) > d.ez) continue;
+            this._raumOhnePlatz = this._raumOhnePlatz || new Set();
+            if (this._raumOhnePlatz.has(d.name)) continue;
+            this._raumOhnePlatz.add(d.name);
+            this._bruchMelden(
+                `RAUM-LICHT ohne Platz: ${d.name} steht über dem Auge, der Dach-Pool trägt nur ${U.dachLage.length}`
+            );
+        }
         // die Hülle des Pools: der achsparallele Kasten um alle gewählten Decken (je Decke ihr gedrehter Grundriss) und die höchste
         // Oberkante — leer (min > max) ohne Decke; `_naesseHimmel` prüft die Plätze nur darin
         const h = [Infinity, Infinity, -Infinity, -Infinity, -1e6];
@@ -3973,7 +4012,7 @@ AnazhRealm.NAESSE = Object.freeze({
 // seiner Normale (die Außenseite der Wand liegt bis zu ihrer Dicke im Grundriss der Decke); die Blende der Kamera folgt dem Raum
 // am Auge mit τ = `blendeS` in Blenden-Stufen (das Auge braucht seine Zeit — die Belichtung springt an der Schwelle nicht), ein
 // Sprung des Auges über `sprungM` in einem Takt (das Wort, die Sonde, die Ankunft) nimmt sie ohne Übergang.
-AnazhRealm.RAUM = Object.freeze({ kanteM: 0.3, blendeS: 0.8, sprungM: 3 });
+AnazhRealm.RAUM = Object.freeze({ kanteM: 0.3, blendeS: 0.8, blendeHellS: 0.3, sprungM: 3 });
 // DIE PFÜTZE (wetter.K2, `_pfuetzeGesetz`, `_pfuetzeKnoten`): der Regen steht in den Mulden des Gesetzes (gelaende-core
 // `muldeEcken`, die Tiefe m in Einheiten von `MULDE.tiefeM` je Vertex des Bodens). Der Film der Welt (die EINE Nässe) hebt das
 // Wasser in jeder Mulde: Wasser = max(0, m − (1 − Nässe)) — nass steht jede Mulde voll, beim Trocknen fallen zuerst die flachen,

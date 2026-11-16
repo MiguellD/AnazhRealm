@@ -5462,6 +5462,43 @@
         }
         return Math.round(Math.min(1, S / ((wand + boden) * (1 - R * R))) * RAUM_LICHT.raster) / RAUM_LICHT.raster;
     }
+    // DER RÜCKSTRAHL DER SONNE (w28-innenlicht, zweiter Summand desselben Raum-Gesetzes): der Tageslicht-Quotient ist das Gesetz
+    // des bedeckten Himmels — am klaren Tag trägt die Sonne das Vielfache, ihr Fleck auf Boden und Wand strahlt in den Raum zurück:
+    //   Raum-Bestrahlung der Sonne = E_Sonne × Σ(Öffnungsfläche × max(0, n_Öffnung · Sonnenrichtung) × Durchlass) × R / (Raum-Oberfläche × (1 − R))
+    // Die Richtung kennt nur die Welt; der Kern trägt je Körper die VIER Seiten seines Rahmens [+x, −x, +z, −z], je Seite
+    // Σ(Fläche × Durchlass) × R / (Oberfläche × (1 − R)) — dieselben Öffnungen, dieselbe Zugehörigkeit, derselbe Rückwurf wie
+    // `raumLicht` (die Rund-Öffnung zählt der Seite ihrer Haupt-Achse). Leser: `deckenZeile` (Zahlen 7–10) → `_dachTakt` des Wirts.
+    function raumSonne(m, y, masse, raum) {
+        var y0 = isFinite(m.y0) ? m.y0 : 0,
+            h = y - y0,
+            rund = m.art === "rund" && m.rad > 0,
+            S = [0, 0, 0, 0];
+        if (!(h > 0) || !raum) return S;
+        var A = rund ? Math.PI * m.rad * m.rad : (m.x1 - m.x0) * (m.z1 - m.z0),
+            U = rund ? 2 * Math.PI * m.rad : 2 * (m.x1 - m.x0 + (m.z1 - m.z0)),
+            n = m.art === "haupt" && m.egTop > y0 ? Math.max(1, Math.round(h / (m.egTop - y0))) : 1,
+            wand = U * h,
+            boden = 2 * A * n,
+            R = (wand * raum.wand + boden * raum.boden) / (wand + boden),
+            mx = (m.x0 + m.x1) / 2,
+            mz = (m.z0 + m.z1) / 2;
+        for (var i = 0; i < raum.oeffnungen.length; i++) {
+            var o = raum.oeffnungen[i],
+                frei = _anKoerper(m, y, o);
+            for (var j = 0; frei && j < masse.length; j++) {
+                var q = masse[j],
+                    qy = q !== m && DECKE_HOEHE[q.art] ? q[DECKE_HOEHE[q.art]] : NaN;
+                if (isFinite(qy) && isFinite(q.x0) && _anKoerper(q, qy, o)) frei = false;
+            }
+            if (!frei) continue;
+            var x = rund ? Math.abs(o.cx - mx) >= Math.abs(o.cz - mz) : o.perp === "x",
+                s = x ? (o.cx >= mx ? 0 : 1) : o.cz >= mz ? 2 : 3;
+            S[s] += o.w * o.h * (o.glas ? raum.glas : 1);
+        }
+        var k = R / ((wand + boden) * (1 - R));
+        for (i = 0; i < 4; i++) S[i] = Math.round(Math.min(1, S[i] * k) * RAUM_LICHT.raster) / RAUM_LICHT.raster;
+        return S;
+    }
     var DECKE_HOEHE = { haupt: "eY", anbau: "yLow", fluegel: "eY", hofarm: "eY", turm: "y1", rund: "y1" };
     function deckenZeile(masse, raum) {
         var d = [];
@@ -5470,7 +5507,7 @@
                 k = DECKE_HOEHE[m.art],
                 y = k ? m[k] : NaN;
             if (!isFinite(y) || !isFinite(m.x0) || !(m.x1 > m.x0) || !(m.z1 > m.z0)) continue;
-            d.push([_hr(m.x0), _hr(m.x1), _hr(m.z0), _hr(m.z1), _hr(y), raumLicht(m, y, masse, raum)]);
+            d.push([_hr(m.x0), _hr(m.x1), _hr(m.z0), _hr(m.z1), _hr(y), raumLicht(m, y, masse, raum)].concat(raumSonne(m, y, masse, raum)));
         }
         return d;
     }

@@ -1947,8 +1947,8 @@ class AnazhRealm_bild_himmel {
 
     // DIE BLENDE DES RAUMS (je Takt, hinter der Belichtung): das Ziel sind die Stufen des Raums am Auge (`_raumAmAuge`, null
     // unter offenem Himmel: 0) × der Anteil des Himmels am gemessenen Licht (`_belichtungSonne`, die Lesung dieses Takts); die
-    // Blende folgt ihm mit τ = `RAUM.blendeS` in Stufen (kein Sprung an der Schwelle, kein Pumpen: EIN Tiefpass erster
-    // Ordnung, er schwingt nicht über), auf der Wanduhr (auf 0,25 s gekappt). Ein Sprung des Auges über `RAUM.sprungM` in
+    // Blende folgt ihm mit τ = `RAUM.blendeS` in Stufen (ins Helle `RAUM.blendeHellS`, das Auge schließt schneller, als es sich öffnet; kein Sprung an der
+    // Schwelle, kein Pumpen: EIN Tiefpass erster Ordnung, er schwingt nicht über), auf der Wanduhr (auf 0,25 s gekappt). Ein Sprung des Auges über `RAUM.sprungM` in
     // einem Takt nimmt das Ziel sofort — die Sonde, das Wort, die Ankunft lesen nie die Blende des Orts von vorher.
     _raumBlendeTakt() {
         const st = this.state;
@@ -1959,6 +1959,15 @@ class AnazhRealm_bild_himmel {
         // der Dach-Pool folgt dem Auge auch in der trockenen Welt: bis w28-innenlicht wählte ihn nur der Takt der Nässe, und der
         // schläft ohne Regen (feld.K3) — die Decken standen, wo das Auge beim letzten Regen war
         this._dachTakt();
+        const dl = st.directionalLight;
+        const [w0, so0] = [this._belichtungGelesen ? this._belichtungE : null, this._belichtungSonne];
+        const lu = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const hi = w0 && so0 ? lu(w0) - lu(so0) : 0;
+        // q: E der Sonne senkrecht zu ihr gegen E des Himmels auf der waagrechten Karte (die Lesung dieses Takts)
+        this._raumSonneTakt(
+            dl && hi > 0 ? (lu([dl.color.r, dl.color.g, dl.color.b]) * dl.intensity) / hi : 0,
+            this._belichtungRichtung
+        );
         const D = this._raumAmAuge();
         const w = this._belichtungGelesen ? this._belichtungE : null; // ohne Lesung des Himmels hält die Blende ihr Ziel am Raum allein
         const so = this._belichtungSonne;
@@ -1974,7 +1983,7 @@ class AnazhRealm_bild_himmel {
         const sprung = !p || !(o.distanceTo(p) <= R.sprungM);
         if (p) o.copy(p);
         const s = this._raumStufen || 0;
-        const n = sprung ? ziel : s + (ziel - s) * (1 - Math.exp(-dt / R.blendeS));
+        const n = sprung ? ziel : s + (ziel - s) * (1 - Math.exp(-dt / (ziel > s ? R.blendeHellS : R.blendeS)));
         this._raumStufen = Math.abs(n - ziel) < 1e-3 ? ziel : n;
         st.raumAmAuge = D;
     }
