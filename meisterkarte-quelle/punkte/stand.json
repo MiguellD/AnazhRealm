@@ -3386,8 +3386,9 @@
      "gruen": true,
      "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.6 σ 21.3 schwarz 0.0 % weiß 0.0 % · ",
      "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js)",
+     "gehalten": true,
+     "r6": "konsum"
     }
    ]
   },
@@ -6266,7 +6267,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 136,
+  "konsum": 137,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6437,11 +6438,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 201
+  "ohne": 200
  },
  "kopfVoll": "be50815d3a94c146941b0a1ae7b82489950f8b10",
- "zeit": "2026-11-16T19:31:30.645Z",
- "vorher": "77a9095f",
+ "zeit": "2026-11-16T19:37:57.434Z",
+ "vorher": "be50815d",
  "bilanz": {
   "gewinn": [],
   "fall": [],
