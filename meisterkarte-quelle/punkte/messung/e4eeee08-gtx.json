@@ -1,7 +1,7 @@
 {
  "sha": "e4eeee086ca78f20b27ae87e12761508215fca34",
  "geraet": "gtx",
- "zeit": "2026-11-16T15:03:09.609Z",
+ "zeit": "2026-11-16T15:58:54.756Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K2#2": {
@@ -830,6 +830,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.kopplung.ereignis#1": {
+   "gruen": false,
+   "zahl": "Probe: eval: {\"ms\":5040,\"fehler\":\"Cannot read properties of null (reading 'erstarrt')\",\"stapel\":[\"lavaSitzungProbe (eval at <anonymous> (:2:29), <anonymous>:61:112)\",\"async eval (eval at <anonymous> (:2:29), <anonymous>:5:8)\",\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_ · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.12,
+   "grund": "ROT: Probe: eval: {\"ms\":5040,\"fehler\":\"Cannot read properties of null (reading 'erstarrt')\",\"stapel\":[\"lavaSitzungProbe (eval at <anonymous> (:2:29), <anonymous>:61:112)\",\"async eval (eval at <anonymous> (:2:29), <anonymous>:5:8)\",\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_ · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kb6a30576236c",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kaae491f57b8b",
+   "s": 6,
+   "fremd": {
+    "s": 9.4,
+    "takte": 4,
+    "fremdS": 24.22,
+    "kerne": 2.588,
+    "fensterKerne": 2.588,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      8.97
+     ],
+     [
+      "Runner.Worker.exe spawnclient 2804 3024",
+      4.39
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.44
+     ]
+    ],
+    "dienerS": 5.77,
+    "diener": [
+     [
+      "System",
+      2.83
+     ],
+     [
+      "dwm.exe",
+      1.69
+     ]
+    ],
+    "geraetS": 11.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.58
+     ],
+     [
+      "svchost.exe",
+      1.98
+     ],
+     [
+      "SearchIndexer.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 18.58,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-16T15:58:54.756Z",
+   "abdruck": "af79baf6c9eb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -849,20 +919,20 @@
   "kb6a30576236c": "dVTbjpswFPyXPLZlzR1iaR+ci5qVWimR9geO7WMgIRDZsLSp+u8VBJIA2/OUoJnMnDkT/iwuIE6Q4MvRlMWCLr4svi0MfKBlUH+gfjmaBV3Ywocgpuw2hDG2bmFCZ5fKkDzjBHgB6RmtWleY5S+iozkiRkBKmi1r9oTsSURWzevrlJpzlKVVgcKByKUbeUCnwNokwNGCWnViPViFYeR6lHQTb9j+SIZhB8ZIs50qcijk2KnyIFAOffvN2JbNHMoMsLLyrDCDppAB91x6F5pvJTU01hUwzVH3pDgMpOcMRqcEldfGjERiTwZuTAlZkgk2QZOJtLIuuuRYDKEt3cgB+knCyaW21LMT4BxiPs03BSwS1GMPkR8In5JfM78nOKMGq4C0hy5tL3L5IxNCyG7uJe+MdxKD8VjyZaRGxPZ2u6Yt2yZuvyT3x/HuVsJNwh5zmIgYkWb6PI5HqUCCTX/MLZkUJGrrVJrqjrZdx8Owb/ymKxLb+5sp87FMz3N5aAfx0y4xYbtZdqZUVQMareRS90T0MYgCytjbDFzB+TwsIVyMg+nhTNUW+tmGHblB0N0i+c8dbvW3rpjlAykSwvGQrn+y6Z4fGs4W8ERnSg3X5oFQy8/K2WBeWbwsqwGpZNhG4pHinooTM/b2dEC28e3v69WBTee9YYeZ906h1NVgPOChrXyqun+imKKvqHNMcJSP9LkHkpJGPFsYPnwdFfE6O981wza5wtRmqPAyksu+wuOsG9QnDsVpyNhRjpC3Xu3ZphcMV+RIbn2/u2H7hrHtiq1HeSS3H7+gIBddqqx9lZEUapNCXj3e4X//AQ=="
  },
  "sitzung": {
-  "start": "2026-11-16T15:02:34.298Z",
-  "ordner": "sitzung-20261116-160234",
+  "start": "2026-11-16T15:53:56.538Z",
+  "ordner": "sitzung-20261116-165356",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 6.8,
+  "warten": 4.42,
+  "bootS": 5.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "karte2.same.kopplung.kaskade#1",
-    "s": 25.8,
-    "takte": 608,
+    "vor": "karte2.same.kopplung.ereignis#1",
+    "s": 25.7,
+    "takte": 561,
     "chunks": 81,
     "nach": null
    }
@@ -871,10 +941,10 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2225,
+   "bilder": 2003,
    "frameP95": 33.4,
-   "taktP95": 15.45,
-   "vramMax": 135.8,
+   "taktP95": 19.13,
+   "vramMax": 134.4,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
@@ -884,8 +954,8 @@
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 116.9,
-  "minuten": 2.05
+  "fahrtS": 116.4,
+  "minuten": 6.43
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
