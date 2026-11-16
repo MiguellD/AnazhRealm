@@ -1,7 +1,7 @@
 {
  "sha": "e4eeee086ca78f20b27ae87e12761508215fca34",
  "geraet": "gtx",
- "zeit": "2026-11-16T17:59:31.441Z",
+ "zeit": "2026-11-16T18:11:47.136Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K2#2": {
@@ -1203,50 +1203,57 @@
   "k74431547df92": "dVRdj5swEPwveeyVM18OxNI9OCVqruqpOd1Dpb6t7TVwIRDZcFSp+t+rcJAE6O0ToBnv7OzgP4sjyD2keP9qq3LBFp8WnxcW3tCxaN7Q3L/aBVu4MgQaM/5ehHP+9QyTJj/WlhS5ICBKyA7oNKbGvLiXHc2TMQIy0m54uyNkRyKybvml1vzhYXpMIVBVTg0ah0OE8qMA2BTY2BQEOtDornEP1stl5AeMdBUnfPdKhuLPnJN2M+0ooFRj1ToAqj322HK+mStUOWDtFHlph55SURH47NKonXMMtM4JMCvQ9KR4SVXgDUKnBF001o6axIGifswIWZEJNkWby6x2jqYSWA6mrfzIA7aea0mPjaNvlYAQEIupvxlgmaIZa4hCKkNGfs/07uGABpwSsh66coPIF1dPCCHbuZaiE961GITHSqwiPSISQtJtF5sk7l4un+Pte5CS9Boq/jxpYmWWm8PYHq2pAnc6s81AoXH2la0vSNf3Alz2yU+6EPFdmEyZ10F6ni+WLo1v5ogJ3858s5WuWzDopMemJ2KINKKMp08zcA2HwzCA9DGmswHqc5hvZbiRT2m3h/SDHbxH3zlhXgykSEovQPbliU/nfDNwcECkJtd62LSgUq/+F8wWi9oRVVUPSK2WZ0sCUl5c8e44f7pZ3i6h7s/vv16eb66Jc23cqe7u9MrUg2gqlq4Ome7+QDlFn9AUmOLIGxWKABQjrbz2ScLh4W4UwNNsdaccz66VtrFDdFeRWvXR7eU/ju+PFs1eQLkffPa0JxXr8rvjCf/BefotuVtPZv+okv7wI0pyNJXOz1cZyaCxGRT19T7/+w8="
  },
  "sitzung": {
-  "start": "2026-11-16T17:58:53.451Z",
-  "ordner": "sitzung-20261116-185853",
+  "start": "2026-11-16T18:11:15.242Z",
+  "ordner": "sitzung-20261116-191115",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 8.5,
+  "bootS": 6.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "vegetation.K4#1",
-    "s": 27.1,
-    "takte": 573,
+    "ort": null,
+    "vor": "breite.siedlung#1",
+    "s": 22.4,
+    "takte": 729,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "messHalt": [
+   {
+    "probe": "breite.siedlung#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   }
+  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 5500,
-   "frameP95": 16.7,
-   "taktP95": 14.48,
-   "vramMax": 117.2,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "vegetation.K4#1",
-     "m": 6443,
+     "probe": "breite.siedlung#1",
+     "m": 566,
      "ringVor": 4,
-     "ringMin": -1
+     "ringMin": 0
     }
    ],
-   "zapfen": 388,
-   "luecken": 1,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 55,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 426.2,
-  "minuten": 7.21
+  "fahrtS": 60.4,
+  "minuten": 1.1
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
@@ -1459,6 +1466,70 @@
    "ungemessen": true,
    "zeit": "2026-11-16T10:29:04.784Z",
    "abdruck": "c0dad0a0880d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "breite.siedlung#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymous> (:2:29), <anonymous>:89:26)\",\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\ExecutionContext.js:391:56)\",\"a",
+   "exit": 2,
+   "minuten": 0.48,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymous> (:2:29), <anonymous>:89:26)\",\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\ExecutionContext.js:391:56)\",\"a",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 27.9,
+   "fremd": {
+    "s": 32.1,
+    "takte": 14,
+    "fremdS": 51,
+    "kerne": 1.591,
+    "fensterKerne": 1.733,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      27
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.64
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.08
+     ]
+    ],
+    "dienerS": 18.77,
+    "diener": [
+     [
+      "System",
+      9.81
+     ],
+     [
+      "dwm.exe",
+      6.61
+     ]
+    ],
+    "geraetS": 14.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.73
+     ],
+     [
+      "svchost.exe",
+      4.09
+     ],
+     [
+      "SearchIndexer.exe",
+      0.5
+     ]
+    ],
+    "eigenS": 173.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-16T18:11:47.136Z",
+   "abdruck": "cd5ba7853ffa",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
