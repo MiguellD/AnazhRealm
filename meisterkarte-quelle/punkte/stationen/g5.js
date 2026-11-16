@@ -1391,7 +1391,16 @@ const K4_ORT =
     "const huegel = (c) => { let b = null; for (const R of [140, 190, 240]) for (let k = 0; k < 32; k++) { const a = (k / 32) * 2 * Math.PI, x = c.x + Math.cos(a) * R, z = c.z + Math.sin(a) * R, y = hoch(x, z); " +
     "if (Number.isFinite(y) && land(x, z) && (!b || y > b.y)) b = { x, y, z }; } return b; }; " +
     "window.__k4 = { S, huegel, land, hoch, hill: huegel(S) }; r.spawnSettlement({ seed: 7, jahr: 1320, position: { x: S.x, y: 0, z: S.z } }); " +
-    "return { S, hill: window.__k4.hill };";
+    // DIE GEGEN-ORTE (vorrat2-stationen-g5, Karte 2 mensch.kopplung.antwort S1 · mensch.zeit.kausal S1): dieselbe Saat von 1320 noch
+    // zweimal, je 120° um den Hügel im selben Abstand wie der Ort (≤ 225 m vom Hügel: der Spieler dort hält beide im Wachstum,
+    // `nearM` 260; ≥ 270 m vom Ort und voneinander: kein Reich berührt ein anderes) — B ohne Haus, C mit Gewalt vor Zeugen (K4_UHR)
+    "const gegen = (sgn, weg) => { const H = window.__k4.hill, rho = Math.hypot(S.x - H.x, S.z - H.z), tA = Math.atan2(S.z - H.z, S.x - H.x); let b = null; " +
+    "for (const rr of [rho, rho - 30, Math.min(rho + 30, 225)]) for (const o of [0, 30, 60]) for (let j = 0; j < (o ? 8 : 1); j++) { const t = tA + sgn * 2.094, x = H.x + Math.cos(t) * rr + Math.cos(j * 0.785) * o, z = H.z + Math.sin(t) * rr + Math.sin(j * 0.785) * o; " +
+    "if (Math.hypot(x - H.x, z - H.z) > 225 || weg.some((q) => Math.hypot(x - q.x, z - q.z) < 270)) continue; const ys = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => [x + Math.cos(i * 0.785) * 60, z + Math.sin(i * 0.785) * 60]); " +
+    "if (!land(x, z) || !ys.every(([u, v]) => land(u, v))) continue; const h = ys.map(([u, v]) => hoch(u, v)), hang = Math.max(...h) - Math.min(...h); if (!b || hang < b.hang) b = { x, z, hang }; } return b; }; " +
+    "const B = window.__k4.hill ? gegen(1, [S]) : null, C = window.__k4.hill ? gegen(-1, B ? [S, B] : [S]) : null; Object.assign(window.__k4, { B, C }); " +
+    "for (const q of [B, C]) if (q) r.spawnSettlement({ seed: 7, jahr: 1320, position: { x: q.x, y: 0, z: q.z } }); " +
+    "return { S, hill: window.__k4.hill, B, C };";
 const K4_VOR =
     "const K = window.__k4, Z = r.state.worldMeta.settlementCells; " +
     "const k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\") && Math.hypot(Z[q].x - K.S.x, Z[q].z - K.S.z) < 250); if (!k) return { fehler: \"der Ort von 1320 steht nicht\" }; " +
@@ -1408,20 +1417,96 @@ const K4_VOR =
 // ihm 1412 → 1744, 12 → 20/21, die alten 0,917, Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort (die Zahl von 715754fc).
 // Erst an der Uhr: Ort, Haus und Hügel stehen wie bisher ohne fremde Dörfer. Die Probe ist `mutiert`: die Tür danach lädt die
 // Seite neu, der Haken steht wieder.
+// DIE GEGEN-ORTE AN DER UHR (vorrat2-stationen-g5): vor der Uhr je Gegen-Ort sein Schlüssel, seine Häuser und sein Jahr; an C schlägt
+// der Spieler dreimal einen Fuchs neben einem Bewohner draußen (`damageCreature` mit source player → `_bewohnerZeuge`: der Ort trägt
+// die Akte gewalt, ihre Furcht bremst sein Wachstum, fachwerk `wachstum`) — dieselbe Uhr wie der Ort
 const K4_UHR =
-    "const K = window.__k4; window.__anazhAutoSettlement = true; K.E1 = K.haeuser(); K.j0 = K.c.wachs && K.c.wachs.jahr; r.state.spielZeit += 1500; " +
-    "return { kern: !!K.c.kern, jahr: K.j0, haeuser: K.E1.length, uhr: r.state.spielZeit };";
+    "const K = window.__k4, Z = r.state.worldMeta.settlementCells, BS = r._bewohnerSiedlungen; " +
+    "const haeuserVon = (k) => { const S = BS.get(k); return S && S.plan ? S.plan.slots.map((s) => r._dorfHaus(S.ox + s.x, S.oz + s.z, s.seed >>> 0)).filter(Boolean) : []; }; " +
+    "const finde = (q) => q && Object.keys(Z).find((k) => k !== K.k && k.startsWith(\"d:7@\") && Math.hypot(Z[k].x - q.x, Z[k].z - q.z) < 120); " +
+    "const G = (K.gegen = { haeuserVon, zeugen: null, schlaege: 0 }); for (const n of [\"B\", \"C\"]) { const k = finde(K[n]); G[n] = k ? { k, c: Z[k], E1: haeuserVon(k), j0: Z[k].wachs && Z[k].wachs.jahr } : null; } " +
+    "if (G.C) { const L = (BS.get(G.C.k) || {}).liste || [], b = L.find((q) => q.leib && !q.drinnen); G.zeugen = L.filter((q) => q.leib && !q.drinnen).length; " +
+    "if (b) { const p = b.leib.position, f = r.spawnCreatureAt(p.x + 1, r.getTerrainHeightAt(p.x + 1, p.z), p.z, \"happy\", \"fuchs\", { bodySize: 1, precise: true }); " +
+    "for (let i = 0; i < 3 && f; i++) if (r.damageCreature(f, 0.001, { source: \"player\" }).ok) G.schlaege++; } } " +
+    "const kurz = (g) => (g ? { k: g.k, haeuser: g.E1.length, jahr: g.j0, akten: (g.c.akten || []).length } : null); " +
+    "window.__anazhAutoSettlement = true; K.E1 = K.haeuser(); K.j0 = K.c.wachs && K.c.wachs.jahr; r.state.spielZeit += 1500; " +
+    "return { kern: !!K.c.kern, jahr: K.j0, haeuser: K.E1.length, uhr: r.state.spielZeit, gegen: { B: kurz(G.B), C: kurz(G.C), zeugen: G.zeugen, schlaege: G.schlaege } };";
+// der Stand nach der Uhr; je Gegen-Ort seine neuen Häuser, an B ihr Median zur Stelle des Hauses (dieselbe Lage zum Ort wie am Ort
+// selbst) und zur Mitte, an beiden die Häuser binnen 30 m der Stelle (`nah30`)
 const K4_STAND =
     "const K = window.__k4, c = K.c, E = K.haeuser(), ring = E.filter((e) => !K.E1.includes(e)).map((e) => [e.position.x, e.position.z]); " +
     "const med = (q) => (ring.length ? Math.round(ring.map(([x, z]) => Math.hypot(x - q[0], z - q[1])).sort((a, b) => a - b)[ring.length >> 1]) : null); " +
+    "const G = K.gegen || {}, sB = G.B && K.haus ? [G.B.c.x + K.haus[0] - c.x, G.B.c.z + K.haus[1] - c.z] : null; " +
+    "const gs = (g, stelle) => { if (!g) return null; const E2 = G.haeuserVon(g.k), neu = E2.filter((e) => !g.E1.includes(e)).map((e) => [e.position.x, e.position.z]); " +
+    "const md = (q) => (neu.length ? Math.round(neu.map(([x, z]) => Math.hypot(x - q[0], z - q[1])).sort((a, b) => a - b)[neu.length >> 1]) : null); " +
+    "return { jahr: [g.j0, g.c.wachs && g.c.wachs.jahr], haeuser: [g.E1.length, E2.length], neu: neu.length, akten: (g.c.akten || []).length, " +
+    "stelle: stelle ? { zumStelle: md(stelle), zumOrt: md([g.c.x, g.c.z]), nah30: neu.filter(([x, z]) => Math.hypot(x - stelle[0], z - stelle[1]) < 30).length } : null }; }; " +
     "return { jahr: [K.j0, c.wachs && c.wachs.jahr], haeuser: [K.E1.length, E.length], slots: r._bewohnerSiedlungen.get(K.k).plan.slots.length, " +
-    "bleiben: +(K.E1.filter((e) => E.includes(e)).length / K.E1.length).toFixed(3), ring: { neu: ring.length, zumHaus: med(K.haus), zumOrt: med([c.x, c.z]) }, offen: r._dorfOffen() };";
+    "bleiben: +(K.E1.filter((e) => E.includes(e)).length / K.E1.length).toFixed(3), ring: { neu: ring.length, zumHaus: med(K.haus), zumOrt: med([c.x, c.z]), " +
+    "nah30: K.haus ? ring.filter(([x, z]) => Math.hypot(x - K.haus[0], z - K.haus[1]) < 30).length : null }, offen: r._dorfOffen(), " +
+    "gegen: { B: gs(G.B, sB), C: gs(G.C, null), zeugen: G.zeugen, schlaege: G.schlaege } };";
 const K4_KAMERA =
     "const K = window.__k4, h = K.hill, mx = (K.c.x + K.haus[0]) / 2, mz = (K.c.z + K.haus[1]) / 2, my = K.hoch(mx, mz); " +
     "return { pose: [h.x, h.y + 1.7, h.z, mx, my + 4, mz].map((v) => +v.toFixed(2)), d: Math.round(Math.hypot(h.x - mx, h.z - mz)), hoeher: Math.round((h.y - my) * 10) / 10 };";
 const K4_SCHRITT = (name, code, sek) =>
     "timeout " + sek + " $W eval '" + code + "' > \"$L/k4-" + name + ".json\" 2>&1; echo '@@PUNKTE@@ " + name.toUpperCase() + "'; cat \"$L/k4-" + name + ".json\"; echo";
 const K4_HUEGEL = (datei) => "HILL=$(" + LIES("console.log(e.hill ? e.hill.x.toFixed(1) + \" \" + e.hill.z.toFixed(1) : \"\")") + " \"$L/k4-" + datei + ".json\" 2> /dev/null)";
+// DIE PROBE DES RINGS VOM HÜGEL (siedlung.K4#2 und die drei Zwillinge der Karte 2: derselbe argv, EIN Lauf)
+const K4_PROBE = {  ...sitzung(90,
+            "A=$(cygpath -m '{AUS}')",
+            // TEIL W NEBEN DER WELT (w12-proben-frist): das Wachstums-Gesetz rechnet in Node ohne Welt (fachwerk-core, 14,8 s CPU) —
+            // es läuft, während die Welt ihren Ort sucht, und seine Zeilen stehen am Ende unter derselben Marke W (das Urteil liest
+            // W1/W2 wo immer sie stehen; die Falle am Ende wartet auf ihn, auch nach einem frühen exit); bis hier stand die Welt 15 s still, bevor sie den Ort suchte (Radeon 8ef49bef: Deckel 45 s an UHR)
+            "node scripts/diag-settlement.cjs --nur-w > \"$L/teil-w.txt\" 2>&1 & WPID=$!; trap 'wait $WPID; WX=$?; echo \"@@PUNKTE@@ W\"; cat \"$L/teil-w.txt\"; echo \"@@PUNKTE@@ EXIT $WX\"' EXIT",
+            "boot",
+            "timeout 60 $W fenster 1600 900 > /dev/null 2>&1",
+            K4_SCHRITT("ort", K4_ORT, 120),
+            K4_HUEGEL("ort"),
+            "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEIN ORT'; exit 4; }",
+            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
+            K4_SCHRITT("vor", K4_VOR, 60),
+            K4_HUEGEL("vor"),
+            "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEIN HAUS AM RAND'; exit 5; }",
+            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
+            K4_SCHRITT("uhr", K4_UHR, 60),
+            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
+            K4_SCHRITT("stand", K4_STAND, 60),
+            K4_SCHRITT("kamera", K4_KAMERA, 60),
+            "K=$(" + LIES("console.log(e.pose ? e.pose.join(\" \") : \"\")") + " \"$L/k4-kamera.json\" 2> /dev/null)",
+            "[ -n \"$K\" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 6; }",
+            "rm -f \"$L/ring.abnahme.json\"",
+            "teil BILD $W bild $K --uhr 0.5 --datei \"$L/ring.png\" --w 1600 --h 900",
+            "cp \"$L/ring.abnahme.json\" \"$A\" 2> /dev/null; true"
+        // mutiert (w4-linsen-a): der Ort von 1320, sein Haus und 1500 s Welt-Uhr bleiben — ohne das Wort stellte die Sitzung danach nicht
+        // zurück, die nächste Probe stand in seinem Ort (GTX 3ed95dcf, klang.K2#1: archLod 5459 Einträge an der Mess-Wiese, sonst 1297)
+        // DIE AUSNAHME (w12-proben-frist): der Ort von 1320 am Rand, drei Wege zum Hügel (592 m, der Ring im Deckel), 1500 s Welt-Uhr des
+        // Wachstums und das Bild vom Hügel — Radeon 8ef49bef stand nach 45 s bei UHR (dem dritten von sechs Schritten, Teil W 14,8 s davor)
+), mutiert: true, sek: 33 };
+const K4_UHR_S = 1500; // die Welt-Uhr, die K4_UHR vorstellt
+// der Lauf der Probe für die Urteile der Karte 2: die Schritte (UHR, STAND), der Adapter, ein Software-Adapter beim Namen
+const k4Lauf = (lauf) => {
+    const out = String(lauf.stdout || "");
+    const teil = (n) => out.split(/^@@PUNKTE@@ /m).find((x) => x.startsWith(n + "\n")) || "";
+    const erg = (n) => ((b) => (b && b.ergebnis) || (b && b.fehler ? { fehler: b.fehler } : {}))(jsonBlock(teil(n)));
+    const u = erg("UHR");
+    return {
+        ad: (/\[linse-gpu\][^\r\n]*/.exec(out) || ["Adapter ungenannt"])[0],
+        soft: /\[linse-gpu\][^\r\n]*(swiftshader|llvmpipe|lavapipe|software|subzero)/i.test(out),
+        u, s: erg("STAND"), uhrS: Number.isFinite(u.uhr) ? K4_UHR_S : null, // prettier-ignore
+    };
+};
+// die Roh-Ausgabe MIT den Gegen-Orten (die Schritte von K4_ROH, UHR und STAND tragen B und C): am Kern gerechnet, nie gemessen
+const K4_GEGEN_ROH = (o) => {
+    const B = Object.assign({ jahr: [1412, 1744], haeuser: [12, 20], neu: 8, akten: 0, stelle: { zumStelle: 47, zumOrt: 41, nah30: 1 } }, o.B);
+    const C = Object.assign({ jahr: [1412, 1560], haeuser: [12, 15], neu: 3, akten: 3, stelle: null }, o.C);
+    const kurz = (g, k) => ({ k, haeuser: g.haeuser[0], jahr: g.jahr[0], akten: k === "d:7@612,431" ? g.akten : 0 });
+    const uhr = { kern: o.kern !== false, jahr: 1412, haeuser: 12, uhr: 1543.1, gegen: { B: kurz(B, "d:7@388,299"), C: kurz(C, "d:7@612,431"), zeugen: o.zeugen == null ? 4 : o.zeugen, schlaege: o.schlaege == null ? 3 : o.schlaege } };
+    const stand = Object.assign({ jahr: [1412, 1744], haeuser: [12, 20], slots: 21, bleiben: 0.917, ring: { neu: 9, zumHaus: 22, zumOrt: 59, nah30: 6 }, offen: 0 }, o.stand, { gegen: { B, C, zeugen: uhr.gegen.zeugen, schlaege: uhr.gegen.schlaege } });
+    return K4_ROH(null)
+        .replace(/@@PUNKTE@@ UHR\n[\s\S]*?(?=\n@@PUNKTE@@ STAND)/, "@@PUNKTE@@ UHR\n" + JSON.stringify({ ms: 3, ergebnis: uhr }, null, 1))
+        .replace(/@@PUNKTE@@ STAND\n[\s\S]*?(?=\n@@PUNKTE@@ KAMERA)/, "@@PUNKTE@@ STAND\n" + JSON.stringify({ ms: 4, ergebnis: stand }, null, 1));
+};
+const K4_PFAD = ["fachwerk-core.js", "tetrapoda-core.js", "stamm/siedlung-*.js", "stamm/kreatur-leben.js", "stamm/gelaende-kollision.js", "stamm/gelaende-boden.js", "stamm/dirigent-takt.js", "scripts/werkbank.cjs", "stamm/dienst.js"];
 
 // DER HIT-STOP DES SPIELS neben der Linse (halten.K2, 23.10.): latenz zählt den Halt im Bild (stehende Schwung-Uhr UND Hand);
 // die Haken zählen daneben, was das Spiel tut — jeder Treffer, der den Halt setzt (`_kampfHitJuice`, seine Dauer), und wie weit
@@ -4290,36 +4375,7 @@ const stationen = [
         kriterium: "siedlung.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: {  ...sitzung(90,
-            "A=$(cygpath -m '{AUS}')",
-            // TEIL W NEBEN DER WELT (w12-proben-frist): das Wachstums-Gesetz rechnet in Node ohne Welt (fachwerk-core, 14,8 s CPU) —
-            // es läuft, während die Welt ihren Ort sucht, und seine Zeilen stehen am Ende unter derselben Marke W (das Urteil liest
-            // W1/W2 wo immer sie stehen; die Falle am Ende wartet auf ihn, auch nach einem frühen exit); bis hier stand die Welt 15 s still, bevor sie den Ort suchte (Radeon 8ef49bef: Deckel 45 s an UHR)
-            "node scripts/diag-settlement.cjs --nur-w > \"$L/teil-w.txt\" 2>&1 & WPID=$!; trap 'wait $WPID; WX=$?; echo \"@@PUNKTE@@ W\"; cat \"$L/teil-w.txt\"; echo \"@@PUNKTE@@ EXIT $WX\"' EXIT",
-            "boot",
-            "timeout 60 $W fenster 1600 900 > /dev/null 2>&1",
-            K4_SCHRITT("ort", K4_ORT, 120),
-            K4_HUEGEL("ort"),
-            "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEIN ORT'; exit 4; }",
-            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
-            K4_SCHRITT("vor", K4_VOR, 60),
-            K4_HUEGEL("vor"),
-            "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEIN HAUS AM RAND'; exit 5; }",
-            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
-            K4_SCHRITT("uhr", K4_UHR, 60),
-            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
-            K4_SCHRITT("stand", K4_STAND, 60),
-            K4_SCHRITT("kamera", K4_KAMERA, 60),
-            "K=$(" + LIES("console.log(e.pose ? e.pose.join(\" \") : \"\")") + " \"$L/k4-kamera.json\" 2> /dev/null)",
-            "[ -n \"$K\" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 6; }",
-            "rm -f \"$L/ring.abnahme.json\"",
-            "teil BILD $W bild $K --uhr 0.5 --datei \"$L/ring.png\" --w 1600 --h 900",
-            "cp \"$L/ring.abnahme.json\" \"$A\" 2> /dev/null; true"
-        // mutiert (w4-linsen-a): der Ort von 1320, sein Haus und 1500 s Welt-Uhr bleiben — ohne das Wort stellte die Sitzung danach nicht
-        // zurück, die nächste Probe stand in seinem Ort (GTX 3ed95dcf, klang.K2#1: archLod 5459 Einträge an der Mess-Wiese, sonst 1297)
-        // DIE AUSNAHME (w12-proben-frist): der Ort von 1320 am Rand, drei Wege zum Hügel (592 m, der Ring im Deckel), 1500 s Welt-Uhr des
-        // Wachstums und das Bild vom Hügel — Radeon 8ef49bef stand nach 45 s bei UHR (dem dritten von sechs Schritten, Teil W 14,8 s davor)
-        ), mutiert: true, sek: 33 },
+        probe: K4_PROBE,
         gpu: true,
         zeit: false,
         minuten: 12,
@@ -4384,6 +4440,110 @@ const stationen = [
                 zahl: /· BILD ohne Abnahme: Seite weg$/ },
         ],
         quelle: "2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)",
+    },
+
+    // ───────── KARTE 2 auf dem Lauf von siedlung.K4#2 (vorrat2-stationen-g5): drei Zwillinge, keine GPU-Minute mehr ─────────
+    // Dieselbe Probe trägt seit diesem Zweig zwei Gegen-Orte derselben Saat von 1320 im selben Uhr-Lauf (K4_ORT, K4_UHR, K4_STAND):
+    // B ohne Haus (die Stelle des Hauses in derselben Lage zum Ort), C mit drei Schlägen vor Zeugen. Am Fenster ungemessen.
+    //   antwort S1  der Ring um das Spielerhaus (der Ort wird Kern, neue Häuser näher am Haus als an der Mitte) UND an B kein Ring:
+    //               B wuchs, seine neuen Häuser liegen nicht näher an der Stelle als an der Mitte, binnen 30 m der Stelle weniger als am Haus
+    //   kausal S1   C trägt ≥ 3 Akten gewalt und wuchs weniger als B (neue Häuser, sonst das Jahr) über dieselbe Uhr
+    //   palimpsest S1  die Häuserzahl steigt über die 1500 s, die alten stehen zu ≥ 0,9 (die Zahl von siedlung.K4#2, eigenes Urteil)
+    {
+        kriterium: "karte2.mensch.kopplung.antwort",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: K4_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const { ad, soft, u, s, uhrS } = k4Lauf(lauf);
+            const ring = s.ring || {}, B = (s.gegen || {}).B;
+            const am = u.kern === true && ring.neu > 0 && ring.zumHaus < ring.zumOrt && uhrS <= 1500;
+            if (!s.ring) return { gruen: false, zahl: "kein Stand nach der Uhr" + (s.fehler ? " — " + s.fehler : "") + " · " + ad };
+            if (!B || !B.stelle) return { gruen: false, zahl: "Ring " + ring.neu + " neu, Median " + ring.zumHaus + " m vom Haus / " + ring.zumOrt + " m vom Ort · der Gegenlauf fehlt (kein Ort B derselben Saat) · " + ad };
+            const kein = B.neu > 0 && !(B.stelle.zumStelle < B.stelle.zumOrt) && B.stelle.nah30 < ring.nah30;
+            return {
+                gruen: !soft && am && kein,
+                zahl:
+                    "mit Haus (Kern " + (u.kern ? "ja" : "nein") + ", " + uhrS + " s): Ring " + ring.neu + " neu, Median " + ring.zumHaus + " m vom Haus / " + ring.zumOrt + " m vom Ort, binnen 30 m " + ring.nah30 +
+                    " · ohne Haus (B, dieselbe Saat, dieselbe Uhr): " + B.neu + " neu, Median " + B.stelle.zumStelle + " m von der Stelle / " + B.stelle.zumOrt + " m vom Ort, binnen 30 m " + B.stelle.nah30 + " · " + ad,
+            };
+        },
+        proben: [
+            { name: "Ring am Haus, an B keiner", stdout: K4_GEGEN_ROH({}), gruen: true },
+            { name: "der Gegenlauf fehlt (der alte Lauf ohne B)", stdout: K4_ROH(null), gruen: false },
+            { name: "B wächst denselben Ring an der Stelle (das Haus wirkt nicht)", stdout: K4_GEGEN_ROH({ B: { neu: 8, stelle: { zumStelle: 21, zumOrt: 58, nah30: 6 } } }), gruen: false },
+            { name: "B wuchs nicht (der Gegenlauf misst nichts)", stdout: K4_GEGEN_ROH({ B: { neu: 0, stelle: { zumStelle: null, zumOrt: null, nah30: 0 } } }), gruen: false },
+            { name: "kein Kern am Ort", stdout: K4_GEGEN_ROH({ kern: false }), gruen: false },
+            { name: "swiftshader", stdout: K4_GEGEN_ROH({}).replace("nvidia/pascal", "google/swiftshader"), gruen: false },
+        ],
+        pfad: K4_PFAD,
+        quelle: "KARTE2 mensch.kopplung.antwort S1 = Ring neuer Häuser um das Spielerhaus binnen 1 500 s; Gegenlauf: dieselbe Saat ohne Spielerhaus → kein Ring an diesem Ort",
+    },
+    {
+        kriterium: "karte2.mensch.zeit.kausal",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: K4_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const { ad, soft, u, s } = k4Lauf(lauf);
+            const g = s.gegen || {}, B = g.B, C = g.C, ug = u.gegen || {};
+            if (!B || !C) return { gruen: false, zahl: "der Gegenlauf fehlt (Ort B " + (B ? "steht" : "fehlt") + ", Ort C " + (C ? "steht" : "fehlt") + ")" + (s.fehler ? " — " + s.fehler : "") + " · " + ad };
+            const [dB, dC] = [B.haeuser[1] - B.haeuser[0], C.haeuser[1] - C.haeuser[0]];
+            const langsamer = dC < dB || (dC === dB && C.jahr[1] < B.jahr[1]);
+            return {
+                gruen: !soft && C.akten >= 3 && dB > 0 && langsamer,
+                zahl:
+                    "mit Gewalt (C: " + ug.schlaege + " Schläge, " + ug.zeugen + " Zeugen draußen, " + C.akten + " Akten): " + C.jahr.join(" → ") + ", Häuser " + C.haeuser.join(" → ") + " (+" + dC + ")" +
+                    " · ohne (B): " + B.jahr.join(" → ") + ", Häuser " + B.haeuser.join(" → ") + " (+" + dB + ") über dieselbe Uhr · " + ad,
+            };
+        },
+        proben: [
+            { name: "C wächst nach der Gewalt langsamer", stdout: K4_GEGEN_ROH({}), gruen: true },
+            { name: "gleiches Jahr, gleiche Häuser (die Furcht bremst nicht)", stdout: K4_GEGEN_ROH({ C: { jahr: [1412, 1744], haeuser: [12, 20], neu: 8, akten: 3 } }), gruen: false },
+            { name: "keine Akte (kein Zeuge draußen)", stdout: K4_GEGEN_ROH({ C: { jahr: [1412, 1744], haeuser: [12, 20], neu: 8, akten: 0 }, schlaege: 3, zeugen: 0 }), gruen: false },
+            { name: "B wuchs nicht", stdout: K4_GEGEN_ROH({ B: { jahr: [1412, 1412], haeuser: [12, 12], neu: 0 } }), gruen: false },
+            { name: "der alte Lauf ohne Gegen-Orte", stdout: K4_ROH(null), gruen: false },
+            { name: "swiftshader", stdout: K4_GEGEN_ROH({}).replace("nvidia/pascal", "google/swiftshader"), gruen: false },
+        ],
+        pfad: K4_PFAD,
+        quelle: "KARTE2 mensch.zeit.kausal S1 = Ort nach Gewalt wächst messbar langsamer",
+    },
+    {
+        kriterium: "karte2.mensch.zeit.palimpsest",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: K4_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const { ad, soft, s, uhrS } = k4Lauf(lauf);
+            if (!Array.isArray(s.haeuser)) return { gruen: false, zahl: "kein Stand nach der Uhr" + (s.fehler ? " — " + s.fehler : "") + " · " + ad };
+            return {
+                gruen: !soft && s.haeuser[1] > s.haeuser[0] && s.bleiben >= 0.9 && uhrS >= 1500,
+                zahl: "über " + uhrS + " s Welt-Uhr: " + (s.jahr || []).join(" → ") + ", Häuser " + s.haeuser.join(" → ") + ", die alten erhalten " + s.bleiben + " (Soll ≥ 0,9) · " + ad,
+            };
+        },
+        proben: [
+            { name: "der Ort wächst, die alten stehen", stdout: K4_GEGEN_ROH({}), gruen: true },
+            { name: "die Häuserzahl steigt nicht", stdout: K4_GEGEN_ROH({ stand: { haeuser: [12, 12], jahr: [1412, 1412] } }), gruen: false },
+            { name: "die alten fallen (0,75)", stdout: K4_GEGEN_ROH({ stand: { bleiben: 0.75 } }), gruen: false },
+            { name: "swiftshader", stdout: K4_GEGEN_ROH({}).replace("nvidia/pascal", "google/swiftshader"), gruen: false },
+        ],
+        pfad: K4_PFAD,
+        quelle: "KARTE2 mensch.zeit.palimpsest S1 = Häuserzahl über 1 500 s steigt, alte ≥ 0,9 erhalten",
     },
 
     // ───────── leib.K1 — Taste → Leib im Bild ─────────
