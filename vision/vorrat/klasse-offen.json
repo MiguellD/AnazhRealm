@@ -11,8 +11,8 @@
  "stand": {
   "karte": "vision/meisterkarte-2.json",
   "ersteSprossen": 253,
-  "gesetzt": 191,
-  "offen": 28
+  "gesetzt": 195,
+  "offen": 24
  },
  "offen": [
   {
@@ -24,14 +24,6 @@
    "grund": "Region 10⁴ km² im Überflug: größer als die Stadt-Spanne (10–10² km², Sicht 20 km), ohne die Bauten der Megastadt — die Treppe nennt keine Zeile für eine leere Region dieser Fläche"
   },
   {
-   "leiter": "planet.relief.grossform",
-   "sprosse": 1,
-   "umfang": "1 Saat, Flussnetz bis zum Horizont",
-   "preis": "P",
-   "richter": "im Spiel an 20 Orten nachgefahren: 100 % der Läufe enden in See oder Meer",
-   "grund": "„Flussnetz bis zum Horizont“: Sicht bis zum Horizont ist die Zeile Megastadt und Kontinent, die Fahrt an 20 Orten wäre Ort — zwei Lesarten"
-  },
-  {
    "leiter": "planet.wasser.eis",
    "sprosse": 1,
    "umfang": "Schnee einer Region",
@@ -40,28 +32,12 @@
    "grund": "„Schnee einer Region“ ohne Größe; die Klasse hängt an der Fläche, die der Text nicht nennt"
   },
   {
-   "leiter": "planet.wasser.kreislauf",
-   "sprosse": 1,
-   "umfang": "Region 2 km",
-   "preis": "P, beide Geräte",
-   "richter": "Pegel nach Sturm im Bild; Scheitel-Verzug gegen Einzugsgebiet im Erd-Band; Regen × Fläche ↔ ΔVolumen ±10 %",
-   "grund": "„Region 2 km“: über der Sicht der Zeile Ort (1 km), aber das Vorbild planet.wetter.lagen („wenige km“) trägt Ort — die Karte widerspricht sich zwischen 1 und 20 km"
-  },
-  {
    "leiter": "planet.wetter.wolken",
    "sprosse": 1,
    "umfang": "EINE Wolkenschicht 800 m, Karte ≈ 8 km",
    "preis": "P",
    "richter": "Zeitraffer der Schicht gegen Zeitraffer-Film realer Schichtwolken (2AFC ≤ 85 %); Zuggeschwindigkeit der Schatten am Boden im Band realer Wolkenzüge (2–20 m/s) und gleich der Wolke darüber (Versatz ≤ 5 %)",
    "grund": "„Karte ≈ 8 km“: über der Sicht der Zeile Ort (1 km), unter Stadt (20 km); Vorbild planet.wetter.lagen („wenige km“) trägt Ort — Widerspruch"
-  },
-  {
-   "leiter": "planet.wetter.klimazonen",
-   "sprosse": 1,
-   "umfang": "1 Klima, Höhe gestaucht",
-   "preis": "P",
-   "richter": "Temperatur am Meer 18/−4 °C, Schneegrenze folgt der Saison",
-   "grund": "„1 Klima, Höhe gestaucht“ nennt weder Ort noch Fläche; die Schneegrenze wird über Höhenzüge gelesen"
   },
   {
    "leiter": "planet.erde.gestalt",
@@ -200,14 +176,6 @@
    "grund": "Fernrohr auf den Mond, verglichen mit dem Anflug an dieselbe Stelle: der Anflug ist ein Welt-Sprung (Planet und Welten), das Fernrohr ein Ort"
   },
   {
-   "leiter": "same.entfaltung.schirm",
-   "sprosse": 1,
-   "umfang": "Wiese und Genesis, Sicht 8 km",
-   "preis": "P stehend",
-   "richter": "Frame p95 je Gerät, Wiese und Genesis, Ego und Third",
-   "grund": "„Wiese und Genesis, Sicht 8 km“: die Sicht liegt in der Zeile Stadt, der Ort ist eine Wiese — die Treppe (Sicht bis 1 km für Ort) und das Spiel (8 km Sicht an jeder Wiese) widersprechen sich"
-  },
-  {
    "leiter": "planet.kopplung.land-meer-luft",
    "sprosse": 1,
    "umfang": "1 Gebirge",
@@ -238,6 +206,32 @@
    "preis": "P",
    "richter": "Bildpaar mit und ohne Eingriff an derselben Saat: Regenmenge im Zielgebiet höher, im Lee tiefer; Bilanz ±10 %",
    "grund": "„EINE Region: Wetter lenken über einer Stadt“, Zielgebiet und Lee: Stadt oder größer"
+  }
+ ],
+ "aufgeloest": [
+  {
+   "leiter": "planet.relief.grossform",
+   "sprosse": 1,
+   "klasse": "Ort",
+   "grund": "Ort — der Richter legt das Maß an 20 Orte („im Spiel an 20 Orten nachgefahren“), die Regel: dieselbe Probe an N Orten bleibt Ort; „bis zum Horizont“ ist die Reichweite des Gesetzes, nicht die Sicht des Bilds (Station karte2.planet.relief.grossform#1, vorrat3-stationen)"
+  },
+  {
+   "leiter": "planet.wasser.kreislauf",
+   "sprosse": 1,
+   "klasse": "Ort",
+   "grund": "Ort — „Region 2 km“ ohne Siedlung trägt nicht die Zeile Stadt (sie verlangt „Stadt“ oder Siedlungen); das Vorbild planet.wetter.lagen („wenige km“) ist Ort; die Station misst am EINEN Bach (karte2.planet.wasser.kreislauf#1, vorrat3-stationen)"
+  },
+  {
+   "leiter": "planet.wetter.klimazonen",
+   "sprosse": 1,
+   "klasse": "Ort",
+   "grund": "Ort — Temperatur am Meer und die Schneegrenze an EINEM Hang (Zeit an EINEM Ort); dieselbe Probe wie planet.kopplung.bahn-klima S1 (Ort), ein Zwilling trägt den Preis desselben Fensters (karte2.planet.wetter.klimazonen#1, vorrat3-stationen)"
+  },
+  {
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 1,
+   "klasse": "Ort",
+   "grund": "Ort — zwei Orte (Wiese, Genesis), keine Stadt; die 8 km Sicht trägt jede Wiese des Spiels, also auch jede Sprosse der Klasse Ort — die Sicht beschreibt den Schirm, nicht eine größere Szene (karte2.same.entfaltung.schirm#1, vorrat3-stationen)"
   }
  ]
 }

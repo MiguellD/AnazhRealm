@@ -711,6 +711,7 @@
        "umfang": "1 Saat, Flussnetz bis zum Horizont",
        "tiefe": "jeder Lauf endet in See oder Meer",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "im Spiel an 20 Orten nachgefahren: 100 % der Läufe enden in See oder Meer"
       },
       {
@@ -1241,6 +1242,7 @@
        "umfang": "Region 2 km",
        "tiefe": "Sturm hebt den Fluss mit Verzug, Dürre senkt ihn; Bilanz geht auf",
        "preis": "P, beide Geräte",
+       "klasse": "Ort",
        "richter": "Pegel nach Sturm im Bild; Scheitel-Verzug gegen Einzugsgebiet im Erd-Band; Regen × Fläche ↔ ΔVolumen ±10 %"
       },
       {
@@ -1489,6 +1491,7 @@
        "umfang": "1 Klima, Höhe gestaucht",
        "tiefe": "Jahres- und Tagesgang, Schneegrenze",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Temperatur am Meer 18/−4 °C, Schneegrenze folgt der Saison"
       },
       {
@@ -13474,6 +13477,7 @@
        "umfang": "Wiese und Genesis, Sicht 8 km",
        "tiefe": "Wiese trägt bis ~20 m, Häuser als Kästen",
        "preis": "P stehend",
+       "klasse": "Ort",
        "richter": "Frame p95 je Gerät, Wiese und Genesis, Ego und Third"
       },
       {
