@@ -1319,6 +1319,86 @@ const K4_KAMERA =
 const K4_SCHRITT = (name, code, sek) =>
     "timeout " + sek + " $W eval '" + code + "' > \"$L/k4-" + name + ".json\" 2>&1; echo '@@PUNKTE@@ " + name.toUpperCase() + "'; cat \"$L/k4-" + name + ".json\"; echo";
 const K4_HUEGEL = (datei) => "HILL=$(" + LIES("console.log(e.hill ? e.hill.x.toFixed(1) + \" \" + e.hill.z.toFixed(1) : \"\")") + " \"$L/k4-" + datei + ".json\" 2> /dev/null)";
+// DIE JAHRESRINGE IM ECHTEN SPIEL (Karte 2 mensch.zeit.palimpsest S 2): derselbe Ort von 1320 wie siedlung.K4#2 (K4_ORT, der Hügel
+// K4_HUEGEL), dann springt die Welt-Uhr dreimal — je Sprung so weit, wie das Gesetz des Orts (fachwerk `wachstum`, derselbe Ruf wie
+// `_ortWachstumTakt`) braucht, bis sein Jahr 1560 · 1860 · 1935 erreicht — und der Takt des Spiels baut den Ort am neuen Jahr um
+// (`_ortWachstumTakt` → `_ortWaechst`, der Zug hebt die Häuser: der Gang von gate:settlement WW). Je Halt der Schnitt des Plans
+// (Grundrisse, Baujahr, gezeichnete Häuser) und die Dauer des Sprungs bis der Ort steht; die Überdeckung rechnet das Urteil.
+const PALI_SCHNITT =
+    "const P = r._ortPlaene.get(K.c.ort) || r._bewohnerSiedlungen.get(K.k).plan, o = P.ort || { x: K.c.x, z: K.c.z }; " +
+    "const schnitt = { jahr: P.jahr + P.spanne, ort: [+o.x.toFixed(2), +o.z.toFixed(2)], slots: P.slots.map((s) => ({ x: +s.x.toFixed(2), z: +s.z.toFixed(2), bj: s.baujahr, " +
+    "obb: { cx: +s.obb.cx.toFixed(3), cz: +s.obb.cz.toFixed(3), ex: +s.obb.ex.toFixed(3), ez: +s.obb.ez.toFixed(3), phi: +s.obb.phi.toFixed(4) } })), " +
+    "steht: P.slots.filter((s) => r._dorfHaus(o.x + s.x, o.z + s.z, s.seed >>> 0)).length }; ";
+const PALI_VOR =
+    "const K = window.__k4, Z = r.state.worldMeta.settlementCells; " +
+    "K.k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\") && Math.hypot(Z[q].x - K.S.x, Z[q].z - K.S.z) < 250); if (!K.k) return { fehler: \"der Ort von 1320 steht nicht\" }; " +
+    "K.c = Z[K.k]; if (!K.c.wachs) return { fehler: \"der Ort trägt kein Gedächtnis des Wachstums (keine Chronik)\" }; " + PALI_SCHNITT +
+    "return { k: K.k, wachs: K.c.wachs.jahr, schnitt, hill: K.huegel(K.c) };";
+// DER EINE TEXT DES SPRUNGS (die Marke M setzt jeder Halt davor): drei Kopien sprengten die Zeile des Befehls (Radeon 71839b1e:
+// der Text der Sitzung riss bei 8 191 Zeichen mitten im Halt 1935, „unexpected EOF")
+const PALI_SPRUNG =
+    "const K = window.__k4, c = K.c, st = r.state, FC = globalThis.__fachwerkCore, A = window.AnazhRealm || r.constructor, FG = A._furchtGesetz(); " +
+    "const P0 = r._ortPlaene.get(c.ort); if (!P0 || !P0.chronik) return { fehler: \"der Ort trägt keine Chronik\" }; " +
+    "const jahr = (t) => FC.wachstum(P0.chronik, c.wachs, c.akten || [], t, (a) => FG.furchtErinnert(a, FG.F), FG.F.fluchtJeFurcht).jahr; " +
+    "const t0 = st.spielZeit; let lo = 0, hi = 60; while (jahr(t0 + hi) < M && hi < 4e5) hi *= 2; " +
+    "if (jahr(t0 + hi) < M) return { marke: M, fehler: \"das Gesetz erreicht \" + M + \" nicht binnen \" + hi + \" s Welt-Uhr (Jahr \" + jahr(t0 + hi) + \")\" }; " +
+    "for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (jahr(t0 + m) >= M) hi = m; else lo = m; } " +
+    // DER TAKT DES WACHSTUMS (Radeon 71839b1e: der Sprung nach 1935 um 121 s blieb im Takt des Sprungs davor, `_ortWachstumTakt` rechnet
+    // einen Ort nur in einem neuen Takt von SIEDLUNG_WACHS.taktS — das Gedächtnis blieb 1922): die Uhr springt mindestens in den nächsten Takt
+    "hi = Math.max(hi, (Math.floor(c.wachs.uhr / A.SIEDLUNG_WACHS.taktS) + 1) * A.SIEDLUNG_WACHS.taktS - t0); " +
+    "const p = { x: c.x, z: c.z }, rahmen = () => new Promise((f) => { let d = 0; requestAnimationFrame(() => d++ || f()); setTimeout(() => d++ || f(), 50); }); " +
+    "window.__anazhAutoSettlement = true; const T0 = performance.now(); st.spielZeit = t0 + Math.ceil(hi); r._ortWachstumTakt(p); await r._ortWachsFlug; let n = 0; " +
+    "for (; n < 4000 && performance.now() - T0 < 40000 && (r._ortWachstumTakt(p), r._dorfOffen()); n++) { r._tickAutoSettlement(p); await rahmen(); } " +
+    "const ms = Math.round(performance.now() - T0); " + PALI_SCHNITT +
+    "return { marke: M, uhr: Math.ceil(hi), ms, takte: n, wachs: c.wachs.jahr, offen: r._dorfOffen(), schnitt };";
+// DAS URTEIL der Jahresringe (aus den Schnitten, nie aus dem Gesetz der Seite): die Überdeckung je Slot wie gate:settlement Teil J
+// (`ueberdeckung`: der Anteil der 3 × 3 Punkte jedes Grundrisses des älteren Plans, die ein Grundriss des jüngeren trägt; die
+// Drehung `lokal(0, 0, −φ, …)`, der Abstand fachwerk `distPunktOBB`) — je Paar der Halte UND 1320 → 1935 unmittelbar
+const paliOBB = (px, pz, o) => {
+    const [c, s, dx, dz] = [Math.cos(o.phi), Math.sin(o.phi), px - o.cx, pz - o.cz];
+    return Math.hypot(Math.max(Math.abs(dx * c - dz * s) - o.ex, 0), Math.max(Math.abs(dx * s + dz * c) - o.ez, 0));
+};
+const paliDeckung = (alt, jung) => {
+    const d = alt.slots.flatMap(({ obb: b }) =>
+        [-1, 0, 1, -1, 0, 1, -1, 0, 1].map((u, i) => {
+            const [a, v, c, s] = [u * b.ex, ((i / 3) | 0) * b.ez - b.ez, Math.cos(-b.phi), Math.sin(-b.phi)];
+            const [x, z] = [b.cx + a * c - v * s, b.cz + a * s + v * c];
+            return jung.slots.some((t) => paliOBB(x, z, t.obb) < 1e-6);
+        })
+    );
+    return d.length ? +(d.filter(Boolean).length / d.length).toFixed(3) : 0;
+};
+// KERN ALT, RAND JUNG: im Plan von 1935 der Median des Baujahrs der inneren Hälfte der Slots (nach Abstand zum Ort) unter dem der äußeren
+const paliKern = (x) => {
+    const s = x.slots.map((q) => [Math.hypot(q.x, q.z), q.bj]).sort((a, b) => a[0] - b[0]);
+    const med = (a) => ((b) => b[b.length >> 1])(a.map((q) => q[1]).sort((p, q) => p - q));
+    const h = s.length >> 1;
+    return h ? { innen: med(s.slice(0, h)), aussen: med(s.slice(s.length - h)) } : { innen: null, aussen: null };
+};
+const PALI_MARKEN = [1560, 1860, 1935];
+// die Roh-Ausgabe der Probe (Selbsttest): ein Ort aus Kern und Ring, je Halt ein Ring mehr; die Mutanten: `bruch` verschiebt drei
+// Kern-Slots im Halt 1935, `alt` dreht die Baujahre (Rand alt), `lahm` braucht 7,4 s, `fehlt` erreicht ein Jahr nie, `halb` zeichnet
+// zwei Häuser nicht, `starr` wächst nie (derselbe Plan in jedem Halt — die Überdeckung 1,0 darf dann nicht grün sein)
+const PALI_ROH = (o = {}) => {
+    const slot = (x, z, bj) => ({ x, z, bj, obb: { cx: x, cz: z, ex: 4, ez: 3, phi: 0.3 } });
+    const kern = [[0, 0], [12, 0], [0, 12], [-12, 0], [0, -12]].map(([x, z]) => slot(x, z, 1350));
+    const ring = (r, bj) => [0, 1, 2, 3, 4, 5].map((k) => slot(Math.round(Math.cos(k + r) * r), Math.round(Math.sin(k + r) * r), bj));
+    const plan = (n, jahr) => {
+        if (o.starr) [n, jahr] = [0, 1412];
+        const s = [...kern, ...[30, 45, 60].slice(0, n).flatMap((r, i) => ring(r, [1500, 1800, 1920][i]))];
+        if (o.bruch && n === 3) [1, 2, 3].forEach((k) => (s[k] = slot(20 + k, 20, 1350)));
+        if (o.alt && n === 3) s.forEach((q) => (q.bj = Math.hypot(q.x, q.z) > 40 ? 1350 : 1920));
+        return { jahr, ort: [400, 693], slots: s, steht: o.halb && n === 3 ? s.length - 2 : s.length };
+    };
+    const blk = (n, e) => ["@@PUNKTE@@ " + n, JSON.stringify({ ergebnis: e }, null, 1)].join("\n");
+    return [
+        "[linse-gpu] amd/rdna-3 (Probe)",
+        blk("ORT", { S: { x: 400, z: 692.82, hang: 3.97 }, hill: { x: 446.8, y: 48, z: 457.4 } }),
+        blk("VOR", { k: "d:7@400,693", wachs: 1412, schnitt: plan(0, 1412), hill: { x: 446.8, y: 48, z: 457.4 } }),
+        ...PALI_MARKEN.map((m, i) => blk("J" + m, o.fehlt === m ? { marke: m, fehler: "das Gesetz erreicht " + m + " nicht" }
+            : { marke: m, uhr: 2400 * (i + 1), ms: o.lahm && m === 1935 ? 7400 : 1800, takte: 40, wachs: m + 3, offen: 0, schnitt: plan(i + 1, m + 3) })),
+    ].join("\n");
+};
 
 // DER HIT-STOP DES SPIELS neben der Linse (halten.K2, 23.10.): latenz zählt den Halt im Bild (stehende Schwung-Uhr UND Hand);
 // die Haken zählen daneben, was das Spiel tut — jeder Treffer, der den Halt setzt (`_kampfHitJuice`, seine Dauer), und wie weit
@@ -4281,6 +4361,84 @@ const stationen = [
                 zahl: /· BILD ohne Abnahme: Seite weg$/ },
         ],
         quelle: "2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)",
+    },
+    // KARTE 2 mensch.zeit.palimpsest S2 (Umfang „Jahresringe über 4 Jahrhunderte im Spiel“, Tiefe „Kern alt, Rand jung“, Preis „P · Sprung
+    // ≤ 5 s“): die Zahl von siedlung.K4#1 (Teil J, headless im Gesetz) im ECHTEN Spiel — der Ort von 1320 aus siedlung.K4#2 (K4_ORT) steht
+    // in der warmen Welt am Hügel, die Welt-Uhr springt dreimal bis 1560 · 1860 · 1935, der Takt des Spiels baut ihn je Sprung am neuen
+    // Jahr um (PALI_SPRUNG). Jedes Glied urteilt für sich: (1) die Überdeckung je Slot ≥ 0,9 je Paar der Halte UND 1320 → 1935 unmittelbar,
+    // am selben Ort; (2) das Jahr jedes Halts erreicht seine Marke, der Plan wächst (ein starrer Ort ist nie grün); (3) jeder Slot jedes
+    // Halts als Haus gezeichnet; (4) Kern alt, Rand jung: im Plan von 1935 liegt der Median des Baujahrs der inneren Hälfte unter dem der
+    // äußeren; (5) jeder Sprung steht ≤ 5 s nach dem Sprung der Uhr (kein Haus offen). P misst der Preis-Lauf der Sitzung am Hügel
+    {
+        kriterium: "karte2.mensch.zeit.palimpsest",
+        karte2: true,
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: {
+            ...sitzung(90,
+                "boot",
+                "timeout 60 $W fenster 1600 900 > /dev/null 2>&1",
+                K4_SCHRITT("ort", K4_ORT, 120),
+                K4_HUEGEL("ort"),
+                "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEIN ORT'; exit 4; }",
+                "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
+                K4_SCHRITT("vor", PALI_VOR, 60),
+                "SPR='" + PALI_SPRUNG + "'",
+                ...PALI_MARKEN.map((m) => "timeout 60 $W eval \"const M = " + m + "; $SPR\" > \"$L/k4-j" + m + ".json\" 2>&1; echo '@@PUNKTE@@ J" + m + "'; cat \"$L/k4-j" + m + ".json\"; echo")
+            ),
+            // mutiert: der Ort von 1320 und die gesprungene Welt-Uhr bleiben — die Grundstellung danach stellt zurück
+            mutiert: true,
+        },
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const teil = (n) => out.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
+            const erg = (n) => ((b) => (b && b.ergebnis) || {})(jsonBlock(teil(n)));
+            const v = erg("VOR"), H = PALI_MARKEN.map((m) => erg("J" + m));
+            if (!v.schnitt)
+                return { gruen: false, zahl: "kein Ort von 1320" + (v.fehler ? " — " + v.fehler : /KEIN ORT/.test(out) ? " — kein ebenes Land vor dem Genesis-Ort" : " (Exit " + lauf.exit + ")") };
+            const fehl = H.map((h, i) => (h.schnitt ? null : PALI_MARKEN[i] + ": " + (h.fehler || "kein Schnitt"))).filter(Boolean);
+            if (fehl.length) return { gruen: false, zahl: "Ort " + v.schnitt.jahr + " mit " + v.schnitt.slots.length + " Slots · der Sprung fehlt: " + fehl.join(" · ").slice(0, 240) };
+            const S = [v.schnitt, ...H.map((h) => h.schnitt)];
+            const paare = S.slice(1).map((x, i) => paliDeckung(S[i], x)), direkt = paliDeckung(S[0], S[3]);
+            const deck = Math.min(...paare, direkt) >= 0.9 && S.every((x) => x.ort[0] === S[0].ort[0] && x.ort[1] === S[0].ort[1]);
+            const jahre = H.every((h, i) => h.wachs >= PALI_MARKEN[i] && h.schnitt.jahr >= PALI_MARKEN[i] && h.schnitt.jahr > S[i].jahr);
+            const steht = S.every((x) => x.slots.length > 0 && x.steht === x.slots.length);
+            const k = paliKern(S[3]), kern = k.innen != null && k.innen < k.aussen;
+            const sprung = H.every((h) => h.ms <= 5000 && h.offen === 0);
+            const z = (b) => (b ? "✅ " : "❌ ");
+            return {
+                gruen: deck && jahre && steht && kern && sprung,
+                zahl:
+                    z(deck) + "Überdeckung je Slot " + paare.join(" · ") + ", 1320 → 1935 unmittelbar " + direkt + " (Soll ≥ 0,9) · " +
+                    z(jahre) + "Jahr " + S.map((x) => x.jahr).join(" → ") + " (Gedächtnis " + H.map((h) => h.wachs).join(" · ") + ") · " +
+                    z(steht) + "Häuser " + S.map((x) => x.steht + "/" + x.slots.length).join(" · ") + " · " +
+                    z(kern) + "Kern alt, Rand jung: Baujahr innen " + k.innen + " / außen " + k.aussen + " · " +
+                    z(sprung) + "Sprung " + H.map((h) => h.ms).join(" · ") + " ms (Soll ≤ 5 000, Uhr +" + H.map((h) => h.uhr).join(" · ") + " s" +
+                    (H.some((h) => h.offen) ? ", offen " + H.map((h) => h.offen).join(" · ") : "") + ")",
+            };
+        },
+        proben: [
+            { name: "Kern und drei Ringe, jeder Sprung 1,8 s", stdout: PALI_ROH(), gruen: true },
+            { name: "Mutante: drei Kern-Slots fehlen 1935 (die Überdeckung bricht)", stdout: PALI_ROH({ bruch: true }), gruen: false, zahl: /^❌ Überdeckung/ },
+            { name: "Mutante: der Ort wächst nie (Überdeckung 1,0 ohne Jahresringe)", stdout: PALI_ROH({ starr: true }), gruen: false, zahl: /❌ Jahr 1412 → 1412/ },
+            { name: "Mutante: der Rand ist alt", stdout: PALI_ROH({ alt: true }), gruen: false, zahl: /❌ Kern alt, Rand jung/ },
+            { name: "Mutante: der Sprung nach 1935 braucht 7,4 s", stdout: PALI_ROH({ lahm: true }), gruen: false, zahl: /❌ Sprung 1800 · 1800 · 7400 ms/ },
+            { name: "Mutante: zwei Häuser von 1935 ungezeichnet", stdout: PALI_ROH({ halb: true }), gruen: false, zahl: /❌ Häuser/ },
+            { name: "Mutante: das Gesetz erreicht 1935 nie", stdout: PALI_ROH({ fehlt: 1935 }), gruen: false, zahl: /der Sprung fehlt: 1935/ },
+        ],
+        pfad: [
+            "fachwerk-core.js",
+            "tetrapoda-core.js",
+            "stamm/siedlung-*.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/gelaende-boden.js",
+            "stamm/dirigent-takt.js",
+            "scripts/werkbank.cjs",
+        ],
+        quelle: "KARTE2 mensch.zeit.palimpsest S2 = Überdeckung je Slot ≥ 0,9 über 1320 → 1935 im echten Spiel",
     },
 
     // ───────── leib.K1 — Taste → Leib im Bild ─────────

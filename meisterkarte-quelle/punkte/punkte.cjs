@@ -405,8 +405,24 @@ function pruefeStationen(liste, karte) {
         else ok.push(st);
     }
     const kr = new Set(ok.map((s) => s.kriterium));
-    for (const k of kr)
+    // DIE LÜCKE DER KARTE 2 (Z3): eine Sprosse n > 1 eines Richters der Karte 2 braucht jede Sprosse darunter — als Station derselben
+    // Leiter ODER als Zeile „gleich“ der Tafel (vision/richter-tafel.json: mensch.zeit.palimpsest S 1 richtet siedlung.K4#2, S 2 die Station
+    // karte2.mensch.zeit.palimpsest#2 — ein Zwilling für S 1 wäre das Pflaster)
+    let tafel = null;
+    const tafelTraegt = (leiter, nr) => {
+        if (!tafel) try { tafel = JSON.parse(fs.readFileSync(path.join(KOORD, "vision", "richter-tafel.json"), "utf8")).zeilen || []; } catch (_e) { tafel = []; }
+        return tafel.some((z) => z.leiter === leiter && z.sprosse === nr && z.richter === "gleich");
+    };
+    for (const k of kr) {
+        if (/^karte2\./.test(k)) {
+            const max = Math.max(...ok.filter((s) => s.kriterium === k).map((s) => s.staffel));
+            for (let n = 1; n < max; n++)
+                if (!ok.some((s) => s.kriterium === k && s.staffel === n) && !tafelTraegt(k.slice(7), n))
+                    fehler.push(k + ": die Sprosse " + n + " trägt weder eine Station noch eine Zeile „gleich“ der Tafel (Z3: eine Lücke zählt nie)");
+            continue;
+        }
         if (!ok.some((s) => s.kriterium === k && s.staffel === 1)) fehler.push(k + ": keine Staffel-1-Station (eine 2 ohne 1 zählt nie)");
+    }
     fehler.push(...fahrtUrteil(ok));
     return { stationen: ok, fehler };
 }
