@@ -1108,7 +1108,9 @@ seiner Wärme; die Boden-Farbe, der Wald (phyto-core `forestWaldgrenze`, `forest
 Nah-Streu, der Rasen und die Bäume eines Plans lesen ihn. Die Farbe des Bodens ohne Krautschicht ist `kahlGrund` (Fels ↔
 Wüsten-Ocker der Palette, foundry-core `PORTAL_GROUND.wueste`), EINE Formel für Wirt und Faden. Die Wasser-Bilanz `bilanz`
 füllt jeden See nur zu ihrem Anteil (`seeBilanz` in `hydrosphaere`). Am Ort (x, z) mit der Nässe des Bodens: die Krautschicht
-`ortKraut` (Boden-Farbe, Acker, Grund eines Dorfs) und der Baum seines Holzes `ortBaum` (Hof-Baum, Baum des Plans).
+`ortKraut` (Boden-Farbe, Acker, Grund eines Dorfs) und der Baum seines Holzes `ortBaum` (Hof-Baum, Baum des Plans). An der
+Höhe y die Wärme der Wärme-Arten `ortWarm` (das Winter-Mittel aus `temperaturFeld` gegen `ORT_WUCHS.warm`, die Heimat 0): Palme
+und Zypresse der Streu stehen nur, wo sie sie trägt.
 DIE SIEDLUNG DES ORTS (`ortGesetz(teil).siedlung`, in der Heimat 1): `bau` (der Mensch baut — nicht vor seiner Zeit, nicht im
 Dauer-Frost) liest die Wahl der Dorf-Zelle, `platz` (der Prüfplatz nur in der Heimat) der Plan des Genesis-Orts; ein Dorf steht,
 wo `ortKraut` in seinem Reich `ORT_SIEDLUNG.naehrt` trägt. DIE LANDUNG: `ortLandung` (Grund an der Ankunft im Makro-Gesetz),
