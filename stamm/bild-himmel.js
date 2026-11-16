@@ -810,8 +810,8 @@ class AnazhRealm_bild_himmel {
     // des Tors; die CPU (`_himmelsIrradianz`) ihre Werte. Bis licht.K5 backte die Neuzeichnung beide ein, höchstens je 6 s
     // Wanduhr: im Wetter-Zug sprang das Bild, sobald die Umgebung nachzog (GTX 0,230 EV/s, takt24c). Das Gesetz lebt EINMAL im
     // Baustein der Engine (welt-licht.js `umgebungLicht`, die Bühne der Studios liest dasselbe).
-    _umgebungLicht() {
-        return __weltLicht.umgebungLicht(this._atmoLutBau().U);
+    _umgebungLicht(farbe) {
+        return __weltLicht.umgebungLicht(this._atmoLutBau().U, farbe);
     }
 
     // DIE KRONE EINES BAUM-KÖRPERS (D10) aus dem Kronen-Buch (`_foundryCacheSet`, Beipack `__krone` der Höhen-Stufe): die
@@ -1164,7 +1164,7 @@ class AnazhRealm_bild_himmel {
         this._dayNightApplyStarField(achse, tint.skyMul);
         this._dayNightApplyDirectionalLight(sunDir, tint, moonDir, atm, achse);
         this._dayNightApplyAmbient(achse);
-        this._updateCelestialBodies(angle, tint.lightMul, achse);
+        this._updateCelestialBodies(angle, tint.lightMul * tint.direkt, achse);
         this._dayNightApplyHemiUndLuft(achse, tint);
         // DIE HIMMELS-UMGEBUNG malt sich aus BEIDEN Quellen, die jetzt gelten — dem Zenit (die Skybox-Tönung, oben) und dem
         // Horizont (die Luft-Farbe, eben): erst danach, und vor jedem Leser ihrer Bestrahlung (Wasser, Belichtung). Bis K10
@@ -1183,17 +1183,24 @@ class AnazhRealm_bild_himmel {
         // Schicht 1 — Wetter-Tint
         const wt = this.state.weatherTransition;
         const tints = this.constructor.WEATHER_TINTS;
-        let skyMul, lightMul;
+        // die Zeile des Wetter-Lichts (WEATHER_TINTS ← das EINE Wetter-Feld): das gesamte Licht, der Anteil der direkten Sonne,
+        // Hub und Ergrauen des Himmels — über den Übergang des Worts gelerpt
+        let skyMul, lightMul, direkt, himmel, grau;
         if (wt && wt.from && wt.to) {
             const fromT = tints[wt.from] || tints.sunny;
             const toT = tints[wt.to] || tints.sunny;
             const p = Math.max(0, Math.min(1, wt.progress || 0));
-            skyMul = fromT.skyMul + (toT.skyMul - fromT.skyMul) * p;
-            lightMul = fromT.lightMul + (toT.lightMul - fromT.lightMul) * p;
+            const l = (k) => fromT[k] + (toT[k] - fromT[k]) * p;
+            [skyMul, lightMul, direkt, himmel, grau] = [
+                l("skyMul"),
+                l("lightMul"),
+                l("direkt"),
+                l("himmel"),
+                l("grau"),
+            ];
         } else {
-            const currentTint = tints[this.state.weather] || tints.sunny;
-            skyMul = currentTint.skyMul;
-            lightMul = currentTint.lightMul;
+            const c = tints[this.state.weather] || tints.sunny;
+            [skyMul, lightMul, direkt, himmel, grau] = [c.skyMul, c.lightMul, c.direkt, c.himmel, c.grau];
         }
         // DER NENNER DER TÖNUNG (D3, S7): der Himmel des Studios (`_studioSky.top`, Vorlage 0x6a9ed0) — EINE Farbe, keine
         // Tafel nach der Uhr: der Himmel selbst ist die Himmels-Sicht der EINEN Atmosphäre, die Schichten tönen ihn relativ.
@@ -1272,8 +1279,8 @@ class AnazhRealm_bild_himmel {
             skyColor.r = Math.max(0, Math.min(1, skyColor.r + flutter));
             skyColor.g = Math.max(0, Math.min(1, skyColor.g - flutter * 0.7));
         }
-        // grey entsättigt das LICHT, NIE den Himmel (skyColor bleibt unberührt): der grey-Kanal zieht das
-        // finale Richtlicht luminanz-erhaltend Richtung Neutralgrau. Läuft nach allen Tint-Schichten.
+        // grey zieht das finale Richtlicht luminanz-erhaltend Richtung Neutralgrau (nach allen Tint-Schichten); den Himmel
+        // ergraut die Zeile des Wetter-Lichts (`grau`), seinen Anteil am Licht tragen `direkt` und `himmel`.
         {
             const wf = this._weatherFieldFor(this.state.weather);
             if (wf.grey > 0) {
@@ -1291,9 +1298,11 @@ class AnazhRealm_bild_himmel {
             skyMul,
             lightMul,
             auraK, // V18.236 — gated auch den Mood/DSL-skyTint-Blend in _dayNightApplySkybox
-            skyR: skyColor.r * skyMul,
-            skyG: skyColor.g * skyMul,
-            skyB: skyColor.b * skyMul,
+            direkt, // der Anteil der direkten Sonne unter der Decke (Richtlicht, Scheibe, Mond)
+            grau, // das Ergrauen des Himmels unter der Decke (`atmoLut.U.grau`: Kuppel, Umgebung, Bestrahlung)
+            skyR: skyColor.r * himmel,
+            skyG: skyColor.g * himmel,
+            skyB: skyColor.b * himmel,
             basis, // der Himmel des Studios ohne Wetter, Feld und Gefühl: der Nenner der Tönung (D3)
         };
     }
@@ -1744,6 +1753,7 @@ class AnazhRealm_bild_himmel {
                 const nc = u.himmelTint.value;
                 const q = (x, y) => Math.max(0, Math.min(4, y > 1e-4 ? x / y : 1));
                 A.U.toenung.value.set(q(nc.r, b.r), q(nc.g, b.g), q(nc.b, b.b));
+                A.U.grau.value = tint.grau;
             }
         }
         if (u.cloudCover) {
@@ -1871,12 +1881,10 @@ class AnazhRealm_bild_himmel {
         // (Wetter-lightMul + Emotion) moduliert; Ziel dir/(amb+hemi) ≥ 3:1 am Tag (nachts 0,67: `_dayNightApplyAmbient`).
         const a = atm || this._atmoSonne(sunDir.y);
         if (sunUp) {
-            dl.color.setRGB(
-                a.col.r * tint.lightColor.r * tint.lightMul,
-                a.col.g * tint.lightColor.g * tint.lightMul,
-                a.col.b * tint.lightColor.b * tint.lightMul
-            );
-            dl.intensity = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightIntensity;
+            dl.color.setRGB(a.col.r * tint.lightColor.r, a.col.g * tint.lightColor.g, a.col.b * tint.lightColor.b);
+            // das gesamte Licht der Wetter-Zeile (`lightIntensity`) × der Anteil, den die Decke direkt lässt (`direkt`); bis
+            // w28-licht-regen lightMul in Farbe UND Stärke (lightMul²) ohne Anteil — der harte Schatten stand im Regen
+            dl.intensity = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightIntensity * tint.direkt;
         } else {
             const M = AnazhRealm.MOONLIGHT;
             // Mond-Pfad: Richtung aus der EINEN Quelle, Intensität MOONLIGHT·Wetter·sein Durchlass; `atm.col`
@@ -1884,7 +1892,7 @@ class AnazhRealm_bild_himmel {
             dl.color.setRGB(a.col.r, a.col.g, a.col.b);
             // V18.378 — der Durchlass liest die ECHTE Mond-Höhe (md.y), nicht −sunDir.y (die
             // z-Bogen-Formel gibt dem Mond eine eigene Normierung → eigene Höhe).
-            dl.intensity = M.intensity * tint.lightMul * this._mondDurchlass(md.y);
+            dl.intensity = M.intensity * tint.lightMul * tint.direkt * this._mondDurchlass(md.y);
         }
         // `nightFactor` 0 = Tag → 1 = Nacht: das Auge der Nacht der Post-Kette (K66, mesopisch) liest ihn — am Tag fällt es. Es
         // ist das Auge der EINEN Tag-Achse (`tag`): es gleitet über die Sonnenhöhe vom Tag in die Nacht (mit

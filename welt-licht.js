@@ -225,6 +225,8 @@ var __weltLicht = (function () {
             // das Sternen-Licht in Einheiten von E0 (die Zenit-Leuchtdichte des Gesetzes × der Anteil der Nacht / E0, `_atmoSternenLicht`)
             nachtE: T.uniform(new THREE.Vector3(0, 0, 0)),
             toenung: T.uniform(new THREE.Vector3(1, 1, 1)),
+            // das Ergrauen des Himmels unter der Decke des Wetters (0 klar … 1 grau, `himmelGrau`; die Bühne trägt 0)
+            grau: T.uniform(0),
         });
         const ziel = (w, h, wrapS, name) => {
             const rt = new THREE.RenderTarget(w, h, {
@@ -562,7 +564,7 @@ var __weltLicht = (function () {
         const himmelTexelUv = (uv) => texture(rtSV.texture, uv).level(float(0));
         const himmelTexel = (dir) => himmelTexelUv(himmelUv(dir));
         const himmelJeLicht = (dir) => himmelTexel(dir).rgb;
-        const himmelFarbe = (dir, tx = null) => (tx ? tx.rgb : himmelJeLicht(dir)).mul(U.licht).mul(U.toenung);
+        const himmelFarbe = (dir, tx = null) => umgebungLicht(U, tx ? tx.rgb : himmelJeLicht(dir));
         // DER ANTEIL DER SONNE (0 … 1) an der Himmels-Sicht in Richtung `dir`: ihre einfache Streuung (Alpha der Tafel) — was ein
         // Grat der Luft hinter ihm nimmt (der Luftschatten der Welt); die Mehrfachstreuung und der Mond bleiben.
         const himmelEinfach = (dir, tx = null) => (tx || himmelTexel(dir)).a;
@@ -815,7 +817,7 @@ var __weltLicht = (function () {
             const k = c === 0 ? "x" : c === 1 ? "y" : "z";
             out[c] = U.licht.value * t[k] * (lies(ms, c) + m[k] * lies(mm, c) + n[k] * w[(W - 1) * 3 + c]);
         }
-        return out;
+        return himmelGrau(out, U.grau.value);
     }
 
     // DIE UMGEBUNG DER STOFFE (material.K4) — EIN Gesetz der Welt und der Bühne: der Himmel, den jeder Standard- und Physical-Stoff
@@ -827,14 +829,25 @@ var __weltLicht = (function () {
     // Bestrahlung: Stufe 1). Die Welt legt darüber ihren Spiegel-Pass und den Rückstrahl des gezeichneten Bodens
     // (`_spiegelUmgebung`, stamm/bild-sicht.js), die Bühne trägt ihn bloß (kein Feld; ihr Boden ist der Boden der Atmosphäre).
     // Bis w12-studio-buehne schrieben Welt und Bühne diesen Knoten je eigen (`_umgebungLicht` im Stamm, `buehne` hier).
-    function umgebungLicht(U) {
-        return U.toenung.mul(U.licht);
+    // DAS LICHT JETZT AUF EINER FARBE DES HIMMELS (je Einheit E0): × E0 × Tönung, dann das Ergrauen unter der Decke des Wetters
+    // (`U.grau`: zur eigenen Leuchtdichte, die Helligkeit bleibt) — EIN Gesetz für die Kuppel (`himmelFarbe`), die Umgebung der
+    // Stoffe, die Sonde der Welt und den Spiegel des Tors; `himmelGrau` dasselbe auf Zahlen (die Bestrahlung, die Irradianz).
+    // Bis w28-licht-regen ein Faktor (`toenung · licht`): unter Sturm blieb der Himmel so satt wie klar.
+    function umgebungLicht(U, farbe) {
+        const TSL = globalThis.THREE.TSL;
+        const c = farbe.mul(U.licht).mul(U.toenung);
+        return TSL.mix(c, TSL.vec3(TSL.dot(c, TSL.vec3(0.2126, 0.7152, 0.0722))), U.grau);
+    }
+    function himmelGrau(rgb, grau) {
+        const y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+        for (let c = 0; c < 3; c++) rgb[c] += (y - rgb[c]) * grau;
+        return rgb;
     }
     function umgebungZeichnen(gen, A, ziel) {
         return gen.fromEquirectangular(A.rtEq.texture, ziel || null);
     }
     function himmelDerStoffe(quelle, U, richtung, stufe) {
-        return globalThis.THREE.TSL.pmremTexture(quelle, richtung, stufe).mul(umgebungLicht(U));
+        return umgebungLicht(U, globalThis.THREE.TSL.pmremTexture(quelle, richtung, stufe));
     }
     // DIE BESTRAHLUNG ERKANNT: r184 reicht der Umgebung die Stufe der Bestrahlung als Variable über der Konstanten 1 (`float(1)`
     // in einer VarNode, gelesen am Vendor 03.11.), die der Spiegelung als Rauheit des Stoffs — der Spiegel (Welt
@@ -1339,6 +1352,7 @@ var __weltLicht = (function () {
         tafelAnker,
         bestrahlung,
         umgebungLicht,
+        himmelGrau,
         umgebungZeichnen,
         himmelDerStoffe,
         stufeKonstant,
