@@ -525,8 +525,12 @@ class AnazhRealm_bild_schatten {
             L.position.set(lage.x, lage.y, lage.z);
             L.distance = lage.w;
             L.updateMatrixWorld(true);
+            // DIE NAHE EBENE IST DER LEIB DER QUELLE: trägt sie einen Kopf (`leibM`, fachwerk `lichtLeib`), steht sie `leibSaum`
+            // jenseits seines Bodens — der Kern des Abfalls ist dort kein Leib (Laterne 0,1 m: ihr Kopf-Boden in 0,2 m warf einen
+            // Kreis von 2,7 m um ihren Fuß, Radeon 4ee205bd Kontrast 0,2482 bei Kontrolle 0,9061; Wandlaterne 2,74 m: nichts in
+            // 2,7 m um sie warf); ohne Kopf trägt der Kern des Glutbetts den Leib (die Steine des Herds)
             const kern = q.L && q.L.kernM > 0 ? q.L.kernM : 0;
-            const nah = Math.max(LW.nahM, kern * LW.kernAnteil);
+            const nah = q.leibM > 0 ? q.leibM + LW.leibSaum : Math.max(LW.nahM, kern * LW.kernAnteil);
             const C = L.shadow.camera;
             if (C.near !== nah || C.far !== lage.w) {
                 C.near = nah;
@@ -1404,7 +1408,7 @@ class AnazhRealm_bild_schatten {
         const tex = T.texture(L.rt.texture);
         const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
         const w = T.max(clip.w, 1e-4);
-        const uv = T.vec2(clip.x.div(w).mul(0.5).add(0.5), T.float(0.5).sub(clip.y.div(w).mul(0.5)));
+        const uv = AnazhRealm._schirmUV(clip.x.div(w), clip.y.div(w));
         const gr = T.vec2(tex.size());
         const t = tex.load(T.ivec2(T.clamp(T.floor(uv.mul(gr)), T.vec2(0), gr.sub(1))));
         const gilt = T.max(T.float(1).sub(T.abs(t.y.sub(w)).div(w.mul(K.tiefeRand))), 0);
@@ -1681,13 +1685,15 @@ AnazhRealm.RUECKSTRAHL = Object.freeze({
 });
 // DER WURF DES FEUERS (schatten.K5, `_lichtWurf` · `_lichtWurfTakt`): EIN Platz des Licht-Pools wirft — die Würfel-Karte je
 // Seite `kartePx` (256: 2,3 cm je Texel in 3 m), die nahe Ebene mindestens `nahM`, sonst `kernAnteil` × der Kern der Quelle (der
-// Leib der Flamme wirft nicht); den Bias schreibt das Gesetz der Kaskade (`_schattenBias`, die Texel-Kante an der Reichweite);
+// Leib der Flamme wirft nicht) — eine Leuchte mit Kopf `leibSaum` jenseits seines Leibs (fachwerk `lichtLeib`: die Platte ihres
+// Bodens liegt genau auf ihm); den Bias schreibt das Gesetz der Kaskade (`_schattenBias`, die Texel-Kante an der Reichweite);
 // PCF über `weichPx`. Wichtig ist eine Quelle ab `wichtigAb` des Lichts der Welt in `bezugM`, gehalten
 // bis eine andere `halten`-fach wichtiger ist; die Karte zeichnet höchstens je `takt` Bilder neu (nie neben einer Kaskade).
 AnazhRealm.LICHT_WURF = Object.freeze({
     kartePx: 256,
     nahM: 0.05,
     kernAnteil: 1,
+    leibSaum: 0.02,
     weichPx: 2,
     bezugM: 2,
     wichtigAb: 0.25,
