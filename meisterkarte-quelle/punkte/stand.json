@@ -5851,7 +5851,7 @@
   },
   "karte2.planet.wasser.kreislauf": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wasser.kreislauf#1 radeon: ungemessen (R10) · karte2.planet.wasser.kreislauf#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wasser.kreislauf#1 radeon: ungemessen (R10) · karte2.planet.wasser.kreislauf#1 gtx: ROT: Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145491 → 381682 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.367 ↔ 1.033 Spielstunden (×2.81, Erd-Band 1.62–2.06; Schwerpunkt 1.367 ↔ 2.087) · Bilanz 2.101 / 2.344 (Soll 0,9–1,1; 3.8 ↔ 8.1 / 19.2 ↔ 45 m³) · [linse-gpu] nvidia/pascal an 4167e10c",
    "stationen": [
     {
      "id": "karte2.planet.wasser.kreislauf#1",
@@ -5867,10 +5867,10 @@
      "id": "karte2.planet.wasser.kreislauf#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145491 → 381682 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.367 ↔ 1.033 Spielstunden (×2.81, Erd-Band 1.62–2.06; Schwerpunkt 1.367 ↔ 2.087) · Bilanz 2.101 / 2.344 (Soll 0,9–1,1; 3.8 ↔ 8.1 / 19.2 ↔ 45 m³) · [linse-gpu] nvidia/pascal",
+     "sha": "4167e10c05fd3401ba5fcad6cbd7b25b19a0323e",
+     "grund": "ROT: Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145491 → 381682 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.367 ↔ 1.033 Spielstunden (×2.81, Erd-Band 1.62–2.06; Schwerpunkt 1.367 ↔ 2.087) · Bilanz 2.101 / 2.344 (Soll 0,9–1,1; 3.8 ↔ 8.1 / 19.2 ↔ 45 m³) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6275,7 +6275,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 147,
+  "konsum": 148,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6446,10 +6446,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 190
+  "ohne": 189
  },
  "kopfVoll": "4167e10c05fd3401ba5fcad6cbd7b25b19a0323e",
- "zeit": "2026-11-16T21:38:20.807Z",
+ "zeit": "2026-11-16T21:45:20.815Z",
  "vorher": "4167e10c",
  "bilanz": {
   "gewinn": [],
