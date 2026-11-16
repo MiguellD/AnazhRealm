@@ -7228,6 +7228,7 @@ function __mengenPrims(kern, B, dials, matFuer, gelenkVon, vox) {
             const auf = z.dicke + mehr;
             p.auf += auf;
             p.ext += auf;
+            p.stoff = auf; // die Auflage seines Kleids allein (die Gewichte lesen die Haut darunter, `__mengenGewichte`)
         }
     }
     return { prims, hoehlen, zonen };
@@ -7235,13 +7236,20 @@ function __mengenPrims(kern, B, dials, matFuer, gelenkVon, vox) {
 
 // DIE GEWICHTE DES MENGEN-LEIBS an den Ecken q (x, y, z je Ecke; die EINE Rechnung, der Guss und der Leib-Raum lesen sie): je Ecke
 // die Tier-Regel über den Abstand zur Oberfläche der Primitive, im Rahmen [lo, hi] ihres Felds (`__primRahmen`).
-function __mengenGewichte(prims, lo, hi, vox, q, skinJoints) {
+// DIE GEWICHTE LIEST DIE HAUT UNTER DEM STOFF (w28-gestalt-norm — wie nah: der Stoff aus der Haut trägt die Gewichte seiner Haut,
+// EIN Verformungsfeld): je Ecke der Punkt ihrer Haut (`heb`: ihr Weg von ihr, `__mengenHebung`) gegen die Primitive ohne die Auflage
+// ihres Kleids (`p.stoff`). Bis hier maß die Ecke am Primitiv MIT seinem Kleid: der um die Weite des Ponchos gehobene Rumpf lag
+// am Saum näher als das Bein — der Saum des Satzes hing am Rumpf (Gewicht 0,88) und wich dem Arm, der nahe Saum trägt das Bein
+// (≤ 0,5) und steht (Poncho-Dorf 0x51ed, y 2,8–2,9 E: Saum nah ±0,93, Satz ±0,82).
+function __mengenGewichte(prims, lo, hi, vox, q, skinJoints, heb) {
     const MM = MENSCH_MENGE;
     const H = hi[1] - lo[1];
-    const { zentren, kandidaten } = __primGewichte(prims, H, MM.blend, vox, lo, hi);
+    if (!heb || heb.length !== q.length) throw new Error("MENGEN-LEIB: die Gewichte ohne den Weg der Ecke von ihrer Haut (fail-closed)");
+    const haut = prims.map((p) => (p.stoff > 0 ? Object.assign({}, p, { auf: p.auf - p.stoff, ext: p.ext - p.stoff }) : p));
+    const { zentren, kandidaten } = __primGewichte(haut, H, MM.blend, vox, lo, hi);
     const eW = TIER_HAUT.eW * H;
     const ecken = [];
-    for (let i = 0; i < q.length; i += 3) ecken.push([q[i], q[i + 1], q[i + 2]]);
+    for (let i = 0; i < q.length; i += 3) ecken.push([q[i] - heb[i], q[i + 1] - heb[i + 1], q[i + 2] - heb[i + 2]]);
     return __hautGewichte(ecken, zentren, skinJoints, eW * eW, kandidaten);
 }
 
@@ -7348,10 +7356,12 @@ function __mengenLeibAusFeld(kern, B, matFuer, skinJoints, prims, hoehlen, zonen
     {
         const spreiz = Float32Array.from(S.geo.attributes.position.array);
         S.geo.setAttribute("aSpreiz", new THREE.BufferAttribute(spreiz, 3));
-        const g0 = __mengenGewichte(prims, F.lo, F.hi, vox, spreiz, skinJoints);
-        const form = gestalt(spreiz, S.geo.index.array, S.zone, g0.sIdx, g0.sWgt, zonen, prims);
-        if (!form || form.length !== spreiz.length) throw new Error("MENGEN-LEIB: die Gestalt des Gesetzes trägt nicht jede Ecke (fail-closed)");
-        S.geo.attributes.position.array.set(form);
+        const g0 = __mengenGewichte(prims, F.lo, F.hi, vox, spreiz, skinJoints, __mengenHebung(spreiz, S.geo.index.array, S.zone, zonen, prims).heb);
+        const G = gestalt(spreiz, S.geo.index.array, S.zone, g0.sIdx, g0.sWgt, zonen, prims);
+        if (!G || !G.form || G.form.length !== spreiz.length || !G.anlage || G.anlage.length !== spreiz.length) throw new Error("MENGEN-LEIB: die Gestalt des Gesetzes trägt nicht jede Ecke (fail-closed)"); // prettier-ignore
+        S.geo.attributes.position.array.set(G.form);
+        // der Weg der Anlage je Ecke (die dichte Hülle wich dem Arm, `gestalt`): er reist durch den Kollaps zur Ruhe-Pose der Stufe
+        S.geo.setAttribute("aAnlage", new THREE.BufferAttribute(G.anlage, 3));
     }
     const geo = __huelleKollaps(S.geo, ziel, S.zone);
     geo.attributes.position.array.set(geo.attributes.aSpreiz.array);
@@ -7359,7 +7369,7 @@ function __mengenLeibAusFeld(kern, B, matFuer, skinJoints, prims, hoehlen, zonen
     const zone = geo === S.geo ? S.zone : geo.userData.zone;
     if (geo !== S.geo) S.geo.dispose();
     // die Gewichte an den Ecken, die bleiben (Tier-Regel: der Abstand zur Oberfläche der Primitive)
-    const { sIdx, sWgt } = __mengenGewichte(prims, F.lo, F.hi, vox, geo.attributes.position.array, skinJoints);
+    const { sIdx, sWgt } = __mengenGewichte(prims, F.lo, F.hi, vox, geo.attributes.position.array, skinJoints, __mengenHebung(geo.attributes.position.array, geo.index.array, zone, zonen, prims).heb); // prettier-ignore
     geo.setAttribute("skinIndex", new THREE.BufferAttribute(sIdx, 4));
     geo.setAttribute("skinWeight", new THREE.BufferAttribute(sWgt, 4));
     geo.setAttribute("aSpreiz", geo.attributes.position.clone()); // die Töne der Haut fragen den Ort der Spreiz-Pose
@@ -7476,8 +7486,10 @@ function __leibRaumRefit(V, P0, P1, vox) {
 // kehrt um SEINE Gelenke in die Ruhe zurück (die Person dreht ihre Arme um ihre eigene Schulter; gemessen: mit dem Delta der
 // Vorlage trugen Alter und Geschlecht nichts, Maxima > 200 mm). Rückgabe { achsen, n, ziele: Float32Array [Ecke][Knoten][xyz] } —
 // der Weg jeder Ecke der Vorlage an jedem Knoten jeder Achse (die übrigen Dials an der Vorlage), Ruhe gegen Ruhe.
-function __leibRaumTafel(kern, geo, P0, dials, achsen, leibVon, skinJoints, vox) {
+function __leibRaumTafel(kern, geo, P0, dials, achsen, leibVon, skinJoints, vox, zone, zonen) {
     if (!Array.isArray(achsen) || !achsen.length) throw new Error("LEIB-RAUM: ohne Achsen keine Tafel (fail-closed)");
+    // der Weg jeder Ecke der Vorlage von ihrer Haut (die Gewichte jedes Knotens lesen die Haut unter dem Stoff, `__mengenGewichte`)
+    const hebV = __mengenHebung(geo.attributes.position.array, geo.index.array, zone, zonen, P0).heb;
     const pa = geo.attributes.position.array,
         na = geo.attributes.normal.array,
         siA = geo.attributes.skinIndex.array,
@@ -7489,7 +7501,7 @@ function __leibRaumTafel(kern, geo, P0, dials, achsen, leibVon, skinJoints, vox)
     // seinen Primitiven; gemessen mit den Gewichten der Vorlage p95 20–27 mm gegen den Guss)
     const ruhe = (W, L) => {
         const R = __primRahmen(L.prims);
-        const { sIdx, sWgt } = __mengenGewichte(L.prims, R.lo, R.hi, vox, W, skinJoints);
+        const { sIdx, sWgt } = __mengenGewichte(L.prims, R.lo, R.hi, vox, W, skinJoints, hebV);
         const delta = L.delta;
         const out = new Float64Array(W.length);
         for (let i = 0; i < n; i++) {
@@ -9514,8 +9526,24 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 tg.computeVertexNormals();
                 kern.leibRelief(form, tg.attributes.normal.array, siA, swA, skinJoints, lageR, dials, H.lageMax, H.lageMax > 0 ? heb : null);
                 tg.dispose();
+                // DIE ANLAGE AN DER DICHTEN HÜLLE (w28-gestalt-norm, koerper `armAnlage` — dieselbe Rechnung wie an der nahen Stufe, am
+                // Raster des Gusses): der Rumpf weicht dem ruhenden Arm, das Gewebe um die Mulde entspannt sich. Der Weg jeder Ecke
+                // reist durch den Kollaps (`aAnlage`, Halbkanten: der Rest-Punkt behält ihn) und fällt unten auf ihre Lage der Ruhe.
+                // Bis hier wich erst das Netz der Zeile (Kante 0,21–0,25 E): es trägt unter dem Arm keine Ecke und entspannt sich
+                // nicht (ARM_RUHE.ringe) — die Lappen des Ponchos standen vor und hinter dem Arm 0,05–0,13 E über dem nahen Stoff, die
+                // Luft zwischen Arm und Rumpf war von vorn zu (Poncho-Dorf 0x51ed: bedeckte Breite der Taille +4,7…+12,7 %).
+                if (typeof kern.armAnlage !== "function") throw new Error("MENSCH-GUSS: koerper-Kern ohne armAnlage — die Rumpf-Hülle weicht dem Arm (fail-closed)");
+                let lageRumpfD = 0;
+                for (let v = 0; v < H.dicke.length; v++) {
+                    let wr = 0;
+                    for (let c = 4 * v; c < 4 * v + 4; c++) if (skinJoints[siA[c]] === "torso" || skinJoints[siA[c]] === "mensch") wr += swA[c];
+                    if (wr > 0.5 && H.dicke[v] > lageRumpfD) lageRumpfD = H.dicke[v];
+                }
+                const anlage = Float32Array.from(form);
+                kern.armAnlage(B, [{ pos: form, idx, si: siA, sw: swA, n: form.length / 3, lage: lageRumpfD }], skinJoints);
+                for (let i = 0; i < anlage.length; i++) anlage[i] = form[i] - anlage[i];
                 __spreizPose(B, true);
-                return form;
+                return { form, anlage };
             };
             mengenLeib = __mengenLeib(kern, B, dials, matFuer, animAhnH, skinJoints, fern, zeilenZiel, gestaltDerMenge);
             // DAS KLEID DER MENGE LIEGT ÜBER SEINER HAUT (w28-gestalt — derselbe Vertrag wie der Stoff aus der Haut der nahen Stufe,
@@ -9565,7 +9593,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     const delta = knoten.map((nd) => (nd ? __spreizDelta(B2, inv2, nd) : new THREE.Matrix4()));
                     return { prims, delta };
                 };
-                raumTafel = __leibRaumTafel(kern, mengenLeib.mesh.geometry, mengenLeib.prims, dials, raumAchsen, leibVon, skinJoints, vox);
+                raumTafel = __leibRaumTafel(kern, mengenLeib.mesh.geometry, mengenLeib.prims, dials, raumAchsen, leibVon, skinJoints, vox, mengenLeib.zone, mengenLeib.zonen);
             }
             __fettDepot(mengenLeib.mesh.geometry, fett, skinJoints);
             gebauteHuellen.push(mengenLeib.mesh);
@@ -10305,6 +10333,16 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         const anlage = [];
         B.character.traverse((m) => {
             const a = m.isMesh && !m.userData.__nichtGiessen && m.userData.__huelle && m.geometry.attributes;
+            // der Leib der Menge trägt den Weg seiner dichten Hülle (`aAnlage`, w28-gestalt-norm): er fällt auf die Lage der Ruhe —
+            // das Netz der Zeile rechnet die Anlage nie selbst
+            if (a && a.aAnlage) {
+                if (a.aAnlage.count !== a.position.count) throw new Error("MENGEN-LEIB: der Weg der Anlage trägt nicht jede Ecke (fail-closed)");
+                for (let i = 0; i < a.position.array.length; i++) a.position.array[i] += a.aAnlage.array[i];
+                m.geometry.deleteAttribute("aAnlage");
+                a.position.needsUpdate = true;
+                m.geometry.computeVertexNormals();
+                return;
+            }
             if (a && a.skinIndex) anlage.push({ m, pos: a.position.array, idx: m.geometry.index.array, si: a.skinIndex.array, sw: a.skinWeight.array, n: a.position.count, lage: m.userData.__lageRumpf != null ? m.userData.__lageRumpf : m.userData.__lage || 0 }); // prettier-ignore
         });
         if (kern.armAnlage(B, anlage, skinJoints))
