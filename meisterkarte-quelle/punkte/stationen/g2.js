@@ -1940,6 +1940,86 @@ async function dorfZaehlung(r, T) {
     }
     return { bewohner: L.length, orte: orte.map((o) => [+o.x.toFixed(1), +o.z.toFixed(1), o.n]), rM: R_M, samenDoppelt, doppelt, sicht: s.cameraMode, proben, version: A.VERSION };
 }
+// DIE ZEUGEN DER TAT (Karte 2 mensch.menge.kollektiv S1, vorrat3-stationen-g2): der Spieler geht um 10 Uhr (Uhr am Regler) in Third
+// längs der langen Achse des Dorfplatzes des Start-Dorfs durch die Menge (1,4 m/s, im Takt des Spiels, nach dem EINEN Warten wie
+// platzAcht), je Bewohner draußen sein kleinster Abstand zum Spieler; dann an der Platzmitte DIE TAT: er schlägt ein Kitz
+// (`damageCreature`, source player — der EINE Schadens-Weg ruft `_bewohnerZeuge`: wer draußen ≤ BEWOHNER.zeugeM steht, erinnert die
+// Gewalt und lässt ihm mehr Raum, `_bewohnerSpielerAbstand`); die Zeugen sind die Bewohner draußen ≤ zeugeM am Opfer in diesem
+// Augenblick. Dann derselbe Gang noch einmal. Gezählt je Zeuge der kleinste Abstand vor und nach der Tat, ihr Median, dazu die
+// erinnerte Furcht der Zeugen vor und nach dem Schlag (Lesewert)
+async function zeugenGang(r, T) {
+    const UHR = 10 / 24, V = 1.4;
+    const s = r.state, wm = s.worldMeta, pm = s.playerMesh.position, A = r.constructor;
+    const zelle = wm.settlementCells && wm.settlementCells.start;
+    if (!zelle) return { fehler: "kein Start-Dorf" };
+    const plan = [...(r._ortPlaene || new Map()).values()].find((v) => v && v.ort && Math.abs(v.ort.x - zelle.x) < 0.5 && Math.abs(v.ort.z - zelle.z) < 0.5);
+    if (!plan) return { fehler: "kein Plan" };
+    const pz = plan.platz, pc = { x: plan.ort.x + pz.cx, z: plan.ort.z + pz.cz };
+    const lang = (pz.phi || 0) + (pz.ex >= pz.ez ? 0 : Math.PI / 2);
+    const ux = -Math.cos(lang), uz = Math.sin(lang);
+    const half = Math.max(6, Math.min(15, Math.max(pz.ex, pz.ez) - 1));
+    s.renderer.setAnimationLoop(null);
+    r.setTimeOfDay(UHR, "regler");
+    if (s.cameraMode !== "third") r.setCameraMode("third");
+    const offen = () => { const o = r._weltOffen(); return !o.leute && !o.leiber; };
+    const dorf = () => [...(r._bewohnerSiedlungen || new Map()).values()].filter((S) => Array.isArray(S.liste) && S.liste.length).sort((a, b) => Math.hypot(a.ox - zelle.x, a.oz - zelle.z) - Math.hypot(b.ox - zelle.x, b.oz - zelle.z))[0];
+    await window.__gebautNach("der Gang durch den Platz", { fertig: () => !!dorf() && offen() });
+    const S = dorf();
+    if (!S) return { fehler: "keine Bewohner im Start-Dorf" };
+    const L = S.liste;
+    let uhr = performance.now();
+    const takt = async () => { uhr += A.TAKT_DECKEL_S * 1000; r._gameLoopTick(uhr); await window.sleep(); };
+    const ruhe = async (sek) => { for (let k = 0; k < Math.round(sek / A.TAKT_DECKEL_S); k++) await takt(); };
+    const stelle = (x, z) => { pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z); if (s._fixedSimPos) s._fixedSimPos.copy(pm); };
+    const gang = async () => {
+        const min = new Map();
+        const n = Math.max(1, Math.round((2 * half) / V / A.TAKT_DECKEL_S));
+        for (let k = 0; k <= n; k++) {
+            const t = -half + (2 * half * k) / n;
+            stelle(pc.x + ux * t, pc.z + uz * t);
+            await takt();
+            for (const b of L) {
+                if (!b.leib || b.drinnen) continue;
+                const d = Math.hypot(b.leib.position.x - pm.x, b.leib.position.z - pm.z);
+                if (!(min.get(b) <= d)) min.set(b, d);
+            }
+        }
+        return min;
+    };
+    stelle(pc.x - ux * half, pc.z - uz * half);
+    await ruhe(2);
+    const vor = await gang();
+    stelle(pc.x, pc.z);
+    await ruhe(1);
+    const fx = pm.x + ux * 2, fz = pm.z + uz * 2;
+    const opfer = r.spawnCreatureAt(fx, r._voxelSurfaceY(fx, fz), fz, "happy", "wesen", { precise: true, bodySize: 0.6 });
+    if (!opfer) return { fehler: "Spawn des Opfers" };
+    const R2 = A.BEWOHNER.zeugeM ** 2;
+    const zeugen = L.filter((b) => b.leib && !b.drinnen && (b.leib.position.x - opfer.position.x) ** 2 + (b.leib.position.z - opfer.position.z) ** 2 < R2);
+    const furcht0 = zeugen.map((b) => r._kreaturFurchtErinnert(b.leib));
+    const tat = r.damageCreature(opfer, 9999, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z } });
+    const furcht1 = zeugen.map((b) => r._kreaturFurchtErinnert(b.leib));
+    stelle(pc.x - ux * half, pc.z - uz * half);
+    await ruhe(2);
+    const nach = await gang();
+    for (const c of [...s.creatures, ...(s.leichname || [])]) if (c === opfer) r.removeCreature(c);
+    const med = (a) => { const v = [...a].sort((x, y) => x - y); return v.length ? +(v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2).toFixed(3) : null; };
+    const paare = zeugen.filter((b) => vor.has(b) && nach.has(b)).map((b) => [+vor.get(b).toFixed(2), +nach.get(b).toFixed(2)]);
+    return { zeugen: zeugen.length, paare, vorMedian: med(paare.map((p) => p[0])), nachMedian: med(paare.map((p) => p[1])), furcht: [med(furcht0), med(furcht1)], tat: !!(tat && tat.ok), halbM: half, uhr: UHR, tod: +s.timeOfDay.toFixed(4), sicht: s.cameraMode, version: A.VERSION };
+}
+const ZEUGEN_GANG = { sek: 90, mutiert: true, befehl: [
+    "bash",
+    "-c",
+    [
+        "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+        "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+        ADAPTER_ZEILE,
+        "node scripts/werkbank.cjs umstellen --ort genesis > \"$B-umstellen.txt\" 2>&1",
+        "node scripts/werkbank.cjs eval 'return await (" + knapp(zeugenGang) + ")(r, T);' > \"$B-zeugen.txt\" 2>&1",
+        "node -e 'const t = require(\"fs\").readFileSync(process.argv[1], \"utf8\"); let e = null; try { e = JSON.parse(t.slice(t.indexOf(\"{\"))); } catch (x) {} " +
+            "console.log(\"ZEUGEN \" + JSON.stringify(e && e.ergebnis ? e.ergebnis : { fehler: String((e && e.fehler) || t.trim().split(\"\\n\").pop() || \"ohne Antwort\").replace(/\\s+/g, \" \").slice(0, 300) }))' \"$B-zeugen.txt\"",
+    ].join("\n"),
+] };
 const DORF_ZAEHLUNG = { sek: 150, mutiert: true, befehl: [
     "bash",
     "-c",
@@ -4970,6 +5050,75 @@ const stationen = [
         })(),
         pfad: [...KREATUR, "stamm/feld-sprache.js", "save-server.js", "scripts/werkbank.cjs", "scripts/lib/welt-orte.cjs", "scripts/lib/welt-boot.cjs"],
         quelle: "KARTE2 erleben.kopplung.wahrnehmung S1 = Gegenlauf Witterung aus → Jagderfolg fällt",
+    },
+    // KARTE 2 mensch.menge.kollektiv S1 (Umfang „Umstehende einer Szene“, Tiefe „nach Gewalt fliehen sie“, Preis „P · Platz“;
+    // vorrat3-stationen-g2): `zeugenGang` (oben, eigene Probe ZEUGEN_GANG am Genesis-Ort) — derselbe Gang längs des Dorfplatzes vor
+    // und nach der Tat. GRÜN: die Tat traf (damageCreature ok), ≥ 5 Zeugen mit Abstand in beiden Gängen, der Median ihres kleinsten
+    // Abstands nach der Tat > vorher, ihre erinnerte Furcht stieg mit dem Schlag (die Ursache, nicht der Lauf der Uhr), Third, der
+    // Adapter der Sitzung eine Karte. Das Preis-Stück fährt an der Pose am Ende des zweiten Gangs (am Rand des Platzes)
+    {
+        kriterium: "karte2.mensch.menge.kollektiv",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: ZEUGEN_GANG,
+        gpu: true,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const { ad, hw } = hwSitzung(lauf.stdout);
+            const z = jsonZeile(lauf.stdout, /^ZEUGEN /);
+            if (!z) return { gruen: false, zahl: "keine Zeile ZEUGEN (Exit " + lauf.exit + ") · " + ad };
+            if (z.fehler) return { gruen: false, zahl: "Zeugen-Gang: " + z.fehler + " · " + ad };
+            const n = Array.isArray(z.paare) ? z.paare.length : 0;
+            const f = Array.isArray(z.furcht) ? z.furcht : [];
+            const weiter = n >= 5 && z.nachMedian > z.vorMedian;
+            const furcht = f[1] > (f[0] || 0);
+            const gruen = hw && z.sicht === "third" && z.tat === true && weiter && furcht;
+            return {
+                gruen,
+                zahl:
+                    z.zeugen + " Zeugen, " + n + " in beiden Gängen · Abstand-Median vorher " + z.vorMedian + " m → nachher " + z.nachMedian + " m" +
+                    (weiter ? "" : n < 5 ? " ✗ < 5 Zeugen" : " ✗ nicht weiter") + " · Furcht " + f[0] + " → " + f[1] + (furcht ? "" : " ✗ stieg nicht") +
+                    (z.tat ? "" : " · ✗ die Tat traf nicht") + " · " + z.sicht + " · " + ad,
+            };
+        },
+        proben: (() => {
+            const ad = "[linse-gpu] amd/rdna-3 (Probe)";
+            const roh = (f = () => {}) => {
+                const z = { zeugen: 7, paare: [[1.2, 2.1], [1.6, 2.4], [2.3, 2.9], [3.1, 3.4], [0.9, 2.2], [4.0, 4.6], [2.8, 3.0]], vorMedian: 2.3, nachMedian: 2.9, furcht: [0, 0.42], tat: true, halbM: 12, uhr: 0.4167, tod: 0.4171, sicht: "third", version: "V18.546.305" };
+                f(z);
+                return ad + "\nZEUGEN " + JSON.stringify(z);
+            };
+            return [
+                { name: "7 Zeugen weichen nach der Tat weiter", stdout: roh(), gruen: true },
+                { name: "nach der Tat gleich nah", stdout: roh((z) => (z.nachMedian = z.vorMedian)), gruen: false },
+                { name: "nach der Tat näher", stdout: roh((z) => (z.nachMedian = 1.9)), gruen: false },
+                { name: "4 Zeugen", stdout: roh((z) => (z.paare = z.paare.slice(0, 4))), gruen: false },
+                { name: "die Furcht stieg nicht (der Abstand aus dem Lauf der Uhr)", stdout: roh((z) => (z.furcht = [0, 0])), gruen: false },
+                { name: "die Tat traf nicht", stdout: roh((z) => (z.tat = false)), gruen: false },
+                { name: "Ego statt Third", stdout: roh((z) => (z.sicht = "first")), gruen: false },
+                { name: "kein Start-Dorf", stdout: ad + "\nZEUGEN " + JSON.stringify({ fehler: "kein Start-Dorf" }), gruen: false },
+                { name: "swiftshader", stdout: roh().replace(ad, "[linse-gpu] google/swiftshader"), gruen: false },
+                { name: "der Adapter ungenannt", stdout: roh().replace(ad, "[linse-gpu] ungenannt"), gruen: false },
+            ];
+        })(),
+        pfad: [
+            "stamm/siedlung-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/koerper-*.js",
+            "stamm/stoff-instanz.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/daten.js",
+            "koerper-core.js",
+            "fachwerk-core.js",
+            "save-server.js",
+            "scripts/werkbank.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "KARTE2 mensch.menge.kollektiv S1 = Abstand nach der Tat > vorher",
     },
     // KARTE 2 leben.tiere.verhalten S1 (Tiefe „Zeitbudget ±20 % am Ethogramm; Riss-Quote Rudel gegen Hirsch 20–40 % (MacNulty)“):
     // tagesbudget und jagdkreis der Kreatur-Linse im Fenster (VERHALTEN_SITZUNG, zwei Teile). Das Budget urteilt wie tiere.K4#2 (je
