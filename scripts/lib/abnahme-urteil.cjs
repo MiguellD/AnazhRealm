@@ -440,6 +440,25 @@ function kennZaehl(DG, DO) {
     }
     return z;
 }
+// DIE VERBORGENE KLASSE BLEIBT VERBORGEN (w28-blueten-bild; rein, in der Seite als `__verborgenHalten`): die Kennung verbirgt eine
+// Klasse (`visible` false) und liest die Tiefe über `n` Bilder — der Takt jedes Bilds stempelt aber die Zahl der Senken über den
+// EINEN Schreiber `_instanzZahl` (visible = n > 0; die Nah-Streu `_nahStreuBestand` je Takt), und die verborgene Klasse zeichnete
+// wieder: ihr Fehlen änderte keine Tiefe, die Maske war blind (luftwasser.K4#1, Radeon 105c9bd3: 96 Blumen gezeichnet, Blüten-Pixel
+// 0 an jedem Ort). Solange die Kennung misst, hält der Schreiber jede Senke in `verborgen` unsichtbar; die Rückgabe stellt ihn zurück.
+function verborgenHalten(A, verborgen) {
+    let K = A;
+    while (K && !Object.prototype.hasOwnProperty.call(K, "_instanzZahl")) K = Object.getPrototypeOf(K);
+    if (!K) throw new Error("die verborgene Klasse: kein Schreiber `_instanzZahl` am Stamm — die Kennung hielte sie nicht verborgen");
+    const alt = K._instanzZahl;
+    K._instanzZahl = function (mesh, n) {
+        const e = alt.call(this, mesh, n);
+        if (verborgen.has(mesh)) mesh.visible = false;
+        return e;
+    };
+    return () => {
+        K._instanzZahl = alt;
+    };
+}
 function kennTeilung(Z, n, tw, th, W, H) {
     const teil = new Uint8Array(W * H);
     const gemischt = new Uint8Array(W * H);
@@ -2237,6 +2256,33 @@ function sollTafelSelbsttest(tafel, q) {
             v.push(`Mutante „gleiche Pixel, zwei frei-Werte" bleibt ungenannt: die Farbe liest frei ${f1} und ${f2} (MUSS > 0,05 und 0)`);
         if (kf !== 0) v.push(`Kennung: die ganze Krone liest frei ${kf} (Soll 0)`);
     }
+    // DIE VERBORGENE KLASSE (w28-blueten-bild, `verborgenHalten`): ein Takt stempelt je Bild die Zahl jeder Senke über den Schreiber
+    // der Basis (der Aufruf über die Welt-Klasse, wie `AnazhRealm._instanzZahl`) — ohne Wache zeigt er die verborgene Blume wieder
+    // (der alte Täter, MUSS hier sichtbar werden), mit Wache bleibt sie verborgen, das Gras daneben zeichnet, danach schreibt der
+    // Stamm wie vorher
+    {
+        class Stamm {
+            static _instanzZahl(m, n) {
+                m.count = n;
+                m.visible = n > 0;
+            }
+        }
+        class Welt extends Stamm {}
+        const [blume, gras] = [{ count: 50, visible: true }, { count: 9, visible: true }];
+        const takt = () => (Welt._instanzZahl(blume, 50), Welt._instanzZahl(gras, 9));
+        blume.visible = false;
+        takt();
+        if (blume.visible !== true) v.push("Mutante „der Takt stempelt die Zahl“ bleibt ungenannt: die verborgene Blume blieb ohne Wache verborgen");
+        blume.visible = false;
+        const lass = verborgenHalten(Welt, new Set([blume]));
+        takt();
+        if (blume.visible !== false) v.push("Verborgen: der Takt zeigt die verborgene Klasse streuNah:blume wieder (`_instanzZahl` an der Wache vorbei)");
+        if (gras.visible !== true) v.push("Verborgen: die Wache verbirgt eine Senke außerhalb der Klasse");
+        if (Object.prototype.hasOwnProperty.call(Welt, "_instanzZahl")) v.push("Verborgen: die Wache legt einen Zwilling des Schreibers an die Welt-Klasse");
+        lass();
+        takt();
+        if (blume.visible !== true) v.push("Verborgen: nach der Messung schreibt der Stamm die Zahl nicht wie vorher");
+    }
     if (bildRauschen(G, G, W, H, 18).anteil !== 0) v.push("Rauschen: zwei gleiche Schüsse rauschen");
     if (bildRauschen(G, OA, W, H, 18).pixel !== 25) v.push("Rauschen: 25 geänderte Pixel nicht gezählt");
     // das Mikro-Detail (material.K2): ein Schachbrett nyquist 1, ein Verlauf 0 und glatt, das Spektrum 1/f^β trifft sein β
@@ -3259,6 +3305,7 @@ module.exports = {
         `window.__bildMasse = ${bildMasse.toString()};` +
         `window.__kennZaehl = ${kennZaehl.toString()};` +
         `window.__kennTeilung = ${kennTeilung.toString()};` +
+        `window.__verborgenHalten = ${verborgenHalten.toString()};` +
         `window.__wirkungTeilung = ${wirkungTeilung.toString()};` +
         `window.__bildRauschen = ${bildRauschen.toString()};` +
         `window.__rindeAus = ${rindeAus.toString()};` +
