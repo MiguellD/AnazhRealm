@@ -205,10 +205,10 @@
     "kriterien": 26,
     "sprossen": 180,
     "heute": 2,
-    "kern": 1,
-    "kernDazu": 1,
+    "kern": 0,
+    "kernDazu": 0,
     "anteilHeute": 0.8,
-    "anteilKern": 0.5
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -1282,7 +1282,7 @@
       }
      ],
      "heute": 0,
-     "kern": 1,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "Mechanik von Sprosse 1 steht: Bilanz 1,006 headless, Pegel-Bild an beiden Geräten (wetter.K3 2/2); Regen kommt als Wetter-Stempel, nicht aus Verdunstung. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen. — KARTE: Kern 1 — Pegel nach Sturm im Bild an beiden Geräten (wetter.K3), Bilanz als Zahl headless; Bild-Preis nicht gemessen.",
      "alt": [
@@ -4698,10 +4698,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 6,
+    "heute": 7,
     "kern": 5,
     "kernDazu": 5,
-    "anteilHeute": 1,
+    "anteilHeute": 1.2,
     "anteilKern": 0.9
    },
    "perspektiven": [
@@ -8690,7 +8690,7 @@
        "richter": "Waffe getauscht → Form-Cluster wechselt ≥ 0,7"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "mauerRing 30 Ecken, Tore, Türme (fachwerk-core.js:4481); ummauerte Stadt vom Hügel in 7/8 Saaten an beiden Geräten (siedlung.K2) — KARTE: 0 — die ummauerte Stadt vom Hügel zählt bei mensch.stadt.siedlungsnetz (R9); Ring ohne Schwebe-Spalt bei Mittag und Dämmerung nie gerichtet.",
@@ -14779,10 +14779,10 @@
     "kriterien": 33,
     "sprossen": 213,
     "heute": 0,
-    "kern": 1,
-    "kernDazu": 1,
+    "kern": 2,
+    "kernDazu": 2,
     "anteilHeute": 0,
-    "anteilKern": 0.4
+    "anteilKern": 0.9
    },
    "perspektiven": [
     {
@@ -15996,12 +15996,14 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "ungemessen",
      "beleg": "Wolf findet Beute über Witterung; Gegenlauf in der alten Karte (§8.K4) — headless. — KARTE: 0 — dieselbe Messgröße wie erleben.sinne.geruch Sprosse 1 (R9), headless.",
      "alt": [],
      "heuteSprossen": [],
-     "kernSprossen": []
+     "kernSprossen": [
+      1
+     ]
     },
     {
      "id": "erleben.kopplung.bild",
@@ -16881,7 +16883,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 20,
+  "heute": 21,
   "davonKopplungen": 33,
   "kern": 10,
   "kernDazu": 10,
