@@ -5008,7 +5008,7 @@
   },
   "karte2.erleben.schoepfen.schutz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.schutz#1 radeon: Station seit der Messung geändert · karte2.erleben.schoepfen.schutz#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.schutz#1 radeon: Station seit der Messung geändert · karte2.erleben.schoepfen.schutz#1 gtx: ROT: 1/2 feindliche Welten am Welt-Tor abgewiesen, die eigene Welt im Bild gleich (Werk bank_sitzbank 1.6 % des Bilds) · gesetz abgewiesen Δ 0.00 % · pflug EINGETRETEN STAND VERÄNDERT Δ 1.57 % · Werk-Codes abgewiesen 3/3 (Lesewert) · [linse-gpu] nvidia/pascal an b5681770",
    "stationen": [
     {
      "id": "karte2.erleben.schoepfen.schutz#1",
@@ -5024,17 +5024,17 @@
      "id": "karte2.erleben.schoepfen.schutz#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "1/2 feindliche Welten am Welt-Tor abgewiesen, die eigene Welt im Bild gleich (Werk bank_sitzbank 1.6 % des Bilds) · gesetz abgewiesen Δ 0.00 % · pflug EINGETRETEN STAND VERÄNDERT Δ 1.57 % · Werk-Codes abgewiesen 3/3 (Lesewert) · [linse-gpu] nvidia/pascal",
+     "sha": "b56817704c3f9b0efcf4fd52d1331756ea5edef2",
+     "grund": "ROT: 1/2 feindliche Welten am Welt-Tor abgewiesen, die eigene Welt im Bild gleich (Werk bank_sitzbank 1.6 % des Bilds) · gesetz abgewiesen Δ 0.00 % · pflug EINGETRETEN STAND VERÄNDERT Δ 1.57 % · Werk-Codes abgewiesen 3/3 (Lesewert) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
   },
   "karte2.erleben.schoepfen.teilen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.teilen#1 radeon: Station seit der Messung geändert · karte2.erleben.schoepfen.teilen#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 2/2 Werke: Original ↔ Import an derselben Kamera gleich · bank_sitzbank Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 11.7 % · eigen_bruecke Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 17.2 % · [linse-gpu] nvidia/pascal an b5681770 gtx — offen: karte2.erleben.schoepfen.teilen#1 radeon: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.schoepfen.teilen#1",
@@ -5049,11 +5049,11 @@
     {
      "id": "karte2.erleben.schoepfen.teilen#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "2/2 Werke: Original ↔ Import an derselben Kamera gleich · bank_sitzbank Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 11.7 % · eigen_bruecke Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 17.2 % · [linse-gpu] nvidia/pascal",
+     "sha": "b56817704c3f9b0efcf4fd52d1331756ea5edef2",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5112,7 +5112,7 @@
   },
   "karte2.erleben.spieler.rolle": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.rolle#1 radeon: ungemessen (R10) · karte2.erleben.spieler.rolle#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.rolle#1 radeon: ungemessen (R10) · karte2.erleben.spieler.rolle#1 gtx: ROT: 0/4 Verb-Gruppen ändern die Welt sichtbar · gehen OHNE ÄNDERUNG Δ 0.05 % (Rauschen 0.05 %) · bauen kein Werk bank_sitzbank am Ort · fahren kein Wagen fahrzeug_gt am Ort · kaempfen OHNE ÄNDERUNG Δ 0.11 % (Rauschen 0.29 %) · [linse-gpu] nvidia/pascal an b5681770",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.rolle#1",
@@ -5128,10 +5128,10 @@
      "id": "karte2.erleben.spieler.rolle#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "0/4 Verb-Gruppen ändern die Welt sichtbar · gehen OHNE ÄNDERUNG Δ 0.05 % (Rauschen 0.05 %) · bauen kein Werk bank_sitzbank am Ort · fahren kein Wagen fahrzeug_gt am Ort · kaempfen OHNE ÄNDERUNG Δ 0.11 % (Rauschen 0.29 %) · [linse-gpu] nvidia/pascal",
+     "sha": "b56817704c3f9b0efcf4fd52d1331756ea5edef2",
+     "grund": "ROT: 0/4 Verb-Gruppen ändern die Welt sichtbar · gehen OHNE ÄNDERUNG Δ 0.05 % (Rauschen 0.05 %) · bauen kein Werk bank_sitzbank am Ort · fahren kein Wagen fahrzeug_gt am Ort · kaempfen OHNE ÄNDERUNG Δ 0.11 % (Rauschen 0.29 %) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5956,7 +5956,7 @@
   },
   "karte2.same.kopplung.ereignis": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.ereignis#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.ereignis#1 gtx: ROT: Guss -268,-1046: Glut R/G 0.962 (Soll ≥ 2), Luma 0.169, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.962 (Soll ≤ 1,25), Luma 0.169, Stoff stein · [linse-gpu] nvidia/pascal an 77e079ae",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.ereignis#1 radeon: Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/gelaende-fern.js, stamm/stoff-material.js) · karte2.same.kopplung.ereignis#1 gtx: ROT: Guss -268,-1046: Glut R/G 0.962 (Soll ≥ 2), Luma 0.169, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.962 (Soll ≤ 1,25), Luma 0.169, Stoff stein · [linse-gpu] nvidia/pascal an 77e079ae",
    "stationen": [
     {
      "id": "karte2.same.kopplung.ereignis#1",
@@ -5964,8 +5964,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/gelaende-fern.js, stamm/stoff-material.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6034,14 +6035,14 @@
   },
   "karte2.same.massstab.physik": {
    "punkte": 0,
-   "beleg": "Maschine: Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 15.94 m gegen v²/(2μg) 16.38 m (-2.7 %, Soll ±10 %), μ 0.6 (Reibkreis 1 × Boden 0.6), 50 → 1.1 km/h, Δh 0 m, 136 Schritte, rollDecel 1 m/s² · [linse-gpu] amd/rdna-3 an c01f942b radeon · Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 15.94 m gegen v²/(2μg) 16.38 m (-2.7 %, Soll ±10 %), μ 0.6 (Reibkreis 1 × Boden 0.6), 50 → 1.1 km/h, Δh 0 m, 136 Schritte, rollDecel 1 m/s² · [linse-gpu] nvidia/pascal an 4167e10c gtx",
+   "beleg": "Maschine: Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 15.94 m gegen v²/(2μg) 16.38 m (-2.7 %, Soll ±10 %), μ 0.6 (Reibkreis 1 × Boden 0.6), 50 → 1.1 km/h, Δh 0 m, 136 Schritte, rollDecel 1 m/s² · [linse-gpu] amd/rdna-3 an 4167e10c radeon · Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 15.94 m gegen v²/(2μg) 16.38 m (-2.7 %, Soll ±10 %), μ 0.6 (Reibkreis 1 × Boden 0.6), 50 → 1.1 km/h, Δh 0 m, 136 Schritte, rollDecel 1 m/s² · [linse-gpu] nvidia/pascal an 4167e10c gtx",
    "stationen": [
     {
      "id": "karte2.same.massstab.physik#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 15.94 m gegen v²/(2μg) 16.38 m (-2.7 %, Soll ±10 %), μ 0.6 (Reibkreis 1 × Boden 0.6), 50 → 1.1 km/h, Δh 0 m, 136 Schritte, rollDecel 1 m/s² · [linse-gpu] amd/rdna-3",
-     "sha": "c01f942b182917fb2e1082f61287177b4d4899de",
+     "sha": "4167e10c05fd3401ba5fcad6cbd7b25b19a0323e",
      "grund": null,
      "r6": "konsum",
      "beide": true
@@ -6060,7 +6061,7 @@
   },
   "karte2.same.physik.verformung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.verformung#1 radeon: ungemessen (R10) · karte2.same.physik.verformung#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.verformung#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, stamm/koerper-leib.js, stamm/koerper-seele.js) · karte2.same.physik.verformung#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.verformung#1",
@@ -6068,8 +6069,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, stamm/koerper-leib.js, stamm/koerper-seele.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6248,7 +6250,7 @@
   },
   "pflicht.E": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: Station seit der Messung geändert · pflicht.E#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, stamm/feld-leben.js +4) — zuletzt an 4167e10c: Last: Referenz f 1,238 (Faden 1,145 · alle Kerne 1,238; vor 117,1/330 ms, nach 108,2/302,9 ms, Ruhe 102,3/266,5 ms seit 2026-11-15) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · pflicht.E#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "pflicht.E#1",
@@ -6256,8 +6258,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, stamm/feld-leben.js +4) — zuletzt an 4167e10c: Last: Referenz f 1,238 (Faden 1,145 · alle Kerne 1,238; vor 117,1/330 ms, nach 108,2/302,9 ms, Ruhe 102,3/266,5 ms seit 2026-11-15) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6276,7 +6279,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 162,
+  "konsum": 168,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6447,10 +6450,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 175
+  "ohne": 169
  },
  "kopfVoll": "b56817704c3f9b0efcf4fd52d1331756ea5edef2",
- "zeit": "2026-11-16T23:25:13.807Z",
+ "zeit": "2026-11-16T23:37:52.512Z",
  "vorher": "b5681770",
  "bilanz": {
   "gewinn": [],
@@ -6633,7 +6636,7 @@
      {
       "station": "pflicht.E#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, stamm/feld-leben.js +4) — zuletzt an 4167e10c: Last: Referenz f 1,238 (Faden 1,145 · alle Kerne 1,238; vor 117,1/330 ms, nach 108,2/302,9 ms, Ruhe 102,3/266,5 ms seit "
      },
      {
       "station": "pflicht.E#1",

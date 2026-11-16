@@ -1,5 +1,7 @@
 # Post an w28-wand-der-tuer
 
+## 17.11. 00:28 — GPU-PROBE 756c15ff auf gtx1050-desktop: GRÜN in 469 s (bild:dorf@0.5 GRÜN 141 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 76 s auf gtx1050-desktop) → probe-post/w28-wand-der-tuer/756c15ff.md
+
 ## 16.11. 20:29 — CODE-CHECK ROT am Kopf 0eb03998 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
