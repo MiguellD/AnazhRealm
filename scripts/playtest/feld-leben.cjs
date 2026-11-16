@@ -1162,7 +1162,7 @@ async function checkBandWelle6APolish({ page, check }) {
 async function checkBandWelle6GHylomorphism({ page, check }) {
     // ### Hylomorphismus-Unification ###
     // Bäume laufen durchs Architektur-System (spawn_tree-DSL-Op → spawnArchitecture): EINE Sprache,
-    // EIN Renderpfad. Inseln + UFOs bleiben Sonderpfad (Inseln = floating-chunk-Disziplin).
+    // EIN Renderpfad.
     const wave6gResults = await safeEvaluate(page, async () => {
         const out = {};
         // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
@@ -1207,8 +1207,6 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
 
         // DSL-Op-Tests: spawn_tree → erzeugt Architektur.
         const archsBefore = st.architectures.length;
-        const islandsBefore = st.floatingIslands.length;
-        const ufosBefore = st.ufos ? st.ufos.length : 0;
         const playerPos = st.playerMesh ? st.playerMesh.position : { x: 0, y: 50, z: 0 };
         // der Ort des Baums liegt auf dem LAND (die Natur-Wand lässt keinen Baum ins Wasser — der feste Versatz
         // +50/+50 lag im Wasser, der Baum fiel benannt „wasser")
@@ -1221,17 +1219,9 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         }
 
         r.dslRun(["spawn_tree", ["at", tx, ty, tz], 1], { source: "test" });
-        r.dslRun(["spawn_island", ["at", tx + 20, ty, tz + 20], 5, 12345], {
-            source: "test",
-        });
-        r.dslRun(["spawn_ufo", ["at", tx + 40, ty + 10, tz + 40]], { source: "test" });
 
         const archsAfter = st.architectures.length;
-        const islandsAfter = st.floatingIslands.length;
-        const ufosAfter = st.ufos ? st.ufos.length : 0;
         out.treeAddedToArchitectures = archsAfter === archsBefore + 1;
-        out.islandSpawned = islandsAfter > islandsBefore;
-        out.ufoSpawned = ufosAfter > ufosBefore;
 
         const newTreeArch = archsAfter > archsBefore ? st.architectures[archsAfter - 1] : null;
         out.newTreeIsBaumEiche = !!(newTreeArch?.type === "baum_eiche");
@@ -1261,40 +1251,6 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             out.treeTagsBrennbar = tags && tags.brennbar > 0.5;
         }
 
-        const newIsland = islandsAfter > islandsBefore ? st.floatingIslands[islandsAfter - 1] : null;
-        const newUfo = ufosAfter > ufosBefore ? st.ufos[ufosAfter - 1] : null;
-        // DETERMINISMUS-BOGEN P3 — Inseln tragen kein per-Objekt-Kollisions-Artefakt
-        // mehr (Ammo entfernt); der UFO-Negativtest bleibt (er hat nie Kollision).
-        out.ufoHasNoCollision = !!(newUfo && (!newUfo.userData || !newUfo.userData.collision));
-        // Inseln aus der Surface-Nets-Pipeline: Vollkörper per Konstruktion (Iso-Fläche schließt oben +
-        // unten). Gemessen wird die Y-Spanne (> 0.5 m), nicht die auflösungsabhängige Vertex-Zahl.
-        if (newIsland?.geometry && newIsland.geometry.attributes.position) {
-            const pa = newIsland.geometry.attributes.position.array;
-            let minY = Infinity;
-            let maxY = -Infinity;
-            for (let i = 1; i < pa.length; i += 3) {
-                if (pa[i] < minY) minY = pa[i];
-                if (pa[i] > maxY) maxY = pa[i];
-            }
-            out.islandHasUnderside = maxY - minY > 0.5;
-        }
-
-        // Diskrimination: derselbe Seed → dieselben Vertices.
-        const beforeIslandsCount = st.floatingIslands.length;
-        r.dslRun(["spawn_island", ["at", tx + 80, ty, tz], 5, 99999], { source: "test" });
-        r.dslRun(["spawn_island", ["at", tx + 100, ty, tz], 5, 99999], { source: "test" });
-        const i1 = st.floatingIslands[beforeIslandsCount];
-        const i2 = st.floatingIslands[beforeIslandsCount + 1];
-        if (i1 && i2 && i1.geometry && i2.geometry) {
-            const v1 = i1.geometry.attributes.position.array;
-            const v2 = i2.geometry.attributes.position.array;
-            out.seedDeterministic =
-                v1.length === v2.length &&
-                v1.length > 0 &&
-                Math.abs(v1[1] - v2[1]) < 0.0001 &&
-                Math.abs(v1[10] - v2[10]) < 0.0001;
-        }
-
         // Chat-Pattern-Tests bleiben — die Patterns selbst sind gleich.
         // je Satz das Programm: [Op, ["at", …], …]
         const prog = (satz, op) => {
@@ -1302,25 +1258,15 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             return Array.isArray(p) && p[0] === op && Array.isArray(p[1]) && p[1][0] === "at" && p;
         };
         out.chatTreeProg = !!prog("pflanze baum hier", "spawn_tree");
-        out.chatIslandProg = Number.isFinite(prog("setze insel hier", "spawn_island")[3]);
-        out.chatUfoProg = !!prog("rufe ufo hier", "spawn_ufo");
 
         return out;
     });
 
     if (erreichbar(check, "Welle 6.G: Tests laufen", wave6gResults)) {
-        // Inseln teilen die Surface-Nets-Pipeline mit den Voxel-Chunks: `_voxelChunkGeometry` nimmt einen
-        // `densityFn`-Callback (Default = Welt-Chunks, Insel-Pfad übergibt `_islandDensityAt`).
+        // `_voxelChunkGeometry` nimmt einen `densityFn`-Callback (Default = Welt-Chunks; die Naht-Probe
+        // `checkBandSeamNormal` reicht den vollen Sampler).
         const r42a = await page.evaluate(() => {
             const out = {};
-            {
-                // Density bei Mitte (lx=lz=ly=0): innerhalb der Insel-
-                // Schicht → > 0 (fest). Density weit außen → < 0 (Luft).
-                const dummyNoise = { noise2D: () => 0 };
-                out.solidInCenter = r._islandDensityAt(0, 0, 0, 6, 5, dummyNoise) > 0;
-                out.airFarAway = r._islandDensityAt(20, 0, 0, 6, 5, dummyNoise) < 0;
-                out.airAbove = r._islandDensityAt(0, 50, 0, 6, 5, dummyNoise) < 0;
-            }
             // Mesher mit densityFn-Callback: untere Hälfte fest,
             // obere Hälfte Luft → garantierte Iso-Fläche bei y=2.
             out.mesherAcceptsDensity = (() => {
@@ -1334,9 +1280,6 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             })();
             return out;
         });
-        check("_islandDensityAt liefert fest in der Mitte (> 0)", r42a.solidInCenter);
-        check("_islandDensityAt liefert Luft außerhalb des Radius", r42a.airFarAway);
-        check("_islandDensityAt liefert Luft weit über der Insel", r42a.airAbove);
         check("_voxelChunkGeometry akzeptiert densityFn-Callback", !!r42a.mesherAcceptsDensity);
         // Skirt-Disziplin im Smooth-Pass: N Glätt-Gänge brauchen N Zellen Pad + Crop, sonst wandern die Naht-Vertices und die
         // Skirt-Überlappung der Nachbar-Chunks reißt. Probe an BENANNTEN Chunks: die vier, die sich am Ursprung (der Ankunft)
@@ -1383,54 +1326,6 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
                 `Skirt-Naht — ${r42bSkirt.gesund} Vertices teilen ihre Position zwischen den 4 Chunks am Ursprung (Stufe 0), ohne Pad ${r42bSkirt.mutante}`,
                 r42bSkirt.gesund >= 200 && r42bSkirt.mutante < 200
             );
-        // Insel-Höhen-Amplitude skaliert mit `height`.
-        const r42bIslandAmp = await page.evaluate(() => {
-            const noise = { noise2D: () => 0.5 };
-            // height=5: kleine Insel
-            const small = r._islandDensityAt(0, 0, 0, 6, 5, noise);
-            // height=20: grosse Insel — Density-Wert in der Mitte
-            // sollte SUBSTANZIELL grösser sein (mehr Material in der Höhe).
-            const big = r._islandDensityAt(0, 0, 0, 6, 20, noise);
-            return { small, big, ratio: small > 0 ? big / small : 0 };
-        });
-        check(
-            `Insel-Amplitude skaliert mit height (ratio ${(r42bIslandAmp.ratio || 0).toFixed(2)}x bei height 20 vs 5)`,
-            r42bIslandAmp.ratio > 1.5
-        );
-        // DSL spawn_island akzeptiert 5. `size`-Argument.
-        const r42bDsl = await page.evaluate(() => {
-            const before = st.floatingIslands.length;
-            r.dslRun(["spawn_island", ["at", 200, 80, 200], 8, 77777, 30], { source: "test" });
-            const after = st.floatingIslands.length;
-            const isle = st.floatingIslands[before];
-            if (!isle) return { spawned: false };
-            const bbox = new window.THREE.Box3().setFromObject(isle);
-            return { spawned: after === before + 1, width: bbox.max.x - bbox.min.x };
-        });
-        check(
-            `DSL spawn_island mit size=30 baut eine grosse Insel (${(r42bDsl.width || 0).toFixed(1)} m breit)`,
-            r42bDsl.spawned && r42bDsl.width > 24
-        );
-        // Insel-Material wie der Voxel-Boden: MeshToon + vertexColors (kein Terrain-ShaderMaterial — das
-        // braucht aField/uv, die Surface-Nets-Geometrie nicht hat → Löcher). _attachIslandColors färbt
-        // grün-oben/erdig-unten per Vertex-Normale.
-        const r42c = await page.evaluate(() => {
-            const out = {};
-            const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
-            if (isle) {
-                out.material = isle.material.type;
-                // Insel = natives MeshToonNodeMaterial (lights=true): isMeshToonMaterial ist NATIV gesetzt,
-                // isMeshToonNodeMaterial markiert den Node-Pfad. Mode-agnostisch: das aktive Lichtmodell ist
-                // Toon ODER PBR.
-                out.isToonMarker = !!(isle.material.isMeshToonMaterial || isle.material.isMeshStandardMaterial);
-                out.isNodeMaterial = /Node/.test(isle.material.type || "");
-            }
-            return out;
-        });
-        check(
-            `V9.42-c/234: Insel nutzt das aktive lit NodeMaterial (Toon ODER PBR) — ${r42c.material}`,
-            r42c.isToonMarker === true && r42c.isNodeMaterial === true
-        );
         check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert (Multi-Part, V17.11)", wave6gResults.hasBaumKiefer);
         check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
         check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
@@ -1461,29 +1356,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             check("Welle 6.G P1.5: Baum-Compound-Tags zeigen lebendig (holz + laub)", wave6gResults.treeTagsLebendig);
             check("Welle 6.G P1.5: Baum-Compound-Tags zeigen brennbar (holz + laub)", wave6gResults.treeTagsBrennbar);
         }
-        check(
-            "Welle 6.G P1.5: spawn_island DSL-Op fügt Insel zu state.floatingIslands hinzu",
-            wave6gResults.islandSpawned
-        );
-        check("Welle 6.G P1.5: spawn_ufo DSL-Op fügt UFO zu state.ufos hinzu", wave6gResults.ufoSpawned);
-        if (wave6gResults.islandHasUnderside !== undefined) check(
-                "Welle 6.G P1.5 / V9.42-a: Insel hat Vollkörper (Y-Spanne > 0.5 m, Surface-Nets schließt sich)",
-                wave6gResults.islandHasUnderside
-            );
-        check(
-            "Welle 6.G P1.5: UFO bleibt bewusst kollisionsfrei (fliegender Beobachter)",
-            wave6gResults.ufoHasNoCollision
-        );
-        check(
-            "Welle 6.G P1.5: spawn_island mit gleichem Seed produziert identische Vertices (Multi-User-Sync)",
-            wave6gResults.seedDeterministic
-        );
         check("Welle 6.G P1.5: Chat 'pflanze baum hier' → spawn_tree mit ['at',...]", wave6gResults.chatTreeProg);
-        check(
-            "Welle 6.G P1.5: Chat 'setze insel hier' → spawn_island mit ['at',...] + eingebettetem Seed",
-            wave6gResults.chatIslandProg
-        );
-        check("Welle 6.G P1.5: Chat 'rufe ufo hier' → spawn_ufo mit ['at',...]", wave6gResults.chatUfoProg);
     }
 
     // ### Welt-Affinitäts-Feld ###

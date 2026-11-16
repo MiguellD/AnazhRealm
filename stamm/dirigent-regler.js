@@ -1958,8 +1958,6 @@ class AnazhRealm_dirigent_regler {
                 nahStreu: st.nahStreu ? st.nahStreu.kacheln.size : 0,
                 pendingGrass: sz(st.pendingGrass),
                 pendingFoliage: sz(st.pendingFoliageChunks),
-                floatingIslands: sz(st.floatingIslands),
-                ufos: sz(st.ufos),
                 archInstanceGroups: sz(st.archInstanceGroups),
                 scatterRegions: sz(st.scatterRegions),
                 logBuffer: sz(st.logBuffer),

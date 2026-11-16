@@ -228,9 +228,8 @@ class AnazhRealm_feld_sprache {
                     };
                 },
             },
-            // "pflanze baum hier" / "setze insel hier" / "rufe ufo hier" platzieren sofort am Spieler. Position
-            // zur Build-Zeit eingebettet (Mitspieler sehen identische Positionen); die Insel trägt zusätzlich
-            // einen Seed für identische Noise-Form.
+            // "pflanze baum hier" platziert sofort am Spieler. Position
+            // zur Build-Zeit eingebettet (Mitspieler sehen identische Positionen).
             {
                 example: "pflanze baum hier",
                 re: /^(?:pflanze|baue|setze|erschaffe)\s+baum\s+hier\s*$/i,
@@ -254,18 +253,6 @@ class AnazhRealm_feld_sprache {
                 },
             },
             {
-                example: "setze insel hier",
-                re: /^(?:setze|erschaffe|baue)\s+insel\s+hier\s*$/i,
-                build: () => {
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
-                    const seed = this._bauSame("insel"); // der Same aus dem Welt-Strom, nie Math.random (Befund D10)
-                    return {
-                        program: ["spawn_island", ["at", p.x, p.y, p.z], 6, seed],
-                        describe: ["chat.satz.insel"],
-                    };
-                },
-            },
-            {
                 // Pflege-Geste: schreibt ins lebendig-Overlay über deposit_life (DERSELBE Op wie der Nexus) —
                 // der Mensch nährt das Feld, das alle lesen · schreiben · werten.
                 example: "pflege das land",
@@ -275,17 +262,6 @@ class AnazhRealm_feld_sprache {
                     return {
                         program: ["deposit_life", ["at", p.x, p.y, p.z]],
                         describe: ["chat.satz.pflege"],
-                    };
-                },
-            },
-            {
-                example: "rufe ufo hier",
-                re: /^(?:rufe|setze|spawne)\s+ufo\s+hier\s*$/i,
-                build: () => {
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
-                    return {
-                        program: ["spawn_ufo", ["at", p.x, p.y, p.z]],
-                        describe: ["chat.satz.ufo"],
                     };
                 },
             },

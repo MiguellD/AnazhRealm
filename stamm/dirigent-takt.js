@@ -175,11 +175,10 @@ class AnazhRealm_dirigent_takt {
                     // ### Status-Panel (UI V1) ###
                     this.updateStatusPanel(wandZeit);
 
-                    // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
+                    // ### Bodenprüfung / Frustum-Culling ### (V9.44-f)
                     this._loopGroundCheck(spielZeit);
                     if (!zwischen) {
                         this._loopFrustumCulling();
-                        this._loopAnimateUfos(this._bildZeit);
                     }
                 }
 
@@ -954,7 +953,6 @@ class AnazhRealm_dirigent_takt {
                     cost += Math.max(3, units * 0.5);
                 } else if (op === "spawn_village" || op === "spawn_temple") cost += 20;
                 else if (op === "spawn_waterfall") cost += 12;
-                else if (op === "spawn_island") cost += 10;
                 else if (op === "spawn_tree") cost += 6;
                 else if (op === "spawn_creature") cost += 8;
                 else if (op.startsWith("deposit_")) cost += 2;
@@ -1077,24 +1075,12 @@ class AnazhRealm_dirigent_takt {
             this.state.camera.matrixWorldInverse
         );
         this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
-        // Inseln und Mesh-Tiere cullt three JE PASS (Geometrie- bzw. Körper-Kugel gegen Blick und Kaskaden-Box) — ein
+        // Mesh-Tiere cullt three JE PASS (Geometrie- bzw. Körper-Kugel gegen Blick und Kaskaden-Box) — ein
         // Frustum-Schreiber hier nahm ihnen den Schatten, sobald sie den Blick verließen (W7).
         // T3 — RENDERBUNDLES: das Region-Culling der gebündelten Gruppen lebt auf der
         // Bundle-Sichtbarkeit (three-Culling friert im Bundle-Replay ein — Sonde
         // diag-render-bundle). Nutzt das frisch gebaute _frustumCache von oben.
         this._archRegionBundleCull();
-    }
-
-    _loopAnimateUfos(currentTime) {
-        if (this.state.ufos && this.state.playerMesh) {
-            const playerPos = this.state.playerMesh.position;
-            this.state.ufos.forEach((ufo) => {
-                const distance = playerPos.distanceTo(ufo.position);
-                if (distance < 50) {
-                    ufo.position.y = ufo.userData.baseY + Math.sin(currentTime * ufo.userData.speed) * 2;
-                }
-            });
-        }
     }
 
     // Steckt der Spieler nach einem fill-Edit im Fels: die nächste offene Luft-Lücke ÜBER ihm finden

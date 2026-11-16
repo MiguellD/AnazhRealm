@@ -373,8 +373,6 @@ class AnazhRealm_daten {
                     "spawn_temple",
                     "spawn_waterfall",
                     "spawn_tree",
-                    "spawn_island",
-                    "spawn_ufo",
                     "spawn_fractal",
                     "set_visible",
                     "voxel_carve",
@@ -734,7 +732,7 @@ class AnazhRealm_daten {
             "SUBSTANCE_RESPONSE",
             Object.freeze({
                 defaults: Object.freeze({
-                    // Terrain/Inseln/Mantel (vertexColors): Albedo-Quelle bleibt das
+                    // Terrain/Mantel (vertexColors): Albedo-Quelle bleibt das
                     // per-Vertex-color-Attribut; micro/AO trägt ihr eigener
                     // triplanar-colorNode (darum hier 0).
                     feld: Object.freeze({ micro: 0, emissiv: 0 }),
@@ -2991,10 +2989,8 @@ class AnazhRealm_daten {
             "ergebnis.ding.bauplan": ["Bauplan", "blueprint"],
             "ergebnis.ding.dorf": ["Dorf", "village"],
             "ergebnis.ding.fraktal": ["Fraktal-{was}", "fractal {was}"],
-            "ergebnis.ding.insel": ["Insel", "island"],
             "ergebnis.ding.kreaturen": ["Kreaturen", "creatures"],
             "ergebnis.ding.tempel": ["Tempel", "temple"],
-            "ergebnis.ding.ufo": ["UFO", "UFO"],
             "ergebnis.ding.wasserfall": ["Wasserfall", "waterfall"],
             "ergebnis.ding.werke": ["Werke", "works"],
             "ergebnis.dorf-folgt": ["Das Dorf wird gebaut — es meldet sich, wenn es steht", "The village is being built — it will report when it stands"],
@@ -3011,7 +3007,6 @@ class AnazhRealm_daten {
             "ergebnis.verb.erschienen": ["erschienen", "appeared"],
             "ergebnis.verb.gebaut": ["gebaut", "built"],
             "ergebnis.verb.gepraegt": ["geprägt", "imprinted"],
-            "ergebnis.verb.gerufen": ["gerufen", "called"],
             "ergebnis.verb.gesetzt": ["gesetzt", "placed"],
             "ergebnis.verb.gewachsen": ["gewachsen", "grown"],
             "grund.bau": ["im Grundriss eines Baus wächst nichts", "nothing grows within the footprint of a building"],
@@ -3055,7 +3050,6 @@ class AnazhRealm_daten {
             "chat.satz.hain": ["Hain (5 Bäume) gepflanzt", "Grove (5 trees) planted"],
             "chat.satz.heile-welt": ["Welt geheilt: sonnig, Kreaturen glücklich, Gravitation auf 1.5G zurück", "World healed: sunny, creatures happy, gravity back to 1.5G"],
             "chat.satz.huegel": ["Hügel gehoben", "Hill raised"],
-            "chat.satz.insel": ["Schwebende Insel gesetzt", "Floating island placed"],
             "chat.satz.kommt": ["die nächste Kreatur kommt näher zu mir", "the nearest creature comes closer to me"],
             "chat.satz.konsum": ["Konsum: {was}", "Consumed: {was}"],
             "chat.satz.kreaturen": ["{n} Kreaturen gespawnt (am Spieler)", "{n} creatures spawned (at the player)"],
@@ -3078,7 +3072,6 @@ class AnazhRealm_daten {
             "chat.satz.studio-gewachsen": ["{n}× {was} aus dem Studio {wo} gewachsen", "{n}× {was} grown from the studio {wo}"],
             "chat.satz.trinkt": ["die nächste Kreatur sucht Wasser und trinkt", "the nearest creature looks for water and drinks"],
             "chat.satz.uhr": ["Uhrzeit gesetzt: {wort} ({n})", "Time set: {wort} ({n})"],
-            "chat.satz.ufo": ["UFO gerufen", "UFO called"],
             "chat.satz.vor-dir": ["vor dir", "in front of you"],
             "chat.satz.vor-dir-gebaut": ["{was} vor dir gebaut", "{was} built in front of you"],
             "chat.satz.waffe": ["Waffe: {was}", "Weapon: {was}"],
@@ -3106,7 +3099,6 @@ class AnazhRealm_daten {
             "tat.fraktal": ["lässt „{was}“ fraktal in Tiefe {tiefe} wachsen {ort}", "grows “{was}” as a fractal of depth {tiefe} {ort}"],
             "tat.grundhoehe": ["hebt die Welt-Grundhöhe auf {n}", "raises the world's base height to {n}"],
             "tat.himmel": ["färbt den Himmel", "tints the sky"],
-            "tat.insel": ["setzt eine schwebende Insel {ort}", "places a floating island {ort}"],
             "tat.inventar": ["legt {n}× „{was}“ ins Inventar", "puts {n}× “{was}” into the inventory"],
             "tat.kreatur": ["ruft {n} Kreatur herbei {ort}", "calls {n} creature {ort}"],
             "tat.kreatur-gemuet": ["ruft {n} {gemuet} Kreatur herbei {ort}", "calls {n} {gemuet} creature {ort}"],
@@ -3157,7 +3149,6 @@ class AnazhRealm_daten {
             "tat.tempel": ["errichtet einen Tempel {ort}", "raises a temple {ort}"],
             "tat.tempo": ["wiegt die Lauf-Geschwindigkeit auf {n} (im Gesetz-Band deines Körpers)", "sets the walking speed to {n} (within the law band of your body)"],
             "tat.trank": ["gibt Kreatur #{id} den Trank „{was}“", "gives creature #{id} the potion “{was}”"],
-            "tat.ufo": ["ruft ein UFO {ort}", "calls a UFO {ort}"],
             "tat.uhr": ["stellt die Uhr auf {n}", "sets the clock to {n}"],
             "tat.und": ["{a} und {b}", "{a} and {b}"],
             "tat.unsichtbar": ["macht „{was}“ unsichtbar", "makes “{was}” invisible"],

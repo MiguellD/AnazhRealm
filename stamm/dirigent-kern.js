@@ -160,7 +160,6 @@ class AnazhRealm {
             // Wind-Uniforms (uWindTime/uWindStrength): EIN geteilter Slot für den TSL-positionNode-Wind
             // (Gras, Streu, Baum: `_windUniformsEnsure`); _loopRender schreibt sie pro Frame (Stärke aus dem Wetter).
             windUniforms: null,
-            floatingIslands: [],
             minHeight: 0,
             maxHeight: 0,
             // Kein aktiver Schreiber (Heightfield-Chunks fort; PBR ist die EINE Material-Wahrheit); nur
@@ -172,7 +171,6 @@ class AnazhRealm {
             // versunken ist — der Kreatur-Takt treibt seinen Fall (_tickLeichname), die Sicht liest ihn, kein Wesen-Leser
             leichname: [],
             creatureAnimationTime: 0,
-            ufos: [],
             // Geteiltes horizontales Wasser-Material für Fluss-Ribbons + See-Planes (lazy,
             // _ensureHydroSurfaceMaterial); teilt Farbe/Sonne/Fog mit Meer + Wasserfall.
             hydroSurfaceMaterial: null,
@@ -1887,7 +1885,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.298";
+AnazhRealm.VERSION = "18.546.299";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([
