@@ -2275,20 +2275,15 @@ class AnazhRealm_siedlung_bewohner {
         // Wege, die dasselbe Netz-Stück teilen, setzten zwei Ankommende 0,57 m auseinander (das Hangdorf um 12,50 Uhr: der
         // Feldarbeiter #809070 und der Hofmann #724672 auf dem Umweg um #809070, Berührung vor dem ersten Schritt). Wer neben
         // einem steht, der schon draußen ist (`_bewohnerNaechster`, das Raster des Takts samt der Ankommenden), tritt beiseite
-        // wie der Stehende im Gedränge (`_bewohnerPlatz`: der Ring bis 1,8 m, frei von Wand und Leib); sein Weg nimmt ihn
-        // zurück auf seine Linie (`_bewohnerLinie`).
+        // wie der Stehende im Gedränge (`_bewohnerBeiseite`: der kleinste freie Schritt, zuerst fort von dem, der da steht,
+        // genau bis zwei Kapseln — der Abstand, den auch das Gedränge im Takt hält); sein Weg nimmt ihn zurück auf seine Linie
+        // (`_bewohnerLinie`).
         const K = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01;
         const g0 = { x: g.position.x, z: g.position.z };
-        if (!b.drinnen && S.raster && this._bewohnerNaechster(S, b, g0.x, g0.z) < K)
-            for (let r = 0.6, fort = false; r <= 1.81 && !fort; r += 0.6)
-                for (let i = 0; i < 12 && !fort; i++) {
-                    const P = { x: g0.x + Math.cos((i * Math.PI) / 6) * r, z: g0.z + Math.sin((i * Math.PI) / 6) * r };
-                    if (this._bewohnerNaechster(S, b, P.x, P.z) < K) continue;
-                    if (this._bewohnerWand(P, P, true) || this._bewohnerWand(g0, P)) continue;
-                    g.position.x = P.x;
-                    g.position.z = P.z;
-                    fort = true;
-                }
+        const nb = { x: g0.x, z: g0.z }; // der Nächste, der schon steht
+        const d0 = !b.drinnen && S.raster ? this._bewohnerNaechster(S, b, g0.x, g0.z, nb) : Infinity;
+        const P = d0 < K && this._bewohnerBeiseite(S, b, g0, Math.atan2(g0.z - nb.z, g0.x - nb.x), K + 0.01 - d0, 1.81);
+        if (P) [g.position.x, g.position.z] = [P.x, P.z];
         // die Stufe am Ende neu (der Schritt fragt die Stufe ab der Höhe seines letzten Stands — nach einem Weg ohne
         // Zwischenschritte läge die Frage am Hang unter oder über ihr)
         this._bewohnerStellen(b, g, g.position.x, g.position.z);
@@ -3027,43 +3022,78 @@ class AnazhRealm_siedlung_bewohner {
         return steht.o;
     }
 
-    // PLATZ MACHEN (mensch.K3 Staffel 2): der Stehende o tritt auf den nächsten Punkt der Ringe um sich (je 0,6 m bis 1,8 m; für
-    // den Spieler je 0,3 m bis über seinen Abstand `kF` hinaus), der mehr als `kF` (zwei Kapseln; dem Spieler sein Abstand,
-    // `_bewohnerSpielerAbstand`) neben dem Bein p → q des Gehenden liegt (dem Wagen: neben jedem Stück seiner Bahn, p eine Folge
-    // von Punkten), frei von Wand und Leib ist und den er frei erreicht (`platz`; wer schon beiseite steht, tritt wieder); ist
-    // sein Stand wieder frei und der Gehende `fuer` an ihm vorbei, geht er zurück (`_tickBewohner`). Liefert, ob er Platz macht.
+    // PLATZ MACHEN (mensch.K3 Staffel 2): der Stehende o tritt beiseite (`_bewohnerBeiseite`, der kleinste freie Schritt: quer
+    // fort vom Bein, sonst die Ringe je 0,3 m bis 1,8 m bzw. über den Abstand `kF` hinaus) auf einen Punkt, der mehr als `kF`
+    // (zwei Kapseln; dem Spieler sein Abstand, `_bewohnerSpielerAbstand`) neben dem Bein p → q des Gehenden liegt (dem Wagen:
+    // neben jedem Stück seiner Bahn, p eine Folge von Punkten), frei von Wand und Leib ist und den er frei erreicht (`platz`;
+    // wer schon beiseite steht, tritt wieder); ist sein Stand wieder frei und der Gehende `fuer` an ihm vorbei, geht er zurück
+    // (`_tickBewohner`). Liefert, ob er Platz macht.
     _bewohnerPlatz(S, o, p, q, fuer, kF = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01) {
         if (o.platz && o.weg) return true; // er tritt schon beiseite
-        const K = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01;
         const g = { x: o.leib.position.x, z: o.leib.position.z };
         const bein = Array.isArray(p) ? p : [p, q];
-        const dr = fuer && fuer.spieler ? 0.3 : 0.6; // dem Spieler auf 0,3 m genau: sein Abstand trägt die Erinnerung
-        for (let r = dr; r <= Math.max(1.81, kF + 0.61); r += dr)
-            for (let i = 0; i < 12; i++) {
-                const P = { x: g.x + Math.cos((i * Math.PI) / 6) * r, z: g.z + Math.sin((i * Math.PI) / 6) * r };
-                const pkt = { minX: P.x, maxX: P.x, minZ: P.z, maxZ: P.z };
-                if (bein.some((c, k) => k && this._streckeBoxAbstand2(pkt, bein[k - 1].x, bein[k - 1].z, c.x, c.z) < (kF + 0.1) ** 2)) continue; // prettier-ignore
-                if (S.verkehr && this._verkehrAufSpur(S, P.x, P.z, 0)) continue; // beiseite heißt: aus der Fahrbahn, nie in sie
-                if (this._bewohnerNaechster(S, o, P.x, P.z) < K) continue;
-                if (this._bewohnerWand(P, P, true) || this._bewohnerWand(g, P)) continue;
-                Object.assign(o, {
-                    weg: [P],
-                    linie: g,
-                    wi: 0,
-                    wegRestAb: new Float64Array(1),
-                    wegRest: r,
-                    da: false,
-                    stand: null,
-                });
-                o.platz = fuer;
-                this._bewohnerWecken(S, o);
-                return true;
-            }
-        return false;
+        // quer fort vom Bein: von seinem nächsten Punkt auf ihm (steht er auf ihm, zur linken Hand des Bein-Stücks)
+        let [dL, a] = [Infinity, 0];
+        for (let k = 1; k < bein.length; k++) {
+            const [A, B] = [bein[k - 1], bein[k]];
+            const [sx, sz] = [B.x - A.x, B.z - A.z];
+            const L2 = sx * sx + sz * sz;
+            const t = L2 > 1e-12 ? Math.max(0, Math.min(1, ((g.x - A.x) * sx + (g.z - A.z) * sz) / L2)) : 0;
+            const [nx, nz] = [g.x - A.x - sx * t, g.z - A.z - sz * t];
+            const d = Math.hypot(nx, nz);
+            if (d < dL) [dL, a] = [d, d > 1e-6 ? Math.atan2(nz, nx) : Math.atan2(sx, -sz)];
+        }
+        const neben = (P) => {
+            const pkt = { minX: P.x, maxX: P.x, minZ: P.z, maxZ: P.z };
+            if (bein.some((c, k) => k && this._streckeBoxAbstand2(pkt, bein[k - 1].x, bein[k - 1].z, c.x, c.z) < (kF + 0.1) ** 2)) return false; // prettier-ignore
+            return !(S.verkehr && this._verkehrAufSpur(S, P.x, P.z, 0)); // beiseite heißt: aus der Fahrbahn, nie in sie
+        };
+        const P = this._bewohnerBeiseite(S, o, g, a, kF + 0.11 - dL, Math.max(1.81, kF + 0.61), neben);
+        if (!P) return false;
+        Object.assign(o, {
+            weg: [P],
+            linie: g,
+            wi: 0,
+            wegRestAb: new Float64Array(1),
+            wegRest: P.r,
+            da: false,
+            stand: null,
+        });
+        o.platz = fuer;
+        this._bewohnerWecken(S, o);
+        return true;
     }
 
-    // DER NÄCHSTE LEIB um (x, z) im Raster seiner Siedlung (`S.raster`), außer b: sein Abstand (Infinity: keiner nah).
-    _bewohnerNaechster(S, b, x, z) {
+    // DER SCHRITT BEISEITE (mensch.K3 Staffel 2; mensch.K2 Staffel 2: der Tag ist f(Same, t)) — das EINE Gesetz, nach dem der
+    // Stehende im Gedränge (`_bewohnerPlatz`) und der Ankommende (`_bewohnerAnkunft`) treten: der kleinste Schritt von g, der
+    // frei macht — zuerst genau `r0` in die Richtung `a` (fort von dem, der ihn bedrängt), dann die Ringe um g je 0,3 m bis
+    // `rMax`, je Ring zwölf Richtungen, die nächsten an `a` zuerst. Frei ist ein Punkt, den `frei` zulässt, der zwei Kapseln
+    // von jedem Leib (`_bewohnerNaechster`) und von jeder Wand liegt und den er von g in gerader Linie erreicht
+    // (`_bewohnerWand`). Liefert den Punkt samt seinem Abstand `r`, oder null. Bis vorrat3-abwesenheit traten beide auf den
+    // ersten freien Punkt der Ringe 0,6 · 1,2 · 1,8 m ab Osten: wer 0,71 m brauchte, ging 1,2 m in eine beliebige Richtung,
+    // und die Wiederkehr nach 1 h fand den Bewohner bis 1,826 m neben dem Lauf mit Zuschauer (mensch.K2#2 an e4eeee08, Radeon
+    // und GTX gleich).
+    _bewohnerBeiseite(S, o, g, a, r0, rMax, frei = null) {
+        const K = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01;
+        const geht = (r, w) => {
+            const P = { x: g.x + Math.cos(w) * r, z: g.z + Math.sin(w) * r, r };
+            if (frei && !frei(P)) return null;
+            if (this._bewohnerNaechster(S, o, P.x, P.z) < K) return null;
+            return this._bewohnerWand(P, P, true) || this._bewohnerWand(g, P) ? null : P;
+        };
+        const erst = r0 > 0 && r0 <= rMax ? geht(r0, a) : null;
+        if (erst) return erst;
+        for (let n = 1; n * 0.3 <= rMax + 1e-9; n++)
+            for (let i = 0; i < 12; i++) {
+                const P = geht(n * 0.3, a + (Math.PI / 6) * Math.ceil(i / 2) * (i % 2 ? 1 : -1));
+                if (P) return P;
+            }
+        return null;
+    }
+
+    // DER NÄCHSTE LEIB um (x, z) im Raster seiner Siedlung (`S.raster`), außer b: sein Abstand (Infinity: keiner nah); `wo`
+    // (wer fragt, wohin er beiseite tritt, `_bewohnerAnkunft`) trägt danach seine Lage.
+    _bewohnerNaechster(S, b, x, z, wo = null) {
         const M = AnazhRealm.BEWOHNER.rasterM;
         const K = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01;
         const [ix, iz] = [Math.floor(x / M), Math.floor(z / M)];
@@ -3074,12 +3104,14 @@ class AnazhRealm_siedlung_bewohner {
         // hielt, in seine Hülle (VK stadt-voll 23 Uhr: 26 Proben „berührt Bewohner“ an EINEM Wagen, bis er abfuhr)
         for (let i = -1; i <= 1; i++)
             for (let j = -1; j <= 1; j++)
-                for (const o of S.raster.get((ix + i) * 2097152 + iz + j) || [])
-                    if (o !== b && !o.drinnen && o.leib)
-                        d = Math.min(
-                            d,
-                            Math.hypot(o.leib.position.x - x, o.leib.position.z - z) - (o.kR ? o.kR - K : 0)
-                        );
+                for (const o of S.raster.get((ix + i) * 2097152 + iz + j) || []) {
+                    if (o === b || o.drinnen || !o.leib) continue;
+                    const P = o.leib.position;
+                    const e = Math.hypot(P.x - x, P.z - z) - (o.kR ? o.kR - K : 0);
+                    if (!(e < d)) continue;
+                    d = e;
+                    if (wo) [wo.x, wo.z] = [P.x, P.z];
+                }
         return d;
     }
 
