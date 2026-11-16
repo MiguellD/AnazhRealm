@@ -1,7 +1,7 @@
 {
  "sha": "a635bfee2a64f47cdc7d1786b5a9fb09bd10b978",
  "geraet": "radeon",
- "zeit": "2026-11-16T13:07:33.362Z",
+ "zeit": "2026-11-16T13:52:23.207Z",
  "host": "MiguellD",
  "je": {
   "mensch.K2#2": {
@@ -329,20 +329,20 @@
   "kaae491f57b8b": "dVRdj5swEPwveeyVM18OxNI9OCVqruqpOd1Dpb6t7TVwIRDZcFSp+t+rcJAE6O0ToBnv7OzgP4sjyD2keP9qq3LBFp8WnxcW3tCxaN7Q3L/aBVu4MgQaM/5ehHP+9QyTJj/WlhS5ICBKyA7oNKbGvLiXHc2TMQIy0m54uyNkRyKybvml1vzhYXpMIVBVTg0ah0OE8qMA2BTY2BQEOtDornEP1stl5AeMdBUnfPdKhuLPnJN2M+0ooFRj1ToAqj322HK+mStUOWDtFHlph55SURH47NKonXMMtM4JMCvQ9KR4SVXgDUKnBF001o6axIGifswIWZEJNkWby6x2jqYSWA6mrfzIA7aea0mPjaNvlYAQEIupvxlgmaIZa4hCKkNGfs/07uGABpwSsh66coPIF1dPCCHbuZaiE961GITHSqwiPSISQtJtF5sk7l4un+Pte5CS9Boq/jxpYmWWm8PYHq2pAnc6s81AoXH2la0vSNf3Alz2yU+6EPFdmEyZ10F6ni+WLo1v5ogJ3858s5WuWzDopMemJ2KINKKMp08zcA2HwzCA9DGmswHqc5hvZbiRT2m3h/SDHbxH3zlhXgykSEovQPbliU/nfDNwcECkJtd62LSgUq/+F8wWi9oRVVUPSK2WZ0sCUl5c8e44f7pZ3mNC3Z/ff70831wT59q4U93d6ZWpB9FULF0dMt39gXKKPqEpMMWRNyoUAShGWnntk4TDw90ogKfZ6k45nl0rbWOH6K4iteqj28t/HN8fLZq9gHI/+OxpTyrW5XfHE/6D8/RbcreezP5RJf3hR5TkaCqdn68ykkFjMyjq633+9x8="
  },
  "sitzung": {
-  "start": "2026-11-16T13:01:46.967Z",
-  "ordner": "sitzung-20261116-140146",
+  "start": "2026-11-16T13:40:51.056Z",
+  "ordner": "sitzung-20261116-144051",
   "port": 7804,
-  "warten": 5.2,
-  "bootS": 7,
+  "warten": 11.06,
+  "bootS": 6.6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "mensch.K5#1",
-    "s": 15.9,
-    "takte": 572,
+    "ort": "wiese",
+    "vor": "gelaende.K4#2",
+    "s": 18.1,
+    "takte": 580,
     "chunks": 81,
     "nach": null
    }
@@ -351,20 +351,86 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3220,
-   "frameP95": 25.36,
-   "taktP95": 12.22,
-   "vramMax": 143,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 140,
-   "luecken": 1,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 27,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 153.8,
-  "minuten": 7.95
+  "fahrtS": 29.1,
+  "minuten": 11.63
+ },
+ "ungemessen": {
+  "gelaende.K4#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile WELTPROBE treibt) · Täter: [linse-gpu] amd/rdna-3",
+   "exit": 3221226505,
+   "minuten": 0.02,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile WELTPROBE treibt) · Täter: [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 0.3,
+   "fremd": {
+    "s": 3,
+    "takte": 1,
+    "fremdS": 4.86,
+    "kerne": 1.646,
+    "fensterKerne": 1.646,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh arten-zweig-warm2 bash probe-arten/stueck2.sh welle2/arten-a",
+      0.84
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh regen-ins-haus-bild node regen-bild/lauf.cjs regen-bild/r3",
+      0.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.64
+     ]
+    ],
+    "dienerS": 3.25,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      2.36
+     ],
+     [
+      "System",
+      0.56
+     ]
+    ],
+    "geraetS": 2.91,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.52
+     ],
+     [
+      "svchost.exe",
+      1.33
+     ],
+     [
+      "SearchIndexer.exe",
+      0.06
+     ]
+    ],
+    "eigenS": 3.94,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-16T13:52:23.207Z",
+   "abdruck": "b52bbcc194d7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }

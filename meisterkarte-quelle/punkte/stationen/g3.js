@@ -884,6 +884,40 @@ const ZUG_PROBE = {
     sek: 33,
     befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify({ vorher: ["umstellen", "--ort", "genesis", "--sicht", "ego"], args: ["licht", "--luft", "--wetter", "rainy", "--zug"], fenster: [640, 360] })),
 };
+// DAS BILDPAAR KLAR ↔ STURM (Karte 2 planet.kopplung.wetter-welt S 1): derselbe Wetter-Zug der Linse (`wetterZug`, klar 5 s →
+// Wort → klar) mit dem Wort stormy, an EINER Pose (Genesis, Ego, Mittag der Bühne — der Zug bewegt die Kamera nie). Die Linse liest je
+// Spiel-Sekunde nur die Leuchtdichte; die Seite der Probe hängt an JEDE ihrer Aufnahmen (`__ausgabeAufnahme`, dieselbe Funktion des
+// Spiel-Baums, nur am Ende verlängert — das Bild bleibt Byte für Byte) drei Lesewerte: das Richtlicht (Luma der Farbe × Stärke von
+// `st.directionalLight`: der Wetter-Faktor lightMul liegt in der Farbe, `_dayNightApplySkybox`), die mittlere Sättigung (HSV, 1 − min/max)
+// des obersten Sechstels des Bilds (der Himmel der Pose) und den Blick (pitch). Nach der Linse wählt der Weg (`pruefe`) das Paar: die
+// letzte stehende Aufnahme klar vor dem Sturm und die letzte stehende im Sturm; fehlt eine, ist die Probe ROT beim Namen (Exit 1).
+const WETTER_PAAR_SEITE = [
+    "return { u8, info, ms, tiefe, abnahme: abnahme(u8, W, H, m) };",
+    "{ const P = (window.__wetterPaarReihe = window.__wetterPaarReihe || []); const dl = st.directionalLight; const wt = st.weatherTransition; let s = 0, n = 0;" +
+        " for (let y = 0; y < Math.max(1, Math.floor(H / 6)); y++) for (let x = 0; x < W; x++, n++) { const i = (y * W + x) * 4, hi = Math.max(u8[i], u8[i + 1], u8[i + 2]), lo = Math.min(u8[i], u8[i + 1], u8[i + 2]); s += hi > 0 ? 1 - lo / hi : 0; }" +
+        " P.push({ wetter: st.weather, zug: wt ? wt.progress : 1, licht: dl ? +((0.2126 * dl.color.r + 0.7152 * dl.color.g + 0.0722 * dl.color.b) * dl.intensity).toFixed(5) : null, himmel: n ? +(s / n).toFixed(4) : null, pitch: +r.state.pitch.toFixed(4) }); }\n" +
+        "            return { u8, info, ms, tiefe, abnahme: abnahme(u8, W, H, m) };",
+];
+const WETTER_PAAR_PRUEFE =
+    "const P = window.__wetterPaarReihe || []; delete window.__wetterPaarReihe; const i = P.findIndex((x) => x.wetter === 'stormy');" +
+    " const klar = i > 0 ? P.slice(0, i).reverse().find((x) => x.wetter === 'sunny' && x.zug === 1) || null : null;" +
+    " const sturm = P.filter((x) => x.wetter === 'stormy' && x.zug === 1).pop() || null;" +
+    " return { aufnahmen: P.length, klar, sturm, rot: klar && sturm ? null : 'kein Paar: klar ' + !!klar + ', Sturm ' + !!sturm + ' (' + P.length + ' Aufnahmen)' };";
+// DER DECKEL (geschätzt, ungemessen an der Karte): der Zug wie ZUG_PROBE (Regen 33 s), der Sturm extrapoliert über den Regen (Intensität
+// 1,35, die Rückkehr nach klar länger, höchstens 150 Spiel-s je Phase) — 45 s
+const WETTER_PAAR_PROBE = {
+    sek: 45,
+    befehl: PW.torBefehl(
+        PW.werkbankLinse,
+        JSON.stringify({
+            vorher: ["umstellen", "--ort", "genesis", "--sicht", "ego"],
+            args: ["licht", "--luft", "--wetter", "stormy", "--zug"],
+            fenster: [640, 360],
+            seite: { __ausgabeAufnahme: ["scripts/lib/ausgabe-aufnahme.cjs", "ausgabeAufnahme", [WETTER_PAAR_SEITE]] },
+            pruefe: WETTER_PAAR_PRUEFE,
+        })
+    ),
+};
 // ───────── DIE NEUN (p3-stationen-g3, 01.11.): schatten.K2 · K3 · K4 · K5 · licht.K4 · ferne.K3 · K4 · lod.K4 · vegetation.K3 ─────────
 // Bis hierher standen sie in `fehlt` (Spike w4-stationen-a am main 94c079cb: was dem Spiel fehlt, beim Namen) und zählten 0 ungemessen.
 // Jetzt misst EINE Probe der Sitzung alle neun im Ausgabe-Pfad (`__ausgabeAufnahme`, satz „messung“) der warmen Welt am Ort dorf (die
@@ -2722,6 +2756,74 @@ const stationen = [
         pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "phyto-core.js"],
         quelle: "1 = der Wetter-Zug klar → Regen → klar ohne Sprung > 0,1 EV/s an einem Gerät",
     },
+    // KARTE 2 planet.kopplung.wetter-welt S 1 — das Bildpaar klar ↔ Sturm an EINER Pose (WETTER_PAAR_PROBE: der Zug der Linse mit dem Wort
+    // stormy, die Seite liest je Aufnahme Richtlicht, Himmels-Sättigung und Blick). Richter: „Richtlicht gedimmt“ = Richtlicht Sturm ÷ klar
+    // ≤ 0,5 · „Himmel grau“ = mittlere Sättigung des Himmels-Ausschnitts Sturm ≤ 0,5 × klar; „an derselben Pose“ = derselbe Blick (pitch)
+    // in beiden Aufnahmen; der Ausschnitt zeigt klar einen farbigen Himmel (Sättigung ≥ 0,1 — sonst misst „grau“ nichts). Der Sprung des
+    // Zugs (die ZUG-Zeile) gehört licht.K5#1, nie dieser Sprosse: die Zeile muss stehen (die Linse lief zu Ende), ihr GRÜN nicht.
+    {
+        kriterium: "karte2.planet.kopplung.wetter-welt",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: WETTER_PAAR_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(out) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const z = /^ZUG (GRUEN|ROT) · ([^\r\n]+)/m.exec(out);
+            const wm = /^WEG (\{.*\})\s*$/m.exec(out);
+            let p = null;
+            try {
+                p = wm && JSON.parse(wm[1]);
+            } catch (_e) {
+                p = null;
+            }
+            if (!z || !p) return { gruen: false, zahl: "keine " + (z ? "WEG" : "ZUG") + "-Zeile (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
+            const [k, s] = [p.klar, p.sturm];
+            if (p.rot || !k || !s) return { gruen: false, zahl: "kein Bildpaar: " + (p.rot || "klar oder Sturm fehlt") + " · " + (ad || "Adapter ungenannt") };
+            const zahl = (x) => Number.isFinite(x);
+            const licht = zahl(k.licht) && zahl(s.licht) && k.licht > 0 ? s.licht / k.licht : null;
+            const grau = zahl(k.himmel) && zahl(s.himmel) && k.himmel > 0 ? s.himmel / k.himmel : null;
+            const pose = zahl(k.pitch) && k.pitch === s.pitch;
+            const blau = zahl(k.himmel) && k.himmel >= 0.1;
+            const ok = [licht != null && licht <= 0.5, grau != null && grau <= 0.5, pose, blau];
+            const gruen = hw && ok.every(Boolean);
+            const f = (x, n = 3) => (x == null ? "—" : x.toFixed(n));
+            return {
+                gruen,
+                zahl:
+                    (ok[0] ? "✅" : "❌") + " Richtlicht Sturm/klar " + f(licht) + " (" + f(s.licht, 4) + "/" + f(k.licht, 4) + ", Soll ≤ 0,5) · " +
+                    (ok[1] ? "✅" : "❌") + " Himmel Sättigung Sturm/klar " + f(grau) + " (" + f(s.himmel, 4) + "/" + f(k.himmel, 4) + ", Soll ≤ 0,5) · " +
+                    (ok[2] ? "✅" : "❌") + " Pose pitch " + k.pitch + "/" + s.pitch + " · " + (ok[3] ? "✅" : "❌") + " klarer Himmel farbig (≥ 0,1) · " +
+                    p.aufnahmen + " Aufnahmen · ZUG " + z[1] + " (licht.K5) · " + (ad || "Adapter ungenannt"),
+            };
+        },
+        proben: (() => {
+            const lauf = (o = {}) =>
+                (o.adapter || "[linse-gpu] amd/rdna-3 (Probe)") + "\n" + (o.ohneZug ? "" : "ZUG GRUEN · Sprung {} EV/s\n") +
+                (o.weg === null ? "" : "WEG " + JSON.stringify(o.weg || { aufnahmen: 160, klar: { wetter: "sunny", zug: 1, licht: 3.1, himmel: 0.42, pitch: -0.05 }, sturm: { wetter: "stormy", zug: 1, licht: 0.62, himmel: 0.08, pitch: -0.05 }, rot: null }) + "\n");
+            const paar = (k, s) => ({ aufnahmen: 160, klar: { wetter: "sunny", zug: 1, licht: 3.1, himmel: 0.42, pitch: -0.05, ...k }, sturm: { wetter: "stormy", zug: 1, licht: 0.62, himmel: 0.08, pitch: -0.05, ...s }, rot: null });
+            return [
+                { name: "Sturm dimmt das Richtlicht auf 0,2 und graut den Himmel auf 0,19", stdout: lauf(), gruen: true },
+                { name: "der Zug riss den Sprung (ZUG ROT gehört licht.K5)", stdout: lauf().replace("ZUG GRUEN", "ZUG ROT"), gruen: true },
+                { name: "das Richtlicht bleibt (Sturm/klar 0,8)", stdout: lauf({ weg: paar({}, { licht: 2.48 }) }), gruen: false },
+                { name: "der Himmel bleibt blau (Sättigung 0,3/0,42)", stdout: lauf({ weg: paar({}, { himmel: 0.3 }) }), gruen: false },
+                { name: "eine andere Pose (pitch −0,05 ↔ −0,4)", stdout: lauf({ weg: paar({}, { pitch: -0.4 }) }), gruen: false },
+                { name: "der Ausschnitt zeigt klar keinen farbigen Himmel (0,04)", stdout: lauf({ weg: paar({ himmel: 0.04 }, { himmel: 0.01 }) }), gruen: false },
+                { name: "kein Sturm stand (das Paar fehlt)", stdout: lauf({ weg: { aufnahmen: 70, klar: null, sturm: null, rot: "kein Paar: klar true, Sturm false (70 Aufnahmen)" } }), gruen: false },
+                { name: "die Linse brach vor der ZUG-Zeile", stdout: lauf({ ohneZug: true }), gruen: false },
+                { name: "ohne WEG-Zeile", stdout: lauf({ weg: null }), gruen: false },
+                { name: "swiftshader", stdout: lauf({ adapter: "[linse-gpu] google/swiftshader (Probe)" }), gruen: false },
+            ];
+        })(),
+        pfad: [...BILD, "stamm/bild-himmel.js", "stamm/daten.js", "phyto-core.js", "gelaende-core.js", "stamm/gelaende-*.js"],
+        quelle: "KARTE2 planet.kopplung.wetter-welt S1 = Bildpaar klar/Sturm an derselben Pose: Richtlicht gedimmt, Himmel grau",
+    },
     {
         kriterium: "material.K2",
         staffel: 1,
@@ -3001,6 +3103,76 @@ const stationen = [
         ],
         pfad: ALBEDO_PFAD,
         quelle: "2 = beide Geräte, Eichung Karte 0,180",
+    },
+    // KARTE 2 erleben.bild.flaeche S 1 — die ALBEDO-HÄLFTE auf demselben Lauf wie material.K1#1/#2 (ALBEDO_K1, Zwillinge: keine GPU-Minute
+    // mehr). Je Stoff des Richters die Albedo der Welt-Seite im Bild (W, lineare Rec.-709-Luma, an der 18-%-Karte geeicht) gegen EINEN
+    // Tabellenwert, |W − Tafel| ≤ 0,05 — nie das breite Band der Klasse (BAENDER), nie Welt/Labor. Die Zeilen der Tafel: Gras → `gras`
+    // (die Albedo-Tafel trägt am Kopf KEINE: `laub` ist das Eichen-Laub, ein Ersatz wäre ein Zwilling — ROT beim Namen, bis die Tafel
+    // eine Wiesen-Zeile misst), Erde → `boden`, Fels → `fels`, Holz → `rinde` (das Holz der Welt im Bild: Stamm und Äste; das Holz des
+    // Hauses steht in `haus` mit Putz und Dach gemischt), Haut → `haut`. Die Werte stehen IM Urteil (der Abdruck liest seinen Text): Gras
+    // 0,25 und nackte Erde 0,17 (die Albedo-Tafel typischer Oberflächen, Wikipedia „Albedo“: grünes Gras 0,25, nackter Boden 0,17 —
+    // dieselbe Tafel, die BAENDER für die Nadel nennt), Fels 0,20 und Holz 0,095 als MITTE des Bands der Karte (Fels 0,10–0,30 PSU EARTH 103, Rinde 0,07–0,12 aaaa — ein Einzelwert
+    // je Gestein und Holz fehlt in jeder Quelle des Repos, offen beim Namen), Haut 0,0717 = die gesetzte Haut der Zeile (Mahagoni
+    // 0x6a4230, linear Rec. 709). DIE HALBSCHATTEN-HÄLFTE des Richters misst diese Probe NICHT (schatten.K1#2, eigene Probe an der Bühne):
+    // die Tafel-Zeile bleibt „fehlt“, bis die Akte zwei Stationen EINER Sprosse trägt.
+    {
+        kriterium: "karte2.erleben.bild.flaeche",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: { ...ALBEDO_K1 }, // derselbe Lauf wie material.K1#1/#2 (Zwillinge)
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 1.5,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            if (j.fehler) return { gruen: false, zahl: j.fehler };
+            const soft = /swiftshader|llvmpipe|lavapipe|software|subzero/i;
+            const echt = !!j.adapter && !soft.test(j.adapter) && !!j.welt && j.welt.echt === true;
+            const TAFEL = [
+                ["Gras", "gras", 0.25],
+                ["Erde", "boden", 0.17],
+                ["Fels", "fels", 0.2],
+                ["Holz", "rinde", 0.095],
+                ["Haut", "haut", 0.0717],
+            ];
+            const Z = j.zeilen || [];
+            const teile = TAFEL.map(([stoff, id, soll]) => {
+                const z = Z.find((x) => x.id === id);
+                const w = z && Number.isFinite(z.W) && z.W > 0 ? z.W : null;
+                const ok = w != null && Math.abs(w - soll) <= 0.05;
+                return [ok, (ok ? "✅ " : "❌ ") + stoff + " (" + id + ") " + (w == null ? (z ? "stumm" : "keine Zeile der Tafel") : "W " + w.toFixed(4) + " Δ " + (w - soll).toFixed(3)) + " gegen " + soll];
+            });
+            const gruen = echt && teile.every(([ok]) => ok);
+            return { gruen, zahl: teile.map(([, s]) => s).join(" · ") + " · Soll |Δ| ≤ 0,05 · Halbschatten nicht in dieser Probe · echt " + (echt ? "Welt" : "NEIN") + " · " + (j.adapter || "Adapter ungenannt") };
+        },
+        proben: (() => {
+            const mit = (o = {}) => {
+                const k = JSON.parse(JSON.stringify(K1_ROH.neu));
+                k.zeilen.push({ id: "gras", L: 0.24, W: 0.24, v: 1, band: [0.15, 0.26], bandOk: true, inBand: true });
+                for (const [id, w] of Object.entries(o)) {
+                    const z = k.zeilen.find((x) => x.id === id);
+                    if (w == null) k.zeilen = k.zeilen.filter((x) => x !== z);
+                    else z.W = w;
+                }
+                return k;
+            };
+            return [
+                { name: "fünf Stoffe am Tafelwert (gras 0,24 · boden 0,15 · fels 0,24 · rinde 0,0807 · haut 0,0604)", j: mit({ boden: 0.15, fels: 0.24 }), gruen: true },
+                { name: "die Messung am Zweig w24-rueckfall-fell 8c5d944c: keine Gras-Zeile, Waldboden 0,0876, Fels 0,2547", j: K1_ROH.neu, gruen: false },
+                { name: "MUTANTE Gras fehlt, der Rest am Tafelwert", j: mit({ gras: null, boden: 0.15, fels: 0.24 }), gruen: false },
+                { name: "Erde 0,0876 (Waldboden, Δ −0,082)", j: mit({ fels: 0.24 }), gruen: false },
+                { name: "Fels 0,2547 (Δ +0,055)", j: mit({ boden: 0.15 }), gruen: false },
+                { name: "Holz 0,16 (Δ +0,065)", j: mit({ boden: 0.15, fels: 0.24, rinde: 0.16 }), gruen: false },
+                { name: "Haut 0,13 (Δ +0,058)", j: mit({ boden: 0.15, fels: 0.24, haut: 0.13 }), gruen: false },
+                { name: "swiftshader", j: { ...mit({ boden: 0.15, fels: 0.24 }), adapter: "[linse-gpu] google/swiftshader" }, gruen: false },
+                { name: "die Folge brach", j: { fehler: "ALBEDO-TAFEL ROT: keine Seite" }, gruen: false },
+            ];
+        })(),
+        pfad: ALBEDO_PFAD,
+        quelle: "KARTE2 erleben.bild.flaeche S1 = Halbschattenbreite gegen Abstand im Band; Albedo im Bild ±0,05 gegen Tabellenwert für Gras, Erde, Fels, Holz, Haut",
     },
     {
         kriterium: "schatten.K1",
@@ -3648,6 +3820,116 @@ const stationen = [
         })(),
         pfad: [...BILD, "spec/farbe/tag-ref.json", "stamm/bild-himmel.js", "welt-licht.js", "stamm/studio-bruecke.js", "stamm/vegetation-*.js", "gelaende-core.js", "stamm/gelaende-*.js"],
         quelle: "KARTE2 planet.kosmos.himmelsmechanik S1 = Sprung ≤ 0,1 EV je Uhrschritt über die ganze Bahn, Ego und Third, beide Geräte",
+    },
+    // KARTE 2 planet.kosmos.sternhimmel S 1 — derselbe Lauf wie licht.K1#1 und himmelsmechanik#1 (TAG_PROBE, Zwillinge: die Fahrt fährt
+    // EINMAL, keine GPU-Minute mehr). Die Sprosse urteilt NUR die Sterne: je Uhr die Punkt-Quellen, die das Sternfeld zeichnet (TAG_STERNE,
+    // die Differenz mit − ohne Sternfeld), gegen die Grenzgrößen-Tafel des bloßen Auges je Sonnenhöhe — die Tafel der Wirklichkeit, nie
+    // die des Spiels (`starFieldUniforms.grenze` steht als Lesewert in der Zeile): ≥ 10° Grenzgröße unter der Venus, kein Stern · ≥ −3°
+    // die Planeten und die hellsten Sterne, ≤ 3 · ≤ −18° Grenzgröße +6, jede Uhr ≥ 5 (allein die Sterne bis +3, ~13 je sr) · bis −6°
+    // (Ende der bürgerlichen Dämmerung, Grenzgröße +1,5) steht nie die halbe Nacht, abends wie morgens · über −18 … 0° steigt die Zahl mit
+    // der sinkenden Sonne (Goodman-Kruskal γ ≥ 0,8). Dieselbe Rechnung wie die Tiefe in himmelsmechanik#1 (inline: der Abdruck liest den
+    // Text des Urteils, nie eine Hilfe), ohne den Sprung des Lichts — der gehört der Sprosse der Himmelsmechanik. Je Ort und Sicht (genesis,
+    // wiese, je Ego und Third) eine Kurve; die Kürzung des Wegs (WEG) darf nicht abweichen, sonst zählte die Probe ein anderes Bild.
+    {
+        kriterium: "karte2.planet.kosmos.sternhimmel",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: TAG_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(out) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const wm = /^WEG (\{.*\})\s*$/m.exec(out);
+            let weg = null;
+            try {
+                weg = wm && JSON.parse(wm[1]);
+            } catch (_e) {
+                weg = null;
+            }
+            const ORTE = ["genesis", "wiese", "genesis:third", "wiese:third"];
+            if (!j || ORTE.every((o) => !j[o])) return { gruen: false, zahl: "keine Kurve der Tag-Achse (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
+            const wegOk = !!weg && !weg.rot;
+            let gruen = hw && wegOk;
+            const gamma = (a, b) => {
+                let c = 0, d = 0;
+                for (let i = 0; i < a.length; i++) for (let k = i + 1; k < a.length; k++) { const p = (a[i] - a[k]) * (b[i] - b[k]); if (p > 0) c++; else if (p < 0) d++; }
+                return a.length >= 5 && c + d ? (c - d) / (c + d) : NaN;
+            };
+            const f = (x, n = 1) => (Number.isFinite(x) ? x.toFixed(n) : "—");
+            const teile = [];
+            for (const ort of ORTE) {
+                const m = j[ort] || {};
+                const alle = (m.zeilen || []).concat(m.fein || []).sort((a, b) => a.uhr - b.uhr);
+                // die Tafel braucht jede Stufe der Sonne: Tag, Dämmerung, astronomische Nacht
+                const tag = alle.filter((z) => z.sonne >= 10), hell = alle.filter((z) => z.sonne >= -3), dunkel = alle.filter((z) => z.sonne <= -18);
+                const dae = alle.filter((z) => z.sonne >= -18 && z.sonne <= 0);
+                if (!tag.length || !dunkel.length || dae.length < 5) {
+                    gruen = false;
+                    teile.push("❌ " + ort + ": " + alle.length + " Uhren, Tag " + tag.length + " · Dämmerung " + dae.length + " · Nacht " + dunkel.length + " (die Tafel braucht jede Stufe)");
+                    continue;
+                }
+                // ohne Zahl ist auch die Zahl ohne den Vergleich mit ↔ ohne Sternfeld (`punkte` fehlt: die Probe zählte jeden Lichtpunkt)
+                const ohne = alle.filter((z) => typeof z.sterne !== "number" || typeof z.punkte !== "number").length;
+                const max = (a) => (a.length ? Math.max(...a.map((z) => z.sterne)) : NaN);
+                const dz = dunkel.map((z) => z.sterne).sort((a, b) => a - b), nMed = dz[dz.length >> 1], nMin = dz[0];
+                // die Sonne, bei der zuerst die halbe Nacht steht: abends in der Uhr vorwärts, morgens rückwärts (die Sonne sinkt je Schritt)
+                const halb = [alle.filter((z) => z.uhr > 0.5), alle.filter((z) => z.uhr < 0.5).reverse()].map((s) => {
+                    const z = s.find((x) => x.sterne >= nMed / 2);
+                    return z ? z.sonne : NaN;
+                });
+                const r = gamma(dae.map((z) => -z.sonne), dae.map((z) => z.sterne));
+                const ok = !ohne && max(tag) === 0 && max(hell) <= 3 && nMin >= 5 && halb.every((h) => h <= -6) && r >= 0.8;
+                if (!ok) gruen = false;
+                const gr = alle.filter((z) => typeof z.grenze === "number").map((z) => z.grenze);
+                teile.push(
+                    (ok ? "✅ " : "❌ ") + ort + ":" + (ohne ? " ohne Zahl an " + ohne + " Uhren ·" : "") + " Tag ≥10° max " + max(tag) + " · ≥−3° max " + max(hell) +
+                        " · Nacht ≤−18° min " + nMin + " Median " + nMed + " · halbe Nacht bei Sonne " + halb.map((h) => f(h) + "°").join(" | ") + " · γ " + f(r, 2) +
+                        " (n " + dae.length + ") · Grenzgröße des Felds " + (gr.length ? f(Math.min(...gr), 2) + "…" + f(Math.max(...gr), 2) : "—")
+                );
+            }
+            return { gruen, zahl: teile.join(" · ") + " · WEG " + (wegOk ? "gleich" : "ROT " + (weg ? String(weg.rot).slice(0, 120) : "fehlt")) + " · " + (ad || "Adapter ungenannt") };
+        },
+        proben: (() => {
+            const ad = "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null }) + "\n";
+            const sonne = (u) => +(60 * Math.sin(2 * Math.PI * (u - 0.25))).toFixed(2);
+            const grenzStern = (s) => (s >= -3 ? 0 : s <= -18 ? 40 : Math.round(40 * ((-3 - s) / 15) ** 2));
+            // `punkte` die rohe Zahl des Bilds mit Feld, `pt` Lichtpunkte am Tag, die keine Sterne sind (Wolkenkante, Laub)
+            const zeile = (u, st, pt) => ({ uhr: u, sonne: sonne(u), Y: 0.2, sterne: st(sonne(u)), punkte: st(sonne(u)) + (pt && sonne(u) >= 10 ? pt : 0), grenze: 6 });
+            const ort = (st = grenzStern, pt = 0) => ({
+                zeilen: Array.from({ length: 100 }, (_, i) => zeile(i / 100, st, pt)),
+                fein: Array.from({ length: 60 }, (_, i) => zeile(+(0.7 + 0.001 * (i + 1)).toFixed(3), st, pt)),
+            });
+            const welt = (o = {}) => ({ genesis: ort(), wiese: ort(), "genesis:third": ort(), "wiese:third": ort(), ...o });
+            const ohne = welt();
+            for (const z of ohne.genesis.zeilen) delete z.sterne;
+            const roh = welt();
+            for (const z of roh.wiese.zeilen.concat(roh.wiese.fein)) delete z.punkte;
+            const sprung = welt();
+            sprung["wiese:third"].zeilen[30].Y *= 1.2;
+            return [
+                { name: "vier Kurven, Sterne nach der Grenzgröße", stdout: ad, j: welt(), gruen: true },
+                { name: "ein Sprung des Lichts gehört der Himmelsmechanik, nie dem Sternhimmel", stdout: ad, j: sprung, gruen: true },
+                { name: "sieben Lichtpunkte am Taghimmel, die das Sternfeld nicht zeichnet", stdout: ad, j: welt({ wiese: ort(grenzStern, 7) }), gruen: true },
+                { name: "zwei Sterne im Mittagshimmel (≥ 10°)", stdout: ad, j: welt({ wiese: ort((s) => (s >= 10 ? 2 : grenzStern(s))) }), gruen: false },
+                { name: "vier Punkte in der hellen Dämmerung (≥ −3°: höchstens die Planeten)", stdout: ad, j: welt({ "genesis:third": ort((s) => (s >= -3 && s < 10 ? 4 : grenzStern(s))) }), gruen: false },
+                { name: "die astronomische Nacht zu dünn (3 Sterne)", stdout: ad, j: welt({ "wiese:third": ort((s) => Math.min(3, grenzStern(s))) }), gruen: false },
+                { name: "die Sterne nach der Uhr, nicht nach der Grenzgröße (alle mit dem Untergang)", stdout: ad, j: welt({ genesis: ort((s) => (s < 0 ? 40 : 0)) }), gruen: false },
+                { name: "die Zahl fällt mit der sinkenden Sonne (γ < 0,8)", stdout: ad, j: welt({ wiese: ort((s) => (s >= -3 ? 0 : s <= -18 ? 40 : Math.round(40 * ((s + 18) / 15) ** 2) + 6)) }), gruen: false },
+                { name: "die Probe ohne Sternzahl", stdout: ad, j: ohne, gruen: false },
+                { name: "die Sternzahl ohne den Vergleich mit ↔ ohne Sternfeld", stdout: ad, j: roh, gruen: false },
+                { name: "ohne Third", stdout: ad, j: { genesis: ort(), wiese: ort() }, gruen: false },
+                { name: "der Weg weicht ab", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ rot: "Uhr 0.25 weicht ab" }) + "\n", j: welt(), gruen: false },
+                { name: "swiftshader", stdout: "[linse-gpu] google/swiftshader (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null }) + "\n", j: welt(), gruen: false },
+                { name: "keine Kurve", stdout: ad, j: null, gruen: false },
+            ];
+        })(),
+        pfad: [...BILD, "stamm/bild-himmel.js", "welt-licht.js", "gelaende-core.js", "stamm/gelaende-*.js"],
+        quelle: "KARTE2 planet.kosmos.sternhimmel S1 = Zahl sichtbarer Sterne je Sonnenhöhe folgt der Grenzgrößen-Tafel",
     },
     {
         kriterium: "licht.K3",

@@ -420,7 +420,11 @@ function fahrtSumme(stationen, geraet) {
 }
 // DIE TEILE DER FAHRT (04.11., deckel-wurzel): jeder Teil ist eine Sitzung ≤ FAHRT_MAX_S samt eigenem Boot — die Deckel folgen dem Bedarf
 // (eichTafel), was über einen Teil reicht, misst die Fortsetzung (fahreFortsetzung); ROT erst über FAHRT_TEILE_MAX Teilen
-const FAHRT_TEILE_MAX = 4; // bis 15.11. 3: mit vier neuen Stationen der Karte 2 fielen liste, run und buchen an BEIDEN Geräten (5 499 s > 5 400); je Landung fährt ohnehin nur die Tafel (--nur). 4 hält den Fall FAHRT-ROT des Selbsttests (87 Läufe × 90 s > 4 Teile)
+// bis 15.11. 3: mit vier neuen Stationen der Karte 2 fielen liste, run und buchen an BEIDEN Geräten (5 499 s > 5 400); je Landung fährt
+// ohnehin nur die Tafel (--nur). 16.11. 4 → 5: die sieben neuen Läufe der Welle vorrat2-stationen (Σ 585 s: verhalten 180, stoerung 90,
+// oeko 90, teilen 75, ereignis 60, wetter-welt 45, physik 45) hoben die Fahrt von 6 619 auf 7 204 s (Radeon) über 4 × 1 740 s.
+// Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (96 Läufe × 120 s > 5 Teile)
+const FAHRT_TEILE_MAX = 5;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
 function fahrtUrteil(stationen) {
     return GERAETE.filter((g) => g !== "headless").flatMap((g) => {
@@ -2971,11 +2975,14 @@ function stromSeite(r, a) {
 // jede Zeile ab POSTEN_MIN_MB beim Namen, der Rest darunter als EINE Zeile: die Liste ist die Summe (bis w28-preis-ort schnitt sie
 // bei 90 % ab — an der Mess-Wiese 12,6 von 134,3 MB ohne Namen)
 const POSTEN_MIN_MB = 0.25;
-async function preisLauf(W, station) {
+// namen: die Stationen der Probe-Gruppe (namen[0] ist der Lauf) — der Preis-Lauf fährt, sobald IRGENDEINE von ihnen eine Sprosse trägt
+// (16.11., Fund g6: bis hier fragte er nur den ersten Zwilling — pflicht.E#1, dritter auf PB_PROBE_GANG, bekam nie einen Preis)
+async function preisLauf(W, namen) {
+    const station = namen[0];
     let RA = null;
     try {
         RA = require(path.join(KOORD, "vision", "richter-akte.cjs"));
-        if (!RA.brauchtPreisLauf(station)) return null;
+        if (!RA.brauchtPreisLauf(namen)) return null;
     } catch (_e) {
         return null;
     }
@@ -3043,13 +3050,16 @@ async function preisPosten(W) {
         ...(h ? { heap_typed_mb: +hSumme.toFixed(1), heap_typed: postenListe(h, hSumme) } : { heap_typed: null }),
         lesart: "nach erzwungenem GC (werkbank /puffer, der Zensus der Band-Wand); Listen [Erzeuger, MB, % der Summe] absteigend je Posten ab " + POSTEN_MIN_MB + " MB, der Rest als eine Zeile; heap_typed: nur Typed-Arrays ab r (__heapHalter), der übrige JS-Heap hat keinen Halter-Zensus" };
 }
-const karte2PreisLauf = (station) => {
+// braucht der Lauf dieser Probe-Gruppe den Preis? — EINE Frage für die Auffüllung der Ruhe und den Preis-Lauf: jede Station der Gruppe
+const karte2PreisLauf = (g, tafel) => {
     try {
-        return require(path.join(KOORD, "vision", "richter-akte.cjs")).brauchtPreisLauf(station);
+        return require(path.join(KOORD, "vision", "richter-akte.cjs")).brauchtPreisLauf(g.map(schluessel), tafel);
     } catch (_e) {
         return false;
     }
 };
+// DIE ZWILLINGE EINES LAUFS (16.11., Fund g6): die Gruppe fuhr EINEN Lauf, der Strom trägt nur seinen Namen (schluessel(g[0])) — jede
+// Station der Gruppe schreibt ihre Akte mit dem Preis DIESES Laufs (`probe`), nie nur der erste. o.tafel/o.karte/o.dir: der Selbsttest
 function richterAkten(g, urteile, o) {
     let RA = null;
     try {
@@ -3060,7 +3070,7 @@ function richterAkten(g, urteile, o) {
     try {
         const bilder = stromLesen(o.strom).bilder;
         g.forEach((st, i) => {
-            for (const z of RA.schreibe({ station: schluessel(st), eintrag: urteile[i], bilder, von: o.von, bis: o.bis, sha: o.sha, geraet: o.geraet, referenz: o.referenz, posten: o.posten, stueck: o.stueck }))
+            for (const z of RA.schreibe({ station: schluessel(st), probe: schluessel(g[0]), eintrag: urteile[i], bilder, von: o.von, bis: o.bis, sha: o.sha, geraet: o.geraet, referenz: o.referenz, posten: o.posten, stueck: o.stueck, tafel: o.tafel, karte: o.karte, dir: o.dir }))
                 console.log("  " + z);
         });
     } catch (e) {
@@ -3547,7 +3557,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     let zuruecksetzen = false, abbruch = false, gerissen = null, grundDa = null, grundWege = null;
     // DIE AUFFÜLLUNG DER RUHE (die Ablage der Fahrten): mit der Welt der Sitzung, ehe die erste Zeit-Probe misst
     // (auch vor dem Preis-Lauf der Meisterkarte 2: seine Referenz urteilt gegen dieselbe Ruhe)
-    if (gruppen.some(istZeit) || gruppen.some((g) => karte2PreisLauf(schluessel(g[0])))) await referenzAuffuellen("sitzung");
+    if (gruppen.some(istZeit) || gruppen.some((g) => karte2PreisLauf(g))) await referenzAuffuellen("sitzung");
     for (const g of gruppen) {
         // DAS SCHLOSS AN DER PROBEN-GRENZE: fiel es (gpu-lauf.sh endete), trägt die Sitzung nicht mehr; wartet ein CI-Job darauf, geht es
         // an ihn und kommt danach wieder — die Welt bleibt warm, das Warten zählt nie in die Fahrt
@@ -3700,7 +3710,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt, konsumWelt } });
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
         // DER PREIS-LAUF der Meisterkarte 2 (richter-akte.cjs PREIS_S): noch unter dem Namen der Probe, an ihrer Pose, der Loop des Spiels
-        const preisFahrt = !gerissen && !tot && es.some((e) => !e.ungemessen) ? await preisLauf(W, schluessel(g[0])) : null;
+        const preisFahrt = !gerissen && !tot && es.some((e) => !e.ungemessen) ? await preisLauf(W, g.map(schluessel)) : null;
         await zapf(aktuell);
         const probeBis = Date.now(); // das Ende des Fensters der Probe (die Richter-Akte schneidet ihren Preis aus dem Strom darin)
         aktuell = "(sitzung)";
@@ -5912,9 +5922,9 @@ async function selbsttest(o = {}) {
             jf[0][0] === "" && jf[0][1] === 40 && jf[0][2] === 10 && jf[0][3] === 40 && jf[0][4] === 10 && jf[0][5] !== abd0 && jf[0][6] === abd0 && jf[0][7] === abd0 && abdruck(jk(), "hilfe", "radeon") === abd0 &&
             /Deckel 1800 s × 1 Teil\(e\) über dem Teil der Fahrt/.test(jf[1][0]) && jf[1][1] === "" && /deckel.json: .* je Karte eine ganze Zahl ≥ 1/.test(jf[2]) && /deckel.json: {"gtx":20}/.test(jf[3]),
             JSON.stringify(jf));
-        const echtGross = ladeStationen().map((s) => (s.probe ? { ...s, probe: { ...s.probe, sek: 90 } } : s));
+        const echtGross = ladeStationen().map((s) => (s.probe ? { ...s, probe: { ...s.probe, sek: 120 } } : s));
         const eg = pruefeStationen(echtGross, karte).fehler.filter((f) => /^(radeon|gtx): die Fahrt/.test(f));
-        pruef("FAHRT-ROT an der echten Liste: jeder Deckel auf 90 s gebläht reißt die " + FAHRT_TEILE_MAX + " Teile der Fahrt beider Karten (liste, run und buchen fallen dort)",
+        pruef("FAHRT-ROT an der echten Liste: jeder Deckel auf 120 s gebläht reißt die " + FAHRT_TEILE_MAX + " Teile der Fahrt beider Karten (liste, run und buchen fallen dort)",
             eg.length === 2 && eg.every((f) => /die größten: /.test(f)), eg.join(" | "));
     }
     // (3) Läufer: grün / rot / Absturz / Deckel / Urteil ungültig / GPU ohne Schloss / GPU über das Schloss
@@ -8160,6 +8170,31 @@ async function selbsttest(o = {}) {
         const ra = spawnSync(process.execPath, [path.join(KOORD, "vision", "richter-akte.cjs"), "--selbsttest"], { encoding: "utf8", timeout: 120000 });
         pruef("RICHTER-AKTE der Selbsttest des Richters der Karte 2 (vision/richter-akte.cjs) ist GRÜN", ra.status === 0,
             String(ra.stdout || "").trim().split("\n").pop() || String(ra.stderr || ra.error || "").trim().slice(0, 200));
+    }
+    // DIE ZWILLINGE EINES LAUFS (16.11., Fund g6): zwei Stationen auf EINER Probe — der Strom trägt nur den Namen des Laufs (der erste
+    // der Gruppe). Beide Sprossen müssen ihre Akte mit dem Preis DIESES Laufs schreiben (richterAkten, wie fahreSitzung ruft), und der
+    // Preis-Lauf fährt auch, wenn nur der ZWEITE eine Sprosse trägt (karte2PreisLauf). Vorher ROT: der zweite „kein Strom im Stück
+    // (0 Bilder)“, der Preis-Lauf fragte nur schluessel(g[0])
+    {
+        const karte = JSON.parse(fs.readFileSync(path.join(KOORD, "vision", "meisterkarte-2.json"), "utf8"));
+        const L = karte.gruppen.flatMap((x) => x.kriterien).filter((l) => l.sprossen && l.sprossen.length).slice(0, 2);
+        const zA = { station: "zw.A#1", leiter: L[0].id, sprosse: L[0].sprossen[0].nr, richter: "gleich" },
+            zB = { station: "zw.B#1", leiter: L[1].id, sprosse: L[1].sprossen[0].nr, richter: "gleich" };
+        const g = [{ kriterium: "zw.A", staffel: 1 }, { kriterium: "zw.B", staffel: 1 }];
+        const sz = path.join(tmp, "strom-zwilling.ndjson"), U = 1e6, ts = Array.from({ length: 80 }, (_, i) => 10100 + i * 110);
+        fs.writeFileSync(sz, JSON.stringify({ probe: "zw.A#1", zeit: "z", bereit: true, seite: "s1", ursprung: U, heap: 300, verloren: 0, fehler: 0,
+            namen: { wetter: ["klar"], zelle: [] }, zeilen: ts.map((t) => [t, 16, 1, 100, -1, 100, 1000, 0, 0, 1, 0, 0, 0, 1, 0, -1]) }) + "\n");
+        const dir = path.join(tmp, "akten-zwilling");
+        const o = { strom: sz, von: U + 10000, bis: U + 20000, sha: "abcdef1234", geraet: "radeon", stueck: { ab: U + 12000, bis: U + 19000 }, karte, dir };
+        richterAkten(g, [{ gruen: true, zahl: "A" }, { gruen: false, zahl: "B" }], { ...o, tafel: { zeilen: [zA, zB] } });
+        const datei = (z) => path.join(dir, z.leiter + "." + z.sprosse + ".abcdef12-radeon.json");
+        const akteB = fs.existsSync(datei(zB)) ? JSON.parse(fs.readFileSync(datei(zB), "utf8")) : null;
+        const beide = fs.existsSync(datei(zA)) && akteB && akteB.station === "zw.B#1" && akteB.lauf === "zw.A#1" &&
+            akteB.geraete[0].richter.urteil === "ROT" && akteB.geraete[0].preis.bilder > 30;
+        const nurB = { zeilen: [{ ...zA, richter: "fehlt", grund: "x" }, zB] };
+        pruef("RICHTER-AKTE ZWILLINGE zwei Stationen auf einer Probe: beide schreiben ihre Akte mit dem Preis des EINEN Laufs; der Preis-Lauf fährt, wenn nur der zweite eine Sprosse trägt",
+            beide && karte2PreisLauf(g, nurB) && !karte2PreisLauf(g, { zeilen: [] }),
+            JSON.stringify({ A: fs.existsSync(datei(zA)), B: akteB && { station: akteB.station, lauf: akteB.lauf, bilder: akteB.geraete[0].preis.bilder }, preisNurB: karte2PreisLauf(g, nurB) }));
     }
     fs.rmSync(tmp, { recursive: true, force: true });
     const rot = fall.filter((f) => !f.ok);

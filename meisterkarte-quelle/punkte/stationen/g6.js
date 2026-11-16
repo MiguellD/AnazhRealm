@@ -1250,7 +1250,82 @@ const ANKUNFT_KALT = {
 // VIER KALT-BOOTS (Karte 2, same.preis.ankunft S1: „t(Kontrolle) von außen, ≥ 4 Kalt-Boots je Gerät“, Preis ≤ 60 s): viermal die Herkunft
 // leer und die Seite neu (H.lade kalt, derselbe Weg wie ANKUNFT_KALT), je Boot die Kontrolle von außen der Kalt-Zeile wörtlich (LEIB_WEG:
 // die gehaltene Taste W trägt den Leib ≥ KONTROLLE_M, die Uhr ab der Navigation). Kein Schuss, keine Ruhe: die Tiefe der Sprosse ist
-// „Bild erscheint, Welt teilweise“. Ein Boot ohne Kontrolle steht mit tK 0 in der Liste und reißt das Urteil beim Namen
+// „Bild erscheint, Welt teilweise“. Ein Boot ohne Kontrolle steht mit tK 0 in der Liste und reißt das Urteil beim Namen.
+// DER NETZ-MITSCHNITT JE KALT-BOOT (Karte 2 same.preis.bytes S1 „Netz-Mitschnitt des Kalt-Boots an beiden Geräten“, Preis ≤ 50 MB roh):
+// derselbe Zähler wie foundryFadenLog (stationen/g4.js:43-51 — requestWillBeSent + loadingFinished je Ziel, autoAttach auf Worker),
+// hier über den GANZEN Kalt-Boot: ab vor der Navigation bis das Netz nach der Kontrolle ruht (keine offene Anfrage, 2 s nichts
+// Neues, höchstens 10 s). roh = Σ dataReceived.dataLength (entpackt), draht = Σ loadingFinished.encodedDataLength, dazu die Frames
+// jedes WebSocket; je requestId EINMAL über alle Ziele (eine Anfrage, die Seite und Worker beide melden, zählt nie doppelt). bisK = roh
+// bis zur Kontrolle (die Zahl von S 3). Ein Ziel, dessen Network nicht angeht, steht beim Namen in `fehler` — nie still zu wenig
+async function netzMitschnitt(page) {
+    const c = await page.target().createCDPSession();
+    const m = { roh: 0, draht: 0, ws: 0, n: 0, offen: new Set(), fehler: [], zuletzt: Date.now(), bisK: null, ruht: false };
+    const anfragen = new Map(); // requestId → { url, roh, von } — `von` das Ziel, das sie zuerst meldete: nur es zählt ihre Bytes
+    const typen = new Map(); // sessionId → Typ des Ziels (Target.attachedToTarget), wie namen in foundryFadenLog
+    const an = new Map(); // die Ziele, deren Network an ist: Schlüssel → Typ
+    c.on("Target.attachedToTarget", (e) => typen.set(e.sessionId, (e.targetInfo && e.targetInfo.type) || "?"));
+    const haenge = async (s, key) => {
+        s.on("Network.requestWillBeSent", (e) => {
+            const url = (e.request && e.request.url) || "";
+            if (!/^(https?|wss?):/.test(url)) return;
+            if (!anfragen.has(e.requestId)) (m.n += 1), anfragen.set(e.requestId, { url, roh: 0, von: key });
+            m.offen.add(e.requestId);
+            m.zuletzt = Date.now();
+        });
+        s.on("Network.dataReceived", (e) => {
+            const r = anfragen.get(e.requestId);
+            if (!r || r.von !== key) return;
+            const d = Math.max(0, e.dataLength || 0);
+            r.roh += d;
+            m.roh += d;
+            m.zuletzt = Date.now();
+        });
+        s.on("Network.loadingFinished", (e) => {
+            const r = anfragen.get(e.requestId);
+            m.offen.delete(e.requestId);
+            m.zuletzt = Date.now();
+            if (r && r.von === key) m.draht += Math.max(0, e.encodedDataLength || 0);
+        });
+        s.on("Network.loadingFailed", (e) => {
+            m.offen.delete(e.requestId);
+            m.zuletzt = Date.now();
+        });
+        s.on("Network.webSocketFrameReceived", (e) => {
+            const d = String((e.response && e.response.payloadData) || "").length;
+            m.ws += d;
+            m.roh += d;
+            m.zuletzt = Date.now();
+        });
+        try {
+            await s.send("Network.enable");
+            an.set(key, true);
+        } catch (e) {
+            m.fehler.push((typen.get(key) || key) + ": Network.enable " + String(e.message).slice(0, 120));
+        }
+    };
+    c.on("sessionattached", async (s) => {
+        await haenge(s, s.id());
+        await s.send("Runtime.runIfWaitingForDebugger").catch(() => {});
+    });
+    await haenge(c, "seite");
+    await c.send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: true, flatten: true });
+    return {
+        kontrolle: () => (m.bisK = m.roh),
+        // das Netz ruht: nichts offen und 2 s nichts Neues — höchstens `ms`, nie über die Frist der Probe
+        ruhe: async (H, ms = 10000) => {
+            const bis = Date.now() + ms;
+            while (Date.now() < bis && H.rest() > 6 && (m.offen.size || Date.now() - m.zuletzt < 2000)) await H.schlaf(200);
+            m.ruht = !m.offen.size && Date.now() - m.zuletzt >= 2000;
+        },
+        schluss: async () => {
+            await c.detach().catch(() => {});
+            const ziele = [...an.keys()].map((k) => (k === "seite" ? "seite" : typen.get(k) || "?"));
+            const groesste = [...anfragen.values()].sort((a, b) => b.roh - a.roh).slice(0, 5).map((r) => [r.url.replace(/^\w+:\/\/[^/]+/, "").slice(0, 80), r.roh]);
+            return { roh: m.roh, draht: m.draht, ws: m.ws, n: m.n, offen: m.offen.size, ruht: m.ruht, bisK: m.bisK, ziele: ziele.length,
+                worker: ziele.filter((t) => /worker/.test(t)).length, fehler: m.fehler, groesste };
+        },
+    };
+}
 async function probeAnkunftVier(H) {
     const L = H.linse("scripts/diag-boot-stage.cjs", ["LEIB_WEG", "KONTROLLE_M", "KONTROLLE_DRUECKE"]);
     const { page } = await H.verbinde();
@@ -1260,13 +1335,21 @@ async function probeAnkunftVier(H) {
             H.fristRiss("Kalt-Boot " + n + " von 4 ausgelassen");
             break;
         }
+        const netz = await H.seite.netz(page).catch((e) => ({ kaputt: String(e.message).slice(0, 160) }));
         const t0 = await H.lade(page, { kalt: true });
         let [tK, druecke] = [0, 0];
         for (; !tK && druecke++ < L.KONTROLLE_DRUECKE && H.rest() > 4; await page.keyboard.down("KeyW"))
-            if (await page.evaluate(L.LEIB_WEG, L.KONTROLLE_M)) tK = Date.now() - t0;
+            if (await page.evaluate(L.LEIB_WEG, L.KONTROLLE_M)) {
+                tK = Date.now() - t0;
+                if (netz.kontrolle) netz.kontrolle();
+            }
         await page.keyboard.up("KeyW");
-        j.kalt.push({ tK, druecke });
-        H.zeile("Kalt-Boot " + n + ": t(Kontrolle) " + (tK ? (tK / 1000).toFixed(2) + " s" : "—") + " von außen");
+        if (netz.ruhe) await netz.ruhe(H);
+        const nz = netz.schluss ? await netz.schluss() : { fehler: ["kein Mitschnitt: " + netz.kaputt] };
+        j.kalt.push({ tK, druecke, netz: nz });
+        const mb = (b) => (b / 1e6).toFixed(2) + " MB";
+        const nzt = nz.roh == null ? "ohne Mitschnitt" : mb(nz.roh) + " roh, " + mb(nz.draht) + " Draht, " + nz.n + " Anfragen (" + nz.offen + " offen), " + nz.ziele + " Ziele (" + nz.worker + " Worker)" + (nz.ruht ? "" : ", das Netz ruhte nicht");
+        H.zeile("Kalt-Boot " + n + ": t(Kontrolle) " + (tK ? (tK / 1000).toFixed(2) + " s" : "—") + " von außen · Netz " + nzt + (nz.fehler.length ? " · " + nz.fehler.join(" | ") : ""));
     }
     // DIE WELT DER WERKBANK ZURÜCK (15.11., Radeon a996d0ae: nach dem vierten Boot fehlten der Seite die Werkzeuge der Werkbank — der
     // Preis-Lauf danach zählte 212 Bilder des Ladens, die Posten „__buehne is not defined“): die Seite einmal über /reload der Werkbank,
@@ -1276,7 +1359,7 @@ async function probeAnkunftVier(H) {
     H.zeile("die Welt der Werkbank zurück: " + JSON.stringify(j.zurueck));
     return j;
 }
-const ANKUNFT_VIER = { ...probeBefehl(probeAnkunftVier, 120), mutiert: true };
+const ANKUNFT_VIER = { ...probeBefehl(probeAnkunftVier, 120, { netz: netzMitschnitt }), mutiert: true };
 const ANKUNFT_VIER_SOLL_MS = 60000;
 const vierUrteil = (j, lauf) => {
     const { ad, hw } = HW(String(lauf.stdout || ""));
@@ -1285,6 +1368,94 @@ const vierUrteil = (j, lauf) => {
     const z = k.length + " Kalt-Boots, " + ok.length + " mit Kontrolle von außen: " + (k.map((t) => (t > 0 ? (t / 1000).toFixed(2) + " s" : "—")).join(" · ") || "keiner") +
         (ok.length ? " (max " + (Math.max(...ok) / 1000).toFixed(2) + " s, Soll ≤ " + ANKUNFT_VIER_SOLL_MS / 1000 + " s)" : "");
     return { gruen: hw && k.length >= 4 && ok.length === k.length && Math.max(...ok) <= ANKUNFT_VIER_SOLL_MS, zahl: z + " · " + ad };
+};
+// DER FALL AUS 10 m (Karte 2 same.massstab.physik S1 „Fallzeit aus 10 m gegen √(2h/g) ±5 %; Bremsweg gegen μ ±10 %“): in der Seite der
+// Sitzung (r = Welt) die Füße des Spielers 10 m über seinen Grund (`_koerperGrund`, der Grund des Kapsel-Schritts), die Vertikale 0,
+// dann der Sim-Schritt des Spiels selbst (`_stepFixedSim` — derselbe, den `_loopFixedStep` je FIXED_DT ruft: Planung, Kapsel-Schritt
+// mit `leibFall`, Kontakt) bis die Füße den Grund tragen. Die Werkbank ruht den Loop (Lehre 17): kein fremder Schritt dazwischen.
+// Danach steht der Spieler, wo er stand. DER BREMSWEG (Wagen auf 50 km/h, s gegen v²/(2μg) mit μ der Stoff-Zeile) ist hier NICHT
+// gebaut: das Urteil verlangt ihn und bleibt ohne ihn ROT beim Namen — nie GRÜN auf der halben Sprosse
+function physikFall(r) {
+    const s = r.state, m = s && s.playerMesh, A = AnazhRealm;
+    if (!m || !s.playerVel || typeof r._stepFixedSim !== "function" || typeof r._koerperGrund !== "function") return { fehler: "ohne Spieler, Sim-Schritt oder _koerperGrund" };
+    const dt = A.FIXED_DT, fuss = A.PLAYER_FOOT_OFFSET, vor = m.position.clone();
+    const grund = r._koerperGrund(vor.x, vor.y - fuss + 2, vor.z, 6);
+    if (!Number.isFinite(grund)) return { fehler: "kein Grund unter dem Spieler binnen 6 m" };
+    const nullV = () => (typeof s.playerVel.setValue === "function" ? s.playerVel.setValue(0, 0, 0) : null, (s._fieldVy = 0));
+    let t = Number.isFinite(s._fixedSimTime) ? s._fixedSimTime : 0, n = 0, land = null, tief = Infinity;
+    const bahn = [];
+    try {
+        m.position.y = grund + 10 + fuss;
+        nullV();
+        while (n < 600) {
+            r._stepFixedSim(t, dt);
+            t += dt;
+            n++;
+            const h = m.position.y - fuss - grund;
+            tief = Math.min(tief, h);
+            if (n % 6 === 0) bahn.push(+h.toFixed(3));
+            if (h <= 0.02) {
+                land = +(n * dt).toFixed(4);
+                break;
+            }
+        }
+    } finally {
+        s._fixedSimTime = t;
+        m.position.copy(vor);
+        nullV();
+    }
+    const g = A.WELT_GESETZ_ERDE && Number.isFinite(A.WELT_GESETZ_ERDE.schwere) ? Math.abs(A.WELT_GESETZ_ERDE.schwere) : null;
+    return { h: 10, grund: +grund.toFixed(3), dt, schritte: n, tLand: land, tief: +tief.toFixed(3), bahn, gSpiel: Math.abs(s.gravity), gGesetz: g };
+}
+async function probePhysikMassstab(H) {
+    const j = (H.teil = {});
+    j.fall = await H.evalWelt("return (" + H.seite.fall + ")(r);", Math.max(10, H.rest() - 2) * 1000).catch((e) => ({ fehler: String(e.message).slice(0, 200) }));
+    H.zeile("Fall aus 10 m: " + JSON.stringify(j.fall));
+    j.bremsweg = null; // der Bremsweg ist in dieser Probe nicht gebaut (oben)
+    return j;
+}
+const PHYSIK_PROBE = probeBefehl(probePhysikMassstab, 45, { fall: physikFall });
+const PHYSIK_G = 9.81;
+const physikUrteil = (j, lauf) => {
+    const { ad, hw } = HW(String(lauf.stdout || ""));
+    const f = j && j.fall;
+    if (!f || f.fehler || !(f.tLand > 0)) return { gruen: false, zahl: "kein Fall aus 10 m gemessen" + (f && f.fehler ? ": " + f.fehler : f ? " (der Grund kam binnen " + f.schritte + " Schritten nicht, tiefste Höhe " + f.tief + " m)" : "") + " · " + ad };
+    const soll = Math.sqrt((2 * f.h) / PHYSIK_G), ab = f.tLand / soll - 1;
+    const fallOk = Math.abs(ab) <= 0.05;
+    const b = j.bremsweg;
+    const bremsOk = !!b && Number.isFinite(b.s) && Number.isFinite(b.soll) && b.soll > 0 && Math.abs(b.s / b.soll - 1) <= 0.1;
+    const z = "Fall aus 10 m " + f.tLand.toFixed(3) + " s gegen √(2h/g) " + soll.toFixed(3) + " s (" + (ab >= 0 ? "+" : "") + (100 * ab).toFixed(1) + " %, Soll ±5 %), " + f.schritte + " Sim-Schritte zu " +
+        (1000 * f.dt).toFixed(1) + " ms, Schwere des Spiels " + f.gSpiel + " m/s²" + (f.gGesetz ? " (Welt-Gesetz " + f.gGesetz + ")" : "") +
+        " · Bremsweg " + (b ? b.s.toFixed(2) + " m gegen v²/(2μg) " + b.soll.toFixed(2) + " m (Soll ±10 %)" : "UNGEMESSEN — die Probe misst ihn noch nicht (die halbe Sprosse ist ROT)");
+    return { gruen: hw && fallOk && bremsOk, zahl: z + " · " + ad };
+};
+// DIE BYTES DES KALT-BOOTS (karte2.same.preis.bytes#1): je Boot der Netz-Mitschnitt aus ANKUNFT_VIER — Soll ≤ 50 MB roh (10⁶ B) je Boot
+const BYTES_SOLL = 50e6;
+const bytesUrteil = (j, lauf) => {
+    const { ad, hw } = HW(String(lauf.stdout || ""));
+    const k = j && Array.isArray(j.kalt) ? j.kalt : [];
+    const mb = (b) => (b / 1e6).toFixed(2) + " MB";
+    const blind = k
+        .map((x, i) => {
+            const nz = x.netz,
+                wer = "Boot " + (i + 1) + ": ";
+            if (!(x.tK > 0)) return wer + "ohne Kontrolle (der Kalt-Boot kam nicht an)";
+            if (!nz || !Number.isFinite(nz.roh)) return wer + "ohne Netz-Mitschnitt" + (nz && nz.fehler && nz.fehler.length ? " (" + nz.fehler[0] + ")" : "");
+            if ((nz.fehler || []).length) return wer + "ein Ziel ohne Network (" + nz.fehler[0] + ")";
+            if (!(nz.n > 0)) return wer + "0 Anfragen im Mitschnitt (blind)";
+            if (!(nz.worker > 0)) return wer + "kein Worker-Ziel im Mitschnitt (der Foundry-Faden ungezählt)";
+            if (nz.offen > 0) return wer + nz.offen + " Anfragen offen am Ende (ihre Bytes ungezählt)";
+            return null;
+        })
+        .filter(Boolean);
+    const roh = k.map((x) => (x.netz && Number.isFinite(x.netz.roh) ? x.netz.roh : NaN));
+    const max = roh.filter(Number.isFinite).reduce((m, x) => Math.max(m, x), 0);
+    const g = k.length ? k[roh.indexOf(max)] : null;
+    const z = k.length + " Kalt-Boots, roh je Boot " + (roh.map((b) => (Number.isFinite(b) ? mb(b) : "—")).join(" · ") || "keiner") + " (max " + mb(max) + ", Soll ≤ " + mb(BYTES_SOLL) + ")" +
+        (g && g.netz && Number.isFinite(g.netz.draht) ? ", am größten " + mb(g.netz.draht) + " Draht, " + g.netz.n + " Anfragen, bis zur Kontrolle " + (g.netz.bisK == null ? "—" : mb(g.netz.bisK)) +
+            ", " + g.netz.ziele + " Ziele (" + g.netz.worker + " Worker)" + ((g.netz.groesste || []).length ? ", am schwersten " + g.netz.groesste.slice(0, 2).map(([u, b]) => u + " " + mb(b)).join(" | ") : "") : "") +
+        (blind.length ? " — " + blind.join(" · ") : "");
+    return { gruen: hw && k.length >= 1 && !blind.length && max > 0 && max <= BYTES_SOLL, zahl: z + " · " + ad };
 };
 // die Spur des Kalt-Boots aus der Ausgabe EINES Laufs: j.spur, sonst die Zeile „SPUR kalt {…}“
 const spurVon = (j, lauf) => (j && j.spur) || jsonZeile(lauf.stdout, /^SPUR kalt \{/);
@@ -3089,6 +3260,75 @@ module.exports = [
         })(),
         pfad: [...ANKUNFT_PFAD, "save-server.js"],
         quelle: "KARTE2 same.preis.ankunft S1 = t(Kontrolle) von außen, ≥ 4 Kalt-Boots je Gerät",
+    },
+    // KARTE 2 same.preis.bytes S1 (Umfang „eine Welt“, Tiefe „Gesetz statt Assets“, Preis „≤ 50 MB roh über das Netz, kein Installer“):
+    // derselbe Lauf wie same.preis.ankunft#1 (ANKUNFT_VIER, kein zweiter Boot) — je Kalt-Boot der Netz-Mitschnitt (netzMitschnitt) über
+    // Seite und Worker; jeder Boot mit Kontrolle, ganz mitgeschnitten (Network an jedem Ziel, mindestens ein Worker, nichts offen am
+    // Ende) und ≤ 50 MB roh. Ein Boot ohne Mitschnitt oder ohne Worker-Ziel ist ROT beim Namen — nie eine zu kleine Zahl als GRÜN
+    {
+        kriterium: "karte2.same.preis.bytes",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: ANKUNFT_VIER,
+        gpu: true,
+        zeit: false,
+        minuten: 2,
+        urteil: bytesUrteil,
+        proben: (() => {
+            const ad = "[linse-gpu] amd/rdna-3 (Probe)";
+            const netz = (roh, o = {}) => ({ roh, draht: roh, ws: 0, n: 120, offen: 0, ruht: true, bisK: roh, ziele: 3, worker: 2, fehler: [], groesste: [], ...o });
+            const j = (...nz) => ({ kalt: nz.map((netz, i) => ({ tK: 8000 + 100 * i, druecke: 3, netz })) });
+            const vier = (o) => j(netz(15.2e6), netz(15.2e6), netz(15.3e6), o || netz(15.2e6));
+            return [
+                { name: "vier Boots je 15,2 MB roh, Seite und zwei Worker", j: vier(), stdout: ad, gruen: true },
+                { name: "ein Boot 50,1 MB roh", j: vier(netz(50.1e6)), stdout: ad, gruen: false },
+                { name: "ein Boot ohne Mitschnitt", j: vier({ fehler: ["kein Mitschnitt: Target closed"] }), stdout: ad, gruen: false },
+                { name: "kein Worker-Ziel (der Foundry-Faden ungezählt)", j: vier(netz(15.2e6, { ziele: 1, worker: 0 })), stdout: ad, gruen: false },
+                { name: "eine Anfrage offen am Ende (ungezählte Bytes)", j: vier(netz(15.2e6, { offen: 1 })), stdout: ad, gruen: false },
+                { name: "Network an einem Ziel nicht an", j: vier(netz(15.2e6, { fehler: ["worker: Network.enable Target closed"] })), stdout: ad, gruen: false },
+                { name: "0 Anfragen (blind)", j: vier(netz(0, { n: 0 })), stdout: ad, gruen: false },
+                { name: "ein Boot ohne Kontrolle", j: { kalt: vier().kalt.map((x, i) => (i === 1 ? { ...x, tK: 0 } : x)) }, stdout: ad, gruen: false },
+                { name: "kein Boot (die Probe brach)", j: { kalt: [] }, stdout: ad, gruen: false },
+                { name: "swiftshader", j: vier(), stdout: "[linse-gpu] google/swiftshader", gruen: false },
+            ];
+        })(),
+        pfad: [...ANKUNFT_PFAD, "save-server.js", "vendor/", "worlds/*/lib/"],
+        quelle: "KARTE2 same.preis.bytes S1 = Netz-Mitschnitt des Kalt-Boots an beiden Geräten",
+    },
+    // KARTE 2 same.massstab.physik S1 (Umfang „0,5–5 m: Mensch, Wagen, Kiste“, Tiefe „Fall, Stoß, Fahrt plausibel“): der Fall des Spielers
+    // aus 10 m im Sim-Schritt des Spiels (physikFall) gegen √(2h/g) ±5 % UND der Bremsweg gegen v²/(2μg) ±10 % — der Bremsweg fehlt der
+    // Probe noch, die Station bleibt bis dahin ROT beim Namen (halb gebaut: der Fall)
+    {
+        kriterium: "karte2.same.massstab.physik",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: PHYSIK_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 1,
+        urteil: physikUrteil,
+        proben: (() => {
+            const ad = "[linse-gpu] nvidia/pascal (Probe)";
+            const fall = (tLand, o = {}) => ({ h: 10, grund: 41.2, dt: 1 / 60, schritte: Math.round(tLand * 60), tLand, tief: 0, bahn: [], gSpiel: 9.81, gGesetz: 9.81, ...o });
+            const brems = (s, soll) => ({ s, soll, v: 13.89, mu: 0.7 });
+            return [
+                { name: "Fall 1,433 s, Bremsweg 14,3 gegen 14,05 m", j: { fall: fall(1.4333), bremsweg: brems(14.3, 14.05) }, stdout: ad, gruen: true },
+                { name: "Fall 1,433 s, Bremsweg ungemessen (die Probe heute)", j: { fall: fall(1.4333), bremsweg: null }, stdout: ad, gruen: false },
+                { name: "Fall 1,52 s (+6,4 %)", j: { fall: fall(1.52), bremsweg: brems(14.3, 14.05) }, stdout: ad, gruen: false },
+                { name: "Fall 1,35 s (−5,5 %)", j: { fall: fall(1.35), bremsweg: brems(14.3, 14.05) }, stdout: ad, gruen: false },
+                { name: "Bremsweg +11 %", j: { fall: fall(1.4333), bremsweg: brems(15.6, 14.05) }, stdout: ad, gruen: false },
+                { name: "Bremsweg −11 %", j: { fall: fall(1.4333), bremsweg: brems(12.5, 14.05) }, stdout: ad, gruen: false },
+                { name: "kein Grund erreicht", j: { fall: fall(0, { tLand: null, schritte: 600, tief: 3.1 }), bremsweg: brems(14.3, 14.05) }, stdout: ad, gruen: false },
+                { name: "die Seite warf", j: { fall: { fehler: "ohne Spieler, Sim-Schritt oder _koerperGrund" }, bremsweg: null }, stdout: ad, gruen: false },
+                { name: "swiftshader", j: { fall: fall(1.4333), bremsweg: brems(14.3, 14.05) }, stdout: "[linse-gpu] google/swiftshader", gruen: false },
+            ];
+        })(),
+        pfad: ["stamm/dirigent-takt.js", "stamm/koerper-bewegung.js", "stamm/kreatur-leben.js", "koerper-core.js"],
+        quelle: "KARTE2 same.massstab.physik S1 = Fallzeit aus 10 m gegen √(2h/g) ±5 %; Bremsweg gegen μ ±10 %",
     },
     // ankunft.K5: die Spur des Kalt-Boots bis zur Kontrolle (`probeAnkunftKalt`): belegt = jede Stichprobe des Haupt-Fadens außer
     // Leerlauf (die Linse `ankunftsHalter`, Aufgaben unter 50 ms zählen mit), die längste LongTask vor der Kontrolle. Eine blinde Spur

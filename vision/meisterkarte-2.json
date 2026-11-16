@@ -2018,6 +2018,7 @@
        "umfang": "~2 800 Punkte der Saat",
        "tiefe": "Größenklasse −4,2…+6, Farbe, Grenzgröße mit der Dämmerung",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Zahl sichtbarer Sterne je Sonnenhöhe folgt der Grenzgrößen-Tafel"
       },
       {
@@ -6092,6 +6093,7 @@
        "umfang": "10¹ im Bild",
        "tiefe": "die Gehenden gehen",
        "preis": "P · Dorfplatz 8 Uhr",
+       "klasse": "Ort",
        "richter": "≥ 10 Menschen, ≥ 3 gehend"
       },
       {
@@ -14286,6 +14288,7 @@
        "umfang": "eine Welt",
        "tiefe": "Gesetz statt Assets",
        "preis": "≤ 50 MB roh über das Netz, kein Installer",
+       "klasse": "Ort",
        "richter": "Netz-Mitschnitt des Kalt-Boots an beiden Geräten"
       },
       {
@@ -14847,6 +14850,7 @@
        "umfang": "Licht und Himmel",
        "tiefe": "dieselbe Front dimmt Sonne, färbt Himmel",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Bildpaar klar/Sturm an derselben Pose: Richtlicht gedimmt, Himmel grau"
       },
       {
@@ -16192,6 +16196,7 @@
        "umfang": "2 Glieder, eine Zelle",
        "tiefe": "Regen löscht Brand",
        "preis": "P im Ereignis-Fenster",
+       "klasse": "Ort",
        "richter": "Bildpaar: Brand erlischt im Regen, hält im Trockenen, beide Geräte"
       },
       {
@@ -16378,6 +16383,7 @@
        "umfang": "1 Domäne, Stunden",
        "tiefe": "Brand schwärzt die Zelle",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Bildpaar Zelle vor / nach dem Brand, beide Geräte"
       },
       {
@@ -16443,6 +16449,7 @@
        "umfang": "eine 16-m-Zelle, 0 Menschen",
        "tiefe": "Glut, Lava erstarrt zu Stein",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Bild der Zelle in Glut und erstarrt, beide Geräte"
       },
       {
