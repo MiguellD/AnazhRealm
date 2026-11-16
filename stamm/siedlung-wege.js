@@ -54,11 +54,12 @@ class AnazhRealm_siedlung_wege {
         const N = raster(W.stufen.map((S) => S.texelM));
         const kN = raster(AnazhRealm.LAUB_STREU.texelM);
         const wege = karte(N, 2, THREE.RGFormat, "wege-karte", W.null);
-        // DIE DECKE DES BODENS (stoffe.K2#2): die Kronen-Karte trägt zwei Kanäle derselben Fläche — R die Laubstreu unter den Kronen,
-        // G die Asche des Brands (`_ascheMalen`); EIN Sampler, EIN Abgriff je Stufe im Boden-Stoff. Hinter den Stufen trägt sie
-        // eine Schicht im selben Raster: DIE NEIGUNG DES GESETZES für den Fern-Ring (`_fernNeigungTakt`, R/G die Normale x/z) —
-        // der Ring-Stoff trägt 16 von 16 Texturen, eine eigene Karte bände er nie (WebGPU 16 je Stufe, WebGL2 16 Einheiten).
-        const streu = karte(kN, 2, THREE.RGFormat, "kronen-streu", 0, W.stufen.length + 1);
+        // DIE DECKE DES BODENS (stoffe.K2#2, stoffe.K3-2): die Kronen-Karte trägt vier Kanäle derselben Fläche — R die Laubstreu
+        // unter den Kronen, G die Asche des Brands (`_ascheMalen`), B die Decke der Lava und A ihre Glut (`_lavaMalen`); EIN
+        // Sampler, EIN Abgriff je Stufe im Boden-Stoff. Hinter den Stufen trägt sie eine Schicht im selben Raster: DIE NEIGUNG DES
+        // GESETZES für den Fern-Ring (`_fernNeigungTakt`, R/G die Normale x/z) — der Ring-Stoff trägt 16 von 16 Texturen, eine
+        // eigene Karte bände er nie (WebGPU 16 je Stufe, WebGL2 16 Einheiten): darum trägt die Lava ihre Kanäle HIER (B/A).
+        const streu = karte(kN, 4, THREE.RGBAFormat, "kronen-streu", 0, W.stufen.length + 1);
         const fluesse = karte(N, 1, THREE.RedFormat, "fluss-karte");
         const stufen = W.stufen.map((S, si) => {
             const daten = wege.schicht(si);
@@ -66,11 +67,14 @@ class AnazhRealm_siedlung_wege {
             // DIE KRONEN-STREU dieser Stufe: dasselbe Fenster, dieselbe Mitte (also dasselbe UV), eigenes Raster.
             // `summe` ist die Wahrheit (die ungekappte Summe aller Kronen-Beiträge je Texel — eine Krone fällt exakt
             // heraus), `daten` ihr gekapptes Abbild für die Karte, nachgezogen im Schmutz-Rechteck beim Upload.
-            // `asche` ist die Wahrheit des Kanals G (die Asche je Texel, 0…255, gemalt aus den Taten `brand`).
+            // `asche` ist die Wahrheit des Kanals G (die Asche je Texel, 0…255, gemalt aus den Taten `brand`), `lava` und `glut`
+            // die der Kanäle B und A (die Decke der Lava und ihre Glut je Texel, gemalt aus den Taten `lava`).
             const kronen = {
                 N: kN,
                 summe: new Uint16Array(kN * kN),
                 asche: new Uint8Array(kN * kN),
+                lava: new Uint8Array(kN * kN),
+                glut: new Uint8Array(kN * kN),
                 daten: streu.schicht(si),
                 tex: streu.tex,
                 schmutz: null,
@@ -405,6 +409,7 @@ class AnazhRealm_siedlung_wege {
             }
         }
         this._ascheStufeMalen(stufe); // die Asche des Fensters neu (die Aschen der Taten, nie die Welt)
+        this._lavaStufeMalen(stufe); // die Lava des Fensters neu (die Laven der Taten)
         kr.schmutz = [0, N - 1, 0, N - 1]; // das ganze Abbild zog um
         kr.upload = -Infinity; // nach dem Umzug sofort hochladen
     }
@@ -414,12 +419,12 @@ class AnazhRealm_siedlung_wege {
     // (0 offen, 0,6 unter einer Krone, 1 wo Kronen sich schließen) — Boden, Nah-Wiese und Klang lesen sie, nie das
     // Kronenlicht-Feld der Platzierung (`_canopyLightAt` sagt, wo Bäume wachsen DÜRFEN, nicht wo sie stehen).
     _kronenStreuAt(x, z) {
-        return this._bodenDeckeAt(x, z, false);
+        return this._bodenDeckeAt(x, z, "summe");
     }
 
     // Der EINE Leser der Kronen-Karte: die Stufe wie `_wegeFeldAt`, bilinear über R (die Laubstreu aus der Summe, gekappt wie
-    // die Karte) oder G (die Asche).
-    _bodenDeckeAt(x, z, asche) {
+    // die Karte, `kanal` "summe"), G (die Asche, "asche") oder B (die Decke der Lava, "lava").
+    _bodenDeckeAt(x, z, kanal) {
         const wk = this.state.wegeKarte;
         if (!wk) return 0;
         const [nah, fern] = wk.stufen;
@@ -438,8 +443,10 @@ class AnazhRealm_siedlung_wege {
         if (i < 0 || j < 0 || i >= N - 1 || j >= N - 1) return 0;
         const tx = fx - i;
         const tz = fz - j;
-        // aus der Summe, gekappt wie die Karte (die `daten` ziehen erst beim gebündelten Upload nach), oder aus der Asche
-        const at = asche ? (a, b) => kr.asche[b * N + a] / 255 : (a, b) => Math.min(255, kr.summe[b * N + a]) / 255;
+        // aus der Summe, gekappt wie die Karte (die `daten` ziehen erst beim gebündelten Upload nach), oder aus der Asche, der Lava
+        const A = kr[kanal];
+        if (!A) throw new Error("_bodenDeckeAt: die Kronen-Karte trägt keinen Kanal „" + kanal + "“");
+        const at = kanal === "summe" ? (a, b) => Math.min(255, A[b * N + a]) / 255 : (a, b) => A[b * N + a] / 255;
         return (
             (at(i, j) * (1 - tx) + at(i + 1, j) * tx) * (1 - tz) +
             (at(i, j + 1) * (1 - tx) + at(i + 1, j + 1) * tx) * tz
@@ -608,6 +615,7 @@ class AnazhRealm_siedlung_wege {
             this._trittTag = tag;
             this._trittErholen();
         }
+        this._lavaTakt(jetzt); // die Glut der Lava im Boden folgt der Welt-Zeit (`_lavaTakt`)
         const hydroN = this._flussKarteStand();
         for (const stufe of wk.stufen) {
             const S = stufe.S;
@@ -637,8 +645,8 @@ class AnazhRealm_siedlung_wege {
                 [stufe.trittHoch, stufe.trittUpload] = [false, jetzt];
             }
             if (stufe.fluss.hydroN !== hydroN) this._flussKarteMalen(stufe, hydroN);
-            // Neu gemalte Kronen und Aschen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`): das Abbild
-            // zieht nur im Schmutz-Rechteck aus der Summe (R, gekappt bei 255) und der Asche (G) nach.
+            // Neu gemalte Kronen, Aschen und Laven gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`): das Abbild
+            // zieht nur im Schmutz-Rechteck aus der Summe (R, gekappt bei 255), der Asche (G) und der Lava (B Decke, A Glut) nach.
             const kr = stufe.kronen;
             if (kr.schmutz && jetzt - kr.upload >= AnazhRealm.LAUB_STREU.uploadMs) {
                 const [i0, i1, j0, j1] = kr.schmutz;
@@ -646,8 +654,10 @@ class AnazhRealm_siedlung_wege {
                 for (let j = j0; j <= j1; j++)
                     for (let k = j * N + i0, e = j * N + i1; k <= e; k++) {
                         const v = kr.summe[k];
-                        kr.daten[2 * k] = v > 255 ? 255 : v;
-                        kr.daten[2 * k + 1] = kr.asche[k];
+                        kr.daten[4 * k] = v > 255 ? 255 : v;
+                        kr.daten[4 * k + 1] = kr.asche[k];
+                        kr.daten[4 * k + 2] = kr.lava[k];
+                        kr.daten[4 * k + 3] = kr.glut[k];
                     }
                 this._wegeSchichtHoch(kr.tex, stufe.schicht);
                 kr.schmutz = null;
@@ -926,8 +936,17 @@ class AnazhRealm_siedlung_wege {
         // Deckung, die Kante als Kipp der Normale, das Korn seiner Zeile), er hält unter ihm den Stein (`_buildPbrNodeMaterial`)
         const stein = {};
         const pflaster = this._kopfsteinFarbe(_T, xz, stein);
-        if (aus) aus.stein = { farbe: pflaster, deckung: _pflaster, kipp: stein.kipp, korn: stein.korn };
-        return _T.mix(mitAcker, pflaster, _pflaster);
+        // DIE LAVA (stoffe.K3-2, `_lavaFlaeche`): ihre Decke (B) liegt über jedem Grund, auch über Weg und Pflaster — glühend und
+        // erstarrt der Basalt der Boden-Palette; ihre Temperatur (A) leuchtet darauf (`_lavaGlutNode`), der Boden-Stoff trägt es
+        // als sein Leuchten (`aus.glut`). Nur auf Begehbarem (die Decke fließt vom Hang, sie haftet nicht an der Wand).
+        const _lava = _T.mix(dFern.b, dNah.b, innen).mul(_begehbar).mul(imFenster);
+        const b = P.basalt;
+        if (aus) {
+            const ohneLava = _T.float(1).sub(_lava);
+            aus.stein = { farbe: pflaster, deckung: _pflaster.mul(ohneLava), kipp: stein.kipp, korn: stein.korn };
+            aus.glut = this._lavaGlutNode(_T, _T.mix(dFern.a, dNah.a, innen)).mul(_lava);
+        }
+        return _T.mix(_T.mix(mitAcker, pflaster, _pflaster), _T.vec3(b[0], b[1], b[2]), _lava);
     }
 
     // DAS KOPFSTEIN (porta STEIN_GESETZ.kopfstein, der Belag `pflaster` der Wege-Karte): Granit-Kleinpflaster im Segmentbogen als
@@ -1833,6 +1852,8 @@ class AnazhRealm_siedlung_wege {
                 this._wegeSchichtHoch(stufe.tex, stufe.schicht);
                 stufe.kronen.summe.fill(0);
                 stufe.kronen.asche.fill(0);
+                stufe.kronen.lava.fill(0);
+                stufe.kronen.glut.fill(0);
                 stufe.kronen.daten.fill(0);
                 stufe.kronen.schmutz = null;
                 this._wegeSchichtHoch(stufe.kronen.tex, stufe.schicht);

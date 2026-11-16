@@ -937,6 +937,8 @@ class AnazhRealm_stoff_material {
                                 _alb = _alb.mul(_Ta.float(1.0).sub(_nass));
                                 mat.emissiveNode = this._fernWasserBlickNode(_Ta).mul(_nass);
                             }
+                            // DIE GLUT DER LAVA (stoffe.K3-2, `_lavaGlutNode`): wo ihre Decke liegt, leuchtet der Boden
+                            if (_weg.glut) mat.emissiveNode = mat.emissiveNode ? mat.emissiveNode.add(_weg.glut) : _weg.glut;
                             albedoNode = _alb;
                             mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;

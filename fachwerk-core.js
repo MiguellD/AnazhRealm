@@ -11744,6 +11744,8 @@
         ZEIT_VIS: ZEIT_VIS,
         // K11 — das Leuchtquellen-Gesetz (Labor und Welt lesen dasselbe Datum)
         LICHT_GESETZ: LICHT_GESETZ,
+        // das Leucht-Gesetz der Glut (Leuchtdichte = lineare Farbe × LEUCHT_FEUER): die Welt webt es in jede Glut ihres Bodens (die Lava)
+        LEUCHT_FEUER: LEUCHT_FEUER,
         BOGEN_GESETZ: BOGEN_GESETZ,
         vorplatzFlaeche: vorplatzFlaeche,
         vorplatzBoden: vorplatzBoden,

@@ -765,12 +765,13 @@ class AnazhRealm_vegetation_wiese {
     // DER GRUND DER WIESE an (x, z) über dem gezeichneten Boden y mit seinem Grün `gruen` (`_bodenSichtAt` … `gruen`: die
     // Wiesen-Wache der Boden-Karte, das Pflaster deckt): das Gewicht ∈ [0, 1], mit dem die Nähe dort Wiese trägt — der Pfad
     // dünnt (`_pfadFeldAt` × `pfadDuennt`: getretene Erde, Gasse, Weg und Pflaster der Wege-Karte, der Ufer-Pfad), die Asche
-    // eines Brands trägt keinen Halm, bis sie nachgrünt (`_ascheAt`, stoffe.K2#2), im Wasser steht nie einer (`_nassAt`, das EINE
-    // Urteil wie die Nah-Streu). Der Wurf der Nähe liest es (× das Gesetz der Bodenschicht); die Ferne zeichnet dieselben
-    // Büschel — dieselben Masken.
+    // eines Brands trägt keinen Halm, bis sie nachgrünt (`_ascheAt`, stoffe.K2#2), die Decke der Lava nie (`_lavaDeckeAt`,
+    // stoffe.K3-2: glühend und erstarrt Stein), im Wasser steht nie einer (`_nassAt`, das EINE Urteil wie die Nah-Streu). Der
+    // Wurf der Nähe liest es (× das Gesetz der Bodenschicht); die Ferne zeichnet dieselben Büschel — dieselben Masken.
     _wieseGrund(x, z, y, gruen) {
         if (!(gruen > 0) || this._nassAt(x, z, 0.1, y)) return 0;
-        return gruen * (1 - this._pfadFeldAt(x, z, y) * AnazhRealm.NAH_WIESE.pfadDuennt) * (1 - this._ascheAt(x, z));
+        const pfad = 1 - this._pfadFeldAt(x, z, y) * AnazhRealm.NAH_WIESE.pfadDuennt;
+        return gruen * pfad * (1 - this._ascheAt(x, z)) * (1 - this._lavaDeckeAt(x, z));
     }
 
     // DIE KACHEL DER FERNE BEGINNT ERST, WENN DA IST, WAS SIE LIEST (w25-ankunft-block-2, die Klasse „ein Bau fällt auf null“): die
