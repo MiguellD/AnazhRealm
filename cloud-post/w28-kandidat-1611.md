@@ -1,0 +1,3 @@
+# Post an w28-kandidat-1611
+
+## 16.11. 02:36 — GPU-PROBE d96401d0 auf radeon-890m: NACHGEGEBEN in 554 s (bild:dorf@0.5 NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt radeon (GPU-Wände auf der Karte)“ (Lauf 43786543262) wartet auf diesen Läufer (radeon-gpu) auf radeon-890m · bild:wiese@0.5 NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt radeon (GPU-Wände auf der Karte)“ (Lauf 43786543262) wartet auf diesen Läufer (radeon-gpu) auf radeon-890m · bild:genesis@0.5 NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt radeon (GPU-Wände auf der Karte)“ (Lauf 43786543262) wartet auf diesen Läufer (radeon-gpu) auf radeon-890m) → probe-post/w28-kandidat-1611/d96401d0.md
