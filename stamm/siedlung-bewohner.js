@@ -2274,8 +2274,8 @@ class AnazhRealm_siedlung_bewohner {
         // Feldarbeiter #809070 und der Hofmann #724672 auf dem Umweg um #809070, Berührung vor dem ersten Schritt). Wer neben
         // einem steht, der schon draußen ist (`_bewohnerNaechster`, das Raster des Takts samt der Ankommenden), tritt beiseite
         // wie der Stehende im Gedränge (`_bewohnerBeiseite`: der kleinste freie Schritt, zuerst fort von dem, der da steht,
-        // genau bis zwei Kapseln — so weit, wie ihn der Zuschauer daneben gesehen hätte); sein Weg nimmt ihn zurück auf seine
-        // Linie (`_bewohnerLinie`).
+        // genau bis zwei Kapseln — der Abstand, den auch das Gedränge im Takt hält); sein Weg nimmt ihn zurück auf seine Linie
+        // (`_bewohnerLinie`).
         const K = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01;
         const g0 = { x: g.position.x, z: g.position.z };
         const nb = { x: g0.x, z: g0.z }; // der Nächste, der schon steht
