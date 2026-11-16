@@ -1034,14 +1034,17 @@ class AnazhRealm_speicher_laden {
                 }
             }
         }
+        // die Fähigkeiten durch ihr Gesetz (`_faehigkeitGrund`): was es nicht trägt, fällt und spricht (`_ladeWeist`) — bis hierher
+        // lag jede in der Liste, und eine unbekannte Tat stand bei jedem Ruf als unknown_op im Log
         if (Array.isArray(state.dslAbilities)) {
-            this.state.dsl.abilities = state.dslAbilities;
-            for (const a of state.dslAbilities) {
-                if (a && typeof a.name === "string" && Array.isArray(a.program)) {
-                    this.state.abilities[a.name] = () => this.dslRun(a.program, { source: `ability:${a.name}` });
-                }
-            }
-            this.log(`DSL-Abilities geladen: ${state.dslAbilities.length}`);
+            this.state.dsl.abilities = state.dslAbilities.filter((a) => {
+                const gilt = !!a && !this._faehigkeitGrund(a.name, a.program);
+                if (!gilt) this._ladeWeist("speicher.weist.programm");
+                return gilt;
+            });
+            for (const a of this.state.dsl.abilities)
+                this.state.abilities[a.name] = () => this.dslRun(a.program, { source: `ability:${a.name}` });
+            this.log(`DSL-Abilities geladen: ${this.state.dsl.abilities.length}`);
         }
         if (Array.isArray(state.dslHistory)) {
             this.state.dsl.history = state.dslHistory.slice(-this.state.dsl.historyCap);
@@ -1209,9 +1212,9 @@ class AnazhRealm_speicher_laden {
     //   Last       tiefer als `WELT_EINLASS.tiefe`, mehr als `.knoten` Glieder, ein Text länger als `.zeichen`
     //   Zukunft    eine Boden-Generation, Herkunft oder Genese-Version, die dieser Build nicht kennt (die Versions-Lüge)
     //   Gesetz     ein Gesetz, das kein Build trägt (`_weltGesetz`, am Abzug: die Datei bleibt, wie sie kam)
-    //   Taten      die Skript-Träger der Welt: eine Welt-Regel oder gewährte Fähigkeit, die ihre Wand im Laden nicht trägt
-    //              (`_isRuleEffectAllowed`, `NON_BROADCASTABLE_OPS` — dieselben Prädikate wie der Restore der Welt-Regeln und
-    //              der Fähigkeiten-Restore; dort fiele sie still, hier fällt die Welt laut)
+    //   Taten      die Skript-Träger der Welt: eine Welt-Regel, gewährte Fähigkeit oder ein Fähigkeiten-Programm, das seine Wand
+    //              im Laden nicht trägt (`_isRuleEffectAllowed`, `NON_BROADCASTABLE_OPS`, `_faehigkeitGrund` — dieselben
+    //              Prädikate wie ihre Restores; dort fällt der Eintrag und die Lade-Wand spricht, hier fällt die Welt laut)
     // Eine ehrliche Welt jeder Version (ein Feld, das dieser Build nicht kennt, ist kein Gift) geht unberührt durch. → Grund | null
     _weltEinlass(snapshot) {
         const E = AnazhRealm.WELT_EINLASS;
@@ -1289,6 +1292,14 @@ class AnazhRealm_speicher_laden {
             const dsl = c && c.dsl;
             if (!this._isRuleEffectAllowed(dsl) || this._dslContainsAnyOp(dsl, AnazhRealm.NON_BROADCASTABLE_OPS))
                 return `die Fähigkeit „${name}“ trägt eine Tat, die keine Welt weitergibt`;
+        }
+        const programme = snapshot.dslAbilities == null ? [] : snapshot.dslAbilities;
+        if (!Array.isArray(programme)) return "die Fähigkeiten-Programme haben keine Gestalt";
+        for (let i = 0; i < programme.length; i++) {
+            const a = programme[i];
+            const g = a && typeof a === "object" ? this._faehigkeitGrund(a.name, a.program) : "kein Eintrag";
+            if (g)
+                return `Fähigkeit ${i + 1}${a && typeof a.name === "string" ? " „" + a.name.slice(0, 40) + "“" : ""}: ${g}`;
         }
         return null;
     }

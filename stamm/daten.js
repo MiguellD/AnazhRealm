@@ -1731,6 +1731,7 @@ class AnazhRealm_daten {
             "speicher.weist.faehigkeit": ["{n} × gewährte Fähigkeit (die Regel- oder Sende-Wand trägt sie nicht)", "{n} × granted ability (the rule or broadcast wall won't carry it)"],
             "speicher.weist.halle": ["{n} × Portal-Halle (widerrufene Herkunft oder keine gültige Adresse)", "{n} × portal hall (revoked origin or no valid address)"],
             "speicher.weist.praegung": ["{n} × Prägung, die ihr Studio-Prüfer abweist", "{n} × imprint its studio check rejects"],
+            "speicher.weist.programm": ["{n} × Fähigkeit (ihr Programm trägt eine Tat, die der Interpreter nicht kennt oder nie ausführt)", "{n} × ability (its program carries a deed the interpreter does not know or never runs)"],
             "speicher.weist.regel": ["{n} × Welt-Regel (ihre Wirkung pflügt den gefrorenen Weltgrund)", "{n} × world rule (its effect ploughs the frozen world ground)"],
             "speicher.weist.seele": ["{n} × Seele (ihr Leib bricht den Bau-Vertrag)", "{n} × soul (its body breaks the building contract)"],
             "speicher.weist.spende": ["{n} × Spende (widerrufener oder unförmiger Anbieter)", "{n} × contribution (revoked or malformed provider)"],
