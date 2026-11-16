@@ -2464,8 +2464,8 @@ AnazhRealm.BAUPLAN_UMZUG = Object.freeze({
 // DIE GRUND-TAFEL (w4-grundstellung): je Größe, die der Stand nicht trägt und eine Probe der Mess-Sitzung ändert, ihr Name, ihr
 // Leser und ihr Wort zurück (`_grundstellung`: jedes Wort vor dem Stand) — der Ritt (der Spieler steigt aus, ehe der Stand ihn
 // stellt), die Sicht und der Blick des Spielers, die Nässe der Welt und der Übergang des Wetters (der Stand trägt das Wort,
-// `_loadStateRestoreBasicState`), die Zellen des Brands (nicht persistiert, die Asche reist als Tat). Der Stand trägt Uhr,
-// Welt-Uhr, Saison, Wetter-Wort, Spieler-Ort, Wesen, Werke und Edits.
+// `_loadStateRestoreBasicState`), die Zellen des Brands (nicht persistiert, die Asche reist als Tat), der Halt der Takte. Der
+// Stand trägt Uhr, Welt-Uhr, Saison, Wetter-Wort, Spieler-Ort, Wesen, Werke und Edits.
 AnazhRealm.GRUND_TAFEL = Object.freeze([
     [
         "ritt",
@@ -2514,6 +2514,30 @@ AnazhRealm.GRUND_TAFEL = Object.freeze([
             if (v.length || !bf) return;
             bf.clear();
             [bf.glutBlock, this._brandRest, this._brandBett] = [null, null, null];
+        },
+    ],
+    // DER HALT DER TAKTE (der Halter der Messung, scripts/lib/ausgabe-aufnahme.cjs `halten`): die gehaltenen Quellen
+    // (`__gehalten`: tiere, bewohner, wagen, leib, skala, spiegel …) und die offenen (`__offen`) — er hüllt die Takte des Prototyps,
+    // und eine Probe, die hielt, ließ den Halt stehen: die nächste lief unter ihm. Radeon fe885d9d (16.11.): gelaende.K4#2 nach
+    // einer haltenden Probe „tier 0/0“ an allen vier Fluss-Orten (der Kreatur-Takt trug das Tier in die Strömung, der Halter
+    // stellte x/z zurück), Schwimmer und Boot trieben; die GTX lief sie als erste der Sitzung GRÜN. Der Grund trägt den Halt
+    // seines Augenblicks, die Grundstellung gibt ihn zurück.
+    [
+        "halt",
+        function () {
+            const q = (s) => (s instanceof Set ? [...s].sort() : []);
+            return [q(globalThis.__gehalten), q(globalThis.__offen)];
+        },
+        function (v) {
+            const [gehalten, offen] = v || [[], []];
+            for (const [name, soll] of [["__gehalten", gehalten], ["__offen", offen]]) {
+                const s = globalThis[name];
+                if (!(s instanceof Set)) continue;
+                s.clear();
+                for (const q of soll) s.add(q);
+            }
+            // die Uhr des gehaltenen Leibs (`animatePlayerSoul`) läuft wieder, wenn der Grund ihn nicht hielt
+            if (globalThis.__gehalten instanceof Set && !globalThis.__gehalten.has("leib")) delete globalThis.__gehalten.t;
         },
     ],
 ]);
