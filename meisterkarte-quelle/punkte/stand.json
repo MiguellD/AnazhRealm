@@ -5479,7 +5479,7 @@
   },
   "karte2.mensch.menge.bild": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bild#1 radeon: Station seit der Messung geändert · karte2.mensch.menge.bild#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bild#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/daten.js) · karte2.mensch.menge.bild#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bild#1",
@@ -5487,8 +5487,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/daten.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -5978,7 +5979,7 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.kaskade#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/bild-schatten.js, stamm/dirigent-kern.js) · karte2.same.kopplung.kaskade#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
@@ -5986,8 +5987,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/bild-schatten.js, stamm/dirigent-kern.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6030,16 +6032,16 @@
   },
   "karte2.same.massstab.physik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.massstab.physik#1 radeon: Station seit der Messung geändert · karte2.same.massstab.physik#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.massstab.physik#1 radeon: ROT: Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 13.90 m gegen v²/(2μg) 16.38 m (-15.1 %, Soll ±10 %), μ 0.6 (Reibkreis 1 × Boden 0.6), 50 → 1.1 km/h, Δh 0 m, 119 Schritte, rollDecel 1 m/s² · [linse-gpu] amd/rdna-3 an 77a9095f · karte2.same.massstab.physik#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.massstab.physik#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 13.90 m gegen v²/(2μg) 16.38 m (-15.1 %, Soll ±10 %), μ 0.6 (Reibkreis 1 × Boden 0.6), 50 → 1.1 km/h, Δh 0 m, 119 Schritte, rollDecel 1 m/s² · [linse-gpu] amd/rdna-3",
+     "sha": "77a9095fcee506f43e2d5d342634103a1d5dd8e4",
+     "grund": "ROT: Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 13.90 m gegen v²/(2μg) 16.38 m (-15.1 %, Soll ±10 %), μ 0.6 (Reibkreis 1 × Boden 0.6), 50 → 1.1 km/h, Δh 0 m, 119 Schritte, rollDecel 1 m/s² · [linse-gpu] amd/rdna-3",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6153,7 +6155,7 @@
   },
   "karte2.same.preis.bytes": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.bytes#1 radeon: ungemessen (R10) · karte2.same.preis.bytes#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.bytes#1 radeon: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js) · karte2.same.preis.bytes#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.bytes#1",
@@ -6161,8 +6163,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6269,7 +6272,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 139,
+  "konsum": 143,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6440,10 +6443,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 198
+  "ohne": 194
  },
  "kopfVoll": "05254c4ce2813c97927141cccdf4b979df01851d",
- "zeit": "2026-11-16T20:04:56.561Z",
+ "zeit": "2026-11-16T20:27:45.016Z",
  "vorher": "05254c4c",
  "bilanz": {
   "gewinn": [],
