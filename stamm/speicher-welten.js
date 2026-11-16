@@ -3397,9 +3397,6 @@ AnazhRealm.R5_STRUCTURE_TEXTURE = Object.freeze({
 // (`_blendeRasterU`, schatten.K2).
 // die Normalformen des Welt-Gesetzes (`_weltGesetz`): je Objekt einmal geprüft — der Leser der Schwere fragt je Teil-Schritt
 AnazhRealm._GESETZ_NORMAL = new WeakSet();
-// DIE GENESE-VERSION, mit der jede neue Welt geboren wird (die Stufen bei `ensureWorldMeta`); eine Welt, die eine höhere trägt,
-// kommt aus einer Zukunft dieses Builds (`_weltEinlass`)
-AnazhRealm.GEN_VERSION = 9;
 AnazhRealm.WELT_GRENZE = Object.freeze({
     ankunft: Object.freeze([
         "playerMesh",

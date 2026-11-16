@@ -2663,6 +2663,9 @@ AnazhRealm.GRUND_TAFEL = Object.freeze([
         },
     ],
 ]);
+// DIE GENESE-VERSION, mit der jede neue Welt geboren wird (die Stufen bei `ensureWorldMeta`); eine Welt, die eine höhere trägt,
+// kommt aus einer Zukunft dieses Builds (`_weltEinlass`)
+AnazhRealm.GEN_VERSION = 9;
 // DIE LAST-GRENZEN DER WAND (`_weltEinlass`): eine ehrliche Welt trägt ~6 Ebenen und ~4 300 Glieder frisch (der Stand einer
 // geborenen Welt, 51 KB), eine gespielte ein Vielfaches davon in der Breite, nie in der Tiefe — die Grenzen liegen um
 // Größenordnungen darüber und unter dem, was einen Stapel oder den Speicher sprengt. `gift`: die Schlüssel des Prototyps.
