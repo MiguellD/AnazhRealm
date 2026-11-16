@@ -966,7 +966,7 @@
      "gruen": true,
      "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 0.645/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4",
      "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
-     "grund": "Station seit der Messung geändert — zuletzt an c8c840c9: Deckel 461 s gerissen: Stille seit 460.9 s nach 461 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Station seit der Messung geändert — zuletzt an c8c840c9: Deckel 110 s gerissen: Stille seit 109.9 s nach 110 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "gehalten": true
     },
     {
@@ -5313,7 +5313,7 @@
   "ohne": 93
  },
  "kopfVoll": "b0c5c6049d89bbe6158a4da952fad165d76066e0",
- "zeit": "2026-11-16T07:24:42.621Z",
+ "zeit": "2026-11-16T07:30:24.510Z",
  "vorher": "b0c5c604",
  "bilanz": {
   "gewinn": [],
