@@ -1441,8 +1441,7 @@ const vierUrteil = (j, lauf) => {
 // Sitzung (r = Welt) die Füße des Spielers 10 m über seinen Grund (`_koerperGrund`, der Grund des Kapsel-Schritts), die Vertikale 0,
 // dann der Sim-Schritt des Spiels selbst (`_stepFixedSim` — derselbe, den `_loopFixedStep` je FIXED_DT ruft: Planung, Kapsel-Schritt
 // mit `leibFall`, Kontakt) bis die Füße den Grund tragen. Die Werkbank ruht den Loop (Lehre 17): kein fremder Schritt dazwischen.
-// Danach steht der Spieler, wo er stand. DER BREMSWEG (Wagen auf 50 km/h, s gegen v²/(2μg) mit μ der Stoff-Zeile) ist hier NICHT
-// gebaut: das Urteil verlangt ihn und bleibt ohne ihn ROT beim Namen — nie GRÜN auf der halben Sprosse
+// Danach steht der Spieler, wo er stand. Den BREMSWEG misst physikBremse (unten) auf demselben Lauf.
 function physikFall(r) {
     const s = r.state, m = s && s.playerMesh, A = AnazhRealm;
     if (!m || !s.playerVel || typeof r._stepFixedSim !== "function" || typeof r._koerperGrund !== "function") return { fehler: "ohne Spieler, Sim-Schritt oder _koerperGrund" };
@@ -1475,14 +1474,83 @@ function physikFall(r) {
     const g = A.WELT_GESETZ_ERDE && Number.isFinite(A.WELT_GESETZ_ERDE.schwere) ? Math.abs(A.WELT_GESETZ_ERDE.schwere) : null;
     return { h: 10, grund: +grund.toFixed(3), dt, schritte: n, tLand: land, tief: +tief.toFixed(3), bahn, gSpiel: Math.abs(s.gravity), gGesetz: g };
 }
+// DER BREMSWEG (Karte 2 same.massstab.physik S1, die zweite Hälfte): der GT des Spiels (`spawnArchitecture` fahrzeug_gt, derselbe
+// Wagen wie die Brems-Kette von gate:fahr-leben) ohne Reiter neben dem Spieler, auf 50 km/h in die ebenste von acht Richtungen über
+// 40 m, dann die volle Bremse im EINEN Fahr-Schritt des Spiels (`_wagenSchritt`: Haftung des Bodens `_fahrHaft`, Kräfte des Kerns
+// `fahrKraefte`, Lage `fahrStand` — derselbe Schritt, den der Wagen mit einem Bewohner am Steuer fährt), Schritt für Schritt FIXED_DT
+// bis zum Brems-Ende des Kerns (`bremsV`). Ohne Hüllen-Probe (`huelle` false): gemessen wird die Bremse auf dem Boden, nie der Wald.
+// Der Wind am Wagen ruht (`_fahrWind` geliehen, wie die Windstille der Brems-Kette). μ ist der Reibkreis des Kerns (maxGrip · grip
+// des Rezepts · Haftung des Bodens, gekappt bei 1 — `fahrKraefte` cap, der Fahrer liest dasselbe), gemittelt über den Weg; das Soll
+// aus der Energie: s = ((v0² − vE²)/2 − g·Δh) / (μ·g) (Δh der Höhenunterschied Start → Halt, ebener Grund: v²/(2μg)). Danach
+// fällt der Wagen, der Spieler stand nie woanders.
+async function physikBremse(r) {
+    const s = r.state, A = AnazhRealm, pm = s && s.playerMesh && s.playerMesh.position;
+    const G0 = A._fahrSchrittGesetz && A._fahrSchrittGesetz();
+    const vc = G0 && G0.vc;
+    if (!pm || !vc || typeof r._wagenSchritt !== "function" || typeof r._fahrHaft !== "function") return { fehler: "ohne Spieler, Fahr-Kern oder _wagenSchritt" };
+    const f = r._ensureAssetFoundry && r._ensureAssetFoundry();
+    for (let i = 0; i < 300 && !(f && f.ready && f.recipes && f.recipes.gt && s.blueprints && s.blueprints.fahrzeug_gt); i++) await new Promise((ok) => setTimeout(ok, 100));
+    if (!(s.blueprints && s.blueprints.fahrzeug_gt)) return { fehler: "der GT ist nicht gebaut (Foundry-Rezept gt binnen 30 s)" };
+    const dt = A.FIXED_DT, g = Math.abs(s.gravity) || 9.81, v0 = 50 / 3.6, bV = vc.FAHR && vc.FAHR.schritt ? vc.FAHR.schritt.bremsV : 0.5, L = 40;
+    const hh = (x, z) => r.getTerrainHeightAt(x, z);
+    // die ebenste Richtung: der kleinste Höhenunterschied über 40 m, ohne Wasser am Ende
+    let best = null;
+    for (let k = 0; k < 8; k++) {
+        const a = (k * Math.PI) / 4, [x1, z1] = [pm.x + 6 * Math.sin(a), pm.z + 6 * Math.cos(a)], [x2, z2] = [x1 + L * Math.sin(a), z1 + L * Math.cos(a)];
+        let rau = 0;
+        for (let t = 0; t < L; t += 4) rau = Math.max(rau, Math.abs(hh(x1 + t * Math.sin(a), z1 + t * Math.cos(a)) - hh(x1, z1)));
+        const ws = r._atlasWaterLevelAt ? r._atlasWaterLevelAt(x2, z2, hh(x2, z2)) : NaN;
+        if (Number.isFinite(ws) && ws > hh(x2, z2) - 0.3) continue;
+        if (!best || rau < best.rau) best = { a, x: x1, z: z1, rau };
+    }
+    if (!best) return { fehler: "keine trockene Richtung um den Spieler" };
+    const e = r.spawnArchitecture("fahrzeug_gt", { x: best.x, y: hh(best.x, best.z) + 0.5, z: best.z }, { silent: true, precise: true, rotationY: best.a - Math.PI / 2 });
+    if (!e) return { fehler: "spawnArchitecture fahrzeug_gt gab nichts" };
+    const wind = Object.prototype.hasOwnProperty.call(r, "_fahrWind") ? r._fahrWind : undefined;
+    r._fahrWind = () => ({ x: 0, z: 0 });
+    try {
+        const prof = r._vehicleProfile(e), G = r._fahrSatz(e, prof);
+        if (!G) return { fehler: "der GT trägt keinen Fahr-Satz (_fahrSatz)" };
+        e._rideYaw = best.a;
+        const fz = (e._fahr = vc.fahrZustand(best.x, best.z, best.a - Math.PI / 2));
+        vc.fahrStand(fz, G, r._fahrBoden(e), 0);
+        if (!Number.isFinite(fz.y)) return { fehler: "der Boden unter dem GT ist nicht gebaut" };
+        fz.vlong = v0;
+        const [x0, z0, y0] = [fz.x, fz.z, fz.y];
+        let n = 0, weg = 0, muWeg = 0, hMin = Infinity, hMax = -Infinity;
+        let [px, pz] = [x0, z0];
+        while (n < 1200 && fz.vlong > bV) {
+            const mu = G.maxGrip * G.grip * Math.min(1, r._fahrHaft(fz));
+            r._wagenSchritt(e, { throttle: 0, brake: 1, hand: false, steer: 0 }, dt, true, false);
+            n++;
+            const d = Math.hypot(fz.x - px, fz.z - pz);
+            weg += d;
+            muWeg += mu * d;
+            [px, pz] = [fz.x, fz.z];
+            hMin = Math.min(hMin, fz.y);
+            hMax = Math.max(hMax, fz.y);
+        }
+        if (!(fz.vlong <= bV)) return { fehler: "der GT hielt nicht binnen " + n + " Schritten (v " + fz.vlong + " m/s)" };
+        const mu = weg > 0 ? muWeg / weg : null, dh = fz.y - y0;
+        const soll = mu > 0 ? ((v0 * v0 - bV * bV) / 2 - g * dh) / (mu * g) : null;
+        return { s: +Math.hypot(fz.x - x0, fz.z - z0).toFixed(3), weg: +weg.toFixed(3), soll: soll && +soll.toFixed(3), v: +v0.toFixed(3), vE: bV, mu: mu && +mu.toFixed(4),
+            grip: +(G.maxGrip * G.grip).toFixed(3), haft0: +r._fahrHaft({ x: x0, z: z0, y: y0 }).toFixed(3), dh: +dh.toFixed(3), wellig: +(hMax - hMin).toFixed(3),
+            schritte: n, dt, g, rollDecel: vc.FAHR ? vc.FAHR.rollDecel : null, naesse: +(s.naesse || 0).toFixed(3), richtung: +best.a.toFixed(3) };
+    } finally {
+        if (wind === undefined) delete r._fahrWind;
+        else r._fahrWind = wind;
+        r.removeArchitecture(e);
+    }
+}
 async function probePhysikMassstab(H) {
     const j = (H.teil = {});
     j.fall = await H.evalWelt("return (" + H.seite.fall + ")(r);", Math.max(10, H.rest() - 2) * 1000).catch((e) => ({ fehler: String(e.message).slice(0, 200) }));
     H.zeile("Fall aus 10 m: " + JSON.stringify(j.fall));
-    j.bremsweg = null; // der Bremsweg ist in dieser Probe nicht gebaut (oben)
+    j.bremsweg = await H.evalWelt("return await (" + H.seite.bremse + ")(r);", Math.max(10, H.rest() - 2) * 1000).catch((e) => ({ fehler: String(e.message).slice(0, 200) }));
+    H.zeile("Bremsweg 50 km/h: " + JSON.stringify(j.bremsweg));
     return j;
 }
-const PHYSIK_PROBE = probeBefehl(probePhysikMassstab, 45, { fall: physikFall });
+const PHYSIK_PROBE = probeBefehl(probePhysikMassstab, 45, { fall: physikFall, bremse: physikBremse });
 const PHYSIK_G = 9.81;
 const physikUrteil = (j, lauf) => {
     const { ad, hw } = HW(String(lauf.stdout || ""));
@@ -1494,7 +1562,10 @@ const physikUrteil = (j, lauf) => {
     const bremsOk = !!b && Number.isFinite(b.s) && Number.isFinite(b.soll) && b.soll > 0 && Math.abs(b.s / b.soll - 1) <= 0.1;
     const z = "Fall aus 10 m " + f.tLand.toFixed(3) + " s gegen √(2h/g) " + soll.toFixed(3) + " s (" + (ab >= 0 ? "+" : "") + (100 * ab).toFixed(1) + " %, Soll ±5 %), " + f.schritte + " Sim-Schritte zu " +
         (1000 * f.dt).toFixed(1) + " ms, Schwere des Spiels " + f.gSpiel + " m/s²" + (f.gGesetz ? " (Welt-Gesetz " + f.gGesetz + ")" : "") +
-        " · Bremsweg " + (b ? b.s.toFixed(2) + " m gegen v²/(2μg) " + b.soll.toFixed(2) + " m (Soll ±10 %)" : "UNGEMESSEN — die Probe misst ihn noch nicht (die halbe Sprosse ist ROT)");
+        " · Bremsweg " + (b && Number.isFinite(b.s) && Number.isFinite(b.soll)
+            ? b.s.toFixed(2) + " m gegen v²/(2μg) " + b.soll.toFixed(2) + " m (" + (b.s / b.soll >= 1 ? "+" : "") + (100 * (b.s / b.soll - 1)).toFixed(1) + " %, Soll ±10 %)" +
+                (Number.isFinite(b.mu) ? ", μ " + b.mu + " (Reibkreis " + b.grip + " × Boden " + b.haft0 + "), " + (3.6 * b.v).toFixed(0) + " → " + (3.6 * b.vE).toFixed(1) + " km/h, Δh " + b.dh + " m, " + b.schritte + " Schritte" + (b.rollDecel != null ? ", rollDecel " + b.rollDecel + " m/s²" : "") : "")
+            : "UNGEMESSEN — " + (b && b.fehler ? "die Probe: " + b.fehler : "die Probe misst ihn nicht"));
     return { gruen: hw && fallOk && bremsOk, zahl: z + " · " + ad };
 };
 // DIE BYTES DES KALT-BOOTS (karte2.same.preis.bytes#1): je Boot der Netz-Mitschnitt aus ANKUNFT_VIER — Soll ≤ 50 MB roh (10⁶ B) je Boot
@@ -3497,8 +3568,8 @@ module.exports = [
         quelle: "KARTE2 same.preis.bytes S1 = Netz-Mitschnitt des Kalt-Boots an beiden Geräten",
     },
     // KARTE 2 same.massstab.physik S1 (Umfang „0,5–5 m: Mensch, Wagen, Kiste“, Tiefe „Fall, Stoß, Fahrt plausibel“): der Fall des Spielers
-    // aus 10 m im Sim-Schritt des Spiels (physikFall) gegen √(2h/g) ±5 % UND der Bremsweg gegen v²/(2μg) ±10 % — der Bremsweg fehlt der
-    // Probe noch, die Station bleibt bis dahin ROT beim Namen (halb gebaut: der Fall)
+    // aus 10 m im Sim-Schritt des Spiels (physikFall) gegen √(2h/g) ±5 % UND der Bremsweg gegen v²/(2μg) ±10 % (physikBremse: der GT des
+    // Spiels 50 km/h → bremsV im Fahr-Schritt `_wagenSchritt`, μ der Reibkreis des Kerns) — fehlt eine Hälfte, ROT beim Namen
     {
         kriterium: "karte2.same.massstab.physik",
         karte2: true,
@@ -3513,20 +3584,21 @@ module.exports = [
         proben: (() => {
             const ad = "[linse-gpu] nvidia/pascal (Probe)";
             const fall = (tLand, o = {}) => ({ h: 10, grund: 41.2, dt: 1 / 60, schritte: Math.round(tLand * 60), tLand, tief: 0, bahn: [], gSpiel: 9.81, gGesetz: 9.81, ...o });
-            const brems = (s, soll) => ({ s, soll, v: 13.89, mu: 0.7 });
+            const brems = (s, soll) => ({ s, weg: s, soll, v: 13.889, vE: 0.5, mu: 0.7, grip: 1, haft0: 0.7, dh: 0, wellig: 0.05, schritte: 140, dt: 1 / 60, g: 9.81, rollDecel: 1 });
             return [
                 { name: "Fall 1,433 s, Bremsweg 14,3 gegen 14,05 m", j: { fall: fall(1.4333), bremsweg: brems(14.3, 14.05) }, stdout: ad, gruen: true },
-                { name: "Fall 1,433 s, Bremsweg ungemessen (die Probe heute)", j: { fall: fall(1.4333), bremsweg: null }, stdout: ad, gruen: false },
+                { name: "Fall 1,433 s, Bremsweg ungemessen (die Probe bis 16.11.)", j: { fall: fall(1.4333), bremsweg: null }, stdout: ad, gruen: false },
                 { name: "Fall 1,52 s (+6,4 %)", j: { fall: fall(1.52), bremsweg: brems(14.3, 14.05) }, stdout: ad, gruen: false },
                 { name: "Fall 1,35 s (−5,5 %)", j: { fall: fall(1.35), bremsweg: brems(14.3, 14.05) }, stdout: ad, gruen: false },
                 { name: "Bremsweg +11 %", j: { fall: fall(1.4333), bremsweg: brems(15.6, 14.05) }, stdout: ad, gruen: false },
                 { name: "Bremsweg −11 %", j: { fall: fall(1.4333), bremsweg: brems(12.5, 14.05) }, stdout: ad, gruen: false },
+                { name: "die Bremse warf (der GT nicht gebaut)", j: { fall: fall(1.4333), bremsweg: { fehler: "der GT ist nicht gebaut (Foundry-Rezept gt binnen 30 s)" } }, stdout: ad, gruen: false },
                 { name: "kein Grund erreicht", j: { fall: fall(0, { tLand: null, schritte: 600, tief: 3.1 }), bremsweg: brems(14.3, 14.05) }, stdout: ad, gruen: false },
                 { name: "die Seite warf", j: { fall: { fehler: "ohne Spieler, Sim-Schritt oder _koerperGrund" }, bremsweg: null }, stdout: ad, gruen: false },
                 { name: "swiftshader", j: { fall: fall(1.4333), bremsweg: brems(14.3, 14.05) }, stdout: "[linse-gpu] google/swiftshader", gruen: false },
             ];
         })(),
-        pfad: ["stamm/dirigent-takt.js", "stamm/koerper-bewegung.js", "stamm/kreatur-leben.js", "koerper-core.js"],
+        pfad: ["stamm/dirigent-takt.js", "stamm/koerper-bewegung.js", "stamm/kreatur-leben.js", "koerper-core.js", "stamm/koerper-fahrt.js", "vehicle-core.js", "stamm/bau-vorlagen.js"],
         quelle: "KARTE2 same.massstab.physik S1 = Fallzeit aus 10 m gegen √(2h/g) ±5 %; Bremsweg gegen μ ±10 %",
     },
     // ankunft.K5: die Spur des Kalt-Boots bis zur Kontrolle (`probeAnkunftKalt`): belegt = jede Stichprobe des Haupt-Fadens außer
