@@ -7330,6 +7330,19 @@
         return B;
     }
     var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, grabstein: ausGrabstein, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld };
+    // DER LEIB EINER LEUCHTE (schatten.K5, rein additiv): der Halbmesser ihres Glas-Kopfs um den Licht-Mittelpunkt `yL` (die Mitte
+    // des Kopfs) — der Boden des Kopfs liegt `yL − yK0` unter dem Licht (die Platte der Stufe 3 genau dort, Halbweite kb/2 + 0,02),
+    // die Eck-Stäbe in kb/2, die Haube über `yK1`. Was im Leib liegt, wirft das eigene Licht nicht: die Welt stellt die nahe Ebene
+    // des Wurfs jenseits (bild-schatten `_lichtWurfTakt`) — mit dem Kern des Abfalls (Laterne 0,1 m) warf der Boden des Kopfs
+    // einen Kreis von 2,7 m unter jede werfende Laterne, mit dem Kern der Wandlaterne (2,74 m, das Wand-Gesetz) warf nichts in
+    // 2,7 m um sie. Aus DERSELBEN Maß-Funktion wie die Gestalt (AUS_MASS in der Größe des Rezepts); 0 für jede Gestalt ohne Kopf.
+    function lichtLeib(id) {
+        var pre = PRESETS[id],
+            mass = AUS_MASS[id];
+        if (!pre || !pre.fx || !pre.fx.licht || typeof mass !== "function") return 0;
+        var m = mass(pre.s.groesse);
+        return m.yK0 < m.yL ? Math.max(m.yL - m.yK0, m.yK1 - m.yL, m.kb / 2) : 0;
+    }
     // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
     // die L1 (die L0 wirft selbst: nah, höchstens drei im Bild); ihre Hülle (`ausHuelle`) reist als Beipack `__fern`.
     // Dieselben Maße wie die Stufen 0/1 (Ring R + Steinbreite, Tisch und Plane, Kranz, Pfosten, First): Feuerstelle der
@@ -11758,6 +11771,8 @@
         // K11b — die Farbe aus der Farbtemperatur, der Abfall 1/d² mit Kern und Saum (die Welt rechnet ihn im Stoff)
         lichtFarbe: lichtFarbe,
         lichtAbfall: lichtAbfall,
+        // schatten.K5 — der Leib einer Leuchte (der Glas-Kopf): die nahe Ebene ihres Wurfs
+        lichtLeib: lichtLeib,
         EXPL_GESETZ: EXPL_GESETZ,
         EXPL_VIS: EXPL_VIS,
         // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)

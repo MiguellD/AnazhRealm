@@ -13,9 +13,20 @@ class AnazhRealm_daten {
     static get WEATHER_TINTS() {
         const F = AnazhRealm.WEATHER_FIELD;
         const L = globalThis.__phytoCore.WX_LICHT;
-        if (!L || ![L.sockel, L.sonne].every(Number.isFinite))
+        if (!L || ![L.sockel, L.sonne, L.direktHoch, L.himmelHub, L.himmelGrau].every(Number.isFinite))
             throw new Error("phyto-core fehlt: WX_LICHT (das Wetter-Licht der Welt)");
-        const zeile = (f) => Object.freeze({ skyMul: f.sun, lightMul: L.sockel + L.sonne * f.sun });
+        // DIE DECKE TEILT DAS LICHT (w28-licht-regen): lightMul ist das GESAMTE Licht der Zeile; `direkt` der Anteil, den die
+        // Decke (grey) von der direkten Sonne lässt (das Richtlicht, die Scheibe), `himmel` der Hub des diffusen Himmels, `grau`
+        // sein Ergrauen. Bis hier trug das Richtlicht lightMul² und der Himmel lightMul · skyMul: direkt ÷ diffus STIEG im Regen
+        // um 1,3×, im Sturm um 3× — der Schatten wurde härter, und `grey` las kein Leser des Himmels.
+        const zeile = (f) =>
+            Object.freeze({
+                skyMul: f.sun,
+                lightMul: L.sockel + L.sonne * f.sun,
+                direkt: Math.pow(Math.max(0, 1 - f.grey), L.direktHoch),
+                himmel: 1 + L.himmelHub * f.grey,
+                grau: Math.max(0, Math.min(1, L.himmelGrau * f.grey)),
+            });
         return this._einmal(
             "WEATHER_TINTS",
             Object.freeze(Object.fromEntries(Object.keys(F).map((w) => [w, zeile(F[w])])))
@@ -2287,6 +2298,7 @@ class AnazhRealm_daten {
             "vorschau.werk": ["Werk", "Work"],
             "welt.brennpunkt-glimmt": ["„{ding}\" glimmt im Brennpunkt von „{linse}\" — rück es aus dem Licht, sonst fängt es Feuer.", "“{ding}” is smouldering in the focus of “{linse}” — move it out of the light before it catches fire."],
             "welt.deine-faust": ["Deine Faust", "Your fist"],
+            "welt.fackel-faengt-nicht": ["Die Glut von „{was}\" zündet hier nichts — der Boden trägt kein Bett, das brennt, oder es ist zu nass.", "The embers of “{was}” light nothing here — the ground bears nothing that burns, or it is too wet."],
             "welt.katalog.begegnung.name": ["Begegnungs-Feld", "Field of Encounters"],
             "welt.katalog.begegnung.text": ["Ein stilles Lichter-Feld — eine fremde single-player Engine, in der ihr euch trotzdem seht: AnazhRealm injiziert die Ko-Präsenz übers Mesh.", "A quiet field of lights — a foreign single-player engine in which you still see each other: AnazhRealm brings in co-presence over the mesh."],
             "welt.katalog.fachwerk.name": ["Fachwerkhaus — parametrisch, begehbar", "Timber-Frame House — parametric, walkable"],
