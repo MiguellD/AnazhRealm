@@ -879,7 +879,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 105c9bd3: die Seite warf: (b)(d) 15.9 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
      "gehalten": true
     },
     {
@@ -967,7 +967,7 @@
      "gruen": true,
      "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 0.645/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4",
      "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
-     "grund": "Konsum seit der Messung geändert (R6: spec/profiband/haushalt.json, stamm/bild-schatten.js, stamm/dirigent-kern.js +2) — zuletzt an 105c9bd3: Deckel 110 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Konsum seit der Messung geändert (R6: spec/profiband/haushalt.json, stamm/bild-schatten.js, stamm/dirigent-kern.js +2) — zuletzt an 105c9bd3: Deckel 227 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2419,7 +2419,7 @@
   },
   "mensch.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an d3708675 headless · gehalten: Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an 71839b1e radeon · gehalten: Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an 71839b1e gtx",
+   "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an d3708675 headless · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an 105c9bd3 radeon · gehalten: Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an 71839b1e gtx",
    "stationen": [
     {
      "id": "mensch.K2#1",
@@ -2436,9 +2436,8 @@
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
-     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
-     "grund": "Konsum seit der Messung geändert (R6: spec/profiband/haushalt.json, stamm/daten.js, stamm/koerper-bewegung.js +2)",
-     "gehalten": true,
+     "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -2517,16 +2516,15 @@
   },
   "mensch.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.267 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 3e4f99cd radeon · gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 3e4f99cd gtx",
+   "beleg": "Maschine: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 105c9bd3 radeon · gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 3e4f99cd gtx",
    "stationen": [
     {
      "id": "mensch.K5#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.267 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1)",
-     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +34) — zuletzt an a996d0ae: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505):",
-     "gehalten": true,
+     "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1)",
+     "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
+     "grund": "GRÜN trotz Last: Referenz f 1,255 (Faden 1,122 · alle Kerne 1,132 · Stoß in der Station 6,12 Kerne fremd → 1,255; vor 116,7/252,5 ms, nach 108,8/305,7 ms, Ruhe 104/270 ms seit 2026-11-15) · fremd: git pack-objects --delta-base-offset --honor-pack-keep pack/.tmp-32068-pack --stdin-packs 38,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 10,8 CPU-s · bash.exe -c source /c/Users/micha/.claude/shell-sna… \"'/\"'; grep -E \"z489|z490 w4/zug-nie- 3,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 13,9 CPU-s · svchost.exe 12,9 CPU-s · SearchIndexer.exe 0,7 CPU-s",
      "r6": "konsum"
     },
     {
@@ -3377,7 +3375,7 @@
   },
   "siedlung.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an d3708675 headless · gehalten: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.5 σ 22.6 schwarz 0.0 % weiß 0.0 % ·  an a996d0ae radeon · gehalten: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.6 σ 21.3 schwarz 0.0 % weiß 0.0 % ·  an 3e4f99cd gtx",
+   "beleg": "Maschine: gehalten: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an d3708675 headless · W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 99.6 σ 21.5 schwarz 0.0 % weiß 0.0 % ·  an 105c9bd3 radeon · gehalten: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.6 σ 21.3 schwarz 0.0 % weiß 0.0 % ·  an 3e4f99cd gtx",
    "stationen": [
     {
      "id": "siedlung.K4#1",
@@ -3393,10 +3391,9 @@
      "id": "siedlung.K4#2",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.5 σ 22.6 schwarz 0.0 % weiß 0.0 % · ",
-     "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
-     "grund": "Konsum seit der Messung geändert (R6: spec/profiband/haushalt.json, stamm/dirigent-takt.js, stamm/gelaende-boden.js +2) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
-     "gehalten": true,
+     "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 99.6 σ 21.5 schwarz 0.0 % weiß 0.0 % · ",
+     "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -3571,7 +3568,7 @@
   },
   "speicher.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt an d3708675 headless · gehalten: bild-diff 0.80 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3 an 4ee205bd radeon · gehalten: Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.68 % (Soll ≤ 1; Rauschen ohne Neuladen 0.21 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal an 71839b1e gtx",
+   "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt an d3708675 headless · Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.69 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3 an 105c9bd3 radeon · gehalten: Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.68 % (Soll ≤ 1; Rauschen ohne Neuladen 0.21 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal an 71839b1e gtx",
    "stationen": [
     {
      "id": "speicher.K4#1",
@@ -3587,10 +3584,9 @@
      "id": "speicher.K4#2",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "bild-diff 0.80 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3",
-     "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: spec/profiband/haushalt.json, stamm/dirigent-kern.js, stamm/dirigent-regler.js +5)",
-     "gehalten": true,
+     "zahl": "Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.69 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3",
+     "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -4849,7 +4845,7 @@
   },
   "breite.siedlung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: breite.siedlung#1 radeon: ungemessen (R10) — zuletzt an 71839b1e: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou · breite.siedlung#1 gtx: ungemessen (R10) — zuletzt an 71839b1e: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
+   "beleg": "Maschine: 0 — offen: breite.siedlung#1 radeon: ungemessen (R10) — zuletzt an 105c9bd3: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou · breite.siedlung#1 gtx: ungemessen (R10) — zuletzt an 71839b1e: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
    "stationen": [
     {
      "id": "breite.siedlung#1",
@@ -4857,7 +4853,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 71839b1e: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
+     "grund": "ungemessen (R10) — zuletzt an 105c9bd3: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
      "ungemessen": true
     },
     {
@@ -4915,7 +4911,7 @@
   },
   "karte2.erleben.spieler.praesenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) — zuletzt an 105c9bd3: Last: Referenz f 1,511 (Faden 1,024 · alle Kerne 1,168 · Stoß in der Station 12,26 Kerne fremd → 1,511; vor 106,8/318,1 ms, nach 99,7/282,4 ms, Ruhe 104,3/272,4 ms seit 2026-11-15) · fremd: git pack-o · karte2.erleben.spieler.praesenz#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) — zuletzt an 105c9bd3: Last: Referenz f 1,681 (Faden 1,019 · alle Kerne 1,146 · Stoß in der Station 16,33 Kerne fremd → 1,681; vor 106/303,2 ms, nach 104,5/307,6 ms, Ruhe 104/268,5 ms seit 2026-11-15) · fremd: Claude.exe -- · karte2.erleben.spieler.praesenz#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.praesenz#1",
@@ -4923,7 +4919,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 105c9bd3: Last: Referenz f 1,511 (Faden 1,024 · alle Kerne 1,168 · Stoß in der Station 12,26 Kerne fremd → 1,511; vor 106,8/318,1 ms, nach 99,7/282,4 ms, Ruhe 104,3/272,4 ms seit 2026-11-15) · fremd: git pack-o",
+     "grund": "ungemessen (R10) — zuletzt an 105c9bd3: Last: Referenz f 1,681 (Faden 1,019 · alle Kerne 1,146 · Stoß in der Station 16,33 Kerne fremd → 1,681; vor 106/303,2 ms, nach 104,5/307,6 ms, Ruhe 104/268,5 ms seit 2026-11-15) · fremd: Claude.exe --",
      "ungemessen": true,
      "beide": true
     },
@@ -4968,16 +4964,15 @@
   },
   "karte2.mensch.stadt.siedlungsnetz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an 71839b1e radeon · gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an 3e4f99cd gtx",
+   "beleg": "Maschine: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an 105c9bd3 radeon · gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an 3e4f99cd gtx",
    "stationen": [
     {
      "id": "karte2.mensch.stadt.siedlungsnetz#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km",
-     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
-     "grund": "Konsum seit der Messung geändert (R6: spec/profiband/haushalt.json, stamm/siedlung-ort.js, stamm/siedlung-satz.js)",
-     "gehalten": true,
+     "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -5022,16 +5017,15 @@
   },
   "karte2.same.preis.ankunft": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 7.45 s · 6.92 s · 7.13 s · 7.00 s (max 7.45 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 71839b1e radeon · gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 7.64 s · 8.04 s · 8.10 s · 8.77 s (max 8.77 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an 3e4f99cd gtx",
+   "beleg": "Maschine: 4 Kalt-Boots, 4 mit Kontrolle von außen: 8.17 s · 7.01 s · 7.54 s · 8.85 s (max 8.85 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 105c9bd3 radeon · gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 7.64 s · 8.04 s · 8.10 s · 8.77 s (max 8.77 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an 3e4f99cd gtx",
    "stationen": [
     {
      "id": "karte2.same.preis.ankunft#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "4 Kalt-Boots, 4 mit Kontrolle von außen: 7.45 s · 6.92 s · 7.13 s · 7.00 s (max 7.45 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3",
-     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
-     "grund": "Konsum seit der Messung geändert (R6: spec/profiband/haushalt.json, stamm/dirigent-kern.js, stamm/dirigent-regler.js +4)",
-     "gehalten": true,
+     "zahl": "4 Kalt-Boots, 4 mit Kontrolle von außen: 8.17 s · 7.01 s · 7.54 s · 8.85 s (max 8.85 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3",
+     "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
+     "grund": "GRÜN trotz Last: Referenz f 1,619 (Faden 1,577 · alle Kerne 1,619; vor 121,8/321,8 ms, nach 163,7/434,6 ms, Ruhe 103,8/268,5 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 39,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,3 CPU-s · sh.exe dienst/zug-dienst.sh 6,2 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 34,3 CPU-s · svchost.exe 16,2 CPU-s · SearchIndexer.exe 7,2 CPU-s",
      "r6": "konsum",
      "beide": true
     },
@@ -5050,16 +5044,15 @@
   },
   "karte2.same.preis.zugang": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.zugang#1 radeon: Konsum seit der Messung geändert (R6: spec/profiband/haushalt.json, stamm/bild-schatten.js, stamm/daten.js +14) · karte2.same.preis.zugang#1 gtx: Konsum seit der Messung geändert (R6: spec/profiband/haushalt.json, stamm/bild-schatten.js, stamm/daten.js +14)",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.zugang#1 radeon: ROT: 6 harte UI-Zeilen im DOM von 635 Zeilen (623 aus der Tafel, 6 Daten) · beim Wechsel auf en stehen 13 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2388, en 2388) · beim Namen: DOM stamm/werkstatt-hud.js:2752 _hudSchreib · #ladeschirm-stand div: 5 Programme des Bilds entstehen | DOM stamm/werkstatt-hud.js:2752 _hudSchreib · #status-slug span: weite-feld | DOM stamm/werkstatt-hud.js:2752 _hudSchreib · #status-weather span: sunny · [linse-gpu] amd/rdna-3 an 105c9bd3 · karte2.same.preis.zugang#1 gtx: Konsum seit der Messung geändert (R6: spec/profiband/haushalt.json, stamm/bild-schatten.js, stamm/daten.js +14)",
    "stationen": [
     {
      "id": "karte2.same.preis.zugang#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: spec/profiband/haushalt.json, stamm/bild-schatten.js, stamm/daten.js +14)",
-     "ungemessen": true,
+     "zahl": "6 harte UI-Zeilen im DOM von 635 Zeilen (623 aus der Tafel, 6 Daten) · beim Wechsel auf en stehen 13 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2388, en 2388) · beim Namen: DOM stamm/werkstatt-hud.js:2752 _hudSchreib · #ladeschirm-stand div: 5 Programme des Bilds entstehen | DOM stamm/werkstatt-hud.js:2752 _hudSchreib · #status-slug span: weite-feld | DOM stamm/werkstatt-hud.js:2752 _hudSchreib · #status-weather span: sunny · [linse-gpu] amd/rdna-3",
+     "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
+     "grund": "ROT: 6 harte UI-Zeilen im DOM von 635 Zeilen (623 aus der Tafel, 6 Daten) · beim Wechsel auf en stehen 13 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2388, en 2388) · beim Namen: DOM stamm/werkstatt-hud.js:2752 _hudSchreib · #ladeschirm-stand div: 5 Programme des Bilds entstehen | DOM stamm/werkstatt-hud.js:2752 _hudSchreib · #status-slug span: weite-feld | DOM stamm/werkstatt-hud.js:2752 _hudSchreib · #status-weather span: sunny · [linse-gpu] amd/rdna-3",
      "r6": "konsum",
      "beide": true
     },
@@ -5317,7 +5310,7 @@
   "ohne": 83
  },
  "kopfVoll": "105c9bd397cc1b5d68391db2420b984a0741b573",
- "zeit": "2026-11-16T04:39:41.050Z",
+ "zeit": "2026-11-16T05:06:20.571Z",
  "vorher": "105c9bd3",
  "bilanz": {
   "gewinn": [],
