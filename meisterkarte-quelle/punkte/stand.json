@@ -978,8 +978,9 @@
      "gruen": true,
      "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4",
      "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
-     "grund": "Station seit der Messung geändert — zuletzt an c8c840c9: Deckel 170 s gerissen: Stille seit 169.9 s nach 170 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-sicht.js) — zuletzt an c8c840c9: Deckel 170 s gerissen: Stille seit 169.9 s nach 170 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "gehalten": true,
+     "r6": "konsum"
     }
    ]
   },
@@ -5059,7 +5060,7 @@
   },
   "karte2.same.preis.zugang": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 0 harte UI-Zeilen im DOM von 635 Zeilen (625 aus der Tafel, 10 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2431, en 2431) · [linse-gpu] amd/rdna-3 an a635bfee radeon — offen: karte2.same.preis.zugang#1 gtx: Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs +44)",
+   "beleg": "Maschine: gehalten: 0 harte UI-Zeilen im DOM von 635 Zeilen (625 aus der Tafel, 10 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2431, en 2431) · [linse-gpu] amd/rdna-3 an a635bfee radeon — offen: karte2.same.preis.zugang#1 gtx: Konsum seit der Messung geändert (R6: index.html, stamm/bild-himmel.js, stamm/bild-sicht.js +3)",
    "stationen": [
     {
      "id": "karte2.same.preis.zugang#1",
@@ -5078,7 +5079,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs +44)",
+     "grund": "Konsum seit der Messung geändert (R6: index.html, stamm/bild-himmel.js, stamm/bild-sicht.js +3)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -5151,7 +5152,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 417,
-  "konsum": 156,
+  "konsum": 157,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5323,10 +5324,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 92
+  "ohne": 91
  },
  "kopfVoll": "9c9c9bd30d415e13b59ed1b8c681f00f27d7ab6c",
- "zeit": "2026-11-16T12:03:18.157Z",
+ "zeit": "2026-11-16T12:15:06.004Z",
  "vorher": "9c9c9bd3",
  "bilanz": {
   "gewinn": [],
