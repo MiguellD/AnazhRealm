@@ -1,7 +1,7 @@
 {
  "sha": "e4eeee086ca78f20b27ae87e12761508215fca34",
  "geraet": "gtx",
- "zeit": "2026-11-16T16:26:01.997Z",
+ "zeit": "2026-11-16T17:11:30.974Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K2#2": {
@@ -970,6 +970,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.kopplung.wetter-welt#1": {
+   "gruen": false,
+   "zahl": "✅ Richtlicht Sturm/klar 0.036 (0.2304/6.3409, Soll ≤ 0,5) · ❌ Himmel Sättigung Sturm/klar 1.643 (0.5293/0.3222, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.52,
+   "grund": "ROT: ✅ Richtlicht Sturm/klar 0.036 (0.2304/6.3409, Soll ≤ 0,5) · ❌ Himmel Sättigung Sturm/klar 1.643 (0.5293/0.3222, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kbc55a5ad52cd",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "kaae491f57b8b",
+   "s": 30.3,
+   "fremd": {
+    "s": 32.8,
+    "takte": 15,
+    "fremdS": 18.83,
+    "kerne": 0.575,
+    "fensterKerne": 0.586,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.94
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.61
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.5
+     ]
+    ],
+    "dienerS": 11,
+    "diener": [
+     [
+      "dwm.exe",
+      4.8
+     ],
+     [
+      "System",
+      4.25
+     ]
+    ],
+    "geraetS": 9.33,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.86
+     ],
+     [
+      "svchost.exe",
+      2.7
+     ],
+     [
+      "SearchIndexer.exe",
+      0.34
+     ]
+    ],
+    "eigenS": 87.81,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-16T17:11:30.974Z",
+   "abdruck": "e2aeea219873",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -986,61 +1056,47 @@
   "ke4876ca6ec51": "dVRdj5swEPwvebzWZ74hlu7BuUS9k1o1+Qlrew0kBCIbjjZV/3sVAkmA6z4BmmFnZ8f+sziBPECKz3tblQu2eFp8XVj4QGLRfKB53tsFWzgygDBh/FqUc/56gUmTn2pLVQ4pORRQpuSMpW3ss+xYTw+YIhcURAnZEUljasyLHuTKBAEZbTe83VK6pTFdtS8vU2ohUFWkBo0DUSgv9oFNgY1NQSCBRnfNerCOotjzGe0qWfPtng7Fd5zTdjPtKKBUY6Xah1C77P035xs+U6hywJoUeWmHnlKFwvfYrdF8KmWgJWfArEDTk5IoVL47CJ0SdNFYO2qS+Cr0Ekbpkk6wKdpcZjU5mUpgOZi29GIX2CcOp6eG6EclIAQkYupvBlimaMYa4iCUAaO/ZnoPcEQDpISshy4dP/bE3RNK6dtcS9EJ71oMwhMllrEeES+7e2svgVwnl5f09jl5uwZ1nfJ77SZNrMxycxzbo3WowGHf55JsBgoNOVS2vqEdz/Ux6k/FugsS3wbrKfM+TM/zROSEycMsCeVvM+9spesWDJL01PREDDCMQ8b5+wxcw/E4DCE9TMLp4mx9CfSjDCf2wrDbRfqfPVzjT86YFwMpltL1kb3+4NM5PwwcCYjU5FoP2xah1MvPwtliURNRVfWA1Cq6WOLT8uaKm3D+/rBAvg6cb6+rHZ/Wbqq7+3tl6kF0KCJHB0x3p1BO0Wc0BaY48kYFwgfFaCsf2w8PX0YhPM9Wd86xGF+FyTJWyz6+Y59bNAcB5WHw19WuVNdMbfm6bxit6J5es35Tw3+2nG9W15v4hJKeTKXzy7VFM2hsBkV9v9P//gM=",
   "k8b24d8f7ca44": "dVRdj5swEPwveWzLmc9ALN2Dc0TNVa2a+wlrew0kBCIbjjZV/3sFiZMAV78A1ox3dnbwn8UJxAEyfNqbulrQxafFl4WBd3QM6nfUT3uzoAtXhBAllF0WYYy99DChi1NjSFlwAryC/IhOqxssyicx0DyRICAl3YZ1O0J2JCbr7vl5Si05ytppQKElcunHAdApsDUZcHSgVUOxK1gtl7EfUDKsJGW7PbGLvTFGus20IodKjpWqACLl0dffjG3YTKEsABunLCpjawoZ8cCnt0LzrqSGzjkD5iXqKylZRjLwrNApQZWtMaMiSSAjP6GErMgEm6EpRN44J11zrKxpKz/2gH7gcHZqHfWoBDiHhE/9zQGrDPVYQxxGIqTk10zvAY6owakgv0JXbhD7/O4JIWQ711IOwocSVngi+SpWI2I/u23Xhy1N+o/stp1sLyFMM3Zfb5MiRuSFPo7tUSqS4NLvc0kmB4naOdSmuaFd3wtweU18OgSJ7cJ0yrw3c+X5fOlGyUMvCWHbmXemVk0HGp3s1F6JGGIUR5Sx1xm4gePRNiF8TKLp4EzTB/pRhhv7UTTMIvvPHC7xd85YlJYUC+EFSF9+sGmf7xqODvBMF0rZafNIqNVH4eywbBxe141FKrnsLQlIdXPFSxh7fRggS0P3a7p+szfMObGTneoeTq91Y0VHfOmqkKr3/i8UU/QZdYkZjryRIQ9AUtKJx/L25fMohOfZ6M4F9q5VpjU2vqtYrq7xHfvcoT5wqA7WX095Ql4ytWNp/8i+pZ/XZE8uWb+pYT87xjZr9vK4y7LL4ScU5KRrVfTXGMmhNTmUzf3+/vsP",
   "k174e5860f58c": "dVTbjpswFPyXPLZlzc3cpH1wNqtmpUpNPuHYPgYSApENoU3Vf68gkATYnqeAZpjxnIn/rM4gjpDiy8FU5SpZfVl9Wxm4oGVQX1C/HMwqWdnCBxol7DaEMfbWwYTOz7UhRc4J8BKyE1qNrjEvXkRPc0SEgAlp31m7I2RHQrJuX1/n1IKjrKwaFI5ELt3Qg2QObEwKHC1oVC82gFUQhK6XkH6iDdsdyDhszxhp3+eKHEo5dao8oMpJPn4z9s4WDmUOWFtFXppRU0jKPTe5Cy1PJTW01hUwK1APpCig0nNGo3OCKhpjJiKRJ6kbJYTEZIZN0eQiq62zrjiWY2ixGzqQfJJwem4s9ewEOIeIz/PNAMsU9dRD6FPhJ+TXwu8RTqjBKiEboLHthS5/ZEII2S69FL3xXmI0Hkkeh2pC7Ha3bbuybaLuIb2/jra3Em5S9pj9TMSILNenaTxKUQl28mNpyWQgUVvHytR3tO06HgZD4zd9kdjO38yZj8MMPJcHNo2ezhIRtl1kZypVt6DRSs/NQEQfaUgTxj4W4BpOp/EQwsWIzhdn6q7Qzzbs0KW030X6nz3c6m9dMS9GUiiE4+H84xcNJwt4qnOlxk1zKlT8WTFbLGqLV1U9IpUMujg8Ut4TcSLGPp6Wxza+/f1tvWfz2c8991+vdD0apjywlZ+oS/cPFHP0FXWBKU5ykT73QCakFc/y44+vkwJeF2u75tglVprGjNWNQxkP1Z1m3KI+ciiPY7aOcoS89WnHNoNgsCYHcuv53Q372T2vbzfsGQU560rl3ZVFMmhMBkX9uKv//gM=",
-  "kb6a30576236c": "dVTbjpswFPyXPLZlzR1iaR+ci5qVWimR9geO7WMgIRDZsLSp+u8VBJIA2/OUoJnMnDkT/iwuIE6Q4MvRlMWCLr4svi0MfKBlUH+gfjmaBV3Ywocgpuw2hDG2bmFCZ5fKkDzjBHgB6RmtWleY5S+iozkiRkBKmi1r9oTsSURWzevrlJpzlKVVgcKByKUbeUCnwNokwNGCWnViPViFYeR6lHQTb9j+SIZhB8ZIs50qcijk2KnyIFAOffvN2JbNHMoMsLLyrDCDppAB91x6F5pvJTU01hUwzVH3pDgMpOcMRqcEldfGjERiTwZuTAlZkgk2QZOJtLIuuuRYDKEt3cgB+knCyaW21LMT4BxiPs03BSwS1GMPkR8In5JfM78nOKMGq4C0hy5tL3L5IxNCyG7uJe+MdxKD8VjyZaRGxPZ2u6Yt2yZuvyT3x/HuVsJNwh5zmIgYkWb6PI5HqUCCTX/MLZkUJGrrVJrqjrZdx8Owb/ymKxLb+5sp87FMz3N5aAfx0y4xYbtZdqZUVQMareRS90T0MYgCytjbDFzB+TwsIVyMg+nhTNUW+tmGHblB0N0i+c8dbvW3rpjlAykSwvGQrn+y6Z4fGs4W8ERnSg3X5oFQy8/K2WBeWbwsqwGpZNhG4pHinooTM/b2dEC28e3v69WBTee9YYeZ906h1NVgPOChrXyqun+imKKvqHNMcJSP9LkHkpJGPFsYPnwdFfE6O981wza5wtRmqPAyksu+wuOsG9QnDsVpyNhRjpC3Xu3ZphcMV+RIbn2/u2H7hrHtiq1HeSS3H7+gIBddqqx9lZEUapNCXj3e4X//AQ=="
+  "kb6a30576236c": "dVTbjpswFPyXPLZlzR1iaR+ci5qVWimR9geO7WMgIRDZsLSp+u8VBJIA2/OUoJnMnDkT/iwuIE6Q4MvRlMWCLr4svi0MfKBlUH+gfjmaBV3Ywocgpuw2hDG2bmFCZ5fKkDzjBHgB6RmtWleY5S+iozkiRkBKmi1r9oTsSURWzevrlJpzlKVVgcKByKUbeUCnwNokwNGCWnViPViFYeR6lHQTb9j+SIZhB8ZIs50qcijk2KnyIFAOffvN2JbNHMoMsLLyrDCDppAB91x6F5pvJTU01hUwzVH3pDgMpOcMRqcEldfGjERiTwZuTAlZkgk2QZOJtLIuuuRYDKEt3cgB+knCyaW21LMT4BxiPs03BSwS1GMPkR8In5JfM78nOKMGq4C0hy5tL3L5IxNCyG7uJe+MdxKD8VjyZaRGxPZ2u6Yt2yZuvyT3x/HuVsJNwh5zmIgYkWb6PI5HqUCCTX/MLZkUJGrrVJrqjrZdx8Owb/ymKxLb+5sp87FMz3N5aAfx0y4xYbtZdqZUVQMareRS90T0MYgCytjbDFzB+TwsIVyMg+nhTNUW+tmGHblB0N0i+c8dbvW3rpjlAykSwvGQrn+y6Z4fGs4W8ERnSg3X5oFQy8/K2WBeWbwsqwGpZNhG4pHinooTM/b2dEC28e3v69WBTee9YYeZ906h1NVgPOChrXyqun+imKKvqHNMcJSP9LkHkpJGPFsYPnwdFfE6O981wza5wtRmqPAyksu+wuOsG9QnDsVpyNhRjpC3Xu3ZphcMV+RIbn2/u2H7hrHtiq1HeSS3H7+gIBddqqx9lZEUapNCXj3e4X//AQ==",
+  "kbc55a5ad52cd": "dVRdb6MwEPwveWzPNV8OxFIfnFA1ke6k9CeszRpoCEQ2lLuc7r+foJAGuNsnsGa849nR/l5dQJ0gxad3W5UrvnpYfVtZ+EBi0XygeXq3K75yVAAs4uKzqBBi18GUyS+1pUUuKcgSsjOSxtSYF0+qp7kqQkBO2xfRHik90pBuW3GrrXh+nl9TSEwqUoPG8RKZeKEPfA5sbAoSCTS6bzyAH2YwCWUy1aR9YNrlh19CvCz7JzlgTYq8tOONKmHS9zgdq11yDLTkCpgVaAZStGaJ7w6kaE7QRWPtpEnkJ8yLOKUbOsOmaHOV1eRiKonlaMnGC13g26WW9NIQfa8EpIRIzt3LAMsUzVRDGDAVcPpzofcEZzRASsgG6MbxQ09+eUIp3S+1FL3wvsUoPErkJtQTIqU03fehiKP+53b8uKfd+fFKdffrRx3obdbEqiw356k9WrMEHP59KclmkKAhp8rWN7TjuT6uh2zHVLx1PYN4zvx6zMDz5Nph0d1bIir2C+9spesWDJL00gxEDJCFjAtxWIBrOJ/HRygPIzYfnK27QN/LcEKPsX4W6X/m8Bl/csW8GEmhUq6PfPdDzN/5YeBMQKYm13qctmRKb/4VzhaLmsiqqkekTtaflpQ3V9xIiIO4qzhwXnfbNzGpnRB+K94W2vsOlalH4UyuHR3wPhCtmqOvaApMceJPEkgfEk5bdS9h/HicBPG6GN81x8650jZ2jPAmTDZDhIdddpjukRbNSUJ5Gr12tasSHos41VTEQ+P1lr7TfXvvQSyObb8Vd/enr2InussvqKgGI5EWja6JQY0Gy+tkbXeYi6l03q09mkFjMyjqL8ifvw=="
  },
  "sitzung": {
-  "start": "2026-11-16T16:25:27.140Z",
-  "ordner": "sitzung-20261116-172527",
+  "start": "2026-11-16T17:11:03.178Z",
+  "ordner": "sitzung-20261116-181103",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.7,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "genesis",
-    "vor": "karte2.planet.kosmos.sternhimmel#1",
-    "s": 24,
+    "vor": "karte2.planet.kopplung.wetter-welt#1",
+    "s": 19.8,
     "takte": 573,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "wanderung": [
-   {
-    "probe": "karte2.planet.kosmos.sternhimmel#1",
-    "ort": "genesis",
-    "m": 1082.54,
-    "dreh": 0.401
-   }
-  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2230,
-   "frameP95": 33.32,
-   "taktP95": 13.16,
-   "vramMax": 141.3,
+   "bilder": 3650,
+   "frameP95": 16.98,
+   "taktP95": 6.71,
+   "vramMax": 128.1,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "karte2.planet.kosmos.sternhimmel#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 377,
+   "ortImDeckel": [],
+   "zapfen": 126,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 400.6,
-  "minuten": 6.78
+  "fahrtS": 133.1,
+  "minuten": 2.3
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
