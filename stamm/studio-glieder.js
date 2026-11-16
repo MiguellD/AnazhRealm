@@ -18,8 +18,11 @@ class AnazhRealm_studio_glieder {
                 fg = 0,
                 fb = 0,
                 fn = 0;
-            const schritt = pos.count > 2000 ? Math.ceil(pos.count / 2000) : 1;
-            for (let i = 0; i < pos.count; i += schritt) {
+            // der Ecken-Bereich des Teils (`ab`, `n`: ein Teil einer verschmolzenen Geometrie), sonst die ganze Geometrie
+            const ab = lf.ab || 0;
+            const zahl = lf.n == null ? pos.count : lf.n;
+            const schritt = zahl > 2000 ? Math.ceil(zahl / 2000) : 1;
+            for (let i = ab; i < ab + zahl; i += schritt) {
                 v.fromBufferAttribute(pos, i);
                 if (lf.localMatrix) v.applyMatrix4(lf.localMatrix);
                 bb.expandByPoint(v);

@@ -2456,7 +2456,7 @@ class AnazhRealm_stoff_instanz {
     // die Kopie verdoppelte ihren Speicher für einen Draw. WAS verschmilzt, sagt das Budget-Gesetz: die Sippe des Teils
     // (phyto-core `budgetSippe`, am Mesh gestempelt) — dieselbe Regel, mit der es die Draws zählt (`budgetSippen`);
     // keine eigene Signatur im Wirt. Die Material-Identität steht dabei: zwei Materialien teilen nie eine Geometrie.
-    // Die verschmolzene Geometrie gehört der Cache-Gruppe (`_eigen`): ihr Dispose und ihre Bytes laufen mit.
+    // Die verschmolzene Geometrie ist die Geometrie des ersten Kinds ihrer Sippe: ihr Dispose und ihre Bytes laufen mit der Gruppe.
     _foundryFlatVerschmelzen(group, leaves) {
         const sippen = new Map();
         for (let i = 0; i < leaves.length; i++) {
@@ -2467,7 +2467,9 @@ class AnazhRealm_stoff_instanz {
             sippen.get(k).push(i);
         }
         const weg = new Set();
-        let bytes = 0;
+        // die Kinder der Gruppe in der Reihe der Leaves (`_foundryFlattenFor` legt je Kind mit Geometrie und Stoff EIN Leaf)
+        const kinder = group.children.filter((c) => c.geometry && c.material);
+        const fort = new Set();
         for (const idx of sippen.values()) {
             if (idx.length < 2) continue;
             let n = 0;
@@ -2475,23 +2477,40 @@ class AnazhRealm_stoff_instanz {
             if (n > globalThis.__phytoCore.BUDGET_GESETZ.verschmelzVerts) continue;
             const geo = AnazhRealm._geoVerbinden(idx.map((i) => leaves[i].geom));
             if (!geo) continue;
+            for (const i of idx)
+                if (!kinder[i] || kinder[i].geometry !== leaves[i].geom)
+                    throw new Error("_foundryFlatVerschmelzen: Leaf " + i + " ist nicht das Kind seiner Gruppe");
+            // die Ecken-Bereiche der Teile in der verbundenen Geometrie: wer je Teil liest (`_streuGesetzFit`), liest sie hier
+            let ab = 0;
+            geo.userData.teile = idx.map((i) => {
+                const z = leaves[i].geom.attributes.position.count;
+                ab += z;
+                return [ab - z, z];
+            });
             const erst = leaves[idx[0]];
-            leaves[idx[0]] = Object.assign({}, erst, { geom: geo, _eigen: true });
-            for (let j = 1; j < idx.length; j++) weg.add(idx[j]);
-            // ein verschränkter Puffer (die Jahres-Ecken) zählt einmal, nie je Sicht
-            for (const p of new Set(
-                Object.values(geo.attributes).map((a) => (a.isInterleavedBufferAttribute ? a.data : a))
-            ))
-                bytes += p.array.byteLength;
-            if (geo.index) bytes += geo.index.array.byteLength;
+            leaves[idx[0]] = Object.assign({}, erst, { geom: geo });
+            // DIE EINE FASSUNG (w28-heap-haus): das erste Kind trägt die verbundene Geometrie, die anderen verlassen die
+            // Gruppe — bis dahin hielt der Cache jedes Teil ein zweites Mal neben seiner Verschmelzung
+            fort.add(kinder[idx[0]].geometry);
+            kinder[idx[0]].geometry = geo;
+            for (let j = 1; j < idx.length; j++) {
+                weg.add(idx[j]);
+                const k = kinder[idx[j]];
+                fort.add(k.geometry);
+                group.remove(k);
+            }
         }
         if (!weg.size) return;
         for (let i = leaves.length - 1; i >= 0; i--) if (weg.has(i)) leaves.splice(i, 1);
-        // die Bytes der eigenen Geometrie buchen (die Räumung zieht group._cacheBytes wieder ab)
+        // eine verlassene Geometrie, die kein Kind mehr trägt, fällt (ein Teil, das sie teilt, hält sie)
+        for (const g of fort) if (!group.children.some((c) => c.geometry === g)) g.dispose();
+        // die Bilanz der Gruppe am neuen Bestand: ihre Bytes und die Zahl ihrer Teile (die Leck-Linse zählt Kinder)
         const f = this._foundry;
+        if (f) f._geomBuiltCount = (f._geomBuiltCount || 0) - weg.size;
         if (Number.isFinite(group._cacheBytes)) {
-            group._cacheBytes += bytes;
-            if (f && Number.isFinite(f.cacheBytes)) f.cacheBytes += bytes;
+            const neu = this._foundryGroupBytes(group);
+            if (f && Number.isFinite(f.cacheBytes)) f.cacheBytes += neu - group._cacheBytes;
+            group._cacheBytes = neu;
         }
     }
 

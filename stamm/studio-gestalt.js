@@ -1152,7 +1152,6 @@ class AnazhRealm_studio_gestalt {
                 // der Wurf-Stufe, nie mit der L0. Befund (Gegenprüfung S3 R2): der L0-Kehraus gab die gestempelte Gestalt
                 // des Schatten-Teils der lebenden L1 frei (r184 zerstört dann die GPU-Puffer des Wurfs und lädt sie neu).
                 if (lf._srcGroup !== g) continue;
-                if (lf._eigen && lf.geom && typeof lf.geom.dispose === "function") lf.geom.dispose();
                 // die L0-gestempelte Zwillings-Gestalt teilt die Puffer dieses Leafs — sie fällt mit ihm
                 if (lf._schattenGeom) {
                     lf._schattenGeom.dispose();
@@ -1375,7 +1374,6 @@ class AnazhRealm_studio_gestalt {
                             dreh: rd.dreh || 0,
                             welt: I, // die Welt-Skala der Vorlage (geteilt)
                         },
-                        _eigen: ecke === 0 ? lf._eigen : false, // die verschmolzene Geometrie gehört EINER Ecke
                     });
                 });
                 leaves.splice(i, 1, ...ecken);
@@ -1424,7 +1422,6 @@ class AnazhRealm_studio_gestalt {
                                 // einer Zwillings-Quelle false: Sträucher würfen still keinen Schatten)
                                 castShadow: lf.teilWirft,
                                 shadowTwin: true,
-                                _eigen: false, // die Geometrie gehört dem Teil, nie dem Zwilling
                                 _schattenGeom: null,
                             })
                         );
@@ -1489,7 +1486,6 @@ class AnazhRealm_studio_gestalt {
                 leafKey: treffer.v.leafKey,
                 localMatrix: new THREE.Matrix4().multiplyMatrices(lf.localMatrix, basis),
                 tuer: Object.assign({}, lf.tuer, { basis }),
-                _eigen: false, // die Geometrie gehört der Vorlage
             });
         }
     }

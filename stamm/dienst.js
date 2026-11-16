@@ -1237,7 +1237,10 @@ class AnazhRealm_dienst {
         const I = this._foundryWorldScaleMatrix(preset);
         const teile = [];
         for (const c of bf.leaves[0]._srcGroup.children)
-            if (c && c.geometry && c.material) teile.push({ geom: c.geometry, mat: c.material, localMatrix: I });
+            if (c && c.geometry && c.material)
+                // ein verschmolzenes Kind trägt seine Teile als Ecken-Bereiche (`_foundryFlatVerschmelzen`): die Passung liest je Teil
+                for (const [ab, n] of c.geometry.userData.teile || [[0, c.geometry.attributes.position.count]])
+                    teile.push({ geom: c.geometry, mat: c.material, localMatrix: I, ab, n });
         return this._gestaltKapselFit(teile);
     }
 
