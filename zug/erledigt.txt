@@ -1295,3 +1295,4 @@ omen-gtx-gtx-e4eeee08-w1117-2-e4eeee08 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · G
 omen-gtx-main-a635-1-a635bfee GRÜN 3 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN gelaende.K4#2 karte2.same.preis.zugang#1 mensch.K2#2 (punkte-maschine 71afe3bd messung/a635bfee-gtx.json)
 omen-gtx-main-a635b-1-a635bfee UNGEMESSEN 1 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN gelaende.K2#1 · GRÜN mensch.K5#1 (punkte-maschine 71afe3bd messung/a635bfee-gtx.json)
 omen-gtx-gtx-e4eeee08-w1221-1-e4eeee08 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT luftwasser.K4#1 ‖ luftwasser.K4#1: 7 Orte im Bild, Bestäuber (im Kegel) 16/8/12/2/4/10/6 (Pixel 13/0/9/2/23/9/5), Blüten (Pixel) 1099/420/1560/869/3245/1263/606, r -0.163 (Soll ≥ 0,5) · ROT r -0.163 < 0,5 (punkte-maschine 71afe3bd messung/e4eeee08-gtx.json)
+2026-11-16 13:40 landung ABGEBROCHEN main e4eeee08: sg-fuge3 wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 20 stellen sich hinten an
