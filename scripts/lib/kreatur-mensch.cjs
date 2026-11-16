@@ -40,7 +40,7 @@ async function menschBuehnen() {
             });
         };
         const wegeMesser = (liste) => {
-            const WG = { wand: new Map(), durch: 0, tuer: 0, falsch: [], geh: 0, aufWeg: 0, sprungN: 0 };
+            const WG = { wand: new Map(), durch: 0, tuer: 0, falsch: [], geh: 0, aufWeg: 0, sprungN: 0, standN: 0, standUeber: 0, standMax: 0, standWer: "—" }; // prettier-ignore
             const [stecken, beruehr, kandW, wSpur, akten] = [[], [], [], new Map(), []];
             let minute = 0;
             const wann = (b) => `${b.rolle} #${b.heim} um ${(s.timeOfDay * 24).toFixed(2)} Uhr`;
@@ -168,6 +168,18 @@ async function menschBuehnen() {
                         (e.blockerAABBs || []).some((q) => imLeib(q) && r._boxAbstand2(q, x, z) < RW * RW)
                     );
                     if (wand) WG.wand.set(nameVon(wand), (WG.wand.get(nameVon(wand)) || 0) + 1);
+                    // DER STAND NACH DEM GANG (w28-stand-hoehe): wer eben ging und jetzt steht, steht mit der Sohle auf dem Boden
+                    // seines Punkts — das Gesetz der Geburt (`_bewohnerStellen`: der Boden der Säule, an der Tür ihre Stufe), einmal
+                    // je Halt gelesen. Bis dahin trug der Stehende den Grund des letzten halben Meters seines Schritts.
+                    const geht = !!b.weg && !b.drinnen;
+                    if (sp.ging && !geht && !b.drinnen && !b.amSteuer) {
+                        const h0 = r._koerperBodenUnter(x, NaN, z);
+                        const ab0 = Number.isFinite(h0) ? Math.abs(fuss - r._bewohnerTritt(x, z, h0, h0)) : 0;
+                        WG.standN++;
+                        if (ab0 > 0.01) WG.standUeber++;
+                        if (ab0 > WG.standMax) [WG.standMax, WG.standWer] = [ab0, wann(b)];
+                    }
+                    sp.ging = geht;
                     if (b.weg && !b.drinnen && d > 0) {
                         WG.geh++;
                         if (r._aufWeg(x, z, 0)) WG.aufWeg++;
@@ -213,6 +225,7 @@ async function menschBuehnen() {
                     falsch: WG.falsch.slice(0, 4),
                     aufWeg: WG.geh ? q3(WG.aufWeg / WG.geh) : null,
                     sprungN: WG.sprungN,
+                    stand: { n: WG.standN, ueber: WG.standUeber, mm: Math.round(WG.standMax * 1000), wer: WG.standWer },
                     wegeMin: Math.min(...je.map((q) => q.n.size)),
                     wegeMax: Math.max(...je.map((q) => q.n.size)),
                     streckeMin: Math.round(Math.min(...je.map((q) => q.gesamt))),
@@ -439,6 +452,9 @@ async function menschBuehnen() {
         await uhrAuf(12.5, "bewohner: der Tag", alleDa);
         // Täter (Selbsttest): der Tag beginnt mit Geschichte — die Bewohner gehen 12 s auf der Uhr von 12,5, ohne Sprung
         if (hat("bewohner-uhr")) for (let k = 0; k < 120; k++) leute(DT);
+        // Täter (Selbsttest): der Schritt liest seinen Grund am Raster des halben Meters — der Stehende trägt den Boden daneben
+        if (hat("bewohner-grund"))
+            decke("_koerperBodenUnter", (alt) => (x, y, z) => (Number.isFinite(y) ? alt.call(r, Math.round(x * 2) / 2, y, Math.round(z * 2) / 2) : alt.call(r, x, y, z))); // prettier-ignore
         const SD = wegeMesser(liste);
         const treffer = new Map();
         const vorher = new Map();
@@ -976,6 +992,10 @@ function menschUrteil(name, z, soll) {
             !v.ausserN && !v.steckenN && v.aufWeg >= 0.85 && !v.kurzN && !v.beruehrN,
             `${wo}Wege ${v.wegeMin}–${v.wegeMax} (${v.ausser}), ${v.steckenN} Steckenbleiber (${v.stecken}), auf Wegen ${v.aufWeg} (Soll ≥ 0,85), Strecke min ${v.streckeMin} m (Soll ≥ 100 je Tag: ${v.kurz}), Berührung: ${v.beruehrN} (${v.beruehr})`
         );
+        soll(
+            v.stand.n >= 10 && v.stand.mm <= 10,
+            `${wo}der Stand nach dem Gang: die Sohle höchstens ${v.stand.mm} mm vom Boden ihres Punkts (Soll ≤ 10; ${v.stand.ueber} von ${v.stand.n} Halten darüber; ${v.stand.wer})`
+        );
     }
     // das Start-Dorf (ohne `--ort` und am Genesis-Ort: seine Wege)
     if (name === "bewohner" && z.wege) {
@@ -1071,6 +1091,7 @@ module.exports = {
             ["bewohner-gleiten", /der Satz gleitet/],
             ["bewohner-haltung", /die Haltung des Stands im Satz/],
             ["bewohner-gestalt", /die Gestalt des Stands im Satz/],
+            ["bewohner-grund", /der Stand nach dem Gang/],
             ["bewohner-nord", /der Blick der Stehenden/],
             ["bewohner-daheim", /ohne Platz/],
             ["bewohner-stapel", /Stände gestapelt: [1-9]/],
