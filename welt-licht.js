@@ -662,16 +662,17 @@ var __weltLicht = (function () {
     // Anker (`belichtungAnker`), `e` der Sinus der Sonnenhöhe, `stufen` die Stufen der Kamera (die Welt reicht ihr Glied
     // `AnazhRealm._belichtungStufen`, an dem die Linsen den Schein der Kamera prüfen). → die Belichtung k: die 18-%-Karte unter
     // dem Anker auf `zielKarte` und die Stufen der Kamera gegen ihn; `B` die Eichung (wie `belichtungStufen`). Der Lichtmesser
-    // liest in der Nacht nie unter dem Nacht-Knoten (`nachtKnotenE`, vom Horizont bis `nachtKnotenGrad`
-    // logarithmisch eingeblendet): darunter steht die Blende, das Bild fällt mit dem Licht.
+    // liest in der Nacht nie unter dem Nacht-Knoten (`nachtKnotenE`): er ist ein BODEN des Messers (UE: Min EV100), der vom
+    // Horizont bis `nachtKnotenGrad` mit der Nacht der Tag-Achse wächst (smoothstep, C¹ an beiden Enden) — darunter steht die
+    // Blende, das Bild fällt mit dem Licht; darüber folgt die Kamera dem Licht. Bis w28-licht-stetig zog ein geometrisches Mittel
+    // E^(1−t) · Knoten^t mit t linear ab dem Horizont jede Uhr der Dämmerung zum Knoten, auch wo das Licht weit darunter lag (die
+    // Sonne 0°: E 0,056, Knoten 0,462 — 3 EV): die Kamera knickte am Horizont, das Bild sprang je 0,002 der Uhr um 0,50 EV
+    // (Wiese, Radeon 71839b1e: k 19,9 → 27,7 bei Sonne −0,72° → 0°) und fiel dazwischen in ein Tal (−2°: 0,9 EV unter dem
+    // Horizont). Der Boden lässt das Licht der Dämmerung durch, wo es über ihm liegt; Mittag und Nacht ab −6° rechnen gleich.
     function belichtung(w, EA, e, stufen, B = BELICHTUNG) {
         const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
-        let E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], 1e-6);
-        const NK = B.nachtKnotenE;
-        if (NK > E) {
-            const t = Math.max(0, Math.min(1, h / B.nachtKnotenGrad));
-            E = E ** (1 - t) * NK ** t;
-        }
+        const s = Math.max(0, Math.min(1, h / B.nachtKnotenGrad));
+        const E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], B.nachtKnotenE * s * s * (3 - 2 * s), 1e-6);
         return Math.max(B.min, (B.zielKarte * 2 ** (stufen || belichtungStufen)(h, E / EA)) / ((0.18 / Math.PI) * E));
     }
 
