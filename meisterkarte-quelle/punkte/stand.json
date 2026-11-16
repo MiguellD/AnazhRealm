@@ -6056,7 +6056,7 @@
   },
   "karte2.same.physik.verformung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.verformung#1 radeon: ungemessen (R10) · karte2.same.physik.verformung#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.verformung#1 radeon: ungemessen (R10) · karte2.same.physik.verformung#1 gtx: Konsum seit der Messung geändert (R6: stamm/daten.js)",
    "stationen": [
     {
      "id": "karte2.same.physik.verformung#1",
@@ -6074,8 +6074,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6268,7 +6269,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 138,
+  "konsum": 139,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6439,11 +6440,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 199
+  "ohne": 198
  },
  "kopfVoll": "05254c4ce2813c97927141cccdf4b979df01851d",
- "zeit": "2026-11-16T19:58:53.993Z",
- "vorher": "be50815d",
+ "zeit": "2026-11-16T20:04:56.561Z",
+ "vorher": "05254c4c",
  "bilanz": {
   "gewinn": [],
   "fall": [],
