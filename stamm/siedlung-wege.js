@@ -513,8 +513,9 @@ class AnazhRealm_siedlung_wege {
     // Bis hier trug die Lava nur das Licht über ihr (`_leuchtQuellen`) und die glut-Achse (`auraAt`): der Boden unter dem Guss
     // blieb Wiese, die Halme standen durch, glühend und erstarrt sahen gleich aus (Radeon fe885d9d, Station
     // karte2.same.kopplung.ereignis: Glut R/G 0,969, erstarrt 0,962). Jetzt liegt jede Decke in der Kronen-Karte (B die Decke,
-    // A ihre Temperatur, `_wegeKarteEnsure`): der Boden-Stoff zeichnet dort den Basalt der Boden-Palette und darauf das Leuchten
-    // ihrer Temperatur (`_lavaKruste`: Schollen und glühende Risse), Nah-Wiese und Nah-Streu tragen auf ihr nichts (`_lavaDeckeAt`).
+    // A ihre Temperatur, `_wegeKarteEnsure`): der Boden-Stoff zeichnet dort die Kruste der Boden-Palette (`kruste`, Basaltglas)
+    // und darauf das Leuchten ihrer Temperatur (`_lavaKruste`: Schollen und glühende Risse), Nah-Wiese und Nah-Streu tragen auf
+    // ihr nichts (`_lavaDeckeAt`).
     // Ihr Rand ist das EINE Rand-Gesetz einer Tat auf den Zellen des Felds (`_brandNarbeFn`: die weiche, verrauschte Grenze statt
     // des 16-m-Quadrats), ihre Temperatur je Texel der Gang des Kerns an der Dicke der Decke dort (`_lavaFlaeche`).
     // Die Decke an (x, z) ∈ [0, 1] — dieselben Bytes, die der Boden-Shader liest (`_bodenDeckeAt`).
@@ -1151,8 +1152,9 @@ class AnazhRealm_siedlung_wege {
     // Die Haut der Scholle trägt `platte` der Temperatur des Innern (sie isoliert), am dünnen Rand der Decke weniger, der Riss das
     // Innere ganz; ihr Leuchten ist das der Temperatur der Oberfläche (`_lavaGlutNode`, Planck je Kanal): der Riss glüht hell
     // orange, die Scholle kirschrot bis schwarz, am Rand der Decke ist sie dunkel (dort reißt nichts, `randDicke`). Die Farbe ist
-    // der Basalt der Boden-Palette, je Scholle im Ton verschieden, in der kalten Fuge dunkel; die Kante der Scholle kippt die
-    // Normale (`relief`, sichtbar nur, solange der Pixel die Fuge trägt — fern glatt, kein Flimmern). Rückgabe { farbe, kipp, glut }.
+    // die Kruste der Boden-Palette (`kruste`, Basaltglas), je Scholle im Ton verschieden, in der kalten Fuge dunkel; die Kante der
+    // Scholle kippt die Normale (`relief`, sichtbar nur, solange der Pixel die Fuge trägt — fern glatt, kein Flimmern).
+    // Rückgabe { farbe, kipp, glut }.
     _lavaKruste(_T, xz, w, decke) {
         const K = AnazhRealm.LAVA_KRUSTE;
         const ra = this._rauschAtlas();
@@ -1170,7 +1172,7 @@ class AnazhRealm_siedlung_wege {
         const riss = _T.float(1).sub(_T.smoothstep(_T.float(0), offen.add(aa), c));
         const glut = this._lavaGlutNode(_T, w.mul(_T.mix(rand.mul(K.platte), _T.float(1), riss)));
         const fuge = _T.float(1).sub(_T.smoothstep(_T.float(0), aa.add(K.fuge), c));
-        const b = AnazhRealm.BODEN_FARBE.basalt;
+        const b = AnazhRealm.BODEN_FARBE.kruste;
         const farbe = _T
             .vec3(b[0], b[1], b[2])
             .mul(n1.x.mul(K.ton).add(1))
@@ -2152,7 +2154,7 @@ AnazhRealm.GLUT_BILD = Object.freeze({
 // DIE KRUSTE DER LAVA (`_lavaKruste`): das Feld der Schollen (Wellenlänge `schollenM`, m) und der feinen Risse (`rissM`, ihr Anteil
 // `rissAnteil`) in den Schichten `schicht` des Rausch-Gesetzes; der Riss ist offen bis |n| < `offen` · w (beim Ausbruch etwa ein
 // Drittel der Fläche, σ des Felds 0,25), die Haut der Scholle hat `platte` der Temperatur des Innern; am Rand der Decke (Dicke
-// unter `randDicke`) reißt nichts. Die kalte Fuge (|n| < `fuge`) dunkelt den Basalt auf `fugeTon`, die Schollen streuen ±`ton`
+// unter `randDicke`) reißt nichts. Die kalte Fuge (|n| < `fuge`) dunkelt die Kruste auf `fugeTon`, die Schollen streuen ±`ton`
 // im Ton, ihre Kante hebt sich um `relief` (m).
 AnazhRealm.LAVA_KRUSTE = Object.freeze({
     schollenM: 1.8,
@@ -2161,7 +2163,7 @@ AnazhRealm.LAVA_KRUSTE = Object.freeze({
     schicht: Object.freeze([13, 17]),
     offen: 0.14,
     platte: 0.6,
-    randDicke: Object.freeze([0.3, 0.9]),
+    randDicke: Object.freeze([0.5, 1]),
     fuge: 0.035,
     fugeTon: 0.45,
     ton: 0.25,

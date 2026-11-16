@@ -106,6 +106,9 @@ const PORTAL_GROUND = {
     // Wiese 0,04–0,08, Jin & Roy 2005)
     asche: 0x45403a,
     wueste: 0xd0a26a,
+    // die erstarrte Lava (stoffe.K3-2, die Kruste im Boden-Stoff der Welt): Basaltglas der Pahoehoe-Kruste, fast neutral,
+    // linear Y 0,055 (frische Basalt-Ströme 0,05–0,08) — `basalt` oben ist das Glut-Gestein des Felds (rotbraun, Y 0,04)
+    kruste: 0x45423f,
 };
 
 const PORTAL_SKY = {
