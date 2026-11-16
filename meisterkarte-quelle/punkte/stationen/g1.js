@@ -1599,6 +1599,650 @@ const LAVA_ROH = {
     roi: [430, 240, 530, 300],
 };
 const lavaRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWELTPROBE lava " + JSON.stringify(aendern(JSON.parse(JSON.stringify(LAVA_ROH))));
+// ───────── KARTE 2, Welle 3 (vorrat3-stationen-g1, 16.11.): vier Richter im echten Fenster — gebaut, headless nur im Selbsttest
+// der Punkte-Maschine geprüft, am Fenster beider Geräte ungemessen ─────────
+
+// DAS SEIL IM ECHTEN FENSTER (Karte 2 same.physik.verformung S1 „Flegel schwingt am Leib des Spielers, Seillänge im Bild ±2 %, beide
+// Geräte“): dieselbe Seiten-Funktion wie physik.K4#1 (`seilProbe` oben, byte-gleich — ihr Abdruck und der der Welt-Probe bleiben), aber
+// in der EINEN warmen Welt der Sitzung — je Takt die Lage der GEZEICHNETEN Seil-Teile (`userData.__seil`, ihre Welt-Matrix nach
+// `_seilTakt`) längs vom Anker. Der Takt des Grunds trägt hier dazu IM BILD: je Takt mit einem Seil in der Hand, ob jedes Seil-Teil
+// sichtbar (die Kette der Eltern) mit seiner Mitte im Kegel der Kamera des Spiels liegt (je Gattung, die `equipHeld` zuletzt nahm);
+// danach je Flegel noch einmal in die Hand, 1,5 s Gang, 0,5 s Stand und EIN Schuss des Ausgabe-Pfads (960×540).
+async function seilBildProbe(r, T, o, G) {
+    const s = G.s;
+    const kegel = new T.Frustum();
+    const pv = new T.Matrix4();
+    const sichtbar = (m) => {
+        for (let q = m; q; q = q.parent) if (!q.visible) return false;
+        return true;
+    };
+    const seilTeile = () => {
+        const h = s.playerMesh.userData && s.playerMesh.userData.heldMesh;
+        const st = [];
+        if (h) h.traverse((m) => m.isMesh && m.userData && Number.isInteger(m.userData.__seil) && st.push(m));
+        return st;
+    };
+    const zaehl = {};
+    let aktuell = null;
+    const takt = (n = 1) => {
+        G.takt(n);
+        const st = seilTeile();
+        if (!aktuell || !st.length) return;
+        const c = s.camera;
+        c.updateMatrixWorld(true);
+        kegel.setFromProjectionMatrix(pv.multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse));
+        const z = (zaehl[aktuell] ||= [0, 0]);
+        z[1]++;
+        if (st.every((m) => sichtbar(m) && kegel.containsPoint(new T.Box3().setFromObject(m).getCenter(new T.Vector3())))) z[0]++;
+    };
+    const eigen = Object.prototype.hasOwnProperty.call(r, "equipHeld");
+    const eq = r.equipHeld;
+    r.equipHeld = function (n) {
+        aktuell = n;
+        return eq.call(this, n);
+    };
+    let aus;
+    try {
+        aus = await seilProbe(r, T, o, Object.assign({}, G, { takt }));
+    } finally {
+        if (eigen) r.equipHeld = eq;
+        else delete r.equipHeld;
+    }
+    aus.schuesse = [];
+    for (const [name, x] of Object.entries(aus.je || {})) {
+        if (x.fehler) continue;
+        x.imBild = zaehl[name] && zaehl[name][1] ? G.r3(zaehl[name][0] / zaehl[name][1]) : 0;
+        x.imBildTakte = zaehl[name] ? zaehl[name][1] : 0;
+        if (!/flegel/i.test(name)) continue;
+        r.equipHeld(name);
+        for (let i = 0; i < 400 && !seilTeile().length; i++) G.takt(), await new Promise((ok) => setTimeout(ok, 10));
+        s.verbTafel.gehalten.vor = true;
+        G.takt(90);
+        s.verbTafel.gehalten.vor = false;
+        G.takt(30);
+        try {
+            const { u8 } = await window.__ausgabeAufnahme(960, 540);
+            aus.schuesse.push({ name, url: window.__png(u8, 960, 540) });
+        } catch (e) {
+            aus.schuesse.push({ name, fehler: String((e && e.message) || e).split("\n")[0].slice(0, 200) });
+        }
+        r.equipHeld(null);
+    }
+    return aus;
+}
+const SEIL_SITZUNG = { befehl: weltSitzungBefehl([["seil", seilBildProbe]], [seilProbe]), sek: 60, mutiert: true };
+// das Urteil: ein Flegel der Schmiede (Name `flegel`), sein Gesetz im Buch (der Anker), Schwung ≥ 0,05 m, die Länge LÄNGS des Seils vom
+// Anker hält ±2 % (größte ≤ 1,02 × kleinste über 180 Takte), der Schwung klingt ab (die Tiefe der Sprosse: v² der letzten ≤ ½ der ersten
+// Sekunde), in ≥ 90 % der Takte jedes Teil im Bild, sein Schuss ohne Fehler, eine echte Karte
+function seilBildUrteil(j, lauf) {
+    const { ad, hw } = adapterEcht(lauf && lauf.stdout);
+    const e = weltZeile(j, lauf, "seil");
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE seil (Exit " + (lauf && lauf.exit) + ") · " + ad };
+    const u = seilUrteil(e);
+    if (e.fehler || !e.je) return { gruen: false, zahl: u.zahl + " · " + ad };
+    const S = e.schuesse || [];
+    const fl = Object.entries(e.je).filter(([n, x]) => /flegel/i.test(n) && !x.fehler);
+    const gut = fl.filter(
+        ([n, x]) =>
+            Array.isArray(x.anker) && x.laengeArt === "längs" && x.schwungM >= 0.05 && x.laengeM[0] > 0 && x.laengeM[1] <= 1.02 * x.laengeM[0] &&
+            x.energie[0] > 0 && x.energie[1] <= 0.5 * x.energie[0] && x.imBild >= 0.9 && S.some((s) => s.name === n && s.datei && !s.fehler)
+    );
+    return {
+        gruen: hw && gut.length > 0,
+        zahl: (fl.length ? "" : "KEIN Flegel am Leib · ") + u.zahl + " · im Bild " + (fl.map(([n, x]) => n + " " + x.imBild).join(", ") || "—") +
+            " (Soll ≥ 0,9 der Takte, die Länge längs, ein Schuss je Flegel) · " + ad,
+    };
+}
+const SEIL_ROH = {
+    klingen: 23,
+    seile: ["klinge_flegel"],
+    je: { klinge_flegel: { teile: 16, anker: [0.545, 0, 0], laengeArt: "längs", schwungM: 0.476, laengeM: [0.328, 0.329], energie: [3.183, 0.257], imBild: 1 } },
+    schuesse: [{ name: "klinge_flegel", datei: "x-seil-s1.png" }],
+};
+const seilRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWELTPROBE seil " + JSON.stringify(aendern(JSON.parse(JSON.stringify(SEIL_ROH))));
+
+// DIE SCHNEELINIE ÜBER DAS JAHR IM ECHTEN FENSTER (Karte 2 planet.kopplung.bahn-klima S1 „Schneelinie wandert über das Jahr im Bild“ ·
+// planet.wetter.klimazonen S1 „Temperatur am Meer 18/−4 °C, Schneegrenze folgt der Saison“ — EIN Lauf, zwei Urteile). Bis hierher
+// urteilten stoffe.K3#2 (der Versatz der Grenze) und wetter.K4#1 (eine Winter-Pose) nur am Null-Renderer, nie ein Pixel.
+// DIE TEMPERATUR: `_temperaturAt(waterLevel)` (die EINE Naht zum Feld des Gelände-Kerns) unter klarem Himmel, je Saison-Mitte (das Wort
+// des Spielers `setSeason`) das Mittel über 24 Stunden der Uhr. DAS BILD: der höchste Grund (Makro-Höhe, Land) binnen 6 km um die
+// Mess-Wiese ist der Gipfel; von ihm in die Richtung, in der der Grund 420 m weiter am tiefsten liegt (Land), steht der Spieler (`stehen`,
+// die Welt lädt dort), die Kamera 35 m über ihm, der Blick auf den Hang 170 m unter dem Gipfel. Die Punkte: ein Gitter je 20 m im
+// Quadrat ±300 m um die Mitte Spieler → Gipfel, trocken (`_nassAt`), auf dem gezeichneten Grund (`_voxelSurfaceY`), im Kegel der Kamera
+// und frei (der Strahl Auge → Punkt je 4 m über dem Makro-Grund + 1,5 m). Je Saison (winter · frühling · sommer · herbst; das Wort,
+// die Uhr mittags, die Welt steht nach dem Neubau der Chunks im Band, `_schneeTakt`) EIN Schuss (960×540) derselben Kamera; je Punkt
+// das Pixel (Mittel 3×3) WEISS, wenn die lineare Luma ≥ 0,3 und die Buntheit (max − min) ÷ max im sRGB ≤ 0,18. Je Saison: die Linie des
+// Bilds = das 10. Perzentil der Höhen (über dem Meer) der weißen Punkte; die Linie des Gesetzes = dasselbe über die Punkte, an denen
+// das Schnee-Gesetz des Kerns (`schnee` mit dem Versatz, den die Welt trägt, `_schneeGilt`) ≥ 0,5 gibt; Treffer = Anteil der
+// Gesetz-Schnee-Punkte, die weiß sind; Falsch = Anteil der Punkte ohne Schnee (≤ 0,1), die weiß sind.
+async function schneeJahrSitzungProbe(r, T, o, G) {
+    const { s, takt, stehen, r3 } = G;
+    const K = globalThis.__gelaendeCore;
+    const L = r._gelaende();
+    const wl = L.waterLevel;
+    const M = o.orte.wiese;
+    const [W, H] = [960, 540];
+    const aus = { schuesse: [], wl: r3(wl), jahr: {} };
+    if (window.__wetterSetzen("sunny") !== "sunny") throw new Error("das Wetter der Probe gilt nicht: sunny (es gilt " + s.weather + ")");
+    r._naesseTakt(1e6);
+    s.autoSeason = false;
+    // die Temperatur am Meer, Tagesmittel je Saison-Mitte
+    const mittel = (name) => {
+        if (!r.setSeason(name)) throw new Error("das Wort " + name + " gilt nicht");
+        const u0 = s.timeOfDay;
+        let t = 0;
+        for (let h = 0; h < 24; h++) (s.timeOfDay = h / 24), (t += r._temperaturAt(wl));
+        s.timeOfDay = u0;
+        return r3(t / 24);
+    };
+    aus.meer = { sommer: mittel("sommer"), winter: mittel("winter") };
+    // der Gipfel und die Pose
+    // der Gipfel über die Makro-Höhe allein (das Gesetz, je Ort ohne geladene Kachel); erst um ihn lädt die Welt das Wasser (`_landAt`)
+    let g = null;
+    for (let dx = -6000; dx <= 6000; dx += 150)
+        for (let dz = -6000; dz <= 6000; dz += 150) {
+            const [x, z] = [M.x + dx, M.z + dz];
+            const y = r._terrainMacroSurfaceY(x, z);
+            if (y > wl + 2 && (!g || y > g.y)) g = { x, z, y };
+        }
+    if (!g) return Object.assign(aus, { fehler: "kein Land binnen 6 km um die Mess-Wiese" });
+    await window.__weltDa(() => !r._ensureHydroTilesAround(g.x, g.z, 800));
+    let pose = null;
+    for (let k = 0; k < 16; k++) {
+        const [ux, uz] = [Math.cos((k * Math.PI) / 8), Math.sin((k * Math.PI) / 8)];
+        const [cx, cz] = [g.x + ux * 420, g.z + uz * 420];
+        if (!r._landAt(cx, cz, 1) || r._nassAt(cx, cz)) continue;
+        const cy = r._terrainMacroSurfaceY(cx, cz);
+        if (!pose || cy < pose.cy) pose = { ux, uz, cx, cz, cy };
+    }
+    if (!pose) return Object.assign(aus, { fehler: "kein trockenes Land 420 m um den Gipfel " + [g.x, g.z].map(Math.round).join("/") });
+    await stehen(pose.cx, pose.cz);
+    const E = new T.Vector3(pose.cx, r._voxelSurfaceY(pose.cx, pose.cz) + 35, pose.cz);
+    const [zx, zz] = [g.x + pose.ux * 170, g.z + pose.uz * 170];
+    const Z = new T.Vector3(zx, r._voxelSurfaceY(zx, zz), zz);
+    const cam = s.camera;
+    const stellen = () => (cam.position.copy(E), cam.lookAt(Z), cam.updateMatrixWorld(true));
+    stellen();
+    const [mx, mz] = [(pose.cx + g.x) / 2, (pose.cz + g.z) / 2];
+    const punkte = [];
+    for (let a = -300; a <= 300; a += 20)
+        for (let b = -300; b <= 300; b += 20) {
+            const [x, z] = [mx + a, mz + b];
+            if (r._nassAt(x, z) || !r._landAt(x, z, 0)) continue;
+            const p = new T.Vector3(x, r._voxelSurfaceY(x, z), z);
+            const q = p.clone().project(cam);
+            if (!(Math.abs(q.x) < 0.98 && Math.abs(q.y) < 0.98 && q.z > -1 && q.z < 1)) continue;
+            const d = p.distanceTo(E);
+            const n = Math.ceil(d / 4);
+            let frei = true;
+            for (let i = 1; i < n - 1 && frei; i++) {
+                const t = i / n;
+                const [sx, sy, sz] = [E.x + (p.x - E.x) * t, E.y + (p.y - E.y) * t, E.z + (p.z - E.z) * t];
+                if (r._terrainMacroSurfaceY(sx, sz) > sy + 1.5) frei = false;
+            }
+            if (frei) punkte.push({ x, y: p.y, z, px: Math.round(((q.x + 1) / 2) * W), py: Math.round(((1 - q.y) / 2) * H) });
+        }
+    Object.assign(aus, {
+        gipfel: [g.x, g.y - wl, g.z].map(r3),
+        kamera: [E.x, E.y, E.z, Z.x, Z.y, Z.z].map((v) => Math.round(v * 10) / 10),
+        punkte: punkte.length,
+        hoehen: punkte.length ? [r3(Math.min(...punkte.map((p) => p.y)) - wl), r3(Math.max(...punkte.map((p) => p.y)) - wl)] : null,
+    });
+    if (punkte.length < 150) return Object.assign(aus, { fehler: "nur " + punkte.length + " freie Punkte des Hangs im Bild (Soll ≥ 150)" });
+    const LUT = Array.from({ length: 256 }, (_, i) => ((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))(i / 255));
+    const q10 = (a) => (a.length ? a.slice().sort((x, y) => x - y)[Math.floor(a.length * 0.1)] : null);
+    for (const name of ["winter", "fruehling", "sommer", "herbst"]) {
+        if (!r.setSeason(name)) throw new Error("das Wort " + name + " gilt nicht");
+        r.setTimeOfDay(0.5, "regler");
+        takt(5);
+        if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+        await window.__weltStehtNach(() => takt(), 900);
+        r.setTimeOfDay(0.5, "regler");
+        takt(2);
+        stellen();
+        const { u8 } = await window.__ausgabeAufnahme(W, H);
+        aus.schuesse.push({ name, url: window.__png(u8, W, H) });
+        const v = r._schneeGilt();
+        const [weiss, gesetz] = [[], []];
+        let [gN, gW, fN, fW] = [0, 0, 0, 0];
+        for (const p of punkte) {
+            const c = [0, 0, 0];
+            let n = 0;
+            for (let dy = -1; dy <= 1; dy++)
+                for (let dx = -1; dx <= 1; dx++) {
+                    const [x, y] = [Math.min(W - 1, Math.max(0, p.px + dx)), Math.min(H - 1, Math.max(0, p.py + dy))];
+                    for (let k = 0; k < 3; k++) c[k] += u8[(y * W + x) * 4 + k];
+                    n++;
+                }
+            const [R, Gr, B] = c.map((w) => w / n);
+            const mx3 = Math.max(R, Gr, B);
+            const w = 0.2126 * LUT[Math.round(R)] + 0.7152 * LUT[Math.round(Gr)] + 0.0722 * LUT[Math.round(B)] >= 0.3 && mx3 > 0 && (mx3 - Math.min(R, Gr, B)) / mx3 <= 0.18;
+            const sg = K.schnee(L, p.y, p.x, p.z, v);
+            if (w) weiss.push(p.y - wl);
+            if (sg >= 0.5) gesetz.push(p.y - wl), gN++, w && gW++;
+            else if (sg <= 0.1) fN++, w && fW++;
+        }
+        aus.jahr[name] = {
+            versatz: r3(v),
+            weiss: weiss.length,
+            linieBild: r3(q10(weiss)),
+            linieGesetz: r3(q10(gesetz)),
+            gesetzN: gN,
+            treffer: gN ? r3(gW / gN) : null,
+            freiN: fN,
+            falsch: fN ? r3(fW / fN) : null,
+        };
+    }
+    r.setSeason("sommer");
+    return aus;
+}
+const SCHNEE_JAHR = { befehl: weltSitzungBefehl([["schneejahr", schneeJahrSitzungProbe]]), sek: 150, mutiert: true };
+const SAISONEN = ["winter", "fruehling", "sommer", "herbst"];
+// das Gemeinsame beider Urteile: vier Bilder ohne Fehler, ≥ 150 freie Punkte, eine echte Karte; je Saison die Bild-Linie am Gesetz
+// (|Bild − Gesetz| ≤ 30 m, Treffer ≥ 0,6 bei ≥ 20 Schnee-Punkten, Falsch ≤ 0,1 bei ≥ 20 Punkten ohne Schnee)
+function schneeJahrLesen(j, lauf) {
+    const { ad, hw } = adapterEcht(lauf && lauf.stdout);
+    const e = weltZeile(j, lauf, "schneejahr");
+    if (!e) return { fehler: "keine Zeile WELTPROBE schneejahr (Exit " + (lauf && lauf.exit) + ") · " + ad };
+    if (e.fehler) return { fehler: "Probe: " + e.fehler + " · " + ad, e, ad, hw };
+    const S = e.schuesse || [];
+    const bilder = SAISONEN.filter((n) => S.some((s) => s.name === n && s.datei && !s.fehler)).length;
+    if (bilder < 4 || SAISONEN.some((n) => !(e.jahr || {})[n])) return { fehler: "Bilder " + bilder + "/4 (" + SAISONEN.join(", ") + ") · " + ad };
+    const rot = [];
+    const folgt = (n) => {
+        const x = e.jahr[n];
+        if (x.linieBild == null || x.linieGesetz == null) return rot.push(n + ": keine Linie (" + x.weiss + " weiße, " + x.gesetzN + " Schnee-Punkte)"), false;
+        let ok = Math.abs(x.linieBild - x.linieGesetz) <= 30;
+        if (x.gesetzN >= 20 && !(x.treffer >= 0.6)) ok = false;
+        if (x.freiN >= 20 && !(x.falsch <= 0.1)) ok = false;
+        if (!ok) rot.push(n + " folgt dem Gesetz nicht");
+        return ok;
+    };
+    const zeile = (n) => {
+        const x = e.jahr[n];
+        return n + " Bild " + x.linieBild + " m · Gesetz " + x.linieGesetz + " m (Versatz " + x.versatz + ", Treffer " + x.treffer + " aus " + x.gesetzN + ", Falsch " + x.falsch + " aus " + x.freiN + ")";
+    };
+    const weg = e.jahr.sommer.linieBild != null && e.jahr.winter.linieBild != null ? r3z(e.jahr.sommer.linieBild - e.jahr.winter.linieBild) : null;
+    return { e, ad, hw, rot, folgt, zeile, weg, kopf: "Gipfel " + (e.gipfel || []).join("/") + ", " + e.punkte + " freie Punkte " + (e.hoehen || []).join("–") + " m über dem Meer" };
+}
+const r3z = (v) => Math.round(v * 1000) / 1000;
+// planet.kopplung.bahn-klima S1: die Linie des Bilds folgt in JEDER der vier Saisons dem Gesetz, und sie wandert: Sommer − Winter ≥ 100 m
+function bahnKlimaUrteil(j, lauf) {
+    const l = schneeJahrLesen(j, lauf);
+    if (l.fehler) return { gruen: false, zahl: l.fehler };
+    const alle = SAISONEN.map(l.folgt).every(Boolean);
+    return {
+        gruen: l.hw && alle && l.weg != null && l.weg >= 100,
+        zahl: l.kopf + " · " + SAISONEN.map(l.zeile).join(" · ") + " · Sommer − Winter " + (l.weg == null ? "—" : l.weg) + " m (Soll ≥ 100)" +
+            (l.rot.length ? " · ROT " + l.rot.join(", ") : "") + " · " + l.ad,
+    };
+}
+// planet.wetter.klimazonen S1: am Meer Tagesmittel 18 ± 0,5 °C zur Sommer-, −4 ± 0,5 °C zur Winter-Mitte, und die Schneegrenze folgt der
+// Saison im Bild (Winter und Sommer am Gesetz, Sommer − Winter ≥ 100 m)
+function klimazonenUrteil(j, lauf) {
+    const l = schneeJahrLesen(j, lauf);
+    if (l.fehler) return { gruen: false, zahl: l.fehler };
+    const m = l.e.meer || {};
+    const temp = Math.abs(m.sommer - 18) <= 0.5 && Math.abs(m.winter + 4) <= 0.5;
+    const folgt = ["winter", "sommer"].map(l.folgt).every(Boolean);
+    return {
+        gruen: l.hw && temp && folgt && l.weg != null && l.weg >= 100,
+        zahl: "am Meer Tagesmittel Sommer " + m.sommer + " °C (Soll 18 ± 0,5), Winter " + m.winter + " °C (Soll −4 ± 0,5) · " + ["winter", "sommer"].map(l.zeile).join(" · ") +
+            " · Sommer − Winter " + (l.weg == null ? "—" : l.weg) + " m (Soll ≥ 100)" + (l.rot.length ? " · ROT " + l.rot.join(", ") : "") + " · " + l.ad,
+    };
+}
+const SCHNEE_JAHR_ROH = {
+    schuesse: SAISONEN.map((n, i) => ({ name: n, datei: "x-schneejahr-s" + (i + 1) + ".png" })),
+    wl: 0,
+    meer: { sommer: 18, winter: -4 },
+    gipfel: [1200, 196, -800],
+    kamera: [1500, 60, -500, 1300, 120, -700],
+    punkte: 640,
+    hoehen: [4, 192],
+    jahr: {
+        winter: { versatz: -160, weiss: 420, linieBild: 12, linieGesetz: 9, gesetzN: 600, treffer: 0.71, freiN: 0, falsch: null },
+        fruehling: { versatz: -120, weiss: 300, linieBild: 41, linieGesetz: 38, gesetzN: 420, treffer: 0.7, freiN: 150, falsch: 0.02 },
+        sommer: { versatz: 0, weiss: 40, linieBild: 150, linieGesetz: 146, gesetzN: 52, treffer: 0.77, freiN: 560, falsch: 0.01 },
+        herbst: { versatz: 10, weiss: 30, linieBild: 158, linieGesetz: 156, gesetzN: 40, treffer: 0.75, freiN: 580, falsch: 0.01 },
+    },
+};
+const schneeJahrRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") =>
+    ad + "\nWELTPROBE schneejahr " + JSON.stringify(aendern(JSON.parse(JSON.stringify(SCHNEE_JAHR_ROH))));
+
+// DER KREISLAUF IM ECHTEN FENSTER (Karte 2 planet.wasser.kreislauf S1 „Pegel nach Sturm im Bild; Scheitel-Verzug gegen Einzugsgebiet im
+// Erd-Band; Regen × Fläche ↔ ΔVolumen ±10 %“): die Ganglinie von wetter.K3#2 (`k3Ganglinie` oben: zwei Bäche um den Bach der Mess-Wiese
+// mit A-Verhältnis ≥ 4, 10 s Niesel als Wort, 12 Spielstunden in 2-s-Schritten der Welt-Uhr gegen denselben Lauf ohne Niesel, der Abfluss
+// nach der Pegel-Abfluss-Beziehung des Gesetzes) in der EINEN warmen Welt der Sitzung — dazu der SCHEITEL (der Schritt des größten
+// Mehr-Abflusses) hinter dem Schwerpunkt des Regens, je Bach. Danach das Bildpaar am Bach (wie die Karten-Hälfte von wetter.K3#2: 7 m quer
+// zu seinem Lauf, Augenhöhe, die Klassen des gezeichneten Wassers) trocken und nach 20 min Sturm der Welt-Uhr (`__vorBild` stellt die
+// Welt vor dem Schuss: „trocken“ · „sturm“).
+async function kreislaufSitzungProbe(r, T, o) {
+    const st = r.state;
+    const K = globalThis.__gelaendeCore;
+    const R = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+    const P = [-258.4, -1132.8];
+    const wort = (w, sek) => {
+        if (window.__wetterSetzen(w) !== w) throw new Error("das Wetter der Probe gilt nicht: " + w + " (es gilt " + st.weather + ")");
+        r._naesseTakt(sek);
+    };
+    const uhr = () => [st.spielZeit, st.regenStempel && st.regenStempel.slice()];
+    const zu = ([t, S]) => ((st.spielZeit = t), (st.regenStempel = S && S.slice()), r._pegelTakt());
+    const [L, tagS, u] = [r._gelaende(), r.constructor.DAY_LENGTH_DEFAULT_MINUTES * 60, uhr()];
+    const ruhe = Object.create(L, { pegel: { value: null } });
+    const gl = K.flussLaeufe(L, P[0] - 800, P[1] - 800, P[0] + 800, P[1] + 800, 8)
+        .flatMap((lf) => lf.glieder.map(({ A, bahn }) => ({ A, ...bahn[bahn.length >> 1] })))
+        .filter((q) => (r._hydroRiverAt(q.x, q.z) || {}).centerness > 0.9)
+        .sort((a, b) => a.A - b.A);
+    const orte = [gl[0], gl.find((q) => q.A >= 4 * gl[0].A)];
+    if (!orte[0] || !orte[1]) return { fehler: "keine zwei Bäche mit A-Verhältnis ≥ 4 um den Bach der Mess-Wiese", glieder: gl.length };
+    const hub = () => orte.map((q) => r._hydroRiverAt(q.x, q.z).surfaceY - K.flussAm(ruhe, q.x, q.z).surfaceY);
+    const Hg = L.hydroGesetz;
+    const tf = (1 - Hg.spiegelFreibord) * Hg.kanalTiefe;
+    const Q = (h) => K.PEGEL.spende * (Math.pow(Math.max(0, 1 + h / tf), 1 / 0.6) - 1);
+    const aus = {};
+    try {
+        wort("sunny", 1e6);
+        zu([st.spielZeit + tagS, st.regenStempel]);
+        const eins = uhr();
+        const reihe = (puls) => {
+            zu(eins);
+            const y = [];
+            for (let k = 0; 2 * k <= tagS / 2; k++) {
+                st.spielZeit = eins[0] + 2 * k;
+                if (puls && (k === 5 || k === 10)) wort(k === 5 ? "cloudy" : "sunny", 0);
+                r._pegelTakt();
+                y.push(hub());
+            }
+            return y;
+        };
+        const [mit, ohne] = [reihe(true), reihe(false)];
+        const mehr = (i) => mit.map((y, k) => Q(y[i]) - Q(ohne[k][i]));
+        const V = [0, 1].map((i) => (mehr(i).reduce((s, q) => s + q, 0) * 2) / tagS);
+        const D = (K.PEGEL.regen * r.constructor.WEATHER_FIELD.cloudy.rain * 10) / tagS;
+        // Spielstunden hinter dem Schwerpunkt des Regens (15 s der Welt-Uhr): der Schwerpunkt der Ganglinie und ihr Scheitel
+        const std = (sek) => ((sek - 15) * 24) / tagS;
+        const lag = V.map((v, i) => (v > 0 ? std((mehr(i).reduce((s, q, k) => s + q * 2 * k, 0) * 2) / tagS / v) : 0));
+        const scheitel = [0, 1].map((i) => {
+            const m = mehr(i);
+            return std(2 * m.reduce((b, q, k) => (q > m[b] ? k : b), 0));
+        });
+        Object.assign(aus, {
+            A: orte.map((q) => R(q.A / 1e6)),
+            lag: lag.map(R),
+            scheitel: scheitel.map(R),
+            bilanz: V.map((v) => R(v / D)),
+            volumen: V.map((v, i) => [Math.round(D * orte[i].A * 10) / 10, Math.round(v * orte[i].A * 10) / 10]),
+        });
+    } finally {
+        zu(u);
+    }
+    // das Bildpaar am Bach der Mess-Wiese: die Welt stellt `__vorBild` vor jedem Schuss
+    const f = r._hydroRiverAt(P[0], P[1]);
+    if (!f) return Object.assign(aus, { fehler: "kein Bach an " + P.join("/") });
+    window.__vorBild = async (stufe) => {
+        if (stufe === "trocken") {
+            wort("sunny", 1e6);
+            window.__k3Grund = st.regenStempel && st.regenStempel.slice();
+            r._pegelTakt();
+            return { y: R(r._hydroRiverAt(P[0], P[1]).surfaceY) };
+        }
+        wort("stormy", 0);
+        for (let k = 0; k < 240; k++) (st.spielZeit += 5), r._tickRain();
+        wort("sunny", 0);
+        r._pegelTakt();
+        r._drainDirtyVoxelChunks();
+        return { y: R(r._hydroRiverAt(P[0], P[1]).surfaceY) };
+    };
+    const [ex, ez] = [P[0] - f.flowZ * 7, P[1] + f.flowX * 7];
+    const kamera = [ex, r._voxelSurfaceY(ex, ez) + 1.7, ez, P[0], f.surfaceY, P[1]].map(R);
+    const klasse = "^(wasserSatz|chunk-water-[a-z]+)$";
+    return Object.assign(aus, { bach: P, bilder: [{ vor: ["trocken"], kamera, klasse }, { vor: ["sturm"], kamera, klasse }] });
+}
+const KREISLAUF_SITZUNG = { befehl: weltSitzungBefehl([["kreislauf", kreislaufSitzungProbe]]), sek: 90, mutiert: true };
+// das Urteil: der Pegel am Bach +≥ 0,15 m nach dem Sturm und das gezeichnete Wasser im zweiten Bild ≥ 5 % mehr Pixel (wetter.K3#2, die
+// Karten-Hälfte); A-Verhältnis ≥ 4 und das Verhältnis der Scheitel-Verzüge im Erd-Band (Snyder mit Hack: t ∝ A^0,3…0,45); die Bilanz
+// Regen × Fläche ↔ ΔVolumen je Bach in [0,9; 1,1]; eine echte Karte
+function kreislaufUrteil(j, lauf) {
+    const { ad, hw } = adapterEcht(lauf && lauf.stdout);
+    const e = weltZeile(j, lauf, "kreislauf");
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE kreislauf (Exit " + (lauf && lauf.exit) + ") · " + ad };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler + " · " + ad };
+    const B = e.bilder || [];
+    const px = (b) => Object.entries((b && b.klassen) || {}).reduce((n, [k, v]) => n + (/^(wasserSatz|chunk-water-)/.test(k) ? v.pixel || 0 : 0), 0);
+    const bilder = B.filter((b) => b.datei && !b.fehler && b.klassen).length;
+    if (bilder < 2) return { gruen: false, zahl: "Bilder " + bilder + "/2 (trocken, sturm) am Bach" + B.filter((b) => b.fehler).map((b) => " FEHLER " + b.fehler).slice(0, 1).join("") + " · " + ad };
+    const [p0, p1] = [px(B[0]), px(B[1])];
+    const y0 = B[0].vor && B[0].vor.y;
+    const y1 = B[1].vor && B[1].vor.y;
+    const hub = Number.isFinite(y0) && Number.isFinite(y1) ? r3z(y1 - y0) : null;
+    const aV = e.A[0] > 0 ? e.A[1] / e.A[0] : 0;
+    const sV = e.scheitel[0] > 0 ? e.scheitel[1] / e.scheitel[0] : 0;
+    const band = aV > 1 ? [Math.pow(aV, 0.3), Math.pow(aV, 0.45)] : [Infinity, Infinity];
+    const bil = (e.bilanz || []).length === 2 && e.bilanz.every((b) => b >= 0.9 && b <= 1.1);
+    return {
+        gruen: hw && hub != null && hub >= 0.15 && p0 > 0 && p1 >= 1.05 * p0 && aV >= 4 && sV >= band[0] && sV <= band[1] && bil,
+        zahl: "Bach +" + hub + " m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild " + p0 + " → " + p1 + " px (×" + (p0 ? (p1 / p0).toFixed(2) : "—") + ", Soll ≥ 1,05) · A " +
+            e.A.join(" ↔ ") + " km² (×" + aV.toFixed(1) + ") · Scheitel " + e.scheitel.join(" ↔ ") + " Spielstunden (×" + sV.toFixed(2) + ", Erd-Band " +
+            band.map((v) => v.toFixed(2)).join("–") + "; Schwerpunkt " + (e.lag || []).join(" ↔ ") + ") · Bilanz " + (e.bilanz || []).join(" / ") + " (Soll 0,9–1,1; " +
+            (e.volumen || []).map((x) => x.join(" ↔ ")).join(" / ") + " m³) · " + ad,
+    };
+}
+const KREISLAUF_ROH = {
+    A: [0.16, 0.8],
+    lag: [1, 1.9],
+    scheitel: [0.8, 1.5],
+    bilanz: [1.006, 0.978],
+    volumen: [[3.8, 3.9], [19.2, 18.8]],
+    bach: [-258.4, -1132.8],
+    bilder: [
+        { vor: { y: 1.2 }, kamera: [-255, 3, -1130, -258.4, 1.2, -1132.8], klasse: "^(wasserSatz|chunk-water-[a-z]+)$", datei: "x-kreislauf-1.png", fehler: null, klassen: { wasserSatz: { pixel: 40000, objekte: 1 } } },
+        { vor: { y: 1.5 }, kamera: [-255, 3, -1130, -258.4, 1.2, -1132.8], klasse: "^(wasserSatz|chunk-water-[a-z]+)$", datei: "x-kreislauf-2.png", fehler: null, klassen: { wasserSatz: { pixel: 52000, objekte: 1 } } },
+    ],
+};
+const kreislaufRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWELTPROBE kreislauf " + JSON.stringify(aendern(JSON.parse(JSON.stringify(KREISLAUF_ROH))));
+
+// DIE LÄUFE IM ECHTEN FENSTER (Karte 2 planet.relief.grossform S1 „im Spiel an 20 Orten nachgefahren: 100 % der Läufe enden in See oder
+// Meer“): die Läufe-Probe der Wasser-Linse (`__wasserLaeufe`, scripts/lib/wasser-linse.cjs, installiert über WASSER_INSTALL — dieselbe
+// Probe wie gelaende.K4#2 headless, kein Zwilling) in der EINEN warmen Welt der Sitzung: jeder Lauf des Gesetzes (`flussLaeufe` ±3 km)
+// bis zu seiner Senke verfolgt, jede Senke nass. Dazu 20 Orte: je Lauf (längste zuerst) der erste nasse Punkt seiner Bahn, je ≥ 500 m
+// auseinander; an jedem steht der Spieler 8 m daneben (`__vorBild`, die Welt lädt dort), und die Sitzung schießt das Bild mit den Klassen
+// des gezeichneten Wassers — die Kamera 6 m schräg, 4 m über dem Spiegel, der Blick auf den Ort; je Ort das Ende SEINES Laufs.
+async function laeufeSitzungProbe(r, T, o, G) {
+    const K = globalThis.__gelaendeCore;
+    const L = r._gelaende();
+    const R = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+    const aus = { laeufe: await window.__wasserLaeufe() };
+    const alle = K.flussLaeufe(L, -3072, -3072, 3072, 3072, 16).sort((a, b) => b.glieder.length - a.glieder.length);
+    const orte = [];
+    for (const l of alle) {
+        if (orte.length >= 20) break;
+        const bahn = l.glieder.flatMap((g) => g.bahn || []);
+        let gefragt = 0;
+        for (let i = 0; i < bahn.length && gefragt < 40; i += 4) {
+            const q = bahn[i];
+            if (orte.some((p) => Math.hypot(p.x - q.x, p.z - q.z) < 500)) continue;
+            gefragt++;
+            await window.__weltDa(() => !r._ensureHydroTilesAround(q.x, q.z, 64));
+            if (!r._nassAt(q.x, q.z)) continue;
+            orte.push({ x: q.x, z: q.z });
+            break;
+        }
+    }
+    window.__vorBild = async (x, z) => {
+        await G.stehen(x + 8, z);
+        return { nass: r._nassAt(x, z) };
+    };
+    const klasse = "^(wasserSatz|chunk-water-[a-z]+)$";
+    aus.orte = orte.map((p) => [R(p.x), R(p.z)]);
+    aus.bilder = orte.map((p) => {
+        const S = r._atlasWaterLevelAt(p.x, p.z, r._voxelSurfaceY(p.x, p.z));
+        return { vor: [p.x, p.z], kamera: [p.x + 6, S + 4, p.z + 6, p.x, S, p.z].map(R), klasse };
+    });
+    return aus;
+}
+const LAEUFE_SITZUNG = { befehl: weltSitzungBefehl([["laeufe", laeufeSitzungProbe, { install: ["scripts/lib/wasser-linse.cjs", "WASSER_INSTALL"] }]]), sek: 180, mutiert: true };
+// das Urteil: 20 Orte mit je einem Bild, das gezeichnetes Wasser trägt (> 0 Pixel der Klassen) und am Ort nass ist; JEDER Lauf des Gesetzes
+// (nicht nur die 20, jeder über Rand und Mündung bis zu seiner Senke) endet in See oder Meer, jede Senke nass; eine echte Karte
+function laeufeUrteil(j, lauf) {
+    const { ad, hw } = adapterEcht(lauf && lauf.stdout);
+    const e = weltZeile(j, lauf, "laeufe");
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE laeufe (Exit " + (lauf && lauf.exit) + ") · " + ad };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler + " · " + ad };
+    const l = e.laeufe || {};
+    const ende = l.ende || {};
+    const inSenke = (ende.see || 0) + (ende.meer || 0);
+    const B = e.bilder || [];
+    const px = (b) => Object.entries((b && b.klassen) || {}).reduce((n, [k, v]) => n + (/^(wasserSatz|chunk-water-)/.test(k) ? v.pixel || 0 : 0), 0);
+    const gut = B.filter((b) => b.datei && !b.fehler && px(b) > 0 && b.vor && b.vor.nass === true).length;
+    return {
+        gruen: hw && B.length >= 20 && gut === B.length && l.laeufe > 0 && inSenke === l.laeufe && l.nass === l.senken && !(l.trocken || []).length,
+        zahl: "Läufe " + inSenke + " von " + l.laeufe + " in See oder Meer (" + Object.entries(ende).map(([k, v]) => k + " " + v).join(", ") + "), Senken nass " + l.nass + "/" + l.senken +
+            ((l.trocken || []).length ? ", trocken " + JSON.stringify(l.trocken.slice(0, 3)) : "") + " · Orte " + B.length + " (Soll 20): Wasser im Bild und nass " + gut + "/" + B.length +
+            B.filter((b) => b.fehler).map((b) => " FEHLER " + b.fehler).slice(0, 1).join("") + " · " + ad,
+    };
+}
+const LAEUFE_ROH = {
+    laeufe: { laeufe: 293, ende: { see: 121, meer: 172 }, nass: 40, trocken: [], schritte: 9000, steigt: 0, senken: 40 },
+    orte: Array.from({ length: 20 }, (_, i) => [i * 600 - 3000, 100]),
+    bilder: Array.from({ length: 20 }, (_, i) => ({ vor: { nass: true }, kamera: [i * 600 - 2994, 5, 106, i * 600 - 3000, 1, 100], klasse: "^(wasserSatz|chunk-water-[a-z]+)$",
+        datei: "x-laeufe-" + (i + 1) + ".png", fehler: null, klassen: { wasserSatz: { pixel: 30000, objekte: 1 } } })),
+};
+const laeufeRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWELTPROBE laeufe " + JSON.stringify(aendern(JSON.parse(JSON.stringify(LAEUFE_ROH))));
+
+// DER TRAMPELPFAD IM ECHTEN FENSTER (Karte 2 same.gedaechtnis.pfad S1 „Büschel auf / neben dem Weg vor ↔ nach im Bild, beide Geräte“ ·
+// leben.kopplung.leben-formt-planet S1 „Gras-Dichte auf dem Weg −≥ 60 % gegen daneben im Bildpaar“ — EIN Lauf, zwei Proben, zwei Urteile):
+// derselbe Weg wie stoffe.K4#2 (`alterSpurProbe`: an der Mess-Wiese 100 × dieselbe Strecke von 8 m mit der Taste w im Takt des Spiels,
+// die Büschel der Nah-Wiese über `alterSpurMessen` im Streifen ±0,5 m und 4 m daneben), aber in der EINEN warmen Welt der Sitzung und mit
+// dem Bild: je Streifen EINE Kamera 1,6 m über seiner Mitte, der Blick steil hinab 0,4 m längs des Wegs voraus (die Bild-Senkrechte folgt
+// dem Weg), die Sitzung zählt die Pixel der Klassen der Nah-Wiese (`^nahWiese`) — `pfad-vor` vor dem ersten Gang, `pfad-nach` nach dem
+// hundertsten; der Spieler steht für die Bilder 12 m quer zur anderen Seite.
+async function pfadVorSitzungProbe(r, T, o, G) {
+    const { s, takt, stehen, r3 } = G;
+    const W = o.orte.wiese;
+    const H = (x, z) => r._voxelSurfaceY(x, z);
+    s.autoSeason = false;
+    r.setSeason("sommer");
+    G.trocken();
+    await stehen(W.x, W.z);
+    const pm = s.playerMesh;
+    const p0 = pm.position.clone();
+    s.yaw = 0;
+    s.verbTafel.gehalten.vor = true;
+    takt(60);
+    s.verbTafel.gehalten.vor = false;
+    const dw = [pm.position.x - p0.x, pm.position.z - p0.z];
+    const lw = Math.hypot(dw[0], dw[1]);
+    if (!(lw > 0.5)) return { fehler: "w trägt den Spieler nicht (" + r3(lw) + " m in 1 s)" };
+    const [ux, uz] = [dw[0] / lw, dw[1] / lw];
+    const a = [r3(W.x), r3(W.z)];
+    const b = [r3(W.x + ux * 8), r3(W.z + uz * 8)];
+    const plan = { bloecke: {}, weg: { a, b } };
+    await stehen(a[0], a[1]);
+    for (let i = 0; i < 20 && alterSpurMessen(r, T, G, plan).gras.weg === null; i++) takt(30);
+    const kamera = (quer) => {
+        const [mx, mz] = [(a[0] + b[0]) / 2 - uz * quer, (a[1] + b[1]) / 2 + ux * quer];
+        const y = H(mx, mz);
+        return [mx, y + 1.6, mz, mx + ux * 0.4, y, mz + uz * 0.4].map(r3);
+    };
+    const abseits = [(a[0] + b[0]) / 2 + uz * 12, (a[1] + b[1]) / 2 - ux * 12];
+    window.__pfadPlan = { plan, ux, uz, abseits };
+    window.__vorBild = async () => {
+        await stehen(abseits[0], abseits[1]);
+        return { steht: true };
+    };
+    const klasse = "^nahWiese";
+    return { plan, gras: alterSpurMessen(r, T, G, plan).gras, bilder: [{ vor: [], kamera: kamera(0), klasse }, { vor: [], kamera: kamera(4), klasse }] };
+}
+async function pfadNachSitzungProbe(r, T, o, G) {
+    const { s, A, takt, stehen, r3 } = G;
+    const P = window.__pfadPlan;
+    if (!P) return { fehler: "kein Plan der Probe pfad-vor" };
+    const { plan, ux, uz, abseits } = P;
+    const [a, b] = [plan.weg.a, plan.weg.b];
+    const H = (x, z) => r._voxelSurfaceY(x, z);
+    const pm = s.playerMesh;
+    let gaenge = 0;
+    for (let k = 0; k < 100; k++) {
+        pm.position.set(a[0], H(a[0], a[1]) + A.PLAYER_FOOT_OFFSET, a[1]);
+        s.playerVel.setValue(0, 0, 0);
+        s.yaw = 0;
+        takt(2);
+        s.verbTafel.gehalten.vor = true;
+        for (let i = 0; i < 1200 && Math.hypot(pm.position.x - a[0], pm.position.z - a[1]) < 8; i++) takt();
+        s.verbTafel.gehalten.vor = false;
+        if (Math.hypot(pm.position.x - a[0], pm.position.z - a[1]) >= 7.9) gaenge++;
+    }
+    s.playerVel.setValue(0, 0, 0);
+    takt(30);
+    const gras = alterSpurMessen(r, T, G, plan).gras;
+    const kamera = (quer) => {
+        const [mx, mz] = [(a[0] + b[0]) / 2 - uz * quer, (a[1] + b[1]) / 2 + ux * quer];
+        const y = H(mx, mz);
+        return [mx, y + 1.6, mz, mx + ux * 0.4, y, mz + uz * 0.4].map(r3);
+    };
+    window.__vorBild = async () => {
+        await stehen(abseits[0], abseits[1]);
+        return { steht: true };
+    };
+    const klasse = "^nahWiese";
+    return { gaenge, gras, bilder: [{ vor: [], kamera: kamera(0), klasse }, { vor: [], kamera: kamera(4), klasse }] };
+}
+const PFAD_SITZUNG = {
+    befehl: weltSitzungBefehl([["pfad-vor", pfadVorSitzungProbe], ["pfad-nach", pfadNachSitzungProbe]], [alterSpurMessen]),
+    sek: 300,
+    mutiert: true,
+};
+// das Gemeinsame: beide Zeilen, je zwei Bilder ohne Fehler, 100 Gänge, eine echte Karte; die Pixel der Nah-Wiese je Streifen vor/nach
+function pfadLesen(j, lauf) {
+    const { ad, hw } = adapterEcht(lauf && lauf.stdout);
+    const [v, n] = [weltZeile(j, lauf, "pfad-vor"), weltZeile(j, lauf, "pfad-nach")];
+    if (!v || !n) return { fehler: "keine Zeile WELTPROBE " + (v ? "pfad-nach" : "pfad-vor") + " (Exit " + (lauf && lauf.exit) + ") · " + ad };
+    if (v.fehler || n.fehler) return { fehler: "Probe: " + (v.fehler || n.fehler) + " · " + ad };
+    const px = (x) => Object.entries((x && x.klassen) || {}).reduce((s, [k, w]) => s + (/^nahWiese/.test(k) ? w.pixel || 0 : 0), 0);
+    const B = [...(v.bilder || []), ...(n.bilder || [])];
+    const bilder = B.filter((x) => x.datei && !x.fehler && x.klassen).length;
+    if (bilder < 4) return { fehler: "Bilder " + bilder + "/4 (Weg und daneben, vor und nach) · " + ad };
+    const bild = { weg: [px(v.bilder[0]), px(n.bilder[0])], neben: [px(v.bilder[1]), px(n.bilder[1])] };
+    const gv = v.gras || {};
+    const gn = n.gras || {};
+    const zeile = "nach " + n.gaenge + " Gängen (Soll 100): Gras im Bild Weg " + bild.weg.join(" → ") + " px, daneben " + bild.neben.join(" → ") + " px · Büschel Weg " + gv.weg + " → " + gn.weg +
+        ", daneben " + gv.neben + " → " + gn.neben;
+    return { ad, hw, v, n, bild, gv, gn, zeile, gaenge: n.gaenge >= 100 };
+}
+// same.gedaechtnis.pfad S1: auf dem Weg fällt das Gras im Bild auf ≤ 40 % (vorher ≥ 1 000 px), daneben bleibt es (0,85–1,15 ×) — und die
+// Büschel der Liste, die die Wiese zeichnet, sagen dasselbe (Weg ≤ 40 %, vorher ≥ 10; daneben 0,85–1,15 ×)
+function pfadUrteil(j, lauf) {
+    const l = pfadLesen(j, lauf);
+    if (l.fehler) return { gruen: false, zahl: l.fehler };
+    const { bild: b, gv, gn } = l;
+    const ok =
+        b.weg[0] >= 1000 && b.weg[1] <= 0.4 * b.weg[0] && b.neben[0] > 0 && b.neben[1] >= 0.85 * b.neben[0] && b.neben[1] <= 1.15 * b.neben[0] &&
+        gv.weg >= 10 && gn.weg <= 0.4 * gv.weg && gn.neben >= 0.85 * gv.neben && gn.neben <= 1.15 * gv.neben;
+    return { gruen: l.hw && l.gaenge && ok, zahl: l.zeile + " (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · " + l.ad };
+}
+// leben.kopplung.leben-formt-planet S1: im Bildpaar nach dem Gang trägt der Weg ≤ 40 % des Grases daneben (−≥ 60 %), vorher trugen beide
+// Streifen vergleichbar (Weg ≥ 0,7 × daneben)
+function lebenFormtUrteil(j, lauf) {
+    const l = pfadLesen(j, lauf);
+    if (l.fehler) return { gruen: false, zahl: l.fehler };
+    const b = l.bild;
+    const q = b.neben[1] > 0 ? b.weg[1] / b.neben[1] : null;
+    const ok = b.neben[0] >= 1000 && b.weg[0] >= 0.7 * b.neben[0] && q != null && q <= 0.4;
+    return {
+        gruen: l.hw && l.gaenge && ok,
+        zahl: l.zeile + " · nach dem Gang Weg ÷ daneben " + (q == null ? "—" : q.toFixed(3)) + " (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · " + l.ad,
+    };
+}
+const PFAD_ROH = {
+    vor: { plan: { bloecke: {}, weg: { a: [-280.4, -1045.6], b: [-280.4, -1037.6] } }, gras: { weg: 13, neben: 17 },
+        bilder: [{ datei: "x-pfad-vor-1.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 300000, objekte: 4 } } }, { datei: "x-pfad-vor-2.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 320000, objekte: 4 } } }] },
+    nach: { gaenge: 100, gras: { weg: 3, neben: 17 },
+        bilder: [{ datei: "x-pfad-nach-1.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 60000, objekte: 4 } } }, { datei: "x-pfad-nach-2.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 318000, objekte: 4 } } }] },
+};
+const pfadRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => {
+    const x = aendern(JSON.parse(JSON.stringify(PFAD_ROH)));
+    return ad + "\nWELTPROBE pfad-vor " + JSON.stringify(x.vor) + "\nWELTPROBE pfad-nach " + JSON.stringify(x.nach);
+};
 const BRAND_PFAD = ["stamm/feld-*.js", "stamm/bild-*.js", "stamm/dirigent-*.js", "stamm/gelaende-*.js", "stamm/wasser-*.js", "stamm/vegetation-*.js",
     "foundry-core.js", "fachwerk-core.js", "gelaende-core.js", "scripts/werkbank.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"];
 // DIE FRONT IM ECHTEN FENSTER (wetter.K1#2, die Karten-Hälfte; Karte 2 planet.wetter.lagen S1 „Regen an A bei trockenem B ≥ 20 % der Zeit,
@@ -4402,6 +5046,185 @@ module.exports = [
         pfad: ["gelaende-core.js", "stamm/gelaende-*.js", "stamm/bild-*.js", "stamm/dirigent-*.js", "stamm/feld-*.js", "stamm/stoff-*.js", "scripts/werkbank.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "KARTE2 same.kopplung.ereignis S1 = Bild der Zelle in Glut und erstarrt, beide Geräte",
+    },
+    // ───────── KARTE 2, Welle 3 (vorrat3-stationen-g1): Seil, Schneelinie über das Jahr, Kreislauf am Bach — im echten Fenster ─────────
+    // Bis hierher urteilten physik.K4#1, stoffe.K3#2 + wetter.K4#1 und wetter.K3#2 (headless) nur am Null-Renderer; gebaut am Zweig
+    // vorrat3-stationen-g1 (16.11.), headless nur im Selbsttest der Punkte-Maschine geprüft — am Fenster beider Geräte ungemessen.
+    {
+        kriterium: "karte2.same.physik.verformung",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: SEIL_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 2,
+        urteil: seilBildUrteil,
+        proben: [
+            { name: "der Flegel schwingt, die Länge längs hält, jedes Teil im Bild", stdout: seilRoh((x) => x), gruen: true },
+            { name: "kein Flegel (nur eine Kette)", stdout: seilRoh((x) => ((x.je = { klinge_kette: x.je.klinge_flegel }), (x.schuesse[0].name = "klinge_kette"), x)), gruen: false },
+            { name: "das Seil starr am Griff (kein Schwung)", stdout: seilRoh((x) => ((x.je.klinge_flegel.schwungM = 0.004), x)), gruen: false },
+            { name: "die Länge dehnt sich um 5 %", stdout: seilRoh((x) => ((x.je.klinge_flegel.laengeM = [0.32, 0.336]), x)), gruen: false },
+            { name: "die Sehne statt der Länge längs (Teile ohne Nummer)", stdout: seilRoh((x) => ((x.je.klinge_flegel.laengeArt = "sehne vom Anker"), x)), gruen: false },
+            { name: "ohne Gesetz im Buch (kein Anker)", stdout: seilRoh((x) => ((x.je.klinge_flegel.anker = null), x)), gruen: false },
+            { name: "der Schwung klingt nicht ab", stdout: seilRoh((x) => ((x.je.klinge_flegel.energie = [3.1, 2.9]), x)), gruen: false },
+            { name: "die Teile außerhalb des Bilds (40 % der Takte im Kegel)", stdout: seilRoh((x) => ((x.je.klinge_flegel.imBild = 0.4), x)), gruen: false },
+            { name: "kein Schuss", stdout: seilRoh((x) => ((x.schuesse = []), x)), gruen: false },
+            { name: "keine Zeile", stdout: "[linse-gpu] amd/rdna-3 (Probe)", gruen: false },
+            { name: "swiftshader", stdout: seilRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: ["stamm/koerper-*.js", "stamm/bau-*.js", "stamm/studio-bruecke.js", "schmiede-core.js", "koerper-core.js", "foundry-core.js", "scripts/werkbank.cjs", ...WELT_PFAD],
+        quelle: "KARTE2 same.physik.verformung S1 = Flegel schwingt am Leib des Spielers, Seillänge im Bild ±2 %, beide Geräte",
+    },
+    {
+        kriterium: "karte2.planet.kopplung.bahn-klima",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: SCHNEE_JAHR,
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: bahnKlimaUrteil,
+        proben: [
+            { name: "die Linie des Bilds folgt dem Gesetz in vier Saisons und wandert 138 m", stdout: schneeJahrRoh((x) => x), gruen: true },
+            { name: "die Linie wandert nicht (Sommer wie Winter)", stdout: schneeJahrRoh((x) => Object.assign(x.jahr.sommer, { linieBild: 20, linieGesetz: 20 }) && x), gruen: false },
+            { name: "im Herbst malt das Bild eine andere Linie als das Gesetz", stdout: schneeJahrRoh((x) => ((x.jahr.herbst.linieBild = 60), x)), gruen: false },
+            { name: "Weiß ohne Schnee im Sommer (Dunst, Farbe)", stdout: schneeJahrRoh((x) => ((x.jahr.sommer.falsch = 0.4), x)), gruen: false },
+            { name: "der Winter-Schnee fehlt im Bild", stdout: schneeJahrRoh((x) => ((x.jahr.winter.treffer = 0.2), x)), gruen: false },
+            { name: "kein Weiß im Sommer (die Linie über jedem Gipfel im Bild)", stdout: schneeJahrRoh((x) => Object.assign(x.jahr.sommer, { weiss: 0, linieBild: null }) && x), gruen: false },
+            { name: "ein Bild fehlt", stdout: schneeJahrRoh((x) => ((x.schuesse = x.schuesse.slice(0, 3)), x)), gruen: false },
+            { name: "zu wenige freie Punkte", stdout: schneeJahrRoh((x) => ((x.fehler = "nur 40 freie Punkte des Hangs im Bild (Soll ≥ 150)"), x)), gruen: false },
+            { name: "swiftshader", stdout: schneeJahrRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: ["gelaende-core.js", "stamm/bild-himmel.js", "stamm/gelaende-*.js", "stamm/siedlung-ort.js", "stamm/wasser-*.js", "voxel-worker.js", "scripts/werkbank.cjs", ...WELT_PFAD],
+        quelle: "KARTE2 planet.kopplung.bahn-klima S1 = Schneelinie wandert über das Jahr im Bild",
+    },
+    {
+        kriterium: "karte2.planet.wetter.klimazonen",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: SCHNEE_JAHR,
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: klimazonenUrteil,
+        proben: [
+            { name: "18/−4 °C am Meer, die Grenze folgt der Saison im Bild", stdout: schneeJahrRoh((x) => x), gruen: true },
+            { name: "der Herbst weicht ab (nicht Teil dieser Sprosse)", stdout: schneeJahrRoh((x) => ((x.jahr.herbst.linieBild = 60), x)), gruen: true },
+            { name: "der Sommer am Meer 22 °C", stdout: schneeJahrRoh((x) => ((x.meer.sommer = 22), x)), gruen: false },
+            { name: "der Winter am Meer +2 °C", stdout: schneeJahrRoh((x) => ((x.meer.winter = 2), x)), gruen: false },
+            { name: "die Grenze folgt der Saison nicht (Sommer wie Winter)", stdout: schneeJahrRoh((x) => Object.assign(x.jahr.sommer, { linieBild: 20, linieGesetz: 20 }) && x), gruen: false },
+            { name: "Weiß ohne Schnee im Sommer", stdout: schneeJahrRoh((x) => ((x.jahr.sommer.falsch = 0.4), x)), gruen: false },
+            { name: "swiftshader", stdout: schneeJahrRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: ["gelaende-core.js", "stamm/bild-himmel.js", "stamm/gelaende-*.js", "stamm/siedlung-ort.js", "stamm/wasser-*.js", "voxel-worker.js", "scripts/werkbank.cjs", ...WELT_PFAD],
+        quelle: "KARTE2 planet.wetter.klimazonen S1 = Temperatur am Meer 18/−4 °C, Schneegrenze folgt der Saison",
+    },
+    {
+        kriterium: "karte2.planet.wasser.kreislauf",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: KREISLAUF_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 3,
+        urteil: kreislaufUrteil,
+        proben: [
+            { name: "der Bach steigt im Bild, Scheitel im Erd-Band, Bilanz ±10 %", stdout: kreislaufRoh((x) => x), gruen: true },
+            { name: "der Pegel steigt zu wenig (+0,05 m)", stdout: kreislaufRoh((x) => ((x.bilder[1].vor.y = 1.25), x)), gruen: false },
+            { name: "das Bild zeigt kein Mehr an Wasser", stdout: kreislaufRoh((x) => ((x.bilder[1].klassen.wasserSatz.pixel = 40500), x)), gruen: false },
+            { name: "zwei Bäche gleicher Fläche (A-Verhältnis 2)", stdout: kreislaufRoh((x) => ((x.A = [0.4, 0.8]), x)), gruen: false },
+            { name: "der Scheitel gleich, unabhängig von A (ein Sinus)", stdout: kreislaufRoh((x) => ((x.scheitel = [1, 1]), x)), gruen: false },
+            { name: "der Scheitel linear in A (×5)", stdout: kreislaufRoh((x) => ((x.scheitel = [0.4, 2]), x)), gruen: false },
+            { name: "die Bilanz 1,25 (in ±30 %, nicht in ±10 %)", stdout: kreislaufRoh((x) => ((x.bilanz = [1.25, 0.978]), x)), gruen: false },
+            { name: "ein Bild fehlt", stdout: kreislaufRoh((x) => ((x.bilder = x.bilder.slice(0, 1)), x)), gruen: false },
+            { name: "kein zweiter Bach", stdout: kreislaufRoh((x) => ({ fehler: "keine zwei Bäche mit A-Verhältnis ≥ 4 um den Bach der Mess-Wiese" })), gruen: false },
+            { name: "swiftshader", stdout: kreislaufRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: ["gelaende-core.js", "voxel-worker.js", "stamm/wasser-*.js", "stamm/gelaende-*.js", "stamm/bild-*.js", "stamm/dirigent-*.js", "stamm/daten.js", "scripts/werkbank.cjs",
+            "scripts/lib/abnahme-urteil.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
+        quelle: "KARTE2 planet.wasser.kreislauf S1 = Pegel nach Sturm im Bild; Scheitel-Verzug gegen Einzugsgebiet im Erd-Band; Regen × Fläche ↔ ΔVolumen ±10 %",
+    },
+    {
+        kriterium: "karte2.planet.relief.grossform",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: LAEUFE_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: laeufeUrteil,
+        proben: [
+            { name: "jeder Lauf endet in See oder Meer, 20 Orte zeigen ihr Wasser", stdout: laeufeRoh((x) => x), gruen: true },
+            { name: "ein Lauf verliert sich (292 von 293)", stdout: laeufeRoh((x) => ((x.laeufe.ende = { see: 120, meer: 172, verloren: 1 }), (x.laeufe.trocken = [["verloren", 10, 20]]), x)), gruen: false },
+            { name: "eine Senke trocken", stdout: laeufeRoh((x) => ((x.laeufe.nass = 39), (x.laeufe.trocken = [["see", 10, 20]]), x)), gruen: false },
+            { name: "nur 12 Orte", stdout: laeufeRoh((x) => ((x.bilder = x.bilder.slice(0, 12)), x)), gruen: false },
+            { name: "ein Ort ohne gezeichnetes Wasser im Bild", stdout: laeufeRoh((x) => ((x.bilder[7].klassen = {}), x)), gruen: false },
+            { name: "ein Ort trocken in der Welt der Sitzung", stdout: laeufeRoh((x) => ((x.bilder[3].vor.nass = false), x)), gruen: false },
+            { name: "keine Läufe", stdout: laeufeRoh((x) => ((x.laeufe = { laeufe: 0, ende: {}, nass: 0, senken: 0, trocken: [] }), x)), gruen: false },
+            { name: "swiftshader", stdout: laeufeRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: ["gelaende-core.js", "voxel-worker.js", "stamm/wasser-*.js", "stamm/gelaende-*.js", "stamm/bild-*.js", "scripts/lib/wasser-linse.cjs", "scripts/werkbank.cjs",
+            "scripts/lib/abnahme-urteil.cjs", ...WELT_PFAD],
+        quelle: "KARTE2 planet.relief.grossform S1 = im Spiel an 20 Orten nachgefahren: 100 % der Läufe enden in See oder Meer",
+    },
+    {
+        kriterium: "karte2.same.gedaechtnis.pfad",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: PFAD_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 6,
+        urteil: pfadUrteil,
+        proben: [
+            { name: "der Weg verliert sein Gras im Bild und in der Liste, daneben bleibt es", stdout: pfadRoh((x) => x), gruen: true },
+            { name: "100 Gänge lassen das Gras im Bild stehen (die Messung am main 5fba36ea, headless 13 → 13)", stdout: pfadRoh((x) => ((x.nach.bilder[0].klassen["nahWiese:L0"].pixel = 298000), (x.nach.gras.weg = 13), x)), gruen: false },
+            { name: "die Liste dünnt, das Bild nicht (die Wiese zeichnet die alte Kachel)", stdout: pfadRoh((x) => ((x.nach.bilder[0].klassen["nahWiese:L0"].pixel = 290000), x)), gruen: false },
+            { name: "das Bild dünnt, die Liste nicht", stdout: pfadRoh((x) => ((x.nach.gras.weg = 12), x)), gruen: false },
+            { name: "daneben fällt das Gras mit (ein Regler über alles)", stdout: pfadRoh((x) => ((x.nach.bilder[1].klassen["nahWiese:L0"].pixel = 120000), x)), gruen: false },
+            { name: "nur 60 Gänge", stdout: pfadRoh((x) => ((x.nach.gaenge = 60), x)), gruen: false },
+            { name: "ein Bild fehlt", stdout: pfadRoh((x) => ((x.nach.bilder = x.nach.bilder.slice(0, 1)), x)), gruen: false },
+            { name: "kein Gras im Bild vor dem Gang", stdout: pfadRoh((x) => ((x.vor.bilder[0].klassen = {}), x)), gruen: false },
+            { name: "swiftshader", stdout: pfadRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: ["stamm/siedlung-wege.js", "stamm/vegetation-*.js", "stamm/dirigent-*.js", "stamm/koerper-*.js", "stamm/bild-*.js", "stamm/gelaende-*.js", "scripts/werkbank.cjs",
+            "scripts/lib/abnahme-urteil.cjs", ...WELT_PFAD],
+        quelle: "KARTE2 same.gedaechtnis.pfad S1 = Büschel auf / neben dem Weg vor ↔ nach im Bild, beide Geräte",
+    },
+    {
+        kriterium: "karte2.leben.kopplung.leben-formt-planet",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: PFAD_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 6,
+        urteil: lebenFormtUrteil,
+        proben: [
+            { name: "auf dem Weg 19 % des Grases daneben im Bildpaar", stdout: pfadRoh((x) => x), gruen: true },
+            { name: "der Weg trägt nach dem Gang 60 % des Grases daneben", stdout: pfadRoh((x) => ((x.nach.bilder[0].klassen["nahWiese:L0"].pixel = 190000), x)), gruen: false },
+            { name: "der Weg war schon vorher kahl (kein Gang hat ihn geformt)", stdout: pfadRoh((x) => ((x.vor.bilder[0].klassen["nahWiese:L0"].pixel = 70000), x)), gruen: false },
+            { name: "nur 60 Gänge", stdout: pfadRoh((x) => ((x.nach.gaenge = 60), x)), gruen: false },
+            { name: "keine Zeile pfad-nach", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWELTPROBE pfad-vor " + JSON.stringify(PFAD_ROH.vor), gruen: false },
+            { name: "swiftshader", stdout: pfadRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: ["stamm/siedlung-wege.js", "stamm/vegetation-*.js", "stamm/dirigent-*.js", "stamm/koerper-*.js", "stamm/bild-*.js", "stamm/gelaende-*.js", "scripts/werkbank.cjs",
+            "scripts/lib/abnahme-urteil.cjs", ...WELT_PFAD],
+        quelle: "KARTE2 leben.kopplung.leben-formt-planet S1 = Gras-Dichte auf dem Weg −≥ 60 % gegen daneben im Bildpaar",
     },
 ];
 
