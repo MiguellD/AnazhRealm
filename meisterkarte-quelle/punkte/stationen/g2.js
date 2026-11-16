@@ -859,8 +859,83 @@ function rudelGefuehl(r, T, o) {
     return aus;
 }
 
+// DIE WITTERUNG FÜHRT DEN JÄGER (Karte 2 erleben.kopplung.wahrnehmung S1, vorrat3-stationen-g2), in der Seite der Werkbank an der
+// Mess-Wiese über den Lauf `wertLauf` (art „rudel“: die Szene, dann ihr Gegenlauf o.gegen): je Jagd ein Kitz (Hirsch, bodySize 0,6)
+// und vier Wölfe 25 m um es, verbunden zum Rudel (`_kreaturVerbinden`), der Spieler 150 m fern und ruhig, im pfad; der echte
+// Kreatur-Takt je 1/60 s (Stoß, Leib-Kontakte, `updateCreatures` — der Takt der Kreatur-Linse, wie jagdkreis die Quote misst) bis
+// zum Riss (das Kitz liegt unter den Leichnamen) oder 90 Spiel-Sekunden. Der Wolf findet Beute NUR über die Witterung
+// (`_creatureScentHuntDir`: der Leib in jagd.scentRangeM, der Wind trägt `_scentAt`); der Gegenlauf setzt die Reichweite der
+// Witterung im Gesetz auf 0 (das Memo des Verhaltens-Gesetzes, wie der Täter jagd-mager der Linse), sonst dieselben Jagden an
+// denselben Orten. Gezählt: Jagden mit Hetze, Risse, die Sekunde jedes Risses; die Szene räumt ihre Tiere und das Gesetz
+function witterungJagd(r, T, o) {
+    const s = r.state, pm = s.playerMesh.position, A = r.constructor;
+    if (s.renderer && s.renderer.setAnimationLoop) s.renderer.setAnimationLoop(null);
+    window.__buehne();
+    s.weatherEffectTime = 0;
+    r._loopNexusUpdate = () => {};
+    s.worldRules = [];
+    s.perfRegulator = false;
+    r.setGameMode("pfad");
+    r.setCameraMode(o.sicht || "first");
+    const raeumen = () => { for (const c of [...s.creatures, ...(s.leichname || [])]) r.removeCreature(c); };
+    raeumen();
+    s.faunaLifecycle.lastTick = 1e12;
+    s.maxCreatures = Math.max(s.maxCreatures || 0, 12);
+    A._verhaltenGesetz();
+    const V0 = A._verhaltenGesetzMemo;
+    if (!V0 || !V0.jagd) return { fehler: "kein Memo des Verhaltens-Gesetzes", gegen: !!o.gegen };
+    if (o.gegen) A._verhaltenGesetzMemo = Object.assign({}, V0, { jagd: Object.assign({}, V0.jagd, { scentRangeM: 0 }) });
+    const aus = { gegen: !!o.gegen, sicht: s.cameraMode, scentRangeM: A._verhaltenGesetz().jagd.scentRangeM, n: 0, jagden: 0, risse: 0, rissS: [], dauer: 0, opfer: 0 };
+    const dt = 1 / 60;
+    try {
+        for (let i = 0; i < 8; i++) {
+            s.creatureAnimationTime = 100;
+            r._creatureAiFrame = 0;
+            s.emotionField = undefined;
+            const w = (2 * Math.PI * i) / 8;
+            let ort = null;
+            for (let k = 0; k < 12 && !ort; k++) {
+                const x = o.x - 60 + Math.cos(w) * (80 + 4 * k), z = o.z + 40 + Math.sin(w) * (80 + 4 * k);
+                if (r._landAt(x, z) && r._landAt(x + 25, z) && r._landAt(x - 25, z)) ort = { x, y: r._voxelSurfaceY(x, z), z };
+            }
+            if (!ort) continue;
+            pm.set(ort.x + 150, r._voxelSurfaceY(ort.x + 150, ort.z + 20) + 1.8, ort.z + 20);
+            const beute = r.spawnCreatureAt(ort.x, ort.y, ort.z, "happy", "wesen", { precise: true, bodySize: 0.6 });
+            if (!beute) return Object.assign(aus, { fehler: "Spawn wesen" });
+            beute.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+            const woelfe = [];
+            for (let j = 0; j < 4; j++) {
+                const a = Math.PI + (j - 1.5) * 0.5 + i * 0.7, x = ort.x + Math.cos(a) * 25, z = ort.z + Math.sin(a) * 25;
+                const c = r.spawnCreatureAt(x, r._voxelSurfaceY(x, z), z, "happy", "wolf", { precise: true, bodySize: 1 });
+                if (!c) return Object.assign(aus, { fehler: "Spawn wolf" });
+                c.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                woelfe.push(c);
+            }
+            r._kreaturVerbinden(woelfe);
+            aus.n++;
+            let hetze = false;
+            let k = 0;
+            for (; k < 5400; k++) {
+                if (s.player.emotions) Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 });
+                r._kreaturStossSchritt(dt);
+                r._leibKontakte();
+                r.updateCreatures(dt);
+                if (woelfe.some((c) => c.userData._motionZustand === "hetzen")) hetze = true;
+                if ((s.leichname || []).includes(beute)) { aus.risse++; aus.rissS.push(+(k * dt).toFixed(1)); break; }
+            }
+            if (hetze) aus.jagden++;
+            aus.dauer = +(aus.dauer + k * dt).toFixed(1);
+            raeumen();
+        }
+    } finally {
+        A._verhaltenGesetzMemo = V0;
+        raeumen();
+    }
+    return aus;
+}
+
 // Der Lauf (im Spiel-Baum, cwd): EINE Werkbank an der Weiche (`[linse-gpu]` nennt die Karte) an der Mess-Wiese, Port {PORT}+20000;
-// art „wert": der Wert-Gang zur Uhr 12 und 22 Uhr (die Wiese hat dann 13,8 °C — um Mitternacht schweigen die Grillen unter
+// art „wert“: der Wert-Gang zur Uhr 12 und 22 Uhr (die Wiese hat dann 13,8 °C — um Mitternacht schweigen die Grillen unter
 // tStumm 12 °C, Dolbear), je Ego und Third; art „rudel": je Sicht der Lauf im pfad und sein Gegenlauf. Je Ergebnis eine Zeile
 // „WERT-GANG {…}" bzw. „RUDEL-GEFUEHL {…}", alle in {AUS}.
 // IN DER SITZUNG (29.10.): „wert" läuft die Diagonale — 12 Uhr in Ego, 22 Uhr in Third (Tag und Nacht, Ego und Third: jede Spalte
@@ -4849,6 +4924,52 @@ const stationen = [
         proben: null,
         pfad: null,
         quelle: "KARTE2 leben.tiere.masse S1 = Herde flieht als EIN Pulk im Bild",
+    },
+    // KARTE 2 erleben.kopplung.wahrnehmung S1 (Umfang „Geruch führt den Jäger zur Beute“, Tiefe „Wind trägt Witterung“, Preis „P“;
+    // vorrat3-stationen-g2): `witterungJagd` (oben) über `wertLauf` an der Mess-Wiese — acht Jagden des Rudels auf ein Kitz mit der
+    // Witterung des Gesetzes, dieselben acht mit jagd.scentRangeM 0. GRÜN: beide Läufe acht Jagden, der Lauf mit Witterung reißt
+    // ≥ 2 (die Jagd findet statt), der Gegenlauf reißt weniger (der Jagderfolg fällt), die Reichweite steht im Lauf > 0 und im
+    // Gegenlauf 0, der Adapter der Sitzung eine Karte
+    {
+        kriterium: "karte2.erleben.kopplung.wahrnehmung",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: { sek: 60, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(witterungJagd)], mutiert: true },
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const { ad, hw } = hwSitzung(lauf.stdout);
+            const L = zeilenVon(lauf, "RUDEL-GEFUEHL");
+            const a = L.find((x) => !x.gegen), g = L.find((x) => x.gegen);
+            if (!a || !g) return { gruen: false, zahl: "Läufe " + L.length + "/2 (Exit " + lauf.exit + ") · " + ad };
+            const f = [a, g].find((x) => x.fehler);
+            if (f) return { gruen: false, zahl: (f.gegen ? "Gegenlauf: " : "Lauf: ") + f.fehler + " · " + ad };
+            const q = (x) => x.risse + "/" + x.n + " Risse (" + x.jagden + " Jagden mit Hetze" + (x.rissS.length ? ", bei " + x.rissS.join("/") + " s" : "") + ")";
+            return {
+                gruen: hw && a.n >= 8 && g.n === a.n && a.scentRangeM > 0 && g.scentRangeM === 0 && a.risse >= 2 && g.risse < a.risse,
+                zahl: "mit Witterung " + a.scentRangeM + " m: " + q(a) + " · Witterung aus (" + g.scentRangeM + " m): " + q(g) + " · " + a.sicht + " · " + ad,
+            };
+        },
+        proben: (() => {
+            const ad = "[linse-gpu] nvidia/pascal (Probe)";
+            const z = (o) => "RUDEL-GEFUEHL " + JSON.stringify({ gegen: false, sicht: "first", scentRangeM: 50, n: 8, jagden: 8, risse: 6, rissS: [12.4, 9.8, 15.1, 11, 20.3, 8.7], dauer: 300, opfer: 0, ...o });
+            const roh = (a = {}, g = {}) => ad + "\n" + z(a) + "\n" + z({ gegen: true, scentRangeM: 0, jagden: 0, risse: 0, rissS: [], dauer: 720, ...g });
+            return [
+                { name: "mit Witterung 6/8, ohne 0/8", stdout: roh(), gruen: true },
+                { name: "der Gegenlauf reißt genauso (die Witterung führt nicht)", stdout: roh({}, { risse: 6, jagden: 8, rissS: [12, 10, 15, 11, 20, 9] }), gruen: false },
+                { name: "der Lauf reißt nur einmal (die Jagd findet kaum statt)", stdout: roh({ risse: 1, rissS: [30] }, {}), gruen: false },
+                { name: "der Gegenlauf trägt die Witterung noch (50 m)", stdout: roh({}, { scentRangeM: 50 }), gruen: false },
+                { name: "sieben Jagden im Gegenlauf", stdout: roh({}, { n: 7 }), gruen: false },
+                { name: "ohne Gegenlauf", stdout: ad + "\n" + z({}), gruen: false },
+                { name: "die Szene fand kein Memo", stdout: roh({ fehler: "kein Memo des Verhaltens-Gesetzes" }), gruen: false },
+                { name: "swiftshader", stdout: roh().replace(ad, "[linse-gpu] google/swiftshader"), gruen: false },
+            ];
+        })(),
+        pfad: [...KREATUR, "stamm/feld-sprache.js", "save-server.js", "scripts/werkbank.cjs", "scripts/lib/welt-orte.cjs", "scripts/lib/welt-boot.cjs"],
+        quelle: "KARTE2 erleben.kopplung.wahrnehmung S1 = Gegenlauf Witterung aus → Jagderfolg fällt",
     },
     // KARTE 2 leben.tiere.verhalten S1 (Tiefe „Zeitbudget ±20 % am Ethogramm; Riss-Quote Rudel gegen Hirsch 20–40 % (MacNulty)“):
     // tagesbudget und jagdkreis der Kreatur-Linse im Fenster (VERHALTEN_SITZUNG, zwei Teile). Das Budget urteilt wie tiere.K4#2 (je
