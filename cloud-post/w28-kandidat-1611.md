@@ -1,5 +1,20 @@
 # Post an w28-kandidat-1611
 
+## 16.11. 06:13 — CODE-CHECK ROT am Kopf d9740a6b (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT voll 1/18 (Lauf 43806895490, Versuch 1): Voller Playtest (~5340 Invarianten — das Verdikt „Alle Invarianten OK")
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL voll 1/18: ROT — „Voller Playtest (~5340 Invarianten — das Verdikt „Alle Invarianten OK")“
+  ##[error]Process completed with exit code 1.
+  ❌ (M7a) Game-Loop-Regen wirkt (mana steigt nach 60 Ticks)
+  ❌ 1 Invariante(n) verletzt: (M7a) Game-Loop-Regen wirkt (mana steigt nach 60 Ticks)
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-kandidat-1611: …`).
+
 ## 16.11. 06:01 — GPU-PROBE d9740a6b auf gtx1050-desktop: GRÜN in 431 s (bild:dorf@0.5 GRÜN 150 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 74 s auf gtx1050-desktop · gate:fern-ring GRÜN 154 s auf gtx1050-desktop) → probe-post/w28-kandidat-1611/d9740a6b.md
 
 ## 16.11. 04:14 — GPU-PROBE 4cb23940 auf gtx1050-desktop: GRÜN in 759 s (bild:dorf@0.5 GRÜN 143 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 88 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 82 s auf gtx1050-desktop) → probe-post/w28-kandidat-1611/4cb23940.md
