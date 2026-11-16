@@ -1363,3 +1363,4 @@ omen-gtx-gtx-77e079ae-1-77e079ae ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte
 2026-11-16 22:02 w28-gestalt-norm ABGABE deca1b54 (GTX 1050): Anlage an der dichten Hülle + Gewichte unter dem Stoff; Taille Median 6,9 → 4,2 %, Linse bewohner GRÜN 2,26·2,48·4,76, kein Preis; OFFEN Maxima > 5 % an der schmalen Gestalt, Hand der Menge
 omen-gtx-gtx-77e079ae-w2200-1-77e079ae UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag karte2.planet.wasser.kreislauf#1 (punkte-maschine e1dcd83c messung/77e079ae-gtx.json)
 omen-gtx-sr-dreier-ring3-1-7173dd3e GRÜN 3 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN gelaende.K4#2 mensch.K2#2 karte2.same.preis.zugang#1 (punkte-maschine e1dcd83c messung/7173dd3e-gtx.json)
+2026-11-16 22:31 landung Zwischenstand main 77e079ae: die Liste endete am Sprung (main ist weiter) — was gemessen war, ist gepusht; Summe und Richter fahren am jüngsten Kopf
