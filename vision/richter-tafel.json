@@ -18,6 +18,7 @@
   { "station": "vegetation.K4#1", "leiter": "leben.kopplung.stadt-im-netz", "sprosse": 1, "richter": "gleich" },
   { "station": "karte2.same.preis.ankunft#1", "leiter": "same.preis.ankunft", "sprosse": 1, "richter": "gleich" },
   { "station": "mensch.K2#2", "leiter": "mensch.geist.tag", "sprosse": 1, "richter": "gleich" },
+  { "station": "mensch.K2#2", "leiter": "mensch.wirtschaft.beruf", "sprosse": 1, "richter": "gleich" },
   { "station": "wetter.K1#2", "leiter": "planet.wetter.lagen", "sprosse": 1, "richter": "gleich" },
   { "station": "karte2.mensch.bau.innen#1", "leiter": "mensch.bau.innen", "sprosse": 1, "richter": "gleich" },
   { "station": "karte2.mensch.stadt.siedlungsnetz#1", "leiter": "mensch.stadt.siedlungsnetz", "sprosse": 1, "richter": "gleich" },
