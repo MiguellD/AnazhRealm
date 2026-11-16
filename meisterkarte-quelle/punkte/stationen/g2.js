@@ -1740,6 +1740,12 @@ async function platzAcht(r, T) {
     }
     if (!staende.length) return { fehler: "kein Stand" };
     s.renderer.setAnimationLoop(null);
+    // DER TAG DES GESETZES (vorrat5-menge-geht): die Sitzung steht unter der Bühne (ausgabe-aufnahme `buehne`, Tag-Länge des
+    // Halts 1e12) — „eine Linse, die die Sonne laufen lässt, setzt ihre eigene“. Unter dem Halt ist die Spielstunde der Leute
+    // 2,5e12 s (`_bewohnerStundeSek`): der Sprung der Uhr trägt jeden ans Ende seines Wegs (`_bewohnerAnkunft`), und die stehende
+    // Uhr bringt keine Wende — Radeon fe885d9d: 12 im Bild, 0 gehend, tod 0,3333 nach 8 Spiel-Sekunden. Headless am Start-Dorf
+    // um 8 Uhr: am Tag des Gesetzes 30 von 77 mit Weg, 32 gingen ≥ 0,5 m; unter dem Halt 0 mit Weg, 2 bewegt (2,5 m/s)
+    s.dayLengthMinutes = A.DAY_LENGTH_DEFAULT_MINUTES;
     r.setTimeOfDay(UHR_T, "regler");
     if (s.cameraMode !== "third") r.setCameraMode("third");
     const cam = s.camera;
@@ -1843,7 +1849,9 @@ const BEWOHNER_SITZUNG = { sek: 90, befehl: [
         ADAPTER_ZEILE,
         "node scripts/werkbank.cjs umstellen --ort genesis > \"$B-umstellen.txt\" 2>&1",
         "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner --ort genesis",
-        "node scripts/werkbank.cjs eval 'return await (" + knapp(platzAcht) + ")(r, T);' > \"$B-platz.txt\"",
+        // die Tag-Länge, die platzAcht für ihr Bild auf den Tag des Gesetzes stellt, kehrt danach zum Halt der Sitzung zurück (kein Leck
+        // in die Stationen danach, auch nicht, wenn die Probe wirft)
+        "node scripts/werkbank.cjs eval 'const tag0 = r.state.dayLengthMinutes; try { return await (" + knapp(platzAcht) + ")(r, T); } finally { r.state.dayLengthMinutes = tag0; }' > \"$B-platz.txt\"",
         "node \"$SK/b64png.cjs\" \"$B-platz.txt\" \"$B-platz-8uhr-third.png\"",
     ].join("\n"),
 ] };
