@@ -5406,7 +5406,7 @@
   },
   "karte2.planet.kopplung.wetter-welt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.wetter-welt#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js) · karte2.planet.kopplung.wetter-welt#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.wetter-welt#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js) · karte2.planet.kopplung.wetter-welt#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, stamm/bild-himmel.js +5)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.wetter-welt#1",
@@ -5425,8 +5425,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, stamm/bild-himmel.js +5)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5742,7 +5743,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 461,
-  "konsum": 178,
+  "konsum": 179,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5913,10 +5914,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 115
+  "ohne": 114
  },
  "kopfVoll": "62e3bdff5498dc3c8a55a8374dd4307aa92ea1cc",
- "zeit": "2026-11-16T16:57:50.680Z",
+ "zeit": "2026-11-16T17:18:48.825Z",
  "vorher": "62e3bdff",
  "bilanz": {
   "gewinn": [],
