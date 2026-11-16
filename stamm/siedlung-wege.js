@@ -2152,8 +2152,8 @@ AnazhRealm.GLUT_BILD = Object.freeze({
     lambdaNm: Object.freeze([611, 549, 464]),
 });
 // DIE KRUSTE DER LAVA (`_lavaKruste`): das Feld der Schollen (Wellenlänge `schollenM`, m) und der feinen Risse (`rissM`, ihr Anteil
-// `rissAnteil`) in den Schichten `schicht` des Rausch-Gesetzes; der Riss ist offen bis |n| < `offen` · w (beim Ausbruch etwa ein
-// Drittel der Fläche, σ des Felds 0,25), die Haut der Scholle hat `platte` der Temperatur des Innern; am Rand der Decke (Dicke
+// `rissAnteil`) in den Schichten `schicht` des Rausch-Gesetzes; der Riss ist offen bis |n| < `offen` · w (beim Ausbruch etwa die
+// Hälfte der Fläche im weichen Band, σ des Felds 0,25), die Haut der Scholle hat `platte` der Temperatur des Innern; am Rand der Decke (Dicke
 // unter `randDicke`) reißt nichts. Die kalte Fuge (|n| < `fuge`) dunkelt die Kruste auf `fugeTon`, die Schollen streuen ±`ton`
 // im Ton, ihre Kante hebt sich um `relief` (m).
 AnazhRealm.LAVA_KRUSTE = Object.freeze({
@@ -2161,8 +2161,8 @@ AnazhRealm.LAVA_KRUSTE = Object.freeze({
     rissM: 0.6,
     rissAnteil: 0.35,
     schicht: Object.freeze([13, 17]),
-    offen: 0.14,
-    platte: 0.6,
+    offen: 0.17,
+    platte: 0.62,
     randDicke: Object.freeze([0.5, 1]),
     fuge: 0.035,
     fugeTon: 0.45,
