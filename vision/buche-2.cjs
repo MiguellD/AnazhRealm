@@ -297,30 +297,70 @@ function kopfFolge(voll, aufMain, ahnenVon) {
         },
     };
 }
-// git, EIN Aufruf je Lauf: `git log` von MAIN_REF und allen Köpfen der Akten, je Commit seine Eltern; die Spitze von MAIN_REF trägt die
-// Dekoration. Ein unbekannter SHA lässt git laut scheitern („bad revision“) — der Bruch nennt ihn und seine Akten.
+// git, EIN Aufruf im Normalfall: `git log` von MAIN_REF und allen Köpfen der Akten, je Commit Zeit und Eltern; die Spitze von MAIN_REF
+// trägt die Dekoration.
+// DAS HOLEN (16.11., der Koordinator: der Baum des Zug-Dienstes holt main nie — sein origin/main ist oft alt, Zweig-Köpfe anderer
+// Geräte fehlen ganz, und die Buchung jedes Zugs stünde an einem fremden Kopf): fehlt ein SHA lokal, ODER steht ein Kopf nicht auf der
+// main-Linie, ist aber jünger als ihre Spitze (dann kann die Spitze alt sein), holt der Lauf EINMAL — main und die fehlenden vollen SHA
+// in EINEM `git fetch` (GitHub liefert erreichbare Commits per vollem SHA) — und liest neu. Erst was DANACH fehlt, bricht laut, mit
+// Namen, Akte und dem Grund, woran das Holen scheiterte; kein Netz ist ein Bruch, nie das Datum. Ein älterer Zweig-Kopf (Ring
+// 2e56cc44) holt nie: der Normalfall bleibt ohne Netz.
 function kopfFolgeAusGit(shas, wo = {}, repo = path.join(__dirname, "..")) {
     const kurz = [...new Set(shas.map((s) => String(s).toLowerCase()))].filter((s) => /^[0-9a-f]{7,40}$/.test(s));
-    const unbekannt = (s, grund) => bruch(`KOPF-FOLGE: der SHA ${s} ist im Repo unbekannt${wo[s] ? " (Akten: " + wo[s].join(", ") + ")" : ""}${grund ? " — " + grund : ""}; git fetch origin main — das Datum ersetzt die Kopf-Folge nie`);
-    const r = spawnSync("git", ["-C", repo, "log", "--format=%H %P%x09%D", "--decorate-refs=refs/remotes/" + MAIN_REF, MAIN_REF, ...kurz, "--"], { encoding: "utf8", maxBuffer: 1 << 28 });
-    if (r.error) bruch(`KOPF-FOLGE: git startet nicht (${r.error.message})`);
-    if (r.status !== 0) {
-        const m = /bad revision '([^']+)'|ambiguous argument '([^']+)'|short object ID (\S+) is ambiguous/.exec(r.stderr || "");
-        const s = m && (m[1] || m[2] || m[3]);
-        if (s === MAIN_REF) bruch(`KOPF-FOLGE: ${MAIN_REF} fehlt im Repo ${repo}`);
-        if (s) unbekannt(s.toLowerCase(), String(r.stderr).trim().split("\n")[0]);
-        bruch(`KOPF-FOLGE: git log scheitert (${String(r.stderr).trim().slice(0, 200)})`);
+    const git = (args, o = {}) =>
+        spawnSync("git", ["-C", repo, ...args], { encoding: "utf8", maxBuffer: 1 << 28, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }, timeout: 180000, ...o });
+    const lies = () => {
+        const r = git(["log", "--format=%H %ct %P%x09%D", "--decorate-refs=refs/remotes/" + MAIN_REF, MAIN_REF, ...kurz, "--"]);
+        if (r.error) bruch(`KOPF-FOLGE: git startet nicht (${r.error.message})`);
+        if (r.status !== 0) return { fehler: r.stderr };
+        const eltern = new Map(),
+            zeit = new Map();
+        let spitze = null;
+        for (const z of r.stdout.split("\n")) {
+            if (!z) continue;
+            const [kopf, deko] = z.split("\t");
+            const [h, t, ...p] = kopf.split(" ").filter(Boolean);
+            eltern.set(h, p);
+            zeit.set(h, +t);
+            if (deko && deko.split(", ").includes(MAIN_REF)) spitze = h;
+        }
+        if (!spitze) bruch(`KOPF-FOLGE: die Spitze von ${MAIN_REF} steht nicht in der Ausgabe von git log`);
+        return { eltern, zeit, spitze };
+    };
+    const erreichbarIn = (eltern) => (von) => {
+        const seen = new Set([von]),
+            stapel = [von];
+        while (stapel.length) for (const p of eltern.get(stapel.pop()) || []) if (!seen.has(p)) seen.add(p), stapel.push(p);
+        return seen;
+    };
+    // jünger als die main-Spitze und nicht auf ihr: die Spitze kann alt sein
+    const spitzeAlt = (g) => {
+        const main = erreichbarIn(g.eltern)(g.spitze);
+        return [...g.eltern.keys()].some((h) => kurz.some((s) => h.startsWith(s)) && !main.has(h) && g.zeit.get(h) > g.zeit.get(g.spitze));
+    };
+    let g = lies(),
+        holen = "";
+    if (g.fehler || spitzeAlt(g)) {
+        // welche SHA fehlen (alle, nicht nur der erste, den git log nennt)
+        const c = git(["cat-file", "--batch-check"], { input: kurz.map((s) => s + "^{commit}").join("\n") + "\n" });
+        const fehlen = c.status === 0 ? kurz.filter((s, i) => / missing$/.test((c.stdout.split("\n")[i] || "").trim())) : kurz;
+        const per = fehlen.filter((s) => s.length === 40); // per SHA holbar sind nur volle
+        const f = git(["fetch", "-q", "origin", `+refs/heads/main:refs/remotes/${MAIN_REF}`, ...per]);
+        holen = f.error || f.status !== 0
+            ? `Holen von origin (main${per.length ? " + " + per.length + " SHA" : ""}) scheiterte: ${String((f.error && f.error.message) || f.stderr).trim().split("\n").pop().slice(0, 160)}`
+            : `Holen von origin (main${per.length ? " + " + per.length + " SHA" : ""}) gelang, der SHA fehlt danach weiter`;
+        g = lies();
     }
-    const eltern = new Map();
-    let spitze = null;
-    for (const z of r.stdout.split("\n")) {
-        if (!z) continue;
-        const [kopf, deko] = z.split("\t");
-        const [h, ...p] = kopf.split(" ").filter(Boolean);
-        eltern.set(h, p);
-        if (deko && deko.split(", ").includes(MAIN_REF)) spitze = h;
+    const unbekannt = (s, grund) =>
+        bruch(`KOPF-FOLGE: der SHA ${s} ist im Repo unbekannt${wo[s] ? " (Akten: " + wo[s].join(", ") + ")" : ""}${grund ? " — " + grund : ""}${holen ? " — " + holen : ""}; das Datum ersetzt die Kopf-Folge nie`);
+    if (g.fehler) {
+        const m = /bad revision '([^']+)'|bad object (\S+)|ambiguous argument '([^']+)'|short object ID (\S+) is ambiguous/.exec(g.fehler || "");
+        const s = m && (m[1] || m[2] || m[3] || m[4]);
+        if (s === MAIN_REF) bruch(`KOPF-FOLGE: ${MAIN_REF} fehlt im Repo ${repo}${holen ? " — " + holen : ""}`);
+        if (s) unbekannt(s.toLowerCase(), String(g.fehler).trim().split("\n")[0]);
+        bruch(`KOPF-FOLGE: git log scheitert (${String(g.fehler).trim().slice(0, 200)})`);
     }
-    if (!spitze) bruch(`KOPF-FOLGE: die Spitze von ${MAIN_REF} steht nicht in der Ausgabe von git log`);
+    const { eltern, spitze } = g;
     const alle = [...eltern.keys()];
     const vollMemo = new Map();
     const voll = (s) => {
@@ -332,12 +372,7 @@ function kopfFolgeAusGit(shas, wo = {}, repo = path.join(__dirname, "..")) {
         }
         return vollMemo.get(s);
     };
-    const erreichbar = (von) => {
-        const seen = new Set([von]),
-            stapel = [von];
-        while (stapel.length) for (const p of eltern.get(stapel.pop()) || []) if (!seen.has(p)) seen.add(p), stapel.push(p);
-        return seen;
-    };
+    const erreichbar = erreichbarIn(eltern);
     const main = erreichbar(spitze);
     return kopfFolge(voll, (h) => main.has(h), erreichbar);
 }
@@ -682,14 +717,71 @@ function selbsttest() {
             return e.bruch && /ohne Kopf-Folge/.test(e.message) ? true : e.message;
         }
     });
-    pruefe("KOPF-FOLGE git: unbekannter SHA bricht laut mit Namen und Akte", () => {
+    // ── DAS HOLEN an einer Fixtur (wie buche.sh selbsttest): ein bare Ursprung, ein Klon, dessen origin/main alt ist ──
+    //   c1 ← c3 (main im Ursprung, nach dem Klonen) ← c5 (main später) ; c1 ← c2 (Zweig im Ursprung)
+    {
+        const os = require("os");
+        const t = fs.mkdtempSync(path.join(os.tmpdir(), "buche-2-kopf-"));
+        const ursprung = path.join(t, "ursprung.git"),
+            klon = path.join(t, "klon");
+        const g = (dir, args, o = {}) => {
+            const r = spawnSync("git", ["-C", dir, "-c", "core.autocrlf=false", ...args], {
+                encoding: "utf8",
+                input: o.input,
+                env: { ...process.env, GIT_AUTHOR_NAME: "selbsttest", GIT_AUTHOR_EMAIL: "selbsttest@invalid", GIT_COMMITTER_NAME: "selbsttest", GIT_COMMITTER_EMAIL: "selbsttest@invalid",
+                    ...(o.zeit ? { GIT_AUTHOR_DATE: o.zeit, GIT_COMMITTER_DATE: o.zeit } : {}) },
+            });
+            if (r.status !== 0) throw new Error(`Fixtur: git ${args.join(" ")}: ${r.stderr}`);
+            return r.stdout.trim();
+        };
+        let c = {},
+            fixtur = "";
         try {
-            kopfFolgeAusGit(["0123abcd99"], { "0123abcd99": ["x.1.0123abcd-gtx"] });
-            return "brach nicht";
+            g(t, ["init", "-q", "--bare", ursprung]);
+            const baum = g(ursprung, ["mktree"], { input: "" });
+            const commit = (n, eltern, zeit) => g(ursprung, ["commit-tree", baum, ...eltern.flatMap((e) => ["-p", e]), "-m", "c" + n], { zeit });
+            c[1] = commit(1, [], "2026-11-16T10:00:00Z");
+            g(ursprung, ["update-ref", "refs/heads/main", c[1]]);
+            g(t, ["clone", "-q", ursprung, klon]);
+            c[2] = commit(2, [c[1]], "2026-11-16T11:00:00Z");
+            c[3] = commit(3, [c[1]], "2026-11-16T12:00:00Z");
+            g(ursprung, ["update-ref", "refs/heads/zweig", c[2]]);
+            g(ursprung, ["update-ref", "refs/heads/main", c[3]]);
         } catch (e) {
-            return e.bruch && /SHA 0123abcd99 ist im Repo unbekannt \(Akten: x\.1\.0123abcd-gtx\)/.test(e.message) ? true : e.message;
+            fixtur = e.message;
         }
-    });
+        pruefe("HOLEN: fehlende Köpfe (Zweig c2, neue main-Spitze c3) werden in EINEM fetch geholt, danach gilt die Folge", () => {
+            if (fixtur) return fixtur;
+            const K = kopfFolgeAusGit([c[1], c[2], c[3]], {}, klon);
+            const [a, z, m] = [K.voll(c[1]), K.voll(c[2]), K.voll(c[3])];
+            return K.aufMain(m) && !K.aufMain(z) && K.istAhn(a, m) && K.istAhn(a, z) && !K.istAhn(z, m) ? true : `main ${K.aufMain(m)} zweig ${K.aufMain(z)}`;
+        });
+        pruefe("HOLEN: ein Kopf liegt lokal, origin/main ist alt und älter als er — der Lauf holt main, der Kopf steht auf main", () => {
+            if (fixtur) return fixtur;
+            c[5] = commit5();
+            function commit5() {
+                const baum = g(ursprung, ["rev-parse", c[3] + "^{tree}"]);
+                const h = g(ursprung, ["commit-tree", baum, "-p", c[3], "-m", "c5"], { zeit: "2026-11-16T13:00:00Z" });
+                g(ursprung, ["update-ref", "refs/heads/probe", h]);
+                g(klon, ["fetch", "-q", "origin", "+refs/heads/probe:refs/remotes/origin/probe"]); // lokal da, origin/main noch c3
+                g(ursprung, ["update-ref", "refs/heads/main", h]);
+                return h;
+            }
+            const K = kopfFolgeAusGit([c[5], c[2]], {}, klon);
+            return K.aufMain(K.voll(c[5])) && !K.aufMain(K.voll(c[2])) ? true : "c5 nicht auf main — die alte Spitze urteilte";
+        });
+        pruefe("HOLEN scheitert (der SHA steht nirgends im Ursprung): lauter Bruch mit Namen, Akte und Grund, nie das Datum", () => {
+            if (fixtur) return fixtur;
+            const nie = "0123abcd".repeat(5);
+            try {
+                kopfFolgeAusGit([c[1], nie], { [nie]: ["x.1.0123abcd-gtx"] }, klon);
+                return "brach nicht";
+            } catch (e) {
+                return e.bruch && new RegExp(`SHA ${nie} ist im Repo unbekannt \\(Akten: x\\.1\\.0123abcd-gtx\\).*Holen von origin \\(main \\+ 1 SHA\\) scheiterte`).test(e.message) ? true : e.message;
+            }
+        });
+        fs.rmSync(t, { recursive: true, force: true });
+    }
     pruefe("KOPF-FOLGE git: e4eeee08 ist echter Vorfahre von a635bfee, nicht umgekehrt, beide auf main", () => {
         const K = kopfFolgeAusGit(["e4eeee08", "a635bfee"]);
         const a = K.voll("e4eeee08"),
