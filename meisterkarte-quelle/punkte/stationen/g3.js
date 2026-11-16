@@ -2982,7 +2982,7 @@ const stationen = [
         probe: WELTEN_PROBE,
         env: envDer,
         gpu: true,
-        zeit: false,
+        zeit: true, // dieselbe Kugel wie licht.K2#1: unter fremder Last schwingt die Belichtung in Bildern ein (pm-fremdlast, Befund 08.11.)
         minuten: 4,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
@@ -4468,6 +4468,7 @@ Object.defineProperty(stationen, "kammKroneM", { value: NEUN_C.kammKroneM, enume
 require("./mass.cjs").massAn(module.exports, {
     "licht.K2#1": "Verhältnis und Schatten-Anteil im Bild — ein Bild-Maß ohne geeichtes k",
     "karte2.planet.kosmos.himmelsmechanik#1": "der größte Sprung in EV je Uhrschritt und die Punkt-Quellen des Himmels je Uhr — Bild-Maße ohne geeichtes k",
+    "karte2.planet.kosmos.welten#1": "Verhältnis der Kugel je Welt und Blau ÷ Rot des Zenits im Bild — Bild-Maße ohne geeichtes k",
     "licht.K5#1": "der größte Sprung in EV je Sekunde über den Wetter-Zug — ein Bild-Maß ohne geeichtes k",
     "lod.K2#1": "Pop-Pixel je Sekunde im Gang — ein Bild-Maß ohne geeichtes k",
     // die Kosten der Kontakt-Kaskade k0 (das Soll gilt an der GTX)
