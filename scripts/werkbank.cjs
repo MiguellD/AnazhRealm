@@ -1061,10 +1061,18 @@ async function starte() {
                     o.mesh.instanceMatrix.needsUpdate = true;
                     r._archMeshBundleTouch(o.mesh);
                 };
-                const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : o.refs ? zieht(o, true) : (o.visible = false));
-                const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : o.refs ? zieht(o, false) : (o.visible = true));
+                // DIE VERBORGENE BLEIBT VERBORGEN (abnahme-urteil `verborgenHalten`): der Takt jedes Bilds stempelt die Zahl der
+                // Senken (die Nah-Streu `_nahStreuBestand` → `_instanzZahl`, visible = n > 0) — ohne die Wache zeigte er die
+                // verborgene Klasse wieder, ihr Fehlen änderte keine Tiefe (luftwasser.K4#1, Radeon 105c9bd3: 96 Blumen gezeichnet,
+                // Blüten-Pixel 0 an jedem Ort)
+                const verborgen = new Set();
+                const verbirg = (o) =>
+                    o.bereich ? r._chunkSatzAus(o.art, o.key) : o.refs ? zieht(o, true) : (verborgen.add(o), (o.visible = false));
+                const zeig = (o) =>
+                    o.bereich ? r._bauSatzMarke(o.key, o.art) : o.refs ? zieht(o, false) : (verborgen.delete(o), (o.visible = true));
                 const ruhen = ["_tickNahWiese", "_ruheImBild"].map((m) => [m, Object.hasOwn(r, m), r[m]]);
                 for (const [m] of ruhen) r[m] = () => 0;
+                const verborgenLassen = __verborgenHalten(r.constructor, verborgen);
                 // verbirgt der Schuss die Strähnen des Spielers, ist sein Kopf kahl: die Kappe gehört zum Haar (`_kopfKahl`, haar.K2)
                 const schuss = async (aus) => {
                     for (const o of aus) verbirg(o);
@@ -1737,6 +1745,7 @@ async function starte() {
                     for (const [o, c] of wurf) o.castShadow = c;
                     bundlesNeu();
                     r._schattenAlleNeu();
+                    verborgenLassen();
                     for (const [m, eigen, alt] of ruhen)
                         if (eigen) r[m] = alt;
                         else delete r[m];
