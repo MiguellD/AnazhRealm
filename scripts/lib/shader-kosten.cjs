@@ -199,6 +199,14 @@ const MATRIX_LADUNG = /\btextureLoad\s*\(\s*\w+\s*,\s*vec[23]<[iu]32>\s*\(\s*\(\
 function matrixLadungen(wgsl) {
     return (ohneKommentare(String(wgsl || "")).match(MATRIX_LADUNG) || []).length;
 }
+// DAS AUSGESCHRIEBENE RAUSCHEN (w28-licht-kern; diag-boot-stage `rauschUrteil`): ein TSL-`Fn` ohne Layout steht je Ruf
+// ausgeschrieben im Programm. Der Hash des Hauses (pcg2d, die LCG-Konstante 1664525) trägt vier Produkte: als EINE
+// WGSL-Funktion (`setLayout`, wie `rauschEbene`) steht die Konstante je Stufe fünfmal, ausgeschrieben je Probe des
+// Wert-Rauschens zwanzigmal (das Wasser: 700 in einer Pipeline, 58 von 106 KB Fragment). Zählt die Konstante eines Texts.
+const RAUSCH_HASH = /\b1664525u\b/g;
+function rauschHash(wgsl) {
+    return (ohneKommentare(String(wgsl || "")).match(RAUSCH_HASH) || []).length;
+}
 
 // Die Ops-Schätzung eines Rumpfs (ohne Aufrufe): Typ-Annotationen und Deklarationen fallen vor der Operator-Zählung
 // (`vec3<f32>` ist kein Vergleich, `var x : f32;` keine Arbeit, `-> f32` kein Minus).
@@ -842,6 +850,8 @@ fn auswahlImZweig() -> f32 {
     const blank = "nodeVar2 = textureLoad( nodeUniform77, ( nodeVar117 + vec2<i32>( -1, -1 ) ), u32( 0u ) );";
     const probe = "nodeVar3 = textureSample( nodeUniform5, nodeUniform5_sampler, ( render.nodeUniform6 * vec3<f32>( uv, 1.0 ) ).xy );";
     pruef("Matrix-Ladungen", [matrixLadungen(mitMatrix + "\n" + mitMatrix.replace("object.", "render.")), matrixLadungen(blank + "\n" + probe), matrixLadungen("// " + mitMatrix), matrixLadungen(null)], [2, 0, 0, 0]);
+    const hash = "let x0 = ( ( u32( i32( p.x ) ) * 1664525u ) + 1013904223u );";
+    pruef("Rausch-Hash", [rauschHash(hash + "\n" + hash), rauschHash("// " + hash), rauschHash("let a = 11664525u;"), rauschHash(null)], [2, 0, 0, 0]);
     return fehler;
 }
 
@@ -936,6 +946,8 @@ module.exports = {
     tslLecks,
     matrixLadungen,
     MATRIX_LADUNG,
+    rauschHash,
+    RAUSCH_HASH,
     kostenUrteil,
     kostenTabelle,
     selbsttest,
