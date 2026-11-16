@@ -1785,17 +1785,21 @@ async function platzAcht(r, T) {
     cam.updateMatrixWorld(true);
     const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     const auge = cam.getWorldPosition(new T.Vector3());
+    // DIE AUSFÄLLE BEIM NAMEN (vorrat3-heiler, Radeon fe885d9d: das Bild um 8 Uhr zeigt Menschen, die Zählung sagte 0 von 77): je
+    // Stand der Grund, an dem er aus der Zählung fällt — drinnen · ungezeichnet · außer Bild · verdeckt —, und die Kamera der Zählung
     let imBild = 0, gehend = 0, alle = 0, mitLeib = 0;
+    const aus = { drinnen: 0, ungezeichnet: 0, ausserBild: 0, verdeckt: 0 };
     for (const b of leiber()) {
         alle++;
         if (b.userData.rig) mitLeib++;
-        if (!gez(b)) continue;
+        if (b.userData._drinnen) { aus.drinnen++; continue; }
+        if (!gez(b)) { aus.ungezeichnet++; continue; }
         const brust = new T.Vector3(b.position.x, b.position.y + 0.4, b.position.z);
-        if (!fr.containsPoint(brust)) continue;
+        if (!fr.containsPoint(brust)) { aus.ausserBild++; continue; }
         const d = auge.distanceTo(brust);
         let frei = true;
         for (let t = 0.6; t < d - 0.6 && frei; t += 0.5) { const k = t / d; if (r._imGrundriss(auge.x + (brust.x - auge.x) * k, auge.z + (brust.z - auge.z) * k, 0) === "haus") frei = false; }
-        if (!frei) continue;
+        if (!frei) { aus.verdeckt++; continue; }
         imBild++;
         const a = p0.get(b);
         if (a && Math.hypot(b.position.x - a.x, b.position.z - a.z) >= 0.5) gehend++;
@@ -1804,7 +1808,7 @@ async function platzAcht(r, T) {
     let b64 = "";
     for (let i = 0; i < u8.length; i += 0x8000) b64 += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
     b64 = btoa(b64);
-    return { b64, uhr: UHR_T, tod: +s.timeOfDay.toFixed(4), sicht: s.cameraMode, stand: [+stand.x.toFixed(1), +stand.z.toFixed(1)], platz: [+pc.x.toFixed(1), +pc.z.toFixed(1)], leiber: alle, mitLeib, imBild, gehendImBild: gehend, fps, takte, version: A.VERSION };
+    return { b64, uhr: UHR_T, tod: +s.timeOfDay.toFixed(4), sicht: s.cameraMode, stand: [+stand.x.toFixed(1), +stand.z.toFixed(1)], platz: [+pc.x.toFixed(1), +pc.z.toFixed(1)], leiber: alle, mitLeib, imBild, gehendImBild: gehend, aus, auge: auge.toArray().map((v) => +v.toFixed(1)), fps, takte, version: A.VERSION };
 }
 
 // DIE PROBE BEWOHNER IN DER SITZUNG (mensch.K1#1 und mensch.K2#2, Zwillinge: EIN Lauf, zwei Urteile) am GENESIS-ORT, dem Ort des
@@ -2041,8 +2045,10 @@ const DORF_ZAEHLUNG = { sek: 150, mutiert: true, befehl: [
 // WÖRTLICH (tiere.K4#2 und tiere.K2#1, oekologie.K1#1/#2 und K2#1), nur ihr Ort wechselt ins Fenster, dazu der Adapter der Sitzung.
 // kaskade: EIN Lauf für drei Sprossen (leben.oeko.netz · leben.oeko.dynamik · leben.tiere.lebenszyklus, Zwillinge): je Saat der
 // Grundlauf 8 Spielstunden und fünf Szenarien zu 6, 8 Saaten; die Probe stellt den Spieler ganze Regionen westlich der Ankunft
-// (das Tal der Wildnis) und räumt die Tiere — sie mutiert. Headless 350 s (DAUER_S): der Preis im Fenster ist ungemessen.
-const KASKADE_SITZUNG = { sek: 90, mutiert: true, befehl: [
+// (das Tal der Wildnis) und räumt die Tiere — sie mutiert. Headless 350 s (DAUER_S). DER DECKEL FOLGT DER DAUER (16.11., Radeon
+// fe885d9d: „Deckel 90 s gerissen“ an allen drei Sprossen, die Probe hing nicht — sie rechnet in EINEM `/eval` ohne Zeile, bis sie
+// fertig ist, und 90 s trugen ein Viertel ihrer gemessenen Dauer): der Grund-Deckel ist die Dauer headless × 1,2.
+const KASKADE_SITZUNG = { sek: 420, mutiert: true, befehl: [
     "bash",
     "-c",
     [

@@ -1314,6 +1314,30 @@ const adapterEcht = (t) => {
     const ad = (/\[linse-gpu\][^\r\n]*/.exec(String(t || "")) || [null])[0];
     return { ad: ad || "Adapter ungenannt", hw: !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad) };
 };
+// DIE FREIE POSE (16.11., Radeon und GTX am fe885d9d: der Brand stand 20 m quer und 12 m über dem Herd fest, die Kamera stak in der
+// Krone einer Kiefer — „ABNAHME ROT [Sicht verdeckt 7.7 % … Laub baum_kiefer]“, drei Sprossen UNGEMESSEN an beiden Geräten): die Pose
+// eines Schusses in der Seite wird aus dem Gesetz der Abnahme gewählt, nie gesetzt. Um das Ziel `z` im Abstand d (dann 1,3 d, 0,75 d)
+// und h über ihm (mindestens 2 m über dem Boden der Pose), ab dem Winkel a0 je 30° beidseits: die erste Pose, an der die Abnahme ohne
+// Ziel (`__abnahmeMessen`, die Nah-Deckung des Schirms) kein `sicht.*` ROT trägt. Die Abnahme bleibt, wie sie ist — der Schuss danach
+// urteilt mit ihr; ohne freie Pose ist das ROT beim Namen der ersten Deckung. Läuft als Helfer in der Seite (weltSitzungBefehl).
+function freiePose(r, z, d, h, a0) {
+    const cam = r.state.camera;
+    const gruende = [];
+    for (const dd of [d, d * 1.3, d * 0.75])
+        for (const w of [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180]) {
+            const a = a0 + (w * Math.PI) / 180;
+            const [x, q] = [z.x + Math.cos(a) * dd, z.z + Math.sin(a) * dd];
+            const y = Math.max(z.y + h, r._voxelSurfaceY(x, q) + 2);
+            if (!Number.isFinite(y)) continue;
+            cam.position.set(x, y, q);
+            cam.lookAt(z.x, z.y, z.z);
+            cam.updateMatrixWorld(true);
+            const rot = window.__abnahmeUrteil(window.__abnahmeMessen({})).rot.filter((f) => /^sicht\./.test(f.feld));
+            if (!rot.length) return { kamera: [x, y, q, z.x, z.y, z.z], versucht: gruende.length + 1 };
+            gruende.push(rot[0].grund);
+        }
+    return { kamera: null, versucht: gruende.length, grund: gruende[0] || "keine Pose über dem Boden" };
+}
 // DER BRAND IM ECHTEN FENSTER (Karte 2 same.kopplung.stoerung S1 · same.kopplung.kaskade S1 · mensch.zeit.erleben S1 — EIN Lauf, drei
 // Urteile): dasselbe Gesetz wie stoffe.K2#2 (scripts/diag-stand-takt.cjs `brandSeite`: `_brandEntfachen`, `_tickBrand` je `BRAND.schrittS`,
 // der Regen über das Wort und `_naesseUhr`), aber in der EINEN warmen Welt der Sitzung und mit dem Ausgabe-Bild. Der Herd: die erste
@@ -1366,7 +1390,10 @@ async function brandSitzungProbe(r, T, o) {
         const [hx, hz] = xz(...herd);
         const hy = r._voxelSurfaceY(hx, hz);
         const [dx, dz] = ((a, b, l = Math.hypot(a, b) || 1) => [a / l, b / l])(hx - M.x, hz - M.z);
-        const kamera = [hx - dz * 20, hy + 12, hz + dx * 20, hx, hy, hz];
+        const wahl = freiePose(r, { x: hx, y: hy, z: hz }, 20, 12, Math.atan2(dx, -dz));
+        if (!wahl.kamera) return { fehler: "keine freie Pose um den Herd in " + wahl.versucht + " Posen: " + wahl.grund };
+        const kamera = wahl.kamera;
+        aus.posen = wahl.versucht;
         const cam = st.camera;
         const stellen = () => (cam.position.set(kamera[0], kamera[1], kamera[2]), cam.lookAt(hx, hy, hz), cam.updateMatrixWorld(true));
         stellen();
@@ -1428,7 +1455,7 @@ async function brandSitzungProbe(r, T, o) {
         st.perfRegulator = regler;
     }
 }
-const BRAND_SITZUNG = { befehl: weltSitzungBefehl([["brand", brandSitzungProbe]]), sek: 90, mutiert: true };
+const BRAND_SITZUNG = { befehl: weltSitzungBefehl([["brand", brandSitzungProbe]], [freiePose]), sek: 90, mutiert: true };
 // die Zeile des Laufs und das Gemeinsame der drei Urteile: drei Bilder ohne Fehler, der Herd fing, der Adapter ist eine echte Karte
 function brandBildLesen(j, lauf) {
     const { ad, hw } = adapterEcht(lauf && lauf.stdout);
@@ -1520,7 +1547,9 @@ async function lavaSitzungProbe(r, T, o) {
         }
     if (!p) return { fehler: "kein trockenes Land 12–40 m um die Mess-Wiese" };
     const [dx, dz] = ((a, b, l = Math.hypot(a, b) || 1) => [a / l, b / l])(p.x - M.x, p.z - M.z);
-    const kamera = [p.x - dz * 10, p.y + 6, p.z + dx * 10, p.x, p.y, p.z];
+    const wahl = freiePose(r, p, 10, 6, Math.atan2(dx, -dz));
+    if (!wahl.kamera) return { fehler: "keine freie Pose um den Guss in " + wahl.versucht + " Posen: " + wahl.grund };
+    const kamera = wahl.kamera;
     const cam = st.camera;
     const stellen = () => (cam.position.set(kamera[0], kamera[1], kamera[2]), cam.lookAt(p.x, p.y, p.z), cam.updateMatrixWorld(true));
     stellen();
@@ -1548,16 +1577,25 @@ async function lavaSitzungProbe(r, T, o) {
     const n0 = (wm.taten ||= []).length;
     const alt = [st.dayLengthMinutes, st._uhrSpielZeit];
     const regler = st.perfRegulator;
+    // DER HALT DER MESSUNG (16.11., Radeon und GTX am fe885d9d: „Cannot read properties of null (reading 'erstarrt')“): die Sitzung hält
+    // die Welt (`weatherEffectTime` < 0, `_messHalt`), und die EINE Engstelle der Welt-Akte (`dslEval`) verweigert `lava` darunter —
+    // der Guss schrieb keine Tat, `_lavaAt` fand keine Decke. Wie jede Probe mit einem Welt-Akt (g4 probeVerben, g2 wetter) fällt der
+    // Halt für den Guss und steht danach wieder; ein Guss, der trotzdem nicht steht, ist ein Urteil beim Namen des DSL-Logs
+    const halt = st.weatherEffectTime;
     st.perfRegulator = false;
     try {
         aus.frei = r3(r.auraAt(p.x, p.z).glut);
-        r.dslRun(["lava", p.x, p.y, p.z], { source: "human" });
+        st.weatherEffectTime = 0;
+        const guss = r.dslRun(["lava", p.x, p.y, p.z], { source: "human" });
+        st.weatherEffectTime = halt;
         aus.gegossen = wm.taten.length > n0;
+        if (!aus.gegossen || !r._lavaAt(p.x, p.z))
+            return { fehler: "der Guss steht nicht (Taten " + n0 + " → " + wm.taten.length + "): " + JSON.stringify((guss && guss.log) || []).slice(0, 200) };
         await window.__weltStehtNach(takt, 900);
         aus.glutBild = await schuss("glut");
         Object.assign(st, { dayLengthMinutes: 1, _uhrSpielZeit: st.spielZeit });
         aus.ab = -1;
-        for (let k = 1; k <= 15 && aus.ab < 0; k++) (st.spielZeit += 1), r.tickDayNight(k), r._lavaAt(p.x, p.z).erstarrt && (aus.ab = k);
+        for (let k = 1; k <= 15 && aus.ab < 0; k++) (st.spielZeit += 1), r.tickDayNight(k), (r._lavaAt(p.x, p.z) || {}).erstarrt && (aus.ab = k);
         [st.dayLengthMinutes, st._uhrSpielZeit] = alt;
         r.setTimeOfDay(0.5, "regler");
         await window.__weltStehtNach(takt, 900);
@@ -1567,9 +1605,10 @@ async function lavaSitzungProbe(r, T, o) {
     } finally {
         [st.dayLengthMinutes, st._uhrSpielZeit] = alt;
         st.perfRegulator = regler;
+        st.weatherEffectTime = halt;
     }
 }
-const LAVA_SITZUNG = { befehl: weltSitzungBefehl([["lava", lavaSitzungProbe]]), sek: 60, mutiert: true };
+const LAVA_SITZUNG = { befehl: weltSitzungBefehl([["lava", lavaSitzungProbe]], [freiePose]), sek: 60, mutiert: true };
 // das Urteil: GLUT rot im Bild (R/G ≥ 2 im Ausschnitt), ERSTARRT grau (R/G ≤ 1,25) und dunkler als die Glut, erstarrt binnen 15 Schritten,
 // der Stoff darunter Stein, beide Bilder ohne Fehler, eine echte Karte
 function lavaUrteil(j, lauf) {

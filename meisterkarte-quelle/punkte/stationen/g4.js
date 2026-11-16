@@ -786,6 +786,19 @@ async function paarSeite(o) {
     const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
     const stand = () => JSON.stringify([st.architectures.filter(Boolean).map((a) => a.id).sort(), Object.keys(st.blueprints).sort(), (st.worldRules || []).length, (st.worldMeta || {}).worldId || null]);
     const s = o.schritt;
+    // DER HALT JE TAT (16.11., Radeon fe885d9d: Import „steht_nicht“, eigen_bruecke „kein Ort trägt das Original“): jedes Bild der
+    // Probe hält die Welt neu (scripts/lib/ausgabe-aufnahme.cjs `wetterHalten`, weatherEffectTime −1e9), und unter dem Halt
+    // verweigert dslEval jeden Welt-Akt (AnazhRealm.DSL_WELTAKTE, spawn_blueprint). Die Null der Bühne galt nur bis zum ersten
+    // Bild — jede Tat der Probe (Original, Import, fremder Code) läuft darum selbst ohne Halt und gibt ihn danach zurück.
+    const ohneHalt = async (f) => {
+        const u = st.weatherEffectTime;
+        st.weatherEffectTime = 0;
+        try {
+            return await f();
+        } finally {
+            st.weatherEffectTime = u;
+        }
+    };
     if (s === "buehne") {
         P.halt = st.weatherEffectTime;
         st.weatherEffectTime = 0; // der Halt der Messung (probeVerben): unter ihm setzt die Werk-Sprache nichts
@@ -805,7 +818,7 @@ async function paarSeite(o) {
         let E = null;
         for (const [d, w] of [[14, 0], [14, 0.7], [14, -0.7], [22, 0], [22, 1.4], [22, -1.4]]) {
             const [c, si] = [Math.cos(w), Math.sin(w)];
-            const lauf = r.dslRun(spawn({ x: pm.x + (v.x * c - v.z * si) * d, y: pm.y, z: pm.z + (v.x * si + v.z * c) * d }), { source: "spieler" });
+            const lauf = await ohneHalt(() => r.dslRun(spawn({ x: pm.x + (v.x * c - v.z * si) * d, y: pm.y, z: pm.z + (v.x * si + v.z * c) * d }), { source: "spieler" }));
             const e = lauf.log.find((x) => x.event === "spawned_blueprint" && x.id != null);
             if ((E = e && werk(e.id))) break;
         }
@@ -829,7 +842,7 @@ async function paarSeite(o) {
         const c = await r.teileWerk(o.name);
         if (!c || !c.ok) return { fehler: "teileWerk " + o.name + ": " + (c && c.grund) };
         const q = P.original.position;
-        const e = await r.empfangeWerk(c.code, { pos: ["at", q.x, q.y, q.z] });
+        const e = await ohneHalt(() => r.empfangeWerk(c.code, { pos: ["at", q.x, q.y, q.z] }));
         const E = e && e.ok && werk(e.id);
         if (!E) return { fehler: "empfangeWerk " + o.name + ": " + (e && e.grund) };
         P.import = E;
@@ -847,7 +860,7 @@ async function paarSeite(o) {
         }[o.fall];
         const [vor, n0] = [stand(), zeilen().length];
         r._spielerSagtLetzte = null; // die 2-s-Sperre derselben Zeile gilt dem gehaltenen Rechtsklick, nie dem nächsten Code
-        const e = await r.empfangeWerk(code);
+        const e = await ohneHalt(() => r.empfangeWerk(code));
         return { ok: !!(e && e.ok), grund: (e && e.grund) || null, zeile: zeilen().slice(n0).join(" | ").slice(0, 200), stand: stand() === vor };
     }
     if (s === "weltVor") {
