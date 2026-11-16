@@ -309,6 +309,8 @@
   const solids=[]; const furniture=[]; let chimney=null;
   const masse=[];                                                                                       // DIE MASSEN DES BAUS (S3, additiv): je Teil des Grundrisses sein Körper — Rechteck, Höhen, Dach. Der Fernkörper des Gesetzbuchs (koerperListe) liest sie; kein Bau liest sie zurück
   function addMasse(m){ if(Number.isFinite(m.x0)){ m.x0+=SHIFT; m.x1+=SHIFT; } masse.push(m); return m; }   // die 2. Einheit des Doppelhauses um +W wie ihre Solids
+  const LICHT=[];   // DIE ÖFFNUNGEN DES LICHTS (w28-innenlicht, additiv — nur eine Liste, kein Bau): jede Öffnung, die der Bau in eine Außenwand schneidet, an ihrem EINEN Bauer (`fensterAt`, die Flügel-Tür, der Rundbau) — `raumVon` rechnet daraus das Raum-Licht je Körper; bis hier trug die Liste des Fern-Fensters nur Haupt, Giebel und Anbau (der Flügel und der Hof-Arm der Stufe 0 standen ohne Öffnung)
+  function lichtAuf(cx,cy,cz,w,h,perp,glas){ LICHT.push({cx:cx+SHIFT,cy,cz,w,h,perp,glas}); }
   // ════ WELTMODELL · geteilte Quelle: Öffnungen · Erschließung · Kraftfluss ════
   const circR=[];
   function addSolid(cx,cy,cz,lx,ly,lz,tag){solids.push({min:[cx+SHIFT-lx/2,cy-ly/2,cz-lz/2],max:[cx+SHIFT+lx/2,cy+ly/2,cz+lz/2],tag});}
@@ -1065,7 +1067,7 @@
         zw.push(st); vor=st; } }
     if(zw.length) prisma(g,zw,eb(dp-0.06),role,{zwickel:{bogen:B}});
     return B; }
-  function fensterAt(g,cx,cy,cz,w,h,horiz,capY){ const fr='holz', gl=fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy)?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
+  function fensterAt(g,cx,cy,cz,w,h,horiz,capY){ lichtAuf(cx,cy,cz,w,h,horiz?'z':'x',1); const fr='holz', gl=fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy)?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
     if(horiz){ beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,0.18,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,true,P.bogenTyp,fr,{art:'fenster',cap:_cap}); beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,0.24,fr);     // Sturz + Fensterbank
       beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.18,fr);              // Pfosten
       const L=grp(); const inner=windowSash(w,h,true,fr,gl); inner.position.x=w/2; L.add(inner);
@@ -1332,7 +1334,7 @@
         if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH, ys=rs([dh]); gz(G0,dL,yB,yT,ys); gz(dR,G1,yB,yT,ys); if(yT>dh+0.05)gz(dL,dR,dh,yT,ys); }
         else if(opt.win){ const {c,wd,cy,ch}=opt.win, L=c-wd/2,R=c+wd/2,wb=cy-ch/2,wt=cy+ch/2, ys=rs([wb,wt]); gz(G0,L,yB,yT,ys); gz(R,G1,yB,yT,ys); gz(L,R,yB,wb,ys); gz(L,R,wt,yT,ys); }
         else gz(G0,G1,yB,yT,rs([])); }
-      if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH;
+      if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH; lichtAuf(horiz?(dL+dR)/2:fixed,(yB+dh)/2,horiz?fixed:(dL+dR)/2,dR-dL,dh-yB,horiz?'z':'x',0);
         if(!GLATT){ fill(a0,dL,yI0,yI1); fill(dR,a1,yI0,yI1); if(yI1>dh+0.05)fill(dL,dR,dh,yI1); }
         if(horiz){ beam(g,(dL+dR)/2,dh+0.06,fixed,dR-dL+0.26,0.13,0.15,'holz'); [dL,dR].forEach(d=>beam(g,d,(yB+dh)/2,fixed,0.13,dh-yB,0.14,'holz')); }
         else      { beam(g,fixed,dh+0.06,(dL+dR)/2,0.15,0.13,dR-dL+0.26,'holz'); [dL,dR].forEach(d=>beam(g,fixed,(yB+dh)/2,d,0.14,dh-yB,0.13,'holz')); }
@@ -1620,9 +1622,9 @@
     for(let lv=0;lv<=nLev;lv++){ const y=baseY+lv*P.egH; for(let s=0;s<seg;s++){ const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI; tri(g,[0,y,0],[rad*Math.cos(a0),y,rad*Math.sin(a0)],[rad*Math.cos(a1),y,rad*Math.sin(a1)],'boden'); } }
     const doorA=-Math.PI/2; for(let s=0;s<seg;s++){ const a=(s+0.5)/seg*2*Math.PI, x=rad*Math.cos(a), z=rad*Math.sin(a), chord=2*Math.PI*rad/seg+0.06, isDoor=Math.abs(((a-doorA+Math.PI)%(2*Math.PI))-Math.PI)<(1.2/rad);
       for(let lv=0;lv<nLev;lv++){ const y0=baseY+lv*P.egH, wH=P.egH;
-        if(isDoor&&lv===0){ beam(g,x,y0+wH-0.4,z,chord,0.8,0.3,wr,[0,Math.PI/2-a,0]); continue; }
+        if(isDoor&&lv===0){ lichtAuf(x,y0+(wH-0.8)/2,z,chord,wH-0.8,'x',0); beam(g,x,y0+wH-0.4,z,chord,0.8,0.3,wr,[0,Math.PI/2-a,0]); continue; }
         if(s%2===0){ beam(g,x,y0+0.5,z,chord,1.0,0.3,wr,[0,Math.PI/2-a,0]); beam(g,x,y0+wH-0.5,z,chord,1.0,0.3,wr,[0,Math.PI/2-a,0]);
-          const ww=chord*0.5,wh=Math.max(0.5,wH-1.9),wy=y0+wH/2,rr=[0,Math.PI/2-a,0]; beam(g,x,wy,z,ww*0.9,wh,0.1,'glas',rr);
+          const ww=chord*0.5,wh=Math.max(0.5,wH-1.9),wy=y0+wH/2,rr=[0,Math.PI/2-a,0]; lichtAuf(x,wy,z,ww*0.9,wh,'x',1); beam(g,x,wy,z,ww*0.9,wh,0.1,'glas',rr);
           beam(g,x,wy+wh/2+0.07,z,ww+0.18,0.1,0.16,'holz',rr); beam(g,x,wy-wh/2-0.07,z,ww+0.2,0.1,0.18,'holz',rr); beam(g,x,wy,z,0.06,wh,0.13,'holz',rr); beam(g,x,wy,z,ww,0.06,0.13,'holz',rr); }
         else beam(g,x,y0+wH/2,z,chord,wH,0.3,wr,[0,Math.PI/2-a,0]); } }
     { const dHalf=Math.min(1.1,Math.max(0.7,2*Math.PI*rad/seg)), bt=(P.bogenTyp&&P.bogenTyp!=='none')?P.bogenTyp:'rund'; bogenRahmen(g,0,baseY+P.egH-0.6,-rad-0.04,dHalf,true,bt,wr); beam(g,0,baseY-0.02,-rad-0.02,2*dHalf+0.3,0.06,0.35,'stein'); for(let st=0;st<4;st++)beam(g,0,baseY-0.12-st*0.16,-rad-0.35-st*0.32,2*dHalf+0.1,0.16,0.4,'stein'); }   // RUNDBAU-TÜR: der Bogen fliesst auch hier durch + Eingangsstufen
@@ -1785,7 +1787,7 @@
   { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:(sm&&sm.RM&&sm.RM.ziegel)||'ziegel',ring:ROUND?0:P.post/2-0.02};   // ring: so weit steht der Ständer-Ring (postsRing, plateRing: Mitte 2 cm innen) vor dem Grundriss — der Umriss der L0
     addMasse(Object.assign({},hm)); if(P.doppel){ SHIFT=W; addMasse(Object.assign({},hm)); SHIFT=0; }
     if(DORMER) addMasse({art:'gaube',x0:DORMER.gx-DORMER.gW/2,x1:DORMER.gx+DORMER.gW/2,z0:DORMER.zFront,z1:DORMER.zBack,y0:DORMER.baseY2,y1:DORMER.frontTop}); }   // der Hauptkörper (das Doppelhaus: beide Einheiten)
-  return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors,
+  return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors, licht:LICHT,
     cellar: P.keller?{x0:-(W/2-0.08),x1:(W/2-0.08),z0:-(Dp/2-0.08),z1:(Dp/2-0.08),floorY:kellerY+0.12}:null,
     wings: wings.map(w=>({side:w.side,outIsX:w.outIsX,ox:w.ox,oz:w.oz,x0:w.x0,x1:w.x1,z0:w.z0,z1:w.z1,eY:w.eY,rY:w.rY,roofAt:w.roofAt,door:w.door})),
     grundriss: P.grundriss,
@@ -5247,6 +5249,7 @@
             grund: grundVon(mass), // DAS GRUND-DATUM (S4): der Slot trägt es
             wandX: wandXVon(mass.H.solids), // DIE AUSSENKANTE DER WÄNDE längs x (Solids des Mass-Baus): die Brandwand-obb liest sie
             fenster: fensterVon(mass), // DIE ÖFFNUNGEN (K38): das Fern-Fenster des fernen Turms liest sie
+            raum: raumVon(mass, p && p.col), // DAS RAUM-LICHT (w28-innenlicht): Öffnungen, Durchlass und Rückwurf — `deckenZeile` liest es
             spawnL: { x: mass.H.spawn.x, z: mass.H.spawn.z },
             hofGap: 2.5,
             meshes: [],
@@ -5382,15 +5385,92 @@
     // (schatten.K4). Bis hier riet der Wirt die Decke aus den Solids (die höchste Box mit der halben Fläche der größten): das
     // Gesetzbuch teilt jedes Obergeschoss am Treppenloch, und der Anbau trägt keine Solid-Box — 11 von 18 Häusern des
     // Start-Dorfs standen innen unter offenem Himmel, ihre Anbauten alle.
+    // DAS RAUM-LICHT (w28-innenlicht, additiv, must-ignore — die EINE Formel): die sechste Zahl der Decke ist der mittlere
+    // Tageslicht-Quotient ihres Körpers, D = Σ (Öffnungsfläche × Himmels-Anteil × Durchlass) / (Raum-Oberfläche × (1 − R²)) —
+    // unter der Decke steht der Raum im Himmel von außen × D. Die Öffnungen sind die des Gesetzbuchs (`raumVon`: die Fenster
+    // der Liste des Fern-Fensters, Haustür und Hintertür der Tür-Zeile, Tor und Tür des Anbaus); eine Öffnung gehört dem Körper,
+    // an dessen Grundriss-Kante sie zwischen Boden und Decke sitzt, und zählt nur, wenn sie an KEINEM zweiten Körper mit Decke
+    // sitzt (die Wand zwischen Haus und Anbau sieht keinen Himmel). Himmels-Anteil: die freie senkrechte Öffnung sieht die
+    // halbe Kuppel. Durchlass: das Glas lässt, was sein Stoff nicht deckt (1 − Deckkraft), die Tür steht offen (`preOpen`).
+    // Raum-Oberfläche: Wände (Umfang × Höhe) + Boden und Decke je Geschoss; R ihr flächen-gewichteter Rückwurf aus den Farben
+    // des Baus (`_colFor`: der Wand-Stoff hinter dem Glas, die Diele) — das dunkle Blockhaus wirft weniger zurück als der Putz.
+    // Ein Körper ohne Öffnung trägt 0. Leser: `deckenZeile` → `__huelle.decken` → der Dach-Pool des Wirts (`_dachTakt`).
+    var RAUM_LICHT = { himmel: 0.5, kante: 0.35, raster: 65536 };
+    function _helle(c) {
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    }
+    function raumVon(st, kol) {
+        var H = (st && st.H) || {},
+            f = fensterVon(st || {}),
+            o = [],
+            off = (st && st.off) || 0,
+            T = (st && st.topH && st.topH.licht) || [];
+        // jede Öffnung EINMAL: die Liste des Baus (`licht`, der Aufsatz des Stapels um `off` gehoben) und die des Fern-Fensters
+        // (die ferne Stufe schneidet keine Löcher, sie trägt ihre Öffnungen dort) nennen dieselbe Öffnung an derselben Stelle
+        var auf = function (a, dy, glas) {
+            for (var k = 0; k < o.length; k++)
+                if (o[k].perp === a.perp && Math.abs(o[k].cx - a.cx) < 0.3 && Math.abs(o[k].cz - a.cz) < 0.3 && Math.abs(o[k].cy - a.cy - dy) < 0.6) return;
+            o.push({ cx: a.cx, cy: a.cy + dy, cz: a.cz, w: a.w, h: a.h, perp: a.perp, glas: glas });
+        };
+        for (var i = 0; i < (H.licht || []).length; i++) auf(H.licht[i], 0, H.licht[i].glas);
+        for (i = 0; i < T.length; i++) auf(T[i], off, T[i].glas);
+        for (i = 0; i < f.liste.length; i++) auf(f.liste[i], 0, 1);
+        var t = H.dims && H.dims.tuer;
+        if (t) {
+            o.push({ cx: t.x, cy: t.y + t.h / 2, cz: t.z, w: t.w, h: t.h, perp: "z", glas: 0 });
+            if (t.hinten) o.push({ cx: t.hinten.x, cy: t.y + t.h / 2, cz: t.hinten.z, w: t.hinten.w, h: t.h, perp: "z", glas: 0 });
+        }
+        var A = H.annexDoors || [];
+        for (var j = 0; j < A.length; j++)
+            o.push({ cx: (A[j].x0 + A[j].x1) / 2, cy: (A[j].y0 + A[j].y1) / 2, cz: A[j].z, w: A[j].x1 - A[j].x0, h: A[j].y1 - A[j].y0, perp: "z", glas: 0 });
+        return { oeffnungen: o, glas: 1 - materials().glas.opacity, wand: _helle(_colFor(f.raum, kol)), boden: _helle(_colFor("boden", kol)) };
+    }
+    function _anKoerper(m, y, o) {
+        var k = RAUM_LICHT.kante,
+            y0 = isFinite(m.y0) ? m.y0 : 0;
+        if (!(o.cy > y0 && o.cy < y)) return false;
+        if (m.art === "rund" && m.rad > 0) {
+            var dx = o.cx - (m.x0 + m.x1) / 2,
+                dz = o.cz - (m.z0 + m.z1) / 2;
+            return Math.abs(Math.sqrt(dx * dx + dz * dz) - m.rad) <= k;
+        }
+        return o.perp === "x"
+            ? (Math.abs(o.cx - m.x0) <= k || Math.abs(o.cx - m.x1) <= k) && o.cz >= m.z0 - k && o.cz <= m.z1 + k
+            : (Math.abs(o.cz - m.z0) <= k || Math.abs(o.cz - m.z1) <= k) && o.cx >= m.x0 - k && o.cx <= m.x1 + k;
+    }
+    function raumLicht(m, y, masse, raum) {
+        var y0 = isFinite(m.y0) ? m.y0 : 0,
+            h = y - y0,
+            rund = m.art === "rund" && m.rad > 0;
+        if (!(h > 0) || !raum) return 0;
+        var A = rund ? Math.PI * m.rad * m.rad : (m.x1 - m.x0) * (m.z1 - m.z0),
+            U = rund ? 2 * Math.PI * m.rad : 2 * (m.x1 - m.x0 + (m.z1 - m.z0)),
+            n = m.art === "haupt" && m.egTop > y0 ? Math.max(1, Math.round(h / (m.egTop - y0))) : 1,
+            wand = U * h,
+            boden = 2 * A * n,
+            R = (wand * raum.wand + boden * raum.boden) / (wand + boden),
+            S = 0;
+        for (var i = 0; i < raum.oeffnungen.length; i++) {
+            var o = raum.oeffnungen[i],
+                frei = _anKoerper(m, y, o);
+            for (var j = 0; frei && j < masse.length; j++) {
+                var q = masse[j],
+                    qy = q !== m && DECKE_HOEHE[q.art] ? q[DECKE_HOEHE[q.art]] : NaN;
+                if (isFinite(qy) && isFinite(q.x0) && _anKoerper(q, qy, o)) frei = false;
+            }
+            if (frei) S += o.w * o.h * RAUM_LICHT.himmel * (o.glas ? raum.glas : 1);
+        }
+        return Math.round(Math.min(1, S / ((wand + boden) * (1 - R * R))) * RAUM_LICHT.raster) / RAUM_LICHT.raster;
+    }
     var DECKE_HOEHE = { haupt: "eY", anbau: "yLow", fluegel: "eY", hofarm: "eY", turm: "y1", rund: "y1" };
-    function deckenZeile(masse) {
+    function deckenZeile(masse, raum) {
         var d = [];
         for (var i = 0; i < (masse || []).length; i++) {
             var m = masse[i],
                 k = DECKE_HOEHE[m.art],
                 y = k ? m[k] : NaN;
             if (!isFinite(y) || !isFinite(m.x0) || !(m.x1 > m.x0) || !(m.z1 > m.z0)) continue;
-            d.push([_hr(m.x0), _hr(m.x1), _hr(m.z0), _hr(m.z1), _hr(y)]);
+            d.push([_hr(m.x0), _hr(m.x1), _hr(m.z0), _hr(m.z1), _hr(y), raumLicht(m, y, masse, raum)]);
         }
         return d;
     }
@@ -5509,7 +5589,7 @@
             geoms.__strahl = solidZeile(st, "strahl"); // der Leib des Strahls (das Geländer), dieselbe Form
             geoms.__kamin = { spitze: kaminSpitze(st.H && st.H.chimney) }; // die Spitze des Stapels (≡ massBau, die Hülle trägt sie)
             geoms.__tuer = tuerZeile(st.H && st.H.dims); // die Tür-Zeile des Baus (≡ exportSettlement, die Hülle trägt sie)
-            geoms.__decken = deckenZeile(masseVon(st)); // die Decken der Körper (≡ der Mass-Bau der Stufen 1/2, die Hülle trägt sie)
+            geoms.__decken = deckenZeile(masseVon(st), raumVon(st, p.col)); // die Decken der Körper samt ihrem Raum-Licht (≡ der Mass-Bau der Stufen 1/2, die Hülle trägt sie)
             bakeLOD(st.g, p.col, geoms, 0, true); // LÜCKENLOS: alles=true (Kopf, Stufen-Wahrheit 0)
             st.g.traverse(function (o) {
                 if (o.geometry) o.geometry.dispose();
@@ -5530,7 +5610,7 @@
             geoms.__strahl = hs.strahl;
             geoms.__kamin = { spitze: kaminSpitze(B.chimney) };
             geoms.__tuer = tuerZeile(B.dims);
-            geoms.__decken = deckenZeile(B.masse);
+            geoms.__decken = deckenZeile(B.masse, B.raum);
         }
         return geoms;
     }
@@ -5554,7 +5634,7 @@
         var g = new THREE.Group();
         for (var role in geoms) {
             var G = geoms[role];
-            if (!G.vo) continue;
+            if (!G || !G.vo) continue; // ein Beipack ohne Wert (die Tür-Zeile des Rundbaus ist null) ist keine Rolle — bis w28-innenlicht warf der Rundbau hier
             var bg = new THREE.BufferGeometry();
             bg.setAttribute("position", new THREE.Float32BufferAttribute(G.pos, 3));
             bg.setAttribute("normal", new THREE.Float32BufferAttribute(G.nrm, 3));
@@ -11639,6 +11719,8 @@
         hausParams: hausParams,
         massBau: massBau,
         grundVon: grundVon, // das Grund-Datum (S4) — die Linse liest es wie die Welt
+        deckenZeile: deckenZeile, // die Decken samt Raum-Licht (w28-innenlicht) — die Linse rechnet daran ihre Mutanten
+        RAUM_LICHT: RAUM_LICHT,
         slotPlan: slotPlan, // das gesetzte Haus als Ein-Slot-Plan (bauen.K2) — der Wirt rechnet daraus den Plan v2 und legt dessen Erdbau
         chimneyTipFromParams: chimneyTipFromParams,
         buildStufe: buildStufe,
