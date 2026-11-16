@@ -4381,6 +4381,8 @@ async function run(opt) {
         fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
         return m;
     }
+    // die Akte für die Wache (laeuferWache): was dieser Lauf misst — stirbt er ohne exit-Haken, schreibt sie es UNGEMESSEN beim Namen
+    laeuferAkte({ datei, sha, geraet: opt.geraet, host, ids: meine.map(schluessel) });
     const alle = gruppiere(meine);
     // DIE SITZUNG zuerst (eine Welt, jede Probe darin), danach der Rest auf den Bahnen wie bisher
     const proben = opt.geraet === "headless" ? [] : alle.filter((g) => g[0].probe);
@@ -5993,6 +5995,30 @@ async function selbsttest(o = {}) {
             pruef("SPERRE die gerechte Schlange: der freie Baum geht an die älteste lebende Marke, ein jüngerer überholt nie (die Fassung davor: er überholte); tote Marken (keine pid, pid neu vergeben, 3 min ohne Auffrischung) zählen nicht und fallen",
                 aNahm === false && aDa && bNahm === true && !bDa && cNahm === true && !cDa && dNahm === true && !dDa && nachFrei.join(",") === "erster" && ordnung.join(",") === "erster,zweiter",
                 JSON.stringify({ a: [aNahm, aDa], b: [bNahm, bDa], c: [cNahm, cDa], d: [dNahm, dDa], nachFrei, ordnung }));
+        }
+        // DER LÄUFER NENNT SEINEN TOD (laeuferWache, 16.11. EXIT=127): ein Kind legt die Akte (a, b, c), urteilt c, schreibt eine Zeile und
+        // endet mit 0xC0000409 ohne exit-Haken — a und b stehen UNGEMESSEN beim Namen (Exit, Name, letzte Zeile), das alte GRÜN von a in
+        // m.je bleibt, c (frisch geurteilt) bleibt unberührt; ein Kind, das seine Akte im exit-Haken räumt und mit 1 endet, ist ein
+        // gewöhnliches Ende (Exit 1 durchgereicht, kein Eintrag). Die Fassung davor: kein Wort, keine Akte
+        {
+            const d = path.join(tmp, "tod-messung.json"), alt = new Date(Date.now() - 3600e3).toISOString();
+            const kindTod = (code, haken) => ["-e", 'const fs = require("fs"), d = process.argv[1], f = process.env.PUNKTE_LAEUFER_AKTE, start = Date.now();' +
+                'fs.writeFileSync(f, JSON.stringify({ datei: d, sha: "s", ids: ["x.a#1", "x.b#1", "x.c#1"], start, pid: process.pid }));' +
+                (haken ? 'process.on("exit", () => fs.rmSync(f, { force: true }));' : "") +
+                'const m = JSON.parse(fs.readFileSync(d, "utf8")); m.je["x.c#1"] = { gruen: true, zeit: new Date(start + 5).toISOString() }; fs.writeFileSync(d, JSON.stringify(m));' +
+                'console.log("  SITZUNG radeon · die Welt steht nach 6.9 s"); setTimeout(() => process.exit(' + code + "), 50);", d];
+            const lege = () => fs.writeFileSync(d, JSON.stringify({ sha: "s", geraet: "radeon", je: { "x.a#1": { gruen: true, zeit: alt } } }));
+            lege();
+            const r1 = await laeuferWache([], { still: true, argv: kindTod(-1073740791, false) });
+            const m1 = JSON.parse(fs.readFileSync(d, "utf8")), u = m1.ungemessen || {};
+            lege();
+            const r2 = await laeuferWache([], { still: true, argv: kindTod(1, true) });
+            const m2 = JSON.parse(fs.readFileSync(d, "utf8"));
+            pruef("WACHE der Läufer nennt seinen Tod: ein Absturz (0xC0000409) ohne exit-Haken schreibt jede Station ohne frisches Urteil UNGEMESSEN mit Exit, Name und letzter Zeile, ein gebuchtes GRÜN bleibt; ein Ende mit Haken reicht seinen Exit durch",
+                r1.code === 3 && Object.keys(u).sort().join(",") === "x.a#1,x.b#1" && /^UNGEMESSEN: Läufer starb \(Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN/.test((u["x.a#1"] || {}).grund || "") &&
+                    /letzte Zeile: SITZUNG radeon · die Welt steht/.test((u["x.b#1"] || {}).grund || "") && m1.je["x.a#1"].gruen === true && !!m1.je["x.c#1"] &&
+                    r2.code === 1 && !m2.ungemessen,
+                JSON.stringify({ r1: [r1.code, r1.n, (r1.grund || "").slice(0, 160)], u: Object.keys(u), r2: [r2.code, !!m2.ungemessen] }));
         }
         // DIE ORDNUNG DER SCHLÖSSER: unter gpu-lauf.sh (GPU_LAUF_HAELT) weist die Sperre sofort ab, beim Namen, und legt keinen Baum an;
         // der echte gpu-lauf.sh gibt die Marke seinem Befehl mit (Mutante: ohne die Marke nähme die Sperre den Baum)
@@ -8482,6 +8508,85 @@ async function selbsttest(o = {}) {
     return rot.length ? 1 : 0;
 }
 
+// DER LÄUFER NENNT SEINEN TOD (16.11., Radeon: zwischen 23:20 und 23:50 endeten vier Läufe ohne ein Wort — flegel-main hinter „SITZUNG
+// radeon · die Welt steht nach 6.9 s“ mit EXIT=127, pid 7136 ließ seine Sperre verwaist, kein Eintrag im Ereignis-Protokoll). Git-bash
+// meldet 127 für jedes NTSTATUS, das es nicht kennt: `node -e "process.exit(-1073740791)"` (0xC0000409, der Fail-Fast) und 0xC00000FD
+// (Stapel-Überlauf) geben dort 127, ein taskkill /F 1, ein abort 134 — EXIT=127 ist ein Absturz des node-Prozesses. Wer so stirbt,
+// ruft keinen exit-Haken: das Wort kann nur sein Vater sagen. `run` fährt darum als Kind seiner Wache: sie reicht jede Zeile durch und
+// behält die letzte; endet das Kind, ohne seine Akte (PUNKTE_LAEUFER_AKTE: nach der Sperre gelegt, im exit-Haken geräumt) zu räumen,
+// oder mit einem NTSTATUS, schreibt sie jede Station dieses Laufs ohne frisches Urteil nach m.ungemessen — „UNGEMESSEN: Läufer starb
+// (Exit 0x… NAME) · Kind <pid> nach N min · letzte Zeile …“ (frisch liest ihn, --offen misst ihn neu). Seine Kinder (Halter, Probe,
+// Werkbank) sterben mit ihm: libuv hängt jedes nicht abgelöste Kind in seinen Job (KILL_ON_JOB_CLOSE) — derselbe Job trägt
+// DIE_ON_UNHANDLED_EXCEPTION, darum schreibt Windows für den Absturz keinen Bericht (kein Ereignis 1000). Das Kind lebt nur mit der
+// Wache (wacheFolgen).
+const NT_NAMEN = { 0xc0000005: "STATUS_ACCESS_VIOLATION", 0xc000001d: "STATUS_ILLEGAL_INSTRUCTION", 0xc0000017: "STATUS_NO_MEMORY",
+    0xc00000fd: "STATUS_STACK_OVERFLOW", 0xc000013a: "STATUS_CONTROL_C_EXIT", 0xc0000142: "STATUS_DLL_INIT_FAILED",
+    0xc0000374: "STATUS_HEAP_CORRUPTION", 0xc0000409: "STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast" };
+function todName(code, sig) {
+    if (code == null) return "Signal " + sig;
+    const u = code >>> 0;
+    if (u >= 0xc0000000) return "Exit 0x" + u.toString(16).toUpperCase() + " " + (NT_NAMEN[u] || "NTSTATUS") + " — der node-Prozess stürzte ab, Git-bash meldet 127";
+    if (u === 1) return "Exit 1 ohne exit-Haken — von außen beendet (TerminateProcess, taskkill /F)";
+    return "Exit " + u + " ohne exit-Haken";
+}
+function laeuferAkte(a) {
+    const f = process.env.PUNKTE_LAEUFER_AKTE;
+    if (!f) return;
+    fs.writeFileSync(f, JSON.stringify({ ...a, pid: process.pid, start: Date.now() }));
+    process.on("exit", () => { try { fs.rmSync(f, { force: true }); } catch (_e) { /* geräumt */ } });
+}
+function wacheFolgen() {
+    const w = Number(process.env.PUNKTE_LAEUFER_WACHE) || 0;
+    if (w) setInterval(() => { try { process.kill(w, 0); } catch (e) { if (e.code !== "EPERM") process.exit(3); } }, 1000).unref();
+}
+// DIE WACHE: argv des Kindes; o.exe/o.argv (der Selbsttest: ein Kind, das stirbt), o.still (keine Durchreiche), o.env
+function laeuferWache(argv, o = {}) {
+    return new Promise((fertig) => {
+        const t0 = Date.now(), akte = path.join(os.tmpdir(), "punkte-akte-" + process.pid + "-" + t0 + ".json");
+        const env = { ...process.env, ...(o.env || {}), PUNKTE_LAEUFER_WACHE: String(process.pid), PUNKTE_LAEUFER_AKTE: akte };
+        const kind = spawn(o.exe || process.execPath, o.argv || [...process.execArgv, __filename, ...argv], { env, stdio: ["inherit", "pipe", "pipe"], windowsHide: true });
+        let rest = "", letzte = "";
+        const lies = (strom) => (d) => {
+            if (!o.still) strom.write(d);
+            rest = (rest + String(d)).slice(-8192);
+            const z = rest.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+            if (z.length) letzte = z[z.length - 1];
+        };
+        kind.stdout.on("data", lies(process.stdout));
+        kind.stderr.on("data", lies(process.stderr));
+        // Strg+C trifft beide: die Wache bleibt, bis das Kind sein Ende hat, und nennt es
+        const still = () => {};
+        process.on("SIGINT", still);
+        kind.on("error", (e) => fertig({ code: 2, grund: "die Wache startet den Läufer nicht: " + e.message }));
+        kind.on("close", (code, sig) => {
+            process.removeListener("SIGINT", still);
+            const hatAkte = fs.existsSync(akte);
+            if (!hatAkte && code != null && code >>> 0 < 0xc0000000) return fertig({ code });
+            let a = null;
+            try { a = JSON.parse(fs.readFileSync(akte, "utf8")); } catch (_e) { a = null; }
+            fs.rmSync(akte, { force: true });
+            const grund = "UNGEMESSEN: Läufer starb (" + todName(code, sig) + ") · Kind " + kind.pid + " nach " + ((Date.now() - t0) / 60000).toFixed(1) + " min" +
+                (letzte ? " · letzte Zeile: " + letzte.slice(0, 240) : "");
+            let n = 0;
+            if (a && a.datei && fs.existsSync(a.datei)) {
+                const m = JSON.parse(fs.readFileSync(a.datei, "utf8"));
+                if (m.sha === a.sha) {
+                    for (const id of a.ids || []) {
+                        if ([m.je, m.ungemessen].some((x) => x && x[id] && Date.parse(x[id].zeit || "") >= a.start)) continue;
+                        eintragen(m, id, { gruen: false, zahl: grund, exit: code, minuten: +((Date.now() - a.start) / 60000).toFixed(2), grund, ungemessen: true,
+                            zeit: new Date().toISOString(), bahn: "tod", ...(a.host ? { host: a.host } : {}) });
+                        n++;
+                    }
+                    if (n) fs.writeFileSync(a.datei, JSON.stringify(konsumRaeumen(m), null, 1) + "\n");
+                }
+            }
+            const zeile = grund + (a && a.datei ? " → " + n + " von " + (a.ids || []).length + " Stationen UNGEMESSEN in " + path.basename(String(a.datei)) : " (vor der Sperre: keine Akte)");
+            if (!o.still) console.log(zeile);
+            fertig({ code: 3, grund, zeile, n });
+        });
+    });
+}
+
 // ───────────────────────────────── CLI ─────────────────────────────────
 function opts(argv) {
     const o = {};
@@ -8496,7 +8601,8 @@ if (require.main === module) {
     const [verb, ...rest] = process.argv.slice(2);
     const o = opts(rest);
     (async () => {
-        if (verb === "run") await run(o);
+        if (verb === "run" && !o.trocken && !process.env.PUNKTE_LAEUFER_WACHE) process.exitCode = (await laeuferWache(process.argv.slice(2))).code;
+        else if (verb === "run") (wacheFolgen(), await run(o));
         else if (verb === "halter") await halter(o);
         else if (verb === "grundstellung") {
             // in einer Probe: die Grundstellung der Welt der Sitzung (WERKBANK_PORT, der Grund PUNKTE_SITZUNG_GRUND)
