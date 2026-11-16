@@ -82,6 +82,7 @@
         "gate:ziel-zensus": "node scripts/diag-ziel-zensus.cjs --selftest && node scripts/diag-ziel-zensus.cjs",
         "gate:verdeckungs-abfrage": "node scripts/diag-verdeckungs-abfrage.cjs --selftest && node scripts/diag-verdeckungs-abfrage.cjs",
         "gate:vehicle-contract": "node scripts/diag-vehicle-contract.cjs",
+        "gate:vehicle-einspur": "node scripts/diag-vehicle-einspur.cjs --selbsttest && node scripts/diag-vehicle-einspur.cjs",
         "gate:porta-contract": "node scripts/diag-porta-contract.cjs",
         "gate:portal-membran": "node scripts/diag-portal-membran.cjs",
         "gate:scatter-lod": "node scripts/diag-scatter-lod.cjs",

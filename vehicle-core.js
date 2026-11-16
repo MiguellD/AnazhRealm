@@ -883,6 +883,21 @@
             g.add(kufen(H, P, M)); // der Schlitten gleitet: keine Ecke dreht, keine lenkt
             return g;
         }
+        if (P.topo === "einspur") {
+            // das Einspur-Fahrzeug (EINSPUR-GESETZ): zwei Räder in der Mittelebene an den Achsen seiner Ableitung, je Stoff EIN Mesh
+            for (const r of einspurRaeder(P, M)) {
+                const hub = new THREE.Group();
+                hub.position.set(r.pos[0], r.pos[1], r.pos[2]);
+                hub.userData.rad = { ecke: corners.length, front: r.front, os: 1 };
+                const spin = new THREE.Group();
+                spin.userData.radDreht = true;
+                hub.add(spin);
+                spin.add(baugruppe("rad", [r.rad]));
+                g.add(hub);
+                corners.push({ grp: hub, wheelSpin: spin, front: r.front, phase: 0, baseY: r.pos[1] });
+            }
+            return g;
+        }
         const zeit = P.rad === "voll" || P.rad === "speiche";
         const defs = [
             ["HUB_FL", true],
@@ -3056,7 +3071,507 @@
         aussen.add(baugruppe("kanzel", [glas]));
         return { innen, aussen };
     }
-    const TOPO = { kutsche: bauKutsche, motorwagen: bauMotorwagen, kanzel: bauKanzel };
+    // ══ DAS EINSPUR-GESETZ (w28-motorrad-kern, rein additiv) — das Motorrad als Gattung DIESES Kerns ══
+    // Aus dem Entwurf „ANATOMIE · MOTORRAD" des Schöpfers ziehen seine GESETZE ein, nie sein Look: EIN Bauplan, die Gattung
+    // (Supersport · Naked · Café · Cruiser · Adventure — die Rezepte `motorrad_*` unten bei PRESETS) und die Kultur (Rahmen-
+    // bauart · Felge · Topf-Lauf · Licht · Einarm, EINSPUR_KULTUR) sind seine Parameter. Die Geometrie leitet sich EINMAL ab
+    // (`einspurAbleiten`: Nachlauf = (R·sin ε − Offset)/cos ε, der Steuerkopf folgt dem Tankkamm, das Schwingenlager dem
+    // Radstand), jede Quer-Lage am Heck aus Reifenbreite, Kette und Freiraum (`einspurBahnen`, nie eine Konstante), und
+    // der Federweg (federwegV vorn entlang der Lenkachse, federwegH hinten um das Lager) ist ein Parameter desselben Baus —
+    // die Linse `gate:vehicle-einspur` baut jede Gattung × Kultur in Ruhe, Bremsnick, Squat und Ausfedern und zählt die
+    // Schnitte der verbotenen Paare (der Entwurf: 154 Schnitte / 26 Kontakte vor den Bahnen, danach 0).
+    // Die Kultur eines Wagens (CULTURES: cGrille) nennt die Kultur des Motorrads, sonst trägt das Rezept seine (`moKultur`).
+    const EINSPUR_KULTUR = {
+        rosso: { lab: "Rosso", rahmen: "trellis", rad: "y5", topf: "unterheck", licht: "doppel", einarm: true },
+        klinge: { lab: "Klinge", rahmen: "beam", rad: "stern", topf: "tief", licht: "split", einarm: false },
+        kante: { lab: "Kante", rahmen: "trellis", rad: "y5", topf: "hoch", licht: "vertikal", einarm: false },
+        legende: { lab: "Legende", rahmen: "cradle", rad: "draht", topf: "chrom", licht: "rund", einarm: false },
+        eisen: { lab: "Eisen", rahmen: "cradle", rad: "draht", topf: "fett", licht: "rund-gross", einarm: false },
+    };
+    // Die Mindestluft zwischen zwei Teilen (m) und der Federweg, den jedes Einspur hält (m, eingefedert > 0: vorn entlang der
+    // Lenkachse, hinten an der Achse; aus = Ausfedern beider) — Bau, Bahnen und die Linse lesen DIESE Zahlen.
+    const EINSPUR_LUFT = 0.006;
+    const EINSPUR_FEDERWEG = { vorn: 0.075, hinten: 0.06, aus: 0.045 };
+    const EINSPUR_AUS_GRILL ={ oval: "rosso", hex: "kante", wide: "klinge", single: "legende", upright: "eisen" };
+    function einspurKultur(P) {
+        return EINSPUR_KULTUR[EINSPUR_AUS_GRILL[P.cGrille]] || EINSPUR_KULTUR[P.moKultur] || EINSPUR_KULTUR.klinge;
+    }
+    // DAS GESETZ DER FEDERBEINE (EIN Satz): Stereo-Holme tragen nur Café und Cruiser mit Zweiarm-Schwinge — am Einarm ist
+    // links die Quer-Achse restlos belegt (Reifen → Kette → Arm), dort fährt immer das Zentralfederbein.
+    function einspurStereo(P, K) {
+        return (P.verk === "cruiser" || P.verk === "cafe") && !K.einarm;
+    }
+    // Die Geometrie EINMAL (deriveM des Entwurfs, ohne die Fahrer-Kinematik) — Bau, Linse und Fahrt lesen dieselbe Zahl.
+    function einspurAbleiten(P) {
+        const eps = (P.lenkkopf * Math.PI) / 180,
+            sE = Math.sin(eps),
+            cE = Math.cos(eps);
+        const fAx = P.radstand / 2,
+            rAx = -P.radstand / 2;
+        const trail = (P.radRv * sE - P.gabelOffset) / cE; // Nachlauf
+        const A0x = fAx + trail; // Fußpunkt der Lenkachse am Boden
+        const sitz = P.sitzhoehe,
+            tankTop = Math.max(P.tankH, sitz + 0.1);
+        const ySKb = Math.max(P.radRv + 0.25, tankTop - 0.14),
+            ySKt = ySKb + 0.13; // der Steuerkopf folgt dem Tankkamm
+        const sB = ySKb / cE,
+            sT = ySKt / cE;
+        const g2w = (u, v) => [A0x + u * cE - v * sE, u * sE + v * cE]; // Gabel-Ebene (u quer, v entlang der Achse) → Welt
+        const fV = P.federwegV || 0,
+            fH = P.federwegH || 0;
+        const sA = (P.radRv - P.gabelOffset * sE) / cE + fV; // die Achse entlang der Lenkachse (eingefedert: höher)
+        const axF = g2w(P.gabelOffset, sA);
+        const skB = [A0x - sB * sE, ySKb],
+            skT = [A0x - sT * sE, ySKt];
+        const xPiv = rAx + Math.max(0.46, P.radstand * 0.355),
+            yPiv = P.radRh + 0.05; // Schwingenlager
+        const Ls = Math.hypot(rAx - xPiv, P.radRh - yPiv),
+            dyH = P.radRh + fH - yPiv;
+        const aufBogen = (f) => [xPiv - Math.sqrt(Math.max(0, Ls * Ls - (P.radRh + f - yPiv) ** 2)), P.radRh + f];
+        const axR = aufBogen(fH); // die Achse auf dem Bogen der Schwinge
+        const xTankF = skB[0] - 0.05,
+            xTankR = xTankF - P.tankL;
+        const hipX = xTankR - 0.16,
+            xSitzR = hipX + 0.17;
+        const xTail = rAx - (0.06 + P.radstand * 0.045);
+        const LT = Math.max(0.15, xSitzR - xTail);
+        // das Heck-Blech folgt dem Rad (an der Schwinge): der Cruiser trägt es tief und lang, sonst der Hugger, nach vorn versetzt
+        const deep = P.verk === "cruiser";
+        const blech = { rr: P.radRh + (deep ? 0.032 : 0.028), rhw: P.radRh * (deep ? 0.92 : 0.48), fcx: deep ? 0 : 0.14 * P.radRh, dicke: 0.012 };
+        // DER HECKRAHMEN ÜBER DEM FEDERWEG: beide Schienen (Lager-Kopf bzw. Sitz-Knoten → Heck-Knoten, Rohr 0,011) laufen mit
+        // der Mindestluft über dem voll eingefederten Blech — fehlt der Raum, hebt sich das Heck (das Freiraum-Gesetz in der Höhe).
+        let yTail = sitz + Math.tan((P.heckKick * Math.PI) / 180) * LT * 0.55;
+        const axV = aufBogen(EINSPUR_FEDERWEG.hinten),
+            xT = xTail + 0.06;
+        // (die Luft steht senkrecht zur geneigten Schiene: ihr Lot wächst mit 1/cos der Neigung — drei Schritte reichen)
+        for (let it = 0; it < 3; it++) {
+            let y = yTail;
+            for (const k of [
+                [xPiv + 0.02, yPiv + 0.13],
+                [xSitzR - 0.02, sitz - 0.045],
+            ]) {
+                const lot = Math.hypot(1, (yTail - 0.035 - k[1]) / (xT - k[0]));
+                for (let i = 0; i <= 32; i++) {
+                    const dx = blech.fcx + blech.rhw * (1 - i / 16);
+                    const yF = axV[1] + Math.sqrt(Math.max(0, blech.rr * blech.rr - dx * dx)) + blech.dicke + (0.011 + EINSPUR_LUFT) * lot + 0.001;
+                    const t = (axV[0] + dx - k[0]) / (xT - k[0]);
+                    if (t > 0) y = Math.max(y, k[1] + (yF - k[1]) / t + 0.035);
+                }
+            }
+            yTail = y;
+        }
+        const barHalf = 0.26 + P.lenkerX * 0.25;
+        const clip = P.lenkerH <= ySKt - 0.02; // Stummel statt Rohrlenker
+        const mx = (skB[0] + xPiv) / 2 - 0.05,
+            motorY = P.bodenfrei + 0.17;
+        return { eps, sE, cE, fAx, rAx, trail, A0x, ySKb, ySKt, sB, sT, sA, axF, axR, skB, skT, xPiv, yPiv, xTankF, xTankR, tankTop, sitz, hipX, xSitzR, xTail, yTail, barHalf, clip, gx: skT[0] - P.lenkerX, gy: P.lenkerH, mx, motorY, g2w, deep, blech };
+    }
+    // DIE BAHNEN (deriveLanes des Entwurfs): jede Quer-Lage am Heck aus der Halbbreite des Pneus, der Nachbarbahn und der
+    // Mindestluft — Kette, Arm, Federholm, Topf und Steigrohr liegen in abgeleiteten Bändern (die Kette links, z < 0).
+    function einspurBahnen(P, K) {
+        const tHalf = P.reifenH * 0.6, // Torus-Rohrradius des Heck-Pneus = seine halbe Breite
+            rCh = 0.008,
+            clr = EINSPUR_LUFT; // Kettenradius · Mindestluft
+        const zArm = tHalf + 0.019 + clr; // Zweiarm-Wangen außen am Pneu
+        const zc = K.einarm ? -(tHalf + rCh + clr) : -(zArm + 0.019 + rCh + clr); // die Kette innen am Einarm, sonst außen am Arm
+        const zEin = zc - rCh - clr - 0.03; // der Einarm-Körper außen an der Kette
+        const zPipe = 0.056 + 0.013 + 0.024 + clr; // der Krümmerlauf außen am Unterzug
+        const zShock = Math.max(zPipe + 0.024 + 0.02 + clr, Math.abs(zc) + rCh + 0.02 + clr); // Federholm außen an Krümmer und Kette
+        const zMufT = zShock + 0.02 + 0.044 + clr; // der Topf außen am Stereo-Holm
+        const zMufA = (K.einarm ? tHalf : zArm + 0.019) + 0.043 + clr; // der Topf ohne Holme außen an Wange bzw. Pneu
+        const zClimb = 0.101 + 0.03 + clr; // das Steigrohr außen am Heckrahmen
+        const rail = 0.088; // die Schienen des Heckrahmens
+        const rfw = tHalf + 0.008; // das Blech deckt den Pneu
+        return { tHalf, rCh, clr, zc, zArm, zEin, zPipe, zShock, zMufT, zMufA, zClimb, rail, rfw };
+    }
+    // P (gemergt) → P des Einspur-Baus: die Maße, die Wirt und Fahr-Gesetz am Wagen lesen (Radius, Bodenfreiheit, Gürtel,
+    // Dach, Breite, Überhänge), leitet der Bauplan ab — ohne `einspur` genau DASSELBE Objekt (jeder Wagen byte-gleich).
+    function einspurForm(P) {
+        if (!P || !P.einspur) return P;
+        const Q = Object.assign({}, P);
+        const D = einspurAbleiten(P);
+        Q.topo = "einspur";
+        Q.radR = P.radRh;
+        Q.fahrhoehe = P.bodenfrei;
+        Q.guertel = P.sitzhoehe;
+        Q.dach = Math.max(P.lenkerH, D.tankTop) + 0.12;
+        Q.spur = 2 * D.barHalf + 0.1;
+        Q.ueberhangV = Math.max(P.radRv + 0.06, D.skB[0] + 0.3 - D.fAx);
+        Q.ueberhangH = Math.max(P.radRh + 0.04, D.rAx - D.xTail + 0.04);
+        Q.taille = 0;
+        Q.tumblehome = 0;
+        return Q;
+    }
+    function rohr(a, b, r, m, seg) {
+        const A = new THREE.Vector3(a[0], a[1], a[2] || 0),
+            E = new THREE.Vector3(b[0], b[1], b[2] || 0);
+        const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, Math.max(1e-4, A.distanceTo(E)), teil(seg || 10, 5), 1), m);
+        me.position.copy(A).add(E).multiplyScalar(0.5);
+        me.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), E.sub(A).normalize());
+        me.castShadow = me.receiveShadow = true;
+        return me;
+    }
+    function ei(c, rx, ry, rz, m, rotZ) {
+        const me = new THREE.Mesh(new THREE.SphereGeometry(1, teil(28, 10), teil(18, 7)), m);
+        me.scale.set(rx, ry, rz);
+        me.position.set(c[0], c[1], c[2] || 0);
+        if (rotZ) me.rotation.z = rotZ;
+        me.castShadow = me.receiveShadow = true;
+        return me;
+    }
+    function tag(n, o) {
+        o.userData.tag = n;
+        return o;
+    }
+    // Ein Bogen um die Achse c (Radius r, Winkel a0 → a1) als Strang (Blech): Breite b quer (z), Dicke d.
+    function blechBogen(c, r, a0, a1, b, d, m, z) {
+        const n = teil(16, 6),
+            pts = [];
+        for (let i = 0; i <= n; i++) {
+            const a = a0 + ((a1 - a0) * i) / n;
+            pts.push([c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r, z || 0]);
+        }
+        return strang(pts, [0, 0, 1], b, d, m);
+    }
+    // DAS EINSPUR-RAD: runder Pneu (Torus — die Halbbreite ist sein Rohr), Felge, Nabe, Speichen der Kultur, Scheibe.
+    function einspurRad(r, w, art, M, scheibe) {
+        const g = new THREE.Group();
+        const h = w * 0.6;
+        g.add(tag("tire", new THREE.Mesh(new THREE.TorusGeometry(r - h, h, teil(16, 6), teil(40, 14)), M.tire)));
+        const rimR = r - 2 * h + 0.012;
+        const fass = new THREE.Mesh(new THREE.CylinderGeometry(rimR, rimR, w * 0.7, teil(28, 10), 1, true), M.rimM);
+        fass.rotation.x = Math.PI / 2;
+        g.add(fass);
+        for (const s of [-1, 1]) {
+            const lip = new THREE.Mesh(new THREE.TorusGeometry(rimR, 0.01, teil(6, 3), teil(28, 10)), M.rimM);
+            lip.position.z = s * w * 0.32;
+            g.add(lip);
+        }
+        const hubR = 0.045;
+        g.add(C(0, 0, 0, "z", hubR, w * 0.55, M.rimD, 14));
+        if (art === "draht") {
+            for (let i = 0; i < 16; i++) {
+                const a = (i / 16) * Math.PI * 2;
+                for (const s of [-1, 1]) g.add(rohr([Math.cos(a) * hubR * 0.8, Math.sin(a) * hubR * 0.8, s * w * 0.16], [Math.cos(a + 0.42 * s) * rimR, Math.sin(a + 0.42 * s) * rimR, s * w * 0.28], 0.0038, M.rimD, 5));
+            }
+        } else {
+            const offs = art === "stern" ? [0] : [-0.17, 0.17];
+            for (let i = 0; i < 5; i++)
+                for (const off of offs) {
+                    const a = (i / 5) * Math.PI * 2 + off;
+                    g.add(B((Math.cos(a) * (rimR + hubR)) / 2, (Math.sin(a) * (rimR + hubR)) / 2, 0, (rimR - hubR) / 2, r * (art === "stern" ? 0.05 : 0.028), w * 0.07, M.rimM, a));
+                }
+        }
+        for (const z of scheibe) {
+            const d = new THREE.Mesh(new THREE.TorusGeometry(r * 0.48, 0.0055, teil(6, 3), teil(30, 10)), M.rimD);
+            d.position.z = z;
+            g.add(d);
+        }
+        return g;
+    }
+    // DIE TEILE des Einspur-Baus — getaggt (die Linse liest die Tags), ungefaltet; der Bau faltet sie je Stoff (baugruppe).
+    // innen = Rahmen · Gabel · Schwinge · Kette · Federbeine · Motor · Auspuff · Rasten; aussen = die Haut (Tank, Sitz, Heck,
+    // Verkleidung, Bleche, Licht). Die Räder baut buildWheels an den Achsen derselben Ableitung (`einspurRaeder`).
+    function einspurTeile(P, M, lack) {
+        const D = einspurAbleiten(P),
+            K = einspurKultur(P),
+            LN = einspurBahnen(P, K);
+        const innen = [],
+            aussen = [];
+        const I = (n, o) => innen.push(n ? tag(n, o) : o);
+        const Au = (n, o) => aussen.push(n ? tag(n, o) : o);
+        const bf = P.bodenfrei,
+            o = P.gabelOffset,
+            zf = 0.105;
+        const fm = K.rahmen === "trellis" ? lack : K.rahmen === "beam" ? M.rimM : M.steel;
+        // ── VORN: die Gabel federt IN SICH (Tauchrohr gleitet im Standrohr), Brücken, Lenker, Licht ──
+        const yMid = D.sA + (D.sB - D.sA) * 0.55;
+        for (const s of [-1, 1]) {
+            const z = s * zf;
+            I("fork", rohr([...D.g2w(o, D.sA - 0.03), z], [...D.g2w(o, yMid + 0.03), z], 0.0235, M.steel, 14));
+            I("fork", rohr([...D.g2w(o, yMid - 0.05), z], [...D.g2w(o, D.sT + 0.03), z], 0.0165, M.rimM, 12));
+        }
+        for (const [v, hh] of [
+            [D.sB, 0.015],
+            [D.sT, 0.013],
+        ]) {
+            const p = D.g2w(o * 0.5, v);
+            I(null, B(p[0], p[1], 0, o * 0.5 + 0.035, hh, zf + 0.022, M.housing, D.eps));
+        }
+        I(null, rohr([...D.g2w(0, D.sB - 0.01), 0], [...D.g2w(0, D.sT + 0.01), 0], 0.026, M.steel, 12));
+        I(null, C(D.axF[0], D.axF[1], 0, "z", 0.014, 0.26, M.rimD, 10));
+        for (const s of [-1, 1]) I(null, B(D.axF[0] - 0.05, D.axF[1] - P.radRv * 0.34, s * 0.064, 0.024, 0.04, 0.012, M.cal, 0.35));
+        const lp = [D.gx, D.gy];
+        for (const s of [-1, 1]) {
+            if (D.clip) I(null, rohr([...D.g2w(o, D.sT + 0.03), s * zf], [lp[0] - 0.02, lp[1], s * (D.barHalf - 0.09)], 0.0125, M.housing));
+            else {
+                const fuss = D.g2w(o * 0.65, D.sT + 0.012);
+                I(null, rohr([fuss[0], fuss[1], s * 0.045], [lp[0], lp[1] + 0.005, s * 0.055], 0.013, M.steel));
+                I(null, rohr([lp[0], lp[1] + 0.005, s * 0.05], [lp[0] - 0.025, lp[1] + 0.012, s * (D.barHalf - 0.09)], 0.0125, M.steel));
+            }
+            I(null, rohr([lp[0] - 0.025, lp[1] + 0.012, s * (D.barHalf - 0.1)], [lp[0] - 0.045, lp[1] + 0.015, s * D.barHalf], 0.0165, M.seat));
+            if (P.verk !== "voll") {
+                I(null, rohr([lp[0] - 0.01, lp[1] + 0.01, s * (D.barHalf - 0.05)], [lp[0] + 0.02, lp[1] + 0.15, s * (D.barHalf + 0.045)], 0.008, M.housing));
+                I(null, B(lp[0] + 0.02, lp[1] + 0.165, s * (D.barHalf + 0.045), 0.007, 0.026, 0.041, M.housing));
+            }
+        }
+        // Schutzblech vorn (am Tauchrohr: federt mit dem Rad)
+        const adv = P.verk === "adv";
+        const frR = P.radRv + (adv ? 0.15 : 0.055);
+        Au("fenderF", blechBogen(D.axF, frR, adv ? 0.5 : 0.35, adv ? 2.2 : 2.6, adv ? 0.11 : 0.135, 0.012, lack));
+        // ── DER RAHMEN der Kultur (ftube) ──
+        const pivT = [D.xPiv + 0.02, D.yPiv + 0.13],
+            pivB = [D.xPiv + 0.02, D.yPiv + 0.02];
+        const sN = [D.xSitzR - 0.02, D.sitz - 0.045],
+            tN = [D.xTail + 0.06, D.yTail - 0.035];
+        if (K.rahmen === "trellis") {
+            const n = 4,
+                lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+            for (const s of [-1, 1]) {
+                const z = s * 0.09;
+                for (let i = 0; i < n; i++) {
+                    const t0 = i / n,
+                        t1 = (i + 1) / n;
+                    const a = lerp(D.skT, pivT, t0),
+                        b = lerp(D.skT, pivT, t1),
+                        c = lerp(D.skB, pivB, t0),
+                        d = lerp(D.skB, pivB, t1);
+                    I("ftube", rohr([...a, z], [...b, z], 0.011, fm));
+                    I("ftube", rohr([...c, z], [...d, z], 0.011, fm));
+                    I("ftube", rohr([...a, z], [...d, z], 0.009, fm));
+                }
+            }
+        } else if (K.rahmen === "beam") {
+            for (const s of [-1, 1]) {
+                const a = [(D.skB[0] + D.skT[0]) / 2, (D.skB[1] + D.skT[1]) / 2],
+                    b = [D.xPiv + 0.02, D.yPiv + 0.08];
+                I("ftube", strang([[...a, s * 0.086], [...b, s * 0.086]], [0, 0, 1], 0.03, 0.11, fm));
+            }
+        } else {
+            const dnF = [D.skB[0] - 0.03, bf + 0.06],
+                uE1 = [D.mx + 0.16, bf + 0.03],
+                uE2 = [D.xPiv - 0.03, bf + 0.035];
+            for (const s of [-1, 1]) {
+                const z = s * 0.056;
+                for (const [a, b] of [
+                    [D.skB, dnF],
+                    [dnF, uE1],
+                    [uE1, uE2],
+                    [uE2, pivB],
+                    [D.skT, sN],
+                    [sN, pivT],
+                ])
+                    I("ftube", rohr([...a, z], [...b, z], 0.013, fm));
+            }
+        }
+        for (const s of [-1, 1]) {
+            I("ftube", rohr([...pivT, s * LN.rail], [...tN, s * LN.rail], 0.011, fm));
+            I("ftube", rohr([...sN, s * LN.rail], [...tN, s * LN.rail], 0.01, fm));
+        }
+        I(null, C(D.xPiv, D.yPiv, 0, "z", 0.024, 0.16, M.steel, 12));
+        // ── DER MOTOR der Gattung ──
+        const my = D.motorY;
+        I(null, B(D.mx, my, 0, 0.16, 0.1, 0.07, M.motor));
+        if (P.motor === "boxer") for (const s of [-1, 1]) I(null, C(D.mx + 0.06, my + 0.06, s * 0.17, "z", 0.055, 0.14, M.motor, 14));
+        else if (P.motor === "v2")
+            for (const a of [-0.45, 0.45]) I(null, B(D.mx + Math.sin(a) * 0.14, my + 0.17, 0, 0.055, 0.1, 0.055, M.motor, -a));
+        else I(null, B(D.mx + 0.05, my + 0.17, 0, P.motor === "twin" ? 0.07 : 0.09, 0.1, P.motor === "twin" ? 0.06 : 0.07, M.motor, -0.3));
+        if (P.kuehl) I(null, B(D.skB[0] - 0.07, my + 0.2, 0, 0.02, 0.14, 0.12, M.housing, -0.2));
+        // ── DAS HECK: Schwinge (Zweiarm / Einarm), Kette, Federbeine, Blech, Streben ──
+        const piv = [D.xPiv, D.yPiv],
+            ax = D.axR;
+        const angS = Math.atan2(ax[1] - piv[1], ax[0] - piv[0]),
+            Ls = Math.hypot(ax[0] - piv[0], ax[1] - piv[1]);
+        const mid = [(piv[0] + ax[0]) / 2, (piv[1] + ax[1]) / 2];
+        if (K.einarm) {
+            I("swing", B(mid[0], mid[1], LN.zEin, Ls / 2 + 0.04, 0.048, 0.03, M.rimM, angS));
+            I("swing", C(ax[0], ax[1], LN.zEin + 0.045, "z", 0.055, 0.085, M.rimM, 16));
+        } else for (const s of [-1, 1]) I("swing", B(mid[0], mid[1], s * LN.zArm, Ls / 2 + 0.03, 0.032, 0.019, M.rimM, angS));
+        const fs = [piv[0] + 0.035, piv[1] + 0.004];
+        I("chain", rohr([fs[0], fs[1] + 0.042, LN.zc], [ax[0], ax[1] + 0.1, LN.zc], 0.008, M.trim, 6));
+        I("chain", rohr([fs[0], fs[1] - 0.042, LN.zc], [ax[0], ax[1] - 0.1, LN.zc], 0.008, M.trim, 6));
+        I(null, C(fs[0], fs[1], LN.zc, "z", 0.045, 0.014, M.rimD, 14));
+        const naheS = (t, dy) => [piv[0] + (ax[0] - piv[0]) * t, piv[1] + (ax[1] - piv[1]) * t + dy];
+        if (einspurStereo(P, K)) {
+            for (const s of [-1, 1]) {
+                const u = naheS(0.72, 0.03);
+                I("shock", rohr([u[0], u[1], s * LN.zShock], [u[0] + 0.07, D.sitz - 0.05, s * LN.zShock], 0.02, M.steel, 12));
+            }
+        } else {
+            const u = naheS(0.3, 0.05);
+            I("shock", rohr([u[0], u[1], 0], [D.xPiv + 0.03, D.yPiv + 0.3, 0], 0.024, M.steel, 12));
+        }
+        const deep = D.deep;
+        const rr = D.blech.rr,
+            rhw = D.blech.rhw,
+            rfw = LN.rfw + (deep ? 0.006 : 0),
+            fcx = D.blech.fcx;
+        const aP = (u, zS) => [ax[0] + fcx + rhw * u, ax[1] + Math.sqrt(Math.max(0, rr * rr - Math.pow(rhw * u + fcx, 2))) - 0.01, zS];
+        {
+            const pts = [];
+            for (let i = 0, n = teil(16, 6); i <= n; i++) {
+                const u = 1 - (2 * i) / n;
+                pts.push([ax[0] + fcx + rhw * u, ax[1] + Math.sqrt(Math.max(0, rr * rr - Math.pow(rhw * u + fcx, 2))), 0]);
+            }
+            Au("fenderR", strang(pts, [0, 0, 1], 2 * rfw, 0.024, lack));
+        }
+        if (deep) {
+            // die Streben des tiefen Blechs: am Einarm nur links, auf der Bahn außen am Ketten-Band (legal per Konstruktion)
+            const zStD = -(Math.abs(LN.zc) + LN.rCh + 0.0075 + LN.clr);
+            for (const s of K.einarm ? [-1] : [-1, 1]) {
+                const zS = K.einarm ? zStD : s * (rfw + 0.012);
+                const a1 = aP(0.62, zS),
+                    a2 = aP(-0.55, zS),
+                    a3 = aP(-0.9, zS);
+                const fuss = [...naheS(1, 0.012), K.einarm ? LN.zEin + 0.02 : s * (LN.zArm - 0.006)];
+                fuss[0] += 0.03 * Math.cos(angS);
+                I("fstay", rohr(fuss, a1, 0.0075, M.rimM, 6));
+                I("fstay", rohr(a1, a2, 0.0075, M.rimM, 6));
+                I("fstay", rohr(a2, a3, 0.0075, M.rimM, 6));
+            }
+            // Licht und Kennzeichen tragen am Blech (ungefedert wie das Rad): radial außen auf seiner Fläche, je Mindestluft frei
+            const amBlech = (a, halb) => {
+                const r = rr + D.blech.dicke + halb + LN.clr;
+                return [ax[0] + Math.cos(a) * r, ax[1] + Math.sin(a) * r];
+            };
+            const aL = Math.PI - 0.62,
+                aK = Math.PI - 0.3;
+            const pl = amBlech(aL, 0.012),
+                pk = amBlech(aK, 0.004);
+            Au("tail", B(pl[0], pl[1], 0, 0.012, 0.02, 0.05, M.lensR, aL));
+            Au("plate", B(pk[0], pk[1], 0, 0.004, 0.046, 0.06, M.housing, aK));
+        } else {
+            // die Hugger-Halter: am Einarm quert die Strebe das Ketten-Band nur über dem Obertrum (der Über-Kette-Knoten)
+            const chY = (x) => {
+                const t = Math.min(1, Math.max(0, (x - fs[0]) / (ax[0] - fs[0])));
+                return fs[1] + 0.042 + t * (ax[1] + 0.1 - (fs[1] + 0.042));
+            };
+            const zK = -(Math.abs(LN.zc) + LN.rCh + 0.0062 + LN.clr);
+            for (const s of K.einarm ? [-1] : [-1, 1]) {
+                const zS = s * (rfw + 0.008);
+                for (const u of [0.55, -0.35]) {
+                    const fp = aP(u, zS),
+                        fx2 = fp[0],
+                        fy2 = fp[1] - 0.002;
+                    const b = naheS(u > 0 ? 0.66 : 0.9, 0.03);
+                    const zB = K.einarm ? LN.zEin + 0.02 : s * (LN.zArm - 0.004);
+                    if (K.einarm) {
+                        const yK = Math.max((b[1] + fy2) / 2, chY(fx2) + LN.rCh + 0.0062 + LN.clr + 0.002);
+                        I("fstay", rohr([b[0], b[1], zB], [fx2, yK, zK], 0.0062, M.trim, 6));
+                        I("fstay", rohr([fx2, yK, zK], [fx2, fy2, zS], 0.0062, M.trim, 6));
+                    } else {
+                        I("fstay", rohr([b[0], b[1], zB], [fx2, (b[1] + fy2) / 2, zS], 0.0062, M.trim, 6));
+                        I("fstay", rohr([fx2, (b[1] + fy2) / 2, zS], [fx2, fy2, zS], 0.0062, M.trim, 6));
+                    }
+                }
+            }
+        }
+        // ── DER AUSPUFF: Krümmer vor dem Motor, Lauf unter ihm (zPipe), der Topf auf seiner Bahn ──
+        const stereo = einspurStereo(P, K);
+        const zMuf = stereo ? LN.zMufT : LN.zMufA;
+        const pm = K.topf === "chrom" || K.topf === "fett" ? M.rimM : M.steel;
+        // der Sammler steht VOR der Schwinge (ihre Stirn: das Lager + ihr Überstand, Rohr 0,024 + Mindestluft): dort wechselt
+        // der Lauf auf die Bahn des Topfs, nie durch den Arm
+        const armStirn = D.xPiv + 0.03 * Math.abs(Math.cos(angS)) + 0.032 * Math.abs(Math.sin(angS));
+        const kol = [Math.max(D.xPiv + 0.06, armStirn + 0.024 + LN.clr + 0.004), bf + 0.05, LN.zPipe];
+        const kop = [D.mx + 0.15, my + 0.1, LN.zPipe * 0.6],
+            vor = [D.mx + 0.22, bf + 0.07, LN.zPipe];
+        I("pipe", rohr(kop, vor, 0.022, pm));
+        I("pipe", rohr(vor, kol, 0.024, pm));
+        // der Raum unter dem Heck (Einarm-Kultur): Topf unter den Schienen und über dem eingefederten Blech, sonst tief
+        const fHmax = EINSPUR_FEDERWEG.hinten,
+            hhM = 0.055;
+        const blechTop = P.radRh + fHmax + rr + 0.012 + LN.clr;
+        const railY = (x) => pivT[1] + ((tN[1] - pivT[1]) * (x - pivT[0])) / (tN[0] - pivT[0]);
+        const xMufF = D.rAx + 0.12,
+            xMufR = D.xTail + 0.08;
+        const yMuf = Math.min(railY(xMufF), railY(xMufR)) - 0.011 - LN.clr - hhM;
+        const lauf = K.topf === "unterheck" && (!K.einarm || yMuf - hhM < blechTop) ? "tief" : K.topf;
+        if (lauf === "unterheck") {
+            const fussS = [D.xPiv - 0.02, bf + 0.08, LN.zClimb];
+            I("pipe", rohr(kol, fussS, 0.024, pm));
+            I("pipe", rohr(fussS, [xMufF, yMuf, LN.zClimb], 0.024, pm));
+            I("pipe", rohr([xMufF, yMuf, LN.zClimb], [xMufF, yMuf, 0.03], 0.024, pm));
+            I("pipe", B((xMufF + xMufR) / 2, yMuf, 0, (xMufF - xMufR) / 2, hhM, 0.06, pm));
+        } else {
+            const rT = K.topf === "fett" ? 0.043 : 0.042;
+            const hoch = lauf === "hoch";
+            const t0 = [kol[0], bf + (hoch ? 0.14 : 0.1), zMuf],
+                t1 = [D.rAx + (hoch ? 0.12 : 0.08), hoch ? D.sitz - 0.14 : P.radRh - 0.02, zMuf];
+            I("pipe", rohr(kol, t0, 0.024, pm));
+            I("pipe", rohr(t0, t1, rT, pm, 14));
+        }
+        for (const s of [-1, 1]) I(null, rohr([P.rastenX, P.rastenH, s * 0.12], [P.rastenX - 0.01, P.rastenH, s * 0.2], 0.012, M.steel, 6));
+        // ── DIE HAUT: Tank, Sitz, Heck, Licht, Verkleidung der Gattung ──
+        const tankC = [(D.xTankF + D.xTankR) / 2, D.tankTop - 0.09];
+        Au("tank", ei(tankC, P.tankL / 2 + 0.03, 0.1, 0.13, lack, -0.08));
+        const sEnd = P.verk === "cafe" ? D.hipX - 0.12 : D.hipX - 0.3;
+        Au("seat", B((D.xSitzR + sEnd) / 2, D.sitz - 0.02, 0, (D.xSitzR - sEnd) / 2, 0.035, P.verk === "cruiser" ? 0.17 : 0.12, M.seat));
+        const hA = [sEnd + 0.05, D.sitz - 0.02],
+            hB = [D.xTail, D.yTail];
+        Au("heck", B((hA[0] + hB[0]) / 2, (hA[1] + hB[1]) / 2 - 0.02, 0, Math.hypot(hB[0] - hA[0], hB[1] - hA[1]) / 2, 0.05, 0.1, lack, Math.atan2(hB[1] - hA[1], hB[0] - hA[0])));
+        if (!deep) Au("tail", B(D.xTail - 0.005, D.yTail - 0.03, 0, 0.01, 0.018, 0.06, M.lensR));
+        const rund = (K.licht === "rund" || K.licht === "rund-gross") && P.verk !== "voll" && P.verk !== "adv";
+        if (rund) {
+            const R0 = K.licht === "rund-gross" ? 0.125 : 0.1;
+            const p = [D.skB[0] + 0.13, D.ySKb + 0.035];
+            Au("licht", C(p[0], p[1], 0, "x", R0, 0.115, K.topf === "chrom" || K.topf === "fett" ? M.rimM : M.housing, 22));
+            Au("licht", C(p[0] + 0.062, p[1], 0, "x", R0 * 0.88, 0.014, M.lensW, 22));
+        } else if (P.verk === "voll") {
+            Au("verkleidung", ei([D.skB[0] + 0.1, D.ySKb - 0.02], 0.3, 0.2, 0.19, lack, -0.25));
+            Au("verkleidung", ei([D.mx + 0.12, my + 0.12], 0.34, 0.17, 0.15, lack, -0.1));
+            Au("scheibe", ei([D.skT[0] + 0.05, D.ySKt + 0.04], 0.16, 0.05, 0.13, M.glass, 0.55));
+            for (const s of [-1, 1]) Au("licht", B(D.skB[0] + 0.33, D.ySKb - 0.02, s * 0.07, 0.02, 0.022, 0.045, M.lensW, -0.4));
+        } else {
+            const p = [D.skB[0] + 0.13, D.ySKb + 0.02];
+            const hoch = K.licht === "vertikal";
+            Au("licht", B(p[0], p[1], 0, 0.05, hoch ? 0.09 : 0.05, hoch ? 0.06 : 0.1, M.housing, -0.3));
+            Au("licht", B(p[0] + 0.05, p[1], 0, 0.006, hoch ? 0.07 : 0.035, hoch ? 0.045 : 0.085, M.lensW, -0.3));
+            if (adv) Au("scheibe", B(p[0] - 0.02, p[1] + 0.2, 0, 0.006, 0.14, 0.12, M.glass, -0.45));
+        }
+        return { innen, aussen, D, K, LN };
+    }
+    // Die Räder an den Achsen derselben Ableitung (Breite vorn 0,10 m, hinten die Reifenbreite des Rezepts), je Rad das
+    // Ritzel bzw. die Scheiben auf ihrer Bahn.
+    function einspurRaeder(P, M) {
+        const D = einspurAbleiten(P),
+            K = einspurKultur(P),
+            LN = einspurBahnen(P, K);
+        const vorn = einspurRad(P.radRv, 0.1, K.rad, M, [-0.064, 0.064]);
+        const hinten = einspurRad(P.radRh, P.reifenH, K.rad, M, [K.einarm ? -0.072 : LN.zArm - 0.023]);
+        hinten.add(C(0, 0, LN.zc, "z", 0.105, 0.013, M.rimD, 24));
+        return [
+            { pos: [D.axF[0], D.axF[1], 0], front: true, rad: vorn },
+            { pos: [D.axR[0], D.axR[1], 0], front: false, rad: hinten },
+        ];
+    }
+    function bauEinspur(H, P, ctx) {
+        const T = ctx.M;
+        const t = einspurTeile(P, T, ctx.bodyMat);
+        const innen = new THREE.Group(),
+            aussen = new THREE.Group();
+        innen.add(baugruppe("einspur", t.innen));
+        aussen.add(baugruppe("einspurHaut", t.aussen));
+        return { innen, aussen };
+    }
+    // DER PRÜFLING der Linse (gate:vehicle-einspur): dieselben Teile und Räder, getaggt und ungefaltet, Welt-Matrizen gesetzt.
+    function einspurPruefling(rezeptId, ov) {
+        const pre = PRESETS[rezeptId];
+        if (!pre || !(pre.fx && pre.fx.einspur)) return null;
+        const P = einspurForm(Object.assign({}, DEFAULT_P, BASE_P, pre.s, pre.fx, ov || {}));
+        const M = materials();
+        const t = einspurTeile(P, M, M.paint);
+        const g = new THREE.Group();
+        for (const m of t.innen.concat(t.aussen)) g.add(m);
+        for (const r of einspurRaeder(P, M)) {
+            r.rad.position.set(r.pos[0], r.pos[1], r.pos[2]);
+            g.add(r.rad);
+        }
+        g.updateMatrixWorld(true);
+        return { g, D: t.D, K: t.K, LN: t.LN, P };
+    }
+
+    const TOPO = { kutsche: bauKutsche, motorwagen: bauMotorwagen, kanzel: bauKanzel, einspur: bauEinspur };
 
     // Schwerpunkthöhe ABGELEITET aus der Form: Bodenfreiheit + Masse sitzt tief (Chassis/Akku) + etwas Aufbau.
     // → flacher Supersportler = tiefer SP = wenig Wanken · hoher SUV = hoher SP = mehr Wanken (automatisch).
@@ -3450,7 +3965,7 @@
     // der Presets) mergt ueber DIESELBE Basis wie buildInstance (DEFAULT_P + BASE_P) — die
     // eine Merge-Ordnung, kein Duplikat.
     function exportDrive(Pin) {
-        const P = epocheForm(Object.assign({}, DEFAULT_P, BASE_P, Pin || {})); // dieselbe Zeit-Achse wie der Bau
+        const P = einspurForm(epocheForm(Object.assign({}, DEFAULT_P, BASE_P, Pin || {}))); // dieselbe Zeit-Achse und dasselbe Einspur-Gesetz wie der Bau
         const ph = carPhys(P);
         // DONOR-ABSCHIED (18.07., rein additiv): die Stations-Wahrheit des Baus
         // (derive + scal-Y-Linien + seatRow-Anker) reist als DATEN mit — der
@@ -4685,6 +5200,40 @@
             },
             fx: { sig: "brow", heck: "steil" },
         },
+        // DIE EINSPUR-GATTUNGEN (w28-motorrad-kern, EINSPUR-GESETZ): derselbe Bauplan, die Gattung setzt Rahmen-Geometrie
+        // (Radstand, Lenkkopf, Gabel-Offset, Heck-Kick), Stance (Räder, Bodenfreiheit, Sitz), das Ergonomie-Dreieck (Tank,
+        // Lenker, Rasten), Verkleidung und Motor; die Maße des Wirts leitet einspurForm ab. leistung kW/t über Fahrzeug und
+        // Fahrer (carPhys), cw über der Stirnfläche Breite × Höhe.
+        motorrad_supersport: {
+            kind: "vehicle",
+            lab: "Motorrad Supersport",
+            s: { leistung: 430, cw: 0.36, radstand: 1.4, lenkkopf: 23.5, gabelOffset: 0.032, heckKick: 17, radRv: 0.31, radRh: 0.32, reifenH: 0.155, bodenfrei: 0.15, sitzhoehe: 0.84, tankL: 0.52, tankH: 1.05, lenkerH: 0.97, lenkerX: 0.02, rastenX: -0.18, rastenH: 0.4, springRate: 125 },
+            fx: { einspur: true, topo: "einspur", verk: "voll", motor: "reihe", kuehl: 1, moKultur: "rosso" },
+        },
+        motorrad_naked: {
+            kind: "vehicle",
+            lab: "Motorrad Naked",
+            s: { leistung: 360, cw: 0.5, radstand: 1.44, lenkkopf: 24.5, gabelOffset: 0.035, heckKick: 13, radRv: 0.31, radRh: 0.32, reifenH: 0.155, bodenfrei: 0.16, sitzhoehe: 0.82, tankL: 0.5, tankH: 1.07, lenkerH: 1.08, lenkerX: 0.15, rastenX: -0.15, rastenH: 0.36, springRate: 105 },
+            fx: { einspur: true, topo: "einspur", verk: "naked", motor: "reihe", kuehl: 1, moKultur: "klinge" },
+        },
+        motorrad_cafe: {
+            kind: "vehicle",
+            lab: "Motorrad Café",
+            s: { leistung: 230, cw: 0.48, radstand: 1.45, lenkkopf: 26.5, gabelOffset: 0.048, heckKick: 3, radRv: 0.325, radRh: 0.32, reifenH: 0.155, bodenfrei: 0.15, sitzhoehe: 0.79, tankL: 0.6, tankH: 1.0, lenkerH: 0.93, lenkerX: 0.05, rastenX: -0.22, rastenH: 0.35, springRate: 85 },
+            fx: { einspur: true, topo: "einspur", verk: "cafe", motor: "twin", kuehl: 0, moKultur: "legende" },
+        },
+        motorrad_cruiser: {
+            kind: "vehicle",
+            lab: "Motorrad Cruiser",
+            s: { leistung: 200, cw: 0.62, radstand: 1.63, lenkkopf: 32, gabelOffset: 0.052, heckKick: 2, radRv: 0.34, radRh: 0.325, reifenH: 0.155, bodenfrei: 0.13, sitzhoehe: 0.69, tankL: 0.55, tankH: 0.92, lenkerH: 1.12, lenkerX: 0.34, rastenX: 0.38, rastenH: 0.3, springRate: 68 },
+            fx: { einspur: true, topo: "einspur", verk: "cruiser", motor: "v2", kuehl: 0, moKultur: "eisen" },
+        },
+        motorrad_adventure: {
+            kind: "vehicle",
+            lab: "Motorrad Adventure",
+            s: { leistung: 280, cw: 0.58, radstand: 1.52, lenkkopf: 26, gabelOffset: 0.054, heckKick: 14, radRv: 0.35, radRh: 0.33, reifenH: 0.155, bodenfrei: 0.26, sitzhoehe: 0.87, tankL: 0.55, tankH: 1.12, lenkerH: 1.18, lenkerX: 0.18, rastenX: -0.05, rastenH: 0.33, springRate: 90 },
+            fx: { einspur: true, topo: "einspur", verk: "adv", motor: "boxer", kuehl: 1, moKultur: "kante" },
+        },
     };
     // Der Regler-Grundzustand (Original garage.js Z.712–714) + die Preset-Klick-Basis
     // (Z.816: heck/windshieldRake reset) — die Shell UND buildInstance mergen identisch.
@@ -4797,7 +5346,7 @@
     // P (gemergt) → P der Epoche. Ohne `epoche` und auf „heute" genau DASSELBE Objekt (byte-gleich); sonst ein neues, das
     // `epoche` VERBRAUCHT hat (idempotent: ein geformtes P formt nie zweimal) und seine Stufe beim Namen trägt (`epocheStufe`).
     function epocheForm(P) {
-        if (!P || P.epoche == null || !Number.isFinite(+P.epoche)) return P;
+        if (!P || P.epoche == null || !Number.isFinite(+P.epoche) || P.einspur) return P; // das Einspur trägt seine eigene Gestalt
         const n = EPOCHE_GESETZ.length - 1;
         const e = Math.max(0, Math.min(n, +P.epoche));
         const i0 = Math.floor(e),
@@ -4847,7 +5396,8 @@
         const pre = PRESETS[rezeptId];
         if (!pre) return null;
         // die Zeit-Achse (EPOCHE_GESETZ): ohne `epoche` bzw. auf „heute" dasselbe P
-        const P = epocheForm(Object.assign({}, DEFAULT_P, BASE_P, pre.s, pre.fx, ov || {}));
+        // das Einspur-Gesetz (einspurForm): ohne `einspur` dasselbe P
+        const P = einspurForm(epocheForm(Object.assign({}, DEFAULT_P, BASE_P, pre.s, pre.fx, ov || {})));
         // die gezeigte Stufe (kindStages.vehicle = [0, 1]): die größte deklarierte ≤ dem Wunsch
         const st = lod >= 1 ? 1 : 0;
         // DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): trägt der Bau mehr Dreiecke als die
@@ -4942,7 +5492,7 @@
         g.add(wheels);
         // DER SCHNITT DER FLANKE gilt jeder Gestalt (w11-fahrzeug): Taille und Tumblehome formen auch Kutschkasten, Motorwagen
         // und Kanzel (vorher waren beide Regler dort tot); die Coke-Linie bleibt die Haut von heute.
-        if (topo) taperBody(body, scal(H, P), Object.assign({}, P, { coke: 0 }));
+        if (topo && !P.einspur) taperBody(body, scal(H, P), Object.assign({}, P, { coke: 0 })); // das Einspur hat keine Flanke
         if (!topo) {
             const S = scal(H, P);
             taperBody(pkg, S, P);
@@ -4979,6 +5529,14 @@
         epocheAusJahr: epocheAusJahr,
         presetPatch: presetPatch,
         buildInstance: buildInstance,
+        // w28-motorrad-kern (rein additiv) — das EINSPUR-GESETZ: Kulturen, Ableitung, Bahnen, Federbein-Gesetz, der Prüfling
+        EINSPUR_KULTUR: EINSPUR_KULTUR,
+        EINSPUR_FEDERWEG: EINSPUR_FEDERWEG,
+        einspurForm: einspurForm,
+        einspurAbleiten: einspurAbleiten,
+        einspurBahnen: einspurBahnen,
+        einspurStereo: einspurStereo,
+        einspurPruefling: einspurPruefling,
         // Mess- & Physik-Fläche (Shell + Wirt lesen dieselben Gesetze)
         derive: derive,
         messen: messen,

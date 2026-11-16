@@ -72,7 +72,9 @@ function epoche(gattungen) {
         }
     return out;
 }
-const E = epoche(Object.keys(VC.PRESETS));
+// die Wagen der Zeit-Achse: die Zweispur-Rezepte — das Einspur (EINSPUR-GESETZ, w28-motorrad-kern) trägt die Achse noch nicht
+// (epocheForm formt es nicht, benannt offen: sein Regler „Epoche" wirkt am Motorrad nicht)
+const E = epoche(Object.keys(VC.PRESETS).filter((r) => !(VC.PRESETS[r].fx && VC.PRESETS[r].fx.einspur)));
 check("E: jede Epoche formt jeden Wagen in seiner Gestalt", !E.length, E.join(" · "));
 const alt = EG.slice();
 EG[H - 1] = alt[H - 2];

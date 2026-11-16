@@ -485,7 +485,9 @@ jobs:
               # Node-direkt (r128) — Determinismus · Geometrie seed-invariant, der Same waehlt den Lack · ov-Kanal ·
               # Plattform-Probe (Math.pow ±1 ULP kippt kein Byte; sin/cos/atan2/hypot halten ihre Ratsche,
               # spec/asset-contract/plattform-ratsche.json) · Selbst-Test. Bis zur Integration W5 lief er nur lokal.
-              run: npm run gate:vehicle-contract
+              # w28-motorrad-kern: dazu das Schnitt-Gate des Einspur-Gesetzes (5 Gattungen × 5 Kulturen × 5 Feder-Posen, 18 verbotene
+              # Paare, SAT + zertifizierter Abstand; Selbsttest: die verschobene Kette nennt chain×swing) — ~4 s
+              run: npm run gate:vehicle-contract && npm run gate:vehicle-einspur
 
             - name: Tor-Asset-Vertrag v4 (porta-core buildInstance byte-eingefroren, Byte-Raster am Ausgang)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 14
