@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 203,
+  "weltTakte": 64,
   "zeilen": 1080
  },
  "geraet": {
@@ -55,7 +55,7 @@
   "leiber": null,
   "abstand": 10.49,
   "gestalt": [
-   "grown_busch_hazel_v1 146"
+   "grown_busch_hazel_v1 82"
   ],
   "gezeichnet": true
  },
@@ -77,7 +77,7 @@
   "h": 1080,
   "mittel": 34,
   "sigma": 21.3,
-  "schwarz": 0.0057,
+  "schwarz": 0.0056,
   "weiss": 0
  },
  "ok": false,
@@ -102,8 +102,8 @@
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 1686,
-   "wechsel": 1165902
+   "ms": 1728,
+   "wechsel": 1165894
   },
   "rinde": null,
   "toene": [

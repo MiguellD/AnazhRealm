@@ -164,8 +164,8 @@ const speicherBildSeite = async function speicherBildSeite(setzen, wasser, stein
     return j;
 }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\71839b1e-radeon\speicher.K4_2.json C:\Users\micha\AppData\Local\Temp\claude\w3\pm
 [linse-gpu] amd/rdna-3
-(B) bild-diff 1.66 % nach dem Neuladen (2145 ms), Rauschen 0.13 %, Pflicht vor {"bau":50,"grube":50,"wasser":2,"soll":100} · nach {"bau":50,"grube":50,"wasser":2,"soll":100} · Stein des Spielers {"steine":50,"gruben":50,"erster":[-265.8,-1119.1],"sperre":{"wand":"bau","gesperrt":2,"bauten":["glutbrunnen -270.0/-1121.0"]}}
-PROBE 66.1 s
+(B) bild-diff 1.36 % nach dem Neuladen (1485 ms), Rauschen 0.17 %, Pflicht vor {"bau":50,"grube":50,"wasser":2,"soll":100} · nach {"bau":50,"grube":50,"wasser":2,"soll":100} · Stein des Spielers {"steine":50,"gruben":50,"erster":[-265.8,-1119.1],"sperre":{"wand":"bau","gesperrt":2,"bauten":["glutbrunnen -270.0/-1121.0"]}}
+PROBE 35.3 s
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
