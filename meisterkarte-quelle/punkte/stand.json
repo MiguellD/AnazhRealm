@@ -5479,7 +5479,7 @@
   },
   "karte2.mensch.menge.bild": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bild#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/daten.js, stamm/siedlung-tor.js) · karte2.mensch.menge.bild#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bild#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/daten.js, stamm/siedlung-tor.js) · karte2.mensch.menge.bild#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/daten.js, stamm/siedlung-tor.js)",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bild#1",
@@ -5498,8 +5498,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, stamm/daten.js, stamm/siedlung-tor.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6156,7 +6157,7 @@
   },
   "karte2.same.preis.bytes": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.bytes#1 radeon: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js) · karte2.same.preis.bytes#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.bytes#1 radeon: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js) · karte2.same.preis.bytes#1 gtx: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js)",
    "stationen": [
     {
      "id": "karte2.same.preis.bytes#1",
@@ -6175,8 +6176,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6273,7 +6275,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 144,
+  "konsum": 146,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6444,10 +6446,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 193
+  "ohne": 191
  },
  "kopfVoll": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
- "zeit": "2026-11-16T20:51:41.331Z",
+ "zeit": "2026-11-16T20:57:39.291Z",
  "vorher": "77e079ae",
  "bilanz": {
   "gewinn": [],
