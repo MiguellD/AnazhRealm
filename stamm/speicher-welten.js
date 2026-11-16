@@ -525,9 +525,12 @@ class AnazhRealm_speicher_welten {
                 .filter((t) => t && !t.builtIn)
                 .map((t) => this._serializeTool(t));
             // Eigene Baupläne wandern mit (Schöpfer-Wissen); die Hotbar bleibt leer (welt-spezifisch).
-            // Nur über _serializeBlueprint — sonst gehen Portal-Rolle + Signatur still verloren.
-            snap.blueprints = this._bauplaeneDesStands(
-                new Set(snap.tools.map((t) => t.sourceBlueprint).filter(Boolean))
+            // Nur über _serializeBlueprint — sonst gehen Portal-Rolle + Signatur still verloren. Der Gang der Baupläne ist ein
+            // Generator (speicher.K2#2): getrieben in EINEM Zug (`_standZug`). Seit w12-speicher-takt (05.11.) rief diese Zeile ihn
+            // ungetrieben — `.map` auf dem Generator war ein fauler Iterator, der als `{}` reiste: die Person verlor an jeder
+            // Geburt mit ihr (Reise, Welt-Tor, neue Welt) ihre eigenen Baupläne, und die Wand der Tür wies die Reise-Welt ab.
+            snap.blueprints = this._standZug(
+                this._bauplaeneDesStands(null, new Set(snap.tools.map((t) => t.sourceBlueprint).filter(Boolean)))
             ).map((bp) => this._serializeBlueprint(bp));
         }
         return snap;
@@ -673,9 +676,10 @@ class AnazhRealm_speicher_welten {
     // kommt. Bis w8-snapshot-schlank reiste jede Art: an der Playtest-Welt trugen 125 Arten 154 082 von 262 028 B des Stands (59 %),
     // der Pin der Welt (`pinCurrentWorld`, 256 KiB) hatte 116 B Luft. IN SCHRITTEN (speicher.K2#2): je vier Baupläne ein Schritt samt
     // seinem Werk (das Urteil der Geburt zählt seins, `_bauplanAusBuch`) — die Menge der Playtest-Welt (196 Baupläne) kostete als
-    // EIN Schritt 0,29 ms. `K` der Kontext des Stands. → (am Ende) die Baupläne
-    *_bauplaeneDesStands(K) {
-        const bezug = yield* this._standBezug(K);
+    // EIN Schritt 0,29 ms. `K` der Kontext des Stands; `bezug` die Namen, wo kein Stand sie nennt (die Geburt einer Welt mit der
+    // Person: die Quellen ihrer Werkzeuge). → (am Ende) die Baupläne
+    *_bauplaeneDesStands(K, bezug = null) {
+        bezug ||= yield* this._standBezug(K);
         const S = this._speicher || { werk: 0 };
         const out = [];
         let i = 0;
