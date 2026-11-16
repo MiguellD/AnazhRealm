@@ -198,8 +198,21 @@ class AnazhRealm_vegetation_streu {
     // DIE ART NACH KLIMA UND ZEIT DES ORTS (Reise, Welle 3: die Tafel `ortGesetz(teil).wuchs`, die Heimat 1): das Nadelholz trägt
     // den Anteil `nadel` (es meidet die Tropen — dort steht die Palme, wo es stünde), der Laubbaum `laub` (vor der Zeit der
     // Bedecktsamer steht Nadelholz); ein eigener Wurf aus dem Hash der Zelle entscheidet, in der Heimat fällt er nie.
-    _scatterSpeciesForCell(lebendig, moisture, hash) {
+    // DIE WÄRME-ARTEN NACH DER WÄRME AM ORT (vorrat2-arten-aus-klima): Palme und Zypresse fallen nie aus dem Rauschen `lebendig`
+    // allein — ihr Platz im Feld fragt das Klima an der Höhe des Orts (gelaende-core `ortWarm`: das Winter-Mittel aus dem EINEN
+    // Feld der Temperatur; die Höhe ist die EINE 2D-Höhe `_terrainMacroSurfaceY` ohne Detail), ein eigener Wurf aus dem Hash
+    // trägt den Anteil; trägt die Wärme sie nicht, steht an ihrem Platz die Art ihres Holzes (die Palme → Eiche, die Zypresse →
+    // Tanne), und der Tausch der Tropen (das Nadelholz meidet sie) setzt die Palme nur, wo die Wärme sie trägt. Die Höhe fragt
+    // nur ein Wurf, der auf eine Wärme-Art fällt. In der Heimat (Winter −4 °C) steht keine. `x`, `z`: der Ort der Zelle.
+    _scatterSpeciesForCell(lebendig, moisture, hash, x, z) {
         const pick = (hash >>> 7) & 0xff;
+        let warm;
+        const waerme = () =>
+            warm !== undefined
+                ? warm
+                : (warm =
+                      ((hash >>> 24) & 0xff) / 256 <
+                      globalThis.__gelaendeCore.ortWarm(this._gelaende(), this._terrainMacroSurfaceY(x, z, false)));
         const amFeld = () => {
             if (moisture > 0.6) {
                 return pick < 128 ? "baum_erle" : "baum_birke";
@@ -208,22 +221,22 @@ class AnazhRealm_vegetation_streu {
                 return pick < 110 ? "baum_buche" : pick < 200 ? "baum_eiche" : "baum_birke";
             }
             if (lebendig > 0.4) {
-                // T1 (wahrerwuchs §4.1) — eine PALME in milder Zone (die Blatt-Typ-Vielfalt
+                // T1 (wahrerwuchs §4.1) — eine PALME in milder Zone, wo die Wärme sie trägt (die Blatt-Typ-Vielfalt
                 // sichtbar; selten → ein gefundener Hain, kein Klon-Teppich).
-                if (pick >= 232) return "baum_palme";
+                if (pick >= 232) return waerme() ? "baum_palme" : "baum_eiche";
                 return pick < 120 ? "baum_eiche" : pick < 200 ? "baum_kiefer" : "baum_tanne";
             }
-            // karger Boden → Nadelwald + Karst + (selten) säulen-förmige ZYPRESSE (Schuppen-Laub)
+            // karger Boden → Nadelwald + Karst + (selten, wo die Wärme sie trägt) säulen-förmige ZYPRESSE (Schuppen-Laub)
             if (pick < 140) return "baum_tanne";
             if (pick < 190) return "baum_kiefer";
-            if (pick < 214) return "baum_zypresse"; // T1: mediterrane Säulen-Zypresse
+            if (pick < 214) return waerme() ? "baum_zypresse" : "baum_tanne"; // T1: mediterrane Säulen-Zypresse
             return "baum_karst";
         };
         const art = amFeld();
         const W = this._gelaende().ort.wuchs;
         const u = ((hash >>> 15) & 0xff) / 256;
         const nadel = AnazhRealm.STREU_NADEL.includes(art);
-        if (nadel && u >= W.nadel) return W.laub > 0 ? "baum_palme" : art;
+        if (nadel && u >= W.nadel) return W.laub > 0 && waerme() ? "baum_palme" : art;
         if (!nadel && u >= W.laub) return (hash >>> 23) & 1 ? "baum_tanne" : "baum_kiefer";
         return art;
     }
@@ -232,7 +245,7 @@ class AnazhRealm_vegetation_streu {
     // Strauch/Kraut/Bodenflora nach Feld (feucht → Farn, lebendig → Blume, sonst Hazel); Fels nach Hash.
     // Die Streu-Schicht „litter" (→ baum_totholz) fiel W1 final: das Studio hat keinen Totholz-Körper, sie
     // zeichnete eine belaubte 21-m-Eiche; die Grammatik-Art Totholz fiel 05.10. mit (kein Erzeuger mehr).
-    _scatterSpeciesForLayer(kind, lebendig, moisture, hash) {
+    _scatterSpeciesForLayer(kind, lebendig, moisture, hash, x, z) {
         if (kind === "under") {
             if (moisture > 0.55) return "farn_busch"; // Kraut-Stratum (feuchte Senken)
             // Bodenflora (üppige Lichtungen) — die Blume ist ein Bedecktsamer (w28-reise-ort): vor ihrer Zeit (`wuchs.laub` des
@@ -247,7 +260,7 @@ class AnazhRealm_vegetation_streu {
             // gewählt). stein_block bleibt der platzierbare Block (nicht gestreut).
             return hash % 100 < 12 ? "felsbrocken" : "kiesel";
         }
-        return this._scatterSpeciesForCell(lebendig, moisture, hash); // Canopy
+        return this._scatterSpeciesForCell(lebendig, moisture, hash, x, z); // Canopy
     }
 
     // Deterministische Cell-Transform — EINE Quelle für Streu UND Promotion, damit der promovierte Baum
@@ -628,7 +641,7 @@ class AnazhRealm_vegetation_streu {
         if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) return false;
         if (layer.promotable && (this._tatSperrt(tf.x, tf.z) || this._baumAlter(tf.x, tf.z) < 1)) return false;
         if (!this._landAt(tf.x, tf.z, 0.4)) return false;
-        const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
+        const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h, tf.x, tf.z);
         const variantIndex = h % AnazhRealm.VARIANTS_PER_SPECIES;
         const warten0 = region._wartenN | 0;
         const rec = this._naturSetzen(species, tf, tf, () => {

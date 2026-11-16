@@ -5727,7 +5727,11 @@
         frost: Object.freeze([-3, 3]),
         nadel: Object.freeze([24, 16]),
         sand: Object.freeze([0, 24]),
+        warm: Object.freeze([3, 7]),
     });
+    // `warm` (`ortWarm`, °C: das Winter-Mittel an der Höhe des Baums): die Wärme-Arten (Palme, Zypresse) erfrieren, wo der
+    // kälteste Monat unter 5 °C mittelt — die Nordgrenze der Palmen (Greenwood & Wing 1995: Arecaceae nur bei einem Mittel des
+    // kältesten Monats ≥ 5 °C), dieselbe Linie trägt die mediterrane Zypresse; die Heimat (Winter −4 °C) trägt keine.
     // `bilanz` (Reise, w28-reise-ort): die Wasser-Bilanz des Orts — das Verhältnis des Planeten zum Anker (`delta.wuchs.decke`:
     // Niederschlag gegen Verdunstung, planet-core `pflanzenDeckung`), höchstens die der Heimat; ohne Frost und Zeit (ein See im Eis
     // verdunstet nicht). Der Leser ist der Spiegel der Seen (`seeBilanz`): ein abflussloses Becken füllt nur den Anteil seiner
@@ -5778,6 +5782,15 @@
     // Wald-Schlange) — in der Heimat 1.
     function ortBaum(W, nass, nadel) {
         return (nadel ? W.nadel : W.laub) * (W.wald + (W.oase - W.wald) * nass);
+    }
+    // DIE WÄRME DER WÄRME-ARTEN AN DER HÖHE y (vorrat2-arten-aus-klima): der Anteil ∈ [0, 1], den das Klima der Lage `L` einer
+    // frost-empfindlichen Art trägt — das Winter-Mittel an der Höhe aus dem EINEN Feld der Temperatur (`temperaturFeld`: das Klima
+    // des Orts, `ortGesetz`, gekühlt mit der Höhe über dem Meer; ohne Uhr und Wetter, das Klima, nie der Tag) gegen `ORT_WUCHS.warm`.
+    // In der Heimat überall 0 (Winter −4 °C am Meer, jede Höhe kälter). Leser: die Wahl der Art der Streu (Stamm
+    // `_scatterSpeciesForCell`: Palme und Zypresse stehen nur, wo die Wärme sie trägt).
+    function ortWarm(L, y) {
+        const F = temperaturFeld(L, y, 0);
+        return glatt(ORT_WUCHS.warm[0], ORT_WUCHS.warm[1], F.mittel - F.jahr.amp - F.kuehlung);
     }
     // DIE LANDUNG DER REISE (K5, w28-reise-ort): trägt das Makro-Gesetz der Lage `L` Grund an der Ankunft — am Ursprung oder auf
     // der Ring-Spirale (je `LANDUNG.ringM` bis `LANDUNG.bisM`, 8 Richtungen; dieselbe Spirale wie der Plan der Ankunft im Faden):
@@ -7778,6 +7791,7 @@
         kahlGrund: kahlGrund,
         ortKraut: ortKraut,
         ortBaum: ortBaum,
+        ortWarm: ortWarm,
         ortLandung: ortLandung,
         ortSaat: ortSaat,
         ortSaatWahl: ortSaatWahl,
