@@ -844,8 +844,9 @@ const TAG_LINSE = {
 // DER DECKEL DER ARBEIT (geschätzt, ungemessen an der Karte): zwei Orte × 100 Uhren und ≥ 60 Fein-Uhren, je Uhr der Sprung, der Himmel
 // und EINE Aufnahme bis das Bild steht (640×360, ~3–5 Bilder), je Ort vier volle gegen die Geschichte, die Mess-Wiese kalt (9–18 s,
 // Radeon eich3–6) — 40 s; die RUF-Zeilen je Kurve nennen die Sekunden je Uhr
-// vier Kurven (genesis · wiese je Ego und Third): der Deckel wächst mit, 240 s (ungemessen bis zur ersten Fahrt)
-const TAG_PROBE = { sek: 240, befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(TAG_LINSE)) };
+// vier Kurven (genesis · wiese je Ego und Third): der Deckel wächst mit, 240 s; mit dem Bild ohne Sternfeld je Uhr, an der das Feld
+// zeichnet, je Kurve ~83 s (Radeon 14ee72dc: die dritte Kurve begann nach 247,6 s statt 157,6 s, der Deckel 240 s riss) — 400 s
+const TAG_PROBE = { sek: 400, befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(TAG_LINSE)) };
 const LAUB_LINSE = {
     vorher: ["umstellen", "--ort", "dorf", "--sicht", "ego"],
     args: ["licht", "--laub", "ring,feld,feld0,feld90,feld180,panorama,spiegel,spiegel180,wasser,fichte,tanne", "--karte", "--uhr", "0.5,0.27,0.05", "--ort", "dorf"],
