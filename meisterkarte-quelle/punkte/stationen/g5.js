@@ -6329,13 +6329,13 @@ function stadtFormMass(kacheln, M) {
         const sxy = X.reduce((a, x, j) => a + (x - mx) * (Y[j] - my), 0), sxx = X.reduce((a, x) => a + (x - mx) * (x - mx), 0), syy = Y.reduce((a, y) => a + (y - my) * (y - my), 0); // prettier-ignore
         fit = { r2: syy > 0 && sxx > 0 ? r3((sxy * sxy) / (sxx * syy)) : null, lambdaM: sxy < 0 ? Math.round((-sxx / sxy) * M) : null };
     }
-    let hoch = 0, n = 0; // prettier-ignore
-    for (const K of voll) for (const h of K.haeuser) { n++; if (h[6] + h[7] > hoch) hoch = h[6] + h[7]; } // prettier-ignore
+    let hoch = 0, n = 0, bei = null; // prettier-ignore
+    for (const K of voll) for (const h of K.haeuser) { n++; if (h[6] + h[7] > hoch) { hoch = h[6] + h[7]; bei = [r3(h[0]), r3(h[1]), K.i, K.k]; } } // prettier-ignore
     return {
         kacheln: voll.length, haeuser: n, rhoMax: r3(rhoMax), kern: kern.length, rand: rand.length, // prettier-ignore
         wand: { kern: wk == null ? null : r3(wk), rand: wr == null ? null : r3(wr), mal: wk > 0 && wr > 0 ? r3(wk / wr) : null },
         dichte: Object.assign({ baender: pkt.map((p) => [p[0], r3(p[1])]) }, fit),
-        hoehe: { kern: hk == null ? null : r3(hk), rand: hr == null ? null : r3(hr), mal: hk > 0 && hr > 0 ? r3(hk / hr) : null, max: r3(hoch) },
+        hoehe: { kern: hk == null ? null : r3(hk), rand: hr == null ? null : r3(hr), mal: hk > 0 && hr > 0 ? r3(hk / hr) : null, max: r3(hoch), bei },
     };
 }
 // IN DER SEITE (r = Welt): der Akt, der Kern erwacht, die Ferne steht — dann das Maß über die gezeichneten Massen
@@ -6406,6 +6406,64 @@ async function stadtFormSeite(M, mass) {
             kacheln.push({ i, k, strassen, haeuser: H });
         }
         aus.form = mass(kacheln, W);
+        // DIE VERTIKALE (Karte 2 mensch.stadt.vertikal S1: „höchstes Gebäude im Bild, begehbare Ebenen = 1“): der Spieler tritt auf
+        // den Straßenpunkt vor dem höchsten Haus (das Maß nennt es, `hoehe.bei`) und blickt es an; fünf Punkte seiner Achse (10–90 %
+        // der Höhe bis zum First) projiziert die Kamera des Spiels — im Rahmen und frei, wenn kein anderes Haus (seine Kiste bis zum
+        // First) und kein Grund auf der Sichtlinie steht. Die Ebenen: zwei Straßen derselben Kachel, die sich ohne gemeinsamen Knoten
+        // (1 m) kreuzen, sind eine Überführung — ohne sie trägt die Stadt EINE begehbare Ebene. Danach steht der Spieler dort (die
+        // Pose des Preis-Laufs zeigt das höchste Haus).
+        const hb = aus.form && aus.form.hoehe && aus.form.hoehe.bei;
+        if (hb) {
+            const Kz = kacheln.find((q) => q.i === hb[2] && q.k === hb[3]), ziel = Kz && Kz.haeuser.find((h) => Math.abs(h[0] - hb[0]) < 0.01 && Math.abs(h[1] - hb[1]) < 0.01); // prettier-ignore
+            const g0 = r.getTerrainHeightAt(hb[0], hb[1]), top = aus.form.hoehe.max;
+            let stand = null;
+            for (const p of (Kz && Kz.strassen) || [])
+                for (let q = 0; q + 1 < p.length; q += 2) { const d = Math.hypot(p[q] - hb[0], p[q + 1] - hb[1]); if (!stand || d < stand.d) stand = { x: p[q], z: p[q + 1], d }; } // prettier-ignore
+            if (!stand || stand.d < 1) stand = { x: hb[0] - (ziel ? ziel[3] : 0) * ((ziel ? ziel[5] : 0) + 12), z: hb[1] + (ziel ? ziel[2] : 1) * ((ziel ? ziel[5] : 0) + 12), d: null }; // prettier-ignore
+            pm.set(stand.x, r._voxelSurfaceY(stand.x, stand.z) + 1.8, stand.z);
+            [st.yaw, st.pitch] = [Math.atan2(hb[0] - stand.x, hb[1] - stand.z), 0];
+            for (let t = 0; t < 4; t++) await takt();
+            const cam = st.camera;
+            cam.updateMatrixWorld(true);
+            const E = cam.position.clone(), alle = kacheln.flatMap((q) => q.haeuser).filter((h) => h !== ziel), gH = new Map(); // prettier-ignore
+            const grund = (h) => (gH.has(h) ? gH.get(h) : (gH.set(h, r.getTerrainHeightAt(h[0], h[1])), gH.get(h)));
+            const punkte = [0.1, 0.3, 0.5, 0.7, 0.9].map((f) => {
+                const P = cam.position.clone().set(hb[0], g0 + f * top, hb[1]), v = P.clone().project(cam);
+                const imRahmen = Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1 && v.z > -1 && v.z < 1;
+                const L = Math.hypot(P.x - E.x, P.z - E.z), nah = alle.filter((h) => Math.hypot(h[0] - (E.x + P.x) / 2, h[1] - (E.z + P.z) / 2) < L / 2 + Math.hypot(h[4], h[5])); // prettier-ignore
+                let vor = null;
+                for (let s = 0.5; s < L && !vor; s += 0.5) {
+                    const t = s / L, qx = E.x + (P.x - E.x) * t, qy = E.y + (P.y - E.y) * t, qz = E.z + (P.z - E.z) * t;
+                    if (ziel) { const u = (qx - ziel[0]) * ziel[2] + (qz - ziel[1]) * ziel[3], w = -(qx - ziel[0]) * ziel[3] + (qz - ziel[1]) * ziel[2]; if (Math.abs(u) <= ziel[4] && Math.abs(w) <= ziel[5]) break; } // prettier-ignore
+                    if (qy < r.getTerrainHeightAt(qx, qz) - 0.2) vor = "Grund " + s.toFixed(1) + " m";
+                    for (const h of nah) {
+                        const u = (qx - h[0]) * h[2] + (qz - h[1]) * h[3], w = -(qx - h[0]) * h[3] + (qz - h[1]) * h[2];
+                        if (Math.abs(u) <= h[4] && Math.abs(w) <= h[5] && qy < grund(h) + h[6] + h[7]) { vor = "Haus " + s.toFixed(1) + " m"; break; } // prettier-ignore
+                    }
+                }
+                return { f, imRahmen, vor, sichtbar: imRahmen && !vor };
+            });
+            let ueber = 0;
+            for (const K2 of kacheln) {
+                const seg = [];
+                K2.strassen.forEach((p, ri) => { for (let q = 0; q + 3 < p.length; q += 2) seg.push([p[q], p[q + 1], p[q + 2], p[q + 3], ri]); }); // prettier-ignore
+                const nahEnde = (x, y, sg) => Math.hypot(x - sg[0], y - sg[1]) < 1 || Math.hypot(x - sg[2], y - sg[3]) < 1;
+                for (let a = 0; a < seg.length; a++)
+                    for (let b = a + 1; b < seg.length; b++) {
+                        const [A, B] = [seg[a], seg[b]], dx1 = A[2] - A[0], dz1 = A[3] - A[1], dx2 = B[2] - B[0], dz2 = B[3] - B[1], den = dx1 * dz2 - dz1 * dx2; // prettier-ignore
+                        if (Math.abs(den) < 1e-9) continue;
+                        const ta = ((B[0] - A[0]) * dz2 - (B[1] - A[1]) * dx2) / den, tb = ((B[0] - A[0]) * dz1 - (B[1] - A[1]) * dx1) / den;
+                        if (ta <= 0 || ta >= 1 || tb <= 0 || tb >= 1) continue;
+                        const x = A[0] + dx1 * ta, z = A[1] + dz1 * ta;
+                        if (!nahEnde(x, z, A) && !nahEnde(x, z, B)) ueber++;
+                    }
+            }
+            aus.vertikal = {
+                haus: { x: hb[0], z: hb[1], kachel: [hb[2], hb[3]], hoeheM: top, grundY: +g0.toFixed(2) },
+                stand: { x: +stand.x.toFixed(1), z: +stand.z.toFixed(1), d: stand.d == null ? null : +stand.d.toFixed(1), auge: [+E.x.toFixed(1), +E.y.toFixed(1), +E.z.toFixed(1)] },
+                punkte, sichtbar: punkte.filter((p) => p.sichtbar).length, ueberfuehrungen: ueber, ebenen: ueber > 0 ? 2 : 1,
+            };
+        } else aus.vertikal = { fehler: "das Maß nennt kein höchstes Haus" };
         Object.assign(aus, { stufe2, strassenAusPlan: ausPlan, ringe: s.ringe, s: sek() });
         return aus;
     } finally {
@@ -6475,4 +6533,64 @@ module.exports.push({
     quelle:
         "BREITE siedlung = die Stadt trägt Kern und Rand: geschlossene Straßenwand Kern ↔ Rand ≥ 2:1, die Dichte fällt exponentiell (Fit R² ≥ 0,8), " +
         "Höhen-Median Kern/Rand ≥ 5 (Meisterkarte 2 mensch.stadt.form Sprosse 1 und 3)",
+});
+
+// KARTE 2 mensch.stadt.vertikal S1 (vorrat2-stationen-g5): das eigene Urteil auf dem Lauf von breite.siedlung#1 (dieselbe Probe, ein
+// Zwilling, keine GPU-Minute mehr) — das höchste Haus der gezeichneten Massen steht im Bild der Kamera des Spiels (≥ 2 von 5 Punkten
+// seiner Achse im Rahmen und frei, der Spieler auf der Straße davor) und die Stadt trägt EINE begehbare Ebene (0 Überführungen).
+// Am Kern gerechnet (w28-stadt-netz): höchstes Haus 30,4 m; Bild und Ebenen am Fenster ungemessen.
+const VERTIKAL_SICHTBAR = 2;
+const stadtVertikalAus = (v, form) =>
+    "[linse-gpu] amd/rdna-3 (Probe)\n@@PUNKTE@@ FORM\n" + JSON.stringify({ ergebnis: { wort: "dorf 7 9310", form: stadtFormFall(form || {}), vertikal: v } }, null, 1) + "\n@@PUNKTE@@ EXIT 0\n";
+const vertikalFall = (o) =>
+    Object.assign(
+        {
+            haus: { x: 851.2, z: 441.7, kachel: [0, 0], hoeheM: 30.387, grundY: 38.4 },
+            stand: { x: 846.1, z: 452.3, d: 11.8, auge: [846.1, 41.9, 452.3] },
+            punkte: [0.1, 0.3, 0.5, 0.7, 0.9].map((f) => ({ f, imRahmen: f < 0.8, vor: null, sichtbar: f < 0.8 })),
+            sichtbar: 4,
+            ueberfuehrungen: 0,
+            ebenen: 1,
+        },
+        o
+    );
+module.exports.push({
+    kriterium: "karte2.mensch.stadt.vertikal",
+    karte2: true,
+    staffel: 1,
+    geraet: ["radeon", "gtx"],
+    beide: true,
+    probe: { ...STADT_FORM_PROBE, mutiert: true },
+    gpu: true,
+    zeit: false,
+    minuten: 6,
+    urteil: (j, lauf) => {
+        const out = String(lauf.stdout || "");
+        const ad = (/\[linse-gpu\][^\r\n]*/.exec(out) || ["Adapter ungenannt"])[0];
+        const soft = /\[linse-gpu\][^\r\n]*(swiftshader|llvmpipe|lavapipe|software|subzero)/i.test(out);
+        const b = jsonBlock(teilVon(lauf, "FORM"));
+        const e = b && (b.ergebnis || b), f = e && e.form, v = e && e.vertikal; // prettier-ignore
+        if (!e || e.fehler || !f || f.fehler || !f.hoehe) return { gruen: false, zahl: "kein Maß der Stadt" + (e && (e.fehler || (f && f.fehler)) ? " — " + (e.fehler || f.fehler) : "") + " · " + ad };
+        if (!v || v.fehler || !Array.isArray(v.punkte)) return { gruen: false, zahl: "kein Blick auf das höchste Haus" + (v && v.fehler ? " — " + v.fehler : " (die Probe trägt keinen Block vertikal)") + " · " + ad };
+        const k = (x, n) => (typeof x === "number" ? x.toFixed(n).replace(".", ",") : "—");
+        const vor = v.punkte.filter((p) => p.vor).map((p) => Math.round(p.f * 100) + " %: " + p.vor);
+        return {
+            gruen: !soft && f.hoehe.max > 0 && v.sichtbar >= VERTIKAL_SICHTBAR && v.ebenen === 1 && v.ueberfuehrungen === 0,
+            zahl:
+                e.wort + ": höchstes Haus " + k(f.hoehe.max, 1) + " m bis zum First (Kachel " + v.haus.kachel.join("/") + ") · im Bild " + v.sichtbar + " von " + v.punkte.length +
+                " Punkten seiner Achse (Soll ≥ " + VERTIKAL_SICHTBAR + ", im Rahmen " + v.punkte.filter((p) => p.imRahmen).length + (vor.length ? ", verdeckt " + vor.join(" · ") : "") +
+                ") vom Straßenpunkt " + (v.stand.d == null ? "(Ersatz vor der Front)" : k(v.stand.d, 1) + " m") + " · begehbare Ebenen " + v.ebenen + " (Überführungen " + v.ueberfuehrungen + ") · " + ad,
+        };
+    },
+    proben: [
+        { name: "das höchste Haus steht im Bild, eine Ebene", stdout: stadtVertikalAus(vertikalFall({})), gruen: true },
+        { name: "das höchste Haus hinter einem Haus (1 von 5 frei)", stdout: stadtVertikalAus(vertikalFall({ sichtbar: 1, punkte: [0.1, 0.3, 0.5, 0.7, 0.9].map((f) => ({ f, imRahmen: true, vor: f < 0.8 ? "Haus 6,5 m" : null, sichtbar: f >= 0.8 })) })), gruen: false },
+        { name: "das höchste Haus außerhalb des Rahmens", stdout: stadtVertikalAus(vertikalFall({ sichtbar: 0, punkte: [0.1, 0.3, 0.5, 0.7, 0.9].map((f) => ({ f, imRahmen: false, vor: null, sichtbar: false })) })), gruen: false },
+        { name: "eine Überführung: zwei Ebenen", stdout: stadtVertikalAus(vertikalFall({ ueberfuehrungen: 1, ebenen: 2 })), gruen: false },
+        { name: "die Stadt ohne Höhe", stdout: stadtVertikalAus(vertikalFall({}), { hoehe: { kern: 0, rand: 0, mal: null, max: 0 } }), gruen: false },
+        { name: "die Probe ohne Block vertikal (der alte Lauf)", stdout: stadtFormAus(stadtFormFall({})), gruen: false },
+        { name: "swiftshader", stdout: stadtVertikalAus(vertikalFall({})).replace("amd/rdna-3 (Probe)", "google/swiftshader"), gruen: false },
+    ],
+    pfad: [...DORF, "scripts/lib/welt-boot.cjs"],
+    quelle: "KARTE2 mensch.stadt.vertikal S1 = höchstes Gebäude im Bild, begehbare Ebenen = 1",
 });
