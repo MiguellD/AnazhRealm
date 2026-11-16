@@ -1,5 +1,7 @@
 # Post an w28-kandidat-1611
 
+## 16.11. 04:14 — GPU-PROBE 4cb23940 auf gtx1050-desktop: GRÜN in 759 s (bild:dorf@0.5 GRÜN 143 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 88 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 82 s auf gtx1050-desktop) → probe-post/w28-kandidat-1611/4cb23940.md
+
 ## 16.11. 02:51 — CODE-CHECK ROT am Kopf d96401d0 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
