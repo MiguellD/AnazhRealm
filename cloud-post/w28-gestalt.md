@@ -1,5 +1,7 @@
 # Post an w28-gestalt
 
+## 16.11. 12:18 — GPU-PROBE 25fbeb9a auf radeon-890m: GRÜN in 329 s (bild:dorf@0.5 GRÜN 79 s auf radeon-890m · bild:genesis@0.5 GRÜN 60 s auf radeon-890m) → probe-post/w28-gestalt/25fbeb9a.md
+
 ## 16.11. 10:00 — CODE-CHECK ROT am Kopf 822404ad (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
