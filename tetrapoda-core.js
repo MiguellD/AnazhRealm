@@ -2221,11 +2221,17 @@
     // Baumpieper; Delius 1963): der Vogel steigt vom Boden in steigS auf seine Höhe, kreist mit tempoMs und sinkt zurück; am
     // Boden schweigt er. Über Bäumen kreist er über dem Dach: die Höhe hebt sich um kroneM × Deckung der Zelle. DIE BAHN (vogelBahn): je Periode periodeS (die Phase je Revier) singt er den Anteil dutyMax × Lied; Höhe
     // und Kreis sind stetig in der Zeit UND im Anteil (Auf- und Abstieg glätten an beiden Rändern des Fensters) — ein
-    // Wetterwechsel holt ihn herunter, er springt nie. DER LEIB (leib): ein Singvogel von 0,22 m Länge und 0,32 m Spannweite
-    // (Amsel-Maß) als Teile — je Teil ein Doppel-Keil (Oktaeder) mit diesen Ausdehnungen in Metern um seine Lage (x rechts,
-    // y oben, z vorn; Farbe sRGB): der Rumpf spitz nach vorn und hinten, Kopf, Schwanz; der Flügel am Schultergelenk (rechts;
-    // links gespiegelt) mit der Länge nach außen, sein Schlag schlagHz mit dem Ausschlag ±schlagRad. Einen Schnabel trägt der
-    // Leib nicht: 8 mm sind ab 2 m unter einem Bildpunkt (die Kosten gehören ins Asset).
+    // Wetterwechsel holt ihn herunter, er springt nie. DER LEIB (leib, w28-vogel-leib 16.11.: die Gesetze des Entwurfs „Vögel
+    // AAA“ v2 im Kern, nie sein Code): EIN Bauplan, die Arten sind seine Parameter (arten: Masse, Spannweite, Länge, Streckung
+    // und die vier Achsen des Entwurfs hals · bein · schnabel · fluegel, 0..1) — vogelLeib baut daraus Rumpf, Hals als stetige
+    // Drehkette (Bézier, je Glied entlang der Tangente; der lange Hals faltet im Flug zum S), Kopf mit Schnabel (Greif-Haken),
+    // Flügel als Knochen-Kette Oberarm · Unterarm · Hand mit Armschwingen, Handschwingen, Deckfedern und Schirmfedern im
+    // Fächer (gefaltet am Leib, im Aufschlag gebeugt), Schwanz-Fächer und das Bein mit Lauf, drei Zehen vorn, der Hinterzehe und
+    // Krallen auf dem Boden (stehend steht der Fuß, fliegend angelegt — der Reiher zieht die Beine nach). Die Schlagfrequenz ist
+    // keine Konstante: Pennycuick (2008, Gl. 4.1) aus Masse, Spannweite und Flügelfläche (vogelSchlagHz). Die Art eines Reviers
+    // ist ein Wurf seiner Zelle (vogelArt): im Offenland je anteil der Greif (Mäusebussard, kreist hoch) und der Reiher
+    // (Graureiher, jagt Mäuse auf der Wiese), sonst der Singvogel; der Schwarm fliegt den Star. Die Kosten gehören ins Asset:
+    // stufePx wählt aus der Spannweite am Schirm den vollen Leib, die Gestalt oder fern die Silhouette (drei Teile).
     var VOGEL_GESETZ = Object.freeze({
         zelleM: 25,
         proHa: 50,
@@ -2236,14 +2242,70 @@
         }),
         flug: Object.freeze({ periodeS: 60, dutyMax: 0.8, steigS: 4, hoeheM: [5, 14], kroneM: 22, radiusM: [3, 9], tempoMs: 5 }),
         leib: Object.freeze({
-            teile: Object.freeze([
-                Object.freeze({ groesse: [0.06, 0.06, 0.16], lage: [0, 0, 0], farbe: 0x8b6b4a }),
-                Object.freeze({ groesse: [0.042, 0.042, 0.05], lage: [0, 0.026, 0.06], farbe: 0x6e5238 }),
-                Object.freeze({ groesse: [0.05, 0.012, 0.09], lage: [0, 0.008, -0.09], farbe: 0x5c442e }),
-            ]),
-            fluegel: Object.freeze({ groesse: [0.14, 0.012, 0.07], schulter: [0.02, 0.015, 0.01], farbe: 0x56402c }),
-            schlagHz: 12,
-            schlagRad: 0.9,
+            stufePx: [56, 14],
+            luftDichte: 1.225,
+            g: 9.81,
+            anteil: Object.freeze({ greif: 0.04, reiher: 0.04, deckungMax: 0.2 }),
+            // je Art: die Maße der Art (Masse kg, Spannweite m, Länge Schnabel–Schwanz m, Streckung b²/S), der Ausschlag des Schlags
+            // (rad), der Gleit-Anteil (der Greif segelt in der Thermik), die vier Achsen des Bauplans, die Farben (sRGB) und der Flug
+            // (ohne: VOGEL_GESETZ.flug). Feldlerche/Amsel-Maß, Star (Sturnus vulgaris), Mäusebussard (Buteo buteo), Graureiher
+            // (Ardea cinerea) — Maße nach Glutz von Blotzheim und Pennycuick 2008 (Anhang: Streckung).
+            arten: Object.freeze({
+                singvogel: Object.freeze({
+                    masseKg: 0.06,
+                    spannM: 0.32,
+                    laengeM: 0.22,
+                    streckung: 5.2,
+                    ausschlagRad: 0.9,
+                    gleit: 0,
+                    hals: 0.17,
+                    bein: 0.18,
+                    schnabel: 0.6,
+                    fluegel: 0.28,
+                    farbe: Object.freeze({ ruecken: 0x7d6344, bauch: 0xc9b48f, kopf: 0x7a5f40, schwinge: 0x5c4630, dunkel: 0x3e2f22, schnabel: 0x6b5a48, fuss: 0xb08a6a }),
+                }),
+                star: Object.freeze({
+                    masseKg: 0.075,
+                    spannM: 0.39,
+                    laengeM: 0.21,
+                    streckung: 5.6,
+                    ausschlagRad: 0.85,
+                    gleit: 0,
+                    hals: 0.17,
+                    bein: 0.2,
+                    schnabel: 0.45,
+                    fluegel: 0.4,
+                    farbe: Object.freeze({ ruecken: 0x2c2b30, bauch: 0x3a3836, kopf: 0x26252a, schwinge: 0x24232a, dunkel: 0x18171c, schnabel: 0xd8b030, fuss: 0x9a6a50 }),
+                }),
+                greif: Object.freeze({
+                    masseKg: 0.85,
+                    spannM: 1.22,
+                    laengeM: 0.54,
+                    streckung: 5.6,
+                    ausschlagRad: 0.6,
+                    gleit: 0.85,
+                    hals: 0.2,
+                    bein: 0.22,
+                    schnabel: 0.95,
+                    fluegel: 0.85,
+                    farbe: Object.freeze({ ruecken: 0x5e4630, bauch: 0xd9c9a8, kopf: 0x6a5038, schwinge: 0x4a3a2a, dunkel: 0x2b2118, schnabel: 0x2e2a26, fuss: 0xe0b030 }),
+                    flug: Object.freeze({ hoeheM: [24, 42], radiusM: [16, 32], tempoMs: 9, steigS: 10 }),
+                }),
+                reiher: Object.freeze({
+                    masseKg: 1.5,
+                    spannM: 1.85,
+                    laengeM: 0.95,
+                    streckung: 6.6,
+                    ausschlagRad: 0.55,
+                    gleit: 0.1,
+                    hals: 0.4,
+                    bein: 0.56,
+                    schnabel: 0.1,
+                    fluegel: 0.7,
+                    farbe: Object.freeze({ ruecken: 0x8e9298, bauch: 0xe8e6e0, kopf: 0xeceae4, schwinge: 0x6e737a, dunkel: 0x2a2c30, schnabel: 0xd8b048, fuss: 0x8a7a5a }),
+                    flug: Object.freeze({ hoeheM: [10, 22], radiusM: [24, 44], tempoMs: 10, steigS: 8 }),
+                }),
+            }),
         }),
         // DER SCHWARM (luftwasser.K5, 27.10., additiv): der Starenschwarm über dem Offenland — fern EIN Agent. Kein Glied wird
         // geboren, gespeichert oder je Kopf getaktet: der Schwarm ist der Wurf seines Reviers (Raster zelleM, je Zelle mit dem
@@ -2343,28 +2405,405 @@
     }
     // w = die Würfe des Reviers [Phase, Höhe, Kreis, Drehsinn] (0..1), anteil = vogelLied, t = die Uhr der Welt (s), deckung die
     // Kronen-Deckung der Zelle (0..1). Schreibt out {dx, dz (von der Mitte), h (über dem Boden), gier (rad, Blick +z), schlag
-    // (rad)}; liefert, ob er singt (und fliegt).
-    function vogelBahn(w, anteil, t, deckung, V, out) {
-        var F = V.flug,
+    // (rad), phase (rad, die Phase des Schlags), roll (rad, die Schräglage im Kreis), gleit (0..1)}; liefert, ob er singt (und
+    // fliegt). art (optional) = die Art des Reviers (vogelArt), ohne sie der Singvogel; ihr Flug ersetzt Höhe, Kreis, Tempo und
+    // Steigzeit, ihr Schlag folgt der Allometrie (vogelSchlagHz) und ruht im Gleiten (gleit: der Anteil der Zeit).
+    function vogelBahn(w, anteil, t, deckung, V, out, art) {
+        var A = art || V.leib.arten.singvogel,
+            F = V.flug,
+            Fa = A.flug || F,
             P = F.periodeS;
         var S = P * F.dutyMax * (anteil > 0 ? (anteil < 1 ? anteil : 1) : 0);
         var tp = (((t - w[0] * P) % P) + P) % P;
         // ein Fenster, das seinen Auf- und Abstieg (2 steigS) nicht trägt, fliegt er nicht — am Boden schweigt er (der Regen hält
         // ihn unten, statt ihn in Hüpfern singen zu lassen); bis 3 steigS wächst der Flug stetig im Anteil in Höhe und Kreis
-        var k = (S - 2 * F.steigS) / F.steigS;
+        var k = (S - 2 * Fa.steigS) / Fa.steigS;
         if (!(tp < S) || !(k > 0)) return false;
-        var a = Math.min(tp, S - tp) / F.steigS;
+        var a = Math.min(tp, S - tp) / Fa.steigS;
         var s = (a >= 1 ? 1 : a * a * (3 - 2 * a)) * (k >= 1 ? 1 : k * k * (3 - 2 * k));
-        var R = F.radiusM[0] + (F.radiusM[1] - F.radiusM[0]) * w[2];
+        var R = Fa.radiusM[0] + (Fa.radiusM[1] - Fa.radiusM[0]) * w[2];
         var sinn = w[3] < 0.5 ? -1 : 1;
-        var phi = w[3] * 12.566370614359172 + (sinn * F.tempoMs * tp) / R;
+        var phi = w[3] * 12.566370614359172 + (sinn * Fa.tempoMs * tp) / R;
         out.dx = R * s * Math.cos(phi);
         out.dz = R * s * Math.sin(phi);
         var d = deckung > 0 ? (deckung < 1 ? deckung : 1) : 0;
-        out.h = (F.hoeheM[0] + (F.hoeheM[1] - F.hoeheM[0]) * w[1] + F.kroneM * d) * s;
+        out.h = (Fa.hoeheM[0] + (Fa.hoeheM[1] - Fa.hoeheM[0]) * w[1] + F.kroneM * d) * s;
         out.gier = Math.atan2(-sinn * Math.sin(phi), sinn * Math.cos(phi));
-        out.schlag = V.leib.schlagRad * Math.sin(6.283185307179586 * V.leib.schlagHz * t + w[0] * 97);
+        // die Schräglage der Kurve: tan φ = v² / (g R), zur Mitte des Kreises
+        out.roll = sinn * Math.atan((Fa.tempoMs * Fa.tempoMs) / (V.leib.g * R)) * s;
+        // Schlag und Gleiten: je Revier ein Sinus der Gleit-Uhr; schlägt er, wo er unter 1 − 2 gleit liegt (stetig über 0,2)
+        var g = A.gleit > 0 ? Math.sin(6.283185307179586 * 0.07 * t + w[2] * 41) : -1;
+        var schwelle = 1 - 2 * A.gleit;
+        var an = g < schwelle - 0.2 ? 1 : g > schwelle ? 0 : (schwelle - g) / 0.2;
+        out.phase = 6.283185307179586 * vogelSchlagHz(A, V) * t + w[0] * 97;
+        out.gleit = 1 - an;
+        out.schlag = 0.12 * (1 - an) + an * A.ausschlagRad * Math.sin(out.phase);
         return true;
+    }
+    // DIE ART DES REVIERS: u = vogelWurf(…, 5) der Zelle, deckung die Kronen-Deckung ihrer Mitte (0..1) → der Schlüssel in
+    // leib.arten. Der Greif und der Reiher jagen im Offenland (Deckung ≤ deckungMax), je mit ihrem Anteil der Zellen.
+    function vogelArt(u, deckung, V) {
+        var A = V.leib.anteil;
+        if (!(deckung <= A.deckungMax)) return "singvogel";
+        if (u < A.greif) return "greif";
+        if (u < A.greif + A.reiher) return "reiher";
+        return "singvogel";
+    }
+    // DIE SCHLAGFREQUENZ (Pennycuick 2008, Modelling the Flying Bird, Gl. 4.1; gemessen an 47 Arten, J exp Biol 199, 1996):
+    // f = m^(3/8) · g^(1/2) · b^(−23/24) · S^(−1/3) · ρ^(−3/8), die Flügelfläche S = b² / Streckung. Singvogel 11,1 Hz, Star 8,9 Hz,
+    // Mäusebussard 3,5 Hz, Graureiher 2,3 Hz.
+    function vogelSchlagHz(art, V) {
+        var L = V.leib,
+            b = art.spannM,
+            S = (b * b) / art.streckung;
+        return Math.pow(art.masseKg, 0.375) * Math.sqrt(L.g) * Math.pow(b, -23 / 24) * Math.pow(S, -1 / 3) * Math.pow(L.luftDichte, -0.375);
+    }
+    // DIE MASSE DES BAUPLANS je Art (die Ableitung des Entwurfs, deriveParams): alle Längen in der Einheit H, H aus der Länge der
+    // Art (Schnabel bis Schwanz, der Hals in Ruhe); der Arm reicht vom Schultergelenk bis zur halben Spannweite, die Flügeltiefe
+    // ist die mittlere Sehne b / Streckung. Gemerkt je Art.
+    var VOGEL_MASS = new Map();
+    function vogelMass(art) {
+        var M = VOGEL_MASS.get(art);
+        if (M) return M;
+        var hals = art.hals,
+            bein = art.bein,
+            sb = art.schnabel,
+            fl = art.fluegel;
+        var nAng = ((18 + (hals - 0.2) * 70) * Math.PI) / 180,
+            nLen = hals * 2.4;
+        var beak = (0.16 + (1 - sb) * 0.42) * 0.6;
+        var tail = (0.34 + (1 - fl) * 0.2 + Math.max(0, 0.3 - bein) * 0.4) * 1.5;
+        var H = art.laengeM / (0.3 + 0.5 * nLen * Math.cos(nAng) + 0.09 + beak + 0.5 + tail);
+        M = {
+            H: H,
+            breit: (0.3 + fl * 0.14) * 1.5,
+            nAng: nAng,
+            nLen: nLen,
+            sKurve: Math.min(1, (Math.max(0, hals - 0.28) * 2.6) / 0.3),
+            nSeg: Math.max(2, Math.round(3 + ((hals - 0.15) / 0.25) * 5)),
+            beak: beak,
+            beakTief: 0.05 + sb * 0.075 + Math.max(0, sb - 0.4) * 0.04,
+            beakBreit: 0.55 + (sb > 0.4 && sb < 0.8 ? 0.25 : 0),
+            haken: Math.max(0, sb - 0.62) / 0.38,
+            tail: tail,
+            tailN: Math.round(9 + fl * 5),
+            tailB: (0.05 + fl * 0.03) * 3.4,
+            tib: bein * 1.2,
+            tar: bein * 1.5,
+            zehe: 0.09 + bein * 0.14 + (sb > 0.6 ? 0.03 : 0),
+            kralle: sb > 0.6 ? 0.05 : 0.02,
+            nSec: Math.max(6, Math.round(7 + fl * 4)),
+            nPrim: Math.max(6, Math.round(7 + fl * 4)),
+            schulter: 0.16,
+            R: art.spannM / 2 / H - 0.16,
+            sehne: art.spannM / art.streckung / H,
+        };
+        VOGEL_MASS.set(art, M);
+        return M;
+    }
+    // DER LEIB AUS DEM BAUPLAN: art (leib.arten), pose {schlag (rad, die Hebung der Schwinge), phase (rad, des Schlags), gleit
+    // (0..1), sitzt (steht am Boden: Schwingen gefaltet, Fuß auf dem Grund)}, stufe 0 (voll) · 1 (Gestalt) · 2 (Silhouette).
+    // Schreibt out.t (Float32Array, je Teil 16 Zahlen: Form 0 rund / 1 Keil, Farbe sRGB, Mitte xyz, dann drei Achsen xyz mit
+    // ihrer vollen Ausdehnung — die Spalten einer Instanz-Matrix um eine Form vom Radius 0,5; Leib-Raum x rechts, y oben,
+    // z vorn, Meter), out.n (Teile) und out.fussY (die Sohle unter der Mitte, m; fliegend 0). Liefert out.
+    function vogelLeib(art, pose, stufe, out) {
+        var M = vogelMass(art),
+            H = M.H,
+            C = art.farbe;
+        if (!out.t || out.t.length < 16 * 256) out.t = new Float32Array(16 * 256);
+        var T = out.t,
+            n = 0;
+        var sitzt = !!pose.sitzt,
+            fold = sitzt ? 1 : 0;
+        // ein Teil an der Mitte c mit den Achsen e0, e1, e2 (volle Ausdehnung)
+        function teil(form, farbe, cx, cy, cz, ax, ay, az, bx, by, bz, gx, gy, gz) {
+            if (n >= 256) return;
+            var o = 16 * n++;
+            T[o] = form;
+            T[o + 1] = farbe;
+            T[o + 2] = cx;
+            T[o + 3] = cy;
+            T[o + 4] = cz;
+            T[o + 5] = ax;
+            T[o + 6] = ay;
+            T[o + 7] = az;
+            T[o + 8] = bx;
+            T[o + 9] = by;
+            T[o + 10] = bz;
+            T[o + 11] = gx;
+            T[o + 12] = gy;
+            T[o + 13] = gz;
+            T[o + 14] = T[o + 15] = 0;
+        }
+        // ein Glied von p nach q (Länge × (1 + ueber)), Breite b, Dicke d; die Dicke zeigt zu `oben` (orthogonalisiert)
+        function glied(form, farbe, px, py, pz, qx, qy, qz, b, d, ueber, ox, oy, oz) {
+            var dx = qx - px,
+                dy = qy - py,
+                dz = qz - pz,
+                l = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+            var ux = dx / l,
+                uy = dy / l,
+                uz = dz / l;
+            var k = ox * ux + oy * uy + oz * uz;
+            var nx = ox - k * ux,
+                ny = oy - k * uy,
+                nz = oz - k * uz,
+                m = Math.sqrt(nx * nx + ny * ny + nz * nz);
+            if (m < 1e-6) {
+                nx = 0;
+                ny = 0;
+                nz = 1;
+                k = uz;
+                nx -= k * ux;
+                ny -= k * uy;
+                nz -= k * uz;
+                m = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+            }
+            nx /= m;
+            ny /= m;
+            nz /= m;
+            var sx = ny * uz - nz * uy,
+                sy = nz * ux - nx * uz,
+                sz = nx * uy - ny * ux;
+            var L = l * (1 + ueber);
+            teil(form, farbe, (px + qx) / 2, (py + qy) / 2, (pz + qz) / 2, sx * b, sy * b, sz * b, nx * d, ny * d, nz * d, ux * L, uy * L, uz * L);
+        }
+        // ein Ellipsoid achsparallel
+        function ell(farbe, cx, cy, cz, bx, by, bz) {
+            teil(0, farbe, cx * H, cy * H, cz * H, bx * H, 0, 0, 0, by * H, 0, 0, 0, bz * H);
+        }
+        // DER RUMPF (die Feld-Quellen des Entwurfs: Brust, Kern, Rücken, Bürzel, Bauch; der Rücken trägt seine Farbe oben)
+        var bw = M.breit;
+        if (stufe >= 2) teil(1, C.ruecken, 0, 0, -0.08 * H, 0.72 * bw * H, 0, 0, 0, 0.3 * H, 0, 0, 0, 0.95 * H);
+        else if (stufe === 1) {
+            teil(1, C.bauch, 0, -0.04 * H, 0.1 * H, 0.64 * bw * H, 0, 0, 0, 0.3 * H, 0, 0, 0, 0.55 * H);
+            teil(1, C.ruecken, 0, 0.02 * H, -0.2 * H, 0.66 * bw * H, 0, 0, 0, 0.3 * H, 0, 0, 0, 0.7 * H);
+        } else {
+            // die Feld-Quellen des Entwurfs verschmelzen zu EINER Spindel: der Rücken-Mantel, darunter der Bauch (er zeigt nur
+            // unten, die Kontur bleibt stetig), der Bürzel verjüngt zum Schwanz
+            ell(C.ruecken, 0, 0.01, -0.06, 2 * 0.36 * bw, 2 * 0.165, 2 * 0.42);
+            ell(C.bauch, 0, -0.025, 0.0, 2 * 0.34 * bw, 2 * 0.155, 2 * 0.36);
+            ell(C.ruecken, 0, 0.02, -0.42, 2 * 0.24 * bw, 2 * 0.11, 2 * 0.2);
+        }
+        // DER HALS als stetige Drehkette: quadratische Bézier vom Hals-Ansatz p0 über p1 zum Kopf p2; stehend steil (nAng) und beim
+        // langen Hals nach vorn gebaucht, fliegend vorgestreckt — der lange Hals (sKurve) zieht den Kopf im S auf die Schultern
+        var p0y = 0.14,
+            p0z = 0.3,
+            nL = M.nLen,
+            sk = M.sKurve;
+        var p2y, p2z, p1y, p1z;
+        if (sitzt) {
+            p2y = p0y + nL * Math.sin(M.nAng);
+            p2z = p0z + 0.5 * nL * Math.cos(M.nAng);
+            p1y = (p0y + p2y) / 2;
+            p1z = (p0z + p2z) / 2 + sk * 0.32;
+        } else {
+            p2y = p0y + nL * (0.15 * (1 - sk) + 0.35 * sk);
+            p2z = p0z + nL * (0.5 * (1 - sk) + 0.12 * sk);
+            p1y = (p0y + p2y) / 2 - sk * 0.3 * nL;
+            p1z = (p0z + p2z) / 2 + sk * 0.25 * nL;
+        }
+        var kopfY = p2y + 0.03,
+            kopfZ = p2z + 0.02;
+        if (stufe === 0) {
+            // die Glieder dicht genug, dass die Kette als EIN Schlauch liest (je Glied höchstens 0,7 seines Durchmessers, die
+            // Überlappung trägt die Krümmung); der Radius stetig vom Ansatz (der lange Hals schlank) zum Kopf
+            var r0 = 0.13 - 0.05 * sk,
+                r1 = 0.075 - 0.015 * sk;
+            var bogen = Math.hypot(p1y - p0y, p1z - p0z) + Math.hypot(p2y - p1y, p2z - p1z);
+            var nG = Math.max(M.nSeg, Math.min(16, Math.ceil(bogen / (0.7 * 2 * r1))));
+            var qy = p0y,
+                qz = p0z;
+            for (var i = 1; i <= nG; i++) {
+                var f = i / nG,
+                    g = 1 - f;
+                var ry = g * g * p0y + 2 * g * f * p1y + f * f * p2y,
+                    rz = g * g * p0z + 2 * g * f * p1z + f * f * p2z;
+                var rr = 2 * (r0 + (r1 - r0) * (f - 0.5 / nG));
+                glied(0, f < 0.45 ? C.ruecken : C.kopf, 0, qy * H, qz * H, 0, ry * H, rz * H, rr * H, rr * H, 1.0, 0, 1, 0);
+                qy = ry;
+                qz = rz;
+            }
+        } else if (stufe === 1) glied(1, C.kopf, 0, p0y * H, p0z * H, 0, p2y * H, p2z * H, 0.16 * H, 0.16 * H, 0.2, 0, 1, 0);
+        // DER KOPF und DER SCHNABEL (der Haken des Greifs biegt die Spitze hinab)
+        if (stufe <= 1) {
+            ell(C.kopf, 0, kopfY, kopfZ, 0.17 * 1.05, 0.17, 0.2);
+            var bl = M.beak,
+                bd = M.beakTief,
+                by0 = kopfY - 0.01,
+                bz0 = kopfZ + 0.07;
+            glied(1, C.schnabel, 0, by0 * H, (bz0 - 0.3 * bl) * H, 0, (by0 - 0.04 * bl) * H, (bz0 + bl) * H, bd * M.beakBreit * H, bd * H, 0, 0, 1, 0);
+            if (M.haken > 0.05 && stufe === 0)
+                glied(1, C.schnabel, 0, (by0 - 0.02 * bl) * H, (bz0 + 0.8 * bl) * H, 0, (by0 - 0.04 * bl - 0.6 * bd * M.haken) * H, (bz0 + 1.12 * bl) * H, 0.6 * bd * M.beakBreit * H, 0.5 * bd * H, 0, 0, 0, 1);
+        }
+        // DIE BEINE: Unterschenkel (befiedert) · Lauf · Fuß. Stehend steht die Sohle auf dem Grund (fussY), drei Zehen vorn im
+        // Fächer ±0,55 rad, die Hinterzehe, je eine Kralle (der Greif seine Fänge); fliegend angelegt unter dem Schwanz, der lange
+        // Lauf (bein > 0,34: der Schreitvogel) zieht nach hinten nach
+        var lang = art.bein > 0.34;
+        out.fussY = 0;
+        for (var seite = 1; seite >= -1; seite -= 2) {
+            var hx = seite * 0.11,
+                hy = -0.06,
+                hz = -0.05;
+            var kx, ky, kz, fx, fy, fz;
+            if (sitzt) {
+                kx = hx;
+                ky = hy - M.tib * 0.94;
+                kz = hz - M.tib * 0.33;
+                fx = hx;
+                fy = ky - M.tar * 0.96;
+                fz = kz + M.tar * 0.28;
+            } else if (lang) {
+                kx = hx;
+                ky = hy - M.tib * 0.35;
+                kz = hz - M.tib * 0.94;
+                fx = hx;
+                fy = ky - M.tar * 0.05;
+                fz = kz - M.tar;
+            } else {
+                kx = hx;
+                ky = hy - M.tib * 0.5;
+                kz = hz - M.tib * 0.86;
+                fx = hx;
+                fy = ky + M.tar * 0.2;
+                fz = kz - M.tar * 0.98;
+            }
+            if (sitzt) out.fussY = (fy - 0.012) * H;
+            // der kurze Lauf liegt fliegend im Bauchgefieder: kein Glied im Bild
+            if (stufe === 0 && (sitzt || lang)) {
+                glied(0, C.bauch, hx * H, hy * H, hz * H, kx * H, ky * H, kz * H, 0.09 * H, 0.09 * H, 0.15, 0, 0, 1);
+                glied(0, C.fuss, kx * H, ky * H, kz * H, fx * H, fy * H, fz * H, 0.035 * H, 0.035 * H, 0.1, 0, 0, 1);
+                if (sitzt || lang)
+                    for (var z = 0; z < 4; z++) {
+                        // Zehe z: drei vorn im Fächer, die vierte (Hallux) nach hinten; liegend flach (stehend) oder nachgezogen
+                        var a = z < 3 ? (z - 1) * 0.55 : Math.PI,
+                            zl = (z < 3 ? 1 : 0.45) * M.zehe;
+                        var dx = Math.sin(a),
+                            dz = Math.cos(a),
+                            dy = 0;
+                        if (!sitzt) {
+                            dx = 0.25 * Math.sin(a);
+                            dy = -0.1;
+                            dz = -1;
+                        }
+                        var tx = fx + dx * zl,
+                            ty = fy - 0.006 + dy * zl,
+                            tz = fz + dz * zl;
+                        glied(1, C.fuss, fx * H, (fy - 0.006) * H, fz * H, tx * H, ty * H, tz * H, 0.024 * H, 0.014 * H, 0.05, 0, 1, 0);
+                        var kl = M.kralle * (z < 3 ? 1 : 0.9);
+                        glied(1, C.dunkel, tx * H, ty * H, tz * H, (tx + dx * 0.6 * kl) * H, (ty - 0.8 * kl * (sitzt ? 0.4 : 1)) * H, (tz + dz * 0.6 * kl) * H, 0.012 * H, 0.008 * H, 0, 0, 1, 0);
+                    }
+            } else if (stufe === 1 && (sitzt || lang)) glied(1, C.fuss, hx * H, hy * H, hz * H, fx * H, fy * H, fz * H, 0.05 * H, 0.05 * H, 0, 0, 0, 1);
+        }
+        // DER SCHWANZ: die Steuerfedern im Fächer um den Bürzel (gleitend gespreizt, sitzend geschlossen und gesenkt)
+        var tN = M.tailN,
+            spreiz = sitzt ? 0.08 : 0.4 + 0.4 * (pose.gleit || 0),
+            neig = sitzt ? -0.3 : 0.05,
+            tl = M.tail;
+        if (stufe === 0)
+            for (var j = 0; j < tN; j++) {
+                var ft = (j - (tN - 1) / 2) / (tN - 1),
+                    wt = ft * 2 * spreiz,
+                    lt = tl * (1 - Math.abs(ft) * 0.25);
+                var ex = Math.sin(wt) * Math.cos(neig),
+                    ey = Math.sin(neig),
+                    ez = -Math.cos(wt) * Math.cos(neig);
+                glied(1, j % 2 ? C.dunkel : C.ruecken, 0, 0.0, -0.46 * H, ex * lt * H, (ey * lt + 0.004 * (j % 2)) * H, (-0.46 + ez * lt) * H, M.tailB * H, 0.012 * H, 0, 0, 1, 0);
+            }
+        else if (stufe === 1) glied(1, C.dunkel, 0, 0, -0.46 * H, 0, Math.sin(neig) * tl * H, (-0.46 - tl) * H, 2.2 * spreiz * tl * H + M.tailB * H, 0.02 * H, 0, 0, 1, 0);
+        // DIE SCHWINGEN: Oberarm · Unterarm · Hand in der Ebene der Schwinge (x außen, z vorn); gefaltet liegen die Glieder im
+        // Zickzack am Leib und die Ebene senkt sich an die Flanke, im Aufschlag beugt sich die Hand (der Entwurf: im Abschlag
+        // gespreizt, im Aufschlag eingezogen). Die Hand hebt sich um 0,35 der Schlag-Hebung weiter (die Spitze führt).
+        var schlag = pose.schlag || 0,
+            beuge = sitzt ? 0 : 0.45 * Math.max(0, Math.cos(pose.phase || 0)) * (1 - (pose.gleit || 0));
+        var ff = Math.min(1, fold + beuge);
+        var R = M.R,
+            ch = M.sehne;
+        var ps1 = -1.25 * ff,
+            ps2 = ps1 + 2.6 * ff,
+            ps3 = ps2 - 2.75 * ff;
+        var lh = 0.2 * R,
+            lf = 0.26 * R,
+            lm = 0.16 * R;
+        var x1 = lh * Math.cos(ps1),
+            z1 = lh * Math.sin(ps1);
+        var x2 = x1 + lf * Math.cos(ps2),
+            z2 = z1 + lf * Math.sin(ps2);
+        var x3 = x2 + lm * Math.cos(ps3),
+            z3 = z2 + lm * Math.sin(ps3);
+        var eA = schlag * (1 - fold) - 1.25 * fold,
+            eH = eA + (0.35 * schlag - 0.4 * beuge) * (1 - fold);
+        var cA = Math.cos(eA),
+            sA = Math.sin(eA),
+            cH = Math.cos(eH),
+            sH = Math.sin(eH);
+        for (var sd = 1; sd >= -1; sd -= 2) {
+            var sx0 = sd * M.schulter,
+                sy0 = 0.1,
+                sz0 = 0;
+            // ein Punkt (x, z) der Ebene: Arm (bis zum Handgelenk) oder Hand (ab dem Handgelenk)
+            var wx = sx0 + sd * x2 * cA,
+                wy = sy0 + x2 * sA;
+            var P = function (x, z, hand) {
+                if (!hand) return [sx0 + sd * x * cA, sy0 + x * sA, sz0 + z];
+                return [wx + sd * (x - x2) * cH, wy + (x - x2) * sH, sz0 + z];
+            };
+            // eine Feder am Glied a→b (Ebene hand) bei t, Richtung ps (in der Ebene: 0 = außen, −π/2 = hinten), Länge, Breite
+            var feder = function (farbe, ax, az, bx, bz, t, ps, len, br, hand, hoch) {
+                var c = hand ? cH : cA,
+                    s = hand ? sH : sA;
+                var q = P(ax + (bx - ax) * t, az + (bz - az) * t, hand);
+                var dx = sd * Math.cos(ps) * c,
+                    dy = Math.cos(ps) * s,
+                    dz = Math.sin(ps);
+                var nx = -sd * s,
+                    ny = c;
+                q[0] += nx * hoch;
+                q[1] += ny * hoch;
+                glied(1, farbe, q[0] * H, q[1] * H, q[2] * H, (q[0] + dx * len) * H, (q[1] + dy * len) * H, (q[2] + dz * len) * H, br * H, 0.12 * br * H, 0, nx, ny, 0);
+            };
+            var zu = 1 - 0.9 * ff;
+            if (stufe >= 1) {
+                // die Gestalt: die Arm-Fläche (Schulter bis Handgelenk, Tiefe der Sehne) und die Hand-Fläche bis zur Spitze;
+                // die Silhouette: EINE Fläche von der Schulter zur Spitze
+                var spitze = P(x3 + 0.4 * R * Math.cos(-Math.PI / 2 + 1.0 * zu), z3 + 0.4 * R * Math.sin(-Math.PI / 2 + 1.0 * zu), true);
+                var w0 = P(x2, z2, false);
+                if (stufe === 1) {
+                    glied(1, C.schwinge, sx0 * H, sy0 * H, (sz0 - 0.4 * ch) * H, w0[0] * H, w0[1] * H, (w0[2] - 0.4 * ch) * H, ch * H, 0.04 * H, 0.1, -sd * sA, cA, 0);
+                    glied(1, C.dunkel, w0[0] * H, w0[1] * H, (w0[2] - 0.35 * ch) * H, spitze[0] * H, spitze[1] * H, spitze[2] * H, 0.85 * ch * H, 0.03 * H, 0.05, -sd * sH, cH, 0);
+                } else glied(1, C.schwinge, sx0 * H, sy0 * H, (sz0 - 0.4 * ch) * H, spitze[0] * H, spitze[1] * H, spitze[2] * H, ch * H, 0.04 * H, 0, -sd * sA, cA, 0);
+                continue;
+            }
+            // die Knochen-Kette mit dem Vorderrand (Flughaut und kleine Deckfedern)
+            var a0 = P(0, 0, false),
+                a1 = P(x1, z1, false),
+                a2 = P(x2, z2, false),
+                a3 = P(x3, z3, true);
+            glied(0, C.ruecken, a0[0] * H, a0[1] * H, a0[2] * H, a1[0] * H, a1[1] * H, a1[2] * H, 0.11 * H, 0.07 * H, 0.2, -sd * sA, cA, 0);
+            glied(0, C.ruecken, a1[0] * H, a1[1] * H, a1[2] * H, a2[0] * H, a2[1] * H, a2[2] * H, 0.08 * H, 0.05 * H, 0.15, -sd * sA, cA, 0);
+            glied(0, C.ruecken, a2[0] * H, a2[1] * H, a2[2] * H, a3[0] * H, a3[1] * H, a3[2] * H, 0.06 * H, 0.04 * H, 0.15, -sd * sH, cH, 0);
+            // die Schirmfedern am Oberarm, die Armschwingen am Unterarm, die Handschwingen an der Hand (nach außen länger und
+            // weiter gefächert, die äußere Hälfte dunkel), darüber die Großen Deck- und die Handdecken
+            for (var e = 0; e < 4; e++)
+                feder(C.ruecken, 0, 0, x1, z1, 0.3 + 0.2 * e, -Math.PI / 2 - 0.1 * zu, ch * 0.75, ch * 0.24, false, 0.004);
+            var nS = M.nSec,
+                nP = M.nPrim;
+            for (var u = 0; u < nS; u++) {
+                var fu = u / (nS - 1);
+                feder(C.schwinge, x1, z1, x2, z2, 0.04 + 0.92 * fu, -Math.PI / 2 + (0.02 + 0.14 * fu) * zu, ch * 0.85 * (0.92 + 0.15 * fu), ch * 0.3, false, 0);
+            }
+            for (var v = 0; v < nP; v++) {
+                var fv = v / (nP - 1),
+                    lv = ch * 0.95 + (0.4 * R - ch * 0.95) * Math.pow(fv, 1.3);
+                feder(fv > 0.5 ? C.dunkel : C.schwinge, x2, z2, x3, z3, 0.1 + 0.9 * fv, -Math.PI / 2 + (0.25 + 0.95 * fv) * zu, lv, lv * 0.22, true, -0.002 * v);
+            }
+            for (var c2 = 0; c2 < 6; c2++)
+                feder(C.ruecken, x1, z1, x2, z2, 0.05 + 0.18 * c2, -Math.PI / 2 + 0.08 * zu, ch * 0.45, ch * 0.2, false, 0.012);
+            for (var c3 = 0; c3 < 4; c3++)
+                feder(C.ruecken, x2, z2, x3, z3, 0.1 + 0.25 * c3, -Math.PI / 2 + (0.3 + 0.3 * c3 * 0.25) * zu, ch * 0.38, ch * 0.16, true, 0.012);
+        }
+        out.n = n;
+        return out;
     }
     // DER SCHWARM (VOGEL_GESETZ.schwarm). u = vogelWurf(…, 0) der Schwarm-Zelle, deckung die Kronen-Deckung ihrer Mitte (0..1).
     // Liefert: zieht dort ein Schwarm?
@@ -2443,8 +2882,10 @@
         // Schlag und Gleiten: der Ausschlag blendet stetig zwischen dem Schlag des Leibs und der leicht gehobenen Gleit-Lage
         var g = Math.sin(TAU * S.gleitHz * t + psi);
         var a = g > 0.6 ? 0 : g < 0.2 ? 1 : (0.6 - g) / 0.4;
-        var L0 = V.leib;
-        out.schlag = 0.15 + a * (L0.schlagRad * Math.sin(TAU * L0.schlagHz * t + 97 * psi) - 0.15);
+        var L0 = V.leib.arten.star;
+        out.phase = TAU * vogelSchlagHz(L0, V) * t + 97 * psi;
+        out.gleit = 1 - a;
+        out.schlag = 0.15 + a * (L0.ausschlagRad * Math.sin(out.phase) - 0.15);
         return out;
     }
     // DER WUNSCH DES GLIEDS i im Verband (VOGEL_GESETZ.schwarm.verband) zur Zeit t: der Kurs gier des Zentrums im Tempo tempoMs,
@@ -5154,6 +5595,9 @@
         vogelRevier: vogelRevier,
         vogelLied: vogelLied,
         vogelBahn: vogelBahn,
+        vogelArt: vogelArt,
+        vogelSchlagHz: vogelSchlagHz,
+        vogelLeib: vogelLeib,
         schwarmRevier: schwarmRevier,
         schwarmZentrum: schwarmZentrum,
         schwarmGlied: schwarmGlied,

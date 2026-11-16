@@ -145,7 +145,7 @@ function laborStufe(){return gestalt?(gestalt.istFern?1:0):null;}
 var T={},regler=null,sitz=null,kosten=null,gattungAktiv='wolf';
 function deriveParams(){/* ULTRAGUSS U4: die Allometrie wohnt im Gesetzbuch (__tetrapodaCore.deriveTierParams) — die Shell reicht die Dials, ruft das EINE Gesetz. */return __tetrapodaCore.deriveTierParams({size:T.size,neckLen:T.neck,legLen:T.leg,diet:T.diet,build:T.build});}
 function buildAnimal(){
-  disposeAnimal();P=deriveParams();
+  vogelWeg();document.querySelectorAll('#voegel button').forEach(function(b){b.classList.remove('active');});disposeAnimal();P=deriveParams();
   var dials={size:T.size,neck:T.neck,leg:T.leg,diet:T.diet,build:T.build},cache={};
   var s0=stufeAnlegen(STUFEN[0],dials,null,cache),s1=stufeAnlegen(STUFEN[1],dials,s0.baum,{}),teile=s0.baum.teile,m=s0.sk.masse||{};
   wolf=teile[s0.sk.root];
@@ -192,6 +192,7 @@ function init(){
   var cine={uniforms:{tDiffuse:{value:null},time:{value:0}},vertexShader:['varying vec2 vUv;','void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}'].join('\n'),fragmentShader:['uniform sampler2D tDiffuse;','uniform float time;','varying vec2 vUv;','float random(vec2 st){return fract(sin(dot(st.xy,vec2(12.9898,78.233)))*43758.5453123);}','float getLum(vec2 uv){return dot(texture2D(tDiffuse,uv).rgb,vec3(0.299,0.587,0.114));}','void main(){vec2 uv=vUv;vec2 dir=uv-0.5;float dist=length(dir);vec2 offset=dir*dist*0.008;float r=texture2D(tDiffuse,uv+offset).r;float g=texture2D(tDiffuse,uv).g;float b=texture2D(tDiffuse,uv-offset).b;vec3 color=vec3(r,g,b);float lum=getLum(uv);float lL=getLum(uv-vec2(0.001,0.0));float lR=getLum(uv+vec2(0.001,0.0));float lU=getLum(uv-vec2(0.0,0.001));float lD=getLum(uv+vec2(0.0,0.001));float edge=abs(lL-lum)+abs(lR-lum)+abs(lU-lum)+abs(lD-lum);color*=(1.0+edge*2.0);color*=smoothstep(1.2,0.1,dist*1.3);color+=random(uv+time)*0.03-0.015;gl_FragColor=vec4(color,1.0);}'].join('\n')};cinePass=new THREE.ShaderPass(cine);cinePass.renderToScreen=true;composer.addPass(cinePass);
   controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=3*MJ;controls.maxDistance=80*MJ;controls.autoRotateSpeed=0.8;clock=new THREE.Clock();buildAnimal();
   document.querySelectorAll('#presets button').forEach(function(b){b.addEventListener('click',function(){sitz.schritt(function(){gattungMarke(b.dataset.p);var p=presets[b.dataset.p];regler.setzen({size:p.size,neck:p.neck,leg:p.leg,diet:p.diet,build:p.build},true);buildAnimal();});});});
+  document.querySelectorAll('#voegel button').forEach(function(b){b.addEventListener('click',function(){if(b.dataset.v==='sitzt'){vogelSitzt=!vogelSitzt;vogelBauen(vogel?vogel.art:'singvogel');}else vogelBauen(b.dataset.v);});});
   document.querySelectorAll('#stufen button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#stufen button').forEach(function(b2){b2.classList.toggle('active',b2===b);});stufeWahl=b.dataset.s;stufeSchalten();});});
   document.querySelectorAll('#emotions button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#emotions button').forEach(function(b2){b2.classList.remove('active');});b.classList.add('active');emoMode=b.dataset.e;emo.set(emoMode);});});
   gangRegler=AnazhHuelle.regler(document.getElementById("gang"),[{id:"tempo",lab:"Tempo v̂ (Froude-Wurzel)",min:0,max:4,step:0.05,def:0}],{werte:gangWerte,gruppen:false,ruheMs:0});
@@ -205,8 +206,30 @@ function init(){
   animate();
 }
 function gattungMarke(g){gattungAktiv=g||gattungAktiv;document.querySelectorAll('#presets button').forEach(function(b){b.classList.toggle('active',!!g&&b.dataset.p===g);});}
+/* DER VOGEL (die Luft-Linie des EINEN Bauplans, tetrapoda vogelLeib — derselbe Leib, den die Welt fliegen lässt): je Art
+   ihre Maße (Masse, Spannweite, Streckung), der Flügelschlag mit der Frequenz aus Pennycuicks Allometrie (vogelSchlagHz),
+   stehend auf dem Fuß (fussY) oder im Schlag; zwei Instanz-Gefäße (Keil + rund) wie im Spiel, keine eigene Gestalt. */
+var vogel=null,vogelSitzt=false;
+function vogelWeg(){if(!vogel)return;[vogel.keil,vogel.rund].forEach(function(m){scene.remove(m);m.geometry.dispose();m.material.dispose();});vogel=null;controls.minDistance=3*MJ;}
+function vogelBauen(art){
+  disposeAnimal();vogelWeg();var VG=__tetrapodaCore.VOGEL_GESETZ,A=VG.leib.arten[art];
+  function gefaess(geo){var m=new THREE.InstancedMesh(geo,new THREE.MeshStandardMaterial({roughness:0.82,metalness:0}),256);m.castShadow=true;m.frustumCulled=false;for(var i=0;i<256;i++)m.setColorAt(i,new THREE.Color(1,1,1));scene.add(m);return m;}
+  vogel={art:art,A:A,hz:__tetrapodaCore.vogelSchlagHz(A,VG),aus:{},keil:gefaess(new THREE.OctahedronGeometry(0.5)),rund:gefaess(new THREE.OctahedronGeometry(0.5,2)),m:new THREE.Matrix4(),f:new THREE.Color()};
+  controls.minDistance=0.3*A.spannM*MJ;controls.target.set(0,0.35*A.spannM*MJ,0);camera.position.set(1.1*A.spannM*MJ,0.6*A.spannM*MJ,1.4*A.spannM*MJ);controls.update();
+  document.querySelectorAll('#presets button').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('#voegel button[data-v]').forEach(function(b){b.classList.toggle('active',b.dataset.v===art||(b.dataset.v==='sitzt'&&vogelSitzt));});
+  document.getElementById('loading').style.display='none';
+}
+function vogelTakt(t){
+  var v=vogel,A=v.A,ph=2*Math.PI*v.hz*t,pose={phase:ph,gleit:0,sitzt:vogelSitzt,schlag:vogelSitzt?0:A.ausschlagRad*Math.sin(ph)};
+  __tetrapodaCore.vogelLeib(A,pose,0,v.aus);var T=v.aus.t,y0=vogelSitzt?-v.aus.fussY:0.35*A.spannM,nK=0,nR=0;
+  for(var j=0;j<v.aus.n;j++){var q=16*j,m=T[q]===0?v.rund:v.keil,o=T[q]===0?nR++:nK++;
+    v.m.set(T[q+5]*MJ,T[q+8]*MJ,T[q+11]*MJ,T[q+2]*MJ, T[q+6]*MJ,T[q+9]*MJ,T[q+12]*MJ,(T[q+3]+y0)*MJ, T[q+7]*MJ,T[q+10]*MJ,T[q+13]*MJ,T[q+4]*MJ, 0,0,0,1);
+    m.setMatrixAt(o,v.m);m.setColorAt(o,v.f.setHex(T[q+1]));}
+  v.keil.count=nK;v.rund.count=nR;[v.keil,v.rund].forEach(function(m){m.instanceMatrix.needsUpdate=true;m.instanceColor.needsUpdate=true;});
+}
 function animate(){
-  requestAnimationFrame(animate);if(!wolf||!leib)return;var t=clock.getElapsedTime(),dt=1/60;uZeit.value=t;cinePass.uniforms.time.value=t;controls.autoRotate=(emoMode==='showcase');
+  requestAnimationFrame(animate);if(vogel){var tv=clock.getElapsedTime();cinePass.uniforms.time.value=tv;vogelTakt(tv);fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);controls.update();composer.render();return;}if(!wolf||!leib)return;var t=clock.getElapsedTime(),dt=1/60;uZeit.value=t;cinePass.uniforms.time.value=t;controls.autoRotate=(emoMode==='showcase');
   // DER LEIB GEHT (tetrapoda tierPose, der Takt der Welt): die Kamera, das Licht, der Boden und der Kontakt-Schatten folgen ihm
   gangTakt(dt);
   if(matrixTafel)matrixTafel.zeichne();

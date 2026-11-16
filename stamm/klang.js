@@ -457,9 +457,11 @@ class AnazhRealm_klang {
                 fall.pan = pan(wfall.x - px, wfall.z - pz);
             }
         }
-        // Die singenden Vögel — die Leiber, die `_vogelTakt` zeichnet (`state.voegel`): Abstand zum Ohr und Richtung je Leib.
+        // Die singenden Vögel — die Leiber, die `_vogelTakt` zeichnet (`state.voegel`): Abstand zum Ohr und Richtung je Leib; das
+        // Lied singt nur der Singvogel (Greif und Reiher kreisen stumm, tetrapoda vogelArt).
         const voegel = [];
         for (const v of this.state.voegel || []) {
+            if (v.art && v.art !== "singvogel") continue;
             const dh = Math.hypot(v.x - px, v.z - pz);
             voegel.push({
                 d: Math.hypot(dh, v.y - py),
@@ -795,16 +797,15 @@ class AnazhRealm_klang {
     }
 
     // DER KLANG-ZENSUS (Linse gate:klang-zensus): je Umwelt-Stimme Gesetz · Pegel · läuft; dazu die Lage am Ohr und RUF ← LEIB
-    // (klang.K1): die Vögel, die das Ohr jetzt hört, und die gezeichneten (der Pool trägt je Vogel seine Teile).
+    // (klang.K1): die Vögel, die das Ohr jetzt hört, und die gezeichneten Sänger (der Pool zählt sie, `voegel`).
     _klangZensus() {
         const um = this.state.symphony && this.state.symphony.umwelt;
         if (!um) return null;
         const P = this.state.vogelPool;
-        const je = AnazhRealm._vogelGesetz().V.leib.teile.length + 2;
         return {
             lage: um.lage,
             stimmen: um.graph.zensus(),
-            leiber: { gehoert: this._umweltLage().voegel.length, gezeichnet: P ? P.mesh.count / je : 0 },
+            leiber: { gehoert: this._umweltLage().voegel.length, gezeichnet: P ? P.voegel : 0 },
             tierRufe: this.state.symphony.tierRufe || 0,
             werkstatt: {
                 laeuft: !!um.werkstatt,

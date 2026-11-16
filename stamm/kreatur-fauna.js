@@ -6,9 +6,9 @@ class AnazhRealm_kreatur_fauna {
     // fliegt und wird gezeichnet, wer schweigt, sitzt im Gras. `state.voegel` trägt die singenden Leiber ({x, y, z}) — die
     // EINE Quelle, die das Ohr liest (`_umweltLage`). Die Karte merkt je Zelle ihre Würfe und ihr Revier (`_vogelZelle`);
     // je Takt frischt eine Zelle Leben und Deckung nach (Pflanzen, Fällen, Pflege), ferne fallen — die Kosten hängen am
-    // Hör-Kreis, nie an der Welt. Gezeichnet wird in EINEM Pool mit dem Stoff der Bau-Pools (`_kistenPool`: EIN Programm, EIN
-    // Befehl), je Vogel seine Teile und zwei Flügel im Schlag. Danach der Schwarm (`_vogelSchwarmTakt`, luftwasser.K5): derselbe
-    // Leib und Stoff, sein eigener Pool, fern EIN Agent.
+    // Hör-Kreis, nie an der Welt. Je Revier seine Art (tetrapoda `vogelArt`), gezeichnet über `_vogelZeichnen`: der Leib aus
+    // dem Bauplan der Art in der Stufe seines Schirms, im Pool mit dem Stoff der Bau-Pools (`_kistenPool`). Danach der Schwarm
+    // (`_vogelSchwarmTakt`, luftwasser.K5): der Leib des Stars, derselbe Stoff, sein eigener Pool, fern EIN Agent.
     _vogelTakt() {
         const st = this.state;
         const pm = st.playerMesh;
@@ -51,7 +51,7 @@ class AnazhRealm_kreatur_fauna {
                 const k = ix * 1048576 + iz;
                 let c = vk.zellen.get(k);
                 if (!c) vk.zellen.set(k, (c = this._vogelZelle(vk, { ix, iz })));
-                if (!c.revier || !VG.bahn(c.wurf, anteil, uhr, c.deckung, V, b)) continue;
+                if (!c.revier || !VG.bahn(c.wurf, anteil, uhr, c.deckung, V, b, V.leib.arten[c.art])) continue;
                 const x = c.x + b.dx;
                 const y = c.y + b.h;
                 const z = c.z + b.dz;
@@ -62,10 +62,15 @@ class AnazhRealm_kreatur_fauna {
                 v.z = z;
                 v.gier = b.gier;
                 v.schlag = b.schlag;
+                v.phase = b.phase;
+                v.gleit = b.gleit;
+                v.roll = b.roll;
+                v.art = c.art;
+                v.sitzt = false;
                 n++;
             }
         voegel.length = n;
-        this._vogelZeichnen(voegel, V.leib, (V.leib.teile.length + 2) * (2 * r + 1) * (2 * r + 1));
+        this._vogelZeichnen(voegel, (2 * r + 1) * (2 * r + 1));
         this._vogelSchwarmTakt(this._sonnenRichtung().y, wf.rain);
     }
     // DER SCHWARM (luftwasser.K5, tetrapoda VOGEL_GESETZ.schwarm): fern EIN Agent. Je Takt die Schwarm-Zellen um das Auge
@@ -166,7 +171,7 @@ class AnazhRealm_kreatur_fauna {
                 }
             }
         voegel.length = n;
-        this._vogelZeichnen(voegel, V.leib, (V.leib.teile.length + 2) * S.glieder[1] * 2, "vogelSchwarmPool");
+        this._vogelZeichnen(voegel, S.glieder[1] * 2, "vogelSchwarmPool");
     }
     // DER VERBAND DES SCHWARMS (luftwasser.K2, tetrapoda verbandZug — derselbe Zug wie die Herde): c die Zelle, zt ihr Zentrum
     // in diesem Takt an (x, y, z). Der Zustand je Glied (`c.verband`: Lage und Lauf im Kurs-Rahmen des Zentrums, quer und
@@ -210,6 +215,8 @@ class AnazhRealm_kreatur_fauna {
                 // je Glied ohne Array (w27-takt-gc: die Destrukturierung baute je Vogel und Bild eines)
                 v.gier = g.gier;
                 v.schlag = 0;
+                v.roll = 0;
+                v.art = "star";
                 v.sitzt = true;
                 // der Rahmen dieses Takts trägt den Sitz: fliegt der Pulk auf, fliegt jedes Glied von seinem Platz
                 const rx = p[3 * i] - x,
@@ -237,6 +244,10 @@ class AnazhRealm_kreatur_fauna {
             p[3 * i + 1] = y + g.y;
             const v = voegel[n0 + i] || (voegel[n0 + i] = {});
             v.schlag = g.schlag;
+            v.phase = g.phase;
+            v.gleit = g.gleit;
+            v.roll = 0;
+            v.art = "star";
             v.sitzt = false;
         }
         let paare = 0;
@@ -365,93 +376,120 @@ class AnazhRealm_kreatur_fauna {
             c.y = this._terrainMacroSurfaceY(c.x, c.z);
             c.u = w(0);
             c.wurf = [w(3), w(4), w(5), w(6)];
+            c.uArt = w(7);
         }
         c.deckung = this._kronenStreuAt(c.x, c.z);
         c.revier = !this._nassAt(c.x, c.z) && VG.revier(c.u, this.auraAt(c.x, c.z).lebendig, c.deckung, VG.V);
+        // die Art des Reviers folgt der Deckung (tetrapoda vogelArt: Greif und Reiher im Offenland)
+        c.art = VG.art(c.uArt, c.deckung, VG.V);
         return c;
     }
-    // DER LEIB IM BILD: je Vogel seine Teile und zwei Flügel (am Schultergelenk, um die Längsachse im Schlag; sitzend angelegt) —
-    // die Matrizen direkt in den Puffer des Pools (Spalten-Ordnung, Gier um y), die Farben je Platz einmal beim Bau (die
-    // Teile-Folge ist je Vogel gleich). `cap` = so viele Plätze, wie der Hör-Kreis Zellen trägt; `feld` = der Pool im Stand
-    // (`vogelPool` die Sänger, `vogelSchwarmPool` der Schwarm) — trägt das Bild mehr Teile als der Pool Plätze, wächst er auf das
-    // Doppelte des Bedarfs (der alte fällt über `_instanzAbschied`): kein Glied fällt still aus dem Bild.
-    _vogelZeichnen(voegel, L, cap, feld = "vogelPool") {
+    // DER LEIB IM BILD (w28-vogel-leib): je Vogel der Leib aus dem Bauplan seiner Art (tetrapoda `vogelLeib`: Rumpf, Hals-Kette,
+    // Kopf und Schnabel, Schwingen-Fächer, Schwanz-Fächer, Beine mit Zehen und Krallen) in der Stufe seiner Spannweite am Schirm
+    // (`leib.stufePx`: voll · Gestalt · fern die Silhouette — die Kosten hängen am Schirm, nie an der Welt). Die Teile gehen in
+    // ZWEI Pools mit dem Stoff der Bau-Pools (`_kistenPool`, je Form EIN Befehl): die runden (Rumpf, Hals, Kopf, Knochen; eine
+    // Kugel aus 128 Dreiecken mit glatter Normale) und die Keile (Federn, Schnabel, Zehen, Krallen; 8 Dreiecke). Die Matrizen und
+    // Farben direkt in die Puffer (Spalten-Ordnung; der Leib gedreht nach YXZ: Gier, dann die Schräglage um die Längsachse —
+    // die Lehre des Entwurfs B1); der sitzende Vogel steht mit der Sohle auf seinem Platz (`fussY`). `cap` = so viele Vögel, wie
+    // der Hör-Kreis Zellen trägt; `feld` = der Pool im Stand (`vogelPool` die Sänger, `vogelSchwarmPool` der Schwarm) — trägt das
+    // Bild mehr Teile als ein Pool Plätze, wächst er auf das Doppelte des Bedarfs (der alte fällt über `_instanzAbschied`): kein
+    // Glied fällt still aus dem Bild.
+    _vogelZeichnen(voegel, cap, feld = "vogelPool") {
         const st = this.state;
-        const je = L.teile.length + 2;
+        const VG = AnazhRealm._vogelGesetz();
+        const LG = VG.V.leib;
+        const cam = st.camera;
+        const hoch = (st.renderer && st.renderer.domElement && st.renderer.domElement.height) || 1080;
+        const fpx = cam ? hoch / (2 * Math.tan((cam.fov * Math.PI) / 360)) : 1000;
+        // je Vogel seine Stufe (die Spannweite seiner Art am Schirm) und die Schranke seiner Teile je Form
+        const stufen = this._vogelStufen || (this._vogelStufen = []);
+        let brauchK = 0;
+        let brauchR = 0;
+        for (let i = 0; i < voegel.length; i++) {
+            const v = voegel[i];
+            const art = LG.arten[v.art] || LG.arten.singvogel;
+            const d = cam
+                ? Math.max(0.05, Math.hypot(v.x - cam.position.x, v.y - cam.position.y, v.z - cam.position.z))
+                : 1e9;
+            const px = (art.spannM * fpx) / d;
+            const s = px >= LG.stufePx[0] ? 0 : px >= LG.stufePx[1] ? 1 : 2;
+            stufen[i] = s;
+            brauchK += s === 0 ? 160 : s === 1 ? 16 : 3;
+            brauchR += s === 0 ? 48 : 0;
+        }
         let P = st[feld];
-        if (P && voegel.length * je > P.cap) {
-            st.scene.remove(P.mesh);
-            this._instanzAbschied(P.mesh);
+        if (P && (brauchK > P.capK || brauchR > P.capR)) {
+            for (const m of [P.mesh, P.rund]) {
+                st.scene.remove(m);
+                this._instanzAbschied(m);
+            }
             P = st[feld] = null;
-            cap = 2 * voegel.length * je;
         }
         if (!P) {
-            // je Teil ein Doppel-Keil der Ausdehnung 1 (8 Dreiecke; das Gesetz trägt die Maße)
-            const mesh = this._kistenPool("vogel", cap, new THREE.OctahedronGeometry(0.5));
-            const farbe = new THREE.Color();
-            for (let i = 0; i < cap; i++)
-                mesh.setColorAt(i, farbe.setHex(i % je < L.teile.length ? L.teile[i % je].farbe : L.fluegel.farbe));
-            mesh.instanceColor.needsUpdate = true;
-            st.scene.add(mesh);
-            P = st[feld] = { mesh, cap };
+            const capK = Math.max(cap * 3, 2 * brauchK, 64);
+            const capR = Math.max(96, 2 * brauchR);
+            const mesh = this._kistenPool("vogel", capK, new THREE.OctahedronGeometry(0.5));
+            const rund = this._kistenPool("vogel", capR, new THREE.OctahedronGeometry(0.5, 2));
+            const weiss = new THREE.Color(1, 1, 1);
+            for (const [m, c] of [
+                [mesh, capK],
+                [rund, capR],
+            ]) {
+                for (let i = 0; i < c; i++) m.setColorAt(i, weiss);
+                m.instanceColor.needsUpdate = true;
+                st.scene.add(m);
+            }
+            P = st[feld] = { mesh, rund, capK, capR, voegel: 0 };
         }
-        const A = P.mesh.instanceMatrix.array;
-        let o = 0;
-        // ein Teil: die Spalten e0 = (ax, ay, 0), e1 = (bx, by, 0), e2 = (0, 0, gz) und die Lage l im Leib-Raum, gedreht um die
-        // Gier (c, s: x' = c·x + s·z, z' = −s·x + c·z) und an den Leib v gesetzt
-        const teil = (v, c, s, ax, ay, bx, by, gz, lx, ly, lz) => {
-            const k = 16 * o++;
-            A[k + 3] = A[k + 7] = A[k + 9] = A[k + 11] = 0;
-            A[k] = c * ax;
-            A[k + 1] = ay;
-            A[k + 2] = -s * ax;
-            A[k + 4] = c * bx;
-            A[k + 5] = by;
-            A[k + 6] = -s * bx;
-            A[k + 8] = s * gz;
-            A[k + 10] = c * gz;
-            A[k + 12] = v.x + c * lx + s * lz;
-            A[k + 13] = v.y + ly;
-            A[k + 14] = v.z - s * lx + c * lz;
-            A[k + 15] = 1;
-        };
-        const F = L.fluegel;
-        const [gx, gy, gz] = F.groesse;
-        for (let i = 0; i < voegel.length && o + je <= P.cap; i++) {
+        const AK = P.mesh.instanceMatrix.array;
+        const AR = P.rund.instanceMatrix.array;
+        const FK = P.mesh.instanceColor.array;
+        const FR = P.rund.instanceColor.array;
+        const farbe = this._vogelFarbe || (this._vogelFarbe = new THREE.Color());
+        const aus = this._vogelLeibAus || (this._vogelLeibAus = {});
+        let oK = 0;
+        let oR = 0;
+        let saenger = 0;
+        for (let i = 0; i < voegel.length; i++) {
             const v = voegel[i];
+            const art = LG.arten[v.art] || LG.arten.singvogel;
+            VG.leib(art, v, stufen[i], aus);
+            const T = aus.t;
             const c = Math.cos(v.gier);
             const s = Math.sin(v.gier);
-            for (const T of L.teile)
-                teil(v, c, s, T.groesse[0], 0, 0, T.groesse[1], T.groesse[2], T.lage[0], T.lage[1], T.lage[2]);
-            for (let seite = 1; seite >= -1; seite -= 2) {
-                // (die Seiten ohne Array je Vogel und Bild, w27-takt-gc)
-                // der sitzende Vogel (der Schwarm auf seiner Krone) legt die Schwinge an den Leib: die Spannweite längs nach
-                // hinten, die Tiefe hoch, an der Flanke des Rumpfs
-                if (v.sitzt) {
-                    const flanke = (seite * (L.teile[0].groesse[0] + gy)) / 2;
-                    teil(v, c, s, gy, 0, 0, gz, gx, flanke, F.schulter[1], F.schulter[2] - gx / 2);
-                    continue;
+            const cr = Math.cos(v.roll || 0);
+            const sr = Math.sin(v.roll || 0);
+            const y0 = v.sitzt ? v.y - aus.fussY : v.y;
+            if (!v.art || v.art === "singvogel") saenger++;
+            for (let j = 0; j < aus.n; j++) {
+                const q = 16 * j;
+                const rund = T[q] === 0;
+                const A = rund ? AR : AK;
+                const F = rund ? FR : FK;
+                const o = rund ? oR++ : oK++;
+                const k = 16 * o;
+                // je Achse (und die Mitte): erst die Schräglage um z, dann die Gier um y
+                for (let e = 0; e < 4; e++) {
+                    const b = e < 3 ? q + 5 + 3 * e : q + 2;
+                    const x1 = cr * T[b] - sr * T[b + 1];
+                    const y1 = sr * T[b] + cr * T[b + 1];
+                    const z1 = T[b + 2];
+                    A[k + 4 * e] = c * x1 + s * z1 + (e === 3 ? v.x : 0);
+                    A[k + 4 * e + 1] = y1 + (e === 3 ? y0 : 0);
+                    A[k + 4 * e + 2] = -s * x1 + c * z1 + (e === 3 ? v.z : 0);
+                    A[k + 4 * e + 3] = e === 3 ? 1 : 0;
                 }
-                const cf = Math.cos(seite * v.schlag);
-                const sf = Math.sin(seite * v.schlag);
-                const h = (seite * gx) / 2;
-                teil(
-                    v,
-                    c,
-                    s,
-                    gx * cf,
-                    gx * sf,
-                    -gy * sf,
-                    gy * cf,
-                    gz,
-                    seite * F.schulter[0] + h * cf,
-                    F.schulter[1] + h * sf,
-                    F.schulter[2]
-                );
+                farbe.setHex(T[q + 1]);
+                F[3 * o] = farbe.r;
+                F[3 * o + 1] = farbe.g;
+                F[3 * o + 2] = farbe.b;
             }
         }
-        AnazhRealm._instanzZahl(P.mesh, o);
-        if (o > 0) P.mesh.instanceMatrix.needsUpdate = true;
+        P.voegel = saenger;
+        AnazhRealm._instanzZahl(P.mesh, oK);
+        AnazhRealm._instanzZahl(P.rund, oR);
+        if (oK > 0) P.mesh.instanceMatrix.needsUpdate = P.mesh.instanceColor.needsUpdate = true;
+        if (oR > 0) P.rund.instanceMatrix.needsUpdate = P.rund.instanceColor.needsUpdate = true;
     }
     // DIE FISCHE (luftwasser.K3, tetrapoda FISCH_GESETZ): je Takt die Zellen binnen nahM um das Auge — je Zelle einmal ihr Stand
     // (`_fischZelle`: der Kolk aus ihren Würfen), je Stand seine Fische mit Lage, Gier und Flucht, je Takt ihr Schritt im Gesetz:
@@ -765,7 +803,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_kreatur_fauna]);
 
 // ===== ATLAS · Kreatur/fauna — Außen-Konstanten =====
 // DER VOGEL (tetrapoda VOGEL_GESETZ + vogelWurf · vogelRevier · vogelLied · vogelBahn, Klang K1): Revier, Lied, Singflug und
-// Leib — gelesen vom Vogel-Takt und vom Klang-Zensus (die Teile je Vogel); dazu der Schwarm (schwarmRevier · schwarmZentrum ·
+// Leib (vogelArt · vogelLeib: Art und Bauplan) — gelesen vom Vogel-Takt; dazu der Schwarm (schwarmRevier · schwarmZentrum ·
 // schwarmGlied · schwarmWunsch · schwarmLeittier · schwarmSitz · schwarmSeparation, luftwasser.K5 und K2), gelesen vom
 // Schwarm-Takt. Fail-closed.
 AnazhRealm._vogelGesetz = function () {
@@ -778,12 +816,17 @@ AnazhRealm._vogelGesetz = function () {
         V.lied &&
         V.flug &&
         V.leib &&
+        V.leib.arten &&
+        V.leib.arten.singvogel &&
+        V.leib.arten.star &&
         V.schwarm &&
         [
             "vogelWurf",
             "vogelRevier",
             "vogelLied",
             "vogelBahn",
+            "vogelArt",
+            "vogelLeib",
             "schwarmRevier",
             "schwarmZentrum",
             "schwarmGlied",
@@ -801,6 +844,8 @@ AnazhRealm._vogelGesetz = function () {
             revier: k.vogelRevier,
             lied: k.vogelLied,
             bahn: k.vogelBahn,
+            art: k.vogelArt,
+            leib: k.vogelLeib,
             schwarmRevier: k.schwarmRevier,
             schwarmZentrum: k.schwarmZentrum,
             glied: k.schwarmGlied,

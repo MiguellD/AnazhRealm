@@ -22,7 +22,9 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 #presets{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
 #presets button{background:#221100;color:#ccaa66;border:1px solid #553311;padding:4px 10px;font-family:monospace;font-size:11px;cursor:pointer;border-radius:3px}
 #presets button:hover{background:#332200}
-#presets button.active{background:#443311;color:#ffcc88}
+#presets button.active,#voegel button.active{background:#443311;color:#ffcc88}
+#voegel{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+#voegel button{background:#221100;color:#ccaa66;border:1px solid #553311;padding:4px 10px;font-family:monospace;font-size:11px;cursor:pointer;border-radius:3px}
 /* Regler · Sitzung · Kosten-Leiste formt die Hülle (../huelle/huelle.css) — hier nur die Palette (Aureus) */
 :root{--h-akzent:#ccaa66;--h-tinte:#ddc89a;--h-matt:#886633;--h-haar:#221100;--h-feld:rgba(14,10,4,.9);--h-knopf:rgba(204,170,102,.12)}
 #gangartZeile{margin-top:4px;font-family:monospace;font-size:10px;color:#ccaa66}
@@ -48,6 +50,7 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 <div id="ui">
 <div id="sitzung"></div>
 <div id="presets"><button data-p="wolf" class="active">Wolf</button><button data-p="fox">Fuchs</button><button data-p="bear">Baer</button><button data-p="deer">Hirsch</button></div>
+<div id="voegel"><button data-v="singvogel">Singvogel</button><button data-v="star">Star</button><button data-v="greif">Greif</button><button data-v="reiher">Reiher</button><button data-v="sitzt">steht / fliegt</button></div>
 <div id="sliders"></div>
 <div id="stufen"><button data-s="auto" class="active">Stufe auto</button><button data-s="0">L0</button><button data-s="1">L1</button><span id="stufeIst"></span></div>
 <div id="emotions">
