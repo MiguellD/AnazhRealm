@@ -1923,13 +1923,7 @@ class AnazhRealm_siedlung_ort {
         const SO = this._gelaende().ort.siedlung;
         const M = this._genesisMitte();
         if (!S || (!P && (SO.platz || !M))) return null;
-        const wm = this.state.worldMeta || {};
-        const s = `${wm.seed || "anazh-realm-seed"}:startdorf`;
-        let h = 2166136261 >>> 0;
-        for (let i = 0; i < s.length; i++) {
-            h ^= s.charCodeAt(i);
-            h = Math.imul(h, 16777619) >>> 0;
-        }
+        const h = this._startSame();
         if (((h >>> 12) & 0xffff) / 65536 >= SO.bau) return null;
         const phase = (((h >>> 8) & 0xff) / 255) * 2 * Math.PI;
         const W = this._startMitte();
@@ -1950,6 +1944,18 @@ class AnazhRealm_siedlung_ort {
                     z: o.z,
                 };
         return null;
+    }
+    // DER SAME DES START-DORFS: FNV-1a über „<Welt-Same>:startdorf" (der Rang, die Phase der Suche und der Same des Plans).
+    // Leser: die Suche (`_autoSettlementStartInfo`) und die Heimat des Kulturfelds (`_siedlungKultur`).
+    _startSame() {
+        const wm = this.state.worldMeta || {};
+        const s = `${wm.seed || "anazh-realm-seed"}:startdorf`;
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 16777619) >>> 0;
+        }
+        return h;
     }
     // DIE MITTE DER SUCHE DES START-DORFS: das Viertel des Genesis-Plans, ohne ihn die Genesis-Mitte (null ohne beide). Leser: die
     // Suche (`_autoSettlementStartInfo`) und die Kultur des Start-Dorfs (`_zellZeit`) — beide vor jedem Plan, nach jedem Reload gleich.
@@ -1985,7 +1991,15 @@ class AnazhRealm_siedlung_ort {
     // (`_dorfAkt`); fail-closed bei kaltem Kern (`AnazhRealm.Gesetz` bricht laut) und ohne Meeresspiegel.
     _siedlungKultur(x, z) {
         const ws = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        if (!this._kulturMemo || this._kulturMemo.ws !== ws) this._kulturMemo = { ws, M: new Map() }; // Instanz-Feld (die _editSaveTimer-Klasse)
+        // DIE HEIMAT IST EIN HERD (fachwerk `kulturFeld` `heimat`): die Mitte der Suche des Start-Dorfs (`_startMitte`, dort liest
+        // es seine Kultur) mit dem Samen seines Plans (`_startSame`, wie `_autoSettlementStartInfo` ihn reicht) — das Start-Dorf baut
+        // seinen eigenen Wurf, die Orte um es tragen seine Kultur. Vor der Mitte (kein Plan, keine Genesis-Mitte) kennt das Feld
+        // keine Heimat, und nichts wird gemerkt.
+        const W = this._startMitte();
+        const heimat = W ? { x: W.x, z: W.z, seed: this._startSame() >>> 0 || 1 } : null;
+        const hk = heimat ? heimat.x + "," + heimat.z : "";
+        if (!this._kulturMemo || this._kulturMemo.ws !== ws || this._kulturMemo.hk !== hk)
+            this._kulturMemo = { ws, hk, M: new Map() }; // Instanz-Feld (die _editSaveTimer-Klasse)
         const M = this._kulturMemo.M;
         const mk = Math.round(x) + "," + Math.round(z);
         if (M.has(mk)) return M.get(mk);
@@ -2002,8 +2016,8 @@ class AnazhRealm_siedlung_ort {
             return h;
         };
         const grund = (px, pz) => this._terrainSaatY(px, pz, false) - meer;
-        const K = AnazhRealm.Gesetz("fachwerk:kulturFeld")(hash, x, z, grund);
-        M.set(mk, K);
+        const K = AnazhRealm.Gesetz("fachwerk:kulturFeld")(hash, x, z, grund, heimat);
+        if (heimat) M.set(mk, K);
         return K;
     }
     // Eine Dorf-Zelle heben (Gate/Test und Tick teilen den Pfad): reserviert bei Export-ANKUNFT

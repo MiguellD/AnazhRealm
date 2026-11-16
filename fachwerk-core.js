@@ -3472,7 +3472,16 @@
     // die der Nachbar baut (DORF, `fremdAn`). Das Jahr des Orts streut um das seines Herds (`streu`). Bis vorrat2-kulturfeld
     // trug jede dritte Siedlung eine Epoche aus dem Hash ihres Zell-Samens (`siedlungsEpoche`), der Rest würfelte die Region
     // aus demselben Samen: Nachbarorte teilten ihre Region mit 0,21 — in 256 m wie in 16 km (Rauschen, kein Kulturraum). ──
-    var KULTURFELD = { zelleM: 2048, zitter: 0.7, grenzeM: 360, proben: 8, hang: 6, wasser: 3, streu: 120 };
+    var KULTURFELD = {
+        zelleM: 2048,
+        zitter: 0.7,
+        grenzeM: 360,
+        proben: 8,
+        hang: 6,
+        wasser: 3,
+        streu: 120,
+        zeitBreite: 680,
+    };
     // die Region eines Wurfs r ∈ [0, 1) (Leser: DORF für den gewürfelten Ort, der Herd des Kulturfelds)
     function regionAus(r) {
         return r < 0.3
@@ -3502,6 +3511,22 @@
         }
         return { jahr: jahr, spanne: spanne };
     }
+    // DER STROM EINES SAMENS: die Würfel des DORF (Leser: DORF, `samenKultur`) — EINE Quelle für den Ort und seinen Herd
+    function samenRnd(seed) {
+        var s = (Math.round((seed || 1) * 613 + 29) * 2654435761) >>> 0;
+        return function () {
+            s = (s * 1664525 + 1013904223) >>> 0;
+            return s / 4294967296;
+        };
+    }
+    // DIE KULTUR EINES SAMENS {region, jahr, spanne}: die ersten Würfe seines Stroms — genau die Kultur, die der Ort dieses Samens
+    // ohne Feld baut (DORF: `regionAus`, dann `zeitAus`). Leser: der Heimat-Herd (`kulturFeld`).
+    function samenKultur(seed) {
+        var rnd = samenRnd(seed),
+            region = regionAus(rnd()),
+            z = zeitAus(region, rnd);
+        return { region: region, jahr: z.jahr, spanne: z.spanne };
+    }
     // der Herd der Kachel (i, k): {x, z, region, epoche, jahr, spanne} aus dem Kachel-Hash des Wirts
     function kulturHerd(hash, i, k) {
         var h = rangSchluessel(hash(i, k) >>> 0),
@@ -3529,15 +3554,28 @@
     // Saat über dem Meer (m; null: flach und trocken). Rückgabe {region, epoche, jahr, spanne, misch, fremd: {region, epoche} | null}
     // — der Eingang `kultur` des DORF (die Epoche reicht der Wirt als `epoche` daneben). Leser: der Wirt (`_siedlungKultur`: die
     // Zellen der Welt, das Start-Dorf, der Akt ohne Epoche), gate:settlement (der Rang-Zensus).
-    function kulturFeld(hash, x, z, grund) {
+    // DIE HEIMAT IST EIN HERD: `heimat` {x, z, seed} (die Mitte der Heimat und der Same ihres Start-Dorfs, vom Wirt) ersetzt den
+    // Herd ihrer Kachel — er steht an ihr und trägt die Kultur ihres Samens (`samenKultur`), keine Legende. Am Start-Dorf ist das
+    // Feld darum genau sein eigener Wurf (DORF baut es byte-gleich wie ohne Feld), um es herum breitet sich seine Kultur aus und
+    // fällt mit dem Weg in die Herde der Nachbar-Kacheln ab. Ohne `heimat` (keine Heimat bekannt) tragen alle Kacheln ihren Wurf.
+    function kulturFeld(hash, x, z, grund, heimat) {
         var Z = KULTURFELD.zelleM,
             i0 = Math.floor(x / Z),
             k0 = Math.floor(z / Z),
             hp = grund ? grund(x, z) : 0,
             herde = [];
+        if (heimat && !(isFinite(heimat.x) && isFinite(heimat.z) && isFinite(heimat.seed)))
+            throw new Error(
+                "fachwerk: die Heimat des Kulturfelds trägt keinen Ort/Samen (" + JSON.stringify(heimat) + ")"
+            );
+        var hi = heimat ? Math.floor(heimat.x / Z) : NaN,
+            hk = heimat ? Math.floor(heimat.z / Z) : NaN;
         for (var i = i0 - 1; i <= i0 + 1; i++)
             for (var k = k0 - 1; k <= k0 + 1; k++) {
-                var c = kulturHerd(hash, i, k);
+                var c =
+                    i === hi && k === hk
+                        ? Object.assign({ x: heimat.x, z: heimat.z, epoche: undefined }, samenKultur(heimat.seed))
+                        : kulturHerd(hash, i, k);
                 herde.push({ c: c, weit: Math.hypot(c.x - x, c.z - z), kost: Infinity });
             }
         // der Weg kostet nie weniger als seine Länge: die Herde in der Folge ihrer Länge, ihr Grund nur, solange einer A (der
@@ -4001,16 +4039,16 @@
       return neu; }
     // prettier-ignore
     function DORF(DP){
-  let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
+  const rnd=samenRnd(DP.seed);   /*der Strom des Samens (`samenRnd`, EINE Quelle mit dem Heimat-Herd)*/
   const K=DP.kultur||null, KF=K&&K.misch>0&&K.fremd&&REGION_HIST[K.fremd.region]?K.fremd:null;   /*DIE KULTUR DES ORTS (vorrat2-kulturfeld): das Feld (`kulturFeld`) — ohne sie wuerfelt der Same wie bisher, byte-gleich*/
   if(K&&!(REGION_HIST[K.region]&&isFinite(K.jahr)&&isFinite(K.spanne)&&isFinite(K.misch))) throw new Error('fachwerk: die Kultur des Orts traegt keine Region/Zeit ('+JSON.stringify(K)+')');
   const fremdAn=i=>!!KF&&rangSchluessel((Math.imul((DP.seed||1)|0,0x9e3779b1)^i)>>>0)/4294967296<K.misch;   /*das Haus i baut der Nachbar (die Grenze mischt, `misch`)*/
   const leg0=(DP.epoche&&DP.epoche!=='gewuerfelt')?EPOCHEN[DP.epoche]:null, achse=leg0?zeitachse(leg0.region):[];
   const chronik=!!leg0&&achse.length>1;                                                 /*DIE CHRONIK (siedlung.K4): die Epoche lebt in der Gegenwart ihrer Region — der Plan ist der ihrer juengsten Epoche, das Jahr schneidet ihn (unten). Die ZAHL ist die Groesse der Gegenwart (die Gestalt); bis w3w schaltete sie die Chronik ab: jede Zelle der Welt (Rang-Gesetz), der Satz „dorf 7 300" und der Akt des DSL trugen eine Zahl und rechneten je Epoche einen eigenen Plan — die Mutante ohne Erbe (Teil J 0,222)*/
   const leg=chronik?EPOCHEN[achse[achse.length-1]]:leg0;
-  let region,jahr,spanne,d=0;
+  let region,jahr,spanne,d=0,eigen=false;
   if(leg){ region=leg.region; d=((rnd()-0.5)*50)|0; jahr=leg.jahr+d; spanne=leg.spanne; }
-  else if(K){ region=K.region; jahr=K.jahr+(((rnd()-0.5)*KULTURFELD.streu)|0); spanne=K.spanne; }   /*DAS KULTURFELD (vorrat2-kulturfeld, `kulturFeld`): der Ort steht in Region und Zeit seines Herds, das Jahr streut um dessen*/
+  else if(K){ const r0=regionAus(rnd()), z0=zeitAus(r0, rnd), b=KULTURFELD.streu/2; region=K.region; jahr=K.jahr+Math.round(b*Math.max(-1,Math.min(1,(z0.jahr-K.jahr)/KULTURFELD.zeitBreite))); spanne=K.spanne; eigen=r0===region&&jahr===z0.jahr&&spanne===z0.spanne; }   /*DAS KULTURFELD (vorrat2-kulturfeld, `kulturFeld`): der Ort steht in Region und Spanne seines Herds; sein Jahr ist sein eigener Wurf (derselbe Strom wie ohne Feld), auf die Streu des Herds gestaucht (Abstand zum Herd-Jahr / zeitBreite × streu/2) — am Herd seines eigenen Samens (die Heimat) ist er sein Wurf, byte-gleich*/
   else{ region=regionAus(rnd()); const z0=zeitAus(region, rnd); jahr=z0.jahr; spanne=z0.spanne; }
   if(DP.erbe&&isFinite(DP.erbe.jahr)&&isFinite(DP.erbe.spanne)){ if(!leg&&REGION_HIST[DP.erbe.region]) region=DP.erbe.region; jahr=DP.erbe.jahr; spanne=DP.erbe.spanne; if(leg) d=jahr-leg.jahr; }   /*DAS ERBE DES KERNS (w28-stadt-funktion, `viertelWort`): das Viertel einer Stadt steht in Region, Jahr und Spanne ihres Kerns — sein eigener Same wuerfelt weiter (der Strom bleibt), die Zeit ist die der Stadt*/
   const nZiel=Math.max(4,Math.min(STADT_FUNKTION.voll,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
@@ -4107,7 +4145,7 @@
   if(C) for(let a=0;a<alle.length;a++){ let v=alle[a];
     if(v.baujahr>za[a].gr) for(const f of za[a].fr) if(f.ab<=za[a].gr) v=f.v;
     C.jahre.push(za[a].gr); C.leute.push(leuteVon(v)); C.wohl.push(isFinite(v.wohl)?v.wohl:1); }
-  const kultur=K?{region, epoche:leg0?DP.epoche:undefined, misch:KF?K.misch:0, fremd:KF, nFremd}:undefined;   /*die Kultur, in der der Ort steht (Leser: der Export, die Linse der Grenze)*/
+  const kultur=K&&!(eigen&&!KF)?{region, epoche:leg0?DP.epoche:undefined, misch:KF?K.misch:0, fremd:KF, nFremd}:undefined;   /*die Kultur, in der der Ort steht (Leser: der Export, die Linse der Grenze) — nur, wo das Feld ihn vom eigenen Wurf wegrückte*/
   return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, kultur, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
           schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
           kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
@@ -11937,6 +11975,7 @@
         wegUeberBruecken: wegUeberBruecken, // fahrzeug.K2 — der Weg über dem Wasser auf der Achse seiner Brücke (Netz und Feldweg)
         siedlungsGroesse: siedlungsGroesse,
         siedlungsReich: siedlungsReich,
+        samenKultur: samenKultur, // die Kultur, die ein Same ohne Feld baut (der Heimat-Herd des Kulturfelds)
         kulturFeld: kulturFeld, // die Kultur eines Orts aus seinem Ort und dem Welt-Samen (vorrat2-kulturfeld; Leser: der Wirt, gate:settlement)
         KULTURFELD: KULTURFELD,
         GROESSE_N: GROESSE_N,
