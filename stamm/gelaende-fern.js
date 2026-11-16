@@ -549,7 +549,13 @@ class AnazhRealm_gelaende_fern {
             mesh.castShadow = false;
             // er empfängt (D3): jenseits der Kaskaden trägt sein Boden-Stoff die Horizont-Karte (`_horizontSicht`)
             mesh.receiveShadow = true;
-            mesh.visible = false; // erst sichtbar, wenn der erste Höhen-Refresh durch ist
+            // DER RING IST SEIN EIGENER GAST DES BILDS (w28-programm-vor-bild): bis sein erster Höhen-Refresh durch ist, nimmt er
+            // keinen Raum (Maßstab 0, `_gastOhneRaum`) und trägt die Prägung — die Erst-Zeichnung baut Knoten und Pipelines seiner
+            // zwei Stoffe unter dem Ladeschirm ohne Draw, während der Fern-Faden seine Höhen rechnet (`_fernRingRefresh` nimmt
+            // sie ihm, sobald er steht). Bis hier hing er unsichtbar in der Szene, und sein Programm begann erst mit den Daten.
+            mesh.__vorbauGast = "bild";
+            mesh.matrix.makeScale(0, 0, 0);
+            mesh.matrixWorldNeedsUpdate = true;
             mesh.matrixAutoUpdate = false; // Vertex-XZ sind absolute Welt-Koordinaten
             mesh.userData.inventar = "fern-ring"; // Identitäts-Stempel (H3-Familie)
             st.scene.add(mesh);
@@ -2150,7 +2156,12 @@ class AnazhRealm_gelaende_fern {
         fr.refreshed += done;
         if (!fr.ready && fr.cursor >= fr.totalVerts) {
             fr.ready = true;
-            for (const m of fr.meshes) m.visible = true;
+            // der Ring steht: er nimmt seinen Raum (die Ecken sind Welt-Koordinaten) und zeichnet als Bürger
+            for (const m of fr.meshes) {
+                delete m.__vorbauGast;
+                m.matrix.identity();
+                m.matrixWorldNeedsUpdate = true;
+            }
         }
         return done;
     }

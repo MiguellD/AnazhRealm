@@ -208,16 +208,16 @@ class AnazhRealm_werkstatt_hof {
             .sort()
             .map((m) => m + have[m])
             .join(",");
-        return (
+        return AnazhRealm._zeichenSig(
             Object.keys(bps).join("|") +
-            "#" +
-            matSig +
-            "#" +
-            (this.state._bpEditTick || 0) +
-            "#" +
-            this.getGameMode() +
-            "#" +
-            (this.state.hotbar || []).join("|")
+                "#" +
+                matSig +
+                "#" +
+                (this.state._bpEditTick || 0) +
+                "#" +
+                this.getGameMode() +
+                "#" +
+                (this.state.hotbar || []).join("|")
         );
     }
 

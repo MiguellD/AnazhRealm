@@ -2794,8 +2794,11 @@ class AnazhRealm_kreatur_verhalten {
                 this._leibMatrix(cr);
                 u._kzGlieder = this._kreaturGliederBacken(cr, false);
             }
-            // Der schwindende Satz folgt den Knochen weiter (sonst geisterte er 0,5 s an der alten Pose).
-            if (u._kzGlieder)
+            // Der schwindende Satz folgt den Knochen weiter (sonst geisterte er 0,5 s an der alten Pose) — der des Bewohners
+            // der Lage seiner Gestalt (`_bewohnerFeldLage`: EIN Schreiber, w28-leib-im-ring).
+            const BL = u._feldLageVon;
+            if (BL) this._bewohnerFeldLage(BL.b, BL.S, false);
+            else if (u._kzGlieder)
                 for (const gl of u._kzGlieder) {
                     if (gl.handle._schwundT0 !== undefined) this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
                     this._weltFeldAktiv(gl.handle, false);
@@ -2822,10 +2825,13 @@ class AnazhRealm_kreatur_verhalten {
         // DIE KNOCHEN TRAGEN DIE FELDER (die Pose der letzten Animations-Auswertung als inverse
         // Welt-Matrix je Glied):
         const an = this.state.creaturesHidden !== true;
-        for (const gl of u._kzGlieder) {
-            this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
-            this._weltFeldAktiv(gl.handle, an);
-        }
+        const BL = u._feldLageVon; // der Bewohner: die Lage seiner Gestalt trägt seine Glieder (`_bewohnerFeldLage`)
+        if (BL) this._bewohnerFeldLage(BL.b, BL.S, an);
+        else
+            for (const gl of u._kzGlieder) {
+                this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
+                this._weltFeldAktiv(gl.handle, an);
+            }
         cr.visible = false; // fern IST das Feld die Gestalt
     }
 

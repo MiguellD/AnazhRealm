@@ -1693,8 +1693,10 @@ class AnazhRealm_studio_bruecke {
     // Budget halbe Rate (der Stau schrumpft immer, kein LongTask). Ohne dt (Gate/Test): 3 unter / 1 über
     // Budget (gate:leistungs-vertrag).
     _tickFoundryIngest(dtSec) {
-        // eine Rückgabe im letzten Takt (`_foundryLoslassen`): der Ruhe-Deckel wiegt, was untätig wurde
-        if (this._foundry && this._foundry.ruheOffen) this._foundryRuheDeckel();
+        // eine Rückgabe im letzten Takt (`_foundryLoslassen`) oder ein Untätiger, dessen Ruhezeit ablief (`ruheFaellig`): der
+        // Ruhe-Deckel wiegt, was untätig wurde
+        const _f = this._foundry;
+        if (_f && (_f.ruheOffen || performance.now() >= _f.ruheFaellig)) this._foundryRuheDeckel();
         const q = this._foundryIngestQueue;
         if (!q || !q.length) return;
         let n;
@@ -2031,16 +2033,24 @@ class AnazhRealm_studio_bruecke {
         const h = typeof reqIdOderMsg === "string" ? /w(\d+)_\d+$/.exec(reqIdOderMsg) : null;
         return h ? "werk" + h[1] : "werk";
     }
-    // Die Pumpe speist die Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug, die Wahl unter den
+    // Die Pumpe speist die Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug (vor dem ersten Weltbild
+    // FOUNDRY_IM_FLUG_ANKUNFT), die Wahl unter den
     // Wartenden ist die EINE Wahl (`_foundryWahl`: nah zuerst, nie verhungert). Ein Auftrag geht in die Bahn mit den meisten freien Plätzen
     // (das Werk und jeder bereite Helfer, `_foundryHelfer`; unter Gleichen das Werk).
     // DER BILD-RANG DER BAHN (B5): nach dem Buch malt das Werk den Blatt-Atlas (bis seine Fracht ankommt, `f.blattAtlas`) — es
     // ist belegt, auch ohne Auftrag im Flug. Ein Kopf der Ankunft (`rang.kopf`: der Leib, das Start-Dorf) geht in eine Bahn ohne
     // Arbeit, und keiner stellt sich hinter ihn, solange eine Bahn ohne Kopf Platz hat. Befund B5 (OMEN 18.10., GTX kalt): die
     // Leib-Stufe wartete im Werk hinter dem Atlas, hinter dem Dorf-Export (3,4–5,4 s) wartete jeder Auftrag seiner Bahn.
+    // DIE WAHL FÄLLT, WENN DER FADEN FREI WIRD (w28-ankunft-faden): ein gesendeter Auftrag gehört seinem Faden, der arbeitet
+    // FIFO — kein anderer Faden nimmt ihn je. Vor dem ersten Weltbild hält eine Bahn darum nur FOUNDRY_IM_FLUG_ANKUNFT im Flug
+    // (einer in Arbeit, einer dahinter gegen den Rundlauf), die übrigen warten beim Host auf den Faden, der zuerst frei wird.
+    // Befund GTX 1050 kalt, main 3e4f99cd (2 Paare im Wechsel, Sonde): der Leib (ein Kopf, 5–7,5 s) hielt seine Bahn, die
+    // Pflanzung stellte derweil 12 Baum-Körper L1 in die andere — der Helfer stand danach 2,5 und 5,6 s leer, während dort noch
+    // fünf Körper warteten: letzter Baum-Körper 19,7 · 20,6 → 16,2 · 16,2 s, alle Karten gebacken 19,8 · 20,7 → 15,9 · 16,5 s.
     _foundryPumpe(f) {
         const q = f && f.warte;
         if (!q || !f.worker) return;
+        const K = this.state._weltbildDa ? AnazhRealm.FOUNDRY_IM_FLUG : AnazhRealm.FOUNDRY_IM_FLUG_ANKUNFT;
         const werke = [{ bahn: "werk", ziel: f.worker, k: 0 }];
         for (const h of f.helfer || []) if (h.bereit) werke.push({ bahn: "werk" + h.k, ziel: h.w, k: h.k });
         let frei = 0,
@@ -2049,10 +2059,7 @@ class AnazhRealm_studio_bruecke {
         // LEERE Bahn — der Faden arbeitet seine Nachrichten nacheinander ab, und jeder Auftrag im Blick wartete hinter bis zu
         // FOUNDRY_IM_FLUG außer Blick (Radeon kalt am Kopf 1aebfc6e: 0 wartend, bis 33 im Werk, die Bauten im Blick bis 18 s)
         let leer = null;
-        const darf = (a) =>
-            a.rang.kopf
-                ? !!(leer || bahn)
-                : !!bahn && (frei === AnazhRealm.FOUNDRY_IM_FLUG || this._rangImBild(a.rang));
+        const darf = (a) => (a.rang.kopf ? !!(leer || bahn) : !!bahn && (frei === K || this._rangImBild(a.rang)));
         const koepfe = f.koepfe || (f.koepfe = new Set());
         while (q.length) {
             const im = new Map();
@@ -2070,7 +2077,7 @@ class AnazhRealm_studio_bruecke {
             for (const w of werke) {
                 const n = im.get(w.bahn) || 0;
                 if (!n && !leer) leer = w;
-                const fr = AnazhRealm.FOUNDRY_IM_FLUG - n;
+                const fr = K - n;
                 if (!mitKopf.has(w.bahn) && fr > frei) {
                     frei = fr;
                     bahn = w;
@@ -3955,6 +3962,10 @@ AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // schneller als er — gemessen 03.10. (Boot-Vorrat leer · nahe Eiche/Tanne-L0): FIFO 12,4 s · 9,0/9,4 s; im Flug 2:
 // 20,4 s · 0,4/0,9 s; 4: 15,2 s; 8: 13,2 s; 12: 12,3 s · 0,9/1,4 s — zwölf halten den Worker ohne Lücke beschäftigt.
 AnazhRealm.FOUNDRY_IM_FLUG = 12;
+// VOR DEM ERSTEN WELTBILD (`_foundryPumpe`): einer in Arbeit, einer dahinter. Dort sind die Aufträge im Blick groß (ein
+// Baum-Körper 0,3–2,6 s) und die Bahnen ungleich belegt (der Leib, der Blatt-Atlas) — zwölf im Flug binden die Arbeit an einen
+// Faden, während der andere leer steht; der Vorrat außer Blick geht dann ohnehin nur in eine leere Bahn (B3d).
+AnazhRealm.FOUNDRY_IM_FLUG_ANKUNFT = 2;
 AnazhRealm.FOUNDRY_ALTER_MS = 6000;
 // Die Werk-Fäden (`_foundryHelfer`, K60): höchstens so viele Fäden bauen Körper (das Werk zählt mit), einer je vier Kerne.
 AnazhRealm.FOUNDRY_WERK_FAEDEN = 4;
