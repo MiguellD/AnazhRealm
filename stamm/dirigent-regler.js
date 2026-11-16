@@ -1106,11 +1106,14 @@ class AnazhRealm_dirigent_regler {
     // Nachlauf) und der Spieler keine eigene Skala gesetzt hat (`state.szeneSkala` gewinnt immer); nach `SZENE_SKALA_MESSUNG.
     // fensterMs` Bild-Zeit urteilt sie EIN Fenster: p95 über `zielMs` und an die GPU gebunden (die Leine hielt ≥ `leineAnteil` der Bilder und
     // CPU p50 unter `gpuAnteil` des Bilds; das Ankunfts-Fenster mit 23 ms CPU bei 55 ms Bild urteilt so nicht)
-    // → eine Stufe hinab; p95 so tief, dass die nächste Stufe hinauf selbst bei voller Füllungs-Last (Bild × Pixel-Verhältnis)
-    // unter `aufAnteil` · zielMs bliebe → eine hinauf, nie über SZENE_SKALA. Höchstens EIN Schritt je Fenster (≥ 10 s), der
-    // Wechsel geht den Weg des Menü-Werts (`_loopRender`: `setResolutionScale` beim nächsten Bild, wie ein Fenster-Wechsel).
-    // Die Zahl lebt in `_geraeteMessung`, das Geräte-Profil trägt sie (`_geraeteMessungIn`: Telemetrie, Pixel-Kappe), jedes Bild
-    // liest sie über `_szeneSkalaWirk`; laut im Log.
+    // → hinab, in EINEM Schritt bis zu der Stufe, an der das Ziel hielte, wäre das Bild ganz Füllung; p95 so tief, dass die
+    // nächste Stufe hinauf selbst bei voller Füllungs-Last (Bild × Pixel-Verhältnis) unter `aufAnteil` · zielMs bliebe → eine
+    // hinauf, nie über SZENE_SKALA. Höchstens EIN Schritt je Fenster; der klare Fall wartet es nicht ab (der frühe Abstieg nach
+    // `abMs`). Bis w28-wiese-takt ging die Skala je 10-s-Fenster eine Stufe: die Radeon zeigte an der Mess-Wiese 22 s lang 0,75
+    // (p95 58,6 ms), 10 s 0,625 (p95 50,3 ms) und erst dann 0,5. Der Wechsel geht den Weg des Menü-Werts (`_loopRender`:
+    // `setResolutionScale` beim nächsten Bild, wie ein Fenster-Wechsel). Die Zahl lebt in `_geraeteMessung` und beim Spieler
+    // (`SZENE_SKALA_MESSUNG.ablage`: die nächste Sitzung beginnt mit ihr), das Geräte-Profil trägt sie (`_geraeteMessungIn`:
+    // Telemetrie, Pixel-Kappe), jedes Bild liest sie über `_szeneSkalaWirk`; laut im Log.
     _szeneSkalaMessen(frameMs, cpuMs) {
         const st = this.state;
         const r = st.renderer;
@@ -1142,8 +1145,12 @@ class AnazhRealm_dirigent_regler {
         F.cpu.push(cpuMs);
         F.summe += frameMs;
         if (gehalten) F.gehalten++;
-        if (F.summe < M.fensterMs) return;
-        this._skalaFenster = { bild: [], cpu: [], summe: 0, gehalten: 0 };
+        // DER FRÜHE ABSTIEG (w28-wiese-takt): einmal je Fenster, nach `abMs` Bild-Zeit und `abBilder` Bildern, fragt die Sitzung nur
+        // den klaren Fall — das `abQuantil` der Bilder über dem Ziel und an die GPU gebunden. Jeder andere wartet das Fenster ab.
+        const voll = F.summe >= M.fensterMs;
+        const frueh = !voll && !F.frueh && F.summe >= M.abMs && F.bild.length >= M.abBilder;
+        if (!voll && !frueh) return;
+        F.frueh = true;
         const q = (a, x) => {
             const s = a.slice().sort((u, v) => u - v);
             return s[Math.min(s.length - 1, Math.floor(x * s.length))];
@@ -1153,6 +1160,8 @@ class AnazhRealm_dirigent_regler {
             cpu50 = q(F.cpu, 0.5);
         const leine = F.gehalten / F.bild.length;
         const gebunden = leine >= M.leineAnteil && cpu50 < M.gpuAnteil * p50;
+        if (frueh && !(gebunden && q(F.bild, M.abQuantil) > M.zielMs)) return;
+        this._skalaFenster = { bild: [], cpu: [], summe: 0, gehalten: 0 };
         const stufen = M.stufen.filter((s) => s >= AnazhRealm.SZENE_SKALA_MIN && s <= AnazhRealm.SZENE_SKALA);
         const m =
             this._geraeteMessung ||
@@ -1161,8 +1170,13 @@ class AnazhRealm_dirigent_regler {
         const jetzt = m.skala == null ? AnazhRealm.SZENE_SKALA : m.skala;
         const i = stufen.indexOf(jetzt);
         let neu = jetzt;
-        if (p95 > M.zielMs && gebunden && i >= 0 && i + 1 < stufen.length) neu = stufen[i + 1];
-        else if (i > 0 && p95 * (stufen[i - 1] / jetzt) ** 2 <= M.aufAnteil * M.zielMs) neu = stufen[i - 1];
+        if (p95 > M.zielMs && gebunden && i >= 0 && i + 1 < stufen.length) {
+            // hinab bis zu der Stufe, an der das Bild das Ziel hielte, wäre es GANZ Füllung (p95 × Pixel-Verhältnis): hält es dort
+            // selbst so nicht, hält es dort nie — die Stufe fällt aus, statt 10 s lang gezeigt zu werden
+            let j = i + 1;
+            while (j + 1 < stufen.length && p95 * (stufen[j] / jetzt) ** 2 > M.zielMs) j++;
+            neu = stufen[j];
+        } else if (i > 0 && p95 * (stufen[i - 1] / jetzt) ** 2 <= M.aufAnteil * M.zielMs) neu = stufen[i - 1];
         m.fenster = {
             p50: +p50.toFixed(1),
             p95: +p95.toFixed(1),
@@ -1174,9 +1188,12 @@ class AnazhRealm_dirigent_regler {
         };
         if (neu === jetzt) return;
         m.skala = neu;
-        // die Spur der Schritte: nach dem wievielten geurteilten Fenster (je fensterMs Bild-Zeit) die Sitzung ihre Skala fand
+        // die Spur der Schritte: nach dem wievielten Urteil (ein Fenster von fensterMs Bild-Zeit oder sein früher Abstieg) die
+        // Sitzung ihre Skala fand
         m.schritte.push({ von: jetzt, nach: neu, fenster: m.gezaehlt });
         m.ab = stufen.indexOf(neu);
+        // die Ablage des Geräts (`_szeneSkalaWirk` liest sie beim nächsten Laden)
+        if (typeof localStorage !== "undefined") localStorage.setItem(M.ablage, String(neu));
         this.log(
             `SZENEN-SKALA eingemessen: ${jetzt} → ${neu}, Bild p50 ${p50.toFixed(1)} ms · p95 ${p95.toFixed(1)} ms · CPU p50 ` +
                 `${cpu50.toFixed(1)} ms, Leine ${Math.round(100 * leine)} % (${gebunden ? "an die GPU gebunden" : "an die CPU gebunden"}, ${F.bild.length} Bilder)`,
@@ -2116,7 +2133,11 @@ AnazhRealm.PERF_TARGET_MS = 17;
 // DIE EINMESSUNG DER SKALA (w28-bild-preis, `_szeneSkalaMessen`): je Fenster von `fensterMs` gezeichneter Bild-Zeit (≥ 10 s:
 // höchstens ein Schritt je Fenster) urteilt die Sitzung ihr Bild — p95 über `zielMs` (34: die Preis-Treppe am Raster des
 // Schirms, 4 Takte bei 120 Hz = 33,5 ms, 2 bei 60 Hz = 33,3 ms) die GPU-Leine hielt ≥ `leineAnteil` der Bilder und CPU p50 liegt
-// unter `gpuAnteil` des Bild-p50 (an die GPU gebunden; Radeon an der Wiese: Leine 65–87 %, CPU 0,18–0,27 des Bilds) → die nächste Stufe hinab; hinauf nur, wenn das Bild × Pixel-Verhältnis unter `aufAnteil` · zielMs bliebe.
+// unter `gpuAnteil` des Bild-p50 (an die GPU gebunden; Radeon an der Wiese: Leine 65–87 %, CPU 0,18–0,27 des Bilds) → hinab bis zu der Stufe, an der p95 × Pixel-Verhältnis das Ziel hielte; hinauf nur, wenn das Bild × Pixel-Verhältnis unter `aufAnteil` · zielMs bliebe.
+// DER FRÜHE ABSTIEG (w28-wiese-takt): nach `abMs` Bild-Zeit und mindestens `abBilder` Bildern urteilt das Fenster einmal vorab —
+// liegt schon das `abQuantil` seiner Bilder über zielMs (jedes fünfte Bild; Radeon an der Wiese bei 0,75: 37 % über 4 Takten von
+// 120 Hz, bei 0,5: 2 %) und ist es an die GPU gebunden, geht die Skala sofort. Hinauf urteilt nur das ganze Fenster. `ablage`:
+// der Schlüssel, unter dem die eingemessene Skala beim Spieler liegt (`_szeneSkalaWirk` liest ihn beim Laden).
 AnazhRealm.SZENE_SKALA_MESSUNG = Object.freeze({
     stufen: Object.freeze([0.75, 0.625, 0.5]),
     fensterMs: 10000,
@@ -2124,6 +2145,10 @@ AnazhRealm.SZENE_SKALA_MESSUNG = Object.freeze({
     gpuAnteil: 0.33,
     leineAnteil: 0.5,
     aufAnteil: 0.85,
+    abMs: 3000,
+    abBilder: 30,
+    abQuantil: 0.8,
+    ablage: "anazh.szeneSkala.geraet",
 });
 // V18.281 — DER ATEM-KOPFRAUM: die Schönheit wächst nur, wenn die Frame-Zeit ≥ diesen
 // Abstand UNTER der Decke liegt (17 − 4 = 13 ms ≈ 77 fps). Das Totband [13..17 ms] ist die
