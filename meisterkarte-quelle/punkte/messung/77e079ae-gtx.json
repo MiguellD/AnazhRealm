@@ -1,0 +1,147 @@
+{
+ "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
+ "geraet": "gtx",
+ "zeit": "2026-11-16T20:55:54.712Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.planet.wetter.klimazonen#1": {
+   "gruen": false,
+   "zahl": "am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.74,
+   "grund": "ROT: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k1b02f4b9122c",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k99b1b7162324",
+   "s": 43.3,
+   "fremd": {
+    "s": 46.3,
+    "takte": 21,
+    "fremdS": 64.56,
+    "kerne": 1.395,
+    "fensterKerne": 1.708,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      37.67
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.39
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.61
+     ]
+    ],
+    "dienerS": 24.58,
+    "diener": [
+     [
+      "System",
+      11.67
+     ],
+     [
+      "dwm.exe",
+      6.5
+     ]
+    ],
+    "geraetS": 19.14,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      10.66
+     ],
+     [
+      "svchost.exe",
+      6.73
+     ],
+     [
+      "SearchIndexer.exe",
+      1.22
+     ]
+    ],
+    "eigenS": 123.36,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-16T20:55:54.712Z",
+   "abdruck": "a46cae46af81",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k1b02f4b9122c": "dVRdj9owEPwvPLbNmXwRx1IfzIHKSa0EUv/A2l4ngZAgO7m0VP3vVUICJLnuE6AZzezs4D+LC8gTJPhytGWxYItPiy8LC+/oWDTvaF6OdsEWSxlASBm/DeGcv7YwabJLZUmeCQKigPSMTm0qzPIX2dFcSRGQkWbLmz0hexKRdfP165SaC1SlU4HGgSiUF/nApsDaJiDQgVp3Yj1Yr1aR5zPSDd3w/ZEMww+ck2Y7VRRQqLFT7UOoXfb2m/MtnzlUGWDl5FlhB02pQuF77C4030oZaJwrYJqj6Ul0FSrfHYxOCTqvrR2JUF+FHmWExGSCTdBmMq2ciykFFkNosRe5wD5IOLnUjn52AkIAFdN8U8AiQTP2EAWhDBj5NfN7gjMacApIe2i89CNPPDIhhOzmXvLOeCcxGKdKxJEeEdvb7Zq2bBvafknuP9PdrYSbhD/mMBGxMs3MeRyP1qGCJfs+t2RTUGicU2mrO9qn1AO/b/ymKxLfB5sp87FMz/PEahnSp10o4btZdrbUVQMGneRS90QMMIxCxvnbDFzB+TwsIT2k4fRwtmoL/WxjGXlh2N0i+c8dbvV3rpjlAymS0vWRvf7g0z3fDZwdEInJtB6uLUKp44/K2WBeOaIsqwGp1aqNxCfFPRWXcv72dEC+CZbfXtcHPp2fDT/MvHcKpakG46FYLXXAdPdPlFP0FU2OCY7yUYHwQTHSyGcLw4fPoyJeZ+e7ZtgmV9jaDhWOIxX3FR5n3aA5CShOQ8audqW69WrPN73gak2O5Nb3uxu+bzjfrm8v7QUluZhSZ+3TRVKobQp59Xiz//4D",
+  "k99b1b7162324": "dVRdj5swEPwveeyVM18OjqV7cErUXNVTc7qHSn1bmzVwIRDZcFSp+t+rcJAE6O0ToBnv7OzgP4sjqD2keP9qq3LBF58WnxcW3tCxaN7Q3L/aBV+4KgTKuHgvIoT4eoYpkx9rS4pcEpAlZAd0GlNjXtyrjuYphoCctBvR7gjZkYisW3GptXh4mB5TSEwqpwaNwyEy8aMA+BTY2BQkOtDornEP1stl5AecdMVisXslQ4lnIUi7mXaUUCZj1ToAqj3+2AqxmStMcsDaKfLSDj1VQmXg80ujds4x0DonwKxA05PYkiaBNwidEnTRWDtqwoKE+owTsiITbIo2V1ntHE0lsRxMW/mRB3w915IeG0ffKgEpgcmpvxlgmaIZa4hCqkJOfs/07uGABpwSsh66coPIl1dPCCHbuZaiE961GISzRK4iPSISQtJtF5uYdS+Xz2z7HqQ4vYZKPE+aWJXl5jC2R2uagDud2WaQoHH2la0vyIAxH4I++XEXIrEL4ynzOkjP8+XSpexmDkbEduabrXTdgkEnPTY9EUOkEeUifZqBazgchgGUj4zOBqjPYb6V4UY+pd0e0g928B5954R5MZAipbwA+ZcnMZ3zzcDBAZmaXOth05IqvfpfMFssakdWVT0gdbI8WxKQ8uKKdyfE083yHmPq/vz+6+X55po418ad6u5Or0w9iKZy6eqQ6+4PVFP0CU2BKY68SUIZQMJJq6594nB4uBsF8DRb3SnHs2ulbewQ3VWUrPro9vIfx/dHi2YvodwPPnvaUwnv8rsTsfghRPotvltPZv+o4v7wIypyNJXOz1cZyaCxGRT19T7/+w8="
+ },
+ "sitzung": {
+  "start": "2026-11-16T20:55:18.810Z",
+  "ordner": "sitzung-20261116-215518",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 7.5,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "karte2.planet.wetter.klimazonen#1",
+    "s": 26.1,
+    "takte": 591,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "karte2.planet.wetter.klimazonen#1",
+    "ort": "wiese",
+    "m": 4763.86,
+    "dreh": 0
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.planet.wetter.klimazonen#1",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 4031,
+   "frameP95": 17.02,
+   "taktP95": 11.66,
+   "vramMax": 132,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.planet.wetter.klimazonen#1",
+     "m": 4764,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 135,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 155.1,
+  "minuten": 2.67
+ }
+}
