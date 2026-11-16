@@ -344,6 +344,7 @@
        "umfang": "Lava als Decke einer Zelle",
        "tiefe": "Newton-Abkühlung, Glut über dem Draper-Punkt, erstarrt zu Stein, Dampf am Wasser; fließt nicht",
        "preis": "P am Guss",
+       "klasse": "Ort",
        "richter": "Kruste bildet sich und die Glut verlischt im Bild nach der Abkühlkurve gemessener Laven ±30 %; Blindpaar Glutbild gegen Lava-Foto (2AFC ≤ 85 %)"
       },
       {
@@ -409,6 +410,7 @@
        "umfang": "jede Felswand trägt ihre Verformung",
        "tiefe": "gefaltet, gekippt, versetzt nach der Geschichte des Orts",
        "preis": "P an der Wand",
+       "klasse": "Ort",
        "richter": "Blindpaar Felswand gegen Foto; in Kollisionszonen ≥ 80 % der Wände verformt, im alten Kraton ≤ 20 %"
       },
       {
@@ -472,6 +474,7 @@
        "umfang": "Höhlen-Feld bis ~28 m unter Basis, Mündung im Fels",
        "tiefe": "Wurm, Kaverne, Halle; Mund nur an der Felsflanke",
        "preis": "P beim Betreten und in der Höhle",
+       "klasse": "Ort",
        "richter": "Mündungen je km² an 3 Saaten im Band; Mund im Bild an ≥ 90 % im Fels"
       },
       {
@@ -530,6 +533,7 @@
        "umfang": "Gestein je Ort aus seiner Genese",
        "tiefe": "magmatisch, sedimentär, metamorph sichtbar verschieden und passend zum Ort",
        "preis": "P an der Wand",
+       "klasse": "Ort",
        "richter": "Jury trennt drei Genesen ≥ 80 %; Genese passt zur Geschichte des Orts ≥ 85 %"
       },
       {
@@ -586,6 +590,7 @@
        "umfang": "Kompass auf einem Dipol-Planeten, 20 Orte",
        "tiefe": "Deklination und Inklination nach Ort",
        "preis": "P (keine Zusatzkosten)",
+       "klasse": "Ort",
        "richter": "Inklination ≤ 5° gegen Dipol an 20 Orten; Deklination ändert sich mit dem Ort"
       },
       {
@@ -642,6 +647,7 @@
        "umfang": "ein Krater als Form",
        "tiefe": "Napf ↔ komplexer Krater mit Zentralberg, Übergang nach der Schwere",
        "preis": "P am Kraterrand",
+       "klasse": "Ort",
        "richter": "einfache Krater Tiefe/Durchmesser 1:5 ±20 %; Profil gegen reale Krater ≤ 15 %"
       },
       {
@@ -770,6 +776,7 @@
        "umfang": "3 Klassen",
        "tiefe": "V-Tal/Trog, Aue, Schichtstufe aus dem Profil-Gesetz",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Blind-Klassifikation von Ego-Bildern an 20 Saaten ≥ 80 %"
       },
       {
@@ -840,6 +847,7 @@
        "umfang": "Fels und Erdboden eines Orts",
        "tiefe": "Schutt, Flechte, Moos nach Steile und Feuchte; Erdboden in der Farbe seines Klimas",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Blindpaar Ego-Bild gegen Foto gleichen Hangs und Klimas (2AFC ≤ 85 %); an 30 Zufallsposen liegt Schutt am Steilen und Moos im Feuchten wie im Foto-Korpus (Anteile ±20 %)"
       },
       {
@@ -896,6 +904,7 @@
        "umfang": "1 Graben",
        "tiefe": "Wasser im Spieler-Graben vertieft ihn, Sediment setzt sich am Fuß ab",
        "preis": "P während des Ereignisses",
+       "klasse": "Ort",
        "richter": "Volumen-Bilanz Abtrag = Ablagerung ±10 %, sichtbar in ≤ 10 min Spielzeit"
       },
       {
@@ -961,6 +970,7 @@
        "umfang": "eine Wasserfläche, 12 Posen",
        "tiefe": "spiegelt Ufer und Himmel",
        "preis": "P an beiden Geräten",
+       "klasse": "Ort",
        "richter": "spiegelTreue ≥ 0,6 an 12 Posen (Uhr × Wetter) in Ausgabe-Größe"
       },
       {
@@ -1035,6 +1045,7 @@
        "umfang": "1 Küste, 24 h",
        "tiefe": "halbtägliche Mondgezeit 12 h 25 min",
        "preis": "P über 24 h Spielzeit",
+       "klasse": "Ort",
        "richter": "Watt fällt sichtbar trocken: benetzte Fläche Ebbe gegen Flut im Bild, Periode ±2 %"
       },
       {
@@ -1288,6 +1299,7 @@
        "umfang": "See, Fluss 0–10 m",
        "tiefe": "Licht verliert je Kanal, Sicht nach Trübung",
        "preis": "P unter Wasser",
+       "klasse": "Ort",
        "richter": "Rot-Anteil fällt bis 5 m auf ≤ 30 %; Sicht gegen Secchi-Referenz ±30 %"
       },
       {
@@ -1542,6 +1554,7 @@
        "umfang": "Flut über Tage, ein Fluss",
        "tiefe": "Fluss verlässt das Bett",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "nach 100 mm Starkregen: Überflutung ≥ Aue, Bildpaar"
       },
       {
@@ -1598,6 +1611,7 @@
        "umfang": "Stunden",
        "tiefe": "Regen kommt aus der Windrichtung",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "100 Regenbeginne: Bedeckung stieg in den 60 min davor aus der Windrichtung in ≥ 70 %"
       },
       {
@@ -1654,6 +1668,7 @@
        "umfang": "1 Atmosphäre (Erde), parametrisch",
        "tiefe": "Rayleigh, Aerosol, Ozon",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Himmelsfarbe Mittag/Abend gegen Foto"
       },
       {
@@ -1717,6 +1732,7 @@
        "umfang": "10² Jahre",
        "tiefe": "Treibhaus-Drift verschiebt Schneegrenze und Küste",
        "preis": "P, Sprung ≤ 5 s",
+       "klasse": "Ort",
        "richter": "+100 a bei +2 °C: Schneegrenze +300 m ±30 %; Küste wandert um Δh/Strandneigung ±25 %"
       },
       {
@@ -1794,6 +1810,7 @@
        "umfang": "Schicht als Form im Tafelland",
        "tiefe": "harte und weiche Bank: Kliff, Schutthang am Ruhewinkel",
        "preis": "P am Kliff",
+       "klasse": "Ort",
        "richter": "Kliff 60–85° und Schutthang im Bild an Tafelland-Saaten"
       },
       {
@@ -1946,6 +1963,7 @@
        "umfang": "1 Tag-Achse für alle Orte",
        "tiefe": "Tag-Kurve stetig, Sterne nach Grenzgröße",
        "preis": "P, Uhr-Lauf ohne Bildsprung",
+       "klasse": "Ort",
        "richter": "Sprung ≤ 0,1 EV je Uhrschritt über die ganze Bahn, Ego und Third, beide Geräte"
       },
       {
@@ -2082,6 +2100,7 @@
        "umfang": "die eigene Sonne über 10⁹ a",
        "tiefe": "Leuchtkraft, Farbe, Radius nach Isochronen",
        "preis": "P, Zeitsprung ≤ 5 s",
+       "klasse": "Ort",
        "richter": "Zeitsprung +5 Ga: Leuchtkraft +~50 % ±10 %, Belichtung am Boden gemessen"
       },
       {
@@ -2145,6 +2164,7 @@
        "umfang": "1 Stern, 1 Planet, 1 Mond",
        "tiefe": "Kepler-Bahnen, Jahr folgt der Bahn",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Bahn am Himmel beobachtet: Planet und Mond stehen über ein Spieljahr gegen die Ephemeride der eigenen Bahn ≤ 0,5°; Mondphase je Woche im Bildpaar"
       },
       {
@@ -2269,6 +2289,7 @@
        "umfang": "sporadische Meteore jede Nacht",
        "tiefe": "Leuchtspur, Dauer, Häufigkeit",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "5–10 je Stunde am dunklen Himmel; Spurlängen gegen Meteor-Kamera-Netze ±30 %"
       },
       {
@@ -2561,6 +2582,7 @@
        "umfang": "10 Gestalten, je von Hand parametrisiert",
        "tiefe": "Gattung an der Silhouette lesbar; Rinde und Blatt nah gegen Herbarfoto",
        "preis": "P · Waldrand",
+       "klasse": "Ort",
        "richter": "Blindtest 10 Bilder je Gestalt: Gattung ≥ 80 % richtig; Herbar-Bildpaar je Gestalt ≥ 0,7"
       },
       {
@@ -2626,6 +2648,7 @@
        "umfang": "ein Klima; Mosaik Wald ↔ Lichtung ↔ Ufer ↔ Gipfel",
        "tiefe": "Waldgrenze unter dem Sommer-Schnee; Uferarten am Wasser; Wärme-Arten nur im Warmen",
        "preis": "P · Gipfel und Ufer",
+       "klasse": "Ort",
        "richter": "Bild am Gipfel baumfrei; Stichprobe: Uferarten am Wasser ≥ 90 %, Wärme-Arten außerhalb der Wärme 0"
       },
       {
@@ -2682,6 +2705,7 @@
        "umfang": "1 Bestand: statische Altersverteilung, stehendes Totholz",
        "tiefe": "reverse-J-Größen, Selbstastung",
        "preis": "P · im Wald",
+       "klasse": "Ort",
        "richter": "Höhenhistogramm aus dem Bild gegen Ertragstafel"
       },
       {
@@ -2799,6 +2823,7 @@
        "umfang": "Wiese dicht bis ~20 m, Wald licht",
        "tiefe": "Boden-Sicht-Anteil je Ring 2–5/5–10/10–20 m wie im Wiesenfoto; Laub-Kante im Band",
        "preis": "P · stehend an der Wiese",
+       "klasse": "Ort",
        "richter": "Ring-Bildanteil gegen Foto; Bildpaar gegen REF real-mischwald"
       },
       {
@@ -2920,6 +2945,7 @@
        "umfang": "≈ 10 Leib-Typen von Hand in Land, Luft, Wasser",
        "tiefe": "Art passt zum Lebensraum",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Spielgang 1 h an 3 Biomen: ≥ 5 Arten im Bild (Klassen-Maske ≥ 200 px)"
       },
       {
@@ -2995,6 +3021,7 @@
        "umfang": "1 Bauplan, 4 Gattungen, 10–300 kg, laufen",
        "tiefe": "Fuß steht (Gleiten ≤ 5 % der Schrittlänge), Gangwechsel bei der Froude-Zahl der Natur ±10 %",
        "preis": "P · Third aus 10 m",
+       "klasse": "Ort",
        "richter": "Fußgleiten und Gangwechsel aus der Third-Aufnahme im Fenster"
       },
       {
@@ -3067,6 +3094,7 @@
        "umfang": "4 Gattungen, ≈ 10 Akte, 2 Sinne",
        "tiefe": "Zeitbudget ±20 % am Ethogramm; Riss-Quote Rudel gegen Hirsch 20–40 % (MacNulty)",
        "preis": "P · Wolfsrevier",
+       "klasse": "Ort",
        "richter": "Zeitraffer 24 Spielstunden im Fenster"
       },
       {
@@ -3135,6 +3163,7 @@
        "umfang": "Geburt und Tod als Bestand je Revier",
        "tiefe": "Bilanz mit Holling-III-Riss, Alterstod",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Bestand je Revier über 3 Spielstunden im Band, im Fenster"
       },
       {
@@ -3200,6 +3229,7 @@
        "umfang": "10 Glieder: Rudel, Kahlwild",
        "tiefe": "Kohäsion wandernd ≥ 0,9, Flucht ≥ 0,8, Ausrichtung Φ ≥ 0,8",
        "preis": "P · Ego auf 40 m",
+       "klasse": "Ort",
        "richter": "Herde flieht als EIN Pulk im Bild"
       },
       {
@@ -3275,6 +3305,7 @@
        "umfang": "10 m: Leine um den Geburtsort",
        "tiefe": "Aufenthalt folgt dem Lebensraum",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Aufenthaltsfläche eines Individuums über 1 Spieltag im Fenster"
       },
       {
@@ -3338,6 +3369,7 @@
        "umfang": "Wildtier reagiert auf den Spieler, 4 Gattungen",
        "tiefe": "Fluchtdistanz je Art im Feldband ±50 %",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Annäherungs-Probe im Fenster"
       },
       {
@@ -3471,6 +3503,7 @@
        "umfang": "Sicht unter Wasser an Bach, See, Fluss",
        "tiefe": "Absorption und Rückstreuung je Kanal",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Sichtweite in m an fester Pose gegen das Band des Gewässertyps"
       },
       {
@@ -3537,6 +3570,7 @@
        "umfang": "Fisch liest Pegel und Spieler",
        "tiefe": "Fisch-Hub ≥ 0,8 × Pegel-Hub, Fluchtabstand ≥ 3 m",
        "preis": "P · am Bach",
+       "klasse": "Ort",
        "richter": "Hub und Flucht aus dem Bild"
       },
       {
@@ -3652,6 +3686,7 @@
        "umfang": "4 Säuger-Arten, 3 Ebenen, ein Tal",
        "tiefe": "Bestand aus Nahrung × Lebensraum",
        "preis": "P · Tal mit allen 4 Arten im Bild",
+       "klasse": "Ort",
        "richter": "8 Saaten im Fenster: jede Art in [⅓×, 3×] des Starts über 6 Spielstunden"
       },
       {
@@ -3790,6 +3825,7 @@
        "umfang": "ein Tal, Spielstunden",
        "tiefe": "Wölfe weg → Hirsche hinauf, Jungwuchs hinab",
        "preis": "P · Zeitraffer im Fenster",
+       "klasse": "Ort",
        "richter": "Kaskaden-Richtungen mit Intervall, das 0 nicht schneidet"
       },
       {
@@ -3855,6 +3891,7 @@
        "umfang": "Säuger-Kadaver",
        "tiefe": "gewittert, gefressen, sinkt in die Erde; JEDER Tod düngt die Zelle",
        "preis": "P · Kadaver mit Fressern im Bild",
+       "klasse": "Ort",
        "richter": "Kadaver-Masse sinkt mit Fresser-Zahl; Nährstoff steigt nach jedem Tod (Wolf, Alter, Spieler)"
       },
       {
@@ -3911,6 +3948,7 @@
        "umfang": "Brand-Zellen um das Dorf",
        "tiefe": "Brand → Asche → Gras → Busch → Wald, Asche düngt",
        "preis": "P · Brandfläche im Bild",
+       "klasse": "Ort",
        "richter": "Halm-, Asche- und Sämling-Zahlen über die Zeit im Fenster"
       },
       {
@@ -3976,6 +4014,7 @@
        "umfang": "ein Nährstoff je Zelle",
        "tiefe": "Ernte und Fällen nehmen, Asche und Leichnam geben",
        "preis": "P · Acker im Bild",
+       "klasse": "Ort",
        "richter": "Ernte 15× → Nährstoff 1 → 0,7, Wuchs sinkt sichtbar im Bildpaar"
       },
       {
@@ -4108,6 +4147,7 @@
        "umfang": "10 Arten mit gemeinsamem Ahn",
        "tiefe": "Verwandtschaft ist sichtbar",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Gestalt-Baum aus Third-Bildern gegen den Baum des Samens: Robinson-Foulds ≤ 0,3; Mutante „Erbe aus“ → Zufall"
       },
       {
@@ -4171,6 +4211,7 @@
        "umfang": "1 Linie über ≥ 10 Generationen",
        "tiefe": "Kind gleicht Eltern im Bild",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Morphometrie aus Third-Bildern: Eltern-Kind-Regression 0,2–0,8; Mutante „Erbe aus“ → ≈ 0"
       },
       {
@@ -4227,6 +4268,7 @@
        "umfang": "1/30: Antwort auf Selektion",
        "tiefe": "Steigung im Band der Natur",
        "preis": "P · Zeitraffer 10³ Generationen ≤ 60 s",
+       "klasse": "Ort",
        "richter": "Räuberdruck auf große Hirsche → Größe sinkt im Bild; Gegenlauf ohne Räuber"
       },
       {
@@ -4283,6 +4325,7 @@
        "umfang": "10⁴ Jahre zurück, eine Epoche",
        "tiefe": "Flora und Fauna unterscheidbar von heute und verwandt mit heute",
        "preis": "P · Zeitsprung",
+       "klasse": "Ort",
        "richter": "Panel ordnet Bildpaare Gegenwart/Epoche ≥ 0,8; Hin- und Rücksprung byte-gleiches Bild"
       },
       {
@@ -4353,6 +4396,7 @@
        "umfang": "Volumen ×10 gegen heute",
        "tiefe": "jede Form bewegt sich ohne Schlupf, ohne Durchdringung",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "1 000 Zufalls-Genome: Bewegungs-Anteil ≥ 95 %"
       },
       {
@@ -4474,6 +4518,7 @@
        "umfang": "Verhalten erblich",
        "tiefe": "Kinder scheuer Eltern sind scheu",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Fluchtdistanz Eltern ↔ Kind korreliert; Räuberdruck macht scheuer, Gegenlauf"
       },
       {
@@ -4537,6 +4582,7 @@
        "umfang": "Matten, Biofilme, Algenbeläge sichtbar",
        "tiefe": "Farbzonen folgen Temperatur und Licht (heiße Quelle, Watt, Fels)",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Bildvergleich der Zonierung gegen Natur-Fotos"
       },
       {
@@ -4593,6 +4639,7 @@
        "umfang": "Fossil an der Fundstelle",
        "tiefe": "Funde sind ausgestorbene Arten des Baums",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "100 Funde: Anteil im Baum des Samens = 100 %"
       },
       {
@@ -4766,6 +4813,7 @@
        "umfang": "10 nah unterscheidbare Leiber je Siedlung",
        "tiefe": "Höhe, Bau, Gesicht, Schnitt verschieden",
        "preis": "P · Dorfplatz Third",
+       "klasse": "Ort",
        "richter": "Bild 10 Bewohner auf 2 m: Prüfer findet 0 gleiche Paare"
       },
       {
@@ -4831,6 +4879,7 @@
        "umfang": "1 Kopf: Spieler an der Third-Kamera 6 m",
        "tiefe": "Augen, Lippe, Höhle, Haar-Deckung lesen als Kopf",
        "preis": "P · Third Wiese",
+       "klasse": "Ort",
        "richter": "Soll-Tafel mensch-kopf GRÜN an 10 Samen"
       },
       {
@@ -4891,6 +4940,7 @@
        "umfang": "1 Platz: Epoche wählt Schnitt und Farbe",
        "tiefe": "Antike vs. Moderne unterscheidbar",
        "preis": "P · Dorfplatz",
+       "klasse": "Ort",
        "richter": "20 Saaten: Prüfer ordnet Epoche ± 1 Jh. ≥ 0,7"
       },
       {
@@ -4957,6 +5007,7 @@
        "umfang": "1 Spieler, Stoff liegt am Leib",
        "tiefe": "Webart als Rauheit, keine Haut ragt durch",
        "preis": "P · Third Wiese",
+       "klasse": "Ort",
        "richter": "16 Posen × 10 Samen: 0 Durchstiche"
       },
       {
@@ -5017,6 +5068,7 @@
        "umfang": "10 Bewohner: Haltung nach Akt und Gemüt",
        "tiefe": "gebeugt bei der Arbeit, müde am Abend, Furcht nach Bedrohung",
        "preis": "P · Dorfplatz",
+       "klasse": "Ort",
        "richter": "Prüfer errät Akt/Gemüt aus der Silhouette ≥ 60 %"
       },
       {
@@ -5075,6 +5127,7 @@
        "umfang": "Alter als Achse 18–80",
        "tiefe": "sichtbar",
        "preis": "P · Third",
+       "klasse": "Ort",
        "richter": "Prüfer-Altersschätzung, Fehler ≤ 15 J"
       },
       {
@@ -5131,6 +5184,7 @@
        "umfang": "1 Wettkampf (Lauf, Wurf) mit Sieger",
        "tiefe": "Sieger folgt aus Leib und Tagesform",
        "preis": "P · 8 Läufer nah",
+       "klasse": "Ort",
        "richter": "20 Läufe: Rangfolge gegen Leib-Leistung ρ 0,6–0,9"
       },
       {
@@ -5203,6 +5257,7 @@
        "umfang": "1 Leib: 5 Verben + 6 Geräte-Verben",
        "tiefe": "Tempo und Sprung geeicht",
        "preis": "P · Ego/Third Wiese",
+       "klasse": "Ort",
        "richter": "Tempo und Sprunghöhe im Spiel gegen Eichwert ± 10 %"
       },
       {
@@ -5270,6 +5325,7 @@
        "umfang": "10² Bewohner mit Können-Profil",
        "tiefe": "Streuung wie echt",
        "preis": "P · 20 nah",
+       "klasse": "Ort",
        "richter": "Variationskoeffizient der 100-m-Zeit 10–20 %, Altersgang gegen Normtafeln"
       },
       {
@@ -5326,6 +5382,7 @@
        "umfang": "1 gegen 1 (Ringen, Fechten)",
        "tiefe": "Finte, Abwehr, Reaktion",
        "preis": "P · 2 Leiber nah",
+       "klasse": "Ort",
        "richter": "Siegquote des Stärkeren 60–80 %, nie 100 %"
       },
       {
@@ -5389,6 +5446,7 @@
        "umfang": "1 Spielfeld aus dem Ort-Gesetz, 10 Zuschauer",
        "tiefe": "Zuschauer schauen dem Ball nach",
        "preis": "P · Feld + 10 nah",
+       "klasse": "Ort",
        "richter": "Blickrichtungen folgen dem Geschehen ≥ 80 %"
       },
       {
@@ -5454,6 +5512,7 @@
        "umfang": "2 Leiber: Meister und Anfänger in 3 Künsten",
        "tiefe": "Anfänger sichtbar ungeschickt",
        "preis": "P · 2 Leiber nah",
+       "klasse": "Ort",
        "richter": "Blindtest Anfänger ↔ Meister ≥ 80 %"
       },
       {
@@ -5510,6 +5569,7 @@
        "umfang": "1 Brettspiel zwischen 2 Bewohnern",
        "tiefe": "Hand setzt den Stein, Brett als Gerät",
        "preis": "P · Tisch nah",
+       "klasse": "Ort",
        "richter": "100 Partien, 0 regelwidrige Züge"
       },
       {
@@ -5566,6 +5626,7 @@
        "umfang": "EINE Abfahrt auf Schnee",
        "tiefe": "die Kante greift, der Schwung trägt, Sturz bei zu viel Tempo",
        "preis": "P · Hang",
+       "klasse": "Ort",
        "richter": "Schwung-Radius gegen Tempo und Kantwinkel ±15 %; Zeit auf 500 m Höhe im Band realer Abfahrten"
       },
       {
@@ -5769,6 +5830,7 @@
        "umfang": "10²",
        "tiefe": "Haushalt als Familie, Besuch folgt dem Netz",
        "preis": "P · Dorf",
+       "klasse": "Ort",
        "richter": "Besuche zu Verwandten/Freunden ≥ 0,6"
       },
       {
@@ -5825,6 +5887,7 @@
        "umfang": "1 Ort, alle Alter",
        "tiefe": "Säugling bis Greis sichtbar verschieden",
        "preis": "P · Dorfplatz",
+       "klasse": "Ort",
        "richter": "Altersanteile im Band der Epoche (Mittelalter ≥ 35 % Kinder)"
       },
       {
@@ -5895,6 +5958,7 @@
        "umfang": "10²",
        "tiefe": "Charakterzüge ändern den Tag",
        "preis": "P · Dorf",
+       "klasse": "Ort",
        "richter": "20 Personen nach 1 Spieltag ihrem Zug zugeordnet ≥ 0,6"
       },
       {
@@ -5951,6 +6015,7 @@
        "umfang": "EIN Bewohner, 4 Gefühle in Gesicht und Gang",
        "tiefe": "jedes mit Anlass in der Welt (Verlust, Fest, Gefahr)",
        "preis": "P · nah 3 m",
+       "klasse": "Ort",
        "richter": "Panel nennt das Gefühl aus 5 s Film ≥ 70 %; Gegenlauf ohne Anlass → neutral"
       },
       {
@@ -6014,6 +6079,7 @@
        "umfang": "10² (ein Dorf)",
        "tiefe": "Tag als Funktion der Uhr, 4–10 Wege",
        "preis": "P · Dorfplatz",
+       "klasse": "Ort",
        "richter": "Zählung im Bild an 20 Stichproben (Ort × Uhr): Körper am Ort gegen den Soll-Plan ±10 %; niemand fehlt, niemand steht doppelt"
       },
       {
@@ -6292,6 +6358,7 @@
        "umfang": "1 Person krank",
        "tiefe": "Haltung, Husten, bleibt daheim",
        "preis": "P · Dorf",
+       "klasse": "Ort",
        "richter": "Bildpaar gesund/krank; Krank-Tag weicht ab"
       },
       {
@@ -6414,6 +6481,7 @@
        "umfang": "Weiler: 10 Gebäude",
        "tiefe": "Tür, Dach, Hof; keine zwei gleich",
        "preis": "P · Ortsrand",
+       "klasse": "Ort",
        "richter": "im Bild gezählt ≥ 10 Häuser; Straßenbild gegen Foto eines Weilers: Panel-2AFC ≤ 90 %; Zwillinge im Bild 0"
       },
       {
@@ -6744,6 +6812,7 @@
        "umfang": "EINE Siedlung unter der Erde, 10² Bewohner",
        "tiefe": "Luft, Licht, Wasser haben sichtbare Wege; die Gänge folgen dem Gestein",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "3 Lebenslinien (Luft, Wasser, Licht) im Bild bis zur Quelle verfolgbar; Gegenlauf Schacht verstopft → die Bewohner verlassen den Trakt"
       },
       {
@@ -6807,6 +6876,7 @@
        "umfang": "EINE Straße, 100 m, Tag",
        "tiefe": "Fassaden, Läden, Menschen, Verkehr — als Straße gelesen",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Blindpaar gegen dieselbe Kameralage im Vergleichstitel: das Panel wählt unser Bild in ≥ 20 %; die vier Zählungen sind an beiden gefahren"
       },
       {
@@ -6937,6 +7007,7 @@
        "umfang": "1 Wagen des Spielers",
        "tiefe": "Route kommt durch",
        "preis": "P · Fahrt 50 km/h",
+       "klasse": "Ort",
        "richter": "2-km-Route 0 Steckenbleiber, Bild p95 ≤ 33 ms während der Fahrt"
       },
       {
@@ -7011,6 +7082,7 @@
        "umfang": "1 Linie, 2 Halte",
        "tiefe": "Linie liegt, wo Bedarf ist",
        "preis": "P · im Fahrzeug",
+       "klasse": "Ort",
        "richter": "Spieler fährt mit; ≥ 10 Bewohner je Stunde"
       },
       {
@@ -7074,6 +7146,7 @@
        "umfang": "1 Ort, 1 Netz",
        "tiefe": "Trennung wirkt",
        "preis": "P · Dorf",
+       "klasse": "Ort",
        "richter": "Leitung getrennt: abhängige Lichter dunkel ≤ 1 s, Rest brennt"
       },
       {
@@ -7137,6 +7210,7 @@
        "umfang": "Dorf: 4 Funktionen",
        "tiefe": "Funktion am Außenbild erkennbar",
        "preis": "P · Dorf",
+       "klasse": "Ort",
        "richter": "50 Bauten blind nach Funktion ≥ 80 %"
       },
       {
@@ -7193,6 +7267,7 @@
        "umfang": "1 Haus im Spiel",
        "tiefe": "aus 10 m als Haus seiner Kultur",
        "preis": "P · Dorf, kein Pop",
+       "klasse": "Ort",
        "richter": "Paarvergleich Spiel ↔ Foto bei 10 m: „Foto“ ≥ 5 %"
       },
       {
@@ -7321,6 +7396,7 @@
        "umfang": "1 Spieler-Haus aus der Werkstatt",
        "tiefe": "gleiche Tiefe wie im Labor",
        "preis": "P · Bauplatz",
+       "klasse": "Ort",
        "richter": "Bildpaar Labor ↔ Welt gleiche Kamera: kein Unterschied"
       },
       {
@@ -7379,6 +7455,7 @@
        "umfang": "Land, 1 Wagen, 50 km/h",
        "tiefe": "Haftung je Boden, Nässe, Furt, Seitenwind",
        "preis": "P · Fahrt 50 km/h",
+       "klasse": "Ort",
        "richter": "Bremsweg Gras/Weg ≥ 1,5×, nass ≥ 1,3×, Bild ≤ 33 ms während der Fahrt"
       },
       {
@@ -7453,6 +7530,7 @@
        "umfang": "1 Werkstatt-Wagen",
        "tiefe": "Masse, Radstand aus dem Bauplan",
        "preis": "P · 500 m Fahrt",
+       "klasse": "Ort",
        "richter": "Tempo folgt der Masse"
       },
       {
@@ -7511,6 +7589,7 @@
        "umfang": "10² Saaten, 5 Gattungen",
        "tiefe": "als Wagen der Gattung erkannt",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "≥ 90 % erkannt"
       },
       {
@@ -7567,6 +7646,7 @@
        "umfang": "10 Fahrer auf Wegen",
        "tiefe": "Spur halten, bremsen",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "1 h: 0 Kollisionen bei Durchsatz und Reisetempo im Band realer Straßen (Zeitlücke 1–3 s, Reisetempo ≥ 80 % des erlaubten), 0 Stillstände ohne Anlass"
       },
       {
@@ -7623,6 +7703,7 @@
        "umfang": "1 Werkzeug mit Wirkung",
        "tiefe": "Kraft sichtbar übertragen",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Haspel hebt Eimer, Hub folgt Kurbelweg"
       },
       {
@@ -7679,6 +7760,7 @@
        "umfang": "1–2 Äcker je Feldweg-Ende",
        "tiefe": "Fleck im Boden",
        "preis": "P · Dorf",
+       "klasse": "Ort",
        "richter": "≥ 1 Acker als Fläche im Bild am Dorfrand"
       },
       {
@@ -7744,6 +7826,7 @@
        "umfang": "1 Kulturpflanze auf 1 Acker",
        "tiefe": "Bestand in Reihen",
        "preis": "P · Ego im Feld",
+       "klasse": "Ort",
        "richter": "Reihen im Bildspektrum ≥ 3σ; Blindurteil ≤ 65 %"
       },
       {
@@ -7800,6 +7883,7 @@
        "umfang": "1 Tier bindet sich an den Spieler",
        "tiefe": "Bindung aus Füttern",
        "preis": "P · Gelände",
+       "klasse": "Ort",
        "richter": "Abstand p95 ≤ 5 m über Hang"
       },
       {
@@ -7931,6 +8015,7 @@
        "umfang": "1 Dorf erntet und lagert",
        "tiefe": "Scheune füllt sich, Bewohner essen",
        "preis": "P · Dorf über 1 Spieljahr",
+       "klasse": "Ort",
        "richter": "Bildpaar Scheune voll/leer, Sägezahn"
       },
       {
@@ -7989,6 +8074,7 @@
        "umfang": "Spieler sammelt Wildes",
        "tiefe": "es wächst nach",
        "preis": "P · Nah-Wiese",
+       "klasse": "Ort",
        "richter": "Pflanze verschwindet, kehrt nach der Nachwuchs-Zeit"
       },
       {
@@ -8047,6 +8133,7 @@
        "umfang": "Gewächshaus und Garten im Ort",
        "tiefe": "wo die Lagerente es trägt",
        "preis": "P · Ort",
+       "klasse": "Ort",
        "richter": "Bildpaar ≤ 65 %; nur in passendem Klima"
       },
       {
@@ -8103,6 +8190,7 @@
        "umfang": "1 Kette, 3 Waren: Erz → Barren → Werkzeug",
        "tiefe": "Erz liegt, wo die Geologie es legt",
        "preis": "P · Dorf",
+       "klasse": "Ort",
        "richter": "Zeitraffer: Halde kleiner, Barren am Ofen, Werkzeug in der Hand"
       },
       {
@@ -8232,6 +8320,7 @@
        "umfang": "Tausch Spieler ↔ Bewohner",
        "tiefe": "nur, was er hat",
        "preis": "P · Markt",
+       "klasse": "Ort",
        "richter": "Bestand sinkt, füllt sich nur aus Herstellung"
       },
       {
@@ -8351,6 +8440,7 @@
        "umfang": "10 Techniken mit Voraussetzung",
        "tiefe": "Stoff + Temperatur + Vorgänger",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "20 Saaten: 0 Techniken ohne Voraussetzung im Bild"
       },
       {
@@ -8414,6 +8504,7 @@
        "umfang": "Muskel und Feuer",
        "tiefe": "Ofen kostet Holz",
        "preis": "P · Dorf",
+       "klasse": "Ort",
        "richter": "Holzstapel sinkt je Schmelze; ohne Holz kein Barren"
       },
       {
@@ -8542,6 +8633,7 @@
        "umfang": "1 Mauerring mit Toren und Türmen",
        "tiefe": "Fuß folgt Hang",
        "preis": "P · Hügel",
+       "klasse": "Ort",
        "richter": "geschlossener Ring mittags und Dämmerung lesbar, kein Schwebe-Spalt"
       },
       {
@@ -8614,6 +8706,7 @@
        "umfang": "1 Stadt, 2 Stände",
        "tiefe": "Wohnfläche ungleich",
        "preis": "P · Viertel",
+       "klasse": "Stadt",
        "richter": "Gini der Wohnfläche im archäologischen Band; arm/reich erkannt ≥ 80 %"
       },
       {
@@ -8670,6 +8763,7 @@
        "umfang": "1 Wache, die wirkt",
        "tiefe": "sieht und antwortet",
        "preis": "P · Platz",
+       "klasse": "Ort",
        "richter": "Regelbruch in Sicht → Antwort ≥ 0,8 von 20"
       },
       {
@@ -8733,6 +8827,7 @@
        "umfang": "Zweikampf: 2 Bewaffnete",
        "tiefe": "Hieb trifft den Leib, Deckung, Ausweichen",
        "preis": "P · Arena",
+       "klasse": "Ort",
        "richter": "20 Zweikämpfe im Bild: der Treffer sitzt, wo die Klinge den Leib kreuzt, der Getroffene antwortet; kein Treffer durch die Deckung"
       },
       {
@@ -8813,6 +8908,7 @@
        "umfang": "1 Wache, Streife",
        "tiefe": "Streife fährt aus der Wache",
        "preis": "P · Straße",
+       "klasse": "Ort",
        "richter": "Antwortzeit ∝ Weg zur Wache ρ ≥ 0,7; niemand erscheint im Sichtfeld"
       },
       {
@@ -8876,6 +8972,7 @@
        "umfang": "1 Sprache: Orts- und Personennamen",
        "tiefe": "aus einem Guss",
        "preis": "P · Dorf",
+       "klasse": "Ort",
        "richter": "100 Namen aus 2 Saaten richtig zugeordnet ≥ 90 %"
       },
       {
@@ -8941,6 +9038,7 @@
        "umfang": "1 Schrift an Sonderbauten",
        "tiefe": "Zeichen passend zur Rolle",
        "preis": "P · Dorf",
+       "klasse": "Ort",
        "richter": "Sonderbauten mit lesbarem, passendem Schild ≥ 90 %"
       },
       {
@@ -8997,6 +9095,7 @@
        "umfang": "1 Glaube mit Kalender",
        "tiefe": "Ritus-Stunde, Fest füllt den Platz",
        "preis": "P · Ritus-Stunde",
+       "klasse": "Ort",
        "richter": "≥ 30 % der Gläubigen im Kultbau; Festtag ≥ 3× Werktag"
       },
       {
@@ -9119,6 +9218,7 @@
        "umfang": "2 Kulturen an einer Grenze",
        "tiefe": "Mischformen",
        "preis": "P · Grenzdorf",
+       "klasse": "Ort",
        "richter": "Grenzstreifen ≥ 30 % gemischt, abseits ≤ 5 %"
       },
       {
@@ -9231,6 +9331,7 @@
        "umfang": "Grüße und Gesten",
        "tiefe": "kulturgemäße Antwort",
        "preis": "P · Markt",
+       "klasse": "Ort",
        "richter": "≥ 90 % antworten; Gruß-Form trennbar ≥ 80 %"
       },
       {
@@ -9287,6 +9388,7 @@
        "umfang": "EIN Ort, 10 Werke (Wandbild, Figur, Ornament)",
        "tiefe": "das Motiv zeigt etwas aus der Welt des Orts (Tier, Berg, Herrscher, Ereignis)",
        "preis": "P · nah",
+       "klasse": "Ort",
        "richter": "10 Werke: Motiv in der Welt gefunden (das Tier lebt dort, das Ereignis geschah) ≥ 80 %; keine zwei gleich"
       },
       {
@@ -9350,6 +9452,7 @@
        "umfang": "EINE Bühne oder EIN Erzähler am Abend, 10² Zuhörer",
        "tiefe": "das Stück läuft von Anfang bis Ende, das Publikum antwortet",
        "preis": "P · im Saal",
+       "klasse": "Ort",
        "richter": "Stück mit Anfang, Wende, Ende im Bild; Lachen und Stille des Publikums folgen den Stellen des Stücks (r ≥ 0,5)"
       },
       {
@@ -9413,6 +9516,7 @@
        "umfang": "EINE Gasse am Abend: 3 Lokale, 20 Gäste",
        "tiefe": "Essen wird gekocht, gereicht, gegessen; Gäste kommen aus eigenem Anlass",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "20 Gäste verfolgt: jeder kam nach seinem Tagesplan, isst und geht; Gericht aus Zutaten der Flur (Gegenlauf Zutat fehlt → das Gericht fehlt)"
       },
       {
@@ -9476,6 +9580,7 @@
        "umfang": "Jahr 1–9999 per Satz, 4 Halte",
        "tiefe": "Stil, Tracht, Größe je Epoche",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "dieselbe Zelle unter 4 Jahren: Blind-Datierung bringt die 4 Bilder in die richtige Folge ≥ 80 %"
       },
       {
@@ -9614,6 +9719,7 @@
        "umfang": "1 Ereignis beugt 1 Kurve",
        "tiefe": "Gewalt bremst Wachstum",
        "preis": "P · Zeitraffer",
+       "klasse": "Ort",
        "richter": "Ort nach Gewalt wächst messbar langsamer"
       },
       {
@@ -9672,6 +9778,7 @@
        "umfang": "Ereignis als Folge am Ort",
        "tiefe": "Ort danach anders",
        "preis": "P · am Ort",
+       "klasse": "Ort",
        "richter": "Bildpaar vorher/nachher am selben Ort"
       },
       {
@@ -9784,6 +9891,7 @@
        "umfang": "EINE Stadt, 50 Jahre nach der Gegenwart ihrer Saat",
        "tiefe": "10 sichtbare Dinge, die es heute nicht gibt, je mit Vorgänger in der Stadt davor",
        "preis": "P",
+       "klasse": "Stadt",
        "richter": "Bildpaar Jahr 0 / +50 am selben Ort: ≥ 10 neue Dinge im Bild benannt; Gegenlauf: Vorgänger gekappt → das Ding fehlt ≥ 80 %"
       },
       {
@@ -9847,6 +9955,7 @@
        "umfang": "EINE Straße mit 10 Bildflächen (Schild, Schirm, Leuchtschrift)",
        "tiefe": "jede zeigt etwas, das es in der Stadt gibt (Laden, Ware, Uhrzeit, Wetter)",
        "preis": "P · Nachtstraße",
+       "klasse": "Ort",
        "richter": "10 Flächen: der Inhalt stimmt mit der Welt (der Laden steht dort, Uhr und Wetter richtig) 100 %; keine zwei gleich"
       },
       {
@@ -9910,6 +10019,7 @@
        "umfang": "EIN Arbeits-Roboter an EINER Aufgabe",
        "tiefe": "Gang und Griff folgen seinem Bau (Räder, Beine, Arme), nicht dem Menschen",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Bewegungs-Kennzahlen aus dem Bild (Schrittfolge, Gelenkgrenzen) passen zum Bau ≥ 90 %; Blindpaar gegen Film realer Roboter ≤ 85 %"
       },
       {
@@ -9973,6 +10083,7 @@
        "umfang": "EIN Bewohner mit Ersatzglied",
        "tiefe": "Gang und Griff ändern sich nach dem Bau des Glieds",
        "preis": "P · nah",
+       "klasse": "Ort",
        "richter": "Gang-Kennzahlen (Schrittlänge, Symmetrie) gegen Aufnahmen von Prothesen-Trägern im Band"
       },
       {
@@ -10097,6 +10208,7 @@
        "umfang": "Wiese, gehen und laufen, Ego + Third",
        "tiefe": "Fuß ≤ 3 cm am 25°-Hang, Kamera nie im Fels",
        "preis": "P · Taste→Bild p95 ≤ 50 ms",
+       "klasse": "Ort",
        "richter": "Gang 2 min je Gerät: Taste → erstes Bild mit Leib-Antwort p95 ≤ 50 ms, Fuß p95 ≤ 3 cm, 0 Bilder mit Kamera im Fels"
       },
       {
@@ -10160,6 +10272,7 @@
        "umfang": "der eigene Leib mit Verben: gehen, bauen, fahren, kämpfen",
        "tiefe": "jede Verb-Gruppe ändert die Welt beobachtbar",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "15 min je Verb-Gruppe: ≥ 1 sichtbare Weltänderung (Werk steht, Tier flieht, Fahrzeug fährt), Bildpaar vorher/nachher"
       },
       {
@@ -10226,6 +10339,7 @@
        "umfang": "setzen und brechen",
        "tiefe": "die Hand trifft, was das Auge zeigt",
        "preis": "P · Taste→Wirkung p95 ≤ 50 ms",
+       "klasse": "Ort",
        "richter": "Eingabe → erstes Bild mit Wirkung p95 ≤ 50 ms, Trefferpunkt = Zielpunkt ± 1 Zelle, beide Geräte"
       },
       {
@@ -10350,6 +10464,7 @@
        "umfang": "Tag-Länge 1–60 min, Jahreszeit per Spieler-Wort",
        "tiefe": "Sonne, Licht, Bewohner-Tag, Laub folgen der Uhr",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Sonnenbahn gegen Ephemeride der Breite ≤ 1°; Saison-Wort ändert Laub und Licht im Bildpaar"
       },
       {
@@ -10427,6 +10542,7 @@
        "umfang": "2 Spieler, zwei physische Geräte",
        "tiefe": "Peer als Leib im Bild, beide sehen dieselbe Welt",
        "preis": "P · ≤ 100 kbit/s je Spieler",
+       "klasse": "Ort",
        "richter": "Taste an A → Leib im Bild von B p95 ≤ 150 ms; Welt-Bild an gleicher Kamera ≤ 1 % Pixel-Abweichung (ohne Leiber)"
       },
       {
@@ -10618,6 +10734,7 @@
        "umfang": "1 Werk über ≤ 3 Eingaben",
        "tiefe": "steht, trägt, wirkt (Statik, Tür, Brennglas); gleich dem Studio-Werk",
        "preis": "P · Wille → Bild ≤ 1 s",
+       "klasse": "Ort",
        "richter": "Konstruktions-Prüfsatz richtig geurteilt mit sichtbarer Folge, Klicks und Zeit am Ereignis-Strom, beide Geräte; Bildvergleich Studio ↔ Welt im Band"
       },
       {
@@ -10703,6 +10820,7 @@
        "umfang": "1 Werk eines Studios (Eiche, Haus)",
        "tiefe": "das Gemeinte entsteht, Negativ-Sätze tun nichts",
        "preis": "P · Satz → Bild ≤ 6 s lokal",
+       "klasse": "Ort",
        "richter": "eingefrorener Korpus ≥ 40 Sätze im echten Fenster: gültig ≥ 95 %, Absicht ≥ 85 % am Ausgabebild, 0 Brüche, 0 Hänger > 100 ms"
       },
       {
@@ -10785,6 +10903,7 @@
        "umfang": "1 Spieler-Regel wirkt in der Welt",
        "tiefe": "sichtbare Folge, reist zum Mitspieler",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Regel im Spiel geschrieben → Wirkung im Bild bei A und B"
       },
       {
@@ -10845,6 +10964,7 @@
        "umfang": "1 Neuling, erste Schöpfung",
        "tiefe": "ohne Anleitung, ohne Fachwort",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "20 Neulinge ab 10 Jahren: Anteil, der in 5 min ein eigenes Werk erschafft und teilt ≥ 80 %"
       },
       {
@@ -10904,6 +11024,7 @@
        "umfang": "1 Bauplan im selben Profil",
        "tiefe": "signiert, gleich",
        "preis": "P · ≤ 10 s",
+       "klasse": "Ort",
        "richter": "Export/Import: Bildpaar an gleicher Pose gleich"
       },
       {
@@ -10964,6 +11085,7 @@
        "umfang": "1 geteilte Welt mit verbotener Tat",
        "tiefe": "benannt abgewiesen",
        "preis": "P · 0 Kosten im Takt",
+       "klasse": "Ort",
        "richter": "feindliche Welt geladen: eigene Welt im Bildpaar unverändert, Abweisung im Spiel benannt"
       },
       {
@@ -11089,6 +11211,7 @@
        "umfang": "1 Tagebuch der Welt, 200 Zeilen",
        "tiefe": "jede Zeile eine wahre Tat mit Ort",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "20 Zufallszeilen des Tagebuchs: der Spieler geht zum genannten Ort und findet die Spur der Tat im Bild (Bildpaar gegen dieselbe Saat ohne die Tat) ≥ 95 %"
       },
       {
@@ -11155,6 +11278,7 @@
        "umfang": "Tod setzt zurück an den Ankunftsort",
        "tiefe": "derselbe Leib, das Gefährt bleibt, wo er fiel",
        "preis": "P · Rückkehr ≤ 5 s",
+       "klasse": "Ort",
        "richter": "Bildfolge: der Leib fällt, derselbe Leib steht am Ankunftsort; das Gefährt steht im Bild, wo er fiel"
       },
       {
@@ -11220,6 +11344,7 @@
        "umfang": "1 Ort, der sich aus der Saat vom Nachbarn unterscheidet",
        "tiefe": "Unterschied sichtbar, nicht nur Zahl",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Blind-Agent nennt in 10 min ≥ 1 Ort „anders als der vorige\" und begründet es am Bild"
       },
       {
@@ -11283,6 +11408,7 @@
        "umfang": "10 min an der Ankunft",
        "tiefe": "tote Minute = im Blick ändert sich nichts, das auf den Spieler antwortet",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Anteil toter Minuten ≤ 50 %"
       },
       {
@@ -11348,6 +11474,7 @@
        "umfang": "die ersten 10 Minuten, 12 blinde Neulinge",
        "tiefe": "niemand bricht ab; sie wissen, was sie tun können",
        "preis": "P · die Ankunft zählt mit",
+       "klasse": "Ort",
        "richter": "Anteil, der nach 10 min freiwillig weiterspielt ≥ 70 %; Zeit bis zur ersten eigenen Tat ≤ 2 min"
       },
       {
@@ -11411,6 +11538,7 @@
        "umfang": "EIN Ort, 30 min",
        "tiefe": "sie merken sich, was eigen war",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "blinde Spieler nennen nach 30 min ≥ 10 verschiedene Dinge beim Namen oder im Bild; 5 davon finden sie wieder"
       },
       {
@@ -11474,6 +11602,7 @@
        "umfang": "eine Wiese, ein Bienen-Auge (UV/B/G)",
        "tiefe": "UV-Muster aus dem Stoff der Blüte, nicht aus einer Bemalung",
        "preis": "P · Wechsel ≤ 0,5 s",
+       "klasse": "Ort",
        "richter": "Bildpaar Mensch ↔ Biene an derselben Wiese: ≥ 1 Muster nur im Bienenbild (Kontrast ≥ 0,2), an Blüten, die Bienen anfliegen"
       },
       {
@@ -11530,6 +11659,7 @@
        "umfang": "ein Haus, ein Echo-Sinn",
        "tiefe": "Echo aus Laufzeit gegen die Geometrie, kein Puls-Effekt",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Blind-Lauf (Bild schwarz, nur Echo): Ausgang in ≤ 2× der sehenden Zeit"
       },
       {
@@ -11586,6 +11716,7 @@
        "umfang": "ein Tier folgt einer Witterung",
        "tiefe": "Abfall mit Distanz, Wind an der Quelle",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Gegenlauf im Bild: Wolf findet Beute über Witterung; Witterung aus oder Wind gedreht → Suchzeit ≥ 3×"
       },
       {
@@ -11642,6 +11773,7 @@
        "umfang": "Dipolfeld des Planeten, schief zur Drehachse",
        "tiefe": "aus dem Kerngesetz; Sonnenwind am Pol",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Polarlicht um den MAGNETISCHEN Pol (60–75° geomagnetisch auf erdähnlichen Saaten); Kompass weist zum selben Pol"
       },
       {
@@ -11698,6 +11830,7 @@
        "umfang": "Tiere mit Sicht- und Witter-Radius je Gattung",
        "tiefe": "Radien, keine Organe",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Witterung und Sicht ändern Flucht und Jagd (Gegenlauf)"
       },
       {
@@ -11754,6 +11887,7 @@
        "umfang": "Warnruf in der Herde",
        "tiefe": "Artgenossen fliehen, bevor sie den Jäger selbst wahrnehmen",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Fluchtbeginn vor eigener Wahrnehmung ≥ 0,7; Ruf aus → Verluste steigen"
       },
       {
@@ -11810,6 +11944,7 @@
        "umfang": "der Spieler als Beute",
        "tiefe": "Rotwild sieht dichromat: Orange und Grün ähnlich",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Entdeckungsdistanz bei Spieler in Orange ≈ Grün (±15 %), in Weiß auf Schnee messbar anders"
       },
       {
@@ -11866,6 +12001,7 @@
        "umfang": "0,2 km",
        "tiefe": "Relief und Bewuchs bis zum Nahrand, Luft wirkt",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Restkontrast je Kanal gegen Koschmieder T/T_soll 0,8–1,2; Ferne = Nähe ≥ 0,8 an 12 Posen"
       },
       {
@@ -11949,6 +12085,7 @@
        "umfang": "1 Quelle",
        "tiefe": "das nächste Feuer wirft Licht und Schatten, auch vom gehenden Spieler",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Schatten-Kontrast ≥ 3:1 an einem Pfosten 2 m vom Feuer; Gasse in der Kelvin-Farbe ±200 K"
       },
       {
@@ -12021,6 +12158,7 @@
        "umfang": "Wiese, 10² m²",
        "tiefe": "Kontaktschatten scharf und weich mit Abstand; Basis-Stoffe mit Albedo im realen Band",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Halbschattenbreite gegen Abstand im Band; Albedo im Bild ±0,05 gegen Tabellenwert für Gras, Erde, Fels, Holz, Haut"
       },
       {
@@ -12099,6 +12237,7 @@
        "umfang": "Mittag, klar",
        "tiefe": "eine Atmosphäre (Rayleigh, Mie, Ozon)",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Himmels-Leuchtdichte gegen gemessenen Klarhimmel ±0,3 EV"
       },
       {
@@ -12166,6 +12305,7 @@
        "umfang": "Gehen",
        "tiefe": "kein Flimmern, kein Treppenkriechen an Kanten, Laub und Schatten",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "zeitliche Pixel-Varianz in ruhenden Bildbereichen ≤ 1 % der Fläche über Schwelle"
       },
       {
@@ -12225,6 +12365,7 @@
        "umfang": "freie Kamera und Standbild",
        "tiefe": "die Welt hält an und bleibt ganz: kein Loch, kein fehlendes Ding hinter der Spieler-Kamera",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "20 Standbilder aus freier Lage: Bild ganz (Lücke ≤ 2 %), Schärfe und Licht wie im Spiel"
       },
       {
@@ -12288,6 +12429,7 @@
        "umfang": "1 Ort, Stereo",
        "tiefe": "links/rechts, Pegel fällt mit Abstand",
        "preis": "P · 0 Aussetzer",
+       "klasse": "Ort",
        "richter": "Pegel- und Laufzeitunterschied am Abgriff an 24 Quellenlagen mit richtigem Vorzeichen (100 %)"
       },
       {
@@ -12497,6 +12639,7 @@
        "umfang": "1 Stimme aus Gesetz, Laute ohne Bedeutung (Murmeln, Rufe)",
        "tiefe": "Stimme folgt dem Leib: Kind, Frau, Mann, groß, klein",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "F0 und Formanten am Abgriff gegen Peterson-Barney-Tafel ±15 % nach Leibmaßen"
       },
       {
@@ -12548,6 +12691,7 @@
        "umfang": "1 Musik-System der Welt",
        "tiefe": "Musik liest das Feld (Valenz, Erregung)",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Hörer-Blindtest: Stimmung der Szene aus der Musik erkannt ≥ 70 %; am Abgriff keine Wiederholung in 10 min"
       },
       {
@@ -12613,6 +12757,7 @@
        "umfang": "7 Stimmen zugleich, die lautesten gewinnen; Musik tritt unter Stimme",
        "tiefe": "keine Spitze über 0 dBFS",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Spitzen ≤ 0 dBFS über 10 min; Duck 8–12 dB bei Stimme"
       },
       {
@@ -12726,6 +12871,7 @@
        "umfang": "1 Körper",
        "tiefe": "fällt, ruht, Masse = Volumen × ρ",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Fass fällt vom Dach: Ruhe ≤ 2 s, Zittern ≤ 1 cm, Spalt zum Boden im Bild ≤ 5 cm"
       },
       {
@@ -12793,6 +12939,7 @@
        "umfang": "1 Glied",
        "tiefe": "knickt nach Euler, zerdrückt nach Druckfestigkeit, ohne Eichfaktor",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Säule realer Schlankheit unter wachsender Last: Versagens-Last gegen Euler ±20 %; halbes E knickt früher"
       },
       {
@@ -12932,6 +13079,7 @@
        "umfang": "1 Zelle",
        "tiefe": "zündet am Zündpunkt, nass nicht; Eis trägt, Lava erstarrt",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Fackel an trockenes / nasses Gras: zündet / zündet nicht; Eis trägt den Spieler, y am Spiegel ±5 cm"
       },
       {
@@ -13005,6 +13153,7 @@
        "umfang": "ein Seil",
        "tiefe": "Länge hält ±2 %, Schwung klingt ab",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Flegel schwingt am Leib des Spielers, Seillänge im Bild ±2 %, beide Geräte"
       },
       {
@@ -13070,6 +13219,7 @@
        "umfang": "1 Reaktion",
        "tiefe": "Holz brennt zu Asche und Rauch, Masse bleibt",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Asche + Rauch-Masse = Holz ±10 %, Rauchmenge sichtbar proportional"
       },
       {
@@ -13128,6 +13278,7 @@
        "umfang": "1 Wurf",
        "tiefe": "Ballistik mit Luftwiderstand",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Stein und Feder: Wurfweiten gegen Rechnung ±10 %, Feder fällt sichtbar langsamer"
       },
       {
@@ -13187,6 +13338,7 @@
        "umfang": "10 Stoffe",
        "tiefe": "unterscheidbar am Verhalten, jede Wirkung liest die Zeile",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Blind-Jury sieht und hört einen grauen Gegenstand fallen, brechen, brennen und benennt den Stoff ≥ 70 %"
       },
       {
@@ -13246,6 +13398,7 @@
        "umfang": "Gelände am Spawn",
        "tiefe": "Höhenform gleich",
        "preis": "P je Gerät",
+       "klasse": "Ort",
        "richter": "Bild G2 ↔ G3 gleiche Pose: Horizont-Linie ≤ 2 px Abweichung"
       },
       {
@@ -13388,6 +13541,7 @@
        "umfang": "Gehen 1 km durch die Wiese",
        "tiefe": "Bilder ganz, sichtbares Nachwachsen nur fern",
        "preis": "P an G2 + G3",
+       "klasse": "Ort",
        "richter": "Gang-Bahn: Anteil ganzer Bilder ≥ 98 %"
       },
       {
@@ -13462,6 +13616,7 @@
        "umfang": "118 Bewohner einer Test-Stadt, ein Tag",
        "tiefe": "nach der Abwesenheit steht jeder, wo er gestanden hätte",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Ort sehen, gehen, nach N h zurück: Lage jedes Bewohners gegen den Lauf mit Zuschauer ≤ 1 m"
       },
       {
@@ -13528,6 +13683,7 @@
        "umfang": "10 Orte EINER Welt",
        "tiefe": "jeder Ort aus einem Bild erkannt; das Merkmal hat eine Ursache (Gestein, Klima, Kultur)",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "aus einem Zufallsbild den richtigen von 10 Orten ≥ 80 % (Panel); der Prüfer nennt das Merkmal, Gegenlauf: Ursache getauscht → Merkmal weg ≥ 80 %"
       },
       {
@@ -13671,6 +13827,7 @@
        "umfang": "3 Größenordnungen: Bildbreite ~1 m bis ~1 km",
        "tiefe": "Wiese, Baum, Haus, Gelände wechseln Stufen unsichtbar",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "N = 20 Saaten × Steigflug 0,5 m → 700 m Auge in 30 s, hin und zurück: alle Bruch-Bedingungen gehalten"
       },
       {
@@ -13758,6 +13915,7 @@
        "umfang": "2 m (Blick vor die Füße), N = 100 Orte",
        "tiefe": "Boden mit Halmen und Steinen",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Spektrum gegen Foto der Bodenklasse: Energie über 1/20 der Bildbreite ≥ 50 % der Referenz in ≥ 80 %"
       },
       {
@@ -13823,6 +13981,7 @@
        "umfang": "Teleport 1 km",
        "tiefe": "Bild ganz, die Welt steht",
        "preis": "ganz ≤ 30 s, p95 ≤ 33 ms an beiden Geräten",
+       "klasse": "Ort",
        "richter": "Spielgang-Station Sprung: p95, t(ganz), Lücke"
       },
       {
@@ -13897,6 +14056,7 @@
        "umfang": "1 Größenordnung (0,5–5 m: Mensch, Wagen, Kiste)",
        "tiefe": "Fall, Stoß, Fahrt plausibel",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Fallzeit aus 10 m gegen √(2h/g) ±5 %; Bremsweg gegen μ ±10 %"
       },
       {
@@ -13953,6 +14113,7 @@
        "umfang": "1 Werk, 3 Stoffe, 30 Spieltage",
        "tiefe": "Farbe ändert sich nach Nässe und Lage",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Bildpaar vor ↔ nach 30 d: Δ Albedo ≥ 0,02, Nord- und Wetterseite verschieden, beide Geräte"
       },
       {
@@ -14025,6 +14186,7 @@
        "umfang": "1 Weg, 1 Spieler, 100 Gänge",
        "tiefe": "Gras-Dichte −60 % auf dem Weg, daneben gleich, über Reload",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Büschel auf / neben dem Weg vor ↔ nach im Bild, beide Geräte"
       },
       {
@@ -14083,6 +14245,7 @@
        "umfang": "1 Grube an einem Ort",
        "tiefe": "Humus über Brandschicht über gewachsenem Boden",
        "preis": "P, Graben ohne Bild-Riss",
+       "klasse": "Ort",
        "richter": "Grubenwand: ≥ 3 unterscheidbare Schichten im Bild"
       },
       {
@@ -14218,6 +14381,7 @@
        "umfang": "Wiese, stehend, Ego",
        "tiefe": "volles Bild der Auslieferung",
        "preis": "p95 ≤ 33 ms stehend an beiden Geräten",
+       "klasse": "Ort",
        "richter": "werkbank lauf, 4 Boots je Gerät"
       },
       {
@@ -14354,6 +14518,7 @@
        "umfang": "Tastatur + Maus",
        "tiefe": "v1-Verben erreichbar",
        "preis": "Eingabe bis Pixel ≤ 100 ms",
+       "klasse": "Ort",
        "richter": "v1-Pfad aus aufgenommenen Eingaben, INP"
       },
       {
@@ -14488,6 +14653,7 @@
        "umfang": "1 min Spielgang",
        "tiefe": "kein Absturz, volles Bild",
        "preis": "Heap-Steigung ≤ 50 MB/min an beiden Geräten",
+       "klasse": "Ort",
        "richter": "Spielgang am Stück mit Heap-Kurve"
       },
       {
@@ -14548,6 +14714,7 @@
        "umfang": "Wiese und Dorf",
        "tiefe": "der Speicher steht nach 60 s",
        "preis": "Heap ≤ 400 MB, VRAM ≤ 118 MB an beiden Geräten",
+       "klasse": "Ort",
        "richter": "Heap- und VRAM-Kurve über 5 min Spielgang"
       },
       {
@@ -14663,6 +14830,7 @@
        "umfang": "Wasserspiegel + Boden-Höhe, 50 Punkte",
        "tiefe": "Leser folgen EINEM Spiegel; Huf, Rad, Fuß stehen ≤ 3 cm",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Bildpaar an 50 Punkten: Wasserspiegel um 1 m gehoben → Ufer, Schilf, Steg, Boot und Fuß folgen im Bild (100 % der Leser); Gegenlauf ohne Hebung: kein Leser bewegt sich"
       },
       {
@@ -14791,6 +14959,7 @@
        "umfang": "1 Welt, 365 Tage",
        "tiefe": "Jahreszeit als Welle",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Schneelinie wandert über das Jahr im Bild"
       },
       {
@@ -14917,6 +15086,7 @@
        "umfang": "ein Platz, eine Gasse",
        "tiefe": "Gasse lenkt Wind, Schatten kühlt",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Wind folgt der Gasse ±20°; Pfütze trocknet im Schatten später"
       },
       {
@@ -14973,6 +15143,7 @@
        "umfang": "1 Ereignis, 1 Folge",
        "tiefe": "Rutschung sperrt Straße → Umweg",
        "preis": "P während der Kaskade",
+       "klasse": "Ort",
        "richter": "20 Saaten: Folge tritt ein und ist im Bild sichtbar"
       },
       {
@@ -15036,6 +15207,7 @@
        "umfang": "1 Ausbruch",
        "tiefe": "Asche-Lage im Umkreis",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Grabung im Umkreis findet die Asche am erwarteten Alter in ≥ 95 %"
       },
       {
@@ -15093,6 +15265,7 @@
        "umfang": "Relikte, 10³ an 10 Saaten",
        "tiefe": "Findling, Moräne, Strandterrasse nur wo Eis oder Meer war",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "1 000 Relikte: Ursache in der Geschichte des Orts = 100 %"
       },
       {
@@ -15151,6 +15324,7 @@
        "umfang": "ein Weg",
        "tiefe": "Tritt formt Pfad",
        "preis": "P · Weg im Bild",
+       "klasse": "Ort",
        "richter": "Gras-Dichte auf dem Weg −≥ 60 % gegen daneben im Bildpaar"
       },
       {
@@ -15216,6 +15390,7 @@
        "umfang": "Lebensraum aus dem Gelände",
        "tiefe": "Gattung wählt Boden-Klasse, Gegenprobe bei anderer Saat",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "≥ 0,9 der Würfe in der Boden-Klasse der Gattung, im Bild gezählt"
       },
       {
@@ -15348,6 +15523,7 @@
        "umfang": "1 Platz: Kleidung folgt dem Wetter",
        "tiefe": "Regen → Kapuze, Kälte → Lagen",
        "preis": "P · Platz Sommer/Winter",
+       "klasse": "Ort",
        "richter": "Lagen-Anteil steigt im Bildpaar"
       },
       {
@@ -15407,6 +15583,7 @@
        "umfang": "Abend: Spiel auf dem Platz",
        "tiefe": "Wahl folgt Alter und Rolle",
        "preis": "P · Dorfplatz am Abend",
+       "klasse": "Ort",
        "richter": "Anteil im Spiel 5–15 %"
       },
       {
@@ -15465,6 +15642,7 @@
        "umfang": "1 Siedlung: Wetter ändert den Tag",
        "tiefe": "Regen → drinnen",
        "preis": "P · Markt Sonne/Regen",
+       "klasse": "Ort",
        "richter": "Anteil draußen sinkt ≥ 0,3"
       },
       {
@@ -15521,6 +15699,7 @@
        "umfang": "1 Spielerhaus wird Keim",
        "tiefe": "Ring neuer Häuser",
        "preis": "P · Hügel",
+       "klasse": "Ort",
        "richter": "Ring neuer Häuser um das Spielerhaus binnen 1 500 s; Gegenlauf: dieselbe Saat ohne Spielerhaus → kein Ring an diesem Ort"
       },
       {
@@ -15581,6 +15760,7 @@
        "umfang": "Baustoff aus Boden und Klima",
        "tiefe": "Lehm, Holz, Stein nach Biom",
        "preis": "P · Dorf",
+       "klasse": "Ort",
        "richter": "32 Saaten: passender Baustoff ≥ 85 %; Region aus Hausbild ≥ 70 %"
       },
       {
@@ -15646,6 +15826,7 @@
        "umfang": "10² Dorf",
        "tiefe": "Nahrung aus eigener Flur, Wasser aus Brunnen",
        "preis": "P · Dorf",
+       "klasse": "Ort",
        "richter": "20 Personen: Mahl bis Feld ≥ 90 %"
       },
       {
@@ -15702,6 +15883,7 @@
        "umfang": "1 Kette in 6 Spielstunden: Wölfe weg → mehr Hirsche → weniger Jungwuchs",
        "tiefe": "Gegenlauf ohne Kette",
        "preis": "P · Raffer am Gerät",
+       "klasse": "Ort",
        "richter": "Bildpaar am selben Ort mit/ohne Wölfe nach 6 Spielstunden: Jungwuchs sichtbar dünner über ≥ 8 Saaten"
       },
       {
@@ -15770,6 +15952,7 @@
        "umfang": "Geruch führt den Jäger zur Beute",
        "tiefe": "Wind trägt Witterung",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Gegenlauf Witterung aus → Jagderfolg fällt"
       },
       {
@@ -15887,6 +16070,7 @@
        "umfang": "Wetter → Stoff: Regen auf jedem Dach nach dessen Stoff",
        "tiefe": "gesehen = gehört über zwei Leitern",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Regenklang je Dachstoff unterscheidbar; Regenstärke im Bild ↔ Pegel r ≥ 0,9"
       },
       {
@@ -15947,6 +16131,7 @@
        "umfang": "2 Spieler, dieselbe Saat",
        "tiefe": "die Tat von A steht bei B, deterministisch",
        "preis": "P auf beiden Geräten",
+       "klasse": "Ort",
        "richter": "Tat von A → Bildpaar am Ort bei B zeigt dieselbe Spur"
       },
       {
@@ -16012,6 +16197,7 @@
        "umfang": "Feuer: 2 Kanäle",
        "tiefe": "Glut im Bild, Knistern am Ohr, Licht auf dem Boden zugleich",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "20 Feuer: Versatz Bild ↔ Abgriff ≤ 50 ms, Quellort am Abgriff ±10° zur Glut, 100 %"
       },
       {
@@ -16070,6 +16256,7 @@
        "umfang": "Tageszeit",
        "tiefe": "Licht, Klang, Bewohnertag zeigen dieselbe Uhr",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "24 Zufallsuhren: 0 Widersprüche zwischen Sonnenstand, Klangbild (Chor, Grillen, Verkehr) und Bewohnertag"
       },
       {
@@ -16126,6 +16313,7 @@
        "umfang": "eine Tat (gebautes Haus, Rodung 1 ha), wirkt bis 1 km",
        "tiefe": "steht im Steigflug, wo sie gebaut wurde; Pegel, Wuchs, Wild ändern sich",
        "preis": "P; Speicher-Zuwachs = Bytes der Tat",
+       "klasse": "Ort",
        "richter": "Haus bauen, aufsteigen: Pixel aus 400 m an seiner Stelle; Bildpaar an 10 Orten im Umkreis"
       },
       {
@@ -16262,6 +16450,7 @@
        "umfang": "2 Glieder, ein Ort",
        "tiefe": "Wasser folgt dem Relief",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "100 Saaten × 50 Punkte: Wasserläufe bergab in Senke oder Meer ≥ 95 %"
       },
       {
@@ -16327,6 +16516,7 @@
        "umfang": "1 Klasse von selbst, 1 km², 100 a",
        "tiefe": "Blitz-Brand aus Trockenheit × Gewitter des EINEN Wetters",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "100 Spieljahre Zeitraffer: Brände je km² und Jahr im Faktor 3 der Real-Rate"
       },
       {
@@ -16569,6 +16759,7 @@
        "umfang": "Lichtung aus 10 Fällungen, 1 Spielstunde",
        "tiefe": "bleibt über Reload, wächst nach",
        "preis": "P",
+       "klasse": "Ort",
        "richter": "Baum-Anteil ≤ 30 %, Stümpfe sichtbar, beide Geräte"
       },
       {

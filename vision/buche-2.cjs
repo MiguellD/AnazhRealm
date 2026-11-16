@@ -507,6 +507,25 @@ function aktenLesen(dir) {
     return akten;
 }
 
+// DIE KLASSE AN DER TAFEL (16.11., vorrat3-klasse): die Tafel vision/richter-tafel.json bindet Stationen an Sprossen; trägt eine
+// solche Sprosse in der Karte keine `klasse`, kann ihre Akte höchstens Kern heben („KLASSE FEHLT“). Bis 16.11. wurde die Klasse von
+// Hand mit der Tafel-Zeile gesetzt und dabei vergessen (zwei gemessene Sprossen fielen daran). Jeder Lauf nennt darum jede solche
+// Zeile beim Namen — kein Abbruch: die Buchung bleibt richtig (Kern), nur das Vergessen wird laut. Regel der Klasse:
+// vision/vorrat/klasse-offen.json (Feld regel), offene erste Sprossen mit Grund ebenda.
+const TAFEL = path.join(__dirname, "richter-tafel.json");
+function tafelOhneKlasse(karte, tafel) {
+    const sprosse = new Map();
+    for (const g of karte.gruppen) for (const L of g.kriterien) for (const s of L.sprossen) sprosse.set(L.id + "#" + s.nr, s);
+    const aus = [];
+    for (const z of (tafel && tafel.zeilen) || []) {
+        const s = sprosse.get(z.leiter + "#" + z.sprosse);
+        if (!s) aus.push(`${z.station} → ${z.leiter} S ${z.sprosse}: die Sprosse steht nicht in der Karte`);
+        else if (!s.klasse) aus.push(`${z.station} → ${z.leiter} S ${z.sprosse} (Richter ${z.richter}): KLASSE FEHLT in der Karte — die Akte hebt höchstens Kern`);
+    }
+    return aus;
+}
+const tafelZeilen = (aus) => [...aus.map((a) => "  TAFEL OHNE KLASSE: " + a), `TAFEL: ${aus.length} Zeile(n) ohne Klasse der Sprosse`];
+
 const schreibe = (karte) => JSON.stringify(karte, null, 1) + "\n";
 const zeile = (z) => `KARTE 2: ${z.heute} von ${z.sprossen} gebucht (${z.anteil.toFixed(1).replace(".", ",")} %), ${z.kern} im Kern`;
 
@@ -559,7 +578,7 @@ function selbsttest() {
             console.log("  ROT   " + name + " — " + e.message);
         }
     };
-    // die Probe-Leitern A und G tragen im Speicher die Klasse Ort (die Karte setzt sie nur für die zehn ersten Richter)
+    // die Probe-Leitern A und G tragen im Speicher die Klasse Ort (A Sprosse 1 ist in der Karte offen: vision/vorrat/klasse-offen.json)
     const lauf = (akten, o = {}) => {
         const k = neu();
         if (!o.ohneKlasse) for (const id of [A, G]) for (const s of finde(k, id).sprossen) s.klasse = s.klasse || "Ort";
@@ -792,6 +811,15 @@ function selbsttest() {
         const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1) }, { ohneKlasse: true });
         return L(A).heute === 0 && L(A).kern === 1 && /KLASSE FEHLT/.test(z.bericht[0].warum) ? true : `heute ${L(A).heute} · ${z.bericht[0].warum}`;
     });
+    pruefe("TAFEL Mutant: eine Tafel-Zeile auf eine Sprosse ohne Klasse wird beim Namen gemeldet, die mit Klasse nicht, kein Abbruch", () => {
+        const k = neu();
+        delete finde(k, B).sprossen[0].klasse; // die Mutante: die Klasse vergessen
+        const tafel = { zeilen: [{ station: "x.K1#1", leiter: B, sprosse: 1, richter: "gleich" }, { station: "y.K2#1", leiter: "erleben.klang.ereignis", sprosse: 1, richter: "gleich" }] };
+        const aus = tafelOhneKlasse(k, tafel);
+        return aus.length === 1 && aus[0].startsWith("x.K1#1 → " + B + " S 1") && /KLASSE FEHLT/.test(aus[0]) && tafelOhneKlasse(neu(), tafel).length === 0
+            ? true
+            : JSON.stringify(aus);
+    });
     pruefe("Mutant Akte misst eine andere Stufe als die Klasse der Karte: bricht laut", () =>
         bricht({ [A + ".1"]: fahrt(A, 1, { preis: { stufe: "Stadt", ankunft_kalt_s: 3 } }) }, /die Karte verlangt „Ort“/)
     );
@@ -848,6 +876,7 @@ function haupt(argv) {
             }
     }
     for (const b of z.bericht) console.log(`  ${b.leiter} S ${b.sprosse}: ${b.stand === "NULL" ? "0" : b.stand} — ${b.warum}${b.notiz.map((n) => " · " + n).join("")}`);
+    for (const t of tafelZeilen(tafelOhneKlasse(karte, JSON.parse(fs.readFileSync(TAFEL, "utf8"))))) console.log(t);
     console.log(zeile(z));
 }
 
@@ -859,4 +888,4 @@ if (require.main === module) {
         process.exit(2);
     }
 }
-module.exports = { rechne, fahrtUrteil, preisUrteil, treppeLesen, brueckeLesen, lastVon, kopfFolgeAusGit, kopfFolgeFest };
+module.exports = { rechne, fahrtUrteil, preisUrteil, treppeLesen, brueckeLesen, lastVon, kopfFolgeAusGit, kopfFolgeFest, tafelOhneKlasse };

@@ -1,0 +1,243 @@
+{
+ "lesart": "Sprosse 1 jeder Leiter der Karte 2, deren Preis-Klasse (sprosse.klasse, R8) die Regel nicht eindeutig trägt — hier steht NICHTS in der Karte, die Buchung hebt sie höchstens zum Kern (KLASSE FEHLT). Eine falsche Klasse wären falsche Preis-Schwellen; die Klasse setzt, wer den Grund auflöst (dieselbe Zeile, textuell nach der preis-Zeile).",
+ "regel": [
+  "Quelle: R5 (Sprosse 1 ist EIN Ort, EIN Ding) und die Spalte Umfang der Preis-Treppe (R8); die Abgrenzung unten ist aus den 37 gesetzten Klassen abgeleitet, nicht wörtlich Gesetz.",
+  "Ort: der Umfang nennt EINEN Ort, EIN Ding, EINEN Leib oder eine Gruppe, EINE Siedlung bis zum Dorf (≤ 10² Bauten, ≤ 10³ Leiber) oder eine Spanne ≤ 1 km; dieselbe Probe an N Orten oder N Saaten bleibt Ort, ebenso Himmel und Feld vom Boden aus (Vorbild planet.kosmos.sternhimmel) und Zeit an EINEM Ort (Zeitraffer, Zeitsprung: der Sprung ≤ 5 s gilt in jeder Klasse).",
+  "Stadt: der Umfang nennt „1 Stadt“/„EINE Stadt“ (Vorbild mensch.stadt.form) oder eine Region 10–10² km² bis 20 km Sicht mit Siedlungen (Vorbild mensch.stadt.siedlungsnetz, 32 × 32 km).",
+  "Megastadt und Kontinent: ≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont — an keiner ersten Sprosse eindeutig.",
+  "Planet und Welten: Orbit bis Boden, jede Welt, jede Zeit — an keiner ersten Sprosse eindeutig.",
+  "Offen: eine Spanne zwischen 1 und 20 km ohne das Wort Stadt (die Treppe sagt Sicht bis 1 km für Ort, das Vorbild planet.wetter.lagen „wenige km“ trägt Ort), Regionen ohne Größe oder über 10² km², ein Welt-Wechsel, der Erd-Schlüssel (Spalte Bytes), zwei Zeilen zugleich genannt."
+ ],
+ "stand": {
+  "karte": "vision/meisterkarte-2.json",
+  "ersteSprossen": 253,
+  "gesetzt": 191,
+  "offen": 28
+ },
+ "offen": [
+  {
+   "leiter": "planet.geologie.platten",
+   "sprosse": 1,
+   "umfang": "Region 10⁴ km²",
+   "preis": "P im Überflug",
+   "richter": "30 Saaten: Gebirgsfläche > 2 km liegt in Gürteln mit Achsen ≥ 4:1 in ≥ 70 %; Blindpaar Schummerung gegen reale Region",
+   "grund": "Region 10⁴ km² im Überflug: größer als die Stadt-Spanne (10–10² km², Sicht 20 km), ohne die Bauten der Megastadt — die Treppe nennt keine Zeile für eine leere Region dieser Fläche"
+  },
+  {
+   "leiter": "planet.relief.grossform",
+   "sprosse": 1,
+   "umfang": "1 Saat, Flussnetz bis zum Horizont",
+   "preis": "P",
+   "richter": "im Spiel an 20 Orten nachgefahren: 100 % der Läufe enden in See oder Meer",
+   "grund": "„Flussnetz bis zum Horizont“: Sicht bis zum Horizont ist die Zeile Megastadt und Kontinent, die Fahrt an 20 Orten wäre Ort — zwei Lesarten"
+  },
+  {
+   "leiter": "planet.wasser.eis",
+   "sprosse": 1,
+   "umfang": "Schnee einer Region",
+   "preis": "P im Schneefall",
+   "richter": "Schneegrenze gegen Nullgrad-Höhe ±150 m an 10 Posen × 4 Jahreszeiten; Fuß sinkt ≥ 5 cm",
+   "grund": "„Schnee einer Region“ ohne Größe; die Klasse hängt an der Fläche, die der Text nicht nennt"
+  },
+  {
+   "leiter": "planet.wasser.kreislauf",
+   "sprosse": 1,
+   "umfang": "Region 2 km",
+   "preis": "P, beide Geräte",
+   "richter": "Pegel nach Sturm im Bild; Scheitel-Verzug gegen Einzugsgebiet im Erd-Band; Regen × Fläche ↔ ΔVolumen ±10 %",
+   "grund": "„Region 2 km“: über der Sicht der Zeile Ort (1 km), aber das Vorbild planet.wetter.lagen („wenige km“) trägt Ort — die Karte widerspricht sich zwischen 1 und 20 km"
+  },
+  {
+   "leiter": "planet.wetter.wolken",
+   "sprosse": 1,
+   "umfang": "EINE Wolkenschicht 800 m, Karte ≈ 8 km",
+   "preis": "P",
+   "richter": "Zeitraffer der Schicht gegen Zeitraffer-Film realer Schichtwolken (2AFC ≤ 85 %); Zuggeschwindigkeit der Schatten am Boden im Band realer Wolkenzüge (2–20 m/s) und gleich der Wolke darüber (Versatz ≤ 5 %)",
+   "grund": "„Karte ≈ 8 km“: über der Sicht der Zeile Ort (1 km), unter Stadt (20 km); Vorbild planet.wetter.lagen („wenige km“) trägt Ort — Widerspruch"
+  },
+  {
+   "leiter": "planet.wetter.klimazonen",
+   "sprosse": 1,
+   "umfang": "1 Klima, Höhe gestaucht",
+   "preis": "P",
+   "richter": "Temperatur am Meer 18/−4 °C, Schneegrenze folgt der Saison",
+   "grund": "„1 Klima, Höhe gestaucht“ nennt weder Ort noch Fläche; die Schneegrenze wird über Höhenzüge gelesen"
+  },
+  {
+   "leiter": "planet.erde.gestalt",
+   "sprosse": 1,
+   "umfang": "EINE Region der Erde, 10⁴ km² (ein Golf mit Vulkan)",
+   "preis": "P · Schlüssel ≤ 10 kB",
+   "richter": "Küstenlinie gegen das Höhenmodell: mittlerer Lagefehler ≤ 5 km; Ortskundige wählen die Region aus 10 Kandidaten an 3 Ego-Bildern ≥ 70 %",
+   "grund": "Region 10⁴ km² (wie platten) UND der Erd-Schlüssel ≤ 10 kB: die Spalte Bytes der Zeile Ort verlangt 0 über das Skript, erst Planet und Welten zählt den Erd-Schlüssel mit"
+  },
+  {
+   "leiter": "planet.kosmos.welten",
+   "sprosse": 1,
+   "umfang": "Heimat + 1 Fremdwelt",
+   "preis": "P an BEIDEN Welten",
+   "richter": "Licht-Bilanz an der Kugel 5–12,5 an beiden Welten; Fremdwelt-Mittag: Zenit nicht blau",
+   "grund": "„Heimat + 1 Fremdwelt“, Preis an BEIDEN Welten: die Zeile Planet und Welten („jede Welt“) oder Ort je Welt — zwei Lesarten, die Schwellen (Ankunft ≤ 5 s je Welt) unterscheiden sich"
+  },
+  {
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 1,
+   "umfang": "EINE Welt, EINE Konstante anders (Schwere-Exponent, Stoff-Dichte, Zähigkeit)",
+   "preis": "P",
+   "richter": "20 Versuche des Spielers (Fall, Wurf, Pendel): Messwerte aus dem Bild folgen dem Gesetz der Welt ±5 % und weichen vom Erd-Gesetz ab",
+   "grund": "EINE fremde Welt mit anderer Konstante: ein Welt-Wechsel; Ort oder Planet und Welten ist am Text nicht ablesbar"
+  },
+  {
+   "leiter": "planet.kosmos.kunstwelten",
+   "sprosse": 1,
+   "umfang": "EIN Drehzylinder, 10 km",
+   "preis": "P",
+   "richter": "Wurf-Versuch: die Bahn weicht um die Coriolis-Ablenkung ab ±10 %; der Horizont steigt im Bild",
+   "grund": "„EIN Drehzylinder, 10 km“: die Spanne 1–20 km, dazu der steigende Horizont; Ort und Stadt sind beide lesbar"
+  },
+  {
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 1,
+   "umfang": "EINE Nachbargalaxie als Ziel",
+   "preis": "P · Sprung ≤ 5 s",
+   "richter": "am Ziel steht die Heimatgalaxie am Himmel in der richtigen Richtung und Größe ±5 %; Bildpaar Anflug gegen Teleskop-Aufnahme (2AFC ≤ 80 %)",
+   "grund": "Sprung zur Nachbargalaxie: der Umfang ist kosmisch (Planet und Welten), die Pose am Ziel ein Ort — zwei Lesarten"
+  },
+  {
+   "leiter": "leben.evolution.fremde-physik",
+   "sprosse": 1,
+   "umfang": "g 0,3–3",
+   "preis": "P",
+   "richter": "Regression aus 50 Saaten je g aus Bildern: Steigung im Band der Statik",
+   "grund": "50 Saaten je Schwere g 0,3–3: fremde Welten in Folge; ob die Zeile Ort je Saat oder Planet und Welten gilt, sagt der Text nicht"
+  },
+  {
+   "leiter": "mensch.stadt.vertikal",
+   "sprosse": 1,
+   "umfang": "1 Ebene, Häuser bis 7 Geschosse",
+   "preis": "P · Stadt",
+   "richter": "höchstes Gebäude im Bild, begehbare Ebenen = 1",
+   "grund": "Umfang „1 Ebene, Häuser bis 7 Geschosse“ ohne Bauten-Zahl, Preis-Pose „Stadt“: Ort oder Stadt"
+  },
+  {
+   "leiter": "mensch.stadt.breite",
+   "sprosse": 1,
+   "umfang": "1 Familie, 6 Regionen",
+   "preis": "P · Stadt",
+   "richter": "Region einer Stadt aus 6 erkannt ≥ 50 %",
+   "grund": "„1 Familie, 6 Regionen“, Richter erkennt die Region EINER Stadt, Preis-Pose „Stadt“: Ort oder Stadt"
+  },
+  {
+   "leiter": "mensch.netz.gestalt",
+   "sprosse": 1,
+   "umfang": "1 Ort, ~10 km, 4 Klassen",
+   "preis": "P · Fahrt",
+   "richter": "Gefälle p95 ≤ 9,5 % über 8 Saaten UND jede Klasse ohne Wand oder Klemmen befahren",
+   "grund": "„1 Ort, ~10 km“: das Wort sagt Ort, die Spanne Stadt (über 1 km Sicht)"
+  },
+  {
+   "leiter": "mensch.wirtschaft.handel",
+   "sprosse": 1,
+   "umfang": "1 Ware, 1 Weg mit Fahrer",
+   "preis": "P · Stadt",
+   "richter": "Bildpaar leer/beladen; ohne Lieferung Stand leer binnen Tagesfrist",
+   "grund": "„1 Weg mit Fahrer“ ohne Länge, Preis-Pose „Stadt“: Ort oder Stadt"
+  },
+  {
+   "leiter": "mensch.macht.grenze",
+   "sprosse": 1,
+   "umfang": "1 Herrschaftsgebiet",
+   "preis": "P · Grenzübertritt",
+   "richter": "Grenze im Bild = Karte; Burg, wo Lage und Reichtum sie tragen",
+   "grund": "„1 Herrschaftsgebiet“ ohne Größe (Burg, Grenze im Bild = Karte)"
+  },
+  {
+   "leiter": "mensch.kultur.gestalt",
+   "sprosse": 1,
+   "umfang": "U_eff ≥ 10 (auch aus Liste)",
+   "preis": "P · Dorf und Stadt",
+   "richter": "10 Kulturen an Häuser-Bildern blind getrennt ≥ 80 %",
+   "grund": "10 Kulturen an Häuser-Bildern, Preis-Pose „Dorf und Stadt“: zwei Zeilen zugleich genannt"
+  },
+  {
+   "leiter": "mensch.kultur.wissen",
+   "sprosse": 1,
+   "umfang": "Technikstand je Ort",
+   "preis": "P",
+   "richter": "Stand ↔ Bevölkerung × Vernetzung r ≥ 0,5",
+   "grund": "„Technikstand je Ort“ über Orte jeder Größe (Bevölkerung × Vernetzung): die Klasse wechselt mit der Stichprobe"
+  },
+  {
+   "leiter": "mensch.zeit.erde",
+   "sprosse": 1,
+   "umfang": "EIN Ort, EINE Zeit (eine römische Stadt um 100)",
+   "preis": "P · Schlüssel ≤ 10 kB",
+   "richter": "Straßenachsen gegen den archäologischen Plan: Deckung ≥ 70 %; Fach-Panel 2AFC Spielbild gegen wissenschaftliche Rekonstruktion ≤ 80 %",
+   "grund": "„EIN Ort … eine römische Stadt um 100“: das Wort Ort gegen das Wort Stadt, dazu der Erd-Schlüssel ≤ 10 kB (Spalte Bytes)"
+  },
+  {
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 1,
+   "umfang": "Landmarke aus 1–3 km sichtbar",
+   "preis": "P",
+   "richter": "N = 50 Saaten: Anteil Spawn-Orte mit ≥ 1 Landmarke in 1–3 km im Bild, Kontrast ≥ 0,1, ≥ 0,9",
+   "grund": "„Landmarke aus 1–3 km sichtbar“: über der Sicht der Zeile Ort (1 km); Vorbild planet.wetter.lagen („wenige km“) trägt Ort — Widerspruch"
+  },
+  {
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 1,
+   "umfang": "EIN Ding der Welt: der Spieler ist ein Fluss",
+   "preis": "P",
+   "richter": "10 min als Fluss: der Weg ist die Gefälle-Linie der Welt (Abweichung ≤ 5 %); ein Eingriff des Spielers (Lauf verlegen) ändert das Ufer im Bildpaar",
+   "grund": "„der Spieler ist ein Fluss“, 10 min entlang der Gefälle-Linie: die Länge des Laufs (und damit die Sicht) nennt der Text nicht"
+  },
+  {
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 1,
+   "umfang": "EIN Instrument: Fernrohr auf den Mond der Welt",
+   "preis": "P",
+   "richter": "das Fernrohr-Bild zeigt Krater, die beim Anflug an derselben Stelle liegen (Lagefehler ≤ 1 %)",
+   "grund": "Fernrohr auf den Mond, verglichen mit dem Anflug an dieselbe Stelle: der Anflug ist ein Welt-Sprung (Planet und Welten), das Fernrohr ein Ort"
+  },
+  {
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 1,
+   "umfang": "Wiese und Genesis, Sicht 8 km",
+   "preis": "P stehend",
+   "richter": "Frame p95 je Gerät, Wiese und Genesis, Ego und Third",
+   "grund": "„Wiese und Genesis, Sicht 8 km“: die Sicht liegt in der Zeile Stadt, der Ort ist eine Wiese — die Treppe (Sicht bis 1 km für Ort) und das Spiel (8 km Sicht an jeder Wiese) widersprechen sich"
+  },
+  {
+   "leiter": "planet.kopplung.land-meer-luft",
+   "sprosse": 1,
+   "umfang": "1 Gebirge",
+   "preis": "P im Regen",
+   "richter": "Niederschlag Luv/Lee ≥ 2:1 an 30 Saaten; im Bild grün/braun an der Kammlinie getrennt",
+   "grund": "„1 Gebirge“, Luv/Lee an der Kammlinie: ein Gebirgszug misst über die Sicht von 1 km hinaus, Größe ungenannt"
+  },
+  {
+   "leiter": "erleben.kopplung.bild",
+   "sprosse": 1,
+   "umfang": "2 Phänomene",
+   "preis": "P",
+   "richter": "Gang 2 km auf einen Hang: Leuchtdichte des Zielfensters springt an keinem Stufenwechsel > 5 %",
+   "grund": "Gang 2 km auf einen Hang, Leuchtdichte nah ↔ fern: Spanne 1–20 km, Ort oder Stadt"
+  },
+  {
+   "leiter": "same.kopplung.erdsaat",
+   "sprosse": 1,
+   "umfang": "1 Ort, 1 Ereignis-Typ",
+   "preis": "P",
+   "richter": "Bildvergleich gegen Relief-Modell; der Vulkan bricht von selbst aus",
+   "grund": "„1 Ort“ der Erd-Saat (Vesuv am Golf): der Erd-Schlüssel zählt erst in der Zeile Planet und Welten (Spalte Bytes), die Zeile Ort verlangt 0"
+  },
+  {
+   "leiter": "same.kopplung.terraform",
+   "sprosse": 1,
+   "umfang": "EIN Eingriff, EINE Region: Wetter lenken über einer Stadt",
+   "preis": "P",
+   "richter": "Bildpaar mit und ohne Eingriff an derselben Saat: Regenmenge im Zielgebiet höher, im Lee tiefer; Bilanz ±10 %",
+   "grund": "„EINE Region: Wetter lenken über einer Stadt“, Zielgebiet und Lee: Stadt oder größer"
+  }
+ ]
+}
