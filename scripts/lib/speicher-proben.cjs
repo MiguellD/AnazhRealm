@@ -29,7 +29,6 @@ async function wegFahrt({ umstellen, rufe }) {
         }
         await rufe("/lauf", { sek: 30, ein: 30 });
         const puf = await rufe("/puffer", { top: 12 });
-        const halter = await ev("return __heapHalter(r, 3).filter(([, b]) => b >= 131072).map(([k, b]) => [k, +(b / 1048576).toFixed(2)]);"); // prettier-ignore
         const h = await rufe("/eval", { code: "return __heapHalter(r, 3).filter(([, b]) => b >= 131072).map(([k, b]) => [k, +(b / 1048576).toFixed(2)]);" }); // prettier-ignore
         weg.push({ pose, x, z, sek: Math.round((Date.now() - t) / 1000), heap_mb: puf.heapMB, vram_mb: puf.vram && puf.vram.mb, halter: h.ergebnis || [] }); // prettier-ignore
         console.log(`${pose}: nach GC Heap ${puf.heapMB} MB · VRAM ${puf.vram && puf.vram.mb} MB`);
@@ -135,6 +134,7 @@ async function rundeFahrt({ umstellen, rufe }) {
     await ev("__geburtLinse(T, r.state.renderer); " + BILD_STROM + " return true;");
     const stand = async (bildMax) => {
         const puf = await rufe("/puffer", { top: 12 });
+        const halter = await ev("return __heapHalter(r, 3).filter(([, b]) => b >= 131072).map(([k, b]) => [k, +(b / 1048576).toFixed(2)]);"); // prettier-ignore
         const z = await ev("return { geometries: r.state.renderer.info.memory.geometries, zensus: __behaelterZensus(r), geburt: __geburtZensus(), ort: r.state.playerMesh.position.toArray().map((x) => +x.toFixed(1)) };"); // prettier-ignore
         return Object.assign({ heapMB: puf.heapMB, vramMB: puf.vram && puf.vram.mb, bildMax: bildMax ? bildMax.max : 0, bilder: bildMax ? bildMax.n : 0, ueber100: bildMax ? bildMax.ueber : 0, langeAufgabe: bildMax ? Math.round(bildMax.lang) : 0, langeAufgabeUmstellen: bildMax ? Math.round(bildMax.langAlle) : 0, halter }, z); // prettier-ignore
     };

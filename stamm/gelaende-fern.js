@@ -195,8 +195,9 @@ class AnazhRealm_gelaende_fern {
     // ein Gedächtnis ohne Schleife wuchs mit dem Weg (Radeon 15.11.: Tritte 4 814 → 31 919, Marken 98 → 422, Freistand
     // 2 375 → 9 298, Pegel 312 → 669; die Marke vom ersten Besuch hielt die Wiederkehr: 6 von 46 Glutbrunnen der Wiese fehlten).
     // EINE ZELLE GRÖSSER ALS EIN CHUNK (die Hydro-Kachel, 2 km) geht erst, wenn KEIN Teil von ihr mehr im behaltenen Gebiet liegt
-    // (`behalten`: der Saum und die Reichweite ihrer Leser) und ein gehender Chunk in ihr lag; eine kleinere geht mit dem Chunk
-    // ihrer Mitte. Die Kachel jenseits bestellt der nächste Bau neu (`_ensureHydroTilesAround`).
+    // (`behalten`: der Saum und die Reichweite ihrer Leser) — auch eine, die ein ferner Leser bestellte, ohne dass dort je ein
+    // Chunk stand (die Fluss-Probe gelaende.K4#2 wirft bis zu 400 Orte ±6 km: 38 → 48 Kacheln blieben, b0a670d7); eine kleinere geht
+    // mit dem Chunk ihrer Mitte. Die Kachel jenseits bestellt der nächste Bau neu (`_ensureHydroTilesAround`).
     _saatGedaechtnisGeht(geht, span, bleiben, behalten) {
         const st = this.state;
         const halten = new Set();
@@ -204,7 +205,6 @@ class AnazhRealm_gelaende_fern {
             const bp = st.blueprints && st.blueprints[e.type];
             if (bp && bp._isGrown) halten.add(this._scatterCellKeyAt(e.position.x, e.position.z, "tree"));
         }
-        const chunks = [...geht].map((k) => k.split(",").map(Number));
         for (const { karte, zelle, reichweite, geht: abschied } of (this._zellGedaechtnisse || new Map()).values()) {
             if (!karte || !karte.size) continue;
             const rw = typeof reichweite === "function" ? reichweite.call(this) : reichweite;
@@ -223,11 +223,7 @@ class AnazhRealm_gelaende_fern {
                 const [x0, z0] = [i * m + ab, j * m + ab];
                 if (m <= span) {
                     if (!geht.has(Math.floor((x0 + m / 2) / span) + "," + Math.floor((z0 + m / 2) / span))) continue;
-                } else if (
-                    behalten(x0, z0, x0 + m, z0 + m, rw) ||
-                    !chunks.some(([cx, cz]) => cx * span < x0 + m && x0 < (cx + 1) * span && cz * span < z0 + m && z0 < (cz + 1) * span) // prettier-ignore
-                )
-                    continue;
+                } else if (behalten(x0, z0, x0 + m, z0 + m, rw)) continue;
                 karte.delete(k);
                 fiel.push(k);
             }
