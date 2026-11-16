@@ -2140,8 +2140,9 @@
      "gruen": true,
      "zahl": "Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.973 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px",
      "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-sicht.js)",
+     "gehalten": true,
+     "r6": "konsum"
     }
    ]
   },
@@ -5153,7 +5154,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 417,
-  "konsum": 158,
+  "konsum": 159,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5325,10 +5326,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 90
+  "ohne": 89
  },
  "kopfVoll": "9c9c9bd30d415e13b59ed1b8c681f00f27d7ab6c",
- "zeit": "2026-11-16T12:42:16.134Z",
+ "zeit": "2026-11-16T12:53:18.905Z",
  "vorher": "9c9c9bd3",
  "bilanz": {
   "gewinn": [],
