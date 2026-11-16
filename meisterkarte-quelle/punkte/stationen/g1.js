@@ -1220,10 +1220,12 @@ async function weltSitzungLauf() {
                 if (!a || a.ergebnis === undefined || a.ergebnis === null) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
                 e = a.ergebnis;
                 for (const [i, b] of (Array.isArray(e.bilder) ? e.bilder : []).entries()) {
-                    // `vor`: die Probe stellt die Welt des Bilds selbst (`window.__vorBild(...vor)`, ihre Seiten-Funktion), vor dem Schuss
+                    // `vor`: die Probe stellt die Welt des Bilds selbst (`window.__vorBild(...vor)`, ihre Seiten-Funktion), vor dem Schuss;
+                    // ihre Antwort steht am Bild als `vor` (luftwasser.K4#1: die Bestäuber im Kegel des Bilds)
                     if (Array.isArray(b.vor)) {
                         const v = await werkbankRuf(W, "/eval", { code: "return await window.__vorBild(..." + JSON.stringify(b.vor) + ");" });
                         if (!v || v.fehler) throw new Error("vorBild: " + JSON.stringify(v).slice(0, 200));
+                        b.vor = v.ergebnis;
                     }
                     const [px, py, pz, lx, ly, lz] = b.kamera;
                     const datei = B + "-" + name + "-" + (i + 1) + ".png";
