@@ -3,7 +3,7 @@
  "je": {
   "affekt.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.7 dB · töten -0.03 -1.17 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an a996d0ae radeon · Tag first GRÜN: fällen -0.12 -4.71 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.7 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 6.91 dB → Tat 10 -0.08 dB (0.012 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.5 s (≤ 2) [6.91 -1.97 -1.3 -0.86 -0.58 -0.39 -0.26 -0.17 -0.12 -0.08] GRÜN an 3e4f99cd gtx",
+   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · Tag first GRÜN: fällen -0.12 -4.69 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 4.11 dB → Tat 10 -0.05 dB (0.012 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.467 s (≤ 2) [4.11 -1.18 -0.79 -0.52 -0.35 -0.24 -0.16 -0.1 -0.07 -0.05] GRÜN an 71839b1e radeon · Tag first GRÜN: fällen -0.12 -4.71 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.7 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 6.91 dB → Tat 10 -0.08 dB (0.012 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.5 s (≤ 2) [6.91 -1.97 -1.3 -0.86 -0.58 -0.39 -0.26 -0.17 -0.12 -0.08] GRÜN an 3e4f99cd gtx",
    "stationen": [
     {
      "id": "affekt.K1#1",
@@ -19,10 +19,10 @@
      "id": "affekt.K1#2",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Tag first GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.7 dB · töten -0.03 -1.17 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
-     "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "Tag first GRÜN: fällen -0.12 -4.69 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 4.11 dB → Tat 10 -0.05 dB (0.012 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.467 s (≤ 2) [4.11 -1.18 -0.79 -0.52 -0.35 -0.24 -0.16 -0.1 -0.07 -0.05] GRÜN",
+     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "affekt.K1#2",
@@ -938,7 +938,7 @@
   },
   "gelaende.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless — offen: gelaende.K4#2 radeon: ungemessen (R10) — zuletzt an 3e4f99cd: Deckel 110 s gerissen: Stille seit 109.9 s nach 110 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · gelaende.K4#2 gtx: ROT: Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 0.879/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4 an 3e4f99cd",
+   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless · Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 0.645/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an 71839b1e radeon — offen: gelaende.K4#2 gtx: ROT: Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 0.879/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4 an 3e4f99cd",
    "stationen": [
     {
      "id": "gelaende.K4#1",
@@ -963,11 +963,11 @@
     {
      "id": "gelaende.K4#2",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 3e4f99cd: Deckel 110 s gerissen: Stille seit 109.9 s nach 110 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 0.645/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4",
+     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "gelaende.K4#2",
@@ -2080,7 +2080,7 @@
   },
   "luftwasser.K3": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.835 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 3e4f99cd radeon · Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.789 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 3e4f99cd gtx — offen: luftwasser.K3#1 radeon: ungemessen (R10) · luftwasser.K3#1 gtx: ROT: Lebensräume mit eigener Fauna im Bild 0 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch — / 0 px (unter dem Spiegel FEHLER ABNAHME ROT [Sicht verdeckt 29.1 % (Laub · Rinde · Fels · Böschung näher als 0.7503167664393774 m, Bau als 0.3751583832196887 m): Gelände 29.1 % · Vordergrund 29.2 % näher als 0.75 m (der halbe Ziel-Abstand): Gelände 29.2 %] · beweis · Sicht 29.1 % (Gelände 29.1 %) · Ziel Blickziel im Bild frei 1.5 m · Luma 88.2 σ 19.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.297 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\3e4f99cd-gtx\\luftwasser.K3_1-bach-1-rot.png, vom Ufer) an 3e4f99cd",
+   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.835 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 3e4f99cd radeon · Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.789 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 3e4f99cd gtx — offen: luftwasser.K3#1 radeon: ROT: Lebensräume mit eigener Fauna im Bild 0 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch — / 0 px (unter dem Spiegel FEHLER ABNAHME ROT [Sicht verdeckt 27.3 % (Laub · Rinde · Fels · Böschung näher als 0.7503322597356359 m, Bau als 0.37516612986781794 m): Gelände 27.3 % · Vordergrund 26.6 % näher als 0.75 m (der halbe Ziel-Abstand): Gelände 26.6 %] · beweis · Sicht 27.3 % (Gelände 27.3 %) · Ziel Blickziel im Bild frei 1.5 m · Luma 91 σ 13.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.298 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\71839b1e-radeon\\luftwasser.K3_1-bach-1-rot.png, vom Ufer) an 71839b1e · luftwasser.K3#1 gtx: ROT: Lebensräume mit eigener Fauna im Bild 0 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch — / 0 px (unter dem Spiegel FEHLER ABNAHME ROT [Sicht verdeckt 29.1 % (Laub · Rinde · Fels · Böschung näher als 0.7503167664393774 m, Bau als 0.3751583832196887 m): Gelände 29.1 % · Vordergrund 29.2 % näher als 0.75 m (der halbe Ziel-Abstand): Gelände 29.2 %] · beweis · Sicht 29.1 % (Gelände 29.1 %) · Ziel Blickziel im Bild frei 1.5 m · Luma 88.2 σ 19.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.297 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\3e4f99cd-gtx\\luftwasser.K3_1-bach-1-rot.png, vom Ufer) an 3e4f99cd",
    "stationen": [
     {
      "id": "luftwasser.K3#1",
@@ -2096,10 +2096,10 @@
      "id": "luftwasser.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "Lebensräume mit eigener Fauna im Bild 0 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch — / 0 px (unter dem Spiegel FEHLER ABNAHME ROT [Sicht verdeckt 27.3 % (Laub · Rinde · Fels · Böschung näher als 0.7503322597356359 m, Bau als 0.37516612986781794 m): Gelände 27.3 % · Vordergrund 26.6 % näher als 0.75 m (der halbe Ziel-Abstand): Gelände 26.6 %] · beweis · Sicht 27.3 % (Gelände 27.3 %) · Ziel Blickziel im Bild frei 1.5 m · Luma 91 σ 13.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.298 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\71839b1e-radeon\\luftwasser.K3_1-bach-1-rot.png, vom Ufer)",
+     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
+     "grund": "ROT: Lebensräume mit eigener Fauna im Bild 0 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch — / 0 px (unter dem Spiegel FEHLER ABNAHME ROT [Sicht verdeckt 27.3 % (Laub · Rinde · Fels · Böschung näher als 0.7503322597356359 m, Bau als 0.37516612986781794 m): Gelände 27.3 % · Vordergrund 26.6 % näher als 0.75 m (der halbe Ziel-Abstand): Gelände 26.6 %] · beweis · Sicht 27.3 % (Gelände 27.3 %) · Ziel Blickziel im Bild frei 1.5 m · Luma 91 σ 13.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.298 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\71839b1e-radeon\\luftwasser.K3_1-bach-1-rot.png, vom Ufer)",
+     "r6": "konsum"
     },
     {
      "id": "luftwasser.K3#1",
@@ -2142,7 +2142,7 @@
   },
   "luftwasser.K4": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: ungemessen (R10) · luftwasser.K4#1 gtx: ROT: 7 Orte im Bild, Bestäuber (Objekte) 1/1/1/0/0/1/1, Blüten (Pixel) 0/0/0/0/0/0/0, r null (Soll ≥ 0,5) · ROT keine Blumen-Klasse im Bild, r null < 0,5 an 3e4f99cd",
+   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: ungemessen (R10) — zuletzt an 71839b1e: Deckel 90 s gerissen: Stille seit 89.9 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · luftwasser.K4#1 gtx: ROT: 7 Orte im Bild, Bestäuber (Objekte) 1/1/1/0/0/1/1, Blüten (Pixel) 0/0/0/0/0/0/0, r null (Soll ≥ 0,5) · ROT keine Blumen-Klasse im Bild, r null < 0,5 an 3e4f99cd",
    "stationen": [
     {
      "id": "luftwasser.K4#1",
@@ -2160,7 +2160,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 71839b1e: Deckel 90 s gerissen: Stille seit 89.9 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true
     },
     {
@@ -3577,7 +3577,7 @@
      "gruen": true,
      "zahl": "bild-diff 0.80 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 71839b1e: Last: Referenz f 1,274 (Faden 1,082 · alle Kerne 1,274; vor 102,2/317 ms, nach 113,4/349,9 ms, Ruhe 104,8/274,7 ms seit 2026-11-14) · fremd: grep.exe -rln gpu-schloss --include=*.sh --include=*.cjs --",
      "gehalten": true
     },
     {
@@ -4872,16 +4872,16 @@
   },
   "karte2.erleben.klang.landschaft": {
    "punkte": 0,
-   "beleg": "Maschine: ✅ Wind r 0.80 bei Lag 0 (n 104, CV Bild 0.22 / Ohr 0.50, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -40.1 dB aus 19 Leibern (19 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an 3e4f99cd gtx — offen: karte2.erleben.klang.landschaft#1 radeon: ungemessen (R10)",
+   "beleg": "Maschine: ✅ Wind r 0.73 bei Lag 0 (n 104, CV Bild 0.28 / Ohr 0.49, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42.7 dB aus 15 Leibern (15 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an 71839b1e radeon · ✅ Wind r 0.80 bei Lag 0 (n 104, CV Bild 0.22 / Ohr 0.50, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -40.1 dB aus 19 Leibern (19 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an 3e4f99cd gtx",
    "stationen": [
     {
      "id": "karte2.erleben.klang.landschaft#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "✅ Wind r 0.73 bei Lag 0 (n 104, CV Bild 0.28 / Ohr 0.49, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42.7 dB aus 15 Leibern (15 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2",
+     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
+     "grund": "GRÜN trotz Last: Referenz f 1,216 (Faden 1,216 · alle Kerne 1,081; vor 127,4/297,9 ms, nach 107,2/274,7 ms, Ruhe 104,8/275,5 ms seit 2026-11-14) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 16,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 15,1 CPU-s · claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh 6,2 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 28,3 CPU-s · svchost.exe 19,6 CPU-s · SearchIndexer.exe 2,2 CPU-s",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -5066,7 +5066,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 413,
-  "konsum": 153,
+  "konsum": 157,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5238,10 +5238,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 91
+  "ohne": 87
  },
  "kopfVoll": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
- "zeit": "2026-11-15T23:43:00.724Z",
+ "zeit": "2026-11-16T00:04:00.325Z",
  "vorher": "71839b1e",
  "bilanz": {
   "gewinn": [],
