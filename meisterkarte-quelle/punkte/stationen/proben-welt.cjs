@@ -1217,11 +1217,21 @@ async function wasserGraben(tor) {
         }
     console.log("  (b)(d) " + ((Date.now() - t1) / 1000).toFixed(1) + " s · Damm " + JSON.stringify(erg.damm) + " · Ferne " + JSON.stringify(erg.ferne));
     const t0 = Date.now();
+    // (b)(d) stehen in der Ausgabe, ehe (a) beginnt: ein Wurf danach nimmt ihnen ihr Urteil nie (GTX a635bfee 16.11.: nach „(b)(d)“
+    // endete die Probe ohne Zeile und ohne {AUS} — die Station blieb ohne Urteil)
+    fs.writeFileSync(tor.aus, JSON.stringify(erg, null, 1));
     const sichtVor = await page.evaluate(() => (window.__loop(true), window.anazhRealm.state.cameraMode));
-    // der Zeiger EINMAL vorab gefangen, ehe ein Fadenkreuz auf einem Graben-Punkt liegt
-    await zeigerFangen();
     try {
-        for (const [teil, sicht, idx] of [["third", "third", [0, 2]], ["ego", "first", [1]]]) {
+        // der Zeiger EINMAL vorab gefangen, ehe ein Fadenkreuz auf einem Graben-Punkt liegt — wirft der Fang, steht sein Text als
+        // `fehler` an beiden Sichten (ROT beim Namen), nie ein Abbruch der ganzen Probe
+        try {
+            await zeigerFangen();
+        } catch (e) {
+            const fehler = "Zeiger-Fang: " + String((e && e.message) || e).split("\n")[0];
+            [erg.third, erg.ego] = [{ graeben: [], fehler }, { graeben: [], fehler }];
+            console.log("  (a) FEHLER " + fehler);
+        }
+        for (const [teil, sicht, idx] of erg.third ? [] : [["third", "third", [0, 2]], ["ego", "first", [1]]]) {
             const liste = [];
             try {
                 for (const i of idx) for (const abstand of [1, 3]) liste.push(await graben(punkte[i], abstand, sicht));
