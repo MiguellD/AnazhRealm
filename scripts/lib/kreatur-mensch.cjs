@@ -592,7 +592,7 @@ async function menschBuehnen() {
         // seines nahen Leibs. Je Bewohner im Satz die bedeckte Breite (die Summe der x-Strecken der Scheibe, wie sie das Bild von vorn
         // füllt) an Schulter, Taille und Hüfte als Anteil der Körperhöhe — am Satz gelesen, wie ihn die Welt zeichnet: der Punkt aus
         // SEINER Zeile der Ton-Tafel (`aGang.z`), die Breite aus SEINER Instanz-Matrix, die Vorlage der Stufe an diesem Punkt
-        // (`_leibRaumLeib`) — gegen den nahen Leib seiner Gestalt (die Hüllen eines Bewohners mit Leib, ihre Geometrie × seine Breite).
+        // (`_leibRaumLeib`) — gegen den nahen Leib seiner Gestalt (die Hüllen ihrer Vorlage im Ofen, ihre Geometrie × seine Breite).
         // Die Achsen des Baus trägt nah der Knochen, fern der Punkt: sie stehen im Vergleich am Kanon (ihr Leser: gate:mensch-anatomie
         // `leser.menge`). Bis hier stand der Satz am Punkt des eigenen Genoms, schmal gegossen, und der Leib an der nächsten Gestalt:
         // Taille bis 39 %, Schulter bis 17,5 % neben dem Leib (40 Bewohner, Ofen).
@@ -637,21 +637,23 @@ async function menschBuehnen() {
                 for (let t = 0; t < I.length; t += 3) aus.push([0, 1, 2].map((k) => [P[3 * I[t + k]], P[3 * I[t + k] + 1], P[3 * I[t + k] + 2]]));
                 return aus;
             };
-            // der nahe Leib je Gestalt: die Hüllen mit Skelett eines Bewohners mit Leib (ohne Haar und Auge), am Kanon ihrer Breite
+            // der nahe Leib je Gestalt: die Hüllen mit Skelett (ohne Haar und Auge), am Kanon ihrer Breite
             const nah = new Map();
-            for (const b of liste) {
-                if (nah.has(b.gestalt) || !b.leib || !b.leib.userData.rig) continue;
+            // (die Vorlage des Ofens, aus der `_buildHumanGroup` jeden nahen Leib dieser Gestalt stellt — gelesen, nie gegossen)
+            S.gestalten.forEach((G, gi) => {
+                const da = A._tierOfenMemo && A._tierOfenMemo.get(G.keys[0]);
+                if (!da || !da.root) return;
                 const T3 = [];
-                b.leib.traverse((o) => {
+                da.root.traverse((o) => {
                     const kl = String((o.userData && o.userData.__klasse) || (o.material && o.material.userData && o.material.userData.__klasse) || "");
                     if (!o.isSkinnedMesh || !o.geometry.index || /hair|haar|eye|iris|pupil|cornea|brow|braue|lash/i.test(kl)) return;
                     dreiecke(o.geometry.attributes.position.array, o.geometry.index.array, T3);
                 });
-                if (T3.length) nah.set(b.gestalt, masse(T3));
-            }
+                if (T3.length) nah.set(gi, masse(T3));
+            });
             gestalt.gestalten = nah.size;
-            // die Achsen des Baus am Kanon (START_PARAMS), jede andere aus der Zeile des Bewohners
-            const kanon = kc.leibRaumPunkt(kc.START_PARAMS);
+            // die Achsen des Baus am Kanon (der Punkt seiner Gestalt: sie gießt im Kanon des Skeletts), jede andere aus der Zeile des Bewohners
+            const kanon = S.gestalten.map((G) => kc.leibRaumPunkt(G.dK));
             const bau = kc.LEIB_RAUM.achsen.map((a) => kc.BAU_GESETZ.achsen.some((q) => q.achse === a.achse));
             const mitte = kc.LEIB_RAUM.achsen.map((a) => (a.knoten.length - 1) / 2);
             const tex = r._tonTafel();
@@ -664,7 +666,7 @@ async function menschBuehnen() {
                 if (!b.leib || b.leib.userData._satz !== true || !b.satzOrt || !(b.satzOrt[1] >= 0) || !nah.has(b.gestalt)) continue;
                 const o = (Math.round(aG.getZ(b.satzOrt[1])) * breiteT + nT) * 4;
                 // Täter (Selbsttest): der Satz ohne Gestalt — jede Instanz liest die Mitte des Leib-Raums (die Vorlage)
-                const punkt = mitte.map((m, ai) => (bau[ai] ? kanon[ai] : hat("bewohner-gestalt") ? m : D[o + ai]));
+                const punkt = mitte.map((m, ai) => (bau[ai] ? kanon[b.gestalt][ai] : hat("bewohner-gestalt") ? m : D[o + ai]));
                 Z.leib.getMatrixAt(b.satzOrt[1], m4);
                 m4.decompose(p3, q4, s3);
                 const fern = masse(dreiecke(A._leibRaumLeib(tafel, punkt, lage), ix2)).map((x) => (x * s3.x) / s3.y);

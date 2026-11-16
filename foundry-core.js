@@ -7236,43 +7236,64 @@ function __unterHaarGrenze(kern, p, x, y, z) {
 }
 
 // Der Mengen-Leib ab seinem Feld: die Zonen je Ecke, der Farb-Schnitt, der Kollaps auf die Zeile, die Gewichte.
-// DIE HEBUNG DES KLEIDS DER MENGE (w28-gestalt): je Ecke ihr Weg von ihrer Haut = die Auflage ihrer Zone (Dicke und Weite, dieselbe
-// Rechnung wie `__mengenPrims`) längs ihrer Normale; eine Ecke an der Grenze zweier Zonen trägt die kleinere Auflage (die Haut am
-// Saum hebt nichts). Rückgabe: `heb` (3 je Ecke), `lage` (je Ecke), `lageMax`.
+// DIE HEBUNG DES KLEIDS DER MENGE (w28-gestalt): je Ecke ihr Weg von ihrer Haut — dieselbe Rechnung wie der Stoff aus der Haut der
+// nahen Stufe (`__stoffAusHaut`): die Dicke ihrer Zone längs ihrer Normale, die Weite (der Poncho, `kleidZonen` weite) WAAGRECHT
+// hinaus — die Normale ohne ihre Höhe, gemischt mit dem Strahl von der senkrechten Achse durch `um` (halb); unter der halben
+// Länge schwindet sie. Längs der Normale gehoben trug die Weite den seitlich gestreckten Arm der Spreiz-Pose rundum auf: die
+// Schulter des Satzes stand unter dem Poncho 0,06–0,13 E breiter als die des nahen Leibs. Eine Ecke an der Grenze zweier Zonen
+// trägt die kleinere Auflage (die Haut am Saum hebt nichts). Rückgabe: `heb` (3 je Ecke), `dicke` (je Ecke: die ihrer Zone
+// ohne Weite — die Lage, die die Anlage liest, wie nah `__lage`), `lageMax` (der längste Weg).
 function __mengenHebung(mp, mi, mz, zonen, prims) {
     const mn = mp.length / 3;
     if (!mz || mz.length !== mi.length / 3) throw new Error("MENGEN-LEIB: die Zone je Fläche fehlt — das Kleid läse neben seiner Haut (fail-closed)");
     const um = zonen.map((z) => (z.weite ? (prims.find((q) => q.teil === z.weite.um) || {}).c || null : null));
-    const aufAn = (zi, x, y, z) => {
-        const Z = zonen[zi],
-            u = um[zi];
-        return Z.dicke + (u ? Z.weite.mehr * Math.min(1, Math.max(0, (Math.hypot(x - u[0], y - u[1], z - u[2]) - Z.weite.ab) / (Z.weite.bis - Z.weite.ab))) : 0);
-    };
-    const dkE = new Float32Array(mn).fill(Infinity),
+    const sumE = new Float32Array(mn).fill(Infinity),
+        dicke = new Float32Array(mn),
+        mehrE = new Float32Array(mn),
+        umE = new Int16Array(mn).fill(-1),
         nE = new Float32Array(mn * 3);
     for (let f = 0; f < mz.length; f++) {
         const e = [mi[3 * f], mi[3 * f + 1], mi[3 * f + 2]];
         const ax = mp[3 * e[1]] - mp[3 * e[0]], ay = mp[3 * e[1] + 1] - mp[3 * e[0] + 1], az = mp[3 * e[1] + 2] - mp[3 * e[0] + 2]; // prettier-ignore
         const bx = mp[3 * e[2]] - mp[3 * e[0]], by = mp[3 * e[2] + 1] - mp[3 * e[0] + 1], bz = mp[3 * e[2] + 2] - mp[3 * e[0] + 2]; // prettier-ignore
         const nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx; // prettier-ignore
+        const zi = mz[f] >= 2 ? mz[f] - 2 : -1,
+            Z = zi >= 0 ? zonen[zi] : null,
+            u = zi >= 0 ? um[zi] : null;
         for (const v of e) {
             nE[3 * v] += nx;
             nE[3 * v + 1] += ny;
             nE[3 * v + 2] += nz;
-            dkE[v] = Math.min(dkE[v], mz[f] >= 2 ? aufAn(mz[f] - 2, mp[3 * v], mp[3 * v + 1], mp[3 * v + 2]) : 0);
+            const d0 = Z ? Z.dicke : 0,
+                mehr = u ? Z.weite.mehr * Math.min(1, Math.max(0, (Math.hypot(mp[3 * v] - u[0], mp[3 * v + 1] - u[1], mp[3 * v + 2] - u[2]) - Z.weite.ab) / (Z.weite.bis - Z.weite.ab))) : 0;
+            if (d0 + mehr < sumE[v]) [sumE[v], dicke[v], mehrE[v], umE[v]] = [d0 + mehr, d0, mehr, u ? zi : -1];
         }
     }
     let lageMax = 0;
-    const heb = new Float32Array(mn * 3),
-        lage = new Float32Array(mn);
+    const heb = new Float32Array(mn * 3);
     for (let v = 0; v < mn; v++) {
-        const l = Math.hypot(nE[3 * v], nE[3 * v + 1], nE[3 * v + 2]),
-            d = dkE[v] < Infinity && l > 0 ? dkE[v] : 0;
-        for (let c = 0; c < 3; c++) heb[3 * v + c] = d > 0 ? (nE[3 * v + c] / l) * d : 0;
-        lage[v] = d;
-        if (d > lageMax) lageMax = d;
+        const l = Math.hypot(nE[3 * v], nE[3 * v + 1], nE[3 * v + 2]);
+        if (!(sumE[v] < Infinity) || !(l > 0)) {
+            dicke[v] = 0;
+            continue;
+        }
+        const N = [nE[3 * v] / l, nE[3 * v + 1] / l, nE[3 * v + 2] / l],
+            o = [N[0] * dicke[v], N[1] * dicke[v], N[2] * dicke[v]];
+        if (mehrE[v] > 0) {
+            const u = um[umE[v]],
+                x = mp[3 * v] - u[0],
+                z = mp[3 * v + 2] - u[2],
+                ra = Math.hypot(x, z) || 1,
+                hx = N[0] + (0.5 * x) / ra,
+                hz = N[2] + (0.5 * z) / ra,
+                w = mehrE[v] / Math.max(0.5, Math.hypot(hx, hz));
+            o[0] += hx * w;
+            o[2] += hz * w;
+        }
+        heb.set(o, 3 * v);
+        lageMax = Math.max(lageMax, Math.hypot(o[0], o[1], o[2]));
     }
-    return { heb, lage, lageMax };
+    return { heb, dicke, lageMax };
 }
 
 function __mengenLeibAusFeld(kern, B, matFuer, skinJoints, prims, hoehlen, zonen, F, roh, vox, ziel, gestalt) {
@@ -9486,12 +9507,13 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     msi = mg.attributes.skinIndex.array,
                     msw = mg.attributes.skinWeight.array,
                     H = __mengenHebung(mg.attributes.position.array, mg.index.array, mengenLeib.zone, mengenLeib.zonen, mengenLeib.prims);
-                // EIN Netz, viele Kleider: die Anlage (koerper armAnlage) liest die Lage an den Rumpf-Ecken, nie die des Schuhs
+                // EIN Netz, viele Kleider: die Anlage (koerper armAnlage) liest die Lage an den Rumpf-Ecken, nie die des Schuhs — die
+                // Dicke ihres Stoffs ohne seine Weite, wie die nahe Stufe (`__lage` des Stoffs aus der Haut)
                 let lageRumpf = 0;
-                for (let v = 0; v < H.lage.length; v++) {
+                for (let v = 0; v < H.dicke.length; v++) {
                     let wr = 0;
                     for (let c = 4 * v; c < 4 * v + 4; c++) if (skinJoints[msi[c]] === "torso" || skinJoints[msi[c]] === "mensch") wr += msw[c];
-                    if (wr > 0.5 && H.lage[v] > lageRumpf) lageRumpf = H.lage[v];
+                    if (wr > 0.5 && H.dicke[v] > lageRumpf) lageRumpf = H.dicke[v];
                 }
                 if (H.lageMax > 0) {
                     mengenLeib.mesh.userData.__lage = H.lageMax;
