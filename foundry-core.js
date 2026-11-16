@@ -324,8 +324,17 @@ var ATMO_RECHNUNG = {
         var HR = G.rayleighH / 1000;
         var mie = Math.max(0, betaLuft - G.luft.betaRayleigh) * 1000;
         var t = G.rayleighTiefe;
+        // DER TROPFEN IST KEIN DUNST (w28-licht-regen): bis zur klaren Luft (betaKlar) ist das Aerosol Dunst — fein, nach
+        // Angstroem blau staerker, mieAlbedo. Was das Wetter darueber legt (Nebel, Regen), sind Wassertropfen, gross gegen
+        // die Wellenlaenge: spektral neutral, ohne Absorption (Albedo 1). Bis hier trug der Sturm 1,5 km Sicht als Dunst —
+        // er roetete Sonne und Wolke (Himmels-Saettigung Sturm/klar 1,45 statt <= 0,5).
+        var dunst = Math.min(mie, Math.max(0, ATMO_RECHNUNG.betaKlar(G) - G.luft.betaRayleigh) * 1000);
+        var tropfen = mie - dunst;
         var ext = G.wellenNm.map(function (l) {
-            return mie * Math.pow(l / 550, -G.mieAngstroem);
+            return dunst * Math.pow(l / 550, -G.mieAngstroem) + tropfen;
+        });
+        var sca = G.wellenNm.map(function (l) {
+            return dunst * Math.pow(l / 550, -G.mieAngstroem) * G.mieAlbedo + tropfen;
         });
         return {
             RG: G.erdeM / 1000,
@@ -334,9 +343,7 @@ var ATMO_RECHNUNG = {
             betaR: [t[0] / HR, t[1] / HR, t[2] / HR],
             HM: G.luft.skalenHoeheM / 1000,
             mieExt: ext,
-            mieSca: ext.map(function (e) {
-                return e * G.mieAlbedo;
-            }),
+            mieSca: sca,
             g: G.mieG,
             ozon: G.ozon.absorption.map(function (x) {
                 return x * 1000;
