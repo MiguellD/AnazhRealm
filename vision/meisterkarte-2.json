@@ -204,11 +204,11 @@
    "summe": {
     "kriterien": 26,
     "sprossen": 180,
-    "heute": 0,
-    "kern": 3,
-    "kernDazu": 3,
-    "anteilHeute": 0,
-    "anteilKern": 1.3
+    "heute": 1,
+    "kern": 2,
+    "kernDazu": 2,
+    "anteilHeute": 0.4,
+    "anteilKern": 0.9
    },
    "perspektiven": [
     {
@@ -1392,8 +1392,8 @@
        "richter": "1 000 Saaten: Druck, Wind, Niederschlag im KS-Test ununterscheidbar von ERA5 in ≥ 90 %"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "Mechanik von Sprosse 1 steht: wetterAt als drei Sinus-Wellen längs der Hauptrichtung (phyto-core.js:4067-4091), wetter.K1 2/2. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
      "alt": [
@@ -10030,11 +10030,11 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 0,
-    "kern": 7,
-    "kernDazu": 7,
-    "anteilHeute": 0,
-    "anteilKern": 2.6
+    "heute": 1,
+    "kern": 6,
+    "kernDazu": 6,
+    "anteilHeute": 0.3,
+    "anteilKern": 2.2
    },
    "perspektiven": [
     {
@@ -12471,8 +12471,8 @@
        "richter": "100 Saaten: „lebendig und eigen\" ≥ 80 %, Paare unterscheidbar ≥ 90 %; Ruftonhöhe ↔ Körpergröße Allometrie-Steigung ±20 %"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "neun Textur-Gesetze (klang-core.js:668-766), Tier-Ruf f0 ∝ L^−0,9 (:495-497), Wind r 0,81/0,79 (§32.K1, K2 je 2/2); Verkehr K-nah (stamm/klang.js:1092-1110); keine Bewohner-Klänge, kein Stadtteppich; Preis Radeon ROT. — KARTE: Kern 1 — Zensus am Abgriff, Wind gesehen = gehört an beiden Geräten (klang.K1, klang.K2); Bild-Preis in der Szene nicht gemessen; das alte Klang-Budget ist kein Preis mehr (R8).",
      "alt": [
@@ -16675,12 +16675,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 6,
+  "heute": 8,
   "davonKopplungen": 33,
-  "kern": 19,
-  "kernDazu": 19,
-  "anteilHeute": 0.4,
-  "anteilKern": 0.9,
+  "kern": 17,
+  "kernDazu": 17,
+  "anteilHeute": 0.5,
+  "anteilKern": 0.8,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
