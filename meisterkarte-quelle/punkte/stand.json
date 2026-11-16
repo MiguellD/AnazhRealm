@@ -1484,7 +1484,7 @@
   },
   "klang.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: gras 6169 Hz (n 6) · laub 8867 Hz (n 6) · stein 4735 Hz (n 5) — kleinster Abstand 1434 Hz an 4ee205bd radeon · ✅ Schritte gras 6286 Hz (n 6) · laub 8836 Hz (n 6) · stein 4634 Hz (n 5), kleinster Abstand 1652 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9710/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505) an a996d0ae radeon · ✅ Schritte gras 6149 Hz (n 6) · laub 8831 Hz (n 6) · glut 3268 Hz (n 6), kleinster Abstand 2682 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9709/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505) an 3e4f99cd gtx",
+   "beleg": "Maschine: gehalten: gras 6169 Hz (n 6) · laub 8867 Hz (n 6) · stein 4735 Hz (n 5) — kleinster Abstand 1434 Hz an 4ee205bd radeon · ✅ Schritte gras 6286 Hz (n 6) · laub 8836 Hz (n 6) · stein 4634 Hz (n 5), kleinster Abstand 1652 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9710/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505) an a996d0ae radeon · ✅ Schritte gras 6158 Hz (n 6) · laub 8765 Hz (n 6) · stein 4908 Hz (n 5), kleinster Abstand 1250 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9710/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505) an 71839b1e gtx",
    "stationen": [
     {
      "id": "klang.K4#1",
@@ -1518,8 +1518,8 @@
      "id": "klang.K4#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "✅ Schritte gras 6149 Hz (n 6) · laub 8831 Hz (n 6) · glut 3268 Hz (n 6), kleinster Abstand 2682 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9709/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505)",
-     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
+     "zahl": "✅ Schritte gras 6158 Hz (n 6) · laub 8765 Hz (n 6) · stein 4908 Hz (n 5), kleinster Abstand 1250 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9710/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505)",
+     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
      "grund": null,
      "r6": "konsum"
     }
@@ -5241,7 +5241,7 @@
   "ohne": 81
  },
  "kopfVoll": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
- "zeit": "2026-11-16T01:05:18.961Z",
+ "zeit": "2026-11-16T01:11:00.837Z",
  "vorher": "71839b1e",
  "bilanz": {
   "gewinn": [],
