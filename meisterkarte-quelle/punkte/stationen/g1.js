@@ -2039,6 +2039,209 @@ const KREISLAUF_ROH = {
     ],
 };
 const kreislaufRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWELTPROBE kreislauf " + JSON.stringify(aendern(JSON.parse(JSON.stringify(KREISLAUF_ROH))));
+
+// DIE LÄUFE IM ECHTEN FENSTER (Karte 2 planet.relief.grossform S1 „im Spiel an 20 Orten nachgefahren: 100 % der Läufe enden in See oder
+// Meer“): die Läufe-Probe der Wasser-Linse (`__wasserLaeufe`, scripts/lib/wasser-linse.cjs, installiert über WASSER_INSTALL — dieselbe
+// Probe wie gelaende.K4#2 headless, kein Zwilling) in der EINEN warmen Welt der Sitzung: jeder Lauf des Gesetzes (`flussLaeufe` ±3 km)
+// bis zu seiner Senke verfolgt, jede Senke nass. Dazu 20 Orte: je Lauf (längste zuerst) der erste nasse Punkt seiner Bahn, je ≥ 500 m
+// auseinander; an jedem steht der Spieler 8 m daneben (`__vorBild`, die Welt lädt dort), und die Sitzung schießt das Bild mit den Klassen
+// des gezeichneten Wassers — die Kamera 6 m schräg, 4 m über dem Spiegel, der Blick auf den Ort; je Ort das Ende SEINES Laufs.
+async function laeufeSitzungProbe(r, T, o, G) {
+    const K = globalThis.__gelaendeCore;
+    const L = r._gelaende();
+    const R = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+    const aus = { laeufe: await window.__wasserLaeufe() };
+    const alle = K.flussLaeufe(L, -3072, -3072, 3072, 3072, 16).sort((a, b) => b.glieder.length - a.glieder.length);
+    const orte = [];
+    for (const l of alle) {
+        if (orte.length >= 20) break;
+        const bahn = l.glieder.flatMap((g) => g.bahn || []);
+        let gefragt = 0;
+        for (let i = 0; i < bahn.length && gefragt < 40; i += 4) {
+            const q = bahn[i];
+            if (orte.some((p) => Math.hypot(p.x - q.x, p.z - q.z) < 500)) continue;
+            gefragt++;
+            await window.__weltDa(() => !r._ensureHydroTilesAround(q.x, q.z, 64));
+            if (!r._nassAt(q.x, q.z)) continue;
+            orte.push({ x: q.x, z: q.z });
+            break;
+        }
+    }
+    window.__vorBild = async (x, z) => {
+        await G.stehen(x + 8, z);
+        return { nass: r._nassAt(x, z) };
+    };
+    const klasse = "^(wasserSatz|chunk-water-[a-z]+)$";
+    aus.orte = orte.map((p) => [R(p.x), R(p.z)]);
+    aus.bilder = orte.map((p) => {
+        const S = r._atlasWaterLevelAt(p.x, p.z, r._voxelSurfaceY(p.x, p.z));
+        return { vor: [p.x, p.z], kamera: [p.x + 6, S + 4, p.z + 6, p.x, S, p.z].map(R), klasse };
+    });
+    return aus;
+}
+const LAEUFE_SITZUNG = { befehl: weltSitzungBefehl([["laeufe", laeufeSitzungProbe, { install: ["scripts/lib/wasser-linse.cjs", "WASSER_INSTALL"] }]]), sek: 180, mutiert: true };
+// das Urteil: 20 Orte mit je einem Bild, das gezeichnetes Wasser trägt (> 0 Pixel der Klassen) und am Ort nass ist; JEDER Lauf des Gesetzes
+// (nicht nur die 20, jeder über Rand und Mündung bis zu seiner Senke) endet in See oder Meer, jede Senke nass; eine echte Karte
+function laeufeUrteil(j, lauf) {
+    const { ad, hw } = adapterEcht(lauf && lauf.stdout);
+    const e = weltZeile(j, lauf, "laeufe");
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE laeufe (Exit " + (lauf && lauf.exit) + ") · " + ad };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler + " · " + ad };
+    const l = e.laeufe || {};
+    const ende = l.ende || {};
+    const inSenke = (ende.see || 0) + (ende.meer || 0);
+    const B = e.bilder || [];
+    const px = (b) => Object.entries((b && b.klassen) || {}).reduce((n, [k, v]) => n + (/^(wasserSatz|chunk-water-)/.test(k) ? v.pixel || 0 : 0), 0);
+    const gut = B.filter((b) => b.datei && !b.fehler && px(b) > 0 && b.vor && b.vor.nass === true).length;
+    return {
+        gruen: hw && B.length >= 20 && gut === B.length && l.laeufe > 0 && inSenke === l.laeufe && l.nass === l.senken && !(l.trocken || []).length,
+        zahl: "Läufe " + inSenke + " von " + l.laeufe + " in See oder Meer (" + Object.entries(ende).map(([k, v]) => k + " " + v).join(", ") + "), Senken nass " + l.nass + "/" + l.senken +
+            ((l.trocken || []).length ? ", trocken " + JSON.stringify(l.trocken.slice(0, 3)) : "") + " · Orte " + B.length + " (Soll 20): Wasser im Bild und nass " + gut + "/" + B.length +
+            B.filter((b) => b.fehler).map((b) => " FEHLER " + b.fehler).slice(0, 1).join("") + " · " + ad,
+    };
+}
+const LAEUFE_ROH = {
+    laeufe: { laeufe: 293, ende: { see: 121, meer: 172 }, nass: 40, trocken: [], schritte: 9000, steigt: 0, senken: 40 },
+    orte: Array.from({ length: 20 }, (_, i) => [i * 600 - 3000, 100]),
+    bilder: Array.from({ length: 20 }, (_, i) => ({ vor: { nass: true }, kamera: [i * 600 - 2994, 5, 106, i * 600 - 3000, 1, 100], klasse: "^(wasserSatz|chunk-water-[a-z]+)$",
+        datei: "x-laeufe-" + (i + 1) + ".png", fehler: null, klassen: { wasserSatz: { pixel: 30000, objekte: 1 } } })),
+};
+const laeufeRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWELTPROBE laeufe " + JSON.stringify(aendern(JSON.parse(JSON.stringify(LAEUFE_ROH))));
+
+// DER TRAMPELPFAD IM ECHTEN FENSTER (Karte 2 same.gedaechtnis.pfad S1 „Büschel auf / neben dem Weg vor ↔ nach im Bild, beide Geräte“ ·
+// leben.kopplung.leben-formt-planet S1 „Gras-Dichte auf dem Weg −≥ 60 % gegen daneben im Bildpaar“ — EIN Lauf, zwei Proben, zwei Urteile):
+// derselbe Weg wie stoffe.K4#2 (`alterSpurProbe`: an der Mess-Wiese 100 × dieselbe Strecke von 8 m mit der Taste w im Takt des Spiels,
+// die Büschel der Nah-Wiese über `alterSpurMessen` im Streifen ±0,5 m und 4 m daneben), aber in der EINEN warmen Welt der Sitzung und mit
+// dem Bild: je Streifen EINE Kamera 1,6 m über seiner Mitte, der Blick steil hinab 0,4 m längs des Wegs voraus (die Bild-Senkrechte folgt
+// dem Weg), die Sitzung zählt die Pixel der Klassen der Nah-Wiese (`^nahWiese`) — `pfad-vor` vor dem ersten Gang, `pfad-nach` nach dem
+// hundertsten; der Spieler steht für die Bilder 12 m quer zur anderen Seite.
+async function pfadVorSitzungProbe(r, T, o, G) {
+    const { s, takt, stehen, r3 } = G;
+    const W = o.orte.wiese;
+    const H = (x, z) => r._voxelSurfaceY(x, z);
+    s.autoSeason = false;
+    r.setSeason("sommer");
+    G.trocken();
+    await stehen(W.x, W.z);
+    const pm = s.playerMesh;
+    const p0 = pm.position.clone();
+    s.yaw = 0;
+    s.verbTafel.gehalten.vor = true;
+    takt(60);
+    s.verbTafel.gehalten.vor = false;
+    const dw = [pm.position.x - p0.x, pm.position.z - p0.z];
+    const lw = Math.hypot(dw[0], dw[1]);
+    if (!(lw > 0.5)) return { fehler: "w trägt den Spieler nicht (" + r3(lw) + " m in 1 s)" };
+    const [ux, uz] = [dw[0] / lw, dw[1] / lw];
+    const a = [r3(W.x), r3(W.z)];
+    const b = [r3(W.x + ux * 8), r3(W.z + uz * 8)];
+    const plan = { bloecke: {}, weg: { a, b } };
+    await stehen(a[0], a[1]);
+    for (let i = 0; i < 20 && alterSpurMessen(r, T, G, plan).gras.weg === null; i++) takt(30);
+    const kamera = (quer) => {
+        const [mx, mz] = [(a[0] + b[0]) / 2 - uz * quer, (a[1] + b[1]) / 2 + ux * quer];
+        const y = H(mx, mz);
+        return [mx, y + 1.6, mz, mx + ux * 0.4, y, mz + uz * 0.4].map(r3);
+    };
+    const abseits = [(a[0] + b[0]) / 2 + uz * 12, (a[1] + b[1]) / 2 - ux * 12];
+    window.__pfadPlan = { plan, ux, uz, abseits };
+    window.__vorBild = async () => {
+        await stehen(abseits[0], abseits[1]);
+        return { steht: true };
+    };
+    const klasse = "^nahWiese";
+    return { plan, gras: alterSpurMessen(r, T, G, plan).gras, bilder: [{ vor: [], kamera: kamera(0), klasse }, { vor: [], kamera: kamera(4), klasse }] };
+}
+async function pfadNachSitzungProbe(r, T, o, G) {
+    const { s, A, takt, stehen, r3 } = G;
+    const P = window.__pfadPlan;
+    if (!P) return { fehler: "kein Plan der Probe pfad-vor" };
+    const { plan, ux, uz, abseits } = P;
+    const [a, b] = [plan.weg.a, plan.weg.b];
+    const H = (x, z) => r._voxelSurfaceY(x, z);
+    const pm = s.playerMesh;
+    let gaenge = 0;
+    for (let k = 0; k < 100; k++) {
+        pm.position.set(a[0], H(a[0], a[1]) + A.PLAYER_FOOT_OFFSET, a[1]);
+        s.playerVel.setValue(0, 0, 0);
+        s.yaw = 0;
+        takt(2);
+        s.verbTafel.gehalten.vor = true;
+        for (let i = 0; i < 1200 && Math.hypot(pm.position.x - a[0], pm.position.z - a[1]) < 8; i++) takt();
+        s.verbTafel.gehalten.vor = false;
+        if (Math.hypot(pm.position.x - a[0], pm.position.z - a[1]) >= 7.9) gaenge++;
+    }
+    s.playerVel.setValue(0, 0, 0);
+    takt(30);
+    const gras = alterSpurMessen(r, T, G, plan).gras;
+    const kamera = (quer) => {
+        const [mx, mz] = [(a[0] + b[0]) / 2 - uz * quer, (a[1] + b[1]) / 2 + ux * quer];
+        const y = H(mx, mz);
+        return [mx, y + 1.6, mz, mx + ux * 0.4, y, mz + uz * 0.4].map(r3);
+    };
+    window.__vorBild = async () => {
+        await stehen(abseits[0], abseits[1]);
+        return { steht: true };
+    };
+    const klasse = "^nahWiese";
+    return { gaenge, gras, bilder: [{ vor: [], kamera: kamera(0), klasse }, { vor: [], kamera: kamera(4), klasse }] };
+}
+const PFAD_SITZUNG = {
+    befehl: weltSitzungBefehl([["pfad-vor", pfadVorSitzungProbe], ["pfad-nach", pfadNachSitzungProbe]], [alterSpurMessen]),
+    sek: 300,
+    mutiert: true,
+};
+// das Gemeinsame: beide Zeilen, je zwei Bilder ohne Fehler, 100 Gänge, eine echte Karte; die Pixel der Nah-Wiese je Streifen vor/nach
+function pfadLesen(j, lauf) {
+    const { ad, hw } = adapterEcht(lauf && lauf.stdout);
+    const [v, n] = [weltZeile(j, lauf, "pfad-vor"), weltZeile(j, lauf, "pfad-nach")];
+    if (!v || !n) return { fehler: "keine Zeile WELTPROBE " + (v ? "pfad-nach" : "pfad-vor") + " (Exit " + (lauf && lauf.exit) + ") · " + ad };
+    if (v.fehler || n.fehler) return { fehler: "Probe: " + (v.fehler || n.fehler) + " · " + ad };
+    const px = (x) => Object.entries((x && x.klassen) || {}).reduce((s, [k, w]) => s + (/^nahWiese/.test(k) ? w.pixel || 0 : 0), 0);
+    const B = [...(v.bilder || []), ...(n.bilder || [])];
+    const bilder = B.filter((x) => x.datei && !x.fehler && x.klassen).length;
+    if (bilder < 4) return { fehler: "Bilder " + bilder + "/4 (Weg und daneben, vor und nach) · " + ad };
+    const bild = { weg: [px(v.bilder[0]), px(n.bilder[0])], neben: [px(v.bilder[1]), px(n.bilder[1])] };
+    const gv = v.gras || {};
+    const gn = n.gras || {};
+    const zeile = "nach " + n.gaenge + " Gängen (Soll 100): Gras im Bild Weg " + bild.weg.join(" → ") + " px, daneben " + bild.neben.join(" → ") + " px · Büschel Weg " + gv.weg + " → " + gn.weg +
+        ", daneben " + gv.neben + " → " + gn.neben;
+    return { ad, hw, v, n, bild, gv, gn, zeile, gaenge: n.gaenge >= 100 };
+}
+// same.gedaechtnis.pfad S1: auf dem Weg fällt das Gras im Bild auf ≤ 40 % (vorher ≥ 1 000 px), daneben bleibt es (0,85–1,15 ×) — und die
+// Büschel der Liste, die die Wiese zeichnet, sagen dasselbe (Weg ≤ 40 %, vorher ≥ 10; daneben 0,85–1,15 ×)
+function pfadUrteil(j, lauf) {
+    const l = pfadLesen(j, lauf);
+    if (l.fehler) return { gruen: false, zahl: l.fehler };
+    const { bild: b, gv, gn } = l;
+    const ok =
+        b.weg[0] >= 1000 && b.weg[1] <= 0.4 * b.weg[0] && b.neben[0] > 0 && b.neben[1] >= 0.85 * b.neben[0] && b.neben[1] <= 1.15 * b.neben[0] &&
+        gv.weg >= 10 && gn.weg <= 0.4 * gv.weg && gn.neben >= 0.85 * gv.neben && gn.neben <= 1.15 * gv.neben;
+    return { gruen: l.hw && l.gaenge && ok, zahl: l.zeile + " (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · " + l.ad };
+}
+// leben.kopplung.leben-formt-planet S1: im Bildpaar nach dem Gang trägt der Weg ≤ 40 % des Grases daneben (−≥ 60 %), vorher trugen beide
+// Streifen vergleichbar (Weg ≥ 0,7 × daneben)
+function lebenFormtUrteil(j, lauf) {
+    const l = pfadLesen(j, lauf);
+    if (l.fehler) return { gruen: false, zahl: l.fehler };
+    const b = l.bild;
+    const q = b.neben[1] > 0 ? b.weg[1] / b.neben[1] : null;
+    const ok = b.neben[0] >= 1000 && b.weg[0] >= 0.7 * b.neben[0] && q != null && q <= 0.4;
+    return {
+        gruen: l.hw && l.gaenge && ok,
+        zahl: l.zeile + " · nach dem Gang Weg ÷ daneben " + (q == null ? "—" : q.toFixed(3)) + " (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · " + l.ad,
+    };
+}
+const PFAD_ROH = {
+    vor: { plan: { bloecke: {}, weg: { a: [-280.4, -1045.6], b: [-280.4, -1037.6] } }, gras: { weg: 13, neben: 17 },
+        bilder: [{ datei: "x-pfad-vor-1.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 300000, objekte: 4 } } }, { datei: "x-pfad-vor-2.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 320000, objekte: 4 } } }] },
+    nach: { gaenge: 100, gras: { weg: 3, neben: 17 },
+        bilder: [{ datei: "x-pfad-nach-1.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 60000, objekte: 4 } } }, { datei: "x-pfad-nach-2.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 318000, objekte: 4 } } }] },
+};
+const pfadRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => {
+    const x = aendern(JSON.parse(JSON.stringify(PFAD_ROH)));
+    return ad + "\nWELTPROBE pfad-vor " + JSON.stringify(x.vor) + "\nWELTPROBE pfad-nach " + JSON.stringify(x.nach);
+};
 const BRAND_PFAD = ["stamm/feld-*.js", "stamm/bild-*.js", "stamm/dirigent-*.js", "stamm/gelaende-*.js", "stamm/wasser-*.js", "stamm/vegetation-*.js",
     "foundry-core.js", "fachwerk-core.js", "gelaende-core.js", "scripts/werkbank.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"];
 // DIE FRONT IM ECHTEN FENSTER (wetter.K1#2, die Karten-Hälfte; Karte 2 planet.wetter.lagen S1 „Regen an A bei trockenem B ≥ 20 % der Zeit,
@@ -4947,6 +5150,80 @@ module.exports = [
         pfad: ["gelaende-core.js", "voxel-worker.js", "stamm/wasser-*.js", "stamm/gelaende-*.js", "stamm/bild-*.js", "stamm/dirigent-*.js", "stamm/daten.js", "scripts/werkbank.cjs",
             "scripts/lib/abnahme-urteil.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "KARTE2 planet.wasser.kreislauf S1 = Pegel nach Sturm im Bild; Scheitel-Verzug gegen Einzugsgebiet im Erd-Band; Regen × Fläche ↔ ΔVolumen ±10 %",
+    },
+    {
+        kriterium: "karte2.planet.relief.grossform",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: LAEUFE_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: laeufeUrteil,
+        proben: [
+            { name: "jeder Lauf endet in See oder Meer, 20 Orte zeigen ihr Wasser", stdout: laeufeRoh((x) => x), gruen: true },
+            { name: "ein Lauf verliert sich (292 von 293)", stdout: laeufeRoh((x) => ((x.laeufe.ende = { see: 120, meer: 172, verloren: 1 }), (x.laeufe.trocken = [["verloren", 10, 20]]), x)), gruen: false },
+            { name: "eine Senke trocken", stdout: laeufeRoh((x) => ((x.laeufe.nass = 39), (x.laeufe.trocken = [["see", 10, 20]]), x)), gruen: false },
+            { name: "nur 12 Orte", stdout: laeufeRoh((x) => ((x.bilder = x.bilder.slice(0, 12)), x)), gruen: false },
+            { name: "ein Ort ohne gezeichnetes Wasser im Bild", stdout: laeufeRoh((x) => ((x.bilder[7].klassen = {}), x)), gruen: false },
+            { name: "ein Ort trocken in der Welt der Sitzung", stdout: laeufeRoh((x) => ((x.bilder[3].vor.nass = false), x)), gruen: false },
+            { name: "keine Läufe", stdout: laeufeRoh((x) => ((x.laeufe = { laeufe: 0, ende: {}, nass: 0, senken: 0, trocken: [] }), x)), gruen: false },
+            { name: "swiftshader", stdout: laeufeRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: ["gelaende-core.js", "voxel-worker.js", "stamm/wasser-*.js", "stamm/gelaende-*.js", "stamm/bild-*.js", "scripts/lib/wasser-linse.cjs", "scripts/werkbank.cjs",
+            "scripts/lib/abnahme-urteil.cjs", ...WELT_PFAD],
+        quelle: "KARTE2 planet.relief.grossform S1 = im Spiel an 20 Orten nachgefahren: 100 % der Läufe enden in See oder Meer",
+    },
+    {
+        kriterium: "karte2.same.gedaechtnis.pfad",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: PFAD_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 6,
+        urteil: pfadUrteil,
+        proben: [
+            { name: "der Weg verliert sein Gras im Bild und in der Liste, daneben bleibt es", stdout: pfadRoh((x) => x), gruen: true },
+            { name: "100 Gänge lassen das Gras im Bild stehen (die Messung am main 5fba36ea, headless 13 → 13)", stdout: pfadRoh((x) => ((x.nach.bilder[0].klassen["nahWiese:L0"].pixel = 298000), (x.nach.gras.weg = 13), x)), gruen: false },
+            { name: "die Liste dünnt, das Bild nicht (die Wiese zeichnet die alte Kachel)", stdout: pfadRoh((x) => ((x.nach.bilder[0].klassen["nahWiese:L0"].pixel = 290000), x)), gruen: false },
+            { name: "das Bild dünnt, die Liste nicht", stdout: pfadRoh((x) => ((x.nach.gras.weg = 12), x)), gruen: false },
+            { name: "daneben fällt das Gras mit (ein Regler über alles)", stdout: pfadRoh((x) => ((x.nach.bilder[1].klassen["nahWiese:L0"].pixel = 120000), x)), gruen: false },
+            { name: "nur 60 Gänge", stdout: pfadRoh((x) => ((x.nach.gaenge = 60), x)), gruen: false },
+            { name: "ein Bild fehlt", stdout: pfadRoh((x) => ((x.nach.bilder = x.nach.bilder.slice(0, 1)), x)), gruen: false },
+            { name: "kein Gras im Bild vor dem Gang", stdout: pfadRoh((x) => ((x.vor.bilder[0].klassen = {}), x)), gruen: false },
+            { name: "swiftshader", stdout: pfadRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: ["stamm/siedlung-wege.js", "stamm/vegetation-*.js", "stamm/dirigent-*.js", "stamm/koerper-*.js", "stamm/bild-*.js", "stamm/gelaende-*.js", "scripts/werkbank.cjs",
+            "scripts/lib/abnahme-urteil.cjs", ...WELT_PFAD],
+        quelle: "KARTE2 same.gedaechtnis.pfad S1 = Büschel auf / neben dem Weg vor ↔ nach im Bild, beide Geräte",
+    },
+    {
+        kriterium: "karte2.leben.kopplung.leben-formt-planet",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: PFAD_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 6,
+        urteil: lebenFormtUrteil,
+        proben: [
+            { name: "auf dem Weg 19 % des Grases daneben im Bildpaar", stdout: pfadRoh((x) => x), gruen: true },
+            { name: "der Weg trägt nach dem Gang 60 % des Grases daneben", stdout: pfadRoh((x) => ((x.nach.bilder[0].klassen["nahWiese:L0"].pixel = 190000), x)), gruen: false },
+            { name: "der Weg war schon vorher kahl (kein Gang hat ihn geformt)", stdout: pfadRoh((x) => ((x.vor.bilder[0].klassen["nahWiese:L0"].pixel = 70000), x)), gruen: false },
+            { name: "nur 60 Gänge", stdout: pfadRoh((x) => ((x.nach.gaenge = 60), x)), gruen: false },
+            { name: "keine Zeile pfad-nach", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWELTPROBE pfad-vor " + JSON.stringify(PFAD_ROH.vor), gruen: false },
+            { name: "swiftshader", stdout: pfadRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: ["stamm/siedlung-wege.js", "stamm/vegetation-*.js", "stamm/dirigent-*.js", "stamm/koerper-*.js", "stamm/bild-*.js", "stamm/gelaende-*.js", "scripts/werkbank.cjs",
+            "scripts/lib/abnahme-urteil.cjs", ...WELT_PFAD],
+        quelle: "KARTE2 leben.kopplung.leben-formt-planet S1 = Gras-Dichte auf dem Weg −≥ 60 % gegen daneben im Bildpaar",
     },
 ];
 
