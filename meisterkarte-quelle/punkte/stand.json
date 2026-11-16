@@ -1,5 +1,5 @@
 {
- "kopf": "4167e10c",
+ "kopf": "b5681770",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -3561,7 +3561,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +129)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +130)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3597,7 +3597,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +129)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +130)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3607,7 +3607,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +129)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +130)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -5981,7 +5981,7 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, stamm/bild-himmel.js +3) · karte2.same.kopplung.kaskade#1 gtx: ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +164 Pixel (Soll ≥ 200; 20 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild +39 (Soll ≤ 20) · [linse-gpu] nvidia/pascal an 77e079ae",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, stamm/bild-himmel.js +3) · karte2.same.kopplung.kaskade#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
@@ -5998,9 +5998,10 @@
      "id": "karte2.same.kopplung.kaskade#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "trocken nach 60 s 1 brennende Zellen, Flammen im Bild +164 Pixel (Soll ≥ 200; 20 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild +39 (Soll ≤ 20) · [linse-gpu] nvidia/pascal",
-     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
-     "grund": "ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +164 Pixel (Soll ≥ 200; 20 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild +39 (Soll ≤ 20) · [linse-gpu] nvidia/pascal",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js)",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     }
@@ -6008,7 +6009,7 @@
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.stoerung#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.stoerung#1 gtx: ROT: Herd -312,-1080: Luma der Zelle vor 0.024 → nach 0.032 (÷ 1.333, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 77e079ae",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.stoerung#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.stoerung#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
@@ -6024,9 +6025,10 @@
      "id": "karte2.same.kopplung.stoerung#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Herd -312,-1080: Luma der Zelle vor 0.024 → nach 0.032 (÷ 1.333, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
-     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
-     "grund": "ROT: Herd -312,-1080: Luma der Zelle vor 0.024 → nach 0.032 (÷ 1.333, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js)",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     }
@@ -6448,8 +6450,8 @@
   ],
   "ohne": 187
  },
- "kopfVoll": "4167e10c05fd3401ba5fcad6cbd7b25b19a0323e",
- "zeit": "2026-11-16T22:01:28.425Z",
+ "kopfVoll": "b56817704c3f9b0efcf4fd52d1331756ea5edef2",
+ "zeit": "2026-11-16T22:07:42.638Z",
  "vorher": "4167e10c",
  "bilanz": {
   "gewinn": [],
