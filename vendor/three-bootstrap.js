@@ -142,6 +142,10 @@ if (typeof CSMShadowNode === "function") {
 }
 // Die zeitliche Auflösung ist die EINE Kantenglättung — hart angebunden (der Import selbst fällt laut, fehlt die Datei).
 THREE_GLOBAL.TRAANode = TRAANode;
+// Ein eigener Pass der Post-Kette (der Lichtschacht, `_godrayStufe`) ist ein TempNode mit `updateBefore` je Frame: Klasse und
+// Takt-Art leben nur im three/webgpu-Bundle — hart angebunden wie die zeitliche Auflösung.
+THREE_GLOBAL.TempNode = requireWebGPU("TempNode");
+THREE_GLOBAL.NodeUpdateType = requireWebGPU("NodeUpdateType");
 // T3 (DC-SUBMIT-TÖTER) — BundleGroup lebt NUR im three/webgpu-Bundle (r184:
 // WebGPU-RenderBundles; der Renderer replayed statischer Subbäume statt sie
 // jeden Frame neu zu encoden). Soft-Anbindung wie PostProcessing/CSM: fehlt

@@ -2939,7 +2939,7 @@ AnazhRealm.ZEIT_GAMMA_RUHE = 1.25;
 AnazhRealm.FLACKER = Object.freeze({ kante: 0.02, rate: 0.125, an: Object.freeze([0.3, 0.6]), ruhePx: 2 });
 // DER LICHTSCHACHT (`_godrayStufe`, w28-lichtschacht): der Radial-Marsch der Godrays läuft in `skala` × Ausgabe (je Achse), mit
 // `schritte` Abtastungen von Farbe und Tiefe je Texel; die Ausgabe liest ihn bilinear.
-AnazhRealm.GODRAY = Object.freeze({ skala: 0.5, schritte: 20 });
+AnazhRealm.GODRAY = Object.freeze({ skala: 0.25, schritte: 20 });
 // Der Kamera-Sprung der zeitlichen Auflösung (K68, `_traaReprojektion`): weiter in EINEM Frame beginnt die Geschichte neu und
 // läuft als Mittel an — der Wagen bei 200 km/h und 15 fps legt 3,7 m je Frame zurück, ein Tor oder ein Umsetzen viele Meter.
 AnazhRealm.ZEIT_SPRUNG_M = 6;
