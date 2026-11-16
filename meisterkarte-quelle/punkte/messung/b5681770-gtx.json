@@ -1,7 +1,7 @@
 {
  "sha": "b56817704c3f9b0efcf4fd52d1331756ea5edef2",
  "geraet": "gtx",
- "zeit": "2026-11-16T22:11:47.922Z",
+ "zeit": "2026-11-16T22:37:51.508Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.same.gedaechtnis.pfad#1": {
@@ -73,6 +73,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.kopplung.leben-formt-planet#1": {
+   "gruen": false,
+   "zahl": "nach 100 Gängen (Soll 100): Gras im Bild Weg 1454851 → 1071239 px, daneben 1581654 → 1581540 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.677 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 5.53,
+   "grund": "ROT: nach 100 Gängen (Soll 100): Gras im Bild Weg 1454851 → 1071239 px, daneben 1581654 → 1581540 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.677 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k702ce0a0a961",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k99b1b7162324",
+   "s": 331.2,
+   "fremd": {
+    "s": 334.8,
+    "takte": 156,
+    "fremdS": 185.31,
+    "kerne": 0.553,
+    "fensterKerne": 1.546,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      57.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      49.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      29.36
+     ]
+    ],
+    "dienerS": 82.22,
+    "diener": [
+     [
+      "System",
+      34.28
+     ],
+     [
+      "dwm.exe",
+      28.94
+     ]
+    ],
+    "geraetS": 80.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.8
+     ],
+     [
+      "svchost.exe",
+      35.75
+     ],
+     [
+      "SearchIndexer.exe",
+      1.14
+     ]
+    ],
+    "eigenS": 410.02,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-16T22:37:51.508Z",
+   "abdruck": "5692c73bf699",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -80,20 +150,20 @@
   "k99b1b7162324": "dVRdj5swEPwveeyVM18OjqV7cErUXNVTc7qHSn1bmzVwIRDZcFSp+t+rcJAE6O0ToBnv7OzgP4sjqD2keP9qq3LBF58WnxcW3tCxaN7Q3L/aBV+4KgTKuHgvIoT4eoYpkx9rS4pcEpAlZAd0GlNjXtyrjuYphoCctBvR7gjZkYisW3GptXh4mB5TSEwqpwaNwyEy8aMA+BTY2BQkOtDornEP1stl5AecdMVisXslQ4lnIUi7mXaUUCZj1ToAqj3+2AqxmStMcsDaKfLSDj1VQmXg80ujds4x0DonwKxA05PYkiaBNwidEnTRWDtqwoKE+owTsiITbIo2V1ntHE0lsRxMW/mRB3w915IeG0ffKgEpgcmpvxlgmaIZa4hCqkJOfs/07uGABpwSsh66coPIl1dPCCHbuZaiE961GISzRK4iPSISQtJtF5uYdS+Xz2z7HqQ4vYZKPE+aWJXl5jC2R2uagDud2WaQoHH2la0vyIAxH4I++XEXIrEL4ynzOkjP8+XSpexmDkbEduabrXTdgkEnPTY9EUOkEeUifZqBazgchgGUj4zOBqjPYb6V4UY+pd0e0g928B5954R5MZAipbwA+ZcnMZ3zzcDBAZmaXOth05IqvfpfMFssakdWVT0gdbI8WxKQ8uKKdyfE083yHmPq/vz+6+X55po418ad6u5Or0w9iKZy6eqQ6+4PVFP0CU2BKY68SUIZQMJJq6594nB4uBsF8DRb3SnHs2ulbewQ3VWUrPro9vIfx/dHi2YvodwPPnvaUwnv8rsTsfghRPotvltPZv+o4v7wIypyNJXOz1cZyaCxGRT19T7/+w8="
  },
  "sitzung": {
-  "start": "2026-11-16T22:11:11.673Z",
-  "ordner": "sitzung-20261116-231111",
+  "start": "2026-11-16T22:37:15.719Z",
+  "ordner": "sitzung-20261116-233715",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.9,
+  "bootS": 6.4,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "karte2.same.gedaechtnis.pfad#1",
-    "s": 26.6,
-    "takte": 607,
+    "vor": "karte2.leben.kopplung.leben-formt-planet#1",
+    "s": 27,
+    "takte": 708,
     "chunks": 81,
     "nach": null
    }
@@ -101,7 +171,7 @@
   "wegeTueren": [],
   "wanderung": [
    {
-    "probe": "karte2.same.gedaechtnis.pfad#1",
+    "probe": "karte2.leben.kopplung.leben-formt-planet#1",
     "ort": "wiese",
     "m": 12.65,
     "dreh": 1.972
@@ -109,7 +179,7 @@
   ],
   "messHalt": [
    {
-    "probe": "karte2.same.gedaechtnis.pfad#1",
+    "probe": "karte2.leben.kopplung.leben-formt-planet#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -121,10 +191,10 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3363,
-   "frameP95": 25.07,
-   "taktP95": 12.53,
-   "vramMax": 124.8,
+   "bilder": 3340,
+   "frameP95": 25.06,
+   "taktP95": 13.32,
+   "vramMax": 118.7,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
@@ -134,7 +204,7 @@
    "luecken": 30,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 440.7,
-  "minuten": 7.47
+  "fahrtS": 442.6,
+  "minuten": 7.49
  }
 }
