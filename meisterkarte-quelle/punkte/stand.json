@@ -3594,8 +3594,9 @@
      "gruen": true,
      "zahl": "bild-diff 0.80 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Station seit der Messung geändert — zuletzt an 71839b1e: Last: Referenz f 1,629 (Faden 1,047 · alle Kerne 1,629; vor 109,7/447,6 ms, nach 101,5/287 ms, Ruhe 104,8/274,7 ms seit 2026-11-14) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: spec/profiband/haushalt.json, stamm/dirigent-kern.js, stamm/dirigent-regler.js +5)",
+     "gehalten": true,
+     "r6": "konsum"
     },
     {
      "id": "speicher.K4#2",
@@ -5150,7 +5151,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 417,
-  "konsum": 164,
+  "konsum": 165,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5322,10 +5323,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 84
+  "ohne": 83
  },
  "kopfVoll": "105c9bd397cc1b5d68391db2420b984a0741b573",
- "zeit": "2026-11-16T03:52:37.756Z",
+ "zeit": "2026-11-16T04:03:09.223Z",
  "vorher": "105c9bd3",
  "bilanz": {
   "gewinn": [],
