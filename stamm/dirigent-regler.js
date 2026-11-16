@@ -31,7 +31,8 @@ class AnazhRealm_dirigent_regler {
     // die FPS-Zeile (#fps) aus dem letzten Fenster: der 1-s-Takt und der Wechsel der Sprache (`_spracheSetzen`) schreiben sie
     _fpsSchreib() {
         const fpsDiv = typeof document !== "undefined" ? document.getElementById("fps") : null;
-        if (fpsDiv && this.state && this.state.fps != null) fpsDiv.innerText = this._t("kern.fps", { fps: this.state.fps });
+        if (fpsDiv && this.state && this.state.fps != null)
+            fpsDiv.innerText = this._t("kern.fps", { fps: this.state.fps });
     }
 
     // ===== DER PERFORMANCE-REGELKREIS (der Nexus WERTET seine Last) ===
@@ -1097,6 +1098,21 @@ class AnazhRealm_dirigent_regler {
         profil.klasse =
             !m || m.ab === 0 ? profil.prior : m.ab >= 2 || profil.prior === "schwach" ? "schwach" : "mittel";
         return profil;
+    }
+
+    // DIE ABLAGE DES GERÄTS (w28-wiese-takt): was eine Sitzung einmaß, trägt die nächste — der Wert liegt beim Spieler
+    // (`SZENE_SKALA_MESSUNG.ablage`, nie im Spielstand, wie die Tag-Länge) und steht, bevor der Szenen-Pass seine Ziele baut
+    // (der EINE Leser, gerufen aus `_szeneSkalaWirk`).
+    // Bis hier begann jede Seite bei SZENE_SKALA: die Radeon an der Mess-Wiese zeigte nach jedem Laden 22 s lang Bild p50
+    // 33,5 · p95 58,6 ms, dann 10 s 0,625, und der Schritt selbst war ein Bild von 109 ms (main a996d0ae).
+    _geraeteMessungAblage() {
+        const M = AnazhRealm.SZENE_SKALA_MESSUNG;
+        const roh = typeof localStorage !== "undefined" ? localStorage.getItem(M.ablage) : null;
+        const ab = roh == null ? -1 : M.stufen.indexOf(Number(roh));
+        this._geraeteMessung =
+            ab > 0 && M.stufen[ab] >= AnazhRealm.SZENE_SKALA_MIN
+                ? { skala: M.stufen[ab], ab, fenster: null, schritte: [], gezaehlt: 0 }
+                : null;
     }
 
     // DIE SZENEN-SKALA ALS FUNKTION DES GEMESSENEN GERÄTS (w28-bild-preis; Gebot 7: die Kosten am Schirm, nie an der Welt). Die

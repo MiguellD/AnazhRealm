@@ -1142,7 +1142,14 @@ class AnazhRealm_dirigent_ankunft {
         // `n`: so viele Löcher trägt sie (der Rundblick zählt sie); `zeuge`: das erste Ding, das sie offen hält — weicht der
         // Ladeschirm laut, nennt sein Satz den Täter (`_lueckeTaeter`)
         const luecke = (term, zeile, arbeitet, n, zeuge) =>
-            out.push({ term, zeile, satz: AnazhRealm._tIn("de", zeile[0], zeile[1]), arbeitet: !!arbeitet, n: n > 0 ? n : 1, zeuge });
+            out.push({
+                term,
+                zeile,
+                satz: AnazhRealm._tIn("de", zeile[0], zeile[1]),
+                arbeitet: !!arbeitet,
+                n: n > 0 ? n : 1,
+                zeuge,
+            });
         const pm = st.playerMesh;
         if (!pm) {
             luecke("welt", ["ankunft.welt"]);
@@ -1179,10 +1186,10 @@ class AnazhRealm_dirigent_ankunft {
             const fr = st.fernRing;
             const fp = st.feldPass;
             if (!fr || !fr.ready)
-                luecke(
-                    "horizont",
-                    ["ankunft.horizont-waechst", { pct: fr && fr.totalVerts ? Math.floor((100 * fr.cursor) / fr.totalVerts) : 0 }]
-                );
+                luecke("horizont", [
+                    "ankunft.horizont-waechst",
+                    { pct: fr && fr.totalVerts ? Math.floor((100 * fr.cursor) / fr.totalVerts) : 0 },
+                ]);
             // die Teilung der Schale 0 im Fern-Faden (`_fernRingTeilung`, w14-ankunft-weg): bis sie zum Stand der Maske steht,
             // zeichnete der Ring frei über dem Gebauten
             else if (!this._fernRingGeteilt(fr)) luecke("horizont", ["ankunft.horizont-geteilt"], true);
@@ -1293,12 +1300,15 @@ class AnazhRealm_dirigent_ankunft {
         if (gesetzt || saat)
             luecke(
                 "pflanzung",
-                ["ankunft.pflanzung", {
-                    teile: [
-                        gesetzt && ["ankunft.baeume-gepflanzt", { n: gesetzt }],
-                        saat && ["ankunft.boeden-bepflanzt", { n: saat }],
-                    ].filter(Boolean),
-                }],
+                [
+                    "ankunft.pflanzung",
+                    {
+                        teile: [
+                            gesetzt && ["ankunft.baeume-gepflanzt", { n: gesetzt }],
+                            saat && ["ankunft.boeden-bepflanzt", { n: saat }],
+                        ].filter(Boolean),
+                    },
+                ],
                 false,
                 gesetzt + saat
             );
