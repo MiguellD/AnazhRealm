@@ -4562,7 +4562,7 @@
   },
   "vegetation.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +34) — zuletzt an a996d0ae: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · vegetation.K4#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +24) · vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +40) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +39)",
+   "beleg": "Maschine: 0 — offen: vegetation.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +34) — zuletzt an a996d0ae: die Welt der Sitzung startet nicht (Halter Exit 1 ohne Wort — ungemessen): SITZUNG ABSTURZ die Werkbank endete ohne Wort (Exit 3221226505): · vegetation.K4#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-haus-welt.cjs, scripts/lib/shader-kosten.cjs +9) · vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +40) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +39)",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -4580,7 +4580,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +24)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-haus-welt.cjs, scripts/lib/shader-kosten.cjs +9)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -5920,8 +5920,8 @@
   "ohne": 113
  },
  "kopfVoll": "77a9095fcee506f43e2d5d342634103a1d5dd8e4",
- "zeit": "2026-11-16T17:56:39.549Z",
- "vorher": "62e3bdff",
+ "zeit": "2026-11-16T18:12:24.079Z",
+ "vorher": "77a9095f",
  "bilanz": {
   "gewinn": [],
   "fall": [],
