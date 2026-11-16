@@ -908,8 +908,9 @@ class AnazhRealm_kreatur_leben {
         // in die Zelle des Falls (`_depositEmotion`) — die Beute meidet sie, bis der Abdruck verblasst (`_kreaturFurchtOrt`).
         // Von Spieler-Hand ist der Fall eine Tat (`_handTat`, affekt K1#2): sein Fehlen geht ins Leben des Orts (die Narbe
         // `TAT_NARBE.riss`, `_tatSchreiben`), gewertet an der Situation davor und danach — der Riss senkt sie, der Fall eines
-        // Jägers löst sein Umstellen. Der Riss eines Jägers der Wildnis ist ihr Kreislauf (der Kadaver nährt), keine Narbe: mit
-        // ihr kippte die Kaskade (gate:kreatur-takt kaskade, Wölfe −0,52 statt 0).
+        // Jägers löst sein Umstellen. Der Riss eines Jägers der Wildnis ist ihr Kreislauf, keine Narbe: mit ihr kippte die
+        // Kaskade (gate:kreatur-takt kaskade, Wölfe −0,52 statt 0). Den Boden nährt der Leib, gleich woran er starb (der Fall
+        // schreibt `aas`, `_kreaturFaellt`).
         const p = creature.position;
         const fall = () => {
             if (p) this._depositEmotion(p.x, p.z, AnazhRealm._furchtGesetz().F.riss);
@@ -996,9 +997,15 @@ class AnazhRealm_kreatur_leben {
         // die EINE Masse des Leibs, _leibMasse), sein Alter ist die Uhr seines Falls (dying.t). Fressen verbraucht es
         // (_kreaturAasZug), sein Geruch ruft jeden Nicht-Pflanzenfresser, ein leerer Kadaver sinkt (_tickLeichname). Ein Leib
         // ohne gemessene Gestalt hat keine Masse und kein Fleisch.
+        // DER LEIB NÄHRT DEN BODEN (leben.oeko.zerfall S1, stoffe.K5#2): jeder Leib mit Fleisch gibt seiner 16-m-Zelle den
+        // Nährstoff zurück, gleich woran er starb — die EINE Tat `aas` (TAT_NARBE.aas, `_tatSchreiben`: ohne Narbe, sie klingt
+        // über ihre Dauer ab, `_naehrstoffAt`). Bis dahin düngte nur der Tod von Spieler-Hand (die Narbe `riss` trug den
+        // Nährstoff); der Riss eines Jägers, der Hunger und das Alter ließen den Boden, wie er war.
         const tbK = ud._tierBaum;
-        if (tbK && tbK.leibV > 0)
+        if (tbK && tbK.leibV > 0) {
             ud.kadaver = { fleisch: AnazhRealm._verhaltenGesetz().aas.fleischAnteil * this._leibMasse(creature) };
+            this._tatSchreiben("aas", creature.position.x, creature.position.z);
+        }
         this._leibZeichenFrei(creature);
         // DER LEICHNAM IST KEIN WESEN (Welle LF kampf Nachbesserung 3): er verlässt die EINE Liste der Wesen im Moment des
         // Todes und liegt in state.leichname, wo der Kreatur-Takt seinen Fall treibt (_tickLeichname). Jeder Leser, der Wesen

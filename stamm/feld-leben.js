@@ -3826,7 +3826,10 @@ AnazhRealm.TAT_NARBE = Object.freeze({
     abbauen: Object.freeze({ tiefe: 0, stunden: Infinity }), // ein Wurf des Gesetzes, abgebaut: er kehrt nie zurück (speicher.K3)
     brand: Object.freeze({ tiefe: 0.3, stunden: 72, naehr: 0.4 }), // die Asche (`_brandSchritt`): solange sie liegt, brennt die Zelle nicht; sie düngt
     lava: Object.freeze({ tiefe: 0.5, stunden: Infinity }), // die Lava (`_lavaGiessen`): erstarrt bleibt sie Stein
-    riss: Object.freeze({ tiefe: 0.03, stunden: 24, naehr: 0.2 }), // ein Tod von Spieler-Hand (`_creatureCombatDeath`): ein Leben fehlt dem Ort, sein Leichnam nährt ihn
+    riss: Object.freeze({ tiefe: 0.03, stunden: 24 }), // ein Tod von Spieler-Hand (`_creatureCombatDeath`): ein Leben fehlt dem Ort
+    // der Leib jedes Tods (`_kreaturFaellt`: Riss eines Jägers, Hunger, Alter, Spieler-Hand) nährt den Boden, wo er liegt — ohne
+    // Narbe (die Narbe am Riss der Wildnis kippte die Kaskade, gate:kreatur-takt kaskade, Wölfe −0,52 statt 0)
+    aas: Object.freeze({ tiefe: 0, stunden: 24, naehr: 0.2 }),
     max: 0.6,
     lebMin: 0.1,
 });
