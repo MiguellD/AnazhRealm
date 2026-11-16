@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "71839b1e",
-    "zeit": "2026-11-16T01:27:29.970Z",
+    "zeit": "2026-11-16T01:48:21.265Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1397,7 +1397,7 @@
           "punkte": 2,
           "staffel": "1 = ein Bewohner trifft ≥ 0,9 seiner Soll-Orte über 24 Spielstunden · 2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m",
           "messung": "NEUE Zeitraffer-Linse auf der Uhr des Spieler-Worts; der Plan ist bei gleichem Seed bit-gleich; Bild der Station Schmiede: um 10 Uhr besetzt, um 2 Uhr leer; Selbsttest: ein um 6 h verschobener Plan ist ROT.",
-          "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an d3708675 headless · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an 71839b1e radeon · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an 3e4f99cd gtx",
+          "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an d3708675 headless · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an 71839b1e radeon · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an 71839b1e gtx",
           "schlupfloch": "Ein Teleport an den Soll-Ort erfüllte den Anteil: K3 verlangt Gangzeit auf Wegen, im Nahbereich sind Sprünge > 2 m je Frame ROT.",
           "aenderung": "Staffel neu (B31); gemessen 22.10. (bewohner-tag, Radeon) 0 → 1.",
           "maschine": true

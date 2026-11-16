@@ -2414,7 +2414,7 @@
   },
   "mensch.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an d3708675 headless · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an 71839b1e radeon · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an 3e4f99cd gtx",
+   "beleg": "Maschine: gehalten: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an d3708675 headless · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an 71839b1e radeon · Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN an 71839b1e gtx",
    "stationen": [
     {
      "id": "mensch.K2#1",
@@ -2440,7 +2440,7 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
-     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
+     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
      "grund": null,
      "r6": "konsum"
     }
@@ -5241,7 +5241,7 @@
   "ohne": 80
  },
  "kopfVoll": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
- "zeit": "2026-11-16T01:27:29.970Z",
+ "zeit": "2026-11-16T01:48:21.265Z",
  "vorher": "71839b1e",
  "bilanz": {
   "gewinn": [],
