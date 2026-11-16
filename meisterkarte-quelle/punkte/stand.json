@@ -5619,8 +5619,9 @@
      "gruen": true,
      "zahl": "4 Kalt-Boots, 4 mit Kontrolle von außen: 7.64 s · 8.04 s · 8.10 s · 8.77 s (max 8.77 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal",
      "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/shader-kosten.cjs, stamm/bild-kosten.js +3)",
      "gehalten": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5746,7 +5747,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 461,
-  "konsum": 180,
+  "konsum": 181,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5917,10 +5918,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 113
+  "ohne": 112
  },
  "kopfVoll": "77a9095fcee506f43e2d5d342634103a1d5dd8e4",
- "zeit": "2026-11-16T18:18:14.461Z",
+ "zeit": "2026-11-16T18:24:02.803Z",
  "vorher": "77a9095f",
  "bilanz": {
   "gewinn": [],
