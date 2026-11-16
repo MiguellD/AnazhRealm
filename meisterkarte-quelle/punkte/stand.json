@@ -5004,16 +5004,16 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: ROT: genesis: ❌ Sprung 0.409 EV (Uhr 0.31→0.32, 188 Uhren) · ❌ Sterne Tag ≥10° max 0 · ≥−3° max 4 · Nacht ≤−18° min 60 Median 74 · halbe Nacht bei Sonne -16.0° | -13.7° · γ 0.92 (n 53) · wiese: ❌ Sprung 0.498 EV (Uhr 0.248→0.25, 188 Uhren) · ✅ Sterne Tag ≥10° max 0 · ≥−3° max 1 · Nacht ≤−18° min 12 Median 28 · halbe Nacht bei Sonne -10.7° | -14.4° · γ 0.84 (n 53) · genesis:third: ❌ Sprung 0.630 EV (Uhr 0.248→0.25, 188 Uhren) · ✅ Sterne Tag ≥10° max 0 · ≥−3° max 2 · Nacht ≤−18° min 32 Median 42 · halbe Nacht bei Sonne -14.7° | -12.9° · γ 0.90 (n 53) · wiese:third: ❌ Sprung 0.485 EV (Uhr 0.248→0.25, 188 Uhren) · ❌ Sterne Tag ≥10° max 0 · ≥−3° max 1 · Nacht ≤−18° min 8 Median 15 · halbe Nacht bei Sonne -6.0° | -11.5° · γ 0.73 (n 53) · WEG ROT Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":3,\"hell\":0.14,\"Y\":0.0101,\"X\":0.0063,\"rb\":0.0005} | Uhr 0 weicht ab: {\"uhr\":0,\"bilder\" · [linse-gpu] amd/rdna-3 an 105c9bd3 · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "genesis: ❌ Sprung 0.409 EV (Uhr 0.31→0.32, 188 Uhren) · ❌ Sterne Tag ≥10° max 0 · ≥−3° max 4 · Nacht ≤−18° min 60 Median 74 · halbe Nacht bei Sonne -16.0° | -13.7° · γ 0.92 (n 53) · wiese: ❌ Sprung 0.498 EV (Uhr 0.248→0.25, 188 Uhren) · ✅ Sterne Tag ≥10° max 0 · ≥−3° max 1 · Nacht ≤−18° min 12 Median 28 · halbe Nacht bei Sonne -10.7° | -14.4° · γ 0.84 (n 53) · genesis:third: ❌ Sprung 0.630 EV (Uhr 0.248→0.25, 188 Uhren) · ✅ Sterne Tag ≥10° max 0 · ≥−3° max 2 · Nacht ≤−18° min 32 Median 42 · halbe Nacht bei Sonne -14.7° | -12.9° · γ 0.90 (n 53) · wiese:third: ❌ Sprung 0.485 EV (Uhr 0.248→0.25, 188 Uhren) · ❌ Sterne Tag ≥10° max 0 · ≥−3° max 1 · Nacht ≤−18° min 8 Median 15 · halbe Nacht bei Sonne -6.0° | -11.5° · γ 0.73 (n 53) · WEG ROT Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":3,\"hell\":0.14,\"Y\":0.0101,\"X\":0.0063,\"rb\":0.0005} | Uhr 0 weicht ab: {\"uhr\":0,\"bilder\" · [linse-gpu] amd/rdna-3",
+     "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
+     "grund": "ROT: genesis: ❌ Sprung 0.409 EV (Uhr 0.31→0.32, 188 Uhren) · ❌ Sterne Tag ≥10° max 0 · ≥−3° max 4 · Nacht ≤−18° min 60 Median 74 · halbe Nacht bei Sonne -16.0° | -13.7° · γ 0.92 (n 53) · wiese: ❌ Sprung 0.498 EV (Uhr 0.248→0.25, 188 Uhren) · ✅ Sterne Tag ≥10° max 0 · ≥−3° max 1 · Nacht ≤−18° min 12 Median 28 · halbe Nacht bei Sonne -10.7° | -14.4° · γ 0.84 (n 53) · genesis:third: ❌ Sprung 0.630 EV (Uhr 0.248→0.25, 188 Uhren) · ✅ Sterne Tag ≥10° max 0 · ≥−3° max 2 · Nacht ≤−18° min 32 Median 42 · halbe Nacht bei Sonne -14.7° | -12.9° · γ 0.90 (n 53) · wiese:third: ❌ Sprung 0.485 EV (Uhr 0.248→0.25, 188 Uhren) · ❌ Sterne Tag ≥10° max 0 · ≥−3° max 1 · Nacht ≤−18° min 8 Median 15 · halbe Nacht bei Sonne -6.0° | -11.5° · γ 0.73 (n 53) · WEG ROT Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":3,\"hell\":0.14,\"Y\":0.0101,\"X\":0.0063,\"rb\":0.0005} | Uhr 0 weicht ab: {\"uhr\":0,\"bilder\" · [linse-gpu] amd/rdna-3",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -5150,7 +5150,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 417,
-  "konsum": 163,
+  "konsum": 164,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5322,10 +5322,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 85
+  "ohne": 84
  },
  "kopfVoll": "105c9bd397cc1b5d68391db2420b984a0741b573",
- "zeit": "2026-11-16T03:32:06.805Z",
+ "zeit": "2026-11-16T03:52:37.756Z",
  "vorher": "105c9bd3",
  "bilanz": {
   "gewinn": [],
