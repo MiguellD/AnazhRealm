@@ -1737,15 +1737,16 @@ async function schneeJahrSitzungProbe(r, T, o, G) {
     };
     aus.meer = { sommer: mittel("sommer"), winter: mittel("winter") };
     // der Gipfel und die Pose
+    // der Gipfel über die Makro-Höhe allein (das Gesetz, je Ort ohne geladene Kachel); erst um ihn lädt die Welt das Wasser (`_landAt`)
     let g = null;
     for (let dx = -6000; dx <= 6000; dx += 150)
         for (let dz = -6000; dz <= 6000; dz += 150) {
             const [x, z] = [M.x + dx, M.z + dz];
-            if (!r._landAt(x, z, 1)) continue;
             const y = r._terrainMacroSurfaceY(x, z);
-            if (!g || y > g.y) g = { x, z, y };
+            if (y > wl + 2 && (!g || y > g.y)) g = { x, z, y };
         }
     if (!g) return Object.assign(aus, { fehler: "kein Land binnen 6 km um die Mess-Wiese" });
+    await window.__weltDa(() => !r._ensureHydroTilesAround(g.x, g.z, 800));
     let pose = null;
     for (let k = 0; k < 16; k++) {
         const [ux, uz] = [Math.cos((k * Math.PI) / 8), Math.sin((k * Math.PI) / 8)];
