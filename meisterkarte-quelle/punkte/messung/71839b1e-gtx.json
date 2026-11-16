@@ -1,7 +1,7 @@
 {
  "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
  "geraet": "gtx",
- "zeit": "2026-11-16T01:09:28.670Z",
+ "zeit": "2026-11-16T01:16:22.567Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K5#2": {
@@ -896,6 +896,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.bau.innen#1": {
+   "gruen": true,
+   "zahl": "6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet",
+   "exit": 0,
+   "minuten": 3.63,
+   "gpu": "nvidia/pascal",
+   "konsum": "kf60f7f906fb6",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k12a520b5868e",
+   "s": 215.8,
+   "fremd": {
+    "s": 222.5,
+    "takte": 95,
+    "fremdS": 610.33,
+    "kerne": 2.743,
+    "fensterKerne": 4.033,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      196.63
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      155.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      59.27
+     ]
+    ],
+    "dienerS": 119.25,
+    "diener": [
+     [
+      "System",
+      64.33
+     ],
+     [
+      "dwm.exe",
+      39.98
+     ]
+    ],
+    "geraetS": 117,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      57.44
+     ],
+     [
+      "svchost.exe",
+      39.28
+     ],
+     [
+      "SearchIndexer.exe",
+      14.38
+     ]
+    ],
+    "eigenS": 635.94,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-16T01:16:22.567Z",
+   "abdruck": "e49a03330cb6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -912,19 +981,19 @@
   "kf60f7f906fb6": "dVRdj5swEPwveWzLmQDmS7oH53JqTmrV5Ces7TWQEEA2hDZV/3sFgSRAu0/Y2vGMZwf/XlUgTpDgy9GUxSpefVp9WRm4oGVQX1C/HM0qXtnCAxrG7FaEMfbWtQmdVbUhecYJ8ALSM1qNrjHLX0QP81wunDAm7Ttr94T8JITMYTlHWVo1KBxBXDqBC/G8sTEJcLSgUT3R0Kx8P3DcmPQVbtn+SMZiB8ZI+/46O4hDIacqlQtUreOPX4y9s9d5v8wAayvPCjNyCkm568R3onaJ0dBaV8A0Rz2AQp9Kdz0KnQNU3hgzIQldSTvrSDS3LEGTibS2Kl1yLEbTIidYQ7xZakmqxlLPSoBzCPnc3xSwSFBPNQQeFV5Mfi70nuCMGqwC0qE1st3A4Q9PCCG7pZa8F95TjMJDyaNATYDd7HZtF7Rt2C2S+3a4uwVwm7BHHWYkRqSZPk/tUYpKsONvS0kmBYnaOpWmfpgZ+IF0bmn/vunSzpL9wgPzuMyAc7hv0/DpLiFhuyWuVHULGq2kagYgekgDGjP2sWiu4XweLyEcDOl8cKbuAv0sww4cSvtZJP+Zwy3+1hWzfAQFQqxdnB9+0XC2gCc6U2qcNKdCRf8KZot5bfGyrMdOJf3ODpcUd0fWIWMfT8NjW8/++rY5sHkd5pr700tdj4Ip923lxerS/YFi3n1FnWOCE1+kx12QMWnFM/348XkSwOtibNcMO8cK05gxulEgoyG6U49b1CcOxekuFTzFb3nas+1A6G/IkdxyflfDfnTrze11rVCQSpcq654skkJjUsjrxzv95y8="
  },
  "sitzung": {
-  "start": "2026-11-16T01:08:54.803Z",
-  "ordner": "sitzung-20261116-020854",
+  "start": "2026-11-16T01:15:44.957Z",
+  "ordner": "sitzung-20261116-021544",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 7.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 25.5,
+    "vor": "karte2.mensch.bau.innen#1",
+    "s": 27.4,
     "takte": 573,
     "chunks": 81,
     "nach": null
@@ -933,7 +1002,7 @@
   "wegeTueren": [],
   "wanderung": [
    {
-    "probe": "siedlung.K1#2",
+    "probe": "karte2.mensch.bau.innen#1",
     "ort": "genesis",
     "m": 183.9,
     "dreh": 1.979
@@ -942,21 +1011,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 5037,
-   "frameP95": 16.72,
-   "taktP95": 15.32,
-   "vramMax": 156.6,
+   "bilder": 4157,
+   "frameP95": 24.99,
+   "taktP95": 20.33,
+   "vramMax": 160.6,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 273,
+   "zapfen": 287,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 302.1,
-  "minuten": 5.12
+  "fahrtS": 339,
+  "minuten": 5.73
  },
  "ungemessen": {
   "tiere.K5#1": {
