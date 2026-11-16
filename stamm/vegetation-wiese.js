@@ -1371,6 +1371,9 @@ class AnazhRealm_vegetation_wiese {
                         const py = this._bodenSichtAt(px, pz);
                         if (py === null) continue;
                         if (!A.zeile.ufer && this._nassAt(px, pz, 0.1, py)) continue;
+                        // auf der Decke der Lava steht nichts (stoffe.K3-2, dieselben Bytes wie Boden und Nah-Wiese, `_lavaDeckeAt`):
+                        // ihr Rand dünnt über die Ordnung der Pflanze, wie die Asche die Kräuter
+                        if (this._lavaDeckeAt(px, pz) > ordnung) continue;
                         // was brennt (die Kräuter, `ernte` kraut), wächst auf der Asche erst mit dem Busch der Sukzession
                         if (A.ernte === "kraut" && !this._streuNachBrand(px, pz, ordnung)) continue;
                         const it = { art: a, id: `${gi}|${gj}|${a}|${i}`, x: px, y: py, z: pz, rot, s, same, ordnung };

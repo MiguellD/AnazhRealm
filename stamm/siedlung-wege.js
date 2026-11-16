@@ -463,7 +463,8 @@ class AnazhRealm_siedlung_wege {
         const [x0, z0, x1, z1] = [(cx - 0.5) * cs, (cz - 0.5) * cs, (cx + 1.5) * cs, (cz + 1.5) * cs];
         let neu = 0;
         for (const stufe of wk.stufen) if (stufe.zentriert) neu = Math.max(neu, flaeche(stufe, x0, z0, x1, z1));
-        if (neu >= 2) this._nahRingNeuIn(x0, z0, x1, z1);
+        // auf der Decke wächst nichts: die Nah-Wiese und die Nah-Streu (Blumen, Kiesel, Totholz) würfeln darüber neu
+        if (neu >= 2) this._nahRingNeuIn(x0, z0, x1, z1), this._nahStreuNeuIn(x0, z0, x1, z1);
         return neu > 0;
     }
 
@@ -513,9 +514,9 @@ class AnazhRealm_siedlung_wege {
     // blieb Wiese, die Halme standen durch, glühend und erstarrt sahen gleich aus (Radeon fe885d9d, Station
     // karte2.same.kopplung.ereignis: Glut R/G 0,969, erstarrt 0,962). Jetzt liegt jede Decke in der Kronen-Karte (B die Decke,
     // A ihre Temperatur, `_wegeKarteEnsure`): der Boden-Stoff zeichnet dort den Basalt der Boden-Palette und darauf das Leuchten
-    // ihrer Temperatur (`_lavaGlutNode`), die Nah-Wiese trägt auf ihr keinen Halm (`_lavaDeckeAt`). Ihr Rand ist das EINE
-    // Rand-Gesetz einer Tat auf den Zellen des Felds (`_brandNarbeFn`: die weiche, verrauschte Grenze statt des 16-m-Quadrats),
-    // ihre Temperatur je Texel das Mittel der Zellen um ihn (die Narbe trägt es in ihrem Mittel `asche`).
+    // ihrer Temperatur (`_lavaKruste`: Schollen und glühende Risse), Nah-Wiese und Nah-Streu tragen auf ihr nichts (`_lavaDeckeAt`).
+    // Ihr Rand ist das EINE Rand-Gesetz einer Tat auf den Zellen des Felds (`_brandNarbeFn`: die weiche, verrauschte Grenze statt
+    // des 16-m-Quadrats), ihre Temperatur je Texel der Gang des Kerns an der Dicke der Decke dort (`_lavaFlaeche`).
     // Die Decke an (x, z) ∈ [0, 1] — dieselben Bytes, die der Boden-Shader liest (`_bodenDeckeAt`).
     _lavaDeckeAt(x, z) {
         return this._bodenDeckeAt(x, z, "lava");
@@ -532,14 +533,14 @@ class AnazhRealm_siedlung_wege {
     }
 
     // Die Temperatur der Lava-Tat `a` in ihrer Spanne (`_lavaSpanne`) ∈ [0, 1]: 0 am Draper-Punkt und darunter (sie glüht nicht
-    // mehr), 1 beim Ausbruch — das Byte A der Kronen-Karte.
+    // mehr), 1 beim Ausbruch — im Innern der Decke das Byte A der Kronen-Karte; ändert es sich, malt der Takt neu (`_lavaTakt`).
     _lavaWaerme(a) {
         const [td, t0] = this._lavaSpanne();
         const T = this._lavaZustand(a).temperatur + 273.15;
         return Math.min(1, Math.max(0, (T - td) / (t0 - td)));
     }
 
-    // DAS LEUCHTEN DER LAVA (TSL, Leser `_wegeBodenFarbe`) aus ihrer Temperatur `w` (das Byte A, `_lavaWaerme`): beim Ausbruch t0
+    // DAS LEUCHTEN DER LAVA (TSL, Leser `_lavaKruste`) aus der Temperatur `w` ihrer Oberfläche in der Spanne: beim Ausbruch t0
     // leuchtet sie im Leucht-Gesetz der Glut (fachwerk `LEUCHT_FEUER`: Leuchtdichte = lineare Farbe × Stärke, das Glutbett des
     // Herdfeuers) in der Farbe ihrer Temperatur (fachwerk `lichtFarbe`, der Planck-Ort); kühler fällt jeder Kanal mit dem
     // Planck-Gesetz an seiner Wellenlänge (`GLUT_BILD`, die Wien-Näherung: e^(c₂/λ · (1/t0 − 1/T)), c₂/(λ·T) ≥ 14 in der ganzen
@@ -559,8 +560,8 @@ class AnazhRealm_siedlung_wege {
         return _T.vec3(kanal(0), kanal(1), kanal(2));
     }
 
-    // Die Zelle (cx, cz) → { asche: ihre Temperatur (`_lavaWaerme`), busch: 0, wald: 0 } (die Form, die `_brandNarbeFn` mittelt)
-    // ihrer jüngsten Lava oder null; der Speicher für EINEN Gang.
+    // Die Zelle (cx, cz) → { asche: ihre Rest-Wärme q = e^(−t/τ) (der Gang des Kerns, `_lavaZustand`), busch: die Luft T_u (K),
+    // wald: 0 } (die Form, die `_brandNarbeFn` mittelt) ihrer jüngsten Lava oder null; der Speicher für EINEN Gang.
     _lavaJeZelle() {
         const M = new Map();
         return (cx, cz) => {
@@ -568,20 +569,29 @@ class AnazhRealm_siedlung_wege {
             let c = M.get(k);
             if (c === undefined) {
                 const a = this._lavaJuengste(k);
-                M.set(k, (c = a ? { asche: this._lavaWaerme(a), busch: 0, wald: 0 } : null));
+                let z = null;
+                if (a) {
+                    const L = this._lavaZustand(a);
+                    z = { asche: Math.exp(-Math.max(0, L.alterS) / L.tau), busch: this._temperaturAt(a.y, 0) + 273.15, wald: 0 };
+                }
+                M.set(k, (c = z));
             }
             return c;
         };
     }
 
-    // Die Fläche [x0, x1) × [z0, z1) in EINE Stufe: B die Decke (der Rand `m` der Narbe), A die Temperatur (ihr Mittel). Rückgabe: 2,
-    // wenn sich eine Decke änderte, 1 nur ein Leuchten, sonst 0.
+    // Die Fläche [x0, x1) × [z0, z1) in EINE Stufe: B die Decke (der Rand `m` der Narbe), A ihre Temperatur in der Spanne
+    // (`_lavaSpanne`). DIE DECKE KÜHLT VOM RAND HER: `m` ist ihre Dicke (1 im Innern, zum Rand dünn) und der Gang des Kerns hat
+    // τ = ρ·c·d / α — die dünne Decke kühlt im Verhältnis ihrer Dicke schneller, ihre Rest-Wärme ist q^(1/m) (q die der Zelle).
+    // Rückgabe: 2, wenn sich eine Decke änderte, 1 nur ein Leuchten, sonst 0.
     _lavaFlaeche(stufe, x0, z0, x1, z1, zelle) {
         const [B, A, rand] = [stufe.kronen.lava, stufe.kronen.glut, this._brandNarbeFn(zelle)];
+        const [td, t0] = this._lavaSpanne();
         return this._deckeTexel(stufe, x0, z0, x1, z1, (k, x, z) => {
             const n = rand(x, z);
             const d = n ? Math.round(n.m * 255) : 0;
-            const g = d > 0 ? Math.round(n.asche * 255) : 0;
+            const T = d > 0 ? n.busch + (t0 - n.busch) * n.asche ** (255 / d) : 0;
+            const g = d > 0 ? Math.round(Math.min(1, Math.max(0, (T - td) / (t0 - td))) * 255) : 0;
             const aus = d !== B[k] ? 2 : g !== A[k] ? 1 : 0;
             [B[k], A[k]] = [d, g];
             return aus;
@@ -1116,17 +1126,61 @@ class AnazhRealm_siedlung_wege {
         // Deckung, die Kante als Kipp der Normale, das Korn seiner Zeile), er hält unter ihm den Stein (`_buildPbrNodeMaterial`)
         const stein = {};
         const pflaster = this._kopfsteinFarbe(_T, xz, stein);
-        // DIE LAVA (stoffe.K3-2, `_lavaFlaeche`): ihre Decke (B) liegt über jedem Grund, auch über Weg und Pflaster — glühend und
-        // erstarrt der Basalt der Boden-Palette; ihre Temperatur (A) leuchtet darauf (`_lavaGlutNode`), der Boden-Stoff trägt es
-        // als sein Leuchten (`aus.glut`). Nur auf Begehbarem (die Decke fließt vom Hang, sie haftet nicht an der Wand).
+        // DIE LAVA (stoffe.K3-2, `_lavaFlaeche`): ihre Decke (B) liegt über jedem Grund, auch über Weg und Pflaster — ihre Kruste
+        // aus Basalt mit den Rissen, die ihre Temperatur (A) öffnet (`_lavaKruste`); der Boden-Stoff trägt die Kruste als Belag aus
+        // Stein (`aus.stein`: das Stein-Gesetz unter ihr, die Kanten der Schollen kippen die Normale) und die Glut als sein
+        // Leuchten (`aus.glut`). Nur auf Begehbarem (die Decke fließt vom Hang, sie haftet nicht an der Wand).
         const _lava = _T.mix(dFern.b, dNah.b, innen).mul(_begehbar).mul(imFenster);
-        const b = P.basalt;
+        const kruste = this._lavaKruste(_T, xz, _T.mix(dFern.a, dNah.a, innen), _lava);
         if (aus) {
-            const ohneLava = _T.float(1).sub(_lava);
-            aus.stein = { farbe: pflaster, deckung: _pflaster.mul(ohneLava), kipp: stein.kipp, korn: stein.korn };
-            aus.glut = this._lavaGlutNode(_T, _T.mix(dFern.a, dNah.a, innen)).mul(_lava);
+            // EIN Belag aus Stein: das Pflaster, wo keine Decke liegt, darüber die Kruste — Farbe und Kipp je Deckung gewichtet
+            const p = _pflaster.mul(_T.float(1).sub(_lava));
+            const deckung = p.add(_lava);
+            const je = _T.float(1).div(_T.max(deckung, 1e-3));
+            const kipp = (stein.kipp ? stein.kipp.mul(p).add(kruste.kipp.mul(_lava)) : kruste.kipp.mul(_lava)).mul(je);
+            aus.stein = { farbe: pflaster.mul(p).add(kruste.farbe.mul(_lava)).mul(je), deckung, kipp, korn: stein.korn };
+            aus.glut = kruste.glut.mul(_lava);
         }
-        return _T.mix(_T.mix(mitAcker, pflaster, _pflaster), _T.vec3(b[0], b[1], b[2]), _lava);
+        return _T.mix(_T.mix(mitAcker, pflaster, _pflaster), kruste.farbe, _lava);
+    }
+
+    // DIE KRUSTE DER LAVA (TSL, Leser `_wegeBodenFarbe`): EIN Gesetz aus der Temperatur `w` (das Byte A, `_lavaFlaeche`: der Gang
+    // des Kerns an der Dicke der Decke) und EINEM Feld in Welt-Lage — dem Rausch-Gesetz in zwei Oktaven (`LAVA_KRUSTE`: die
+    // Schollen, die feinen Risse). Die Oberfläche erstarrt sofort zur Kruste; wo das Feld seine Null kreuzt, reißt sie: die Risse
+    // sind das Band |n| < `offen` · w — heiß weit offen (die Schmelze steht zwischen treibenden Schollen), kühler enger, kalt zu.
+    // Die Haut der Scholle trägt `platte` der Temperatur des Innern (sie isoliert), am dünnen Rand der Decke weniger, der Riss das
+    // Innere ganz; ihr Leuchten ist das der Temperatur der Oberfläche (`_lavaGlutNode`, Planck je Kanal): der Riss glüht hell
+    // orange, die Scholle kirschrot bis schwarz, am Rand der Decke ist sie dunkel (dort reißt nichts, `randDicke`). Die Farbe ist
+    // der Basalt der Boden-Palette, je Scholle im Ton verschieden, in der kalten Fuge dunkel; die Kante der Scholle kippt die
+    // Normale (`relief`, sichtbar nur, solange der Pixel die Fuge trägt — fern glatt, kein Flimmern). Rückgabe { farbe, kipp, glut }.
+    _lavaKruste(_T, xz, w, decke) {
+        const K = AnazhRealm.LAVA_KRUSTE;
+        const ra = this._rauschAtlas();
+        // die Lage modulo der Periode des Gesetzes (P Zellen): dasselbe Feld, kleine Zahlen (die Genauigkeit fern vom Ursprung)
+        const P = AnazhRealm.RAUSCH_GESETZ.P;
+        const n1 = ra.ebeneNeigung(xz.div(K.schollenM).mod(P), K.schicht[0], "x");
+        const n2 = ra.ebeneNeigung(xz.div(K.rissM).mod(P), K.schicht[1], "x");
+        const n = n1.x.add(n2.x.mul(K.rissAnteil));
+        const c = n.abs();
+        // die Neigung von |n| in der Welt (1/m): die Ableitungen der Oktaven durch ihre Wellenlänge, mit dem Vorzeichen von n
+        const grad = n1.yz.div(K.schollenM).add(n2.yz.mul(K.rissAnteil / K.rissM)).mul(n.div(c.add(1e-4)));
+        const aa = _T.fwidth(c);
+        const rand = _T.smoothstep(_T.float(K.randDicke[0]), _T.float(K.randDicke[1]), decke);
+        const offen = w.mul(K.offen).mul(rand);
+        const riss = _T.float(1).sub(_T.smoothstep(_T.float(0), offen.add(aa), c));
+        const glut = this._lavaGlutNode(_T, w.mul(_T.mix(rand.mul(K.platte), _T.float(1), riss)));
+        const fuge = _T.float(1).sub(_T.smoothstep(_T.float(0), aa.add(K.fuge), c));
+        const b = AnazhRealm.BODEN_FARBE.basalt;
+        const farbe = _T
+            .vec3(b[0], b[1], b[2])
+            .mul(n1.x.mul(K.ton).add(1))
+            .mul(_T.mix(_T.float(1), _T.float(K.fugeTon), fuge));
+        // die Scholle wölbt sich über der Fuge: h = smoothstep(0, 2·fuge, |n|) · relief, die Normale kippt gegen ∇h
+        const t = c.div(2 * K.fuge).clamp(0.0, 1.0);
+        const sicht = _T.float(1).sub(_T.smoothstep(_T.float(K.fuge), _T.float(4 * K.fuge), aa));
+        const steil = t.mul(_T.float(1).sub(t)).mul((6 * K.relief) / (2 * K.fuge)).mul(sicht);
+        const kipp = _T.vec3(grad.x.mul(steil).negate(), 0, grad.y.mul(steil).negate());
+        return { farbe, kipp, glut };
     }
 
     // DAS KOPFSTEIN (porta STEIN_GESETZ.kopfstein, der Belag `pflaster` der Wege-Karte): Granit-Kleinpflaster im Segmentbogen als
@@ -2094,6 +2148,24 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
 AnazhRealm.GLUT_BILD = Object.freeze({
     c2: 1.438777e-2,
     lambdaNm: Object.freeze([611, 549, 464]),
+});
+// DIE KRUSTE DER LAVA (`_lavaKruste`): das Feld der Schollen (Wellenlänge `schollenM`, m) und der feinen Risse (`rissM`, ihr Anteil
+// `rissAnteil`) in den Schichten `schicht` des Rausch-Gesetzes; der Riss ist offen bis |n| < `offen` · w (beim Ausbruch etwa ein
+// Drittel der Fläche, σ des Felds 0,25), die Haut der Scholle hat `platte` der Temperatur des Innern; am Rand der Decke (Dicke
+// unter `randDicke`) reißt nichts. Die kalte Fuge (|n| < `fuge`) dunkelt den Basalt auf `fugeTon`, die Schollen streuen ±`ton`
+// im Ton, ihre Kante hebt sich um `relief` (m).
+AnazhRealm.LAVA_KRUSTE = Object.freeze({
+    schollenM: 1.8,
+    rissM: 0.6,
+    rissAnteil: 0.35,
+    schicht: Object.freeze([13, 17]),
+    offen: 0.12,
+    platte: 0.7,
+    randDicke: Object.freeze([0.3, 0.9]),
+    fuge: 0.035,
+    fugeTon: 0.45,
+    ton: 0.25,
+    relief: 0.06,
 });
 // DIE LAUB-STREU UNTER DEN KRONEN (`_kronenStreuNeu`, Welle 5 Boden): je Wege-Stufe eine R8-Karte im selben Fenster — `texelM` je Stufe
 // (nah 1 m, fern 4 m: 512² = 256 KB je Stufe); eine Krone legt `dichte` Laubstreu bis `kern` × Kronen-Radius, weich
