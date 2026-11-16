@@ -816,7 +816,7 @@ class AnazhRealm_stoff_material {
         let emissiveColor = null;
         let emissiveIntensity = 0;
         let _wieseGrund = null; // der Bestand der Wiese am Boden (`_terrainGeologyAlbedo` → `gruen`), sein Grund liest die Narbe
-        let _ascheDecke = null; // die Asche des Brands auf dem Boden (`aus.asche`): unter ihr bleibt vom Mikro-Relief `BRAND.ascheKorn`
+        let _ascheDecke = null; // die Asche des Brands auf dem Boden (`aus.asche`): unter ihr ruht das Mikro-Relief
         let _steinBelag = null; // der Belag aus Stein auf dem Boden (`_wegeBodenFarbe` → `aus.stein`): unter ihm gilt das Stein-Gesetz
         const params = {};
         if (opts.color !== undefined) params.color = opts.color;
@@ -895,7 +895,7 @@ class AnazhRealm_stoff_material {
                         // die Asche des Brands (w28-brand-bild): die Geologie hält auf ihr Rauheit und Farbe ihrer Zeile
                         if (_weg.asche) {
                             _terrRough.asche = _weg.asche;
-                            _ascheDecke = _weg.asche.deckung.mul(1 - AnazhRealm.BRAND.ascheKorn);
+                            _ascheDecke = _weg.asche.deckung;
                         }
                         let _geo = this._terrainGeologyAlbedo(
                             _Ta,
@@ -1884,7 +1884,8 @@ class AnazhRealm_stoff_material {
                         const _mk = this._mikroRelief(_Tn, _wp);
                         // DER BELAG AUS STEIN (w28-stein-kamm, `_steinBelag`): unter ihm trägt der Boden vom Mikro-Relief nur, was das
                         // Korn seiner Zeile lässt, und die Kante seiner Steine kippt die Normale (der EINE Kamm, `_steinStoff`)
-                        // DIE ASCHE IST PULVER (w28-brand-bild): sie füllt Klumpen und Kiesel — unter dem Licht ihres eigenen Feuers
+                        // DIE ASCHE IST PULVER (w28-brand-bild): sie füllt Klumpen und Kiesel, ihr Korn trägt die Albedo (`BRAND.ascheKorn`),
+                        // die Normale bleibt die des Bodens (bei 0,3 des Reliefs standen die Trapeze noch) — unter dem Licht ihres Feuers
                         // (1 m über dem Boden, ab 4 m flacher als die 13° des Reliefs) stand der Boden sonst als helle und schwarze
                         // Trapeze, ein Wellen-Muster wie Wasser (Dorf-Wiese, Nacht, 300 s)
                         const _mkS = _steinBelag ? _lod.mul(_Tn.float(1.0).sub(_steinBelag.stein)) : _lod;
