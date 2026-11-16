@@ -1,0 +1,140 @@
+{
+ "sha": "b56817704c3f9b0efcf4fd52d1331756ea5edef2",
+ "geraet": "gtx",
+ "zeit": "2026-11-16T22:11:47.922Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.same.gedaechtnis.pfad#1": {
+   "gruen": false,
+   "zahl": "nach 100 Gängen (Soll 100): Gras im Bild Weg 1454866 → 1071239 px, daneben 1581654 → 1581540 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 5.51,
+   "grund": "ROT: nach 100 Gängen (Soll 100): Gras im Bild Weg 1454866 → 1071239 px, daneben 1581654 → 1581540 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k702ce0a0a961",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k99b1b7162324",
+   "s": 329.7,
+   "fremd": {
+    "s": 332.8,
+    "takte": 155,
+    "fremdS": 180.81,
+    "kerne": 0.543,
+    "fensterKerne": 1.535,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      59.58
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      49.97
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      26.97
+     ]
+    ],
+    "dienerS": 84.28,
+    "diener": [
+     [
+      "System",
+      35.36
+     ],
+     [
+      "dwm.exe",
+      28.88
+     ]
+    ],
+    "geraetS": 78.05,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      43.8
+     ],
+     [
+      "svchost.exe",
+      31.66
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      1.08
+     ]
+    ],
+    "eigenS": 407.92,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-16T22:11:47.922Z",
+   "abdruck": "eb1c0f4de3ea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k702ce0a0a961": "dVTRjpswEPyXPLblnAAOjqV7cJJT76pWSqT+wNpeAwmByIajTdV/ryCQBLjuU4JmmPHs4D+zM6gjxPh0cEU+47NPsy8zB+/oObTvaJ8ObsZncxUCZVxchwghNg1M2fRcOpKlkoDMITmhV9kS0+xJtbSFYgjISf0i6h0hOxKRdS1usxHPz+PXZBJ14ZVgsH+J1H4UAB8DKxeDRA8q0wp3YLNcRn7ASTtsK3YH0o/YC9E4+UBVQq6Hzk0A1Cz4228hXqZ4nQKWXpbmrtdVmsrA5zexesqxUHsXwCRD25HYkupg0ZsdE0xWOTcQYYGmPuOErMgIG6NLVVJ6Z1tIzPvgVn60AL6eeonPlWcenYCUwOQ44wQwj9EOPUQhVSEnvyZ+j3BCC14OSQddzYPIl/dMCCGvUy9Za7yV6I0zLVeRGRCb/b221dmy5k98e8xer2Xaxvdiif1IxKkktadhPMZQDXP+fWrJJaDResfClTd0wJgPQfcFbNsyiV24HTPvh+l4vlzOKXs4CyPidZKdK0xZg0UvPlcdEUOkEeVCvE3AJZxO/SGUj4yOF+fKptCPNuaRT2m7i/g/e7jW37tgmvWkSKlFgHzzQ4zP+W7h5IGMbWpMv21JlVl9VM4as9KTRVH2SKOX10jyWyoBE+LtYYFiG86/btZ7MZ6ftdhPvLcKhS1741Qu5ybkpv0S1Rh9QZthjIN8dCgD0JzU6tFC/+PzoIiXyfouKTbJ5a5yfYVXkV51FR5mXaM9SsiPfcYLs1Caf2t0dmLbCS7X5EDGs6uF+LG+3rxnVORsC5M2VxdJoHIJZOX9Dv/7Dw==",
+  "k99b1b7162324": "dVRdj5swEPwveeyVM18OjqV7cErUXNVTc7qHSn1bmzVwIRDZcFSp+t+rcJAE6O0ToBnv7OzgP4sjqD2keP9qq3LBF58WnxcW3tCxaN7Q3L/aBV+4KgTKuHgvIoT4eoYpkx9rS4pcEpAlZAd0GlNjXtyrjuYphoCctBvR7gjZkYisW3GptXh4mB5TSEwqpwaNwyEy8aMA+BTY2BQkOtDornEP1stl5AecdMVisXslQ4lnIUi7mXaUUCZj1ToAqj3+2AqxmStMcsDaKfLSDj1VQmXg80ujds4x0DonwKxA05PYkiaBNwidEnTRWDtqwoKE+owTsiITbIo2V1ntHE0lsRxMW/mRB3w915IeG0ffKgEpgcmpvxlgmaIZa4hCqkJOfs/07uGABpwSsh66coPIl1dPCCHbuZaiE961GISzRK4iPSISQtJtF5uYdS+Xz2z7HqQ4vYZKPE+aWJXl5jC2R2uagDud2WaQoHH2la0vyIAxH4I++XEXIrEL4ynzOkjP8+XSpexmDkbEduabrXTdgkEnPTY9EUOkEeUifZqBazgchgGUj4zOBqjPYb6V4UY+pd0e0g928B5954R5MZAipbwA+ZcnMZ3zzcDBAZmaXOth05IqvfpfMFssakdWVT0gdbI8WxKQ8uKKdyfE083yHmPq/vz+6+X55po418ad6u5Or0w9iKZy6eqQ6+4PVFP0CU2BKY68SUIZQMJJq6594nB4uBsF8DRb3SnHs2ulbewQ3VWUrPro9vIfx/dHi2YvodwPPnvaUwnv8rsTsfghRPotvltPZv+o4v7wIypyNJXOz1cZyaCxGRT19T7/+w8="
+ },
+ "sitzung": {
+  "start": "2026-11-16T22:11:11.673Z",
+  "ordner": "sitzung-20261116-231111",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.9,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "karte2.same.gedaechtnis.pfad#1",
+    "s": 26.6,
+    "takte": 607,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "karte2.same.gedaechtnis.pfad#1",
+    "ort": "wiese",
+    "m": 12.65,
+    "dreh": 1.972
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.same.gedaechtnis.pfad#1",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 3363,
+   "frameP95": 25.07,
+   "taktP95": 12.53,
+   "vramMax": 124.8,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 131,
+   "luecken": 30,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 440.7,
+  "minuten": 7.47
+ }
+}
