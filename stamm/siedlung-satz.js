@@ -1,5 +1,5 @@
 class AnazhRealm_siedlung_satz {
-    // ===== ATLAS · Siedlung/satz — Bau-Satz · Satz-Kern · Bau setzen · Fundament · Katalog · Arten-Substanz · Inseln =====
+    // ===== ATLAS · Siedlung/satz — Bau-Satz · Satz-Kern · Bau setzen · Fundament · Katalog · Arten-Substanz =====
     // ═══ DER BAU-SATZ (Welle 6) ═══
     // Die Draw-Einheit des gesetzten Studio-Baus ist sein STOFF, nie seine Gestalt. Befund (echte GPU, Mess-Wiese
     // −900/−850, `werkbank band`): jede Instanz-Gruppe ist EINE Geometrie (`f:<preset>|<gestalt>|<lod>[|ov]:<teil>`), und
@@ -637,115 +637,8 @@ class AnazhRealm_siedlung_satz {
         return namen.slice().sort((a, b) => this._katalogRang(a) - this._katalogRang(b));
     }
 
-    // Architektur-/Insel-/Chunk-Kollision ist feld-nativ (Dichtefeld + `entry.blockerAABBs` +
+    // Architektur-/Chunk-Kollision ist feld-nativ (Dichtefeld + `entry.blockerAABBs` +
     // `_stepCharacterStructures`) — es gibt keine Ammo-Kollisions-Builder.
-
-    // _islandDensityAt: Insel-Dichte-Feld in LOKALEN Koordinaten (Mitte bei (0,0,0)) für dieselbe
-    // Surface-Nets-Pipeline wie die Voxel-Chunks. Oberseite: radiale Noise-Höhe mit Rim-Falloff;
-    // Unterseite flach, zum Rand verjüngt; außen radial harte Luft (gekapselt, kein Boden-Anker).
-    // Iso = `min(topY-ly, ly-botY)` im Innern. Seed-deterministisch (Multi-User-Sync).
-    _islandDensityAt(lx, ly, lz, radius, height, noise) {
-        const dx = lx;
-        const dz = lz;
-        const distXZ = Math.sqrt(dx * dx + dz * dz);
-        if (distXZ >= radius) return -1;
-        const factor = 1 - distXZ / radius;
-        if (factor <= 0) return -1;
-        // V9.42-b — Höhen-Amplitude skaliert mit `height`-Parameter
-        // (Schöpfer-Befund: "Höhenwerte zu beschränkt"). Frequenz-Mix
-        // gibt mehr Variation; Basis-Lift ebenso höhen-skaliert.
-        const ampScale = Math.max(1, height * 0.35);
-        const h1 = noise.noise2D(lx * 0.18, lz * 0.18) * 1.5 * factor * ampScale;
-        const h2 = noise.noise2D(lx * 0.45, lz * 0.45) * 0.7 * factor * ampScale;
-        const h3 = noise.noise2D(lx * 0.85, lz * 0.85) * 0.35 * factor;
-        const topY = Math.max(0, h1 + h2 + h3 + factor * 0.4 * ampScale);
-        // Unterseite — sanft verjüngt, flach im Innern.
-        const botY = -Math.max(2, height * 0.4) * factor;
-        if (ly > topY || ly < botY) return -1;
-        return Math.min(topY - ly, ly - botY);
-    }
-
-    spawnIslandAt(x, y, z, height = 6, opts = {}) {
-        if (!this.state.scene) return null;
-        // V9.42-b — Schöpfer-Wahl: Insel-Grösse jetzt bis 48 m Durchmesser
-        // (vorher 24, immer gleich gefühlt) + size-Parameter ist DSL-erreichbar.
-        const size = Number.isFinite(opts.size) ? Math.max(6, Math.min(48, opts.size)) : 12;
-        const seedStr = opts.seed != null ? String(opts.seed) : String(this._bauSame("insel")); // Γ5, nie Math.random
-        const noise = new SimplexNoise(seedStr);
-        // V9.42-a — Geometrie aus der Surface-Nets-Pipeline. Voxel-Welt-Chunks
-        // + Inseln teilen sich `_voxelChunkGeometry` (eine Mesh-Sprache, zwei
-        // Anwendungen). Lokales Volumen mit ~1.5-Marge gegen das Iso-Band.
-        const radius = size / 2;
-        const step = 0.9;
-        const margin = 1.5;
-        const halfXZ = radius + margin;
-        const dimXZ = Math.max(8, Math.ceil((2 * halfXZ) / step));
-        // V9.42-b — Höhen-Amplitude wächst mit `height` (siehe _islandDensityAt).
-        const ampScale = Math.max(1, height * 0.35);
-        const topMax = (1.5 + 0.7) * ampScale + 0.35 + 0.4 * ampScale + margin;
-        const botMin = -(Math.max(2, height * 0.4) + margin);
-        const dimYNeeded = Math.max(6, Math.ceil((topMax - botMin) / step));
-        const islandDensity = (px, py, pz) => this._islandDensityAt(px, py, pz, radius, height, noise);
-        const geometry = this._voxelChunkGeometry(
-            -halfXZ,
-            botMin,
-            -halfXZ,
-            dimXZ,
-            dimYNeeded,
-            dimXZ,
-            step,
-            islandDensity
-        );
-        // Insel-Farbe per vertexColors (_attachIslandColors) — dieselbe Cel-Sprache wie der Voxel-Boden; das
-        // Terrain-ShaderMaterial passt nicht (die Surface-Nets-Geometrie trägt kein aField/uv).
-        this._attachIslandColors(geometry);
-        // V10.0-g — Insel-Material auf ToonNodeMaterial (WebGPU-kompatibel).
-        const material = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
-        const island = new THREE.Mesh(geometry, material);
-        island.position.set(x, y, z);
-        island.castShadow = true;
-        island.receiveShadow = true;
-        island.name = "dsl-insel";
-        island.userData.sourceOp = "spawn_island";
-        this.state.scene.add(island);
-        if (!Array.isArray(this.state.floatingIslands)) this.state.floatingIslands = [];
-        this.state.floatingIslands.push(island);
-        // DETERMINISMUS-BOGEN (Entscheid #2) — die AABB-Hülle für die feld-native Kollision:
-        // der Spieler kann auf einer fliegenden Insel STEHEN (Auflage auf der Oberkante) +
-        // wird an ihren Flanken geblockt. Die Hülle kommt exakt aus der gebauten Geometrie.
-        geometry.computeBoundingBox();
-        const bb = geometry.boundingBox;
-        if (bb) {
-            island.userData.fieldAABB = {
-                minX: x + bb.min.x,
-                maxX: x + bb.max.x,
-                minZ: z + bb.min.z,
-                maxZ: z + bb.max.z,
-                topY: y + bb.max.y,
-                botY: y + bb.min.y,
-            };
-        }
-        return island;
-    }
-
-    // UFOs sind bewusst kollisionsfrei — fliegende Beobachter, kein
-    // Hindernis. Sanfte Sinus-Hover-Animation wird im Frustum-Loop
-    // angewandt (selber Pfad wie initialer spawnIslands-UFO).
-    spawnUfoAt(x, y, z) {
-        if (!this.state.scene) return null;
-        const geo = new THREE.ConeGeometry(1, 2, 8);
-        const mat = new THREE.MeshBasicMaterial({ color: 0xc0e8ff });
-        const ufo = new THREE.Mesh(geo, mat);
-        ufo.position.set(x, y, z);
-        ufo.visible = true;
-        ufo.name = "dsl-ufo";
-        // der Schwebe-Takt aus dem Welt-Strom (Γ5): jeder Peer sieht das UFO im selben Takt
-        ufo.userData = { baseY: y, speed: 0.5 + this._samenStrom(this._bauSame("ufo"))() * 0.5, sourceOp: "spawn_ufo" };
-        this.state.scene.add(ufo);
-        if (!Array.isArray(this.state.ufos)) this.state.ufos = [];
-        this.state.ufos.push(ufo);
-        return ufo;
-    }
 
     // Horizontaler Footprint-Radius eines Bauplans (Zentrum bis äußerster solider Part-Rand), VOR dem
     // Spawn aus bp.parts berechnet (entry.blockerAABBs entsteht erst danach) — für die Spawn-Clearance.

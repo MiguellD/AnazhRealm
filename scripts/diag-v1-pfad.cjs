@@ -175,8 +175,6 @@ const ORT_OPS = [
     "spawn_creature",
     "spawn_tree",
     "spawn_studio",
-    "spawn_island",
-    "spawn_ufo",
     "spawn_village",
     "spawn_temple",
     "spawn_waterfall",
@@ -230,7 +228,7 @@ const KNOTEN = [
     ],
     ["leerer Knoten", ["spawn_tree", [], 1, "eiche", 5], "^leerer Ort-Knoten", "spawn_tree"],
     ["Zahl statt Knoten", ["spawn_creature", 42, 1, "happy"], "^„42“ ist kein Ort-Knoten", "spawn_creature"],
-    ["Objekt statt Knoten", ["spawn_ufo", { x: 3, z: 4 }], "ist kein Ort-Knoten", "spawn_ufo"],
+    ["Objekt statt Knoten", ["spawn_waterfall", { x: 3, z: 4 }, 7], "ist kein Ort-Knoten", "spawn_waterfall"],
     [
         "Text statt Knoten im Feld-Akt",
         ["deposit_life", "near_water", 0.5],
@@ -250,8 +248,8 @@ const KNOTEN = [
         "^at: x fehlt",
         "spawn_creature",
     ],
-    ["at ohne z", ["spawn_ufo", ["at", 12, 3]], "^at: z fehlt", "spawn_ufo"],
-    ["at mit Text-Höhe", ["spawn_island", ["at", 5, "hoch", 5], 6, 7], "^at: y „hoch“ ist keine Zahl", "spawn_island"],
+    ["at ohne z", ["spawn_creature", ["at", 12, 3], 1, "happy"], "^at: z fehlt", "spawn_creature"],
+    ["at mit Text-Höhe", ["spawn_waterfall", ["at", 5, "hoch", 5], 7], "^at: y „hoch“ ist keine Zahl", "spawn_waterfall"],
     [
         "near_water mit Text-Radius",
         ["spawn_tree", ["near_water", "abc"], 1, "eiche", 5],
@@ -278,9 +276,9 @@ const KNOTEN = [
     ],
     [
         "random_position mit Text-Spanne",
-        ["spawn_ufo", ["random_position", "x"]],
+        ["spawn_tree", ["random_position", "x"], 1, "eiche", 5],
         "^random_position: Spanne „x“ ist keine Zahl",
-        "spawn_ufo",
+        "spawn_tree",
     ],
     [
         "at_player_forward mit Text-Abstand",
@@ -1306,8 +1304,6 @@ async function probe(arg) {
         const ortVon = {
             spawnCreatureAt: (a) => ({ x: a[0], z: a[2] }),
             spawnArchitecture: (a) => a[1] || null,
-            spawnIslandAt: (a) => ({ x: a[0], z: a[2] }),
-            spawnUfoAt: (a) => ({ x: a[0], z: a[2] }),
             spawnSettlement: (a) => (a[0] && a[0].position) || null,
             _lebenGabe: (a) => ({ x: a[0], z: a[1] }), // die Gabe am Eingang (`_feldAkt`): wann sie ins Feld schreibt, ordnet die Folge (`_feldFolgeSteht`)
             _depositEmotion: (a) => ({ x: a[0], z: a[1] }),
@@ -1338,8 +1334,6 @@ async function probe(arg) {
             ["spawn_creature", NW, 2, "happy"],
             ["spawn_tree", NW, 2, "eiche", 5],
             ["spawn_studio", "eiche", NW, 3, 5],
-            ["spawn_island", NW, 10, 5, 12],
-            ["spawn_ufo", NW],
             ["spawn_village", NW, 7],
             ["spawn_temple", NW, 7],
             ["spawn_waterfall", NW, 7],

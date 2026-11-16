@@ -975,7 +975,6 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
                 _fieldSurfaceBelow: () => null,
                 _fieldResolveSphere: () => false,
                 _stepCharacterStructures: ohne,
-                _stepCharacterIslands: ohne,
                 _koerperWasser: () => pm.position.y + 3,
             };
             Object.assign(r, buehne);

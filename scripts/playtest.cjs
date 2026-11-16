@@ -98,7 +98,6 @@ async function gatherInitialFinalState(page) {
             playerX: st.playerMesh?.position?.x,
             playerZ: st.playerMesh?.position?.z,
             creatures: st.creatures?.length || 0,
-            floatingIslands: st.floatingIslands?.length || 0,
             hasPlayerBody: !!st.playerVel,
             grokSeenFirstSpawn: st.grok?.seenFirstSpawn === true,
             grokLastSpoke: st.grok?.lastSpoke || 0,

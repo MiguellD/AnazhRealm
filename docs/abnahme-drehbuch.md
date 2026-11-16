@@ -34,8 +34,9 @@
 **Stehende Ein-Wort-Defaults** (bestätigt, nur bei Widerspruch melden): Materialisierungs-Pop
 der Mesh-Zone = Streaming, kein eigener Fall · Feuerstelle (glutbrunnen) · Marktstand · Ziehbrunnen =
 Studio-Gestalt (fachwerk-Ausstattung; die Wirts-Teile sind unsichtbare Substanz, ein gezeichnetes Wirts-Teil ist
-eine Fremd-Silhouette) · fliegende Inseln = Welt-Substanz (die Stein-Scheibe des Genesis-Orts fiel mit dem Schöpfer-Wort vom
-31.10.: der Platz ist EIN Plan des Ort-Gesetzes).
+eine Fremd-Silhouette) · der Himmel trägt keinen Körper ohne Mechanismus (die fliegenden Inseln und die UFOs fielen mit dem
+Schöpfer-Wort vom 16.11.: „die schwerkraft würde bei ihnen keine ausnahme machen“; die Stein-Scheibe des Genesis-Orts fiel mit
+dem Schöpfer-Wort vom 31.10.: der Platz ist EIN Plan des Ort-Gesetzes).
 
 **Abschluss:** 19 ✔ = das Wort des Schöpfers über Scope/Ship (Schritt 15 zuletzt: sein Trace ist der FPS-Boden-Beweis, p95 ≤ 33 ms). Das Bild-Paar
 vorher↔nachher eines Studios liefert `npm run blick:studio -- <studio> --paar` (das Look-Golden fiel am 04.11. ungemintet).
