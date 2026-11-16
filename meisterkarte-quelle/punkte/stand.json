@@ -3065,7 +3065,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 69 Bilder · max 83.63 ms · 63.77 % > 33 ms · Fahrt 52 Bilder · max 100.25 ms · 92.31 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 63.77 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.25), 92.31 % > 33 ms an 2b826a89 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Gehen 69 Bilder · max 83.63 ms · 63.77 % > 33 ms · Fahrt 52 Bilder · max 100.25 ms · 92.31 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 63.77 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.25), 92.31 % > 33 ms an 2b826a89 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an 77e079ae: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,249; vor 121,2/297,8 ms, nach 90,1/229,1 ms, Ruhe 92,1/238,5 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3082,8 +3082,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, vehicle-core.js)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "profiband.K4#2",
@@ -3100,7 +3101,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 77e079ae: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,249; vor 121,2/297,8 ms, nach 90,1/229,1 ms, Ruhe 92,1/238,5 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
      "ungemessen": true
     }
    ]
@@ -4980,7 +4981,7 @@
   },
   "karte2.erleben.kopplung.wahrnehmung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.wahrnehmung#1 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.3/12.1/12.2/12.2/12.4/12.1/14.6/12.1 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal an 77e079ae gtx — offen: karte2.erleben.kopplung.wahrnehmung#1 radeon: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.wahrnehmung#1",
@@ -4995,11 +4996,11 @@
     {
      "id": "karte2.erleben.kopplung.wahrnehmung#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.3/12.1/12.2/12.2/12.4/12.1/14.6/12.1 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal",
+     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5427,7 +5428,7 @@
   },
   "karte2.mensch.macht.wehrbau": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.wehrbau#1 radeon: ungemessen (R10) · karte2.mensch.macht.wehrbau#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an 77e079ae gtx — offen: karte2.mensch.macht.wehrbau#1 radeon: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.macht.wehrbau#1",
@@ -5442,11 +5443,11 @@
     {
      "id": "karte2.mensch.macht.wehrbau#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal",
+     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5559,7 +5560,7 @@
   },
   "karte2.mensch.stadt.siedlungsnetz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an c8c840c9 radeon · gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an c8c840c9 gtx",
+   "beleg": "Maschine: gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an c8c840c9 radeon · ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an 77e079ae gtx",
    "stationen": [
     {
      "id": "karte2.mensch.stadt.siedlungsnetz#1",
@@ -5576,9 +5577,9 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km",
-     "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5689,7 +5690,7 @@
   },
   "karte2.planet.kopplung.bahn-klima": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.bahn-klima#1 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#1 gtx: Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/daten.js)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.bahn-klima#1 radeon: ungemessen (R10) · karte2.planet.kopplung.bahn-klima#1 gtx: ROT: Gipfel -3880.4/198.937/-3745.6, 166 freie Punkte 77.048–199.209 m über dem Meer · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · fruehling Bild 79.771 m · Gesetz 102 m (Versatz -106, Treffer 0.066 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · herbst Bild 180.942 m · Gesetz 144.787 m (Versatz -24, Treffer 0.02 aus 99, Falsch 0 aus 55) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, fruehling folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht, herbst folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal an 77e079ae",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.bahn-klima#1",
@@ -5705,10 +5706,9 @@
      "id": "karte2.planet.kopplung.bahn-klima#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/daten.js)",
-     "ungemessen": true,
+     "zahl": "Gipfel -3880.4/198.937/-3745.6, 166 freie Punkte 77.048–199.209 m über dem Meer · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · fruehling Bild 79.771 m · Gesetz 102 m (Versatz -106, Treffer 0.066 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · herbst Bild 180.942 m · Gesetz 144.787 m (Versatz -24, Treffer 0.02 aus 99, Falsch 0 aus 55) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, fruehling folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht, herbst folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal",
+     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
+     "grund": "ROT: Gipfel -3880.4/198.937/-3745.6, 166 freie Punkte 77.048–199.209 m über dem Meer · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · fruehling Bild 79.771 m · Gesetz 102 m (Versatz -106, Treffer 0.066 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · herbst Bild 180.942 m · Gesetz 144.787 m (Versatz -24, Treffer 0.02 aus 99, Falsch 0 aus 55) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, fruehling folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht, herbst folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     }
@@ -5955,7 +5955,7 @@
   },
   "karte2.same.kopplung.ereignis": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.ereignis#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.ereignis#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.ereignis#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.ereignis#1 gtx: ROT: Guss -268,-1046: Glut R/G 0.962 (Soll ≥ 2), Luma 0.169, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.962 (Soll ≤ 1,25), Luma 0.169, Stoff stein · [linse-gpu] nvidia/pascal an 77e079ae",
    "stationen": [
     {
      "id": "karte2.same.kopplung.ereignis#1",
@@ -5971,10 +5971,10 @@
      "id": "karte2.same.kopplung.ereignis#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "Guss -268,-1046: Glut R/G 0.962 (Soll ≥ 2), Luma 0.169, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.962 (Soll ≤ 1,25), Luma 0.169, Stoff stein · [linse-gpu] nvidia/pascal",
+     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
+     "grund": "ROT: Guss -268,-1046: Glut R/G 0.962 (Soll ≥ 2), Luma 0.169, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.962 (Soll ≤ 1,25), Luma 0.169, Stoff stein · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6133,7 +6133,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: ungemessen (R10) · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, vehicle-core.js)",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -6151,8 +6151,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, vehicle-core.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6277,7 +6278,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 153,
+  "konsum": 159,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6448,10 +6449,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 184
+  "ohne": 178
  },
  "kopfVoll": "b56817704c3f9b0efcf4fd52d1331756ea5edef2",
- "zeit": "2026-11-16T22:21:54.126Z",
+ "zeit": "2026-11-16T22:38:24.448Z",
  "vorher": "b5681770",
  "bilanz": {
   "gewinn": [],
