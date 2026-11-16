@@ -1369,6 +1369,66 @@ const vierUrteil = (j, lauf) => {
         (ok.length ? " (max " + (Math.max(...ok) / 1000).toFixed(2) + " s, Soll ≤ " + ANKUNFT_VIER_SOLL_MS / 1000 + " s)" : "");
     return { gruen: hw && k.length >= 4 && ok.length === k.length && Math.max(...ok) <= ANKUNFT_VIER_SOLL_MS, zahl: z + " · " + ad };
 };
+// DER FALL AUS 10 m (Karte 2 same.massstab.physik S1 „Fallzeit aus 10 m gegen √(2h/g) ±5 %; Bremsweg gegen μ ±10 %“): in der Seite der
+// Sitzung (r = Welt) die Füße des Spielers 10 m über seinen Grund (`_koerperGrund`, der Grund des Kapsel-Schritts), die Vertikale 0,
+// dann der Sim-Schritt des Spiels selbst (`_stepFixedSim` — derselbe, den `_loopFixedStep` je FIXED_DT ruft: Planung, Kapsel-Schritt
+// mit `leibFall`, Kontakt) bis die Füße den Grund tragen. Die Werkbank ruht den Loop (Lehre 17): kein fremder Schritt dazwischen.
+// Danach steht der Spieler, wo er stand. DER BREMSWEG (Wagen auf 50 km/h, s gegen v²/(2μg) mit μ der Stoff-Zeile) ist hier NICHT
+// gebaut: das Urteil verlangt ihn und bleibt ohne ihn ROT beim Namen — nie GRÜN auf der halben Sprosse
+function physikFall(r) {
+    const s = r.state, m = s && s.playerMesh, A = AnazhRealm;
+    if (!m || !s.playerVel || typeof r._stepFixedSim !== "function" || typeof r._koerperGrund !== "function") return { fehler: "ohne Spieler, Sim-Schritt oder _koerperGrund" };
+    const dt = A.FIXED_DT, fuss = A.PLAYER_FOOT_OFFSET, vor = m.position.clone();
+    const grund = r._koerperGrund(vor.x, vor.y - fuss + 2, vor.z, 6);
+    if (!Number.isFinite(grund)) return { fehler: "kein Grund unter dem Spieler binnen 6 m" };
+    const nullV = () => (typeof s.playerVel.setValue === "function" ? s.playerVel.setValue(0, 0, 0) : null, (s._fieldVy = 0));
+    let t = Number.isFinite(s._fixedSimTime) ? s._fixedSimTime : 0, n = 0, land = null, tief = Infinity;
+    const bahn = [];
+    try {
+        m.position.y = grund + 10 + fuss;
+        nullV();
+        while (n < 600) {
+            r._stepFixedSim(t, dt);
+            t += dt;
+            n++;
+            const h = m.position.y - fuss - grund;
+            tief = Math.min(tief, h);
+            if (n % 6 === 0) bahn.push(+h.toFixed(3));
+            if (h <= 0.02) {
+                land = +(n * dt).toFixed(4);
+                break;
+            }
+        }
+    } finally {
+        s._fixedSimTime = t;
+        m.position.copy(vor);
+        nullV();
+    }
+    const g = A.WELT_GESETZ_ERDE && Number.isFinite(A.WELT_GESETZ_ERDE.schwere) ? Math.abs(A.WELT_GESETZ_ERDE.schwere) : null;
+    return { h: 10, grund: +grund.toFixed(3), dt, schritte: n, tLand: land, tief: +tief.toFixed(3), bahn, gSpiel: Math.abs(s.gravity), gGesetz: g };
+}
+async function probePhysikMassstab(H) {
+    const j = (H.teil = {});
+    j.fall = await H.evalWelt("return (" + H.seite.fall + ")(r);", Math.max(10, H.rest() - 2) * 1000).catch((e) => ({ fehler: String(e.message).slice(0, 200) }));
+    H.zeile("Fall aus 10 m: " + JSON.stringify(j.fall));
+    j.bremsweg = null; // der Bremsweg ist in dieser Probe nicht gebaut (oben)
+    return j;
+}
+const PHYSIK_PROBE = probeBefehl(probePhysikMassstab, 45, { fall: physikFall });
+const PHYSIK_G = 9.81;
+const physikUrteil = (j, lauf) => {
+    const { ad, hw } = HW(String(lauf.stdout || ""));
+    const f = j && j.fall;
+    if (!f || f.fehler || !(f.tLand > 0)) return { gruen: false, zahl: "kein Fall aus 10 m gemessen" + (f && f.fehler ? ": " + f.fehler : f ? " (der Grund kam binnen " + f.schritte + " Schritten nicht, tiefste Höhe " + f.tief + " m)" : "") + " · " + ad };
+    const soll = Math.sqrt((2 * f.h) / PHYSIK_G), ab = f.tLand / soll - 1;
+    const fallOk = Math.abs(ab) <= 0.05;
+    const b = j.bremsweg;
+    const bremsOk = !!b && Number.isFinite(b.s) && Number.isFinite(b.soll) && b.soll > 0 && Math.abs(b.s / b.soll - 1) <= 0.1;
+    const z = "Fall aus 10 m " + f.tLand.toFixed(3) + " s gegen √(2h/g) " + soll.toFixed(3) + " s (" + (ab >= 0 ? "+" : "") + (100 * ab).toFixed(1) + " %, Soll ±5 %), " + f.schritte + " Sim-Schritte zu " +
+        (1000 * f.dt).toFixed(1) + " ms, Schwere des Spiels " + f.gSpiel + " m/s²" + (f.gGesetz ? " (Welt-Gesetz " + f.gGesetz + ")" : "") +
+        " · Bremsweg " + (b ? b.s.toFixed(2) + " m gegen v²/(2μg) " + b.soll.toFixed(2) + " m (Soll ±10 %)" : "UNGEMESSEN — die Probe misst ihn noch nicht (die halbe Sprosse ist ROT)");
+    return { gruen: hw && fallOk && bremsOk, zahl: z + " · " + ad };
+};
 // DIE BYTES DES KALT-BOOTS (karte2.same.preis.bytes#1): je Boot der Netz-Mitschnitt aus ANKUNFT_VIER — Soll ≤ 50 MB roh (10⁶ B) je Boot
 const BYTES_SOLL = 50e6;
 const bytesUrteil = (j, lauf) => {
@@ -3236,6 +3296,39 @@ module.exports = [
         })(),
         pfad: [...ANKUNFT_PFAD, "save-server.js", "vendor/", "worlds/*/lib/"],
         quelle: "KARTE2 same.preis.bytes S1 = Netz-Mitschnitt des Kalt-Boots an beiden Geräten",
+    },
+    // KARTE 2 same.massstab.physik S1 (Umfang „0,5–5 m: Mensch, Wagen, Kiste“, Tiefe „Fall, Stoß, Fahrt plausibel“): der Fall des Spielers
+    // aus 10 m im Sim-Schritt des Spiels (physikFall) gegen √(2h/g) ±5 % UND der Bremsweg gegen v²/(2μg) ±10 % — der Bremsweg fehlt der
+    // Probe noch, die Station bleibt bis dahin ROT beim Namen (halb gebaut: der Fall)
+    {
+        kriterium: "karte2.same.massstab.physik",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: PHYSIK_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 1,
+        urteil: physikUrteil,
+        proben: (() => {
+            const ad = "[linse-gpu] nvidia/pascal (Probe)";
+            const fall = (tLand, o = {}) => ({ h: 10, grund: 41.2, dt: 1 / 60, schritte: Math.round(tLand * 60), tLand, tief: 0, bahn: [], gSpiel: 9.81, gGesetz: 9.81, ...o });
+            const brems = (s, soll) => ({ s, soll, v: 13.89, mu: 0.7 });
+            return [
+                { name: "Fall 1,433 s, Bremsweg 14,3 gegen 14,05 m", j: { fall: fall(1.4333), bremsweg: brems(14.3, 14.05) }, stdout: ad, gruen: true },
+                { name: "Fall 1,433 s, Bremsweg ungemessen (die Probe heute)", j: { fall: fall(1.4333), bremsweg: null }, stdout: ad, gruen: false },
+                { name: "Fall 1,52 s (+6,4 %)", j: { fall: fall(1.52), bremsweg: brems(14.3, 14.05) }, stdout: ad, gruen: false },
+                { name: "Fall 1,35 s (−5,5 %)", j: { fall: fall(1.35), bremsweg: brems(14.3, 14.05) }, stdout: ad, gruen: false },
+                { name: "Bremsweg +11 %", j: { fall: fall(1.4333), bremsweg: brems(15.6, 14.05) }, stdout: ad, gruen: false },
+                { name: "Bremsweg −11 %", j: { fall: fall(1.4333), bremsweg: brems(12.5, 14.05) }, stdout: ad, gruen: false },
+                { name: "kein Grund erreicht", j: { fall: fall(0, { tLand: null, schritte: 600, tief: 3.1 }), bremsweg: brems(14.3, 14.05) }, stdout: ad, gruen: false },
+                { name: "die Seite warf", j: { fall: { fehler: "ohne Spieler, Sim-Schritt oder _koerperGrund" }, bremsweg: null }, stdout: ad, gruen: false },
+                { name: "swiftshader", j: { fall: fall(1.4333), bremsweg: brems(14.3, 14.05) }, stdout: "[linse-gpu] google/swiftshader", gruen: false },
+            ];
+        })(),
+        pfad: ["stamm/dirigent-takt.js", "stamm/koerper-bewegung.js", "stamm/kreatur-leben.js", "koerper-core.js"],
+        quelle: "KARTE2 same.massstab.physik S1 = Fallzeit aus 10 m gegen √(2h/g) ±5 %; Bremsweg gegen μ ±10 %",
     },
     // ankunft.K5: die Spur des Kalt-Boots bis zur Kontrolle (`probeAnkunftKalt`): belegt = jede Stichprobe des Haupt-Fadens außer
     // Leerlauf (die Linse `ankunftsHalter`, Aufgaben unter 50 ms zählen mit), die längste LongTask vor der Kontrolle. Eine blinde Spur
