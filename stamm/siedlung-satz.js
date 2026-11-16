@@ -112,7 +112,7 @@ class AnazhRealm_siedlung_satz {
         const st = this.state;
         const sm = st.bauSatzSchmutzig;
         const raten = st.bauSatzRaten;
-        if (!(sm && sm.size > 0) && !(raten && raten.size > 0)) return;
+        if (!(sm && sm.size > 0) && !(raten && raten.size > 0)) return this._satzWerkRuhe();
         const groups = st.archInstanceGroups;
         const saetze = st.chunkSaetze;
         const ohne = deckel === Infinity || st._weltbildDa == null;
@@ -522,7 +522,16 @@ class AnazhRealm_siedlung_satz {
 
     // DIE EINE WERKBANK der Satz-Blöcke (K69): je Attribut-Name ein Array, das mit dem größten Block wächst (×1,5) und nie
     // schrumpft — ein Block ist ein View ihrer ersten `len` Werte, gültig bis zum nächsten `_satzBlock`.
+    // DIE WERKBANK RUHT (w28-heap-deckel): ein Block ist ein View bis zum nächsten Block, der Satz packt ihn beim Eintritt
+    // (`_chunkSatzEin`) — nach dem Upload liest niemand die Werkbank. Sie hielt am Dorfplatz (Radeon, Kandidat 56fa05ed)
+    // 15,5 MB, gewachsen am größten Block der Ankunft, bis zum Ende der Sitzung. Jetzt lebt sie nur, solange Blöcke gelegt
+    // werden (die Welle eines Gangs, K69: kein frisches Array je Block); `SATZ_WERK_RUHE_MS` ohne Block, und sie fällt.
+    // Leser: `_tickBauSatz` ohne Arbeit (je Render).
+    _satzWerkRuhe() {
+        if (this._satzWerk && performance.now() - this._satzWerkT > AnazhRealm.SATZ_WERK_RUHE_MS) this._satzWerk = null;
+    }
     _satzWerkbank(name, len, Typ) {
+        this._satzWerkT = performance.now();
         const W = this._satzWerk || (this._satzWerk = new Map());
         let a = W.get(name);
         if (!a || a.length < len) {
@@ -1554,6 +1563,8 @@ AnazhRealm.BAU_SATZ = Object.freeze({
 // Bau-Arbeit (ein Bereich darüber tritt in Raten ein; ist die Frist leer, geht der Takt EIN Stück) — gemessen Messort stadt:
 // Radeon 890M ~0,1 µs, GTX 1060 ~0,6 µs je Ecke; bis w25-stadt-takt-2 der Deckel je Takt (BAU_SATZ_ECKEN_JE_TAKT, 8 192).
 AnazhRealm.BAU_SATZ_STUECK = 2048;
+// DIE RUHE DER WERKBANK (w28-heap-deckel, `_satzWerkRuhe`): so lange (ms) legt kein Block eine Ecke, dann fällt die Werkbank.
+AnazhRealm.SATZ_WERK_RUHE_MS = 2000;
 AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
     Object.freeze(["position", 3]),
     Object.freeze(["normal", 3, "snorm8"]),

@@ -1072,7 +1072,13 @@ class AnazhRealm_werkstatt_vorschau {
             if (Number.isInteger(ch.userData && ch.userData.__seil)) mesh.userData.__seil = ch.userData.__seil;
             out.add(mesh);
         }
-        return out.children.length ? out : null;
+        if (!out.children.length) return null;
+        // Die Hülle HÄLT die Quell-Gruppe (`_liveRefs`), solange sie lebt: der Ruhe-Deckel räumt jeden Untätigen nach seiner
+        // Ruhezeit — eine Vorschau oder Hand ohne Halter verlöre ihre Geometrie mitten im Blick. Die Rückgabe: `_disposeSoulGroup`
+        // (Hand, Ofen, Bühne) und der Vorschau-Umbau (`_workshopRebuildPreviewMesh`) rufen `_foundryLoslassen`.
+        group._liveRefs = (group._liveRefs || 0) + 1;
+        out.userData.foundrySrcGroup = group;
+        return out;
     }
     _workshopRebuildPreviewMesh() {
         const ws = this._ensureWorkshopState();
@@ -1085,6 +1091,12 @@ class AnazhRealm_werkstatt_vorschau {
             p.scene.remove(p.currentMesh);
             if (!ofenGuss)
                 p.currentMesh.traverse((obj) => {
+                    // die Rückgabe der Foundry-Quelle der Hülle (`_workshopWrapFoundryGroup`), idempotent via Nullen
+                    const src = obj.userData && obj.userData.foundrySrcGroup;
+                    if (src) {
+                        obj.userData.foundrySrcGroup = null;
+                        this._foundryLoslassen(src);
+                    }
                     // V8.38 — auch isLine disposen (Verbindungs-Linien), sonst
                     // leaken ihre Geometrie + Material bei jedem Bauplan-Edit.
                     if (obj.isMesh || obj.isLine) {

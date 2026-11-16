@@ -690,7 +690,11 @@ class AnazhRealm_dirigent_takt {
         // Takte, und die Welt nannte sich ruhig, während ihre Leute noch entstanden: jeder Deckel zählte die Takte als still und brach,
         // `_weltSteht` gab ein Bild ohne die Leute frei. Offen ist je Siedlung im Nah-Ring (dort geht ihr Werk, `_tickBewohner`) ihr
         // Werk samt seinem Rest (`listeRest`: Personen, Besuche, Stände, die es noch stellt) und je Kopf, wer noch geboren wird
-        // (`leib` null; `false` heißt: ohne Leib) oder noch ankommt (`ankunft`)
+        // (`leib` null; `false` heißt: ohne Leib) oder noch ankommt (`ankunft`).
+        // DER LEIB IM RING (w28-leib-im-ring): geboren ist der STAND (die Hülle `b.leib`, Lage und Zahlen seines Baus) — den Leib
+        // trägt nur, wen das Gesetz ihn tragen heißt (der Erste je Gestalt, solange er backt: er trägt ihn ab der Geburt; die
+        // Nah-Wahl; der Fahrer im gezeichneten Wagen). Offen ist darum auch, wen die Nah-Wahl traf und der Deckel der Geburten
+        // noch warten lässt (`S.leibOffen`, `_tickBewohner`) — EINE Definition von „die Leute stehen“, die Proben lesen sie hier.
         o.leute = 0;
         if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull && st.playerMesh) {
             const p = st.playerMesh.position;
@@ -698,6 +702,7 @@ class AnazhRealm_dirigent_takt {
             for (const S of this._bewohnerSiedlungen.values()) {
                 if (S.listeWerk && (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2 <= nah * nah)
                     o.leute += 1 + Math.max(0, S.listeRest | 0);
+                o.leute += S.leibOffen | 0;
                 for (const b of S.liste || []) if (b.leib == null || b.ankunft) o.leute++;
             }
         }

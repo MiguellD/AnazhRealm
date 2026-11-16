@@ -255,7 +255,10 @@ async function menschBuehnen() {
             },
             menge: (S) => {
                 const M = liste.filter((b) => b.leib && !b.drinnen).sort((a, b) => ab(a.leib.position, pm) - ab(b.leib.position, pm)).slice(0, 50); // prettier-ignore
-                const f = M[0].leib.userData._tierBaum.wrap.scale.x;
+                // (die Skala der Vorlage liest die Probe am nächsten LEIB-Träger — der Stand trägt keinen Baum, w28-leib-im-ring)
+                const T0 = M.find((b) => b.leib.userData._tierBaum);
+                if (!T0) throw new Error(`bewohner: die Menge trägt keinen Leib unter den ${M.length} Nächsten`);
+                const f = T0.leib.userData._tierBaum.wrap.scale.x;
                 ms.sort(aufsteigend);
                 // die Dreiecke der Senken des EINEN Satzes der Siedlung (Leib, Wurf) — jeder Typ zeichnet in ihm
                 const dreiecke = ["leib", "wurf"].map((k) => S.satz[k].geometry.index.count / 3);
@@ -377,12 +380,15 @@ async function menschBuehnen() {
         const rand = amPlatz(S.ox, S.oz, pz);
         if (!rand) return { fehler: "kein freier Stand am Rand des Dorfplatzes" };
         const { pc, ax, az } = rand;
-        const leiber = () => s.scene.children.filter((o) => o?.userData && o.userData.rig && o.userData.heim != null);
+        // DIE STÄNDE (w28-leib-im-ring): jeder Bewohner steht als Hülle in der Szene (`_bewohnerGeburt`: Lage, Heim, Feld und
+        // Satz); seinen Leib trägt nur, wen das Gesetz ihn tragen heißt (Nah-Wahl, Erster je Gestalt, Fahrer im Bild). Was die
+        // Probe zählt und wo sie steht, liest sie am Stand; ob jeder verlangte Leib steht, sagt die Welt (`_weltOffen().leute`).
+        const leiber = () => s.scene.children.filter((o) => o?.userData?._feldLageVon && o.userData.heim != null);
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
-        // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios — bricht der
+        // mit Bild trägt jeder Stand draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios — bricht der
         // Deckel, bricht die Probe bei seinem Namen (nie misst die Quote ein halb geborenes Dorf)
         await bisDa(
-            "bewohner: die Leiber",
+            "bewohner: die Stände",
             () => leiber().length < sollSumme || r._weltOffen().leiber > 0 || hausE.some((e) => !e._hausHuelle)
         );
         await stehtUm("bewohner: das Start-Dorf");
@@ -505,6 +511,83 @@ async function menschBuehnen() {
                 if (Math.abs(wrap(d)) <= 1.3) blicke.treffer++;
             }
         };
+        // DIE HALTUNG DES STANDS IM SATZ (w28-steh-haltung): wer im Satz steht, steht in der Haltung, in der sein naher Leib steht —
+        // je stehendem Bewohner im Satz der Winkel zwischen der Stand-Zeile, die seine Instanz liest (`aGang.y`: 2 · Stand +
+        // Gewicht, wie der Knoten `_gangSatzKnoten`), und der Pose des nahen Wegs (`_animateHuman` mit SEINEM Gemüt an einem Leib
+        // mit Rig, auf die Vorlage gelegt wie das Backen, `_bewohnerRaumStellen`), an Schulter und Ellbogen beider Arme. Bis hier
+        // buk der Satz EINEN Stand ohne Haltung: beim Akt besuch sprang die Schulter an der Nah-Grenze um 8,2°.
+        const haltung = { n: 0, mit: 0, maxGrad: 0, wer: "", je: {}, ruheGrad: 0 };
+        const haltungMessen = () => {
+            const Z = S.satz;
+            const modell = liste.find((b) => b.leib && b.leib.userData.rig && !b.amSteuer && !b.backt);
+            if (!Z || !Z.fertig || !Z.leib || !modell) return;
+            const g = modell.leib;
+            const rig = g.userData.rig;
+            const namen = [rig.armL.shoulder, rig.armL.elbow, rig.armR.shoulder, rig.armR.elbow].map((k) => k.name);
+            const aG = Z.leib.geometry.attributes.aGang;
+            const D = Z.tex.image.data;
+            // Täter (Selbsttest): der Satz ohne Haltung — jede Instanz liest den neutralen Stand
+            if (hat("bewohner-haltung")) for (let q = 0; q < aG.count; q++) aG.setY(q, aG.getY(q) % 2);
+            const [mA, mB, inv] = [new T.Matrix4(), new T.Matrix4(), new T.Matrix4()];
+            const [qA, qB, p3, s3] = [new T.Quaternion(), new T.Quaternion(), new T.Vector3(), new T.Vector3()];
+            // der Winkel zweier Drehungen: an der normierten Differenz (2 · atan2(|v|, |w|)) — `angleTo` rauscht an den Drehungen
+            // einer zerlegten Matrix nahe 0 um 0,3–1,1° (acos nahe 1, die Norm weicht um 1e-5)
+            const winkel = (a, b) => {
+                const d = a.clone().normalize().multiply(b.clone().normalize().invert());
+                return (2 * Math.atan2(Math.hypot(d.x, d.y, d.z), Math.abs(d.w)) * 180) / Math.PI;
+            };
+            // der neutrale Stand: am Modell (der nahe Weg ohne Gemüt) und im Satz (die Zeile des Stands 0), je Knochen
+            const [nahe0, satz0] = [new Map(), new Map()];
+            const lies = (zeile, p, q) => {
+                const o = A._gangOrt(Z, zeile, p);
+                return mB.set(D[o], D[o + 1], D[o + 2], D[o + 3], D[o + 4], D[o + 5], D[o + 6], D[o + 7], D[o + 8], D[o + 9], D[o + 10], D[o + 11], 0, 0, 0, 1).decompose(p3, q, s3); // prettier-ignore
+            };
+            const pose = (gm, je) => {
+                r._animateHuman(g, 0, 0, false, false, gm);
+                r._leibMatrix(g);
+                const P = r._bewohnerRaumStellen(S, g);
+                inv.copy(P.wurzel.matrixWorld).invert();
+                Z.knochen.forEach(({ q, j, nm }, p) => {
+                    if (!namen.includes(nm)) return;
+                    mA.multiplyMatrices(inv, P.teile[nm].matrixWorld)
+                        .multiply(q.m.skeleton.boneInverses[j])
+                        .multiply(q.m.bindMatrix)
+                        .decompose(p3, qA, s3);
+                    je(p, qA);
+                });
+            };
+            pose(null, (p, q) => {
+                nahe0.set(p, q.clone());
+                lies(Z.n * Z.baender, p, qB);
+                satz0.set(p, qB.clone());
+                // DIE KÖRPER-RUHE (gemessen, nie geurteilt): der neutrale Stand des Modells gegen den des Satzes — die Arme hängen am
+                // Leib nach SEINEM Bau (koerper `leibBauArme`), im Satz nach dem der Vorlage
+                haltung.ruheGrad = Math.max(haltung.ruheGrad, q3(winkel(q, qB)));
+            });
+            const neutral = A.MOTION_PROFILE_MAP.koerper.idle;
+            for (const b of liste) {
+                if (!b.leib || b.leib.userData._satz !== true || b.weg || b._gaitW > 0 || b.drinnen) continue;
+                if (!b.satzOrt || !(b.satzOrt[1] >= 0)) continue;
+                const gm = r._bewohnerGemuet(b);
+                const name = r._koerperMotionName(false, gm);
+                const zeile = Z.n * Z.baender + Math.floor(aG.getY(b.satzOrt[1]) / 2);
+                // die Haltung als Drehung GEGEN den neutralen Stand — am nahen Weg und im Satz dieselbe (die Körper-Ruhe fällt heraus)
+                let grad = 0;
+                pose(gm, (p, q) => {
+                    lies(zeile, p, qB);
+                    const dN = q.clone().normalize().multiply(nahe0.get(p).clone().normalize().invert());
+                    const dS = qB.clone().normalize().multiply(satz0.get(p).clone().normalize().invert());
+                    grad = Math.max(grad, winkel(dN, dS));
+                });
+                haltung.n++;
+                if (name !== neutral) haltung.mit++;
+                haltung.je[name] = Math.max(haltung.je[name] || 0, q3(grad));
+                if (grad > haltung.maxGrad) [haltung.maxGrad, haltung.wer] = [q3(grad), `${wer(b)} (${b.akt}: ${name})`];
+            }
+            // das Modell steht wieder in seiner eigenen Pose
+            r._animateHuman(g, modell.uhr + modell.atem, modell.walkPhase || 0, !!modell.weg, false, r._bewohnerGemuet(modell), modell._gait); // prettier-ignore
+            r._leibMatrix(g);
+        };
         // DER PLATZ (mensch.K2): jeder hat einen Stand am Platz, seinem Rand oder seinen Gassen (bis 12 m über ihn hinaus) — auch
         // wo die Spur der Wagen ihn trifft: trägt der Platz neben ihr keinen Ort seines Gesetzes, fällt der Stand
         // (`_bewohnerOhneStand`), und die Linse nennt den Plan, der zu wenig Platz bietet, an seinen Leuten
@@ -562,6 +645,7 @@ async function menschBuehnen() {
                 blick10 = [blickZaehlen("ego", L), blickZaehlen("third", L)];
             }
             if ([10, 12.5, 19].some(um)) blickMessen();
+            if ([10, 12.5, 19].some(um)) haltungMessen();
             if (um(12.5)) haendlerFehlt = ohneHaendler(S, true);
             if (um(2)) z.schmiede2 = anStation();
             if (i % 15 === 0) blieb.set(s.timeOfDay * 24, lagen()); // je 1,5 h
@@ -639,6 +723,7 @@ async function menschBuehnen() {
             unterN: unter.length,
             stationen: stationen.length,
             satzGang: gang.schlupf(),
+            haltung,
             blick: {
                 n: blicke.n,
                 quote: blicke.n ? q3(blicke.treffer / blicke.n) : null,
@@ -702,9 +787,19 @@ async function menschBuehnen() {
         if (!b) return { fehler: "kein Stehender mit freiem Weg um 10 Uhr" };
         const [g, stand] = [b.leib, b.ziel];
         // DER KOPF IM BILD: seine Welt-Matrix (die dritte Spalte: wohin das Gesicht zeigt) gegen den Spieler
-        const kopf = () => g.userData.rig.head.matrixWorld.elements;
+        // (den Kopf trägt nur der Leib: in 3 m hat ihn die Nah-Wahl gegeben — fehlt er, bricht die Probe beim Namen)
+        const kopf = () => {
+            const R = g.userData.rig;
+            const d = ab(pm, g.position).toFixed(2);
+            if (!R) throw new Error(`begegnung: ${b.rolle} #${b.heim} trägt in ${d} m keinen Leib`);
+            return R.head.matrixWorld.elements;
+        };
         const gier = (e = kopf()) =>
             Math.abs(grad(wrap(Math.atan2(pm.x - e[12], pm.z - e[14]) - Math.atan2(e[8], e[10]))));
+        // DER KOPF ENDET AM RING (w28-leib-im-ring): jenseits des Nah-Kreises gibt der Ring den Leib zurück (bei
+        // nahM + nahHystM + ringHystM = 12 m) — dort gibt es keinen Kopf, der sich wenden könnte, die Frage endet. Im Nah-Kreis
+        // selbst MUSS er ihn tragen: dort bricht `kopf()` weiter beim Namen
+        const traegt = () => !!g.userData.rig || ab(pm, g.position) <= A.BEWOHNER.nahM;
         // EIN GANG (versatz quer zum Weg): je Takt der Kreatur-Takt und die Bewohner, im Fenster der echte Frame aus Ego
         const gang = (v) => {
             const a = { x: w.a.x + w.v.x * v, z: w.a.z + w.v.z * v };
@@ -720,7 +815,7 @@ async function menschBuehnen() {
                 z.dMin = Math.min(z.dMin, Math.round(d * 1000) / 1000);
                 z.beruehrt += S.liste.filter((o) => !o.drinnen && ab(pm, o.leib.position) < 2 * A.PLAYER_WALL_RADIUS).length; // prettier-ignore
                 if (e === null && d <= A.BEWOHNER.begegnungM) [e, z.amEreignis] = [t, Math.round(gier())];
-                if (e !== null && z.zuS === null && gier() <= 10)
+                if (e !== null && z.zuS === null && traegt() && gier() <= 10)
                     [z.zuS, z.imBild] = [Math.round((t - e) * 1000) / 1000, !!b.nah && (!echt || (g.visible && imBlick(kopf()[12], kopf()[13], kopf()[14])))]; // prettier-ignore
             }
             // der Spieler steht am Ende, bis der Bewohner wieder an seinem Ort steht
@@ -820,6 +915,11 @@ function menschUrteil(name, z, soll) {
             `Wiederkehr nach 1 h Abwesenheit: ${wk.ueberN} von ${wk.n} über ±2 m (max ${wk.maxM} m: ${wk.ueber})`
         );
         soll(sg.schlupf <= 0.05 && sg.wegLeib >= 10, `der Satz gleitet: Schlupf ${sg.schlupf} über ${sg.wegLeib} m`);
+        const ht = z.haltung || { n: 0, mit: 0, maxGrad: "ungemessen", wer: "", je: {} };
+        soll(
+            ht.n >= 10 && ht.mit >= 3 && ht.maxGrad <= 1,
+            `die Haltung des Stands im Satz: ${ht.maxGrad}° zum nahen Leib an ${ht.wer || "—"} (Soll ≤ 1°; ${ht.n} Stehende, ${ht.mit} mit Haltung, die Körper-Ruhe des Mess-Leibs ${ht.ruheGrad}°; je Stand ${Object.entries(ht.je).map(([k, v]) => `${k} ${v}°`).join(" · ")})`
+        );
         soll(
             b.n >= 10 && b.quote >= 0.9 && b.sektorMax <= 0.5,
             `der Blick der Stehenden: ${b.quote} von ${b.n} auf ihr Ziel, ${b.sektorMax} in einer Richtung`
@@ -866,6 +966,7 @@ module.exports = {
             ["bewohner-sprung", /Sprung im Nahbereich/],
             ["bewohner-uhr", /der Tag beginnt mit Geschichte/],
             ["bewohner-gleiten", /der Satz gleitet/],
+            ["bewohner-haltung", /die Haltung des Stands im Satz/],
             ["bewohner-nord", /der Blick der Stehenden/],
             ["bewohner-daheim", /ohne Platz/],
             ["bewohner-stapel", /Stände gestapelt: [1-9]/],
