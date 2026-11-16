@@ -789,7 +789,8 @@ async function paarSeite(o) {
     // DER HALT JE TAT (16.11., Radeon fe885d9d: Import „steht_nicht“, eigen_bruecke „kein Ort trägt das Original“): jedes Bild der
     // Probe hält die Welt neu (scripts/lib/ausgabe-aufnahme.cjs `wetterHalten`, weatherEffectTime −1e9), und unter dem Halt
     // verweigert dslEval jeden Welt-Akt (AnazhRealm.DSL_WELTAKTE, spawn_blueprint). Die Null der Bühne galt nur bis zum ersten
-    // Bild — jede Tat der Probe (Original, Import, fremder Code) läuft darum selbst ohne Halt und gibt ihn danach zurück.
+    // Bild — die Geste des Empfängers (Import, fremder Code: `empfangeWerk` → dslRun) läuft darum selbst ohne Halt und gibt ihn
+    // danach zurück; das Original setzt der Bau-Modus des Spielers (`confirmBuild`, kein DSL-Akt)
     const ohneHalt = async (f) => {
         const u = st.weatherEffectTime;
         st.weatherEffectTime = 0;
@@ -809,20 +810,50 @@ async function paarSeite(o) {
         }
         return { halt: P.halt };
     }
-    if (s === "zurueck") return P.halt !== undefined && (st.weatherEffectTime = P.halt), 1; // nach einem Eintritt ist die Seite neu: kein Halt zum Zurückgeben
+    if (s === "zurueck") return P.modus !== undefined && r.setGameMode(P.modus), P.halt !== undefined && (st.weatherEffectTime = P.halt), 1; // nach einem Eintritt ist die Seite neu: kein Halt zum Zurückgeben
     if (s === "original") {
+        // DER WEG DES SPIELERS (16.11., Koordinator: teilen#1 und schutz#1 endeten an „kein Ort trägt das Original“ — die Probe stellte
+        // das Werk per dslRun spawn_blueprint, den der Halt der Bilder als Welt-Akt verweigerte): der Bauplan in die Hotbar, der
+        // Bau-Modus zeigt sein Phantom am Fadenkreuz (`tickBuildMode`), der Rechtsklick setzt es (`confirmBuild`: das Urteil
+        // `_setzUrteil`, der Stempel `_studioStampFor`, `spawnArchitecture` am Phantom) — je Blick (Gier × Neigung) bis das Phantom auf
+        // stabilem Grund steht; eine Absage nennt den Satz des Spieler-Kanals
         const bp = st.blueprints[o.name];
         if (!bp) return { fehler: "kein Bauplan " + o.name };
-        const pm = st.playerMesh.position, v = r._blickVorn(st.yaw, 0);
-        const spawn = (q) => ["spawn_blueprint", o.name, ["at", q.x, q.y, q.z], r._werkSame(bp, o.name, null), null, r._studioStampFor(o.name) || null, 0];
-        let E = null;
-        for (const [d, w] of [[14, 0], [14, 0.7], [14, -0.7], [22, 0], [22, 1.4], [22, -1.4]]) {
-            const [c, si] = [Math.cos(w), Math.sin(w)];
-            const lauf = await ohneHalt(() => r.dslRun(spawn({ x: pm.x + (v.x * c - v.z * si) * d, y: pm.y, z: pm.z + (v.x * si + v.z * c) * d }), { source: "spieler" }));
-            const e = lauf.log.find((x) => x.event === "spawned_blueprint" && x.id != null);
-            if ((E = e && werk(e.id))) break;
+        const SLOT = 8, altSlot = st.hotbar[SLOT], bm = st.buildMode, [y0, p0] = [st.yaw, st.pitch];
+        const vorher = new Set(st.architectures.filter(Boolean).map((a) => a.id));
+        const n0 = zeilen().length;
+        let E = null, blicke = 0;
+        // der Modus des Schöpfers (der Schalter des Spielers, Einstellungen): frei baut nur schöpfer — frieden und pfad zahlten Material,
+        // das die Probe nie gesammelt hat; „zurueck“ stellt den Modus der Welt wieder her
+        if (r.getGameMode() !== "schöpfer") {
+            if (P.modus === undefined) P.modus = r.getGameMode();
+            r.setGameMode("schöpfer");
         }
-        if (!E) return { fehler: "kein Ort trägt das Original " + o.name };
+        r.setHotbarSlot(SLOT, o.name);
+        try {
+            if (!(bm.active && bm.blueprintName === o.name)) r.selectHotbarSlot(SLOT);
+            if (!bm.active) return { fehler: "kein Bau-Modus für " + o.name + ": " + zeilen().slice(n0).join(" | ").slice(0, 160) };
+            for (const w of [0, 0.7, -0.7, 1.4, -1.4, Math.PI]) {
+                for (const dp of [-0.35, 0.35, -0.6, 0.6]) {
+                    st.yaw = y0 + w;
+                    st.pitch = p0 + dp;
+                    await window.__seitenTakt();
+                    r.tickBuildMode();
+                    blicke++;
+                    const z = r._resolvePhantomTarget();
+                    if (!z.hit || !z.isStable) continue;
+                    if (r.confirmBuild()) E = st.architectures.find((a) => a && a.type === o.name && !vorher.has(a.id)) || null;
+                    break;
+                }
+                if (E) break;
+            }
+        } finally {
+            r._clearBuildMode();
+            r.setHotbarSlot(SLOT, altSlot || null);
+            st.yaw = y0;
+            st.pitch = p0;
+        }
+        if (!E) return { fehler: "kein Ort trägt das Original " + o.name + " (" + blicke + " Blicke, der Spieler-Kanal: " + (zeilen().slice(n0).join(" | ").slice(0, 160) || "stumm") + ")" };
         P.original = E;
         // DIE POSE: die Box aus den Blockern, die Kamera des Rahmen-Gesetzes, der Spieler an ihrem Fuß (das Auge der Stufen)
         const bb = new T.Box3();
