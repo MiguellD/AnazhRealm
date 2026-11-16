@@ -2708,12 +2708,46 @@ async function starte() {
                     return send(Object.assign(o, { tafel: Z.spiegelTafel(o) }));
                 }
                 // DER HEAP-ZENSUS NACH ERZEUGER: nach zwei GC die lebenden Bytes je Allokations-Stelle und je Besteller im Spiel
+                // `modus` (w28-heap-stichprobe): lebend (Vorgabe) · muell (ALLE Allokationen in `sek` s Loop des Spiels, auch die
+                // gesammelten; danach läuft das Sampling für die Lebenden neu — ein späteres `lebend` kennt den Boot nicht mehr) ·
+                // bewohner (was jedes Feld der Bewohner hält) · texturen-wache / texturen (die CPU-Kopien der GPU-Texturen)
                 if (req.url === "/heap-zensus") {
+                    const Z = require("./lib/heap-zensus.cjs");
+                    const top = Number(b.top) || 30;
+                    const m = (x) => +(x / 1048576).toFixed(1);
+                    if (b.modus === "bewohner" || b.modus === "texturen" || b.modus === "texturen-wache") {
+                        const bew = b.modus === "bewohner";
+                        const o = await page.evaluate(bew ? Z.bewohnerGewicht : Z.texturen, { modus: b.modus === "texturen-wache" ? "wache" : "zaehlen", top });
+                        const cdp = heapCdp || (await page.target().createCDPSession());
+                        for (let i = 0; i < 2; i++) await cdp.send("HeapProfiler.collectGarbage");
+                        const u = await cdp.send("Runtime.getHeapUsage");
+                        if (cdp !== heapCdp) await cdp.detach();
+                        if (o && !o.fehler) Object.assign(o, { heapMB: m(u.usedSize + (u.backingStorageSize || 0)), jsMB: m(u.usedSize), typedMB: m(u.backingStorageSize || 0) });
+                        return send(o && !o.fehler ? Object.assign(o, { tafel: (bew ? Z.bewohnerTafel : Z.texturTafel)(o) }) : o);
+                    }
                     if (!heapCdp) throw new Error("heap-zensus braucht `start --heap-zensus` (das Sampling muss den Boot erleben)");
+                    if (b.modus === "muell") {
+                        // der Loop des Spiels wie `__loop(1)`, gezählt — nie Fokus, nie Zeiger
+                        const sek = Number(b.sek) || 30;
+                        await heapCdp.send("HeapProfiler.stopSampling");
+                        await heapCdp.send("HeapProfiler.startSampling", { samplingInterval: HEAP_INTERVALL, includeObjectsCollectedByMajorGC: true, includeObjectsCollectedByMinorGC: true });
+                        const t0 = await page.evaluate(() => {
+                            window.__muellBilder = 0;
+                            r.state.renderer.setAnimationLoop((t) => (window.__muellBilder++, r._gameLoopTick(t)));
+                            return performance.now();
+                        });
+                        await new Promise((ok) => setTimeout(ok, sek * 1000));
+                        const [bilder, dt] = await page.evaluate((t0) => (__loop(), [window.__muellBilder, (performance.now() - t0) / 1000]), t0);
+                        const u = await heapCdp.send("Runtime.getHeapUsage");
+                        const { profile } = await heapCdp.send("HeapProfiler.getSamplingProfile");
+                        await heapCdp.send("HeapProfiler.stopSampling");
+                        await heapCdp.send("HeapProfiler.startSampling", { samplingInterval: HEAP_INTERVALL });
+                        return send(Z.verdichten(profile, u, { top, sek: dt, bilder }));
+                    }
                     for (let i = 0; i < 2; i++) await heapCdp.send("HeapProfiler.collectGarbage");
                     const u = await heapCdp.send("Runtime.getHeapUsage");
                     const { profile } = await heapCdp.send("HeapProfiler.getSamplingProfile");
-                    return send(require("./lib/heap-zensus.cjs").verdichten(profile, u, { top: Number(b.top) || 30 }));
+                    return send(Z.verdichten(profile, u, { top }));
                 }
                 if (req.url === "/gang")
                     return send(await gangLauf(page, pufferStand, b));
@@ -3756,10 +3790,11 @@ hauptLauf(async () => {
         endeMit(o.tafel + (o.frei ? "\nFREI " + JSON.stringify(o.frei) : "") + (o.wache != null ? "\nWACHE " + o.wache : ""), true);
     }
     else if (cmd === "heap-zensus") {
-        // `heap-zensus [--top n] [--datei <txt>]` an einer Sitzung `start --heap-zensus`; `--selbsttest` ohne Welt
+        // `heap-zensus [--modus lebend|muell|bewohner|texturen-wache|texturen] [--sek 30] [--top n] [--datei <txt>]` an einer Sitzung
+        // `start --heap-zensus` (bewohner und texturen auch ohne); `--selbsttest` ohne Welt
         if (SELBST) selbsttestEnde(require("./lib/heap-zensus.cjs").selbsttest(), "Stelle auf three, Besteller aufs Spiel");
         if (SELBST) process.exit(0);
-        o = await rufe("/heap-zensus", { top: opt("--top") });
+        o = await rufe("/heap-zensus", { top: opt("--top"), modus: opt("--modus", "lebend"), sek: opt("--sek") });
         if (!o || o.fehler || !o.tafel) endeMit(o);
         if (opt("--datei")) fs.writeFileSync(opt("--datei"), o.tafel + "\n");
         endeMit(o.tafel, true);
