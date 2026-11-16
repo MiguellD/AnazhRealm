@@ -1,0 +1,9 @@
+[
+    {
+        "station": "karte2.same.preis.bytes#1",
+        "leiter": "same.preis.bytes",
+        "sprosse": 1,
+        "richter": "gleich",
+        "grund": "Netz-Mitschnitt jedes Kalt-Boots von ANKUNFT_VIER (Seite + Worker, roh je Boot <= 50 MB) an Radeon und GTX. Akte: die Station ist der ZWEITE Zwilling der Gruppe ANKUNFT_VIER (g[0] = karte2.same.preis.ankunft#1) — der Strom trägt nur den Namen von g[0] (punkte.cjs:3700 aktuell, preisImFenster b.probe === station), ihre Akte entsteht erst mit dem Schnitt in punkte.cjs:3063 (Offen im Commit)."
+    }
+]
