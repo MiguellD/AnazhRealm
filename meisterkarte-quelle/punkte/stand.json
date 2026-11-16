@@ -1766,7 +1766,7 @@
   },
   "licht.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/abnahme-urteil.cjs +30) — zuletzt an 4c1b5dc5: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "licht.K1#1",
@@ -1774,9 +1774,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, scripts/lib/abnahme-urteil.cjs +30) — zuletzt an 4c1b5dc5: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
-     "r6": "konsum"
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     }
    ]
   },
@@ -4929,6 +4928,32 @@
     }
    ]
   },
+  "karte2.erleben.spieler.praesenz": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.erleben.spieler.praesenz#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.erleben.spieler.praesenz#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    }
+   ]
+  },
   "karte2.mensch.bau.innen": {
    "punkte": 0,
    "beleg": "Maschine: gehalten: 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an 71839b1e radeon · gehalten: 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an 71839b1e gtx",
@@ -4981,6 +5006,32 @@
      "grund": "Konsum seit der Messung geändert (R6: spec/profiband/haushalt.json, stamm/siedlung-ort.js, stamm/siedlung-satz.js)",
      "gehalten": true,
      "r6": "konsum",
+     "beide": true
+    }
+   ]
+  },
+  "karte2.planet.kosmos.himmelsmechanik": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.planet.kosmos.himmelsmechanik#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.planet.kosmos.himmelsmechanik#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
      "beide": true
     }
    ]
@@ -5106,8 +5157,8 @@
  },
  "rueckfall": [],
  "r6": {
-  "haelften": 413,
-  "konsum": 164,
+  "haelften": 417,
+  "konsum": 163,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5279,10 +5330,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 80
+  "ohne": 85
  },
  "kopfVoll": "105c9bd397cc1b5d68391db2420b984a0741b573",
- "zeit": "2026-11-16T02:50:26.494Z",
+ "zeit": "2026-11-16T03:11:23.896Z",
  "vorher": "105c9bd3",
  "bilanz": {
   "gewinn": [],
