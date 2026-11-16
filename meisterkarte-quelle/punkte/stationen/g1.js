@@ -1316,27 +1316,21 @@ const adapterEcht = (t) => {
 };
 // DIE FREIE POSE (16.11., Radeon und GTX am fe885d9d: der Brand stand 20 m quer und 12 m über dem Herd fest, die Kamera stak in der
 // Krone einer Kiefer — „ABNAHME ROT [Sicht verdeckt 7.7 % … Laub baum_kiefer]“, drei Sprossen UNGEMESSEN an beiden Geräten): die Pose
-// eines Schusses in der Seite wird aus dem Gesetz der Abnahme gewählt, nie gesetzt. Um das Ziel `z` im Abstand d (dann 1,3 d, 0,75 d)
-// und h über ihm (mindestens 2 m über dem Boden der Pose), ab dem Winkel a0 je 30° beidseits: die erste Pose, an der die Abnahme ohne
-// Ziel (`__abnahmeMessen`, die Nah-Deckung des Schirms) kein `sicht.*` ROT trägt. Die Abnahme bleibt, wie sie ist — der Schuss danach
-// urteilt mit ihr; ohne freie Pose ist das ROT beim Namen der ersten Deckung. Läuft als Helfer in der Seite (weltSitzungBefehl).
-function freiePose(r, z, d, h, a0) {
+// eines Schusses in der Seite wählt die EINE Blick-Wahl der Aufnahme (scripts/lib/ausgabe-aufnahme.cjs `__blickWahl`, Lehre 17) — um
+// das Ziel `z` ab der Start-Pose (Abstand d, h über ihm, Azimut a0) Azimut für Azimut, Runde für Runde höher und näher, je Pose die
+// Abnahme in IHRER Welt (die Nah-Sätze stehen erst, wenn die Welt an der Pose steht: eine eigene Suche mit `__abnahmeMessen` vor dem
+// Stehen nannte die Kiefer frei, der Schuss fand sie, Radeon fe885d9d Lauf 2). Ohne freie Pose das ROT beim Namen der ersten Deckung.
+// Läuft als Helfer in der Seite (weltSitzungBefehl).
+async function freiePose(r, z, d, h, a0) {
     const cam = r.state.camera;
-    const gruende = [];
-    for (const dd of [d, d * 1.3, d * 0.75])
-        for (const w of [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180]) {
-            const a = a0 + (w * Math.PI) / 180;
-            const [x, q] = [z.x + Math.cos(a) * dd, z.z + Math.sin(a) * dd];
-            const y = Math.max(z.y + h, r._voxelSurfaceY(x, q) + 2);
-            if (!Number.isFinite(y)) continue;
-            cam.position.set(x, y, q);
-            cam.lookAt(z.x, z.y, z.z);
-            cam.updateMatrixWorld(true);
-            const rot = window.__abnahmeUrteil(window.__abnahmeMessen({})).rot.filter((f) => /^sicht\./.test(f.feld));
-            if (!rot.length) return { kamera: [x, y, q, z.x, z.y, z.z], versucht: gruende.length + 1 };
-            gruende.push(rot[0].grund);
-        }
-    return { kamera: null, versucht: gruende.length, grund: gruende[0] || "keine Pose über dem Boden" };
+    const [x, q] = [z.x + Math.cos(a0) * d, z.z + Math.sin(a0) * d];
+    cam.position.set(x, Math.max(z.y + h, r._voxelSurfaceY(x, q) + 2), q);
+    cam.lookAt(z.x, z.y, z.z);
+    cam.updateMatrixWorld(true);
+    const w = await window.__blickWahl({ ziel: { x: z.x, y: z.y, z: z.z, name: "Blickziel" }, wahl: 42 });
+    if (w.gewaehlt == null) return { kamera: null, versucht: w.versucht, grund: (w.posen[0] && w.posen[0].rot[0]) || "keine Pose über dem Boden" };
+    const p = cam.position;
+    return { kamera: [p.x, p.y, p.z, z.x, z.y, z.z], versucht: w.versucht };
 }
 // DER BRAND IM ECHTEN FENSTER (Karte 2 same.kopplung.stoerung S1 · same.kopplung.kaskade S1 · mensch.zeit.erleben S1 — EIN Lauf, drei
 // Urteile): dasselbe Gesetz wie stoffe.K2#2 (scripts/diag-stand-takt.cjs `brandSeite`: `_brandEntfachen`, `_tickBrand` je `BRAND.schrittS`,
@@ -1390,7 +1384,7 @@ async function brandSitzungProbe(r, T, o) {
         const [hx, hz] = xz(...herd);
         const hy = r._voxelSurfaceY(hx, hz);
         const [dx, dz] = ((a, b, l = Math.hypot(a, b) || 1) => [a / l, b / l])(hx - M.x, hz - M.z);
-        const wahl = freiePose(r, { x: hx, y: hy, z: hz }, 20, 12, Math.atan2(dx, -dz));
+        const wahl = await freiePose(r, { x: hx, y: hy, z: hz }, 20, 12, Math.atan2(dx, -dz));
         if (!wahl.kamera) return { fehler: "keine freie Pose um den Herd in " + wahl.versucht + " Posen: " + wahl.grund };
         const kamera = wahl.kamera;
         aus.posen = wahl.versucht;
@@ -1547,7 +1541,7 @@ async function lavaSitzungProbe(r, T, o) {
         }
     if (!p) return { fehler: "kein trockenes Land 12–40 m um die Mess-Wiese" };
     const [dx, dz] = ((a, b, l = Math.hypot(a, b) || 1) => [a / l, b / l])(p.x - M.x, p.z - M.z);
-    const wahl = freiePose(r, p, 10, 6, Math.atan2(dx, -dz));
+    const wahl = await freiePose(r, p, 10, 6, Math.atan2(dx, -dz));
     if (!wahl.kamera) return { fehler: "keine freie Pose um den Guss in " + wahl.versucht + " Posen: " + wahl.grund };
     const kamera = wahl.kamera;
     const cam = st.camera;

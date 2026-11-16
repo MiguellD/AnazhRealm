@@ -1785,6 +1785,7 @@ async function platzAcht(r, T) {
     cam.updateMatrixWorld(true);
     const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     const auge = cam.getWorldPosition(new T.Vector3());
+    const augeImHaus = r._imGrundriss(auge.x, auge.z, 0) === "haus";
     // DIE AUSFÄLLE BEIM NAMEN (vorrat3-heiler, Radeon fe885d9d: das Bild um 8 Uhr zeigt Menschen, die Zählung sagte 0 von 77): je
     // Stand der Grund, an dem er aus der Zählung fällt — drinnen · ungezeichnet · außer Bild · verdeckt —, und die Kamera der Zählung
     let imBild = 0, gehend = 0, alle = 0, mitLeib = 0;
@@ -1797,8 +1798,11 @@ async function platzAcht(r, T) {
         const brust = new T.Vector3(b.position.x, b.position.y + 0.4, b.position.z);
         if (!fr.containsPoint(brust)) { aus.ausserBild++; continue; }
         const d = auge.distanceTo(brust);
-        let frei = true;
-        for (let t = 0.6; t < d - 0.6 && frei; t += 0.5) { const k = t / d; if (r._imGrundriss(auge.x + (brust.x - auge.x) * k, auge.z + (brust.z - auge.z) * k, 0) === "haus") frei = false; }
+        // DIE SICHTLINIE BEGINNT VOR DEM EIGENEN GRUNDRISS (Radeon fe885d9d: 35 von 35 im Frustum „verdeckt“, das Bild zeigte Menschen):
+        // steht das Auge der Third-Kamera über einem Hausgrundriss (2,9 m hinter dem Spieler am Platzrand), lag jede Linie ab 0,6 m
+        // „im Haus“ — gezählt wird ein Haus erst, nachdem die Linie den Grundriss unter dem Auge verlassen hat
+        let frei = true, raus = !augeImHaus;
+        for (let t = 0.6; t < d - 0.6 && frei; t += 0.5) { const k = t / d, h = r._imGrundriss(auge.x + (brust.x - auge.x) * k, auge.z + (brust.z - auge.z) * k, 0) === "haus"; if (!raus) raus = !h; else if (h) frei = false; }
         if (!frei) { aus.verdeckt++; continue; }
         imBild++;
         const a = p0.get(b);
@@ -1808,7 +1812,7 @@ async function platzAcht(r, T) {
     let b64 = "";
     for (let i = 0; i < u8.length; i += 0x8000) b64 += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
     b64 = btoa(b64);
-    return { b64, uhr: UHR_T, tod: +s.timeOfDay.toFixed(4), sicht: s.cameraMode, stand: [+stand.x.toFixed(1), +stand.z.toFixed(1)], platz: [+pc.x.toFixed(1), +pc.z.toFixed(1)], leiber: alle, mitLeib, imBild, gehendImBild: gehend, aus, auge: auge.toArray().map((v) => +v.toFixed(1)), fps, takte, version: A.VERSION };
+    return { b64, uhr: UHR_T, tod: +s.timeOfDay.toFixed(4), sicht: s.cameraMode, stand: [+stand.x.toFixed(1), +stand.z.toFixed(1)], platz: [+pc.x.toFixed(1), +pc.z.toFixed(1)], leiber: alle, mitLeib, imBild, gehendImBild: gehend, aus, auge: auge.toArray().map((v) => +v.toFixed(1)), augeImHaus, fps, takte, version: A.VERSION };
 }
 
 // DIE PROBE BEWOHNER IN DER SITZUNG (mensch.K1#1 und mensch.K2#2, Zwillinge: EIN Lauf, zwei Urteile) am GENESIS-ORT, dem Ort des
@@ -1932,8 +1936,8 @@ async function dorfZaehlung(r, T) {
                 const brust = new T.Vector3(g.position.x, g.position.y + 0.4, g.position.z);
                 if (!fr.containsPoint(brust)) continue;
                 const dA = auge.distanceTo(brust);
-                let frei = true;
-                for (let t = 0.6; t < dA - 0.6 && frei; t += 0.5) { const f = t / dA; if (r._imGrundriss(auge.x + (brust.x - auge.x) * f, auge.z + (brust.z - auge.z) * f, 0) === "haus") frei = false; }
+                let frei = true, raus = r._imGrundriss(auge.x, auge.z, 0) !== "haus"; // wie platzAcht: ab dem Rand des Grundrisses unter dem Auge
+                for (let t = 0.6; t < dA - 0.6 && frei; t += 0.5) { const f = t / dA, h = r._imGrundriss(auge.x + (brust.x - auge.x) * f, auge.z + (brust.z - auge.z) * f, 0) === "haus"; if (!raus) raus = !h; else if (h) frei = false; }
                 if (frei) ist++;
             }
             doppelt = Math.max(doppelt, [...je.values()].filter((n) => n > 1).length);
