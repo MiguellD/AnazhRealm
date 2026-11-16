@@ -1,0 +1,10 @@
+{
+ "ms": 7,
+ "ergebnis": {
+  "gehalten": [
+   "leib"
+  ],
+  "takte": 0,
+  "ruht": true
+ }
+}
