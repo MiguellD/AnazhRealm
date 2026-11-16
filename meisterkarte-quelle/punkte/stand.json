@@ -889,7 +889,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an 71839b1e: die Seite warf: (b)(d) 15.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
+     "grund": "Station seit der Messung geändert — zuletzt an a635bfee: die Seite warf: (b)(d) 16.9 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
      "gehalten": true
     },
     {
@@ -5327,7 +5327,7 @@
   "ohne": 91
  },
  "kopfVoll": "9c9c9bd30d415e13b59ed1b8c681f00f27d7ab6c",
- "zeit": "2026-11-16T12:15:06.004Z",
+ "zeit": "2026-11-16T12:36:10.924Z",
  "vorher": "9c9c9bd3",
  "bilanz": {
   "gewinn": [],
