@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "b5681770",
-    "zeit": "2026-11-16T23:25:13.807Z",
+    "zeit": "2026-11-16T23:32:00.780Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -349,7 +349,7 @@
           {
             "station": "pflicht.E#1",
             "geraet": "radeon",
-            "zeile": "Station seit der Messung geändert"
+            "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, stamm/feld-leben.js +4) — zuletzt an 4167e10c: Last: Referenz f 1,238 (Faden 1,145 · alle Kerne 1,238; vor 117,1/330 ms, nach 108,2/302,9 ms, Ruhe 102,3/266,5 ms seit "
           },
           {
             "station": "pflicht.E#1",
