@@ -937,8 +937,8 @@
    ]
   },
   "gelaende.K4": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless · Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 0.645/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an 71839b1e radeon — offen: gelaende.K4#2 gtx: ROT: Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 0.879/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4 an 3e4f99cd",
+   "punkte": 2,
+   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless · Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 0.645/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an 71839b1e radeon · Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an 71839b1e gtx",
    "stationen": [
     {
      "id": "gelaende.K4#1",
@@ -972,10 +972,10 @@
     {
      "id": "gelaende.K4#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": "Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 0.879/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4",
-     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
-     "grund": "ROT: Strömung 0 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 0/0 | schwimmer 1.629/0 boot 1.666/0 tier 0/0 | schwimmer 0.879/0 boot 1.758/0 tier 0/0 | schwimmer 1.315/0 boot 1.666/0 tier 0/0 · Bilder 4/4",
+     "gruen": true,
+     "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4",
+     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -5241,10 +5241,12 @@
   "ohne": 87
  },
  "kopfVoll": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
- "zeit": "2026-11-16T00:04:00.325Z",
+ "zeit": "2026-11-16T00:09:44.254Z",
  "vorher": "71839b1e",
  "bilanz": {
-  "gewinn": [],
+  "gewinn": [
+   "gelaende.K4 1→2"
+  ],
   "fall": [],
   "massenFall": false
  },
