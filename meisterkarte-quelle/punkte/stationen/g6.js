@@ -1260,7 +1260,7 @@ const ANKUNFT_KALT = {
 // bis zur Kontrolle (die Zahl von S 3). Ein Ziel, dessen Network nicht angeht, steht beim Namen in `fehler` — nie still zu wenig
 async function netzMitschnitt(page) {
     const c = await page.target().createCDPSession();
-    const m = { roh: 0, draht: 0, ws: 0, n: 0, offen: new Set(), fehler: [], zuletzt: Date.now(), bisK: null, ruht: false };
+    const m = { roh: 0, draht: 0, ws: 0, n: 0, offen: new Set(), fehler: [], zu: [], zuletzt: Date.now(), bisK: null, ruht: false };
     const anfragen = new Map(); // requestId → { url, roh, von } — `von` das Ziel, das sie zuerst meldete: nur es zählt ihre Bytes
     const typen = new Map(); // sessionId → Typ des Ziels (Target.attachedToTarget), wie namen in foundryFadenLog
     const an = new Map(); // die Ziele, deren Network an ist: Schlüssel → Typ
@@ -1301,7 +1301,13 @@ async function netzMitschnitt(page) {
             await s.send("Network.enable");
             an.set(key, true);
         } catch (e) {
-            m.fehler.push((typen.get(key) || key) + ": Network.enable " + String(e.message).slice(0, 120));
+            // DAS ZIEL, DAS SCHLOSS, EHE ES LIEF (16.11., Radeon fe885d9d: Boot 2 und 3 „worker: Network.enable … Target closed“, roh je
+            // Boot 31,98 MB an allen vier Boots, mit und ohne dieses Ziel): ein angehängtes Ziel steht unter waitForDebuggerOnStart, bis
+            // `sessionattached` es nach dieser Zeile weckt — schließt es vorher, lief keine Zeile seines Codes, es trägt keine eigene
+            // Anfrage. Es steht gezählt beim Namen (`zu`), nie als Fehler; jeder andere Grund und die Seite selbst bleiben Fehler
+            const msg = String(e.message);
+            if (key !== "seite" && /Target closed|Session closed|No target with given id/i.test(msg)) m.zu.push(typen.get(key) || key);
+            else m.fehler.push((typen.get(key) || key) + ": Network.enable " + msg.slice(0, 120));
         }
     };
     c.on("sessionattached", async (s) => {
@@ -1323,7 +1329,7 @@ async function netzMitschnitt(page) {
             const ziele = [...an.keys()].map((k) => (k === "seite" ? "seite" : typen.get(k) || "?"));
             const groesste = [...anfragen.values()].sort((a, b) => b.roh - a.roh).slice(0, 5).map((r) => [r.url.replace(/^\w+:\/\/[^/]+/, "").slice(0, 80), r.roh]);
             return { roh: m.roh, draht: m.draht, ws: m.ws, n: m.n, offen: m.offen.size, ruht: m.ruht, bisK: m.bisK, ziele: ziele.length,
-                worker: ziele.filter((t) => /worker/.test(t)).length, fehler: m.fehler, groesste };
+                worker: ziele.filter((t) => /worker/.test(t)).length, fehler: m.fehler, zu: m.zu, groesste };
         },
     };
 }
@@ -1517,7 +1523,9 @@ const bytesUrteil = (j, lauf) => {
         (g && g.netz && Number.isFinite(g.netz.draht) ? ", am größten " + mb(g.netz.draht) + " Draht, " + g.netz.n + " Anfragen, bis zur Kontrolle " + (g.netz.bisK == null ? "—" : mb(g.netz.bisK)) +
             ", " + g.netz.ziele + " Ziele (" + g.netz.worker + " Worker)" + ((g.netz.groesste || []).length ? ", am schwersten " + g.netz.groesste.slice(0, 2).map(([u, b]) => u + " " + mb(b)).join(" | ") : "") : "") +
         (blind.length ? " — " + blind.join(" · ") : "");
-    return { gruen: hw && k.length >= 1 && !blind.length && max > 0 && max <= BYTES_SOLL, zahl: z + " · " + ad };
+    // die Ziele, die vor ihrem Lauf schlossen (netzMitschnitt `zu`): gezählt beim Namen, ohne eigene Bytes
+    const zu = k.map((x, i) => (x.netz && (x.netz.zu || []).length ? "Boot " + (i + 1) + " " + x.netz.zu.join("+") : null)).filter(Boolean);
+    return { gruen: hw && k.length >= 1 && !blind.length && max > 0 && max <= BYTES_SOLL, zahl: z + (zu.length ? " · vor dem Lauf geschlossen (ohne eigene Anfrage): " + zu.join(" · ") : "") + " · " + ad };
 };
 // die Spur des Kalt-Boots aus der Ausgabe EINES Laufs: j.spur, sonst die Zeile „SPUR kalt {…}“
 const spurVon = (j, lauf) => (j && j.spur) || jsonZeile(lauf.stdout, /^SPUR kalt \{/);
@@ -3477,7 +3485,8 @@ module.exports = [
                 { name: "ein Boot ohne Mitschnitt", j: vier({ fehler: ["kein Mitschnitt: Target closed"] }), stdout: ad, gruen: false },
                 { name: "kein Worker-Ziel (der Foundry-Faden ungezählt)", j: vier(netz(15.2e6, { ziele: 1, worker: 0 })), stdout: ad, gruen: false },
                 { name: "eine Anfrage offen am Ende (ungezählte Bytes)", j: vier(netz(15.2e6, { offen: 1 })), stdout: ad, gruen: false },
-                { name: "Network an einem Ziel nicht an", j: vier(netz(15.2e6, { fehler: ["worker: Network.enable Target closed"] })), stdout: ad, gruen: false },
+                { name: "Network an einem Ziel nicht an (ein anderer Grund als das Schließen)", j: vier(netz(15.2e6, { fehler: ["worker: Network.enable Internal error"] })), stdout: ad, gruen: false },
+                { name: "ein Worker schloss vor seinem Lauf (Radeon fe885d9d Boot 2 und 3: gezählt in `zu`, keine eigene Anfrage)", j: vier(netz(31.98e6, { zu: ["worker"] })), stdout: ad, gruen: true },
                 { name: "0 Anfragen (blind)", j: vier(netz(0, { n: 0 })), stdout: ad, gruen: false },
                 { name: "ein Boot ohne Kontrolle", j: { kalt: vier().kalt.map((x, i) => (i === 1 ? { ...x, tK: 0 } : x)) }, stdout: ad, gruen: false },
                 { name: "kein Boot (die Probe brach)", j: { kalt: [] }, stdout: ad, gruen: false },
