@@ -1,7 +1,7 @@
 {
  "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
  "geraet": "radeon",
- "zeit": "2026-11-16T03:28:16.085Z",
+ "zeit": "2026-11-16T03:43:40.894Z",
  "host": "MiguellD",
  "je": {
   "vegetation.K4#1": {
@@ -562,6 +562,106 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#1": {
+   "gruen": false,
+   "zahl": "genesis: ❌ Sprung 0.409 EV (Uhr 0.31→0.32, 188 Uhren) · ❌ Sterne Tag ≥10° max 0 · ≥−3° max 4 · Nacht ≤−18° min 60 Median 74 · halbe Nacht bei Sonne -16.0° | -13.7° · γ 0.92 (n 53) · wiese: ❌ Sprung 0.498 EV (Uhr 0.248→0.25, 188 Uhren) · ✅ Sterne Tag ≥10° max 0 · ≥−3° max 1 · Nacht ≤−18° min 12 Median 28 · halbe Nacht bei Sonne -10.7° | -14.4° · γ 0.84 (n 53) · genesis:third: ❌ Sprung 0.630 EV (Uhr 0.248→0.25, 188 Uhren) · ✅ Sterne Tag ≥10° max 0 · ≥−3° max 2 · Nacht ≤−18° min 32 Median 42 · halbe Nacht bei Sonne -14.7° | -12.9° · γ 0.90 (n 53) · wiese:third: ❌ Sprung 0.485 EV (Uhr 0.248→0.25, 188 Uhren) · ❌ Sterne Tag ≥10° max 0 · ≥−3° max 1 · Nacht ≤−18° min 8 Median 15 · halbe Nacht bei Sonne -6.0° | -11.5° · γ 0.73 (n 53) · WEG ROT Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":3,\"hell\":0.14,\"Y\":0.0101,\"X\":0.0063,\"rb\":0.0005} | Uhr 0 weicht ab: {\"uhr\":0,\"bilder\" · [linse-gpu] amd/rdna-3",
+   "exit": 1,
+   "minuten": 4.28,
+   "grund": "ROT: genesis: ❌ Sprung 0.409 EV (Uhr 0.31→0.32, 188 Uhren) · ❌ Sterne Tag ≥10° max 0 · ≥−3° max 4 · Nacht ≤−18° min 60 Median 74 · halbe Nacht bei Sonne -16.0° | -13.7° · γ 0.92 (n 53) · wiese: ❌ Sprung 0.498 EV (Uhr 0.248→0.25, 188 Uhren) · ✅ Sterne Tag ≥10° max 0 · ≥−3° max 1 · Nacht ≤−18° min 12 Median 28 · halbe Nacht bei Sonne -10.7° | -14.4° · γ 0.84 (n 53) · genesis:third: ❌ Sprung 0.630 EV (Uhr 0.248→0.25, 188 Uhren) · ✅ Sterne Tag ≥10° max 0 · ≥−3° max 2 · Nacht ≤−18° min 32 Median 42 · halbe Nacht bei Sonne -14.7° | -12.9° · γ 0.90 (n 53) · wiese:third: ❌ Sprung 0.485 EV (Uhr 0.248→0.25, 188 Uhren) · ❌ Sterne Tag ≥10° max 0 · ≥−3° max 1 · Nacht ≤−18° min 8 Median 15 · halbe Nacht bei Sonne -6.0° | -11.5° · γ 0.73 (n 53) · WEG ROT Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":3,\"hell\":0.14,\"Y\":0.0101,\"X\":0.0063,\"rb\":0.0005} | Uhr 0 weicht ab: {\"uhr\":0,\"bilder\" · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k3d6024cf8470",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "kc6c901b98f59",
+   "s": 256.5,
+   "fremd": {
+    "s": 260.9,
+    "takte": 108,
+    "fremdS": 285.95,
+    "kerne": 1.096,
+    "fensterKerne": 1.654,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      78.95
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      60.63
+     ],
+     [
+      "Explorer.EXE",
+      19.86
+     ]
+    ],
+    "dienerS": 125.48,
+    "diener": [
+     [
+      "System",
+      47.22
+     ],
+     [
+      "dwm.exe",
+      38.69
+     ]
+    ],
+    "geraetS": 94.22,
+    "geraet": [
+     [
+      "svchost.exe",
+      46.56
+     ],
+     [
+      "MsMpEng.exe",
+      42.75
+     ],
+     [
+      "SearchIndexer.exe",
+      4.17
+     ]
+    ],
+    "eigenS": 372.8,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 0.844,
+     "nach": 0.817,
+     "station": 3.386
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 107.1,
+     "alle": 243,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 107.5,
+     "alle": 294.5,
+     "cpuEin": 109
+    },
+    "ruhe": {
+     "ein": 104.6,
+     "alle": 273.4,
+     "n": 592,
+     "von": "2026-11-14"
+    },
+    "f": 1.077,
+    "fEin": 1.028,
+    "fAlle": 1.077,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-16T03:43:40.894Z",
+   "abdruck": "1e8584254f97",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -572,7 +672,9 @@
   "ke5bf804a5daa": "dVTBjpswEP2XHNuyTgADsbQHJ1l1d9WVEqmn3sb2GEgIRDYs21T99woCSYDt3EDveZ7fPM+f2QnkAWJ82Nsin7HZl9m3mYV3dCyadzQPeztjs7n0gUaM73hTW875uoFJk55KS7JUEBA5JEd0KlNimj3IluZ7QroRI/UTr7eEfBBC+H3tHh/Hx2QCVeGUoLE/RCg39ICNgZWNQaADlW4bd2AdBKHrMdJWtOHbPelrVXPeKFnzSVcBuRoq1x5QvWAvvzl/muJVClg6WZrbvq9UVHguuzarpxwDtXMGTDI0HSkKqPIWvdgxQWeVtYMmkadoYydZkhE2RpvKpHROphCY98Yt3XABbDXVEp8qR98rASEgEmOPE8A8RjPUEPpU+ox8TPQe4IgGnBySDrqce6Erbp4QQp6nWrJWeNuiFx4psQz1gNgk57luMrOJmo/4+jt6vmRpE98Ha9TEyiQ1x6E9WlMFc/ZjKskmoNA4h8KWNzPDIFQua09/W7UxjrcTD+ztMh3PFcGcRnd3iQh/nvIKXdZg0IlPVUdEH2lIGecvE3AJx2N/CeliRMeDs2UT6HsZ89CltJ1F/J85XOLvnDHNelIo5cJDtn7jmxH43cDRARGbVOt+2oJKvfwsnDVmpSOKouyRWgUXS/KrK17E+cv9atj48+8/fu12fFQ/60+2RtuhMGUvnIpgrn2m25cox+gzmgxjHPijfOGBYqTWFz37iPNt2L1l/XUQxPNkfOcUG+dyW9k+wstQLbsID72u0RwE5IerVPC1YK/tXpWb7pLBiuzJuLY152+vfH3BSM63fmv1CSU5mUKnzRojCVQ2gay87fO//wA=",
   "k2826f28d1a6a": "dVRdj5swEPwvPJ7KmQAOH9I9OM2pOelOTaQ+9W1t1sCFALIhXFP1v1cQuATT7hsw4x3PDvvbqkEcIcXHd12VVmw9WF8sDWe0Naozqsd3bcWWI3ygYcyuRRhjX3uYUHndaFLknAAvITuh3aoG8+JRDDTf48INY9I9s25PyAchxKQVHJPKbkDiROKJG3gQm8BWp8DRhlYOjUbwgwHjUCZzDdIDKlfxyy/GntnTk4FPcsDGLvJSTyeKhHLPjclU3ZKjoLMvgFmBaiSFa5p4q5EUmgRZtFrPmoReQntjSGQakqLORdbYtao4lpMlkRusIN4staR1a8t7JcA5hNx0LwMsU1RzDYFPhR+Tj4XeI5xQgV1CNkIjxwtcfvOEELJbaikG4UOLSXiY8CiQMyIhhO26PkbbsH9IP1+Hu2u8tim71cFookWWq9PcHilpAk78upSkM0hQ2cdKNzczg3WQuNcsv236LLN0v/BA3y4z8ly+dmh4d5eQsN2SV8mmA4V2WrcjEX2kAY0Ze1mAGzidpksIF0NqDk43faDvZTiBS+kwi/Q/c7jG375gXkykQIiVh+bhZwUnG3iqcimnSXMqZPSvYHZYNDavqmZCymTd2+GR8tORVcjYy93w2NZ3vr3+PByYUQdT83B6pZpJMOVrR/qxPPd/oDDRF1QFpjjzxdwElxx7D0rd6imMUZBEYxjnrnWojhzK42dz8CW/JmT/vO23HWM/1hvyTjwjyt+7Tfe26b/3JRjb+4NxNQpSq0rm/UIiGbQ6g6K57dg/fwE=",
   "kb031752451e3": "dVTLbtswEPwXH9MytPW2gBzoB+oACWoDPfW2JJeSbFkySClKXfTfC71sS2r3JmGGOzs75O/ZBcQJInw+mjybhbOn2deZgQ8kBvUH6uejmYWzuXDADULWFmWMrWuY0MmlMFQmEJFTCllErpiZ0jyLhvX0gEkTToFnEJ+RlLrAJO1Ajs2FFYS02rJqT+knpXRMSznKnBSgsCdxafk2hGNgaSLgSKBUTaMOrDzPt+yQNhVs2P5I+1pVjNFq+zI6iEMmhyqVDa5ahK+/GNuylzFeJoAFSZPM9D2FdLlthbdG1ZSjoSJXwDhF3ZECz5X2ohc6Jqi0NGbQJLClW1tHl2PLIjSJiAty0TnHrDdtafkLCFdTLdGlJOpRCXAOAR/7GwNmEeqhBt9xhRPSz4neE5xRA8kg7qDLue1b/O4JpXQ31ZI2wpsWvfBA8qWvBkRKKdtVdRg3Qf0R3X4Huzakm4jd6zBqYkSc6PPQHqVcCfPwbSrJxCBRk1NuiruZvudLq70R76v6RrBoP/HA3IfpeBb35m7wMEtA2W7Ky1VRgUYSXcqOiA66vhsy9joBF3A+90MICwN3vDhT1IF+lDH3LddtdhH9Zw9t/MkVk7Qn+UIsbAzX72wzAn9oOBPgkU6U6rfNXaGW/wpnhWlBeJ4XPVJJr7bEptnNlUXA2OvDAtnGmX97+3k4sFEdxrqb03Nd9KJd7s2VE6rmFoox+oo6xQgH3kiH2yBDWqlWyzVgbO9391h9GYTwOlndNcF0+AwGS18uu/gOfa5Qnzhkp5tUcBRvM7XfbtoBf3greqT2KPzfq1X1vmLrFiMY2zuNzRcU9KJzldRPGI2hNDGkxf1t//MX",
-  "k0f860ecf50f1": "dVTBjpswEP2XHNuyTgADsbQHJ1k1W+1KWamn3sb2GEgIRDYs21T99woCSYDt3EDved68efaf2QnkAWJ82Nsin7HZl9m3mYV3dCyadzQPeztjs7n0gUaMX4pwztcNTJr0VFqSpYKAyCE5olOZEtPsQbY03xPSjRipn3i9I+SDEMLv6+3xcXxMJlAVTgka+0OEckMP2BhY2RgEOlDptnEH1kEQuh4jbUUbvtuTvlY1542SNZ90FZCroXLtAdUL9vyb86cpXqWApZOlue37SkWF57Jrs3rKMVA7Z8AkQ9ORooAqb9GLHRN0Vlk7aBJ5ijZ2kiUZYWO0qUxK52QKgXlv3NINF8BWUy3xqXL0vRIQAiIx9jgBzGM0Qw2hT6XPyMdE7wGOaMDJIemgy7kXuuLmCSFkO9WStcLbFr3wSIllqAfEJjnbusnMJmo+4uvvaHvJ0ia+D9aoiZVJao5De7SmCubsZSrJJqDQOIfCljczwyBU7uUGvK7aGMe7iQf2NkzHc0Uwp9HdLBHh2ymv0GUNBp34VHVE9JGGlHH+PAGXcDz2Q0gXIzpenC2bQN/LmIcupe0u4v/s4RJ/54xp1pNCKRcesvUr34zA7waODojYpFr32xZU6uVn4awxKx1RFGWP1Cq4WJJfXfEizp/vn4aNP//+8uvtjY/qZ/3Jq9F2KEzZC6cimGuf6fYmyjH6jCbDGAf+KF94oBip9UXPOeJ8F3Z3WX8dBPE8Wd85xca53Fa2j/AyVMsuwkOvazQHAfnhKhV8LdiPZrbd06YbMliRPRnXrl7Vryu+vmAk5zu/tfqEkpxModPmGSMJVDaBrLy953//AQ=="
+  "k0f860ecf50f1": "dVTBjpswEP2XHNuyTgADsbQHJ1k1W+1KWamn3sb2GEgIRDYs21T99woCSYDt3EDved68efaf2QnkAWJ82Nsin7HZl9m3mYV3dCyadzQPeztjs7n0gUaMX4pwztcNTJr0VFqSpYKAyCE5olOZEtPsQbY03xPSjRipn3i9I+SDEMLv6+3xcXxMJlAVTgka+0OEckMP2BhY2RgEOlDptnEH1kEQuh4jbUUbvtuTvlY1542SNZ90FZCroXLtAdUL9vyb86cpXqWApZOlue37SkWF57Jrs3rKMVA7Z8AkQ9ORooAqb9GLHRN0Vlk7aBJ5ijZ2kiUZYWO0qUxK52QKgXlv3NINF8BWUy3xqXL0vRIQAiIx9jgBzGM0Qw2hT6XPyMdE7wGOaMDJIemgy7kXuuLmCSFkO9WStcLbFr3wSIllqAfEJjnbusnMJmo+4uvvaHvJ0ia+D9aoiZVJao5De7SmCubsZSrJJqDQOIfCljczwyBU7uUGvK7aGMe7iQf2NkzHc0Uwp9HdLBHh2ymv0GUNBp34VHVE9JGGlHH+PAGXcDz2Q0gXIzpenC2bQN/LmIcupe0u4v/s4RJ/54xp1pNCKRcesvUr34zA7waODojYpFr32xZU6uVn4awxKx1RFGWP1Cq4WJJfXfEizp/vn4aNP//+8uvtjY/qZ/3Jq9F2KEzZC6cimGuf6fYmyjH6jCbDGAf+KF94oBip9UXPOeJ8F3Z3WX8dBPE8Wd85xca53Fa2j/AyVMsuwkOvazQHAfnhKhV8LdiPZrbd06YbMliRPRnXrl7Vryu+vmAk5zu/tfqEkpxModPmGSMJVDaBrLy953//AQ==",
+  "k3d6024cf8470": "dVTbbqMwEP2XPHbXNQEciKU+OEnVRtpK7SeMzRhoCCAbSjer/fdVuDRctvOE4JyZM2eG+bMqQZ0gxvt3W+Qrvrpb/VxZ+EBi0XyguX+3K75ylA8s5KILKoTYX2HKpGVlaZZKCjKH5IykNhWm2b1qab4nlRty2jyK5pXST0qp+Iq9mKfIJEYFqUDjkEBGbuABnwNrG4NEArVui/bguxlMQh5N9WgPmF7z428hHsXDwwwfpYAVydLcDhlVxKTncjpEs+QYaMgFMMnQ9KRwwyJv3ZPCOUFntbWTIqEXsatJdEtn2BhtqpKKlKaQmA+WbN1gDXy31BKXNdFjJSAlhHLuXgKYx2imGgKfKZ/Tz4XeE5zRAMkh6aFbxwtcefOEUvq81JK1wtsS+TfjsSpJzXnanNYsAof/Wia0CURoyKmw1c2KYBNEbreVL7t2teLXRQf2JqXnuXLjsHDUQkjF85JX6KoBgyQu656IPrKAcSGOC3AF5/PQhHIxZHPbbXVdx7EMJ3AZa52Mv3GxW15ywTQbSIFSaw/5/kUcZuAPA2cCMjap1sOsJFN6+7/VajCriCyKakDqaNNZkn+5sg6FOIpRHHznab97E/PwGvG20N5WKEw1CGdy42if6/Y/UnP0BU2GMU78iXzpQcRpo8YShocf4w2kl8X4LilencttbYcl3wbRVndjb7osx+kVaNCcJOSnL8nga8kP4hBTKg594c2OvtPnZmKMeG2EeNyJ/fjtk+hmVKKiGoxEWkFMDOrJqb1+LU2h0+u5ognUNoGsukH+/gM=",
+  "kc6c901b98f59": "dVTBbptAEP0XH5uSxcAavFIOm2DVqWrVUQ6VepvdnQViDNYuhMhV/70yBttAMyfbem/mzZvn/TM7gNxBgvdvtixmbPZl9nVm4R0di+Ydzf2bnbGZKwOgEePnIpzzbyeYNNmhsiTPBAFRQLpHpzYVZvm9bGmBL6QXMdKseLMl5IMQwi/1xMctcoGqdCrQ2DcQygt9YGNgbRMQ6ECt26EdWC8Woecz0lYU8+0b6Yu/cE6a1cOokYBCDRVrH6ies+eG8xV/GONVBlg5eVbYfqZUVPgeuwxqphwDjXMETHM0HSlaUOXPe6Fjgs5rawdDIl/Rk41kSUbYBG0m08o5mFJg0Zu29MI5sMepluRQO/pWCQgBkRj7mwIWCZqhhjCgMmDkY6J3B3s04BSQdtCl64eeuHpCCFlPteSt8HZELzxSYhnqAZEQkqybU1ziqP1y+Tlan2MUJ9dI8ZfRECvTzOyH9mhNFbjjnW0KCo2zK211NTJchMo7p37z2EY32U72t9dFOp4nFi6NbvaICF9PeaWuGjDoJIe6I2KANKSMJ5sJuIL9vl9AehjRyQLVKcy3MtzQo7S9Q/LJDc7Rd46Y5T0plHLuI3va8HgEfjewd0AkJtO6v7SgUi//F8wG88oRZVn1SK0WJ0t8Ulxcmd9xvrk53jam7q8fv19fGj6olTvW3XYvTdWLpmLh6oDp9h8ox+gjmhwTHHijAuGDYqSR1zlx0H+4GwTwODndMcOTa4WtbR/dZaiWXXQ7+c/D96NBsxNQ7C6SIdCCtfnd8pj/5Dz5Ht89jnb/rOKu+QElOZhSZ6enjKRQ2xTy6vqW//0H"
  },
  "sitzung": {
   "start": "2026-11-16T03:08:53.879Z",
