@@ -1308,6 +1308,195 @@ function treibtUrteil(e) {
             " · Bilder " + bilder + "/" + T4.length + B.filter((b) => b.fehler).map((b) => " FEHLER " + b.fehler).slice(0, 1).join(""),
     };
 }
+// DER ADAPTER DER SITZUNG (Karte 2, R2): die Zeile [linse-gpu] des Sitzungs-Logs (weltSitzungLauf reicht sie durch) — eine Software-Karte
+// (swiftshader, llvmpipe …) oder keine Zeile ist ROT; dieselbe Lesart wie HW5 in stationen/g5.js
+const adapterEcht = (t) => {
+    const ad = (/\[linse-gpu\][^\r\n]*/.exec(String(t || "")) || [null])[0];
+    return { ad: ad || "Adapter ungenannt", hw: !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad) };
+};
+// DER BRAND IM ECHTEN FENSTER (Karte 2 same.kopplung.stoerung S1 · same.kopplung.kaskade S1 · mensch.zeit.erleben S1 — EIN Lauf, drei
+// Urteile): dasselbe Gesetz wie stoffe.K2#2 (scripts/diag-stand-takt.cjs `brandSeite`: `_brandEntfachen`, `_tickBrand` je `BRAND.schrittS`,
+// der Regen über das Wort und `_naesseUhr`), aber in der EINEN warmen Welt der Sitzung und mit dem Ausgabe-Bild. Der Herd: die erste
+// trockene Gras-Zelle (`_brandStoff`, Feuchte unter ihrem `mx`, kein Wasser) 2–5 Zellen um die Mess-Wiese; EINE Kamera 20 m quer zur
+// Linie Spieler → Herd, 12 m über dem Boden, der Blick auf die Mitte der Zelle; der Ausschnitt ist die Mitte der Zelle ±¼ Zelle am
+// Boden, projiziert. Drei Bilder derselben Kamera (960×540, `__ausgabeAufnahme`): VOR (mittags, trocken, die Welt steht) · BRENNT (60 s
+// Spielzeit trocken nach dem Entfachen, 30 Takte für das Bild der Flammen) · ERLOSCHEN (das Wort Regen bis 300 s, dann der Rest des
+// Brands, dann wieder trocken und mittags, die Welt steht). Je Bild: die mittlere LINEARE Luma des Ausschnitts (sRGB entzerrt) und die
+// Flammen-Pixel des ganzen Bilds (warm: R ≥ 150, R ≥ 1,3 G, G ≥ 1,15 B); dazu der Anteil der Ausschnitt-Pixel, deren Luma VOR → ERLOSCHEN
+// um ≥ 30 % fiel, und die Asche `_ascheAt` an der Mitte des Herds.
+async function brandSitzungProbe(r, T, o) {
+    const st = r.state;
+    const [C, B] = [AnazhRealm, AnazhRealm.BRAND];
+    const cs = C.LIFE_FIELD.cell;
+    const M = o.orte.wiese;
+    const [W, H] = [960, 540];
+    const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+    const xz = (cx, cz) => [(cx + 0.5) * cs, (cz + 0.5) * cs];
+    let t = performance.now();
+    const takt = () => r._gameLoopTick((t += 1000 / 60));
+    const trocken = () => {
+        if (window.__wetterSetzen("sunny") !== "sunny") throw new Error("das Wetter der Probe gilt nicht: sunny (es gilt " + st.weather + ")");
+        r._naesseTakt(1e6);
+    };
+    // je Schritt der Welt-Uhr bis `max` s, solange der Brand lebt (wie `brennen` in brandSeite)
+    const brennen = (max, tick = () => r._tickBrand(), u = r._brandUhr) => {
+        while (r._brandUhr - u < max - 1e-9 && r._brandLebt()) (st.spielZeit = r._brandUhr + B.schrittS), tick();
+        return Math.round(r._brandUhr - u);
+    };
+    const brennt = () => [...(st.brandFeld || new Map()).values()].filter((z) => z.t0 !== null).length;
+    const regler = st.perfRegulator;
+    st.perfRegulator = false;
+    const aus = { schuesse: [] };
+    try {
+        r.setSeason("sommer");
+        trocken();
+        r.setTimeOfDay(0.5, "regler");
+        const [mx, mz] = [Math.floor(M.x / cs), Math.floor(M.z / cs)];
+        let herd = null;
+        for (let d = 2; d <= 5 && !herd; d++)
+            for (let i = -d; i <= d && !herd; i++)
+                for (const [cx, cz] of [[mx + i, mz - d], [mx + i, mz + d], [mx - d, mz + i], [mx + d, mz + i]]) {
+                    const f = r._brandStoff(cx, cz);
+                    if (f && f.zeile.name === "gras" && r._brandFeuchte(f.boden) < f.zeile.brenn.mx && !r._nassAt(...xz(cx, cz))) {
+                        herd = [cx, cz];
+                        break;
+                    }
+                }
+        if (!herd) return { fehler: "keine trockene Gras-Zelle 2–5 Zellen um die Mess-Wiese (Zelle " + cs + " m)" };
+        const [hx, hz] = xz(...herd);
+        const hy = r._voxelSurfaceY(hx, hz);
+        const [dx, dz] = ((a, b, l = Math.hypot(a, b) || 1) => [a / l, b / l])(hx - M.x, hz - M.z);
+        const kamera = [hx - dz * 20, hy + 12, hz + dx * 20, hx, hy, hz];
+        const cam = st.camera;
+        const stellen = () => (cam.position.set(kamera[0], kamera[1], kamera[2]), cam.lookAt(hx, hy, hz), cam.updateMatrixWorld(true));
+        stellen();
+        const q = cs / 4;
+        const P = [[-q, -q], [q, -q], [-q, q], [q, q]].map(([a, b]) => new THREE.Vector3(hx + a, r._voxelSurfaceY(hx + a, hz + b), hz + b).project(cam));
+        const roi = [
+            Math.max(0, Math.floor(((Math.min(...P.map((p) => p.x)) + 1) / 2) * W)),
+            Math.max(0, Math.floor(((1 - Math.max(...P.map((p) => p.y))) / 2) * H)),
+            Math.min(W, Math.ceil(((Math.max(...P.map((p) => p.x)) + 1) / 2) * W)),
+            Math.min(H, Math.ceil(((1 - Math.min(...P.map((p) => p.y))) / 2) * H)),
+        ];
+        if ((roi[2] - roi[0]) * (roi[3] - roi[1]) < 100) return { fehler: "der Ausschnitt der Herd-Zelle trägt < 100 Pixel: " + roi.join(",") };
+        const LUT = Array.from({ length: 256 }, (_, i) => ((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))(i / 255));
+        const Y = {};
+        const schuss = async (name) => {
+            stellen();
+            const { u8 } = await window.__ausgabeAufnahme(W, H);
+            const L = [];
+            for (let y = roi[1]; y < roi[3]; y++)
+                for (let x = roi[0]; x < roi[2]; x++) {
+                    const i = (y * W + x) * 4;
+                    L.push(0.2126 * LUT[u8[i]] + 0.7152 * LUT[u8[i + 1]] + 0.0722 * LUT[u8[i + 2]]);
+                }
+            let flammen = 0;
+            for (let i = 0; i < W * H; i++) {
+                const [R, G, Bl] = [u8[4 * i], u8[4 * i + 1], u8[4 * i + 2]];
+                if (R >= 150 && R >= 1.3 * G && G >= 1.15 * Bl) flammen++;
+            }
+            Y[name] = L;
+            aus.schuesse.push({ name, url: window.__png(u8, W, H) });
+            return { luma: r3(L.reduce((s, v) => s + v, 0) / Math.max(1, L.length)), flammen };
+        };
+        await window.__weltStehtNach(takt, 900);
+        aus.vor = await schuss("vor");
+        const n0 = (st.worldMeta.taten ||= []).length;
+        aus.entfacht = !!r._brandEntfachen(hx, hz);
+        aus.trockenS = brennen(60);
+        aus.brennt = Object.assign({ zellen: brennt() }, (() => {
+            for (let i = 0; i < 30; i++) takt();
+            return { flammenListe: (r._brandFlammen || []).length };
+        })());
+        Object.assign(aus.brennt, await schuss("brennt"));
+        delete r._naesseTakt;
+        r._naesseUhr = st.spielZeit;
+        if (window.__wetterSetzen("rainy") !== "rainy") throw new Error("das Wetter der Probe gilt nicht: rainy (es gilt " + st.weather + ")");
+        aus.regenS = brennen(300, takt);
+        aus.nachRegen = brennt();
+        for (let n = 0; n < 600 && r._brandLebt(); n++) takt();
+        trocken();
+        r.setTimeOfDay(0.5, "regler");
+        await window.__weltStehtNach(takt, 900);
+        aus.erloschen = Object.assign({ zellen: brennt(), lebt: r._brandLebt() }, await schuss("erloschen"));
+        aus.asche = r3(r._ascheAt(hx, hz));
+        aus.aschen = st.worldMeta.taten.slice(n0).filter((a) => a.tat === "brand").length;
+        aus.veraendert = r3(Y.vor.filter((v, i) => Y.erloschen[i] <= 0.7 * v).length / Math.max(1, Y.vor.length));
+        Object.assign(aus, { herd: [hx, hz].map(Math.round), zelle: cs, kamera: kamera.map((v) => Math.round(v * 10) / 10), roi });
+        return aus;
+    } finally {
+        st.perfRegulator = regler;
+    }
+}
+const BRAND_SITZUNG = { befehl: weltSitzungBefehl([["brand", brandSitzungProbe]]), sek: 90, mutiert: true };
+// die Zeile des Laufs und das Gemeinsame der drei Urteile: drei Bilder ohne Fehler, der Herd fing, der Adapter ist eine echte Karte
+function brandBildLesen(j, lauf) {
+    const { ad, hw } = adapterEcht(lauf && lauf.stdout);
+    const e = weltZeile(j, lauf, "brand");
+    if (!e) return { fehler: "keine Zeile WELTPROBE brand (Exit " + (lauf && lauf.exit) + ") · " + ad };
+    if (e.fehler) return { fehler: "Probe: " + e.fehler + " · " + ad };
+    const S = e.schuesse || [];
+    const bilder = ["vor", "brennt", "erloschen"].filter((n) => S.some((s) => s.name === n && s.datei && !s.fehler)).length;
+    if (!e.vor || !e.brennt || !e.erloschen || bilder < 3) return { fehler: "Bilder " + bilder + "/3 (vor, brennt, erloschen) · " + ad };
+    if (!e.entfacht) return { fehler: "der Herd " + (e.herd || []).join(",") + " fing nicht · " + ad };
+    return { e, ad, hw };
+}
+// same.kopplung.stoerung S1: die Zelle nach dem Brand im Bild dunkler — lineare Luma ERLOSCHEN ÷ VOR ≤ 0,5, die Asche an der Mitte ≥ 0,99
+function stoerungUrteil(j, lauf) {
+    const l = brandBildLesen(j, lauf);
+    if (l.fehler) return { gruen: false, zahl: l.fehler };
+    const { e, ad, hw } = l;
+    const q = e.vor.luma > 0 ? e.erloschen.luma / e.vor.luma : null;
+    return {
+        gruen: hw && q != null && q <= 0.5 && e.asche >= 0.99,
+        zahl: "Herd " + e.herd.join(",") + ": Luma der Zelle vor " + e.vor.luma + " → nach " + e.erloschen.luma + " (÷ " + (q == null ? "—" : q.toFixed(3)) +
+            ", Soll ≤ 0,5) · Asche " + e.asche + " (Soll ≥ 0,99), " + e.aschen + " Aschen · " + ad,
+    };
+}
+// same.kopplung.kaskade S1: trocken brennt der Herd nach 60 s noch (Zellen ≥ 1, Flammen im Bild: ≥ 200 warme Pixel mehr als VOR), im Regen
+// erlischt er ≤ 60 s (danach 0 brennende Zellen, ERLOSCHEN ≤ 20 warme Pixel über VOR)
+function kaskadeUrteil(j, lauf) {
+    const l = brandBildLesen(j, lauf);
+    if (l.fehler) return { gruen: false, zahl: l.fehler };
+    const { e, ad, hw } = l;
+    const [fB, fC] = [e.brennt.flammen - e.vor.flammen, e.erloschen.flammen - e.vor.flammen];
+    return {
+        gruen: hw && e.trockenS >= 60 && e.brennt.zellen >= 1 && fB >= 200 && e.regenS <= 60 && e.nachRegen === 0 && e.erloschen.zellen === 0 && fC <= 20,
+        zahl: "trocken nach " + e.trockenS + " s " + e.brennt.zellen + " brennende Zellen, Flammen im Bild +" + fB + " Pixel (Soll ≥ 200; " + e.brennt.flammenListe +
+            " Flammen gezeichnet) · Regen löscht nach " + e.regenS + " s (Soll ≤ 60), danach " + e.erloschen.zellen + " Zellen, Flammen im Bild " + (fC >= 0 ? "+" : "") + fC + " (Soll ≤ 20) · " + ad,
+    };
+}
+// mensch.zeit.erleben S1: dieselbe Pose vorher/nachher — ≥ 50 % des Ausschnitts um ≥ 30 % dunkler, die Asche an der Mitte ≥ 0,99
+function erlebenUrteil(j, lauf) {
+    const l = brandBildLesen(j, lauf);
+    if (l.fehler) return { gruen: false, zahl: l.fehler };
+    const { e, ad, hw } = l;
+    return {
+        gruen: hw && e.veraendert >= 0.5 && e.asche >= 0.99,
+        zahl: "Bildpaar an der Kamera " + e.kamera.join(",") + ": " + Math.round(e.veraendert * 100) + " % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche " + e.asche + " (Soll ≥ 0,99) · " + ad,
+    };
+}
+// die Roh-Zeile der Proben (ein erfundener GRÜN-Lauf der Form, nie eine Messung) und ihre Mutanten
+const BRAND_ROH = {
+    schuesse: [{ name: "vor", datei: "x-brand-s1.png" }, { name: "brennt", datei: "x-brand-s2.png" }, { name: "erloschen", datei: "x-brand-s3.png" }],
+    vor: { luma: 0.12, flammen: 4 },
+    entfacht: true,
+    trockenS: 60,
+    brennt: { zellen: 6, flammenListe: 22, luma: 0.2, flammen: 1800 },
+    regenS: 7,
+    nachRegen: 0,
+    erloschen: { zellen: 0, lebt: false, luma: 0.03, flammen: 6 },
+    asche: 0.995,
+    aschen: 9,
+    veraendert: 0.82,
+    herd: [100, -200],
+    zelle: 16,
+    kamera: [80, 12, -190, 100, 0, -200],
+    roi: [400, 250, 560, 330],
+};
+const brandRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWELTPROBE brand " + JSON.stringify(aendern(JSON.parse(JSON.stringify(BRAND_ROH))));
+const BRAND_PFAD = ["stamm/feld-*.js", "stamm/bild-*.js", "stamm/dirigent-*.js", "stamm/gelaende-*.js", "stamm/wasser-*.js", "stamm/vegetation-*.js",
+    "foundry-core.js", "fachwerk-core.js", "gelaende-core.js", "scripts/werkbank.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"];
 // DIE FRONT IM ECHTEN FENSTER (wetter.K1#2, die Karten-Hälfte; Karte 2 planet.wetter.lagen S1 „Regen an A bei trockenem B ≥ 20 % der Zeit,
 // Lag ±20 %“): derselbe Zug wie gate:wetter-wache (F) (scripts/diag-wetter-wache.cjs `probe`), in der Welt der Sitzung mit IHRER Saat —
 // A = der Spieler an der Mess-Wiese, B = 3 km windab (`windGrund` der Saat); je Lauf `zuege` Takte des Zugs (je Takt springt die
@@ -4014,6 +4203,75 @@ module.exports = [
         ],
         pfad: ["stamm/bild-himmel.js", "stamm/gelaende-*.js", "stamm/koerper-*.js", "gelaende-core.js", ...WELT_PFAD],
         quelle: "1 = Schnee-Deckung ≥ 60 % über der Schneegrenze der Saison UND der Fuß sinkt ≥ 5 cm ein, an einer Pose",
+    },
+
+    // ───────── KARTE 2: der Brand im echten Fenster (BRAND_SITZUNG, brandSitzungProbe oben) — EIN Lauf, drei Sprossen ─────────
+    // Bis hierher urteilte stoffe.K2#2 den Brand nur am Null-Renderer (Asche-Bytes, Zustand des Felds, nie ein Pixel). Gebaut am Zweig
+    // vorrat2-stationen-g1 (16.11.), headless nur im Selbsttest der Punkte-Maschine geprüft — am Fenster beider Geräte ungemessen.
+    {
+        kriterium: "karte2.same.kopplung.stoerung",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: BRAND_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 3,
+        urteil: stoerungUrteil,
+        proben: [
+            { name: "die Zelle nach dem Brand im Bild dunkler, Asche voll", stdout: brandRoh((x) => x), gruen: true },
+            { name: "die Luma fällt zu wenig (÷ 0,6)", stdout: brandRoh((x) => ((x.erloschen.luma = 0.072), x)), gruen: false },
+            { name: "die Asche an der Mitte nicht voll", stdout: brandRoh((x) => ((x.asche = 0.8), x)), gruen: false },
+            { name: "ein Bild fehlt", stdout: brandRoh((x) => ((x.schuesse = x.schuesse.slice(0, 2)), x)), gruen: false },
+            { name: "der Herd fing nicht", stdout: brandRoh((x) => ((x.entfacht = false), x)), gruen: false },
+            { name: "swiftshader", stdout: brandRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: BRAND_PFAD,
+        quelle: "KARTE2 same.kopplung.stoerung S1 = Bildpaar Zelle vor / nach dem Brand, beide Geräte",
+    },
+    {
+        kriterium: "karte2.same.kopplung.kaskade",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: BRAND_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 3,
+        urteil: kaskadeUrteil,
+        proben: [
+            { name: "trocken brennt er, im Regen erlischt er", stdout: brandRoh((x) => x), gruen: true },
+            { name: "trocken erloschen vor 60 s", stdout: brandRoh((x) => ((x.trockenS = 41), (x.brennt.zellen = 0), x)), gruen: false },
+            { name: "keine Flammen im Bild, obwohl Zellen brennen", stdout: brandRoh((x) => ((x.brennt.flammen = 60), x)), gruen: false },
+            { name: "der Regen löscht nach 300 s nicht", stdout: brandRoh((x) => ((x.regenS = 300), (x.nachRegen = 4), x)), gruen: false },
+            { name: "erloschen, aber Flammen im Bild", stdout: brandRoh((x) => ((x.erloschen.flammen = 900), x)), gruen: false },
+            { name: "swiftshader", stdout: brandRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: BRAND_PFAD,
+        quelle: "KARTE2 same.kopplung.kaskade S1 = Bildpaar: Brand erlischt im Regen, hält im Trockenen, beide Geräte",
+    },
+    {
+        kriterium: "karte2.mensch.zeit.erleben",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: BRAND_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 3,
+        urteil: erlebenUrteil,
+        proben: [
+            { name: "der Ort trägt die Narbe im Bildpaar", stdout: brandRoh((x) => x), gruen: true },
+            { name: "das Bildpaar gleich (der Ort trägt nichts)", stdout: brandRoh((x) => ((x.veraendert = 0.04), x)), gruen: false },
+            { name: "keine Asche am Herd", stdout: brandRoh((x) => ((x.asche = 0), x)), gruen: false },
+            { name: "keine Zeile", stdout: "[linse-gpu] amd/rdna-3 (Probe)", gruen: false },
+            { name: "swiftshader", stdout: brandRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: BRAND_PFAD,
+        quelle: "KARTE2 mensch.zeit.erleben S1 = Bildpaar vorher/nachher am selben Ort",
     },
 ];
 
