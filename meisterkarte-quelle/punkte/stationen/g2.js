@@ -4640,6 +4640,63 @@ const stationen = [
         pfad: [...KREATUR, "gelaende-core.js", "phyto-core.js", "stamm/gelaende-boden.js", "stamm/wasser-hydro.js", "stamm/bild-himmel.js", "save-server.js", "scripts/werkbank.cjs"],
         quelle: "KARTE2 leben.tiere.verhalten S1 = Zeitraffer 24 Spielstunden im Fenster",
     },
+    // KARTE 2 leben.tiere.wanderung S1 (Umfang „10 m: Leine um den Geburtsort“, Tiefe „Aufenthalt folgt dem Lebensraum“): der Zwilling
+    // von leben.tiere.verhalten (VERHALTEN_SITZUNG, Teil 1 tagesbudget — je Gattung drei Tiere am Ufer, 72 Spielstunden am echten Takt,
+    // kein GPU-Mehrpreis). Das Urteil liest je Tier `wander` der Zeile tagesbudget: { g, leineM (leashBaseM × bodySize ± leashSpanM
+    // über die Mut-Achse, tetrapoda-core.js wandern), punkte (die Lage je Spiel-Minute über ≥ 24 Spielstunden), flaecheM2 (die
+    // konvexe Hülle der 95 % ankernächsten Punkte, MCP 95), anteil (der Punkte in der Boden-Klasse der Gattung, _lebensraumGesetz) }.
+    // GRÜN: ≥ 4 Gattungen, JEDES Tier ≥ 1440 Punkte, Fläche in [½, 1½] × π · leineM², Anteil ≥ 0,9. DIE PROBE TRÄGT `wander` NOCH
+    // NICHT (scripts/diag-kreatur-leben.cjs, Spiel-Baum, fremde Datei): bis zu jenem Schnitt urteilt die Station ROT „ohne wander“
+    {
+        kriterium: "karte2.leben.tiere.wanderung",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: VERHALTEN_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const { ad, hw } = hwSitzung(lauf.stdout);
+            const t = probeZeile(lauf.stdout, "tagesbudget");
+            if (!t) return { gruen: false, zahl: "keine Zeile der Probe tagesbudget im Fenster (Exit " + lauf.exit + ") · " + ad };
+            if (t.fehler) return { gruen: false, zahl: "Probe-Fehler tagesbudget: " + t.fehler + " · " + ad };
+            if (!Array.isArray(t.wander) || !t.wander.length) return { gruen: false, zahl: "die Probe tagesbudget trägt ohne wander keine Aufenthaltsfläche · " + ad };
+            const je = t.wander.map((w) => {
+                const soll = Math.PI * w.leineM * w.leineM;
+                const q = w.flaecheM2 / soll;
+                const ok = w.leineM > 0 && w.punkte >= 1440 && q >= 0.5 && q <= 1.5 && w.anteil >= 0.9;
+                return { ok, g: w.g, t: (ok ? "" : "✗ ") + w.g + " " + Math.round(w.flaecheM2) + " m² = " + q.toFixed(2) + "× π·" + w.leineM + "², im Lebensraum " + w.anteil + ", " + w.punkte + " Punkte" };
+            });
+            const gattungen = new Set(je.map((x) => x.g)).size;
+            return {
+                gruen: hw && gattungen >= 4 && je.every((x) => x.ok),
+                zahl: gattungen + " Gattungen · " + je.map((x) => x.t).join(" · ") + " · " + ad,
+            };
+        },
+        proben: (() => {
+            const ad = "[linse-gpu] nvidia/pascal (Probe)";
+            const W = [["deer", 18.4], ["deer", 21.0], ["wolf", 15.2], ["fox", 11.8], ["bear", 24.6]];
+            const z = (f = () => {}) => {
+                const wander = W.map(([g, L]) => ({ g, leineM: L, punkte: 4320, flaecheM2: Math.round(Math.PI * L * L * 0.92), anteil: 0.97 }));
+                f(wander);
+                return ad + "\n  ✅ tagesbudget " + JSON.stringify({ soll: {}, budget: {}, ruhe: [1500, 12], wander });
+            };
+            return [
+                { name: "jedes Tier im Band seiner Leine und im Lebensraum", stdout: z(), gruen: true },
+                { name: "der Wolf streift 3× seine Leine (keine Leine)", stdout: z((w) => (w[2].flaecheM2 *= 3)), gruen: false },
+                { name: "der Fuchs klebt am Anker (0,2×)", stdout: z((w) => (w[3].flaecheM2 = Math.round(w[3].flaecheM2 * 0.2))), gruen: false },
+                { name: "der Bär steht zu 30 % außerhalb seines Lebensraums", stdout: z((w) => (w[4].anteil = 0.7)), gruen: false },
+                { name: "nur 6 Spielstunden (360 Punkte)", stdout: z((w) => w.forEach((x) => (x.punkte = 360))), gruen: false },
+                { name: "drei Gattungen", stdout: z((w) => w.splice(3, 2)), gruen: false },
+                { name: "die Probe ohne wander (heute)", stdout: ad + "\n  ✅ tagesbudget " + JSON.stringify({ soll: {}, budget: {}, ruhe: [1500, 12] }), gruen: false },
+                { name: "swiftshader", stdout: z().replace(ad, "[linse-gpu] google/swiftshader"), gruen: false },
+            ];
+        })(),
+        pfad: [...KREATUR, "gelaende-core.js", "phyto-core.js", "stamm/gelaende-boden.js", "stamm/wasser-hydro.js", "save-server.js", "scripts/werkbank.cjs"],
+        quelle: "KARTE2 leben.tiere.wanderung S1 = Aufenthaltsfläche eines Individuums über 1 Spieltag im Fenster",
+    },
     // KARTE 2 leben.oeko.netz S1 · leben.oeko.dynamik S1 · leben.tiere.lebenszyklus S1: EIN Lauf der Probe kaskade im Fenster
     // (KASKADE_SITZUNG, Zwillinge), je Sprosse das Urteil der headless-Station WÖRTLICH (IM_FENSTER unten) — netz: oekologie.K1#1 (je
     // Saat und Gattung Stunde 8 gegen 2 in [⅓×, 3×], ≥ 8 Saaten, ≥ 16 ansässige Bestände, kein Takt an der Kappe); dynamik:

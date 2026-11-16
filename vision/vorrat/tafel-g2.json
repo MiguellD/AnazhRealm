@@ -14,6 +14,13 @@
         "grund": "tagesbudget (72 Spielstunden gemessen, Budget ±20 % am Ethogramm) und jagdkreis (Quote tiere.K2#1 wörtlich, Rudel 20–40 %) im Fenster, zwei Teile derselben Welt"
     },
     {
+        "station": "karte2.leben.tiere.wanderung#1",
+        "leiter": "leben.tiere.wanderung",
+        "sprosse": 1,
+        "richter": "fehlt",
+        "grund": "die Probe tagesbudget (scripts/diag-kreatur-leben.cjs) trägt noch kein wander je Tier (Lage je Spiel-Minute, MCP-95-Fläche, Anteil im Lebensraum, leineM) — nach jenem Schnitt im Spiel-Baum wird die Zeile gleich"
+    },
+    {
         "station": "karte2.leben.oeko.netz#1",
         "leiter": "leben.oeko.netz",
         "sprosse": 1,
