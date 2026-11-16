@@ -1056,15 +1056,23 @@ hauptLauf(async () => {
                         FC.kachelNetz(s, ix, iz)
                     ),
             },
+            // die Form im Bild (w28-stadt-form): Massen auf halber Tiefe (der Stab) · der Ton je Kachel statt je Lage (die Kante)
+            {
+                massen: (...a) =>
+                    ((m) => m && { ...m, lage: m.lage.map((v, j) => (j % 7 === 4 ? v / 2 : v)) })(FC.kachelMassen(...a)),
+            },
+            { tonAn: (s, i, k, m) => ((f) => (col) => f(col, 0, 0))(FC.stadtTonAn(s, i, k, m)) },
         ].map((o) => stadtFunktion(FC, o));
         check(
-            "Selbst-Test S STADT ALS NETZ: das Gesetz GRÜN · verlorene Kacheln, ohne Erbe, nicht zustandslos, gleiche Samen, Tore aus dem Samen der Kachel ROT beim Namen",
+            "Selbst-Test S STADT ALS NETZ: das Gesetz GRÜN · verlorene Kacheln, ohne Erbe, nicht zustandslos, gleiche Samen, Tore aus dem Samen der Kachel, Massen als Stäbe, der Ton je Kachel ROT beim Namen",
             sm[0].gruen &&
                 /die Kacheln tragen/.test(sm[1].fehl) &&
                 /ohne Erbe|die Mitte in/.test(sm[2].fehl) &&
                 /beim zweiten Fragen/.test(sm[3].fehl) &&
                 /denselben Samen/.test(sm[4].fehl) &&
-                /NAHT/.test(sm[5].fehl),
+                /NAHT/.test(sm[5].fehl) &&
+                /FORM STAB/.test(sm[6].fehl) &&
+                /FORM TON-KANTE/.test(sm[7].fehl),
             sm.map((m) => m.fehl.slice(0, 2).join(" | ") || "grün").join(" · ")
         );
         // V-G (w28-gruendung-flach): ohne Raster (eine Zelle für alle) fragt `fremd` wieder jeden Grundriss — G1 fällt beim Namen
@@ -1186,7 +1194,7 @@ hauptLauf(async () => {
         // Z4 (w28-stadt-funktion): die Stadt über der Wand eines Viertels ist eine Funktion über Vierteln (lib/ort-proben.cjs)
         const SV = stadtFunktion(FC);
         check(
-            `Z4 STADT ALS NETZ (Wand ${FC.STADT_FUNKTION.voll}, ${FC.STADT_NETZ.jeKachel} Häuser je Kachel): die Summe der Kacheln ist die Zahl des Worts, die Tore jeder Kante aus beiden Kacheln gleich, die Mauer nur am Rand der Stadt, die Kachel in der Zeit der Mitte — ${SV.je.join(" · ")}`,
+            `Z4 STADT ALS NETZ (Wand ${FC.STADT_FUNKTION.voll}, ${FC.STADT_NETZ.jeKachel} Häuser je Kachel): die Summe der Kacheln ist die Zahl des Worts, die Tore jeder Kante aus beiden Kacheln gleich, die Mauer nur am Rand der Stadt, die Kachel in der Zeit der Mitte, kein Haus ein Stab, keine Ton-Kante — ${SV.je.join(" · ")}`,
             SV.gruen,
             SV.fehl.slice(0, 4).join(" · ")
         );

@@ -1491,7 +1491,7 @@ class AnazhRealm_siedlung_wege {
                             S2.oz,
                             S2.plan
                         );
-                        if (alt) [e.strassen, e.box] = [alt.strassen, alt.box];
+                        if (alt) [e.strassen, e.box, e.band] = [alt.strassen, alt.box, alt.band];
                         F.je.set(key, e);
                     } else if (!e && darf) {
                         const m = AnazhRealm.Gesetz("fachwerk:kachelMassen")(s.seed, s.nH, i, k, s.epoche);
@@ -1504,10 +1504,21 @@ class AnazhRealm_siedlung_wege {
                     // der Zug endete: ein Los, das kein Haus trägt (es fiel an der Bau-Wand), trägt auch keine Masse
                     // (die Kachel STEHT: die Sitzung kennt ihre Siedlung und ihr Zug ist durch — ein Vorrat steht noch nicht)
                     if (e.los && !e.steht && !imZug && B && B.has(key)) this._stadtMasseZugEnde(F, e);
+                    const d = Math.hypot(s.x + i * M - playerPos.x, s.z + k * M - playerPos.z);
+                    // eine Kachel, die ihren Plan ohne Stufe 1 bekam (der Reload: die Sitzung kennt ihre Siedlung), holt die
+                    // Gassen ihres Netzes für das Band, sobald sie jenseits `bandAbM` liegt
+                    if (!e.strassen && e.los && darf && d > A.bandAbM) {
+                        const m = AnazhRealm.Gesetz("fachwerk:kachelMassen")(s.seed, s.nH, i, k, s.epoche);
+                        e.strassen = m ? m.strassen : [];
+                        darf = false;
+                    }
                     if (!e.strassen) continue;
+                    // das Band der Straßen: jenseits `bandAbM` (dort malt keine Stufe der Wege-Karte mehr die ganze Kachel)
+                    // liegt es, diesseits fällt es (`bandSpielM` Spiel gegen das Flattern an der Grenze)
+                    if (!!e.band !== d > A.bandAbM - (e.band ? A.bandSpielM : 0))
+                        this._stadtFerneBand(F, e, !e.band, s.x + i * M, s.z + k * M);
                     // die Straßen der Stufe 1: bis `strassenM` vom Spieler (dahinter malt keine Stufe der Wege-Karte); sie
                     // fallen eine Kachel weiter draußen — und sobald die Kachel steht (ihr Plan malt seine Gassen selbst)
-                    const d = Math.hypot(e.ox - playerPos.x, e.oz - playerPos.z);
                     if (e.box ? e.steht || d > A.strassenM + M : !e.los && d < A.strassenM && weg) {
                         this._stadtFerneStrassen(e, !e.box);
                         weg = false;
@@ -1525,6 +1536,7 @@ class AnazhRealm_siedlung_wege {
             (st.stadtFerne = {
                 wand: null,
                 dach: null,
+                band: null,
                 je: new Map(),
                 takt: 0,
                 los: new Map(),
@@ -1648,7 +1660,7 @@ class AnazhRealm_siedlung_wege {
     _stadtFerneBauen(F, m, ox, oz, plan) {
         const A = AnazhRealm.STADT_FERNE;
         const n = m ? m.n : 0;
-        const e = { wand: null, dach: null, ox, oz, strassen: null, box: null, los: !!plan, steht: false, anH: new Uint8Array(n), gebunden: new Uint8Array(n) }; // prettier-ignore
+        const e = { wand: null, dach: null, band: null, ox, oz, strassen: null, box: null, los: !!plan, steht: false, anH: new Uint8Array(n), gebunden: new Uint8Array(n) }; // prettier-ignore
         if (!n) return e;
         const [L, T] = [m.lage, m.ton];
         const [mat, quat, pos, mass, auf] = [new THREE.Matrix4(), new THREE.Quaternion(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(0, 1, 0)]; // prettier-ignore
@@ -1685,8 +1697,9 @@ class AnazhRealm_siedlung_wege {
         return e;
     }
     // die Massen einer Kachel fallen aus den Pools (Stufe 1, wenn ihr Plan kommt): Null-Kisten, die Plätze frei für die nächste
-    _stadtFerneLoesen(F, e) {
-        for (const art of ["wand", "dach"]) {
+    // (`arten`: die Pools — ohne sie Wand und Dach; das Band der Straßen löst `_stadtFerneBand`)
+    _stadtFerneLoesen(F, e, arten = ["wand", "dach"]) {
+        for (const art of arten) {
             const [t, P] = [e[art], F[art]];
             if (!t || !P) continue;
             const ziel = P.mesh.instanceMatrix.array;
@@ -1696,6 +1709,53 @@ class AnazhRealm_siedlung_wege {
             P.frei.push({ a: t.a, n: t.n });
             e[art] = null;
         }
+    }
+    // DAS BAND DER STRASSEN EINER FERNEN KACHEL (`an`: legen, sonst lösen; `ox`/`oz` die Mitte der Kachel): jenseits `bandAbM`
+    // malt keine Stufe der Wege-Karte die ganze Kachel (ihr fernes Fenster reicht 1024 m) — dort trägt jede Gasse ihres Netzes
+    // (fachwerk `kachelMassen` `strassen`) EINE Kiste im dritten Pool der Ferne: von ihrem ersten zu ihrem letzten Punkt, so
+    // breit wie Belag und Saum, `bandHubM` über dem Grund des Gesetzes an ihren Enden (`bandDickM` dick: der Hang), im Ton des
+    // Kopfsteins (der Stein des Farb-Gesetzes mal dem Anteil seiner Fuge, porta `STEIN_GESETZ`). EIN Draw für alle Straßen
+    // aller fernen Kacheln. Bis hier standen die Massen jenseits 1 200 m ohne Weg: aus 1 km lag fast die Hälfte der Stadt als
+    // Konfetti auf der Wiese.
+    _stadtFerneBand(F, e, an, ox, oz) {
+        if (!an) {
+            if (e.band && e.band.n) this._stadtFerneLoesen(F, e, ["band"]);
+            e.band = null;
+            return;
+        }
+        const A = AnazhRealm.STADT_FERNE;
+        const n = e.strassen.length;
+        e.band = { a: 0, n: 0 }; // auch leer gemerkt: die Kachel fragt nicht je Takt neu
+        if (!n) return;
+        const K = AnazhRealm.Gesetz("porta:STEIN_GESETZ.kopfstein");
+        const c = AnazhRealm._srgbHexLinear(AnazhRealm.Gesetz("porta:STEIN_GESETZ.farbe")[K.stein]);
+        const ton = 1 - ((1 - K.fugeTon) * 2 * K.fuge) / K.steinM;
+        const P = this._stadtFernePool(F, "band");
+        const a = this._stadtFernePlatz(P, n);
+        const [ziel, farben] = [P.mesh.instanceMatrix.array, P.mesh.instanceColor.array];
+        const [mat, quat, pos, mass, dreh] = [new THREE.Matrix4(), new THREE.Quaternion(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Euler()]; // prettier-ignore
+        for (let h = 0; h < n; h++) {
+            const [s, o] = [e.strassen[h], (a + h) * 16];
+            ziel.fill(0, o, o + 16);
+            ziel[o + 15] = 1; // die Null-Kiste: eine Gasse im Wasser trägt kein Band
+            farben.set([c[0] * ton, c[1] * ton, c[2] * ton], (a + h) * 3);
+            const p = s.p;
+            const [ax, az, bx, bz] = [ox + p[0], oz + p[1], ox + p[p.length - 2], oz + p[p.length - 1]];
+            const lang = Math.hypot(bx - ax, bz - az);
+            if (!(lang > 0.5) || !this._landAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue;
+            const [ya, yb] = [this.getTerrainHeightAt(ax, az), this.getTerrainHeightAt(bx, bz)];
+            if (!Number.isFinite(ya) || !Number.isFinite(yb)) continue;
+            quat.setFromEuler(dreh.set(-Math.atan2(yb - ya, lang), Math.atan2(bx - ax, bz - az), 0, "YXZ"));
+            mat.compose(
+                pos.set((ax + bx) / 2, (ya + yb) / 2 + A.bandHubM - A.bandDickM / 2, (az + bz) / 2),
+                quat,
+                mass.set(Math.max(1.2, s.w) + 2 * Math.max(0, s.saum || 0), A.bandDickM, Math.hypot(lang, yb - ya))
+            );
+            ziel.set(mat.elements, o);
+        }
+        P.mesh.instanceColor.needsUpdate = true;
+        P.mesh.instanceMatrix.needsUpdate = true;
+        e.band = { a, n };
     }
     // DIE STRASSEN EINER FERNEN KACHEL (`an`: legen, sonst lösen): die Gassen ihres Netzes mit dem Belag des Gesetzbuchs
     // (fachwerk `kachelMassen` `strassen`) als Formen der Wege-Karte — der Boden malt Pflaster, die Natur-Wand hält die Linie
@@ -2295,11 +2355,17 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
 // um den größten Laub-Rand 21 m erweitert —, nie den Bestand).
 // DIE FERNE DER STADT (`_stadtFerneTakt`): bis `reichM` vom Spieler trägt eine Stadt ihre Massen (plus ihre Ringe); die Kiste
 // eines Hauses reicht `sockelM` unter seinen Grund (der Hang), das Dach steht `ueberM` über die Wand; je `jeTakte` Takte EINE Kachel.
-// Ihre Straßen liegen bis `strassenM` in der Wege-Karte (das Fenster der fernen Stufe reicht 1024 m).
+// Ihre Straßen liegen bis `strassenM` in der Wege-Karte (das Fenster der fernen Stufe reicht 1024 m), jenseits `bandAbM`
+// (drei Kacheln: bis dahin liegt jede Kachel ganz im Fenster) als Band im Pool der Ferne (`_stadtFerneBand`: `bandHubM` über
+// dem Grund, `bandDickM` dick, `bandSpielM` Spiel an der Grenze).
 // Ein stehendes Haus der Stadt trägt bis `nahM` seinen Satz im Welt-March, dahinter seine Masse (`_stadtMasseRegt`).
 AnazhRealm.STADT_FERNE = Object.freeze({
     reichM: 3000,
     strassenM: 1200,
+    bandAbM: 768,
+    bandSpielM: 64,
+    bandHubM: 0.6,
+    bandDickM: 3,
     sockelM: 2.5,
     ueberM: 0.5,
     jeTakte: 6,

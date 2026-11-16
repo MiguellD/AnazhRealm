@@ -457,6 +457,42 @@ function stadtFunktion(FC, o = {}) {
         const schief = (e, ende) => { const P = e.pts, [p, r] = ende ? [P[P.length - 2], P[P.length - 1]] : [P[0], P[1]]; return Math.abs(Math.atan2(r.z - p.z, r.x - p.x) - (ost ? 0 : Math.PI / 2)); };
         if (eA.length !== a.length || eB.length !== a.length || eA.some((e, j) => e.gen !== eB[j].gen || schief(e, true) > 0.02 || schief(eB[j], false) > 0.02)) { fehl.push(`NAHT ${s} ${ix},${iz}: die Straßen treffen sich an der Kante nicht (Zahl, Klasse oder Richtung)`); break; }
     }
+    // (d) DIE FORM IM BILD (`STADT_FORM`, w28-stadt-form) an der Stadt von 33 vollen Kacheln: KEIN STAB — in den Massen der
+    // Stufe 1 (`kachelMassen`, Mitte · Kern · Rand) trägt jedes Haus seine Traufe auf seiner Tiefe (Traufe / Tiefe ≤ `stab`: der
+    // Grundriss wächst mit den Geschossen, ein hohes Haus steht auf einem tiefen Platz); KEINE TON-KANTE — der Ton hängt an der
+    // LAGE (`stadtTonAn`): über fünf Kanten zweier Kacheln springt er auf 2 m um höchstens 6 von 255 (eine Stufe trägt 3), das
+    // Feld lebt, und die Massen lesen es an ihrem Ort (ohne `tonHub`: in der Kachel neben der Mitte bleiben die Häuser an der
+    // Mitte, wie sie sind — dort ist das Feld 0 —, die am Rand wechseln die Farbe). `o.massen` und `o.tonAn` tauschen das Gesetz.
+    const massen = o.massen || FC.kachelMassen, tonAn = o.tonAn || FC.stadtTonAn, FO = FC.STADT_FORM, gross = 33 * K;
+    for (const [i, k] of [[0, 0], [1, 0], [2, 1]]) {
+        const m = massen(7, gross, i, k);
+        if (!m) { fehl.push(`FORM: die Stadt ${gross} trägt keine Kachel ${i},${k}`); continue; }
+        let stab = 0, wer = "";
+        for (let h = 0; h < m.n; h++) { const [d, t] = [m.lage[h * 7 + 4], m.lage[h * 7 + 5]]; if (t / d > FO.stab + 1e-3 && !stab++) wer = `${t.toFixed(1)} m auf ${d.toFixed(1)} m`; }
+        if (stab) fehl.push(`FORM STAB: ${stab} von ${m.n} Häusern der Kachel ${i},${k} tragen Traufe / Tiefe über ${FO.stab} (${wer})`);
+    }
+    const grau = { putz: 0x808080, ziegel: 0x808080 }, rot = (c) => [(c.putz >> 16) & 255, (c.ziegel >> 16) & 255];
+    let [sprung, wo, lebt] = [0, "", false];
+    for (const [i, k, di, dk] of [[1, 0, 1, 0], [2, 1, 0, 1], [-2, -1, 1, 0], [0, 3, 0, 1], [3, 3, 1, 0]]) {
+        const [A, B] = [tonAn(7, i, k, M), tonAn(7, i + di, k + dk, M)];
+        for (let q = 0; q < 32; q++) {
+            const t = ((q + 0.5) / 32 - 0.5) * M, [a, b] = [rot(A(grau, di ? M / 2 - 1 : t, dk ? M / 2 - 1 : t)), rot(B(grau, di ? 1 - M / 2 : t, dk ? 1 - M / 2 : t))];
+            const d = Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
+            if (d > sprung) [sprung, wo] = [d, `${i},${k} → ${i + di},${k + dk}`];
+            lebt = lebt || a[0] !== 128 || a[1] !== 128;
+        }
+    }
+    if (sprung > 6) fehl.push(`FORM TON-KANTE: über die Kante ${wo} springt der Ton auf 2 m um ${sprung} von 255 — er hängt an der Kachel, nicht an der Lage`);
+    if (!lebt) fehl.push("FORM TON: das Feld der Viertel-Töne ist an fünf Kanten überall 0");
+    {
+        const hub = FO.tonHub, mit = massen(7, gross, 1, 0);
+        let ohne = null;
+        FO.tonHub = 0;
+        try { ohne = massen(7, gross, 1, 0); } finally { FO.tonHub = hub; }
+        let [gleich, anders] = [0, 0];
+        if (mit && ohne) for (let h = 0; h < mit.n; h++) Array.from(mit.ton.subarray(h * 6, h * 6 + 6)).some((v, j) => Math.abs(v - ohne.ton[h * 6 + j]) > 1e-5) ? anders++ : gleich++;
+        if (!gleich || !anders) fehl.push(`FORM TON: die Massen der Kachel 1,0 lesen das Feld nicht an ihrem Ort (ohne tonHub ${anders} Häuser anders, ${gleich} gleich — Soll: beides)`);
+    }
     // (c) der Export am kleinen Stand
     const klein = o.klein || 40, gleich = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     [SF.voll, SN.jeKachel] = [klein, 30];

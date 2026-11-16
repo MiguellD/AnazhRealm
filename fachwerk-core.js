@@ -3551,13 +3551,17 @@
     // Häuser nach den größten Resten, die Summe ist die Zahl des Worts; eine Kachel unter `kleinTeil` der vollen Zahl steht
     // nicht (der Rand franst aus; `stadtPlan`). Die Höhe folgt demselben Profil: der Faktor der Geschosse (`erbe.hoch`, DORF
     // liest ihn) trägt im Kern `hochKern` (in kleinen Städten weniger: λ / `hochAbLam`) und fällt steiler als die Dichte
-    // (Profil hoch `hochPot`: ein hoher Kern, ein weiter niedriger Rand) auf `hochRand`. Jedes
-    // Viertel trägt den Ton seines Samens (`erbe.ton`: Wand und Dach heller oder dunkler, wärmer oder kälter um höchstens
-    // `tonHub`, `stadtTon`). Die Mauer steht um den Kern: an der Kante einer Kachel ab `mauerTeil` der vollen Zahl zu einem
+    // (Profil hoch `hochPot`: ein hoher Kern, ein weiter niedriger Rand) auf `hochRand`. Der GRUNDRISS wächst mit den
+    // Geschossen (DORF, die EINE Quelle beider Stufen und des Hauses im Nah-Ring): Breite und Tiefe tragen die Traufe /
+    // `schlank`, die Breite bis `breitMax` (das Raster der Plätze), die Tiefe bis `tiefMax` (der Block hinter der Straße);
+    // in Stufe 1 steht ein hohes Haus auf einem Platz, dessen Tiefe es trägt (Traufe / Tiefe ≤ `stab`, `kachelMassen`).
+    // Jedes Haus trägt den Ton seiner LAGE in der Stadt (`stadtTonAn`: Wand und Dach heller oder dunkler, wärmer oder kälter
+    // um höchstens `tonHub`, `stadtTon`; in `tonStufen` Stufen je Richtung — Nachbarn teilen ihre Palette). Die Mauer steht
+    // um den Kern: an der Kante einer Kachel ab `mauerTeil` der vollen Zahl zu einem
     // Nachbarn darunter — die Vorstadt liegt vor der Mauer (`kachelRand`). Bis hier trug jede Kachel jeder Stadt `jeKachel`
     // Häuser, der Umriss war das Quadrat der Ringe, jede Kachel stand in der Höhe und im Ton der Mitte (15 × 15, 42 750
     // Häuser: im Bild aus 1 km ein Quadrat mit EINEM Dach-Ton).
-    var STADT_FORM = { randTeil: 0.1, kern: 0.6, spiel: 0.5, kleinTeil: 0.065, hochKern: 3.3, hochRand: 0.3, hochAbLam: 2, hochPot: 1.6, mauerTeil: 0.55, tonHub: 0.2, tonWeite: 3 };
+    var STADT_FORM = { randTeil: 0.1, kern: 0.6, spiel: 0.5, kleinTeil: 0.065, hochKern: 3.3, hochRand: 0.3, hochAbLam: 2, hochPot: 1.6, mauerTeil: 0.55, tonHub: 0.2, tonWeite: 3, tonStufen: 16, schlank: 1.5, stab: 2, breitMax: 7.5, tiefMax: 11 };
     var stadtFormMemo = { lam: new Map(), plan: new Map() };
     function stadtProfil(lam, r) {
         return Math.min(1, Math.exp(STADT_FORM.kern - r / lam));
@@ -3617,23 +3621,36 @@
         M.set(key, plan);
         return plan;
     }
-    // die Form an einer Kachel: { hoch, ton } — der Faktor der Geschosse und der Ton des Viertels ([Wand, Dach] in −1 … 1; die
-    // Mitte trägt den Ton der Kultur selbst)
+    // die Form an einer Kachel: { hoch } — der Faktor der Geschosse (der Ton hängt an der Lage des Hauses, `stadtTonAn`)
     function stadtFormAm(samen, nH, i, k) {
         var F = STADT_FORM, lam = stadtLambda(nH), mitte = 1 + (F.hochKern - 1) * Math.min(1, lam / F.hochAbLam), e3 = function (v) { return Math.round(v * 1000) / 1000; };
-        return {
-            hoch: e3(F.hochRand + (mitte - F.hochRand) * Math.pow(stadtProfil(lam, Math.hypot(i, k)), F.hochPot)),
-            ton: !i && !k ? [0, 0] : [e3(stadtTonFeld(samen, 61, i, k)), e3(stadtTonFeld(samen, 67, i, k))],
-        };
+        return { hoch: e3(F.hochRand + (mitte - F.hochRand) * Math.pow(stadtProfil(lam, Math.hypot(i, k)), F.hochPot)) };
     }
-    // DER TON DER VIERTEL ALS FELD: ein Viertel reicht über `tonWeite` Kacheln, Nachbarn gehen ineinander über (Wert-Rauschen auf
-    // einem Gitter, das gegen die Kacheln versetzt liegt, linear gemischt); zur Mitte fällt das Feld auf 0 — sie trägt den Ton ihrer
-    // Kultur. Bis hier würfelte jede Kachel ihren Ton allein: aus 1 km las sich die Stadt als Schachbrett ihrer Kacheln.
-    function stadtTonFeld(samen, kanal, i, k) {
-        var q = STADT_FORM.tonWeite, x = (i + 0.37) / q, z = (k + 0.61) / q, x0 = Math.floor(x), z0 = Math.floor(z), fx = x - x0, fz = z - z0;
+    // DER TON DER VIERTEL ALS FELD ÜBER DER STADT: an der Lage (u, v) in Kacheln (stetig; die Mitte der Kachel (i, k) ist (i, k))
+    // der Ton in −1 … 1 — ein Viertel reicht über `tonWeite` Kacheln, Nachbarn gehen ineinander über (Wert-Rauschen auf einem
+    // Gitter, das gegen die Kacheln versetzt liegt, linear gemischt); in der Kachel der Mitte ist das Feld 0 — sie trägt den Ton
+    // ihrer Kultur —, dahinter steigt es über anderthalb Kacheln auf sein Maß. Bis hier trug jede Kachel EINEN Ton: aus 260 m
+    // und aus 1 km las sich die Stadt als die Quadrate ihrer Kacheln.
+    function stadtTonFeld(samen, kanal, u, v) {
+        var q = STADT_FORM.tonWeite, x = (u + 0.37) / q, z = (v + 0.61) / q, x0 = Math.floor(x), z0 = Math.floor(z), fx = x - x0, fz = z - z0;
         var h = function (a, b) { return (netzHash(samen, kanal, a, b) / 4294967296) * 2 - 1; };
-        var v =(h(x0, z0) * (1 - fx) + h(x0 + 1, z0) * fx) * (1 - fz) + (h(x0, z0 + 1) * (1 - fx) + h(x0 + 1, z0 + 1) * fx) * fz;
-        return Math.max(-1, Math.min(1, v * 1.5)) * Math.min(1, Math.hypot(i, k) / 2);
+        var w = (h(x0, z0) * (1 - fx) + h(x0 + 1, z0) * fx) * (1 - fz) + (h(x0, z0 + 1) * (1 - fx) + h(x0 + 1, z0 + 1) * fx) * fz;
+        return Math.max(-1, Math.min(1, w * 1.5)) * Math.max(0, Math.min(1, (Math.hypot(u, v) - 0.75) / 1.5));
+    }
+    // DER TON AM ORT: für die Kachel (i, k) der Stadt `samen` (Kante `m`) die Frage (col, x, z) → die Palette `col` im Ton der
+    // Lage (x, z) (lokal um die Mitte der Kachel, m): das Feld beider Kanäle (Wand 61, Dach 67), gerundet auf `tonStufen` Stufen
+    // — gleiche Stufen derselben Palette sind EIN Objekt (gemerkt je Frage); ohne Ton die Palette selbst.
+    function stadtTonAn(samen, i, k, m) {
+        var Q = STADT_FORM.tonStufen, memo = new Map();
+        return function (col, x, z) {
+            if (!col) return col;
+            var u = i + x / m, v = k + z / m, a = Math.round(stadtTonFeld(samen, 61, u, v) * Q), b = Math.round(stadtTonFeld(samen, 67, u, v) * Q);
+            if (!a && !b) return col;
+            var M = memo.get(col), key = (a + Q) * (2 * Q + 1) + b + Q;
+            if (!M) memo.set(col, (M = new Map()));
+            if (!M.has(key)) M.set(key, stadtTon(col, [a / Q, b / Q]));
+            return M.get(key);
+        };
     }
     // DER TON EINES VIERTELS auf einer Palette (`col` einer Kultur, Hex sRGB) → eine neue Palette: die Rollen der Wand um
     // ton[0], die des Dachs um ton[1] dunkler (bis 1,4 · `tonHub`) oder heller (bis 0,35 ·), dazu um die halbe Weite wärmer oder kälter (die Wand nach
@@ -3657,7 +3674,7 @@
     // DAS WORT EINER KACHEL: Kachel (i, k) der Stadt „<samen> <nH> [<epoche>]" → {seed, nH, epoche, erbe, ring} oder null (dort
     // steht keine). Bis zur Wand ist (0, 0) das Wort selbst und sonst nichts; darüber ist (0, 0) die Mitte (der Same des Worts,
     // `jeKachel` Häuser; ihr Erbe trägt nur die Form — ihre Zeit ist die der Stadt), jede andere trägt die Zahl ihres Platzes
-    // im Plan der Stadt (`stadtPlan`) und im Erbe Region, Jahr und Spanne der Mitte samt ihrer Form (`stadtFormAm`: Höhe, Ton).
+    // im Plan der Stadt (`stadtPlan`) und im Erbe Region, Jahr und Spanne der Mitte samt ihrer Form (`stadtFormAm`: die Höhe).
     function viertelWort(samen, nH, i, k, epoche) {
         samen = isFinite(samen) ? Number(samen) : 1;
         nH = Math.floor(Number(nH)) || 0;
@@ -3749,12 +3766,23 @@
                     kand.push({ w: bi * 4 + e, j, x: p[0] + ux * t, z: p[1] + uz * t, ux, uz, nx: -s * uz, nz: s * ux, breit: frei / n, tief: tief[e & 1], h: netzHash(samen, 43, i, k, bi * 4 + e, j) }); } }
         });
         const n = Math.min(H.length, kand.length), reihe = (a, b) => a.w - b.w || a.j - b.j, d2 = q => (q.x - z0.x) * (q.x - z0.x) + (q.z - z0.z) * (q.z - z0.z);
-        const wahl = kand.slice().sort((a, b) => a.h - b.h || reihe(a, b)).slice(0, n).sort((a, b) => d2(a) - d2(b) || reihe(a, b));
-        const lage = new Float32Array(n * 7), ton = new Float32Array(n * 6);
+        // EIN HOHES HAUS STEHT AUF EINEM TIEFEN PLATZ: das Los des Samens wählt n Plätze, die Liste nimmt je Haus den nächsten zur
+        // Kreuzung, dessen Tiefe seine Traufe trägt (Traufe / Tiefe ≤ `stab`) — fehlt er unter den gewählten, den nächsten der
+        // übrigen; erst wenn kein Platz der Kachel es trägt, steht es auf dem nächsten freien (dann schmaler, als es ist)
+        const nah = (a, b) => d2(a) - d2(b) || reihe(a, b), los = kand.slice().sort((a, b) => a.h - b.h || reihe(a, b));
+        const frei = los.slice(0, n).sort(nah), uebrig = los.slice(n).sort(nah), wahl = [];
+        for (let r = 0; r < n; r++) { const soll = Math.min(H[r].D, (Math.max(1, H[r].storeys || 1) * S.geschossM + S.sockelM) / STADT_FORM.stab), passt = q => q.tief - S.einzugM - 1 >= soll;
+            let L = frei, j = L.findIndex(passt);
+            if (j < 0) { L = uebrig; j = L.findIndex(passt); }
+            if (j < 0) { L = frei.length ? frei : uebrig; j = 0; }
+            wahl.push(L.splice(j, 1)[0]); }
+        const lage = new Float32Array(n * 7), ton = new Float32Array(n * 6), tonAm = stadtTonAn(samen, i, k, netz.m);
         for (let r = 0; r < n; r++) { const q = wahl[r], p = H[r];
-            const W = Math.max(3, Math.min(p.W, q.breit - 0.8)), D = Math.max(3, Math.min(p.D, q.tief - S.einzugM - 1)), ab = S.einzugM + 0.6 + D / 2;
-            lage.set([e3(q.x + q.nx * ab), e3(q.z + q.nz * ab), e3(Math.atan2(-q.uz, q.ux))].concat(hausMasse(p, W, D)), r * 7);
-            ton.set(hausMasseTon(p), r * 6); }
+            // die Reihe schließt sich, wo das Haus seinen Platz füllt (Brandwand an Brandwand); das schmalere steht frei in seinem Platz
+            const W = Math.max(3, p.W >= q.breit ? q.breit : Math.min(p.W, q.breit - 0.8)), D = Math.max(3, Math.min(p.D, q.tief - S.einzugM - 1)), ab = S.einzugM + 0.6 + D / 2;
+            const x = e3(q.x + q.nx * ab), z = e3(q.z + q.nz * ab);
+            lage.set([x, z, e3(Math.atan2(-q.uz, q.ux))].concat(hausMasse(p, W, D)), r * 7);
+            ton.set(hausMasseTon(p, tonAm(p.col, x, z)), r * 6); }
         return { n, lage, ton, strassen, haeuser: H.length, plaetze: kand.length, m: netz.m }; }
     // DIE MASSE EINES HAUSES (die EINE Regel beider Stufen): [W, D, Traufe, First] aus seinem Parameter-Vektor — der Kasten bis zur
     // Traufe (Geschosse × `geschossM` über dem Sockel), das Satteldach über der Tiefe (First längs der Breite), flach ohne First;
@@ -3762,8 +3790,9 @@
     // prettier-ignore
     function hausMasse(p, W, D) { const S = STADT_MASSEN, flach = p.dachTyp === "flach" || !(p.pitchDeg >= S.flachGrad), e3 = v => Math.round(v * 1000) / 1000;
         return [e3(W), e3(D), Math.max(1, p.storeys || 1) * S.geschossM + S.sockelM, flach ? 0 : e3(Math.tan((p.pitchDeg * Math.PI) / 180) * D * 0.5)]; }
-    function hausMasseTon(p) {
-        return _colFor(_wandRolle(p), p.col).concat(_colFor("ziegel", p.col));
+    function hausMasseTon(p, col) {
+        col = col || p.col; // die Palette am Ort (`stadtTonAn`, Stufe 1) oder die des Vektors (Stufe 2: der Export trägt sie schon)
+        return _colFor(_wandRolle(p), col).concat(_colFor("ziegel", col));
     }
     // STUFE 2 IM BILD — DIE MASSEN EINES PLANS (w28-stadt-netz, der Schnitt der Kapsel-Liste): die Häuser eines Plans (der Export,
     // `exportSettlement`) als dieselben Massen wie die der Stufe 1 (`hausMasse`), an ihren ECHTEN Losen — je Slot der Rahmen
@@ -4150,8 +4179,12 @@
   const nBurg=grammatik?stadtViertel(geb, fr, n, {region, jahr, burg:herr?burgAb:-1, poolAt:y=>poolAt(y, ringe), rv}).map(p=>{ alle.push(p); za.push({gr:p.baujahr, fr:[]}); }).length:0;
   for(const a of alle) if(a.rolle==='scheune'&&alle[a.parent].viertel) a.viertel=alle[a.parent].viertel;   /*die Scheune steht im Viertel ihres Hofs*/
   const zugHandwerk=rv()*Math.PI*2;                                                         /*die Seite der Stadt, an der ihr Handwerk liegt (dorfLayout `zug`)*/
-  if(DP.erbe&&Array.isArray(DP.erbe.ton)&&(DP.erbe.ton[0]||DP.erbe.ton[1])){ const neu=new Map(), war=new Set(), tn=o=>{ if(!o||!o.col||war.has(o)) return; war.add(o); if(!neu.has(o.col)) neu.set(o.col, stadtTon(o.col, DP.erbe.ton)); o.col=neu.get(o.col); };   /*DER TON DES VIERTELS (STADT_FORM, `viertelWort`): jeder Bau des Plans — auch der fruehere eines Loses — traegt die Palette seiner Kultur im Ton seines Viertels*/
-    alle.forEach((v,a)=>{ tn(v); za[a].fr.forEach(f=>tn(f.v)); }); }
+  /*DER GRUNDRISS WAECHST MIT DEN GESCHOSSEN (STADT_FORM, nach allen Rollen: Kirche, Burg und die Bau-Typen der Viertel setzen ihre Masse selbst — ihr Fuss folgt ihrer Hoehe wie der jedes Hauses): Breite und Tiefe tragen die Traufe / `schlank`, die Breite bis `breitMax` (das Raster der Plaetze), die Tiefe bis `tiefMax` (der Block hinter der Strasse); der Turm der Moderne bleibt ein Turm. Bis hier wuchs im Viertel nur die Hoehe: der Kern stand als Staebe (Traufe / Tiefe 2,6 im Median, 156 von 205 Haeusern ueber 2)*/
+  if(DP.erbe&&DP.erbe.hoch>0) for(const v of alle){ if(v.turmbau||!(v.W>0)||!(v.D>0)) continue;
+    const fuss=Math.ceil((Math.max(1,v.storeys||1)*STADT_MASSEN.geschossM+STADT_MASSEN.sockelM)/STADT_FORM.schlank*2)/2;
+    v.W=Math.max(v.W, Math.min(STADT_FORM.breitMax, fuss)); v.D=Math.max(v.D, Math.min(STADT_FORM.tiefMax, fuss));
+    const trag=Math.floor((STADT_FORM.stab*v.D-STADT_MASSEN.sockelM)/STADT_MASSEN.geschossM);   /*DIE HOEHE FOLGT DEM LOS: mehr Geschosse, als seine Tiefe traegt (Traufe ≤ `stab` × Tiefe), steigen nicht — der Grundriss waechst nur bis `tiefMax`, jenseits davon kostet er Lose (am Kern von 42 750: 192 → 107 von 205 Haeusern bei 12 × 17 m)*/
+    if((v.storeys||1)>trag) v.storeys=Math.max(1, trag); }
   // DER SCHNITT DER CHRONIK: das Jahr der Epoche (T = jahr + d + spanne) nimmt die Lose, die bis T gegruendet sind — der Anfang
   // der Liste (Kern = alt) —, je Los den Bau, der bei T steht; `lose` traegt das Los der Gegenwart, wo ein frueherer Bau steht
   // (das Layout packt die Lose: ein frueherer Plan liegt in der Gestalt des juengeren). Ohne Chronik ist der Plan sein Schnitt.
@@ -9412,12 +9445,17 @@
         if (nA < plan.houses.length) ringUm(lay, teil(nA, plan.houses.length, K, lay), K, nA, plan.norm.gap);
         var slots = [],
             slotVon = {};
+        // DER TON DER LAGE (STADT_FORM): das Haus einer Kachel trägt die Palette seiner Kultur im Ton seines Orts in der Stadt
+        // (`stadtTonAn` am Rahmen des Slots — dieselbe Frage, die Stufe 1 an ihren Massen stellt)
+        var tonAm = kachel ? stadtTonAn(kachel.samen, kachel.i, kachel.k, kNetz.m) : null;
         for (i = 0; i < plan.houses.length; i++) {
             var q = lay.pl[i];
             if (!q || !q.obb || Math.abs(q.obb.cx) > 5000 || Math.abs(q.obb.cz) > 5000) continue;
             var hp = plan.houses[i],
                 ev = Bs[i].ext,
-                o = plan.lose[i] ? obbImLos(q, ev) : q.obb;
+                o = plan.lose[i] ? obbImLos(q, ev) : q.obb,
+                tc = tonAm ? tonAm(hp.col, q.x, q.z) : hp.col;
+            if (tc !== hp.col) hp = Object.assign({}, hp, { col: tc });
             slotVon[i] = slots.length;
             slots.push(
                 hausSlot(
@@ -11916,6 +11954,7 @@
         stadtRinge: stadtRinge,
         STADT_FORM: STADT_FORM,
         stadtLambda: stadtLambda,
+        stadtTonAn: stadtTonAn, // der Ton der Lage in der Stadt (Leser: die Linse gate:settlement Z4, die Ton-Kante)
         stadtKachelZahl: stadtKachelZahl,
         viertelWort: viertelWort,
         // w28-stadt-netz — die Kachel: ihre Tore je Kante, ihre Stufe 1 (Netz), der Rand der Stadt an ihr
