@@ -1319,7 +1319,7 @@ class AnazhRealm_speicher_laden {
     //   3. SPERRE, ZEIGER, WECHSEL AM ORT (`_weltWechsel`): die alte Welt geht ganz (`_weltAbschied`), die neue kommt an wie
     //      beim Boot — nie lädt die Seite sie über die alte (die lebte darin weiter: Tiere, Chunks, Worker, Wasser).
     // `meta` legt Felder ins worldMeta (der Gast: role, hostInfo, slug); `wechseln:false` legt nur ab (daneben legen, Tests),
-    // `aktiv:false` lässt dann auch den Aktiv-Zeiger (daneben legen); `zeugnis` ([zeile, ctx]) schreibt den Empfang ins Journal
+    // `aktiv:false` lässt dann auch den Aktiv-Zeiger (daneben legen); `zeugnis` ({schluessel, werte, ctx}, die Zeile der Tafel wie `zeugnisA`) schreibt den Empfang ins Journal
     // der kommenden Welt (ersetzen, daneben). Vor allem anderen DIE WAND (`_weltEinlass`): eine feindliche oder kaputte Welt
     // kommt nie herein — die Seite sichert nichts, legt nichts ab, wechselt nicht, und der Spieler hört den Grund.
     // → {ok, worldId|reason, abgewiesen?}
@@ -1351,7 +1351,7 @@ class AnazhRealm_speicher_laden {
                     e && typeof e === "object" ? { ...e, d: 0 } : e
                 ),
             };
-        if (zeugnis) AnazhRealm._zeugnisEintragen(welt, zeugnis[0], zeugnis[1]);
+        if (zeugnis) AnazhRealm._zeugnisEintragen(welt, [zeugnis.schluessel, zeugnis.werte], zeugnis.ctx);
         if (typeof welt.worldMeta.worldId !== "string" || !welt.worldMeta.worldId)
             welt.worldMeta.worldId = AnazhRealm._neueWeltId();
         const ab = this._weltAblegen(welt, { aktiv: aktiv || wechseln });
@@ -1715,7 +1715,7 @@ class AnazhRealm_speicher_laden {
         // ein Tier); eine Datei ohne worldId landete roh auf dem Platz der alten Welt, und beide waren fort. Weist die Wand sie
         // ab, hat die Tür schon gesprochen.
         this._closeWeltTorDialog();
-        const r = this._weltBetreten(pending.parsed, null, { zeugnis: [["journal.ersetzt"]] });
+        const r = this._weltBetreten(pending.parsed, null, { zeugnis: { schluessel: "journal.ersetzt" } });
         if (r.ok) this._chatEcho(["speicher.ersetzen-ok", { datei: fileName }]);
         else if (!r.abgewiesen)
             this._spielerSagt(["speicher.ersetzen-fehl", { datei: fileName, grund: String(r.reason) }]);
@@ -1978,10 +1978,11 @@ class AnazhRealm_speicher_laden {
         const ab = this._weltBetreten(parsed, identitaet, {
             wechseln: reload,
             aktiv: reload,
-            zeugnis: [
-                ["journal.empfangen-neben", { welt: slug }],
-                { fromWorldId: originalId, asWorldId: newWorldId, asSlug: slug },
-            ],
+            zeugnis: {
+                schluessel: "journal.empfangen-neben",
+                werte: { welt: slug },
+                ctx: { fromWorldId: originalId, asWorldId: newWorldId, asSlug: slug },
+            },
         });
         if (ab.abgewiesen) return ab;
         if (!ab.ok) return { ok: false, reason: `Speicher voll: ${ab.reason}` };
