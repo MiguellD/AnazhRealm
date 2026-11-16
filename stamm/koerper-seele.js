@@ -638,10 +638,10 @@ class AnazhRealm_koerper_seele {
         this.recomputePlayerStats();
         // die Hand liest die Hand-Mitte der feinen Stufe (`handMitte`, nur lod 0 gegossen): vor dem Bild wünscht sie die feine
         // (`_leibWunsch`, B5), danach trägt der Leib sie aus dem Leerlauf (`_leibFeinTausch` im Vorbau, w20-leib-takt) — nur ein
-        // Griff vor diesem Tausch tauscht selbst (er trägt die Hand dabei neu, `applyPlayerSoul`), jeder danach baut nichts
+        // Griff vor diesem Tausch tauscht selbst (er trägt die Hand dabei neu, `applyPlayerSoul`), jeder danach baut nichts; ist
+        // die feine nach dem Bild noch im Werk, wünscht der Griff sie (`_leibFuerHand`: ihre Ankunft gießt und tauscht)
         this._leibWunsch();
-        const z = this._spielerVorlagen;
-        if (!(this.state._weltbildDa && z && z.feinDa === true && this._leibFeinTausch())) this._refreshHeldMesh(); // S9
+        if (!this._leibFuerHand()) this._refreshHeldMesh(); // S9
         this._refreshIchIfOpen(); // M5 — Equip-Feedback ist instant
         return { ok: true, equipped: bpName };
     }
@@ -738,18 +738,30 @@ class AnazhRealm_koerper_seele {
             // UND ist die Foundry-Gruppe warm, tragen Wrapper um die GETEILTE Studio-Geometrie die Optik; die
             // Parts bleiben unsichtbare Substanz-Wahrheit (Tags · Ω-PHYSIS · wield). "pending" → der Part-Bau
             // trägt sichtbar als Interim (die Hand ist nie leer); null → Part-Pfad byte-alt.
-            const studio = this._heldFoundryGroup(bpName);
+            // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
+            // benennt, sonst die Körper-Wurzel (Custom-/Flug-Seelen).
+            const anchor =
+                (parts && (side === "left" ? parts.leftArm || parts.leftWing : parts.rightArm || parts.rightWing)) ||
+                pm;
+            const rig = pm.userData && pm.userData.rig;
+            const imGelenk = !!rig && ((rig.armR && anchor === rig.armR.wrist) || (rig.armL && anchor === rig.armL.wrist));
+            // DIE FAUST WARTET AUF DIE FEINE (physik.K4, same.physik.verformung): trägt der Leib nah noch die Grobstufe (B5, der
+            // Ego-Boot), fehlt ihm die Hand-Mitte (`handMitte`, nur lod 0 gegossen) — bis zum Tausch, den der Griff wünscht
+            // (`_leibFuerHand`), trägt der Part-Bau wie bei kaltem Buch. Bis hier fiel jede Studio-Gestalt dort aus der Hand (die
+            // Faust ohne Hand-Mitte: null), bis der Leerlauf tauschte — GTX 1060 am be50815d „klinge_flegel ohne Gestalt in der Hand“,
+            // Null-Renderer am Grob-Leib: 23 von 23 Gattungen der Schmiede leer, der Flegel 380 Takte.
+            const grobOhneMitte =
+                imGelenk &&
+                !(rig.handMitte && rig.handMitte[anchor.name]) &&
+                !!pm.userData._gelenk &&
+                pm.userData._gelenk.nahStufe === 1;
+            const studio = grobOhneMitte ? "pending" : this._heldFoundryGroup(bpName);
             const isStudio = !!(studio && studio !== "pending");
             const mesh = isStudio ? studio : this._buildFromBlueprint({ name: `held_${bpName}`, parts: bp.parts });
             // das Gerät in der Hand ist keine Haut: die Ich-Regel (_applyEgoSicht) lässt es sichtbar
             mesh.userData._gehalten = true;
             // Der Erst-Zeig-Stall (die V18.367-Klasse) fällt an der Erst-Zeichnung (`_configureRenderer`): die Hand
             // zeichnet ab dem Frame, in dem ihr Stoff gebaut und ihre Pipeline steht.
-            // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
-            // benennt, sonst die Körper-Wurzel (Custom-/Flug-Seelen).
-            const anchor =
-                (parts && (side === "left" ? parts.leftArm || parts.leftWing : parts.rightArm || parts.rightWing)) ||
-                pm;
             // DIE WAHRE GRÖSSE (W5 Gegenstände): das Gerät erbt die Welt-Skala seines Ankers — der Studio-Mensch steht
             // als Baum in Studio-Einheiten unter einer 0,283-Gruppe, sein Handgelenk misst 0,26–0,28 Welt je Einheit.
             // Bis W5 skalierte die Hand im Anker-Raum: das Langschwert (Gesetzbuch 1,228 m) schrumpfte auf 0,62 Einheiten
@@ -779,11 +791,7 @@ class AnazhRealm_koerper_seele {
             // Spaten) in der Schwung-Ebene nach unten; der Bogen liegt mit seiner Länge im Griff. Die Gelenk-Achsen des
             // Handgelenks: −y zu den Fingern, +z nach vorn (Daumenseite), x quer. Vorher stand die Klinge mit 0,5 rad
             // Kipp den Unterarm hinauf (ein Handgelenk, um 160° überstreckt) — Messname: Haltung, Hand-Griff-Versatz.
-            const rig = pm.userData && pm.userData.rig;
-            const faust =
-                isStudio &&
-                !!rig &&
-                ((rig.armR && anchor === rig.armR.wrist) || (rig.armL && anchor === rig.armL.wrist));
+            const faust = isStudio && imGelenk;
             if (faust) {
                 // DIE HAND-MITTE kommt aus der Hand selbst (Ofen-Beipack: der Schwerpunkt der Hand-Haut im Hand-Raum) —
                 // vorher eine Welt-Konstante der Hand vor Welle 5 (0,107 m fingerwärts); die neue Hand (kleiner, höher)

@@ -2000,13 +2000,16 @@ class AnazhRealm_koerper_leib {
                 const nachBild = lodM === 0 && grob;
                 // die Stufen des ersten Bilds sind ein Kopf der Ankunft (`_foundryRang`: die Bahn ohne Arbeit, `_foundryPumpe`) —
                 // auch die feine, sobald das erste Bild sie wünscht (`_leibWunsch`)
+                // der Rang der feinen nach dem Bild steht am Zustand (`z.rang`): ein Griff, der sie wünscht, hebt ihn (`_leibFuerHand`)
                 const bestellen = () =>
                     this._foundryRequest(
                         "mensch",
                         0,
                         lodM,
                         { dials: dM, skinColor: fM.skin, hairColor: fM.hair },
-                        this._foundryRang(pm ? pm.position : undefined, !nachBild || z.gewuenscht === true)
+                        nachBild
+                            ? (z.rang = this._foundryRang(pm ? pm.position : undefined, z.gewuenscht === true))
+                            : this._foundryRang(pm ? pm.position : undefined, true)
                     ).then((meshes) => {
                         // fail-LAUT (V18.462): ein toter Prefetch war von Erfolg
                         // nicht unterscheidbar — das eine Wort macht ihn sichtbar.
@@ -2080,6 +2083,26 @@ class AnazhRealm_koerper_leib {
         z.gewuenscht = true;
         z.steht = z.vorBildDa === true && z.feinDa === true;
         ja();
+    }
+    // DER GRIFF NACH DEM BILD (physik.K4, same.physik.verformung): die Faust liest die Hand-Mitte der feinen Stufe — trägt der Leib
+    // nah die Grobstufe, tauscht der Griff die feine ein, wenn sie da ist (`_leibFeinTausch`); ist sie noch im Werk, WÜNSCHT er sie:
+    // ihre Ankunft gießt sie (nie roh) und tauscht (`_ofenSpielerVorlagen`, derselbe Weg wie der Wunsch vor dem Bild), bis dahin trägt
+    // der Part-Bau (`_refreshHeldMesh`). Bis hier wartete ein Griff vor der Ankunft auf den Leerlauf, und der kommt im Gang nie
+    // (die Eingabe ruht nicht). → true = getauscht (der Tausch trug die Hand neu).
+    _leibFuerHand() {
+        const st = this.state;
+        const z = this._spielerVorlagen;
+        if (!st._weltbildDa || !z) return false;
+        if (z.feinDa === true) return this._leibFeinTausch();
+        const g = st.playerMesh && st.playerMesh.userData._gelenk;
+        if (!g || g.nahStufe !== 1) return false;
+        z.gewuenscht = true;
+        // der Auftrag im Flug wird ein Kopf der Ankunft am Ort des Spielers (`_foundryNaeher`; bestellt ohne Leib, war er Vorrat)
+        if (z.rang) {
+            z.rang.kopf = true;
+            this._foundryNaeher(z.rang, st.playerMesh.position);
+        }
+        return false;
     }
     // DER TAUSCH DER FEINEN STUFE (B5): kam sie nach dem Bild, trägt der Leib des Spielers sie ab jetzt — derselbe Bau
     // (`applyPlayerSoul`, die Lage reist mit), die Grobstufe fällt mit dem alten Leib. Nur ein Leib, der nah die Grobstufe
