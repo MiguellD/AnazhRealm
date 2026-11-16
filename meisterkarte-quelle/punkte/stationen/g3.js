@@ -3649,6 +3649,116 @@ const stationen = [
         pfad: [...BILD, "spec/farbe/tag-ref.json", "stamm/bild-himmel.js", "welt-licht.js", "stamm/studio-bruecke.js", "stamm/vegetation-*.js", "gelaende-core.js", "stamm/gelaende-*.js"],
         quelle: "KARTE2 planet.kosmos.himmelsmechanik S1 = Sprung ≤ 0,1 EV je Uhrschritt über die ganze Bahn, Ego und Third, beide Geräte",
     },
+    // KARTE 2 planet.kosmos.sternhimmel S 1 — derselbe Lauf wie licht.K1#1 und himmelsmechanik#1 (TAG_PROBE, Zwillinge: die Fahrt fährt
+    // EINMAL, keine GPU-Minute mehr). Die Sprosse urteilt NUR die Sterne: je Uhr die Punkt-Quellen, die das Sternfeld zeichnet (TAG_STERNE,
+    // die Differenz mit − ohne Sternfeld), gegen die Grenzgrößen-Tafel des bloßen Auges je Sonnenhöhe — die Tafel der Wirklichkeit, nie
+    // die des Spiels (`starFieldUniforms.grenze` steht als Lesewert in der Zeile): ≥ 10° Grenzgröße unter der Venus, kein Stern · ≥ −3°
+    // die Planeten und die hellsten Sterne, ≤ 3 · ≤ −18° Grenzgröße +6, jede Uhr ≥ 5 (allein die Sterne bis +3, ~13 je sr) · bis −6°
+    // (Ende der bürgerlichen Dämmerung, Grenzgröße +1,5) steht nie die halbe Nacht, abends wie morgens · über −18 … 0° steigt die Zahl mit
+    // der sinkenden Sonne (Goodman-Kruskal γ ≥ 0,8). Dieselbe Rechnung wie die Tiefe in himmelsmechanik#1 (inline: der Abdruck liest den
+    // Text des Urteils, nie eine Hilfe), ohne den Sprung des Lichts — der gehört der Sprosse der Himmelsmechanik. Je Ort und Sicht (genesis,
+    // wiese, je Ego und Third) eine Kurve; die Kürzung des Wegs (WEG) darf nicht abweichen, sonst zählte die Probe ein anderes Bild.
+    {
+        kriterium: "karte2.planet.kosmos.sternhimmel",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: TAG_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(out) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const wm = /^WEG (\{.*\})\s*$/m.exec(out);
+            let weg = null;
+            try {
+                weg = wm && JSON.parse(wm[1]);
+            } catch (_e) {
+                weg = null;
+            }
+            const ORTE = ["genesis", "wiese", "genesis:third", "wiese:third"];
+            if (!j || ORTE.every((o) => !j[o])) return { gruen: false, zahl: "keine Kurve der Tag-Achse (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
+            const wegOk = !!weg && !weg.rot;
+            let gruen = hw && wegOk;
+            const gamma = (a, b) => {
+                let c = 0, d = 0;
+                for (let i = 0; i < a.length; i++) for (let k = i + 1; k < a.length; k++) { const p = (a[i] - a[k]) * (b[i] - b[k]); if (p > 0) c++; else if (p < 0) d++; }
+                return a.length >= 5 && c + d ? (c - d) / (c + d) : NaN;
+            };
+            const f = (x, n = 1) => (Number.isFinite(x) ? x.toFixed(n) : "—");
+            const teile = [];
+            for (const ort of ORTE) {
+                const m = j[ort] || {};
+                const alle = (m.zeilen || []).concat(m.fein || []).sort((a, b) => a.uhr - b.uhr);
+                // die Tafel braucht jede Stufe der Sonne: Tag, Dämmerung, astronomische Nacht
+                const tag = alle.filter((z) => z.sonne >= 10), hell = alle.filter((z) => z.sonne >= -3), dunkel = alle.filter((z) => z.sonne <= -18);
+                const dae = alle.filter((z) => z.sonne >= -18 && z.sonne <= 0);
+                if (!tag.length || !dunkel.length || dae.length < 5) {
+                    gruen = false;
+                    teile.push("❌ " + ort + ": " + alle.length + " Uhren, Tag " + tag.length + " · Dämmerung " + dae.length + " · Nacht " + dunkel.length + " (die Tafel braucht jede Stufe)");
+                    continue;
+                }
+                // ohne Zahl ist auch die Zahl ohne den Vergleich mit ↔ ohne Sternfeld (`punkte` fehlt: die Probe zählte jeden Lichtpunkt)
+                const ohne = alle.filter((z) => typeof z.sterne !== "number" || typeof z.punkte !== "number").length;
+                const max = (a) => (a.length ? Math.max(...a.map((z) => z.sterne)) : NaN);
+                const dz = dunkel.map((z) => z.sterne).sort((a, b) => a - b), nMed = dz[dz.length >> 1], nMin = dz[0];
+                // die Sonne, bei der zuerst die halbe Nacht steht: abends in der Uhr vorwärts, morgens rückwärts (die Sonne sinkt je Schritt)
+                const halb = [alle.filter((z) => z.uhr > 0.5), alle.filter((z) => z.uhr < 0.5).reverse()].map((s) => {
+                    const z = s.find((x) => x.sterne >= nMed / 2);
+                    return z ? z.sonne : NaN;
+                });
+                const r = gamma(dae.map((z) => -z.sonne), dae.map((z) => z.sterne));
+                const ok = !ohne && max(tag) === 0 && max(hell) <= 3 && nMin >= 5 && halb.every((h) => h <= -6) && r >= 0.8;
+                if (!ok) gruen = false;
+                const gr = alle.filter((z) => typeof z.grenze === "number").map((z) => z.grenze);
+                teile.push(
+                    (ok ? "✅ " : "❌ ") + ort + ":" + (ohne ? " ohne Zahl an " + ohne + " Uhren ·" : "") + " Tag ≥10° max " + max(tag) + " · ≥−3° max " + max(hell) +
+                        " · Nacht ≤−18° min " + nMin + " Median " + nMed + " · halbe Nacht bei Sonne " + halb.map((h) => f(h) + "°").join(" | ") + " · γ " + f(r, 2) +
+                        " (n " + dae.length + ") · Grenzgröße des Felds " + (gr.length ? f(Math.min(...gr), 2) + "…" + f(Math.max(...gr), 2) : "—")
+                );
+            }
+            return { gruen, zahl: teile.join(" · ") + " · WEG " + (wegOk ? "gleich" : "ROT " + (weg ? String(weg.rot).slice(0, 120) : "fehlt")) + " · " + (ad || "Adapter ungenannt") };
+        },
+        proben: (() => {
+            const ad = "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null }) + "\n";
+            const sonne = (u) => +(60 * Math.sin(2 * Math.PI * (u - 0.25))).toFixed(2);
+            const grenzStern = (s) => (s >= -3 ? 0 : s <= -18 ? 40 : Math.round(40 * ((-3 - s) / 15) ** 2));
+            // `punkte` die rohe Zahl des Bilds mit Feld, `pt` Lichtpunkte am Tag, die keine Sterne sind (Wolkenkante, Laub)
+            const zeile = (u, st, pt) => ({ uhr: u, sonne: sonne(u), Y: 0.2, sterne: st(sonne(u)), punkte: st(sonne(u)) + (pt && sonne(u) >= 10 ? pt : 0), grenze: 6 });
+            const ort = (st = grenzStern, pt = 0) => ({
+                zeilen: Array.from({ length: 100 }, (_, i) => zeile(i / 100, st, pt)),
+                fein: Array.from({ length: 60 }, (_, i) => zeile(+(0.7 + 0.001 * (i + 1)).toFixed(3), st, pt)),
+            });
+            const welt = (o = {}) => ({ genesis: ort(), wiese: ort(), "genesis:third": ort(), "wiese:third": ort(), ...o });
+            const ohne = welt();
+            for (const z of ohne.genesis.zeilen) delete z.sterne;
+            const roh = welt();
+            for (const z of roh.wiese.zeilen.concat(roh.wiese.fein)) delete z.punkte;
+            const sprung = welt();
+            sprung["wiese:third"].zeilen[30].Y *= 1.2;
+            return [
+                { name: "vier Kurven, Sterne nach der Grenzgröße", stdout: ad, j: welt(), gruen: true },
+                { name: "ein Sprung des Lichts gehört der Himmelsmechanik, nie dem Sternhimmel", stdout: ad, j: sprung, gruen: true },
+                { name: "sieben Lichtpunkte am Taghimmel, die das Sternfeld nicht zeichnet", stdout: ad, j: welt({ wiese: ort(grenzStern, 7) }), gruen: true },
+                { name: "zwei Sterne im Mittagshimmel (≥ 10°)", stdout: ad, j: welt({ wiese: ort((s) => (s >= 10 ? 2 : grenzStern(s))) }), gruen: false },
+                { name: "vier Punkte in der hellen Dämmerung (≥ −3°: höchstens die Planeten)", stdout: ad, j: welt({ "genesis:third": ort((s) => (s >= -3 && s < 10 ? 4 : grenzStern(s))) }), gruen: false },
+                { name: "die astronomische Nacht zu dünn (3 Sterne)", stdout: ad, j: welt({ "wiese:third": ort((s) => Math.min(3, grenzStern(s))) }), gruen: false },
+                { name: "die Sterne nach der Uhr, nicht nach der Grenzgröße (alle mit dem Untergang)", stdout: ad, j: welt({ genesis: ort((s) => (s < 0 ? 40 : 0)) }), gruen: false },
+                { name: "die Zahl fällt mit der sinkenden Sonne (γ < 0,8)", stdout: ad, j: welt({ wiese: ort((s) => (s >= -3 ? 0 : s <= -18 ? 40 : Math.round(40 * ((s + 18) / 15) ** 2) + 6)) }), gruen: false },
+                { name: "die Probe ohne Sternzahl", stdout: ad, j: ohne, gruen: false },
+                { name: "die Sternzahl ohne den Vergleich mit ↔ ohne Sternfeld", stdout: ad, j: roh, gruen: false },
+                { name: "ohne Third", stdout: ad, j: { genesis: ort(), wiese: ort() }, gruen: false },
+                { name: "der Weg weicht ab", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ rot: "Uhr 0.25 weicht ab" }) + "\n", j: welt(), gruen: false },
+                { name: "swiftshader", stdout: "[linse-gpu] google/swiftshader (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null }) + "\n", j: welt(), gruen: false },
+                { name: "keine Kurve", stdout: ad, j: null, gruen: false },
+            ];
+        })(),
+        pfad: [...BILD, "stamm/bild-himmel.js", "welt-licht.js", "gelaende-core.js", "stamm/gelaende-*.js"],
+        quelle: "KARTE2 planet.kosmos.sternhimmel S1 = Zahl sichtbarer Sterne je Sonnenhöhe folgt der Grenzgrößen-Tafel",
+    },
     {
         kriterium: "licht.K3",
         staffel: 1,
