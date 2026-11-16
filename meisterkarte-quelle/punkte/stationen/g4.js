@@ -850,6 +850,30 @@ async function paarSeite(o) {
         const e = await r.empfangeWerk(code);
         return { ok: !!(e && e.ok), grund: (e && e.grund) || null, zeile: zeilen().slice(n0).join(" | ").slice(0, 200), stand: stand() === vor };
     }
+    if (s === "weltVor") {
+        // DIE FEINDLICHE WELT (vorrat3-stationen-g4): der eigene Stand als fremde Datei (`buildStateSnapshot`, neue worldId), dazu EINE
+        // verbotene Tat — gesetz: ein Gesetz, das kein Build trägt (Schwere 999, `_weltGesetz`); pflug: eine Welt-Regel, die den frozen
+        // Worldgen umpflügt (`RULE_FORBIDDEN_EFFECT_OPS` voxel_carve). Sie klopft an DIE Tür jeder Datei (`_openWeltTorDialog`, das
+        // Welt-Tor), die Probe wählt „ersetzen“ am Knopf des Dialogs (DOM-Klick, kein Zeiger) — wer eintritt, lädt die Seite neu.
+        const snap = JSON.parse(JSON.stringify(r.buildStateSnapshot()));
+        const m = (snap.worldMeta = { ...(snap.worldMeta || {}), worldId: "feind-" + o.fall + "-" + Date.now().toString(36), slug: "feind-" + o.fall, label: "Feindliche Welt" });
+        if (o.fall === "gesetz") m.gesetz = { ...(m.gesetz && typeof m.gesetz === "object" ? m.gesetz : {}), schwere: 999 };
+        if (o.fall === "pflug") snap.worldRules = [{ cond: [">", ["field", "w"], -1], effect: ["voxel_carve", 0, 0, 0, 4], everySec: 5, source: "feind" }];
+        P.heim = (st.worldMeta || {}).worldId || null;
+        const [vor, n0] = [stand(), zeilen().length];
+        r._spielerSagtLetzte = null;
+        r._openWeltTorDialog(snap, { name: "feind-" + o.fall + ".json" });
+        const knopf = document.getElementById("world-tor-replace");
+        if (!knopf) return { fehler: "kein Knopf #world-tor-replace am Welt-Tor" };
+        P.weltVor = { vor, n0 };
+        setTimeout(() => knopf.click(), 0); // nach der Antwort: ein Eintritt lädt die Seite neu, die Antwort käme sonst nie an
+        return { heim: P.heim, n0 };
+    }
+    if (s === "weltNach") {
+        const { vor, n0 } = P.weltVor || {};
+        const z = zeilen().slice(n0).join(" | ").slice(0, 200);
+        return { ok: (st.worldMeta || {}).worldId !== P.heim, welt: (st.worldMeta || {}).worldId || null, zeile: z, stand: stand() === vor };
+    }
     return { fehler: "kein Schritt " + s };
 }
 async function probeBildpaar(H) {
@@ -902,22 +926,73 @@ async function probeBildpaar(H) {
         }
         console.log(`  teilen ${name}: Δ ${z.diff} · Rauschen ${z.rausch} · Werk im Bild ${z.praesenz}${z.fehler ? " — " + z.fehler : ""} · ${H.sek()} s`);
     }
+    // DIE FEINDLICHE WELT (schutz, wörtlich „feindliche Welt geladen“): zuletzt, denn eine Welt, die eintritt, lädt die Seite neu. Das
+    // eigene Werk steht an der Kamera der Pose, je Fall: anklopfen, „ersetzen“, bis eine Zeile im Spieler-Kanal steht oder die Seite neu
+    // lädt (höchstens 8 s); danach das Bild gegen das davor, der Stand, die Welt. Tritt sie ein, kehrt die Probe heim (`_weltWechsel`).
+    j.welt = { faelle: {} };
+    if (H.rest() < 30) j.welt.fehler = "Frist der Probe vor der feindlichen Welt (" + H.sek() + " s)";
+    else
+        try {
+            const name = H.seite.WERKE[0];
+            const o = await seite({ schritt: "original", name, soll: S });
+            if (o.fehler) throw new Error(o.fehler);
+            const A = await H.seite.paarSchuss(H, o, name + "-welt");
+            Object.assign(j.welt, { werk: name, rausch: H.seite.paarDiff(H, A, await H.seite.paarSchuss(H, o, name + "-welt-2")) });
+            for (const fall of H.seite.WELT) {
+                let neu = false;
+                const nav = (f) => f === page.mainFrame() && (neu = true);
+                page.on("framenavigated", nav);
+                const v = await seite({ schritt: "weltVor", fall });
+                if (v.fehler) throw new Error(v.fehler);
+                const t0 = Date.now();
+                while (!neu && Date.now() - t0 < 8000 && !(await page.evaluate((n0) => document.querySelectorAll("#chat-output > div").length > n0, v.n0).catch(() => false))) await H.schlaf(200);
+                await H.schlaf(neu ? 0 : 400);
+                page.off("framenavigated", nav);
+                if (neu) {
+                    // EINGETRETEN: die Seite trägt die feindliche Welt — beim Namen, dann heim
+                    await H.binnen(page.waitForFunction(() => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state.worldMeta, { timeout: 0, polling: 250 }), 60000);
+                    const welt = await page.evaluate(() => window.anazhRealm.state.worldMeta.worldId).catch(() => null);
+                    j.welt.faelle[fall] = { ok: true, neu: true, welt, zeile: "", stand: false };
+                    console.log(`  ❌ feindliche Welt ${fall}: EINGETRETEN (die Seite lud neu, Welt ${welt}) · ${H.sek()} s`);
+                    await H.binnen(page.evaluate((heim) => window.anazhRealm._weltWechsel(heim).then(() => true), v.heim), 40000);
+                    break;
+                }
+                const f = (j.welt.faelle[fall] = await seite({ schritt: "weltNach" }));
+                f.diff = H.seite.paarDiff(H, A, await H.seite.paarSchuss(H, o, name + "-welt-" + fall));
+                console.log(`  ${!f.ok && f.zeile && f.stand ? "✅" : "❌"} feindliche Welt ${fall}: ${f.ok ? "EINGETRETEN" : "abgewiesen"} · Stand ${f.stand ? "gleich" : "VERÄNDERT"} · Δ ${(100 * f.diff).toFixed(2)} % · „${f.zeile}“`);
+            }
+            if (!Object.values(j.welt.faelle).some((f) => f.neu)) {
+                await seite({ schritt: "fort" });
+                j.welt.praesenz = H.seite.paarDiff(H, A, await H.seite.paarSchuss(H, o, name + "-welt-leer"));
+            }
+        } catch (e) {
+            j.welt.fehler = String((e && e.message) || e).slice(0, 300);
+            await seite({ schritt: "fort" }).catch(() => {});
+        }
     return j;
 }
-const PAAR_PROBE = { ...probeBefehl(probeBildpaar, 75, { SOLL: JSON.stringify(PAAR_SOLL), WERKE: JSON.stringify(PAAR_WERKE), FREMD: JSON.stringify(PAAR_FREMD), paarSeite, paarSchuss, paarDiff }), mutiert: true };
+const PAAR_WELT = ["gesetz", "pflug"];
+// DER DECKEL: 75 s für die Paare und die Codes (vorrat2), dazu die feindliche Welt — zwei Schüsse, je Fall ≤ 8 s und ein Schuss, eine
+// Rückkehr, falls sie eintritt (≤ 40 s)
+const PAAR_PROBE = { ...probeBefehl(probeBildpaar, 120, { SOLL: JSON.stringify(PAAR_SOLL), WERKE: JSON.stringify(PAAR_WERKE), FREMD: JSON.stringify(PAAR_FREMD), WELT: JSON.stringify(PAAR_WELT), paarSeite, paarSchuss, paarDiff }), mutiert: true };
 // die Rohdatei des Paars als Probe des Urteils: gesund je Werk Δ 0,02 % bei Rauschen 0,01 %, das Werk trägt 4 % des Bilds
-const paarRoh = (teilen = {}, schutz = {}, faelle = {}) => {
+const paarRoh = (teilen = {}, schutz = {}, faelle = {}, welt = {}, weltFaelle = {}) => {
     const z = (o) => ({ rausch: 0.0001, praesenz: 0.04, diff: 0.0002, ...o });
     const f = (o) => ({ ok: false, grund: "signatur", zeile: "Geteiltes Werk abgewiesen: Signatur", stand: true, diff: 0.0001, ...o });
+    const w = (o) => ({ ok: false, welt: "a1b2c3d4", zeile: "Ersetzen abgelehnt: Das Gesetz der Welt abgelehnt", stand: true, diff: 0.0001, ...o });
     return {
         adapter: "amd/rdna-3",
         teilen: { bank_sitzbank: z(teilen.bank_sitzbank), eigen_bruecke: z(teilen.eigen_bruecke) },
         schutz: { werk: "bank_sitzbank", rausch: 0.0001, praesenz: 0.04, ...schutz, faelle: { verb: f(faelle.verb), signatur: f(faelle.signatur), welt: f(faelle.welt) } },
+        welt: { werk: "bank_sitzbank", rausch: 0.0001, praesenz: 0.04, ...welt, faelle: { gesetz: w(weltFaelle.gesetz), pflug: w(weltFaelle.pflug) } },
     };
 };
 const PAAR_KARTE = "[linse-gpu] amd/rdna-3";
 const PAAR_PFAD = [
     "stamm/netz-identitaet.js",
+    "stamm/netz-p2p.js",
+    "stamm/speicher-*.js",
+    "stamm/dienst.js",
     "stamm/feld-dsl.js",
     "stamm/feld-leben.js",
     "stamm/werkstatt-*.js",
@@ -948,6 +1023,137 @@ const k4Fachwerk = (j) => {
             (z && !k4Gestalt(z) ? ", OHNE Gestalt beider Seiten" : "") + ")" + (z && z.grund ? " [" + String(z.grund).slice(0, 120) + "]" : "") + " · " + ((j && j.geraet) || "Gerät ungenannt"),
     };
 };
+// ───────── DER TAKT AN DER ANKUNFT (Karte 2: erleben.sinn.takt S 1, vorrat3-stationen-g4) ─────────
+// 10 Minuten Spielgang am Grund der Sitzung (die Ankunft ihrer Welt), die Schleife des Spiels läuft wie im Spiel. DER GANG je Minute
+// (fest, keine Wahl): 20 s gehen (die echte Taste W über CDP, kein Zeiger), 10 s umsehen (die Gier einmal um 360°), 20 s gehen in die
+// neue Richtung, 10 s stehen. DIE ZÄHLUNG je Bild der Seite (requestAnimationFrame, die Frage des Spiels `_kreaturImBlick` am Frustum
+// des Vor-Takts): eine Tat im Buch der Wertung (`state.taten`, `_tatWerten` — ohne Ort oder mit Ort im Blick) · ein Tier im Blick, das
+// in die Flucht wechselt (`userData._motionZustand` „flucht“) · eine Zeile der Stimme des Felds (`_stimme.t`, `_feldStimme`) · ein
+// Eintrag im Tagebuch der Welt (`worldJournal.entries`). TOT ist die Minute, in der nichts davon geschah; GRÜN bei ≤ 50 % toter
+// Minuten über 10 ganze Minuten, jede mit gezeichneten Bildern.
+const TAKT_SOLL = { minuten: 10, totAnteil: 0.5 };
+async function taktSeite(o) {
+    const r = window.anazhRealm, st = r.state;
+    const T = (window.__takt ||= { an: false });
+    const leer = () => ({ taten: 0, tiere: 0, stimme: 0, tagebuch: 0, bilder: 0 });
+    const tagebuch = () => ((st.worldJournal && st.worldJournal.entries) || []).length;
+    if (o.schritt === "an") {
+        Object.assign(T, { an: true, m: leer(), zustand: new Map(), letzte: (st.taten || [])[(st.taten || []).length - 1] || null, stimmeT: r._stimme ? r._stimme.t : null, tb: tagebuch() });
+        const tick = () => {
+            if (!T.an) return;
+            try {
+                T.m.bilder++;
+                for (const c of st.creatures || []) {
+                    const z = (c.userData && c.userData._motionZustand) || null;
+                    if (T.zustand.get(c) !== z) {
+                        if (z === "flucht" && T.zustand.has(c) && r._kreaturImBlick(c.position.x, c.position.z)) T.m.tiere++;
+                        T.zustand.set(c, z);
+                    }
+                }
+                const buch = st.taten || [];
+                for (let i = buch.length - 1; i >= 0 && buch[i] !== T.letzte; i--) if (buch[i].x == null || r._kreaturImBlick(buch[i].x, buch[i].z)) T.m.taten++;
+                T.letzte = buch[buch.length - 1] || null;
+                const s = r._stimme ? r._stimme.t : null;
+                if (s !== T.stimmeT) (T.m.stimme++, (T.stimmeT = s));
+            } catch (e) {
+                T.fehler = String((e && e.message) || e).slice(0, 160);
+            }
+            requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        return { tiere: (st.creatures || []).length, tagebuch: T.tb };
+    }
+    if (o.schritt === "umsehen") {
+        const y0 = st.yaw, t0 = performance.now();
+        await new Promise((ok) => {
+            const dreh = () => {
+                const k = Math.min(1, (performance.now() - t0) / o.ms);
+                st.yaw = y0 + 2 * Math.PI * k;
+                k < 1 ? requestAnimationFrame(dreh) : ok();
+            };
+            requestAnimationFrame(dreh);
+        });
+        return 1;
+    }
+    if (o.schritt === "minute") {
+        const tb = tagebuch();
+        const m = { ...T.m, tagebuch: Math.max(0, tb - T.tb), fehler: T.fehler || null, ort: [st.playerMesh.position.x, st.playerMesh.position.z].map((v) => +v.toFixed(1)) };
+        Object.assign(T, { m: leer(), tb, fehler: null });
+        return m;
+    }
+    if (o.schritt === "aus") return (T.an = false), 1;
+    return { fehler: "kein Schritt " + o.schritt };
+}
+async function probeTakt(H) {
+    const { page } = await H.verbinde();
+    const ad = await page.evaluate(async () => {
+        const a = navigator.gpu && (await navigator.gpu.requestAdapter());
+        const i = (a && a.info) || {};
+        return a ? (i.vendor || "?") + "/" + (i.architecture || "?") : "kein Adapter";
+    });
+    console.log("[linse-gpu] " + ad);
+    const S = H.seite.SOLL;
+    const seite = (o) => page.evaluate(H.seite.taktSeite, o);
+    await H.ereignisStrom(page);
+    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t)));
+    H.beimAbbau(() => page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null)));
+    H.beimAbbau(() => seite({ schritt: "aus" }));
+    H.beimAbbau(() => page.keyboard.up("KeyW"));
+    const j = (H.teil = { adapter: ad, soll: S, an: await seite({ schritt: "an" }), minuten: [] });
+    for (let n = 0; n < S.minuten; n++) {
+        if (H.rest() < 64) {
+            H.fristRiss("Minute " + (n + 1) + " und die folgenden ausgelassen");
+            break;
+        }
+        await page.keyboard.down("KeyW");
+        await H.schlaf(20000);
+        await page.keyboard.up("KeyW");
+        await seite({ schritt: "umsehen", ms: 10000 });
+        await page.keyboard.down("KeyW");
+        await H.schlaf(20000);
+        await page.keyboard.up("KeyW");
+        await H.schlaf(10000);
+        const m = await seite({ schritt: "minute" });
+        const tot = !(m.taten + m.tiere + m.stimme + m.tagebuch > 0);
+        j.minuten.push({ ...m, tot });
+        console.log(`  ${tot ? "❌ tot" : "✅ lebt"} Minute ${n + 1}: Taten ${m.taten} · Tiere in Flucht ${m.tiere} · Stimme ${m.stimme} · Tagebuch ${m.tagebuch} · ${m.bilder} Bilder · am ${m.ort.join(", ")}${m.fehler ? " — " + m.fehler : ""} · ${H.sek()} s`);
+    }
+    return j;
+}
+const TAKT_PROBE = { ...probeBefehl(probeTakt, 640, { SOLL: JSON.stringify(TAKT_SOLL), taktSeite }), mutiert: true };
+const taktUrteil = (j, lauf) => {
+    const { ad, hw } = PAAR_HW(lauf.stdout);
+    const M = (j && j.minuten) || [];
+    if (!M.length) return { gruen: false, zahl: "keine Minute in der Ausgabe der Probe (Exit " + lauf.exit + ") · " + ad };
+    const tot = M.filter((m) => m.tot).length;
+    const ohneBild = M.filter((m) => !(m.bilder > 0)).length;
+    const ganz = M.length === TAKT_SOLL.minuten;
+    return {
+        gruen: hw && lauf.exit === 0 && ganz && ohneBild === 0 && tot / M.length <= TAKT_SOLL.totAnteil,
+        zahl:
+            tot + "/" + M.length + " Minuten tot (" + ((100 * tot) / M.length).toFixed(0) + " %, Soll ≤ 50 % über " + TAKT_SOLL.minuten + " Minuten" + (ganz ? "" : ", NICHT GANZ") + ")" +
+            (ohneBild ? " · " + ohneBild + " Minuten ohne Bild" : "") + " · Σ Taten " + M.reduce((s, m) => s + m.taten, 0) + " · Tiere in Flucht " + M.reduce((s, m) => s + m.tiere, 0) +
+            " · Stimme " + M.reduce((s, m) => s + m.stimme, 0) + " · Tagebuch " + M.reduce((s, m) => s + m.tagebuch, 0) + " · " + ad,
+    };
+};
+const taktRoh = (tote = 3, o = {}) => ({
+    adapter: "amd/rdna-3",
+    soll: TAKT_SOLL,
+    minuten: Array.from({ length: TAKT_SOLL.minuten }, (_, i) => (i < tote ? { taten: 0, tiere: 0, stimme: 0, tagebuch: 0, bilder: 3400, tot: true } : { taten: 1, tiere: 1, stimme: 0, tagebuch: 0, bilder: 3400, tot: false })),
+    ...o,
+});
+const TAKT_PFAD = [
+    "stamm/feld-sprache.js",
+    "stamm/feld-*.js",
+    "stamm/kreatur-*.js",
+    "stamm/koerper-*.js",
+    "stamm/dienst.js",
+    "stamm/dirigent-*.js",
+    "index.html",
+    "scripts/werkbank.cjs",
+    "scripts/lib/welt-boot.cjs",
+];
+
 const k4FachwerkRoh = (d, o = {}) => {
     const z = { gruen: d <= 0.021, differenz: { anteil: d }, albedo: { max: 0.04 }, welt: { maske: "gestalt", pixel: 340155 }, buehne: { maske: "gestalt", pixel: 341300 }, ...o };
     return "K4 " + JSON.stringify({ geraet: "WebGPU rdna-3", studios: { fachwerk: z }, fehler: [] });
@@ -2527,8 +2733,10 @@ const alle = [
         pfad: PAAR_PFAD,
         quelle: "KARTE2 erleben.schoepfen.teilen S1 = Export/Import: Bildpaar an gleicher Pose gleich",
     },
-    // erleben.schoepfen.schutz S 1: drei feindliche Codes am Bild des eigenen Werks — keiner nimmt, die eigene Welt bleibt im Bild und
-    // im Stand gleich, jede Abweisung steht im Spieler-Kanal
+    // erleben.schoepfen.schutz S 1 (vorrat3-stationen-g4, wörtlich): je feindliche WELT (ein Gesetz, das kein Build trägt · eine
+    // Welt-Regel, die den frozen Worldgen pflügt) durch das Welt-Tor „ersetzen“ am Bild des eigenen Werks — keine tritt ein, die eigene
+    // Welt bleibt im Bild (gleich im Rauschen, das Werk im Bild) und im Stand gleich, jede Abweisung steht im Spieler-Kanal. Die drei
+    // feindlichen Werk-Codes (vorrat2) sind Lesewert in der Zahl, nie das Urteil: der Richter sagt „Welt“.
     {
         kriterium: "karte2.erleben.schoepfen.schutz",
         karte2: true,
@@ -2541,25 +2749,28 @@ const alle = [
         minuten: 2,
         urteil: (j, lauf) => {
             const { ad, hw } = PAAR_HW(lauf.stdout);
-            const s = j && j.schutz;
-            if (!s || !s.faelle) return { gruen: false, zahl: "kein Schutz-Paar in der Ausgabe der Probe (Exit " + lauf.exit + ") · " + ad };
-            const gut = (f) => !!f && f.ok === false && !!f.zeile && f.stand === true && paarGleich({ rausch: s.rausch, praesenz: s.praesenz, diff: f.diff });
-            const ja = PAAR_FREMD.filter((k) => gut(s.faelle[k]));
+            const w = j && j.welt;
+            if (!w || !w.faelle) return { gruen: false, zahl: "keine feindliche Welt in der Ausgabe der Probe (Exit " + lauf.exit + ") · " + ad };
+            const gut = (f) => !!f && f.ok === false && !f.neu && !!f.zeile && f.stand === true && paarGleich({ rausch: w.rausch, praesenz: w.praesenz, diff: f.diff });
+            const ja = PAAR_WELT.filter((k) => gut(w.faelle[k]));
+            const s = j.schutz && j.schutz.faelle;
+            const codes = s ? PAAR_FREMD.filter((k) => s[k] && s[k].ok === false && s[k].zeile).length + "/" + PAAR_FREMD.length : "–";
             return {
-                gruen: hw && lauf.exit === 0 && ja.length === PAAR_FREMD.length,
+                gruen: hw && lauf.exit === 0 && ja.length === PAAR_WELT.length,
                 zahl:
-                    ja.length + "/" + PAAR_FREMD.length + " feindliche Codes abgewiesen, die eigene Welt im Bild gleich (Werk " + s.werk + " " + (Number.isFinite(s.praesenz) ? (100 * s.praesenz).toFixed(1) + " % des Bilds" : "–") + ") · " +
-                    PAAR_FREMD.map((k) => { const f = s.faelle[k]; return k + " " + (!f ? "nicht gelaufen" : (f.ok ? "ANGENOMMEN" : f.grund) + (f.stand ? "" : " STAND VERÄNDERT") + (f.zeile ? "" : " OHNE ZEILE") + " Δ " + (Number.isFinite(f.diff) ? (100 * f.diff).toFixed(2) + " %" : "–")); }).join(" · ") + // prettier-ignore
-                    " · " + ad,
+                    ja.length + "/" + PAAR_WELT.length + " feindliche Welten am Welt-Tor abgewiesen, die eigene Welt im Bild gleich (Werk " + (w.werk || "–") + " " + (Number.isFinite(w.praesenz) ? (100 * w.praesenz).toFixed(1) + " % des Bilds" : "–") + ") · " +
+                    PAAR_WELT.map((k) => { const f = w.faelle[k]; return k + " " + (!f ? "nicht gelaufen" : (f.neu ? "EINGETRETEN (Seite neu, Welt " + f.welt + ")" : f.ok ? "EINGETRETEN" : "abgewiesen") + (f.neu || f.stand ? "" : " STAND VERÄNDERT") + (f.neu || f.zeile ? "" : " OHNE ZEILE") + (Number.isFinite(f.diff) ? " Δ " + (100 * f.diff).toFixed(2) + " %" : "")); }).join(" · ") + // prettier-ignore
+                    (w.fehler ? " · " + String(w.fehler).slice(0, 120) : "") + " · Werk-Codes abgewiesen " + codes + " (Lesewert) · " + ad,
             };
         },
         proben: [
-            { name: "gesund: drei Codes abgewiesen, Bild und Stand gleich, jede Abweisung benannt", j: paarRoh(), stdout: PAAR_KARTE, gruen: true },
-            { name: "ein Code nimmt (die fremde Welt angenommen)", j: paarRoh({}, {}, { welt: { ok: true, grund: null } }), stdout: PAAR_KARTE, gruen: false },
-            { name: "die Abweisung nur im Log (keine Zeile im Spieler-Kanal)", j: paarRoh({}, {}, { verb: { zeile: "" } }), stdout: PAAR_KARTE, gruen: false },
-            { name: "das eigene Werk verschwand (Bild 3 % anders)", j: paarRoh({}, {}, { verb: { diff: 0.03 } }), stdout: PAAR_KARTE, gruen: false },
-            { name: "der Stand der Welt änderte sich", j: paarRoh({}, {}, { signatur: { stand: false } }), stdout: PAAR_KARTE, gruen: false },
-            { name: "das eigene Werk nicht im Bild (blind gleich)", j: paarRoh({}, { praesenz: 0.001 }), stdout: PAAR_KARTE, gruen: false },
+            { name: "gesund: beide Welten abgewiesen, Bild und Stand gleich, jede Abweisung benannt", j: paarRoh(), stdout: PAAR_KARTE, gruen: true },
+            { name: "die Pflug-Welt tritt ein (die Seite lädt neu)", j: paarRoh({}, {}, {}, {}, { pflug: { ok: true, neu: true, welt: "feind-pflug-x", zeile: "", stand: false, diff: undefined } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "die Abweisung nur im Log (keine Zeile im Spieler-Kanal)", j: paarRoh({}, {}, {}, {}, { gesetz: { zeile: "" } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "das eigene Werk verschwand (Bild 3 % anders)", j: paarRoh({}, {}, {}, {}, { gesetz: { diff: 0.03 } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "der Stand der Welt änderte sich", j: paarRoh({}, {}, {}, {}, { pflug: { stand: false } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "das eigene Werk nicht im Bild (blind gleich)", j: paarRoh({}, {}, {}, { praesenz: 0.001 }), stdout: PAAR_KARTE, gruen: false },
+            { name: "die Probe kam nicht zur Welt (nur die Werk-Codes)", j: { ...paarRoh(), welt: { faelle: {}, fehler: "Frist der Probe vor der feindlichen Welt (70 s)" } }, stdout: PAAR_KARTE, gruen: false },
             { name: "swiftshader", j: paarRoh(), stdout: "[linse-gpu] google/swiftshader", gruen: false },
         ],
         pfad: PAAR_PFAD,
@@ -2591,6 +2802,30 @@ const alle = [
         ],
         pfad: K4_PFAD,
         quelle: "KARTE2 mensch.bau.bauen S1 = Bildpaar Labor ↔ Welt gleiche Kamera: kein Unterschied",
+    },
+    // erleben.sinn.takt S 1 (vorrat3-stationen-g4): 10 Minuten fester Spielgang an der Ankunft der Sitzung (TAKT_PROBE), je Minute
+    // die Antworten im Blick (Tat · Tier in Flucht · Stimme · Tagebuch) — Anteil toter Minuten ≤ 50 %, beide Geräte
+    {
+        kriterium: "karte2.erleben.sinn.takt",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: TAKT_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 11,
+        urteil: (j, lauf) => taktUrteil(j, lauf),
+        proben: [
+            { name: "gesund: 3 von 10 Minuten tot", j: taktRoh(3), stdout: PAAR_KARTE, gruen: true },
+            { name: "die Grenze: 5 von 10 Minuten tot", j: taktRoh(5), stdout: PAAR_KARTE, gruen: true },
+            { name: "6 von 10 Minuten tot", j: taktRoh(6), stdout: PAAR_KARTE, gruen: false },
+            { name: "nur 4 Minuten gelaufen (die Frist), keine tot", j: { ...taktRoh(0), minuten: taktRoh(0).minuten.slice(0, 4) }, stdout: PAAR_KARTE, gruen: false },
+            { name: "eine Minute ohne gezeichnetes Bild", j: { ...taktRoh(0), minuten: taktRoh(0).minuten.map((m, i) => (i === 7 ? { ...m, bilder: 0 } : m)) }, stdout: PAAR_KARTE, gruen: false },
+            { name: "swiftshader", j: taktRoh(3), stdout: "[linse-gpu] google/swiftshader", gruen: false },
+        ],
+        pfad: TAKT_PFAD,
+        quelle: "KARTE2 erleben.sinn.takt S1 = Anteil toter Minuten ≤ 50 %",
     },
 ];
 
