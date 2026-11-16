@@ -918,6 +918,67 @@ const WETTER_PAAR_PROBE = {
         })
     ),
 };
+// ZWEI WELTEN AN DER KUGEL (Karte 2 planet.kosmos.welten S 1): die Kugel-Bilanz von licht.K2#1 (kugel.js, ihr Blob fest) an der
+// Mess-Wiese der Heimat, dann der echte Weg des Spielers in die Ferne — das Tor holen (`obtainPortalForWorld("ferne")`), setzen,
+// hindurch (`enterPortal` → `_weltTorBetreten`: die Welt wird mit dem Gesetz der Ferne geboren, stamm/netz-portal.js:604), wie
+// ultiversumK1Lauf (stationen/g5.js) —, dort dieselbe Kugel am Mittag ihrer Bühne; je Welt danach der Zenit im Ausgabe-Bild: das Auge
+// 1,7 m über dem Spieler, der Blick senkrecht hinauf (fov 50), das Mittel-Fünftel des Bilds als Median je Kanal (sRGB → linear) und
+// sein Blau ÷ Rot; der Zenit ist frei, wenn kein Werfer (SHADOW_TWIN_LAYER, wie kugel.js) binnen 5 km über dem Auge steht. Zuletzt
+// durch das Heimtor zurück (die Sitzung setzt die Welt danach ohnehin zurück: mutiert). Die Schleife des Spiels läuft nur, solange die
+// Tür wartet (`__loop` der Werkbank), dann steht die Welt wieder zwischen den Befehlen.
+const WELTEN_TEXTE = {
+    ZENIT:
+        "const st = r.state, cam = st.camera, sc = st.scene, W = 1920, H = 1080;" +
+        " const kam0 = [cam.position.clone(), cam.quaternion.clone(), cam.fov], pm = st.playerMesh.position, auge = new T.Vector3(pm.x, pm.y + 1.7, pm.z);" +
+        " const rc = new T.Raycaster(auge.clone(), new T.Vector3(0, 1, 0), 0.5, 5000); rc.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);" +
+        " const treffer = rc.intersectObject(sc, true).filter((h) => !(h.object.name || '').startsWith('probe:') && h.object !== st.playerMesh).length;" +
+        " let u8 = null; cam.fov = 50; cam.updateProjectionMatrix(); cam.position.copy(auge); cam.lookAt(auge.x, auge.y + 100, auge.z - 0.01); cam.updateMatrixWorld(true); st.playerMesh.visible = false;" +
+        " try { for (let i = 0; i < 4; i++) u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: 'messung' })).u8; }" +
+        " finally { cam.fov = kam0[2]; cam.updateProjectionMatrix(); cam.position.copy(kam0[0]); cam.quaternion.copy(kam0[1]); cam.updateMatrixWorld(true); st.playerMesh.visible = true; }" +
+        " const lin = (v) => ((v /= 255), v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)); const K = [[], [], []];" +
+        " for (let y = Math.round(H * 0.4); y < Math.round(H * 0.6); y += 2) for (let x = Math.round(W * 0.4); x < Math.round(W * 0.6); x += 2) { const i = (y * W + x) * 4; for (let c = 0; c < 3; c++) K[c].push(lin(u8[i + c])); }" +
+        " const rgb = K.map((q) => q.sort((a, b) => a - b)[q.length >> 1]), G = st.worldMeta && st.worldMeta.gesetz;" +
+        " return { ende: 'ok', welt: st.worldMeta.worldId, uhr: st.timeOfDay, wetter: st.weather, frei: treffer === 0, treffer, n: K[0].length, rgb: rgb.map((v) => +v.toFixed(5)), blauRot: rgb[0] > 0 ? +(rgb[2] / rgb[0]).toFixed(4) : null, rayleighTiefe: G && G.himmel ? G.himmel.rayleighTiefe : null };",
+    // die Tür wartet: das Versprechen der Welt (`erwacht`), dann das erste Weltbild (`_weltbildDa`, höchstens 60 s) und 40 Bilder
+    WARTE:
+        "const loop = typeof window.__loop === 'function' ? window.__loop : null; if (loop) loop(true); let da = false;" +
+        " try { for (let i = 0; i < 1200 && !(da = r.state._weltbildDa > 0); i++) await new Promise((ok) => setTimeout(ok, 50)); for (let i = 0; i < 40; i++) await new Promise((ok) => requestAnimationFrame(ok)); } finally { if (loop) loop(false); }",
+    TOR:
+        "const st0 = r.state, idA = st0.worldMeta.worldId, t0 = performance.now(); const hol = r.obtainPortalForWorld('ferne');" +
+        " if (!hol || !hol.ok) return { ok: false, grund: 'obtainPortalForWorld ' + (hol && hol.reason) };" +
+        " const p = st0.playerMesh.position, e = r.spawnArchitecture(hol.blueprint, { x: p.x + 4, y: p.y, z: p.z }, { id: 'welten-k2-tor', precise: true });" +
+        " if (!e || !(e.affordances && e.affordances.isPortal)) return { ok: false, grund: 'das Tor steht nicht als Portal' };" +
+        " const res = r.enterPortal(e); if (!res || !res.ok) return { ok: false, grund: 'enterPortal ' + JSON.stringify(res) }; const erw = await r.erwacht;" +
+        " @T:WARTE@ const st = r.state, G = st.worldMeta.gesetz;" +
+        " return { ok: erw === true && da && st !== st0 && st.worldMeta.worldId === res.worldId && res.worldId !== idA, a: idA, b: res.worldId, geboren: res.geboren === true, weltbild: da, s: +((performance.now() - t0) / 1000).toFixed(1), schwere: G ? G.schwere : null, rayleighTiefe: G && G.himmel ? G.himmel.rayleighTiefe : null };",
+    HEIM:
+        "const st0 = r.state, idB = st0.worldMeta.worldId; const h = (st0.architectures || []).find((a) => a && typeof a.id === 'string' && a.id.startsWith('heimtor-'));" +
+        " if (!h) return { ok: false, grund: 'kein Heimtor in ' + idB }; const res = r.enterPortal(h); if (!res || !res.ok) return { ok: false, grund: 'enterPortal ' + JSON.stringify(res) };" +
+        " const erw = await r.erwacht; @T:WARTE@ return { ok: erw === true && da && r.state.worldMeta.worldId !== idB, hier: r.state.worldMeta.worldId };",
+};
+// DER DECKEL (geschätzt, ungemessen an der Karte): zwei Kugel-Bilanzen wie licht.K2#1 (Radeon eich3–6 6,6–9,0 s je Bilanz), zwei
+// Zenit-Schüsse (je vier Aufnahmen), die Geburt der Ferne bis zum ersten Weltbild (kalt wie eine Ankunft: GTX 12–17 s, Radeon ~11 s) und
+// die Rückkehr — 90 s
+const WELTEN_KUGEL = { probe: "@KOORD@/bericht/2110-messschuld2/kugel.js", blob: "2f71153039543f9f842d56ad19ad5dc0a1fed3ef" };
+const WELTEN_PROBE = {
+    sek: 90,
+    mutiert: true,
+    befehl: befehlDer({
+        name: "karte2.planet.kosmos.welten#1",
+        // der Text WARTE steht in TOR und HEIM: `ers` der Folge setzt @T:<name>@ einmal je Argument — darum vorab eingesetzt
+        texte: Object.fromEntries(Object.entries(WELTEN_TEXTE).map(([k, v]) => [k, v.split("@T:WARTE@").join(WELTEN_TEXTE.WARTE)])),
+        schritte: [
+            { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+            { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
+            { name: "kugel-heim", ...WELTEN_KUGEL, muss: true },
+            { name: "zenit-heim", args: ["eval", "@T:ZENIT@"] },
+            { name: "tor", args: ["eval", "@T:TOR@"] },
+            { name: "kugel-ferne", ...WELTEN_KUGEL },
+            { name: "zenit-ferne", args: ["eval", "@T:ZENIT@"] },
+            { name: "heim", args: ["eval", "@T:HEIM@"] },
+        ],
+    }),
+};
 // ───────── DIE NEUN (p3-stationen-g3, 01.11.): schatten.K2 · K3 · K4 · K5 · licht.K4 · ferne.K3 · K4 · lod.K4 · vegetation.K3 ─────────
 // Bis hierher standen sie in `fehlt` (Spike w4-stationen-a am main 94c079cb: was dem Spiel fehlt, beim Namen) und zählten 0 ungemessen.
 // Jetzt misst EINE Probe der Sitzung alle neun im Ausgabe-Pfad (`__ausgabeAufnahme`, satz „messung“) der warmen Welt am Ort dorf (die
@@ -2823,6 +2884,103 @@ const stationen = [
         })(),
         pfad: [...BILD, "stamm/bild-himmel.js", "stamm/daten.js", "phyto-core.js", "gelaende-core.js", "stamm/gelaende-*.js"],
         quelle: "KARTE2 planet.kopplung.wetter-welt S1 = Bildpaar klar/Sturm an derselben Pose: Richtlicht gedimmt, Himmel grau",
+    },
+    // KARTE 2 planet.kosmos.welten S 1 — WELTEN_PROBE (oben): die Kugel-Bilanz an der Heimat UND an der Ferne, in die der Spieler durch
+    // das Tor ging. Richter: „Licht-Bilanz an der Kugel 5–12,5 an beiden Welten“ = je Welt das Verhältnis Sonne ÷ Schatten der 18-%-Kugel
+    // oben (`bilanz.verhaeltnisG_oben`) in 5–12,5, gültig wie licht.K2#1 (A = B an der Sonnen-Kugel, A = C an der Schatten-Kugel ± 2 %,
+    // Kappe ≥ 100 px, Uhr 0,5 ± UHR_TOL, sunny) — der Schatten-Anteil ist hier Lesewert, kein Teil des Richters · „Fremdwelt-Mittag: Zenit
+    // nicht blau“ = Blau ÷ Rot des Zenits der Ferne < 1 am Mittag, frei (kein Werfer darüber), ≥ 1 000 Pixel. Dass die Ferne eine ANDERE
+    // Welt ist: das Tor führte hin (geboren, das erste Weltbild stand), Zenit und Kugel der Ferne stehen in dessen worldId. Der Gegenlauf
+    // des Maßes: derselbe Zenit an der Heimat ist blau (Blau ÷ Rot > 1) — sonst sieht das Maß kein Blau, und „nicht blau“ wäre blind.
+    {
+        kriterium: "karte2.planet.kosmos.welten",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: WELTEN_PROBE,
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            const S = j.schritte || {};
+            const erg = (n) => (S[n] && S[n].json && S[n].json.ergebnis) || null;
+            const f = (x, n = 3) => (Number.isFinite(x) ? (+x).toFixed(n) : "—");
+            const kugel = (n, wo) => {
+                const e = erg(n);
+                if (!e) return [false, "❌ " + wo + ": keine Kugel-Antwort (" + String((S[n] && S[n].rest) || "").slice(-120) + ")"];
+                if (e.ende !== "ok") return [false, "❌ " + wo + ": Probe " + (e.fehler || e.ende)];
+                const Q = e.schuesse || [];
+                const Y = (i, k) => (Q[i] && Q[i][k] && Q[i][k].oben ? Q[i][k].oben.Y : null);
+                const ab = Y(0, "G-sonne") && Y(1, "G-sonne") ? Y(0, "G-sonne") / Y(1, "G-sonne") : null;
+                const ac = Y(0, "G-schatten") && Y(2, "G-schatten") ? Y(0, "G-schatten") / Y(2, "G-schatten") : null;
+                const px = Q[0] && Q[0]["G-sonne"] && Q[0]["G-sonne"].oben ? Q[0]["G-sonne"].oben.n : 0;
+                const b = e.bilanz || {}, st = e.stand || {}, v = b.verhaeltnisG_oben;
+                const gueltig = ab != null && Math.abs(ab - 1) <= 0.02 && ac != null && Math.abs(ac - 1) <= 0.02 && px >= 100;
+                const ok = gueltig && uhrIst(st.uhr, 0.5) && st.wetter === "sunny" && Number.isFinite(v) && v >= 5 && v <= 12.5;
+                return [ok, (ok ? "✅ " : "❌ ") + wo + " Bilanz " + f(v) + " (5–12,5) · Schatten-Anteil " + f(b.schattenAnteilG, 4) + " · A/B " + f(ab) + " · A/C " + f(ac) + " · Kappe " + px + " px · Uhr " + st.uhr + " " + st.wetter + (gueltig ? "" : " · UNGÜLTIG")];
+            };
+            const zOk = (z) => !!z && z.ende === "ok" && z.frei === true && z.n >= 1000 && uhrIst(z.uhr, 0.5) && Number.isFinite(z.blauRot);
+            const zt = (z) => (z ? "B/R " + f(z.blauRot) + (z.frei ? "" : " VERDECKT (" + z.treffer + ")") + " · " + z.n + " px · Uhr " + z.uhr : "kein Zenit");
+            const tor = erg("tor") || {};
+            const [zh, zf] = [erg("zenit-heim"), erg("zenit-ferne")];
+            const kh = kugel("kugel-heim", "Heimat");
+            const kf = kugel("kugel-ferne", "Ferne");
+            const fremd = tor.ok === true && !!zh && !!zf && zh.welt === tor.a && zf.welt === tor.b && tor.a !== tor.b;
+            const blauHeim = zOk(zh) && zh.blauRot > 1;
+            const nichtBlau = zOk(zf) && zf.blauRot < 1;
+            const ok = [kh[0], kf[0], fremd, nichtBlau, blauHeim];
+            const gruen = hw && ok.every(Boolean);
+            return {
+                gruen,
+                zahl:
+                    kh[1] + " · " + kf[1] + " · " + (ok[3] ? "✅" : "❌") + " Zenit der Ferne " + zt(zf) + " (Soll < 1) · " + (ok[4] ? "✅" : "❌") + " Gegenlauf Zenit der Heimat " + zt(zh) +
+                    " (Soll > 1) · " + (ok[2] ? "✅" : "❌") + " Tor " + (tor.ok ? "führte in " + String(tor.b).slice(0, 8) + " (" + tor.s + " s, Schwere " + tor.schwere + ")" : "führte nicht hin: " + (tor.grund || "keine Antwort")) +
+                    " · " + (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        proben: (() => {
+            const kug = (v, o = {}) => ({
+                exit: 0,
+                json: { ergebnis: { ende: "ok", stand: { uhr: 0.5004, wetter: "sunny", ...(o.stand || {}) }, schuesse: [{ "G-sonne": { oben: { Y: 0.6, n: 420 } }, "G-schatten": { oben: { Y: +(0.6 / v).toFixed(5), n: 410 } } }, { "G-sonne": { oben: { Y: o.ab ? 0.6 / o.ab : 0.6, n: 420 } } }, { "G-schatten": { oben: { Y: +(0.6 / v).toFixed(5), n: 410 } } }], bilanz: { verhaeltnisG_oben: v, schattenAnteilG: +(1 / v).toFixed(4) } } },
+            });
+            const zen = (welt, br, o = {}) => ({ exit: 0, json: { ergebnis: { ende: "ok", welt, uhr: 0.5004, wetter: "sunny", frei: true, treffer: 0, n: 25920, rgb: [0.1, 0.12, +(0.1 * br).toFixed(5)], blauRot: br, ...o } } });
+            const lauf = (o = {}) => ({
+                adapter: o.adapter || "[linse-gpu] amd/rdna-3 (Probe)",
+                schritte: {
+                    fenster: { exit: 0 },
+                    umstellen: { exit: 0 },
+                    "kugel-heim": o.kh || kug(5.27),
+                    "zenit-heim": o.zh || zen("welt-erde", 2.41),
+                    tor: o.tor || { exit: 0, json: { ergebnis: { ok: true, a: "welt-erde", b: "welt-ferne", geboren: true, weltbild: true, s: 14.2, schwere: 3.71, rayleighTiefe: [0.0058, 0.0135, 0.0331] } } },
+                    "kugel-ferne": o.kf || kug(6.1),
+                    "zenit-ferne": o.zf || zen("welt-ferne", 0.42),
+                    heim: { exit: 0, json: { ergebnis: { ok: true, hier: "welt-erde" } } },
+                },
+                dateien: {},
+            });
+            return [
+                { name: "beide Welten im Band (5,27 · 6,1), der Zenit der Ferne rot (B/R 0,42), der Heimat blau (2,41)", j: lauf(), gruen: true },
+                { name: "die Ferne unter dem Band (3,9)", j: lauf({ kf: kug(3.9) }), gruen: false },
+                { name: "die Heimat über dem Band (13,1)", j: lauf({ kh: kug(13.1) }), gruen: false },
+                { name: "der Zenit der Ferne blau (B/R 1,3)", j: lauf({ zf: zen("welt-ferne", 1.3) }), gruen: false },
+                { name: "das Tor führt nicht hin (enterPortal)", j: lauf({ tor: { exit: 0, json: { ergebnis: { ok: false, grund: "enterPortal {\"ok\":false,\"reason\":\"gesetz_unbekannt\"}" } } } }), gruen: false },
+                { name: "der Zenit der „Ferne“ steht in der Heimat (dieselbe worldId)", j: lauf({ zf: zen("welt-erde", 0.42) }), gruen: false },
+                { name: "der Zenit der Ferne ist verdeckt (ein Werfer darüber)", j: lauf({ zf: zen("welt-ferne", 0.42, { frei: false, treffer: 2 }) }), gruen: false },
+                { name: "MUTANTE das Maß sieht kein Blau (Heimat B/R 0,95)", j: lauf({ zh: zen("welt-erde", 0.95) }), gruen: false },
+                { name: "die Kugel der Ferne ungültig (A/B 0,9: ein Schatten fiel auf die Sonnen-Kugel)", j: lauf({ kf: kug(6.1, { ab: 0.9 }) }), gruen: false },
+                { name: "die Ferne nicht am Mittag (Uhr 0,62)", j: lauf({ kf: kug(6.1, { stand: { uhr: 0.62 } }) }), gruen: false },
+                { name: "die Kugel der Ferne antwortete nicht", j: lauf({ kf: { exit: 1, json: null, rest: "Error: kein freier Ort" } }), gruen: false },
+                { name: "swiftshader", j: lauf({ adapter: "[linse-gpu] google/swiftshader (Probe)" }), gruen: false },
+                { name: "die Folge brach", j: { adapter: "[linse-gpu] amd/rdna-3 (Probe)", schritte: {}, fehler: "umstellen: Exit 1" }, gruen: false },
+            ];
+        })(),
+        pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/bau-teile.js", "stamm/bild-himmel.js", "stamm/daten.js", "stamm/netz-portal.js"],
+        quelle: "KARTE2 planet.kosmos.welten S1 = Licht-Bilanz an der Kugel 5–12,5 an beiden Welten; Fremdwelt-Mittag: Zenit nicht blau",
     },
     {
         kriterium: "material.K2",
