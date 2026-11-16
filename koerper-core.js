@@ -5144,19 +5144,32 @@
             kontor: Object.freeze({ werkAm: "platz" }),
             // DER HÄNDLER (w28-stadt-grammatik): je Stand des Plans steht EINER hinter der Theke (der Wirt gibt ihm die Rolle wie
             // dem Fahrer, `_bewohnerListe`) — von früh bis zum Abend, das Mittag hält er durch: kein Stand steht leer
-            haendler: Object.freeze({ werk: Object.freeze([7, 18.5]), mittagAmWerk: true }),
+            // (`regenfest`: unter dem Dach seines Stands bleibt er auch im Regen, TAGES_GESETZ.regen)
+            haendler: Object.freeze({ werk: Object.freeze([7, 18.5]), mittagAmWerk: true, regenfest: true }),
             // DER FAHRER (PFLICHT-OFFEN C): wer einen Wagen der Stadt fährt (der Wirt gibt ihm die Rolle, `_verkehrAnlegen`), ist
             // von früh bis spät am Steuer — sein Werk ist der Platz seines Wagens, das Mittag fährt er durch; DER NACHTFAHRER
             // lebt denselben Tag um `versatzH` Stunden versetzt (am Steuer von 19 bis 7 Uhr: der Wagen der Stadt fährt bei Tag
             // und bei Nacht, am Platz wechselt die Schicht)
-            fahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true, haltung: false }),
-            nachtfahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true, versatzH: 12, haltung: false }),
+            fahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true, haltung: false, regenfest: true }),
+            nachtfahrer: Object.freeze({
+                werk: Object.freeze([7, 19]),
+                mittagAmWerk: true,
+                versatzH: 12,
+                haltung: false,
+                regenfest: true,
+            }),
             // DIE WACHE (PFLICHT-OFFEN A, der Prüfplatz): wer am Platz Wache steht (der Wirt gibt die Rolle zwei Bewohnern, wie
             // dem Fahrer), steht von 6 bis 20 Uhr an seinem Punkt — sein Werk und sein Platz sind der Wache-Punkt, das Mittag hält
             // er durch; DER NACHTWÄCHTER lebt denselben Tag um `versatzH` Stunden versetzt (18 bis 8 Uhr) — zu jeder Stunde steht
             // einer draußen, auch um Mitternacht, wenn jeder andere drinnen schläft (`ruhe`)
-            waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, haltung: false }),
-            nachtwaechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, versatzH: 12, haltung: false }),
+            waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, haltung: false, regenfest: true }),
+            nachtwaechter: Object.freeze({
+                werk: Object.freeze([6, 20]),
+                mittagAmWerk: true,
+                versatzH: 12,
+                haltung: false,
+                regenfest: true,
+            }),
         }),
         // DAS ANGEBOT JE ORT (Art → Güte je Bedürfnis): die Rolle eines Slots, der Platz, der Acker; `sonst` jede Rolle, die
         // hier keine Zeile trägt; `daheim` das eigene Haus aus der Sicht seiner Leute (der Tisch, die Bank vor der Tür)
@@ -5192,6 +5205,17 @@
         // `haltung: false` (die Wache, der Fahrer am Steuer) stehen neutral. Bis hier schrieb der Wirt den Akt und las ihn nie:
         // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
         haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad" }),
+        // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
+        // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
+        // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
+        // Platz über seine Sekunden), wird JEDER Akt draußen drinnen — er bleibt daheim (der Schmied in seiner Schmiede, der
+        // Wirt im Gasthaus; wer am Platz oder auf dem Acker arbeitet, geht heim); draußen bleibt nur, wessen Arbeit einen
+        // Posten hat (die Rolle `regenfest`: der Händler unter dem Dach seines Stands, der Fahrer am Steuer, die Wache). Die
+        // Tafel des Wetters (phyto WX_GESETZ.rain): klar 0 · nebel 0 · bewoelkt 0,12 · regen 0,6 · sturm 1 — bei Wolken bleibt
+        // jeder draußen, bei Regen und Sturm jeder drinnen. Bis hier kannte der Tag kein Wetter: im Sturm stand der Markt
+        // mittags so voll wie in der Sonne; bis zum Bild am Genesis-Ort (Radeon, Regen um 13:16 Uhr) ging nur die Muße heim —
+        // 31 von 77 standen bei der Arbeit im Regen auf dem Platz.
+        regen: Object.freeze({ ab: 0.3, streuH: 0.15 }),
     });
     // DIE HALTUNG ZUM AKT (TAGES_GESETZ.haltung): der Name des Profils der Bewegung oder null (neutral)
     function tagesHaltung(akt, rolle) {
@@ -5296,8 +5320,10 @@
     // seiner Bindung stellt (`tagesBindung`; ohne Werk ist der Hof das Werk, ohne Platz das Heim der Platz, ohne Mittagstisch isst er
     // daheim, ohne Treff sitzt er vor seiner Tür, ohne Besuch kein Besuch). Liefert { ort, wo, akt, drinnen } — ort ist einer
     // der gereichten Orte, wo sein Name, akt eines von schlaf · morgen · besuch · arbeit · mittag · abend; drinnen = der Mensch
-    // ist in seinem Haus (an der Tür ungezeichnet).
-    function tagesPlan(same, rolle, stunde, orte) {
+    // ist in seinem Haus (an der Tür ungezeichnet). nass = der Regen am Ort (0–1, der Kanal `rain` des Wetter-Felds; ohne ihn
+    // trocken): über der Schwelle des Menschen (TAGES_GESETZ.regen) bleibt er daheim, außer am Posten seiner Arbeit
+    // (`regenfest`).
+    function tagesPlan(same, rolle, stunde, orte, nass) {
         var G = TAGES_GESETZ;
         var R = G.rollen[rolle] || {};
         var h = (((Number(stunde) - (R.versatzH || 0)) % 24) + 24) % 24;
@@ -5312,7 +5338,11 @@
         var ruhe = (R.ruhe || G.ruhe) + j("ruhe");
         var heim = orte.heim,
             besuch = orte.besuch;
+        var W = G.regen,
+            regen = nass > 0 && nass >= W.ab + (_tagZahl(same, "regen") * 2 - 1) * W.streuH;
         var aus = function (wo, akt, drinnen) {
+            if (regen && !drinnen && !(akt === "arbeit" && R.regenfest))
+                return { ort: heim, wo: "heim", akt: akt, drinnen: true };
             return { ort: orte[wo] || heim, wo: orte[wo] ? wo : "heim", akt: akt, drinnen: !!drinnen };
         };
         var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;
