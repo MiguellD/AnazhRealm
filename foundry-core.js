@@ -7167,6 +7167,21 @@ function __mengenPrims(kern, B, dials, matFuer, gelenkVon, vox) {
         p.auf += LH.dicke;
         p.ext += LH.dicke;
     }
+    // DIE HAND DER MENGE IST DIE HAND DER HAUT (w28-satz-hand, koerper MENSCH_GESTALT.handHaut — dieselbe Verrundung wie die
+    // Hand-Haut der nahen Stufe): ihre Primitive (Handfläche, Finger, Daumen) verrunden mit der Verrundung der Hand-Haut und
+    // wachsen um keinen Dicken-Zuschlag (`TIER_HAUT.minDicke`). Bis hier blähte der Zuschlag jeden Finger und Knöchel auf
+    // 0,75 vox und die Verrundung des Leibs legte sich darüber: die Hand des Satzes stand als Kugel neben der offenen Hand des
+    // nahen Leibs (Ofen, 8 Gestalten: Dicke +47…+64 %, Breite +28…+46 %, Länge +10…+16 %).
+    const HH = (kern.MENSCH_GESTALT || {}).handHaut;
+    if (!HH || !(HH.blend > 0)) throw new Error("MENGEN-LEIB: MENSCH_GESTALT.handHaut.blend fehlt (fail-closed)");
+    const haende = ["hand1", "hand-1"].map((nm) => B.parts[nm]).filter(Boolean);
+    for (const p of prims) {
+        let hand = false;
+        for (let c = p.node; c && !hand; c = c.parent) if (haende.includes(c)) hand = true;
+        if (!hand) continue;
+        p.ext += HH.blend - MM.blend - p.auf;
+        [p.blend, p.auf] = [HH.blend, 0];
+    }
     // die Höhlen der Augen (Klasse socket) formen nichts: sie sind ein Ton der Haut wie in der Kopf-Haut der Nah-Stufe
     const hoehlen = __tierPrims(B.character, B.character, () => true, vox, MM.blend, gelenkVon, ["socket"], true);
     const platz = new Map();
