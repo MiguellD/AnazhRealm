@@ -296,11 +296,13 @@ async function kreaturProben(r, T, opts) {
             const G = m.userData.gang;
             const a = m.geometry.attributes;
             const x = a.aGang.getX(inst);
-            const w = a.aGang.getY(inst);
+            // (das Gewicht trägt den Stand der Instanz mit: y = 2 · Stand + Gewicht, `_gangSatzInstanz`)
+            const hs = Math.floor(a.aGang.getY(inst) / 2);
+            const w = a.aGang.getY(inst) - 2 * hs;
             const r0 = Math.floor(x) * G.n;
             const f = (x - Math.floor(x)) * G.n;
             const k0 = Math.floor(f);
-            const zs = G.baender * G.n;
+            const zs = G.baender * G.n + hs;
             const z0 = r0 + k0;
             const z1 = r0 + ((k0 + 1) % G.n);
             // der Knochen j, Zeile r, Spalte c der Matrix in der Pose-Zeile z (drei Texel je Knochen)

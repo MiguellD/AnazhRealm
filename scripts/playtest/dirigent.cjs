@@ -49,11 +49,6 @@ function checkInitialState({ check, finalState }) {
             `unbenannt=[${finalState.szenenZensus.unbenannt.join(" · ")}]`
     );
     check(
-        "Fliegende Inseln gespawnt",
-        finalState.floatingIslands >= 1,
-        `floatingIslands=${finalState.floatingIslands}`
-    );
-    check(
         "Feld-native Spieler-Velocity (playerVel) vorhanden",
         finalState.hasPlayerBody === true,
         `hasPlayerVel=${finalState.hasPlayerBody}`
@@ -1443,9 +1438,31 @@ async function checkBandSzeneSkala({ page, check }) {
                 const p = r._geraeteProfil();
                 return { wirk: r._szeneSkalaWirk(), klasse: p.klasse, messung: p.messung };
             };
-            const radeon = lauf(41.9, 3, 11);
-            return { radeon, radeon2: lauf(41.9, 3, 11, null, true), gtx: lauf(16.8, 4, 11), cpu: lauf(41.9, 30, 11, null, false, true), spieler: lauf(41.9, 3, 11, 0.9) };
+            // (w28-wiese-takt) der frühe Abstieg: nach 3 s Bild-Zeit geht der klare Fall, 41,9 ms eine Stufe (× 0,694 = 29,1 hielte),
+            // 58,6 ms beide in EINEM Schritt (0,625 hielte selbst als reine Füllung nicht: 40,7); ein Fall unter dem Fünftel
+            // (jedes zehnte Bild 50 ms) wartet das Fenster ab; die Ablage trägt die Skala in die nächste Sitzung
+            const radeon = lauf(41.9, 3, 4);
+            const radeon2 = lauf(41.9, 3, 4, null, true);
+            r._geraeteMessung = undefined;
+            st.szeneSkala = null;
+            const ablage = { wirk: r._szeneSkalaWirk(), roh: localStorage.getItem(AnazhRealm.SZENE_SKALA_MESSUNG.ablage) };
+            const sprung = lauf(58.6, 3, 4);
+            let k = 0;
+            const selten = () => (k++ % 10 === 9 ? 50 : 25);
+            r._geraeteMessung = null;
+            r._gpuLeine = { ausgesetzt: 0, imFlug: 0, gerendert: 0, sammelMs: 0 };
+            r._skalaFenster = null;
+            for (let ms = 0, b; ms < 6000; ms += b) {
+                b = selten();
+                r._gpuLeine.ausgesetzt++;
+                st._perfFrame = { render: 3 };
+                st._perfMarks = {};
+                r._perfSenseFoldFrame(b, b / 1000);
+            }
+            const seltenFrueh = { wirk: r._szeneSkalaWirk() };
+            return { radeon, radeon2, ablage, sprung, seltenFrueh, gtx: lauf(16.8, 4, 11), cpu: lauf(41.9, 30, 11, null, false, true), spieler: lauf(41.9, 3, 11, 0.9) };
         };
+        const ablageWar = localStorage.getItem(AnazhRealm.SZENE_SKALA_MESSUNG.ablage);
         try {
             if (st.renderer) st.renderer._isHeadlessNull = false;
             st._traa = true;
@@ -1476,6 +1493,8 @@ async function checkBandSzeneSkala({ page, check }) {
             r._geraeteMessung = sicher.mess;
             r._gpuLeine = sicher.leine;
             r._skalaFenster = sicher.fen;
+            if (ablageWar == null) localStorage.removeItem(AnazhRealm.SZENE_SKALA_MESSUNG.ablage);
+            else localStorage.setItem(AnazhRealm.SZENE_SKALA_MESSUNG.ablage, ablageWar);
         }
         return out;
     });
@@ -1487,12 +1506,16 @@ async function checkBandSzeneSkala({ page, check }) {
         m.radeon2.wirk === 0.5 &&
         m.radeon2.klasse === "schwach" &&
         m.radeon2.messung.gebunden === true &&
+        m.ablage.wirk === 0.5 &&
+        m.ablage.roh === "0.5" &&
+        m.sprung.wirk === 0.5 &&
+        m.seltenFrueh.wirk === 0.75 &&
         m.gtx.wirk === 0.75 &&
         m.cpu.wirk === 0.75 &&
         m.spieler.wirk === 0.9;
-    const zeig = (m) => (m && !m.fehler ? ["radeon", "radeon2", "gtx", "cpu", "spieler"].map((k) => `${k} ${m[k].wirk}`).join(" · ") : JSON.stringify(m));
+    const zeig = (m) => (m && !m.fehler ? ["radeon", "radeon2", "ablage", "sprung", "seltenFrueh", "gtx", "cpu", "spieler"].map((k) => `${k} ${m[k].wirk}`).join(" · ") : JSON.stringify(m));
     check(
-        "Szenen-Skala (5) die Einmessung am Gerät: Radeon 41,9 ms → 0,625 → 0,5 (schwach, an die GPU gebunden), GTX 16,8 ms 0,75, CPU-gebunden 0,75, der Spieler 0,9 gewinnt; die Mutante (liest die eingemessene Skala nicht) fällt",
+        "Szenen-Skala (5) die Einmessung am Gerät: Radeon 41,9 ms nach 4 s 0,625, nach 8 s 0,5 (schwach, an die GPU gebunden), die Ablage trägt 0,5 in die nächste Sitzung, 58,6 ms in EINEM Schritt 0,5, jedes zehnte Bild 50 ms nach 6 s noch 0,75, GTX 16,8 ms 0,75, CPU-gebunden 0,75, der Spieler 0,9 gewinnt; die Mutante (liest die eingemessene Skala nicht) fällt",
         einmessung(g.mess) && !einmessung(g.messMutante),
         `${zeig(g.mess)} | Mutante ${zeig(g.messMutante)}`
     );

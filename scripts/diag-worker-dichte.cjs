@@ -415,6 +415,67 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                         }
                     }
                 }
+                // DIE MASCHE DES FELDS (w28-feld-fuss): die vier innersten Reihen des Feld-Passes um den Spieler, wie
+                // `_feldPassMal` sie bestellt, beim Feld-Faden — und dieselben Punkte als Ring (`ring`) und als reines Gesetz
+                // (`teile`). Der Ring fragt OHNE Fuß (Wort für Wort das Gesetz), die Reihe an der Naht trägt die Zahl des
+                // Rings (Gesetz → Gewässer-Form → Spiegel, bis auf die f32-Ablage des Felds), dahinter liest das Feld die
+                // Stufe seiner Masche (sonst zählt der Fuß nichts: die Kosten der Ebene 2 stehen wieder im Bild). Nur die
+                // Standard-Welt trägt das Netz der Wildnis. Der Ring rechnet jede Ecke zweimal: als Punkt (Masche 0, der
+                // Bezug des Felds — den verfälscht auch ein Ring nicht, der seinen Fuß nennt: der Selbsttest nimmt alle
+                // drei Zeilen im selben Boot) und mit der Masche des Rings dort (gegen das reine Gesetz).
+            }
+            if (r._getVoxelWorker() && welt === "standard") {
+                const pm = s.playerMesh ? s.playerMesh.position : { x: 0, z: 0 };
+                const [FP, FR] = [AnazhRealm.FELD_PASS, AnazhRealm.FERN_RING];
+                const rMin = FR.schalen[FR.schalen.length - 1].aussen;
+                const hrF = (FP.rMaxM - rMin) / (2 * FP.rad);
+                const REIHEN = 4;
+                const nF = FP.az * REIHEN;
+                const pF = new Float32Array(nF * 2);
+                const [ht, hr, rad, ang, q] = [0, 0, 0, 0, 0].map(() => new Float64Array(nF * 2));
+                for (let iy = 0, k = 0; iy < REIHEN; iy++)
+                    for (let ix = 0; ix < FP.az; ix++, k++) {
+                        const rr = rMin + ((iy + 0.5) / FP.rad) * (FP.rMaxM - rMin);
+                        const a = ((ix + 0.5) / FP.az - 0.5) * 2 * Math.PI;
+                        pF[k * 2] = pm.x + Math.cos(a) * rr;
+                        pF[k * 2 + 1] = pm.z + Math.sin(a) * rr;
+                        [rad[k], ang[k], q[k]] = [rad[nF + k], ang[nF + k], q[nF + k]] = [rr, a, 1.1];
+                        ht[nF + k] = hr[nF + k] = (Math.PI * rr) / FP.az;
+                    }
+                const kopf = { ax: pm.x, az: pm.z };
+                const feld = await r._fernAuftrag("feld", {
+                    ...kopf,
+                    punkte: pF.slice(),
+                    azN: FP.az,
+                    hr: hrF,
+                    naht: rMin,
+                    saison: r._fernSaison({ r: 1, g: 1, b: 1 }),
+                    praesenz: r._fernPraesenz(),
+                });
+                const ring = await r._fernAuftrag("ring", {
+                    ...kopf,
+                    punkte: Float64Array.from([...pF, ...pF]),
+                    ht,
+                    hr,
+                    rad,
+                    ang,
+                    q,
+                    zone: new Uint8Array(nF * 2),
+                    deckZoneRad: 0,
+                    memo: r._fernMemoGen | 0,
+                });
+                const rein = await r._fernAuftrag("teile", { punkte: Float64Array.from(pF), detail: false, nurHoehe: true });
+                const [rb, tb] = [new BigUint64Array(ring.law.buffer), new BigUint64Array(rein.law.buffer)];
+                const ma = (out.masche = { n: nF, ringUngleich: 0, naht: 0, liest: 0, groesste: 0 });
+                for (let k = 0; k < nF; k++) {
+                    if (rb[nF + k] !== tb[k]) ma.ringUngleich++;
+                    const d = Math.abs(feld.daten[k * 4] - (ring.nassY[k] < ring.spiegel[k] ? ring.spiegel[k] : ring.nassY[k]));
+                    if (k < FP.az) ma.naht = Math.max(ma.naht, d);
+                    else {
+                        if (d > 1e-3) ma.liest++;
+                        ma.groesste = Math.max(ma.groesste, d);
+                    }
+                }
             }
             // TEIL W — DER BESTAND DES WALDS: die stehenden Darts der Wald-Zellen um jeden Ort (9 × 9 Zellen; die geborenen
             // und das Urteil der Kronen-Schüchternheit, phyto-core `forestStehende`) im Main (`_forestCellDarts`, frisches
@@ -596,7 +657,7 @@ const KERN_MUTATIONEN = {
     "Edit-Radius": ["if (!(ed.r > 0)) return n;", "if (!(ed.r > 0)) return n;\n        ed = { ...ed, r: ed.r * 1.1 };"],
     "Dichte-Versatz": ["let d = surf - y;", "let d = surf - y + 0.25;"],
     "See-Spiegel": ["const y = h.water.waterY[i];", "const y = h.water.waterY[i] + 0.5;"],
-    "Höhen-Versatz": ["let h = hoeheGrund(L, x, z, mitDetail, aus);", "let h = hoeheGrund(L, x, z, mitDetail, aus) + 0.01;"],
+    "Höhen-Versatz": ["let h = hoeheGrund(L, x, z, mitDetail, aus, fuss);", "let h = hoeheGrund(L, x, z, mitDetail, aus, fuss) + 0.01;"],
 };
 const KERN_MODUS = { haupt: null, faden: null, probe: null, wald: false }; // je Boot die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe; `wald`: der Faden ohne „die Reihe zuerst“
 // TEIL R: die Abstände (m) der vier Aufträge in der Reihe des Sendens — und die Zeile des Fadens, die seiner Wahl die Wahl gibt
@@ -604,12 +665,44 @@ const KERN_MODUS = { haupt: null, faden: null, probe: null, wald: false }; // je
 const RANG_REIHE = [500, 400, 300, 1];
 const RANG_SOLL = RANG_REIHE.slice().sort((a, b) => a - b).join(" · ");
 const WALD_REIHE_ZUERST = "if (reihe.length && !reiheHaelt) return void waldWecken();";
+// DIE MASCHE DES FELDS (w28-feld-fuss): die drei Zeilen des Fern-Fadens, die der Selbsttest ihm im selben Boot nimmt — der
+// Ring nennt dem Gesetz einen Fuß (ROT am bit-Diff) · die Reihe an der Naht fragt mit einem Fuß (ROT an der Naht) · das Feld
+// hinter der Naht fragt mit Fuß 0 (ROT: es liest die ganze Stufe, die Kosten der Ebene 2 stehen wieder im Bild).
+const MASCHE_MUTANTEN = {
+    ring: ["let L = G.hoehe(state, x, z, false, aus);", "let L = G.hoehe(state, x, z, false, aus, 2 * Math.max(msg.ht[k], msg.hr[k]));"],
+    naht: ["< 2 * msg.hr ? 0 :", "< 2 * msg.hr ? 300 :"],
+    fuss: ["Math.sqrt(4 * fuss.ht * msg.hr)", "0"],
+};
+const MASCHE_NAHT_M = 1e-3; // die f32-Ablage des Felds (ein Schritt bei 255 m: 1,5e-5 m)
+function mascheUrteil(ma) {
+    if (!ma) return { gut: false, rot: ["leer"], taeter: "kein Voxel-Faden — keine Probe der Masche" };
+    const rot = [];
+    const namen = [];
+    if (ma.ringUngleich !== 0) {
+        rot.push("ring");
+        namen.push(`der Ring fragt das Gesetz mit einem Fuß: ${ma.ringUngleich} von ${ma.n} Punkten weichen vom reinen Gesetz ab (voxel-worker fernAuftrag „ring“)`);
+    }
+    if (!(ma.naht <= MASCHE_NAHT_M)) {
+        rot.push("naht");
+        namen.push(`die Reihe des Felds an der Naht trägt nicht die Zahl des Rings: größte Differenz ${ma.naht.toFixed(3)} m (voxel-worker fernAuftrag „feld“: die Masche an \`msg.naht\` fragt ohne Fuß)`);
+    }
+    if (!(ma.liest > 0)) {
+        rot.push("fuss");
+        namen.push("das Feld hinter der Naht liest die ganze Stufe des Netzes: kein Punkt weicht vom Ring-Gesetz ab (voxel-worker fernAuftrag „feld“ nennt gelaende-core `hoehe` seine Masche nicht)");
+    }
+    return { gut: !rot.length, rot, taeter: namen.join(" · ") };
+}
 const kernQuelle = (wurzel = root) => ausDatei(path.join(wurzel, "gelaende-core.js")); // der EINE Leser des Kerns
 const kernMutiert = (roh, name) => String(roh).replace(...(KERN_MUTATIONEN[name] || ["", ""]));
 function kernWandle(p, roh) {
     if (p === "/voxel-worker.js" && KERN_MODUS.wald && roh) {
         if (String(roh).split(WALD_REIHE_ZUERST).length !== 2) throw new Error("Teil R: der Selbsttest findet die Zeile „die Reihe zuerst“ nicht in voxel-worker.js");
-        return String(roh).replace(WALD_REIHE_ZUERST, "");
+        let text = String(roh).replace(WALD_REIHE_ZUERST, "");
+        for (const [name, [alt, neu]] of Object.entries(MASCHE_MUTANTEN)) {
+            if (text.split(alt).length !== 2) throw new Error(`die Masche des Felds: der Selbsttest findet die Zeile „${name}“ nicht in voxel-worker.js`);
+            text = text.replace(alt, neu);
+        }
+        return text;
     }
     if (p === "/gelaende-core.js" && KERN_MODUS.haupt) return kernMutiert(roh, KERN_MODUS.haupt);
     if (p === "/gelaende-core.faden.js") return kernMutiert(kernQuelle(), KERN_MODUS.faden);
@@ -927,6 +1020,70 @@ function presetsAnSaaten(K, Z) {
     }
     return { befunde, je };
 }
+// DAS NETZ (w28-ankunft-faden; die Summe der Ankunft: das Feld-Panorama baute je neuer Zelle die Talprofile ihrer 25 bzw. 49
+// Knoten neu und zählte je Rinnen-Knoten ein Einzugsgebiet ohne Leser — 6,4 CPU-s vor dem ersten Bild der GTX 1050). Die Wand:
+// der Kern zählt selbst (`netzZaehler`), jedes Profil ist EINMAL gebaut, kein Knoten der Ebene 2 trägt ein Einzugsgebiet.
+// Der Selbsttest nimmt dem Kern je eine Zeile (`NETZ_MUTANTEN`): jeder Mutant fällt beim EIGENEN Namen ROT.
+const NETZ_MUTANTEN = {
+    profil: ["if (kn.seg !== undefined) return kn.seg;", ""],
+    einzug: ["kn.k <= 1 ? knotenA(N, kn) * S * S : 0", "knotenA(N, kn) * S * S"],
+    fuss: ["if (fuss > 0) while (k > 0 && N.S[k] * NETZ_TRAGT < fuss) k--;", ""],
+};
+// DIE STUFE DES FRAGERS (w28-feld-fuss): 192 Fragen auf dem 20-km-Kreis mit der Masche des Felds dort (600 m) an eine frische
+// Lage — die Ebene 2 (Kante 100 m) trägt diese Masche nicht, der Kern baut keinen ihrer Knoten (das Feld der Ferne las sie:
+// 463 636 Knoten, 3,1 s je Bild).
+const NETZ_FUSS = { kreisM: 20000, fragen: 192, mascheM: 600 };
+function netzUrteil(G, L, frisch) {
+    const z = typeof G.netzZaehler === "function" ? G.netzZaehler(L) : null;
+    if (!z) return { gut: false, rot: ["zaehler"], taeter: "der Kern zählt sein Netz nicht (gelaende-core `netzZaehler` fehlt)" };
+    const mehrfach = z.profilBau.map((b, k) => b - z.profile[k]);
+    const rot = [];
+    const namen = [];
+    if (!(z.profile[0] + z.profile[1] > 0) || !(z.knoten[2] > 0)) {
+        rot.push("leer");
+        namen.push(`die Messung fragte das Netz nicht (Profile ${z.profile.join(" · ")} an ${z.knoten.join(" · ")} Knoten)`);
+    }
+    if (mehrfach.some((m) => m !== 0)) {
+        rot.push("profil");
+        namen.push(`segment baut das Talprofil eines Knotens mehrfach: je Ebene ${z.profilBau.join(" · ")} Bauten für ${z.profile.join(" · ")} Knoten mit Profil (das Gedächtnis \`kn.seg\` fehlt)`);
+    }
+    if (z.einzugOhneLeser !== 0) {
+        rot.push("einzug");
+        namen.push(`${z.einzugOhneLeser} Knoten der Ebene 2 zählen ihr Einzugsgebiet ohne Leser (segmentNeu: knotenA nur für die Ebenen 0 und 1)`);
+    }
+    let fuss = null;
+    if (frisch) {
+        for (let i = 0; i < NETZ_FUSS.fragen; i++) {
+            const a = (i / NETZ_FUSS.fragen) * 2 * Math.PI;
+            G.hoehe(frisch, Math.cos(a) * NETZ_FUSS.kreisM, Math.sin(a) * NETZ_FUSS.kreisM, false, undefined, NETZ_FUSS.mascheM);
+        }
+        fuss = G.netzZaehler(frisch).knoten;
+        if (!(fuss[1] > 0) || fuss[2] !== 0) {
+            rot.push("fuss");
+            namen.push(`ein Frager mit der Masche ${NETZ_FUSS.mascheM} m baut ${fuss[2]} Knoten der Ebene 2 (Soll 0; Knoten je Ebene ${fuss.join(" · ")}) — gelaende-core netzStufe liest den Fuß nicht`);
+        }
+    }
+    return { ...z, fuss, gut: !rot.length, rot, taeter: namen.join(" · ") };
+}
+// Der Selbsttest der Netz-Wand: der Kern der gemessenen Wurzel mit je EINER genommenen Zeile, 41 × 41 Fragen im 100-m-Raster.
+function netzSelbsttest(wurzel, saat) {
+    const simplex = ausDatei(path.join(wurzel, "vendor", "simplex-noise.js"));
+    const je = {};
+    for (const [name, [alt, neu]] of Object.entries(NETZ_MUTANTEN)) {
+        const roh = String(kernQuelle(wurzel));
+        if (roh.split(alt).length !== 2) {
+            je[name] = { anker: false, rot: [], sieht: false };
+            continue;
+        }
+        const c = require("./lib/asset-worker-harness.cjs").kernAusText([simplex, roh.replace(alt, neu)]);
+        const M = { G: c.__gelaendeCore, SimplexNoise: c.SimplexNoise };
+        const L = realismusLage(M, M.G, saat);
+        for (let j = 0; j <= 40; j++) for (let i = 0; i <= 40; i++) M.G.hoehe(L, -2000 + i * 100, -2000 + j * 100, false);
+        const u = netzUrteil(M.G, L, realismusLage(M, M.G, saat));
+        je[name] = { anker: true, rot: u.rot, sieht: u.rot.length === 1 && u.rot[0] === name, taeter: u.taeter };
+    }
+    return { je, sieht: Object.values(je).every((m) => m.sieht) };
+}
 function realismus() {
     // Das Gesetz kommt aus der gemessenen Wurzel (`--wurzel`: ein anderer Stand), die Linse (statistik, hangBaender)
     // immer aus DIESEM Baum — vorher und nachher misst dieselbe Rechnung.
@@ -966,8 +1123,10 @@ function realismus() {
             m.lambdaBreiten <= 14 &&
             m.rcBreiten >= 2 &&
             m.rcBreiten <= 3;
-        const urteil = { ...Z.urteil(st, sm), maeander: maeanderGut(maeander), kosten: kosten.imBudget };
+        const netz = netzUrteil(G, L, realismusLage(K, Z, saat)); // nach Raster und Läufen: das Netz dieser Lage hat gearbeitet
+        const urteil = { ...Z.urteil(st, sm), maeander: maeanderGut(maeander), kosten: kosten.imBudget, netz: netz.gut };
         const taeter = {
+            netz: netz.taeter,
             senken: "geschlossene Mulden ohne Auslass (flaeche: ein Profil-Minimum ohne Netz-Abfluss, oder das Detail T3)",
             flint: "das Gefälle folgt dem Einzugsgebiet nicht (knotenSohle: das Bett steigt nicht mit S = ks·A^−θ je Flächen-Klasse)",
             hammond: "keine Ebenen (RELIEF_KNOTEN hoch im Tiefland, Aue F zu schmal)",
@@ -1004,6 +1163,7 @@ function realismus() {
             schicht,
             urteil,
             maeander,
+            netz: { knoten: netz.knoten, profile: netz.profile, profilBau: netz.profilBau, einzugOhneLeser: netz.einzugOhneLeser, fuss: netz.fuss },
             stoerung: stoer && {
                 senken1mJeKm2: stoer.senken1mJeKm2,
                 minimaJeKm2: stoer.minimaJeKm2,
@@ -1025,6 +1185,10 @@ function realismus() {
         console.log(
             `    Mäander: ${maeander.glieder} Flachland-Glieder · Sinuosität ${maeander.sinuositaet} · λ ${maeander.lambdaBreiten} Breiten · Rc ${maeander.rcBreiten} Breiten (Soll ≥ 1,3 · 10–14 · 2–3)`
         );
+        if (netz.knoten)
+            console.log(
+                `    Netz: Knoten je Ebene ${netz.knoten.join(" · ")} · Talprofile ${netz.profile.join(" · ")}, gebaut ${netz.profilBau.join(" · ")} (Soll eins je Knoten) · Einzug ohne Leser ${netz.einzugOhneLeser} (Soll 0) · Masche ${NETZ_FUSS.mascheM} m: Knoten ${(netz.fuss || []).join(" · ")} (Soll Ebene 2: 0)`
+            );
         if (stoer)
             console.log(
                 `    Selbsttest-Störung: Senken>1m ${stoer.senken1mJeKm2}/km² · die Gerade (Glieder ohne Bahn): Mäander ${stoer.maeanderGerade}`
@@ -1051,14 +1215,21 @@ function realismus() {
                     presets: presets && presets.je,
                 });
     if (SELBSTTEST) {
-        const blind = welten.some(
-            (w) =>
-                !(w.stoerung && w.stoerung.senken1mJeKm2 > 1) ||
-                !(w.kostenLast && !w.kostenLast.imBudget) ||
-                w.stoerung.maeanderGerade !== "rot"
-        );
+        const ns = netzSelbsttest(root, REALISMUS_SAATEN[0]);
+        for (const [name, m] of Object.entries(ns.je))
+            console.log(
+                `  Selbsttest-Netz „${name}" (der Kern ohne die Zeile): ${!m.anker ? "⛔ kein Anker im Kern" : m.sieht ? "✅ fällt beim Namen ROT — " + m.taeter : "⛔ BLIEB BLIND (rot: " + (m.rot.join(", ") || "nichts") + ")"}`
+            );
+        const blind =
+            !ns.sieht ||
+            welten.some(
+                (w) =>
+                    !(w.stoerung && w.stoerung.senken1mJeKm2 > 1) ||
+                    !(w.kostenLast && !w.kostenLast.imBudget) ||
+                    w.stoerung.maeanderGerade !== "rot"
+            );
         console.log(
-            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung, die Kosten-Last oder die Gerade blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget, die Gerade färbt den Mäander rot"}\n`
+            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung, die Kosten-Last, die Gerade oder ein Netz-Mutant blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget, die Gerade färbt den Mäander rot, das Netz ohne Gedächtnis, der Einzug ohne Leser und der Frager ohne Stufe fallen beim Namen"}\n`
         );
         return blind ? 1 : 0;
     }
@@ -2627,6 +2798,11 @@ hauptLauf(async () => {
                 : "    Höhen der Ferne: kein Voxel-Faden — keine Probe"
         );
         if (!fe || fe.abweichend > 0) rot = true;
+        const mu = welt === "standard" ? mascheUrteil(rep.masche) : { gut: true };
+        if (welt === "standard") console.log(
+            `    Masche des Felds: ${rep.masche ? `Ring ≠ Gesetz ${rep.masche.ringUngleich} von ${rep.masche.n} · Naht Feld ↔ Ring ${rep.masche.naht.toExponential(1)} m (Soll ≤ ${MASCHE_NAHT_M}) · hinter der Naht lesen ${rep.masche.liest} Punkte die Stufe ihrer Masche (größte ${rep.masche.groesste.toFixed(1)} m)` : "keine Probe"}${mu.gut ? "" : " — ⛔ " + mu.rot.join(" · ").toUpperCase() + ": " + mu.taeter}`
+        );
+        if (!mu.gut) rot = true;
         const wa = rep.wald;
         const wu = rep.wuchs || [];
         console.log(
@@ -2654,6 +2830,7 @@ hauptLauf(async () => {
                 maxDiff: v.maxDiff,
                 gitter: v.gitter,
                 ferne: v.ferne ? v.ferne.abweichend : 0,
+                masche: mascheUrteil(v.masche).rot.join(" · "),
                 wald: v.wald ? v.wald.abweichend : 0,
                 wuchs: v.wuchs?.[1],
                 rang: (v.rang || []).join(" · "),
@@ -2706,6 +2883,7 @@ hauptLauf(async () => {
             selbst &&
             selbst.abweichend > 0 &&
             selbst.ferne > 0 &&
+            selbst.masche === Object.keys(MASCHE_MUTANTEN).join(" · ") &&
             selbst.wald > 0 &&
             selbst.wuchs > 0 &&
             urform &&
@@ -2715,6 +2893,7 @@ hauptLauf(async () => {
             selbst.namen === "FERN-RING";
         console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen · Wuchs ${selbst?.wuchs} (Soll > 0)`);
         console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);
+        console.log(`  SELBSTTEST Masche des Felds (drei Zeilen des Fadens genommen): rot ${selbst ? selbst.masche || "nichts" : "?"} (Soll ${Object.keys(MASCHE_MUTANTEN).join(" · ")})`);
         console.log(`  SELBSTTEST Wahl des Wald-Fadens (ohne „die Reihe zuerst“): geliefert ${selbst ? selbst.rang : "?"} (Soll die Reihe der Ankunft ${RANG_REIHE.join(" · ")})`);
         console.log(
             `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: der saubere Spiegel ist byte-gleich, der verfälschte Worker-Term fällt rot" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "die Verfälschung blieb unentdeckt (die Linse ist blind)")}\n`

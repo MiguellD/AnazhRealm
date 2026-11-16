@@ -175,11 +175,10 @@ class AnazhRealm_dirigent_takt {
                     // ### Status-Panel (UI V1) ###
                     this.updateStatusPanel(wandZeit);
 
-                    // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
+                    // ### Bodenprüfung / Frustum-Culling ### (V9.44-f)
                     this._loopGroundCheck(spielZeit);
                     if (!zwischen) {
                         this._loopFrustumCulling();
-                        this._loopAnimateUfos(this._bildZeit);
                     }
                 }
 
@@ -691,7 +690,11 @@ class AnazhRealm_dirigent_takt {
         // Takte, und die Welt nannte sich ruhig, während ihre Leute noch entstanden: jeder Deckel zählte die Takte als still und brach,
         // `_weltSteht` gab ein Bild ohne die Leute frei. Offen ist je Siedlung im Nah-Ring (dort geht ihr Werk, `_tickBewohner`) ihr
         // Werk samt seinem Rest (`listeRest`: Personen, Besuche, Stände, die es noch stellt) und je Kopf, wer noch geboren wird
-        // (`leib` null; `false` heißt: ohne Leib) oder noch ankommt (`ankunft`)
+        // (`leib` null; `false` heißt: ohne Leib) oder noch ankommt (`ankunft`).
+        // DER LEIB IM RING (w28-leib-im-ring): geboren ist der STAND (die Hülle `b.leib`, Lage und Zahlen seines Baus) — den Leib
+        // trägt nur, wen das Gesetz ihn tragen heißt (der Erste je Gestalt, solange er backt: er trägt ihn ab der Geburt; die
+        // Nah-Wahl; der Fahrer im gezeichneten Wagen). Offen ist darum auch, wen die Nah-Wahl traf und der Deckel der Geburten
+        // noch warten lässt (`S.leibOffen`, `_tickBewohner`) — EINE Definition von „die Leute stehen“, die Proben lesen sie hier.
         o.leute = 0;
         if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull && st.playerMesh) {
             const p = st.playerMesh.position;
@@ -699,6 +702,7 @@ class AnazhRealm_dirigent_takt {
             for (const S of this._bewohnerSiedlungen.values()) {
                 if (S.listeWerk && (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2 <= nah * nah)
                     o.leute += 1 + Math.max(0, S.listeRest | 0);
+                o.leute += S.leibOffen | 0;
                 for (const b of S.liste || []) if (b.leib == null || b.ankunft) o.leute++;
             }
         }
@@ -949,7 +953,6 @@ class AnazhRealm_dirigent_takt {
                     cost += Math.max(3, units * 0.5);
                 } else if (op === "spawn_village" || op === "spawn_temple") cost += 20;
                 else if (op === "spawn_waterfall") cost += 12;
-                else if (op === "spawn_island") cost += 10;
                 else if (op === "spawn_tree") cost += 6;
                 else if (op === "spawn_creature") cost += 8;
                 else if (op.startsWith("deposit_")) cost += 2;
@@ -1072,24 +1075,12 @@ class AnazhRealm_dirigent_takt {
             this.state.camera.matrixWorldInverse
         );
         this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
-        // Inseln und Mesh-Tiere cullt three JE PASS (Geometrie- bzw. Körper-Kugel gegen Blick und Kaskaden-Box) — ein
+        // Mesh-Tiere cullt three JE PASS (Geometrie- bzw. Körper-Kugel gegen Blick und Kaskaden-Box) — ein
         // Frustum-Schreiber hier nahm ihnen den Schatten, sobald sie den Blick verließen (W7).
         // T3 — RENDERBUNDLES: das Region-Culling der gebündelten Gruppen lebt auf der
         // Bundle-Sichtbarkeit (three-Culling friert im Bundle-Replay ein — Sonde
         // diag-render-bundle). Nutzt das frisch gebaute _frustumCache von oben.
         this._archRegionBundleCull();
-    }
-
-    _loopAnimateUfos(currentTime) {
-        if (this.state.ufos && this.state.playerMesh) {
-            const playerPos = this.state.playerMesh.position;
-            this.state.ufos.forEach((ufo) => {
-                const distance = playerPos.distanceTo(ufo.position);
-                if (distance < 50) {
-                    ufo.position.y = ufo.userData.baseY + Math.sin(currentTime * ufo.userData.speed) * 2;
-                }
-            });
-        }
     }
 
     // Steckt der Spieler nach einem fill-Edit im Fels: die nächste offene Luft-Lücke ÜBER ihm finden

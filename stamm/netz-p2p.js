@@ -1126,7 +1126,7 @@ class AnazhRealm_netz_p2p {
             .map((k) => k + (cw[k] && cw[k].bundleHash ? cw[k].bundleHash : ""))
             .sort()
             .join(",");
-        const sig = peerSig + "##" + mineSig;
+        const sig = AnazhRealm._zeichenSig(peerSig + "##" + mineSig);
         if (host.dataset.sig === sig) return;
         host.dataset.sig = sig;
         host.textContent = "";

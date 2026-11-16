@@ -472,7 +472,7 @@ class AnazhRealm_stoff_material {
     }
 
     // V12.0-f — Toon-Material-Helper: alle Toon-Materials der Welt (Voxel-
-    // Chunks, Architektur-Parts, Inseln, Avatar-Torso) sind native
+    // Chunks, Architektur-Parts, Avatar-Torso) sind native
     // `THREE.MeshToonNodeMaterial` (r184, lights=true). Die EINE Wahrheits-
     // ═══ DIE UNIFORM-HEIMAT (18.07., sechster Schöpfer-Trace: 60M Klein-Uploads
     // ≤16K = 9.3 GB, ~9k writeBuffer je Frame bei 631 Draws — die per-Draw-
@@ -1785,7 +1785,7 @@ class AnazhRealm_stoff_material {
                     // DIE VERTEX-FARBE EINMAL (der EINE Ort der Klasse „Albedo = Farbe²"): r184 setupDiffuseColor
                     // multipliziert den colorNode mit der Vertex-Farbe, solange vertexColors an ist und die Geometrie ein
                     // color-Attribut trägt. Jeder colorNode dieses Zweigs TRÄGT sie schon — Fels (`vertexColorAlbedo`),
-                    // Boden (Chunk, Insel, Voxel-Test, Bauplan-Verschmelzung), Rinde, Laub, Klinge, Kronen-Kern; die
+                    // Boden (Chunk, Voxel-Test, Bauplan-Verschmelzung), Rinde, Laub, Klinge, Kronen-Kern; die
                     // Karte ersetzt sie durch den Atlas und hat kein color-Attribut. Bis 06.10. schaltete nur der Boden ab:
                     // Grammatik-Rinde/-Laub und der Fels zeichneten Farbe², die Werkstatt-Vorschau desselben Baums Farbe¹.
                     // `eckeImKnoten` sagt es jedem späteren Schreiber der Ecke (das Alter, `_werkAlterFaerbe`).
@@ -1839,7 +1839,7 @@ class AnazhRealm_stoff_material {
                     // Variable je Programm, und las dieser normalNode (er baut in der NORMAL-Stufe) sie zuerst, übernahmen der
                     // Schatten-Lookup (normalBias), das Halbkugel- und das Umgebungslicht ihre NORMAL-Fassung — die
                     // Geometrie-Normale mit Flächen-Vorzeichen (gate:altlasten Normal-Wand). OHNE Flächen-Vorzeichen: jede
-                    // Boden-Normale zeigt in die Luft (der Chunk −∇d, der Ring die Kreuze seiner Maschen nach +Y, die Insel −∇d),
+                    // Boden-Normale zeigt in die Luft (der Chunk −∇d, der Ring die Kreuze seiner Maschen nach +Y),
                     // die Windung des Netzes kennt die Seite der Luft nicht — die Boden-Dreiecke zeigen oben ihre Rückseite
                     // (DoubleSide), × faceDirection zeigte die Normale dort nach unten.
                     // der Boden (K51-2): die Geometrie-Normale wandert im Übergangs-Band mit der Lage zur Normale der gröberen Stufe

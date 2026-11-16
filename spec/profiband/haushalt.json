@@ -668,12 +668,12 @@
         },
         {
             "id": "einzelstuecke",
-            "titel": "Einzelstücke (Himmel, Spieler, Feld-Pass, Inseln, Portal, Wetter, Bau-Werkzeug …)",
+            "titel": "Einzelstücke (Himmel, Spieler, Feld-Pass, Portal, Wetter, Bau-Werkzeug …)",
             "befehle": 25,
             "dreiecke": 15000,
             "regeln": [
                 {
-                    "muster": "^(himmel|himmel-[a-z]+|spieler|p2p-spieler|p2p-namensschild|feld-pass|dsl-insel|dsl-ufo|kreatur-aura|kreatur-traglast|dorf-rauch|funken|vogel|pfeil|portal-membran|wetter-regen|bau-phantom|bau-platzhalter|occl-proxy)$"
+                    "muster": "^(himmel|himmel-[a-z]+|spieler|p2p-spieler|p2p-namensschild|feld-pass|kreatur-aura|kreatur-traglast|dorf-rauch|funken|vogel|pfeil|portal-membran|wetter-regen|bau-phantom|bau-platzhalter|occl-proxy)$"
                 }
             ]
         },

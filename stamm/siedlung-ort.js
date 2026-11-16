@@ -251,7 +251,6 @@ class AnazhRealm_siedlung_ort {
         pos.x = x;
         pos.z = z;
         this._stepCharacterStructures(pos, 0, 0, 0, k);
-        this._stepCharacterIslands(pos, 0, 0, 0, k);
         return k.schub.length ? "bau" : null;
     }
     // Siedlung als DATEN anfragen: der Worker rechnet exportSettlement und liefert reine Slot-Daten (kein
@@ -1310,7 +1309,7 @@ class AnazhRealm_siedlung_ort {
     }
     // DER BAU-SAME (Γ5): zieht aus dem Welt-Seed-Stream (Suffix ":<art>", FNV-1a — das _worldRuleSeed-Muster); je Art zählt
     // ein Akt-Zähler hoch → jeder neue Bau derselben Welt ein ANDERER, aber deterministischer Same. Die Siedlung trägt die
-    // Art "stadt". Leser: `spawnSettlement` (Chat `dorf`), jeder Chat-Satz mit Same (`baue … hier`, Insel, Fraktal, der
+    // Art "stadt". Leser: `spawnSettlement` (Chat `dorf`), jeder Chat-Satz mit Same (`baue … hier`, Fraktal, der
     // Studio-Hain — der Same reist im Programm), der Strom jedes Programms ohne eigenen Seed (`dslCtx`), der Standard-Same
     // der Wurzel `spawnArchitecture` (Bau einer Kreatur, Plattform, Portal), der Würfel der Werkstatt, die Komposition des
     // Nexus. Der Zähler ist Welt-Gedächtnis (`worldMeta.bauSame`, reist im
@@ -1335,7 +1334,7 @@ class AnazhRealm_siedlung_ort {
     }
     // Der Strom EINES Samens (LCG, [0, 1)): was ein Akt würfelt — Streuung, Drehung, Größe — ist eine Funktion seines Samens,
     // auf jedem Peer und nach jedem Reload dieselbe. Das EINE LCG der Welt: Leser `_streamRng` (der Strom eines Namens),
-    // `dslCtx` (der Programm-Strom), `_dslSpawnStudioItems`, die Nexus-Komposition und der Schwebe-Takt eines UFOs.
+    // `dslCtx` (der Programm-Strom), `_dslSpawnStudioItems` und die Nexus-Komposition.
     _samenStrom(same) {
         let s = Number(same) >>> 0 || 1;
         return () => {

@@ -1,6 +1,6 @@
 // diag-werkstatt-weg.cjs — DIE WERKSTATT-WEG-LINSE (v1-Schritte 3–4: in der Werkstatt bauen, mit der KI erschaffen), im
 // echten Boot (headless, foundry-ON, Null-Renderer der Seite: keine Bühne zeichnet); jede Probe ruft ihren Chokepoint, L-WERKSTATT fährt echte Eingaben.
-//   D10 — der Same eines Satzes (Hain, Insel, Fraktal, KI ohne Seed) kommt aus dem Welt-Strom (`_bauSame`), nie aus
+//   D10 — der Same eines Satzes (Hain, Fraktal, KI ohne Seed) kommt aus dem Welt-Strom (`_bauSame`), nie aus
 //     Math.random; derselbe Satz an derselben Stelle der Welt-Geschichte ist derselbe Hain.
 //   L-WORTSCHATZ — jedes Wort löst über die Studio-Arten auf, „bau mir ein fachwerkhaus" stellt ein Haus, ein unbekanntes Wort
 //     hört den Katalog.
@@ -31,7 +31,7 @@ const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // Meisterkarte B
 const { errs, check } = pruefer();
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
-const SAETZE = ["hain", "insel", "fraktal", "ki ohne Seed"];
+const SAETZE = ["hain", "fraktal", "ki ohne Seed"];
 // der Konsum am Ruf: jeder Eintrag {Leser → Gesetz: gerufen}; fehlt die Probe, ist sie rot
 const konsumTaeter = (k) => Object.entries(k || { "(keine Probe)": false }).filter(([, ok]) => ok !== true).map(([n]) => `Konsum: ${n} ruft sein Gesetz nicht`);
 // eine Probe, die nicht zu Ende lief (das Urteil „start"), und eine Spieler-Zeile im Befund
@@ -305,7 +305,7 @@ function wand(w) {
         for (const [g, re] of faelle) if (!stammLib.fehlt(g, re, w)) return [false, stammLib.fehlt.wo];
         return [true];
     };
-    const wurzeln = ["spawnArchitecture", "spawnIslandAt", "spawnUfoAt", "_workshopRecipeSpec", "dslCompose", "generateEvolution", "confirmBuild"];
+    const wurzeln = ["spawnArchitecture", "_workshopRecipeSpec", "dslCompose", "generateEvolution", "confirmBuild"];
     const WORT = /"(?:baum_|haus_|fels|stein|kristall|eiche|kiefer|birke|tanne|buche|hain|wald)\w*"/;
     return [
         ["W1 kein Satz würfelt aus Math.random (chatDslPatterns · dslCtx · _dslSpawnStudioItems)", ...alle([[/\n {4}get chatDslPatterns\(\) \{/, "dslCtx", "_dslSpawnStudioItems"], /Math\.random/])],
@@ -485,8 +485,6 @@ async function probe(argW) {
         m.samen = [h1.same, h2.same];
         m.samenGleich = h1.same != null && h1.same === h2.same;
         m.ortAbweichung = abweichung(h1.orte, h2.orte);
-        zaehle(() => r.parseChatToDsl("setze insel hier"));
-        m.zuege.insel = n;
         zaehle(() => r.parseChatToDsl("baue fraktal tempel"));
         m.zuege.fraktal = n;
         // Ein KI-Programm ohne Seed: der Strom des Programms ist der Welt-Strom.
@@ -1355,7 +1353,7 @@ hauptLauf(async () => {
         console.log("=== SELBST-TEST — die Verdikte und die Wand nennen ihre Täter ===");
         const gesund = {
             gestartet: true,
-            zuege: { hain: 0, insel: 0, fraktal: 0, "ki ohne Seed": 0 },
+            zuege: { hain: 0, fraktal: 0, "ki ohne Seed": 0 },
             hainBaeume: 6,
             samen: [11, 11],
             samenGleich: true,
@@ -1377,8 +1375,6 @@ hauptLauf(async () => {
         familie("D10", sameVerdict, gesund, [
             // der Hain würfelt (Befund 1 + 24)
             [zug("hain", 25), "hain: 25 Math.random-Züge"],
-            // die Insel würfelt
-            [zug("insel", 1), "insel: 1 Math.random"],
             // das Fraktal würfelt
             [zug("fraktal", 1), "fraktal: 1 Math.random"],
             // die KI ohne Seed würfelt (Befund 13)

@@ -966,14 +966,12 @@ class AnazhRealm_koerper_seele {
             return "pending";
         }
         if (group === null || !group.children || !group.children.length) return null;
-        const wrap = this._workshopWrapFoundryGroup(group); // EINE Wrapper-Quelle (W-A1)
+        // EINE Wrapper-Quelle (W-A1); V4(B)-Ref: die Hülle hält die Quell-Geometrie lebendig (`foundrySrcGroup`) — die LRU
+        // räumt sie erst nach der Rückgabe (_disposeSoulGroup) wirklich frei.
+        const wrap = this._workshopWrapFoundryGroup(group);
         if (!wrap) return null;
         wrap.userData.foundryHeld = true;
         wrap.userData.heldPreset = preset;
-        // V4(B)-Ref: die Hand hält die Quell-Geometrie lebendig — die LRU räumt sie erst
-        // nach der Rückgabe (_disposeSoulGroup) wirklich frei.
-        group._liveRefs = (group._liveRefs || 0) + 1;
-        wrap.userData.foundrySrcGroup = group;
         // Griff + Achse als DATEN: die KIND_POLICY-Zeile deklariert die Template-Handachse (weapon: handAxis
         // "x"), das LIVE-Buch die Griff-Mitte (`fx.held.gripX`, im Kern aus stations(P) wie buildInstance).
         // Kein Dial-Raten im Wirt; Fallback ohne held-Feld: die Klingen-Formel s.griff/2, sonst 0.

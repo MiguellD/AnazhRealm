@@ -293,17 +293,21 @@ class AnazhRealm_studio_glieder {
         // Analog-Import: das Glied wird KAPSEL (Achse + Radius + Farbe aus dem Skelett-Raum, ~32 Byte statt
         // 128 KB Brick), DEDUP je Gattung + Glied; jede Instanz posiert sie per eigener Knochen-Matrix. Der
         // March digitalisiert am Schirm; Voxel-Glieder-Bricks gibt es nicht mehr (kein Parallelpfad).
+        // DER BEWOHNER STEHT IM FELD NIE AN KNOCHEN (w28-leib-im-ring): seine Glieder stehen in der Lage seiner Gestalt
+        // (`_bewohnerFeldAnker`; je Takt `_bewohnerFeldLage`) — sein Leib lebt nur im Nah-Ring
         const tb = cr.userData._tierBaum;
+        const BL = cr.userData._feldLageVon || null;
         const glieder = [];
         for (const nm of namen) {
-            const a = nm.name ? tb && tb.teile && tb.teile[nm.name] : (tb && tb.wrap) || cr;
-            if (!a) {
+            const a = BL ? null : nm.name ? tb && tb.teile && tb.teile[nm.name] : (tb && tb.wrap) || cr;
+            if (a) a.updateMatrixWorld(true);
+            const lage = BL ? this._bewohnerFeldAnker(BL, nm.name) : a && a.matrixWorld;
+            if (!lage) {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
                 return null;
             }
-            a.updateMatrixWorld(true);
             const key = nm.key;
-            const handle = this._weltKapselSpawn(key, a.matrixWorld, () => this._gliedKapseln.get(key), einblenden);
+            const handle = this._weltKapselSpawn(key, lage, () => this._gliedKapseln.get(key), einblenden);
             if (!handle) {
                 // ganz oder gar nicht — kein halber Wolf; was dieser Ruf nahm, gibt er still zurück (kein neuer Platz)
                 for (const gl of glieder) this._weltFeldFrei(gl.handle, true);
@@ -406,6 +410,9 @@ class AnazhRealm_studio_glieder {
         const namen = this._trefferGliedNamen && this._trefferGliedNamen.get(this._kreaturGattung(cr));
         if (namen) return namen;
         this._gliederKalt = (this._gliederKalt | 0) + 1;
+        // (der Stand eines Bewohners trägt keine Gestalt zum Zerlegen: seine Gattung bestellt der Leib, an dem sie backt —
+        // `_bewohnerLeibAn`, w28-leib-im-ring)
+        if (cr.userData._feldLageVon && !cr.userData._tierBaum) return null;
         this._gliederBestellen(cr);
         return null;
     }
