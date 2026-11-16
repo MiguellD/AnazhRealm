@@ -599,7 +599,7 @@ function raumLinse() {
         });
         disposeGroup(g);
         L.sort((x, y) => x - y);
-        const med = L[L.length >> 1],
+        const med = rang(L),
             im = (z) => med / z >= 0.6 && med / z <= 1.15;
         void raum;
         if (!(L.length > 200) || !im(lese)) stoff.push(`${k}: ${L.length} Innen-Ecken, Median ${med && med.toFixed(3)} gegen gelesen ${lese.toFixed(3)}`);
