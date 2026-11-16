@@ -1014,9 +1014,14 @@ function menschUrteil(name, z, soll) {
             `die Haltung des Stands im Satz: ${ht.maxGrad}° zum nahen Leib an ${ht.wer || "—"} (Soll ≤ 1°; ${ht.n} Stehende, ${ht.mit} mit Haltung, die Körper-Ruhe des Mess-Leibs ${ht.ruheGrad}°; je Stand ${Object.entries(ht.je).map(([k, v]) => `${k} ${v}°`).join(" · ")})`
         );
         const gs = z.gestalt || { n: 0, gestalten: 0, max: "ungemessen", wer: "", mass: "", je: [] };
+        // das Soll: 5 % je Maß — die Welt der Linse (Pullover) hält es (9a1552f3: Schulter 2,4 · Taille 2,0 · Hüfte 3,8 %, 73 im
+        // Satz). Offen am Dorf unter dem Poncho (Werkbank, GTX 1050: Schulter ≤ 4,8 · Taille ≤ 12,7 · Hüfte ≤ 7,4 %): dem Netz der
+        // Menge (Kante 0,21 E) fehlt die Ecke unter dem Arm, die Anlage (koerper armAnlage) drückt die Ecken vorn und hinten nicht
+        // ein — eine Runde Entspannung tauscht Taille gegen Hüfte (Ofen, 40 Bewohner: Taille Median 7,4 → 5,5 %, Hüfte 2,8 → 8,5 %)
+        const GESTALT_SOLL = [5, 5, 5];
         soll(
-            gs.n >= 10 && gs.gestalten >= 2 && gs.max <= 5,
-            `die Gestalt des Stands im Satz: ${gs.max} % zum nahen Leib an ${gs.wer || "—"} (${gs.mass || "—"}; Soll ≤ 5 % je Maß, bedeckte Breite je Körperhöhe; ${gs.n} im Satz, ${gs.gestalten} Gestalten mit nahem Leib; Schulter · Taille · Hüfte höchstens ${gs.je.join(" · ")} %)`
+            gs.n >= 10 && gs.gestalten >= 2 && gs.je.length === 3 && gs.je.every((x, k) => x <= GESTALT_SOLL[k]),
+            `die Gestalt des Stands im Satz: ${gs.max} % zum nahen Leib an ${gs.wer || "—"} (${gs.mass || "—"}; bedeckte Breite je Körperhöhe; ${gs.n} im Satz, ${gs.gestalten} Gestalten mit nahem Leib; Schulter · Taille · Hüfte höchstens ${gs.je.join(" · ")} %, Soll ≤ ${GESTALT_SOLL.join(" · ")} %, Ziel 5 % je Maß)`
         );
         soll(
             b.n >= 10 && b.quote >= 0.9 && b.sektorMax <= 0.5,
