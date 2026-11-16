@@ -1,7 +1,7 @@
 {
  "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
  "geraet": "gtx",
- "zeit": "2026-11-16T02:22:11.910Z",
+ "zeit": "2026-11-16T02:26:05.670Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K5#2": {
@@ -1372,20 +1372,20 @@
   "k2a9578cab2d9": "dVRdj5swEPwvPLblTADzJd2Dc5yaq1op9xPW9hq4EEA2hFOq/vcKEpIA7T6BNeMdz47922pAHCDDpw9TV1ZifbG+WQZOaBvUJ9RPH8ZKLEf4QKOEXYowxl4GmNBF0xpSFpwAryA/ot3pFovySYw03+PCjRLSv7J+T8gnIWRJKznK2m5B4UTi0g09SJbAzmTA0YZOjY2uYBUEoeslZKwoZfsPMhV7Z4z0r8+LjThUcq5SeUDVZjzcK3te4mUB2NplUZmpp5CUe25ya9SvORp6+wyYl6ivpCig0ttMQpcEVXbGzJpEnqSDdSReWpahKUTe2o2uOVaTabEbbiDZrrVkTWerRyXAOUR86W8OWGWo5xpCnwo/IZ8rvQc4oga7gvwKjR0vdPndE0LIbq2lHIWPLSbhkeRxqGbEYXa7fhhHGg0/2W052l0CmGbsXu+LJkbkhT7O7VGKSnCSn2tJJgeJ2j7Upr2bGQahdC9p/7Ud0s6y/coDcz/MlefywKHRw1kiwnZrXq3aHjTaWdNdiegjDWnC2NsK3MLxOB1CuBjR5eBMOwT6UYYTupSOs8j+M4dL/O0zFuVECoXYeJi8MJYuwCcNRxt4pgulpmlzKlT8r3D2WLY2r+t2QioZDJacSXVzZRMx9vYwQJb6zvd0+76+e+NutW4nkZQHjvITdRpunViiz6hLzHDmhfS5BzIhvXhsN318nYXuvBrVucDBpcp0ZoprHMr4Gte5rz3qA4fqcJMKvuKXDO1ZOryY2Y/067Zni0oZ9tuebdnLbDm7bN6gII2uVTE8WySHzuRQtve3+s9f"
  },
  "sitzung": {
-  "start": "2026-11-16T02:21:36.702Z",
-  "ordner": "sitzung-20261116-032136",
+  "start": "2026-11-16T02:25:30.278Z",
+  "ordner": "sitzung-20261116-032530",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 8.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "karte2.same.preis.zugang#1",
-    "s": 26.7,
-    "takte": 882,
+    "vor": "breite.siedlung#1",
+    "s": 24.7,
+    "takte": 831,
     "chunks": 81,
     "nach": null
    }
@@ -1393,7 +1393,7 @@
   "wegeTueren": [],
   "messHalt": [
    {
-    "probe": "karte2.same.preis.zugang#1",
+    "probe": "breite.siedlung#1",
     "halt": -1000000000,
     "zurueck": 0
    }
@@ -1401,21 +1401,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3024,
-   "frameP95": 33.34,
-   "taktP95": 21.46,
-   "vramMax": 121.6,
-   "seiten": 3,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 116,
-   "luecken": 1,
-   "letzteLuecke": "THREE is not defined"
+   "ortImDeckel": [
+    {
+     "probe": "breite.siedlung#1",
+     "m": 566,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 62,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 124.5,
-  "minuten": 2.16
+  "fahrtS": 70.3,
+  "minuten": 1.25
  },
  "ungemessen": {
   "tiere.K5#1": {
@@ -1480,6 +1487,70 @@
    },
    "zeit": "2026-11-15T23:39:01.991Z",
    "abdruck": "55eca60f50c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "breite.siedlung#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymous> (:2:29), <anonymous>:89:26)\",\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\ExecutionContext.js:391:56)\",\"a",
+   "exit": 2,
+   "minuten": 0.59,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymous> (:2:29), <anonymous>:89:26)\",\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\ExecutionContext.js:391:56)\",\"a",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 34.2,
+   "fremd": {
+    "s": 38.9,
+    "takte": 17,
+    "fremdS": 98.53,
+    "kerne": 2.536,
+    "fensterKerne": 2.826,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      45.14
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      24.69
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      11.19
+     ]
+    ],
+    "dienerS": 24.55,
+    "diener": [
+     [
+      "System",
+      12.31
+     ],
+     [
+      "dwm.exe",
+      9.45
+     ]
+    ],
+    "geraetS": 22.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.41
+     ],
+     [
+      "svchost.exe",
+      7.22
+     ],
+     [
+      "SearchIndexer.exe",
+      3.41
+     ]
+    ],
+    "eigenS": 196.48,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-16T02:26:05.670Z",
+   "abdruck": "43bb6d734514",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
