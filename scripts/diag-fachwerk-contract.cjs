@@ -145,6 +145,7 @@ function shellPfad(name, seed, stufe) {
             tuerWraps.push(wg);
         }
         if (tuerWraps.length) geoms.__tuerFluegel = tuerWraps;
+        geoms.__decken = FC.deckenZeile(FC.masseVon(st), FC.raumVon(st, p.col)); // der Innen-Stoff liest die Decken (w28-innenlicht)
         FC.bakeLOD(st.g, p.col, geoms, 0, true);
         disposeGroup(st.g);
     } else {
@@ -520,6 +521,93 @@ function posenLinse() {
     const P = FC.genesisPosen(plan, boden);
     console.log(P.text.replace(/^/gm, "  "));
     check(`POSEN: jede Station hält ihre Pose (${P.posen.length - P.fehl.length}/${P.posen.length}, Plan-Hash ${FC.ortHash(plan)}; leer ist ROT)`, P.posen.length > 0 && !P.fehl.length, P.fehl.map((u) => u.text).join(" | "));
+}
+
+// ── DAS RAUM-LICHT (w28-innenlicht, Familie siedlung.K1): die sechste Zahl der Decken-Zeile ist der mittlere Tageslicht-Quotient
+//    des Körpers (fachwerk `raumLicht`), der Dach-Pool des Wirts reicht sie dem EINEN Umgebungs-Term und der Kamera
+//    (`_dachTakt` → `_raumHimmel`, `_raumBlendeTakt`). Je Kultur am Mass-Bau:
+//    R1 jede Decke trägt elf Zahlen (D, die vier Seiten des Sonnen-Rückstrahls und das Feld des Messers, fachwerk `raumSonne`), D auf dem Raster, 0 < D ≤ 0,2 (ein Körper mit Decke und ohne Öffnung wäre ein Raum ohne Licht);
+//    R2 MUTANTEN am selben Bau: ohne Öffnung D = 0 an jeder Decke · jede Öffnung doppelt so breit hebt D an jeder Decke · dichtes
+//       Glas (Durchlass 0) senkt die Summe · heller Rückwurf (0,8) hebt D an jeder Decke · eine Öffnung an der Wand zweier Körper zählt keinem.
+//    Der Täter steht beim Namen: Kultur · Körper-Index · D.
+function raumLinse() {
+    const R = FC.RAUM_LICHT,
+        rot = [],
+        mut = [];
+    let n = 0,
+        min = 1,
+        max = 0;
+    const summe = (z) => z.reduce((s, d) => s + d[5], 0);
+    for (const k of KULTUREN) {
+        const B = FC.massBau(FC.hausParams(FC.PRESETS[k], {})),
+            Z = FC.deckenZeile(B.masse, B.raum);
+        if (!Z.length) rot.push(k + " ohne Decke");
+        Z.forEach((d, i) => {
+            n++;
+            const D = d[5];
+            if (d.length !== 11 || d.slice(6).some((v) => !(v >= 0 && v <= 1)) || !(D > 0 && D <= 0.2) || Math.round(D * R.raster) !== D * R.raster) rot.push(`${k}#${i} D ${D}`);
+            else [min, max] = [Math.min(min, D), Math.max(max, D)];
+        });
+        const mit = (o) => FC.deckenZeile(B.masse, Object.assign({}, B.raum, o));
+        const zu = mit({ oeffnungen: [] }),
+            breit = mit({ oeffnungen: B.raum.oeffnungen.map((o) => Object.assign({}, o, { w: o.w * 2 })) }),
+            dicht = mit({ glas: 0 }),
+            hell = mit({ wand: 0.8, boden: 0.8 });
+        if (zu.some((d) => d[5] !== 0)) mut.push(k + " ohne Öffnung hell");
+        if (breit.some((d, i) => !(d[5] > Z[i][5]))) mut.push(k + " doppelte Öffnung hebt nicht");
+        if (!(summe(dicht) < summe(Z))) mut.push(k + " dichtes Glas senkt nicht");
+        if (hell.some((d, i) => !(d[5] > Z[i][5]))) mut.push(k + " heller Rückwurf hebt nicht");
+        if (zu.some((d) => d.slice(6).some((v) => v !== 0))) mut.push(k + " ohne Öffnung Sonne im Raum");
+        if (!Z.some((d) => d.slice(6).some((v) => v > 0))) mut.push(k + " keine Seite trägt Sonne");
+    }
+    // die Wand zwischen zwei Körpern sieht keinen Himmel: zwei Kästen Wand an Wand, EINE Öffnung in der gemeinsamen Wand, eine außen
+    const zwei = [
+        { art: "haupt", x0: 0, x1: 4, z0: 0, z1: 4, eY: 3, egTop: 3 },
+        { art: "anbau", x0: 4, x1: 7, z0: 0, z1: 4, yLow: 2.5 },
+    ];
+    const raum = (o) => ({ oeffnungen: o, glas: 0.6, wand: 0.3, boden: 0.2 });
+    const innen = FC.deckenZeile(zwei, raum([{ cx: 4, cy: 1, cz: 2, w: 1, h: 2, perp: "x", glas: 0 }])),
+        aussen = FC.deckenZeile(zwei, raum([{ cx: 0, cy: 1, cz: 2, w: 1, h: 2, perp: "x", glas: 0 }]));
+    if (innen.some((d) => d[5] !== 0)) mut.push("Öffnung zwischen zwei Körpern zählt: " + innen.map((d) => d[5]).join(" · "));
+    // die Öffnung in der Wand −x trägt die Seite −x (Index 7) und keine andere
+    if (!(aussen[0][7] > 0) || aussen[0][6] + aussen[0][8] + aussen[0][9] !== 0) mut.push("Sonnen-Seite falsch: " + aussen[0].slice(6).join(" · "));
+    if (!(aussen[0][5] > 0) || aussen[1][5] !== 0) mut.push("Öffnung außen zählt dem falschen Körper: " + aussen.map((d) => d[5]).join(" · "));
+    // R3 GEZEICHNET = GELESEN (der Innen-Stoff): am gebauten Haus der Stufe 0 tragen die Wand-Flächen, die in einen Körper mit Decke
+    // schauen (`innenAn`, dieselbe Regel wie der Bake), im Median die Zahl, die das Raum-Licht als Rückwurf der Wand liest
+    // (`raumVon`), bis auf Kontakt-AO und Brett-Ton (0,6–1,15). MUTANT: liest der Raum die Außen-Zahl der Rolle, reißt das Band.
+    const stoff = [];
+    for (const k of ["alpenchalet", "schwarzwald"]) {
+        const p = FC.hausParams(FC.PRESETS[k], {});
+        p.seed = 7;
+        const g = FC.buildInstance(k, 7, 0),
+            rows = g.userData.__huelle.decken,
+            raum = FC.raumVon({ H: { dims: {} } }, p.col),
+            aussen = FC.RAUM_LICHT && 0.2126 * FC._colFor("blockholz", p.col)[0] + 0.7152 * FC._colFor("blockholz", p.col)[1] + 0.0722 * FC._colFor("blockholz", p.col)[2],
+            lese = FC.massBau(p).raum.wand,
+            L = [];
+        g.updateMatrixWorld(true);
+        g.traverse((o) => {
+            const A = o.geometry && o.geometry.attributes;
+            if (!A || !A.color || !A.normal) return;
+            for (let v = 0; v < A.position.count; v++) {
+                if (Math.abs(A.normal.getY(v)) > 0.3) continue;
+                const P = [A.position.getX(v), A.position.getY(v), A.position.getZ(v)],
+                    N = [A.normal.getX(v), A.normal.getY(v), A.normal.getZ(v)];
+                if (P[1] < 0.6 || !FC.innenAn(P, N, rows, null)) continue;
+                L.push(0.2126 * A.color.getX(v) + 0.7152 * A.color.getY(v) + 0.0722 * A.color.getZ(v));
+            }
+        });
+        disposeGroup(g);
+        L.sort((x, y) => x - y);
+        const med = rang(L),
+            im = (z) => med / z >= 0.6 && med / z <= 1.15;
+        void raum;
+        if (!(L.length > 200) || !im(lese)) stoff.push(`${k}: ${L.length} Innen-Ecken, Median ${med && med.toFixed(3)} gegen gelesen ${lese.toFixed(3)}`);
+        if (im(aussen)) stoff.push(`${k}: der Mutant (Außen-Zahl ${aussen.toFixed(3)}) bleibt im Band — die Linse ist blind`);
+    }
+    check("Raum-Licht R3: gezeichnet = gelesen — die Innenwand trägt den Ton, den das Raum-Licht liest (Mutant Außen-Zahl ROT)", !stoff.length, stoff.join(" · "));
+    check(`Raum-Licht R1: ${n} Decken in ${KULTUREN.length} Kulturen tragen D ${(min * 100).toFixed(2)}–${(max * 100).toFixed(2)} % auf dem Raster`, !rot.length, rot.slice(0, 6).join(" · "));
+    check("Raum-Licht R2 Mutanten: ohne Öffnung dunkel · doppelte Öffnung · dichtes Glas · heller Rückwurf · Wand zweier Körper", !mut.length, mut.slice(0, 6).join(" · "));
 }
 
 (async function main() {
@@ -971,6 +1059,9 @@ function posenLinse() {
 
     // 13) DIE POSEN DES GENESIS-ORTS
     posenLinse();
+
+    // 14) DAS RAUM-LICHT
+    raumLinse();
 
     wandEnde(errs, "der Haus-Asset-Vertrag steht (cv:6) — jede Prüfung oben.");
 })();

@@ -306,11 +306,13 @@ class AnazhRealm_bild_sicht {
     // SPIEGEL.drift, wandert das Fenster; stehen neue Kronen darin, backt die Nachlese es neu. Ein Auftrag fliegt zur Zeit und
     // nur, wenn der Worker keinen Chunk baut (das Streamen hat Vorrang, Lehre 13) und das erste Weltbild steht (die Ankunft
     // trägt keinen Spiegel); seine Antwort trägt der nächste Takt ein (`_spiegelFeldEintrag`) — ein Bild der ruhenden Welt
-    // (die Bühne, eine Linse, die Werkbank zwischen Befehlen) bäckt nichts und sieht keine Antwort landen.
+    // (die Bühne, eine Linse, die Werkbank zwischen Befehlen) bäckt nichts und sieht keine Antwort landen. Bestellt wird nur,
+    // wenn der Faden den Stand trägt (`_voxelFadenTraegt`, das EINE Prädikat): bis w28-strom-haengt fragte der Takt den Ack
+    // und bestellte auch bei ausgehängtem Faden — die Bestellung gebar einen Zwilling, der fortan den Boden trug.
     _spiegelFeldTakt() {
         const st = this.state;
         const rend = st.renderer;
-        if (!st._weltbildDa || !st.camera || !rend || rend._isHeadlessNull || !st.voxelWorkerReady) return;
+        if (!st._weltbildDa || !st.camera || !rend || rend._isHeadlessNull || !this._voxelFadenTraegt()) return;
         const K = AnazhRealm.SPIEGEL;
         const S = this._spiegelFeld();
         const ant = S.antwort;
@@ -700,8 +702,12 @@ class AnazhRealm_bild_sicht {
                     // der Renderer Schatten zeichnet (`_wirftImStoff`: unter kienspan ruht die Karte)
                     const ort = builder.material.receivedShadowPositionNode || T.positionWorld;
                     const frei = wirt._wirftImStoff(T.max(himmel.sub(wirt._horizontHimmel(ort, n)), T.vec3(0)), himmel);
-                    return wirt._rueckstrahlHalbraum(frei, n);
+                    // DER BAU NIMMT DEN HIMMEL (w28-innenlicht): unter einer Decke trägt die Bestrahlung das Raum-Licht ihres
+                    // Körpers (`_raumHimmel`, die EINE Zahl des Gesetzbuchs) — Himmel UND gezeichneter Boden, beide kommen von außen
+                    return wirt._rueckstrahlHalbraum(frei, n).mul(wirt._raumHimmel(T));
                 }
+                // die Strahlung (der Spiegel der glatten Fläche): im Raum spiegelt sie den Himmel des Raums, nicht den von draußen
+                const raum = wirt._raumHimmel(T);
                 const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
                 const w = T.max(clip.w, 1e-4);
                 const uv = T.vec2(clip.x.div(w).mul(0.5).add(0.5), T.float(0.5).sub(clip.y.div(w).mul(0.5)));
@@ -711,7 +717,7 @@ class AnazhRealm_bild_sicht {
                     .mul(L.an)
                     .mul(T.float(1).sub(T.smoothstep(a, b, stufe)));
                 const sp = T.texture(L.rt.texture, uv).level(T.float(0));
-                return sp.rgb.mul(k).add(himmel.mul(T.float(1).sub(sp.a.mul(k))));
+                return sp.rgb.mul(k).add(himmel.mul(raum).mul(T.float(1).sub(sp.a.mul(k))));
             }
         }
         this._spiegelUmgebungK = T.nodeObject(new SpiegelUmgebung());

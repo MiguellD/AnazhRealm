@@ -524,9 +524,10 @@ class AnazhRealm_gelaende_chunks {
     // DAS SPIEGEL-FELD off-thread (D10): ein Rechteck der Welt-Zellen (`auftrag`: i0, j0, w, h, texel, bezug, wasserFarbe,
     // baeume, gestalten, block — `spiegelFeldBacken` im Worker) → { hoehen (RGBA-Halbfloat), stoff (RGBA8), hoechste je Block, wasser,
     // hMax } am
-    // synchronisierten Zustand.
+    // synchronisierten Zustand. EINE BESTELLUNG GEBIERT NIE (w28-strom-haengt): sie geht an den Faden, der den Stand trägt —
+    // `_getVoxelWorker` gebar hier bei ausgehängtem Faden (Test-Naht der Wasser-Linse) einen Zwilling, der den Boden übernahm.
     _voxelWorkerSpiegel(auftrag) {
-        const worker = this._getVoxelWorker();
+        const worker = this._voxelFadenTraegt() ? this.state.voxelWorker : null;
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
         return this._voxelFadenAuftrag(worker, Object.assign({ type: "spiegel-feld" }, auftrag));
     }
@@ -577,8 +578,10 @@ class AnazhRealm_gelaende_chunks {
         const alle = this._nebenFaeden || (this._nebenFaeden = new Map());
         let f = alle.get(name);
         if (f) return f;
-        // der Voxel-Faden zuerst (lazy wie jeder Chunk-Auftrag; er gibt die Regionen) — steht er noch nicht, wartet der Rufer
-        if (!this._getVoxelWorker()) return null;
+        // der Voxel-Faden zuerst (lazy wie jeder Chunk-Auftrag; er gibt die Regionen) — steht er noch nicht, wartet der Rufer;
+        // lebt er und ist nur ausgehängt (eine Test-Naht: `_bodenFaden` ohne `state.voxelWorker`), gibt DIESER die Regionen — kein Zwilling
+        const voxel = this.state.voxelWorker || this._bodenFaden || this._getVoxelWorker();
+        if (!voxel) return null;
         const worker = new Worker(this._quelleStand().url, { name });
         f = { worker, pending: new Map(), next: 1, geboren: performance.now(), quittiert: null };
         const NAME = name.toUpperCase();
@@ -610,7 +613,7 @@ class AnazhRealm_gelaende_chunks {
         // trägt, per Transfer — der Haupt-Faden klont nie eine); jede spätere Änderung bringt der Sender des Zustands
         // (`_voxelZustandPost`), auch jede Bestellung ab jetzt
         const port = new MessageChannel();
-        this.state.voxelWorker.postMessage({ type: "hydro-an", port: port.port1 }, [port.port1]);
+        voxel.postMessage({ type: "hydro-an", port: port.port1 }, [port.port1]);
         worker.postMessage(
             { type: "state-set", snapshot: this._voxelWorkerSnapshotState(), hydroVon: port.port2, requestId: geburt },
             [port.port2]
@@ -1760,6 +1763,13 @@ class AnazhRealm_gelaende_chunks {
         if (msg.fehlt) {
             const e = this.state.voxelChunks && this.state.voxelChunks.get(msg.key);
             if (!e || !e.mesh || e.mesh.geometry.userData.bid !== msg.bid) return;
+            // DER ZWILLING BEIM NAMEN (w28-strom-haengt): trägt den Boden ein anderer Faden als der, der baut, hält er KEIN
+            // gebautes Netz — jeder Neubau fiele wieder (am Fluss-Ort der Strömungs-Probe 7 Neubauten je Sekunde und Chunk,
+            // die Welt stand nie). Das bricht laut und baut nicht neu.
+            if (this.state.voxelWorker && this._bodenFaden !== this.state.voxelWorker)
+                return void this._bruchMelden(
+                    `BODEN-NAHT: den Boden trägt ein Zwilling des Voxel-Fadens — er hält das Netz ${msg.key} (${msg.bid}) nicht, der Bau-Faden baute es`
+                );
             (this.state.dirtyVoxelChunks || (this.state.dirtyVoxelChunks = new Set())).add(msg.key);
             this.log(`BODEN-NAHT: der Faden hält das Netz ${msg.key} (${msg.bid}) nicht mehr — es baut neu`, "WARNING");
             return;

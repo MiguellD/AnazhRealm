@@ -369,18 +369,15 @@ class AnazhRealm_siedlung_bewohner {
             );
             b.farben = { skinTone: d.skinTone, hairColor: d.hairColor, topColor: d.topColor, bottomColor: d.bottomColor, shoeColor: d.shoeColor }; // prettier-ignore
             const f = this._menschGussFarben(d);
-            // SEIN PUNKT IM LEIB-RAUM (w26-leib-raum): die Achsen seines Genoms — Geschlecht, Bau, Muskel, Alter, die Fülle und der
-            // Ansatz des Haars, der Schnitt als Kappe (koerper `leibRaumPunkt`); seine Größe die Skala seines Satzes gegen die Vorlage
-            const dP = Object.assign(this._dialsAusGenom(gen), {
-                age: gen.alter,
-                hairVol: gen.haarFuelle,
-                haaransatz: gen.haaransatz,
-                hairStyle: gen.schnitt,
-            });
-            b.raumPunkt = kc.leibRaumPunkt(dP);
-            b.raumSkala = dP.height / R.dK.height;
-            // SEIN BAU (w28-leib-genom): die Achsen seines Skeletts — der Punkt oben trägt sie in die Menge, die Geburt auf seine Knochen
-            b.bau = Object.fromEntries(kc.BAU_GESETZ.achsen.map((a) => [a.achse, dP[a.achse]]));
+            // SEIN BAU (w28-leib-genom): die Achsen seines Skeletts — sein Punkt trägt sie in die Menge, die Geburt auf seine Knochen
+            const dE = this._dialsAusGenom(gen);
+            b.bau = Object.fromEntries(kc.BAU_GESETZ.achsen.map((a) => [a.achse, dE[a.achse]]));
+            // SEIN PUNKT IM LEIB-RAUM IST DER SEINES NAHEN LEIBS (w28-gestalt, koerper `leibRaumPunkt`): das Weiche seiner GESTALT
+            // (Geschlecht, Bau, Muskel, Alter, Haar — `G.dK`, der Guss, in dem er nah steht) auf SEINEN Knochen (`bau`); Breite und
+            // Tiefe seines Genoms trägt die Matrix seines Satzes wie die Hüllen seines Leibs (`_bewohnerLeibAn`). Bis hier stand im
+            // Satz der Punkt seines eigenen Genoms: beim Näherkommen sprang die Figur auf den Leib der nächsten Gestalt.
+            b.raumPunkt = kc.leibRaumPunkt(Object.assign({}, G.dK, b.bau));
+            b.raumSkala = dE.height / R.dK.height;
             if (b.tonZeilen) this._tonZeileFrei(b.tonZeilen[0]);
             // seine Zeile trägt seine Palette und seinen Punkt; die Nah-Wahl und das Feld färben gegen die Gestalt, der Satz gegen
             // die Vorlage (`satzZeilen`)
@@ -847,7 +844,7 @@ class AnazhRealm_siedlung_bewohner {
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
                     drehen: u, platz: u,
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
-                    tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, _gait: u, _gaitW: u, walkPhase: u,
+                    tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
                     wagen: u, amSteuer: u,
                 });
                 besuche.push(P);
@@ -1435,7 +1432,8 @@ class AnazhRealm_siedlung_bewohner {
         // je Art die Senke des Satzes: der Wurf, der Leib
         const ARTEN = ["wurf", "leib"];
         const Z = S.satz || null;
-        // seine Matrix: Ort, Blick und seine Größe gegen die Vorlage (`raumSkala`) — die Sohle bleibt, wo die seines Leibs steht
+        // seine Matrix: Ort, Blick, seine Größe gegen die Vorlage (`raumSkala`) und Breite und Tiefe seines Genoms, wie sie die
+        // Hüllen seines Leibs tragen (w28-gestalt) — die Sohle bleibt, wo die seines Leibs steht
         // (der Ursprung liegt PLAYER_FOOT_OFFSET × Skala über ihr, `_bewohnerStellen`)
         const lage = (g, b) =>
             m4.compose(
@@ -1445,7 +1443,7 @@ class AnazhRealm_siedlung_bewohner {
                     g.position.z
                 ),
                 g.quaternion,
-                v3.setScalar(b.raumSkala)
+                v3.set(b.raumSkala * b.breite, b.raumSkala, b.raumSkala * b.tiefe)
             );
         const setze = (k, i, b) =>
             AnazhRealm._gangSatzInstanz(
@@ -2607,11 +2605,23 @@ class AnazhRealm_siedlung_bewohner {
         this._blockerNahe(x, z, AnazhRealm.PLAYER_WALL_RADIUS + 0.25, 0, kand);
         const r2 = (AnazhRealm.PLAYER_WALL_RADIUS + 0.25) ** 2;
         const box = kand.some((e) => (e.blockerAABBs || []).some((q) => this._boxAbstand2(q, x, z) <= r2));
-        if (box || !(b.grundH !== undefined && (x - b.grundX) ** 2 + (z - b.grundZ) ** 2 < 0.25)) {
-            const h = this._koerperBodenUnter(x, sohle, z);
-            [b.grundX, b.grundZ, b.grundH] = [x, z, Number.isFinite(h) ? h : sohle];
+        // Der gehaltene Grund ist eine SCHRÄGE (Höhe an seinem Punkt + Gefälle entlang des Gangs, aus dem Halt davor — kein
+        // zweiter Leser), nie eine Zahl: bis w28-stand-hoehe trug der Schritt die Höhe des letzten halben Meters — am Hang
+        // (0,5 m/m) stand der vom Ausweichen Zurückgekehrte 12 cm im Boden und blieb dort. Wer steht (kein Weg in diesem
+        // Schritt, oder sein Weg endet), liest genau an seinem Punkt. Der Halt hängt am Abstand zum Auge (`grundHaltJeM`,
+        // höchstens ein halber Meter): ein Knick des Geländes kostet den Gehenden nah Zentimeter, nie den Hang des halben Meters.
+        const halt = Math.min(0.5, AnazhRealm.BEWOHNER.grundHaltJeM * Math.sqrt(b.d2 || 0) || 0.5);
+        const steht = b.wi >= pts.length || (x === g.position.x && z === g.position.z);
+        const fern = !(b.grundH !== undefined && (x - b.grundX) ** 2 + (z - b.grundZ) ** 2 < halt * halt);
+        if (box || fern || (steht && (x !== b.grundX || z !== b.grundZ))) {
+            const h0 = this._koerperBodenUnter(x, sohle, z);
+            const h = Number.isFinite(h0) ? h0 : sohle;
+            const [dx, dz] = b.grundH === undefined ? [0, 0] : [x - b.grundX, z - b.grundZ];
+            const k = box || steht || !(dx || dz) || dx * dx + dz * dz > 0.3 ? 0 : (h - b.grundH) / (dx * dx + dz * dz);
+            [b.grundX, b.grundZ, b.grundH, b.grundGx, b.grundGz] = [x, z, h, k * dx, k * dz];
         }
-        g.position.set(x, this._bewohnerTritt(x, z, sohle, b.grundH, kand) + fuss, z); // die Boxen seiner Reichweite trägt kand
+        const grund = b.grundH + b.grundGx * (x - b.grundX) + b.grundGz * (z - b.grundZ);
+        g.position.set(x, this._bewohnerTritt(x, z, sohle, grund, kand) + fuss, z); // die Boxen seiner Reichweite trägt kand
         this._tritt(g, x, z, true, false); // sein Gang tritt den Pfad (stoffe.K4)
         if (rx || rz) {
             const TC = globalThis.__tetrapodaCore;
@@ -3872,6 +3882,7 @@ AnazhRealm.BEWOHNER = Object.freeze({
     fahrbahnStrafe: 3,
     fernS: 0.25,
     sohleM: 0.008,
+    grundHaltJeM: 0.01, // der Halt des gehaltenen Grunds je Meter Abstand zum Auge (5 m: 5 cm, ab 50 m der halbe Meter)
     begegnungM: 3,
     kopfMaxRad: 1.2,
     rumpfMaxRad: 0.45,

@@ -772,7 +772,9 @@ function messeMenge(eingriff, W = mengeWelt(eingriff)) {
     const px = (1080 / (2 * Math.tan((A.KAM_FOV_GRAD * Math.PI) / 360)) / A.BEWOHNER.nahM) * ((8 * A.PLAYER_KH) / 6);
     const m = { gleich: 0, min: Infinity, paar: null };
     for (const { S, R } of W.siedlungen) {
-        const je = S.liste.map((b) => [A._leibRaumLeib(R, b.raumPunkt).map((x) => x * b.raumSkala * px), b.seed]);
+        // die Ecke, wie die Matrix seines Satzes sie stellt (w28-gestalt): seine Größe, Breite und Tiefe seines Genoms
+        const mal = (b) => [b.raumSkala * b.breite * px, b.raumSkala * px, b.raumSkala * b.tiefe * px];
+        const je = S.liste.map((b) => [A._leibRaumLeib(R, b.raumPunkt).map((x, e) => x * mal(b)[e % 3]), b.seed]);
         je.forEach(([a, s], i) =>
             je.slice(i + 1).forEach(([c, t]) => {
                 const d = Math.max(
@@ -785,8 +787,12 @@ function messeMenge(eingriff, W = mengeWelt(eingriff)) {
     }
     return m;
 }
-// das Urteil der Menge: kein Paar gleicher Gestalt (unter 1 px)
-const urteileMenge = (m) => (m.gleich ? [`menge.gleich ${m.gleich} Paare unter 1 px (${m.paar})`] : []);
+// das Urteil der Menge: Paare gleicher Gestalt (unter 1 px) höchstens MENGE_GLEICH_SOLL. Seit w28-gestalt steht im Satz die
+// Form des nahen Leibs (das Weiche seiner Gestalt auf seinen Knochen, Breite und Tiefe ±restMax) — bis dahin trug der Satz den
+// Punkt des eigenen Genoms, eine Vielfalt, die der nahe Leib nie hatte. Gemessen: 1 Paar von 2 450 (20973:4:0 / 20973:10:0,
+// eine Gestalt, 0,91 px: Arm 1 cm), das nächste 1,55 px. Die Ratsche fällt auf 0, sobald der nahe Leib sein eigenes Weiches trägt.
+const MENGE_GLEICH_SOLL = 1;
+const urteileMenge = (m) => (m.gleich > MENGE_GLEICH_SOLL ? [`menge.gleich ${m.gleich} Paare unter 1 px (${m.paar}), Soll ≤ ${MENGE_GLEICH_SOLL}`] : []); // prettier-ignore
 
 // DER BAU (w28-leib-genom, koerper BAU_GESETZ; die Bänder BAU_SOLL): das Skelett jedes Bewohners ist sein eigenes — gemessen am
 // GELESENEN, mit Vorzeichen. (1) DIE STREUUNG IN DER MENGE: je Bewohner sein gezeichneter Leib der Menge (die Vorlage der Stufe 2 an
