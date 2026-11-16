@@ -2448,17 +2448,28 @@ async function fahrKette(tor) {
     tor.karte();
     await page.evaluate(require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL);
     await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__taktHz = ${d.taktHz}; window.__ruckJeBild = ${F.ruckJeBild};`);
-    // DIE BILDER WÄHREND DER FAHRT: der Abstand je zwei Bild-Rückrufen der Seite (requestAnimationFrame) über die ganze Kette —
-    // die Bremsfahrten laufen im Takt der Bilder; p95 und das größte stehen in der Zeile
+    // DIE BILDER WÄHREND DER FAHRT sind die TAKTE der Fahrt (16.11., Radeon 77e079ae und OMEN 4167e10c: „p95 2444 ms, größtes 6403 ms,
+    // 52 Bilder“ — bis hier maß die Station den Abstand je zwei requestAnimationFrame der Seite; die Bremsfahrten von probeLeben takten
+    // aber SYNCHRON (`bilder` → `r._gameLoopTick` in einer Schleife, scripts/lib/fahr-proben.cjs), kein rAF fällt in eine Bremsung, und
+    // die Zeile maß die Dauer der Bremsungen, nie ein Bild des Spiels): die Wanduhr JEDES `_gameLoopTick` während der Kette, in der
+    // Seite um die Hülle des Takts — p95 und das größte in der Zeile. DER HALT DER MESSUNG TAUT (dieselben Läufe: nass ÷ trocken 1,00×
+    // an beiden Böden, jede Lage regen 0 · naesse 0): die Werkbank der Sitzung friert `weatherEffectTime` an jedem Ort und Takt
+    // (`__buehne` → `__wetterHalten`), probeLeben schreibt das Wetter über `r._setWeather` (headless ohne Halt: 1,72/1,48×), und der
+    // EINE Wetter-Schreiber verweigert unter dem Halt jedes Wort — der Sturm fiel still. Die Station setzt weatherEffectTime = 0 für
+    // die Kette und gibt ihn danach zurück, wie er stand.
     await page.evaluate(() => {
-        const B = (window.__ketteBilder = []);
-        let t = performance.now();
-        const f = (n) => {
-            B.push(n - t);
-            t = n;
-            if (window.__ketteBilder === B) requestAnimationFrame(f);
+        const r = window.anazhRealm, s = r.state, B = (window.__ketteBilder = []);
+        const eigen = Object.prototype.hasOwnProperty.call(r, "_gameLoopTick"), vor = r._gameLoopTick;
+        window.__ketteZurueck = { halt: s.weatherEffectTime, takt: () => (eigen ? (r._gameLoopTick = vor) : delete r._gameLoopTick) };
+        if (s.weatherEffectTime < 0) s.weatherEffectTime = 0;
+        r._gameLoopTick = function (t) {
+            const a = performance.now();
+            try {
+                return vor.call(this, t);
+            } finally {
+                if (window.__ketteBilder === B) B.push(performance.now() - a);
+            }
         };
-        requestAnimationFrame(f);
     });
     const t0 = Date.now();
     let o = null, bilder = [];
@@ -2466,9 +2477,11 @@ async function fahrKette(tor) {
         o = await page.evaluate(F.probeLeben, { messort: mo, nurKette: true, kette: d.KETTE });
     } finally {
         bilder = await page.evaluate(() => {
-            const B = window.__ketteBilder || [];
+            const B = window.__ketteBilder || [], z = window.__ketteZurueck;
             delete window.__ketteBilder;
-            return B.slice(1);
+            delete window.__ketteZurueck;
+            if (z) (z.takt(), (window.anazhRealm.state.weatherEffectTime = z.halt));
+            return B;
         });
     }
     const s = bilder.slice().sort((a, b) => a - b);
@@ -2477,7 +2490,8 @@ async function fahrKette(tor) {
     console.log("  (KETTE " + ((Date.now() - t0) / 1000).toFixed(1) + " s in der Welt der Sitzung)");
 }
 const KETTE_PROBE = { befehl: PW.torBefehl(fahrKette), sek: 45, mutiert: true };
-// die Bilder, ohne die „während der Fahrt“ nichts misst (vier Bremsungen 50 → 0 km/h dauern je ≥ 2 s: ≥ 4 × 2 s × 30 Bilder)
+// die Takte, ohne die „während der Fahrt“ nichts misst (neun Bremsungen 50 → 0 km/h zu je ≥ 100 Sim-Takten; die Fassung mit rAF
+// zählte 52 in 21 s)
 const KETTE_BILDER = 240;
 const WEGENETZ_PROBEN = (() => {
     const tafel = { ortsdurchfahrt: 50, wohnstrasse: 30, gasse: 25, feldweg: 40 };
@@ -6391,12 +6405,13 @@ const stationen = [
             const z = (x) => (Number.isFinite(x) ? x.toFixed(2).replace(".", ",") : "?");
             const [boden, nG, nW] = [q("trocken", "weg"), q("sturm", "trocken"), q("wegNass", "weg")];
             const b = k.bild || null;
+            const still = !!r.sturm && !(r.sturm.regen > 0) && !(r.sturm.naesse > 0);
             const ok = { boden: boden >= 1.5, nass: Math.min(nG, nW) >= 1.3, bild: !!b && b.n >= KETTE_BILDER && b.p95 <= 33 };
             return {
                 gruen: !soft && ok.boden && ok.nass && ok.bild && lauf.exit === 0,
                 zahl:
                     (ok.boden ? "✅" : "❌") + " Bremsweg 50 → 0 km/h Gras " + z(r.trocken && r.trocken.s) + " / Weg " + z(r.weg && r.weg.s) + " m = " + z(boden) + "× (Soll ≥ 1,5) · " +
-                    (ok.nass ? "✅" : "❌") + " nass ÷ trocken Gras " + z(nG) + "×, Weg " + z(nW) + "× (Soll ≥ 1,3) · " + (ok.bild ? "✅" : "❌") + " Bild während der Fahrt " +
+                    (ok.nass ? "✅" : "❌") + " nass ÷ trocken Gras " + z(nG) + "×, Weg " + z(nW) + "× (Soll ≥ 1,3)" + (still ? " — der Sturm fiel still (regen 0 · Nässe 0: das Wort galt nie, der Halt der Messung?)" : "") + " · " + (ok.bild ? "✅" : "❌") + " Bild (Takt) während der Fahrt " +
                     (b ? "p95 " + z(b.p95) + " ms (Soll ≤ 33), größtes " + z(b.max) + " ms, " + b.n + " Bilder" + (b.n < KETTE_BILDER ? " (Soll ≥ " + KETTE_BILDER + ")" : "") : "ungemessen (die Zeile trägt keine Bilder)") +
                     " · Exit " + lauf.exit + " · " + ad,
             };
@@ -6413,6 +6428,8 @@ const stationen = [
                 { name: "jeder Boden bremst gleich (μ 1 auf Gras und Weg)", stdout: z({ trocken: { s: 12.5 } , sturm: { s: 21.5 } }), gruen: false },
                 { name: "nass nur 1,28× (die Welt vor der Stoff-Zeile)", stdout: z({ sturm: { s: 26.1 }, wegNass: { s: 16 } }), gruen: false },
                 { name: "der Weg wird nass nicht länger", stdout: z({ wegNass: { s: 12.6 } }), gruen: false },
+                { name: "der Sturm fiel still unter dem Halt der Sitzung (Radeon 77e079ae: jede Lage regen 0, nass 1,00×, rAF p95 2444 ms in 52 Bildern)",
+                    stdout: z({ sturm: { regen: 0, naesse: 0, s: 20.6 }, wegNass: { regen: 0, naesse: 0, s: 12.62 } }, undefined, { n: 52, p95: 2444.1, max: 6403.1 }), gruen: false },
                 { name: "der Stand kennt nurKette nicht", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nkeine Zeile KETTE: probeLeben kennt nurKette nicht (gate:fahr-leben --kette fehlt am Stand)", gruen: false },
                 { name: "die Kette brach (keine Bremsung)", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nKETTE " + JSON.stringify({ roh: null, err: "kein Wagen im Sattel" }), gruen: false },
                 { name: "swiftshader", stdout: z({}, "google/swiftshader"), gruen: false },

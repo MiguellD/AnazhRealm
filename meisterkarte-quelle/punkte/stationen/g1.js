@@ -1370,17 +1370,25 @@ async function brandSitzungProbe(r, T, o) {
         trocken();
         r.setTimeOfDay(0.5, "regler");
         const [mx, mz] = [Math.floor(M.x / cs), Math.floor(M.z / cs)];
+        // DER HERD IM OFFENEN (16.11., Radeon b68b59cf: der Herd −312/−1080 lag im Wald — VOR lag die Zelle im Schatten der Kronen,
+        // ERLOSCHEN waren die Kronen verbrannt und die Narbe lag in der Sonne, Luma 0,024 → 0,032, ÷ 1,333): ein Bildpaar urteilt die
+        // Narbe nur unter DEMSELBEN Licht. Die Zelle trägt kein Kronendach — `_kronenStreuAt` (die EINE Lese-Stelle „hier steht Wald“,
+        // 0 offen, 0,6 unter einer Krone) an der Mitte und den vier Viertel-Punkten ≤ KRONE_OFFEN (dieselbe Zahl im Urteil, brandLicht)
+        const KRONE_OFFEN = 0.05;
+        if (typeof r._kronenStreuAt !== "function") return { fehler: "der Leser des Kronendachs `_kronenStreuAt` fehlt am Stand" };
+        const krone = (cx, cz) => Math.max(...[[0, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) => r._kronenStreuAt((cx + 0.5 + a / 4) * cs, (cz + 0.5 + b / 4) * cs)));
         let herd = null;
-        for (let d = 2; d <= 5 && !herd; d++)
+        for (let d = 2; d <= 8 && !herd; d++)
             for (let i = -d; i <= d && !herd; i++)
                 for (const [cx, cz] of [[mx + i, mz - d], [mx + i, mz + d], [mx - d, mz + i], [mx + d, mz + i]]) {
                     const f = r._brandStoff(cx, cz);
-                    if (f && f.zeile.name === "gras" && r._brandFeuchte(f.boden) < f.zeile.brenn.mx && !r._nassAt(...xz(cx, cz))) {
+                    if (f && f.zeile.name === "gras" && r._brandFeuchte(f.boden) < f.zeile.brenn.mx && !r._nassAt(...xz(cx, cz)) && krone(cx, cz) <= KRONE_OFFEN) {
                         herd = [cx, cz];
                         break;
                     }
                 }
-        if (!herd) return { fehler: "keine trockene Gras-Zelle 2–5 Zellen um die Mess-Wiese (Zelle " + cs + " m)" };
+        if (!herd) return { fehler: "keine trockene Gras-Zelle ohne Kronendach 2–8 Zellen um die Mess-Wiese (Zelle " + cs + " m)" };
+        aus.krone = r3(krone(...herd));
         const [hx, hz] = xz(...herd);
         const hy = r._voxelSurfaceY(hx, hz);
         const [dx, dz] = ((a, b, l = Math.hypot(a, b) || 1) => [a / l, b / l])(hx - M.x, hz - M.z);
@@ -1402,6 +1410,17 @@ async function brandSitzungProbe(r, T, o) {
         if ((roi[2] - roi[0]) * (roi[3] - roi[1]) < 100) return { fehler: "der Ausschnitt der Herd-Zelle trägt < 100 Pixel: " + roi.join(",") };
         const LUT = Array.from({ length: 256 }, (_, i) => ((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))(i / 255));
         const Y = {};
+        const warm = (u8) => {
+            let n = 0;
+            for (let i = 0; i < W * H; i++) {
+                const [R, G, Bl] = [u8[4 * i], u8[4 * i + 1], u8[4 * i + 2]];
+                if (R >= 150 && R >= 1.3 * G && G >= 1.15 * Bl) n++;
+            }
+            return n;
+        };
+        // DIE FLAMMEN SIND EMISSION (16.11., Radeon b68b59cf: nach dem Regen 0 brennende Zellen und doch +40 „Flammen-Pixel“ — die warme
+        // Farb-Regel zählt die besonnte grau-braune Asche mit): je Schuss ein zweites Bild derselben Kamera ohne den Flammen-Satz
+        // (`brandFlammenSatz.mesh`, _brandFlammenZeichnen); Flammen = warme Pixel mit − ohne ihn. Ohne Satz steht keine Flamme in der Welt (0).
         const schuss = async (name) => {
             stellen();
             const { u8 } = await window.__ausgabeAufnahme(W, H);
@@ -1411,15 +1430,22 @@ async function brandSitzungProbe(r, T, o) {
                     const i = (y * W + x) * 4;
                     L.push(0.2126 * LUT[u8[i]] + 0.7152 * LUT[u8[i + 1]] + 0.0722 * LUT[u8[i + 2]]);
                 }
-            let flammen = 0;
-            for (let i = 0; i < W * H; i++) {
-                const [R, G, Bl] = [u8[4 * i], u8[4 * i + 1], u8[4 * i + 2]];
-                if (R >= 150 && R >= 1.3 * G && G >= 1.15 * Bl) flammen++;
+            const w = warm(u8), S = st.brandFlammenSatz, m = S && S.mesh;
+            let ohne = w;
+            if (m && m.visible) {
+                m.visible = false;
+                try {
+                    stellen();
+                    ohne = warm((await window.__ausgabeAufnahme(W, H)).u8);
+                } finally {
+                    m.visible = true;
+                }
             }
             Y[name] = L;
             aus.schuesse.push({ name, url: window.__png(u8, W, H) });
-            return { luma: r3(L.reduce((s, v) => s + v, 0) / Math.max(1, L.length)), flammen };
+            return { luma: r3(L.reduce((s, v) => s + v, 0) / Math.max(1, L.length)), warm: w, flammen: Math.max(0, w - ohne) };
         };
+        aus.flammenArt = "emission";
         await window.__weltStehtNach(takt, 900);
         aus.vor = await schuss("vor");
         const n0 = (st.worldMeta.taten ||= []).length;
@@ -1460,6 +1486,11 @@ function brandBildLesen(j, lauf) {
     const bilder = ["vor", "brennt", "erloschen"].filter((n) => S.some((s) => s.name === n && s.datei && !s.fehler)).length;
     if (!e.vor || !e.brennt || !e.erloschen || bilder < 3) return { fehler: "Bilder " + bilder + "/3 (vor, brennt, erloschen) · " + ad };
     if (!e.entfacht) return { fehler: "der Herd " + (e.herd || []).join(",") + " fing nicht · " + ad };
+    // DASSELBE LICHT (brandSitzungProbe, der Herd im Offenen): eine Zeile ohne Kronendach am Herd stammt von der Probe vor dem Schnitt
+    // (Schatten VOR, Sonne ERLOSCHEN), eine ohne Emissions-Flammen zählte die Asche als Flamme — beides urteilt kein Bild
+    if (!(e.krone != null && e.krone <= 0.05))
+        return { fehler: "der Herd " + (e.herd || []).join(",") + " unter dem Kronendach " + (e.krone == null ? "ungemessen" : e.krone) + " (Soll ≤ 0,05: dasselbe Licht vor und nach dem Brand) · " + ad };
+    if (e.flammenArt !== "emission") return { fehler: "die Flammen im Bild sind keine Emission (warme Pixel zählen die Asche mit) · " + ad };
     return { e, ad, hw };
 }
 // same.kopplung.stoerung S1: die Zelle nach dem Brand im Bild dunkler — lineare Luma ERLOSCHEN ÷ VOR ≤ 0,5, die Asche an der Mitte ≥ 0,99
@@ -1484,7 +1515,7 @@ function kaskadeUrteil(j, lauf) {
     return {
         gruen: hw && e.trockenS >= 60 && e.brennt.zellen >= 1 && fB >= 200 && e.regenS <= 60 && e.nachRegen === 0 && e.erloschen.zellen === 0 && fC <= 20,
         zahl: "trocken nach " + e.trockenS + " s " + e.brennt.zellen + " brennende Zellen, Flammen im Bild +" + fB + " Pixel (Soll ≥ 200; " + e.brennt.flammenListe +
-            " Flammen gezeichnet) · Regen löscht nach " + e.regenS + " s (Soll ≤ 60), danach " + e.erloschen.zellen + " Zellen, Flammen im Bild " + (fC >= 0 ? "+" : "") + fC + " (Soll ≤ 20) · " + ad,
+            " Flammen gezeichnet) · Regen löscht nach " + e.regenS + " s (Soll ≤ 60), danach " + e.erloschen.zellen + " Zellen, Flammen im Bild (Emission) " + (fC >= 0 ? "+" : "") + fC + " (Soll ≤ 20; warm " + e.erloschen.warm + ") · " + ad,
     };
 }
 // mensch.zeit.erleben S1: dieselbe Pose vorher/nachher — ≥ 50 % des Ausschnitts um ≥ 30 % dunkler, die Asche an der Mitte ≥ 0,99
@@ -1500,13 +1531,15 @@ function erlebenUrteil(j, lauf) {
 // die Roh-Zeile der Proben (ein erfundener GRÜN-Lauf der Form, nie eine Messung) und ihre Mutanten
 const BRAND_ROH = {
     schuesse: [{ name: "vor", datei: "x-brand-s1.png" }, { name: "brennt", datei: "x-brand-s2.png" }, { name: "erloschen", datei: "x-brand-s3.png" }],
-    vor: { luma: 0.12, flammen: 4 },
+    vor: { luma: 0.12, warm: 4, flammen: 0 },
     entfacht: true,
     trockenS: 60,
-    brennt: { zellen: 6, flammenListe: 22, luma: 0.2, flammen: 1800 },
+    brennt: { zellen: 6, flammenListe: 22, luma: 0.2, warm: 1840, flammen: 1800 },
     regenS: 7,
     nachRegen: 0,
-    erloschen: { zellen: 0, lebt: false, luma: 0.03, flammen: 6 },
+    erloschen: { zellen: 0, lebt: false, luma: 0.03, warm: 10, flammen: 0 },
+    krone: 0,
+    flammenArt: "emission",
     asche: 0.995,
     aschen: 9,
     veraendert: 0.82,
@@ -1701,6 +1734,12 @@ async function seilBildProbe(r, T, o, G) {
         aktuell = n;
         return eq.call(this, n);
     };
+    // DER LEIB IM BILD IST DIE DRITTE SICHT (Wort des Spielers `setCameraMode`): die Ego-Kamera sitzt im Leib, die Hand hängt
+    // unter dem Auge (Null-Renderer am Kopf vorrat5-flegel: der Kopf des Flegels 1,73 m unter der Kamera, quer 0,16 m, vorn 0 —
+    // im Kegel 0 von 120 Takten; in der dritten Sicht 120 von 120) — die Sprosse „schwingt am Leib des Spielers im Bild“ misst
+    // dort, wo das Bild den Leib zeigt; die Sicht der Sitzung kehrt danach zurück
+    const sicht = s.cameraMode;
+    r.setCameraMode("third");
     let aus;
     try {
         aus = await seilProbe(r, T, o, Object.assign({}, G, { takt }));
@@ -1728,6 +1767,7 @@ async function seilBildProbe(r, T, o, G) {
         }
         r.equipHeld(null);
     }
+    r.setCameraMode(sicht);
     return aus;
 }
 const SEIL_SITZUNG = { befehl: weltSitzungBefehl([["seil", seilBildProbe]], [seilProbe]), sek: 60, mutiert: true };
@@ -1825,8 +1865,15 @@ async function schneeJahrSitzungProbe(r, T, o, G) {
     stellen();
     const [mx, mz] = [(pose.cx + g.x) / 2, (pose.cz + g.z) / 2];
     const punkte = [];
-    for (let a = -300; a <= 300; a += 20)
-        for (let b = -300; b <= 300; b += 20) {
+    // DIE KRONEN VERDECKEN (16.11., Radeon 77e079ae: winter „Bild 79,9 m · Gesetz 102 m, Treffer 0,127 aus 166“, sommer Treffer 0,031 —
+    // im Bild liegt der Hang weiß bis zum Fuß, nur vor ihm stehen Bäume, und die Hälfte der Punkte las das Pixel einer Krone): ein Punkt
+    // unter einem Kronendach oder hinter einer Krone (je 4 m des Strahls: `_kronenStreuAt` ≥ 0,3 und der Strahl ≤ BAUM_HOCH über dem
+    // Grund) ist kein Pixel des Bodens; das Gitter je 10 m (bis hier 20 m) hält die Zahl der freien Punkte
+    if (typeof r._kronenStreuAt !== "function") return Object.assign(aus, { fehler: "der Leser des Kronendachs `_kronenStreuAt` fehlt am Stand" });
+    const [KRONE, BAUM_HOCH] = [0.3, 30];
+    let verdeckt = 0;
+    for (let a = -300; a <= 300; a += 10)
+        for (let b = -300; b <= 300; b += 10) {
             const [x, z] = [mx + a, mz + b];
             if (r._nassAt(x, z) || !r._landAt(x, z, 0)) continue;
             const p = new T.Vector3(x, r._voxelSurfaceY(x, z), z);
@@ -1834,14 +1881,18 @@ async function schneeJahrSitzungProbe(r, T, o, G) {
             if (!(Math.abs(q.x) < 0.98 && Math.abs(q.y) < 0.98 && q.z > -1 && q.z < 1)) continue;
             const d = p.distanceTo(E);
             const n = Math.ceil(d / 4);
-            let frei = true;
-            for (let i = 1; i < n - 1 && frei; i++) {
+            let frei = true, krone = r._kronenStreuAt(x, z) >= KRONE;
+            for (let i = 1; i < n - 1 && frei && !krone; i++) {
                 const t = i / n;
                 const [sx, sy, sz] = [E.x + (p.x - E.x) * t, E.y + (p.y - E.y) * t, E.z + (p.z - E.z) * t];
-                if (r._terrainMacroSurfaceY(sx, sz) > sy + 1.5) frei = false;
+                const grund = r._terrainMacroSurfaceY(sx, sz);
+                if (grund > sy + 1.5) frei = false;
+                else if (sy <= grund + BAUM_HOCH && r._kronenStreuAt(sx, sz) >= KRONE) krone = true;
             }
-            if (frei) punkte.push({ x, y: p.y, z, px: Math.round(((q.x + 1) / 2) * W), py: Math.round(((1 - q.y) / 2) * H) });
+            if (frei && krone) verdeckt++;
+            else if (frei) punkte.push({ x, y: p.y, z, px: Math.round(((q.x + 1) / 2) * W), py: Math.round(((1 - q.y) / 2) * H) });
         }
+    aus.verdeckt = verdeckt;
     Object.assign(aus, {
         gipfel: [g.x, g.y - wl, g.z].map(r3),
         kamera: [E.x, E.y, E.z, Z.x, Z.y, Z.z].map((v) => Math.round(v * 10) / 10),
@@ -5034,6 +5085,9 @@ module.exports = [
             { name: "ein Bild fehlt", stdout: brandRoh((x) => ((x.schuesse = x.schuesse.slice(0, 2)), x)), gruen: false },
             { name: "der Herd fing nicht", stdout: brandRoh((x) => ((x.entfacht = false), x)), gruen: false },
             { name: "swiftshader", stdout: brandRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+            // die Fassung vor dem Schnitt urteilte diese zwei GRÜN: Schatten VOR gegen Sonne ERLOSCHEN
+            { name: "der Herd unter dem Kronendach 0,6 (VOR im Schatten, die Narbe in der Sonne: ÷ 0,25 ohne Täter)", stdout: brandRoh((x) => ((x.krone = 0.6), x)), gruen: false },
+            { name: "die Zeile der Probe vor dem Schnitt (kein Kronendach gemessen)", stdout: brandRoh((x) => (delete x.krone, x)), gruen: false },
         ],
         pfad: BRAND_PFAD,
         quelle: "KARTE2 same.kopplung.stoerung S1 = Bildpaar Zelle vor / nach dem Brand, beide Geräte",
@@ -5056,6 +5110,9 @@ module.exports = [
             { name: "der Regen löscht nach 300 s nicht", stdout: brandRoh((x) => ((x.regenS = 300), (x.nachRegen = 4), x)), gruen: false },
             { name: "erloschen, aber Flammen im Bild", stdout: brandRoh((x) => ((x.erloschen.flammen = 900), x)), gruen: false },
             { name: "swiftshader", stdout: brandRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+            // die Fassung vor dem Schnitt: die besonnte Asche trägt +40 warme Pixel, Emission 0 — sie urteilte ROT ohne Flamme
+            { name: "erloschen, die besonnte Asche warm (+40 Pixel), keine Emission (Radeon b68b59cf)", stdout: brandRoh((x) => ((x.erloschen.warm = 44), x)), gruen: true },
+            { name: "die Zeile der Probe vor dem Schnitt (warme Pixel statt Emission)", stdout: brandRoh((x) => (delete x.flammenArt, x)), gruen: false },
         ],
         pfad: BRAND_PFAD,
         quelle: "KARTE2 same.kopplung.kaskade S1 = Bildpaar: Brand erlischt im Regen, hält im Trockenen, beide Geräte",

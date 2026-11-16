@@ -2123,7 +2123,48 @@ async function baumSperre(repo, geraet, o = {}) {
     const wer = String((o.env || process.env).PUNKTE_WER || "macher").replace(/[^A-Za-z0-9_]/g, "") || "macher";
     const marke = path.join(repo, ".claude", "worktrees", "punkte-" + geraet + ".wartet", wer + "-" + process.pid);
     const markeFort = () => { try { fs.rmSync(marke, { force: true }); } catch (_e) {} };
-    for (let gemeldet = false; ; ) {
+    // DIE GERECHTE SCHLANGE (16.11., Radeon: pid 11860, seit 22:04 mit EINER Station am Baum, wartete 53 min, während der Lauf von 22:31
+    // den Baum bekam — wer nach dem Freiwerden zuerst pollte, gewann): die Marke trägt die Zeit, SEIT der Lauf wartet (das mtime frischt
+    // je Runde auf, die Leser `-mmin -1` bleiben gleich), und ein freier Baum geht an die ÄLTESTE lebende Marke — ein jüngerer Wartender
+    // überholt nie. Tot zählt nicht und fällt: eine Marke ohne Auffrischung seit 2 min, eine pid ohne Prozess, eine pid, die heute ein
+    // Prozess trägt, der nach der Marke begann (halterLebt). Die Fassung vor diesem Schnitt schrieb je Runde die JETZT-Zeit in die Marke —
+    // ihre Läufe erscheinen hier stets frisch, also jünger als jeder, der länger wartet, und nehmen frei wie bisher: kein Verklemmen.
+    const ordner = path.dirname(marke), ich = path.basename(marke), startVon = o.startVon || prozessStart, starts = new Map();
+    let seit = 0; // ms, seit dieser Lauf wartet; 0 = er wartet noch nicht
+    const lebtPid = (pid) => { if (o.startVon) return true; try { process.kill(pid, 0); return true; } catch (e) { return e.code === "EPERM"; } };
+    const aelterWartet = () => {
+        let namen;
+        try { namen = fs.readdirSync(ordner).sort(); } catch (_e) { return null; }
+        const meins = seit || Date.now();
+        for (const n of namen) {
+            if (n === ich) continue;
+            const datei = path.join(ordner, n), m = /-(\d+)$/.exec(n), fort = () => { try { fs.rmSync(datei, { force: true }); } catch (_e) {} };
+            let mtime, t;
+            try { mtime = fs.statSync(datei).mtimeMs; t = Date.parse(fs.readFileSync(datei, "utf8").trim()); } catch (_e) { continue; }
+            if (Date.now() - mtime > 120000) { fort(); continue; }
+            if (!m) continue;
+            if (!Number.isFinite(t)) t = mtime;
+            if (!(t < meins || (t === meins && n < ich))) continue; // jünger als dieser Lauf: er zählt hier nicht
+            const pid = Number(m[1]);
+            if (!starts.has(pid)) starts.set(pid, startVon(pid));
+            if (!lebtPid(pid) || !halterLebt(starts.get(pid), t)) { fort(); starts.delete(pid); continue; }
+            return n;
+        }
+        return null;
+    };
+    const warteRunde = async () => {
+        if (!seit) { seit = Date.now(); process.on("exit", markeFort); }
+        try { fs.mkdirSync(ordner, { recursive: true }); fs.writeFileSync(marke, new Date(seit).toISOString()); } catch (_e) {} // die Marke stört nie das Warten
+        await new Promise((r) => setTimeout(r, o.wartMs || 10000)); // 10 s (bis 14.11. 30 s: zwischen zwei Stationen der Landung blieb dem Wartenden keine Runde)
+    };
+    for (let gemeldet = false, vorGemeldet = false; ; ) {
+        const vor = fs.existsSync(sperre) ? null : aelterWartet();
+        if (vor) {
+            if (o.einmal) return false;
+            if (!vorGemeldet) { console.log("Punkte-Maschine: der Spiel-Baum " + geraet + " ist frei, doch " + vor + " wartet länger — er zuerst"); vorGemeldet = true; }
+            await warteRunde();
+            continue;
+        }
         try {
             fs.mkdirSync(sperre);
             fs.writeFileSync(path.join(sperre, "pid"), String(process.pid));
@@ -2146,9 +2187,8 @@ async function baumSperre(repo, geraet, o = {}) {
                 continue;
             }
             if (o.einmal) return false;
-            if (!gemeldet) { console.log("Punkte-Maschine: der Spiel-Baum " + geraet + " ist belegt (pid " + pid + "), warte"); gemeldet = true; process.on("exit", markeFort); }
-            try { fs.mkdirSync(path.dirname(marke), { recursive: true }); fs.writeFileSync(marke, new Date().toISOString()); } catch (_e) {} // die Marke stört nie das Warten
-            await new Promise((r) => setTimeout(r, o.wartMs || 10000)); // 10 s (bis 14.11. 30 s: zwischen zwei Stationen der Landung blieb dem Wartenden keine Runde)
+            if (!gemeldet) { console.log("Punkte-Maschine: der Spiel-Baum " + geraet + " ist belegt (pid " + pid + "), warte"); gemeldet = true; }
+            await warteRunde();
         }
     }
 }
@@ -5921,6 +5961,39 @@ async function selbsttest(o = {}) {
         console.log = still;
         fs.rmSync(wOrdner, { recursive: true, force: true });
         fs.rmSync(sp, { recursive: true, force: true });
+        // DIE GERECHTE SCHLANGE (16.11.: pid 11860 wartete 53 min, ein Lauf von 22:31 bekam den Baum): der freie Baum geht an die älteste
+        // lebende Marke. (a) eine fremde lebende Marke seit 30 s hält den freien Baum für sich — die Fassung davor nahm ihn (der jüngere
+        // überholte); (b) ihre pid ohne Prozess, (c) ihre pid heute an einem Prozess, der nach der Marke begann, (d) seit 3 min nicht
+        // aufgefrischt: tot, geräumt, der Baum geht; (e) zwei echte Wartende: der jüngere pollt alle 10 ms, der ältere alle 150 ms — der
+        // ältere nimmt, der jüngere danach. Selbstprobe: ROT an der Fassung vor dem Schnitt (a und e nahm der jüngere)
+        {
+            const FREMD = 999917, fremd = path.join(wOrdner, "macher-" + FREMD), seitFremd = Date.now() - 30000;
+            const legeFremd = (altS = 0) => { fs.mkdirSync(wOrdner, { recursive: true }); fs.writeFileSync(fremd, new Date(seitFremd).toISOString());
+                if (altS) { const t = new Date(Date.now() - altS * 1000); fs.utimesSync(fremd, t, t); } };
+            const mit = (sf) => ({ startVon: (pid) => (pid === FREMD ? sf : start) });
+            const fall = async (sf, altS) => { fs.rmSync(sp, { recursive: true, force: true }); legeFremd(altS); const r = await nimm(mit(sf)); const da = fs.existsSync(fremd);
+                fs.rmSync(sp, { recursive: true, force: true }); fs.rmSync(wOrdner, { recursive: true, force: true }); return [r, da]; };
+            const [aNahm, aDa] = await fall(seitFremd - 1000), [bNahm, bDa] = await fall(null), [cNahm, cDa] = await fall(seitFremd + 60000), [dNahm, dDa] = await fall(seitFremd - 1000, 180);
+            // (e) der Halter ist eine fremde lebende pid; erst wartet „erster“, 80 ms später „zweiter“, dann fällt die Sperre
+            fs.mkdirSync(sp, { recursive: true }); fs.writeFileSync(marke, String(FREMD));
+            const ordnung = [], o5 = (wer, ms) => ({ env: { PUNKTE_WER: wer }, wartMs: ms, startVon: (pid) => (pid === FREMD ? Date.now() - 3600000 : start) });
+            console.log = () => {};
+            const erster = baumSperre(repo, "selbst", o5("erster", 150)).then(() => ordnung.push("erster"));
+            await new Promise((r) => setTimeout(r, 80));
+            const zweiter = baumSperre(repo, "selbst", o5("zweiter", 10)).then(() => ordnung.push("zweiter"));
+            await new Promise((r) => setTimeout(r, 200));
+            fs.rmSync(sp, { recursive: true, force: true });
+            await new Promise((r) => setTimeout(r, 600));
+            const nachFrei = ordnung.slice();
+            fs.rmSync(sp, { recursive: true, force: true });
+            await Promise.race([Promise.all([erster, zweiter]), new Promise((r) => setTimeout(r, 3000))]);
+            console.log = still;
+            fs.rmSync(wOrdner, { recursive: true, force: true });
+            fs.rmSync(sp, { recursive: true, force: true });
+            pruef("SPERRE die gerechte Schlange: der freie Baum geht an die älteste lebende Marke, ein jüngerer überholt nie (die Fassung davor: er überholte); tote Marken (keine pid, pid neu vergeben, 3 min ohne Auffrischung) zählen nicht und fallen",
+                aNahm === false && aDa && bNahm === true && !bDa && cNahm === true && !cDa && dNahm === true && !dDa && nachFrei.join(",") === "erster" && ordnung.join(",") === "erster,zweiter",
+                JSON.stringify({ a: [aNahm, aDa], b: [bNahm, bDa], c: [cNahm, cDa], d: [dNahm, dDa], nachFrei, ordnung }));
+        }
         // DIE ORDNUNG DER SCHLÖSSER: unter gpu-lauf.sh (GPU_LAUF_HAELT) weist die Sperre sofort ab, beim Namen, und legt keinen Baum an;
         // der echte gpu-lauf.sh gibt die Marke seinem Befehl mit (Mutante: ohne die Marke nähme die Sperre den Baum)
         const ordnung = await nimm({ env: { GPU_LAUF_HAELT: "karte2" } }).then(() => "nahm den Baum", (e) => e.message);
