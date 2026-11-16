@@ -1,0 +1,36 @@
+{
+ "art": "rudel",
+ "laeufe": [
+  {
+   "gegen": false,
+   "sicht": "first",
+   "scentRangeM": 50,
+   "n": 8,
+   "jagden": 8,
+   "risse": 8,
+   "rissS": [
+    12.6,
+    18.6,
+    11.9,
+    11.9,
+    12.1,
+    12.6,
+    14.2,
+    12.4
+   ],
+   "dauer": 106.2,
+   "opfer": 0
+  },
+  {
+   "gegen": true,
+   "sicht": "first",
+   "scentRangeM": 0,
+   "n": 8,
+   "jagden": 0,
+   "risse": 0,
+   "rissS": [],
+   "dauer": 720,
+   "opfer": 0
+  }
+ ]
+}
