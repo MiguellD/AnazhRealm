@@ -1,7 +1,7 @@
 {
  "sha": "b56817704c3f9b0efcf4fd52d1331756ea5edef2",
  "geraet": "gtx",
- "zeit": "2026-11-16T23:13:32.273Z",
+ "zeit": "2026-11-16T23:18:00.300Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.same.gedaechtnis.pfad#1": {
@@ -283,6 +283,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.menge.kollektiv#1": {
+   "gruen": false,
+   "zahl": "Zeugen-Gang: kein Start-Dorf · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.04,
+   "grund": "ROT: Zeugen-Gang: kein Start-Dorf · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kf23071914cbc",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k99b1b7162324",
+   "s": 1.7,
+   "fremd": {
+    "s": 6.4,
+    "takte": 3,
+    "fremdS": 1.66,
+    "kerne": 0.258,
+    "fensterKerne": 0.258,
+    "namen": [
+     [
+      "Explorer.EXE",
+      0.69
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.17
+     ]
+    ],
+    "dienerS": 1.78,
+    "diener": [
+     [
+      "System",
+      0.75
+     ],
+     [
+      "dwm.exe",
+      0.72
+     ]
+    ],
+    "geraetS": 1.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1
+     ],
+     [
+      "svchost.exe",
+      0.53
+     ],
+     [
+      "SearchIndexer.exe",
+      0.17
+     ]
+    ],
+    "eigenS": 9.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-16T23:18:00.300Z",
+   "abdruck": "5de034fc8cd7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -292,8 +362,8 @@
   "k5666470a3483": "pVVNj5swFPwvObZlTfgIYGkPTqiaVF0pe+zx2X4GEgKRDUubqv+9IoEkQFZ7qE+A5r2ZNx6bP7MjiD0k+LQzZTGjs0+zLzMDb2gZ1G+on3ZmRme28MAPKbsswhhbtTChs2NliMwgsfYaoaq1lSPH4kmcyzzPk4iUfLQa8fxeuwr2VdfNiVxEoMuEsRf2fF+RZ5wALyA9oFXrCrO8K5mLEAEpab6yZkvIlgRk2bDrWj1ok3OUpVWBwr4Jl07gAh0Da5MARwtqdSbuwGqxCBy3GzmM2XZ3nZK9MtYqecDKoZBD5coFX83p5jdjX6d4mQFWVp4VpucV0ueuc7O6mdZoaKwTYJqj7orChS/deS92XKDy2pgBSehK3wkpIREZYRM0mUgr66jL2/bzyAnmQJdTLcmxttS9EuAcQj72OAUsEtRDDYHnC4+SXxO9ezigBquAtINGths4fBC/9VRLn7QDFkb0pcpeuEJ8nFxCSPx+y6EbvvS4S9n/rs3P5YguP1t/NqknCyWPAjXWz9bn8Mdh+5JcP4frS+c4uaN5HZEYkWb6MBxJKV+CTX9MHTApSNTWvjTVFe2GoQO9AfH5OLCtF48rb8P0554vbD+8myUkbD3ZfVOqqgGNVnKsu0L00A98ythmAq7gcOiHEA6G/sN9eZBcU7VH9V6eHTi+f05Z8k7CLgfbOmGW90WBEHMX6eqFjed/03CwgCc6U6rPMfeFih4duwbzyuJl2V+RkZKLi1XF1S03ZGxzP1Xs2d9Wy9fxsLHbPJj3zFDqqhfu84WtPKqm13aLPqHOMcGBP23qQVLSiHsJ/cPnQUBPk209Zdg6V5ja9NGOAhl10R7qbVDvORT73uO5mgtJv7c8WxZ3hIsl2ZHx2jaMvSwvP7UjCnLUpcraS5mkUJsU8mrwe7xAalS8xrTANhRVVhZY3FB//wE="
  },
  "sitzung": {
-  "start": "2026-11-16T23:12:56.988Z",
-  "ordner": "sitzung-20261117-001256",
+  "start": "2026-11-16T23:17:31.547Z",
+  "ordner": "sitzung-20261117-001731",
   "port": 7804,
   "warten": 0.01,
   "bootS": 6.3,
@@ -302,29 +372,19 @@
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "karte2.leben.tiere.masse#1",
-    "s": 26.8,
-    "takte": 593,
+    "ort": "genesis",
+    "vor": "karte2.mensch.menge.kollektiv#1",
+    "s": 20.5,
+    "takte": 573,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "wanderung": [
-   {
-    "probe": "karte2.leben.tiere.masse#1",
-    "ort": "wiese",
-    "m": 326.94,
-    "dreh": 0
-   }
-  ],
   "messHalt": [
    {
-    "probe": "karte2.leben.tiere.masse#1",
+    "probe": "karte2.mensch.menge.kollektiv#1",
     "gehalten": [
-     "skala",
-     "spiegel",
      "tiere"
     ],
     "offen": []
@@ -333,27 +393,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2712,
-   "frameP95": 25.11,
-   "taktP95": 13.51,
-   "vramMax": 137.1,
+   "bilder": 3300,
+   "frameP95": 24.98,
+   "taktP95": 8.93,
+   "vramMax": 133.1,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "karte2.leben.tiere.masse#1",
-     "m": 327,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 142,
-   "luecken": 1,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "ortImDeckel": [],
+   "zapfen": 100,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 167.5,
-  "minuten": 2.87
+  "fahrtS": 105,
+  "minuten": 1.83
  }
 }
