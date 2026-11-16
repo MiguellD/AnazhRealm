@@ -844,7 +844,7 @@ class AnazhRealm_siedlung_bewohner {
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
                     drehen: u, platz: u,
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
-                    tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, _gait: u, _gaitW: u, walkPhase: u,
+                    tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
                     wagen: u, amSteuer: u,
                 });
                 besuche.push(P);
@@ -2605,11 +2605,25 @@ class AnazhRealm_siedlung_bewohner {
         this._blockerNahe(x, z, AnazhRealm.PLAYER_WALL_RADIUS + 0.25, 0, kand);
         const r2 = (AnazhRealm.PLAYER_WALL_RADIUS + 0.25) ** 2;
         const box = kand.some((e) => (e.blockerAABBs || []).some((q) => this._boxAbstand2(q, x, z) <= r2));
-        if (box || !(b.grundH !== undefined && (x - b.grundX) ** 2 + (z - b.grundZ) ** 2 < 0.25)) {
-            const h = this._koerperBodenUnter(x, sohle, z);
-            [b.grundX, b.grundZ, b.grundH] = [x, z, Number.isFinite(h) ? h : sohle];
+        // Der gehaltene Grund ist eine EBENE (Höhe + Gefälle an seinem Punkt), nie eine Zahl: bis w28-stand-hoehe trug der
+        // Schritt die Höhe des letzten halben Meters — am Hang (0,5 m/m) stand der vom Ausweichen Zurückgekehrte 12 cm im
+        // Boden und blieb dort. Wer steht (kein Weg in diesem Schritt, oder sein Weg endet), liest genau an seinem Punkt.
+        // Der Halt der Ebene hängt am Abstand zum Auge (`grundHaltJeM`, höchstens ein halber Meter): ein Knick des Geländes
+        // kostet den Gehenden nah Zentimeter, nie den ganzen Hang des halben Meters.
+        const halt = Math.min(0.5, AnazhRealm.BEWOHNER.grundHaltJeM * Math.sqrt(b.d2 || 0) || 0.5);
+        const steht = b.wi >= pts.length || (x === g.position.x && z === g.position.z);
+        const fern = !(b.grundH !== undefined && (x - b.grundX) ** 2 + (z - b.grundZ) ** 2 < halt * halt);
+        if (box || fern || (steht && (x !== b.grundX || z !== b.grundZ))) {
+            const h0 = this._koerperBodenUnter(x, sohle, z);
+            const h = Number.isFinite(h0) ? h0 : sohle;
+            const e = AnazhRealm.BEWOHNER.grundEbeneM;
+            const [hx, hz] =
+                box || steht ? [h, h] : [this._koerperBodenUnter(x + e, h, z), this._koerperBodenUnter(x, h, z + e)];
+            [b.grundX, b.grundZ, b.grundH] = [x, z, h];
+            [b.grundGx, b.grundGz] = [Number.isFinite(hx) ? (hx - h) / e : 0, Number.isFinite(hz) ? (hz - h) / e : 0];
         }
-        g.position.set(x, this._bewohnerTritt(x, z, sohle, b.grundH, kand) + fuss, z); // die Boxen seiner Reichweite trägt kand
+        const grund = b.grundH + b.grundGx * (x - b.grundX) + b.grundGz * (z - b.grundZ);
+        g.position.set(x, this._bewohnerTritt(x, z, sohle, grund, kand) + fuss, z); // die Boxen seiner Reichweite trägt kand
         this._tritt(g, x, z, true, false); // sein Gang tritt den Pfad (stoffe.K4)
         if (rx || rz) {
             const TC = globalThis.__tetrapodaCore;
@@ -3870,6 +3884,8 @@ AnazhRealm.BEWOHNER = Object.freeze({
     fahrbahnStrafe: 3,
     fernS: 0.25,
     sohleM: 0.008,
+    grundEbeneM: 0.25, // die Spanne, an der der Schritt das Gefälle seines gehaltenen Grunds liest
+    grundHaltJeM: 0.01, // der Halt des gehaltenen Grunds je Meter Abstand zum Auge (5 m: 5 cm, ab 50 m der halbe Meter)
     begegnungM: 3,
     kopfMaxRad: 1.2,
     rumpfMaxRad: 0.45,
