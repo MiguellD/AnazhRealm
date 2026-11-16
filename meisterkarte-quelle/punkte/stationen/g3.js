@@ -3002,6 +3002,76 @@ const stationen = [
         pfad: ALBEDO_PFAD,
         quelle: "2 = beide Geräte, Eichung Karte 0,180",
     },
+    // KARTE 2 erleben.bild.flaeche S 1 — die ALBEDO-HÄLFTE auf demselben Lauf wie material.K1#1/#2 (ALBEDO_K1, Zwillinge: keine GPU-Minute
+    // mehr). Je Stoff des Richters die Albedo der Welt-Seite im Bild (W, lineare Rec.-709-Luma, an der 18-%-Karte geeicht) gegen EINEN
+    // Tabellenwert, |W − Tafel| ≤ 0,05 — nie das breite Band der Klasse (BAENDER), nie Welt/Labor. Die Zeilen der Tafel: Gras → `gras`
+    // (die Albedo-Tafel trägt am Kopf KEINE: `laub` ist das Eichen-Laub, ein Ersatz wäre ein Zwilling — ROT beim Namen, bis die Tafel
+    // eine Wiesen-Zeile misst), Erde → `boden`, Fels → `fels`, Holz → `rinde` (das Holz der Welt im Bild: Stamm und Äste; das Holz des
+    // Hauses steht in `haus` mit Putz und Dach gemischt), Haut → `haut`. Die Werte stehen IM Urteil (der Abdruck liest seinen Text): Gras
+    // 0,25 und nackte Erde 0,17 (die Albedo-Tafel typischer Oberflächen, Wikipedia „Albedo“: grünes Gras 0,25, nackter Boden 0,17 —
+    // dieselbe Tafel, die BAENDER für die Nadel nennt), Fels 0,20 und Holz 0,095 als MITTE des Bands der Karte (Fels 0,10–0,30 PSU EARTH 103, Rinde 0,07–0,12 aaaa — ein Einzelwert
+    // je Gestein und Holz fehlt in jeder Quelle des Repos, offen beim Namen), Haut 0,0717 = die gesetzte Haut der Zeile (Mahagoni
+    // 0x6a4230, linear Rec. 709). DIE HALBSCHATTEN-HÄLFTE des Richters misst diese Probe NICHT (schatten.K1#2, eigene Probe an der Bühne):
+    // die Tafel-Zeile bleibt „fehlt“, bis die Akte zwei Stationen EINER Sprosse trägt.
+    {
+        kriterium: "karte2.erleben.bild.flaeche",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: { ...ALBEDO_K1 }, // derselbe Lauf wie material.K1#1/#2 (Zwillinge)
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 1.5,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            if (j.fehler) return { gruen: false, zahl: j.fehler };
+            const soft = /swiftshader|llvmpipe|lavapipe|software|subzero/i;
+            const echt = !!j.adapter && !soft.test(j.adapter) && !!j.welt && j.welt.echt === true;
+            const TAFEL = [
+                ["Gras", "gras", 0.25],
+                ["Erde", "boden", 0.17],
+                ["Fels", "fels", 0.2],
+                ["Holz", "rinde", 0.095],
+                ["Haut", "haut", 0.0717],
+            ];
+            const Z = j.zeilen || [];
+            const teile = TAFEL.map(([stoff, id, soll]) => {
+                const z = Z.find((x) => x.id === id);
+                const w = z && Number.isFinite(z.W) && z.W > 0 ? z.W : null;
+                const ok = w != null && Math.abs(w - soll) <= 0.05;
+                return [ok, (ok ? "✅ " : "❌ ") + stoff + " (" + id + ") " + (w == null ? (z ? "stumm" : "keine Zeile der Tafel") : "W " + w.toFixed(4) + " Δ " + (w - soll).toFixed(3)) + " gegen " + soll];
+            });
+            const gruen = echt && teile.every(([ok]) => ok);
+            return { gruen, zahl: teile.map(([, s]) => s).join(" · ") + " · Soll |Δ| ≤ 0,05 · Halbschatten nicht in dieser Probe · echt " + (echt ? "Welt" : "NEIN") + " · " + (j.adapter || "Adapter ungenannt") };
+        },
+        proben: (() => {
+            const mit = (o = {}) => {
+                const k = JSON.parse(JSON.stringify(K1_ROH.neu));
+                k.zeilen.push({ id: "gras", L: 0.24, W: 0.24, v: 1, band: [0.15, 0.26], bandOk: true, inBand: true });
+                for (const [id, w] of Object.entries(o)) {
+                    const z = k.zeilen.find((x) => x.id === id);
+                    if (w == null) k.zeilen = k.zeilen.filter((x) => x !== z);
+                    else z.W = w;
+                }
+                return k;
+            };
+            return [
+                { name: "fünf Stoffe am Tafelwert (gras 0,24 · boden 0,15 · fels 0,24 · rinde 0,0807 · haut 0,0604)", j: mit({ boden: 0.15, fels: 0.24 }), gruen: true },
+                { name: "die Messung am Zweig w24-rueckfall-fell 8c5d944c: keine Gras-Zeile, Waldboden 0,0876, Fels 0,2547", j: K1_ROH.neu, gruen: false },
+                { name: "MUTANTE Gras fehlt, der Rest am Tafelwert", j: mit({ gras: null, boden: 0.15, fels: 0.24 }), gruen: false },
+                { name: "Erde 0,0876 (Waldboden, Δ −0,082)", j: mit({ fels: 0.24 }), gruen: false },
+                { name: "Fels 0,2547 (Δ +0,055)", j: mit({ boden: 0.15 }), gruen: false },
+                { name: "Holz 0,16 (Δ +0,065)", j: mit({ boden: 0.15, fels: 0.24, rinde: 0.16 }), gruen: false },
+                { name: "Haut 0,13 (Δ +0,058)", j: mit({ boden: 0.15, fels: 0.24, haut: 0.13 }), gruen: false },
+                { name: "swiftshader", j: { ...mit({ boden: 0.15, fels: 0.24 }), adapter: "[linse-gpu] google/swiftshader" }, gruen: false },
+                { name: "die Folge brach", j: { fehler: "ALBEDO-TAFEL ROT: keine Seite" }, gruen: false },
+            ];
+        })(),
+        pfad: ALBEDO_PFAD,
+        quelle: "KARTE2 erleben.bild.flaeche S1 = Halbschattenbreite gegen Abstand im Band; Albedo im Bild ±0,05 gegen Tabellenwert für Gras, Erde, Fels, Holz, Haut",
+    },
     {
         kriterium: "schatten.K1",
         staffel: 1,
