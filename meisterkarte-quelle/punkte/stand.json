@@ -4864,7 +4864,7 @@
   },
   "breite.siedlung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: breite.siedlung#1 radeon: ungemessen (R10) — zuletzt an 71839b1e: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou · breite.siedlung#1 gtx: ungemessen (R10) — zuletzt an 3e4f99cd: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
+   "beleg": "Maschine: 0 — offen: breite.siedlung#1 radeon: ungemessen (R10) — zuletzt an 71839b1e: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou · breite.siedlung#1 gtx: ungemessen (R10) — zuletzt an 71839b1e: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
    "stationen": [
     {
      "id": "breite.siedlung#1",
@@ -4881,7 +4881,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 3e4f99cd: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
+     "grund": "ungemessen (R10) — zuletzt an 71839b1e: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
      "ungemessen": true
     }
    ]
@@ -5282,7 +5282,7 @@
   "ohne": 80
  },
  "kopfVoll": "105c9bd397cc1b5d68391db2420b984a0741b573",
- "zeit": "2026-11-16T02:27:24.921Z",
+ "zeit": "2026-11-16T02:33:11.037Z",
  "vorher": "105c9bd3",
  "bilanz": {
   "gewinn": [],
