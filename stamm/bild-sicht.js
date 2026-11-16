@@ -1297,7 +1297,11 @@ class AnazhRealm_bild_sicht {
             const x3 = x2.add(y2.mul(PCG_A));
             const x4 = x3.bitXor(x3.shiftRight(uint(16)));
             return float(x4).mul(1.0 / 4294967296.0);
-        });
+        }).setLayout({ name: "wasserHash", type: "float", inputs: [{ name: "p", type: "vec2" }] });
+        // DAS RAUSCHEN als EINE WGSL-Funktion (w28-licht-kern, wie `rauschEbene` in K17-3): rein über seiner Lage, dieselbe
+        // Rechnung wie ausgeschrieben — ausgeschrieben stand es je Probe im Programm (Dünung, Kräuselung in drei Normal-Proben,
+        // Fluss, Glitzer: GTX 1050 kalt, 547 Zeilen und ≈ 58 von 106 KB des Wasser-Programms, das als eines der letzten vor
+        // dem ersten Weltbild übersetzt).
         const vnoise = Fn(([p]) => {
             const i = floor(p);
             const f = fract(p);
@@ -1307,7 +1311,7 @@ class AnazhRealm_bild_sicht {
                 mix(hash2(i.add(vec2(0.0, 1.0))), hash2(i.add(vec2(1.0, 1.0))), u.x),
                 u.y
             );
-        });
+        }).setLayout({ name: "wasserRauschen", type: "float", inputs: [{ name: "p", type: "vec2" }] });
 
         // Organische Dünung: drei DEKORRELIERTE value-noise-Oktaven mit eigener Drift-Richtung → runde,
         // ungerichtete Hügel. Nie Gerstner/Sinus: `dot(xz, dir)` gibt per Konstruktion parallele Kämme
