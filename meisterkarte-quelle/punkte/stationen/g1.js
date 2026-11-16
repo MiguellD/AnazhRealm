@@ -1495,6 +1495,110 @@ const BRAND_ROH = {
     roi: [400, 250, 560, 330],
 };
 const brandRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWELTPROBE brand " + JSON.stringify(aendern(JSON.parse(JSON.stringify(BRAND_ROH))));
+// DIE LAVA IM ECHTEN FENSTER (Karte 2 same.kopplung.ereignis S1 „Bild der Zelle in Glut und erstarrt, beide Geräte“): derselbe Guss wie
+// stoffe.K3#2 (scripts/lib/wasser-linse.cjs `wasserErstarrung`: `dslRun(["lava", x, y, z])`, die Uhr im Takt des Tags — Tag 1 min, je
+// Schritt 1 s Spielzeit und `tickDayNight` —, `_lavaAt(x, z).erstarrt`), in der warmen Welt der Sitzung an Land 12–40 m um die Mess-Wiese,
+// mittags, trocken. EINE Kamera 10 m quer, 6 m über dem Guss; der Ausschnitt ±1,5 m um ihn am Boden, projiziert. Bild GLUT nach dem Guss
+// (die Welt steht), Bild ERSTARRT nach dem ersten erstarrten Schritt (höchstens 15, die Welt steht). Je Bild die mittlere LINEARE Farbe
+// des Ausschnitts (R, G, B, Luma) und R/G; dazu die glut-Achse (`auraAt`) und der Stoff unter dem Guss (`_kontaktStoffAt`).
+async function lavaSitzungProbe(r, T, o) {
+    const st = r.state;
+    const wm = st.worldMeta;
+    const M = o.orte.wiese;
+    const [W, H] = [960, 540];
+    const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+    let t = performance.now();
+    const takt = () => r._gameLoopTick((t += 1000 / 60));
+    if (window.__wetterSetzen("sunny") !== "sunny") throw new Error("das Wetter der Probe gilt nicht: sunny (es gilt " + st.weather + ")");
+    r._naesseTakt(1e6);
+    r.setTimeOfDay(0.5, "regler");
+    let p = null;
+    for (let d = 12; d <= 40 && !p; d += 4)
+        for (let k = 0; k < 12 && !p; k++) {
+            const [x, z] = [M.x + d * Math.cos((k * Math.PI) / 6), M.z + d * Math.sin((k * Math.PI) / 6)];
+            if (!r._nassAt(x, z) && r._landAt(x, z, 1)) p = { x, z, y: r._voxelSurfaceY(x, z) };
+        }
+    if (!p) return { fehler: "kein trockenes Land 12–40 m um die Mess-Wiese" };
+    const [dx, dz] = ((a, b, l = Math.hypot(a, b) || 1) => [a / l, b / l])(p.x - M.x, p.z - M.z);
+    const kamera = [p.x - dz * 10, p.y + 6, p.z + dx * 10, p.x, p.y, p.z];
+    const cam = st.camera;
+    const stellen = () => (cam.position.set(kamera[0], kamera[1], kamera[2]), cam.lookAt(p.x, p.y, p.z), cam.updateMatrixWorld(true));
+    stellen();
+    const P = [[-1.5, -1.5], [1.5, -1.5], [-1.5, 1.5], [1.5, 1.5]].map(([a, b]) => new THREE.Vector3(p.x + a, p.y, p.z + b).project(cam));
+    const roi = [
+        Math.max(0, Math.floor(((Math.min(...P.map((q) => q.x)) + 1) / 2) * W)),
+        Math.max(0, Math.floor(((1 - Math.max(...P.map((q) => q.y))) / 2) * H)),
+        Math.min(W, Math.ceil(((Math.max(...P.map((q) => q.x)) + 1) / 2) * W)),
+        Math.min(H, Math.ceil(((1 - Math.min(...P.map((q) => q.y))) / 2) * H)),
+    ];
+    if ((roi[2] - roi[0]) * (roi[3] - roi[1]) < 100) return { fehler: "der Ausschnitt des Gusses trägt < 100 Pixel: " + roi.join(",") };
+    const LUT = Array.from({ length: 256 }, (_, i) => ((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))(i / 255));
+    const aus = { schuesse: [] };
+    const schuss = async (name) => {
+        stellen();
+        const { u8 } = await window.__ausgabeAufnahme(W, H);
+        const s = [0, 0, 0];
+        let n = 0;
+        for (let y = roi[1]; y < roi[3]; y++)
+            for (let x = roi[0]; x < roi[2]; x++, n++) for (let c = 0; c < 3; c++) s[c] += LUT[u8[(y * W + x) * 4 + c]];
+        const [R, G, B] = s.map((v) => v / Math.max(1, n));
+        aus.schuesse.push({ name, url: window.__png(u8, W, H) });
+        return { rgb: [R, G, B].map(r3), luma: r3(0.2126 * R + 0.7152 * G + 0.0722 * B), rg: r3(G > 0 ? R / G : 99), glut: r3(r.auraAt(p.x, p.z).glut), stoff: ((id) => (r._stoff(id) || {}).name || String(id))(r._kontaktStoffAt(p.x, p.z, p.y)) };
+    };
+    const n0 = (wm.taten ||= []).length;
+    const alt = [st.dayLengthMinutes, st._uhrSpielZeit];
+    const regler = st.perfRegulator;
+    st.perfRegulator = false;
+    try {
+        aus.frei = r3(r.auraAt(p.x, p.z).glut);
+        r.dslRun(["lava", p.x, p.y, p.z], { source: "human" });
+        aus.gegossen = wm.taten.length > n0;
+        await window.__weltStehtNach(takt, 900);
+        aus.glutBild = await schuss("glut");
+        Object.assign(st, { dayLengthMinutes: 1, _uhrSpielZeit: st.spielZeit });
+        aus.ab = -1;
+        for (let k = 1; k <= 15 && aus.ab < 0; k++) (st.spielZeit += 1), r.tickDayNight(k), r._lavaAt(p.x, p.z).erstarrt && (aus.ab = k);
+        [st.dayLengthMinutes, st._uhrSpielZeit] = alt;
+        r.setTimeOfDay(0.5, "regler");
+        await window.__weltStehtNach(takt, 900);
+        aus.erstarrtBild = await schuss("erstarrt");
+        Object.assign(aus, { ort: [p.x, p.z].map(Math.round), kamera: kamera.map((v) => Math.round(v * 10) / 10), roi });
+        return aus;
+    } finally {
+        [st.dayLengthMinutes, st._uhrSpielZeit] = alt;
+        st.perfRegulator = regler;
+    }
+}
+const LAVA_SITZUNG = { befehl: weltSitzungBefehl([["lava", lavaSitzungProbe]]), sek: 60, mutiert: true };
+// das Urteil: GLUT rot im Bild (R/G ≥ 2 im Ausschnitt), ERSTARRT grau (R/G ≤ 1,25) und dunkler als die Glut, erstarrt binnen 15 Schritten,
+// der Stoff darunter Stein, beide Bilder ohne Fehler, eine echte Karte
+function lavaUrteil(j, lauf) {
+    const { ad, hw } = adapterEcht(lauf && lauf.stdout);
+    const e = weltZeile(j, lauf, "lava");
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE lava (Exit " + (lauf && lauf.exit) + ") · " + ad };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler + " · " + ad };
+    const S = e.schuesse || [];
+    const bilder = ["glut", "erstarrt"].filter((n) => S.some((s) => s.name === n && s.datei && !s.fehler)).length;
+    const [g, s] = [e.glutBild || {}, e.erstarrtBild || {}];
+    if (bilder < 2 || !e.glutBild || !e.erstarrtBild) return { gruen: false, zahl: "Bilder " + bilder + "/2 (glut, erstarrt) · " + ad };
+    return {
+        gruen: hw && e.gegossen === true && g.rg >= 2 && e.ab >= 1 && s.rg <= 1.25 && s.luma < g.luma && /stein|basalt|fels/i.test(String(s.stoff)),
+        zahl: "Guss " + (e.ort || []).join(",") + (e.gegossen ? "" : " (KEIN Guss)") + ": Glut R/G " + g.rg + " (Soll ≥ 2), Luma " + g.luma + ", glut-Achse " + g.glut +
+            " · erstarrt nach " + e.ab + " Schritten (Soll 1–15): R/G " + s.rg + " (Soll ≤ 1,25), Luma " + s.luma + ", Stoff " + s.stoff + " · " + ad,
+    };
+}
+const LAVA_ROH = {
+    schuesse: [{ name: "glut", datei: "x-lava-s1.png" }, { name: "erstarrt", datei: "x-lava-s2.png" }],
+    frei: 0,
+    gegossen: true,
+    glutBild: { rgb: [0.9, 0.2, 0.05], luma: 0.34, rg: 4.5, glut: 1, stoff: "lava" },
+    ab: 4,
+    erstarrtBild: { rgb: [0.05, 0.05, 0.05], luma: 0.05, rg: 1.02, glut: 0, stoff: "stein" },
+    ort: [100, -200],
+    kamera: [90, 6, -195, 100, 0, -200],
+    roi: [430, 240, 530, 300],
+};
+const lavaRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWELTPROBE lava " + JSON.stringify(aendern(JSON.parse(JSON.stringify(LAVA_ROH))));
 const BRAND_PFAD = ["stamm/feld-*.js", "stamm/bild-*.js", "stamm/dirigent-*.js", "stamm/gelaende-*.js", "stamm/wasser-*.js", "stamm/vegetation-*.js",
     "foundry-core.js", "fachwerk-core.js", "gelaende-core.js", "scripts/werkbank.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"];
 // DIE FRONT IM ECHTEN FENSTER (wetter.K1#2, die Karten-Hälfte; Karte 2 planet.wetter.lagen S1 „Regen an A bei trockenem B ≥ 20 % der Zeit,
@@ -4272,6 +4376,32 @@ module.exports = [
         ],
         pfad: BRAND_PFAD,
         quelle: "KARTE2 mensch.zeit.erleben S1 = Bildpaar vorher/nachher am selben Ort",
+    },
+    // KARTE 2 same.kopplung.ereignis S1: die Lava im echten Fenster (LAVA_SITZUNG, lavaSitzungProbe oben) — bis hierher urteilte stoffe.K3#2
+    // die Erstarrung nur am Null-Renderer (glut-Achse und `_lavaAt`, nie ein Pixel). Gebaut am Zweig vorrat2-stationen-g1, am Fenster ungemessen.
+    {
+        kriterium: "karte2.same.kopplung.ereignis",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: LAVA_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 2,
+        urteil: lavaUrteil,
+        proben: [
+            { name: "rot in Glut, grau erstarrt, Stein darunter", stdout: lavaRoh((x) => x), gruen: true },
+            { name: "die Glut nicht rot im Bild (R/G 1,3)", stdout: lavaRoh((x) => ((x.glutBild.rg = 1.3), x)), gruen: false },
+            { name: "erstarrt nie", stdout: lavaRoh((x) => ((x.ab = -1), x)), gruen: false },
+            { name: "erstarrt, aber noch rot im Bild", stdout: lavaRoh((x) => ((x.erstarrtBild.rg = 3.1), x)), gruen: false },
+            { name: "kein Stein unter dem Guss", stdout: lavaRoh((x) => ((x.erstarrtBild.stoff = "gras"), x)), gruen: false },
+            { name: "ein Bild fehlt", stdout: lavaRoh((x) => ((x.schuesse = x.schuesse.slice(0, 1)), x)), gruen: false },
+            { name: "swiftshader", stdout: lavaRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: ["gelaende-core.js", "stamm/gelaende-*.js", "stamm/bild-*.js", "stamm/dirigent-*.js", "stamm/feld-*.js", "stamm/stoff-*.js", "scripts/werkbank.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
+        quelle: "KARTE2 same.kopplung.ereignis S1 = Bild der Zelle in Glut und erstarrt, beide Geräte",
     },
 ];
 
