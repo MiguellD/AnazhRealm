@@ -711,7 +711,7 @@ async function lebenBuehnen() {
                         zz = U.z + Math.sin(i * 2.1 + seele.length) * 6;
                     const c = tier({ x, y: boden(x, zz), z: zz }, seele, 1);
                     ruhig(c);
-                    return { c, g: A.TETRAPODA_SOUL_MAP[seele], x, z: zz, ruhK: 0, trunk: 0, nass: 0 };
+                    return { c, g: A.TETRAPODA_SOUL_MAP[seele], x, z: zz, ruhK: 0, trunk: 0, nass: 0, spur: [] };
                 })
             );
             pm.set(U.x, r.getTerrainHeightAt(U.x, U.z + 90) + 0.5, U.z + 90);
@@ -720,7 +720,10 @@ async function lebenBuehnen() {
                 for (let k = 0; k < takte; k++) {
                     ruhigSpieler();
                     takt(0.1);
+                    // die Lage je Spiel-Minute (der Schritt der Uhr: 0,1 Spielstunde = 6 Minuten in `takte` Takten)
+                    const minute = i >= ein * 10 && Math.floor(((k + 1) * 6) / takte) > Math.floor((k * 6) / takte);
                     for (const t of tiere) {
+                        if (minute) t.spur.push({ x: t.c.position.x, z: t.c.position.z });
                         const ud = t.c.userData,
                             p = t.c.position;
                         if (t.g0 !== undefined && ud._getrunken !== t.g0)
@@ -737,7 +740,13 @@ async function lebenBuehnen() {
                     }
                 }
             }
-            for (const t of tiere) r.removeCreature(t.c);
+            for (const t of tiere) {
+                // der Anker und die Leine, wie der Takt sie liest (_creatureCharacterWander: wanderAnchor, leashM)
+                const ud = t.c.userData;
+                t.anker = ud.wanderAnchor ? { x: ud.wanderAnchor.x, z: ud.wanderAnchor.z } : null;
+                t.leineM = r._creatureMoveCharacter(t.c).leashM;
+                r.removeCreature(t.c);
+            }
             return tiere;
         };
         const tiere = tagLauf(["wesen", "baer", "fuchs", "wolf"], ...(taeter ? [2, 12] : [12, 72]), z);
@@ -750,6 +759,22 @@ async function lebenBuehnen() {
         }
         z.truenke = tiere.map((t) => t.trunk);
         z.amWasser = tiere.reduce((a, t) => a + t.nass, 0);
+        // DIE WANDERUNG (leben.tiere.wanderung): je Tier die Aufenthaltsfläche aus seiner Spur — die konvexe Hülle der 95 %
+        // ankernächsten Lagen (MCP 95, die Hülle und Fläche des Spiels: _convexHull2D, _polygonArea2D) gegen seine Leine, und der
+        // Anteil der Lagen in einer Boden-Klasse, die seine Gattung bewohnt (_bodenKlasseAt × LG.lebensraum > 0)
+        z.wander = tiere.map((t) => {
+            const w = { g: t.g, leineM: rund(t.leineM, 2), punkte: t.spur.length, flaecheM2: null, anteil: null };
+            if (!t.anker || !t.spur.length) return Object.assign(w, { fehler: "kein Anker der Leine" });
+            const nah = t.spur
+                .map((p) => [Math.hypot(p.x - t.anker.x, p.z - t.anker.z), p])
+                .sort((a, b) => a[0] - b[0])
+                .slice(0, Math.ceil(0.95 * t.spur.length))
+                .map((e) => e[1]);
+            w.flaecheM2 = rund(r._polygonArea2D(r._convexHull2D(nah)), 1);
+            const drin = t.spur.filter((p) => LG.lebensraum(t.g, r._bodenKlasseAt(p.x, p.z), LG.L) > 0).length;
+            w.anteil = rund(drin / t.spur.length, 3);
+            return w;
+        });
         durstAus();
         z.durstAus = tagLauf(["wesen"], 0, 10, { budget: {}, ruhe: [0, 0] }).reduce((a, t) => a + t.trunk, 0);
         return z;
