@@ -202,6 +202,12 @@ urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei 
         echo "$(date +%H:%M) $id NICHT GELANDET ${z%@*} ${z#*@}: ${rest#— } — Kopf wieder frei" >>"$L"
         echo "${z%@*} ${z#*@} $id ${rest#— }" >>"$W/zug-nicht-gelandet.txt"
     done
+    # KOPF-EIGEN GEHT HEIM, NICHT IN DEN KREIS (16.11., z582–z585: drei Köpfe fielen 361-mal am Siegel-Wort ihres eigenen Verlaufs und
+    # wurden je Zug wieder frei): zug.cjs nennt den Fall GEURTEILT · kopf-eigen, der Kopf bleibt gefahren und geht EINMAL heim
+    echo "$nw" | grep "^NACHWEIS GEURTEILT .* — kopf-eigen: " | while read -r _ _ z rest; do
+        sh "$D/heim.sh" "${z%@*}" "${z#*@}" "${rest#— kopf-eigen: }" </dev/null >/dev/null 2>&1
+        echo "$(date +%H:%M) $id KOPF-EIGEN ${z%@*} ${z#*@}: ${rest#— kopf-eigen: } — bleibt draussen bis zu einem neuen Kopf" >>"$L"
+    done
     echo "$nw" | grep -q "^NACHWEIS" || echo "$(date +%H:%M) $id nachweis: kein Ergebnis — $(echo "$nw" | tail -1 | cut -c1-200)" >>"$L"
     rm -f "$S/zug.fahrt"
 }

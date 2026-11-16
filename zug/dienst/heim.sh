@@ -26,6 +26,14 @@ if [ -n "$grund" ]; then
     satz="Check und Probe des Zweigs können grün sein — MIT main verschmolzen fällt eine Wand, und der Zug nimmt den Zweig nicht. Ihr Text:"
     rat="main einmischen, die Wand am verschmolzenen Stand lokal fahren (\`node scripts/diag-betriebsgesetz.cjs --grund tag\`), heilen, neu abgeben (EIN Kopf, Betreff \`Abgabe $b: …\`)."
     betreff="die Wand des Zugs hält den Kopf ${sha:0:8} draussen"
+    # KOPF-EIGEN (16.11., z582–z585): das Siegel-Wort steht im VERLAUF des Kopfs — kein Einmischen von main heilt es, nur ein neuer Kopf
+    case "$grund" in *"Siegel-Wort"*)
+        t="ROT kopf-eigen: $grund"
+        titel="DER EIGENE VERLAUF HÄLT DEN KOPF ${sha:0:8} DRAUSSEN (Zug-Dienst, ohne LLM)"
+        satz="Ein Commit im Verlauf des Kopfs (oder der Zweig-Name) trägt ein Siegel-Wort des Betriebsgesetzes — der Bau lässt den Zweig in JEDEM Zug fallen. Der Kopf fährt nicht wieder, bis ein neuer kommt. Der Text des Baus:"
+        rat="Den Verlauf ohne Siegel-Wort neu schreiben (den Commit umbenennen, oder den fremden WIP-Commit aus dem Verlauf nehmen: auf origin/main neu aufsetzen), neu abgeben (EIN Kopf, Betreff \`Abgabe $b: …\`)."
+        betreff="der eigene Verlauf hält den Kopf ${sha:0:8} draussen (Siegel-Wort)" ;;
+    esac
 else
     TOKEN=$(printf 'protocol=https\nhost=github.com\n\n' | git -C $R credential fill 2>/dev/null | sed -n 's/^password=//p')
     t=$(TOKEN=$TOKEN node "$D/rot-text.cjs" --sha "$sha" 2>&1) || exit 1

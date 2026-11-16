@@ -1365,11 +1365,18 @@ const pushInhalt = (grund) => /pre-receive hook declined|rule violations|GH0\d\d
 // FREI — er fiel vor oder im Bau, über ihn fiel kein Urteil des Zugs, sein Kopf fährt wieder.
 // Kein Karussell: fiel ein Zweig ALLEIN (der Zug trug nur ihn) an einer Probe oder im Bau, war das ein Urteil über genau ihn — er bleibt
 // gefahren (GEURTEILT), bis ein neuer Kopf kommt; frei wird nur, wer im Bündel mit anderen fiel oder ohne benannten Grund.
-function nachweisUrteil({ zweige, inMain, drin, gelandet, gefallen = new Set() }) {
+// KOPF-EIGEN (16.11., z582–z585: w28-ankunft-faden, w28-feld-fuss und w28-licht-kern fielen seit 02:50 in JEDEM Zug am Siegel-Wort
+// eines fremden WIP-Commits in ihrem Verlauf, 361-mal „Kopf wieder frei“, drei Züge fuhren leer): ein Fall, den nur der Verlauf des
+// Kopfs trägt — das Siegel-Wort im Commit oder im Zweig-Namen —, fällt in jedem Bündel wieder. Er ist ein Urteil über den Kopf, auch
+// im Bündel: GEURTEILT, der Dienst schickt ihn EINMAL heim (heim.sh, cloud-post/<zweig>.md). Konflikt, Zwischenstand-Klassen und
+// ein fehlender Zweig hängen am Bündel oder an main und bleiben FREI.
+const kopfEigen = (zeile) => /: Siegel-Wort „[^"“]*["“] im (Commit|Zweig-Namen)/.test(zeile || "");
+function nachweisUrteil({ zweige, inMain, drin, gelandet, gefallen = new Set(), eigen = new Set() }) {
     return zweige.map((spec) => {
         const [zweig, sha] = spec.split("@");
         if (inMain.has(spec)) return { zweig, sha, wort: "GELANDET" };
         if (drin.has(zweig) && !gelandet) return { zweig, sha, wort: "GEURTEILT" };
+        if (!drin.has(zweig) && eigen.has(zweig)) return { zweig, sha, wort: "GEURTEILT", kopfEigen: true };
         if (!drin.has(zweig) && zweige.length === 1 && gefallen.has(zweig)) return { zweig, sha, wort: "GEURTEILT" };
         return { zweig, sha, wort: "FREI", grund: drin.has(zweig) ? "im Kandidaten, aber nicht in main" : "nicht im Kandidaten" };
     });
@@ -1394,9 +1401,10 @@ function nachweis(args) {
         if (z) fall.set(spec.split("@")[0], z.trim().slice(0, 200));
     }
     let frei = 0;
-    for (const u of nachweisUrteil({ zweige, inMain, drin, gelandet: args.includes("--gelandet"), gefallen: new Set(fall.keys()) })) {
+    const eigen = new Set([...fall].filter(([, z]) => kopfEigen(z)).map(([b]) => b));
+    for (const u of nachweisUrteil({ zweige, inMain, drin, gelandet: args.includes("--gelandet"), gefallen: new Set(fall.keys()), eigen })) {
         if (u.wort === "FREI") frei++;
-        const grund = u.wort === "FREI" ? ` — ${u.grund}${fall.has(u.zweig) ? `: ${fall.get(u.zweig)}` : ""}` : u.wort === "GEURTEILT" && fall.has(u.zweig) ? ` — fiel allein: ${fall.get(u.zweig)}` : "";
+        const grund = u.wort === "FREI" ? ` — ${u.grund}${fall.has(u.zweig) ? `: ${fall.get(u.zweig)}` : ""}` : u.kopfEigen ? ` — kopf-eigen: ${fall.get(u.zweig)}` : u.wort === "GEURTEILT" && fall.has(u.zweig) ? ` — fiel allein: ${fall.get(u.zweig)}` : "";
         console.log(`NACHWEIS ${u.wort} ${u.zweig}@${u.sha}${grund}`);
     }
     return frei ? 1 : 0;
@@ -1526,6 +1534,14 @@ function selbsttest() {
     pr("Nachweis kein Karussell: ein Zweig fiel ALLEIN an der Probe → GEURTEILT; ohne benannten Grund → FREI",
         nw({ zweige: ["a@1"], inMain: new Set(), drin: new Set(), gelandet: false, gefallen: new Set(["a"]) }) === "a:GEURTEILT" &&
             nw({ zweige: ["a@1"], inMain: new Set(), drin: new Set(), gelandet: false }) === "a:FREI");
+    // z582–z585 (16.11.): drei Köpfe fielen im Bündel an einem Siegel-Wort IHRES Verlaufs, wurden je Zug wieder frei und fuhren
+    // 361-mal im Kreis — ein kopf-eigener Fall ist ein Urteil über den Kopf, auch im Bündel; ein Bündel-Fall bleibt FREI
+    pr("Nachweis kopf-eigen: Siegel im eigenen Verlauf → GEURTEILT auch im Bündel; ein Konflikt im Bündel bleibt FREI",
+        nw({ zweige: ["a@1", "b@2", "c@3"], inMain: new Set(), drin: new Set(["c"]), gelandet: false, gefallen: new Set(["a", "b"]),
+            eigen: new Set(["a"]) }) === "a:GEURTEILT b:FREI c:GEURTEILT" &&
+            kopfEigen(`gefallen a@1: Siegel-Wort „fertig" im Commit bb4045f79a WIP x`) &&
+            kopfEigen(`gefallen a: Siegel-Wort „RUND" im Zweig-Namen (wandert in die Merge-Message)`) &&
+            !kopfEigen("gefallen b@2: merge scheitert: CONFLICT (content)") && !kopfEigen("gefallen b: Zweig fehlt auf origin"));
     // der Grund eines gefallenen Pushs (z447): die letzte Zeile nennt ihn nie — die Mutante ist das alte „letzte Zeile“
     const pe = (...z) => [...z, "error: failed to push some refs to 'https://github.com/x/y.git'"].join("\n");
     const pg1 = pushGrund(pe("To https://github.com/x/y.git", " ! [remote rejected]     abc123 -> integ-probe (cannot lock ref 'refs/heads/integ-probe': is at 1 but expected 2)"));
