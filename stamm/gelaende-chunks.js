@@ -579,8 +579,9 @@ class AnazhRealm_gelaende_chunks {
         let f = alle.get(name);
         if (f) return f;
         // der Voxel-Faden zuerst (lazy wie jeder Chunk-Auftrag; er gibt die Regionen) — steht er noch nicht, wartet der Rufer;
-        // lebt er und ist nur ausgehängt (eine Test-Naht: `_bodenFaden` ohne `state.voxelWorker`), wartet der Rufer auch — kein Zwilling
-        if (!this.state.voxelWorker && (this._bodenFaden || !this._getVoxelWorker())) return null;
+        // lebt er und ist nur ausgehängt (eine Test-Naht: `_bodenFaden` ohne `state.voxelWorker`), gibt DIESER die Regionen — kein Zwilling
+        const voxel = this.state.voxelWorker || this._bodenFaden || this._getVoxelWorker();
+        if (!voxel) return null;
         const worker = new Worker(this._quelleStand().url, { name });
         f = { worker, pending: new Map(), next: 1, geboren: performance.now(), quittiert: null };
         const NAME = name.toUpperCase();
@@ -612,7 +613,7 @@ class AnazhRealm_gelaende_chunks {
         // trägt, per Transfer — der Haupt-Faden klont nie eine); jede spätere Änderung bringt der Sender des Zustands
         // (`_voxelZustandPost`), auch jede Bestellung ab jetzt
         const port = new MessageChannel();
-        this.state.voxelWorker.postMessage({ type: "hydro-an", port: port.port1 }, [port.port1]);
+        voxel.postMessage({ type: "hydro-an", port: port.port1 }, [port.port1]);
         worker.postMessage(
             { type: "state-set", snapshot: this._voxelWorkerSnapshotState(), hydroVon: port.port2, requestId: geburt },
             [port.port2]

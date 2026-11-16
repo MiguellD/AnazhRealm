@@ -1098,11 +1098,13 @@ async function checkBandV18132FerneSeen({ page, check }) {
         const main = r._voxelEditedDensityGrid(`ferne-seen|${cx},${cz}`, ...g);
         st.voxelBaseDensityCache.delete(`ferne-seen|${cx},${cz}`);
         const alt = st.voxelWorker;
+        const altBoden = r._bodenFaden; // die Geburt setzt auch den Faden des Bodens — er geht mit zurück, sonst trüge ihn ein Toter
         st.voxelWorker = null;
         const neu = r._getVoxelWorker();
         const wk = await r._voxelWorkerComputeDensity(...g).catch((e) => String(e));
         neu.terminate();
         st.voxelWorker = alt;
+        r._bodenFaden = altBoden;
         const bits = (a) => new Uint32Array(a.buffer, a.byteOffset, a.length);
         out.workerMirror =
             !wk || typeof wk === "string" ? String(wk) : main.length === wk.length && bits(main).every((v, i) => v === bits(wk)[i]);
