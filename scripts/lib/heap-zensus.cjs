@@ -336,9 +336,20 @@ function bewohnerGewicht(o) {
     let knoten = 0;
     const DECKEL = o.deckel || 2e7;
     const zahlFeld = (v) => typeof v === "number" && !Number.isInteger(v);
-    const lauf = (wurzel, z) => {
+    // DIE GRENZE DES GANGS: Knoten der Shader-Sprache (TSL — ihre Proxy-Hülle münzt je Zugriff einen NEUEN Knoten, der Gang endete
+    // nie), Materialien und Texturen sind Welt-Gut und bleiben draußen; ein Feld über `feldDeckel` Knoten und der Zeit-Deckel
+    // nennen sich als Überlauf, statt zu hängen
+    const FELD_DECKEL = o.feldDeckel || 2e6;
+    const ZEIT_DECKEL = performance.now() + (o.zeitMs || 90000);
+    let ueberlauf = [];
+    const lauf = (wurzel, z, wo) => {
         const stapel = [wurzel];
+        const n0 = z.n;
         while (stapel.length) {
+            if (z.n - n0 > FELD_DECKEL || performance.now() > ZEIT_DECKEL) {
+                ueberlauf.push(wo + " (" + (z.n - n0) + " Knoten)");
+                return false;
+            }
             const x = stapel.pop();
             if (x == null) continue;
             const t = typeof x;
@@ -386,6 +397,10 @@ function bewohnerGewicht(o) {
                 continue;
             }
             if (typeof GPUBuffer !== "undefined" && (x instanceof GPUBuffer || x instanceof GPUTexture)) continue;
+            if (x.isNode || x.isMaterial || x.isTexture) {
+                z.welt = (z.welt || 0) + 1;
+                continue;
+            }
             const keys = Object.keys(x);
             z.js += 12 + 4 * keys.length;
             for (const k of keys) {
@@ -404,23 +419,33 @@ function bewohnerGewicht(o) {
     const abdruck = (v) => {
         if (v == null || typeof v !== "object") return String(v);
         if (v.isObject3D) return "O3D";
-        const ws = new WeakSet();
+        // EIGENER Abdruck, nie JSON.stringify: es ruft `toJSON` VOR jedem Ersetzer — ein erreichbares Object3D serialisierte so
+        // die halbe Szene, und der Gang hing zweimal über 6 min in der Seite (Radeon 16.11.); gedeckelt auf 4 000 Knoten, 40 000 Zeichen
+        const ws = new Set();
+        let s = "",
+            n = 0;
+        const geh = (x, tiefe) => {
+            if (n++ > 4000 || s.length > 40000 || tiefe > 24) return void (s += "…");
+            if (x == null || typeof x !== "object") return void (s += typeof x === "string" ? '"' + x.slice(0, 200) + '"' : typeof x === "function" ? "ƒ" : String(x));
+            if (x.isObject3D || x.isMaterial || x.isBufferGeometry || x.isNode || x.isTexture || x === r) return void (s += "#");
+            if (ws.has(x)) return void (s += "@");
+            ws.add(x);
+            if (ArrayBuffer.isView(x)) return void (s += "TA" + x.length);
+            const ein = x instanceof Map ? [...x].slice(0, 2000) : x instanceof Set ? [...x].slice(0, 2000).map((w, i) => [i, w]) : Array.isArray(x) ? x.slice(0, 2000).map((w, i) => [i, w]) : Object.keys(x).map((k) => [k, x[k]]);
+            s += "{";
+            for (const [k, w] of ein) {
+                s += (typeof k === "object" ? "·" : String(k)) + ":";
+                geh(w, tiefe + 1);
+                s += ",";
+            }
+            s += "}";
+        };
         try {
-            const s = JSON.stringify(v, (k, x) => {
-                if (x && typeof x === "object") {
-                    if (x.isObject3D || x.isMaterial || x.isBufferGeometry || x === r) return "#";
-                    if (ArrayBuffer.isView(x)) return "TA" + x.length;
-                    if (ws.has(x)) return "@";
-                    ws.add(x);
-                    if (x instanceof Map) return [...x].slice(0, 2000);
-                    if (x instanceof Set) return [...x].slice(0, 2000);
-                }
-                return x;
-            });
-            return s && s.length > 40000 ? s.slice(0, 40000) + "…" + s.length : s;
+            geh(v, 0);
         } catch (e) {
-            return "?" + e.message;
+            s += "?" + e.message;
         }
+        return s;
     };
     const leer = () => ({ js: 0, typed: 0, n: 0 });
     const feld = new Map(),
@@ -441,8 +466,9 @@ function bewohnerGewicht(o) {
                 const v = b[k];
                 if (v == null || (typeof v !== "object" && typeof v !== "string")) continue;
                 const z = feld.get(k) || feld.set(k, leer()).get(k);
-                lauf(v, z);
-                if (o.abdruck !== false && k !== "leib") {
+                const n0 = z.n;
+                const ganz = lauf(v, z, k) !== false;
+                if (o.abdruck !== false && ganz && k !== "leib" && z.n - n0 < 4000) {
                     const a = abd.get(k) || abd.set(k, new Set()).get(k);
                     if (a.size < 400) a.add(abdruck(v));
                 }
@@ -458,7 +484,7 @@ function bewohnerGewicht(o) {
         for (const k of Object.keys(S)) {
             if (k === "liste") continue;
             const z = siedlung.get(k) || siedlung.set(k, leer()).get(k);
-            lauf(S[k], z);
+            lauf(S[k], z, "siedlung." + k);
         }
     }
     const mb = (x) => +(x / 1048576).toFixed(2);
@@ -482,6 +508,7 @@ function bewohnerGewicht(o) {
         siedlungJsMB: sum(sied, "jsMB"),
         siedlungTypedMB: sum(sied, "typedMB"),
         knoten,
+        ueberlauf: ueberlauf.slice(0, 12),
         felder: felder.slice(0, o.top || 30),
         siedlung: sied.slice(0, o.top || 30),
     };
@@ -492,7 +519,7 @@ function bewohnerTafel(o) {
     return [
         `WAS DIE BEWOHNER HALTEN (Schätzung der Form, EINMAL beim ersten Halter) — Heap nach GC ${o.heapMB} MB (JS ${o.jsMB} + Typed ${o.typedMB})`,
         `${o.bewohner} Bewohner in ${o.siedlungen} Siedlungen, ${o.mitLeib} mit Leib, ${o.skinned} SkinnedMesh, ${o.skelette} Skelette, ${o.knochen} Knochen`,
-        `an den Bewohnern JS ${o.bewohnerJsMB} MB + Typed ${o.bewohnerTypedMB} MB · an den Siedlungen (ohne liste) JS ${o.siedlungJsMB} MB + Typed ${o.siedlungTypedMB} MB · ${o.knoten} Knoten`,
+        `an den Bewohnern JS ${o.bewohnerJsMB} MB + Typed ${o.bewohnerTypedMB} MB · an den Siedlungen (ohne liste) JS ${o.siedlungJsMB} MB + Typed ${o.siedlungTypedMB} MB · ${o.knoten} Knoten${o.ueberlauf.length ? " · ÜBERLAUF " + o.ueberlauf.join(", ") : ""}`,
         `    JS MB  Typed MB   Objekte  versch.  Feld des Bewohners (versch. = verschiedene Inhalte unter allen, gekappt 400)`,
         ...z(o.felder),
         `    JS MB  Typed MB   Objekte           Feld der Siedlung`,
@@ -567,7 +594,7 @@ function texturen(o) {
                 if (!pfad.has(v)) pfad.set(v, p + "." + kn);
                 continue;
             }
-            if (ArrayBuffer.isView(v) || (v.isObject3D && d > 1)) continue;
+            if (ArrayBuffer.isView(v) || v.isNode || (v.isObject3D && d > 1)) continue;
             if (d < 5) q.push([v, p + "." + kn, d + 1]);
         }
     }
