@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-16",
-  "kopf": "77a9095f",
-  "version": "V18.546.308",
+  "kopf": "be50815d",
+  "version": "V18.546.309",
   "skala": "2.0",
   "summe": 215,
   "max": 330,
   "maschine": {
-    "kopf": "77a9095f",
-    "zeit": "2026-11-16T19:25:36.537Z",
+    "kopf": "be50815d",
+    "zeit": "2026-11-16T19:31:30.645Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -519,7 +519,7 @@
           "punkte": 1,
           "staffel": "1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort · 2 = überall, dazu endet jeder Lauf in See oder Meer und die Strömung treibt",
           "messung": "gate:wasser-leben F + gate:kopplung F1 + Kern-Mutation: Wasser an 50 Zufalls-Punkten; Tier-Trinkziel, Tier-Scheu, Pflanzen-Wasserurteil, Klang-Nässe, Auftrieb und Leib folgen binnen eines Takts; 0 Pflanzen im gezeichneten Wasser, 0 Tiere trocken durch eine zweite Fläche. Jeder Lauf endet in See oder Meer (100 %), der Spiegel steigt stromab nie; die Strömung treibt Schwimmer, Boot und Tier > 0,5 m in 90 Takten. Die Leser-Liste steht nur hier (Wetter K3 verweist).",
-          "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless · gehalten: Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an fe885d9d gtx — offen: gelaende.K4#2 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/lib/shader-kosten.cjs +6) — zuletzt an a635bfee: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile WELTPROBE treibt) · Täter: [linse-gpu] amd/rdna-3",
+          "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless · gehalten: Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an fe885d9d gtx — offen: gelaende.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +8) — zuletzt an a635bfee: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile WELTPROBE treibt) · Täter: [linse-gpu] amd/rdna-3",
           "schlupfloch": "Ein Ausnahme-Filter je Leser (das Tier meidet Wasser-Chunks) bestünde eine Zählung; die Kern-Mutation an Zufalls-Punkten verlangt, dass jeder Leser binnen eines Takts folgt.",
           "aenderung": "Synthese gab 1 ohne Staffel, während die eigenen Belege widersprachen (Natur ×3, Tier trocken) → 0 (B11); Schnitt wasser-leser 22.10. 0 → 1.",
           "maschine": true
@@ -1793,7 +1793,7 @@
           "punkte": 0,
           "staffel": "1 = die Dichte der Bestäuber korreliert mit dem Blüten-Anteil am Ort (r ≥ 0,5) · 2 = sie folgen der Pflege-Geste (Feld K5) und der Uhr",
           "messung": "werkbank bild --zeit an der Mess-Wiese mit Klassen-Maske insekt.",
-          "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert · luftwasser.K4#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs, stamm/bild-himmel.js, stamm/bild-kosten.js +3)",
+          "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert · luftwasser.K4#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs, stamm/bild-himmel.js, stamm/bild-kosten.js +4)",
           "schlupfloch": "Ein Partikel-Schwarm ohne Feld-Leser: die Korrelation mit Blüten am Ort und die Pflege-Mutation verlangen das Feld.",
           "maschine": true
         },
@@ -2561,7 +2561,7 @@
           "punkte": 0,
           "staffel": "1 = ≥ 3/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 · 2 = 7/7 auf beiden Geräten",
           "messung": "Dasselbe Werk (Saat + ov) in Studio-Bühne und Welt bei gleicher Pose (Standard-Kamera der Bühne = Vorschau-Kamera der Welt) und Uhr, aus dem Ausgabe-Pfad (bild-diff.cjs-Rezept), Radeon UND GTX; die 18-%-Karte der Bühne bei Luma 110–130.",
-          "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, koerper-core.js, scripts/lib/shader-kosten.cjs +6) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +54) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, gelaende-core.js +39) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, gelaende-core.js +46) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+          "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +8) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +54) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · studios.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, gelaende-core.js +39) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · studios.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, gelaende-core.js +46) — zuletzt an 7f778d44: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
           "schlupfloch": "r184 laden und eigenes Licht oder eine Bau-Kopie behalten: H6 wäre grün, Labor ≠ Welt bliebe — darum urteilt das Bild, nie die Netz-Anfrage; eine Pose, die niemand sieht, zählt nicht.",
           "aenderung": "EIN Heim von Labor = Welt im Bild (vorher auch Material K2, Tore K3(b), Siedlung K1; B39, V16).",
           "maschine": true
@@ -3232,7 +3232,7 @@
           "punkte": 1,
           "staffel": "1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus · 2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte",
           "messung": "Spielgang-Station haus: Tür öffnen, Treppe, Keller (kellerY −2,40 m), Dachboden, Ego und Third, mittags und nachts.",
-          "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/abnahme-urteil.cjs +31) — zuletzt an a996d0ae: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: … bild 13/17 haus_schwarzwald · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/shader-kosten.cjs +10)",
+          "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/abnahme-urteil.cjs +31) — zuletzt an a996d0ae: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: … bild 13/17 haus_schwarzwald · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/shader-kosten.cjs +11)",
           "schlupfloch": "Den Keller zählen statt zu begehen: die Station geht hinein; Labor und Welt durch ein abgedunkeltes Labor anzugleichen: die Albedo zählt Material K1 absolut.",
           "aenderung": "Die 1 der Synthese stand auf Gesetz-Merkmalen, während die Klasse haus am Kopf kein Ist trägt (B60) → 0; Labor = Welt zählt Studios K4, der Ton Material K3 (V16, V22); Schnitt haus-innen 0 → 1 (W10, b9537781).",
           "maschine": true
@@ -4808,7 +4808,7 @@
     },
     {
       "stand": "2026-11-16",
-      "kopf": "77a9095f",
+      "kopf": "be50815d",
       "summe": 215,
       "max": 330,
       "skala": "2.0",
@@ -4816,7 +4816,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 16.11.2026, Kopf main 77a9095f (V18.546.308)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 16.11.2026, Kopf main be50815d (V18.546.309)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
