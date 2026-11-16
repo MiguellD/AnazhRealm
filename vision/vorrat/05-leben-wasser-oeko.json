@@ -1,0 +1,123 @@
+[
+ {
+  "leiter": "leben.wasser.lebensraeume", "sprosse": 2, "klasse": "B",
+  "richter": "Klassifikator erkennt den Lebensraum ≥ 80 %; Ufer-Stichprobe ≥ 90 %",
+  "hat": "nur der Bach trägt Fauna: der Fisch-Stand verlangt fließendes Wasser ≥ minMs 0,05 m/s (tetrapoda-core.js:2656-2676, FISCH_GESETZ), der See bleibt ohne Fisch; Weide als Art in phyto-core.js:570-595, Schilf und Erle nicht gefunden; Küstenflachwasser ohne eigenen Körper (foundry-core.js:176 kennt see/fluss/bach) (gelesen)",
+  "station": "keine; S1 luftwasser.K3#1 (BACH_SITZUNG, stationen/g2.js:6325) ist selbst kein Paar: GTX GRÜN an 105c9bd3 (Bett 0,2 %, 18 386 px), Radeon an 105c9bd3 ROT (Kamera im Bett 29,1 %)",
+  "fehlt": "See-Fauna ohne Strömung, Küstenflachwasser als Lebensraum mit Fauna, Uferflora-Zonierung (Schilf, Erle, Weide) und ein Klassifikator samt Ufer-Stichprobe — drei Bauten und ein neuer Richter.",
+  "rezept": "Erst S1 schließen: luftwasser.K3#1 an der Radeon am Kopf 105c9bd3 (oder beide am neuen Kopf) nachfahren. Dann im FISCH_GESETZ einen Stand für stehendes Wasser (der Kreis kreisHz ist schon beschrieben, tetrapoda-core.js:2663) und die Ufer-Zonierung in gelaende-core (Band am Ufer, gelaende-core.js:5776) bauen; der Richter zählt je Pose (Bach, See, Küste) die Klassen tier:fisch und die Ufer-Arten in der Maske wie bachRaumUrteil (stationen/g2.js:3264).",
+  "messgroesse": "Bau-Ansatz: tetrapoda-core.js:2694 fischStand (stehendes Wasser), gelaende-core.js:762 gewaesserArt (Küste als Art), gelaende-core.js:5776 Uferband",
+  "preisRisiko": "keines erkennbar am Bach (GTX p95 25 ms, Heap 314 MB gelesen); Küste ungemessen",
+  "gpuMin": 6, "bau": "L", "sicher": 0.75
+ },
+ {
+  "leiter": "leben.wasser.bild", "sprosse": 1, "klasse": "R",
+  "richter": "Sichtweite in m an fester Pose gegen das Band des Gewässertyps",
+  "hat": "drei Wasser-Körper je Art mit kd und c (see/fluss/bach, foundry-core.js:176), die Kamera unter Wasser liest die Art am Ort (stamm/bild-himmel.js:2418-2434: WK = koerper[_wasserArtAt], U.beta = c[1]) — der Spieler sieht am Bach klar, im Fluss trüb (gelesen)",
+  "station": "leib.K3#2 (Probe UNTERWASSER_PROBE, radeon+gtx, stationen/g5.js:4803) misst den Abfall K(z) aus dem Bild NUR am See gegen das Secchi-Band (g5.js:2343-2351); grün Radeon 4ee205bd, GTX 350e6b11 — kein Paar am selben Kopf, Bach und Fluss ungemessen",
+  "fehlt": "Die Sicht am Bach und am Fluss je gegen ihr Band, in derselben Probe beider Geräte.",
+  "rezept": "probeUnterwasser (stationen/g5.js:2509) um zwei Orte erweitern: die Bach-Pose der BACH_SITZUNG (-309,8/-822,5, Kamera 'unter dem Spiegel', g2.js:3140-3146) und eine Fluss-Pose aus __wasserOrte. Bach und Fluss tragen keine 2,5 m Säule: dort WAAGRECHT messen — der Weber-Kontrast eines Ziels (Leib in Third, wie LEIB_KONTRAST g5.js:2635) in zwei Abständen, Sicht = Abstand bei Kontrast 0,02 (Duntley, g5.js:2353). Die Soll-Tafel trägt heute EIN Band sichtAbfall [0,17; 0,57] (See, soll-tafel.json:1350) — je Art eine Zeile Sichtweite in m dazu.",
+  "messgroesse": "stationen/g5.js:2614-2637 (K und Leib-Kontrast aus der Luma, schon gebaut); Band spec/abnahme/soll-tafel.json:1350; das Gesetz am Ort stamm/bild-himmel.js:2422",
+  "preisRisiko": "p95 am Fluss (41,9 > 34 ms an der Radeon) — die Fluss-Pose liegt dort",
+  "gpuMin": 3, "bau": "M", "sicher": 0.65
+ },
+ {
+  "leiter": "leben.wasser.netz", "sprosse": 1, "klasse": "B",
+  "richter": "Hub und Flucht aus dem Bild",
+  "hat": "Flucht ≥ 3 m und Heimkehr stehen im Fenster (Akte rhythmen S1: Radeon 105c9bd3 nächster 4,83 m, GTX 3e4f99cd 4,79 m); den Pegel folgt der Fisch nur mit dem Anteil seiner Säule: tiefe 0,4 der Wassertiefe über dem Bett (tetrapoda-core.js:2669-2679) — Hub = 0,4 × Pegel-Hub; headless gemessen Fisch 25,166 → 25,247 bei Pegel 25,815 → 26,022 = 0,39× (gelesen)",
+  "station": "luftwasser.K3#2 GPU (BACH_HEIM_SITZUNG, stationen/g2.js:6343) urteilt nur Flucht+Heimkehr; der Pegel-Teil nur headless (fische2Urteil, g2.js:6253, grün d3708675 — urteilt den Säulen-Anteil, nicht 0,8 × Hub)",
+  "fehlt": "Die Tiefe der Sprosse (Fisch-Hub ≥ 0,8 × Pegel-Hub) reißt am Gesetz selbst (0,4×), und der Pegel-Teil fehlt der Sitzungs-Probe.",
+  "rezept": "Im Kern FISCH_GESETZ.tiefe als Abstand unter dem Spiegel statt Anteil über dem Bett lesen oder auf ≥ 0,8 heben (tetrapoda-core.js:2679, additiv mit Byte-Beweis) — Entscheid des Koordinators, ob die Karte oder der Fisch irrt. Dann den Sturm-Pegel aus fische2Probe (g2.js:2818) in bachSitzungProbe übernehmen und Hub = Δy Trupp ÷ Δ Spiegel neben der Flucht urteilen.",
+  "messgroesse": "Bau-Ansatz tetrapoda-core.js:2679 (tiefe); Mess-Größe: mittleres y der Fische des Trupps vor/nach dem Pegel (wie WELT_ROH3.fische2.pegel, g2.js:3291)",
+  "preisRisiko": "keines erkennbar (Bach: GTX p95 25 ms, Radeon 25 ms gelesen)",
+  "gpuMin": 4, "bau": "S", "sicher": 0.65
+ },
+ {
+  "leiter": "leben.wasser.rhythmen", "sprosse": 2, "klasse": "B",
+  "richter": "Tiefe der Streuschicht Mittag gegen Mitternacht, Hub ≥ 200 m",
+  "hat": "kein Plankton als Feld oder Wesen — 'Plankton' steht nur im Kommentar der Trübe (foundry-core.js:172-175); keine Tiefsee-Fauna (gelesen)",
+  "station": "keine; S1 (luftwasser.K3#2) GRÜN an Radeon 105c9bd3 und GTX 3e4f99cd/71839b1e — Paar am selben Kopf nur 3e4f99cd, dort Radeon-Heap 404,8 MB > 400",
+  "fehlt": "Eine Streuschicht (Zooplankton) in der offenen See, deren Tiefe der Sonne folgt, und ein Ort mit ≥ 300 m Wassertiefe, an dem die Kamera sie misst.",
+  "rezept": "Neben FISCH_GESETZ im Fauna-Kern eine Streuschicht als Funktion (Tiefe = f(Sonnenhöhe), Dichte je Zelle, kein Speicher) bauen; die Probe liest ihre Tiefe an derselben Pose um 12 und 0 Uhr. Muster der Uhr: bestaeuber2Probe Mittag/Mitternacht (stationen/g2.js:3290).",
+  "messgroesse": "Bau-Ansatz tetrapoda-core.js:2654 (das Fauna-Gesetzbuch neben dem Fisch)",
+  "preisRisiko": "unbekannt — Tiefsee-Pose nie gemessen",
+  "gpuMin": 4, "bau": "L", "sicher": 0.8
+ },
+ {
+  "leiter": "leben.oeko.netz", "sprosse": 1, "klasse": "F",
+  "richter": "8 Saaten im Fenster: jede Art in [⅓×, 3×] des Starts über 6 Spielstunden",
+  "hat": "der Bestand aus Nahrung × Lebensraum (tickFaunaLifecycle, Regionen state.faunaBestand); die Probe kaskade fährt ihn im Zeitraffer im Tal 709 m westlich der Ankunft (scripts/diag-kreatur-leben.cjs:290-353) (gelesen)",
+  "station": "oekologie.K1#1 (headless, eigener Boot: scripts/diag-kreatur-takt.cjs --proben kaskade, stationen/g2.js:5226) — urteilt genau [⅓×, 3×] über 8 Saaten, Stunde 8 gegen 2: 0,35–1,35×, grün d3708675",
+  "fehlt": "Die Probe kaskade als Probe der Sitzung beider Geräte, mit der Pose 'Tal mit allen 4 Arten im Bild' und dem Preis im Fenster.",
+  "rezept": "Den Körper von buehne('kaskade') (diag-kreatur-leben.cjs:290) als Sitzungs-Probe nach dem Muster WP.sitzung (BACH_SITZUNG, stationen/g2.js:3283) heben, nur den Grundlauf je Saat (8 × 2880 Takte); das Urteil von oekologie.K1#1 (g2.js:5234-5248) bleibt wörtlich. Dazu EIN Bild auf das Tal mit Maske ^tier: (vier Arten).",
+  "messgroesse": "je Saat und Gattung der Bestand der Regionen (s.faunaBestand.regionen, diag-kreatur-leben.cjs:347) Stunde 2 gegen 8",
+  "preisRisiko": "Zeitraffer im Fenster: 8 Saaten × 2880 Takte können den 45-s-Deckel reißen (headless 6 min); Pose im Wald, nicht am Dorf",
+  "gpuMin": 6, "bau": "M", "sicher": 0.6
+ },
+ {
+  "leiter": "leben.oeko.vielfalt", "sprosse": 1, "klasse": "A",
+  "richter": "Spielgang 10 min, Tier im Bild ≥ 200 px",
+  "hat": "Tafel-Zeile tiere.K5#1 steht; der Kreis 600 Spiel-s je Sicht mit Masken (PW.tierKreis, stationen/g2.js:4826) (gelesen)",
+  "station": "tiere.K5#1 (Probe, radeon+gtx, 5 Teile à 45 s): GTX GRÜN an 3e4f99cd (Ego 5, Third 4); Radeon ROT an 3e4f99cd (Ego 2) und 105c9bd3 (Third 2)",
+  "fehlt": "Die Radeon trifft ≥ 3 Sichtungen nicht stabil in beiden Sichten — Streuung des Bestands, kein fehlender Richter.",
+  "rezept": "Radeon am Kopf 3e4f99cd oder beide am neuen Kopf nachfahren; reißt Ego wieder, die Dichte des Reviers (_bestandSeite) gegen die Kreis-Runde lesen.",
+  "messgroesse": "kreisUrteil (stationen/g2.js:4842)",
+  "preisRisiko": "keines erkennbar (Radeon p95 33,3–33,5 ms knapp unter 34, Heap 378–389 MB gelesen)",
+  "gpuMin": 4, "bau": "S", "sicher": 0.8
+ },
+ {
+  "leiter": "leben.oeko.dynamik", "sprosse": 1, "klasse": "F",
+  "richter": "Kaskaden-Richtungen mit Intervall, das 0 nicht schneidet",
+  "hat": "die Kaskade lebt im Spiel: Wölfe weg → Hirsche hinauf, Jungwuchs hinab über den Fraß (_kreaturFrass, diag-kreatur-leben.cjs:293-298, 330-337) (gelesen)",
+  "station": "oekologie.K1#2 (headless, eigener Boot, stationen/g2.js:5254): hirsche +0,448 [0,321; 0,536], jungwuchs −0,279 [−0,325; −0,194], Mutante ROT, grün d3708675",
+  "fehlt": "Dieselbe Probe kaskade in der Sitzung beider Geräte mit den Szenarien ohneWolf, bejagt, mutante — ein Lauf mit oeko.netz S1.",
+  "rezept": "Dieselbe Sitzungs-Probe wie leben.oeko.netz S1 (buehne kaskade, diag-kreatur-leben.cjs:290), dazu die Szenarien ohneWolf/bejagt/mutante; das Urteil von oekologie.K1#2 (g2.js:5266-5280) wörtlich.",
+  "messgroesse": "R.ohneWolf/bejagt/mutante Effekt und Intervall (diag-kreatur-leben.cjs:270-276)",
+  "preisRisiko": "Zeitraffer im Fenster: 8 Saaten × 4 Szenarien × 2160 Takte — Deckel der Sitzung (Teile nötig wie tiere.K5#1)",
+  "gpuMin": 8, "bau": "M", "sicher": 0.6
+ },
+ {
+  "leiter": "leben.oeko.zerfall", "sprosse": 1, "klasse": "B",
+  "richter": "Kadaver-Masse sinkt mit Fresser-Zahl; Nährstoff steigt nach jedem Tod (Wolf, Alter, Spieler)",
+  "hat": "der Kadaver trägt Fleisch (fleischAnteil × Masse, stamm/kreatur-leben.js:995-1001), wird am Aas gefressen (_kreaturAasZug) und sinkt leer (_tickLeichname, kreatur-leben.js:3166); gedüngt wird NUR der Tod von Spieler-Hand (kreatur-leben.js:918 → _tatSchreiben('riss'), TAT_NARBE.riss naehr 0,2, stamm/feld-leben.js:3829) (gelesen)",
+  "station": "keine für den Nährstoff; tiere.K2#2 (radeon+gtx, stationen/g2.js:4727) zeigt Riss und Fressen der Wölfe im Bild — Muster",
+  "fehlt": "Der Tod durch Wolf und Alter düngt die Zelle nicht, und keine Station liest Kadaver-Masse gegen Fresser und den Nährstoff nach dem Tod.",
+  "rezept": "In _kreaturFaellt (kreatur-leben.js:926, der EINE Weg jedes Tods) eine Tat ohne Narbe schreiben (neue Zeile TAT_NARBE.aas mit tiefe 0, naehr 0,2 — die Narbe kippte die Kaskade, kreatur-leben.js:911-912). Station nach tiere.K2#2: Riss im Revier, je 10 s Fleisch des Kadavers und Fresser am Aas, _naehrstoffAt der Zelle vor/nach, dazu Tod am Alter und von Spieler-Hand.",
+  "messgroesse": "creature.userData.kadaver.fleisch (kreatur-leben.js:1001) und _naehrstoffAt (stamm/vegetation-wiese.js:2084)",
+  "preisRisiko": "keines erkennbar (Wald-Revier, nicht am Dorf)",
+  "gpuMin": 4, "bau": "S", "sicher": 0.8
+ },
+ {
+  "leiter": "leben.oeko.sukzession", "sprosse": 1, "klasse": "F",
+  "richter": "Halm-, Asche- und Sämling-Zahlen über die Zeit im Fenster",
+  "hat": "Brand → Asche → Gras → Busch → Wald als Funktion des Rests der Narbe (stamm/vegetation-wiese.js:2098-2104), Asche düngt (TAT_NARBE.brand naehr 0,4, stamm/feld-leben.js:3827) (gelesen)",
+  "station": "stoffe.K5#2 (headless, eigener Boot: scripts/diag-stand-takt.cjs --brand, stationen/g1.js:3712): Halme 477 → 70 → 491, Sämling 0 → 1, grün d3708675",
+  "fehlt": "Die SUKZESSION-Probe als Sitzungs-Probe beider Geräte an Brand-Zellen um das Dorf, mit der Brandfläche im Bild.",
+  "rezept": "Den Brand-Teil von diag-stand-takt.cjs --brand als WP.sitzung-Probe heben (Muster BACH_SITZUNG, stationen/g2.js:3283), das Urteil g1.js:3726-3743 (Asche/Gras/Busch/Sämling) wörtlich, dazu EIN Bild der Brandfläche je Stufe.",
+  "messgroesse": "die Zeile SUKZESSION (asche.vor/asche/gras/busch, saemling.stufen) der Probe, gelesen aus Nah-Streu und Nah-Wiese der Zelle",
+  "preisRisiko": "Heap am Dorf (417–549 MB > 400) — die Pose 'um das Dorf' liegt dort",
+  "gpuMin": 5, "bau": "M", "sicher": 0.65
+ },
+ {
+  "leiter": "leben.oeko.stoffe", "sprosse": 1, "klasse": "R",
+  "richter": "Ernte 15× → Nährstoff 1 → 0,7, Wuchs sinkt sichtbar im Bildpaar",
+  "hat": "EIN Nährstoff je 16-m-Zelle aus den Taten (_naehrstoffAt, stamm/vegetation-wiese.js:2084-2096), Monod im Wuchs (_wuchsAt, vegetation-wiese.js:2065-2075) — der Wuchs steuert das Nachwachsen der Narbe, nicht eine Größe (gelesen)",
+  "station": "stoffe.K5#2 (headless, stationen/g1.js:3712) misst Ernte 15: Nährstoff 1 → 0,7, Wuchs 0,748 → 0,698 (−6,7 %); kein Bild",
+  "fehlt": "Ein Bildpaar desselben Ackers nach 15 Ernten gegen den unberührten Nachbarn — und ob −6,7 % Wuchs überhaupt sichtbar wird (nur als längere Heilzeit der Narbe).",
+  "rezept": "Sitzungs-Probe: 15 Ernten in einer Zelle, dann dieselbe Kamera auf Zelle und Nachbar nach der Heilzeit des Nachbarn (stunden/Wuchs, _tatDauer); Mess-Größe = Pixel der Klasse streuNah im Kegel beider Zellen (Maske wie partnerSitzungProbe, stationen/g2.js:3157). Reißt die Sichtbarkeit, ist es B am Wuchs-Gesetz.",
+  "messgroesse": "_naehrstoffAt und _wuchsAt (stamm/vegetation-wiese.js:2065, 2084); Bild: Klassen-Pixel streuNah je Zelle",
+  "preisRisiko": "Heap am Dorf, falls der Acker am Dorf liegt",
+  "gpuMin": 4, "bau": "M", "sicher": 0.5
+ },
+ {
+  "leiter": "leben.oeko.partner", "sprosse": 1, "klasse": "A",
+  "richter": "r(Bestäuber, Blüten) ≥ 0,5 aus dem Bild",
+  "hat": "Tafel-Zeile luftwasser.K4#1 steht; die Bestäuber lesen Blüten, Pflege und Uhr (headless r 0,8 an 9 Orten) (gelesen)",
+  "station": "luftwasser.K4#1 (PARTNER_SITZUNG, radeon+gtx, stationen/g2.js:6277): an 3e4f99cd, 71839b1e, 105c9bd3 auf BEIDEN Geräten ROT 'keine Blumen-Klasse im Bild', Blüten 0 px; die Akten zählen noch Objekte der Maske — die Station zählt seither die Gäste im Kegel (g2.js:3184-3199)",
+  "fehlt": "Eine frische Fahrt am neuen Kopf mit der Kegel-Fassung; bleiben die Blüten 0 px, fehlt die Blumen-Klasse der Maske (Wache verborgener Klassen, scripts/lib/abnahme-urteil.cjs:2271-2283).",
+  "rezept": "Beide Geräte am Kopf e4eeee08 fahren; bei 0 px Blüten prüfen, ob die Senken streuNah:<art> der Blumen (stamm/vegetation-wiese.js:1393-1399) im Bild der Maske sichtbar bleiben.",
+  "messgroesse": "partnerUrteil (stationen/g2.js:3208)",
+  "preisRisiko": "Radeon Einlauf p95 42–50 ms an der Mess-Wiese (Akten 71839b1e/105c9bd3), im Fenster 33,5–33,7 ms knapp",
+  "gpuMin": 4, "bau": "S", "sicher": 0.7
+ }
+]

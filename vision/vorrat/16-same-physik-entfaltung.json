@@ -1,0 +1,156 @@
+[
+ {
+  "leiter": "same.physik.koerper", "sprosse": 1, "klasse": "F",
+  "richter": "Fass fällt vom Dach: Ruhe ≤ 2 s, Zittern ≤ 1 cm, Spalt zum Boden im Bild ≤ 5 cm",
+  "hat": "Der EINE Starrkörper-Löser läuft im Spiel-Takt (stamm/dirigent-takt.js:1178 `_freiSchritt`), das Fass ist ein Bauplan mit `frei` (stamm/bau-vorlagen.js:1024), Masse = Volumen × ρ (stamm/koerper-frei.js:35), Bau-Boxen sind ruhende Kisten des Lösers (koerper-frei.js:350) — gelesen; ein Fass liegt nirgends gesät, es entsteht nur über spawnBlueprint.",
+  "station": "physik.K3#1 (headless, befehl diag-fahr-leben + diag-kollision-bild, grün an d3708675: 5 Kisten Ruhe 0,87 s, Zittern 0 cm)",
+  "fehlt": "Das Urteil fällt am Löser-Zustand headless an 5 Kisten auf der Wiese — kein Fass vom Dach, kein Spalt im gezeichneten Bild, keine Probe in der Sitzung beider Geräte.",
+  "rezept": "Muster physik.K2#2 (stationen/g1.js:2833, Probe PW.kollisionTempo in der warmen Sitzung, Bild-Spalt aus den gezeichneten Ecken gegen das Mesh): ein Fass per spawnBlueprint 1 m über der Traufe eines Dorf-Hauses setzen, 3 s Spur. Mess-Größen: Zeit bis `schlaf`, max |Δy| der letzten Sekunde, Unterkante des gezeichneten Mesh gegen Boden-Höhe.",
+  "messgroesse": "Zustand e._frei (Lage, schlaf, kasten) aus stamm/koerper-frei.js:16/421; Boden-Höhe über den Höhen-Leser; Bild-Spalt wie diag-kollision-bild --bild (gezeichnete Matrix des Mesh)",
+  "preisRisiko": "Heap am Dorf, wenn die Pose am Dorf-Haus liegt (417–549 MB > 400); Wiese mit einem Werk wäre preis-sicherer",
+  "gpuMin": 3, "bau": "S", "sicher": 0.65
+ },
+ {
+  "leiter": "same.physik.tragen", "sprosse": 1, "klasse": "B",
+  "richter": "Säule realer Schlankheit unter wachsender Last: Versagens-Last gegen Euler ±20 %; halbes E knickt früher",
+  "hat": "Euler-Knick und Zerdrücken je Glied stehen im Richter (stamm/bau-buch.js:1860-1892, SG.tragSpannung), aber geteilt durch knickSicherheit 500 und druckSicherheit 10 (stamm/bau-buch.js:2588-2591) — gelesen; der Beleg vom 14.11. stimmt am Kopf.",
+  "station": "keine; bauen.K3#2 (headless, Statik 10/10 an d3708675) urteilt stabil/instabil, nie eine Versagens-Last gegen Euler",
+  "fehlt": "Die Versagens-Last ist um den Eichfaktor 500 verfälscht und keine Last wächst an einem Glied im Spiel; kein Richter.",
+  "rezept": "Bau: knickSicherheit auf eine reale Imperfektions-Abminderung (≈ 1–2) und druckSicherheit 1 im Richter setzen, die Häuser-Statik (bauen.K3 Prüf-Satz) am selben Kopf nachziehen. Dann Probe in der Sitzung: eine Holzsäule λ ≈ 100 bauen, Last-Teile auflegen bis zum Bruch, F_krit gegen π²EI/(KL)² und zweiter Lauf mit E/2 in der Stoff-Zeile.",
+  "messgroesse": "Bau setzt an stamm/bau-buch.js:2588 (AnazhRealm.PHYSIS.knickSicherheit) und bau-buch.js:1892 (tragSpannung-Aufruf) an; Versagen lesbar als Bruch-Ereignis `_werkBricht` (stamm/bau-teile.js:2570)",
+  "preisRisiko": "keines erkennbar (ein Werk auf der Wiese)",
+  "gpuMin": 4, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "same.physik.fluid", "sprosse": 1, "klasse": "T",
+  "richter": "Grube unter dem Pegel gegraben füllt sich im Bild, beide Geräte",
+  "hat": "Das Zellen-Wasser füllt die gegrabene Grube im Spiel (stamm/wasser-zellen.js), gemessen im Ausgabe-Bild über das echte Verb graben (CDP-Klick, Third, Fluss nächst Genesis) — gelesen aus der Station; Widerspruch: der Beleg sagt „im Spiel-Bild nie gesehen\", die Station gelaende.K2#1 misst genau das im Bild an beiden Geräten.",
+  "station": "gelaende.K2#1 (Probe K2_PROBE in der Sitzung, Radeon grün an b3f9ae95: 8/10 Gräben, gefüllt 34–203 ms; GTX grün an 715754fc: gefüllt 46–367 ms)",
+  "fehlt": "Nur die Tafel-Zeile {station: gelaende.K2#1, leiter: same.physik.fluid, sprosse: 1} und die frische Fahrt beider Geräte am SELBEN Kopf (heute zwei verschiedene Köpfe) mit dem Preis der Pose.",
+  "rezept": "Tafel-Zeile setzen (stationen/g1.js:1874 trägt das Urteil schon: Graben über das Verb, doppelt 0, über dem Spiegel 0, gefüllt ≤ 2 s). punkte.cjs an einem Kopf auf Radeon und GTX mit --nur gelaende.K2#1 fahren.",
+  "messgroesse": "j.third.graeben[] (gefuelltMs, nassVor/nassEnde, doppeltMax, ueberMax) aus K2_PROBE / proben-welt.cjs wasserGraben",
+  "preisRisiko": "p95 am Fluss — die Pose liegt am Fluss nächst Genesis (Radeon 41,9 > 34 ms); die Graben-Station fängt an der Radeon den echten Mauszeiger",
+  "gpuMin": 6, "bau": "S", "sicher": 0.8
+ },
+ {
+  "leiter": "same.physik.feuer", "sprosse": 1, "klasse": "B",
+  "richter": "Fackel an trockenes / nasses Gras: zündet / zündet nicht; Eis trägt den Spieler, y am Spiegel ±5 cm",
+  "hat": "Zünden auf dem Feld nach Rothermel mit Feuchte-Halt (stamm/feld-leben.js:2711 `_brandEntfachen`, :2741 `_brandZuenden`, :2855 Feuchte über mx erstickt) und Eis im Winter (stoffe.K3) stehen im Spiel — gelesen; der EINZIGE Zünder des Spielers ist das Brennglas (stamm/koerper-fahrt.js:2351), eine Fackel gibt es nicht (Grep fackel in stamm/: 0 Treffer).",
+  "station": "stoffe.K2#2 (headless, nasses Gras hält, grün an d3708675) · stoffe.K3#1 (headless, Eis trägt, Füße 0 m vom Spiegel, grün an d3708675)",
+  "fehlt": "Die Fackel als Werkzeug des Spielers fehlt; beide Hälften des Richters sind nur headless gemessen.",
+  "rezept": "Bau: ein Gerät Fackel (Schmiede-Gattung oder Werkstatt-Teil), dessen Hieb/Verb `_brandEntfachen(x, z)` am Zielpunkt ruft — derselbe Akt wie das Brennglas. Dann EINE Probe in der Sitzung beider Geräte: Fackel an trockene und an nasse Zelle (brandFeld-Eintrag ja/nein), danach Winter-Saison und W über den See (Füße − Spiegel ±5 cm), Muster stoffe.K3#1 (stationen/g1.js:3488) und physik.K2#2 als Sitzungs-Probe (g1.js:2833).",
+  "messgroesse": "Bau setzt an stamm/feld-leben.js:2711 (_brandEntfachen, Feld-Akt) und am Verb-Pfad wie stamm/koerper-fahrt.js:2351 an; Lesung: state.brandFeld.has(cx,cz) und Füße−Spiegel aus der Eis-Probe",
+  "preisRisiko": "keines erkennbar an der Wiese; liegt der See am Fluss-Ort, p95 am Fluss",
+  "gpuMin": 4, "bau": "S", "sicher": 0.7
+ },
+ {
+  "leiter": "same.physik.verformung", "sprosse": 1, "klasse": "F",
+  "richter": "Flegel schwingt am Leib des Spielers, Seillänge im Bild ±2 %, beide Geräte",
+  "hat": "Das EINE Seil-Gesetz (schmiede-core seilZustand/seilSchritt) läuft am Leib im Spiel-Takt (stamm/koerper-seele.js:849 `_seilAmLeib`, :880 `_seilTakt`, gerufen in stamm/dirigent-takt.js:338) — gelesen; nah am Auge gerechnet (SEIL_NAH_M), sonst ruhend.",
+  "station": "physik.K4#1 (headless, WELT_G1 Null-Renderer, grün an d3708675: Flegel Schwung 0,486 m, Länge längs 0,328–0,328 m, v² 3,206 → 0,264)",
+  "fehlt": "Das Urteil fällt am Seil-Zustand im Null-Renderer; die Länge im gezeichneten Bild an Radeon und GTX in der Sitzung fehlt.",
+  "rezept": "seilProbe (stationen/g1.js:3891, seilUrteil) als Probe in die warme Sitzung heben wie physik.K2#2 (g1.js:2833): Flegel in die Hand, 3 s Schwung, je Bild die Welt-Lage der gezeichneten Seil-Teile (matrixWorld der `__seil`-Kinder) längs summieren gegen die Ruhe-Länge ±2 %. Pose: Spieler auf der Mess-Wiese, Ego (Seil näher als SEIL_NAH_M).",
+  "messgroesse": "mesh.children mit userData.__seil (stamm/koerper-seele.js:858), Welt-Lage nach `_seilTakt` (koerper-seele.js:880); Ruhe-Länge aus fx.seil.glieder × Teilung",
+  "preisRisiko": "keines erkennbar (Wiese)",
+  "gpuMin": 2, "bau": "S", "sicher": 0.7
+ },
+ {
+  "leiter": "same.physik.reaktion", "sprosse": 1, "klasse": "B",
+  "richter": "Asche + Rauch-Masse = Holz ±10 %, Rauchmenge sichtbar proportional",
+  "hat": "Das Feld brennt nach Rothermel, ausgebrannte Zellen fallen als Asche (stamm/feld-leben.js:2851 `_brandSchritt`), der Rauch steigt als Ballen je Zelle ∝ Glut, gedeckelt durch ein Fahnen-Budget (feld-leben.js:3052-3055) — gelesen; keine Massen-Bilanz, nur Vegetation brennt, kein Holz-Ding.",
+  "station": "keine; stoffe.K2#1/#2 (headless) urteilen Front-Tempo und Halt, nie Masse",
+  "fehlt": "Ein Massen-Konto je Zelle (Brennstoff-Last → Asche-Anteil + Rauch) fehlt, und der Budget-Deckel `anteil` bricht die Proportionalität der Rauchmenge bei großen Bränden.",
+  "rezept": "Bau: in `_brandSchritt` je Zelle die Brennstoff-Last w0 (kg/m², aus `_brandStoff`) als verbrannt buchen, Asche = Mineral-Anteil der Stoff-Zeile, Rauch = Rest; in `_brandRauch` die Ballen-Masse aus dm/dt statt aus Glut (Deckel als Ballen-Größe kMax, nicht als Rate). Richter: Probe in der Sitzung, ein Holz-Feld zünden, Σ Asche + Σ Rauch-Masse gegen w0 × Fläche, Ballen-Zahl gegen dm/dt (r ≥ 0,9).",
+  "messgroesse": "Bau setzt an stamm/feld-leben.js:2851 (_brandSchritt) und :3053-3057 (_brandRauch, rate = R.jeS × glut) an",
+  "preisRisiko": "Bild p95 im Brand-Fenster ungemessen (stoffe.K2 nur headless)",
+  "gpuMin": 4, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "same.physik.flug", "sprosse": 1, "klasse": "B",
+  "richter": "Stein und Feder: Wurfweiten gegen Rechnung ±10 %, Feder fällt sichtbar langsamer",
+  "hat": "Der EINZIGE Flug ist der Pfeil, eine Parabel ohne Widerstand (stamm/kampf.js:1236 `_pfeilBahn`: p0 + v0·τ + ½gτ²) — gelesen; der Spieler kann kein Ding werfen, der freie Körper (stamm/koerper-frei.js:421) kennt keinen Luftwiderstand.",
+  "station": "keine; halten.K4#1 (headless) urteilt die Parabel ±5 % — ohne Widerstand",
+  "fehlt": "Luftwiderstand (½ ρ_Luft c_w A v²) und ein Wurf-Verb fehlen; eine Feder ist kein Ding der Welt.",
+  "rezept": "Bau: im Löser der freien Körper (`_freiSchritt`) eine Widerstandskraft aus Querschnitt der Gestalt und Luftdichte des Planeten; ein Wurf-Verb, das ein gehaltenes Ding als freien Körper mit v0 entlässt; ein Bauplan `feder` (frei, Fläche groß, Masse klein). Richter: Probe in der Sitzung, Stein und Feder mit gleichem v0, Weite gegen numerische Rechnung ±10 %, Fallzeit Feder > Stein.",
+  "messgroesse": "Bau setzt an stamm/koerper-frei.js:421 (_freiSchritt) an, Wurf am Halte-Pfad (stamm/kampf.js:1202ff Abschuss als Muster)",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 3, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "same.physik.stoffe", "sprosse": 1, "klasse": "B",
+  "richter": "Blind-Jury sieht und hört einen grauen Gegenstand fallen, brechen, brennen und benennt den Stoff ≥ 70 %",
+  "hat": "Die EINE SI-Stoff-Tafel mit 21 Zeilen, 4–5 von 7 Wirkungen je Stoff belegt (stoffe.K1); freie Körper lesen ρ (stamm/koerper-frei.js:35) — gelesen; frei fallen nur Kiste und Fass aus Holz (stamm/bau-vorlagen.js:1009-1034), ein Ding bricht nur als Werk über den Lastpfad, brennen kann nur Vegetation.",
+  "station": "keine; stoffe.K1#1 (headless) urteilt die Mutation je Wirkung, nie das Erkennen",
+  "fehlt": "Ein loser Gegenstand je Stoff, der beim Aufprall nach seiner Zeile klingt, bricht und brennt, fehlt — und der Jury-Lauf (Bild + Ton je Stoff, Panel) wurde nie gebaut.",
+  "rezept": "Bau: freie Körper aus jeder Stoff-Zeile (material des Bauplans statt fest holz), Aufprall-Klang über klang-core aus der Klang-Spalte, Bruch des freien Körpers über Festigkeit, Brand eines Dings über T_zünd. Danach ein Jury-Satz: je Stoff ein graues Bildpaar + Ton-Spur aus der Sitzung beider Geräte.",
+  "messgroesse": "Bau setzt an stamm/koerper-frei.js:16 (_freiKoerperSetzen, Stoff des Teils) und stamm/bau-vorlagen.js:1009 (frei-Baupläne) an",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 10, "bau": "L", "sicher": 0.6
+ },
+ {
+  "leiter": "same.entfaltung.gleichheit", "sprosse": 1, "klasse": "R",
+  "richter": "Bild G2 ↔ G3 gleiche Pose: Horizont-Linie ≤ 2 px Abweichung",
+  "hat": "Das Gelände ist EINE Funktion des Samens (gelaende-core.js:2819 `hoehe`), Studio = Welt byte-gleich (gelaende.K1) — gelesen; der Spieler sieht am Spawn auf jedem Gerät dasselbe Relief, solange die Fern-Stufe (LOD am Schirm) nicht je Gerät anders wählt.",
+  "station": "keine Bild-Station; gelaende.K1#1/#2 (headless, byte-gleich an d3708675) und feld.K2 (headless) urteilen Zahlen, nie das Bild zweier GPUs",
+  "fehlt": "Ein Richter, der an derselben Pose (Spawn, Mittag, Uhr fest) die Horizont-Linie im Ausgabe-Bild je Gerät misst.",
+  "rezept": "Muster lod.K2#1 (stationen/g3.js:3297: `fenster 1920 1080`, `umstellen --ort`, ein Schuss als Probe in der Sitzung): am Spawn Third und Ego je ein Schuss, je Bild-Spalte die erste Zeile unter dem Himmel. Damit die Punkte-Maschine je Gerät allein urteilt, gegen dieselbe Wahrheit: die Horizont-Linie aus `hoehe` längs der Kamera-Strahlen gerechnet, Soll ≤ 1 px je Gerät (⇒ ≤ 2 px G2 ↔ G3); die Akten beider Geräte am selben Kopf zusätzlich Spalte gegen Spalte.",
+  "messgroesse": "gelaende-core.js:2819 hoehe(L, x, z) längs der Strahlen der Spiel-Kamera; im Bild die Himmel/Grund-Kante je Spalte",
+  "preisRisiko": "keines erkennbar (Spawn stehend); Risiko der Messung: adaptive Fern-Stufe je Gerät (perfTarget, LOD am Schirm) kann die Linie verschieben",
+  "gpuMin": 2, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "same.entfaltung.schirm", "sprosse": 1, "klasse": "T",
+  "richter": "Frame p95 je Gerät, Wiese und Genesis, Ego und Third",
+  "hat": "Das Spiel steht an Wiese und Genesis in Ego und Third (PB_STEHT der Gang-Probe) — gelesen aus der Station; GTX stehend p95 16,8 ms laut PFLICHT E.",
+  "station": "pflicht.E#1 (stationen/g6.js:3450, Probe PB_PROBE_GANG in der Sitzung, Radeon und GTX, beide: true; Soll Bild-p95 ≤ 33 ms in jeder Stand-Zelle) — Zahl am Kopf im Eingang nicht geführt",
+  "fehlt": "Die Tafel-Zeile {station: pflicht.E#1, leiter: same.entfaltung.schirm, sprosse: 1} und das Paar am selben Kopf (das Radeon-ABAB fehlt laut PFLICHT E).",
+  "rezept": "Tafel-Zeile setzen; prüfen, dass richter-akte.cjs auch eine `pflicht: true`-Station (Buchung in pflichtJe statt je) als Akte liest. Dann punkte.cjs --nur pflicht.E#1 an Radeon und GTX am selben Kopf.",
+  "messgroesse": "pbRichter(lauf, {zellen: PB_STEHT, feld: z.frame}) aus dem Strom der Sitzung (stationen/g6.js:3463)",
+  "preisRisiko": "Radeon stehend an Genesis Third ungemessen am Kopf; die Sprosse IST der Preis",
+  "gpuMin": 1, "bau": "S", "sicher": 0.65
+ },
+ {
+  "leiter": "same.entfaltung.reise", "sprosse": 1, "klasse": "F",
+  "richter": "Gang-Bahn: Anteil ganzer Bilder ≥ 98 %",
+  "hat": "Der Spieler geht durch die Wiese, der EINE Rang (Zeit bis Bedarf) lädt voraus — gelesen aus streaming.K1 (Zweig w7-rang: 0 von 4 143 Lücken-Bildern im Sprint, headless).",
+  "station": "streaming.K1#1 (headless, befehl FAHRT, stationen/g6.js:3195; im Eingang nicht grün gebucht) · lod.K2#1 (Probe in der Sitzung, Radeon grün an 4ee205bd: 0,0439 % Pop-Pixel/s; GTX offen)",
+  "fehlt": "Die Lücken-Zählung je Bild läuft nur headless über 60 s Sprint (≈ 300 m), nicht 1 km Gehen in der Sitzung beider Geräte; ihr Maß ist der Zustand (Karte/Bau/Streu fehlt im Kegel), nicht das Bild gegen die Ruhe-Pose.",
+  "rezept": "fahrtProbe (g6.js oben, fahrtLueckeUrteil) als Probe in die Sitzung heben wie lod.K2#1 (g3.js:3297), Bahn 1 km Gehen auf der Wiese; ganz = Bild ohne Lücke im Kegel. Stichprobe von 20 Posen danach im Stand nachschießen und die Lücke als Bild-Diff ≤ 2 % gegen die Ruhe-Referenz bestätigen.",
+  "messgroesse": "je Bild die Ding-Lücken im Sichtkegel (Karten, Bauten, Streu) wie fahrtLueckeUrteil; Bild-Diff über ausgabe-aufnahme",
+  "preisRisiko": "Preis „P an G2 + G3\" gehend: Radeon gehend 66 % der Bilder > 33 ms (Beleg) — dort liegt das Risiko",
+  "gpuMin": 6, "bau": "M", "sicher": 0.5
+ },
+ {
+  "leiter": "same.entfaltung.abwesenheit", "sprosse": 1, "klasse": "B",
+  "richter": "Ort sehen, gehen, nach N h zurück: Lage jedes Bewohners gegen den Lauf mit Zuschauer ≤ 1 m",
+  "hat": "Die Ankunft spielt den Tag ohne Zuschauer nach (stamm/siedlung-bewohner.js:2251 `_bewohnerAnkunft`, Wende gerastert auf wendeH, höchstens ankunftWenden) — gelesen; Widerspruch zum Beleg „die Abwesenheits-Probe wurde nie gefahren\": mensch.K2#2 fährt genau sie an e4eeee08 auf beiden Geräten.",
+  "station": "mensch.K2#2 (Probe BEWOHNER_SITZUNG in der Sitzung, Radeon und GTX grün an e4eeee08: Wiederkehr nach 1 h 0 von 1 232 Lagen über ±2 m, max 1,826 m; 77 Bewohner)",
+  "fehlt": "Das Spiel hält heute max 1,826 m statt ≤ 1 m (gelesen aus der Akte am Kopf), und die Station urteilt ±2 m an 77 statt 118 Bewohnern.",
+  "rezept": "Bau S: in `_bewohnerAnkunft` die Wende feiner rastern (wendeH, planH) bzw. den Rest des Wegs nach dem Raster nachgehen, bis die Wiederkehr ≤ 1 m hält. Dann eine Karte-2-Zeile auf derselben Probe (Muster mensch.K2#2, stationen/g2.js:5483, Urteil k.maxM ≤ 1 und k.n ≥ 118) an der belebten Stadt statt am Start-Dorf.",
+  "messgroesse": "Bau setzt an stamm/siedlung-bewohner.js:2251 (_bewohnerAnkunft) und den Konstanten wendeH/ankunftWenden (siedlung-bewohner.js:3790) an; Lesung probeZeile(\"bewohner\").wiederkehr.maxM",
+  "preisRisiko": "Heap am Dorf/Haus nach dem Gang (417–549 MB > 400), die Probe steht am Dorf",
+  "gpuMin": 10, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "same.entfaltung.vielfalt", "sprosse": 1, "klasse": "B",
+  "richter": "aus einem Zufallsbild den richtigen von 10 Orten ≥ 80 % (Panel); der Prüfer nennt das Merkmal, Gegenlauf: Ursache getauscht → Merkmal weg ≥ 80 %",
+  "hat": "Häuser tragen eine Kultur je Slot (stamm/siedlung-ort.js:2262, Bauplan = Präfix + slot.kultur; fachwerk-core.js:3705 herr/sakral/fern) — gelesen; die Kultur ist eine Rolle des Plans, keine Folge von Gestein oder Klima des Orts, und Häuser lesen als weiße Kästen (Beleg).",
+  "station": "keine",
+  "fehlt": "Kein Merkmal eines Orts folgt aus einer Ursache am Ort (Gestein → Baustoff, Klima → Dach), also gibt es nichts, was der Gegenlauf wegnehmen könnte; kein Erkennungs-Lauf.",
+  "rezept": "Bau: die Siedlung liest am Slot Gestein und Klima aus dem Gelände-Kern und wählt daraus Baustoff und Dachform (eine Zeile je Ursache, nie ein Zufall). Dann 10 Orte einer Welt je ein Bild in der Sitzung, Panel-Satz + Gegenlauf mit getauschter Ursache.",
+  "messgroesse": "Bau setzt an stamm/siedlung-ort.js:2262 (Bauplan des Slots) und am Plan-Export der Kultur (fachwerk-core.js:3705) an",
+  "preisRisiko": "Heap am Dorf",
+  "gpuMin": 15, "bau": "L", "sicher": 0.45
+ },
+ {
+  "leiter": "same.entfaltung.akte", "sprosse": 2, "klasse": "F",
+  "richter": "Bildpaar ≤ 1 %; Median ≤ 100 B je Tat; Ankunft mit ↔ ohne Taten",
+  "hat": "Taten überstehen den Reload sichtbar (speicher.K4#2 an beiden Geräten), der Stand wächst mit den Edits, nicht mit dem Weg (speicher.K3) — gelesen aus den Stationen.",
+  "station": "speicher.K4#2 (Probe in der Sitzung, Radeon grün an 105c9bd3 0,69 %, GTX an 71839b1e 0,68 % — 100 Taten) · speicher.K3#2 (headless, 1000 Gruben, Bytes) · speicher.K2#2 (Probe in der Sitzung, 10 000 Gruben, nur Speicher-ms)",
+  "fehlt": "Das Bildpaar fährt 100 statt 1 000 Taten, die Bytes je Tat nur headless, und Ankunft mit ↔ ohne Taten misst niemand.",
+  "rezept": "speicherBildSeite (stationen/g6.js:4440ff) auf 1 000 Taten heben und im selben Lauf die Stand-Größe aus dem Speicher-Faden durch n teilen (Median je Tat, wie diag-persistence --weg roh); danach Reload mit und ohne Taten, Zeit bis zum ersten ganzen Bild je Fall.",
+  "messgroesse": "bild-diff und Pflicht-Zählung aus speicherBildSeite; Stand-Bytes aus dem Speicher-Faden (speicher.K2 SPEICHER_TAKT_PROBE); Ankunft aus dem Strom der Sitzung",
+  "preisRisiko": "keines erkennbar (Bach der Mess-Wiese); 1 000 Taten im Blick heben Tris/dc",
+  "gpuMin": 5, "bau": "M", "sicher": 0.6
+ }
+]

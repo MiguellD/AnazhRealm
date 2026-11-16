@@ -1,0 +1,167 @@
+[
+ {
+  "leiter": "mensch.zeit.spanne", "sprosse": 1, "klasse": "R",
+  "richter": "dieselbe Zelle unter 4 Jahren: Blind-Datierung bringt die 4 Bilder in die richtige Folge ≥ 80 %",
+  "hat": "der Satz „dorf <seed> <häuser> jahr <1–9999>“ gründet den Ort am Jahr (stamm/feld-leben.js:1174–1194); Stil je Jahr aus REGION_HIST (fachwerk-core.js:3281), Tracht und Größe je Epoche aus EPOCHEN (fachwerk-core.js:3294–3303), Leser der Tracht der Wirt (stamm/siedlung-bewohner.js:245–255) — gelesen",
+  "station": "siedlung.K4#1 (headless, grün an d3708675: Jahresringe 0,915, Rolle/Bauart/Kleidung 0 Brüche — Struktur, kein Bild, keine Datierung)",
+  "fehlt": "ein Richter, der vier Bilder derselben Zelle (1320/1560/1860/1935) im echten Fenster schießt und blind datieren lässt; in den Stationen gibt es keinen Blind-Datierer (Grep „blind|2AFC|Panel“ in stationen/: nur Selbsttest-Wörter)",
+  "rezept": "Muster stationen/g5.js:4290 (siedlung.K4#2: sitzung, K4_SCHRITT, teil BILD $W bild … --uhr 0.5): vier Sätze „dorf 7 300 jahr J“ an derselben Stelle, je ein Bild von derselben Hügel-Pose; die vier PNG gemischt an einen Blind-Leser (KI-Bildurteil nach dem Muster kiSpracheLaufUrteil g5.js:384), 10 Mischungen, Anteil richtige Folge ≥ 0,8.",
+  "messgroesse": "Pose aus K4_HUEGEL/K4_KAMERA (g5.js:4302/4312), Bild über werkbank bild; Datierung = Folge-Treffer des Blind-Lesers je Mischung (neu zu bauen)",
+  "preisRisiko": "Heap am Dorf (vier Orte in einer Sitzung; 417–549 MB nach dem Gang bekannt rot)",
+  "gpuMin": 6, "bau": "M", "sicher": 0.65
+ },
+ {
+  "leiter": "mensch.zeit.palimpsest", "sprosse": 2, "klasse": "F",
+  "richter": "Überdeckung je Slot ≥ 0,9 über 1320 → 1935 im echten Spiel",
+  "hat": "derselbe Satz mit Jahr 1320/1560/1860/1935 setzt dieselbe Zelle (stamm/feld-leben.js:1180), die Chronik vererbt die Lose (chronikJahr fachwerk-core.js:3604); das Wachstum tauscht den Plan am neuen Jahr in der Welt (stamm/siedlung-ort.js:2865 _ortWaechst) — gelesen",
+  "station": "siedlung.K4#1 (headless Node, Teil J: Überdeckung je Slot 0,915, mit Zahl 0,958, grün an d3708675); siedlung.K4#2 (Radeon 105c9bd3 + GTX 3e4f99cd, Probe in der Sitzung) misst „die alten 0,917“ nur über 1412 → 1724 im Wachstum",
+  "fehlt": "die Überdeckung je Slot 1320 → 1560 → 1860 → 1935 aus der WELT (Plan des stehenden Orts), nicht aus dem Node-Export, und die Sprung-Zeit Satz → Ort steht ≤ 5 s, an beiden Geräten",
+  "rezept": "In die Sitzung von siedlung.K4#2 (g5.js:4293) vier Schritte nach dem Muster weltWachstum (scripts/diag-settlement.cjs:206 ort(jahr,x)): dieselbe Zelle unter den vier Jahren, je Paar ueberdeckung() über S.plan (diag-settlement.cjs:178) und die Uhr vom Satz bis zum letzten gehobenen Haus; Urteil min ≥ 0,9 und Sprung ≤ 5 s.",
+  "messgroesse": "r._bewohnerSiedlungen.get(k).plan.slots (scripts/diag-settlement.cjs:210–213) gegen ueberdeckung(FC, P, x) (diag-settlement.cjs:178); Sprung über __marke vor/nach spawnSettlement",
+  "preisRisiko": "Heap am Dorf (vier Orte nacheinander); Teil J liegt mit 0,915 knapp über 0,9 — die Welt-Zahl kann darunter fallen",
+  "gpuMin": 5, "bau": "S", "sicher": 0.7
+ },
+ {
+  "leiter": "mensch.zeit.kausal", "sprosse": 1, "klasse": "F",
+  "richter": "Ort nach Gewalt wächst messbar langsamer",
+  "hat": "die Welt verdrahtet es: schlägt der Spieler ein Wesen vor Zeugen, trägt der Ort eine Akte gewalt (stamm/siedlung-bewohner.js:2105–2118), der Wachstums-Takt rechnet fachwerk wachstum mit dieser Furcht (stamm/siedlung-ort.js:2847–2848, fachwerk-core.js:3644–3690) — gelesen",
+  "station": "siedlung.K4#2 Teil W, Check W2 „Gewalt bremst“ (scripts/diag-settlement.cjs:1133) — läuft während der GPU-Sitzung, aber als Node ohne Welt (g5.js:4298), grün an 105c9bd3/3e4f99cd",
+  "fehlt": "der Gegenlauf IN der Welt: derselbe Ort von 1320 über 1500 s einmal mit drei Schlägen vor Zeugen, einmal ohne — Häuser/Jahr danach verglichen, an beiden Geräten",
+  "rezept": "Die Schritte K4_ORT … K4_STAND der Station siedlung.K4#2 (g5.js:4301–4311) an zwei Zellen derselben Saat im selben Uhr-Lauf (der Nachbar wächst im selben Takt, WW4 diag-settlement.cjs:1797); vor der Uhr an der einen dreimal damageCreature neben Bewohnern (_bewohnerZeuge); Urteil Häuser bzw. Jahr mit Gewalt < ohne und c.akten.length ≥ 3.",
+  "messgroesse": "settlementCells[k].akten und settlementCells[k].wachs.jahr (stamm/siedlung-ort.js:2848–2849), Häuser über r._dorfHaus je Slot (diag-settlement.cjs:211)",
+  "preisRisiko": "Heap am Dorf (zwei Orte, 1500 s Uhr); Probe-Dauer — K4#2 trägt schon 12 min",
+  "gpuMin": 8, "bau": "S", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.zeit.erleben", "sprosse": 1, "klasse": "F",
+  "richter": "Bildpaar vorher/nachher am selben Ort",
+  "hat": "ein Brand ist ein Ereignis mit Folge am Ort: das Brennglas entfacht (stamm/feld-leben.js:2711 _brandEntfachen), die Tat brand bleibt im Tat-Index und malt die Narbe der Asche (stamm/feld-leben.js:9–18, 63–68, 140) — gelesen; Häuser brennen NICHT (brenn nur gras/laub, stamm/bau-vorlagen.js:1551), das Wachstum nach Gewalt (siehe kausal) ist die zweite Folge am Ort",
+  "station": "stoffe.K2#2 (headless, Null-Renderer, scripts/diag-stand-takt.cjs --brand, g1.js:3408): Asche an der Zelle des Herds 0,809, Kante, Flammen — kein Bildpaar, kein Gerät",
+  "fehlt": "das Bildpaar vor und nach dem Brand von derselben Pose im echten Fenster an beiden Geräten, mit einem Bild-Maß (Anteil Asche-Pixel im Schirm-Ausschnitt), und die Lesart, ob eine Gras-Narbe am Dorfrand als „Ereignis am Ort“ zählt",
+  "rezept": "Muster stationen/g5.js:4290 (sitzung + teil BILD): Pose am Dorfrand, Bild A mittags, Brennglas-Herd per _brandEntfachen, Uhr bis die Front steht, Bild B von derselben Pose; Urteil Differenz im Ausschnitt (Luminanz/Asche-Albedo) über einer Schwelle und Asche ≥ 0,99 an der Herdzelle wie g1.js:3439.",
+  "messgroesse": "_tatIndex().brand (stamm/feld-leben.js:140) und die Asche der Zelle (feld-leben.js:63–68); das Bildpaar über werkbank bild an derselben Pose",
+  "preisRisiko": "Brand mit 2 000 Zellen: Schirm 0,3–0,8 ms headless gelesen, an der GPU ungemessen; Heap am Dorf, wenn die Pose am Dorf liegt",
+  "gpuMin": 5, "bau": "S", "sicher": 0.45
+ },
+ {
+  "leiter": "mensch.zeit.erde", "sprosse": 1, "klasse": "B",
+  "richter": "Straßenachsen gegen den archäologischen Plan: Deckung ≥ 70 %; Fach-Panel 2AFC Spielbild gegen wissenschaftliche Rekonstruktion ≤ 80 %",
+  "hat": "nur die Epoche antike (region antik, Jahr 80, Größe markt, Tracht poncho/shorts, fachwerk-core.js:3295) und die Gestalt roemisch — kein Erd-Schlüssel, kein Stadtplan einer echten Stadt, kein Raster cardo/decumanus (Grep in fachwerk-core.js: 0) — gelesen",
+  "station": "keine",
+  "fehlt": "ein Erd-Schlüssel ≤ 10 kB einer römischen Stadt um 100 (Achsen, Forum, Mauer, Hauptbauten) und ein Stadt-Grammatik-Weg, der ihn statt des Samens liest; dazu der Richter mit Plan-Vergleich und Fach-Panel",
+  "rezept": "Bau an der Stadt-Grammatik (fachwerk-core.js:3692ff, Gewebe STADT_DICHTE) und am Export (fachwerk-core.js:3818 leg/region): ein Schlüssel-Objekt legt Straßenachsen und Sonderbauten fest, der Rest wächst aus dem Gesetz; Richter: Achsen des Plans aus dem Export gegen den digitalisierten Grabungsplan (Linien-Deckung im 5-m-Puffer).",
+  "messgroesse": "Bau setzt an fachwerk-core.js:3818–3823 (die Wahl von region/jahr, DP.erbe als Vorbild eines vorgegebenen Erbes) und an der Stadt-Grammatik fachwerk-core.js:3692",
+  "preisRisiko": "Stadt-Klasse (Heap ≤ 600 MB, Ankunft ≤ 5 s) — Ankunft heute 16,6 s kalt an der GTX (PFLICHT-OFFEN B)",
+  "gpuMin": 6, "bau": "L", "sicher": 0.8
+ },
+ {
+  "leiter": "mensch.zukunft.technik", "sprosse": 1, "klasse": "B",
+  "richter": "Bildpaar Jahr 0 / +50 am selben Ort: ≥ 10 neue Dinge im Bild benannt; Gegenlauf: Vorgänger gekappt → das Ding fehlt ≥ 80 %",
+  "hat": "die Zeit endet bei der Moderne: das letzte Band ist 1965 modern/volle_moderne (fachwerk-core.js:3282), EPOCHEN moderne Jahr 1935 (fachwerk-core.js:3303); ein Satz „dorf … jahr 2100“ gründet einen Ort der Moderne ohne ein neues Ding — gelesen",
+  "station": "keine",
+  "fehlt": "ein Technik-Baum im Export (Ding → Vorgänger), der über die Gegenwart der Saat weiterwächst und 10 sichtbare Dinge (Bauteile, Straßenmöbel, Fahrzeuge) setzt; der Gegenlauf braucht den gekappten Vorgänger als Schalter",
+  "rezept": "Bau als weitere Zeile der Zeit-Achse der Stadt-Grammatik (fachwerk-core.js:3697–3699: „eine spätere Epoche ist eine Zeile in zeit und je Viertel ein Satz“) plus ein Vorgänger-Feld je Ding; Richter Bildpaar über werkbank bild nach Muster g5.js:4290, Benennung durch einen Blind-Leser.",
+  "messgroesse": "Bau setzt an fachwerk-core.js:3697 (zeit-Bänder der Stadt-Grammatik) und REGION_HIST fachwerk-core.js:3282",
+  "preisRisiko": "Stadt-Klasse: Heap am Dorf/Haus bekannt rot",
+  "gpuMin": 6, "bau": "L", "sicher": 0.8
+ },
+ {
+  "leiter": "mensch.zukunft.medien", "sprosse": 1, "klasse": "B",
+  "richter": "10 Flächen: der Inhalt stimmt mit der Welt (der Laden steht dort, Uhr und Wetter richtig) 100 %; keine zwei gleich",
+  "hat": "keine Bildfläche: Grep schild|leuchtschrift|reklame|hologramm|werbetafel in stamm/ und den Kernen trifft nur fremde Wörter (planet-core, netz-p2p, kreatur-leben, stoff-karte), fachwerk-core 0; es gibt aber Händler und Handelshäuser mit Ständen (koerper-core.js:5119–5127) — der Inhalt wäre da — gelesen",
+  "station": "keine",
+  "fehlt": "eine Bildfläche je Laden (Schild, Uhr, Wetter-Tafel) als Ding der Stadt-Grammatik, deren Inhalt aus der Rolle des Hauses, der Uhr (timeOfDay) und dem Wetterwort gelesen wird, sichtbar in der Nachtstraße",
+  "rezept": "Bau: ein Ding „schild“ in den Gegenständen des Markt-Viertels (Stadt-Grammatik fachwerk-core.js:3692–3697, dinge) mit Inhalt = Rolle des Slots; Uhr/Wetter-Flächen lesen state.timeOfDay und WEATHER_INTENSITY (stamm/bild-himmel.js:2786); Richter: 10 Flächen der Straße, Inhalt gegen Welt-Zustand, Paarvergleich auf Gleichheit.",
+  "messgroesse": "Bau setzt an fachwerk-core.js:3692 (dinge des Viertels) und koerper-core.js:5123–5127 (kaufhaus/kontor/haendler als Inhalts-Quelle)",
+  "preisRisiko": "Nachtstraße mit 10 Lichtquellen: Licht-Budget (dirigent-kern.js:1738 Quellen-Wahl) ungemessen",
+  "gpuMin": 4, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.zukunft.maschinenwesen", "sprosse": 1, "klasse": "B",
+  "richter": "Bewegungs-Kennzahlen aus dem Bild (Schrittfolge, Gelenkgrenzen) passen zum Bau ≥ 90 %; Blindpaar gegen Film realer Roboter ≤ 85 %",
+  "hat": "kein Roboter: Grep roboter|robot|android|cyborg in stamm/ und den Kernen 0 Treffer — gelesen; die Bausteine stehen getrennt: Räder im vehicle-core.js, Beine im tetrapoda-core.js, Arme und Griff im koerper-core.js (leibPlan koerper-core.js:5312ff)",
+  "station": "keine",
+  "fehlt": "EIN Arbeits-Roboter als Leib aus Fahrwerk + Arm mit einer Aufgabe (Lasten tragen), dessen Gang und Griff aus seinem Bau folgen, plus ein Richter für Bewegungs-Kennzahlen aus dem Bild",
+  "rezept": "Bau: ein Fahrwerk aus vehicle-core mit einem Arm-Glied nach koerper-core leibKette (koerper-core.js:7426) als Kreatur der Welt; Richter Gelenkwinkel je Bild aus dem Rig gegen die Gelenkgrenzen seines Baus (Muster der Gang-Messung mensch.K2#2 g2.js:5483).",
+  "messgroesse": "Bau setzt an vehicle-core.js (Fahrwerk) und koerper-core.js:5312 (DER EINE BEWEGUNGS-TAKT DES LEIBS)",
+  "preisRisiko": "keines erkennbar (ein Leib)",
+  "gpuMin": 4, "bau": "L", "sicher": 0.8
+ },
+ {
+  "leiter": "mensch.zukunft.leib", "sprosse": 1, "klasse": "B",
+  "richter": "Gang-Kennzahlen (Schrittlänge, Symmetrie) gegen Aufnahmen von Prothesen-Trägern im Band",
+  "hat": "keine Prothese und kein asymmetrischer Gang: Grep prothese|implantat|hink|humpel|asymmetr in koerper-core.js und stamm/ 0 einschlägige Treffer (nur porta-core.js:856 „Holzbeine“ einer Gestalt) — gelesen",
+  "station": "keine",
+  "fehlt": "ein Glied-Parameter im Bauplan (Ersatzbein: Länge, Masse, Knie steif), den der Gang-Takt liest, so dass Schrittlänge und Symmetrie sich ändern; dazu Referenz-Band aus Prothesen-Gangdaten",
+  "rezept": "Bau im koerper-core: BAU_GESETZ-Achse oder Gen „ersatz“ je Glied (koerper-core.js:5312ff leibPlan, _gaitTick im Wirt) — der Wirt setzt sie einem Bewohner (_bewohnerGestalten stamm/siedlung-bewohner.js:252–267); Richter: Schrittlänge links/rechts und Symmetrie-Index aus der Rig-Pose je Bild gegen das Literatur-Band.",
+  "messgroesse": "Bau setzt an koerper-core.js:5312 (Bewegungs-Takt) und stamm/siedlung-bewohner.js:265–267 (Bau je Bewohner)",
+  "preisRisiko": "keines erkennbar (ein Bewohner, nah)",
+  "gpuMin": 3, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.kopplung.leib", "sprosse": 1, "klasse": "B",
+  "richter": "Lagen-Anteil steigt im Bildpaar",
+  "hat": "die Tracht folgt nur der Epoche: _bewohnerGestalten liest S.plan.kleidung (stamm/siedlung-bewohner.js:247) und backt je Gestalt einen Ofen-Schlüssel (:271); die Temperatur des Orts zu Saison und Wetter gibt es (_temperaturAt stamm/bild-himmel.js:2797), aber kein Leser am Leib — gelesen; der Beleg stimmt",
+  "station": "keine",
+  "fehlt": "der Schnitt der Tracht (tshirt → pullover/poncho, Lagen) aus der Temperatur am Platz zur Saison, so dass Sommer und Winter verschiedene Gestalten backen",
+  "rezept": "Bau: _bewohnerTracht (stamm/siedlung-bewohner.js:255) liest _temperaturAt(y) und das Regenwort; unter einer Schwelle wählt sie die Lage aus der Tracht der Epoche; Richter: Platz mittags Sommer gegen Winter (seasonPhase gesetzt), Anteil Gestalten mit Lage aus ov.top (stamm/siedlung-bewohner.js:255) plus Bildpaar nach Muster mensch.K2#2 (g2.js:5483).",
+  "messgroesse": "Bau setzt an stamm/siedlung-bewohner.js:255 (_bewohnerTracht) mit _temperaturAt stamm/bild-himmel.js:2797; Mess-Größe Anteil ov.top ∈ Lagen je Siedlung",
+  "preisRisiko": "Heap am Dorf (zweiter Satz Gestalten im Ofen bei Saison-Wechsel)",
+  "gpuMin": 4, "bau": "S", "sicher": 0.7
+ },
+ {
+  "leiter": "mensch.kopplung.sport", "sprosse": 1, "klasse": "B",
+  "richter": "Anteil im Spiel 5–15 %",
+  "hat": "der Tag kennt kein Spiel: tagesPlan liefert nur schlaf · morgen · besuch · arbeit · mittag · abend (koerper-core.js:5275–5309), der Abend ist der Treff (koerper-core.js:5308); die Verben der Spielgeräte gibt es für den Spieler (VERB_GESETZ, koerper-core.js:5317–5318) — gelesen; der Beleg nennt 5057–5086, die Stelle liegt heute bei 5280",
+  "station": "keine",
+  "fehlt": "ein Akt „spiel“ am Abend auf dem Platz, gewählt nach Alter und Rolle, mit Bewegung der Spielenden",
+  "rezept": "Bau im koerper-core: TAGES_GESETZ (koerper-core.js:5106) bekommt ein Band spiel mit Wahl nach age/Rolle, tagesPlan (koerper-core.js:5280) gibt akt spiel am Ort platz; der Wirt (_bewohnerSoll stamm/siedlung-bewohner.js:2125) spielt die Haltung; Richter: Dorfplatz am Abend, Anteil b.akt === spiel an den Bewohnern draußen, Muster mensch.K2#2 (g2.js:5483).",
+  "messgroesse": "Bau setzt an koerper-core.js:5280–5309 (tagesPlan); Mess-Größe Anteil soll.akt je Bewohner aus _bewohnerSoll (stamm/siedlung-bewohner.js:2129)",
+  "preisRisiko": "Heap am Dorf",
+  "gpuMin": 4, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.kopplung.leben", "sprosse": 1, "klasse": "B",
+  "richter": "Anteil draußen sinkt ≥ 0,3",
+  "hat": "der Tag kennt kein Wetter: tagesPlan(same, rolle, stunde, orte) ohne Wetter-Eingang (koerper-core.js:5280), der einzige Rufer _bewohnerSoll (stamm/siedlung-bewohner.js:2129) reicht keins; das Wetterwort steht im Wirt (WEATHER_INTENSITY stamm/bild-himmel.js:2786) — gelesen",
+  "station": "keine (mensch.K2#2 g2.js:5483 misst den Tag der Bewohner an beiden Geräten, aber nie unter Regen)",
+  "fehlt": "der Regen als Eingang des Tages-Gesetzes: bei Regen werden Platz-, Treff- und Morgen-Akte drinnen (soll.drinnen)",
+  "rezept": "Bau: tagesPlan bekommt einen fünften Eingang nass (0–1, additiv, ohne ihn byte-gleich), über einer Schwelle wird aus platz/abend/morgen drinnen; _bewohnerSoll reicht WEATHER_INTENSITY; Richter: Markt mittags Sonne gegen Regen in derselben Sitzung (Wetter per Wort), Anteil !b.drinnen sinkt ≥ 0,3, Muster mensch.K2#2 (g2.js:5483).",
+  "messgroesse": "Bau setzt an koerper-core.js:5280/5295 (aus(wo, akt, drinnen)) und stamm/siedlung-bewohner.js:2129; Mess-Größe Anteil soll.drinnen === false je Siedlung",
+  "preisRisiko": "keines erkennbar (Markt-Pose; Heap am Dorf, falls dort gemessen)",
+  "gpuMin": 3, "bau": "S", "sicher": 0.8
+ },
+ {
+  "leiter": "mensch.kopplung.antwort", "sprosse": 1, "klasse": "R",
+  "richter": "Ring neuer Häuser um das Spielerhaus binnen 1 500 s; Gegenlauf: dieselbe Saat ohne Spielerhaus → kein Ring an diesem Ort",
+  "hat": "das gesetzte Haus wird Kern eines Rings (stamm/siedlung-ort.js:2969–2973 _ortKernAkt, Rufer stamm/gelaende-kollision.js:419), die Lose wachsen um das Haus (fachwerk ringUm) — gelesen",
+  "station": "siedlung.K4#2 (Radeon 105c9bd3 + GTX 3e4f99cd, Probe in der Sitzung, g5.js:4290): Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort — die erste Hälfte des Richters; der Gegenlauf ohne Haus fehlt im Urteil (g5.js:4335 kern = u.kern && ring.neu > 0 && zumHaus < zumOrt)",
+  "fehlt": "der Gegenlauf: dieselbe Saat ohne Spielerhaus über dieselbe Uhr, neue Häuser im selben Umkreis der Haus-Stelle = 0; dann die Tafel-Zeile",
+  "rezept": "In die Sitzung von siedlung.K4#2 (g5.js:4293) einen zweiten Ort derselben Saat ohne Haus (der Nachbar wächst im selben Takt, WW4 scripts/diag-settlement.cjs:1797), dieselbe Haus-Stelle relativ zum Ort gespiegelt; Urteil zusätzlich: neue Häuser binnen 30 m der Stelle ohne Haus 0.",
+  "messgroesse": "ring.neu/zumHaus aus dem Schritt STAND (g5.js:4332), neue Slots über S.plan.slots gegen den alten Plan (scripts/diag-settlement.cjs:210–213)",
+  "preisRisiko": "Heap am Dorf (zwei wachsende Orte, 1500 s Uhr)",
+  "gpuMin": 4, "bau": "S", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.kopplung.kultur", "sprosse": 1, "klasse": "B",
+  "richter": "32 Saaten: passender Baustoff ≥ 85 %; Region aus Hausbild ≥ 70 %",
+  "hat": "die Welt zieht die Region per Würfel: region = r<.30 mitteleuropa … (fachwerk-core.js:3819); metaParams Klima × Epoche → Stoff (fachwerk-core.js:8779) liest nur das Studio (worlds/fachwerk/fachwerk.js:626–630) — gelesen; der Beleg stimmt, die Zeilen sind gewandert (3647 → 3819, 8103 → 8779)",
+  "station": "keine",
+  "fehlt": "die Region bzw. der Baustoff aus Biom und Klima der Zelle statt aus rnd(): der Export bekommt das Klima des Orts vom Wirt und metaParams wird der eine Leser für Welt und Studio",
+  "rezept": "Bau: exportSettlement nimmt DP.klima (vom Wirt aus dem Biom der Zelle) und wählt region/Stoff über metaParams statt fachwerk-core.js:3819; Richter: 32 Saaten an verschiedenen Biomen, Baustoff des Exports gegen Biom-Tafel, dann Blind-Leser Region aus Hausbild (Muster g5.js:4290 teil BILD).",
+  "messgroesse": "Bau setzt an fachwerk-core.js:3818–3822 (Region-Wahl) mit metaParams fachwerk-core.js:8779; Mess-Größe region/stil je Export",
+  "preisRisiko": "Heap am Dorf (32 Saaten nur im Export, Bild an wenigen)",
+  "gpuMin": 5, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.kopplung.kreislauf", "sprosse": 1, "klasse": "B",
+  "richter": "20 Personen: Mahl bis Feld ≥ 90 %",
+  "hat": "jeder Bewohner hat einen Ort des Mahls (tagesBindung mahl, koerper-core.js:5270) und Felder sind Orte der Arbeit (angebot feld, koerper-core.js:5146), aber keine Ware mit Herkunft, kein Brunnen-Gang, niemand isst etwas Bestimmtes — gelesen",
+  "station": "keine",
+  "fehlt": "eine Herkunfts-Kette Mahl → Feld der eigenen Flur und Wasser → Brunnen je Haushalt, im Spiel lesbar (Frage oder sichtbarer Gang)",
+  "rezept": "Bau in tagesBindung (koerper-core.js:5248–5273): je Haus das Feld seines Hofs (Agrarparzelle des HOF-GESETZES, fachwerk-core.js:3279) und den nächsten Brunnen binden, das Mahl trägt die Herkunft; Richter: 20 Zufalls-Bewohner, Kette mahl → feld bis zu einem Feld des Orts ≥ 0,9, Muster mensch.K2#2 (g2.js:5483).",
+  "messgroesse": "Bau setzt an koerper-core.js:5266–5273 (Rückgabe der Bindung werk/platz/mahl/abend/besuch); Mess-Größe b.orte je Bewohner",
+  "preisRisiko": "Heap am Dorf",
+  "gpuMin": 3, "bau": "M", "sicher": 0.7
+ }
+]

@@ -1,0 +1,145 @@
+[
+ {
+  "leiter": "leben.pflanzen.arten", "sprosse": 1, "klasse": "R",
+  "richter": "Blindtest 10 Bilder je Gestalt: Gattung ≥ 80 % richtig; Herbar-Bildpaar je Gestalt ≥ 0,7",
+  "hat": "12 Gestalten stehen im Spiel (gelesen): 9 Bäume baum_tanne/kiefer/buche/birke/eiche/erle/karst/palme/zypresse + busch_hazel, farn_busch, blume_gross in stamm/vegetation-baum.js:3201-3255, gezogen je Zelle in stamm/vegetation-streu.js:201-229.",
+  "station": "keine; material.K1 (g3.js:2934) misst Albedo, nicht Gattung — ROT/ungefahren an beiden Geräten",
+  "fehlt": "ein Richter, der je Gestalt 10 Bilder schießt und blind die Gattung zuordnet, und die Herbar-Referenzen (spec/abnahme/ trägt nur k24-tanne.png, sonst kein Gestalt-Foto).",
+  "rezept": "Muster lod.K1#1 (stationen/g3.js:3142, befehlDer mit bild --klasse): je Gestalt 10 Posen (Azimut × Abstand 8/20/40 m) mit der Klassen-Maske f:<art>, Silhouetten-Deskriptor je Bild (Höhe/Breite, Kronen-Profil in 8 Höhen, Rand-Rauheit) und Nächster-Nachbar-Zuordnung leave-one-out gegen die 9 anderen Gestalten → Trefferquote ≥ 0,8. Herbar-Paar: 10 REF-Fotos nach spec/abnahme/ legen und dasselbe Bild-Maß wie die Soll-Tafel (Ähnlichkeit ≥ 0,7) an der Nah-Pose rechnen.",
+  "messgroesse": "die Klassen-Maske je Art liest die Seite wie in vegetation.K5 (Maske f:eiche|birke|buche, stationen/g2.js:1990-2013); die Art je Instanz trägt e.type / e._lodSpecies (Muster g3.js:1921).",
+  "preisRisiko": "keines erkennbar (Waldrand an der Mess-Wiese); Heap nach dem Gang bleibt das allgemeine Risiko",
+  "gpuMin": 4, "bau": "M", "sicher": 0.6
+ },
+ {
+  "leiter": "leben.pflanzen.biome", "sprosse": 1, "klasse": "B",
+  "richter": "Bild am Gipfel baumfrei; Stichprobe: Uferarten am Wasser ≥ 90 %, Wärme-Arten außerhalb der Wärme 0",
+  "hat": "Waldgrenze unter dem Sommer-Schnee steht (phyto-core.js:3193-3202, bestand.waldgrenze 0,1), Feuchte → Erle/Birke (vegetation-streu.js:204-206); aber die Palme fällt weiter aus dem Rauschen `lebendig` (vegetation-streu.js:210-213, lebendig > 0,4 und pick ≥ 232) und die Zypresse aus kargem Boden (Zeile 219) — keine Wärme-Bedingung (gelesen).",
+  "station": "keine (alt: keine Station auf dieser Leiter)",
+  "fehlt": "Wärme-Arten (baum_palme, baum_zypresse) lesen keine Temperatur — der Beleg vom 14.11. stimmt am Kopf noch; dazu ein Richter für Gipfel-Bild + Ufer-/Wärme-Stichprobe.",
+  "rezept": "Bau S: in _scatterSpeciesForCell (vegetation-streu.js:201) die Palme/Zypresse an die Luft-Temperatur des Orts binden (`_temperaturAt(y)` stamm/bild-himmel.js:2797, Schwelle als Zeile im Ort-Gesetz `ortGesetz(teil).wuchs`, Heimat = gemäßigt → 0). Richter nach Muster vegetation.K3 in NEUN_PROBE (stationen/g3.js:1909-1945): Bild am höchsten Gipfel mit Klassen-Maske baum_* = 0 px, dann Stichprobe über `_blockerUmPlatz` im Umkreis: Erle/Birke-Anteil der Bäume ≤ 15 m vom Wasser ≥ 0,9, Palme/Zypresse wo `_temperaturAt` unter der Schwelle = 0.",
+  "messgroesse": "Bau setzt an stamm/vegetation-streu.js:207-219 an; Temperatur aus stamm/bild-himmel.js:2797; Waldgrenze phyto-core.js:3202",
+  "preisRisiko": "keines erkennbar (Gipfel und Ufer, nicht Dorf/Fluss-Pose — das Ufer am Fluss trüge das p95-Risiko 41,9 ms der Radeon)",
+  "gpuMin": 3, "bau": "S", "sicher": 0.65
+ },
+ {
+  "leiter": "leben.pflanzen.lebenslauf", "sprosse": 1, "klasse": "R",
+  "richter": "Höhenhistogramm aus dem Bild gegen Ertragstafel",
+  "hat": "Der Bestand trägt reverse-J-Größen mit Schichten und Selbstausdünnung (phyto-core.js:3101, 3180-3183 groesse [0,55, 1,95], schicht alter [0,7, 0,4]) und stehendes Totholz mit Bruch-Höhe (phyto-core.js:2512-2518) — statisch, gelesen.",
+  "station": "vegetation.K3#1 (stationen/g3.js:2346, NEUN_PROBE, nur Radeon, ROT/ungefahren) misst Stämme/ha und Unterholz, nicht die Höhen",
+  "fehlt": "ein Höhen-Histogramm des Bestands und eine Ertragstafel-REF (real-mischwald.json trägt nur Stämme/ha, Deckung, Flecken); dazu das zweite Gerät.",
+  "rezept": "Den teil vegetation.K3 der NEUN_PROBE (stationen/g3.js:1909-1945) um die Höhe je Stamm im Sichtkeil erweitern (Instanz-Skala × hoeheM der Art, nur Stämme mit Masken-Pixel im Bild) und in Klassen 5-m binden; REF als Zeile hoehenKlassen in spec/abnahme/real-mischwald.json (Ertragstafel Buche/Fichte, BWI 4). Urteil: Histogramm-Abstand ≤ Schwelle und Totholz-Anteil > 0, an Radeon UND GTX.",
+  "messgroesse": "S = r._blockerUmPlatz(x, z, R, []) und e._schicht wie in stationen/g3.js:1922-1936; Größen-Span phyto-core.js:3183",
+  "preisRisiko": "unbekannt am Wald-Ort; Heap nach dem Gang (417–549 MB) wenn die Probe nach dem Dorf fährt",
+  "gpuMin": 2, "bau": "S", "sicher": 0.55
+ },
+ {
+  "leiter": "leben.pflanzen.jahreslauf", "sprosse": 1, "klasse": "A",
+  "richter": "Pixelanteil der Krone im Zeitraffer (Klassen-Maske)",
+  "hat": "Das EINE SAISON_GESETZ lässt Laub fallen und austreiben und staucht die Halme (stamm/bild-himmel.js:868-883 `_saisonPraesenz`), gelesen.",
+  "station": "vegetation.K5#2 (Tafel-Zeile steht; grün gelesen an Radeon und GTX c8c840c9: Winter 0,018 / 0,022 × Sommer, Wiese 0,356)",
+  "fehlt": "nur die gepaarte Fahrt am selben Kopf mit Preis: nach meisterkarte-2-richter.md:72 Heap nach GC 420–661 MB, größtes Bild 184–209 ms — der Preis reißt. Danach S2 (10 Arten gestaffelt) = B: die Präsenz ist EINE Uniform für alle Arten (bild-himmel.js:832-840), keine Phase je Art.",
+  "rezept": "Fahrt `--nur vegetation.K5#2` an Radeon und GTX am selben Kopf; der Preis hängt am Heap-Schnitt (Runde statt Deckel) und am größten Bild beim Saison-Wechsel (Karten-Bake `_karteJahr`). Für S2: im SAISON_GESETZ (foundry-core) je Art einen Phasen-Versatz und uLaubPraesenz je Instanz statt global — Bau M.",
+  "messgroesse": "Krone-Pixel der Laub-Maske je Saison (stationen/g2.js:1993-2013 jahrUrteil)",
+  "preisRisiko": "Heap nach GC 420–661 MB > 400 und größtes Bild 184–209 ms > 101 an der Mess-Wiese",
+  "gpuMin": 2, "bau": "S", "sicher": 0.8
+ },
+ {
+  "leiter": "leben.pflanzen.dichte", "sprosse": 1, "klasse": "F",
+  "richter": "Ring-Bildanteil gegen Foto; Bildpaar gegen REF real-mischwald",
+  "hat": "Die Nah-Wiese steht mit Ringen 0–40 m (vegetation.K1 misst nahWiese gegen bodenSatz je Ring, stationen/g2.js:1946-1964), der Wald-Bestand folgt dem Standort mit 1/61/131/349 Stämmen/ha (phyto-core.js:3191-3192); die Laub-Kante stand am 17.10. ROT 0,2635 > 0,22 (PFLICHT-OFFEN A).",
+  "station": "drei Teile auf drei Stationen: vegetation.K1#1 (Ringe bis 40 m mit Saum — strenger als S1, ROT an beiden Geräten), lod.K1#1 (Laub-Kante, g3.js:3142, ROT), vegetation.K3#1 (REF real-mischwald, g3.js:2346, nur Radeon, ROT)",
+  "fehlt": "eine Station, die genau S1 urteilt (Ringe 2–5/5–10/10–20 m, nicht 20–40 m; Kante im Band; Wald-Bildpaar gegen die REF) an beiden Geräten in einer Fahrt — und die Tiefe selbst ist an jedem der drei Teile zuletzt ROT gelesen.",
+  "rezept": "Eine wieseStation-Variante (stationen/g2.js:1946) mit baender [0,2,5,10,20] statt bis 40 m und dem Kanten-Urteil laubKanteUrteil aus lod.K1#1 an derselben Pose; vegetation.K3 von neunStation (geraet radeon) auf [radeon, gtx] heben. Pose: stehend an der Mess-Wiese, Ego, Uhr 0,5.",
+  "messgroesse": "Ring-Pixel nahWiese/bodenSatz je Band aus dem VEGETATION-Lauf (stationen/g2.js:1968-1969, wieseRinge); Kante aus laubKanteRoh (g3.js:3160)",
+  "preisRisiko": "keines an der Wiese bekannt (GTX stehend p95 16,8 ms gelesen im Beleg); Heap, falls nach dem Dorf gefahren",
+  "gpuMin": 4, "bau": "S", "sicher": 0.5
+ },
+ {
+  "leiter": "leben.pflanzen.kraft", "sprosse": 1, "klasse": "A",
+  "richter": "zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit",
+  "hat": "Die wandernde Böe WIND_BOE biegt jeden Halm (stamm/stoff-material.js:133-149 `_windSwayOffset`), dieselbe Böe hört das Ohr (klang-core.js:399-447), gelesen.",
+  "station": "vegetation.K2#1 (Tafel-Zeile steht; grün gelesen an Radeon und GTX 105c9bd3, Kamm/Tal 5,93)",
+  "fehlt": "nur der Preis in der gepaarten Fahrt: GTX Heap nach GC 412,3 (−12 MB), VRAM 133,2 (−15 über 118), Radeon VRAM 125,0 (−7) (meisterkarte-2-richter.md:7). Danach S2 (bis 300 m, Gras ↔ Krone r ≥ 0,6) = R: Rinde, Laub und Karte lesen dieselbe WIND_BOE mit der Phase am Welt-Anker (stamm/stoff-material.js:1678-1691, gelesen) — die Kopplung steht im Spiel, keine Station vegetation.K2#2 urteilt sie.",
+  "rezept": "Fahrt `--nur vegetation.K2#1` beider Geräte am selben Kopf nach dem Heap/VRAM-Schnitt. Für S2: dieselbe Probe auf Ringe bis 300 m und eine Kronen-Maske erweitern, Kreuzkorrelation der Luma-Zeitreihen Gras ↔ Krone längs uWindDir mit Laufzeit aus WIND_BOE, Ruhe ↔ Sturm über das Wetter.",
+  "messgroesse": "Luma-Varianz-Zeitreihe je Ring aus der Probe (stationen/g2.js:5884); Böe-Phase sin(uWindTime·ω − (Lage·uWindDir)·k) stamm/stoff-material.js:136",
+  "preisRisiko": "VRAM 125–133 MB und Heap 412 MB nach GC an der Mess-Wiese (die VRAM-Schwelle 118 im Richter-Blatt ist strenger als die Preis-Treppe 256 — prüfen, welche gilt)",
+  "gpuMin": 1, "bau": "S", "sicher": 0.8
+ },
+ {
+  "leiter": "leben.tiere.arten", "sprosse": 1, "klasse": "F",
+  "richter": "Spielgang 1 h an 3 Biomen: ≥ 5 Arten im Bild (Klassen-Maske ≥ 200 px)",
+  "hat": "Im Bild können 7 Klassen erscheinen (gelesen): tier:wolf/fuchs/baer/wesen aus den 4 Gattungen (tetrapoda-core.js:361-382, GATTUNGEN deer/wolf/bear/fox), tier:fisch (stamm/kreatur-fauna.js:557), tier:bestaeuber (kreatur-fauna.js:650) und die Klasse vogel (luftwasser.K5#2); die Gattung folgt dem Boden (tiere.K4#1 headless 431/431).",
+  "station": "tiere.K5#1 (stationen/g2.js:4827, probe PW.tierKreis in der Sitzung, beide Geräte; grün gelesen an der GTX 3e4f99cd mit 5 Sichtungen in 601 Spiel-s, Radeon nie grün) — zählt Sichtungen, nicht Arten, nur an der Wiese, 600 Spiel-s je Sicht",
+  "fehlt": "der Kreis muss Arten statt Sichtungen zählen (inkl. vogel/fisch/bestaeuber), an 3 Biomen (Wiese, Wald, Seeufer) und über 1 Spielstunde — und die Radeon muss den Deckel halten.",
+  "rezept": "kreisUrteil von tiere.K5#1 auf die Menge der Klassen der Sichtungen umstellen (Set der tier:*-Klassen ≥ 200 px ≥ 5) und PW.tierKreis an drei Orten fahren (umstellen --ort wiese|wald|seeufer, je 1 200 Spiel-s Raffer); die vorhandene Maske der Station bleibt das Maß. Pose Ego, Uhr 0,5.",
+  "messgroesse": "die Sichtungen tragen Klasse, px und Abstand (Zahl der GTX: „wesen 414 px 51 m 378 s“, stationen/g2.js:4790-4800); Klassen-Namen aus `_kleintierZeichnen` stamm/kreatur-fauna.js:725",
+  "preisRisiko": "das Seeufer nahe am Fluss (p95 41,9 > 34 ms an der Radeon) und der Heap nach dem langen Raffer; der Deckel der Radeon riss schon bei 600 Spiel-s (g2.js:4806)",
+  "gpuMin": 10, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "leben.tiere.bewegung", "sprosse": 1, "klasse": "F",
+  "richter": "Fußgleiten und Gangwechsel aus der Third-Aufnahme im Fenster",
+  "hat": "Der Gang folgt der Froude-Zahl, der Fuß steht (gate:tier-gang, Schlupf 0,011–0,036), und die Gang-Bühne stellt wolf/fuchs/baer/wesen im Schritt aus 10 m ins Bild (stationen/g2.js:4274, gelesen).",
+  "station": "tiere.K3#2 (stationen/g2.js:4261, beide Geräte, grün gelesen Radeon 4ee205bd, GTX 6aa7a5a6) — aber Schlupf und Gangwechsel misst diag-tier-gang in einer EIGENEN Null-Welt neben der Sitzung; das Bild prüft nur ‚3 Füße am Boden, Gangart schritt‘ in EINEM Standbild",
+  "fehlt": "Fußgleiten (≤ 5 % der Schrittlänge) und der Gangwechsel an der Froude-Schwelle ±10 % aus einer Third-Bildreihe im Fenster statt aus der Null-Welt; Umfang 10–300 kg: der Fuchs liegt darunter (≈ 6 kg), sonst passt er.",
+  "rezept": "Die Bühne von tiere.K3#2 (g2.js:4274) je Gattung mit einer Tempo-Rampe über die Froude-Schwelle fahren und eine Third-Reihe aus 10 m schießen (bild --klasse '^tier:' je 1/30 s); je Bild die Fuß-Teile T.flP/frP/hlP/hrP in Bildkoordinaten projizieren: Gleiten = Weg des Stand-Fußes während Kontakt / Schrittlänge, Gangwechsel = Tempo, an dem die Fußfolge kippt, gegen Fr der Natur.",
+  "messgroesse": "c.userData._tierBaum.teile (flP…hrP) und tb._gang.art, s.gravity, tb.beinL wie in stationen/g2.js:4274",
+  "preisRisiko": "keines erkennbar (Bühne vor dem Spieler, Loop ruht)",
+  "gpuMin": 3, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "leben.tiere.verhalten", "sprosse": 1, "klasse": "F",
+  "richter": "Zeitraffer 24 Spielstunden im Fenster",
+  "hat": "Ethogramm aus Bedürfnis-Pegeln, Jagd-Kreislauf mit Riss-Quote und Furcht stehen im Kern (tetrapoda-core.js VERHALTEN, JAGD_GESETZ ab :2029); im Fenster beider Geräte reißt und frisst das Rudel (tiere.K2#2 grün gelesen) — gelesen.",
+  "station": "tiere.K4#2 (Budget, g2.js:4670) und tiere.K2#1 (Riss-Quote rudel 18/60, g2.js:4594) headless in eigener Null-Welt; tiere.K2#2 (g2.js:4727) an beiden Geräten nur Mahl + Wolfsrevier-Bild",
+  "fehlt": "Budget ±20 % und Riss-Quote 20–40 % im Fenster beider Geräte statt headless.",
+  "rezept": "Die Kreatur-Linse läuft jede Probe auch in der Sitzung (`diag-kreatur-takt.cjs --werkbank <port>`, scripts/diag-kreatur-takt.cjs:4-6 und :150-160, gelesen) — wie tiere.K2#2 das Mahl schon fährt (g2.js:4716-4722): `--werkbank $W --proben tagesbudget,jagdkreis` als Probe an Radeon und GTX, Urteile der Stationen K4#2 und K2#1 wörtlich übernehmen.",
+  "messgroesse": "Probe-Zeilen tagesbudget (budget/soll je Gattung) und jagdkreis (riss.quote) aus scripts/lib/kreatur-proben.cjs, gelesen über probeZeile wie g2.js:4603/4679",
+  "preisRisiko": "Dauer: jagdkreis ≈ 77 s (DAUER_S scripts/diag-kreatur-takt.cjs:33) — der Proben-Deckel; Heap nach dem Raffer",
+  "gpuMin": 6, "bau": "S", "sicher": 0.7
+ },
+ {
+  "leiter": "leben.tiere.lebenszyklus", "sprosse": 1, "klasse": "F",
+  "richter": "Bestand je Revier über 3 Spielstunden im Band, im Fenster",
+  "hat": "Geburt und Tod je Region mit Holling-III-Riss und Alterstod (BESTAND_GESETZ, tetrapoda-core.js:2177; der Bestand als Verzeichnis state.faunaBestand) — gelesen.",
+  "station": "oekologie.K2#1/#2 (stationen/g2.js:5149/5192, Probe kaskade, headless, grün gelesen d3708675: Grundbestand min 6,84, halbe Nahrung −0,36, 17 932 Hungertode = die Ältesten)",
+  "fehlt": "dieselbe kaskade im Fenster beider Geräte über 3 Spielstunden; das ‚Band‘ als Zahl (Grundbestand ≥ 4, kein Aussterben, Tod = die Ältesten).",
+  "rezept": "`diag-kreatur-takt.cjs --werkbank $W --proben kaskade` als Sitzungs-Probe (Muster tiere.K2#2, g2.js:4727), Urteil von oekologie.K2#1 auf 3 Spielstunden je Revier gekürzt; der Spieler ruhig an der Ecke von vier Regionen wie in #2.",
+  "messgroesse": "Probe-Zeile kaskade: saaten (Bestand je Region und Stunde), hungertod, bestand.ms (g2.js:5161-5175)",
+  "preisRisiko": "Takt p95 des Lebenszyklus (Soll ≤ 5,8 ms; Cloud-VM 6,7 ms, g2.js:5186-5190) — der CPU-Takt reißt an der GTX schon heute an Genesis Third (6,3 > 5,8, PFLICHT-OFFEN E)",
+  "gpuMin": 6, "bau": "S", "sicher": 0.65
+ },
+ {
+  "leiter": "leben.tiere.masse", "sprosse": 1, "klasse": "T",
+  "richter": "Herde flieht als EIN Pulk im Bild",
+  "hat": "Der Wurf wirft Rudel 3–6 und Kahlwild 3–7 (tetrapoda-core.js:289), Kohäsion und Flucht als Verband (fluchtRadius :2019) — gelesen.",
+  "station": "tiere.K1#2 (stationen/g2.js:4109, Probe herdeHang in der Sitzung, Radeon UND GTX) urteilt Kohäsion ≥ 0,9/0,8, Φ ≥ 0,8, drei Ego-Schüsse 40–50 m mit EINEM Fleck je Pulk — der ganze Richter; nie grün gelesen (zahl null an beiden), Radeon ROT im Beleg",
+  "fehlt": "die Tafel-Zeile und ein grünes Paar; dazu der Umfang: S1 nennt 10 Glieder, der Wurf gibt höchstens 7 (Kahlwild [3, 7]) und die Station verlangt nur ≥ 3.",
+  "rezept": "Tafel-Zeile tiere.K1#2 → leben.tiere.masse S1 erst, wenn das Urteil glieder ≥ 10 verlangt; dafür den Kahlwild-Wurf in tetrapoda-core.js:289 auf das Feldmaß heben (Clutton-Brock: Winter-Rudel bis 20+; additiv, Byte-Beweis) oder herdeSzene zwei Würfe vereinen lassen. Dann Fahrt beider Geräte.",
+  "messgroesse": "j.serie[].pulk {glieder, sichtbar, flecken} und z.verband/ausrichtung aus herdeHang (g2.js:4134-4163)",
+  "preisRisiko": "der Hang des Wurfs liegt 250–312 m im kalten Ring (g2.js:4118-4121): Schuss 1 samt Ring 24–32 s — Bild-Spitzen über 101 ms und Heap-Wachstum wahrscheinlich",
+  "gpuMin": 2, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "leben.tiere.wanderung", "sprosse": 1, "klasse": "R",
+  "richter": "Aufenthaltsfläche eines Individuums über 1 Spieltag im Fenster",
+  "hat": "Jedes Tier hängt an einer Leine um seinen Geburtsort: leashBaseM 18 × bodySize ± 10 m über die Mut-Achse, Heim-Zug jenseits davon (tetrapoda-core.js:222-233), der Weg zur Tränke aus Durst (trinkSuchM 40, :280) — gelesen.",
+  "station": "keine (alt: keine Station auf dieser Leiter)",
+  "fehlt": "ein Richter, der EIN Individuum über 24 Spielstunden im Fenster verfolgt und die Aufenthaltsfläche gegen das Soll der Leine (π·(18·s ± 10)² m², Lebensraum-Boden) urteilt.",
+  "rezept": "Muster Probe tagesbudget (24 Spielstunden am echten Takt, stationen/g2.js:4664-4713) in der Sitzung per `--werkbank`: je Gattung ein Tier, Position je Spiel-Minute, Fläche als konvexe Hülle (MCP 95 %) und Anteil der Punkte in der Boden-Klasse der Gattung; Soll Fläche im Band der Leine ±50 %, Anteil ≥ 0,9.",
+  "messgroesse": "c.position und c.userData-Anker (Geburtsort) der Kreatur; Leine aus AnazhRealm._verhaltenGesetz().wandern (tetrapoda-core.js:222)",
+  "preisRisiko": "keines erkennbar (Zustandsmaß, kurzer Raffer); Heap nach dem Raffer",
+  "gpuMin": 4, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "leben.tiere.mensch", "sprosse": 1, "klasse": "B",
+  "richter": "Annäherungs-Probe im Fenster",
+  "hat": "Die Tiere reagieren auf den Spieler (noticeRadius 22 m, fleeRadius 14 m × Temperament fleeMul 0,5–1,7, tetrapoda-core.js:182-219), geschlagene halten Abstand (oekologie.K3 headless), das Rudel umstellt den Spieler im Bild (oekologie.K4#2 grün gelesen an beiden) — gelesen.",
+  "station": "oekologie.K3#1/#2 (g2.js:4553, headless) misst Abstand nach Schlag/Futter, nicht die Fluchtdistanz je Art; keine Annäherungs-Probe",
+  "fehlt": "Fluchtdistanz je Art im Feldband ±50 %: das Spiel trägt EINEN Radius 14 m für alle Gattungen (nur über fleeMul ≤ 24 m), das Feldmaß des Rothirschs liegt bei ~100–200 m, Fuchs/Wolf/Bär dazwischen — der Umfang fehlt; dazu der Richter.",
+  "rezept": "Bau S: fleeRadius/noticeRadius je Gattung als Zeile in GATTUNGEN bzw. FURCHT_GESETZ (tetrapoda-core.js:182-200, additiv, Byte-Beweis der anderen Leser) aus Feldmaß (Stankowich 2008 Review FID). Richter: Probe nach Muster der furcht-Probe der Kreatur-Linse per `--werkbank` — der Spieler geht mit 1,4 m/s auf je ein Tier jeder Gattung zu, gemessen der Abstand beim ersten Flucht-Takt, Band ±50 % je Art, an beiden Geräten.",
+  "messgroesse": "Bau setzt an tetrapoda-core.js:197 (fleeRadius) und :216-219 (fleeMul) an; die Flucht liest die Task des Tiers (c.userData.task.name)",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 4, "bau": "S", "sicher": 0.65
+ }
+]

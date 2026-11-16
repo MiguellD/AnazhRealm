@@ -1,0 +1,101 @@
+[
+ {
+  "leiter": "erleben.bild.ferne", "sprosse": 1, "klasse": "R",
+  "richter": "Restkontrast je Kanal gegen Koschmieder T/T_soll 0,8–1,2; Ferne = Nähe ≥ 0,8 an 12 Posen",
+  "hat": "Die Luft-Hälfte steht im Spiel und in der Linse (scripts/lib/licht-linsen.cjs:2364 luftTiefe, Urteil :2595); „Ferne = Nähe“ hat im Spiel-Baum 0 Treffer (Grep fernGleich/Ferne = Nähe in stamm/, scripts/, Wurzel-Kerne) (gelesen).",
+  "station": "ferne.K1#1 (probe FERNE_SITZUNG, Radeon 4ee205bd T/T_soll 0,87–1,06 + GTX 6aa7a5a6 0,89–1,02, bei 1/2/5/8 km — nicht 0,2 km)",
+  "fehlt": "der Richter „Ferne = Nähe“ (Fernbild gegen verkleinerte Nahaufnahme nach Abzug der Luft, SSIM ≥ 0,8) an 12 Posen und die 0,2-km-Stufe der Koschmieder-Hälfte.",
+  "rezept": "Muster FERNE_SITZUNG (stationen/g3.js:747, Urteil ferne.K1 :2513): nach der Luft am Genesis-Hügel je Pose ein Fern-Schuss auf einen Punkt in 0,2 km, dann Teleport auf 10 m davor, Nahschuss auf Fernauflösung verkleinert, Luft (T, In-Streuung aus luftTiefe) abgezogen, SSIM je Pose. 12 Posen = 4 Azimute × 3 Ziele (Wiese, Wald, Hang); dieselbe Fahrt urteilt T/T_soll mit einem 0,2-km-Band.",
+  "messgroesse": "SSIM Fern ↔ Nah nach Luftabzug; die Luft liefert luftTiefe (scripts/lib/licht-linsen.cjs:2364), Fern-Ring stamm/gelaende-fern.js",
+  "preisRisiko": "keines erkennbar (Genesis-Hügel, nicht Dorf/Fluss)",
+  "gpuMin": 6, "bau": "M", "sicher": 0.6
+ },
+ {
+  "leiter": "erleben.bild.nacht", "sprosse": 1, "klasse": "B",
+  "richter": "Schatten-Kontrast ≥ 3:1 an einem Pfosten 2 m vom Feuer; Gasse in der Kelvin-Farbe ±200 K",
+  "hat": "Der Wurf EINER Quelle ist gebaut (stamm/bild-schatten.js:383-404 _lichtWurf, Wahl :474 _lichtWurfTakt, Kelvin-Farbe stamm/dirigent-kern.js:1709) — an der Pose der Probe aber kein Wurf: Kontrast 0,2482:1 an laterne_dorf (Radeon 4ee205bd), 0,2484:1 an esse (63655917); grün 7,85:1 nur an glutbrunnen (23d19f6f) (gelesen).",
+  "station": "schatten.K5#1 (NEUN-Probe in der Sitzung, nur Radeon, ROT 0,2482:1 an 4ee205bd; Kelvin-Hälfte ungemessen)",
+  "fehlt": "ein Wurf, der an der Probe-Pose trägt (Kontrast < 1 heißt: der „Schatten“ ist heller als das Licht — Wahl oder Mess-Pose falsch), die Kelvin-Hälfte und die GTX.",
+  "rezept": "Zuerst triagieren, ob _lichtWurfTakt (stamm/bild-schatten.js:474) die nahe laterne_dorf wählt oder sie an wichtigAb scheitert; die NEUN-Probe auf eine feste Feuerquelle (glutbrunnen) legen. Dann die Kelvin-Hälfte in dieselbe Probe (Farbton der Gasse gegen lichtFarbe(kelvin), stamm/dirigent-kern.js:1709) und geraet auf [radeon, gtx] (stationen/g3.js:2205 neunStation trägt nur radeon).",
+  "messgroesse": "Wahl des Wurfs stamm/bild-schatten.js:474-506 (W.wichtig, wichtigAb gegen _belichtungE); Kelvin stamm/dirigent-kern.js:1704-1710",
+  "preisRisiko": "Heap am Dorf (die Pose liegt im Dorf)",
+  "gpuMin": 2, "bau": "S", "sicher": 0.45
+ },
+ {
+  "leiter": "erleben.bild.flaeche", "sprosse": 1, "klasse": "R",
+  "richter": "Halbschattenbreite gegen Abstand im Band; Albedo im Bild ±0,05 gegen Tabellenwert für Gras, Erde, Fels, Holz, Haut",
+  "hat": "Die Halbschatten-Hälfte steht an beiden Geräten (schatten.K1#2 Radeon 1cd1c408 0,96 cm/m, GTX 9c545df2 0,95 cm/m); die Albedo-Fahrt ALBEDO_K1 liefert je Stoff-Zeile W und Band: an 4ee205bd 13/13 im realen Band an beiden Geräten (gelesen).",
+  "station": "schatten.K1#2 (probe, beide Geräte grün) + material.K1#1 (probe ALBEDO_K1, beide Geräte, ROT nur an Welt/Labor: fels 1,106, boden 1,516 an 4ee205bd)",
+  "fehlt": "ein Urteil „W je Zeile ±0,05 gegen Tabellenwert“ für Gras, Erde, Fels, Holz, Haut aus derselben ALBEDO_K1-Fahrt (heute urteilt die Station Welt/Labor und ein breites Band, nicht ±0,05), zusammen mit der Halbschatten-Fahrt.",
+  "rezept": "Neues Urteil auf dem bestehenden Lauf ALBEDO_K1 (Muster stationen/g3.js:2934): je Zeile |W − Tafel| ≤ 0,05 für gras/boden/fels/rinde/haut aus spec/farbe/albedo-tafel.json. Die Halbschatten-Hälfte liest schatten.K1#2 (stationen/g3.js:3053) in derselben Sitzung; zwei Tafel-Zeilen oder ein Kombi-Urteil.",
+  "messgroesse": "W je Stoff-Zeile in der ALBEDO-Messung (scripts/lib/albedo-tafel.cjs, spec/farbe/albedo-tafel.json); Halbschatten scripts/lib/licht-linsen.cjs kontaktSicht/kontaktUrteil",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 3, "bau": "S", "sicher": 0.55
+ },
+ {
+  "leiter": "erleben.bild.himmel", "sprosse": 1, "klasse": "R",
+  "richter": "Himmels-Leuchtdichte gegen gemessenen Klarhimmel ±0,3 EV",
+  "hat": "Der Himmel ist das Medium des Kerns mit Rayleigh-Tiefe je Kanal, Mie-Phase, Ozon-Zelt (stamm/bild-himmel.js:1388-1394, Leuchtdichte am Boden :1428) — eine Referenz „Klarhimmel“ liegt nirgends im Spiel-Baum (Grep Klarhimmel/Hosek/Preetham/CIE in spec/, scripts/lib/, stamm/: 0) (gelesen).",
+  "station": "keine; licht.K2#1 (probe, beide Geräte grün) misst Sonne : Himmel an einer Kugel, nicht die Himmels-Leuchtdichte gegen Referenz",
+  "fehlt": "eine Referenz-Tafel gemessener Klarhimmel-Leuchtdichten (Zenit, 4 Azimute × 3 Höhen, Mittag) im spec/farbe-Ordner und ein Richter, der die Himmelspixel über die Belichtung in cd/m² zurückrechnet und ±0,3 EV urteilt.",
+  "rezept": "Muster licht.K2 (stationen/g3.js:2377, Sitzung beider Geräte, Uhr 0,5 klar): Kamera auf 12 Himmelsrichtungen, Luma ÷ Belichtung (BELICHTUNG, stamm/bild-himmel.js:3292) = Leuchtdichte, gegen die Tafel in EV. Referenz neu als spec/farbe/klarhimmel-referenz.json neben luft-referenz.json.",
+  "messgroesse": "Himmelspixel-Luma ÷ Belichtung der Seite (stamm/bild-himmel.js:3292) → cd/m²; Himmels-Rechnung stamm/bild-himmel.js:1388-1430",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 3, "bau": "M", "sicher": 0.55
+ },
+ {
+  "leiter": "erleben.bild.auge", "sprosse": 1, "klasse": "R",
+  "richter": "zeitliche Pixel-Varianz in ruhenden Bildbereichen ≤ 1 % der Fläche über Schwelle",
+  "hat": "Das Spiel geht und zeichnet mit TRAA; eine Reprojektions-Messung im Gang gibt es nur für Schatten-Ränder (NEUN-Teil schatten.K2, stationen/g3.js:1785-1814: Gang 4 m/s, Kamera-Matrizen je Bild, TRAA-Geschichte zurückgesetzt) (gelesen).",
+  "station": "schatten.K2#1 (NEUN-Probe in der Sitzung, nur Radeon, 0,00 % unerklärte Schattenrand-Pixel an 63655917) — nur Schattenkanten, nicht Laub und Kanten",
+  "fehlt": "derselbe Reprojektions-Vergleich über ALLE ruhenden Bildbereiche (Laub, Kanten, Schatten) mit dem Anteil der Fläche über Schwelle, und die GTX.",
+  "rezept": "Den NEUN-Teil schatten.K2 (stationen/g3.js:1785) erweitern: statt nur Rand-Pixel des Schattens jedes Pixel gegen das reprojizierte Vorbild, Anteil über Schwelle ≤ 1 %; Pose im Wald-Saum mit Laub im Bild. geraet [radeon, gtx] (neunStation trägt heute nur radeon, stationen/g3.js:2205).",
+  "messgroesse": "reprojizierte Luma-Differenz je Pixel aus Kam[] (welt/proj je Bild) im NEUN-Teil, stationen/g3.js:1798-1814",
+  "preisRisiko": "keines erkennbar (Wiese/Wald-Saum)",
+  "gpuMin": 2, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "erleben.bild.kamera", "sprosse": 1, "klasse": "B",
+  "richter": "20 Standbilder aus freier Lage: Bild ganz (Lücke ≤ 2 %), Schärfe und Licht wie im Spiel",
+  "hat": "Der Spieler hat Ego und Third (stamm/koerper-bewegung.js:2484 cameraToggle first↔third) und kann das HUD ausblenden (:2480); eine freie Kamera oder ein Anhalten der Welt gibt es nicht („pausiert“ in stamm/werkstatt-hud.js:1526 gilt Gesetzen, nicht der Welt) (gelesen).",
+  "station": "keine",
+  "fehlt": "eine freie Kamera, die die Welt anhält und sich vom Leib löst, und ein Richter für Lücken hinter der Spieler-Kamera.",
+  "rezept": "Bau: ein dritter Modus in setCameraMode (stamm/koerper-bewegung.js:2484) — Kamera frei, Spielzeit steht, Sicht-Fokus (LOD, Streuung) folgt der Kamera statt dem Leib. Richter: 20 zufällige Lagen um den Spieler (bis 50 m), Lücke = Himmels-/Löschfarbe unter dem Horizont, Muster lod.K1 Spielgang-Schuss (stationen/g3.js:3142).",
+  "messgroesse": "Bau setzt an setCameraMode / cameraMode in stamm/koerper-bewegung.js:2484 (Leser :1612, :1782)",
+  "preisRisiko": "Heap am Dorf, falls die Lagen im Dorf liegen; Fokus fern vom Leib lädt Ringe nach",
+  "gpuMin": 3, "bau": "M", "sicher": 0.65
+ },
+ {
+  "leiter": "erleben.klang.raum", "sprosse": 1, "klasse": "B",
+  "richter": "Pegel- und Laufzeitunterschied am Abgriff an 24 Quellenlagen mit richtigem Vorzeichen (100 %)",
+  "hat": "Links/rechts nur als Pegel: die Quellen hängen an createStereoPanner (klang-core.js:1012, :1191, :1277) — ein Laufzeitunterschied entsteht nirgends (Grep ITD/HRTF/createPanner in klang-core.js, stamm/: 0); die Linse raumSeite (scripts/diag-klang-zensus.cjs:1346) misst nur ILD (gelesen).",
+  "station": "klang.K3#1 (headless, befehl diag-klang-zensus, 24/24 ILD-Vorzeichen grün an d3708675)",
+  "fehlt": "der Laufzeitunterschied (ITD) im Klang-Weg und die Messung in der Sitzung beider Geräte statt headless.",
+  "rezept": "Bau S: neben dem StereoPanner je Quelle ein Verzögerungs-Paar aus dem Winkel (Woodworth, ≤ 0,66 ms) in klang-core.js:1012 (Kern: additiv, Byte-Beweis). Station: raumSeite (scripts/diag-klang-zensus.cjs:1346) per h.skript in die Sitzung heben wie landschaftLauf (stationen/g6.js:481), ITD per Kreuzkorrelation L/R am Abgriff dazu.",
+  "messgroesse": "Bau setzt an klang-core.js:1012 (createStereoPanner); Messung raumSeite scripts/diag-klang-zensus.cjs:1346",
+  "preisRisiko": "keines erkennbar (Dorf-Ort der Linse: Heap am Dorf möglich)",
+  "gpuMin": 3, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "erleben.klang.ereignis", "sprosse": 3, "klasse": "B",
+  "richter": "Stoff aus 10 nur am Klang ≥ 70 % (Jury, dann Klassifikator); FAD je Stoff gegen Foley-Korpus ≤ Schwelle",
+  "hat": "Sprossen 1–2 stehen (Tafel klang.K4#2). Das Spiel klingt Schritt (Ferse/Rollen/Ballen, klang-core.js:1466-1575), Treffer und Motor; Kontaktarten Kratzen, Gleiten, Rollen eines Dings und Bruch gibt es nicht (Grep in klang-core.js: nur das Rollen des Fußes) (gelesen).",
+  "station": "klang.K4#2 (Sitzung, beide Geräte grün, c8c840c9) — trägt S1/S2, nicht S3",
+  "fehlt": "vier Kontaktarten je Stoff im Klang-Kern, 10 unterscheidbare Stoffe, ein Klassifikator und ein Foley-Korpus mit FAD.",
+  "rezept": "Bau L: die Kontakt-Synthese des Schritts (klang-core.js:1529-1575, Hertz-Kontakt + Körnung) zu Stoß/Kratzen/Rollen/Gleiten/Bruch verallgemeinern, gespeist aus der Stoff-Zeile. Station nach K4_PROBE (stationen/g6.js:472): 32 Ereignisse am Abgriff, Klassifikator auf Spektral-Merkmalen; Korpus und FAD sind eigener Aufwand.",
+  "messgroesse": "Bau setzt an schrittKlang/Kontakt-Hülle klang-core.js:1529-1575",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 5, "bau": "L", "sicher": 0.65
+ },
+ {
+  "leiter": "erleben.klang.landschaft", "sprosse": 2, "klasse": "R",
+  "richter": "Kreuzkorrelation Bild ↔ Ohr ≥ 0,6 je Biom; Wagenpegel ∝ Abstand",
+  "hat": "Sprosse 1 steht (Tafel karte2.erleben.klang.landschaft#1). Grillen-Takt aus der Temperatur (Dolbear, klang-core.js:396/:483, stamm/klang.js:489), Wagen der Stadt im Ohr mit K Stimmen (stamm/klang.js:1092-1114 _fahrtVerkehr) (gelesen).",
+  "station": "karte2.erleben.klang.landschaft#1 (LANDSCHAFT_PROBE, beide Geräte) misst Wind r nur an der Wiese; klang.K2#2 headless Ufer r 0,90 · Regen r 1,00",
+  "fehlt": "der Wind-/Wasser-/Regen-Abgleich Bild ↔ Ohr an 5 Biomen × Tag/Nacht × Regen in der Sitzung und ein Urteil Wagenpegel gegen Abstand.",
+  "rezept": "windLauf/landschaftLauf (stationen/g6.js:481-535) über 5 Messorte (wiese, wald, ufer, dorf, fels) × Uhr 0,5/0 × klar/Regen fahren, r je Biom; dazu in der Stadt die Pegel von _fahrtVerkehr-Wagen gegen ihren Abstand (Steigung ≈ −6 dB je Verdopplung).",
+  "messgroesse": "Wind-Bus-Pegel ↔ Luma-Varianz wie windLauf; Wagen-Abstände aus stamm/klang.js:1096-1114 (nah, d2)",
+  "preisRisiko": "Heap am Dorf; der Stadt-Teil mit Wagen ist ungemessen",
+  "gpuMin": 8, "bau": "M", "sicher": 0.5
+ }
+]

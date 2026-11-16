@@ -1,0 +1,35 @@
+[
+ {
+  "leiter": "erleben.sinn.ziele", "sprosse": 2, "klasse": "B",
+  "richter": "Blind-Spieler (nur Bild und Eingabe) nennt nach 60 min ≥ 1 Ziel, die Prüfung gegen den Zustand bestätigt es",
+  "hat": "Sprosse 1 steht an der Tafel (affekt.K1#2, beide Geräte grün an c8c840c9); Bewohner tragen nur ein Uhr-Ziel (stamm/siedlung-bewohner.js:405 `_bewohnerZiel`), keine Not und keine Rede — Grep Not/Hunger/Durst/Brunnen-leer an Bewohner-Rede in stamm/: 0 (gelesen).",
+  "station": "keine (affekt.K1#2 trägt nur Sprosse 1)",
+  "fehlt": "ein Not-Zustand der Siedlung, den ein Bewohner im Blick äußert, und ein Blind-Spieler-Richter über 60 min.",
+  "rezept": "Not aus einem wahren Zustand (z. B. Weg zum Wasser über `journal.wasser-fern` stamm/kreatur-verhalten.js:1805 oder Hunger der Kreaturen) als Zeile an den Bewohner im Blick hängen; Richter als Probe der Sitzung, die die geäußerte Not gegen den Zustand prüft; Blind-Spieler-Teil braucht einen Agenten mit Bild+Eingabe (kein Muster vorhanden).",
+  "messgroesse": "Bau setzt an stamm/siedlung-bewohner.js:405 (`_bewohnerZiel`, der Bewohner-Takt) an; die Zeile über die Tafel `journalAppend` stamm/dienst.js:385",
+  "preisRisiko": "Heap am Dorf (417–549 MB > 400) — die Not lebt an Bewohnern, also im Dorf",
+  "gpuMin": 60, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "erleben.sinn.legenden", "sprosse": 1, "klasse": "B",
+  "richter": "20 Zufallszeilen des Tagebuchs: der Spieler geht zum genannten Ort und findet die Spur der Tat im Bild (Bildpaar gegen dieselbe Saat ohne die Tat) ≥ 95 %",
+  "hat": "Das Tagebuch steht und ist sichtbar (Schreiber stamm/dienst.js:385, Kappe 200 :405, Welt-Drawer stamm/werkstatt-sozial.js:308 `renderWorldJournal`), aber die Zeile trägt keinen Ort: entry = {id, at, type, t, ctx}, ctx meist {source, at} (stamm/koerper-seele.js:356, stamm/kreatur-leben.js:902) — gelesen.",
+  "station": "keine (affekt.K4#1/#2 nie grün; ki.K3#1 headless, misst Erinnerung im Gespräch, nicht Ort-Spur)",
+  "fehlt": "jede Zeile braucht den Ort der Tat (x, z) und viele Zeilen-Arten (erste Kreatur, Tor, KI-Welt, geteilt) haben keine Bild-Spur; dann ein Richter Bildpaar je Zeile.",
+  "rezept": "Am EINEN Schreiber `journalAppend` (stamm/dienst.js:385) den Ort ins entry schreiben (Spieler- oder Täter-Ort); Richter als Probe: 20 Zeilen ziehen, Kamera an den Ort, Bildpaar gegen Saat ohne Tat (Muster Bildpaar affekt.K1#2 stationen/g2.js:4967); Zeilen ohne Ort-Spur (Ritual, Portal, Teilen) gehören nicht zu ‚Tat‘ — Filter nach type loss/relationship/growth.",
+  "messgroesse": "Bau an stamm/dienst.js:385-406 (entry.ctx.ort); Spur im Bild z. B. Stumpf/Einsturz (stamm/bau-teile.js:2606 journal.einsturz), Riss-Narbe (stamm/kreatur-leben.js:907-912)",
+  "preisRisiko": "Heap am Dorf, wenn die Zeilen im Dorf liegen",
+  "gpuMin": 20, "bau": "S", "sicher": 0.75
+ },
+ {
+  "leiter": "erleben.sinn.tod", "sprosse": 1, "klasse": "R",
+  "richter": "Bildfolge: der Leib fällt, derselbe Leib steht am Ankunftsort; das Gefährt steht im Bild, wo er fiel",
+  "hat": "Der Tod setzt an den Genesis-Ort zurück (stamm/koerper-seele.js:329-365, Anker stamm/gelaende-boden.js:553-571 setzt pm.position), derselbe Leib (Seele bleibt), und steigt vom Gefährt ab, das stehen bleibt (stamm/koerper-seele.js:339-343 → dismountArchitecture stamm/koerper-fahrt.js:1247) — gelesen.",
+  "station": "halten.K5#1 (Probe HALTEN_K5 in der Sitzung, GTX grün an b3f9ae95: Tod jagd, Anker 0,0 m; Radeon ohne grün)",
+  "fehlt": "die Probe misst Anker-Abstand, Seele, Wunde, Emotion (scripts/lib/kampf-proben.cjs:3285-3294), aber kein Gefährt, keine Bildfolge, keine Rückkehr-Zeit ≤ 5 s; Radeon-Fahrt grün fehlt.",
+  "rezept": "HALTEN_K5 (stationen/g5.js:5197) um einen Tod im Sattel erweitern: mountArchitecture auf ein Fahrzeug, Wolf tötet, Gefährt-Position vor/nach (Abstand ≈ 0) und Spieler am Anker; drei Bilder (Fall, Anker, Gefährt) per page.screenshot wie haltenK1Seite (stationen/g5.js:851); Rückkehr-Zeit = spielZeit Tod → Leib am Anker.",
+  "messgroesse": "state.player.mountedArch (stamm/koerper-fahrt.js:1159), Gefährt-entry Position, pm.position gegen _genesisMitte (scripts/lib/kampf-proben.cjs:3287)",
+  "preisRisiko": "keines erkennbar (Genesis-Ort, nicht Dorf/Fluss) — Heap, falls der Genesis-Ort ein Dorf ist",
+  "gpuMin": 3, "bau": "S", "sicher": 0.75
+ }
+]

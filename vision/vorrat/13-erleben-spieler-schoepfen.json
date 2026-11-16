@@ -1,0 +1,156 @@
+[
+ {
+  "leiter": "erleben.spieler.praesenz", "sprosse": 1, "klasse": "A",
+  "richter": "Gang 2 min je Gerät: Taste → erstes Bild mit Leib-Antwort p95 ≤ 50 ms, Fuß p95 ≤ 3 cm, 0 Bilder mit Kamera im Fels",
+  "hat": "Tafel-Zeile karte2.erleben.spieler.praesenz#1 steht (vision/richter-tafel.json:32)",
+  "station": "karte2.erleben.spieler.praesenz#1",
+  "fehlt": "nur die Fahrt am Kopf an beiden Geräten (Radeon-Taste→Bild ohne frisches Urteil: leib.K1#1 radeon leer im Eingang, Beleg 235/81,6 ms)",
+  "rezept": "Sitzung der Punkte-Maschine mit --nur karte2.erleben.spieler.praesenz#1 an Radeon und GTX am selben Kopf.",
+  "messgroesse": "die Station selbst",
+  "preisRisiko": "Taste→Bild an der Radeon (Beleg 235 ms ego / 81,6 ms third gegen 50)",
+  "gpuMin": 3, "bau": "S", "sicher": 0.9
+ },
+ {
+  "leiter": "erleben.spieler.rolle", "sprosse": 1, "klasse": "R",
+  "richter": "15 min je Verb-Gruppe: ≥ 1 sichtbare Weltänderung (Werk steht, Tier flieht, Fahrzeug fährt), Bildpaar vorher/nachher",
+  "hat": "alle vier Verb-Gruppen ändern die Welt (gelesen): bauen confirmBuild stamm/werkstatt-bauen.js:376, fahren über die Fahrt-Sitzung, kämpfen damageCreature stamm/kreatur-leben.js:778 über _beginPlayerSwing stamm/kampf.js:92, Tier flieht vor dem Spieler _creatureWarinessSpieler stamm/kreatur-furcht.js:107",
+  "station": "Teilrichter je Gruppe als GPU-Probe in der Sitzung: bauen.K5#2 (VERB_PROBE, radeon+gtx gehalten 4ee205bd/b4bcf19c), fahrzeug.K3#2/K4 (FAHR_SITZUNG), halten.K1#2 (HALTEN_K1) — keiner urteilt alle vier Gruppen noch ein Bildpaar je Gruppe",
+  "fehlt": "EINE Station, die je Verb-Gruppe (gehen, bauen, fahren, kämpfen) eine Weltänderung zählt und das Bildpaar vor/nach schießt; gehen hat keinen Weltänderungs-Richter (Tier flieht bei Annäherung)",
+  "rezept": "Muster bauen.K5#2 (stationen/g4.js:2065) als Rahmen: in der warmen Sitzung VERB_PROBE (Werk steht), FAHR_SITZUNG (Wagen Δ ≥ 10 m) und HALTEN_K1 (Treffer → Tier hp Δ und Flucht) nacheinander, dazu ein Gang auf einen Hirsch zu (Wariness ≥ fleeThreshold, Abstand wächst). Je Gruppe Weltfeld vor/nach + /schirm-Bild vor/nach; GRÜN bei 4/4 Gruppen mit Δ ≠ 0. Die 15 min sind Obergrenze, die Probe endet bei der ersten Änderung.",
+  "messgroesse": "bauen: state.buildings Zuwachs nach confirmBuild (stamm/werkstatt-bauen.js:376); kämpfen: creature.hp Δ (stamm/kreatur-leben.js:778); gehen: Wariness/Fluchtradius (stamm/kreatur-furcht.js:107-122) und Abstand Tier↔Spieler; fahren: Wagen-Position Δ; Bild: werkbank /schirm (scripts/werkbank.cjs:1860)",
+  "preisRisiko": "Bild-Preis in Bewegung an der Radeon (Beleg: ROT); Heap am Dorf, falls der Bau am Dorf steht",
+  "gpuMin": 6, "bau": "S", "sicher": 0.65
+ },
+ {
+  "leiter": "erleben.spieler.hand", "sprosse": 1, "klasse": "R",
+  "richter": "Eingabe → erstes Bild mit Wirkung p95 ≤ 50 ms, Trefferpunkt = Zielpunkt ± 1 Zelle, beide Geräte",
+  "hat": "setzen (RMB/F → confirmBuild, stamm/werkstatt-bauen.js:108-129, :376) und brechen (Klick → Abbau/Graben am Fadenkreuz-Strahl, stamm/kampf.js:2292-2306, _strikeArchitecture :2338) sind spielbar (gelesen)",
+  "station": "leib.K1#2 / halten.K2#1 (LATENZ_HALT_SITZUNG, stationen/g5.js:1488) messen nur gehen, springen, einsteigen, hieb — Hand ≥ 1 cm, nicht die Wirkung; kein Trefferpunkt-Maß",
+  "fehlt": "die Verben setzen und brechen in werkbank latenz, mit Marke 'erstes Bild mit Wirkung' (Werk-Mesh sichtbar / Abbau-Fortschritt) und dem Abstand Treffer ↔ Zielpunkt",
+  "rezept": "Muster LATENZ_HALT_SITZUNG (stationen/g5.js:1488) erweitern: werkbank latenz um --verb setzen (Taste F im Bau-Modus) und brechen (Klick auf Bauwerk im Arm) — scripts/werkbank.cjs:1877 Tasten-Tafel. Treffer: ort aus _strikeArchitecture/confirmBuild gegen _fadenkreuzStrahl (stamm/kampf.js:2305), Zelle = Raster des Bau-Modus. Pose Mess-Wiese, Ego + Third.",
+  "messgroesse": "Wirkungs-Bild: Takt, an dem state.buildings wächst bzw. der Abbau-Fortschritt des Ziels steigt, gegen die Marke getCurrentTexture (__latenz in welt-boot); Treffer: |ort − Fadenkreuz-Schnitt| in Zellen (stamm/kampf.js:2305-2306)",
+  "preisRisiko": "Taste→Bild an der Radeon (Beleg third 81,6 ms > 50)",
+  "gpuMin": 3, "bau": "M", "sicher": 0.6
+ },
+ {
+  "leiter": "erleben.spieler.wegfindung", "sprosse": 1, "klasse": "R",
+  "richter": "N = 50 Saaten: Anteil Spawn-Orte mit ≥ 1 Landmarke in 1–3 km im Bild, Kontrast ≥ 0,1, ≥ 0,9",
+  "hat": "die Ferne steht im Bild: Fern-Ring mit Schalen und camera.far = Schalen-Rand + 500 m (stamm/bild-sicht.js:2863-2870), Kamm-Krone (:2862); Fels-Landmarken als Scatter-Pass mit Distanz-Culling (stamm/vegetation-baum.js:1469, :1581) — Gipfel und Grate aus dem Gelände sind die einzigen Landmarken auf 1–3 km (gelesen)",
+  "station": "keine; nächstes Muster ferne.K2#1 (FERNE_SITZUNG, radeon+gtx, Restkontrast am Rand der Fern-Schale, stationen/g3.js:2548) und ferne.K2#2 (das Höchste des Gesetzes binnen 3 km, stationen/g3.js:2621)",
+  "fehlt": "ein Richter, der je Saat am Spawn die Gipfel/Grate in 1–3 km aus dem Höhenfeld zieht, ihren Bildort projiziert und den Kontrast gegen den Himmel/Hintergrund liest; dazu der Saat-Wechsel in der Sitzung (50 Welten)",
+  "rezept": "Muster ferne.K2#2 (stationen/g3.js:2621): Gipfel-Suche binnen 3 km schon dort; je Saat Kamera am Spawn auf Augenhöhe, 4 Azimute, Prominenz-Kandidat in 1–3 km projizieren, Weber-Kontrast Silhouette ↔ Himmel aus dem Ausgabe-Bild. 50 Saaten = 50 Geburten — als eigene Probe mit Saat-Liste, nicht in der Haupt-Sitzung.",
+  "messgroesse": "Gipfel aus dem Höhenfeld des Kerns (wie FERNE_SITZUNG 'Gipfel'), Silhouette im präsentierten Canvas (werkbank /schirm, scripts/werkbank.cjs:1860); Bauansatz der Probe: Saat-Wechsel über den Boot (Ankunft je Saat 12–17 s GTX)",
+  "preisRisiko": "keines am Spawn erkennbar; Kosten sind Boot-Zeit (50 × Ankunft) — Ankunft ist PFLICHT-OFFEN B",
+  "gpuMin": 18, "bau": "M", "sicher": 0.55
+ },
+ {
+  "leiter": "erleben.spieler.zeit", "sprosse": 1, "klasse": "B",
+  "richter": "Sonnenbahn gegen Ephemeride der Breite ≤ 1°; Saison-Wort ändert Laub und Licht im Bildpaar",
+  "hat": "Saison-Wort und Laub-Präsenz stehen (stamm/bild-himmel.js:822-853, _saisonMul nach SAISON_GESETZ); die Sonnenbahn ist eine feste Kunstformel ohne Breite und Jahr: x = cos w, y = sin w, z = 0,4 sin(w/2) (welt-licht.js:709-715) — der Meeus-Weg (sin h = sin φ sin δ + cos φ cos δ cos H) stand gebaut und fiel an gate:tag-achse:echt (Kommentar welt-licht.js:700-708) (gelesen)",
+  "station": "keine",
+  "fehlt": "die Sonnenbahn aus Jahr × Breite; ohne sie ist der Ephemeriden-Fehler bei jeder Breite ≠ Äquator gross (Mittag immer 90°)",
+  "rezept": "Bau: Meeus Kap. 13 zurück in sonnenRichtung (welt-licht.js:709) mit Breite aus dem Ort-Gesetz und Tag aus seasonPhase, dazu den Lichtmesser stetig machen (_kartenWurfSicht, Dichte-Profil der Krone, Kommentar :704-708), der den ersten Versuch fällte. Richter: Sonnenrichtung aus _sonnenRichtung (stamm/bild-himmel.js:1368) gegen Meeus-Referenz an 24 Uhrzeiten × 2 Saisons, dazu Bildpaar Sommer/Herbst an der Wiese.",
+  "messgroesse": "Bauansatz welt-licht.js:709 sonnenRichtung (die EINE Formel für Licht, Schatten, Himmelskörper); Leser stamm/bild-himmel.js:1368 _sonnenRichtung",
+  "preisRisiko": "keines im Preis; Risiko ist die Licht-Stetigkeit (0,15–0,18 EV Sprung gegen Soll 0,1, Radeon)",
+  "gpuMin": 4, "bau": "M", "sicher": 0.85
+ },
+ {
+  "leiter": "erleben.spieler.gemeinsam", "sprosse": 1, "klasse": "R",
+  "richter": "Taste an A → Leib im Bild von B p95 ≤ 150 ms; Welt-Bild an gleicher Kamera ≤ 1 % Pixel-Abweichung (ohne Leiber)",
+  "hat": "der Mitspieler ist ein Leib im Bild: _p2pApplyPeerSoul baut den Leib der Seele (stamm/netz-p2p.js:1962, :2191; stamm/koerper-fahrt.js:2710), P2P über RTCPeerConnection (stamm/netz-p2p.js), Räume im signaling-server.js (gelesen)",
+  "station": "tore.K4 ohne Station: 'unmessbar in EINEM Lauf auf EINEM Gerät … kein Läufer verbindet zwei Sitzungen zweier Rechner' (stationen/g5.js:6173); gate:mp-sync fährt zwei Seiten in EINEM Browser",
+  "fehlt": "ein Läufer, der Radeon-Sitzung (A) und OMEN-Sitzung (B) über den signaling-server koppelt, die Taste an A stempelt und den Leib im Ausgabe-Bild von B misst",
+  "rezept": "Muster leib.K1 latenz (LATENZ_HALT_SITZUNG, stationen/g5.js:1488) über zwei Rechner: A drückt per CDP W, B pollt die Pose des Peer-Leibs im präsentierten Bild (getCurrentTexture-Marke) — Uhren über NTP-Abgleich der zwei Werkbänke. Welt-Bild: beide Seiten an derselben Kamera-Pose, Leiber verborgen, Pixel-Diff ≤ 1 %.",
+  "messgroesse": "Peer-Leib-Pose nach _p2pApplyPeerSoul (stamm/netz-p2p.js:2191), Bild über werkbank /schirm (scripts/werkbank.cjs:1860); Bauansatz: Punkte-Maschine punkte.cjs (zwei Geräte in EINER Akte)",
+  "preisRisiko": "Taste→Bild an der Radeon (Beleg > 50 ms) frisst vom 150-ms-Budget; Uhrabgleich zweier Rechner",
+  "gpuMin": 5, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "erleben.spieler.nichtleib", "sprosse": 1, "klasse": "B",
+  "richter": "10 min als Fluss: der Weg ist die Gefälle-Linie der Welt (Abweichung ≤ 5 %); ein Eingriff des Spielers (Lauf verlegen) ändert das Ufer im Bildpaar",
+  "hat": "der Spieler ist nur ein Leib (stamm/koerper-seele.js Seele/Inventar); der Fluss als Feld steht: _waterFlowAt (stamm/wasser-hydro.js:346), _hydroRiverAt (:587), Pegel mit Regen (_pegelTafel/_regenWeg :79-195) — keine Perspektive, die den Fluss bewohnt, kein Verb 'Lauf verlegen' (gelesen)",
+  "station": "keine",
+  "fehlt": "eine Kamera/Seele, die dem Fluss-Lauf folgt (Gefälle-Linie aus _waterFlowAt), und ein Verb, das den Lauf im Gesetz verlegt, so dass das Ufer neu gezeichnet wird",
+  "rezept": "Bau in stamm/wasser-hydro.js (:346 _waterFlowAt als Weg, :587 _hydroRiverAt als Lauf) plus eine Seelen-Art 'Ding' in stamm/koerper-seele.js; das Verlegen als Edit des Fluss-Gesetzes (nie als Mesh-Pflaster). Richter danach: Pfad der Kamera gegen die steilste Abstiegslinie des Höhenfelds, Bildpaar Ufer vor/nach.",
+  "messgroesse": "Bauansatz stamm/wasser-hydro.js:346 und :587; Seele stamm/koerper-seele.js",
+  "preisRisiko": "p95 am Fluss (41,9 > 34 ms Radeon) — die dichteste Pose IST der Fluss",
+  "gpuMin": 12, "bau": "L", "sicher": 0.85
+ },
+ {
+  "leiter": "erleben.spieler.forscher", "sprosse": 1, "klasse": "B",
+  "richter": "das Fernrohr-Bild zeigt Krater, die beim Anflug an derselben Stelle liegen (Lagefehler ≤ 1 %)",
+  "hat": "der Mond ist eine glatte, einfarbige Kugel (SphereGeometry 9, 16×16, Farbe 0xd0d4e0, stamm/dirigent-ankunft.js:340-353), gegenüber der Sonne (welt-licht.js:718); ein Fernglas zoomt auf 25° nur mit Lupen-Werk in 8 m (stamm/koerper-fahrt.js:2231-2247, :3240-3242); kein Krater, kein Anflug (gelesen; 'Krater' 0 Treffer in planet-core.js)",
+  "station": "keine",
+  "fehlt": "ein Mond aus einem Gesetz mit Kratern (Lage aus Saat) und ein Weg dorthin (Anflug) — beides fehlt; das Fernrohr selbst ist fast da",
+  "rezept": "Bau: Mond-Körper aus planet-core.js (dieselbe Funktion wie der Planet, eigene Saat) statt der Kugel in stamm/dirigent-ankunft.js:340, Krater-Feld im Kern; Fernrohr = ZOOM_FOV_DEG enger (koerper-fahrt.js:3240). Der Anflug hängt an der Planet-Klasse (Orbit) — ohne ihn trägt nur der Fernrohr-Teil.",
+  "messgroesse": "Bauansatz stamm/dirigent-ankunft.js:340 (moonMesh), planet-core.js; Fernrohr stamm/koerper-fahrt.js:2246",
+  "preisRisiko": "Preis-Klasse Planet (Anflug), Ankunft",
+  "gpuMin": 8, "bau": "L", "sicher": 0.85
+ },
+ {
+  "leiter": "erleben.schoepfen.hebel", "sprosse": 1, "klasse": "F",
+  "richter": "Konstruktions-Prüfsatz richtig geurteilt mit sichtbarer Folge, Klicks und Zeit am Ereignis-Strom, beide Geräte; Bildvergleich Studio ↔ Welt im Band",
+  "hat": "1 Werk über ≤ 3 Eingaben steht (Bau-Modus, confirmBuild stamm/werkstatt-bauen.js:108-141, :376), Statik und Wirkung aus der Form wirken in der Welt (gelesen)",
+  "station": "bauen.K3#2 headless (Statik 10/10, Wirkung 5/5 an d3708675); bauen.K1#2 GPU-Probe BILD_PROBE (stationen/g4.js:1657) ohne Urteil am Kopf — GTX e0139769 0/8, Radeon an der Frist; studios.K4#1 GPU-Probe K4_BEFEHL (stationen/g4.js:2156) ohne Urteil, 15 Soll-Minuten",
+  "fehlt": "bauen.K3 als Probe in die Sitzung (Prüfsatz spec/pruefsatz/bauen-k3.json mit Bild der Folge) und die zwei GPU-Proben zum ersten grünen Urteil: Wille → Bild ≤ 1 s und K4-Band",
+  "rezept": "Den Prüfsatz von bauen.K3#2 als Probe neben VERB_PROBE in die Sitzung heben (Muster bauen.K5#2, stationen/g4.js:2065), Folge per /schirm. Zeit und Klicks aus bauen.K1#2 (zeiten[4] = Eingabe → GPU-Bild, stationen/g4.js:1679), Bildvergleich aus studios.K4. Pose Mess-Wiese.",
+  "messgroesse": "e.zeiten[4] und e.eingaben in der Ausgabe von diag-werkstatt-weg (stationen/g4.js:1679-1681); K4: Bild-Differenz ≤ 2,1 % und Albedo-Rand 0,10 (stationen/g4.js:2171)",
+  "preisRisiko": "Wille → Bild ≤ 1 s: Radeon kalt 1 052–2 346 ms im Beleg, GTX 0/8 — der Preis selbst ist rot",
+  "gpuMin": 18, "bau": "M", "sicher": 0.5
+ },
+ {
+  "leiter": "erleben.schoepfen.satz", "sprosse": 1, "klasse": "F",
+  "richter": "eingefrorener Korpus ≥ 40 Sätze im echten Fenster: gültig ≥ 95 %, Absicht ≥ 85 % am Ausgabebild, 0 Brüche, 0 Hänger > 100 ms",
+  "hat": "Satz → spawn_studio → Stempel steht im Chat-Pfad (Op stamm/feld-dsl.js, Beleg :1072), Negativ-Sätze tun nichts (gelesen)",
+  "station": "ki.K1#2 headless gegen qwen3:4b @ 127.0.0.1:11434 (41/41, gültig 100 %, Absicht 100 %, p95 4 998 ms an 039509b2, stationen/g4.js:1308) — Prädikat am Null-Renderer, das Bild-Prädikat fiel als blind (10–17 % Ruhe-Rauschen, Kommentar :1316-1317); ki.K5#2 (Hänger) fehlt",
+  "fehlt": "der Korpus in der GPU-Sitzung beider Geräte (OMEN braucht einen Modell-Endpunkt), ein Absicht-Urteil am Ausgabebild, das nicht blind ist, und die Hänger-Zählung (> 100 ms) während die KI-Werke bauen",
+  "rezept": "KI_KORPUS_ECHT (stationen/g4.js:1318) als Probe in die Sitzung, Endpunkt per OLLAMA_ENV an beiden Geräten. Absicht am Bild: Masken-Differenz vor/nach nur im Fußabdruck des gestempelten Werks (statt Vollbild-Diff, die blind fiel); Hänger aus dem Bild-Takt der Sitzung (werkbank haenger).",
+  "messgroesse": "state-Prädikat des Korpus plus Bild-Diff im Fußabdruck des neuen Bauwerks; Hänger = Bildzeit > 100 ms im präsentierten Takt",
+  "preisRisiko": "Hänger während des Baus (ki.K5#2 offen); Satz → Bild ≤ 6 s lokal (p95 4,998 s, knapp)",
+  "gpuMin": 15, "bau": "M", "sicher": 0.55
+ },
+ {
+  "leiter": "erleben.schoepfen.gesetz", "sprosse": 1, "klasse": "F",
+  "richter": "Regel im Spiel geschrieben → Wirkung im Bild bei A und B",
+  "hat": "A schreibt im Gespräch eine Regel (_regelAusSatz → _registerWorldRule, Kanal p2pBroadcastDsl), B trägt sie, sie wirkt bei beiden (gelesen in der Stations-Beschreibung, stationen/g5.js:5877-5885)",
+  "station": "ultiversum.K4#1 headless (gate:mp-sync, zwei Seiten einer Maschine, grün an d3708675, stationen/g5.js:5874) — die Wirkung ist eine Erzählung im Wissen/Tagebuch, kein Bild",
+  "fehlt": "eine Regel mit SICHTBARER Wirkung und das Bild bei A und B, als GPU-Probe beider Geräte",
+  "rezept": "diag-mp-sync (h) als Probe in der Sitzung mit zweiter Seite am selben Broker; Regel-Satz mit sichtbarem Effekt (z. B. spawn am Ort) statt Erzählung; /schirm bei A und B vor/nach, Diff im Wirkungs-Ort > Schwelle.",
+  "messgroesse": "state.worldRules Hash bei A und B (_regelHash), Bild-Diff am Wirkungs-Ort über werkbank /schirm (scripts/werkbank.cjs:1860)",
+  "preisRisiko": "zwei Seiten auf einem Gerät verdoppeln VRAM/Heap — Heap-Decke 400 MB",
+  "gpuMin": 4, "bau": "M", "sicher": 0.5
+ },
+ {
+  "leiter": "erleben.schoepfen.gespraech", "sprosse": 1, "klasse": "R",
+  "richter": "20 Neulinge ab 10 Jahren: Anteil, der in 5 min ein eigenes Werk erschafft und teilt ≥ 80 %",
+  "hat": "erschaffen (Werkstatt, Rezeptbuch, Satz an die KI) und teilen (Teilen-Knopf, Code im Chat) sind spielbar (VERB_FAELLE werkstatt/ki/geteilt in bauen.K5#2, stationen/g4.js:672-679) (gelesen)",
+  "station": "keine; der Blind-Spieler-Ersatz spielgang.K2 ist 'unmessbar ohne Blind-Spieler' (stationen/g5.js:6174)",
+  "fehlt": "der Richter verlangt 20 Menschen — kein GPU-Läufer trägt ihn; die Punkte-Maschine kann höchstens den Ereignis-Strom zählen (H.ereignisStrom, stationen/sitzung-seite.js)",
+  "rezept": "Mensch-Panel mit Aufzeichnung des Ereignis-Stroms (Zeit bis erstes Werk + Teilen-Code), 20 Sitzungen. Kein Station-Bau trägt es.",
+  "messgroesse": "Zeit erste Eingabe → confirmBuild/spawn_studio und Teilen-Klick am Ereignis-Strom",
+  "preisRisiko": "keines erkennbar; Kosten sind Menschen, nicht GPU",
+  "gpuMin": 0, "bau": "L", "sicher": 0.4
+ },
+ {
+  "leiter": "erleben.schoepfen.teilen", "sprosse": 1, "klasse": "F",
+  "richter": "Export/Import: Bildpaar an gleicher Pose gleich",
+  "hat": "Teilen-Knopf der Werkstatt → Code → im Chat getippt → das Werk steht, signiert (VERB_FAELLE 'geteilt' Bank/Brücke, stationen/g4.js:677-678; Signatur netz-identitaet) (gelesen)",
+  "station": "bauen.K5#2 GPU-Probe (radeon 4ee205bd, gtx b4bcf19c gehalten) fährt den geteilt-Weg in der Sitzung, urteilt aber nur das Verb; tore.K5#1 headless urteilt Bau-Hash A = B ohne Bild (stationen/g5.js:5536 'ein Bild an B's Pose misst die Station nicht')",
+  "fehlt": "das Bildpaar: Original an Pose P, Import an derselben Pose P, Pixel-Gleichheit — im selben Profil",
+  "rezept": "In probeVerben (stationen/g4.js:680) für den Fall geteilt: /schirm des Originals an fester Pose, Original entfernen, Code importieren, /schirm an derselben Pose, Diff ≤ Rausch-Schwelle; ≤ 10 s Klick → Bild nennen.",
+  "messgroesse": "werkbank /schirm (scripts/werkbank.cjs:1860) zweimal an derselben Kamera, Pixel-Diff; Bau-Hash wie tore.K5",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 2, "bau": "S", "sicher": 0.65
+ },
+ {
+  "leiter": "erleben.schoepfen.schutz", "sprosse": 1, "klasse": "F",
+  "richter": "feindliche Welt geladen: eigene Welt im Bildpaar unverändert, Abweisung im Spiel benannt",
+  "hat": "ein fremder Code mit verbotenem Verb fällt und der Spieler hört es ('Geteiltes Werk abgewiesen: {grund}', stamm/netz-identitaet.js:686, daten.js:1496); ein geladener Stand verwirft Pflug-Regeln (stamm/speicher-laden.js:1026-1029), aber nur ins Log (this.log WARN), nicht in den Spieler-Kanal (gelesen)",
+  "station": "ultiversum.K5#1 headless (gate:praegung-welt, op:rule · rule_effect_forbidden · 0 Schreibe, grün an d3708675, stationen/g5.js:5102) — ohne Bild",
+  "fehlt": "die Probe in der GPU-Sitzung mit Bildpaar vor/nach; für den Welt-Weg die Abweisung im Spieler-Kanal statt nur im Log",
+  "rezept": "Kleiner Bau: speicher-laden.js:1027 sagt die Verwerfung per _spielerSagt (wie netz-identitaet.js:686). Probe: /schirm an fester Pose, feindliche Welt/Code laden, Abweisungs-Text im Spieler-Kanal lesen, /schirm an derselben Pose, Diff ≤ Rausch-Schwelle.",
+  "messgroesse": "Spieler-Kanal-Eintrag pass.werk.abgewiesen (stamm/netz-identitaet.js:686); Bild-Diff über werkbank /schirm",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 2, "bau": "S", "sicher": 0.6
+ }
+]

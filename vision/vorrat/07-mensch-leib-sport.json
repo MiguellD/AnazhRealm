@@ -1,0 +1,156 @@
+[
+ {
+  "leiter": "mensch.leib.verschieden", "sprosse": 1, "klasse": "F",
+  "richter": "Bild 10 Bewohner auf 2 m: Prüfer findet 0 gleiche Paare",
+  "hat": "je Siedlung 8 Gestalten (stamm/siedlung-bewohner.js:3816, _bewohnerGestalten :241–275) mit Gesicht, Haar und Alter aus dem Genom, dazu je Bewohner eigene Farben und Höhe/Breite/Tiefe aus seinem Samen (_bewohnerGenome :320–327); der Kleider-Schnitt ist EINER je Siedlung (_bewohnerTracht :313–318) (gelesen)",
+  "station": "mensch.K4#2 (headless, eigenes Boot diag-kreatur-takt --ort stadt-voll, grün an 78d37554: 50 aus 50 Samen, 0 Paare unter 1 px)",
+  "fehlt": "die Zählung gleicher Paare als Urteil in der warmen Sitzung beider Geräte am Dorfplatz (10 Nächste auf 2 m statt 50 an der Metropole), mit Bild",
+  "rezept": "Ein Zwillings-Urteil auf den Lauf BEWOHNER_SITZUNG (stationen/g2.js:1730–1751: Probe bewohner am Genesis-Start-Dorf + Dorfplatz 8 Uhr Third, schon Radeon und GTX) mit der Paar-Distanz von mensch.K4#2 (stationen/g2.js:5998–6006: Maße × pxM, eigene Farben) über die 10 nächsten Bewohner; grün bei 0 Paaren unter 1 px. Ob die Probe bewohner an genesis die Spalten `menge.je` schreibt (an stadt-voll tut sie es), ist ungeprüft — sonst die Spalte dort ergänzen. Die Tiefe „Schnitt verschieden“ trägt der Kleider-Schnitt nicht (ein Schnitt je Siedlung); das Urteil zählt Paare.",
+  "messgroesse": "die Bewohner-Liste der Siedlung (this._bewohnerSiedlungen, stamm/siedlung-bewohner.js:227) mit Genom und Farben je Person (_bewohnerGenome :327); Distanz wie stationen/g2.js:5998–6006",
+  "preisRisiko": "Heap am Dorf (417–549 MB > 400 nach dem Gang) — die Pose liegt am Dorfplatz",
+  "gpuMin": 2, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "mensch.leib.gesicht", "sprosse": 1, "klasse": "F",
+  "richter": "Soll-Tafel mensch-kopf GRÜN an 10 Samen",
+  "hat": "der Spieler-Kopf an der Third-Kamera des Spiels; seine Dials kommen aus dem Mensch-Rezept mit der Prägung als Vorrang (stamm/koerper-leib.js:2956–2971) (gelesen)",
+  "station": "mensch.K4#1 (Probe in der Sitzung, sollKlasseStation stationen/g2.js:1529 + :5920–5952; Radeon grün an 63655917 auf 6,14 m an EINEM Samen; GTX nie gefahren)",
+  "fehlt": "die Probe urteilt einen Samen (den Leib des Spielers) und nur an der Radeon: 10 Samen und die GTX fehlen",
+  "rezept": "mensch.K4#1 (stationen/g2.js:5920) um eine Schleife über 10 Prägungen des Mensch-Rezepts erweitern (Übergabe-Kanal `_studioPraegung`, stamm/koerper-leib.js:2969), je Same KAMERA-Pose + Schuss + sollTafelUrteil, grün nur bei 10/10; dann Radeon + GTX am selben Kopf.",
+  "messgroesse": "sollTafelUrteil der Klasse ^spieler:kopf/ (augeFrei, lippeL/A, hoehleL/A, haarDeckung) an der Kamera aus `_loopCamera` (stationen/g2.js:5928)",
+  "preisRisiko": "keines erkennbar (Third Wiese)",
+  "gpuMin": 6, "bau": "S", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.leib.tracht", "sprosse": 1, "klasse": "R",
+  "richter": "20 Saaten: Prüfer ordnet Epoche ± 1 Jh. ≥ 0,7",
+  "hat": "die Epoche des Plans wählt Schnitt und Palette (fachwerk-core.js:3294–3303 EPOCHEN.tracht, :3908/:3917 plan.kleidung) und kleidet jede Gestalt (stamm/siedlung-bewohner.js:245–255, :313–318); 9 Epochen, aber nur 6 Schnitte: Hanse/Barock/Gründerzeit (1560/1700/1860) tragen denselben Schnitt pullover/pants/boot, Mittelalter/Mediterran/Fernost poncho/pants (gelesen)",
+  "station": "haar.K4#1 (headless Prüfbühne, grün an d3708675: 1320 gegen 1935, 72,3 % der Leib-Pixel anders) — zwei Epochen, kein Prüfer",
+  "fehlt": "ein Prüfer-Satz (R11: Korpus + eingefrorenes Modell mit 200 Ankern) und ein Lauf über 20 Saaten am Dorfplatz im echten Fenster beider Geräte",
+  "rezept": "Muster trachtLauf/trachtUrteil (stationen/g2.js:6118–6154) als Probe in der Sitzung: 20 Saaten über die 9 Epochen, je ein Third-Bild am Dorfplatz mit 3 Bewohnern; das Prüfer-Modell ordnet Bild ↔ Jahr. Risiko: ± 1 Jh. zwischen 1560/1700/1860 trägt nur die Palette.",
+  "messgroesse": "plan.kleidung {top, bottom, shoes, farben} je Siedlung (fachwerk-core.js:3917), am Leib über _bewohnerTracht (stamm/siedlung-bewohner.js:313)",
+  "preisRisiko": "Heap am Dorf (Pose Dorfplatz)",
+  "gpuMin": 8, "bau": "M", "sicher": 0.55
+ },
+ {
+  "leiter": "mensch.leib.stoff", "sprosse": 1, "klasse": "F",
+  "richter": "16 Posen × 10 Samen: 0 Durchstiche",
+  "hat": "das Tuch liegt durch den EINEN XPBD-Löser drapiert über der Haut, einmal je Vorlage in der Ruhe (stamm/koerper-leib.js:356–358, :437–452 `tuchDrapieren`); die Webung je Stoff als Mikro-Struktur (koerper-core.js:5064–5073 WEBE) (gelesen). Widerspruch zum Beleg „starr, Durchstich nie gemessen“: haar.K4#2 misst die Durchdringung im Gang headless 0",
+  "station": "haar.K4#2 (headless WELT_TUCH, grün an d3708675: Durchdringung fein/fein 0 im Gang) — ein Same, Gang statt 16 Posen, kein Gerät",
+  "fehlt": "der Durchstich-Zähler als Probe in der warmen Sitzung beider Geräte an Third Wiese über 16 Posen × 10 Samen",
+  "rezept": "tuchProbe/tuchUrteil von haar.K4#2 (stationen/g2.js:6155–6173) als seiteProbe (Muster LEIB_K2, stationen/g5.js:1192) heben; 10 Prägungen wie bei mensch.leib.gesicht, je 16 Posen (MOTION-Profile) die Tuch-Ecken hinter der Haut zählen, beide Stufen. Achtung: die grobe Stufe trug früher 543 Ecken in der Haut (Kommentar g2.js:6155–6159).",
+  "messgroesse": "Tuch-Ecken hinter der Haut (n.userData.__seh === 'stoff' gegen 'haut', stamm/koerper-leib.js:443–445) je Pose",
+  "preisRisiko": "keines erkennbar (Third Wiese)",
+  "gpuMin": 5, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "mensch.leib.ausdruck", "sprosse": 1, "klasse": "R",
+  "richter": "Prüfer errät Akt/Gemüt aus der Silhouette ≥ 60 %",
+  "hat": "die Haltung folgt dem Akt des Tags (koerper-core.js:5169–5181: arbeit pwalk, mittag/besuch showcase, abend sad) und der erinnerten Furcht (stamm/siedlung-bewohner.js:2183–2190 `_bewohnerGemuet`, Stand-Wechsel :2166–2182) (gelesen)",
+  "station": "keine (leib.K2 misst den Fuß, nicht die Haltung)",
+  "fehlt": "ein Richter, der Silhouetten von 10 Bewohnern in bekannten Akten/Furcht schießt und einen Prüfer-Satz (R11) raten lässt",
+  "rezept": "Muster BEWOHNER_SITZUNG + platzAcht (stationen/g2.js:1700–1751): am Start-Dorf zu Uhr 8 / 12 / 20 und nach einer Bedrohung je 10 Silhouetten schießen, der Akt jedes Bewohners als Wahrheit (b.akt, b.gemuet); das Prüfer-Modell rät. Bis der Prüfer-Satz steht: Haltungs-Distanz der Silhouetten je Akt als Vorstufe.",
+  "messgroesse": "b.akt / b.gemuet.haltung / b.gemuet.sorrow je Bewohner (stamm/siedlung-bewohner.js:2186–2188), Stand-Zeile b.standZeile (:2177)",
+  "preisRisiko": "Heap am Dorf (Pose Dorfplatz)",
+  "gpuMin": 6, "bau": "M", "sicher": 0.6
+ },
+ {
+  "leiter": "mensch.leib.spur", "sprosse": 1, "klasse": "R",
+  "richter": "Prüfer-Altersschätzung, Fehler ≤ 15 J",
+  "hat": "der Dial Alter 18–80 (koerper-core.js:119–127) formt Muskel, Fett, Kiefer, Kopf-Senkung und Breite (koerper-core.js:2158–2205); Bewohner tragen ihr Alter aus dem Genom (stamm/siedlung-bewohner.js:259 age: gen.alter); kein Ergrauen, keine Falten (gelesen)",
+  "station": "keine",
+  "fehlt": "ein Prüfer-Satz (R11) und ein Lauf über Leiber verschiedenen Alters in Third; das Bild trägt das Alter nur in Gestalt und Haltung",
+  "rezept": "Muster mensch.K4#1 (stationen/g2.js:5920) mit Prägungen age 0 … 1 (10 Stufen) in Third schießen, das Prüfer-Modell schätzt Jahre, Wahrheit 18 + 62·age. Risiko: ohne Haar-Grau und Falten liegt der Fehler leicht über 15 J — dann B (Haar-Farbe und Falten-Ton am Alter im koerper-core).",
+  "messgroesse": "dials.age (koerper-core.js:2158–2185) → Jahre 18–80; Leser: die Prägung des Mensch-Rezepts",
+  "preisRisiko": "keines erkennbar (Third Wiese)",
+  "gpuMin": 4, "bau": "M", "sicher": 0.5
+ },
+ {
+  "leiter": "mensch.sport.regeln", "sprosse": 1, "klasse": "B",
+  "richter": "20 Läufe: Rangfolge gegen Leib-Leistung ρ 0,6–0,9",
+  "hat": "kein Wettkampf, kein Sieger; die Arena des Prüfplatzes ist eine leere Fläche (fachwerk-core.js:10621–10627, Zone :11036); Tempo je Leib aus der Größe (koerper-core.js:5405–5411 leibWerte) (gelesen)",
+  "station": "keine",
+  "fehlt": "ein Wettlauf von 8 Bewohnern mit Start, Ziel und Rangfolge",
+  "rezept": "Bau: ein Akt „wettlauf“ im TAGES_GESETZ (koerper-core.js:5169–5181) mit dem Ort arena des Prüfplatzes; Tempo aus leibWerte × Tagesform aus dem Samen (`_tagZahl` koerper-core.js:5183); der Wirt lässt 8 Bewohner laufen. Richter: 20 Läufe, Spearman ρ der Ankunft gegen leibWerte.sprintSpeed.",
+  "messgroesse": "Bau setzt an koerper-core.js:5174 (TAGES_GESETZ.haltung/akt) und fachwerk-core.js:10627 (arena)",
+  "preisRisiko": "keines erkennbar (Arena-Fläche, 8 Leiber)",
+  "gpuMin": 4, "bau": "M", "sicher": 0.8
+ },
+ {
+  "leiter": "mensch.sport.koerper", "sprosse": 1, "klasse": "R",
+  "richter": "Tempo und Sprunghöhe im Spiel gegen Eichwert ± 10 %",
+  "hat": "Gehen ~1,5 m/s, Sprint × 4,5, Sprung aus v = √(2d(F/m − g)) (koerper-core.js:499–511, :5042–5056); Tempo und Sprung fallen mit der Größe (koerper-core.js:5405–5411) (gelesen)",
+  "station": "leib.K2#2 (Probe LEIB_K2 in der Sitzung, stationen/g5.js:4496–4533; Radeon 2d5f4146 Hub 0,369 m, GTX 715754fc 0,323 m) — misst den Sprung und seine Mutation, nie das Tempo und nie gegen einen Eichwert",
+  "fehlt": "das Tempo (Gehen, Sprint) im selben Lauf und ein eingefrorener Eichwert je Verb mit Quelle",
+  "rezept": "In rollen/K9 (scripts/diag-koerper-stand.cjs, Probe LEIB_K2 stationen/g5.js:646–665) die Sprint-Strecke vor dem Sprung als m/s ausgeben und eine Geh-Strecke dazunehmen; das Urteil vergleicht Tempo und Hub gegen den Eichwert ± 10 %. Widerspruch: der Kommentar nennt Sprung ~0,53 m (koerper-core.js:503), das Gesetz gibt v 2,6 m/s ≈ 0,345 m — gegen 0,53 wäre der Sprung ROT, gegen 0,345 läge er im Band (gelesen).",
+  "messgroesse": "die horizontale Geschwindigkeit des Leibs im Sprint (state.player, Kapsel) und der Hub aus K9 (j.k8.sprung, stationen/g5.js:4514)",
+  "preisRisiko": "Bild in Bewegung an der Radeon (gehend 66 % der Bilder über 33 ms laut Beleg)",
+  "gpuMin": 1, "bau": "S", "sicher": 0.7
+ },
+ {
+  "leiter": "mensch.sport.koennen", "sprosse": 1, "klasse": "B",
+  "richter": "Variationskoeffizient der 100-m-Zeit 10–20 %, Altersgang gegen Normtafeln",
+  "hat": "leibWerte rechnet Tempo nur aus der Größe (koerper-core.js:5405–5411); kein Talent, keine Übung (Grep leer in koerper-core, schmiede-core, siedlung-bewohner) (gelesen)",
+  "station": "keine",
+  "fehlt": "ein Können-Profil je Bewohner (Talent, Alter) und eine 100-m-Zeit im Bild",
+  "rezept": "Bau: Talent- und Alters-Achse im Genom (`_rollHumanoidGenome`, Leser stamm/siedlung-bewohner.js:253) und leibWerte liest sie (koerper-core.js:5405); die 100-m-Zeit läuft über den Wettlauf von mensch.sport.regeln 1. Richter: VK über 100 Bewohner, Altersgang gegen eine eingefrorene Normtafel.",
+  "messgroesse": "Bau setzt an koerper-core.js:5405 (leibWerte) und am Genom des Bewohners",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 4, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.sport.mannschaft", "sprosse": 1, "klasse": "B",
+  "richter": "Siegquote des Stärkeren 60–80 %, nie 100 %",
+  "hat": "Kampf nur Spieler gegen Kreatur (stamm/kampf.js:27 `_playerAttackCreature`, :92 `_beginPlayerSwing`); Bewohner folgen nur dem Tagesplan (gelesen)",
+  "station": "keine",
+  "fehlt": "ein Zweikampf zweier Bewohner mit Finte, Abwehr und Ausgang",
+  "rezept": "Bau: der Schwung des Spielers (stamm/kampf.js:92–150) als Verb jedes Leibs, ein Zweikampf-Akt zweier Bewohner mit Treffer-Wahrscheinlichkeit aus leibWerte und Reaktion; Richter: 50 Kämpfe, Siegquote des Stärkeren.",
+  "messgroesse": "Bau setzt an stamm/kampf.js:92 (_beginPlayerSwing) und am Tagesplan",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 4, "bau": "L", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.sport.arena", "sprosse": 1, "klasse": "B",
+  "richter": "Blickrichtungen folgen dem Geschehen ≥ 80 %",
+  "hat": "die Arena ist eine Fläche ohne Geräte (fachwerk-core.js:10625–10627), der Spielplatz trägt Geräte und Bänke (:10628ff, :6900–6911); kein Zuschauer, kein Blick-Ziel der Bewohner (gelesen)",
+  "station": "keine",
+  "fehlt": "ein Geschehen auf dem Feld und 10 Zuschauer, deren Kopf ihm folgt",
+  "rezept": "Bau: Akt „zuschauen“ (Ort Bank am Rand der Arena) mit Kopf-Blick-Ziel auf den führenden Läufer des Wettlaufs (mensch.sport.regeln 1); Richter: Winkel Blick ↔ Geschehen je Zuschauer ≤ 20° in ≥ 80 % der Bilder.",
+  "messgroesse": "Bau setzt an koerper-core.js:5169–5181 (Akt/Haltung) und am Kopf-Knochen des Rigs",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 3, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "mensch.sport.kunst", "sprosse": 1, "klasse": "B",
+  "richter": "Blindtest Anfänger ↔ Meister ≥ 80 %",
+  "hat": "die Güte steckt in der Waffe (schmiede-core.js:4062 gueteFaktor), nicht in der Hand; Bewegungs-Profile ohne Können-Achse (gelesen)",
+  "station": "keine",
+  "fehlt": "eine Können-Achse, die die Bewegung (Rhythmus, Streuung, Zögern) in 3 Künsten sichtbar ändert, und ein Prüfer-Satz",
+  "rezept": "Bau: das Können-Profil (mensch.sport.koennen 1) moduliert Streuung und Takt des Schwungs/Werk-Akts; Richter: Prüfer-Modell im Blindpaar.",
+  "messgroesse": "Bau setzt an schmiede-core.js:4062 (gueteFaktor liest die Hand) und an den MOTION-Profilen",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 4, "bau": "L", "sicher": 0.7
+ },
+ {
+  "leiter": "mensch.sport.geistspiel", "sprosse": 1, "klasse": "B",
+  "richter": "100 Partien, 0 regelwidrige Züge",
+  "hat": "kein Brett-, Karten- oder Würfelspiel (Grep Schach/Brettspiel/Kartenspiel leer in stamm/ und *-core.js) (gelesen)",
+  "station": "keine",
+  "fehlt": "ein Brettspiel mit Regel, Brett als Werk und zwei Bewohnern am Tisch",
+  "rezept": "Bau: ein Brett als Werk des Zimmermanns (Muster sitzbank fachwerk-core.js:6871, siteTag gasthaus), ein Akt „spielen“ im Treff des TAGES_GESETZ, die Regel (Mühle oder Dame) als reine Funktion; Richter: 100 Partien headless-gleich im Fenster gezählt, 0 regelwidrige Züge.",
+  "messgroesse": "Bau setzt an fachwerk-core.js:6871 (WERKE) und koerper-core.js:5169 (Akt)",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 3, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.sport.medium", "sprosse": 1, "klasse": "B",
+  "richter": "Schwung-Radius gegen Tempo und Kantwinkel ±15 %; Zeit auf 500 m Höhe im Band realer Abfahrten",
+  "hat": "Lauf, Sprung und Fahrt am Boden; die Fahrt gleitet nur an Wänden (stamm/koerper-bewegung.js:471 `_wandGleiten`); kein Ski, keine Kante (gelesen)",
+  "station": "keine",
+  "fehlt": "ein Gerät Ski mit Kante, Reibung auf Schnee und Sturz bei zu viel Tempo",
+  "rezept": "Bau: Ski als Fahrt im EINEN Fahr-Löser (stamm/koerper-fahrt.js / koerper-bewegung.js:512ff) mit Kantwinkel → Radius r = Länge²/(… ) und Schnee-Reibung aus dem Wetter; Richter: Abfahrt am Hang.",
+  "messgroesse": "Bau setzt an stamm/koerper-bewegung.js:512–571 (Fahr-Hülle)",
+  "preisRisiko": "unbekannt (Hang mit Schnee)",
+  "gpuMin": 5, "bau": "L", "sicher": 0.7
+ }
+]

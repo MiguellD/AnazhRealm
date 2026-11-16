@@ -1,0 +1,178 @@
+[
+ {
+  "leiter": "mensch.macht.grenze", "sprosse": 1, "klasse": "B",
+  "richter": "Grenze im Bild = Karte; Burg, wo Lage und Reichtum sie tragen",
+  "hat": "kein Herrschaftsgebiet und keine Grenze im Spiel (gelesen: kein Treffer auf herrschaft/territor/grenzstein in Kernen und stamm/); die Burg haengt am Herrn, der zur Haelfte per Muenzwurf faellt (fachwerk-core.js:3878 `muenze=herrBar&&rnd()<0.5`), Lage hoehe (fachwerk-core.js:3725); die Kultur eines Orts ist ein Hash seines Zell-Samens ohne raeumlichen Zusammenhang (stamm/siedlung-ort.js:1955-1961)",
+  "station": "keine; siedlung.K2 (g5.js:3776) misst Stadt+Mauer, nicht Grenze",
+  "fehlt": "ein Gebiet je Stadt der obersten Rang-Stufe mit Grenzlinie/Grenzzeichen im Land und eine Burg aus Lage+Reichtum statt Muenze",
+  "rezept": "Im RANG-GESETZ (fachwerk-core.js:3335) das Raster der obersten Stufe als Herrschaftsgebiet des Siegers lesen (der Sieger traegt die Zelle) und an seinem Rand Grenzsteine im Wege-Pool setzen; den Muenzwurf in fachwerk-core.js:3878 durch Wohlstand x Hoehe ersetzen. Richter-Muster siedlung.K2 (g5.js:3776): Schuss vom Huegel, dazu Grenzstein-Lage gegen die Karten-Grenze.",
+  "messgroesse": "Bau setzt an fachwerk-core.js:3335 (SIEDLUNG.rang, Raster je Stufe) und fachwerk-core.js:3878 (herr/muenze); Grenzzeichen im Wege-Pool nach dem Muster stamm/siedlung-wege.js:1701 (_stlMauerBuild)",
+  "preisRisiko": "keines erkennbar (Grenzuebertritt im Land, abseits Haus/Fluss)",
+  "gpuMin": 15, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.macht.wehrbau", "sprosse": 1, "klasse": "R",
+  "richter": "geschlossener Ring mittags und Dämmerung lesbar, kein Schwebe-Spalt",
+  "hat": "der Ring steht im Spiel (gelesen): mauerRing 30 Ecken, offen nur um die Tore, Turm je fuenfte Ecke (fachwerk-core.js:4729-4737); die Wand liest den Boden an beiden Enden und 3 Zwischenpunkten, Fuss reicht STADTMAUER_FUSS_M unter den tiefsten Punkt, Krone folgt dem Hang (stamm/siedlung-wege.js:1738-1766); ein Segment ueber Wasser entfaellt (`_landAt`, :1738) und oeffnet den Ring",
+  "station": "siedlung.K2#2 (g5.js:3833, Probe in der Sitzung, Radeon 4ee205bd + GTX b3f9ae95 gruen) schiesst die Stadt vom Huegel mittags und in der Daemmerung, urteilt aber nur segs>0, hoeher>0 und die allgemeine Abnahme — weder Geschlossenheit noch Spalt",
+  "fehlt": "ein Urteil Geschlossenheit (gebaute Segmente = Soll-Segmente ausser Toren) und Schwebe-Spalt (Wandfuss unter Boden an jeder Stuetze) in derselben Fahrt; laut Beleg zaehlt die Station bei mensch.stadt.siedlungsnetz (R9), braucht also einen eigenen Richter",
+  "rezept": "Muster siedlung.K2#2 (g5.js:3833) — dieselbe Sitzungs-Probe (SIEDLUNG_SITZUNG) um einen Block MAUER erweitern: Zahl gebauter Segmente gegen plan.mauer.segs und je Segment min(Fussunterkante − Boden) an 5 Stuetzen. Pose: Huegel-Schuss mittags (Uhr 0,5) und Daemmerung (0,25), beide schon geschossen.",
+  "messgroesse": "Pool-Zaehler n aus _stlMauerBuild (stamm/siedlung-wege.js:1729-1768) gegen M.segs.length; Spalt = Unterkante my+(hoch−fuss)/2−(hoch+fuss)/2 gegen getTerrainHeightAt an den 5 Stuetzen (:1739-1747)",
+  "preisRisiko": "keines erkennbar (Huegel vor der Stadt, nicht Haus/Fluss); offen: Stadt am Fluss oeffnet den Ring (:1738)",
+  "gpuMin": 15, "bau": "S", "sicher": 0.7
+ },
+ {
+  "leiter": "mensch.macht.stand", "sprosse": 1, "klasse": "R",
+  "richter": "Gini der Wohnfläche im archäologischen Band; arm/reich erkannt ≥ 80 %",
+  "hat": "Wohnflaeche ist heute ungleich (gelesen): WOHLSTANDS-GESETZ Naehe zum Kern = Wohlstand → Breite/Geschosse (fachwerk-core.js:3278) und LEUTE_GESETZ je Person 20 + 20·wohl m² (fachwerk-core.js:8832-8847); Widerspruch zum Beleg „Rollen ohne Stand“: der Stand ist da, aber stetig (wohl), nicht als zwei benannte Staende",
+  "station": "keine",
+  "fehlt": "ein Richter, der den Gini der Wohnflaeche je Person ueber die Haeuser der stehenden Stadt liest und arm/reich am Bild trennt",
+  "rezept": "Muster siedlung.K2 (g5.js:3776, Sitzungs-Probe mit Stadt): je stehendem Los W·D·storeys·0,7 / leuteVon(hp) sammeln, Gini rechnen, gegen das archaeologische Band halten; arm/reich = unteres/oberes Drittel wohl, Nah-Bild je Haus, Trennung ueber Geschosse/Breite im Bild. Pose: Gang durchs Viertel vom Kern zum Rand.",
+  "messgroesse": "leuteVon(hp) und hp.W/D/storeys/wohl der Plan-Zeile (fachwerk-core.js:8840-8847); der Wirt liest sie (:8838)",
+  "preisRisiko": "Heap am Dorf/Haus nach dem Gang (417–549 MB > 400) — der Gang durchs Viertel liegt dort",
+  "gpuMin": 15, "bau": "S", "sicher": 0.5
+ },
+ {
+  "leiter": "mensch.macht.recht", "sprosse": 1, "klasse": "B",
+  "richter": "Regelbruch in Sicht → Antwort ≥ 0,8 von 20",
+  "hat": "Waechter/Nachtwaechter stehen 6–20 Uhr am Wache-Punkt, haltung false (koerper-core.js:5134-5139, gelesen); ein Regelbruch existiert schon: schlaegt der Spieler ein Wesen, erinnern Bewohner im Radius zeugeM die Gewalt und weichen mehr (stamm/siedlung-bewohner.js:2100-2120) — die Wache weicht wie jeder, sie antwortet nicht; der Beleg-Verweis koerper-core.js:4942 ist veraltet (dort _flaechenNormalen)",
+  "station": "keine",
+  "fehlt": "eine Antwort der Wache auf den gesehenen Schlag (zuwenden, hingehen, rufen) statt Ausweichen, und eine Sicht-Pruefung statt Radius",
+  "rezept": "In _bewohnerZeuge (stamm/siedlung-bewohner.js:2105) fuer Rolle waechter/nachtwaechter einen Akt „antworten“ setzen (Ziel = Tatort, Gang des Leibs), Sicht per Blickkegel statt Radius. Richter: 20 Schlaege am Platz in Sicht der Wache, Anteil mit Antwort binnen n s; Muster einer Sitzungs-Probe mit Bewohnern (siedlung.K4#2, g5.js:4290).",
+  "messgroesse": "Bau setzt an stamm/siedlung-bewohner.js:2105 (_bewohnerZeuge) und koerper-core.js:5138 (Rolle waechter im TAGES_GESETZ)",
+  "preisRisiko": "Heap am Dorf (Platz mit Bewohnern)",
+  "gpuMin": 10, "bau": "S", "sicher": 0.65
+ },
+ {
+  "leiter": "mensch.macht.krieg", "sprosse": 1, "klasse": "B",
+  "richter": "20 Zweikämpfe im Bild: der Treffer sitzt, wo die Klinge den Leib kreuzt, der Getroffene antwortet; kein Treffer durch die Deckung",
+  "hat": "der Spieler schwingt eine Studio-Klinge, getroffen wird im Klingen-Sweep an den Gliedern des Ziels (stamm/kampf.js:22-29, :446), gerichtet an beiden Geraeten (halten.K1#2); ein zweiter Bewaffneter fehlt: kein Bewohner traegt eine Waffe, keine Deckung/Parade im Spiel (gelesen: Grep deckung/parier nur in schmiede-core Parierstange-Masse)",
+  "station": "halten.K1#2 (g5.js:5271, Radeon 4ee205bd + GTX e84fd1fb gruen) misst Treffer-Physik Spieler → Ziel, nicht Zweikampf",
+  "fehlt": "ein bewaffneter Gegner (Mensch) mit Schwung aus demselben Gesetz, Deckung als Klinge-gegen-Klinge-Test und eine Antwort des Getroffenen",
+  "rezept": "Den Schwung (_beginPlayerSwing/_kampfSweepTick, stamm/kampf.js:27, :446) vom Spieler auf einen Leib verallgemeinern und der Wache ein Studio-Schwert geben; Deckung = Sweep trifft zuerst die gegnerische Klinge. Richter nach dem Muster halten.K1#2 (g5.js:5271): 20 Gaenge in der Arena, Trefferstelle gegen Klingen-Kreuzung, Antwort-Anteil, Durchdringung der Deckung 0.",
+  "messgroesse": "Bau setzt an stamm/kampf.js:446 (_kampfSweepTick) und an der Wache-Rolle koerper-core.js:5138",
+  "preisRisiko": "keines erkennbar (Arena), 2 Leiber",
+  "gpuMin": 15, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "mensch.macht.megastadt", "sprosse": 1, "klasse": "B",
+  "richter": "Antwortzeit ∝ Weg zur Wache ρ ≥ 0,7; niemand erscheint im Sichtfeld",
+  "hat": "es gibt Fahrer mit Wagen am Platz (koerper-core.js:5128-5133) und eine stehende Wache (:5134-5139), aber keine Wache als Gebaeude, keine Streife, keine Antwort (gelesen)",
+  "station": "keine",
+  "fehlt": "eine Wache, aus der auf einen Vorfall eine Streife faehrt — haengt an mensch.macht.recht 1 (die Antwort) und am Verkehr (PFLICHT-OFFEN C)",
+  "rezept": "Nach recht 1: der Vorfall (_bewohnerZeuge) ruft einen Fahrer der Wache (Rolle fahrer, _verkehrAnlegen) zum Tatort ueber das Wegenetz; Antwortzeit gegen Weglaenge ρ ueber 20 Vorfaelle, Spawn-Pruefung im Sichtkegel. Muster: Sitzungs-Probe mit Verkehr (gate:fahr-leben, siehe Kommentar koerper-core.js:5159).",
+  "messgroesse": "Bau setzt an koerper-core.js:5132 (Rolle fahrer) und stamm/siedlung-bewohner.js:2105 (Vorfall)",
+  "preisRisiko": "Heap an der Stadt",
+  "gpuMin": 20, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "mensch.kultur.sprache", "sprosse": 1, "klasse": "B",
+  "richter": "100 Namen aus 2 Saaten richtig zugeordnet ≥ 90 %",
+  "hat": "Ortsnamen aus festen Silbenlisten je Region (fachwerk-core.js:3306-3317, ORTSNAME), plan.name nur in Bruch-Meldungen gelesen (stamm/siedlung-bewohner.js:806 u. a.) — der Spieler sieht keinen Namen; Personennamen gibt es nicht (Grep vorname/rufname: 0)",
+  "station": "spielgang.K5#1 (headless, 6aa7a5a6) misst UI-Sprache DE/EN, nicht Welt-Sprache",
+  "fehlt": "ein Lautinventar aus dem Samen, das Orts- UND Personennamen einer Sprache erzeugt, und eine Stelle, an der der Spieler sie liest",
+  "rezept": "NAMEN/ORTSNAME (fachwerk-core.js:3306) durch eine Silben-Grammatik aus dem Welt-Samen ersetzen (Laute, Silbenbau), dieselbe fuer Personennamen der Bewohner; den Ortsnamen beim Betreten zeigen. Richter: 100 Namen aus 2 Saaten, blinde Zuordnung (z. B. Bigramm-Klassifikator) ≥ 90 %.",
+  "messgroesse": "Bau setzt an fachwerk-core.js:3306-3317 (NAMEN, ORTSNAME) und fachwerk-core.js:3915 (name im Plan)",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 5, "bau": "S", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.kultur.schrift", "sprosse": 1, "klasse": "B",
+  "richter": "Sonderbauten mit lesbarem, passendem Schild ≥ 90 %",
+  "hat": "kein Schild an Bauten (gelesen: Grep schild/ausleger/fillText in fachwerk-core und stamm/siedlung-* 0); die Sonderbauten stehen (SONDERBAU-GESETZ Kirche·Gasthaus·Schmiede, fachwerk-core.js:3278); die Stele traegt ein Schriftband nur als Geometrie (worlds/neuntes-buch/stele-core.js:331)",
+  "station": "keine",
+  "fehlt": "ein Schild je Sonderbau mit Zeichen zur Rolle (Gasthaus, Schmiede, Kirche), lesbar im Nah-Bild",
+  "rezept": "Im Bau der Sonderbauten (stamm/siedlung-bauten.js, Rolle aus dem Plan) ein Ausleger-Schild mit Rollen-Zeichen setzen, Text aus der Welt-Sprache (sprache 1). Richter: Nah-Schuss je Sonderbau des Dorfs, Schild im Bild und Zeichen = Rolle ≥ 90 %.",
+  "messgroesse": "Bau setzt an fachwerk-core.js:3278 (SONDERBAU-GESETZ, Rollen) und stamm/siedlung-bauten.js (Bau je Rolle)",
+  "preisRisiko": "Heap am Dorf",
+  "gpuMin": 10, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "mensch.kultur.glaube", "sprosse": 1, "klasse": "B",
+  "richter": "≥ 30 % der Gläubigen im Kultbau; Festtag ≥ 3× Werktag",
+  "hat": "die Kirche ist Ort mit Angebot arbeit 1 · treff 3 und Pfarrer-Stunden 7–19 (koerper-core.js:5117, :5150, gelesen) — abends kommen einige zum Treff; keine Ritus-Stunde, kein Wochen- oder Festkalender (Grep sonntag/feiertag/gottesdienst 0)",
+  "station": "keine",
+  "fehlt": "ein Beduerfnis „ritus“ zu einer Stunde und ein Festtag im Kalender der Welt-Uhr, die die Kirche fuellen",
+  "rezept": "Im TAGES_GESETZ (koerper-core.js:5106) ein Beduerfnis ritus mit Stunde und Tag-Rhythmus aus der Uhr, Angebot kirche ritus hoch (:5150); tagesBindung waehlt es. Richter: Anteil der Bewohner im Kultbau zur Ritus-Stunde und Festtag/Werktag-Verhaeltnis, Muster gate:kreatur-takt zielplan (Kommentar koerper-core.js:5096) als Probe in der Sitzung.",
+  "messgroesse": "Bau setzt an koerper-core.js:5106-5175 (TAGES_GESETZ, angebot.kirche) und tagesPlan koerper-core.js:5280",
+  "preisRisiko": "Heap am Dorf",
+  "gpuMin": 10, "bau": "S", "sicher": 0.7
+ },
+ {
+  "leiter": "mensch.kultur.gestalt", "sprosse": 1, "klasse": "R",
+  "richter": "10 Kulturen an Häuser-Bildern blind getrennt ≥ 80 %",
+  "hat": "das Spiel baut Haeuser aus Region-Historie und Epochen-Tafel (fachwerk-core.js:3281-3303: 6 Regionen, Epochen mit Pool/Mark/Tracht), je Siedlung waehlt fachwerk:siedlungsEpoche aus dem Samen (stamm/siedlung-ort.js:1955-1961) — mehr als 10 Stil-Kombinationen stehen in der Welt (gelesen); der Beleg sagt „Haeuser lesen als weisse Kaesten“ — das Risiko, dass die Trennung rot ausfaellt",
+  "station": "haar.K4#1 (g2.js:6119, headless) trennt 2 Epochen am Leib; siedlung.K4#1 (g5.js:4236, headless) Epoche → Bauart im Export — keine trennt 10 Kulturen am Haus-Bild",
+  "fehlt": "ein Richter, der 10 Orte verschiedener Kultur in einer Sitzung anfaehrt, Haus-Bilder schiesst und blind trennt",
+  "rezept": "Muster siedlung.K4#2 (g5.js:4290, Sitzung beider Geraete, K4_SCHRITT/K4_HUEGEL): 10 Zellen mit verschiedener siedlungsEpoche anfahren, je 3 Haus-Nahbilder; Merkmalsvektor (Farbhistogramm, Dachneigung, Umriss) und Leave-one-out-Naechster-Schwerpunkt ≥ 80 %.",
+  "messgroesse": "die Kultur der Zelle aus AnazhRealm.Gesetz(\"fachwerk:siedlungsEpoche\")(seed) (stamm/siedlung-ort.js:1960), der Stil im Plan (fachwerk-core.js:8830 stil/epoche); Trennung im Bild durch die Station",
+  "preisRisiko": "Heap am Dorf (10 Orte in einer Sitzung)",
+  "gpuMin": 30, "bau": "M", "sicher": 0.5
+ },
+ {
+  "leiter": "mensch.kultur.diffusion", "sprosse": 1, "klasse": "B",
+  "richter": "Grenzstreifen ≥ 30 % gemischt, abseits ≤ 5 %",
+  "hat": "Kultur je Ort ist ein Hash des Zell-Samens — jede dritte Siedlung eine Epoche der Tafel, die uebrigen wuerfelt der Same (stamm/siedlung-ort.js:1955-1961, gelesen); ohne raeumliches Kulturfeld gibt es weder Grenze noch Mischung",
+  "station": "keine",
+  "fehlt": "ein raeumlich zusammenhaengendes Kulturfeld (zwei Kulturen mit Grenze) und Mischformen im Streifen",
+  "rezept": "fachwerk siedlungsEpoche (Aufruf stamm/siedlung-ort.js:1960) aus einem niederfrequenten Feld ueber der Weltposition statt aus dem Zell-Hash lesen, im Grenzstreifen Pool-Mischung beider Kulturen je Haus. Richter: Anteil gemischter Haeuser im Streifen gegen abseits, Muster siedlung.K2 (g5.js:3776, 8 Saaten).",
+  "messgroesse": "Bau setzt an fachwerk:siedlungsEpoche (gerufen stamm/siedlung-ort.js:1960) und REGION_HIST fachwerk-core.js:3281",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 15, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.kultur.wissen", "sprosse": 1, "klasse": "B",
+  "richter": "Stand ↔ Bevölkerung × Vernetzung r ≥ 0,5",
+  "hat": "der Stand eines Orts ist seine Epoche aus dem Samen bzw. das Jahr (stamm/siedlung-ort.js:1203, :1955-1961, gelesen); Groesse (RANG-GESETZ, fachwerk-core.js:3335) und Wegenetz existieren, beeinflussen den Stand nicht; der Beleg-Verweis fachwerk-core.js:8105 ist veraltet (dort Huellen-Rezepte)",
+  "station": "keine",
+  "fehlt": "ein Technikstand je Ort als Funktion von Groesse × Grad im Wegenetz, sichtbar am Bau (Material/Hochform)",
+  "rezept": "Einen Stand-Wert je Zelle aus nH (Rang-Gesetz) und Wegenetz-Grad (stamm/siedlung-ort.js:3197ff) rechnen und in den Plan geben, wo heute Wohlstand Material und Hochform schaltet (fachwerk-core.js:8787-8807). Richter: r ueber die Orte von 8 Saaten, dazu Nah-Bild zweier Orte.",
+  "messgroesse": "Bau setzt an fachwerk-core.js:8787-8807 (Material/Monument aus Wohlstand) und stamm/siedlung-ort.js:3197 (Wegenetz der Orte)",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 15, "bau": "M", "sicher": 0.6
+ },
+ {
+  "leiter": "mensch.kultur.verstaendigung", "sprosse": 1, "klasse": "B",
+  "richter": "≥ 90 % antworten; Gruß-Form trennbar ≥ 80 %",
+  "hat": "Bewohner halten dem Spieler Raum (_bewohnerSpielerAbstand, stamm/siedlung-bewohner.js:2091-2096), gruessen nicht (Grep gruss/winken/zuwenden 0, gelesen); Haltungs-Profile je Akt existieren (koerper-core.js:5174)",
+  "station": "keine",
+  "fehlt": "eine Gruss-Antwort des Bewohners auf den nahen Spieler, ihre Form je Kultur verschieden",
+  "rezept": "Bei _bewohnerSpielerAbstand (stamm/siedlung-bewohner.js:2096) beim Naehern einen Gruss-Akt (Zuwenden + Geste aus MOTION) setzen, die Form aus der Kultur der Zelle. Richter: 20 Begegnungen am Markt, Antwort-Anteil, Gruss-Form zweier Kulturen getrennt.",
+  "messgroesse": "Bau setzt an stamm/siedlung-bewohner.js:2091-2096 und koerper-core.js:5174 (haltung je Akt)",
+  "preisRisiko": "Heap am Dorf (Markt)",
+  "gpuMin": 10, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "mensch.kultur.bildkunst", "sprosse": 1, "klasse": "B",
+  "richter": "10 Werke: Motiv in der Welt gefunden (das Tier lebt dort, das Ereignis geschah) ≥ 80 %; keine zwei gleich",
+  "hat": "keine Kunst an Bau oder Platz (gelesen: Beleg „nie gemessen“, kein Treffer auf Wandbild/Figur in den Kernen); Tiere des Orts und Akten des Orts (settlementCells[k].akten, stamm/siedlung-bewohner.js:2117) waeren Motiv-Quellen",
+  "station": "keine",
+  "fehlt": "Werke (Wandbild, Figur, Ornament) an Sonderbauten, deren Motiv aus Tieren und Akten des Orts gezogen wird",
+  "rezept": "Am Sonderbau ein Relief/Wandbild-Feld, dessen Motiv aus der Fauna der Zelle oder einer Akte des Orts gewaehlt und als Silhouette der Studio-Gestalt gezeichnet wird. Richter: 10 Werke am Dorf, Motiv in der Welt nachgeschlagen, keine zwei gleich.",
+  "messgroesse": "Bau setzt an fachwerk-core.js:3278 (Sonderbau) und den Akten stamm/siedlung-bewohner.js:2117",
+  "preisRisiko": "Heap am Dorf",
+  "gpuMin": 10, "bau": "L", "sicher": 0.8
+ },
+ {
+  "leiter": "mensch.kultur.erzaehlkunst", "sprosse": 1, "klasse": "B",
+  "richter": "Stück mit Anfang, Wende, Ende im Bild; Lachen und Stille des Publikums folgen den Stellen des Stücks (r ≥ 0,5)",
+  "hat": "keine Buehne, kein Erzaehler; das Gasthaus ist abends Treff mit Angebot treff 8 (koerper-core.js:5149, gelesen), Bewohner sprechen nicht",
+  "station": "keine",
+  "fehlt": "ein Erzaehler-Akt am Abend mit Publikum, ein Stueck mit Ablauf und hoerbare Reaktion",
+  "rezept": "Am Gasthaus einen Abend-Akt erzaehlen (ein Bewohner vorn, Treff-Gaeste als Publikum), ein Stueck aus Akten des Orts mit drei Stellen, Publikums-Laut im Klang. Richter: Ablauf im Bild, Reaktions-Zeitreihe gegen Stellen r.",
+  "messgroesse": "Bau setzt an koerper-core.js:5149 (angebot gasthaus) und tagesPlan koerper-core.js:5280",
+  "preisRisiko": "Heap am Dorf",
+  "gpuMin": 10, "bau": "L", "sicher": 0.8
+ },
+ {
+  "leiter": "mensch.kultur.strassenleben", "sprosse": 1, "klasse": "B",
+  "richter": "20 Gäste verfolgt: jeder kam nach seinem Tagesplan, isst und geht; Gericht aus Zutaten der Flur (Gegenlauf Zutat fehlt → das Gericht fehlt)",
+  "hat": "teilweise (gelesen): Gaeste kommen nach ihrem Tagesplan ins Gasthaus — Angebot mahl 8 · treff 8, Wirt 10–23 Uhr (koerper-core.js:5118, :5149), Nutzen-Wahl je Mensch (:5086-5091); es fehlen Kochen/Reichen/Essen als sichtbarer Akt, das Gericht und seine Zutaten aus der Flur",
+  "station": "keine",
+  "fehlt": "ein Gericht aus Flur-Zutaten je Lokal (Gegenlauf: Zutat fehlt → Gericht fehlt) und der sichtbare Ess-Akt; 3 Lokale in einer Gasse",
+  "rezept": "Dem Gasthaus ein Gericht aus den Feldern/Tieren der Zelle geben (fehlt die Zutat, faellt das Gericht und das Angebot mahl), Ess-Haltung im Akt mittag/abend (koerper-core.js:5174). Richter: 20 Gaeste verfolgen (Tagesplan-Akt = Gasthaus, Ankunft, Ess-Akt, Gehen) plus Gegenlauf; Muster gate:kreatur-takt zielplan als Sitzungs-Probe.",
+  "messgroesse": "Bau setzt an koerper-core.js:5143-5156 (angebot gasthaus) und :5174 (haltung)",
+  "preisRisiko": "Heap am Dorf",
+  "gpuMin": 15, "bau": "M", "sicher": 0.65
+ }
+]

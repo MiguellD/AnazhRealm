@@ -1,0 +1,134 @@
+[
+ {
+  "leiter": "leben.kopplung.stadt-im-netz", "sprosse": 1, "klasse": "A",
+  "richter": "Halm- und Büschel-Pixel 0 in jeder Haus-Box (Klassen-Maske)",
+  "hat": "Tafel-Zeile vegetation.K4#1 → Sprosse 1 steht; die Station ist Probe VEGETATION_K4 in der Sitzung beider Geräte (stationen/g2.js:4402-4469); im Eingang tragen beide Geräte eine leere Akte (gruen false, zahl null, ohne Kopf) (gelesen).",
+  "station": "vegetation.K4#1 (radeon + gtx, probe in der Sitzung, Akte leer)",
+  "fehlt": "nur die frische Fahrt am Kopf an beiden Geräten; laut Beleg ist die Natur-Wand an der Radeon ROT, an der GTX gehalten — ein ROT-Täter an der Radeon kann bleiben.",
+  "rezept": "Fahrt der Sitzung mit VEGETATION_K4 am selben Kopf auf Radeon und GTX; bei Radeon-ROT die benannte Box im W9 lesen.",
+  "messgroesse": "W9 aus dem Ausgabe-Bild: halm/boden/bueschel je Haus-Box, gesehen ≥ 90 %, Gegenprobe > 0 (stationen/g2.js:4419-4447)",
+  "preisRisiko": "Heap am Dorf (die Pose ist das Start-Dorf)",
+  "gpuMin": 2, "bau": "S", "sicher": 0.8
+ },
+ {
+  "leiter": "leben.kopplung.leben-formt-planet", "sprosse": 1, "klasse": "F",
+  "richter": "Gras-Dichte auf dem Weg −≥ 60 % gegen daneben im Bildpaar",
+  "hat": "Der Trampelpfad lebt im Spielpfad: jeder Leib (Spieler, Bewohner, Tiere) zählt Tritte je Zelle, ab der Pfad-Stufe malt die Wege-Karte Erde und die Nah-Wiese wächst dünner neu (stamm/siedlung-wege.js:974-1060, `_tritt` :997, `_trittStufe` :1055, `_trittWiese` :1039) — der Spieler sieht ihn (gelesen).",
+  "station": "stoffe.K4#2 (headless, eigener Boot ALTER_SPUR, grün an d3708675: Weg 13 → 3 Büschel, daneben 17 → 17, auch nach dem Reload)",
+  "fehlt": "die Zahl zählt die Büschel-LISTE (`_nahWieseKachelBueschel`), nicht Pixel im Bild, und läuft headless mit eigenem Boot — kein Bildpaar, kein Gerät.",
+  "rezept": "Den Weg-Teil von alterSpurProbe (stationen/g1.js:626-628, 686-708; 100 × 8 m mit Taste w) als Probe in die Sitzung heben, Muster tiere.K2#2 (stationen/g2.js:4727-4766: werkbank bild mit --klasse); Bildpaar aus derselben Kamera (Third, 3–5 m über der Strecke) vorher/nachher, Pixel der Klasse nahWiese im Streifen ±0,5 m gegen 4 m daneben. Die Büschel-Zahl bleibt als Mechanik-Zeile daneben.",
+  "messgroesse": "Pixel der Klassen-Maske nahWiese (Klasse `nahWiese`, stamm/dirigent-takt.js:2154) in den zwei Streifen; Mechanik: r._nahWieseKachelBueschel(tx,tz) (stationen/g1.js:698)",
+  "preisRisiko": "keines am Ort erkennbar (Mess-Wiese, nicht Dorf); Zeit-Risiko: 100 Gänge × 8 m sprengen den Sitzungs-Deckel, wenn zu Fuß gegangen — Lauftempo prüfen",
+  "gpuMin": 6, "bau": "S", "sicher": 0.75
+ },
+ {
+  "leiter": "leben.kopplung.evolution-planet", "sprosse": 1, "klasse": "F",
+  "richter": "≥ 0,9 der Würfe in der Boden-Klasse der Gattung, im Bild gezählt",
+  "hat": "Die Art wählt den Ort im Spielpfad: jede natürliche Geburt nimmt die Seele ihres Lebensraums (`_pickFaunaSoulAtPlayer`, stamm/kreatur-leben.js:1963, Gesetz tetrapoda LEBENSRAUM_GESETZ tetrapoda-core.js:2052, Leser kreatur-leben.js:1682 und 3473), der Wurf bleibt im Raum (kreatur-leben.js:1885-1905) — sichtbar als Tiere am Ort (gelesen).",
+  "station": "tiere.K4#1 (headless, eigener Boot diag-kreatur-takt --proben lebensraum, grün an d3708675: 431/431, Gegenprobe 405/405)",
+  "fehlt": "gezählt werden Geburten im Verzeichnis, nicht Tiere im Bild; kein Gerät, kein Kamera-Bild.",
+  "rezept": "Muster tiere.K2#2 (stationen/g2.js:4727-4766): diag-kreatur-takt --werkbank $W --proben lebensraum in der Sitzung, dann an ≥ 3 Orten unterschiedlicher Boden-Klasse werkbank bild --klasse '^tier:' (Third, 1920×1080); je gezeichnetem Tier mit Pixeln > Schwelle die Boden-Klasse unter ihm (`r._bodenKlasseAt`) gegen die Gattung. Gegenprobe mit anderer Saat bleibt headless als Mechanik.",
+  "messgroesse": "Pixel je Klasse tier:<gattung> aus der Abnahme (j.klasse.klassen, stationen/g2.js:4755) × r._bodenKlasseAt(x,z) am Leib; Soll aus LG.lebensraum(gattung, klasse) > 0 (kreatur-leben.js:1888)",
+  "preisRisiko": "keines erkennbar (Wildnis-Orte); Fluss-Pose meiden (p95 am Fluss)",
+  "gpuMin": 4, "bau": "S", "sicher": 0.7
+ },
+ {
+  "leiter": "leben.evolution.erbe", "sprosse": 1, "klasse": "B",
+  "richter": "Morphometrie aus Third-Bildern: Eltern-Kind-Regression 0,2–0,8; Mutante „Erbe aus“ → ≈ 0",
+  "hat": "Jedes Tier des Bestands trägt eine eigene Größe als Identität (bs, kreatur-leben.js:1882-1901), die Geburt würfelt sie aber neu je Wurf aus der Saat (`_creatureNaturalBirth`, kreatur-leben.js:1948-1977); keine Eltern, keine Linie; GESTALTEN_JE_REZEPT = 1 (tetrapoda-core.js:39) (gelesen).",
+  "station": "keine",
+  "fehlt": "Erbe: das Kind bezieht seine Merkmale nicht von einem Elter.",
+  "rezept": "Kleinster Bau: in `_creatureNaturalBirth` (kreatur-leben.js:1948) zieht das Kind bs (und einen Fell-Dial) vom Elter derselben Gattung in der Region + Mutation aus der Saat, mit Schalter „Erbe aus“; der Richter misst Widerrist aus Third-Bildern (Muster tiere.K1#2 Schüsse, stationen/g2.js:4146-4149) über 10 Generationen im Zeitraffer.",
+  "messgroesse": "Bau setzt an stamm/kreatur-leben.js:1948 (Geburt in den Bestand) und tetrapoda-core.js:2177 (BESTAND_GESETZ) an; Bild-Maß: Widerrist-Pixelhöhe je Individuum",
+  "preisRisiko": "keines erkennbar; Zeitraffer über 10 Generationen kostet Sitzungszeit",
+  "gpuMin": 8, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "leben.evolution.bauplan", "sprosse": 1, "klasse": "B",
+  "richter": "1 000 Zufalls-Genome: Bewegungs-Anteil ≥ 95 %",
+  "hat": "Die Gestalt mischt 4 Säuger-Presets über 5 Dials mit σ² = 0,01 (artGewichte/artGestalt, tetrapoda-core.js:3914-3965) — jedes Preset ist zu > 99,99 % seine Art, der Raum ist 4 Punkte; Beleg stimmt (gelesen).",
+  "station": "tiere.K3#2 (radeon + gtx, probe, grün: Gangart 49/49, Schlupf ≤ 0,036) — misst 4 Gattungen + wesen, nie Zufalls-Genome",
+  "fehlt": "ein Genom-Raum mit ×10 Volumen und Zufalls-Wesen, deren Gang der Richter zählt.",
+  "rezept": "Kleinster Bau: Zufalls-Genom als Dial-Vektor über ART_SPANNE hinaus mit weicher Mischung (σ² aufgeweitet) in artGewichte (tetrapoda-core.js:3915); dann tiere.K3#2 (stationen/g2.js:4261) auf 1 000 Genome mit Schlupf-Schwelle 0,05 als Bewegungs-Anteil.",
+  "messgroesse": "Bau setzt an tetrapoda-core.js:3915 (artGewichte, σ² 0,01) und 3826 (ART_GESTALT) an",
+  "preisRisiko": "keines erkennbar; 1 000 Genome in der Sitzung = Zeit-Risiko",
+  "gpuMin": 10, "bau": "L", "sicher": 0.6
+ },
+ {
+  "leiter": "leben.evolution.zeitreise", "sprosse": 1, "klasse": "B",
+  "richter": "Panel ordnet Bildpaare Gegenwart/Epoche ≥ 0,8; Hin- und Rücksprung byte-gleiches Bild",
+  "hat": "WIDERSPRUCH zum Beleg „nur Gegenwart“: der Spieler reist per Chat „reise <Breite> <Länge> [<Zeit in Ma>]“ (−4000 … 1000 Ma, stamm/feld-leben.js:1414-1440, daten.js:976) und die Flora folgt der Zeit (ortWuchs: Landpflanzen, Wald, Laub, Gras in Ma, gelaende-core.js:5704-5752; Blumen vegetation-wiese.js:1350) — aber in Ma-Schwellen: 10⁴ Jahre (0,01 Ma) ändern nichts, und die Fauna liest die Zeit nie (0 Treffer ortGesetz/wuchs in stamm/kreatur-*.js) (gelesen).",
+  "station": "keine",
+  "fehlt": "eine Epoche 10⁴ Jahre zurück, deren Flora UND Fauna sich sichtbar von heute unterscheidet (Klima der Kaltzeit, andere Tiere).",
+  "rezept": "Kleinster Bau: die Fauna liest den Zeit-Teil des Orts (Art wählt Ort, kreatur-leben.js:1682) und das Klima der Kaltzeit tritt in planetKlimaGlobal (planet-core.js:1883, heute nur Gough-Leuchtkraft) — ohne Kaltzeit ist 10⁴ Jahre unsichtbar. Richter: Bildpaar Gegenwart/Epoche am selben Ort plus Rücksprung byte-gleich.",
+  "messgroesse": "Bau setzt an planet-core.js:1883 (Klima nach zeitMa) und stamm/kreatur-leben.js:1682 (Gattung nach Ort) an",
+  "preisRisiko": "Ankunft: jeder Sprung bootet den Ort neu (Ankunft heute 11–17 s)",
+  "gpuMin": 6, "bau": "L", "sicher": 0.65
+ },
+ {
+  "leiter": "leben.evolution.stammbaum", "sprosse": 1, "klasse": "B",
+  "richter": "Gestalt-Baum aus Third-Bildern gegen den Baum des Samens: Robinson-Foulds ≤ 0,3; Mutante „Erbe aus“ → Zufall",
+  "hat": "Keine Abstammung: 4 Gattungen als Presets (tetrapoda-core.js:3826, 3898), Würfe sind Hash(Saat, Zelle) (stamm/kreatur-fauna.js:125) (gelesen).",
+  "station": "keine",
+  "fehlt": "ein Baum des Samens, aus dem 10 Arten ihre Gestalt ableiten, und ein Bild-Maß der Verwandtschaft.",
+  "rezept": "Kleinster Bau: im tetrapoda-Kern ein Saat-Baum (gemeinsamer Ahn → 10 Dial-Vektoren durch Verzweigung + Mutation), gezeichnet über dieselbe artGestalt (tetrapoda-core.js:3941); setzt den aufgeweiteten Genom-Raum aus leben.evolution.bauplan voraus. Richter: Silhouetten-Deskriptoren aus Third-Bildern → Nachbar-Baum → RF-Distanz.",
+  "messgroesse": "Bau setzt an tetrapoda-core.js:3915-3965 (artGewichte/artGestalt) an",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 10, "bau": "L", "sicher": 0.7
+ },
+ {
+  "leiter": "leben.evolution.muster", "sprosse": 1, "klasse": "B",
+  "richter": "Räuberdruck auf große Hirsche → Größe sinkt im Bild; Gegenlauf ohne Räuber",
+  "hat": "Jagd und Riss wählen Beute (tiere.K2, jagdkreis), die Größe je Tier ist Identität (kreatur-leben.js:1882), aber nichts vererbt sie — Selektion kann nicht antworten (gelesen).",
+  "station": "keine",
+  "fehlt": "Erbe (leben.evolution.erbe 1) plus größenabhängiger Riss und ein Zeitraffer über 10³ Generationen ≤ 60 s.",
+  "rezept": "Baut auf dem Erbe-Bau (kreatur-leben.js:1948) auf: Riss-Chance nach bs, Zeitraffer der Bestands-Bilanz (tetrapoda-core.js:2204 bestandBilanz) je Region; Richter: Widerrist-Mittel der Herde im Bild vorher/nachher, Gegenlauf mit „Wolf aus“.",
+  "messgroesse": "Bau setzt an stamm/kreatur-leben.js:1948 und tetrapoda-core.js:2204 an",
+  "preisRisiko": "Zeitraffer 10³ Generationen ≤ 60 s — CPU-Last im Takt",
+  "gpuMin": 6, "bau": "L", "sicher": 0.7
+ },
+ {
+  "leiter": "leben.evolution.fremde-physik", "sprosse": 1, "klasse": "B",
+  "richter": "Regression aus 50 Saaten je g aus Bildern: Steigung im Band der Statik",
+  "hat": "Jeder Planet-Samen trägt sein g (planet-core.js:314, Spanne 0,8–1,2 × Radius-Maß) und der Gang liest die Schwere der Welt (stamm/koerper-leib.js:486-495, tetrapoda-core.js:1403), aber der Bein-Querschnitt ist fest je Art (ANATOMIE_SOLL unterarm, tetrapoda-core.js:3898-3911) (gelesen).",
+  "station": "keine",
+  "fehlt": "Bein-Dicke aus Masse·g und Welten mit g 0,3–3 zum Betreten.",
+  "rezept": "Kleinster Bau: die Glieder (tetrapoda-core.js:4243) skalieren den Querschnitt mit (Masse·g)^(1/2) aus der Gang-Zeile der Welt; g-Spanne der Samen in planet-core.js:314 auf 0,3–3 öffnen. Richter: Unterarm/Widerrist aus Third-Bildern über Saaten je g.",
+  "messgroesse": "Bau setzt an tetrapoda-core.js:4243 (Glieder) und planet-core.js:314 (g je Samen) an",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 10, "bau": "M", "sicher": 0.6
+ },
+ {
+  "leiter": "leben.evolution.zivilisation", "sprosse": 1, "klasse": "B",
+  "richter": "Fluchtdistanz Eltern ↔ Kind korreliert; Räuberdruck macht scheuer, Gegenlauf",
+  "hat": "Der Mut ist Temperament der Gattung aus Art und Masse (temperamentDerGattung, tetrapoda-core.js:1959; VERHALTEN.temperament :201), fleeMul je Profil (:219) — nie je Individuum, nie vererbt (gelesen).",
+  "station": "keine",
+  "fehlt": "ein individueller, vererbter Scheu-Wert und eine Linie (setzt Erbe voraus).",
+  "rezept": "Baut auf dem Erbe-Bau auf: ein Scheu-Faktor je Bestand-Tier, von Eltern gezogen, multipliziert in die Flucht-Distanz des Temperaments (tetrapoda-core.js:1959). Richter: Fluchtdistanz gegen den Spieler-Ansatz je Individuum Eltern ↔ Kind.",
+  "messgroesse": "Bau setzt an tetrapoda-core.js:1959 und stamm/kreatur-leben.js:1948 an",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 8, "bau": "M", "sicher": 0.65
+ },
+ {
+  "leiter": "leben.evolution.mikroben", "sprosse": 1, "klasse": "B",
+  "richter": "Bildvergleich der Zonierung gegen Natur-Fotos",
+  "hat": "Ein Teil steht, gegen den Beleg „0 Treffer“: Krustenflechte am trockenen Licht und Moos am feuchten Sims auf dem Fels (gelaende-core.js:3379-3381, 3897-3908) und der grüne Algen-/Moos-Belag auf nassem Stein der Bauten (fachwerk-core.js:6125) — Zonen nach Licht und Nässe; heiße Quelle und Watt fehlen, eine Temperatur-Zonierung gibt es nicht (gelesen).",
+  "station": "keine",
+  "fehlt": "Biofilm-/Matten-Zonen nach Temperatur (heiße Quelle) und Gezeiten-Saum (Watt).",
+  "rezept": "Kleinster Bau: im selben Fels-/Boden-Farbgesetz (gelaende-core.js:3897) eine Matten-Zone am Ufer-Saum nach Wasser-Nähe und Ort-Temperatur; heiße Quellen gibt es nicht — ohne sie bleibt die Temperatur-Zone aus. Richter: Farbband quer zur Ufer-/Fels-Zone im Bild gegen Natur-Foto.",
+  "messgroesse": "Bau setzt an gelaende-core.js:3897-3908 (Flechte/Moos des Fels-Gesetzes) an",
+  "preisRisiko": "p95 am Fluss, wenn die Pose der Ufer-Saum ist",
+  "gpuMin": 4, "bau": "M", "sicher": 0.55
+ },
+ {
+  "leiter": "leben.evolution.fossil", "sprosse": 1, "klasse": "B",
+  "richter": "100 Funde: Anteil im Baum des Samens = 100 %",
+  "hat": "Keine Fossilien (0 Treffer in stamm/ und den Kernen) und kein Baum der Arten (gelesen).",
+  "station": "keine",
+  "fehlt": "der Stammbaum (leben.evolution.stammbaum 1) und ein Fund im Gestein, der eine ausgestorbene Art daraus zeigt.",
+  "rezept": "Baut auf dem Stammbaum-Bau auf: ausgestorbene Blätter des Saat-Baums als Knochen-Gestalt im Fels-Netz des Geländes (gelaende-core.js Fels-Gesetz) an Aufschlüssen; Richter: Funde → Blatt-ID gegen den Baum.",
+  "messgroesse": "Bau setzt an tetrapoda-core.js:3941 (Gestalt) und dem Fels-Gesetz gelaende-core.js:3344 an",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 6, "bau": "L", "sicher": 0.8
+ }
+]

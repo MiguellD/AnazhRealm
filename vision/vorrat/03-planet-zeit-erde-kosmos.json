@@ -1,0 +1,134 @@
+[
+ {
+  "leiter": "planet.zeit.klimageschichte", "sprosse": 1, "klasse": "B",
+  "richter": "+100 a bei +2 °C: Schneegrenze +300 m ±30 %; Küste wandert um Δh/Strandneigung ±25 %",
+  "hat": "gelesen: die Reise „reise <Breite> <Länge> [<Ma>]“ (stamm/feld-leben.js:1419-1467) trägt ein Klima je Zeit (planet-core.js:1889 Gough + Walker) in die Ort-Tafel, die Schneegrenze (schneeBandM, gelaende-core.js:5919) und Meer (meerUnterBasisM − Δ, gelaende-core.js:5910) verschiebt — aber nur in ganzen Ma (Regex feld-leben.js:1420), ohne Treibhaus-Antrieb auf 10² a. Widerspruch zum Beleg „das Jahr wiederholt sich ohne Drift; Meeresspiegel fest“: über Ma driften Klima und Meer seit der Reise.",
+  "station": "keine",
+  "fehlt": "ein Zeit-Schritt in Jahren und ein Antrieb ΔT (Treibhaus) im Klima(t) des Planeten; dazu ein Richter, der Schneegrenze und Küste vor/nach am selben Ort im Bild liest",
+  "rezept": "Bau: zeitMa als Bruch zulassen (feld-leben.js:1420/1425, ortGesetz gelaende-core.js:5882 nimmt schon Zahlen) und in planet-core Klima(t) (:1889) einen Antrieb auf kurzer Skala; Richter: zwei Reisen an denselben Ort (t, t+100 a), Schnee-Linie aus SCHNEE.start+schneeBandM und Spiegel aus meerUnterBasisM lesen, Küsten-Versatz an der Strand-Neigung der geladenen Chunks; Muster stationen/g3.js:3549 (Sitzungs-Probe beider Geräte). Achtung Maßstab: die Welt kühlt 0,11 K/m (gelaende-core.js:1305) — +2 °C sind dort 18 m, nicht 300 m; der Richter braucht die Stauchung s_v (planet-core.js:48).",
+  "messgroesse": "Bau setzt an planet-core.js:1889 (Klima(t)) und stamm/feld-leben.js:1420 (Zeit-Form der Reise); Lesung: globalThis.__gelaendeCore.ortGesetz(teil).schneeBandM / .meerUnterBasisM (gelaende-core.js:5910-5919)",
+  "preisRisiko": "Sprung ≤ 5 s = Geburt einer Reise-Welt; Ankunft heute kalt 12–17 s (PFLICHT-OFFEN B)",
+  "gpuMin": 6, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "planet.zeit.archiv", "sprosse": 1, "klasse": "R",
+  "richter": "Kliff 60–85° und Schutthang im Bild an Tafelland-Saaten",
+  "hat": "gelesen: das Schicht-Gesetz T5 baut im Tafelland Pediment → Schutthang am Ruhewinkel → Kliff (gelaende-core.js:374-396, schichtMass :1041, treppeSchutt :1078); schichtOrt (gelaende-core.js:2058, exportiert :7917) findet die Treppe im 16-km-Feld um die Wiese, der Spieler kann dorthin gehen.",
+  "station": "keine Karten-Station; scripts/lib/fahr-proben.cjs:2976 nutzt schichtOrt nur als Ort einer Fahrzeug-Fahrt (Spaltkante)",
+  "fehlt": "ein Richter, der an der Treppe die Hang-Bänder (Kliff ≥ 60°, Schutt 30–40°) aus dem gezeichneten Gelände liest und ein Bild schießt, an beiden Geräten",
+  "rezept": "Probe in der Sitzung: Teleport an GK.schichtOrt(r._gelaende(), …) wie fahr-proben.cjs:2976, Chunks stehen lassen, GK.hangBaender (gelaende-core.js:3260, Bänder HANG_BAENDER :3254) über das Höhenfeld um die Treppe; Kliff-Anteil > 0 mit Winkeln 60–85° und Schutt-Anteil im Ruhe-Band, dazu ein Ego-Bild quer zur Treppe. Muster stationen/g3.js:3549 (Probe, beide Geräte). „Saaten“ im Plural: mindestens zwei Welten mit Tafelland (Heimat + eine Reise-Welt mit hohem Regler tafel, gelaende-core.js:393).",
+  "messgroesse": "globalThis.__gelaendeCore.schichtOrt (gelaende-core.js:2058) → Ort; globalThis.__gelaendeCore.hangBaender(H, n, step) (gelaende-core.js:3260, exportiert :7828) → kliff/schutt/ruhe-Anteile",
+  "preisRisiko": "Gang bis 8 km von der Wiese: Streaming kalt; Heap nach dem Gang (bekannt rot 417–549 MB)",
+  "gpuMin": 4, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "planet.erde.gestalt", "sprosse": 1, "klasse": "B",
+  "richter": "Küstenlinie gegen das Höhenmodell: mittlerer Lagefehler ≤ 5 km; Ortskundige wählen die Region aus 10 Kandidaten an 3 Ego-Bildern ≥ 70 %",
+  "hat": "gelesen: keine Erd-Saat (Grep in *-core.js, stamm/ leer); der Planet ist ein Samen-Planet (planet-core.js:1-53), sein Relief trägt nur Wellenlängen ≥ 32 km (K8, planet-core.js:25) — ein Lagefehler ≤ 5 km ist damit nicht erreichbar, und die Küste der Welt am Ort kommt aus dem Rauschen der Heimat, nicht vom Planeten.",
+  "station": "keine",
+  "fehlt": "ein Erd-Schlüssel (≤ 10 kB) für EINE Region, den planet-core als Schlüsselbild liest, und eine Welt am Ort, die ihre Küste daraus zieht",
+  "rezept": "Bau in planet-core (planetPlan Schlüsselbilder, planet-core.js:9) plus eine Küsten-Führung im Wildnis-Term der Reise-Welt (ortErbgut gelaende-core.js:5941); Richter: Küste der geladenen Chunks gegen den Schlüssel; die Wahl-Probe der Ortskundigen braucht Menschen.",
+  "messgroesse": "Bau setzt an planet-core.js planetPlan (:9) und gelaende-core.js:5941 (ortErbgut)",
+  "preisRisiko": "Schlüssel-Bytes (Decke 10 kB); Ankunft der Reise-Welt",
+  "gpuMin": 10, "bau": "L", "sicher": 0.8
+ },
+ {
+  "leiter": "planet.kosmos.himmelsmechanik", "sprosse": 1, "klasse": "A",
+  "richter": "Sprung ≤ 0,1 EV je Uhrschritt über die ganze Bahn, Ego und Third, beide Geräte",
+  "hat": "Tafel-Zeile steht: karte2.planet.kosmos.himmelsmechanik#1 (stationen/g3.js:3549, Probe TAG_PROBE beider Geräte); gelesen ROT: Radeon 105c9bd3 Sprung 0,409–0,630 EV, GTX e4eeee08 ungemessen (Last f 1,303), deren Probe sah 0,416/0,454 EV.",
+  "station": "karte2.planet.kosmos.himmelsmechanik#1 (Sitzung, Radeon+GTX; ROT am Sprung um Uhr 0,248→0,25 und 0,31→0,32)",
+  "fehlt": "der Spiel-Schnitt am Sprung der Tag-Kurve am Horizont, nicht der Richter",
+  "rezept": "Richter steht — weiter.",
+  "messgroesse": "stationen/g3.js:3592-3594 (größter |log2 Y| je Folge-Uhr)",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 15, "bau": "-", "sicher": 0.95
+ },
+ {
+  "leiter": "planet.kosmos.sternhimmel", "sprosse": 1, "klasse": "T",
+  "richter": "Zahl sichtbarer Sterne je Sonnenhöhe folgt der Grenzgrößen-Tafel",
+  "hat": "gelesen: Sternfeld aus der Saat, die Dämmerung setzt die Grenzgröße (stamm/bild-himmel.js:310, :388, :1763-1775 starFieldUniforms.grenze); die Probe TAG_STERNE (stationen/g3.js:810-832) zählt die Sterne im Ausgabe-Bild je Uhr als Differenz mit − ohne Sternfeld, das Urteil (g3.js:3598-3607) prüft sie gegen die Grenzgröße des bloßen Auges je Sonnenhöhe.",
+  "station": "karte2.planet.kosmos.himmelsmechanik#1 trägt das Stern-Urteil mit (Radeon 105c9bd3: Sterne ✅ an wiese und genesis:third, ❌ genesis ≥−3° max 4 > 3, ❌ wiese:third γ 0,73 < 0,8)",
+  "fehlt": "eine eigene Station karte2.planet.kosmos.sternhimmel#1 auf DERSELBEN Probe (kein Zusatz-Lauf), die nur das Stern-Urteil fällt, plus ihre Tafel-Zeile; danach der Spiel-Schnitt an den zwei roten Kurven (Planet in der Dämmerung genesis, Third-Wiese zu dünn)",
+  "rezept": "Station als zweites Urteil über TAG_PROBE (stationen/g3.js:849), Code aus g3.js:3595-3607 ohne die Sprung-Bedingung; Tafel-Zeile {station: karte2.planet.kosmos.sternhimmel#1, leiter: planet.kosmos.sternhimmel, sprosse: 1, richter: gleich}. Die Probe fährt einmal, beide Akten lesen sie.",
+  "messgroesse": "stationen/g3.js:822-830 (Punkt-Quellen der oberen Bildhälfte, mit − ohne starField), st.starFieldUniforms.grenze (stamm/bild-himmel.js:1773)",
+  "preisRisiko": "keines erkennbar (dieselbe Pose wie himmelsmechanik)",
+  "gpuMin": 0, "bau": "S", "sicher": 0.75
+ },
+ {
+  "leiter": "planet.kosmos.sterne", "sprosse": 1, "klasse": "B",
+  "richter": "Zeitsprung +5 Ga: Leuchtkraft +~50 % ±10 %, Belichtung am Boden gemessen",
+  "hat": "gelesen: planet-core rechnet den Sternfluss nach Gough über die Zeit (planet-core.js:1889) — aber nur ins Klima; die Sonne im Bild (stamm/bild-himmel.js:1873 dl.intensity, welt-licht.js:1193) liest weder zeitMa noch Fluss (Grep zeitMa in stamm/: nur feld-leben, gelaende-chunks, netz-portal), und die Reise endet bei +1 000 Ma (feld-leben.js:1426, planet-core.js:32).",
+  "station": "keine",
+  "fehlt": "die Sonnen-Stärke als Leser des Gough-Flusses der Ort-Zeit und eine Zeitachse bis +5 Ga",
+  "rezept": "Bau: dl.intensity (bild-himmel.js:1873) × L(t)/L_jetzt aus ortGesetz(teil) (Fluss an planet-core.js:1889 einmal in die Tafel reichen), Grenze der Reise auf +5 000 Ma heben (feld-leben.js:1426, planet-core [−4 000; +1 000]); Richter: Kugel-Bilanz wie licht.K2#1 (stationen/g3.js:2377) an der Heimat und an der Reise-Welt +5 Ga, Bestrahlung der Sonnen-Kugel vor der Belichtung.",
+  "messgroesse": "Bau setzt an stamm/bild-himmel.js:1873 und planet-core.js:1889; Lesung wie licht.K2 (Y der Sonnen-Kugel, roh vor der Kamera)",
+  "preisRisiko": "Ankunft der Reise-Welt (Sprung ≤ 5 s gegen heute 12–17 s kalt)",
+  "gpuMin": 5, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "planet.kosmos.systeme", "sprosse": 1, "klasse": "B",
+  "richter": "Bahn am Himmel beobachtet: Planet und Mond stehen über ein Spieljahr gegen die Ephemeride der eigenen Bahn ≤ 0,5°; Mondphase je Woche im Bildpaar",
+  "hat": "gelesen: das Jahr ist eine Zahl (gelaende-core.js:1319 jahrTage 365), der Mond trägt die Vollmond-Nacht des Gesetzes (welt-licht.js:61-77 MOND_E), die Wandelsterne sind feste Punkte des Sternfelds (stamm/bild-himmel.js:312-371, Tafel :3245) — keine Bahn, keine Phase.",
+  "station": "keine",
+  "fehlt": "Kepler-Bahnen für Planet und Mond (Ort am Himmel je Tag aus der Bahn) und die Mondphase als Folge davon",
+  "rezept": "Bau: eine Bahn-Funktion im Kern des Planeten (planet-core, neben Klima(t) :1889) liefert Richtung von Sonne, Mond, einem Wandelstern je Spieltag; Leser: die Mondquelle in welt-licht.js:716 („der Mond steht der Sonne voll gegenüber“) und die Wandelstern-Punkte (bild-himmel.js:371); Richter: Sitzungs-Probe, die über 52 Wochen-Uhren die Bildposition gegen die Ephemeride liest, Muster stationen/g3.js:3549.",
+  "messgroesse": "Bau setzt an welt-licht.js:716 (Mond) und stamm/bild-himmel.js:312-371 (Wandelsterne)",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 8, "bau": "M", "sicher": 0.8
+ },
+ {
+  "leiter": "planet.kosmos.welten", "sprosse": 1, "klasse": "F",
+  "richter": "Licht-Bilanz an der Kugel 5–12,5 an beiden Welten; Fremdwelt-Mittag: Zenit nicht blau",
+  "hat": "gelesen: zwei gesetzte Welten (stamm/daten.js:73-94: erde und ferne mit Schwere 3,71, Rayleigh-Tiefe zum Rot, trockenes Wetter, Hochland), das Welt-Tor legt das Gesetz in die geborene Welt; der Himmel liest die Rayleigh-Tiefe (ultiversum.K1 Blau÷Rot 0,3846 in der Ferne).",
+  "station": "licht.K2#1 (Kugel-Bilanz, Probe in der Sitzung, Radeon dc9eacb0 5,266 / GTX 94d9c5a6 5,455 grün — nur Heimat, alte Köpfe); ultiversum.K1#1 (headless, Blau÷Rot der Ferne 0,3846, d3708675)",
+  "fehlt": "die Kugel-Bilanz und das Zenit-Maß in der Ferne als Probe an beiden GPUs in derselben Sitzung, und eine Station, die beide Welten zusammen urteilt",
+  "rezept": "licht.K2#1 (stationen/g3.js:2377-2426) um einen zweiten Ort erweitern: Tor in die Ferne wie ultiversumK1Lauf (stationen/g5.js:4988-5005), dort die Kugel (bericht/2110-messschuld2/kugel.js) am Mittag sunny, dazu Blau÷Rot des Zenits aus dem Ausgabe-Bild (obere Bildmitte); grün nur, wenn beide Welten 5–12,5 und die Ferne Blau÷Rot < 1.",
+  "messgroesse": "Kugel-Bilanz e.bilanz.verhaeltnisG_oben (g3.js:2412); Zenit-Farbe aus dem Ausgabe-Bild; das Gesetz der Welt AnazhRealm._weltGesetz(worldMeta) (stamm/dirigent-kern.js:884)",
+  "preisRisiko": "Fremdwelt-Preis nie gemessen; Ankunft der Ferne kalt (Tor-Geburt, PFLICHT-OFFEN B)",
+  "gpuMin": 4, "bau": "S", "sicher": 0.7
+ },
+ {
+  "leiter": "planet.kosmos.ereignisse", "sprosse": 1, "klasse": "B",
+  "richter": "5–10 je Stunde am dunklen Himmel; Spurlängen gegen Meteor-Kamera-Netze ±30 %",
+  "hat": "gelesen: keine Meteore (Grep Meteor/Komet/Polarlicht in *-core.js, stamm/, welt-licht.js, worlds/ leer bis auf Fremdbedeutung).",
+  "station": "keine",
+  "fehlt": "sporadische Meteore als Funktion der Zeit (zählerbasierter Zufall je Spielminute) im Sternfeld der Nacht",
+  "rezept": "Bau: im Sternfeld (stamm/bild-himmel.js:307-421 Bau, :1763-1775 Takt) eine Spur je Ereignis aus Saat × Spielzeit, Rate 5–10/h, Dauer/Länge nach Verteilung; Richter: Zeitraffer einer Nacht in der Sitzung, Spuren im Differenzbild zählen (Muster TAG_STERNE stationen/g3.js:819).",
+  "messgroesse": "Bau setzt an stamm/bild-himmel.js:1763 (Takt des Sternfelds)",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 6, "bau": "M", "sicher": 0.85
+ },
+ {
+  "leiter": "planet.kosmos.eigengesetz", "sprosse": 1, "klasse": "B",
+  "richter": "20 Versuche des Spielers (Fall, Wurf, Pendel): Messwerte aus dem Bild folgen dem Gesetz der Welt ±5 % und weichen vom Erd-Gesetz ab",
+  "hat": "gelesen: die Ferne hat eine andere Schwere (stamm/daten.js:79), Leib, Sprung, Pfeil und Hüpfer lesen sie (stamm/dirigent-kern.js:878-884); aber das Seil/Pendel liest eine feste Schwere (stamm/koerper-seele.js:911 SEIL_GESETZ.schwere), das Fahrzeug G 9,8 (vehicle-core.js:3080, :3307), und keine Welt trägt einen anderen Schwere-Exponenten, eine andere Dichte oder Zähigkeit.",
+  "station": "ultiversum.K1#1 (headless, Sprung 1,54 m bei g 3,71) misst nur die Schwere und nur den Sprung",
+  "fehlt": "EINE Gesetz-Konstante jenseits von g im Welt-Gesetz (Zähigkeit oder Schwere-Exponent) mit Lesern in Fall, Wurf und Pendel, und das Pendel am Welt-Gesetz statt an SEIL_GESETZ",
+  "rezept": "Bau: eine Zeile im ULTIVERSUM (stamm/daten.js:73 „Ein neues Gesetz ist EINE Zeile hier“), Leser im Pfeil-/Wurf-Schritt und im Seil (koerper-seele.js:911); Richter: in der Ferne Fall, Wurf, Pendel je ~7 Mal in der Sitzung, Zeit/Weite aus der Spur des Körpers gegen das Welt-Gesetz.",
+  "messgroesse": "Bau setzt an stamm/daten.js:73-94 und stamm/koerper-seele.js:911",
+  "preisRisiko": "keines erkennbar",
+  "gpuMin": 6, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "planet.kosmos.kunstwelten", "sprosse": 1, "klasse": "B",
+  "richter": "Wurf-Versuch: die Bahn weicht um die Coriolis-Ablenkung ab ±10 %; der Horizont steigt im Bild",
+  "hat": "gelesen: der Boden ist eine Ebene, die Schwere ein senkrechter Vektor (stamm/dirigent-kern.js:878); kein Coriolis, keine Wölbung des Bodens (Grep in *-core.js, stamm/ leer).",
+  "station": "keine",
+  "fehlt": "eine Welt-Geometrie Zylinder (Boden gewölbt nach oben, Schwere radial aus Drehung, Coriolis im Wurf)",
+  "rezept": "Bau: Krümmung im Vertex-Schritt des Zeichners (planet-core.js:42 nennt ihn für die Kugel) mit Vorzeichen nach innen, Schwere als Funktion des Orts im Welt-Gesetz (stamm/daten.js:73), Coriolis-Term im Wurf; Richter: Wurf-Spur gegen Rechnung, Horizont-Zeile im Bild.",
+  "messgroesse": "Bau setzt an stamm/daten.js:73 (Welt-Gesetz) und am Vertex-Schritt der Chunks (stamm/gelaende-chunks.js)",
+  "preisRisiko": "Sicht 10 km im Zylinder (Fern-Gelände über Kopf)",
+  "gpuMin": 8, "bau": "L", "sicher": 0.85
+ },
+ {
+  "leiter": "planet.kosmos.galaxien", "sprosse": 1, "klasse": "B",
+  "richter": "am Ziel steht die Heimatgalaxie am Himmel in der richtigen Richtung und Größe ±5 %; Bildpaar Anflug gegen Teleskop-Aufnahme (2AFC ≤ 80 %)",
+  "hat": "gelesen: 2 800 Sterne an einer Kugel von 480 m (stamm/bild-himmel.js:307-421); keine Galaxie, kein Ort außerhalb des Planeten (Grep Galaxie/Milchstraße leer).",
+  "station": "keine",
+  "fehlt": "eine Galaxie als Funktion (Sternverteilung) und ein Ort-Sprung dorthin samt Himmel vom Ziel",
+  "rezept": "Bau: Galaxie als Dichte-Funktion aus der Saat neben planet-core, der Himmel des Orts aus ihr statt der festen Kugel; Voraussetzung same.massstab.spanne (Flug ohne Bruch).",
+  "messgroesse": "Bau setzt an stamm/bild-himmel.js:307 (Sternfeld-Bau)",
+  "preisRisiko": "Sprung ≤ 5 s",
+  "gpuMin": 10, "bau": "L", "sicher": 0.9
+ }
+]

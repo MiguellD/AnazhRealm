@@ -1,0 +1,57 @@
+[
+ {
+  "leiter": "mensch.nahrung.erdbau", "sprosse": 1, "klasse": "A",
+  "richter": "Graben gefüllt ≤ 2 s",
+  "hat": "Tafel-Zeile gelaende.K2#1 → mensch.nahrung.erdbau 1 steht (vision/richter-tafel.json:8, gelesen)",
+  "station": "gelaende.K2#1 (probe, radeon grün an b3f9ae95, gtx grün an 715754fc — gelesen)",
+  "fehlt": "nur die frische Paar-Fahrt am selben Kopf (Radeon und GTX stehen an verschiedenen Köpfen)",
+  "rezept": "punkte.cjs run --nur gelaende.K2#1 an beiden Geräten am selben Kopf.",
+  "messgroesse": "Station gelaende.K2#1 (stationen/g1.js:1875)",
+  "preisRisiko": "keines erkennbar (Mess-Wiese)",
+  "gpuMin": 2, "bau": "S", "sicher": 0.9
+ },
+ {
+  "leiter": "mensch.fahrzeug.medium", "sprosse": 1, "klasse": "F",
+  "richter": "Bremsweg Gras/Weg ≥ 1,5×, nass ≥ 1,3×, Bild ≤ 33 ms während der Fahrt",
+  "hat": "Der Spieler fährt den GT in der Welt mit μ je Boden und der EINEN Nässe; Furt (_fahrTiefe, stamm/koerper-fahrt.js:1777) und Seitenwind (e.wind, stamm/koerper-fahrt.js:1844; fahrLuft vehicle-core.js:3633) sind im Fahr-Schritt (gelesen).",
+  "station": "fahrzeug.K1#2 (befehl headless diag-fahr-leben --kette, grün an d3708675: Gras/Weg 1,63×, nass 1,72/1,48× — gelesen)",
+  "fehlt": "Die Bremsungen laufen nur headless mit eigenem Boot, und keine Station liest das Bild-p95 während der Fahrt an beiden Geräten.",
+  "rezept": "Probe fahrKette in proben-welt.cjs nach dem Muster fahrRueck (stationen/proben-welt.cjs:862): probeLeben mit der Kette (scripts/lib/fahr-proben.cjs:409) in der warmen Sitzung, dazu die Bild-Zeiten der Bremsfahrt (p95, max). Urteil wie fahrzeug.K1#2 (stationen/g5.js:5373) plus p95 ≤ 33 ms; Pose Mess-Wiese ab 50 km/h.",
+  "messgroesse": "KETTE {roh: trocken/weg/sturm/wegNass .s} aus scripts/lib/fahr-proben.cjs:409-424 (Bremsweg bis VC.FAHR.schritt.bremsV); Bild-Zeit aus dem rAF-Takt der Probe",
+  "preisRisiko": "Beleg 14.11.: GTX reißt bei 36 km/h (Bild 35,4 ms) — die Fahrt bei 50 km/h liegt genau im roten Band",
+  "gpuMin": 3, "bau": "S", "sicher": 0.75
+ },
+ {
+  "leiter": "mensch.fahrzeug.form", "sprosse": 1, "klasse": "B",
+  "richter": "Tempo folgt der Masse",
+  "hat": "Ein Teile-Werk mit Rädern fährt den EINEN Fahr-Schritt (exportDrive aus der Hülle, stamm/koerper-fahrt.js:1013-1078); seine Trägheit kAcc folgt aber `mass` = _compoundSizeFactor (Volumen, geklemmt 0,6–2,5, stamm/koerper-fahrt.js:893/928), nicht den kg der Teile — die echte Masse (_fahrMasse, :3014) liest nur Wasser-Term und Stoß (gelesen).",
+  "station": "keine",
+  "fehlt": "Ein Eisen-Wagen fährt gleich schnell wie derselbe Wagen aus Holz: die Masse aus dem Bauplan (kg) erreicht Beschleunigung und Tempo nicht; danach fehlt der Richter.",
+  "rezept": "Bau: in _vehicleProfile (stamm/koerper-fahrt.js:893) die Trägheit aus _fahrMasse (kg der Teile, :3014) statt aus dem Volumen-Faktor, und dieselbe Masse in zweispur.mass des Werk-P. Richter: zwei Werkstatt-Wagen gleicher Gestalt (Holz/Eisen), je 500 m Vollgas auf der Mess-Wiese, Zeit und Ø-Tempo; Muster fahrRueck (stationen/proben-welt.cjs:862).",
+  "messgroesse": "Bau setzt an stamm/koerper-fahrt.js:893 (mass) und :928 (kAcc); Messung e._fahr.vlong über 500 m",
+  "preisRisiko": "p95 der Fahrt an der GTX (wie medium)",
+  "gpuMin": 3, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "mensch.fahrzeug.gestalt", "sprosse": 1, "klasse": "B",
+  "richter": "≥ 90 % erkannt",
+  "hat": "In der Welt fahren 3 Wagen-Typen (kompakt_fwd, limousine, suv; stamm/siedlung-verkehr.js:2241, gewählt :383); vehicle-core trägt EIN Preset gt (vehicle-core.js:4520) mit 5 Kultur-Linien (CULTURES :4504) und 6 Epochen (:4725), die im Verkehr nicht gewählt werden (gelesen).",
+  "station": "keine (spielgang.K2 nennt: kein Läufer mit Bild-Modell an der Punkte-Maschine, stationen/g5.js:6174)",
+  "fehlt": "5 Gattungen über 10² Saaten erscheinen nicht in der Welt, und kein Blind-Erkenner (Bild-Modell) urteilt.",
+  "rezept": "Bau: die Wagen-Tafel des Verkehrs (stamm/siedlung-verkehr.js:2241) auf die 5 Gattungen des Kerns heben, Saat → Gattung. Richter: 100 Saaten je ein Bild aus dem Ausgabe-Pfad, Blind-Klassifikation durch einen Bild-Modell-Läufer, Anteil richtig.",
+  "messgroesse": "Bau setzt an stamm/siedlung-verkehr.js:2241 und :383 (gen.pick); der Erkenner fehlt ganz",
+  "preisRisiko": "keines erkennbar (Einzelbilder)",
+  "gpuMin": 10, "bau": "L", "sicher": 0.6
+ },
+ {
+  "leiter": "mensch.fahrzeug.lenker", "sprosse": 1, "klasse": "F",
+  "richter": "1 h: 0 Kollisionen bei Durchsatz und Reisetempo im Band realer Straßen (Zeitlücke 1–3 s, Reisetempo ≥ 80 % des erlaubten), 0 Stillstände ohne Anlass",
+  "hat": "Bewohner fahren Wagen auf den Trassen der Stadt mit dem EINEN Fahrer und Folge-Deckel (stamm/siedlung-verkehr.js:3-21, _verkehrFolge :1568, Grund des Halts W.grund :1575) (gelesen) — der Beleg „kein Bewohner fährt“ ist überholt.",
+  "station": "pflicht.C#1 (headless diag-fahr-leben --verkehr, 10 min je 10/23 Uhr: ≥ 20 am Steuer, 0 Berührung, Ziele, stationen/g5.js:6026); pflicht.C#2 Band an stadt-voll (g6.js:1398)",
+  "fehlt": "Kein Lauf über 1 h, keine Zeitlücke, kein Reisetempo gegen das erlaubte Tempo, keine Zählung „Stillstand ohne Grund“, und das Urteil läuft headless.",
+  "rezept": "Die Linse VK als Probe in die Sitzung heben (Muster fahrWegenetz mit teile, stationen/proben-welt.cjs:927 und g5.js:5962), Lauf in Teilen bis 1 h Spielzeit (Zeitraffer der Uhr), je Takt Zeitlücke = Abstand/v zum Vordermann und v/V.tempoMs; Stillstand ohne Anlass = v≈0 bei W.grund null.",
+  "messgroesse": "S.verkehr.wagen[] → W.entry._fahr.vlong, W.grund/W.wer aus _verkehrFolge (stamm/siedlung-verkehr.js:1568-1580), Deckel AnazhRealm.VERKEHR.tempoMs",
+  "preisRisiko": "Stadt voll (stadt-voll, Klasse Stadt: Heap ≤ 600 MB) — Heap nach dem Gang ist am Dorf schon 417–549 MB",
+  "gpuMin": 8, "bau": "M", "sicher": 0.65
+ }
+]

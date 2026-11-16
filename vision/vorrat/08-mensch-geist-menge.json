@@ -1,0 +1,134 @@
+[
+ {
+  "leiter": "mensch.geist.gespraech", "sprosse": 1, "klasse": "T",
+  "richter": "Zuwendung ≤ 0,5 s, Berührung 0",
+  "hat": "Der Bewohner wendet dem Spieler ab begegnungM 3 m den Kopf zu (kopfRadS 4,5) und hält den Raum spielerRaumM 0,5 m über zwei Kapseln (stamm/siedlung-bewohner.js:3875-3880, _bewohnerSpielerAbstand :2093) — gelesen, nicht gemessen.",
+  "station": "mensch.K5#1 (probe in der Sitzung, Radeon 105c9bd3 + GTX 3e4f99cd grün: Zuwendung 0,283 s, Berührung 0 — zwei verschiedene Köpfe, keiner e4eeee08)",
+  "fehlt": "die Tafel-Zeile {mensch.K5#1, mensch.geist.gespraech, 1, gleich} und eine frische Paar-Fahrt am selben Kopf (seit 105c9bd3 landete w28-leib-im-ring: der Leib hängt nun an der Nah-Wahl).",
+  "rezept": "Tafel-Zeile wie die von mensch.menge.dichte S1 (richter-tafel.json:14) setzen; K5#1 (stationen/g2.js:5784) an Radeon und GTX am selben Kopf fahren; die Umfang-Frage (10² Bewohner, die Probe misst EINEN, kreatur-mensch.cjs:778 `allein`) im Tafel-Grund benennen — die Leiter dichte S1 nahm dieselbe Probe als gleich.",
+  "messgroesse": "probeZeile begegnung: zuS[4], beruehrt[4], dMin[4] aus scripts/lib/kreatur-mensch.cjs:817-835 (Kopf-Knoten der Welt-Matrix je echtem Frame)",
+  "preisRisiko": "Preis in der Szene unbelegt (Start-Dorf 10 Uhr) — Dorfplatz an der Radeon ≈ 37 ms und Heap am Dorf 417–549 MB sind die nächsten bekannten Roten",
+  "gpuMin": 8, "bau": "S", "sicher": 0.7
+ },
+ {
+  "leiter": "mensch.menge.bild", "sprosse": 1, "klasse": "R",
+  "richter": "≥ 10 Menschen, ≥ 3 gehend",
+  "hat": "Jeder Bewohner steht als Hülle mit Feld/Satz in der Szene (stamm/siedlung-bewohner.js:966-995, userData._feldLageVon :982), sein Tag läuft als f(Uhr) mit Morgengang und Werk ab 8 Uhr (koerper-core.js:5106-5112) — gelesen.",
+  "station": "mensch.K1#1 (probe BEWOHNER_SITZUNG beider Geräte, platzAcht zählt imBild UND gehendImBild, urteilt aber nur imBild ≥ 10; ohne Urteil in der neuen Karte, Beleg 14.11.: 18 im Bild, 0 gehend)",
+  "fehlt": "das Urteil gehendImBild ≥ 3 und ein Zähler, der die Bewohner am Kopf überhaupt sieht: platzAcht filtert `userData.rig` (stationen/g2.js:1694), seit w28-leib-im-ring trägt nur die Nah-Wahl einen Rig — die übrigen Hüllen (_feldLageVon) fallen aus der Zählung.",
+  "rezept": "platzAcht (stationen/g2.js:1693-1722) auf den Stand-Filter der Probe umstellen (`userData._feldLageVon && heim != null`, wie scripts/lib/kreatur-mensch.cjs:386) und im Urteil von mensch.K1#1 (g2.js:4361) `p.gehendImBild >= 3` ergänzen; als eigene Station mensch.K1#1b mit Tafel-Zeile {mensch.menge.bild, 1}; Pose Dorfplatz 8 Uhr Third, 8 Spiel-Sekunden.",
+  "messgroesse": "je Hülle Bewegung ≥ 0,5 m in 8 Spiel-Sekunden im Frustum der Spiel-Kamera, Sichtlinie frei gegen _imGrundriss (g2.js:1709-1722); die Lage liest b.position der Hülle, die _tickBewohner/_bewohnerStellen schreibt (siedlung-bewohner.js:977)",
+  "preisRisiko": "p95 am Dorfplatz: Radeon 26,9 fps ≈ 37 ms > 34 (Beleg 14.11.) — die dichteste Pose IST der Dorfplatz; Heap am Dorf",
+  "gpuMin": 3, "bau": "S", "sicher": 0.6
+ },
+ {
+  "leiter": "mensch.menge.kollektiv", "sprosse": 1, "klasse": "R",
+  "richter": "Abstand nach der Tat > vorher",
+  "hat": "Schlägt der Spieler ein Wesen, erinnert JEDER Bewohner draußen auf zeugeM 25 m die Gewalt (_bewohnerZeuge, stamm/siedlung-bewohner.js:2105-2120, Aufruf kreatur-leben.js:793) und weitet seinen Raum zum Spieler um fluchtJeFurcht 1,25 je Furcht (siedlung-bewohner.js:2093-2097) — gelesen.",
+  "station": "mensch.K5#1 (probe beider Geräte) misst EINEN Umstehenden (kreatur-mensch.cjs:778 `allein`), Tafel urteilt „fehlt: Umfang“ (richter-tafel.json:15)",
+  "fehlt": "eine Probe über ALLE Umstehenden einer Szene: mittlerer Abstand der Zeugen zum Spieler vor und nach der Tat, am Platz statt allein.",
+  "rezept": "Muster mensch.K5#1 (stationen/g2.js:5784) und die Probe begegnung (kreatur-mensch.cjs:755-835): am Dorfplatz 10 Uhr die Bewohner draußen ≤ zeugeM erfassen, Gang des Spielers durch sie vor und nach `damageCreature` (kreatur-mensch.cjs:830), je Bewohner kleinster Abstand; grün, wenn Median(nachher) > Median(vorher) und N ≥ 5.",
+  "messgroesse": "kleinster Abstand Hülle↔Spieler je Gang (b.leib.position), Furcht je Zeuge aus r._kreaturFurchtErinnert(b.leib) (siedlung-bewohner.js:2095)",
+  "preisRisiko": "Dorfplatz (Radeon ≈ 37 ms) und Heap am Dorf",
+  "gpuMin": 3, "bau": "M", "sicher": 0.6
+ },
+ {
+  "leiter": "mensch.menge.bevoelkerung", "sprosse": 1, "klasse": "R",
+  "richter": "Zählung im Bild an 20 Stichproben (Ort × Uhr): Körper am Ort gegen den Soll-Plan ±10 %; niemand fehlt, niemand steht doppelt",
+  "hat": "Der Plan der Stunde je Bewohner ist rein (koerper-core.js:5280 tagesPlan, Leser _bewohnerSoll stamm/siedlung-bewohner.js:2125), die Hülle steht am Ort ihres Tags (Ankunft _bewohnerAnkunft) — gelesen.",
+  "station": "mensch.K2#2 (probe beider Geräte, grün e4eeee08) urteilt die Treffer je Leib über 24 h, nicht die Zählung im Bild; mensch.K1#1 zählt im Bild an EINER (Ort × Uhr)",
+  "fehlt": "ein Richter, der an 20 (Ort × Uhr) die gezeichneten Körper im Frustum gegen die Bewohner zählt, deren _bewohnerSoll dort liegt, und Doppelte (zwei Körper je heim+seed) sucht.",
+  "rezept": "Muster platzAcht (stationen/g2.js:1660-1727) als Schleife über 20 Stichproben (5 Orte des Start-Dorfs: Platz, Schmiede, Gasthaus, zwei Gassen × 4 Uhren 3/8/12/19), je Stichprobe Soll = Bewohner mit _bewohnerSoll(b, h).ziel im Frustum, Ist = sichtbare Hüllen (_feldLageVon-Filter) — |Ist−Soll|/Soll ≤ 0,1, Doppelte 0; in BEWOHNER_SITZUNG anhängen (g2.js:1740).",
+  "messgroesse": "r._bewohnerSoll(b, stunde) (siedlung-bewohner.js:2125), Hüllen per userData._feldLageVon (:982), Frustum der Spiel-Kamera wie g2.js:1707",
+  "preisRisiko": "Dorfplatz Radeon ≈ 37 ms, Heap am Dorf nach dem Gang 417–549 MB",
+  "gpuMin": 4, "bau": "M", "sicher": 0.55
+ },
+ {
+  "leiter": "mensch.menge.rhythmus", "sprosse": 2, "klasse": "R",
+  "richter": "zwei Spitzen, Spitze/Tal ≥ 3",
+  "hat": "Der Tag trägt feste Wenden mit Streuung ±0,5 h (wach 6,5, Morgengang 1 h, Werk 8–17, Mittag 12–13, Ruhe 22; koerper-core.js:5106-5113); die Metropole stadt-voll trägt 1 089 Bewohner (stationen/g2.js:6423) — die Morgen- und Abendspitze folgt aus dem Gesetz, ob ≥ 10³ Wege/h an der Spitze: gelesen, ungezählt.",
+  "station": "keine: mensch.K2#2 zählt Wege je Bewohner und Tag am Start-Dorf (77 Bewohner), mensch.K1#2 (stadt-voll) steht in `fehlt` (Deckel 61–68 s, g2.js:6420)",
+  "fehlt": "eine Ganglinie: Weg-Beginne je Spielstunde über 24 h an der Stadt, an beiden Geräten in der Sitzung.",
+  "rezept": "Das Wege-Messer (scripts/lib/kreatur-mensch.cjs:179) sammelt schon je Bewohner die Stunde jeder Wende (`sp.n` mit b.tagAb) — als Histogramm je Stunde ausgeben; Lauf stadtTag am Ort stadt-voll mit 24 h (kreatur-mensch.cjs:325-359), Urteil: zwei lokale Maxima ≥ 3 × Tal, Spitze ≥ 10³ Wege/h; Muster mensch.K2#2 (stationen/g2.js:5483).",
+  "messgroesse": "Wende-Stunden b.tagAb bei b.ziel-Wechsel ≥ 2 m (kreatur-mensch.cjs:179, gesetzt in _bewohnerZiel stamm/siedlung-bewohner.js:2195)",
+  "preisRisiko": "stadt-voll riss den Fahrt-Deckel (87–119 s vor dem Deckel, g2.js:6423); Heap der Stadt (Preis-Klasse Platz ≤ 400 MB) ungemessen",
+  "gpuMin": 6, "bau": "M", "sicher": 0.5
+ },
+ {
+  "leiter": "mensch.menge.dichte", "sprosse": 2, "klasse": "R",
+  "richter": "Spuren in ≤ 30 s, Ordnungsparameter ≥ 0,7",
+  "hat": "Jeder Bewohner weicht voraus aus (ausweichS, ausweichRichtungen, Raster rasterM; _bewohnerAusweichen) und trägt seine Geschwindigkeit b.vx/b.vz (stamm/siedlung-bewohner.js:850); Gegenströme entstehen um 7 Uhr am Markt der Metropole (Morgengang, kreatur-mensch.cjs:286-289) — ob sich Spuren bilden: gelesen, nie gemessen.",
+  "station": "keine (mensch.K3#1/#2 headless: Berührung 0, kein Ordnungsparameter)",
+  "fehlt": "ein Richter des Ordnungsparameters im Gegenstrom; fällt er < 0,7, wird die Sprosse B (Seiten-Vorliebe in _bewohnerAusweichen).",
+  "rezept": "Am Ort stadt-voll 7 Uhr (Muster ringMesser kreatur-mensch.cjs:249-277) je Takt die Bewohner einer Gasse mit Gegenstrom nehmen, Ordnungsparameter φ = Anteil der Nachbarn in 1 m quer mit gleicher Laufrichtung (b.vx/b.vz) über 30 s; Station nach mensch.K5#1 (stationen/g2.js:5784).",
+  "messgroesse": "b.vx, b.vz, b.leib.position je Takt (siedlung-bewohner.js:850)",
+  "preisRisiko": "stadt-voll: Deckel der Fahrt (g2.js:6423), Bild der Stadt ungemessen",
+  "gpuMin": 4, "bau": "M", "sicher": 0.35
+ },
+ {
+  "leiter": "mensch.geist.netz", "sprosse": 1, "klasse": "B",
+  "richter": "Besuche zu Verwandten/Freunden ≥ 0,6",
+  "hat": "Ein Haus trägt n Bewohner (stamm/siedlung-bewohner.js:798) — der Haushalt ist da, aber ohne Bindung; der Besuch wählt die Tür eines beliebigen Wohnhauses nach Güte × Nähe ≥ besuchFernM 40 m (koerper-core.js:5272, :5162) — kein Netz (gelesen).",
+  "station": "keine",
+  "fehlt": "ein Netz je Haushalt (Verwandte/Freunde aus dem Samen) und der Besuch, der ihm folgt.",
+  "rezept": "In tagesBindung (koerper-core.js:5225-5273) die Wahl `besuch` über die Häuser des Netzes gewichten (Netz = k Haushalte aus dem Plan-Samen, Kern additiv); die Probe bewohner (Muster mensch.K2#2, stationen/g2.js:5483) zählt Besuch-Akte, deren Tür im Netz liegt.",
+  "messgroesse": "Bau setzt an koerper-core.js:5272 (`besuch: wahl(...)`) und am Haushalt siedlung-bewohner.js:798-853 an",
+  "preisRisiko": "Heap am Dorf (417–549 MB > 400)",
+  "gpuMin": 3, "bau": "M", "sicher": 0.8
+ },
+ {
+  "leiter": "mensch.geist.innenleben", "sprosse": 1, "klasse": "B",
+  "richter": "Panel nennt das Gefühl aus 5 s Film ≥ 70 %; Gegenlauf ohne Anlass → neutral",
+  "hat": "Der Leib kann vier Gefühle im Gang zeigen (angry, fear, sad, joy — stamm/koerper-leib.js:3387-3416), der Bewohner erreicht davon nur fear über erinnerte Gewalt (sorrow = chaos = Furcht, stamm/siedlung-bewohner.js:2188); ein Gesichtsausdruck fehlt (Grep Mimik leer) — gelesen.",
+  "station": "keine",
+  "fehlt": "Anlässe für Trauer, Freude und Zorn im Gemüt des Bewohners, und der Gegenlauf: TAGES_GESETZ.haltung legt abends „sad“ OHNE Anlass an (koerper-core.js:5174) — das Panel läse Trauer, wo Müdigkeit gemeint ist.",
+  "rezept": "_bewohnerGemuet (siedlung-bewohner.js:2183-2190) um Achsen aus vorhandenen Ereignissen erweitern (Schlag gegen ihn → chaos ohne sorrow = angry; Tod des Spielers → sorrow aus dem Trauer-Feld, stamm/koerper-seele.js:322-352; Fest → joy, braucht einen Anlass), abend-Haltung auf ein müdes statt trauriges Profil; Richter: 5-s-Film je Gefühl nah 3 m mit Gegenlauf.",
+  "messgroesse": "Bau setzt an _bewohnerGemuet siedlung-bewohner.js:2183 und BEWOHNER.gemuet :3832 an; Profilname über _koerperMotionName",
+  "preisRisiko": "keines erkennbar (EIN Bewohner nah 3 m)",
+  "gpuMin": 3, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "mensch.geist.absicht", "sprosse": 1, "klasse": "B",
+  "richter": "20 Personen nach 1 Spieltag ihrem Zug zugeordnet ≥ 0,6",
+  "hat": "Der Tag ist für jeden derselbe bis auf ±streuH 0,5 h und die Ortswahl aus dem Samen (koerper-core.js:5106-5111, :5225); kein Charakterzug bei Menschen (Grep Charakter/temperament nur in tetrapoda-core für Tiere) — gelesen.",
+  "station": "keine",
+  "fehlt": "Charakterzüge aus dem Genom (z. B. gesellig, fleißig, häuslich), die Wenden und Ortswahl des Tags ändern.",
+  "rezept": "In tagesPlan/tagesBindung (koerper-core.js:5280, :5225) zwei, drei Züge aus _tagZahl(same, …) lesen (früher Werk, Abend am Treff statt daheim, Besuch ja/nein); Richter in der Probe bewohner: 20 Bewohner, Tagesprofil → Zug-Klassifikation gegen den wahren Zug.",
+  "messgroesse": "Bau setzt an koerper-core.js:5280 (tagesPlan) und :5183 (_tagZahl) an",
+  "preisRisiko": "Heap am Dorf",
+  "gpuMin": 4, "bau": "M", "sicher": 0.8
+ },
+ {
+  "leiter": "mensch.menge.seuche", "sprosse": 1, "klasse": "B",
+  "richter": "Bildpaar gesund/krank; Krank-Tag weicht ab",
+  "hat": "Kein Gesetz für Krankheit bei Menschen (Grep krank/Seuche/Infekt/Husten in Kernen und stamm/siedlung|kreatur|koerper-* leer) — gelesen.",
+  "station": "keine",
+  "fehlt": "ein Zustand krank am Bewohner mit Haltung und einem Tag, der daheim bleibt.",
+  "rezept": "tagesPlan (koerper-core.js:5280) um einen Zustand krank erweitern (drinnen/heim statt werk, Haltung über TAGES_GESETZ.haltung :5174 ein gebeugtes Profil), gesetzt aus einem Erreger-Satz im Kern; Richter: Bildpaar desselben Bewohners gesund/krank, Tagesprofil gegen den gesunden.",
+  "messgroesse": "Bau setzt an koerper-core.js:5280 (tagesPlan) und siedlung-bewohner.js:2125 (_bewohnerSoll) an",
+  "preisRisiko": "Heap am Dorf",
+  "gpuMin": 3, "bau": "M", "sicher": 0.85
+ },
+ {
+  "leiter": "mensch.geist.generationen", "sprosse": 1, "klasse": "B",
+  "richter": "Altersanteile im Band der Epoche (Mittelalter ≥ 35 % Kinder)",
+  "hat": "Der Leib kennt nur 18–80 Jahre (koerper-core.js:120-126, Dial age), die Siedlung würfelt 8 Gestalten mit gen.alter (stamm/siedlung-bewohner.js:252-259); kein Kind im Kern (Grep child/Kind leer) — gelesen.",
+  "station": "keine",
+  "fehlt": "Kinder- und Greisen-Proportionen im Bau des Leibs und eine Altersverteilung der Epoche in der Siedlung.",
+  "rezept": "koerper-core BAU_GESETZ/age additiv auf 0–90 J. mit Kopf-zu-Leib-Proportion erweitern, _bewohnerGestalten (siedlung-bewohner.js:241) Gestalten nach Altersband der Epoche des Plans; Richter: Altersanteile der Hüllen am Dorfplatz gegen das Band.",
+  "messgroesse": "Bau setzt an koerper-core.js:120 (age) und siedlung-bewohner.js:252-259 an",
+  "preisRisiko": "Dorfplatz Radeon ≈ 37 ms",
+  "gpuMin": 3, "bau": "L", "sicher": 0.85
+ },
+ {
+  "leiter": "mensch.geist.tag", "sprosse": 2, "klasse": "B",
+  "richter": "7 Tage: Akte je Stunde gegen ATUS-Profil ≤ 20 % je Hauptkategorie",
+  "hat": "Der Tag ist jeden Tag derselbe (reine Funktion der Stunde, koerper-core.js:5076-5081), 6 Akte schlaf · morgen · besuch · arbeit · mittag · abend (:5278), kein Wochentag, keine Kinder — gelesen.",
+  "station": "keine (mensch.K2#2 trägt Sprosse 1)",
+  "fehlt": "≥ 12 Akte, Wochentag ≠ Feiertag, Kind und Alter anders (an generationen S1 gebunden) und eine ATUS-Referenz.",
+  "rezept": "TAGES_GESETZ (koerper-core.js:5106) um Akte und einen Wochentag aus der Spielzeit erweitern, tagesPlan liest ihn; Richter: 7 Spieltage Akte je Stunde gegen ein ATUS-Profil.",
+  "messgroesse": "Bau setzt an koerper-core.js:5106 (TAGES_GESETZ) und :5280 (tagesPlan) an",
+  "preisRisiko": "Stadtplatz ungemessen",
+  "gpuMin": 6, "bau": "L", "sicher": 0.85
+ }
+]

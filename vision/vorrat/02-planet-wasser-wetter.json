@@ -1,0 +1,134 @@
+[
+ {
+  "leiter": "planet.wasser.seegang", "sprosse": 1, "klasse": "F",
+  "richter": "spiegelTreue ≥ 0,6 an 12 Posen (Uhr × Wetter) in Ausgabe-Größe",
+  "hat": "Der See spiegelt Ufer, Kronen und Himmel aus dem Spiegel-Feld (stamm/bild-sicht.js:229-302, `_spiegelFeld`), das Maß spiegelTreue ist Pearson im Abnahme-Urteil (scripts/lib/abnahme-urteil.cjs:1003); werkbank `bild` nimmt --uhr/--wetter (scripts/werkbank.cjs:10) (gelesen).",
+  "station": "gelaende.K3#1 (probe in der Sitzung, EINE Pose Ego-Mittag am See 1866,6/−6193,9; GTX grün 0,73 an e84fd1fb, Radeon ohne Urteil); Staffel 2 (12 Posen) steht in `fehlt` (stationen/g1.js:4022)",
+  "fehlt": "11 der 12 Posen (Ego/Third × Mittag/Nacht/Regen u. a.) und die Radeon-Fahrt — die Station misst das Richtige, aber an 1 von 12 Posen und einem Gerät.",
+  "rezept": "Die Probe stationen/g1.js:2016-2091 als Schleife über 12 Schüsse fahren (`W bild $KAM ... --uhr u --wetter w`, Ego und Third, Uhr 0,5/0,25/0 × Wetter sunny/rainy), dasselbe Ziel `WASSER_ZIEL`, Urteil min(spiegelTreue) ≥ 0,6 über alle 12. Dann an Radeon und GTX in der Sitzung fahren und die Tafel-Zeile `gelaende.K3#2 → planet.wasser.seegang 1` setzen.",
+  "messgroesse": "j.klasse.klassen.wasserSatz.spiegelTreue je Schuss (scripts/lib/abnahme-urteil.cjs:1003, Klassen ^(wasserSatz|farWater|chunk-water-*)$)",
+  "preisRisiko": "Nacht-Posen: spiegelTreue im Dunkeln kann zerfallen (Pearson auf rauscharmem Schwarz) — Richter-Risiko, nicht Preis; Preis am See ungemessen, kein Fluss",
+  "gpuMin": 6, "bau": "S", "sicher": 0.7
+ },
+ {
+  "leiter": "planet.wasser.gezeiten", "sprosse": 1, "klasse": "B",
+  "richter": "Watt fällt sichtbar trocken: benetzte Fläche Ebbe gegen Flut im Bild, Periode ±2 %",
+  "hat": "Der Meeresspiegel ist eine Konstante Basis − 3 m (gelaende-core.js:2736-2745 `LAGE_GRUND`, der Stamm setzt state.waterLevel einmal: stamm/bild-himmel.js:479); der Pegel hebt nur Binnen-Gewässer, „nie das Meer“ (gelaende-core.js:1558-1561); der Mond steht stur der Sonne gegenüber (stamm/bild-himmel.js:1144) — 0 Treffer für Gezeit/Tide/Ebbe (gelesen).",
+  "station": "keine",
+  "fehlt": "Eine Gezeit überhaupt: Spiegel des Meeres als Funktion der Welt-Uhr, eine Mondbahn mit eigener Periode, und eine flache Küste (Watt), an der der Hub Fläche freilegt.",
+  "rezept": "Bau: `gezeitHub(t)` (M2, 12 h 25 min, Amplitude aus Gesetz) neben `pegelLauf` (gelaende-core.js:1658) als Term des MEER-Spiegels, gelesen von denselben Spiegel-Lesern wie der Binnen-Pegel (`_waterLevelAt`); dann ein Richter nach dem Muster wetter.K3#2 (stationen/g1.js:2622-2663: zwei Schüsse derselben Kamera, Wasser-Pixel vorher/nachher) bei Ebbe und Flut, dazu die Periode aus dem Pegel über 24 h Welt-Uhr.",
+  "messgroesse": "Bau setzt an gelaende-core.js:1558-1575 (Pegel „nie das Meer“) und am Stamm-Spiegel state.waterLevel (stamm/bild-himmel.js:479); Maß dann chunk-water-ocean/farWater-Pixel Ebbe↔Flut",
+  "preisRisiko": "Neubau der Wasser-Chunks je Pegel-Stufe (der Binnen-Pegel baut 1 343 Chunks neu, stoffe.K3#2) — Bild-Spitzen über 101 ms beim Gezeitenwechsel",
+  "gpuMin": 8, "bau": "M", "sicher": 0.85
+ },
+ {
+  "leiter": "planet.wasser.stroemung", "sprosse": 1, "klasse": "A",
+  "richter": "Treibgut-Probe an 4 Fluss-Orten > 0,5 m in 90 Takten, im Spiel mit Bild",
+  "hat": "Tafel-Zeile gelaende.K4#2 → stroemung 1 steht (gelesen)",
+  "station": "gelaende.K4#2 (Radeon + GTX grün an 71839b1e)",
+  "fehlt": "nur die frische Fahrt am Kopf beider Geräte",
+  "rezept": "Richter steht — eine Zeile, weiter.",
+  "messgroesse": "-",
+  "preisRisiko": "p95 am Fluss (41,9 > 34 ms an der Radeon)",
+  "gpuMin": 2, "bau": "-", "sicher": 0.9
+ },
+ {
+  "leiter": "planet.wasser.eis", "sprosse": 1, "klasse": "B",
+  "richter": "Schneegrenze gegen Nullgrad-Höhe ±150 m an 10 Posen × 4 Jahreszeiten; Fuß sinkt ≥ 5 cm",
+  "hat": "Schneedecke mit Grenze aus Höhe, Zungen und Jahres-Versatz des Schnee-Pegels (gelaende-core.js:1270-1298 `schnee`), Temperatur mit 0,11 K/m, die Null-Grad-Linie des Sommer-Mittels auf der Mitte des Schnee-Bands (gelaende-core.js:1300-1320); der Fuß sinkt 0,204 m (wetter.K4#1, headless) — aber es SCHNEIT nie: der Niederschlag ist immer die Regen-Schliere (stamm/bild-himmel.js:977-1081 `_ensureRainSystem`), 0 Treffer für Schneefall/Flocke (gelesen).",
+  "station": "wetter.K4#1 (headless, EINE Pose Winter Tag 40, grün an d3708675); Staffel 2 GPU in `fehlt` (stationen/g1.js:4024)",
+  "fehlt": "Der Preis „P im Schneefall“ hat keine Szene (kein Schneefall), und kein Richter vergleicht die sichtbare Schneegrenze mit der Null-Grad-Höhe an 10 Posen × 4 Jahreszeiten an beiden Geräten.",
+  "rezept": "Bau S: im Regen-System (stamm/bild-himmel.js:977) die Phase aus `_temperaturAt(yKamera)` lesen — unter 0 °C fallen Flocken (langsam, breit) statt Schliere, EIN System. Richter: nach dem Muster gelaende.K3#1 (stationen/g1.js:2016) je Pose `bild --saison s` schießen, im Bild die unterste weiße Höhe gegen die Höhe, an der `temperaturFeld` 0 °C trägt, dazu der Fuß aus wetter.K4#1 als `W eval` in der Sitzung.",
+  "messgroesse": "Schneegrenze: gelaende-core.js:1290 `schnee(L,y,x,z,versatz)` + `schneeVersatz`; Null-Grad-Höhe aus `temperaturFeld` gelaende-core.js:1321 (Stamm `_temperaturAt` stamm/bild-himmel.js:2797); Bau des Schneefalls an stamm/bild-himmel.js:977-1058",
+  "preisRisiko": "keines erkennbar (Partikel-Tausch statt neuer Schicht); Hinweis: die Welt staucht die Höhe (160 m tragen 3 km), ±150 m ist auf einer Landform bis ~200 m fast keine Schranke",
+  "gpuMin": 10, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "planet.wasser.kreislauf", "sprosse": 1, "klasse": "F",
+  "richter": "Pegel nach Sturm im Bild; Scheitel-Verzug gegen Einzugsgebiet im Erd-Band; Regen × Fläche ↔ ΔVolumen ±10 %",
+  "hat": "Der Pegel ist eine Funktion der Welt-Uhr und der Regen-Stempel, gefaltet je Lag-Klasse nach Nash/Snyder (gelaende-core.js:1558-1600, `pegelLauf` 1658), der Stamm legt die Stempel (stamm/wasser-hydro.js:85-213); der Bach steigt sichtbar (gelesen).",
+  "station": "wetter.K3#2 GPU-Probe (Bild am Bach, Radeon grün 4ee205bd ×2,62, GTX grün 8efb6318 ×3,82) + wetter.K3#2 headless (Lag 1 ↔ 1,9 h bei A ×5, Bilanz 1,006/0,98, d3708675)",
+  "fehlt": "Verzug und Bilanz urteilt nur der headless-Lauf (eigenes Boot, Null-Renderer), mit ±30 % statt ±10 % und Lag nur „> 1“ statt Erd-Band — beides muss in die Probe der Sitzung beider Geräte.",
+  "rezept": "Die Ganglinie `k3Ganglinie` (stationen/g1.js:2565-2613) als `W eval` in die GPU-Probe stationen/g1.js:2622-2663 hängen (gleiche warme Welt, nach dem Bild-Paar). Urteil: Bach-Hub ≥ 0,15 m und Pixel ×≥ 1,05 UND Bilanz in [0,9; 1,1] UND Lag-Verhältnis im Snyder/Hack-Band (A-Verhältnis^0,3…0,45). Dann Tafel-Zeile wetter.K3#3 → kreislauf 1.",
+  "messgroesse": "koerper.pegel.lauf {A, lag, verhaeltnis, bilanz} aus dem Kern-Spiegel `_waterLevelAt` per Sprung der Welt-Uhr; Pixel der Klassen ^(wasserSatz|chunk-water-*)$",
+  "preisRisiko": "Bach der Mess-Wiese, kein großer Fluss — p95 am Fluss nur, wenn der Blick den Fluss fasst; mutierende Probe (Stempel zurück)",
+  "gpuMin": 7, "bau": "S", "sicher": 0.75
+ },
+ {
+  "leiter": "planet.wasser.tiefsee", "sprosse": 1, "klasse": "R",
+  "richter": "Rot-Anteil fällt bis 5 m auf ≤ 30 %; Sicht gegen Secchi-Referenz ±30 %",
+  "hat": "Unter Wasser trägt das Licht je Kanal den Abfall kd der Wasser-Art (foundry-core.js:166-176: see kd [0,45; 0,15; 0,3] /m, Secchi ~8 m, Sicht ~15 m; Leser stamm/bild-himmel.js:2182-2330, `unterWasser`) — nach dem Gesetz fällt Rot bei 5 m auf e^(−2,25) ≈ 11 % (gelesen, gerechnet, nicht gemessen).",
+  "station": "leib.K3#2 (GPU-Probe in der Sitzung, Radeon grün 4ee205bd, GTX grün 350e6b11): misst nur die LUMA bei 0,5/1,5/2,5 m, K 0,21–0,23 /m gegen das Band sichtAbfall der Soll-Tafel",
+  "fehlt": "Kein Kanal-Urteil (Rot-Anteil), keine Tiefe 5 m (die Reihe endet bei 2,5 m) und kein expliziter Vergleich Secchi ≈ 1,7/K gegen die Referenz 8 m.",
+  "rezept": "In `probeUnterwasser` die Reihe `tiefen: [0.5, 1.5, 2.5]` (stationen/g5.js:2528) um 5 m erweitern (der See trägt seine Tiefe `see.tiefe`, g5.js:2519 — ist sie < 5,5 m, den tiefsten See aus `__wasserOrte` wählen) und je Schuss das RGB-Mittel melden; Urteil (g5.js:2603-2654) R(5 m)/R(0,5 m) ≤ 0,30 und Secchi = 1,7/K_Luma gegen 8 m ±30 % (bei K 0,22 /m: 7,7 m). Die Schüsse sind 480×270 (g5.js:2526), keine Ausgabe-Größe — für dieses Maß (Mittel) ohne Belang.",
+  "messgroesse": "Szenen-Mittel je Kanal der Aufnahme unter Wasser (die Reihe w.ego/w.third, heute nur L) — der Kanal-Abfall liest `WASSER_GESETZ.koerper.see.kd` über stamm/bild-himmel.js:2182",
+  "preisRisiko": "keines erkennbar; Risiko der Pose: ob der Mess-See ≥ 5 m tief ist, ungelesen",
+  "gpuMin": 2, "bau": "S", "sicher": 0.65
+ },
+ {
+  "leiter": "planet.wetter.lagen", "sprosse": 2, "klasse": "B",
+  "richter": "50 Frontpassagen aus 50 Saaten: Abfolge Cirrus → Nimbostratus → Schauer, Druckfall, Winddrehung stimmt ≥ 80 %",
+  "hat": "Das Wetter ist EINE Front-Stärke aus drei Sinus-Wellen längs der Grundrichtung, die mit 11 m/s ziehen, und fünf Zeilen klar/nebel/bewoelkt/regen/sturm (phyto-core.js:4300-4323 `WIND_FELD`, 4419-4450 `wetterAt`); die Wind-Richtung mäandert unabhängig von der Front (phyto-core.js:4350-4355), es gibt keinen Luftdruck, keine Wolken-Gattung (EINE Schicht 800 m, welt-licht.js:851) (gelesen).",
+  "station": "keine (wetter.K1#2 trägt Sprosse 1)",
+  "fehlt": "Druck, Winddrehung an der Front und eine Abfolge von Wolken-Gattungen gibt es nicht; die Front ist ein Skalar ohne Warm-/Kaltseite.",
+  "rezept": "Bau: `wetterAt` (phyto-core.js:4419) liefert zur Front-Phase s Druck, Drehung des Winds und Gattung (Vorderseite hoch/Cirrus → Nimbostratus → Rückseite Schauer) als Funktion derselben s; die Kuppel (welt-licht.js:888 `wolkenFeld`) braucht mindestens eine zweite, hohe Schicht für Cirrus. Richter danach headless über 50 Saaten + Bild-Stichprobe in der Sitzung.",
+  "messgroesse": "Bau setzt an phyto-core.js:4419-4450 (`wetterAt` gibt heute nur {zeile, front, feuchte}) und welt-licht.js:851-888 (EINE Schicht)",
+  "preisRisiko": "zweite Wolkenschicht in der Kuppel kostet Himmel-ms an der GTX",
+  "gpuMin": 10, "bau": "L", "sicher": 0.85
+ },
+ {
+  "leiter": "planet.wetter.wolken", "sprosse": 1, "klasse": "R",
+  "richter": "Zeitraffer der Schicht gegen Zeitraffer-Film realer Schichtwolken (2AFC ≤ 85 %); Zuggeschwindigkeit der Schatten am Boden im Band realer Wolkenzüge (2–20 m/s) und gleich der Wolke darüber (Versatz ≤ 5 %)",
+  "hat": "EINE Schicht 800 m, Karte 512 × 16 m ≈ 8,2 km (welt-licht.js:851-864); Kuppel und Wurf lesen dasselbe `wolkenFeld` (welt-licht.js:878-888), der Zug ist der EINE Wind, 11 m/s längs `windGrund` (stamm/bild-himmel.js:1749-1758), der Schatten liest die Karte (stamm/bild-himmel.js:160-219, neu je `zugS` 0,1 s) — der Spieler sieht Schatten ziehen (gelesen).",
+  "station": "keine (licht.K4 ohne Fundstelle; kein 2AFC-Werkzeug im Spiel- oder Stations-Baum, 0 Treffer)",
+  "fehlt": "Ein Richter: Zuggeschwindigkeit der Schatten am Boden und der Wolke im Himmel aus zwei Bildern dt auseinander, und ein 2AFC-Apparat mit Referenz-Zeitraffer realer Schichtwolken (keine Referenz unter spec/).",
+  "rezept": "Geschwindigkeit: zwei Schüsse 2 s auseinander nach dem Muster wetter.K3#2 (stationen/g1.js:2622: zwei Bilder, dieselbe Kamera) — Boden nach unten, Himmel nach oben, Phasen-Korrelation der Luma ergibt m/s, Soll 2–20 m/s und |v_Schatten/v_Wolke − 1| ≤ 5 %. 2AFC: Zeitraffer 10 s aus der Sitzung + lizenzfreie Referenz-Filme in spec/abnahme, Urteil durch ein Bildmodell als Wahl-Paar.",
+  "messgroesse": "Uniform `zug` (stamm/bild-himmel.js:1757-1758) als Soll, das Maß aus dem Bildpaar; Schatten = `_wolkenSchatten` (stamm/bild-himmel.js:204)",
+  "preisRisiko": "keines erkennbar (Wiese)",
+  "gpuMin": 4, "bau": "M", "sicher": 0.55
+ },
+ {
+  "leiter": "planet.wetter.klimazonen", "sprosse": 1, "klasse": "F",
+  "richter": "Temperatur am Meer 18/−4 °C, Schneegrenze folgt der Saison",
+  "hat": "Das Klima am Meer ist 18 °C Sommer / −4 °C Winter im Tagesmittel, ±5 °C Tagesgang (gelaende-core.js:1313-1320 `TEMPERATUR`), die Schneegrenze wandert mit dem Schnee-Pegel übers Jahr (gelaende-core.js:1279-1297); der Spieler fühlt es am Eis, das trägt, am Weiß des Bodens und am Grillen-Ton (stamm/klang.js:492 liest `_temperaturAt`) (gelesen).",
+  "station": "stoffe.K3#2 (headless, Grenze 178 m übers Jahr, −4,375 °C am Spiegel, d3708675) + wetter.K4#1 (headless, eine Winter-Pose)",
+  "fehlt": "Beides urteilt nur headless mit eigenem Boot; kein Bild der Schneegrenze je Saison an beiden Geräten.",
+  "rezept": "Probe in der Sitzung nach dem Muster gelaende.K3#1 (stationen/g1.js:2016): `W eval` liest `_temperaturAt(waterLevel)` zur Sommer- und Winter-Mitte (Soll 18/−4 ±0,5 °C), dann `bild --saison` an EINER Hang-Pose zu 4 Jahreszeiten — Urteil: die unterste weiße Höhe im Bild steigt Winter → Sommer um ≥ 100 m (Versatz-Weg 160–178 m). Derselbe Lauf trägt den Schneegrenzen-Teil von planet.wasser.eis 1.",
+  "messgroesse": "stamm/bild-himmel.js:2797 `_temperaturAt(y, traegTage)`; Schnee-Anteil gelaende-core.js:1290 `schnee` und die Boden-Farbe (`_bodenFarbeAt`) im Bild",
+  "preisRisiko": "Neubau der Chunks im Schnee-Band beim Saison-Sprung (81 Chunks, stoffe.K3#2) — Spitze beim Sprung, nicht im Richter-Bild",
+  "gpuMin": 5, "bau": "S", "sicher": 0.65
+ },
+ {
+  "leiter": "planet.wetter.extreme", "sprosse": 1, "klasse": "B",
+  "richter": "nach 100 mm Starkregen: Überflutung ≥ Aue, Bildpaar",
+  "hat": "Der Pegel ist an der Krone des Betts gedeckelt, „darüber trägt die Aue den Überschuss, nicht gerechnet“ (gelaende-core.js:1569-1570; `pegelHubVon` klemmt an `krone` gelaende-core.js:1627-1631, Krone ≈ 0,2 m aus `pegelBett` 1620-1625) — kein Fluss verlässt sein Bett (gelesen).",
+  "station": "keine",
+  "fehlt": "Hub über der Krone und Wasser, das die Aue deckt.",
+  "rezept": "Bau: die Klemme `Math.min(krone, h)` (gelaende-core.js:1630) ersetzen durch einen Hub über der Krone, dessen Überschuss die Aue als Fläche bis zur Höhe des Spiegels füllt (das Wasser-Blatt `water-sheet`, stamm/gelaende-chunks.js:767, füllt dann die Zellen der Aue unter dem Spiegel). Richter nach dem Muster wetter.K3#2 (stationen/g1.js:2622: Bildpaar trocken/nach Sturm), Soll benetzte Fläche ≥ Aue.",
+  "messgroesse": "Bau setzt an gelaende-core.js:1627-1631 (`pegelHubVon`) und am Wasser-Blatt stamm/gelaende-chunks.js:767",
+  "preisRisiko": "Chunk-Neubau beim Hochwasser; Fluss-Pose = p95 am Fluss (41,9 > 34 ms Radeon)",
+  "gpuMin": 7, "bau": "M", "sicher": 0.8
+ },
+ {
+  "leiter": "planet.wetter.vorhersage", "sprosse": 1, "klasse": "B",
+  "richter": "100 Regenbeginne: Bedeckung stieg in den 60 min davor aus der Windrichtung in ≥ 70 %",
+  "hat": "Die Deckung ist EIN Uniform für den ganzen Himmel (welt-licht.js:1157 `cloudCover`, geschrieben aus dem Wetter-Wort am Spieler, stamm/bild-himmel.js:1743-1747) — die nahende Front zeichnet sich nicht windauf zuerst; die Bänder ziehen mit 11 m/s bei Wellenlängen 2,5–6,6 km (phyto-core.js:4316-4317), ein Band geht in ~4–10 min durch, nicht in 60 min (gelesen).",
+  "station": "keine",
+  "fehlt": "Eine Deckung, die der Ort-Funktion der Front folgt (windauf mehr Wolke, bevor es hier regnet), und eine Front-Skala in Stunden.",
+  "rezept": "Bau: im `wolkenFeld` (welt-licht.js:888) die Deckung je Punkt der Schicht aus `wetterAt(saat, x, z, t).front` lesen statt aus dem globalen Uniform — die Front am Himmelspunkt windauf kommt dann sichtbar vor dem Regen; dazu die Wellenlängen in `WIND_FELD.front.wellen` (phyto-core.js:4317) auf Stunden-Skala, gegen wetter.K1#2 (Lag 240 s) abzustimmen. Richter danach: Deckungs-Mittel der windauf-Hälfte des Himmels-Bilds in 60 min vor jedem Regenbeginn.",
+  "messgroesse": "Bau setzt an welt-licht.js:878-888 (`wolkenFeld` liest H.cloudCover) und phyto-core.js:4313-4323",
+  "preisRisiko": "wetterAt je Himmels-Texel in TSL statt Uniform — Himmel-ms an der GTX",
+  "gpuMin": 10, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "planet.wetter.fremde-atmosphaeren", "sprosse": 1, "klasse": "R",
+  "richter": "Himmelsfarbe Mittag/Abend gegen Foto",
+  "hat": "Der Himmel folgt Hillaire mit Rayleigh, Aerosol, Ozon (foundry-core.js:283-308 `ATMO_GESETZ`); die Luft-Linse misst in der Sitzung beider Geräte (ferne.K1/K2, FERNE_SITZUNG stationen/g3.js:747-757) den Ton der In-Streuung am Horizont zu Uhr 0,5 und 0,27 × 4 Azimute (gelesen).",
+  "station": "ferne.K1#2 (GPU-Sitzung, Luft-Linse; Urteil des Himmels-Tons nur zu Mittag gegen 222° ±15 aus dem MODELL Hillaire, scripts/lib/licht-linsen.cjs:2628-2636; spec/farbe/luft-referenz.json `himmel.ton`)",
+  "fehlt": "Ein Foto als Soll (heute ist das Soll das eigene Modell) und das Urteil zu Abend (Uhr 0,27 wird gemessen, aber nicht im Ton geurteilt).",
+  "rezept": "In licht-linsen.cjs:2631 die Ton-Prüfung auf beide Uhren der Referenz (`R.uhren` [0,5; 0,27]) ausdehnen und das Soll aus Fotos klaren Himmels (Mittag, Sonne ~10°) unter spec/farbe ziehen (Muster: spec/abnahme/llyn-padarn.png als Foto-Soll der spiegelTreue); als eigene Station auf FERNE_SITZUNG (stationen/g3.js:747) mit Tafel-Zeile → fremde-atmosphaeren 1.",
+  "messgroesse": "z.himmel (lineares RGB der In-Streuung am Horizont je Uhr × Azimut) → farbTon, scripts/lib/licht-linsen.cjs:2631-2636",
+  "preisRisiko": "keines erkennbar (Hügel über Genesis, Sicht bis Gipfel; GTX-Fahrt ≥ 90 s)",
+  "gpuMin": 3, "bau": "S", "sicher": 0.6
+ }
+]

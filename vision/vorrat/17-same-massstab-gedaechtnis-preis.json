@@ -1,0 +1,68 @@
+[
+ {
+  "leiter": "same.preis.zugang", "sprosse": 1, "klasse": "A",
+  "richter": "harte UI-Zeilen = 0",
+  "hat": "Tafel-Zeile karte2.same.preis.zugang#1 steht (vision/richter-tafel.json:24), Station g5.js:5685 (Probe SPRACHE_SITZUNG, beide Geräte); die letzten Fahrten ROT: 6 harte Zeilen Radeon 105c9bd3, 8 GTX 71839b1e — alle aus _hudSchreib (#status-weather, #status-slug, #ladeschirm-stand); am Kopf schreibt das Wetter über die Sprach-Tafel (werkstatt-hud.js:1324-1327), der Slug trägt translate=no, der Ladeschirm-Stand setzt Schlüssel (_tSetze, dirigent-ankunft.js:1365-1376) (gelesen)",
+  "station": "karte2.same.preis.zugang#1 (beide Geräte ungemessen am Kopf: R6 Konsum geändert, stand.json:5057; zuletzt ROT 6/8 harte Zeilen)",
+  "fehlt": "nur die frische Fahrt am Kopf an Radeon UND GTX — die drei Täter der letzten Fahrt sind gelesen geheilt",
+  "rezept": "Fahrt der Punkte-Maschine mit --nur karte2.same.preis.zugang#1 an beiden Geräten am selben Kopf; steht dann 'beim Wechsel auf en stehen N' > 0, sind es dieselben drei Knoten (_sprachDom-Lauf prüfen).",
+  "messgroesse": "die Station selbst (g5.js:5694-5701: j.dom, j.stehen, j.blind aus probeSpracheSitzung)",
+  "preisRisiko": "keines erkennbar (Pose der Sitzung, Wiese)",
+  "gpuMin": 2, "bau": "S", "sicher": 0.75
+ },
+ {
+  "leiter": "same.preis.ankunft", "sprosse": 2, "klasse": "F",
+  "richter": "t(Kontrolle) + Bild-Diff gegen 60 s Ruhe, ≥ 4 Boots je Gerät",
+  "hat": "Der Kalt-Boot bis zur Kontrolle steht (karte2.same.preis.ankunft#1: 4 Boots 7,0–8,85 s Radeon 105c9bd3, 7,6–8,8 s GTX 3e4f99cd, stand.json:5029); die Lücke misst ankunft.K2#1 nur an der Radeon (0,00 %, 818b466d) und nur EIN Boot (gelesen)",
+  "station": "karte2.same.preis.ankunft#1 (Probe ANKUNFT_VIER, beide Geräte, ohne Bild) + ankunft.K2#1 (Probe ANKUNFT_KALT, Lücke, nur Radeon grün)",
+  "fehlt": "ein Urteil, das je Boot t(Kontrolle) ≤ 20 s UND Lücke ≤ 2 % gegen die Ruhe hält, an beiden Geräten; dazu die Entscheidung, ob 'Dorf (10² Häuser)' im Bild stehen muss — der Ankunftsort ist dorffrei (siedlung-ort.js:1658 spawnClearM)",
+  "rezept": "probeAnkunftVier (g6.js:1254) je Boot um den Schuss + Ruhe-Vergleich aus probeAnkunft erweitern (kaltKontrolle g6.js:1293 als Urteil, Soll 20 s statt 60 s); Frist der Probe von 120 s auf ~4 × (20 + 40) s heben oder die Ruhe einmal je Fahrt teilen.",
+  "messgroesse": "j.bild.luecke aus den Kacheln (g6.js:2962, Pixel > 32 je Kanal gegen dieselbe Pose nach Ruhe der Foundry) + tK von außen (LEIB_WEG, scripts/diag-boot-stage.cjs)",
+  "preisRisiko": "keines erkennbar (8,9 s < 20 s); die Fahrt-Frist der Punkte-Maschine ist das Risiko",
+  "gpuMin": 5, "bau": "S", "sicher": 0.7
+ },
+ {
+  "leiter": "same.massstab.spanne", "sprosse": 1, "klasse": "B",
+  "richter": "N = 20 Saaten × Steigflug 0,5 m → 700 m Auge in 30 s, hin und zurück: alle Bruch-Bedingungen gehalten",
+  "hat": "Kein Steig- oder Flug-Verb des Spielers am Kopf (Grep stamm/ nach Flug/Gleiter/Ballon/fly/noclip: 0 Spieler-Treffer); das Auge steigt nur über Gelände, Schwimmen hat eine Vertikale (koerper-bewegung.js:228, :918); die Pop-Linse misst nur Gehen 4 m/s (lod.K2#1 Radeon 0,0439 %/s) (gelesen)",
+  "station": "lod.K2#1 (Radeon grün 4ee205bd, GTX nie) · ferne.K2#1/#2 (beide grün, Kante am Horizont, nicht Steigflug)",
+  "fehlt": "der Spieler kann nicht 700 m steigen; danach ein Richter über Pop, Jitter, ΔE₀₀ und Lücke im Steigflug an 20 Saaten",
+  "rezept": "Bau: ein Steig-Verb (Kamera-Höhe als Leib-Zustand) neben _swimVerticalVelocity (koerper-bewegung.js:228) über die Verb-Tafel (dirigent-takt.js:1161). Richter nach dem Muster lod.K2 (stationen/g3.js:3297): Pop-Pixel je s aus Bildfolge, dazu Jitter und ΔE je Stufen-Wechsel, Pose Wiese hoch über Genesis.",
+  "messgroesse": "Bau setzt an koerper-bewegung.js:228/918 (vertikale Geschwindigkeit), die Pop-Zählung der lod.K2-Probe liest Stufen-Wechsel je Bild",
+  "preisRisiko": "hoch: ab ~100 m Auge sieht das Bild den ganzen Ring — p95 und VRAM ungemessen; der Fern-Saum ist ROT (Kohärenz 0,60 laut Beleg)",
+  "gpuMin": 10, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "same.massstab.nahe", "sprosse": 1, "klasse": "R",
+  "richter": "Spektrum gegen Foto der Bodenklasse: Energie über 1/20 der Bildbreite ≥ 50 % der Referenz in ≥ 80 %",
+  "hat": "Der Spieler sieht in Ego vor die Füße (pitch −0,75 in der Arm-Probe); Boden mit Halmen und Streu steht im Bild; das kleinste Auge ist HOEHLEN_AUGE_M 0,25 m (bild-sicht.js:3872 — der Beleg nennt :3861, Zeile gewandert) (gelesen)",
+  "station": "material.K2#1 (Probe in der Sitzung, beide Geräte grün: Radeon 4ee205bd, GTX 8efb6318 — nyquist/glatt an EINEM Ort, kein Spektrum gegen Foto)",
+  "fehlt": "ein Spektral-Richter gegen eine Foto-Referenz je Bodenklasse an 100 Orten — im Repo liegt keine Boden-Referenz (spec/abnahme/ trägt nur real-mischwald.json und Einzelbilder)",
+  "rezept": "Muster material.K2#1 (stationen/g3.js:2726): Ego, pitch −0,75, Schuss 2 m Bildbreite, an 100 Saat-Orten statt einem; Leistungsspektrum je Schuss (die FFT steht in scripts/lib/abnahme-urteil.cjs:1048-1102, beta :1023), Band-Energie über f > 20/Breite gegen eine Referenz-Spektral-Zeile in spec/abnahme/soll-tafel.json.",
+  "messgroesse": "scripts/lib/abnahme-urteil.cjs:958/1023 (beta des Leistungsspektrums je Klasse) — die Band-Energie fehlt als Zahl, dazu die Referenz-Zahl je Bodenklasse",
+  "preisRisiko": "keines erkennbar (Wiese, stehend); 100 Orte kosten Ein-Takte (material.K2 riss schon bei 2 Orten an der Frist)",
+  "gpuMin": 8, "bau": "M", "sicher": 0.6
+ },
+ {
+  "leiter": "same.massstab.sprung", "sprosse": 1, "klasse": "F",
+  "richter": "Spielgang-Station Sprung: p95, t(ganz), Lücke",
+  "hat": "Der Sprung ist eine Lage-Übernahme der Probe (dirigent-takt.js:1195-1204 übernimmt den externen Teleport ohne Schweif) — der Spieler selbst hat kein Teleport-Verb, nur Tore; die Welt steht nach dem Sprung (gelesen)",
+  "station": "streaming.K3#1 (Probe PW.sprungKadenz in der Sitzung, beide Geräte grün gegen Soll 50 ms: Radeon p95 41,9 ms, steht nach 45–58 s, 4ee205bd; GTX 49,9 ms, 14–15 s, 715754fc)",
+  "fehlt": "ein Karte-2-Urteil mit p95 ≤ 33 ms, t(steht) ≤ 30 s und einem Lücken-Maß; nach den letzten Zahlen reißt der Preis an beiden Geräten (41,9 / 49,9 > 33) und die Zeit an der Radeon (45–58 s > 30 s)",
+  "rezept": "Muster streaming.K3 (stationen/g6.js:3132): dasselbe SPRUNG-JSON, Urteil Soll 33 ms und stehtS ≤ 30; nach stehtS ein Schuss + Lücke gegen die Ruhe wie ankunft.K2 (g6.js:2962).",
+  "messgroesse": "frameMs.p95 und stehtS der SPRUNG-Zeile (g6.js:3157-3164), _weltSteht über __deckel; die Lücke aus den Kacheln (g6.js:2962)",
+  "preisRisiko": "hoch: p95 nach Sprung 41,9 (Radeon) / 49,9 ms (GTX) > 33 — der Preis selbst ist ein Bau (Takt-Täter laut Akte: _knotenRate › build, _dispatchFrameJobs)",
+  "gpuMin": 20, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "same.massstab.physik", "sprosse": 1, "klasse": "R",
+  "richter": "Fallzeit aus 10 m gegen √(2h/g) ±5 %; Bremsweg gegen μ ±10 %",
+  "hat": "Schwere aus dem Welt-Gesetz (feld-leben.js:1922 WELT_GESETZ_ERDE.schwere), der freie Körper fällt im Sim-Schritt (koerper-frei.js:534, dirigent-takt.js:1178), der Wagen bremst mit μ aus der Stoff-Zeile (vehicle-core.js, gate fahr-leben) — der Spieler kann fallen, Kisten stoßen, bremsen (gelesen)",
+  "station": "fahrzeug.K1#2 (headless, Bremsweg-VERHÄLTNISSE Gras/Weg/nass, nicht gegen v²/2μg) — keine Station misst die Fallzeit",
+  "fehlt": "ein GPU-Richter, der Fallzeit und Bremsweg gegen die Formel im Fenster hält",
+  "rezept": "Neue Sitzungs-Probe: Spieler (oder Kiste) 10 m über Grund setzen, t bis Bodenkontakt aus dem Sim-Strom gegen √(2·10/9,81)=1,428 s; Wagen auf 50 km/h, Bremsung, s gegen v²/(2μg) mit μ der Stoff-Zeile. Muster der Kette fahrzeug.K1#2 (stationen/g5.js:5372), aber als probe in der Sitzung.",
+  "messgroesse": "state.gravity (koerper-frei.js:534), playerMesh.position.y je Sim-Schritt; Bremsweg s wie diag-fahr-leben --kette (g5.js:5377 KETTE.roh)",
+  "preisRisiko": "keines erkennbar (Wiese)",
+  "gpuMin": 3, "bau": "S", "sicher": 0.65
+ }
+]
