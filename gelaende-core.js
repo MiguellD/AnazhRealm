@@ -5786,9 +5786,11 @@
     // DIE WÄRME DER WÄRME-ARTEN AN DER HÖHE y (vorrat2-arten-aus-klima): der Anteil ∈ [0, 1], den das Klima der Lage `L` einer
     // frost-empfindlichen Art trägt — das Winter-Mittel an der Höhe aus dem EINEN Feld der Temperatur (`temperaturFeld`: das Klima
     // des Orts, `ortGesetz`, gekühlt mit der Höhe über dem Meer; ohne Uhr und Wetter, das Klima, nie der Tag) gegen `ORT_WUCHS.warm`.
-    // In der Heimat überall 0 (Winter −4 °C am Meer, jede Höhe kälter). Leser: die Wahl der Art der Streu (Stamm
-    // `_scatterSpeciesForCell`: Palme und Zypresse stehen nur, wo die Wärme sie trägt).
+    // In der Heimat überall 0 (Winter −4 °C am Meer, jede Höhe kälter). Ohne `y` die Wärme am Meer der Lage: die größte, die
+    // ein Ort auf dem Land trägt (die Höhe kühlt nur) — der Leser fragt die Höhe nur, wo schon das Meer die Art trägt. Leser:
+    // die Wahl der Art der Streu (Stamm `_scatterSpeciesForCell`: Palme und Zypresse stehen nur, wo die Wärme sie trägt).
     function ortWarm(L, y) {
+        if (y == null) y = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
         const F = temperaturFeld(L, y, 0);
         return glatt(ORT_WUCHS.warm[0], ORT_WUCHS.warm[1], F.mittel - F.jahr.amp - F.kuehlung);
     }

@@ -201,18 +201,28 @@ class AnazhRealm_vegetation_streu {
     // DIE WÄRME-ARTEN NACH DER WÄRME AM ORT (vorrat2-arten-aus-klima): Palme und Zypresse fallen nie aus dem Rauschen `lebendig`
     // allein — ihr Platz im Feld fragt das Klima an der Höhe des Orts (gelaende-core `ortWarm`: das Winter-Mittel aus dem EINEN
     // Feld der Temperatur; die Höhe ist die EINE 2D-Höhe `_terrainMacroSurfaceY` ohne Detail), ein eigener Wurf aus dem Hash
-    // trägt den Anteil; trägt die Wärme sie nicht, steht an ihrem Platz die Art ihres Holzes (die Palme → Eiche, die Zypresse →
-    // Tanne), und der Tausch der Tropen (das Nadelholz meidet sie) setzt die Palme nur, wo die Wärme sie trägt. Die Höhe fragt
-    // nur ein Wurf, der auf eine Wärme-Art fällt. In der Heimat (Winter −4 °C) steht keine. `x`, `z`: der Ort der Zelle.
+    // trägt den Anteil; trägt die Wärme sie nicht, fällt ihr Platz an die übrigen Arten ihres Bands im Verhältnis des Bands (ein
+    // zweiter Wurf über die Würfe ohne die Wärme-Art — das Band bleibt sein Gesetz, keine feste Ersatz-Art), und der Tausch der
+    // Tropen (das Nadelholz meidet sie) setzt die Palme nur, wo die Wärme sie trägt. Die Höhe fragt nur ein Wurf, der auf eine
+    // Wärme-Art fällt und den schon die Wärme am Meer trägt (`ortWarm` ohne Höhe); in der Heimat (Winter −4 °C) keiner, dort
+    // steht keine. `x`, `z`: der Ort der Zelle.
     _scatterSpeciesForCell(lebendig, moisture, hash, x, z) {
         const pick = (hash >>> 7) & 0xff;
         let warm;
-        const waerme = () =>
-            warm !== undefined
-                ? warm
-                : (warm =
-                      ((hash >>> 24) & 0xff) / 256 <
-                      globalThis.__gelaendeCore.ortWarm(this._gelaende(), this._terrainMacroSurfaceY(x, z, false)));
+        const waerme = () => {
+            if (warm === undefined) {
+                const K = globalThis.__gelaendeCore;
+                const L = this._gelaende();
+                const r = ((hash >>> 24) & 0xff) / 256;
+                warm = r < K.ortWarm(L) && r < K.ortWarm(L, this._terrainMacroSurfaceY(x, z, false));
+            }
+            return warm;
+        };
+        // der zweite Wurf des Bands ohne den Platz [lo, hi) der Wärme-Art: gleichverteilt über die übrigen Würfe
+        const ohneWaerme = (lo, hi) => {
+            const q = ((Math.imul(hash, 0x9e3779b1) >>> 24) * (256 - (hi - lo))) >> 8;
+            return q < lo ? q : q + (hi - lo);
+        };
         const amFeld = () => {
             if (moisture > 0.6) {
                 return pick < 128 ? "baum_erle" : "baum_birke";
@@ -223,13 +233,16 @@ class AnazhRealm_vegetation_streu {
             if (lebendig > 0.4) {
                 // T1 (wahrerwuchs §4.1) — eine PALME in milder Zone, wo die Wärme sie trägt (die Blatt-Typ-Vielfalt
                 // sichtbar; selten → ein gefundener Hain, kein Klon-Teppich).
-                if (pick >= 232) return waerme() ? "baum_palme" : "baum_eiche";
-                return pick < 120 ? "baum_eiche" : pick < 200 ? "baum_kiefer" : "baum_tanne";
+                if (pick >= 232 && waerme()) return "baum_palme";
+                const p = pick >= 232 ? ohneWaerme(232, 256) : pick;
+                return p < 120 ? "baum_eiche" : p < 200 ? "baum_kiefer" : "baum_tanne";
             }
             // karger Boden → Nadelwald + Karst + (selten, wo die Wärme sie trägt) säulen-förmige ZYPRESSE (Schuppen-Laub)
-            if (pick < 140) return "baum_tanne";
-            if (pick < 190) return "baum_kiefer";
-            if (pick < 214) return waerme() ? "baum_zypresse" : "baum_tanne"; // T1: mediterrane Säulen-Zypresse
+            const zyp = pick >= 190 && pick < 214;
+            if (zyp && waerme()) return "baum_zypresse"; // T1: mediterrane Säulen-Zypresse
+            const p = zyp ? ohneWaerme(190, 214) : pick;
+            if (p < 140) return "baum_tanne";
+            if (p < 190) return "baum_kiefer";
             return "baum_karst";
         };
         const art = amFeld();
