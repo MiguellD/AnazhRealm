@@ -1,7 +1,7 @@
 {
  "sha": "e4eeee086ca78f20b27ae87e12761508215fca34",
  "geraet": "gtx",
- "zeit": "2026-11-16T14:45:03.535Z",
+ "zeit": "2026-11-16T15:03:09.609Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K2#2": {
@@ -760,6 +760,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.kopplung.kaskade#1": {
+   "gruen": false,
+   "zahl": "Probe: eval: {\"ms\":3963,\"fehler\":\"ABNAHME ROT [Sicht verdeckt 7.7 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_kiefer 7.7 %] · beweis · Sicht 7.7 % (Laub baum_kiefer 7.7 %) · Ziel ungenannt · Luma 39.3 σ 20.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.301 · Bühne summer sunny 0.50  · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 0.15,
+   "grund": "ROT: Probe: eval: {\"ms\":3963,\"fehler\":\"ABNAHME ROT [Sicht verdeckt 7.7 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_kiefer 7.7 %] · beweis · Sicht 7.7 % (Laub baum_kiefer 7.7 %) · Ziel ungenannt · Luma 39.3 σ 20.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.301 · Bühne summer sunny 0.50  · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kb6a30576236c",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kaae491f57b8b",
+   "s": 7.9,
+   "fremd": {
+    "s": 11.2,
+    "takte": 5,
+    "fremdS": 24.73,
+    "kerne": 2.206,
+    "fensterKerne": 2.206,
+    "namen": [
+     [
+      "Runner.Worker.exe spawnclient 2960 2492",
+      5.27
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      3.83
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.61
+     ]
+    ],
+    "dienerS": 7.94,
+    "diener": [
+     [
+      "System",
+      4.17
+     ],
+     [
+      "dwm.exe",
+      2.8
+     ]
+    ],
+    "geraetS": 13.09,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      10.2
+     ],
+     [
+      "svchost.exe",
+      2.31
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 22.69,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-16T15:03:09.609Z",
+   "abdruck": "ff714c0a8e3f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -779,20 +849,20 @@
   "kb6a30576236c": "dVTbjpswFPyXPLZlzR1iaR+ci5qVWimR9geO7WMgIRDZsLSp+u8VBJIA2/OUoJnMnDkT/iwuIE6Q4MvRlMWCLr4svi0MfKBlUH+gfjmaBV3Ywocgpuw2hDG2bmFCZ5fKkDzjBHgB6RmtWleY5S+iozkiRkBKmi1r9oTsSURWzevrlJpzlKVVgcKByKUbeUCnwNokwNGCWnViPViFYeR6lHQTb9j+SIZhB8ZIs50qcijk2KnyIFAOffvN2JbNHMoMsLLyrDCDppAB91x6F5pvJTU01hUwzVH3pDgMpOcMRqcEldfGjERiTwZuTAlZkgk2QZOJtLIuuuRYDKEt3cgB+knCyaW21LMT4BxiPs03BSwS1GMPkR8In5JfM78nOKMGq4C0hy5tL3L5IxNCyG7uJe+MdxKD8VjyZaRGxPZ2u6Yt2yZuvyT3x/HuVsJNwh5zmIgYkWb6PI5HqUCCTX/MLZkUJGrrVJrqjrZdx8Owb/ymKxLb+5sp87FMz3N5aAfx0y4xYbtZdqZUVQMareRS90T0MYgCytjbDFzB+TwsIVyMg+nhTNUW+tmGHblB0N0i+c8dbvW3rpjlAykSwvGQrn+y6Z4fGs4W8ERnSg3X5oFQy8/K2WBeWbwsqwGpZNhG4pHinooTM/b2dEC28e3v69WBTee9YYeZ906h1NVgPOChrXyqun+imKKvqHNMcJSP9LkHkpJGPFsYPnwdFfE6O981wza5wtRmqPAyksu+wuOsG9QnDsVpyNhRjpC3Xu3ZphcMV+RIbn2/u2H7hrHtiq1HeSS3H7+gIBddqqx9lZEUapNCXj3e4X//AQ=="
  },
  "sitzung": {
-  "start": "2026-11-16T14:40:05.684Z",
-  "ordner": "sitzung-20261116-154005",
+  "start": "2026-11-16T15:02:34.298Z",
+  "ordner": "sitzung-20261116-160234",
   "port": 7804,
-  "warten": 4.34,
-  "bootS": 6.9,
+  "warten": 0.01,
+  "bootS": 6.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "karte2.same.kopplung.stoerung#1",
-    "s": 28.7,
-    "takte": 632,
+    "vor": "karte2.same.kopplung.kaskade#1",
+    "s": 25.8,
+    "takte": 608,
     "chunks": 81,
     "nach": null
    }
@@ -801,21 +871,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1850,
-   "frameP95": 41.13,
-   "taktP95": 21.41,
-   "vramMax": 136.3,
+   "bilder": 2225,
+   "frameP95": 33.4,
+   "taktP95": 15.45,
+   "vramMax": 135.8,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 108,
+   "zapfen": 111,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 116.3,
-  "minuten": 6.39
+  "fahrtS": 116.9,
+  "minuten": 2.05
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
