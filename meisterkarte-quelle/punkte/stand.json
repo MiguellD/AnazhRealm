@@ -2361,7 +2361,7 @@
      "gruen": true,
      "zahl": "lack spiegelTreue 0.4468 (114732 px in der Ebene, 59 Blöcke, Einfall 58.1°, Normale [0.077,0.996,0.04]) · glas spiegelTreue 0.7656 (6259 px in der Ebene, 28 Blöcke, Einfall 72.6°, Normale [-0.001,1,0.016]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000301 sunny · [linse-gpu] nvidia/pascal",
      "sha": "e84fd1fb99ee167658e625c473ea4f3c8d1f746d",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, stamm/siedlung-bewohner.js)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/shader-kosten.cjs, stamm/bild-kosten.js +5)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -5916,8 +5916,8 @@
   "ohne": 115
  },
  "kopfVoll": "62e3bdff5498dc3c8a55a8374dd4307aa92ea1cc",
- "zeit": "2026-11-16T16:51:56.100Z",
- "vorher": "9fa4015e",
+ "zeit": "2026-11-16T16:57:50.680Z",
+ "vorher": "62e3bdff",
  "bilanz": {
   "gewinn": [],
   "fall": [],
