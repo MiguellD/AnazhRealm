@@ -3099,16 +3099,50 @@ async function bachSitzungProbe(r, T, o, G) {
     const M = [trupp.reduce((a, f) => a + f.x, 0) / trupp.length, trupp.reduce((a, f) => a + f.y, 0) / trupp.length, trupp.reduce((a, f) => a + f.z, 0) / trupp.length];
     const w = r._waterFlowAt(M[0], M[2]) || { x: 1, z: 0 };
     const wn = Math.hypot(w.x, w.z) || 1;
-    // 1,5 m stromab unter dem Spiegel (Radeon a996d0ae: aus 4 m wies die Abnahme das Bild ab — „Sicht verdeckt 42 %“, das Bett liegt in der
-    // Säule von 0,83 m immer näher als 2 m; die Nah-Deckung zählt bis zum halben Ziel-Abstand, ausgabe-aufnahme.cjs RADIUS)
-    const [kx, kz] = [M[0] + (w.x / wn) * 1.5, M[2] + (w.z / wn) * 1.5];
-    const kb = r._voxelSurfaceY(kx, kz);
-    const ks = r._koerperWasser(kx, kz, kb);
+    // UNTER DEM SPIEGEL (Radeon 105c9bd3 und 71839b1e, GTX 71839b1e: „Sicht verdeckt 29,1 % (Gelände)“ — die Kamera stand 1,5 m stromab
+    // auf halber Säule, 0,32 m über dem Bett des Kolks (Säule 0,63 m), und sah waagrecht auf den leeren Schwerpunkt des Trupps: die
+    // untere Hälfte des Bilds war Bett näher als der halbe Ziel-Abstand 0,75 m; davor a996d0ae aus 4 m „Sicht verdeckt 42 %“). Jetzt
+    // das Ziel: der Fisch des Trupps nächst seiner Mitte; die Kamera 10 cm unter dem Spiegel im Wasser um ihn (Säule ≥ 0,3 m), je
+    // Abstand (0,8 · 1 · 0,6 · 1,25 · 1,5 m) und Richtung (16) — und je Pose fragt die Probe DIESELBE Abnahme, die nach dem Schuss urteilt
+    // (`__abnahmeMessen` der Werkbank, ausgabe-aufnahme.cjs: Nah-Deckung ≤ 2 %, Vordergrund ≤ 25 %, das Ziel frei). Die erste freie Pose
+    // steht; findet keine, die mit der kleinsten Nah-Deckung, und das Urteil nennt sie (`bett`). Ein eigener Strahl-Gang über
+    // `_voxelSurfaceY` sah an derselben Pose 0 % Bett, die Abnahme 18,3 % (Radeon 105c9bd3, 16.11.: das gezeichnete Bett ist nicht der Boden
+    // des Gesetzes) — darum kein Zwilling der Frage.
+    if (typeof window.__abnahmeMessen !== "function") return Object.assign(aus, { fehler: "die Abnahme der Werkbank fehlt in der Seite (__abnahmeMessen)" });
+    const cam = s.camera;
+    const Fz = trupp.reduce((b, f) => (Math.hypot(f.x - M[0], f.z - M[2]) < Math.hypot(b.x - M[0], b.z - M[2]) ? f : b));
+    const Z = [Fz.x, Fz.y, Fz.z];
+    const abnahme = (E) => {
+        cam.position.set(E[0], E[1], E[2]);
+        cam.lookAt(Z[0], Z[1], Z[2] + 1e-4);
+        cam.updateMatrixWorld(true);
+        const m = window.__abnahmeMessen({ ziel: { x: Z[0], y: Z[1], z: Z[2], name: "Blickziel", fuss: false } });
+        const vd = m.sicht && m.sicht.vordergrund ? m.sicht.vordergrund.deckung : 0;
+        const d = m.sicht ? m.sicht.deckung : null;
+        return { deckung: d, frei: d != null && d <= 0.02 && !(vd > 0.25) && !(m.ziel && m.ziel.frei === false) };
+    };
+    const t0 = performance.now();
+    let unter = null;
+    let posen = 0;
+    for (const D of [0.8, 1, 0.6, 1.25, 1.5]) {
+        for (let k = 0; k < 16 && !(unter && unter.frei) && performance.now() - t0 < 10000; k++) {
+            const [ex, ez] = [Z[0] + D * Math.cos((k / 16) * 2 * Math.PI), Z[2] + D * Math.sin((k / 16) * 2 * Math.PI)];
+            const eb = r._voxelSurfaceY(ex, ez);
+            const es = r._koerperWasser(ex, ez, eb);
+            if (!(es - eb >= 0.3)) continue;
+            const E = [ex, es - 0.1, ez];
+            const a = abnahme(E);
+            posen++;
+            if (!unter || (a.frei && !unter.frei) || (!unter.frei && a.deckung < unter.bett)) unter = { E, bett: a.deckung, frei: a.frei, saeule: es - eb, D };
+        }
+        if (unter && unter.frei) break;
+    }
+    if (!unter) return Object.assign(aus, { fehler: "keine Pose unter dem Spiegel (Säule ≥ 0,3 m) binnen 1,5 m des Fischs" });
     // vom Ufer: 5 m quer zur Strömung, 2,5 m über dem Spiegel des Trupps
     const [ux, uz] = [M[0] - (w.z / wn) * 5, M[2] + (w.x / wn) * 5];
     const us = r._koerperWasser(M[0], M[2], r._voxelSurfaceY(M[0], M[2]));
     aus.bilder = [
-        { wo: "unter dem Spiegel", saeule: r3(ks - kb), kamera: [kx, kb + 0.5 * Math.max(0, ks - kb), kz, ...M].map(r3), klasse: "^tier:fisch" },
+        { wo: "unter dem Spiegel", saeule: r3(unter.saeule), abstand: unter.D, bett: r3(unter.bett), posen, kamera: [...unter.E, ...Z].map(r3), klasse: "^tier:fisch" },
         { wo: "vom Ufer", kamera: [ux, Math.max(us, r._voxelSurfaceY(ux, uz)) + 2.5, uz, ...M].map(r3), klasse: "^tier:fisch" },
     ];
     return aus;
@@ -3205,18 +3239,28 @@ function bachHeimUrteil(e) {
     return { gruen: flieht && heim && bild, zahl: zahl + (flieht ? "" : " · ROT sie fliehen nicht") + (heim ? "" : " · ROT sie kehren nicht heim") + (bild ? "" : " · ROT kein Bild des Trupps") };
 }
 // leben.wasser.lebensraeume S1 (luftwasser.K3#1, die Karten-Hälfte): Lebensräume mit eigener Fauna im Bild — der Bach-Kolk zählt, wenn
-// ein Bild auf ihn die Klasse ^tier:fisch zeigt (≥ 20 px: ein Glied, wie die Sichtung der Herde); Soll 1 (von 15)
+// ein Bild auf ihn die Klasse ^tier:fisch zeigt (≥ 20 px: ein Glied, wie die Sichtung der Herde); Soll 1 (von 15). DIE KAMERA IM BETT
+// (Radeon 105c9bd3 / 71839b1e, GTX 71839b1e: „Sicht verdeckt 29,1 % (Gelände)“): das Bild unter dem Spiegel trägt den Bett-Anteil seines
+// Kegels im Nah-Radius, die Nah-Deckung derselben Abnahme an der Pose vor dem Schuss (`bett`, bachSitzungProbe) — ungeprüft oder über
+// ihrem Soll 2 % ROT beim Namen
 function bachRaumUrteil(e) {
     if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE bach" };
     if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
     const px = fischPixel(e);
     const raeume = px.some((n) => n >= 20) ? 1 : 0;
+    const pct = (x) => (Math.round(x * 1000) / 10).toFixed(1) + " %";
+    const bett = (e.bilder || []).filter((b) => b.wo === "unter dem Spiegel" && !(typeof b.bett === "number" && b.bett <= 0.02));
     return {
-        gruen: raeume >= 1 && (e.bilder || []).every((b) => !b.fehler),
+        gruen: raeume >= 1 && !bett.length && (e.bilder || []).every((b) => !b.fehler),
         zahl: "Lebensräume mit eigener Fauna im Bild " + raeume + " (Soll 1): Bach-Kolk " + (e.bach || []).join("/") + ", " + e.fische + " Fische binnen 40 m, Bild tier:fisch " +
-            px.map((n) => (n == null ? "—" : n)).join(" / ") + " px (" + (e.bilder || []).map((b) => b.wo + (b.fehler ? " FEHLER " + b.fehler : "")).join(", ") + ")",
+            px.map((n) => (n == null ? "—" : n)).join(" / ") + " px (" + (e.bilder || []).map((b) => b.wo + (typeof b.bett === "number" ? " Bett " + pct(b.bett) : "") + (b.abstand ? " aus " + b.abstand + " m" : "") + (b.fehler ? " FEHLER " + b.fehler : "")).join(", ") + ")" +
+            (bett.length ? " · ROT die Kamera im Bett: unter dem Spiegel " + bett.map((b) => (typeof b.bett === "number" ? "Bett " + pct(b.bett) + " im Nah-Radius (Soll ≤ 2 %)" : "Bett ungeprüft")).join(", ") : ""),
     };
 }
+// DIE ROH-ZEILE der Station an main 105c9bd3 (Radeon, 16.11.): die Kamera 0,32 m über dem Bett, die Abnahme wies das Bild ab — die Selbsttests
+const BACH_ROH_105C = {"bach": [-309.768, -822.525], "gesetz": {"fluchtM": 4.5, "ruheS": 8}, "fische": 27, "meiden": {"stand": [-300.554, -817.23], "vorher": 13, "spielerAmStand": 0, "naechsterM": 4.594, "heim": 12}, "bilder": [{"wo": "unter dem Spiegel", "saeule": 0.633, "kamera": [-300.683, 25.432, -815.578, -301.791, 25.478, -816.589], "klasse": "^tier:fisch", "fehler": "ABNAHME ROT [Sicht verdeckt 29.1 % (Laub · Rinde · Fels · Böschung näher als 0.7503167664393774 m, Bau als 0.3751583832196887 m): Gelände 29.1 %]", "klassen": null}, {"wo": "vom Ufer", "kamera": [-305.161, 28.811, -812.895, -301.791, 25.478, -816.589], "klasse": "^tier:fisch", "fehler": null, "klassen": {}}], "sek": 18.3};
+const bachRoh = (aendern) => "WELTPROBE bach " + JSON.stringify(aendern(JSON.parse(JSON.stringify(BACH_ROH_105C))));
+const bachFrei = (x) => Object.assign(x.bilder[0], { fehler: null, bett: 0, abstand: 1.25, klassen: { "tier:fisch": { pixel: 1557, objekte: 1 } } }) && x;
 // DER DECKEL: Radeon a996d0ae 0,45 min samt zwei Bildern
 const BACH_SITZUNG = { befehl: WP.sitzung([["bach", bachSitzungProbe]], [kleintierAmOrt]), sek: 45, mutiert: true };
 // KEIN ZWILLING (Radeon a996d0ae, 15.11.): der Strom der Sitzung trägt je Bild den Namen der ERSTEN Station eines Laufs — die Akte des
@@ -6256,6 +6300,12 @@ const stationen = [
         zeit: false,
         minuten: 4,
         urteil: (j, lauf) => bachRaumUrteil(WP.zeile(j, lauf, "bach")),
+        proben: [
+            { name: "die Messung an main 105c9bd3: die Kamera im Bett, die Abnahme weist ab", stdout: bachRoh((x) => x), gruen: false, zahl: /ROT die Kamera im Bett: unter dem Spiegel Bett ungeprüft/ },
+            { name: "die Pose sieht das Bett im Nah-Radius (29 %), der Fisch steht im Bild", stdout: bachRoh((x) => ((x = bachFrei(x)), (x.bilder[0].bett = 0.29), x)), gruen: false, zahl: /ROT die Kamera im Bett: unter dem Spiegel Bett 29\.0 %/ },
+            { name: "die Pose knapp unter dem Spiegel, das Bett frei, der Fisch im Bild", stdout: bachRoh(bachFrei), gruen: true },
+            { name: "das Bett frei, kein Fisch im Bild", stdout: bachRoh((x) => ((x = bachFrei(x)), (x.bilder[0].klassen = {}), x)), gruen: false },
+        ],
         pfad: ["stamm/wasser-*.js", "stamm/kreatur-*.js", "stamm/dirigent-*.js", "stamm/bild-*.js", "tetrapoda-core.js", "gelaende-core.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "1 = Fische stehen gegen die Strömung des Kerns (Ausrichtung zur Strömung ≥ 0,8)",
     },
