@@ -204,10 +204,10 @@
    "summe": {
     "kriterien": 26,
     "sprossen": 180,
-    "heute": 1,
+    "heute": 2,
     "kern": 1,
     "kernDazu": 1,
-    "anteilHeute": 0.4,
+    "anteilHeute": 0.8,
     "anteilKern": 0.5
    },
    "perspektiven": [
@@ -1156,7 +1156,7 @@
        "richter": "Wirbelzahl je Halbkugel folgt der Rotationsrate ±1 über 5 Welten"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Mechanik von Sprosse 1 steht HEADLESS: 4/4 Fluss-Orte (Strömung WG.wellen.adv, stamm/bild-sicht.js:1224-1228); Ozean ohne Strömung. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
@@ -4699,10 +4699,10 @@
     "kriterien": 84,
     "sprossen": 569,
     "heute": 5,
-    "kern": 4,
-    "kernDazu": 4,
+    "kern": 6,
+    "kernDazu": 6,
     "anteilHeute": 0.8,
-    "anteilKern": 0.7
+    "anteilKern": 1
    },
    "perspektiven": [
     {
@@ -6210,7 +6210,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "18 Menschen am Dorfplatz, 0 gehend, 26,9 fps Radeon; voll lebendig höchstens 4 Leiber im 8-m-Kreis (nahLeiber, siedlung-bewohner.js:1551)",
      "alt": [
@@ -9704,7 +9704,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "kern",
      "beleg": "Wachstum aus Bewohnern 12 → 19/20 Häuser in 1 500 s, alte 0,917, Radeon und GTX (siedlung.K4); Jahresringe 0,915 nur headless — KARTE: Kern 1 — Wachstum an beiden Geräten grün (siedlung.K4); Bild-Preis nicht gemessen.",
      "alt": [
@@ -12819,10 +12819,10 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 3,
+    "heute": 4,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 1.2,
+    "anteilHeute": 1.6,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -14503,7 +14503,7 @@
        "richter": "20 neue Planeten: Netz-Bytes je Sprung = 0"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "≈ 12,9 MB roh Stamm + Kerne (64 Dateien 9,1 MB + 10 Kerne 3,75 MB), vendor 2,3 MB — eine Summe von Dateigrößen, kein Netz-Mitschnitt. — KARTE: 0 — der Richter (Netz-Mitschnitt des Kalt-Boots) wurde nie gefahren; die Datei-Summe ist eine obere Schranke, kein Lauf (Z2).",
@@ -16881,11 +16881,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 17,
+  "heute": 19,
   "davonKopplungen": 33,
-  "kern": 9,
-  "kernDazu": 9,
-  "anteilHeute": 0.9,
+  "kern": 11,
+  "kernDazu": 11,
+  "anteilHeute": 1.1,
   "anteilKern": 0.4,
   "kapitel": 7,
   "perspektiven": 42,
