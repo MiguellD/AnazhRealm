@@ -73,11 +73,18 @@ function rangZensus(FC, o = {}) {
         const [x0, z0] = [sx, sz].map((v) => Math.floor(v / S.cellM - W / 2));
         for (let i = 0; i < W * W; i++) {
             const q = S.rang.length && FC.siedlungsZelle(S, x0 + (i % W), z0 + ((i / W) | 0), H, M);
-            if (q?.stufe) st.push([Math.hypot(q.x - sx, q.z - sz), q]);
+            if (q?.stufe) st.push([Math.hypot(q.x - sx, q.z - sz), q, x0 + (i % W), z0 + ((i / W) | 0)]);
         }
         let w = null;
-        for (const [d, q] of st.filter((u) => u[0] <= 2000).sort((u, v) => u[0] - v[0])) {
-            const x = (o.ex || FC.exportSettlement)({ seed: q.seed, nH: q.nH, epoche: FC.siedlungsEpoche(q.seed) });
+        for (const [d, q, cx, cz] of st.filter((u) => u[0] <= 2000).sort((u, v) => u[0] - v[0])) {
+            // die Kultur der Zelle wie im Wirt (`_siedlungKultur`: das Feld an ihrer Mitte; hier flach, ohne Meer)
+            const K = FC.kulturFeld(
+                (u, v) => fnv(`saat-${k}:kultur:${u},${v}`),
+                (cx + 0.5) * S.cellM,
+                (cz + 0.5) * S.cellM,
+                null
+            );
+            const x = (o.ex || FC.exportSettlement)({ seed: q.seed, nH: q.nH, epoche: K.epoche, kultur: K });
             if (/stadt|metropole/.test(x.groesse) && x.mauer?.segs.length && (w = [d, x])) break;
         }
         [Z.mitStadt, Z.graph] = [Z.mitStadt + !!w, Z.graph + !!w?.[1].graph?.nE];
@@ -2572,7 +2579,7 @@ hauptLauf(async () => {
                             res.err = `der Dorf-Zug baut an ${messort.join("/")} kein Dorf der Zelle ${zelle}`;
                             return res;
                         }
-                        plan = { seed: c.seed, nH: c.nH, epoche: r._siedlungEpoche(c.seed) };
+                        plan = { seed: c.seed, nH: c.nH, ...r._zellZeit(zelle, c.seed) }; // derselbe Plan wie der Zug (`_dorfBereiten`)
                     } else {
                         const ort = globalThis.__gelaendeCore.hangOrt(L, (x, z) => r._landAt(x, z, 0.2));
                         res.hang = ort;

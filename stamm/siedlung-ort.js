@@ -1218,7 +1218,14 @@ class AnazhRealm_siedlung_ort {
         const SF = AnazhRealm.Gesetz("fachwerk:STADT_FUNKTION");
         const stadt = SF && nH > SF.voll ? nH : undefined;
         if (stadt) nH = SF.voll;
-        const dp = { seed, nH, epoche: o.epoche, budget: o.budget };
+        // DIE KULTUR DES AKTS (vorrat2-kulturfeld): ein Akt ohne Epoche steht in der Kultur des Orts, an dem er verlangt ist (der
+        // verlangte Ort, sonst der Spieler) — „dorf 7 18" baut im Kulturraum, in dem du stehst; ein Satz mit Epoche oder Jahr nennt
+        // seine eigene. Sein Gedächtnis trägt sie (`kultur`): die Wiederkehr fragt kein Feld an einem gerückten Anker.
+        const wo = o.position || (this.state.playerMesh && this.state.playerMesh.position);
+        if (!o.epoche && !wo) throw new Error("SIEDLUNG: der Akt hat keinen Ort für seine Kultur");
+        const kultur = o.epoche ? undefined : this._siedlungKultur(wo.x, wo.z);
+        const epoche = kultur ? kultur.epoche : o.epoche;
+        const dp = { seed, nH, epoche, budget: o.budget, kultur };
         return this._foundryRequestSettlement(dp).then(async (plan) => {
             if (this._dorfWeltGing(welt, "Export")) return null;
             if (!plan) {
@@ -1275,7 +1282,8 @@ class AnazhRealm_siedlung_ort {
                         wx: b.ort.x,
                         wz: b.ort.z,
                         ort,
-                        epoche: o.epoche,
+                        epoche,
+                        kultur,
                         budget: o.budget,
                         autonomous: o.autonomous || undefined,
                         wachs: this._ortWachsAnfang(plan),
@@ -1424,7 +1432,7 @@ class AnazhRealm_siedlung_ort {
         return Math.max(0, reich(A, nH) - reich(A, A.nHMin + A.nHSpan - 1));
     }
     // DIE STÄDTE DER WELT (w28-stadt-funktion): jedes Gedächtnis eines Worts, das die Zahl einer Stadt trägt (`stadt`, mehr Häuser
-    // als ein Viertel fasst — `_dorfAkt`) — {key, seed, nH, epoche, x, z, cx, cz, ringe}: ihr Kern steht am Anker des Worts, ihre
+    // als ein Viertel fasst — `_dorfAkt`) — {key, seed, nH, epoche, kultur, x, z, cx, cz, ringe}: ihr Kern steht am Anker des Worts, ihre
     // Viertel in den Zellen um ihn (`_viertelInfo`). Gemerkt am Gedächtnis der Welt und der Zahl seiner Einträge. Kein eigener
     // Stand: die Stadt reist als das Gedächtnis ihres Kerns.
     _staedte() {
@@ -1445,6 +1453,7 @@ class AnazhRealm_siedlung_ort {
                 seed: c.seed,
                 nH: c.stadt,
                 epoche: c.epoche,
+                kultur: c.kultur,
                 x: c.x,
                 z: c.z,
                 cx,
@@ -1479,7 +1488,9 @@ class AnazhRealm_siedlung_ort {
                 const [i0, k0] = [Math.round((rang.x - s.x) / m), Math.round((rang.z - s.z) / m)];
                 for (let i = i0 - 1; i <= i0 + 1 && aus === undefined; i++)
                     for (let k = k0 - 1; k <= k0 + 1 && aus === undefined; k++) {
-                        const w = Math.max(Math.abs(i), Math.abs(k)) <= s.ringe && wort(s.seed, s.nH, i, k, s.epoche);
+                        const w =
+                            Math.max(Math.abs(i), Math.abs(k)) <= s.ringe &&
+                            wort(s.seed, s.nH, i, k, s.epoche, s.kultur);
                         const d = Math.hypot(s.x + i * m - rang.x, s.z + k * m - rang.z);
                         if (w && d < reich(S, w.nH) + reich(S, rang.nH)) aus = null;
                     }
@@ -1487,7 +1498,7 @@ class AnazhRealm_siedlung_ort {
                 const [dx, dz] = [cx - s.cx, cz - s.cz];
                 const drin = Math.max(Math.abs(dx), Math.abs(dz)) <= s.ringe * SF.schritt;
                 if (!drin || (!dx && !dz) || dx % SF.schritt || dz % SF.schritt) continue;
-                const w = wort(s.seed, s.nH, dx / SF.schritt, dz / SF.schritt, s.epoche);
+                const w = wort(s.seed, s.nH, dx / SF.schritt, dz / SF.schritt, s.epoche, s.kultur);
                 if (w)
                     aus = {
                         key: cx + "," + cz,
@@ -1508,12 +1519,18 @@ class AnazhRealm_siedlung_ort {
         return aus;
     }
     // DIE ZEIT EINER ZELLE: das Viertel einer Stadt trägt die Epoche und das Erbe seiner Stadt (`_viertelInfo`: Region, Jahr und
-    // Spanne ihres Kerns), jede andere Zelle die Legende ihres Samens (`_siedlungEpoche`). Leser: der Export der Zelle
-    // (`_dorfBereiten`) und ihres Gedächtnisses (`_ortDp`).
+    // Spanne ihres Kerns), jede andere Zelle die Kultur ihres Orts (`_siedlungKultur`: die Zelle an ihrer Mitte, das Start-Dorf
+    // an der Mitte seiner Suche, `_startMitte` — Orte, die ihr Gesetz kennt, bevor ein Plan steht: die Ort-Wahl rückt den Anker,
+    // die Kultur nie). Leser: der Export der Zelle (`_dorfBereiten`) und ihres Gedächtnisses (`_ortDp`).
     _zellZeit(key, seed) {
         const m = /^(-?\d+),(-?\d+)$/.exec(key);
         const v = m && this._viertelInfo(+m[1], +m[2]);
-        return v && v.seed === seed ? { epoche: v.epoche, erbe: v.erbe } : { epoche: this._siedlungEpoche(seed) };
+        if (v && v.seed === seed) return { epoche: v.epoche, erbe: v.erbe };
+        const C = AnazhRealm._siedlungGesetz().cellM;
+        const p = m ? { x: (+m[1] + 0.5) * C, z: (+m[2] + 0.5) * C } : this._startMitte();
+        if (!p) throw new Error("SIEDLUNG: die Zelle " + key + " hat keinen Ort für ihre Kultur");
+        const kultur = this._siedlungKultur(p.x, p.z);
+        return { epoche: kultur.epoche, kultur };
     }
     // EINE STADT IST GEGRÜNDET (`_dorfAkt`): die Zellen um ihren Kern sind ab jetzt ihre Viertel — was die Welt je Saat über sie
     // gemerkt hat (die Orte der Zellen, ihr Reich, die Nachbarn des Wegenetzes, die verworfenen Zellen in ihrem Reich), fällt und
@@ -1915,7 +1932,7 @@ class AnazhRealm_siedlung_ort {
         }
         if (((h >>> 12) & 0xffff) / 65536 >= SO.bau) return null;
         const phase = (((h >>> 8) & 0xff) / 255) * 2 * Math.PI;
-        const W = P ? { x: P.ort.x + P.viertel.x, z: P.ort.z + P.viertel.z } : { x: M.x, z: M.z };
+        const W = this._startMitte();
         const orte = P ? [W] : [];
         const reich = P ? 0 : AnazhRealm.Gesetz("fachwerk:siedlungsReich")(S, S.nHMin + S.nHSpan - 1);
         for (const r of P ? AnazhRealm.AUTO_SETTLEMENT.startRingeM : [reich, 1.5 * reich, 2 * reich])
@@ -1933,6 +1950,13 @@ class AnazhRealm_siedlung_ort {
                     z: o.z,
                 };
         return null;
+    }
+    // DIE MITTE DER SUCHE DES START-DORFS: das Viertel des Genesis-Plans, ohne ihn die Genesis-Mitte (null ohne beide). Leser: die
+    // Suche (`_autoSettlementStartInfo`) und die Kultur des Start-Dorfs (`_zellZeit`) — beide vor jedem Plan, nach jedem Reload gleich.
+    _startMitte() {
+        const P = this._genesisPlan;
+        const M = P ? null : this._genesisMitte();
+        return P ? { x: P.ort.x + P.viertel.x, z: P.ort.z + P.viertel.z } : M ? { x: M.x, z: M.z } : null;
     }
     // Auto-Dörfer laufen NUR, wenn das LIVE-Buch ein Rezept trägt, dessen Place-Auflösung über
     // `_placeDispatch` auf "settlement" fällt. Gecacht auf Buch-Identität (wie _forestExtraSpecies).
@@ -1952,12 +1976,35 @@ class AnazhRealm_siedlung_ort {
         this._autoStlChannelBook = book;
         return live;
     }
-    // Epochen-Legende: jede dritte Siedlung trägt seed-deterministisch eine Epoche der fachwerk-EPOCHEN-
-    // Tafel (DP.epoche fixiert Region + Zeit), die übrigen würfelt der Same (Region-Historie). Reine
-    // Funktion des Zell-Seeds → der Wege-Rebuild trifft dieselbe Epoche. Das Gesetz ist fachwerk `siedlungsEpoche` (siedlung.K2:
-    // der Zensus des Rang-Gesetzes liest dieselbe Legende); fail-closed bei kaltem Kern (`AnazhRealm.Gesetz` bricht laut).
-    _siedlungEpoche(seed) {
-        return AnazhRealm.Gesetz("fachwerk:siedlungsEpoche")(seed);
+    // DIE KULTUR EINES ORTS (vorrat2-kulturfeld): das Kulturfeld des Kerns (fachwerk `kulturFeld`) am Ort (x, z) — eine Funktion
+    // des Orts und des Welt-Samens, kein Speicher: der Herd-Hash ist FNV-1a über „<Welt-Same>:kultur:i,k", der Grund die Höhe der
+    // Saat über dem Meer (`_terrainSaatY` ohne Detail und ohne Erdbau: auf jeder Seite und nach jedem Reload dieselbe, gleich,
+    // welcher Chunk steht). Gemerkt je Welt-Same und Ort. Bis vorrat2-kulturfeld trug jede dritte Siedlung eine Epoche aus dem
+    // Hash ihres Zell-Samens (fachwerk `siedlungsEpoche`), der Rest würfelte die Region aus demselben Samen — Nachbarorte waren
+    // Rauschen. Leser: die Zeit einer Zelle (`_zellZeit`: die Zellen der Welt und das Start-Dorf) und der Akt ohne Epoche
+    // (`_dorfAkt`); fail-closed bei kaltem Kern (`AnazhRealm.Gesetz` bricht laut) und ohne Meeresspiegel.
+    _siedlungKultur(x, z) {
+        const ws = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        if (!this._kulturMemo || this._kulturMemo.ws !== ws) this._kulturMemo = { ws, M: new Map() }; // Instanz-Feld (die _editSaveTimer-Klasse)
+        const M = this._kulturMemo.M;
+        const mk = Math.round(x) + "," + Math.round(z);
+        if (M.has(mk)) return M.get(mk);
+        const meer = this.state.waterLevel;
+        if (!Number.isFinite(meer))
+            throw new Error("SIEDLUNG: die Kultur des Orts braucht den Meeresspiegel — er fehlt");
+        const hash = (i, k) => {
+            const s = `${ws}:kultur:${i},${k}`;
+            let h = 2166136261 >>> 0;
+            for (let n = 0; n < s.length; n++) {
+                h ^= s.charCodeAt(n);
+                h = Math.imul(h, 16777619) >>> 0;
+            }
+            return h;
+        };
+        const grund = (px, pz) => this._terrainSaatY(px, pz, false) - meer;
+        const K = AnazhRealm.Gesetz("fachwerk:kulturFeld")(hash, x, z, grund);
+        M.set(mk, K);
+        return K;
     }
     // Eine Dorf-Zelle heben (Gate/Test und Tick teilen den Pfad): reserviert bei Export-ANKUNFT
     // (`worldMeta.settlementCells[key]`), Slots in die budgetierte Queue. Kein Export → nichts markiert.
@@ -2917,7 +2964,7 @@ class AnazhRealm_siedlung_ort {
     // Wachstum (`_ortWaechst`).
     _ortDp(k, c) {
         const akt = k.startsWith("d:");
-        const zeit = akt ? { epoche: c.epoche } : this._zellZeit(k, c.seed); // das Viertel trägt die Zeit seiner Stadt
+        const zeit = akt ? { epoche: c.epoche, kultur: c.kultur } : this._zellZeit(k, c.seed); // das Viertel trägt die Zeit seiner Stadt, der Akt seine Kultur
         return {
             seed: c.seed,
             nH: c.nH,

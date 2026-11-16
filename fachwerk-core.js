@@ -3461,14 +3461,122 @@
     function siedlungsReich(S, nH) {
         return S.reichM.kern + S.reichM.jeWurzel * Math.sqrt(nH);
     }
-    // DIE EPOCHEN-LEGENDE einer Siedlung aus ihrem Samen: jede dritte trägt eine Epoche der Tafel (DP.epoche fixiert Region und
-    // Zeit), die übrigen würfelt der Same (undefined). Bis siedlung.K2 rechnete sie der Wirt (`_siedlungEpoche`), byte-gleich.
-    function siedlungsEpoche(seed) {
-        var namen = Object.keys(EPOCHEN);
-        var h = (Math.imul(seed >>> 0 || 1, 2654435761) + 0x9e3779b9) >>> 0;
-        h = (h ^ (h >>> 16)) >>> 0;
-        if (h % 3 !== 0) return undefined;
-        return namen[(h >>> 4) % namen.length];
+    // ── DAS KULTURFELD (vorrat2-kulturfeld): die Kultur eines Orts ist eine FUNKTION seines Orts und des Welt-Samens — kein
+    // Speicher, ihr Preis hängt nie an der Weltgröße (Gebot 7). Je Kachel `zelleM` steht ein HERD: sein Ort die Kachel-Mitte
+    // ± `zitter`/2 Kachel, seine Region der Wurf der Regionen (`regionAus`, dieselbe Verteilung wie der gewürfelte Ort im DORF),
+    // seine Zeit der Wurf der Zeit (`zeitAus`), jeder dritte Herd trägt eine Epoche der Tafel AUS SEINER Region (die Legende;
+    // die nordische Region hat keine). Ein Ort gehört dem nächsten der neun Herde um seine Kachel; der Weg zu ihm kostet über
+    // das Gebirge `hang` m je m Grat über dem höheren Ende und über das Wasser `wasser` × der Anteil seiner `proben` unter dem
+    // Meer mehr — die Kultur driftet mit der Entfernung, am Pass und über das Meer. An der Kante zum nächsten FREMDEN Herd
+    // (andere Region oder Legende) mischt sie: `misch` = ½ · (1 − Vorsprung / `grenzeM`), 0 abseits — der Anteil der Häuser,
+    // die der Nachbar baut (DORF, `fremdAn`). Das Jahr des Orts streut um das seines Herds (`streu`). Bis vorrat2-kulturfeld
+    // trug jede dritte Siedlung eine Epoche aus dem Hash ihres Zell-Samens (`siedlungsEpoche`), der Rest würfelte die Region
+    // aus demselben Samen: Nachbarorte teilten ihre Region mit 0,21 — in 256 m wie in 16 km (Rauschen, kein Kulturraum). ──
+    var KULTURFELD = { zelleM: 2048, zitter: 0.7, grenzeM: 360, proben: 8, hang: 6, wasser: 3, streu: 120 };
+    // die Region eines Wurfs r ∈ [0, 1) (Leser: DORF für den gewürfelten Ort, der Herd des Kulturfelds)
+    function regionAus(r) {
+        return r < 0.3
+            ? "mitteleuropa"
+            : r < 0.46
+              ? "alpin"
+              : r < 0.64
+                ? "mediterran"
+                : r < 0.76
+                  ? "nordisch"
+                  : r < 0.88
+                    ? "fernost"
+                    : "antik";
+    }
+    // die Zeit {jahr, spanne} einer Region aus dem Strom rnd (Leser: DORF für den gewürfelten Ort, der Herd des Kulturfelds)
+    function zeitAus(region, rnd) {
+        var jahr, spanne;
+        if (region === "antik") {
+            jahr = -150 + ((rnd() * 400) | 0);
+            spanne = 40 + ((rnd() * 90) | 0);
+        } else {
+            jahr = 880 + ((rnd() * 680) | 0);
+            var sp = rnd();
+            spanne =
+                sp < 0.35 ? 20 + ((rnd() * 60) | 0) : sp < 0.75 ? 180 + ((rnd() * 300) | 0) : 500 + ((rnd() * 420) | 0);
+            if (region === "fernost" && jahr > 1500) jahr = 1050 + ((rnd() * 450) | 0);
+        }
+        return { jahr: jahr, spanne: spanne };
+    }
+    // der Herd der Kachel (i, k): {x, z, region, epoche, jahr, spanne} aus dem Kachel-Hash des Wirts
+    function kulturHerd(hash, i, k) {
+        var h = rangSchluessel(hash(i, k) >>> 0),
+            w = rangSchluessel((h ^ 0x9e3779b9) >>> 0),
+            s = w;
+        var rnd = function () {
+            s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+            return s / 4294967296;
+        };
+        var region = regionAus(((h >>> 8) & 0xffff) / 65536);
+        var leg = Object.keys(EPOCHEN).filter(function (e) {
+            return EPOCHEN[e].region === region;
+        });
+        var zeit = zeitAus(region, rnd);
+        return {
+            x: (i + 0.5 + ((w & 0xff) / 255 - 0.5) * KULTURFELD.zitter) * KULTURFELD.zelleM,
+            z: (k + 0.5 + (((w >>> 8) & 0xff) / 255 - 0.5) * KULTURFELD.zitter) * KULTURFELD.zelleM,
+            region: region,
+            epoche: leg.length && (h >>> 24) % 3 === 0 ? leg[(w >>> 16) % leg.length] : undefined,
+            jahr: zeit.jahr,
+            spanne: zeit.spanne,
+        };
+    }
+    // DIE KULTUR AM ORT (x, z): `hash(i, k)` reicht der Wirt (FNV-1a über „<Welt-Same>:kultur:i,k"), `grund(x, z)` die Höhe der
+    // Saat über dem Meer (m; null: flach und trocken). Rückgabe {region, epoche, jahr, spanne, misch, fremd: {region, epoche} | null}
+    // — der Eingang `kultur` des DORF (die Epoche reicht der Wirt als `epoche` daneben). Leser: der Wirt (`_siedlungKultur`: die
+    // Zellen der Welt, das Start-Dorf, der Akt ohne Epoche), gate:settlement (der Rang-Zensus).
+    function kulturFeld(hash, x, z, grund) {
+        var Z = KULTURFELD.zelleM,
+            i0 = Math.floor(x / Z),
+            k0 = Math.floor(z / Z),
+            hp = grund ? grund(x, z) : 0,
+            herde = [];
+        for (var i = i0 - 1; i <= i0 + 1; i++)
+            for (var k = k0 - 1; k <= k0 + 1; k++) {
+                var c = kulturHerd(hash, i, k),
+                    dx = c.x - x,
+                    dz = c.z - z,
+                    kost = Math.hypot(dx, dz);
+                if (grund) {
+                    var dach = Math.max(hp, grund(c.x, c.z)),
+                        grat = 0,
+                        nass = 0;
+                    for (var s = 1; s <= KULTURFELD.proben; s++) {
+                        var t = s / (KULTURFELD.proben + 1),
+                            h = grund(x + dx * t, z + dz * t);
+                        if (h - dach > grat) grat = h - dach;
+                        if (h < 0) nass++;
+                    }
+                    kost = kost * (1 + (KULTURFELD.wasser * nass) / KULTURFELD.proben) + KULTURFELD.hang * grat;
+                }
+                herde.push({ c: c, kost: kost });
+            }
+        herde.sort(function (a, b) {
+            return a.kost - b.kost;
+        });
+        var A = herde[0].c,
+            B = null,
+            vor = 0;
+        for (var j = 1; j < herde.length && !B; j++) {
+            var q = herde[j].c;
+            if (q.region !== A.region || q.epoche !== A.epoche) {
+                B = q;
+                vor = herde[j].kost - herde[0].kost;
+            }
+        }
+        var misch = B ? Math.round(Math.max(0, 0.5 * (1 - vor / KULTURFELD.grenzeM)) * 1000) / 1000 : 0;
+        return {
+            region: A.region,
+            epoche: A.epoche,
+            jahr: A.jahr,
+            spanne: A.spanne,
+            misch: misch,
+            fremd: misch > 0 ? { region: B.region, epoche: B.epoche } : null,
+        };
     }
     // DIE ZELLE DER WELT (siedlung.K2): `zellHash(cx, cz)` reicht der Wirt (FNV-1a über „<Welt-Same>:dorf:cx,cz"), der Kern
     // entscheidet Existenz (1 von `rarity`), Anker (die Zell-Mitte ± ¼ Zelle aus den Bits >>>8 und >>>16), Stufe, Größe, Reichweite
@@ -3576,7 +3684,7 @@
     }
     // DAS WORT EINES VIERTELS: Viertel (i, k) der Stadt „<samen> <nH> [<epoche>]" → {seed, nH, epoche, erbe, ring} oder null (dort
     // steht keines). (0, 0) ist der Kern: der Same des Worts, min(nH, voll), ohne Erbe — der Plan, den das Wort bisher gründete.
-    function viertelWort(samen, nH, i, k, epoche) {
+    function viertelWort(samen, nH, i, k, epoche, kultur) {
         var V = STADT_FUNKTION.voll;
         samen = isFinite(samen) ? Number(samen) : 1;
         nH = Math.floor(Number(nH)) || 0;
@@ -3597,7 +3705,7 @@
             n = Math.floor(R / m) + (t < R % m ? 1 : 0);
         }
         var h = rangSchluessel((rangSchluessel((Math.imul(samen | 0, 0x9e3779b1) ^ (i + 0x7f4a7c15)) >>> 0) ^ (k + 0x165667b1)) >>> 0); // erst i, dann k gemischt: (−1, 1) und (1, −1) tragen verschiedene Samen
-        var kern = DORF({ seed: samen, nH: 4, epoche: epoche });
+        var kern = DORF({ seed: samen, nH: 4, epoche: epoche, kultur: kultur }); // die Kultur des Kerns (sein Gedächtnis, `kulturFeld`) trägt seine Viertel
         return { seed: 1 + (h % 1000000), nH: n, epoche: epoche, erbe: { region: kern.region, jahr: kern.jahr, spanne: kern.spanne }, ring: r };
     }
     // ── DIE CHRONIK (siedlung.K4): das Jahr ist EIN Parameter des Plans. Der Ort wächst längs der ZEITACHSE seiner Region (ihre
@@ -3887,15 +3995,16 @@
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
+  const K=DP.kultur||null, KF=K&&K.misch>0&&K.fremd&&REGION_HIST[K.fremd.region]?K.fremd:null;   /*DIE KULTUR DES ORTS (vorrat2-kulturfeld): das Feld (`kulturFeld`) — ohne sie wuerfelt der Same wie bisher, byte-gleich*/
+  if(K&&!(REGION_HIST[K.region]&&isFinite(K.jahr)&&isFinite(K.spanne)&&isFinite(K.misch))) throw new Error('fachwerk: die Kultur des Orts traegt keine Region/Zeit ('+JSON.stringify(K)+')');
+  const fremdAn=i=>!!KF&&rangSchluessel((Math.imul((DP.seed||1)|0,0x9e3779b1)^i)>>>0)/4294967296<K.misch;   /*das Haus i baut der Nachbar (die Grenze mischt, `misch`)*/
   const leg0=(DP.epoche&&DP.epoche!=='gewuerfelt')?EPOCHEN[DP.epoche]:null, achse=leg0?zeitachse(leg0.region):[];
   const chronik=!!leg0&&achse.length>1;                                                 /*DIE CHRONIK (siedlung.K4): die Epoche lebt in der Gegenwart ihrer Region — der Plan ist der ihrer juengsten Epoche, das Jahr schneidet ihn (unten). Die ZAHL ist die Groesse der Gegenwart (die Gestalt); bis w3w schaltete sie die Chronik ab: jede Zelle der Welt (Rang-Gesetz), der Satz „dorf 7 300" und der Akt des DSL trugen eine Zahl und rechneten je Epoche einen eigenen Plan — die Mutante ohne Erbe (Teil J 0,222)*/
   const leg=chronik?EPOCHEN[achse[achse.length-1]]:leg0;
   let region,jahr,spanne,d=0;
   if(leg){ region=leg.region; d=((rnd()-0.5)*50)|0; jahr=leg.jahr+d; spanne=leg.spanne; }
-  else{ const r=rnd(); region= r<.30?'mitteleuropa': r<.46?'alpin': r<.64?'mediterran': r<.76?'nordisch': r<.88?'fernost':'antik';
-    if(region==='antik'){ jahr=-150+((rnd()*400)|0); spanne=40+((rnd()*90)|0); }
-    else{ jahr=880+((rnd()*680)|0); const sp=rnd(); spanne= sp<.35?(20+((rnd()*60)|0)):(sp<.75?(180+((rnd()*300)|0)):(500+((rnd()*420)|0)));
-      if(region==='fernost'&&jahr>1500) jahr=1050+((rnd()*450)|0); } }
+  else if(K){ region=K.region; jahr=K.jahr+(((rnd()-0.5)*KULTURFELD.streu)|0); spanne=K.spanne; }   /*DAS KULTURFELD (vorrat2-kulturfeld, `kulturFeld`): der Ort steht in Region und Zeit seines Herds, das Jahr streut um dessen*/
+  else{ region=regionAus(rnd()); const z0=zeitAus(region, rnd); jahr=z0.jahr; spanne=z0.spanne; }
   if(DP.erbe&&isFinite(DP.erbe.jahr)&&isFinite(DP.erbe.spanne)){ if(!leg&&REGION_HIST[DP.erbe.region]) region=DP.erbe.region; jahr=DP.erbe.jahr; spanne=DP.erbe.spanne; if(leg) d=jahr-leg.jahr; }   /*DAS ERBE DES KERNS (w28-stadt-funktion, `viertelWort`): das Viertel einer Stadt steht in Region, Jahr und Spanne ihres Kerns — sein eigener Same wuerfelt weiter (der Strom bleibt), die Zeit ist die der Stadt*/
   const nZiel=Math.max(4,Math.min(STADT_FUNKTION.voll,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
   const staedtischVon=g=>(g==='markt'||g==='stadt'||g==='grossstadt'||g==='metropole'), kr=rnd(), vor=achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr);
@@ -3906,7 +4015,10 @@
   const groesse=groesseVon(n);
   const staedtisch=staedtischVon(groesse);
   const kernel= staedtisch?'markt':(kr<.45?'brunnen':(kr<.78?'anger':'kreuzung'));
-  const poolAt=(y,hist)=>{ if(!hist&&leg&&leg.pool)return leg.pool; const H=REGION_HIST[region]; let P=H[0][1]; for(const q of H){ if(y>=q[0])P=q[1]; } return P; };   /*hist=true: die HISTORIE gewinnt ueber die Legende — Jahresringe brauchen die Architektur ihrer Zeit*/
+  const histPool=(R,y)=>{ const H=REGION_HIST[R]; let P=H[0][1]; for(const q of H){ if(y>=q[0])P=q[1]; } return P; };
+  const poolAt=(y,hist)=>(!hist&&leg&&leg.pool)?leg.pool:histPool(region,y);   /*hist=true: die HISTORIE gewinnt ueber die Legende — Jahresringe brauchen die Architektur ihrer Zeit*/
+  const poolVon=(i,y,hist)=>{ if(!fremdAn(i)) return poolAt(y,hist); const E=KF.epoche&&EPOCHEN[KF.epoche]; return (!hist&&E&&E.pool)?E.pool:histPool(KF.region,y); };   /*das Haus des Nachbarn: SEINE Legende, sonst die Historie SEINER Region im Jahr des Hauses*/
+  let nFremd=0;
   const geb=[];
   const anker=ringe? chronikAnker(vor, d, gr0, jahr+spanne, n, leg?leg.groesse:groesse) : null;   /*die Ring-Stadt waechst laengs der Zeitachse (chronikJahr) — Kern=Gruendung, Rand=Gegenwart*/
   const gr=[], fr=[];                                                                         /*je Los: das Gruendungsjahr und die frueheren Bauten [{ab, v}] (der Schnitt der Chronik liest sie)*/
@@ -3917,7 +4029,7 @@
       by=Math.max(gr0, Math.min(jahr+spanne, by)); }
     else by=jahr+Math.round(spanne*t9r*(0.55+0.45*rnd()));
     gr.push(ringe?chronikJahr(anker,i):by); fr.push([]);
-    const pool=poolAt(by, ringe), kn=pool[(rnd()*pool.length)|0], hs=1+((rnd()*1e6)|0);
+    const pool=poolVon(i, by, ringe), kn=pool[(rnd()*pool.length)|0], hs=1+((rnd()*1e6)|0); if(fremdAn(i)) nFremd++;
     const p=kulturParams(kn,hs); p.seed=hs; p.kultur=kn; p.terrain=0; p.baujahr=by; p.rolle='wohnhaus';
     if(ringe) p.W=Math.max(4.5, Math.min(15, Math.round(p.W*(0.80+0.38*t9r)*2)/2));         /*PARZELLEN-GEDAECHTNIS: schmale Buergerhaeuser im Kern, breite Lose am Saum*/
     const w=(1.22-0.5*(i/Math.max(1,n-1)))*(0.78+0.44*rnd()); p.wohl=Math.round(w*100)/100;
@@ -3931,7 +4043,7 @@
     p.arm=(n>=16&&w<0.72)?1:0;
     p.balcony=(w>0.95&&p.storeys>=2&&rnd()<0.5)?1:0;
     if(i>0){ const g2=rnd(); p.grundriss=(g2<(staedtisch?0.85:0.68))?'I':((g2<0.9)?'L':p.grundriss); }
-    if(by!==gr[i]){ const P0=poolAt(gr[i], ringe), k0=P0[hs%P0.length]; fr[i].push({ab:gr[i], v:Object.assign({}, p, kulturParams(k0,hs), {kultur:k0, baujahr:gr[i]})}); }
+    if(by!==gr[i]){ const P0=poolVon(i, gr[i], ringe), k0=P0[hs%P0.length]; fr[i].push({ab:gr[i], v:Object.assign({}, p, kulturParams(k0,hs), {kultur:k0, baujahr:gr[i]})}); }
     geb.push(p); }
   const modern=(jahr>=1905&&staedtisch), gewerbe=(jahr>=1850&&staedtisch&&n>=20), gwA=rnd()*Math.PI*2;
   if(modern){ for(let i=0;i<n;i++){ if(i>0&&i<n*0.22&&rnd()<0.72){ const p=geb[i];      // DOWNTOWN-GESETZ: der Kern wächst in den Himmel — als NEUBAU des alten Loses im Jahrhundert der Moderne (der alte Bau bleibt in fr)
@@ -3988,7 +4100,8 @@
   if(C) for(let a=0;a<alle.length;a++){ let v=alle[a];
     if(v.baujahr>za[a].gr) for(const f of za[a].fr) if(f.ab<=za[a].gr) v=f.v;
     C.jahre.push(za[a].gr); C.leute.push(leuteVon(v)); C.wohl.push(isFinite(v.wohl)?v.wohl:1); }
-  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
+  const kultur=K?{region, epoche:leg0?DP.epoche:undefined, misch:KF?K.misch:0, fremd:KF, nFremd}:undefined;   /*die Kultur, in der der Ort steht (Leser: der Export, die Linse der Grenze)*/
+  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, kultur, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
           schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
           kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
           norm:Object.assign({},DORF_NORM,{budget:Math.max(80000,Math.min(400000,DP.budget||DORF_NORM.budget)), gap:(groesse==='stadt'||groesse==='grossstadt'||groesse==='metropole')?0.06:(staedtisch?0.6:DORF_NORM.gap)})};
@@ -9234,6 +9347,7 @@
             budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
             jahr: isFinite(dp.jahr) ? Number(dp.jahr) : undefined, // das Jahr des Orts (Staffel 2, `wachstum`); ohne es das Ende der Epoche
             erbe: dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // das Viertel einer Stadt: Region, Jahr und Spanne ihres Kerns (`viertelWort`)
+            kultur: dp.kultur && typeof dp.kultur === "object" ? dp.kultur : undefined, // die Kultur des Orts (`kulturFeld`)
         });
         var ext = [];
         var Bs = [];
@@ -9423,6 +9537,7 @@
                 z1: Math.max(lay.welt.z1, mz.R + 17),
             };
         if (plan.chronik) aus.chronik = plan.chronik; // die Chronik der Gestalt (Staffel 2: ihr Leser ist `wachstum`)
+        if (plan.kultur) aus.kultur = plan.kultur; // die Kultur des Orts aus dem Feld (`kulturFeld`) — nur, wo der Wirt sie reichte
         // DER PLAN, DER DAS WASSER LAS (w28-stadt-grammatik): Los, Gasse, Laterne und Trasse wichen dem Wasser SEINES Rasters aus —
         // er passt an seinem Wunsch und sonst nirgends. Die Marke reist nur mit ihm (ohne Raster kein Feld: die Goldens des
         // Exports ohne Ort bleiben byte-gleich). Leser: die Ort-Wahl (voxel-worker `ortWahl`).
@@ -11815,7 +11930,8 @@
         wegUeberBruecken: wegUeberBruecken, // fahrzeug.K2 — der Weg über dem Wasser auf der Achse seiner Brücke (Netz und Feldweg)
         siedlungsGroesse: siedlungsGroesse,
         siedlungsReich: siedlungsReich,
-        siedlungsEpoche: siedlungsEpoche,
+        kulturFeld: kulturFeld, // die Kultur eines Orts aus seinem Ort und dem Welt-Samen (vorrat2-kulturfeld; Leser: der Wirt, gate:settlement)
+        KULTURFELD: KULTURFELD,
         GROESSE_N: GROESSE_N,
         STADTMAUER: STADTMAUER,
         STADT_GRAMMATIK: STADT_GRAMMATIK, // die Stadt-Grammatik (Viertel · Bau-Typen · Gegenstände; Leser: DORF, dorfLayout, die Linse)
