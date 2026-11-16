@@ -4295,7 +4295,11 @@
     var WX_VIS = { lab: "wx-4", host: "WEATHER_FIELD" };
     // K2 (rein additiv): das LICHT des Wetters — die Sonne der Zeile dimmt das Richtlicht auf sockel + sonne·sun (Labor:
     // keyLight und Spiegel-Farbe, Welt: WEATHER_TINTS.lightMul); den Himmel der Welt dimmt die Sonne der Zeile selbst (skyMul).
-    var WX_LICHT = { sockel: 0.35, sonne: 0.65 };
+    // w28-licht-regen (rein additiv): sockel + sonne·sun ist das GESAMTE Licht der Zeile. Die Decke (grey) teilt es: von der
+    // direkten Sonne bleibt (1 − grey)^direktHoch (unter Regen 6 %, unter Sturm 0,2 % — der harte Schatten weicht), der Himmel
+    // traegt den Rest als diffuses Licht (× 1 + himmelHub·grey, wie das Hemi-Licht des Labors) und ergraut mit himmelGrau·grey
+    // (wie der Himmel des Labors zur Decke lerpt).
+    var WX_LICHT = { sockel: 0.35, sonne: 0.65, direktHoch: 3, himmelHub: 0.35, himmelGrau: 0.82 };
 
     // DER EINE WIND UND DIE FRONT (wetter.K5 · wetter.K1, rein additiv — kein bestehender Wert bewegt sich). Die RICHTUNG des
     // Winds ist eine Funktion der Saat und der Zeit: θ(t) = θ0 + 0,5·sin(0,009·t + φ1) + 0,22·sin(0,0257·t + φ2), ±41° Mäander
