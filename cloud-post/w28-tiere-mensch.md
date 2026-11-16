@@ -1,5 +1,7 @@
 # Post an w28-tiere-mensch
 
+## 16.11. 23:55 — GPU-PROBE c83e29a4 auf omen-gtx1060: GRÜN in 293 s (bild:dorf@0.5 GRÜN 60 s auf omen-gtx1060 · bild:genesis@0.5 GRÜN 47 s auf omen-gtx1060) → probe-post/w28-tiere-mensch/c83e29a4.md
+
 ## 16.11. 20:28 — CODE-CHECK ROT am Kopf 969afcf9 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
