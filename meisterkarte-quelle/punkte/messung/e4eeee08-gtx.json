@@ -1,0 +1,128 @@
+{
+ "sha": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "geraet": "gtx",
+ "zeit": "2026-11-16T09:24:48.499Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "mensch.K2#2": {
+   "gruen": true,
+   "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
+   "exit": 0,
+   "minuten": 1.53,
+   "gpu": "nvidia/pascal",
+   "konsum": "k2849281b695d",
+   "konsumN": 33,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kaae491f57b8b",
+   "s": 91.1,
+   "fremd": {
+    "s": 93.5,
+    "takte": 42,
+    "fremdS": 127.86,
+    "kerne": 1.368,
+    "fensterKerne": 1.848,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      77.23
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      18.03
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.19
+     ]
+    ],
+    "dienerS": 39.88,
+    "diener": [
+     [
+      "System",
+      18.84
+     ],
+     [
+      "dwm.exe",
+      13.39
+     ]
+    ],
+    "geraetS": 35.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.69
+     ],
+     [
+      "svchost.exe",
+      12.3
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 302.34,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-16T09:24:48.499Z",
+   "abdruck": "4b3401187f18",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k2849281b695d": "pVVNj6M4EP0vOe4s7fBhPizNwen0diJNS+njHst2GegQiGxodrOa/z6ChnSAtOawPgGqqvfq+VXx3+oM8ggpPrzZqlyx1R+rP1cW3tGxaN7RPLzZFVutZQA0ZvzjEM75YxcmTX6uLVE5pM7RINSNcQoUWD7IPi0IAoXIyO9OK79/Va6GYz1U8xIfEdgm5fyFf7/NKHJBQJSQndBpTI15MaS4MkZARton3h4IOZCIbFp+PZs7ZQqBqnJq0DgWEcqLfGDzwMamINCBRvfAQ7AOw8jzh5bjLT+8Xbvkr5yT9mmOKKBUU9baB6pdtv+X86clQ5UD1k6Rl3bElIoK3/uUuV3mGGidC2BWoBmS4pAq3x2JzhN00Vg7AYl9Rb2YEZKQWWyKNpdZ7ZxN9Xn1IvEiF9hmySU9N46+ZQJCQCzm+maAZYpmyiEKqAwY+WfB9wgnNOCUkA2hydqPPDGx3m7JZXTZCUsrx1RNYxl6v3Xt4etyUyWoCoTP+P89+783M7iil70XaASLlUgiPeee7nrTb+P+5fo53n1U3qY3MK8zECuz3JymLWlNFazZj6UCNgOFxjlWtr5Grz3Xx3AQYNuPAT8E23nmZzPjvItwTeObXmLCd4ubt5WuWzDopOdmSMQAaUQZ5/tFcA2n09iE9DCmd+/ljmtt3Y3pLb115FHaOyz9wl0fQ+1cMC/GpEhK10f2+MLn/b8bODkgUpNrPXpYUKmTeyPXYlE7oqrG1ZhoFXZS+aS8quXGnO9vu9oG6+fHzeu82a3f3um3R6hMPRKnIlzrgOnluu6iL2gKTHGiT+d6UIy08pbC+PBtYtDL4lovOXbKlbaxo7WTSCWDtYcdvp9uxxbNUUB5HLV2tSsV6/z9F+HbATjckDeyaycK8EPb/w0eb78+D8XPKMnZVDrvFjXJoLEZFPXkd/kR0qAWDWYldmap86rE8jPq5y8=",
+  "kaae491f57b8b": "dVRdj5swEPwveeyVM18OxNI9OCVqruqpOd1Dpb6t7TVwIRDZcFSp+t+rcJAE6O0ToBnv7OzgP4sjyD2keP9qq3LBFp8WnxcW3tCxaN7Q3L/aBVu4MgQaM/5ehHP+9QyTJj/WlhS5ICBKyA7oNKbGvLiXHc2TMQIy0m54uyNkRyKybvml1vzhYXpMIVBVTg0ah0OE8qMA2BTY2BQEOtDornEP1stl5AeMdBUnfPdKhuLPnJN2M+0ooFRj1ToAqj322HK+mStUOWDtFHlph55SURH47NKonXMMtM4JMCvQ9KR4SVXgDUKnBF001o6axIGifswIWZEJNkWby6x2jqYSWA6mrfzIA7aea0mPjaNvlYAQEIupvxlgmaIZa4hCKkNGfs/07uGABpwSsh66coPIF1dPCCHbuZaiE961GITHSqwiPSISQtJtF5sk7l4un+Pte5CS9Boq/jxpYmWWm8PYHq2pAnc6s81AoXH2la0vSNf3Alz2yU+6EPFdmEyZ10F6ni+WLo1v5ogJ3858s5WuWzDopMemJ2KINKKMp08zcA2HwzCA9DGmswHqc5hvZbiRT2m3h/SDHbxH3zlhXgykSEovQPbliU/nfDNwcECkJtd62LSgUq/+F8wWi9oRVVUPSK2WZ0sCUl5c8e44f7pZ3mNC3Z/ff70831wT59q4U93d6ZWpB9FULF0dMt39gXKKPqEpMMWRNyoUAShGWnntk4TDw90ogKfZ6k45nl0rbWOH6K4iteqj28t/HN8fLZq9gHI/+OxpTyrW5XfHE/6D8/RbcreezP5RJf3hR5TkaCqdn68ykkFjMyjq633+9x8="
+ },
+ "sitzung": {
+  "start": "2026-11-16T09:24:16.135Z",
+  "ordner": "sitzung-20261116-102416",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 7,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "mensch.K2#2",
+    "s": 22.9,
+    "takte": 573,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "mensch.K2#2",
+    "ort": "genesis",
+    "m": 185.18,
+    "dreh": 3.189
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 3690,
+   "frameP95": 25.04,
+   "taktP95": 15.67,
+   "vramMax": 180.7,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 167,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 201.2,
+  "minuten": 3.43
+ }
+}
