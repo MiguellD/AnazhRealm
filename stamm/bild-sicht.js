@@ -2783,12 +2783,7 @@ class AnazhRealm_bild_sicht {
         this._himmelsIrrStempel = stempel;
         const J = this._himmelsIrrJe;
         const k = [t.x, t.y, t.z].map((x) => (ei * L * x) / Math.PI);
-        // das Licht jetzt je Kanal, dann das Ergrauen des Himmels unter der Decke — wie jeder Stoff (welt-licht `umgebungLicht`)
-        const jetzt = (je) =>
-            __weltLicht.himmelGrau(
-                je.map((x, c) => x * k[c]),
-                grau
-            );
+        const jetzt = (je) => __weltLicht.himmelGrau([je[0] * k[0], je[1] * k[1], je[2] * k[2]], grau); // + das Ergrauen der Decke
         if (J && J.version === st._skyEnvVersion) {
             this._himmelsIrr = { mitte: jetzt(J.mitte), oben: jetzt(J.oben) };
             return this._himmelsIrr;
