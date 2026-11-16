@@ -868,11 +868,13 @@ function shaderKostenSeite(o) {
         const roh = objs.get;
         const pp = st.postProcessing;
         const traa = st.traaNode;
+        const schacht = st.godrayUniforms && st.godrayUniforms.stufe;
         const stoffe = Object.entries(opt.stoffe || {}).map(([n, z]) => [n, st[z]]);
         const je = new Map();
         const name = (ro) => {
             if (pp && ro.object === pp._quadMesh) return "post:ausgabe";
             if (traa && ro.material === traa._resolveMaterial) return "TRAA.resolve";
+            if (schacht && ro.object === schacht.quad) return "post:godray";
             try {
                 return r._taeterKlasse(ro.object);
             } catch {
