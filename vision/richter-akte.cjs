@@ -332,7 +332,7 @@ function selbsttest() {
         const kern0 = buche.brueckeLesen(fs.readFileSync(path.join(__dirname, "BRUECKE.md"), "utf8"));
         const ak = {};
         for (const n of fs.readdirSync(dir)) ak[n.slice(0, -5)] = JSON.parse(fs.readFileSync(path.join(dir, n), "utf8"));
-        const z = buche.rechne(k, ak, kern0);
+        const z = buche.rechne(k, ak, kern0, buche.kopfFolgeFest({ main: [basis.sha] })); // die Probe-Akte am Schein-Kopf (buche-2 KOPF-FOLGE)
         return z.heute === 0 && z.kern === 19 && /kein Punkt, nur ein Gerät/.test(z.bericht[0].warum) ? true : JSON.stringify(z.bericht);
     });
     pruefe("buche-2 vereint Radeon- und GTX-Akte desselben SHA mit grünem Preis: Punkt", () => {
@@ -342,7 +342,7 @@ function selbsttest() {
         const kern0 = buche.brueckeLesen(fs.readFileSync(path.join(__dirname, "BRUECKE.md"), "utf8"));
         const ak = {};
         for (const n of fs.readdirSync(dir)) ak[n.slice(0, -5)] = JSON.parse(fs.readFileSync(path.join(dir, n), "utf8"));
-        const z = buche.rechne(k, ak, kern0);
+        const z = buche.rechne(k, ak, kern0, buche.kopfFolgeFest({ main: [basis.sha] })); // die Probe-Akte am Schein-Kopf (buche-2 KOPF-FOLGE)
         return z.heute === 1 && z.kern === 18 ? true : JSON.stringify(z.bericht);
     });
     pruefe("Mutant zweite Fahrt desselben SHA und Geräts: die erste bleibt als Beleg, die Folge trägt beide (buche-2 liest sie)", () => {
@@ -354,7 +354,7 @@ function selbsttest() {
         const kern0 = buche.brueckeLesen(fs.readFileSync(path.join(__dirname, "BRUECKE.md"), "utf8"));
         const ak = {};
         for (const m of fs.readdirSync(dir)) ak[m.slice(0, -5)] = JSON.parse(fs.readFileSync(path.join(dir, m), "utf8"));
-        const z = buche.rechne(k, ak, kern0);
+        const z = buche.rechne(k, ak, kern0, buche.kopfFolgeFest({ main: [basis.sha] })); // die Probe-Akte am Schein-Kopf (buche-2 KOPF-FOLGE)
         return Array.isArray(inhalt) && inhalt.length === 2 && z.heute === 1 ? true : JSON.stringify(inhalt).slice(0, 200);
     });
     fs.rmSync(X, { recursive: true, force: true });

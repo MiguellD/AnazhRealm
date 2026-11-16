@@ -15,7 +15,7 @@
 //   "leiter":  "leben.pflanzen.kraft",          // = Dateiname, sonst Bruch
 //   "sprosse": 1,                                // = Dateiname, muss in der Karte stehen, sonst Bruch
 //   "sha":     "7f778d44c1…",                    // SHA am Kopf (main), auf dem gefahren wurde (≥ 7 Zeichen)
-//   "datum":   "2026-11-14T21:05:00+01:00",      // ISO; ordnet die Fahrten (Ratsche Z4)
+//   "datum":   "2026-11-14T21:05:00+01:00",      // ISO; ordnet die Fahrten desselben Kopfes (Ratsche Z4; über Köpfe hinweg: KOPF-FOLGE)
 //   "soll":    "<wörtlich der Richter der Sprosse aus meisterkarte-2.json>",   // weicht er ab: Bruch
 //   "geraete": [                                 // je Gerät eine Messung in DERSELBEN Fahrt
 //     { "geraet": "Radeon 890M",
@@ -38,7 +38,21 @@
 //   KERN    : beide GRÜN, aber ein Preis fehlt, ist unvollständig, UNGEMESSEN unter Last oder ROT (R3: fehlende Preis-Zahl ist ROT), oder die Karte nennt
 //             für die Sprosse keine klasse („KLASSE FEHLT“, laut im Bericht) → Kern (Z5)
 //   PUNKT   : beide GRÜN und der Preis hält an beiden Geräten         → Punkt (Z2)
-// Die Fahrten einer Sprosse laufen nach Datum; jede ROT-, KERN- oder PUNKT-Fahrt setzt den Stand, „nichts“ lässt ihn (Ratsche Z4).
+// Die Fahrten einer Sprosse laufen nach Datum; jede ROT-, KERN- oder PUNKT-Fahrt setzt den Stand, „nichts“ lässt ihn (Ratsche Z4) —
+// unter dem Gesetz der KOPF-FOLGE:
+//
+// ── DIE KOPF-FOLGE (16.11.) ── Der Stand folgt dem Code, nicht der Uhr. Bis hier setzte eine spätere Messung an ÄLTEREM Code das Urteil
+// über neueren (GTX 16.11.: 13:14 am a635bfee Preis ROT, Heap 491 MB → Kern; 14:11 am Vorfahren e4eeee08 Preis GRÜN → hob die Sprosse
+// wieder auf PUNKT „am e4eeee08“, an mensch.geist.tag S 1 und mensch.menge.rhythmus S 1). Jetzt:
+//   1. Nur Köpfe der main-Linie (Vorfahren von origin/main oder er selbst) setzen den Stand. Eine Fahrt an einem Zweig- oder
+//      Kandidaten-Kopf hebt nichts, nimmt nichts und steht laut im Bericht („nicht auf der main-Linie“). Begründung: die Akte trägt
+//      per Form den „SHA am Kopf (main)“; ein Zweig ist kein Code, den ein Spieler bekommt, und ohne main gibt es keine Folge, an der
+//      „neuer“ messbar wäre (bis 16.11. buchten Zweig-Akten mit — LAGE.md: die Probe-Fehler-Akte am WIP-Kopf c3f23d23).
+//   2. Eine Fahrt an einem Kopf, der echter Vorfahre eines Kopfes ist, an dem dieselbe Sprosse schon eine ROT-, KERN- oder PUNKT-Fahrt
+//      trägt, setzt nichts („überholt: <kopf> ist Vorfahre von <kopf>“, laut im Bericht).
+//   3. Innerhalb eines Kopfes, und zwischen main-Köpfen ohne Vorfahr-Beziehung (zwei gemergte Zweig-Spitzen), bleibt das Datum.
+// Die Folge liest git in EINEM Aufruf je Lauf (kopfFolgeAusGit). Ein SHA, den das Repo nicht kennt, bricht laut mit Namen — nie ein
+// stiller Rückfall auf das Datum (git fetch origin main hilft).
 //
 // ── DER EINGANG DER BRÜCKE ── Der Kern von heute (19) stammt aus BRUECKE.md, Tafel „Was die bestehenden Stationen in der neuen
 // Karte schon heben“ (alte Stationen an Radeon UND GTX im Bild grün). Er steht unten als BRUECKEN_KERN mit Sprossen-Nummern,
@@ -53,7 +67,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { execFileSync } = require("child_process");
+const { execFileSync, spawnSync } = require("child_process");
 
 const KARTE = path.join(__dirname, "meisterkarte-2.json");
 const AKTEN = path.join(__dirname, "richter");
@@ -266,12 +280,120 @@ function fahrtenJeSha(liste) {
         .sort((a, b) => Date.parse(a.datum) - Date.parse(b.datum));
 }
 
+// ── DIE KOPF-FOLGE (Kopf-Kommentar) ── EINE Form, zwei Quellen: git (die Buchung) und eine feste Tafel (Selbsttests ohne Repo).
+//   voll(sha)     → der volle SHA; unbekannt: Bruch mit Namen
+//   aufMain(voll) → steht der Kopf auf der main-Linie (Vorfahr von MAIN_REF oder er selbst)
+//   istAhn(a, b)  → a ist ECHTER Vorfahr von b (a ≠ b)
+const MAIN_REF = "origin/main";
+function kopfFolge(voll, aufMain, ahnenVon) {
+    const memo = new Map();
+    return {
+        voll,
+        aufMain,
+        istAhn: (a, b) => {
+            if (a === b) return false;
+            if (!memo.has(b)) memo.set(b, ahnenVon(b));
+            return memo.get(b).has(a);
+        },
+    };
+}
+// git, EIN Aufruf im Normalfall: `git log` von MAIN_REF und allen Köpfen der Akten, je Commit Zeit und Eltern; die Spitze von MAIN_REF
+// trägt die Dekoration.
+// DAS HOLEN (16.11., der Koordinator: der Baum des Zug-Dienstes holt main nie — sein origin/main ist oft alt, Zweig-Köpfe anderer
+// Geräte fehlen ganz, und die Buchung jedes Zugs stünde an einem fremden Kopf): fehlt ein SHA lokal, ODER steht ein Kopf nicht auf der
+// main-Linie, ist aber jünger als ihre Spitze (dann kann die Spitze alt sein), holt der Lauf EINMAL — main und die fehlenden vollen SHA
+// in EINEM `git fetch` (GitHub liefert erreichbare Commits per vollem SHA) — und liest neu. Erst was DANACH fehlt, bricht laut, mit
+// Namen, Akte und dem Grund, woran das Holen scheiterte; kein Netz ist ein Bruch, nie das Datum. Ein älterer Zweig-Kopf (Ring
+// 2e56cc44) holt nie: der Normalfall bleibt ohne Netz.
+function kopfFolgeAusGit(shas, wo = {}, repo = path.join(__dirname, "..")) {
+    const kurz = [...new Set(shas.map((s) => String(s).toLowerCase()))].filter((s) => /^[0-9a-f]{7,40}$/.test(s));
+    const git = (args, o = {}) =>
+        spawnSync("git", ["-C", repo, ...args], { encoding: "utf8", maxBuffer: 1 << 28, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }, timeout: 180000, ...o });
+    const lies = () => {
+        const r = git(["log", "--format=%H %ct %P%x09%D", "--decorate-refs=refs/remotes/" + MAIN_REF, MAIN_REF, ...kurz, "--"]);
+        if (r.error) bruch(`KOPF-FOLGE: git startet nicht (${r.error.message})`);
+        if (r.status !== 0) return { fehler: r.stderr };
+        const eltern = new Map(),
+            zeit = new Map();
+        let spitze = null;
+        for (const z of r.stdout.split("\n")) {
+            if (!z) continue;
+            const [kopf, deko] = z.split("\t");
+            const [h, t, ...p] = kopf.split(" ").filter(Boolean);
+            eltern.set(h, p);
+            zeit.set(h, +t);
+            if (deko && deko.split(", ").includes(MAIN_REF)) spitze = h;
+        }
+        if (!spitze) bruch(`KOPF-FOLGE: die Spitze von ${MAIN_REF} steht nicht in der Ausgabe von git log`);
+        return { eltern, zeit, spitze };
+    };
+    const erreichbarIn = (eltern) => (von) => {
+        const seen = new Set([von]),
+            stapel = [von];
+        while (stapel.length) for (const p of eltern.get(stapel.pop()) || []) if (!seen.has(p)) seen.add(p), stapel.push(p);
+        return seen;
+    };
+    // jünger als die main-Spitze und nicht auf ihr: die Spitze kann alt sein
+    const spitzeAlt = (g) => {
+        const main = erreichbarIn(g.eltern)(g.spitze);
+        return [...g.eltern.keys()].some((h) => kurz.some((s) => h.startsWith(s)) && !main.has(h) && g.zeit.get(h) > g.zeit.get(g.spitze));
+    };
+    let g = lies(),
+        holen = "";
+    if (g.fehler || spitzeAlt(g)) {
+        // welche SHA fehlen (alle, nicht nur der erste, den git log nennt)
+        const c = git(["cat-file", "--batch-check"], { input: kurz.map((s) => s + "^{commit}").join("\n") + "\n" });
+        const fehlen = c.status === 0 ? kurz.filter((s, i) => / missing$/.test((c.stdout.split("\n")[i] || "").trim())) : kurz;
+        const per = fehlen.filter((s) => s.length === 40); // per SHA holbar sind nur volle
+        const f = git(["fetch", "-q", "origin", `+refs/heads/main:refs/remotes/${MAIN_REF}`, ...per]);
+        holen = f.error || f.status !== 0
+            ? `Holen von origin (main${per.length ? " + " + per.length + " SHA" : ""}) scheiterte: ${String((f.error && f.error.message) || f.stderr).trim().split("\n").pop().slice(0, 160)}`
+            : `Holen von origin (main${per.length ? " + " + per.length + " SHA" : ""}) gelang, der SHA fehlt danach weiter`;
+        g = lies();
+    }
+    const unbekannt = (s, grund) =>
+        bruch(`KOPF-FOLGE: der SHA ${s} ist im Repo unbekannt${wo[s] ? " (Akten: " + wo[s].join(", ") + ")" : ""}${grund ? " — " + grund : ""}${holen ? " — " + holen : ""}; das Datum ersetzt die Kopf-Folge nie`);
+    if (g.fehler) {
+        const m = /bad revision '([^']+)'|bad object (\S+)|ambiguous argument '([^']+)'|short object ID (\S+) is ambiguous/.exec(g.fehler || "");
+        const s = m && (m[1] || m[2] || m[3] || m[4]);
+        if (s === MAIN_REF) bruch(`KOPF-FOLGE: ${MAIN_REF} fehlt im Repo ${repo}${holen ? " — " + holen : ""}`);
+        if (s) unbekannt(s.toLowerCase(), String(g.fehler).trim().split("\n")[0]);
+        bruch(`KOPF-FOLGE: git log scheitert (${String(g.fehler).trim().slice(0, 200)})`);
+    }
+    const { eltern, spitze } = g;
+    const alle = [...eltern.keys()];
+    const vollMemo = new Map();
+    const voll = (s) => {
+        s = String(s).toLowerCase();
+        if (!vollMemo.has(s)) {
+            const t = alle.filter((h) => h.startsWith(s));
+            if (t.length !== 1) unbekannt(s, t.length ? `${t.length} Commits tragen dieses Präfix` : "nicht unter den gelesenen Köpfen");
+            vollMemo.set(s, t[0]);
+        }
+        return vollMemo.get(s);
+    };
+    const erreichbar = erreichbarIn(eltern);
+    const main = erreichbar(spitze);
+    return kopfFolge(voll, (h) => main.has(h), erreichbar);
+}
+// die feste Tafel: { main: [sha…], zweig: [sha…], ahnen: { <nachfahr>: [<ahn>…] } } (von Hand transitiv)
+function kopfFolgeFest({ main = [], zweig = [], ahnen = {} } = {}) {
+    const bekannt = [...main, ...zweig];
+    const voll = (s) => {
+        const t = bekannt.filter((h) => h.startsWith(String(s)) || String(s).startsWith(h));
+        if (t.length !== 1) bruch(`KOPF-FOLGE: der SHA ${s} ist im Repo unbekannt (feste Tafel); git fetch origin main — das Datum ersetzt die Kopf-Folge nie`);
+        return t[0];
+    };
+    return kopfFolge(voll, (h) => main.includes(h), (b) => new Set((ahnen[b] || []).map(voll)));
+}
+
 const RANG = { NULL: 0, KERN: 1, PUNKT: 2 };
 
 // Rechnet die Karte (in place) aus Akten { "<datei ohne .json>": fahrt | [fahrt, …] } und gibt die Zählung zurück; bericht: je
 // Sprosse mit Akten ihr Stand und der Grund der letzten Fahrt, die ihn setzte oder ließ.
 const AKTEN_NAME = /^(.+)\.(\d+)(?:\.([0-9a-f]{7,40})-([a-z0-9]+))?$/;
-function rechne(karte, akten, kern0) {
+function rechne(karte, akten, kern0, kopf) {
+    if (!kopf || typeof kopf.istAhn !== "function") bruch("rechne ohne Kopf-Folge (kopfFolgeAusGit | kopfFolgeFest) — das Datum allein urteilt nie über Köpfe hinweg");
     const T = treppeLesen(karte);
     const leitern = new Map();
     for (const g of karte.gruppen) for (const L of g.kriterien) leitern.set(L.id, L);
@@ -295,6 +417,7 @@ function rechne(karte, akten, kern0) {
             if (!f || f.leiter !== id || f.sprosse !== nr) bruch(`Akte ${datei}: Inhalt nennt ${f && f.leiter}.${f && f.sprosse}`);
             if (m[3] && !String(f.sha).startsWith(m[3])) bruch(`Akte ${datei}: der Name nennt ${m[3]}, die Fahrt ${f.sha}`);
             fahrtPruefen(f, sp, `Akte ${datei} Fahrt ${i + 1}`);
+            kopf.voll(f.sha); // jeder Kopf muss bekannt sein — sonst Bruch mit Namen, auch wo die Sprosse nur EINEN Kopf trägt
         });
         const k = id + "#" + nr;
         if (!jeSprosse.has(k)) jeSprosse.set(k, { id, nr, sp, liste: [] });
@@ -304,15 +427,22 @@ function rechne(karte, akten, kern0) {
     for (const [k, { id, nr, sp, liste }] of [...jeSprosse.entries()].sort()) {
         let s = stand.get(k) || "NULL",
             warum = "";
+        const notiz = [], // was nicht setzte, laut: Zweig-Köpfe und überholte Köpfe
+            setzer = []; // die vollen SHA der Fahrten, die den Stand dieser Sprosse schon setzten (ROT, KERN, PUNKT)
         fahrtenJeSha(liste).forEach((f, i) => {
-            const r = fahrtUrteil(f, sp, T, `Sprosse ${id} S ${nr} Fahrt ${i + 1}`);
+            const r = fahrtUrteil(f, sp, T, `Sprosse ${id} S ${nr} Fahrt ${i + 1}`); // auch die nicht setzende Fahrt bricht laut
+            const h = kopf.voll(f.sha),
+                h8 = h.slice(0, 8);
+            if (!kopf.aufMain(h)) return void notiz.push(`nicht auf der main-Linie: ${h8} (${r.u}) setzt nichts`);
+            const neuer = setzer.find((g) => kopf.istAhn(h, g));
+            if (neuer) return void notiz.push(`überholt: ${h8} (${r.u}) ist Vorfahre von ${neuer.slice(0, 8)}`);
             warum = r.warum;
-            if (r.u === "ROT") s = "NULL";
-            else if (r.u === "KERN") s = "KERN";
-            else if (r.u === "PUNKT") s = "PUNKT";
+            if (r.u === "NICHTS") return;
+            setzer.push(h);
+            s = r.u === "ROT" ? "NULL" : r.u;
         });
         stand.set(k, s);
-        bericht.push({ leiter: id, sprosse: nr, stand: s, warum });
+        bericht.push({ leiter: id, sprosse: nr, stand: s, warum, notiz });
     }
     // Leitern zählen
     for (const L of leitern.values()) {
@@ -377,6 +507,25 @@ function aktenLesen(dir) {
     return akten;
 }
 
+// DIE KLASSE AN DER TAFEL (16.11., vorrat3-klasse): die Tafel vision/richter-tafel.json bindet Stationen an Sprossen; trägt eine
+// solche Sprosse in der Karte keine `klasse`, kann ihre Akte höchstens Kern heben („KLASSE FEHLT“). Bis 16.11. wurde die Klasse von
+// Hand mit der Tafel-Zeile gesetzt und dabei vergessen (zwei gemessene Sprossen fielen daran). Jeder Lauf nennt darum jede solche
+// Zeile beim Namen — kein Abbruch: die Buchung bleibt richtig (Kern), nur das Vergessen wird laut. Regel der Klasse:
+// vision/vorrat/klasse-offen.json (Feld regel), offene erste Sprossen mit Grund ebenda.
+const TAFEL = path.join(__dirname, "richter-tafel.json");
+function tafelOhneKlasse(karte, tafel) {
+    const sprosse = new Map();
+    for (const g of karte.gruppen) for (const L of g.kriterien) for (const s of L.sprossen) sprosse.set(L.id + "#" + s.nr, s);
+    const aus = [];
+    for (const z of (tafel && tafel.zeilen) || []) {
+        const s = sprosse.get(z.leiter + "#" + z.sprosse);
+        if (!s) aus.push(`${z.station} → ${z.leiter} S ${z.sprosse}: die Sprosse steht nicht in der Karte`);
+        else if (!s.klasse) aus.push(`${z.station} → ${z.leiter} S ${z.sprosse} (Richter ${z.richter}): KLASSE FEHLT in der Karte — die Akte hebt höchstens Kern`);
+    }
+    return aus;
+}
+const tafelZeilen = (aus) => [...aus.map((a) => "  TAFEL OHNE KLASSE: " + a), `TAFEL: ${aus.length} Zeile(n) ohne Klasse der Sprosse`];
+
 const schreibe = (karte) => JSON.stringify(karte, null, 1) + "\n";
 const zeile = (z) => `KARTE 2: ${z.heute} von ${z.sprossen} gebucht (${z.anteil.toFixed(1).replace(".", ",")} %), ${z.kern} im Kern`;
 
@@ -406,6 +555,12 @@ function selbsttest() {
             preis: o.ohnePreis === g || o.ohnePreis === true ? undefined : preis(o.preis),
         })),
     });
+    // die Köpfe der Probe: 7f778d44 und 0123abcd auf main ohne Vorfahr-Beziehung; NEU (a635bfee) ist Nachfahr von ALT (e4eeee08),
+    // ZWEIG (c3f23d23) steht nicht auf main — wie am echten Stand 16.11.
+    const ALT = "e4eeee086c",
+        NEU = "a635bfee2a",
+        ZWEIG = "c3f23d23aa";
+    const KOPF = kopfFolgeFest({ main: ["7f778d44c1", "0123abcd99", ALT, NEU], zweig: [ZWEIG], ahnen: { [NEU]: [ALT] } });
     let ok = 0,
         fehl = 0;
     const pruefe = (name, f) => {
@@ -423,26 +578,29 @@ function selbsttest() {
             console.log("  ROT   " + name + " — " + e.message);
         }
     };
-    // die Probe-Leitern A und G tragen im Speicher die Klasse Ort (die Karte setzt sie nur für die zehn ersten Richter)
+    // die Probe-Leitern A und G tragen im Speicher die Klasse Ort (A Sprosse 1 ist in der Karte offen: vision/vorrat/klasse-offen.json)
     const lauf = (akten, o = {}) => {
         const k = neu();
         if (!o.ohneKlasse) for (const id of [A, G]) for (const s of finde(k, id).sprossen) s.klasse = s.klasse || "Ort";
         if (o.klasse) finde(k, A).sprossen[0].klasse = o.klasse;
-        const z = rechne(k, akten, kern0);
+        const z = rechne(k, akten, kern0, o.kopf || KOPF);
         return { k, z, L: (id) => finde(k, id) };
     };
-    const bricht = (akten, muster) => {
+    const bricht = (akten, muster, o) => {
         try {
-            lauf(akten);
+            lauf(akten, o);
             return "brach nicht";
         } catch (e) {
             return e.bruch && muster.test(e.message) ? true : "falscher Bruch: " + e.message;
         }
     };
 
-    pruefe("ohne Akten: byte-gleich, 0 gebucht, 19 im Kern", () => {
+    // Die Karte im Repo trägt seit der ersten echten Buchung (15.11.) gebuchte Zahlen — byte-gleich ist sie darum nur ohne die Felder
+    // der Maschine (Kopf: heute, kern, heuteSprossen, kernSprossen, summe); bis 16.11. verglich die Probe die ganze Datei und stand ROT.
+    const ohneMaschine = (t) => JSON.stringify(JSON.parse(t), (key, v) => (["heute", "kern", "heuteSprossen", "kernSprossen", "summe"].includes(key) ? undefined : v));
+    pruefe("ohne Akten: nur die Felder der Maschine ändern sich, 0 gebucht, 19 im Kern", () => {
         const { k, z } = lauf({}, { ohneKlasse: true });
-        if (schreibe(k) !== roh) return "Datei nicht byte-gleich";
+        if (ohneMaschine(schreibe(k)) !== ohneMaschine(roh)) return "die Maschine fasste ein fremdes Feld an";
         return z.heute === 0 && z.kern === 19 && k.summe.anteilKern === 0.9 ? true : zeile(z);
     });
     pruefe("volle Akte hebt genau die Sprosse: Kern → Punkt", () => {
@@ -540,9 +698,127 @@ function selbsttest() {
             [B + ".1.0123abcd-gtx"]: fahrt(B, 1, { geraete: ["GTX 1060"], sha: "0123abcd99" }) });
         return L(B).heute === 0 && L(B).kern === 1 ? true : `heute ${L(B).heute} kern ${L(B).kern}`;
     });
+    // ── DIE KOPF-FOLGE: der Fall der GTX 16.11. (13:14 am a635bfee Preis ROT, 14:11 am Vorfahren e4eeee08 Preis GRÜN) ──
+    const heapRot = { heap_mb: 491, urteil: "ROT" };
+    pruefe("KOPF-FOLGE Mutant: ältere Kopf-Fahrt später gemessen hebt nicht — Kern am a635bfee bleibt, laut „überholt“", () => {
+        const { L, z } = lauf({ [B + ".1"]: [fahrt(B, 1, { sha: NEU, datum: "2026-11-16T13:14:00+01:00", preis: heapRot }), fahrt(B, 1, { sha: ALT, datum: "2026-11-16T14:11:00+01:00" })] });
+        const b = z.bericht[0];
+        return L(B).heute === 0 && L(B).kern === 1 && /am a635bfee/.test(b.warum) && b.notiz.join() === "überholt: e4eeee08 (PUNKT) ist Vorfahre von a635bfee" ? true : `heute ${L(B).heute} kern ${L(B).kern} · ${b.warum} · ${b.notiz}`;
+    });
+    pruefe("KOPF-FOLGE Mutant: ältere Kopf-Fahrt ROT später gemessen nimmt den Punkt des neueren Kopfes nicht", () => {
+        const { L, z } = lauf({ [A + ".1"]: [fahrt(A, 1, { sha: NEU, datum: "2026-11-16T13:14:00+01:00" }), fahrt(A, 1, { sha: ALT, datum: "2026-11-16T14:11:00+01:00", rot: "GTX 1060" })] });
+        return L(A).heute === 1 && /überholt: e4eeee08 \(ROT\)/.test(z.bericht[0].notiz.join()) ? true : `heute ${L(A).heute} · ${z.bericht[0].notiz}`;
+    });
+    pruefe("KOPF-FOLGE: neuerer Kopf später gemessen setzt den Stand (Kern nach Punkt, ROT nach Punkt), ohne Notiz", () => {
+        const a = lauf({ [B + ".1"]: [fahrt(B, 1, { sha: ALT, datum: "2026-11-16T13:14:00+01:00" }), fahrt(B, 1, { sha: NEU, datum: "2026-11-16T14:11:00+01:00", preis: heapRot })] });
+        const b = lauf({ [A + ".1"]: [fahrt(A, 1, { sha: ALT, datum: "2026-11-16T13:14:00+01:00" }), fahrt(A, 1, { sha: NEU, datum: "2026-11-16T14:11:00+01:00", rot: "Radeon 890M" })] });
+        return a.L(B).heute === 0 && a.L(B).kern === 1 && !a.z.bericht[0].notiz.length && b.L(A).heute === 0 && b.L(A).kern === 0 && !b.z.bericht[0].notiz.length
+            ? true
+            : `Kern-Fall heute ${a.L(B).heute} kern ${a.L(B).kern} · ROT-Fall heute ${b.L(A).heute} kern ${b.L(A).kern}`;
+    });
+    pruefe("KOPF-FOLGE: Köpfe ohne Vorfahr-Beziehung auf main folgen dem Datum (ROT später nimmt den Punkt)", () => {
+        const { L } = lauf({ [A + ".1"]: [fahrt(A, 1, { sha: "0123abcd99", datum: "2026-11-14T10:00:00Z" }), fahrt(A, 1, { sha: "7f778d44c1", datum: "2026-11-15T10:00:00Z", rot: "GTX 1060" })] });
+        return L(A).heute === 0 && L(A).kern === 0 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
+    });
+    pruefe("KOPF-FOLGE Mutant: ein Zweig-Kopf (nicht auf main) setzt nichts — weder Punkt noch ROT, laut benannt", () => {
+        const a = lauf({ [B + ".1"]: fahrt(B, 1, { sha: ZWEIG }) });
+        const b = lauf({ [B + ".1"]: fahrt(B, 1, { sha: ZWEIG, rot: "Radeon 890M" }) });
+        return a.L(B).heute === 0 && a.L(B).kern === 1 && b.L(B).kern === 1 && /nicht auf der main-Linie: c3f23d23 \(PUNKT\)/.test(a.z.bericht[0].notiz.join())
+            ? true
+            : `PUNKT-Fall heute ${a.L(B).heute} kern ${a.L(B).kern} · ROT-Fall kern ${b.L(B).kern} · ${a.z.bericht[0].notiz}`;
+    });
+    pruefe("KOPF-FOLGE Mutant: unbekannter SHA bricht laut mit Namen (feste Tafel)", () => bricht({ [A + ".1"]: fahrt(A, 1, { sha: "deadbeef01" }) }, /SHA deadbeef01 ist im Repo unbekannt/));
+    pruefe("KOPF-FOLGE Mutant: rechne ohne Kopf-Folge bricht laut", () => {
+        try {
+            rechne(neu(), {}, kern0);
+            return "brach nicht";
+        } catch (e) {
+            return e.bruch && /ohne Kopf-Folge/.test(e.message) ? true : e.message;
+        }
+    });
+    // ── DAS HOLEN an einer Fixtur (wie buche.sh selbsttest): ein bare Ursprung, ein Klon, dessen origin/main alt ist ──
+    //   c1 ← c3 (main im Ursprung, nach dem Klonen) ← c5 (main später) ; c1 ← c2 (Zweig im Ursprung)
+    {
+        const os = require("os");
+        const t = fs.mkdtempSync(path.join(os.tmpdir(), "buche-2-kopf-"));
+        const ursprung = path.join(t, "ursprung.git"),
+            klon = path.join(t, "klon");
+        const g = (dir, args, o = {}) => {
+            const r = spawnSync("git", ["-C", dir, "-c", "core.autocrlf=false", ...args], {
+                encoding: "utf8",
+                input: o.input,
+                env: { ...process.env, GIT_AUTHOR_NAME: "selbsttest", GIT_AUTHOR_EMAIL: "selbsttest@invalid", GIT_COMMITTER_NAME: "selbsttest", GIT_COMMITTER_EMAIL: "selbsttest@invalid",
+                    ...(o.zeit ? { GIT_AUTHOR_DATE: o.zeit, GIT_COMMITTER_DATE: o.zeit } : {}) },
+            });
+            if (r.status !== 0) throw new Error(`Fixtur: git ${args.join(" ")}: ${r.stderr}`);
+            return r.stdout.trim();
+        };
+        let c = {},
+            fixtur = "";
+        try {
+            g(t, ["init", "-q", "--bare", ursprung]);
+            const baum = g(ursprung, ["mktree"], { input: "" });
+            const commit = (n, eltern, zeit) => g(ursprung, ["commit-tree", baum, ...eltern.flatMap((e) => ["-p", e]), "-m", "c" + n], { zeit });
+            c[1] = commit(1, [], "2026-11-16T10:00:00Z");
+            g(ursprung, ["update-ref", "refs/heads/main", c[1]]);
+            g(t, ["clone", "-q", ursprung, klon]);
+            c[2] = commit(2, [c[1]], "2026-11-16T11:00:00Z");
+            c[3] = commit(3, [c[1]], "2026-11-16T12:00:00Z");
+            g(ursprung, ["update-ref", "refs/heads/zweig", c[2]]);
+            g(ursprung, ["update-ref", "refs/heads/main", c[3]]);
+        } catch (e) {
+            fixtur = e.message;
+        }
+        pruefe("HOLEN: fehlende Köpfe (Zweig c2, neue main-Spitze c3) werden in EINEM fetch geholt, danach gilt die Folge", () => {
+            if (fixtur) return fixtur;
+            const K = kopfFolgeAusGit([c[1], c[2], c[3]], {}, klon);
+            const [a, z, m] = [K.voll(c[1]), K.voll(c[2]), K.voll(c[3])];
+            return K.aufMain(m) && !K.aufMain(z) && K.istAhn(a, m) && K.istAhn(a, z) && !K.istAhn(z, m) ? true : `main ${K.aufMain(m)} zweig ${K.aufMain(z)}`;
+        });
+        pruefe("HOLEN: ein Kopf liegt lokal, origin/main ist alt und älter als er — der Lauf holt main, der Kopf steht auf main", () => {
+            if (fixtur) return fixtur;
+            c[5] = commit5();
+            function commit5() {
+                const baum = g(ursprung, ["rev-parse", c[3] + "^{tree}"]);
+                const h = g(ursprung, ["commit-tree", baum, "-p", c[3], "-m", "c5"], { zeit: "2026-11-16T13:00:00Z" });
+                g(ursprung, ["update-ref", "refs/heads/probe", h]);
+                g(klon, ["fetch", "-q", "origin", "+refs/heads/probe:refs/remotes/origin/probe"]); // lokal da, origin/main noch c3
+                g(ursprung, ["update-ref", "refs/heads/main", h]);
+                return h;
+            }
+            const K = kopfFolgeAusGit([c[5], c[2]], {}, klon);
+            return K.aufMain(K.voll(c[5])) && !K.aufMain(K.voll(c[2])) ? true : "c5 nicht auf main — die alte Spitze urteilte";
+        });
+        pruefe("HOLEN scheitert (der SHA steht nirgends im Ursprung): lauter Bruch mit Namen, Akte und Grund, nie das Datum", () => {
+            if (fixtur) return fixtur;
+            const nie = "0123abcd".repeat(5);
+            try {
+                kopfFolgeAusGit([c[1], nie], { [nie]: ["x.1.0123abcd-gtx"] }, klon);
+                return "brach nicht";
+            } catch (e) {
+                return e.bruch && new RegExp(`SHA ${nie} ist im Repo unbekannt \\(Akten: x\\.1\\.0123abcd-gtx\\).*Holen von origin \\(main \\+ 1 SHA\\) scheiterte`).test(e.message) ? true : e.message;
+            }
+        });
+        fs.rmSync(t, { recursive: true, force: true });
+    }
+    pruefe("KOPF-FOLGE git: e4eeee08 ist echter Vorfahre von a635bfee, nicht umgekehrt, beide auf main", () => {
+        const K = kopfFolgeAusGit(["e4eeee08", "a635bfee"]);
+        const a = K.voll("e4eeee08"),
+            n = K.voll("a635bfee");
+        return K.istAhn(a, n) && !K.istAhn(n, a) && !K.istAhn(a, a) && K.aufMain(a) && K.aufMain(n) ? true : `ahn ${K.istAhn(a, n)} umgekehrt ${K.istAhn(n, a)}`;
+    });
     pruefe("Mutant KLASSE FEHLT in der Karte: höchstens Kern, laut benannt", () => {
         const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1) }, { ohneKlasse: true });
         return L(A).heute === 0 && L(A).kern === 1 && /KLASSE FEHLT/.test(z.bericht[0].warum) ? true : `heute ${L(A).heute} · ${z.bericht[0].warum}`;
+    });
+    pruefe("TAFEL Mutant: eine Tafel-Zeile auf eine Sprosse ohne Klasse wird beim Namen gemeldet, die mit Klasse nicht, kein Abbruch", () => {
+        const k = neu();
+        delete finde(k, B).sprossen[0].klasse; // die Mutante: die Klasse vergessen
+        const tafel = { zeilen: [{ station: "x.K1#1", leiter: B, sprosse: 1, richter: "gleich" }, { station: "y.K2#1", leiter: "erleben.klang.ereignis", sprosse: 1, richter: "gleich" }] };
+        const aus = tafelOhneKlasse(k, tafel);
+        return aus.length === 1 && aus[0].startsWith("x.K1#1 → " + B + " S 1") && /KLASSE FEHLT/.test(aus[0]) && tafelOhneKlasse(neu(), tafel).length === 0
+            ? true
+            : JSON.stringify(aus);
     });
     pruefe("Mutant Akte misst eine andere Stufe als die Klasse der Karte: bricht laut", () =>
         bricht({ [A + ".1"]: fahrt(A, 1, { preis: { stufe: "Stadt", ankunft_kalt_s: 3 } }) }, /die Karte verlangt „Ort“/)
@@ -578,7 +854,11 @@ function haupt(argv) {
     const roh = fs.readFileSync(karteDatei, "utf8");
     const karte = JSON.parse(roh);
     const kern0 = brueckeLesen(fs.readFileSync(BRUECKE, "utf8"));
-    const z = rechne(karte, aktenLesen(aktenDir), kern0);
+    const akten = aktenLesen(aktenDir);
+    const wo = {}; // SHA → Akten, die ihn tragen (für den Bruch beim Namen)
+    for (const [datei, inhalt] of Object.entries(akten))
+        for (const f of [].concat(inhalt)) if (f && typeof f.sha === "string") (wo[f.sha.toLowerCase()] = wo[f.sha.toLowerCase()] || []).push(datei);
+    const z = rechne(karte, akten, kern0, kopfFolgeAusGit(Object.keys(wo), wo));
     const aus = schreibe(karte);
     if (!trocken && aus !== roh) fs.writeFileSync(karteDatei, aus);
     if (!trocken && karteDatei === KARTE) execFileSync(process.execPath, [path.join(__dirname, "seite-bauen.cjs")], { stdio: "ignore" });
@@ -595,7 +875,8 @@ function haupt(argv) {
                 if (h !== L.heute || k !== L.kern) console.log(`  ${L.id}: heute ${h} → ${L.heute} · kern ${k} → ${L.kern}`);
             }
     }
-    for (const b of z.bericht) console.log(`  ${b.leiter} S ${b.sprosse}: ${b.stand === "NULL" ? "0" : b.stand} — ${b.warum}`);
+    for (const b of z.bericht) console.log(`  ${b.leiter} S ${b.sprosse}: ${b.stand === "NULL" ? "0" : b.stand} — ${b.warum}${b.notiz.map((n) => " · " + n).join("")}`);
+    for (const t of tafelZeilen(tafelOhneKlasse(karte, JSON.parse(fs.readFileSync(TAFEL, "utf8"))))) console.log(t);
     console.log(zeile(z));
 }
 
@@ -607,4 +888,4 @@ if (require.main === module) {
         process.exit(2);
     }
 }
-module.exports = { rechne, fahrtUrteil, preisUrteil, treppeLesen, brueckeLesen, lastVon };
+module.exports = { rechne, fahrtUrteil, preisUrteil, treppeLesen, brueckeLesen, lastVon, kopfFolgeAusGit, kopfFolgeFest, tafelOhneKlasse };
