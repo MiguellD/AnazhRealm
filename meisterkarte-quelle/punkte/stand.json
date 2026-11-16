@@ -5522,7 +5522,7 @@
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.stoerung#1 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.stoerung#1 radeon: ungemessen (R10) · karte2.same.kopplung.stoerung#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, stamm/bild-himmel.js +3)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
@@ -5540,8 +5540,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, stamm/bild-himmel.js +3)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5718,7 +5719,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 461,
-  "konsum": 152,
+  "konsum": 153,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5889,10 +5890,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 141
+  "ohne": 140
  },
  "kopfVoll": "fe885d9de1ae25cb5b5caf0e929dd71bdcfeaedb",
- "zeit": "2026-11-16T14:46:33.643Z",
+ "zeit": "2026-11-16T14:53:19.111Z",
  "vorher": "fe885d9d",
  "bilanz": {
   "gewinn": [],
