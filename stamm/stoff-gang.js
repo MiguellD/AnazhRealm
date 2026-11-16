@@ -2,9 +2,10 @@ class AnazhRealm_stoff_gang {
     // ===== ATLAS · Stoff/gang — Der Gang-Satz: je Gestalt EIN Knochen-Puffer · Pose · Ecken · Instanz-Gang · die Hülle der Wahl (Bewohner und Tiere) =====
     // DER GANG-SATZ — der EINE Baustein jeder Menge gelenkiger Gestalten (Bewohner, Tiere; Lehre 23: WebGPU zieht jeden Draw
     // einzeln — die Kosten der Menge hängen nie an der Kopfzahl): je Gestalt EIN Knochen-Puffer, eine Textur — `baender` Bänder
-    // zu je `n` Phasen des Doppelschritts und der Stand (Zeile baender·n), je Zeile die Matrix jedes Knochens jeder Quelle in den
+    // zu je `n` Phasen des Doppelschritts und `staende` Stände (die Zeilen ab baender·n: der neutrale zuerst, dann je Haltung
+    // des Gesetzes einer — `spec.staende`, ohne Wort einer; w28-steh-haltung), je Zeile die Matrix jedes Knochens jeder Quelle in den
     // Raum des Leibs (`_gangSatzPose`, drei Texel je Knochen: die Zeilen der affinen Matrix). Die Kosten gehören dem Skelett,
-    // nie den Ecken (Lehre 19: je Gestalt 3·J·(baender·n + 1) Texel statt einer Lage je Ecke und Phase). Jede Senke
+    // nie den Ecken (Lehre 19: je Gestalt 3·J·(baender·n + staende) Texel statt einer Lage je Ecke und Phase). Jede Senke
     // (`spec.senken`: ihr Teil, ihre Quellen, ihr Stoff, ob sie wirft) ist eine Instanz-Senke über den EINEN Zeichner
     // (`_instanzMesh`); jede Ecke trägt ihre Vorlage (`aRoh`, `aRohN` — die Rückseite eines beidseitigen Teils mit gekehrter
     // Normale), ihre vier Knochen (`aKnochen`, Platz im Puffer) und Gewichte (`aGewicht`), ihre Lage im Stand (`position`,
@@ -34,6 +35,7 @@ class AnazhRealm_stoff_gang {
         const J = knochen.length;
         const N = spec.n;
         const B = spec.baender || 1;
+        const H = spec.staende || 1;
         // DER TON JE ECKE (mensch.K4): tragen die Quellen ihn (der Mensch, koerper `menschTon`), färbt jede Instanz ihre Ecken nach
         // ihrer Palette — die Zeilen der Ton-Tafel [Leib, Gestalt] reisen je Instanz in `aGang.zw` (`_gangSatzInstanz`), gelesen am
         // Index des Gangs (`_senkenKnoten().gang`: in der Wahl der GPU der Eintrag ihrer Liste, nie der Index des Zugs)
@@ -48,12 +50,13 @@ class AnazhRealm_stoff_gang {
                 `der Leib-Raum des Satzes (${spec.name})`,
                 new Error("eine Quelle ohne Ton oder Tafel")
             );
-        const seite = this._gangSeite(spec.name, N, B, ton, J, raum);
+        const seite = this._gangSeite(spec.name, N, B, ton, J, raum, H);
         const tex = seite.tex;
         const satz = {
             quellen: spec.quellen,
             n: N,
             baender: B,
+            staende: H,
             J,
             knochen,
             tex,
@@ -208,9 +211,10 @@ class AnazhRealm_stoff_gang {
             m.userData.gang = {
                 n: N,
                 baender: B,
+                staende: H,
                 J: seite.breite,
                 puffer: tex.image.data,
-                bytes: 3 * J * (B * N + 1) * 16,
+                bytes: 3 * J * (B * N + H) * 16,
             };
             m.receiveShadow = !sk.wurf;
             m.layers.mask = sk.wurf ? 0 : 1; // der Wurf nur auf der Wurf-Ebene (`_wurfEbene`), das Auge nur auf Ebene 0
@@ -221,6 +225,8 @@ class AnazhRealm_stoff_gang {
             satz.senken.push(m);
         }
         satz.kugeln = AnazhRealm._gangSatzKugeln(satz);
+        // jeder weitere Stand (`staende`: geschrieben vor den Senken) weitet die Kugel wie jede gebackene Zeile
+        for (let h = 1; h < H; h++) AnazhRealm._gangSatzHuelle(satz, B * N + h);
         return satz;
     }
 
@@ -270,12 +276,14 @@ class AnazhRealm_stoff_gang {
 
     // DIE INSTANZ i EINER SENKE DES SATZES: die Matrix und der Gang (Band + Phase in Zyklen — der ganze Teil wählt das Band,
     // der Rest die Phase — und das Gewicht des Gangs, 0 = der Stand); trägt der Satz den Ton (mensch.K4), die Zeilen ihrer
-    // Palette in der Ton-Tafel [Leib, Gestalt] (`zeilen`, ohne sie die Eins)
-    static _gangSatzInstanz(m, i, m4, band, phase, w, zeilen) {
+    // Palette in der Ton-Tafel [Leib, Gestalt] (`zeilen`, ohne sie die Eins). DER STAND DER INSTANZ (w28-steh-haltung): die Zeile
+    // ihres Stands unter den Ständen des Satzes (`stand`, 0 = neutral) reist mit dem Gewicht — y = 2 · Stand + Gewicht, der
+    // Knoten liest beides (`_gangSatzKnoten`); `aGang` trägt keine freie Komponente
+    static _gangSatzInstanz(m, i, m4, band, phase, w, zeilen, stand = 0) {
         m.setMatrixAt(i, m4);
         const a = m.geometry.attributes.aGang;
         const x = band + phase - Math.floor(phase);
-        a.setXYZW(i, x, w, zeilen ? zeilen[0] : 0, zeilen ? zeilen[1] : 0);
+        a.setXYZW(i, x, 2 * stand + Math.min(1, w), zeilen ? zeilen[0] : 0, zeilen ? zeilen[1] : 0);
     }
     // DIE ZAHL EINER SENKE DES SATZES (dicht, [0, n) lebt): `_instanzZahl`, und was sich schrieb, lädt neu
     static _gangSatzZahl(m, n) {
@@ -308,17 +316,17 @@ class AnazhRealm_stoff_gang {
     // V18.546.159: 8 Bauten des bewohner-satz und 10 seines Wurfs, EIN Programm je Pass). Die Seite wächst in der Breite (doppelt,
     // bis GANG_SEITE.max Plätze: drei Texel je Platz unter der Textur-Grenze 8192), jede Zeile zieht dabei um; erst eine volle
     // Seite öffnet die nächste (ein Knoten mehr).
-    _gangSeite(name, n, baender, ton, J, raum = false) {
+    _gangSeite(name, n, baender, ton, J, raum = false, staende = 1) {
         const S = this._gangSeiten || (this._gangSeiten = new Map());
         const G = AnazhRealm.GANG_SEITE;
         if (!(J <= G.max)) throw this._stoffBruch(`die Seite des Gangs (${name})`, new Error(`${J} Plätze > ${G.max}`));
-        const key = `${name}|${n}|${baender}|${ton ? "ton" : ""}|${raum ? "raum" : ""}`;
+        const key = `${name}|${n}|${baender}|${staende}|${ton ? "ton" : ""}|${raum ? "raum" : ""}`;
         const liste = S.get(key) || S.set(key, []).get(key);
         let seite = liste.find((x) => x.passt(J));
         if (seite) return seite;
         const T = THREE;
         const TSL = T.TSL;
-        const zeilen = baender * n + 1;
+        const zeilen = baender * n + staende;
         const tex = new T.DataTexture(
             new Float32Array(3 * G.start * zeilen * 4),
             3 * G.start,
@@ -603,7 +611,9 @@ class AnazhRealm_stoff_gang {
             const f = T.fract(a.x).mul(n);
             const k0 = T.floor(f);
             const t = f.sub(k0).toVar();
-            const zs = T.int(baender * n);
+            const hs = T.floor(a.y.mul(0.5));
+            const wg = a.y.sub(hs.mul(2));
+            const zs = T.int(hs.add(baender * n)).toVar();
             const z0 = T.int(band.add(k0)).toVar();
             const z1 = T.int(band.add(T.mod(k0.add(1), n))).toVar();
             const lage = T.vec3(0).toVar();
@@ -611,7 +621,7 @@ class AnazhRealm_stoff_gang {
             for (const c of ["x", "y", "z", "w"]) {
                 const j = T.int(ki[c]).mul(3).toVar();
                 const lies = (r, z) => T.textureLoad(tex, T.ivec2(j.add(r), z), T.int(0));
-                const R = [0, 1, 2].map((r) => T.mix(lies(r, zs), T.mix(lies(r, z0), lies(r, z1), t), a.y).toVar());
+                const R = [0, 1, 2].map((r) => T.mix(lies(r, zs), T.mix(lies(r, z0), lies(r, z1), t), wg).toVar());
                 lage.addAssign(T.vec3(T.dot(R[0], roh), T.dot(R[1], roh), T.dot(R[2], roh)).mul(kw[c]));
                 nrm.addAssign(T.vec3(T.dot(R[0].xyz, rohN), T.dot(R[1].xyz, rohN), T.dot(R[2].xyz, rohN)).mul(kw[c]));
             }

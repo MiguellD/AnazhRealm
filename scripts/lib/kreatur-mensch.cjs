@@ -511,6 +511,77 @@ async function menschBuehnen() {
                 if (Math.abs(wrap(d)) <= 1.3) blicke.treffer++;
             }
         };
+        // DIE HALTUNG DES STANDS IM SATZ (w28-steh-haltung): wer im Satz steht, steht in der Haltung, in der sein naher Leib steht —
+        // je stehendem Bewohner im Satz der Winkel zwischen der Stand-Zeile, die seine Instanz liest (`aGang.y`: 2 · Stand +
+        // Gewicht, wie der Knoten `_gangSatzKnoten`), und der Pose des nahen Wegs (`_animateHuman` mit SEINEM Gemüt an einem Leib
+        // mit Rig, auf die Vorlage gelegt wie das Backen, `_bewohnerRaumStellen`), an Schulter und Ellbogen beider Arme. Bis hier
+        // buk der Satz EINEN Stand ohne Haltung: beim Akt besuch sprang die Schulter an der Nah-Grenze um 8,2°.
+        const haltung = { n: 0, mit: 0, maxGrad: 0, wer: "", je: {}, ruheGrad: 0 };
+        const haltungMessen = () => {
+            const Z = S.satz;
+            const modell = liste.find((b) => b.leib && b.leib.userData.rig && !b.amSteuer && !b.backt);
+            if (!Z || !Z.fertig || !Z.leib || !modell) return;
+            const g = modell.leib;
+            const rig = g.userData.rig;
+            const namen = [rig.armL.shoulder, rig.armL.elbow, rig.armR.shoulder, rig.armR.elbow].map((k) => k.name);
+            const aG = Z.leib.geometry.attributes.aGang;
+            const D = Z.tex.image.data;
+            // Täter (Selbsttest): der Satz ohne Haltung — jede Instanz liest den neutralen Stand
+            if (hat("bewohner-haltung")) for (let q = 0; q < aG.count; q++) aG.setY(q, aG.getY(q) % 2);
+            const [mA, mB, inv] = [new T.Matrix4(), new T.Matrix4(), new T.Matrix4()];
+            const [qA, qB, p3, s3] = [new T.Quaternion(), new T.Quaternion(), new T.Vector3(), new T.Vector3()];
+            // der neutrale Stand: am Modell (der nahe Weg ohne Gemüt) und im Satz (die Zeile des Stands 0), je Knochen
+            const [nahe0, satz0] = [new Map(), new Map()];
+            const lies = (zeile, p, q) => {
+                const o = A._gangOrt(Z, zeile, p);
+                return mB.set(D[o], D[o + 1], D[o + 2], D[o + 3], D[o + 4], D[o + 5], D[o + 6], D[o + 7], D[o + 8], D[o + 9], D[o + 10], D[o + 11], 0, 0, 0, 1).decompose(p3, q, s3); // prettier-ignore
+            };
+            const pose = (gm, je) => {
+                r._animateHuman(g, 0, 0, false, false, gm);
+                r._leibMatrix(g);
+                const P = r._bewohnerRaumStellen(S, g);
+                inv.copy(P.wurzel.matrixWorld).invert();
+                Z.knochen.forEach(({ q, j, nm }, p) => {
+                    if (!namen.includes(nm)) return;
+                    mA.multiplyMatrices(inv, P.teile[nm].matrixWorld)
+                        .multiply(q.m.skeleton.boneInverses[j])
+                        .multiply(q.m.bindMatrix)
+                        .decompose(p3, qA, s3);
+                    je(p, qA);
+                });
+            };
+            pose(null, (p, q) => {
+                nahe0.set(p, q.clone());
+                lies(Z.n * Z.baender, p, qB);
+                satz0.set(p, qB.clone());
+                // DIE KÖRPER-RUHE (gemessen, nie geurteilt): der neutrale Stand des Modells gegen den des Satzes — die Arme hängen am
+                // Leib nach SEINEM Bau (koerper `leibBauArme`), im Satz nach dem der Vorlage
+                haltung.ruheGrad = Math.max(haltung.ruheGrad, q3((q.angleTo(qB) * 180) / Math.PI));
+            });
+            const neutral = A.MOTION_PROFILE_MAP.koerper.idle;
+            for (const b of liste) {
+                if (!b.leib || b.leib.userData._satz !== true || b.weg || b._gaitW > 0 || b.drinnen) continue;
+                if (!b.satzOrt || !(b.satzOrt[1] >= 0)) continue;
+                const gm = r._bewohnerGemuet(b);
+                const name = r._koerperMotionName(false, gm);
+                const zeile = Z.n * Z.baender + Math.floor(aG.getY(b.satzOrt[1]) / 2);
+                // die Haltung als Drehung GEGEN den neutralen Stand — am nahen Weg und im Satz dieselbe (die Körper-Ruhe fällt heraus)
+                let grad = 0;
+                pose(gm, (p, q) => {
+                    lies(zeile, p, qB);
+                    const dN = q.clone().multiply(nahe0.get(p).clone().invert());
+                    const dS = qB.clone().multiply(satz0.get(p).clone().invert());
+                    grad = Math.max(grad, (dN.angleTo(dS) * 180) / Math.PI);
+                });
+                haltung.n++;
+                if (name !== neutral) haltung.mit++;
+                haltung.je[name] = Math.max(haltung.je[name] || 0, q3(grad));
+                if (grad > haltung.maxGrad) [haltung.maxGrad, haltung.wer] = [q3(grad), `${wer(b)} (${b.akt}: ${name})`];
+            }
+            // das Modell steht wieder in seiner eigenen Pose
+            r._animateHuman(g, modell.uhr + modell.atem, modell.walkPhase || 0, !!modell.weg, false, r._bewohnerGemuet(modell), modell._gait); // prettier-ignore
+            r._leibMatrix(g);
+        };
         // DER PLATZ (mensch.K2): jeder hat einen Stand am Platz, seinem Rand oder seinen Gassen (bis 12 m über ihn hinaus) — auch
         // wo die Spur der Wagen ihn trifft: trägt der Platz neben ihr keinen Ort seines Gesetzes, fällt der Stand
         // (`_bewohnerOhneStand`), und die Linse nennt den Plan, der zu wenig Platz bietet, an seinen Leuten
@@ -568,6 +639,7 @@ async function menschBuehnen() {
                 blick10 = [blickZaehlen("ego", L), blickZaehlen("third", L)];
             }
             if ([10, 12.5, 19].some(um)) blickMessen();
+            if ([10, 12.5, 19].some(um)) haltungMessen();
             if (um(12.5)) haendlerFehlt = ohneHaendler(S, true);
             if (um(2)) z.schmiede2 = anStation();
             if (i % 15 === 0) blieb.set(s.timeOfDay * 24, lagen()); // je 1,5 h
@@ -645,6 +717,7 @@ async function menschBuehnen() {
             unterN: unter.length,
             stationen: stationen.length,
             satzGang: gang.schlupf(),
+            haltung,
             blick: {
                 n: blicke.n,
                 quote: blicke.n ? q3(blicke.treffer / blicke.n) : null,
@@ -832,6 +905,11 @@ function menschUrteil(name, z, soll) {
             `Wiederkehr nach 1 h Abwesenheit: ${wk.ueberN} von ${wk.n} über ±2 m (max ${wk.maxM} m: ${wk.ueber})`
         );
         soll(sg.schlupf <= 0.05 && sg.wegLeib >= 10, `der Satz gleitet: Schlupf ${sg.schlupf} über ${sg.wegLeib} m`);
+        const ht = z.haltung || { n: 0, mit: 0, maxGrad: "ungemessen", wer: "", je: {} };
+        soll(
+            ht.n >= 10 && ht.mit >= 3 && ht.maxGrad <= 1,
+            `die Haltung des Stands im Satz: ${ht.maxGrad}° zum nahen Leib an ${ht.wer || "—"} (Soll ≤ 1°; ${ht.n} Stehende, ${ht.mit} mit Haltung, die Körper-Ruhe des Mess-Leibs ${ht.ruheGrad}°; je Stand ${Object.entries(ht.je).map(([k, v]) => `${k} ${v}°`).join(" · ")})`
+        );
         soll(
             b.n >= 10 && b.quote >= 0.9 && b.sektorMax <= 0.5,
             `der Blick der Stehenden: ${b.quote} von ${b.n} auf ihr Ziel, ${b.sektorMax} in einer Richtung`
@@ -878,6 +956,7 @@ module.exports = {
             ["bewohner-sprung", /Sprung im Nahbereich/],
             ["bewohner-uhr", /der Tag beginnt mit Geschichte/],
             ["bewohner-gleiten", /der Satz gleitet/],
+            ["bewohner-haltung", /die Haltung des Stands im Satz/],
             ["bewohner-nord", /der Blick der Stehenden/],
             ["bewohner-daheim", /ohne Platz/],
             ["bewohner-stapel", /Stände gestapelt: [1-9]/],

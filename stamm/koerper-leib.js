@@ -2921,13 +2921,18 @@ class AnazhRealm_koerper_leib {
         // DIE HALTUNG DES TAGS (w28-mensch-menge, koerper `tagesHaltung`): ein Gemüt mit `haltung` (der Bewohner,
         // `_bewohnerGemuet`) trägt nie den Kampf-Zustand des Spielers; im Stand steht es in der Haltung seines Akts, solange keine
         // Emotion über ihrer Schwelle die Zeile wählt (die Furcht schlägt die Arbeit)
+        const p = m[this._koerperMotionName(moving, emotions)];
+        return p && typeof p === "object" ? p : null;
+    }
+    // DER NAME DES PROFILS (w28-steh-haltung — die EINE Wahl, die der Leser der Daten `_koerperMotionProfile` und der Stand
+    // des Bewohners im Satz und im Feld lesen, `_bewohnerStandVon`): Zustand vor Emotion vor der Haltung des Tags
+    _koerperMotionName(moving, emotions) {
         const eigen = !!emotions && emotions.haltung !== undefined;
         const zust = emotions && !eigen ? this._koerperKampfZustand() : null;
-        let name = this._motionProfileName(moving, emotions, "koerper", zust);
-        if (eigen && emotions.haltung && !moving && name === AnazhRealm.MOTION_PROFILE_MAP.koerper.idle)
-            name = emotions.haltung;
-        const p = m[name];
-        return p && typeof p === "object" ? p : null;
+        const name = this._motionProfileName(moving, emotions, "koerper", zust);
+        return eigen && emotions.haltung && !moving && name === AnazhRealm.MOTION_PROFILE_MAP.koerper.idle
+            ? emotions.haltung
+            : name;
     }
     // ZENSUS-REST V18.488 — DER KAMPF-ZUSTAND DES AVATARS: im Schwung ODER in
     // der Nachklang-Haltung (KAMPF_HALTUNG_SEC nach dem letzten Angriff) steht
