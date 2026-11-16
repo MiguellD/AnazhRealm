@@ -55,7 +55,11 @@ return +((performance.now() - t0) / 1000).toFixed(1);`;
 const HALT = `window.__rbZaehlt = false; __loop(false); return window.__rb;`;
 const HAEUSER = `const st = r.state, pm = st.playerMesh, raf = () => new Promise((f) => requestAnimationFrame(f));
 const stell = (x, y, z) => { pm.position.set(x, y, z); st._fieldVy = 0; if (st.playerVel && st.playerVel.setValue) st.playerVel.setValue(0, 0, 0); if (st._fixedSimPos) st._fixedSimPos.copy(pm.position); };
-const c = ((st.worldMeta && st.worldMeta.settlementCells) || {}).start, plan = c && r._ortPlaene && r._ortPlaene.get(c.ort);
+const zelle = () => ((st.worldMeta && st.worldMeta.settlementCells) || {}).start, takt = window.__anazhAutoSettlement;
+__loop(true); window.__rbZaehlt = true; window.__anazhAutoSettlement = true;
+for (const t1 = performance.now(); !(zelle() && !r._autoSettlementQueue && !r._stlWegePending) && performance.now() - t1 < 120000; ) await raf();
+window.__anazhAutoSettlement = takt;
+const c = zelle(), plan = c && r._ortPlaene && r._ortPlaene.get(c.ort);
 const slots = ((plan && plan.slots) || []).filter((sl) => /^haus_/.test(r._slotBauplan(sl, r._foundry) || ""));
 const H = slots.map((sl) => st.architectures.find((a) => a.tuer && Math.hypot(a.position.x - c.x - sl.x, a.position.z - c.z - sl.z) < 0.05)).filter(Boolean);
 const start = pm.position.toArray(); __loop(true); window.__rbZaehlt = true; let stufe0 = 0;
@@ -68,8 +72,13 @@ function anlageVon(root) {
     const S = require("./stamm.cjs");
     const zeilen = S.text(root).split("\n");
     const cache = new Map();
+    // ein Behälter in Tiefe 2 (`r._fischKarte.zellen`) entsteht mit seinem Träger: die Anlage des Trägers
     return (pfad) => {
-        const name = pfad.split(".").pop();
+        const teile = pfad.replace(/^r\.(state\.)?/, "").split(".");
+        if (teile.length > 1) return lies(teile[0]) + " (." + teile.slice(1).join(".") + ")";
+        return lies(teile[0]);
+    };
+    function lies(name) {
         if (cache.has(name)) return cache.get(name);
         const e = name.replace(/[$]/g, "\\$");
         const zuweisung = new RegExp(`(?:\\.|\\b)${e}\\s*(?:=(?![=>])|\\|\\|=|\\?\\?=)|\\b${e}\\s*:\\s*new\\b`);
@@ -79,7 +88,7 @@ function anlageVon(root) {
         const ort = i < 0 ? "Anlage nicht im Stamm" : S.ort(root, i + 1);
         cache.set(name, ort);
         return ort;
-    };
+    }
 }
 
 function bildPaar(a, b) {

@@ -383,12 +383,16 @@ class AnazhRealm_speicher_laden {
         // Die Promotion der Streu rechnet der Weg neu (speicher.K3); ein älterer Stand trägt seine Liste
         // (`worldMeta.scatterPromoted`) mit den Bäumen, die sie promotete — sie bleibt im worldMeta und reist weiter.
         const promoviert = this.state.worldMeta && this.state.worldMeta.scatterPromoted;
-        this.state.scatterPromoted = new Set(Array.isArray(promoviert) ? promoviert : []);
+        this.state.scatterPromoted = this._zellGedaechtnis(
+            "scatterPromoted",
+            new Set(Array.isArray(promoviert) ? promoviert : []),
+            (s) => this._streuZelleM(s)
+        );
         // Scatter-Counters + Lookup-Buffer beim Welt-Wechsel resetten; sie bauen sich beim Stream neu.
         // Nicht persistiert (Session-Tatsache, kein Welt-Erbgut).
         if (!ort) {
             this.state.scatterCounters = { tree: 0, under: 0, stone: 0 };
-            this.state.scatterLookup = new Map();
+            this.state.scatterLookup = this._zellGedaechtnis("scatterLookup", new Map(), (s) => this._streuZelleM(s));
         }
         // Migration: das Legacy-"private" wird zur kanonischen 4-Stufen-Form "privat"; unbekannte Werte
         // (Müll/Zukunft) fallen still auf den sicheren Default "privat".

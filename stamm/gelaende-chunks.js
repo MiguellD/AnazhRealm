@@ -952,7 +952,12 @@ class AnazhRealm_gelaende_chunks {
                 if (meshData.vonPlatte) {
                     // Diagnose-Zähler (Linse diag-warm-start), keine Spiel-Logik
                     this.state._chunkIdbHits = (this.state._chunkIdbHits | 0) + 1;
-                    if (!this.state._chunkIdbHitByKey) this.state._chunkIdbHitByKey = new Map();
+                    if (!this.state._chunkIdbHitByKey)
+                        this.state._chunkIdbHitByKey = this._zellGedaechtnis(
+                            "_chunkIdbHitByKey",
+                            new Map(),
+                            this._voxelChunkConfig(0).span
+                        );
                     this.state._chunkIdbHitByKey.set(cacheKey, (this.state._chunkIdbHitByKey.get(cacheKey) | 0) + 1);
                 }
             })

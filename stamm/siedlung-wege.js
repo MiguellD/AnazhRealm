@@ -1011,7 +1011,9 @@ class AnazhRealm_siedlung_wege {
         // eine Zelle reist erst mit ihrer ersten Stufe, dem Pfad (`_trittStufe`); was darunter getreten ist (sichtbar nichts),
         // zählt das flüchtige Gedächtnis `_trittSchwach`
         const F = wm.tritt || (wm.tritt = {});
-        const schwach = this._trittSchwach || (this._trittSchwach = new Map());
+        const schwach =
+            this._trittSchwach ||
+            (this._trittSchwach = this._zellGedaechtnis("_trittSchwach", new Map(), AnazhRealm.TRITT.zelleM));
         const key = i + "," + j;
         const jetzt = this._trittJetzt();
         const alt = F[key] || schwach.get(key);
@@ -1106,7 +1108,10 @@ class AnazhRealm_siedlung_wege {
             const [n, t] = wm.tritt[key];
             const st = AnazhRealm._trittStufe(n * Math.exp(-(jetzt - t) / T.erholTage));
             if (!(st > 0)) {
-                (this._trittSchwach || (this._trittSchwach = new Map())).set(key, wm.tritt[key]);
+                (
+                    this._trittSchwach ||
+                    (this._trittSchwach = this._zellGedaechtnis("_trittSchwach", new Map(), AnazhRealm.TRITT.zelleM))
+                ).set(key, wm.tritt[key]);
                 delete wm.tritt[key];
                 this._trittSchrieb = (this._trittSchrieb || 0) + 1;
             }

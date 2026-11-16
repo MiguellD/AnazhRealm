@@ -95,14 +95,15 @@ class AnazhRealm_vegetation_streu {
     // V18.220 — Cell-Key in Welt-Koords (deterministisch, P2P-sicher).
     // Layer ∈ {"tree", "under", "stone"}; das Cell-Raster pro Layer.
     _scatterCellKeyAt(x, z, layer) {
-        const cfg = this._scatterConfig();
-        let cell;
-        if (layer === "under") cell = cfg.underCellM;
-        else if (layer === "stone") cell = cfg.stoneCellM;
-        else cell = cfg.treeCellM;
+        const cell = this._streuZelleM(layer);
         const cx = Math.floor(x / cell);
         const cz = Math.floor(z / cell);
         return `${layer}:${cx},${cz}`;
+    }
+    // Das Zellmaß der Schicht (m) — der Schlüssel der Streu und das Register der Zell-Gedächtnisse (`_zellGedaechtnis`) lesen es.
+    _streuZelleM(layer) {
+        const cfg = this._scatterConfig();
+        return layer === "under" ? cfg.underCellM : layer === "stone" ? cfg.stoneCellM : cfg.treeCellM;
     }
 
     // V18.220 — die PROMOTED-Bitmask. Plan §2 + §8: ein Cell, das via Ω-H
@@ -110,7 +111,9 @@ class AnazhRealm_vegetation_streu {
     // Doppel-Tree). Snapshot-getragen — die Promotion überlebt den Reload.
     _ensureScatterPromotedSet() {
         if (!this.state.scatterPromoted || !(this.state.scatterPromoted instanceof Set)) {
-            this.state.scatterPromoted = new Set();
+            this.state.scatterPromoted = this._zellGedaechtnis("scatterPromoted", new Set(), (s) =>
+                this._streuZelleM(s)
+            );
         }
         return this.state.scatterPromoted;
     }
@@ -155,7 +158,7 @@ class AnazhRealm_vegetation_streu {
     // kann die Promotion die Cell nicht zur Form-Identität auflösen.
     _ensureScatterLookup() {
         if (!this.state.scatterLookup || !(this.state.scatterLookup instanceof Map)) {
-            this.state.scatterLookup = new Map();
+            this.state.scatterLookup = this._zellGedaechtnis("scatterLookup", new Map(), (s) => this._streuZelleM(s));
         }
         return this.state.scatterLookup;
     }

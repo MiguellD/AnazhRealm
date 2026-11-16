@@ -150,55 +150,44 @@ class AnazhRealm_gelaende_fern {
         return n;
     }
 
-    // DIE GEDÄCHTNISSE DER SAAT GEHEN MIT IHREM CHUNK (Gegner Speicher F2 F3, Gegner Bild F1, 15.11.): was die Saat und der Gang
-    // an einem Ort merken, fällt mit dem Chunk aus dem Saum — die Marke der Streu (`scatterPromoted`, jede Schicht) und ihr
-    // Lookup (`scatterLookup`), außer am Ort eines bleibenden gewachsenen Baus (`bleiben`: eine Tat, ein Werk, eine Promotion);
-    // die Antworten des Freistands (`_freistandMemo`); der Pegel des Chunks (`_pegelOrte`); das flüchtige Gedächtnis der
-    // Tritte (`_trittSchwach`: was unter dem Pfad blieb — den Pfad trägt der Stand). Bis hier wuchs jedes mit dem Weg (Radeon,
-    // Wiese → Dorf → West → Wiese → Pendeln → 3,35 km → Wiese): Tritte 4 814 → 31 919, Marken 98 → 422, Freistand 2 375 → 9 298,
-    // Pegel 312 → 669 — und die Marke vom ersten Besuch hielt die Wiederkehr: die Saat übersprang die Probe einer Zelle, deren
-    // Marke ein Busch des ersten Besuchs gesetzt hatte (6 von 46 Glutbrunnen der Wiese fehlten, Bäume standen an ihrem Ort).
+    // DAS REGISTER DER ZELL-GEDÄCHTNISSE (Schnitt 2 „der Speicher folgt dem Blick“; Gegner Speicher F2 F3, Runden-Zensus 16.11.):
+    // jedes Gedächtnis mit Zell-Schlüssel meldet sich bei seiner Anlage HIER an — Name, Karte (Map oder Set), Zellmaß (m je Zelle,
+    // oder eine Funktion der Schicht vor „:“) — und bekommt seine Karte zurück; eine neue Karte desselben Namens (ein neuer Stand)
+    // ersetzt die alte. Der Schlüssel ist „[schicht:]i,j[,…]“, die Zelle (i, j) hat die Mitte ((i + ½)·m, (j + ½)·m). Angemeldet:
+    // die Marke der Streu und ihr Lookup (`scatterPromoted`, `scatterLookup`), die Antworten des Freistands (`_freistandMemo`), der
+    // Pegel des Chunks (`_pegelOrte`), das flüchtige Gedächtnis der Tritte (`_trittSchwach` — den Pfad trägt der Stand). Die Darts
+    // der Wald-Zellen (`_forestDartMemo`) melden sich NICHT an: ihr EINER Räumer ist die Schranke (`_forestDartRaum`,
+    // WALD_PLAN.zellen, die fernsten zuerst) — die Streu liest den Plan bis an ihren Horizont (`SCATTER.outerM`), weit jenseits
+    // des Saums der Saat (gate:kreatur-takt schwarm: die Krone s:tree:74,0 ohne Scheitel, als die Saat ihn mitnahm).
+    _zellGedaechtnis(name, karte, mass) {
+        (this._zellGedaechtnisse || (this._zellGedaechtnisse = new Map())).set(name, { karte, mass });
+        return karte;
+    }
+
+    // DIE GEDÄCHTNISSE GEHEN MIT IHREM CHUNK (Gegner Speicher F2 F3, Gegner Bild F1): verlässt ein Chunk den Saum der Saat, fallen
+    // die Einträge seines Gebiets in ALLEN angemeldeten Gedächtnissen (`_zellGedaechtnis`) in EINEM Gang — außer am Ort eines
+    // bleibenden gewachsenen Baus (`bleiben`: eine Tat, ein Werk, eine Promotion; seine Zelle der Streu hält). Was wiederkehrt,
+    // rechnet sein Leser aus dem Samen neu. Bis hier räumte jeder Halter in eigener Schleife mit eigener Lesart seines Schlüssels —
+    // ein Gedächtnis ohne Schleife wuchs mit dem Weg (Radeon 15.11.: Tritte 4 814 → 31 919, Marken 98 → 422, Freistand
+    // 2 375 → 9 298, Pegel 312 → 669; die Marke vom ersten Besuch hielt die Wiederkehr: 6 von 46 Glutbrunnen der Wiese fehlten).
     _saatGedaechtnisGeht(geht, span, bleiben) {
-        const chunkVon = (x, z) => Math.floor(x / span) + "," + Math.floor(z / span);
         const st = this.state;
-        const SC = this._scatterConfig ? this._scatterConfig() : null;
-        const zelleM = (schicht) =>
-            !SC ? 0 : schicht === "under" ? SC.underCellM : schicht === "stone" ? SC.stoneCellM : SC.treeCellM;
         const halten = new Set();
         for (const e of bleiben) {
             const bp = st.blueprints && st.blueprints[e.type];
-            if (bp && bp._isGrown && this._scatterCellKeyAt)
-                halten.add(this._scatterCellKeyAt(e.position.x, e.position.z, "tree"));
+            if (bp && bp._isGrown) halten.add(this._scatterCellKeyAt(e.position.x, e.position.z, "tree"));
         }
-        const marke = (k) => {
-            if (halten.has(k)) return false;
-            const a = k.indexOf(":");
-            const b = k.indexOf(",", a);
-            const c = zelleM(k.slice(0, a));
-            return c > 0 && geht.has(chunkVon((+k.slice(a + 1, b) + 0.5) * c, (+k.slice(b + 1) + 0.5) * c));
-        };
-        if (st.scatterPromoted && st.scatterPromoted.size)
-            for (const k of st.scatterPromoted) if (marke(k)) st.scatterPromoted.delete(k);
-        if (st.scatterLookup && st.scatterLookup.size)
-            for (const k of st.scatterLookup.keys()) if (marke(k)) st.scatterLookup.delete(k);
-        const fm = this._freistandMemo;
-        if (fm && fm.size)
-            for (const k of fm.keys()) {
-                const a = k.indexOf(",");
-                if (geht.has(chunkVon(+k.slice(0, a), +k.slice(a + 1, k.indexOf(",", a + 1))))) fm.delete(k);
-            }
-        // Die Darts der Wald-Zellen (`_forestDartMemo`) gehen NICHT mit der Saat: ihr EINER Räumer ist die Schranke
-        // (`_forestDartRaum`, WALD_PLAN.zellen, die fernsten zuerst) — die Streu liest den Plan bis an ihren Horizont
-        // (`SCATTER.outerM`, über `_ortGestaltSame` → `_waldPlanSteht`), weit jenseits des Saums der Saat. Räumte die Saat ihn mit,
-        // wartete jede gezeichnete Streu-Zelle jenseits des Saums ohne Höhe auf einen neuen Plan (gate:kreatur-takt schwarm: die
-        // Krone s:tree:74,0 ohne Scheitel, 0 von 100 Gliedern auf ihr).
-        if (this._pegelOrte) for (const k of geht) this._pegelOrte.delete(k);
-        const T = this._trittSchwach;
-        if (T && T.size) {
-            const m = AnazhRealm.TRITT.zelleM;
-            for (const k of T.keys()) {
-                const a = k.indexOf(",");
-                if (geht.has(chunkVon((+k.slice(0, a) + 0.5) * m, (+k.slice(a + 1) + 0.5) * m))) T.delete(k);
+        for (const { karte, mass } of (this._zellGedaechtnisse || new Map()).values()) {
+            if (!karte || !karte.size) continue;
+            for (const k of karte instanceof Map ? karte.keys() : karte) {
+                if (halten.has(k)) continue;
+                const a = k.indexOf(":") + 1;
+                const b = k.indexOf(",", a);
+                const c = k.indexOf(",", b + 1);
+                const m = typeof mass === "function" ? mass(k.slice(0, Math.max(0, a - 1))) : mass;
+                const x = (+k.slice(a, b) + 0.5) * m;
+                const z = (+k.slice(b + 1, c < 0 ? k.length : c) + 0.5) * m;
+                if (geht.has(Math.floor(x / span) + "," + Math.floor(z / span))) karte.delete(k);
             }
         }
     }
