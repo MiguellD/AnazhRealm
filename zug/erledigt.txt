@@ -1298,3 +1298,4 @@ omen-gtx-gtx-e4eeee08-w1221-1-e4eeee08 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT
 2026-11-16 13:40 landung ABGEBROCHEN main e4eeee08: sg-fuge3 wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 20 stellen sich hinten an
 2026-11-16 13:40 landung Zwischenstand main e4eeee08: misst 20 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (25) je allein (5 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-gtx-e4eeee08-w1340-1-e4eeee08 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN luftwasser.K3#2 ‖ luftwasser.K3#2: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.71 m, heim nach 20 s 11 (85 %, Soll ≥ 60 %) · Bild tier:fisch 5434 / 0 px (punkte-maschine 2a5b4c9b messung/e4eeee08-gtx.json)
+2026-11-16 13:48 landung ABGEBROCHEN main e4eeee08: sg-fuge6 wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 19 stellen sich hinten an
