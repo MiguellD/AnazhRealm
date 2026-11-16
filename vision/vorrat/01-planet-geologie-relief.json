@@ -1,0 +1,46 @@
+[
+ {
+  "leiter": "planet.geologie.platten", "sprosse": 1, "klasse": "B",
+  "richter": "30 Saaten: Gebirgsfläche > 2 km liegt in Gürteln mit Achsen ≥ 4:1 in ≥ 70 %; Blindpaar Schummerung gegen reale Region",
+  "hat": "Der Planet trägt Platten, Ränder, Orogen-Gürtel und Gräben im Kern (planet-core.js:4-33, Rand/Orogen planet-core.js:1149-1173), aber im Spiel liest ihn nur der Satz „reise“ (stamm/feld-leben.js:1365, stamm/gelaende-chunks.js:673) als SKALARE Regler je Welt (planet-core.js:2320-2330: hoehe aus orogenStaerke, ks aus Konvergenz); das lokale Relief bleibt die Großform aus drei glatten Rausch-Feldern (gelaende-core.js:361-363), die 9×9-Leit-Stützen über 64 km (planet-core.js:2341-2350) liest kein Leser im Gelände (gelesen).",
+  "station": "keine (keine Station der alten Karte misst Tektonik; scripts/diag-planet.cjs ist ein headless Richter des Kerns, keine Station)",
+  "fehlt": "Die Gebirge der Spielwelt liegen nicht in Gürteln: der Ort einer Gebirgsfläche folgt dem Erosions-Rausch E, nicht dem Plattenrand; dazu fehlt jede Sicht auf 10⁴ km² im Spiel (kein Überflug) und jede Station.",
+  "rezept": "Bau: die Leit-Stützen o.leit.huelleM (planet-core.js:2350) als langwellige Hülle in die Großform der Reise-Welt legen (gelaende-core.js:403 Spline OFFSET/RELIEF), so dass Gebirge > 2 km dem Orogen folgen. Richter: Höhenraster 100×100 km der Reise-Welt aus dem Faden (Muster Feld-Pass stamm/gelaende-chunks.js:704-711) an 30 Reise-Zielen, Gebirgsflächen > 2 km als Komponenten, Achsenverhältnis aus dem Trägheitstensor. Pose: Überflug, Kamera 3–5 km über dem Gürtel.",
+  "messgroesse": "Bau setzt an gelaende-core.js:403-410 (Spline der Großform) und an ortErbgut gelaende-core.js:5941 (das Erbgut trägt heute nur Regler, kein Feld); Quelle planet-core.js:2341-2350",
+  "preisRisiko": "Überflug-Pose ungemessen: Sicht 10⁴ km² sprengt die Ort-Klasse (Sicht ≤ 1 km) — der Preis liefe auf Klasse Stadt/Kontinent, kein Gerät hat dort je gemessen",
+  "gpuMin": 10, "bau": "L", "sicher": 0.75
+ },
+ {
+  "leiter": "planet.geologie.vulkan", "sprosse": 1, "klasse": "R",
+  "richter": "Kruste bildet sich und die Glut verlischt im Bild nach der Abkühlkurve gemessener Laven ±30 %; Blindpaar Glutbild gegen Lava-Foto (2AFC ≤ 85 %)",
+  "hat": "Die DSL gießt Lava als Tat-Decke einer 16-m-Zelle (stamm/feld-leben.js:421, :3213-3235), ihr Zustand ist der Newton-Gang des Kerns (gelaende-core.js:1835-1852, τ = ρ·c·1 m / 150 W/m²K), sie glüht über die glut-Achse, leuchtet als Feuer (stamm/feld-leben.js:3386-3398) und erstarrt zu Stein, am Wasser unter Dampf (gelesen).",
+  "station": "stoffe.K3#2 (headless, diag-wasser-leben --nur koerper, grün an d3708675; stationen/g1.js:3556) — urteilt nur den Zustand glut→stein und Dampf, nie das Bild und nie die Kurve gegen gemessene Laven",
+  "fehlt": "Ein Richter im Fenster, der die Glut der Zelle im Ausgabe-Bild über die Welt-Zeit liest und gegen eine Abkühlkurve gemessener Laven legt, plus das Blindpaar; eine sichtbare KRUSTE (dunkle Haut über heißem Kern) kennt das Spiel nicht — die Glut ist EIN Wert je Zelle.",
+  "rezept": "Muster: die Uhr-Fahrt der Himmelsmechanik (stationen/g3.js:3540-3560, Bild-Maß je Uhrschritt in der warmen Sitzung): Lava per DSL vor die Kamera gießen, die Welt-Stunde vorstellen. Mess-Größe: Leuchtdichte der Lava-Zelle im Bild über der Draper-Schwelle je Zeitschritt gegen T(t) gemessener Laven. Gelesen: τ ≈ 4 h für 1 m Decke, gemessene Oberflächen-Glut erlischt in Minuten — der Richter fiele wahrscheinlich rot, bis die Kruste als Oberflächen-Gang (dünne Haut) im Kern steht (LAVA.dicke gelaende-core.js:1819).",
+  "messgroesse": "Seite liest _lavaAt(x,z).glut und .alterS (stamm/feld-leben.js:3221-3235) und die Leuchtdichte der Zelle im Bild; Kurve aus gelaende-core.js:1844",
+  "preisRisiko": "keines erkennbar (eine Zelle, ein Feuer-Licht); die Pose ist frei wählbar, nicht am Dorf",
+  "gpuMin": 4, "bau": "M", "sicher": 0.6
+ },
+ {
+  "leiter": "planet.geologie.gebirge", "sprosse": 1, "klasse": "B",
+  "richter": "Blindpaar Felswand gegen Foto; in Kollisionszonen ≥ 80 % der Wände verformt, im alten Kraton ≤ 20 %",
+  "hat": "Jede Felswand trägt Bänke aus dem Fels-Stoff mit EINEM festen Einfallen von 4° und fester Streich-Richtung für die ganze Welt (gelaende-core.js:3349-3351 FELS.einfall 0.07, streichen 0.6); keine Faltung, kein Versatz, keine Ortsgeschichte (gelesen).",
+  "station": "keine",
+  "fehlt": "Eine Verformung, die vom Ort abhängt: Einfallen, Faltung und Versatz der Bänke als Funktion einer tektonischen Größe des Orts — heute ist jede Wand gleich flach gelagert, es gibt weder Kollisionszone noch Kraton im lokalen Gesetz.",
+  "rezept": "Bau: FELS.einfall/streichen von Konstanten zu einem Erbgut-Feld der Reise-Welt aus planetOrt (rand.art konvergent, rand.abstandKm, orogenStaerke: planet-core.js:2316-2353), als Faltung der Bank-Höhe längs des Streichens im Fels-Stoff. Richter: an N Wänden je Welt die Bank-Neigung im Bild (Gradient der Bank-Fugen) gegen 10°-Schwelle, je eine Reise in Kollisions- und Kraton-Lage; Muster die Blick-Fahrt von leib.K3#2 (stationen/g5.js:4803).",
+  "messgroesse": "Bau setzt an gelaende-core.js:3349-3364 (FELS) und am Shader-Leser des Fels-Stoffs (foundry-core.js:4302); Ortsgröße aus planet-core.js:2353 o.rand",
+  "preisRisiko": "keines erkennbar (Shader-Term, keine neue Geometrie)",
+  "gpuMin": 6, "bau": "M", "sicher": 0.7
+ },
+ {
+  "leiter": "planet.geologie.unterwelt", "sprosse": 1, "klasse": "R",
+  "richter": "Mündungen je km² an 3 Saaten im Band; Mund im Bild an ≥ 90 % im Fels",
+  "hat": "Das Höhlen-Feld (Wurm, Kaverne, Halle) liegt unter der Hülle (gelaende-core.js:7206), die Decke 16 m unter dem Boden, nur an Fels-Flanken 40–50° und am Kliff hebt sie sich als Mund (gelaende-core.js:2849-2865, gezählt 5 · 1 · 14 je km² an 3 Saaten); die Höhlen-Sicht zeichnet sie im Fenster (scripts/diag-hoehlen-sicht.cjs:3-30) (gelesen).",
+  "station": "leib.K3#2 (Radeon + GTX, probe in der Sitzung, grün an 4ee205bd/350e6b11; stationen/g5.js:4803) urteilt nur den Licht-Abfall in EINER Höhle bei −1041/−738; die Mündungs-Suche (l) lebt nur im Gate diag-hoehlen-sicht (headless, Null-Renderer, eine Saat)",
+  "fehlt": "Ein Richter in der Sitzung beider Geräte, der Mündungen über das Gesetz zählt UND je Mündung im Bild prüft, dass der Mund-Rahmen Fels zeigt; dazu der Weg zu 3 Saaten (die warme Sitzung trägt eine Welt).",
+  "rezept": "Muster: die Mündungs-Suche (l) aus scripts/diag-hoehlen-sicht.cjs:83-90 als Seiten-Funktion neben den Höhlen-Blick der Unterwasser-Probe (stationen/g5.js:2530) heben. Mess-Größe: Mündungen je km² in 4 km² und je Mund ein Blick aus 15 m, Anteil der Rahmen-Pixel mit Fels-Stoff. 3 Saaten über drei Welten derselben Sitzung (Reise) oder ehrlich: 1 Saat GPU + 3 Saaten Kern.",
+  "messgroesse": "Seite liest den Höhlen-Graph (Mündungen) des Chunk-Satzes (`_voxelHoehlenGraph`, scripts/diag-hoehlen-sicht.cjs:7-8) und hoehlenMund (gelaende-core.js:2863); Fels im Bild über den Stoff des Bodens",
+  "preisRisiko": "keines erkennbar (Wiese/Hang, nicht Dorf oder Fluss); 3 Saaten kosten je eine Welt-Geburt",
+  "gpuMin": 6, "bau": "S", "sicher": 0.65
+ }
+]
