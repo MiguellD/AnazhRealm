@@ -1959,7 +1959,21 @@ async function pbProbe(art, aus) {
             } catch (x) {
                 gang = ["gangUrteil warf: " + String((x && x.message) || x).slice(0, 160)];
             }
+            // DIE HEAP-KURVE (Karte 2 same.preis.ausdauer S1 „Spielgang am Stück mit Heap-Kurve“, vorrat3-stationen-g6): je Block des Stroms
+            // der Strecke EIN Punkt (Wanduhr, Heap der Seite, wie der Zapfen ihn las — ohne Aufräumen), die Steigung als Ausgleichsgerade in
+            // MB/min; daneben die zwei Stände nach dem Collector (heap). Ohne Heap im Strom bleibt die Kurve leer (n 0) und das Urteil ROT
+            const kurve = [];
+            for (const b of strecke)
+                if (Number.isFinite(b.heap) && Number.isFinite(b.wand) && (!kurve.length || kurve[kurve.length - 1][2] !== b.block)) kurve.push([b.wand, b.heap, b.block]);
+            let heapKurve = { n: kurve.length };
+            if (kurve.length >= 2) {
+                const t0k = kurve[0][0], xs = kurve.map((p) => (p[0] - t0k) / 60000), ys = kurve.map((p) => p[1]);
+                const mx = xs.reduce((s, x) => s + x, 0) / xs.length, my = ys.reduce((s, y) => s + y, 0) / ys.length;
+                const sxx = xs.reduce((s, x) => s + (x - mx) * (x - mx), 0), sxy = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0);
+                heapKurve = { n: kurve.length, min: +xs[xs.length - 1].toFixed(2), steigung: sxx > 0 ? +(sxy / sxx).toFixed(2) : null, von: ys[0], bis: ys[ys.length - 1], max: Math.max(...ys) };
+            }
             Object.assign(zus.dauer, {
+                heapKurve,
                 minuten: +((e.wert.zeit - a.wert.zeit) / 60000).toFixed(2), seiten: seiten.length, proben: [...new Set(strecke.map((b) => b.probe))].length,
                 last: zahlen(strecke), weg: Math.round(weg), gegangen: Math.round(gegangen), fahren: strecke.some((b) => b.sattel === 1),
                 nachtImStrom: strecke.some((b) => b.uhr != null && (b.uhr < 0.05 || b.uhr > 0.95)),
@@ -2303,6 +2317,58 @@ const PB_PROBEN_DAUER = [
     ["Mutante der Aufnehmer warf", (d, s) => (s.fehler = 3), false],
     ["Mutante Software-Adapter", () => {}, false, "[linse-gpu] google/swiftshader"],
 ].map(([name, m, gruen, adapter]) => ({ name, stdout: k5Roh(m, adapter), gruen }));
+// KARTE 2 same.preis.ausdauer S1 (Umfang „1 min Spielgang“, Tiefe „kein Absturz, volles Bild“, Preis „Heap-Steigung ≤ 50 MB/min an beiden
+// Geräten“, Richter „Spielgang am Stück mit Heap-Kurve“; vorrat3-stationen-g6): derselbe Dauer-Lauf wie profiband.K5 (PB_PROBE_DAUER) —
+// der Strom zwischen dem Stand des Anfangs und dem des Endes in EINER Seite (am Stück, kein Neuladen, der Aufnehmer ohne Wurf), ≥ 1 min;
+// die Heap-Kurve des Stroms (heapKurve: ≥ AUSDAUER_S1.punkte Blöcke über ≥ 1 min) UND die Steigung der zwei Stände nach dem Collector je
+// ≤ 50 MB/min; das volle Bild: beide Anker-Fenster unter Regler voll. Was erst Sprosse 2/3 verlangt (Drift, 5 km, Tor, Nacht), urteilt
+// hier nicht
+const AUSDAUER_S1 = { min: 1, steigung: 50, punkte: 10 };
+function ausdauerRichter(lauf) {
+    const { ad, hw } = HW(String(lauf.stdout || ""));
+    const z = pbZus(lauf, "dauer");
+    if (!z) return { gruen: false, zahl: "keine Zeile PROFIBAND der Dauer (Exit " + lauf.exit + ") · " + ad };
+    const d = z.dauer || {}, k = d.heapKurve || {}, rot = [];
+    const [ha, he] = Array.isArray(d.heap) ? d.heap : [];
+    const gc = d.minuten > 0 && Number.isFinite(ha) && Number.isFinite(he) ? +((he - ha) / d.minuten).toFixed(1) : NaN;
+    if (d.minuten == null) rot.push("kein Spielgang zwischen den Marken (Anfang " + (d.anfang ? "da" : "fehlt") + ", Ende " + (d.ende ? "da" : "fehlt") + ")");
+    else {
+        if (d.seiten !== 1) rot.push(d.seiten + " Seiten zwischen Anfang und Ende (neu geladen — nie am Stück)");
+        if (!(d.minuten >= AUSDAUER_S1.min)) rot.push(d.minuten + " min am Stück < " + AUSDAUER_S1.min);
+        if (!(k.n >= AUSDAUER_S1.punkte && k.min >= AUSDAUER_S1.min && Number.isFinite(k.steigung))) rot.push("Heap-Kurve blind (" + (k.n || 0) + " Punkte über " + (k.min || 0) + " min)");
+        else if (!(k.steigung <= AUSDAUER_S1.steigung)) rot.push("Heap-Kurve steigt " + k.steigung + " MB/min > " + AUSDAUER_S1.steigung);
+        if (!(gc <= AUSDAUER_S1.steigung)) rot.push("Heap nach dem Collector " + ha + " → " + he + " MB: " + gc + " MB/min > " + AUSDAUER_S1.steigung);
+        const an = d.anker || {};
+        if (!(an.a && an.b && an.a.voll >= 0.99 && an.b.voll >= 0.99)) rot.push("volles Bild: die Anker-Fenster nicht beide unter Regler voll (" + (an.laeufe || 0) + " Fenster)");
+    }
+    if (z.strom.fehler || z.strom.verloren) rot.push("der Aufnehmer warf " + z.strom.fehler + " · verlor " + z.strom.verloren + " Bilder");
+    if (!hw) rot.push("Adapter: " + ad);
+    return {
+        gruen: rot.length === 0,
+        zahl: "Spielgang " + d.minuten + " min in " + d.seiten + " Seite(n) · Heap-Kurve " + (k.n || 0) + " Punkte, " + (k.von == null ? "?" : k.von) + " → " + (k.bis == null ? "?" : k.bis) +
+            " MB (max " + (k.max == null ? "?" : k.max) + "), Steigung " + (k.steigung == null ? "?" : k.steigung) + " MB/min · nach dem Collector " + gc + " MB/min (Soll je ≤ " + AUSDAUER_S1.steigung + ") · " + ad +
+            (rot.length ? " — ROT " + rot.length + ": " + rot.slice(0, 6).join(" | ") : ""),
+    };
+}
+const ausdauerProben = () => {
+    const kurve = (o = {}) => (d) => (d.heapKurve = { n: 1340, min: 22.3, steigung: 0.8, von: 301.2, bis: 333.0, max: 402.7, ...o });
+    const mit = (...m) => (d, s) => m.forEach((f) => f(d, s));
+    return [
+        ["Roh (22,4 min am Stück, Kurve +0,8 MB/min, nach GC +0,8)", kurve(), true],
+        ["Mutante 1,06 min, +185 MB/min (der Beleg der Radeon)", mit(kurve({ n: 64, min: 1.05, steigung: 183.4, von: 290, bis: 486 }), (d) => Object.assign(d, { minuten: 1.06, heap: [290.1, 486.2] })), false],
+        ["Mutante die Kurve steigt 61 MB/min (nach GC flach)", kurve({ steigung: 61 }), false],
+        ["Mutante nach GC +60 MB/min (die Kurve flach)", mit(kurve(), (d) => (d.heap = [300, 1644])), false],
+        ["Mutante die Kurve blind (3 Punkte)", kurve({ n: 3 }), false],
+        ["Mutante kein Heap im Strom", (d) => (d.heapKurve = { n: 0 }), false],
+        ["Mutante 0,6 min am Stück", mit(kurve({ min: 0.6 }), (d) => (d.minuten = 0.6)), false],
+        ["Mutante neu geladen zwischen Anfang und Ende", mit(kurve(), (d) => (d.seiten = 2)), false],
+        ["Mutante Anker unter Regler frei (nicht das volle Bild)", mit(kurve(), (d) => (d.anker.b.voll = 0)), false],
+        ["Mutante der Aufnehmer warf", mit(kurve(), (d, s) => (s.fehler = 3)), false],
+        ["Mutante kein Anfang (die Glätte fuhr nicht)", (d) => Object.assign(d, { anfang: false, minuten: undefined }), false],
+        ["Mutante Weg 4,6 km, nie Nacht (Sprosse 3 — hier nicht geurteilt)", mit(kurve(), (d) => Object.assign(d, { weg: 4600, nachtImStrom: false, nacht: { nacht: 0.5, mittag: 0.5 } })), true],
+        ["Mutante Software-Adapter", kurve(), false, "[linse-gpu] google/swiftshader"],
+    ].map(([name, m, gruen, adapter]) => ({ name, stdout: k5Roh(m, adapter), gruen }));
+};
 // die drei Proben (die Zwillinge teilen je EINE: gleiche Probe, ein Lauf); Ziel der Gruppe ≤ 90 s: glaette ~16 + gang ~60 + dauer ~14.
 // DIE DECKEL NACH IHRER MESSUNG (w4-fehlt-acht, Radeon eich3–6 4f098fa6 … 1f17e7d1 am selben Abdruck): glaette 27,6 · 27,0 · 27,0 · 28,8 s
 // → 29 s, dauer 36,0 · 22,8 · 29,4 · 30,6 s → 37 s (die Messung trägt Minuten auf zwei Stellen: 36,0 heißt bis 36,3 s; vorher je
@@ -3972,6 +4038,22 @@ module.exports = [
         proben: PB_PROBEN_DAUER,
         quelle: "2 = an beiden",
     },
+    {
+        // KARTE 2 same.preis.ausdauer S1 (ausdauerRichter oben): derselbe Dauer-Lauf, ein Urteil mehr — keine GPU-Minute
+        kriterium: "karte2.same.preis.ausdauer",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: PB_PROBE_DAUER,
+        gpu: true,
+        zeit: true,
+        minuten: 0.3,
+        urteil: (j, lauf) => ausdauerRichter(lauf),
+        pfad: PB_PFAD,
+        proben: ausdauerProben(),
+        quelle: "KARTE2 same.preis.ausdauer S1 = Spielgang am Stück mit Heap-Kurve",
+    },
 
     // ─────────────────────────────── Klang K1 · K2 · K4 · K5 ───────────────────────────────
     {
@@ -5054,6 +5136,14 @@ require("./mass.cjs").massAn(module.exports, {
     "profiband.K4#2": (j, lauf) => k4Mass(lauf, 2),
     "profiband.K5#1": (j, lauf) => k5Mass(lauf),
     "profiband.K5#2": (j, lauf) => k5Mass(lauf),
+    // die Minuten am Stück (die Last verlängert sie nur) und die Steigung der Heap-Kurve — der Heap hängt an keiner Wanduhr: fest
+    "karte2.same.preis.ausdauer#1": (j, lauf) => {
+        const z = pbZus(lauf, "dauer"), d = (z && z.dauer) || {}, k = d.heapKurve || {};
+        if (!z || d.minuten == null) return [];
+        const m = [{ wort: "am Stück min", wert: d.minuten, soll: AUSDAUER_S1.min, richtung: "≥", fest: true }];
+        if (Number.isFinite(k.steigung)) m.push({ wort: "Heap-Kurve MB/min", wert: k.steigung, soll: AUSDAUER_S1.steigung, fest: true });
+        return m;
+    },
     "klang.K2#1": "die Korrelation r von Bild und Ohr — ein Maß ohne geeichtes k",
     "karte2.erleben.klang.landschaft#1": "die Korrelation r von Bild und Ohr und Pegel je Ort — Maße ohne geeichtes k",
     "klang.K5#2": (j) => {
