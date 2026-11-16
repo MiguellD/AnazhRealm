@@ -726,6 +726,233 @@ async function probeVerben(H) {
 }
 const VERB_PROBE = probeBefehl(probeVerben, 60, { FAELLE: JSON.stringify(VERB_FAELLE) });
 
+// ───────── DAS BILDPAAR AN FESTER POSE (Karte 2: erleben.schoepfen.teilen · erleben.schoepfen.schutz, vorrat2-stationen-g4) ─────────
+// EIN Muster für jede Sprosse, deren Richter „Bildpaar … gleich“ oder „… unverändert“ sagt. Die Kamera steht als ZAHL fest — das
+// Rahmen-Gesetz der Werkstatt (`_workshopRahmen`, Gier 0,6 · Neigung 0,32 · fov 45, wie studios.K4) um das Werk, der Spieler am Fuß
+// der Kamera (das Auge der Stufen steht dort) —, die Welt geht über `/bild` der Werkbank der Sitzung (der Ausgabe-Pfad) an GENAU dieser
+// Kamera: zweimal vor der Tat (der Rausch-Boden), ohne das Werk (die Präsenz: das Werk steht im Bild), nach der Tat. Gezählt wird mit
+// `bildRauschen` (scripts/lib/abnahme-urteil.cjs: Anteil der Pixel mit Σ|ΔRGB| über der Schwelle) über die PNG-Datei selbst
+// (`pngLesen`). GLEICH heißt: höchstens der doppelte Rausch-Boden plus 0,1 % der Leinwand, und nur, wo das Werk ≥ 1 % der Pixel
+// trägt — ein Paar ohne das Werk im Bild wäre blind gleich.
+//   teilen: das Original (der eigene Bauplan, sein Same `_werkSame`, sein Stempel `_studioStampFor`, `spawn_blueprint` an einem Ort)
+//     gegen den Import seines Codes (`teileWerk` → `empfangeWerk` an DENSELBEN Ort, die Geste des Empfängers wie im Chat) — je Werk
+//     ein Paar: die Bank (Gesetzbuch fachwerk) und die Brücke (eigener Bauplan, reist als define_blueprint, kommt umbenannt).
+//   schutz: am selben Bild, solange das Original steht, drei feindliche Codes durch den EINEN Eingang (`empfangeWerk`): ein verbotenes
+//     Verb (remove_architecture), ein Werk mit gefälschter Signatur, eine fremde Welt-Adresse mit gefälschter Signatur — je Code das
+//     Bild danach gegen das davor, der Stand der Welt (Werke, Baupläne, Regeln, Welt) und die Abweisung im Spieler-Kanal (#chat-output).
+const PAAR_SOLL = { schwelle: 24, praesenz: 0.01, faktor: 2, rand: 0.001, w: 640, h: 360, fov: 45, gier: 0.6, neigung: 0.32 };
+const PAAR_WERKE = ["bank_sitzbank", "eigen_bruecke"];
+const PAAR_FREMD = ["verb", "signatur", "welt"];
+// gleich: das Werk im Bild, die Differenz im Rauschen (rein: die Probe schreibt die Anteile, das Urteil spricht hier)
+const paarGleich = (z, S = PAAR_SOLL) =>
+    !!z && !z.fehler && [z.rausch, z.praesenz, z.diff].every(Number.isFinite) && z.praesenz >= S.praesenz && z.diff <= S.faktor * z.rausch + S.rand;
+const paarZahl = (z) =>
+    !z ? "nicht gelaufen" : z.fehler ? String(z.fehler).slice(0, 140) : "Δ " + (100 * z.diff).toFixed(2) + " % · Rauschen " + (100 * z.rausch).toFixed(2) + " % · Werk im Bild " + (100 * z.praesenz).toFixed(1) + " %";
+const PAAR_HW = (t) => {
+    const ad = (/\[linse-gpu\][^\r\n]*/.exec(String(t || "")) || [null])[0];
+    return { ad: ad || "Adapter ungenannt", hw: !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero|kein Adapter/i.test(ad) };
+};
+// DER SCHUSS an der Kamera der Pose (Node, in der Probe): /bild schreibt das PNG, die Probe liest es selbst
+async function paarSchuss(H, kam, name) {
+    const S = H.seite.SOLL;
+    const datei = String(H.AUS).replace(/\.json$/i, "") + "-paar-" + name + ".png";
+    const o = await H.wb("/bild", { px: kam.kamera[0], py: kam.kamera[1], pz: kam.kamera[2], lx: kam.ziel[0], ly: kam.ziel[1], lz: kam.ziel[2], w: S.w, h: S.h, fov: S.fov, wahl: "0", datei }, 90000);
+    if (!o || !o.datei || !H.fs.existsSync(o.datei)) throw new Error("/bild " + name + ": " + JSON.stringify(o).slice(0, 200));
+    return require(H.path.resolve("scripts/lib/abnahme-urteil.cjs")).pngLesen(H.fs.readFileSync(o.datei));
+}
+// der Anteil zweier Schüsse über der Schwelle
+const paarDiff = (H, A, B) => require(H.path.resolve("scripts/lib/abnahme-urteil.cjs")).bildRauschen(A.u8, B.u8, A.W, A.H, H.seite.SOLL.schwelle).anteil;
+// DIE SEITE: setzen, rahmen, warten, entfernen, empfangen — je Schritt ein Aufruf (o.schritt), der Stand in window.__paar
+async function paarSeite(o) {
+    const r = window.anazhRealm, st = r.state, K = r.constructor, T = THREE;
+    const P = (window.__paar ||= {});
+    const werk = (id) => st.architectures.find((a) => a && a.id === id) || null;
+    // das Werk steht in der Stufe am Auge (die Foundry-Instanz wie studios.K4 `steht`), ein eigener Bauplan mit seinem Mesh in der Szene
+    const steht = (E) => {
+        if (!(E.instFoundry || (E.instSlots && E.instSlots.length))) return !!(E.mesh && E.mesh.parent);
+        const kl = new Set();
+        for (const [key, g] of st.archInstanceGroups || []) if (g.slotEntry && g.slotEntry.indexOf(E) >= 0 && !g.shadowTwin && g.geom && /^f:/.test(K._instanzKlasse(key))) kl.add(K._instanzKlasse(key));
+        return E._lodAmAbstand === true && [...kl].some((k) => k.endsWith(":L" + (E._lodLevel | 0)));
+    };
+    const warte = async (E, was) => {
+        E._lodAmAbstand = false;
+        return { takte: await window.__gebautNach(was + " " + E.type + " in der Stufe am Auge der Pose", { fertig: () => steht(E), bau: () => {} }), stufe: E._lodLevel | 0 };
+    };
+    const fort = async (E) => {
+        r.removeArchitecture(E, { still: true });
+        await window.__gebautNach("das Werk " + E.type + " ist fort", { fertig: () => ![...(st.archInstanceGroups || new Map()).values()].some((g) => g.slotEntry && g.slotEntry.includes(E)) && !(E.mesh && E.mesh.parent), bau: () => {} });
+    };
+    const ort = (E) => [E.position.x, E.position.y, E.position.z].map((v) => +v.toFixed(3));
+    const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
+    const stand = () => JSON.stringify([st.architectures.filter(Boolean).map((a) => a.id).sort(), Object.keys(st.blueprints).sort(), (st.worldRules || []).length, (st.worldMeta || {}).worldId || null]);
+    const s = o.schritt;
+    if (s === "buehne") {
+        P.halt = st.weatherEffectTime;
+        st.weatherEffectTime = 0; // der Halt der Messung (probeVerben): unter ihm setzt die Werk-Sprache nichts
+        r.setTimeOfDay(0.5, "human"), r._setWeather("sunny", "human"), (st.weatherTransition = null), r._naesseTakt(1e6), r.setSeason("sommer");
+        for (const [name, [label, plan]] of Object.entries(o.teile || {})) {
+            if (!st.blueprints[name]) r.createBlueprint(name, label);
+            for (const [x, y, z, a, b, c] of st.blueprints[name].parts.length ? [] : plan) r.addPartToBlueprint(name, { shape: "box", material: "stein", position: { x, y, z }, size: { x: a, y: b, z: c } });
+        }
+        return { halt: P.halt };
+    }
+    if (s === "zurueck") return (st.weatherEffectTime = P.halt), 1;
+    if (s === "original") {
+        const bp = st.blueprints[o.name];
+        if (!bp) return { fehler: "kein Bauplan " + o.name };
+        const pm = st.playerMesh.position, v = r._blickVorn(st.yaw, 0);
+        const spawn = (q) => ["spawn_blueprint", o.name, ["at", q.x, q.y, q.z], r._werkSame(bp, o.name, null), null, r._studioStampFor(o.name) || null, 0];
+        let E = null;
+        for (const [d, w] of [[14, 0], [14, 0.7], [14, -0.7], [22, 0], [22, 1.4], [22, -1.4]]) {
+            const [c, si] = [Math.cos(w), Math.sin(w)];
+            const lauf = r.dslRun(spawn({ x: pm.x + (v.x * c - v.z * si) * d, y: pm.y, z: pm.z + (v.x * si + v.z * c) * d }), { source: "spieler" });
+            const e = lauf.log.find((x) => x.event === "spawned_blueprint" && x.id != null);
+            if ((E = e && werk(e.id))) break;
+        }
+        if (!E) return { fehler: "kein Ort trägt das Original " + o.name };
+        P.original = E;
+        // DIE POSE: die Box aus den Blockern, die Kamera des Rahmen-Gesetzes, der Spieler an ihrem Fuß (das Auge der Stufen)
+        const bb = new T.Box3();
+        for (const b of E.blockerAABBs || []) bb.union(new T.Box3(new T.Vector3(b.minX, b.botY, b.minZ), new T.Vector3(b.maxX, b.topY, b.maxZ)));
+        if (bb.isEmpty()) bb.setFromCenterAndSize(new T.Vector3(E.position.x, E.position.y + 1, E.position.z), new T.Vector3(2, 2, 2));
+        const [R, c] = [bb.getSize(new T.Vector3()).length() / 2, bb.getCenter(new T.Vector3())];
+        const cosP = Math.cos(o.soll.neigung), blick = [cosP * Math.cos(o.soll.gier), Math.sin(o.soll.neigung), cosP * Math.sin(o.soll.gier)];
+        const cam = new T.PerspectiveCamera(o.soll.fov, o.soll.w / o.soll.h, Math.min(0.1, R / 10), Math.max(200, 32 * R));
+        const dist = r._workshopRahmen({ rahmen: { box: bb, R }, camera: cam, orbit: { yaw: o.soll.gier, pitch: o.soll.neigung } });
+        const kamera = c.clone().addScaledVector(new T.Vector3(...blick), dist);
+        st.playerMesh.position.set(kamera.x, r.getTerrainHeightAt(kamera.x, kamera.z) + K.PLAYER_FOOT_OFFSET, kamera.z);
+        return { id: E.id, ort: ort(E), kamera: kamera.toArray(), ziel: c.toArray(), ...(await warte(E, "das Original")) };
+    }
+    if (s === "fort") return await fort(P.original), 1;
+    if (s === "import") {
+        // der Code des Senders (der Teilen-Knopf ruft dieselbe Geste; die Sitzung sagt Ja) an den Ort des Originals
+        const c = await r.teileWerk(o.name);
+        if (!c || !c.ok) return { fehler: "teileWerk " + o.name + ": " + (c && c.grund) };
+        const q = P.original.position;
+        const e = await r.empfangeWerk(c.code, { pos: ["at", q.x, q.y, q.z] });
+        const E = e && e.ok && werk(e.id);
+        if (!E) return { fehler: "empfangeWerk " + o.name + ": " + (e && e.grund) };
+        P.import = E;
+        return { id: E.id, name: e.name, ort: ort(E), zeichen: c.code.length, ...(await warte(E, "der Import")) };
+    }
+    if (s === "importFort") return P.import && (await fort(P.import)), 1;
+    if (s === "fremd") {
+        // die feindlichen Codes: dieselbe Hülle (`WERK_CODE.praefix` + base64url), der Autor der eigene Schlüssel, die Signatur falsch
+        const W = K.WERK_CODE, autor = st.vibePass.publicKeyHex, sig = "00".repeat(64);
+        const kodiere = (h) => W.praefix + r._vibeBytesToB64u(new TextEncoder().encode(JSON.stringify({ v: 1, ...h, autor, sig })));
+        const code = {
+            verb: kodiere({ programm: ["chain", ["define_blueprint", "fremd_werk", []], ["remove_architecture", P.original.id]] }),
+            signatur: kodiere({ programm: r._werkReise(o.name) }),
+            welt: kodiere({ welt: { worldId: "fremd-welt", roomId: "fremd-raum", broker: "wss://fremd.invalid", label: "Fremde Welt" } }),
+        }[o.fall];
+        const [vor, n0] = [stand(), zeilen().length];
+        r._spielerSagtLetzte = null; // die 2-s-Sperre derselben Zeile gilt dem gehaltenen Rechtsklick, nie dem nächsten Code
+        const e = await r.empfangeWerk(code);
+        return { ok: !!(e && e.ok), grund: (e && e.grund) || null, zeile: zeilen().slice(n0).join(" | ").slice(0, 200), stand: stand() === vor };
+    }
+    return { fehler: "kein Schritt " + s };
+}
+async function probeBildpaar(H) {
+    const { page } = await H.verbinde();
+    const ad = await page.evaluate(async () => {
+        const a = navigator.gpu && (await navigator.gpu.requestAdapter());
+        const i = (a && a.info) || {};
+        return a ? (i.vendor || "?") + "/" + (i.architecture || "?") : "kein Adapter";
+    });
+    console.log("[linse-gpu] " + ad);
+    const S = H.seite.SOLL;
+    const seite = (o) => page.evaluate(H.seite.paarSeite, o);
+    const { TEILE } = H.linse("scripts/diag-werkstatt-weg.cjs", ["TEILE"]);
+    await seite({ schritt: "buehne", teile: { eigen_bruecke: TEILE.eigen_bruecke } });
+    H.beimAbbau(() => seite({ schritt: "zurueck" }));
+    const j = (H.teil = { adapter: ad, soll: S, teilen: {}, schutz: null });
+    for (const name of H.seite.WERKE) {
+        if (H.rest() < 20) {
+            j.teilen[name] = { fehler: "Frist der Probe vor dem Paar (" + H.sek() + " s)" };
+            continue;
+        }
+        const z = (j.teilen[name] = {});
+        try {
+            const o = await seite({ schritt: "original", name, soll: S });
+            if (o.fehler) throw new Error(o.fehler);
+            Object.assign(z, { original: o });
+            const A = await H.seite.paarSchuss(H, o, name + "-original");
+            z.rausch = H.seite.paarDiff(H, A, await H.seite.paarSchuss(H, o, name + "-original-2"));
+            // DER SCHUTZ am Bild des ersten Werks: jeder feindliche Code gegen das Bild davor, solange das Original steht
+            if (!j.schutz) {
+                j.schutz = { werk: name, rausch: z.rausch, faelle: {} };
+                for (const fall of H.seite.FREMD) {
+                    const f = (j.schutz.faelle[fall] = await seite({ schritt: "fremd", fall, name }));
+                    f.diff = H.seite.paarDiff(H, A, await H.seite.paarSchuss(H, o, name + "-fremd-" + fall));
+                    console.log(`  ${!f.ok && f.zeile && f.stand ? "✅" : "❌"} fremd ${fall}: ${f.ok ? "ANGENOMMEN" : "abgewiesen " + f.grund} · Stand ${f.stand ? "gleich" : "VERÄNDERT"} · Δ ${(100 * f.diff).toFixed(2)} % · „${f.zeile}“`);
+                }
+            }
+            await seite({ schritt: "fort" });
+            z.praesenz = H.seite.paarDiff(H, A, await H.seite.paarSchuss(H, o, name + "-leer"));
+            if (j.schutz && j.schutz.werk === name) j.schutz.praesenz = z.praesenz;
+            const e = await seite({ schritt: "import", name });
+            if (e.fehler) throw new Error(e.fehler);
+            z.import = e;
+            z.diff = H.seite.paarDiff(H, A, await H.seite.paarSchuss(H, o, name + "-import"));
+            await seite({ schritt: "importFort" });
+        } catch (e) {
+            z.fehler = String((e && e.message) || e).slice(0, 300);
+            await seite({ schritt: "fort" }).catch(() => {});
+            await seite({ schritt: "importFort" }).catch(() => {});
+        }
+        console.log(`  teilen ${name}: Δ ${z.diff} · Rauschen ${z.rausch} · Werk im Bild ${z.praesenz}${z.fehler ? " — " + z.fehler : ""} · ${H.sek()} s`);
+    }
+    return j;
+}
+const PAAR_PROBE = { ...probeBefehl(probeBildpaar, 75, { SOLL: JSON.stringify(PAAR_SOLL), WERKE: JSON.stringify(PAAR_WERKE), FREMD: JSON.stringify(PAAR_FREMD), paarSeite, paarSchuss, paarDiff }), mutiert: true };
+// die Rohdatei des Paars als Probe des Urteils: gesund je Werk Δ 0,02 % bei Rauschen 0,01 %, das Werk trägt 4 % des Bilds
+const paarRoh = (teilen = {}, schutz = {}, faelle = {}) => {
+    const z = (o) => ({ rausch: 0.0001, praesenz: 0.04, diff: 0.0002, ...o });
+    const f = (o) => ({ ok: false, grund: "signatur", zeile: "Geteiltes Werk abgewiesen: Signatur", stand: true, diff: 0.0001, ...o });
+    return {
+        adapter: "amd/rdna-3",
+        teilen: { bank_sitzbank: z(teilen.bank_sitzbank), eigen_bruecke: z(teilen.eigen_bruecke) },
+        schutz: { werk: "bank_sitzbank", rausch: 0.0001, praesenz: 0.04, ...schutz, faelle: { verb: f(faelle.verb), signatur: f(faelle.signatur), welt: f(faelle.welt) } },
+    };
+};
+const PAAR_KARTE = "[linse-gpu] amd/rdna-3";
+const PAAR_PFAD = [
+    "stamm/netz-identitaet.js",
+    "stamm/feld-dsl.js",
+    "stamm/feld-leben.js",
+    "stamm/werkstatt-*.js",
+    "stamm/studio-*.js",
+    "stamm/bau-*.js",
+    "stamm/dirigent-*.js",
+    "stamm/stoff-*.js",
+    "stamm/bild-*.js",
+    "index.html",
+    "fachwerk-core.js",
+    "foundry-core.js",
+    "foundry-bruecke.js",
+    "scripts/werkbank.cjs",
+    "scripts/diag-werkstatt-weg.cjs",
+    "scripts/lib/abnahme-urteil.cjs",
+    "scripts/lib/ausgabe-aufnahme.cjs",
+    "scripts/lib/welt-boot.cjs",
+];
+// das Fachwerk allein aus der K4-Probe (mensch.bau.bauen S 1): die Differenz Labor ↔ Welt über der Gestalt beider Seiten
+const k4Fachwerk = (j) => {
+    const z = ((j && j.studios) || {}).fachwerk || null;
+    const hw = !!(j && j.geraet) && !/swiftshader|llvmpipe|lavapipe|software|subzero|Gerät ungenannt|probe/i.test(String(j.geraet));
+    const d = z && z.differenz && z.differenz.anteil;
+    return {
+        gruen: hw && !!z && k4Gestalt(z) && z.welt.pixel > 0 && z.buehne.pixel > 0 && Number.isFinite(d) && d <= 0.021,
+        zahl:
+            "fachwerk Labor ↔ Welt an derselben Kamera: " + (Number.isFinite(d) ? (100 * d).toFixed(1) + " %" : "–") + " (Soll ≤ 2,1 % über der Gestalt beider Seiten" +
+            (z && !k4Gestalt(z) ? ", OHNE Gestalt beider Seiten" : "") + ")" + (z && z.grund ? " [" + String(z.grund).slice(0, 120) + "]" : "") + " · " + ((j && j.geraet) || "Gerät ungenannt"),
+    };
+};
+const k4FachwerkRoh = (d, o = {}) => {
+    const z = { gruen: d <= 0.021, differenz: { anteil: d }, albedo: { max: 0.04 }, welt: { maske: "gestalt", pixel: 340155 }, buehne: { maske: "gestalt", pixel: 341300 }, ...o };
+    return "K4 " + JSON.stringify({ geraet: "WebGPU rdna-3", studios: { fachwerk: z }, fehler: [] });
+};
+
 const alle = [
     // ───────────────────────────── Studios ─────────────────────────────
     {
@@ -2267,6 +2494,103 @@ const alle = [
             "scripts/lib/stamm.cjs",
         ],
         quelle: "2 = auf allen Wegen (Werkstatt, KI-Satz, Foundry, P2P), und der Atlas nennt seine EINE Quelle",
+    },
+    // ───────── KARTE 2 (vorrat2-stationen-g4): das Bildpaar an fester Pose (PAAR_PROBE) und das Fachwerk aus der K4-Probe ─────────
+    // erleben.schoepfen.teilen S 1: je Werk (die Bank aus dem Gesetzbuch, die Brücke als eigener Bauplan) das Original gegen den Import
+    // seines Codes an DERSELBEN Kamera und demselben Ort — gleich im Rauschen, das Werk im Bild, beide Geräte
+    {
+        kriterium: "karte2.erleben.schoepfen.teilen",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: PAAR_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const { ad, hw } = PAAR_HW(lauf.stdout);
+            if (!j || !j.teilen) return { gruen: false, zahl: "kein Bildpaar in der Ausgabe der Probe (Exit " + lauf.exit + ") · " + ad };
+            const ja = PAAR_WERKE.filter((w) => paarGleich(j.teilen[w]));
+            return {
+                gruen: hw && lauf.exit === 0 && ja.length === PAAR_WERKE.length,
+                zahl: ja.length + "/" + PAAR_WERKE.length + " Werke: Original ↔ Import an derselben Kamera gleich · " + PAAR_WERKE.map((w) => w + " " + paarZahl(j.teilen[w])).join(" · ") + " · " + ad,
+            };
+        },
+        proben: [
+            { name: "gesund: beide Werke gleich im Rauschen, das Werk im Bild", j: paarRoh(), stdout: PAAR_KARTE, gruen: true },
+            { name: "der Import weicht ab (2 % der Leinwand)", j: paarRoh({ eigen_bruecke: { diff: 0.02 } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "das Werk steht nicht im Bild (blind gleich)", j: paarRoh({ bank_sitzbank: { praesenz: 0.002 } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "der Import steht nicht", j: paarRoh({ bank_sitzbank: { fehler: "empfangeWerk bank_sitzbank: steht_nicht:bank_sitzbank", diff: undefined } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "swiftshader", j: paarRoh(), stdout: "[linse-gpu] google/swiftshader", gruen: false },
+        ],
+        pfad: PAAR_PFAD,
+        quelle: "KARTE2 erleben.schoepfen.teilen S1 = Export/Import: Bildpaar an gleicher Pose gleich",
+    },
+    // erleben.schoepfen.schutz S 1: drei feindliche Codes am Bild des eigenen Werks — keiner nimmt, die eigene Welt bleibt im Bild und
+    // im Stand gleich, jede Abweisung steht im Spieler-Kanal
+    {
+        kriterium: "karte2.erleben.schoepfen.schutz",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: PAAR_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const { ad, hw } = PAAR_HW(lauf.stdout);
+            const s = j && j.schutz;
+            if (!s || !s.faelle) return { gruen: false, zahl: "kein Schutz-Paar in der Ausgabe der Probe (Exit " + lauf.exit + ") · " + ad };
+            const gut = (f) => !!f && f.ok === false && !!f.zeile && f.stand === true && paarGleich({ rausch: s.rausch, praesenz: s.praesenz, diff: f.diff });
+            const ja = PAAR_FREMD.filter((k) => gut(s.faelle[k]));
+            return {
+                gruen: hw && lauf.exit === 0 && ja.length === PAAR_FREMD.length,
+                zahl:
+                    ja.length + "/" + PAAR_FREMD.length + " feindliche Codes abgewiesen, die eigene Welt im Bild gleich (Werk " + s.werk + " " + (Number.isFinite(s.praesenz) ? (100 * s.praesenz).toFixed(1) + " % des Bilds" : "–") + ") · " +
+                    PAAR_FREMD.map((k) => { const f = s.faelle[k]; return k + " " + (!f ? "nicht gelaufen" : (f.ok ? "ANGENOMMEN" : f.grund) + (f.stand ? "" : " STAND VERÄNDERT") + (f.zeile ? "" : " OHNE ZEILE") + " Δ " + (Number.isFinite(f.diff) ? (100 * f.diff).toFixed(2) + " %" : "–")); }).join(" · ") + // prettier-ignore
+                    " · " + ad,
+            };
+        },
+        proben: [
+            { name: "gesund: drei Codes abgewiesen, Bild und Stand gleich, jede Abweisung benannt", j: paarRoh(), stdout: PAAR_KARTE, gruen: true },
+            { name: "ein Code nimmt (die fremde Welt angenommen)", j: paarRoh({}, {}, { welt: { ok: true, grund: null } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "die Abweisung nur im Log (keine Zeile im Spieler-Kanal)", j: paarRoh({}, {}, { verb: { zeile: "" } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "das eigene Werk verschwand (Bild 3 % anders)", j: paarRoh({}, {}, { verb: { diff: 0.03 } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "der Stand der Welt änderte sich", j: paarRoh({}, {}, { signatur: { stand: false } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "das eigene Werk nicht im Bild (blind gleich)", j: paarRoh({}, { praesenz: 0.001 }), stdout: PAAR_KARTE, gruen: false },
+            { name: "swiftshader", j: paarRoh(), stdout: "[linse-gpu] google/swiftshader", gruen: false },
+        ],
+        pfad: PAAR_PFAD,
+        quelle: "KARTE2 erleben.schoepfen.schutz S1 = feindliche Welt geladen: eigene Welt im Bildpaar unverändert, Abweisung im Spiel benannt",
+    },
+    // mensch.bau.bauen S 1: das Fachwerk allein aus der K4-Probe (derselbe Lauf wie studios.K4#1, kein GPU-Lauf mehr) — das Werk in der
+    // Bühne des Labors und in der Welt an derselben Vorschau-Kamera, die Bild-Differenz über der Gestalt beider Seiten
+    {
+        kriterium: "karte2.mensch.bau.bauen",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: { sek: 33, mutiert: true, befehl: K4_BEFEHL },
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            j = j || jsonZeile(lauf.stdout, /^K4 \{/);
+            if (!j || !j.studios) return { gruen: false, zahl: "kein K4-JSON (Exit " + lauf.exit + ")" };
+            return k4Fachwerk(j);
+        },
+        proben: [
+            { name: "fachwerk 1,2 % über der Gestalt beider Seiten", stdout: k4FachwerkRoh(0.012), gruen: true },
+            { name: "fachwerk 2,5 %", stdout: k4FachwerkRoh(0.025), gruen: false },
+            { name: "dieselbe Zahl über der Teilung der Werkbank (der Boden zählt als Werk)", stdout: k4FachwerkRoh(0.012, { welt: { maske: "teilung", pixel: 340155 } }), gruen: false },
+            { name: "das Fachwerk fehlt im Lauf", stdout: "K4 " + JSON.stringify({ geraet: "WebGPU rdna-3", studios: {}, fehler: [] }), gruen: false },
+            { name: "swiftshader", stdout: k4FachwerkRoh(0.012).replace("WebGPU rdna-3", "WebGPU swiftshader"), gruen: false },
+        ],
+        pfad: K4_PFAD,
+        quelle: "KARTE2 mensch.bau.bauen S1 = Bildpaar Labor ↔ Welt gleiche Kamera: kein Unterschied",
     },
 ];
 
