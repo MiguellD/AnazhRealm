@@ -1,0 +1,1753 @@
+{
+ "paket": "17-same-massstab-gedaechtnis-preis",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "same.massstab.spanne",
+   "name": "Die Spanne ohne Bruch",
+   "art": "kriterium",
+   "misst": "Größte zusammenhängende Spanne der Bildbreite, über die ein Flug in beide Richtungen keine Stufe verrät: keine Lücke, kein Ladebild, Pop ≤ 0,5 %, Jitter < 0,5 px, kein Farbsprung > ΔE₀₀ 3, und P. Achse: Größenordnungen 3 → 31 (bis zu fremden Galaxien).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Unter Sprosse 1: die Wiese trägt bis ~20 m, der Fern-Saum ist ROT (Kohärenz 0,60, Radeon); der Himmel rechnet eine Kugel (foundry-core.js:284, 6 360 km), der Boden ist eine flache Ebene — ein Zwilling, sichtbar ab ~10 km Auge. Gemessen ohne Bruch ist keine Spanne.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "3 Größenordnungen: Bildbreite ~1 m bis ~1 km",
+     "tiefe": "Wiese, Baum, Haus, Gelände wechseln Stufen unsichtbar",
+     "preis": "P",
+     "richter": "N = 20 Saaten × Steigflug 0,5 m → 700 m Auge in 30 s, hin und zurück: alle Bruch-Bedingungen gehalten"
+    },
+    {
+     "nr": 2,
+     "umfang": "5: 1 cm bis 1 km; Sicht bis ~20 km ohne Kante",
+     "tiefe": "Halm und Blatt mit Parallaxe und Eigenschatten; Landschaft ohne Farbsprung",
+     "preis": "P",
+     "richter": "wie 1, Spanne 1 cm → 1 km"
+    },
+    {
+     "nr": 3,
+     "umfang": "8: 1 mm bis 100 km; der Planet krümmt sich",
+     "tiefe": "Korn als Körper; Horizont sinkt wie auf einer Kugel",
+     "preis": "P",
+     "richter": "wie 1; Horizont-Absenkung aus 10 km gegen √(2h/R) ±10 %"
+    }
+   ],
+   "sprossenGesamt": 9,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "ferne.K2",
+     "text": "Die Welt hat keine Kante",
+     "staffel": "\"1 = Restkontrast am Rand der letzten Fern-Schale ≤ 2 % bei klarem Wetter an einem Gerät, 4 Azimute · 2 = keine waagrechte Kanten-Linie (Struktur-Tensor am Horizont), Hügel und Gipfel, im Boden-Haushalt, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g3.js:2548",
+      "stationen/g3.js:2621"
+     ],
+     "stationen": [
+      {
+       "id": "ferne.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Restkontrast am Rand 1.2–1.7 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "ferne.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Restkontrast am Rand 1.1–1.9 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "ferne.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 44.1k/64k Dreiecke · [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "ferne.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 43.5k/64k Dreiecke · [linse-gpu] nvidia/pascal",
+       "sha": "4e2df19b",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ferne.K3",
+     "text": "Bewaldete Grate tragen einen Saum bis 8 km",
+     "staffel": "\"1 = am Kamm in 0,4–4 km Kohärenz des Struktur-Tensors < 0,3 gegen REF real-mischwald und Umriss-Schwankung ≥ 3 m bei 2 km, an einem Gerät · 2 = Kronen-Relief ≥ 10 m bis 8 km, Kammlinie ≤ 0,22 wie REF real-felsen, 4 Azimute, 0,5/1/3/8 km, beide Geräte, im Boden-Haushalt\"",
+     "punkteAlt": 0,
+     "fundstellen": [],
+     "stationen": [
+      {
+       "id": "ferne.K3#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "material.K3",
+     "text": "Dieselbe Albedo in jeder Stufe",
+     "staffel": "\"1 = Haus und Fels Stufe/L0 0,95–1,05 bei Uhr 0,5 an einem Gerät · 2 = Haus, Birke, Fichte, Fels, L0/L1/L2/Karte, Uhr 0,5 und 0,27, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g3.js:2819",
+      "stationen/g3.js:2874"
+     ],
+     "stationen": [
+      {
+       "id": "material.K3#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Haus L0 0.1512 · L1/L0 1.008 · L2/L0 1.006 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2706 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+       "sha": "c4010773",
+       "gehalten": true
+      },
+      {
+       "id": "material.K3#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "material.K3#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "haus@0.5 l1 1.008/l2 1.006 · birke@0.5 l1 0.994/karte 1.009 · fichte@0.5 l1 0.998/karte 0.999 · haus@0.27 l1 1.008/l2 1.006 · birke@0.27 l1 0.993/karte 1.009 · fichte@0.27 l1 0.998/karte 0.999 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+       "sha": "c4010773",
+       "gehalten": true
+      },
+      {
+       "id": "material.K3#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "haus@0.5 l1 1.013/l2 1.004 · birke@0.5 l1 0.992/karte 1.003 · fichte@0.5 l1 0.997/karte 0.998 · haus@0.27 l1 1.013/l2 1.004 · birke@0.27 l1 0.992/karte 1.003 · fichte@0.27 l1 0.997/karte 0.998 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+       "sha": "039509b2",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "lod.K1",
+     "text": "Der Umriss hält in jeder Stufe",
+     "staffel": "\"1 = kante ≤ 0,22 je Teil-Klasse (die schlechteste urteilt) an der Tafel-Pose UND einem Spielgang-Bild an einem Gerät, frisch am Kopf · 2 = Ego mit Blick 15° hoch, Third und Hügel, Haus- und Tor-Stufen L1–L3 halten milchweiss und zielTreue, beide Geräte\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g3.js:3142"
+     ],
+     "stationen": [
+      {
+       "id": "lod.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "lod.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "lod.K2",
+     "text": "Kein Pop unter Bewegung und Sicht-Wechsel",
+     "staffel": "\"1 = eine Bewegungsart an einem Gerät ≤ 0,05 % Pop-Pixel je Sekunde · 2 = Gehen, Ritt, Fahrt (vmax des Spiels), Ego↔Third alle 5 s, Wiese → Genesis und durch das Start-Dorf, 0 Geister, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:3297"
+     ],
+     "stationen": [
+      {
+       "id": "lod.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Gehen 4 m/s: 0.0439 % Pop-Pixel je Sekunde (910 px, Soll ≤ 0,05 %), je Schritt 24*/21*/321*/277*/43*/63*/71*/90* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "lod.K2#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "lod.K3",
+     "text": "Aus jeder Blick-Hebung",
+     "staffel": "\"1 = Karten-Deckung ≥ 0,75 und IoU ≥ 0,65 bei −20/0/40/80° für Bäume an einem Gerät · 2 = je Familie (Baum, Haus, Tor, Wagen), Atlas im VRAM-Band (≤ 118 MB gesamt), beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:3734",
+      "stationen/g3.js:3800"
+     ],
+     "stationen": [
+      {
+       "id": "lod.K3#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Deckung/IoU bc -20° 0.994/0.942 · 0° 0.984/0.871 · 40° 1.001/0.966 · 80° 0.97/0.963 (waagrecht 80° 0.323/0.224) · rgba8 -20° 0.994/0.942 · 0° 0.986/0.886 · 40° 1.001/0.966 · 80° 0.97/0.963 (waagrecht 80° 0.323/0.224) (Soll ≥ 0,75/0,65) · [linse-gpu] nvidia/pas …",
+       "sha": "b4bcf19c",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "lod.K4",
+     "text": "Der Stufenwechsel in Ruhe ist unsichtbar",
+     "staffel": "\"1 = Luma-Sprung je Klasse < 2 % und zweiton 0 bei Uhr 0,5 an einem Gerät · 2 = Uhr 0,5 und 0,27, Boden-Morph p90 ≤ 0,1 m im Bild, beide Geräte\"",
+     "punkteAlt": 0,
+     "fundstellen": [],
+     "stationen": [
+      {
+       "id": "lod.K4#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "lod.K5",
+     "text": "Fehler ≤ 1 Pixel am Wechsel — die Stufe folgt dem Schirm, nicht dem Regler",
+     "staffel": "\"1 = je Familie (Baum, Haus, Tor, Wagen) ist am Wechsel-Abstand der Kanten-Versatz L0 ↔ Stufe ≤ 1 px bei 1920×1080, an einem Gerät · 2 = die Wechsel-Abstände bleiben bei 30/60/144 fps und Regler des Spielers ±10 % gleich (Pixelgröße statt Bildrate), beide Geräte\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g3.js:3177",
+      "stationen/g3.js:3267"
+     ],
+     "stationen": [
+      {
+       "id": "lod.K5#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "lod.K5#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "lod.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "pipeline.K2",
+     "text": "EIN Karten-Bäcker: die Karte entsteht aus derselben Rechnung wie L0",
+     "staffel": "\"1 = die Karte eines Baums aus Studio und Welt byte-gleich (EIN Bäcker) · 2 = jede Art mit Karte, aus derselben Bake-Rechnung wie L0 (der Ton L2/L0 misst Material K3, der Umriss LOD K1)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:1138",
+      "stationen/g4.js:1169"
+     ],
+     "stationen": [
+      {
+       "id": "pipeline.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "byte-gleich: Labor Labor-Fernstufe (three r128, 128×3584) eiche|1 3670016 B sha a9218749cd ⇄ Welt _karteWeltBacken (three r184) bc 128×3584 3670016 B sha a9218749cd",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "pipeline.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "10/10 Arten mit Karte byte-gleich (Welt _karteWeltBacken (three r184) bc 128×3584 ⇄ Labor Labor-Fernstufe (three r128, 128×3584)): eiche ×3 8026d999 10,5 MB · fichte ×3 9ffd36e9 10,5 MB · birke ×3 26dea106 10,5 MB · weide ×1 24a7d4a4 3,5 MB · mammut ×1 e9deb4b …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.massstab.nahe",
+   "name": "Die Tiefe am kleinen Ende",
+   "art": "kriterium",
+   "misst": "Wie viel echte Struktur das Bild bei kleiner Bildbreite trägt, gegen Makro- und Mikroskop-Fotos derselben Bodenklasse, an zufälligen Orten. Achse: Bildbreite 2 m → 10 µm.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Ungemessen; kleinstes Auge 0,25 m (bild-sicht.js:3861), die Armlänge-Pose der alten Karte prüft Pixel, nicht Spektrum.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "2 m (Blick vor die Füße), N = 100 Orte",
+     "tiefe": "Boden mit Halmen und Steinen",
+     "preis": "P",
+     "richter": "Spektrum gegen Foto der Bodenklasse: Energie über 1/20 der Bildbreite ≥ 50 % der Referenz in ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "50 cm",
+     "tiefe": "einzelne Halme, Kiesel, Laubstreu",
+     "preis": "P",
+     "richter": "wie 1 gegen Foto 50 cm; Gram-Statistik im Band"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 cm",
+     "tiefe": "Blattadern, Rindenrisse, Bodenkrümel mit Eigenschatten",
+     "preis": "P",
+     "richter": "wie 1 gegen Makrofoto 10 cm"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "material.K2",
+     "text": "Mikro-Detail bis Armlänge",
+     "staffel": "\"1 = Boden und Fels auf 0,5/1/2 m: ein Korn, das der Pixel trägt (das Urteil der Arm-Linse: nyquist ≤ 0,12, glatte Blöcke ≤ 10 %) an einem Gerät · 2 = Boden, Fels, Rinde, Putz, Holz, Haut, kein Kachel-Muster (1/f^β, β 0–2,4), beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:2726",
+      "stationen/g3.js:3811"
+     ],
+     "stationen": [
+      {
+       "id": "material.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "boden 0.5 m glatt 0.0735 nyquist 0.0737 (Arm 0.498), 1 m glatt 0.0577 nyquist 0.0849 (Arm 0.998), 2 m glatt 0.0716 nyquist 0.1127 (Arm 1.996) · fels 0.5 m glatt 0.0026 nyquist 0.0971 (Arm 0.493), 1 m glatt 0.0015 nyquist 0.086 (Arm 0.99), 2 m glatt 0.0011 nyqu …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "material.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "boden 0.5 m glatt 0.0615 nyquist 0.1616 (Arm 0.498), 1 m glatt 0.0331 nyquist 0.1701 (Arm 0.998), 2 m glatt 0.0245 nyquist 0.1756 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.166 (Arm 0.494), 1 m glatt 0.0691 nyquist 0.1562 (Arm 0.99), 2 m glatt 0 nyquist 0.164  …",
+       "sha": "8efb6318",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.massstab.sprung",
+   "name": "Der Sprung",
+   "art": "kriterium",
+   "misst": "Sekunden bis zum ganzen Bild (≤ 2 % Lücke) nach einem Sprung im laufenden Spiel an einen nie besuchten Ort, Maßstab oder Zeitpunkt. Achse: Reichweite 1 km → jeder Ort der Galaxie, Zeit 30 s → 1 s.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Teleport 1 km: p95 33,8 ms (Radeon) / 49,9 ms (GTX), die Welt steht nach 14–45 s (streaming.K3 1/2) — der Preis von Sprosse 1 reißt an der GTX.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Teleport 1 km",
+     "tiefe": "Bild ganz, die Welt steht",
+     "preis": "ganz ≤ 30 s, p95 ≤ 33 ms an beiden Geräten",
+     "richter": "Spielgang-Station Sprung: p95, t(ganz), Lücke"
+    },
+    {
+     "nr": 2,
+     "umfang": "Teleport 1 km",
+     "tiefe": "wie 1",
+     "preis": "ganz ≤ 5 s, P",
+     "richter": "wie 1 an beiden Geräten"
+    },
+    {
+     "nr": 3,
+     "umfang": "Zufallsort im Umkreis 10–100 km",
+     "tiefe": "volles Bild am Boden",
+     "preis": "ganz ≤ 2 s, P",
+     "richter": "N = 20 Sprünge: p95 t(ganz)"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "tore.K1",
+     "text": "Der Durchgang: Studio-Tor und Welt-Tor — Schwelle → Kontrolle und zurück",
+     "staffel": "\"1 = eine Zeile (Studio-Tor oder Welt-Tor) ≤ 2 s an einem Gerät · 2 = beide Zeilen im Soll (warm ≤ 1 s, kalt ≤ 2 s, Heimkehr ≤ 1 s) an beiden Geräten\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g5.js:5422"
+     ],
+     "stationen": [
+      {
+       "id": "tore.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "tore.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "tore.K2",
+     "text": "Die Membran zeigt, wohin du gehst — Kontinuität statt Postkarte",
+     "staffel": "\"1 = an einer Pose und einem Gerät: Spearman r ≥ 0,5 zwischen Membran und Ankunfts-Bild, milchweiss ≤ 0,05, oeffnungBunt ≥ 20, Stempel frisch · 2 = Ego und Third, mittags und nachts, beide Geräte, jedes Tor\"",
+     "fundstellen": [],
+     "stationen": []
+    },
+    {
+     "kriterium": "streaming.K3",
+     "text": "Der Sprung hält die Kadenz: Bild und Welt auf zwei Fäden",
+     "staffel": "\"1 = beim Teleport um 1 km Frame p95 ≤ 50 ms an einem Gerät · 2 = Teleport und Tor-Durchgang: p95 ≤ 33 ms und keine Aufgabe > 50 ms im Bild-Faden, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g6.js:3132"
+     ],
+     "stationen": [
+      {
+       "id": "streaming.K3#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Frame p95 Median 41.88 ms (41.95 · 41.88 · 41.87) · CPU-Takt p95 24.43 · 26.85 · 25.55 ms · die Welt steht nach 45.1 · 48.2 · 57.8 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: verteilt x10 | TAKT: _knotenRate › build [three.webgpu.min.js] x9 | TAKT: rendere …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "streaming.K3#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Frame p95 Median 49.9 ms (41.7 · 49.9 · 49.9) · CPU-Takt p95 40.3 · 42.4 · 44.1 ms · die Welt steht nach 14.4 · 15.2 · 15.2 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _dispatchFrameJobs › run x11 | TAKT: _loopVoxelStreaming › _runFrameScheduler x6 | TAKT: …",
+       "sha": "715754fc",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.massstab.physik",
+   "name": "Die Physik des Maßstabs",
+   "art": "kriterium",
+   "misst": "Ob dieselbe Physik je Größe das Richtige tut, gegen die dimensionslosen Gesetze (Reynolds, Bond, Froude, Kepler) — Fähigkeit, nicht Liste. Achse: 1 → 12 Größenordnungen Körpergröße.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Körper- und Fahrt-Physik im Mensch-Maßstab vorhanden, gegen die Formel ungemessen; keine Physik über den Maßstab.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Größenordnung (0,5–5 m: Mensch, Wagen, Kiste)",
+     "tiefe": "Fall, Stoß, Fahrt plausibel",
+     "preis": "P",
+     "richter": "Fallzeit aus 10 m gegen √(2h/g) ±5 %; Bremsweg gegen μ ±10 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "3 (Ameise bis Haus)",
+     "tiefe": "die Ameise überlebt den Sturz, der Mensch nicht",
+     "preis": "P",
+     "richter": "Endgeschwindigkeit eines 5-mm-Körpers ±20 % gegen ~6 m/s; Sturzfolge passend zur Größe"
+    },
+    {
+     "nr": 3,
+     "umfang": "Flüssigkeit über den Maßstab",
+     "tiefe": "Tropfen unter der Kapillarlänge kugelig, darüber flach",
+     "preis": "P",
+     "richter": "Tropfenform gegen Bond-Zahl ±15 % bei 0,5 / 2,7 / 10 mm"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "same.gedaechtnis.alter",
+   "name": "Alter des Gebauten",
+   "art": "kriterium",
+   "misst": "Ob alles Gebaute sein Alter nach Stoff, Lage, Klima und Gebrauch wahr trägt — als EINE Dosis-Faltung, die nicht sättigt, sondern bis zum Bruch und zur Rücknahme durch die Natur läuft. Achse: Zeit 30 Tage → 10⁶ Jahre.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "EIN Alters-Kern (siedlung-satz.js:843-967), 3 alternde Stoffe × 5 Schichten (bau-vorlagen.js:1650), sättigt nach 10–300 Tagen; Tag 30 Δ Albedo 0,038 (1 Klasse), Tag 60 Holz S 0,72 → 0,29, Rost 23° — alles headless (stoffe.K4 an d3708675). Die Nässe-Dosis ist ein Zähler im Stand (bild-himmel.js:2663), keine Funktion von t.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Werk, 3 Stoffe, 30 Spieltage",
+     "tiefe": "Farbe ändert sich nach Nässe und Lage",
+     "preis": "P",
+     "richter": "Bildpaar vor ↔ nach 30 d: Δ Albedo ≥ 0,02, Nord- und Wetterseite verschieden, beide Geräte"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Dorf, jedes Werk, 1 Jahr",
+     "tiefe": "Holz vergraut, Eisen rostet nur im Regen, Moos nord, Flechte oben, Algen im Regenlauf",
+     "preis": "P",
+     "richter": "nach 60 d und 1 a: Soll-Farbe je Schicht im Band, über Reload gleich"
+    },
+    {
+     "nr": 3,
+     "umfang": "jede Fläche einer Stadt (10⁴ Werke), 10 Jahre",
+     "tiefe": "Gebrauch: Schwelle ausgetreten, Ruß, Rostfahne; Schäden wachsen statt zu sättigen",
+     "preis": "P",
+     "richter": "Blind-Paarvergleich gegen Fotos 10 Jahre alter Bauten: ≥ 60 % schätzen gleich alt"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "stoffe.K4",
+     "text": "Verwitterung mit der Zeit: Rost, Vergrauen, Moos, Trampelpfad",
+     "staffel": "\"1 = nach einem Spielzeit-Sprung von 30 Tagen ändert sich ≥ 1 Stoff messbar im Bild, abhängig von Nässe oder Lage · 2 = Holz-Sättigung −30 %, Eisen im Regen Farbton 20–30° (Rost), Moos auf nassen Nordflächen, ein 100× gegangener Weg wird Pfad (Gras-Dichte −60 %), über den Reload\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3956",
+      "stationen/g1.js:3977"
+     ],
+     "stationen": [
+      {
+       "id": "stoffe.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Tag 30, 16 Häuser und 13 Klassen im Umkreis 60 m des Dorfs (Ort -704.217/-885.52) · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.008/sued 0.007/oben 0.038 · bodenSatz nord 0/sued 0/oben 0 · formationenSatz nord 0/sued 0/oben 0 · 1 altern (≥ 0,02), 1 nach  …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "stoffe.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Tag 60, 100 Gänge · Holz S 0.72 → 0.29 · Eisen im Regen 23° S 0.59 (Δ nass 0.139, trocken 0.000) · Stein nord Δ nass 0.032 (grünt 0.024), süd Δ nass 0.001, nord Δ trocken 0.000 · Weg 13 → 3 Büschel, daneben 17 → 17 · nach dem Reload: Holz S 0.72 → 0.29 · Eisen …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.gedaechtnis.pfad",
+   "name": "Spur des Gangs",
+   "art": "kriterium",
+   "misst": "Ob die Bewegung aller Körper (Spieler, Bewohner, Tiere, Fahrzeuge) die Landschaft dauerhaft formt — vom Trampelpfad zur Fernroute. Achse: Leiber 10⁰ → 10¹⁰.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Trampelpfad aus dem Tritt der Leiber und Peers (dirigent-takt.js:1163, netz-p2p.js:2938): 100 Gänge → Büschel 13 → 3, daneben 17 → 17 — headless (stoffe.K4).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Weg, 1 Spieler, 100 Gänge",
+     "tiefe": "Gras-Dichte −60 % auf dem Weg, daneben gleich, über Reload",
+     "preis": "P",
+     "richter": "Büschel auf / neben dem Weg vor ↔ nach im Bild, beide Geräte"
+    },
+    {
+     "nr": 2,
+     "umfang": "~10² Leiber eines Dorfs",
+     "tiefe": "Pfade entstehen, wo Ziele sie ziehen",
+     "preis": "P",
+     "richter": "nach 30 Spieltagen: Pfad-Pixel auf Kürzesten-Weg-Linien zwischen Zielen ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴ Leiber und Fahrzeuge, eine Stadt, 1 Jahr",
+     "tiefe": "Abkürzung über den Rasen, Wildwechsel, Spurrillen",
+     "preis": "P",
+     "richter": "Netzform (Knotengrad, Abkürzungs-Anteil) gegen Luftbilder echter Parks im Band"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "stoffe.K4",
+     "text": "Verwitterung mit der Zeit: Rost, Vergrauen, Moos, Trampelpfad",
+     "staffel": "\"1 = nach einem Spielzeit-Sprung von 30 Tagen ändert sich ≥ 1 Stoff messbar im Bild, abhängig von Nässe oder Lage · 2 = Holz-Sättigung −30 %, Eisen im Regen Farbton 20–30° (Rost), Moos auf nassen Nordflächen, ein 100× gegangener Weg wird Pfad (Gras-Dichte −60 %), über den Reload\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3956",
+      "stationen/g1.js:3977"
+     ],
+     "stationen": [
+      {
+       "id": "stoffe.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Tag 30, 16 Häuser und 13 Klassen im Umkreis 60 m des Dorfs (Ort -704.217/-885.52) · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.008/sued 0.007/oben 0.038 · bodenSatz nord 0/sued 0/oben 0 · formationenSatz nord 0/sued 0/oben 0 · 1 altern (≥ 0,02), 1 nach  …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "stoffe.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Tag 60, 100 Gänge · Holz S 0.72 → 0.29 · Eisen im Regen 23° S 0.59 (Δ nass 0.139, trocken 0.000) · Stein nord Δ nass 0.032 (grünt 0.024), süd Δ nass 0.001, nord Δ trocken 0.000 · Weg 13 → 3 Büschel, daneben 17 → 17 · nach dem Reload: Holz S 0.72 → 0.29 · Eisen …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.gedaechtnis.schicht",
+   "name": "Kulturschichten",
+   "art": "kriterium",
+   "misst": "Ob unter dem Spieler die Vergangenheit des Orts in Schichten liegt, die er ausgraben kann, und ob sie zur bereisbaren Geschichte passt. Achse: 1 Grube → jeder Planet über Äonen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Nichts: Boden ohne Geschichte.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Grube an einem Ort",
+     "tiefe": "Humus über Brandschicht über gewachsenem Boden",
+     "preis": "P, Graben ohne Bild-Riss",
+     "richter": "Grubenwand: ≥ 3 unterscheidbare Schichten im Bild"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Siedlungshügel, 10³ Jahre",
+     "tiefe": "Dicke nach Rate (~1 cm/a), Zerstörungs-Schübe, Scherben je Schicht",
+     "preis": "P",
+     "richter": "Schichtdicke / Siedlungsdauer im Band 0,5–2 cm/a"
+    },
+    {
+     "nr": 3,
+     "umfang": "jede Siedlung einer Region, 5 000 Jahre",
+     "tiefe": "Tells wachsen 10–20 m, Funde passen zur Epoche",
+     "preis": "P",
+     "richter": "Hügelhöhe gegen Besiedlungsdauer an N = 20 im Band"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "same.preis.ankunft",
+   "name": "Ankunft",
+   "art": "kriterium",
+   "misst": "Sekunden vom Klick (leere Platte, Netz der Sprosse) bis zur ersten angenommenen Eingabe in einem ganzen Bild (≤ 2 % Lücke gegen 60 s Ruhe) im vollen Bild der Auslieferung, beim Welt-Umfang der Sprosse. Achse: 60 s → 1 s, Dorf → viele Planeten, Standardgerät → G0–G7. Ab der Klasse Stadt ist ≤ 5 s Teil von P jeder Inhalts-Sprosse (R8); die Zeit eines Sprungs im laufenden Spiel stuft same.massstab.sprung.",
+   "heute": 1,
+   "kern": 0,
+   "fuss": "kern",
+   "beleg": "GTX kalt 16,6 s (16,1–17,0) am 18.10., Zweit-Boot 12,0 s, Haupt-Faden bis zum Bild 97 % belegt; Radeon ≈ 11 s am 17.10.; lokaler Server, nie gedrosselt (PFLICHT B); am Kopf nicht nachgemessen, die Station hat sich seither geändert. — KARTE: 0 — kein Lauf des Richters am Kopf (Z2). Kern 1: ≤ 60 s kalt ist an beiden Geräten gemessen. Sprosse 2 nicht im Kern: das ganze Bild (≤ 2 % Lücke) ist nur an der Radeon gebucht (ankunft.K2).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "eine Wiese am Spawn",
+     "tiefe": "Bild erscheint, Welt teilweise",
+     "preis": "≤ 60 s kalt an beiden Geräten, lokales Netz",
+     "klasse": "Ort",
+     "richter": "t(Kontrolle) von außen, ≥ 4 Kalt-Boots je Gerät"
+    },
+    {
+     "nr": 2,
+     "umfang": "Dorf (10² Häuser)",
+     "tiefe": "Bild ganz, ≤ 2 % Lücke",
+     "preis": "≤ 20 s kalt an beiden Geräten",
+     "richter": "t(Kontrolle) + Bild-Diff gegen 60 s Ruhe, ≥ 4 Boots je Gerät"
+    },
+    {
+     "nr": 3,
+     "umfang": "Dorf",
+     "tiefe": "ganz nach 180°-Drehung, volles Bild der Auslieferung (keine Klasse abgeschaltet)",
+     "preis": "≤ 10 s kalt, warm ≤ 3 s",
+     "richter": "wie 2, plus Drehung 2 s nach der Kontrolle"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [
+    {
+     "station": "karte2.same.preis.ankunft#1",
+     "leiter": "same.preis.ankunft",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "pipeline.K4",
+     "text": "Wärme: Platte und Gesetz-SHA tragen jede Lieferung",
+     "staffel": "\"1 = build-asset kommt beim Zweit-Boot zu ≥ 95 % von der Platte · 2 = jede Lieferung (Blatt-Atlas, Dorf-Export, Karten) 100 %, ein geänderter Kern-SHA baut nur seine Art neu (0 fremde Neubauten), beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:1054",
+      "stationen/g4.js:1098"
+     ],
+     "stationen": [
+      {
+       "id": "pipeline.K4#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "125 von 125 build-asset von der Platte (100.0 %), Bau-Ereignisse Werk 0 · Haupt-Faden 0, leer 0, verschluckt 0",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "pipeline.K4#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "183 von 183 build-asset von der Platte (100.0 %), Bau-Ereignisse Werk 0 · Haupt-Faden 0, leer 0, verschluckt 0",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "pipeline.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 1/1 0 ms · karte 13/13 14 ms · Kern-Wechsel fachwerk: 5 Leser neu, fremd 0 , alt 0 ",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "pipeline.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 2/2 0 ms · karte 19/19 7 ms · Kern-Wechsel fachwerk: 43 Leser neu, fremd 0 , alt 0 ",
+       "sha": "715754fc",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "pipeline.K5",
+     "text": "EIN Bauer auf der Engine der Welt",
+     "staffel": "\"1 = Netz- und Parse-Log des Foundry-Workers zeigt 0 Bytes auf worlds/*/lib/three* UND kein synchrones XHR · 2 = dazu kalt bereit ≤ 300 ms an beiden Geräten\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g4.js:1202"
+     ],
+     "stationen": [
+      {
+       "id": "pipeline.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "1 Foundry-Fäden (buch): worlds/*/lib/three* 0 B über das Netz, geparst nichts · synchrones XHR 0 · THREE im Faden r184 gegen die Welt r184",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ankunft.K1",
+     "text": "Kalt bis zur Kontrolle an beiden Geräten",
+     "staffel": "\"1 = Median ≤ 5 s an einem Gerät UND ≤ 10 s am anderen · 2 = ≤ 5 s an beiden\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:3017",
+      "stationen/g6.js:3045"
+     ],
+     "stationen": [
+      {
+       "id": "ankunft.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "ankunft.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "ankunft.K1#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "ankunft.K1#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "ankunft.K2",
+     "text": "Das Bild bei der Kontrolle ist ganz, auch rundum",
+     "staffel": "\"1 = das Ankunftsbild ist an einem Gerät ganz (≤ 2 % Lücke gegen dieselbe Pose nach 60 s), gemessen von außen · 2 = auch nach 180°-Drehung 2 s nach der Kontrolle und aus 30 m Höhe, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g6.js:2946"
+     ],
+     "stationen": [
+      {
+       "id": "ankunft.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s) · [linse-gpu] amd/rdna-3",
+       "sha": "818b466d",
+       "gehalten": true
+      },
+      {
+       "id": "ankunft.K2#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "ankunft.K3",
+     "text": "Wiederkehr warm und nach der Versions-Stufe",
+     "staffel": "\"1 = warm ≤ 5 s an einem Gerät · 2 = warm ≤ 1,5 s und nach der Versions-Stufe ≤ 3 s an beiden\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:2986"
+     ],
+     "stationen": [
+      {
+       "id": "ankunft.K3#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "ankunft.K3#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "ankunft.K4",
+     "text": "Der erste Blick ist AAAA: jede Klasse am Spawn",
+     "staffel": "\"1 = am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third: ≥ 6 von 12 Klassen frisch GRÜN an einem Gerät · 2 = jede sichtbare Klasse gemessen (auch fahrzeug, esse, tier, haus-vorschau mit externem Soll), ≥ 95 % GRÜN an beiden Geräten\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:2897"
+     ],
+     "stationen": [
+      {
+       "id": "ankunft.K4#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "ankunft.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "ankunft.K5",
+     "text": "Das Lade-Bild lebt, der Haupt-Faden atmet",
+     "staffel": "\"1 = längste Haupt-Faden-Aufgabe ≤ 250 ms und blockierte Summe bis zur Kontrolle ≤ 4 s an einem Gerät · 2 = ≤ 100 ms und ≤ 2 s an beiden, eine Eingabe im Lade-Bild antwortet\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:3098"
+     ],
+     "stationen": [
+      {
+       "id": "ankunft.K5#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.preis.takt",
+   "name": "Bild-Takt über die Gerätespanne",
+   "art": "kriterium",
+   "misst": "Nach Verbreitung gewichteter Anteil aller Geräte, auf denen die Welt läuft UND Frame p95 ≤ 33 ms (oben ≤ 16,7 ms, VR ≤ 11,1 ms) in Bewegung hält — beim Umfang der Sprosse und im vollen Bild der Auslieferung (keine Klasse abgeschaltet, kein Sparmodus). Wie wahr das Bild ist, richten die Inhalts-Leitern. Achse: Standardgerät stehend → ≥ 95 % der Geräte der Menschheit.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "GTX stehend p95 16,8 ms (18.10.); Radeon gehend 66 %, fahrend 94 % der Bilder > 33 ms; das Radeon-ABAB am Kopf steht aus (PFLICHT E). — KARTE: 0 — der Stand ist nur an der GTX gemessen, an der Radeon am Kopf nicht; kein Kern.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Wiese, stehend, Ego",
+     "tiefe": "volles Bild der Auslieferung",
+     "preis": "p95 ≤ 33 ms stehend an beiden Geräten",
+     "richter": "werkbank lauf, 4 Boots je Gerät"
+    },
+    {
+     "nr": 2,
+     "umfang": "Wiese + Genesis, Ego + Third, stehend",
+     "tiefe": "volles Bild, keine Klasse abgeschaltet",
+     "preis": "p95 ≤ 33 ms stehend an G2 und G3 in jeder Zelle",
+     "richter": "ABAB an beiden Geräten"
+    },
+    {
+     "nr": 3,
+     "umfang": "Gehen, Sprint, Fahrt, Sturm, Dorfgasse",
+     "tiefe": "volles Bild",
+     "preis": "p95 ≤ 33 ms in jeder Bewegungszelle an G2 + G3, 0 Frames > 100 ms",
+     "richter": "Spielgang-Bahnen, 4 Sitzungen je Gerät"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "feld.K3",
+     "text": "Ruhe ist Null: in Ruhe arbeitet keine Simulation",
+     "staffel": "\"1 = der Wasser-Automat hat 0 Takte in 60 s Ruhe · 2 = jede langsame Simulation (Wasser, Overlays, Wetter, Brand, Wachstum) hat 0 Einheiten in Ruhe und arbeitet nur in berührten Zellen\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2898",
+      "stationen/g1.js:2948"
+     ],
+     "stationen": [
+      {
+       "id": "feld.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Wasser-Automat 0 Einheiten in 60 s Ruhe (Akte 7920); alle Sims: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "feld.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 7920 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: {\"zellen\":56,\"einheiten\":20.2,\"start\":true,\"mit\":0.911,\"koepfe\" …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "streaming.K4",
+     "text": "Kein stiller Ersatz im Haupt-Faden",
+     "staffel": "\"1 = im Spiel 0 synchrone Bauten außerhalb der drei benannten forceSync-Stellen (Fußabdruck, Test-Naht, `_drainDirty`), Kalt-Boot-Rückfälle laut über `_bruchMelden` · 2 = 0 überall, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:3245",
+      "stationen/g6.js:3274"
+     ],
+     "stationen": [
+      {
+       "id": "streaming.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Bauten 31 an Sync-Stellen · 0 sonst",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "streaming.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Bauten 0 außerhalb der Sync-Stellen · 25 an ihnen {\"naht\":25} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 3.0 s · 6 Bau-Klicks · [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "streaming.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Bauten 0 außerhalb der Sync-Stellen · 5 an ihnen {\"naht\":5} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 120.0 s · 6 Bau-Klicks · [linse-gpu] nvidia/pascal",
+       "sha": "715754fc",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "profiband.K1",
+     "text": "Flüssig in Bewegung",
+     "staffel": "\"1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten · 2 = ≤ 16,7 ms in jeder Zelle\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:3421",
+      "stationen/g6.js:3437"
+     ],
+     "stationen": [
+      {
+       "id": "profiband.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K1#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K1#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "profiband.K2",
+     "text": "Der CPU-Takt, gemessen als ganze Belegung — stehend und bewegt",
+     "staffel": "\"1 = stehend ≤ 5,8 ms an einem Gerät · 2 = stehend ≤ 5,8 UND bewegt ≤ 8 ms an beiden\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:3488",
+      "stationen/g6.js:3504"
+     ],
+     "stationen": [
+      {
+       "id": "profiband.K2#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K2#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K2#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K2#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "profiband.K3",
+     "text": "Der GPU-Haushalt am Spieler-Bild",
+     "staffel": "\"1 = im Stand an beiden Geräten frisch am Kopf (Ratsche + gpu-bank) · 2 = alle Zellen samt Bewegung\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:3524",
+      "stationen/g6.js:3541"
+     ],
+     "stationen": [
+      {
+       "id": "profiband.K3#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K3#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K3#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K3#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "profiband.K4",
+     "text": "Glätte: keine Hänger",
+     "staffel": "\"1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g6.js:3389",
+      "stationen/g6.js:3406"
+     ],
+     "stationen": [
+      {
+       "id": "profiband.K4#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Gehen 69 Bilder · max 83.63 ms · 63.77 % > 33 ms · Fahrt 52 Bilder · max 100.25 ms · 92.31 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 63.77 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.25), 92.31 % > 33 ms",
+       "sha": "2b826a89",
+       "gehalten": true
+      },
+      {
+       "id": "profiband.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K4#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K4#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.preis.bytes",
+   "name": "Null Download",
+   "art": "kriterium",
+   "misst": "Bytes über das Netz gegen den erlebten Welt-Umfang — der Preis hängt am Schirm, nie an der Welt; der Erd-Schlüssel (R4) zählt mit. Achse: 50 MB → 0 B je neuer Welt. Heap und Grafikspeicher stuft same.preis.speicher.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "≈ 12,9 MB roh Stamm + Kerne (64 Dateien 9,1 MB + 10 Kerne 3,75 MB), vendor 2,3 MB — eine Summe von Dateigrößen, kein Netz-Mitschnitt. — KARTE: 0 — der Richter (Netz-Mitschnitt des Kalt-Boots) wurde nie gefahren; die Datei-Summe ist eine obere Schranke, kein Lauf (Z2).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "eine Welt",
+     "tiefe": "Gesetz statt Assets",
+     "preis": "≤ 50 MB roh über das Netz, kein Installer",
+     "richter": "Netz-Mitschnitt des Kalt-Boots an beiden Geräten"
+    },
+    {
+     "nr": 2,
+     "umfang": "Dorf + Studios",
+     "tiefe": "volles Bild der Auslieferung",
+     "preis": "≤ 20 MB roh",
+     "richter": "Netz-Mitschnitt des Kalt-Boots und des ersten Studio-Besuchs"
+    },
+    {
+     "nr": 3,
+     "umfang": "Dorf",
+     "tiefe": "volles Bild",
+     "preis": "≤ 5 MB komprimiert bis zur Kontrolle",
+     "richter": "Netz-Mitschnitt bis zur Kontrolle"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "pipeline.K5",
+     "text": "EIN Bauer auf der Engine der Welt",
+     "staffel": "\"1 = Netz- und Parse-Log des Foundry-Workers zeigt 0 Bytes auf worlds/*/lib/three* UND kein synchrones XHR · 2 = dazu kalt bereit ≤ 300 ms an beiden Geräten\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g4.js:1202"
+     ],
+     "stationen": [
+      {
+       "id": "pipeline.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "1 Foundry-Fäden (buch): worlds/*/lib/three* 0 B über das Netz, geparst nichts · synchrones XHR 0 · THREE im Faden r184 gegen die Welt r184",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.preis.eingabe",
+   "name": "Jedes Verb über jede Eingabe",
+   "art": "kriterium",
+   "misst": "Anteil der Verben, der über jede Eingabe-Art (Tastatur/Maus, Gamepad, Finger, Stimme, Hände im Raum) erreichbar ist, mit Latenz Eingabe → Pixel — oben: ein per Satz erschaffenes Verb ohne Hand-Arbeit. Achse: 1 → 5 Eingaben, v1-Verben → Verben, die es gestern nicht gab.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Tastatur/Maus und Gamepad mit Totzone und freier Belegung (koerper-bewegung.js:2413-2434); kein Touch (nur ein pointerdown-Stempel), WebXR und Spracherkennung 0 Treffer. — KARTE: 0 — Eingabe → Pixel an der Radeon Ego gehend 235 ms, Third 81,6 ms (leib.K1 ROT) gegen ≤ 100 ms; der v1-Pfad ist nur an der GTX gebucht (spielgang.K3).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Tastatur + Maus",
+     "tiefe": "v1-Verben erreichbar",
+     "preis": "Eingabe bis Pixel ≤ 100 ms",
+     "richter": "v1-Pfad aus aufgenommenen Eingaben, INP"
+    },
+    {
+     "nr": 2,
+     "umfang": "+ Gamepad, Belegung frei",
+     "tiefe": "v1-Verben über beide",
+     "preis": "INP ≤ 200 ms an G2 + G3",
+     "richter": "v1-Pfad je Eingabe, Anteil erreichter Verben"
+    },
+    {
+     "nr": 3,
+     "umfang": "+ Finger",
+     "tiefe": "100 % der v1-Verben, Treffer der Finger-Ziele ≥ 98 %",
+     "preis": "INP ≤ 100 ms an G4",
+     "richter": "v1-Pfad am Handy nur per Finger, Fehltipp-Quote"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "leib.K1",
+     "text": "Die Taste bewegt den Leib im Bild: Eingabe-Latenz",
+     "staffel": "\"1 = Taste → bewegter Leib im Ausgabe-Bild p95 ≤ 50 ms an einem Gerät (gehen, Sicht-Wechsel) · 2 = jedes Verb (gehen, springen, schwingen, einsteigen), beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:4391",
+      "stationen/g5.js:4416"
+     ],
+     "stationen": [
+      {
+       "id": "leib.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "leib.K1#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 46.2 · third/gehen 45.3 · ego/wechsel 33.1 · third/wechsel 30.1 · Bild 25.24 ms",
+       "sha": "2b826a89",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K1#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "leib.K1#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "leib.K5",
+     "text": "Das Gamepad lenkt jedes Verb analog",
+     "staffel": "\"1 = Gehen, Kamera und Fahren analog über den Achs-Wert (Lenkwinkel stetig) · 2 = jedes Verb, Rumble aus dem Zustand, Belegung frei\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4749"
+     ],
+     "stationen": [
+      {
+       "id": "leib.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.389/0.885/1.560 m/s, Auslauf 0.873/1.241 m/s ohne/mit Handbre …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "✅ jedes Verb liest NUR die Tafel — rohe Tasten-Leser []; SELBSTTEST Zwilling-Leser ROT | ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel  …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "spielgang.K3",
+     "text": "Bedienung: HUD und Menü antworten, ohne das Bild zu verdecken",
+     "staffel": "\"1 = HUD und Menü antworten INP ≤ 200 ms und das HUD deckt ≤ 5 % des Bilds, an einem Gerät · 2 = Text ≥ 16 px bei 1080p, Tastenbelegung frei, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:5585"
+     ],
+     "stationen": [
+      {
+       "id": "spielgang.K3#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "spielgang.K3#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "HUD deckt 2.84 % (1920×1080, im Spiel) · INP HUD 96 ms (50) · Menü 80 ms (20)",
+       "sha": "dc9eacb0",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.preis.zugang",
+   "name": "Zugang mit fehlendem Sinn",
+   "art": "kriterium",
+   "misst": "Anteil der Aufgaben, die ein Spieler mit je einem fehlenden oder geschwächten Sinn ohne fremde Hilfe schafft — gerichtet durch Läufe, die nur den verbleibenden Kanal erhalten; oben an Dingen aus Zufalls-Saaten, die niemand beschrieben hat.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Untertitel aus dem Klang-Gesetz 39/39, Farbsicht-Modus (Deuteranopie min ΔE 31,8, bild-kosten.js:3928-3931), Komfort-Regler, DE/EN aus EINER Tafel; kein Screenreader-Kanal, keine Beschreibung der Welt in Sprache. — KARTE: 0 — Untertitel 39/39 und Farbsicht ΔE 31,8 sind headless gebucht (spielgang.K4, K5), im echten Fenster nie gefahren (R2).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Text der Oberfläche",
+     "tiefe": "DE/EN aus einer Tafel",
+     "preis": "0 zusätzliche Kosten",
+     "klasse": "Ort",
+     "richter": "harte UI-Zeilen = 0"
+    },
+    {
+     "nr": 2,
+     "umfang": "taub und farbschwach",
+     "tiefe": "jedes Klang-Ereignis hat seine Zeile; Klassen-Grenzen ΔE ≥ 10 unter Deuteranopie; Bewegungs-Komfort",
+     "preis": "≤ 0,1 ms je Bild",
+     "richter": "Klang-Ereignisse mit Zeile; ΔE min unter Machado-Simulation am Ausgabe-Bild"
+    },
+    {
+     "nr": 3,
+     "umfang": "+ motorisch: Ein-Hand, Assist",
+     "tiefe": "v1-Pfad mit einer Hand",
+     "preis": "0 Bild-Kosten",
+     "richter": "v1-Pfad mit halbierter Tastenmenge, Anteil Schritte"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [
+    {
+     "station": "karte2.same.preis.zugang#1",
+     "leiter": "same.preis.zugang",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "spielgang.K4",
+     "text": "Zugänglichkeit aus dem Gesetz",
+     "staffel": "\"1 = Untertitel für jede Stimme und jeden Ruf aus dem Klang-Gesetz ODER ein Farb-Modus (jede Klassen-Grenze unter Deuteranopie-Simulation ΔE ≥ 10) · 2 = beides und Bewegungs-Komfort (FOV, Kopfwackeln, Unschärfe aus)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:5807",
+      "stationen/g5.js:5843"
+     ],
+     "stationen": [
+      {
+       "id": "spielgang.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "39 von 39 Klang-Ereignissen und Stimmen tragen ihre Zeile",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "spielgang.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Farbsicht: 4 Grenzen, ΔE min 23.9 (vorher 15.85) unter Machado-Deuteranopie [gras|boden 25.18, gras|bau 25.64, boden|bau 23.9, bau|laub 31.6] · Sichtfeld 75→92°, Skala 0.74 (Soll 0.741) · Wackeln an {\"dip\":-0.0791,\"atem\":6,\"bildPx\":42574} aus {\"dip\":0,\"atem\":0 …",
+       "sha": "039509b2",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "spielgang.K5",
+     "text": "Die Welt spricht die Sprache des Spielers",
+     "staffel": "\"1 = jede UI-Zeile aus EINER Text-Quelle in DE und EN (0 harte Strings, Zählung), an einem Gerät umgeschaltet · 2 = die KI antwortet in der Sprache des Spielers (Korpus-Teil EN aus KI K1)\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:5647",
+      "stationen/g5.js:5733"
+     ],
+     "stationen": [
+      {
+       "id": "spielgang.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "0 harte UI-Zeilen (Code 0 · DOM 0 von 580 Zeilen, 574 aus der Tafel, 6 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2379, en 2379)",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "spielgang.K5#2",
+       "geraet": "headless",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.preis.ausdauer",
+   "name": "Die Sitzung hält",
+   "art": "kriterium",
+   "misst": "Spieldauer am Stück ohne Drift (p95 der letzten 5 min ≤ erste × 1,05), ohne Speicherwachstum, ohne thermische Drosselung, mit begrenztem Akku. Achse: 1 min → Tage.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "1,06 min Spielgang an der Radeon ohne Absturz, aber ROT: Bild-p95 67,2 ms, Heap 290 → 486 MB (+185 MB/min), VRAM nach GC 135,6 → 159,4 MB (profiband.K5). — KARTE: 0 — die Messung steht ROT.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 min Spielgang",
+     "tiefe": "kein Absturz, volles Bild",
+     "preis": "Heap-Steigung ≤ 50 MB/min an beiden Geräten",
+     "richter": "Spielgang am Stück mit Heap-Kurve"
+    },
+    {
+     "nr": 2,
+     "umfang": "5 min, Weg ≥ 1 km",
+     "tiefe": "Heap-Drift ≤ 5 MB/min, Bild am Ende = Anfang",
+     "preis": "p95 ohne Drift an beiden Geräten",
+     "richter": "5-min-Spielgang"
+    },
+    {
+     "nr": 3,
+     "umfang": "20 min, Weg ≥ 5 km, Tor, Nacht",
+     "tiefe": "VRAM-Drift ≤ 2 MB",
+     "preis": "an G2 + G3",
+     "richter": "20-min-Spielgang, beide Geräte"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "spielgang.K1",
+     "text": "Die fünf Schritte in EINER Sitzung, jeder mit seiner Spieler-Zahl",
+     "staffel": "\"1 = ≥ 3 von 5 Schritten in EINER Sitzung gemessen gehalten an einem Gerät · 2 = 5/5 an beiden Geräten, der Speicher-Rundlauf am Ende trägt alle Werke byte-gleich\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:5760"
+     ],
+     "stationen": [
+      {
+       "id": "spielgang.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "5/5 Schritte gehalten in EINER Sitzung (1× geladen, 93 Eingaben aus der Spur, 0 ohne Ziel): ankommen Kontrolle 822 ms, Zeiger gefangen · laufen 12.81 m, Blick 139°, Sicht first→third→first · bauen bank_sitzbank steht in schöpfer, 8 Eingaben · ki der Satz stell …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "streaming.K5",
+     "text": "Bytes reisen, nie Kopien",
+     "staffel": "\"1 = Klon-MB je Minute am Empfang gemessen und ≤ 5 MB/min in 60 s Fahrt · 2 = ≤ 1 MB/min, 0 Kopien nach dem Empfang, Speichern im Worker\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:3330",
+      "stationen/g6.js:3351"
+     ],
+     "stationen": [
+      {
+       "id": "streaming.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "1.04 MB/min am Empfang in 60.0 s Fahrt",
+       "sha": "78d37554",
+       "gehalten": true
+      },
+      {
+       "id": "streaming.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "0.87 MB/min in 60.0 s Fahrt · Kopie 0.00 MB · Speicher-Faden ja (Fäden: buch · voxel · streu · wald · speicher)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "profiband.K5",
+     "text": "Ausdauer: 20 min ohne Drift",
+     "staffel": "\"1 = an einem Gerät · 2 = an beiden\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:3566",
+      "stationen/g6.js:3583"
+     ],
+     "stationen": [
+      {
+       "id": "profiband.K5#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K5#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K5#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K5#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.preis.speicher",
+   "name": "Speicher, Wärme, Akku",
+   "art": "kriterium",
+   "misst": "Heap und Grafikspeicher gegen den erlebten Welt-Umfang, dazu Wärme und Akku am Laptop — der Speicher hängt am Schirm, nie an der Welt. Die Decken dieser Leiter sind der Speicher-Teil von P (R8).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Heap 290 → 486 MB in 1,06 min (+185 MB/min), VRAM nach GC 135,6 → 159,4 MB an der Radeon (profiband.K5, ROT); GTX stehend VRAM 99,6–111,2 MB (PFLICHT E). — KARTE: 0 — Sprosse 1 reißt an der Radeon (VRAM 159 MB > 118 MB, der Heap steigt).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Wiese und Dorf",
+     "tiefe": "der Speicher steht nach 60 s",
+     "preis": "Heap ≤ 400 MB, VRAM ≤ 118 MB an beiden Geräten",
+     "richter": "Heap- und VRAM-Kurve über 5 min Spielgang"
+    },
+    {
+     "nr": 2,
+     "umfang": "Dorf, 20 min Weg",
+     "tiefe": "kein Wachstum mit dem Weg",
+     "preis": "Steigung ≤ 5 MB/min, VRAM-Drift ≤ 2 MB",
+     "richter": "20-min-Spielgang, Kurven an beiden Geräten"
+    },
+    {
+     "nr": 3,
+     "umfang": "Stadt, 10³–10⁴ Bauten",
+     "tiefe": "Speicher ∝ Schirm",
+     "preis": "Heap ≤ 600 MB, VRAM ≤ 256 MB",
+     "richter": "Bahn durch die Stadt und zurück: Speicher am Ende = Anfang ±2 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "streaming.K5",
+     "text": "Bytes reisen, nie Kopien",
+     "staffel": "\"1 = Klon-MB je Minute am Empfang gemessen und ≤ 5 MB/min in 60 s Fahrt · 2 = ≤ 1 MB/min, 0 Kopien nach dem Empfang, Speichern im Worker\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:3330",
+      "stationen/g6.js:3351"
+     ],
+     "stationen": [
+      {
+       "id": "streaming.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "1.04 MB/min am Empfang in 60.0 s Fahrt",
+       "sha": "78d37554",
+       "gehalten": true
+      },
+      {
+       "id": "streaming.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "0.87 MB/min in 60.0 s Fahrt · Kopie 0.00 MB · Speicher-Faden ja (Fäden: buch · voxel · streu · wald · speicher)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "profiband.K3",
+     "text": "Der GPU-Haushalt am Spieler-Bild",
+     "staffel": "\"1 = im Stand an beiden Geräten frisch am Kopf (Ratsche + gpu-bank) · 2 = alle Zellen samt Bewegung\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:3524",
+      "stationen/g6.js:3541"
+     ],
+     "stationen": [
+      {
+       "id": "profiband.K3#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K3#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K3#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K3#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "profiband.K5",
+     "text": "Ausdauer: 20 min ohne Drift",
+     "staffel": "\"1 = an einem Gerät · 2 = an beiden\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:3566",
+      "stationen/g6.js:3583"
+     ],
+     "stationen": [
+      {
+       "id": "profiband.K5#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K5#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K5#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K5#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

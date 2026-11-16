@@ -1,0 +1,616 @@
+{
+ "paket": "06-leben-evolution-kopplung",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "leben.evolution.stammbaum",
+   "name": "Stammbaum: Arten mit Abstammung, lebend und ausgestorben",
+   "art": "kriterium",
+   "misst": "Ob die Arten eines Samens einen Baum bilden, dessen Verwandtschaft im Bild SICHTBAR ist, und ob jedes Blatt — auch ein ausgestorbenes — als Körper besuchbar ist.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "keine Abstammung: Würfe sind Hash(Saat, Zelle) (stamm/kreatur-fauna.js:125); `STAMMBAUM` ist der Name eines Studios (tetrapoda-core.js:5185); Ankunft 11–17 s.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 Arten mit gemeinsamem Ahn",
+     "tiefe": "Verwandtschaft ist sichtbar",
+     "preis": "P",
+     "richter": "Gestalt-Baum aus Third-Bildern gegen den Baum des Samens: Robinson-Foulds ≤ 0,3; Mutante „Erbe aus“ → Zufall"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Arten",
+     "tiefe": "Baumgestalt wie reale Kladen (Colless-Unbalance im Band)",
+     "preis": "P · Baum-Blick öffnet ≤ 1 s",
+     "richter": "Colless aus 100 Saaten gegen reale Kladen"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Arten",
+     "tiefe": "jedes Blatt hat Ort und Nische",
+     "preis": "P · Blatt → Körper ≤ 2 s",
+     "richter": "100 Zufallsblätter: als laufender Körper im Lebensraum, den Klima und Bauplan vorhersagen, ≥ 90 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "leben.evolution.erbe",
+   "name": "Individuum und Erbe: keines dem anderen gleich",
+   "art": "kriterium",
+   "misst": "Ob Kinder ihren Eltern sichtbar gleichen, jedes Individuum wiedererkennbar und beständig ist — bis zu Milliarden je Planet mit Ahnenlinie.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Bestand als Zahl je Revier, kein Erbe; Individuen einer Gattung bis auf Würfe gleich (GESTALTEN_JE_REZEPT = 1).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Linie über ≥ 10 Generationen",
+     "tiefe": "Kind gleicht Eltern im Bild",
+     "preis": "P",
+     "richter": "Morphometrie aus Third-Bildern: Eltern-Kind-Regression 0,2–0,8; Mutante „Erbe aus“ → ≈ 0"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Individuen einer Herde",
+     "tiefe": "jedes wiedererkennbar an Muster, Größe, Narbe, Gang",
+     "preis": "P",
+     "richter": "ein Individuum nach 1 Spieltag aus 100 wiedererkannt ≥ 90 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "der Spieler züchtet über 10 Generationen",
+     "tiefe": "Antwort auf Selektion R = h²·S ±20 %",
+     "preis": "P · Zeitraffer ≤ 60 s",
+     "richter": "Merkmalsmittel vorher ↔ nachher im Bild der Herde"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "leben.evolution.muster",
+   "name": "Die Experimente der Natur aus EINEM Gesetz",
+   "art": "kriterium",
+   "misst": "Den Anteil eines VOR dem Bau eingefrorenen Kanons K30 von 30 evolutiven Mustern (Selektion, Drift, Artbildung, Bergmann, Insel-Regel, Radiation, Konvergenz, Rote Königin, Mimikry, Neuheit, Kontingenz …), die mit Gegenlauf in 100 Saaten erscheinen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "0 von 30; die ökologischen Muster (Kaskade, Holling III) zählen in leben.oeko.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1/30: Antwort auf Selektion",
+     "tiefe": "Steigung im Band der Natur",
+     "preis": "P · Zeitraffer 10³ Generationen ≤ 60 s",
+     "richter": "Räuberdruck auf große Hirsche → Größe sinkt im Bild; Gegenlauf ohne Räuber"
+    },
+    {
+     "nr": 2,
+     "umfang": "3/30: + Drift, Isolation → Art",
+     "tiefe": "Varianz ∝ 1/N; nach Trennung Paarungs-Anteil < 5 %",
+     "preis": "P · Zeitraffer 10⁵ Generationen ≤ 60 s",
+     "richter": "Insel N = 20 vs. 2 000; getrennte Bestände im Bild-Embedding trennbar ≥ 0,9"
+    },
+    {
+     "nr": 3,
+     "umfang": "10/30",
+     "tiefe": "jedes im Band der Literatur",
+     "preis": "P",
+     "richter": "Statistik aus 100 Saaten, je Muster mit Gegenlauf"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "leben.evolution.zeitreise",
+   "name": "Zeitreise durch die Geschichte des Lebens",
+   "art": "kriterium",
+   "misst": "Ob der Spieler an jeden Punkt der Geschichte DESSELBEN Planeten reisen und dort Flora und Fauna antreffen kann, die dessen Evolution damals trug — und ob die Kurve der Vielfalt stimmt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "nur Gegenwart, Arten fest; keine Epochen-Flora oder -Fauna; Ankunft 11–17 s.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10⁴ Jahre zurück, eine Epoche",
+     "tiefe": "Flora und Fauna unterscheidbar von heute und verwandt mit heute",
+     "preis": "P · Zeitsprung",
+     "richter": "Panel ordnet Bildpaare Gegenwart/Epoche ≥ 0,8; Hin- und Rücksprung byte-gleiches Bild"
+    },
+    {
+     "nr": 2,
+     "umfang": "10⁵ Jahre: Eiszeit",
+     "tiefe": "Megafauna, Tundra-Flora, Wälder in Refugien",
+     "preis": "P · Sprung ≤ 10 s",
+     "richter": "Körpermassen-Median über dem der Gegenwart; Biom-Anteile gegen Paläo-Rekonstruktion ±20 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁶ Jahre",
+     "tiefe": "Ahnen und Schwestern der heutigen Arten",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "20 Arten am Zielpunkt: Ahn oder Schwester einer heutigen = 100 %"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "leben.evolution.bauplan",
+   "name": "Bauplan-Raum: wie fremd und vielfältig die Körper werden",
+   "art": "kriterium",
+   "misst": "Das Volumen des Morphoraums aus Silhouetten- und Bewegungs-Deskriptoren von 1 000 Zufalls-Wesen gegen heute und gegen Natur-Bildsätze (Disparität).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "4 Säuger-Gestalten über 5 Dials, gemischt per Gauß-Gewicht (ART_GESTALT, tetrapoda-core.js:3826), dazu je ein Gesetz für Vogel, Fisch, Bestäuber — die Punkte setzt der Mensch.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Volumen ×10 gegen heute",
+     "tiefe": "jede Form bewegt sich ohne Schlupf, ohne Durchdringung",
+     "preis": "P",
+     "richter": "1 000 Zufalls-Genome: Bewegungs-Anteil ≥ 95 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "×10²: Laufen, Schwimmen, Fliegen, Schlängeln ENTSTEHEN",
+     "tiefe": "Abdeckung des irdischen Tetrapoden-Morphoraums ≥ 50 %",
+     "preis": "P",
+     "richter": "Deskriptoren gegen Natur-Bildsatz der Tetrapoden"
+    },
+    {
+     "nr": 3,
+     "umfang": "×10³ über Stämme (Gliederfüßer, Weichtiere, Pflanzen-Wuchsformen)",
+     "tiefe": "Abdeckung irdischer Tier- und Pflanzen-Morphoräume ≥ 50 %",
+     "preis": "P",
+     "richter": "wie Sprosse 2, über alle Natur-Bildsätze"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "tiere.K3",
+     "text": "Gang und Leib: der Fuß steht, die Gangart folgt dem Tempo, Labor = Welt",
+     "staffel": "\"1 = der Fuß steht (Schlupf ≤ 0,05) · 2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:4192",
+      "stationen/g2.js:4261"
+     ],
+     "stationen": [
+      {
+       "id": "tiere.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen)",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "tiere.K3#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · ti …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "tiere.K3#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · ti …",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.evolution.fremde-physik",
+   "name": "Dieselbe Evolution unter fremdem Stern, Schwere und Chemie",
+   "art": "kriterium",
+   "misst": "Ob Leben unter anderer Schwerkraft, Luftdichte, Strahlung und anderem Lösungsmittel den Gesetzen folgt — oder ob seine Leere erklärt ist.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "ein Planet, g fest, eine Sonne.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "g 0,3–3",
+     "tiefe": "Bein-Querschnitt folgt Masse·g",
+     "preis": "P",
+     "richter": "Regression aus 50 Saaten je g aus Bildern: Steigung im Band der Statik"
+    },
+    {
+     "nr": 2,
+     "umfang": "Luftdichte 0,1–10 bar",
+     "tiefe": "Flieger-Anteil steigt mit Dichte/g",
+     "preis": "P",
+     "richter": "Anteil fliegender Arten über 20 Saaten, Kurve monoton"
+    },
+    {
+     "nr": 3,
+     "umfang": "Stern M bis F, Doppelsterne, gezeitengebundene Welten",
+     "tiefe": "Pflanzenfarbe folgt dem Licht; Leben sammelt sich an der Dämmerzone",
+     "preis": "P",
+     "richter": "Laubfarbe gegen Absorptions-Optimum; Biomasse-Profil über die Terminator-Linie"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "leben.evolution.zivilisation",
+   "name": "Bis zur Zivilisation: Verhalten, Kultur, fremde Personen",
+   "art": "kriterium",
+   "misst": "Ob Verhalten, Tradition und Kultur als Ergebnis der Evolution entstehen — bis zu nicht-menschlichen Zivilisationen, deren Bauten aus Körper und Geschichte folgen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Temperament je Gattung von Hand, Verhalten als Daten, nicht vererbt; die „Evolution“ in stamm/feld-nexus.js mutiert DSL-Programme der KI, nicht Leben.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Verhalten erblich",
+     "tiefe": "Kinder scheuer Eltern sind scheu",
+     "preis": "P",
+     "richter": "Fluchtdistanz Eltern ↔ Kind korreliert; Räuberdruck macht scheuer, Gegenlauf"
+    },
+    {
+     "nr": 2,
+     "umfang": "Sozialität evolviert",
+     "tiefe": "Herde oder Einzelgänger aus Selektion",
+     "preis": "P · Zeitraffer ≤ 60 s",
+     "richter": "Gruppengröße steigt mit Räuberdichte über 100 Saaten"
+    },
+    {
+     "nr": 3,
+     "umfang": "Tradition wird weitergegeben: Gesangs-Dialekte, Zugrouten, Werkzeug",
+     "tiefe": "Dialekt-Grenzen zwischen Populationen",
+     "preis": "P",
+     "richter": "Gesang zweier Populationen im Spektrum trennbar ≥ 0,9, innerhalb nicht; Werkzeug in ≥ 10 % der Saaten im Bild"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "leben.evolution.mikroben",
+   "name": "Mikroben und Ursprung: die unsichtbare Mehrheit",
+   "art": "kriterium",
+   "misst": "Ob die mikrobielle Welt sichtbar ist (Matten, Zoom bis zur Kolonie), die Kreisläufe trägt und ob Leben dort entsteht, wo Energie und Chemie es erlauben.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "kein mikrobielles Leben (0 Treffer).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Matten, Biofilme, Algenbeläge sichtbar",
+     "tiefe": "Farbzonen folgen Temperatur und Licht (heiße Quelle, Watt, Fels)",
+     "preis": "P",
+     "richter": "Bildvergleich der Zonierung gegen Natur-Fotos"
+    },
+    {
+     "nr": 2,
+     "umfang": "Zoom 1 m → 1 mm: Pilzfäden, Milben, Kolonien",
+     "tiefe": "Dichte im Band (~10⁹ Zellen je g Boden, sichtbar als Kolonien)",
+     "preis": "P · Zoom ohne Ladebalken",
+     "richter": "Bildvergleich am Ende des Zooms gegen Mikroskop-Aufnahmen"
+    },
+    {
+     "nr": 3,
+     "umfang": "Zoom auf 10⁻⁵ m an jedem Ort",
+     "tiefe": "die Gemeinschaft passt zum Milieu",
+     "preis": "P · Zoom ≤ 1 s",
+     "richter": "100 Zufallsorte: 2AFC Zoom-Bild gegen Lichtmikroskopie desselben Lebensraums ≤ 75 %; Formen passen zum Lebensraum (Teich, Boden, Darm) ≥ 90 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "leben.evolution.fossil",
+   "name": "Die Spur: das Leben im Gestein lesen",
+   "art": "kriterium",
+   "misst": "Ob der Spieler im Gestein Fossilien findet, die Arten des Baums sind, in richtiger Schichtfolge — und sie an ihrem Zeitpunkt lebend wiedertrifft.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "keine Fossilien.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Fossil an der Fundstelle",
+     "tiefe": "Funde sind ausgestorbene Arten des Baums",
+     "preis": "P",
+     "richter": "100 Funde: Anteil im Baum des Samens = 100 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Schichtfolge",
+     "tiefe": "tiefere Schicht trägt ältere Formen, Leitfossilien",
+     "preis": "P",
+     "richter": "100 Aufschlüsse: Superposition ≥ 99 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Spurenfossilien: Fährten, Bauten, Koprolithen",
+     "tiefe": "die Fährte passt zum Gang der Art",
+     "preis": "P",
+     "richter": "Schrittlänge und Fußfall der Fährte ±10 % zum lebenden Gang derselben Art"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "leben.kopplung.leben-formt-planet",
+   "name": "Leben formt Gelände, Wasser und Fels",
+   "art": "kopplung",
+   "misst": "Ob das Leben die Oberfläche sichtbar umbaut — vom Trampelpfad über Biberdamm und Atoll bis zu Kalkgebirge und Kohle; die Chemie zählt leben.oeko.stoffe.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Trampelpfad: 17 → 3 Büschel nach 100 Gängen (alte Stoffe K4) — Zahl belegt, Bildpaar im Fenster fehlt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "ein Weg",
+     "tiefe": "Tritt formt Pfad",
+     "preis": "P · Weg im Bild",
+     "richter": "Gras-Dichte auf dem Weg −≥ 60 % gegen daneben im Bildpaar"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Hang",
+     "tiefe": "Wurzeln halten den Hang",
+     "preis": "P · Starkregen im Bild",
+     "richter": "Gegenlauf: Erosion gerodet ≥ 5× bewaldet, Rutschung sichtbar"
+    },
+    {
+     "nr": 3,
+     "umfang": "ein Fluss",
+     "tiefe": "Biber staut, Aue entsteht, Wald stirbt im Stau",
+     "preis": "P",
+     "richter": "Bildpaar 0/10 Jahre: Wasserfläche und Totholz gegen Referenz-Luftbild"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "stoffe.K4",
+     "text": "Verwitterung mit der Zeit: Rost, Vergrauen, Moos, Trampelpfad",
+     "staffel": "\"1 = nach einem Spielzeit-Sprung von 30 Tagen ändert sich ≥ 1 Stoff messbar im Bild, abhängig von Nässe oder Lage · 2 = Holz-Sättigung −30 %, Eisen im Regen Farbton 20–30° (Rost), Moos auf nassen Nordflächen, ein 100× gegangener Weg wird Pfad (Gras-Dichte −60 %), über den Reload\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3956",
+      "stationen/g1.js:3977"
+     ],
+     "stationen": [
+      {
+       "id": "stoffe.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Tag 30, 16 Häuser und 13 Klassen im Umkreis 60 m des Dorfs (Ort -704.217/-885.52) · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.008/sued 0.007/oben 0.038 · bodenSatz nord 0/sued 0/oben 0 · formationenSatz nord 0/sued 0/oben 0 · 1 altern (≥ 0,02), 1 nach  …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "stoffe.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Tag 60, 100 Gänge · Holz S 0.72 → 0.29 · Eisen im Regen 23° S 0.59 (Δ nass 0.139, trocken 0.000) · Stein nord Δ nass 0.032 (grünt 0.024), süd Δ nass 0.001, nord Δ trocken 0.000 · Weg 13 → 3 Büschel, daneben 17 → 17 · nach dem Reload: Holz S 0.72 → 0.29 · Eisen …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.kopplung.evolution-planet",
+   "name": "Evolution liest den Planeten",
+   "art": "kopplung",
+   "misst": "Ob Gelände, Klima, Platten und Katastrophen die Arten formen — und der Spieler mit einem Eingriff eine andere Fauna erzeugt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Gattung wählt Boden-Klasse: 431/431, Gegenprobe 405/405 (alte Tiere K4) — headless, im Bild nie.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Lebensraum aus dem Gelände",
+     "tiefe": "Gattung wählt Boden-Klasse, Gegenprobe bei anderer Saat",
+     "preis": "P",
+     "richter": "≥ 0,9 der Würfe in der Boden-Klasse der Gattung, im Bild gezählt"
+    },
+    {
+     "nr": 2,
+     "umfang": "Merkmal aus Klima und Boden über 10² Generationen",
+     "tiefe": "Fell folgt der Bodenhelligkeit, Größe dem Klima (Bergmann)",
+     "preis": "P · Zeitraffer",
+     "richter": "Korrelation Fell ↔ Boden ≥ 0,5, ohne Selektion ≈ 0; Bildvergleich Nord ↔ Süd"
+    },
+    {
+     "nr": 3,
+     "umfang": "Vikarianz",
+     "tiefe": "Platten trennen → Schwesterarten beidseits",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Baum-Distanz wächst mit dem Trennungsalter der Kontinente"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "tiere.K4",
+     "text": "Lebensraum und Tagesrhythmus (Art × Ort × Uhr)",
+     "staffel": "\"1 = ≥ 0,9 der Geburten in der Boden-Klasse der Gattung, mit Gegenprobe bei anderem Seed · 2 = dazu das Tages-Budget je Gattung ±20 % am Ethogramm, Trinken aus Durst (Mutante „Durst aus“ → 0), am Fluss Bären-Sichtung ≥ 2× wahrscheinlicher\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:4628",
+      "stationen/g2.js:4670"
+     ],
+     "stationen": [
+      {
+       "id": "tiere.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "im Lebensraum 431/431 = 1 (Saat anazh-realm-seed, {\"fox\":34,\"deer\":254,\"bear\":29,\"wolf\":114}) · Gegenprobe 405/405 = 1 (Saat lebensraum-gegen)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "tiere.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Budget deer ruhen 0.409/0.4 · deer nahrung 0.485/0.5 · deer ziehen 0.106/0.1 · bear ruhen 0.446/0.45 · bear nahrung 0.409/0.4 · bear ziehen 0.144/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.601/0.6 · wolf nahrung 0/0 · wo …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.kopplung.stadt-im-netz",
+   "name": "Mensch, Stadt und Meer im Netz des Lebens",
+   "art": "kopplung",
+   "misst": "Ob Siedlung, Landwirtschaft, Fischerei und Megastadt Wandler in derselben Bilanz sind — sie nehmen aus dem Netz, geben zurück, werden von Tieren besiedelt und ernährt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Alte Vegetation K4 Staffel 1 an einem Gerät: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild, Halm 0 px, Boden 0 px; Staffel 2 (jedes Haus, jedes Wasser, beide Geräte) offen. Fischer, Hafen, Kulturfolger, Stoffströme der Stadt: nichts. — KARTE: 0 — die Natur-Wand ist an der Radeon ROT, nur an der GTX gehalten (vegetation.K4).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Siedlungsrand: die Natur-Wand",
+     "tiefe": "kein Halm im Haus, Waldsaum am Ort",
+     "preis": "P · Start-Dorf",
+     "klasse": "Ort",
+     "richter": "Halm- und Büschel-Pixel 0 in jeder Haus-Box (Klassen-Maske)"
+    },
+    {
+     "nr": 2,
+     "umfang": "Ernte, Fällen, Jagd und Fischen des Spielers",
+     "tiefe": "Wuchs, Bestand und Fang folgen Nutzung und Dichte",
+     "preis": "P",
+     "richter": "Bildpaar übernutzter Ort gegen daneben; Fang je Stunde ↔ Fischdichte an 20 Orten r ≥ 0,6"
+    },
+    {
+     "nr": 3,
+     "umfang": "ein Dorf mit Feldern, Weiden und Fang",
+     "tiefe": "Lage folgt Fischgründen und Boden; Überjagung lässt Bestände fallen, Schonung erholt",
+     "preis": "P · am Dorf",
+     "richter": "50 Saaten: ≥ 70 % der Fischerdörfer am produktivsten Drittel der Küste; Fang ×3 → Bestand −≥ 50 % in 10 Spieljahren, Erholung nach Stopp"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [
+    {
+     "station": "vegetation.K4#1",
+     "leiter": "leben.kopplung.stadt-im-netz",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "vegetation.K4",
+     "text": "Die Natur-Wand: kein Halm im Haus, kein Halm im Wasser",
+     "staffel": "\"1 = Halm- und Büschel-Pixel 0 in jeder Haus-Box des Start-Dorfs an einem Gerät · 2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g2.js:4402",
+      "stationen/g2.js:4471"
+     ],
+     "stationen": [
+      {
+       "id": "vegetation.K4#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "vegetation.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "vegetation.K4#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "vegetation.K4#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

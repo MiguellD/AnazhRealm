@@ -1,0 +1,1593 @@
+{
+ "paket": "16-same-physik-entfaltung",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "same.physik.koerper",
+   "name": "Freie Körper",
+   "art": "kriterium",
+   "misst": "Zahl der losen Dinge, die bei einem Ereignis im Bild zugleich der Physik folgen, ohne Durchdringen, und liegen bleiben, wo die Rechnung sie ließ. Achse: Körper 10⁰ → 10¹².",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "EIN Starrkörper-Löser für Kiste und Zylinder (stamm/koerper-frei.js:3-35), headless 100 wache Körper 0,4 ms; im echten Spiel an der Stadt kein Bild, die Dinge der Stadt sind keine losen Körper.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Körper",
+     "tiefe": "fällt, ruht, Masse = Volumen × ρ",
+     "preis": "P",
+     "richter": "Fass fällt vom Dach: Ruhe ≤ 2 s, Zittern ≤ 1 cm, Spalt zum Boden im Bild ≤ 5 cm"
+    },
+    {
+     "nr": 2,
+     "umfang": "10",
+     "tiefe": "Stapel, Stoß nach Massenverhältnis",
+     "preis": "P",
+     "richter": "Wagen fährt in 10 Kisten: 0 Durchdringen im Bild, Δv ±10 % gegen Impulsbilanz, Ruhe ≤ 3 s"
+    },
+    {
+     "nr": 3,
+     "umfang": "10²",
+     "tiefe": "Trümmerfeld eines Einsturzes, liegt über Reload",
+     "preis": "P",
+     "richter": "Einsturz eines Werks: 100 Trümmer im Bild, nach Reload jede Lage ±1 cm"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "physik.K1",
+     "text": "EIN Körper-Gesetz: Masse aus Volumen × Stoff, Impuls, Reibung, Auftrieb",
+     "staffel": "\"1 = die Leiber (Spieler, Tier, Wagen) gemessen · 2 = jedes Ding (gebaut, geschmiedet, lose); die Mutation von ρ in der EINEN Stoff-Zeile zieht Masse und Eintauchtiefe in der Welt\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3165",
+      "stationen/g1.js:3183"
+     ],
+     "stationen": [
+      {
+       "id": "physik.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "DIE LEIBER: die Messung der Meisterkarte und ρ ×2 — spieler 89.0 → 178.0 kg, tief 1.07 → 3.438 m · wolf 64.0 → 128.0 kg, tief 0.599 → 3.407 m · wagen 1341.4 → 2682.7 kg, tief 3.438 → 3.438 m · Labor Mensch 89.0, Wolf 64, Wagen 1341 kg · Brustkorb 1.22 m · Δv 0 …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "physik.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "DIE DINGE: die Messung der Meisterkarte und ρ ×2 — holz 1814.4 → 3628.8 kg, tief 0.432 → 3.438 m · stein 6678.0 → 13356.0 kg, tief 3.438 → 3.438 m · geschmiedet 2.2 → 4.4 kg · lose 2.6 → 5.2 kg · Holz 0.720 der Höhe (ρ/ρw 0.72) · Labor Keule 2.177 kg",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "physik.K2",
+     "text": "Kontakt ohne Durchdringen, im festen Takt, beim Tempo des Spiels",
+     "staffel": "\"1 = die Leiber (Mechanik, als solche benannt) · 2 = auch der Wagen bei der vmax des Spiels × 1,2 und die Bild-Probe (Spalt Leib–Wand ≤ 5 cm) auf beiden Geräten\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:2747",
+      "stationen/g1.js:2834"
+     ],
+     "stationen": [
+      {
+       "id": "physik.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "(V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 68.95 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "physik.K2#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "physik.K2#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "physik.K3",
+     "text": "Freie Körper und Trümmer: kippen, stapeln, brechen, einstürzen",
+     "staffel": "\"1 = Körper fallen und ruhen (5 Kisten ≤ 2 s, Zittern ≤ 1 cm), ein Wagen wirft ein Fass um · 2 = auch Einsturz nach Lastpfad, Trümmer ≥ 10 min und über den Reload, 100 freie Körper ≤ 1 ms CPU an der GTX-CPU\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3785",
+      "stationen/g1.js:3849"
+     ],
+     "stationen": [
+      {
+       "id": "physik.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "5 Kisten ruhen nach 0.87 s, Zittern 0.00 cm (wach 0.00), Boden 0.002 m, Fugen -0.001/-0.000/0.001/0.001 m · GT 9.13 → 8.93 m/s, Fass 158.7° · Mutanten: Schwere 0 Boden 0.107 m, ohne Stoß 3.0°",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "physik.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Same 260739443: ohne 0+1 → 2/2 Trümmer, ohne 0+2 → 1/1 Trümmer, ohne 2 → 0/0 Trümmer, Ruhe 1,283 s, 10 min 0 m · Reload 3/3, Lage 0 m, Drehung 0° (ohne sie ≥ 24,097°) · 100 Körper wach: Trümmerfeld 0,4 ms (p75 0,6), Haufen 4 hoch 0,6 ms (p75 0,7), schlafend 0  …",
+       "sha": "78d37554",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.physik.tragen",
+   "name": "Tragen und Brechen",
+   "art": "kriterium",
+   "misst": "Größte Struktur, deren Stehen, Durchbiegen, Schwingen und Brechen aus Stoff-Zeile, Querschnitt und Last folgt — absolut wahr, nicht geeicht. Achse: Bauvolumen 10⁰ → 10⁹ m³ und fremde Schwere.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Biegung und Euler-Knick je Glied (stamm/bau-buch.js:1823-1892), aber durch knickSicherheit 500 geeicht (:2580-2591): relativ wahr, absolut nicht; Lastpfad-Bruch nur in der Werkstatt, kein gesätes Stadthaus bricht.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Glied",
+     "tiefe": "knickt nach Euler, zerdrückt nach Druckfestigkeit, ohne Eichfaktor",
+     "preis": "P",
+     "richter": "Säule realer Schlankheit unter wachsender Last: Versagens-Last gegen Euler ±20 %; halbes E knickt früher"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Werk (≈ 10 Glieder)",
+     "tiefe": "Teile ohne Lastpfad fallen, die übrigen stehen, Trümmer bleiben",
+     "preis": "P",
+     "richter": "zufälliger Pfosten entfernt: gefallene Teile = Teile ohne Lastpfad (100 %), Trümmer liegen 10 min"
+    },
+    {
+     "nr": 3,
+     "umfang": "ein Haus (10³ m³)",
+     "tiefe": "Balken biegen sichtbar; Holz bricht längs der Faser, Mauer in Fugen, Glas radial",
+     "preis": "P",
+     "richter": "1 m Schnee auf flachem Holzdach: Durchbiegung ±20 % gegen Balkenformel; Bruchbild-Paar je Stoff gegen Fotos, Jury „echt\" ≥ 70 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "physik.K3",
+     "text": "Freie Körper und Trümmer: kippen, stapeln, brechen, einstürzen",
+     "staffel": "\"1 = Körper fallen und ruhen (5 Kisten ≤ 2 s, Zittern ≤ 1 cm), ein Wagen wirft ein Fass um · 2 = auch Einsturz nach Lastpfad, Trümmer ≥ 10 min und über den Reload, 100 freie Körper ≤ 1 ms CPU an der GTX-CPU\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3785",
+      "stationen/g1.js:3849"
+     ],
+     "stationen": [
+      {
+       "id": "physik.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "5 Kisten ruhen nach 0.87 s, Zittern 0.00 cm (wach 0.00), Boden 0.002 m, Fugen -0.001/-0.000/0.001/0.001 m · GT 9.13 → 8.93 m/s, Fass 158.7° · Mutanten: Schwere 0 Boden 0.107 m, ohne Stoß 3.0°",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "physik.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Same 260739443: ohne 0+1 → 2/2 Trümmer, ohne 0+2 → 1/1 Trümmer, ohne 2 → 0/0 Trümmer, Ruhe 1,283 s, 10 min 0 m · Reload 3/3, Lage 0 m, Drehung 0° (ohne sie ≥ 24,097°) · 100 Körper wach: Trümmerfeld 0,4 ms (p75 0,6), Haufen 4 hoch 0,6 ms (p75 0,7), schlafend 0  …",
+       "sha": "78d37554",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "bauen.K3",
+     "text": "Das Teil gehorcht dem Gesetz: Statik und Wirkung aus der Form, in der Welt",
+     "staffel": "\"1 = die Wirkung aus der Form ist gemessen, die Statik gilt nur in der Werkstatt · 2 = ein Prüf-Satz aus 10 Konstruktionen (5 stabil, 5 instabil) wird in der Welt 10/10 richtig geurteilt mit sichtbarer Folge, und 5 Wirkungs-Konstruktionen halten 100 %\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:1821",
+      "stationen/g4.js:1859"
+     ],
+     "stationen": [
+      {
+       "id": "bauen.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Wirkung aus der Form: Plattform: steht nach 480 s (max. Wärme 0) · Linse: glimmt 3 s, brennt 7 s („Die Sonne entzündete durch „Brennglas\" „Eiche\" (30 m von dir\") · Regen: die Eiche s",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "bauen.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Statik 10/10 richtig, Wirkung 5/5",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.physik.fluid",
+   "name": "Flüssigkeit und Gas",
+   "art": "kriterium",
+   "misst": "Volumen Wasser, Schlamm, Lava, Rauch, Gas, das mit Impuls und freier Oberfläche sichtbar fließt und Körper mitnimmt. Achse: 10⁰ → 10⁹ m³, dann planetar und fremd.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Zellen-Feld Uint8Array Luft/Wasser/fest je Chunk (stamm/wasser-zellen.js:3), kein Impuls; die gegrabene Grube füllt sich im Code, im Spiel-Bild nie gesehen. Gas als Feld: nichts.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Zellen-Wasser ohne Impuls",
+     "tiefe": "gegrabene Grube unter dem Pegel füllt sich",
+     "preis": "P",
+     "richter": "Grube unter dem Pegel gegraben füllt sich im Bild, beide Geräte"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 m³ (Eimer, Brunnen)",
+     "tiefe": "Schwall, Spritzer mit Impuls",
+     "preis": "P",
+     "richter": "gekippter Eimer: Front gegen Ritter 2·√(g·h) ±15 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ m³ (Becken, Bach-Stau)",
+     "tiefe": "Dammbruch, Strömung trägt Körper mit",
+     "preis": "P",
+     "richter": "Holzdamm gebrochen: Front ±15 %, Fässer treiben mit der Strömung"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "gelaende.K2",
+     "text": "Das Wasser folgt jedem Edit: Graben, Damm, Ferne",
+     "staffel": "\"1 = (a) im Ausgabe-Bild an einem Gerät · 2 = (a), (b) und (d) an beiden Geräten, Ego und Third\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:1875",
+      "stationen/g1.js:1937"
+     ],
+     "stationen": [
+      {
+       "id": "gelaende.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
+       "sha": "715754fc",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K2#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "gelaende.K2#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.physik.feuer",
+   "name": "Wärme, Feuer, Phase",
+   "art": "kriterium",
+   "misst": "Fläche, auf der Wärme wandert, Stoffe ihre Phase wechseln oder verbrennen — mit Tempo nach Physik, gemessen im Brand-Fenster, nicht im ruhigen Stand. Achse: 10² m² (Zelle) → Kontinent → fremde Welten.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Rothermel 1972 + Albini + Anderson auf dem Feld (stamm/feld-leben.js:2477-2620), Halt an Fluss und Fels, Asche als Tat; Phasen nur Eis und Wasser (bau-vorlagen.js:1610). Alle Belege headless (stoffe.K2/K3 an d3708675), Bild-p95 im Brand nie gemessen; nur Vegetation brennt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Zelle",
+     "tiefe": "zündet am Zündpunkt, nass nicht; Eis trägt, Lava erstarrt",
+     "preis": "P",
+     "richter": "Fackel an trockenes / nasses Gras: zündet / zündet nicht; Eis trägt den Spieler, y am Spiegel ±5 cm"
+    },
+    {
+     "nr": 2,
+     "umfang": "eine Wiese (10⁴ m², 2 000 Zellen)",
+     "tiefe": "Front mit Wind und Hang 0,5–2 m/s, Halt an Fluss, Fels, nassem Gras; Regen löscht",
+     "preis": "P im Brand-Fenster",
+     "richter": "Front-Tempo im Rothermel-Band, Halt in 100 % der Proben, Bild-p95 ≤ 33 ms während 2 000 Zellen brennen, beide Geräte"
+    },
+    {
+     "nr": 3,
+     "umfang": "ein Haus innen (10³ m³)",
+     "tiefe": "Raum zu Raum, Flashover, Rauchschicht unter der Decke, Glas springt",
+     "preis": "P",
+     "richter": "Flashover nach 3–10 min; Raum-Temperatur gegen ISO 834 ±20 %"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "stoffe.K2",
+     "text": "Feuer: zünden, ausbreiten, verzehren, löschen",
+     "staffel": "\"1 = die Front läuft im Rothermel-Band (mit dem Wind 0,5–2 m/s, gegen ≤ 0,2 m/s) an einer Pose · 2 = Halt an Fluss, Fels und nassem Gras, Regen löscht ≤ 60 s, Asche ≤ 0,08 grünt nach, Licht/Rauch/Knistern aus demselben Zustand, 2 000 brennende Zellen ≤ 0,5 ms CPU an der GTX-CPU, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3333",
+      "stationen/g1.js:3408"
+     ],
+     "stationen": [
+      {
+       "id": "stoffe.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "mit dem Wind 0.911 m/s (18 Köpfe) · gegen 0.023 m/s · Mutante ohne Wind bis 0.041 m/s · bis 20.2 Einheiten je Zelle",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "stoffe.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Halt: 99 Zellen brannten, die Front hielt 3× am nassen Gras (ohne die Feuchte des Orts brannten 7 nasse, sie hielt 4× am Wasser) · Fels 10× gehalten · Regen löscht nach 7 s (Mutante 300 s) · Asche 1 (voll 0.809) → nach der Stufe Gras 0 · Kante Achse 0.263, Lin …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "stoffe.K3",
+     "text": "Phasen: Gefrieren, Schmelzen, Erstarren, Glühen",
+     "staffel": "\"1 = eine Phase mit Körper-Folge (das Eis trägt den Spieler, y am Spiegel ±5 cm) · 2 = alle vier: Schnee schmilzt über 0 °C und speist den Pegel, Lava (glut-Achse) erstarrt am Wasser unter Dampf zu Basalt, Stahl glüht in der Esse ab seiner Temperatur (Schmiede = Welt)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3489",
+      "stationen/g1.js:3556"
+     ],
+     "stationen": [
+      {
+       "id": "stoffe.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Winter -4.375 °C am Spiegel: 1151 Schritte auf dem See, die Füße bis 0 m vom Spiegel, 0 schwimmend · 3 von 3 Tieren am Spiegel · Feld +10 °C (5.625 °C): 1003 Schritte schwimmend",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "stoffe.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "5 von 5 Gliedern · Eis ✓ (-4.375 °C) · Schnee ✓ (Pegel 0.163 m, Grenze 178 m übers Jahr, 81 Chunks neu) · Wasser-Pegel ✓ (See +0.2 m in 3 Wochen, Fluss +0.2 m, Körper +0.2 m, 1343 Chunks neu) · Lava ✓ (erstarrt Land Takt 2, See Takt 1 unter Dampf) · Stahl ✓ (s …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.physik.verformung",
+   "name": "Verformung und Weiches",
+   "art": "kriterium",
+   "misst": "Wie viel Stoff elastisch oder plastisch verformt wird und die Verformung behält: Seil, Tuch, Blech, Boden, Schüttgut, Eis. Achse: ein Seil → jedes Ding → Kriechen über Zeitalter.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "EIN Seil-Löser im Körper-Kern, gelesen vom Flegel. Das Blatt nennt ein Bild im Spiel, die alte Karte bucht physik.K4 aber nur headless (d3708675) — Preis an den Standardgeräten ungemessen. Plastische Verformung: nichts (vehicle-core.js:1317 ist ein Modellier-Werkzeug).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "ein Seil",
+     "tiefe": "Länge hält ±2 %, Schwung klingt ab",
+     "preis": "P",
+     "richter": "Flegel schwingt am Leib des Spielers, Seillänge im Bild ±2 %, beide Geräte"
+    },
+    {
+     "nr": 2,
+     "umfang": "Tuch und Hängebrücke",
+     "tiefe": "Fahne im EINEN Wind, Brücke trägt den Spieler",
+     "preis": "P",
+     "richter": "Fahne und Gras schwingen gemeinsam (Phasen-Korrelation r ≥ 0,6); Durchhang unter 90 kg ±20 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "ein Wagen knautscht",
+     "tiefe": "Blech plastisch, Dellen bleiben, Achse verbiegt, das Fahren ändert sich",
+     "preis": "P",
+     "richter": "frontal 50 km/h gegen Mauer: Knautschtiefe gegen Crashtest ±25 %; danach zieht der Wagen messbar zur Seite"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "physik.K4",
+     "text": "Seile, Tuch, Weiches — EIN Löser, Labor = Welt",
+     "staffel": "\"1 = ein Leser (das Schmiede-Seil schwingt in der Welt am Leib) · 2 = Seil, Tuch und Hängebrücke\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:3891"
+     ],
+     "stationen": [
+      {
+       "id": "physik.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "klinge_flegel Schwung 0.486 m, Länge (längs) 0.328–0.328 m, v² 3.206 → 0.264 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.physik.reaktion",
+   "name": "Reaktion und Umwandlung",
+   "art": "kriterium",
+   "misst": "Welche Stoff-Umwandlungen (Verbrennen, Explodieren, Rosten, Faulen, Verhütten) aus Zeile, Temperatur und Partner folgen — bis die Werkstoffe einer Epoche aus dem Prozess entstehen. Achse: 1 Reaktion → Epochen → fremde Chemie.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Außer Verbrennen nach Rothermel nichts; „phaseChange\"/„plastic\" je Stoff (bau-buch.js:2624-2626) sind Etiketten des Bauplans, keine Chemie.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Reaktion",
+     "tiefe": "Holz brennt zu Asche und Rauch, Masse bleibt",
+     "preis": "P",
+     "richter": "Asche + Rauch-Masse = Holz ±10 %, Rauchmenge sichtbar proportional"
+    },
+    {
+     "nr": 2,
+     "umfang": "Explosion",
+     "tiefe": "Druckwelle nach Ladung, Fenster splittern bis zum gerechneten Abstand",
+     "preis": "P",
+     "richter": "Schadensradius ∝ W^(1/3) ±25 % bei drei Ladungen"
+    },
+    {
+     "nr": 3,
+     "umfang": "Zeit-Reaktionen",
+     "tiefe": "Rost, Fäulnis, Gärung, Kochen — Tempo nach Temperatur und Nässe",
+     "preis": "P",
+     "richter": "Bildpaar Eisen am See / in der Wüste nach 1 Spieljahr: Rost-Verhältnis ±30 % gegen Korrosions-Raten"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "stoffe.K2",
+     "text": "Feuer: zünden, ausbreiten, verzehren, löschen",
+     "staffel": "\"1 = die Front läuft im Rothermel-Band (mit dem Wind 0,5–2 m/s, gegen ≤ 0,2 m/s) an einer Pose · 2 = Halt an Fluss, Fels und nassem Gras, Regen löscht ≤ 60 s, Asche ≤ 0,08 grünt nach, Licht/Rauch/Knistern aus demselben Zustand, 2 000 brennende Zellen ≤ 0,5 ms CPU an der GTX-CPU, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3333",
+      "stationen/g1.js:3408"
+     ],
+     "stationen": [
+      {
+       "id": "stoffe.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "mit dem Wind 0.911 m/s (18 Köpfe) · gegen 0.023 m/s · Mutante ohne Wind bis 0.041 m/s · bis 20.2 Einheiten je Zelle",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "stoffe.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Halt: 99 Zellen brannten, die Front hielt 3× am nassen Gras (ohne die Feuchte des Orts brannten 7 nasse, sie hielt 4× am Wasser) · Fels 10× gehalten · Regen löscht nach 7 s (Mutante 300 s) · Asche 1 (voll 0.809) → nach der Stufe Gras 0 · Kante Achse 0.263, Lin …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.physik.flug",
+   "name": "Umströmung und Flug",
+   "art": "kriterium",
+   "misst": "Wurf, Ball, Segel, Flügel und Schwimmen im EINEN Wind und Wasser, skaliert mit Schwere und Luftdichte des Planeten — die Physik jeder Sportart und jedes Fliegers.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Nichts als Gesetz belegt: kein Widerstand, kein Drall, kein Auftrieb am Körper gesehen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Wurf",
+     "tiefe": "Ballistik mit Luftwiderstand",
+     "preis": "P",
+     "richter": "Stein und Feder: Wurfweiten gegen Rechnung ±10 %, Feder fällt sichtbar langsamer"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Ball im Sport",
+     "tiefe": "Drall krümmt die Bahn, Abprall nach Fläche",
+     "preis": "P",
+     "richter": "Freistoß mit Drall: Ablenkung im Band realer Messungen ±25 %; Abprall Rasen/Beton nach Stoßzahl ±10 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Schwimmen und Segeln",
+     "tiefe": "Auftrieb und Widerstand in Wasser und Wind",
+     "preis": "P",
+     "richter": "Tauchtiefe = Dichteverhältnis ±5 %; Segelboot fährt am Wind, nicht gegen ihn (Polar-Form)"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "wetter.K5",
+     "text": "Wind: EIN Feld, vom Gelände geformt",
+     "staffel": "\"1 = EIN Term, global, die Richtung aus der Saat am Verhalten gemessen · 2 = Lee −40 %, Tal-Düse +20 %, und jeder Leser außer Pflanze und Ohr (Wasser-Kräusel, Regen-Drift, Tuch, Feuer, Wagen-Seitenkraft) liest dieselbe Funktion (Mutation)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2667",
+      "stationen/g1.js:2701"
+     ],
+     "stationen": [
+      {
+       "id": "wetter.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 1.751 → 0.000 · wagen 0.681 → 0.000)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "halten.K4",
+     "text": "Der Bogen schießt ballistisch, der Pfeil bleibt",
+     "staffel": "\"1 = Flugbahn folgt Abschuss-Tempo und Schwerkraft (±5 % gegen die Parabel) · 2 = der Pfeil steckt im getroffenen Ding und bleibt über den Reload, Zug-Kraft aus dem Bogen-Gesetz\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:5166"
+     ],
+     "stationen": [
+      {
+       "id": "halten.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "(Q12) Bahn {\"bahn\":[[25,30,0],[25,60,0],[25,144,0],[0,30,0],[0,60,0],[0,144,0],[-8,30,0],[-8,60,0],[-8,144,0]],\"Wd\":{\"zF\":-9.506,\"p0\":[-3.512,92.945,-26.108],\"v0\":[0,-0.37,56.373],\"treffer\":{\"hit\":true,\"x\":-3.512,\"y\":92.41,\"z\":-9.506,\"nx\":0,\"ny\":0,\"nz\":-1,\"t\": …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "halten.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "(Q12) Bahn {\"bahn\":[[25,30,0],[25,60,0],[25,144,0],[0,30,0],[0,60,0],[0,144,0],[-8,30,0],[-8,60,0],[-8,144,0]],\"Wd\":{\"zF\":-9.506,\"p0\":[-3.512,92.945,-26.108],\"v0\":[0,-0.37,56.373],\"treffer\":{\"hit\":true,\"x\":-3.512,\"y\":92.41,\"z\":-9.506,\"nx\":0,\"ny\":0,\"nz\":-1,\"t\": …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.physik.stoffe",
+   "name": "Stoff-Vielfalt aus dem Samen",
+   "art": "kriterium",
+   "misst": "Wie viele Stoffe die Welt zeigt, die ein Mensch am Verhalten (Fallen, Klingen, Brechen, Brennen) ohne Textur erkennt — Kraft, nicht Tafel-Länge. Achse: 10 → 10⁶ Stoffe.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Unter Sprosse 1: 21 SI-Zeilen (stamm/bau-vorlagen.js:1585-1608), ρ über den EINEN Leser _stoffRho, 7 Wirkungen mit 4–5 belegt; die Jury wurde nie gefahren.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 Stoffe",
+     "tiefe": "unterscheidbar am Verhalten, jede Wirkung liest die Zeile",
+     "preis": "P",
+     "richter": "Blind-Jury sieht und hört einen grauen Gegenstand fallen, brechen, brennen und benennt den Stoff ≥ 70 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10²",
+     "tiefe": "Werte gegen Handbuch",
+     "preis": "P",
+     "richter": "Stichprobe 50 Zeilen ±10 % gegen Ingenieurs-Tafeln; Jury ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Werkstoffe einer Zivilisation, je Epoche",
+     "tiefe": "Legierungen, Gemische, Nahrung entstehen aus Reaktion, nicht eingetragen",
+     "preis": "P",
+     "richter": "Stichprobe 50 entstandener Werkstoffe: Verhalten gegen Handbuch ±15 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "physik.K1",
+     "text": "EIN Körper-Gesetz: Masse aus Volumen × Stoff, Impuls, Reibung, Auftrieb",
+     "staffel": "\"1 = die Leiber (Spieler, Tier, Wagen) gemessen · 2 = jedes Ding (gebaut, geschmiedet, lose); die Mutation von ρ in der EINEN Stoff-Zeile zieht Masse und Eintauchtiefe in der Welt\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3165",
+      "stationen/g1.js:3183"
+     ],
+     "stationen": [
+      {
+       "id": "physik.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "DIE LEIBER: die Messung der Meisterkarte und ρ ×2 — spieler 89.0 → 178.0 kg, tief 1.07 → 3.438 m · wolf 64.0 → 128.0 kg, tief 0.599 → 3.407 m · wagen 1341.4 → 2682.7 kg, tief 3.438 → 3.438 m · Labor Mensch 89.0, Wolf 64, Wagen 1341 kg · Brustkorb 1.22 m · Δv 0 …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "physik.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "DIE DINGE: die Messung der Meisterkarte und ρ ×2 — holz 1814.4 → 3628.8 kg, tief 0.432 → 3.438 m · stein 6678.0 → 13356.0 kg, tief 3.438 → 3.438 m · geschmiedet 2.2 → 4.4 kg · lose 2.6 → 5.2 kg · Holz 0.720 der Höhe (ρ/ρw 0.72) · Labor Keule 2.177 kg",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "stoffe.K1",
+     "text": "EINE Stoff-Tafel in SI, und jede Wirkung liest sie",
+     "staffel": "\"1 = ≥ 3 von 7 Wirkungen je Stoff bestehen ihre Mutation · 2 = 7/7\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:3216"
+     ],
+     "stationen": [
+      {
+       "id": "stoffe.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "holz 5/7 · stein 4/7 · eisen 4/7 · gras 5/7 · erde 4/7 · laub 5/7 · wasser 4/7 · Sabotage ROT an jeder Wirkung",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.entfaltung.gleichheit",
+   "name": "Gleichheit über Geräte und Peers",
+   "art": "kriterium",
+   "misst": "Was zwei Geräte und zwei Peers an derselben Koordinate (Ort, Maßstab, Zeit) sehen, ist dieselbe Welt — dieselben Dinge und Personen an denselben Stellen, nur feiner oder gröber. Achse: Stichproben-Raum 1 Pose → 10⁴ Koordinaten einer Galaxie.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Headless: alle Teil-Simulationen gleich ohne Zustands-Nachricht (Leben 1189/1189, Reload mitten im Sturm), Fusion byte-gleich 1146 B (feld.K2, ultiversum.K2). Bild-Gleichheit zweier GPUs und Horizont G2 ↔ G3 nie gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Gelände am Spawn",
+     "tiefe": "Höhenform gleich",
+     "preis": "P je Gerät",
+     "richter": "Bild G2 ↔ G3 gleiche Pose: Horizont-Linie ≤ 2 px Abweichung"
+    },
+    {
+     "nr": 2,
+     "umfang": "Dorf: Häuser, Bäume, 10 Taten eines Spielers",
+     "tiefe": "Klassen gleich; Spieler B sieht die Taten von A, auch nach Reload",
+     "preis": "P",
+     "richter": "Klassen-Masken-Diff ≤ 1 % (A ↔ B, vor ↔ nach Reload, Radeon ↔ GTX)"
+    },
+    {
+     "nr": 3,
+     "umfang": "Stadt mit Bewohnern in Bewegung, alle Teil-Simulationen, 20 min",
+     "tiefe": "Personen ≤ 0,5 m nach 10 min; Wetter, Leben, Pegel, Brand ohne Zustands-Nachricht",
+     "preis": "P",
+     "richter": "zwei Geräte in EINER Sitzung: Masken + Positionen; Netz-Log zeigt nur Akten"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "gelaende.K1",
+     "text": "EIN 3D-Gesetz: Dichte, Edit und Wasser-Spiegel im Kern — am Verhalten bit-gleich",
+     "staffel": "\"1 = die 2D-Form (hoehe, flussLaeufe) ist EINE Quelle, Studio-Plan = Welt byte-gleich · 2 = auch dichte, editForm und Wasser-Spiegel im Kern, jede Mutation der festen Liste zieht Stamm-Leser UND Worker-Feld\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:1755",
+      "stationen/g1.js:1811"
+     ],
+     "stationen": [
+      {
+       "id": "gelaende.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Welt = Studio byte-gleich (Makro b91513103dff4c9c), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "100000 Punkte, 300 Edits, ≠ Kern 0 (maxDiff 0), 4/4 Mutationen ziehen Stamm-Leser und Worker-Feld, Selbsttest sieht",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "wetter.K1",
+     "text": "Wetter = f(Saat, Ort, Zeit) ⊕ Schreib-Akte — für alle gleich, nie aus der Wanduhr",
+     "staffel": "\"1 = das Wetter-Wort entsteht aus Saat + Spielzeit + Schreib-Akten statt aus der Wanduhr (global, gemessen) · 2 = die Front am Ort: Regen an A bei trockenem B ≥ 20 % der Zeit, Lag = Abstand ÷ Wind ±20 %, alle 5 Labor-Zeilen erreichbar, die Mutation der Kern-Funktion zieht Labor und Welt\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2296",
+      "stationen/g1.js:2348",
+      "stationen/g1.js:2389"
+     ],
+     "stationen": [
+      {
+       "id": "wetter.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K1#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenb …",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K1#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenb …",
+       "sha": "105c9bd3",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "feld.K2",
+     "text": "Gleich für alle: Saat + Schreib-Akte = Welt, über Peers und Reload",
+     "staffel": "\"1 = Edits und Bauten aus Schreib-Akten byte-gleich über Peers und Reload, gemessen · 2 = alle Teil-Simulationen (Wetter am Ort, Pegel, Overlays, Brand) ohne Zustands-Nachricht; ein Reload mitten im Sturm setzt denselben Zustand fort\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2993",
+      "stationen/g1.js:3037"
+     ],
+     "stationen": [
+      {
+       "id": "feld.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 218 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gle …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "feld.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OK   (f) Peers: Teil-Simulationen gleich — wetter gleich · leben gleich · pegel gleich · brand gleich — Leben 1189/1189 Zellen, Brand 0 Zellen | OK   (f) Reload mitten im Sturm: Teil-Simulationen gleich  …",
+       "sha": "95ba6fd6",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ultiversum.K2",
+     "text": "Welten heiraten: Fusion deterministisch",
+     "staffel": "\"1 = fuseWorlds(A, B) byte-gleich auf zwei Geräten · 2 = 0 Schreibe auf den frozen Kern, die gemischten Regeln werten nach Affekt K3\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:5009",
+      "stationen/g5.js:5035"
+     ],
+     "stationen": [
+      {
+       "id": "ultiversum.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "✅ FUSION A+B byte-gleich — 1146 Bytes | ✅ GERICHTET: B+A ≠ A+B | ✅ TÄTER-PROBE: Date.now in der Geburt ist ROT",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "ultiversum.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Schreibe 0 (Selbsttest 1) · heilA 30× v 0.5521 ern. 3 · heilB 30× v 0.3089 ern. 3 · leer 7× v 0 verfiel · pflug fehlt · steil fehlt · im Stand heilA/leer/heilB · Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.entfaltung.schirm",
+   "name": "Schirm statt Sack",
+   "art": "kriterium",
+   "misst": "Die Kosten eines Bildes hängen am Schirm, nicht an der Menge Welt dahinter — UND was er zeigt, hält dem Foto stand (sonst gewinnt die leere Stadt). Achse: Bauten im Blick 10² → 10⁷, Menschen bis 10¹⁰ je Welt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "GTX stehend p95 16,8 ms an Wiese und Genesis; das Radeon-ABAB am Kopf fehlt (PFLICHT E), die Wiese trägt bis ~20 m, Häuser lesen als weiße Kästen. Das Blatt setzte HEUTE mit dem Preis „nur GTX\" — die Karte nicht, solange ein Standardgerät fehlt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Wiese und Genesis, Sicht 8 km",
+     "tiefe": "Wiese trägt bis ~20 m, Häuser als Kästen",
+     "preis": "P stehend",
+     "richter": "Frame p95 je Gerät, Wiese und Genesis, Ego und Third"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³ Häuser im Blick (heute 300 am Marktplatz)",
+     "tiefe": "≥ 50 % der Häuser im Blindtest gegen Fotos echter Altstädte plausibel",
+     "preis": "P; Inhalt ×10 kostet ≤ 10 % mehr",
+     "richter": "p95(×10) ÷ p95(×1) ≤ 1,10; Blindtest Bildpaar Spiel ↔ Foto"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴ Gebäude und 10⁴ Menschen im Bild (Kreuzung einer Großstadt)",
+     "tiefe": "jeder Mensch mit eigenem Leib und Gang",
+     "preis": "P, Steigung ≤ 10 %",
+     "richter": "wie 2; Dichte-Histogramm gegen Foto einer Großstadt-Kreuzung"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "studios.K3",
+     "text": "Kosten-Wahrheit am Griff — das Thermometer",
+     "staffel": "\"1 = Dreiecke ±5 % gegen renderer.info in ≥ 4/7 Mesh-Studios · 2 = Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 7/7, beim Klang die Audio-Graph-ms\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g4.js:839",
+      "stationen/g4.js:893"
+     ],
+     "stationen": [
+      {
+       "id": "studios.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %)",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "studios.K3#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "studios.K3#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "pipeline.K3",
+     "text": "Kosten am Asset: jede Stufe reduziert nach Gesetz und hält ihr Budget an jedem Regler-Rand",
+     "staffel": "\"1 = reglerBudget ≤ 3 ohne geschrumpften Wertebereich · 2 = 0, und je Art L1/L0 ≤ 0,5, L2/L0 ≤ 0,15 Dreiecke\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:994",
+      "stationen/g4.js:1015"
+     ],
+     "stationen": [
+      {
+       "id": "pipeline.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "über Budget 0 (Staffel 1 ≤ 3) in 9002 Bauten, leer 0, Exits 0/0/0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "pipeline.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "über Budget 0, Quote max L1/L0 0.50 · L2/L0 0.15",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "profiband.K1",
+     "text": "Flüssig in Bewegung",
+     "staffel": "\"1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten · 2 = ≤ 16,7 ms in jeder Zelle\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:3421",
+      "stationen/g6.js:3437"
+     ],
+     "stationen": [
+      {
+       "id": "profiband.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K1#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K1#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.entfaltung.reise",
+   "name": "Reise ohne Bruch",
+   "art": "kriterium",
+   "misst": "Wie weit und wie schnell der Spieler am Stück reist, während die Welt ihm vorauswächst: Anteil ganzer Bilder (Lücke ≤ 2 % gegen dieselbe Pose in Ruhe), Zittern, Pause. Achse: Strecke 1 km → 10⁵ Lichtjahre, je Sprosse eine Größenordnung.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Sicht 8 km auf einer flachen Ebene ohne Krümmung und ohne Ursprungs-Versatz (Grep: nur ein Kommentar in netz-p2p.js:2126); Radeon gehend 66 %, fahrend 94 % der Bilder > 33 ms. Wo float32 zu zittern beginnt, ist nie gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Gehen 1 km durch die Wiese",
+     "tiefe": "Bilder ganz, sichtbares Nachwachsen nur fern",
+     "preis": "P an G2 + G3",
+     "richter": "Gang-Bahn: Anteil ganzer Bilder ≥ 98 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Fahrt 30 km/h, 10 km durchs Dorf",
+     "tiefe": "≥ 90 % der Bilder ganz",
+     "preis": "P",
+     "richter": "Fahrt-Bahn, Bild-Diff je Bild gegen Ruhe-Referenz"
+    },
+    {
+     "nr": 3,
+     "umfang": "Fahrt 120 km/h, 100 km am Stück",
+     "tiefe": "≥ 98 % ganz, kein Aufploppen in 50 m, Zittern ≤ 0,5 px",
+     "preis": "P",
+     "richter": "wie 2 über 100 km"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "lod.K2",
+     "text": "Kein Pop unter Bewegung und Sicht-Wechsel",
+     "staffel": "\"1 = eine Bewegungsart an einem Gerät ≤ 0,05 % Pop-Pixel je Sekunde · 2 = Gehen, Ritt, Fahrt (vmax des Spiels), Ego↔Third alle 5 s, Wiese → Genesis und durch das Start-Dorf, 0 Geister, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:3297"
+     ],
+     "stationen": [
+      {
+       "id": "lod.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Gehen 4 m/s: 0.0439 % Pop-Pixel je Sekunde (910 px, Soll ≤ 0,05 %), je Schritt 24*/21*/321*/277*/43*/63*/71*/90* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "lod.K2#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "streaming.K1",
+     "text": "Keine Lücke im Blick unter Tempo — bis zur Tempo-Decke des Spiels",
+     "staffel": "\"1 = 0 Lücken-Bilder in 60 s bei Sprint und GT-vmax auf fester Bahn an einem Gerät · 2 = Tempo-Decke ≥ vmax des schnellsten Rezepts × 1,2 am Boden und 30 m darüber, auf einer Bahn aus dem geladenen Ring heraus, beide Geräte\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:3195"
+     ],
+     "stationen": [
+      {
+       "id": "streaming.K1#1",
+       "geraet": "headless",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "streaming.K2",
+     "text": "Fertig vor Bedarf: EIN Rang, Zeit bis Bedarf",
+     "staffel": "\"1 = ≥ 95 % der Chunks, Bäume, Bauten und Karten in der verlangten Stufe fertig vor dem Eintritt in den Sichtkegel, an einem Gerät · 2 = ≥ 99 % bei GT-Vollgas an beiden Geräten\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:3221"
+     ],
+     "stationen": [
+      {
+       "id": "streaming.K2#1",
+       "geraet": "headless",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.entfaltung.abwesenheit",
+   "name": "Rechnung ohne Zuschauer",
+   "art": "kriterium",
+   "misst": "Wer fortgeht und wiederkommt, findet die Welt, wie sie geworden wäre, obwohl in der Abwesenheit fast nichts gerechnet wurde. Achse: Wesen 10² → Galaxie, Abwesenheit Tag → Äonen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Tag jedes Bewohners = f(Same, t) (siedlung-bewohner.js:1881-1932), aber periodisch (mod 24, :1894), die Ankunft spielt nur 3 h nach (:3500); Ruhe ist Null (feld.K3, headless). Die Abwesenheits-Probe wurde nie gefahren; Bestand und Strom über Tage gibt es nicht.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "118 Bewohner einer Test-Stadt, ein Tag",
+     "tiefe": "nach der Abwesenheit steht jeder, wo er gestanden hätte",
+     "preis": "P",
+     "richter": "Ort sehen, gehen, nach N h zurück: Lage jedes Bewohners gegen den Lauf mit Zuschauer ≤ 1 m"
+    },
+    {
+     "nr": 2,
+     "umfang": "10⁴ Wesen (Menschen, Tiere, Wuchs), 1 Tag",
+     "tiefe": "Widersprüche = 0 (niemand an zwei Orten, gefällt bleibt gefällt)",
+     "preis": "P",
+     "richter": "Klassen-Statistik Rückkehr ↔ Zuschauer-Lauf ≤ 5 %; Widerspruchs-Zähler = 0"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁶: eine Metropole, 1 Jahr",
+     "tiefe": "Ströme, Märkte und Bauten wachsen nach Gesetz",
+     "preis": "P",
+     "richter": "wie 2 an 100 Stichproben; Bildpaar Stadtteil vorher ↔ nachher zeigt die Veränderung"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "feld.K3",
+     "text": "Ruhe ist Null: in Ruhe arbeitet keine Simulation",
+     "staffel": "\"1 = der Wasser-Automat hat 0 Takte in 60 s Ruhe · 2 = jede langsame Simulation (Wasser, Overlays, Wetter, Brand, Wachstum) hat 0 Einheiten in Ruhe und arbeitet nur in berührten Zellen\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2898",
+      "stationen/g1.js:2948"
+     ],
+     "stationen": [
+      {
+       "id": "feld.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Wasser-Automat 0 Einheiten in 60 s Ruhe (Akte 7920); alle Sims: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "feld.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 7920 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: {\"zellen\":56,\"einheiten\":20.2,\"start\":true,\"mit\":0.911,\"koepfe\" …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "mensch.K2",
+     "text": "Tagesablauf: Rolle × Uhr × Ort",
+     "staffel": "\"1 = ein Bewohner trifft ≥ 0,9 seiner Soll-Orte über 24 Spielstunden · 2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:3945",
+      "stationen/g2.js:5483"
+     ],
+     "stationen": [
+      {
+       "id": "mensch.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "mensch.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
+       "sha": "e4eeee08"
+      },
+      {
+       "id": "mensch.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
+       "sha": "e4eeee08"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.entfaltung.vielfalt",
+   "name": "Jede Saat eine eigene Welt",
+   "art": "kriterium",
+   "misst": "Ob jede Saat eine Welt ergibt, die ein Mensch aus EINEM Bild wiedererkennt und deren Eigenheit eine Ursache hat — über alle Gesetze zugleich (Haus, Baum, Tier, Mensch, Wagen, Stadt, Kultur), im Spiel gezählt. Die Breite je Gesetz zählen die Arten-, Bau- und Gestalt-Leitern der Kapitel (R9); hier zählt, ob aus ihnen unterscheidbare Orte, Regionen und Welten werden. Rauschen besteht nicht: jede Unterscheidung braucht ihre Ursache (R10).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Nie gemessen; Häuser lesen als weiße Kästen mit Fenstern. — KARTE: 0 — kein Erkennungs-Lauf gefahren.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 Orte EINER Welt",
+     "tiefe": "jeder Ort aus einem Bild erkannt; das Merkmal hat eine Ursache (Gestein, Klima, Kultur)",
+     "preis": "P",
+     "richter": "aus einem Zufallsbild den richtigen von 10 Orten ≥ 80 % (Panel); der Prüfer nennt das Merkmal, Gegenlauf: Ursache getauscht → Merkmal weg ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Orte: Stadtteile und Biome mit eigenem Charakter",
+     "tiefe": "≥ 3 Gesetze tragen den Unterschied zugleich (Bau, Wuchs, Tracht)",
+     "preis": "P",
+     "richter": "richtiger von 10 Zufalls-Orten aus 10² ≥ 80 %; Unterschied in ≥ 3 Domänen benannt"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Orte, 10 Regionen einer Welt",
+     "tiefe": "Region aus einem Bild; Nachbar-Regionen gehen ohne Naht ineinander über",
+     "preis": "P",
+     "richter": "Region ≥ 80 %; Übergangs-Bilder werden zwischen die Nachbarn eingeordnet, nie zu einer dritten"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "same.entfaltung.akte",
+   "name": "Die Tat bleibt",
+   "art": "kriterium",
+   "misst": "Was Spieler und KI-Bewohner tun, bleibt — für alle, über jede Gesetzes-Version — und kostet nach der Zahl der Taten, nie nach der Größe der Welt. Achse: Akte 10² → 10¹².",
+   "heute": 1,
+   "kern": 0,
+   "fuss": "kern",
+   "beleg": "Reload im echten Spiel: bild-diff 0,69 % (Radeon) / 0,71 % (GTX) mit Bau, Grube und Wasser im Bild (Speicher K4). 1 000 Edits 86 kB, Peers byte-gleich und Korpus 138 Stände nur headless; Bytes je Tat und eine Gesetzes-Version im Bild nie gemessen. — KARTE: Kern 1 — Bildpaar vor ↔ nach Reload an beiden Geräten grün (speicher.K4); der Bild-Preis in dieser Szene ist an der Radeon nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² Taten einer Sitzung",
+     "tiefe": "nach dem Reload steht jede Tat sichtbar an ihrem Ort",
+     "preis": "P",
+     "klasse": "Ort",
+     "richter": "Bildpaar vor ↔ nach Reload ≤ 1 % Diff mit Pflicht-Inhalt, beide Geräte"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³ Edits eines Spielers",
+     "tiefe": "Stand ≤ 100 kB, Ankunft unverändert",
+     "preis": "P",
+     "richter": "Bildpaar ≤ 1 %; Median ≤ 100 B je Tat; Ankunft mit ↔ ohne Taten"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴ Edits, 2 Peers, jede alte Version",
+     "tiefe": "gleich ohne Zustands-Nachricht, alte Stände laden",
+     "preis": "P",
+     "richter": "Bild zweier Gäste ≤ 1 % Diff; Anteil ladender alter Stände = 100 %"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [
+    {
+     "station": "speicher.K4#2",
+     "leiter": "same.entfaltung.akte",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "feld.K2",
+     "text": "Gleich für alle: Saat + Schreib-Akte = Welt, über Peers und Reload",
+     "staffel": "\"1 = Edits und Bauten aus Schreib-Akten byte-gleich über Peers und Reload, gemessen · 2 = alle Teil-Simulationen (Wetter am Ort, Pegel, Overlays, Brand) ohne Zustands-Nachricht; ein Reload mitten im Sturm setzt denselben Zustand fort\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2993",
+      "stationen/g1.js:3037"
+     ],
+     "stationen": [
+      {
+       "id": "feld.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 218 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gle …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "feld.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OK   (f) Peers: Teil-Simulationen gleich — wetter gleich · leben gleich · pegel gleich · brand gleich — Leben 1189/1189 Zellen, Brand 0 Zellen | OK   (f) Reload mitten im Sturm: Teil-Simulationen gleich  …",
+       "sha": "95ba6fd6",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "feld.K4",
+     "text": "Die Tat bleibt am Ort: Spur und Gedächtnis",
+     "staffel": "\"1 = die Spur hält bis zum Reload · 2 = sie hält nach Reload UND nach 1 Spielstunde und wächst über das Feld nach\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3128",
+      "stationen/g1.js:3143"
+     ],
+     "stationen": [
+      {
+       "id": "feld.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "nach der Stunde vor dem Reload: 3 von 13 Bäumen, 0 von 30 Pflanzen zurück, 10 Stümpfe für 10, Feld -0.167 unter frozen",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "feld.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "nach dem Reload 3/13 Bäume, 0 Pflanzen, 10 Stümpfe, Feld -0.167 · nach Reload und Stunde 3/13 Bäume, 0 Pflanzen, 10 Stümpfe, Feld -0.157 · nach 36 Stunden 30 von 30 Pflanzen zurück, Feld -0.157 → -0.059, Taten 40 → 10",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "tore.K3",
+     "text": "Was der Spieler trägt, reist mit",
+     "staffel": "\"1 = Leib, Inventar und Gehaltenes stehen nach Tor hin und zurück byte-gleich, an einem Gerät · 2 = auch Reittier/Fahrzeug und die Rundreise eines Werks Studio → Welt → Studio mit gleichem Bau-Hash, für jede Ziel-Seite\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:5448",
+      "stationen/g5.js:5494"
+     ],
+     "stationen": [
+      {
+       "id": "tore.K3#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E)",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "tore.K3#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E)",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "tore.K3#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "tore.K3#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim",
+       "sha": "715754fc",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "speicher.K1",
+     "text": "Nichts geht verloren — auf dem Pfad des Spielers",
+     "staffel": "\"1 = der Browser-Pfad (ohne save-server) besteht den Tab-Tod an einem Gerät: Stand ≤ 10 s alt, 0 korrupt, 0 halbe Welten · 2 = an beiden Geräten, auch mitten im IDB- oder localStorage-Schreiben\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:4217",
+      "stationen/g6.js:4247"
+     ],
+     "stationen": [
+      {
+       "id": "speicher.K1#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "4 Tode: Alter max 6.902 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
+       "sha": "2d5f4146",
+       "gehalten": true
+      },
+      {
+       "id": "speicher.K1#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "20 Tode: Alter max 3.339 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
+       "sha": "715754fc",
+       "gehalten": true
+      },
+      {
+       "id": "speicher.K1#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "4 Tode: Alter max 6.902 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+       "sha": "2d5f4146",
+       "gehalten": true
+      },
+      {
+       "id": "speicher.K1#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "20 Tode: Alter max 3.339 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+       "sha": "715754fc",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "speicher.K2",
+     "text": "Speichern kostet keinen Frame",
+     "staffel": "\"1 = ≤ 0,3 ms je Bild (p95) in einer frischen Welt, auf dem Pfad des Spielers · 2 = ≤ 0,1 ms in der frischen Welt UND nach 2 h mit 10 000 Edits, kein Frame > 16,7 ms wegen des Speicherns, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:4280",
+      "stationen/g6.js:4308"
+     ],
+     "stationen": [
+      {
+       "id": "speicher.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "je Speicher-Bild in der frischen Welt p50 0.02 / p95 0.07 / max 0.345 ms (Soll p95 ≤ 0,3; 20 Stände, 620 Speicher-Bilder)",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "speicher.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind)",
+       "sha": "715754fc",
+       "gehalten": true
+      },
+      {
+       "id": "speicher.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Speicher-Bild frisch p50 0.02 / p95 0.07 / max 0.345 ms (620 Bilder), 0 von 31 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.02 / p95 0.07 / max 0.97 ms (692 Bilder), 0 von 43 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "speicher.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Speicher-Bild frisch p50 0.02 / p95 0.05 / max 0.18 ms (562 Bilder), 0 von 39 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.015 / p95 0.045 / max 0.375 ms (667 Bilder), 0 von 90 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)",
+       "sha": "bf55b24a",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "speicher.K3",
+     "text": "Die Datei wächst mit den Änderungen, nie mit dem Weg",
+     "staffel": "\"1 = nach 30 min und 5 km Wanderung ohne Edit Δ ≤ 10 kB gegen die frische Welt · 2 = dazu ≤ 100 kB je 1000 Edits, roh und auf der Platte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:4339",
+      "stationen/g6.js:4376"
+     ],
+     "stationen": [
+      {
+       "id": "speicher.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 3.9 kB, Platte 7.9 kB, am stärksten architectures 1.4 kB · gesamt roh 58.4 kB, Platte 116.7 kB · Leben worldJournal 36.9 kB, dslHistory 12.3 kB, dslAbilities 3.1 kB, knowledgeBase 2.9 kB, dslPatt …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "speicher.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 3.9 kB, Platte 7.9 kB, am stärksten architectures 1.4 kB · gesamt roh 58.4 kB, Platte 116.7 kB · Leben worldJournal 36.9 kB, dslHistory 12.3 kB, dslAbilities 3.1 kB, knowledgeBase 2.9 kB, dslPatt …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "speicher.K4",
+     "text": "Die Wiederkehr zeigt dieselbe Welt",
+     "staffel": "\"1 = der Zahlen-Rundlauf (Dichte, Bauten) über einen echten Reload ist bewiesen · 2 = bild-diff ≤ 1 % an derselben Pose bei festgehaltener Uhr und Wetter, Pflicht-Inhalt (Bauten, Edits, Wasser) im Bild, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:4404",
+      "stationen/g6.js:4440"
+     ],
+     "stationen": [
+      {
+       "id": "speicher.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Lin …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "speicher.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.69 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "speicher.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.68 % (Soll ≤ 1; Rauschen ohne Neuladen 0.21 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal",
+       "sha": "71839b1e",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "speicher.K5",
+     "text": "Über Versionen hinweg",
+     "staffel": "\"1 = eine Migrations-Klasse bewiesen · 2 = ein Korpus aus ≥ 10 alten Versionen (aus git gezogen, unter spec/) lädt am Kopf ohne Verlust, der Korpus wächst je Versions-Stufe\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:4497",
+      "stationen/g6.js:4518"
+     ],
+     "stationen": [
+      {
+       "id": "speicher.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "speicher.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

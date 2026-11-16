@@ -1,0 +1,772 @@
+{
+ "paket": "12-mensch-zeit-zukunft-kopplung",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "mensch.zeit.spanne",
+   "name": "Die Kultur-Zeit am Ort — datierbar",
+   "art": "kriterium",
+   "misst": "wie fein und wie wahr die Zeit der Kultur am selben Ort ist: ob ein blinder Prüfer das Jahr aus dem Bild liest und Nachbar-Halte sich aus einer Ursache unterscheiden. Die Spanne, das Raffen und die Sprung-Zeit des Spielers zählen erleben.spieler.zeit und same.massstab.sprung; die Orte der echten Menschheit mensch.zeit.erde.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Zeitreise nur per Chat-Satz, Jahre 1–9999, jeder Satz gründet den Ort neu (stamm/feld-leben.js:1173–1197); Wechsel-Zeit nie gemessen, kein Regler",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Jahr 1–9999 per Satz, 4 Halte",
+     "tiefe": "Stil, Tracht, Größe je Epoche",
+     "preis": "P",
+     "richter": "dieselbe Zelle unter 4 Jahren: Blind-Datierung bringt die 4 Bilder in die richtige Folge ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "3 000 J, Schritt ≤ 50 J, Regler",
+     "tiefe": "Bauten, Wege, Menschen, Fahrzeuge",
+     "preis": "P",
+     "richter": "60 Halte: Blind-Datierung, Fehler ≤ 10 % der Spanne bei ≥ 80 %; Nachbar-Halte im Bildpaar unterscheidbar ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "12 000 J, Schritt ≤ 10 J",
+     "tiefe": "Lager, Dorf ohne Metall, Tell",
+     "preis": "P",
+     "richter": "Stichprobe 100 aus 1 200 Halten: Datierungs-Fehler ≤ 10 % der Spanne; jeder Unterschied zweier Nachbar-Halte hat eine benennbare Ursache (Brand, Zuzug, neue Technik) ≥ 80 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "siedlung.K4",
+     "text": "Durch die Jahrhunderte — als Parameter, dann als Wachstum",
+     "staffel": "\"1 = dieselbe Zelle unter 1320/1560/1860/1935: der ältere Kern liegt zu ≥ 80 % im jüngeren (Jahresringe), die Epoche moderne ergibt stadt, die Epoche bestimmt Rolle, Bauart und Kleidung im Export · 2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4236",
+      "stationen/g5.js:4290"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m …",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m …",
+       "sha": "3e4f99cd",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.zeit.palimpsest",
+   "name": "Hervorgehen: das Jüngere trägt das Ältere",
+   "art": "kriterium",
+   "misst": "welcher Anteil des Sichtbaren eines jüngeren Zustands aus dem älteren stammt, und wie lange eine Stadt am selben Ort wächst, verfällt und überbaut wird (Geschichte L2 + Stadt L5).",
+   "heute": 1,
+   "kern": 0,
+   "fuss": "kern",
+   "beleg": "Wachstum aus Bewohnern 12 → 19/20 Häuser in 1 500 s, alte 0,917, Radeon und GTX (siedlung.K4); Jahresringe 0,915 nur headless — KARTE: Kern 1 — Wachstum an beiden Geräten grün (siedlung.K4); Bild-Preis nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Ort wächst in Spielzeit",
+     "tiefe": "alte Häuser bleiben",
+     "preis": "P · Hügel",
+     "klasse": "Ort",
+     "richter": "Häuserzahl über 1 500 s steigt, alte ≥ 0,9 erhalten"
+    },
+    {
+     "nr": 2,
+     "umfang": "Jahresringe über 4 Jahrhunderte im Spiel",
+     "tiefe": "Kern alt, Rand jung",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Überdeckung je Slot ≥ 0,9 über 1320 → 1935 im echten Spiel"
+    },
+    {
+     "nr": 3,
+     "umfang": "+ Wege und Mauer erben",
+     "tiefe": "Mauertrasse wird Straße",
+     "preis": "P · Sprung",
+     "richter": "Luftbild 1560/1860: Trasse als Straße ≥ 80 %, Kerngassen ≥ 90 %"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [
+    {
+     "station": "siedlung.K4#2",
+     "leiter": "mensch.zeit.palimpsest",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "siedlung.K4",
+     "text": "Durch die Jahrhunderte — als Parameter, dann als Wachstum",
+     "staffel": "\"1 = dieselbe Zelle unter 1320/1560/1860/1935: der ältere Kern liegt zu ≥ 80 % im jüngeren (Jahresringe), die Epoche moderne ergibt stadt, die Epoche bestimmt Rolle, Bauart und Kleidung im Export · 2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4236",
+      "stationen/g5.js:4290"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m …",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m …",
+       "sha": "3e4f99cd",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.zeit.kausal",
+   "name": "Die Kausalkette aus dem Samen",
+   "art": "kriterium",
+   "misst": "ob Geschichte entsteht statt aus einer Kalender-Tafel gelesen zu werden, und ob jedes „Warum“ beantwortbar ist.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Gewalt → Furcht → langsameres Wachstum im Spiel gemessen (WACHSTUM fachwerk-core.js:3580, siedlung.K4); Epoche sonst Kalender-Nachschlag an ≥ 4 Stellen — KARTE: 0 — Geräte der Messung nicht belegt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ereignis beugt 1 Kurve",
+     "tiefe": "Gewalt bremst Wachstum",
+     "preis": "P · Zeitraffer",
+     "richter": "Ort nach Gewalt wächst messbar langsamer"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Saaten × 10³ J",
+     "tiefe": "Geschichte entsteht, keine Kalendertafel",
+     "preis": "P · Geschichte bis t ≤ 1 s",
+     "richter": "Varianz der Epoche über Saaten > 0; Ordnungsbrüche 0"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Orte: jeder Bruch hat Ursache",
+     "tiefe": "„Warum?“ im Spiel beantwortbar",
+     "preis": "P · Kette ≤ 1 s",
+     "richter": "Kette ≥ 5 Glieder bis zum Samen ≥ 95 %; Brüche ohne Ursache ≤ 5 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "siedlung.K4",
+     "text": "Durch die Jahrhunderte — als Parameter, dann als Wachstum",
+     "staffel": "\"1 = dieselbe Zelle unter 1320/1560/1860/1935: der ältere Kern liegt zu ≥ 80 % im jüngeren (Jahresringe), die Epoche moderne ergibt stadt, die Epoche bestimmt Rolle, Bauart und Kleidung im Export · 2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4236",
+      "stationen/g5.js:4290"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m …",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m …",
+       "sha": "3e4f99cd",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.zeit.erleben",
+   "name": "Geschichte erleben",
+   "art": "kriterium",
+   "misst": "ob ein historisches Ereignis als Erlebnis in Echtzeit begehbar ist, nicht nur als Folge.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "keine begehbaren Ereignisse",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Ereignis als Folge am Ort",
+     "tiefe": "Ort danach anders",
+     "preis": "P · am Ort",
+     "richter": "Bildpaar vorher/nachher am selben Ort"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Ereignisart begehbar (Brand)",
+     "tiefe": "Feuer nach Bauart und Wind, Flucht",
+     "preis": "P · während des Ereignisses",
+     "richter": "Fluchtwege sinnvoll ≥ 90 % blind"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Ereignisarten",
+     "tiefe": "Ablauf aus Gesetzen",
+     "preis": "P",
+     "richter": "100 Saaten je Art: Abläufe paarweise verschieden ≥ 90 %; Phasen des Ablaufs gegen Quellen realer Ereignisse der Art (Brand, Flut, Belagerung) im Faktor 2 bei ≥ 85 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.zeit.erde",
+   "name": "Orte und Zeiten der echten Menschheit",
+   "art": "kriterium",
+   "misst": "ob die Erd-Saat die Orte der Menschheit zu ihrer Zeit trifft — Rom um 100, Edo um 1700, Tenochtitlan um 1500 — gemessen am archäologischen Plan und an datierten Bildquellen. Der Schlüssel zählt im Byte-Preis (R4).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: keine Erd-Saat; die Zeitreise per Satz gründet den Ort neu (siehe mensch.zeit.spanne).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EIN Ort, EINE Zeit (eine römische Stadt um 100)",
+     "tiefe": "Stadtplan, Hauptbauten, Tracht nach dem Befund",
+     "preis": "P · Schlüssel ≤ 10 kB",
+     "richter": "Straßenachsen gegen den archäologischen Plan: Deckung ≥ 70 %; Fach-Panel 2AFC Spielbild gegen wissenschaftliche Rekonstruktion ≤ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Orte × 3 Epochen",
+     "tiefe": "Bauweise, Dichte, Lage am Wasser je Ort",
+     "preis": "P · Schlüssel ≤ 100 kB",
+     "richter": "je Ort Plan-Deckung ≥ 70 %, Einwohner ±30 % gegen die Schätzung der Forschung"
+    },
+    {
+     "nr": 3,
+     "umfang": "100 Orte über 5 000 Jahre, je 5 Zeitschnitte",
+     "tiefe": "dieselbe Stadt wächst, brennt, wird überbaut — wie sie es tat",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Blind-Datierung der Schnitte: Fehler ≤ 10 % der Spanne; Stadtumriss je Schnitt gegen den historischen Atlas IoU ≥ 0,6"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.zukunft.technik",
+   "name": "Technik nach uns — Epochen jenseits der Gegenwart",
+   "art": "kriterium",
+   "misst": "ob die Technik aus dem Samen über die Gegenwart hinaus weiterwächst — Energie, Stoff, Rechnen, Raumfahrt — und im Stadtbild als Folge sichtbar wird. Die Pfade bis zum Halbleiter zählt mensch.wirtschaft.technik; hier beginnt die Zeit danach. Richter ist die Fremdwelt-Probe (R10) am Bild, nie eine Studie.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Die Epochen-Tafel der Stadt ist eine Liste, nicht gewachsen (fachwerk-core.js:3294, siehe mensch.wirtschaft.technik); die Zeitreise per Satz bis Jahr 9999 gründet den Ort neu, ohne Technik-Folge (siehe mensch.zeit.spanne).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EINE Stadt, 50 Jahre nach der Gegenwart ihrer Saat",
+     "tiefe": "10 sichtbare Dinge, die es heute nicht gibt, je mit Vorgänger in der Stadt davor",
+     "preis": "P",
+     "richter": "Bildpaar Jahr 0 / +50 am selben Ort: ≥ 10 neue Dinge im Bild benannt; Gegenlauf: Vorgänger gekappt → das Ding fehlt ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "+200 Jahre, 10² neue Techniken",
+     "tiefe": "die Energiequelle prägt die Stadt (Fusion, Sonne aus dem Orbit, Erdwärme): Trassen, Türme, Abwärme",
+     "preis": "P",
+     "richter": "Ursachen-Probe: der Leser nennt aus dem Stadtbild die Energiequelle ≥ 70 %; Gegenlauf Quelle getauscht → das Stadtbild kippt ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "+500 Jahre: neue Stoffe und Bauweisen",
+     "tiefe": "Bauten, die heutige Stoffe nicht trügen — und nach ihrem Stoff-Gesetz tragen",
+     "preis": "P",
+     "richter": "höchste Spannweite und Höhe im Bild ≤ Grenze des Stoffs der Epoche (same.physik.tragen) und > Grenze heutiger Stoffe"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.zukunft.medien",
+   "name": "Rechner, Netz und die Bildschicht der Stadt",
+   "art": "kriterium",
+   "misst": "ob Rechnen und Netz als Schicht der Stadt da sind — Bildschirm, Leuchtschrift, Hologramm, Werbung, Nachricht, Unterhaltung — und ob ihr Inhalt aus der Welt stammt statt aus einer Schleife.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: Hologramm, Reklame, Werbetafel, Leuchtreklame — 0 Treffer in stamm/ und den Kernen (Grep 14.11.).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EINE Straße mit 10 Bildflächen (Schild, Schirm, Leuchtschrift)",
+     "tiefe": "jede zeigt etwas, das es in der Stadt gibt (Laden, Ware, Uhrzeit, Wetter)",
+     "preis": "P · Nachtstraße",
+     "richter": "10 Flächen: der Inhalt stimmt mit der Welt (der Laden steht dort, Uhr und Wetter richtig) 100 %; keine zwei gleich"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Viertel, 10² Flächen, bewegt",
+     "tiefe": "Werbung folgt Ort und Tageszeit; das Licht der Flächen fällt auf Straße und Gesichter",
+     "preis": "P",
+     "richter": "Leuchtdichte der Straße folgt dem Inhalt der Flächen (r ≥ 0,7); Blindpaar Nachtstraße gegen Foto einer Leuchtschrift-Straße ≤ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Stadt, 10⁴ Flächen und Nachrichten",
+     "tiefe": "Nachrichten berichten, was in der Stadt geschah (Brand, Wahl, Spiel-Ergebnis)",
+     "preis": "P",
+     "richter": "20 Ereignisse ausgelöst: auf Flächen und Geräten der Bewohner binnen 1 Spielstunde ≥ 80 %; Gegenlauf ohne Ereignis: keine Meldung"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.zukunft.maschinenwesen",
+   "name": "Roboter, Androiden, KI-Personen",
+   "art": "kriterium",
+   "misst": "ob Maschinen als Wesen der Welt leben — arbeiten, sich bewegen, wie ihr Bau es verlangt, Personen sind mit Tag, Gedächtnis und Recht — und ob die Straße mit ihnen der Messlatte standhält.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: Roboter, Android, Cyborg — 0 Treffer in stamm/ und den Kernen (Grep 14.11.).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EIN Arbeits-Roboter an EINER Aufgabe",
+     "tiefe": "Gang und Griff folgen seinem Bau (Räder, Beine, Arme), nicht dem Menschen",
+     "preis": "P",
+     "richter": "Bewegungs-Kennzahlen aus dem Bild (Schrittfolge, Gelenkgrenzen) passen zum Bau ≥ 90 %; Blindpaar gegen Film realer Roboter ≤ 85 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Maschinen in einer Stadt, 10 Bauarten",
+     "tiefe": "jede Bauart aus ihrer Aufgabe (Lasten, Putzen, Liefern, Wachen)",
+     "preis": "P",
+     "richter": "Aufgabe aus dem Bild der Maschine erraten ≥ 70 %; Gegenlauf Aufgabe getauscht → die Bauart wechselt"
+    },
+    {
+     "nr": 3,
+     "umfang": "Maschinen im Stoffwechsel der Stadt: 10⁴",
+     "tiefe": "sie laden, werden gewartet, fallen aus, werden repariert; ohne sie stockt die Stadt",
+     "preis": "P",
+     "richter": "Gegenlauf: Maschinen gekappt → Lieferzeit und Müll steigen messbar binnen 1 Spieltag"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.zukunft.leib",
+   "name": "Der veränderte Leib — Implantat, Prothese, Gentechnik",
+   "art": "kriterium",
+   "misst": "ob Leiber sichtbar und wirksam verändert sind — Ersatzglieder, Implantate, gezüchtete Merkmale — und ob die Änderung kann, was sie zeigt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: Implantat, Prothese, Gentechnik — 0 Treffer in stamm/ und den Kernen (Grep 14.11.).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EIN Bewohner mit Ersatzglied",
+     "tiefe": "Gang und Griff ändern sich nach dem Bau des Glieds",
+     "preis": "P · nah",
+     "richter": "Gang-Kennzahlen (Schrittlänge, Symmetrie) gegen Aufnahmen von Prothesen-Trägern im Band"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Bewohner, 10 Arten von Eingriff (Auge, Arm, Haut, Sinnes-Zusatz)",
+     "tiefe": "jeder Eingriff ändert, was der Träger kann (sieht nachts, hebt mehr)",
+     "preis": "P",
+     "richter": "je Eingriff ein Versuch im Bild: Leistung des Trägers gegen Unveränderte um die genannte Spanne höher; Gegenlauf Eingriff aus"
+    },
+    {
+     "nr": 3,
+     "umfang": "Stadt 10⁴: Eingriffe folgen Beruf, Stand und Geld",
+     "tiefe": "die Verteilung hat eine Ursache; Werkstätten, Kliniken, Schwarzmarkt als Orte",
+     "preis": "P",
+     "richter": "Eingriffs-Dichte je Viertel ↔ Einkommen und Beruf r ≥ 0,5; Gegenlauf Klinik entfernt → die Dichte sinkt über Jahre"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.kopplung.leib",
+   "name": "Leib folgt dem Planeten",
+   "art": "kopplung",
+   "misst": "ob Kleidung, Leib und Tracht Wetter, Klima, Stoff, Migration, Epoche und Schwerkraft folgen (Leib L7).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Tracht folgt nur der Epoche-Tafel; kein Wetter, kein Klima am Leib",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Platz: Kleidung folgt dem Wetter",
+     "tiefe": "Regen → Kapuze, Kälte → Lagen",
+     "preis": "P · Platz Sommer/Winter",
+     "richter": "Lagen-Anteil steigt im Bildpaar"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Saaten: Leib folgt Herkunftsklima",
+     "tiefe": "Hautton nach UV-Breite, Statur nach Bergmann/Allen",
+     "preis": "P",
+     "richter": "200 Saaten: Hautton ↔ Breite r ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "Tracht aus verfügbarem Stoff",
+     "tiefe": "Flachs, Wolle, Seide aus Feld, Herde, Handel",
+     "preis": "P",
+     "richter": "Stoffe ⊆ Erzeugnisse und Handel der Region 100 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.kopplung.sport",
+   "name": "Sport sitzt im Leben der Welt",
+   "art": "kopplung",
+   "misst": "wie Klima die Sportart, Stadt die Arena und Alltag die Freizeit formt (Sport L10).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "tagesPlan kennt keine Freizeit (koerper-core.js:5057–5086)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Abend: Spiel auf dem Platz",
+     "tiefe": "Wahl folgt Alter und Rolle",
+     "preis": "P · Dorfplatz am Abend",
+     "richter": "Anteil im Spiel 5–15 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Wetter stoppt, Jahreszeit wechselt",
+     "tiefe": "Regen → Abbruch, Frost → Eis",
+     "preis": "P · Platz bei Regen und Frost",
+     "richter": "Partien bei Regen ↓ ≥ 50 %; Eis nur < 0 °C"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Saaten: Gelände formt Sportkultur",
+     "tiefe": "Bergvolk klettert, Küste rudert",
+     "preis": "P · Ankunft je Saat",
+     "richter": "200 Saaten: Biom ↔ Sportart Cramérs V ≥ 0,3"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.kopplung.leben",
+   "name": "Leben und Welt formen sich",
+   "art": "kopplung",
+   "misst": "wie stark die Welt die Leben ändert und die Leben die Welt (Geist L8).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "nur Gewalt → Furcht lokal; Bauten altern ohne Kopplung an Bewohner (stamm/siedlung-satz.js:858)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Siedlung: Wetter ändert den Tag",
+     "tiefe": "Regen → drinnen",
+     "preis": "P · Markt Sonne/Regen",
+     "richter": "Anteil draußen sinkt ≥ 0,3"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³: Missernte, Brand → Not",
+     "tiefe": "Umzug, Trauer, Erinnerung",
+     "preis": "P",
+     "richter": "Gegenlauf: mit Missernte ziehen ≥ 10 % der Betroffenen um und ändern ihren Tag, ohne Missernte keine Umzugswelle; Betroffene nennen das Ereignis auf Frage ≥ 0,8"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁵: Leben formen die Welt",
+     "tiefe": "Familien bauen an, Wege werden Straßen",
+     "preis": "P · Sprung 20 J",
+     "richter": "Bauten ↔ Familiengröße r ≥ 0,5; verlassene Häuser verfallen"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.kopplung.antwort",
+   "name": "Die Welt antwortet auf Eingriff",
+   "art": "kopplung",
+   "misst": "ob Stadt und Region ein Gleichgewicht sind, das sich sichtbar umbaut, wenn Spieler oder Ereignis einen Wert ändern (Stadt L8).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Ring 8–9 neuer Häuser, Median 22 m um das Spielerhaus, beide Geräte (siedlung.K4) — KARTE: 0 — das Wachstum (siedlung.K4) hebt den Kern von mensch.zeit.palimpsest, das benutzte Werk (bauen.K5) den von erleben.spieler.rolle (R9, Z6); der eigene Lauf mit Gegenlauf fehlt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Spielerhaus wird Keim",
+     "tiefe": "Ring neuer Häuser",
+     "preis": "P · Hügel",
+     "richter": "Ring neuer Häuser um das Spielerhaus binnen 1 500 s; Gegenlauf: dieselbe Saat ohne Spielerhaus → kein Ring an diesem Ort"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Trasse des Spielers",
+     "tiefe": "Bebauung folgt der Erreichbarkeit",
+     "preis": "P",
+     "richter": "Dichte im 200-m-Gürtel ≥ 2× gegen Kontroll-Saat"
+    },
+    {
+     "nr": 3,
+     "umfang": "1 zerstörtes Viertel",
+     "tiefe": "Neubau nach neuem Bodenwert",
+     "preis": "P",
+     "richter": "Netz-Kennzahlen des Neubaus weichen vom alten Viertel ab und liegen im Band realer Wiederaufbau-Pläne ≥ 70 %; Gegenlauf ohne Zerstörung: Viertel unverändert"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "bauen.K5",
+     "text": "Das Werk wird benutzt: jedes gesetzte Werk trägt seine Verben",
+     "staffel": "\"1 = von 6 gesetzten Werken (Haus, Wagen, Tor, Brücke, Leiter, Bank) ist jedes Verb aus KIND_POLICY (betreten, drive, portal, sitzen, klettern) über die echte Eingabe nutzbar, an einem Gerät · 2 = auch für KI-gesetzte und geteilte Werke, Ego und Third, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:2010",
+      "stationen/g4.js:2065"
+     ],
+     "stationen": [
+      {
+       "id": "bauen.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "6/6 Werke tragen ihr Verb über die Taste",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "bauen.K5#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal)",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "bauen.K5#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal)",
+       "sha": "b4bcf19c",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "siedlung.K4",
+     "text": "Durch die Jahrhunderte — als Parameter, dann als Wachstum",
+     "staffel": "\"1 = dieselbe Zelle unter 1320/1560/1860/1935: der ältere Kern liegt zu ≥ 80 % im jüngeren (Jahresringe), die Epoche moderne ergibt stadt, die Epoche bestimmt Rolle, Bauart und Kleidung im Export · 2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4236",
+      "stationen/g5.js:4290"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m …",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m …",
+       "sha": "3e4f99cd",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.kopplung.kultur",
+   "name": "Kultur folgt der Welt",
+   "art": "kopplung",
+   "misst": "ob Baustoff aus dem Boden, Glaube aus der Landschaft und Kalender aus dem Himmel folgen — und der Bau den Ort deutet (Kultur L6 + Bauten L1).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "metaParams Klima × Epoche → Dach, Stoff, Hof (fachwerk-core.js:8103) liest nur das Studio (worlds/fachwerk/fachwerk.js:621); die Welt zieht die Region per Zufall (:3647) — Zwilling",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Baustoff aus Boden und Klima",
+     "tiefe": "Lehm, Holz, Stein nach Biom",
+     "preis": "P · Dorf",
+     "richter": "32 Saaten: passender Baustoff ≥ 85 %; Region aus Hausbild ≥ 70 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "3 Kopplungen: Dach ↔ Niederschlag, Hof bei Hitze, Speise ↔ Anbau",
+     "tiefe": "Mutation Klima ändert Bau gesetzrichtig",
+     "preis": "P · Dorf",
+     "richter": "Dach ↔ Niederschlag r ≥ 0,5; Mutation ≥ 90 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kalender und Fest aus Himmel und Ernte",
+     "tiefe": "Fest auf Ereignis der eigenen Welt",
+     "preis": "P · Festplatz",
+     "richter": "≥ 80 % der Feste auf einem Ereignis der Saat"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.kopplung.kreislauf",
+   "name": "Die Stadt trägt sich",
+   "art": "kopplung",
+   "misst": "ob eine Zufallsperson Wohnung, Werk, Nahrung, Wasser und Energie hat — rückverfolgbar bis Feld, Quelle und Kraftwerk (neu; trägt die Megastadt).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "keine Ware mit Herkunft, niemand isst; Brunnen und Laternen ohne Fluss",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² Dorf",
+     "tiefe": "Nahrung aus eigener Flur, Wasser aus Brunnen",
+     "preis": "P · Dorf",
+     "richter": "20 Personen: Mahl bis Feld ≥ 90 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³",
+     "tiefe": "+ Markt, Brennholz, Werkzeug",
+     "preis": "P · Stadt",
+     "richter": "Bilanz je Gut ± 10 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴",
+     "tiefe": "+ Leitung, Abwasser, Müll",
+     "preis": "P · Stadt",
+     "richter": "Bilanz je Stoff ± 5 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  }
+ ]
+}

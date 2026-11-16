@@ -1,0 +1,826 @@
+{
+ "paket": "02-planet-wasser-wetter",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "planet.wasser.seegang",
+   "name": "Seegang — die See, wie ein Seemann sie liest",
+   "art": "kriterium",
+   "misst": "ob die Wasseroberfläche vom Teich bis zum Orkan und vom Horizont bis zur Brandung aussieht und sich verhält wie die Wirklichkeit",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Mechanik halb: spiegelTreue 0,73 an EINER von 12 Posen (GTX); Weißkappe aus Monahan im Gesetz auf 3 % (foundry-core.js:160-161), Bild ungemessen. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "eine Wasserfläche, 12 Posen",
+     "tiefe": "spiegelt Ufer und Himmel",
+     "preis": "P an beiden Geräten",
+     "richter": "spiegelTreue ≥ 0,6 an 12 Posen (Uhr × Wetter) in Ausgabe-Größe"
+    },
+    {
+     "nr": 2,
+     "umfang": "Meer, See, Fluss je eigene Bewegung",
+     "tiefe": "Weißkappen-Anteil wächst mit dem Wind",
+     "preis": "P, beide Geräte",
+     "richter": "Weißkappen-Anteil im Bild bei 5/10/20 m/s gegen Monahan ±30 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "offene See bis 2 km Sicht",
+     "tiefe": "Seegang aus Wind × Fetch, Beaufort 0–12",
+     "preis": "P im Sturm",
+     "richter": "Blindtest 10 Bilder je Beaufort-Stufe, ≥ 70 % richtig zugeordnet"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "gelaende.K3",
+     "text": "Wasser-Bild aus dem Gesetz an jeder Pose des Spielers",
+     "staffel": "\"1 = spiegelTreue ≥ 0,6 an einer Pose in Ausgabe-Größe mit der Kamera des Spiels an einem Gerät · 2 = alle 12 Posen (Ego/Third × Mittag/Nacht/Regen × beide Geräte) und Fließ-Anisotropie ≥ 1,5\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:2017"
+     ],
+     "stationen": [
+      {
+       "id": "gelaende.K3#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "gelaende.K3#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "spiegelTreue 0.73 (wasserSatz 25525 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 94.5 σ 37.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.212 · Bühne summer sunny 0.50 …",
+       "sha": "e84fd1fb",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "material.K4",
+     "text": "Spiegelung aus EINER Quelle: Glas, Lack, Metall, Nässe",
+     "staffel": "\"1 = spiegelTreue ≥ 0,5 an Fenster-Glas ODER Lack aus Ego an einem Gerät · 2 = jede glänzende Klasse aus Ego und Third, kein Spiegel-Flimmern unter Bewegung, ≤ 1 ms an der GTX, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:3336"
+     ],
+     "stationen": [
+      {
+       "id": "material.K4#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "material.K4#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "lack spiegelTreue 0.4468 (114732 px in der Ebene, 59 Blöcke, Einfall 58.1°, Normale [0.077,0.996,0.04]) · glas spiegelTreue 0.7656 (6259 px in der Ebene, 28 Blöcke, Einfall 72.6°, Normale [-0.001,1,0.016]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.500000 …",
+       "sha": "e84fd1fb",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ankunft.K4",
+     "text": "Der erste Blick ist AAAA: jede Klasse am Spawn",
+     "staffel": "\"1 = am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third: ≥ 6 von 12 Klassen frisch GRÜN an einem Gerät · 2 = jede sichtbare Klasse gemessen (auch fahrzeug, esse, tier, haus-vorschau mit externem Soll), ≥ 95 % GRÜN an beiden Geräten\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:2897"
+     ],
+     "stationen": [
+      {
+       "id": "ankunft.K4#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "ankunft.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.wasser.gezeiten",
+   "name": "Gezeiten und Sturmflut — der Spiegel in der Stunde",
+   "art": "kriterium",
+   "misst": "ob der Meeresspiegel eine Funktion der Himmelsmechanik ist, von der Stunde bis zum nahen Mond der Frühzeit",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: Meeresspiegel ist eine Konstante, Basis − 3 m (gelaende-core.js:2687); 0 Treffer für Gezeit/Tide/Ebbe.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Küste, 24 h",
+     "tiefe": "halbtägliche Mondgezeit 12 h 25 min",
+     "preis": "P über 24 h Spielzeit",
+     "richter": "Watt fällt sichtbar trocken: benetzte Fläche Ebbe gegen Flut im Bild, Periode ±2 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "30 Tage",
+     "tiefe": "Spring- und Nipptide aus Mond und Sonne",
+     "preis": "P",
+     "richter": "Pegel über 30 Tage: Spring-Nipp-Takt 14,8 d ±2 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "jede Küste einer Region 10³ km",
+     "tiefe": "Tidenhub aus Schelfbreite und Buchtform, amphidromische Punkte",
+     "preis": "P",
+     "richter": "20 Küsten aus 5 Saaten: Hub gegen Resonanz-Vorhersage ±30 %; ≥ 1 Bucht > 8 m je 10⁴ km² Küste"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.wasser.stroemung",
+   "name": "Strömung — das Wasser, das Dinge und Wärme trägt",
+   "art": "kriterium",
+   "misst": "ob Wasser fließt, wohin die Physik es treibt: Fluss, Küstenstrom, Ozeanwirbel, Umwälzung",
+   "heute": 0,
+   "kern": 1,
+   "fuss": "gemessen",
+   "beleg": "Mechanik von Sprosse 1 steht HEADLESS: 4/4 Fluss-Orte (Strömung WG.wellen.adv, stamm/bild-sicht.js:1224-1228); Ozean ohne Strömung. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Flüsse einer Region",
+     "tiefe": "Strömung längs Gefälle trägt Schwimmer, Boot, Tier",
+     "preis": "P",
+     "klasse": "Ort",
+     "richter": "Treibgut-Probe an 4 Fluss-Orten > 0,5 m in 90 Takten, im Spiel mit Bild"
+    },
+    {
+     "nr": 2,
+     "umfang": "sichtbares Fließen",
+     "tiefe": "Strähnen, Wirbel hinter Steinen, Kehrwasser",
+     "preis": "P, beide Geräte",
+     "richter": "optischer Fluss zweier Bilder 0,5 s auseinander: längs/quer ≥ 1,5, Richtung ±20° an 12 Posen"
+    },
+    {
+     "nr": 3,
+     "umfang": "Küste und Mündung, 10 km",
+     "tiefe": "Brandungsrückstrom, Küstenlängsstrom, Gezeitenstrom, Salzkeil",
+     "preis": "P",
+     "richter": "Rip-Ströme ≥ 1 je 500 m brandender Küste; Treibrichtung gegen Welleneinfall ±20°"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [
+    {
+     "station": "gelaende.K4#2",
+     "leiter": "planet.wasser.stroemung",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "gelaende.K4",
+     "text": "EIN Wasser-Spiegel für alle Leser — Körper, Tier, Pflanze, Klang",
+     "staffel": "\"1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort · 2 = überall, dazu endet jeder Lauf in See oder Meer und die Strömung treibt\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2095",
+      "stationen/g1.js:2149",
+      "stationen/g1.js:2230"
+     ],
+     "stationen": [
+      {
+       "id": "gelaende.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 0.645/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 …",
+       "sha": "71839b1e",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 …",
+       "sha": "71839b1e",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.wasser.eis",
+   "name": "Eis — vom Schnee zum Eisschild",
+   "art": "kriterium",
+   "misst": "wie viel Eis die Welt trägt, wie es entsteht, fließt, kalbt und den Spiegel bewegt",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Mechanik halb: See-Eis nach Stefan (gelaende-core.js:1341-1422) trägt headless 1 151 Schritte; Schneedecke mit Tiefe 1/2 (wetter.K4); kein Gletscher, kein Meereis. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Schnee einer Region",
+     "tiefe": "Decke kommt und geht mit Saison und Höhe, trägt und gibt nach",
+     "preis": "P im Schneefall",
+     "richter": "Schneegrenze gegen Nullgrad-Höhe ±150 m an 10 Posen × 4 Jahreszeiten; Fuß sinkt ≥ 5 cm"
+    },
+    {
+     "nr": 2,
+     "umfang": "Seen frieren zu",
+     "tiefe": "Eis wächst mit Frost, Salz senkt den Gefrierpunkt, trägt erst ab tragender Dicke",
+     "preis": "P",
+     "richter": "Spieler geht bei Frost auf dem See, bricht bei Tauwetter ein; Einsetzen gegen Frostgrad-Summe ±20 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Meereis 10⁶ km²",
+     "tiefe": "Packeis, Schollen, Rinnen; Fläche folgt der Saison",
+     "preis": "P",
+     "richter": "Verhältnis Winter/Sommer gegen Arktis ±30 %; Blindpaar Scholle"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "wetter.K4",
+     "text": "Temperatur und Schnee-Decke mit Tiefe",
+     "staffel": "\"1 = Schnee-Deckung ≥ 60 % über der Schneegrenze der Saison UND der Fuß sinkt ≥ 5 cm ein, an einer Pose · 2 = die Spur bleibt, die Schneegrenze folgt temperaturAt(Höhe, Saison, Uhr), Ego/Third, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:4000"
+     ],
+     "stationen": [
+      {
+       "id": "wetter.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Winter Tag 40 an -280.4/-1045.6 (27.612 m, Versatz -160): Deckung 1 aus 317 Proben, der Fuß 0.204 m unter dem Boden (Schnee 1) · Sommer an der Wiese -0.01 m (Schnee 0, Versatz 0) (Soll Deckung ≥ 0,6, Fuß ≥ 0,05 m, ohne Schnee ≤ 0,01 m)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "stoffe.K3",
+     "text": "Phasen: Gefrieren, Schmelzen, Erstarren, Glühen",
+     "staffel": "\"1 = eine Phase mit Körper-Folge (das Eis trägt den Spieler, y am Spiegel ±5 cm) · 2 = alle vier: Schnee schmilzt über 0 °C und speist den Pegel, Lava (glut-Achse) erstarrt am Wasser unter Dampf zu Basalt, Stahl glüht in der Esse ab seiner Temperatur (Schmiede = Welt)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3489",
+      "stationen/g1.js:3556"
+     ],
+     "stationen": [
+      {
+       "id": "stoffe.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Winter -4.375 °C am Spiegel: 1151 Schritte auf dem See, die Füße bis 0 m vom Spiegel, 0 schwimmend · 3 von 3 Tieren am Spiegel · Feld +10 °C (5.625 °C): 1003 Schritte schwimmend",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "stoffe.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "5 von 5 Gliedern · Eis ✓ (-4.375 °C) · Schnee ✓ (Pegel 0.163 m, Grenze 178 m übers Jahr, 81 Chunks neu) · Wasser-Pegel ✓ (See +0.2 m in 3 Wochen, Fluss +0.2 m, Körper +0.2 m, 1343 Chunks neu) · Lava ✓ (erstarrt Land Takt 2, See Takt 1 unter Dampf) · Stahl ✓ (s …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.wasser.kreislauf",
+   "name": "Der Kreislauf — EINE Bilanz vom Meer bis zum Aquifer",
+   "art": "kriterium",
+   "misst": "ob Verdunstung, Regen, Abfluss, Aquifer und Meer EINE Bilanz sind",
+   "heute": 0,
+   "kern": 1,
+   "fuss": "kern",
+   "beleg": "Mechanik von Sprosse 1 steht: Bilanz 1,006 headless, Pegel-Bild an beiden Geräten (wetter.K3 2/2); Regen kommt als Wetter-Stempel, nicht aus Verdunstung. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen. — KARTE: Kern 1 — Pegel nach Sturm im Bild an beiden Geräten (wetter.K3), Bilanz als Zahl headless; Bild-Preis nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Region 2 km",
+     "tiefe": "Sturm hebt den Fluss mit Verzug, Dürre senkt ihn; Bilanz geht auf",
+     "preis": "P, beide Geräte",
+     "richter": "Pegel nach Sturm im Bild; Scheitel-Verzug gegen Einzugsgebiet im Erd-Band; Regen × Fläche ↔ ΔVolumen ±10 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Aquifer als Volumen",
+     "tiefe": "Quellen, Brunnen, Feuchtgebiet, wo der Spiegel das Gelände schneidet; Brunnen senkt den Spiegel",
+     "preis": "P an der Bohrung",
+     "richter": "Grube unter dem Spiegel füllt sich bis zu ihm ±0,1 m; Quellen ≥ 90 % an Spiegel-Austritten; Entnahme: Absenkungstrichter, Quelle flussab versiegt"
+    },
+    {
+     "nr": 3,
+     "umfang": "Monate",
+     "tiefe": "Bodenfeuchte als Gedächtnis",
+     "preis": "P",
+     "richter": "nach 60 Tagen ohne Regen: Wiese braun gegen Dürrefoto, Fluss ≥ 50 % Querschnitt verloren"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "wetter.K3",
+     "text": "Der Wasser-Kreislauf: Regen speist die Flüsse, Dürre leert sie",
+     "staffel": "\"1 = Pegel am Bach +≥ 0,2 m nach 20 min Sturm an einem Ort · 2 = der Lag wächst mit dem Einzugsgebiet A, Volumen-Bilanz Regen × Fläche ≈ ΔVolumen ±30 %, 14 Spieltage Dürre senken, Bild am Bach auf beiden Geräten\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2523",
+      "stationen/g1.js:2566",
+      "stationen/g1.js:2623"
+     ],
+     "stationen": [
+      {
+       "id": "wetter.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Bach +0.2 m nach 20 min Sturm (Spieler-Wort, Welt-Uhr im Takt), 48 Tafeln an den Faden · Regen-Feld gehalten +0 m · Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "A 0.16 ↔ 0.8 km² (×5.0) · Lag 1 ↔ 1.9 Spielstunden (Verhältnis 1.647) · Bilanz 1.006 / 0.98 (Regen × Fläche ↔ ΔVolumen 3.8 ↔ 3.9 / 19.2 ↔ 18.8 m³) · Dürre-Δ 14 Spieltage Bach/Fluss/See -0.2 / -0.2 / -0.2 m · Regen-Feld gehalten Bilanz 0 / 0 · Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K3#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 145509 → 381701 px (×2.62) in 1920×1080 / 1920×1080",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K3#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 158085 → 604080 px (×3.82) in 1920×1080 / 1920×1080",
+       "sha": "8efb6318",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.wasser.tiefsee",
+   "name": "Unter dem Spiegel — der Raum, der 70 % des Planeten ist",
+   "art": "kriterium",
+   "misst": "ob der Spieler abtauchen kann und einen wahren Raum findet bis zur Sohle des tiefsten Grabens. Der RAUM unter dem Spiegel und sein Boden; Licht, Wasserfarbe und Leiber im Bild zählt leben.wasser.bild.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Stand 0: Absorption und Sicht je Wasser-Art als Gesetz (foundry-core.js:163-172), im Bild ungemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "See, Fluss 0–10 m",
+     "tiefe": "Licht verliert je Kanal, Sicht nach Trübung",
+     "preis": "P unter Wasser",
+     "richter": "Rot-Anteil fällt bis 5 m auf ≤ 30 %; Sicht gegen Secchi-Referenz ±30 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Küstenmeer 0–40 m",
+     "tiefe": "Kaustik, Sandrippel, Dünung spürbar",
+     "preis": "P beim Tauchen in Brandung",
+     "richter": "Blindtest 50 Posen gegen Taucherfotos ≥ 60 %; Rippel-Abstand gegen Wellen-Orbital ±30 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Schelf bis 200 m",
+     "tiefe": "Dämmerung, Sprungschicht, Kälte",
+     "preis": "P im Abtauchen",
+     "richter": "Lichtrest bei 200 m ≤ 1 %; Sprungschicht im Temperaturprofil des Tauchgangs"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "leib.K3",
+     "text": "Wasser und Höhle: Ufer, Schwimmen, Tauchen, Sicht unter Wasser",
+     "staffel": "\"1 = Ufer → Schwimmen → Tauchen ohne Sprung (Lage, Kamera) an einem Gerät · 2 = Unterwasser-Bild aus der EINEN Wasser-Wahrheit (Sicht-Abfall nach Tiefe gegen REF), Höhle mit Licht-Abfall, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4775",
+      "stationen/g5.js:4803"
+     ],
+     "stationen": [
+      {
+       "id": "leib.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Ex …",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K3#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Blick Ego 0,5 ↔ 2,5 m 57.19 %, Third 0,5 ↔ 2,5 m 55.29 %, Ego ↔ Third 0,5 m 4.54 % · ego L 0.2746673/0.2186528/0.1820547 · K 0.23, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746576/0.2214764/0.1847688 · K 0.22, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0. …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K3#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Blick Ego 0,5 ↔ 2,5 m 58.24 %, Third 0,5 ↔ 2,5 m 55.48 %, Ego ↔ Third 0,5 m 5.72 % · ego L 0.2762601/0.221478/0.1828824 · K 0.22, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746637/0.2220571/0.1847694 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 …",
+       "sha": "350e6b11",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.wetter.lagen",
+   "name": "Wetterlagen — das synoptische Wetter vom Orbit bis zum Ort",
+   "art": "kriterium",
+   "misst": "wie wahr das Wetter ist, wenn es sich über wachsende Räume bewegt",
+   "heute": 1,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Mechanik von Sprosse 1 steht: wetterAt als drei Sinus-Wellen längs der Hauptrichtung (phyto-core.js:4067-4091), wetter.K1 2/2. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "5 Wetter-Zeilen, Bänder ziehen über wenige km",
+     "tiefe": "Wetter wandert",
+     "preis": "P",
+     "klasse": "Ort",
+     "richter": "Regen an A bei trockenem B ≥ 20 % der Zeit, Lag ±20 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Region 10² km",
+     "tiefe": "Frontpassage in Erd-Abfolge",
+     "preis": "P",
+     "richter": "50 Frontpassagen aus 50 Saaten: Abfolge Cirrus → Nimbostratus → Schauer, Druckfall, Winddrehung stimmt ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kontinent 10³ km",
+     "tiefe": "Tief mit Lebenslauf 3–7 Tage",
+     "preis": "P, Draufsicht 400 km",
+     "richter": "Blindtest 20 Draufsichten gegen Satellitenbild: Trefferquote ≤ 60 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [
+    {
+     "station": "wetter.K1#2",
+     "leiter": "planet.wetter.lagen",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "wetter.K1",
+     "text": "Wetter = f(Saat, Ort, Zeit) ⊕ Schreib-Akte — für alle gleich, nie aus der Wanduhr",
+     "staffel": "\"1 = das Wetter-Wort entsteht aus Saat + Spielzeit + Schreib-Akten statt aus der Wanduhr (global, gemessen) · 2 = die Front am Ort: Regen an A bei trockenem B ≥ 20 % der Zeit, Lag = Abstand ÷ Wind ±20 %, alle 5 Labor-Zeilen erreichbar, die Mutation der Kern-Funktion zieht Labor und Welt\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2296",
+      "stationen/g1.js:2348",
+      "stationen/g1.js:2389"
+     ],
+     "stationen": [
+      {
+       "id": "wetter.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K1#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenb …",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K1#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenb …",
+       "sha": "105c9bd3",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.wetter.wolken",
+   "name": "Wolken, Niederschlag und Luft im Bild",
+   "art": "kriterium",
+   "misst": "was das Auge vom Boden bis durch die Wolke sieht, und ob es aus dem Zustand am Ort folgt",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Mechanik von Sprosse 1 steht: WOLKEN_SCHICHT (welt-licht.js:850), Licht der Oberseite (welt-licht.js:994-1003). Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EINE Wolkenschicht 800 m, Karte ≈ 8 km",
+     "tiefe": "Licht aus der Atmosphäre, Schatten ziehen",
+     "preis": "P",
+     "richter": "Zeitraffer der Schicht gegen Zeitraffer-Film realer Schichtwolken (2AFC ≤ 85 %); Zuggeschwindigkeit der Schatten am Boden im Band realer Wolkenzüge (2–20 m/s) und gleich der Wolke darüber (Versatz ≤ 5 %)"
+    },
+    {
+     "nr": 2,
+     "umfang": "Himmel bis zum Horizont, drei Stockwerke",
+     "tiefe": "Silberrand, dunkle Basis, Gegenlicht",
+     "preis": "P",
+     "richter": "Blindtest 20 Himmelsbilder gegen Foto ≤ 70 %; Gattung vom Bildmodell erkannt ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "jede Wolke entsteht und vergeht",
+     "tiefe": "Gattung folgt aus Feuchte, Hebung, Stabilität",
+     "preis": "P",
+     "richter": "200 Momente × 20 Saaten: sichtbare Gattung = verlangte ≥ 80 %; Cumulus-Gipfel 14–17 Uhr in ≥ 80 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "licht.K4",
+     "text": "Wolken mit Körper und Schatten",
+     "staffel": "\"1 = der Wolken-Schatten wandert mit dem Wolkenfeld über die Wiese (r ≥ 0,6) an einem Gerät · 2 = auch über Wald, Silberrand im Gegenlicht ≥ 1,3, Unterseite dunkler als Oberseite, Himmel ≤ 1,0 ms gpu-bank an der GTX, beide Geräte\"",
+     "punkteAlt": 0,
+     "fundstellen": [],
+     "stationen": [
+      {
+       "id": "licht.K4#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.wetter.klimazonen",
+   "name": "Klimazonen und Jahreszeiten",
+   "art": "kriterium",
+   "misst": "wie viele Klimata die Welt trägt und wie wahr sie verteilt sind",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Mechanik von Sprosse 1 steht: EIN Klima 18/−4 °C, 0,11 K/m (gelaende-core.js:1285-1305), wetter.K4 1/2. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Klima, Höhe gestaucht",
+     "tiefe": "Jahres- und Tagesgang, Schneegrenze",
+     "preis": "P",
+     "richter": "Temperatur am Meer 18/−4 °C, Schneegrenze folgt der Saison"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Gebirge in Erd-Höhe",
+     "tiefe": "Höhenstufen wie auf der Erde",
+     "preis": "P",
+     "richter": "Baum- und Schneegrenze im Bild auf Erd-Höhe ihrer Breite ±20 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "3 Klimata in einer Welt",
+     "tiefe": "Kontinentalität: Jahresamplitude wächst mit der Meeresferne",
+     "preis": "P",
+     "richter": "Jahresamplitude gegen Meeresabstand Rang ≥ 0,7 an 30 Orten"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "wetter.K4",
+     "text": "Temperatur und Schnee-Decke mit Tiefe",
+     "staffel": "\"1 = Schnee-Deckung ≥ 60 % über der Schneegrenze der Saison UND der Fuß sinkt ≥ 5 cm ein, an einer Pose · 2 = die Spur bleibt, die Schneegrenze folgt temperaturAt(Höhe, Saison, Uhr), Ego/Third, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:4000"
+     ],
+     "stationen": [
+      {
+       "id": "wetter.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Winter Tag 40 an -280.4/-1045.6 (27.612 m, Versatz -160): Deckung 1 aus 317 Proben, der Fuß 0.204 m unter dem Boden (Schnee 1) · Sommer an der Wiese -0.01 m (Schnee 0, Versatz 0) (Soll Deckung ≥ 0,6, Fuß ≥ 0,05 m, ohne Schnee ≤ 0,01 m)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.wetter.extreme",
+   "name": "Extreme und Wiederkehr",
+   "art": "kriterium",
+   "misst": "ob Flut, Hitze, Sturm in Stärke und Häufigkeit der Statistik der Erde folgen",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: keine Extreme jenseits des Sturm-Worts.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Flut über Tage, ein Fluss",
+     "tiefe": "Fluss verlässt das Bett",
+     "preis": "P",
+     "richter": "nach 100 mm Starkregen: Überflutung ≥ Aue, Bildpaar"
+    },
+    {
+     "nr": 2,
+     "umfang": "Hitze- und Kältewelle, eine Region",
+     "tiefe": "Welle aus Blockierlage",
+     "preis": "P",
+     "richter": "Dauer und Amplitude gegen Erd-Statistik gleichen Klimas ±50 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Wiederkehr über 10² Jahre",
+     "tiefe": "Jahrhundertflut, Jahrhundert-Hitze",
+     "preis": "P, Zeitsprung 100 a ≤ 5 s",
+     "richter": "GEV-Anpassung der Jahresmaxima: 100-a-Wert innerhalb Faktor 2 der Erd-Erwartung"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.wetter.vorhersage",
+   "name": "Der lesbare Himmel — bis an die Grenze des Chaos",
+   "art": "kriterium",
+   "misst": "ob sich das Wetter ankündigt und ehrlich unvorhersagbar wird, wo die Erde es wird",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: das Wetter ist drei Sinus-Wellen, ohne Vorlauf und ohne Chaos.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Stunden",
+     "tiefe": "Regen kommt aus der Windrichtung",
+     "preis": "P",
+     "richter": "100 Regenbeginne: Bedeckung stieg in den 60 min davor aus der Windrichtung in ≥ 70 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Tag",
+     "tiefe": "Zeichen der Front 6–24 h vorher",
+     "preis": "P",
+     "richter": "Bildmodell, das NUR den Himmel sieht: Regen in 12 h mit Skill ≥ 0,3 über Persistenz"
+    },
+    {
+     "nr": 3,
+     "umfang": "Tage",
+     "tiefe": "Druck und Wind am Ort lesbar",
+     "preis": "P",
+     "richter": "Vorhersage aus Spiel-Beobachtung: Skill ≥ 0,2 über Klimatologie bei 3 Tagen"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.wetter.fremde-atmosphaeren",
+   "name": "Fremde Atmosphären — dasselbe Gesetz, andere Welten",
+   "art": "kriterium",
+   "misst": "ob Himmel, Zirkulation und Wetter fremder Welten aus Gas, Masse, Stern und Rotation folgen",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Mechanik von Sprosse 1 steht: ATMO_GESETZ nach Hillaire (foundry-core.js:283-308); die Fremdwelt „ferne“ tauscht nur die Rayleigh-Tiefe, gesetzt statt gefolgert (stamm/daten.js:68-81). Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Atmosphäre (Erde), parametrisch",
+     "tiefe": "Rayleigh, Aerosol, Ozon",
+     "preis": "P",
+     "richter": "Himmelsfarbe Mittag/Abend gegen Foto"
+    },
+    {
+     "nr": 2,
+     "umfang": "Gas, Druck, Stern als Zufallsparameter",
+     "tiefe": "Himmelsfarbe folgt aus ihnen",
+     "preis": "P",
+     "richter": "Mars-Parameter: blaue Dämmerung, butterfarbener Tag gegen Rover-Fotos; Titan: oranger Dunst gegen Huygens, Farbton ±10°"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Welten: was eine Welt hält",
+     "tiefe": "Atmosphäre aus Fluchtgeschwindigkeit und Einstrahlung",
+     "preis": "P",
+     "richter": "1 000 Welten: Atmosphäre gegen die Zahnle-Catling-Grenze richtig eingeordnet ≥ 90 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  }
+ ]
+}

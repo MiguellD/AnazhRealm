@@ -1,0 +1,1269 @@
+{
+ "paket": "04-leben-pflanzen-tiere",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "leben.pflanzen.arten",
+   "name": "Pflanzenarten aus EINEM Wachstumsgesetz",
+   "art": "kriterium",
+   "misst": "Wie viele unterscheidbare Pflanzenarten eine Welt im Spiel trägt — gezählt an den Angetroffenen (Akkumulationskurve, Chao1), nie im Saat-Raum — und wie viele davon ein Bild zugleich zeigt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "12 Gestalten von Hand (stamm/vegetation-baum.js SPECIES_TREE_PARAMS) + baum_mammut (phyto-core.js); kein Gesetz erzeugt Arten; der Blindtest von Sprosse 1 wurde nie gefahren.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 Gestalten, je von Hand parametrisiert",
+     "tiefe": "Gattung an der Silhouette lesbar; Rinde und Blatt nah gegen Herbarfoto",
+     "preis": "P · Waldrand",
+     "richter": "Blindtest 10 Bilder je Gestalt: Gattung ≥ 80 % richtig; Herbar-Bildpaar je Gestalt ≥ 0,7"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Arten, gezogen aus EINEM Merkmalsraum (Saat → Art), keine Tabelle",
+     "tiefe": "≥ 90 % als echte Wuchsform erkannt (Baum, Strauch, Gras, Kletterer, Sukkulente, Farn, Moos)",
+     "preis": "P",
+     "richter": "100 Saaten → Wuchsform-Blindtest; Silhouetten-Paare unterscheidbar ≥ 95 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Arten je Planet, ≥ 50 zugleich im Bild",
+     "tiefe": "Merkmalsverteilung (Höhe, Blattgröße, Holzdichte) im Band der Erde (TRY, Díaz 2016)",
+     "preis": "P · artenreichste Szene",
+     "richter": "Histogramm-Distanz Spiel ↔ Erde ≤ 0,2 aus Bild-Morphometrie; Artenzahl im Bild per Blindbenennung"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "material.K1",
+     "text": "Albedo im realen Band, Labor = Welt, echt auf beiden Geräten",
+     "staffel": "\"1 = alle Zeilen Welt/Labor 0,9–1,1 und im realen Band, beide Seiten --echt, an einem Gerät · 2 = beide Geräte, Eichung Karte 0,180\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g3.js:2934",
+      "stationen/g3.js:2972"
+     ],
+     "stationen": [
+      {
+       "id": "material.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "material.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "material.K1#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "material.K1#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.pflanzen.biome",
+   "name": "Biome folgen aus Klima, Boden und Licht",
+   "art": "kriterium",
+   "misst": "Wie viel des Klimaraums die Vegetationsdecke auf wachsender Fläche richtig besetzt, ohne dass ein Biom gesetzt wird.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Waldgrenze unter dem Sommer-Schnee und Feuchte-Arten GRÜN, aber die Palme folgt dem Rauschen `lebendig` (stamm/feld-leben.js) statt Wärme: ROT an Sprosse 1; ein Klimafeld Temperatur × Niederschlag fehlt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "ein Klima; Mosaik Wald ↔ Lichtung ↔ Ufer ↔ Gipfel",
+     "tiefe": "Waldgrenze unter dem Sommer-Schnee; Uferarten am Wasser; Wärme-Arten nur im Warmen",
+     "preis": "P · Gipfel und Ufer",
+     "richter": "Bild am Gipfel baumfrei; Stichprobe: Uferarten am Wasser ≥ 90 %, Wärme-Arten außerhalb der Wärme 0"
+    },
+    {
+     "nr": 2,
+     "umfang": "Region 10² km² mit Höhen- und Luv/Lee-Gradient",
+     "tiefe": "Höhenstufen kollin → alpin in richtiger Folge, Ökoton statt Kante",
+     "preis": "P · Flug über die Region",
+     "richter": "50 Hänge: Stufenfolge richtig ≥ 90 %; scharfe Biom-Kanten im Luftbild ≤ 10 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kontinent 10⁶ km²",
+     "tiefe": "Biome folgen Temperatur × Niederschlag; ≥ 80 % des Whittaker-Raums besetzt",
+     "preis": "P · 20 Zufallsorte",
+     "richter": "Kappa ≥ 0,6 zwischen Biom-Bild und Klima-Zuordnung (Whittaker/Köppen)"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "leben.pflanzen.lebenslauf",
+   "name": "Keimen, Wachsen, Altern, Sterben — auch ungesehen",
+   "art": "kriterium",
+   "misst": "Ob der Spieler Pflanze und Bestand wachsen und sterben sieht und bei der Rückkehr den gewachsenen, nicht den alten Wald findet.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "reverse-J-Größen und Selbstastung stehen als statischer Parameter (phyto-core.js:2899); Verjüngung nur im Labor („Host has no pass“); der Ertragstafel-Richter wurde nie gefahren.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Bestand: statische Altersverteilung, stehendes Totholz",
+     "tiefe": "reverse-J-Größen, Selbstastung",
+     "preis": "P · im Wald",
+     "richter": "Höhenhistogramm aus dem Bild gegen Ertragstafel"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Pflanze im Zeitraffer vom Keimling zum Altbaum",
+     "tiefe": "Formwechsel jung → alt (Kronenform, Borke)",
+     "preis": "P · Zeitraffer",
+     "richter": "Bildreihe 0/10/50/150 Jahre gegen Fotoreihe derselben Art"
+    },
+    {
+     "nr": 3,
+     "umfang": "1 ha über 10² Jahre",
+     "tiefe": "Lückendynamik: Tod → Lichtschacht → Verjüngung",
+     "preis": "P · Jahrhundert in ≤ 60 s Wanduhr",
+     "richter": "Stämme/ha und Basalfläche über die Zeit gegen Ertragstafel ±20 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "vegetation.K3",
+     "text": "Der Wald von innen: Stämme, Unterholz, Licht durch die Kronen",
+     "staffel": "\"1 = im Mischwald (Ego, Mittag) Stamm-Dichte und Unterholz-Deckung im Band der REF und Licht-Flecken am Boden aus der Kaskade, an einem Gerät · 2 = auch im Gegenlicht (Strahlen durch die Kronen, Uhr 0,3) und an einer Lichtung, beide Geräte, im Haushalt baum ≤ 40 Befehle / 150k Dreiecke\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g2.js:6401"
+     ],
+     "stationen": [
+      {
+       "id": "vegetation.K3#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.pflanzen.jahreslauf",
+   "name": "Der Jahreslauf: Austrieb, Blüte, Frucht, Laubfall",
+   "art": "kriterium",
+   "misst": "Ob die Jahreszeit die Gestalt der Pflanzen ändert, je Art gestaffelt, aus dem Klima und auf fremden Bahnen.",
+   "heute": 1,
+   "kern": 0,
+   "fuss": "kern",
+   "beleg": "Alte Vegetation K5 2/2 im echten Bild: Krone Winter 0,037 × Sommer (Radeon), 0,113 (GTX); Wiese niedriger; Mess-Wiese, GTX stehend p95 16,8 ms. — KARTE: Kern 1 — Richter an beiden Geräten grün (vegetation.K5); Bild-Preis nur an der GTX belegt, die Radeon fehlt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Laubbäume + Wiese, 3 Saisonphasen an einem Ort",
+     "tiefe": "Kronendeckung Winter ≤ 0,3 × Sommer, Wiese Winter ≤ 0,5 × Sommer",
+     "preis": "P · Mess-Wiese",
+     "klasse": "Ort",
+     "richter": "Pixelanteil der Krone im Zeitraffer (Klassen-Maske)"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Arten, Phänologie je Art gestaffelt",
+     "tiefe": "Reihenfolge gegen Phänologie-Netz (Hasel vor Buche)",
+     "preis": "P",
+     "richter": "Kalender des Spiels gegen Beobachtungsreihe: Rangkorrelation ≥ 0,8"
+    },
+    {
+     "nr": 3,
+     "umfang": "Blüte und Frucht als Ereignis (Wiesenblüte, Kirschblüte, Mast) an 10² Arten",
+     "tiefe": "Farbe und Deckung im Wochentakt",
+     "preis": "P · in der Blüte",
+     "richter": "12-Wochen-Bildreihe gegen Webcam-Zeitreihe"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [
+    {
+     "station": "vegetation.K5#2",
+     "leiter": "leben.pflanzen.jahreslauf",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "vegetation.K5",
+     "text": "Die Jahreszeit als Gestalt: Laub und Wiese",
+     "staffel": "\"1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose · 2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:2047"
+     ],
+     "stationen": [
+      {
+       "id": "vegetation.K5#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "vegetation.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer",
+       "sha": "94d9c5a6",
+       "gehalten": true
+      },
+      {
+       "id": "vegetation.K5#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Krone sommer 104465 px · winter 1911 px · fruehling 76645 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
+       "sha": "c8c840c9",
+       "gehalten": true
+      },
+      {
+       "id": "vegetation.K5#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Krone sommer 104169 px · winter 2254 px · fruehling 76363 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
+       "sha": "c8c840c9",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.pflanzen.dichte",
+   "name": "Dichte und Ferne: vom Halm am Stiefel bis zum Orbit",
+   "art": "kriterium",
+   "misst": "Wie viel Pflanze der Spieler auf einmal sieht und wie wahr sie wirkt — gemessen am Bild und an der Bildzeit, nie an Dreiecken.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "P an der Wiese GRÜN (GTX p95 16,8 ms), Tiefe ROT: Saum springt (alte Vegetation K1 0/2), Wald 24 Stämme/ha gegen 370–900, Unterholz 0,029 gegen 0,25–0,78 (K3 0/2), Laub-Kante 0,2635 > 0,22 (PFLICHT-OFFEN A).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Wiese dicht bis ~20 m, Wald licht",
+     "tiefe": "Boden-Sicht-Anteil je Ring 2–5/5–10/10–20 m wie im Wiesenfoto; Laub-Kante im Band",
+     "preis": "P · stehend an der Wiese",
+     "richter": "Ring-Bildanteil gegen Foto; Bildpaar gegen REF real-mischwald"
+    },
+    {
+     "nr": 2,
+     "umfang": "Wiese 0–40 m ohne Saum; Wald von innen (370–900 Stämme/ha, Unterholz 0,25–0,78)",
+     "tiefe": "Lichtflecken wandern mit der Sonne",
+     "preis": "P · im Wald-Innern, gehend",
+     "richter": "Bildpaar Wald-innen gegen REF; Ring-Bildanteil 20–40 m wie 0–20 m"
+    },
+    {
+     "nr": 3,
+     "umfang": "jede Pflanze bis 1 km ohne Sprung",
+     "tiefe": "Waldrand und Hang auf 1 km gegen Foto ≥ 0,7",
+     "preis": "P · gehend und fahrend",
+     "richter": "Pop-Zähler unter Bewegung = 0 (Bild-Differenz ohne Kamera-Anteil); Bildpaar 1 km"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "vegetation.K1",
+     "text": "Die Wiese wurzelt dicht und bunt bis zum Saum (0–40 m)",
+     "staffel": "\"1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget · 2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g2.js:1947",
+      "stationen/g2.js:6410"
+     ],
+     "stationen": [
+      {
+       "id": "vegetation.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "vegetation.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "vegetation.K3",
+     "text": "Der Wald von innen: Stämme, Unterholz, Licht durch die Kronen",
+     "staffel": "\"1 = im Mischwald (Ego, Mittag) Stamm-Dichte und Unterholz-Deckung im Band der REF und Licht-Flecken am Boden aus der Kaskade, an einem Gerät · 2 = auch im Gegenlicht (Strahlen durch die Kronen, Uhr 0,3) und an einer Lichtung, beide Geräte, im Haushalt baum ≤ 40 Befehle / 150k Dreiecke\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g2.js:6401"
+     ],
+     "stationen": [
+      {
+       "id": "vegetation.K3#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "lod.K1",
+     "text": "Der Umriss hält in jeder Stufe",
+     "staffel": "\"1 = kante ≤ 0,22 je Teil-Klasse (die schlechteste urteilt) an der Tafel-Pose UND einem Spielgang-Bild an einem Gerät, frisch am Kopf · 2 = Ego mit Blick 15° hoch, Third und Hügel, Haus- und Tor-Stufen L1–L3 halten milchweiss und zielTreue, beide Geräte\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g3.js:3142"
+     ],
+     "stationen": [
+      {
+       "id": "lod.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "lod.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "pflicht.A",
+     "text": "{}",
+     "staffel": "null",
+     "fundstellen": [],
+     "stationen": []
+    },
+    {
+     "kriterium": "ankunft.K4",
+     "text": "Der erste Blick ist AAAA: jede Klasse am Spawn",
+     "staffel": "\"1 = am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third: ≥ 6 von 12 Klassen frisch GRÜN an einem Gerät · 2 = jede sichtbare Klasse gemessen (auch fahrzeug, esse, tier, haus-vorschau mit externem Soll), ≥ 95 % GRÜN an beiden Geräten\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:2897"
+     ],
+     "stationen": [
+      {
+       "id": "ankunft.K4#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "ankunft.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.pflanzen.kraft",
+   "name": "Pflanze unter Wind, Last und Berührung",
+   "art": "kriterium",
+   "misst": "Ob Pflanzen auf Wind, Schnee und Körper sichtbar antworten — vom Halm am Stiefel bis zum Sturmfeld über 10 km.",
+   "heute": 1,
+   "kern": 0,
+   "fuss": "kern",
+   "beleg": "Alte Vegetation K2 1/2: die Böe nah (0–15 m) an einem Gerät als zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit; Staffel 2 (bis 300 m, Gras ↔ Krone, beide Geräte) offen. — KARTE: Kern 1 — die nahe Böe an beiden Geräten grün (vegetation.K2); Bild-Preis an der Radeon fehlt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Böe nah 0–15 m",
+     "tiefe": "Böe als wandernde Front, nicht als gleiches Schwingen",
+     "preis": "P · Mess-Wiese",
+     "klasse": "Ort",
+     "richter": "zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit"
+    },
+    {
+     "nr": 2,
+     "umfang": "Böe über jeden Ring bis 300 m, Gras und Krone gekoppelt",
+     "tiefe": "Gras ↔ Krone r ≥ 0,6 längs der Windrichtung; Ruhe → Sturm hebt die Varianz ≥ 3×",
+     "preis": "P · Ego und Third",
+     "richter": "Kreuzkorrelation Gras ↔ Krone mit Laufzeit ±20 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Halme und Sträucher weichen dem Körper und richten sich auf; Schnee beugt Äste",
+     "tiefe": "Rückstellzeit und Spur wie im Video",
+     "preis": "P · gehend durch Wiese und Gebüsch",
+     "richter": "Bildreihe Durchgang gegen Video derselben Lage"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [
+    {
+     "station": "vegetation.K2#1",
+     "leiter": "leben.pflanzen.kraft",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "vegetation.K2",
+     "text": "Die sichtbare Böe: EIN wanderndes Feld über Gras und Krone",
+     "staffel": "\"1 = nah (0–15 m) an einem Gerät: zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit · 2 = jeder Ring bis 300 m, Gras ↔ Krone r ≥ 0,6 längs uWindDir, Ruhe → Sturm hebt die Varianz ≥ 3×, Ego und Third, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:5884"
+     ],
+     "stationen": [
+      {
+       "id": "vegetation.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Kamm 405.8 über Rausch-Boden 0.000 (×405.8), Tal 68.4 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "vegetation.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Kamm 405.9 über Rausch-Boden 0.000 (×405.9), Tal 68.4 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s",
+       "sha": "105c9bd3",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.tiere.arten",
+   "name": "Tierarten aus dem Samen — Land, Luft und Wasser",
+   "art": "kriterium",
+   "misst": "Wie viele unterscheidbare Tierarten ein Same in allen Medien hervorbringt — gezählt an den im Spielgang Angetroffenen (Chao1), jede in ihrer Nische — und dass kein Individuum dem anderen gleicht.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "≈ 8 Leib-Typen von Hand: Wolf, Fuchs, Bär, Hirsch aus fünf Dials (tetrapoda-core.js:62), Singvogel, Star, Bachforelle als Oktaeder, Hummel als Doppelkeil; Individuen byte-gleich (GESTALTEN_JE_REZEPT = 1); der Richter von Sprosse 1 wurde im Fenster nie gefahren.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "≈ 10 Leib-Typen von Hand in Land, Luft, Wasser",
+     "tiefe": "Art passt zum Lebensraum",
+     "preis": "P",
+     "richter": "Spielgang 1 h an 3 Biomen: ≥ 5 Arten im Bild (Klassen-Maske ≥ 200 px)"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Arten aus dem Samen, ein Bauplan je Medium; jedes Individuum eigen (Alter, Geschlecht, Fell, Narbe)",
+     "tiefe": "Fell, Schuppe, Proportion aus 10 m glaubhaft",
+     "preis": "P · Herde von 20 im Bild",
+     "richter": "1 000 Saaten: Blind-Panel „echt möglich“ ≥ 0,7; Herde: kein Paar im Bild-Embedding näher als zwei Fotos desselben realen Tiers"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Arten, alle Wirbeltier-Klassen",
+     "tiefe": "Haut, Feder, Schuppe je Klasse; die Form folgt der Lebensweise",
+     "preis": "P · Riff mit ≥ 30 Arten im Bild",
+     "richter": "je Klasse Panel ≥ 0,7; aus Silhouetten: Schlankheit ↔ Reisetempo Rangkorrelation ≥ 0,6"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "tiere.K4",
+     "text": "Lebensraum und Tagesrhythmus (Art × Ort × Uhr)",
+     "staffel": "\"1 = ≥ 0,9 der Geburten in der Boden-Klasse der Gattung, mit Gegenprobe bei anderem Seed · 2 = dazu das Tages-Budget je Gattung ±20 % am Ethogramm, Trinken aus Durst (Mutante „Durst aus“ → 0), am Fluss Bären-Sichtung ≥ 2× wahrscheinlicher\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:4628",
+      "stationen/g2.js:4670"
+     ],
+     "stationen": [
+      {
+       "id": "tiere.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "im Lebensraum 431/431 = 1 (Saat anazh-realm-seed, {\"fox\":34,\"deer\":254,\"bear\":29,\"wolf\":114}) · Gegenprobe 405/405 = 1 (Saat lebensraum-gegen)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "tiere.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Budget deer ruhen 0.409/0.4 · deer nahrung 0.485/0.5 · deer ziehen 0.106/0.1 · bear ruhen 0.446/0.45 · bear nahrung 0.409/0.4 · bear ziehen 0.144/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.601/0.6 · wolf nahrung 0/0 · wo …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "haar.K1",
+     "text": "Fell aus dem Gesetz im Bild",
+     "staffel": "\"1 = Klasse fell in der Soll-Tafel (Soll aus externer REF), GRÜN auf Armlänge (0,7 m) und im Third (4 m) an einem Gerät · 2 = jede Gattung, L0 bis Karte ohne Ton-Sprung, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:6079"
+     ],
+     "stationen": [
+      {
+       "id": "haar.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "haar.K1#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "arm GRÜN strich 0.5667 Soll [0.4358,0.6538] · third GRÜN strich 0.5198 Soll [0.4358,0.6538]",
+       "sha": "b4bcf19c",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "haar.K5",
+     "text": "Haar und Fell zahlen am Schirm",
+     "staffel": "\"1 = Strähnen nah, Schale/Karte fern, im Haushalt der Klasse (tier ≤ 30 Befehle) an einem Gerät · 2 = beide Geräte, E hält\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:6375"
+     ],
+     "stationen": [
+      {
+       "id": "haar.K5#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Herde 8, Fell an je Abstand 1.2 m an · 4.7 m an · 15.4 m aus · 26 m aus · 40.7 m aus · 59 m aus · 89.8 m aus · 130.2 m aus · tier 1 Befehle (tier:wolf 1) (Soll nah an, fern aus, ≤ 30 Befehle)",
+       "sha": "4ee205bd",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "luftwasser.K1",
+     "text": "Der Vogel fliegt und ruft aus seinem Körper",
+     "staffel": "\"1 = ein Vogel-Körper aus einem Gesetzbuch fliegt und ruft · 2 = jeder Vogel-Pegel im Klang-Zensus hat einen Körper (Konsum-Kette Ruf ← Leib), ohne Körper ROT\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5556",
+      "stationen/g2.js:5595"
+     ],
+     "stationen": [
+      {
+       "id": "luftwasser.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Wiese 20 Vogel-Leiber gezeichnet (20 gehört), Flug 5.5 m/s 11 m über Grund, Ruf -38.6 dB (Soll: > 0 Leiber rufen, ≥ 1 m/s, ≥ 2 m)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "luftwasser.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "wiese 20/20 5.5 m/s · nacht 0/0 0 m/s · regen 0/0 0 m/s · gehend 16/16 5.5 m/s · fahrend 13/13 5.69 m/s · wald 18/18 5.59 m/s · dorf 19/19 5.46 m/s · glutArm 14/14 5.99 m/s · seeufer 15/15 5.28 m/s · fallArm 17/17 5.46 m/s (gehört/gezeichnet) · ohne Leib 0 Lei …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.tiere.bewegung",
+   "name": "Leib und Fortbewegung über Masse-Dekaden und Medien",
+   "art": "kriterium",
+   "misst": "Über wie viele Größenordnungen der Körpermasse und wie viele Medien ein Tier physikalisch wahr läuft, fliegt, schwimmt, gräbt, klettert.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Gang aus Froude für 4 Säuger, Schlupf max 0,011 in 25 Läufen — headless (alte Tiere K3), am Gerät halb; der Fisch pendelt als starrer Leib 2,5 Hz (tetrapoda-core.js:2685).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Bauplan, 4 Gattungen, 10–300 kg, laufen",
+     "tiefe": "Fuß steht (Gleiten ≤ 5 % der Schrittlänge), Gangwechsel bei der Froude-Zahl der Natur ±10 %",
+     "preis": "P · Third aus 10 m",
+     "richter": "Fußgleiten und Gangwechsel aus der Third-Aufnahme im Fenster"
+    },
+    {
+     "nr": 2,
+     "umfang": "3 Dekaden 1–10³ kg: Vierbeiner, Laufvogel, Fisch mit Körperwelle",
+     "tiefe": "Fußfall gegen Muybridge ±0,05; Strouhal 0,2–0,4",
+     "preis": "P · Schwarm von 300 im Bild",
+     "richter": "Fußfall-Diagramm und St = f·A/U aus dem Ausgabe-Bild"
+    },
+    {
+     "nr": 3,
+     "umfang": "+ Fliegen und 5 Schwimmweisen (Aal, Barsch, Thun, Rückstoß, Flossenflug) aus der Körperform",
+     "tiefe": "Schlagfrequenz ±20 % zur Allometrie; die Weise folgt dem Leib, nicht einer Zuweisung",
+     "preis": "P · Trupp oder Schwarm von 3 000",
+     "richter": "100 Stichproben-Arten: Frequenz gegen Pennycuick; Blindtest Schwimmweise ≥ 80 %"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "tiere.K3",
+     "text": "Gang und Leib: der Fuß steht, die Gangart folgt dem Tempo, Labor = Welt",
+     "staffel": "\"1 = der Fuß steht (Schlupf ≤ 0,05) · 2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:4192",
+      "stationen/g2.js:4261"
+     ],
+     "stationen": [
+      {
+       "id": "tiere.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen)",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "tiere.K3#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · ti …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "tiere.K3#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · ti …",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.tiere.verhalten",
+   "name": "Verhalten aus Bedürfnis, Sinn und Leib",
+   "art": "kriterium",
+   "misst": "Ob das Verhalten einer BELIEBIGEN Art aus ihrem Leib, ihren Sinnen und ihrer Welt folgt — an Stichproben-Arten, nie an Akt-Listen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Jagd-Kreislauf, Furcht mit Gedächtnis, Ethogramm aus Bedürfnis-Pegeln (tetrapoda-core.js VERHALTEN): Rudel reißt 18/60, Budget Hirsch ruhen 0,409/0,4 — headless, im Fenster nie gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "4 Gattungen, ≈ 10 Akte, 2 Sinne",
+     "tiefe": "Zeitbudget ±20 % am Ethogramm; Riss-Quote Rudel gegen Hirsch 20–40 % (MacNulty)",
+     "preis": "P · Wolfsrevier",
+     "richter": "Zeitraffer 24 Spielstunden im Fenster"
+    },
+    {
+     "nr": 2,
+     "umfang": "eine Art mit vollem Ethogramm (≥ 30 Akte: sichern, Alarmruf, Spiel, Komfort, Markieren, Drohen)",
+     "tiefe": "Alarm-Kette ≤ 1 s, Fluchtdistanz nach Feldmaß",
+     "preis": "P · Herde im Bild",
+     "richter": "1 h Beobachtung: Häufigkeiten gegen Feld-Ethogramm, Rangkorrelation ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Stichproben-Arten aus dem Samen",
+     "tiefe": "Räuber pirscht, Beute sichert, Aasfresser kreist — ohne Zuweisung von Hand",
+     "preis": "P",
+     "richter": "100 Saaten, je 1 h: Ethologe ordnet die Lebensweise blind zu ≥ 0,8"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "tiere.K1",
+     "text": "Verband: Zusammenhalt, Ausrichtung, Alarm-Kette, Identität",
+     "staffel": "\"1 = (a) Kohäsion an einem Gerät · 2 = (a)–(d) auf beiden Geräten mit der Bild-Serie „Herde am Hang“\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:4059",
+      "stationen/g2.js:4110"
+     ],
+     "stationen": [
+      {
+       "id": "tiere.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337)",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "tiere.K1#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "tiere.K1#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "tiere.K2",
+     "text": "Der Jagd-Kreislauf: Pirsch, Umstellen, Hetze, Riss, Fressen, Aas",
+     "staffel": "\"1 = Hetze und Riss mit HP aus dem Leib-Gesetz, Quote im Band über ≥ 10 Seeds · 2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:4594",
+      "stationen/g2.js:4727"
+     ],
+     "stationen": [
+      {
+       "id": "tiere.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 43.5 s",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "tiere.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Fressen 106 s nach dem Riss bei 28.8 s, am Aas fuchs 19.9 s, baer 17.4 s · Wolfsrevier wald, Riss 14.7 s, 3 fressen: tier:wolf 8621 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.26 m · Luma 80.1 σ 39.7 schwarz 1.2 % weiß 0.0 % …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "tiere.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 12459 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0  …",
+       "sha": "715754fc",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "tiere.K4",
+     "text": "Lebensraum und Tagesrhythmus (Art × Ort × Uhr)",
+     "staffel": "\"1 = ≥ 0,9 der Geburten in der Boden-Klasse der Gattung, mit Gegenprobe bei anderem Seed · 2 = dazu das Tages-Budget je Gattung ±20 % am Ethogramm, Trinken aus Durst (Mutante „Durst aus“ → 0), am Fluss Bären-Sichtung ≥ 2× wahrscheinlicher\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:4628",
+      "stationen/g2.js:4670"
+     ],
+     "stationen": [
+      {
+       "id": "tiere.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "im Lebensraum 431/431 = 1 (Saat anazh-realm-seed, {\"fox\":34,\"deer\":254,\"bear\":29,\"wolf\":114}) · Gegenprobe 405/405 = 1 (Saat lebensraum-gegen)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "tiere.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Budget deer ruhen 0.409/0.4 · deer nahrung 0.485/0.5 · deer ziehen 0.106/0.1 · bear ruhen 0.446/0.45 · bear nahrung 0.409/0.4 · bear ziehen 0.144/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.601/0.6 · wolf nahrung 0/0 · wo …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "oekologie.K3",
+     "text": "EIN Furcht-Gesetz: das Wesen erinnert, der Ort erinnert",
+     "staffel": "\"1 = ein Wesen, das der Spieler schlug, hält bei der nächsten Begegnung Abstand (Median ≥ 2× ein Kontroll-Wesen), ein gefüttertes nähert sich, ohne Modell, über Speichern · 2 = dazu deponiert ein Riss Furcht am Ort, und die Herde meidet die Zelle (Aufenthalt −50 % gegen den Gegenlauf)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:4553"
+     ],
+     "stationen": [
+      {
+       "id": "oekologie.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "geschlagen 96.95 m gegen Kontrolle 36.22 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.025 gegen Gegenlauf 1",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "oekologie.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "geschlagen 96.95 m gegen Kontrolle 36.22 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.025 gegen Gegenlauf 1",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.tiere.lebenszyklus",
+   "name": "Lebenszyklus: Geburt, Aufzucht, Balz, Brut, Tod",
+   "art": "kriterium",
+   "misst": "Ob der Spieler Brunft, Balz, Brut, Aufwachsen und Altern SIEHT — von einer Art bis zu den Lebenszyklen aller Klassen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Geburt und Tod als Zahl je Revier mit Holling-III-Riss und Alterstod (BESTAND_GESETZ, tetrapoda-core.js:2177) — headless; sichtbares Wachstum, Brunft, Nest: nichts.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Geburt und Tod als Bestand je Revier",
+     "tiefe": "Bilanz mit Holling-III-Riss, Alterstod",
+     "preis": "P",
+     "richter": "Bestand je Revier über 3 Spielstunden im Band, im Fenster"
+    },
+    {
+     "nr": 2,
+     "umfang": "sichtbares Jungtier, das wächst",
+     "tiefe": "Proportion jung ↔ alt allometrisch (großer Kopf, lange Beine beim Kitz)",
+     "preis": "P",
+     "richter": "Bildpaar Kitz/Hirsch Panel ≥ 0,7; Jungtiere ≥ 10 % einer Herde im Frühsommer"
+    },
+    {
+     "nr": 3,
+     "umfang": "Brunft, Balz, Revierkampf zur Jahreszeit der Art",
+     "tiefe": "Röhren im Herbst, Balzflug im Frühling",
+     "preis": "P · Jahres-Zeitraffer",
+     "richter": "Ereignisse im Bild je Monat, Gipfel im Monat der Natur ±1"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "oekologie.K2",
+     "text": "Bestand aus Nahrung × Lebensraum, der Deckel ist nur die Kosten-Kappe",
+     "staffel": "\"1 = Geburt und Tod folgen der Nahrung an einem Ort (Mutante Nahrung halbiert → Bestand fällt) · 2 = überall; fern als Zahl, nah als Körper; die Kappe am Schirm ändert nur, wer gezeichnet wird, nie den Bestand; im Profi-Band\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5149",
+      "stationen/g2.js:5192"
+     ],
+     "stationen": [
+      {
+       "id": "oekologie.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "8 Saaten · Grundbestand min 6.84 · halbe Nahrung -0.36 [-0.58, -0.246] · 17932 Hungertode, 17932 die Ältesten · Takte an der Kappe 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "oekologie.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "8 Saaten · Kappe halbiert: 0 von 17280 Takten andere Tiere in 4 nahen Regionen, Leiber 20/10 bei Bestand 34.9 · halbe Nahrung senkt 8 von 8 Regionen (4 fern, Effekt -0.307 … -0.41) · Takt p95 5 ms",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.tiere.masse",
+   "name": "Herde, Schwarm, Pulk: die Masse im Bild",
+   "art": "kriterium",
+   "misst": "Wie viele einzeln lebende Glieder ein Kollektiv im Bild trägt und wie wahr seine Form ist — an Land, in der Luft und im Wasser; die EINZIGE Leiter für Leiber im Bild.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Kohäsion fliehend 0,981 headless, Radeon ROT (alte Tiere K1 1/2); Star-Trupp 60–140 gebaut, am Gerät ungemessen; ~30 Fische einzeln, kein Fischschwarm; höchstens 20 gezeichnete Leiber (dirigent-kern.js maxCreatures).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 Glieder: Rudel, Kahlwild",
+     "tiefe": "Kohäsion wandernd ≥ 0,9, Flucht ≥ 0,8, Ausrichtung Φ ≥ 0,8",
+     "preis": "P · Ego auf 40 m",
+     "richter": "Herde flieht als EIN Pulk im Bild"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Glieder: Star-Trupp, Fischschwarm",
+     "tiefe": "Dichte-Welle, Leittier, kein Glied im anderen",
+     "preis": "P · der Trupp im Bild",
+     "richter": "Φ und Kohäsion aus den gezeichneten Leibern; Silhouette gegen Murmuration-Film"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³: Köderball, Gnu-Herde am Fluss",
+     "tiefe": "Räuber teilen den Schwarm (Fontäne, Vakuole); topologisch 6–7 Nachbarn",
+     "preis": "P · Angriff im Bild",
+     "richter": "Konvexität und Lückenfläche gegen Unterwasser-Film; Nachbarzahl im Band Ballerini"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "tiere.K1",
+     "text": "Verband: Zusammenhalt, Ausrichtung, Alarm-Kette, Identität",
+     "staffel": "\"1 = (a) Kohäsion an einem Gerät · 2 = (a)–(d) auf beiden Geräten mit der Bild-Serie „Herde am Hang“\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:4059",
+      "stationen/g2.js:4110"
+     ],
+     "stationen": [
+      {
+       "id": "tiere.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337)",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "tiere.K1#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "tiere.K1#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "tiere.K5",
+     "text": "Begegnung im Bild, Dichte und Kosten beim Namen",
+     "staffel": "\"1 = ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät · 2 = dazu eine Herde ≥ 20 im Bild in 30 min, updateCreatures ≤ 1,0 ms p95 bei 150 Tieren im 500-m-Ring an der GTX, die Ratsche tier eingerastet, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:4827"
+     ],
+     "stationen": [
+      {
+       "id": "tiere.K5#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "tiere.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "ego (first) 5 Sichtungen in 601 Spiel-s (wesen 414 px 51 m 378 s · wesen 314 px 50 m 378 s · wesen 212 px 68 m 423 s · wesen 222 px 62 m 428 s · wesen 377 px 53 m 437 s), 625 Prüfungen, 50 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 4 Sichtun …",
+       "sha": "3e4f99cd",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "luftwasser.K2",
+     "text": "Schwärme aus dem Verbands-Gesetz",
+     "staffel": "\"1 = Vogel- oder Fischschwarm mit Φ ≥ 0,8 und Kohäsion ≥ 0,9 aus `verbandZug` · 2 = Flucht vor dem Spieler als EIN Pulk, Landung auf Bäumen der Welt\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5655",
+      "stationen/g2.js:5692"
+     ],
+     "stationen": [
+      {
+       "id": "luftwasser.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Φ 0.967, Kohäsion 1 (min 1, Glied zu Glied ≤ 2.5 m) bei 100 Gliedern, 1 Züge je Glied und Takt durch verbandZug (Soll Φ ≥ 0,8, Kohäsion ≥ 0,9, 1 Zug)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "luftwasser.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Flucht nach 4.5 s, Abstand 30.5 → 95.7 m, 1 der Glieder mit, Verbund 1; Landung nach 19.7 s auf a:1153, Δ 0 m zum Scheitel 84.564 m, 1 auf der Krone (Soll + 40 m, 0,95, 0,9; ± 0,25 m, 0,99)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "luftwasser.K5",
+     "text": "Ein Schwarm ist fern EIN Agent",
+     "staffel": "\"1 = 100 Vögel im Bild ≤ 0,3 ms CPU an der GTX-CPU · 2 = dazu im Haushalt ≤ 10 Befehle, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5735",
+      "stationen/g2.js:5759"
+     ],
+     "stationen": [
+      {
+       "id": "luftwasser.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Schwarm-Takt 0.175 ms je Takt (Median, p95 0.27) bei 100 Gliedern im Blick in jeder Reihe, 13346 Paare der Separation, Auge 49.3 m (Soll ≤ 0,3 ms, 100 im Bild)",
+       "sha": "b4bcf19c",
+       "gehalten": true
+      },
+      {
+       "id": "luftwasser.K5#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Klasse vogel 2 Befehle {\"haupt\":2}, 590 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle)",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "luftwasser.K5#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Klasse vogel 2 Befehle {\"haupt\":2}, 585 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle)",
+       "sha": "b4bcf19c",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.tiere.wanderung",
+   "name": "Wanderung und Raum",
+   "art": "kriterium",
+   "misst": "Über welche Strecken ein Tier im Spiel zieht, ob die Route aus Futter und Wetter folgt und ob es heimfindet.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Leine 18 m × Körpergröße (tetrapoda-core.js:225), Wildwechsel zur Tränke aus Durst — headless; Streifgebiet im Fenster nie gemessen; keine Wanderung.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 m: Leine um den Geburtsort",
+     "tiefe": "Aufenthalt folgt dem Lebensraum",
+     "preis": "P",
+     "richter": "Aufenthaltsfläche eines Individuums über 1 Spieltag im Fenster"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² m: Revier, Fluchtstrecke, Wildwechsel zur Tränke",
+     "tiefe": "Weg aus Durst",
+     "preis": "P",
+     "richter": "Streifgebiet eines Individuums über 1 Spieltag"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ m: Streifgebiet nach Feldmaß (Rothirsch 1–10 km²)",
+     "tiefe": "Wildwechsel als Pfad im Boden sichtbar",
+     "preis": "P",
+     "richter": "Spur über 7 Spieltage: Streifgebiet im Band der Telemetrie ±Faktor 2"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "leben.tiere.mensch",
+   "name": "Tier und Spieler: Begegnung, Reittier, Domestikation, Tier-Sein",
+   "art": "kriterium",
+   "misst": "Wie tief der Spieler mit Tieren umgehen kann — bis dahin, dass er jedes Tier einer Stichprobe mit dessen Leib und Sinnen SPIELT. Die Bindung EINES Tiers zählt mensch.nahrung.tier; hier zählt der Spieler mit und als Tier.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Fluchtdistanz aus dem Furcht-Gesetz und ein gebundenes Tier folgt 600 s (alte Ökologie K3/K5) — headless; das Rudel pirscht und umstellt den Spieler im Bild an beiden Geräten (oekologie.K4), die Annäherungs-Probe von Sprosse 1 ist ungefahren; Reit-, Haus-, Spiel-Tiere: nichts.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Wildtier reagiert auf den Spieler, 4 Gattungen",
+     "tiefe": "Fluchtdistanz je Art im Feldband ±50 %",
+     "preis": "P",
+     "richter": "Annäherungs-Probe im Fenster"
+    },
+    {
+     "nr": 2,
+     "umfang": "Fährte, Losung, Beobachten, Jagd",
+     "tiefe": "Spur und Losung führen zum Tier",
+     "preis": "P",
+     "richter": "einer frischen Spur folgen → Tier in ≤ 10 min ≥ 0,8"
+    },
+    {
+     "nr": 3,
+     "umfang": "Haus- und Reittier: Hund folgt, Pferd reitbar",
+     "tiefe": "Gang des Reittiers aus seinem Leib, nicht als Fahrzeug",
+     "preis": "P · Reiter in Bewegung",
+     "richter": "Fußfall des Pferds unter Reiter ±0,05; Hund kehrt auf Ruf ≥ 0,9"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "oekologie.K3",
+     "text": "EIN Furcht-Gesetz: das Wesen erinnert, der Ort erinnert",
+     "staffel": "\"1 = ein Wesen, das der Spieler schlug, hält bei der nächsten Begegnung Abstand (Median ≥ 2× ein Kontroll-Wesen), ein gefüttertes nähert sich, ohne Modell, über Speichern · 2 = dazu deponiert ein Riss Furcht am Ort, und die Herde meidet die Zelle (Aufenthalt −50 % gegen den Gegenlauf)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:4553"
+     ],
+     "stationen": [
+      {
+       "id": "oekologie.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "geschlagen 96.95 m gegen Kontrolle 36.22 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.025 gegen Gegenlauf 1",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "oekologie.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "geschlagen 96.95 m gegen Kontrolle 36.22 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.025 gegen Gegenlauf 1",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "oekologie.K4",
+     "text": "Der Spieler im Kreislauf: Beute sein, Furcht und Triumph",
+     "staffel": "\"1 = im Wolfsrevier wird der Spieler in 10 Spielminuten ≥ 1× gepirscht und umstellt (im Bild) · 2 = seine Emotion-Achsen antworten (Furcht beim Umstellen, Triumph nach dem Fall des Jägers) gegen einen Gegenlauf, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5390",
+      "stationen/g2.js:5432"
+     ],
+     "stationen": [
+      {
+       "id": "oekologie.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.9 s · Lücke beim ersten Biss 86° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "oekologie.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 17 s, Furcht chaos 1 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.625 (Gegenlauf 0)",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "oekologie.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 16.85 s, Furcht chaos 0.908 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.42 (Gegenlauf 0)",
+       "sha": "eeb5d2bf",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "oekologie.K5",
+     "text": "Bindung und Ansteckung",
+     "staffel": "\"1 = ein gebundenes Tier folgt ≥ 10 min über Hindernisse · 2 = die Ansteckung verschiebt die Stimmung des Spielers messbar gegen einen Gegenlauf mit bond = 0, und die Bindung übersteht den Reload\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5288",
+      "stationen/g2.js:5327"
+     ],
+     "stationen": [
+      {
+       "id": "oekologie.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "600 s gebunden (bond 0.12 → 1): Abstand p50 3.57 · p95 4.91 · max 5.7 m · 3 Wände ohne Durchdringung, Sockel 208 Takte darüber · Hang > 15° 300 s, nass 43 s · ungebunden 144.7 m",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "oekologie.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Stimmung nach 120 s gebunden 0.1164/0.1164 gegen bond = 0 0.0818/0.0818 (Δ 0.0346, Rauschen 0.0000) · bond A 0.12 → 1, 0.12 → 1 · Abstand p50 3/3/3/3 m, Spieler verschoben 0/0/0/0 m · Reload [1,\"follow_player\"] → [1,\"follow_player\"]",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

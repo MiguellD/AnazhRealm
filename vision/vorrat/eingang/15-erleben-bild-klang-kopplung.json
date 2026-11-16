@@ -1,0 +1,1788 @@
+{
+ "paket": "15-erleben-bild-klang-kopplung",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "erleben.bild.ferne",
+   "name": "Fernsicht und Treue über die Stufen: die Ferne ist dieselbe Welt",
+   "art": "kriterium",
+   "misst": "die größte Entfernung, bis zu der das Bild der Ferne der Welt GLEICHT, die man dort betritt (Richter „Ferne = Nähe\": Fernbild gegen verkleinerte Nahaufnahme nach Abzug der Luft, SSIM ≥ 0,8, ΔE ≤ 5). Was Höhe oder Ferne statistisch zeigen, findet der Abstieg an derselben Stelle als Einzelnes wieder (Lichter fern = Fenster nah, Wolken oben = Wetter unten) — eine Welt statt zweier.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Gelände-Ring ±8 km (stamm/gelaende-fern.js:2123), Koschmieder je Kanal T/T_soll 0,86–1,08, Restkontrast 1,0–1,3 % bei 17–22 km (§14.K1/K2 je 2); Wald-Saum bis 8 km 0 (§14.K3); Ferne = Nähe nirgends gefahren; die Wiese trägt bis ~20 m. — KARTE: 0 — die Luft-Hälfte des Richters steht an beiden Geräten (ferne.K1, ferne.K2: Koschmieder, Restkontrast), „Ferne = Nähe“ ist nirgends gefahren.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "0,2 km",
+     "tiefe": "Relief und Bewuchs bis zum Nahrand, Luft wirkt",
+     "preis": "P",
+     "richter": "Restkontrast je Kanal gegen Koschmieder T/T_soll 0,8–1,2; Ferne = Nähe ≥ 0,8 an 12 Posen"
+    },
+    {
+     "nr": 2,
+     "umfang": "2 km",
+     "tiefe": "Relief, Wald, Häuser mit Luft, kein Umschlag beim Näherkommen",
+     "preis": "P",
+     "richter": "Gang auf ein Ziel aus 2 km: kein Bildsprung > 5 % Leuchtdichte im Zielfenster; Ferne = Nähe ≥ 0,8"
+    },
+    {
+     "nr": 3,
+     "umfang": "8 km",
+     "tiefe": "Relief bis zum Horizont mit Luft, Welt ohne Kante",
+     "preis": "P",
+     "richter": "T/T_soll 0,86–1,08, Restkontrast ≤ 1,3 % am Rand; Ferne = Nähe für Relief ≥ 0,8"
+    }
+   ],
+   "sprossenGesamt": 9,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "ferne.K1",
+     "text": "Die Luft macht Tiefe: Kontrast nach Koschmieder, je Kanal, mit heller Sonnenseite",
+     "staffel": "\"1 = C = e^(−βd) ±15 % bei 1/2/5/8 km an einem Gerät, Uhr 0,5 · 2 = je Kanal (der Farbton rückt zum Himmel, Δh ≤ 10° bei 8 km), Sonnenseite/Gegenseite ≥ 1,2, bei Sonne 5° fernes Weiß R/B ≥ 1,3, Uhr 0,5 und 0,27, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g3.js:2513",
+      "stationen/g3.js:2580"
+     ],
+     "stationen": [
+      {
+       "id": "ferne.K1#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Koschmieder T/T_soll 0.87–1.06 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "ferne.K1#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Koschmieder T/T_soll 0.89–1.02 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "ferne.K1#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "K1-2 GRUEN (0 Befunde) · Farbton 8 km 1.06–7.66° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.001 (≥ 1,2) · fernes Weiß R/B 6.271 (≥ 1,3) · [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "ferne.K1#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "K1-2 GRUEN (0 Befunde) · Farbton 8 km 1.22–9.11° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.252/5.001 (≥ 1,2) · fernes Weiß R/B 6.271 (≥ 1,3) · [linse-gpu] nvidia/pascal",
+       "sha": "1cd1c408",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ferne.K2",
+     "text": "Die Welt hat keine Kante",
+     "staffel": "\"1 = Restkontrast am Rand der letzten Fern-Schale ≤ 2 % bei klarem Wetter an einem Gerät, 4 Azimute · 2 = keine waagrechte Kanten-Linie (Struktur-Tensor am Horizont), Hügel und Gipfel, im Boden-Haushalt, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g3.js:2548",
+      "stationen/g3.js:2621"
+     ],
+     "stationen": [
+      {
+       "id": "ferne.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Restkontrast am Rand 1.2–1.7 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "ferne.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Restkontrast am Rand 1.1–1.9 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "ferne.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 44.1k/64k Dreiecke · [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "ferne.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 43.5k/64k Dreiecke · [linse-gpu] nvidia/pascal",
+       "sha": "4e2df19b",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ferne.K3",
+     "text": "Bewaldete Grate tragen einen Saum bis 8 km",
+     "staffel": "\"1 = am Kamm in 0,4–4 km Kohärenz des Struktur-Tensors < 0,3 gegen REF real-mischwald und Umriss-Schwankung ≥ 3 m bei 2 km, an einem Gerät · 2 = Kronen-Relief ≥ 10 m bis 8 km, Kammlinie ≤ 0,22 wie REF real-felsen, 4 Azimute, 0,5/1/3/8 km, beide Geräte, im Boden-Haushalt\"",
+     "punkteAlt": 0,
+     "fundstellen": [],
+     "stationen": [
+      {
+       "id": "ferne.K3#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "ferne.K4",
+     "text": "Grate werfen Abendschatten in ferne Täler",
+     "staffel": "\"1 = bei Sonne 5° Luma Schatten-/Lichthang ≤ 0,4 hinter einem ≥ 2 km fernen Grat an einem Gerät · 2 = die Schattengrenze stimmt mit dem Horizontwinkel des Gelände-Kerns überein (±2 px), Uhr 0,26 und 0,74, ≤ 0,3 ms an der GTX, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [],
+     "stationen": [
+      {
+       "id": "ferne.K4#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Schatten-/Lichthang 0.1785 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 24/77 Orten im Bild, Auge 1500 m, Grat 5.3184 km, Sonne 5.0087° (Uhr 0.735) · Ort [70.7,-1] · 0.51 s · [linse-gpu] amd/rdna-3",
+       "sha": "63655917",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ferne.K5",
+     "text": "Die Ferne im Wetter: Sicht, Vorhang, Dunst",
+     "staffel": "\"1 = im Sturm Sicht 1,5 km ±15 % im Bild an einem Gerät · 2 = der Regenvorhang einer Front (Wetter K1) ist aus 2 km sichtbar, Nebel im Tal folgt dem Gelände, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:2660"
+     ],
+     "stationen": [
+      {
+       "id": "ferne.K5#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Sicht im Sturm 1597 m (Azimute 1525/1576/1597/1606, Soll 1 500 m ±15 %), [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "ferne.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Sicht im Sturm 1508 m (Azimute 1443/1499/1508/1509, Soll 1 500 m ±15 %), [linse-gpu] nvidia/pascal",
+       "sha": "b4bcf19c",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.bild.nacht",
+   "name": "Nacht: Lichter, die werfen",
+   "art": "kriterium",
+   "misst": "wie viele Quellen, die die Welt selbst setzt, zugleich im Bild stehen — nah als LICHT, das fällt und Schatten wirft, fern als wahre Statistik der Stadt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Licht-Pool 4 Plätze in 48 m (stamm/stoff-material.js:3849); Feuer-Wurf gebaut (stamm/bild-schatten.js:383-391), gemessen ROT 0,248:1 statt ≥ 3:1 (Radeon, cec92db1, §16.K5); ~2 800 Sterne.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Quelle",
+     "tiefe": "das nächste Feuer wirft Licht und Schatten, auch vom gehenden Spieler",
+     "preis": "P",
+     "richter": "Schatten-Kontrast ≥ 3:1 an einem Pfosten 2 m vom Feuer; Gasse in der Kelvin-Farbe ±200 K"
+    },
+    {
+     "nr": 2,
+     "umfang": "10²: Dorf bei Nacht",
+     "tiefe": "jede Quelle im 50-m-Umkreis beleuchtet ihren Boden",
+     "preis": "P",
+     "richter": "Anteil sichtbarer Quellen in 50 m mit Bodenfleck ≥ 1 EV über Umgebung ≥ 0,9; Gassen-Histogramm gegen Fotosatz ΔEV-Median ≤ 0,5"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³: Kleinstadt",
+     "tiefe": "Fenster gehen nach dem Leben ihrer Bewohner an und aus",
+     "preis": "P",
+     "richter": "Anteil beleuchteter Fenster 20 → 4 Uhr gegen gemessene Nachtgang-Kurven ±0,1; Straße 5–30 lx"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "schatten.K5",
+     "text": "Nachts wirft das Feuer",
+     "staffel": "\"1 = Schatten-Kontrast ≥ 3:1 an einem Pfosten 2 m vom Feuer an einem Gerät · 2 = die Gasse in der kelvin-Farbe des Gesetzes (±200 K) lesbar, der gehende Spieler wirft, ≤ 0,4 ms an der GTX, beide Geräte\"",
+     "punkteAlt": 0,
+     "fundstellen": [],
+     "stationen": [
+      {
+       "id": "schatten.K5#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.bild.flaeche",
+   "name": "Fläche im wahren Licht",
+   "art": "kriterium",
+   "misst": "in welcher Szenen-Härte und über welchen Raum von Stoffen jede Fläche steht wie in der Wirklichkeit — Kontakt, Rückstrahlung, Innenraum, Schlucht, Glut; die Stoffbreite als Stichprobe aus dem Stoff-Gesetz.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Kontaktschatten steht (§16.K1 2), Albedo-Band 0 (§15), Ruhe 1/2, Rückstrahl 1/2, Kontakt-Verdeckung 0; Stoffe eine gebaute Tafel, kein Raum.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Wiese, 10² m²",
+     "tiefe": "Kontaktschatten scharf und weich mit Abstand; Basis-Stoffe mit Albedo im realen Band",
+     "preis": "P",
+     "richter": "Halbschattenbreite gegen Abstand im Band; Albedo im Bild ±0,05 gegen Tabellenwert für Gras, Erde, Fels, Holz, Haut"
+    },
+    {
+     "nr": 2,
+     "umfang": "Dorf, 10⁴ m²",
+     "tiefe": "Schatten ruhig unter laufender Sonne, Rückstrahlung, Kontakt-Verdeckung, Nässe",
+     "preis": "P",
+     "richter": "Flimmer-Anteil der Schattenkante ≤ 1 % im Gang; Wand unten/Sonnenseite ±20 % gegen Messung; Glanz nach Regen gegen Foto"
+    },
+    {
+     "nr": 3,
+     "umfang": "Innenraum",
+     "tiefe": "Licht fällt durch Tür und Fenster, Raum ohne Lampe lesbar",
+     "preis": "P",
+     "richter": "Tageslichtquotient im Bild gegen gemessene Werte gleicher Fenstergröße (1–5 %) ±30 %"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "material.K1",
+     "text": "Albedo im realen Band, Labor = Welt, echt auf beiden Geräten",
+     "staffel": "\"1 = alle Zeilen Welt/Labor 0,9–1,1 und im realen Band, beide Seiten --echt, an einem Gerät · 2 = beide Geräte, Eichung Karte 0,180\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g3.js:2934",
+      "stationen/g3.js:2972"
+     ],
+     "stationen": [
+      {
+       "id": "material.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "material.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "material.K1#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "material.K1#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "material.K4",
+     "text": "Spiegelung aus EINER Quelle: Glas, Lack, Metall, Nässe",
+     "staffel": "\"1 = spiegelTreue ≥ 0,5 an Fenster-Glas ODER Lack aus Ego an einem Gerät · 2 = jede glänzende Klasse aus Ego und Third, kein Spiegel-Flimmern unter Bewegung, ≤ 1 ms an der GTX, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:3336"
+     ],
+     "stationen": [
+      {
+       "id": "material.K4#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "material.K4#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "lack spiegelTreue 0.4468 (114732 px in der Ebene, 59 Blöcke, Einfall 58.1°, Normale [0.077,0.996,0.04]) · glas spiegelTreue 0.7656 (6259 px in der Ebene, 28 Blöcke, Einfall 72.6°, Normale [-0.001,1,0.016]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.500000 …",
+       "sha": "e84fd1fb",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "material.K5",
+     "text": "Rauheit und Glanz aus der Stoff-Zeile",
+     "staffel": "\"1 = Glanz-Breite und -Spitze an der Kugel-Bühne für ≥ 3 Klassen im realen Band einer gemessenen BRDF-Referenz, an einem Gerät · 2 = jede Klasse, beide Geräte, die Rauheit liest die EINE Stoff-Zeile (Mutation)\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:3408"
+     ],
+     "stationen": [
+      {
+       "id": "material.K5#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "3 von 4 Klassen im Band (Soll ≥ 3): eisen θ50 10.278° NEBEN dem Band, ρ 7.12 im Band — black-oxidized-steel · bronze θ50 3.295° im Band, ρ 82.93 im Band — alum-bronze 7,79°/51,4, brass 1,31°/471,3 · quarz θ50 1.251° im Band, ρ 443.62 im Band — black-obsidian 0 …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "material.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "3 von 4 Klassen im Band (Soll ≥ 3): eisen θ50 10.262° NEBEN dem Band, ρ 7.16 im Band — black-oxidized-steel · bronze θ50 3.367° im Band, ρ 80.26 im Band — alum-bronze 7,79°/51,4, brass 1,31°/471,3 · quarz θ50 1.387° im Band, ρ 414.29 im Band — black-obsidian 0 …",
+       "sha": "b4bcf19c",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "schatten.K1",
+     "text": "Schatten scharf am Kontakt, weich mit Abstand",
+     "staffel": "\"1 = Halbschatten am Fuß ≤ 3 cm an einem Gerät · 2 = Zuwachs ≈ 0,9 cm je m, Uhr 0,5 und 0,3, Kosten ≤ +0,3 ms an der GTX, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g3.js:3006",
+      "stationen/g3.js:3053"
+     ],
+     "stationen": [
+      {
+       "id": "schatten.K1#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Uhr 0.5 ego 2.1 cm (10 Kanten) · Uhr 0.5 third 2.1 cm (10 Kanten), [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "schatten.K1#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Uhr 0.5 ego 1.8 cm (10 Kanten) · Uhr 0.5 third 2.1 cm (10 Kanten), [linse-gpu] nvidia/pascal",
+       "sha": "94c079cb",
+       "gehalten": true
+      },
+      {
+       "id": "schatten.K1#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Uhr 0.5 ego 0.962 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.5 third 0.757 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.3 ego 0.922 cm/m (44/44 Kanten, Fuß 1.8 cm) · Uhr 0.3 third 0.853 cm/m (44/44 Kanten, Fuß 2.1 cm) · Treue 0/0 Bytes · Kontakt-Kaskade k0 0.21 ms, [l …",
+       "sha": "1cd1c408",
+       "gehalten": true
+      },
+      {
+       "id": "schatten.K1#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Uhr 0.5 ego 0.945 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.5 third 0.798 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.3 ego 0.93 cm/m (44/44 Kanten, Fuß 1.8 cm) · Uhr 0.3 third 0.875 cm/m (44/44 Kanten, Fuß 2.1 cm) · Treue 0/0 Bytes · Kontakt-Kaskade k0 0 ms (GTX ≤  …",
+       "sha": "9c545df2",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "schatten.K2",
+     "text": "Ruhige Schatten unter Bewegung und laufender Sonne",
+     "staffel": "\"1 = ≤ 0,5 % unerklärte Randpixel beim Gehen an einem Gerät · 2 = Gehen 4 m/s, Drehen 1°/Frame, Sonne in der Tageslänge, kein Kaskaden-Sprung im Takt, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [],
+     "stationen": [
+      {
+       "id": "schatten.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Maß reprojektion: unerklärt je Bild max 0.00 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0006) über 15 Bilder Gang 4 m/s, Schatten im Bild 1.5 % (≥ 1 %) · Ort [70.7,-1] · 0.67 s · [linse-gpu] amd/rdna-3",
+       "sha": "63655917",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "schatten.K3",
+     "text": "Jedes Ding steht: Kontakt-Verdeckung und Himmels-Sicht",
+     "staffel": "\"1 = Kontaktband (0–20 cm) 30–60 % des freien Bodens an Fuß und Sockel an einem Gerät · 2 = auch Stammfuß und Tor-Fuß, klar UND bedeckt, ≤ 0,5 ms an der GTX, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [],
+     "stationen": [
+      {
+       "id": "schatten.K3#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "fuss Band 51.1 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) · sockel Band 45.2 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) (Soll 30–60 %, Himmel allein; Platz [52.7,17] Grün 0) · Ort [70.7,-1] · 0.81 s · [linse-gpu] a …",
+       "sha": "63655917",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "schatten.K4",
+     "text": "Licht springt einmal: Rückstrahlung und Innenraum",
+     "staffel": "\"1 = weiße Hauswand im Schatten neben besonnter Wiese: Gewinn ≥ 10 % gegen den Gegenschuss mit Boden-Albedo 0, an einem Gerät · 2 = getönt zur Boden-Farbe, Innenraum durch die offene Tür ≥ 15 % des Außen-Schattens, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [],
+     "stationen": [
+      {
+       "id": "schatten.K4#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Gewinn 19.8 % (Wand 0.1673 gegen 0.1397 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.241, Platte sicht, Hub 0.3857 m · Ort [70.7,-1] · 1.54 s · [linse-gpu] amd/rdna-3",
+       "sha": "63655917",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.bild.himmel",
+   "name": "Luft, Tag und Himmel",
+   "art": "kriterium",
+   "misst": "die Treue von Himmel und Luftperspektive als Stichprobe über den Zustandsraum Uhr × Wetter × Saison × Breite × Aerosol × Zeitalter × Planet — Umfang ist die Zahl der Achsen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Hillaire-Atmosphäre mit Rayleigh, Mie, Ozon (welt-licht.js:211-265) — gegen Klarhimmel ungemessen; Tag-Bahn ROT: Radeon +0,94 EV bei Uhr 0,33, GTX −22 % golden (§13.K1 = 0). — KARTE: 0 — gegen den Klarhimmel ungemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Mittag, klar",
+     "tiefe": "eine Atmosphäre (Rayleigh, Mie, Ozon)",
+     "preis": "P",
+     "richter": "Himmels-Leuchtdichte gegen gemessenen Klarhimmel ±0,3 EV"
+    },
+    {
+     "nr": 2,
+     "umfang": "× Uhr",
+     "tiefe": "Tag-Bahn monoton, golden, Nacht lesbar; Wolken mit Körper und Schatten",
+     "preis": "P",
+     "richter": "Belichtungskurve über 24 h gegen Referenzkurve, max. Abweichung ≤ 0,3 EV"
+    },
+    {
+     "nr": 3,
+     "umfang": "× Wetter",
+     "tiefe": "Dunst, Nebel, Regen, Gewitter, Schnee als Dichte desselben Mediums",
+     "preis": "P",
+     "richter": "Sichtweite im Bild ±15 % zur gesetzten; kein Bildsprung beim Wetterwechsel"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "licht.K1",
+     "text": "Die Tag-Kurve: monoton, stetig, golden, Nacht lesbar — über die GANZE Bahn",
+     "staffel": "\"1 = an einem Gerät in einer Sicht über die ganze Bahn im Soll · 2 = beide Geräte, Ego UND Third\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g3.js:3474"
+     ],
+     "stationen": [
+      {
+       "id": "licht.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "licht.K2",
+     "text": "Licht-Bilanz an einer Kugel in der Szene: Sonne zu Himmel je Stunde und Wetter",
+     "staffel": "\"1 = klar am Mittag Verhältnis 5–12,5 und Schatten-Anteil 0,08–0,20 an einem Gerät · 2 = alle Spalten Uhr 0,5/0,27/0,73 × klar/Regen, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:2377",
+      "stationen/g3.js:2429"
+     ],
+     "stationen": [
+      {
+       "id": "licht.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Verhältnis 5.266 (5–12,5), Schatten-Anteil 0.1899 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
+       "sha": "dc9eacb0",
+       "gehalten": true
+      },
+      {
+       "id": "licht.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal",
+       "sha": "94d9c5a6",
+       "gehalten": true
+      },
+      {
+       "id": "licht.K2#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "licht.K2#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "licht.K5",
+     "text": "Wetter und Nacht als Zustände des EINEN Mediums: Übergang ohne Bruch",
+     "staffel": "\"1 = der Wetter-Zug klar → Regen → klar ohne Sprung > 0,1 EV/s an einem Gerät · 2 = Licht-Verhältnis der Kugel unter Regen ≤ 1,5, Sterne bei Neumond > 0, Purkinje B/R ≥ 1,2× Mittag, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:2690"
+     ],
+     "stationen": [
+      {
+       "id": "licht.K5#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "größter Sprung 0.035 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.38 EV · 125 s, Wörter standen · [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "licht.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "größter Sprung 0.056 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.94 EV · 127 s, Wörter standen · [linse-gpu] nvidia/pascal",
+       "sha": "b895650c",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.bild.auge",
+   "name": "Das Auge: Belichtung, Dynamik, Ruhe",
+   "art": "kriterium",
+   "misst": "ob das Bild sich verhält wie ein Auge in jeder Perspektive — vom Insekt im Gras bis zum Orbit, aus der Höhle in die Sonne, im Gehen, Fahren, Fliegen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Belichtungs-Gesetz mit Gleitung (BELICHTUNG, stamm/bild-himmel.js:3292), gegen keine Referenz gemessen; Schatten-Ruhe 1/2 (§16.K2).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Gehen",
+     "tiefe": "kein Flimmern, kein Treppenkriechen an Kanten, Laub und Schatten",
+     "preis": "P",
+     "richter": "zeitliche Pixel-Varianz in ruhenden Bildbereichen ≤ 1 % der Fläche über Schwelle"
+    },
+    {
+     "nr": 2,
+     "umfang": "Tag ↔ Nacht, drinnen ↔ draußen",
+     "tiefe": "Belichtung gleitet wie ein Auge, nie Pumpen",
+     "preis": "P",
+     "richter": "Höhle → Mittagssonne: ausgebrannte Fläche ≤ 2 % nach 1 s; hell → dunkel ohne Belichtungs-Umkehr"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁻³ – 10⁵ cd/m² (8 Dekaden)",
+     "tiefe": "Sterne, Mond, Laterne, Sonne im selben Lauf lesbar",
+     "preis": "P",
+     "richter": "20 Szenen: geklippte Fläche ≤ 2 %, Tonwertumfang im Band kalibrierter HDR-Fotos"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "licht.K5",
+     "text": "Wetter und Nacht als Zustände des EINEN Mediums: Übergang ohne Bruch",
+     "staffel": "\"1 = der Wetter-Zug klar → Regen → klar ohne Sprung > 0,1 EV/s an einem Gerät · 2 = Licht-Verhältnis der Kugel unter Regen ≤ 1,5, Sterne bei Neumond > 0, Purkinje B/R ≥ 1,2× Mittag, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:2690"
+     ],
+     "stationen": [
+      {
+       "id": "licht.K5#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "größter Sprung 0.035 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.38 EV · 125 s, Wörter standen · [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "licht.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "größter Sprung 0.056 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.94 EV · 127 s, Wörter standen · [linse-gpu] nvidia/pascal",
+       "sha": "b895650c",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "schatten.K2",
+     "text": "Ruhige Schatten unter Bewegung und laufender Sonne",
+     "staffel": "\"1 = ≤ 0,5 % unerklärte Randpixel beim Gehen an einem Gerät · 2 = Gehen 4 m/s, Drehen 1°/Frame, Sonne in der Tageslänge, kein Kaskaden-Sprung im Takt, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [],
+     "stationen": [
+      {
+       "id": "schatten.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Maß reprojektion: unerklärt je Bild max 0.00 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0006) über 15 Bilder Gang 4 m/s, Schatten im Bild 1.5 % (≥ 1 %) · Ort [70.7,-1] · 0.67 s · [linse-gpu] amd/rdna-3",
+       "sha": "63655917",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.bild.kamera",
+   "name": "Jede Kamera — Foto, Kino, Wiederholung, Zuschauen",
+   "art": "kriterium",
+   "misst": "welche Blickweisen der Spieler jenseits von Ego und Third hat — freie Kamera, Foto mit Blende und Brennweite, Kinofahrt, Wiederholung eines Augenblicks, Zuschauen bei Bewohnern und Mitspielern, Sport-Übertragung, Karten- und Feldherrenblick — und ob jedes Bild davon dem echten Gerät standhält.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Spieler-Kameras der gebuchten Stationen sind Ego und Third; Fotomodus 0 Treffer in stamm/ und den Kernen (Grep 14.11.).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "freie Kamera und Standbild",
+     "tiefe": "die Welt hält an und bleibt ganz: kein Loch, kein fehlendes Ding hinter der Spieler-Kamera",
+     "preis": "P",
+     "richter": "20 Standbilder aus freier Lage: Bild ganz (Lücke ≤ 2 %), Schärfe und Licht wie im Spiel"
+    },
+    {
+     "nr": 2,
+     "umfang": "Foto: Brennweite, Blende, Belichtungszeit",
+     "tiefe": "Schärfentiefe und Bewegungsunschärfe nach der Optik",
+     "preis": "P",
+     "richter": "Unschärfe-Kreis gegen die Linsenformel ±10 %; Blindpaar gegen ein Foto gleicher Brennweite und Blende ≤ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Wiederholung: die letzten 60 s aus jeder Lage",
+     "tiefe": "derselbe Augenblick — bild-gleich aus der alten Lage, neu aus jeder anderen",
+     "preis": "P",
+     "richter": "Wiederholung aus der Spieler-Lage gegen die Aufnahme: Diff ≤ 1 %; aus 5 anderen Lagen ohne Loch"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.klang.raum",
+   "name": "Raum, Medium und Hörort",
+   "art": "kriterium",
+   "misst": "ob Richtung, Entfernung, Verdeckung, Beugung und Nachhall jeder Quelle aus der Welt folgen — vom Feld über die Häuserschlucht bis zur fremden Atmosphäre und zum Vakuum.",
+   "heute": 0,
+   "kern": 2,
+   "fuss": "kern",
+   "beleg": "RT60 Feld 0,283 · Wald 0,649 · Gasse 1,522 · Höhle 3,195 s, Verdeckung Haus −11,2 dB (§32.K3 2/2); Klang-Takt Radeon p95 0,25 ms > 0,2 (§32.K5 1/2); kein HRTF, kein Medienwechsel. — KARTE: Kern 2 — am Abgriff gemessen (klang.K3); Bild-Preis in der Szene nicht gemessen; das alte Klang-Budget (an der Radeon 0,25 ms gegen 0,2) ist kein Preis mehr (R8).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ort, Stereo",
+     "tiefe": "links/rechts, Pegel fällt mit Abstand",
+     "preis": "P · 0 Aussetzer",
+     "richter": "Pegel- und Laufzeitunterschied am Abgriff an 24 Quellenlagen mit richtigem Vorzeichen (100 %)"
+    },
+    {
+     "nr": 2,
+     "umfang": "4 Raumklassen (Feld, Wald, Gasse, Höhle)",
+     "tiefe": "Nachhall paarweise ≥ 1,3× verschieden; hinter Haus/Hang ≥ 6 dB leiser und dumpfer",
+     "preis": "P",
+     "richter": "RT60 am Abgriff je Ort; Mutation Bau-Dichte → RT60 monoton"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ begehbare Orte einer Siedlung",
+     "tiefe": "vorn/hinten/oben, Ecke und Tür hörbar",
+     "preis": "P",
+     "richter": "Blind-Lokalisierung (geeicht) ≥ 85 %; RT60 an 50 Zufallsorten ±25 % der Sabine-Zahl"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "klang.K3",
+     "text": "Raum: Richtung, Verdeckung und Hall aus der Welt",
+     "staffel": "\"1 = Richtung und Entfernung: links/rechts zu 100 % mit richtigem Vorzeichen (ILD/ITD am Stereo-Abgriff) · 2 = Verdeckung hinter Haus und Hang ≥ 6 dB plus Tiefpass, RT60 von Wald, Feld, Gasse und Höhle paarweise ≥ 30 % verschieden, und die Mutation (mehr Kronen-Deckung oder Bau-Dichte am selben Ort) ändert die RT60 monoton\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:3891",
+      "stationen/g6.js:3946"
+     ],
+     "stationen": [
+      {
+       "id": "klang.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "24/24 Vorzeichen richtig (tier 12, glut 12) · |ILD| ≥ 80.6 dB bei 90°, ≥ 7.7 dB bei 30° · Pegel fällt: tier 3 m -22.9 › 8 m -31.4 › 20 m -39.4 · glut 1.5 m -17.7 › 3 m -23.7 › 6 m -29.7 dB",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "klang.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "haus −11.2 dB, Schwerpunkt 1129 → 660 Hz · hang −10.9 dB, Schwerpunkt 1055 → 641 Hz · RT60 feld 0.283 s · wald 0.649 s · gasse 1.522 s · hoehle 3.195 s · Bau-Dichte 0 → 0.283 s, 2 → 0.517 s, 4 → 0.687 s, 8 → 1.042 s (Soll: Verdeckung ≥ 6 dB + Tiefpass ≤ 0,85,  …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "klang.K5",
+     "text": "Kosten am Hörbaren, null Aussetzer",
+     "staffel": "\"1 = die Kosten sind an das Hörbare gebunden (gemessen) · 2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g6.js:4127",
+      "stationen/g6.js:4163"
+     ],
+     "stationen": [
+      {
+       "id": "klang.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "klang.K5#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "klang.K5#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+       "sha": "2d5f4146",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.klang.ereignis",
+   "name": "Stoff und Ereignis",
+   "art": "kriterium",
+   "misst": "wie viele Ereignisse aus dem Gesetz unterscheidbar klingen und wie wahr sie gegen Aufnahmen sind — an Zufallsstichproben, nie an einer Liste.",
+   "heute": 2,
+   "kern": 0,
+   "fuss": "kern",
+   "beleg": "schrittKlang (klang-core.js:1532), trefferPaar (:1420), Motor mit Doppler (:1675); Motor r 1,0, Landung r 0,9975 (§32.K4 2/2); Preis Radeon ROT; kein Bruch, kein Donner, kein Vulkan. — KARTE: Kern 2 — am Abgriff an den Geräten gemessen (klang.K4); Bild-Preis in der Szene nicht gemessen; das alte Klang-Budget ist kein Preis mehr (R8).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Schritt auf 3 Stoffen",
+     "tiefe": "Stoffe am Klang unterscheidbar",
+     "preis": "P",
+     "klasse": "Ort",
+     "richter": "Spektralschwerpunkt je Stoff ≥ 300 Hz getrennt, ≥ 5 Schritte je Stoff"
+    },
+    {
+     "nr": 2,
+     "umfang": "~10 Ereignisklassen (Schritt, Landung, Treffer, Motor+Doppler, Glut, Substanz)",
+     "tiefe": "Landung ∝ Aufprall, Motor folgt Gas, Doppler stimmt",
+     "preis": "P",
+     "klasse": "Ort",
+     "richter": "Motor r = 1,0, Landung r ≥ 0,99, Doppler r ≥ 0,99 am Abgriff"
+    },
+    {
+     "nr": 3,
+     "umfang": "jeder Stoff × jede Kontaktart (Stoß, Kratzen, Rollen, Gleiten, Bruch)",
+     "tiefe": "Stoff am Klang erkennbar",
+     "preis": "P bei 32 Ereignissen",
+     "richter": "Stoff aus 10 nur am Klang ≥ 70 % (Jury, dann Klassifikator); FAD je Stoff gegen Foley-Korpus ≤ Schwelle"
+    },
+    {
+     "nr": 4,
+     "umfang": "jedes Ding aus der Werkstatt, 100 Zufallsbauten",
+     "tiefe": "Größe → Tonhöhe, Hohlraum → Resonanz, Bruch → Trümmerklänge",
+     "preis": "P bei 64 Ereignissen",
+     "richter": "tiefste Eigenfrequenz ±10 % gegen Platten-/Balkenformel; Trümmer im Bild ↔ Einschläge am Abgriff r ≥ 0,8"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [
+    {
+     "station": "klang.K4#2",
+     "leiter": "erleben.klang.ereignis",
+     "sprosse": 2,
+     "richter": "gleich"
+    },
+    {
+     "station": "klang.K4#2",
+     "leiter": "erleben.klang.ereignis",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "fahrzeug.K5",
+     "text": "Rückmeldung: der Körper fühlt die Fahrt",
+     "staffel": "\"1 = ≥ 3 Kanäle mit gemessenem Paar aus dem Ausgabe-Pfad bzw. am Klang-Abgriff · 2 = 6/6 (Motor-Klang, sichtbare Federung, Reifenspur aus dem Schlupf, Staub und Spritzwasser je Boden, Kamera-Rauheit je Boden, Rumble)\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:5316"
+     ],
+     "stationen": [
+      {
+       "id": "fahrzeug.K5#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Federung im Bild: Drift-Wank 8.454 gegen Glatt 0.327 mm, Stoß-Antwort Glatt/Hang 7.561/7.326 mm (Mutante 2.154/1.613) · Rumble Drift 1 gegen Glatt 0.002, Summen 0.566/0.531 (Mutante 0, 0.144) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Federung im Bild: Drift-Wank 8.613 gegen Glatt 0.541 mm, Stoß-Antwort Glatt/Hang 7.239/9.209 mm (Mutante 2.744/0.499) · Rumble Drift 1 gegen Glatt 0.004, Summen 0.594/0.58 (Mutante 0, 0.126) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅",
+       "sha": "94c079cb",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "klang.K4",
+     "text": "Der Körper klingt aus Stoff und Bewegung",
+     "staffel": "\"1 = am Abgriff gemessen: der Spektral-Schwerpunkt der Schritte je Stoff ≥ 300 Hz verschieden ODER der Motor-Grundton folgt der Drehzahl (r ≥ 0,9) · 2 = beides, die Landung skaliert mit dem Aufprall, Doppler proportional zur Radialgeschwindigkeit\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:3984",
+      "stationen/g6.js:4026"
+     ],
+     "stationen": [
+      {
+       "id": "klang.K4#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "gras 6169 Hz (n 6) · laub 8867 Hz (n 6) · stein 4735 Hz (n 5) — kleinster Abstand 1434 Hz",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "klang.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "klang.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "✅ Schritte gras 6208 Hz (n 6) · laub 8919 Hz (n 6) · stein 4798 Hz (n 6), kleinster Abstand 1410 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · …",
+       "sha": "c8c840c9",
+       "gehalten": true
+      },
+      {
+       "id": "klang.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "✅ Schritte gras 6180 Hz (n 6) · laub 8813 Hz (n 6) · stein 4771 Hz (n 6), kleinster Abstand 1409 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · …",
+       "sha": "c8c840c9",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.klang.landschaft",
+   "name": "Klanglandschaft: Natur und Stadt als EINE Population",
+   "art": "kriterium",
+   "misst": "ob die Landschaft klingt nach dem, was dort WIRKLICH lebt, fährt und arbeitet — fern als Feld, nah als Einzelne, von der Wiese bis zur Megastadt.",
+   "heute": 1,
+   "kern": 0,
+   "fuss": "kern",
+   "beleg": "neun Textur-Gesetze (klang-core.js:668-766), Tier-Ruf f0 ∝ L^−0,9 (:495-497), Wind r 0,81/0,79 (§32.K1, K2 je 2/2); Verkehr K-nah (stamm/klang.js:1092-1110); keine Bewohner-Klänge, kein Stadtteppich; Preis Radeon ROT. — KARTE: Kern 1 — Zensus am Abgriff, Wind gesehen = gehört an beiden Geräten (klang.K1, klang.K2); Bild-Preis in der Szene nicht gemessen; das alte Klang-Budget ist kein Preis mehr (R8).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Biom (Wiese) + Dorf, Feuer, Motor",
+     "tiefe": "jede Quelle hat einen Körper im Bild; Wind gesehen = gehört",
+     "preis": "P",
+     "klasse": "Ort",
+     "richter": "Klang-Zensus Pegel je Ort im Soll; Wind Bild ↔ Ohr r ≥ 0,6"
+    },
+    {
+     "nr": 2,
+     "umfang": "5 Biome × Tag/Nacht × Regen; 20 Wagen",
+     "tiefe": "Insekten-Takt aus Temperatur; Kosten an K Stimmen",
+     "preis": "P",
+     "richter": "Kreuzkorrelation Bild ↔ Ohr ≥ 0,6 je Biom; Wagenpegel ∝ Abstand"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² lebende Quellen eines Dorfs",
+     "tiefe": "Schritte, Werkzeug, Tür, Murmeln folgen dem Tagesplan",
+     "preis": "P",
+     "richter": "Dorfplatz Mittag gegen Nacht ≥ 15 dB; Quellen am Abgriff ↔ Bewohner im Bild r ≥ 0,8"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [
+    {
+     "station": "karte2.erleben.klang.landschaft#1",
+     "leiter": "erleben.klang.landschaft",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "luftwasser.K1",
+     "text": "Der Vogel fliegt und ruft aus seinem Körper",
+     "staffel": "\"1 = ein Vogel-Körper aus einem Gesetzbuch fliegt und ruft · 2 = jeder Vogel-Pegel im Klang-Zensus hat einen Körper (Konsum-Kette Ruf ← Leib), ohne Körper ROT\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5556",
+      "stationen/g2.js:5595"
+     ],
+     "stationen": [
+      {
+       "id": "luftwasser.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Wiese 20 Vogel-Leiber gezeichnet (20 gehört), Flug 5.5 m/s 11 m über Grund, Ruf -38.6 dB (Soll: > 0 Leiber rufen, ≥ 1 m/s, ≥ 2 m)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "luftwasser.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "wiese 20/20 5.5 m/s · nacht 0/0 0 m/s · regen 0/0 0 m/s · gehend 16/16 5.5 m/s · fahrend 13/13 5.69 m/s · wald 18/18 5.59 m/s · dorf 19/19 5.46 m/s · glutArm 14/14 5.99 m/s · seeufer 15/15 5.28 m/s · fallArm 17/17 5.46 m/s (gehört/gezeichnet) · ohne Leib 0 Lei …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "klang.K1",
+     "text": "Der Ort klingt nach dem, was dort ist — und jeder Ruf hat einen Körper",
+     "staffel": "\"1 = Mittag im Stand: jedes Soll je Ort hält, und jeder Pegel einer Quelle mit Körper (Vogel, Tier) hat einen Körper in der Welt · 2 = zusätzlich Nacht (Grillen), Regen, gehend und fahrend\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:3598",
+      "stationen/g6.js:3655"
+     ],
+     "stationen": [
+      {
+       "id": "klang.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Wiese wind -36.3 · vogel -38.6 dB aus 20 Leibern (20 gezeichnet), ohne Leib still · Ufer -25.4 (wind -36.3) · Wald laub -31.1 · Dorf glut -27.2",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "klang.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Nacht grille -40.1 · vogel −∞ dB (0 Leiber) · Regen regen -30.4 (wind -23.2, vogel −∞ aus 0 Leibern) · gehend 10 m wind -36.3 vogel -41.9 (16/16) · fahrend 30 m im Sattel wind -36.3 vogel -41.1 (13/13)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "klang.K2",
+     "text": "Gesehen = gehört",
+     "staffel": "\"1 = Wind an einem Gerät: Kreuzkorrelation Luma-Varianz der Halme/Kronen ↔ Pegel des Wind-Busses r ≥ 0,6 · 2 = auch Ufer (Pegel ↔ sichtbare Strömung) und Regen, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:3726",
+      "stationen/g6.js:3842"
+     ],
+     "stationen": [
+      {
+       "id": "klang.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "r 0.73 bei Lag 0 (n 102), Spitze 0.74 bei -0.2 s, CV Bild 0.26 / Ohr 0.55, 48.7 fps, Klang an",
+       "sha": "41ec3a96",
+       "gehalten": true
+      },
+      {
+       "id": "klang.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "r 0.79 bei Lag 0 (n 104), Spitze 0.82 bei -0.4 s, CV Bild 0.23 / Ohr 0.58, 67 fps, Klang an",
+       "sha": "95ba6fd6",
+       "gehalten": true
+      },
+      {
+       "id": "klang.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Ufer r 0.90 bei Lag 0 (n 270, Spitze 0.90 bei 0 s, CV Bild 0.33 / Ohr 0.42, stumm 0/265) · Regen r 1.00 bei Lag 0 (n 270, Spitze 1.00 bei -0.5 s, CV Bild 0.63 / Ohr 0.64, stumm 0/261) · Selbsttest (eingefroren) ROT",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.klang.stimme",
+   "name": "Die Stimme",
+   "art": "kriterium",
+   "misst": "wie viele Personen mit eigener Stimme sprechen und antworten — verständlich, gefühlvoll, aus dem Leib, ohne Aufnahme und ohne Gewichte; die Sprachen selbst (Zahl, Wandel, Verwandtschaft) zählt mensch.kultur.sprache.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Bewohner sprechen nicht; der Begleiter spricht über speechSynthesis des Browsers (stamm/werkstatt-hud.js:71-89) — Gerätestimme, nicht aus Gesetz, zählt nach R4 nicht.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Stimme aus Gesetz, Laute ohne Bedeutung (Murmeln, Rufe)",
+     "tiefe": "Stimme folgt dem Leib: Kind, Frau, Mann, groß, klein",
+     "preis": "P",
+     "richter": "F0 und Formanten am Abgriff gegen Peterson-Barney-Tafel ±15 % nach Leibmaßen"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Stimmen, 1 Sprache (Spielersprache), verständlich",
+     "tiefe": "Prosodie aus Affekt",
+     "preis": "P · 0 Gewichts-Download",
+     "richter": "Wortfehlerrate eines Spracherkenners am Abgriff ≤ 10 %; Affekt blind ≥ 60 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "jeder Bewohner einer Siedlung (10³)",
+     "tiefe": "eigen nach Alter, Herkunft, Krankheit",
+     "preis": "P",
+     "richter": "Sprecher-Verwechslung zweier Zufallsbewohner ≤ 5 %"
+    }
+   ],
+   "sprossenGesamt": 5,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "affekt.K4",
+     "text": "Die Welt erklärt sich: die Stimme des Felds",
+     "staffel": "\"1 = jede Tat von Nexus oder KI im Blick schreibt eine Zeile mit Ort, Ursache und Gesetz in die Dialog-Box, Faktentreue gegen state 100 %, ≤ 1 Zeile je 30 s (Vorlage ohne Modell) · 2 = „warum regnet es?“ nennt den wahren Schreiber, mit Modell erzählend (Korpus-Prädikat), beide Geräte\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g2.js:4913",
+      "stationen/g2.js:4939"
+     ],
+     "stationen": [
+      {
+       "id": "affekt.K4#1",
+       "geraet": "headless",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "affekt.K4#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "affekt.K4#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.klang.musik",
+   "name": "Musik je Kultur und Epoche",
+   "art": "kriterium",
+   "misst": "ob Musik aus einem Gesetz entsteht (Instrument aus Stoff → Spektrum → Tonsystem → Tradition), an Quellen der Welt hängt und Hörer Kultur und Epoche erkennen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "22 Genre-Tafeln (klang-core.js:96-117), 7 Skalen 12-TET (:39-47), 185 Phrasen 0 wiederholt (§10.K5 2/2) — von Hand gestimmt, Fleiß statt Same. — KARTE: 0 — der Hörer-Blindtest von Sprosse 1 ist nie gefahren; affekt.K5 misst den Chroma-Abstand headless.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Musik-System der Welt",
+     "tiefe": "Musik liest das Feld (Valenz, Erregung)",
+     "preis": "P",
+     "richter": "Hörer-Blindtest: Stimmung der Szene aus der Musik erkannt ≥ 70 %; am Abgriff keine Wiederholung in 10 min"
+    },
+    {
+     "nr": 2,
+     "umfang": "Musik am Ort: eine hörbare Quelle in der Welt",
+     "tiefe": "gebautes Instrument klingt nach seiner Gestalt",
+     "preis": "P",
+     "richter": "Tonhöhe am Abgriff folgt Saiten-/Röhrenlänge ±3 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "100 Zufallskulturen, je Tonsystem aus dem Spektrum ihrer Instrumente",
+     "tiefe": "Mikrotonalität, Metrum, Form",
+     "preis": "P",
+     "richter": "Intervall-Histogramme decken reale Traditionen: jede hat einen Nachbarn ≤ 15 cent; Paare unterscheidbar ≥ 90 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "affekt.K5",
+     "text": "Die Musik liest das Feld",
+     "staffel": "\"1 = ein Leser: Tonart/Modus folgt der Valenz von `auraAt.emotion` am Spieler (die Mutation der Achse ändert die Spektral-Merkmale am Abgriff) · 2 = Tempo und Dichte aus der Erregung, Wetter und Uhr wechseln die Schicht, keine Phrase wiederholt sich binnen 10 min, die Musik duckt sich unter Schritt, Ruf und Gespräch um ≥ 6 dB\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5115",
+      "stationen/g2.js:5130"
+     ],
+     "stationen": [
+      {
+       "id": "affekt.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "feld Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4906 (Rauschen 0) · global Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4906 (Rauschen 0) · Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "affekt.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Erregung 0.9 ↔ -0.7 (awe/peace): Periode 2.752 ↔ 3.744 s (Rauschen 2.752), Dichte 12.633 ↔ 6.583 Quellen/s (12.583) · Schicht L1 Sturm 0.297, Nacht 0.566 (Rauschen 0.009) · 600 s: 185 Phrasen, 185 mit Ton, 0 wiederholt · Duck Schritt 8.51 · Ruf 10 · Gespräch 1 …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.klang.getuemmel",
+   "name": "Hören im Getümmel",
+   "art": "kriterium",
+   "misst": "ob der Spieler in der lautesten Welt das Wichtige hört — Gespräch, Warnung, eigener Schritt —, ohne dass die Menge verschwindet.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Stimmen-Deckel 7 (klang-core.js:417), Spitzen-Wand, Musik-Duck 8,5–12 dB; Preis Radeon ROT. — KARTE: 0 — Spitzen über 10 min nie gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "7 Stimmen zugleich, die lautesten gewinnen; Musik tritt unter Stimme",
+     "tiefe": "keine Spitze über 0 dBFS",
+     "preis": "P",
+     "richter": "Spitzen ≤ 0 dBFS über 10 min; Duck 8–12 dB bei Stimme"
+    },
+    {
+     "nr": 2,
+     "umfang": "Dorfplatz mit 10² Quellen",
+     "tiefe": "der zugewandte Sprecher bleibt verständlich",
+     "preis": "P",
+     "richter": "WER des zugewandten Sprechers bei 65 dB(A) ≤ 15 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Großstadtstraße 75 dB(A), 10⁴ Quellen",
+     "tiefe": "Zuwendung hebt eine Stimme aus der Menge, wie das Ohr",
+     "preis": "P",
+     "richter": "WER ≤ 15 %, Menge dabei ≤ 3 dB gesenkt"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "affekt.K5",
+     "text": "Die Musik liest das Feld",
+     "staffel": "\"1 = ein Leser: Tonart/Modus folgt der Valenz von `auraAt.emotion` am Spieler (die Mutation der Achse ändert die Spektral-Merkmale am Abgriff) · 2 = Tempo und Dichte aus der Erregung, Wetter und Uhr wechseln die Schicht, keine Phrase wiederholt sich binnen 10 min, die Musik duckt sich unter Schritt, Ruf und Gespräch um ≥ 6 dB\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5115",
+      "stationen/g2.js:5130"
+     ],
+     "stationen": [
+      {
+       "id": "affekt.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "feld Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4906 (Rauschen 0) · global Valenz 2.2 ↔ -1.6 → Chroma-Abstand 0.4906 (Rauschen 0) · Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "affekt.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Erregung 0.9 ↔ -0.7 (awe/peace): Periode 2.752 ↔ 3.744 s (Rauschen 2.752), Dichte 12.633 ↔ 6.583 Quellen/s (12.583) · Schicht L1 Sturm 0.297, Nacht 0.566 (Rauschen 0.009) · 600 s: 185 Phrasen, 185 mit Ton, 0 wiederholt · Duck Schritt 8.51 · Ruf 10 · Gespräch 1 …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "klang.K5",
+     "text": "Kosten am Hörbaren, null Aussetzer",
+     "staffel": "\"1 = die Kosten sind an das Hörbare gebunden (gemessen) · 2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g6.js:4127",
+      "stationen/g6.js:4163"
+     ],
+     "stationen": [
+      {
+       "id": "klang.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "klang.K5#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "klang.K5#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Klang-Takt p95 gehen 0.14 · fahrt 0.2 · nacht 0.18 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+       "sha": "2d5f4146",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.kopplung.emergenz",
+   "name": "Emergenz: ungeskriptete Ketten im Blick",
+   "art": "kopplung",
+   "misst": "wie oft der Spieler eine Kette aus ≥ 3 Ursachen IM BLICK erlebt, die niemand geschrieben hat — die Kette als Gesetz misst das Kapitel Kopplung, hier zählt das Erleben.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "trophische Kaskade headless über 8 Saaten (Hirsche +0,448, Jungwuchs −0,279, §8.K1 2/2), Emotion → Wetter headless (§10.K2, K3) — im Bild nie gefahren.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Kette in 6 Spielstunden: Wölfe weg → mehr Hirsche → weniger Jungwuchs",
+     "tiefe": "Gegenlauf ohne Kette",
+     "preis": "P · Raffer am Gerät",
+     "richter": "Bildpaar am selben Ort mit/ohne Wölfe nach 6 Spielstunden: Jungwuchs sichtbar dünner über ≥ 8 Saaten"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Kette mit ≥ 3 Gliedern je Spielstunde im Blick",
+     "tiefe": "jedes Glied sichtbar und mit Ursache",
+     "preis": "P",
+     "richter": "Spielgang 60 min: Ketten mit ≥ 3 Gliedern im Sichtkegel ≥ 1"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Ketten je Stunde über Domänen (Dürre → Ernte → Preis → Auszug)",
+     "tiefe": "Glieder aus ≥ 3 Domänen",
+     "preis": "P",
+     "richter": "Ketten mit Gliedern aus ≥ 3 Domänen je Stunde im Blick ≥ 10"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "oekologie.K1",
+     "text": "Die trophische Kaskade: Räuber · Beute · Pflanze",
+     "staffel": "\"1 = jede Art bleibt in [⅓×, 3×] des Starts, ohne Aussterben und ohne Ausbruch, über ≥ 8 Seeds · 2 = die drei Richtungen (Wölfe weg → Hirsche +≥ 30 % und Jungwuchs −≥ 20 %; Hirsche bejagt → Wölfe nehmen ab) mit Konfidenz-Intervall, das 0 nicht schneidet; die Mutante „Fraß-Leser aus“ ist ROT\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5226",
+      "stationen/g2.js:5254"
+     ],
+     "stationen": [
+      {
+       "id": "oekologie.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "8 Saaten · 23 ansässige Bestände · Stunde 8 gegen 2: 0.35–1.35× · außer Band 0 · Takte an der Kappe 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "oekologie.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "8 Saaten · hirsche 0.448 [0.321, 0.536] · jungwuchs -0.279 [-0.325, -0.194] · woelfe -0.51 [-0.858, -0.231] · mutante 0.614 [0.546, 0.691] · Mutante ROT",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "affekt.K2",
+     "text": "Die Emotion formt die Welt — über Regeln mit Quelle",
+     "staffel": "\"1 = eine getragene Stimmung verschiebt am Ort EINE Größe (Wetter-Wahrscheinlichkeit, Kreatur-Laune, Klang oder Materie-Antwort) gegen den Gegenlauf mit eingefrorener Emotion-Achse · 2 = alle vier, jede Kopplung als DSL-Regel mit Quelle, deterministisch aus Saat + Akten\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:5024"
+     ],
+     "stationen": [
+      {
+       "id": "affekt.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Sonne echt 12/15 (10 Züge aus rule:emotion:hope, das Gesetz feuert 34×, Hoffnung 908.4 s über der Schwelle) · starr 3 (Front 3) · Gesetz pausiert 3 · Bauten 49/49/49",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "affekt.K3",
+     "text": "Der Nexus spielt mit: schreibt, wertet, lernt — sichtbar",
+     "staffel": "\"1 = Selektion gemessen: der Anteil der Regeln mit value > 0 steigt vom ersten zum letzten Drittel UND schlägt den Gegenlauf mit gemischtem δ · 2 = ≥ 70 % der Feuer an Zellen unter dem Median von lebendig, ≥ 1 Wirkung je 5 Spielminuten im Blick (Leser aus Feld K5), _tickWorldRules ≤ 0,2 ms, 0 verbotene Ops, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:5073"
+     ],
+     "stationen": [
+      {
+       "id": "affekt.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "value > 0 echt 0.508 → 0.860 · gemischt 0.284 → 0.588 · stumm 0.000 → 0.000 · erneuert echt 177/188 mit value > 0, 1/50 ohne, gemischt 8/19 mit value > 0, 0/41 ohne · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südw …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.kopplung.wahrnehmung",
+   "name": "Wahrnehmung treibt Verhalten und Landschaft",
+   "art": "kopplung",
+   "misst": "ob Sinne die Welt beobachtbar ändern: ein Sinn aus = ein anderer Bestand, eine andere Landschaft.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Wolf findet Beute über Witterung; Gegenlauf in der alten Karte (§8.K4) — headless. — KARTE: 0 — dieselbe Messgröße wie erleben.sinne.geruch Sprosse 1 (R9), headless.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Geruch führt den Jäger zur Beute",
+     "tiefe": "Wind trägt Witterung",
+     "preis": "P",
+     "richter": "Gegenlauf Witterung aus → Jagderfolg fällt"
+    },
+    {
+     "nr": 2,
+     "umfang": "Räuber + Beute, Sicht + Geruch",
+     "tiefe": "Beute wählt die Lage gegen den Wind",
+     "preis": "P",
+     "richter": "Gegenlauf: Beute mit Wind-Wahl überlebt ≥ 1,5×"
+    },
+    {
+     "nr": 3,
+     "umfang": "Bestäubung: UV-Saftmal ↔ Biene, koevolviert",
+     "tiefe": "Saftmal entsteht aus dem Bestäuber-Sinn",
+     "preis": "P",
+     "richter": "Saftmal aus → Bestäubung −≥ 30 %; N = 50 Saaten: bienenbestäubte Blüten mit Saftmal im Bienenspektrum ≥ 0,6"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.kopplung.bild",
+   "name": "Ein wahres Bild",
+   "art": "kopplung",
+   "misst": "wie viele gekoppelte Phänomene in EINEM Bild konsistent stehen (Vulkan formt Küste, Küste trägt Stadt, Stadt leuchtet, Wetter verschleiert, Meer spiegelt) und ob Menschen es vom Foto unterscheiden.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "gleiche Helligkeit über alle Lichtwege gemessen (§13.K3 = 1). — KARTE: 0 — nur an der GTX gebucht (licht.K3).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "2 Phänomene",
+     "tiefe": "Luft dunstet Relief; Gelände ändert seine Helligkeit nah ↔ fern nicht",
+     "preis": "P",
+     "richter": "Gang 2 km auf einen Hang: Leuchtdichte des Zielfensters springt an keinem Stufenwechsel > 5 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "4",
+     "tiefe": "Dorf, Wald, Wasser, Himmel ohne Bruch",
+     "preis": "P",
+     "richter": "Panel-2AFC Spiel gegen Foto ähnlicher Landschaft ≤ 75 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "8",
+     "tiefe": "Stadt, Küste, Meer, Wetterfront, Abendlicht",
+     "preis": "P",
+     "richter": "2AFC ≤ 65 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "licht.K3",
+     "text": "EIN Lichtweg: Karte, Fern-Ring, Feld-Pass, Panorama und Wasser zeigen dieselbe Fläche gleich hell",
+     "staffel": "\"1 = Karte und Fern-Ring je Uhr 0,5/0,27/0,05 im Band 0,9–1,1 an einem Gerät · 2 = auch Feld-Pass, Panorama und Wasser, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:3653",
+      "stationen/g3.js:3684"
+     ],
+     "stationen": [
+      {
+       "id": "licht.K3#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "licht.K3#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+       "sha": "8efb6318",
+       "gehalten": true
+      },
+      {
+       "id": "licht.K3#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "licht.K3#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.kopplung.klang",
+   "name": "Die Kette ist hörbar",
+   "art": "kopplung",
+   "misst": "ob ein Ereignis seine Folgen hörbar durch die Welt zieht und ob die Klanglandschaft eines Orts nur nach dem klingt, was dort zu dieser Zeit lebt und gebaut ist.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "nichts über die Leitern hinaus gekoppelt; Regen nur als Textur am Ort.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Wetter → Stoff: Regen auf jedem Dach nach dessen Stoff",
+     "tiefe": "gesehen = gehört über zwei Leitern",
+     "preis": "P",
+     "richter": "Regenklang je Dachstoff unterscheidbar; Regenstärke im Bild ↔ Pegel r ≥ 0,9"
+    },
+    {
+     "nr": 2,
+     "umfang": "Ereignis → Menge: Ausbruch, Beben, Unfall",
+     "tiefe": "Schrei, Flucht, Hupe, Vogel verstummt",
+     "preis": "P",
+     "richter": "Spektrum und Pegel der Klanglandschaft ändern sich ≤ 2 s, folgen der Reaktion der Simulation r ≥ 0,8"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kette über 10² Jahre: Asche → Küste wächst → neue Bucht mit Brandung und Hafen",
+     "tiefe": "die Klanglandschaft folgt der Geschichte des Orts",
+     "preis": "P",
+     "richter": "Raffer 100 Jahre an 10 Orten: Quellen am Abgriff ⊂ was die Simulation dort entstehen ließ, 0 Waisen"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "klang.K2",
+     "text": "Gesehen = gehört",
+     "staffel": "\"1 = Wind an einem Gerät: Kreuzkorrelation Luma-Varianz der Halme/Kronen ↔ Pegel des Wind-Busses r ≥ 0,6 · 2 = auch Ufer (Pegel ↔ sichtbare Strömung) und Regen, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:3726",
+      "stationen/g6.js:3842"
+     ],
+     "stationen": [
+      {
+       "id": "klang.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "r 0.73 bei Lag 0 (n 102), Spitze 0.74 bei -0.2 s, CV Bild 0.26 / Ohr 0.55, 48.7 fps, Klang an",
+       "sha": "41ec3a96",
+       "gehalten": true
+      },
+      {
+       "id": "klang.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "r 0.79 bei Lag 0 (n 104), Spitze 0.82 bei -0.4 s, CV Bild 0.23 / Ohr 0.58, 67 fps, Klang an",
+       "sha": "95ba6fd6",
+       "gehalten": true
+      },
+      {
+       "id": "klang.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Ufer r 0.90 bei Lag 0 (n 270, Spitze 0.90 bei 0 s, CV Bild 0.33 / Ohr 0.42, stumm 0/265) · Regen r 1.00 bei Lag 0 (n 270, Spitze 1.00 bei -0.5 s, CV Bild 0.63 / Ohr 0.64, stumm 0/261) · Selbsttest (eingefroren) ROT",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.kopplung.geteilter-sinn",
+   "name": "Geteilter Sinn: Taten reisen zwischen Spielern",
+   "art": "kopplung",
+   "misst": "ob die Tat eines Spielers zur Welt, zum Ziel und zur Legende eines anderen wird (Spieler × Erzählung × Netz).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "ungemessen; kein Netz-Spiel über zwei Geräte.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "2 Spieler, dieselbe Saat",
+     "tiefe": "die Tat von A steht bei B, deterministisch",
+     "preis": "P auf beiden Geräten",
+     "richter": "Tat von A → Bildpaar am Ort bei B zeigt dieselbe Spur"
+    },
+    {
+     "nr": 2,
+     "umfang": "Bewohner bei B erzählen die Tat von A",
+     "tiefe": "Kern-Treue ≥ 90 %",
+     "preis": "P · Verzug ≤ 1 s",
+     "richter": "10 Taten von A: Zeugen bei B nennen Wer, Was, Wo richtig"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Spieler in einer Stadt",
+     "tiefe": "gemeinsame Ziele aus dem Zustand",
+     "preis": "P",
+     "richter": "Anteil Ziele, die ≥ 2 Spieler zugleich verfolgen ≥ 20 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "tore.K4",
+     "text": "Mitspieler: man sieht sich, man baut zusammen — zwei echte Geräte",
+     "staffel": "\"1 = zwei physische Geräte im LAN, der Peer im Bild von B (Klassen-Teilung > 0, nie im Ursprung) · 2 = Pose-Latenz p95 ≤ 150 ms (Tastendruck an A → Leib im Ausgabe-Bild von B), ein Bau von A steht bei B ≤ 1 s mit gleichem Bau-Hash, Rejoin ≤ 31 s nach 3 s Ausfall\"",
+     "fundstellen": [],
+     "stationen": []
+    }
+   ]
+  },
+  {
+   "id": "erleben.kopplung.ein-ereignis",
+   "name": "Ein Ereignis, alle Sinne, alle Perspektiven",
+   "art": "kopplung",
+   "misst": "ob EIN Ereignis in jedem Kanal des Erlebens dasselbe ist — gesehen, gehört, gefühlt, gerochen, aus jeder Perspektive und in jeder Erzählung —, zeitlich und räumlich ohne Widerspruch.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Wind gesehen = gehört r 0,81 (§32.K2) ist ein Zwei-Kanal-Same, aber kein Ereignis; nie über Kanäle gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Feuer: 2 Kanäle",
+     "tiefe": "Glut im Bild, Knistern am Ohr, Licht auf dem Boden zugleich",
+     "preis": "P",
+     "richter": "20 Feuer: Versatz Bild ↔ Abgriff ≤ 50 ms, Quellort am Abgriff ±10° zur Glut, 100 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Gewitter in 10 km: 4 Kanäle",
+     "tiefe": "Blitz, Donner nach d/c, Regen kommt, Bewohner suchen Schutz",
+     "preis": "P",
+     "richter": "Donner-Verzug = Abstand/c ±2 %; Regen am Ort ≤ Zugzeit der Front; Bewohner unter Dach ≥ 0,8"
+    },
+    {
+     "nr": 3,
+     "umfang": "Vulkanausbruch in 20 km: ≥ 6 Kanäle",
+     "tiefe": "Glut, Grollen bis Infraschall, Beben im Boden, Ascheregen, Schwefelgeruch, Flucht",
+     "preis": "P während des Ausbruchs",
+     "richter": "Zeitfolge der Spuren am Spieler (Bodenwelle → Schall → Asche) nach Abstand und Geschwindigkeit ±10 %; 0 Kanäle ohne Spur"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "klang.K2",
+     "text": "Gesehen = gehört",
+     "staffel": "\"1 = Wind an einem Gerät: Kreuzkorrelation Luma-Varianz der Halme/Kronen ↔ Pegel des Wind-Busses r ≥ 0,6 · 2 = auch Ufer (Pegel ↔ sichtbare Strömung) und Regen, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g6.js:3726",
+      "stationen/g6.js:3842"
+     ],
+     "stationen": [
+      {
+       "id": "klang.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "r 0.73 bei Lag 0 (n 102), Spitze 0.74 bei -0.2 s, CV Bild 0.26 / Ohr 0.55, 48.7 fps, Klang an",
+       "sha": "41ec3a96",
+       "gehalten": true
+      },
+      {
+       "id": "klang.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "r 0.79 bei Lag 0 (n 104), Spitze 0.82 bei -0.4 s, CV Bild 0.23 / Ohr 0.58, 67 fps, Klang an",
+       "sha": "95ba6fd6",
+       "gehalten": true
+      },
+      {
+       "id": "klang.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Ufer r 0.90 bei Lag 0 (n 270, Spitze 0.90 bei 0 s, CV Bild 0.33 / Ohr 0.42, stumm 0/265) · Regen r 1.00 bei Lag 0 (n 270, Spitze 1.00 bei -0.5 s, CV Bild 0.63 / Ohr 0.64, stumm 0/261) · Selbsttest (eingefroren) ROT",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.kopplung.epoche-ganz",
+   "name": "Die Epoche ist ganz",
+   "art": "kopplung",
+   "misst": "ob nach einem Zeitsprung ALLES Erlebte derselben Zeit gehört — Licht, Klang, Sprache, Verben, Ziele, Werkzeuge, Himmel —, ohne einen einzigen Anachronismus über die Kanäle.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Uhr treibt Licht und Bewohnertag (§9.K2); Saison per Wort; keine Epochen-Sprünge.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Tageszeit",
+     "tiefe": "Licht, Klang, Bewohnertag zeigen dieselbe Uhr",
+     "preis": "P",
+     "richter": "24 Zufallsuhren: 0 Widersprüche zwischen Sonnenstand, Klangbild (Chor, Grillen, Verkehr) und Bewohnertag"
+    },
+    {
+     "nr": 2,
+     "umfang": "Jahreszeit",
+     "tiefe": "Laub, Licht, Insekten- und Vogelklang, Kleidung, Ernteziele",
+     "preis": "P",
+     "richter": "12 Zufallsmonate: 0 Widersprüche zwischen Bild, Klang, Kleidung und Zielen"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Jahre: eine Generation weiter",
+     "tiefe": "Bauweise, Lampen, Fahrzeuge, Klang der Technik, Sprache gewandelt",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Sprung um 100 Jahre an 10 Orten: Änderung in Bild, Klang und Sprache gleichgerichtet, 0 Waisen"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  }
+ ]
+}

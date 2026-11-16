@@ -1,0 +1,1540 @@
+{
+ "paket": "13-erleben-spieler-schoepfen",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "erleben.spieler.praesenz",
+   "name": "Präsenz: der Leib antwortet",
+   "art": "kriterium",
+   "misst": "ob der Spieler in jeder Lage SEIN Leib ist — Taste → Bild schnell, Fuß steht, Kamera nie im Bau —, gezogen an Zufallslagen, nicht an der Mess-Wiese.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Fuß p95 0,3–1,4 cm und Third draußen gehalten (§25.K2, §25.K4 Stufe 1); Taste→Pixel ROT: Radeon ego/gehen 235 ms, third 81,6 ms gegen 50 ms (§25.K1 = 0); im Haus 17 von 1 320 Bildern < 0,25 m am Bau, Sprint-Ruck 0,039 m (§25.K4#2).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Wiese, gehen und laufen, Ego + Third",
+     "tiefe": "Fuß ≤ 3 cm am 25°-Hang, Kamera nie im Fels",
+     "preis": "P · Taste→Bild p95 ≤ 50 ms",
+     "richter": "Gang 2 min je Gerät: Taste → erstes Bild mit Leib-Antwort p95 ≤ 50 ms, Fuß p95 ≤ 3 cm, 0 Bilder mit Kamera im Fels"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Lagen: Hang, Wasser, Höhle, Haus, Gasse, Treppe, Sprint, Sturz",
+     "tiefe": "dieselben Schwellen in jeder Lage",
+     "preis": "P · 50 ms",
+     "richter": "N = 100 Zufallslagen aus 10 Saaten: Anteil, der alle drei Schwellen hält ≥ 0,95"
+    },
+    {
+     "nr": 3,
+     "umfang": "im Gedränge: 10³ Bewohner im Bild",
+     "tiefe": "Leib weicht, stößt, wird gestoßen; kein Durchgleiten",
+     "preis": "P · 50 ms",
+     "richter": "Gang durch die Menge 2 min: 0 Bilder Leib in Leib, Latenz wie S1"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [
+    {
+     "station": "karte2.erleben.spieler.praesenz#1",
+     "leiter": "erleben.spieler.praesenz",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "gelaende.K5",
+     "text": "EINE Boden-Höhe je Rolle: Huf, Rad, Streu-Fuß, Feinform",
+     "staffel": "\"1 = Kontakt p95 ≤ 3 cm für eine Rolle an einem Ort, beide Sichten · 2 = alle Rollen an Mess-Wiese und 25°-Hang, in Fahrt, beide Geräte, jede Rolle ruft benannt EINE Funktion (Ratsche)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2245",
+      "stationen/g1.js:2265"
+     ],
+     "stationen": [
+      {
+       "id": "gelaende.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 0.9 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K5#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.7 · rad 0.1 | hang fein 4.3 · streu 1 · huf 1.3 · rad 1.2 cm (p95, schlechtere Sicht)",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K5#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.8 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.8 · rad 1.2 cm (p95, schlechtere Sicht)",
+       "sha": "94d9c5a6",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "fahrzeug.K3",
+     "text": "Die Kamera atmet das Tempo — EIN Rig aus dem Kern",
+     "staffel": "\"1 = FOV (+≥ 8°) und Arm (+≥ 15 %) aus v/vmax in Garage UND Welt gemessen · 2 = dazu Azimut auf dem Fahrtvektor im Drift (Fehler ≤ 15°), Maus-Orbit mit Rückkehr nach 1–1,5 s, seitlicher Ruck p95 ≤ 0,02 m je Bild, EIN FOV-Schreiber\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:3647",
+      "stationen/g5.js:3695"
+     ],
+     "stationen": [
+      {
+       "id": "fahrzeug.K3#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Garage FOV +10.00° Arm +19.4 % bei 60.63/63.82 m/s · Welt FOV +8.43° Arm +19.7 % bei 39.7 m/s (Ende ok)",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K3#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Garage FOV +9.06° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.47° Arm +18.4 % bei 15.18 m/s (Ende ok)",
+       "sha": "10770eb5",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K3#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Drift Kamera ≤ 2.7° neben dem Fahrtvektor (Schlupf bis 1.2°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov]",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K3#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.08 s nach 67° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov]",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "fahrzeug.K4",
+     "text": "Übergänge unter Bewegung: Sicht-Wechsel, Auf- und Absteigen, Hang",
+     "staffel": "\"1 = an einem Gerät im Bild gehalten · 2 = an beiden Geräten im Bild, und bei jeder neuen vmax-Stufe neu gemessen\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:3734"
+     ],
+     "stationen": [
+      {
+       "id": "fahrzeug.K4#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.71 m · T4 Absteigen 0.38 m je Bild, Azimut nach 10 Bildern 6.2° · Hang 17.4°",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K4#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.74 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.8° · Hang 17.4°",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.71 m · T4 Absteigen 0.38 m je Bild, Azimut nach 10 Bildern 6.2° · Hang 17.4°",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.74 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.8° · Hang 17.4°",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "leib.K1",
+     "text": "Die Taste bewegt den Leib im Bild: Eingabe-Latenz",
+     "staffel": "\"1 = Taste → bewegter Leib im Ausgabe-Bild p95 ≤ 50 ms an einem Gerät (gehen, Sicht-Wechsel) · 2 = jedes Verb (gehen, springen, schwingen, einsteigen), beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:4391",
+      "stationen/g5.js:4416"
+     ],
+     "stationen": [
+      {
+       "id": "leib.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "leib.K1#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 46.2 · third/gehen 45.3 · ego/wechsel 33.1 · third/wechsel 30.1 · Bild 25.24 ms",
+       "sha": "2b826a89",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K1#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "leib.K1#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "leib.K2",
+     "text": "Der Fuß steht: Hang, Stufe, Sprung aus dem Leib-Gesetz",
+     "staffel": "\"1 = Fuß p95 ≤ 3 cm am 25°-Hang und auf Stufen, 0 Steckenbleiber auf dem Spielgang, an einem Gerät · 2 = dazu Sprung-Höhe und -Weite aus dem Leib-Gesetz (Mutation von Leib-Masse/Kraft zieht sie), Ego und Third, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4437",
+      "stationen/g5.js:4497"
+     ],
+     "stationen": [
+      {
+       "id": "leib.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "hang 1.2 (n 200) · falllinie 0.9 (n 200) · treppe hang 0.8 (n 201) · treppe wiese 0.3 (n 200) cm p95 · Steckenbleiber 0",
+       "sha": "2d5f4146",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Ego 0.369/3.019 → 0.216/2.329 → 0.562/3.623 · Third 0.369/3.019 → 0.216/2.329 → 0.562/3.623 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.2 (n 200) · falllinie 0.9 (n 200) · treppe hang 0.8 (n 201) · treppe wiese 0.3 (n 200) cm p95 · Steckenbleiber 0",
+       "sha": "2d5f4146",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Ego 0.323/2.846 → 0.179/2.156 → 0.503/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.503/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 200) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 200) cm p95 · Steckenbleiber 0",
+       "sha": "715754fc",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "leib.K4",
+     "text": "Die Kamera zu Fuß",
+     "staffel": "\"1 = Third nie im Fels oder in der Wand (0 Fels-Pixel im Nahbereich der Kamera), Ruck ≤ 0,02 m p95 beim Gehen, an einem Gerät · 2 = auch am Steilhang, im Haus, beim Sprint, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:4561",
+      "stationen/g5.js:4618"
+     ],
+     "stationen": [
+      {
+       "id": "leib.K4#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.53 → 0.43 m · Kugel {\"orbit: im Stamm baum_tanne\":5} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m |  …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K4#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 B …",
+       "sha": "2d5f4146",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K4#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "leib.K4#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.spieler.rolle",
+   "name": "Die Rolle: jeder Bewohner ist übernehmbar",
+   "art": "kriterium",
+   "misst": "wie groß die Welt ist, in der der Spieler JEDEN Bewohner übernehmen kann, und wie tief dessen Verben die Welt ändern — Rolle als Regelwerk des Bewohners, nie als Liste von Spieler-Modi. Eine Leiter für Übernahme UND Folge der Rolle (Athlet, Hersteller, Wache, Herrscher, Rebell); das Tier-Sein mit dessen Sinnen zählt leben.tiere.mensch, jede Perspektive ohne Leib (Fluss, Stadt, Maschine, Planet) erleben.spieler.nichtleib.",
+   "heute": 0,
+   "kern": 1,
+   "fuss": "kern",
+   "beleg": "Bauen, Aufsitzen (stamm/koerper-fahrt.js:1271), Hieb (stamm/kampf.js), Inventar 27 Plätze (stamm/dirigent-kern.js:739) ändern die Welt; Bewohner tragen einen Beruf (stamm/siedlung-bewohner.js:783-798), keiner ist übernehmbar. — KARTE: Kern 1 — Werk wird benutzt (bauen.K5), Hieb trifft (halten.K1), Fahrt (fahrzeug.K3/K4) je an beiden Geräten im Bild; Bild-Preis in Bewegung an der Radeon ROT.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "der eigene Leib mit Verben: gehen, bauen, fahren, kämpfen",
+     "tiefe": "jede Verb-Gruppe ändert die Welt beobachtbar",
+     "preis": "P",
+     "richter": "15 min je Verb-Gruppe: ≥ 1 sichtbare Weltänderung (Werk steht, Tier flieht, Fahrzeug fährt), Bildpaar vorher/nachher"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Dorf, 10² Bewohner: jeden übernehmen",
+     "tiefe": "die Welt antwortet auf die Rolle (Kunde, Rivale, Gefolge)",
+     "preis": "P · Übernahme ≤ 1 s",
+     "richter": "N = 30 Zufallsbewohner: spielbar mit ≥ 3 Verben seines Berufs, Anteil ≥ 0,9; je Rolle Δ eines Weltfelds (Preis, Bestand, Ertrag) nach 15 min ≠ 0, im Bild sichtbar"
+    },
+    {
+     "nr": 3,
+     "umfang": "eine Stadt, 10⁴",
+     "tiefe": "Rollen koppeln: Entscheid in Rolle A ändert den Alltag in Rolle B",
+     "preis": "P · ≤ 1 s",
+     "richter": "N = 20 Rollenpaare: Δ in B binnen 1 Spieltag messbar, Anteil ≥ 0,8"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "bauen.K5",
+     "text": "Das Werk wird benutzt: jedes gesetzte Werk trägt seine Verben",
+     "staffel": "\"1 = von 6 gesetzten Werken (Haus, Wagen, Tor, Brücke, Leiter, Bank) ist jedes Verb aus KIND_POLICY (betreten, drive, portal, sitzen, klettern) über die echte Eingabe nutzbar, an einem Gerät · 2 = auch für KI-gesetzte und geteilte Werke, Ego und Third, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:2010",
+      "stationen/g4.js:2065"
+     ],
+     "stationen": [
+      {
+       "id": "bauen.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "6/6 Werke tragen ihr Verb über die Taste",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "bauen.K5#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal)",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "bauen.K5#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal)",
+       "sha": "b4bcf19c",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "spielgang.K1",
+     "text": "Die fünf Schritte in EINER Sitzung, jeder mit seiner Spieler-Zahl",
+     "staffel": "\"1 = ≥ 3 von 5 Schritten in EINER Sitzung gemessen gehalten an einem Gerät · 2 = 5/5 an beiden Geräten, der Speicher-Rundlauf am Ende trägt alle Werke byte-gleich\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:5760"
+     ],
+     "stationen": [
+      {
+       "id": "spielgang.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "5/5 Schritte gehalten in EINER Sitzung (1× geladen, 93 Eingaben aus der Spur, 0 ohne Ziel): ankommen Kontrolle 822 ms, Zeiger gefangen · laufen 12.81 m, Blick 139°, Sicht first→third→first · bauen bank_sitzbank steht in schöpfer, 8 Eingaben · ki der Satz stell …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.spieler.hand",
+   "name": "Hand und Werk: Wirkung aus dem Stoff",
+   "art": "kriterium",
+   "misst": "ob das, was die Hand mit einem Werkzeug an einem Stoff tut, so aussieht und wirkt wie in der Wirklichkeit — an zufällig gezogenen Paaren aus dem Stoff-Gesetz.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Taste→Wirkung p95 81–235 ms (§25.K1 = 0); Halten und Führen (Klinge, Werkzeug, Bogen) 10/10 in der alten Karte, aber nie gegen Real-Foto oder Stoff-Stichprobe.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "setzen und brechen",
+     "tiefe": "die Hand trifft, was das Auge zeigt",
+     "preis": "P · Taste→Wirkung p95 ≤ 50 ms",
+     "richter": "Eingabe → erstes Bild mit Wirkung p95 ≤ 50 ms, Trefferpunkt = Zielpunkt ± 1 Zelle, beide Geräte"
+    },
+    {
+     "nr": 2,
+     "umfang": "Stoffe des Spawns (Holz, Erde, Stein, Wasser, Laub)",
+     "tiefe": "Wirkung folgt dem Stoff (Holz splittert, Erde krümelt)",
+     "preis": "P · 50 ms",
+     "richter": "N = 20 Zufallspaare (Werkzeug × Stoff): Blindurteil Ergebnisbild gegen Real-Foto, Anteil plausibel ≥ 0,8"
+    },
+    {
+     "nr": 3,
+     "umfang": "Parameter: Kraft, Winkel, Schärfe — 10² Paare",
+     "tiefe": "Ergebnis monoton im Parameter",
+     "preis": "P · 50 ms",
+     "richter": "N = 100 Zufallspaare, je ein Parameter variiert: Anteil monotoner Antwort ≥ 0,95"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "leib.K1",
+     "text": "Die Taste bewegt den Leib im Bild: Eingabe-Latenz",
+     "staffel": "\"1 = Taste → bewegter Leib im Ausgabe-Bild p95 ≤ 50 ms an einem Gerät (gehen, Sicht-Wechsel) · 2 = jedes Verb (gehen, springen, schwingen, einsteigen), beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:4391",
+      "stationen/g5.js:4416"
+     ],
+     "stationen": [
+      {
+       "id": "leib.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "leib.K1#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 46.2 · third/gehen 45.3 · ego/wechsel 33.1 · third/wechsel 30.1 · Bild 25.24 ms",
+       "sha": "2b826a89",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K1#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "leib.K1#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "halten.K1",
+     "text": "Der Treffer aus dem Gesetz: Trägheit, Masse, Schneide, Tempo",
+     "staffel": "\"1 = Schwung und Treffer folgen der Trägheit des Werks (Dauer ∝ √I ±5 % an echten Blueprints, Klingen-Sweep am Chokepoint) — Mechanik · 2 = Schaden und Impuls aus Masse × Schneide × Tempo, eine Mutation in schmiede-core ändert Treffer UND Labor-Werk, im Bild beider Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4832",
+      "stationen/g5.js:5271"
+     ],
+     "stationen": [
+      {
+       "id": "halten.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "(A) I1=[{\"I1\":349.92,\"I2\":699.84,\"D1\":0.763,\"D2\":1.08},1.414,1.414] · 0 von 5 Proben ROT",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "halten.K1#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "vor: Treffer KE 74.2 J · p 5.96 · v 23.3 · Schaden 15.7 · edgeQ 1.000/Bild 1.000 · Werk 1.386 kg β 26.3° · Labor 1.386 kg β 26.3° | masse: Treffer KE 79.7 J · p 6.81 · v 21.4 · Schaden 17.2 · edgeQ 1.000/Bild 1.000 · Werk 1.649 kg β 26.3° · Labor 1.649 kg β 26 …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "halten.K1#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "vor: Treffer KE 74.6 J · p 5.96 · v 23.3 · Schaden 15.8 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 76.8 J · p 6.67 · v 20.9 · Schaden 16.6 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26 …",
+       "sha": "e84fd1fb",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "halten.K2",
+     "text": "Das Gefühl: Eingabe → Schwung, Hit-Stop, Funken und Klang aus dem Stoff-Paar",
+     "staffel": "\"1 = Eingabe → erstes Schwung-Bild ≤ 50 ms und Hit-Stop sichtbar im Ausgabe-Bild an einem Gerät · 2 = Klang und Funken aus dem Stoff-Paar (Spektrum je Paar verschieden), Ego und Third, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4856",
+      "stationen/g5.js:4887"
+     ],
+     "stationen": [
+      {
+       "id": "halten.K2#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "halten.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 41 · ego/hieb 28.1 · Bild 15.5/15.5/15.3 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 59-mal (124–179 ms, gleitet bis 0 mm je Takt) / 60-mal (153–168 ms, gleitet bis 0 mm je Takt) / 60-mal ( …",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "halten.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "stahl/holz 954 Hz -37 dB Funken 0 Latenz 0 ms · stahl/stein 2179 Hz -34 dB Funken 24 Latenz 0 ms · holz/fleisch 192 Hz -49 dB Funken 0 Latenz 0 ms · S19 feuert",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "halten.K3",
+     "text": "Das Werkzeug wirkt nach seiner Form",
+     "staffel": "\"1 = Axt fällt, Spaten gräbt, Sichel erntet über die echte Eingabe, und eine umgeformte Klinge (Axt mit Spaten-Blatt) wirkt nach der neuen Form · 2 = jede Werkzeug-Form der Schmiede, Verschleiß aus dem Stoff\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4928",
+      "stationen/g5.js:4959"
+     ],
+     "stationen": [
+      {
+       "id": "halten.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Q11 grün (form {\"axtBlatt\":{\"baum_eiche\":{\"verb\":\"abbau\",\"wirk\":0.20272765541497276,\"zehrt\":0.008470588235294119},\"boden\":{\"verb\":\"graben\",\"wirk\":0.3986238941467844,\"zehrt\":0.008470588235294119}},\"spatenAxt\":{\"baum_eiche\":{\"verb\":\"abbau\",\"wirk\":0.462) · Sichel …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "halten.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "23 von 23 Gestalten · zehrt bronze 0.0131 > eisen 0.0096 > stahl 0.0085 je Hieb, die halbe Härte 0.0169",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.spieler.wegfindung",
+   "name": "Wegfindung ohne Pfeil",
+   "art": "kriterium",
+   "misst": "wie zuverlässig ein Spieler ein benanntes Ziel nur mit Mitteln der Welt erreicht — Landmarke, Sonne, Sterne, Auskunft, eine Karte, die die Welt selbst zeichnet.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "keine Karte, kein Kompass, kein Wegweiser in stamm/; Landmark-Formationen im Genom (stamm/bau-vorlagen.js:855), nie gegen Wegfindung gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Landmarke aus 1–3 km sichtbar",
+     "tiefe": "Turm, Fels, Gipfel vom Rauschen der Ferne trennbar",
+     "preis": "P",
+     "richter": "N = 50 Saaten: Anteil Spawn-Orte mit ≥ 1 Landmarke in 1–3 km im Bild, Kontrast ≥ 0,1, ≥ 0,9"
+    },
+    {
+     "nr": 2,
+     "umfang": "Ziel in 1 km per Landmarke",
+     "tiefe": "die Silhouette ist eindeutig",
+     "preis": "P",
+     "richter": "Testspieler (Mensch, nicht Entwickler) nur mit Bild: Erfolg ≥ 0,9, Umweg ≤ 1,5"
+    },
+    {
+     "nr": 3,
+     "umfang": "Karte aus dem Gesetz, 10 km",
+     "tiefe": "Höhenlinien, Wege, Ortsnamen — die Welt zeichnet sich selbst",
+     "preis": "P · Karte ≤ 1 s",
+     "richter": "Wege-Deckung Karte ↔ Draufsicht ≥ 0,95; Ziel in 10 km mit Karte: Erfolg ≥ 0,9"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.spieler.zeit",
+   "name": "Die Zeit des Spielers: Dehnen, Raffen, Springen",
+   "art": "kriterium",
+   "misst": "über wie viele Größenordnungen der Spieler die Zeit dehnen, raffen oder an ein Datum springen kann — rückwärts bis zum ersten Licht, vorwärts bis zur sterbenden Sonne — und ob die Welt danach dieselbe ist, die ein Echtzeit-Lauf ergeben hätte. Die EINE Leiter für die Zeit-Achse des Spielers; was er in der Zeit SIEHT, zählen planet.zeit.klimageschichte (Land), leben.evolution.zeitreise (Leben) und mensch.zeit.spanne (Kultur).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Tag-Länge 1–60 min (stamm/daten.js:135-150), Saison per Wort setzbar (stamm/bild-himmel.js:885-929, Sprung, kein Raffer); Ephemeride ungemessen; Raffer nur in Prüfläufen (stamm/dirigent-takt.js:1045), keine Zeitlupe, kein Epochen-Sprung. — KARTE: 0 — die Sonnenbahn gegen die Ephemeride ist ungemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Tag-Länge 1–60 min, Jahreszeit per Spieler-Wort",
+     "tiefe": "Sonne, Licht, Bewohner-Tag, Laub folgen der Uhr",
+     "preis": "P",
+     "richter": "Sonnenbahn gegen Ephemeride der Breite ≤ 1°; Saison-Wort ändert Laub und Licht im Bildpaar"
+    },
+    {
+     "nr": 2,
+     "umfang": "Zeitlupe 10× (Fliegen-Takt)",
+     "tiefe": "Fall, Flügel, Wasser bleiben stetig und gesetzestreu",
+     "preis": "P · Wechsel ≤ 0,5 s",
+     "richter": "fallender Tropfen in 10×: Fallzeit ±5 % zum Fallgesetz, ≤ 2 px Sprung je Bild"
+    },
+    {
+     "nr": 3,
+     "umfang": "Raffer 10³: ein Tag in 90 s, als Spieler-Verb",
+     "tiefe": "Wetter, Wachstum, Bewohner konsistent",
+     "preis": "P",
+     "richter": "Zustand nach Raffer ↔ nach Echtzeit-Lauf: Feld-Abweichung ≤ 5 % — UND gegen den Start verändert: Sonnenstand, Wetter und der Ort von ≥ 80 % der Bewohner"
+    }
+   ],
+   "sprossenGesamt": 9,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.spieler.gemeinsam",
+   "name": "Viele Menschen, EINE Welt",
+   "art": "kriterium",
+   "misst": "wie viele Menschen zugleich in derselben bleibenden Welt aus demselben Samen stehen, einander als Leib sehen und dieselbe Welt sehen — ungeteilt, ohne Kopie und ohne Zeitdehnung. Last-Protokoll ab Sprosse 5: Protokoll-Klienten dürfen die Menge stellen, gerichtet wird an ≥ 100 echten Browser-Fenstern auf echten Geräten mitten in ihr. Die Leiter endet bei 10⁶ — dort ist das Protokoll fahrbar; „Millionen von Personen“ meint Bewohner, sie zählt mensch.menge.bevoelkerung.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "P2P über RTCPeerConnection (stamm/netz-p2p.js:451), Räume als Map (signaling-server.js:63); gemessen nur zwei Seiten in EINEM Browser, §22.K4 0/2.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "2 Spieler, zwei physische Geräte",
+     "tiefe": "Peer als Leib im Bild, beide sehen dieselbe Welt",
+     "preis": "P · ≤ 100 kbit/s je Spieler",
+     "richter": "Taste an A → Leib im Bild von B p95 ≤ 150 ms; Welt-Bild an gleicher Kamera ≤ 1 % Pixel-Abweichung (ohne Leiber)"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Spieler, ein Dorf",
+     "tiefe": "Werk und Spur des einen stehen beim anderen; gemeinsames Bauen ohne Verlust",
+     "preis": "P bei allen",
+     "richter": "Werk von A bei B ≤ 1 s; 10 Spieler × 30 min: 0 verlorene Edits, 0 Durchdringungen im Bild"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Spieler, eine Stadt",
+     "tiefe": "Bewohner reagieren auf alle gleich",
+     "preis": "P bei 100 sichtbaren Leibern",
+     "richter": "N = 20 Bewohner: gleicher Tagesplan auf allen Klienten; Pose-Latenz p95 ≤ 150 ms"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "tore.K4",
+     "text": "Mitspieler: man sieht sich, man baut zusammen — zwei echte Geräte",
+     "staffel": "\"1 = zwei physische Geräte im LAN, der Peer im Bild von B (Klassen-Teilung > 0, nie im Ursprung) · 2 = Pose-Latenz p95 ≤ 150 ms (Tastendruck an A → Leib im Ausgabe-Bild von B), ein Bau von A steht bei B ≤ 1 s mit gleichem Bau-Hash, Rejoin ≤ 31 s nach 3 s Ausfall\"",
+     "fundstellen": [],
+     "stationen": []
+    }
+   ]
+  },
+  {
+   "id": "erleben.spieler.nichtleib",
+   "name": "Sein, was kein Leib ist",
+   "art": "kriterium",
+   "misst": "ob der Spieler Perspektiven einnimmt, die kein Lebewesen sind — Wolke, Fluss, Lava, Vulkan, Planet, Stern; Schwarm oder Stadt als Ganzes; Maschine, Fahrzeug-Geist, Roboter — mit den Verben dieses Dings und in seiner Zeit. Jeden Leib zählt erleben.spieler.rolle.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Der Spieler ist EIN Leib mit Verben (siehe erleben.spieler.rolle); keine Perspektive ohne Leib.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EIN Ding der Welt: der Spieler ist ein Fluss",
+     "tiefe": "er fließt nach dem Gefälle, schwillt mit dem Regen, trägt Geschiebe; sein Verb ist der Lauf",
+     "preis": "P",
+     "richter": "10 min als Fluss: der Weg ist die Gefälle-Linie der Welt (Abweichung ≤ 5 %); ein Eingriff des Spielers (Lauf verlegen) ändert das Ufer im Bildpaar"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Dinge: Wolke, Wind, Feuer, Lava, Gletscher",
+     "tiefe": "jedes in seiner Zeit (Gletscher im Raffer, Feuer in Echtzeit) und mit seiner Grenze",
+     "preis": "P · Wechsel ≤ 5 s",
+     "richter": "je Ding 3 Verben mit Weltwirkung im Bildpaar; die Grenze hält (Feuer ohne Brennstoff erlischt)"
+    },
+    {
+     "nr": 3,
+     "umfang": "das Ganze sein: Schwarm, Herde, Wald, Stadt",
+     "tiefe": "die Teile leben weiter; der Spieler lenkt die Neigung, nicht jedes Glied",
+     "preis": "P",
+     "richter": "als Stadt: eine Vorliebe gesetzt (Hafen, Höhe) → das Wachstum folgt binnen 50 Spieljahren; 100 Zufallsbewohner leben ihren Tag weiter"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.spieler.forscher",
+   "name": "Instrument und Ursache — der Blick des Forschers",
+   "art": "kriterium",
+   "misst": "ob der Spieler die Welt mit Instrumenten befragen kann — Fernrohr, Mikroskop, Seismograph, Spektrum, Bohrkern, Feldkarte — und ob das Instrument die Ursache zeigt, die das Gesetz wirklich rechnet. Eine Welt aus Gesetzen kann ihre Ursachen zeigen; hier zählt, ob man an ihr die Wirklichkeit lernt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: Mikroskop, Seismograph, Spektrometer — 0 Treffer in stamm/ und den Kernen; „Teleskop“ nur als Form-Signatur eines Bauteils (stamm/bau-teile.js:291, 374) (Grep 14.11.).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EIN Instrument: Fernrohr auf den Mond der Welt",
+     "tiefe": "es zeigt mehr, als das Auge sah, und dasselbe Ding",
+     "preis": "P",
+     "richter": "das Fernrohr-Bild zeigt Krater, die beim Anflug an derselben Stelle liegen (Lagefehler ≤ 1 %)"
+    },
+    {
+     "nr": 2,
+     "umfang": "5 Instrumente: dazu Mikroskop, Thermometer, Kompass, Lot",
+     "tiefe": "der Messwert stimmt mit der Welt",
+     "preis": "P",
+     "richter": "je Instrument 20 Messungen: Wert gegen den Zustand, den ein zweiter Weg zeigt (Eis schmilzt bei 0, Lot gegen Tauchgang) ±5 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Feldkarten: Wärme, Strömung, Wind, Bestand, Dichte der Menschen",
+     "tiefe": "die Karte ist das Feld, das die Welt rechnet — nicht gemalt",
+     "preis": "P · Karte ≤ 1 s",
+     "richter": "20 Stichpunkte je Karte: die Karte sagt den Ort voraus, an dem der Spieler das Ding dann antrifft (Herde, Strömung) ≥ 90 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.schoepfen.hebel",
+   "name": "Der Hebel: Geste, Plan, Gott — Folge im Ego",
+   "art": "kriterium",
+   "misst": "wie viel Welt EINE Geste, ein Plan oder ein Gott-Eingriff gesetzestreu verändert — und ob die Folge in der Ego-Sicht am einzelnen Bewohner ankommt; die Kraft des Werkzeugs, nie der Fleiß des Bauens.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "72/72 Werke über echte Ereignisse (Werkstatt, Rezeptbuch, Hotbar je 24/24), Statik, Turm 70 m; Haus als Slot 2/2 (§21); Wille → Bild ≤ 1 s offen (bauen.K1#2, Radeon 1 052–2 346 ms kalt); Bildvergleich Studio ↔ Welt und Blindurteil ungefahren. Pinsel, Terraforming, Gesetz-Geste: nichts. — KARTE: 0 — Wille → Bild an der Radeon 1 052–2 346 ms kalt gegen ≤ 1 s; Bildvergleich Studio ↔ Welt ungefahren; Werke headless gebucht.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Werk über ≤ 3 Eingaben",
+     "tiefe": "steht, trägt, wirkt (Statik, Tür, Brennglas); gleich dem Studio-Werk",
+     "preis": "P · Wille → Bild ≤ 1 s",
+     "richter": "Konstruktions-Prüfsatz richtig geurteilt mit sichtbarer Folge, Klicks und Zeit am Ereignis-Strom, beide Geräte; Bildvergleich Studio ↔ Welt im Band"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Werk wird Teil des Orts",
+     "tiefe": "Gasse legt sich um, Haus wird Slot",
+     "preis": "P · ≤ 1 s",
+     "richter": "Bildpaar Spieler-Hof ↔ Gesetz-Hof derselben Region: Blindurteil unterscheidet ≤ 60 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10¹: einen Weg setzen",
+     "tiefe": "das Wegenetz ist Gesetz, Bewohner nehmen ihn",
+     "preis": "P",
+     "richter": "nach 1 Spieltag: Anteil Bewohner-Wege über den neuen Weg > 0, Trampelspur im Bild"
+    }
+   ],
+   "sprossenGesamt": 9,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "studios.K2",
+     "text": "Griff → Bild ohne Warten, eine Sitzung, die bleibt",
+     "staffel": "\"1 = Undo/Redo wirkt in 8/8 Studios · 2 = p95 Griff → erstes Bild mit neuem Bau-Hash ≤ 200 ms (Zeilen mit `uniform: true` im Vertrag) bzw. ≤ 1 s (Neubau) auf beiden Geräten, dazu A/B und Persistenz über das Neuladen in 8/8\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g4.js:732",
+      "stationen/g4.js:775"
+     ],
+     "stationen": [
+      {
+       "id": "studios.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z)",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "studios.K2#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "studios.K2#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "studios.K4",
+     "text": "Studio = Welt im Bild — EINE Engine, EIN Licht, EIN Bauer",
+     "staffel": "\"1 = ≥ 3/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 · 2 = 7/7 auf beiden Geräten\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g4.js:2156",
+      "stationen/g4.js:2174"
+     ],
+     "stationen": [
+      {
+       "id": "studios.K4#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "studios.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "studios.K4#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "studios.K4#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "pipeline.K1",
+     "text": "Der Griff steht in der Welt: alle 8 Arten, byte-gleich",
+     "staffel": "\"1 = ≥ 4/8 Studio-Seiten, deren Werk mit gleichem Bau-Hash in der Welt steht · 2 = 8/8, mit zufälligem ov je Lauf und jeder Zeile von PARAMS_BY_KIND\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:959",
+      "stationen/g4.js:976"
+     ],
+     "stationen": [
+      {
+       "id": "pipeline.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "8/8 Studio-Seiten mit gleichem Bau-Hash in der Welt (Arten 23/23, Saat 2993737635), Konsum im Spiel grün",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "pipeline.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "8/8 Studio-Seiten mit gleichem Bau-Hash in der Welt (Arten 23/23, Saat 2993737635), Konsum im Spiel grün",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "bauen.K1",
+     "text": "Vom Willen zum stehenden Werk: ≤ 3 Eingaben, ≤ 1 s, auf jedem Weg",
+     "staffel": "\"1 = jeder Weg (Werkstatt, Rezeptbuch, Hotbar) stellt das Werk über echte DOM-Ereignisse, gezählt am Ereignis-Strom · 2 = ≤ 3 Eingaben und p95 ≤ 1 s bis zum ersten Ausgabe-Bild in L0, kalt und warm, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g4.js:1590",
+      "stationen/g4.js:1657"
+     ],
+     "stationen": [
+      {
+       "id": "bauen.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2)",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "bauen.K1#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "bauen.K1#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "bauen.K2",
+     "text": "Das gesetzte Haus gehört dem Ort: EIN Grund-Datum, Slot im Plan",
+     "staffel": "\"1 = Erdbau und Vorplatz wie ein Dorf-Slot derselben Gestalt (Byte-Vergleich der ortPlan-Ausgabe), am Hang mit Gefälle ≥ 15 % · 2 = im Ortsradius Slot des Plans mit umgelegter Gasse, Keller über die Treppe ohne Anti-Clip-Hub\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:1732",
+      "stationen/g4.js:1780"
+     ],
+     "stationen": [
+      {
+       "id": "bauen.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "haus_italienisch am Hang 0.408 (Soll ≥ 0,15) · Erdbau 3 Splats (Platte, Grund, Vorplatz) · byte-gleich dem Dorf-Slot true · Vorplatz-Boden 1 (Erde 0,3 m unter, keine 0,3 m über der Platte) · Erde über der Diele 0/315",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "bauen.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "haus_italienisch auf der Gasse: Grundriss-Punkte auf der Gasse 15 → 0 (von 25) · Erdbau byte-gleich dem Ein-Slot-Plan true · Fremd-Slots im Plan 1 · Gang in den Keller erreicht, Hub 0.20 m je Schritt (Soll ≤ 0,3)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "bauen.K3",
+     "text": "Das Teil gehorcht dem Gesetz: Statik und Wirkung aus der Form, in der Welt",
+     "staffel": "\"1 = die Wirkung aus der Form ist gemessen, die Statik gilt nur in der Werkstatt · 2 = ein Prüf-Satz aus 10 Konstruktionen (5 stabil, 5 instabil) wird in der Welt 10/10 richtig geurteilt mit sichtbarer Folge, und 5 Wirkungs-Konstruktionen halten 100 %\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:1821",
+      "stationen/g4.js:1859"
+     ],
+     "stationen": [
+      {
+       "id": "bauen.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Wirkung aus der Form: Plattform: steht nach 480 s (max. Wärme 0) · Linse: glimmt 3 s, brennt 7 s („Die Sonne entzündete durch „Brennglas\" „Eiche\" (30 m von dir\") · Regen: die Eiche s",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "bauen.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Statik 10/10 richtig, Wirkung 5/5",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "bauen.K4",
+     "text": "Bauen in jeder Höhe und auf Gebautem",
+     "staffel": "\"1 = ein Turm aus 20 Blöcken trägt ≥ 60 m über dem Gelände (Fuß ≤ 0,15 m über dem Mesh) und hält über den Reload (0 Löcher) · 2 = auch auf Dach, Fels und Brücke (oberste Fläche, `_bodenSichtAt`), der Fern-Ring zeigt den Edit ≤ 1 s (byte-Diff), Ego und Third, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:1910",
+      "stationen/g4.js:1958"
+     ],
+     "stationen": [
+      {
+       "id": "bauen.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Turm aus 20/20 Blöcken über die Maus 70.00 m über dem Gelände · Hub 3.49–3.52 m je Block · Sohle ≤ 0.03 m neben dem Mesh · nach dem Reload 20 Edits, 0 Löcher, Sohle 0.01 m",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "bauen.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Dach Ego 69.97 m, Sohle ≤ 0.04 m, Ring 165.26/165.26 m, Edit nach 2 Takten (69 Bytes) · Dach Third 69.94 m, Sohle ≤ 0.06 m, Ring 167.34/167.34 m, Edit nach 2 Takten (3 Bytes) · Fels Ego 69.98 m, Sohle ≤ 0.02 m, Ring 162.41/162.41 m, Edit nach 2 Takten (3 Bytes …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.schoepfen.satz",
+   "name": "Ein Satz wird Welt",
+   "art": "kriterium",
+   "misst": "wie groß und wie wahr die Welt-Änderung ist, die EIN Satz oder Absatz im echten Spiel erzeugt, und wie schnell sie im Bild steht.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Op spawn_studio (stamm/feld-dsl.js:1072); KI-Korpus 41/41 gegen lokales qwen3:4b, Absicht 100 %, Negativ 9/9, p95 4 998 ms — alles headless, ein Werk je Satz; ki.K5#2 (0 Hänger) offen; im echten Fenster ungerichtet. Stadt des Worts (300 Häuser) ohne Plausibilitäts-Richter. — KARTE: 0 — headless (R2).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Werk eines Studios (Eiche, Haus)",
+     "tiefe": "das Gemeinte entsteht, Negativ-Sätze tun nichts",
+     "preis": "P · Satz → Bild ≤ 6 s lokal",
+     "richter": "eingefrorener Korpus ≥ 40 Sätze im echten Fenster: gültig ≥ 95 %, Absicht ≥ 85 % am Ausgabebild, 0 Brüche, 0 Hänger > 100 ms"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Werk, sein ganzer Ausdrucksraum",
+     "tiefe": "„knorrige alte Eiche\" sieht knorrig und alt aus",
+     "preis": "P · Satz → Bild ≤ 3 s",
+     "richter": "Bildpaar Satz-Werk ↔ Referenzfoto der genannten Eigenschaft, 100 Regler-Sätze: Blindurteil „passt\" ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10–100 Werke: ein Ensemble (Hof, Weiler, Hain)",
+     "tiefe": "Anordnung gehorcht dem Ort (Hang, Wasser, Weg)",
+     "preis": "P · erstes Bild ≤ 3 s",
+     "richter": "100 Zufallssätze × Zufallsorte: Anteil plausibler Ensembles im Blindurteil ≥ 80 %"
+    }
+   ],
+   "sprossenGesamt": 9,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "studios.K1",
+     "text": "Jeder Griff wirkt sichtbar oder hörbar — das ganze Gesetz in der Hand",
+     "staffel": "\"1 = ≥ 80 % der Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr · 2 = 100 % — der Nenner ist die Zeilen-Zahl bei der Messung (eine Ratsche, die nur wächst, mit den Baum-Zeilen)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:2121",
+      "stationen/g4.js:2138"
+     ],
+     "stationen": [
+      {
+       "id": "studios.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "152/152 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (100.0 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · Baum-Zeilen gemessen · Exits 0/0/0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "studios.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "152/152 Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (100.0 %, davon 17 an ihrem Leser der Welt) · Bild-Schwelle 0,1 mm 0.01 % → tot · 3 cm 4.30 % → wirkt · Baum-Zeilen gemessen · Exits 0/0/0",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ki.K1",
+     "text": "Satz → Tat mit echtem Modell: EIN eingefrorener Korpus, Welt-Prädikate",
+     "staffel": "\"1 = Grundstufe ohne Schlüssel: ≥ 10 Positiv-Sätze mit Welt-Prädikat gemessen und gehalten · 2 = das Soll mit Modell (gültig ≥ 95 %, Absicht ≥ 85 %, 0 Brüche, Negativ-Sätze scheitern benannt)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:1240",
+      "stationen/g4.js:1308"
+     ],
+     "stationen": [
+      {
+       "id": "ki.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "32 von 32 Positiv-Sätzen mit Welt-Prädikat, Negativ 9/9 ohne Tat, Brüche 0, Ratsche hält (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-11-06)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "ki.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "41/41 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434: gültig 100.0 % (Soll 95), Absicht 100.0 % (Soll 85), Brüche 0, Negativ 9/9 ohne Tat benannt, p95 4998 ms (genannt)",
+       "sha": "039509b2",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ki.K2",
+     "text": "Die KI spricht das ganze Gesetz: Regler-Wörter",
+     "staffel": "\"1 = ≥ 50 % der Zeilen von PARAMS_BY_KIND sind aus einem KI-Programm erreichbar (ov als fünftes Argument von spawn_studio, am Kern geklemmt, fail-closed), und der Bau-Hash des Welt-Werks folgt · 2 = ≥ 95 % und der Korpus-Teil Regler-Wörter („knorrig“, „schmal und hoch“) ≥ 80 % mit Modell\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:1421",
+      "stationen/g4.js:1450"
+     ],
+     "stationen": [
+      {
+       "id": "ki.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "152 von 152 Zeilen (100.0 %) aus einem KI-Programm, Bau-Hash folgt",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "ki.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "152 von 152 Zeilen (100.0 %), Korpus-Teil 20 von 24 Sätzen mit Welt-Prädikat (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-26)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ki.K5",
+     "text": "Antwort und Kosten: die KI hält den Takt",
+     "staffel": "\"1 = p95 Satz → erstes sichtbares Ergebnis gemessen mit Anbieter-Host im Netz-Log, an einem Gerät, im Soll (Haiku-Klasse ≤ 3 s, lokal ≤ 6 s) · 2 = dazu Prompt ≤ 4 000 Tokens, 0 Hänger > 100 ms, während die KI-Werke bauen (werkbank haenger), ≤ 0,002 $ je Satz, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g4.js:1369"
+     ],
+     "stationen": [
+      {
+       "id": "ki.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "p95 Satz → Welt 2.41 s über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 0) · 41/41 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434",
+       "sha": "78d37554",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.schoepfen.gesetz",
+   "name": "Gesetz erfinden",
+   "art": "kriterium",
+   "misst": "ob Mensch oder KI ein NEUES Gesetz — Art, Bauweise, Kultur, Physik — schafft, das danach selbst Millionen plausible Werke erzeugt: die Kraft des Samens in Spielerhand.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Spieler-Regel wirkt und reist, Spieler-Gesetzbuch dockt an (7 822 B, §28.K4) — headless; kein Saaten-Richter, keine KI-Erfindung eines Gesetzes. — KARTE: 0 — headless (R2).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Spieler-Regel wirkt in der Welt",
+     "tiefe": "sichtbare Folge, reist zum Mitspieler",
+     "preis": "P",
+     "richter": "Regel im Spiel geschrieben → Wirkung im Bild bei A und B"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Spieler-Gesetzbuch dockt an wie ein Studio",
+     "tiefe": "erzeugt Varianten, nicht ein Ding",
+     "preis": "P",
+     "richter": "100 Saaten: ≥ 80 % plausible Werke; Blindvergleich gegen Studio-Werke derselben Gattung ≤ 60 % Trefferquote"
+    },
+    {
+     "nr": 3,
+     "umfang": "1 Gesetz aus einem Satz (KI): „eine Baumart für Salzwüsten\"",
+     "tiefe": "neue Form gehorcht Ort und Klima",
+     "preis": "P · Satz → erstes Werk ≤ 10 s",
+     "richter": "100 Erfindungssätze × 100 Saaten: Anteil plausibler UND vom Bestand verschiedener Werke ≥ 70 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "studios.K5",
+     "text": "Ein neuntes Gesetzbuch dockt an, ohne dass der Wirt eine Zeile lernt",
+     "staffel": "\"1 = ein Probe-Gesetzbuch (Fixture-Kern in spec/ mit PARAMS_BY_KIND und Bauer) steht über die Werkstatt in der Welt mit LOD-Kette, Kosten-Leiste und Speicher-Rundlauf, `git diff stamm/` = 0 · 2 = auf allen Wegen (Werkstatt, KI-Satz, Foundry, P2P), und der Atlas nennt seine EINE Quelle\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g4.js:2192",
+      "stationen/g4.js:2234"
+     ],
+     "stationen": [
+      {
+       "id": "studios.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "3/3 Baupläne · Stufen L0 160 · L1 32 · L2 14 △ · Kosten pass/pass/pass · Neuladen steht · der Wirt nennt die Art 0×",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "studios.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "4/4 Wege (✓ Werkstatt 6f1c8c0a/1 · ✓ KI-Satz a996fd2b/1 · ✓ Foundry 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1 · ✓ P2P 6f1c8c0a/1) · Atlas worlds/neuntes-buch/stele-core.js · der Wirt nennt die Art 0×",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ki.K4",
+     "text": "Die Regeln des Modells laufen durch dieselbe Wertung",
+     "staffel": "\"1 = im Selbstlauf mit Modell registrierte LLM-Regeln (source llm) werden von derselben Fitness gewertet und verdrängt wie Nexus-Regeln, gegen den Gegenlauf mit gemischtem δ · 2 = ihr Anteil an überlebenden Regeln mit δ > 0 gemessen, 0 verbotene Ops, Takt ≤ 0,2 ms, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g4.js:1540"
+     ],
+     "stationen": [
+      {
+       "id": "ki.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "LLM-Regeln neu je Drittel 2/1/2, erneuert 4 · verfallen 5 · verdrängt 0 (Nexus 164 · 136 · 0); Gegenlauf: erneuert LLM δ+ 0.82 · δ− 0.00, verdrängt 2",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ultiversum.K4",
+     "text": "Spieler schreiben Gesetze und teilen sie",
+     "staffel": "\"1 = ein Spieler schreibt eine DSL-Regel im Spiel, sie wirkt und reist zum Mitspieler · 2 = ein Spieler-Gesetzbuch dockt über Studios K5 an\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:5874",
+      "stationen/g5.js:5915"
+     ],
+     "stationen": [
+      {
+       "id": "ultiversum.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "OK   (h) A schreibt ein neues Gesetz im Gespräch, B trägt es, beide würfeln gleich, es wirkt bei beiden — Hash d7ff724d neu true · bei B true · Wurf in 40 Scheiben gleich true · wirkt bei A true, bei B true · B erinnert  | OK   (h) Selbsttest: die Vorlage ist  …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "ultiversum.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Gegenlauf 3/3 Rezepte · 3/3 Baupläne · steht 160 △ · nach dem Laden da · Bibliothek gesetzbuch 65538958330ff208 · Spieler-Buch (7822 B, neu true, der Wirt nennt es 0×) 3/3 Rezepte · 3/3 Baupläne · steht 160 △ · nach dem Laden da · Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.schoepfen.gespraech",
+   "name": "Im Gespräch erschaffen",
+   "art": "kriterium",
+   "misst": "wie gut Mensch und KI ein Werk Satz für Satz gemeinsam verfeinern — und wie niedrig die Schwelle für den ersten Menschen ist.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Korrektur-Dialoge, Neulings-Schwelle, Gruppe mit KI: nichts gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Neuling, erste Schöpfung",
+     "tiefe": "ohne Anleitung, ohne Fachwort",
+     "preis": "P",
+     "richter": "20 Neulinge ab 10 Jahren: Anteil, der in 5 min ein eigenes Werk erschafft und teilt ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Werk, 5 Korrektursätze („höher\", „älter\", „mehr wie Kyoto\")",
+     "tiefe": "jede Korrektur ändert nur das Gemeinte, Rücknahme jederzeit",
+     "preis": "P · Satz → Bild ≤ 3 s",
+     "richter": "Korrektur-Korpus 100 Dialoge: Endfassung im Blindurteil näher am Wunsch als jede Zwischenfassung ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "ein Ort, der im Gespräch eine Stunde wächst",
+     "tiefe": "die KI erinnert Absicht und Stil",
+     "preis": "P",
+     "richter": "nach 60 min: Urteil des Schöpfers des Orts „das wollte ich\" ≥ 4/5; ≤ 1 vergessene Absicht"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "affekt.K3",
+     "text": "Der Nexus spielt mit: schreibt, wertet, lernt — sichtbar",
+     "staffel": "\"1 = Selektion gemessen: der Anteil der Regeln mit value > 0 steigt vom ersten zum letzten Drittel UND schlägt den Gegenlauf mit gemischtem δ · 2 = ≥ 70 % der Feuer an Zellen unter dem Median von lebendig, ≥ 1 Wirkung je 5 Spielminuten im Blick (Leser aus Feld K5), _tickWorldRules ≤ 0,2 ms, 0 verbotene Ops, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:5073"
+     ],
+     "stationen": [
+      {
+       "id": "affekt.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "value > 0 echt 0.508 → 0.860 · gemischt 0.284 → 0.588 · stumm 0.000 → 0.000 · erneuert echt 177/188 mit value > 0, 1/50 ohne, gemischt 8/19 mit value > 0, 0/41 ohne · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südw …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "spielgang.K2",
+     "text": "Der erste Eindruck erklärt sich",
+     "staffel": "\"1 = ein Blind-Spieler (frischer Agent, nur Bild und Eingabe, keine Doku) findet gehen, umsehen, Sicht-Wechsel, Werkstatt, Satz und Tor in ≤ 3 min — ≥ 4 von 6 — an einem Gerät · 2 = 6/6 bei 3 von 3 Blind-Spielern, beide Geräte\"",
+     "fundstellen": [],
+     "stationen": []
+    }
+   ]
+  },
+  {
+   "id": "erleben.schoepfen.teilen",
+   "name": "Teilen und offene Bibliothek",
+   "art": "kriterium",
+   "misst": "wie schnell eine Schöpfung beim Empfänger steht und wie viel Ausdrucksraum die offene Bibliothek trägt — nie die bloße Zahl der Einträge.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Welt 1 041 B, Regel 335 B, Bauplan 428 B, signiert, forkbar; Fusion byte-gleich auf zwei Geräten (§28.K2) — headless; fremdes Gerät mit frischem Profil ungemessen (§22.K5 1/2). — KARTE: 0 — headless (R2).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Bauplan im selben Profil",
+     "tiefe": "signiert, gleich",
+     "preis": "P · ≤ 10 s",
+     "richter": "Export/Import: Bildpaar an gleicher Pose gleich"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Bauplan / 1 Welt auf ein fremdes Gerät, frisches Profil",
+     "tiefe": "dasselbe Werk an der Pose von B",
+     "preis": "P · Geste → Bild bei B ≤ 5 s über Mobilfunk",
+     "richter": "B (anderes Gerät, Speicher leer) sieht das Werk; Bildpaar A ↔ B gleich ± Rauschen"
+    },
+    {
+     "nr": 3,
+     "umfang": "forkbare Bibliothek mit Herkunft",
+     "tiefe": "Fork trägt Kette, Autor sichtbar",
+     "preis": "P · Zufallseintrag → Bild ≤ 5 s",
+     "richter": "Zufallseintrag im Bild ≤ 5 s; Fork zeigt Herkunft im Spiel"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "tore.K5",
+     "text": "Teilen in EINER Geste: Bauplan oder Welt reist per Code",
+     "staffel": "\"1 = ein Fluss (Bauplan oder Welt) an einem Gerät: A teilt, B (anderes Gerät, frisches Profil, IDB leer) öffnet; das Werk steht an B's Pose mit gleichem Bau-Hash und studioOv, Signatur gültig, ≤ 10 s · 2 = beide Flüsse (Welt per Einladungs-Code, Kontrolle ≤ 5 s) an beiden Geräten, Bauplan ≤ 4 KB\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:5540"
+     ],
+     "stationen": [
+      {
+       "id": "tore.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Zeit 153 ms (A 381) · A=9c183437/12 B=9c183437/12 ohne=515787a7/12 · Profil A, B, Kontext-Probe: ?",
+       "sha": "78d37554",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ultiversum.K2",
+     "text": "Welten heiraten: Fusion deterministisch",
+     "staffel": "\"1 = fuseWorlds(A, B) byte-gleich auf zwei Geräten · 2 = 0 Schreibe auf den frozen Kern, die gemischten Regeln werten nach Affekt K3\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:5009",
+      "stationen/g5.js:5035"
+     ],
+     "stationen": [
+      {
+       "id": "ultiversum.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "✅ FUSION A+B byte-gleich — 1146 Bytes | ✅ GERICHTET: B+A ≠ A+B | ✅ TÄTER-PROBE: Date.now in der Geburt ist ROT",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "ultiversum.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Schreibe 0 (Selbsttest 1) · heilA 30× v 0.5521 ern. 3 · heilB 30× v 0.3089 ern. 3 · leer 7× v 0 verfiel · pflug fehlt · steil fehlt · im Stand heilA/leer/heilB · Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ultiversum.K3",
+     "text": "Die Bibliothek: signiert, klein, forkbar",
+     "staffel": "\"1 = Welten, Regeln und Baupläne liegen signiert vor, je Gesetz ≤ 8 KB, auffindbar über einen Code · 2 = forkbar mit Herkunfts-Kette, offen lesbar\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:5056",
+      "stationen/g5.js:5079"
+     ],
+     "stationen": [
+      {
+       "id": "ultiversum.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Welt 1041 B · Regel 335 B · Bauplan 428 B · signatur · code · gross 17850 B",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "ultiversum.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "✅ FORK: Herkunfts-Kette (Autor und Code je Vorgänger), eigene Signatur, das Gesetz verände | ✅ BIBLIOTHEK offen lesbar: das Gesetz im Eintrag = das Gesetz der Welt",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.schoepfen.schutz",
+   "name": "Schutz, Vertrauen und Moderation",
+   "art": "kriterium",
+   "misst": "wie gut die Welt Werke und Menschen gegen feindliche Inhalte, Störer und gelenkte KI schützt — bei wachsender Menge.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "RULE_FORBIDDEN_EFFECT_OPS (stamm/feld-dsl.js:194); 0 von 7 Injektionen erreichen das Modell (§28.K5) — headless, Korpus zu klein für S2. — KARTE: 0 — headless (R2).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 geteilte Welt mit verbotener Tat",
+     "tiefe": "benannt abgewiesen",
+     "preis": "P · 0 Kosten im Takt",
+     "richter": "feindliche Welt geladen: eigene Welt im Bildpaar unverändert, Abweisung im Spiel benannt"
+    },
+    {
+     "nr": 2,
+     "umfang": "feindlicher Korpus ≥ 10²: Injektionen in Namen, Plänen, Regeln",
+     "tiefe": "0 erreichen das Modell, 0 Taten",
+     "preis": "P",
+     "richter": "Injektions-Korpus ≥ 100: 0 ausgeführte fremde Anweisungen"
+    },
+    {
+     "nr": 3,
+     "umfang": "roter Spieler am zweiten Gerät; Besitz und Rechte",
+     "tiefe": "Griefing wirkungslos auf fremden Besitz, erlaubte Änderung gelingt",
+     "preis": "P beim Opfer",
+     "richter": "30 min, 100 Versuche: 0 bleibende Schäden am fremden Werk, 100 % erlaubte Änderungen gelingen"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "ultiversum.K5",
+     "text": "Vertrauen: eine fremde Welt kann meine nicht töten",
+     "staffel": "\"1 = eine geteilte Regel oder Welt mit verbotenen Ops wird beim Laden benannt abgewiesen (RULE_FORBIDDEN_EFFECT_OPS), 0 Schreibe auf den frozen Kern · 2 = ein Korpus aus Prompt-Injektionen in Bauplänen, Namen und Regeln lenkt die KI nicht (0 ausgeführte fremde Anweisungen), die Signatur-Prüfung schlägt bei Manipulation an\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:5102",
+      "stationen/g5.js:5133"
+     ],
+     "stationen": [
+      {
+       "id": "ultiversum.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "✅ op:rule — op:rule · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:rule). | ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden) | ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinner …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "ultiversum.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "✅ FEIND Wand: jede Erinnerung trägt ihre Namen als Datum — 0 ungetarnt | ✅ FEIND erreicht: keine Injektion erreicht das Modell — 0 von 7 (Rufe {\"stimme\":1,\"wesen\":1,\"journal\":8}) | ✅ FEIND ausgeführt: 0 fremde Anweisungen — 0 Taten | ✅ FEIND Signatur: die Mani …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

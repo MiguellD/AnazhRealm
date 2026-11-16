@@ -1,0 +1,591 @@
+{
+ "paket": "01-planet-geologie-relief",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "planet.geologie.platten",
+   "name": "Gestalt aus Platten — Kugel, Kontinente, Drift",
+   "art": "kriterium",
+   "misst": "wie groß und wie wahr die Gestalt des Planeten aus EINEM Tektonik-Gesetz folgt, über Raum und über die Zeit",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: ebene Welt, Großform aus drei glatten Rausch-Feldern (gelaende-core.js:361-391), Kontinentalität ohne Ursache; Grep 14.11. ohne Treffer für Tektonik.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Region 10⁴ km²",
+     "tiefe": "Gebirge liegen in Gürteln, Gräben an Rissen — die Gestalt hat eine Ursache",
+     "preis": "P im Überflug",
+     "richter": "30 Saaten: Gebirgsfläche > 2 km liegt in Gürteln mit Achsen ≥ 4:1 in ≥ 70 %; Blindpaar Schummerung gegen reale Region"
+    },
+    {
+     "nr": 2,
+     "umfang": "Kontinent 10⁶ km²",
+     "tiefe": "bimodale Hypsometrie, Schelf, Tiefseegraben",
+     "preis": "P im Überflug",
+     "richter": "100 Saaten: Höhenhistogramm mit zwei Gipfeln im Abstand 3–6 km in ≥ 90 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kugel von Mondgröße 4·10⁷ km², Orbit bis Boden ohne Ladebild",
+     "tiefe": "Horizont krümmt sich, Gürtel umspannen die Kugel",
+     "preis": "P im ganzen Abstieg",
+     "richter": "Horizont-Senkung im Bild = acos(R/(R+h)) ±0,1° bei 1, 10, 100 km; Blindpaar Orbitbild gegen Relief-Globus"
+    }
+   ],
+   "sprossenGesamt": 9,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.geologie.vulkan",
+   "name": "Vulkanismus — Magma, das fließt und Land macht",
+   "art": "kriterium",
+   "misst": "ob Vulkane als Ereignis UND als Landform aus einem Magma-Gesetz entstehen und die Oberfläche bleibend formen",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Mechanik von Sprosse 1 steht: Lava als Tat-Decke mit Newton-Abkühlung (gelaende-core.js:1787-1831), Bild im Spiel ungemessen. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Lava als Decke einer Zelle",
+     "tiefe": "Newton-Abkühlung, Glut über dem Draper-Punkt, erstarrt zu Stein, Dampf am Wasser; fließt nicht",
+     "preis": "P am Guss",
+     "richter": "Kruste bildet sich und die Glut verlischt im Bild nach der Abkühlkurve gemessener Laven ±30 %; Blindpaar Glutbild gegen Lava-Foto (2AFC ≤ 85 %)"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Strom 1 km, ein Ausbruch",
+     "tiefe": "Strom fließt, bildet Front und Kruste",
+     "preis": "P neben dem Strom",
+     "richter": "Frontgeschwindigkeit auf 10°-Hang 0,01–10 km/h; Blindpaar Clip gegen Ausbruchsfilm"
+    },
+    {
+     "nr": 3,
+     "umfang": "ein Vulkan 10 km wächst aus seinen Ausbrüchen",
+     "tiefe": "Schild, Strato, Caldera, Kegel ENTSTEHEN aus der Zähigkeit",
+     "preis": "P am Kegel",
+     "richter": "30 Saaten verschiedener Zähigkeit: Flankenneigung folgt ihr (Schild 2–10°, Strato 25–35°) in ≥ 90 %; Profil gegen reales Gegenstück ≤ 15 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "stoffe.K3",
+     "text": "Phasen: Gefrieren, Schmelzen, Erstarren, Glühen",
+     "staffel": "\"1 = eine Phase mit Körper-Folge (das Eis trägt den Spieler, y am Spiegel ±5 cm) · 2 = alle vier: Schnee schmilzt über 0 °C und speist den Pegel, Lava (glut-Achse) erstarrt am Wasser unter Dampf zu Basalt, Stahl glüht in der Esse ab seiner Temperatur (Schmiede = Welt)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3489",
+      "stationen/g1.js:3556"
+     ],
+     "stationen": [
+      {
+       "id": "stoffe.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Winter -4.375 °C am Spiegel: 1151 Schritte auf dem See, die Füße bis 0 m vom Spiegel, 0 schwimmend · 3 von 3 Tieren am Spiegel · Feld +10 °C (5.625 °C): 1003 Schritte schwimmend",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "stoffe.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "5 von 5 Gliedern · Eis ✓ (-4.375 °C) · Schnee ✓ (Pegel 0.163 m, Grenze 178 m übers Jahr, 81 Chunks neu) · Wasser-Pegel ✓ (See +0.2 m in 3 Wochen, Fluss +0.2 m, Körper +0.2 m, 1343 Chunks neu) · Lava ✓ (erstarrt Land Takt 2, See Takt 1 unter Dampf) · Stahl ✓ (s …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.geologie.gebirge",
+   "name": "Gebirge und Bruch — Orogenese, Verwerfung, Beben",
+   "art": "kriterium",
+   "misst": "ob Gebirge aus Kollision wachsen und Beben aus Verwerfungen kommen, sichtbar und fühlbar",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: keine Faltung, keine Verwerfung, kein Beben (Grep 14.11.); das Schicht-Gesetz T5 (gelaende-core.js:374-375) zählt bei planet.zeit.archiv.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "jede Felswand trägt ihre Verformung",
+     "tiefe": "gefaltet, gekippt, versetzt nach der Geschichte des Orts",
+     "preis": "P an der Wand",
+     "richter": "Blindpaar Felswand gegen Foto; in Kollisionszonen ≥ 80 % der Wände verformt, im alten Kraton ≤ 20 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Orogen 10⁵ km²",
+     "tiefe": "Kammhöhe, Breite, Isostasie",
+     "preis": "P im Überflug",
+     "richter": "Hypsometrie des Orogens gegen Alpen-/Himalaya-Profil ≤ 20 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Beben einer Region über ein Spieljahr, fühlbar",
+     "tiefe": "Gutenberg-Richter, Herd an Verwerfungen",
+     "preis": "P im Beben, in der Stadt",
+     "richter": "b-Wert 0,8–1,2; ≥ 90 % der Epizentren an Verwerfungen; Boden und Häuser bewegen sich mit der Magnitude"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.geologie.unterwelt",
+   "name": "Die Unterwelt — Höhle, Karst, Röhre",
+   "art": "kriterium",
+   "misst": "ob unter dem Boden eine begehbare, geologisch erklärte Welt liegt",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Mechanik von Sprosse 1 steht im Kern: Rauschfelder Wurm/Kaverne/Halle (gelaende-core.js:6843-6865), Mündungs-Gesetz (gelaende-core.js:2800-2806, 5 · 1 · 14 Mündungen/km² an 3 Saaten); im Spiel nie blind gefahren. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Höhlen-Feld bis ~28 m unter Basis, Mündung im Fels",
+     "tiefe": "Wurm, Kaverne, Halle; Mund nur an der Felsflanke",
+     "preis": "P beim Betreten und in der Höhle",
+     "richter": "Mündungen je km² an 3 Saaten im Band; Mund im Bild an ≥ 90 % im Fels"
+    },
+    {
+     "nr": 2,
+     "umfang": "Karsthöhle 1 km",
+     "tiefe": "nur in löslichem Gestein; Tropfstein, Quelle am Ausgang, Doline über dem Hohlraum",
+     "preis": "P in der Höhle",
+     "richter": "≥ 90 % der Höhlen in Karbonat; ≥ 80 % entwässern zu einer Quelle; Dolinen- gegen Höhlendichte r ≥ 0,7; Blindpaar Karstfeld"
+    },
+    {
+     "nr": 3,
+     "umfang": "System 10 km",
+     "tiefe": "unterirdischer Fluss, Siphon, Einsturzdoline",
+     "preis": "P ohne Ladebild",
+     "richter": "10 km am Stück begehbar; Höhlenplan-Statistik (Verzweigung, Querschnitt) im Band realer Systeme"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "leib.K3",
+     "text": "Wasser und Höhle: Ufer, Schwimmen, Tauchen, Sicht unter Wasser",
+     "staffel": "\"1 = Ufer → Schwimmen → Tauchen ohne Sprung (Lage, Kamera) an einem Gerät · 2 = Unterwasser-Bild aus der EINEN Wasser-Wahrheit (Sicht-Abfall nach Tiefe gegen REF), Höhle mit Licht-Abfall, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4775",
+      "stationen/g5.js:4803"
+     ],
+     "stationen": [
+      {
+       "id": "leib.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Ex …",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K3#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Blick Ego 0,5 ↔ 2,5 m 57.19 %, Third 0,5 ↔ 2,5 m 55.29 %, Ego ↔ Third 0,5 m 4.54 % · ego L 0.2746673/0.2186528/0.1820547 · K 0.23, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746576/0.2214764/0.1847688 · K 0.22, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0. …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K3#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Blick Ego 0,5 ↔ 2,5 m 58.24 %, Third 0,5 ↔ 2,5 m 55.48 %, Ego ↔ Third 0,5 m 5.72 % · ego L 0.2762601/0.221478/0.1828824 · K 0.22, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746637/0.2220571/0.1847694 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 …",
+       "sha": "350e6b11",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.geologie.lagerstaette",
+   "name": "Gestein und Lagerstätte — die Kraft, Funde vorherzusagen",
+   "art": "kriterium",
+   "misst": "ob jede Stelle ein Gestein mit Herkunft trägt und Rohstoffe dort liegen, wo die Geschichte sie hinlegt",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: die Fels-Genese-Achse liegt im Kern (foundry-core.js:5204 rockPhenotype), wählt aber nur die Sorte eines Brockens; kein Leser bindet sie an Ort oder Alter; keine Lagerstätte, kein Mineral.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Gestein je Ort aus seiner Genese",
+     "tiefe": "magmatisch, sedimentär, metamorph sichtbar verschieden und passend zum Ort",
+     "preis": "P an der Wand",
+     "richter": "Jury trennt drei Genesen ≥ 80 %; Genese passt zur Geschichte des Orts ≥ 85 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "geologische Karte einer Region 10⁴ km²",
+     "tiefe": "Gestein folgt Tektonik und Alter",
+     "preis": "P im Überflug",
+     "richter": "Blindpaar geologische Karte gegen reale"
+    },
+    {
+     "nr": 3,
+     "umfang": "Lagerstätten eines Kontinents",
+     "tiefe": "Kohle, Salz, Kupfer, Seifengold, Öl, Bändereisen entstehen aus Becken- und Erzgeschichte",
+     "preis": "P beim Suchen",
+     "richter": "Prospektor-Probe an 30 Saaten: Fundquote nach Zeichen ≥ 5× blindes Bohren"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.geologie.inneres",
+   "name": "Das Innere spricht — Feld, Wärme, Schalen",
+   "art": "kriterium",
+   "misst": "ob das unsichtbare Innere an der Oberfläche spürbar und im Schnitt sichtbar wird",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: kein Magnetfeld, kein Wärmefluss, kein Schnitt (Grep 14.11.).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Kompass auf einem Dipol-Planeten, 20 Orte",
+     "tiefe": "Deklination und Inklination nach Ort",
+     "preis": "P (keine Zusatzkosten)",
+     "richter": "Inklination ≤ 5° gegen Dipol an 20 Orten; Deklination ändert sich mit dem Ort"
+    },
+    {
+     "nr": 2,
+     "umfang": "Umpolung über 10⁶ Jahre",
+     "tiefe": "Feldgeschichte im Gestein des Ozeanbodens",
+     "preis": "P im Messflug",
+     "richter": "Magnetometer-Flug über den Rücken: Streifen spiegelsymmetrisch in ≥ 90 % der Saaten"
+    },
+    {
+     "nr": 3,
+     "umfang": "Wärme an der Oberfläche, 10² Quellen",
+     "tiefe": "Geysire, heiße Quellen, Schwarze Raucher nur über Wärme-Anomalien",
+     "preis": "P am Geysir",
+     "richter": "≥ 95 % der Geysire über Anomalien; Intervalle Minuten bis Stunden"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.geologie.einschlag",
+   "name": "Einschlag und Krater — die Haut als Uhr",
+   "art": "kriterium",
+   "misst": "ob Einschläge Landschaft machen und ihre Dichte das Alter einer Oberfläche erzählt",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: „Krater“ im Code sind Grab-Edits des Spielers.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "ein Krater als Form",
+     "tiefe": "Napf ↔ komplexer Krater mit Zentralberg, Übergang nach der Schwere",
+     "preis": "P am Kraterrand",
+     "richter": "einfache Krater Tiefe/Durchmesser 1:5 ±20 %; Profil gegen reale Krater ≤ 15 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Einschlag als Ereignis",
+     "tiefe": "Feuerball, Druckwelle, Auswurf, Strahlen",
+     "preis": "P im Ereignis",
+     "richter": "Krater-Durchmesser gegen Energie nach Pi-Skalierung ±30 %; Blindpaar gegen Kraterfoto"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kraterfeld einer Region 10⁴ km²",
+     "tiefe": "Größen-Häufigkeit nach Potenzgesetz",
+     "preis": "P im Überflug",
+     "richter": "N(> D) ∝ D^−2 ±0,5"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.relief.grossform",
+   "name": "Relief aus Abtrag — die Großform gegen die Erde",
+   "art": "kriterium",
+   "misst": "ob das Relief über wachsende Fläche die Kennzahlen echter Landschaften trägt, an N Zufallssaaten, im Spiel gefahren",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Mechanik von Sprosse 1 steht HEADLESS: 293/293 Läufe enden in See oder Meer (MEISTERKARTE.md:240, d3708675), im Spiel nie nachgefahren. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Saat, Flussnetz bis zum Horizont",
+     "tiefe": "jeder Lauf endet in See oder Meer",
+     "preis": "P",
+     "richter": "im Spiel an 20 Orten nachgefahren: 100 % der Läufe enden in See oder Meer"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² km², 20 Saaten",
+     "tiefe": "Hack-Gesetz L ∝ A^0,5–0,6, Bifurkation 3–5",
+     "preis": "P, Fernsicht 10 km",
+     "richter": "≥ 80 % der Saaten tragen beide Kennzahlen im sichtbaren Netz"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴ km², 50 Saaten",
+     "tiefe": "Hangverteilung und Hypsometrie-Integral wie ein Erd-DEM gleichen Klimas",
+     "preis": "P, Fernsicht 30 km",
+     "richter": "Wasserstein-Abstand der Hangverteilung ≤ 3° in ≥ 80 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "gelaende.K4",
+     "text": "EIN Wasser-Spiegel für alle Leser — Körper, Tier, Pflanze, Klang",
+     "staffel": "\"1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort · 2 = überall, dazu endet jeder Lauf in See oder Meer und die Strömung treibt\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2095",
+      "stationen/g1.js:2149",
+      "stationen/g1.js:2230"
+     ],
+     "stationen": [
+      {
+       "id": "gelaende.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 0.645/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 …",
+       "sha": "71839b1e",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 …",
+       "sha": "71839b1e",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.relief.formschatz",
+   "name": "Formschatz — Land- und Küstenformen aus Prozessen",
+   "art": "kriterium",
+   "misst": "ob der Same Formen ungerufen hervorbringt, wo die Prozesse am Ort sie verlangen, und dem Klima folgt — nie die Zahl gebauter Typen",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: Profil-Gesetze V/Trog und Schichtstufe stehen im Kern (gelaende-core.js:374-375, 387-388), Mäander kinematisch (gelaende-core.js:765-784); kein Delta, Strand, Fjord, keine Düne; nie blind klassifiziert.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "3 Klassen",
+     "tiefe": "V-Tal/Trog, Aue, Schichtstufe aus dem Profil-Gesetz",
+     "preis": "P",
+     "richter": "Blind-Klassifikation von Ego-Bildern an 20 Saaten ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Klassen, Wasser voll; Region 2 km",
+     "tiefe": "Mäander mit Prall/Gleithang, Schwemmfächer, Talsee, Wasserfall, Terrasse; das Ufer liest als Ufer",
+     "preis": "P",
+     "richter": "Blind-Klassifikation ≥ 80 % je Klasse; plausible Ufer-Bilder an 50 Zufallsorten ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "30 Klassen, 4 Agenzien, 10 km Küste und Binnenland",
+     "tiefe": "Delta, Lagune, Strand, Kliff, Kar, Moräne, Barchan, Badlands — wo Wellenenergie, Tidenhub, Sediment, Gefälle sie verlangen",
+     "preis": "P",
+     "richter": "200 Orte aus 20 Saaten: Bild-Klasse = Klasse, die die Prozessgrößen vorhersagen, ≥ 70 %"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.relief.boden",
+   "name": "Boden — Gestein wird Boden mit Horizonten",
+   "art": "kriterium",
+   "misst": "ob unter jedem Ort ein gereifter Boden liegt, dessen Typ aus Gestein × Klima × Hang × Leben × Zeit folgt",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: keine Horizonte, keine Bodenarten; Erdbodenfarbe aus Rausch-Flecken (stamm/gelaende-boden.js:2459-2556).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Fels und Erdboden eines Orts",
+     "tiefe": "Schutt, Flechte, Moos nach Steile und Feuchte; Erdboden in der Farbe seines Klimas",
+     "preis": "P",
+     "richter": "Blindpaar Ego-Bild gegen Foto gleichen Hangs und Klimas (2AFC ≤ 85 %); an 30 Zufallsposen liegt Schutt am Steilen und Moos im Feuchten wie im Foto-Korpus (Anteile ±20 %)"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Bodenart-Feld, Planet",
+     "tiefe": "Korngröße aus Herkunft (Hang, Aue, Wind)",
+     "preis": "P",
+     "richter": "Korngröße im Bild nimmt stromab ab: Rang ≥ 0,7 an 20 Läufen"
+    },
+    {
+     "nr": 3,
+     "umfang": "Horizonte überall",
+     "tiefe": "O/A/B/C im Anschnitt, Mächtigkeit aus Bodenproduktion − Abtrag",
+     "preis": "P, Anschnitt ≤ 2 s nach dem Graben",
+     "richter": "Graben an 50 Zufallsorten: Horizonte sichtbar; Kuppe dünner als Unterhang in ≥ 90 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.relief.wandel",
+   "name": "Lebendige Form — das Relief ändert sich in Spielzeit und über Epochen",
+   "art": "kriterium",
+   "misst": "ob Abtrag und Ablagerung als Ereignis sichtbar werden und die Oberfläche messbar umformen",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Stand 0: ein Spieler-Graben füllt sich mit Wasser (MEISTERKARTE.md:238), das Wasser gräbt aber nicht.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Graben",
+     "tiefe": "Wasser im Spieler-Graben vertieft ihn, Sediment setzt sich am Fuß ab",
+     "preis": "P während des Ereignisses",
+     "richter": "Volumen-Bilanz Abtrag = Ablagerung ±10 %, sichtbar in ≤ 10 min Spielzeit"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 ha, 1 Starkregen",
+     "tiefe": "Rinnen, Schwemmkegel, Hangrutsch an Übersteilung",
+     "preis": "P während des Regens",
+     "richter": "Zahl neuer Rinnen wächst mit der Regenmenge, Rang ≥ 0,8 an 10 Läufen; Bildpaar vorher/nachher"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 km Fluss, 10² Jahre",
+     "tiefe": "Mäander wandert, schnürt Altarm ab, Hochwasser legt Auenlehm ab",
+     "preis": "P im Zeitraffer",
+     "richter": "Migrationsrate 1–5 % Breite/Jahr; Abschnürung tritt ein; Bildfolge gegen Landsat-Zeitreihe"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "gelaende.K2",
+     "text": "Das Wasser folgt jedem Edit: Graben, Damm, Ferne",
+     "staffel": "\"1 = (a) im Ausgabe-Bild an einem Gerät · 2 = (a), (b) und (d) an beiden Geräten, Ego und Third\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:1875",
+      "stationen/g1.js:1937"
+     ],
+     "stationen": [
+      {
+       "id": "gelaende.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
+       "sha": "715754fc",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K2#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "gelaende.K2#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

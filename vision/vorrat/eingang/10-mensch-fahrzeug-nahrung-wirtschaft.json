@@ -1,0 +1,1024 @@
+{
+ "paket": "10-mensch-fahrzeug-nahrung-wirtschaft",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "mensch.fahrzeug.medium",
+   "name": "Bewegung in jedem Medium",
+   "art": "kriterium",
+   "misst": "in wie vielen Medien der Spieler fährt und wie wahr — Boden, Nässe, Furt, Wind eingeschlossen (Fahrzeuge L1 + L7 S1–3).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Bremsweg Gras/Weg 1,63×, nass 1,48–1,72× (fahrzeug.K1); GTX reißt bei 36 km/h (Bild 35,4 ms); fahrWasser/fahrLuft nur Widerstand (vehicle-core.js:3619/3633)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Land, 1 Wagen, 50 km/h",
+     "tiefe": "Haftung je Boden, Nässe, Furt, Seitenwind",
+     "preis": "P · Fahrt 50 km/h",
+     "richter": "Bremsweg Gras/Weg ≥ 1,5×, nass ≥ 1,3×, Bild ≤ 33 ms während der Fahrt"
+    },
+    {
+     "nr": 2,
+     "umfang": "Land, jede Saat bis 130 km/h, Einspur",
+     "tiefe": "Bremsweg, Kurvengrenze; Spur bleibt im Schlamm",
+     "preis": "P · 130 km/h",
+     "richter": "20 Saaten: Bremsweg 100 → 0 in 30–50 m ∝ v²/μ; Spurrinne nach 10 Durchfahrten sichtbar"
+    },
+    {
+     "nr": 3,
+     "umfang": "+ Wasser: Floß bis Segler",
+     "tiefe": "Auftrieb, Krängung, Segel aus dem Wetter",
+     "preis": "P",
+     "richter": "Wende 80–100°, Höhe gegen den Wind > 0; Rollperiode ± 15 %"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "fahrzeug.K1",
+     "text": "Das Fahr-Gesetz: Reifen, μ aus der EINEN Stoff-Zeile × Nässe, Takt",
+     "staffel": "\"1 = (a) Seitenkraft mit Spitze bei 6–10° Schlupf und ≥ 15 % Abfall ODER (b) μ je Boden aus der EINEN Stoff-Zeile IN DER WELT gemessen (Bremsweg 50 → 0 km/h Gras/Weg ≥ 1,5×) · 2 = (a) + (b) + nass ≥ 1,3× aus der EINEN Nässe + Sim-Takt im Fahr-Schritt ≥ 240 Hz, Labor = Welt S1 ≤ 0,01 m\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:5346",
+      "stationen/g5.js:5373"
+     ],
+     "stationen": [
+      {
+       "id": "fahrzeug.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 %",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "(a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 1.7053025658242404e-13 m (198 Schritte) · Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "fahrzeug.K4",
+     "text": "Übergänge unter Bewegung: Sicht-Wechsel, Auf- und Absteigen, Hang",
+     "staffel": "\"1 = an einem Gerät im Bild gehalten · 2 = an beiden Geräten im Bild, und bei jeder neuen vmax-Stufe neu gemessen\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:3734"
+     ],
+     "stationen": [
+      {
+       "id": "fahrzeug.K4#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.71 m · T4 Absteigen 0.38 m je Bild, Azimut nach 10 Bildern 6.2° · Hang 17.4°",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K4#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.74 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.8° · Hang 17.4°",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.71 m · T4 Absteigen 0.38 m je Bild, Azimut nach 10 Bildern 6.2° · Hang 17.4°",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.74 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.8° · Hang 17.4°",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "fahrzeug.K5",
+     "text": "Rückmeldung: der Körper fühlt die Fahrt",
+     "staffel": "\"1 = ≥ 3 Kanäle mit gemessenem Paar aus dem Ausgabe-Pfad bzw. am Klang-Abgriff · 2 = 6/6 (Motor-Klang, sichtbare Federung, Reifenspur aus dem Schlupf, Staub und Spritzwasser je Boden, Kamera-Rauheit je Boden, Rumble)\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:5316"
+     ],
+     "stationen": [
+      {
+       "id": "fahrzeug.K5#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Federung im Bild: Drift-Wank 8.454 gegen Glatt 0.327 mm, Stoß-Antwort Glatt/Hang 7.561/7.326 mm (Mutante 2.154/1.613) · Rumble Drift 1 gegen Glatt 0.002, Summen 0.566/0.531 (Mutante 0, 0.144) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Federung im Bild: Drift-Wank 8.613 gegen Glatt 0.541 mm, Stoß-Antwort Glatt/Hang 7.239/9.209 mm (Mutante 2.744/0.499) · Rumble Drift 1 gegen Glatt 0.004, Summen 0.594/0.58 (Mutante 0, 0.126) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅",
+       "sha": "94c079cb",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.fahrzeug.form",
+   "name": "Form wird Fahrt",
+   "art": "kriterium",
+   "misst": "ob JEDE gebaute, gesprochene oder erfundene Form nach dem Gesetz fährt — oder ehrlich kentert.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Teile-Werk fährt mit seiner Hülle (stamm/koerper-fahrt.js:550), Preis nicht gemessen",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Werkstatt-Wagen",
+     "tiefe": "Masse, Radstand aus dem Bauplan",
+     "preis": "P · 500 m Fahrt",
+     "richter": "Tempo folgt der Masse"
+    },
+    {
+     "nr": 2,
+     "umfang": "50 Baupläne an Land",
+     "tiefe": "Schwerpunkt und Spur entscheiden Kippen",
+     "preis": "P",
+     "richter": "Kippgrenze ± 15 % gegen statische Formel"
+    },
+    {
+     "nr": 3,
+     "umfang": "+ Rumpf, Segel, Flügel aus Teilen",
+     "tiefe": "Auftrieb aus der gebauten Hülle",
+     "preis": "P",
+     "richter": "Floß sinkt/schwimmt, Gleiter fällt/fliegt an der Formel-Grenze ± 15 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "fahrzeug.K1",
+     "text": "Das Fahr-Gesetz: Reifen, μ aus der EINEN Stoff-Zeile × Nässe, Takt",
+     "staffel": "\"1 = (a) Seitenkraft mit Spitze bei 6–10° Schlupf und ≥ 15 % Abfall ODER (b) μ je Boden aus der EINEN Stoff-Zeile IN DER WELT gemessen (Bremsweg 50 → 0 km/h Gras/Weg ≥ 1,5×) · 2 = (a) + (b) + nass ≥ 1,3× aus der EINEN Nässe + Sim-Takt im Fahr-Schritt ≥ 240 Hz, Labor = Welt S1 ≤ 0,01 m\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:5346",
+      "stationen/g5.js:5373"
+     ],
+     "stationen": [
+      {
+       "id": "fahrzeug.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 %",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "(a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 1.7053025658242404e-13 m (198 Schritte) · Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.fahrzeug.gestalt",
+   "name": "Gestalt-Breite",
+   "art": "kriterium",
+   "misst": "wie viele unterscheidbare, glaubhafte Fahrzeug-Welten die Saaten gebären.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "5 Gattungen, EPOCHE_GESETZ 6 Stufen über EINER Wagen-Vorlage (vehicle-core.js:4523, 4725); Blind-Erkennung nie gefahren",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² Saaten, 5 Gattungen",
+     "tiefe": "als Wagen der Gattung erkannt",
+     "preis": "P",
+     "richter": "≥ 90 % erkannt"
+    },
+    {
+     "nr": 2,
+     "umfang": "Land −5000 bis 2150",
+     "tiefe": "Gestalt je Epoche eigen",
+     "preis": "P",
+     "richter": "Epoche ± 1 Jh. ≥ 70 %; Silhouette gegen Museumsfoto IoU ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Saaten: Land, Wasser, Schiene, alle Kulturen",
+     "tiefe": "Dschunke ≠ Kogge ≠ Dhau",
+     "preis": "P",
+     "richter": "glaubhaft ≥ 90 %, Kultur ≥ 60 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.fahrzeug.lenker",
+   "name": "Lenkerkunst",
+   "art": "kriterium",
+   "misst": "ob die Fahrer fahren können — Pendler, Kapitän, Pilot, Rennfahrer.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "kein Bewohner fährt mit Können; pflicht.C offen",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 Fahrer auf Wegen",
+     "tiefe": "Spur halten, bremsen",
+     "preis": "P",
+     "richter": "1 h: 0 Kollisionen bei Durchsatz und Reisetempo im Band realer Straßen (Zeitlücke 1–3 s, Reisetempo ≥ 80 % des erlaubten), 0 Stillstände ohne Anlass"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Fahrer mit Charakter",
+     "tiefe": "vorsichtig ≠ eilig",
+     "preis": "P",
+     "richter": "Tempo je Charakter trennbar; Zeitlücke 1–3 s"
+    },
+    {
+     "nr": 3,
+     "umfang": "Rennfahrer auf 20 Strecken",
+     "tiefe": "Ideallinie aus der Physik",
+     "preis": "P",
+     "richter": "bester Umlauf ≤ 105 % des Optimums"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.fahrzeug.maschine",
+   "name": "Maschinen, Werkzeug, Fabrik",
+   "art": "kriterium",
+   "misst": "ob dasselbe Kraft-Fluss-Gesetz laufende Maschinen erzeugt, deren Arbeit in der Welt ankommt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Haspel des Ziehbrunnens als Gestalt ohne Wirkung (fachwerk-core.js:5314)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Werkzeug mit Wirkung",
+     "tiefe": "Kraft sichtbar übertragen",
+     "preis": "P",
+     "richter": "Haspel hebt Eimer, Hub folgt Kurbelweg"
+    },
+    {
+     "nr": 2,
+     "umfang": "50 Maschinen-Saaten",
+     "tiefe": "Quelle aus Wetter und Fluss",
+     "preis": "P",
+     "richter": "≥ 90 % arbeiten nur bei Quelle (Mühle steht bei Flaute)"
+    },
+    {
+     "nr": 3,
+     "umfang": "Werkstatt-Kette Rohstoff → Fahrzeug",
+     "tiefe": "Teile entstehen sichtbar",
+     "preis": "P",
+     "richter": "Wagen aus Holz, Eisen, Leder ≤ 10 min"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.nahrung.flur",
+   "name": "Die Flur",
+   "art": "kriterium",
+   "misst": "wie viel Land als Kulturlandschaft entsteht und ob Größe, Zuschnitt, Kante und Lage der Wirklichkeit gleichen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "1–2 Äcker je Feldweg-Ende (fachwerk-core.js:4699–4714), als Fleck im Boden-Kanal gemalt (stamm/siedlung-wege.js:1621); in jedem Dorfbild sichtbar — KARTE: 0 — Beleg ist ein Code-Zitat (R2).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1–2 Äcker je Feldweg-Ende",
+     "tiefe": "Fleck im Boden",
+     "preis": "P · Dorf",
+     "richter": "≥ 1 Acker als Fläche im Bild am Dorfrand"
+    },
+    {
+     "nr": 2,
+     "umfang": "Flur eines Dorfs ≈ 1 km²",
+     "tiefe": "Zuschnitt folgt Hang und Weg, Rain und Hecke",
+     "preis": "P · 150-m-Hügel und Ego am Rain",
+     "richter": "Feldgrößen-Verteilung gegen reale Flur KS ≤ 0,25, Blindurteil ≤ 65 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Landschaft 10² km², 10³ Parzellen",
+     "tiefe": "Flurform aus Werkzeug und Recht",
+     "preis": "P · Flug 100 m/s",
+     "richter": "20 Luftbilder gegen Satellit, Blindurteil ≤ 65 % an 8 Saaten"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "siedlung.K3",
+     "text": "Gelände-Treue: der Grundriss liest den Boden",
+     "staffel": "\"1 = Gassen-Gefälle p95 ≤ 12 % VOR der Erdbau-Glättung in ≥ 4 Saaten · 2 = dazu Hangdörfer über slopeMax 0,35 hinaus, Erdbau-Median je Haus als Kosten, EIN Grundriss-Leser statt drei\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4126",
+      "stationen/g5.js:4173"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "7 Dörfer, Gassen-Gefälle p95 -5,-5 9.5 % · -3,-3 9.1 % · -3,-5 8.5 % · -5,-3 9 % · -2,-4 9 % · -4,-4 8.6 % · Akt 10 %, Versatz 0/0/0/0/0/0/0 m, Selbsttest ✅, Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "4 Hangdörfer -1,-12 0.57/11.2 %/801 m³ · -3,-12 0.51/10.7 %/541 m³ · -3,-14 0.38/9.1 %/451 m³ · -1,-14 0.49/8.5 %/526 m³, 1 Grundriss-Leser, Selbsttests ✅✅, Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.nahrung.frucht",
+   "name": "Die Frucht und das Jahr",
+   "art": "kriterium",
+   "misst": "ob Kulturpflanzen mit Saison, Wetter und Arbeit sichtbar wachsen und aus dem Gesetz statt einer Liste fallen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "keine Kulturpflanze in der Welt; nur das Studio zeichnet Furchen (worlds/fachwerk/fachwerk.js:361) — Zwilling der Darstellung",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Kulturpflanze auf 1 Acker",
+     "tiefe": "Bestand in Reihen",
+     "preis": "P · Ego im Feld",
+     "richter": "Reihen im Bildspektrum ≥ 3σ; Blindurteil ≤ 65 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Art über 1 Spieljahr",
+     "tiefe": "Saat → Reife → Stoppel",
+     "preis": "P · jede Jahreszeit",
+     "richter": "Höhe und Farbe gegen BBCH-Kurve ± 15 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Klimazonen, ihre Pflanzen",
+     "tiefe": "Reis im Wasser, Wein am Südhang",
+     "preis": "P · jede Zone",
+     "richter": "32 Saaten × 4 Zonen: Bild ↔ Klima ≥ 80 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.nahrung.tier",
+   "name": "Das Tier im Dienst",
+   "art": "kriterium",
+   "misst": "wie Menschen Tiere jagen, zähmen, halten und fangen, sichtbar an Land und Meer.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "gebundenes Tier folgt ≥ 10 min über Hang (oekologie.K5); wilde Herde ohne Hirte — KARTE: 0 — die Bindung ist headless gebucht (oekologie.K5).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Tier bindet sich an den Spieler",
+     "tiefe": "Bindung aus Füttern",
+     "preis": "P · Gelände",
+     "richter": "Abstand p95 ≤ 5 m über Hang"
+    },
+    {
+     "nr": 2,
+     "umfang": "Bewohner jagen und fischen",
+     "tiefe": "Beute wird Nahrung",
+     "preis": "P · Ortsrand",
+     "richter": "8 Saaten: ≥ 1 Jagd je Tag, Wildbestand sinkt"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Tiere: Herde mit Hirte",
+     "tiefe": "Weide abgefressen, Pfad",
+     "preis": "P · 100 Tiere im Bild",
+     "richter": "Grasdeckung −≥ 20 % nach 30 Tagen, Viehpfad"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "oekologie.K5",
+     "text": "Bindung und Ansteckung",
+     "staffel": "\"1 = ein gebundenes Tier folgt ≥ 10 min über Hindernisse · 2 = die Ansteckung verschiebt die Stimmung des Spielers messbar gegen einen Gegenlauf mit bond = 0, und die Bindung übersteht den Reload\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5288",
+      "stationen/g2.js:5327"
+     ],
+     "stationen": [
+      {
+       "id": "oekologie.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "600 s gebunden (bond 0.12 → 1): Abstand p50 3.57 · p95 4.91 · max 5.7 m · 3 Wände ohne Durchdringung, Sockel 208 Takte darüber · Hang > 15° 300 s, nass 43 s · ungebunden 144.7 m",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "oekologie.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Stimmung nach 120 s gebunden 0.1164/0.1164 gegen bond = 0 0.0818/0.0818 (Δ 0.0346, Rauschen 0.0000) · bond A 0.12 → 1, 0.12 → 1 · Abstand p50 3/3/3/3 m, Spieler verschoben 0/0/0/0 m · Reload [1,\"follow_player\"] → [1,\"follow_player\"]",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.nahrung.erdbau",
+   "name": "Wasser und Erdbau",
+   "art": "kriterium",
+   "misst": "ob Bewohner Gelände und Wasser umformen, wo es sich lohnt, und die Form physikalisch trägt.",
+   "heute": 0,
+   "kern": 1,
+   "fuss": "kern",
+   "beleg": "Graben füllt sich ≤ 2 s, eine Wasserfläche (gelaende.K2); Bewohner bauen keine Gräben — KARTE: Kern 1 — Graben füllt sich im Ausgabe-Bild an beiden Geräten (gelaende.K2); Bild-Preis beim Graben nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Spieler gräbt, Wasser folgt",
+     "tiefe": "eine Wasserfläche",
+     "preis": "P · Mess-Wiese",
+     "klasse": "Ort",
+     "richter": "Graben gefüllt ≤ 2 s"
+    },
+    {
+     "nr": 2,
+     "umfang": "Bewohner bewässern",
+     "tiefe": "Bach → Graben → Acker",
+     "preis": "P · Dorf",
+     "richter": "Acker grüner als ohne; ohne Bach kein Graben"
+    },
+    {
+     "nr": 3,
+     "umfang": "Terrasse, Mühlteich, Damm",
+     "tiefe": "wo Neigung × Wasser × Epoche tragen",
+     "preis": "P · Gegenhang",
+     "richter": "Blindurteil ≤ 65 %; Terrassen über Schwelle ≥ 80 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [
+    {
+     "station": "gelaende.K2#1",
+     "leiter": "mensch.nahrung.erdbau",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "gelaende.K2",
+     "text": "Das Wasser folgt jedem Edit: Graben, Damm, Ferne",
+     "staffel": "\"1 = (a) im Ausgabe-Bild an einem Gerät · 2 = (a), (b) und (d) an beiden Geräten, Ego und Third\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:1875",
+      "stationen/g1.js:1937"
+     ],
+     "stationen": [
+      {
+       "id": "gelaende.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
+       "sha": "715754fc",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K2#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "gelaende.K2#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.nahrung.strom",
+   "name": "Der Nahrungsstrom",
+   "art": "kriterium",
+   "misst": "ob Menschen von dem leben, was das Land trägt, und Mangel und Überfluss die Welt ändern.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Bewohner mit Rolle feld geht zum Acker (koerper-core.js:4907), nichts wird geerntet, niemand isst",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Dorf erntet und lagert",
+     "tiefe": "Scheune füllt sich, Bewohner essen",
+     "preis": "P · Dorf über 1 Spieljahr",
+     "richter": "Bildpaar Scheune voll/leer, Sägezahn"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Bewohner beim Mahl",
+     "tiefe": "Gericht aus eigener Flur",
+     "preis": "P · 100 beim Essen",
+     "richter": "Korb Feld → Teller verfolgt; Gericht ≤ 65 % vom Foto trennbar"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Orte: Markt",
+     "tiefe": "Preis aus Knappheit",
+     "preis": "P · Handelsstraße",
+     "richter": "Missernte A → Preis ≥ + 50 %, Wagen aus B unterwegs"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "mensch.K2",
+     "text": "Tagesablauf: Rolle × Uhr × Ort",
+     "staffel": "\"1 = ein Bewohner trifft ≥ 0,9 seiner Soll-Orte über 24 Spielstunden · 2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:3945",
+      "stationen/g2.js:5483"
+     ],
+     "stationen": [
+      {
+       "id": "mensch.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "mensch.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
+       "sha": "e4eeee08"
+      },
+      {
+       "id": "mensch.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
+       "sha": "e4eeee08"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.nahrung.hand",
+   "name": "Die Hand am Feld",
+   "art": "kriterium",
+   "misst": "ob Spieler und Bewohner sammeln, pflügen, säen, mähen und ernten — mit dem Werkzeug ihrer Epoche.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Nah-Streu: Kraut, Stein, Holz pflücken, Mahd, Nachwachsen (stamm/vegetation-wiese.js:1741, 2710) — KARTE: 0 — Beleg ist ein Code-Zitat (R2); halten.K3 headless.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Spieler sammelt Wildes",
+     "tiefe": "es wächst nach",
+     "preis": "P · Nah-Wiese",
+     "richter": "Pflanze verschwindet, kehrt nach der Nachwuchs-Zeit"
+    },
+    {
+     "nr": 2,
+     "umfang": "Spieler bestellt ein Feld",
+     "tiefe": "Furche bleibt, Saat geht auf",
+     "preis": "P · Ego am Pflug",
+     "richter": "Bildpaar vor/nach: Furchen in Zugrichtung"
+    },
+    {
+     "nr": 3,
+     "umfang": "50 Bewohner arbeiten sichtbar",
+     "tiefe": "Hacke, Sense, Garbe, Dreschen",
+     "preis": "P · 50 im Bild",
+     "richter": "Erntetag gegen Foto ≤ 65 %; Fläche je Stunde ± 30 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "halten.K3",
+     "text": "Das Werkzeug wirkt nach seiner Form",
+     "staffel": "\"1 = Axt fällt, Spaten gräbt, Sichel erntet über die echte Eingabe, und eine umgeformte Klinge (Axt mit Spaten-Blatt) wirkt nach der neuen Form · 2 = jede Werkzeug-Form der Schmiede, Verschleiß aus dem Stoff\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4928",
+      "stationen/g5.js:4959"
+     ],
+     "stationen": [
+      {
+       "id": "halten.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Q11 grün (form {\"axtBlatt\":{\"baum_eiche\":{\"verb\":\"abbau\",\"wirk\":0.20272765541497276,\"zehrt\":0.008470588235294119},\"boden\":{\"verb\":\"graben\",\"wirk\":0.3986238941467844,\"zehrt\":0.008470588235294119}},\"spatenAxt\":{\"baum_eiche\":{\"verb\":\"abbau\",\"wirk\":0.462) · Sichel …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "halten.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "23 von 23 Gestalten · zehrt bronze 0.0131 > eisen 0.0096 > stahl 0.0085 je Hieb, die halbe Härte 0.0169",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.nahrung.jenseits",
+   "name": "Nahrung jenseits des Ackers",
+   "art": "kriterium",
+   "misst": "ob die Welt Nahrung ohne offenes Feld erzeugt, wo Boden knapp und Energie billig ist.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "nichts",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Gewächshaus und Garten im Ort",
+     "tiefe": "wo die Lagerente es trägt",
+     "preis": "P · Ort",
+     "richter": "Bildpaar ≤ 65 %; nur in passendem Klima"
+    },
+    {
+     "nr": 2,
+     "umfang": "Gewächshausmeer 10² km²",
+     "tiefe": "aus Licht, Wasser, Markt",
+     "preis": "P · aus 10 km",
+     "richter": "vom Orbit als Albedo-Fleck; Blindurteil ≤ 65 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Nahrungstürme der Megastadt",
+     "tiefe": "wo Boden teurer als Licht",
+     "preis": "P · im Turm",
+     "richter": "Stadtnahrung ↔ Bodenpreis r ≥ 0,7"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.wirtschaft.stoffstrom",
+   "name": "Stoffstrom vom Gestein zur Ware",
+   "art": "kriterium",
+   "misst": "wie viele Waren aus Ressourcen des Geländes hergestellt UND verbraucht werden — Gesetz-Hebel H ≥ 10^(n−2) ab Sprosse 3.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Misch-Regel Bronze (schmiede-core.js:2911) nur im Studio; in der Welt hat keine Ware eine Herkunft",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Kette, 3 Waren: Erz → Barren → Werkzeug",
+     "tiefe": "Erz liegt, wo die Geologie es legt",
+     "preis": "P · Dorf",
+     "richter": "Zeitraffer: Halde kleiner, Barren am Ofen, Werkzeug in der Hand"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Waren",
+     "tiefe": "Mengen erhalten sich",
+     "preis": "P · 100 Bewohner",
+     "richter": "7 Tage: hinein = hinaus ± 10 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Waren",
+     "tiefe": "Rezepte aus Stoff-Gesetzen",
+     "preis": "P · 10³ Werke",
+     "richter": "20 Saaten: Warenkorb passt zu Geologie ≥ 90 %; H ≥ 10"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.wirtschaft.beruf",
+   "name": "Werk und Beruf",
+   "art": "kriterium",
+   "misst": "ob man eine zufällige Person ihr Werk tun sieht, das den Stoff ändert, und wie viele Berufe aus Stoff × Technik auftauchen (Geist L2 + Wirtschaft L2).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "8 Rollen (koerper-core.js:4928–4943), Schmiede 10/2 Uhr 2/0 (mensch.K2); kein Werkstück ändert sich; Dorf-Bild Radeon ROT",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "8 Rollen am Werk",
+     "tiefe": "steht zur Werkzeit am Werk",
+     "preis": "P · Dorf zur Werkzeit",
+     "richter": "Schmiede 10 Uhr besetzt / 2 Uhr leer"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Berufe mit Handlung",
+     "tiefe": "Hammer trifft, Werkstück ändert Form",
+     "preis": "P · 40 Arbeitende nah",
+     "richter": "Beruf aus 1 Bild benannt ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Berufe, Lehrling und Meister, Ketten",
+     "tiefe": "Stoff ändert sich, Ware wandert",
+     "preis": "P · Stadt 10³",
+     "richter": "nach 2 h verändert ≥ 0,9; Ware am nächsten Glied ≥ 0,9"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "mensch.K2",
+     "text": "Tagesablauf: Rolle × Uhr × Ort",
+     "staffel": "\"1 = ein Bewohner trifft ≥ 0,9 seiner Soll-Orte über 24 Spielstunden · 2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:3945",
+      "stationen/g2.js:5483"
+     ],
+     "stationen": [
+      {
+       "id": "mensch.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "mensch.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
+       "sha": "e4eeee08"
+      },
+      {
+       "id": "mensch.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
+       "sha": "e4eeee08"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.wirtschaft.markt",
+   "name": "Markt und Geld",
+   "art": "kriterium",
+   "misst": "ob Preise aus Knappheit, Weg und Bedarf entstehen und der Spieler sie spürt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Spieler-Inventar 27 Plätze (stamm/dirigent-kern.js:736); Preis/Münze/Geld in stamm/: 0 Treffer",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Tausch Spieler ↔ Bewohner",
+     "tiefe": "nur, was er hat",
+     "preis": "P · Markt",
+     "richter": "Bestand sinkt, füllt sich nur aus Herstellung"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Markt, 10 Waren",
+     "tiefe": "Knappheit treibt Preis",
+     "preis": "P · Markt",
+     "richter": "Missernte: Brot ≥ + 30 % in 3 Tagen, fällt nach Ernte"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Märkte, Münze",
+     "tiefe": "Münzwert aus Metall",
+     "preis": "P · Markt",
+     "richter": "Preis ↔ Wegkosten r ≥ 0,7"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.wirtschaft.handel",
+   "name": "Fernhandel, Knoten und Ketten",
+   "art": "kriterium",
+   "misst": "ob sichtbare Transporte echte Ladung auf sinnvollen Wegen tragen und Häfen und Lager ihren Ort selbst wählen (Wirtschaft L4 + Netze L5).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Wagen ohne Ladung (hausJeWagen 15); Hafen, Lager: Grep 0",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ware, 1 Weg mit Fahrer",
+     "tiefe": "Stand leert sich ohne Lieferung",
+     "preis": "P · Stadt",
+     "richter": "Bildpaar leer/beladen; ohne Lieferung Stand leer binnen Tagesfrist"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Routen, Karawane, Lieferwagen",
+     "tiefe": "Tier, Wagen, Träger je Gelände",
+     "preis": "P · auf der Route",
+     "richter": "Route ≤ 10 % teurer als die billigste (ORBIS-Maß)"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Routen, Hafen",
+     "tiefe": "Hafen an geschütztem Wasser, Segelzeit aus Wind",
+     "preis": "P · Hafen",
+     "richter": "Hafenlage plausibel 100 %; Schiffe beladen ≥ 80 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.wirtschaft.technik",
+   "name": "Erfindungspfade",
+   "art": "kriterium",
+   "misst": "ob Technik aus Voraussetzungen wächst, Saaten verschiedene Pfade gehen und Erfindungen über Wege wandern — bis zur Gegenwart; die Epochen danach zählt mensch.zukunft.technik.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Werkstoff-Tafeln im Studio, Epochen-Tafel der Stadt (fachwerk-core.js:3294) — Liste, nicht gewachsen; jede Saat hat dieselbe Epochenfolge",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 Techniken mit Voraussetzung",
+     "tiefe": "Stoff + Temperatur + Vorgänger",
+     "preis": "P",
+     "richter": "20 Saaten: 0 Techniken ohne Voraussetzung im Bild"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Techniken, ≥ 5 Pfade",
+     "tiefe": "ohne Zinn keine Bronze",
+     "preis": "P",
+     "richter": "50 Saaten: ≥ 5 plausible Pfadfolgen; Erfindungsjahre streuen ≥ 10 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ als sichtbare Dinge",
+     "tiefe": "in Werkzeug, Bau, Fahrzeug",
+     "preis": "P · jede Epoche",
+     "richter": "Artefakte passen zum Pfad ≥ 80 %; H ≥ 10"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.wirtschaft.energie",
+   "name": "Energie",
+   "art": "kriterium",
+   "misst": "ob jede Arbeit Energie kostet und die Quelle bestimmt, wie viel eine Zivilisation umwandelt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "keine Energie-Größe in der Wirtschaft",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Muskel und Feuer",
+     "tiefe": "Ofen kostet Holz",
+     "preis": "P · Dorf",
+     "richter": "Holzstapel sinkt je Schmelze; ohne Holz kein Barren"
+    },
+    {
+     "nr": 2,
+     "umfang": "Wasser und Wind",
+     "tiefe": "Mühle folgt Abfluss und Wind",
+     "preis": "P",
+     "richter": "Flaute ↔ Wind: Mühle steht ↔ dreht, Mehl knapper"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kohle und Dampf",
+     "tiefe": "Warenstrom je Kopf springt",
+     "preis": "P · Kohlestadt",
+     "richter": "Strom je Arbeitendem ≥ 10× über den Übergang"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  }
+ ]
+}

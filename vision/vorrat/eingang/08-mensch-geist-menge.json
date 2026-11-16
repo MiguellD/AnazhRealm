@@ -1,0 +1,768 @@
+{
+ "paket": "08-mensch-geist-menge",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "mensch.geist.tag",
+   "name": "Bedürfnis und Tag",
+   "art": "kriterium",
+   "misst": "ob eine zufällig angetroffene Person einen Tag lebt, der statistisch wie ein echter aussieht.",
+   "heute": 1,
+   "kern": 0,
+   "fuss": "kern",
+   "beleg": "TAGES_GESETZ 6 Akte (koerper-core.js:4919, 5057), Soll-Orte 81/81, Wiederkehr max 1,2 m (mensch.K2, Radeon und GTX); Dorfplatz-Bild an der Radeon 26,9 fps ≈ 37 ms — Preis ROT — KARTE: Kern 1 — Soll-Orte an beiden Geräten grün (mensch.K2); der Bild-Preis reißt am Dorfplatz (Radeon ≈ 37 ms).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² in 1 Siedlung",
+     "tiefe": "6 Akte, Ortswahl nach 5 statischen Bedürfnissen",
+     "preis": "P · Dorfplatz",
+     "klasse": "Ort",
+     "richter": "Zeitraffer 24 h: Soll-Orte ≥ 0,9; Schmiede 10 Uhr besetzt / 2 Uhr leer"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³, 1 Stadt",
+     "tiefe": "≥ 12 Akte, Wochentag ≠ Feiertag, Kind und Alter anders",
+     "preis": "P · Stadtplatz",
+     "richter": "7 Tage: Akte je Stunde gegen ATUS-Profil ≤ 20 % je Hauptkategorie"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴",
+     "tiefe": "Bedürfnisse als Pegel, 17 Hauptkategorien",
+     "preis": "P · Stadt",
+     "richter": "100 gefolgte Personen: Tagesprofil gegen die Zeitverwendungs-Erhebung ≤ 20 % je Hauptkategorie bei ≥ 0,9; Abweichung vom Vortag bei ≥ 0,3 mit benennbarem Anlass"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [
+    {
+     "station": "mensch.K2#2",
+     "leiter": "mensch.geist.tag",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "mensch.K2",
+     "text": "Tagesablauf: Rolle × Uhr × Ort",
+     "staffel": "\"1 = ein Bewohner trifft ≥ 0,9 seiner Soll-Orte über 24 Spielstunden · 2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:3945",
+      "stationen/g2.js:5483"
+     ],
+     "stationen": [
+      {
+       "id": "mensch.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "mensch.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
+       "sha": "e4eeee08"
+      },
+      {
+       "id": "mensch.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
+       "sha": "e4eeee08"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.geist.gespraech",
+   "name": "Gedächtnis und Gespräch",
+   "art": "kriterium",
+   "misst": "ob eine zufällig angesprochene Person wahr erinnert und spricht.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Zuwendung 0,267 s, Berührung 0 an der Radeon (mensch.K5), Preis in der Szene unbelegt; Kreaturen-Gedächtnis mit lokalem qwen3:4b (stamm/feld-nexus.js:1281) bricht 0 Download",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² Bewohner ohne Wort",
+     "tiefe": "Kopf-Zuwendung, Ausweichen, Furcht-Abstand",
+     "preis": "P · Begegnung 3 m",
+     "richter": "Zuwendung ≤ 0,5 s, Berührung 0"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Personen sprechen",
+     "tiefe": "Antwort zitiert ≥ 2 wahre Fakten ihres Lebens",
+     "preis": "P · Antwort p95 ≤ 3 s, ≤ 10 kB je Antwort",
+     "richter": "Faktentreue ≥ 0,95; Bezug auf die vorige Begegnung"
+    },
+    {
+     "nr": 3,
+     "umfang": "jede Person im Blick (10²–10³)",
+     "tiefe": "erinnert jede Begegnung über Sitzungen",
+     "preis": "P · Antwort p95 ≤ 3 s, ≤ 10 kB je Antwort",
+     "richter": "neue Sitzung: letzte Begegnung korrekt genannt ≥ 0,95"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "mensch.K5",
+     "text": "Begegnung, Gespräch, Gedächtnis",
+     "staffel": "\"1 = ohne Modell im Bild: Kopf-Zuwendung ≤ 0,5 s auf 3 m, Ausweichen ohne Berührung, die Erinnerung lenkt den Abstand · 2 = das Gespräch mit echtem Anbieter (Host im Netz-Log) zitiert ≥ 2 Fakten aus dem Datensatz in ≤ 3 s und bezieht sich auf die vorige Begegnung, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:5784"
+     ],
+     "stationen": [
+      {
+       "id": "mensch.K5#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewa …",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "mensch.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewa …",
+       "sha": "3e4f99cd",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ki.K3",
+     "text": "Die Seele erinnert sich im Gespräch",
+     "staffel": "\"1 = mit lokalem Modell nennen ≥ 70 % der Antworten aus dem Gesprächs-Korpus eine der letzten 8 Erinnerungen, an einem Gerät · 2 = auch Menschen-Bewohner, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g4.js:1497"
+     ],
+     "stationen": [
+      {
+       "id": "ki.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "12 von 12/12 Antworten nennen eine erlebte Tat (Soll 70 %) gegen qwen3:4b-instruct @ 127.0.0.1:11434, z. B. „erinnerst du dich an mich?“ → Ich erinnere mich an dich — ich wurde von dir geschlagen. Das war mein erstes Erlebnis in ",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.geist.netz",
+   "name": "Freundschaft, Feindschaft, Ruf",
+   "art": "kriterium",
+   "misst": "ob eine zufällige Person in einem wahren sozialen Netz steht (synchron).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Haus mit n Bewohnern ohne Bindung",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10²",
+     "tiefe": "Haushalt als Familie, Besuch folgt dem Netz",
+     "preis": "P · Dorf",
+     "richter": "Besuche zu Verwandten/Freunden ≥ 0,6"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³",
+     "tiefe": "Freund, Feind, Rivale, Liebe an Gruß und Meiden",
+     "preis": "P · Markt",
+     "richter": "Prüfer sagt aus Gesten Freund/Feind/fremd ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴",
+     "tiefe": "Ruf: Taten ändern die Behandlung",
+     "preis": "P · Stadt",
+     "richter": "nach Tat meiden Bekannte des Opfers den Täter ≥ 0,3 öfter als Fremde"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.geist.generationen",
+   "name": "Abstammung, Lebenslauf, Demografie",
+   "art": "kriterium",
+   "misst": "ob eine Bevölkerung wahr geboren wird, altert, erbt und stirbt — und die Zeitreise dieselben Familien findet (Geist L5 + Menge L5).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "der Leib kennt nur 18–80 J, keine Kinder (koerper-core.js:120–126); keine Geburt, kein Tod, keine Verwandtschaft bei Menschen (Grep leer)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ort, alle Alter",
+     "tiefe": "Säugling bis Greis sichtbar verschieden",
+     "preis": "P · Dorfplatz",
+     "richter": "Altersanteile im Band der Epoche (Mittelalter ≥ 35 % Kinder)"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² über Lebensphasen",
+     "tiefe": "Kinder ähneln Eltern, Kind spielt, Alter geht langsamer",
+     "preis": "P · Dorf",
+     "richter": "Prüfer ordnet Kinder den Eltern ≥ 0,7; Gang je Altersgruppe ≤ 15 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ über 100 Jahre",
+     "tiefe": "Geburt, Tod (Gompertz), Hochzeit, Begräbnis",
+     "preis": "P · Zeitraffer ohne Bruch",
+     "richter": "Sterbetafel: Lebenserwartung ± 3 J gegen Epochen-Referenz"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.geist.absicht",
+   "name": "Absicht und Charakter",
+   "art": "kriterium",
+   "misst": "ob Personen eigene Ziele über Jahre verfolgen und daraus ungeschriebene Geschichten fallen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "keine Ziele, keine Charakterzüge, die das Handeln ändern",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10²",
+     "tiefe": "Charakterzüge ändern den Tag",
+     "preis": "P · Dorf",
+     "richter": "20 Personen nach 1 Spieltag ihrem Zug zugeordnet ≥ 0,6"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³",
+     "tiefe": "Ziele über Monate (sparen, werben, lernen)",
+     "preis": "P · Stadt",
+     "richter": "100 Befragte, 1 Spieljahr später: Fortschritt sichtbar ≥ 0,5"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴",
+     "tiefe": "Ziele über Jahre ändern die Welt (Haus, Werkstatt, Umzug)",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Sprung 10 J: erklärte Ziele in der Welt ≥ 0,3, je auf eine Person rückführbar"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.geist.innenleben",
+   "name": "Innenleben — Gefühl, Bindung, Kindheit, Alter",
+   "art": "kriterium",
+   "misst": "ob Bewohner ein Innenleben haben, das man ihnen ansieht und das ihr Handeln ändert: Freude, Trauer, Zorn, Liebe, Humor, Angst; Kinder, die spielen; Alte, die langsamer werden; Träume und seelische Not.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Gewalt → Furcht lokal (siehe mensch.kopplung.leben); Trauer +0,3 und Ehrfurcht +0,2 nach dem Tod des Spielers als Feld-Werte (stamm/koerper-seele.js:322-352, siehe erleben.sinn.tod) — im Gesicht und im Tag der Bewohner nie gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EIN Bewohner, 4 Gefühle in Gesicht und Gang",
+     "tiefe": "jedes mit Anlass in der Welt (Verlust, Fest, Gefahr)",
+     "preis": "P · nah 3 m",
+     "richter": "Panel nennt das Gefühl aus 5 s Film ≥ 70 %; Gegenlauf ohne Anlass → neutral"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Bewohner: das Gefühl ändert den Tag",
+     "tiefe": "wer trauert, bleibt daheim; wer sich freut, sucht Gesellschaft",
+     "preis": "P",
+     "richter": "Todesfall ausgelöst: das Tagesprofil der Angehörigen ändert sich über Tage und kehrt zurück; die Kontrollgruppe bleibt gleich"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kinder und Alte, 10³",
+     "tiefe": "Kinder spielen miteinander nach eigenen Regeln; Alte gehen langsam, erzählen, werden versorgt",
+     "preis": "P · Platz",
+     "richter": "Spiel der Kinder im Bild erkannt (Fangen, Ball, Verstecken) ≥ 70 %; Gangtempo je Alter gegen Normtafeln ±15 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.menge.bevoelkerung",
+   "name": "Bevölkerung mit eigenem Plan",
+   "art": "kriterium",
+   "misst": "wie viele Menschen die Welt zugleich führt, jeder mit Plan f(Same, t), am Soll-Ort ± 2 m, in jedem Jahr (Menge L1 + Geschichte L7).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "81/81 Häuser bewohnt, Test-Stadt 118 Bewohner (14.11.); Dorfplatz Radeon 26,9 fps ≈ 37 ms — Preis ROT (mensch.K1)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² (ein Dorf)",
+     "tiefe": "Tag als Funktion der Uhr, 4–10 Wege",
+     "preis": "P · Dorfplatz",
+     "richter": "Zählung im Bild an 20 Stichproben (Ort × Uhr): Körper am Ort gegen den Soll-Plan ±10 %; niemand fehlt, niemand steht doppelt"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³ (Stadt, 300 Häuser)",
+     "tiefe": "Wohnort ≠ Arbeitsort",
+     "preis": "P · Stadt des Worts",
+     "richter": "20 Stichproben-Personen ± 2 m angetroffen"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴",
+     "tiefe": "Haushalte, Alter 0–100, Rollen aus Zensus-Randverteilungen",
+     "preis": "P · Stadt",
+     "richter": "Alters- und Haushaltsverteilung gegen Zensus der Epoche KS ≤ 0,1 in ≥ 0,9 von 20 Saaten"
+    }
+   ],
+   "sprossenGesamt": 9,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "mensch.K1",
+     "text": "Besiedlung und Skala: der Plan wird Körper",
+     "staffel": "\"1 = Start-Dorf voll: Körper mit Menschen-Leib je Siedlung ÷ Σ leute = 1,0 ±0,05, ≥ 10 Menschen im Bild am Dorfplatz an einem Gerät · 2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g2.js:4335",
+      "stationen/g2.js:6420"
+     ],
+     "stationen": [
+      {
+       "id": "mensch.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "mensch.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.menge.bild",
+   "name": "Sichtbare Menge",
+   "art": "kriterium",
+   "misst": "wie viele Menschen der Spieler in EINEM Bild sieht, lebendig, ohne Zwillinge und Attrappen. Die Menge in der Ferne ist die Summe der Einzelnen: Anflug-Probe — N = 100 Punkte der Menge angeflogen, dort steht ein Einzelner, der dasselbe tut (Ort ±2 m, Richtung, Tätigkeit); die EINZIGE Leiter für Menschen in einem Blick.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "18 Menschen am Dorfplatz, 0 gehend, 26,9 fps Radeon; voll lebendig höchstens 4 Leiber im 8-m-Kreis (nahLeiber, siedlung-bewohner.js:1551)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10¹ im Bild",
+     "tiefe": "die Gehenden gehen",
+     "preis": "P · Dorfplatz 8 Uhr",
+     "richter": "≥ 10 Menschen, ≥ 3 gehend"
+    },
+    {
+     "nr": 2,
+     "umfang": "10²",
+     "tiefe": "keine zwei gleich, ≥ 40 % gehend",
+     "preis": "P · Markt",
+     "richter": "≥ 100 Menschen, ≥ 40 gehend; Zwillingssuche 0"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ (Markt, Bahnsteig)",
+     "tiefe": "Nahring 20 m voll lebendig",
+     "preis": "P · Bahnsteig",
+     "richter": "Bildpaar gegen Foto eines vollen Bahnsteigs: Dichte ± 20 %, Zwillinge 0"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "mensch.K1",
+     "text": "Besiedlung und Skala: der Plan wird Körper",
+     "staffel": "\"1 = Start-Dorf voll: Körper mit Menschen-Leib je Siedlung ÷ Σ leute = 1,0 ±0,05, ≥ 10 Menschen im Bild am Dorfplatz an einem Gerät · 2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g2.js:4335",
+      "stationen/g2.js:6420"
+     ],
+     "stationen": [
+      {
+       "id": "mensch.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "mensch.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "mensch.K4",
+     "text": "Körper, Vielfalt, Ausdruck — und die Kosten einer Menge",
+     "staffel": "\"1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf · 2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5922",
+      "stationen/g2.js:5972"
+     ],
+     "stationen": [
+      {
+       "id": "mensch.K4#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.14 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -8.84 [-14, -4] · lippeA 7.23 [4, 14] · hoehleL -5.51 [-12, 0] · hoehleA 1.33 [-2, 6] · haarDeckung 1 [0.9, 1]",
+       "sha": "63655917",
+       "gehalten": true
+      },
+      {
+       "id": "mensch.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "mensch.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeile …",
+       "sha": "78d37554",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.menge.dichte",
+   "name": "Massen-Physik",
+   "art": "kriterium",
+   "misst": "ob Mengen sich wie wirkliche verhalten: Spurbildung, Fundamentaldiagramm, Engpass, Gedränge.",
+   "heute": 1,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Ausweichen ohne Berührung (mensch.K3, headless), Preis unbelegt; kein Fundamentaldiagramm, kein Engpass",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Paar",
+     "tiefe": "Ausweichen ohne Berührung",
+     "preis": "P · Gasse",
+     "klasse": "Ort",
+     "richter": "Berührung 0, kleinster Abstand ≥ Radius"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² im Gang",
+     "tiefe": "Spurbildung im Gegenstrom",
+     "preis": "P · Korridor",
+     "richter": "Spuren in ≤ 30 s, Ordnungsparameter ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³",
+     "tiefe": "Fundamentaldiagramm v(ρ)",
+     "preis": "P · Messfeld",
+     "richter": "v(ρ) ± 15 % der Weidmann-Kurve, 0,5–4 P/m²"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [
+    {
+     "station": "mensch.K5#1",
+     "leiter": "mensch.menge.dichte",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "mensch.K3",
+     "text": "Wege und Raum: Gassen, Türen, keine Durchdringung",
+     "staffel": "\"1 = 0 Durchdringung und Eintritt zu 100 % über die Tür im Start-Dorf · 2 = 24 h ohne Steckenbleiber in einer Stadt, Gangzeit auf Wegen ≥ 0,85, ≥ 100 m Weg je Bewohner und Tag, Ausweichen ohne Berührung\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:3855",
+      "stationen/g2.js:3892"
+     ],
+     "stationen": [
+      {
+       "id": "mensch.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Durchdringung 0, Tür 266/266, Hüllen 18/18, Gangzeit auf Wegen 0.9",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "mensch.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Stadt 33 Häuser: Steckenbleiber 0, Gangzeit auf Wegen 0.967, Strecke min 165 m, Berührung 0, Durchdringung 0, Tür 390/390",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.menge.rhythmus",
+   "name": "Ströme und Tagesrhythmus",
+   "art": "kriterium",
+   "misst": "wer wann von wo nach wo geht — Ganglinie, Pendeln, Wochen- und Saisonrhythmus.",
+   "heute": 1,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "5–8 Wege je Tag, Wiederkehr 1,2 m (mensch.K2); Preis in der Szene unbelegt, Takt der Bewohner 1,52–1,82 ms an der Stadt — KARTE: 0 — die Messung mensch.K2 hebt den Kern von mensch.geist.tag (R9); der eigene Lauf (Wege je Tag im Bild gezählt) fehlt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Wege in 1 Siedlung",
+     "tiefe": "Heim, Platz, Werk, Mahl, Abend, Besuch",
+     "preis": "P · Dorf",
+     "klasse": "Ort",
+     "richter": "4–10 Wege je Tag, Wiederkehr ≤ 2 m"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³ Wege/h (Stadt)",
+     "tiefe": "Morgen- und Abendspitze emergent",
+     "preis": "P · Platz",
+     "richter": "zwei Spitzen, Spitze/Tal ≥ 3"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴ Wege/h",
+     "tiefe": "Pendelmatrix nach Gravitationsmodell",
+     "preis": "P · Stadt",
+     "richter": "Pendeldistanz gegen Zensus KS ≤ 0,15 in ≥ 0,8 von 20 Saaten"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [
+    {
+     "station": "mensch.K2#2",
+     "leiter": "mensch.menge.rhythmus",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "mensch.K2",
+     "text": "Tagesablauf: Rolle × Uhr × Ort",
+     "staffel": "\"1 = ein Bewohner trifft ≥ 0,9 seiner Soll-Orte über 24 Spielstunden · 2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:3945",
+      "stationen/g2.js:5483"
+     ],
+     "stationen": [
+      {
+       "id": "mensch.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "mensch.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
+       "sha": "e4eeee08"
+      },
+      {
+       "id": "mensch.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
+       "sha": "e4eeee08"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.menge.seuche",
+   "name": "Gesundheit, Seuche, Medizin",
+   "art": "kriterium",
+   "misst": "ob Krankheit und Heilung aus den Kontakten der Menge entstehen — EIN Erreger-Parametersatz.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "kein Gesetz für Krankheit bei Menschen (Grep Seuche/krank/Epidem leer)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Person krank",
+     "tiefe": "Haltung, Husten, bleibt daheim",
+     "preis": "P · Dorf",
+     "richter": "Bildpaar gesund/krank; Krank-Tag weicht ab"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Dorf-Ausbruch",
+     "tiefe": "Ansteckung aus echten Kontakten",
+     "preis": "P · Dorf",
+     "richter": "Kurve S-I-R, R0 im Band des Erregers"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴ Stadt",
+     "tiefe": "Pendlerwege tragen, Quarantäne wirkt",
+     "preis": "P · Stadt",
+     "richter": "Markt geschlossen ⇒ Spitze ≥ 30 % niedriger"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.menge.kollektiv",
+   "name": "Kollektiv in Bewegung",
+   "art": "kriterium",
+   "misst": "ob ganze Mengen aus EINEM Antwort-Gesetz auf Ereignisse reagieren — von der Flucht bis zur Völkerwanderung.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Furcht weitet den Abstand 1,335 → 1,952 m (mensch.K5, Radeon), Preis unbelegt",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Umstehende einer Szene",
+     "tiefe": "nach Gewalt fliehen sie",
+     "preis": "P · Platz",
+     "klasse": "Ort",
+     "richter": "Abstand nach der Tat > vorher"
+    },
+    {
+     "nr": 2,
+     "umfang": "10²",
+     "tiefe": "Schreck über Sicht und Klang",
+     "preis": "P · Markt",
+     "richter": "Schreck-Front 3–8 m/s, Flucht weg ≥ 0,9"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³–10⁴ (Demonstration)",
+     "tiefe": "Zug mit Ziel, Ruf, Kordon",
+     "preis": "P · Demo",
+     "richter": "Kopf 0,5–1 m/s, Länge × Dichte = Teilnehmer ± 10 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [
+    {
+     "station": "mensch.K5#1",
+     "leiter": "mensch.menge.kollektiv",
+     "sprosse": 1,
+     "richter": "fehlt",
+     "grund": "Umfang: die Sprosse verlangt Umstehende einer Szene, die Probe misst EINEN Umstehenden (Abstand 1,44 → 1,83 m)"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "mensch.K5",
+     "text": "Begegnung, Gespräch, Gedächtnis",
+     "staffel": "\"1 = ohne Modell im Bild: Kopf-Zuwendung ≤ 0,5 s auf 3 m, Ausweichen ohne Berührung, die Erinnerung lenkt den Abstand · 2 = das Gespräch mit echtem Anbieter (Host im Netz-Log) zitiert ≥ 2 Fakten aus dem Datensatz in ≤ 3 s und bezieht sich auf die vorige Begegnung, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:5784"
+     ],
+     "stationen": [
+      {
+       "id": "mensch.K5#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewa …",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "mensch.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewa …",
+       "sha": "3e4f99cd",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

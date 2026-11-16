@@ -1,0 +1,1061 @@
+{
+ "paket": "18-planet-same-kopplung",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "planet.kopplung.siedlungslage",
+   "name": "Gelände, Wasser und Gestein tragen Siedlung und Verkehr",
+   "art": "kopplung",
+   "misst": "wie viele Systeme Relief, Boden, Wasser und Gestein LESEN, bis Städte und Trassen aus der Landschaft vorhersagbar werden",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Mechanik von Sprosse 1 halb: EIN Spiegel und EINE Boden-Höhe headless an 6/6 Orten (gelaende.K4, gelaende.K5), im Spiel nicht an 50 Punkten. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Wasserspiegel + Boden-Höhe, 50 Punkte",
+     "tiefe": "Leser folgen EINEM Spiegel; Huf, Rad, Fuß stehen ≤ 3 cm",
+     "preis": "P",
+     "richter": "Bildpaar an 50 Punkten: Wasserspiegel um 1 m gehoben → Ufer, Schilf, Steg, Boot und Fuß folgen im Bild (100 % der Leser); Gegenlauf ohne Hebung: kein Leser bewegt sich"
+    },
+    {
+     "nr": 2,
+     "umfang": "≥ 5 Boden- und Gesteins-Leser",
+     "tiefe": "Pflanze nach Bodenart und Gestein, Rad sinkt in Schlamm, Ernte, Fundament",
+     "preis": "P",
+     "richter": "Mutation der Bodenart ändert ≥ 5 Leser im Bild; ≥ 50 % der Biomgrenzen folgen einer Gesteinsgrenze"
+    },
+    {
+     "nr": 3,
+     "umfang": "Siedlungen einer Region",
+     "tiefe": "an Furt, Terrasse, Hochwasserlinie, Küste und Fluss",
+     "preis": "P",
+     "richter": "Siedlungen an Furt, Terrasse, Küste ≥ 80 %; Gegenlauf: dieselbe Saat mit eingeebnetem Relief oder gekapptem Fluss → Anteil fällt auf das Zufallsniveau (≤ 30 %); Städte > 10⁵ ≤ 10 km von Küste oder Strom ≥ 70 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "gelaende.K4",
+     "text": "EIN Wasser-Spiegel für alle Leser — Körper, Tier, Pflanze, Klang",
+     "staffel": "\"1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort · 2 = überall, dazu endet jeder Lauf in See oder Meer und die Strömung treibt\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2095",
+      "stationen/g1.js:2149",
+      "stationen/g1.js:2230"
+     ],
+     "stationen": [
+      {
+       "id": "gelaende.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 0.645/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 …",
+       "sha": "71839b1e",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 …",
+       "sha": "71839b1e",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "gelaende.K5",
+     "text": "EINE Boden-Höhe je Rolle: Huf, Rad, Streu-Fuß, Feinform",
+     "staffel": "\"1 = Kontakt p95 ≤ 3 cm für eine Rolle an einem Ort, beide Sichten · 2 = alle Rollen an Mess-Wiese und 25°-Hang, in Fahrt, beide Geräte, jede Rolle ruft benannt EINE Funktion (Ratsche)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2245",
+      "stationen/g1.js:2265"
+     ],
+     "stationen": [
+      {
+       "id": "gelaende.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 0.9 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K5#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.7 · rad 0.1 | hang fein 4.3 · streu 1 · huf 1.3 · rad 1.2 cm (p95, schlechtere Sicht)",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K5#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.8 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.8 · rad 1.2 cm (p95, schlechtere Sicht)",
+       "sha": "94d9c5a6",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "siedlung.K3",
+     "text": "Gelände-Treue: der Grundriss liest den Boden",
+     "staffel": "\"1 = Gassen-Gefälle p95 ≤ 12 % VOR der Erdbau-Glättung in ≥ 4 Saaten · 2 = dazu Hangdörfer über slopeMax 0,35 hinaus, Erdbau-Median je Haus als Kosten, EIN Grundriss-Leser statt drei\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4126",
+      "stationen/g5.js:4173"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "7 Dörfer, Gassen-Gefälle p95 -5,-5 9.5 % · -3,-3 9.1 % · -3,-5 8.5 % · -5,-3 9 % · -2,-4 9 % · -4,-4 8.6 % · Akt 10 %, Versatz 0/0/0/0/0/0/0 m, Selbsttest ✅, Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "4 Hangdörfer -1,-12 0.57/11.2 %/801 m³ · -3,-12 0.51/10.7 %/541 m³ · -3,-14 0.38/9.1 %/451 m³ · -1,-14 0.49/8.5 %/526 m³, 1 Grundriss-Leser, Selbsttests ✅✅, Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.kopplung.land-meer-luft",
+   "name": "Land, Meer und Luft — EIN Klima",
+   "art": "kopplung",
+   "misst": "ob Gebirge, Meeresströme und Meeresabstand das Klima am Ort setzen — und eine Hebung das Klima kippt",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: Regen ist ein Wetter-Stempel, das Meer kein Glied; ein Klima für die ganze Welt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Gebirge",
+     "tiefe": "Regenschatten",
+     "preis": "P im Regen",
+     "richter": "Niederschlag Luv/Lee ≥ 2:1 an 30 Saaten; im Bild grün/braun an der Kammlinie getrennt"
+    },
+    {
+     "nr": 2,
+     "umfang": "Kontinent",
+     "tiefe": "Wüste folgt Meeresabstand und Regenschatten",
+     "preis": "P",
+     "richter": "Wüstenanteil gegen Meeresabstand und Schatten Rang ≥ 0,7 an 10 Saaten"
+    },
+    {
+     "nr": 3,
+     "umfang": "Westküste eines Beckens",
+     "tiefe": "Auftrieb: kaltes Wasser, Nebel, Küstenwüste",
+     "preis": "P",
+     "richter": "an ≥ 70 % der Ostrand-Ströme Nebelhäufigkeit ≥ 2× Umland, Küstenwüste daneben"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.kopplung.bahn-klima",
+   "name": "Die Bahn formt Klima und Leben",
+   "art": "kopplung",
+   "misst": "ob der Himmel Ursache dessen ist, was am Boden geschieht",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Mechanik von Sprosse 1 steht: Jahres-Welle jahrTage: 365 (gelaende-core.js:1304,1317), Laub, Schnee, Wasser lesen sie. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Welt, 365 Tage",
+     "tiefe": "Jahreszeit als Welle",
+     "preis": "P",
+     "richter": "Schneelinie wandert über das Jahr im Bild"
+    },
+    {
+     "nr": 2,
+     "umfang": "jede Breite, Saaten mit anderer Neigung",
+     "tiefe": "Insolation am Ort setzt Temperatur und Tageslänge",
+     "preis": "P",
+     "richter": "0° Neigung: Jahresamplitude ≤ 10 % der Erd-Saat; 45°: ≥ 2× — Schneelinie und Laub im Bild"
+    },
+    {
+     "nr": 3,
+     "umfang": "±10⁶ Jahre",
+     "tiefe": "Milanković treibt Eisschilde, Meeresspiegel, Küste",
+     "preis": "P, Zeitsprung ≤ 5 s",
+     "richter": "Eisrand und Küste folgen der Juni-Insolation 65° N verzögert, r ≥ 0,7 gegen Laskar"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "wetter.K4",
+     "text": "Temperatur und Schnee-Decke mit Tiefe",
+     "staffel": "\"1 = Schnee-Deckung ≥ 60 % über der Schneegrenze der Saison UND der Fuß sinkt ≥ 5 cm ein, an einer Pose · 2 = die Spur bleibt, die Schneegrenze folgt temperaturAt(Höhe, Saison, Uhr), Ego/Third, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:4000"
+     ],
+     "stationen": [
+      {
+       "id": "wetter.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Winter Tag 40 an -280.4/-1045.6 (27.612 m, Versatz -160): Deckung 1 aus 317 Proben, der Fuß 0.204 m unter dem Boden (Schnee 1) · Sommer an der Wiese -0.01 m (Schnee 0, Versatz 0) (Soll Deckung ≥ 0,6, Fuß ≥ 0,05 m, ohne Schnee ≤ 0,01 m)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.kopplung.wetter-welt",
+   "name": "Eine Front läuft durch die Welt",
+   "art": "kopplung",
+   "misst": "wie weit das Wetter in Licht, Bewegung, Leben, Gelände und Bauform hineinreicht",
+   "heute": 0,
+   "kern": 2,
+   "fuss": "kern",
+   "beleg": "Mechanik von Sprosse 1 und 3 steht (wetter.K2 2/2), Wind-Leser halb (wetter.K5: 6 Leser im Code, Bild-Richter nie gefahren). Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen. — KARTE: Kern 2 — die Front im Licht (licht.K5) und die Nässe (wetter.K2) stehen je an beiden Geräten im Bild; als Glieder zählt jede für sich (Z3). Der Wind-Leser ist nur headless; Bild-Preis im Sturm an der Radeon nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Licht und Himmel",
+     "tiefe": "dieselbe Front dimmt Sonne, färbt Himmel",
+     "preis": "P",
+     "richter": "Bildpaar klar/Sturm an derselben Pose: Richtlicht gedimmt, Himmel grau"
+    },
+    {
+     "nr": 2,
+     "umfang": "jeder Beweger liest den Wind",
+     "tiefe": "Lee schwächer, Tal-Düse stärker",
+     "preis": "P",
+     "richter": "ein Sturmbild: Gras, Bäume, Wolken, Rauch, Wasser zeigen dieselbe Richtung ±20°, Lee < frei < Düse"
+    },
+    {
+     "nr": 3,
+     "umfang": "Nässe, Pfützen, Pegel",
+     "tiefe": "poröse Stoffe dunkler, Pfützen in Senken",
+     "preis": "P",
+     "klasse": "Ort",
+     "richter": "Luma porös nass/trocken 0,5–0,8; Pfützen in Senken r ≥ 0,5"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [
+    {
+     "station": "wetter.K2#2",
+     "leiter": "planet.kopplung.wetter-welt",
+     "sprosse": 3,
+     "richter": "fehlt",
+     "grund": "Pfützen in Senken r ≥ 0,5 misst nur headless; der Gegenlauf (R7: Regen gekappt → trocken) fehlt im Lauf"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "wetter.K2",
+     "text": "Nässe: Regen benetzt — EIN Zustand, EIN Soll",
+     "staffel": "\"1 = Boden-Luma nass/trocken 0,5–0,8 nur auf porösem Stoff, im SELBEN Schuss mit trockenem Innenraum unter dem Dach, an einer Pose · 2 = Mess-Wiese und Dorfgasse, Ego/Third, beide Geräte, mit Pfützen und Trocken-Kurve\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2409",
+      "stationen/g1.js:2463",
+      "stationen/g1.js:2489"
+     ],
+     "stationen": [
+      {
+       "id": "wetter.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Dorf porös draußen 0.516 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 10 (n 3985/13289)",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Dorf porös draußen 0.571 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809)",
+       "sha": "b4bcf19c",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "ego r 0.785 (116/223 Ecken Pfütze) · third r 0.736 (111/237 Ecken Pfütze) · Mutante r 0.006 erkannt · benetzt 0.909 → trocken nach 570 s · Fall 9 m/s · Exit 0",
+       "sha": "fe57747a",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.611 · Regen 146 | third porös 0.79 (n 25910) · Glanz 16 · Regenbild 0.637 · Regen 113",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.627 · Regen 151 | third porös 0.779 (n 25882) · Glanz 16 · Regenbild 0.598 · Regen 94",
+       "sha": "a996d0ae",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "wetter.K5",
+     "text": "Wind: EIN Feld, vom Gelände geformt",
+     "staffel": "\"1 = EIN Term, global, die Richtung aus der Saat am Verhalten gemessen · 2 = Lee −40 %, Tal-Düse +20 %, und jeder Leser außer Pflanze und Ohr (Wasser-Kräusel, Regen-Drift, Tuch, Feuer, Wagen-Seitenkraft) liest dieselbe Funktion (Mutation)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2667",
+      "stationen/g1.js:2701"
+     ],
+     "stationen": [
+      {
+       "id": "wetter.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "wetter.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 1.751 → 0.000 · wagen 0.681 → 0.000)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "licht.K5",
+     "text": "Wetter und Nacht als Zustände des EINEN Mediums: Übergang ohne Bruch",
+     "staffel": "\"1 = der Wetter-Zug klar → Regen → klar ohne Sprung > 0,1 EV/s an einem Gerät · 2 = Licht-Verhältnis der Kugel unter Regen ≤ 1,5, Sterne bei Neumond > 0, Purkinje B/R ≥ 1,2× Mittag, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:2690"
+     ],
+     "stationen": [
+      {
+       "id": "licht.K5#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "größter Sprung 0.035 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.38 EV · 125 s, Wörter standen · [linse-gpu] amd/rdna-3",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "licht.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "größter Sprung 0.056 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.94 EV · 127 s, Wörter standen · [linse-gpu] nvidia/pascal",
+       "sha": "b895650c",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.kopplung.stadtklima",
+   "name": "Die Megastadt macht ihr eigenes Wetter",
+   "art": "kopplung",
+   "misst": "ob Stadt und Wetter einander formen, von der Gasse bis zur Stadt über Tokio",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: kein Stadtklima.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "ein Platz, eine Gasse",
+     "tiefe": "Gasse lenkt Wind, Schatten kühlt",
+     "preis": "P",
+     "richter": "Wind folgt der Gasse ±20°; Pfütze trocknet im Schatten später"
+    },
+    {
+     "nr": 2,
+     "umfang": "Stadt 10² Häuser",
+     "tiefe": "Wärmeinsel",
+     "preis": "P",
+     "richter": "klare Winternacht: Kern ≥ 2 K wärmer; Schnee taut im Kern zuerst (Bildpaar)"
+    },
+    {
+     "nr": 3,
+     "umfang": "Stadt 10⁴ Häuser",
+     "tiefe": "Dunstglocke, Fallwind am Turm",
+     "preis": "P",
+     "richter": "Sicht im Kern ≤ 50 % des Umlands bei Inversion; Böe am Turmfuß ≥ 1,5×"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.kopplung.kaskade",
+   "name": "Vulkan formt Küste formt Stadt formt Verkehr — die schnelle Kaskade",
+   "art": "kopplung",
+   "misst": "wie weit ein Ereignis durch die Welt läuft, bevor es versiegt, an nie gesehenen Auslöseorten. Gezählt wird, was die WELT nach dem Ereignis tut (Küste, Stadt, Bewohner, Verkehr, Neubau); die Physik im Ereignis-Fenster zählt same.kopplung.kaskade.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: kein Ereignis formt Gelände; die alte Kaskade (Ökologie) liegt im Leben-Kapitel.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ereignis, 1 Folge",
+     "tiefe": "Rutschung sperrt Straße → Umweg",
+     "preis": "P während der Kaskade",
+     "richter": "20 Saaten: Folge tritt ein und ist im Bild sichtbar"
+    },
+    {
+     "nr": 2,
+     "umfang": "Ausbruch an der Küste",
+     "tiefe": "neues Land, Lavadelta, schwarzer Strand",
+     "preis": "P am Strand",
+     "richter": "Küstenlinie verschiebt sich messbar; Strandfarbe folgt Gestein"
+    },
+    {
+     "nr": 3,
+     "umfang": "Fluss verlagert sich",
+     "tiefe": "Stadt baut Deich",
+     "preis": "P",
+     "richter": "nach Verlagerung entsteht Deich am Prallufer in ≥ 80 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.kopplung.ereignis-spur",
+   "name": "Ereignis und Spur über die Äonen — Ausbruch, Trapp, Einschlag, Sterben",
+   "art": "kopplung",
+   "misst": "ob eine Ursache Klima, Leben und Gestein verändert und alle Spuren übereinstimmen — erlebt im Moment UND gelesen danach",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: keine Ereignisse jenseits des Wetters.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ausbruch",
+     "tiefe": "Asche-Lage im Umkreis",
+     "preis": "P",
+     "richter": "Grabung im Umkreis findet die Asche am erwarteten Alter in ≥ 95 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Großausbruch VEI 7",
+     "tiefe": "kühlt das Folgejahr",
+     "preis": "P beim Ausbruch und am Antipoden",
+     "richter": "Welt-Temperatur −0,5 bis −2 K für 1–3 Jahre"
+    },
+    {
+     "nr": 3,
+     "umfang": "Trapp 10⁶ km²",
+     "tiefe": "Basaltdecken, Klimawechsel",
+     "preis": "P am Lava-Rand",
+     "richter": "Mitteltemperatur ändert sich ≥ 2 °C; Basalt in Bohrungen der Fläche ≥ 95 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.kopplung.gegenwart",
+   "name": "Die Gegenwart als Ergebnis der Geschichte",
+   "art": "kopplung",
+   "misst": "ob jedes Merkmal der Welt bei T = 0 seine Ursache in der Geschichte hat, die der Spieler bereisen kann",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Unter der Leiter: Findlinge „Eiszeit-Erratiker“ ohne je ein Eis (stamm/vegetation-baum.js:3246) — der erste Zwilling der Tiefen Zeit; die Landform ist Rauschen neben jeder Geschichte.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Relikte, 10³ an 10 Saaten",
+     "tiefe": "Findling, Moräne, Strandterrasse nur wo Eis oder Meer war",
+     "preis": "P",
+     "richter": "1 000 Relikte: Ursache in der Geschichte des Orts = 100 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Gebirge und Becken",
+     "tiefe": "jede Kette ihr Zusammenstoß, jedes Becken seine Absenkung",
+     "preis": "P",
+     "richter": "100 Saaten: Gipfel > 2 km an einer jemals konvergenten Grenze ≥ 95 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Täler, Canyons, Fjorde",
+     "tiefe": "antezedente Durchbrüche, Fjorde nur wo Eis war",
+     "preis": "P",
+     "richter": "Bildpaar Durchbruch/Fjord gegen Foto; Fjorde außerhalb jemals vereister Küsten = 0"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "same.kopplung.aufwaerts",
+   "name": "Das Kleine schreibt das Große — Tat, Stadt und Zivilisation formen Land, Wasser und Klima",
+   "art": "kopplung",
+   "misst": "Ob eine Tat, eine Stadt, ein Ausbruch die größere Stufe sichtbar umschreibt (Region, Klima, Küste, Planet) — und gespeichert wird nur die Tat, kein mit der Welt wachsender Zustand. Koppelt entfaltung × massstab × gedaechtnis. Achse: 1 ha → Planet, Menschen 10² → 10⁷, Zeit 1 a → Jahrhunderte.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Unter der Leiter: die Siedlung liest Natur nur als Verbot und Kosten (fachwerk-core.js:8623, :3861); keine Tat verschiebt ihren Elternknoten; ein gebautes Haus aus 400 m nie gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "eine Tat (gebautes Haus, Rodung 1 ha), wirkt bis 1 km",
+     "tiefe": "steht im Steigflug, wo sie gebaut wurde; Pegel, Wuchs, Wild ändern sich",
+     "preis": "P; Speicher-Zuwachs = Bytes der Tat",
+     "richter": "Haus bauen, aufsteigen: Pixel aus 400 m an seiner Stelle; Bildpaar an 10 Orten im Umkreis"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Dorf rodet 10 km²",
+     "tiefe": "Wald weicht Feld, Wild zieht ab; sichtbar aus 10 km",
+     "preis": "P",
+     "richter": "Waldanteil im Umkreis 5 km fällt mit der Bevölkerung (r ≥ 0,6); Bildpaar aus 10 km ΔE ≥ 5 an der Tat, sonst ≤ 1"
+    },
+    {
+     "nr": 3,
+     "umfang": "eine Stadt (10⁵) ändert ihr Tal (10 km)",
+     "tiefe": "Rodung → Erosion → Versandung; Damm → Stausee; Wärmeinsel 1–3 K",
+     "preis": "P, Zeitraffer",
+     "richter": "Sediment im Hafen ≥ 2× der Wald-Saat; Temperatur Stadt ↔ Umland gegen gemessene Wärmeinseln"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "same.kopplung.kaskade",
+   "name": "Die Kette der Stoff-Physik",
+   "art": "kopplung",
+   "misst": "Wie viele Physik-Domänen ein Ereignis im Ereignis-Fenster (Sekunden bis Stunden) nacheinander in Gang setzt (Beben → Bruch → Brand → Flut), jedes Glied im Bild an der Stelle UND beim Festhalten seines Vorgängers ausbleibend. Koppelt die acht physik-Kriterien; was die Welt danach tut, zählt planet.kopplung.kaskade. Achse: Glieder 2 → 6, Raum Zelle → Region → fremde Welten.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Kette regen → nässe → stoff → brand → licht, Tiefe 4 mit Festhalte-Probe (feld.K1) — headless; Bruch, Fluid mit Impuls und Beben fehlen als Glieder.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "2 Glieder, eine Zelle",
+     "tiefe": "Regen löscht Brand",
+     "preis": "P im Ereignis-Fenster",
+     "richter": "Bildpaar: Brand erlischt im Regen, hält im Trockenen, beide Geräte"
+    },
+    {
+     "nr": 2,
+     "umfang": "4 Glieder an einem Ort (Regen → Nässe → Stoff → Brand → Licht)",
+     "tiefe": "jedes Glied liest seinen Vorgänger",
+     "preis": "P",
+     "richter": "Spielgang Sturm: Glieder, deren Bild sich ändert und beim Festhalten des Vorgängers stehen bleibt, ≥ 4"
+    },
+    {
+     "nr": 3,
+     "umfang": "Bruch → Körper → Fluid, 10³ m³",
+     "tiefe": "Damm bricht, Wasser trägt Trümmer, Trümmer stauen",
+     "preis": "P",
+     "richter": "N = 20 Saaten: Anteil, in dem jedes Glied im Bild eintritt ≥ 90 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "feld.K1",
+     "text": "Kopplungs-Tiefe: eine Ursache, eine Kette über ≥ 4 Teilsysteme",
+     "staffel": "\"1 = Tiefe 2–3 mit Festhalte-Probe · 2 = Tiefe ≥ 4\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3077",
+      "stationen/g1.js:3105"
+     ],
+     "stationen": [
+      {
+       "id": "feld.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Tiefe 4 mit Festhalte-Probe · Bremsweg trocken 20.6 → Sturm 35.5 m (Regen gehalten 20.6, Nässe gehalten 20.6) · Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "feld.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Tiefe 4 mit Festhalte-Probe (Glieder regen → naesse → stoff → brand → licht), Soll ≥ 4 · Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.kopplung.kohaerenz",
+   "name": "Die gewachsene Kohärenz",
+   "art": "kopplung",
+   "misst": "Wie viele Glieder Platte → Relief → Klima → Wasser → Boden → Biom → Siedlung → Wirtschaft → Verkehr → Kultur in einer UNGESTÖRTEN Saat erkennbar auseinander folgen. Achse: Glieder 2 → 10, Fläche 1 Ort → Planet → fremde Physik.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Stream-Power-Flüsse und EIN Wasser-Spiegel (gelaende-core.js, gelaende.K4); die Siedlung liest Wasser nur als Verbot und Kosten, nicht als Ursache des Standorts; die 100-Saaten-Stichprobe wurde nie gefahren.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "2 Glieder, ein Ort",
+     "tiefe": "Wasser folgt dem Relief",
+     "preis": "P",
+     "richter": "100 Saaten × 50 Punkte: Wasserläufe bergab in Senke oder Meer ≥ 95 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "4 Glieder, 10 km²",
+     "tiefe": "Relief → Wasser → Feuchte → Pflanze",
+     "preis": "P",
+     "richter": "100 Saaten: Pflanzen-Dichte gegen Abstand zum Wasser monoton fallend in ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "6 Glieder, 10³ km²",
+     "tiefe": "Regenschatten; Städte an Furt, Mündung, Pass",
+     "preis": "P",
+     "richter": "Städte an Fluss/Küste/Pass ≥ 70 %; Niederschlag Luv/Lee ≥ 2:1"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "gelaende.K4",
+     "text": "EIN Wasser-Spiegel für alle Leser — Körper, Tier, Pflanze, Klang",
+     "staffel": "\"1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort · 2 = überall, dazu endet jeder Lauf in See oder Meer und die Strömung treibt\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:2095",
+      "stationen/g1.js:2149",
+      "stationen/g1.js:2230"
+     ],
+     "stationen": [
+      {
+       "id": "gelaende.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 0.645/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 …",
+       "sha": "71839b1e",
+       "gehalten": true
+      },
+      {
+       "id": "gelaende.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 …",
+       "sha": "71839b1e",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.kopplung.gewalt",
+   "name": "Der Katalog der Gewalt",
+   "art": "kopplung",
+   "misst": "Wie viel Gefahr die Welt von SELBST trägt, mit Häufigkeit und Ort, die die Erde schrieb (Potenzgesetze aus Feldern, nie Schieberegler). Achse: Klassen 1 → namenlose, Zeit 10² → 10⁹ a.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Unter der Leiter: Gefahr nur als Spieler-Tat (Brennglas, lava-Satz), kein Blitz (Grep leer); 100 Spieljahre ohne Zutun = 0 Ereignisse.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Klasse von selbst, 1 km², 100 a",
+     "tiefe": "Blitz-Brand aus Trockenheit × Gewitter des EINEN Wetters",
+     "preis": "P",
+     "richter": "100 Spieljahre Zeitraffer: Brände je km² und Jahr im Faktor 3 der Real-Rate"
+    },
+    {
+     "nr": 2,
+     "umfang": "3 Klassen (Brand, Hochwasser, Dürre), 10³ km², 10³ a",
+     "tiefe": "Rate aus dem Klima; Hochwasser verlässt das Bett",
+     "preis": "P",
+     "richter": "Häufigkeits-Kurven gegen GWIS und HQ100, Steigung im Faktor 1,5"
+    },
+    {
+     "nr": 3,
+     "umfang": "6 Klassen (+ Beben, Ausbruch, Hangrutsch), Kontinent, 10⁴ a",
+     "tiefe": "b 0,8–1,2; VEI-Raten; Rutsch nach Neigung × Nässe",
+     "preis": "P",
+     "richter": "8 Saaten × 10⁴ Jahre: b-Wert und VEI-Raten im Real-Band"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "same.kopplung.stoerung",
+   "name": "Die Antwort auf die Störung",
+   "art": "kopplung",
+   "misst": "Wie viele Domänen ein Eingriff (Ereignis, Tat, Wurzel-Mutation) sichtbar ändert und wie lange. Achse: Domänen 1 → 10, Zeit Stunden → 10⁸ a. Richter mit Mutante: Kopplung gekappt → die Folge zeigt 0; ein Glied zählt ab ≥ 2σ gegen die Kontroll-Saat.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Brand schwärzt, Asche düngt, Sukzession r = 0,825 (stoffe.K5) — Mechanik headless; Tier-, Wasser-, Siedlungs-Antwort fehlt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Domäne, Stunden",
+     "tiefe": "Brand schwärzt die Zelle",
+     "preis": "P",
+     "richter": "Bildpaar Zelle vor / nach dem Brand, beide Geräte"
+    },
+    {
+     "nr": 2,
+     "umfang": "3 Domänen (Boden, Pflanze, Licht), 1 Jahr",
+     "tiefe": "Asche düngt, Gras → Busch → Wald",
+     "preis": "P",
+     "richter": "Zeitsprung 1 Spieljahr: Nachwuchs auf Asche, r(Tempo, Feuchte × Licht) ≥ 0,5"
+    },
+    {
+     "nr": 3,
+     "umfang": "5 Domänen (+ Tier, Wasser), 10 Jahre",
+     "tiefe": "Tiere fliehen und kehren zurück, Abfluss steigt",
+     "preis": "P",
+     "richter": "Tierdichte −50 % sofort, Rückkehr in 3–10 a; Pegel-Spitze ≥ 1,3×"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "stoffe.K5",
+     "text": "Nährstoff, Nachwuchs, Sukzession",
+     "staffel": "\"1 = der Nachwuchs korreliert nach 1 Spieljahr mit Feuchte × Licht (r ≥ 0,5) · 2 = Stubben → Sämling, Brand → Gras → Busch → Wald, Ernte entnimmt Nährstoff, Asche und Leichnam geben ihn zurück\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3640",
+      "stationen/g1.js:3712"
+     ],
+     "stationen": [
+      {
+       "id": "stoffe.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Ufer -348/-662: nach 8767 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.825, im Offenen (16 Kacheln) 0.936, nass 1.258 × trocken · Mutante Feuchte gleich: offen r -0.517, nass 0.973 × trocken",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "stoffe.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Halme 477 → Asche 70 → Gras 491 · Kräuter 23 → Asche 3 → Gras 3 → Busch 21 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling 0 → 0.06 → 0.18 → 0.7 → 1, Gestalt [[5,1461],[9,2933]] · Wald 71: Brand nimmt 71, Jungwuchs 71,  …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.kopplung.ereignis",
+   "name": "Mitten im Ereignis",
+   "art": "kopplung",
+   "misst": "Die größte Katastrophe und die meisten Menschen, die der Spieler LIVE erlebt, im Preis. Achse: Fläche 10² m² → Planet, Menschen 0 → 10¹⁰.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Lava-Zelle glüht und erstarrt als Spieler-Tat (gelaende-core.js:1787-1801); Frame-p95 im brennenden Hektar und Flucht der Bewohner nie gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "eine 16-m-Zelle, 0 Menschen",
+     "tiefe": "Glut, Lava erstarrt zu Stein",
+     "preis": "P",
+     "richter": "Bild der Zelle in Glut und erstarrt, beide Geräte"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 ha, 10 Menschen",
+     "tiefe": "Feuerfront mit Wind und Hang; Bewohner weichen",
+     "preis": "P während der Front",
+     "richter": "Frame p95 während 1 ha brennt; Bewohner meiden die Front = 100 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "1 km², 10³ Menschen",
+     "tiefe": "Wald- oder Lavafeld mit Rauch, Glut, Fluss; ein Dorf flieht",
+     "preis": "P",
+     "richter": "Bildvergleich gegen Foto (Brandfront, Pahoehoe); Fluchtwege folgen dem Gelände"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "same.kopplung.erdsaat",
+   "name": "Die Erde als Saat",
+   "art": "kopplung",
+   "misst": "Wie viele Ereignisse der echten Geschichte aus Gesetzen nachwachsen statt nachgebaut zu werden — die Zeitreise in die Katastrophe. Achse: 1 Ort → 4,5·10⁹ Jahre Erdgeschichte. Die Erd-Saat trägt ihren Schlüssel (R4); wie genau die Erde selbst sitzt, zählt planet.erde.gestalt, die Orte der Menschheit mensch.zeit.erde.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Es gibt keine Erd-Saat.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ort, 1 Ereignis-Typ",
+     "tiefe": "der Ort der Erd-Saat trägt die echte Gefahr (Vesuv am Golf)",
+     "preis": "P",
+     "richter": "Bildvergleich gegen Relief-Modell; der Vulkan bricht von selbst aus"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Orte, Epoche wählbar",
+     "tiefe": "Ausbruch, Beben, Brand mit Rate im Real-Band",
+     "preis": "P",
+     "richter": "simulierte Wiederkehr Faktor 3 der historischen"
+    },
+    {
+     "nr": 3,
+     "umfang": "Pompeji 79, Lissabon 1755, London 1666",
+     "tiefe": "Ablauf aus Gesetzen: Säulen-Phase → pyroklastischer Strom; Beben → Brand → Tsunami",
+     "preis": "P, 10⁴ Menschen live",
+     "richter": "Zeitachse gegen Quellen (Plinius, Augenzeugen 1755) Faktor 2 je Phase; Blind-Bildvergleich"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "same.kopplung.zeitreise",
+   "name": "Die Tat zu jeder Zeit",
+   "art": "kopplung",
+   "misst": "Eine Tat zum Zeitpunkt t ist zu jedem anderen Zeitpunkt richtig sichtbar — vorwärts gealtert, verfestigt, vernarbt, verschüttet, erinnert; rückwärts noch nicht da. Koppelt alle gedaechtnis-Kriterien mit entfaltung.akte. Achse: 1 Stunde → 10⁹ Jahre, dann zwischen Welten.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Lichtung bleibt über Reload, 138/138 Pflanzen nach 1 Spieljahr (feld.K4, stoffe.K5) — headless; rückwärts klemmt _werkAlter die Zeit auf 0: ein Werk vor seinem Akt erscheint ungealtert statt abwesend.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Lichtung aus 10 Fällungen, 1 Spielstunde",
+     "tiefe": "bleibt über Reload, wächst nach",
+     "preis": "P",
+     "richter": "Baum-Anteil ≤ 30 %, Stümpfe sichtbar, beide Geräte"
+    },
+    {
+     "nr": 2,
+     "umfang": "Tat + 1 Spieljahr vorwärts",
+     "tiefe": "Sukzession, Werk gealtert, gleich nach Reload",
+     "preis": "P",
+     "richter": "Pflanzen zurück, Sukzessions-Reihe, Alter nach Reload gleich"
+    },
+    {
+     "nr": 3,
+     "umfang": "Sprung 10–100 Jahre vorwärts",
+     "tiefe": "Bau gealtert, Pfad verfestigt, Lichtung Wald, Name am Ort",
+     "preis": "P, Sprung ≤ 5 s bis Bild",
+     "richter": "alle Spuren gleichzeitig im Soll ihrer Leiter"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "stoffe.K5",
+     "text": "Nährstoff, Nachwuchs, Sukzession",
+     "staffel": "\"1 = der Nachwuchs korreliert nach 1 Spieljahr mit Feuchte × Licht (r ≥ 0,5) · 2 = Stubben → Sämling, Brand → Gras → Busch → Wald, Ernte entnimmt Nährstoff, Asche und Leichnam geben ihn zurück\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3640",
+      "stationen/g1.js:3712"
+     ],
+     "stationen": [
+      {
+       "id": "stoffe.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Ufer -348/-662: nach 8767 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.825, im Offenen (16 Kacheln) 0.936, nass 1.258 × trocken · Mutante Feuchte gleich: offen r -0.517, nass 0.973 × trocken",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "stoffe.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Halme 477 → Asche 70 → Gras 491 · Kräuter 23 → Asche 3 → Gras 3 → Busch 21 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling 0 → 0.06 → 0.18 → 0.7 → 1, Gestalt [[5,1461],[9,2933]] · Wald 71: Brand nimmt 71, Jungwuchs 71,  …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "feld.K4",
+     "text": "Die Tat bleibt am Ort: Spur und Gedächtnis",
+     "staffel": "\"1 = die Spur hält bis zum Reload · 2 = sie hält nach Reload UND nach 1 Spielstunde und wächst über das Feld nach\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3128",
+      "stationen/g1.js:3143"
+     ],
+     "stationen": [
+      {
+       "id": "feld.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "nach der Stunde vor dem Reload: 3 von 13 Bäumen, 0 von 30 Pflanzen zurück, 10 Stümpfe für 10, Feld -0.167 unter frozen",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "feld.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "nach dem Reload 3/13 Bäume, 0 Pflanzen, 10 Stümpfe, Feld -0.167 · nach Reload und Stunde 3/13 Bäume, 0 Pflanzen, 10 Stümpfe, Feld -0.157 · nach 36 Stunden 30 von 30 Pflanzen zurück, Feld -0.157 → -0.059, Taten 40 → 10",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "same.kopplung.terraform",
+   "name": "Technik formt den Planeten",
+   "art": "kopplung",
+   "misst": "ob eine Zivilisation jenseits der Gegenwart ihren Planeten — oder einen fremden — sichtbar umformt: Klima lenken, Meere anlegen, Atmosphäre bauen, Rohstoffe aus dem All — über Epochen, mit Gegenlauf. Der Anfang der Kette ist mensch.zukunft.technik; was Rodung, Damm und Industrie der Gegenwart tun, zählt same.kopplung.aufwaerts.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: der Graben des Spielers füllt sich mit Wasser (gelaende.K2) — die einzige Umformung; keine Technik lenkt Klima oder Welt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EIN Eingriff, EINE Region: Wetter lenken über einer Stadt",
+     "tiefe": "Regen fällt, wo er gesät wird; nebenan fehlt er",
+     "preis": "P",
+     "richter": "Bildpaar mit und ohne Eingriff an derselben Saat: Regenmenge im Zielgebiet höher, im Lee tiefer; Bilanz ±10 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Meer anlegen, eine Wüste begrünen: 10⁵ km², 10² Jahre",
+     "tiefe": "Küste, Klima und Leben ziehen nach",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Sprung +100 a: neues Ufer mit Bewuchs und Siedlung; Gegenlauf ohne Eingriff: die Wüste bleibt"
+    },
+    {
+     "nr": 3,
+     "umfang": "Geo-Technik am ganzen Planeten: Spiegel, Aerosol, Kohlenstoff-Entzug",
+     "tiefe": "die Mitteltemperatur folgt dem Eingriff; Nebenfolgen (der Monsun kippt) treten auf",
+     "preis": "P",
+     "richter": "Temperatur-Antwort je Eingriff im Band der Klima-Rechnung (2–5 K je Verdopplung); ≥ 1 ungewollte Folge im Bild; Gegenlauf ohne Eingriff"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  }
+ ]
+}

@@ -1,0 +1,629 @@
+{
+ "paket": "03-planet-zeit-erde-kosmos",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "planet.zeit.klimageschichte",
+   "name": "Klima, Eis und Meeresspiegel über die Äonen",
+   "art": "kriterium",
+   "misst": "ob die Klimageschichte am Ort erlebbar ist: Drift, Eiszeiten, Treibhaus, Schneeball, Meeresspiegel als Küstenlinie",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: das Jahr wiederholt sich ohne Drift; Meeresspiegel fest bei Basis − 3 m.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² Jahre",
+     "tiefe": "Treibhaus-Drift verschiebt Schneegrenze und Küste",
+     "preis": "P, Sprung ≤ 5 s",
+     "richter": "+100 a bei +2 °C: Schneegrenze +300 m ±30 %; Küste wandert um Δh/Strandneigung ±25 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10⁴ Jahre",
+     "tiefe": "Eiszeit: Meer −120 m, Landbrücken, Eisrand",
+     "preis": "P, Sprung ≤ 5 s",
+     "richter": "Erd-Saat −21 ka: Meer −120 ±10 m, Landbrücke begehbar, Eisrand gegen LGM-Rekonstruktion, global −6 ±2 °C"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁶ Jahre",
+     "tiefe": "Glazialtakt 41/100 ka",
+     "preis": "P",
+     "richter": "Spektrum der im Spiel gemessenen Eisbedeckung über 3 Ma: Gipfel bei 41 ±5 und 100 ±15 ka; Eis gegen Meeresspiegel r ≤ −0,8"
+    }
+   ],
+   "sprossenGesamt": 9,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.zeit.archiv",
+   "name": "Die Welt als Archiv — Schicht, Wand, lesbare Geschichte",
+   "art": "kriterium",
+   "misst": "ob jede Wand, jeder Graben und jede Landform die Geschichte trägt, die die Zeitreise zeigt — und ein Kundiger sie liest",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Mechanik von Sprosse 1 steht: Schicht-Gesetz T5 Pediment → Schutthang → Kliff (gelaende-core.js:374-375, schichtMass :1028), nicht mit eigenem Auge belegt; Lagen ohne Alter und Stoff. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Schicht als Form im Tafelland",
+     "tiefe": "harte und weiche Bank: Kliff, Schutthang am Ruhewinkel",
+     "preis": "P am Kliff",
+     "richter": "Kliff 60–85° und Schutthang im Bild an Tafelland-Saaten"
+    },
+    {
+     "nr": 2,
+     "umfang": "Schichten mit Gesteinsart, 1 Wand",
+     "tiefe": "Farbe und Korn je Lage aus dem Ablagerungsmilieu",
+     "preis": "P an der Wand",
+     "richter": "Bildvergleich gegen Fotos des Colorado-Plateaus (Farbbänder, Rhythmus)"
+    },
+    {
+     "nr": 3,
+     "umfang": "Schichten mit Alter, 10⁴ a am Ort",
+     "tiefe": "Absetzrate, Warven; Grenzen setzen sich stetig fort",
+     "preis": "P beim Graben",
+     "richter": "Grabung 3 m: Lagen = Ablagerungs-Episoden der bereisten Geschichte ±10 %; Grenzen stetig über ≥ 100 m"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.erde.gestalt",
+   "name": "Die echte Erde — erkannt und vermessen",
+   "art": "kriterium",
+   "misst": "wie genau die Erd-Saat die echte Erde trifft — Küste, Relief, Klima, Orte — und was ihr Schlüssel wiegt. Die Erde ist die eine Saat mit Schlüssel (R4): er zählt als Bytes, und jede Sprosse nennt seine Decke. Die Erdgeschichte zählen planet.geologie.platten, planet.zeit.klimageschichte und same.kopplung.erdsaat, die Orte der Menschheit mensch.zeit.erde.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: es gibt keine Erd-Saat (siehe same.kopplung.erdsaat).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EINE Region der Erde, 10⁴ km² (ein Golf mit Vulkan)",
+     "tiefe": "Küste, Hauptgipfel, Hauptfluss liegen, wo sie liegen",
+     "preis": "P · Schlüssel ≤ 10 kB",
+     "richter": "Küstenlinie gegen das Höhenmodell: mittlerer Lagefehler ≤ 5 km; Ortskundige wählen die Region aus 10 Kandidaten an 3 Ego-Bildern ≥ 70 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Kontinent",
+     "tiefe": "Gebirgsgürtel, Ströme, Wüsten, Klimazonen an ihrem Ort",
+     "preis": "P · Schlüssel ≤ 100 kB",
+     "richter": "Lagefehler der 100 größten Formen ≤ 50 km; Köppen-Klasse an 1 000 Punkten richtig ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "die ganze Erde heute, Orbit bis Boden",
+     "tiefe": "Kontinente, Meere, Eis, Biome",
+     "preis": "P · Schlüssel ≤ 1 MB",
+     "richter": "Orbitbild gegen Satellitenmosaik: Panel-2AFC ≤ 70 %; Küstenlinie p90 ≤ 20 km"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.kosmos.himmelsmechanik",
+   "name": "Himmelsmechanik am Ort — Tag, Jahr, Mond, Finsternis, Äonen",
+   "art": "kriterium",
+   "misst": "ob der Himmel über dem Spieler aus den Bahnen folgt und an jedem Ort zu jeder Zeit stimmt",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Mechanik halb: feste Sonnenbahn ohne Breite (welt-licht.js:696-714), Richter der Tag-Kurve 0/2 (licht.K1); Mond immer voll (welt-licht.js:715-719); die Meeus-Bahn fiel am Tag-Achsen-Gate. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Tag-Achse für alle Orte",
+     "tiefe": "Tag-Kurve stetig, Sterne nach Grenzgröße",
+     "preis": "P, Uhr-Lauf ohne Bildsprung",
+     "richter": "Sprung ≤ 0,1 EV je Uhrschritt über die ganze Bahn, Ego und Third, beide Geräte"
+    },
+    {
+     "nr": 2,
+     "umfang": "jede Breite × 365 Tage",
+     "tiefe": "Mittagshöhe, Auf-/Untergang, Tageslänge",
+     "preis": "P, Datumswechsel ohne Sprung > 0,1 EV",
+     "richter": "Sonnenhöhe aus der Schattenlänge an 3 Breiten × 4 Daten gegen Meeus ±0,5°; Polartag bei 80° N im Juni"
+    },
+    {
+     "nr": 3,
+     "umfang": "1 Mond, 29,53 d",
+     "tiefe": "Phase, Terminator, Erdschein",
+     "preis": "P",
+     "richter": "Terminator-Winkel ±3°; Mondaufgang ±10 min; Neumond-Nacht ≥ 2 EV dunkler als Vollmond"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [
+    {
+     "station": "karte2.planet.kosmos.himmelsmechanik#1",
+     "leiter": "planet.kosmos.himmelsmechanik",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "licht.K1",
+     "text": "Die Tag-Kurve: monoton, stetig, golden, Nacht lesbar — über die GANZE Bahn",
+     "staffel": "\"1 = an einem Gerät in einer Sicht über die ganze Bahn im Soll · 2 = beide Geräte, Ego UND Third\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g3.js:3474"
+     ],
+     "stationen": [
+      {
+       "id": "licht.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.kosmos.sternhimmel",
+   "name": "Sternhimmel, Galaxie, Universum",
+   "art": "kriterium",
+   "misst": "wie viele Sterne der Spieler sieht und erreichen kann, und wie wahr ihr Himmel ist",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Mechanik von Sprosse 1 steht: 2 800 Sterne aus der Saat an einer Kugel von 480 m (stamm/bild-himmel.js:307-421), drei Wandelsterne als feste Punkte. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "~2 800 Punkte der Saat",
+     "tiefe": "Größenklasse −4,2…+6, Farbe, Grenzgröße mit der Dämmerung",
+     "preis": "P",
+     "richter": "Zahl sichtbarer Sterne je Sonnenhöhe folgt der Grenzgrößen-Tafel"
+    },
+    {
+     "nr": 2,
+     "umfang": "~9 000 Sterne bis mag 6, Planeten wandern",
+     "tiefe": "Zählkurve log N(m), Farb-Helligkeit wie das Sonnenumfeld",
+     "preis": "P",
+     "richter": "Zählkurve aus dem Bild ±10 % gegen Bright-Star-Katalog; ein Planet läuft sichtbar rückläufig"
+    },
+    {
+     "nr": 3,
+     "umfang": "1 Galaxie von innen",
+     "tiefe": "Milchstraßenband, Staubbahnen, Zodiakallicht",
+     "preis": "P, Nacht",
+     "richter": "Bildpaar Bortle 1 gegen Weitwinkel-Foto: Histogramm ±10 %, Band ±5°"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.kosmos.sterne",
+   "name": "Das Leben der Sterne — Entstehung bis Überrest",
+   "art": "kriterium",
+   "misst": "ob Sterne als Prozess über die Zeit erlebbar sind",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: die Sonne hat kein Alter.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "die eigene Sonne über 10⁹ a",
+     "tiefe": "Leuchtkraft, Farbe, Radius nach Isochronen",
+     "preis": "P, Zeitsprung ≤ 5 s",
+     "richter": "Zeitsprung +5 Ga: Leuchtkraft +~50 % ±10 %, Belichtung am Boden gemessen"
+    },
+    {
+     "nr": 2,
+     "umfang": "alle Sterne eines Systems über 10¹⁰ a",
+     "tiefe": "Roter Riese verschluckt innere Bahnen, Weißer Zwerg",
+     "preis": "P",
+     "richter": "Sonne als Riese füllt ≥ 20° des Himmels bei 1 AE, Himmelsfarbe kippt"
+    },
+    {
+     "nr": 3,
+     "umfang": "Geburt im Nebel, Haufen 10³ Sterne",
+     "tiefe": "Kollaps, Protostern, Jets, Emissionsnebel",
+     "preis": "P, auch im Nebel",
+     "richter": "Bildvergleich Emissionsnebel gegen Teleskop-Foto; Haufen-Massen folgen der IMF (KS p > 0,05)"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.kosmos.systeme",
+   "name": "Sonnensysteme aus der Scheibe",
+   "art": "kriterium",
+   "misst": "ob die Systeme einer Saat in ihrer Verteilung wie die gemessenen Systeme der Wirklichkeit sind — gezählt an den angeflogenen, nie im Saat-Raum",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: jahrTage: 365 ist eine Zahl, keine Bahn (gelaende-core.js:1304).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Stern, 1 Planet, 1 Mond",
+     "tiefe": "Kepler-Bahnen, Jahr folgt der Bahn",
+     "preis": "P",
+     "richter": "Bahn am Himmel beobachtet: Planet und Mond stehen über ein Spieljahr gegen die Ephemeride der eigenen Bahn ≤ 0,5°; Mondphase je Woche im Bildpaar"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 System, 3–12 Planeten",
+     "tiefe": "Schneegrenze trennt Gestein und Riesen, Bahnen stabil",
+     "preis": "P, Systemansicht ohne Nachladen",
+     "richter": "1 000 Saaten: über 10⁹ a dieselben Planeten am Himmel in ≥ 95 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10–100 Monde je Riese, Ringe",
+     "tiefe": "Roche-Grenze, Resonanzen",
+     "preis": "P vom Orbit",
+     "richter": "Ringe nur innerhalb der Roche-Grenze (100 %); Resonanzketten in ≥ 10 % der Riesen-Systeme"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.kosmos.welten",
+   "name": "Fremde Welten begehbar — Schwere, Rotation, Bauart, voller Radius",
+   "art": "kriterium",
+   "misst": "ob man auf anderen Welten steht und sie anders erlebt, weil ihre Gesetze aus Masse, Abstand und Alter folgen",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Mechanik halb: zwei gesetzte Welten (stamm/daten.js:68-81), Schwere als Regler mit 5 Lesern, aber Fahrzeug 9,8 (vehicle-core.js:3307) und Lab g = 20 (fachwerk-core.js:9506) als Zwillinge; Preis der Fremdwelt nie gemessen. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Heimat + 1 Fremdwelt",
+     "tiefe": "eigene Schwere, eigener Himmel",
+     "preis": "P an BEIDEN Welten",
+     "richter": "Licht-Bilanz an der Kugel 5–12,5 an beiden Welten; Fremdwelt-Mittag: Zenit nicht blau"
+    },
+    {
+     "nr": 2,
+     "umfang": "jede Welt g 0,1–3",
+     "tiefe": "Gang, Sprung, Fall, Wurf, Fahrzeug, Wasser skalieren mit g",
+     "preis": "P",
+     "richter": "Fallzeit aus 10 m = √(20/g) ±2 % für Leib UND Fahrzeug UND Wurf; Sprunghöhe ∝ 1/g ±5 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Tag 4 h bis gebunden",
+     "tiefe": "Sonnenlauf folgt der Rotation",
+     "preis": "P",
+     "richter": "gebundene Welt: Sonne steht still; Tageslänge im Bild = Rotation ±1 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "licht.K2",
+     "text": "Licht-Bilanz an einer Kugel in der Szene: Sonne zu Himmel je Stunde und Wetter",
+     "staffel": "\"1 = klar am Mittag Verhältnis 5–12,5 und Schatten-Anteil 0,08–0,20 an einem Gerät · 2 = alle Spalten Uhr 0,5/0,27/0,73 × klar/Regen, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g3.js:2377",
+      "stationen/g3.js:2429"
+     ],
+     "stationen": [
+      {
+       "id": "licht.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Verhältnis 5.266 (5–12,5), Schatten-Anteil 0.1899 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
+       "sha": "dc9eacb0",
+       "gehalten": true
+      },
+      {
+       "id": "licht.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal",
+       "sha": "94d9c5a6",
+       "gehalten": true
+      },
+      {
+       "id": "licht.K2#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "licht.K2#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "tore.K1",
+     "text": "Der Durchgang: Studio-Tor und Welt-Tor — Schwelle → Kontrolle und zurück",
+     "staffel": "\"1 = eine Zeile (Studio-Tor oder Welt-Tor) ≤ 2 s an einem Gerät · 2 = beide Zeilen im Soll (warm ≤ 1 s, kalt ≤ 2 s, Heimkehr ≤ 1 s) an beiden Geräten\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g5.js:5422"
+     ],
+     "stationen": [
+      {
+       "id": "tore.K1#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "tore.K1#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "tore.K3",
+     "text": "Was der Spieler trägt, reist mit",
+     "staffel": "\"1 = Leib, Inventar und Gehaltenes stehen nach Tor hin und zurück byte-gleich, an einem Gerät · 2 = auch Reittier/Fahrzeug und die Rundreise eines Werks Studio → Welt → Studio mit gleichem Bau-Hash, für jede Ziel-Seite\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:5448",
+      "stationen/g5.js:5494"
+     ],
+     "stationen": [
+      {
+       "id": "tore.K3#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E)",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "tore.K3#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E)",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "tore.K3#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "tore.K3#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim",
+       "sha": "715754fc",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "ultiversum.K1",
+     "text": "Das Welt-Gesetz: Konstanten, die ein Leser liest",
+     "staffel": "\"1 = zwei per Tor erreichbare Welten mit verschiedenen Konstanten (g, Wetter-Tafel, Himmel, Gelände-Parameter), jede Konstante hat einen Leser (Mutation ändert Bild bzw. Leib) · 2 = alle Kapitel des Gesetzes je Welt, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:4994"
+     ],
+     "stationen": [
+      {
+       "id": "ultiversum.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "A g -9.81 Sprung 0.323 m · Blau÷Rot 5.2273 · Wetter foggy 29/rainy 55/sunny 69/stormy 32/cloudy 55 · Relief ×1 | B g -3.71 Sprung 1.54 m · Blau÷Rot 0.3846 · Wetter sunny 63/stormy 26/foggy 88/cloudy 63 · Relief ×1.7185 | A2 = A · Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "planet.kosmos.ereignisse",
+   "name": "Himmelsereignisse am Boden — Meteor, Komet, Polarlicht",
+   "art": "kriterium",
+   "misst": "ob die Ereignisse des Himmels aus denselben Bahnen und Feldern folgen und am Boden fühlbar sind",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: keine Meteore, Kometen, Polarlichter.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "sporadische Meteore jede Nacht",
+     "tiefe": "Leuchtspur, Dauer, Häufigkeit",
+     "preis": "P",
+     "richter": "5–10 je Stunde am dunklen Himmel; Spurlängen gegen Meteor-Kamera-Netze ±30 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "jährliche Ströme",
+     "tiefe": "Radiant, Datum, Rate aus dem Mutterkometen",
+     "preis": "P",
+     "richter": "Erd-Saat: Maximum an festem Datum ±1 d, ~100/h, ein Radiant ±2°"
+    },
+    {
+     "nr": 3,
+     "umfang": "periodische Kometen",
+     "tiefe": "Schweif von der Sonne weg, Wachstum am Perihel",
+     "preis": "P",
+     "richter": "Schweif antisolar ±5°; Wiederkehr nach der Bahnperiode ±1 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.kosmos.eigengesetz",
+   "name": "Welten mit eigenem Naturgesetz",
+   "art": "kriterium",
+   "misst": "ob eine Welt, deren Konstanten und Gesetze nicht die der Erde sind, unter IHREM Gesetz geschlossen ist — der Spieler findet das Gesetz durch Versuch heraus und kann sich darauf verlassen. Richter ist die Fremdwelt-Probe (R10), nie „könnte so sein“.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: EINE Physik; die Schwere ist ein Regler mit 5 Lesern, Fahrzeug und Labor tragen eigene feste Werte (siehe planet.kosmos.welten) — keine Welt mit eigenem Gesetz.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EINE Welt, EINE Konstante anders (Schwere-Exponent, Stoff-Dichte, Zähigkeit)",
+     "tiefe": "Fall, Wurf, Bahn und Flüssigkeit folgen dem geänderten Gesetz, nicht dem der Erde",
+     "preis": "P",
+     "richter": "20 Versuche des Spielers (Fall, Wurf, Pendel): Messwerte aus dem Bild folgen dem Gesetz der Welt ±5 % und weichen vom Erd-Gesetz ab"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Welten, je 3 Konstanten anders",
+     "tiefe": "Landschaft, Wetter und Himmel sind Folgen der Konstanten",
+     "preis": "P",
+     "richter": "Ursachen-Probe: der Leser sagt aus Ego-Bildern die geänderte Konstante voraus, Rang ≥ 0,7; Gegenlauf: Konstante zurück → das Merkmal ist weg ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Welten mit anderer Chemie (Lösungsmittel, Phasen, Bindung)",
+     "tiefe": "Gestein, Meer, Wolke, Eis nach dem eigenen Phasendiagramm",
+     "preis": "P",
+     "richter": "je Welt: Phasengrenzen im Bild (was schmilzt, was regnet, was gefriert) gegen das Diagramm der Welt richtig ≥ 90 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.kosmos.kunstwelten",
+   "name": "Gebaute Welten — Ring, Schale, Hohlwelt, Scheibe",
+   "art": "kriterium",
+   "misst": "ob Welten, die jemand gebaut hat, begehbar sind und ihre eigene Physik zeigen: Schwere aus Drehung, ein Horizont, der sich hebt, Tag aus Blenden. Gerichtet wird, was der Spieler am Boden misst und sieht.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: der Boden ist eine flache Ebene (siehe same.massstab.spanne); keine gebaute Welt.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EIN Drehzylinder, 10 km",
+     "tiefe": "Schwere aus Drehung, der Boden wölbt sich nach oben",
+     "preis": "P",
+     "richter": "Wurf-Versuch: die Bahn weicht um die Coriolis-Ablenkung ab ±10 %; der Horizont steigt im Bild"
+    },
+    {
+     "nr": 2,
+     "umfang": "Hohlwelt oder Zylinder 10³ km mit Land, Meer, Wetter",
+     "tiefe": "Wolken, Flüsse, Wind folgen der Drehung",
+     "preis": "P",
+     "richter": "Flussläufe und Wolkenzug gegen die Rechnung für Dreh-Schwere; der Blick nach oben zeigt das Land gegenüber, Bildpaar gegen Rechen-Referenz"
+    },
+    {
+     "nr": 3,
+     "umfang": "Ringwelt, 10⁸ km Umfang",
+     "tiefe": "Bogen am Himmel, Tag und Nacht aus Blenden, Randmauern",
+     "preis": "P · am Boden und im Aufstieg",
+     "richter": "Bogen-Winkel am Himmel = Geometrie ±0,5°; Tageslänge = Blendenfolge ±1 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "planet.kosmos.galaxien",
+   "name": "Galaxien, Haufen und das junge All — als Ziel",
+   "art": "kriterium",
+   "misst": "ob der Kosmos jenseits der eigenen Galaxie ein Reiseziel ist — andere Galaxien mit eigenen Sternen und Welten, Haufen, das Netz — und ob seine Geschichte vom ersten Licht bis in die ferne Zukunft bereisbar ist. Was man vom Boden am Himmel sieht, zählt planet.kosmos.sternhimmel; den Flug ohne Bruch same.massstab.spanne.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "2 800 Sterne an einer Kugel von 480 m (siehe planet.kosmos.sternhimmel); keine Galaxie als Ort, keine Zeit vor dem Planeten.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EINE Nachbargalaxie als Ziel",
+     "tiefe": "aus der Ferne ein Nebelfleck, im Anflug Sterne, am Ziel ein Himmel mit der Heimatgalaxie darin",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "am Ziel steht die Heimatgalaxie am Himmel in der richtigen Richtung und Größe ±5 %; Bildpaar Anflug gegen Teleskop-Aufnahme (2AFC ≤ 80 %)"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Galaxien, Typen aus ihrer Geschichte",
+     "tiefe": "Spirale, Ellipse, Zwerg aus Masse, Drehung, Verschmelzung",
+     "preis": "P",
+     "richter": "Typ-Anteile der angeflogenen gegen Durchmusterung ±20 %; Farbe ↔ Sternbildung im Band"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴ Galaxien: Gruppen und Haufen",
+     "tiefe": "Dichte bestimmt den Typ, Verschmelzungen im Zeitraffer",
+     "preis": "P · Zeitsprung ≤ 5 s",
+     "richter": "Zwei-Punkt-Korrelation der im Flug gezählten Galaxien gegen Durchmusterungs-Karten im Band"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  }
+ ]
+}

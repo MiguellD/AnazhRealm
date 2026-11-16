@@ -1,0 +1,859 @@
+{
+ "paket": "05-leben-wasser-oeko",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "leben.wasser.lebensraeume",
+   "name": "Lebensräume im Wasser entstehen aus Physik",
+   "art": "kriterium",
+   "misst": "Welcher Anteil der Wasser-Lebensräume (Messliste 15: Bach, See, Küstenflachwasser, Ästuar, Kelp, Seegras, Mangrove, Riff, offene See, Polarmeer, Tiefsee-Ebene, Hydrothermalquelle, Walfall, Höhle, Gezeitenzone) aus der Physik einer Saat entsteht, samt seiner Flora.",
+   "heute": 1,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "1 von 15: der Bach-Kolk mit Forellen am Strömungsschatten — headless, Preis an der Fisch-Pose nie gemessen; Uferflora teils; das Meer ist Höhe und Wasserkörper, kein Lebensraum.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 von 15: Bach-Kolk mit eigener Fauna",
+     "tiefe": "Stand am Strömungsschatten (Fausch 1984)",
+     "preis": "P · am Bach",
+     "klasse": "Ort",
+     "richter": "Lebensräume mit eigener Fauna im Bild zählen"
+    },
+    {
+     "nr": 2,
+     "umfang": "3 von 15: Bach, See, Küstenflachwasser mit Uferflora (Schilf, Erle, Weide)",
+     "tiefe": "See-Fauna ohne Strömung; Ufer-Zonierung; Landarten im Wasser 0",
+     "preis": "P je Lebensraum",
+     "richter": "Klassifikator erkennt den Lebensraum ≥ 80 %; Ufer-Stichprobe ≥ 90 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "7 von 15: + Kelpwald, Seegras, Mangrove, Gezeitenzone",
+     "tiefe": "sie stehen, wo die Physik sie verlangt (Kelp kalt mit Auftrieb, Seegras nach Lichttiefe)",
+     "preis": "P · im Kelpwald",
+     "richter": "50 Saaten: Lage gegen Meeresklima ≥ 90 %; Tauchbild gegen Unterwasserfoto ≥ 0,7"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [
+    {
+     "station": "luftwasser.K3#1",
+     "leiter": "leben.wasser.lebensraeume",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "luftwasser.K3",
+     "text": "Fische lesen die Strömung",
+     "staffel": "\"1 = Fische stehen gegen die Strömung des Kerns (Ausrichtung zur Strömung ≥ 0,8) · 2 = sie meiden den Spieler, folgen dem Pegel und sind unter Wasser sichtbar (Leib K3)\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g2.js:6213",
+      "stationen/g2.js:6253",
+      "stationen/g2.js:6325",
+      "stationen/g2.js:6343"
+     ],
+     "stationen": [
+      {
+       "id": "luftwasser.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "luftwasser.K3#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "luftwasser.K3#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "luftwasser.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (So …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "luftwasser.K3#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "luftwasser.K3#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.973 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px",
+       "sha": "71839b1e",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.wasser.bild",
+   "name": "Das Bild unter Wasser: Licht, Trübe, Leib",
+   "art": "kriterium",
+   "misst": "Wie wahr Licht, Wasserfarbe und Lebewesen unter Wasser aussehen, von der Bachforelle bis zur Tiefsee fremder Planeten.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Sicht 19,6 m am Bach, Absorption und Rückstreuung je Kanal nach Gordon 1975 (stamm/bild-sicht.js:217) — headless; 3 feste Wasserkörper, das Meer liest den See-Körper; Fischleib ein Oktaeder.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Sicht unter Wasser an Bach, See, Fluss",
+     "tiefe": "Absorption und Rückstreuung je Kanal",
+     "preis": "P",
+     "richter": "Sichtweite in m an fester Pose gegen das Band des Gewässertyps"
+    },
+    {
+     "nr": 2,
+     "umfang": "Fischleib als Art lesbar",
+     "tiefe": "Flossen, Schuppenglanz, Seitenlinie",
+     "preis": "P · 1 m vor einem Schwarm",
+     "richter": "Bildpaar 1 m vor dem Fisch: Blindtest erkennt die Art ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Lichtfinger und Kaustik im Flachwasser",
+     "tiefe": "folgen Welle und Sonnenstand",
+     "preis": "P · bei Seegang",
+     "richter": "Richtung der Lichtfinger ±5° zur Sonne; Kaustik-Kontrast im Band des Fotos"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "gelaende.K3",
+     "text": "Wasser-Bild aus dem Gesetz an jeder Pose des Spielers",
+     "staffel": "\"1 = spiegelTreue ≥ 0,6 an einer Pose in Ausgabe-Größe mit der Kamera des Spiels an einem Gerät · 2 = alle 12 Posen (Ego/Third × Mittag/Nacht/Regen × beide Geräte) und Fließ-Anisotropie ≥ 1,5\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:2017"
+     ],
+     "stationen": [
+      {
+       "id": "gelaende.K3#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "gelaende.K3#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "spiegelTreue 0.73 (wasserSatz 25525 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 94.5 σ 37.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.212 · Bühne summer sunny 0.50 …",
+       "sha": "e84fd1fb",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "leib.K3",
+     "text": "Wasser und Höhle: Ufer, Schwimmen, Tauchen, Sicht unter Wasser",
+     "staffel": "\"1 = Ufer → Schwimmen → Tauchen ohne Sprung (Lage, Kamera) an einem Gerät · 2 = Unterwasser-Bild aus der EINEN Wasser-Wahrheit (Sicht-Abfall nach Tiefe gegen REF), Höhle mit Licht-Abfall, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4775",
+      "stationen/g5.js:4803"
+     ],
+     "stationen": [
+      {
+       "id": "leib.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Ex …",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K3#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Blick Ego 0,5 ↔ 2,5 m 57.19 %, Third 0,5 ↔ 2,5 m 55.29 %, Ego ↔ Third 0,5 m 4.54 % · ego L 0.2746673/0.2186528/0.1820547 · K 0.23, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746576/0.2214764/0.1847688 · K 0.22, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0. …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K3#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Blick Ego 0,5 ↔ 2,5 m 58.24 %, Third 0,5 ↔ 2,5 m 55.48 %, Ego ↔ Third 0,5 m 5.72 % · ego L 0.2762601/0.221478/0.1828824 · K 0.22, 0.21 /m · 2,5÷0,5 m 0.66 · third L 0.2746637/0.2220571/0.1847694 · K 0.21, 0.2 /m · 2,5÷0,5 m 0.67 · Leib Third 0,5 m Kontrast 0.1 …",
+       "sha": "350e6b11",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.wasser.netz",
+   "name": "Primärproduktion und Größenspektrum im Wasser",
+   "art": "kriterium",
+   "misst": "Ob Licht und Nährstoff das Plankton tragen, das Plankton die Fische und die Fische die Räuber — bis zum Größenspektrum vom Plankton zum Wal.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Fische folgen dem Pegel (0,335 → 0,363) und fliehen ≥ 3 m — headless; Plankton nur als Kommentar zur Trübe des See-Körpers (foundry-core.js:163), kein Feld.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Fisch liest Pegel und Spieler",
+     "tiefe": "Fisch-Hub ≥ 0,8 × Pegel-Hub, Fluchtabstand ≥ 3 m",
+     "preis": "P · am Bach",
+     "richter": "Hub und Flucht aus dem Bild"
+    },
+    {
+     "nr": 2,
+     "umfang": "Licht × Nährstoff → Plankton-Feld",
+     "tiefe": "Blüte im Frühjahr, wo Auftrieb oder Mündung Nährstoff bringt",
+     "preis": "P · Zeitraffer",
+     "richter": "Chlorophyll-Feld über ein Spieljahr gegen Ozeanfarben-Zeitreihe: Phase der Blüte ±1 Monat"
+    },
+    {
+     "nr": 3,
+     "umfang": "Plankton → Schwarmfisch → Räuber",
+     "tiefe": "Fischdichte folgt der Primärproduktion",
+     "preis": "P",
+     "richter": "räumliche Korrelation Fischbiomasse ↔ Plankton r ≥ 0,6 an 50 Orten"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "luftwasser.K3",
+     "text": "Fische lesen die Strömung",
+     "staffel": "\"1 = Fische stehen gegen die Strömung des Kerns (Ausrichtung zur Strömung ≥ 0,8) · 2 = sie meiden den Spieler, folgen dem Pegel und sind unter Wasser sichtbar (Leib K3)\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g2.js:6213",
+      "stationen/g2.js:6253",
+      "stationen/g2.js:6325",
+      "stationen/g2.js:6343"
+     ],
+     "stationen": [
+      {
+       "id": "luftwasser.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "luftwasser.K3#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "luftwasser.K3#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "luftwasser.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (So …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "luftwasser.K3#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "luftwasser.K3#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.973 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px",
+       "sha": "71839b1e",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.wasser.rhythmen",
+   "name": "Rhythmen des Wasserlebens: Tag bis Jahrtausend",
+   "art": "kriterium",
+   "misst": "Über welche Zeitspannen das Wasserleben wahr wirkt — von der Flucht in Sekunden bis zu Bestands-Regimen über Jahrzehnte.",
+   "heute": 1,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Sekunden: Schwanzschlag, Flucht, Heimkehr nach 8 s — headless, Preis nie gemessen; keine Tagesuhr für Fische.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Sekunden: Schwanzschlag, Flucht, Heimkehr",
+     "tiefe": "Fisch kehrt nach Ruhezeit heim",
+     "preis": "P",
+     "klasse": "Ort",
+     "richter": "Heimkehr ≥ 60 % im Fenster"
+    },
+    {
+     "nr": 2,
+     "umfang": "Tag: Vertikalwanderung (die größte tägliche Tierwanderung der Erde)",
+     "tiefe": "Zooplankton steigt nachts, sinkt am Tag",
+     "preis": "P",
+     "richter": "Tiefe der Streuschicht Mittag gegen Mitternacht, Hub ≥ 200 m"
+    },
+    {
+     "nr": 3,
+     "umfang": "Jahr: Blüte, Laichzug, Walwanderung",
+     "tiefe": "Lachse ziehen flussauf, Wale zwischen Pol und Tropen",
+     "preis": "P · Zeitraffer",
+     "richter": "Ankunft der Züge in ihrem Monat ±1"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [
+    {
+     "station": "luftwasser.K3#2",
+     "leiter": "leben.wasser.rhythmen",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": []
+  },
+  {
+   "id": "leben.oeko.netz",
+   "name": "Das Nahrungsnetz: Breite, Stabilität, Wahrheit",
+   "art": "kriterium",
+   "misst": "Wie viele Arten aus Saaten ein Netz bilden, das sich hält, wie nah seine Kennzahlen an realen Netzen liegen und ob die Arten in Gestalt UND Rolle verschieden sind.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "4 Land-Säuger mit Beute nach Masse (beuteMasse 2,0, tetrapoda-core.js:166), Bestand aus Nahrung × Lebensraum (alte Ökologie K2 2/2) — headless, unter P im Fenster nie gefahren.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "4 Säuger-Arten, 3 Ebenen, ein Tal",
+     "tiefe": "Bestand aus Nahrung × Lebensraum",
+     "preis": "P · Tal mit allen 4 Arten im Bild",
+     "richter": "8 Saaten im Fenster: jede Art in [⅓×, 3×] des Starts über 6 Spielstunden"
+    },
+    {
+     "nr": 2,
+     "umfang": "10¹ Arten, 4 Ebenen, ein Biom",
+     "tiefe": "Fressen und Gefressenwerden im Bild; das Netz hält",
+     "preis": "P · Waldrand, ≥ 5 Arten im Bild",
+     "richter": "Transekt im Spielgang, 32 Saaten × 100 Spieljahre im Raffer: jede Art wird am Ende wieder angetroffen in ≥ 80 % der Saaten; beobachtete Fraß-Paare je Art im Band realer Wald-Netze"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Arten je Biom aus der Saat",
+     "tiefe": "Ebenen, Omnivorie, Räuber-Beute-Massenverhältnis im Band",
+     "preis": "P",
+     "richter": "Transekt-Zählung an 32 Saaten: aus angetroffenen Arten und beobachteten Fraß-Ereignissen die Kennzahlen des Netzes (Ebenen, Omnivorie, Massenverhältnis) im 90-%-Band von ≥ 20 realen Netzen UND 50 Zufallspaare in Gestalt UND Rolle trennbar ≥ 90 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "oekologie.K2",
+     "text": "Bestand aus Nahrung × Lebensraum, der Deckel ist nur die Kosten-Kappe",
+     "staffel": "\"1 = Geburt und Tod folgen der Nahrung an einem Ort (Mutante Nahrung halbiert → Bestand fällt) · 2 = überall; fern als Zahl, nah als Körper; die Kappe am Schirm ändert nur, wer gezeichnet wird, nie den Bestand; im Profi-Band\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5149",
+      "stationen/g2.js:5192"
+     ],
+     "stationen": [
+      {
+       "id": "oekologie.K2#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "8 Saaten · Grundbestand min 6.84 · halbe Nahrung -0.36 [-0.58, -0.246] · 17932 Hungertode, 17932 die Ältesten · Takte an der Kappe 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "oekologie.K2#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "8 Saaten · Kappe halbiert: 0 von 17280 Takten andere Tiere in 4 nahen Regionen, Leiber 20/10 bei Bestand 34.9 · halbe Nahrung senkt 8 von 8 Regionen (4 fern, Effekt -0.307 … -0.41) · Takt p95 5 ms",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.oeko.vielfalt",
+   "name": "Vielfalt am Ort und ihre Gesetze",
+   "art": "kriterium",
+   "misst": "Wie viele Arten der Spieler an einem Ort je Zeit antrifft und ob die Verteilung den Gesetzen der Natur gehorcht (Arten-Areal, Breitengradient, Rang-Häufigkeit, Biomasse-Anteile).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Alte Tiere K5 Staffel 1: ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät (Klassen-Maske tier ≥ 200 px); Herde ≥ 20 und 150 Tiere im Ring offen. — KARTE: 0 — Sichtungen nur an einem Gerät gebucht (tiere.K5).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "≥ 3 Tier-Sichtungen je 10 Spielminuten",
+     "tiefe": "Art passt zum Lebensraum (Hirsch Wiese, Bär Fluss)",
+     "preis": "P",
+     "klasse": "Ort",
+     "richter": "Spielgang 10 min, Tier im Bild ≥ 200 px"
+    },
+    {
+     "nr": 2,
+     "umfang": "10¹ Arten je Hektar mit Vögeln, Insekten, Pflanzen; 150 Tiere im 500-m-Ring",
+     "tiefe": "Fauna wechselt mit Biom und Uhr",
+     "preis": "P · Ego und Third",
+     "richter": "Arten je ha in 10 min gegen Feldkartierung ±Faktor 2"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Arten je Hektar; ≥ 50 Pflanzenarten zugleich im Bild",
+     "tiefe": "Tag ≠ Nacht, Sommer ≠ Winter",
+     "preis": "P",
+     "richter": "Arten-Akkumulationskurve gegen Feldkurve; Jaccard Tag/Nacht und Sommer/Winter ±0,15"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [
+    {
+     "station": "tiere.K5#1",
+     "leiter": "leben.oeko.vielfalt",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "tiere.K5",
+     "text": "Begegnung im Bild, Dichte und Kosten beim Namen",
+     "staffel": "\"1 = ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät · 2 = dazu eine Herde ≥ 20 im Bild in 30 min, updateCreatures ≤ 1,0 ms p95 bei 150 Tieren im 500-m-Ring an der GTX, die Ratsche tier eingerastet, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:4827"
+     ],
+     "stationen": [
+      {
+       "id": "tiere.K5#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "tiere.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "ego (first) 5 Sichtungen in 601 Spiel-s (wesen 414 px 51 m 378 s · wesen 314 px 50 m 378 s · wesen 212 px 68 m 423 s · wesen 222 px 62 m 428 s · wesen 377 px 53 m 437 s), 625 Prüfungen, 50 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 4 Sichtun …",
+       "sha": "3e4f99cd",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.oeko.dynamik",
+   "name": "Dynamik: Zyklen, Kaskaden, Ausbrüche, Invasionen",
+   "art": "kriterium",
+   "misst": "Ob das Netz in der Zeit lebt — Schwingungen, Kaskaden und Ausbrüche entstehen aus der Bilanz, nie aus einem Zeitplan.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Wölfe weg → Hirsche +0,448 [0,321; 0,536], Jungwuchs −0,279 über 8 Saaten (alte Ökologie K1 2/2) — headless, im Fenster nie.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "ein Tal, Spielstunden",
+     "tiefe": "Wölfe weg → Hirsche hinauf, Jungwuchs hinab",
+     "preis": "P · Zeitraffer im Fenster",
+     "richter": "Kaskaden-Richtungen mit Intervall, das 0 nicht schneidet"
+    },
+    {
+     "nr": 2,
+     "umfang": "ein Tal, 10 Spieljahre, sichtbar",
+     "tiefe": "die Kaskade im Bild: Jungwuchs am Fluss",
+     "preis": "P · Zeitraffer",
+     "richter": "Bildpaar gleicher Kamera vor/nach 10 Spieljahren ohne Wölfe: Jungwuchs-Deckung −≥ 20 % gegen Gegenlauf"
+    },
+    {
+     "nr": 3,
+     "umfang": "ein Biom, 10² Spieljahre",
+     "tiefe": "Räuber-Beute-Schwingung mit Phasenversatz",
+     "preis": "P · 100 Spieljahre in ≤ 60 s Wanduhr",
+     "richter": "Periode 8–11 Jahre, Räuber hinkt 1–2 Jahre nach (Hudson-Bay-Reihen)"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "oekologie.K1",
+     "text": "Die trophische Kaskade: Räuber · Beute · Pflanze",
+     "staffel": "\"1 = jede Art bleibt in [⅓×, 3×] des Starts, ohne Aussterben und ohne Ausbruch, über ≥ 8 Seeds · 2 = die drei Richtungen (Wölfe weg → Hirsche +≥ 30 % und Jungwuchs −≥ 20 %; Hirsche bejagt → Wölfe nehmen ab) mit Konfidenz-Intervall, das 0 nicht schneidet; die Mutante „Fraß-Leser aus“ ist ROT\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5226",
+      "stationen/g2.js:5254"
+     ],
+     "stationen": [
+      {
+       "id": "oekologie.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "8 Saaten · 23 ansässige Bestände · Stunde 8 gegen 2: 0.35–1.35× · außer Band 0 · Takte an der Kappe 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "oekologie.K1#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "8 Saaten · hirsche 0.448 [0.321, 0.536] · jungwuchs -0.279 [-0.325, -0.194] · woelfe -0.51 [-0.858, -0.231] · mutante 0.614 [0.546, 0.691] · Mutante ROT",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.oeko.zerfall",
+   "name": "Zerfall: Aas, Totholz, Pilz, Boden",
+   "art": "kriterium",
+   "misst": "Ob alles Tote sichtbar, in der Zeit und stofflich in den Kreislauf zurückkehrt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Kadaver wird gewittert, gefressen, sinkt (tetrapoda-core.js:168); gedüngt wird nur ein Tod von Spieler-Hand (stamm/kreatur-leben.js:918); Totholz und Konsolen-Pilze als zeitlose Gestalt (foundry-core.js:5155).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Säuger-Kadaver",
+     "tiefe": "gewittert, gefressen, sinkt in die Erde; JEDER Tod düngt die Zelle",
+     "preis": "P · Kadaver mit Fressern im Bild",
+     "richter": "Kadaver-Masse sinkt mit Fresser-Zahl; Nährstoff steigt nach jedem Tod (Wolf, Alter, Spieler)"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Kadaver jeder Größe zugleich",
+     "tiefe": "Verwesungsstufen; Ankunftsfolge der Aasfresser emergent aus Witterung und Anflug",
+     "preis": "P · 10 Kadaver im Bild",
+     "richter": "Bildreihe 0/3/10/30 Tage gegen forensische Referenz; Gilde-Folge im Band von Kamerafallen-Studien"
+    },
+    {
+     "nr": 3,
+     "umfang": "Totholz eines Waldes über Jahrzehnte",
+     "tiefe": "Zerfallsklasse WÄCHST, Moos, Konsolen-Pilz, Ammenstamm mit Sämlingen",
+     "preis": "P · Altwald im Bild",
+     "richter": "Bildreihe 0/10/40 Spieljahre am selben Stamm; Totholz 10–30 % der Biomasse"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "leben.oeko.sukzession",
+   "name": "Sukzession: EIN Gesetz für jede Wunde",
+   "art": "kriterium",
+   "misst": "Ob das Leben jede Störung durch DASSELBE Gesetz zurückerobert — wachsend in Fläche, Zeit und Zahl der Störungsarten, bis zur verlassenen Metropole.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Brand → Asche → Gras → Busch → Wald, Halme 477 → 70 → 491, Sämling 0 → 1 (stamm/feld-leben.js) — Mechanik belegt, unter P im Bild ungemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Brand-Zellen um das Dorf",
+     "tiefe": "Brand → Asche → Gras → Busch → Wald, Asche düngt",
+     "preis": "P · Brandfläche im Bild",
+     "richter": "Halm-, Asche- und Sämling-Zahlen über die Zeit im Fenster"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 km² Waldbrand aus Brennstoff und Wind",
+     "tiefe": "Mosaik mit Überlebenden-Inseln; Feuer-Regime je Biom",
+     "preis": "P · Überflug",
+     "richter": "Bildpaar nach 1/5/25 Spieljahren gegen die Yellowstone-1988-Fotoreihe"
+    },
+    {
+     "nr": 3,
+     "umfang": "ein Tal, 5 Störungsarten (Brand, Rodung, Flut, Lawine, Verlassen), auch frei ausgelöst",
+     "tiefe": "der Pfad hängt an der Ausgangslage: Boden, Samenbank, Überlebende",
+     "preis": "P",
+     "richter": "5 Arten × 8 Saaten: Deckungs-Kurven im Band realer Chronosequenzen ≥ 80 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "stoffe.K5",
+     "text": "Nährstoff, Nachwuchs, Sukzession",
+     "staffel": "\"1 = der Nachwuchs korreliert nach 1 Spieljahr mit Feuchte × Licht (r ≥ 0,5) · 2 = Stubben → Sämling, Brand → Gras → Busch → Wald, Ernte entnimmt Nährstoff, Asche und Leichnam geben ihn zurück\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3640",
+      "stationen/g1.js:3712"
+     ],
+     "stationen": [
+      {
+       "id": "stoffe.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Ufer -348/-662: nach 8767 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.825, im Offenen (16 Kacheln) 0.936, nass 1.258 × trocken · Mutante Feuchte gleich: offen r -0.517, nass 0.973 × trocken",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "stoffe.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Halme 477 → Asche 70 → Gras 491 · Kräuter 23 → Asche 3 → Gras 3 → Busch 21 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling 0 → 0.06 → 0.18 → 0.7 → 1, Gestalt [[5,1461],[9,2933]] · Wald 71: Brand nimmt 71, Jungwuchs 71,  …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.oeko.stoffe",
+   "name": "Stoffkreisläufe: Kohlenstoff, Stickstoff, Sauerstoff, Wasser",
+   "art": "kriterium",
+   "misst": "Ob das Leben die Chemie seines Planeten trägt und ändert — vom Nährstoff einer Zelle bis zur Biosignatur fremder Atmosphären.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "EIN Nährstoff-Skalar je Zelle (stamm/feld-leben.js:3736: Fällen −0,3, Ernte −0,02, Brand +0,4, Riss +0,2); Ernte 15× → 1 → 0,7 belegt, Wuchs im Bild ungemessen; kein ökologischer C, N, O.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "ein Nährstoff je Zelle",
+     "tiefe": "Ernte und Fällen nehmen, Asche und Leichnam geben",
+     "preis": "P · Acker im Bild",
+     "richter": "Ernte 15× → Nährstoff 1 → 0,7, Wuchs sinkt sichtbar im Bildpaar"
+    },
+    {
+     "nr": 2,
+     "umfang": "N und P getrennt je Zelle",
+     "tiefe": "Leguminosen und Erle binden N, P aus Gestein",
+     "preis": "P · beide Wiesen im Bild",
+     "richter": "Bildpaar Wiese mit Klee neben Wiese ohne nach 5 Spieljahren: Wuchs-Unterschied"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kohlenstoff eines Bioms",
+     "tiefe": "Biomasse + Boden-C als Bilanz; Brand gibt frei, Moor speichert",
+     "preis": "P",
+     "richter": "C-Vorrat je ha im Band (Tropenwald ~200 t C, Steppe ~10 t)"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "stoffe.K5",
+     "text": "Nährstoff, Nachwuchs, Sukzession",
+     "staffel": "\"1 = der Nachwuchs korreliert nach 1 Spieljahr mit Feuchte × Licht (r ≥ 0,5) · 2 = Stubben → Sämling, Brand → Gras → Busch → Wald, Ernte entnimmt Nährstoff, Asche und Leichnam geben ihn zurück\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g1.js:3640",
+      "stationen/g1.js:3712"
+     ],
+     "stationen": [
+      {
+       "id": "stoffe.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Ufer -348/-662: nach 8767 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.825, im Offenen (16 Kacheln) 0.936, nass 1.258 × trocken · Mutante Feuchte gleich: offen r -0.517, nass 0.973 × trocken",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "stoffe.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Halme 477 → Asche 70 → Gras 491 · Kräuter 23 → Asche 3 → Gras 3 → Busch 21 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling 0 → 0.06 → 0.18 → 0.7 → 1, Gestalt [[5,1461],[9,2933]] · Wald 71: Brand nimmt 71, Jungwuchs 71,  …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "leben.oeko.partner",
+   "name": "Wechselbeziehungen: der Partner verschiebt die Bilanz",
+   "art": "kriterium",
+   "misst": "Ob Arten einander brauchen und schaden — Bestäubung, Pilzpartner, Seuche, Ko-Evolution — geprüft stets durch denselben Richter: den Partner entfernen, die Folge sehen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Bestäuber folgen den Blüten, r 0,8 an 9 Orten (alte Leben in Luft und Wasser K4) — headless gerendert, Preis im Fenster nie; Einbahn: die Blüte merkt den Besuch nicht.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Bestäuber an der Mess-Wiese",
+     "tiefe": "Dichte folgt Blüten, Pflege und Uhr (Einbahn)",
+     "preis": "P · Wiese im Bild",
+     "klasse": "Ort",
+     "richter": "r(Bestäuber, Blüten) ≥ 0,5 aus dem Bild"
+    },
+    {
+     "nr": 2,
+     "umfang": "eine Wiese, beide Richtungen",
+     "tiefe": "der Besuch entscheidet den Samenansatz",
+     "preis": "P",
+     "richter": "Gegenlauf ohne Bestäuber: Blüten-Dichte im Folgejahr −≥ 30 % im Bildpaar"
+    },
+    {
+     "nr": 3,
+     "umfang": "ein Wald",
+     "tiefe": "Pilz-Partner der Bäume; Schatten-Sämlinge zehren vom Netz",
+     "preis": "P",
+     "richter": "Gegenlauf ohne Pilz: Sämlinge im Schatten −≥ 30 % Wuchs"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [
+    {
+     "station": "luftwasser.K4#1",
+     "leiter": "leben.oeko.partner",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "feld.K5",
+     "text": "Das Feld wird gesehen: Konsum am Ort der Tat",
+     "staffel": "\"1 = ein Leser sichtbar am Ort an einem Gerät · 2 = zwei Orte auf beiden Geräten, Wiese UND Tier\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:3936"
+     ],
+     "stationen": [
+      {
+       "id": "feld.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Feld der Mitte 0.855 → 1 · Streu der Mitte 29 → 35 (Blumen 26 → 32), Nachbarzelle 30 → 30 (Blumen 24 → 24), Rauschen ±0 (Soll: Blumen +≥ 3 oder alle +≥ 10 % am Ort, Nachbar im Rauschen)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "luftwasser.K4",
+     "text": "Insekten und Bestäuber lesen das Feld",
+     "staffel": "\"1 = die Dichte der Bestäuber korreliert mit dem Blüten-Anteil am Ort (r ≥ 0,5) · 2 = sie folgen der Pflege-Geste (Feld K5) und der Uhr\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g2.js:6233",
+      "stationen/g2.js:6278",
+      "stationen/g2.js:6302"
+     ],
+     "stationen": [
+      {
+       "id": "luftwasser.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5)",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "luftwasser.K4#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "luftwasser.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "luftwasser.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im  …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

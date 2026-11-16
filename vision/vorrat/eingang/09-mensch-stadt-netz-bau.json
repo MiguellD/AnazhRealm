@@ -1,0 +1,1129 @@
+{
+ "paket": "09-mensch-stadt-netz-bau",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "mensch.stadt.groesse",
+   "name": "Größe einer zusammenhängenden Stadt",
+   "art": "kriterium",
+   "misst": "wie groß eine zusammenhängende, betretbare Stadt wird — gezählt im Bild oder per Anflug, im Blindpaar gegen Fotos realer Städte derselben Klasse und in der Statistik ihres Plans (Orientierungs-Entropie, Blockgrößen, Rang-Größe der Höhen); gegen ein Band vieler Städte, nie gegen EINE — kein Abbild. Die Messlatte der besten Spiel-Städte zählt mensch.stadt.messlatte.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Start-Dorf 12 Häuser in den E-Messorten (GTX 16,8 ms); Stadt des Worts 300 Häuser, 1,08 Mio. Dreiecke, P an der vollen Stadt nie gemessen; GROESSE_WAND 500 (fachwerk-core.js:3354); Häuser lesen als weiße Kästen mit Fenstern (14.11.) — KARTE: 0 — kein Blindpaar gegen ein Foto gefahren; P an der vollen Stadt nie gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Weiler: 10 Gebäude",
+     "tiefe": "Tür, Dach, Hof; keine zwei gleich",
+     "preis": "P · Ortsrand",
+     "richter": "im Bild gezählt ≥ 10 Häuser; Straßenbild gegen Foto eines Weilers: Panel-2AFC ≤ 90 %; Zwillinge im Bild 0"
+    },
+    {
+     "nr": 2,
+     "umfang": "Marktstadt: 10² Gebäude",
+     "tiefe": "Platz, Kirche, Markt, Mauer",
+     "preis": "P · Marktplatz",
+     "richter": "im Blick gezählt ≥ 100; 2AFC Straßen- und Luftbild ≤ 85 %; Gassenbreiten und Parzellen im Band realer Marktstädte ±30 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kleinstadt: 10³",
+     "tiefe": "Viertel unterscheidbar",
+     "preis": "P · höchster Punkt",
+     "richter": "Anflug-Zählung ≥ 10³; 2AFC ≤ 80 %; Blockgrößen-Verteilung gegen reale Kleinstädte KS ≤ 0,2"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "siedlung.K5",
+     "text": "Das erste Haus steht sofort",
+     "staffel": "\"1 = erstes Haus sichtbar ≤ 0,5 s nach dem Erwachen der Zelle, unabhängig von nH (12 gegen 300), als Studio-L-Kette (Bau-Hash im Bild), an einem Gerät · 2 = beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:4091"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K5#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "siedlung.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
+       "sha": "715754fc",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K5#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "siedlung.K5#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
+       "sha": "715754fc",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.stadt.form",
+   "name": "Stadtform-Wahrheit",
+   "art": "kriterium",
+   "misst": "ob Kern, Rand, Viertel, Netz und Dichte den Gesetzen realer Städte folgen — bis die Form ihre Ursachen verrät.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Kern-Verdichtung (fachwerk-core.js:4632), Gewerbe-Hallen am Rand (:3693) im Code, Richter nie gefahren; kein Bodenwert (Grep 0)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Stadt: Kern und Rand",
+     "tiefe": "geschlossene Straßenwand im Kern, Gewerbe am Rand",
+     "preis": "P · Straße",
+     "klasse": "Stadt",
+     "richter": "geschlossene Wand Kern ↔ Rand ≥ 2:1"
+    },
+    {
+     "nr": 2,
+     "umfang": "Großstadt: Viertel aus dem Bodenwert",
+     "tiefe": "nicht aus einer Typen-Liste",
+     "preis": "P · Straße",
+     "richter": "Blindtest Lage und Wohlstand aus 20 Straßenbildern ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Großstadt: Dichtegradient und Höhe",
+     "tiefe": "Clark-Gradient, Turm im Kern, Slum am Hang",
+     "preis": "P",
+     "richter": "exponentieller Fit R² ≥ 0,8; Höhen-Median Kern/Rand ≥ 5"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [
+    {
+     "station": "breite.siedlung#1",
+     "leiter": "mensch.stadt.form",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": []
+  },
+  {
+   "id": "mensch.stadt.vertikal",
+   "name": "Vertikale Stadt",
+   "art": "kriterium",
+   "misst": "wie viele begehbare Stadtschichten übereinander liegen und wie hoch die Stadt wächst.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "höchster Typ hochhaus mit 7 Geschossen (fachwerk-core.js:1987); keine zweite Ebene, keine Arkologie (Grep 0) — KARTE: 0 — Beleg ist ein Code-Zitat (R2).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ebene, Häuser bis 7 Geschosse",
+     "tiefe": "Haus von Keller bis Dachboden",
+     "preis": "P · Stadt",
+     "richter": "höchstes Gebäude im Bild, begehbare Ebenen = 1"
+    },
+    {
+     "nr": 2,
+     "umfang": "Türme 30 Geschosse",
+     "tiefe": "Fassade aus 5 km lesbar",
+     "preis": "P · Fernblick",
+     "richter": "höchstes Gebäude ≥ 100 m, Silhouette aus 5 km erkennbar"
+    },
+    {
+     "nr": 3,
+     "umfang": "Supertall ≥ 400 m",
+     "tiefe": "Fernform hält ohne Flackern",
+     "preis": "P · Anflug",
+     "richter": "Anflug 10 km bis Fuß ohne Formsprung, Pixel-Unruhe ≤ 1 %"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "siedlung.K1",
+     "text": "Das Haus von innen: Tür, Treppe, Keller, Dachboden",
+     "staffel": "\"1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus · 2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:3929",
+      "stationen/g5.js:3981"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K1#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "siedlung.K1#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.stadt.breite",
+   "name": "Stadtgestalt aus Ursache",
+   "art": "kriterium",
+   "misst": "die Kraft, Stadtformen aus Klima, Stoff, Technik, Macht und Leib der Bauenden zu erzeugen — gemessen daran, ob man vom Bild auf die Ursache kommt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "9 Epochen, 6 Namens-Regionen, 32 Hausstile (fachwerk-core.js:3294–3312, 2012); Netz nur organisch oder Raster, gesetzt statt verursacht; Blindtest nie gefahren",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Familie, 6 Regionen",
+     "tiefe": "Region aus dem Stadtbild",
+     "preis": "P · Stadt",
+     "richter": "Region einer Stadt aus 6 erkannt ≥ 50 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Netzformen aus Ursache (organisch, Raster, radial, Wasser, Terrasse, Burg)",
+     "tiefe": "Netz und Haus zusammen stimmig",
+     "preis": "P",
+     "richter": "50 Saaten: Kenner nennen die Ursache ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "die Erde: Kulturräume aller Kontinente",
+     "tiefe": "gegen Fotos realer Altstädte",
+     "preis": "P",
+     "richter": "20 Referenz-Altstädte glaubhaft ≥ 70 %; Klimazone aus dem Stadtbild ≥ 60 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.stadt.siedlungsnetz",
+   "name": "Siedlungsnetz",
+   "art": "kriterium",
+   "misst": "wie viele Siedlungen ein Planet trägt, ob Hierarchie und Netz wahr sind und ob der Spieler jede erreicht.",
+   "heute": 0,
+   "kern": 1,
+   "fuss": "kern",
+   "beleg": "Stadt binnen 2 km in 7/8 Saaten an Radeon und GTX; Zipf ζ 1,022 [0,956; 1,158] über 8 Saaten, Spannweite 6–500 Häuser (siedlung.K2) — KARTE: Kern 1 — an beiden Geräten grün (siedlung.K2); Bild-Preis am Hügel an der Radeon nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Region 32 × 32 km, Weiler bis Kleinstadt",
+     "tiefe": "Rang-Größe-Gesetz",
+     "preis": "P · Hügel",
+     "klasse": "Stadt",
+     "richter": "Stadt binnen 2 km in ≥ 6/8 Spawns; Zipf ζ ∈ [0,8; 1,2]"
+    },
+    {
+     "nr": 2,
+     "umfang": "Land 10³ km",
+     "tiefe": "zentrale Orte, Abstände nach Rang",
+     "preis": "P · Flug",
+     "richter": "Nachtbild aus 100 km gegen Satellitenbild eines Landes: Verwechslung ≥ 30 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kontinent: 10⁴ Städte",
+     "tiefe": "Zipf über 4 Dekaden, Handelswege, Grenzen",
+     "preis": "P · Landung ≤ 5 s",
+     "richter": "ζ ∈ [0,8; 1,2] über 4 Dekaden; 100 Zufallslandungen ≤ 5 s"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [
+    {
+     "station": "karte2.mensch.stadt.siedlungsnetz#1",
+     "leiter": "mensch.stadt.siedlungsnetz",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "siedlung.K2",
+     "text": "Die Stadt in Reichweite, nach Rang und Größe",
+     "staffel": "\"1 = in ≥ 6 von 8 Saaten mit zufälligem Spawn steht binnen 2 km eine ummauerte Stadt (Auto-Zellen, nie Chat), sichtbar vom Hügel an einem Gerät · 2 = Zipf-Exponent 0,8–1,2 über 32 × 32 km mit Konfidenz-Intervall, Export trägt mauer und graph, mittags und in der Dämmerung, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:3776",
+      "stationen/g5.js:3833"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 48 · Schuss vom acker 104 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 66.65 m · Luma 98. …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 104 · Schuss vom acker 103 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 6 …",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 48 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 104 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sich …",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.stadt.habitat",
+   "name": "Siedeln jenseits der Oberfläche",
+   "art": "kriterium",
+   "misst": "ob Menschen dort wohnen, wo die Oberfläche es nicht erlaubt — unter der Erde, unter Wasser, auf Mond, Mars, Asteroid, im freien Raum — und ob die Siedlung zeigt, was sie am Leben hält.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stand 0: jede Siedlung steht auf der Oberfläche EINER Welt (siehe mensch.stadt.vertikal: keine zweite Ebene).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EINE Siedlung unter der Erde, 10² Bewohner",
+     "tiefe": "Luft, Licht, Wasser haben sichtbare Wege; die Gänge folgen dem Gestein",
+     "preis": "P",
+     "richter": "3 Lebenslinien (Luft, Wasser, Licht) im Bild bis zur Quelle verfolgbar; Gegenlauf Schacht verstopft → die Bewohner verlassen den Trakt"
+    },
+    {
+     "nr": 2,
+     "umfang": "Stadt unter Wasser, 10³",
+     "tiefe": "Druckhülle, Schleusen, Tauchboote, Licht aus dem Wasser",
+     "preis": "P · innen und außen",
+     "richter": "Schleuse hin und zurück ohne Ladebild; Hüllform ↔ Tiefe nach dem Druck-Gesetz ±20 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Kolonie auf Mond oder Mars, 10³",
+     "tiefe": "Schwere, Staub, Strahlung prägen Bau und Tag; Versorgung von außen im Takt",
+     "preis": "P · Außeneinsatz",
+     "richter": "Gang der Bewohner bei einem Sechstel und einem Drittel der Schwere gegen Film realer Mondgänge (2AFC ≤ 75 %); Gegenlauf Nachschub aus → der Vorrat fällt, der Tagesplan rationiert"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.stadt.messlatte",
+   "name": "Die Stadt gegen die Besten",
+   "art": "kriterium",
+   "misst": "ob dieselbe Szene die vom Schöpfer genannten Messlatten schlägt — im Blindpaar und in vier Zählungen nach EINEM Protokoll, das im Vergleichstitel genauso gefahren wird: Dinge zum Benutzen je 100 m Straße, betretbare Innenräume je Block, Bewohner mit eigenem Tagesplan je Straße, Sekunden vom Start bis in die Straße. Vergleichstitel: die Stadt aus Cyberpunk 2077 (Night City), die jüngste offene Stadt von Rockstar Games — und, sobald ein Titel sie übertrifft, der beste der Gegenwart; dazu Straßenfotos von Tokio.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Nie gefahren. Stadt des Worts 300 Häuser, Test-Stadt 35 Häuser mit 118 Bewohnern, Häuser lesen als weiße Kästen mit Fenstern (14.11.).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EINE Straße, 100 m, Tag",
+     "tiefe": "Fassaden, Läden, Menschen, Verkehr — als Straße gelesen",
+     "preis": "P",
+     "richter": "Blindpaar gegen dieselbe Kameralage im Vergleichstitel: das Panel wählt unser Bild in ≥ 20 %; die vier Zählungen sind an beiden gefahren"
+    },
+    {
+     "nr": 2,
+     "umfang": "EIN Block, Tag und Nacht",
+     "tiefe": "Innenräume hinter den Türen, Licht aus den Fenstern",
+     "preis": "P",
+     "richter": "betretbare Innenräume je Block ≥ Vergleichstitel; Blindpaar ≥ 30 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "ein Viertel, 1 km²",
+     "tiefe": "Dichte der Dinge zum Benutzen; Bewohner mit Tagesplan",
+     "preis": "P",
+     "richter": "Dinge je 100 m und Bewohner mit Tagesplan je Straße ≥ Vergleichstitel an 20 Zufallsstraßen; Blindpaar ≥ 40 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.netz.gestalt",
+   "name": "Das Netz als Gestalt",
+   "art": "kriterium",
+   "misst": "ob Netze in Größe, Hierarchie und Form echten gleichen und EIN Gesetz jede Dichte, Kultur und Welt trägt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "STRASSENGRAPH-GESETZ (fachwerk-core.js:3810), 4 Klassen; Gefälle nur headless (siedlung.K3), Befahrbarkeit nie gefahren",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ort, ~10 km, 4 Klassen",
+     "tiefe": "Trasse folgt Hang, Brücke über Wasser",
+     "preis": "P · Fahrt",
+     "richter": "Gefälle p95 ≤ 9,5 % über 8 Saaten UND jede Klasse ohne Wand oder Klemmen befahren"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³ Häuser, ~50 km",
+     "tiefe": "Kreuzungsgrad, Sackgassen, Block, Entropie",
+     "preis": "P · dichtester Platz",
+     "richter": "3 von 4 Kennzahlen im OSM-Band ± 20 % in ≥ 80 % von 32 Saaten"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴ Häuser, ~500 km, Achsen und Ring",
+     "tiefe": "breite Straßen tragen den Verkehr",
+     "preis": "P · Fernblick",
+     "richter": "Breite ↔ Fahrten r ≥ 0,7; Luftbild-Echtheits-Probe"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "fahrzeug.K2",
+     "text": "Die Fahrt kommt durch: das Wegenetz trägt das Rad",
+     "staffel": "\"1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät · 2 = auch 25°-Hang und Furt, Ego und Third, und der Verkehr der Stadt (PFLICHT-OFFEN C): um 10 und 23 Uhr fährt jeder Wagen des Gesetzes mit seinem Fahrer am Steuer, keiner steckt, keiner berührt Bewohner, Wagen oder Bau, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:5962"
+     ],
+     "stationen": [
+      {
+       "id": "fahrzeug.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "in 1 Teil · Route 2440 m (Weg 97.8 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 87.4 % von 13116 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 51.3 % / Wald 19.5 % / Dorf 29.2 % · Exit 0",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "in 6 Teilen · Route 2440 m (Weg 98.2 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 89.3 % von 12948 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 27 % / Wald 43.4 % / Dorf 29.6 % · Exit 0",
+       "sha": "e84fd1fb",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "siedlung.K3",
+     "text": "Gelände-Treue: der Grundriss liest den Boden",
+     "staffel": "\"1 = Gassen-Gefälle p95 ≤ 12 % VOR der Erdbau-Glättung in ≥ 4 Saaten · 2 = dazu Hangdörfer über slopeMax 0,35 hinaus, Erdbau-Median je Haus als Kosten, EIN Grundriss-Leser statt drei\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4126",
+      "stationen/g5.js:4173"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "7 Dörfer, Gassen-Gefälle p95 -5,-5 9.5 % · -3,-3 9.1 % · -3,-5 8.5 % · -5,-3 9 % · -2,-4 9 % · -4,-4 8.6 % · Akt 10 %, Versatz 0/0/0/0/0/0/0 m, Selbsttest ✅, Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K3#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "4 Hangdörfer -1,-12 0.57/11.2 %/801 m³ · -3,-12 0.51/10.7 %/541 m³ · -3,-14 0.38/9.1 %/451 m³ · -1,-14 0.49/8.5 %/526 m³, 1 Grundriss-Leser, Selbsttests ✅✅, Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "siedlung.K5",
+     "text": "Das erste Haus steht sofort",
+     "staffel": "\"1 = erstes Haus sichtbar ≤ 0,5 s nach dem Erwachen der Zelle, unabhängig von nH (12 gegen 300), als Studio-L-Kette (Bau-Hash im Bild), an einem Gerät · 2 = beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:4091"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K5#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "siedlung.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
+       "sha": "715754fc",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K5#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "siedlung.K5#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
+       "sha": "715754fc",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.netz.verkehr",
+   "name": "Verkehr mit Anlass",
+   "art": "kriterium",
+   "misst": "wie viele Fahrzeuge und Reisende mit eigenem Anlass zugleich unterwegs sind und ob der Strom echt fließt (Netze L2 + Fahrzeuge L4).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "VERKEHR_GESETZ 1 Wagen je 15 Häuser (fachwerk-core.js:4070), Fahrer würfelt eine Wende (_verkehrZielNeu siedlung-verkehr.js:934); pflicht.C 0/3; GTX reißt bei 36 km/h (35,4 ms)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Wagen des Spielers",
+     "tiefe": "Route kommt durch",
+     "preis": "P · Fahrt 50 km/h",
+     "richter": "2-km-Route 0 Steckenbleiber, Bild p95 ≤ 33 ms während der Fahrt"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Wagen, je ein Bewohner am Steuer",
+     "tiefe": "0 Berührung, 0 Stillstand",
+     "preis": "P · Marktplatz",
+     "richter": "nH 300, Tag + Nacht, 10 min: 0 / 0 / 100 % am Ziel UND Wagen im Bild"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Teilnehmer an Ampel und Übergang",
+     "tiefe": "Folgeabstand, Vorfahrt",
+     "preis": "P · voller Knoten",
+     "richter": "Zeitlücken Median 1–3 s; 0 Konflikte"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "fahrzeug.K2",
+     "text": "Die Fahrt kommt durch: das Wegenetz trägt das Rad",
+     "staffel": "\"1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät · 2 = auch 25°-Hang und Furt, Ego und Third, und der Verkehr der Stadt (PFLICHT-OFFEN C): um 10 und 23 Uhr fährt jeder Wagen des Gesetzes mit seinem Fahrer am Steuer, keiner steckt, keiner berührt Bewohner, Wagen oder Bau, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:5962"
+     ],
+     "stationen": [
+      {
+       "id": "fahrzeug.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "in 1 Teil · Route 2440 m (Weg 97.8 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 87.4 % von 13116 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 51.3 % / Wald 19.5 % / Dorf 29.2 % · Exit 0",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "fahrzeug.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "in 6 Teilen · Route 2440 m (Weg 98.2 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 89.3 % von 12948 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 27 % / Wald 43.4 % / Dorf 29.6 % · Exit 0",
+       "sha": "e84fd1fb",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "profiband.K4",
+     "text": "Glätte: keine Hänger",
+     "staffel": "\"1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g6.js:3389",
+      "stationen/g6.js:3406"
+     ],
+     "stationen": [
+      {
+       "id": "profiband.K4#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Gehen 69 Bilder · max 83.63 ms · 63.77 % > 33 ms · Fahrt 52 Bilder · max 100.25 ms · 92.31 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 63.77 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.25), 92.31 % > 33 ms",
+       "sha": "2b826a89",
+       "gehalten": true
+      },
+      {
+       "id": "profiband.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K4#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "profiband.K4#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "pflicht.C",
+     "text": "{}",
+     "staffel": "null",
+     "fundstellen": [
+      "stationen/g5.js:6027",
+      "stationen/g6.js:3474"
+     ],
+     "stationen": []
+    }
+   ]
+  },
+  {
+   "id": "mensch.netz.massenverkehr",
+   "name": "Massenverkehr und dritte Dimension",
+   "art": "kriterium",
+   "misst": "ob Bahnen, Bahnhöfe und Ebenen unter und über der Stadt aus dem Fluss entstehen und betreten werden.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Schiene, Bahnhof: Grep 0",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Linie, 2 Halte",
+     "tiefe": "Linie liegt, wo Bedarf ist",
+     "preis": "P · im Fahrzeug",
+     "richter": "Spieler fährt mit; ≥ 10 Bewohner je Stunde"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Korridore: Stadt wählt Modus",
+     "tiefe": "Bus → Tram → Bahn nach Last",
+     "preis": "P · fahrender Zug",
+     "richter": "32 Saaten: Modus passt zur Last ≥ 80 %; Querbeschleunigung ≤ 1 m/s²"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Fahrgäste/Tag, 1 Tiefen- + 1 Hochebene",
+     "tiefe": "Treppe, Bahnsteig, Tunnel",
+     "preis": "P · Ebenenwechsel",
+     "richter": "Straße → Zug → Ziel 0 Brüche"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.netz.stoffwechsel",
+   "name": "Stadtstoffwechsel",
+   "art": "kriterium",
+   "misst": "ob Wasser, Abwasser, Energie, Müll und Daten als geschlossene Flüsse EINES Gesetzes existieren, deren Ausfall die Welt ändert.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Laternen und Brunnen ohne Fluss dahinter; Leitungen Grep 0",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ort, 1 Netz",
+     "tiefe": "Trennung wirkt",
+     "preis": "P · Dorf",
+     "richter": "Leitung getrennt: abhängige Lichter dunkel ≤ 1 s, Rest brennt"
+    },
+    {
+     "nr": 2,
+     "umfang": "10³: Wasser, Strom, Abwasser, Müll",
+     "tiefe": "Bedarf je Kopf (Kennedy 2015)",
+     "preis": "P · Viertel",
+     "richter": "Bilanz ± 5 %; Quelle gedrosselt: Hähne versiegen in Netzreihenfolge"
+    },
+    {
+     "nr": 3,
+     "umfang": "Leitungen aufschneidbar",
+     "tiefe": "Abwasser bergab, Leitungen unter Straßen",
+     "preis": "P · Schnitt",
+     "richter": "Rohre in plausibler Tiefe; Gefälle ≥ Norm 100 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.bau.bedarf",
+   "name": "Bedarf wird Bauwerk",
+   "art": "kriterium",
+   "misst": "ob der Bedarf der Welt (Fluss, Flotte, Sport, Glaube, Industrie) das Bauwerk erzeugt — vom Wohnhaus zur Megastruktur.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Rollen Kirche der Epoche, Scheune, Schmiede, Turm (fachwerk-core.js:3189, 3697); Funktions-Blindtest nie gefahren; kein Ingenieurbau",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Dorf: 4 Funktionen",
+     "tiefe": "Funktion am Außenbild erkennbar",
+     "preis": "P · Dorf",
+     "richter": "50 Bauten blind nach Funktion ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Stadt: ≥ 20 Funktionen",
+     "tiefe": "Häufigkeit wie reale Städte der Epoche",
+     "preis": "P · Stadt",
+     "richter": "Rangkorrelation gegen Zensus ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Saaten: Ingenieurbau (Brücke, Damm, Hafen, Aquädukt)",
+     "tiefe": "am richtigen Ort",
+     "preis": "P · Brücke",
+     "richter": "Flussquerungen mit Brücke/Furt ≥ 95 %; Lage sinnvoll ≥ 80 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.bau.huelle",
+   "name": "Hülle gegen das Foto",
+   "art": "kriterium",
+   "misst": "die Wahrheit der Fassade, des Dachs und des Details in jedem Abstand und jeder Menge.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Welt 14.11.: Häuser lesen als weiße Kästen mit Fenstern; Labor ↔ Welt 0,788 (studios.K4); Pop 2,30 px am Labor-Haus",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Haus im Spiel",
+     "tiefe": "aus 10 m als Haus seiner Kultur",
+     "preis": "P · Dorf, kein Pop",
+     "richter": "Paarvergleich Spiel ↔ Foto bei 10 m: „Foto“ ≥ 5 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Häuser eines Orts",
+     "tiefe": "Fuge, Maserung, Verwitterung; Stufenwechsel unsichtbar",
+     "preis": "P · Dorf",
+     "richter": "10 m und 100 m ≥ 15 % „Foto“; kein Pop im Gang"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Bauten",
+     "tiefe": "Ornament, Gesims, Laden, Schilder",
+     "preis": "P · Platz",
+     "richter": "1/10/100 m ≥ 30 % „Foto“"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "material.K3",
+     "text": "Dieselbe Albedo in jeder Stufe",
+     "staffel": "\"1 = Haus und Fels Stufe/L0 0,95–1,05 bei Uhr 0,5 an einem Gerät · 2 = Haus, Birke, Fichte, Fels, L0/L1/L2/Karte, Uhr 0,5 und 0,27, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g3.js:2819",
+      "stationen/g3.js:2874"
+     ],
+     "stationen": [
+      {
+       "id": "material.K3#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Haus L0 0.1512 · L1/L0 1.008 · L2/L0 1.006 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2706 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+       "sha": "c4010773",
+       "gehalten": true
+      },
+      {
+       "id": "material.K3#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "material.K3#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "haus@0.5 l1 1.008/l2 1.006 · birke@0.5 l1 0.994/karte 1.009 · fichte@0.5 l1 0.998/karte 0.999 · haus@0.27 l1 1.008/l2 1.006 · birke@0.27 l1 0.993/karte 1.009 · fichte@0.27 l1 0.998/karte 0.999 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+       "sha": "c4010773",
+       "gehalten": true
+      },
+      {
+       "id": "material.K3#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "haus@0.5 l1 1.013/l2 1.004 · birke@0.5 l1 0.992/karte 1.003 · fichte@0.5 l1 0.997/karte 0.998 · haus@0.27 l1 1.013/l2 1.004 · birke@0.27 l1 0.992/karte 1.003 · fichte@0.27 l1 0.997/karte 0.998 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+       "sha": "039509b2",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "lod.K5",
+     "text": "Fehler ≤ 1 Pixel am Wechsel — die Stufe folgt dem Schirm, nicht dem Regler",
+     "staffel": "\"1 = je Familie (Baum, Haus, Tor, Wagen) ist am Wechsel-Abstand der Kanten-Versatz L0 ↔ Stufe ≤ 1 px bei 1920×1080, an einem Gerät · 2 = die Wechsel-Abstände bleiben bei 30/60/144 fps und Regler des Spielers ±10 % gleich (Pixelgröße statt Bildrate), beide Geräte\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g3.js:3177",
+      "stationen/g3.js:3267"
+     ],
+     "stationen": [
+      {
+       "id": "lod.K5#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "lod.K5#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "lod.K5#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "studios.K4",
+     "text": "Studio = Welt im Bild — EINE Engine, EIN Licht, EIN Bauer",
+     "staffel": "\"1 = ≥ 3/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 · 2 = 7/7 auf beiden Geräten\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g4.js:2156",
+      "stationen/g4.js:2174"
+     ],
+     "stationen": [
+      {
+       "id": "studios.K4#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "studios.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "studios.K4#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "studios.K4#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "ankunft.K4",
+     "text": "Der erste Blick ist AAAA: jede Klasse am Spawn",
+     "staffel": "\"1 = am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third: ≥ 6 von 12 Klassen frisch GRÜN an einem Gerät · 2 = jede sichtbare Klasse gemessen (auch fahrzeug, esse, tier, haus-vorschau mit externem Soll), ≥ 95 % GRÜN an beiden Geräten\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g6.js:2897"
+     ],
+     "stationen": [
+      {
+       "id": "ankunft.K4#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "ankunft.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.bau.innen",
+   "name": "Innenräume",
+   "art": "kriterium",
+   "misst": "ob jedes Bauwerk betretbar ist und das Raumgefüge aus Fassade und Funktion folgt.",
+   "heute": 0,
+   "kern": 1,
+   "fuss": "gemessen",
+   "beleg": "Tür → Keller → Dachboden ganz in 1 von 8 Gängen, headless (siedlung.K1); Raumteilung mit Herd (fachwerk-core.js:576–620)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Haus, Tür → Keller → Dachboden",
+     "tiefe": "Herd, Küche, Möbel",
+     "preis": "P · im Haus",
+     "klasse": "Ort",
+     "richter": "Gang ohne Sprung > 0,3 m"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Häuser des Start-Dorfs",
+     "tiefe": "innen lesbar",
+     "preis": "P · beide Geräte",
+     "klasse": "Ort",
+     "richter": "Spielgang aller Häuser im echten Fenster"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Bauten: Werkstatt, Laden, Schenke",
+     "tiefe": "Raumfunktion lesbar",
+     "preis": "P · außen ↔ innen",
+     "richter": "200 Räume blind klassifiziert ≥ 85 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [
+    {
+     "station": "siedlung.K1#2",
+     "leiter": "mensch.bau.innen",
+     "sprosse": 2,
+     "richter": "gleich"
+    },
+    {
+     "station": "karte2.mensch.bau.innen#1",
+     "leiter": "mensch.bau.innen",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "siedlung.K1",
+     "text": "Das Haus von innen: Tür, Treppe, Keller, Dachboden",
+     "staffel": "\"1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus · 2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:3929",
+      "stationen/g5.js:3981"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K1#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "siedlung.K1#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.bau.bauen",
+   "name": "Bauen als Vorgang",
+   "art": "kriterium",
+   "misst": "ob Bauen in der Welt geschieht — Baustelle, Bewohner bauen, Spieler-Haus, Satz → Bau. Das Werk des Spielers zählt erleben.schoepfen.hebel; hier zählt das Bauen der Bewohner als sichtbarer Vorgang.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Häuser erscheinen ohne Baustelle (12 → 19/20 in 1 500 s); Labor ↔ Welt 0,788",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Spieler-Haus aus der Werkstatt",
+     "tiefe": "gleiche Tiefe wie im Labor",
+     "preis": "P · Bauplatz",
+     "richter": "Bildpaar Labor ↔ Welt gleiche Kamera: kein Unterschied"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Baustellen der Bewohner",
+     "tiefe": "Aushub, Gerüst, Rohbau, Dach",
+     "preis": "P · beim Zusehen",
+     "richter": "Bauphasen richtig geordnet ≥ 90 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Spieler-Haus wird bewohnt",
+     "tiefe": "Einrichtung und Spur folgen",
+     "preis": "P",
+     "richter": "nach 1 h: Bewohner, Einrichtung nach Beruf, Abnutzung"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "studios.K4",
+     "text": "Studio = Welt im Bild — EINE Engine, EIN Licht, EIN Bauer",
+     "staffel": "\"1 = ≥ 3/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 · 2 = 7/7 auf beiden Geräten\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g4.js:2156",
+      "stationen/g4.js:2174"
+     ],
+     "stationen": [
+      {
+       "id": "studios.K4#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "studios.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "studios.K4#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "studios.K4#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,713 @@
+{
+ "paket": "14-erleben-sinn-sinne",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "erleben.sinn.ziele",
+   "name": "Ziele aus dem Zustand der Welt",
+   "art": "kriterium",
+   "misst": "wie viele verschiedene Ziele ein Spieler ohne Drehbuch aus der Welt liest, ob jedes auf einen wahren Zustand zurückgeht und ob ihre Vielfalt mit der Welt wächst statt mit einer Liste.",
+   "heute": 1,
+   "kern": 0,
+   "fuss": "kern",
+   "beleg": "δ-Wertung antwortet am Ort, beide Geräte, Tag/Nacht, Ego/Third: Tat 1 δ 0,1607 → Tat 10 δ −0,0018, Vogelchor 3,39 dB, Nachbar 0 dB (§10.K1 2/2). Kein Ziel entsteht aus der Welt; „Aufträge/Quests\" in der Statusleiste sind Befehle an Wesen. — KARTE: Kern 1 — die Antwort am Ort an beiden Geräten, Tag und Nacht, Ego und Third (affekt.K1); Bild-Preis nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Signal: die Welt antwortet hörbar am Ort einer Tat",
+     "tiefe": "Schaden kehrt die Antwort um, Gewöhnung bei Wiederholung",
+     "preis": "P · Antwort ≤ 2 s",
+     "klasse": "Ort",
+     "richter": "dieselbe Tat 10×: Antwort am Ort (dB, Licht) fällt von Tat 1 auf Tat 10 auf ≤ 30 %, Nachbarzelle 0"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Not je Spielstunde, die ein Bewohner im Blick äußert",
+     "tiefe": "100 % wahr gegen den Zustand (der Brunnen IST leer)",
+     "preis": "P",
+     "richter": "Blind-Spieler (nur Bild und Eingabe) nennt nach 60 min ≥ 1 Ziel, die Prüfung gegen den Zustand bestätigt es"
+    },
+    {
+     "nr": 3,
+     "umfang": "10¹ Ziel-Arten: Vielfalt folgt der Welt, keine Liste",
+     "tiefe": "jedes Ziel lösbar, die Lösung ändert ein Bildpaar",
+     "preis": "P",
+     "richter": "10 Saaten: ≥ 10 unterscheidbare Ziel-Arten; Arten je Ort steigen mit den Domänen dort ρ ≥ 0,6"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [
+    {
+     "station": "affekt.K1#2",
+     "leiter": "erleben.sinn.ziele",
+     "sprosse": 1,
+     "richter": "gleich"
+    }
+   ],
+   "alt": [
+    {
+     "kriterium": "feld.K5",
+     "text": "Das Feld wird gesehen: Konsum am Ort der Tat",
+     "staffel": "\"1 = ein Leser sichtbar am Ort an einem Gerät · 2 = zwei Orte auf beiden Geräten, Wiese UND Tier\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:3936"
+     ],
+     "stationen": [
+      {
+       "id": "feld.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Feld der Mitte 0.855 → 1 · Streu der Mitte 29 → 35 (Blumen 26 → 32), Nachbarzelle 30 → 30 (Blumen 24 → 24), Rauschen ±0 (Soll: Blumen +≥ 3 oder alle +≥ 10 % am Ort, Nachbar im Rauschen)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "affekt.K1",
+     "text": "Die Wertung antwortet am Ort: der δ-Kreis",
+     "staffel": "\"1 = Gewöhnung (δ von Tat 10 ≤ 0,3 × Tat 1) und Antwort am Ort (ΔE ≥ 2 am Ort der Tat gegen die Nachbarzelle, oder ein Klang-Parameter am Ort) an einer Pose · 2 = eine schädliche Tat kehrt das Vorzeichen um, nach 30 min Ruhe Baseline, Tag und Nacht, Ego und Third, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:4868",
+      "stationen/g2.js:4967"
+     ],
+     "stationen": [
+      {
+       "id": "affekt.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "affekt.K1#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Tag first GRÜN: fällen -0.12 -4.62 dB · töten -0.03 -1.15 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.12 dB · pflegen 0.25 8.99 dB · nach 30 min 0.2463 8.75 dB (Ertrag 0.25) | zehn T …",
+       "sha": "c8c840c9",
+       "gehalten": true
+      },
+      {
+       "id": "affekt.K1#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Tag first GRÜN: fällen -0.12 -4.72 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.67 dB · töten -0.03 -1.18 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten:  …",
+       "sha": "c8c840c9",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.sinn.legenden",
+   "name": "Legenden aus Bewohnern und Ereignissen",
+   "art": "kriterium",
+   "misst": "wie viele Geschichten die Welt aus wirklich geschehenen Ereignissen erzählt, wie weit sie reisen und ob man sie bis zum Ursprung zurückverfolgen kann. Dazu gehört das Erinnern am Ort (Grab, Mal, Name) und in der Rede, über Generationen verzerrt, aber aus dem Ereignis herleitbar.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "journalAppend (stamm/dienst.js:385), entryCap 200; Zeilen journal.bedrohung-bezwungen / journal.fiel-im-kampf (stamm/kreatur-leben.js:898/902) — Gedächtnis, keine Legende: nichts wird weitergegeben, verzerrt oder gealtert. Die Welt erklärt sich 0/2 (§10.K4). — KARTE: 0 — das Tagebuch ist nie gegen den Zustand gerichtet worden.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Tagebuch der Welt, 200 Zeilen",
+     "tiefe": "jede Zeile eine wahre Tat mit Ort",
+     "preis": "P",
+     "richter": "20 Zufallszeilen des Tagebuchs: der Spieler geht zum genannten Ort und findet die Spur der Tat im Bild (Bildpaar gegen dieselbe Saat ohne die Tat) ≥ 95 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Bewohner erzählt auf Frage eine Tat, die er sah",
+     "tiefe": "wahr, in der Sprache des Spielers, mit Ort",
+     "preis": "P · Antwort p95 ≤ 2 s am Gerät allein",
+     "richter": "„Was hast du gesehen?\" an 20 Zeugen: Faktentreue ≥ 95 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Ereignisse über 2 Weitergaben durch ein Dorf (10²)",
+     "tiefe": "nach δ verdichtet, Details verblassen messbar",
+     "preis": "P",
+     "richter": "Zeugen 1., 2., 3. Hand: Kern-Treue (Wer, Was, Wo) ≥ 90 %, Detail-Treue fällt monoton"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "affekt.K4",
+     "text": "Die Welt erklärt sich: die Stimme des Felds",
+     "staffel": "\"1 = jede Tat von Nexus oder KI im Blick schreibt eine Zeile mit Ort, Ursache und Gesetz in die Dialog-Box, Faktentreue gegen state 100 %, ≤ 1 Zeile je 30 s (Vorlage ohne Modell) · 2 = „warum regnet es?“ nennt den wahren Schreiber, mit Modell erzählend (Korpus-Prädikat), beide Geräte\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g2.js:4913",
+      "stationen/g2.js:4939"
+     ],
+     "stationen": [
+      {
+       "id": "affekt.K4#1",
+       "geraet": "headless",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "affekt.K4#2",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "affekt.K4#2",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "ki.K3",
+     "text": "Die Seele erinnert sich im Gespräch",
+     "staffel": "\"1 = mit lokalem Modell nennen ≥ 70 % der Antworten aus dem Gesprächs-Korpus eine der letzten 8 Erinnerungen, an einem Gerät · 2 = auch Menschen-Bewohner, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g4.js:1497"
+     ],
+     "stationen": [
+      {
+       "id": "ki.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "12 von 12/12 Antworten nennen eine erlebte Tat (Soll 70 %) gegen qwen3:4b-instruct @ 127.0.0.1:11434, z. B. „erinnerst du dich an mich?“ → Ich erinnere mich an dich — ich wurde von dir geschlagen. Das war mein erstes Erlebnis in ",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.sinn.tod",
+   "name": "Leben und Tod des Spielers",
+   "art": "kriterium",
+   "misst": "wie viel Folge ein Leben und ein Tod des Spielers in der Welt hinterlassen — auch dort, wo er nie war.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "_playerDeathRespawn (stamm/koerper-seele.js:322-352): Trauer +0,3, Ehrfurcht +0,2, Wunde ~10 min, Lebensspur, Rückkehr am Genesis-Anker — im Code gelesen. — KARTE: 0 — halten.K5 misst Zustand und Anker-Abstand an beiden Geräten (Mechanik); die Bildfolge am Todesort und die Rückkehr-Zeit sind ungefahren; kein Erbe, keine Erzählung, kein Ruf.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Tod setzt zurück an den Ankunftsort",
+     "tiefe": "derselbe Leib, das Gefährt bleibt, wo er fiel",
+     "preis": "P · Rückkehr ≤ 5 s",
+     "richter": "Bildfolge: der Leib fällt, derselbe Leib steht am Ankunftsort; das Gefährt steht im Bild, wo er fiel"
+    },
+    {
+     "nr": 2,
+     "umfang": "Tod hinterlässt Spur: Lebensspur am Todesort, Wunde, Trauer, Ehrfurcht",
+     "tiefe": "Spur sichtbar, Wunde fühlbar",
+     "preis": "P",
+     "richter": "Bildpaar am Todesort vor/nach; die Wunde mindert die Werte des Spielers messbar über ~10 min"
+    },
+    {
+     "nr": 3,
+     "umfang": "Zeugen erzählen den Tod, der Täter steigt im Ruf (Nemesis für jede Art)",
+     "tiefe": "Faktentreue gegen das Ereignis",
+     "preis": "P",
+     "richter": "20 Zeugen: ≥ 80 % nennen Ort und Täter; der Täter tritt sichtbar anders auf"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "halten.K5",
+     "text": "Lebenswerte, Sturz, Tod und Wiederkehr als Zustand",
+     "staffel": "\"1 = Fall-Schaden aus dem Aufprall-Tempo, Tod und Wiederkehr am Ort mit Zustand (Inventar, Bindung) über Speichern, an einem Gerät · 2 = Lebenswerte lesen Werk und Nahrung (Mutation), beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:5198",
+      "stationen/g5.js:5235"
+     ],
+     "stationen": [
+      {
+       "id": "halten.K5#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "halten.K5#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "halten.K5#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "hpMax/staminaMax/manaMax/defense leer 116.0/158.0/80.0/10.4 · Werk eisen 154.9/129.8/80.0/15.9 · bronze 152.7/131.0/80.0/15.5 · holz 131.9/144.5/80.0/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184 …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "halten.K5#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184 …",
+       "sha": "715754fc",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "erleben.sinn.entdeckung",
+   "name": "Entdeckung",
+   "art": "kriterium",
+   "misst": "wie dicht die Welt Entdeckenswertes aus Gesetzen trägt und ob ein Spieler es ohne Markierung findet.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "jede dritte Siedlung trägt seed-deterministisch eine Epoche (stamm/siedlung-ort.js:1644) — Gesetz steht, ungefahren.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Ort, der sich aus der Saat vom Nachbarn unterscheidet",
+     "tiefe": "Unterschied sichtbar, nicht nur Zahl",
+     "preis": "P",
+     "richter": "Blind-Agent nennt in 10 min ≥ 1 Ort „anders als der vorige\" und begründet es am Bild"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Fund je 100 m Weg (Ruine, Höhle, Tier, Besonderheit)",
+     "tiefe": "aus Gesetzen, nicht platziert",
+     "preis": "P",
+     "richter": "Spielgang 10 min: Funde, die ein Blind-Agent „besonders\" nennt ≥ 5"
+    },
+    {
+     "nr": 3,
+     "umfang": "Funde haben Ursachen",
+     "tiefe": "die Ruine hat eine Geschichte (Legenden-Leiter)",
+     "preis": "P",
+     "richter": "Anteil Funde mit Ursache im Ereignis-Graph ≥ 80 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.sinn.takt",
+   "name": "Takt: Dramaturgie ohne Regisseur",
+   "art": "kriterium",
+   "misst": "ob die Stunde des Spielers einen Bogen hat — keine toten Minuten, keine Reizflut, Höhepunkte in Wellen — aus dem Verlauf von δ, nie aus einem Ereignis-Katalog.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "keine Messung toter Minuten; ungemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 min an der Ankunft",
+     "tiefe": "tote Minute = im Blick ändert sich nichts, das auf den Spieler antwortet",
+     "preis": "P",
+     "richter": "Anteil toter Minuten ≤ 50 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 h Spielgang",
+     "tiefe": "weder leer noch überladen",
+     "preis": "P",
+     "richter": "tote Minuten ≤ 20 % UND Minuten mit > 3 gleichzeitigen Ansprüchen ≤ 10 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "1 Abend (3 h)",
+     "tiefe": "Wellen: Ruhe, Ahnung, Höhepunkt",
+     "preis": "P",
+     "richter": "≥ 1 Höhepunkt je 30–60 min (δ im Blick ≥ 3× Median), danach ≥ 5 min Ruhe"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "spielgang.K2",
+     "text": "Der erste Eindruck erklärt sich",
+     "staffel": "\"1 = ein Blind-Spieler (frischer Agent, nur Bild und Eingabe, keine Doku) findet gehen, umsehen, Sicht-Wechsel, Werkstatt, Satz und Tor in ≤ 3 min — ≥ 4 von 6 — an einem Gerät · 2 = 6/6 bei 3 von 3 Blind-Spielern, beide Geräte\"",
+     "fundstellen": [],
+     "stationen": []
+    }
+   ]
+  },
+  {
+   "id": "erleben.sinn.sog",
+   "name": "Der Sog — bleiben und wiederkommen",
+   "art": "kriterium",
+   "misst": "ob Menschen in dieser Welt bleiben wollen: freiwillige Spielzeit blinder Neulinge ohne Auftrag, Wiederkehr an späteren Tagen, und die Wahl, wenn daneben das Beste der Gegenwart liegt. Fühlbar im Spiel schlägt messbar im Trace — hier wird das Fühlen selbst gezählt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Nie gemessen: kein blinder Neuling hat die Welt im Protokoll gespielt; der v1-Pfad ist als Spielgang nur von der Maschine gefahren (spielgang.K1, headless).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "die ersten 10 Minuten, 12 blinde Neulinge",
+     "tiefe": "niemand bricht ab; sie wissen, was sie tun können",
+     "preis": "P · die Ankunft zählt mit",
+     "richter": "Anteil, der nach 10 min freiwillig weiterspielt ≥ 70 %; Zeit bis zur ersten eigenen Tat ≤ 2 min"
+    },
+    {
+     "nr": 2,
+     "umfang": "die erste Stunde",
+     "tiefe": "sie wollen weiter",
+     "preis": "P",
+     "richter": "freiwillige Spielzeit ohne Auftrag: Median ≥ 45 von 60 min; „will weiter“ ≥ 60 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "der zweite Tag",
+     "tiefe": "sie kommen wieder",
+     "preis": "P",
+     "richter": "Wiederkehr am Folgetag ≥ 40 %, nach 7 Tagen ≥ 20 %, ohne Erinnerung von außen"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.sinn.staunen",
+   "name": "Die erlebte Größe — Staunen und Merken",
+   "art": "kriterium",
+   "misst": "ob ein Spieler die Größenordnungen der Welt ERLEBT: ob er die Millionen Arten als Vielfalt merkt, den Planeten als Planeten, die Tiefe der Zeit als Zeit — gemessen an dem, was blinde Spieler nach dem Spiel sagen, schätzen und wiedererkennen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Nie gemessen: kein blinder Spieler hat die Welt im Protokoll gesehen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EIN Ort, 30 min",
+     "tiefe": "sie merken sich, was eigen war",
+     "preis": "P",
+     "richter": "blinde Spieler nennen nach 30 min ≥ 10 verschiedene Dinge beim Namen oder im Bild; 5 davon finden sie wieder"
+    },
+    {
+     "nr": 2,
+     "umfang": "Vielfalt am Ort: ein Wald, ein Riff, ein Markt",
+     "tiefe": "sie merken, dass kaum etwas sich wiederholt",
+     "preis": "P",
+     "richter": "Schätzfrage „wie viele verschiedene Arten, Gesichter, Häuser?“: Median im Faktor 3 der gezählten Zahl; „wiederholt sich“ ≤ 20 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Staunen: 10 Augenblicke aus Gesetzen (Sonnenaufgang über dem Meer, Herde am Horizont, Stadt bei Nacht)",
+     "tiefe": "sie halten an und schauen",
+     "preis": "P",
+     "richter": "Verweildauer und freiwillige Standbilder an den Augenblicken ≥ 2× Umgebung; Staunen-Panel (Skala 1–7) Median ≥ 5"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.sinne.sicht",
+   "name": "Fremde Sicht: das Auge als Leser des Lichts",
+   "art": "kriterium",
+   "misst": "ob das Bild durch ein fremdes Auge (UV, Wärme, Polarisation, Auflösung) wahr ist und wie weit diese Wahrheit reicht — Wiese → Planet → fremde Sterne.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "keine Sicht außer der menschlichen; Stoffe sind RGB/PBR, kein Spektrum (Grep UV/IR/Polarisation in stamm/ und *-core.js: 0).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "eine Wiese, ein Bienen-Auge (UV/B/G)",
+     "tiefe": "UV-Muster aus dem Stoff der Blüte, nicht aus einer Bemalung",
+     "preis": "P · Wechsel ≤ 0,5 s",
+     "richter": "Bildpaar Mensch ↔ Biene an derselben Wiese: ≥ 1 Muster nur im Bienenbild (Kontrast ≥ 0,2), an Blüten, die Bienen anfliegen"
+    },
+    {
+     "nr": 2,
+     "umfang": "Wiese, Siedlung, Himmel; jedes Auge aus 2–16 Rezeptor-Kurven",
+     "tiefe": "EIN Leser für beliebige Kurven, kein Modus je Art",
+     "preis": "P",
+     "richter": "Biene und Vogel gegen Tier-Kamera-Referenz (Vasas/Hanley 2024): Kontrast-Rangordnung über 10 Pflanzenklassen Spearman ≥ 0,7; 20 Zufalls-Kurvensätze → 20 Bilder ohne Bruch"
+    },
+    {
+     "nr": 3,
+     "umfang": "Wärme und Polarisation",
+     "tiefe": "warme Leiber, Feuer, sonnenwarmer Stein aus der Temperatur des Gesetzes; Himmel polarisiert",
+     "preis": "P",
+     "richter": "Nacht, Grubenotter: warmer Leib in 10 m im Wärmebild sichtbar, im Menschenbild nicht; Polarisationswinkel ±10° zur Rayleigh-Erwartung"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.sinne.hoeren",
+   "name": "Hören jenseits des Menschen",
+   "art": "kriterium",
+   "misst": "ob eine Welt aus Schall begehbar ist und in Bändern klingt, die der Mensch nicht hört — Laufzeit, Impedanz, Doppler tragen die Geometrie, die Ferne trägt den Infraschall.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Klang nur fürs Menschenohr; kein Echolot, kein Infraschall, kein Hörbereich je Art.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "ein Haus, ein Echo-Sinn",
+     "tiefe": "Echo aus Laufzeit gegen die Geometrie, kein Puls-Effekt",
+     "preis": "P",
+     "richter": "Blind-Lauf (Bild schwarz, nur Echo): Ausgang in ≤ 2× der sehenden Zeit"
+    },
+    {
+     "nr": 2,
+     "umfang": "Wald 1 ha und eine Stadtstraße",
+     "tiefe": "Blatt, Stamm, Wasser, Glas, Stein klingen gesetzmäßig verschieden",
+     "preis": "P",
+     "richter": "Blind-Flug Fledermaus 200 m Wald: ≤ 1 Kollision je 100 m; trinkt im Flug ≥ 4 von 5"
+    },
+    {
+     "nr": 3,
+     "umfang": "Beute im Flug, Doppler",
+     "tiefe": "Motte als bewegtes Ziel, Rufrate steigt beim Anflug",
+     "preis": "P",
+     "richter": "Fangquote im Echobild ≥ 0,7 der Fangquote im Sichtbild"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.sinne.geruch",
+   "name": "Das Geruchs-Feld: Chemie im Wind",
+   "art": "kriterium",
+   "misst": "ob Gerüche als Feld MIT Gedächtnis existieren, das der Spieler mit fremder Nase lesen und verfolgen kann.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "_scentAt (stamm/koerper-seele.js:1578-1604), Leser stamm/kreatur-verhalten.js:178-275 und tetrapoda-core.js:149-171; Wolf findet Beute (§8.K4). Feld ohne Gedächtnis; der Spieler riecht nichts. — KARTE: 0 — der Gegenlauf ist headless gebucht (R2).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "ein Tier folgt einer Witterung",
+     "tiefe": "Abfall mit Distanz, Wind an der Quelle",
+     "preis": "P",
+     "richter": "Gegenlauf im Bild: Wolf findet Beute über Witterung; Witterung aus oder Wind gedreht → Suchzeit ≥ 3×"
+    },
+    {
+     "nr": 2,
+     "umfang": "der Spieler riecht: eine Nase",
+     "tiefe": "er findet, was er nicht sieht",
+     "preis": "P",
+     "richter": "Aas 100 m gegen den Wind in ≤ 90 s; Nase aus ≥ 3× die Zeit"
+    },
+    {
+     "nr": 3,
+     "umfang": "Fahne mit Turbulenz und Alter",
+     "tiefe": "Filamente, Intermittenz; Spur altert über Stunden",
+     "preis": "P",
+     "richter": "Intermittenz-Faktor ±30 % gegen Rauch-/Tracer-Aufnahme; Spur von vor 1 h lesbar, von vor 24 h nicht"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.sinne.feld",
+   "name": "Feld-Sinne: Magnetismus, Elektrizität, Schwingung",
+   "art": "kriterium",
+   "misst": "ob die unsichtbaren Felder des Planeten-Inneren existieren, sichtbar wirken und von Wesen gelesen werden.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "kein Magnetfeld, kein Elektrosinn („Magnet\" nur als Bild in stamm/koerper-bewegung.js:1127).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Dipolfeld des Planeten, schief zur Drehachse",
+     "tiefe": "aus dem Kerngesetz; Sonnenwind am Pol",
+     "preis": "P",
+     "richter": "Polarlicht um den MAGNETISCHEN Pol (60–75° geomagnetisch auf erdähnlichen Saaten); Kompass weist zum selben Pol"
+    },
+    {
+     "nr": 2,
+     "umfang": "Magnetsinn-Sicht (Vogel), ein Zugweg",
+     "tiefe": "Feldlinien als Muster im Auge",
+     "preis": "P",
+     "richter": "Zugvogel-Schar 1 000 km: Fehler ≤ 50 km; Feld aus → Fehler ≥ 5×"
+    },
+    {
+     "nr": 3,
+     "umfang": "Elektrosinn (Hai, Rochen), Seitenlinie (Fisch)",
+     "tiefe": "Muskelfelder der Beute, Druckwellen im Wasser",
+     "preis": "P",
+     "richter": "Hai findet eingegrabenen Rochen ohne Licht ≥ 0,8"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.sinne.genom",
+   "name": "Sinnes-Genom: Breite und Evolution der Umwelten",
+   "art": "kriterium",
+   "misst": "wie viele Wesen eine eigene, plausible Wahrnehmung aus EINEM Sinnes-Genom ziehen — und ob sie entsteht statt gesetzt zu werden.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "pirschSichtM 5 (tetrapoda-core.js:162), sichtM 320 (:2310), scentRangeM 50 — Zahlen für Verhalten, keine Organe, keine Kurven. — KARTE: 0 — dieselbe Messgröße wie erleben.sinne.geruch Sprosse 1 (R9), headless.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Tiere mit Sicht- und Witter-Radius je Gattung",
+     "tiefe": "Radien, keine Organe",
+     "preis": "P",
+     "richter": "Witterung und Sicht ändern Flucht und Jagd (Gegenlauf)"
+    },
+    {
+     "nr": 2,
+     "umfang": "jede Art der heutigen Welt zieht ihre Sinne aus EINEM Genom",
+     "tiefe": "Kurven, Bänder, Reichweiten im Bereich der Erd-Biologie",
+     "preis": "P",
+     "richter": "alle Gattungen beziehbar; Anteil Sinneswerte im Band der Biologie ≥ 0,9"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ Arten je Saat",
+     "tiefe": "Sinne passen zum Lebensraum (Höhle → blind + Echo, Nacht → großes Auge)",
+     "preis": "P",
+     "richter": "N = 50 Saaten: Höhlenarten mit reduziertem Auge ≥ 0,7, Nachtarten mit größerem Auge ≥ 0,7"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.sinne.signale",
+   "name": "Signale: ein Wesen schreibt, ein anderes liest",
+   "art": "kriterium",
+   "misst": "ob Ruf, Tanz, Duftmarke und Muster Information tragen, die ein Empfänger mit SEINEM Sinn liest und nach der er handelt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Grep Warnruf/Alarmruf/Duftmarke/Gesang: 0 Treffer.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Warnruf in der Herde",
+     "tiefe": "Artgenossen fliehen, bevor sie den Jäger selbst wahrnehmen",
+     "preis": "P",
+     "richter": "Fluchtbeginn vor eigener Wahrnehmung ≥ 0,7; Ruf aus → Verluste steigen"
+    },
+    {
+     "nr": 2,
+     "umfang": "Ort-Information: Bienentanz, Duftmarke des Reviers",
+     "tiefe": "Richtung und Entfernung kodiert",
+     "preis": "P",
+     "richter": "Sammlerinnen erreichen die getanzte Tracht, Richtungsfehler ≤ 15°; Reviergrenzen folgen den Marken"
+    },
+    {
+     "nr": 3,
+     "umfang": "Dialekte: Gesänge je Population, wandernd",
+     "tiefe": "kulturelle Evolution der Signale",
+     "preis": "P",
+     "richter": "N = 20 Saaten: Gesangs-Ähnlichkeit fällt mit Distanz r ≥ 0,4"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "erleben.sinne.gesehen",
+   "name": "Gesehen werden: Tarnung, Mimikry, Warnfarbe",
+   "art": "kriterium",
+   "misst": "ob Erscheinung im Auge des ANDEREN wirkt — Tiere, Bewohner und der Spieler eingeschlossen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Wild bemerkt den Spieler über Radien, nicht über Farbe.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "der Spieler als Beute",
+     "tiefe": "Rotwild sieht dichromat: Orange und Grün ähnlich",
+     "preis": "P",
+     "richter": "Entdeckungsdistanz bei Spieler in Orange ≈ Grün (±15 %), in Weiß auf Schnee messbar anders"
+    },
+    {
+     "nr": 2,
+     "umfang": "Tarnung im Jäger-Auge",
+     "tiefe": "Muster gegen Bodenfarbe im Rezeptorraum des Jägers",
+     "preis": "P",
+     "richter": "getarnte Beute: Entdeckungsdistanz −≥ 30 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Tarnung ist sinn-abhängig",
+     "tiefe": "ein Muster tarnt im Vogelauge und leuchtet im UV-Auge",
+     "preis": "P",
+     "richter": "Bildpaar zweier Jäger-Augen an derselben Beute; Entdeckungsdistanzen verschieden ≥ 30 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  }
+ ]
+}

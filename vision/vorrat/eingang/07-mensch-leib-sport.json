@@ -1,0 +1,924 @@
+{
+ "paket": "07-mensch-leib-sport",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "mensch.leib.verschieden",
+   "name": "Ein Leib je Mensch",
+   "art": "kriterium",
+   "misst": "wie viele Menschen zugleich verschieden sind und wiedererkannt werden (Gesicht, Gang, Tracht zusammen).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "nah teilen sich die Bewohner einer Siedlung 8 Gestalten und EINEN Schnitt (stamm/siedlung-bewohner.js:232–247); 50 aus 50 Samen ohne Paar nur headless (mensch.K4#2)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 nah unterscheidbare Leiber je Siedlung",
+     "tiefe": "Höhe, Bau, Gesicht, Schnitt verschieden",
+     "preis": "P · Dorfplatz Third",
+     "richter": "Bild 10 Bewohner auf 2 m: Prüfer findet 0 gleiche Paare"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Personen nah, je eigener Leib",
+     "tiefe": "keine zwei unter 1 px Gestalt-Distanz",
+     "preis": "P · Test-Stadt (118)",
+     "richter": "Zensus 100 Bewohner im Third an beiden GPUs: 0 Paare unter 1 px"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³ eigene Leiber in einer Stadt",
+     "tiefe": "gezeigte Person unter 100 der Szene wiedergefunden",
+     "preis": "P · Stadtplatz",
+     "richter": "Prüfer-Wiedererkennung ≥ 90 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "mensch.K4",
+     "text": "Körper, Vielfalt, Ausdruck — und die Kosten einer Menge",
+     "staffel": "\"1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf · 2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5922",
+      "stationen/g2.js:5972"
+     ],
+     "stationen": [
+      {
+       "id": "mensch.K4#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.14 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -8.84 [-14, -4] · lippeA 7.23 [4, 14] · hoehleL -5.51 [-12, 0] · hoehleA 1.33 [-2, 6] · haarDeckung 1 [0.9, 1]",
+       "sha": "63655917",
+       "gehalten": true
+      },
+      {
+       "id": "mensch.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "mensch.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeile …",
+       "sha": "78d37554",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.leib.gesicht",
+   "name": "Das Gesicht nah",
+   "art": "kriterium",
+   "misst": "wie wahr ein Gesicht auf 0,5–6 m dem Foto standhält, in jedem Alter, Ausdruck und Licht.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "mensch-kopf GRÜN im Third auf 6,11 m an der Radeon (a41ce72d), Third-Bild im E-Band (GTX 16,8 ms); kein Ausdruck, kein Blick-Ziel (koerper-core.js:4785–4826) — KARTE: 0 — der Kopf ist nur an der Radeon gebucht (mensch.K4), an der GTX ungemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Kopf: Spieler an der Third-Kamera 6 m",
+     "tiefe": "Augen, Lippe, Höhle, Haar-Deckung lesen als Kopf",
+     "preis": "P · Third Wiese",
+     "richter": "Soll-Tafel mensch-kopf GRÜN an 10 Samen"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Bewohner in Begegnung auf 2 m",
+     "tiefe": "Blick, Lidschlag, Haut ohne Wachs, Haar ohne Helm",
+     "preis": "P · Gasthaus-Begegnung",
+     "richter": "Bildpaar gegen Porträtfoto gleicher Beleuchtung: Prüfer „lebt“ ≥ 50 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Gesichter, 0–100 Jahre, alle Populationen",
+     "tiefe": "Säugling bis Greis: Proportion, Falten, Poren, Zähne",
+     "preis": "P · Markt",
+     "richter": "Altersschätzung des Prüfers über 100 Zufallssamen, Fehler ≤ 5 Jahre"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "mensch.K4",
+     "text": "Körper, Vielfalt, Ausdruck — und die Kosten einer Menge",
+     "staffel": "\"1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf · 2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:5922",
+      "stationen/g2.js:5972"
+     ],
+     "stationen": [
+      {
+       "id": "mensch.K4#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.14 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -8.84 [-14, -4] · lippeA 7.23 [4, 14] · hoehleL -5.51 [-12, 0] · hoehleA 1.33 [-2, 6] · haarDeckung 1 [0.9, 1]",
+       "sha": "63655917",
+       "gehalten": true
+      },
+      {
+       "id": "mensch.K4#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "mensch.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeile …",
+       "sha": "78d37554",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "haar.K2",
+     "text": "Haar aus dem Gesetz",
+     "staffel": "\"1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät · 2 = 50 Seeds ohne zwei gleiche Frisuren, beide Geräte\"",
+     "punkteAlt": 0,
+     "fundstellen": [
+      "stationen/g2.js:6103"
+     ],
+     "stationen": [
+      {
+       "id": "haar.K2#1",
+       "geraet": "radeon",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      },
+      {
+       "id": "haar.K2#1",
+       "geraet": "gtx",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    },
+    {
+     "kriterium": "haar.K5",
+     "text": "Haar und Fell zahlen am Schirm",
+     "staffel": "\"1 = Strähnen nah, Schale/Karte fern, im Haushalt der Klasse (tier ≤ 30 Befehle) an einem Gerät · 2 = beide Geräte, E hält\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:6375"
+     ],
+     "stationen": [
+      {
+       "id": "haar.K5#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Herde 8, Fell an je Abstand 1.2 m an · 4.7 m an · 15.4 m aus · 26 m aus · 40.7 m aus · 59 m aus · 89.8 m aus · 130.2 m aus · tier 1 Befehle (tier:wolf 1) (Soll nah an, fern aus, ≤ 30 Befehle)",
+       "sha": "4ee205bd",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.leib.tracht",
+   "name": "Tracht und Gesicht der Menge",
+   "art": "kriterium",
+   "misst": "ob das Gesetz glaubhafte Tracht für jede Welt erzeugt und eine Menge Epoche, Kultur und Stand am Leib trägt (Leib L3 + Menge L8).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "9 Epochen, 6 Schnitt-Kombinationen, je Siedlung EIN Schnitt, Antike und Fernost tragen Poncho (fachwerk-core.js:3295–3303); Blind-Zuordnung nie gefahren",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Platz: Epoche wählt Schnitt und Farbe",
+     "tiefe": "Antike vs. Moderne unterscheidbar",
+     "preis": "P · Dorfplatz",
+     "richter": "20 Saaten: Prüfer ordnet Epoche ± 1 Jh. ≥ 0,7"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Silhouetten-Familien (Rock, Mantel, Tunika, Kimono, Sari, Kopfbedeckung)",
+     "tiefe": "Region lesbar",
+     "preis": "P · Platz",
+     "richter": "50 Zufalls-Eingaben: Prüfer ordnet Bild ↔ Epoche/Region ≥ 60 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Personen: Stand und Rolle lesbar",
+     "tiefe": "Bauer, Händler, Adel, Soldat, Priester",
+     "preis": "P · Markt aus 20 m",
+     "richter": "Stand-Rateaufgabe an 50 Zufallspersonen ≥ 70 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "haar.K4",
+     "text": "Kleidung aus der Epoche, als Tuch am Leib",
+     "staffel": "\"1 = Bewohner tragen Kleidung aus der Epoche ihres Hauses (zwei Epochen im Bild unterscheidbar) · 2 = Tuch des EINEN XPBD-Lösers, 0 Durchdringung beim Gang, Labor = Welt\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:6119",
+      "stationen/g2.js:6161"
+     ],
+     "stationen": [
+      {
+       "id": "haar.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "1320 mittelalter poncho/pants/boot · 1935 moderne tshirt/pants/sneaker: im Bild 72.3 % der Leib-Pixel anders (Soll ≥ 25 %), der Schnitt allein 16.6 % (≥ 5 %), Umriss-Deckung 0.9406, die Mutante 0.0 % (≤ 0,2 %) · Leib 7253/7030/7253/6989 px (≥ 2 000), Treue 0 B …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "haar.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Tracht poncho/pants, 8245/2877 Tuch-Ecken · Löser [xpbdSchritt, xpbdKette, tuchGitter, tuchZustand, tuchTakt, tuchRuhe, tuchDrapieren] 87 Rufe im Gang (Gitter-Stufe 0, 11.32 ms je Takt) · Durchdringung fein/fein 0 (0 Bilder, Ruhe 12, trägt 0.1036 m, Mutante 73 …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "siedlung.K4",
+     "text": "Durch die Jahrhunderte — als Parameter, dann als Wachstum",
+     "staffel": "\"1 = dieselbe Zelle unter 1320/1560/1860/1935: der ältere Kern liegt zu ≥ 80 % im jüngeren (Jahresringe), die Epoche moderne ergibt stadt, die Epoche bestimmt Rolle, Bauart und Kleidung im Export · 2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4236",
+      "stationen/g5.js:4290"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m …",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m …",
+       "sha": "3e4f99cd",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.leib.stoff",
+   "name": "Stoff in Bewegung",
+   "art": "kriterium",
+   "misst": "ob Kleidung als Stoff fällt, schwingt, nass wird und verschleißt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Stoff aus der Haut extrudiert, starr; Durchstich nie gemessen",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Spieler, Stoff liegt am Leib",
+     "tiefe": "Webart als Rauheit, keine Haut ragt durch",
+     "preis": "P · Third Wiese",
+     "richter": "16 Posen × 10 Samen: 0 Durchstiche"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Spieler: Saum, Ärmel, Mantel schwingen",
+     "tiefe": "Fall nach Gewicht des Stoffs",
+     "preis": "P · Lauf Third",
+     "richter": "Bildreihe Lauf: Saum folgt mit Verzug, Durchdringung 0"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Nahe mit Lagen",
+     "tiefe": "Hemd unter Mantel unter Umhang, Wind sichtbar",
+     "preis": "P · Dorf bei Sturm",
+     "richter": "Video gegen Referenz-Aufnahme: Prüfer „echt“ ≥ 60 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "physik.K4",
+     "text": "Seile, Tuch, Weiches — EIN Löser, Labor = Welt",
+     "staffel": "\"1 = ein Leser (das Schmiede-Seil schwingt in der Welt am Leib) · 2 = Seil, Tuch und Hängebrücke\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:3891"
+     ],
+     "stationen": [
+      {
+       "id": "physik.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "klinge_flegel Schwung 0.486 m, Länge (längs) 0.328–0.328 m, v² 3.206 → 0.264 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "haar.K3",
+     "text": "Bewegung: im EINEN Wind und mit dem Leib",
+     "staffel": "\"1 = Mähne bzw. Haar korreliert mit dem Wind am Ort (r ≥ 0,6) · 2 = dazu Trägheit beim Lauf (Nachschwingen), Nässe dunkler und schwerer\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g2.js:6358"
+     ],
+     "stationen": [
+      {
+       "id": "haar.K3#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Haar 2517 px, 20 Bilder: Bewegung im Wind 22.229 gegen ohne Wind 5.36 Luma-Stufen je Bild (Rauschen 0), r(Wind, Bewegung) 0.735 (Soll r ≥ 0,6, ≥ 0,5 Stufen und ≥ 2 × ohne Wind)",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "haar.K4",
+     "text": "Kleidung aus der Epoche, als Tuch am Leib",
+     "staffel": "\"1 = Bewohner tragen Kleidung aus der Epoche ihres Hauses (zwei Epochen im Bild unterscheidbar) · 2 = Tuch des EINEN XPBD-Lösers, 0 Durchdringung beim Gang, Labor = Welt\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:6119",
+      "stationen/g2.js:6161"
+     ],
+     "stationen": [
+      {
+       "id": "haar.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "1320 mittelalter poncho/pants/boot · 1935 moderne tshirt/pants/sneaker: im Bild 72.3 % der Leib-Pixel anders (Soll ≥ 25 %), der Schnitt allein 16.6 % (≥ 5 %), Umriss-Deckung 0.9406, die Mutante 0.0 % (≤ 0,2 %) · Leib 7253/7030/7253/6989 px (≥ 2 000), Treue 0 B …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "haar.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Tracht poncho/pants, 8245/2877 Tuch-Ecken · Löser [xpbdSchritt, xpbdKette, tuchGitter, tuchZustand, tuchTakt, tuchRuhe, tuchDrapieren] 87 Rufe im Gang (Gitter-Stufe 0, 11.32 ms je Takt) · Durchdringung fein/fein 0 (0 Bilder, Ruhe 12, trägt 0.1036 m, Mutante 73 …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.leib.ausdruck",
+   "name": "Bewegungs-Ausdruck",
+   "art": "kriterium",
+   "misst": "ob Haltung, Gang und Gestik Alter, Last, Verletzung, Gemüt und Kultur lesen lassen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "zehn Bewegungs-Profile an Bewohnern (tagesHaltung koerper-core.js:4972, _bewohnerGemuet siedlung-bewohner.js:1864), ungemessen; Fuß gleitet 3,1–3,4 cm (leib.K2 ROT)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10 Bewohner: Haltung nach Akt und Gemüt",
+     "tiefe": "gebeugt bei der Arbeit, müde am Abend, Furcht nach Bedrohung",
+     "preis": "P · Dorfplatz",
+     "richter": "Prüfer errät Akt/Gemüt aus der Silhouette ≥ 60 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10²: Gang nach Alter, Bau, Last, Verletzung",
+     "tiefe": "Greis langsam, Kind hüpft, Sack, Hinken",
+     "preis": "P · Markt",
+     "richter": "Lichtpunkt-Gang: Alter ± 15 J; „verletzt/beladen“ ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10³: Gestik im Gespräch",
+     "tiefe": "Gruß, Zeigen, Streit, Gebet, Verbeugung",
+     "preis": "P · Markt mit Gesprächen",
+     "richter": "Prüfer erkennt Gemüt aus dem Ganzkörper ≥ 70 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "leib.K2",
+     "text": "Der Fuß steht: Hang, Stufe, Sprung aus dem Leib-Gesetz",
+     "staffel": "\"1 = Fuß p95 ≤ 3 cm am 25°-Hang und auf Stufen, 0 Steckenbleiber auf dem Spielgang, an einem Gerät · 2 = dazu Sprung-Höhe und -Weite aus dem Leib-Gesetz (Mutation von Leib-Masse/Kraft zieht sie), Ego und Third, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4437",
+      "stationen/g5.js:4497"
+     ],
+     "stationen": [
+      {
+       "id": "leib.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "hang 1.2 (n 200) · falllinie 0.9 (n 200) · treppe hang 0.8 (n 201) · treppe wiese 0.3 (n 200) cm p95 · Steckenbleiber 0",
+       "sha": "2d5f4146",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Ego 0.369/3.019 → 0.216/2.329 → 0.562/3.623 · Third 0.369/3.019 → 0.216/2.329 → 0.562/3.623 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.2 (n 200) · falllinie 0.9 (n 200) · treppe hang 0.8 (n 201) · treppe wiese 0.3 (n 200) cm p95 · Steckenbleiber 0",
+       "sha": "2d5f4146",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Ego 0.323/2.846 → 0.179/2.156 → 0.503/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.503/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 200) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 200) cm p95 · Steckenbleiber 0",
+       "sha": "715754fc",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.leib.spur",
+   "name": "Spur am Leib",
+   "art": "kriterium",
+   "misst": "ob man den Lebenslauf an Haut, Schmuck und Ersatzteil liest.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Alters-Dial 18–80 (koerper-core.js:120–126) nie gemessen; Narbe, Tätowierung, Schmuck, Wunde: Grep leer",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Alter als Achse 18–80",
+     "tiefe": "sichtbar",
+     "preis": "P · Third",
+     "richter": "Prüfer-Altersschätzung, Fehler ≤ 15 J"
+    },
+    {
+     "nr": 2,
+     "umfang": "Arbeit am Leib, 10 Berufe",
+     "tiefe": "Bauer gebräunt, Schmied rußig, Arbeitshände",
+     "preis": "P · Markt 5 m",
+     "richter": "Beruf-Rateaufgabe ≥ 50 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Verletzung live",
+     "tiefe": "Wunde → Verband → Narbe über Tage",
+     "preis": "P · Dorf",
+     "richter": "Bildreihe Tag 0/3/30 am selben Bewohner"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.sport.regeln",
+   "name": "Regel-Grammatik",
+   "art": "kriterium",
+   "misst": "wie viel Spiel-Vielfalt die Welt aus EINER Grammatik hervorbringt, und wie wahr und spielbar sie ist.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "kein Regelspiel, keine Wertung; Ball nur am Seil im Prüfstand (schmiede-core.js:4627/4630)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Wettkampf (Lauf, Wurf) mit Sieger",
+     "tiefe": "Sieger folgt aus Leib und Tagesform",
+     "preis": "P · 8 Läufer nah",
+     "richter": "20 Läufe: Rangfolge gegen Leib-Leistung ρ 0,6–0,9"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Ballspiel mit Gegner und Pfiff",
+     "tiefe": "Schiedsrichter-Urteil = Regeltext",
+     "preis": "P · 10 Leiber + Ball",
+     "richter": "20 Partien: richtige Pfiffe ≥ 90 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 reale Sportarten aus EINER Grammatik",
+     "tiefe": "erkennbar ohne Beschriftung",
+     "preis": "P · 22 Leiber + Ball",
+     "richter": "30-s-Clip je Art: ≥ 8 von 10 von Fremden benannt"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "pflicht.F",
+     "text": "{}",
+     "staffel": "null",
+     "fundstellen": [],
+     "stationen": []
+    }
+   ]
+  },
+  {
+   "id": "mensch.sport.koerper",
+   "name": "Körperkönnen",
+   "art": "kriterium",
+   "misst": "wie wahr ein Leib aus Kraft und Gleichgewicht sich bewegt, gegen echte Athleten.",
+   "heute": 0,
+   "kern": 1,
+   "fuss": "kern",
+   "beleg": "Gehen, Sprint ~6,8 m/s, Sprung ~0,53 m, Klettern, Schwimmen, 6 Geräte-Verben über EINEN Löser (koerper-core.js:497–556, 5089–5130); Fuß 3,4/3,1 cm ROT (leib.K2) — KARTE: Kern 1 — Tempo und Sprung an beiden Geräten gebucht (leib.K2); Bild-Preis in Bewegung an der Radeon ROT (gehend 66 % der Bilder über 33 ms).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Leib: 5 Verben + 6 Geräte-Verben",
+     "tiefe": "Tempo und Sprung geeicht",
+     "preis": "P · Ego/Third Wiese",
+     "richter": "Tempo und Sprunghöhe im Spiel gegen Eichwert ± 10 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "dieselben Verben auf Stufe, Hang, Gerät",
+     "tiefe": "Fuß hält, wo er steht",
+     "preis": "P · Ego und Third",
+     "richter": "Fuß-Gleiten ≤ 2 cm"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Leiber: Kraft statt Konstante",
+     "tiefe": "Kraft-Geschwindigkeit, Ermüdung",
+     "preis": "P · 10 Leiber nah",
+     "richter": "400 m verliert 5–12 % auf der zweiten Hälfte; Wurfweite wächst mit Leib-Kraft"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "physik.K5",
+     "text": "Der aktive Leib: Gleichgewicht, Stolpern, Sturz, Aufstehen",
+     "staffel": "\"1 = ein Stoß von 200 N für 0,2 s beim Gehen führt zu Ausfallschritt und Erholung ≤ 1,5 s ohne Sturz, an einem Gerät · 2 = über einer Schwelle Sturz → Ragdoll → Aufstehen in eine Pose, die Treffer-Reaktion folgt der Impuls-Richtung (r ≥ 0,8), für Spieler, Tier und Mensch, beide Geräte\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g1.js:3916"
+     ],
+     "stationen": [
+      {
+       "id": "physik.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "200 N × 0,2 s quer im Gang (89.022 kg): Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Gegen-Richtung Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Masse ×2 Ausfall 0.077 m, Wurzel quer 0.07 m, erholt 0.617 s (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, ke …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "leib.K2",
+     "text": "Der Fuß steht: Hang, Stufe, Sprung aus dem Leib-Gesetz",
+     "staffel": "\"1 = Fuß p95 ≤ 3 cm am 25°-Hang und auf Stufen, 0 Steckenbleiber auf dem Spielgang, an einem Gerät · 2 = dazu Sprung-Höhe und -Weite aus dem Leib-Gesetz (Mutation von Leib-Masse/Kraft zieht sie), Ego und Third, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4437",
+      "stationen/g5.js:4497"
+     ],
+     "stationen": [
+      {
+       "id": "leib.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "hang 1.2 (n 200) · falllinie 0.9 (n 200) · treppe hang 0.8 (n 201) · treppe wiese 0.3 (n 200) cm p95 · Steckenbleiber 0",
+       "sha": "2d5f4146",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Ego 0.369/3.019 → 0.216/2.329 → 0.562/3.623 · Third 0.369/3.019 → 0.216/2.329 → 0.562/3.623 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.2 (n 200) · falllinie 0.9 (n 200) · treppe hang 0.8 (n 201) · treppe wiese 0.3 (n 200) cm p95 · Steckenbleiber 0",
+       "sha": "2d5f4146",
+       "gehalten": true
+      },
+      {
+       "id": "leib.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Ego 0.323/2.846 → 0.179/2.156 → 0.503/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.503/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 200) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 200) cm p95 · Steckenbleiber 0",
+       "sha": "715754fc",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "pflicht.F",
+     "text": "{}",
+     "staffel": "null",
+     "fundstellen": [],
+     "stationen": []
+    }
+   ]
+  },
+  {
+   "id": "mensch.sport.koennen",
+   "name": "Talent, Übung und Rekord",
+   "art": "kriterium",
+   "misst": "wie Können in einer Bevölkerung entsteht, wächst, altert und Weltrekorde hervorbringt — EIN Gesetz für Sport, Handwerk, Tanz.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "leibWerte (koerper-core.js:5182–5187) rechnet Tempo nur aus der Größe, Sprint fester Faktor 4,5; kein Talent, keine Übung",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "10² Bewohner mit Können-Profil",
+     "tiefe": "Streuung wie echt",
+     "preis": "P · 20 nah",
+     "richter": "Variationskoeffizient der 100-m-Zeit 10–20 %, Altersgang gegen Normtafeln"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Bewohner über 10² Übungsstunden",
+     "tiefe": "Potenzgesetz der Übung in Sport, Handwerk, Tanz",
+     "preis": "P · nah über Spielstunden",
+     "richter": "Güte über 100 h gegen Potenzgesetz R² ≥ 0,8"
+    },
+    {
+     "nr": 3,
+     "umfang": "10⁴ Bevölkerung",
+     "tiefe": "Bestwert wächst mit log N",
+     "preis": "P · Stadt im Bild",
+     "richter": "Wettkampf im Bild bei N = 10², 10³, 10⁴: Bestleistung wächst mit der Zahl der Teilnehmer UND ihrer Übung; Gegenlauf: Teilnehmer ÷ 10 oder Übung gekappt → der Bestwert sinkt um die Extremwert-Erwartung ±5 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.sport.mannschaft",
+   "name": "Mannschaft und Taktik",
+   "art": "kriterium",
+   "misst": "wie viele Spieler zugleich regelgerecht und klug zusammen- und gegeneinander spielen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "0 Mannschaften; Bewohner folgen nur dem Tagesplan",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 gegen 1 (Ringen, Fechten)",
+     "tiefe": "Finte, Abwehr, Reaktion",
+     "preis": "P · 2 Leiber nah",
+     "richter": "Siegquote des Stärkeren 60–80 %, nie 100 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "5 gegen 5",
+     "tiefe": "Raum öffnen, Pass vor Lauf",
+     "preis": "P · 10 Leiber + Ball",
+     "richter": "Passquote und Ballbesitzkette gegen Amateur-Statistik ± 20 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "11 gegen 11 mit Schiedsrichter",
+     "tiefe": "Formation, Pressing, Abseits",
+     "preis": "P · 23 Leiber + Ball",
+     "richter": "Tore je Spiel 2–3,5, Pässe 700–1 100"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.sport.arena",
+   "name": "Arena, Publikum und Liga",
+   "art": "kriterium",
+   "misst": "wie viele Zuschauer, Spielstätten und Wettbewerbe aus Stadt und Bevölkerung wachsen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Prüfstand-Hof 22 Geräte, Spielplatz mit Bänken (fachwerk-core.js:10014); 0 Zuschauer, 0 Ligen",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Spielfeld aus dem Ort-Gesetz, 10 Zuschauer",
+     "tiefe": "Zuschauer schauen dem Ball nach",
+     "preis": "P · Feld + 10 nah",
+     "richter": "Blickrichtungen folgen dem Geschehen ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "10² Zuschauer, Jubel",
+     "tiefe": "Laut und Bewegung folgen dem Spielstand",
+     "preis": "P · Tribüne nah",
+     "richter": "Lautstärke-Spitze ≤ 0,5 s nach dem Tor"
+    },
+    {
+     "nr": 3,
+     "umfang": "Stadion mit 10⁴ Zuschauern aus Epoche und Bau-Gesetz",
+     "tiefe": "liest wie ein echtes Stadion seines Typs",
+     "preis": "P · volles Haus",
+     "richter": "Bildvergleich gegen Fotos des Typs; ≥ 1 000 Zuschauer nah sichtbar bewegt"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "pflicht.F",
+     "text": "{}",
+     "staffel": "null",
+     "fundstellen": [],
+     "stationen": []
+    }
+   ]
+  },
+  {
+   "id": "mensch.sport.kunst",
+   "name": "Handwerk, Tanz und Kampf als Kunst",
+   "art": "kriterium",
+   "misst": "ob man Stil, Meisterschaft und Kultur in der Bewegung sieht.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Güte steckt in der Waffe (gueteFaktor schmiede-core.js:4062), nicht in der Hand",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "2 Leiber: Meister und Anfänger in 3 Künsten",
+     "tiefe": "Anfänger sichtbar ungeschickt",
+     "preis": "P · 2 Leiber nah",
+     "richter": "Blindtest Anfänger ↔ Meister ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "die Hand prägt das Werk (10 Werkstücke)",
+     "tiefe": "Meister-Topf, Meister-Klinge messbar besser",
+     "preis": "P · Werkstatt nah",
+     "richter": "Werk-Güte gegen Können-Profil R² ≥ 0,7"
+    },
+    {
+     "nr": 3,
+     "umfang": "20 Tänzer zur Musik, Paar und Gruppe",
+     "tiefe": "Takt und Partner synchron",
+     "preis": "P · 20 nah",
+     "richter": "Schritt-Takt-Abstand ≤ 50 ms"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.sport.geistspiel",
+   "name": "Geist-Spiele",
+   "art": "kriterium",
+   "misst": "ob Bewohner Brett-, Karten-, Würfel- und Rätselspiele am Tisch spielen, und wie viele davon das Gesetz erzeugt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "kein Brett-, Karten- oder Würfelspiel (Grep leer)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Brettspiel zwischen 2 Bewohnern",
+     "tiefe": "Hand setzt den Stein, Brett als Gerät",
+     "preis": "P · Tisch nah",
+     "richter": "100 Partien, 0 regelwidrige Züge"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Tische, Spielstärke streut",
+     "tiefe": "Elo-Spreizung wie Vereinsschach",
+     "preis": "P · Wirtshaus",
+     "richter": "Elo 800–2 000, Rang ↔ Übung ρ ≥ 0,6"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² historische Spiele aus EINER Grammatik",
+     "tiefe": "Ausdruckskraft",
+     "preis": "P · Ankunft am Tisch",
+     "richter": "100 Zufallsspiele eines Archivs: ≥ 90 % reproduziert"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.sport.medium",
+   "name": "Sport in jedem Medium — Schnee, Brandung, Luft, Motor, Tier",
+   "art": "kriterium",
+   "misst": "ob Sport dort wahr ist, wo das Medium die Leistung macht: Kante im Schnee, Kufe auf Eis, Brett auf der Welle, Schirm im Aufwind, Reifen an der Haftgrenze, Pferd unter dem Reiter — dazu Sport mit anderem Leib (Rollstuhl, Prothese) und das Wettspiel am Bildschirm.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Lauf, Sprung und Fahrt am Boden (siehe mensch.sport.koerper); Schnee mit Einsinken 1/2 (wetter.K4, headless); kein Sport in Schnee, Wasser oder Luft gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EINE Abfahrt auf Schnee",
+     "tiefe": "die Kante greift, der Schwung trägt, Sturz bei zu viel Tempo",
+     "preis": "P · Hang",
+     "richter": "Schwung-Radius gegen Tempo und Kantwinkel ±15 %; Zeit auf 500 m Höhe im Band realer Abfahrten"
+    },
+    {
+     "nr": 2,
+     "umfang": "Eis und Brandung",
+     "tiefe": "die Kufe gleitet und schneidet; die Welle trägt das Brett nur auf ihrer Schulter",
+     "preis": "P",
+     "richter": "Gleitweg auf Eis gegen den Reibwert ±15 %; Wellenritt nur bei Wellenhöhe und Winkel im Band, Gegenlauf flaches Wasser"
+    },
+    {
+     "nr": 3,
+     "umfang": "Luft: Gleitschirm, Fallschirm, Segelflug",
+     "tiefe": "Aufwind am Hang und unter der Wolke trägt; ohne ihn sinkt man",
+     "preis": "P · Flug",
+     "richter": "Gleitzahl ±10 %; Steigen nur über Hang-Aufwind und Thermik des EINEN Wetters (Gegenlauf Wind aus)"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  }
+ ]
+}

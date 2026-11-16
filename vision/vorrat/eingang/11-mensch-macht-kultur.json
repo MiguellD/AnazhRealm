@@ -1,0 +1,843 @@
+{
+ "paket": "11-mensch-macht-kultur",
+ "kopfSpiel": "e4eeee086ca78f20b27ae87e12761508215fca34",
+ "preisTreppe": [
+  {
+   "klasse": "Ort",
+   "umfang": "bis 10² Bauten oder 10³ Leiber, Sicht bis 1 km",
+   "bild": "p95 ≤ 34 ms, kein Bild über 101 ms, Ton ohne Aussetzer — in Szene und Bewegung des Richters; die Zahlen sind Takte des Schirms: 30 Bilder je Sekunde (2 Takte bei 60 Hz = 33,33 ms, 4 bei 120 Hz = 33,47 ms), ein Aussetzer höchstens 6 Takte bei 60 Hz (100,0 ms) oder 12 bei 120 Hz (100,4 ms)",
+   "ankunft": "keine Schranke in der Sprosse (gestuft in same.preis.ankunft 1–3)",
+   "speicher": "Heap ≤ 400 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min — gehalten nach dem Aufräumen; der VRAM hängt am Schirm, nicht an der Zahl der Bauten, darum die Decke der Stadt",
+   "bytes": "0 über das Skript hinaus"
+  },
+  {
+   "klasse": "Stadt",
+   "umfang": "10³–10⁵ Bauten, 10⁴–10⁶ Menschen, Sicht bis 20 km",
+   "bild": "wie Ort",
+   "ankunft": "kalt am Ort des Richters ≤ 5 s",
+   "speicher": "Heap ≤ 600 MB, VRAM ≤ 256 MB, Wachstum ≤ 5 MB/min",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Megastadt und Kontinent",
+   "umfang": "≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont",
+   "bild": "wie Ort",
+   "ankunft": "≤ 5 s",
+   "speicher": "Heap ≤ 1 GB, VRAM ≤ 512 MB, kein Wachstum mit dem Weg",
+   "bytes": "0"
+  },
+  {
+   "klasse": "Planet und Welten",
+   "umfang": "Orbit bis Boden, jede Welt, jede Zeit",
+   "bild": "wie Ort, auch im Abstieg und im Zeitraffer",
+   "ankunft": "≤ 5 s an jedem (Welt, Ort, Zeit)",
+   "speicher": "wie Megastadt — der Speicher wächst nicht mit der Welt",
+   "bytes": "0 je neuer Welt; der Erd-Schlüssel zählt mit"
+  }
+ ],
+ "leitern": [
+  {
+   "id": "mensch.macht.grenze",
+   "name": "Gemeinwesen, Grenzen, Reiche",
+   "art": "kriterium",
+   "misst": "wie viele Ordnungen der Planet trägt, in wie vielen Ebenen, wie sie steigen und fallen und ob man ihre Grenzen im Land sieht (Macht L1 + Geschichte L4).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "BURG-GESETZ zu 50 % per Zufall (fachwerk-core.js:3705), Mauer bis 1750; kein Gemeinwesen, keine Grenze",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Herrschaftsgebiet",
+     "tiefe": "Grenze im Land sichtbar, Herr mit Ursache",
+     "preis": "P · Grenzübertritt",
+     "richter": "Grenze im Bild = Karte; Burg, wo Lage und Reichtum sie tragen"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Gemeinwesen auf 32 × 32 km",
+     "tiefe": "Grenze aus der Kostenfläche",
+     "preis": "P · Ritt über die Grenze",
+     "richter": "Fluss/Kamm verlegt → Grenze folgt ≥ 70 % von 32 Saaten; ≥ 1 Grenzzeichen"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Gemeinwesen, 2 Ebenen",
+     "tiefe": "Stadtstaat + Bund",
+     "preis": "P · Flug",
+     "richter": "Größenverteilung im Band historischer Atlanten"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "siedlung.K2",
+     "text": "Die Stadt in Reichweite, nach Rang und Größe",
+     "staffel": "\"1 = in ≥ 6 von 8 Saaten mit zufälligem Spawn steht binnen 2 km eine ummauerte Stadt (Auto-Zellen, nie Chat), sichtbar vom Hügel an einem Gerät · 2 = Zipf-Exponent 0,8–1,2 über 32 × 32 km mit Konfidenz-Intervall, Export trägt mauer und graph, mittags und in der Dämmerung, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:3776",
+      "stationen/g5.js:3833"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 48 · Schuss vom acker 104 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 66.65 m · Luma 98. …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 104 · Schuss vom acker 103 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 6 …",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 48 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 104 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sich …",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.macht.wehrbau",
+   "name": "Spuren der Macht im Stein",
+   "art": "kriterium",
+   "misst": "ob Mauern, Burgen, Festungen und Machtbauten am richtigen Ort und in der richtigen Epoche stehen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "mauerRing 30 Ecken, Tore, Türme (fachwerk-core.js:4481); ummauerte Stadt vom Hügel in 7/8 Saaten an beiden Geräten (siedlung.K2) — KARTE: 0 — die ummauerte Stadt vom Hügel zählt bei mensch.stadt.siedlungsnetz (R9); Ring ohne Schwebe-Spalt bei Mittag und Dämmerung nie gerichtet.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Mauerring mit Toren und Türmen",
+     "tiefe": "Fuß folgt Hang",
+     "preis": "P · Hügel",
+     "richter": "geschlossener Ring mittags und Dämmerung lesbar, kein Schwebe-Spalt"
+    },
+    {
+     "nr": 2,
+     "umfang": "Wehrbau folgt Waffe und Epoche",
+     "tiefe": "Palisade → Steinring → Bastion → kein Wall",
+     "preis": "P · Sprung",
+     "richter": "900/1350/1650/1900: Jahrhundert ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Mauer-Generationen als Jahresringe",
+     "tiefe": "alter Ring wird Ringstraße",
+     "preis": "P · Sprung",
+     "richter": "32 Saaten: Ring als Straße ≥ 0,7"
+    }
+   ],
+   "sprossenGesamt": 8,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "siedlung.K2",
+     "text": "Die Stadt in Reichweite, nach Rang und Größe",
+     "staffel": "\"1 = in ≥ 6 von 8 Saaten mit zufälligem Spawn steht binnen 2 km eine ummauerte Stadt (Auto-Zellen, nie Chat), sichtbar vom Hügel an einem Gerät · 2 = Zipf-Exponent 0,8–1,2 über 32 × 32 km mit Konfidenz-Intervall, Export trägt mauer und graph, mittags und in der Dämmerung, beide Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:3776",
+      "stationen/g5.js:3833"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K2#1",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 48 · Schuss vom acker 104 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 66.65 m · Luma 98. …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K2#1",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 104 · Schuss vom acker 103 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 6 …",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K2#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 48 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K2#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 104 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sich …",
+       "sha": "b3f9ae95",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.macht.stand",
+   "name": "Stand, Kaste, Klasse",
+   "art": "kriterium",
+   "misst": "ob Ungleichheit sichtbar und wahr ist, in Wohnung, Leib, Kleidung und Viertel.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Rollen ohne Stand; „Stände“ im Code sind Marktstände (fachwerk-core.js:4511)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Stadt, 2 Stände",
+     "tiefe": "Wohnfläche ungleich",
+     "preis": "P · Viertel",
+     "richter": "Gini der Wohnfläche im archäologischen Band; arm/reich erkannt ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "3–5 Stände mit Vierteln",
+     "tiefe": "Viertel, Kleidung, Nahrung nach Stand",
+     "preis": "P · Gang durchs Viertel",
+     "richter": "Segregation im Band; Stand aus dem Nah-Bild ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Städte, Ordnung aus Überschuss",
+     "tiefe": "Gini steigt mit Überschuss",
+     "preis": "P · Sprung",
+     "richter": "64 Saaten × 4 Epochen: Gini im Band ≥ 80 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.macht.recht",
+   "name": "Gesetz, Verwaltung, Steuer, Strafe",
+   "art": "kriterium",
+   "misst": "ob Recht das Verhalten der Welt beobachtbar ändert.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Wächter und Nachtwächter stehen 6–20 Uhr und reagieren auf nichts (koerper-core.js:4942)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Wache, die wirkt",
+     "tiefe": "sieht und antwortet",
+     "preis": "P · Platz",
+     "richter": "Regelbruch in Sicht → Antwort ≥ 0,8 von 20"
+    },
+    {
+     "nr": 2,
+     "umfang": "1 Regel, Spieler als Täter",
+     "tiefe": "sehen, verfolgen, strafen",
+     "preis": "P · Verfolgung",
+     "richter": "Folge binnen 60 s ≥ 0,8, ungesehen ohne Folge ≥ 0,8"
+    },
+    {
+     "nr": 3,
+     "umfang": "Verbrechen unter 10³ Bewohnern",
+     "tiefe": "Rate nach Stand und Wache",
+     "preis": "P",
+     "richter": "Rate steigt mit Gini ≥ 80 %; Wache × 2 → Rate fällt"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.macht.krieg",
+   "name": "Krieg, Belagerung, Diplomatie",
+   "art": "kriterium",
+   "misst": "wie viele Kämpfer bei vollem Preis, wie wahr, und ob Krieg und Frieden die Welt bleibend ändern.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "Hieb-Physik, Treffer am Leib (stamm/kampf.js), an beiden Geräten im Bild (halten.K1); das umringende Rudel (tiere.K2, oekologie.K4) ist Jagd und zählt bei leben.tiere.verhalten und leben.tiere.mensch. — KARTE: 0 — ein Zweikampf zwischen zwei Bewaffneten ist nicht gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Zweikampf: 2 Bewaffnete",
+     "tiefe": "Hieb trifft den Leib, Deckung, Ausweichen",
+     "preis": "P · Arena",
+     "richter": "20 Zweikämpfe im Bild: der Treffer sitzt, wo die Klinge den Leib kreuzt, der Getroffene antwortet; kein Treffer durch die Deckung"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Kämpfer, Mensch gegen Mensch",
+     "tiefe": "Moral, Flucht",
+     "preis": "P · 10 im Bild",
+     "richter": "Flucht statt Tod im Band; „menschlich“ ≥ 60 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Scharmützel",
+     "tiefe": "Formation, Gelände",
+     "preis": "P · 10² im Bild",
+     "richter": "Höhe gewinnt ≥ 65 % bei gleicher Stärke"
+    }
+   ],
+   "sprossenGesamt": 9,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "halten.K1",
+     "text": "Der Treffer aus dem Gesetz: Trägheit, Masse, Schneide, Tempo",
+     "staffel": "\"1 = Schwung und Treffer folgen der Trägheit des Werks (Dauer ∝ √I ±5 % an echten Blueprints, Klingen-Sweep am Chokepoint) — Mechanik · 2 = Schaden und Impuls aus Masse × Schneide × Tempo, eine Mutation in schmiede-core ändert Treffer UND Labor-Werk, im Bild beider Geräte\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4832",
+      "stationen/g5.js:5271"
+     ],
+     "stationen": [
+      {
+       "id": "halten.K1#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "(A) I1=[{\"I1\":349.92,\"I2\":699.84,\"D1\":0.763,\"D2\":1.08},1.414,1.414] · 0 von 5 Proben ROT",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "halten.K1#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "vor: Treffer KE 74.2 J · p 5.96 · v 23.3 · Schaden 15.7 · edgeQ 1.000/Bild 1.000 · Werk 1.386 kg β 26.3° · Labor 1.386 kg β 26.3° | masse: Treffer KE 79.7 J · p 6.81 · v 21.4 · Schaden 17.2 · edgeQ 1.000/Bild 1.000 · Werk 1.649 kg β 26.3° · Labor 1.649 kg β 26 …",
+       "sha": "4ee205bd",
+       "gehalten": true
+      },
+      {
+       "id": "halten.K1#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "vor: Treffer KE 74.6 J · p 5.96 · v 23.3 · Schaden 15.8 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 76.8 J · p 6.67 · v 20.9 · Schaden 16.6 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26 …",
+       "sha": "e84fd1fb",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "pflicht.F",
+     "text": "{}",
+     "staffel": "null",
+     "fundstellen": [],
+     "stationen": []
+    }
+   ]
+  },
+  {
+   "id": "mensch.macht.megastadt",
+   "name": "Macht in der Megastadt",
+   "art": "kriterium",
+   "misst": "ob Polizei, Bande, Konzern, Protest und Überwachung aus dem Feld entstehen statt aus dem Nichts.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "nichts",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Wache, Streife",
+     "tiefe": "Streife fährt aus der Wache",
+     "preis": "P · Straße",
+     "richter": "Antwortzeit ∝ Weg zur Wache ρ ≥ 0,7; niemand erscheint im Sichtfeld"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Bandenreviere",
+     "tiefe": "Überschuss minus Kontrollkosten",
+     "preis": "P",
+     "richter": "Grenzen an Barrieren ≥ 0,7; Revier aus Graffiti ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Machtzentren",
+     "tiefe": "Bodenpreis und Höhe folgen Macht",
+     "preis": "P · Skyline",
+     "richter": "Gradient im Band; Türme an maximaler Erreichbarkeit ≥ 0,8"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.kultur.sprache",
+   "name": "Sprachen der Welt",
+   "art": "kriterium",
+   "misst": "wie viele unterscheidbare Sprachen aus dem Samen entstehen, wie wahr sie klingen und ob ihre Verwandtschaft rekonstruierbar ist.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "keine Welt-Sprache; Ortsnamen aus festen Silben je Region (fachwerk-core.js:3306)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Sprache: Orts- und Personennamen",
+     "tiefe": "aus einem Guss",
+     "preis": "P · Dorf",
+     "richter": "100 Namen aus 2 Saaten richtig zugeordnet ≥ 90 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "U_eff ≥ 10",
+     "tiefe": "Laute, Silben, Wortschatz",
+     "preis": "P · Dorf",
+     "richter": "Sprachen an 20 Sätzen getrennt ≥ 85 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "U_eff ≥ 10², ≥ 5 Familien",
+     "tiefe": "Lautgesetze erzeugen Kognaten",
+     "preis": "P",
+     "richter": "Stammbaum aus gelesenen Wortlisten, Robinson-Foulds ≤ 0,3 in ≥ 70 %"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "spielgang.K5",
+     "text": "Die Welt spricht die Sprache des Spielers",
+     "staffel": "\"1 = jede UI-Zeile aus EINER Text-Quelle in DE und EN (0 harte Strings, Zählung), an einem Gerät umgeschaltet · 2 = die KI antwortet in der Sprache des Spielers (Korpus-Teil EN aus KI K1)\"",
+     "punkteAlt": 1,
+     "fundstellen": [
+      "stationen/g5.js:5647",
+      "stationen/g5.js:5733"
+     ],
+     "stationen": [
+      {
+       "id": "spielgang.K5#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "0 harte UI-Zeilen (Code 0 · DOM 0 von 580 Zeilen, 574 aus der Tafel, 6 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2379, en 2379)",
+       "sha": "6aa7a5a6",
+       "gehalten": true
+      },
+      {
+       "id": "spielgang.K5#2",
+       "geraet": "headless",
+       "gruen": false,
+       "zahl": null,
+       "sha": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.kultur.schrift",
+   "name": "Die geschriebene Welt",
+   "art": "kriterium",
+   "misst": "wie viel Schrift der Spieler im Bild liest und ob sie aus dem Ort folgt — bis jeder Text wahr über die Welt ist.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "die Stele mit Schriftband lebt nicht im Spiel; lesbar nur das Peer-Namensschild (stamm/netz-p2p.js:2232)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Schrift an Sonderbauten",
+     "tiefe": "Zeichen passend zur Rolle",
+     "preis": "P · Dorf",
+     "richter": "Sonderbauten mit lesbarem, passendem Schild ≥ 90 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "U_eff ≥ 10 Schrift-Typen, 500 Grabsteine",
+     "tiefe": "Typus folgt Epoche; Grabstein aus der Akte",
+     "preis": "P · Friedhof",
+     "richter": "OCR liest ≥ 80 % zu den Akten zurück"
+    },
+    {
+     "nr": 3,
+     "umfang": "U_eff ≥ 10², jede Hauswand",
+     "tiefe": "Schild aus dem Gewerbe dahinter",
+     "preis": "P · Marktgasse",
+     "richter": "Text-Pixel-Anteil ± 25 % gegen Foto; ≥ 90 % nennen das Gewerbe"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.kultur.glaube",
+   "name": "Glaube, Ritual, Bestattung",
+   "art": "kriterium",
+   "misst": "wie viele unterscheidbare Glaubenssysteme die Welt trägt und wie sichtbar sie Landschaft und Leben formen.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Rolle kirche als Region-Markbau mit 1 Bewohner (fachwerk-core.js:3696–3700, 8163); kein Ritus, kein Kalender, kein Friedhof",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "1 Glaube mit Kalender",
+     "tiefe": "Ritus-Stunde, Fest füllt den Platz",
+     "preis": "P · Ritus-Stunde",
+     "richter": "≥ 30 % der Gläubigen im Kultbau; Festtag ≥ 3× Werktag"
+    },
+    {
+     "nr": 2,
+     "umfang": "U_eff ≥ 10 Glauben",
+     "tiefe": "Kultbau und Ritus aus der Lehre",
+     "preis": "P · 500 Feiernde",
+     "richter": "Ausrichtung ≤ 5° von der Regel; blind getrennt ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "≥ 10³ Gräber je Stadt",
+     "tiefe": "Gräberfeld wächst mit Sterblichkeit",
+     "preis": "P · Friedhof",
+     "richter": "Gräberzahl ± 20 %; Schichtung 1320/1860"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.kultur.gestalt",
+   "name": "Kultur als Stil-Raum",
+   "art": "kriterium",
+   "misst": "wie viele unterscheidbare Kulturen und Zeit-Gestalten das Gesetz hervorbringt, sichtbar in Bau, Tracht, Werkzeug, Speise, Fest — gezählt als U_eff an Saaten (Kultur L4 + Geschichte L5 + Bauten L1).",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "gemessen",
+   "beleg": "32 Archetypen per Hash (fachwerk-core.js:2012), 28 Baustil-Pools, 9 Epochen; zwei Epochen 72,3 % andere Leib-Pixel (haar.K4); Häuser-Trennung ungemessen, Häuser lesen als weiße Kästen",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "U_eff ≥ 10 (auch aus Liste)",
+     "tiefe": "Bau und Tracht je Kultur und Epoche",
+     "preis": "P · Dorf und Stadt",
+     "richter": "10 Kulturen an Häuser-Bildern blind getrennt ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "U_eff ≥ 10² aus dem Samen",
+     "tiefe": "Merkmalsvektor aus dem Erbfeld",
+     "preis": "P",
+     "richter": "Saat-Probe: getrennt ≥ 80 %, plausibel ≥ 90 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "U_eff ≥ 10³ auf einem Kontinent",
+     "tiefe": "hält Fotovergleich nah und fern",
+     "preis": "P · Nah- und Fern-Pose",
+     "richter": "Merkmalsabstand zum realen Gegenstück im Foto-Band"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": [
+    {
+     "kriterium": "haar.K4",
+     "text": "Kleidung aus der Epoche, als Tuch am Leib",
+     "staffel": "\"1 = Bewohner tragen Kleidung aus der Epoche ihres Hauses (zwei Epochen im Bild unterscheidbar) · 2 = Tuch des EINEN XPBD-Lösers, 0 Durchdringung beim Gang, Labor = Welt\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g2.js:6119",
+      "stationen/g2.js:6161"
+     ],
+     "stationen": [
+      {
+       "id": "haar.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "1320 mittelalter poncho/pants/boot · 1935 moderne tshirt/pants/sneaker: im Bild 72.3 % der Leib-Pixel anders (Soll ≥ 25 %), der Schnitt allein 16.6 % (≥ 5 %), Umriss-Deckung 0.9406, die Mutante 0.0 % (≤ 0,2 %) · Leib 7253/7030/7253/6989 px (≥ 2 000), Treue 0 B …",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "haar.K4#2",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Tracht poncho/pants, 8245/2877 Tuch-Ecken · Löser [xpbdSchritt, xpbdKette, tuchGitter, tuchZustand, tuchTakt, tuchRuhe, tuchDrapieren] 87 Rufe im Gang (Gitter-Stufe 0, 11.32 ms je Takt) · Durchdringung fein/fein 0 (0 Bilder, Ruhe 12, trägt 0.1036 m, Mutante 73 …",
+       "sha": "d3708675",
+       "gehalten": true
+      }
+     ]
+    },
+    {
+     "kriterium": "siedlung.K4",
+     "text": "Durch die Jahrhunderte — als Parameter, dann als Wachstum",
+     "staffel": "\"1 = dieselbe Zelle unter 1320/1560/1860/1935: der ältere Kern liegt zu ≥ 80 % im jüngeren (Jahresringe), die Epoche moderne ergibt stadt, die Epoche bestimmt Rolle, Bauart und Kleidung im Export · 2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)\"",
+     "punkteAlt": 2,
+     "fundstellen": [
+      "stationen/g5.js:4236",
+      "stationen/g5.js:4290"
+     ],
+     "stationen": [
+      {
+       "id": "siedlung.K4#1",
+       "geraet": "headless",
+       "gruen": true,
+       "zahl": "Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0",
+       "sha": "d3708675",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K4#2",
+       "geraet": "radeon",
+       "gruen": true,
+       "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m …",
+       "sha": "105c9bd3",
+       "gehalten": true
+      },
+      {
+       "id": "siedlung.K4#2",
+       "geraet": "gtx",
+       "gruen": true,
+       "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m …",
+       "sha": "3e4f99cd",
+       "gehalten": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mensch.kultur.diffusion",
+   "name": "Wanderung, Diffusion, Mischung",
+   "art": "kriterium",
+   "misst": "ob Merkmale über Wege wandern, Kulturen sich berühren und mischen, sichtbar im Raum.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Stile lösen sich nur in der Zeit ab (fachwerk-core.js:3281), keine Wanderung im Raum",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "2 Kulturen an einer Grenze",
+     "tiefe": "Mischformen",
+     "preis": "P · Grenzdorf",
+     "richter": "Grenzstreifen ≥ 30 % gemischt, abseits ≤ 5 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "≥ 10 Kulturen, Diffusion über Wege",
+     "tiefe": "Merkmale und Lehnwörter folgen dem Weg",
+     "preis": "P",
+     "richter": "Mantel-r ≥ 0,4 und größer als Luftlinie; Lehnwort ↔ Distanz r ≤ −0,5"
+    },
+    {
+     "nr": 3,
+     "umfang": "10 Herkünfte in einer Stadt",
+     "tiefe": "Diaspora-Viertel, zweite Generation mischt",
+     "preis": "P · Viertel",
+     "richter": "Herkunft aus Straßenbildern ≥ 75 %"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.kultur.wissen",
+   "name": "Wissen und Weitergabe",
+   "art": "kriterium",
+   "misst": "ob Wissen wächst, gelehrt, aufgeschrieben, verloren und wiedergefunden wird.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Technikstand nur als Funktion der Jahreszahl (fachwerk-core.js:8105)",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Technikstand je Ort",
+     "tiefe": "wächst mit Größe und Vernetzung",
+     "preis": "P",
+     "richter": "Stand ↔ Bevölkerung × Vernetzung r ≥ 0,5"
+    },
+    {
+     "nr": 2,
+     "umfang": "Schule, Bibliothek, Werkstatt",
+     "tiefe": "Können folgt Lehrer und Buch",
+     "preis": "P",
+     "richter": "Schüler eines Meisters ≥ 1 SD über dem Mittel"
+    },
+    {
+     "nr": 3,
+     "umfang": "Bücher und Medien lesbar und wahr",
+     "tiefe": "zeigen Ereignisse der eigenen Welt",
+     "preis": "P · Text am Blick",
+     "richter": "≥ 70 % verweisen auf ein reales Ereignis der letzten Tage"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.kultur.verstaendigung",
+   "name": "Verständigung",
+   "art": "kriterium",
+   "misst": "ob der Spieler einer fremden Sprache begegnen, sie lernen und verstehen kann.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "keine Welt-Sprache, Bewohner sprechen nicht mit dem Spieler",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "Grüße und Gesten",
+     "tiefe": "kulturgemäße Antwort",
+     "preis": "P · Markt",
+     "richter": "≥ 90 % antworten; Gruß-Form trennbar ≥ 80 %"
+    },
+    {
+     "nr": 2,
+     "umfang": "Wort für Wort lernbar",
+     "tiefe": "aus Zeigen, Schild, Kontext",
+     "preis": "P",
+     "richter": "unbefangener Spieler: ≥ 20 Wörter in 30 min"
+    },
+    {
+     "nr": 3,
+     "umfang": "Schrift entziffern",
+     "tiefe": "Bilinguen im Spiel",
+     "preis": "P",
+     "richter": "≥ 50 % einer Inschrift entziffert"
+    }
+   ],
+   "sprossenGesamt": 6,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.kultur.bildkunst",
+   "name": "Bild, Skulptur, Baukunst",
+   "art": "kriterium",
+   "misst": "ob Kulturen Kunst hervorbringen, die man in der Welt findet — Wandbild, Gemälde, Skulptur, Ornament, Bau als Kunstwerk —, mit eigenem Stil je Kultur und Epoche und Motiven aus dem, was es in ihrer Welt gibt.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Nie gemessen; keine Station der alten Karte misst Kunst am Bau oder im Raum.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EIN Ort, 10 Werke (Wandbild, Figur, Ornament)",
+     "tiefe": "das Motiv zeigt etwas aus der Welt des Orts (Tier, Berg, Herrscher, Ereignis)",
+     "preis": "P · nah",
+     "richter": "10 Werke: Motiv in der Welt gefunden (das Tier lebt dort, das Ereignis geschah) ≥ 80 %; keine zwei gleich"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Kulturen, je eigener Stil",
+     "tiefe": "Stil aus einem Bild erkennbar",
+     "preis": "P",
+     "richter": "Werk blind der richtigen von 10 Kulturen zugeordnet ≥ 70 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Stil wandelt sich über 1 000 Jahre",
+     "tiefe": "früh, hoch, spät — datierbar",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Blind-Datierung der Werke eines Orts: Fehler ≤ 15 % der Spanne"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.kultur.erzaehlkunst",
+   "name": "Buch, Bühne, Film",
+   "art": "kriterium",
+   "misst": "ob die Welt erzählende Künste trägt — Buch, Theater, Kino, Sendung — als Orte mit Publikum und als Werke, deren Stoff aus der Geschichte dieser Welt kommt und die man lesen, sehen, hören kann.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Nie gemessen; Bewohner sprechen nicht (siehe erleben.klang.stimme).",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EINE Bühne oder EIN Erzähler am Abend, 10² Zuhörer",
+     "tiefe": "das Stück läuft von Anfang bis Ende, das Publikum antwortet",
+     "preis": "P · im Saal",
+     "richter": "Stück mit Anfang, Wende, Ende im Bild; Lachen und Stille des Publikums folgen den Stellen des Stücks (r ≥ 0,5)"
+    },
+    {
+     "nr": 2,
+     "umfang": "10 Werke einer Stadt, lesbar oder sehbar",
+     "tiefe": "jedes erzählt ein Ereignis, das in der Welt geschah oder geglaubt wird",
+     "preis": "P",
+     "richter": "10 Werke: Kern (Wer, Was, Wo) gegen den Zustand der Welt oder ihre Legenden ≥ 80 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "10² Werke, 5 Gattungen (Epos, Posse, Tragödie, Lied, Chronik)",
+     "tiefe": "Gattung blind erkannt; die Werke verschieden",
+     "preis": "P",
+     "richter": "Gattung ≥ 70 % richtig; Blindpaar Text gegen Übersetzungen realer Werke der Epoche (2AFC ≤ 75 %)"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  },
+  {
+   "id": "mensch.kultur.strassenleben",
+   "name": "Straßenleben — Küche, Mode, Nacht, Vergnügen",
+   "art": "kriterium",
+   "misst": "ob die Stadt lebt, wenn niemand arbeitet: Garküche und Wirtshaus, Mode, die kommt und geht, Nacht mit Lokalen und Musik, Spiel, Rausch und Einkauf — als Orte, die Bewohner aufsuchen, mit Wandel über die Zeit.",
+   "heute": 0,
+   "kern": 0,
+   "fuss": "ungemessen",
+   "beleg": "Bewohner tragen einen Tagesplan mit 6 Akten (siehe mensch.geist.tag); Lokal, Mode und Nacht als eigene Orte und Abläufe: nie gemessen.",
+   "sprossen": [
+    {
+     "nr": 1,
+     "umfang": "EINE Gasse am Abend: 3 Lokale, 20 Gäste",
+     "tiefe": "Essen wird gekocht, gereicht, gegessen; Gäste kommen aus eigenem Anlass",
+     "preis": "P",
+     "richter": "20 Gäste verfolgt: jeder kam nach seinem Tagesplan, isst und geht; Gericht aus Zutaten der Flur (Gegenlauf Zutat fehlt → das Gericht fehlt)"
+    },
+    {
+     "nr": 2,
+     "umfang": "Küche eines Orts: 10² Gerichte aus Flur, Meer, Handel",
+     "tiefe": "die Küstenstadt isst Fisch, das Bergdorf Käse",
+     "preis": "P",
+     "richter": "Speisekarte ↔ Umland: Zutaten im Umkreis oder im Handel gefunden ≥ 90 %"
+    },
+    {
+     "nr": 3,
+     "umfang": "Mode in einer Stadt über 10 Jahre",
+     "tiefe": "Schnitt und Farbe kommen auf, breiten sich aus, verschwinden",
+     "preis": "P · Sprung ≤ 5 s",
+     "richter": "Anteil eines Merkmals auf der Straße über 10 Jahre: Aufstieg und Abklingen im Band realer Mode-Kurven; zuerst bei Jungen und Reichen"
+    }
+   ],
+   "sprossenGesamt": 7,
+   "tafel": [],
+   "alt": []
+  }
+ ]
+}
