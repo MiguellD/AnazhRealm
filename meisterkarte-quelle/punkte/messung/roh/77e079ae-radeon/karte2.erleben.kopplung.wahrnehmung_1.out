@@ -99,7 +99,7 @@ raeumen();
 return aus;
 }
 [linse-gpu] amd/rdna-3
-RUDEL-GEFUEHL {"gegen":false,"sicht":"first","scentRangeM":50,"n":8,"jagden":8,"risse":8,"rissS":[12.6,18.6,11.9,11.9,12.1,12.6,14.2,12.4],"dauer":106.2,"opfer":0}
+RUDEL-GEFUEHL {"gegen":false,"sicht":"first","scentRangeM":50,"n":8,"jagden":8,"risse":8,"rissS":[12.8,12.6,11.9,11.8,12.1,12.4,15.3,12.1],"dauer":101,"opfer":0}
 RUDEL-GEFUEHL {"gegen":true,"sicht":"first","scentRangeM":0,"n":8,"jagden":0,"risse":0,"rissS":[],"dauer":720,"opfer":0}
 
 --- gpu-zeuge ---

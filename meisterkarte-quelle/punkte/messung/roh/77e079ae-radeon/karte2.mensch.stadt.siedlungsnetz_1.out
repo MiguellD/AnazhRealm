@@ -1,7 +1,7 @@
 $ C:/Program Files/Git/bin/bash.exe -c . "$PUNKTE_RUMPF_SH"
 @@PUNKTE@@ WAHL
 {
- "ms": 8,
+ "ms": 12,
  "ergebnis": {
   "seed": "anazh-realm-seed",
   "staedte": 3,
@@ -23,20 +23,20 @@ $ C:/Program Files/Git/bin/bash.exe -c . "$PUNKTE_RUMPF_SH"
 
 @@PUNKTE@@ STAND
 {
- "ms": 22912,
+ "ms": 12721,
  "ergebnis": {
   "mauer": 48,
   "zug": false,
   "pending": null,
   "haeuser": 51,
-  "takte": 1371,
+  "takte": 229,
   "zugHaken": false
  }
 }
 
 @@PUNKTE@@ KAMERA
 {
- "ms": 6,
+ "ms": 5,
  "ergebnis": {
   "pose": [
    -469.53,
@@ -56,7 +56,7 @@ $ C:/Program Files/Git/bin/bash.exe -c . "$PUNKTE_RUMPF_SH"
 
 @@PUNKTE@@ MAUER
 {
- "ms": 24,
+ "ms": 19,
  "ergebnis": {
   "geplant": 21,
   "gebaut": 21,
@@ -80,26 +80,26 @@ $ C:/Program Files/Git/bin/bash.exe -c . "$PUNKTE_RUMPF_SH"
 
 @@PUNKTE@@ MITTAG
 {
- "ms": 438,
+ "ms": 293,
  "kamera": [
   -402.86,
   38.61,
   -1296.08
  ],
  "hell": 95.5,
- "kontrast": 6.29,
- "dc": 76,
- "dreiecke": 343844,
+ "kontrast": 6.28,
+ "dc": 79,
+ "dreiecke": 350872,
  "klasse": null,
  "zeit": null,
  "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 66.65 m · Luma 98.1 σ 29.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.311 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 6 Posen",
  "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-27804\\stadt-mittag.png",
- "gesamtMs": 19049
+ "gesamtMs": 18093
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ DAEMMERUNG
 {
- "ms": 257,
+ "ms": 237,
  "kamera": [
   -402.86,
   38.61,
@@ -107,13 +107,13 @@ $ C:/Program Files/Git/bin/bash.exe -c . "$PUNKTE_RUMPF_SH"
  ],
  "hell": 51.4,
  "kontrast": 4.94,
- "dc": 78,
- "dreiecke": 316786,
+ "dc": 80,
+ "dreiecke": 353750,
  "klasse": null,
  "zeit": null,
  "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 66.65 m · Luma 103.4 σ 70.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.311 · Bühne summer sunny 0.25 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 6 Posen",
  "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-27804\\stadt-daemmerung.png",
- "gesamtMs": 3895
+ "gesamtMs": 4509
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ Z

@@ -256,9 +256,13 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     }
 })(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\bdc204a033231caa\3f59870c-5b2c-4386-8f3b-a749a5db56d4\scratchpad\buch-tree\meisterkarte-quelle\punkte\messung\roh\77e079ae-radeon\karte2.planet.kopplung.wetter-welt_1.json {"vorher":["umstellen","--ort","genesis","--sicht","ego"],"args":["licht","--luft","--wetter","stormy","--zug"],"fenster":[640,360],"seite":{"__ausgabeAufnahme":["scripts/lib/ausgabe-aufnahme.cjs","ausgabeAufnahme",[["return { u8, info, ms, tiefe, abnahme: abnahme(u8, W, H, m) };","{ const P = (window.__wetterPaarReihe = window.__wetterPaarReihe || []); const dl = st.directionalLight; const wt = st.weatherTransition; let s = 0, n = 0; for (let y = 0; y < Math.max(1, Math.floor(H / 6)); y++) for (let x = 0; x < W; x++, n++) { const i = (y * W + x) * 4, hi = Math.max(u8[i], u8[i + 1], u8[i + 2]), lo = Math.min(u8[i], u8[i + 1], u8[i + 2]); s += hi > 0 ? 1 - lo / hi : 0; } P.push({ wetter: st.weather, zug: wt ? wt.progress : 1, licht: dl ? +((0.2126 * dl.color.r + 0.7152 * dl.color.g + 0.0722 * dl.color.b) * dl.intensity).toFixed(5) : null, himmel: n ? +(s / n).toFixed(4) : null, pitch: +r.state.pitch.toFixed(4) }); }\n            return { u8, info, ms, tiefe, abnahme: abnahme(u8, W, H, m) };"]]]},"pruefe":"const P = window.__wetterPaarReihe || []; delete window.__wetterPaarReihe; const i = P.findIndex((x) => x.wetter === 'stormy'); const klar = i > 0 ? P.slice(0, i).reverse().find((x) => x.wetter === 'sunny' && x.zug === 1) || null : null; const sturm = P.filter((x) => x.wetter === 'stormy' && x.zug === 1).pop() || null; return { aufnahmen: P.length, klar, sturm, rot: klar && sturm ? null : 'kein Paar: klar ' + !!klar + ', Sturm ' + !!sturm + ' (' + P.length + ' Aufnahmen)' };"}
 [linse-gpu] amd/rdna-3
-VORHER werkbank umstellen --ort genesis --sicht ego EXIT=0 · 13.2 s
+VORHER werkbank umstellen --ort genesis --sicht ego EXIT=0 · 1.1 s
 
 ✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+RUF /eval const kantenLinie = function kantenLinie(Y, W, H · 38.6 s · 41.1 s
+ZUG GRUEN · Sprung {"t":23.541935000025127,"wetter":"stormy","zug":0.0892014602421105,"Y":2759.2408299528825,"d":0.09005540608269379} EV/s (Soll ≤ 0.1) · klar → stormy → klar gezogen true, 125 s
+LINSE werkbank licht --luft --wetter stormy --zug EXIT=0 nach 41.2 s in der Welt der Sitzung (0 Beruhigungen, Fenster 640×360)
+WEG {"aufnahmen":125,"klar":{"wetter":"sunny","zug":1,"licht":6.34094,"himmel":0.3233,"pitch":0},"sturm":{"wetter":"stormy","zug":1,"licht":0.00081,"himmel":0.0484,"pitch":0},"rot":null}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
