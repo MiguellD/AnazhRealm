@@ -164,7 +164,7 @@ class AnazhRealm_speicher_welten {
         // Stufen: 1 Legacy · 2 Feuchte · 3 Makro-Geographie · 4 prozedurale Baum-Baupläne · 5 Skeleton-
         // Wuchs aus dem Gesetz (_phytoArt → treeParams) · 6 Mesh-Merge · 7 Tube-Geometrie/Foliage-Cards/Wind ·
         // 8 Palette/Tag-Vektoren/Understory · 9 baum_karst + Busch-Baupläne.
-        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 9;
+        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = AnazhRealm.GEN_VERSION;
         // Seed und Voxel-Boden heilt das EINE Heil jeder Welt (`_weltMetaHeil`, auch jede geladene); Journal-Eintrag nur
         // bei `!fresh` (geladene Welt verdichtet sich), die frische Welt schreibt nur „Ich erwache als <slug>".
         const warVoxel = m.voxelTerrain === true;
@@ -439,7 +439,7 @@ class AnazhRealm_speicher_welten {
         // behalten ihr Gesicht (Genese ist Welt-Identität). Der Varianten-Pool (variantSeed[]) ist
         // Genese-Konstante: je Art eine Zeile, gepinnt beim ersten Wuchs der Art (_variantSeedsFor).
         const variantSeed = {};
-        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 9, variantSeed };
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: AnazhRealm.GEN_VERSION, variantSeed };
     }
 
     // Snapshot einer leeren Welt mit gegebenem worldMeta (optional mit Player-Snapshot für „Person
@@ -3397,6 +3397,9 @@ AnazhRealm.R5_STRUCTURE_TEXTURE = Object.freeze({
 // (`_blendeRasterU`, schatten.K2).
 // die Normalformen des Welt-Gesetzes (`_weltGesetz`): je Objekt einmal geprüft — der Leser der Schwere fragt je Teil-Schritt
 AnazhRealm._GESETZ_NORMAL = new WeakSet();
+// DIE GENESE-VERSION, mit der jede neue Welt geboren wird (die Stufen bei `ensureWorldMeta`); eine Welt, die eine höhere trägt,
+// kommt aus einer Zukunft dieses Builds (`_weltEinlass`)
+AnazhRealm.GEN_VERSION = 9;
 AnazhRealm.WELT_GRENZE = Object.freeze({
     ankunft: Object.freeze([
         "playerMesh",

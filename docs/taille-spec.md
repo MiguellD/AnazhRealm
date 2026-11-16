@@ -91,7 +91,7 @@ Kein Import-Pfad übernimmt Abgeleitetes als Wahrheit:
   hier **fail-closed** — die Ausnahme zu §2: eine Term-Art, die dieser Build nicht trägt,
   lässt die Welt nicht erwachen (der Grund steht auf dem Ladeschirm); sie still als Wildnis
   zu lesen hieße, eine andere Welt zu zeichnen. Dieselbe Wand steht an jeder Tür, durch die
-  ein Snapshot zur Welt wird (`_erbgutEinlass`: Welt-Tor daneben/ersetzen, Einladung,
+  ein Snapshot zur Welt wird (die Wand der Tür `_weltEinlass`: Welt-Tor daneben/ersetzen, Einladung,
   Snapshot eines Mitspielers) — eine abgelehnte Welt betritt den Speicher nie. Und eine Welt,
   deren Erbgut nicht die Wildnis allein ist, reist nur zu einem Leser: der Empfänger erklärt
   `erbgut` ≥ 1 in `world-request`/`world-pull` (`AnazhRealm.ERBGUT_PROTOKOLL`), sonst
