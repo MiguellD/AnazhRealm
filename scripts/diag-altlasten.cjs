@@ -1326,6 +1326,11 @@ const ENTSORGUNG_BESITZER = {
     _kammKroneDispose: { arten: ["geometry"], grund: "die Kamm-Krone (ihr Netz und ihr Gast, Ring-Besitz)" },
     _kammKroneVorbau: { arten: ["geometry"], grund: "der Gast der Kamm-Krone: sein leeres Dreieck, sobald das Netz zeichnete (w28-leben-vorbau)" },
     verifyComputeContribution: { arten: ["geometry", "material"], grund: "das Prüf-Mesh der Compute-Probe" },
+    _arenaKlasse: {
+        arten: ["geometry"],
+        // Gegner Speicher F7 (Runden-Zensus 16.11.): ihre Puffer gehören dem Lager, ihr Entsorgen bucht nur den Abgang
+        grund: "die Geometrie-Arena: ihre eigene Hülle (je `_geoNeu` frisch) — die alte beim Neubau, ihre beim Fallen",
+    },
     _tickPortalMembranes: {
         arten: ["material"],
         grund: "Membran- und Nebel-Stoff je Tor (die Geometrie gehört dem Memo je Gestalt)",
