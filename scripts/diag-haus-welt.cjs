@@ -693,20 +693,34 @@ async function proben(phasen) {
             s.renderer.setAnimationLoop(null); // der Loop ruht (Lehre 17)
             tick = r._tickNahWiese;
         }
-        // ein Schuss aus dem Ausgabe-Pfad: `aus` unsichtbar, die Büschel `innen` ([Kachel, Index]) ohne Matrix
+        // ein Schuss aus dem Ausgabe-Pfad: `aus` unsichtbar, die Büschel `innen` ([Karte, Kante, Schlüssel, Kachel, Index]) fort.
+        // DER BESTAND IST DIE EINE QUELLE (w28-natur-wand-auge): seit w25-gpu-wahl (e9894afd) liest die Wahl der GPU den Bestand
+        // (`_nahWieseBestand`), der einen Block NUR bei Geburt und Tod einer Kachel schreibt — die Basis einer stehenden Kachel
+        // liest niemand mehr. Bis hier nullte der Schuss sie und setzte `neu`: das Bild O war das Bild G, jeder Halm 0 px und
+        // die Gegenprobe 0 px (Radeon und GTX seit 11.11., 0 von 0). Jetzt fällt jede betroffene Kachel (Nähe UND Ferne, die
+        // dieselben Büschel jenseits der Übergabe zeichnet) wie im Spiel und wird ohne diese Büschel neu geboren
+        // (`_nahWieseKachelDaten`, derselbe Bau wie der Takt); danach kehrt die alte Kachel zurück (Tod und Geburt noch einmal).
         const schuss = async (aus, innen) => {
-            const halt = innen.map(([k, i]) => [k, i, k.basis.slice(i * 16, i * 16 + 16)]);
+            const je = new Map(); // die Kachel → [Karte, Kante, Schlüssel, Kachel, die fortfallenden Indizes]
+            for (const [M, K, key, k, i] of innen) (je.get(k) || je.set(k, [M, K, key, k, new Set()]).get(k))[4].add(i);
             for (const m of aus) m.visible = false;
-            for (const [k, i] of innen) k.basis.fill(0, i * 16, i * 16 + 16);
-            if (innen.length) s.nahWiese.neu = true;
+            for (const [M, K, key, k, weg] of je.values()) {
+                const [tx, tz] = key.split(",").map(Number);
+                M.set(key, Object.assign({}, k, { bloecke: [] }, r._nahWieseKachelDaten(tx, tz, k.bueschel.filter((_, i) => !weg.has(i)), K))); // prettier-ignore
+            }
+            const bestand = () => {
+                s.nahWiese.neu = true;
+                r._nahWieseBestand();
+            };
+            if (je.size) bestand();
             r._tickNahWiese = aus.length || innen.length ? () => 0 : tick;
             window.__bundlesNeu();
             try {
                 return (await window.__ausgabeAufnahme(WB, HB, 1, { satz: "messung" })).u8;
             } finally {
                 for (const m of aus) m.visible = true;
-                for (const [k, i, alt] of halt) k.basis.set(alt, i * 16);
-                if (halt.length) s.nahWiese.neu = true;
+                for (const [M, , key, k] of je.values()) M.set(key, k);
+                if (je.size) bestand();
                 r._tickNahWiese = tick;
                 window.__bundlesNeu();
             }
@@ -756,8 +770,11 @@ async function proben(phasen) {
         const blick = async (weg, je, aus = [], ohne = [], boden = true) => {
             cam.updateMatrixWorld(true);
             const innen = [];
-            for (const k of s.nahWiese.kacheln.values())
-                for (const [j, bu] of (k.bueschel || []).entries()) if (weg(bu)) innen.push([k, j]);
+            const NW = A.NAH_WIESE;
+            const karten = [[s.nahWiese.kacheln, NW.kachel], [s.nahWiese.fern ? s.nahWiese.fern.kacheln : new Map(), NW.fern.kachel]]; // prettier-ignore
+            for (const [M, K] of karten)
+                for (const [key, k] of M)
+                    for (const [j, bu] of (k.bueschel || []).entries()) if (weg(bu)) innen.push([M, K, key, k, j]);
             const leer = !innen.length && !ohne.length;
             if (leer && !boden) return { innen: 0, png: null };
             // die Nah-Sätze dieses Auges, wie sie der Schuss G baute (der Ausgabe-Pfad schwingt sie ein) — die Maske verbirgt jeden
@@ -921,15 +938,29 @@ async function proben(phasen) {
                     [m.x0 + i, m.z1 - i],
                 ];
                 const M0 = [(m.x0 + m.x1) / 2, (m.z0 + m.z1) / 2];
-                const paare = [
-                    [E4[0], E4[1]],
-                    [E4[1], E4[0]],
-                    [E4[2], E4[3]],
-                    [E4[3], E4[2]],
-                    ...E4.map((q) => [M0, q]),
-                ];
+                // DAS RASTER DER BOX (w28-natur-wand-auge): stehen Diagonalen und Mitte im Bau (Treppe, Kamin, Innenwand im Haupthaus),
+                // sucht das Auge auf dem 0,5-m-Raster der Box weiter, je Auge das fernste freie Ziel des 1-m-Rasters zuerst — bis
+                // hier blieb eine solche Box „ungemessen (ohne freies Auge)“ (Radeon 3e4f99cd: 7 von 58, je die Box haupt)
+                const raster = (d) => {
+                    const l = [];
+                    for (let x = m.x0 + i; x <= m.x1 - i + 1e-6; x += d) for (let z = m.z0 + i; z <= m.z1 - i + 1e-6; z += d) l.push([x, z]); // prettier-ignore
+                    return l;
+                };
+                const ziele = raster(1);
+                const weiter = function* () {
+                    for (const a of raster(0.5)) {
+                        const fern = ziele.filter((q) => Math.hypot(q[0] - a[0], q[1] - a[1]) >= 1.5);
+                        yield* fern.sort((p, q) => Math.hypot(q[0] - a[0], q[1] - a[1]) - Math.hypot(p[0] - a[0], p[1] - a[1])).map((q) => [a, q, true]); // prettier-ignore
+                    }
+                };
+                const paare = (function* () {
+                    yield* [[E4[0], E4[1]], [E4[1], E4[0]], [E4[2], E4[3]], [E4[3], E4[2]], ...E4.map((q) => [M0, q])];
+                    yield* weiter();
+                })();
                 const dm = Number.isFinite(diele(...M0)) ? diele(...M0) : 0.5;
-                for (const [[ax, az], [zx, zz]] of paare) {
+                const genommen = new Set(); // im Raster je Auge EIN Blick (das zweite Auge steht woanders)
+                for (const [[ax, az], [zx, zz], imRaster] of paare) {
+                    if (imRaster && genommen.has(ax + "," + az)) continue;
                     if (b.blicke >= 2) break;
                     const da = Number.isFinite(diele(ax, az)) ? diele(ax, az) : dm;
                     const dz = Number.isFinite(diele(zx, zz)) ? diele(zx, zz) : dm;
@@ -943,6 +974,7 @@ async function proben(phasen) {
                     if (!strahl.every((q) => Math.hypot(q[0] - zx, q[1] - dz, q[2] - zz) < 0.3 || frei(...q, 0.02)))
                         continue;
                     b.blicke++;
+                    genommen.add(ax + "," + az);
                     const [p, q] = [welt(e, ax * sc, az * sc), welt(e, zx * sc, zz * sc)];
                     cam.position.set(p.x, base + ay * sc, p.z);
                     cam.lookAt(q.x, base + dz * sc, q.z);
