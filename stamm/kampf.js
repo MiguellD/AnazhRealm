@@ -2266,6 +2266,7 @@ class AnazhRealm_kampf {
         let ort = null; // der Punkt des Ziels auf dem Strahl (Bauwerk · Blüte · Boden)
         let flora = null;
         let boden = null;
+        let inArm = false;
         const pmB = this.state.playerMesh;
         const R = pmB ? this._kampfSchwungRahmen(this._torRahmen || (this._torRahmen = {})) : null;
         const klinge = R ? R.reach + AnazhRealm._arenaGesetz().schwung.bladeRadiusM : 0;
@@ -2292,6 +2293,12 @@ class AnazhRealm_kampf {
             } else if (pick && pick.entry) {
                 verb = "abbau";
                 ort = pick.point;
+            } else if (this._fackelGlut()) {
+                // DIE FACKEL (same.physik.feuer S1): wer Glut in der Hand hält, legt sie an den Boden unter dem Fadenkreuz — vor
+                // dem Pflücken und dem Graben: die Glut fasst den Halm nicht, sie zündet ihn
+                verb = "zuenden";
+                boden = this._raycastWorldHit(30);
+                if (boden.hit) ort = boden;
             } else if ((flora = this._ernteZiel())) {
                 // S6-B (V18.133) — FORAGING vor dem Graben: wer auf die Blüte zielt, will sie, kein Loch darunter; ein Gerät,
                 // dessen Schneide den Halm fasst, mäht ihn auch unter dem Fadenkreuz in der Wiese (halten.K3, `_ernteZiel`)
@@ -2303,7 +2310,7 @@ class AnazhRealm_kampf {
                 if (boden.hit) ort = boden;
             }
             const F = ort ? this._fadenkreuzStrahl() : null;
-            const inArm = !!F && Math.hypot(ort.x - F.o.x, ort.y - F.o.y, ort.z - F.o.z) <= AnazhRealm.FORAGE.reach;
+            inArm = !!F && Math.hypot(ort.x - F.o.x, ort.y - F.o.y, ort.z - F.o.z) <= AnazhRealm.FORAGE.reach;
             const tier = pmB && !inArm && !geraetPick ? this._kampfKegelZiel(R, klinge) : null;
             if (tier) {
                 verb = "hieb";
@@ -2337,6 +2344,7 @@ class AnazhRealm_kampf {
         // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
         if (verb === "abbau") return this._strikeArchitecture(pick.entry, pick.point);
         if (verb === "pfluecken") return flora.mahd ? this._maehen(flora.mahd) : this._harvestScatterPick(flora);
+        if (verb === "zuenden") return this._fackelZuenden(inArm ? ort : null);
         const target = boden || this._raycastWorldHit(30);
         if (!target.hit) {
             this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
@@ -2407,6 +2415,36 @@ class AnazhRealm_kampf {
             this.log(`Gegraben (${digMat}), aber das Inventar ist voll.`, "INFO");
         }
         return true;
+    }
+
+    // DIE GLUT IN DER HAND (same.physik.feuer S1): das gehaltene Gerät trägt Glut, wenn seine Teile eine Brenn-Fläche tragen —
+    // dasselbe Maß (`_glutFlaeche`), nach dem jeder Bau ins Verzeichnis „glut" tritt, knistert und leuchtet. Die Fackel ist so
+    // kein Name und keine Gattung: ein Stiel mit Glut am Kopf, in der Werkstatt gebaut; ein Bauwerk in der Hand ist ein Phantom.
+    _fackelGlut() {
+        const bp = this._heldImplementBlueprint();
+        return !!bp && !this._isPlaceableBlueprint(bp) && this._glutFlaeche({ type: bp.name }) > 0;
+    }
+
+    // DIE FACKEL AM BODEN (same.physik.feuer S1): die Glut berührt den Boden in Arm-Reichweite (`ort`, FORAGE.reach wie Pflücken
+    // und Streu-Pick; null jenseits) — derselbe Akt wie das Brennglas (`_brandEntfachen`, ein Akt der Seite, jeder Mitspieler
+    // sieht den Brand). Ob die Zelle fängt, urteilt allein das Gesetz des Brands: ihr Bett (`_brandStoff`: Stoff, Last, kein
+    // Wasser, keine Asche) und Rothermel mit der Erlöschungs-Feuchte (`_brandTempo`) — trockenes Gras fängt, nasses hält. Was
+    // nicht fängt, nennt sich dem Spieler; wo es schon brennt, schweigt die Fackel. Bis hier zündete der Spieler nur über das
+    // Brennglas in der Sonne (stamm: 0 Treffer „fackel").
+    _fackelZuenden(ort) {
+        const bp = this._heldImplementBlueprint();
+        if (this._geraetVerbraucht(bp, "Zünden")) return false;
+        if (!ort) {
+            this.log("Zünden: kein Boden in Arm-Reichweite.", "INFO");
+            return false;
+        }
+        const bf = this.state.brandFeld;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const n = bf && bf.get(Math.floor(ort.x / cs) + "," + Math.floor(ort.z / cs));
+        if (n && n.t0 !== null) return true; // die Zelle brennt schon
+        if (this._brandEntfachen(ort.x, ort.z)) return true;
+        this._spielerSagt(["welt.fackel-faengt-nicht", { was: AnazhRealm._namensKopf(bp.label || bp.name) }]);
+        return false;
     }
 
     // DAS TIER UNTER DEM FADENKREUZ (halten.K2): der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`, far 30 m) gegen die EINE
