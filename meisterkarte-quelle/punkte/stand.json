@@ -5717,7 +5717,7 @@
   },
   "karte2.planet.kopplung.wetter-welt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.wetter-welt#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/shader-kosten.cjs +8) — zuletzt an 77e079ae: Deckel 47 s gerissen: Stille seit 32.8 s nach 47 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot  · karte2.planet.kopplung.wetter-welt#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +13)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.wetter-welt#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/shader-kosten.cjs +8) · karte2.planet.kopplung.wetter-welt#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +13)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.wetter-welt#1",
@@ -5725,7 +5725,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/shader-kosten.cjs +8) — zuletzt an 77e079ae: Deckel 47 s gerissen: Stille seit 32.8 s nach 47 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot ",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/shader-kosten.cjs +8)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -5800,7 +5800,7 @@
   },
   "karte2.planet.kosmos.welten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an b5681770: Last: Referenz f 1,234 (Faden 1,103 · alle Kerne 1,234; vor 87/264 ms, nach 101,1/291,3 ms, Ruhe 91,7/236,1 ms seit 2026-11-16) · fremd: Explorer.EXE 2,7 CPU-s · LightStudio-background.exe InvokerPRAI",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.welten#1",
@@ -5818,7 +5818,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an b5681770: Last: Referenz f 1,234 (Faden 1,103 · alle Kerne 1,234; vor 87/264 ms, nach 101,1/291,3 ms, Ruhe 91,7/236,1 ms seit 2026-11-16) · fremd: Explorer.EXE 2,7 CPU-s · LightStudio-background.exe InvokerPRAI",
      "ungemessen": true,
      "beide": true
     }
@@ -5904,7 +5904,7 @@
   },
   "karte2.same.entfaltung.schirm": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: ungemessen (R10) · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an b5681770: Last: Referenz f 1,224 (Faden 1,224 · alle Kerne 1,082; vor 100,6/224 ms, nach 112,2/255,4 ms, Ruhe 91,7/236,1 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --u",
    "stationen": [
     {
      "id": "karte2.same.entfaltung.schirm#1",
@@ -5922,7 +5922,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an b5681770: Last: Referenz f 1,224 (Faden 1,224 · alle Kerne 1,082; vor 100,6/224 ms, nach 112,2/255,4 ms, Ruhe 91,7/236,1 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --u",
      "ungemessen": true,
      "beide": true
     }
@@ -6453,7 +6453,7 @@
   "ohne": 169
  },
  "kopfVoll": "b56817704c3f9b0efcf4fd52d1331756ea5edef2",
- "zeit": "2026-11-16T23:37:52.512Z",
+ "zeit": "2026-11-16T23:43:47.870Z",
  "vorher": "b5681770",
  "bilanz": {
   "gewinn": [],
