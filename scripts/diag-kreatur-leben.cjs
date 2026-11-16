@@ -704,11 +704,33 @@ async function lebenBuehnen() {
         r._uhrSetzen(0.5, "regler");
         const takte = Math.round((0.1 / 24) * (s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES) * 600);
         const z = { budget: {}, soll: {}, ruhe: [0, 0] };
+        // JEDE ART IN IHREM LEBENSRAUM (leben.tiere.wanderung, 16.11.): bis hierher standen alle drei Tiere jeder Art am Ufer U — die
+        // Boden-Klasse `fluss`, in der nach dem Gesetz nur der Bär lebt; Hirsch, Fuchs und Wolf zogen um einen Anker außerhalb ihres
+        // Lebensraums. Je Art der Ort, der U am nächsten liegt (Ringe zu 5 m, bis 200 m: das Wasser bleibt in der Reichweite des Durstes)
+        // und dessen Klasse sie bewohnt — der Ort UND die Geburtsorte ihrer drei Tiere, gelesen aus `_bodenKlasseAt` × `LG.lebensraum`
+        const um = (seele, i) => [Math.cos(i * 2.1 + seele.length) * 6, Math.sin(i * 2.1 + seele.length) * 6];
+        const heim = {};
+        const heimVon = (seele) => {
+            if (heim[seele]) return heim[seele];
+            const g = A.TETRAPODA_SOUL_MAP[seele];
+            const passt = (x, zz) =>
+                r._landAt(x, zz) && !r._nassAt(x, zz) && LG.lebensraum(g, r._bodenKlasseAt(x, zz), LG.L) > 0;
+            for (let rad = 0; rad <= 200 && !heim[seele]; rad += 5)
+                for (let k = 0, n = Math.max(1, Math.round(rad / 5) * 6); k < n && !heim[seele]; k++) {
+                    const x = U.x + Math.cos((k / n) * 2 * Math.PI) * rad,
+                        zz = U.z + Math.sin((k / n) * 2 * Math.PI) * rad;
+                    if ([0, 1, 2].every((i) => passt(x + um(seele, i)[0], zz + um(seele, i)[1])))
+                        heim[seele] = { x, z: zz };
+                }
+            if (!heim[seele]) throw new Error("kein Lebensraum der Gattung " + g + " im Umkreis von 200 m um das Ufer");
+            return heim[seele];
+        };
         const tagLauf = (seelen, ein, mess, z) => {
             const tiere = seelen.flatMap((seele) =>
                 [0, 1, 2].map((i) => {
-                    const x = U.x + Math.cos(i * 2.1 + seele.length) * 6,
-                        zz = U.z + Math.sin(i * 2.1 + seele.length) * 6;
+                    const H = heimVon(seele);
+                    const x = H.x + um(seele, i)[0],
+                        zz = H.z + um(seele, i)[1];
                     const c = tier({ x, y: boden(x, zz), z: zz }, seele, 1);
                     ruhig(c);
                     return { c, g: A.TETRAPODA_SOUL_MAP[seele], x, z: zz, ruhK: 0, trunk: 0, nass: 0, spur: [] };
