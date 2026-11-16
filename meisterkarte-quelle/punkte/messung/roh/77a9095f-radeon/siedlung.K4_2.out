@@ -1,7 +1,7 @@
 $ C:/Program Files/Git/bin/bash.exe -c . "$PUNKTE_RUMPF_SH"
 @@PUNKTE@@ ORT
 {
- "ms": 13,
+ "ms": 14,
  "ergebnis": {
   "S": {
    "x": 400.0000000000001,
@@ -28,7 +28,7 @@ $ C:/Program Files/Git/bin/bash.exe -c . "$PUNKTE_RUMPF_SH"
 
 @@PUNKTE@@ VOR
 {
- "ms": 58,
+ "ms": 65,
  "ergebnis": {
   "k": "d:7@400,693",
   "groesse": "dorf",
@@ -49,12 +49,12 @@ $ C:/Program Files/Git/bin/bash.exe -c . "$PUNKTE_RUMPF_SH"
 
 @@PUNKTE@@ UHR
 {
- "ms": 6,
+ "ms": 5,
  "ergebnis": {
   "kern": true,
   "jahr": 1412,
   "haeuser": 12,
-  "uhr": 1667.7177600000732,
+  "uhr": 1539.9988700000347,
   "gegen": {
    "B": {
     "k": "d:7@289,379",
@@ -76,7 +76,7 @@ $ C:/Program Files/Git/bin/bash.exe -c . "$PUNKTE_RUMPF_SH"
 
 @@PUNKTE@@ STAND
 {
- "ms": 4,
+ "ms": 3,
  "ergebnis": {
   "jahr": [
    1412,
@@ -151,21 +151,21 @@ $ C:/Program Files/Git/bin/bash.exe -c . "$PUNKTE_RUMPF_SH"
 
 @@PUNKTE@@ BILD
 {
- "ms": 412,
+ "ms": 297,
  "kamera": [
   380.19,
   45.46,
   792.4
  ],
- "hell": 97.9,
+ "hell": 98,
  "kontrast": 2.75,
  "dc": 42,
- "dreiecke": 310251,
+ "dreiecke": 285717,
  "klasse": null,
  "zeit": null,
- "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.5 σ 22.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.308 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 11 Posen",
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 99.7 σ 21.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.308 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 11 Posen",
  "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-27804\\ring.png",
- "gesamtMs": 5153
+ "gesamtMs": 2817
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ W
