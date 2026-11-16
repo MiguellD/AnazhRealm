@@ -2150,7 +2150,7 @@
         }
         return false;
     }
-    // ein Teil (seine Ecken `pa`, `M` führt sie in den Rahmen des Hauses) steht NICHT ganz in der Wanddicke EINER Kante eines Körpers
+    // ein Teil (seine Ecken `pa`, `M` führt sie in den Rahmen des Hauses) steht in einem Körper, ohne ganz in der Wanddicke EINER seiner Kanten zu liegen
     function innenFrei(pa, M, rows) {
         var e = M.elements, x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, w = INNEN_HOLZ.wandM;
         for (var v = 0; v < pa.count; v++) {
@@ -2164,9 +2164,10 @@
         }
         for (var k = 0; k < rows.length; k++) {
             var r = rows[k];
-            if (x1 - r[0] < w || r[1] - x0 < w || z1 - r[2] < w || r[3] - z0 < w) return false;
+            if (x1 < r[0] || x0 > r[1] || z1 < r[2] || z0 > r[3]) continue; // neben diesem Körper (der Anbau am Haus): er urteilt nicht
+            if (!(x1 - r[0] < w || r[1] - x0 < w || z1 - r[2] < w || r[3] - z0 < w)) return true;
         }
-        return true;
+        return false;
     }
     // prettier-ignore
     function bakeHaus(g,kol,geoms){
