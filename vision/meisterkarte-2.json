@@ -12666,11 +12666,11 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 1,
-    "kern": 1,
-    "kernDazu": 1,
-    "anteilHeute": 0.4,
-    "anteilKern": 0.4
+    "heute": 2,
+    "kern": 0,
+    "kernDazu": 0,
+    "anteilHeute": 0.8,
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -13639,8 +13639,8 @@
        "richter": "10 000 zufällige Taten: sichtbar 100 %, Ankunft ≤ 1 s"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "Reload im echten Spiel: bild-diff 0,69 % (Radeon) / 0,71 % (GTX) mit Bau, Grube und Wasser im Bild (Speicher K4). 1 000 Edits 86 kB, Peers byte-gleich und Korpus 138 Stände nur headless; Bytes je Tat und eine Gesetzes-Version im Bild nie gemessen. — KARTE: Kern 1 — Bildpaar vor ↔ nach Reload an beiden Geräten grün (speicher.K4); der Bild-Preis in dieser Szene ist an der Radeon nicht gemessen.",
      "alt": [
@@ -16675,12 +16675,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 5,
+  "heute": 6,
   "davonKopplungen": 33,
-  "kern": 20,
-  "kernDazu": 20,
-  "anteilHeute": 0.3,
-  "anteilKern": 1,
+  "kern": 19,
+  "kernDazu": 19,
+  "anteilHeute": 0.4,
+  "anteilKern": 0.9,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
