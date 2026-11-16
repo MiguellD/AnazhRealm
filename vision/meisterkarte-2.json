@@ -4646,11 +4646,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 2,
-    "kern": 6,
-    "kernDazu": 6,
-    "anteilHeute": 0.3,
-    "anteilKern": 1
+    "heute": 4,
+    "kern": 4,
+    "kernDazu": 4,
+    "anteilHeute": 0.7,
+    "anteilKern": 0.7
    },
    "perspektiven": [
     {
@@ -5681,8 +5681,8 @@
        "richter": "N = 100 Welten: Rhythmus ↔ Tageslänge r ≥ 0,9; Fremdwelt-Probe (R10)"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "TAGES_GESETZ 6 Akte (koerper-core.js:4919, 5057), Soll-Orte 81/81, Wiederkehr max 1,2 m (mensch.K2, Radeon und GTX); Dorfplatz-Bild an der Radeon 26,9 fps ≈ 37 ms — Preis ROT — KARTE: Kern 1 — Soll-Orte an beiden Geräten grün (mensch.K2); der Bild-Preis reißt am Dorfplatz (Radeon ≈ 37 ms).",
      "alt": [
@@ -6269,8 +6269,8 @@
        "richter": "Flüsse aus dem Orbit gegen reale Netze der Epoche"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "5–8 Wege je Tag, Wiederkehr 1,2 m (mensch.K2); Preis in der Szene unbelegt, Takt der Bewohner 1,52–1,82 ms an der Stadt — KARTE: 0 — die Messung mensch.K2 hebt den Kern von mensch.geist.tag (R9); der eigene Lauf (Wege je Tag im Bild gezählt) fehlt.",
      "alt": [
@@ -16675,11 +16675,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 13,
+  "heute": 15,
   "davonKopplungen": 33,
-  "kern": 13,
-  "kernDazu": 13,
-  "anteilHeute": 0.8,
+  "kern": 11,
+  "kernDazu": 11,
+  "anteilHeute": 0.9,
   "anteilKern": 0.5,
   "kapitel": 7,
   "perspektiven": 42,
