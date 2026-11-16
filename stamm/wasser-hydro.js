@@ -800,7 +800,7 @@ class AnazhRealm_wasser_hydro {
         const S = this._spiegelLeser();
         const clip = S.vp.mul(vec4(o.ort, 1.0));
         const sw = max(clip.w, float(1e-4));
-        const suv = AnazhRealm._schirmUV(TSL, clip.x.div(sw), clip.y.div(sw)).add(o.n.xz.mul(0.03));
+        const suv = AnazhRealm._schirmUV(clip.x.div(sw), clip.y.div(sw)).add(o.n.xz.mul(0.03));
         const sp = texture(S.rt.texture, suv).level(float(0));
         const drin = step(0.0, suv.x)
             .mul(step(suv.x, 1.0))

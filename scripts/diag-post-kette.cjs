@@ -965,7 +965,7 @@ function zugangProbe() {
             );
         if (out.godray)
             log(
-                `Godrays mit der Sonne im Bild: Stärke ${out.godray.staerke} · ${out.godray.aenderungPct} % der Pixel geändert (Rausch-Boden ${out.godray.rauschenPct} %)`
+                `Godrays mit der Sonne im Bild: Stärke ${out.godray.staerke} · ${out.godray.aenderungPct} % der Pixel geändert (Rausch-Boden ${out.godray.rauschenPct} %) · Lage: Marsch-Ziel ${out.godray.lage && out.godray.lage.ziel} ↔ Scheibe ${out.godray.lage && out.godray.lage.sonne} (screenUV)`
             );
     } catch (e) {
         out = { error: fehlerText(e) };

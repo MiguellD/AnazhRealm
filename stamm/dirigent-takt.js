@@ -2504,7 +2504,7 @@ class AnazhRealm_dirigent_takt {
             const proj = (this._godrayProjV || (this._godrayProjV = new THREE.Vector3()))
                 .copy(this.state.sunMesh.position)
                 .project(cam);
-            const [uvx, uvy] = AnazhRealm._schirmUV(null, proj.x, proj.y);
+            const [uvx, uvy] = AnazhRealm._schirmUV(proj.x, proj.y);
             gu.sunScreenPos.value.set(uvx, uvy);
             // Sichtbarkeit: (a) VOR der Kamera (robust via Blickrichtung · Sonnen-Richtung, statt
             // der zweideutigen NDC-z hinter der Kamera), (b) im Bild, (c) über dem Horizont.

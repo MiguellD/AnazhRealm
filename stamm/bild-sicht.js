@@ -622,13 +622,13 @@ class AnazhRealm_bild_sicht {
 
     // DIE LAGE IM SCHIRM (w28-lichtschacht): Welt → Schirm-UV, das EINE Gesetz jedes Lesers, der einen Punkt der Welt im Bild
     // sucht — `x`, `y` die NDC des Punkts (Clip ÷ w), die Schirm-UV die von r184s `screenUV`: oben links, y nach UNTEN (WebGPU
-    // fragCoord; unter WebGL2 dreht ScreenNode die Zeile, `h − y`). Mit `T` (TSL) ein Knoten, ohne `T` zwei Zahlen (die CPU,
+    // fragCoord; unter WebGL2 dreht ScreenNode die Zeile, `h − y`). Aus TSL-Knoten ein Knoten, aus Zahlen zwei Zahlen (die CPU,
     // `Vector3.project`). Bis hier rechnete jeder Leser selbst, die Godrays (`_loopRender`) y nach OBEN: ihr Marsch lief zur an
     // der Bildmitte gespiegelten Sonne — im Raum stiegen die Strahlen vom Fenster an die Decke (Dachfuge 16.11., GTX 6f3c713d,
     // 17 Uhr: Mittel der hellen Pixel 0,6741, ohne Godrays 0,0752).
-    static _schirmUV(T, x, y) {
-        if (!T) return [x * 0.5 + 0.5, 0.5 - y * 0.5];
-        return T.vec2(x.mul(0.5).add(0.5), T.float(0.5).sub(y.mul(0.5)));
+    static _schirmUV(x, y) {
+        if (typeof x === "number") return [x * 0.5 + 0.5, 0.5 - y * 0.5];
+        return THREE.TSL.vec2(x.mul(0.5).add(0.5), THREE.TSL.float(0.5).sub(y.mul(0.5)));
     }
 
     // DER LESER DES SPIEGELS (D10): das Ziel des Passes, die Ansicht, aus der er rechnete (der Wasser-Stoff reprojiziert seinen
@@ -721,7 +721,7 @@ class AnazhRealm_bild_sicht {
                 const raum = wirt._raumHimmel(T);
                 const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
                 const w = T.max(clip.w, 1e-4);
-                const uv = AnazhRealm._schirmUV(T, clip.x.div(w), clip.y.div(w));
+                const uv = AnazhRealm._schirmUV(clip.x.div(w), clip.y.div(w));
                 const drin = T.step(0, uv.x).mul(T.step(uv.x, 1)).mul(T.step(0, uv.y)).mul(T.step(uv.y, 1));
                 const k = drin
                     .mul(T.step(0, clip.w))
@@ -903,8 +903,8 @@ class AnazhRealm_bild_sicht {
                     const cE = U.vp.mul(vec4(P.add(R.mul(tMax)), 1.0));
                     const iwP = float(1).div(cP.w),
                         iwE = float(1).div(max(cE.w, 1e-4));
-                    const uvP = AnazhRealm._schirmUV(T, cP.x.mul(iwP), cP.y.mul(iwP));
-                    const uvE = AnazhRealm._schirmUV(T, cE.x.mul(iwE), cE.y.mul(iwE));
+                    const uvP = AnazhRealm._schirmUV(cP.x.mul(iwP), cP.y.mul(iwP));
+                    const uvE = AnazhRealm._schirmUV(cE.x.mul(iwE), cE.y.mul(iwE));
                     const du = uvE.sub(uvP);
                     const austritt = (u, dd) =>
                         select(
@@ -1147,7 +1147,7 @@ class AnazhRealm_bild_sicht {
                     If(raus.not().and(bildW.lessThan(1.0)).and(aus.a.lessThan(1.0)), () => {
                         const cI = U.vp.mul(vec4(R, 0.0));
                         const iwI = float(1).div(max(cI.w, 1e-6));
-                        const uvI = AnazhRealm._schirmUV(T, cI.x.mul(iwI), cI.y.mul(iwI));
+                        const uvI = AnazhRealm._schirmUV(cI.x.mul(iwI), cI.y.mul(iwI));
                         const imBild = cI.w
                             .greaterThan(0.0)
                             .and(min(uvI.x, uvI.y).greaterThan(0.0))

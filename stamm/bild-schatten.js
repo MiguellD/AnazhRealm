@@ -1404,7 +1404,7 @@ class AnazhRealm_bild_schatten {
         const tex = T.texture(L.rt.texture);
         const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
         const w = T.max(clip.w, 1e-4);
-        const uv = AnazhRealm._schirmUV(T, clip.x.div(w), clip.y.div(w));
+        const uv = AnazhRealm._schirmUV(clip.x.div(w), clip.y.div(w));
         const gr = T.vec2(tex.size());
         const t = tex.load(T.ivec2(T.clamp(T.floor(uv.mul(gr)), T.vec2(0), gr.sub(1))));
         const gilt = T.max(T.float(1).sub(T.abs(t.y.sub(w)).div(w.mul(K.tiefeRand))), 0);
