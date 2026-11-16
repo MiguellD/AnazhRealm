@@ -172,7 +172,9 @@ hauptLauf(async () => {
         st.scene.traverse((n) => {
             if (n.isMesh && n.userData && n.userData.inventar === "fern-ring") res.sceneMeshes++;
         });
-        res.visible = fr.meshes.every((m) => m.visible === true);
+        // der stehende Ring nimmt Raum und trägt keine Gast-Prägung mehr (w28-programm-vor-bild: bis zum ersten Refresh ist er sein eigener Gast)
+        st.scene.updateMatrixWorld(true);
+        res.visible = fr.meshes.every((m) => m.visible === true && !m.__vorbauGast && m.matrixWorld.determinant() !== 0);
         res.flags = fr.meshes.every((m) => m.frustumCulled === false && !m.castShadow && m.receiveShadow === true);
         // DER LOCH-DECKEL: Schale 1 beginnt DIREKT am Spieler (0.5·span)
         // — der Ring deckt jedes Chunk-Loch (die Wasser-Plane samt Spekular bleibt
@@ -446,7 +448,15 @@ hauptLauf(async () => {
         // ===== (7) DER NEUBAU AUS DEM FADEN: nach dem Dispose entsteht der Ring wieder ganz (B2) =====
         r._tickFernRing(st.playerMesh.position);
         const fr7 = st.fernRing;
+        // DER RING IST BIS ZU SEINEM ERSTEN REFRESH SEIN EIGENER GAST DES BILDS (w28-programm-vor-bild): frisch geboren trägt jedes
+        // seiner Netze die Prägung „bild“ und nimmt keinen Raum (Maßstab 0) — die Erst-Zeichnung baut Knoten und Pipelines unter dem
+        // Ladeschirm ohne Draw; steht er, nimmt er Raum ohne Prägung. GTX 1050 kalt, main 9b3750ba: sein Programm begann erst mit
+        // den Daten, seine zwei Pipelines waren in 9 von 9 Boots die letzten vor dem Bild (fertig 21,8–23,9 s; als Gast 13,3 · 15,3 s).
+        st.scene.updateMatrixWorld(true);
+        res.gastVor = !!fr7 && fr7.ready !== true && fr7.meshes.length > 0 && fr7.meshes.every((m) => m.visible === true && m.__vorbauGast === "bild" && m.matrixWorld.determinant() === 0);
         await pumpe(st.playerMesh.position);
+        st.scene.updateMatrixWorld(true);
+        res.gastNach = !!fr7 && fr7.ready === true && fr7.meshes.every((m) => !m.__vorbauGast && m.matrixWorld.determinant() !== 0);
         res.fzCpuFertig = !!(fr7 && fr7.cursor >= fr7.totalVerts && fr7.ready === true);
 
         // ===== (8) DER FELD-PASS: die Ferne ganz ohne Schalen-Geometrie =====
@@ -1473,6 +1483,11 @@ hauptLauf(async () => {
         out.zweiStoffe === true
     );
     check("1: sichtbar erst nach vollem Refresh + frustumCulled aus, wirft nicht, empfängt (die Horizont-Karte, D3)", out.ready && out.visible && out.flags);
+    check(
+        "7: der Ring ist bis zu seinem ersten Refresh sein eigener GAST DES BILDS (Prägung „bild“, Maßstab 0: sein Programm entsteht unter dem Ladeschirm vor seinen Höhen) und nimmt danach Raum ohne Prägung",
+        out.gastVor === true && out.gastNach === true,
+        `frisch geboren Gast ${out.gastVor} · nach dem Refresh Bürger ${out.gastNach}`
+    );
     check("1: LOCH-DECKEL — Schale 1 beginnt am Spieler (0.5·span), deckZoneRad = Ziel-Zone", out.innerRandOk === true);
     check(
         "Bau IN SCHEIBEN aus dem Fern-Faden über Takte (je Takt <= scheibe × scheibenImFlug, Index-Folge ohne Loch, mehrere Takte, Cursor voll)",

@@ -1378,10 +1378,50 @@
     }
     // Die Lagen beliebiger Karten (je Karte vier Ecken in Bau-Reihenfolge, Dreiecke 0-1-2 und 0-2-3): die Strähnen der
     // Trauer-Krone und der Wedel lesen dasselbe Raster wie die Laub-Karten.
+    // DIE PROBE NUR AM RAND (w28-ankunft-faden): das Raster zählt je Pixel die Lagen, das Ergebnis ist die Summe ganzer
+    // Zahlen — bit-gleich, solange jedes Pixel dasselbe Urteil trägt. Bis hier fragte jedes Dreieck JEDES Pixel seines Rechtecks
+    // von floor(min) bis ceil(max) mit zwei Divisionen (die Karten einer Krone sind groß: 261 Proben je Dreieck für 96 Treffer;
+    // GTX 1050 kalt 6,2 CPU-s Selbstzeit auf den beiden Foundry-Fäden vor dem ersten Bild, die Hälfte jedes Laub-Körpers).
+    // Jetzt je Zeile des Dreiecks — die drei Gewichte sind entlang einer Zeile LINEAR, g_i(x) = m_i + x · s_i:
+    //   (1) Tragen zwei Pixel einer Zeile alle drei Gewichte ≥ LAGEN_FEST (die Rundung der Probe liegt ≥ 6-fach darunter),
+    //       tragen es alle Pixel dazwischen: sie zählen ohne Probe. Die Kandidaten kommen aus den Nullstellen der Gewichte,
+    //       der Beweis ist allein die Probe der zwei Enden.
+    //   (2) Von dort nach links und nach rechts trägt jedes Pixel das Urteil, wie es stand — im Saum |g| < LAGEN_FEST mit den
+    //       Quotienten selbst (n/fl < 0 ⟺ n und fl tragen verschiedene Vorzeichen: der Zähler ist 0 oder ≥ 2⁻¹⁵⁸, der Quotient
+    //       läuft nie unter), außerhalb des Saums entscheidet das Vorzeichen allein —, bis ein Gewicht ≤ −LAGEN_FEST steht,
+    //       das in der Lauf-Richtung weiter fällt: dahinter fällt jedes Pixel. Eine Zeile ohne festes Inneres (die Spitze,
+    //       die flache Kante) läuft so von ihrer Mitte aus.
+    //   (3) Spalten und Zeilen, deren Pixel-Mitte ≥ LAGEN_RAND außerhalb des Rechtecks der Ecken liegt, tragen ein Gewicht
+    //       ≤ −LAGEN_RAND/(2·D) (D die Raster-Kante) und fielen immer.
+    //   (4) Wo der Beweis nicht trägt — der Splitter (|fl| < LAGEN_SPLITTER·D³: dort urteilt die Rundung), eine Ecke ohne
+    //       Zahl —, bleibt das Urteil je Pixel über das ganze Rechteck, wie es stand.
+    // Die Lagen stehen als Stufen je Zeile (+1 am Anfang einer Spanne, −1 dahinter), die Summe läuft am Ende einmal durch.
+    // `lagenZaehler` zählt Dreiecke, Proben und Treffer (Leser: gate:asset-contract, die Wand der Lagen-Kosten).
+    const LAGEN_RAND = 0.25;
+    const LAGEN_FEST = 1e-6;
+    const LAGEN_SPLITTER = 1e-9;
+    const _lagenZahl = { rufe: 0, dreiecke: 0, proben: 0, treffer: 0 };
+    function lagenZaehler(leeren) {
+        const z = {
+            rufe: _lagenZahl.rufe,
+            dreiecke: _lagenZahl.dreiecke,
+            proben: _lagenZahl.proben,
+            treffer: _lagenZahl.treffer,
+        };
+        if (leeren) _lagenZahl.rufe = _lagenZahl.dreiecke = _lagenZahl.proben = _lagenZahl.treffer = 0;
+        return z;
+    }
     function quadLagen(P, n, aufl) {
         if (!n) return 0;
         const U = new Float32Array(n * 4),
             V = new Float32Array(n * 4);
+        const X = new Float64Array(n * 4),
+            Y = new Float64Array(n * 4);
+        const Z = _lagenZahl;
+        const boden = Math.floor,
+            decke = Math.ceil,
+            fern = Infinity;
+        Z.rufe++;
         let sQ = 0,
             nQ = 0;
         for (let k = 0; k < 8; k++) {
@@ -1408,39 +1448,174 @@
             if (!(px > 0)) continue;
             const W = Math.ceil((u1 - u0) / px) + 2,
                 H = Math.ceil((v1 - v0) / px) + 2;
-            const buf = new Uint16Array(W * H);
+            const buf = new Int32Array(W * H + 1); // die Stufen: +1 am Anfang einer Spanne, −1 hinter ihr
+            for (let i = 0; i < n * 4; i++) {
+                X[i] = (U[i] - u0) / px;
+                Y[i] = (V[i] - v0) / px;
+            }
+            const D = Math.max(W, H);
+            const splitter = Math.max(LAGEN_SPLITTER * D * D * D, 1e-6);
+            let proben = 0;
             for (let c = 0; c < n; c++)
                 for (let d = 0; d < 2; d++) {
                     const a = c * 4,
                         b = c * 4 + 1 + d,
                         f = c * 4 + 2 + d;
-                    const ax = (U[a] - u0) / px,
-                        ay = (V[a] - v0) / px,
-                        bx = (U[b] - u0) / px,
-                        by = (V[b] - v0) / px,
-                        qx = (U[f] - u0) / px,
-                        qy = (V[f] - v0) / px;
+                    const ax = X[a],
+                        ay = Y[a],
+                        bx = X[b],
+                        by = Y[b],
+                        qx = X[f],
+                        qy = Y[f];
                     const fl = (bx - ax) * (qy - ay) - (by - ay) * (qx - ax);
                     if (Math.abs(fl) < 1e-12) continue;
-                    const xa = Math.max(0, Math.floor(Math.min(ax, bx, qx))),
-                        xb = Math.min(W - 1, Math.ceil(Math.max(ax, bx, qx))),
-                        ya = Math.max(0, Math.floor(Math.min(ay, by, qy))),
-                        yb = Math.min(H - 1, Math.ceil(Math.max(ay, by, qy)));
-                    for (let y = ya; y <= yb; y++)
-                        for (let x = xa; x <= xb; x++) {
-                            const sx = x + 0.5,
-                                sy = y + 0.5;
-                            const w0 = ((bx - sx) * (qy - sy) - (by - sy) * (qx - sx)) / fl,
-                                w1 = ((qx - sx) * (ay - sy) - (qy - sy) * (ax - sx)) / fl;
-                            if (w0 < 0 || w1 < 0 || 1 - w0 - w1 <= 0) continue;
-                            buf[y * W + x]++;
+                    const x0 = Math.min(ax, bx, qx),
+                        x1 = Math.max(ax, bx, qx),
+                        y0 = Math.min(ay, by, qy),
+                        y1 = Math.max(ay, by, qy);
+                    let xa = Math.max(0, Math.floor(x0)),
+                        xb = Math.min(W - 1, Math.ceil(x1)),
+                        ya = Math.max(0, Math.floor(y0)),
+                        yb = Math.min(H - 1, Math.ceil(y1));
+                    Z.dreiecke++;
+                    if (!(Math.abs(fl) >= splitter) || fl - fl !== 0) {
+                        // der Splitter und die Ecke ohne Zahl: das Urteil der Quotienten über das ganze Rechteck, wie es stand
+                        for (let y = ya; y <= yb; y++)
+                            for (let x = xa; x <= xb; x++) {
+                                const sx = x + 0.5,
+                                    sy = y + 0.5;
+                                const w0 = ((bx - sx) * (qy - sy) - (by - sy) * (qx - sx)) / fl,
+                                    w1 = ((qx - sx) * (ay - sy) - (qy - sy) * (ax - sx)) / fl;
+                                proben++;
+                                if (w0 < 0 || w1 < 0 || 1 - w0 - w1 <= 0) continue;
+                                buf[y * W + x]++;
+                                buf[y * W + x + 1]--;
+                            }
+                        continue;
+                    }
+                    if (x0 - (xa + 0.5) >= LAGEN_RAND) xa++;
+                    if (xb + 0.5 - x1 >= LAGEN_RAND) xb--;
+                    if (xb + 0.5 - x1 >= LAGEN_RAND) xb--;
+                    if (y0 - (ya + 0.5) >= LAGEN_RAND) ya++;
+                    if (yb + 0.5 - y1 >= LAGEN_RAND) yb--;
+                    if (yb + 0.5 - y1 >= LAGEN_RAND) yb--;
+                    if (xb < xa || yb < ya) continue;
+                    // mit dem Vorzeichen der Fläche: g_i = sg · n_i, innen ⟺ jedes g_i ≥ 0, ihre Summe ist fa
+                    const sg = fl > 0 ? 1 : -1,
+                        fa = sg * fl,
+                        fest = LAGEN_FEST * fa;
+                    const s0 = sg * (by - qy),
+                        s1 = sg * (qy - ay),
+                        s2 = sg * (ay - by);
+                    const i0 = s0 !== 0 ? -1 / s0 : 0,
+                        i1 = s1 !== 0 ? -1 / s1 : 0,
+                        i2 = s2 !== 0 ? -1 / s2 : 0;
+                    for (let y = ya; y <= yb; y++) {
+                        const sy = y + 0.5,
+                            zeile = y * W;
+                        const m0 = sg * (bx * (qy - sy) - (by - sy) * qx),
+                            m1 = sg * (qx * (ay - sy) - (qy - sy) * ax),
+                            m2 = sg * (ax * (by - sy) - (ay - sy) * bx);
+                        // die Kandidaten des festen Inneren: zwischen den Nullstellen der drei Gewichte
+                        let lo = -fern,
+                            hi = fern,
+                            w;
+                        if (s0 > 0) lo = m0 * i0;
+                        else if (s0 < 0) hi = m0 * i0;
+                        else if (m0 < 0) hi = -fern;
+                        if (s1 > 0) {
+                            if ((w = m1 * i1) > lo) lo = w;
+                        } else if (s1 < 0) {
+                            if ((w = m1 * i1) < hi) hi = w;
+                        } else if (m1 < 0) hi = -fern;
+                        if (s2 > 0) {
+                            if ((w = m2 * i2) > lo) lo = w;
+                        } else if (s2 < 0) {
+                            if ((w = m2 * i2) < hi) hi = w;
+                        } else if (m2 < 0) hi = -fern;
+                        let cl = decke(lo - 0.5),
+                            cr = boden(hi - 0.5);
+                        if (!(cl >= xa)) cl = xa;
+                        if (!(cr <= xb)) cr = xb;
+                        let innen = cl <= cr;
+                        if (innen) {
+                            // der Beweis: beide Enden tragen alle drei Gewichte ≥ LAGEN_FEST (× |fl|, ohne Division)
+                            const sl = cl + 0.5,
+                                sr = cr + 0.5;
+                            proben += 2;
+                            innen =
+                                m0 + sl * s0 >= fest &&
+                                m1 + sl * s1 >= fest &&
+                                m2 + sl * s2 >= fest &&
+                                m0 + sr * s0 >= fest &&
+                                m1 + sr * s1 >= fest &&
+                                m2 + sr * s2 >= fest;
                         }
+                        if (innen) {
+                            buf[zeile + cl]++;
+                            buf[zeile + cr + 1]--;
+                        } else {
+                            // kein festes Inneres: die Zeile läuft von ihrer Mitte aus
+                            cr = boden((lo + hi) * 0.5);
+                            if (!(cr >= xa)) cr = xa;
+                            if (cr > xb) cr = xb;
+                            cl = cr + 1;
+                        }
+                        for (let x = cl - 1; x >= xa; x--) {
+                            const sx = x + 0.5;
+                            const n0 = (bx - sx) * (qy - sy) - (by - sy) * (qx - sx),
+                                n1 = (qx - sx) * (ay - sy) - (qy - sy) * (ax - sx);
+                            const g0 = sg * n0,
+                                g1 = sg * n1,
+                                g2 = fa - g0 - g1;
+                            proben++;
+                            if (g0 >= fest && g1 >= fest && g2 >= fest) {
+                                buf[zeile + x]++;
+                                buf[zeile + x + 1]--;
+                            } else if (g0 > -fest && g1 > -fest && g2 > -fest) {
+                                // der Saum: das Urteil der Quotienten, wie es stand
+                                if (!(g0 < 0 || g1 < 0 || 1 - n0 / fl - n1 / fl <= 0)) {
+                                    buf[zeile + x]++;
+                                    buf[zeile + x + 1]--;
+                                }
+                            } else if ((g0 <= -fest && s0 >= 0) || (g1 <= -fest && s1 >= 0) || (g2 <= -fest && s2 >= 0))
+                                break;
+                        }
+                        for (let x = cr + 1; x <= xb; x++) {
+                            const sx = x + 0.5;
+                            const n0 = (bx - sx) * (qy - sy) - (by - sy) * (qx - sx),
+                                n1 = (qx - sx) * (ay - sy) - (qy - sy) * (ax - sx);
+                            const g0 = sg * n0,
+                                g1 = sg * n1,
+                                g2 = fa - g0 - g1;
+                            proben++;
+                            if (g0 >= fest && g1 >= fest && g2 >= fest) {
+                                buf[zeile + x]++;
+                                buf[zeile + x + 1]--;
+                            } else if (g0 > -fest && g1 > -fest && g2 > -fest) {
+                                if (!(g0 < 0 || g1 < 0 || 1 - n0 / fl - n1 / fl <= 0)) {
+                                    buf[zeile + x]++;
+                                    buf[zeile + x + 1]--;
+                                }
+                            } else if ((g0 <= -fest && s0 <= 0) || (g1 <= -fest && s1 <= 0) || (g2 <= -fest && s2 <= 0))
+                                break;
+                        }
+                    }
                 }
-            for (let i = 0; i < buf.length; i++)
-                if (buf[i]) {
-                    sQ += buf[i];
+            // die Stufen laufen durch: je Pixel seine Lagen (gezählt wie zuvor in 16 Bit)
+            let lagen = 0,
+                treffer = 0;
+            for (let i = 0; i < W * H; i++) {
+                lagen += buf[i];
+                treffer += lagen;
+                const z = lagen & 65535;
+                if (z) {
+                    sQ += z;
                     nQ++;
                 }
+            }
+            Z.proben += proben;
+            Z.treffer += treffer;
         }
         return nQ ? sQ / nQ : 0;
     }
@@ -6955,6 +7130,7 @@
         mulberry32: mulberry32, // der Vorlagen-RNG (der Strom des Wuchses; gate:pflanzen-nah wächst dasselbe Skelett)
         kronenLagen: kronenLagen, // S3: die Lagen einer Krone — der Bau-Regler der Karten-Wahl (foundry-core __lagenWahl)
         quadLagen: quadLagen, // S3: die Lagen beliebiger Karten (Strähnen der Trauer-Krone)
+        lagenZaehler: lagenZaehler, // die Arbeit des Lagen-Rasters: Rufe · Dreiecke · Proben · Treffer (gate:asset-contract)
         BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Zellen + Kern + Füllung) der Breitblatt-Zellen
         BLATT_ATLAS_WEDEL: BLATT_ATLAS_WEDEL, // der Atlas-Steckbrief (Zelle + Kern + Füllung) des Wedels (S3: Zelle 3)
         buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0
