@@ -4694,11 +4694,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 2,
-    "kern": 7,
-    "kernDazu": 7,
-    "anteilHeute": 0.3,
-    "anteilKern": 1.2
+    "heute": 5,
+    "kern": 4,
+    "kernDazu": 4,
+    "anteilHeute": 0.8,
+    "anteilKern": 0.7
    },
    "perspektiven": [
     {
@@ -5743,8 +5743,8 @@
        "richter": "N = 100 Welten: Rhythmus ↔ Tageslänge r ≥ 0,9; Fremdwelt-Probe (R10)"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "TAGES_GESETZ 6 Akte (koerper-core.js:4919, 5057), Soll-Orte 81/81, Wiederkehr max 1,2 m (mensch.K2, Radeon und GTX); Dorfplatz-Bild an der Radeon 26,9 fps ≈ 37 ms — Preis ROT — KARTE: Kern 1 — Soll-Orte an beiden Geräten grün (mensch.K2); der Bild-Preis reißt am Dorfplatz (Radeon ≈ 37 ms).",
      "alt": [
@@ -6338,8 +6338,8 @@
        "richter": "Flüsse aus dem Orbit gegen reale Netze der Epoche"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "5–8 Wege je Tag, Wiederkehr 1,2 m (mensch.K2); Preis in der Szene unbelegt, Takt der Bewohner 1,52–1,82 ms an der Stadt — KARTE: 0 — die Messung mensch.K2 hebt den Kern von mensch.geist.tag (R9); der eigene Lauf (Wege je Tag im Bild gezählt) fehlt.",
      "alt": [
@@ -8300,8 +8300,8 @@
        "richter": "≥ 10⁶ sichtbar; Berufe passen zum Ort ≥ 0,95"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "8 Rollen (koerper-core.js:4928–4943), Schmiede 10/2 Uhr 2/0 (mensch.K2); kein Werkstück ändert sich; Dorf-Bild Radeon ROT",
      "alt": [
@@ -12815,11 +12815,11 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 3,
-    "kern": 0,
-    "kernDazu": 0,
-    "anteilHeute": 1.2,
-    "anteilKern": 0
+    "heute": 2,
+    "kern": 1,
+    "kernDazu": 1,
+    "anteilHeute": 0.8,
+    "anteilKern": 0.4
    },
    "perspektiven": [
     {
@@ -14632,8 +14632,8 @@
        "richter": "Anteil geschafft ≥ 95 % je Sinn-Profil in Kanal-Läufen"
       }
      ],
-     "heute": 1,
-     "kern": 0,
+     "heute": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "Untertitel aus dem Klang-Gesetz 39/39, Farbsicht-Modus (Deuteranopie min ΔE 31,8, bild-kosten.js:3928-3931), Komfort-Regler, DE/EN aus EINER Tafel; kein Screenreader-Kanal, keine Beschreibung der Welt in Sprache. — KARTE: 0 — Untertitel 39/39 und Farbsicht ΔE 31,8 sind headless gebucht (spielgang.K4, K5), im echten Fenster nie gefahren (R2).",
      "alt": [
@@ -16875,12 +16875,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 14,
+  "heute": 16,
   "davonKopplungen": 33,
-  "kern": 12,
-  "kernDazu": 12,
+  "kern": 10,
+  "kernDazu": 10,
   "anteilHeute": 0.9,
-  "anteilKern": 0.5,
+  "anteilKern": 0.4,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
