@@ -816,6 +816,7 @@ class AnazhRealm_stoff_material {
         let emissiveColor = null;
         let emissiveIntensity = 0;
         let _wieseGrund = null; // der Bestand der Wiese am Boden (`_terrainGeologyAlbedo` → `gruen`), sein Grund liest die Narbe
+        let _ascheDecke = null; // die Asche des Brands auf dem Boden (`aus.asche`): unter ihr bleibt vom Mikro-Relief `BRAND.ascheKorn`
         let _steinBelag = null; // der Belag aus Stein auf dem Boden (`_wegeBodenFarbe` → `aus.stein`): unter ihm gilt das Stein-Gesetz
         const params = {};
         if (opts.color !== undefined) params.color = opts.color;
@@ -892,7 +893,10 @@ class AnazhRealm_stoff_material {
                         const _weg = {};
                         const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode, _weg) : null;
                         // die Asche des Brands (w28-brand-bild): die Geologie hält auf ihr Rauheit und Farbe ihrer Zeile
-                        if (_weg.asche) _terrRough.asche = _weg.asche;
+                        if (_weg.asche) {
+                            _terrRough.asche = _weg.asche;
+                            _ascheDecke = _weg.asche.deckung.mul(1 - AnazhRealm.BRAND.ascheKorn);
+                        }
                         let _geo = this._terrainGeologyAlbedo(
                             _Ta,
                             _bodenVc || albedoNode,
@@ -1880,7 +1884,11 @@ class AnazhRealm_stoff_material {
                         const _mk = this._mikroRelief(_Tn, _wp);
                         // DER BELAG AUS STEIN (w28-stein-kamm, `_steinBelag`): unter ihm trägt der Boden vom Mikro-Relief nur, was das
                         // Korn seiner Zeile lässt, und die Kante seiner Steine kippt die Normale (der EINE Kamm, `_steinStoff`)
-                        const _mkK = _steinBelag ? _lod.mul(_Tn.float(1.0).sub(_steinBelag.stein)) : _lod;
+                        // DIE ASCHE IST PULVER (w28-brand-bild): sie füllt Klumpen und Kiesel — unter dem Licht ihres eigenen Feuers
+                        // (1 m über dem Boden, ab 4 m flacher als die 13° des Reliefs) stand der Boden sonst als helle und schwarze
+                        // Trapeze, ein Wellen-Muster wie Wasser (Dorf-Wiese, Nacht, 300 s)
+                        const _mkS = _steinBelag ? _lod.mul(_Tn.float(1.0).sub(_steinBelag.stein)) : _lod;
+                        const _mkK = _ascheDecke ? _mkS.mul(_Tn.float(1.0).sub(_ascheDecke)) : _mkS;
                         _baseN = _baseN.add(_mk.neigung.mul(_mkK));
                         if (_steinBelag && _steinBelag.kipp)
                             _baseN = _baseN.add(_steinBelag.kipp.mul(_steinBelag.deckung));
