@@ -2488,11 +2488,20 @@ function bauAbweichung(vor, nach, grundWege) {
 // nicht zurück, und unter ihm verweigert die Engstelle der Welt-Akte (stamm/feld-dsl.js `_messHalt`) jedes Setzen: bauen.K5#2 „2/6
 // Herkunft × Sicht × Werk“, vegetation.K4#2 „1 gesetzt über die Werkstatt false“ — das Spiel kennt den Halt nie (weatherEffectTime ≥ 0).
 // Statt jeder Probe ihr eigenes `weatherEffectTime = 0` (g2.js trägt es fünfmal) liest die Sitzung ihn vor und nach JEDER Probe und
-// gibt ihn zurück, wie er stand; setz null: nur lesen. → die Zahl oder null (unlesbar, kein Spiel)
+// gibt ihn zurück, wie er stand.
+// DER HALTER IST DIESELBE LEIHE (16.11., Befund „Tier in der Strömung“): eine Probe, die `__halten` ruft (scripts/lib/ausgabe-aufnahme.cjs
+// — im Befehl oder in einer Linse), lässt `window.__gehalten` stehen; die Hülle von `updateCreatures` setzt danach jedes Tier nach jedem
+// Kreatur-Takt zurück. gelaende.K4#2 urteilte mitten in der Sitzung „tier 0/0“ an 4 Fluss-Orten (frisch 1,8 · 1,666 m), die Grundstellung
+// deckte den Halt nur nach 3 von 6 haltenden Radeon-Proben. Das Spiel hält nie: die Sitzung leert Halter und Offen-Schalter (`__offen`)
+// vor und nach JEDER Probe, beim Namen. `setz` null: nur lesen · { wetter } setzt den Wetter-Halt · { frei: true } leert den Halter.
+// → { wetter: Zahl|null, gehalten: [Quellen], offen: [Quellen] } oder null (unlesbar, kein Spiel)
 const messHaltRuf = (w, setz) =>
-    rufFrist(w, "/eval", { code: "/* __punkteMessHalt */ const s = r.state; " + (setz == null ? "" : "s.weatherEffectTime = " + Number(setz) + "; ") +
-        "return typeof s.weatherEffectTime === \"number\" ? s.weatherEffectTime : null;" }, 30000)
-        .then((a) => (a && typeof a.ergebnis === "number" ? a.ergebnis : null)).catch(() => null);
+    rufFrist(w, "/eval", { code: "/* __punkteMessHalt */ const s = r.state, H = window.__gehalten, O = window.__offen; " +
+        (setz && typeof setz.wetter === "number" ? "s.weatherEffectTime = " + Number(setz.wetter) + "; " : "") +
+        (setz && setz.frei ? "if (H) { H.clear(); delete H.t; } if (O) O.clear(); " : "") +
+        "return { wetter: typeof s.weatherEffectTime === \"number\" ? s.weatherEffectTime : null, gehalten: H ? [...H] : [], offen: O ? [...O] : [] };" }, 30000)
+        .then((a) => (a && a.ergebnis && typeof a.ergebnis === "object" ? a.ergebnis : null)).catch(() => null);
+const haltLeer = (h) => !h || (!h.gehalten.length && !h.offen.length);
 // DER STAND DES ORTS (13.11., pm-ernte; schatten.K5#1 Radeon: 0,60:1 mit dem Spieler 3,9 m vom Feuer, am 12.11. 5,28:1 mit 9,4 m —
 // die Probe wählt Quelle und Seite des Pfostens vom Spieler aus, und die Sitzung stellte den Ort `dorf` nur EINMAL um: jede Probe danach
 // fand den Spieler, wo die vorige ihn ließ): nach dem Umstellen und nach jeder Probe am Ort der Stand des Spielers [x, z, Gier]; weicht er
@@ -3838,7 +3847,14 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             .catch((e) => ({ fehler: String((e && e.message) || e).split("\n")[0] }));
         const leihe = await leiheRuf(false);
         if (leihe.fehler) console.log("  SITZUNG die Leihe der Hänger-Linse vor " + schluessel(g[0]) + " nicht lesbar: " + leihe.fehler);
-        const haltVor = await messHaltRuf(W, null);
+        // DER HALTER VOR DER PROBE (messHaltRuf): hielt ihn noch etwas (eine Probe ohne Rückgabe, die Grundstellung, das Umstellen), misst
+        // die Probe frei — beim Namen dessen, was vor ihr lief
+        let haltVor = await messHaltRuf(W, null);
+        if (!haltLeer(haltVor)) {
+            (kopf.messHalt = kopf.messHalt || []).push({ vor: schluessel(g[0]), gehalten: haltVor.gehalten, offen: haltVor.offen });
+            console.log("  SITZUNG vor " + schluessel(g[0]) + " hielt der Halter noch " + [...haltVor.gehalten, ...haltVor.offen.map((q) => "offen:" + q)].join(" ") + " — frei");
+            haltVor = await messHaltRuf(W, { frei: true });
+        }
         const zeit = new Date().toISOString();
         aktuell = schluessel(g[0]);
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt, konsumWelt } });
@@ -3891,11 +3907,17 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         }
         // DER HALT DER MESSUNG ZURÜCK (messHaltRuf): ließ die Probe ihn stehen, gibt die Sitzung ihn zurück, wie er vor ihr stand — beim Namen
         const haltNach = weg ? null : await messHaltRuf(W, null);
-        if (typeof haltNach === "number" && haltNach < 0 && !(typeof haltVor === "number" && haltVor < 0)) {
-            const zurueck = typeof haltVor === "number" ? haltVor : 0;
-            await messHaltRuf(W, zurueck);
-            (kopf.messHalt = kopf.messHalt || []).push({ probe: schluessel(g[0]), halt: haltNach, zurueck });
-            console.log("  SITZUNG " + schluessel(g[0]) + " ließ den Halt der Messung stehen (weatherEffectTime " + haltNach + ") — zurück auf " + zurueck);
+        const wVor = haltVor && haltVor.wetter, wNach = haltNach && haltNach.wetter;
+        if (typeof wNach === "number" && wNach < 0 && !(typeof wVor === "number" && wVor < 0)) {
+            const zurueck = typeof wVor === "number" ? wVor : 0;
+            await messHaltRuf(W, { wetter: zurueck });
+            (kopf.messHalt = kopf.messHalt || []).push({ probe: schluessel(g[0]), halt: wNach, zurueck });
+            console.log("  SITZUNG " + schluessel(g[0]) + " ließ den Halt der Messung stehen (weatherEffectTime " + wNach + ") — zurück auf " + zurueck);
+        }
+        if (!haltLeer(haltNach)) {
+            await messHaltRuf(W, { frei: true });
+            (kopf.messHalt = kopf.messHalt || []).push({ probe: schluessel(g[0]), gehalten: haltNach.gehalten, offen: haltNach.offen });
+            console.log("  SITZUNG " + schluessel(g[0]) + " ließ den Halter stehen (" + [...haltNach.gehalten, ...haltNach.offen.map((q) => "offen:" + q)].join(" ") + ") — frei");
         }
         const gab = !weg && !abbruch && leihe.leiht ? await leiheRuf(true) : null;
         if (gab && gab.fehler) console.log("  SITZUNG die Hänger-Linse nach " + schluessel(g[0]) + " nicht zurück: " + gab.fehler);
@@ -5878,10 +5900,14 @@ async function selbsttest(o = {}) {
         lege(process.pid, 0);
         const wOrdner = path.join(repo, ".claude", "worktrees", "punkte-selbst.wartet");
         console.log = () => {};
+        // FRISCH heißt: in DIESER Runde geschrieben (nach t0), nie „jünger als 1 s an der Wanduhr“ — je Wartendem blockiert prozessStart
+        // (spawnSync powershell) die Schleife; unter Last (16.11., Selbsttest belownormal neben einem Radeon-Lauf) lag die erste Marke so
+        // älter als 1 s, ohne Täter
+        const t0 = Date.now() - 50; // die Uhr des Dateisystems gegen Date.now (wie START_SPIEL_MS, nur kleiner)
         const wartend = baumSperre(repo, "selbst", { env: { PUNKTE_WER: "landung" }, wartMs: 40 }), wartend2 = baumSperre(repo, "selbst", { env: {}, wartMs: 40 });
         await new Promise((r) => setTimeout(r, 200));
         const wMarken = fs.existsSync(wOrdner) ? fs.readdirSync(wOrdner).sort() : [];
-        const wFrisch = wMarken.every((n) => Date.now() - fs.statSync(path.join(wOrdner, n)).mtimeMs < 1000);
+        const wFrisch = wMarken.every((n) => fs.statSync(path.join(wOrdner, n)).mtimeMs >= t0);
         fs.rmSync(sp, { recursive: true, force: true });
         const wNahm = await Promise.race([wartend, wartend2, new Promise((r) => setTimeout(() => r("nie"), 3000))]);
         await new Promise((r) => setTimeout(r, 200));
@@ -7734,6 +7760,16 @@ async function selbsttest(o = {}) {
                 !!rh.es["h.K1#1"] && rh.es["h.K1#1"].gruen === true && !!rh.es["k.K1#1"] && rh.es["k.K1#1"].gruen === true &&
                     JSON.stringify(rh.kopf.messHalt) === JSON.stringify([{ probe: "h.K1#1", halt: -1e9, zurueck: 0 }]),
                 JSON.stringify([rh.es["k.K1#1"] && rh.es["k.K1#1"].zahl, rh.kopf.messHalt]));
+            // DER HALTER IST DIESELBE LEIHE: h2 hält die Tiere (`__halten` → window.__gehalten) und lässt ihn stehen; k2 findet die Tiere
+            // frei, der Kopf nennt h2. DIE MUTANTE (vorher ROT am Täter, Radeon 1e521ee4 gelaende.K4#2 „tier 0/0“ an 4 Fluss-Orten): ohne
+            // die Rückgabe fände k2 „tiere“ gehalten
+            const freiU = (j) => ({ gruen: !!j && j.welt === 0, zahl: "gehalten " + (j && j.welt) });
+            const rt = await lauf([[S("h2.K1", 1, { befehl: [...ruf, "seite: window.__gehalten = new Set([\"tiere\"]); window.__gehalten.t = 1; return \"warm\";"], sek: 30 }, warm)],
+                [S("k2.K1", 1, { befehl: [...ruf, "seite: return window.__gehalten ? window.__gehalten.size : 0;"], sek: 30 }, freiU)]], "gut");
+            pruef("SITZUNG DER HALTER ZURÜCK: h2 ließ die Tiere gehalten, k2 findet sie frei (0 Quellen), der Kopf nennt h2 beim Namen",
+                !!rt.es["h2.K1#1"] && rt.es["h2.K1#1"].gruen === true && !!rt.es["k2.K1#1"] && rt.es["k2.K1#1"].gruen === true &&
+                    JSON.stringify(rt.kopf.messHalt) === JSON.stringify([{ probe: "h2.K1#1", gehalten: ["tiere"], offen: [] }]),
+                JSON.stringify([rt.es["k2.K1#1"] && rt.es["k2.K1#1"].zahl, rt.kopf.messHalt]));
         }
         // DIE TEILE EINER PROBE (probe.teile, w19-fahrt-ziel-2-pm): je Teil ein Prozess unter dem Deckel mit PUNKTE_TEIL und der Frist
         // (Gesetz − Vorlauf, nie der Eich-Deckel), der nächste nur nach WEITER, EIN Urteil über alle Teile, `s` der längste, `teile` je Teil;
