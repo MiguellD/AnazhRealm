@@ -884,6 +884,40 @@ const ZUG_PROBE = {
     sek: 33,
     befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify({ vorher: ["umstellen", "--ort", "genesis", "--sicht", "ego"], args: ["licht", "--luft", "--wetter", "rainy", "--zug"], fenster: [640, 360] })),
 };
+// DAS BILDPAAR KLAR ↔ STURM (Karte 2 planet.kopplung.wetter-welt S 1): derselbe Wetter-Zug der Linse (`wetterZug`, klar 5 s →
+// Wort → klar) mit dem Wort stormy, an EINER Pose (Genesis, Ego, Mittag der Bühne — der Zug bewegt die Kamera nie). Die Linse liest je
+// Spiel-Sekunde nur die Leuchtdichte; die Seite der Probe hängt an JEDE ihrer Aufnahmen (`__ausgabeAufnahme`, dieselbe Funktion des
+// Spiel-Baums, nur am Ende verlängert — das Bild bleibt Byte für Byte) drei Lesewerte: das Richtlicht (Luma der Farbe × Stärke von
+// `st.directionalLight`: der Wetter-Faktor lightMul liegt in der Farbe, `_dayNightApplySkybox`), die mittlere Sättigung (HSV, 1 − min/max)
+// des obersten Sechstels des Bilds (der Himmel der Pose) und den Blick (pitch). Nach der Linse wählt der Weg (`pruefe`) das Paar: die
+// letzte stehende Aufnahme klar vor dem Sturm und die letzte stehende im Sturm; fehlt eine, ist die Probe ROT beim Namen (Exit 1).
+const WETTER_PAAR_SEITE = [
+    "return { u8, info, ms, tiefe, abnahme: abnahme(u8, W, H, m) };",
+    "{ const P = (window.__wetterPaarReihe = window.__wetterPaarReihe || []); const dl = st.directionalLight; const wt = st.weatherTransition; let s = 0, n = 0;" +
+        " for (let y = 0; y < Math.max(1, Math.floor(H / 6)); y++) for (let x = 0; x < W; x++, n++) { const i = (y * W + x) * 4, hi = Math.max(u8[i], u8[i + 1], u8[i + 2]), lo = Math.min(u8[i], u8[i + 1], u8[i + 2]); s += hi > 0 ? 1 - lo / hi : 0; }" +
+        " P.push({ wetter: st.weather, zug: wt ? wt.progress : 1, licht: dl ? +((0.2126 * dl.color.r + 0.7152 * dl.color.g + 0.0722 * dl.color.b) * dl.intensity).toFixed(5) : null, himmel: n ? +(s / n).toFixed(4) : null, pitch: +r.state.pitch.toFixed(4) }); }\n" +
+        "            return { u8, info, ms, tiefe, abnahme: abnahme(u8, W, H, m) };",
+];
+const WETTER_PAAR_PRUEFE =
+    "const P = window.__wetterPaarReihe || []; delete window.__wetterPaarReihe; const i = P.findIndex((x) => x.wetter === 'stormy');" +
+    " const klar = i > 0 ? P.slice(0, i).reverse().find((x) => x.wetter === 'sunny' && x.zug === 1) || null : null;" +
+    " const sturm = P.filter((x) => x.wetter === 'stormy' && x.zug === 1).pop() || null;" +
+    " return { aufnahmen: P.length, klar, sturm, rot: klar && sturm ? null : 'kein Paar: klar ' + !!klar + ', Sturm ' + !!sturm + ' (' + P.length + ' Aufnahmen)' };";
+// DER DECKEL (geschätzt, ungemessen an der Karte): der Zug wie ZUG_PROBE (Regen 33 s), der Sturm extrapoliert über den Regen (Intensität
+// 1,35, die Rückkehr nach klar länger, höchstens 150 Spiel-s je Phase) — 45 s
+const WETTER_PAAR_PROBE = {
+    sek: 45,
+    befehl: PW.torBefehl(
+        PW.werkbankLinse,
+        JSON.stringify({
+            vorher: ["umstellen", "--ort", "genesis", "--sicht", "ego"],
+            args: ["licht", "--luft", "--wetter", "stormy", "--zug"],
+            fenster: [640, 360],
+            seite: { __ausgabeAufnahme: ["scripts/lib/ausgabe-aufnahme.cjs", "ausgabeAufnahme", [WETTER_PAAR_SEITE]] },
+            pruefe: WETTER_PAAR_PRUEFE,
+        })
+    ),
+};
 // ───────── DIE NEUN (p3-stationen-g3, 01.11.): schatten.K2 · K3 · K4 · K5 · licht.K4 · ferne.K3 · K4 · lod.K4 · vegetation.K3 ─────────
 // Bis hierher standen sie in `fehlt` (Spike w4-stationen-a am main 94c079cb: was dem Spiel fehlt, beim Namen) und zählten 0 ungemessen.
 // Jetzt misst EINE Probe der Sitzung alle neun im Ausgabe-Pfad (`__ausgabeAufnahme`, satz „messung“) der warmen Welt am Ort dorf (die
@@ -2721,6 +2755,74 @@ const stationen = [
         },
         pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "phyto-core.js"],
         quelle: "1 = der Wetter-Zug klar → Regen → klar ohne Sprung > 0,1 EV/s an einem Gerät",
+    },
+    // KARTE 2 planet.kopplung.wetter-welt S 1 — das Bildpaar klar ↔ Sturm an EINER Pose (WETTER_PAAR_PROBE: der Zug der Linse mit dem Wort
+    // stormy, die Seite liest je Aufnahme Richtlicht, Himmels-Sättigung und Blick). Richter: „Richtlicht gedimmt“ = Richtlicht Sturm ÷ klar
+    // ≤ 0,5 · „Himmel grau“ = mittlere Sättigung des Himmels-Ausschnitts Sturm ≤ 0,5 × klar; „an derselben Pose“ = derselbe Blick (pitch)
+    // in beiden Aufnahmen; der Ausschnitt zeigt klar einen farbigen Himmel (Sättigung ≥ 0,1 — sonst misst „grau“ nichts). Der Sprung des
+    // Zugs (die ZUG-Zeile) gehört licht.K5#1, nie dieser Sprosse: die Zeile muss stehen (die Linse lief zu Ende), ihr GRÜN nicht.
+    {
+        kriterium: "karte2.planet.kopplung.wetter-welt",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: WETTER_PAAR_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(out) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const z = /^ZUG (GRUEN|ROT) · ([^\r\n]+)/m.exec(out);
+            const wm = /^WEG (\{.*\})\s*$/m.exec(out);
+            let p = null;
+            try {
+                p = wm && JSON.parse(wm[1]);
+            } catch (_e) {
+                p = null;
+            }
+            if (!z || !p) return { gruen: false, zahl: "keine " + (z ? "WEG" : "ZUG") + "-Zeile (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
+            const [k, s] = [p.klar, p.sturm];
+            if (p.rot || !k || !s) return { gruen: false, zahl: "kein Bildpaar: " + (p.rot || "klar oder Sturm fehlt") + " · " + (ad || "Adapter ungenannt") };
+            const zahl = (x) => Number.isFinite(x);
+            const licht = zahl(k.licht) && zahl(s.licht) && k.licht > 0 ? s.licht / k.licht : null;
+            const grau = zahl(k.himmel) && zahl(s.himmel) && k.himmel > 0 ? s.himmel / k.himmel : null;
+            const pose = zahl(k.pitch) && k.pitch === s.pitch;
+            const blau = zahl(k.himmel) && k.himmel >= 0.1;
+            const ok = [licht != null && licht <= 0.5, grau != null && grau <= 0.5, pose, blau];
+            const gruen = hw && ok.every(Boolean);
+            const f = (x, n = 3) => (x == null ? "—" : x.toFixed(n));
+            return {
+                gruen,
+                zahl:
+                    (ok[0] ? "✅" : "❌") + " Richtlicht Sturm/klar " + f(licht) + " (" + f(s.licht, 4) + "/" + f(k.licht, 4) + ", Soll ≤ 0,5) · " +
+                    (ok[1] ? "✅" : "❌") + " Himmel Sättigung Sturm/klar " + f(grau) + " (" + f(s.himmel, 4) + "/" + f(k.himmel, 4) + ", Soll ≤ 0,5) · " +
+                    (ok[2] ? "✅" : "❌") + " Pose pitch " + k.pitch + "/" + s.pitch + " · " + (ok[3] ? "✅" : "❌") + " klarer Himmel farbig (≥ 0,1) · " +
+                    p.aufnahmen + " Aufnahmen · ZUG " + z[1] + " (licht.K5) · " + (ad || "Adapter ungenannt"),
+            };
+        },
+        proben: (() => {
+            const lauf = (o = {}) =>
+                (o.adapter || "[linse-gpu] amd/rdna-3 (Probe)") + "\n" + (o.ohneZug ? "" : "ZUG GRUEN · Sprung {} EV/s\n") +
+                (o.weg === null ? "" : "WEG " + JSON.stringify(o.weg || { aufnahmen: 160, klar: { wetter: "sunny", zug: 1, licht: 3.1, himmel: 0.42, pitch: -0.05 }, sturm: { wetter: "stormy", zug: 1, licht: 0.62, himmel: 0.08, pitch: -0.05 }, rot: null }) + "\n");
+            const paar = (k, s) => ({ aufnahmen: 160, klar: { wetter: "sunny", zug: 1, licht: 3.1, himmel: 0.42, pitch: -0.05, ...k }, sturm: { wetter: "stormy", zug: 1, licht: 0.62, himmel: 0.08, pitch: -0.05, ...s }, rot: null });
+            return [
+                { name: "Sturm dimmt das Richtlicht auf 0,2 und graut den Himmel auf 0,19", stdout: lauf(), gruen: true },
+                { name: "der Zug riss den Sprung (ZUG ROT gehört licht.K5)", stdout: lauf().replace("ZUG GRUEN", "ZUG ROT"), gruen: true },
+                { name: "das Richtlicht bleibt (Sturm/klar 0,8)", stdout: lauf({ weg: paar({}, { licht: 2.48 }) }), gruen: false },
+                { name: "der Himmel bleibt blau (Sättigung 0,3/0,42)", stdout: lauf({ weg: paar({}, { himmel: 0.3 }) }), gruen: false },
+                { name: "eine andere Pose (pitch −0,05 ↔ −0,4)", stdout: lauf({ weg: paar({}, { pitch: -0.4 }) }), gruen: false },
+                { name: "der Ausschnitt zeigt klar keinen farbigen Himmel (0,04)", stdout: lauf({ weg: paar({ himmel: 0.04 }, { himmel: 0.01 }) }), gruen: false },
+                { name: "kein Sturm stand (das Paar fehlt)", stdout: lauf({ weg: { aufnahmen: 70, klar: null, sturm: null, rot: "kein Paar: klar true, Sturm false (70 Aufnahmen)" } }), gruen: false },
+                { name: "die Linse brach vor der ZUG-Zeile", stdout: lauf({ ohneZug: true }), gruen: false },
+                { name: "ohne WEG-Zeile", stdout: lauf({ weg: null }), gruen: false },
+                { name: "swiftshader", stdout: lauf({ adapter: "[linse-gpu] google/swiftshader (Probe)" }), gruen: false },
+            ];
+        })(),
+        pfad: [...BILD, "stamm/bild-himmel.js", "stamm/daten.js", "phyto-core.js", "gelaende-core.js", "stamm/gelaende-*.js"],
+        quelle: "KARTE2 planet.kopplung.wetter-welt S1 = Bildpaar klar/Sturm an derselben Pose: Richtlicht gedimmt, Himmel grau",
     },
     {
         kriterium: "material.K2",
