@@ -637,11 +637,12 @@ class AnazhRealm_koerper_seele {
         eq.held = bpName;
         this.recomputePlayerStats();
         // die Hand liest die Hand-Mitte der feinen Stufe (`handMitte`, nur lod 0 gegossen): vor dem Bild wünscht sie die feine
-        // (`_leibWunsch`, B5), danach trägt der Leib sie aus dem Leerlauf (`_leibFeinTausch` im Vorbau, w20-leib-takt) — nur ein
-        // Griff vor diesem Tausch tauscht selbst (er trägt die Hand dabei neu, `applyPlayerSoul`), jeder danach baut nichts; ist
-        // die feine nach dem Bild noch im Werk, wünscht der Griff sie (`_leibFuerHand`: ihre Ankunft gießt und tauscht)
+        // (`_leibWunsch`, B5), danach trägt der Leib sie aus dem Leerlauf (`_leibFeinTausch` im Vorbau, w20-leib-takt) — der
+        // Griff tauscht nie (die Faust liest die Hand-Mitte der feinen Vorlage, `_leibHandMitte`); ist die feine nach dem Bild noch
+        // im Werk, hebt der Griff ihren Auftrag (`_leibFuerHand`), ihre Ankunft trägt die Hand neu
         this._leibWunsch();
-        if (!this._leibFuerHand()) this._refreshHeldMesh(); // S9
+        this._leibFuerHand();
+        this._refreshHeldMesh(); // S9
         this._refreshIchIfOpen(); // M5 — Equip-Feedback ist instant
         return { ok: true, equipped: bpName };
     }
@@ -745,14 +746,14 @@ class AnazhRealm_koerper_seele {
                 pm;
             const rig = pm.userData && pm.userData.rig;
             const imGelenk = !!rig && ((rig.armR && anchor === rig.armR.wrist) || (rig.armL && anchor === rig.armL.wrist));
-            // DIE FAUST WARTET AUF DIE FEINE (physik.K4, same.physik.verformung): trägt der Leib nah noch die Grobstufe (B5, der
-            // Ego-Boot), fehlt ihm die Hand-Mitte (`handMitte`, nur lod 0 gegossen) — bis zum Tausch, den der Griff wünscht
-            // (`_leibFuerHand`), trägt der Part-Bau wie bei kaltem Buch. Bis hier fiel jede Studio-Gestalt dort aus der Hand (die
-            // Faust ohne Hand-Mitte: null), bis der Leerlauf tauschte — GTX 1060 am be50815d „klinge_flegel ohne Gestalt in der Hand“,
-            // Null-Renderer am Grob-Leib: 23 von 23 Gattungen der Schmiede leer, der Flegel 380 Takte.
+            // DIE FAUST LIEST DIE HAND-MITTE DES LEIBS (`_leibHandMitte`, physik.K4 · same.physik.verformung): an der Grobstufe (B5,
+            // der Ego-Boot) die der feinen Vorlage; ist die feine noch im Werk, trägt der Part-Bau wie bei kaltem Buch, bis ihre
+            // Ankunft die Hand neu trägt (`_leibFuerHand`). Bis hier fiel jede Studio-Gestalt dort aus der Hand (die Faust ohne
+            // Hand-Mitte: null), bis der Leerlauf tauschte.
+            const handMitte = imGelenk ? this._leibHandMitte(rig) : null;
             const grobOhneMitte =
                 imGelenk &&
-                !(rig.handMitte && rig.handMitte[anchor.name]) &&
+                !(handMitte && handMitte[anchor.name]) &&
                 !!pm.userData._gelenk &&
                 pm.userData._gelenk.nahStufe === 1;
             const studio = grobOhneMitte ? "pending" : this._heldFoundryGroup(bpName);
@@ -796,7 +797,7 @@ class AnazhRealm_koerper_seele {
                 // DIE HAND-MITTE kommt aus der Hand selbst (Ofen-Beipack: der Schwerpunkt der Hand-Haut im Hand-Raum) —
                 // vorher eine Welt-Konstante der Hand vor Welle 5 (0,107 m fingerwärts); die neue Hand (kleiner, höher)
                 // ließ den Griff 0,072 m neben ihr (gate:nervensystem-schmiede H-F). Ohne Mitte keine Faust: LAUT.
-                const hm = rig.handMitte && rig.handMitte[anchor.name];
+                const hm = handMitte && handMitte[anchor.name];
                 if (!hm) {
                     this.log("FAUST: die Hand trägt keine Hand-Mitte (Ofen-Beipack handMitte) — kein Griff.", "ERROR");
                     return null;

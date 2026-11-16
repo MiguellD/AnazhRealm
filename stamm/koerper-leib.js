@@ -188,6 +188,8 @@ class AnazhRealm_koerper_leib {
             // Die Hand-Mitte je Handgelenk (Ofen-Beipack, Hand-Raum): dort sitzt der Griff der Faust (_refreshHeldMesh).
             // Eigenes Feld, nie in armL/armR — deren Glieder setzt die Pose je Schlüssel auf neutral.
             handMitte: t0.handMitte || null,
+            // trägt die Grobstufe nah (B5), liegt die Hand-Mitte in der feinen Vorlage desselben Leibs (`_leibHandMitte`)
+            _feinKey: grob ? this._ofenMenschKey(dials, skinCol, hairCol, 0) : null,
             _skinMat: null, // GEFALLEN mit dem Inline-Bau — die Farb-Wahrheit ist userData.hautTon (Pipe: Vertex-Farben)
         });
         // V18.491.85 — Augen-Welle: iris/lid aus Ofen-Gelenken (fail-closed ohne Refs).
@@ -2000,7 +2002,7 @@ class AnazhRealm_koerper_leib {
                 const nachBild = lodM === 0 && grob;
                 // die Stufen des ersten Bilds sind ein Kopf der Ankunft (`_foundryRang`: die Bahn ohne Arbeit, `_foundryPumpe`) —
                 // auch die feine, sobald das erste Bild sie wünscht (`_leibWunsch`)
-                // der Rang der feinen nach dem Bild steht am Zustand (`z.rang`): ein Griff, der sie wünscht, hebt ihn (`_leibFuerHand`)
+                // der Rang der feinen nach dem Bild steht am Zustand (`z.rang`): ein Griff vor ihr hebt ihn (`_leibFuerHand`)
                 const bestellen = () =>
                     this._foundryRequest(
                         "mensch",
@@ -2035,7 +2037,12 @@ class AnazhRealm_koerper_leib {
                     ? Promise.race([this._weltbildKommt(), new Promise((ja) => (z.wunsch = ja))])
                           .then(bestellen)
                           .finally(fein)
-                          .then(() => z.gewuenscht === true && this._leibFeinTausch())
+                          // die gewünschte tauscht den Leib; wartete ein Griff auf sie (`z.hand`), trägt die Hand nun ihre Mitte
+                          .then(() =>
+                              z.gewuenscht === true
+                                  ? this._leibFeinTausch()
+                                  : z.hand === true && ((z.hand = false), this._refreshHeldMesh())
+                          )
                     : bestellen();
                 if (!nachBild) vorBild.push(auftrag);
                 auftraege.push(auftrag);
@@ -2084,25 +2091,40 @@ class AnazhRealm_koerper_leib {
         z.steht = z.vorBildDa === true && z.feinDa === true;
         ja();
     }
-    // DER GRIFF NACH DEM BILD (physik.K4, same.physik.verformung): die Faust liest die Hand-Mitte der feinen Stufe — trägt der Leib
-    // nah die Grobstufe, tauscht der Griff die feine ein, wenn sie da ist (`_leibFeinTausch`); ist sie noch im Werk, WÜNSCHT er sie:
-    // ihre Ankunft gießt sie (nie roh) und tauscht (`_ofenSpielerVorlagen`, derselbe Weg wie der Wunsch vor dem Bild), bis dahin trägt
-    // der Part-Bau (`_refreshHeldMesh`). Bis hier wartete ein Griff vor der Ankunft auf den Leerlauf, und der kommt im Gang nie
-    // (die Eingabe ruht nicht). → true = getauscht (der Tausch trug die Hand neu).
+    // DIE HAND-MITTE DES LEIBS (der EINE Leser — die Faust `_refreshHeldMesh`, der Hieb `_kampfHandMitte`, die Kette `_leibKette`):
+    // der Schwerpunkt der Hand-Haut im Raum des Handgelenks, gegossen nur in der feinen Stufe (foundry-core, lod 0). Trägt der Leib nah
+    // die Grobstufe (B5, der Ego-Boot), liest er sie aus der feinen Vorlage DESSELBEN Leibs (dieselben Regler, dieselben Gelenke), wo
+    // sie liegt: gegossen im Memo oder roh, wie das Werk sie schickte (`_ofenRoh`: das Skelett im Beipack, kein Guss). Bis hier las
+    // jeder Leser nur den Leib — an der Grobstufe fiel jede Studio-Gestalt aus der Hand, bis der Leerlauf die feine eintauschte
+    // (GTX 1060 am be50815d „klinge_flegel ohne Gestalt in der Hand“; Null-Renderer am Grob-Leib 23 von 23 Gattungen leer).
+    _leibHandMitte(rig) {
+        if (!rig) return null;
+        if (rig.handMitte) return rig.handMitte;
+        const k = rig._feinKey;
+        if (!k) return null;
+        const t = AnazhRealm._tierOfenMemo && AnazhRealm._tierOfenMemo.get(k);
+        if (t) return t.handMitte || null;
+        const roh = AnazhRealm._ofenRohMemo && AnazhRealm._ofenRohMemo.get(k);
+        const sk = Array.isArray(roh) ? roh.find((m) => m && m.kind === "__skelett" && m.skelett) : null;
+        return (sk && sk.skelett.handMitte) || null;
+    }
+    // DER GRIFF VOR DER FEINEN (physik.K4, same.physik.verformung): ist die feine Stufe nach dem Bild noch im Werk, trägt der Part-Bau
+    // die Hand (`_refreshHeldMesh`), und der Griff macht ihren Auftrag zum Kopf der Ankunft am Ort des Spielers (`_foundryNaeher`;
+    // bestellt ohne Leib war er Vorrat) — ihre Ankunft trägt die Hand neu (`_ofenSpielerVorlagen`). Der Leib tauscht nie im Griff
+    // (Lehre 14: der Leerlauf tauscht) — bis hier tauschte ein Griff nach der Ankunft den ganzen Leib (`applyPlayerSoul`) auf dem
+    // Pfad der Eingabe, und jeder Leser des alten Leibs hielt eine leere Hand.
     _leibFuerHand() {
         const st = this.state;
         const z = this._spielerVorlagen;
-        if (!st._weltbildDa || !z) return false;
-        if (z.feinDa === true) return this._leibFeinTausch();
-        const g = st.playerMesh && st.playerMesh.userData._gelenk;
-        if (!g || g.nahStufe !== 1) return false;
-        z.gewuenscht = true;
-        // der Auftrag im Flug wird ein Kopf der Ankunft am Ort des Spielers (`_foundryNaeher`; bestellt ohne Leib, war er Vorrat)
+        const pm = st.playerMesh;
+        if (!st._weltbildDa || !z || !pm || this._leibHandMitte(pm.userData.rig)) return;
+        const g = pm.userData._gelenk;
+        if (!g || g.nahStufe !== 1) return;
+        z.hand = true;
         if (z.rang) {
             z.rang.kopf = true;
-            this._foundryNaeher(z.rang, st.playerMesh.position);
+            this._foundryNaeher(z.rang, pm.position);
         }
-        return false;
     }
     // DER TAUSCH DER FEINEN STUFE (B5): kam sie nach dem Bild, trägt der Leib des Spielers sie ab jetzt — derselbe Bau
     // (`applyPlayerSoul`, die Lage reist mit), die Grobstufe fällt mit dem alten Leib. Nur ein Leib, der nah die Grobstufe
