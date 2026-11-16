@@ -48,10 +48,10 @@ async function wegFahrt({ umstellen, rufe }) {
 // Ratsche des Wegs); (b) Platz → jedes Haus des Start-Dorfs bis zu seiner Stufe 0 → Platz (Genesis, Ego); (reise) Wiese → zwei
 // ferne Orte → Wiese, die Würfe der Fluss-Probe gelaende.K4#2 (±6 km, je ≥ 1,5 km auseinander, ihre Saat): Runde 1 die ersten
 // zwei, Runde 2 die nächsten zwei — was mit dem WEG wächst (die Hydro-Kachel je Ort), wächst von Runde zu Runde. Der Bild-Strom
-// zählt je rAF bei laufendem Loop, nie im Umstellen und nie im GC, daneben die längste Aufgabe der Seite (longtask). Ein Bildpaar
+// zählt je rAF bei laufendem Loop, nie im Umstellen und nie im GC, daneben die längste Aufgabe der Seite (longtask; `langeAufgabeUmstellen` samt dem Umstellen, dem Wieder-Bestellen der Kacheln). Ein Bildpaar
 // Start ↔ Rückkehr an derselben Kamera. → { text, gruen }
-const BILD_STROM = `window.__rb = { max: 0, n: 0, ueber: 0, lang: 0 }; window.__rbZaehlt = false;
-try { new PerformanceObserver((l) => { if (window.__rbZaehlt) for (const e of l.getEntries()) if (e.duration > window.__rb.lang) window.__rb.lang = e.duration; }).observe({ type: "longtask" }); } catch (_e) {}
+const BILD_STROM = `window.__rb = { max: 0, n: 0, ueber: 0, lang: 0, langAlle: 0 }; window.__rbZaehlt = false;
+try { new PerformanceObserver((l) => { for (const e of l.getEntries()) { const B = window.__rb; if (e.duration > B.langAlle) B.langAlle = e.duration; if (window.__rbZaehlt && e.duration > B.lang) B.lang = e.duration; } }).observe({ type: "longtask" }); } catch (_e) {}
 if (!window.__rbAn) { window.__rbAn = 1; let last = 0; const f = (t) => { if (window.__rbZaehlt && last) { const d = t - last, B = window.__rb; B.n++; if (d > B.max) B.max = d; if (d > 100) B.ueber++; } last = window.__rbZaehlt ? t : 0; requestAnimationFrame(f); }; requestAnimationFrame(f); }`;
 const EINSCHWINGEN = `__loop(true); window.__rbZaehlt = true; const t0 = performance.now(); const raf = () => new Promise((f) => requestAnimationFrame(f));
 for (let k = 0; k < 120 && performance.now() - t0 < 90000; ) { await raf(); const o = typeof __einschwingOffen === "function" ? __einschwingOffen(r) : null; k = o && Object.keys(o).length ? 0 : k + 1; }
@@ -136,7 +136,7 @@ async function rundeFahrt({ umstellen, rufe }) {
     const stand = async (bildMax) => {
         const puf = await rufe("/puffer", { top: 12 });
         const z = await ev("return { geometries: r.state.renderer.info.memory.geometries, zensus: __behaelterZensus(r), geburt: __geburtZensus(), ort: r.state.playerMesh.position.toArray().map((x) => +x.toFixed(1)) };"); // prettier-ignore
-        return Object.assign({ heapMB: puf.heapMB, vramMB: puf.vram && puf.vram.mb, bildMax: bildMax ? bildMax.max : 0, bilder: bildMax ? bildMax.n : 0, ueber100: bildMax ? bildMax.ueber : 0, langeAufgabe: bildMax ? Math.round(bildMax.lang) : 0, halter }, z); // prettier-ignore
+        return Object.assign({ heapMB: puf.heapMB, vramMB: puf.vram && puf.vram.mb, bildMax: bildMax ? bildMax.max : 0, bilder: bildMax ? bildMax.n : 0, ueber100: bildMax ? bildMax.ueber : 0, langeAufgabe: bildMax ? Math.round(bildMax.lang) : 0, langeAufgabeUmstellen: bildMax ? Math.round(bildMax.langAlle) : 0, halter }, z); // prettier-ignore
     };
     const kamera = () =>
         ev("const p = r.state.playerMesh.position, y = (x, z) => r._voxelSurfaceY(x, z); return [p.x, y(p.x, p.z) + 1.7, p.z, p.x + 24, y(p.x + 24, p.z + 6) + 1.2, p.z + 6];"); // prettier-ignore
@@ -165,7 +165,7 @@ async function rundeFahrt({ umstellen, rufe }) {
             name: "b",
             start: () => geh({ ort: "genesis", sicht: "ego" }),
             runde: async () => {
-                await ev("window.__rb = { max: 0, n: 0, ueber: 0, lang: 0 }; return 1;");
+                await ev("window.__rb = { max: 0, n: 0, ueber: 0, lang: 0, langAlle: 0 }; return 1;");
                 const h = await ev(HAEUSER);
                 await ev(EINSCHWINGEN);
                 return h;
@@ -196,10 +196,10 @@ async function rundeFahrt({ umstellen, rufe }) {
         const b0 = await bild(k, R.name + "-start");
         const was = [];
         for (let i = 0; i < 2; i++) {
-            await ev("window.__rb = { max: 0, n: 0, ueber: 0, lang: 0 }; return 1;");
+            await ev("window.__rb = { max: 0, n: 0, ueber: 0, lang: 0, langAlle: 0 }; return 1;");
             was.push(await R.runde(i));
             s.push(await stand(await ev(HALT)));
-            console.log(`runde ${R.name}${i + 1}: Heap ${s[i + 1].heapMB} MB · geometries ${s[i + 1].geometries} · größtes Bild ${s[i + 1].bildMax.toFixed(1)} ms · längste Aufgabe ${s[i + 1].langeAufgabe} ms`); // prettier-ignore
+            console.log(`runde ${R.name}${i + 1}: Heap ${s[i + 1].heapMB} MB · geometries ${s[i + 1].geometries} · größtes Bild ${s[i + 1].bildMax.toFixed(1)} ms · längste Aufgabe ${s[i + 1].langeAufgabe} ms (samt Umstellen ${s[i + 1].langeAufgabeUmstellen})`); // prettier-ignore
         }
         const b2 = await bild(k, R.name + "-rueckkehr");
         const paar = bildPaar(b0, b2);
