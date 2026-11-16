@@ -53,6 +53,10 @@ const BUDGET_AUSGABE = { unbedingtMax: 9, zweigMin: 24 };
 // Die Godrays ändern mit der Sonne im Bild mindestens so viele Pixel (% des Bildes, je Pixel ≥ 4/255 in einem Kanal) —
 // sie sitzen um die Sonne.
 const GODRAY_MIN_PCT = 2;
+// Die Lage: der Marsch zielt höchstens 0,08 (screenUV) neben die Scheibe; die Sonne steht dafür mehr als 0,08 neben der Bildmitte
+// (der Blick 0,2 rad unter ihr) — an der Mitte fiele die gespiegelte Lage mit der wahren zusammen.
+const GODRAY_LAGE_MAX = 0.08;
+const GODRAY_LAGE_MITTE = 0.08;
 // Das Wasser über dem Grund (unten im Bild, Mittel je Kanal in 8 bit): mit dem Tiefen-Abbild höchstens WASSER_TOL von
 // r184s Viewport-Tiefe entfernt; zweimal das Abbild höchstens WASSER_RAUSCHEN; ohne Grund mindestens WASSER_TIEFE_MIN
 // anders. Mit dem Wasser der Welle L las das 2×2-Maximum 6,0 daneben; das waagrechte Paar (die Zeile ganz) 0.
@@ -245,6 +249,15 @@ function urteil(z) {
         v.push(
             `GODRAYS: der Rausch-Boden ${g.rauschenPct} % liegt zu nah an der Änderung ${g.aenderungPct} % (die Probe ist blind)`
         );
+    // DIE LAGE (w28-lichtschacht): der Marsch zielt dorthin, wo die Sonne im Bild steht — bis dahin y gespiegelt (Dachfuge)
+    const lg = g.lage || {};
+    if (!lg.ziel || !lg.sonne) v.push(`GODRAY-LAGE: nicht gemessen ${JSON.stringify(lg)}`);
+    else if (!(Math.abs(lg.sonne[1] - 0.5) > GODRAY_LAGE_MITTE))
+        v.push(`GODRAY-LAGE: die Sonne steht bei ${lg.sonne} zu nah an der Bildmitte (die Probe ist blind)`);
+    else if (!(Math.hypot(lg.ziel[0] - lg.sonne[0], lg.ziel[1] - lg.sonne[1]) <= GODRAY_LAGE_MAX))
+        v.push(
+            `GODRAY-LAGE: der Marsch zielt auf ${lg.ziel}, die Sonne steht im Bild bei ${lg.sonne} (screenUV) — die Lage im Schirm ist nicht die des Passes (\`_schirmUV\`)`
+        );
     return v;
 }
 
@@ -285,7 +298,7 @@ function selbsttest() {
         ],
         gpuFehler: [],
         ausgabe,
-        godray: { staerke: 0.6, aenderungPct: 14, rauschenPct: 0 },
+        godray: { staerke: 0.6, aenderungPct: 14, rauschenPct: 0, lage: { ziel: [0.52, 0.31], sonne: [0.51, 0.33] } },
         buehne: { boden: 90.3, wasserY: 147.1, eisNull: 157.1 },
         wasser: {
             umgehaengt: [1, 1],
@@ -343,6 +356,10 @@ function selbsttest() {
         ["Bühne bricht ab", ["abbruch=", "TypeError: x"], /ABBRUCH/],
         ["Godray-Zweig trägt nicht", ["godray.aenderungPct=", 0], /der Zweig trägt nicht/],
         ["Godray-Probe blind", ["godray.staerke=", 0], /die Probe ist blind/],
+        // Dachfuge 16.11. (GTX 6f3c713d): die Sonnen-Lage y nach oben — der Marsch zielte auf die an der Mitte gespiegelte Sonne
+        ["Godray-Lage gespiegelt (Dachfuge)", ["godray.lage", { ziel: [0.52, 0.69], sonne: [0.51, 0.33] }], /GODRAY-LAGE: der Marsch zielt auf 0\.52,0\.69/],
+        ["Godray-Lage an der Mitte (blind)", ["godray.lage", { ziel: [0.5, 0.5], sonne: [0.5, 0.52] }], /GODRAY-LAGE: .*zu nah an der Bildmitte/],
+        ["Godray-Lage ungemessen", ["godray.lage"], /GODRAY-LAGE: nicht gemessen/],
         ["Grading schneidet dunkles Licht ab", ["dunkel", { luma1: 0, luma4: 0 }], /DUNKEL: .*schneidet dunkles Licht ab/],
         ["Grading hängt an der Belichtung", ["dunkel", { luma1: 12, luma4: 7 }], /DUNKEL: .*hängt an der Belichtung/],
         ["Dunkel-Probe fehlt", ["dunkel"], /DUNKEL: die Probe lief nicht/],
@@ -700,10 +717,13 @@ function buehne(nFrames, nachtLicht) {
             st.timeOfDay = 0.3;
             if (st.world) st.world.timeOfDay = 0.3;
             r._applyDayNightToScene();
+            // der Blick 0,2 rad UNTER die Sonne: sie steht in der oberen Bildhälfte — an der Mitte fiele eine gespiegelte Lage
+            // mit der wahren zusammen (die Probe der LAGE wäre blind)
             const blickSonne = () => {
                 cam.position.set(x0, y0, z0);
                 frame();
                 cam.lookAt(st.sunMesh.position);
+                cam.rotateX(-0.2);
                 cam.updateMatrixWorld(true);
             };
             const bild = async (skala) => {
@@ -712,6 +732,24 @@ function buehne(nFrames, nachtLicht) {
                 blickSonne();
                 const { u8 } = await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" });
                 return u8;
+            };
+            // DIE LAGE DER SONNE IM BILD (w28-lichtschacht): der Schwerpunkt der hellsten Pixel (die Scheibe) gegen die Lage, auf
+            // die der Marsch zielt (`sunScreenPos`, `_schirmUV`) — beide in `screenUV` (oben links)
+            const hellste = (a) => {
+                const l = (i) => 0.2126 * a[i] + 0.7152 * a[i + 1] + 0.0722 * a[i + 2];
+                let m = 0;
+                for (let i = 0; i < a.length; i += 4) m = Math.max(m, l(i));
+                let sx = 0,
+                    sy = 0,
+                    n = 0;
+                for (let i = 0; i < a.length; i += 4)
+                    if (l(i) >= m - 2) {
+                        const p = i / 4;
+                        sx += (p % 64) + 0.5;
+                        sy += Math.floor(p / 64) + 0.5;
+                        n++;
+                    }
+                return [+(sx / n / 64).toFixed(3), +(sy / n / 48).toFixed(3)];
             };
             // der Anteil der Pixel, die sich in einem Kanal um mindestens 4/255 ändern
             const diff = (a, b) => {
@@ -728,10 +766,12 @@ function buehne(nFrames, nachtLicht) {
             const staerke = st.godrayUniforms ? st.godrayUniforms.strength.value : null;
             const mit2 = await bild(1);
             const ohne = await bild(0);
+            const ziel = st.godrayUniforms ? st.godrayUniforms.sunScreenPos.value : null;
             aus.godray = {
                 staerke: staerke == null ? null : +staerke.toFixed(3),
                 aenderungPct: diff(mit1, ohne),
                 rauschenPct: diff(mit1, mit2),
+                lage: { ziel: ziel ? [+ziel.x.toFixed(3), +ziel.y.toFixed(3)] : null, sonne: hellste(ohne) },
             };
             // (h) DAS DUNKEL: eine flache, unbeleuchtete Fläche ohne Luft füllt das Bild (die Bühne verborgen, Godrays aus),
             // zweimal mit demselben belichteten Licht — Belichtung 1 mit 0,05, Belichtung 4 mit 0,0125 —, gemessen im Ausgabe-Pfad.

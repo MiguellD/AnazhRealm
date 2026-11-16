@@ -2499,12 +2499,12 @@ class AnazhRealm_dirigent_takt {
             const gu = this.state.godrayUniforms;
             const cam = this.state.camera;
             const sunDir = this._sonnenRichtung(); // dieselbe Richtungs-Quelle wie Licht/Skybox
-            // NDC-Projektion des sichtbaren Sonnen-Meshes → Screen-UV (0..1).
+            // NDC-Projektion des sichtbaren Sonnen-Meshes → die Lage im Schirm (`_schirmUV`, die `screenUV` des Passes: y nach
+            // unten). Bis w28-lichtschacht stand hier y nach oben — der Marsch lief zur gespiegelten Sonne.
             const proj = (this._godrayProjV || (this._godrayProjV = new THREE.Vector3()))
                 .copy(this.state.sunMesh.position)
                 .project(cam);
-            const uvx = proj.x * 0.5 + 0.5;
-            const uvy = proj.y * 0.5 + 0.5;
+            const [uvx, uvy] = AnazhRealm._schirmUV(null, proj.x, proj.y);
             gu.sunScreenPos.value.set(uvx, uvy);
             // Sichtbarkeit: (a) VOR der Kamera (robust via Blickrichtung · Sonnen-Richtung, statt
             // der zweideutigen NDC-z hinter der Kamera), (b) im Bild, (c) über dem Horizont.

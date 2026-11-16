@@ -776,7 +776,7 @@ class AnazhRealm_wasser_hydro {
             throw new Error(
                 "Wasser-Blick: ohne Sonnen-Sicht (`o.sonne`, `_sonnenSicht`) glänzt die Sonne auch im Schatten"
             );
-        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, mix } = TSL;
+        const { float, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, mix } = TSL;
         const HG =
             AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
         // DER FRESNEL AUS DER STOFF-ZEILE (w28-stoff-gesetz): F0 = ((n − 1)/(n + 1))² je Kanal des Bilds aus n(λ) der Zeile
@@ -800,9 +800,7 @@ class AnazhRealm_wasser_hydro {
         const S = this._spiegelLeser();
         const clip = S.vp.mul(vec4(o.ort, 1.0));
         const sw = max(clip.w, float(1e-4));
-        const suv = vec2(clip.x.div(sw).mul(0.5).add(0.5), float(0.5).sub(clip.y.div(sw).mul(0.5))).add(
-            o.n.xz.mul(0.03)
-        );
+        const suv = AnazhRealm._schirmUV(TSL, clip.x.div(sw), clip.y.div(sw)).add(o.n.xz.mul(0.03));
         const sp = texture(S.rt.texture, suv).level(float(0));
         const drin = step(0.0, suv.x)
             .mul(step(suv.x, 1.0))

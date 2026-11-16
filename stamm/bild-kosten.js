@@ -2263,17 +2263,35 @@ class AnazhRealm_bild_kosten {
             }
             const bloom = acc.mul(u.bloomStrength);
 
-            // --- GODRAYS: radialer Light-Shaft-March (GPU-Gems-3). Je Pixel N feste Schritte Richtung
-            // Sonnen-Screen-Position; nur sehr helle Himmels-Lücken tragen bei → Occlusion durch Blatt/Berg
-            // gratis, ohne Depth-Buffer. UNROLLT (der JS-Loop akkumuliert TSL-Nodes, kein Shader-Loop); der
-            // Beitrag klingt mit 0.96^i ab. Stärke 0 → der Zweig fällt, keine Abtastung (`nurBeiStaerke`).
+            // DIE EINE HIMMELS-MASKE (die Szenen-Tiefe): wo sie über der Himmels-Schwelle des Spiegels steht (0,99999, `bild-sicht`),
+            // zeichnete nur der Himmel (`_himmelImUnendlichen`: Kuppel, Sterne, Sonne und Mond auf Tiefe 1). Die Godrays nehmen nur
+            // dort ihre Quelle, die Farbsicht wirkt nur daneben (unten).
+            const szenenTiefe = scenePass.getTextureNode("depth");
+            const tiefenGr = vec2(szenenTiefe.size());
+            const istWelt = (uv) =>
+                szenenTiefe.load(uv.mul(tiefenGr).floor().clamp(vec2(0), tiefenGr.sub(1))).r.lessThan(float(0.99999));
+
+            // --- GODRAYS: radialer Light-Shaft-March (GPU-Gems-3). Je Pixel N Schritte Richtung Sonnen-Lage
+            // (`_schirmUV`, y nach unten wie `screenUV`); Quelle ist nur der HELLE HIMMEL — die Lücke zwischen Blatt, Berg und Bau
+            // (Tiefe = Himmel, nie „kein Laub“). UNROLLT (der JS-Loop akkumuliert TSL-Nodes, kein Shader-Loop); der Beitrag klingt
+            // mit 0.96^i ab, jeder Schritt um den Versatz des Pixels verschoben (interleaved gradient noise): die N Abtastungen
+            // einer scharfen Quelle legen keine N Kopien mehr. Stärke 0 → der Zweig fällt, keine Abtastung (`nurBeiStaerke`).
+            // DIE DACHFUGE (w28-lichtschacht, GTX 6f3c713d, Raum 17 Uhr): bis hier lief der Marsch zur an der Bildmitte
+            // gespiegelten Sonne, jedes helle Pixel war Quelle (das Fenster mit Haus und Weg dahinter) und die 20 Schritte lagen
+            // fest — vom Fenster stieg eine Treppe gestapelter Kopien an die Decke (Mittel der hellen Pixel 0,6741, ohne Godrays
+            // 0,0752, das Rohbild der Szene 0,0617).
             const GN = 20;
             const gDelta = u.godraySun.sub(screenUV); // Vektor Pixel → Sonne (Screen-UV)
+            const gVersatz = TSL.fract(
+                float(52.9829189).mul(TSL.fract(TSL.dot(TSL.screenCoordinate.xy, vec2(0.06711056, 0.00583715))))
+            );
             let gacc = null;
             for (let i = 0; i < GN; i++) {
-                const uvI = screenUV.add(gDelta.mul(u.godrayDensity.mul(float(i / GN))));
+                const uvI = screenUV.add(gDelta.mul(u.godrayDensity.mul(gVersatz.add(i).div(GN))));
                 const cI = bild(uvI);
-                const mI = smoothstep(u.godrayThreshold, u.godrayThreshold.add(float(0.2)), luminance(cI));
+                const mI = smoothstep(u.godrayThreshold, u.godrayThreshold.add(float(0.2)), luminance(cI)).mul(
+                    istWelt(uvI).select(float(0), float(1))
+                );
                 const wI = Math.pow(0.96, i) * (1 / GN); // JS-Skalar-Gewicht
                 const srcI = cI.mul(mI).mul(float(wI));
                 gacc = gacc ? gacc.add(srcI) : srcI;
@@ -2328,12 +2346,7 @@ class AnazhRealm_bild_kosten {
             // (`_himmelImUnendlichen`: Kuppel, Sterne, Sonne und Mond auf Tiefe 1 — die Sonne rastert ihre 1 eine Spur darunter,
             // gate:post-kette 80 Pixel unter Deuteranopie) — dort wirkt Δ nie. Deut und Prot trafen das Blau nie (e · Himmelsblau
             // < 0), die Tritanopie (e = 0,859 (B − G)) traf genau es (OMEN Ego RGB 71,6/93,1/104,5 → 59,1/85,2/105,2).
-            const szenenTiefe = scenePass.getTextureNode("depth");
-            const tiefenGr = vec2(szenenTiefe.size());
-            const welt = szenenTiefe
-                .load(screenUV.mul(tiefenGr).floor().clamp(vec2(0), tiefenGr.sub(1)))
-                .r.lessThan(float(0.99999))
-                .select(float(1), float(0));
+            const welt = istWelt(screenUV).select(float(1), float(0));
             const farbsichtDelta = u.farbSchub.mul(TSL.dot(u.farbFehler, gesehen).max(0).mul(welt));
             u.ausgabe = { aus: graded, farbsicht: gesehen.add(farbsichtDelta).max(vec3(0, 0, 0)) };
 
