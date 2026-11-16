@@ -1007,7 +1007,8 @@ class AnazhRealm_siedlung_bewohner {
         // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, der Stand sofort
         if (G.lage === null) {
             G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, gebacken: 0, fertig: false, tempo: b.tempo, gang: null };
-            this._bewohnerGangPose(g, G.lage, G.lage.n, null);
+            for (let h = 0; h < AnazhRealm._bewohnerStaende().length; h++)
+                this._bewohnerGangPose(g, G.lage, G.lage.n + h, null);
         }
     }
 
@@ -1188,18 +1189,23 @@ class AnazhRealm_siedlung_bewohner {
                 gesicht,
                 inventar: "bewohner",
                 n: AnazhRealm.BEWOHNER.gangPhasen,
+                staende: AnazhRealm._bewohnerStaende().length,
                 quellen,
                 cap: S.liste.length,
                 senken,
                 raum: true,
             },
             // der Stand zuerst (der Satz steht, bis sein Gang gebacken ist — `_bewohnerGangBacken` im Takt)
-            (Z) => this._bewohnerGangPose(b.leib, Object.assign(Z, { gebacken: 0, tempo: b.tempo }), Z.n, S)
+            (Z) => {
+                Object.assign(Z, { gebacken: 0, tempo: b.tempo });
+                for (let h = 0; h < Z.staende; h++) this._bewohnerGangPose(b.leib, Z, Z.n + h, S);
+            }
         );
     }
 
     // DIE POSE k (k < n: die Phase 2πk/n des Doppelschritts im EINEN Gang-Gesetz — `_gaitTick` mit dem Tempo des Leibs,
-    // eingeschwungen, dann `_animateHuman`; k = n: der Stand, der Kontrapost des Atems bei 0) am Leib `g`: mit der Siedlung `S` die
+    // eingeschwungen, dann `_animateHuman`; k = n + h: der Stand h, der Kontrapost des Atems bei 0 in der Haltung seines Namens,
+    // `_bewohnerStaende` — im Gesetz ändert die Haltung nur den Stand, nie den Gang) am Leib `g`: mit der Siedlung `S` die
     // Zeile k des Gang-Puffers ihres Satzes `Z` — die Pose auf die Knochen der Vorlage gelegt (`_bewohnerRaumStellen`) und in den
     // Raum des Leibs geskinnt (`_gangSatzPose`) —, ohne sie die Lagen der Zeile k einer Gestalt `Z` (`_bewohnerLagePose`: der Gang
     // des Felds). Danach steht der Leib wieder im Stand.
@@ -1210,13 +1216,13 @@ class AnazhRealm_siedlung_bewohner {
                 for (let i = 0; i < 40; i++) Z.gang = this._gaitTick(g, h, Z.tempo, 0.1, null);
             }
             this._animateHuman(g, 0, (2 * Math.PI * k) / Z.n, true, false, null, Z.gang);
-        } else this._animateHuman(g, 0, 0, false, false, null);
+        } else this._animateHuman(g, 0, 0, false, false, this._bewohnerStandGemuet(k - Z.n));
         this._leibMatrix(g);
         if (S) {
             const P = this._bewohnerRaumStellen(S, g);
             this._gangSatzPose(Z, k, P.teile, P.wurzel.matrixWorld);
         } else this._bewohnerLagePose(Z, k, g);
-        if (k < Z.n) {
+        if (k !== Z.n) {
             this._animateHuman(g, 0, 0, false, false, null);
             this._leibMatrix(g);
         }
@@ -1281,7 +1287,7 @@ class AnazhRealm_siedlung_bewohner {
         const tb = g.userData._tierBaum;
         if (!satz.lageTeile) {
             satz.lageTeile = ["", ...Object.keys(tb.teile)];
-            satz.lagen = new Float32Array((satz.n + 1) * satz.lageTeile.length * 16);
+            satz.lagen = new Float32Array((satz.n + AnazhRealm._bewohnerStaende().length) * satz.lageTeile.length * 16);
         }
         const inv = (this._bewohnerLageInv || (this._bewohnerLageInv = new THREE.Matrix4()))
             .copy(g.matrixWorld)
@@ -1334,7 +1340,7 @@ class AnazhRealm_siedlung_bewohner {
         const E = M.elements;
         for (let i = 0; i < gl.length; i++) {
             const j = Z.lageVon.get(gl[i].name);
-            const s = (Z.n * K + j) * 16;
+            const s = ((Z.n + (b.standZeile || 0)) * K + j) * 16;
             const a0 = (k0 * K + j) * 16;
             const a1 = (k1 * K + j) * 16;
             for (let e = 0; e < 16; e++) {
@@ -1449,7 +1455,8 @@ class AnazhRealm_siedlung_bewohner {
                 0,
                 Z.fertig ? (b.walkPhase || 0) / (2 * Math.PI) : 0,
                 Z.fertig ? b._gaitW || 0 : 0,
-                b.satzZeilen
+                b.satzZeilen,
+                b.standZeile || 0
             );
         if (bewegt) {
             if (!Z) return;
@@ -1603,6 +1610,7 @@ class AnazhRealm_siedlung_bewohner {
                 if (b.ankunft) continue; // wer noch ankommt, liest seinen Plan in seiner Ankunft (`_bewohnerAnkunft`)
                 const z0 = (this._bewohnerUhrNach(S, b), b.ziel);
                 if (this._bewohnerZiel(b, stunde, true)) anders = true;
+                if (this._bewohnerStandNeu(b, S)) anders = true; // der Akt wechselt am selben Ort: sein Stand im Satz
                 if (b.ziel !== z0) this._bewohnerWecken(S, b);
             }
             if (S.planSoll >= N) S.planSoll = 0;
@@ -1808,6 +1816,7 @@ class AnazhRealm_siedlung_bewohner {
                 this._bewohnerRasterLage(S, b);
                 if (b.amSteuer) continue; // sein Leib gehört dem Wagen (`_tickVerkehr`)
                 const istNah = nah.indexOf(b) >= 0;
+                if (this._bewohnerStandNeu(b, S)) bewegt.push(b); // die Furcht kommt und geht: sein Stand im Satz
                 // DIE ARME IN DER RUHE SEINES BAUS (w28-leib-genom, koerper `leibBauArme`): wer nah gezeigt wird, hängt seine Arme an
                 // SEINEM Rumpf — der Löser am Baum des Gesetzes, einmal je Leib und höchstens EIN Leib je Takt (Lehre 25: die
                 // Geburt zahlt ihn nicht; fern trägt ihn der Satz, sein Punkt im Leib-Raum). Die Ruhe der Gelenk-Gestalt merkt sie.
@@ -2125,6 +2134,52 @@ class AnazhRealm_siedlung_bewohner {
     // `tagesHaltung`, seine Rolle) und die Furcht, die er erinnert (`_kreaturFurchtErinnert`: Kummer und Aufruhr, wie die Bedrohung
     // sie dem Spieler speist) — die EINE Emotions-Brücke (`_koerperMotionProfile`) wählt daraus das Profil seines Stands. Bis hier
     // ging jeder Leib mit `null`: der Akt des Tags und die Furcht standen in keinem Bild. Ein Objekt je Bewohner, je Ruf gefüllt.
+    // DIE STÄNDE DES BEWOHNERS (w28-steh-haltung): die Namen der Profile, in denen ein Bewohner stehen kann — neutral, je
+    // Haltung des Tages-Gesetzes (koerper TAGES_GESETZ.haltung) und je Zeile der Emotions-Brücke an einer Achse seines Gemüts
+    // (BEWOHNER.gemuet: sorrow, chaos). Der ferne Satz und das Feld backen je Namen EINE Stand-Zeile (`_bewohnerGangPose`),
+    // jeder Bewohner wählt seine über denselben Namen wie sein naher Leib (`_koerperMotionName`). Bis hier buk der Satz EINEN
+    // Stand ohne Haltung: an der Nah-Grenze sprang die Schulter beim Akt besuch um 8,2°.
+    static _bewohnerStaende() {
+        if (AnazhRealm._bewohnerStaendeListe) return AnazhRealm._bewohnerStaendeListe;
+        const KC = window.__koerperCore;
+        if (!KC || !KC.TAGES_GESETZ) return AnazhRealm._kernPflichtBruch("koerper:TAGES_GESETZ");
+        const L = [AnazhRealm.MOTION_PROFILE_MAP.koerper.idle];
+        const nimm = (nm) => nm && !L.includes(nm) && L.push(nm);
+        Object.values(KC.TAGES_GESETZ.haltung).forEach(nimm);
+        for (const r of AnazhRealm.MOTION_EMOTION_PROFILES)
+            if (r.koerper && AnazhRealm.BEWOHNER.gemuet.includes(r.axis)) nimm(r.koerper.idle);
+        return (AnazhRealm._bewohnerStaendeListe = Object.freeze(L));
+    }
+    // DAS GEMÜT DES STANDS h (das Backen): das Gemüt, das die Brücke auf den Namen des Stands h führt (0: neutral, wie bisher);
+    // ein Stand ohne Profil im Buch bricht laut — nie eine neutrale Zeile unter fremdem Namen
+    _bewohnerStandGemuet(h) {
+        if (!(h > 0)) return null;
+        const e = { haltung: AnazhRealm._bewohnerStaende()[h] };
+        if (!this._koerperMotionProfile(false, e) || this._koerperMotionName(false, e) !== e.haltung)
+            this._bruchMelden(
+                `BEWOHNER: der Stand „${e.haltung}“ trägt kein Profil der Bewegung (das Buch des Körpers)`
+            );
+        return e;
+    }
+    // DER STAND DES BEWOHNERS: die Zeile seines Stands — der Name, den sein naher Leib steht (`_bewohnerGemuet` über die EINE
+    // Wahl `_koerperMotionName`), in der Liste der Stände; ein Name ohne Zeile bricht laut
+    _bewohnerStandVon(b) {
+        const nm = this._koerperMotionName(false, this._bewohnerGemuet(b));
+        const h = AnazhRealm._bewohnerStaende().indexOf(nm);
+        if (h < 0) this._bruchMelden(`BEWOHNER: der Stand „${nm}“ trägt keine Zeile im Satz`);
+        return Math.max(0, h);
+    }
+    // SEIN STAND WECHSELT (der Akt des Tags, die Furcht): gemerkt (`b.standZeile` — die Leser: `_bewohnerSatzSchreiben`, im Feld
+    // `_bewohnerFeldLage`, dort sofort neu gestellt); liefert, ob der Satz ihn neu schreiben muss
+    _bewohnerStandNeu(b, S) {
+        const h = this._bewohnerStandVon(b);
+        if (h === (b.standZeile || 0)) return false;
+        b.standZeile = h;
+        const g = b.leib;
+        const echt = !(this.state.renderer && this.state.renderer._isHeadlessNull);
+        if (g && echt && !b.nah && !b.drinnen && this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S);
+        return true;
+    }
     _bewohnerGemuet(b) {
         const KC = window.__koerperCore;
         if (!KC || typeof KC.tagesHaltung !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesHaltung");
@@ -3773,6 +3828,8 @@ AnazhRealm.BEWOHNER = Object.freeze({
     ringHystM: 3,
     ringLeiber: 6,
     gangPhasen: 16,
+    // die Achsen seines Gemüts (`_bewohnerGemuet`): die Furcht, die er erinnert — die Stände des Satzes lesen sie (`_bewohnerStaende`)
+    gemuet: Object.freeze(["sorrow", "chaos"]),
     gangJeTakt: 2,
     platzRandM: 10,
     planH: 0.002,
