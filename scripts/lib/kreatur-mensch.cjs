@@ -255,7 +255,10 @@ async function menschBuehnen() {
             },
             menge: (S) => {
                 const M = liste.filter((b) => b.leib && !b.drinnen).sort((a, b) => ab(a.leib.position, pm) - ab(b.leib.position, pm)).slice(0, 50); // prettier-ignore
-                const f = M[0].leib.userData._tierBaum.wrap.scale.x;
+                // (die Skala der Vorlage liest die Probe am nächsten LEIB-Träger — der Stand trägt keinen Baum, w28-leib-im-ring)
+                const T0 = M.find((b) => b.leib.userData._tierBaum);
+                if (!T0) throw new Error(`bewohner: die Menge trägt keinen Leib unter den ${M.length} Nächsten`);
+                const f = T0.leib.userData._tierBaum.wrap.scale.x;
                 ms.sort(aufsteigend);
                 // die Dreiecke der Senken des EINEN Satzes der Siedlung (Leib, Wurf) — jeder Typ zeichnet in ihm
                 const dreiecke = ["leib", "wurf"].map((k) => S.satz[k].geometry.index.count / 3);
@@ -377,12 +380,15 @@ async function menschBuehnen() {
         const rand = amPlatz(S.ox, S.oz, pz);
         if (!rand) return { fehler: "kein freier Stand am Rand des Dorfplatzes" };
         const { pc, ax, az } = rand;
-        const leiber = () => s.scene.children.filter((o) => o?.userData && o.userData.rig && o.userData.heim != null);
+        // DIE STÄNDE (w28-leib-im-ring): jeder Bewohner steht als Hülle in der Szene (`_bewohnerGeburt`: Lage, Heim, Feld und
+        // Satz); seinen Leib trägt nur, wen das Gesetz ihn tragen heißt (Nah-Wahl, Erster je Gestalt, Fahrer im Bild). Was die
+        // Probe zählt und wo sie steht, liest sie am Stand; ob jeder verlangte Leib steht, sagt die Welt (`_weltOffen().leute`).
+        const leiber = () => s.scene.children.filter((o) => o?.userData?._feldLageVon && o.userData.heim != null);
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
-        // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios — bricht der
+        // mit Bild trägt jeder Stand draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios — bricht der
         // Deckel, bricht die Probe bei seinem Namen (nie misst die Quote ein halb geborenes Dorf)
         await bisDa(
-            "bewohner: die Leiber",
+            "bewohner: die Stände",
             () => leiber().length < sollSumme || r._weltOffen().leiber > 0 || hausE.some((e) => !e._hausHuelle)
         );
         await stehtUm("bewohner: das Start-Dorf");
@@ -702,7 +708,13 @@ async function menschBuehnen() {
         if (!b) return { fehler: "kein Stehender mit freiem Weg um 10 Uhr" };
         const [g, stand] = [b.leib, b.ziel];
         // DER KOPF IM BILD: seine Welt-Matrix (die dritte Spalte: wohin das Gesicht zeigt) gegen den Spieler
-        const kopf = () => g.userData.rig.head.matrixWorld.elements;
+        // (den Kopf trägt nur der Leib: in 3 m hat ihn die Nah-Wahl gegeben — fehlt er, bricht die Probe beim Namen)
+        const kopf = () => {
+            const R = g.userData.rig;
+            const d = ab(pm, g.position).toFixed(2);
+            if (!R) throw new Error(`begegnung: ${b.rolle} #${b.heim} trägt in ${d} m keinen Leib`);
+            return R.head.matrixWorld.elements;
+        };
         const gier = (e = kopf()) =>
             Math.abs(grad(wrap(Math.atan2(pm.x - e[12], pm.z - e[14]) - Math.atan2(e[8], e[10]))));
         // EIN GANG (versatz quer zum Weg): je Takt der Kreatur-Takt und die Bewohner, im Fenster der echte Frame aus Ego

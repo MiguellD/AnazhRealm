@@ -956,36 +956,112 @@ class AnazhRealm_siedlung_bewohner {
     // Gesetz (Lehre 22: die Sohle liegt PLAYER_FOOT_OFFSET unter dem Ursprung des Leibs). Er hält seine Haltung jenseits der
     // Stufen-Grenze (`haltungFest`: kein Sprung in die A-Pose der Vorlage); die Glieder der Gestalt (`_tierBaum`: Teile, Hülle,
     // Ruhe) trägt der Glieder-Satz des Welt-March (`_kzLeib`).
+    // DER LEIB IM RING (w28-leib-im-ring, Gebot 7: die Kosten hängen am Schirm, nie an der Kopfzahl): die Geburt stellt den
+    // STAND des Bewohners — seine Hülle `b.leib` (Lage, Größe, `userData`: Heim, Gattung, Farben, Feld und Satz) und die Zahlen
+    // seines Baus (`bauZu`, `beinMass`, `beinL`, `tempo`); den Leib selbst (Haut, Knochen, Grobstufe) zieht `_bewohnerLeibAn` in
+    // die Hülle, nur für den, den das Auge als Leib sieht (die Nah-Wahl, der Fahrer im gezeichneten Wagen) oder an dem seine
+    // Gestalt backt (`_bewohnerGangBacken`), und `_bewohnerLeibAb` nimmt ihn wieder. Der ERSTE einer Gestalt trägt ihn bei der
+    // Geburt: an ihm misst sie ihr Maß (`G.mass`). Bis hier trug jeder Kopf Leib und Grobstufe mit je eigenem Skelett —
+    // Dorfplatz mensch.K2#2 (Radeon, 16.11.): 77 Bewohner, 1 sichtbar, 952 Skelette, 4 879 Objekte, 454,2 MB Heap.
     _bewohnerGeburt(S, b) {
         const G = S.gestalten[b.gestalt];
-        const alt = this._activePeerUebergabe;
-        this._activePeerUebergabe = {};
-        let g = null;
-        try {
-            g = this._buildHumanGroup(G.ov);
-        } finally {
-            this._activePeerUebergabe = alt;
-        }
-        const gl = g && g.userData._gelenk;
-        if (!g || !g.userData.rig || !gl) {
-            b.leib = false;
-            if (g) this._disposeSoulGroup(g);
-            return this._bruchMelden(`BEWOHNER: der Mensch-Bau lieferte keinen Leib („${S.plan.name || "?"}")`);
-        }
+        const g = new THREE.Group();
+        g.rotation.order = "YXZ"; // wie der Mensch-Bau (`_buildHumanGroup`)
         g.name = "bewohner";
         g.userData.heim = b.heim;
         g.userData.gattung = `mensch:${S.key}:${b.gestalt}`;
         g.scale.setScalar(b.groesse);
-        // Breite und Tiefe seines Genoms tragen die Hüllen (im Raum des Leibs, nach der Haut — wie die Matrix seines Satzes);
-        // das Rig, die Glieder des Felds und der Stand bleiben in seiner Höhe. SEINE FARBEN (mensch.K4): jedes Teil liest seine
-        // Palette aus der Ton-Tafel (`userData.__ton` [Kopf, Gestalt], `_tonFaktor`), das Feld seine Glieder (`_tonFeldFarbe`)
+        // SEINE FARBEN (mensch.K4): jedes Teil liest seine Palette aus der Ton-Tafel (`userData.__ton` [Kopf, Gestalt],
+        // `_tonFaktor`), das Feld seine Glieder (`_tonFeldFarbe`)
         g.userData.__tonZeilen = b.tonZeilen;
-        g.traverse((n) => {
-            if (n.isSkinnedMesh) n.scale.set(b.breite, 1, b.tiefe);
-            if (n.isMesh) n.userData.__ton = b.tonZeilen;
-        });
         this._bewohnerStellen(b, g, b.x, b.z);
         g.rotation.y = b.blick;
+        g.visible = false;
+        g.userData._menge = true; // der Mensch der Menge: sein Feld wählt das Stufen-Gesetz am Schirm (`_feldGrenzen`)
+        // seine Glieder im Feld stehen in der Lage seiner Gestalt (`_bewohnerFeldLage`, `_bewohnerFeldAnker`), nie an Knochen
+        g.userData._feldLageVon = b._feldLageVon = { b, S };
+        b.bauZu = Object.assign({}, G.dK, b.bau);
+        b.leib = g;
+        if (!G.mass) {
+            if (!this._bewohnerLeibAn(S, b)) {
+                b.leib = false;
+                return;
+            }
+            this._bewohnerBackt(S, b); // an ihm backt seine Gestalt (`_bewohnerGangBacken`)
+        }
+        // DER LEIB OHNE SZENEN-GANG (die Klasse der Ruhe, K59: `_ruhendeWurzel`): seine Matrizen stehen, der Szenen-Gang
+        // überspringt ihn; was ihn bewegt (Atem, Gang, Schritt — `_tickBewohner`), zieht sie selbst nach (`_leibMatrix`)
+        this._leibMatrix(g);
+        g.updateMatrixWorld = AnazhRealm._ruhendeWurzel;
+        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags. Die
+        // Beinlänge seiner GESTALT in seiner Größe, nicht die seines Baus (w28-leib-genom): der Schritt seines Gangs liest sein
+        // wahres Bein (`beinMass`, kein Gleiten), das Tempo seines Tags bliebe mit ihm ±1,3 % je σ — und die Ankunft spielt
+        // einen Weg nicht tempo-treu nach: am wahren Bein riss die Wiederkehr an 1 von 1296 (2,674 m über ±2 m,
+        // gate:kreatur-takt bewohner — derselbe Bewohner, der an der Achse des Kopfs riss). Diese Wurzel steht offen.
+        b.beinMass = this._bewohnerBeinMass(G, b);
+        if (g.userData.rig) g.userData.rig._beinMass = b.beinMass;
+        b.beinL = Math.max(0.3, G.mass.beinL * b.groesse);
+        b.tempo = globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang;
+        this.state.scene.add(g);
+        if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
+        // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, der Stand sofort
+        if (G.lage === null) {
+            G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, gebacken: 0, fertig: false, tempo: b.tempo, gang: null };
+            this._bewohnerGangPose(g, G.lage, G.lage.n, null);
+        }
+    }
+
+    // DAS BEIN SEINES BAUS OHNE LEIB (w28-leib-im-ring; Leser: der Gang-Takt `_gaitTakt`, das Rig seines Leibs): Ober- und
+    // Unterschenkel der Gestalt in ihrer Ruhe (`G.mass`, am ersten Leib gemessen), gestellt von demselben Gesetz, das die
+    // Knochen seines Leibs stellt (koerper `leibBauAuf` auf Daten-Knoten: nur die Höhen von Knie und Knöchel) — dieselben
+    // Zahlen wie `_gaitBeinMass` am gebauten Leib.
+    _bewohnerBeinMass(G, b) {
+        const M = G.mass;
+        const P = () => ({ position: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } });
+        const t = { mensch: P(), torso: P(), head: P() };
+        for (const s of ["1", "-1"]) for (const n of ["arm", "elbow", "hand", "knee", "ankle"]) t[n + s] = P();
+        window.__koerperCore.leibBauAuf(t, G.dK, b.bauZu);
+        const laenge = (p, dy) => Math.sqrt(p.x * p.x + (p.y + dy) * (p.y + dy) + p.z * p.z);
+        const l1 = laenge(M.knie, t[M.knieName].position.y);
+        const l2 = laenge(M.fuss, t[M.fussName].position.y);
+        const [wpl, wz] = [M.wpl * b.groesse, M.wz * b.groesse];
+        return { l1, l2, wpl, wz, L: (l1 + l2) * wpl };
+    }
+
+    // DER LEIB ZIEHT IN DIE HÜLLE (w28-leib-im-ring): der EINE Mensch-Bau unter den Dials seiner Gestalt (die Übergabe des
+    // Spielers ruht — der Sentinel des Mitspielers) — Haut, Knochen und Grobstufe hängen an der Hülle des Bewohners, was der
+    // Bau an seiner Gruppe trägt (`rig`, `_gelenk`, …), an ihrem `userData` (`_leibTeile` merkt die Namen für den Abschied).
+    // Er hält seine Haltung jenseits der Stufen-Grenze (`haltungFest`: kein Sprung in die A-Pose der Vorlage). → trägt er ihn?
+    _bewohnerLeibAn(S, b) {
+        const G = S.gestalten[b.gestalt];
+        const g = b.leib;
+        const u = g.userData;
+        if (u.rig) return true;
+        const alt = this._activePeerUebergabe;
+        this._activePeerUebergabe = {};
+        let k = null;
+        try {
+            k = this._buildHumanGroup(G.ov);
+        } finally {
+            this._activePeerUebergabe = alt;
+        }
+        const gl = k && k.userData._gelenk;
+        if (!k || !k.userData.rig || !gl) {
+            if (k) this._disposeSoulGroup(k);
+            this._bruchMelden(`BEWOHNER: der Mensch-Bau lieferte keinen Leib („${S.plan.name || "?"}")`);
+            return false;
+        }
+        u._leibTeile = Object.keys(k.userData);
+        Object.assign(u, k.userData);
+        while (k.children.length) g.add(k.children[0]);
+        // Breite und Tiefe seines Genoms tragen die Hüllen (im Raum des Leibs, nach der Haut — wie die Matrix seines Satzes);
+        // das Rig, die Glieder des Felds und der Stand bleiben in seiner Höhe.
+        // DER WURF IST DER SATZ (`_bewohnerSatz`): kein Teil des Leibs wirft, auch der nahe nicht — die Kaskaden zeichnen jeden
+        // Bewohner im Nah-Kreis aus dem Wurf-Satz seiner Gestalt; sichtbar wird der Leib erst durch die Nah-Wahl (`_tickBewohner`)
+        g.traverse((n) => {
+            if (n.isSkinnedMesh) n.scale.set(b.breite, 1, b.tiefe);
+            if (n.isMesh) [n.userData.__ton, n.castShadow] = [b.tonZeilen, false];
+        });
         gl.haltungFest = true;
         const teile = {};
         gl.nah.traverse((n) => {
@@ -997,42 +1073,60 @@ class AnazhRealm_siedlung_bewohner {
         // Menschen, kein Baum: Mikrosekunden); die Ruhe der Gelenk-Gestalt (`_gelenkRuhe`) merkt sie. Die Ruhe seiner ARME an
         // seinem Rumpf rechnet der Löser am Baum des Gesetzes (~3,7 ms) — erst, wenn er nah gezeigt wird (`_tickBewohner`,
         // `bauZu`). Gang, Feld und Stand lesen diese Knochen.
-        // (DAS TEMPO SEINES TAGS misst an der Beinlänge seiner Gestalt, vor seinem Bau — unten: die Wiederkehr der Bewohner hält es)
-        const beinTag = this._gaitBeinMass(g.userData.rig).L;
-        delete g.userData.rig._beinMass;
+        // DAS MASS DER GESTALT (am ersten Leib, vor seinem Bau): Knie und Knöchel in ihrer Ruhe, die Welt-Skala der Hüfte je
+        // Größe 1, die Beinlänge je Größe 1 (das Tempo des Tags, `_bewohnerGeburt`) und die Zeile ihrer Gelenk-Gestalt (die
+        // Grenze der Grobstufe, `_bewohnerGelenkAb`) — wer ohne Leib steht und geht, liest sie hier (`_bewohnerBeinMass`)
+        const rig = u.rig;
+        if (!G.mass) {
+            const M0 = this._gaitBeinMass(rig);
+            G.mass = {
+                knie: rig.legL.knee.position.clone(),
+                fuss: rig.legL.ankle.position.clone(),
+                knieName: rig.legL.knee.name,
+                fussName: rig.legL.ankle.name,
+                wpl: M0.wpl / b.groesse,
+                wz: M0.wz / b.groesse,
+                beinL: M0.L / b.groesse,
+                gelenk: { art: gl.art, abM: gl.abM, hyst: gl.hyst },
+            };
+            // die Glieder der Gattung zerlegt der Vorrat an einem Leib (`_gliederBestellen`, im Leerlauf): an diesem — wer
+            // ohne Leib steht, bestellt nicht (`_gattungGlieder`)
+            const echt = !(this.state.renderer && this.state.renderer._isHeadlessNull);
+            if (echt && !(this._trefferGliedNamen && this._trefferGliedNamen.has(u.gattung))) this._gliederBestellen(g);
+        }
         const kc = window.__koerperCore;
-        b.bauZu = Object.assign({}, G.dK, b.bau);
         kc.leibBauAuf(teile, G.dK, b.bauZu);
         for (const e of gl.ruhe || []) e[1].copy(e[0].position);
         const ruhe = {};
         for (const [k, p, q, s] of gl.ruhe || []) if (k.name) ruhe[k.name] = { position: p, quaternion: q, scale: s };
-        g.userData._tierBaum = { teile, wrap: gl.nah.parent, ruhe };
-        // DER LEIB OHNE SZENEN-GANG (die Klasse der Ruhe, K59: `_ruhendeWurzel`): seine Matrizen stehen, der Szenen-Gang
-        // überspringt ihn; was ihn bewegt (Atem, Gang, Schritt — `_tickBewohner`), zieht sie selbst nach (`_leibMatrix`)
-        g.updateMatrixWorld(true);
-        g.updateMatrixWorld = AnazhRealm._ruhendeWurzel;
-        // DAS TEMPO DES GANGS (mensch.K2): die Tempo-Einheit des Steuer-Gesetzes an seiner Beinlänge × `gang` des Tags. Die
-        // Beinlänge seiner GESTALT in seiner Größe (`beinTag`), nicht die seines Baus (w28-leib-genom): der Schritt seines Gangs
-        // liest sein wahres Bein am Rig (`_gaitBeinMass`, kein Gleiten), das Tempo seines Tags bliebe mit ihm ±1,3 % je σ — und
-        // die Ankunft spielt einen Weg nicht tempo-treu nach: am wahren Bein riss die Wiederkehr an 1 von 1296 (2,674 m über
-        // ±2 m, gate:kreatur-takt bewohner — derselbe Bewohner, der an der Achse des Kopfs riss). Diese Wurzel steht offen.
-        b.beinL = Math.max(0.3, beinTag);
-        b.tempo = globalThis.__tetrapodaCore.tempoEinheit(b.beinL) * window.__koerperCore.TAGES_GESETZ.gang;
-        // DER WURF IST DER SATZ (`_bewohnerSatz`): kein Teil des Leibs wirft, auch der nahe nicht — die Kaskaden zeichnen jeden
-        // Bewohner im Nah-Kreis aus dem Wurf-Satz seiner Gestalt; sichtbar wird der Leib erst durch die Nah-Wahl (`_tickBewohner`)
-        g.traverse((n) => {
-            if (n.isMesh) n.castShadow = false;
-        });
+        u._tierBaum = { teile, wrap: gl.nah.parent, ruhe };
+        // das Bein seines Baus ist EINE Zahl (`_bewohnerBeinMass`): sein Rig liest sie, wie sein Stand sie las
+        rig._beinMass = b.beinMass || undefined;
+        b.armeOffen = true; // die Ruhe der Arme seines Baus stellt die Nah-Wahl an DIESEM Leib (`_tickBewohner`)
+        this._leibMatrix(g);
+        return true;
+    }
+
+    // DER LEIB GEHT (w28-leib-im-ring): Haut, Knochen und Grobstufe verlassen die Hülle über den EINEN Abschied
+    // (`_disposeSoulGroup`: die Geometrie der Vorlage bleibt, die Render-Objekte lösen sich, die Vorlage zählt ihn ab) — der
+    // Stand bleibt (Lage, Feld, Satz, Gang: Phase und Gewicht liegen am Bewohner). Wer als Leib im Bild steht, gibt ihn nicht.
+    _bewohnerLeibAb(b) {
+        const g = b.leib;
+        const u = g && g.userData;
+        if (!u || !u.rig || b.backt) return; // (an wem gebacken wird, der hält ihn: `_bewohnerBackt`)
+        const k = new THREE.Group();
+        while (g.children.length) k.add(g.children[0]);
+        for (const n of u._leibTeile) delete u[n];
+        for (const n of ["_leibTeile", "_tierBaum", "_trefferGlieder", "_gaitIK"]) delete u[n];
+        this._disposeSoulGroup(k);
+        b.armeOffen = false;
         g.visible = false;
-        g.userData._menge = true; // der Mensch der Menge: sein Feld wählt das Stufen-Gesetz am Schirm (`_feldGrenzen`)
-        this.state.scene.add(g);
-        b.leib = g;
-        if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
-        // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, der Stand sofort
-        if (G.lage === null) {
-            G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, gebacken: 0, fertig: false, tempo: b.tempo, gang: null };
-            this._bewohnerGangPose(g, G.lage, G.lage.n, null);
-        }
+    }
+
+    // DIE GRENZE DER GROBSTUFE eines Bewohners in Metern (der Takt seines Gangs, `_creatureAnimDiv`): die Zeile der
+    // Gelenk-Gestalt seiner Gestalt (`G.mass.gelenk`) × seine Größe — mit und ohne Leib dieselbe Zahl (`_gelenkAb`).
+    _bewohnerGelenkAb(S, b) {
+        return this._gelenkGrenzen(S.gestalten[b.gestalt].mass.gelenk).grenzen[0].ab * (b.leib.scale.x || 1);
     }
 
     // DER STAND DES LEIBS an (x, z): auf dem Boden jedes Körpers (Q4: die Fels-Grenze, nie das Dach), an der Tür auf ihrer
@@ -1209,7 +1303,7 @@ class AnazhRealm_siedlung_bewohner {
     // Bis stadt-takt-z15d ging je Schritt das Rig (`_animateHuman`) und die Welt-Matrix des ganzen Leibs (`_leibMatrix`) — am
     // Messort stadt mittags (165 Gehende) `_bewohnerGangSchritt` 108,7 → 25,6 ms je Sekunde (Radeon); die Lage der Glieder
     // weicht vom Rig höchstens 3,7 cm ab (der Atem, das Tempo des Back-Leibs).
-    _bewohnerFeldLage(b, S) {
+    _bewohnerFeldLage(b, S, an = this.state.creaturesHidden !== true) {
         const g = b.leib;
         const gl = g.userData._kzGlieder;
         const Z = S.gestalten[b.gestalt].lage;
@@ -1222,7 +1316,6 @@ class AnazhRealm_siedlung_bewohner {
             this._bruchMelden(`BEWOHNER: ein Glied ohne Lage im Gang der Gestalt („${S.plan.name || "?"}")`);
         }
         if (!Z.lageVon) return;
-        g.userData._feldLageVon = b._feldLageVon || (b._feldLageVon = { b, S }); // der Stufen-Wechsel schreibt die Lage neu (`_leibStufeTauschen`)
         const K = Z.lageTeile.length;
         const L = Z.lagen;
         const w = Z.fertig ? b._gaitW || 0 : 0;
@@ -1239,7 +1332,6 @@ class AnazhRealm_siedlung_bewohner {
         const M = this._bewohnerFeldM || (this._bewohnerFeldM = new THREE.Matrix4());
         const W = this._bewohnerFeldW || (this._bewohnerFeldW = new THREE.Matrix4());
         const E = M.elements;
-        const an = this.state.creaturesHidden !== true;
         for (let i = 0; i < gl.length; i++) {
             const j = Z.lageVon.get(gl[i].name);
             const s = (Z.n * K + j) * 16;
@@ -1254,13 +1346,56 @@ class AnazhRealm_siedlung_bewohner {
         }
     }
 
+    // DER ANKER EINES GLIEDS IM FELD (w28-leib-im-ring; Leser: das Backen der Glieder, `_kreaturGliederBacken`): die Welt-Matrix
+    // des Teils `name` ("" = die Hülle) im Stand seiner Gestalt (die Zeile n ihrer Lagen, `_bewohnerLagePose`) an der Lage des
+    // Bewohners — der Bewohner im Feld steht nie an Knochen. null: die Gestalt trägt die Lage (noch) nicht.
+    _bewohnerFeldAnker(L, name) {
+        const Z = L.S.gestalten && L.S.gestalten[L.b.gestalt].lage;
+        const j = Z && Z.lageTeile ? Z.lageTeile.indexOf(name) : -1;
+        if (j < 0) return null;
+        const g = L.b.leib;
+        const R = (this._bewohnerFeldR || (this._bewohnerFeldR = new THREE.Matrix4())).compose(
+            g.position,
+            g.quaternion,
+            g.scale
+        );
+        const M = (this._bewohnerFeldM || (this._bewohnerFeldM = new THREE.Matrix4())).fromArray(
+            Z.lagen,
+            (Z.n * Z.lageTeile.length + j) * 16
+        );
+        return (this._bewohnerFeldW || (this._bewohnerFeldW = new THREE.Matrix4())).multiplyMatrices(R, M);
+    }
+
+    // AN IHM WIRD GEBACKEN (w28-leib-im-ring): er hält seinen Leib, bis der Satz der Siedlung, die Lagen seiner Gestalt und die
+    // Glieder seiner Gattung stehen (`_bewohnerGangBacken` gibt ihn frei) — der Ring nimmt ihn so lange nicht.
+    _bewohnerBackt(S, b) {
+        if (!b.backt) (S.backt || (S.backt = [])).push(b);
+        b.backt = true;
+        return b;
+    }
+
     // DER GANG WIRD GEBACKEN (Lehre 14: schwere deterministische Arbeit im Takt, nie als Spitze): je Takt höchstens `je`
     // Phasen — zuerst der Satz der Siedlung (am ersten Leib, der nicht als Leib lebt: ein Leib der Nah-Wahl trägt seine eigene
     // Pose), dann die Lagen jeder Gestalt (das Feld, an einem ihrer Leiber); ist der Satz gebacken, lädt die Textur EINMAL neu und
     // er geht (`fertig`). Liefert, ob der Satz eben fertig wurde.
     _bewohnerGangBacken(S, je) {
         let fertig = false;
-        const frei = (gi) => S.liste.find((x) => (gi < 0 || x.gestalt === gi) && x.leib && !x.nah && !x.amSteuer);
+        // (w28-leib-im-ring: gebacken wird an einem Leib — der Erste, der frei ist, trägt ihn für das Backen, `backt`, und
+        // gibt ihn zurück, sobald Satz, Lagen und die Glieder seiner Gattung stehen)
+        const frei = (gi) => {
+            const x = S.liste.find((x) => (gi < 0 || x.gestalt === gi) && x.leib && !x.nah && !x.amSteuer);
+            return x && this._bewohnerLeibAn(S, x) ? this._bewohnerBackt(S, x) : null;
+        };
+        if (S.backt && S.backt.length) {
+            const echt = !(this.state.renderer && this.state.renderer._isHeadlessNull);
+            const warm = (x) =>
+                !echt || (this._trefferGliedNamen && this._trefferGliedNamen.has(x.leib.userData.gattung));
+            S.backt = S.backt.filter((x) => {
+                const L = S.gestalten[x.gestalt].lage;
+                x.backt = !((!S.satz || S.satz.fertig) && L && L.fertig && warm(x));
+                return x.backt;
+            });
+        }
         const Z = S.satz;
         const b = Z && !Z.fertig && je > 0 ? frei(-1) : null;
         if (b) {
@@ -1583,7 +1718,10 @@ class AnazhRealm_siedlung_bewohner {
                 }
                 if (b.weg) {
                     b.gehDt = (b.gehDt || 0) + delta;
-                    const div = Math.max(1, this._creatureAnimDiv(Math.sqrt(ad2), this._gelenkAb(g), 0, delta, true));
+                    const div = Math.max(
+                        1,
+                        this._creatureAnimDiv(Math.sqrt(ad2), this._bewohnerGelenkAb(S, b), 0, delta, true)
+                    );
                     if ((b.gehTakt = ((b.gehTakt || 0) + 1) % div) === 0) {
                         const dt = b.gehDt;
                         b.gehDt = 0;
@@ -1621,8 +1759,9 @@ class AnazhRealm_siedlung_bewohner {
                         );
                         this._leibMatrix(g);
                     }
-                    this._kzLeib(g, auge, true); // die Glieder backen vorab: wer hinausgeht, trägt sein Feld ab dem ersten Schritt
-                    if (this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S); // wer ins Feld tritt, geht dort seinen Gang
+                    // die Glieder backen vorab: wer hinausgeht, trägt sein Feld ab dem ersten Schritt — wer ins Feld tritt, geht
+                    // dort seinen Gang (`_kzLeib` schreibt seine Glieder über `_bewohnerFeldLage`, der EINE Schreiber)
+                    this._kzLeib(g, auge, true);
                 }
                 // DER NAH-KREIS: wer draußen keinem Feld gehört (`_kzBesitztFeld` — diesseits der Nah-Grenze, ohne Bild und
                 // fern, bis der Bake-Takt seine Glieder backt: bis dahin trägt der Körper), steht darin: der Satz, die Nächsten
@@ -1643,6 +1782,22 @@ class AnazhRealm_siedlung_bewohner {
             // Nah-Kreis steht im Satz seiner Gestalt; der Wechsel schaltet nur `visible` und schreibt die Sätze neu
             nah.sort((a, b) => b.bedeutung - a.bedeutung);
             if (nah.length > BW.nahLeiber) nah.length = BW.nahLeiber;
+            // DER LEIB IM RING (w28-leib-im-ring): wen die Wahl trifft, dem zieht sein Leib in die Hülle (`_bewohnerLeibAn`,
+            // unter dem Deckel der Geburten) — bis dahin trägt ihn der Satz, wie jeden anderen im Nah-Kreis. Wen die Wahl trifft
+            // und der Deckel warten lässt, dessen Leib verlangt das Gesetz JETZT: die Welt steht nicht ohne ihn (`leibOffen`, der
+            // Leser `_weltOffen().leute`); wem der Bau keinen Leib gibt, der ist laut gebrochen (`_bruchMelden`), nie offen.
+            S.leibOffen = 0;
+            for (let i = nah.length - 1; i >= 0; i--) {
+                if (nah[i].leib.userData.rig) continue;
+                if (geburten >= BW.geburtenJeTakt) S.leibOffen++;
+                else if (this._bewohnerLeibAn(S, nah[i])) {
+                    geburten++;
+                    continue;
+                }
+                nah.splice(i, 1);
+            }
+            const halter = this._bewohnerHalter || (this._bewohnerHalter = []);
+            halter.length = 0;
             let armeFrei = true; // (die Ruhe der Arme seines Baus: EIN Leib je Takt, unten)
             for (const b of koepfe) {
                 const g = b.leib;
@@ -1656,7 +1811,7 @@ class AnazhRealm_siedlung_bewohner {
                 // DIE ARME IN DER RUHE SEINES BAUS (w28-leib-genom, koerper `leibBauArme`): wer nah gezeigt wird, hängt seine Arme an
                 // SEINEM Rumpf — der Löser am Baum des Gesetzes, einmal je Leib und höchstens EIN Leib je Takt (Lehre 25: die
                 // Geburt zahlt ihn nicht; fern trägt ihn der Satz, sein Punkt im Leib-Raum). Die Ruhe der Gelenk-Gestalt merkt sie.
-                if (istNah && b.bauZu && armeFrei) {
+                if (istNah && b.armeOffen && armeFrei) {
                     const [G, kc, rig] = [S.gestalten[b.gestalt], window.__koerperCore, g.userData.rig];
                     kc.leibBauArme(rig, G.bauRuhe || (G.bauRuhe = kc.leibBauRuhe(G.dK)), kc.leibBauRuhe(b.bauZu));
                     [rig.armL, rig.armR].forEach((seite, i) => {
@@ -1664,7 +1819,7 @@ class AnazhRealm_siedlung_bewohner {
                             for (const e of g.userData._gelenk.ruhe || [])
                                 if (e[0] === seite[k]) e[2].setFromEuler(new THREE.Euler(...rig.armRuhe[i][k]));
                     });
-                    [b.bauZu, armeFrei] = [null, false];
+                    [b.armeOffen, armeFrei] = [false, false];
                 }
                 if (istNah !== !!b.nah) {
                     b.nah = istNah;
@@ -1683,7 +1838,10 @@ class AnazhRealm_siedlung_bewohner {
                     this._bewohnerGangSchritt(b, 0, delta, echt, S);
                     bewegt.push(b);
                 }
-                if (!istNah) continue;
+                if (!istNah) {
+                    if (g.userData.rig && !b.backt) halter.push(b); // er trägt einen Leib, den das Auge nicht sieht
+                    continue;
+                }
                 // der Leib zieht seine Matrizen selbst nach (K59 `_ruhendeWurzel`): nach jeder Pose und jedem Schritt
                 let neu = b.lageNeu === true;
                 let gepost = false;
@@ -1711,6 +1869,20 @@ class AnazhRealm_siedlung_bewohner {
                 if (this._bewohnerKopf(b, delta, p, gepost)) neu = true; // die Begegnung: Kopf und Rumpf über der Pose
                 if (neu) this._leibMatrix(g);
                 if (neu && (b.weg || b._gaitW > 0)) bewegt.push(b); // sein Wurf geht im Satz mit
+            }
+            // DER RING GIBT ZURÜCK (w28-leib-im-ring): wer seinen Leib trägt, ohne dass das Auge ihn als Leib sieht, hält ihn bis
+            // `ringHystM` jenseits des Nah-Kreises (die Hysterese gegen das Flattern an 8 m) und solange die Siedlung höchstens
+            // `ringLeiber` Leiber hält — darüber gibt der Fernste zuerst
+            if (halter.length) {
+                const aus2 = (BW.nahM + BW.nahHystM + BW.ringHystM) ** 2;
+                const fern = (b) => (b.drinnen ? Infinity : b.dA2 || 0); // wer drinnen ist, den sieht keiner
+                halter.sort((a, c) => fern(c) - fern(a));
+                let n = nah.length + halter.length;
+                for (const b of halter) {
+                    if (!(fern(b) > aus2 || n > BW.ringLeiber)) break;
+                    this._bewohnerLeibAb(b);
+                    n--;
+                }
             }
             if (anders) this._bewohnerSatzSchreiben(S);
             else if (bewegt.length) this._bewohnerSatzSchreiben(S, bewegt);
@@ -1792,9 +1964,10 @@ class AnazhRealm_siedlung_bewohner {
     _bewohnerRuhig(b, innen, m, echt, N) {
         if (!b.leib || !b.da || b.weg || b.platz || b.hinaus || b.ankunft || b.nah || b.drehen != null || b._gaitW > 0)
             return false;
+        const u = b.leib.userData;
+        if (u.rig) return false; // wer seinen Leib trägt, gibt ihn im Takt zurück (`_tickBewohner`, der Ring) — erst dann ruht er
         if (b.drinnen) return true;
         if (b.d2 < innen * innen) return false;
-        const u = b.leib.userData;
         if (!echt) return true;
         if (!u._kzVersuch) return false;
         const d = Math.sqrt(b.dA2);
@@ -1846,8 +2019,8 @@ class AnazhRealm_siedlung_bewohner {
     // lief sie im Takt des gehenden Tempos über den Schritt des gebackenen: der Satz glitt um 0,034, wer eilte, um 0,045.
     _bewohnerGangSchritt(b, v, dt, echt, S) {
         const g = b.leib;
-        if (v > 0) this._gaitTick(g, b, b.tempo, (dt * v) / b.tempo, null);
-        else this._gaitTick(g, b, 0, dt, null);
+        if (v > 0) this._gaitTakt(b.beinMass.L, b, b.tempo, (dt * v) / b.tempo);
+        else this._gaitTakt(b.beinMass.L, b, 0, dt);
         if (v === 0 && !(b._gaitW > 0.01)) b._gaitW = 0;
         if (echt && !b.drinnen && this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S);
     }
@@ -2067,8 +2240,7 @@ class AnazhRealm_siedlung_bewohner {
         g.userData._drinnen = b.drinnen;
         this._leibMatrix(g);
         if (g.userData._kzGlieder) for (const gl of g.userData._kzGlieder) this._weltFeldAktiv(gl.handle, false);
-        if (echt && !b.drinnen) this._kzLeib(g, this._lodAuge() || p, true);
-        if (echt && !b.drinnen && this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S);
+        if (echt && !b.drinnen) this._kzLeib(g, this._lodAuge() || p, true); // (sein Feld: `_bewohnerFeldLage` darin)
     }
 
     // DIE NÄCHSTE WENDE des Solls in (von, bis]: die erste Stunde, an der `_bewohnerSoll` ein anderes Ziel nennt — gerastert
@@ -3482,6 +3654,7 @@ class AnazhRealm_siedlung_bewohner {
     // Leib sie hält. Die Liste fällt mit: kehrt der Spieler zurück, entsteht sie neu aus dem Plan (dieselbe Funktion).
     _bewohnerFort(S) {
         this._verkehrFort(S); // die Wagen gehen mit (ihre Fahrer sind Leiber der Liste)
+        S.leibOffen = 0; // (die Nah-Wahl geht mit: kein Leib, auf den die Welt wartet)
         for (const b of S.liste || []) {
             if (b.tonZeilen) this._tonZeileFrei(b.tonZeilen[0]); // die Palette des Kopfs geht mit ihm (mensch.K4)
             b.tonZeilen = null;
@@ -3597,6 +3770,8 @@ AnazhRealm.BEWOHNER = Object.freeze({
     nahM: 8,
     nahHystM: 1,
     nahLeiber: 4,
+    ringHystM: 3,
+    ringLeiber: 6,
     gangPhasen: 16,
     gangJeTakt: 2,
     platzRandM: 10,

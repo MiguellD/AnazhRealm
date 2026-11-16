@@ -476,12 +476,12 @@ class AnazhRealm_koerper_leib {
     // vermessen, Welt-Maß aus der Gelenk-Skala). Die Phase bleibt weg-getrieben (2π je Doppelschritt Λ, ω = 2π·v/Λ).
     // Vorher eichte ein Faktor des Schritt-Blocks (4,0 × Bein ≈ 3,4 m je Schritt) den Takt auf 5,5 rad/s beim Basistempo:
     // beim Gehen 0,34 Schritte/s, zwei Schritt-Töne in sechs Sekunden, der Fuß glitt 130 % des Wegs.
-    _gaitGesetz(rig, speed) {
+    _gaitGesetz(rig, speed, L = this._gaitBeinMass(rig).L) {
         const core = typeof window !== "undefined" && window.__tetrapodaCore;
         if (!core || typeof core.gangSchritt !== "function")
             return AnazhRealm._kernPflichtBruch("tetrapoda:gangSchritt");
         const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
-        return core.gangSchritt(v, this._gaitBeinMass(rig).L, this._gangZeile(true));
+        return core.gangSchritt(v, L, this._gangZeile(true));
     }
     // DIE ZEILE DES GANGS IN DER WELT (K07): das Gang-Gesetz misst Froude-Zahl und Becken an der Schwere der Welt
     // (`state.gravity`, die DSL setzt sie) — Mensch und Tier lesen sie aus EINER Zeile, Schritt und Becken aus derselben
@@ -540,10 +540,25 @@ class AnazhRealm_koerper_leib {
     _gaitTick(mesh, halter, speed, dt, opts) {
         const rig = mesh && mesh.userData && mesh.userData.rig;
         if (!rig || !halter) return null;
+        const emoF = opts && Number.isFinite(opts.emoFaktor) && opts.emoFaktor > 0 ? opts.emoFaktor : 1;
+        const g = this._gaitTakt(this._gaitBeinMass(rig).L, halter, speed, dt, emoF);
+        const d = Number.isFinite(dt) && dt > 0 ? dt : 0;
+        g.ik = opts && opts.ik ? this._gaitIKPrep(mesh, opts.soleY, opts.yaw, d) : null;
+        // der Stoß-Zustand des Leibs (physik.K5) reist mit dem Gang des lokalen Avatars zur Pose (der Ausfallschritt)
+        g.stossLeib = opts && opts.ik ? this.state : null;
+        // ohne Boden-IK (Luft, Peer) löst jeder Fuß-Lock — die Landung friert die Stand-Füße frisch ein
+        const ikC = !g.ik && mesh.userData && mesh.userData._gaitIK;
+        if (ikC) ikC.lockL.on = ikC.lockR.on = false;
+        return g;
+    }
+    // DER GANG-TAKT AN DER ZAHL (w28-leib-im-ring): der EINE Takt liest vom Leib nur die Länge seines Beins `L` (in Metern,
+    // `_gaitBeinMass`) — wer ohne Leib geht (der Bewohner jenseits des Nah-Rings: sein Stand trägt die Zahl seines Baus,
+    // `_bewohnerBeinMass`), geht ihn hier mit derselben Phase und demselben Gewicht; `_gaitTick` ist dieser Takt am Rig, dazu
+    // die Fuß-IK des lokalen Avatars. Kein Fuß-Ziel am Boden, kein Stoß (`ik`, `stossLeib` null).
+    _gaitTakt(L, halter, speed, dt, emoF = 1) {
         const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
         const d = Number.isFinite(dt) && dt > 0 ? dt : 0;
-        const emoF = opts && Number.isFinite(opts.emoFaktor) && opts.emoFaktor > 0 ? opts.emoFaktor : 1;
-        const gs = this._gaitGesetz(rig, v);
+        const gs = this._gaitGesetz(null, v, L);
         // DER EINE GANG-TAKT (koerper-core `leibGangTakt`, w4-koerper-park — dasselbe Gesetz im Körper-Studio): DER STEHENDE FUSS
         // HÄLT (K07, tetrapoda `gangPhaseHaelt`: ändert sich die Zeile, behält das stehende Bein sein Fuß-Ziel; aus dem Stand
         // setzt das nähere Bein in der Mitte seines Stands ein), die Phase wächst mit dem Takt, das Blend-Gewicht glättet, die
@@ -554,22 +569,8 @@ class AnazhRealm_koerper_leib {
             Number(this.state.speed) ||
                 AnazhRealm._bewegungsKoeff("speed").base + AnazhRealm._bewegungsKoeff("speed").leicht
         );
-        const g = AnazhRealm._leibTakt().leibGangTakt(
-            window.__tetrapodaCore,
-            halter,
-            gs,
-            v,
-            d,
-            emoF,
-            vRef,
-            this._gaitBeinMass(rig).L
-        );
-        g.ik = opts && opts.ik ? this._gaitIKPrep(mesh, opts.soleY, opts.yaw, d) : null;
-        // der Stoß-Zustand des Leibs (physik.K5) reist mit dem Gang des lokalen Avatars zur Pose (der Ausfallschritt)
-        g.stossLeib = opts && opts.ik ? this.state : null;
-        // ohne Boden-IK (Luft, Peer) löst jeder Fuß-Lock — die Landung friert die Stand-Füße frisch ein
-        const ikC = !g.ik && mesh.userData && mesh.userData._gaitIK;
-        if (ikC) ikC.lockL.on = ikC.lockR.on = false;
+        const g = AnazhRealm._leibTakt().leibGangTakt(window.__tetrapodaCore, halter, gs, v, d, emoF, vRef, L);
+        [g.ik, g.stossLeib] = [null, null];
         return g;
     }
     // DER STAND-LESER DER SICHT (Q4 Erdung, Entscheid a der Leben-Synthese): die Sim steht auf dem Gesetz, die Sicht auf
