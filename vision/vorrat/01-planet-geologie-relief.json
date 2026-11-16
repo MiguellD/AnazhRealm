@@ -42,5 +42,82 @@
   "messgroesse": "Seite liest den Höhlen-Graph (Mündungen) des Chunk-Satzes (`_voxelHoehlenGraph`, scripts/diag-hoehlen-sicht.cjs:7-8) und hoehlenMund (gelaende-core.js:2863); Fels im Bild über den Stoff des Bodens",
   "preisRisiko": "keines erkennbar (Wiese/Hang, nicht Dorf oder Fluss); 3 Saaten kosten je eine Welt-Geburt",
   "gpuMin": 6, "bau": "S", "sicher": 0.65
+ },
+ {
+  "leiter": "planet.geologie.lagerstaette", "sprosse": 1, "klasse": "B",
+  "richter": "Jury trennt drei Genesen ≥ 80 %; Genese passt zur Geschichte des Orts ≥ 85 %",
+  "hat": "Jede Felswand der Welt trägt EIN Aussehen: gebankter Schicht-Fels des Fels-Stoffs (gelaende-core.js:3341-3402, Bänke, Fugen, Klüfte — sedimentär gelesen), gleich an jedem Ort; die Genese-Achse rockPhenotype (foundry-core.js:5232-5238) wählt nur die Form eines Brockens aus dem Dial `gen` (foundry-core.js:5302-5313), kein Leser bindet sie an Ort oder Alter (gelesen).",
+  "station": "keine",
+  "fehlt": "Magmatischer und metamorpher Fels kommen im Spiel nicht vor (weder massig/säulig noch geschiefert an der Wand), und der Ort trägt keine Geschichte, aus der die Genese folgte; dazu fehlt die Jury.",
+  "rezept": "Bau: ein Genese-Feld je Ort in die EINE Tafel des Orts (ortGesetz, gelaende-core.js:5698) — magmatisch nahe planetOrt.vulkan, metamorph am konvergenten Rand/Orogen, sonst sedimentär (planet-core.js:2351-2353) —, gelesen vom Fels-Stoff (Bankung ↔ massig ↔ Schieferung) und vom Dial gen der Foundry. Richter: N Wand-Bilder je Reise-Ziel mit dem Gesetzes-Etikett, eine Jury trennt blind; Muster der Blick-Fahrt leib.K3#2 (stationen/g5.js:4803).",
+  "messgroesse": "Bau setzt an gelaende-core.js:3349 (FELS, heute Konstanten) und foundry-core.js:5304 (gen aus dem Dial statt aus dem Ort); Etikett aus planet-core.js:2351-2353",
+  "preisRisiko": "keines erkennbar (Shader-Zweig im Fels-Stoff)",
+  "gpuMin": 6, "bau": "M", "sicher": 0.75
+ },
+ {
+  "leiter": "planet.geologie.inneres", "sprosse": 1, "klasse": "B",
+  "richter": "Inklination ≤ 5° gegen Dipol an 20 Orten; Deklination ändert sich mit dem Ort",
+  "hat": "Kein Magnetfeld und kein Kompass: Grep nach Kompass/Magnetfeld/Inklination in stamm/, Kernen und index.html ohne Treffer (einziger Treffer ein Bild-Wort in stamm/bau-buch.js:100); der Spieler kennt seinen Ort auf dem Planeten über den Anker (stamm/gelaende-chunks.js:673-684) und reist per „reise <Breite> <Länge>“ (stamm/feld-leben.js:1420) (gelesen).",
+  "station": "keine",
+  "fehlt": "Ein Dipol-Feld des Planeten (geneigte Achse aus dem Samen) und eine Nadel, die der Spieler sieht — beides fehlt ganz.",
+  "rezept": "Bau: planetFeld(breite, laenge) im Planet-Kern neben planetOrt (planet-core.js:2290), Dipol mit geneigter Achse aus dem Samen → D, I; die Reise trägt beides in die Tafel des Orts, eine Kompass-Nadel im HUD liest sie (stamm/werkstatt-hud.js). Richter: 20 Reisen in der Sitzung, je Ort die Nadel-Neigung im Bild (Winkel der gezeichneten Nadel) gegen atan(2·tan φ_m) ≤ 5°, Deklination streut über die Orte; Muster die Reise-Probe (Satz reise, stamm/feld-leben.js:1420) mit Bild-Maß wie die Himmelsmechanik (stationen/g3.js:3540).",
+  "messgroesse": "Bau setzt an planet-core.js:2290-2303 (planetOrt reicht das Feld weiter) und an stamm/werkstatt-hud.js (die Nadel); Seite liest die Nadel-Lage aus dem HUD-Zustand und dem Bild",
+  "preisRisiko": "keines erkennbar (P ohne Zusatzkosten); 20 Reisen kosten je eine Welt-Geburt in der Sitzung — die Ankunft (B) bestimmt die Probenzeit",
+  "gpuMin": 12, "bau": "S", "sicher": 0.85
+ },
+ {
+  "leiter": "planet.geologie.einschlag", "sprosse": 1, "klasse": "B",
+  "richter": "einfache Krater Tiefe/Durchmesser 1:5 ±20 %; Profil gegen reale Krater ≤ 15 %",
+  "hat": "Kein Einschlag-Krater: „Krater“ steht im Code nur für Grab-Löcher des Spielers (stamm/kampf.js:2224, stamm/dirigent-ankunft.js:1424); weder gelaende-core noch planet-core tragen einen Krater-Term (Grep ohne Treffer) (gelesen).",
+  "station": "keine",
+  "fehlt": "Eine Krater-Form im Gelände-Gesetz (Napf mit d/D 1:5, Wall, Auswurf; komplex mit Zentralberg über dem Übergangs-Durchmesser ∝ 1/g) und ein Weg, sie in die Welt zu legen.",
+  "rezept": "Bau: ein Term `krater` in der Term-Tafel des Gelände-Plans neben kuppel/plateau/rinne (gelaende-core.js:35-67 termY, Prüfung in erbgutNormal gelaende-core.js:87-200), Profil aus Durchmesser und Schwere des Planet-Körpers; die DSL legt ihn als Tat (Muster tat.lava stamm/feld-leben.js:421). Richter: die Seite legt Krater 50/200/800 m, liest Tiefe/Durchmesser aus dem gezeichneten Boden (_voxelSurfaceY) und ein Bild-Profil am Rand; Muster der Graben-Bild-Fahrt (stationen/g1.js:1874 K2_PROBE).",
+  "messgroesse": "Bau setzt an gelaende-core.js:41-67 (die Term-Formen) und gelaende-core.js:2840-2846 (die Terme laufen über die Wildnis); Seite liest _voxelSurfaceY (stamm/feld-leben.js:3214) über den Querschnitt",
+  "preisRisiko": "keines erkennbar (ein Term mehr in der Höhe; Chunks im Krater-Radius neu)",
+  "gpuMin": 4, "bau": "M", "sicher": 0.8
+ },
+ {
+  "leiter": "planet.relief.grossform", "sprosse": 1, "klasse": "F",
+  "richter": "im Spiel an 20 Orten nachgefahren: 100 % der Läufe enden in See oder Meer",
+  "hat": "Das Flussnetz zuerst (gelaende-core.js:364-370): jede Sohle fällt bis ins Meer oder in einen benannten See, die Welt entwässert; die Spielwelt zeichnet Flüsse und Seen aus derselben Hydrosphäre (gelesen).",
+  "station": "gelaende.K4#2 headless (diag-wasser-leben --nur laeufe, 293/293 Läufe in See oder Meer, grün an d3708675; stationen/g1.js:2149) — dazu gelaende.K4#2 Karten-Hälfte an Radeon + GTX in der Sitzung (stationen/g1.js:2229, grün an 71839b1e), die aber nur die Strömung an 4 Fluss-Orten fährt, nicht die Läufe",
+  "fehlt": "Die Läufe-Probe (wasserLaeufe, scripts/lib/wasser-linse.cjs:2967) lebt nur headless; sie muss als Probe in die warme Sitzung beider Geräte, an 20 Orten mit dem Bild des Wassers am Ort und der Verfolgung stromab bis zur Senke.",
+  "rezept": "Muster: die Karten-Hälfte von gelaende.K4#2 (stationen/g1.js:2229-2241, weltSitzungBefehl mit WASSER_INSTALL) — eine zweite Seiten-Funktion `laeufe` neben `treibt`. Mess-Größe: je Ort (wasserKarte({fluss:true, n:20}), scripts/lib/wasser-linse.cjs:2948) der Lauf stromab bis see/meer über _nassAt und ein Bild am Startort; Soll 20 von 20. Pose: am Fluss.",
+  "messgroesse": "Seite liest G.flussLaeufe und r._nassAt (scripts/lib/wasser-linse.cjs:2967-2975), Orte aus r._hydroFor(x,z).rivers (scripts/lib/wasser-linse.cjs:2955)",
+  "preisRisiko": "p95 am Fluss (41,9 > 34 ms an der Radeon): die dichteste Pose des Richters liegt am Wasser",
+  "gpuMin": 3, "bau": "S", "sicher": 0.75
+ },
+ {
+  "leiter": "planet.relief.formschatz", "sprosse": 1, "klasse": "R",
+  "richter": "Blind-Klassifikation von Ego-Bildern an 20 Saaten ≥ 80 %",
+  "hat": "Das Talprofil trägt V ↔ Trog (talForm, trog im Hochgebirge), die ebene Aue (∝ A^0,4) und die Schichtstufe des Schicht-Gesetzes (gelaende-core.js:364-375, Regler gelaende-core.js:386-398); der Punkt der Wildnis meldet seine Lage (aus.steil, aus.hang, aus.schutt, aus.aue: gelaende-core.js:1225-1229) — der Spieler sieht die drei Klassen heute (gelesen).",
+  "station": "keine",
+  "fehlt": "Ein Richter, der an 20 Saaten Ego-Bilder an Orten der drei Klassen schießt (Etikett aus dem Gesetz) und sie blind klassifizieren lässt — eine Jury-Maschine gibt es in der Punkte-Maschine nicht (Grep 2AFC/Jury/Blindpaar in meisterkarte-quelle/punkte ohne Treffer).",
+  "rezept": "Muster: die Blick-Fahrt von leib.K3#2 (stationen/g5.js:4803, Ego-Kamera in der warmen Sitzung). Mess-Größe: je Saat drei Orte, gefunden über aus.aue > 0,5 (Aue), aus.steil am Kliff (Schichtstufe), Talquerschnitt mit hohem trog (Trog/V); die Bilder gehen an eine Jury (Modell oder Mensch), Treffer ≥ 80 %. 20 Saaten über Reise-Ziele derselben Sitzung.",
+  "messgroesse": "Seite liest wildnisY(L, x, z, …, aus) mit aus.aue/aus.steil (gelaende-core.js:1225-1229) über window.__gelaendeCore und r._gelaende()",
+  "preisRisiko": "keines erkennbar (Wildnis); 20 Saaten kosten 20 Welt-Geburten — Ankunft (B) bestimmt die Probenzeit",
+  "gpuMin": 15, "bau": "M", "sicher": 0.6
+ },
+ {
+  "leiter": "planet.relief.boden", "sprosse": 1, "klasse": "R",
+  "richter": "Blindpaar Ego-Bild gegen Foto gleichen Hangs und Klimas (2AFC ≤ 85 %); an 30 Zufallsposen liegt Schutt am Steilen und Moos im Feuchten wie im Foto-Korpus (Anteile ±20 %)",
+  "hat": "Der Schutthang liegt am Ruhewinkel des Schicht-Gesetzes (gelaende-core.js:374-375, aus.schutt gelaende-core.js:1228), Flechte am trockenen Licht und Moos am feuchten Sims trägt der Fels-Stoff (gelaende-core.js:3379-3384), die Flechte des Bodens folgt Feuchte × Dichte (stamm/gelaende-boden.js:2516-2535), und in Reise-Welten liegt der kahle Grund nach der Wärme des Orts Fels ↔ Sand (stamm/gelaende-boden.js:2521-2529, gelaende-core.js:5716) (gelesen).",
+  "station": "keine",
+  "fehlt": "Ein Foto-Korpus nach Hang und Klima, die Jury für das 2AFC und eine Probe, die an 30 Zufallsposen die Anteile Schutt/Moos im Bild gegen den Korpus misst. Widerspruch zum Beleg: „Stand 0, Erdbodenfarbe aus Rausch-Flecken“ stimmt nur in der Heimat — die Reise-Welt färbt den Grund nach Klima (Welle 3).",
+  "rezept": "Muster: die Blick-Fahrt von leib.K3#2 (stationen/g5.js:4803). Mess-Größe: an 30 Zufallsposen die Bild-Anteile von Schutt (aus.schutt) und Moos (Feuchte über _feuchteAt) gegen Steile und Feuchte des Orts, verglichen mit den Anteilen im Korpus ±20 %; das 2AFC über dieselbe Jury wie formschatz.",
+  "messgroesse": "Seite liest aus.schutt/aus.steil (gelaende-core.js:1225-1228), this._feuchteAt (stamm/gelaende-boden.js:2510) und die Farbe _bodenFarbeAt (stamm/gelaende-boden.js:2476)",
+  "preisRisiko": "keines erkennbar (Wildnis-Posen)",
+  "gpuMin": 6, "bau": "M", "sicher": 0.55
+ },
+ {
+  "leiter": "planet.relief.wandel", "sprosse": 1, "klasse": "B",
+  "richter": "Volumen-Bilanz Abtrag = Ablagerung ±10 %, sichtbar in ≤ 10 min Spielzeit",
+  "hat": "Der Spieler-Graben füllt sich mit Wasser über das Verb graben (gelaende.K2#1 an Radeon und GTX, gefüllt nach 34–367 ms), das Wasser gräbt aber nicht: kein Abtrag, keine Ablagerung — der Boden ändert sich nur durch Taten (voxel_fill → tat.schuettet, stamm/feld-leben.js:420) (gelesen).",
+  "station": "gelaende.K2#1 (Radeon b3f9ae95 + GTX 715754fc, probe K2_PROBE in der Sitzung; stationen/g1.js:1874) — urteilt Füllung und Bild des Grabens, nicht seine Vertiefung",
+  "fehlt": "Ein Abtrag im fließenden Graben: die Sohle sinkt, das Material liegt am Fuß — beides fehlt im Gesetz.",
+  "rezept": "Bau: der Abtrag als FUNKTION der Welt-Zeit seit dem Graben wie die Lava (stamm/feld-leben.js:3205-3212: Zustand = f(Welt-Stunde − Tat), kein Takt): die Tat graben trägt ihren Fluss (_waterFlowAt), Tiefe(t) und Fuß-Kegel(t) mit gleichem Volumen — die Bilanz ist exakt per Bau. Richter: die K2_PROBE (stationen/g1.js:1874) um 10 Spiel-Minuten Uhr verlängern, Querschnitt des gezeichneten Bodens vorher/nachher, Abtrag- gegen Ablagerungs-Volumen.",
+  "messgroesse": "Bau setzt an der Tat-Schrift stamm/feld-leben.js:3213-3216 (Muster _lavaGiessen) und am Höhen-Leser der Taten; Seite liest _voxelSurfaceY über Graben und Fuß",
+  "preisRisiko": "p95 am Fluss: K2_PROBE gräbt am Fluss nächst Genesis (stationen/g1.js:1869)",
+  "gpuMin": 6, "bau": "M", "sicher": 0.7
  }
 ]
