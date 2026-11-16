@@ -4698,11 +4698,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 5,
-    "kern": 6,
-    "kernDazu": 6,
-    "anteilHeute": 0.8,
-    "anteilKern": 1
+    "heute": 6,
+    "kern": 5,
+    "kernDazu": 5,
+    "anteilHeute": 1,
+    "anteilKern": 0.9
    },
    "perspektiven": [
     {
@@ -9703,8 +9703,8 @@
        "richter": "1 000 Blicke: ≥ 2 Epochen sichtbar ≥ 60 %, jede Spur im Zustand ihres Jahres"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "Wachstum aus Bewohnern 12 → 19/20 Häuser in 1 500 s, alte 0,917, Radeon und GTX (siedlung.K4); Jahresringe 0,915 nur headless — KARTE: Kern 1 — Wachstum an beiden Geräten grün (siedlung.K4); Bild-Preis nicht gemessen.",
      "alt": [
@@ -16881,10 +16881,10 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 19,
+  "heute": 20,
   "davonKopplungen": 33,
-  "kern": 11,
-  "kernDazu": 11,
+  "kern": 10,
+  "kernDazu": 10,
   "anteilHeute": 1.1,
   "anteilKern": 0.4,
   "kapitel": 7,
