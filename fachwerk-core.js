@@ -3537,45 +3537,52 @@
             herde = [];
         for (var i = i0 - 1; i <= i0 + 1; i++)
             for (var k = k0 - 1; k <= k0 + 1; k++) {
-                var c = kulturHerd(hash, i, k),
-                    dx = c.x - x,
-                    dz = c.z - z,
-                    kost = Math.hypot(dx, dz);
-                if (grund) {
-                    var dach = Math.max(hp, grund(c.x, c.z)),
-                        grat = 0,
-                        nass = 0;
-                    for (var s = 1; s <= KULTURFELD.proben; s++) {
-                        var t = s / (KULTURFELD.proben + 1),
-                            h = grund(x + dx * t, z + dz * t);
-                        if (h - dach > grat) grat = h - dach;
-                        if (h < 0) nass++;
-                    }
-                    kost = kost * (1 + (KULTURFELD.wasser * nass) / KULTURFELD.proben) + KULTURFELD.hang * grat;
-                }
-                herde.push({ c: c, kost: kost });
+                var c = kulturHerd(hash, i, k);
+                herde.push({ c: c, weit: Math.hypot(c.x - x, c.z - z), kost: Infinity });
             }
+        // der Weg kostet nie weniger als seine Länge: die Herde in der Folge ihrer Länge, ihr Grund nur, solange einer A (der
+        // nächste) oder B (der nächste fremde, innerhalb `grenzeM` hinter A) werden kann
         herde.sort(function (a, b) {
-            return a.kost - b.kost;
+            return a.weit - b.weit;
         });
-        var A = herde[0].c,
-            B = null,
-            vor = 0;
-        for (var j = 1; j < herde.length && !B; j++) {
-            var q = herde[j].c;
-            if (q.region !== A.region || q.epoche !== A.epoche) {
-                B = q;
-                vor = herde[j].kost - herde[0].kost;
+        var A = null,
+            B = null;
+        for (var j = 0; j < herde.length; j++) {
+            var e = herde[j];
+            if (A && e.weit >= Math.min(B ? B.kost : Infinity, A.kost + KULTURFELD.grenzeM)) break;
+            e.kost = e.weit;
+            if (grund) {
+                var dx = e.c.x - x,
+                    dz = e.c.z - z,
+                    dach = Math.max(hp, grund(e.c.x, e.c.z)),
+                    grat = 0,
+                    nass = 0;
+                for (var s = 1; s <= KULTURFELD.proben; s++) {
+                    var t = s / (KULTURFELD.proben + 1),
+                        h = grund(x + dx * t, z + dz * t);
+                    if (h - dach > grat) grat = h - dach;
+                    if (h < 0) nass++;
+                }
+                e.kost = e.weit * (1 + (KULTURFELD.wasser * nass) / KULTURFELD.proben) + KULTURFELD.hang * grat;
             }
+            var fremd = function (q) {
+                return q.c.region !== A.c.region || q.c.epoche !== A.c.epoche;
+            };
+            if (!A || e.kost < A.kost) {
+                B = A && fremd(e) ? A : null;
+                A = e;
+                if (!B) for (var u = 0; u < j; u++) if (fremd(herde[u]) && (!B || herde[u].kost < B.kost)) B = herde[u];
+            } else if (fremd(e) && (!B || e.kost < B.kost)) B = e;
         }
-        var misch = B ? Math.round(Math.max(0, 0.5 * (1 - vor / KULTURFELD.grenzeM)) * 1000) / 1000 : 0;
+        var vor = B ? B.kost - A.kost : Infinity;
+        var misch = Math.round(Math.max(0, 0.5 * (1 - vor / KULTURFELD.grenzeM)) * 1000) / 1000;
         return {
-            region: A.region,
-            epoche: A.epoche,
-            jahr: A.jahr,
-            spanne: A.spanne,
+            region: A.c.region,
+            epoche: A.c.epoche,
+            jahr: A.c.jahr,
+            spanne: A.c.spanne,
             misch: misch,
-            fremd: misch > 0 ? { region: B.region, epoche: B.epoche } : null,
+            fremd: misch > 0 ? { region: B.c.region, epoche: B.c.epoche } : null,
         };
     }
     // DIE ZELLE DER WELT (siedlung.K2): `zellHash(cx, cz)` reicht der Wirt (FNV-1a über „<Welt-Same>:dorf:cx,cz"), der Kern
