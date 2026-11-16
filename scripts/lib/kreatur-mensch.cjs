@@ -627,7 +627,8 @@ async function menschBuehnen() {
             for (const b of planFn ? liste : []) {
                 const o = b.orte;
                 const sh = (stunde + (hat("bewohner-plan6") ? 6 : 0)) % 24;
-                const planJetzt = () => planFn(b.same, b.rolle, sh, o);
+                // der Regen der Welt, wie der Wirt ihn reicht (`_bewohnerSoll`: der Kanal rain des EINEN Wetter-Felds)
+                const planJetzt = () => planFn(b.same, b.rolle, sh, o, r._weatherFieldFor().rain);
                 const soll = planJetzt();
                 if (JSON.stringify(soll) !== JSON.stringify(planJetzt())) planGleich = false;
                 const ziel = soll.drinnen ? o.tuer : soll.ort;
