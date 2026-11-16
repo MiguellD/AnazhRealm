@@ -5653,7 +5653,7 @@
      "gruen": true,
      "zahl": "0 harte UI-Zeilen im DOM von 635 Zeilen (625 aus der Tafel, 10 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2431, en 2431) · [linse-gpu] amd/rdna-3",
      "sha": "a635bfee2a64f47cdc7d1786b5a9fb09bd10b978",
-     "grund": "Konsum seit der Messung geändert (R6: index.html, stamm/bild-himmel.js, stamm/bild-sicht.js +4)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -5911,7 +5911,7 @@
   "ohne": 116
  },
  "kopfVoll": "9fa4015eeb45db7006048415f37cd4f7f055c690",
- "zeit": "2026-11-16T16:14:35.605Z",
+ "zeit": "2026-11-16T16:41:06.305Z",
  "vorher": "9fa4015e",
  "bilanz": {
   "gewinn": [],
