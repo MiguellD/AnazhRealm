@@ -75,7 +75,7 @@
         "gate:fall-waechter": "node scripts/diag-fall-waechter.cjs --selftest && node scripts/diag-fall-waechter.cjs",
         "gate:brennglas-takt": "node scripts/diag-brennglas-takt.cjs --selftest && node scripts/diag-brennglas-takt.cjs",
         "gate:raum-tags": "node scripts/diag-raum-tags.cjs --selftest && node scripts/diag-raum-tags.cjs",
-        "gate:stand-takt": "node scripts/diag-stand-takt.cjs --selftest && node scripts/diag-stand-takt.cjs",
+        "gate:stand-takt": "node scripts/diag-stand-takt.cjs --selftest && node scripts/diag-stand-takt.cjs && node scripts/diag-stand-takt.cjs --narbe",
         "gate:kamera-treue": "node scripts/diag-kamera-treue.cjs --selftest && node scripts/diag-kamera-treue.cjs",
         "gate:ego-schatten": "node scripts/diag-ego-schatten.cjs --selftest && node scripts/diag-ego-schatten.cjs",
         "gate:post-kette": "node scripts/diag-post-kette.cjs --selftest && node scripts/diag-post-kette.cjs",

@@ -24,8 +24,8 @@
 // ein verschlafener Wechsel, eine halbe oder wachsende Runde, ein ungesehener Täter, ein Bau, der nicht weckt, starres
 // Gehen, verhungernder Strom, eine Sim, die in Ruhe zählt oder nach ihrem Ereignis nicht schläft, ein Automat, der am
 // Fixpunkt wach bleibt, Page-Error — MUSS rot fallen und ihn beim Namen nennen.
-//   node scripts/diag-stand-takt.cjs [--selftest | --tat | --nachwuchs | --brand]   (npm run gate:stand-takt; Port STAND_TAKT_PORT;
-//   --tat: (K4), --nachwuchs: (K5), --brand: (K2#2 · K5#2) unten)
+//   node scripts/diag-stand-takt.cjs [--selftest | --tat | --nachwuchs | --brand | --narbe]   (npm run gate:stand-takt; Port STAND_TAKT_PORT;
+//   --tat: (K4), --nachwuchs: (K5), --brand: (K2#2 · K5#2), --narbe: (N1–N4, w28-brand-bild) unten; --narbe: ROT Exit 1, Absturz Exit 2)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -1177,6 +1177,203 @@ async function brandSeite(MESS) {
     }
 }
 
+// (N1–N4) DIE NARBE FOLGT DER FRONT (w28-brand-bild, `--narbe`, Null-Renderer, Mess-Wiese, mittags, trockenes Bett: `_feuchteAt` 0
+// für den Lauf): der Herd fängt AM ORT der Mess-Wiese (`_brandEntfachen`), die Probe schreitet den Takt des Brands (`_tickBrand`)
+// je `schrittS`, höchstens 20 s und nur, solange die Herd-Zelle brennt und ein Ort in ihr vor jeder Front liegt.
+//   N1 — die Narbe, die der Maler liest (`_brandNarbe` über `_brandZellen`, m × asche wie `_ascheFlaeche`): am Zünd-Punkt (die
+//   Flamme stand dort ihre Verweilzeit) > 0,5; am Ort DERSELBEN Zelle, den noch keine Front der vier Zellen um ihn erreichte (die
+//   Ankunft aus R, ecc, kopf, ex, ez jeder brennenden Zelle selbst gerechnet; um die Zell-Mitte, wo die Narbe die Herd-Zelle liest), 0. Die Mutanten: die Front konstant 0 (die Narbe
+//   wartet auf die ausgebrannte Zelle) und die brennende Zelle ohne Front (ihr Quadrat fällt auf einmal).
+//   N2 — `ende − t0` der Herd-Zelle ≥ die späteste Ankunft ihrer Ellipse an den vier Ecken; die Mutante stutzt `ende` auf den
+//   Durchlauf des Kopfs (quer/R + tr, der Stand bis w28-brand-bild).
+//   N3 — nach EINEM Bild (`_brandBild`) steht jede Leuchtquelle des Brands, die das Licht liest (`_leuchtQuellen`), ≤ 0,6 m (xz)
+//   von einer Flamme ihrer Zelle (`_brandFlammen`); die Mutante stellt den Ort zurück über die Zell-Mitte (`_brandOrt`).
+//   N4 — der Stoff des Chunk-Bodens, frisch gebaut über seinen Bauer (`_getVoxelChunkMaterial`, mit Wege-Karte), ruft
+//   `STOFF_GESETZ.zeile("asche")` ≥ 1-mal (gezählt am Kern der Seite, kein Quelltext); die Mutante nimmt dem Boden-Stoff die
+//   Asche-Decke (`_wegeBodenFarbe` ohne `aus.asche`) und liest 0.
+function narbeUrteil(b) {
+    const [a, e, l, s] = [b?.n1, b?.n2, b?.n3, b?.n4];
+    if (!a || !e || !l || !s) return ["LEER: " + JSON.stringify(b && Object.keys(b))];
+    const [mw, mq] = [a.mutanteWartet, a.mutanteQuadrat];
+    return [
+        a.brennt && a.s >= a.tr && a.fernAn > a.s ? "" : `N1-LEER: die Herd-Zelle ${a.brennt ? "brennt" : "brennt nicht mehr"} nach ${a.s} s (Verweilzeit ${a.tr} s), der ferne Ort fängt nach ${a.fernAn} s`,
+        a.zuend > 0.5 ? "" : `N1-WARTET: die Narbe wartet auf die ausgebrannte Zelle: brennende Zelle trägt ${a.zuend} am verzehrten Ort (Zünd-Punkt nach ${a.s} s Brand, Verweilzeit ${a.tr} s; verlangt > 0,5)`,
+        a.fern === 0 ? "" : `N1-QUADRAT: Zell-Quadrat: Asche vor der Front — Narbe ${a.fern} bei (${a.fernOrt}), die Front kommt dort erst nach ${a.fernAn} s (Uhr des Brands ${a.s} s)`,
+        mw?.zuend <= 0.5 ? "" : `MUTANTE-N1-WARTET: mit der Front konstant 0 trägt der Zünd-Punkt ${mw?.zuend} — die Linse liest die Front nicht`,
+        mq?.fern > 0 ? "" : `MUTANTE-N1-QUADRAT: ohne Front (das Quadrat der Zelle) trägt der ferne Ort ${mq?.fern} — die Linse sieht keine Asche vor der Front`,
+        e.dauer >= e.ecken ? "" : `N2-ENDE: die Zelle fällt mit dem Kopf: sie brennt ${e.dauer} s, ihre Front deckt sie erst nach ${e.ecken} s (die späteste Ecke; der Kopf ist nach ${e.kopf} s durch)`,
+        e.mutante?.dauer < e.mutante?.ecken ? "" : `MUTANTE-N2: auf den Kopf gestutzt brennt die Zelle ${e.mutante?.dauer} s bei ${e.mutante?.ecken} s bis zur spätesten Ecke — an diesem Ort deckt der Kopf die Zelle`,
+        l.gemessen >= 1 ? "" : `N3-LEER: kein Licht einer Zelle mit Flammen (${l.lichter} Leuchtquellen des Brands, ${l.flammen} Flammen im Bild)`,
+        l.max <= 0.6 ? "" : `N3-LICHT: Licht ${l.mitte ? "über der Zell-Mitte" : "abseits der Flammen"}, ${l.max} m neben der nächsten Flamme (${l.gemessen} Zellen mit Flammen; verlangt ≤ 0,6 m)`,
+        l.mutante?.max > 0.6 ? "" : `MUTANTE-N3: über der Zell-Mitte steht das Licht ${l.mutante?.max} m neben der nächsten Flamme — die Linse sieht die Mitte nicht`,
+        s.gebaut ? "" : `N4-LEER: der Bauer des Chunk-Bodens (_getVoxelChunkMaterial) baute keinen frischen Stoff`,
+        s.abrufe >= 1 ? "" : `N4-ZEILE: der Boden liest die Asche-Zeile nicht: ${s.abrufe} Abrufe zeile("asche") beim Bau des Chunk-Boden-Stoffs (Rauheit der Zeile ${s.rauheit})`,
+        s.mutante === 0 ? "" : `MUTANTE-N4: ohne Asche-Decke zählt die Linse ${s.mutante} Abrufe zeile("asche") — sie zählt einen anderen Leser`,
+    ].filter(Boolean);
+}
+
+async function narbeSeite(MESS) {
+    const { pm, stehen, wort } = await window.__seite();
+    const [C, P, L] = [AnazhRealm, Object.getPrototypeOf(r), (st.worldMeta.taten ||= [])];
+    const [B, cs, n0] = [C.BRAND, C.LIFE_FIELD.cell, L.length];
+    const r3 = (v) => Math.round(v * 1e3) / 1e3;
+    const zelle = (x, z) => [Math.floor(x / cs), Math.floor(z / cs)];
+    const bf = () => (st.brandFeld ||= new Map());
+    const [hx, hz] = zelle(MESS.x, MESS.z);
+    // die Ankunft der Ellipse einer brennenden Zelle an (x, z) in Sekunden nach ihrem Eintritt — aus ihren eigenen Feldern
+    const zeit = (b, x, z) => (Math.hypot(x - b.ex, z - b.ez) - b.ecc * ((x - b.ex) * b.kopf[0] + (z - b.ez) * b.kopf[1])) / (b.R * (1 - b.ecc));
+    const ecken = (b) => [0, 1].flatMap((i) => [0, 1].map((j) => [(b.cx + i) * cs, (b.cz + j) * cs]));
+    const kopfS = (b) => Math.max(...ecken(b).map(([x, z]) => (x - b.ex) * b.kopf[0] + (z - b.ez) * b.kopf[1])) / b.R + b.tr;
+    const dauer = (b) => ({ dauer: r3(b.ende - b.t0), ecken: r3(Math.max(...ecken(b).map(([x, z]) => zeit(b, x, z)))), kopf: r3(kopfS(b)), R: r3(b.R), ecc: r3(b.ecc) });
+    const leer = () => {
+        if (r._brandRest) r._brandArbeit(Infinity);
+        bf().clear();
+        L.length = n0;
+        r._tatGen = (r._tatGen | 0) + 1;
+        (st.wegeKarte ? st.wegeKarte.stufen : []).forEach((s) => s.zentriert && r._ascheStufeMalen(s));
+    };
+    const zuenden = () => (leer(), r._brandEntfachen(MESS.x, MESS.z), ((b) => (b && b.t0 !== null ? b : null))(bf().get(hx + "," + hz)));
+    // EIN Schritt der Uhr des Brands samt seiner ganzen Arbeit (jede fällige Zelle fängt zu ihrer Ankunft)
+    const schritt = () => {
+        const u = r._brandUhr;
+        for (let i = 0; i < 4000 && r._brandUhr === u && r._brandLebt(); i++) (st.spielZeit = u + B.schrittS), r._tickBrand();
+        r._brandArbeit(Infinity);
+        return r._brandUhr > u;
+    };
+    // die vier Zellen, deren Mitten die Narbe an (x, z) mischt (`_brandNarbeFn`); die früheste Front einer brennenden unter ihnen
+    // an (x, z) als Uhr des Brands — NaN, wo eine der vier schon Asche trägt (dort liegt Asche zu Recht)
+    const vier = (x, z, i = Math.floor(x / cs - 0.5), j = Math.floor(z / cs - 0.5)) => [[i, j], [i + 1, j], [i, j + 1], [i + 1, j + 1]];
+    const ankunft = (x, z) =>
+        vier(x, z).reduce((t, [cx, cz]) => {
+            if (r._brandZelle(cx, cz)) return NaN;
+            const q = bf().get(cx + "," + cz);
+            return q && q.t0 !== null ? Math.min(t, q.t0 + zeit(q, x, z)) : t;
+        }, Infinity);
+    // der Ort der Herd-Zelle (je Meter), den die Fronten zuletzt erreichen → [Ankunft, x, z] — nur, wo die Narbe zu ≥ 0,9 die
+    // Herd-Zelle liest (ihr Gewicht in `_brandNarbeFn`, um ihre Mitte): an der Ecke wiegt sie 0,35, dort trüge auch das Quadrat
+    // der Zelle 0 (gemessen bei −287/−1055) und die Linse wäre blind für die Asche vor der Front
+    const S = (t) => t * t * (3 - 2 * t);
+    const gew = (v, h, f = v / cs - h) => (f >= 0.5 ? 1 - S(f - 0.5) : S(f + 0.5));
+    const fernster = () => {
+        let best = [-Infinity, 0, 0];
+        for (let i = 1; i < cs; i++)
+            for (let j = 1; j < cs; j++) {
+                const [x, z] = [hx * cs + i, hz * cs + j];
+                if (gew(x, hx) * gew(z, hz) < 0.9) continue;
+                const t = ankunft(x, z);
+                if (t > best[0]) best = [t, x, z];
+            }
+        return best;
+    };
+    const m = (n) => (n ? r3(n.m * n.asche) : 0);
+    const [uhr, jahr] = [st.weatherEffectTime, st.autoSeason];
+    const aus = {};
+    try {
+        st.weatherEffectTime = -1e9;
+        st.autoSeason = false;
+        r.setSeason("sommer");
+        wort("cloudy");
+        r._naesseTakt = () => (st.naesse = 0);
+        st.naesse = 0;
+        await stehen(MESS);
+        r._feldFolgeSteht = () => true;
+        r._feuchteAt = () => 0;
+        r.setTimeOfDay(0.5, "regler");
+        const b = zuenden();
+        if (!b) return { fehler: `an der Mess-Wiese (${MESS.x}, ${MESS.z}) fing mit trockenem Bett kein Brand` };
+        // N2: die Dauer der Herd-Zelle, wie sie fing
+        const N2 = (aus.n2 = dauer(b));
+        // N1: schreiten, solange die Herd-Zelle brennt und ihr fernster Ort ≥ 1 s vor jeder Front liegt
+        while (r._brandUhr + B.schrittS - b.t0 <= 20 + 1e-9 && r._brandUhr + B.schrittS < b.ende && fernster()[0] > r._brandUhr + 2 * B.schrittS) if (!schritt()) break;
+        const [fernAn, fx, fz] = fernster();
+        const lesen = () => ({ zuend: m(r._brandNarbe(b.ex, b.ez)), fern: m(r._brandNarbe(fx, fz)) });
+        const N1 = (aus.n1 = Object.assign(lesen(), {
+            s: r3(r._brandUhr - b.t0),
+            tr: r3(b.tr),
+            brennt: b.t0 !== null && bf().get(hx + "," + hz) === b && !r._brandZelle(hx, hz),
+            brennend: [...bf().values()].filter((q) => q.t0 !== null).length,
+            fernOrt: [r3(fx), r3(fz)],
+            fernAn: r3(fernAn - b.t0),
+        }));
+        r._brandFront = () => ({ asche: 1, busch: 0, wald: 0, front: () => 0 });
+        N1.mutanteWartet = lesen();
+        r._brandFront = () => ({ asche: 1, busch: 0, wald: 0 });
+        N1.mutanteQuadrat = lesen();
+        delete r._brandFront;
+        // N3: EIN Bild des Brands, dann die Leuchtquellen, die das Licht liest, gegen die Flammen ihrer Zelle
+        const bild = () => {
+            r._bildZeit = 0;
+            r._brandBild(0.1);
+            const F = r._brandFlammen || [];
+            const Q = r._leuchtQuellen(pm.x, pm.y, pm.z, 64).filter((q) => q.quelle === "brand");
+            const R = { lichter: Q.length, flammen: F.length, gemessen: 0, max: 0, mitte: false };
+            for (const q of Q) {
+                const [cx, cz] = zelle(q.x, q.z);
+                const d = Math.min(...F.filter((f) => Math.floor(f.x / cs) === cx && Math.floor(f.z / cs) === cz).map((f) => Math.hypot(f.x - q.x, f.z - q.z)));
+                if (!Number.isFinite(d)) continue; // eine Zelle ohne Flamme im Bild (ihre Front verließ sie, der Deckel des Bilds)
+                R.gemessen++;
+                if (d >= R.max) [R.max, R.mitte] = [r3(d), Math.hypot(q.x - (cx + 0.5) * cs, q.z - (cz + 0.5) * cs) < 1e-6];
+            }
+            return R;
+        };
+        const N3 = (aus.n3 = bild());
+        r._brandBild = function (dt) {
+            P._brandBild.call(this, dt);
+            for (const q of bf().glueht || []) (q.ort = null), this._brandOrt(q);
+        };
+        N3.mutante = bild();
+        delete r._brandBild;
+        bild();
+        // N2, die Mutante: derselbe Herd, `ende` auf den Durchlauf des Kopfs gestutzt
+        r._brandZuenden = function (...a) {
+            const z = P._brandZuenden.apply(this, a);
+            if (z) z.ende = z.t0 + kopfS(z);
+            return z;
+        };
+        const bm = zuenden();
+        delete r._brandZuenden;
+        N2.mutante = bm ? dauer(bm) : null;
+        leer();
+        // N4: der Bauer des Chunk-Bodens baut seinen Stoff frisch; der Kern der Seite zählt die Abrufe der Asche-Zeile
+        const bauen = () => {
+            const [K, alt] = [globalThis.__schmiedeCore, st.voxelChunkMaterial];
+            const SG = K.STOFF_GESETZ;
+            let [n, neu] = [0, null];
+            const zaehler = Object.create(SG, { zeile: { value: (name) => ((n += name === "asche"), SG.zeile(name)) } });
+            globalThis.__schmiedeCore = Object.create(K, { STOFF_GESETZ: { value: zaehler } });
+            try {
+                if (globalThis.__schmiedeCore.STOFF_GESETZ !== zaehler) throw new Error("der Kern der Seite nimmt den Zähler nicht");
+                st.voxelChunkMaterial = null;
+                neu = r._getVoxelChunkMaterial();
+            } finally {
+                globalThis.__schmiedeCore = K;
+                st.voxelChunkMaterial = alt;
+                if (neu && neu !== alt && neu.dispose) neu.dispose();
+            }
+            return { abrufe: n, gebaut: !!neu && neu !== alt };
+        };
+        const N4 = (aus.n4 = bauen());
+        try {
+            N4.rauheit = globalThis.__schmiedeCore.STOFF_GESETZ.zeile("asche").rauheit;
+        } catch (e) {
+            N4.rauheit = "keine Zeile";
+        }
+        r._wegeBodenFarbe = function (T, vc, a) {
+            const v = P._wegeBodenFarbe.call(this, T, vc, a);
+            if (a) delete a.asche;
+            return v;
+        };
+        N4.mutante = bauen().abrufe;
+        delete r._wegeBodenFarbe;
+        return aus;
+    } finally {
+        for (const k of ["_naesseTakt", "_feuchteAt", "_feldFolgeSteht", "_brandFront", "_brandBild", "_brandZuenden", "_wegeBodenFarbe"]) delete r[k];
+        leer();
+        st.weatherEffectTime = uhr;
+        st.autoSeason = jahr;
+    }
+}
+
 if (SELBSTTEST) {
     console.log("=== STAND-TAKT — Selbsttest (ohne Browser) ===");
     selbsttest();
@@ -1225,8 +1422,20 @@ if (SELBSTTEST) {
                 },
                 [["ASCHE", "asche.asche.halmeVoll", 30], ["GRAS", "asche.gras.kraut", 6], ["BUSCH", "asche.busch.kraut", 1], ["ERNTE", "naehr.ernte.N", 1], ["RÜCKGABE", "naehr.asche", 1], ["MUTANTE-NÄHRSTOFF", "naehr.mutante.W", 0.7], ["SÄMLING", "saemling.stufen.0.alter", 0.5], ["SÄMLING", "saemling.stufen.2.skala", 1], ["GESTALT", "saemling.gestalt.0.0", 8], ["MUTANTE-GESTALT", "saemling.mutante.0.1", 600], ["WALD", "wald.brand", 2]]
             ),
+            // die Narbe-Linse (`--narbe`): der grüne Befund der Mess-Wiese und je Fall sein Täter — die Zahlen der Täter sind die
+            // des Stands vor w28-brand-bild (die brennende Zelle trägt 0, das Ende am Kopf, das Licht über der Mitte, kein Abruf)
+            ...falsch(
+                narbeUrteil,
+                {
+                    n1: { zuend: 1, fern: 0, s: 20, tr: 6.6, brennt: true, brennend: 4, fernOrt: [-287, -1055], fernAn: 41.2, mutanteWartet: { zuend: 0, fern: 0 }, mutanteQuadrat: { zuend: 1, fern: 0.9 } },
+                    n2: { dauer: 52.4, ecken: 45.8, kopf: 31.5, mutante: { dauer: 31.5, ecken: 45.8, kopf: 31.5 } },
+                    n3: { lichter: 4, flammen: 60, gemessen: 4, max: 0, mitte: false, mutante: { lichter: 4, flammen: 60, gemessen: 4, max: 5.3, mitte: true } },
+                    n4: { abrufe: 1, gebaut: true, rauheit: 0.96, mutante: 0 },
+                },
+                [["N1-LEER", "n1.brennt", false], ["N1-LEER", "n1.s", 3], ["N1-LEER", "n1.fernAn", 12], ["N1-WARTET", "n1.zuend", 0], ["N1-QUADRAT", "n1.fern", 0.9], ["MUTANTE-N1-WARTET", "n1.mutanteWartet.zuend", 1], ["MUTANTE-N1-QUADRAT", "n1.mutanteQuadrat.fern", 0], ["N2-ENDE", "n2.dauer", 31.5], ["MUTANTE-N2", "n2.mutante.dauer", 52.4], ["MUTANTE-N2", "n2.mutante", null], ["N3-LEER", "n3.gemessen", 0], ["N3-LICHT", "n3.max", 5.3, "n3.mitte", true], ["MUTANTE-N3", "n3.mutante.max", 0], ["N4-LEER", "n4.gebaut", false], ["N4-ZEILE", "n4.abrufe", 0], ["MUTANTE-N4", "n4.mutante", 1]]
+            ),
         ],
-        "die Tat-, Nachwuchs-, Brand- und Sukzessions-Linse nennen jeden Täter."
+        "die Tat-, Nachwuchs-, Brand-, Sukzessions- und Narbe-Linse nennen jeden Täter."
     );
     process.exit(0);
 }
@@ -1238,6 +1447,10 @@ const server = statikServer();
 const TAT = process.argv.includes("--tat");
 const NACHWUCHS = process.argv.includes("--nachwuchs");
 const BRANDLAUF = process.argv.includes("--brand");
+const NARBE = process.argv.includes("--narbe");
+// `--narbe` (Lehre 9): ROT ist Exit 1, jeder Absturz — der Boot, die Seite, ein Wurf im Urteil — ist Exit 2, nie ein stilles Grün
+const absturz = (e) => (console.error("❌ NARBE ABSTURZ (Exit 2) — " + (e && e.stack ? e.stack : e)), process.exit(2));
+if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", absturz);
 
 (async () => {
     console.log("=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===");
@@ -1252,6 +1465,7 @@ const BRANDLAUF = process.argv.includes("--brand");
         if (TAT) befund = await tatLauf(page);
         else if (NACHWUCHS) befund = await page.evaluate(tatSeite, MESS, { ufer: true });
         else if (BRANDLAUF) befund = await page.evaluate(brandSeite, MESS);
+        else if (NARBE) befund = await page.evaluate(narbeSeite, MESS);
         else befund = await page.evaluate(
             async (MESS, TAKTE) => {
                 const P = Object.getPrototypeOf(r);
@@ -2318,6 +2532,14 @@ const BRANDLAUF = process.argv.includes("--brand");
         );
     } catch (e) {
         befund = { fehler: fehlerText(e) };
+    }
+    if (NARBE) {
+        await browser.close();
+        server.close();
+        if (!befund || befund.fehler) absturz(befund ? befund.fehler : "kein Befund");
+        console.log("NARBE " + JSON.stringify(befund));
+        const v = narbeUrteil(befund);
+        urteilEnde(v.length, `❌ NARBE ROT — ${v.join(" | ")}`, "✅ NARBE GRÜN — die Narbe folgt der Front, die Zelle brennt, bis ihre Front sie deckt, das Licht steht bei den Flammen, der Boden liest die Asche-Zeile");
     }
     await seiteZu(browser, server, befund, null, "fehler");
     if (TAT || NACHWUCHS) {
