@@ -1,7 +1,7 @@
 {
  "sha": "e4eeee086ca78f20b27ae87e12761508215fca34",
  "geraet": "gtx",
- "zeit": "2026-11-16T18:11:47.136Z",
+ "zeit": "2026-11-16T18:16:09.405Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K2#2": {
@@ -1180,6 +1180,113 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.preis.ankunft#1": {
+   "gruen": true,
+   "zahl": "4 Kalt-Boots, 4 mit Kontrolle von außen: 11.25 s · 8.89 s · 8.71 s · 13.47 s (max 13.47 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.99,
+   "mass": [
+    {
+     "wort": "t(Kontrolle) kalt max s",
+     "wert": 13.466,
+     "soll": 60
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "kab1ae1048f4e",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "kaae491f57b8b",
+   "s": 58.2,
+   "fremd": {
+    "s": 63.3,
+    "takte": 24,
+    "fremdS": 176.95,
+    "kerne": 2.795,
+    "fensterKerne": 5.793,
+    "namen": [
+     [
+      "node scripts/format-teile.cjs --selftest stamm phyto-core.js voxel-worker.js speicher-fade",
+      89.45
+     ],
+     [
+      "node.exe scripts/stamm-umzug.cjs --nach-karte",
+      14.61
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      14.41
+     ]
+    ],
+    "dienerS": 37.89,
+    "diener": [
+     [
+      "System",
+      18.39
+     ],
+     [
+      "dwm.exe",
+      14.3
+     ]
+    ],
+    "geraetS": 43.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.91
+     ],
+     [
+      "svchost.exe",
+      11.09
+     ],
+     [
+      "SearchIndexer.exe",
+      7.95
+     ]
+    ],
+    "eigenS": 361.66,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.575,
+     "nach": 0.78,
+     "station": 6.827
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 114.3,
+     "alle": 302.1,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 113.8,
+     "alle": 357.5,
+     "cpuEin": 109
+    },
+    "ruhe": {
+     "ein": 92.8,
+     "alle": 240.6,
+     "n": 414,
+     "von": "2026-11-16"
+    },
+    "f": 1.486,
+    "fEin": 1.232,
+    "fAlle": 1.486,
+    "verdraengt": 1.043,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "grund": "GRÜN trotz Last: Referenz f 1,569 (Faden 1,232 · alle Kerne 1,486 · Stoß in der Station 6,83 Kerne fremd → 1,569; vor 114,3/302,1 ms, nach 113,8/357,5 ms, Ruhe 92,8/240,6 ms seit 2026-11-16) · fremd: node scripts/format-teile.cjs --selftest stamm phyto-core.js voxel-worker.js speicher-fade 89,5 CPU-s · node.exe scripts/stamm-umzug.cjs --nach-karte 14,6 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 14,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 22,9 CPU-s · svchost.exe 11,1 CPU-s · SearchIndexer.exe 8,0 CPU-s",
+   "zeit": "2026-11-16T18:16:09.405Z",
+   "abdruck": "fa3e49df18ba",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1203,19 +1310,19 @@
   "k74431547df92": "dVRdj5swEPwveeyVM18OxNI9OCVqruqpOd1Dpb6t7TVwIRDZcFSp+t+rcJAE6O0ToBnv7OzgP4sjyD2keP9qq3LBFp8WnxcW3tCxaN7Q3L/aBVu4MgQaM/5ehHP+9QyTJj/WlhS5ICBKyA7oNKbGvLiXHc2TMQIy0m54uyNkRyKybvml1vzhYXpMIVBVTg0ah0OE8qMA2BTY2BQEOtDornEP1stl5AeMdBUnfPdKhuLPnJN2M+0ooFRj1ToAqj322HK+mStUOWDtFHlph55SURH47NKonXMMtM4JMCvQ9KR4SVXgDUKnBF001o6axIGifswIWZEJNkWby6x2jqYSWA6mrfzIA7aea0mPjaNvlYAQEIupvxlgmaIZa4hCKkNGfs/07uGABpwSsh66coPIF1dPCCHbuZaiE961GITHSqwiPSISQtJtF5sk7l4un+Pte5CS9Boq/jxpYmWWm8PYHq2pAnc6s81AoXH2la0vSNf3Alz2yU+6EPFdmEyZ10F6ni+WLo1v5ogJ3858s5WuWzDopMemJ2KINKKMp08zcA2HwzCA9DGmswHqc5hvZbiRT2m3h/SDHbxH3zlhXgykSEovQPbliU/nfDNwcECkJtd62LSgUq/+F8wWi9oRVVUPSK2WZ0sCUl5c8e44f7pZ3i6h7s/vv16eb66Jc23cqe7u9MrUg2gqlq4Ome7+QDlFn9AUmOLIGxWKABQjrbz2ScLh4W4UwNNsdaccz66VtrFDdFeRWvXR7eU/ju+PFs1eQLkffPa0JxXr8rvjCf/BefotuVtPZv+okv7wI0pyNJXOz1cZyaCxGRT19T7/+w8="
  },
  "sitzung": {
-  "start": "2026-11-16T18:11:15.242Z",
-  "ordner": "sitzung-20261116-191115",
+  "start": "2026-11-16T18:15:35.412Z",
+  "ordner": "sitzung-20261116-191535",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.9,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "breite.siedlung#1",
-    "s": 22.4,
+    "vor": "karte2.same.preis.ankunft#1",
+    "s": 25.5,
     "takte": 729,
     "chunks": 81,
     "nach": null
@@ -1224,7 +1331,7 @@
   "wegeTueren": [],
   "messHalt": [
    {
-    "probe": "breite.siedlung#1",
+    "probe": "karte2.same.preis.ankunft#1",
     "halt": -1000000000,
     "zurueck": 0
    }
@@ -1232,28 +1339,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
+   "bilder": 3464,
+   "frameP95": 75.07,
+   "taktP95": 58.57,
+   "vramMax": 142,
+   "seiten": 6,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "breite.siedlung#1",
-     "m": 566,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 55,
-   "luecken": 0,
-   "letzteLuecke": null
+   "ortImDeckel": [],
+   "zapfen": 154,
+   "luecken": 7,
+   "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 60.4,
-  "minuten": 1.1
+  "fahrtS": 168.1,
+  "minuten": 2.88
  },
  "ungemessen": {
   "karte2.planet.kosmos.himmelsmechanik#1": {
