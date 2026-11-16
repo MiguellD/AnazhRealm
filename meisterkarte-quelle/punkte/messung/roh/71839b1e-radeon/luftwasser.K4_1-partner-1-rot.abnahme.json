@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 268,
+  "weltTakte": 165,
   "zeilen": 1080
  },
  "geraet": {
@@ -51,7 +51,7 @@
   "leiber": null,
   "abstand": 10.55,
   "gestalt": [
-   "grown_busch_hazel_v2 152"
+   "grown_busch_hazel_v2 88"
   ],
   "gezeichnet": true
  },
@@ -98,8 +98,8 @@
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 1864,
-   "wechsel": 1162647
+   "ms": 1929,
+   "wechsel": 1162654
   },
   "rinde": null,
   "toene": [
@@ -109,7 +109,7 @@
   "klassen": {
    "tier:bestaeuber": {
     "objekte": 1,
-    "pixel": 7
+    "pixel": 2
    }
   },
   "abstand": null,
