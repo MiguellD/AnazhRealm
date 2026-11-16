@@ -1573,7 +1573,11 @@ class AnazhRealm_koerper_seele {
     // Einheitsvektor Quelle→Empfänger, windDir = der EINE Wind an der Quelle, `_windAt` auf der Sim-Uhr — die Nase riecht
     // den Wind, den das Gras zeigt, und das Verhalten hängt nie an der Bildrate; positiv = downwind); windMod = max(minDirectional, (1−windFactor) + windFactor ·
     // max(0, dot)); geruch = strength · decay · windMod.
-    _scentAt(x, z, sources) {
+    // DIE NASE ENTDECKT IM WIND (erleben.sinne.geruch): `nase` ist die Reichweite des Lesers in m (das Genom des Jägers,
+    // tetrapoda VERHALTEN.jagd.scentRangeM) — sie gilt quer zum Wind (SCENT.quer, windMod bei dot 0); windab trägt der
+    // Wind sie weiter (Reichweite = nase · windMod / quer, höchstens nase / quer), windauf bleibt sie die quere; eine
+    // Quelle jenseits davon riecht diese Nase nicht (0), nase 0 riecht nichts. Ohne `nase` das Feld selbst.
+    _scentAt(x, z, sources, nase) {
         if (!Array.isArray(sources) || sources.length === 0) return 0;
         const S = AnazhRealm.SCENT;
         let total = 0;
@@ -1596,6 +1600,7 @@ class AnazhRealm_koerper_seele {
             // VON src ZU recv, trägt also den Geruch hin).
             const dot = dirX * wind.x + dirZ * wind.z;
             const windMod = Math.max(S.minDirectional, 1 - S.windFactor + S.windFactor * Math.max(0, dot));
+            if (nase !== undefined && !(dist * S.quer <= nase * windMod)) continue;
             total += strength * decay * windMod;
         }
         return total;
@@ -1787,6 +1792,11 @@ AnazhRealm.SCENT = Object.freeze({
     // Minimaler Richtungs-Faktor (gegen Wind): nie ganz 0, sonst wäre der
     // Geruch upwind invisible — eine Schwelle, die "Restduft" trägt.
     minDirectional: 0.2,
+    // Der Richtungs-Faktor quer zum Wind (dot 0, und windauf: max(0, dot)) — das Maß, an dem eine Nase ihre Reichweite
+    // trägt (`_scentAt` mit `nase`); windab streckt der Wind sie bis 1 / quer.
+    get quer() {
+        return Math.max(this.minDirectional, 1 - this.windFactor);
+    },
 });
 
 // Emotion→Tag-Mapping für Boosts: jede der 6 Emotionen koppelt an einen MATERIAL_TAG_KEY; über 0.7

@@ -196,7 +196,13 @@ class AnazhRealm_kreatur_verhalten {
         if (wariness >= VG.furcht.fleeThreshold) return null;
         if (this._kreaturSatt(creature)) return null; // satt jagt keine Beute (VERHALTEN.aas)
         if (this._kreaturErschoepft(creature)) return null; // die Jagd endete, der Jäger ruht (Tiere K2)
+        // DIE WITTERUNG ENTDECKT (erleben.sinne.geruch): die Nase des Genoms (jagd.scentRangeM) reicht quer zum Wind so weit,
+        // windab trägt der EINE Wind (`_windAt` an der Beute) den Geruch weiter — bis scentRangeM / SCENT.quer (2,5×) —, und
+        // eine Beute jenseits dieser Reichweite bemerkt der Jäger nicht (`_scentAt` mit der Nase: 0). Vorher schnitt ein harter
+        // Kreis scentRangeM in jeder Richtung, die Witterung wählte nur in ihm: gegen den Wind jagte er wie mit ihm, und eine
+        // Beute 60 m windauf fand er nie anders als eine 60 m windab. scentRangeM 0 riecht nichts (der Gegenlauf).
         const scentRange = VG.jagd.scentRangeM;
+        const weit = scentRange / AnazhRealm.SCENT.quer;
         const cx = creature.position.x;
         const cz = creature.position.z;
         const quelle =
@@ -212,7 +218,7 @@ class AnazhRealm_kreatur_verhalten {
             if (!other || !other.position) continue;
             const dx = other.position.x - cx;
             const dz = other.position.z - cz;
-            const fern = dx * dx + dz * dz > scentRange * scentRange;
+            const fern = dx * dx + dz * dz > weit * weit;
             // DER RISS NENNT DIE BEUTE (oekologie.K2, `_kreaturRiss`): das Opfer, das der Bestand im Nah-Kreis diesem Jäger
             // oder seinem Verband zusprach, ist das Ziel, wo es auch steht
             const von = other.userData && other.userData._rissVon;
@@ -224,7 +230,7 @@ class AnazhRealm_kreatur_verhalten {
             if (fern) continue;
             quelle[0].x = other.position.x;
             quelle[0].z = other.position.z;
-            const witterung = this._scentAt(cx, cz, quelle);
+            const witterung = this._scentAt(cx, cz, quelle, scentRange);
             if (witterung > bestS) {
                 bestS = witterung;
                 best = other;
@@ -242,8 +248,8 @@ class AnazhRealm_kreatur_verhalten {
 
     // DER KADAVER RUFT (Meisterkarte Tiere H3, tetrapoda VERHALTEN.aas): ein Tier, das kein Pflanzenfresser ist (diet über
     // temperament.gattung.pflanzDiet) und nicht satt, wittert die Gefallenen mit Fleisch über das Geruch-Feld (_scentAt an
-    // seiner Nase, Quelle = das Fleisch in kg, in jagd.scentRangeM — dieselbe Nase wie die Jagd), wählt den stärksten Geruch
-    // und geht hin (das Ankunfts-Gesetz; der Halt, wo das Maul am liegenden Leib ist). Dort FRISST es: je Sekunde der
+    // seiner Nase, Quelle = das Fleisch in kg, in jagd.scentRangeM, windab weiter — dieselbe Nase wie die Jagd), wählt den
+    // stärksten Geruch und geht hin (das Ankunfts-Gesetz; der Halt, wo das Maul am liegenden Leib ist). Dort FRISST es: je Sekunde der
     // Kreatur-Uhr magenAnteil × die eigene Masse / fressSec, bis der Magen voll oder der Kadaver leer ist (der Zustand
     // „fressen" senkt den Kopf, _tickKreaturVerhalten). Rückgabe: true, wenn der Kadaver den Weg schrieb (dann zieht kein
     // Verband). Vorher lag der Riss ohne Zustand, kein Tier sah ihn an, und nach 90 s sank er.
@@ -258,6 +264,7 @@ class AnazhRealm_kreatur_verhalten {
         if (!hunger || this._kreaturDiet(creature) <= VG.temperament.gattung.pflanzDiet)
             return this._kreaturFrisstNicht(creature);
         const R = VG.jagd.scentRangeM;
+        const weit = R / AnazhRealm.SCENT.quer; // windab trägt der Wind die Nase weiter (dieselbe Entdeckung wie die Jagd)
         const cx = creature.position.x,
             cz = creature.position.z;
         const quelle = this._aasQuelle || (this._aasQuelle = [{ x: 0, z: 0, strength: 1 }]);
@@ -268,11 +275,11 @@ class AnazhRealm_kreatur_verhalten {
             if (!K || !(K.fleisch > 0)) continue;
             const dx = k.position.x - cx,
                 dz = k.position.z - cz;
-            if (dx * dx + dz * dz > R * R) continue;
+            if (dx * dx + dz * dz > weit * weit) continue;
             quelle[0].x = k.position.x;
             quelle[0].z = k.position.z;
             quelle[0].strength = K.fleisch;
-            const w = this._scentAt(cx, cz, quelle);
+            const w = this._scentAt(cx, cz, quelle, R);
             if (w > bestS) {
                 bestS = w;
                 best = k;
