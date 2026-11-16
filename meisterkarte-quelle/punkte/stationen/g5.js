@@ -1342,7 +1342,7 @@ const MAUER_FREI = 0.25;
 const STADT_MAUER =
     "const SK = window.__stadtKamera; if (!SK) return { fehler: \"keine Kamera der Stadt (STADT_KAMERA lief nicht)\" }; const v2 = SK.v2, K = SK.pose, o = v2.ort; " +
     "const P = r.state.stlMauer, wk = r._wegeKarteEnsure(); " +
-    "const box = (wk.siedlungen || []).filter((b) => b && b.mauerVon && b.mauerVon.ort && Math.hypot(b.mauerVon.ort.x - o.x, b.mauerVon.ort.z - o.z) < 1).pop(); " +
+    "const box = (wk.siedlungen || []).filter((b) => b && b.mauerVon && (b.mauerVon === v2 || (b.mauerVon.ort && Math.hypot(b.mauerVon.ort.x - o.x, b.mauerVon.ort.z - o.z) < 1))).pop(); " +
     "if (!P || !box) return { fehler: \"die Mauer der Stadt steht nicht im Pool\" }; " +
     "const SM = globalThis.__fachwerkCore.STADTMAUER, cam = r.state.camera.clone(), M4 = cam.matrixWorld.clone(), pos = cam.position.clone(), q = cam.quaternion.clone(), sk = cam.position.clone(), V = cam.position.clone(); " +
     "const boden = (x, z) => { const y = r._voxelSurfaceY(x, z); return Number.isFinite(y) ? y : r.getTerrainHeightAt(x, z); }; " +
