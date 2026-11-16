@@ -753,35 +753,45 @@ async function praesenzSeite(H) {
         P.fehlt.push("Fuß: " + String((e && e.message) || e).slice(0, 200));
     }
     H.schritt("fuss");
-    // (3) DIE KAMERA: Third (leibGang mit gang2) und der Ego-Gang danach in derselben Seite
+    // (3) DIE KAMERA: Third (leibGang mit gang2), dann der Ego-Gang je Ort und Gangart in eigenen Rufen derselben Seite — jeder Ruf
+    // eine Zeile (der Wächter der Stille in punkte.cjs: die Probe tickt von Hand, die Welt zeigt dabei kein Bild; Radeon 71839b1e 16.11.:
+    // EIN Ruf über Third und Ego schwieg 180 s und fiel UNGEMESSEN)
+    const NAH = "nahFels = (k) => (k.Fels || 0) + (k[\"Gelände\"] || 0) > 0, fels = (t) => t.some((n) => /im Fels|fels/i.test(n))";
     try {
         P.kamera = await H.seite(
             "window.__anazhAutoSettlement = false;\n" + zusatz + "\nwindow.__buehne(); await (" + D.leibInstall + ")(" + JSON.stringify({ R: D.LEIB_R }) + "); " +
                 "const w = await (" + D.leibWiese + ")(" + JSON.stringify({ x: M.x, z: M.z, quote: { haus: 0, fels: 0, baum: 0 } }) + "); " +
                 "const G = " + JSON.stringify(Object.assign({}, D.GANG, { zwei: true })) + "; const g = await (" + D.leibGang + ")(G); " +
-                "const MUSTER = __MUSTER, mittel = MUSTER.reduce((s, v) => s + v, 0) / MUSTER.length, L = window.__kamLeib; " +
-                "const fels = (t) => t.some((n) => /im Fels|fels/i.test(n)), nahFels = (k) => (k.Fels || 0) + (k[\"Gelände\"] || 0) > 0; " +
+                "const MUSTER = __MUSTER, mittel = MUSTER.reduce((s, v) => s + v, 0) / MUSTER.length, " + NAH + "; " +
                 "const third = { bilder: 0, fels: 0, wer: [] }; " +
                 "for (const x of (g && g.gaenge) || []) { third.bilder += x.bilder; " +
                 "  for (const t of x.taeter) if (fels(t.taeter)) third.fels++, third.wer.length < 3 && third.wer.push(x.art + \" Bild \" + t.bild + \": \" + t.taeter.join(\"/\")); " +
                 "  for (const t of x.nah) if (nahFels(t.jeKlasse)) third.fels++, third.wer.length < 3 && third.wer.push(x.art + \" Bild \" + t.bild + \" Nah \" + JSON.stringify(t.jeKlasse)); } " +
-                "const ego = { bilder: 0, fels: 0, wer: [], ms: 0, orte: [] }; " +
-                "const orte = [[\"wiese\", " + M.x + ", " + M.z + ", 0], g && g.hang && [\"hang\", g.hang.x, g.hang.z, g.hang.gier]].filter(Boolean); " +
-                "let tMs = performance.now(), nr = 0; " +
-                "for (const [ort, x, z, gier] of orte) for (const sprint of [false, true]) { " +
-                "  await L.hin(x, z, 30000); L.fuss(x, z, gier, 0); r.setCameraMode(\"first\"); tMs = Math.max(tMs, performance.now()); " +
-                "  Object.assign(halt, { vor: true, links: false, zurueck: false, rechts: false, sprint }); " +
-                "  for (let j = 0; j < 240; j++) { const dt = MUSTER[nr++ % MUSTER.length]; tMs += dt; ego.ms += dt; st.yaw += (2 * Math.PI * dt) / G.orbitMs; r._gameLoopTick(tMs); ego.bilder++; " +
-                "    const c = st.camera.position, t = L.kugel(c, L.sichtbar(c.x, c.z)); " +
-                "    for (const { a, b } of L.boxen(c.x, c.z, 30)) if (b.pflanze !== true && /fels/i.test(a.type) && L.inBox(c, b, G.R)) t.push(\"in \" + a.type); " +
-                "    let nah = null; if (j % G.nahJe === 0) { const d = window.__nahDeckung({ radien: G.nahRadien, gw: G.gw, gh: G.gh, ort: { id: \"praesenz-ego-\" + ort, r: 4 }, neu: j === 0 }); nah = d.deckung > 0 && nahFels(d.jeKlasse) ? d.jeKlasse : null; } " +
-                "    if (fels(t) || nah) ego.fels++, ego.wer.length < 3 && ego.wer.push(ort + (sprint ? \" laufen\" : \" gehen\") + \" Bild \" + j + \": \" + (t.join(\"/\") || JSON.stringify(nah))); " +
-                "    if (j % 20 === 0) await sleep(0); } " +
-                "  ego.orte.push(ort + (sprint ? \"-laufen\" : \"-gehen\")); } " +
-                "Object.assign(halt, { vor: false, sprint: false }); r.setCameraMode(\"first\"); " +
-                "return { anker: w.anker, err: (g && g.err) || w.err || null, gaenge: ((g && g.gaenge) || []).map((x) => x.art), hang: g && g.hang ? { neig: g.hang.neigung } : null, " +
-                "  third, ego, gangS: +((third.bilder * mittel + ego.ms) / 1000).toFixed(1) };"
+                "return { anker: w.anker, err: (g && g.err) || w.err || null, gaenge: ((g && g.gaenge) || []).map((x) => x.art), hangOrt: g && g.hang ? [g.hang.x, g.hang.z, g.hang.gier] : null, " +
+                "  third, thirdS: +((third.bilder * mittel) / 1000).toFixed(1) };"
         );
+        H.schritt("third");
+        const ego = { bilder: 0, fels: 0, wer: [], ms: 0, orte: [] };
+        const orte = [["wiese", M.x, M.z, 0], P.kamera.hangOrt && ["hang", ...P.kamera.hangOrt]].filter(Boolean);
+        for (const [ort, x, z, gier] of orte)
+            for (const sprint of [false, true]) {
+                const e = await H.seite(
+                    "const MUSTER = __MUSTER, L = window.__kamLeib, G = " + JSON.stringify(D.GANG) + ", " + NAH + "; const e = { bilder: 0, fels: 0, wer: [], ms: 0 }; " +
+                        "await L.hin(" + x + ", " + z + ", 30000); L.fuss(" + x + ", " + z + ", " + gier + ", 0); r.setCameraMode(\"first\"); let tMs = performance.now(); " +
+                        "Object.assign(halt, { vor: true, links: false, zurueck: false, rechts: false, sprint: " + sprint + " }); " +
+                        "try { for (let j = 0; j < 240; j++) { const dt = MUSTER[j % MUSTER.length]; tMs += dt; e.ms += dt; st.yaw += (2 * Math.PI * dt) / G.orbitMs; r._gameLoopTick(tMs); e.bilder++; " +
+                        "  const c = st.camera.position, t = L.kugel(c, L.sichtbar(c.x, c.z)); " +
+                        "  for (const { a, b } of L.boxen(c.x, c.z, 30)) if (b.pflanze !== true && /fels/i.test(a.type) && L.inBox(c, b, G.R)) t.push(\"in \" + a.type); " +
+                        "  let nah = null; if (j % G.nahJe === 0) { const d = window.__nahDeckung({ radien: G.nahRadien, gw: G.gw, gh: G.gh, ort: { id: \"praesenz-ego-" + ort + "\", r: 4 }, neu: j === 0 }); nah = d.deckung > 0 && nahFels(d.jeKlasse) ? d.jeKlasse : null; } " +
+                        "  if (fels(t) || nah) e.fels++, e.wer.length < 3 && e.wer.push(\"" + ort + (sprint ? " laufen" : " gehen") + " Bild \" + j + \": \" + (t.join(\"/\") || JSON.stringify(nah))); " +
+                        "  if (j % 20 === 0) await sleep(0); } } finally { Object.assign(halt, { vor: false, sprint: false }); } return e;"
+                );
+                Object.assign(ego, { bilder: ego.bilder + e.bilder, fels: ego.fels + e.fels, ms: ego.ms + e.ms, wer: [...ego.wer, ...e.wer].slice(0, 3) });
+                ego.orte.push(ort + (sprint ? "-laufen" : "-gehen"));
+                H.schritt("ego " + ego.orte[ego.orte.length - 1] + " " + e.fels + " von " + e.bilder);
+            }
+        P.kamera.ego = ego;
+        P.kamera.gangS = +(P.kamera.thirdS + ego.ms / 1000).toFixed(1);
     } catch (e) {
         P.fehlt.push("Kamera: " + String((e && e.message) || e).slice(0, 200));
     }
@@ -1193,8 +1203,8 @@ const LEIB_K2 = seiteProbe(33, leibK2Seite, {
 const LEIB_K4 = seiteProbe(33, leibK4Seite, {
     mutiert: true,
 });
-// der Gang der Präsenz (Karte 2): Taste ~30 s + Fuß ~25 s + Kamera (Third ~40 s, Ego 960 Bilder) — der Deckel trägt das Gesetz der Probe
-const PRAESENZ = seiteProbe(240, praesenzSeite, { mutiert: true });
+// der Gang der Präsenz (Karte 2): Taste + Fuß 59 s an der Radeon (71839b1e), dazu Third und Ego — der Deckel trägt das Gesetz der Probe, die Messung schreibt deckel.json
+const PRAESENZ = seiteProbe(420, praesenzSeite, { mutiert: true });
 const HALTEN_K5 = seiteProbe(19, haltenK5Seite, { mutiert: true });
 const HALTEN_K1 = seiteProbe(10, haltenK1Seite, { mutiert: true });
 const TORE_K3 = seiteProbe(10, toreK3Seite, {
