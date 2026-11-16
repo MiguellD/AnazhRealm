@@ -700,6 +700,97 @@ async function leibK4Seite(H) {
     return errs.length ? 1 : 0;
 }
 
+// KARTE 2 erleben.spieler.praesenz S1 — DER GANG IN EINER WELT (stationen-w1-a, 16.11.): die drei Glieder des Richters in EINER Probe
+// der Sitzung, ohne Grundstellung dazwischen — (1) die Taste: `/latenz` der Werkbank (dieselbe Linse wie leib.K1#1, gehen in Ego und
+// Third an der Mess-Wiese, LATENZ_PROBEN je Reihe); (2) der Fuß: `rollen` von gate:koerper-stand (wie leibK2Seite) an Mess-Wiese und
+// 25°-Hang, längs und in der Falllinie; (3) die Kamera: `leibGang` von gate:kamera-leib mit gang2 (wie leibK4Seite: Third gehen UND
+// laufen, Stamm · Fels · Haus · Haus innen · Steilhang) und dazu der EGO-GANG, den keine alte Station fuhr: an Mess-Wiese und
+// Steilhang gehen und laufen, die Maus dreht, je Bild die Kugel der Linse (`L.kugel`, das Gelände-Gesetz), die Felsturm-Boxen und
+// jedes nahJe-te Bild die Nah-Pixel (Fels, Gelände). Die Spielzeit der Gänge (Bilder × das Bild-Muster) ist die Länge „2 min“.
+// DER ZEIGER (Schöpfer 16.11.: eine Probe nimmt nie Zeiger noch Fokus): der Klick der Latenz fängt ihn über den Griff des Spiels wie die
+// Spur (dirigent-takt `_spurLaden`: `pointerLockElement` als Getter), nie über das Betriebssystem; am Ende fällt der Griff.
+async function praesenzSeite(H) {
+    const K2 = H.quelle("scripts/diag-koerper-stand.cjs", ["K8_UMFANG", "eignerKarte", "gezeichnet", "rollen"]);
+    const D = H.quelle("scripts/diag-kamera-laub.cjs", ["ORTE", "LEIB_R", "GANG", "leibInstall", "leibWiese", "leibGang"]);
+    const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const zusatz = require(path.resolve("scripts/lib/kamera-nah.cjs")).KAMERA_NAH_INSTALL + "\n" + require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL;
+    const P = { fehlt: [] };
+    await H.frist();
+    // dieselbe Attrappe wie proben-welt `zeigerFangen` (window.__zeigerDerProbe: der Stand der Leinwand, `pointerlockchange` zum Hörer des Spiels)
+    await H.seite(
+        "if (!window.__zeigerDerProbe) { const stand = (window.__zeigerDerProbe = { el: null, rpl: HTMLCanvasElement.prototype.requestPointerLock, epl: document.exitPointerLock }); " +
+            "const melde = () => document.dispatchEvent(new Event(\"pointerlockchange\")); " +
+            "Object.defineProperty(document, \"pointerLockElement\", { configurable: true, get: () => stand.el }); " +
+            "HTMLCanvasElement.prototype.requestPointerLock = function () { stand.el = this; return Promise.resolve().then(melde); }; " +
+            "document.exitPointerLock = () => ((stand.el = null), melde()); } return 1;"
+    );
+    H.ende.push(() => H.seite("const z = window.__zeigerDerProbe; if (z && z.rpl) { if (document.pointerLockElement) document.exitPointerLock(); HTMLCanvasElement.prototype.requestPointerLock = z.rpl; " +
+        "delete document.exitPointerLock; delete document.pointerLockElement; delete window.__zeigerDerProbe; } return 1;"));
+    // (1) DIE TASTE
+    try {
+        await H.ruf("/umstellen", { ort: "wiese" });
+        const l = await H.ruf("/latenz", { proben: 15, sichten: "ego,third", verben: "gehen" });
+        P.latenz = { reihen: l.reihen, bildMs: l.bildMs, urteil: l.urteil };
+    } catch (e) {
+        P.fehlt.push("Taste: " + String((e && e.message) || e).slice(0, 200));
+    }
+    H.schritt("taste");
+    // (2) DER FUSS
+    await H.ruf("/fenster", { w: 640, h: 360 });
+    try {
+        const o = await H.seite(
+            "window.__anazhAutoSettlement = false; window.__eignerKarte = " + K2.eignerKarte + "; window.__gezeichnet = " + K2.gezeichnet + "; " +
+                "await window.__weltStehtNach(() => { try { r._gameLoopTick(performance.now()); } catch (e) {} }); " +
+                "const sc = r.spawnCreatureAt, sa = r.spawnArchitecture; " +
+                "r.spawnCreatureAt = function (...a) { return a[4] === \"wesen\" && a[5] && a[5].bodySize ? null : sc.apply(this, a); }; " +
+                "r.spawnArchitecture = function (t, ...a) { return t === \"fahrzeug_gt\" ? null : sa.call(this, t, ...a); }; " +
+                "try { return await (" + K2.rollen + ")(" + K2.K8_UMFANG + "); } finally { r.spawnCreatureAt = sc; r.spawnArchitecture = sa; }"
+        );
+        const t = (x) => (x ? { p95: x.p95, n: x.n } : null);
+        P.fuss = {};
+        for (const ort of ["wiese", "hang"]) P.fuss[ort] = o && o[ort] ? { neig: o[ort].neig, fuss: t(o[ort].fuss), falllinie: t(o[ort].falllinie) } : null;
+    } catch (e) {
+        P.fehlt.push("Fuß: " + String((e && e.message) || e).slice(0, 200));
+    }
+    H.schritt("fuss");
+    // (3) DIE KAMERA: Third (leibGang mit gang2) und der Ego-Gang danach in derselben Seite
+    try {
+        P.kamera = await H.seite(
+            "window.__anazhAutoSettlement = false;\n" + zusatz + "\nwindow.__buehne(); await (" + D.leibInstall + ")(" + JSON.stringify({ R: D.LEIB_R }) + "); " +
+                "const w = await (" + D.leibWiese + ")(" + JSON.stringify({ x: M.x, z: M.z, quote: { haus: 0, fels: 0, baum: 0 } }) + "); " +
+                "const G = " + JSON.stringify(Object.assign({}, D.GANG, { zwei: true })) + "; const g = await (" + D.leibGang + ")(G); " +
+                "const MUSTER = __MUSTER, mittel = MUSTER.reduce((s, v) => s + v, 0) / MUSTER.length, L = window.__kamLeib; " +
+                "const fels = (t) => t.some((n) => /im Fels|fels/i.test(n)), nahFels = (k) => (k.Fels || 0) + (k[\"Gelände\"] || 0) > 0; " +
+                "const third = { bilder: 0, fels: 0, wer: [] }; " +
+                "for (const x of (g && g.gaenge) || []) { third.bilder += x.bilder; " +
+                "  for (const t of x.taeter) if (fels(t.taeter)) third.fels++, third.wer.length < 3 && third.wer.push(x.art + \" Bild \" + t.bild + \": \" + t.taeter.join(\"/\")); " +
+                "  for (const t of x.nah) if (nahFels(t.jeKlasse)) third.fels++, third.wer.length < 3 && third.wer.push(x.art + \" Bild \" + t.bild + \" Nah \" + JSON.stringify(t.jeKlasse)); } " +
+                "const ego = { bilder: 0, fels: 0, wer: [], ms: 0, orte: [] }; " +
+                "const orte = [[\"wiese\", " + M.x + ", " + M.z + ", 0], g && g.hang && [\"hang\", g.hang.x, g.hang.z, g.hang.gier]].filter(Boolean); " +
+                "let tMs = performance.now(), nr = 0; " +
+                "for (const [ort, x, z, gier] of orte) for (const sprint of [false, true]) { " +
+                "  await L.hin(x, z, 30000); L.fuss(x, z, gier, 0); r.setCameraMode(\"first\"); tMs = Math.max(tMs, performance.now()); " +
+                "  Object.assign(halt, { vor: true, links: false, zurueck: false, rechts: false, sprint }); " +
+                "  for (let j = 0; j < 240; j++) { const dt = MUSTER[nr++ % MUSTER.length]; tMs += dt; ego.ms += dt; st.yaw += (2 * Math.PI * dt) / G.orbitMs; r._gameLoopTick(tMs); ego.bilder++; " +
+                "    const c = st.camera.position, t = L.kugel(c, L.sichtbar(c.x, c.z)); " +
+                "    for (const { a, b } of L.boxen(c.x, c.z, 30)) if (b.pflanze !== true && /fels/i.test(a.type) && L.inBox(c, b, G.R)) t.push(\"in \" + a.type); " +
+                "    let nah = null; if (j % G.nahJe === 0) { const d = window.__nahDeckung({ radien: G.nahRadien, gw: G.gw, gh: G.gh, ort: { id: \"praesenz-ego-\" + ort, r: 4 }, neu: j === 0 }); nah = d.deckung > 0 && nahFels(d.jeKlasse) ? d.jeKlasse : null; } " +
+                "    if (fels(t) || nah) ego.fels++, ego.wer.length < 3 && ego.wer.push(ort + (sprint ? \" laufen\" : \" gehen\") + \" Bild \" + j + \": \" + (t.join(\"/\") || JSON.stringify(nah))); " +
+                "    if (j % 20 === 0) await sleep(0); } " +
+                "  ego.orte.push(ort + (sprint ? \"-laufen\" : \"-gehen\")); } " +
+                "Object.assign(halt, { vor: false, sprint: false }); r.setCameraMode(\"first\"); " +
+                "return { anker: w.anker, err: (g && g.err) || w.err || null, gaenge: ((g && g.gaenge) || []).map((x) => x.art), hang: g && g.hang ? { neig: g.hang.neigung } : null, " +
+                "  third, ego, gangS: +((third.bilder * mittel + ego.ms) / 1000).toFixed(1) };"
+        );
+    } catch (e) {
+        P.fehlt.push("Kamera: " + String((e && e.message) || e).slice(0, 200));
+    }
+    H.schritt("kamera");
+    fs.writeFileSync(H.aus, JSON.stringify(P, null, 1));
+    console.log("PRAESENZ " + JSON.stringify(P));
+    return 0;
+}
+
 // halten.K5 #1 + #2 (Zwillinge, EIN Lauf): Q13/Q14 von gate:kampf-gefuehl --k5 — K5_VOR (der Takt von Hand: fünf Stürze, zwei
 // Tod-Lagen, der Tod durch den Wolf, die Werte je Werk und Nahrung, saveState), der Reload der Seite (die Werkbank lädt neu, der
 // Spielstand bleibt: die Grundstellung kommt erst vor der nächsten Probe), der Abdruck danach; Urteil und Zeilen aus der Linse
@@ -1102,6 +1193,8 @@ const LEIB_K2 = seiteProbe(33, leibK2Seite, {
 const LEIB_K4 = seiteProbe(33, leibK4Seite, {
     mutiert: true,
 });
+// der Gang der Präsenz (Karte 2): Taste ~30 s + Fuß ~25 s + Kamera (Third ~40 s, Ego 960 Bilder) — der Deckel trägt das Gesetz der Probe
+const PRAESENZ = seiteProbe(240, praesenzSeite, { mutiert: true });
 const HALTEN_K5 = seiteProbe(19, haltenK5Seite, { mutiert: true });
 const HALTEN_K1 = seiteProbe(10, haltenK1Seite, { mutiert: true });
 const TORE_K3 = seiteProbe(10, toreK3Seite, {
@@ -4573,6 +4666,73 @@ const stationen = [
         ],
         quelle: "2 = auch am Steilhang, im Haus, beim Sprint, beide Geräte",
     },
+    // KARTE 2 erleben.spieler.praesenz S1 (praesenzSeite oben): „Gang 2 min je Gerät: Taste → erstes Bild mit Leib-Antwort p95 ≤ 50 ms,
+    // Fuß p95 ≤ 3 cm, 0 Bilder mit Kamera im Fels“ — Umfang Wiese, gehen und laufen, Ego + Third; Tiefe der 25°-Hang. Jedes Glied ein
+    // eigenes ✅/❌ in der Zahl; fehlt eines (die Probe nennt es in `fehlt`), ist das Urteil ROT beim Namen
+    {
+        kriterium: "karte2.erleben.spieler.praesenz",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: PRAESENZ,
+        gpu: true,
+        zeit: true,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const P = jsonZeile(String(lauf.stdout || ""), /^PRAESENZ \{/);
+            if (!P) return { gruen: false, zahl: "keine Zeile PRAESENZ (Exit " + lauf.exit + ")" };
+            const rot = [...(P.fehlt || [])];
+            // (1) die Taste: gehen in Ego und Third, je ≥ 15 Proben, keine fehlt, p95 ≤ 50 ms
+            const re = (P.latenz && P.latenz.reihen) || {};
+            const taste = ["ego/gehen", "third/gehen"].map((id) => [id, re[id]]);
+            const tasteOk = taste.every(([, x]) => x && x.n >= 15 && x.fehlt === 0 && x.p95 <= 50);
+            // (2) der Fuß: Mess-Wiese und 25°-Hang, längs und in der Falllinie, je ≥ 200 Kontakte, p95 ≤ 3 cm
+            const fu = P.fuss || {};
+            const fuss = ["wiese", "hang"].flatMap((o) => ["fuss", "falllinie"].map((b) => [o + " " + b, fu[o] && fu[o][b]]));
+            const hangOk = !!(fu.hang && fu.hang.neig >= 24); // der 25°-Hang des Orts-Gesetzes (diag-koerper-stand: __weltOrt("hang", { min: 24, max: 26 }))
+            const fussOk = hangOk && fuss.every(([, x]) => x && x.n >= 200 && x.p95 <= 3);
+            // (3) die Kamera: 0 Bilder im Fels in Third (jeder Gang von gang2, gehen und laufen) UND Ego (Wiese und Hang, gehen und laufen)
+            const ka = P.kamera || {};
+            const th = ka.third || {}, eg = ka.ego || {};
+            const dritt = ["stamm", "fels", "haus", "innen", "innen-sprint", "steil", "steil-sprint"].filter((a) => !(ka.gaenge || []).includes(a));
+            const egoOrte = ["wiese-gehen", "wiese-laufen", "hang-gehen", "hang-laufen"].filter((a) => !(eg.orte || []).includes(a));
+            const kameraOk = !ka.err && !dritt.length && !egoOrte.length && th.bilder >= 1000 && eg.bilder >= 900 && th.fels === 0 && eg.fels === 0;
+            // die Länge des Gangs: Spielzeit der Kamera-Gänge (Bilder × Bild-Muster) ≥ 120 s
+            const langOk = ka.gangS >= 120;
+            const f = (x) => (x == null ? "—" : x);
+            const zahl =
+                (tasteOk ? "✅" : "❌") + " Taste→Bild p95 " + taste.map(([id, x]) => id + " " + (x ? x.p95 + " ms (n " + x.n + (x.fehlt ? ", fehlt " + x.fehlt : "") + ")" : "—")).join(" · ") +
+                " · Bild " + f(P.latenz && P.latenz.bildMs) + " ms · " +
+                (fussOk ? "✅" : "❌") + " Fuß p95 " + fuss.map(([n, x]) => n + " " + (x ? x.p95 + " (n " + x.n + ")" : "—")).join(" · ") + " cm am Hang " + f(fu.hang && fu.hang.neig) + "° · " +
+                (kameraOk ? "✅" : "❌") + " Kamera im Fels: Third " + f(th.fels) + " von " + f(th.bilder) + " Bildern · Ego " + f(eg.fels) + " von " + f(eg.bilder) +
+                ([...(th.wer || []), ...(eg.wer || [])].length ? " (" + [...(th.wer || []), ...(eg.wer || [])].slice(0, 3).join(" · ") + ")" : "") +
+                (dritt.length ? " · Third ohne " + dritt.join(", ") : "") + (egoOrte.length ? " · Ego ohne " + egoOrte.join(", ") : "") + (ka.err ? " · " + String(ka.err).split("\n")[0].slice(0, 120) : "") +
+                " · " + (langOk ? "✅" : "❌") + " Gang " + f(ka.gangS) + " s (Soll ≥ 120)" + (rot.length ? " — ROT: " + rot.join(" · ") : "");
+            return { gruen: tasteOk && fussOk && kameraOk && langOk && !rot.length, zahl };
+        },
+        proben: (() => {
+            const lat = (eg, th) => ({ reihen: { "ego/gehen": { n: 15, fehlt: 0, p95: eg }, "third/gehen": { n: 15, fehlt: 0, p95: th } }, bildMs: 16.7, urteil: "GRÜN" });
+            const fuss = (h) => ({ wiese: { neig: 2, fuss: { p95: 1.1, n: 200 }, falllinie: { p95: 0.9, n: 200 } }, hang: { neig: 25, fuss: { p95: h, n: 200 }, falllinie: { p95: 0.9, n: 200 } } });
+            const kam = (o = {}) => ({ gaenge: ["stamm", "fels", "haus", "innen", "innen-sprint", "steil", "steil-sprint"], err: null, third: { bilder: 6900, fels: 0, wer: [] },
+                ego: { bilder: 960, fels: 0, wer: [], orte: ["wiese-gehen", "wiese-laufen", "hang-gehen", "hang-laufen"] }, gangS: 145.2, ...o });
+            const roh = (P) => "[linse-gpu] amd/rdna-3 (Probe)\nPRAESENZ " + JSON.stringify({ fehlt: [], latenz: lat(33, 41), fuss: fuss(1.2), kamera: kam(), ...P });
+            return [
+                { name: "jedes Glied im Soll", stdout: roh({}), gruen: true },
+                { name: "Third gehen p95 61 ms", stdout: roh({ latenz: lat(33, 61) }), gruen: false },
+                { name: "der Fuß am Hang 3,4 cm", stdout: roh({ fuss: fuss(3.4) }), gruen: false },
+                { name: "die Ego-Kamera 2 Bilder im Fels (das neue Glied)", stdout: roh({ kamera: kam({ ego: { bilder: 960, fels: 2, wer: ["hang laufen Bild 77: im Fels (Gelände-Gesetz)"], orte: ["wiese-gehen", "wiese-laufen", "hang-gehen", "hang-laufen"] } }) }), gruen: false },
+                { name: "der Ego-Gang am Hang fehlt", stdout: roh({ kamera: kam({ ego: { bilder: 480, fels: 0, wer: [], orte: ["wiese-gehen", "wiese-laufen"] } }) }), gruen: false },
+                { name: "der Gang kürzer als 2 min", stdout: roh({ kamera: kam({ gangS: 95 }) }), gruen: false },
+                { name: "die Taste bricht (fehlt)", stdout: roh({ latenz: null, fehlt: ["Taste: /latenz: keine Ruhe"] }), gruen: false },
+                { name: "die Zeile fehlt", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nPROBE 12 s", gruen: false },
+            ];
+        })(),
+        pfad: [...new Set([...LATENZ, "stamm/koerper-*.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "stamm/siedlung-*.js", "stamm/dirigent-*.js", "stamm/daten.js",
+            "koerper-core.js", "gelaende-core.js", "voxel-worker.js", "scripts/diag-koerper-stand.cjs", "scripts/diag-kamera-laub.cjs", "scripts/werkbank.cjs",
+            "scripts/lib/kamera-nah.cjs", "scripts/lib/wasser-linse.cjs", "scripts/lib/welt-orte.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/haenger-linse.cjs"])],
+        quelle: "KARTE2 erleben.spieler.praesenz S1 = Gang 2 min je Gerät: Taste → erstes Bild mit Leib-Antwort p95 ≤ 50 ms, Fuß p95 ≤ 3 cm, 0 Bilder mit Kamera im Fels",
+    },
 
     // ───────── leib.K5 — das Gamepad (gamepad-verben) ─────────
     ...[1, 2].map((staffel) => ({
@@ -6041,6 +6201,11 @@ require("./mass.cjs").massAn(module.exports, {
     "leib.K1#1": latenzMassDesUrteils,
     "leib.K1#2": latenzMassDesUrteils,
     "halten.K2#1": latenzMassDesUrteils,
+    // die Taste des Gangs der Präsenz: je Reihe (gehen, Ego und Third) das p95 gegen 50 ms — der Fuß und die Kamera fallen nicht an der Wanduhr
+    "karte2.erleben.spieler.praesenz#1": (j, lauf) => {
+        const P = jsonZeile(String(lauf.stdout || ""), /^PRAESENZ \{/), re = (P && P.latenz && P.latenz.reihen) || {};
+        return ["ego/gehen", "third/gehen"].filter((id) => re[id]).map((id) => ({ wort: id + " p95 ms", wert: re[id].p95, soll: 50 }));
+    },
     // der Ruck p95 je Gang gegen das Soll, das die Linse in ihrer K4-Zeile nennt
     "leib.K4#1": (j, lauf) => {
         const z = lauf.stdout.split(/\r?\n/).find((l) => /^\s*(✅|❌) K4 der Gang in Third/.test(l));
