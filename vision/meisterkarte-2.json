@@ -12666,11 +12666,11 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 0,
-    "kern": 2,
-    "kernDazu": 2,
-    "anteilHeute": 0,
-    "anteilKern": 0.8
+    "heute": 1,
+    "kern": 1,
+    "kernDazu": 1,
+    "anteilHeute": 0.4,
+    "anteilKern": 0.4
    },
    "perspektiven": [
     {
@@ -14187,8 +14187,8 @@
        "richter": "20 zufällige (Same, Planet, Epoche): Median, p95, Lücke"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "GTX kalt 16,6 s (16,1–17,0) am 18.10., Zweit-Boot 12,0 s, Haupt-Faden bis zum Bild 97 % belegt; Radeon ≈ 11 s am 17.10.; lokaler Server, nie gedrosselt (PFLICHT B); am Kopf nicht nachgemessen, die Station hat sich seither geändert. — KARTE: 0 — kein Lauf des Richters am Kopf (Z2). Kern 1: ≤ 60 s kalt ist an beiden Geräten gemessen. Sprosse 2 nicht im Kern: das ganze Bild (≤ 2 % Lücke) ist nur an der Radeon gebucht (ankunft.K2).",
      "alt": [
@@ -16675,11 +16675,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 4,
+  "heute": 5,
   "davonKopplungen": 33,
-  "kern": 21,
-  "kernDazu": 21,
-  "anteilHeute": 0.2,
+  "kern": 20,
+  "kernDazu": 20,
+  "anteilHeute": 0.3,
   "anteilKern": 1,
   "kapitel": 7,
   "perspektiven": 42,
