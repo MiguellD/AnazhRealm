@@ -1019,7 +1019,8 @@ Dials `s`) beim Namen.
 Ort `bahnAm`, den der Fahrer der Linie und die Prüfstrecke der Garage lesen —, der Wildnis-Term `wildnisY` = die LANDFORM,
 K16: Großform-Splines `grossform` an den Knoten `OFFSET_KNOTEN`/`RELIEF_KNOTEN` mit den Reglern `LANDFORM_REGLER` — gelesen
 je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
-den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, die Art des Gewässers
+den benannten Seen `benannteSeen`, die Arbeit des Netzes `netzZaehler` (Knoten und gebaute Talprofile je Ebene, das
+Einzugsgebiet ohne Leser — der Leser ist die Gelände-Linse „netz“), die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, die Art des Gewässers
 `GEWAESSER_ART`/`gewaesserArt` (w13-bach-klar: see · bach · fluss nach der LAWA-Größenklasse, Bach < 100 km² Einzugsgebiet,
 über die Breite — sie wählt `WASSER_GESETZ.koerper` in Welt und Studio), der Mäander `MAEANDER`, das
 Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
