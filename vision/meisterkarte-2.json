@@ -2504,11 +2504,11 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 3,
-    "kern": 1,
-    "kernDazu": 1,
-    "anteilHeute": 2.1,
-    "anteilKern": 0.6
+    "heute": 4,
+    "kern": 0,
+    "kernDazu": 0,
+    "anteilHeute": 2.7,
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -2778,8 +2778,8 @@
        "richter": "100 Planeten: Phänologie folgt der Einstrahlung, r ≥ 0,8"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "Alte Vegetation K5 2/2 im echten Bild: Krone Winter 0,037 × Sommer (Radeon), 0,113 (GTX); Wiese niedriger; Mess-Wiese, GTX stehend p95 16,8 ms. — KARTE: Kern 1 — Richter an beiden Geräten grün (vegetation.K5); Bild-Preis nur an der GTX belegt, die Radeon fehlt.",
      "alt": [
@@ -10030,11 +10030,11 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 1,
-    "kern": 6,
-    "kernDazu": 6,
-    "anteilHeute": 0.3,
-    "anteilKern": 2.2
+    "heute": 4,
+    "kern": 3,
+    "kernDazu": 3,
+    "anteilHeute": 1.5,
+    "anteilKern": 1.1
    },
    "perspektiven": [
     {
@@ -11064,8 +11064,8 @@
        "richter": "Rate neu gewählter Ziel-Arten je Stunde nach 1 000 h ≥ 50 % der Rate in Stunde 10"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "δ-Wertung antwortet am Ort, beide Geräte, Tag/Nacht, Ego/Third: Tat 1 δ 0,1607 → Tat 10 δ −0,0018, Vogelchor 3,39 dB, Nachbar 0 dB (§10.K1 2/2). Kein Ziel entsteht aus der Welt; „Aufträge/Quests\" in der Statusleiste sind Befehle an Wesen. — KARTE: Kern 1 — die Antwort am Ort an beiden Geräten, Tag und Nacht, Ego und Third (affekt.K1); Bild-Preis nicht gemessen.",
      "alt": [
@@ -12397,8 +12397,8 @@
        "richter": "1 000 Zufallsereignisse: geeichtes Ohr „plausibel für Stoff und Medium\" ≥ 90 %"
       }
      ],
-     "heute": 0,
-     "kern": 2,
+     "heute": 2,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "schrittKlang (klang-core.js:1532), trefferPaar (:1420), Motor mit Doppler (:1675); Motor r 1,0, Landung r 0,9975 (§32.K4 2/2); Preis Radeon ROT; kein Bruch, kein Donner, kein Vulkan. — KARTE: Kern 2 — am Abgriff an den Geräten gemessen (klang.K4); Bild-Preis in der Szene nicht gemessen; das alte Klang-Budget ist kein Preis mehr (R8).",
      "alt": [
@@ -16675,12 +16675,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 9,
+  "heute": 13,
   "davonKopplungen": 33,
-  "kern": 17,
-  "kernDazu": 17,
-  "anteilHeute": 0.6,
-  "anteilKern": 0.8,
+  "kern": 13,
+  "kernDazu": 13,
+  "anteilHeute": 0.8,
+  "anteilKern": 0.5,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
