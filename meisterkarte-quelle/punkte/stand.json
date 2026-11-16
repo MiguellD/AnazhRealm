@@ -5877,7 +5877,7 @@
   },
   "karte2.planet.wetter.klimazonen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.klimazonen#1 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.klimazonen#1 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#1 gtx: ROT: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal an 77e079ae",
    "stationen": [
     {
      "id": "karte2.planet.wetter.klimazonen#1",
@@ -5893,10 +5893,10 @@
      "id": "karte2.planet.wetter.klimazonen#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal",
+     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
+     "grund": "ROT: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 79.942 m · Gesetz 102 m (Versatz -160, Treffer 0.133 aus 166, Falsch null aus 0) · sommer Bild 180.942 m · Gesetz 156.457 m (Versatz 0, Treffer 0.031 aus 65, Falsch 0 aus 78) · Sommer − Winter 101 m (Soll ≥ 100) · ROT winter folgt dem Gesetz nicht, sommer folgt dem Gesetz nicht · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6275,7 +6275,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 146,
+  "konsum": 147,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6446,10 +6446,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 191
+  "ohne": 190
  },
  "kopfVoll": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
- "zeit": "2026-11-16T20:57:39.291Z",
+ "zeit": "2026-11-16T21:03:40.557Z",
  "vorher": "77e079ae",
  "bilanz": {
   "gewinn": [],
