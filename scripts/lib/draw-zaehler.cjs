@@ -708,6 +708,153 @@ function wegSelbsttest() {
     return f;
 }
 
+// DER RUNDEN-ZENSUS (Preis des Orts, Schnitt 2 „der Speicher folgt dem Blick“; `werkbank runde`): dieselbe Runde zweimal, nach
+// jeder an der START-Pose zwei GC — was zwischen Runde 1 und Runde 2 entstand und an der Start-Pose noch lebt, ist das Leck (die
+// Drei-Schnappschuss-Methode). Der Zensus zählt JEDE Map/Set/Array am Stamm und an `state` bis Tiefe 2 (schlichte Objekte),
+// ein Behälter, den mehrere Namen halten, steht unter dem ersten.
+function behaelterZensus(r) {
+    const aus = {};
+    const groesse = (v) => (v instanceof Map || v instanceof Set ? v.size : Array.isArray(v) ? v.length : null);
+    const schlicht = (v) => [Object.prototype, null].includes(Object.getPrototypeOf(v)) && !Array.isArray(v);
+    const gesehen = new WeakSet([r.state]);
+    const geh = (o, p, tiefe) => {
+        for (const k of Object.keys(o)) {
+            let v;
+            try {
+                v = o[k];
+            } catch {
+                continue;
+            }
+            if (!v || typeof v !== "object" || gesehen.has(v)) continue;
+            gesehen.add(v);
+            const g = groesse(v);
+            if (g != null) aus[p + "." + k] = g;
+            else if (tiefe > 1 && schlicht(v)) geh(v, p + "." + k, tiefe - 1);
+        }
+    };
+    geh(r, "r", 2);
+    geh(r.state, "r.state", 2);
+    return aus;
+}
+// DIE GEBURT DER GEOMETRIEN: r184 zählt `info.memory.geometries` beim ersten Zeichnen einer Geometrie (`Geometries.initGeometry`)
+// und zieht erst bei ihrem `dispose` ab — eine Geometrie, die keiner entsorgt, zählt (und hält ihre Attribute in
+// `info.memoryMap`, Lehre 27), auch wenn der GC sie nahm. Die Linse merkt je Geometrie die oberste Stamm-Zeile ihres Stapels
+// (beim ersten `setAttribute`/`setIndex` — jeder Bau, jeder Klon) und zählt je Geburts-Stelle: gezählt (im Zähler des
+// Renderers), davon lebend und verwaist (der GC nahm sie, `dispose` nie), geboren, entsorgt. Fehlt die Naht im Vendor, wirft sie.
+function geburtLinse(T, renderer) {
+    if (window.__geburt) return window.__geburt.schluessel.size;
+    const geo = renderer && renderer._geometries;
+    if (!geo || typeof geo.initGeometry !== "function")
+        throw new Error("geburtLinse: renderer._geometries.initGeometry fehlt (r184-Naht verschoben)");
+    const G = (window.__geburt = { von: new WeakMap(), schluessel: new Map() });
+    const stelle = () => {
+        const alt = Error.stackTraceLimit;
+        Error.stackTraceLimit = 40;
+        const s = new Error().stack || "";
+        Error.stackTraceLimit = alt;
+        const m = /(stamm\/[\w-]+\.js)(?:\?[^:\s)]*)?:(\d+)/.exec(s);
+        return m ? m[1] + ":" + m[2] : "ohne Stamm";
+    };
+    const P = T.BufferGeometry.prototype;
+    for (const n of ["setAttribute", "setIndex"]) {
+        const f = P[n];
+        P[n] = function (...a) {
+            if (!G.von.has(this)) G.von.set(this, stelle());
+            return f.apply(this, a);
+        };
+    }
+    const init = geo.initGeometry;
+    geo.initGeometry = function (ro) {
+        const g = ro.geometry;
+        const k = G.von.get(g) || "vor der Linse";
+        let e = G.schluessel.get(k);
+        if (!e) G.schluessel.set(k, (e = { geboren: 0, entsorgt: 0, refs: new Set() }));
+        e.geboren++;
+        const ref = new WeakRef(g);
+        e.refs.add(ref);
+        const weg = () => {
+            e.entsorgt++;
+            e.refs.delete(ref);
+            g.removeEventListener("dispose", weg);
+        };
+        g.addEventListener("dispose", weg);
+        return init.call(this, ro);
+    };
+    return 0;
+}
+function geburtZensus() {
+    const aus = {};
+    for (const [k, e] of window.__geburt.schluessel) {
+        let lebend = 0;
+        for (const ref of e.refs) if (ref.deref()) lebend++;
+        aus[k] = { gezaehlt: e.refs.size, lebend, verwaist: e.refs.size - lebend, geboren: e.geboren, entsorgt: e.entsorgt };
+    }
+    return aus;
+}
+// DAS URTEIL EINER RUNDE: `stand` = [Start, nach Runde 1, nach Runde 2] an derselben Pose, je { heapMB, geometries, zensus,
+// geburt, bildMax }. ROT: Heap Runde 2 − Runde 1 > 5 MB · die Geometrien des Renderers wachsen (beim Namen ihrer Geburts-Stelle) ·
+// ein Behälter wächst von Runde 1 zu Runde 2 (beim Namen und der Zeile seiner Anlage, `anlage(pfad)`) · ein Bild der Runde über
+// 101 ms. Die Tafel trägt jeden Wachser mit Start → Runde 1 → Runde 2.
+const RUNDE = { heapMB: 5, bildMs: 101, wachsMin: 16, wachsAnteil: 0.05 };
+function rundenUrteil({ name, stand }, anlage) {
+    const [s, a, b] = stand;
+    const f = [];
+    const dh = b.heapMB - a.heapMB;
+    if (dh > RUNDE.heapMB) f.push(`${name}: Heap Runde 2 − Runde 1 = +${dh.toFixed(1)} MB > ${RUNDE.heapMB}`);
+    const tafel = Object.entries(b.zensus)
+        .map(([k, n2]) => ({ name: k, start: s.zensus[k] || 0, r1: a.zensus[k] || 0, r2: n2 }))
+        .filter((t) => t.r2 - t.r1 >= Math.max(RUNDE.wachsMin, t.r1 * RUNDE.wachsAnteil))
+        .sort((p, q) => q.r2 - q.r1 - (p.r2 - p.r1));
+    for (const t of tafel) {
+        t.anlage = anlage(t.name);
+        f.push(`${name}: ${t.name} (${t.anlage}) ${t.start} → ${t.r1} → ${t.r2}`);
+    }
+    if (b.geometries > a.geometries) {
+        const g = Object.entries(b.geburt)
+            .map(([k, e]) => [k, e.gezaehlt - ((a.geburt[k] && a.geburt[k].gezaehlt) || 0), e])
+            .filter(([, d]) => d > 0)
+            .sort((p, q) => q[1] - p[1])
+            .slice(0, 5)
+            .map(([k, d, e]) => `${k} +${d} (lebend ${e.lebend}, verwaist ${e.verwaist})`);
+        f.push(`${name}: geometries ${s.geometries} → ${a.geometries} → ${b.geometries} — Geburt: ${g.join(" · ") || "?"}`);
+    }
+    [a, b].forEach((x, i) => {
+        if (x.bildMax > RUNDE.bildMs) f.push(`${name}: größtes Bild der Runde ${i + 1} ${x.bildMax.toFixed(1)} ms > ${RUNDE.bildMs}`);
+    });
+    return { f, tafel };
+}
+// Selbsttest: eine Welt mit Ring (folgt dem Blick), einem Zell-Gedächtnis, das jede Runde neue Schlüssel legt (die Zeit im
+// Schlüssel, Klasse F2/F3), und einer Geometrie, die je Runde neu gebaut und nie entsorgt wird (F7) — ROT beim Namen des
+// Gedächtnisses samt Anlage und bei der Geburts-Stelle; dieselbe Welt mit Räumung nach Abstand ist GRÜN.
+function rundenSelbsttest() {
+    const fahrt = (mutant) => {
+        const r = { state: { ring: new Map(), memo: new Map() }, _tritt: new Map() };
+        let geom = 10;
+        const geburt = {};
+        const stand = [];
+        for (let runde = 0; runde < 3; runde++) {
+            for (let zelle = 0; zelle < 40; zelle++) {
+                r.state.ring.set(zelle, 1);
+                if (r.state.ring.size > 9) r.state.ring.delete(r.state.ring.keys().next().value);
+                r._tritt.set(zelle + ":" + (mutant ? runde : 0), 1);
+                r.state.memo.set(zelle, 1);
+                if (!mutant && Math.abs(zelle - 39) > 4) (r._tritt.delete(zelle + ":0"), r.state.memo.delete(zelle));
+            }
+            if (mutant && runde) geburt["stamm/gelaende-fern.js:741"] = { gezaehlt: 8 * runde, lebend: 8 * runde, verwaist: 0 };
+            geom = 10 + (mutant ? 8 * runde : 0);
+            stand.push({ heapMB: 300, geometries: geom, zensus: behaelterZensus(r), geburt: { ...geburt }, bildMax: 40 });
+        }
+        return rundenUrteil({ name: "a", stand }, (k) => (k === "r._tritt" ? "stamm/siedlung-wege.js:1014" : "?")).f.join(" | ");
+    };
+    const f = [];
+    const gruen = fahrt(false);
+    if (gruen) f.push("die geräumte Runde ist rot: " + gruen);
+    const rot = fahrt(true);
+    if (!/r\._tritt \(stamm\/siedlung-wege\.js:1014\) 40 → 80 → 120/.test(rot) || !/geometries 10 → 18 → 26 — Geburt: stamm\/gelaende-fern\.js:741 \+8/.test(rot))
+        f.push("der Mutant ist nicht rot beim Namen: " + (rot || "GRÜN"));
+    return f;
+}
+
 // DER GANG (profiband K5, `werkbank puffer --gang`): am Start eingeschwungen messen (`stand`, die Puffer-Linse der Werkbank),
 // je ein Drittel gehen · fahren (GT, Taste E) · Nacht (Spieler-Wort) über die echten Tasten und den Spiel-Loop, zurück am Start.
 async function gangLauf(page, pufferStand, b) {
@@ -837,6 +984,8 @@ module.exports = {
     gangSelbsttest,
     wegUrteil,
     wegSelbsttest,
+    rundenUrteil,
+    rundenSelbsttest,
     satzInhalt,
     texturErzeuger,
     vramFalte,
@@ -848,6 +997,9 @@ module.exports = {
         `window.__drawZensus = ${drawZensus.toString()};` +
         `window.__pufferZensus = ${pufferZensus.toString()};` +
         `window.__heapHalter = ${heapHalter.toString()};` +
+        `window.__behaelterZensus = ${behaelterZensus.toString()};` +
+        `window.__geburtLinse = ${geburtLinse.toString()};` +
+        `window.__geburtZensus = ${geburtZensus.toString()};` +
         `window.__kehrausJetzt = ${kehrausJetzt.toString()};` +
         `window.__texturErzeuger = ${texturErzeuger.toString()};` +
         `window.__texturZensus = ${texturZensus.toString()};`,

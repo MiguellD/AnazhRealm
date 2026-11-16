@@ -73,6 +73,7 @@
 //   node scripts/werkbank.cjs band [--ort <id>] [--datei f.json] [--proben n] [--cap sek]
 //                                                           DIE BAND-LINSE gegen Haushalt und Ratsche des Orts (spec/profiband/, scripts/lib/band-urteil.cjs)
 //   node scripts/werkbank.cjs weg [--datei f.json] [--ratsche r.json]   DER WEG DES SPEICHERS: Heap nach GC je Pose der Ratsche, Urteil H8 (scripts/lib/speicher-proben.cjs)
+//   node scripts/werkbank.cjs runde [--datei f.json] [--nur a|b]   DIE RUNDE DES SPEICHERS: dieselbe Runde zweimal, Zensus an der Start-Pose
 //   node scripts/werkbank.cjs ratsche [--ort <id>] <band-*.json | messfolge-*.json …> [--nur vram] [--neu]
 //                                                           DIE RATSCHE aus ≥ 4 Läufen eines Orts × Geräts × Sicht; `--neu` der Re-Mint (nur Node)
 //   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE nach `start --gpu-fehler` (scripts/lib/gpu-fehler.cjs)
@@ -3758,8 +3759,9 @@ hauptLauf(async () => {
                 a.length >= 6 ? { px: a[0], py: a[1], pz: a[2], lx: a[3], ly: a[4], lz: a[5] } : {}
             )
         );
-    else if (cmd === "weg") {
-        const o = await require("./lib/speicher-proben.cjs").wegFahrt({ umstellen, rufe }); // der Weg des Speichers, H8
+    else if (cmd === "weg" || cmd === "runde") {
+        // der Weg des Speichers (H8) · die Runde des Speichers (dieselbe Runde zweimal, Zensus an der Start-Pose)
+        const o = await require("./lib/speicher-proben.cjs")[cmd === "weg" ? "wegFahrt" : "rundeFahrt"]({ umstellen, rufe });
         endeMit(o.text, o.gruen);
     } else if (cmd === "band") {
         o = await rufe("/band", {
