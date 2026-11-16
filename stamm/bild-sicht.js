@@ -2666,7 +2666,7 @@ class AnazhRealm_bild_sicht {
         himmel.texture.name = "welt-licht-himmel";
         const sonde = TSL.texture(himmel.texture);
         // die Sonde liest die Umgebung je Einheit des Lichts — das Licht jetzt wie jeder Stoff (`_umgebungLicht`)
-        const licht = this._umgebungLicht();
+        const licht = (farbe) => this._umgebungLicht(farbe);
         // `sicht` (optional): die Sonnen-Sicht am Punkt des Lesers (`_sonnenSicht`: Horizont des Gesetzes × Wurf der Wolke) auf
         // dem direkten Licht — wie jeder Empfänger der Kaskaden; Feld und Panorama reichen ihren Treffer (`at(n, p)`).
         const baue = (sicht) => {
@@ -2674,7 +2674,7 @@ class AnazhRealm_bild_sicht {
             const hemi = TSL.mix(U.hemiUnten, U.hemiOben, sicht.n.y.mul(0.5).add(0.5));
             // der Boden um das Auge in der unteren Hemisphäre — dasselbe Gesetz wie die Umgebung der Stoffe (schatten.K4)
             const umgebung = this._rueckstrahlHalbraum(
-                sonde.sample(TSL.equirectUV(sicht.n)).level(0).rgb.mul(licht),
+                licht(sonde.sample(TSL.equirectUV(sicht.n)).level(0).rgb),
                 sicht.n
             ).mul(U.ei);
             return (sicht.s ? direkt.mul(sicht.s) : direkt)
@@ -2766,13 +2766,20 @@ class AnazhRealm_bild_sicht {
         if (!d || !A || !env) return null;
         const t = A.U.toenung.value;
         const L = A.U.licht.value;
-        const stempel = (st._skyEnvVersion || 0) + ":" + ei + ":" + L + ":" + t.x + ":" + t.y + ":" + t.z;
+        const grau = A.U.grau.value;
+        const stempel = (st._skyEnvVersion || 0) + ":" + ei + ":" + L + ":" + t.x + ":" + t.y + ":" + t.z + ":" + grau;
         if (this._himmelsIrrStempel === stempel && this._himmelsIrr) return this._himmelsIrr;
         this._himmelsIrrStempel = stempel;
         const J = this._himmelsIrrJe;
         const k = [t.x, t.y, t.z].map((x) => (ei * L * x) / Math.PI);
+        // das Licht jetzt je Kanal, dann das Ergrauen des Himmels unter der Decke — wie jeder Stoff (welt-licht `umgebungLicht`)
+        const jetzt = (je) =>
+            __weltLicht.himmelGrau(
+                je.map((x, c) => x * k[c]),
+                grau
+            );
         if (J && J.version === st._skyEnvVersion) {
-            this._himmelsIrr = { mitte: J.mitte.map((x, c) => x * k[c]), oben: J.oben.map((x, c) => x * k[c]) };
+            this._himmelsIrr = { mitte: jetzt(J.mitte), oben: jetzt(J.oben) };
             return this._himmelsIrr;
         }
         const W = A.rtEq.width;
@@ -2799,7 +2806,7 @@ class AnazhRealm_bild_sicht {
             }
         }
         this._himmelsIrrJe = { version: st._skyEnvVersion, mitte, oben };
-        this._himmelsIrr = { mitte: mitte.map((x, c) => x * k[c]), oben: oben.map((x, c) => x * k[c]) };
+        this._himmelsIrr = { mitte: jetzt(mitte), oben: jetzt(oben) };
         return this._himmelsIrr;
     }
 

@@ -13,9 +13,20 @@ class AnazhRealm_daten {
     static get WEATHER_TINTS() {
         const F = AnazhRealm.WEATHER_FIELD;
         const L = globalThis.__phytoCore.WX_LICHT;
-        if (!L || ![L.sockel, L.sonne].every(Number.isFinite))
+        if (!L || ![L.sockel, L.sonne, L.direktHoch, L.himmelHub, L.himmelGrau].every(Number.isFinite))
             throw new Error("phyto-core fehlt: WX_LICHT (das Wetter-Licht der Welt)");
-        const zeile = (f) => Object.freeze({ skyMul: f.sun, lightMul: L.sockel + L.sonne * f.sun });
+        // DIE DECKE TEILT DAS LICHT (w28-licht-regen): lightMul ist das GESAMTE Licht der Zeile; `direkt` der Anteil, den die
+        // Decke (grey) von der direkten Sonne lässt (das Richtlicht, die Scheibe), `himmel` der Hub des diffusen Himmels, `grau`
+        // sein Ergrauen. Bis hier trug das Richtlicht lightMul² und der Himmel lightMul · skyMul: direkt ÷ diffus STIEG im Regen
+        // um 1,3×, im Sturm um 3× — der Schatten wurde härter, und `grey` las kein Leser des Himmels.
+        const zeile = (f) =>
+            Object.freeze({
+                skyMul: f.sun,
+                lightMul: L.sockel + L.sonne * f.sun,
+                direkt: Math.pow(Math.max(0, 1 - f.grey), L.direktHoch),
+                himmel: 1 + L.himmelHub * f.grey,
+                grau: Math.max(0, Math.min(1, L.himmelGrau * f.grey)),
+            });
         return this._einmal(
             "WEATHER_TINTS",
             Object.freeze(Object.fromEntries(Object.keys(F).map((w) => [w, zeile(F[w])])))
