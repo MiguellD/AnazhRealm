@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "71839b1e",
-    "zeit": "2026-11-16T00:59:48.829Z",
+    "zeit": "2026-11-16T01:05:18.961Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -4220,7 +4220,7 @@
           "punkte": 2,
           "staffel": "1 = der Zahlen-Rundlauf (Dichte, Bauten) über einen echten Reload ist bewiesen · 2 = bild-diff ≤ 1 % an derselben Pose bei festgehaltener Uhr und Wetter, Pflicht-Inhalt (Bauten, Edits, Wasser) im Bild, beide Geräte",
           "messung": "Station speichern: Pose und Ausgabe-Bild vor dem Speichern, Neuladen, dieselbe Pose.",
-          "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt an d3708675 headless · gehalten: bild-diff 0.80 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3 an 4ee205bd radeon · gehalten: bild-diff 0.66 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] nvidia/pascal an a996d0ae gtx",
+          "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt an d3708675 headless · gehalten: bild-diff 0.80 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3 an 4ee205bd radeon · Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.68 % (Soll ≤ 1; Rauschen ohne Neuladen 0.21 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal an 71839b1e gtx",
           "schlupfloch": "Eine leere Himmels-Pose vergleichen: Pflicht-Inhalt im Bild.",
           "maschine": true
         },

@@ -3559,7 +3559,7 @@
   },
   "speicher.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt an d3708675 headless · gehalten: bild-diff 0.80 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3 an 4ee205bd radeon · gehalten: bild-diff 0.66 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] nvidia/pascal an a996d0ae gtx",
+   "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt an d3708675 headless · gehalten: bild-diff 0.80 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3 an 4ee205bd radeon · Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.68 % (Soll ≤ 1; Rauschen ohne Neuladen 0.21 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal an 71839b1e gtx",
    "stationen": [
     {
      "id": "speicher.K4#1",
@@ -3584,10 +3584,10 @@
      "id": "speicher.K4#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "bild-diff 0.66 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] nvidia/pascal",
-     "sha": "a996d0ae945520b24915c0595a9d02363466f8f1",
-     "grund": "Station seit der Messung geändert — zuletzt an 3e4f99cd: Last: Referenz f 1,314 (Faden 1,314 · alle Kerne 1,295; vor 110,1/256,2 ms, nach 124,4/312,2 ms, Ruhe 94,7/241 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --u",
-     "gehalten": true
+     "zahl": "Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.68 % (Soll ≤ 1; Rauschen ohne Neuladen 0.21 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal",
+     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
+     "grund": "GRÜN trotz Last: Referenz f 1,738 (Faden 1,412 · alle Kerne 1,738; vor 123,1/270,8 ms, nach 132,9/418,6 ms, Ruhe 94,1/240,9 ms seit 2026-11-12) · fremd: node.exe scripts/diag-fachwerk-contract.cjs 71,7 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 45,7 CPU-s · CompatTelRunner.exe 43,6 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 23,3 CPU-s · svchost.exe 13,9 CPU-s · SearchIndexer.exe 1,4 CPU-s",
+     "r6": "konsum"
     }
    ]
   },
@@ -5066,7 +5066,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 413,
-  "konsum": 162,
+  "konsum": 163,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -5238,10 +5238,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 82
+  "ohne": 81
  },
  "kopfVoll": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
- "zeit": "2026-11-16T00:59:48.829Z",
+ "zeit": "2026-11-16T01:05:18.961Z",
  "vorher": "71839b1e",
  "bilanz": {
   "gewinn": [],
