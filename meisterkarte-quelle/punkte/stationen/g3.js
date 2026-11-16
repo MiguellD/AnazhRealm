@@ -979,6 +979,42 @@ const WELTEN_PROBE = {
         ],
     }),
 };
+// DAS RUHIGE AUGE (Karte 2 erleben.bild.auge S 1): die zeitliche Varianz des Bilds im Stand — dieselben Werkzeuge wie der NEUN-Teil
+// schatten.K2 (das Ausgabe-Ziel `setOutputRenderTarget`, je Bild `_loopShadowUpdate` + `__loopBild` wie im Loop, `__zielLesen`), aber
+// die Kamera steht: das Ego-Auge des Messorts (1,7 m), Blick voraus 20 m und 4 m hinab, die Uhr der Bühne steht. ZWEI gleiche Läufe
+// (TRAA-Geschichte und Jitter je Lauf auf null, `_schattenAlleNeu`) zu 8 Einschwing- und 16 Mess-Bildern. „Ruhend“ ist ein Pixel, der in
+// beiden Läufen Bild für Bild gleich ist (± 2 Luma) — was an der Uhr der Szene hängt (Wind im Gras, Wasser, Tiere), weicht zwischen den
+// Läufen ab und fällt heraus; der Jitter und die Geschichte sind je Lauf dieselbe Folge. „Über Schwelle“: die Spanne seines Lumas über
+// die 16 Mess-Bilder des ersten Laufs > 18 (Rec. 709, dieselbe Schwelle wie der Pop von lod.K2 und die Reprojektion von schatten.K2).
+const AUGE_TEXT =
+    "const st = r.state, rend = st.renderer, cam = st.camera; window.__buehne({});" +
+    " const d = rend.getDrawingBufferSize(new T.Vector2()), W = Math.round(d.x), H = Math.round(d.y), EIN = 8, N = 16, SCHWELLE = 18, GLEICH = 2, n = W * H;" +
+    " const merk = [cam.position.clone(), cam.quaternion.clone(), cam.fov, st.playerMesh.visible], P0 = st.playerMesh.position.clone();" +
+    " const fwd = new T.Vector3(0, 0, -1).applyQuaternion(merk[1]).setY(0).normalize(), auge = new T.Vector3(P0.x, r._voxelSurfaceY(P0.x, P0.z) + 1.7, P0.z);" +
+    " cam.position.copy(auge); cam.lookAt(auge.clone().addScaledVector(fwd, 20).setY(auge.y - 4)); cam.updateMatrixWorld(true); st.playerMesh.visible = false;" +
+    " const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 }), [prevOut, prevZiel] = [rend.getOutputRenderTarget(), rend.getRenderTarget()];" +
+    " const lauf = async (je) => { const tn = st.traaNode; if (tn) { tn._jitterIndex = 0; if (tn._historyRenderTarget) tn._historyRenderTarget.setSize(1, 1); } if (st._traaR) st._traaR.neu = true; r._schattenAlleNeu(); rend.setOutputRenderTarget(rt);" +
+    " try { for (let k = 0; k < EIN + N; k++) { r._loopShadowUpdate(); window.__loopBild(); if (k < EIN) continue; const u8 = await window.__zielLesen(rt, W, H), L = new Uint8Array(n);" +
+    " for (let p = 0; p < n; p++) L[p] = Math.round(0.2126 * u8[4 * p] + 0.7152 * u8[4 * p + 1] + 0.0722 * u8[4 * p + 2]); je(k - EIN, L); } } finally { rend.setOutputRenderTarget(prevOut); rend.setRenderTarget(prevZiel); } };" +
+    " const A = [], lo = new Uint8Array(n).fill(255), hi = new Uint8Array(n), bewegt = new Uint8Array(n); let bilder = 0;" +
+    " try { await lauf((k, L) => { A[k] = L; for (let p = 0; p < n; p++) { if (L[p] < lo[p]) lo[p] = L[p]; if (L[p] > hi[p]) hi[p] = L[p]; } });" +
+    " await lauf((k, L) => { bilder++; const B = A[k]; for (let p = 0; p < n; p++) if (Math.abs(L[p] - B[p]) > GLEICH) bewegt[p] = 1; }); }" +
+    " finally { rt.dispose(); cam.fov = merk[2]; cam.updateProjectionMatrix(); cam.position.copy(merk[0]); cam.quaternion.copy(merk[1]); cam.updateMatrixWorld(true); st.playerMesh.visible = merk[3]; }" +
+    " let ruhend = 0, flackern = 0; for (let p = 0; p < n; p++) if (!bewegt[p]) { ruhend++; if (hi[p] - lo[p] > SCHWELLE) flackern++; }" +
+    " return { ende: 'ok', leinwand: [W, H], bilder: A.length, bilderZwei: bilder, schwelle: SCHWELLE, ruhend: +(ruhend / n).toFixed(4), flackern, flackernAnteil: ruhend ? +(flackern / ruhend).toFixed(5) : null, uhr: st.timeOfDay, wetter: st.weather };";
+// DER DECKEL (geschätzt, ungemessen an der Karte): 2 × 24 Bilder des Loops samt Lesen des Ziels (1920 × 1080) und je Bild ein Luma-Feld —
+// wie der Gang des NEUN-Teils schatten.K2 (2 × 20 Bilder) — 20 s
+const AUGE_PROBE = {
+    sek: 20,
+    befehl: befehlDer({
+        name: "karte2.erleben.bild.auge#1",
+        schritte: [
+            { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+            { name: "umstellen", args: ["umstellen", "--ort", "wiese", "--sicht", "ego"], muss: true },
+            { name: "auge", args: ["eval", AUGE_TEXT], ms: 600000 },
+        ],
+    }),
+};
 // ───────── DIE NEUN (p3-stationen-g3, 01.11.): schatten.K2 · K3 · K4 · K5 · licht.K4 · ferne.K3 · K4 · lod.K4 · vegetation.K3 ─────────
 // Bis hierher standen sie in `fehlt` (Spike w4-stationen-a am main 94c079cb: was dem Spiel fehlt, beim Namen) und zählten 0 ungemessen.
 // Jetzt misst EINE Probe der Sitzung alle neun im Ausgabe-Pfad (`__ausgabeAufnahme`, satz „messung“) der warmen Welt am Ort dorf (die
@@ -2981,6 +3017,58 @@ const stationen = [
         })(),
         pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/bau-teile.js", "stamm/bild-himmel.js", "stamm/daten.js", "stamm/netz-portal.js"],
         quelle: "KARTE2 planet.kosmos.welten S1 = Licht-Bilanz an der Kugel 5–12,5 an beiden Welten; Fremdwelt-Mittag: Zenit nicht blau",
+    },
+    // KARTE 2 erleben.bild.auge S 1 — AUGE_PROBE (oben): im Stand an der Mess-Wiese, Ego, Mittag der Bühne. Richter: „zeitliche
+    // Pixel-Varianz in ruhenden Bildbereichen ≤ 1 % der Fläche über Schwelle“ = Anteil der ruhenden Pixel, deren Luma über 16 Bilder
+    // des Loops um mehr als 18 schwankt, ≤ 1 % der ruhenden Fläche. Gültig nur, wenn die ruhende Fläche ≥ 50 % des Bilds trägt (sonst
+    // misst die Zahl einen Rest) und beide Läufe ihre 16 Bilder lasen.
+    {
+        kriterium: "karte2.erleben.bild.auge",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: AUGE_PROBE,
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 2,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            const k = j.schritte && j.schritte.auge;
+            const e = k && k.json && k.json.ergebnis;
+            if (!e || e.ende !== "ok") return { gruen: false, zahl: "keine Antwort des Auges (" + String((e && (e.fehler || e.ende)) || (k && k.rest) || "").slice(-200) + ")" };
+            const gueltig = e.bilder >= 16 && e.bilderZwei >= 16 && e.ruhend >= 0.5 && Number.isFinite(e.flackernAnteil);
+            const gruen = hw && gueltig && e.flackernAnteil <= 0.01;
+            return {
+                gruen,
+                zahl:
+                    (gruen ? "✅" : "❌") + " über Schwelle (Spanne > " + e.schwelle + " Luma) " + (Number.isFinite(e.flackernAnteil) ? (100 * e.flackernAnteil).toFixed(2) : "—") + " % der ruhenden Fläche (" + e.flackern +
+                    " px, Soll ≤ 1 %) · ruhend " + (100 * e.ruhend).toFixed(1) + " % des Bilds (≥ 50 %) · " + e.bilder + "/" + e.bilderZwei + " Bilder · " + (e.leinwand || []).join("×") + " · Uhr " + e.uhr + " " + e.wetter +
+                    (gueltig ? "" : " · UNGÜLTIG") + " · " + (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        proben: (() => {
+            const lauf = (o = {}, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ({
+                adapter: ad,
+                schritte: { fenster: { exit: 0 }, umstellen: { exit: 0 }, auge: { exit: 0, json: { ergebnis: { ende: "ok", leinwand: [1920, 1080], bilder: 16, bilderZwei: 16, schwelle: 18, ruhend: 0.8312, flackern: 5357, flackernAnteil: 0.00311, uhr: 0.5002, wetter: "sunny", ...o } } } },
+                dateien: {},
+            });
+            return [
+                { name: "0,31 % der ruhenden Fläche flackern, 83 % ruhen", j: lauf(), gruen: true },
+                { name: "das Laub flimmert: 1,6 % der ruhenden Fläche", j: lauf({ flackern: 27650, flackernAnteil: 0.016 }), gruen: false },
+                { name: "knapp über dem Richter (1,02 %)", j: lauf({ flackern: 17600, flackernAnteil: 0.0102 }), gruen: false },
+                { name: "MUTANTE fast nichts ruht (31 %): die Zahl misst einen Rest", j: lauf({ ruhend: 0.31, flackernAnteil: 0.002 }), gruen: false },
+                { name: "der zweite Lauf las keine Bilder (die Maske ist leer)", j: lauf({ bilderZwei: 0 }), gruen: false },
+                { name: "die Probe warf", j: { adapter: "[linse-gpu] amd/rdna-3 (Probe)", schritte: { auge: { exit: 1, json: null, rest: "TypeError: window.__loopBild is not a function" } } }, gruen: false },
+                { name: "swiftshader", j: lauf({}, "[linse-gpu] google/swiftshader (Probe)"), gruen: false },
+                { name: "die Folge brach", j: { adapter: "[linse-gpu] amd/rdna-3 (Probe)", schritte: {}, fehler: "umstellen: Exit 1" }, gruen: false },
+            ];
+        })(),
+        pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "phyto-core.js"],
+        quelle: "KARTE2 erleben.bild.auge S1 = zeitliche Pixel-Varianz in ruhenden Bildbereichen ≤ 1 % der Fläche über Schwelle",
     },
     {
         kriterium: "material.K2",

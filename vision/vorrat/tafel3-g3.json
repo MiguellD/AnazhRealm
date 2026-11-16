@@ -9,6 +9,15 @@
         "stand": "ganz"
     },
     {
+        "station": "karte2.erleben.bild.auge#1",
+        "leiter": "erleben.bild.auge",
+        "sprosse": 1,
+        "richter": "gleich",
+        "klasse": "Ort",
+        "grund": "AUGE_PROBE (stationen/g3.js, neu, allein, 20 s): im Stand an der Mess-Wiese (Ego, Mittag der Bühne) zwei gleiche Läufe des Loops (TRAA und Jitter je Lauf auf null, das Ausgabe-Ziel wie der NEUN-Teil schatten.K2), je 8 + 16 Bilder; ruhend = Bild für Bild gleich in beiden Läufen (± 2 Luma), über Schwelle = Spanne > 18 Luma über die 16 Bilder. Urteil wörtlich: über Schwelle ≤ 1 % der ruhenden Fläche, gültig bei ruhender Fläche ≥ 50 %. Klasse Ort: EINE Pose am Spieler.",
+        "stand": "ganz"
+    },
+    {
         "station": "karte2.erleben.bild.flaeche#1",
         "leiter": "erleben.bild.flaeche",
         "sprosse": 1,
