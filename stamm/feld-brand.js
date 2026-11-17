@@ -463,8 +463,24 @@ class AnazhRealm_feld_brand {
         // der Schritt fällt, sobald die Uhr ihn erreicht — im Gleitkomma mit einem Hauch (`(a + 1) − a` ist für ~0,1 % der Uhren
         // 0,99999…: bis w3v-brand-bild hing jeder, der die Uhr auf `_brandUhr + schrittS` stellte, an dieser Uhr, und derselbe
         // Herd trug 0 bis 95 Aschen)
-        while (this._brandArbeit(frist) && bf.size && this.state.spielZeit - this._brandUhr >= B.schrittS - 1e-9)
-            this._brandSchritt((this._brandUhr += B.schrittS));
+        // DER SPRUNG IST GESCHLOSSEN (w28-lava-nachlauf): liegt die Welt-Uhr mehr als `sprungS` vor (ein geladener Stand, der
+        // Mitspieler mit späterer Uhr: `_weltUhrNimm`), geht die Uhr des Brands von EREIGNIS zu Ereignis — zum nächsten Schritt,
+        // an dem eine wartende Zelle fängt (ihre Ankunft `an`, auf das Raster der Schritte gehoben), und ohne wartende Zelle in
+        // EINEM Schritt ans Ziel. Jede Zelle trägt Ankunft und Ende als Zeiten (`_brandZuenden`): dieselben Zellen fangen zur
+        // selben Zeit wie Schritt um Schritt, die leeren Schritte dazwischen fallen. Die Kosten tragen die Zellen, die fangen,
+        // im Budget je Bild — bis hier ging er `schrittS` um `schrittS` (ein Tag: 3 600 Schritte über alle Zellen des Felds).
+        while (this._brandArbeit(frist) && bf.size) {
+            const rueck = this.state.spielZeit - this._brandUhr;
+            if (rueck < B.schrittS - 1e-9) break;
+            let dt = B.schrittS;
+            if (rueck > B.sprungS) {
+                let an = Infinity;
+                for (const z of bf.values()) if (z.t0 === null && z.an < an) an = z.an;
+                const naechst = Math.ceil((an - this._brandUhr) / B.schrittS - 1e-9) * B.schrittS;
+                dt = Math.min(Math.floor(rueck / B.schrittS + 1e-9) * B.schrittS, Math.max(B.schrittS, naechst));
+            }
+            this._brandSchritt((this._brandUhr += dt));
+        }
         this._brandMalen();
         if (!bf.size && !this._brandRest) this._brandBett = null; // erloschen: das Gemessene fällt
     }
@@ -863,6 +879,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_feld_brand]);
 // und hebt glut in `auraAt`.
 AnazhRealm.BRAND = Object.freeze({
     schrittS: 1,
+    sprungS: 10, // liegt die Welt-Uhr weiter vor, sprang sie: die Uhr des Brands geht von Ereignis zu Ereignis (`_tickBrand`)
     aufS: 4,
     ascheKorn: 0.3, // so viel vom Korn des Erdreichs zeigt die Asche-Decke (`_terrainGeologyAlbedo`)
     versengt: Object.freeze([0.9, 0.4, 0.2]), // der Ton (× die Farbe des Halms) des versengten Halms im Saum der Narbe (`_nahWieseKachelBueschel`)

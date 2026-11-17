@@ -756,7 +756,8 @@ class AnazhRealm_siedlung_satz {
             entry._nass = A.nassMin + Math.max(0, Math.min(1, +this._feuchteAt(p.x, p.z, p.y) || 0));
         }
         const wm = this.state.worldMeta || {};
-        const zeit = Math.max(0, (wm.tag || 0) - (entry.geburt || 0));
+        // die Zeit am Tag der Prozesse (`_weltTag`, die Welt-Uhr) — nie am Sonnenstand des Spielers (w28-lava-nachlauf)
+        const zeit = Math.max(0, Math.floor(this._weltTag()) - (entry.geburt || 0));
         const nass = Math.max(0, (+wm.nassTage || 0) - (+entry.geburtNass || 0));
         return { zeit: zeit * entry._nass, nass: nass * entry._nass };
     }
@@ -951,8 +952,7 @@ class AnazhRealm_siedlung_satz {
     // auf ihren neuen Körper — die Studio-Werke (der Regler `verwitterung`) und die Werke aus Bau-Teilen (die Stoff-Zeile,
     // `_werkAlterFaerbe`). Die kalten lesen ihr Alter, wenn sie das nächste Mal gebaut werden.
     _werkeAltern() {
-        const wm = this.state.worldMeta;
-        const tag = (wm && wm.tag) || 0;
+        const tag = Math.floor(this._weltTag());
         if (this._werkAlterTag === tag) return;
         this._werkAlterTag = tag;
         const offen = this._werkAltertOffen || (this._werkAltertOffen = new Set());
@@ -1329,7 +1329,7 @@ class AnazhRealm_siedlung_satz {
         else if (opts.feldWurf === true || (opts.autonomous === true && opts.ausGesetz !== true)) entry.feldWurf = true;
         // DIE GEBURT DES WERKS (stoffe.K4, `_werkAlterOv`): der Welt-Tag seines Akts — der Stand bringt seine mit, ein neues Werk
         // nimmt den Tag der Welt; ohne Zeile (Feld, Gesetz, Tag 0) der erste Tag. Sie reist durch den Save.
-        const geburt = "geburt" in opts ? opts.geburt : entry.werk ? (this.state.worldMeta || {}).tag : null;
+        const geburt = "geburt" in opts ? opts.geburt : entry.werk ? Math.floor(this._weltTag()) : null;
         if (Number.isInteger(geburt) && geburt > 0) entry.geburt = geburt;
         // ebenso die Nässe-Dosis der Welt bei seinem Akt (`_werkAlter`: die Nässe zählt ab hier)
         const geburtNass =

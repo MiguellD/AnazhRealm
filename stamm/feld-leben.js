@@ -2589,10 +2589,31 @@ class AnazhRealm_feld_leben {
     // (FORAGE.regrowMs, 300 s Wanduhr), das Fällen schrieb nichts ins Feld (Mess-Wiese, Null-Renderer, main f7dd313c: 8 Bäume
     // und 23 Pflanzen mit tryMouseBreak — Δlebendig 0, kein Stumpf, nach dem Reload 23 von 23 Pflanzen zurück).
 
-    // DIE WELT-STUNDE: Stunden seit dem ersten Tag der Welt — ihr Tag (`worldMeta.tag`, `_uhrSetzen` zählt ihn) und die Uhr.
-    _weltStunde() {
+    // DER TAG DER PROZESSE (w28-lava-nachlauf): die EINE Zeit, an der alles altert, was ein Prozess ist — die Welt-Uhr
+    // (`spielZeit`: sie reist, geht nie zurück, die spätere gilt, `_weltUhrNimm`) im Tag des Gesetzes (`PEGEL_TAG_S` Welt-Uhr je
+    // Tag, nie die Tag-Länge einer Seite), ab dem Null-Punkt der Welt (`worldMeta.tagNull`, `_weltTagEichen`). Leser: die
+    // Welt-Stunde (`_weltStunde`: das Erkalten der Lava, Stempel und Heilung der Taten, der Nachwuchs, die Sukzession), der
+    // Pfad (`_trittJetzt`, sein Tag-Wechsel in `_tickWegeKarte`) und das Alter der Werke (`_werkAlter`, `_werkeAltern`). Bis
+    // hier lasen sie den Tag der SICHT (`worldMeta.tag` + `timeOfDay`, der Sonnenstand des Spielers): ein Zug am Regler der Uhr
+    // ließ die Lava erkalten und die Narbe heilen, Brand, Nässe und Wetter (an der Welt-Uhr) standen — zwei Uhren für eine
+    // Welt, und die eine reiste nie. Die Uhr des Spielers (`_uhrSetzen`) bewegt jetzt keinen Prozess mehr.
+    _weltTag() {
         const st = this.state;
-        return 24 * (((st.worldMeta && st.worldMeta.tag) || 0) + (st.timeOfDay || 0));
+        return (+(st.worldMeta && st.worldMeta.tagNull) || 0) + (st.spielZeit || 0) / AnazhRealm.PEGEL_TAG_S;
+    }
+
+    // DER NULL-PUNKT EINES STANDS VON VOR DEM SCHNITT: seine Stempel (Taten `h`, Lava `h`, Werke `geburt`, Tritte) tragen den
+    // Tag der Sicht — der Null-Punkt legt den Tag der Prozesse EINMAL auf ihn, nach Welt-Uhr und Stunde des Stands
+    // (`_applyLoadedState`); von da an läuft er nur noch an der Welt-Uhr. Eine neue Welt beginnt bei 0.
+    _weltTagEichen() {
+        const [st, wm] = [this.state, this.state.worldMeta];
+        if (!wm || Number.isFinite(wm.tagNull)) return;
+        wm.tagNull = (wm.tag || 0) + (st.timeOfDay || 0) - (st.spielZeit || 0) / AnazhRealm.PEGEL_TAG_S;
+    }
+
+    // DIE WELT-STUNDE: Stunden seit dem ersten Tag der Welt, am Tag der Prozesse (`_weltTag`).
+    _weltStunde() {
+        return 24 * this._weltTag();
     }
 
     // Die Tat schreibt: an ihren Ort, zur Welt-Stunde; `mehr` trägt, was ihre Klasse braucht (die Ernte ihre Kachel und Kennung,
