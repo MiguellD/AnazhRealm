@@ -642,6 +642,96 @@ class AnazhRealm_netz_portal {
         return { ...ab, geboren: true };
     }
 
+    // DIE REISE (Reise, Schnitt 3): ein Ort des Planeten ist eine Welt des Ultiversums, geboren durch DIE TÜR (`_weltBetreten` →
+    // `_weltWechsel`) wie die Welt eines Welt-Tors — aus `o`, der Antwort des Planet-Fadens (`planet-ort`: Samen und VERSION
+    // des Planeten, Lage, Zeit, das Δ zum Anker). Ihre Saat ist die Ort-Saat `<Samen>@<Breite>_<Länge>_<Zeit>` (der Rausch-Strom,
+    // die Schlüssel, Fronten und Fauna werden von selbst ortseigen), ihre Id eine Funktion von (Ort-Saat, VERSION, Heimat) — derselbe
+    // Satz führt in dieselbe Welt. Ihr Gesetz ist das der Heimat (Schwere, Himmel, Wetter-Tafel) mit dem Erbgut des Orts (`ortErbgut`:
+    // der Wildnis-Term der Heimat + das Δ der Regler, EINMAL geschrieben) und dem Teil `ort` (nur das Δ — die Tafel `ortGesetz`
+    // bildet daraus Klima, Schnee, Meer, Spende und Wetter); ihr Heimtor führt in die Heimat (`_heimTorSetzen`). Das Gesetz der
+    // Heimat liest eine Reise-Welt aus deren Platz im Speicher (fehlt er, bricht der Satz beim Namen). Die Person reist mit
+    // (Seele, Werkzeuge, eigene Stoffe und Baupläne, `_buildEmptyWorldSnapshot`). → {ok, worldId, geboren, ort} | {ok:false, reason}
+    _reiseBetreten(o) {
+        const hier = this.state.worldMeta || {};
+        const hierGesetz = AnazhRealm._weltGesetz(hier);
+        const heimId = hierGesetz.ort ? hier.heimTor && hier.heimTor.weltId : hier.worldId;
+        const heimLabel = hierGesetz.ort ? (hier.heimTor && hier.heimTor.label) || "" : hier.slug || "";
+        if (typeof heimId !== "string" || !heimId) return { ok: false, reason: "die Welt kennt ihre Heimat nicht" };
+        const ort = {
+            samen: o.samen,
+            version: o.version,
+            breite: o.breite,
+            laenge: o.laenge,
+            zeitMa: o.zeitMa,
+            delta: o.delta,
+        };
+        globalThis.__gelaendeCore.ortGesetz(ort); // die Tafel prüft den Teil, ehe eine Welt entsteht
+        let heim = hierGesetz;
+        if (hierGesetz.ort) {
+            const roh = localStorage.getItem(this.worldStorageKey(heimId));
+            if (!roh) return { ok: false, reason: `die Heimat ${heimId.slice(0, 8)}… liegt nicht im Speicher` };
+            heim = AnazhRealm._weltGesetz(JSON.parse(roh).worldMeta);
+        }
+        const saat = this._reiseSaat(ort, heim.gelaende); // die Reihe der Ort-Saaten: die erste mit Grund an der Ankunft (K5)
+        const worldId = `ort_${this._fastHash(saat + "|" + o.version)}${this._fastHash(heimId)}`;
+        if (worldId === hier.worldId) return { ok: false, reason: "der Spieler steht schon an diesem Ort" };
+        if (localStorage.getItem(this.worldStorageKey(worldId))) {
+            this.saveState();
+            this.log(`Reise: zurück an den Ort ${saat}`, "INFO");
+            this._weltWechsel(worldId);
+            return { ok: true, worldId, geboren: false, ort };
+        }
+        const K = globalThis.__gelaendeCore;
+        const kurz = (x, p, n) => `${Math.round(Math.abs(x) * 100)}${x < 0 ? n : p}`;
+        const meta = this._generateFreshWorldMeta(
+            `ort-${kurz(o.breite, "n", "s")}-${kurz(o.laenge, "o", "w")}` +
+                (o.zeitMa ? `-${kurz(o.zeitMa / 100, "n", "v")}` : "")
+        );
+        meta.worldId = worldId;
+        meta.seed = saat;
+        const snap = this._buildEmptyWorldSnapshot(meta, true);
+        snap.worldMeta.voxelTerrain = true;
+        snap.worldMeta.gesetz = {
+            schwere: heim.schwere,
+            himmel: { rayleighTiefe: heim.himmel.rayleighTiefe.slice() },
+            wetter: Object.assign({}, heim.wetter),
+            gelaende: K.ortErbgut(K.erbgutNormal(heim.gelaende == null ? undefined : heim.gelaende), o.delta.wildnis),
+            ort,
+        };
+        AnazhRealm._weltGesetz(snap.worldMeta);
+        snap.worldMeta.heimTor = { weltId: heimId, label: heimLabel };
+        this.log(`Reise: der Ort ${saat} wird geboren (${worldId})`, "INFO");
+        const ab = this._weltBetreten(snap, null, {
+            zeugnisA: {
+                key: `reise:${worldId}`,
+                type: "portal",
+                schluessel: "chat.befehl.reise.zeugnis",
+                werte: { ort: saat },
+            },
+        });
+        return { ...ab, geboren: true, ort };
+    }
+
+    // DIE WORTE EINES ORTS (Reise): Lage in Grad (Süden und Westen negativ) und Zeit in Ma → die Werte der Zeilen der Text-Tafel
+    // (`chat.befehl.reise.*`), Zahlen in der Sprache des Spielers (`_reiseZahl`); `q` trägt Samen und VERSION des Planeten.
+    _reiseWorte(breite, laenge, zeitMa, q) {
+        return {
+            breite: this._reiseZahl(Math.abs(breite), 2),
+            ns: breite < 0 ? "S" : "N",
+            laenge: this._reiseZahl(Math.abs(laenge), 2),
+            ow: laenge < 0 ? "W" : ["chat.befehl.reise.ost"],
+            zeit: zeitMa
+                ? [zeitMa < 0 ? "chat.befehl.reise.vor" : "chat.befehl.reise.nach", { ma: String(Math.abs(zeitMa)) }]
+                : "",
+            samen: String(q.samen),
+            version: String(q.version),
+        };
+    }
+    _reiseZahl(x, n) {
+        const s = x.toFixed(n);
+        return AnazhRealm._sprache() !== "en" ? s.replace(".", ",") : s;
+    }
+
     // DAS HEIMTOR (ultiversum.K1): eine Welt, die ein Welt-Tor gebar (`worldMeta.heimTor`), trägt nach ihrer Ankunft ein Tor in
     // die Welt, aus der es kam — sechs Meter vor dem Spieler auf dem Boden, das Welt-Portal mit der Kennung seiner Herkunft
     // (`heimtor-<id>`: einmal, der Stand trägt es weiter). Leser: der Anschluss jeder Welt (`_weltAnschluss`).

@@ -22,7 +22,7 @@
 //       der Wald liest den Bezug nie als Wasser, kein Bau weckt den Automaten am Setz-Punkt, der Stempel läuft nie den ganzen
 //       Bestand, keine Wurzel sagt still ab, `natur_weicht` ist fort (die gefallenen Namen trägt gate:altlasten).
 //   K — DER KONSUM AM RUF: am Ort des Spielers ruft jeder Leser sein Gesetz — `_feuchteAt` den Bezug, der Wald
-//       `_atlasWaterLevelAt`, der Zell-Stempel `_blockerNahe`, Tempel und Bauplan `_werkOrtSuchen`, Baum · Insel · UFO
+//       `_atlasWaterLevelAt`, der Zell-Stempel `_blockerNahe`, Tempel und Bauplan `_werkOrtSuchen`, der Baum
 //       `_setzErgebnis`, der losgelassene Wagen `_fahrTiefe`.
 //   F — DER WAGEN IM WASSER: der GT fährt im echten Sim-Schritt mit Vollgas aus 26 m Anlauf in 0,5–0,75 m Wasser (eine
 //       Furt um den Schau-Ort, gesucht). Soll: 1 s nach dem Eintauchen
@@ -1669,11 +1669,6 @@ async function probe(A) {
                         [at, 1, "eiche", 7],
                         ctx(),
                     ]),
-                    "spawn_island → _setzErgebnis": ruft(r.dslEffects, "spawn_island", "_setzErgebnis", [
-                        [at, 6, 7, 1],
-                        ctx(),
-                    ]),
-                    "spawn_ufo → _setzErgebnis": ruft(r.dslEffects, "spawn_ufo", "_setzErgebnis", [[at], ctx()]),
                 };
                 for (const e of neueWerke(vorA)) r.removeArchitecture(e);
                 // der losgelassene Wagen (der GT der Ansaugung) rechnet im Nachlauf mit der Tiefe am Wagen
@@ -1854,7 +1849,7 @@ function selbsttest() {
         zensus: { werke: 80, haeuser: 12, baeume: 68, imWasser: [], ohneHuelle: [], ohneWand: [], anDerWand: 4 },
         satz: { orte: 9, haeuser: 9, fern: [] },
         leser: [],
-        konsum: { "_feuchteAt → _waterLevelAt": true, "spawn_ufo → _setzErgebnis": true },
+        konsum: { "_feuchteAt → _waterLevelAt": true, "spawn_tree → _setzErgebnis": true },
         wagen: { vEin: 11, v1: 3, tiefe: 0.61, kameraUnter: 0, kameraTiefe: 0 },
         ansaug: {
             ansaug: 0.72,
@@ -1954,7 +1949,7 @@ function selbsttest() {
         ["H Stamm im Wasser", ["hain.staemme.3.tiefe=", 2.4], /H: baum_eiche #3 .* steht 2\.40 m im Wasser/],
         ["H Automat geweckt", ["hain.caChunks=", 15], /H: die Bauten am Ufer weckten den Wasser-Automaten \(15/],
         ["H leer", ["hain.satz=", 2], /H LEER/],
-        ["K ein Leser ruft sein Gesetz nicht", (b) => (b.konsum["spawn_ufo → _setzErgebnis"] = false), /KONSUM: spawn_ufo/],
+        ["K ein Leser ruft sein Gesetz nicht", (b) => (b.konsum["spawn_tree → _setzErgebnis"] = false), /KONSUM: spawn_tree/],
         ["K nicht gemessen", ["konsum"], /K LEER/],
         [
             "Z Fundament im Wasser",

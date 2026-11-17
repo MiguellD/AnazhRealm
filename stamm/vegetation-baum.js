@@ -21,7 +21,7 @@ class AnazhRealm_vegetation_baum {
     }
 
     // Trägt die Wildnis den Ort? Das EINE Prädikat an den WÜRFEN des Feldes (Wald, Streu, Nah-Streu, Geburts-Ort, Dorf-
-    // Ort, Schwebe-Inseln und jeder Ort, den der Nexus wählt — `dslEvalPos`): wo der Wildnis-Term nicht wiegt, wirft das
+    // Ort und jeder Ort, den der Nexus wählt — `dslEvalPos`): wo der Wildnis-Term nicht wiegt, wirft das
     // Feld nichts — Akte (Mensch, KI, Saat, Linse) setzen überall. Liest das Gewicht des Erbguts (heute je Welt: 1 oder
     // 0, der Ort ist die Naht künftiger Masken).
     _wildnisTraegt(_x, _z) {
@@ -1350,7 +1350,8 @@ class AnazhRealm_vegetation_baum {
                     if (wurf >= glocke * 0.42 * (1 - trail * 0.92)) continue;
                     const slopeB = this._slopeAt(bxp, bzp);
                     const rk = Math.max(0, Math.min(1, (slopeB - GS.lo) / (GS.hi - GS.lo)));
-                    const pShrub = glocke * (1 - rk) * 0.42 * (1 - trail * 0.92);
+                    // × die Krautschicht des Orts (Reise: die Tafel `ortGesetz(teil).wuchs.decke`; die Heimat 1)
+                    const pShrub = glocke * (1 - rk) * 0.42 * (1 - trail * 0.92) * this._gelaende().ort.wuchs.decke;
                     if (wurf >= pShrub) continue;
                     if (!this._landAt(bxp, bzp, 0.1)) continue;
                     // Busch-Spawn-Name ist ein GEWACHSENER Bauplan: busch_hazel ist eine Grammatik-Spezies, kein Built-in
@@ -1530,10 +1531,11 @@ class AnazhRealm_vegetation_baum {
             }
         }
 
-        // Wurde diese Zelle schon promotet (ein REALER Baum lebt hier), wird sie übersprungen.
-        if (this._scatterIsCellPromoted && this._scatterIsCellPromoted(sampleX, sampleZ, "tree")) {
-            return 0;
-        }
+        // DIE SAAT LIEST KEINE MARKE (Gegner Bild F1, 15.11.): die Probe ist eine Funktion des Samens, nie des Wegs. Bis hier übersprang
+        // sie eine Zelle, deren Marke (`scatterPromoted`) ein gewachsener Bau gesetzt hatte — gesetzt beim Spawn aus der Schlange,
+        // also nach der Zeit des Takts, und vom ersten Besuch gehalten: die Wiederkehr der Wiese säte 6 von 46 Glutbrunnen nicht,
+        // und der Wald pflanzte an ihrem Ort (Bestand 150 m, gegner-speicher). Die Marke schützt die Deko-Streu vor dem Doppel
+        // (`_scatterCellTransform`-Leser in vegetation-streu); die Bäume pflanzt der Wald, nie diese Probe.
         // V18.220 — die CAP-Wand. Plan §13 (600k Tree / 700k Under / 1.5M Stone).
         // Bei einer CPU-First-Welt ist die echte Decke ~10k pro Layer — der Cap
         // schützt vor Memory-Explosion bei extremen Welten.
@@ -3083,7 +3085,15 @@ class AnazhRealm_vegetation_baum {
         entry._cullEimer = art === "weg" ? -1 : undefined;
         K.schlaefer.delete(entry);
         if (art === "weg") [K.wach.delete(entry), K.autos.delete(entry)];
-        else [K.wach.add(entry), entry.autonomous && K.autos.add(entry)];
+        else {
+            // DER WECKRUF WECKT DEN TAKT (b-ankunft, das Muster der Streu: `_standWecken("streuLod")`): tritt er in die Wache,
+            // geht der nächste Gang des Culls. Ein Schläfer auf seiner Zusage zählt in keinem Gang (`K.schlaefer`) — schliefen alle
+            // Offenen, ruhte der Takt (`_standRuht`), und kam die Zusage als letztes Ereignis, stand der Eintrag wach mit seinem
+            // gedockten Asset, bis ein fremdes Ereignis die Bau-Takte regte. GTX 1050 kalt, main 2b826a89: 10–28 Bäume der
+            // Mesh-Zone standen so 6–8 s vor dem ersten Weltbild („Bäume und Bauten wachsen“, der Haupt-Faden leer).
+            if (!K.wach.has(entry)) this._standWecken("archCull");
+            [K.wach.add(entry), entry.autonomous && K.autos.add(entry)];
+        }
     }
 
     // Autonome Bauten bounded: sie spawnen fern (far_player, jenseits des Cull-Radius), der Bestand ist

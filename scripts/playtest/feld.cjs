@@ -97,7 +97,7 @@ async function checkRing2Dsl({ page, check }) {
         // Keine Struktur-Batch-Bomben: generateEvolution erzeugt nie >1 schweren Welt-Bau pro Evolution
         // (`repeat N × spawn_village` liefe synchron als N Footprint-Remeshes = periodischer Nexus-Freeze).
         {
-            const HEAVY = /spawn_(village|temple|island|fractal|waterfall)/g;
+            const HEAVY = /spawn_(village|temple|fractal|waterfall)/g;
             let maxHeavy = 0;
             for (let i = 0; i < 120; i++) {
                 const ev = r.generateEvolution();

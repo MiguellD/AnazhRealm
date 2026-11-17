@@ -1231,6 +1231,19 @@
         ]
     },
     {
+        "warum": "DER KNOTEN-BAU FÄLLT MIT SEINEM ERGEBNIS (Preis des Orts, Schnitt 2, N3): jeder Bau verlässt r184 über _createNodeBuilderState; danach wird der Bau-Graph des Bauers entkernt (BAU_GRAPH, die Felder des Konstruktors).",
+        "anker": [
+            {
+                "sub": "_createNodeBuilderState(e){return new xN(e.vertexShader,e.fragmentShader,e.computeShader,e.getAttributesArray(),e.getBindings(),e.updateNodes,e.updateBeforeNodes,e.updateAfterNodes,e.observer,e.transforms)}",
+                "organ": "_knotenBauEntkernen (der EINE Ausgang des Baus; der Stand liest nur diese Felder)"
+            },
+            {
+                "sub": "this.cache=new AN,this.globalCache=this.cache,this.flowsData=new WeakMap",
+                "organ": "BAU_GRAPH (der Knoten-Cache des Bauers)"
+            }
+        ]
+    },
+    {
         "warum": "DER KNOTEN-BAU IN RATEN: der Gang von NodeBuilder.build, der Eintritt in den Bau-Cache",
         "anker": [
             {

@@ -1,5 +1,5 @@
 class AnazhRealm_siedlung_satz {
-    // ===== ATLAS · Siedlung/satz — Bau-Satz · Satz-Kern · Bau setzen · Fundament · Katalog · Arten-Substanz · Inseln =====
+    // ===== ATLAS · Siedlung/satz — Bau-Satz · Satz-Kern · Bau setzen · Fundament · Katalog · Arten-Substanz =====
     // ═══ DER BAU-SATZ (Welle 6) ═══
     // Die Draw-Einheit des gesetzten Studio-Baus ist sein STOFF, nie seine Gestalt. Befund (echte GPU, Mess-Wiese
     // −900/−850, `werkbank band`): jede Instanz-Gruppe ist EINE Geometrie (`f:<preset>|<gestalt>|<lod>[|ov]:<teil>`), und
@@ -112,7 +112,7 @@ class AnazhRealm_siedlung_satz {
         const st = this.state;
         const sm = st.bauSatzSchmutzig;
         const raten = st.bauSatzRaten;
-        if (!(sm && sm.size > 0) && !(raten && raten.size > 0)) return;
+        if (!(sm && sm.size > 0) && !(raten && raten.size > 0)) return this._satzWerkRuhe();
         const groups = st.archInstanceGroups;
         const saetze = st.chunkSaetze;
         const ohne = deckel === Infinity || st._weltbildDa == null;
@@ -463,11 +463,18 @@ class AnazhRealm_siedlung_satz {
                 continue;
             }
             const q = A[name];
-            if (!q || q.itemSize !== is) throw new Error(`_satzBlock(${wer}): Attribut ${name} fehlt oder passt nicht`);
+            // die Gestalt trägt Normale und Farbe im Eck-Format (`_eckForm`, vier Stellen): der Satz liest sie dicht (`_eckDicht`)
+            const eck = !!q && is === 3 && q.itemSize === 4 && (name === "normal" || name === "color");
+            if (!q || (q.itemSize !== is && !eck))
+                throw new Error(`_satzBlock(${wer}): Attribut ${name} fehlt oder passt nicht`);
             const out = this._satzWerkbank(name, N * is, Float32Array);
             const jeInstanz = q.isInstancedBufferAttribute === true;
             // die Sicht eines verschränkten Puffers (die Jahres-Ecken, `_jahrEcken`) liest dicht (`_sichtDicht`)
-            const qa = q.isInterleavedBufferAttribute ? AnazhRealm._sichtDicht(q) : q.array;
+            const qa = q.isInterleavedBufferAttribute
+                ? AnazhRealm._sichtDicht(q)
+                : eck
+                  ? AnazhRealm._eckDicht(q, this._satzWerkbank("#eck:" + name, n0 * 3, Float32Array))
+                  : q.array;
             const src = jeInstanz || (v0 === 0 && v1 === n0) ? qa : qa.subarray(v0 * is, v1 * is);
             // je Rechnung EIN Kern (`_satzKern*`, K69): eine kleine Funktion, eine Schleife, immer dieselben Array-Arten — die
             // Rechnung des Blocks hält ihre optimierte Form. Vorher lag jede Schleife in diesem Rumpf, und der Wechsel eines
@@ -515,7 +522,16 @@ class AnazhRealm_siedlung_satz {
 
     // DIE EINE WERKBANK der Satz-Blöcke (K69): je Attribut-Name ein Array, das mit dem größten Block wächst (×1,5) und nie
     // schrumpft — ein Block ist ein View ihrer ersten `len` Werte, gültig bis zum nächsten `_satzBlock`.
+    // DIE WERKBANK RUHT (w28-heap-deckel): ein Block ist ein View bis zum nächsten Block, der Satz packt ihn beim Eintritt
+    // (`_chunkSatzEin`) — nach dem Upload liest niemand die Werkbank. Sie hielt am Dorfplatz (Radeon, Kandidat 56fa05ed)
+    // 15,5 MB, gewachsen am größten Block der Ankunft, bis zum Ende der Sitzung. Jetzt lebt sie nur, solange Blöcke gelegt
+    // werden (die Welle eines Gangs, K69: kein frisches Array je Block); `SATZ_WERK_RUHE_MS` ohne Block, und sie fällt.
+    // Leser: `_tickBauSatz` ohne Arbeit (je Render).
+    _satzWerkRuhe() {
+        if (this._satzWerk && performance.now() - this._satzWerkT > AnazhRealm.SATZ_WERK_RUHE_MS) this._satzWerk = null;
+    }
     _satzWerkbank(name, len, Typ) {
+        this._satzWerkT = performance.now();
         const W = this._satzWerk || (this._satzWerk = new Map());
         let a = W.get(name);
         if (!a || a.length < len) {
@@ -630,115 +646,8 @@ class AnazhRealm_siedlung_satz {
         return namen.slice().sort((a, b) => this._katalogRang(a) - this._katalogRang(b));
     }
 
-    // Architektur-/Insel-/Chunk-Kollision ist feld-nativ (Dichtefeld + `entry.blockerAABBs` +
+    // Architektur-/Chunk-Kollision ist feld-nativ (Dichtefeld + `entry.blockerAABBs` +
     // `_stepCharacterStructures`) — es gibt keine Ammo-Kollisions-Builder.
-
-    // _islandDensityAt: Insel-Dichte-Feld in LOKALEN Koordinaten (Mitte bei (0,0,0)) für dieselbe
-    // Surface-Nets-Pipeline wie die Voxel-Chunks. Oberseite: radiale Noise-Höhe mit Rim-Falloff;
-    // Unterseite flach, zum Rand verjüngt; außen radial harte Luft (gekapselt, kein Boden-Anker).
-    // Iso = `min(topY-ly, ly-botY)` im Innern. Seed-deterministisch (Multi-User-Sync).
-    _islandDensityAt(lx, ly, lz, radius, height, noise) {
-        const dx = lx;
-        const dz = lz;
-        const distXZ = Math.sqrt(dx * dx + dz * dz);
-        if (distXZ >= radius) return -1;
-        const factor = 1 - distXZ / radius;
-        if (factor <= 0) return -1;
-        // V9.42-b — Höhen-Amplitude skaliert mit `height`-Parameter
-        // (Schöpfer-Befund: "Höhenwerte zu beschränkt"). Frequenz-Mix
-        // gibt mehr Variation; Basis-Lift ebenso höhen-skaliert.
-        const ampScale = Math.max(1, height * 0.35);
-        const h1 = noise.noise2D(lx * 0.18, lz * 0.18) * 1.5 * factor * ampScale;
-        const h2 = noise.noise2D(lx * 0.45, lz * 0.45) * 0.7 * factor * ampScale;
-        const h3 = noise.noise2D(lx * 0.85, lz * 0.85) * 0.35 * factor;
-        const topY = Math.max(0, h1 + h2 + h3 + factor * 0.4 * ampScale);
-        // Unterseite — sanft verjüngt, flach im Innern.
-        const botY = -Math.max(2, height * 0.4) * factor;
-        if (ly > topY || ly < botY) return -1;
-        return Math.min(topY - ly, ly - botY);
-    }
-
-    spawnIslandAt(x, y, z, height = 6, opts = {}) {
-        if (!this.state.scene) return null;
-        // V9.42-b — Schöpfer-Wahl: Insel-Grösse jetzt bis 48 m Durchmesser
-        // (vorher 24, immer gleich gefühlt) + size-Parameter ist DSL-erreichbar.
-        const size = Number.isFinite(opts.size) ? Math.max(6, Math.min(48, opts.size)) : 12;
-        const seedStr = opts.seed != null ? String(opts.seed) : String(this._bauSame("insel")); // Γ5, nie Math.random
-        const noise = new SimplexNoise(seedStr);
-        // V9.42-a — Geometrie aus der Surface-Nets-Pipeline. Voxel-Welt-Chunks
-        // + Inseln teilen sich `_voxelChunkGeometry` (eine Mesh-Sprache, zwei
-        // Anwendungen). Lokales Volumen mit ~1.5-Marge gegen das Iso-Band.
-        const radius = size / 2;
-        const step = 0.9;
-        const margin = 1.5;
-        const halfXZ = radius + margin;
-        const dimXZ = Math.max(8, Math.ceil((2 * halfXZ) / step));
-        // V9.42-b — Höhen-Amplitude wächst mit `height` (siehe _islandDensityAt).
-        const ampScale = Math.max(1, height * 0.35);
-        const topMax = (1.5 + 0.7) * ampScale + 0.35 + 0.4 * ampScale + margin;
-        const botMin = -(Math.max(2, height * 0.4) + margin);
-        const dimYNeeded = Math.max(6, Math.ceil((topMax - botMin) / step));
-        const islandDensity = (px, py, pz) => this._islandDensityAt(px, py, pz, radius, height, noise);
-        const geometry = this._voxelChunkGeometry(
-            -halfXZ,
-            botMin,
-            -halfXZ,
-            dimXZ,
-            dimYNeeded,
-            dimXZ,
-            step,
-            islandDensity
-        );
-        // Insel-Farbe per vertexColors (_attachIslandColors) — dieselbe Cel-Sprache wie der Voxel-Boden; das
-        // Terrain-ShaderMaterial passt nicht (die Surface-Nets-Geometrie trägt kein aField/uv).
-        this._attachIslandColors(geometry);
-        // V10.0-g — Insel-Material auf ToonNodeMaterial (WebGPU-kompatibel).
-        const material = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
-        const island = new THREE.Mesh(geometry, material);
-        island.position.set(x, y, z);
-        island.castShadow = true;
-        island.receiveShadow = true;
-        island.name = "dsl-insel";
-        island.userData.sourceOp = "spawn_island";
-        this.state.scene.add(island);
-        if (!Array.isArray(this.state.floatingIslands)) this.state.floatingIslands = [];
-        this.state.floatingIslands.push(island);
-        // DETERMINISMUS-BOGEN (Entscheid #2) — die AABB-Hülle für die feld-native Kollision:
-        // der Spieler kann auf einer fliegenden Insel STEHEN (Auflage auf der Oberkante) +
-        // wird an ihren Flanken geblockt. Die Hülle kommt exakt aus der gebauten Geometrie.
-        geometry.computeBoundingBox();
-        const bb = geometry.boundingBox;
-        if (bb) {
-            island.userData.fieldAABB = {
-                minX: x + bb.min.x,
-                maxX: x + bb.max.x,
-                minZ: z + bb.min.z,
-                maxZ: z + bb.max.z,
-                topY: y + bb.max.y,
-                botY: y + bb.min.y,
-            };
-        }
-        return island;
-    }
-
-    // UFOs sind bewusst kollisionsfrei — fliegende Beobachter, kein
-    // Hindernis. Sanfte Sinus-Hover-Animation wird im Frustum-Loop
-    // angewandt (selber Pfad wie initialer spawnIslands-UFO).
-    spawnUfoAt(x, y, z) {
-        if (!this.state.scene) return null;
-        const geo = new THREE.ConeGeometry(1, 2, 8);
-        const mat = new THREE.MeshBasicMaterial({ color: 0xc0e8ff });
-        const ufo = new THREE.Mesh(geo, mat);
-        ufo.position.set(x, y, z);
-        ufo.visible = true;
-        ufo.name = "dsl-ufo";
-        // der Schwebe-Takt aus dem Welt-Strom (Γ5): jeder Peer sieht das UFO im selben Takt
-        ufo.userData = { baseY: y, speed: 0.5 + this._samenStrom(this._bauSame("ufo"))() * 0.5, sourceOp: "spawn_ufo" };
-        this.state.scene.add(ufo);
-        if (!Array.isArray(this.state.ufos)) this.state.ufos = [];
-        this.state.ufos.push(ufo);
-        return ufo;
-    }
 
     // Horizontaler Footprint-Radius eines Bauplans (Zentrum bis äußerster solider Part-Rand), VOR dem
     // Spawn aus bp.parts berechnet (entry.blockerAABBs entsteht erst danach) — für die Spawn-Clearance.
@@ -1515,7 +1424,12 @@ class AnazhRealm_siedlung_satz {
                 entry._lodLevel = Number.isFinite(bp._lodLevel) ? bp._lodLevel : 0;
                 // Jeder grown-Baum ist ein echtes Welt-Ding → seine Cell wird „promoted" markiert; die Scatter-Bitmask
                 // schützt den Slot vor späterer Deko (sonst setzte die GPU-Aktivierung eine zweite Instanz).
-                if (this._scatterMarkCellPromoted) {
+                // DER WURF DES FELDS SETZT KEINE MARKE (Heilung 2, w28-preis-ort): er ist eine Funktion des Samens, die Streu auch —
+                // die Marke kam, sobald er aus der Pflanz-Schlange trat, und die Streu las sie, wann immer ihre Region baute: wer
+                // zuerst kam, stand. Am Kopf 5f7c0bf1 kehrte die Streu der Wiese anders wieder (gate:takt T18: eine Birke weg, drei
+                // Bäume neu, alle in Baum-Zellen eines Haselbuschs des Felds; Radeon rand-ost 5,46 % gegen main 1,30 %). Die Marke
+                // tragen die Promotion (`_promoteScatterCell`, vor ihrem Spawn) und, was bleibt (Tat, Werk, Ort).
+                if (this._scatterMarkCellPromoted && entry.feldWurf !== true) {
                     this._scatterMarkCellPromoted(position.x, position.z, "tree");
                 }
                 if (this._scatterRegisterCell) {
@@ -1649,6 +1563,8 @@ AnazhRealm.BAU_SATZ = Object.freeze({
 // Bau-Arbeit (ein Bereich darüber tritt in Raten ein; ist die Frist leer, geht der Takt EIN Stück) — gemessen Messort stadt:
 // Radeon 890M ~0,1 µs, GTX 1060 ~0,6 µs je Ecke; bis w25-stadt-takt-2 der Deckel je Takt (BAU_SATZ_ECKEN_JE_TAKT, 8 192).
 AnazhRealm.BAU_SATZ_STUECK = 2048;
+// DIE RUHE DER WERKBANK (w28-heap-deckel, `_satzWerkRuhe`): so lange (ms) legt kein Block eine Ecke, dann fällt die Werkbank.
+AnazhRealm.SATZ_WERK_RUHE_MS = 2000;
 AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
     Object.freeze(["position", 3]),
     Object.freeze(["normal", 3, "snorm8"]),

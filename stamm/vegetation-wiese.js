@@ -179,6 +179,13 @@ class AnazhRealm_vegetation_wiese {
                 // dem Wagen (`_imWagen`, er hält: `_wagenGrund`) und dem Bau mit Boxen (`_imGrundriss` "bau": Tor, Esse, Brunnen)
                 if (this._imWagen(x, z, reich * sb) || this._imGrundriss(x, z, reich * sb) === "bau") continue;
                 const f = WT(x, z, L, m, [1, 1, 1], 0);
+                // DER VERSENGTE HALM (w28-brand-bild): im Saum der Narbe (dieselbe Asche, die den Wurf dünnt) steht das Büschel
+                // braun gesengt — bis hier war ein Halm grün oder weg, die Narbe endete als Schnitt im Grün
+                const av = this._ascheAt(x, z);
+                if (av > 0) {
+                    const [V, k] = [AnazhRealm.BRAND.versengt, Math.min(1, av * 2)];
+                    for (let c = 0; c < 3; c++) f[c] *= 1 + (V[c] - 1) * k;
+                }
                 out.push({ x, y, z, s: sb, rot, vorlage, o, f, gi, gj, gx: eb.gx, gz: eb.gz });
             }
         }
@@ -765,12 +772,15 @@ class AnazhRealm_vegetation_wiese {
     // DER GRUND DER WIESE an (x, z) über dem gezeichneten Boden y mit seinem Grün `gruen` (`_bodenSichtAt` … `gruen`: die
     // Wiesen-Wache der Boden-Karte, das Pflaster deckt): das Gewicht ∈ [0, 1], mit dem die Nähe dort Wiese trägt — der Pfad
     // dünnt (`_pfadFeldAt` × `pfadDuennt`: getretene Erde, Gasse, Weg und Pflaster der Wege-Karte, der Ufer-Pfad), die Asche
-    // eines Brands trägt keinen Halm, bis sie nachgrünt (`_ascheAt`, stoffe.K2#2), im Wasser steht nie einer (`_nassAt`, das EINE
-    // Urteil wie die Nah-Streu). Der Wurf der Nähe liest es (× das Gesetz der Bodenschicht); die Ferne zeichnet dieselben
-    // Büschel — dieselben Masken.
+    // eines Brands trägt keinen Halm, bis sie nachgrünt (`_ascheAt`, stoffe.K2#2), die Decke der Lava nie (`_lavaDeckeAt`,
+    // stoffe.K3-2: glühend und erstarrt Stein), im Wasser steht nie einer (`_nassAt`, das EINE Urteil wie die Nah-Streu). Der
+    // Wurf der Nähe liest es (× das Gesetz der Bodenschicht); die Ferne zeichnet dieselben Büschel — dieselben Masken.
     _wieseGrund(x, z, y, gruen) {
-        if (!(gruen > 0) || this._nassAt(x, z, 0.1, y)) return 0;
-        return gruen * (1 - this._pfadFeldAt(x, z, y) * AnazhRealm.NAH_WIESE.pfadDuennt) * (1 - this._ascheAt(x, z));
+        // wo die Decke der Lava liegt, auch in ihrem dünnen Rand, steht kein Halm (w28-lava-zuendet: bis hier dünnte sie nur —
+        // Büschel standen grün im glühenden Rand)
+        if (!(gruen > 0) || this._nassAt(x, z, 0.1, y) || this._lavaDeckeAt(x, z) > 0) return 0;
+        const pfad = 1 - this._pfadFeldAt(x, z, y) * AnazhRealm.NAH_WIESE.pfadDuennt;
+        return gruen * pfad * (1 - this._ascheAt(x, z));
     }
 
     // DIE KACHEL DER FERNE BEGINNT ERST, WENN DA IST, WAS SIE LIEST (w25-ankunft-block-2, die Klasse „ein Bau fällt auf null“): die
@@ -1303,6 +1313,7 @@ class AnazhRealm_vegetation_wiese {
             return v === null ? NaN : v;
         };
         const licht = this._bodenLichtFeld(tx * K, tz * K, (tx + 1) * K, (tz + 1) * K);
+        const [WO, FV] = [this._gelaende().ort.wuchs, AnazhRealm.FEUCHTE];
         for (let gj = tz * n; gj < tz * n + n; gj++) {
             for (let gi = tx * n; gi < tx * n + n; gi++) {
                 const x = (gi + 0.5) * Z;
@@ -1327,10 +1338,27 @@ class AnazhRealm_vegetation_wiese {
                     hang: this._slopeAt(x, z, boden),
                     leben: this._lebenStufe(x, z), // das Leben-Overlay am Ort in Stufen (feld.K5: die Pflege lässt blühen)
                 };
+                // DER WUCHS DES ORTS (Reise, Welle 3: die Tafel `ortGesetz(teil).wuchs`, die Heimat 1) je Stoff der Art [Kraut,
+                // Holz, Stein]: das Kraut trägt die Krautschicht des Orts — wo der Regen sie nicht trägt, hält die Feuchte des
+                // Bodens sie am Wasser (die Oase, dieselbe Kurve wie der kahle Grund in `_bodenFarbeAt`); das Totholz liegt, wo
+                // Wald steht; der Stein liegt überall.
+                const of = (feucht - FV.sichtbarLo) / (FV.sichtbarHi - FV.sichtbarLo);
+                const oase = of > 0 ? (of < 1 ? of : 1) : 0;
+                const klima = [WO.decke + (WO.oase - WO.decke) * oase * oase * (3 - 2 * oase), WO.wald, 1];
                 for (let a = 0; a < arten.length; a++) {
                     const A = arten[a];
                     const gw = this._nahStreuBodenGewicht(core, A.zeile, u, uf, y);
-                    const lam = A.zeile.dichte * Z * Z * 0.01 * gw * last;
+                    // × der Wuchs des Orts (`klima`, oben): das Kraut die Krautschicht samt der Oase, das Totholz der Wald, der Stein 1
+                    const lam =
+                        A.zeile.dichte *
+                        Z *
+                        Z *
+                        0.01 *
+                        gw *
+                        last *
+                        klima[A.ernte === "kraut" ? 0 : A.ernte === "holz" ? 1 : 2] *
+                        // die Blume ist ein Bedecktsamer (w28-reise-ort): vor ihrer Zeit blüht nichts (`wuchs.laub`, die Heimat 1)
+                        (A.kind === "flower" ? WO.laub : 1);
                     if (!(lam > 0)) continue;
                     let hs =
                         ((gi * 73856093) ^ (gj * 19349663) ^ ((a + 1) * 0x85ebca6b) ^ seedInt ^ 0x5eedb0de) >>> 0 || 1;
@@ -1352,6 +1380,9 @@ class AnazhRealm_vegetation_wiese {
                         const py = this._bodenSichtAt(px, pz);
                         if (py === null) continue;
                         if (!A.zeile.ufer && this._nassAt(px, pz, 0.1, py)) continue;
+                        // auf der Decke der Lava steht nichts (stoffe.K3-2, dieselben Bytes wie Boden und Nah-Wiese, `_lavaDeckeAt`):
+                        // ihr Rand dünnt über die Ordnung der Pflanze, wie die Asche die Kräuter
+                        if (this._lavaDeckeAt(px, pz) > ordnung) continue;
                         // was brennt (die Kräuter, `ernte` kraut), wächst auf der Asche erst mit dem Busch der Sukzession
                         if (A.ernte === "kraut" && !this._streuNachBrand(px, pz, ordnung)) continue;
                         const it = { art: a, id: `${gi}|${gj}|${a}|${i}`, x: px, y: py, z: pz, rot, s, same, ordnung };
@@ -2049,7 +2080,12 @@ class AnazhRealm_vegetation_wiese {
         const wasser =
             W.wasserBasis + (1 - W.wasserBasis) * (Number.isFinite(feuchte) ? feuchte : this._feuchteAt(x, z));
         const N = this._naehrstoffAt(x, z);
-        return ((wasser * N * (1 + W.naehrK)) / (N + W.naehrK)) * this._bodenLichtFeld(x, z, x, z)(x, z);
+        // × die Krautschicht des Orts (die Tafel `ortGesetz(teil).wuchs.decke`; die Heimat 1): wo der Regen nichts trägt, heilt nichts
+        return (
+            ((wasser * N * (1 + W.naehrK)) / (N + W.naehrK)) *
+            this._bodenLichtFeld(x, z, x, z)(x, z) *
+            this._gelaende().ort.wuchs.decke
+        );
     }
 
     // DER NÄHRSTOFF am Ort (stoffe.K5#2) — EINE Funktion der Taten seiner 16-m-Zelle, kein Speicher daneben: 1 ist der eigene
@@ -2435,6 +2471,10 @@ class AnazhRealm_vegetation_wiese {
         const relH = Number.isFinite(surfaceY) ? surfaceY - baseH : 0;
         const highF = 1 - P.highAmp * ss(P.highLo, P.highHi, relH);
         let f = clump * slopeF * wetF * highF;
+        // (4b) DAS KLIMA DES ORTS (Reise, die Tafel `ortGesetz(teil).wuchs`; die Heimat 1): der Wald trägt den Wald-Anteil des
+        // Orts, der Unterwuchs den der Krautschicht — die Wüste und das Eis tragen keinen.
+        const W = this._gelaende().ort.wuchs;
+        f *= purpose === "meadow" ? W.decke : W.wald;
         // (5) PERF — der EINE Qualitäts-Regler; headless (Null-Renderer) → 1 (voll).
         const fd = this.state && this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
         f *= fd;
@@ -2469,7 +2509,8 @@ class AnazhRealm_vegetation_wiese {
         const baseH = (this.state && this.state.terrainBaseHeight) || 0;
         const relH = Number.isFinite(surfaceY) ? surfaceY - baseH : 0;
         const highF = 1 - P.highAmp * ss(P.highLo, P.highHi, relH); // hoch → weniger Kronen → mehr Bodenlicht
-        let cover = clump * wetF * highF;
+        // × der Wald-Anteil des Orts (die Tafel `ortGesetz(teil).wuchs`, wie `_placementDensityFactor`; die Heimat 1)
+        let cover = clump * wetF * highF * this._gelaende().ort.wuchs.wald;
         if (cover < 0) cover = 0;
         const L = Math.exp(-cover * U.canopyK);
         return L < 0 ? 0 : L > 1 ? 1 : L;
@@ -2765,6 +2806,8 @@ class AnazhRealm_vegetation_wiese {
                       stand: (px, pz) => this._placementStandAt(px, pz, "forest"), // Lichtung und Schluss (phyto-core)
                       // die Waldgrenze (phyto-core `forestWaldgrenze`): der Schnee des Sommers am Boden, Versatz 0 (die Sommer-Mitte)
                       schnee: (px, pz, y) => globalThis.__gelaendeCore.schnee(this._gelaende(), y, px, pz, 0),
+                      // der Wuchs des Orts (Reise: die Tafel `ortGesetz` — Trockengrenze, Nadel- und Laubholz; die Heimat 1)
+                      wuchs: this._gelaende().ort.wuchs,
                       surfaceYAt: (x, z) => {
                           bodenX = x;
                           bodenZ = z;
@@ -2988,8 +3031,11 @@ class AnazhRealm_vegetation_wiese {
     // und der Erdbau — wechselt einer, rechnet der Faden jede Zelle neu, wie der Main sie neu fragt.
     // Ein Erdbau mit Kasten fällt nur seine Zellen (`_forestDartsFallen`, im Faden `waldFall`); den Schlüssel wechselt nur ein
     // Erdbau ohne Kasten (`_erdbauGanz`: der Boden-Umzug legt jeden Ort neu).
+    // DER STAND TRÄGT DIE WELT (w28-reise-ort): die Nummer des Gedächtnisses beginnt in jeder Welt neu (der Wechsel räumt sie) —
+    // ohne den Samen der Welt im Schlüssel las der Wald-Faden am Ort der Reise die geborenen Darts der Heimat (Stand „1|0“ hier wie
+    // dort): ihre Tannen, Kiefern und Eichen standen auf dem Eis 90 m über dem Grund und als Laubbaum auf dem Sand der Wüste.
     _waldStandSchluessel() {
-        return (this._forestDartGen | 0) + "|" + (this._erdbauGanz | 0);
+        return this._forestSeedInt() + "|" + (this._forestDartGen | 0) + "|" + (this._erdbauGanz | 0);
     }
 
     // DER STOFF DES WALDS IM FADEN (K60-3, B-Wald): JEDE offene Zelle der Schlange reist, sobald sie bestellt ist — nah zuerst,

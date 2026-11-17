@@ -296,11 +296,13 @@ async function kreaturProben(r, T, opts) {
             const G = m.userData.gang;
             const a = m.geometry.attributes;
             const x = a.aGang.getX(inst);
-            const w = a.aGang.getY(inst);
+            // (das Gewicht trägt den Stand der Instanz mit: y = 2 · Stand + Gewicht, `_gangSatzInstanz`)
+            const hs = Math.floor(a.aGang.getY(inst) / 2);
+            const w = a.aGang.getY(inst) - 2 * hs;
             const r0 = Math.floor(x) * G.n;
             const f = (x - Math.floor(x)) * G.n;
             const k0 = Math.floor(f);
-            const zs = G.baender * G.n;
+            const zs = G.baender * G.n + hs;
             const z0 = r0 + k0;
             const z1 = r0 + ((k0 + 1) % G.n);
             // der Knochen j, Zeile r, Spalte c der Matrix in der Pose-Zeile z (drei Texel je Knochen)
@@ -956,6 +958,19 @@ async function kreaturProben(r, T, opts) {
         // die alten Defekte: der Verband ohne seinen Zug (Ausrichtung und Kohäsion), ohne den Alarm aus zweiter Hand, die
         // Flucht endet am Radius
         if (taeter === "herde-zerfall") decke("_kreaturVerbandZug", () => () => {});
+        // das Revier je Glied statt je Wurf (w28-wander-revier): jedes Glied legt seinen Anker drei Leinen weit in seine eigene
+        // Richtung — die Herde hat kein gemeinsames Revier mehr und zerfällt beim Wandern (eine Leine weit hielt der Zug des
+        // Verbands sie noch: 1)
+        if (taeter === "herde-revier")
+            decke(
+                "_kreaturRevier",
+                (alt) =>
+                    function (c, a, leash) {
+                        const w = parseInt(String(c.userData.netId || "c0").slice(1), 10) || 0;
+                        const b = { x: a.x + Math.cos(w) * 3 * leash, z: a.z + Math.sin(w) * 3 * leash };
+                        return alt.call(this, c, b, leash);
+                    }
+            );
         if (taeter === "herde-alarm")
             decke(
                 "_kreaturVerbandAlarm",
@@ -1120,7 +1135,13 @@ async function kreaturProben(r, T, opts) {
                         return (c.leit = { modus: "zieht", x, y: H(x, z) + zt.h, z, gier: zt.gier });
                     }
             );
-        if (taeter === "leittier-hoehe") decke("_kronenOben", () => (c) => H(c[0], c[1]) + VG.V.flug.kroneM);
+        // (der Täter nie zufällig wahr: trifft die zweite Höhe den Scheitel binnen des Kronen-Radius — ein Baum von kroneM Höhe,
+        // Teil 3 an w28-reise-ort: s:tree:74,0, 0,171 m —, landet er einen Radius über ihm, nie auf ihm)
+        if (taeter === "leittier-hoehe")
+            decke("_kronenOben", (alt) => (c) => {
+                const [o, z] = [alt.call(r, c), H(c[0], c[1]) + VG.V.flug.kroneM];
+                return Math.abs(z - o) < c[2] ? o + c[2] : z;
+            });
         r._uhrSetzen(0.5, "regler");
         r._setWeather("sunny", "regler");
         const fenster = A._verhaltenGesetz().herde.fensterRaum * S.raumM;
@@ -3176,7 +3197,11 @@ const TAETER = {
     herde: [
         ["herde", /am Blick/],
         ["herde-artfremd", /Verbands-ID bricht nach 0 s: Verband 0 liest 10 Leiber/],
-        ["herde-zerfall", /zerfällt beim Wandern[\s\S]*zerfällt auf der Flucht[\s\S]*flieht ungerichtet/],
+        // der Verband ohne seinen Zug zerfällt auf der Flucht (0,456 an main, 0,645 mit dem Revier, Soll ≥ 0,8); beim Wandern und
+        // in der Richtung lag er am Rand (main 0,89 / Φ 0,784 gegen 0,9 / 0,8) und fällt mit dem Revier im Lebensraum
+        // (w28-wander-revier: die Glieder ziehen zu Zielen IN der Leine des gemeinsamen Wurf-Ankers, 1 / Φ 0,879) — nicht sein Grund
+        ["herde-zerfall", /zerfällt auf der Flucht: im Mittel 0\.[0-7]/],
+        ["herde-revier", /zerfällt beim Wandern/],
         ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
         ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],

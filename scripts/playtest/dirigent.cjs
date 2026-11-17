@@ -49,11 +49,6 @@ function checkInitialState({ check, finalState }) {
             `unbenannt=[${finalState.szenenZensus.unbenannt.join(" · ")}]`
     );
     check(
-        "Fliegende Inseln gespawnt",
-        finalState.floatingIslands >= 1,
-        `floatingIslands=${finalState.floatingIslands}`
-    );
-    check(
         "Feld-native Spieler-Velocity (playerVel) vorhanden",
         finalState.hasPlayerBody === true,
         `hasPlayerVel=${finalState.hasPlayerBody}`
@@ -1417,9 +1412,113 @@ async function checkBandSzeneSkala({ page, check }) {
         // (4) der Flugschreiber-Snapshot trägt die Szenen-Skala
         const snap = r._flightRecorderSnapshot(16.0, {});
         out.snapshotSkala = snap?.ctx ? snap.ctx.szeneSkala : undefined;
+        // (5) DIE EINMESSUNG AM GERÄT (w28-bild-preis, `_szeneSkalaMessen`): die echte Faltung (`_perfSenseFoldFrame`) mit einem
+        // Profil mit Adapter-Wahrheit, der headless-Zweig gelüftet, Regler und Flugschreiber gestubbt, alles gesichert — die
+        // Radeon an der Mess-Wiese (Bild 41,9 ms, CPU 3 ms) geht nach einem Fenster eine Stufe, nach dem zweiten die nächste;
+        // die GTX (16,8 ms), ein CPU-gebundenes Bild (41,9 ms bei 30 ms CPU) und der Wert des Spielers (0,9) bleiben. Der
+        // Konsum-Leser ist `_szeneSkalaWirk`; die Mutante liest die eingemessene Skala nicht (die Formel bis w28) und fällt.
+        const sicher = { nul: st.renderer?._isHeadlessNull, mess: r._geraeteMessung, leine: r._gpuLeine, traa: st._traa, pend: st.voxelMeshPending, sk: st.szeneSkala, fen: r._skalaFenster, nach: st._nachlauf, sense: st.perfSense };
+        const stubs = ["_ladeTakt", "_nexusPerfRegulate", "_flightRecorderTick", "_perfPanelRender"];
+        const alt = Object.fromEntries(stubs.map((n) => [n, Object.prototype.hasOwnProperty.call(r, n) ? r[n] : undefined]));
+        const mess = () => {
+            // je Bild hielt die GPU-Leine den Takt (`ausgesetzt` steigt), außer im CPU-gebundenen Fall
+            const lauf = (bildMs, cpuMs, sek, spieler, weiter, frei) => {
+                if (!weiter) {
+                    r._geraeteMessung = null;
+                    r._gpuLeine = { ausgesetzt: 0, imFlug: 0, gerendert: 0, sammelMs: 0 };
+                    r._skalaFenster = null;
+                }
+                st.szeneSkala = spieler == null ? null : spieler;
+                for (let i = 0; i < Math.ceil((sek * 1000) / bildMs); i++) {
+                    if (!frei) r._gpuLeine.ausgesetzt++;
+                    st._perfFrame = { render: cpuMs };
+                    st._perfMarks = {};
+                    r._perfSenseFoldFrame(bildMs, bildMs / 1000);
+                }
+                const p = r._geraeteProfil();
+                return { wirk: r._szeneSkalaWirk(), klasse: p.klasse, messung: p.messung };
+            };
+            // (w28-wiese-takt) der frühe Abstieg: nach 3 s Bild-Zeit geht der klare Fall, 41,9 ms eine Stufe (× 0,694 = 29,1 hielte),
+            // 58,6 ms beide in EINEM Schritt (0,625 hielte selbst als reine Füllung nicht: 40,7); ein Fall unter dem Fünftel
+            // (jedes zehnte Bild 50 ms) wartet das Fenster ab; die Ablage trägt die Skala in die nächste Sitzung
+            const radeon = lauf(41.9, 3, 4);
+            const radeon2 = lauf(41.9, 3, 4, null, true);
+            r._geraeteMessung = undefined;
+            st.szeneSkala = null;
+            const ablage = { wirk: r._szeneSkalaWirk(), roh: localStorage.getItem(AnazhRealm.SZENE_SKALA_MESSUNG.ablage) };
+            const sprung = lauf(58.6, 3, 4);
+            let k = 0;
+            const selten = () => (k++ % 10 === 9 ? 50 : 25);
+            r._geraeteMessung = null;
+            r._gpuLeine = { ausgesetzt: 0, imFlug: 0, gerendert: 0, sammelMs: 0 };
+            r._skalaFenster = null;
+            for (let ms = 0, b; ms < 6000; ms += b) {
+                b = selten();
+                r._gpuLeine.ausgesetzt++;
+                st._perfFrame = { render: 3 };
+                st._perfMarks = {};
+                r._perfSenseFoldFrame(b, b / 1000);
+            }
+            const seltenFrueh = { wirk: r._szeneSkalaWirk() };
+            return { radeon, radeon2, ablage, sprung, seltenFrueh, gtx: lauf(16.8, 4, 11), cpu: lauf(41.9, 30, 11, null, false, true), spieler: lauf(41.9, 3, 11, 0.9) };
+        };
+        const ablageWar = localStorage.getItem(AnazhRealm.SZENE_SKALA_MESSUNG.ablage);
+        try {
+            if (st.renderer) st.renderer._isHeadlessNull = false;
+            st._traa = true;
+            st.voxelMeshPending = new Set();
+            st._nachlauf = null;
+            for (const n of stubs) r[n] = n === "_ladeTakt" ? () => false : () => {};
+            out.mess = mess();
+            const wirkWar = r._szeneSkalaWirk,
+                wirkEigen = Object.prototype.hasOwnProperty.call(r, "_szeneSkalaWirk");
+            r._szeneSkalaWirk = function () {
+                if (!this.state._traa) return 1;
+                const s = this.state.szeneSkala;
+                return Math.max(AnazhRealm.SZENE_SKALA_MIN, Math.min(1, s == null || !Number.isFinite(+s) ? AnazhRealm.SZENE_SKALA : +s));
+            };
+            try {
+                out.messMutante = mess();
+            } finally {
+                if (wirkEigen) r._szeneSkalaWirk = wirkWar;
+                else delete r._szeneSkalaWirk;
+            }
+        } catch (e) {
+            out.mess = { fehler: String(e && e.message) };
+        } finally {
+            for (const n of stubs) if (alt[n] === undefined) delete r[n];
+            else r[n] = alt[n];
+            if (st.renderer) st.renderer._isHeadlessNull = sicher.nul;
+            Object.assign(st, { _traa: sicher.traa, voxelMeshPending: sicher.pend, szeneSkala: sicher.sk, _nachlauf: sicher.nach, perfSense: sicher.sense });
+            r._geraeteMessung = sicher.mess;
+            r._gpuLeine = sicher.leine;
+            r._skalaFenster = sicher.fen;
+            if (ablageWar == null) localStorage.removeItem(AnazhRealm.SZENE_SKALA_MESSUNG.ablage);
+            else localStorage.setItem(AnazhRealm.SZENE_SKALA_MESSUNG.ablage, ablageWar);
+        }
         return out;
     });
     const g = o || {};
+    const einmessung = (m) =>
+        !!m &&
+        !m.fehler &&
+        m.radeon.wirk === 0.625 &&
+        m.radeon2.wirk === 0.5 &&
+        m.radeon2.klasse === "schwach" &&
+        m.radeon2.messung.gebunden === true &&
+        m.ablage.wirk === 0.5 &&
+        m.ablage.roh === "0.5" &&
+        m.sprung.wirk === 0.5 &&
+        m.seltenFrueh.wirk === 0.75 &&
+        m.gtx.wirk === 0.75 &&
+        m.cpu.wirk === 0.75 &&
+        m.spieler.wirk === 0.9;
+    const zeig = (m) => (m && !m.fehler ? ["radeon", "radeon2", "ablage", "sprung", "seltenFrueh", "gtx", "cpu", "spieler"].map((k) => `${k} ${m[k].wirk}`).join(" · ") : JSON.stringify(m));
+    check(
+        "Szenen-Skala (5) die Einmessung am Gerät: Radeon 41,9 ms nach 4 s 0,625, nach 8 s 0,5 (schwach, an die GPU gebunden), die Ablage trägt 0,5 in die nächste Sitzung, 58,6 ms in EINEM Schritt 0,5, jedes zehnte Bild 50 ms nach 6 s noch 0,75, GTX 16,8 ms 0,75, CPU-gebunden 0,75, der Spieler 0,9 gewinnt; die Mutante (liest die eingemessene Skala nicht) fällt",
+        einmessung(g.mess) && !einmessung(g.messMutante),
+        `${zeig(g.mess)} | Mutante ${zeig(g.messMutante)}`
+    );
     check(
         "Szenen-Skala (1) EINE Größe: ohne Wert SZENE_SKALA, 0,3 → MIN, 1,4 → 1, 0,85 bleibt, ohne TRAA 1",
         !!g.skala && g.skala.join("/") === [g.SKALA, g.MIN, 1, 0.85, 1].join("/"),
@@ -1557,23 +1656,26 @@ async function checkBandReglerSim({ page, check }) {
                 const pMittelGross = prof({ vendor: "intel", architecture: "gen-12lp" }, 12, 16, 2, 3840, 2160);
                 o.s5 = { pStark, pSchwach, pMittel, pMittelGross };
                 o.s5Klassen =
-                    pStark.klasse === "stark" &&
-                    pStark.seed === 1 &&
+                    pStark.klasse === "mittel" &&
+                    Math.abs(pStark.seed - 0.7) < 1e-9 &&
                     pSchwach.klasse === "schwach" &&
                     Math.abs(pSchwach.seed - 0.45) < 1e-9 &&
+                    // DER NAME HEBT NICHT MEHR (w28-bild-preis): jede Karte ohne Software-/Telefon-Marke beginnt „mittel“ —
+                    // ihre Klasse misst ihr Bild (`_szeneSkalaMessen`), nie der Adapter-Text (nvidia ampere wie intel gen-12lp)
                     pMittel.klasse === "mittel" &&
                     Math.abs(pMittel.seed - 0.7) < 1e-9 &&
                     pMittelGross.seed === pMittel.seed;
-                // KONSUM: ein frischer Sense-Init (non-headless, Mittel-Profil aktiv)
+                // KONSUM: ein frischer Sense-Init (non-headless, schwaches Profil aktiv)
                 // startet loadScale AM SEED — nicht bei optimistischer 1.
+                prof({ vendor: "arm", architecture: "valhall" }, 8, 8, 1, 800, 600);
                 r._geraeteProfilMemo = null;
                 st.perfSense = null;
                 feed(17, Object.assign({}, HONEST));
                 o.s5SeedStart = st.perfSense ? st.perfSense.seedStart : null;
                 o.s5SeedKonsumiert =
                     st.perfSense &&
-                    Math.abs(st.perfSense.seedStart - 0.7) < 1e-9 &&
-                    Math.abs(st.perfSense.loadScale - 0.7) < 0.06;
+                    Math.abs(st.perfSense.seedStart - 0.45) < 1e-9 &&
+                    Math.abs(st.perfSense.loadScale - 0.45) < 0.06;
                 // HEADLESS BYTE-ALT: derselbe Init unter Null-Renderer ⇒ Seed 1.
                 st.renderer._isHeadlessNull = true;
                 r._geraeteProfilMemo = null;
@@ -1708,7 +1810,7 @@ async function checkBandReglerSim({ page, check }) {
     check(`Regler-Sim S2/S3: Rückstau → Stream-Budget MAX (V18.282), starke GPU → alles wächst zurück (${o.s3 ? f2(o.s3.loadScale) + "/" + f2(o.s3.density) : "?"})`, o.s2StreamSacred === true && o.s3Recovered === true);
     check(`Regler-Sim S4 Session-Zeit-Invarianz: identischer Input früh vs +2400 Frames ⇒ identische Stellgrößen (maxΔ ${o.s4MaxDrift})`, o.s4Invariant === true);
     check(
-        "Regler-Sim S5 Geräte-Seed: stark 1 · schwach 0,45 · mittel 0,7, auf 4K derselbe Seed; der frische Sense-Init startet am Seed, headless byte-alt",
+        "Regler-Sim S5 Geräte-Seed: schwach 0,45 · jede Karte ohne Marke mittel 0,7 (der Name hebt nicht, die Messung urteilt), auf 4K derselbe Seed; der frische Sense-Init startet am Seed, headless byte-alt",
         o.s5Klassen === true && o.s5SeedKonsumiert === true && o.s5HeadlessAlt === true,
         `Seed-Start ${o.s5SeedStart} · headless ${o.s5HeadlessAlt}`
     );

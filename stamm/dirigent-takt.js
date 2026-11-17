@@ -175,11 +175,10 @@ class AnazhRealm_dirigent_takt {
                     // ### Status-Panel (UI V1) ###
                     this.updateStatusPanel(wandZeit);
 
-                    // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
+                    // ### Bodenprüfung / Frustum-Culling ### (V9.44-f)
                     this._loopGroundCheck(spielZeit);
                     if (!zwischen) {
                         this._loopFrustumCulling();
-                        this._loopAnimateUfos(this._bildZeit);
                     }
                 }
 
@@ -402,13 +401,8 @@ class AnazhRealm_dirigent_takt {
                     }
                 }
             }
-            // was die nächste Eingabe zeigt, baut im Leerlauf vor — die Leiber, die Geister der Hotbar, die Ich-Bühne, die
-            // Schubladen (`_vorbauBedienung`, eigenes try/catch wie oben)
-            try {
-                this._vorbauBedienung();
-            } catch (err) {
-                this._loopErrorBoundary(err);
-            }
+            // was die nächste Eingabe zeigt, baut im Leerlauf vor (`_vorbauBedienung`) — als Bauer der EINEN Frist im Planer
+            // (`TAKT_BAUER.vorbau`, `_runFrameScheduler`), nie mehr hier nach dem Bild am Tor vorbei
         };
         // Loop-Funktion exponieren, damit Tests (playtest.cjs) einen Frame SYNCHRON treiben können statt
         // auf das headless gedrosselte rAF zu warten; der Loop selbst läuft weiter über setAnimationLoop.
@@ -696,7 +690,11 @@ class AnazhRealm_dirigent_takt {
         // Takte, und die Welt nannte sich ruhig, während ihre Leute noch entstanden: jeder Deckel zählte die Takte als still und brach,
         // `_weltSteht` gab ein Bild ohne die Leute frei. Offen ist je Siedlung im Nah-Ring (dort geht ihr Werk, `_tickBewohner`) ihr
         // Werk samt seinem Rest (`listeRest`: Personen, Besuche, Stände, die es noch stellt) und je Kopf, wer noch geboren wird
-        // (`leib` null; `false` heißt: ohne Leib) oder noch ankommt (`ankunft`)
+        // (`leib` null; `false` heißt: ohne Leib) oder noch ankommt (`ankunft`).
+        // DER LEIB IM RING (w28-leib-im-ring): geboren ist der STAND (die Hülle `b.leib`, Lage und Zahlen seines Baus) — den Leib
+        // trägt nur, wen das Gesetz ihn tragen heißt (der Erste je Gestalt, solange er backt: er trägt ihn ab der Geburt; die
+        // Nah-Wahl; der Fahrer im gezeichneten Wagen). Offen ist darum auch, wen die Nah-Wahl traf und der Deckel der Geburten
+        // noch warten lässt (`S.leibOffen`, `_tickBewohner`) — EINE Definition von „die Leute stehen“, die Proben lesen sie hier.
         o.leute = 0;
         if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull && st.playerMesh) {
             const p = st.playerMesh.position;
@@ -704,6 +702,7 @@ class AnazhRealm_dirigent_takt {
             for (const S of this._bewohnerSiedlungen.values()) {
                 if (S.listeWerk && (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2 <= nah * nah)
                     o.leute += 1 + Math.max(0, S.listeRest | 0);
+                o.leute += S.leibOffen | 0;
                 for (const b of S.liste || []) if (b.leib == null || b.ankunft) o.leute++;
             }
         }
@@ -954,7 +953,6 @@ class AnazhRealm_dirigent_takt {
                     cost += Math.max(3, units * 0.5);
                 } else if (op === "spawn_village" || op === "spawn_temple") cost += 20;
                 else if (op === "spawn_waterfall") cost += 12;
-                else if (op === "spawn_island") cost += 10;
                 else if (op === "spawn_tree") cost += 6;
                 else if (op === "spawn_creature") cost += 8;
                 else if (op.startsWith("deposit_")) cost += 2;
@@ -1077,24 +1075,12 @@ class AnazhRealm_dirigent_takt {
             this.state.camera.matrixWorldInverse
         );
         this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
-        // Inseln und Mesh-Tiere cullt three JE PASS (Geometrie- bzw. Körper-Kugel gegen Blick und Kaskaden-Box) — ein
+        // Mesh-Tiere cullt three JE PASS (Geometrie- bzw. Körper-Kugel gegen Blick und Kaskaden-Box) — ein
         // Frustum-Schreiber hier nahm ihnen den Schatten, sobald sie den Blick verließen (W7).
         // T3 — RENDERBUNDLES: das Region-Culling der gebündelten Gruppen lebt auf der
         // Bundle-Sichtbarkeit (three-Culling friert im Bundle-Replay ein — Sonde
         // diag-render-bundle). Nutzt das frisch gebaute _frustumCache von oben.
         this._archRegionBundleCull();
-    }
-
-    _loopAnimateUfos(currentTime) {
-        if (this.state.ufos && this.state.playerMesh) {
-            const playerPos = this.state.playerMesh.position;
-            this.state.ufos.forEach((ufo) => {
-                const distance = playerPos.distanceTo(ufo.position);
-                if (distance < 50) {
-                    ufo.position.y = ufo.userData.baseY + Math.sin(currentTime * ufo.userData.speed) * 2;
-                }
-            });
-        }
     }
 
     // Steckt der Spieler nach einem fill-Edit im Fels: die nächste offene Luft-Lücke ÜBER ihm finden
@@ -2089,6 +2075,21 @@ class AnazhRealm_dirigent_takt {
         h.bild = T.bildNr;
         return true;
     }
+    // DER VORBAU GEHT IM ZWISCHEN-TAKT (w28-preis-ort, Schnitt 3, die Regel der EINEN Frist „gebaut wird, wo der Faden auf die GPU
+    // wartet“): ein Takt ohne Bild (die GPU-Leine ist gespannt) trägt ihn — dort wartet der Faden ohnehin auf das Bild davor, ein
+    // Stück, das die Frist nicht teilen kann (das Auslegen einer Schublade, das Werte-Feld der Werkstatt: je 60–70 ms Stil und
+    // Rechnung), verschiebt das nächste Bild nur um seinen Überhang. Ein Takt MIT Bild trägt ihn nicht: er wartet dort und wird
+    // hungriger; erst nach VORBAU_BILD_HUNGER Bild-Takten in Folge geht er auch dort (das Gerät, dessen Leine nie hält, verhungert
+    // ihn nie). Kopf 94f2e615, Radeon, Mess-Wiese stehend 60 s: im Bild-Takt hielt er drei Bilder zu 110–134 ms (zwei davon das
+    // Pflicht-Stück nach der Frist). Ohne Ende (Null-Renderer, ruhender Loop) und unter dem Ladeschirm geht er wie jeder Bauer.
+    // Sein Warten zählt ein eigener Zähler, nie das Hauptbuch des Tors: ein Hunger dort nähme den Übrigen im nächsten Takt die
+    // Scheibe des Vortritts (`_fristStellen`), ohne dass er am Tor stand.
+    _vorbauDran() {
+        const T = this._bauFristTakt;
+        const geht = !T || T.ohne || T.lade || !T.bild || this._vorbauBildTakte >= AnazhRealm.VORBAU_BILD_HUNGER;
+        this._vorbauBildTakte = geht ? 0 : (this._vorbauBildTakte | 0) + 1;
+        return geht;
+    }
     // OHNE ENDE baut, was kein Spieler fühlt: der Null-Renderer und der ruhende Loop (eine Sonde, ein Befehl der Werkbank, das Portal)
     _bauFristOhneEnde() {
         const r = this.state.renderer;
@@ -2342,6 +2343,12 @@ class AnazhRealm_dirigent_takt {
         this._stauFelder(); // der Stau folgt den Werken (ein Bau kam oder fiel; die Edits rechnen ihn sofort)
         this._tickWorldWaterCA();
         this._bauer("boden", B.boden, playerPos);
+        this._bauer("todLage", B.todLage); // die Tafel eines Gefallenen Winkel für Winkel, bevor sein Fall sie braucht (`_todLageTakt`)
+        // DER VORBAU DER BEDIENUNG IST EIN BAUER DER EINEN FRIST (w28-preis-ort, Schnitt 3): was die nächste Eingabe zeigt, baut
+        // durch dasselbe Tor wie jede Bau-Arbeit — vor der Frist ein Schritt, nach ihr nur als das EINE Pflicht-Stück. Bis hier lief
+        // er je Takt NACH dem Bild, außerhalb der Frist, sein Tor nur „die Welt steht, die Eingabe ruht“ — der Zustand jedes
+        // stehenden Spielers (Radeon, Mess-Wiese 41ec3a96: Rezeptbuch 175,6 · Werkstatt 159,1 · Tuch-Gitter 159,0 ms in EINEM Bild)
+        if (this._vorbauDran()) this._bauer("vorbau", B.vorbau);
         this._bauPflichtGang(); // nach der Frist: der EINE mit Vortritt geht sein Pflicht-Stück
         // `_frameOverBudget` als FOLGE der abgelaufenen Frist (zusätzliches Signal; der Regler setzt es am Frame-Ende weiter aus
         // frameMs): ein Bauer baute nach ihr — eine Welt, die nichts zu bauen hat, reißt sie nie
@@ -2493,12 +2500,12 @@ class AnazhRealm_dirigent_takt {
             const gu = this.state.godrayUniforms;
             const cam = this.state.camera;
             const sunDir = this._sonnenRichtung(); // dieselbe Richtungs-Quelle wie Licht/Skybox
-            // NDC-Projektion des sichtbaren Sonnen-Meshes → Screen-UV (0..1).
+            // NDC-Projektion des sichtbaren Sonnen-Meshes → die Lage im Schirm (`_schirmUV`, die `screenUV` des Passes: y nach
+            // unten). Bis w28-lichtschacht stand hier y nach oben — der Marsch lief zur gespiegelten Sonne.
             const proj = (this._godrayProjV || (this._godrayProjV = new THREE.Vector3()))
                 .copy(this.state.sunMesh.position)
                 .project(cam);
-            const uvx = proj.x * 0.5 + 0.5;
-            const uvy = proj.y * 0.5 + 0.5;
+            const [uvx, uvy] = AnazhRealm._schirmUV(proj.x, proj.y);
             gu.sunScreenPos.value.set(uvx, uvy);
             // Sichtbarkeit: (a) VOR der Kamera (robust via Blickrichtung · Sonnen-Richtung, statt
             // der zweideutigen NDC-z hinter der Kamera), (b) im Bild, (c) über dem Horizont.
@@ -2536,9 +2543,10 @@ class AnazhRealm_dirigent_takt {
         this._leuchtTakt();
         // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
         const zaehlerVor = this._gpuKehrausMarke();
-        // DIE SZENEN-SKALA am Szenen-Pass: nie je Last (jeder Ziel-Wechsel unter lebenden Bündeln war die Destroyed-Klasse,
-        // realloc-tod 20.07.) — nur ein neuer Wert des Spielers (`state.szeneSkala`, der Regler im Menü), und der legt die
-        // Ziele beim nächsten Frame neu an wie ein Fenster-Wechsel (der Vorher-Textur-Wächter der Diät folgt jeder Textur).
+        // DIE SZENEN-SKALA am Szenen-Pass: nie je Bild — ein neuer Wert des Spielers (`state.szeneSkala`, der Regler im Menü) oder
+        // ein Schritt der Einmessung am Gerät (`_szeneSkalaMessen`, höchstens einer je 10-s-Fenster), und er legt die Ziele beim
+        // nächsten Frame neu an wie ein Fenster-Wechsel (der Vorher-Textur-Wächter der Diät folgt jeder Textur; 70 Wechsel unter
+        // lebenden Bündeln ohne GPU-Fehler an der Radeon, w28-bild-preis — realloc-tod 20.07. war ein Wechsel je Last).
         const sp = this.state.scenePass;
         if (sp && sp.getResolutionScale() !== this._szeneSkalaWirk()) sp.setResolutionScale(this._szeneSkalaWirk());
         const ppu = this.state.postProcessingUniforms;
@@ -2643,6 +2651,9 @@ _stammZonen(AnazhRealm, [AnazhRealm_dirigent_takt]);
 // `_bedarfTempo`) gilt das Soll der Bewegung. `stueckAb`: ab so vielen ms hat ein Gang durch das Tor gebaut (`_bauer`), auch wenn
 // er die Frist nicht fragte. `vortritt`: die Scheibe des EINEN mit Vortritt (`_bauPflichtGang`; bis w28-takt-frist BAU_ALTER_MS).
 AnazhRealm.TAKT_FRIST = Object.freeze({ steht: 5.8, bewegt: 8, bewegtAb: 0.5, stueckAb: 0.25, vortritt: 3 });
+// DER VORBAU IM BILD-TAKT (`_vorbauDran`): so viele Takte mit Bild in Folge wartet er, bevor er auch dort geht (ein Gerät, dessen
+// GPU-Leine nie hält, hat keinen Zwischen-Takt — 60 Bilder ≈ 1 s bei 60 fps)
+AnazhRealm.VORBAU_BILD_HUNGER = 60;
 // OHNE FRIST (`_bauFristOhneEnde`: Null-Renderer, ruhender Loop) baut jeder Bauer am Stück — bis auf drei Scheiben je Ruf (ms),
 // die den Takt einer Linse halten, wie er vor w28-takt-frist maß: das Wasser bei Rückstau, die Ferne der Wiese (ohne sie baute ein
 // Ruf jede Kachel, bis 155 ms im Null-Renderer) und die Deko neben dem Terrain; `deko` ist auch ihr Boden je Lade-Frame (K60-2).
@@ -2657,6 +2668,15 @@ AnazhRealm.TAKT_BAUER = Object.freeze({
     horizont: (w, pos) => w._tickFernRing(pos),
     boden: (w, pos) => w._tickDirtyVoxelChunks(pos),
     dorf: (w, pos) => w._tickAutoSettlement(pos), // der Häuser-Zug der Orte: er fragt die Frist vor jedem Haus (`_dorfZugSchritt`)
+    todLage: (w) => w._todLageTakt(),
+    // ein Wurf im Vorbau reißt den Planer nicht (sein try/catch stand bis Schnitt 3 im Loop)
+    vorbau: (w) => {
+        try {
+            w._vorbauBedienung();
+        } catch (e) {
+            w._loopErrorBoundary(e);
+        }
+    },
 });
 // der Gang eines Jobs des Planers durch das Tor: sein Budget ist der Rest der Frist (prio 0, der Strom, fragt sie selbst)
 AnazhRealm._jobLauf = (w, job) => job.run((job.prio || 0) === 0 ? Infinity : w._fristRest(job.name));

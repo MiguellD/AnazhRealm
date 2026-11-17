@@ -4,8 +4,11 @@
 "use strict";
 
 // ── furcht (Ökologie K3, tetrapoda FURCHT_GESETZ): (A) je Ort und Rolle ein Tier allein — geschlagen, gefüttert, gebunden,
-// zur Kontrolle, der Bär vor ruhiger, zorniger, friedlicher Aura — über den Speicherstand, dann geht der Spieler bis 8 m
-// heran und steht 15 s: der Median des Abstands. (B) ein Rudel um einen Riss: sein Aufenthalt in dessen Zelle über 90 s,
+// zur Kontrolle, der Bär vor ruhiger, zorniger, friedlicher Aura, Wolf und Fuchs fremd — über den Speicherstand, dann geht der
+// Spieler in Stufen aus 480 m auf es zu, bis es flieht (der Abstand dann: die Fluchtdistanz, tetrapoda fluchtDistanz) oder bis 8 m, und
+// steht 15 s: der Median des Abstands. Seit leben.tiere.mensch S1 flieht jedes Wild den gehenden Menschen ab der Distanz seiner
+// Gattung, Gedächtnis und Aura weiten sie; vorher ging er aus 30 m bis 8 m heran, und der Median nach 40 s Hetze maß den Sprint
+// des Tiers, nicht sein Gedächtnis (Kontrolle 342 m, geschlagen 358 m). (B) ein Rudel um einen Riss: sein Aufenthalt in dessen Zelle über 90 s,
 // gegen den Gegenlauf ohne Feld-Furcht. (C) eine Herde 15 m vom Herd eines Brands: wer binnen 10 s flieht, gegen den Lauf ohne
 // Brand (w28-brand-flucht: vorher las die Furcht die Glut nie) ──
 // Die Bühnen stehen an der Marke LEBEN_BUEHNEN im Leib von `kreaturProben` (scripts/lib/kreatur-proben.cjs): r, s, A, pm, buehne,
@@ -16,6 +19,7 @@ async function lebenBuehnen() {
     await buehne("furcht", async (restore) => {
         if (taeter === "furcht-gedaechtnis") decke("_kreaturFurchtErinnert", () => () => 0);
         if (taeter === "furcht-ort") decke("_kreaturFurchtOrt", () => (c, NAT, von, w) => w);
+        if (taeter === "furcht-mensch") decke("_kreaturMenschFlucht", () => () => 0);
         if (taeter === "furcht-speicher")
             decke("_serializeCreature", (alt) => (c) => Object.assign(alt.call(r, c), { memory: [] }));
         if (taeter === "furcht-aura") {
@@ -38,10 +42,12 @@ async function lebenBuehnen() {
             baerRuhig: ["baer"],
             baerZornig: ["baer", zorn],
             baerFrieden: ["baer", zorn, "frieden"],
+            wolf: ["wolf"], // satt
+            fuchs: ["fuchs"],
         };
         const erinnert = {};
         for (const [rolle, [seele, e, modus]] of Object.entries(rollen)) {
-            const R = { abstand: [], naeher: [], erinnerungen: [] };
+            const R = { abstand: [], naeher: [], erinnerungen: [], flucht: [] };
             r.setGameMode(modus || "pfad");
             for (let o = 0; o < 4; o++) {
                 s.creatureAnimationTime = 100;
@@ -60,15 +66,26 @@ async function lebenBuehnen() {
                 const c = r._restoreCreatureFromSnapshot(snap);
                 ruhig(c);
                 if (rolle === "gebunden") c.userData.bond = 1;
+                // der Wolf satt (VERHALTEN.aas): ein hungriger jagt den Spieler und flieht ihn nicht (`_kreaturJagdBereit`)
+                if (rolle === "wolf") c.userData.magen = r._kreaturMagenVoll(c);
                 R.erinnerungen.push((c.userData.memory || []).length);
-                pm.set(c.position.x + 30, boden(c.position.x + 30, c.position.z), c.position.z);
-                for (let k = 0, d = 30; k < 2400 && d > 8; k++) {
-                    d = ab(c.position, pm);
-                    pm.x += ((c.position.x - pm.x) / d) * s.speed * dt;
-                    pm.z += ((c.position.z - pm.z) / d) * s.speed * dt;
-                    pm.y = boden(pm.x, pm.z);
-                    lauf(1, e);
+                // DIE LEITER DER NÄHERUNG: der Spieler tritt in Stufen aus 480 m heran (je Stufe 12 % näher am Tier), geht dort 1 s
+                // in seinem Lauf auf es zu, bis es flieht (`_motionZustand` "flucht"): `fluchtM` (0 = es floh nicht); sonst steht
+                // er nach der letzten Stufe bei 8 m (ein Gang aus 480 m wären bei s.speed Minuten je Tier)
+                let fluchtM = 0;
+                for (let d = 480; !fluchtM; d = Math.max(8, d * 0.88)) {
+                    pm.set(c.position.x + d, boden(c.position.x + d, c.position.z), c.position.z);
+                    for (let k = 0; k < 60 && !fluchtM; k++) {
+                        const dk = ab(c.position, pm);
+                        pm.x += ((c.position.x - pm.x) / dk) * s.speed * dt;
+                        pm.z += ((c.position.z - pm.z) / dk) * s.speed * dt;
+                        pm.y = boden(pm.x, pm.z);
+                        lauf(1, e);
+                        if (c.userData._motionZustand === "flucht") fluchtM = ab(c.position, pm);
+                    }
+                    if (d === 8) break;
                 }
+                R.flucht.push(rund(fluchtM, 1));
                 const d0 = ab(c.position, pm);
                 for (let k = 0; k < 900; k++) {
                     lauf(1, e);
@@ -80,6 +97,8 @@ async function lebenBuehnen() {
             erinnert[rolle] = {
                 medianM: rund(quantil(R.abstand, 0.5), 2),
                 naeherM: rund(quantil(R.naeher, 0.5), 2),
+                fluchtM: rund(quantil(R.flucht, 0.5), 1),
+                flucht: R.flucht,
                 erinnerungen: R.erinnerungen,
             };
         }
@@ -173,6 +192,7 @@ async function lebenBuehnen() {
         const mittel = (a) => rund(a.reduce(addiere, 0) / a.length, 3);
         return {
             erinnert,
+            witterungM: A._verhaltenGesetz().furcht.noticeRadius,
             ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) },
             brand: { flieht: mittel(brand.feuer), gegenlauf: mittel(brand.gegenlauf), herde: orte.length, je: brand.feuer },
         };
@@ -704,14 +724,17 @@ async function lebenBuehnen() {
         r._uhrSetzen(0.5, "regler");
         const takte = Math.round((0.1 / 24) * (s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES) * 600);
         const z = { budget: {}, soll: {}, ruhe: [0, 0] };
-        const tagLauf = (seelen, ein, mess, z) => {
+        const amUfer = (seele, i) => ({
+            x: U.x + Math.cos(i * 2.1 + seele.length) * 6,
+            z: U.z + Math.sin(i * 2.1 + seele.length) * 6,
+        });
+        const tagLauf = (seelen, ein, mess, z, ort = amUfer) => {
             const tiere = seelen.flatMap((seele) =>
                 [0, 1, 2].map((i) => {
-                    const x = U.x + Math.cos(i * 2.1 + seele.length) * 6,
-                        zz = U.z + Math.sin(i * 2.1 + seele.length) * 6;
+                    const { x, z: zz } = ort(seele, i);
                     const c = tier({ x, y: boden(x, zz), z: zz }, seele, 1);
                     ruhig(c);
-                    return { c, g: A.TETRAPODA_SOUL_MAP[seele], x, z: zz, ruhK: 0, trunk: 0, nass: 0 };
+                    return { c, g: A.TETRAPODA_SOUL_MAP[seele], x, z: zz, ruhK: 0, trunk: 0, nass: 0, spur: [] };
                 })
             );
             pm.set(U.x, r.getTerrainHeightAt(U.x, U.z + 90) + 0.5, U.z + 90);
@@ -720,7 +743,10 @@ async function lebenBuehnen() {
                 for (let k = 0; k < takte; k++) {
                     ruhigSpieler();
                     takt(0.1);
+                    // die Lage je Spiel-Minute (der Schritt der Uhr: 0,1 Spielstunde = 6 Minuten in `takte` Takten)
+                    const minute = i >= ein * 10 && Math.floor(((k + 1) * 6) / takte) > Math.floor((k * 6) / takte);
                     for (const t of tiere) {
+                        if (minute) t.spur.push({ x: t.c.position.x, z: t.c.position.z });
                         const ud = t.c.userData,
                             p = t.c.position;
                         if (t.g0 !== undefined && ud._getrunken !== t.g0)
@@ -737,7 +763,13 @@ async function lebenBuehnen() {
                     }
                 }
             }
-            for (const t of tiere) r.removeCreature(t.c);
+            for (const t of tiere) {
+                // der Anker und die Leine, wie der Takt sie liest (_creatureCharacterWander: wanderAnchor, leashM)
+                const ud = t.c.userData;
+                t.anker = ud.wanderAnchor ? { x: ud.wanderAnchor.x, z: ud.wanderAnchor.z } : null;
+                t.leineM = r._creatureMoveCharacter(t.c).leashM;
+                r.removeCreature(t.c);
+            }
             return tiere;
         };
         const tiere = tagLauf(["wesen", "baer", "fuchs", "wolf"], ...(taeter ? [2, 12] : [12, 72]), z);
@@ -750,6 +782,70 @@ async function lebenBuehnen() {
         }
         z.truenke = tiere.map((t) => t.trunk);
         z.amWasser = tiere.reduce((a, t) => a + t.nass, 0);
+        // DIE WANDERUNG (leben.tiere.wanderung S1): je Gattung drei Tiere, geboren, wo die Geburt des Spiels wirft — in ihrem
+        // Lebensraum (_bodenKlasseAt × LG.lebensraum > 0), auf trockenem Land, ≥ CREATURE_SPAWN_FAR_MIN vom Spieler, gleichverteilt
+        // im Quadrat 400 m um das Ufer (die Folge des goldenen Schnitts: kein Ort ist gewählt, auch der Saum nicht) — über 24
+        // Spielstunden nach 2 Einlauf. Je Tier die Aufenthaltsfläche aus seiner Spur, die konvexe Hülle der 95 % ankernächsten Lagen
+        // (MCP 95, Hülle und Fläche des Spiels: _convexHull2D, _polygonArea2D), gegen seine Leine, und der Anteil der Lagen in
+        // seinem Lebensraum. Die Probe 68f84acf maß am Ufer U und setzte die Tiere an den ufernächsten Ort ihres Lebensraums, den
+        // Saum (die halbe Leine draußen, das Wasser jenseits trinkSuchM: Hirsch, Fuchs und Wolf tranken nie) — der Tag am Ufer
+        // (Ethogramm, Durst) blieb, wie er war
+        if (!taeter) {
+            const lebt = (g, x, zz) => LG.lebensraum(g, r._bodenKlasseAt(x, zz), LG.L) > 0;
+            const spieler = { x: U.x, z: U.z + 90 };
+            const orte = {};
+            const imRaum = (seele, i) => {
+                const g = A.TETRAPODA_SOUL_MAP[seele];
+                const O = orte[g] || (orte[g] = []);
+                for (let k = O.k || 0; O.length <= i && k < 20000; k++) {
+                    const x = U.x + (((k * 0.6180339887) % 1) - 0.5) * 400,
+                        zz = U.z + (((k * 0.7548776662) % 1) - 0.5) * 400;
+                    O.k = k + 1;
+                    if (Math.hypot(x - spieler.x, zz - spieler.z) < A.CREATURE_SPAWN_FAR_MIN) continue;
+                    if (r._landAt(x, zz) && !r._nassAt(x, zz) && lebt(g, x, zz)) O.push({ x, z: zz });
+                }
+                if (!O[i]) throw new Error("kein Lebensraum der Gattung " + g + " im Quadrat 400 m um das Ufer");
+                return O[i];
+            };
+            z.wander = tagLauf(["wesen", "baer", "fuchs", "wolf"], 2, 24, { budget: {}, ruhe: [0, 0] }, imRaum).map((t) => {
+                const w = { g: t.g, leineM: rund(t.leineM, 2), punkte: t.spur.length, flaecheM2: null, anteil: null };
+                if (!t.anker || !t.spur.length) return Object.assign(w, { fehler: "kein Anker der Leine" });
+                const nah = t.spur
+                    .map((p) => [Math.hypot(p.x - t.anker.x, p.z - t.anker.z), p])
+                    .sort((a, b) => a[0] - b[0])
+                    .slice(0, Math.ceil(0.95 * t.spur.length))
+                    .map((e) => e[1]);
+                w.flaecheM2 = rund(r._polygonArea2D(r._convexHull2D(nah)), 1);
+                w.anteil = rund(t.spur.filter((p) => lebt(t.g, p.x, p.z)).length / t.spur.length, 3);
+                // der Anker gegen das Ufer U (der Ort im Bild der Spur)
+                w.anker = [rund(t.anker.x - U.x, 1), rund(t.anker.z - U.z, 1)];
+                // DIE GETRAGENE SCHEIBE (der Maßstab der Fläche): im Raster zu Leine/10 der Anteil der Leinen-Scheibe um den Anker,
+                // den der Lebensraum auf trockenem Grund trägt (traegt), und davon der vom Anker aus über ihn erreichbare (erreicht:
+                // vier Nachbarn, Wasser trennt): trägt er ≥ 0,5, ist die Fläche ≥ 0,5·π·Leine² dort erreichbar, und ihr Fehlen ist
+                // das Wandern, nicht der Ort (17.11.: getragen 0,64–0,97 je Tier, die Bären 0,74/0,92/0,85)
+                const G = new Map();
+                for (let i = -10; i <= 10; i++)
+                    for (let j = -10; j <= 10; j++) {
+                        if (i * i + j * j > 100) continue;
+                        const [x, zz] = [t.anker.x + (i * t.leineM) / 10, t.anker.z + (j * t.leineM) / 10];
+                        G.set(i + "," + j, lebt(t.g, x, zz) && !r._nassAt(x, zz));
+                    }
+                const [zu, weg] = [[[0, 0]], new Set(["0,0"])];
+                let n = 0;
+                while (zu.length) {
+                    const [i, j] = zu.pop();
+                    if (!G.get(i + "," + j)) continue;
+                    n++;
+                    for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                        const k = i + a + "," + (j + b);
+                        if (G.has(k) && !weg.has(k)) (weg.add(k), zu.push([i + a, j + b]));
+                    }
+                }
+                w.traegt = rund([...G.values()].filter(Boolean).length / G.size, 3);
+                w.erreicht = rund(n / G.size, 3);
+                return w;
+            });
+        }
         durstAus();
         z.durstAus = tagLauf(["wesen"], 0, 10, { budget: {}, ruhe: [0, 0] }).reduce((a, t) => a + t.trunk, 0);
         return z;
@@ -970,10 +1066,11 @@ async function lebenBuehnen() {
                 const tuer = st && tueren.find((q) => ab(q, st.anker) < 0.05);
                 const fernM = tuer ? ab(st.ur || st, tuer) : 0;
                 if (fernM > ringM && !fern.some((f) => f.st === st)) fern.push({ st, text: `${wer(b)}: ${q3(fernM)} m von ${tuer.k}` }); // prettier-ignore
-                // (der Stand neben dem eigenen Wagen ist der Ort des Fahrers, `_verkehrAnlegen` — kein Haus daneben)
+                // (der Stand neben dem eigenen Wagen ist der Ort des Fahrers, `_verkehrAnlegen` — kein Haus daneben; am Steuer
+                // ist es der Wagen selbst, `_bewohnerSoll`: kein Haus, an dem er vorbeifährt)
                 const o = tuer
                     ? { k: tuer.k, rolle: tuer.rolle, haus: true }
-                    : b.wagen && ziel === b.orte.werk
+                    : b.wagen && (ziel === b.orte.werk || ziel === (b.wagen.entry && b.wagen.entry.position))
                       ? null
                       : ortVon(ziel, "haus#" + b.heim);
                 const dort = b.amSteuer || (drinnen ? !!b.drinnen : !b.weg && ab(b.leib.position, ziel) < 1.5);
@@ -1167,23 +1264,33 @@ function lebenUrteil(name, z, soll) {
     }
     if (name !== "furcht") return;
     const { kontrolle: K, geschlagen: G, gefuettert: F, gebunden: B, baerRuhig, baerZornig, baerFrieden } = z.erinnert;
+    const { wolf: W, fuchs: Fu } = z.erinnert;
     soll(
         [...G.erinnerungen, ...F.erinnerungen].every((n) => n >= 1),
         `das Gedächtnis reist nicht über den Speicherstand: geschlagen ${G.erinnerungen}, gefüttert ${F.erinnerungen}`
     );
     soll(K.medianM >= 5, `der Kontroll-Hirsch hält keinen Abstand (Median ${K.medianM} m, vakuös)`);
+    // DER MENSCH IST DER SUPER-RÄUBER (leben.tiere.mensch S1): das Wild flieht den gehenden Fremden jenseits der Witterung der
+    // Aura (VERHALTEN.furcht.noticeRadius) — vorher floh der Hirsch erst bei 14 m, Wolf und Bär nie
     soll(
-        G.medianM >= 2 * K.medianM,
-        `das Wesen vergisst, wer es schlug: ${G.medianM} m gegen ${K.medianM} m der Kontrolle (Soll ≥ 2×)`
+        [K, baerRuhig, W, Fu].every((R) => R.fluchtM > z.witterungM),
+        `das Wild flieht den Menschen nicht: Hirsch ab ${K.fluchtM} m, Bär ${baerRuhig.fluchtM} m, Wolf ${W.fluchtM} m, Fuchs ${Fu.fluchtM} m (Soll > ${z.witterungM} m)`
     );
     soll(
-        F.medianM <= 0.5 * K.medianM && F.naeherM >= 2,
-        `das gefütterte Wesen nähert sich nicht: ${F.medianM} m (Soll ≤ ½×), selbst ${F.naeherM} m näher (Soll ≥ 2 m)`
+        G.fluchtM >= 2 * K.fluchtM,
+        `das Wesen vergisst, wer es schlug: es flieht ab ${G.fluchtM} m gegen ${K.fluchtM} m der Kontrolle (Soll ≥ 2×)`
     );
-    soll(B.medianM <= 0.8 * K.medianM, `die Bindung macht nicht mutig: ${B.medianM} m`);
     soll(
-        baerZornig.medianM >= 2 * baerRuhig.medianM && baerFrieden.medianM <= 0.5 * baerZornig.medianM,
-        `die Aura treibt die Furcht nicht: der Bär ruhig ${baerRuhig.medianM} m, zornig ${baerZornig.medianM} m, im frieden ${baerFrieden.medianM} m`
+        F.medianM <= 0.5 * K.medianM && F.naeherM >= 2 && F.fluchtM <= 0.5 * K.fluchtM,
+        `das gefütterte Wesen nähert sich nicht: ${F.medianM} m (Soll ≤ ½×), selbst ${F.naeherM} m näher (Soll ≥ 2 m), flieht ab ${F.fluchtM} m (Soll ≤ ½×)`
+    );
+    soll(
+        B.medianM <= 0.8 * K.medianM && B.fluchtM <= 0.8 * K.fluchtM,
+        `die Bindung macht nicht mutig: ${B.medianM} m, flieht ab ${B.fluchtM} m`
+    );
+    soll(
+        baerZornig.fluchtM >= 2 * baerRuhig.fluchtM && baerFrieden.fluchtM <= 0.5 * baerZornig.fluchtM,
+        `die Aura treibt die Furcht nicht: der Bär flieht ruhig ab ${baerRuhig.fluchtM} m, zornig ${baerZornig.fluchtM} m, im frieden ${baerFrieden.fluchtM} m`
     );
     const O = z.ort;
     soll(O.gegenlauf >= 0.2, `das Rudel steht im Gegenlauf nicht am Riss-Ort (${O.gegenlauf}, vakuös)`);
@@ -1246,6 +1353,7 @@ module.exports = {
         furcht: [
             ["furcht-gedaechtnis", /vergisst, wer es schlug[\s\S]*nähert sich nicht/],
             ["furcht-ort", /meidet den Riss nicht/],
+            ["furcht-mensch", /das Wild flieht den Menschen nicht/],
             ["furcht-speicher", /reist nicht über den Speicherstand/],
             ["furcht-aura", /die Aura treibt die Furcht nicht/],
             ["brand-flucht", /die Glut ist keine Bedrohung/],

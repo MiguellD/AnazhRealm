@@ -1979,6 +1979,14 @@
     // laeuft vom Ort der Bedrohung bis fluchtWegJeRadius Flucht-Radien jenseits des Radius — die Beute flieht eine Strecke, nicht
     // bis zur Kante der Furcht, und wer frueher flieht, flieht weiter (Stankowich 2008, „distance fled"); vorher endete die
     // Flucht am Radius selbst.
+    // DIE FLUCHTDISTANZ VOR DEM MENSCHEN (leben.tiere.mensch S1, 16.11., additiv): fluchtDistanzM je Gattung ist das Feldmass
+    // der Flucht eines wilden, nicht gewoehnten Tiers vor einem Menschen, der zu Fuss auf es zugeht (flight initiation
+    // distance) — der Mensch ist der Super-Raeuber, den jede dieser Arten flieht (Clinchy/Zanette 2023). Rothirsch 120 m (bejagte
+    // Bestaende ~100–200 m: Stankowich 2008, Biol. Conserv. 141:2159), Wolf 106 m (Karlsson et al. 2007, Can. J. Zool.
+    // 85:1193), Braunbaer 55 m (Moen et al. 2012, PLoS ONE 7:e31699), Rotfuchs 40 m (Feldmass duenn, Band der Kleinraeuber).
+    // Sie antwortet der NAEHERUNG: erst wer mit naeherungMS (m/s) oder schneller auf das Tier zugeht, wird geflohen; wer
+    // steht oder schleicht, wird beaeugt (Stankowich & Blumstein 2005, Proc. R. Soc. B 272:2627: langsame Naeherung, kuerzere
+    // Flucht). Vorher floh jede Gattung bei EINEM fleeRadius von 14 m, Wolf und Baer nie.
     var FURCHT_GESETZ = Object.freeze({
         erinnerung: Object.freeze({ geschlagen: 2, gefuettert: -1.5, gewalt: 1 }),
         deckel: 3,
@@ -1987,6 +1995,8 @@
         riss: Object.freeze({ chaos: 1.6, sorrow: 1.6 }),
         ortGewicht: 1,
         ortRadiusZellen: 1.5,
+        fluchtDistanzM: Object.freeze({ deer: 120, wolf: 106, bear: 55, fox: 40 }),
+        naeherungMS: 0.5,
     });
     // e = die Emotions-Achsen {chaos, sorrow, peace, joy, …}, NAT = VERHALTEN.furcht. Liefert die Bedrohung (negativ = beruhigt).
     function bedrohung(e, NAT) {
@@ -2024,6 +2034,16 @@
             r = Math.max(r, Math.sqrt((p.x - B.x) * (p.x - B.x) + (p.z - B.z) * (p.z - B.z)));
         }
         return r + FURCHT_GESETZ.fluchtWegJeRadius * B.r;
+    }
+    // d = fluchtDistanzM der Gattung (m), erinnert = furchtErinnert des Wesens, menace = die Bedrohung der Aura (bedrohung),
+    // bond = die Bindung ∈ [0, 1]. Liefert die Fluchtdistanz vor dem Menschen JETZT (m; 0 = es flieht ihn nicht): erinnerte
+    // Furcht und eine bedrohliche Aura weiten sie um fluchtJeFurcht je Einheit (wer geschlagen wurde und wer einen schnellen,
+    // drohenden Naeherer sieht, flieht frueher: Stankowich & Blumstein 2005, Proc. R. Soc. B 272:2627), die Gabe (erinnert < 0)
+    // gewoehnt das Tier an ihn bis zur Naehe, die Bindung hebt sie auf.
+    function fluchtDistanz(d, erinnert, menace, bond, F) {
+        var furcht = 1 + (erinnert + (menace > 0 ? menace : 0)) * F.fluchtJeFurcht;
+        var frei = 1 - (bond > 0 ? (bond < 1 ? bond : 1) : 0);
+        return furcht > 0 ? d * furcht * frei : 0;
     }
 
     // DIE JAGD HAT EIN ENDE (Tiere K2, 23.10., additiv — JAGD_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): eine
@@ -5131,6 +5151,7 @@
         furchtErinnert: furchtErinnert,
         furchtOrt: furchtOrt,
         fluchtRadius: fluchtRadius,
+        fluchtDistanz: fluchtDistanz,
         JAGD_GESETZ: JAGD_GESETZ,
         wundTempo: wundTempo,
         LEBENSRAUM_GESETZ: LEBENSRAUM_GESETZ,

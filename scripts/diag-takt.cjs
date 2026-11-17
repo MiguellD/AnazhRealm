@@ -39,10 +39,24 @@
 //       der Hungrigste zuerst — vier Bauer mit Arbeit bauen in 12 Takten je 3 Stücke, keiner verhungert, und die Arbeit nach der
 //       Frist steht je Bauer im Hauptbuch (`_bauHunger`: „Arbeit nach der Frist: <Bauer> X ms“). Bis hier ging JEDER der 17 Bauer
 //       nach der Frist sein Stück (Radeon, Dorf im Gang: `_runFrameScheduler` 16,4 ms je Takt ab p95).
+//   T15 DER VORBAU AM TOR (w28-preis-ort, Schnitt 3): der Vorbau der Bedienung ist ein Bauer der EINEN Frist (`_bauer("vorbau")`),
+//       nie ein Ruf neben ihr; Rezeptbuch und Werkstatt bauen bei abgelaufener Frist je Ruf EIN Stück (`_rezeptBau`,
+//       `_werkstattBau`). Bis hier lief er nach dem Bild am Tor vorbei (Radeon, Mess-Wiese 41ec3a96: Rezeptbuch 175,6 · Werkstatt
+//       159,1 · Tuch-Gitter 159,0 ms in EINEM Bild).
+//   T16 DIE SAAT FOLGT IHREM SAUM (w28-preis-ort, Heilung der Gegner): am echten Abräumen bleibt die Saat beim Pendeln um einen
+//       Chunk, ihr Abschied fällt nach der Frist in SAAT_GEHT_MIN Würfen je Takt, Tritt und Marke gehen mit dem Chunk, die Probe der
+//       Saat liest keine Marke (`_saatGeht`, `_saatGehtZuEnde`, `_saatGedaechtnisGeht`, `_vegetationSampleSpawn`).
+//   T17 DAS TUCH-GITTER IM FADEN (w28-preis-ort, Heilung der Gegner): das Gitter des Voxel-Fadens (`_tuchGitterFaden`) gleicht dem
+//       des Haupt-Fadens (koerper-core `tuchGitter`) Byte für Byte in jedem Feld.
+//   T18 DIE RÜCKKEHR ZEIGT DENSELBEN BESTAND (w28-preis-ort, Heilung 2): eine Fahrt der echten Welt — Boot an der Mess-Wiese,
+//       Sprung 3 km, Rückkehr, Pendeln ±90 m — trägt an jedem Halt dieselbe Menge (Klasse, Art, Ort auf 1 cm) aller Einträge und
+//       Zellen der Deko-Streu binnen 120 m; der Selbsttest lässt den gewachsenen Wurf des Felds die Marke seiner Baum-Zelle setzen.
 // --selftest: der Wer-zuerst-fragt-Takt macht T3 rot, die Schwelle über das ganze Fenster
 // T4, die FIFO-Pumpe und die FIFO-Freigabe T5, die Nur-der-Nächste-Wahl (Pumpe UND Freigabe) T6, die löschende Frist T8, die Kappe
 // allein T9 (je Leser), der Wagen als Beweger, jede geschlossene Box als Damm und die Leiter ohne Sprosse T11 (je Leser), die
-// Frist ohne Ende T12 (je Bauer), die zweite Uhr eines Bauers und das Tor ohne Hunger T13 (je Bauer).
+// Frist ohne Ende T12 (je Bauer), die zweite Uhr eines Bauers und das Tor ohne Hunger T13 (je Bauer), der Vorbau neben dem Tor
+// und Rezeptbuch und Werkstatt am Stück T15 (je Täter), die Saat mit dem Boden, am Stück, mit Gedächtnis und die Probe an der Marke
+// T16 (je Täter), der Faden ohne die Normale T17.
 //
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
@@ -53,6 +67,145 @@ const { hauptLauf, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.TAKT_PORT || 4563);
 const SELBST = SELBSTTEST;
+
+// T18 in der Seite: die Fahrt und ihre Mengen (siehe den Ruf unten). → { halte, diff, taeter }
+async function t18Fahrt(selbst, wiese) {
+    const P = AnazhRealm.prototype;
+    const [X, Z, RAD] = [wiese.x, wiese.z, 120];
+    const stelle = (x, z) => {
+        const y = r._voxelSurfaceY(x, z);
+        pm.position.set(x, (Number.isFinite(y) ? y : 60) + 1.8, z);
+    };
+    const nah = (x, z) => (x - X) * (x - X) + (z - Z) * (z - Z) <= RAD * RAD;
+    // die Saat steht (der Null-Renderer zeichnet kein Weltbild, `_weltSteht` kommt nie): kein Chunk-Bau, keine Pflanz-Schlange, kein
+    // Chunk wartet auf Saat oder Plan, keine Saat geht, die Streu wartet nicht — zwanzig Takte in Folge
+    // Das Warten ist das EINE der Boot-Lib (`__gebautNach`: zwischen zwei Takten landet die Antwort der Fäden, der Deckel urteilt am
+    // Ereignis — hängt ein Offenes, nennt er es). Bis hier zählte eine eigene Schleife 3000 Takte ohne Pause: auf EINEM Kern
+    // hungerten die Fäden neben ihr (Chunks 4, Schlange 133 nach 3000 Takten), auf zwei stand die Saat nach 1589.
+    const stehtSaat = async () => {
+        let ruhig = 0;
+        let terme = {};
+        const offen = () => {
+            terme = {
+                chunks: st.voxelMeshPending ? st.voxelMeshPending.size : 0,
+                schlange: st.pendingVegSpawns ? st.pendingVegSpawns.length : 0,
+                saat: r._saatOffen ? r._saatOffen.size : 0,
+                wald: r._waldPflanzWarten ? r._waldPflanzWarten.size : 0,
+                gehend: r._saatGehend ? r._saatGehend.size : 0,
+                refill: r._scatterRefillPending ? 1 : 0,
+                streu: r._streuWartet(pm.position, []) ? 1 : 0,
+            };
+            return Object.values(terme).some(Boolean);
+        };
+        return __gebautNach("T18: die Saat", {
+            fertig: () => (ruhig = offen() ? 0 : ruhig + 1) >= 20,
+            offen: () => Object.values(terme).some(Boolean),
+            warum: () => "offen: " + (Object.entries(terme).filter(([, v]) => v).map(([k, v]) => k + " " + v).join(", ") || "keiner"), // prettier-ignore
+        });
+    };
+    const f = (v) => (+v).toFixed(2);
+    const bestand = () => {
+        const L = [];
+        for (const e of st.architectures || []) {
+            if (!e || !e.position || !nah(e.position.x, e.position.z)) continue;
+            const k = e._ausGesetz === true ? (e.feldWurf === true ? "feld" : "gesetz") : e.werk ? "werk" : "sonst";
+            L.push(`${k}|${e.type}|${f(e.position.x)},${f(e.position.z)}`);
+        }
+        for (const [, reg] of st.scatterRegions || [])
+            for (const c of (reg && reg.cells) || [])
+                if (c && nah(c.x, c.z)) L.push(`streu:${c.layer}|${c.species}/${c.variantIndex}|${f(c.x)},${f(c.z)}`);
+        return L;
+    };
+    // die alte Klasse: der gewachsene Wurf des Felds setzt die Marke seiner Baum-Zelle (wann immer er aus der Schlange kommt) — ab
+    // dem Bestand des Boots: der Weg trägt sie, nie der Same
+    let zurueck = () => {};
+    const halte = {};
+    try {
+        stelle(X, Z);
+        halte.bootTakte = await stehtSaat();
+        const boot = bestand();
+        halte.boot = boot.length;
+        if (selbst)
+            zurueck = leihe(r, {
+                spawnArchitecture(name, pos, opts, ...a) {
+                    const e = P.spawnArchitecture.call(r, name, pos, opts, ...a);
+                    const bp = e && typeof e === "object" && st.blueprints[e.type];
+                    if (bp && bp._isGrown && e.feldWurf === true && !(opts && typeof opts._lodSpecies === "string"))
+                        r._scatterMarkCellPromoted(e.position.x, e.position.z, "tree");
+                    return e;
+                },
+            });
+        // fern: bis die Saat der Wiese ging und ihre Streu-Regionen fielen
+        stelle(X + 3000, Z);
+        const { span } = r._voxelChunkConfig();
+        const wiese = Math.floor(X / span) + "," + Math.floor(Z / span);
+        let n = 0;
+        for (; n < 600; n++) {
+            await __seitenTakt();
+            const Pop = st.voxelPopulatedChunks;
+            const gehend = r._saatGehend ? r._saatGehend.size : 0;
+            let streu = 0;
+            for (const [, reg] of st.scatterRegions || []) for (const c of (reg && reg.cells) || []) if (c && nah(c.x, c.z)) streu++;
+            if (!(Pop && Pop.has(wiese)) && !gehend && !streu) break;
+        }
+        halte.fernTakte = n;
+        stelle(X, Z);
+        halte.rueckTakte = await stehtSaat();
+        // DER SELBSTTEST BAUT DIE STREU NACH DER SAAT: steht die Saat, baut die Streu jede Region neu (`_disposeAllScatterRegions`) —
+        // so liest sie die Marken der Würfe sicher. Ohne diesen Neubau hing das ROT der alten Klasse am Takt des Geräts (zwei Kerne
+        // anders 2, ein Kern anders 0: die Region stand vor dem Wurf); es zählt nur mit dem Täter beim Namen (unten `n18`).
+        if (selbst) {
+            r._disposeAllScatterRegions();
+            r._scatterRefillPending = true;
+            halte.rueckTakte += await stehtSaat();
+        }
+        const rueck = bestand();
+        halte.rueck = rueck.length;
+        // Pendeln ±90 m an der Chunk-Grenze, dreimal hin und her, 1,33 m je Takt (40 m/s bei 30 Bildern)
+        const gx = (Math.floor(X / r._voxelChunkConfig().span) - 1) * r._voxelChunkConfig().span; // die Grenze westlich der Wiese (Gegner: x = −302,4)
+        const ziele = [gx - 90, gx + 90, gx - 90, gx + 90, gx - 90, gx + 90, X];
+        let x = X;
+        for (const zx of ziele)
+            while (Math.abs(zx - x) > 1e-6) {
+                x += Math.sign(zx - x) * Math.min(1.33, Math.abs(zx - x));
+                stelle(x, Z);
+                await __seitenTakt();
+            }
+        halte.pendelTakte = await stehtSaat();
+        const pendel = bestand();
+        halte.pendel = pendel.length;
+        const B = new Set(boot);
+        const diff = { weg: [], neu: [] };
+        for (const L of [rueck, pendel]) {
+            const S = new Set(L);
+            for (const t of boot) if (!S.has(t) && !diff.weg.includes(t)) diff.weg.push(t);
+            for (const t of L) if (!B.has(t) && !diff.neu.includes(t)) diff.neu.push(t);
+        }
+        // der Täter je Abweichung: eine Zelle der Streu, in deren Baum-Zelle ein gewachsener Wurf des Felds steht, las die Marke
+        const zelle = (x, z) => r._scatterCellKeyAt(x, z, "tree");
+        const busch = new Set();
+        for (const e of st.architectures || []) {
+            const bp = e && e.position && st.blueprints[e.type];
+            if (bp && bp._isGrown && e.feldWurf === true && e._waldDart !== true) busch.add(zelle(e.position.x, e.position.z));
+        }
+        const taeter = {};
+        for (const t of [...diff.weg, ...diff.neu]) {
+            const [k, , ort] = t.split("|");
+            const [x0, z0] = ort.split(",").map(Number);
+            const wer = /^streu/.test(k)
+                ? busch.has(zelle(x0, z0))
+                    ? "_streuWurf (liest die Marke des Felds)"
+                    : "_streuWurf (der Platz der Region verschob sich)"
+                : k === "feld"
+                  ? "_saatGeht (die Saat)"
+                  : "unbenannt";
+            taeter[wer] = (taeter[wer] || 0) + 1;
+        }
+        return { halte, diff: { weg: diff.weg.slice(0, 6), neu: diff.neu.slice(0, 6), n: diff.weg.length + diff.neu.length }, taeter };
+    } finally {
+        zurueck();
+    }
+}
 
 hauptLauf(async () => {
     const realm = await PK.bootRealm(PORT);
@@ -117,6 +270,14 @@ hauptLauf(async () => {
             // in Worker-Reihenfolge, danach pumpt der Host wie im onmessage) und ihre Freigabe; der Selbsttest tauscht die EINE Wahl.
             const pm = st.playerMesh.position;
             const fEcht = r._foundry;
+            // DIE WELT TRÄGT NIE EIN DOPPEL ÜBER EINEN MAKROTASK (w28-preis-ort): solange eine Probe ein Doppel in die Welt hängt (die
+            // Foundry, den Renderer, den `Worker`), wartet sie nur auf Mikrotasks — eine Nachricht eines Fadens (das Buch:
+            // `_foundryWirtSteht` und `_foundryIngestBook` schreiben an `this._foundry`) und jeder Takt der Welt kämen sonst ans
+            // Doppel. Auf EINEM Kern landete das Buch so im Doppel von T8 (`sleep(2000)`): die echte Foundry blieb ohne Rezepte, die
+            // Wahrnehmung stand, und jeder Bau der Saat brach in T18 an „phyto:lod.budget (zacken)“ (CI 43701660493, 1589 Würfe).
+            const mikro = async () => {
+                for (let i = 0; i < 64; i++) await null;
+            };
             const fifo = (q, halter, darf) => (darf ? q.findIndex(darf) : 0); // die alte Klasse: jede in Ankunfts-Reihenfolge
             const nurNaechster = function (q, halter, darf) {
                 // ohne Alters-Wache: der Nächste gewinnt immer
@@ -199,13 +360,13 @@ hauptLauf(async () => {
                     const wos = [...Array(11).keys()].map((i) => ({ x: pm.x + 900 + i, z: pm.z }));
                     const zuege = wos.map((wo, i) => zug("fern" + i, wo));
                     for (const [id, res] of [...f.pending]) f.pending.delete(id) && res([]);
-                    await sleep(0);
-                    // nur die eigenen Ergebnisse (die Welt liefert in denselben Wächter): am Datensatz, ohne ihn am Ort
+                    await mikro();
+                    // nur die eigenen Ergebnisse: am Datensatz, ohne ihn am Ort
                     const meine = r._foundryIngestQueue.map((e) => [e, zuege.findIndex((z, i) => (e.rang ? e.rang === z.rang : e.wo === wos[i]))]).filter(([, i]) => i >= 0); // prettier-ignore
                     meine.forEach(([e, i]) => ((f0) => (e.frei = () => (reihe.push(i), f0())))(e.frei));
                     zug("fern10", pm); // der nahe Leser hängt sich an den letzten Zug
                     for (let t = 0; t < 30 && reihe.length < meine.length; t++) r._tickFoundryIngest(1 / 60);
-                    await sleep(0);
+                    await mikro();
                     return { n: meine.length, erster: reihe[0] };
                 } finally {
                     [r._foundry, st.renderer, r._foundryIngestQueue] = [fE, rE, qE];
@@ -237,27 +398,24 @@ hauptLauf(async () => {
                     pending: new Map(),
                     reqSeq: 1,
                 };
-                const zurueck = leihe(r, { _foundry: f, _foundryFrist: selbst ? fristAlt : fristGeist });
+                // die Probe fährt die echten Methoden an ihrem EIGENEN `this` (die Welt darunter, das Doppel und die Frist darauf):
+                // sie wartet 2 s echte Zeit, und die Welt behält derweil ihre Foundry (`mikro`, oben)
+                const rT8 = Object.create(r, { _foundry: { value: f, writable: true }, _foundryFrist: { value: selbst ? fristAlt : fristGeist, writable: true } }); // prettier-ignore
                 const aus8 = { erster: "offen", zweiter: "offen", helferErster: "offen", helferZweiter: "offen" };
-                try {
-                    const auftrag = (name, k) =>
-                        r
-                            ._foundryAuftrag(f, "r", { type: "build-asset", presetId: name }, null, 600, "-")
-                            .then((x) => (aus8[k] = x === null ? "abgelaufen" : "beantwortet"));
-                    auftrag("lang", "erster");
-                    auftrag("helfer-lang", "helferErster");
-                    auftrag("dahinter", "zweiter");
-                    auftrag("helfer-dahinter", "helferZweiter");
-                    aus8.nummern = [...f.pending.keys()];
-                    await sleep(2000);
-                    // die Geister der ersten (r1, rw1_2) halten noch ihren Platz — die Welt läuft weiter und darf derweil
-                    // eigene Aufträge an das Doppel stellen (spätere Nummern, sie berühren keine der Uhren)
-                    aus8.geist = f.pending.has("r1");
-                    aus8.helferGeist = f.pending.has("rw1_2");
-                    return aus8;
-                } finally {
-                    zurueck();
-                }
+                const auftrag = (name, k) =>
+                    rT8
+                        ._foundryAuftrag(f, "r", { type: "build-asset", presetId: name }, null, 600, "-")
+                        .then((x) => (aus8[k] = x === null ? "abgelaufen" : "beantwortet"));
+                auftrag("lang", "erster");
+                auftrag("helfer-lang", "helferErster");
+                auftrag("dahinter", "zweiter");
+                auftrag("helfer-dahinter", "helferZweiter");
+                aus8.nummern = [...f.pending.keys()];
+                await sleep(2000);
+                // die Geister der ersten (r1, rw1_2) halten noch ihren Platz
+                aus8.geist = f.pending.has("r1");
+                aus8.helferGeist = f.pending.has("rw1_2");
+                return aus8;
             })();
             // T9 — die Kappen des Lade-Takts: im Lade-Takt arbeiten die Leser der Klasse bis zur EINEN Frist. Der Selbsttest
             // fährt die Kappe allein (`_ladeFrist` −∞).
@@ -415,17 +573,18 @@ hauptLauf(async () => {
                     helfer: 0,
                     helferSoll: r._foundryFaedenZahl() - 1,
                 };
-                const zurueck = leihe(r, { _foundry: null, _foundryHelfer: selbst ? () => {} : r._foundryHelfer });
+                // die Geburt an einem EIGENEN `this` (die Welt behält ihre Foundry), der Schein-Faden nur für ihren synchronen Ruf
+                const rT10 = Object.create(r, { _foundry: { value: null, writable: true }, ...(selbst ? { _foundryHelfer: { value: () => {}, writable: true } } : {}) }); // prettier-ignore
+                let f = null;
                 try {
-                    const f = r._ensureAssetFoundry();
-                    await __weltDa(() => !!!(f && !f.worker));
-                    aus10.geboren = !!f?.worker;
-                    if (aus10.geboren) Object.assign(aus10, { name: f.worker.name, post: f.worker.post.slice() });
-                    aus10.helfer = Math.max(0, geboren.length - 1);
+                    f = rT10._ensureAssetFoundry();
                 } finally {
                     window.Worker = WorkerEcht;
-                    zurueck();
                 }
+                await __weltDa(() => !!!(f && !f.worker));
+                aus10.geboren = !!f?.worker;
+                if (aus10.geboren) Object.assign(aus10, { name: f.worker.name, post: f.worker.post.slice() });
+                aus10.helfer = Math.max(0, geboren.length - 1);
                 return aus10;
             })();
             // T11 — DER VERKEHR KOSTET SCHIRM UND ÄNDERUNG: eine Siedlung der Probe mit einem Wagen des Gesetzes 300 m fern (der
@@ -472,7 +631,239 @@ hauptLauf(async () => {
                 return o.n;
             })();
 
+            // T15 — DER VORBAU AM TOR (w28-preis-ort, Schnitt 3): der Vorbau der Bedienung geht nur durch das Tor der EINEN Frist
+            // (`_bauer("vorbau")` im Planer oder als Pflicht-Stück) — zwölf echte Takte, jeder Ruf von `_vorbauBedienung` nennt,
+            // durch welches Tor er kam; dazu bauen Rezeptbuch und Werkstatt bei abgelaufener Frist je Ruf EIN Stück (`_rezeptBau`,
+            // `_werkstattBau`). Bis hier lief er nach dem Bild am Tor vorbei und baute beide am Stück (Radeon, Mess-Wiese: Rezeptbuch
+            // 175,6 · Werkstatt 159,1 ms in EINEM Bild). Der Selbsttest fährt die alte Klasse: der Vorbau zusätzlich nach dem Planer,
+            // Rezeptbuch und Werkstatt am Stück.
+            const t15 = await (async () => {
+                const P = AnazhRealm.prototype;
+                const o = { rufe: 0, vorbei: 0, buch: 0, werk: 0, imBild: 0, zwischen: 0 };
+                let tor = null;
+                const zurueck = leihe(r, {
+                    _vorbauBedienung: () => (o.rufe++, (o.vorbei += +(tor === null))),
+                    _bauer(wer, lauf, a) {
+                        const v = tor;
+                        tor = wer;
+                        try {
+                            return P._bauer.call(this, wer, lauf, a);
+                        } finally {
+                            tor = v;
+                        }
+                    },
+                    _bauPflichtGang() {
+                        const v = tor;
+                        tor = "pflicht";
+                        try {
+                            return P._bauPflichtGang.call(this);
+                        } finally {
+                            tor = v;
+                        }
+                    },
+                    // die alte Klasse: der Vorbau läuft NEBEN dem Tor (nach dem Planer, wie bis Schnitt 3 nach dem Bild)
+                    ...(selbst ? { _runFrameScheduler(...x) { const z = P._runFrameScheduler.apply(this, x); this._vorbauBedienung(); return z; } } : {}), // prettier-ignore
+                    // die alte Klasse: Rezeptbuch und Werkstatt am Stück, gleich welche Frist
+                    ...(selbst ? { _rezeptBau: () => P._rezeptBau.call(r, Infinity), _werkstattBau: () => P._werkstattBau.call(r, Infinity) } : {}), // prettier-ignore
+                    // die alte Klasse: der Vorbau geht in jedem Takt, auch in dem, der zeichnet
+                    ...(selbst ? { _vorbauDran: () => true } : {}),
+                });
+                try {
+                    for (let i = 0; i < 12; i++) r._gameLoopTick(performance.now());
+                    const host = document.getElementById("inventory-recipes");
+                    if (host) {
+                        [r._recipeBookSig, r._rezeptBauStand, host.innerHTML] = [null, null, ""];
+                        while (!r._rezeptBau(performance.now() - 1) && o.buch < 1e4) o.buch++;
+                        o.buch++;
+                    }
+                    r._werkstattBauStand = null;
+                    while (!r._werkstattBau(performance.now() - 1) && o.werk < 1e3) o.werk++;
+                    o.werk++;
+                    // DER ZWISCHEN-TAKT (`_vorbauDran`): im Spiel (mit Ende) geht er in 30 Takten mit Bild nie, im Takt ohne Bild immer
+                    const ohne = leihe(r, { _bauFristOhneEnde: () => false, _ladeTakt: () => false });
+                    try {
+                        r._vorbauBildTakte = 0;
+                        for (let i = 0; i < 30; i++) o.imBild += +(P._fristStellen.call(r, performance.now(), true), r._vorbauDran()); // prettier-ignore
+                        o.zwischen = +(P._fristStellen.call(r, performance.now(), false), r._vorbauDran());
+                    } finally {
+                        [ohne(), (r._bauFristTakt = null), (r._vorbauBildTakte = 0)];
+                    }
+                } finally {
+                    zurueck();
+                    r._renderWorkshopDOM();
+                }
+                return o;
+            })();
+
+            // T16 — DIE SAAT FOLGT IHREM SAUM (w28-preis-ort, Heilung der Gegner 15.11.): am echten Abräumen
+            // (`_pruneDistantVoxelChunks`) bleibt die Saat beim Pendeln um EINEN Chunk (der Saum, Ring + 2), ihr Abschied fällt bei
+            // abgelaufener Frist je Takt in `SAAT_GEHT_MIN` Würfen, ihre Gedächtnisse gehen mit dem Chunk (Tritt, Marke), und die Probe
+            // der Saat liest keine Marke (`_vegetationSampleSpawn`). Bis hier ging sie mit dem Boden (Pendeln ±8 m: 115 Chunks
+            // abgerissen), fiel am Stück im Bild des Abräumens (87 Abbauten 64,1 ms), ihr Gedächtnis wuchs mit dem Weg (Tritte
+            // 4 814 → 31 919), und die Marke des ersten Besuchs nahm der Wiederkehr 6 von 46 Glutbrunnen. Der Selbsttest fährt die
+            // alte Klasse je Täter.
+            const t16 = (() => {
+                const P = AnazhRealm.prototype;
+                const st = r.state;
+                const pm = st.playerMesh.position;
+                const { span, ringRadius: R } = r._voxelChunkConfig();
+                const [x0, z0] = [pm.x, pm.z];
+                const [pcx, pcz] = [Math.floor(x0 / span), Math.floor(z0 / span)];
+                const o = {
+                    pendelGeht: -1,
+                    wuerfe: 0,
+                    raten: [],
+                    restGeht: -1,
+                    tritt: -1,
+                    marke: -1,
+                    markeGelesen: -1,
+                };
+                const zurueck = leihe(r, {
+                    // die alte Klasse: die Saat geht mit dem Boden (kein Saum)
+                    ...(selbst ? { _saatGeht: (a, b, R0, bl, s) => P._saatGeht.call(r, a, b, -3, bl, s) } : {}),
+                    // die alte Klasse: der Abschied am Stück
+                    ...(selbst ? { _saatGehtZuEnde: (k, g) => P._saatGehtZuEnde.call(r, k, g, Infinity, 0) } : {}),
+                    // die alte Klasse: das Gedächtnis bleibt
+                    ...(selbst ? { _saatGedaechtnisGeht: () => {} } : {}),
+                });
+                const abbau = { n: 0 };
+                const saat = (e) => !!e && e._ausGesetz === true && e.feldWurf === true;
+                const zurueckAbbau = leihe(r, { removeArchitecture: (e, ...a) => (saat(e) && abbau.n++, P.removeArchitecture.call(r, e, ...a)) }); // prettier-ignore
+                const Pop = st.voxelPopulatedChunks || (st.voxelPopulatedChunks = new Set());
+                const gehend = () => (r._saatGehend ? r._saatGehend.size : 0);
+                try {
+                    // die Saat steht im Ring + 1 um den Spieler (gepflanzt), zwölf Würfe des Felds im Chunk des Spielers (der echte Bau)
+                    for (let dx = -(R + 1); dx <= R + 1; dx++)
+                        for (let dz = -(R + 1); dz <= R + 1; dz++) Pop.add(pcx + dx + "," + (pcz + dz));
+                    // die Würfe stehen KALT (nur Daten, kein Mesh): die Probe zählt die Saat, nie ihr Bild — ein Mesh fragt das Buch des
+                    // Fadens (`_foundryBudgetZeile`), und kam es nicht rechtzeitig, brach T16 fail-closed an „phyto:lod.budget (basalt)“
+                    // (3 von 14 Läufen am Zweig, einer hing 240 s)
+                    const reich = st.architectureCullingRadius;
+                    st.architectureCullingRadius = -1;
+                    try {
+                        for (let i = 0; i < 12; i++) {
+                            const p = { x: (pcx + 0.1 + 0.07 * i) * span, y: 0, z: (pcz + 0.5) * span };
+                            const e = r.spawnArchitecture("stein_block", p, { silent: true, precise: true, ausGesetz: true, feldWurf: true, seed: 7 + i }); // prettier-ignore
+                            if (e && typeof e === "object")
+                                [e._ausGesetz, e.feldWurf, o.wuerfe] = [true, true, o.wuerfe + 1];
+                        }
+                    } finally {
+                        st.architectureCullingRadius = reich;
+                    }
+                    // 1) PENDELN um EINEN Chunk: nichts geht
+                    const vor = Pop.size;
+                    for (const dx of [span, 0, span, 0]) {
+                        pm.x = x0 + dx;
+                        r._pruneDistantVoxelChunks(pm);
+                    }
+                    o.pendelGeht = vor - Pop.size + gehend();
+                    for (let i = 0; i < 400 && gehend(); i++) r._pruneDistantVoxelChunks(pm);
+                    // 2) DAS GEDÄCHTNIS am Ort: ein Tritt und eine Marke unter dem Spieler
+                    const T = r._trittSchwach || (r._trittSchwach = new Map());
+                    const zm = AnazhRealm.TRITT.zelleM;
+                    const tk = Math.floor(x0 / zm) + "," + Math.floor(z0 / zm);
+                    T.set(tk, [0.9, 0]);
+                    r._scatterMarkCellPromoted(x0, z0, "under");
+                    const mk = r._scatterCellKeyAt(x0, z0, "under");
+                    // 3) DER SPRUNG 3 km bei abgelaufener Frist: je Takt höchstens SAAT_GEHT_MIN Abbauten der Saat
+                    pm.x = x0 + 3000;
+                    const zurueckFrist = leihe(r, { _bauFrist: () => -Infinity });
+                    try {
+                        for (let i = 0; i < 6; i++) {
+                            abbau.n = 0;
+                            r._pruneDistantVoxelChunks(pm);
+                            o.raten.push(abbau.n);
+                        }
+                    } finally {
+                        zurueckFrist();
+                    }
+                    for (let i = 0; i < 400 && gehend(); i++) r._pruneDistantVoxelChunks(pm);
+                    o.restGeht = gehend();
+                    o.tritt = +T.has(tk);
+                    o.marke = +st.scatterPromoted.has(mk);
+                    T.delete(tk);
+                    st.scatterPromoted.delete(mk);
+                } finally {
+                    [zurueckAbbau(), zurueck()];
+                    [pm.x, pm.z] = [x0, z0];
+                }
+                // 4) DIE PROBE LIEST KEINE MARKE: zwanzig Proben (ohne Wahrzeichen) fragen die Marke ihrer Zelle nie
+                const Q = st.pendingVegSpawns || (st.pendingVegSpawns = []);
+                const q0 = Q.length;
+                let gelesen = 0;
+                const zurueckMarke = leihe(r, {
+                    _scatterIsCellPromoted: (...a) => (gelesen++, P._scatterIsCellPromoted.apply(r, a)),
+                    // die alte Klasse: die Probe fragt die Marke ihrer Zelle
+                    ...(selbst ? { _vegetationSampleSpawn: (x, z, ...a) => (r._scatterIsCellPromoted(x, z, "tree") ? 0 : P._vegetationSampleSpawn.call(r, x, z, ...a)) } : {}), // prettier-ignore
+                });
+                try {
+                    for (let i = 0, n = 0; n < 20 && i < 200; i++) {
+                        const [x, z] = [Math.round(x0 + i * 4.32), Math.round(z0 + 3 * i)];
+                        const seed = ((x * 73856093) ^ (z * 19349663)) >>> 0;
+                        if ((seed % 1000) / 1000 < 0.014) continue; // ein Wahrzeichen urteilt vor jeder Marke
+                        r._vegetationSampleSpawn(x, z, 10, seed, null, null);
+                        n++;
+                    }
+                } finally {
+                    [zurueckMarke(), (Q.length = q0)];
+                }
+                o.markeGelesen = gelesen;
+                return o;
+            })();
+
+            // T17 — DAS GITTER IM FADEN GLEICHT DEM DES HAUPT-FADENS (w28-preis-ort, Heilung Gegner Gesetz F3): das Tuch-Gitter der
+            // Tracht des Spielers, im Voxel-Faden gerechnet (`_tuchGitterFaden`, voxel-worker `tuch-gitter`), ist Byte für Byte das
+            // Gitter des Haupt-Fadens (koerper-core `tuchGitter` an denselben Meshes) — zwei Wege zum selben Gitter, beide bewiesen. Der
+            // Selbsttest reicht dem Faden die Normale nicht (ein Feld fehlt in der Kopie).
+            const t17 = await (async () => {
+                const p = r.state.playerMesh;
+                const o = { tuch: false, felder: 0, anders: [] };
+                if (!p || !r._tuchTeileVon(p)) return o;
+                const u = p.userData;
+                const satz = u._tuchTeile[u._gelenk.istFern ? "fern" : "nah"];
+                if (!satz) return o;
+                o.tuch = true;
+                const { sim, folge } = satz;
+                const haut = r._tuchHaut(p);
+                const key = sim[0].userData.__tuchVorlage || sim[0].geometry;
+                const haupt = globalThis.__koerperCore.tuchGitter(sim, folge, haut, r._tuchWebe(sim));
+                const [memo0, flug0] = [AnazhRealm._tuchGitterMemo, AnazhRealm._tuchGitterFlug];
+                [AnazhRealm._tuchGitterMemo, AnazhRealm._tuchGitterFlug] = [new WeakMap(), new WeakMap()];
+                const P = AnazhRealm.prototype;
+                const zurueck = leihe(r, selbst ? { _voxelFadenAuftrag: (w, m, tr) => (m.sim.forEach((s) => (s.nrm = null)), P._voxelFadenAuftrag.call(r, w, m, tr)) } : {}); // prettier-ignore
+                let faden = null;
+                try {
+                    // das EINE Warten (`__weltDa`): bis der Faden das Gitter lieferte oder laut warf
+                    await __weltDa(() => r._tuchGitterFaden(sim, folge, haut) === true || !!AnazhRealm._tuchGitterMemo.get(key)); // prettier-ignore
+                    faden = AnazhRealm._tuchGitterMemo.get(key) || null;
+                } finally {
+                    zurueck();
+                    [AnazhRealm._tuchGitterMemo, AnazhRealm._tuchGitterFlug] = [memo0, flug0];
+                }
+                const vergleiche = (a, b, pfad) => {
+                    if (ArrayBuffer.isView(a) || ArrayBuffer.isView(b)) {
+                        o.felder++;
+                        const x = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
+                        const y =
+                            b && ArrayBuffer.isView(b) ? new Uint8Array(b.buffer, b.byteOffset, b.byteLength) : null;
+                        if (!y || x.length !== y.length || x.some((v, i) => v !== y[i])) o.anders.push(pfad);
+                        return;
+                    }
+                    if (a && typeof a === "object") {
+                        for (const k of new Set([...Object.keys(a), ...Object.keys(b || {})])) vergleiche(a[k], b ? b[k] : undefined, pfad + "." + k); // prettier-ignore
+                        return;
+                    }
+                    if (a !== b && !(Number.isNaN(a) && Number.isNaN(b))) o.anders.push(pfad);
+                };
+                if (faden) vergleiche(haupt, faden, "gitter");
+                else o.anders.push("der Faden lieferte kein Gitter");
+                return o;
+            })();
+
             return {
+                t17,
+                t16,
+                t15,
                 t14,
                 t11,
                 t10,
@@ -485,6 +876,14 @@ hauptLauf(async () => {
                 t9,
             };
         }, SELBST);
+        // T18 — DIE RÜCKKEHR ZEIGT DENSELBEN BESTAND (w28-preis-ort, Heilung 2): eine eigene Fahrt der echten Welt (Takte des
+        // Loops, Strom, Pflanz-Schlange, Streu) — Boot an der Mess-Wiese, Sprung 3 km, bis die Saat der Wiese ging, Rückkehr,
+        // Pendeln ±90 m an der Chunk-Grenze x = −302,4; je Halt der Bestand binnen 120 m als Menge (Klasse, Art, Ort auf 1 cm):
+        // jeder Eintrag der Welt und jede Zelle der Deko-Streu. Bis hier kehrte die Streu anders wieder (Kopf 5f7c0bf1, headless:
+        // eine Birke weg, drei Bäume neu, alle in Baum-Zellen eines Buschs des Felds — die Marke `scatterPromoted` setzte der
+        // Busch, sobald er aus der Schlange kam; die Streu las sie, wann immer ihre Region baute). Der Selbsttest fährt die alte
+        // Klasse: der gewachsene Wurf des Felds setzt die Marke seiner Baum-Zelle.
+        if (aus && !aus.fehler) aus.t18 = await realm.page.evaluate(t18Fahrt, SELBST, require("./lib/welt-orte.cjs").messort("wiese"));
     } finally {
         await realm.close();
     }
@@ -528,6 +927,41 @@ hauptLauf(async () => {
     const t10 = aus.t10;
     const [z3, z6, z10] = [[t3.fernJa, t3.nah1, t3.nah2, t3.fern2, t3.fern3], `${t6.folge} · frei ${t6.frei}`, [t10.name, t10.post, t10.helfer, t10.helferSoll]]; // prettier-ignore
     const T14 = aus.t14 === 1; // die Räumung am Ort liest die EINE Form am Kasten
+    // T15 je Täter beim Namen: der Vorbau kam in 12 Takten nur durchs Tor (mindestens einmal), Rezeptbuch und Werkstatt bauten bei
+    // abgelaufener Frist in mehr als einem Stück
+    const t15 = aus.t15;
+    const T15je = {
+        _vorbauBedienung: t15.rufe > 0 && t15.vorbei === 0,
+        _rezeptBau: t15.buch > 1,
+        _werkstattBau: t15.werk > 1,
+        _vorbauDran: t15.imBild === 0 && t15.zwischen === 1,
+    };
+    const n15 = Object.keys(T15je).filter((k) => T15je[k] === SELBST);
+    // T16 je Täter beim Namen: Pendeln um einen Chunk reißt nichts ab, je Takt nach der Frist höchstens SAAT_GEHT_MIN Abbauten (und
+    // überhaupt welche), am Ende geht nichts mehr, Tritt und Marke des Orts fielen mit ihm, die Probe sät mit der Marke dasselbe
+    const t16 = aus.t16;
+    const T16je = {
+        _saatGeht: t16.pendelGeht === 0,
+        _saatGehtZuEnde:
+            t16.wuerfe >= 8 && t16.raten.some((n) => n > 0) && t16.raten.every((n) => n <= 4) && t16.restGeht === 0,
+        _saatGedaechtnisGeht: t16.tritt === 0 && t16.marke === 0,
+        _vegetationSampleSpawn: t16.markeGelesen === 0,
+    };
+    const n16 = Object.keys(T16je).filter((k) => T16je[k] === SELBST);
+    // T17 beim Namen: das Gitter des Fadens gleicht dem des Haupt-Fadens in jedem Feld (und es gibt eins)
+    const t17 = aus.t17;
+    const n17 = (t17.tuch && t17.felder > 0 && !t17.anders.length) === SELBST ? ["_tuchGitterFaden"] : [];
+    const z17 = t17.tuch
+        ? `${t17.felder} Felder, anders: ${t17.anders.slice(0, 4).join(", ") || "keins"}`
+        : "der Spieler trägt kein Tuch";
+    // T18 beim Namen: der Bestand der Rückkehr und des Pendelns gleicht dem Boot (Menge, 1 cm), und die Fahrt sah einen Bestand
+    const t18 = aus.t18 || { halte: {}, diff: { n: -1, weg: [], neu: [] }, taeter: {} };
+    // im Selbsttest gilt das ROT nur mit dem Täter der alten Klasse beim Namen (eine fremde Abweichung beweist nichts)
+    const T18 = t18.halte.boot > 0 && (SELBST ? !t18.taeter["_streuWurf (liest die Marke des Felds)"] : t18.diff.n === 0);
+    const n18 = T18 === SELBST ? (SELBST ? ["_streuWurf"] : Object.keys(t18.taeter).length ? Object.keys(t18.taeter) : ["unbenannt"]) : []; // prettier-ignore
+    const z18 = `Boot ${t18.halte.boot} · Rückkehr ${t18.halte.rueck} · Pendeln ${t18.halte.pendel} (Takte Boot ${t18.halte.bootTakte} · fern ${t18.halte.fernTakte} · Rückkehr ${t18.halte.rueckTakte} · Pendeln ${t18.halte.pendelTakte}) · anders ${t18.diff.n}${t18.diff.n ? ` (weg ${t18.diff.weg.slice(0, 3).join(" ")} · neu ${t18.diff.neu.slice(0, 3).join(" ")}; ${JSON.stringify(t18.taeter)})` : ""}`; // prettier-ignore
+    const z16 = `Pendeln ${t16.pendelGeht} Chunks gegangen · Abbauten je Takt nach der Frist ${t16.raten} · gehend am Ende ${t16.restGeht} · Tritt ${t16.tritt} Marke ${t16.marke} · ${t16.wuerfe} Würfe · die Probe las die Marke ${t16.markeGelesen}-mal`;
+    const z15 = `${t15.rufe} Rufe, ${t15.vorbei} am Tor vorbei · Rezeptbuch in ${t15.buch} Stücken · Werkstatt in ${t15.werk} · im Bild-Takt ${t15.imBild}/30, im Zwischen-Takt ${t15.zwischen}/1`;
     const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
     // T11 je Leser beim Namen: die Leiter (vakuös ist ein ferner Wagen, der nie schreitet), der Beweger, der Stau — in der Wand
     // der Täter (rot), im Selbsttest der Vakuöse (grün unter der alten Klasse)
@@ -542,14 +976,32 @@ hauptLauf(async () => {
     if (SELBST) {
         const [v, vak] = [(x) => (x ? "vakuös" : "rot"), (n) => (n.length ? "vakuös: " + n : "rot")];
         const vakuoes = Object.keys(frist).filter((k) => frist[k]); // je Leser rot beim Namen, sonst geht er an `_kappeOffen` vorbei
-        const ok = ![T3, T4, T5, T6, T8, T5i, T5a, T9, T10, T14, ...vakuoes, ...t9.gang, ...n11, ...n12, ...n13].some(
-            Boolean
-        );
+        const ok = ![
+            T3,
+            T4,
+            T5,
+            T6,
+            T8,
+            T5i,
+            T5a,
+            T9,
+            T10,
+            T14,
+            ...vakuoes,
+            ...t9.gang,
+            ...n11,
+            ...n12,
+            ...n13,
+            ...n15,
+            ...n16,
+            ...n17,
+            ...n18,
+        ].some(Boolean);
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST (je T die alte Klasse): T3 ${z3} ${v(T3)}; T4 ${v(T4)}; ` +
                 `T5 ${z5} ${v(T5)}; T6 ${z6} ${v(T6)}; ` +
                 `T8 ${z8} ${v(T8)}; T9 ${z9} ${v(T9)}${vakuoes.length ? ` — vakuös: ${vakuoes}` : ""}; ` +
-                `T10 ${z10} ${v(T10)}; T11 ${z11} ${vak(n11)}; T12 ${t9.bau12} ${vak(n12)}; T13 ${z13} ${vak(n13)}; T14 ${aus.t14} ${v(T14)}`
+                `T10 ${z10} ${v(T10)}; T11 ${z11} ${vak(n11)}; T12 ${t9.bau12} ${vak(n12)}; T13 ${z13} ${vak(n13)}; T14 ${aus.t14} ${v(T14)}; T15 ${z15} ${vak(n15)}; T16 ${z16} ${vak(n16)}; T17 ${z17} ${vak(n17)}; T18 ${z18} ${vak(n18)}`
         );
         process.exit(ok ? 0 : 1);
     }
@@ -593,7 +1045,11 @@ hauptLauf(async () => {
     benannt(n12, `T12 die EINE Frist: ${N12} je ${t9.bau12}`); // abgelaufen: je Bauer EIN Stück (`_bauFrist`)
     benannt(n13, `T13 der EINE, reihum: ${z13}`); // je Takt nach der Frist EIN Pflicht-Stück, der Hungrigste zuerst
     benannt(T14 ? [] : ["_grundrissWegeIn"], `T14 Räumung am Ort: ${aus.t14}`); // die Formen, die sie las
-    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10 && T14) || n11.concat(n12, n13).length) {
+    benannt(n15, `T15 der Vorbau am Tor: ${z15}`); // je Takt durch das Tor der EINEN Frist, Buch und Werkstatt je Stück
+    benannt(n17, `T17 das Tuch-Gitter im Faden gleicht dem Haupt-Faden: ${z17}`); // Byte für Byte, je Feld
+    benannt(n16, `T16 die Saat folgt ihrem Saum: ${z16}`); // der Saum, der Abschied in Raten, die Gedächtnisse, die Probe ohne Marke
+    benannt(n18, `T18 die Rückkehr zeigt denselben Bestand: ${z18}`); // Menge je Klasse, Art, Ort auf 1 cm: Boot = Rückkehr = Pendeln
+    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10 && T14) || n11.concat(n12, n13, n15, n16, n17, n18).length) {
         console.error("\n❌ ROT");
         process.exit(1);
     }

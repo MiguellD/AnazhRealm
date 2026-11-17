@@ -572,6 +572,18 @@ function standUrteil(b) {
         if (!W.regler) v.push("LEER: kein Regler-Schritt in der Weck-Phase");
         else if (!W.regler.takte.archCull || !(W.regler.takte.archCull.summe > 0))
             v.push("WECKEN: ein Regler-Schritt (der Cull-Radius) weckt archCull nicht — der Rand bliebe stehen");
+        // die Zusage eines Schläfers weckt den Cull (b-ankunft): er tritt in die Wache, sein Gang geht — sonst steht er wach mit
+        // seinem gedockten Asset, bis ein fremdes Ereignis die Bau-Takte regt (GTX 1050 kalt: 6–8 s vor dem ersten Weltbild)
+        if (!W.zusage) v.push("LEER: keine Zusage eines Schläfers in der Weck-Phase");
+        else {
+            if (W.zusage.vor !== 0) v.push(`LEER: vor der Zusage des Schläfers ruhte archCull nicht (${W.zusage.vor} Einheiten)`);
+            if (W.zusage.wach !== true) v.push("WECKEN: die Zusage holt den Schläfer nicht in die Wache des Culls");
+            else if (!W.zusage.takte.archCull || !(W.zusage.takte.archCull.summe > 0))
+                v.push(
+                    "WECKEN: die Zusage eines Schläfers weckt archCull nicht — er stünde wach mit seinem Asset, bis ein fremdes " +
+                        "Ereignis den Takt regt"
+                );
+        }
         // der Stempel liest die Wahrnehmung selbst (kein Weckruf am Schreiber): eine neue LOD-Distanz weckt die Stufen-Wahlen
         if (!W.wahrnehmung) v.push("LEER: kein Wahrnehmungs-Schritt in der Weck-Phase");
         else

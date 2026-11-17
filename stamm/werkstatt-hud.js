@@ -1321,7 +1321,10 @@ class AnazhRealm_werkstatt_hud {
         if (currentTime - this._statusRefs.lastTick < 0.4) return;
         this._statusRefs.lastTick = currentTime;
         const r = this._statusRefs;
-        this._hudSchreib(r.weather, this.state.weather || "—");
+        // das Wetter als Wort der Sprach-Tafel (`wetter.<wort>`, `_wetterZeile`) — nie das Wort des Gesetzes am Schirm; der Name
+        // der Welt ist ein Datum (`#status-slug` trägt translate="no")
+        const wz = this.state.weather ? this._wetterZeile(this.state.weather) : "—";
+        this._hudSchreib(r.weather, Array.isArray(wz) ? this._t(wz[0]) : wz);
         this._hudSchreib(r.slug, this.state.worldMeta.slug || "—");
         if (this.state.playerMesh) {
             const p = this.state.playerMesh.position;
@@ -1417,8 +1420,9 @@ class AnazhRealm_werkstatt_hud {
         const ordered = list.slice().reverse();
         const shown = expanded ? ordered : ordered.slice(0, GESTEN_SHOWN);
         const hidden = ordered.length - shown.length;
-        const signature =
-            `${list.length}:${expanded ? "E" : "C"}:` + shown.map((a) => `${a.name}:${a.source || "?"}`).join("|");
+        const signature = AnazhRealm._zeichenSig(
+            `${list.length}:${expanded ? "E" : "C"}:` + shown.map((a) => `${a.name}:${a.source || "?"}`).join("|")
+        );
         if (signature === r.abilitiesSignature) return;
         r.abilitiesSignature = signature;
         const container = r.abilities;
@@ -1640,7 +1644,9 @@ class AnazhRealm_werkstatt_hud {
         const sigOf = (x) =>
             `${x.id}:${x.pinned ? "p" : "_"}:${x.disabled ? "x" : "_"}:${(x.value || 0).toFixed(1)}:` +
             `${this._worldRuleActivityLabel(x, now)}:${this._worldRuleStatusLabel(x, now)}`;
-        const signature = `${mode}|${expanded ? "E" : "C"}|Y:${yours.map(sigOf).join(",")}|N:${nexusShown.map(sigOf).join(",")}|h:${nexusHidden}`;
+        const signature = AnazhRealm._zeichenSig(
+            `${mode}|${expanded ? "E" : "C"}|Y:${yours.map(sigOf).join(",")}|N:${nexusShown.map(sigOf).join(",")}|h:${nexusHidden}`
+        );
         if (signature === r.worldrulesSignature) return;
         r.worldrulesSignature = signature;
         const container = r.worldrules;
@@ -2200,6 +2206,8 @@ class AnazhRealm_werkstatt_hud {
         for (const v of voices) {
             const opt = document.createElement("option");
             opt.value = v.name;
+            // der Name einer Stimme ist ein Datum des Geräts („Microsoft Hedda - German (Germany)“), kein Wort der Tafel
+            opt.setAttribute("translate", "no");
             opt.textContent = `${v.name} (${v.lang})`;
             sel.appendChild(opt);
         }
@@ -2764,19 +2772,25 @@ class AnazhRealm_werkstatt_hud {
     // Stil, das erste Layout (Radeon echt, werkbank bedienung: Tab 82 ms im Hörer, die Einstellungen 81 ms Layout; warm 20 und
     // 4 ms). Der Vorbau zeichnet das Ich einmal vor und legt jede verborgene Schublade einmal aus — unsichtbar und im selben
     // Takt wieder verborgen, kein Bild sieht sie —, je Takt EINE. true: alles vorgebaut.
+    // JE STÜCK BIS ZUR FRIST (w28-preis-ort, Schnitt 3; der Vorbau ist ein Bauer der EINEN Frist, `_bauer("vorbau")`): das
+    // Rezeptbuch je Bauplan (`_rezeptBau`), dann die Habe, dann Werte und Steckbrief, die Werkstatt je Teil (`_werkstattBau`) —
+    // bis hier zeichnete EIN Schritt das ganze Ich samt Rezeptbuch (175,6 ms) und die ganze Werkstatt (159,1 ms) in einem Takt.
     _uiVorbau() {
         if (typeof document === "undefined") return true;
-        const V = this._uiVorbauStand || (this._uiVorbauStand = { ich: false, aus: new WeakSet(), alle: false });
+        const V = this._uiVorbauStand || (this._uiVorbauStand = { ich: 0, aus: new WeakSet(), alle: false });
         if (V.alle) return true;
-        if (!V.ich) {
-            V.ich = true;
-            this.renderInventoryUI();
-            this.recomputePlayerStats();
-            this._ichRenderSpecSheet();
+        if (V.ich < 3) {
+            if (V.ich === 0 && !this._rezeptBau(this._bauFrist("vorbau"))) return false;
+            if (V.ich === 1) this.renderInventoryUI(); // das Buch steht: die Habe zeichnet es nicht neu (seine Signatur)
+            if (V.ich === 2) {
+                this.recomputePlayerStats();
+                this._ichRenderSpecSheet();
+            }
+            V.ich++;
             return false;
         }
         // die Werkstatt ihren ersten Bau (der Init baut sie nicht, w16-lade-atem)
-        if (!this._werkstattGemalt) return (this._renderWorkshopDOM(), false);
+        if (!this._werkstattGemalt) return (this._werkstattBau(this._bauFrist("vorbau")), false);
         for (const el of [
             document.getElementById("inventory-overlay"),
             ...document.querySelectorAll(".drawer[data-drawer]"),
@@ -3024,7 +3038,8 @@ class AnazhRealm_werkstatt_hud {
     // DIE UNTERTITEL (spielgang.K4): EIN Klang-Ereignis, zwei Leser — der Ton und die Zeile. Jeder Chokepoint des
     // Klang-Gesetzes ruft hier in dem Augenblick, in dem er seine Quelle startet (der Ruf `_tierRuf`, der Substanz-Klang
     // `_substanzKlang`, der Schritt `_schrittKlangEreignis`, die Stimmen der Umwelt-Mischung, die Fahrt, die Musik), mit dem
-    // Namen aus dem Gesetz; der Satz steht in der EINEN Tafel `UNTERTITEL` (ein Name ohne Satz ist laut, `_bruchMelden`).
+    // Namen aus dem Gesetz; die Tafel `UNTERTITEL` trägt je Name den Schlüssel seiner Zeile in der Sprach-Tafel (`_t`, die
+    // Sprache von jetzt; ein Name ohne Schlüssel ist laut, `_bruchMelden`).
     // Dieselbe Zeile (art · name · wer) frischt auf statt zu stapeln, die Richtung kommt aus dem Panorama (‹ links · › rechts).
     // Nur, wenn der Spieler sie gewählt hat (Einstellungen › Untertitel, `state.untertitel`); `state._untertitel` zählt die
     // Zeilen (headless messbar, gate:klang-zensus Ü).
@@ -3057,7 +3072,7 @@ class AnazhRealm_werkstatt_hud {
             const satz = T[art] && T[art][name];
             if (!satz) return void this._bruchMelden(`UNTERTITEL: kein Satz für ${art}:${name}`);
             const links = pan < -T.panSchwelle ? "‹ " : "";
-            saetze.push(links + satz.replace("{wer}", wer || "") + (pan > T.panSchwelle ? " ›" : ""));
+            saetze.push(links + this._t(satz, { wer: wer || "" }) + (pan > T.panSchwelle ? " ›" : ""));
         }
         const box = document.getElementById("untertitel");
         if (!box) return false;
@@ -3134,33 +3149,34 @@ AnazhRealm.EMOTION_WIRKT = Object.freeze({
 // Schritt je Stoff-Klasse (Schritt · Landung), die Fahrt (Motor · Rollen) und die Musik; {wer} setzt der Chokepoint ein.
 // Die Klang-Linse hält die Tafel vollständig gegen das Gesetz (gate:klang-zensus Ü).
 AnazhRealm.UNTERTITEL = Object.freeze({
+    // je Name der Schlüssel seiner Zeile in der Sprach-Tafel (`untertitel.<art>.<name>`), gelesen in der Sprache von jetzt
     stimme: {
-        wind: "Wind weht",
-        laub: "Laub rauscht",
-        ufer: "Wellen am Ufer",
-        fluss: "Wasser fließt",
-        fall: "Wasserfall rauscht",
-        regen: "Regen fällt",
-        glut: "Feuer knistert",
-        vogel: "Vögel singen",
-        grille: "Grillen zirpen",
+        wind: "untertitel.stimme.wind",
+        laub: "untertitel.stimme.laub",
+        ufer: "untertitel.stimme.ufer",
+        fluss: "untertitel.stimme.fluss",
+        fall: "untertitel.stimme.fall",
+        regen: "untertitel.stimme.regen",
+        glut: "untertitel.stimme.glut",
+        vogel: "untertitel.stimme.vogel",
+        grille: "untertitel.stimme.grille",
     },
     ruf: {
-        freude: "{wer} ruft freudig",
-        ruhe: "{wer} ruft leise",
-        trauer: "{wer} klagt",
-        furcht: "{wer} schreit ängstlich",
+        freude: "untertitel.ruf.freude",
+        ruhe: "untertitel.ruf.ruhe",
+        trauer: "untertitel.ruf.trauer",
+        furcht: "untertitel.ruf.furcht",
     },
     substanz: {
-        treffer: "Treffer: {wer}",
-        singen: "Eine Form singt",
-        abschied: "Eine Form verklingt",
-        wasser: "Wasser gluckert",
-        inventar: "Ding klingt",
+        treffer: "untertitel.substanz.treffer",
+        singen: "untertitel.substanz.singen",
+        abschied: "untertitel.substanz.abschied",
+        wasser: "untertitel.substanz.wasser",
+        inventar: "untertitel.substanz.inventar",
     },
-    schritt: { schritt: "Schritte auf {wer}", landung: "Landung auf {wer}" },
-    fahrt: { motor: "Motor brummt", rollen: "Wagen rollt" },
-    musik: { lofi: "♪ Musik" },
+    schritt: { schritt: "untertitel.schritt.schritt", landung: "untertitel.schritt.landung" },
+    fahrt: { motor: "untertitel.fahrt.motor", rollen: "untertitel.fahrt.rollen" },
+    musik: { lofi: "untertitel.musik.lofi" },
     panSchwelle: 0.35, // |pan| darüber zeigt die Richtung
     maxZeilen: 4, // so viele Zeilen höchstens; die älteste weicht
     sek: 2.5, // so lange steht eine Zeile nach ihrer letzten Auffrischung

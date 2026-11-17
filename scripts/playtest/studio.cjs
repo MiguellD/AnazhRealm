@@ -79,20 +79,37 @@ async function checkBandStoffSignatur({ page, check }) {
         // w28-stein-kamm — DER EINE STEIN-KAMM (`_steinStoff`): das Korn eines Steins ist die Zahl seiner Gesetz-Zeile, nie die Rauheit
         // seines Stoffs (der Rahmen mit 0,88 baute das volle Mikro-Relief: die Tore der Ankunft unter Flecken gröber als die Fuge),
         // und jeder Leser liefert dem Kamm nur seine Lage (das Kopfstein rechnete Fuge, Ziehung und Fern-Regel selbst). `korn`: beide
-        // Zeilen tragen 0; `ohne`: rau und glatt bauen kein Mikro-Relief (aoNode); `mutante`: derselbe Quader
+        // Zeilen tragen 0; `ohne`: rau und glatt bauen kein Mikro-Relief (der Stoff frisch gebaut, das Gedächtnis `_foundryMats`
+        // beiseite, gezählt der Ruf des EINEN Reliefs `_mikroRelief` — bis w28-himmel-korn war die Marke der aoNode, den das Relief
+        // schrieb); `mutante`: derselbe Quader
         // als Probe-Zeile mit Korn 0,5 baut es (ohne sie wäre „kein Relief“ blind); `leser`: das Kopfstein ruft den Kamm einmal mit
         // u und v und reicht Kante und Korn weiter; `sinus`: keine Sinus-Ziehung in Kamm und Lesern.
         {
             const [sg, vor, lagen, aus] = [pc.STEIN_GESETZ, { ...r._foundryMats }, [], {}];
-            const ao = (name, rauh) => !!r._foundryTreeMaterial("unknown", { roughness: rauh, stein: name }).aoNode;
+            const relief = (name, rauh) => {
+                const [halt, roh] = [r._foundryMats, r._mikroRelief];
+                let n = 0;
+                r._foundryMats = {};
+                r._mikroRelief = function (...a) {
+                    n++;
+                    return roh.apply(this, a);
+                };
+                try {
+                    r._foundryTreeMaterial("unknown", { roughness: rauh, stein: name });
+                } finally {
+                    delete r._mikroRelief;
+                    r._foundryMats = halt;
+                }
+                return n > 0;
+            };
             const kamm = r._steinStoff;
             const s = (out.stein = {
                 korn: sg.quader.korn === 0 && sg.kopfstein.korn === 0,
-                ohne: !ao("quader", 0.88) && !ao("quader", 0.2),
+                ohne: !relief("quader", 0.88) && !relief("quader", 0.2),
             });
             sg.__probe = { ...sg.quader, korn: 0.5 };
             try {
-                s.mutante = ao("__probe", 0.2);
+                s.mutante = relief("__probe", 0.2);
                 r._steinStoff = function (...a) {
                     lagen.push(a[2]);
                     return kamm.apply(this, a);
@@ -107,9 +124,36 @@ async function checkBandStoffSignatur({ page, check }) {
             s.leser = lagen.length === 1 && !!lagen[0].u && !!lagen[0].v && !!aus.kipp && aus.korn === 0;
             s.sinus = window.__fehlt([kamm, r._steinRahmen, r._kopfsteinFarbe], /\bsin\(/);
         }
+        // w28-himmel-korn — DAS HIMMELS-LICHT LIEST DASSELBE KORN WIE DIE SONNE (`_mikroStoff`, der EINE Stoff des Mikro-Reliefs von
+        // Boden, Fels-Gestalt und Stein): er schreibt das Korn in die Albedo und fasst den aoNode nicht an. `ao`: ein Stoff mit
+        // Himmels-Sicht behält genau sie, einer ohne bleibt ohne, die Albedo trägt das Korn (colorNode); `leser`: kein Glied des
+        // Reliefs schreibt den aoNode; `mutante`: das zweite Bild kehrt zurück (ein Bild der Höhe im aoNode) — die Probe MUSS es
+        // sehen. Die gefallenen Zahlen in `TERRAIN_BUMP` hält gate:altlasten (`krume`, `kavitaet:`), das Bild urteilt
+        // gate:schatten-terminator (K) auf der Karte: das Korn im Schlagschatten gegen das Korn im Licht.
+        {
+            const probe = () => {
+                const sicht = TSL.float(0.5);
+                const [mit, ohne] = [new T.MeshStandardNodeMaterial(), new T.MeshStandardNodeMaterial()];
+                mit.aoNode = sicht;
+                for (const m of [mit, ohne]) r._mikroStoff(TSL, m, TSL.float(0.3), TSL.float(1.0), "erde");
+                return mit.aoNode === sicht && !ohne.aoNode && !!mit.colorNode;
+            };
+            const hk = (out.himmelKorn = { ao: probe(), leser: window.__fehlt([r._mikroStoff, r._mikroGestalt, r._steinRahmen], /aoNode/) });
+            const roh = r._mikroStoff;
+            r._mikroStoff = function (Tm, mat, hoehe, k, stoff) {
+                roh.call(this, Tm, mat, hoehe, k, stoff);
+                mat.aoNode = Tm.exp(hoehe.mul(k));
+            };
+            try {
+                hk.mutante = !probe();
+            } finally {
+                delete r._mikroStoff;
+            }
+        }
         return out;
     });
     check(`w28-stein-kamm: Korn aus der Gesetz-Zeile, EIN Kamm — ${JSON.stringify(res.stein)}`, !!res.stein && !Object.values(res.stein).includes(false)); // prettier-ignore
+    check(`w28-himmel-korn: das Himmels-Licht liest das Korn der Albedo, kein zweites Bild im aoNode — ${JSON.stringify(res.himmelKorn)}`, !!res.himmelKorn && !Object.values(res.himmelKorn).includes(false)); // prettier-ignore
     check(`1310-18 Schlüssel: je Signatur der Welt EIN Programm (${res.paare} geteilt) — getrennt: ${res.welt.slice(0, 3).join(" | ") || "keiner"}`, !res.welt.length && res.paare > 0); // prettier-ignore
     check(
         "1310-18 Schlüssel: das Leucht-Maß ist ein Stoff-Wert (zwei Maße, EIN Programm-Schlüssel)",

@@ -324,6 +324,47 @@ function hoehleVornAmGuss(K, g) {
     for (let o = 0; o < W * H; o++) if (wer[o] === 0 || wer[o] === 1) (haut++, (hoehle += wer[o]));
     return haut ? hoehle / haut : NaN;
 }
+// DAS GESICHT DER MENGE (w28-satz-menge, KOPF_SOLL mengeGesicht): der Leib der Menge (Ofen L2) ist EINE Hülle ohne Auge, Braue und
+// Lippe — die Züge seines Baus reisen als Beipack der Stufe (foundry `__gesichtFern`: `__skelett.gesicht`), der Stoff des Satzes
+// zeichnet sie (stoff-gang `_gangSeite`; der Wirt bricht laut, wo die Stufe sie nicht trägt: `_bewohnerSatz`). Gemessen gegen den
+// Guss der NAHEN Stufe (L0) desselben Genoms, im selben Rahmen: (1) der Radius des Augapfels ±5 %, (2) beide Augen-Mitten an den
+// Mitten der Augäpfel (≤ 0,5 R: die Vorlage des Leib-Raums trägt den Kopf 0,26 R tiefer und 0,36 R weiter vorn als der nahe Guss), (3) die Lidspalte und die Iris sind die des Gesetzes (auge.lid, die Iris-Kugel), (4) der Mund im
+// Kasten der Lippen-Ecken der nahen Haut, seine Breite ±30 %, (5) jede Braue im Kasten der Brauen-Ecken ihrer Seite, (6) die festen
+// Farben stehen (das Weiß heller als die Iris). mengeGesicht = der Anteil der sechs, der hält. Am Stand davor (main 2b826a89) trug
+// der Beipack kein Gesicht: 0 — der Satz der Bewohner zeigte EINE Fläche unter der Haar-Kappe.
+function messeMengeGesicht(sb, eingriff) {
+    const K = sb.__koerperCore;
+    const kern = eingriff && eingriff.kern ? eingriff.kern(K) : K;
+    const G = sb.BAKERS_BY_KIND.koerper(kern, "mensch", 1, 2, null).userData.__skelett.gesicht;
+    if (!G) return { mengeGesicht: 0 };
+    const netze = K.gussNetze(sb.BAKERS_BY_KIND.koerper(kern, "mensch", 1, 0, null), false).filter((n) => n.I);
+    const kasten = (P, wahl) => {
+        const b = [Infinity, -Infinity, Infinity, -Infinity, Infinity, -Infinity];
+        for (let i = 0; i < P.length / 3; i++)
+            if (!wahl || wahl(i))
+                for (let d = 0; d < 3; d++) [b[2 * d], b[2 * d + 1]] = [Math.min(b[2 * d], P[3 * i + d]), Math.max(b[2 * d + 1], P[3 * i + d])]; // prettier-ignore
+        return b;
+    };
+    const mitte = (b) => [(b[0] + b[1]) / 2, (b[2] + b[3]) / 2, (b[4] + b[5]) / 2];
+    const innen = (b, p, rand = 0) => p[0] >= b[0] - rand && p[0] <= b[1] + rand && p[1] >= b[2] - rand && p[1] <= b[3] + rand;
+    const baelle = ["eyeL", "eyeR"].map((j) => kasten(netze.find((n) => n.k === "eye" && n.j === j).P));
+    const R = (baelle[0][1] - baelle[0][0]) / 2;
+    const haut = netze.find((n) => n.k === "haut" && n.j === "head");
+    const ton = haut.o.geometry.attributes.aTon;
+    const zone = (klasse, seite) => kasten(haut.P, (i) => Math.round(ton.getX(i)) === K.menschTon(klasse) && (!seite || seite * haut.P[3 * i] > 0)); // prettier-ignore
+    const [lippen, brauL, brauR] = [zone("lips"), zone("braue", -1), zone("braue", 1)];
+    const AU = K.MENSCH_GESTALT.auge;
+    const nah = (a, b, tol) => Math.abs(a - b) <= tol;
+    const haelt = [
+        nah(G.r, R, 0.05 * R),
+        [0, 1].every((s) => Math.hypot(...mitte(baelle[s]).map((x, d) => x - G.augen[3 * s + d])) <= 0.5 * R),
+        nah(G.spalt[0], AU.lid.winkel / 0.12, 1e-3) && nah(G.spalt[1], AU.lid.oben / 0.12, 1e-3) && nah(G.spalt[2], AU.lid.unten / 0.12, 1e-3) && G.iris[0] > 0.3 && G.iris[0] < 0.6 && G.iris[2] > 0 && G.iris[2] < G.iris[0], // prettier-ignore
+        innen(lippen, G.mund, 0.2 * R) && nah(G.mund[3], (lippen[1] - lippen[0]) / 2, 0.3 * G.mund[3]),
+        innen(brauL, G.brauen, 0.2 * R) && innen(brauR, G.brauen.slice(5), 0.2 * R),
+        G.fest.length === 9 && luma709(G.fest, 0) > luma709(G.fest, 3) && G.mundLinie.length === 3,
+    ];
+    return { mengeGesicht: haelt.filter(Boolean).length / haelt.length, mengeGesichtZuege: +haelt.map((x) => +x).join("") };
+}
 // die Frau (der Mann steht in `messeKopf`, jedes Genom der Menge in `kopfJe`)
 const messeOrbitaFrau = (so, taeter = {}) => {
     const K = so.__koerperCore,
@@ -615,6 +656,154 @@ const messeKleid = (
 const urteileKleid = (so, m) =>
     Object.entries(m).flatMap(([t, x]) => urteile(so, x, "KLEID_SOLL").map((f) => `kleid.${t} ${f}`));
 
+// DIE HAND DER MENGE (w28-satz-hand): der Satz trägt die Hand des nahen Leibs. Am Ofen derselbe Leib (der Mann im Hemd, im
+// Pullover und im Poncho, die Frau im Pullover — die langen Ärmel nennen den Ellbogen, unter dem die Hand hängt) nah (L0: die
+// Hand-Haut am Gelenk) und in der Menge (L2: die Dreiecke, deren Ecken mehrheitlich am Gelenk der Hand hängen), je Hand entlang
+// des Unterarms: die Länge über das Handgelenk hinaus und jenseits der Naht zum Unterarm (ab einem Fünftel der nahen Länge —
+// dort hängt nah die Haut des Arms über der Hand, fern die Naht des Gusses) die BEDECKTE FLÄCHE von vorn (die Ebene der
+// Handfläche: die Lücken der Finger, der Daumen) und von der Seite (die flache Hand), als Abweichung der Menge in %. Die
+// Ausdehnung allein unterscheidet die Faust nicht von der offenen Hand: der Klumpen füllt denselben Kasten (das Dorf im Poncho:
+// Länge +2,7 %, Breite +1,4 %, Dicke −2,2 % — im Bild die Faust). Bis w28-satz-hand erbte die Hand der Menge zudem die Zone des
+// Ärmels (foundry-core `__mengenPrims`), wo ein Oberteil den Ellbogen nennt.
+// Der Täter: `{ kern }` (der Kern, mit dem der Ofen gießt).
+// das Band je Maß in % gegen die nahe Hand: der Klumpen (die Faust: +24…+42 % Fläche) liegt über ihm, die zerfallenen Finger
+// (ohne Verrundung und Zuschlag auf dem Raster der Menge: −51…−61 %) unter ihm; 20 % der Hand sind bei 9 m 1–2 Bildpunkte
+const HAND_MENGE_SOLL = { laenge: [-20, 20], vorn: [-20, 10], seite: [-20, 10] };
+const HAND_MENGE_ZELLE = 0.004; // E, das Raster der bedeckten Fläche (die Hand misst ~0,46 E)
+const messeHandMenge = (so, taeter = {}, K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore) => {
+    const KC = so.__koerperCore;
+    const m = {};
+    for (const [wer, dials] of [["hemd", {}], ["pullover", { top: "pullover" }], ["poncho", { top: "poncho" }], ["frauPullover", { gender: 0, top: "pullover" }]]) { // prettier-ignore
+        const netze = (lod, g = so.BAKERS_BY_KIND.koerper(K, "mensch", 1, lod, { dials })) => Object.assign(KC.gussNetze(g, false), { namen: g.userData.__skelett.skinJoints }); // prettier-ignore
+        const [nah, fern] = [netze(0), netze(2)];
+        for (const sd of ["1", "-1"]) {
+            // die Dreiecke der Hand im Raum des Unterarms: [s entlang, w quer in der Handfläche, t durch sie] je Ecke
+            const hand = (N) => {
+                const [W, E] = [N.lage("hand" + sd), N.lage("elbow" + sd)];
+                const nz = ([x, y, z], l = Math.hypot(x, y, z)) => [x / l, y / l, z / l];
+                const a = nz([W[0] - E[0], W[1] - E[1], W[2] - E[2]]);
+                const w = nz([a[1], -a[0], 0]); // a × z
+                const t = [a[1] * w[2] - a[2] * w[1], a[2] * w[0] - a[0] * w[2], a[0] * w[1] - a[1] * w[0]];
+                const T = [];
+                for (const n of N) {
+                    const ecke = (i) => [a, w, t].map((ax) => ax.reduce((s, c, d) => s + c * (n.P[3 * i + d] - W[d]), 0));
+                    const I = n.I || Array.from({ length: n.P.length / 3 }, (_, i) => i);
+                    // die geskinnte Hülle (die Menge) zählt ihre Ecken am stärksten Gewicht, die starre (nah) an ihrem Gelenk
+                    let amGelenk = null;
+                    if (n.haut) {
+                        const [si, sw] = [n.o.geometry.attributes.skinIndex, n.o.geometry.attributes.skinWeight];
+                        amGelenk = (i) => {
+                            let [b, bw] = [0, -1];
+                            for (let k = 0; k < 4; k++) if (sw.getComponent(i, k) > bw) [bw, b] = [sw.getComponent(i, k), si.getComponent(i, k)];
+                            return N.namen[b] === "hand" + sd;
+                        };
+                    } else if (!(n.j === "hand" + sd && n.k === "haut")) continue;
+                    for (let f = 0; f < I.length; f += 3) {
+                        const ix = [I[f], I[f + 1], I[f + 2]];
+                        if (amGelenk && ix.filter(amGelenk).length < 2) continue;
+                        T.push(ix.map(ecke));
+                    }
+                }
+                return T;
+            };
+            const [hn, hf] = [hand(nah), hand(fern)];
+            const L = (T) => Math.max(0, ...T.flat().map((q) => q[0]));
+            const s0 = 0.2 * L(hn);
+            // die bedeckte Fläche jenseits von s0 in der Ebene (s, k): die Zellen, deren Mitte in einem Dreieck liegt
+            const flaeche = (T, k, c = HAND_MENGE_ZELLE) => {
+                const zellen = new Set();
+                for (const d of T) {
+                    const [p, q, r] = d.map((e) => [e[0], e[k]]);
+                    const det = (q[0] - p[0]) * (r[1] - p[1]) - (r[0] - p[0]) * (q[1] - p[1]);
+                    if (!det) continue;
+                    const [u0, u1] = [Math.max(s0, Math.min(p[0], q[0], r[0])), Math.max(p[0], q[0], r[0])];
+                    const [v0, v1] = [Math.min(p[1], q[1], r[1]), Math.max(p[1], q[1], r[1])];
+                    for (let i = Math.floor(u0 / c); i * c <= u1; i++)
+                        for (let j = Math.floor(v0 / c); j * c <= v1; j++) {
+                            const [x, y] = [(i + 0.5) * c, (j + 0.5) * c];
+                            if (x < s0) continue;
+                            const l1 = ((q[0] - x) * (r[1] - y) - (r[0] - x) * (q[1] - y)) / det;
+                            const l2 = ((r[0] - x) * (p[1] - y) - (p[0] - x) * (r[1] - y)) / det;
+                            if (l1 >= 0 && l2 >= 0 && l1 + l2 <= 1) zellen.add(i * 4096 + j);
+                        }
+                }
+                return zellen.size * c * c;
+            };
+            const pct = (f, n) => (n > 0 ? +(((f - n) / n) * 100).toFixed(1) : null);
+            m[`${wer}${sd === "1" ? "R" : "L"}`] = { laenge: pct(L(hf), L(hn)), vorn: pct(flaeche(hf, 1), flaeche(hn, 1)), seite: pct(flaeche(hf, 2), flaeche(hn, 2)), dreiecke: hf.length }; // prettier-ignore
+        }
+    }
+    return m;
+};
+const urteileHandMenge = (m) =>
+    Object.entries(m).flatMap(([wer, x]) => [
+        ...(x.dreiecke < 8 ? [`menge.hand ${wer} ohne Hand (${x.dreiecke} Dreiecke am Gelenk)`] : []),
+        ...["laenge", "vorn", "seite"]
+            .filter((k) => !(x[k] >= HAND_MENGE_SOLL[k][0] && x[k] <= HAND_MENGE_SOLL[k][1]))
+            .map((k) => `menge.hand ${wer} ${k} ${x[k]} % gegen die nahe Hand (Soll ${HAND_MENGE_SOLL[k][0]} … +${HAND_MENGE_SOLL[k][1]} %)`),
+    ]);
+
+// DIE FLANKE DER MENGE (w28-gestalt-norm): der Rumpf des Satzes weicht dem ruhenden Arm wie der des nahen Leibs. Am Ofen
+// derselbe Leib (die Vorlage des Leib-Raums) im Poncho und im Pullover nah (L0) und in der Menge (L2), in der Ruhe: je Höhe der Flanke
+// (y 3,1 … 3,8 E, zwischen Hüfte und Ellbogen) die BEDECKTE Strecke quer durch die Mitte des Leibs — der Rumpf samt Stoff bis zur
+// ersten Luft neben ihm; schließt der Satz die Luft zum Arm, läuft sie bis an seine Außenkante. Das Maß: die größte Abweichung
+// der Menge in % (`breit`, wo beide Luft zeigen) und die Zahl der Höhen, an denen nah sichtbare Luft steht und fern keine (`zu`). Bis w28-gestalt-norm wich
+// erst das Netz der Zeile (Kante 0,21 E, keine Ecke unter dem Arm, keine Entspannung): die Lappen des Ponchos standen vor und
+// hinter dem Arm (Vorlage des Poncho-Dorfs 0x51ed: Rumpf +0,05…+0,13 E je Seite, die Luft an zwei von acht Höhen zu).
+// Der Täter: `{ kern }` (der Kern, mit dem der Ofen gießt).
+const FLANKE_MENGE_SOLL = { breit: [-12, 12], zu: [0, 0] };
+const FLANKE_MENGE_LUFT = 0.05; // E (~1,6 cm, bei 9 m knapp zwei Bildpunkte): ab dieser Luft des nahen Leibs zählt eine geschlossene Höhe
+const messeFlankeMenge = (so, taeter = {}, K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore) => {
+    const KC = so.__koerperCore;
+    const m = {};
+    for (const [wer, tracht] of [["poncho", { top: "poncho" }], ["pullover", { top: "pullover" }]]) { // prettier-ignore
+        // (die Stufe der Menge gießt die Vorlage ihres Leib-Raums: der nahe Leib steht an denselben Dials, koerper `leibRaumVorlage`)
+        const dials = KC.leibRaumVorlage(tracht);
+        const mitte = (lod) => {
+            const N = KC.gussNetze(so.BAKERS_BY_KIND.koerper(K, "mensch", 1, lod, { dials }), false);
+            const T = [];
+            for (const n of N) {
+                if (!n.I) continue;
+                for (let f = 0; f < n.I.length; f += 3) T.push([0, 1, 2].map((k) => [n.P[3 * n.I[f + k]], n.P[3 * n.I[f + k] + 1]]));
+            }
+            // je Höhe die Strecken des Schnitts, verschmolzen; die Strecke über x = 0 ist der Rumpf, [Breite, Zahl der Strecken]
+            const aus = [];
+            for (let y = 3.1; y < 3.85; y += 0.1) {
+                const seg = [];
+                for (const t of T) {
+                    let [a, b] = [Infinity, -Infinity];
+                    for (let k = 0; k < 3; k++) {
+                        const [p, q] = [t[k], t[(k + 1) % 3]];
+                        if ((p[1] - y) * (q[1] - y) > 0 || p[1] === q[1]) continue;
+                        const x = p[0] + ((y - p[1]) / (q[1] - p[1])) * (q[0] - p[0]);
+                        [a, b] = [Math.min(a, x), Math.max(b, x)];
+                    }
+                    if (b >= a) seg.push([a, b]);
+                }
+                seg.sort((p, q) => p[0] - q[0]);
+                const M = [];
+                for (const q of seg) M.length && q[0] <= M[M.length - 1][1] + 0.005 ? (M[M.length - 1][1] = Math.max(M[M.length - 1][1], q[1])) : M.push(q.slice());
+                const ri = M.findIndex((q) => q[0] <= 0 && q[1] >= 0);
+                const r = M[ri];
+                // die Luft neben dem Rumpf: der kleinere Abstand zur nächsten Strecke links und rechts (ohne Nachbar keine)
+                aus.push([r ? r[1] - r[0] : 0, r && ri > 0 && ri < M.length - 1 ? Math.min(r[0] - M[ri - 1][1], M[ri + 1][0] - r[1]) : 0]);
+            }
+            return aus;
+        };
+        const [nah, fern] = [mitte(0), mitte(2)];
+        // die Breite zählt, wo beide Luft zeigen; `zu`: nah steht sichtbare Luft (ab FLANKE_MENGE_LUFT), fern keine
+        const pct = nah.map((n, i) => (n[1] > 0 && fern[i][1] > 0 ? ((fern[i][0] - n[0]) / n[0]) * 100 : 0));
+        m[wer] = { breit: +pct.reduce((a, b) => (Math.abs(b) > Math.abs(a) ? b : a), 0).toFixed(1), zu: nah.filter((n, i) => n[1] >= FLANKE_MENGE_LUFT && !(fern[i][1] > 0)).length, luft: +Math.max(...nah.map((n) => n[1])).toFixed(3) };
+    }
+    return m;
+};
+const urteileFlankeMenge = (m) =>
+    Object.entries(m).flatMap(([wer, x]) =>
+        ["breit", "zu"]
+            .filter((k) => !(x[k] >= FLANKE_MENGE_SOLL[k][0] && x[k] <= FLANKE_MENGE_SOLL[k][1]))
+            .map((k) => `menge.flanke ${wer} ${k} ${x[k]} gegen den nahen Leib (Soll ${FLANKE_MENGE_SOLL[k][0]} … ${FLANKE_MENGE_SOLL[k][1]})`)
+    );
+
 // DER KANON (w28-leib-kanon, koerper-core `leibKanon`, die Bänder LEIB_SOLL.kanon): am Ofen L0 nackt der Mann (gender 1) und die Frau
 // (gender 0) an den Start-Dials — die Maße des Rumpfs, der Schulter und der Hüfte als Anteil von H; `--kanon <ordner>` legt die
 // Umrisse vorn und seitlich als PNG ab (rot die Zehntel von H, blau die Soll-Höhen von Schulter und Schritt). Täter: `{ kern }`.
@@ -731,7 +920,9 @@ function messeMenge(eingriff, W = mengeWelt(eingriff)) {
     const px = (1080 / (2 * Math.tan((A.KAM_FOV_GRAD * Math.PI) / 360)) / A.BEWOHNER.nahM) * ((8 * A.PLAYER_KH) / 6);
     const m = { gleich: 0, min: Infinity, paar: null };
     for (const { S, R } of W.siedlungen) {
-        const je = S.liste.map((b) => [A._leibRaumLeib(R, b.raumPunkt).map((x) => x * b.raumSkala * px), b.seed]);
+        // die Ecke, wie die Matrix seines Satzes sie stellt (w28-gestalt): seine Größe, Breite und Tiefe seines Genoms
+        const mal = (b) => [b.raumSkala * b.breite * px, b.raumSkala * px, b.raumSkala * b.tiefe * px];
+        const je = S.liste.map((b) => [A._leibRaumLeib(R, b.raumPunkt).map((x, e) => x * mal(b)[e % 3]), b.seed]);
         je.forEach(([a, s], i) =>
             je.slice(i + 1).forEach(([c, t]) => {
                 const d = Math.max(
@@ -744,8 +935,12 @@ function messeMenge(eingriff, W = mengeWelt(eingriff)) {
     }
     return m;
 }
-// das Urteil der Menge: kein Paar gleicher Gestalt (unter 1 px)
-const urteileMenge = (m) => (m.gleich ? [`menge.gleich ${m.gleich} Paare unter 1 px (${m.paar})`] : []);
+// das Urteil der Menge: Paare gleicher Gestalt (unter 1 px) höchstens MENGE_GLEICH_SOLL. Seit w28-gestalt steht im Satz die
+// Form des nahen Leibs (das Weiche seiner Gestalt auf seinen Knochen, Breite und Tiefe ±restMax) — bis dahin trug der Satz den
+// Punkt des eigenen Genoms, eine Vielfalt, die der nahe Leib nie hatte. Gemessen: 1 Paar von 2 450 (20973:4:0 / 20973:10:0,
+// eine Gestalt, 0,91 px: Arm 1 cm), das nächste 1,55 px. Die Ratsche fällt auf 0, sobald der nahe Leib sein eigenes Weiches trägt.
+const MENGE_GLEICH_SOLL = 1;
+const urteileMenge = (m) => (m.gleich > MENGE_GLEICH_SOLL ? [`menge.gleich ${m.gleich} Paare unter 1 px (${m.paar}), Soll ≤ ${MENGE_GLEICH_SOLL}`] : []); // prettier-ignore
 
 // DER BAU (w28-leib-genom, koerper BAU_GESETZ; die Bänder BAU_SOLL): das Skelett jedes Bewohners ist sein eigenes — gemessen am
 // GELESENEN, mit Vorzeichen. (1) DIE STREUUNG IN DER MENGE: je Bewohner sein gezeichneter Leib der Menge (die Vorlage der Stufe 2 an
@@ -956,7 +1151,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "bau" ? urteileBau(sb, messeBau(verzerre, 1)) : kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf === "kalotte" ? urteileKalotte(sb, messeKalotte(sb, verzerre)) : kopf === "grob" ? urteileKopf(sb, messeGrob(sb, verzerre)) : /^kleid/.test(kopf) ? urteileKleid(sb, messeKleid(sb, verzerre, { kleid: "guss", kleidMenge: "menge", kleidSchuh: "schuh" }[kopf])) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "handMenge" ? urteileHandMenge(messeHandMenge(sb, verzerre)) : kopf === "flankeMenge" ? urteileFlankeMenge(messeFlankeMenge(sb, verzerre)) : kopf === "bau" ? urteileBau(sb, messeBau(verzerre, 1)) : kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "formFrau" ? urteileFormFrau(sb, messeFormFrau(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf === "kalotte" ? urteileKalotte(sb, messeKalotte(sb, verzerre)) : kopf === "grob" ? urteileKopf(sb, messeGrob(sb, verzerre)) : /^kleid/.test(kopf) ? urteileKleid(sb, messeKleid(sb, verzerre, { kleid: "guss", kleidMenge: "menge", kleidSchuh: "schuh" }[kopf])) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -1079,6 +1274,8 @@ if (SELBSTTEST) {
     pruefe("KL3 die Hose ohne die Linie ihres Bunds (der gezackte Rand der Haut-Region) wird erkannt", zonen((z) => (z.bund ? { bund: null } : {})), /^kleid\.\w+ bundEben .* > /, "kleid"); // prettier-ignore
     pruefe("KL4 der Poncho ohne Weite (ein zweiter Pullover) wird im Guss erkannt", zonen(() => ({ weite: null })), /^kleid\.tracht ponchoWeiter .* < /, "kleid"); // prettier-ignore
     pruefe("KL5 der Poncho ohne Weite wird im Satz der Menge erkannt (die Menge liest dasselbe Gesetz)", zonen(() => ({ weite: null })), /^kleid\.tracht ponchoMengeWeiter .* < /, "kleidMenge"); // prettier-ignore
+    pruefe("HM1 der Ärmel, der die Hand schluckt (die Zone des Oberteils nennt die Hand: die Faust), wird im Satz der Menge erkannt", { kern: (K) => ({ ...K, kleidZonen: (d) => (K.kleidZonen(d) || []).map((z) => ((z.teile || []).includes("elbow1") ? { ...z, teile: [...z.teile, "hand1", "hand-1"] } : z)) }) }, /^menge.hand (frau)?[pP]ullover[RL] (vorn|seite) /, "handMenge"); // prettier-ignore
+    pruefe("FM1 die Anlage, die an der dichten Hülle der Menge nichts rechnet (der Rumpf weicht dem Arm nicht: die Lappen des Ponchos schließen die Luft), wird im Satz der Menge erkannt", { kern: (K) => ({ ...K, armAnlage: (B, H, G) => (H.length === 1 && H[0].n > 4000 ? 0 : K.armAnlage(B, H, G)) }) }, /^menge.flanke poncho (breit|zu) /, "flankeMenge"); // prettier-ignore
     // DER SCHUH: (KL6) dreifach dick (der Ballon am Fuß), (KL7) ohne Auflage (ein Zehntel der Dicke: der Schuh liegt in der
     // Haut), (KL8) ohne die Linie seines Schafts (sie liegt über jeder Form: der Rand sind die Ohren über den Knöcheln), (KL9, am
     // Guss) die Sohle um die Dicke unter dem Fuß (der Schuh vor Gelände H5: sie steht im Boden)
@@ -1155,6 +1352,18 @@ if (SELBSTTEST) {
     // DIE HÖHLE VORN (w28-iris-frei): der Brauen-Bogen über die ganze Augen-Partie gezogen nimmt der Haut vorn den Ton der Höhle —
     // der Stand am Kopf von w28-wange (dort nahm ihn der Saum im Raum: hoehleVorn 0,000)
     pruefe("OH1 die Höhle ohne Ton vorn um das Auge wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, kopfHaut: { ...K.MENSCH_GESTALT.kopfHaut, brauBogen: 0.6 } } }) }, /^hoehleVorn .* </, true); // prettier-ignore
+    // DAS GESICHT DER MENGE (w28-satz-menge): der Guss der Menge ohne das Gesetz seiner Züge (der Stand davor: kein Beipack) — der
+    // Ofen bricht laut, oder die Linse nennt das Maß
+    {
+        let wurf = "";
+        try {
+            wurf = urteileKopf(ladeOfen(), messeMengeGesicht(ladeOfen(), { kern: (K) => ({ ...K, KOPF_TON: { ...K.KOPF_TON, mundLinie: null } }) })).find((x) => /^mengeGesicht /.test(x)) || ""; // prettier-ignore
+        } catch (e) {
+            wurf = /MENGEN-LEIB: das Gesetz des Gesichts fehlt/.test(e.message) ? e.message : "";
+        }
+        console.log(`  ${wurf ? "✅" : "❌"} SG1 der Guss der Menge ohne das Gesetz seines Gesichts bricht laut${wurf ? " — " + wurf : ""}`);
+        if (!wurf) rot++;
+    }
     pruefe("KA1 der Brustkorb anderthalbfach tief wird erkannt", nachLeser((p, i, s) => { if (s > 0.4 && s < 0.7) p[i + 2] *= 1.5; }), /^kanon\.mann brustT /, "kanon"); // prettier-ignore
     pruefe("KA2 das Becken tief hängend wird erkannt", { kern: (K) => ({ ...K, morphAuf: (B, d) => { const M = K.morphAuf(B, d); B.parts.rumpfa.position.y -= 0.3; B.parts.rumpfa.scale.y *= 1.6; return M; } }) }, /^kanon\.(mann|frau) schritt .* </, "kanon"); // prettier-ignore
     // DIE GESTALT (w28-leib-kanon): der Guss ohne den Leser (die Kugel-Ketten: Wurst-Glieder, Kugel-Knie) und der Rumpf ohne seine
@@ -1200,6 +1409,8 @@ zeige(m);
 const so = ladeOfen();
 const mk = messeKopf(so);
 zeige(mk);
+const mmg = messeMengeGesicht(so);
+zeige(mmg);
 const mW = mengeWelt();
 const mm = messeMenge(null, mW);
 const mb = messeBau(null, 0, mW);
@@ -1212,6 +1423,10 @@ zeige(ml);
 const ms = messeStand(so);
 zeige(Object.fromEntries(ms.map((r, i) => ["innenStand" + i, r.innenStand])));
 const mkl = messeKleid(so);
+const mhm = messeHandMenge(so);
+console.log("  menge.hand (Satz gegen die nahe Hand, %):", Object.entries(mhm).map(([w, x]) => `${w} L ${x.laenge} vorn ${x.vorn} Seite ${x.seite}`).join(" · ")); // prettier-ignore
+const mfm = messeFlankeMenge(so);
+console.log("  menge.flanke (Rumpf des Satzes gegen den nahen, % · Höhen ohne Luft):", Object.entries(mfm).map(([w, x]) => `${w} ${x.breit} · ${x.zu}`).join(" · ")); // prettier-ignore
 const mka = messeKalotte(so);
 const mgr = messeGrob(so);
 const mof = messeOrbitaFrau(so);
@@ -1231,7 +1446,7 @@ console.log(
 console.log("  form.frau:", Object.entries(mfF).filter(([, x]) => typeof x === "number").map(([n, x]) => `${n} ${x.toFixed(2)}`).join(" · ")); // prettier-ignore
 const iKanon = process.argv.indexOf("--kanon");
 if (iKanon > 0) kanonBilder(mkn, process.argv[iKanon + 1] || "artifacts/kanon", so.__koerperCore.LEIB_SOLL.kanon);
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileKopf(so, mof).map((x) => "orbita.frau " + x), urteileMenge(mm), urteileBau(so, mb), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKleid(so, mkl), urteileKalotte(so, mka), urteileKopf(so, mgr), urteileKopf(so, mof).map((x) => "orbita.frau " + x), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileKopf(so, mmg), urteileKopf(so, mof).map((x) => "orbita.frau " + x), urteileMenge(mm), urteileHandMenge(mhm), urteileFlankeMenge(mfm), urteileBau(so, mb), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKleid(so, mkl), urteileKalotte(so, mka), urteileKopf(so, mgr), urteileKopf(so, mof).map((x) => "orbita.frau " + x), urteileKanon(so, mkn), urteileForm(so, mf), urteileFormFrau(so, mfF), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
 urteilEnde(
     fehler.length,
     `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),

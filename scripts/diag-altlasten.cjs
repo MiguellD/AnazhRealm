@@ -816,6 +816,10 @@ const FORBIDDEN = [
     ...["costMsSum", "costBudgetMs"].map((token) => [token, "w28-nexus-uhr — die Regel-Kosten sind ihr Budget-Anteil (kostenSum), nie Wandzeit", ["scripts/playtest.cjs"]]), // prettier-ignore
     // w28-takt-frist — DIE EINE FRIST AB DEM KOPF DES TAKTS (`_fristStellen`): jede Uhr daneben fiel
     ...["BAU_FRIST_MS", "BAU_ALTER_", "_makeFrameBudget", "_deferrableBudgetMs", "FRAME_SCHED_", "SCATTER_SLICE_MS", "PERF_RENDER_CALL_MS"].map((t) => [t, "w28-takt-frist — die EINE Frist (TAKT_FRIST), der Regler liest phase.gpuMs"]),
+    // w28-himmel-korn — DAS HIMMELS-LICHT LIEST DASSELBE KORN WIE DIE SONNE: das zweite Bild der Höhe im aoNode (`_mikroStoff`) fiel mit
+    // seinen Zahlen in `TERRAIN_BUMP` — im Schlagschatten sprang es je Kiesel 1 : 5,8 (gate:schatten-terminator (K) misst das Bild)
+    // … und das Korn ist eine Spalte des Stoffs (die Stoff-Tafel, Zeilen erde und stein), nie wieder EINE Zahl in `TERRAIN_BUMP`
+    ...["krume", "kavitaet:", "BUMP.korn"].map((t) => [t, "w28-himmel-korn — das Korn der Albedo ist das EINE Bild der Höhe (_mikroStoff)"]),
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -1322,6 +1326,11 @@ const ENTSORGUNG_BESITZER = {
     _kammKroneDispose: { arten: ["geometry"], grund: "die Kamm-Krone (ihr Netz und ihr Gast, Ring-Besitz)" },
     _kammKroneVorbau: { arten: ["geometry"], grund: "der Gast der Kamm-Krone: sein leeres Dreieck, sobald das Netz zeichnete (w28-leben-vorbau)" },
     verifyComputeContribution: { arten: ["geometry", "material"], grund: "das Prüf-Mesh der Compute-Probe" },
+    _arenaKlasse: {
+        arten: ["geometry"],
+        // Gegner Speicher F7 (Runden-Zensus 16.11.): ihre Puffer gehören dem Lager, ihr Entsorgen bucht nur den Abgang
+        grund: "die Geometrie-Arena: ihre eigene Hülle (je `_geoNeu` frisch) — die alte beim Neubau, ihre beim Fallen",
+    },
     _tickPortalMembranes: {
         arten: ["material"],
         grund: "Membran- und Nebel-Stoff je Tor (die Geometrie gehört dem Memo je Gestalt)",

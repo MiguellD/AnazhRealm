@@ -1359,6 +1359,9 @@
     //   von vorn am Guss L0, ohne Augapfel und Iris), der den Ton der Höhle trägt — die Höhle ist die Öffnung der Orbita, wie die Kamera
     //   vor dem Gesicht sie sieht (das Unterlid und die Haut darunter; über dem Auge beginnt sie unter dem Brauen-Bogen). 0 = der Ton
     //   steht nur noch seitlich am Augenwinkel (der Stand nach w28-gesicht: die Station mensch.K4#1 las dort Streiflicht statt Höhle).
+    //   w28-satz-menge: mengeGesicht = der Anteil der Züge (Augapfel, Augen-Mitten, Lidspalte und Iris, Mund, Brauen, feste Farben), die
+    //   der Guss der Menge (L2) als Gesetz seines Gesichts beipackt (foundry `__gesichtFern`) und die auf dem Guss der nahen Stufe (L0)
+    //   desselben Genoms liegen — der Leib der Menge trägt keine Ecke für Auge, Braue, Lippe: der Stoff des Satzes zeichnet sie.
     // prettier-ignore
     var KOPF_SOLL = Object.freeze({
         augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
@@ -1370,6 +1373,7 @@
         lidSpalt: [0.33, 0.5], lidSchulter: [0, 0.12], lidZu: [0, 0], lidWulst: [0, 0.1], augeWeiss: [0.2, 0.5], haarHaube: [0, 0], hautFleck: [0, 0.02],
         orbitaOben: [0.67, 1.0], orbitaUnten: [0.08, 0.42], wangeVor: [0, 0.33], lidHinterRand: [0, 1],
         hoehleVorn: [0.3, 1],
+        mengeGesicht: [1, 1],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
     // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand
@@ -2566,6 +2570,7 @@
         spalt: 0.02, // die Anlage: so weit (E, ~6 mm, zwei Luft-Breiten des Tuch-Gesetzes) liegt die gewichene Rumpf-Hülle über dem Arm
         rand: 0.3, // so weit (E, ~8,5 cm, längs der Fläche) entspannt sich das Gewebe um die gewichenen Ecken
         entspannen: 16, // Runden der Entspannung
+        ringe: 2, // so viele Kanten fasst die Reichweite `rand` mindestens, damit sich Gewebe entspannt (w28-gestalt: ein gröberes Netz — der Leib der Menge, Kante 0,21 E gegen 0,05–0,10 E der nahen Stufen — trägt zwischen der gewichenen Ecke und dem Rand der Reichweite keine Fläche; das Mittel seiner Nachbarn zog dort die Flanke zur Mitte des Rumpfs, 0,13–0,17 E statt 0,06 E)
         bisRad: 1.2, // höchstens so weit (rad) spreizt die Schulter
         ellbogenRad: 0.3, // der Tragewinkel des Ellbogens höchstens (rad, ~17°)
         stellen: 14, // Halbierungen je Winkel
@@ -4722,12 +4727,22 @@
         var klasse = gelenke.map(function (g) {
             return g === "torso" || g === "mensch" ? 1 : /^(arm|elbow|hand)1$/.test(g) ? 2 : /^(arm|elbow|hand)-1$/.test(g) ? 3 : 0;
         });
+        // (w28-gestalt, der Leib der Menge ist EIN Netz mit Hand und Schuh: die Hand ist kein Ärmel — eine Ecke über 0,5 Hand-Gewicht
+        // misst die Hülle des Arms nicht (nah ist die Hand ein eigenes starres Netz, nie Hülle))
+        var istHand = gelenke.map(function (g) {
+            return /^hand-?1$/.test(g);
+        });
         huellen.forEach(function (h) {
             h.kl = new Uint8Array(h.n);
+            h.hd = new Uint8Array(h.n);
             for (var i = 0; i < h.n; i++) {
-                var w = [0, 0, 0, 0];
-                for (var k = 4 * i; k < 4 * i + 4; k++) w[klasse[h.si[k]]] += h.sw[k];
+                var w = [0, 0, 0, 0], wh = 0;
+                for (var k = 4 * i; k < 4 * i + 4; k++) {
+                    w[klasse[h.si[k]]] += h.sw[k];
+                    if (istHand[h.si[k]]) wh += h.sw[k];
+                }
                 h.kl[i] = w[1] > 0.5 ? 1 : w[2] > 0.5 ? 2 : w[3] > 0.5 ? 3 : 0;
+                h.hd[i] = wh > 0.5 ? 1 : 0;
             }
         });
         var laenge = function (x, y, z) {
@@ -4785,7 +4800,7 @@
             };
             var huelle = 0;
             huellen.forEach(function (h) {
-                for (var i = 0; i < h.n; i++) if (h.kl[i] === Z.kl && Z.f(h.pos, 3 * i) >= 1) huelle = Math.max(huelle, hoehe(E, h.pos[3 * i], h.pos[3 * i + 1], h.pos[3 * i + 2], 1));
+                for (var i = 0; i < h.n; i++) if (h.kl[i] === Z.kl && !h.hd[i] && Z.f(h.pos, 3 * i) >= 1) huelle = Math.max(huelle, hoehe(E, h.pos[3 * i], h.pos[3 * i + 1], h.pos[3 * i + 2], 1));
             });
             Z.soll = huelle + A.spalt;
             seiten.push(Z);
@@ -4867,8 +4882,17 @@
                     weit[w] = dw;
                 }
             }
+            // die mittlere Kante des Gewebes (Rumpf-Ecken im Umkreis) gegen die Reichweite: ARM_RUHE.ringe
+            var kS = 0, kN = 0;
+            for (z = 0; z < frei.length; z++)
+                for (k = 0; k < nb[(v = frei[z])].length; k++) {
+                    if (h.kl[(w = nb[v][k])] !== 1) continue;
+                    kS += laenge(h.pos[3 * w] - h.pos[3 * v], h.pos[3 * w + 1] - h.pos[3 * v + 1], h.pos[3 * w + 2] - h.pos[3 * v + 2]);
+                    kN++;
+                }
+            var runden = kN && (kS / kN) * A.ringe > A.rand ? 0 : A.entspannen;
             var neu = new Float64Array(3 * h.n);
-            for (var r = 0; r < A.entspannen; r++) {
+            for (var r = 0; r < runden; r++) {
                 for (z = 0; z < frei.length; z++) {
                     var m = [0, 0, 0], n = 0, L = rand[(v = frei[z])] || nb[v];
                     for (k = 0; k < L.length; k++) {
@@ -5120,19 +5144,32 @@
             kontor: Object.freeze({ werkAm: "platz" }),
             // DER HÄNDLER (w28-stadt-grammatik): je Stand des Plans steht EINER hinter der Theke (der Wirt gibt ihm die Rolle wie
             // dem Fahrer, `_bewohnerListe`) — von früh bis zum Abend, das Mittag hält er durch: kein Stand steht leer
-            haendler: Object.freeze({ werk: Object.freeze([7, 18.5]), mittagAmWerk: true }),
+            // (`regenfest`: unter dem Dach seines Stands bleibt er auch im Regen, TAGES_GESETZ.regen)
+            haendler: Object.freeze({ werk: Object.freeze([7, 18.5]), mittagAmWerk: true, regenfest: true }),
             // DER FAHRER (PFLICHT-OFFEN C): wer einen Wagen der Stadt fährt (der Wirt gibt ihm die Rolle, `_verkehrAnlegen`), ist
             // von früh bis spät am Steuer — sein Werk ist der Platz seines Wagens, das Mittag fährt er durch; DER NACHTFAHRER
             // lebt denselben Tag um `versatzH` Stunden versetzt (am Steuer von 19 bis 7 Uhr: der Wagen der Stadt fährt bei Tag
             // und bei Nacht, am Platz wechselt die Schicht)
-            fahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true, haltung: false }),
-            nachtfahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true, versatzH: 12, haltung: false }),
+            fahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true, haltung: false, regenfest: true }),
+            nachtfahrer: Object.freeze({
+                werk: Object.freeze([7, 19]),
+                mittagAmWerk: true,
+                versatzH: 12,
+                haltung: false,
+                regenfest: true,
+            }),
             // DIE WACHE (PFLICHT-OFFEN A, der Prüfplatz): wer am Platz Wache steht (der Wirt gibt die Rolle zwei Bewohnern, wie
             // dem Fahrer), steht von 6 bis 20 Uhr an seinem Punkt — sein Werk und sein Platz sind der Wache-Punkt, das Mittag hält
             // er durch; DER NACHTWÄCHTER lebt denselben Tag um `versatzH` Stunden versetzt (18 bis 8 Uhr) — zu jeder Stunde steht
             // einer draußen, auch um Mitternacht, wenn jeder andere drinnen schläft (`ruhe`)
-            waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, haltung: false }),
-            nachtwaechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, versatzH: 12, haltung: false }),
+            waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, haltung: false, regenfest: true }),
+            nachtwaechter: Object.freeze({
+                werk: Object.freeze([6, 20]),
+                mittagAmWerk: true,
+                versatzH: 12,
+                haltung: false,
+                regenfest: true,
+            }),
         }),
         // DAS ANGEBOT JE ORT (Art → Güte je Bedürfnis): die Rolle eines Slots, der Platz, der Acker; `sonst` jede Rolle, die
         // hier keine Zeile trägt; `daheim` das eigene Haus aus der Sicht seiner Leute (der Tisch, die Bank vor der Tür)
@@ -5168,6 +5205,17 @@
         // `haltung: false` (die Wache, der Fahrer am Steuer) stehen neutral. Bis hier schrieb der Wirt den Akt und las ihn nie:
         // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
         haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad" }),
+        // DER REGEN TREIBT INS HAUS (mensch.kopplung.leben S1 der Karte 2; Leser: `tagesPlan`, sein Wirt `_bewohnerSoll` reicht
+        // den Regen der Welt, den Kanal `rain` des EINEN Wetter-Felds 0–1): steht der Regen am Ort über der Schwelle eines
+        // Menschen (`ab` ± `streuH` aus seinem Samen — das Dorf flieht nicht im selben Atemzug, der Übergang des Worts leert den
+        // Platz über seine Sekunden), wird JEDER Akt draußen drinnen — er bleibt daheim (der Schmied in seiner Schmiede, der
+        // Wirt im Gasthaus; wer am Platz oder auf dem Acker arbeitet, geht heim); draußen bleibt nur, wessen Arbeit einen
+        // Posten hat (die Rolle `regenfest`: der Händler unter dem Dach seines Stands, der Fahrer am Steuer, die Wache). Die
+        // Tafel des Wetters (phyto WX_GESETZ.rain): klar 0 · nebel 0 · bewoelkt 0,12 · regen 0,6 · sturm 1 — bei Wolken bleibt
+        // jeder draußen, bei Regen und Sturm jeder drinnen. Bis hier kannte der Tag kein Wetter: im Sturm stand der Markt
+        // mittags so voll wie in der Sonne; bis zum Bild am Genesis-Ort (Radeon, Regen um 13:16 Uhr) ging nur die Muße heim —
+        // 31 von 77 standen bei der Arbeit im Regen auf dem Platz.
+        regen: Object.freeze({ ab: 0.3, streuH: 0.15 }),
     });
     // DIE HALTUNG ZUM AKT (TAGES_GESETZ.haltung): der Name des Profils der Bewegung oder null (neutral)
     function tagesHaltung(akt, rolle) {
@@ -5272,8 +5320,10 @@
     // seiner Bindung stellt (`tagesBindung`; ohne Werk ist der Hof das Werk, ohne Platz das Heim der Platz, ohne Mittagstisch isst er
     // daheim, ohne Treff sitzt er vor seiner Tür, ohne Besuch kein Besuch). Liefert { ort, wo, akt, drinnen } — ort ist einer
     // der gereichten Orte, wo sein Name, akt eines von schlaf · morgen · besuch · arbeit · mittag · abend; drinnen = der Mensch
-    // ist in seinem Haus (an der Tür ungezeichnet).
-    function tagesPlan(same, rolle, stunde, orte) {
+    // ist in seinem Haus (an der Tür ungezeichnet). nass = der Regen am Ort (0–1, der Kanal `rain` des Wetter-Felds; ohne ihn
+    // trocken): über der Schwelle des Menschen (TAGES_GESETZ.regen) bleibt er daheim, außer am Posten seiner Arbeit
+    // (`regenfest`).
+    function tagesPlan(same, rolle, stunde, orte, nass) {
         var G = TAGES_GESETZ;
         var R = G.rollen[rolle] || {};
         var h = (((Number(stunde) - (R.versatzH || 0)) % 24) + 24) % 24;
@@ -5288,7 +5338,11 @@
         var ruhe = (R.ruhe || G.ruhe) + j("ruhe");
         var heim = orte.heim,
             besuch = orte.besuch;
+        var W = G.regen,
+            regen = nass > 0 && nass >= W.ab + (_tagZahl(same, "regen") * 2 - 1) * W.streuH;
         var aus = function (wo, akt, drinnen) {
+            if (regen && !drinnen && !(akt === "arbeit" && R.regenfest))
+                return { ort: heim, wo: "heim", akt: akt, drinnen: true };
             return { ort: orte[wo] || heim, wo: orte[wo] ? wo : "heim", akt: akt, drinnen: !!drinnen };
         };
         var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;

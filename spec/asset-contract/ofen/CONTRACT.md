@@ -210,6 +210,14 @@ des Spiels zwei Flecken im Streiflicht statt der Höhle. Dazu die Töne (koerper
 byte-gleich — jedes Tier, L2 und L3 des Menschen: am Guss der Menge (946 Ecken: 174 Haut · 54 Haar · 718 Kleid) trägt keine Ecke
 Lippe, Höhle oder Braue (`__mengenFarben`) — ihr Gesicht ist der nächste Schnitt.
 
+Vertrags-Akt w28-satz-menge (15.11.2026, das Gesicht der Menge — gate:mensch-anatomie KOPF `mengeGesicht`): der Guss der Menge packt
+das Gesetz seines Gesichts bei (foundry `__gesichtFern`: `__skelett.gesicht` — der Radius des Augapfels, die Augen-Mitten, die
+Lidspalte und die Iris in Radien, die Zonen der Brauen, der Kasten der Lippen mit der Mund-Linie, die festen Farben), im Raum seiner
+Vorlage. Der Leib der Menge trägt keine Ecke für Auge, Braue oder Lippe (946 Ecken: 174 Haut · 54 Haar · 718 Kleid): der Stoff des
+Satzes zeichnet die Züge als Funktion (stoff-gang `_gangSeite`), kein Dreieck und kein Befehl je Bewohner. 2 Zeilen des Goldens
+bewegt: `mensch-L2|beipack` und `mensch-L3|beipack`. Keine Klasse fällt, keine kommt (507); 505 Klassen byte-gleich — jede Ecke,
+jedes Gelenk, jedes Tier.
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.

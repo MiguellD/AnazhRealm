@@ -72,6 +72,8 @@
 //                                                           DIE SHADER-KOSTEN je gezeichnetem Programm (scripts/lib/shader-kosten.cjs)
 //   node scripts/werkbank.cjs band [--ort <id>] [--datei f.json] [--proben n] [--cap sek]
 //                                                           DIE BAND-LINSE gegen Haushalt und Ratsche des Orts (spec/profiband/, scripts/lib/band-urteil.cjs)
+//   node scripts/werkbank.cjs weg [--datei f.json] [--ratsche r.json]   DER WEG DES SPEICHERS: Heap nach GC je Pose der Ratsche, Urteil H8 (scripts/lib/speicher-proben.cjs)
+//   node scripts/werkbank.cjs runde [--datei f.json] [--nur a|b|reise]   DIE RUNDE DES SPEICHERS: dieselbe Runde zweimal (reise: je Runde zwei ferne Orte), Zensus an der Start-Pose
 //   node scripts/werkbank.cjs ratsche [--ort <id>] <band-*.json | messfolge-*.json …> [--nur vram] [--neu]
 //                                                           DIE RATSCHE aus ≥ 4 Läufen eines Orts × Geräts × Sicht; `--neu` der Re-Mint (nur Node)
 //   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE nach `start --gpu-fehler` (scripts/lib/gpu-fehler.cjs)
@@ -106,6 +108,7 @@ const { WIESE_INSTALL } = require("./lib/welt-orte.cjs");
 const { vramAbgriff } = require("./lib/vram-abgriff.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 const HL = require("./lib/haenger-linse.cjs");
+const WW = require("./lib/wirt-wache.cjs");
 
 // DIE MESSUNG IN DIE SOLL-TAFEL (`bild --klasse … --ist <id>[:L<n>|:wirkung]`, `licht --ist <id>`): das Werkzeug
 // schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
@@ -531,6 +534,7 @@ async function starte() {
     const seite = (name, k) => page.evaluate((n, k) => window[n](k), name, k);
     if (!ECHT) await page.setViewport(START_FENSTER);
     const spur = { an: null }; // DIE BELEGUNG: der Lauf ruft die Spur vor seinem ersten gemessenen Takt an (`/lauf`)
+    let wirt = null; // DIE WIRT-WACHE zwischen `/wirt` nimm und gib: { heapVor } — solange trägt jeder `/eval` die Marke
     await page.exposeFunction("__spurAn", () => spur.an && spur.an());
     await page.evaluateOnNewDocument(WARTEN_SEITE); // die Seiten-Werkzeuge jeder Seite (`r`, sleep, das Warten), wie welt-boot
     await page.evaluateOnNewDocument(FALTE_INSTALL);
@@ -1060,10 +1064,18 @@ async function starte() {
                     o.mesh.instanceMatrix.needsUpdate = true;
                     r._archMeshBundleTouch(o.mesh);
                 };
-                const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : o.refs ? zieht(o, true) : (o.visible = false));
-                const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : o.refs ? zieht(o, false) : (o.visible = true));
+                // DIE VERBORGENE BLEIBT VERBORGEN (abnahme-urteil `verborgenHalten`): der Takt jedes Bilds stempelt die Zahl der
+                // Senken (die Nah-Streu `_nahStreuBestand` → `_instanzZahl`, visible = n > 0) — ohne die Wache zeigte er die
+                // verborgene Klasse wieder, ihr Fehlen änderte keine Tiefe (luftwasser.K4#1, Radeon 105c9bd3: 96 Blumen gezeichnet,
+                // Blüten-Pixel 0 an jedem Ort)
+                const verborgen = new Set();
+                const verbirg = (o) =>
+                    o.bereich ? r._chunkSatzAus(o.art, o.key) : o.refs ? zieht(o, true) : (verborgen.add(o), (o.visible = false));
+                const zeig = (o) =>
+                    o.bereich ? r._bauSatzMarke(o.key, o.art) : o.refs ? zieht(o, false) : (verborgen.delete(o), (o.visible = true));
                 const ruhen = ["_tickNahWiese", "_ruheImBild"].map((m) => [m, Object.hasOwn(r, m), r[m]]);
                 for (const [m] of ruhen) r[m] = () => 0;
+                const verborgenLassen = __verborgenHalten(r.constructor, verborgen);
                 // verbirgt der Schuss die Strähnen des Spielers, ist sein Kopf kahl: die Kappe gehört zum Haar (`_kopfKahl`, haar.K2)
                 const schuss = async (aus) => {
                     for (const o of aus) verbirg(o);
@@ -1736,6 +1748,7 @@ async function starte() {
                     for (const [o, c] of wurf) o.castShadow = c;
                     bundlesNeu();
                     r._schattenAlleNeu();
+                    verborgenLassen();
                     for (const [m, eigen, alt] of ruhen)
                         if (eigen) r[m] = alt;
                         else delete r[m];
@@ -2206,16 +2219,43 @@ async function starte() {
                     if (U.u === "ROT") throw new Error(`${zeile} · ROT-Bild ${datei}`);
                     return send(Object.assign(o, { abnahme: zeile, datei, gesamtMs: Date.now() - t0 }));
                 }
+                // zwischen `/wirt` nimm und gib trägt jeder Rumpf die Marke der Wirt-Wache (scripts/lib/wirt-wache.cjs `evalRumpf`)
                 if (req.url === "/eval") {
                     const o = await page.evaluate(
-                        (code) =>
-                            new Function("r", "T", `return (async () => { ${code} })();`)(
-                                r,
-                                THREE
-                            ),
-                        b.code
+                        (rumpf, code, marke) =>
+                            new Function("r", "T", "__wirtMarke", rumpf)(r, THREE, marke ? (0, eval)(`(${marke})`)(window, code) : null),
+                        WW.evalRumpf(b.code),
+                        b.code,
+                        wirt ? String(WW.wirtMarke) : null
                     );
                     return send({ ergebnis: o });
+                }
+                // DIE WIRT-WACHE (scripts/lib/wirt-wache.cjs; Leser: der Läufer der Punkte-Maschine vor dem Preis-Lauf): `nimm` vor der
+                // Probe (das Gedächtnis der Seite, der Heap nach dem Collector, die Marken an), `gib` nach ihr — jede Abweichung am Wirt
+                // beim Namen und zurück, die Marken, deren Kontext noch jemand hält, der Heap danach und das Urteil (UNGEMESSEN beim Grund)
+                if (req.url === "/wirt") {
+                    const heap = async () => {
+                        const cdp = await page.target().createCDPSession();
+                        for (let i = 0; i < 3; i++) await cdp.send("HeapProfiler.collectGarbage");
+                        const u = await cdp.send("Runtime.getHeapUsage");
+                        await cdp.detach();
+                        return +((u.usedSize + u.backingStorageSize) / 1048576).toFixed(1);
+                    };
+                    const lies = (gib) => page.evaluate((c) => new Function("r", c)(r), WW.wirtCode(gib));
+                    if (!b.gib) {
+                        const g = await lies(false);
+                        wirt = { heapVor: b.heap ? await heap() : null };
+                        await page.evaluate(() => delete window.__wirtMarken);
+                        return send({ genommen: true, glieder: g.glieder, heapVor: wirt.heapVor });
+                    }
+                    const vor = wirt;
+                    wirt = null;
+                    let ab = await lies(true);
+                    // die Seite ist neu seit `nimm` (eine Probe lud sie): an ihr steht nichts der Probe; das Gedächtnis nimmt der nächste `nimm`
+                    if (vor && ab.fehler) ab = { anders: [], wie: {}, erklaert: [], bleibt: [], neu: true };
+                    const heapNach = b.heap ? await heap() : null;
+                    const haelt = await page.evaluate((m) => (0, eval)(`(${m})`)(window), String(WW.markenLies));
+                    return send(Object.assign(WW.wirtUrteil({ ab: vor ? ab : { fehler: "nimm fehlt" }, haelt, heapVor: vor && vor.heapVor, heapNach }), { neu: !!ab.neu }));
                 }
                 if (req.url === "/methode") {
                     // `--quelle <datei>`: die Methode aus einem anderen Stand (die Basis eines A/B in EINER Welt)
@@ -2646,7 +2686,9 @@ async function starte() {
                         async (halter, top) => {
                             await __drawZensus({ top: 1 });
                             __kehrausJetzt();
-                            const texturen = __texturZensus(),
+                            // DER ZENSUS VOR DER LISTE: erst `__pufferZensus` bucht jeden Puffer auf seinen Halter (sonst `buf:?`)
+                            const puffer = __pufferZensus(),
+                                texturen = __texturZensus(),
                                 v = window.__vram || {},
                                 mb = (x) => +((x || 0) / 1048576).toFixed(1);
                             return {
@@ -2659,7 +2701,7 @@ async function starte() {
                                     gc: mb(v.gc),
                                     liste: __vramBericht(top),
                                 },
-                                puffer: __pufferZensus(),
+                                puffer,
                                 halter: halter ? __heapHalter(r, 8) : null,
                             };
                         },
@@ -3703,6 +3745,10 @@ hauptLauf(async () => {
         console.log(JSON.stringify(o, null, 1));
         endeMit(o.urteil && !o.urteil.length ? "GANG GRÜN" : "GANG ROT", o.urteil && !o.urteil.length);
     } else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
+    else if (cmd === "wirt" && SELBST) {
+        selbsttestEnde(await WW.wirtSelbsttest(), "die Wirt-Wache nennt jeden Haken am Wirt (r, Prototyp, r.state, window) und setzt ihn zurück, die Marke sieht den Kontext, den eine Probe hält, hält sie ihn über der Schwelle, ist der Preis UNGEMESSEN — die Welt, die sie baute, nicht; die Mutante von main (der Haken der Hülle) besteht nicht");
+        process.exit(0);
+    } else if (cmd === "wirt") o = await rufe("/wirt", { gib: hat("gib"), heap: hat("heap") });
     else if (cmd === "diaet") {
         if (SELBST) {
             const f = DIAET.selbsttest();
@@ -3746,7 +3792,11 @@ hauptLauf(async () => {
                 a.length >= 6 ? { px: a[0], py: a[1], pz: a[2], lx: a[3], ly: a[4], lz: a[5] } : {}
             )
         );
-    else if (cmd === "band") {
+    else if (cmd === "weg" || cmd === "runde") {
+        // der Weg des Speichers (H8) · die Runde des Speichers (dieselbe Runde zweimal, Zensus an der Start-Pose)
+        const o = await require("./lib/speicher-proben.cjs")[cmd === "weg" ? "wegFahrt" : "rundeFahrt"]({ umstellen, rufe });
+        endeMit(o.text, o.gruen);
+    } else if (cmd === "band") {
         o = await rufe("/band", {
             ort: opt("--ort"),
             datei: opt("--datei"),

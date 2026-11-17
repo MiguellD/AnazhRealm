@@ -24,8 +24,8 @@
 // ein verschlafener Wechsel, eine halbe oder wachsende Runde, ein ungesehener Täter, ein Bau, der nicht weckt, starres
 // Gehen, verhungernder Strom, eine Sim, die in Ruhe zählt oder nach ihrem Ereignis nicht schläft, ein Automat, der am
 // Fixpunkt wach bleibt, Page-Error — MUSS rot fallen und ihn beim Namen nennen.
-//   node scripts/diag-stand-takt.cjs [--selftest | --tat | --nachwuchs | --brand]   (npm run gate:stand-takt; Port STAND_TAKT_PORT;
-//   --tat: (K4), --nachwuchs: (K5), --brand: (K2#2 · K5#2) unten)
+//   node scripts/diag-stand-takt.cjs [--selftest | --tat | --nachwuchs | --brand | --narbe]   (npm run gate:stand-takt; Port STAND_TAKT_PORT;
+//   --tat: (K4), --nachwuchs: (K5), --brand: (K2#2 · K5#2), --narbe: (N1–N7, w28-brand-bild · -saum · -zunge · -nacht; L1–L5, w28-lava-zuendet) unten; --narbe: ROT Exit 1, Absturz Exit 2)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -109,6 +109,7 @@ function selbsttest() {
             regler: phase(12, 10),
             wahrnehmung: phase(30, 4),
             schirm: Object.assign(phase(30, 4), { stehtSofort: false, zeilen: [360, 480] }),
+            zusage: Object.assign(phase(3, 4), { vor: 0, wach: true }),
         },
         // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
         strom: {
@@ -232,6 +233,13 @@ function selbsttest() {
             ["wecken.regler.takte.archCull", { summe: 0, mitArbeit: 0 }],
             /WECKEN: ein Regler-Schritt \(der Cull-Radius\) weckt archCull nicht/,
         ],
+        [
+            "die Zusage eines Schläfers weckt den Cull nicht",
+            ["wecken.zusage.takte.archCull", { summe: 0, mitArbeit: 0 }],
+            /WECKEN: die Zusage eines Schläfers weckt archCull nicht/,
+        ],
+        ["die Zusage holt den Schläfer nicht in die Wache", ["wecken.zusage.wach=", false], /WECKEN: die Zusage holt den Schläfer nicht/],
+        ["vor der Zusage ruht der Cull nicht", ["wecken.zusage.vor=", 12], /LEER: vor der Zusage des Schläfers ruhte archCull nicht \(12/],
         [
             "nach dem Bau schläft die Wache nicht",
             ["wecken.nachher=", Object.assign(phase(0, 20), { summe: 7020 })],
@@ -587,7 +595,7 @@ async function seite() {
     const y = (x, z) => r._voxelSurfaceY(x, z);
     const stehen = (p) => (pm.set(p.x, y(p.x, p.z) + 1.8, p.z), __weltStehtNach(takt));
     // das Wort des Spielers über den EINEN Schreiber ohne Übergang (die Bühne)
-    const wort = (w) => ((st.weatherEffectTime = 0), r._setWeather(w, "human"), (st.weatherEffectTime = -1e9), (st.weatherTransition = null));
+    const wort = (w) => ((st.weatherEffectTime = 0), r._setWeather(w, "human"), (st.weatherEffectTime = -1e9), window.__uebergangFaellt(r));
     // die Punkte der Flüsse (ohne See) binnen R um M, der nächste zuerst
     const fluss = (M, R = Infinity, d = (q) => Math.hypot(q.x - M.x, q.z - M.z)) =>
         (st.hydrosphere?.rivers || []).flatMap((rv) => rv.points.filter((q) => !q.inLake && d(q) < R)).sort((p, q) => d(p) - d(q));
@@ -1169,6 +1177,574 @@ async function brandSeite(MESS) {
     }
 }
 
+// (N1–N4) DIE NARBE FOLGT DER FRONT (w28-brand-bild, `--narbe`, Null-Renderer, Mess-Wiese, mittags, trockenes Bett: `_feuchteAt` 0
+// für den Lauf): der Herd fängt AM ORT der Mess-Wiese (`_brandEntfachen`), die Probe schreitet den Takt des Brands (`_tickBrand`)
+// je `schrittS`, höchstens 20 s und nur, solange die Herd-Zelle brennt und ein Ort in ihr vor jeder Front liegt.
+//   N1 — die Narbe, die der Maler liest (`_brandNarbe` über `_brandZellen`, m × asche wie `_ascheFlaeche`): am Zünd-Punkt (die
+//   Flamme stand dort ihre Verweilzeit) > 0,5; am Ort DERSELBEN Zelle, den noch keine Front der vier Zellen um ihn erreichte (die
+//   Ankunft aus R, ecc, kopf, ex, ez jeder brennenden Zelle selbst gerechnet; um die Zell-Mitte, wo die Narbe die Herd-Zelle liest), 0. Die Mutanten: die Front konstant 0 (die Narbe
+//   wartet auf die ausgebrannte Zelle) und die brennende Zelle ohne Front (ihr Quadrat fällt auf einmal).
+//   N2 — `ende − t0` der Herd-Zelle ≥ die späteste Ankunft ihrer Ellipse an den vier Ecken; die Mutante stutzt `ende` auf den
+//   Durchlauf des Kopfs (quer/R + tr, der Stand bis w28-brand-bild).
+//   N3 — nach EINEM Bild (`_brandBild`) steht jede Leuchtquelle des Brands, die das Licht liest (`_leuchtQuellen`), ≤ 0,6 m (xz)
+//   von einer Flamme ihrer Zelle (`_brandFlammen`); die Mutante stellt den Ort zurück über die Zell-Mitte (`_brandOrt`).
+//   N4 — der Stoff des Chunk-Bodens, frisch gebaut über seinen Bauer (`_getVoxelChunkMaterial`, mit Wege-Karte), ruft
+//   `STOFF_GESETZ.zeile("asche")` ≥ 1-mal (gezählt am Kern der Seite, kein Quelltext); die Mutante nimmt dem Boden-Stoff die
+//   Asche-Decke (`_wegeBodenFarbe` ohne `aus.asche`) und liest 0.
+//   N5 (w28-brand-saum) — die Front ist ein geschlossener Saum: in demselben Bild stehen die Flammen der Herd-Zelle längs ihrer
+//   Front im Median ihrer Paare ≤ `NARBE_SAUM` × die volle Breite ihrer Zungen auseinander (2 × `BRAND.bild.breite` × Länge ×
+//   rMax der Zunge `FLAMME.zunge`, wie `_brandFlammenZeichnen`; die Länge die ruhende nach Byram 0,0775·I^0,46 aus `f.I`, nicht
+//   die pulsende `f.lang`; ≥ 8 Paare). Gemessen 1,187 (0,427 m bei 0,36 m); die Mutante (`abstandMinM` 0,5 m, die Tafel zur
+//   Laufzeit ersetzt) 1,6 (1,123 m bei 0,702 m): die kleinen Zungen der Flanken stehen als einzelne Punkte.
+//   N6 (w28-brand-zunge) — die Zungen pulsen: in demselben Bild streut die Länge der Flammen der Herd-Zelle je ihrer Byram-Länge
+//   (q = `f.lang` ÷ 0,0775·I^0,46) mit σ ≥ `NARBE_PULS` (≥ 8 Flammen). Gemessen σ 0,246 bei der Bild-Uhr 0 (q 0,652 … 1,35; der
+//   Ort-Term des Takts trägt allein), 0,259 nach 1,3 s; erwartet puls/√2 = 0,247. Die Mutante (`BRAND.bild.puls` 0) σ 0: die
+//   Front steht als Band gleicher Höhe.
+//   N7 (w28-brand-nacht) — das Schein-Maß: NACHTS (Uhr 0) trägt jede Leuchtquelle des Brands (`_leuchtQuellen`) AN der Flamme
+//   die Bestrahlung `_leuchtStaerke` ÷ π × (1 + k²)/k² (k = ihr Kern `L.kernM`) in Welt-Einheiten (`BRAND.bild.flamme.schein`);
+//   das Maximum über die Quellen und acht Bild-Uhren liegt in [`NARBE_SCHEIN_MIN`, `NARBE_SCHEIN_MAX`], und keine
+//   trägt einen Zeitplan (`L.zeit`). Die Mutante (`_flammenLicht` → das Herdfeuer × `BRAND.licht`, der Stand bis
+//   w28-brand-nacht): der Zeitplan der Nacht hebt den Brand über das Band. N7-UHR: am Mittag trägt derselbe Brand denselben
+//   Schein (± 2 %); die Mutante „am Bild-Ton“ (Masse ÷ Belichtung, der widerlegte Stand 63c7e567: am Tag färbte der Brand Gras
+//   und Rauch orange) lässt Tag und Nacht auseinanderfallen.
+// so weit dürfen Nachbarn stehen, je volle Breite der Zunge: das Rauschen weitet ihren Radius bis × `weit` (2), der Saum schließt
+// also schon im Mittel dieses Hubs; 1,4 liegt zwischen den beiden gemessenen Ständen
+const NARBE_SAUM = 1.4;
+// so weit streut die Länge der Zungen mindestens je Byram-Länge: gut die Hälfte der Streuung eines vollen Sinus mit `puls` 0,35
+const NARBE_PULS = 0.15;
+// das Band des Scheins: die Bestrahlung an der Flamme in Welt-Einheiten — `schein` 7,5 × Flackern (± 0,18) × Glut liegt
+// darin; unter 3 bleibt das Gras der Nacht dunkel, 27 brennt es weiß aus, der Herdfeuer-Punkt mit Zeitplan trägt Hunderte
+const [NARBE_SCHEIN_MIN, NARBE_SCHEIN_MAX] = [3, 10.5];
+function narbeUrteil(b) {
+    const [a, e, l, s, n, z, h] = [b?.n1, b?.n2, b?.n3, b?.n4, b?.n5, b?.n6, b?.n7];
+    if (!a || !e || !l || !s || !n || !z || !h || !b.l1 || !b.l2 || !b.l3 || !b.l4 || !b.l5) return ["LEER: " + JSON.stringify(b && Object.keys(b))];
+    const [mw, mq] = [a.mutanteWartet, a.mutanteQuadrat];
+    return [
+        a.brennt && a.s >= a.tr && a.fernAn > a.s ? "" : `N1-LEER: die Herd-Zelle ${a.brennt ? "brennt" : "brennt nicht mehr"} nach ${a.s} s (Verweilzeit ${a.tr} s), der ferne Ort fängt nach ${a.fernAn} s`,
+        a.zuend > 0.5 ? "" : `N1-WARTET: die Narbe wartet auf die ausgebrannte Zelle: brennende Zelle trägt ${a.zuend} am verzehrten Ort (Zünd-Punkt nach ${a.s} s Brand, Verweilzeit ${a.tr} s; verlangt > 0,5)`,
+        a.fern === 0 ? "" : `N1-QUADRAT: Zell-Quadrat: Asche vor der Front — Narbe ${a.fern} bei (${a.fernOrt}), die Front kommt dort erst nach ${a.fernAn} s (Uhr des Brands ${a.s} s)`,
+        mw?.zuend <= 0.5 ? "" : `MUTANTE-N1-WARTET: mit der Front konstant 0 trägt der Zünd-Punkt ${mw?.zuend} — die Linse liest die Front nicht`,
+        mq?.fern > 0 ? "" : `MUTANTE-N1-QUADRAT: ohne Front (das Quadrat der Zelle) trägt der ferne Ort ${mq?.fern} — die Linse sieht keine Asche vor der Front`,
+        e.dauer >= e.ecken ? "" : `N2-ENDE: die Zelle fällt mit dem Kopf: sie brennt ${e.dauer} s, ihre Front deckt sie erst nach ${e.ecken} s (die späteste Ecke; der Kopf ist nach ${e.kopf} s durch)`,
+        e.mutante?.dauer < e.mutante?.ecken ? "" : `MUTANTE-N2: auf den Kopf gestutzt brennt die Zelle ${e.mutante?.dauer} s bei ${e.mutante?.ecken} s bis zur spätesten Ecke — an diesem Ort deckt der Kopf die Zelle`,
+        l.gemessen >= 1 ? "" : `N3-LEER: kein Licht einer Zelle mit Flammen (${l.lichter} Leuchtquellen des Brands, ${l.flammen} Flammen im Bild)`,
+        l.max <= 0.6 ? "" : `N3-LICHT: Licht ${l.mitte ? "über der Zell-Mitte" : "abseits der Flammen"}, ${l.max} m neben der nächsten Flamme (${l.gemessen} Zellen mit Flammen; verlangt ≤ 0,6 m)`,
+        l.mutante?.max > 0.6 ? "" : `MUTANTE-N3: über der Zell-Mitte steht das Licht ${l.mutante?.max} m neben der nächsten Flamme — die Linse sieht die Mitte nicht`,
+        s.gebaut ? "" : `N4-LEER: der Bauer des Chunk-Bodens (_getVoxelChunkMaterial) baute keinen frischen Stoff`,
+        s.abrufe >= 1 ? "" : `N4-ZEILE: der Boden liest die Asche-Zeile nicht: ${s.abrufe} Abrufe zeile("asche") beim Bau des Chunk-Boden-Stoffs (Rauheit der Zeile ${s.rauheit})`,
+        s.mutante === 0 ? "" : `MUTANTE-N4: ohne Asche-Decke zählt die Linse ${s.mutante} Abrufe zeile("asche") — sie zählt einen anderen Leser`,
+        n.paare >= 8 && n.mass > 0 ? "" : `N5-LEER: keine Messung des Saums: ${n.paare} Paare benachbarter Flammen in der Herd-Zelle (${n.flammen} Flammen; verlangt ≥ 8)`,
+        !(n.mass > NARBE_SAUM) ? "" : `N5-SAUM: die Front steht als einzelne Punkte: Flammen-Abstand ${n.abstand} m > Zungen-Breite ${n.breite} m × ${NARBE_SAUM} (Verhältnis ${n.mass} im Median von ${n.paare} Paaren, BRAND.bild.abstandMinM ${n.minM} m)`,
+        n.mutante?.paare >= 8 && n.mutante?.mass > NARBE_SAUM ? "" : `MUTANTE-N5: mit abstandMinM 0,5 m liest die Linse Flammen-Abstand ${n.mutante?.abstand} m bei Zungen-Breite ${n.mutante?.breite} m (Verhältnis ${n.mutante?.mass}, ${n.mutante?.paare} Paare) — sie sieht die Lücken nicht`,
+        z.flammen >= 8 && (z.sigma > 0 || z.sigma === 0) ? "" : `N6-LEER: keine Messung des Pulses: ${z.flammen} Flammen in der Herd-Zelle (σ ${z.sigma}; verlangt ≥ 8)`,
+        !(z.sigma < NARBE_PULS) ? "" : `N6-BAND: die Front steht als Band gleicher Höhe: σ ${z.sigma} < ${NARBE_PULS} (Länge je Byram-Länge ${z.min} … ${z.max} über ${z.flammen} Flammen, BRAND.bild.puls ${z.puls})`,
+        z.mutante?.flammen >= 8 && z.mutante?.sigma < NARBE_PULS ? "" : `MUTANTE-N6: ohne Puls liest die Linse σ ${z.mutante?.sigma} über ${z.mutante?.flammen} Flammen — sie misst nicht den Puls`,
+        h.quellen >= 1 && h.max > 0 && h.herd > 1 ? "" : `N7-LEER: keine Messung des Scheins: ${h.quellen} Leuchtquellen des Brands (Schein ${h.max}), der Zeitplan des Herdfeuers steht bei ${h.herd} (verlangt > 1: die Nacht)`,
+        !(h.max > NARBE_SCHEIN_MAX) && h.zeit === 0 ? "" : `N7-SCHEIN: der Brand leuchtet als Herdfeuer-Punkt × BRAND.licht × Zeitplan: Schein ${h.max} > ${NARBE_SCHEIN_MAX} oder Zeitplan an ${h.zeit} von ${h.quellen} Quellen (nachts, Zeitplan des Herdfeuers × ${h.herd}, Kern ${h.kern} m, Belichtung ${h.belichtung}, BRAND.bild.flamme.schein ${h.soll})`,
+        !(h.max < NARBE_SCHEIN_MIN) ? "" : `N7-DUNKEL: der Brand leuchtet nicht als Flamme: Schein ${h.max} < ${NARBE_SCHEIN_MIN} (${h.quellen} Quellen, Kern ${h.kern} m, Belichtung ${h.belichtung}, BRAND.bild.flamme.schein ${h.soll})`,
+        Math.abs(h.tag - h.max) <= 0.02 * h.max ? "" : `N7-UHR: das Licht des Brands hängt an der Stunde oder der Belichtung: Schein am Mittag ${h.tag} ↔ nachts ${h.max} (verlangt gleich ± 2 %)`,
+        Math.abs(h.mutanteTon?.tag - h.mutanteTon?.nacht) > 0.2 * h.mutanteTon?.nacht ? "" : `MUTANTE-N7-TON: mit der Masse ÷ Belichtung liest die Linse am Mittag ${h.mutanteTon?.tag} ↔ nachts ${h.mutanteTon?.nacht} — sie sieht das Licht am Bild-Ton nicht`,
+        h.mutante?.quellen >= 1 && h.mutante?.max > NARBE_SCHEIN_MAX && h.mutante?.zeit >= 1 ? "" : `MUTANTE-N7: als Herdfeuer-Punkt × BRAND.licht × Zeitplan liest die Linse Schein ${h.mutante?.max} (Zeitplan an ${h.mutante?.zeit} von ${h.mutante?.quellen} Quellen) — sie sieht den Herdfeuer-Punkt nicht`,
+        ...lavaUrteil(b),
+    ].filter(Boolean);
+}
+
+// (L1–L5) DAS URTEIL DER LAVA-LINSE (w28-lava-zuendet, `lavaSeite` im Lauf `--narbe`). Gemessen am Kopf 163a65de ↔ Mutante
+// (Mess-Wiese, Null-Renderer; acht Nachbarinnen mit Bett, sechs Gras tZuend 533 K, zwei Laub 523 K; Decke 1 650 K, τ 13 957 s):
+//   L1 — brennende Nachbarinnen nach EINEM Takt 8 von 8 Betten ↔ `_lavaZuendet` leer 0; die Decke 513 K (10 K unter dem Laub)
+//   0, 543 K (10 K über dem Gras, Glut 0) 8: die Schwelle ist `tZuend` der Zeile, nicht das Glühen.
+//   L2 — ROT am Kopf: je Kanten-Nachbarin 9 Eintritte, aber ALLE 1,99 m in der Zelle der Lava (der Boden der Suche), die Decke
+//   dort bis 1: `_lavaTakt` zündet, bevor er die Decke malt (in den ersten 5 s keine Flamme in einer der vier Nachbarinnen). Malt
+//   die Seite die Decke vor dem Zünden (nachgestellt, nicht Teil der Linse): Decke 0 an jedem, Lage −1,99 … 3,51 m, an 7 von 9
+//   einen halben Meter einwärts Decke, Front nach 60 s längs jeder Kante 16 m (in der Nachbarin 5,75 gegen den Wind, sonst
+//   15,5 … 16) ↔ `_brandFangen` ohne `ein`: 0 Eintritte, 1,75 … 9,25 m.
+//   L3 — die Zelle (−296/−1064), lebendig 0,802, vier Viertel-Punkte Gras: mit Stein unter der Mitte Bett 0,642 (= × 4/5) ↔ jeder
+//   Punkt liest die Mitte: kein Bett (ohne Stein 0,802).
+//   L4 — 32 Punkte im dünnen Rand (Decke 0,043 … 0,962): Grund 0 ↔ die Decke dünnt nur: 0,038 … 0,957, 32 von 32 über 0.
+//   L5 — nachts (Zeitplan des Herdfeuers × 45) EINE Quelle, Schein 6,777 … 7,918, Kern 8 m, kein Zeitplan, auf `a.y` ↔ das alte
+//   Datum: 444 … 519, Kern 0,76 m, Zeitplan, 1 m darüber.
+// so weit reicht die Front nach 60 s mindestens längs der Kante (m): die neun Eintritte decken die Kante der Zelle (15,96 m),
+// der EINE Punkt trägt in 60 s seine Ellipse — das Band liegt zwischen den beiden gemessenen Ständen
+const LAVA_RAND_M = 12;
+// je Achtel der Kante ein Eintritt (`_lavaZuendet`)
+const LAVA_EIN = 9;
+function lavaUrteil(b) {
+    const [z, k, s, h, q] = [b.l1, b.l2, b.l3, b.l4, b.l5];
+    const [km, qm] = [k.mutante, q.mutante];
+    return [
+        z.betten >= 1 && z.kalt?.tK < z.tZuend?.[0] && z.lau?.tK > z.tZuend?.[1] ? "" : `L1-LEER: keine Messung der Zündung: ${z.betten} Nachbarinnen der Decke tragen ein Bett, das sie zündet (Decke ${z.tK} K, tZuend ${z.tZuend}); die kalte Decke steht bei ${z.kalt?.tK} K, die laue bei ${z.lau?.tK} K`,
+        z.brennend === z.betten ? "" : `L1-ZÜNDUNG: das Gras steht grün am Rand der heißen Decke: nach Guss und EINEM Takt (_lavaTakt) brennen ${z.brennend} von ${z.betten} Nachbarinnen mit Bett (Decke ${z.tK} K, tZuend ${z.tZuend} K) — stamm/siedlung-wege.js _lavaZuendet (aus _lavaTakt), der Akt „brand“ über _feldAkt`,
+        z.kalt?.brennend === 0 ? "" : `L1-KALT: die Decke unter der Zünd-Temperatur zündet: ${z.kalt?.brennend} Nachbarinnen brennen bei ${z.kalt?.tK} K (tZuend ${z.tZuend} K) — stamm/siedlung-wege.js _lavaZuendet liest tZuend der Bett-Zeile nicht`,
+        z.lau?.brennend === z.betten ? "" : `L1-LAU: die Decke über der Zünd-Temperatur zündet nicht: ${z.lau?.brennend} von ${z.betten} Nachbarinnen brennen bei ${z.lau?.tK} K (tZuend ${z.tZuend} K, Glut ${z.lau?.glut}) — stamm/siedlung-wege.js _lavaZuendet: die Schwelle ist nicht tZuend der Bett-Zeile`,
+        z.mutante === 0 ? "" : `MUTANTE-L1: mit _lavaZuendet leer zählt die Linse ${z.mutante} brennende Nachbarinnen — sie zählt einen anderen Zünder`,
+        k.kanten >= 1 && k.uhr >= 60 ? "" : `L2-LEER: keine Messung des Rands: ${k.kanten} Kanten-Nachbarinnen der Decke brennen, die Uhr des Brands lief ${k.uhr} s (verlangt 60)`,
+        k.ein === LAVA_EIN ? "" : `L2-EIN: die Kanten-Nachbarin fängt an EINEM Punkt: ${k.ein} Eintritte (verlangt ${LAVA_EIN}) — stamm/siedlung-wege.js _lavaZuendet (akt.ein) oder stamm/feld-leben.js _feldAktWirkt → _brandFangen → _brandZuenden reichen „ein“ nicht durch`,
+        k.decke === 0 ? "" : `L2-DECKE: die Eintritte liegen AUF der Decke: _lavaDeckeAt bis ${k.decke} an einem Eintritt (verlangt 0: dort endet die Decke), ihre Lage zur Kante ${k.tief} m${k.tief?.[1] < 0 ? " — alle am Boden der Suche, 2 m in der Zelle der Lava: _lavaZuendet las die Decke, bevor _lavaTakt sie malte (stamm/siedlung-wege.js _lavaTakt: zünden vor _deckeMalen)" : " — stamm/siedlung-wege.js _lavaZuendet (die Suche nach dem Ende der Decke)"}`,
+        k.ein !== LAVA_EIN || k.amRand >= 5 ? "" : `L2-ABSEITS: die Eintritte liegen nicht am Rand der Decke: an ${k.amRand} von ${k.ein} trägt der Ort einen halben Meter einwärts Decke (verlangt ≥ 5; Lage zur Kante ${k.tief} m) — stamm/siedlung-wege.js _lavaZuendet`,
+        k.spanne >= LAVA_RAND_M ? "" : `L2-SPANNE: der Rand zündet nicht auf seiner Länge: nach ${k.uhr} s reicht die Front längs der Kante ${k.spanne} m (verlangt ≥ ${LAVA_RAND_M} m; in der Nachbarin je Kante ${k.sicht}) — stamm/feld-leben.js _brandWeg (das Minimum über „ein“), Leser _brandFront`,
+        km?.kanten >= 1 && km.einMax === 0 && km.spanneMax < LAVA_RAND_M ? "" : `MUTANTE-L2: ohne Eintritte (_brandFangen verwirft „ein“) liest die Linse ${km?.einMax} Eintritte und ${km?.spanneMax} m Front längs der Kante — sie sieht den EINEN Punkt nicht`,
+        s.k >= 1 && s.voll > 0 ? "" : `L3-LEER: keine Messung des Betts: die Probe-Zelle (${s.ort}) trägt Brennstoff an ${s.k} Viertel-Punkten, ihr Bett ohne Eingriff ${s.voll}`,
+        s.stein !== null ? "" : `L3-BETT: ein Stein unter der Mitte nimmt der Zelle ihr Bett: kein Bett bei Brennstoff an ${s.k} von 4 Viertel-Punkten (lebendig ${s.leb}) — stamm/feld-leben.js _brandStoff liest nur die Mitte`,
+        s.stein === null || Math.abs(s.stein - s.soll) <= 0.001 ? "" : `L3-ANTEIL: der Anteil des Betts geht nicht als Last ins Gesetz: leb ${s.stein} bei lebendig ${s.leb} × ${s.k}/5 = ${s.soll} — stamm/feld-leben.js _brandStoff (leb × Anteil)`,
+        s.mutante === null && s.mutanteVoll === s.voll ? "" : `MUTANTE-L3: liest jeder Punkt die Mitte, trägt die Zelle mit Stein dort ${s.mutante}, ohne Stein ${s.mutanteVoll} (ihr Bett ${s.voll}) — die Linse sieht die Mitte nicht`,
+        h.punkte >= 8 && h.aussen > 0 ? "" : `L4-LEER: keine Messung des Halms: ${h.punkte} Punkte im dünnen Rand der Decke (verlangt ≥ 8), der Grund der Wiese jenseits der Decke ${h.aussen}`,
+        h.max === 0 ? "" : `L4-HALM: Büschel stehen im glühenden Rand: _wieseGrund bis ${h.max} an ${h.punkte} Punkten mit Decke ${h.decke} (verlangt 0) — stamm/vegetation-wiese.js _wieseGrund (die Decke dünnt nur)`,
+        h.mutante?.max > 0 ? "" : `MUTANTE-L4: mit Gewicht × (1 − Decke) liest die Linse Grund ${h.mutante?.max} im Rand — sie sieht den Halm auf der Decke nicht`,
+        q.quellen >= 1 && q.max > 0 && q.herd > 1 && q.glut > 0 ? "" : `L5-LEER: keine Messung des Lichts: ${q.quellen} Leuchtquellen „lava“ (Schein ${q.max}, Glut ${q.glut}), der Zeitplan des Herdfeuers steht bei ${q.herd} (verlangt > 1: die Nacht)`,
+        !(q.max > NARBE_SCHEIN_MAX) && q.zeit === 0 ? "" : `L5-SCHEIN: die Lava leuchtet als Herdfeuer-Punkt × BRAND.licht × Zeitplan: Schein ${q.max} > ${NARBE_SCHEIN_MAX} oder Zeitplan an ${q.zeit} von ${q.quellen} Quellen (nachts, Kern ${q.kern} m) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: _flammenLicht)`,
+        !(q.max < NARBE_SCHEIN_MIN) ? "" : `L5-DUNKEL: die Lava leuchtet nicht als Flammen-Fläche: Schein ${q.max} < ${NARBE_SCHEIN_MIN} (Glut ${q.glut}, Kern ${q.kern} m, BRAND.bild.flamme.schein ${q.soll}) — stamm/dirigent-kern.js _leuchtQuellen (die Lava)`,
+        q.kern === q.kernSoll ? "" : `L5-KERN: das Licht der Lava trägt nicht die Fläche ihrer Zelle: Kern ${q.kern} m (verlangt ${q.kernSoll} m, die halbe Zelle) — stamm/dirigent-kern.js _leuchtQuellen (_flammenLicht(Zelle/2))`,
+        q.hoch === 0 ? "" : `L5-HÖHE: das Licht der Lava steht ${q.hoch} m neben der Höhe ihrer Decke (verlangt a.y) — stamm/dirigent-kern.js _leuchtQuellen (die Lava)`,
+        qm?.max > NARBE_SCHEIN_MAX && qm.zeit >= 1 && qm.hoch > 0 && qm.kern !== q.kernSoll ? "" : `MUTANTE-L5: mit dem alten Datum (Herdfeuer × BRAND.licht, 1 m über der Mitte) liest die Linse Schein ${qm?.max}, Zeitplan an ${qm?.zeit}, Höhe ${qm?.hoch} m, Kern ${qm?.kern} m — sie sieht den Herdfeuer-Punkt nicht`,
+    ];
+}
+
+async function narbeSeite(MESS) {
+    const { pm, stehen, wort } = await window.__seite();
+    const [C, P, L] = [AnazhRealm, Object.getPrototypeOf(r), (st.worldMeta.taten ||= [])];
+    const [B, cs, n0] = [C.BRAND, C.LIFE_FIELD.cell, L.length];
+    const r3 = (v) => Math.round(v * 1e3) / 1e3;
+    const zelle = (x, z) => [Math.floor(x / cs), Math.floor(z / cs)];
+    const bf = () => (st.brandFeld ||= new Map());
+    const [hx, hz] = zelle(MESS.x, MESS.z);
+    // die Ankunft der Ellipse einer brennenden Zelle an (x, z) in Sekunden nach ihrem Eintritt — aus ihren eigenen Feldern
+    const zeit = (b, x, z) => (Math.hypot(x - b.ex, z - b.ez) - b.ecc * ((x - b.ex) * b.kopf[0] + (z - b.ez) * b.kopf[1])) / (b.R * (1 - b.ecc));
+    const ecken = (b) => [0, 1].flatMap((i) => [0, 1].map((j) => [(b.cx + i) * cs, (b.cz + j) * cs]));
+    const kopfS = (b) => Math.max(...ecken(b).map(([x, z]) => (x - b.ex) * b.kopf[0] + (z - b.ez) * b.kopf[1])) / b.R + b.tr;
+    const dauer = (b) => ({ dauer: r3(b.ende - b.t0), ecken: r3(Math.max(...ecken(b).map(([x, z]) => zeit(b, x, z)))), kopf: r3(kopfS(b)), R: r3(b.R), ecc: r3(b.ecc) });
+    const leer = () => {
+        if (r._brandRest) r._brandArbeit(Infinity);
+        bf().clear();
+        L.length = n0;
+        r._tatGen = (r._tatGen | 0) + 1;
+        (st.wegeKarte ? st.wegeKarte.stufen : []).forEach((s) => s.zentriert && r._ascheStufeMalen(s));
+    };
+    const zuenden = () => (leer(), r._brandEntfachen(MESS.x, MESS.z), ((b) => (b && b.t0 !== null ? b : null))(bf().get(hx + "," + hz)));
+    // EIN Schritt der Uhr des Brands samt seiner ganzen Arbeit (jede fällige Zelle fängt zu ihrer Ankunft)
+    const schritt = () => {
+        const u = r._brandUhr;
+        for (let i = 0; i < 4000 && r._brandUhr === u && r._brandLebt(); i++) (st.spielZeit = u + B.schrittS), r._tickBrand();
+        r._brandArbeit(Infinity);
+        return r._brandUhr > u;
+    };
+    // die vier Zellen, deren Mitten die Narbe an (x, z) mischt (`_brandNarbeFn`); die früheste Front einer brennenden unter ihnen
+    // an (x, z) als Uhr des Brands — NaN, wo eine der vier schon Asche trägt (dort liegt Asche zu Recht)
+    const vier = (x, z, i = Math.floor(x / cs - 0.5), j = Math.floor(z / cs - 0.5)) => [[i, j], [i + 1, j], [i, j + 1], [i + 1, j + 1]];
+    const ankunft = (x, z) =>
+        vier(x, z).reduce((t, [cx, cz]) => {
+            if (r._brandZelle(cx, cz)) return NaN;
+            const q = bf().get(cx + "," + cz);
+            return q && q.t0 !== null ? Math.min(t, q.t0 + zeit(q, x, z)) : t;
+        }, Infinity);
+    // der Ort der Herd-Zelle (je Meter), den die Fronten zuletzt erreichen → [Ankunft, x, z] — nur, wo die Narbe zu ≥ 0,9 die
+    // Herd-Zelle liest (ihr Gewicht in `_brandNarbeFn`, um ihre Mitte): an der Ecke wiegt sie 0,35, dort trüge auch das Quadrat
+    // der Zelle 0 (gemessen bei −287/−1055) und die Linse wäre blind für die Asche vor der Front
+    const S = (t) => t * t * (3 - 2 * t);
+    const gew = (v, h, f = v / cs - h) => (f >= 0.5 ? 1 - S(f - 0.5) : S(f + 0.5));
+    const fernster = () => {
+        let best = [-Infinity, 0, 0];
+        for (let i = 1; i < cs; i++)
+            for (let j = 1; j < cs; j++) {
+                const [x, z] = [hx * cs + i, hz * cs + j];
+                if (gew(x, hx) * gew(z, hz) < 0.9) continue;
+                const t = ankunft(x, z);
+                if (t > best[0]) best = [t, x, z];
+            }
+        return best;
+    };
+    const m = (n) => (n ? r3(n.m * n.asche) : 0);
+    const [uhr, jahr] = [st.weatherEffectTime, st.autoSeason];
+    const aus = {};
+    try {
+        st.weatherEffectTime = -1e9;
+        st.autoSeason = false;
+        r.setSeason("sommer");
+        wort("cloudy");
+        r._naesseTakt = () => (st.naesse = 0);
+        st.naesse = 0;
+        await stehen(MESS);
+        r._feldFolgeSteht = () => true;
+        r._feuchteAt = () => 0;
+        r.setTimeOfDay(0.5, "regler");
+        const b = zuenden();
+        if (!b) return { fehler: `an der Mess-Wiese (${MESS.x}, ${MESS.z}) fing mit trockenem Bett kein Brand` };
+        // N2: die Dauer der Herd-Zelle, wie sie fing
+        const N2 = (aus.n2 = dauer(b));
+        // N1: schreiten, solange die Herd-Zelle brennt und ihr fernster Ort ≥ 1 s vor jeder Front liegt
+        while (r._brandUhr + B.schrittS - b.t0 <= 20 + 1e-9 && r._brandUhr + B.schrittS < b.ende && fernster()[0] > r._brandUhr + 2 * B.schrittS) if (!schritt()) break;
+        const [fernAn, fx, fz] = fernster();
+        const lesen = () => ({ zuend: m(r._brandNarbe(b.ex, b.ez)), fern: m(r._brandNarbe(fx, fz)) });
+        const N1 = (aus.n1 = Object.assign(lesen(), {
+            s: r3(r._brandUhr - b.t0),
+            tr: r3(b.tr),
+            brennt: b.t0 !== null && bf().get(hx + "," + hz) === b && !r._brandZelle(hx, hz),
+            brennend: [...bf().values()].filter((q) => q.t0 !== null).length,
+            fernOrt: [r3(fx), r3(fz)],
+            fernAn: r3(fernAn - b.t0),
+        }));
+        r._brandFront = () => ({ asche: 1, busch: 0, wald: 0, front: () => 0 });
+        N1.mutanteWartet = lesen();
+        r._brandFront = () => ({ asche: 1, busch: 0, wald: 0 });
+        N1.mutanteQuadrat = lesen();
+        delete r._brandFront;
+        // N3: EIN Bild des Brands, dann die Leuchtquellen, die das Licht liest, gegen die Flammen ihrer Zelle
+        const bild = () => {
+            r._bildZeit = 0;
+            r._brandBild(0.1);
+            const F = r._brandFlammen || [];
+            const Q = r._leuchtQuellen(pm.x, pm.y, pm.z, 64).filter((q) => q.quelle === "brand");
+            const R = { lichter: Q.length, flammen: F.length, gemessen: 0, max: 0, mitte: false };
+            for (const q of Q) {
+                const [cx, cz] = zelle(q.x, q.z);
+                const d = Math.min(...F.filter((f) => Math.floor(f.x / cs) === cx && Math.floor(f.z / cs) === cz).map((f) => Math.hypot(f.x - q.x, f.z - q.z)));
+                if (!Number.isFinite(d)) continue; // eine Zelle ohne Flamme im Bild (ihre Front verließ sie, der Deckel des Bilds)
+                R.gemessen++;
+                if (d >= R.max) [R.max, R.mitte] = [r3(d), Math.hypot(q.x - (cx + 0.5) * cs, q.z - (cz + 0.5) * cs) < 1e-6];
+            }
+            return R;
+        };
+        const N3 = (aus.n3 = bild());
+        r._brandBild = function (dt) {
+            P._brandBild.call(this, dt);
+            for (const q of bf().glueht || []) (q.ort = null), this._brandOrt(q);
+        };
+        N3.mutante = bild();
+        delete r._brandBild;
+        bild();
+        // N5: die Flammen der Herd-Zelle in demselben Bild, in ihrer Reihenfolge längs der Front: je Paar von Nachbarn ihr Abstand (xz)
+        // und die volle Breite ihrer Zungen, gerechnet wie `_brandFlammenZeichnen` (2 × `breite` × Länge × rMax der Zunge des
+        // Fachwerks, die Länge das Mittel des Paars); das Paar am Median des Verhältnisses trägt das Urteil
+        const byram = (f) => 0.0775 * Math.pow(f.I, 0.46);
+        const saum = () => {
+            const Bb = C.BRAND.bild;
+            const F = (r._brandFlammen || []).filter((f) => Math.floor(f.x / cs) === hx && Math.floor(f.z / cs) === hz);
+            const rMax = Math.max(...globalThis.__fachwerkCore.FLAMME.zunge.map((p) => p[0]));
+            const paare = F.slice(1).map((g, i) => [Math.hypot(g.x - F[i].x, g.z - F[i].z), Bb.breite * (byram(F[i]) + byram(g)) * rMax]);
+            const [d, w] = rang(paare.sort((u, v) => u[0] / u[1] - v[0] / v[1]), 0.5) || [NaN, NaN];
+            return { flammen: F.length, paare: paare.length, abstand: r3(d), breite: r3(w), mass: r3(d / w), weit: r3(1 + 1.25 * Bb.flamme.rausch[2]), minM: Bb.abstandMinM };
+        };
+        const N5 = (aus.n5 = saum());
+        // die Mutante: die Tafel des Bilds mit dem Mindest-Abstand 0,5 m (der Stand bis w28-brand-saum)
+        C.BRAND = Object.freeze({ ...B, bild: Object.freeze({ ...B.bild, abstandMinM: 0.5 }) });
+        try {
+            bild();
+            N5.mutante = saum();
+        } finally {
+            C.BRAND = B;
+        }
+        bild();
+        // N6: dieselben Flammen der Herd-Zelle, je Flamme ihre Länge im Bild je Byram-Länge ihrer Intensität (q = `f.lang` ÷
+        // 0,0775·I^0,46); die Streuung von q über die Front. `uhr`: dieselbe Streuung 1,3 s Bild-Uhr später (nur gemeldet)
+        const pulsen = () => {
+            const q = (r._brandFlammen || []).filter((f) => Math.floor(f.x / cs) === hx && Math.floor(f.z / cs) === hz).map((f) => f.lang / byram(f));
+            const mi = q.reduce((a, v) => a + v, 0) / Math.max(1, q.length);
+            return { flammen: q.length, sigma: r3(Math.sqrt(q.reduce((a, v) => a + (v - mi) * (v - mi), 0) / Math.max(1, q.length))), min: r3(Math.min(...q)), max: r3(Math.max(...q)), puls: C.BRAND.bild.puls };
+        };
+        const N6 = (aus.n6 = pulsen());
+        r._bildZeit = 1.3;
+        r._brandBild(0.1);
+        N6.uhr = pulsen().sigma;
+        // die Mutante: die Tafel des Bilds ohne Puls (jede Zunge steht auf ihrer Byram-Länge)
+        C.BRAND = Object.freeze({ ...B, bild: Object.freeze({ ...B.bild, puls: 0 }) });
+        try {
+            bild();
+            N6.mutante = pulsen();
+        } finally {
+            C.BRAND = B;
+        }
+        bild();
+        // N7: derselbe Brand NACHTS (die Uhr als Spieler-Wort auf 0 — `setTimeOfDay` wendet den Tag samt Belichtung an). Je
+        // Leuchtquelle des Brands, frisch gelesen (`_leuchtQuellen`, nicht die Wahl des Pools) und über acht Bild-Uhren des
+        // Flackerns: ihre Bestrahlung AN der Flamme; das Maximum trägt das Urteil. `herd`: der Zeitplan des
+        // Herdfeuers zu dieser Uhr (die Nacht steht), `zeit`: die Quellen des Brands, die einen Zeitplan tragen
+        const LGf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        const schein = () => {
+            const [BF, bel] = [C.BRAND.bild.flamme, (st.renderer && st.renderer.toneMappingExposure) || 1];
+            const Q = r._leuchtQuellen(pm.x, pm.y, pm.z, 64).filter((q) => q.quelle === "brand");
+            const mass = (q, t, k = q.L.kernM) => ((r._leuchtStaerke(q, t) / Math.PI) * (1 + k * k)) / (k * k);
+            const W = Q.flatMap((q) => [0, 0.37, 0.9, 1.3, 2.1, 3.3, 4.7, 6.1].map((t) => mass(q, t)));
+            return { quellen: Q.length, max: r3(Math.max(0, ...W)), min: r3(Math.min(...W)), kern: r3(Math.max(0, ...Q.map((q) => q.L.kernM))), zeit: Q.filter((q) => q.L.zeit != null).length, herd: r3(r._lichtZeitplan(LGf.zeit)), belichtung: r3(bel), soll: BF.schein };
+        };
+        const tagSchein = schein().max; // derselbe Brand am Mittag (die Uhr der Sitzung): das Licht der Flamme hängt nicht an der Stunde
+        r.setTimeOfDay(0, "regler");
+        const N7 = (aus.n7 = schein());
+        N7.tag = tagSchein;
+        // die Mutante „am Bild-Ton": die Masse ÷ Belichtung (der widerlegte Stand 63c7e567) — Tag und Nacht fallen auseinander
+        const F0 = P._flammenLicht;
+        const amTon = () => {
+            r._flammenLicht = function (...a) {
+                const F = F0.apply(this, a);
+                return { L: F.L, masse: F.masse / ((st.renderer && st.renderer.toneMappingExposure) || 1) };
+            };
+            return schein().max;
+        };
+        try {
+            N7.mutanteTon = { nacht: amTon(), tag: (r.setTimeOfDay(0.5, "regler"), amTon()) };
+        } finally {
+            delete r._flammenLicht;
+            r.setTimeOfDay(0, "regler");
+        }
+        // die Mutante: der Brand als Herdfeuer-Punkt × `BRAND.licht` mit dem Zeitplan des Feuers (der Stand bis w28-brand-nacht)
+        r._flammenLicht = () => ({ L: LGf, masse: C.BRAND.licht });
+        try {
+            N7.mutante = schein();
+        } finally {
+            delete r._flammenLicht;
+            r.setTimeOfDay(0.5, "regler");
+        }
+        // N2, die Mutante: derselbe Herd, `ende` auf den Durchlauf des Kopfs gestutzt
+        r._brandZuenden = function (...a) {
+            const z = P._brandZuenden.apply(this, a);
+            if (z) z.ende = z.t0 + kopfS(z);
+            return z;
+        };
+        const bm = zuenden();
+        delete r._brandZuenden;
+        N2.mutante = bm ? dauer(bm) : null;
+        leer();
+        // N4: der Bauer des Chunk-Bodens baut seinen Stoff frisch; der Kern der Seite zählt die Abrufe der Asche-Zeile
+        const bauen = () => {
+            const [K, alt] = [globalThis.__schmiedeCore, st.voxelChunkMaterial];
+            const SG = K.STOFF_GESETZ;
+            let [n, neu] = [0, null];
+            const zaehler = Object.create(SG, { zeile: { value: (name) => ((n += name === "asche"), SG.zeile(name)) } });
+            globalThis.__schmiedeCore = Object.create(K, { STOFF_GESETZ: { value: zaehler } });
+            try {
+                if (globalThis.__schmiedeCore.STOFF_GESETZ !== zaehler) throw new Error("der Kern der Seite nimmt den Zähler nicht");
+                st.voxelChunkMaterial = null;
+                neu = r._getVoxelChunkMaterial();
+            } finally {
+                globalThis.__schmiedeCore = K;
+                st.voxelChunkMaterial = alt;
+                if (neu && neu !== alt && neu.dispose) neu.dispose();
+            }
+            return { abrufe: n, gebaut: !!neu && neu !== alt };
+        };
+        const N4 = (aus.n4 = bauen());
+        try {
+            N4.rauheit = globalThis.__schmiedeCore.STOFF_GESETZ.zeile("asche").rauheit;
+        } catch (e) {
+            N4.rauheit = "keine Zeile";
+        }
+        r._wegeBodenFarbe = function (T, vc, a) {
+            const v = P._wegeBodenFarbe.call(this, T, vc, a);
+            if (a) delete a.asche;
+            return v;
+        };
+        N4.mutante = bauen().abrufe;
+        delete r._wegeBodenFarbe;
+        return aus;
+    } finally {
+        for (const k of ["_naesseTakt", "_feuchteAt", "_feldFolgeSteht", "_brandFront", "_brandBild", "_brandZuenden", "_wegeBodenFarbe", "_flammenLicht"]) delete r[k];
+        leer();
+        st.weatherEffectTime = uhr;
+        st.autoSeason = jahr;
+    }
+}
+
+// (L1–L5) DIE LAVA ZÜNDET IHREN RAND (w28-lava-zuendet, im Lauf `--narbe` NACH N1–N7 auf derselben Seite: Null-Renderer, Mess-Wiese,
+// Sommer, trockenes Bett). Der Guss ist der Schreib-Akt des Spiels (`_lavaGiessen` auf die Mitte der Mess-Zelle), danach EIN Takt
+// der Lava (`_lavaTakt`, wie `_tickWegeKarte` ihn ruft) — kein zweiter Takt, keine Hilfe der Probe. Jede Probe räumt hinter sich
+// auf (`leer`: die Taten der Probe fallen, das Brand-Feld leert, Asche- und Lava-Decke der Kronen-Karte malen neu).
+async function lavaSeite(MESS) {
+    const { stehen, wort } = await window.__seite();
+    const [C, P, L] = [AnazhRealm, Object.getPrototypeOf(r), (st.worldMeta.taten ||= [])];
+    const [B, cs, n0] = [C.BRAND, C.LIFE_FIELD.cell, L.length];
+    const r3 = (v) => Math.round(v * 1e3) / 1e3;
+    const bf = () => (st.brandFeld ||= new Map());
+    const [hx, hz] = [Math.floor(MESS.x / cs), Math.floor(MESS.z / cs)];
+    const [mx, mz] = [(hx + 0.5) * cs, (hz + 0.5) * cs];
+    const NB = [-1, 0, 1].flatMap((dz) => [-1, 0, 1].map((dx) => [dx, dz])).filter(([dx, dz]) => dx || dz);
+    const KANTEN = NB.filter(([dx, dz]) => !dx !== !dz);
+    const brennt = (dx, dz) => ((q) => (q && q.t0 !== null ? q : null))(bf().get(hx + dx + "," + (hz + dz)));
+    const leer = () => {
+        if (r._brandRest) r._brandArbeit(Infinity);
+        bf().clear();
+        L.length = n0;
+        r._tatGen = (r._tatGen | 0) + 1;
+        r._brandBett = null;
+        for (const s of st.wegeKarte ? st.wegeKarte.stufen : []) if (s.zentriert) r._ascheStufeMalen(s), r._lavaStufeMalen(s);
+        r._lavaTaktT = -Infinity;
+    };
+    // EIN Guss auf die Mitte der Mess-Zelle, `alterS` Sekunden alt (ihre Welt-Stunde `h` zurückgestellt), und EIN Takt der Lava
+    const giessen = (alterS = 0) => {
+        leer();
+        const a = r._lavaGiessen(mx, mz);
+        a.h -= alterS / 3600;
+        r._lavaTaktT = -Infinity;
+        r._lavaTakt(performance.now());
+        return a;
+    };
+    // EIN Schritt der Uhr des Brands samt seiner ganzen Arbeit (wie N1)
+    const schritt = () => {
+        const u = r._brandUhr;
+        for (let i = 0; i < 4000 && r._brandUhr === u && r._brandLebt(); i++) (st.spielZeit = u + B.schrittS), r._tickBrand();
+        r._brandArbeit(Infinity);
+        return r._brandUhr > u;
+    };
+    const [uhr, jahr] = [st.weatherEffectTime, st.autoSeason];
+    const aus = {};
+    try {
+        st.weatherEffectTime = -1e9;
+        st.autoSeason = false;
+        r.setSeason("sommer");
+        wort("cloudy");
+        r._naesseTakt = () => (st.naesse = 0);
+        st.naesse = 0;
+        await stehen(MESS);
+        r._feldFolgeSteht = () => true;
+        r._feuchteAt = () => 0;
+        r.setTimeOfDay(0.5, "regler");
+        leer();
+        if (!st.wegeKarte || !st.wegeKarte.stufen.some((s) => s.zentriert)) return { fehler: "die Wege-Karte der Seite steht nicht (keine zentrierte Stufe): die Decke der Lava hat keinen Ort" };
+
+        // L3 — DAS BETT AUS FÜNF PUNKTEN (vor jedem Guss): die erste Nachbarin der Mess-Zelle mit Bett; für die Probe trägt ihre
+        // Mitte Stein (`_kontaktStoffAt` nur an diesem EINEN Punkt ersetzt), `k` zählt die Viertel-Punkte mit Brennstoff am echten
+        // Leser. `voll`: ihr Bett ohne Eingriff, `stein`: mit Stein unter der Mitte, `soll`: lebendig × k/5.
+        const pi = NB.findIndex(([dx, dz]) => r._brandStoff(hx + dx, hz + dz));
+        if (pi < 0) return { fehler: `keine Nachbarin der Mess-Zelle (${hx}, ${hz}) trägt ein Bett` };
+        const [pcx, pcz] = [hx + NB[pi][0], hz + NB[pi][1]];
+        const [px, pz] = [(pcx + 0.5) * cs, (pcz + 0.5) * cs];
+        const bett = () => ((r._brandBett = null), ((f) => (f ? r3(f.leb) : null))(r._brandStoff(pcx, pcz)));
+        const traegt = (x, z) => ((s) => !!(s && s.brenn))(r._stoff(r._kontaktStoffAt(x, z, r._voxelSurfaceY(x, z))));
+        const k = [-1, 1].flatMap((i) => [-1, 1].map((j) => traegt(px + (i * cs) / 4, pz + (j * cs) / 4))).filter(Boolean).length;
+        const leb = r.auraAt(px, pz).lebendig;
+        const L3 = (aus.l3 = { ort: [px, pz], leb: r3(leb), k, soll: r3((leb * k) / 5), voll: bett() });
+        const steinMitte = function (x, z, y) {
+            return Math.abs(x - px) < 1e-6 && Math.abs(z - pz) < 1e-6 ? "stein" : P._kontaktStoffAt.call(this, x, z, y);
+        };
+        r._kontaktStoffAt = steinMitte;
+        L3.stein = bett();
+        // die Mutante: jeder der fünf Punkte liest die Mitte (der Stand bis w28-lava-zuendet) — mit Stein dort kein Bett;
+        // `mutanteVoll`: dieselbe Mutante ohne Stein trägt das volle Bett (sie ist nicht blind für jede Zelle)
+        r._kontaktStoffAt = function (x, z, y) {
+            return steinMitte.call(this, px, pz, y);
+        };
+        L3.mutante = bett();
+        r._kontaktStoffAt = function (x, z, y) {
+            return P._kontaktStoffAt.call(this, px, pz, y);
+        };
+        L3.mutanteVoll = bett();
+        delete r._kontaktStoffAt;
+
+        // L1 — DIE ZÜNDUNG: nach Guss und EINEM Takt brennen von den acht Nachbarinnen genau die mit Bett, deren Zeile unter der
+        // Decke zündet (`tZuend` < Temperatur der Decke). `kalt`/`lau`: dieselbe Decke 10 K unter der kleinsten / über der größten
+        // Zünd-Temperatur ihrer Betten (das Alter aus dem Gang des Kerns: τ · ln((T₀ − T_Luft)/(T − T_Luft)), `_lavaZustand` liest nach).
+        const a = giessen();
+        const Z = r._lavaZustand(a);
+        const [tK, tu] = [Z.temperatur + 273.15, r._temperaturAt(a.y, 0) + 273.15];
+        const zaehlen = () => NB.filter(([dx, dz]) => brennt(dx, dz)).length;
+        const betten = NB.map(([dx, dz]) => r._brandStoff(hx + dx, hz + dz)).filter(Boolean);
+        const zuend = betten.map((f) => f.zeile.tZuend);
+        const L1 = (aus.l1 = { brennend: zaehlen(), betten: betten.filter((f) => tK > f.zeile.tZuend).length, tK: r3(tK), tZuend: [Math.min(...zuend), Math.max(...zuend)], tau: r3(Z.tau) });
+
+        // L4 — KEIN HALM AUF DER DECKE: gleich nach dem Takt (die Decke ist gemalt, keine Front lief), je Viertelmeter auf den vier
+        // Achsen aus der Mitte der Decke: wo 0 < `_lavaDeckeAt` < 1 (ihr dünner Rand), ist `_wieseGrund` (gruen 1) 0. `aussen`: der
+        // kleinste Grund 2 m jenseits ihres Endes je Achse (dort steht Wiese — die Probe ist nicht blind).
+        const [rand, draussen] = [[], []];
+        for (const [dx, dz] of KANTEN) {
+            let ende = false;
+            for (let d = 0; d <= 1.5 * cs; d += 0.25) {
+                const [x, z] = [mx + dx * d, mz + dz * d];
+                const dk = r._lavaDeckeAt(x, z);
+                if (dk > 0 && dk < 1) rand.push([x, z, dk]);
+                if (dk === 0 && d > cs / 4 && !ende) (ende = true), draussen.push([x + dx * 2, z + dz * 2]);
+            }
+        }
+        const grund = (Q) => Q.map(([x, z]) => r._wieseGrund(x, z, r._voxelSurfaceY(x, z), 1));
+        const L4 = (aus.l4 = { punkte: rand.length, max: r3(Math.max(-1, ...grund(rand))), decke: [r3(Math.min(...rand.map((q) => q[2]))), r3(Math.max(...rand.map((q) => q[2])))], aussen: draussen.length === 4 ? r3(Math.min(...grund(draussen))) : 0, asche: r3(Math.max(0, ...rand.map(([x, z]) => r._ascheAt(x, z)))) });
+        // die Mutante: die Decke dünnt nur (Gewicht × (1 − Decke), der Stand bis w28-lava-zuendet)
+        r._wieseGrund = function (x, z, y, g) {
+            const dk = P._lavaDeckeAt.call(this, x, z);
+            this._lavaDeckeAt = () => 0;
+            try {
+                return P._wieseGrund.call(this, x, z, y, g) * (1 - dk);
+            } finally {
+                delete this._lavaDeckeAt;
+            }
+        };
+        L4.mutante = ((h) => ({ max: r3(Math.max(-1, ...h)), ueber0: h.filter((v) => v > 0).length }))(grund(rand));
+        delete r._wieseGrund;
+
+        // L2 — DER RAND ZÜNDET AUF SEINER LÄNGE: je Kanten-Nachbarin, die brennt, ihre Eintritte (`ein`): ihre Zahl, die Decke AN
+        // jedem (`decke`, das Maximum: 0 = jeder liegt, wo die Decke endet), wie viele einen halben Meter einwärts Decke tragen
+        // (`amRand`), ihre Lage zur gemeinsamen Kante (`tief`, m nach außen). Dann 60 s Uhr des Brands: `spanne` = wie weit die
+        // Front (`_brandFront(b).front` > 0) längs der Kante reicht, im Streifen von 2 m einwärts bis 4 m auswärts der Kante (dort
+        // sucht `_lavaZuendet` das Ende der Decke), das Minimum über die Kanten-Nachbarinnen. Nur gemeldet: `sicht` (dieselbe
+        // Spanne nur IN der Nachbarin, je Kante) und `flammen` (ihre Flammen im Bild `_brandBild`, je Kante).
+        const kante = (dx, dz) => [(hx + (dx > 0 ? 1 : 0)) * cs, (hz + (dz > 0 ? 1 : 0)) * cs];
+        const spanne = (dx, dz, von, bis) => {
+            const [b, [kx, kz]] = [brennt(dx, dz), kante(dx, dz)];
+            if (!b) return 0;
+            const front = r._brandFront(b).front;
+            let [lo, hi] = [Infinity, -Infinity];
+            for (let o = von; o <= bis; o += 0.25)
+                for (let s = 0.125; s < cs; s += 0.25) if (front(dx ? kx + dx * o : hx * cs + s, dz ? kz + dz * o : hz * cs + s) > 0) [lo, hi] = [Math.min(lo, s), Math.max(hi, s)];
+            return hi >= lo ? hi - lo + 0.25 : 0;
+        };
+        const randLauf = () => {
+            const K = KANTEN.filter(([dx, dz]) => brennt(dx, dz));
+            const E = K.map(([dx, dz]) => {
+                const [e, [kx, kz]] = [brennt(dx, dz).ein || [], kante(dx, dz)];
+                const P2 = [...Array(e.length / 2)].map((_, i) => [e[2 * i], e[2 * i + 1]]);
+                return { n: P2.length, decke: Math.max(0, ...P2.map(([x, z]) => r._lavaDeckeAt(x, z))), amRand: P2.filter(([x, z]) => r._lavaDeckeAt(x - dx * 0.5, z - dz * 0.5) > 0).length, tief: P2.map(([x, z]) => (dx ? (x - kx) * dx : (z - kz) * dz)) };
+            });
+            const u0 = r._brandUhr;
+            while (K.length && r._brandUhr - u0 < 60 - 1e-9) if (!schritt()) break;
+            r._bildZeit = 0;
+            r._brandBild(0.1);
+            const fl = ([dx, dz]) => (r._brandFlammen || []).filter((f) => Math.floor(f.x / cs) === hx + dx && Math.floor(f.z / cs) === hz + dz).length;
+            const tief = E.flatMap((e) => e.tief);
+            return { kanten: K.length, ein: Math.min(...E.map((e) => e.n)), einMax: Math.max(0, ...E.map((e) => e.n)), decke: r3(Math.max(0, ...E.map((e) => e.decke))), amRand: Math.min(...E.map((e) => e.amRand)), tief: tief.length ? [r3(Math.min(...tief)), r3(Math.max(...tief))] : null, uhr: r3(r._brandUhr - u0), spanne: Math.min(...K.map(([dx, dz]) => spanne(dx, dz, -cs / 8 - 0.25, cs / 4 + 0.25))), spanneMax: Math.max(0, ...K.map(([dx, dz]) => spanne(dx, dz, -cs / 8 - 0.25, cs / 4 + 0.25))), sicht: K.map(([dx, dz]) => spanne(dx, dz, 0.25, cs - 0.25)), flammen: K.map(fl) };
+        };
+        const L2 = (aus.l2 = randLauf());
+        // die Mutante: `_brandFangen` verwirft die Eintritte (die Nachbarin fängt an dem EINEN Punkt ex/ez)
+        r._brandFangen = function (x, z) {
+            return P._brandFangen.call(this, x, z);
+        };
+        giessen();
+        L2.mutante = randLauf();
+        delete r._brandFangen;
+
+        // L1, die Mutante (`_lavaZuendet` leer: der Takt malt, nichts fängt) und die Gegenproben kalt und lau
+        r._lavaZuendet = () => 0;
+        giessen();
+        L1.mutante = zaehlen();
+        delete r._lavaZuendet;
+        const alter = (TK) => Z.tau * Math.log((tK - tu) / (TK - tu));
+        const gegen = (TK, g = giessen(alter(TK))) => ({ brennend: zaehlen(), tK: r3(r._lavaZustand(g).temperatur + 273.15), glut: r3(r._lavaZustand(g).glut) });
+        L1.kalt = gegen(L1.tZuend[0] - 10);
+        L1.lau = gegen(L1.tZuend[1] + 10);
+
+        // L5 — DAS LICHT DER LAVA: NACHTS gegossen (die Uhr zuerst: das Alter der Decke hängt an der Welt-Stunde), die Quelle
+        // `lava`, die das Licht liest (`_leuchtQuellen` um die Decke): ihr Schein AN der Decke im Maß von N7 (`_leuchtStaerke` ÷ π ×
+        // (1 + k²)/k², das Maximum über acht Bild-Uhren), ihr Kern, ihr Zeitplan, ihre Höhe über `a.y`
+        const LGf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        r.setTimeOfDay(0, "regler");
+        const an = giessen();
+        const schein = () => {
+            const Q = r._leuchtQuellen(an.x, an.y + 1.8, an.z, 64).filter((q) => q.quelle === "lava");
+            const mass = (q, t, kk = q.L.kernM) => ((r._leuchtStaerke(q, t) / Math.PI) * (1 + kk * kk)) / (kk * kk);
+            const W = Q.flatMap((q) => [0, 0.37, 0.9, 1.3, 2.1, 3.3, 4.7, 6.1].map((t) => mass(q, t)));
+            return { quellen: Q.length, max: r3(Math.max(0, ...W)), min: r3(Math.min(...W)), kern: r3(Math.max(0, ...Q.map((q) => q.L.kernM))), kernSoll: cs / 2, zeit: Q.filter((q) => q.L.zeit != null).length, hoch: r3(Math.max(-99, ...Q.map((q) => Math.abs(q.y - an.y)))), herd: r3(r._lichtZeitplan(LGf.zeit)), glut: r3(r._lavaZustand(an).glut), soll: C.BRAND.bild.flamme.schein };
+        };
+        const L5 = (aus.l5 = schein());
+        // die Mutante: das alte Datum der Lava (der Herdfeuer-Punkt × `BRAND.licht` × Glut mit Zeitplan, 1 m über ihrer Mitte)
+        r._leuchtQuellen = function (...arg) {
+            return P._leuchtQuellen.apply(this, arg).map((q) => (q.quelle === "lava" ? Object.assign(q, { L: LGf, masse: C.BRAND.licht * this._lavaZustand(q.id).glut, y: q.y + 1 }) : q));
+        };
+        L5.mutante = schein();
+        delete r._leuchtQuellen;
+        return aus;
+    } finally {
+        for (const k of ["_naesseTakt", "_feuchteAt", "_feldFolgeSteht", "_kontaktStoffAt", "_lavaZuendet", "_brandFangen", "_wieseGrund", "_lavaDeckeAt", "_leuchtQuellen"]) delete r[k];
+        r.setTimeOfDay(0.5, "regler");
+        leer();
+        st.weatherEffectTime = uhr;
+        st.autoSeason = jahr;
+    }
+}
+
 if (SELBSTTEST) {
     console.log("=== STAND-TAKT — Selbsttest (ohne Browser) ===");
     selbsttest();
@@ -1217,8 +1793,32 @@ if (SELBSTTEST) {
                 },
                 [["ASCHE", "asche.asche.halmeVoll", 30], ["GRAS", "asche.gras.kraut", 6], ["BUSCH", "asche.busch.kraut", 1], ["ERNTE", "naehr.ernte.N", 1], ["RÜCKGABE", "naehr.asche", 1], ["MUTANTE-NÄHRSTOFF", "naehr.mutante.W", 0.7], ["SÄMLING", "saemling.stufen.0.alter", 0.5], ["SÄMLING", "saemling.stufen.2.skala", 1], ["GESTALT", "saemling.gestalt.0.0", 8], ["MUTANTE-GESTALT", "saemling.mutante.0.1", 600], ["WALD", "wald.brand", 2]]
             ),
+            // die Narbe-Linse (`--narbe`): der grüne Befund der Mess-Wiese und je Fall sein Täter — die Zahlen der Täter sind die
+            // des Stands vor w28-brand-bild (die brennende Zelle trägt 0, das Ende am Kopf, das Licht über der Mitte, kein Abruf)
+            ...falsch(
+                narbeUrteil,
+                {
+                    n1: { zuend: 1, fern: 0, s: 20, tr: 6.6, brennt: true, brennend: 4, fernOrt: "fern", fernAn: 41.2, mutanteWartet: { zuend: 0, fern: 0 }, mutanteQuadrat: { zuend: 1, fern: 0.9 } },
+                    n2: { dauer: 52.4, ecken: 45.8, kopf: 31.5, mutante: { dauer: 31.5, ecken: 45.8, kopf: 31.5 } },
+                    n3: { lichter: 4, flammen: 60, gemessen: 4, max: 0, mitte: false, mutante: { lichter: 4, flammen: 60, gemessen: 4, max: 5.3, mitte: true } },
+                    n4: { abrufe: 1, gebaut: true, rauheit: 0.96, mutante: 0 },
+                    n5: { flammen: 27, paare: 26, abstand: 0.427, breite: 0.36, mass: 1.187, weit: 2, minM: 0.2, mutante: { flammen: 22, paare: 21, abstand: 1.123, breite: 0.702, mass: 1.6, weit: 2, minM: 0.5 } },
+                    n6: { flammen: 27, sigma: 0.246, min: 0.652, max: 1.35, puls: 0.35, uhr: 0.259, mutante: { flammen: 27, sigma: 0, min: 1, max: 1, puls: 0 } },
+                    n7: { quellen: 4, max: 8.2, min: 5.7, tag: 8.2, mutanteTon: { nacht: 5.5, tag: 16 }, kern: 2, zeit: 0, herd: 45, belichtung: 1.5, soll: 7.5, mutante: { quellen: 4, max: 460, min: 300, kern: 0.76, zeit: 4, herd: 45, belichtung: 1.5, soll: 7 } },
+                    // die Lava-Linse (L1–L5): die Zahlen der Mess-Wiese; `l2` im Stand, in dem die Decke vor dem Zünden gemalt ist
+                    l1: { brennend: 8, betten: 8, tK: 1650, tZuend: [523, 533], tau: 13956.667, mutante: 0, kalt: { brennend: 0, tK: 513, glut: 0 }, lau: { brennend: 8, tK: 543, glut: 0 } },
+                    l2: { kanten: 4, ein: 9, einMax: 9, decke: 0, amRand: 7, tief: [-1.99, 3.51], uhr: 60, spanne: 16, spanneMax: 16, sicht: [5.75, 15.5, 16, 15.5], flammen: [24, 41, 18, 151], mutante: { kanten: 4, ein: 0, einMax: 0, decke: 0, amRand: 0, tief: null, uhr: 60, spanne: 1.75, spanneMax: 9.25, sicht: [4.75, 9.25, 9.25, 1.75], flammen: [19, 22, 19, 16] } },
+                    l3: { ort: "probe", leb: 0.802, k: 4, soll: 0.642, voll: 0.802, stein: 0.642, mutante: null, mutanteVoll: 0.802 },
+                    l4: { punkte: 32, max: 0, decke: [0.043, 0.962], aussen: 1, asche: 0, mutante: { max: 0.957, ueber0: 32 } },
+                    l5: { quellen: 1, max: 7.918, min: 6.777, kern: 8, kernSoll: 8, zeit: 0, hoch: 0, herd: 45, glut: 1, soll: 7.5, mutante: { quellen: 1, max: 519.05, min: 444.211, kern: 0.76, kernSoll: 8, zeit: 1, hoch: 1, herd: 45, glut: 1, soll: 7.5 } },
+                },
+                [["N1-LEER", "n1.brennt", false], ["N1-LEER", "n1.s", 3], ["N1-LEER", "n1.fernAn", 12], ["N1-WARTET", "n1.zuend", 0], ["N1-QUADRAT", "n1.fern", 0.9], ["MUTANTE-N1-WARTET", "n1.mutanteWartet.zuend", 1], ["MUTANTE-N1-QUADRAT", "n1.mutanteQuadrat.fern", 0], ["N2-ENDE", "n2.dauer", 31.5], ["MUTANTE-N2", "n2.mutante.dauer", 52.4], ["MUTANTE-N2", "n2.mutante", null], ["N3-LEER", "n3.gemessen", 0], ["N3-LICHT", "n3.max", 5.3, "n3.mitte", true], ["MUTANTE-N3", "n3.mutante.max", 0], ["N4-LEER", "n4.gebaut", false], ["N4-ZEILE", "n4.abrufe", 0], ["MUTANTE-N4", "n4.mutante", 1], ["N5-LEER", "n5.paare", 2], ["N5-LEER", "n5.mass", null], ["N5-SAUM", "n5.mass", 1.6, "n5.abstand", 1.123, "n5.breite", 0.702], ["MUTANTE-N5", "n5.mutante.mass", 1.187], ["MUTANTE-N5", "n5.mutante.paare", 2], ["MUTANTE-N5", "n5.mutante", null], ["N6-LEER", "n6.flammen", 3], ["N6-LEER", "n6.sigma", null], ["N6-BAND", "n6.sigma", 0, "n6.min", 1, "n6.max", 1], ["MUTANTE-N6", "n6.mutante.sigma", 0.246], ["MUTANTE-N6", "n6.mutante.flammen", 3], ["MUTANTE-N6", "n6.mutante", null], ["N7-UHR", "n7.tag", 16], ["MUTANTE-N7-TON", "n7.mutanteTon.tag", 5.6], ["N7-LEER", "n7.quellen", 0], ["N7-LEER", "n7.herd", 1], ["N7-SCHEIN", "n7.max", 460], ["N7-SCHEIN", "n7.zeit", 4], ["N7-DUNKEL", "n7.max", 1], ["MUTANTE-N7", "n7.mutante.max", 8.2], ["MUTANTE-N7", "n7.mutante.zeit", 0], ["MUTANTE-N7", "n7.mutante", null],
+                    // die Täter der Lava-Linse: je Fall der Stand vor w28-lava-zuendet (L2-DECKE: der Kopf 163a65de — alle Eintritte 2 m in der Zelle der Lava)
+                    ["LEER", "l3", null], ["L1-LEER", "l1.betten", 0, "l1.brennend", 0], ["L1-LEER", "l1.kalt.tK", 600], ["L1-LEER", "l1.lau", null], ["L1-ZÜNDUNG", "l1.brennend", 0], ["L1-ZÜNDUNG", "l1.brennend", 5], ["L1-KALT", "l1.kalt.brennend", 8], ["L1-LAU", "l1.lau.brennend", 0], ["MUTANTE-L1", "l1.mutante", 8], ["L2-LEER", "l2.kanten", 0], ["L2-LEER", "l2.uhr", 12], ["L2-EIN", "l2.ein", 0], ["L2-DECKE", "l2.decke", 1, "l2.tief", [-1.99, -1.99]], ["L2-DECKE", "l2.decke", 0.3], ["L2-ABSEITS", "l2.amRand", 0], ["L2-SPANNE", "l2.spanne", 9.25], ["MUTANTE-L2", "l2.mutante.einMax", 9], ["MUTANTE-L2", "l2.mutante.spanneMax", 16], ["MUTANTE-L2", "l2.mutante", null], ["L3-LEER", "l3.k", 0], ["L3-LEER", "l3.voll", null], ["L3-BETT", "l3.stein", null], ["L3-ANTEIL", "l3.stein", 0.802], ["MUTANTE-L3", "l3.mutante", 0.642], ["MUTANTE-L3", "l3.mutanteVoll", null], ["L4-LEER", "l4.punkte", 0], ["L4-LEER", "l4.aussen", 0], ["L4-HALM", "l4.max", 0.957], ["MUTANTE-L4", "l4.mutante.max", 0], ["MUTANTE-L4", "l4.mutante", null], ["L5-LEER", "l5.quellen", 0], ["L5-LEER", "l5.herd", 1], ["L5-SCHEIN", "l5.max", 519.05], ["L5-SCHEIN", "l5.zeit", 1], ["L5-DUNKEL", "l5.max", 1], ["L5-KERN", "l5.kern", 0.76], ["L5-HÖHE", "l5.hoch", 1], ["MUTANTE-L5", "l5.mutante.max", 7.918], ["MUTANTE-L5", "l5.mutante.zeit", 0], ["MUTANTE-L5", "l5.mutante.hoch", 0], ["MUTANTE-L5", "l5.mutante", null],
+                ]
+            ),
         ],
-        "die Tat-, Nachwuchs-, Brand- und Sukzessions-Linse nennen jeden Täter."
+        "die Tat-, Nachwuchs-, Brand-, Sukzessions-, Narbe- und Lava-Linse nennen jeden Täter."
     );
     process.exit(0);
 }
@@ -1230,6 +1830,10 @@ const server = statikServer();
 const TAT = process.argv.includes("--tat");
 const NACHWUCHS = process.argv.includes("--nachwuchs");
 const BRANDLAUF = process.argv.includes("--brand");
+const NARBE = process.argv.includes("--narbe");
+// `--narbe` (Lehre 9): ROT ist Exit 1, jeder Absturz — der Boot, die Seite, ein Wurf im Urteil — ist Exit 2, nie ein stilles Grün
+const absturz = (e) => (console.error("❌ NARBE ABSTURZ (Exit 2) — " + (e && e.stack ? e.stack : e)), process.exit(2));
+if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", absturz);
 
 (async () => {
     console.log("=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===");
@@ -1244,6 +1848,11 @@ const BRANDLAUF = process.argv.includes("--brand");
         if (TAT) befund = await tatLauf(page);
         else if (NACHWUCHS) befund = await page.evaluate(tatSeite, MESS, { ufer: true });
         else if (BRANDLAUF) befund = await page.evaluate(brandSeite, MESS);
+        else if (NARBE) {
+            // die Lava-Linse (L1–L5) auf derselben Seite NACH der Narbe: ihr Befund steht, bevor der erste Guss fällt
+            befund = await page.evaluate(narbeSeite, MESS);
+            if (befund && !befund.fehler) Object.assign(befund, await page.evaluate(lavaSeite, MESS));
+        }
         else befund = await page.evaluate(
             async (MESS, TAKTE) => {
                 const P = Object.getPrototypeOf(r);
@@ -1595,6 +2204,23 @@ const BRANDLAUF = process.argv.includes("--brand");
                     W.schirm = Object.assign(await phase(4), { stehtSofort, zeilen: [lh, r._schirm().hoehe] });
                     schirmAuf(lh);
                     await bisRuhe(600);
+                    // die Zusage eines Schläfers (b-ankunft): der Baum schläft auf seiner Zusage (`_schlafen`) und verlässt die Wache
+                    // wie im Gang des Culls (`K.schlaefer`), der Takt ruht; kommt sie, holt sie ihn zurück (`_cullWecken`) — der Cull geht
+                    if (e) {
+                        const K = r._cullWache();
+                        let kam;
+                        const zusage = new Promise((ja) => (kam = ja));
+                        r._schlafen(e, [zusage], r._bereitStand(r._lodAuge(), true), (x) => r._cullWecken(x));
+                        e._cullEimer = undefined;
+                        K.wach.delete(e);
+                        K.schlaefer.add(e);
+                        const vor = await phase(4);
+                        kam();
+                        await sleep(5);
+                        const wach = K.wach.has(e);
+                        W.zusage = Object.assign(await phase(4), { vor: vor.takte.archCull ? vor.takte.archCull.summe : null, wach });
+                        await bisRuhe(600);
+                    }
                     aus.wecken = W;
                 }
                 // (G) GEHEN: W gehalten, zur Mitte der Spieler-Zelle — der Gang bleibt in seiner Zelle (verlässt er sie doch, ist
@@ -2293,6 +2919,14 @@ const BRANDLAUF = process.argv.includes("--brand");
         );
     } catch (e) {
         befund = { fehler: fehlerText(e) };
+    }
+    if (NARBE) {
+        await browser.close();
+        server.close();
+        if (!befund || befund.fehler) absturz(befund ? befund.fehler : "kein Befund");
+        console.log("NARBE " + JSON.stringify(befund));
+        const v = narbeUrteil(befund);
+        urteilEnde(v.length, `❌ NARBE ROT — ${v.join(" | ")}`, "✅ NARBE GRÜN — die Narbe folgt der Front, die Zelle brennt, bis ihre Front sie deckt, das Licht steht bei den Flammen, der Boden liest die Asche-Zeile, die Front ist ein geschlossener Saum, die Zungen pulsen, der Brand leuchtet nachts als Flammen-Fläche; die Lava zündet die Betten um sie auf der Länge ihres Rands, kein Halm steht auf ihrer Decke, sie leuchtet als Flammen-Fläche");
     }
     await seiteZu(browser, server, befund, null, "fehler");
     if (TAT || NACHWUCHS) {

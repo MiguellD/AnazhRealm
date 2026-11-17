@@ -406,17 +406,19 @@ async function weltDa(bed) {
 }
 // DIE FARBEN EINER GESTALT (`window.__farben(g)`): je Mesh die erste Vertex-Farbe auf drei Stellen; `window.__lin(hex)` schreibt
 // eine Farbe der Tafel (sRGB-Hex) linear in derselben Form. Bis w6-spielgang-decke trugen p2p-gestalt und studio-uebergabe je beide.
+// DIE FORM IST DIE DER PIPE (`_eckForm`, w28-preis-ort): die Farbe einer Gestalt steht in half — beide Seiten lesen durch half
+// (`Math.f16round`, auf half-Werten die Identität), sonst stand die Haut porzellan als 0,792 gegen die Tafel 0,791 (R 0,79150).
 function farben(g) {
     const set = new Set();
     g?.traverse((o) => {
         const c = o.geometry?.attributes?.color?.array;
-        if (c?.length >= 3) set.add([c[0], c[1], c[2]].map((v) => v.toFixed(3)).join(","));
+        if (c?.length >= 3) set.add([c[0], c[1], c[2]].map((v) => Math.f16round(v).toFixed(3)).join(","));
     });
     return set;
 }
 const lin = (hx) =>
     [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]
-        .map((c) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4).toFixed(3))
+        .map((c) => Math.f16round((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4).toFixed(3))
         .join(",");
 // DER EINE ABDRUCK einer Gestalt (`window.__abdruck(x, alle)`): FNV-1a über die Puffer einer Gruppe (traverse), eines Flats (je
 // Geometrie seiner Blätter einmal, ohne Schatten-Zwilling) oder einer Geometrie — die Lage, mit `alle` jedes Attribut und der
@@ -527,7 +529,18 @@ const rahmen = (b) =>
         hx: (b.maxX - b.minX) / 2,
         hz: (b.maxZ - b.minZ) / 2,
     };
-const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__pufferLesen = ${pufferLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__eichMs = ${eichMs}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+// DER ÜBERGANG FÄLLT (`window.__uebergangFaellt(r)`, in jeder Seite, `WARTEN_SEITE`): jede Probe, die das Wetter ohne Übergang will —
+// die Bühne (`__wetterSetzen` ohne Zug, ausgabe-aufnahme.cjs), die Wasser-Linse, jede Linse mit eigenem Wort oder eigener Leinwand des
+// Übergangs. Das Wort, das gilt (`state.weather`), steht ab jetzt im Bild UND auf dem Weg des Regens — der Zweig des Spiels für ein
+// Wort ohne Übergang (`requestWeatherTransition` from === target: Übergang null, `_regenWeg(w, w, jetzt, 0)`); vorher fällt der
+// laufende Übergang, sonst nähme das Spiel denselben Zielwert als „schon unterwegs“ und ließe die Rampe liegen. Bis w28-wetter-ohne-
+// rampe nullte jede Probe nur `weatherTransition` (13 Stellen): die Stempel, die `_setWeather` schon als Rampe von 45 s ± Gemüt gelegt
+// hatte, blieben liegen — 10 s Niesel stempelten 23,6–24,4 s (planet.wasser.kreislauf S1: Bilanz 2,087 / 2,332 statt ≈ 1).
+function uebergangFaellt(r) {
+    r.state.weatherTransition = null;
+    r.requestWeatherTransition(r.state.weather, 0, r.state.weather);
+}
+const WARTEN_SEITE = `${weltR} window.__uebergangFaellt = ${uebergangFaellt}; window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__pufferLesen = ${pufferLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__eichMs = ${eichMs}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");

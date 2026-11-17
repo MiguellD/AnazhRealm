@@ -13,9 +13,20 @@ class AnazhRealm_daten {
     static get WEATHER_TINTS() {
         const F = AnazhRealm.WEATHER_FIELD;
         const L = globalThis.__phytoCore.WX_LICHT;
-        if (!L || ![L.sockel, L.sonne].every(Number.isFinite))
+        if (!L || ![L.sockel, L.sonne, L.direktHoch, L.himmelHub, L.himmelGrau].every(Number.isFinite))
             throw new Error("phyto-core fehlt: WX_LICHT (das Wetter-Licht der Welt)");
-        const zeile = (f) => Object.freeze({ skyMul: f.sun, lightMul: L.sockel + L.sonne * f.sun });
+        // DIE DECKE TEILT DAS LICHT (w28-licht-regen): lightMul ist das GESAMTE Licht der Zeile; `direkt` der Anteil, den die
+        // Decke (grey) von der direkten Sonne lässt (das Richtlicht, die Scheibe), `himmel` der Hub des diffusen Himmels, `grau`
+        // sein Ergrauen. Bis hier trug das Richtlicht lightMul² und der Himmel lightMul · skyMul: direkt ÷ diffus STIEG im Regen
+        // um 1,3×, im Sturm um 3× — der Schatten wurde härter, und `grey` las kein Leser des Himmels.
+        const zeile = (f) =>
+            Object.freeze({
+                skyMul: f.sun,
+                lightMul: L.sockel + L.sonne * f.sun,
+                direkt: Math.pow(Math.max(0, 1 - f.grey), L.direktHoch),
+                himmel: 1 + L.himmelHub * f.grey,
+                grau: Math.max(0, Math.min(1, L.himmelGrau * f.grey)),
+            });
         return this._einmal(
             "WEATHER_TINTS",
             Object.freeze(Object.fromEntries(Object.keys(F).map((w) => [w, zeile(F[w])])))
@@ -373,8 +384,6 @@ class AnazhRealm_daten {
                     "spawn_temple",
                     "spawn_waterfall",
                     "spawn_tree",
-                    "spawn_island",
-                    "spawn_ufo",
                     "spawn_fractal",
                     "set_visible",
                     "voxel_carve",
@@ -658,31 +667,14 @@ class AnazhRealm_daten {
                 // DIE HÖHE AM SCHIRM streut `streu` (σ, in der Höhe −1 … 1), STETIG über den Oktaven-Wechsel: jede Oktave trägt
                 // mikroHoehe^(Oktaven über der feinsten), die ein- und die ausblendende leistungs-gleich (√fract, √(1 − fract)) — σ
                 // steht auf 0,142–0,146. Bis w27-boden-nah-2 fiel die Höhe einer Oktave an jedem Wechsel im Sprung (1 → 0,75 → 0,56):
-                // σ 0,133 ↔ 0,178, das Mittel des Bodens im reinen Himmels-Licht 1,12 ↔ 1,20 — Bänder im Schatten und in der Nacht.
+                // σ 0,133 ↔ 0,178 — Bänder im Korn.
                 streu: 0.142,
-                // DAS HIMMELS-BILD (`_mikroStoff`, aoNode): was das Relief im reinen Himmels-Licht zeigt — Schatten, bedeckter Tag,
-                // Nacht. Im LOGARITHMUS beschränkt: ln Bild = −ln(mulde) · s(kavitaet · (h − krume)), s(x) = x / √(1 + x²). Die
-                // tiefste Mulde hält `mulde` des Lichts der Fläche, die höchste Krume trägt 1/mulde: kein Pixel säuft ab, keiner
-                // glitzert. `kavitaet` ist die Steile zwischen beiden (je Höhe), `krume` die Schwelle über der mittleren Fläche — die
-                // Mehrheit liegt in der Mulde, das Mittel des Bilds steht bei 1,13 (main 1,09, w26 1,15; gerechnet am Rausch-Gesetz).
-                // GEMESSEN (Radeon 890M, Mess-Wiese Ego, der Weg von material.K2#1, ABAB in EINER Welt, je 2× bit-gleich): glatt
-                // 0,5/1/2 m 0,157/0,093/0,108 → 0,032/0,013/0,012, nyquist 0,167/0,171/0,175 → 0,175/0,179/0,180, Klassen-Luma
-                // 32,18 → 32,30; die Nacht der Prüfbühne (S0, Radeon wie swiftshader): abgesoffen 4,0 % → 0,7 %, Luma 24,2 → 24,1.
-                // DAS GESETZ DAVOR — Korn × Kavität linear, (1 + korn · h)(1 + kavitaet · h) — nahm der Mulde Albedo UND Himmel, bis
-                // auf 0 bei h = −1/kavitaet: mit 2,1 soffen in der Nacht 4,0 % ab (pascal 6,4 %: main saß ohne Abstand an der Wand
-                // 5 %), mit 3,6 (w26-boden-nah, glatt 0,031) 9,8 % — der Zug z352 fiel an S0 Nacht. Das Urteil glatt liest die BREITE
-                // der Verteilung (p10–p90 2,0 der Fläche), nicht ihre Spitzen: ein Boden mit hellen Spitzen (0,6 + 0,4 · exp in der
-                // Helligkeit) hielt die Nacht und verlor K2#1 (glatt 0,161, dieselbe Welt). Die Schwelle 0,03 gäbe der Nacht Luma
-                // 23,7, 0,02 gäbe 24,6 — 0,025 hält die Luma von main.
-                mulde: 0.38,
-                kavitaet: 12,
-                krume: 0.025,
-                // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller (σ 8,5 %), mittelfrei —
-                // die Sonne liest es, das Himmels-Licht liest das Himmels-Bild. Bis w28-stadt-grund 2,0 (σ 29 %): das Korn überdeckte den
-                // Bruchton des Steins (Kopfstein ±12 %, σ 7 %) — am Genesis-Kern stand im Bild kein Stein, nur Rauschen (Radeon,
-                // Laplace-σ 37,5 bei mikroPx 1, 21,4 bei mikroPx 3 und korn 2,0); unter σ 8,5 % trägt der Stein das Bild, das Korn
-                // seine Fläche.
-                korn: 0.6,
+                // DAS KORN je Höhe (`_mikroStoff`, colorNode) ist DAS EINE BILD DER HÖHE: die Albedo der Mulde dunkler, der Erhebung
+                // heller, mittelfrei. Jedes Licht liest es (Sonne, Licht-Pool, Himmel): im Schlagschatten und in der Nacht steht
+                // dasselbe Korn wie in der Sonne. Seine Amplitude ist keine Zahl dieser Tafel mehr: sie ist die Spalte `korn` der
+                // Stoff-Tafel (`_defaultMaterials`: `erde` der offene Boden, `stein` der Fels), dort die Zahlen und die Messung. Bis
+                // w28-himmel-korn las das Himmels-Licht ein zweites Bild derselben Höhe (aoNode, zwischen 0,38 und 1/0,38 im
+                // Logarithmus beschränkt, Steile 12 je Höhe): der Schlagschatten sprang je Kiesel 1 : 5,8, gate:schatten-terminator (K).
                 // Kipp-Stärke subtil halten: der Bump kippt die wahre Normale des Bodens (ferne.K4: keine 2.5D-Lichtung mehr)
                 // — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze. 0.24 = 13° moduliert echtes
                 // Mikro-Relief; das Albedo-Korn trägt die feine Textur.
@@ -751,7 +743,7 @@ class AnazhRealm_daten {
             "SUBSTANCE_RESPONSE",
             Object.freeze({
                 defaults: Object.freeze({
-                    // Terrain/Inseln/Mantel (vertexColors): Albedo-Quelle bleibt das
+                    // Terrain/Mantel (vertexColors): Albedo-Quelle bleibt das
                     // per-Vertex-color-Attribut; micro/AO trägt ihr eigener
                     // triplanar-colorNode (darum hier 0).
                     feld: Object.freeze({ micro: 0, emissiv: 0 }),
@@ -983,6 +975,20 @@ class AnazhRealm_daten {
             "chat.befehl.praege.kein-rezept": ["Kein Studio-Rezept „{gattung}\" im Buch.", "No studio recipe “{gattung}” in the book."],
             "chat.befehl.praege.keine-achse": ["„{rezept}\" ({art}) trägt keine Charakter-Achse.", "“{rezept}” ({art}) has no character axis."],
             "chat.befehl.praege.zeilen": ["Die {achse} des Studios: {zeilen}.", "The studio's {achse} options: {zeilen}."],
+            "chat.befehl.reise.ort": ["Diese Welt liegt bei {breite}° {ns} · {laenge}° {ow} auf ihrem Planeten, die Küste {kueste} km entfernt (Samen „{samen}\", Kern {version}).", "This world lies at {breite}° {ns} · {laenge}° {ow} on its planet, the coast {kueste} km away (seed “{samen}”, core {version})."],
+            "chat.befehl.reise.ohne-ort": ["Der Ort dieser Welt auf ihrem Planeten ist nicht bekannt: {grund}", "This world’s place on its planet is unknown: {grund}"],
+            "chat.befehl.reise.ost": ["O", "E"],
+            "chat.befehl.reise.vor": [" vor {ma} Mio. Jahren", " {ma} million years ago"],
+            "chat.befehl.reise.nach": [" in {ma} Mio. Jahren", " {ma} million years from now"],
+            "chat.befehl.reise.hier-ort": ["Diese Welt ist ein Ort ihres Planeten bei {breite}° {ns} · {laenge}° {ow}{zeit} (Samen „{samen}\", Kern {version}); „reise heim\" führt zurück.", "This world is a place of its planet at {breite}° {ns} · {laenge}° {ow}{zeit} (seed “{samen}”, core {version}); “reise heim” leads back."],
+            "chat.befehl.reise.ziel": ["Du reist nach {breite}° {ns} · {laenge}° {ow}{zeit}: Sommer {sommer} °C, Winter {winter} °C am Meer, Schnee ab {schnee} m, das Meer bei {meer} m.", "You travel to {breite}° {ns} · {laenge}° {ow}{zeit}: summer {sommer} °C, winter {winter} °C at the sea, snow from {schnee} m, the sea at {meer} m."],
+            "chat.befehl.reise.meer": ["Bei {breite}° {ns} · {laenge}° {ow}{zeit} liegt Meer, {kueste} km vor der Küste — dort ist kein Ort.", "At {breite}° {ns} · {laenge}° {ow}{zeit} lies open sea, {kueste} km off the coast — there is no place there."],
+            "chat.befehl.reise.heim": ["Du reist heim nach „{welt}\".", "You travel home to “{welt}”."],
+            "chat.befehl.reise.daheim": ["Du bist daheim — „reise <Breite> <Länge> [<Zeit in Mio. Jahren>]\" führt an einen anderen Ort dieses Planeten.", "You are home — “reise <latitude> <longitude> [<time in Ma>]” leads to another place of this planet."],
+            "chat.befehl.reise.form": ["So reist du: „reise <Breite> <Länge> [<Zeit in Mio. Jahren>]\" (Grad, Süden und Westen negativ oder mit N/S/O/W, die Zeit −4000 bis 1000), „reise\" sagt den Ort, „reise heim\" führt zurück.", "To travel: “reise <latitude> <longitude> [<time in Ma>]” (degrees, south and west negative or with N/S/E/W, time −4000 to 1000), “reise” tells the place, “reise heim” leads back."],
+            "chat.befehl.reise.heim-fehlt": ["Die Heimat {welt}… liegt nicht im Speicher.", "The home world {welt}… is not in storage."],
+            "chat.befehl.reise.nicht": ["Die Reise kam nicht an: {grund}", "The journey did not arrive: {grund}"],
+            "chat.befehl.reise.zeugnis": ["Du reistest an einen anderen Ort des Planeten: {ort}.", "You travelled to another place of the planet: {ort}."],
             "chat.befehl.symphonie.aktiviert": ["Anazh-Symphonie aktiviert — die Welt klingt (und die Kreaturen beleben sich).", "Anazh Symphony activated — the world sings (and the creatures come alive)."],
             "chat.befehl.symphonie.ohne-klang": ["Anazh-Symphonie: Belebung aktiv; Klang konnte nicht starten (kein Audio-Kontext).", "Anazh Symphony: creatures enlivened; sound couldn't start (no audio context)."],
             "chat.befehl.version.aktiviert": ["Version {version} aktiviert", "Version {version} activated"],
@@ -1262,6 +1268,51 @@ class AnazhRealm_daten {
             "kern.lade-erwachen-fehl": ["die Welt konnte nicht erwachen: {grund}", "the world could not awaken: {grund}"],
             "kern.lade-gpu-stumm": ["die Grafikkarte antwortet seit 25 s nicht — versuche ?holz=kienspan", "the graphics card has not answered for 25 s — try ?holz=kienspan"],
             "kern.lade-gpu-verweigert": ["die Grafikkarte verweigert die Welt: {grund}", "the graphics card refuses the world: {grund}"],
+            // die Lücken des ersten Weltbilds (`_weltbildLuecken`): je Term seine Zeile am Ladeschirm (`_ladeschirmStand`)
+            "ankunft.welt": ["die Welt entsteht", "the world is forming"],
+            "ankunft.boden": ["der Boden wächst ({n} Stücke im Bild)", "the ground is growing ({n} pieces in view)"],
+            "ankunft.horizont-waechst": ["der Horizont wächst ({pct} %)", "the horizon is growing ({pct} %)"],
+            "ankunft.horizont-geteilt": ["der Horizont wird geteilt", "the horizon is being divided"],
+            "ankunft.horizont-gemalt": ["der Horizont wird gemalt", "the horizon is being painted"],
+            "ankunft.licht": ["das Licht des Orts wird gemessen", "the light of the place is being measured"],
+            "ankunft.leib": ["der Spieler erhält seinen Leib", "the player receives a body"],
+            "ankunft.zeichnung-eins": ["1 Programm des Bilds entsteht", "1 program of the picture is being built"],
+            "ankunft.zeichnung": ["{n} Programme des Bilds entstehen", "{n} programs of the picture are being built"],
+            "ankunft.buch": ["das Buch der Studios öffnet sich", "the book of the studios opens"],
+            "ankunft.bauten": ["{n} Bäume und Bauten wachsen", "{n} trees and buildings are growing"],
+            "ankunft.dorf-haeuser": ["{n} Häuser des Dorfs wachsen", "{n} houses of the village are growing"],
+            "ankunft.dorf-geplant": ["das Dorf wird geplant", "the village is being planned"],
+            "ankunft.dorf-kehrt": ["das Dorf kehrt wieder", "the village returns"],
+            "ankunft.dorf-gegruendet": ["das Dorf wird gegründet", "the village is being founded"],
+            "ankunft.pflanzung": ["{teile}", "{teile}"],
+            "ankunft.baeume-gepflanzt": ["{n} Bäume werden gepflanzt", "{n} trees are being planted"],
+            "ankunft.boeden-bepflanzt": ["{n} Wald-Böden werden bepflanzt", "{n} forest floors are being planted"],
+            "ankunft.streu": ["{n} Wald-Stücke warten auf ihre Gestalt", "{n} forest pieces await their shape"],
+            "ankunft.karten": ["{n} ferne Bäume werden gemalt", "{n} distant trees are being painted"],
+            // die Untertitel-Tafel (`AnazhRealm.UNTERTITEL`): je Ereignis-Name des Klang-Gesetzes seine Zeile
+            "untertitel.stimme.wind": ["Wind weht", "wind blows"],
+            "untertitel.stimme.laub": ["Laub rauscht", "leaves rustle"],
+            "untertitel.stimme.ufer": ["Wellen am Ufer", "waves on the shore"],
+            "untertitel.stimme.fluss": ["Wasser fließt", "water flows"],
+            "untertitel.stimme.fall": ["Wasserfall rauscht", "waterfall roars"],
+            "untertitel.stimme.regen": ["Regen fällt", "rain falls"],
+            "untertitel.stimme.glut": ["Feuer knistert", "fire crackles"],
+            "untertitel.stimme.vogel": ["Vögel singen", "birds sing"],
+            "untertitel.stimme.grille": ["Grillen zirpen", "crickets chirp"],
+            "untertitel.ruf.freude": ["{wer} ruft freudig", "{wer} calls joyfully"],
+            "untertitel.ruf.ruhe": ["{wer} ruft leise", "{wer} calls softly"],
+            "untertitel.ruf.trauer": ["{wer} klagt", "{wer} laments"],
+            "untertitel.ruf.furcht": ["{wer} schreit ängstlich", "{wer} cries out in fear"],
+            "untertitel.substanz.treffer": ["Treffer: {wer}", "Hit: {wer}"],
+            "untertitel.substanz.singen": ["Eine Form singt", "A form sings"],
+            "untertitel.substanz.abschied": ["Eine Form verklingt", "A form fades away"],
+            "untertitel.substanz.wasser": ["Wasser gluckert", "water gurgles"],
+            "untertitel.substanz.inventar": ["Ding klingt", "a thing chimes"],
+            "untertitel.schritt.schritt": ["Schritte auf {wer}", "steps on {wer}"],
+            "untertitel.schritt.landung": ["Landung auf {wer}", "landing on {wer}"],
+            "untertitel.fahrt.motor": ["Motor brummt", "engine hums"],
+            "untertitel.fahrt.rollen": ["Wagen rollt", "cart rolls"],
+            "untertitel.musik.lofi": ["♪ Musik", "♪ music"],
             "kern.perf-blackbox": ["BLACKBOX schlimmster {ms} ms (GPU-Lücke {luecke} · CPU {cpu}) · {frames}F → anazhRealmPerf.json", "BLACKBOX worst {ms} ms (GPU gap {luecke} · CPU {cpu}) · {frames}F → anazhRealmPerf.json"],
             "kern.perf-chunk": ["chunk SYNC {sync}/f ({syncms} ms)  worker {worker}/f  q{q}", "chunk SYNC {sync}/f ({syncms} ms)  worker {worker}/f  q{q}"],
             "kern.perf-export": ["Export: Einstellungen → Leistung → „Perf-Daten exportieren\"", "Export: Settings → Performance → “Export perf data”"],
@@ -1666,9 +1717,11 @@ class AnazhRealm_daten {
             "speicher.diese-welt": ["(diese Welt)", "(this world)"],
             "speicher.eltern-id": ["— ID {id}…", "— ID {id}…"],
             "speicher.eltern-verloren": ["(verloren) — ID {id}…", "(lost) — ID {id}…"],
-            "speicher.ersetzen-abgelehnt": ["Ersetzen abgelehnt: {grund}", "Replace refused: {grund}"],
             "speicher.ersetzen-fehl": ["Ersetzen fehlgeschlagen: {datei} ließ sich nicht ablegen ({grund}) — du bleibst in deiner Welt.", "Replace failed: {datei} could not be stored ({grund}) — you stay in your world."],
             "speicher.ersetzen-ok": ["Datei {datei} importiert — die Welt erwacht neu.", "File {datei} imported — the world awakens anew."],
+            "speicher.fusion-fehl": ["Fusion fehlgeschlagen: {grund}", "Fusion failed: {grund}"],
+            "speicher.fusion-ohne-welt": ["Fusion verweigert: die aktive Welt fehlt.", "Fusion refused: there is no active world."],
+            "speicher.fusion-ohne-zweite": ["Fusion verweigert: keine zweite Welt gewählt.", "Fusion refused: no second world chosen."],
             "speicher.fusion-strategie": ["Fusion-Strategie: {strategie}", "Fusion strategy: {strategie}"],
             "speicher.fusion-vorbereitung-fehl": ["Fusion-Vorbereitung fehlgeschlagen: {grund}", "Fusion preparation failed: {grund}"],
             "speicher.import-fehl": ["Import fehlgeschlagen: {grund}", "Import failed: {grund}"],
@@ -1676,10 +1729,26 @@ class AnazhRealm_daten {
             "speicher.keine-eltern": ["Diese Welt ist eigenständig — keine Eltern-Welten.", "This world stands on its own — no parent worlds."],
             "speicher.klang-an": ["Klang: an", "Sound: on"],
             "speicher.klang-aus": ["Klang: aus", "Sound: off"],
+            "speicher.laden-gerettet": ["Der Speicher trug die Welt nicht ganz ({befund}) — sie kam aus {quelle}.", "Storage did not hold the world whole ({befund}) — it came from {quelle}."],
+            "speicher.laden-unlesbar": ["Der Speicherstand ist beschädigt und ließ sich nicht lesen ({grund}) — die Welt erwacht ohne ihn.", "The saved state is damaged and could not be read ({grund}) — the world awakens without it."],
+            "speicher.laden-weist": ["Die Wände der Welt wiesen ab: {teile}.", "The world's walls turned away: {teile}."],
             "speicher.namenlos": ["(namenlos)", "(nameless)"],
+            "speicher.quelle-bak": [".bak (ein Stand zurück)", ".bak (one state back)"],
             "speicher.tor-anklopfen": ["„{slug}\" (ID {id}…, {tage} Tage alt, {bauwerke} Bauwerke, {plaene} eigene Baupläne, {erinnerungen} Erinnerungen) klopft an dein Tor. Wie willst du sie empfangen?", "“{slug}” (ID {id}…, {tage} days old, {bauwerke} structures, {plaene} own blueprints, {erinnerungen} memories) is knocking at your gate. How will you receive it?"],
             "speicher.tor-anklopfen-1": ["„{slug}\" (ID {id}…, {tage} Tag alt, {bauwerke} Bauwerke, {plaene} eigene Baupläne, {erinnerungen} Erinnerungen) klopft an dein Tor. Wie willst du sie empfangen?", "“{slug}” (ID {id}…, {tage} day old, {bauwerke} structures, {plaene} own blueprints, {erinnerungen} memories) is knocking at your gate. How will you receive it?"],
             "speicher.unbekannt": ["unbekannt", "unknown"],
+            "speicher.weist.bau": ["{n} × Bau ohne Bauplan (sein Bauplan ist gefallen)", "{n} × structure without a blueprint (its blueprint has fallen)"],
+            "speicher.weist.bauplan": ["{n} × Bauplan (unlesbar oder von widerrufener Herkunft)", "{n} × blueprint (unreadable or of revoked origin)"],
+            "speicher.weist.faehigkeit": ["{n} × gewährte Fähigkeit (die Regel- oder Sende-Wand trägt sie nicht)", "{n} × granted ability (the rule or broadcast wall won't carry it)"],
+            "speicher.weist.halle": ["{n} × Portal-Halle (widerrufene Herkunft oder keine gültige Adresse)", "{n} × portal hall (revoked origin or no valid address)"],
+            "speicher.weist.praegung": ["{n} × Prägung, die ihr Studio-Prüfer abweist", "{n} × imprint its studio check rejects"],
+            "speicher.weist.programm": ["{n} × Fähigkeit (ihr Programm trägt eine Tat, die der Interpreter nicht kennt oder nie ausführt)", "{n} × ability (its program carries a deed the interpreter does not know or never runs)"],
+            "speicher.weist.regel": ["{n} × Welt-Regel (ihre Wirkung pflügt den gefrorenen Weltgrund)", "{n} × world rule (its effect ploughs the frozen world ground)"],
+            "speicher.weist.seele": ["{n} × Seele (ihr Leib bricht den Bau-Vertrag)", "{n} × soul (its body breaks the building contract)"],
+            "speicher.weist.spende": ["{n} × Spende (widerrufener oder unförmiger Anbieter)", "{n} × contribution (revoked or malformed provider)"],
+            "speicher.weist.stoff": ["{n} × Stoff (die Stoff-Wand trägt ihn nicht)", "{n} × material (the material wall won't carry it)"],
+            "speicher.weist.werkzeug": ["{n} × Werkzeug (fremde Wirkungs-Art)", "{n} × tool (unknown kind of effect)"],
+            "speicher.welt-abgewiesen": ["Die fremde Welt kam nicht herein: {grund} — deine Welt bleibt, wie sie war.", "The foreign world was turned away: {grund} — your world stays as it was."],
             "speicher.welt-option": ["{slug} — ID {id}…", "{slug} — ID {id}…"],
             "speicher.welt-wechselt": ["die Welt wechselt", "the world is changing"],
             "stoff.blech": ["Blech", "Sheet metal"],
@@ -2247,6 +2316,7 @@ class AnazhRealm_daten {
             "vorschau.werk": ["Werk", "Work"],
             "welt.brennpunkt-glimmt": ["„{ding}\" glimmt im Brennpunkt von „{linse}\" — rück es aus dem Licht, sonst fängt es Feuer.", "“{ding}” is smouldering in the focus of “{linse}” — move it out of the light before it catches fire."],
             "welt.deine-faust": ["Deine Faust", "Your fist"],
+            "welt.fackel-faengt-nicht": ["Die Glut von „{was}\" zündet hier nichts — der Boden trägt kein Bett, das brennt, oder es ist zu nass.", "The embers of “{was}” light nothing here — the ground bears nothing that burns, or it is too wet."],
             "welt.katalog.begegnung.name": ["Begegnungs-Feld", "Field of Encounters"],
             "welt.katalog.begegnung.text": ["Ein stilles Lichter-Feld — eine fremde single-player Engine, in der ihr euch trotzdem seht: AnazhRealm injiziert die Ko-Präsenz übers Mesh.", "A quiet field of lights — a foreign single-player engine in which you still see each other: AnazhRealm brings in co-presence over the mesh."],
             "welt.katalog.fachwerk.name": ["Fachwerkhaus — parametrisch, begehbar", "Timber-Frame House — parametric, walkable"],
@@ -2949,10 +3019,8 @@ class AnazhRealm_daten {
             "ergebnis.ding.bauplan": ["Bauplan", "blueprint"],
             "ergebnis.ding.dorf": ["Dorf", "village"],
             "ergebnis.ding.fraktal": ["Fraktal-{was}", "fractal {was}"],
-            "ergebnis.ding.insel": ["Insel", "island"],
             "ergebnis.ding.kreaturen": ["Kreaturen", "creatures"],
             "ergebnis.ding.tempel": ["Tempel", "temple"],
-            "ergebnis.ding.ufo": ["UFO", "UFO"],
             "ergebnis.ding.wasserfall": ["Wasserfall", "waterfall"],
             "ergebnis.ding.werke": ["Werke", "works"],
             "ergebnis.dorf-folgt": ["Das Dorf wird gebaut — es meldet sich, wenn es steht", "The village is being built — it will report when it stands"],
@@ -2969,7 +3037,6 @@ class AnazhRealm_daten {
             "ergebnis.verb.erschienen": ["erschienen", "appeared"],
             "ergebnis.verb.gebaut": ["gebaut", "built"],
             "ergebnis.verb.gepraegt": ["geprägt", "imprinted"],
-            "ergebnis.verb.gerufen": ["gerufen", "called"],
             "ergebnis.verb.gesetzt": ["gesetzt", "placed"],
             "ergebnis.verb.gewachsen": ["gewachsen", "grown"],
             "grund.bau": ["im Grundriss eines Baus wächst nichts", "nothing grows within the footprint of a building"],
@@ -3013,7 +3080,6 @@ class AnazhRealm_daten {
             "chat.satz.hain": ["Hain (5 Bäume) gepflanzt", "Grove (5 trees) planted"],
             "chat.satz.heile-welt": ["Welt geheilt: sonnig, Kreaturen glücklich, Gravitation auf 1.5G zurück", "World healed: sunny, creatures happy, gravity back to 1.5G"],
             "chat.satz.huegel": ["Hügel gehoben", "Hill raised"],
-            "chat.satz.insel": ["Schwebende Insel gesetzt", "Floating island placed"],
             "chat.satz.kommt": ["die nächste Kreatur kommt näher zu mir", "the nearest creature comes closer to me"],
             "chat.satz.konsum": ["Konsum: {was}", "Consumed: {was}"],
             "chat.satz.kreaturen": ["{n} Kreaturen gespawnt (am Spieler)", "{n} creatures spawned (at the player)"],
@@ -3036,7 +3102,6 @@ class AnazhRealm_daten {
             "chat.satz.studio-gewachsen": ["{n}× {was} aus dem Studio {wo} gewachsen", "{n}× {was} grown from the studio {wo}"],
             "chat.satz.trinkt": ["die nächste Kreatur sucht Wasser und trinkt", "the nearest creature looks for water and drinks"],
             "chat.satz.uhr": ["Uhrzeit gesetzt: {wort} ({n})", "Time set: {wort} ({n})"],
-            "chat.satz.ufo": ["UFO gerufen", "UFO called"],
             "chat.satz.vor-dir": ["vor dir", "in front of you"],
             "chat.satz.vor-dir-gebaut": ["{was} vor dir gebaut", "{was} built in front of you"],
             "chat.satz.waffe": ["Waffe: {was}", "Weapon: {was}"],
@@ -3064,7 +3129,6 @@ class AnazhRealm_daten {
             "tat.fraktal": ["lässt „{was}“ fraktal in Tiefe {tiefe} wachsen {ort}", "grows “{was}” as a fractal of depth {tiefe} {ort}"],
             "tat.grundhoehe": ["hebt die Welt-Grundhöhe auf {n}", "raises the world's base height to {n}"],
             "tat.himmel": ["färbt den Himmel", "tints the sky"],
-            "tat.insel": ["setzt eine schwebende Insel {ort}", "places a floating island {ort}"],
             "tat.inventar": ["legt {n}× „{was}“ ins Inventar", "puts {n}× “{was}” into the inventory"],
             "tat.kreatur": ["ruft {n} Kreatur herbei {ort}", "calls {n} creature {ort}"],
             "tat.kreatur-gemuet": ["ruft {n} {gemuet} Kreatur herbei {ort}", "calls {n} {gemuet} creature {ort}"],
@@ -3115,7 +3179,6 @@ class AnazhRealm_daten {
             "tat.tempel": ["errichtet einen Tempel {ort}", "raises a temple {ort}"],
             "tat.tempo": ["wiegt die Lauf-Geschwindigkeit auf {n} (im Gesetz-Band deines Körpers)", "sets the walking speed to {n} (within the law band of your body)"],
             "tat.trank": ["gibt Kreatur #{id} den Trank „{was}“", "gives creature #{id} the potion “{was}”"],
-            "tat.ufo": ["ruft ein UFO {ort}", "calls a UFO {ort}"],
             "tat.uhr": ["stellt die Uhr auf {n}", "sets the clock to {n}"],
             "tat.und": ["{a} und {b}", "{a} and {b}"],
             "tat.unsichtbar": ["macht „{was}“ unsichtbar", "makes “{was}” invisible"],

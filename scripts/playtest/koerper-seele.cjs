@@ -2523,20 +2523,20 @@ async function checkBandPhasenBF({ page, check }) {
             // Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5) — die Probe setzt den Strom, nie Math.random.
             const hatteStrom = Object.hasOwn(r, "_faunaRng");
             try {
-                st.weatherTransition = null;
                 st.weather = "rainy";
+                window.__uebergangFaellt(r);
                 const vRainy = r._weatherBlendedValue(0, 1);
                 st.weather = "stormy";
                 const vStormy = r._weatherBlendedValue(0, 1);
                 st.weatherTransition = { from: "sunny", to: "rainy", progress: 0.5 };
                 const vMitte = r._weatherBlendedValue(0, 1);
-                st.weatherTransition = null;
                 st.weather = "sunny";
+                window.__uebergangFaellt(r);
                 const vSunny = r._weatherBlendedValue(0, 1);
                 if (!(vSunny === 0 && Math.abs(vMitte - 0.5) < 1e-3 && Math.abs(vRainy - 1) < 1e-9 && vStormy > 1))
                     return `Achse: sunny=${vSunny} mitte=${vMitte} rainy=${vRainy} stormy=${vStormy}`;
                 if (!r.requestWeatherTransition("sunny")) return "Gate: sunny abgelehnt";
-                st.weatherTransition = null;
+                window.__uebergangFaellt(r);
                 if (r.requestWeatherTransition("xyz")) return "Gate: xyz angenommen";
                 const fake = {
                     userData: { emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 } },

@@ -1974,6 +1974,14 @@ class AnazhRealm_dienst {
         return sp === "pseudo" ? "de" : sp;
     }
 
+    // DIE ZEICHEN-SIGNATUR (spielgang.K5, der Wechsel am Ort): ein Zeichner, der sein Stück nur bei neuer Lage neu baut, trägt
+    // die Sprache in der Lage — sonst ruft ihn der Wechsel (`SPRACH_ZEICHNER`, der Status-Takt), und er lässt die alte Spalte
+    // stehen (Radeon 2676a667, same.preis.zugang: 10 Zeilen des Welt-Journals). Leser: Welt-Journal, Rezeptbuch, Gesten,
+    // Gesetze, der Welt-Katalog der Mitspieler.
+    static _zeichenSig(lage) {
+        return AnazhRealm._sprache() + "|" + lage;
+    }
+
     // der Wechsel am Ort: das Wort auf dem Gerät, die Spalte neu gelesen, das DOM aus index.html neu gefüllt (`_sprachDom`) —
     // jede Zeile, die danach entsteht, liest die neue Spalte; die Seite lädt nie neu (gate:weltgrenze: `location.reload`
     // steht nur im lauten Rückfall des Welt-Wechsels)
@@ -1986,6 +1994,19 @@ class AnazhRealm_dienst {
         // die Zeichner der Oberfläche zeichnen neu (jeder liest die Tafel und die Etiketten in der neuen Spalte); die Linse
         // (gate:sprache --lebend, der Wechsel am Ort) nennt jede Zeile, die danach noch in der alten Sprache steht, beim Erzeuger
         for (const z of AnazhRealm.SPRACH_ZEICHNER) this[z]();
+        // die Takt-Schreiber des HUD (die Status-Leiste 2,5 Hz: Wetter · Leistung · Bauten · Seele · Gefühl; das Lebens-HUD
+        // 10 Hz und sein Tooltip 1 Hz) schreiben ihre Zeilen JETZT in der neuen Spalte — bis hier standen sie bis zu ihrem
+        // nächsten Takt in der alten (Radeon a996d0ae, same.preis.zugang: 13 Zeilen stehen nach dem Wechsel)
+        const st = this.state;
+        if (st) {
+            st._statsHudLastTick = st._statsHudTooltipLastTick = 0;
+            if (this._statusRefs) this._statusRefs.lastTick = -Infinity;
+            const jetzt = performance.now() / 1000;
+            this.tickStatsHud(jetzt);
+            this.updateStatusPanel(jetzt);
+            // die FPS-Zeile (1-s-Takt): in de und en dieselbe Zeichenfolge, aus der Linsen-Sprache pseudo stand sie bis zu ihrem Takt
+            this._fpsSchreib();
+        }
     }
 
     // DIE ZEILE AM KNOTEN (spielgang.K5): ein Knoten, den ein Bauer EINMAL füllt, trägt seinen Schlüssel (`data-t`, je Attribut

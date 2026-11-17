@@ -71,7 +71,6 @@ hauptLauf(async () => {
                     right: new THREE.Vector3(),
                     moveDirection: new THREE.Vector3(),
                     architectures: [],
-                    floatingIslands: null,
                     materials: st.materials,
                 };
                 shim._mountedEntry = null;
@@ -239,7 +238,9 @@ hauptLauf(async () => {
                 const { vc } = AR._fahrSchrittGesetz();
                 const T = { x: P.x, y: 9, z: P.z };
                 const leser = {
-                    gras: () => (r._loopRender(), st.windUniforms.uWindStrength.value),
+                    // der Wind-Satz entsteht am ersten Leser (Boden, Gras: `_windUniformsEnsure`) — die Probe nimmt dieselbe Tür,
+                    // bevor der Takt schreibt (bis 16.11. legte ihn zufällig das Material einer fliegenden Insel an)
+                    gras: () => (r._windUniformsEnsure(), r._loopRender(), st.windUniforms.uWindStrength.value),
                     wasser: () => (r._dayNightApplyWaterMaterials(P), st.hydroSurfaceUniforms.wind.value),
                     regen: () => (r._tickRain(), r._rainSystem.uDrift.value.length()),
                     tuch: () => (r._animateCompoundMotion(g, [{ role: "segel", phase: 0 }], 1.3), Math.abs(g.children[0].rotation.z)),

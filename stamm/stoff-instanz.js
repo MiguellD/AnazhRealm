@@ -1450,8 +1450,9 @@ class AnazhRealm_stoff_instanz {
                 weg(this._rend, this._ind);
                 this._zuege.clear();
                 this._zuegeB.clear();
-                // ihre Bindegruppen (Uniform-Puffer) fallen nach dem Submit des Frames, wie jeder Puffer der Arena
-                setTimeout(() => AnazhRealm._renderObjekteLoesen(this), 0);
+                // ihre Bindegruppen (Uniform-Puffer) fallen nach dem Submit des Frames, wie jeder Puffer der Arena, danach ihre
+                // Geometrie (ihr Entsorgen bucht nur den Abgang: die Puffer gab die Zeile davor frei)
+                setTimeout(() => (AnazhRealm._renderObjekteLoesen(this), this.geometry.dispose()), 0);
             }
             _gestaltNehmen(m) {
                 const g = m.geometry,
@@ -1475,6 +1476,11 @@ class AnazhRealm_stoff_instanz {
                 this._fassade(g);
                 this.geometry = g;
                 this._neuAuf(); // neue Vertex-/Index-Puffer
+                // DIE ALTE GEOMETRIE GEHT (Gegner Speicher F7, Runden-Zensus 16.11.): ihre Puffer gehören dem Lager und der neuen
+                // Geometrie (der Geometrie-Hörer des r184 fiel, `_renderObjektRegister`), ihr Entsorgen bucht nur ihren Abgang —
+                // bis hier fiel sie dem GC ohne `dispose`, und `info.memory.geometries` zählte sie für immer (GTX, Runde Wiese ·
+                // Ost · Dorf · West: 272 → 585 → 832, davon 608 Geometrien dieser Zeile ohne Halter)
+                if (alt && alt !== g) alt.dispose();
             }
             // DIE INSTANZ-SEITE: je Glied ein Block nach seiner Zahl (`_blockFuer`) — den Speicher-Puffer der Matrizen bindet
             // r184 in die Bindegruppe jedes Render-Objekts: die Arena tauscht ihn nie. Ein Block zieht um, wenn die Zahl über
@@ -2051,6 +2057,8 @@ class AnazhRealm_stoff_instanz {
         AnazhRealm._renderObjekteLoesen(mesh);
         // gezeichnet hat ihr Zeichner (1410-1): seine Render-Objekte lösen sich ebenso
         if (mesh.__zeichner) AnazhRealm._renderObjekteLoesen(mesh.__zeichner);
+        // und seine Fassade geht mit ihm (sie hält nur die geteilte Marke; ohne `dispose` zählte sie im Info für immer)
+        if (mesh.__zeichner) mesh.__zeichner.__fassade.dispose();
         if (mesh.__arena) mesh.__arena.lassen(mesh, false);
         if (AnazhRealm.__arenaKommt) AnazhRealm.__arenaKommt.delete(mesh);
         mesh.dispose();
@@ -2073,33 +2081,39 @@ class AnazhRealm_stoff_instanz {
         const ros = obj && obj.__renderObjekte;
         if (!ros) return;
         obj.__renderObjekte = null;
-        for (const ro of ros) {
-            const rend = ro.renderer;
-            const o = ro.object;
-            if (ro.material) ro.material.removeEventListener("dispose", ro.onMaterialDispose);
-            if (ro.geometry) ro.geometry.removeEventListener("dispose", ro.onGeometryDispose);
-            // Auch ein BatchedMesh trägt Objekteigenes im Schlüssel (die uuid seiner Matrizen- und Farb-Textur, 6:209537) —
-            // kommt je eins in den Stamm (heute 0), gehört `o.isBatchedMesh === true` in diese Bedingung.
-            const eigenerSchluessel =
-                !!o && (o.isInstancedMesh === true || o.count > 1 || Array.isArray(o.morphTargetInfluences));
-            if (eigenerSchluessel && rend && rend._nodes) rend._nodes.delete(ro);
-            if (rend && rend._bindings && ro._bindings)
-                for (const bg of ro._bindings) {
-                    const b0 = bg.bindings && bg.bindings[0];
-                    if (b0 && b0.groupNode && b0.groupNode.shared === true) continue;
-                    rend.backend.deleteBindGroupData(bg);
-                    rend._bindings.delete(bg);
-                    // r184 merkt jede Bindegruppe an jeder Textur, die sie liest (`bindGroups`, für den Neubau bei
-                    // einem Textur-Wechsel) und vergisst sie nie: eine geteilte Textur (Karten-Atlas, Schatten-Karte)
-                    // hielt so die Bindegruppe — und mit ihr die Uniform-Puffer — jeder je gezeichneten Senke.
-                    for (const b of bg.bindings || [])
-                        if (b.isSampledTexture && b.texture && rend._textures.has(b.texture)) {
-                            const td = rend._textures.get(b.texture);
-                            if (td.bindGroups) td.bindGroups.delete(bg);
-                        }
-                    AnazhRealm._samplerLoesen(bg);
-                }
-        }
+        for (const ro of ros) AnazhRealm._renderObjektLoesen(ro);
+    }
+    // DIE LÖSUNG EINES RENDER-OBJEKTS — der Rumpf von `_renderObjekteLoesen` und die Naht N1 des Gesetzes „der Speicher folgt dem
+    // Blick“ (Preis des Orts, Schnitt 2): fällt die Geometrie, die das Objekt noch trägt, hat das Render-Objekt keinen Leser mehr
+    // (`_renderObjektRegister`, der Geometrie-Hörer). Ohne sie hielt der geteilte Stoff jedes Render-Objekt jeder entsorgten Geometrie
+    // samt `vertexBuffers` und Index-Spiegel (Befund Heap, Radeon 14.11.: Kamm-Krone 8 → 40 Render-Objekte, 8,56 → 54,11 MB auf dem
+    // Weg Wiese → West → Wiese). Nie `ro.dispose()`: die Pipeline bleibt im Cache ihres Schlüssels (Frost-Nachbesserung 5).
+    static _renderObjektLoesen(ro) {
+        const rend = ro.renderer;
+        const o = ro.object;
+        if (ro.material) ro.material.removeEventListener("dispose", ro.onMaterialDispose);
+        if (ro.geometry) ro.geometry.removeEventListener("dispose", ro.onGeometryDispose);
+        // Auch ein BatchedMesh trägt Objekteigenes im Schlüssel (die uuid seiner Matrizen- und Farb-Textur, 6:209537) —
+        // kommt je eins in den Stamm (heute 0), gehört `o.isBatchedMesh === true` in diese Bedingung.
+        const eigenerSchluessel =
+            !!o && (o.isInstancedMesh === true || o.count > 1 || Array.isArray(o.morphTargetInfluences));
+        if (eigenerSchluessel && rend && rend._nodes) rend._nodes.delete(ro);
+        if (rend && rend._bindings && ro._bindings)
+            for (const bg of ro._bindings) {
+                const b0 = bg.bindings && bg.bindings[0];
+                if (b0 && b0.groupNode && b0.groupNode.shared === true) continue;
+                rend.backend.deleteBindGroupData(bg);
+                rend._bindings.delete(bg);
+                // r184 merkt jede Bindegruppe an jeder Textur, die sie liest (`bindGroups`, für den Neubau bei
+                // einem Textur-Wechsel) und vergisst sie nie: eine geteilte Textur (Karten-Atlas, Schatten-Karte)
+                // hielt so die Bindegruppe — und mit ihr die Uniform-Puffer — jeder je gezeichneten Senke.
+                for (const b of bg.bindings || [])
+                    if (b.isSampledTexture && b.texture && rend._textures.has(b.texture)) {
+                        const td = rend._textures.get(b.texture);
+                        if (td.bindGroups) td.bindGroups.delete(bg);
+                    }
+                AnazhRealm._samplerLoesen(bg);
+            }
     }
     // DIE SAMPLER-HÖRER FALLEN MIT IHRER BINDEGRUPPE (w4-leck-knoten): r184 klont je Render-Objekt jede Sampler-Bindung (Textur
     // und Sampler), und der Klon hängt einen dispose-Hörer an seine Textur (vendor `nR.clone`: `e.texture = this.texture` →
@@ -2157,6 +2171,24 @@ class AnazhRealm_stoff_instanz {
             }
             const liste = o.__renderObjekte || (o.__renderObjekte = []);
             liste.push(ro);
+            // DAS RENDER-OBJEKT STIRBT MIT SEINER GEOMETRIE (Naht N1, „der Speicher folgt dem Blick“): fällt die Geometrie, die das
+            // Objekt noch trägt, liest niemand mehr das Render-Objekt — es verlässt die Kette seines Renderers (ein neuer Blick baut
+            // es neu; Knoten-Stand und Pipeline liegen im Cache ihres Schlüssels) und das Register, gelöst wie beim Abschied
+            // (`_renderObjektLoesen`). Getauscht am lebenden Objekt (`setGeometry` zieht den Hörer nach) bleibt r184s Hörer allein.
+            const geoRoh = ro.onGeometryDispose;
+            ro.geometry.removeEventListener("dispose", geoRoh);
+            ro.onGeometryDispose = (ev) => {
+                geoRoh();
+                if (!ev || ev.target !== o.geometry) return;
+                const ketten = this.chainMaps || {};
+                const kette = ro.getChainArray();
+                for (const k in ketten) if (ketten[k].get(kette) === ro) ketten[k].delete(kette);
+                const l = o.__renderObjekte;
+                const i = l ? l.indexOf(ro) : -1;
+                if (i >= 0) l.splice(i, 1);
+                AnazhRealm._renderObjektLoesen(ro);
+            };
+            ro.geometry.addEventListener("dispose", ro.onGeometryDispose);
             // r184 löst ein Render-Objekt selbst (ein neuer Schlüssel, ein entsorgter Stoff): es verlässt das Register.
             const roDispose = ro.onDispose;
             ro.onDispose = () => {

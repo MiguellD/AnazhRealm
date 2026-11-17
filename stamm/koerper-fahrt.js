@@ -159,6 +159,7 @@ class AnazhRealm_koerper_fahrt {
     // die Geometrie der Vorlage zurück, die eigene Spalte nimmt der GPU-Kehraus.
     _tuchTakt(group, t) {
         const u = group.userData;
+        if (AnazhRealm._tuchGitterZeit && AnazhRealm._tuchGitterZeit.size) this._tuchGitterRuhe();
         if (!this._tuchTeileVon(group)) return;
         const G = u._gelenk;
         const KC = globalThis.__koerperCore;
@@ -224,6 +225,18 @@ class AnazhRealm_koerper_fahrt {
         if (u._tuchSchlaf) {
             wahl.delete(group);
             return;
+        }
+        // DAS GITTER EINES BEWOHNERS AUS DEM FADEN (w28-heap-dorf): fehlt es (die Ruhe des Gitters, `_tuchGitterRuhe`, nahm es oder
+        // die Tracht kommt zum ersten Mal nah), bestellt der Leib es im Voxel-Faden und sein Tuch ruht in der Pose, bis es steht —
+        // nie am Haupt-Faden (Radeon: ein Gitter 159 ms in EINEM Takt). Der eigene Leib trägt es aus dem Vorbau (`_tuchVorbau`);
+        // fiel der Faden, baut `_tuchZustandAn` es hier wie bisher.
+        if (an && !u._tuch && group !== st.playerMesh) {
+            const memo = AnazhRealm._tuchGitterMemo;
+            const key = satz.sim[0].userData.__tuchVorlage || satz.sim[0].geometry;
+            if (!(memo && memo.get(key)) && !this._tuchGitterFaden(satz.sim, satz.folge, this._tuchHaut(group))) {
+                wahl.delete(group);
+                return;
+            }
         }
         if (an && !wahl.has(group)) {
             let fern = null;
@@ -333,10 +346,9 @@ class AnazhRealm_koerper_fahrt {
         if (!satz) return true;
         const { sim, folge } = satz;
         const memo = AnazhRealm._tuchGitterMemo;
-        if (!memo || !memo.get(sim[0].userData.__tuchVorlage || sim[0].geometry)) {
-            this._tuchGitter(sim, folge, this._tuchHaut(p));
-            return false;
-        }
+        // das Gitter rechnet der Faden; fiel er, geht der Vorbau weiter (der erste Wechsel ins Third baut es, `_tuchZustandAn`)
+        if (!memo || !memo.get(sim[0].userData.__tuchVorlage || sim[0].geometry))
+            return this._tuchGitterFaden(sim, folge, this._tuchHaut(p));
         if (u._tuchSchlaf !== true) return true;
         this._tuchZustandAn(p);
         this._leibMatrix(p);
@@ -349,15 +361,98 @@ class AnazhRealm_koerper_fahrt {
         const key = sim[0].userData.__tuchVorlage || sim[0].geometry;
         let g = memo.get(key);
         if (!g) {
-            // die Webung der Kleid-Zeile (der Stoff trägt sie in seinen Ofen-Werten, `foundryMp`)
-            const webe = sim.map((m) => {
-                const ud = (m.material && m.material.userData) || {};
-                return ud.__webe || (ud.foundryMp && ud.foundryMp.webe) || null;
-            });
-            g = globalThis.__koerperCore.tuchGitter(sim, folge, haut, webe);
+            g = globalThis.__koerperCore.tuchGitter(sim, folge, haut, this._tuchWebe(sim));
             memo.set(key, g);
+            (AnazhRealm._tuchGitterZeit || (AnazhRealm._tuchGitterZeit = new Map())).set(key, null);
         }
         return g;
+    }
+    // die Webung der Kleid-Zeile je sim-Mesh (der Stoff trägt sie in seinen Ofen-Werten, `foundryMp`)
+    _tuchWebe(sim) {
+        return sim.map((m) => {
+            const ud = (m.material && m.material.userData) || {};
+            return ud.__webe || (ud.foundryMp && ud.foundryMp.webe) || null;
+        });
+    }
+    // DAS GITTER IM FADEN (w28-preis-ort, Schnitt 3 — der Vorbau trägt nie ein Stück über die Frist): derselbe Kern rechnet es im
+    // Voxel-Faden (`tuch-gitter`, koerper-core `tuchGitter`), der Wirt reicht nur die Felder, die er liest, als Kopien per Transfer
+    // und legt die Antwort in DASSELBE Gedächtnis wie `_tuchGitter` — der nächste Schritt des Vorbaus findet es. Bis hier rechnete
+    // der Vorbau es am Haupt-Faden in EINEM Takt (Radeon, Mess-Wiese 41ec3a96: 159,0 ms, `_tuchGitterStufe`). Steht der Faden noch
+    // nicht, wartet der Vorbau (er fragt im nächsten Takt neu); wirft der Faden, bricht es laut beim Namen und das Gitter bleibt
+    // offen — der erste Wechsel ins Third baut es dann am Haupt-Faden (`_tuchZustandAn`), wie vor dem Vorbau. → true: der Faden
+    // warf (der Vorbau geht weiter), sonst false (er wartet auf die Antwort).
+    _tuchGitterFaden(sim, folge, haut) {
+        const key = sim[0].userData.__tuchVorlage || sim[0].geometry;
+        const flug = AnazhRealm._tuchGitterFlug || (AnazhRealm._tuchGitterFlug = new WeakMap());
+        const worker = this.state.voxelWorker;
+        if (flug.has(key) || !worker) return flug.get(key) === "gefallen";
+        const transfer = [];
+        const kopie = (a) => {
+            if (!a) return null;
+            const c = a.slice();
+            transfer.push(c.buffer);
+            return c;
+        };
+        const form = (m) => {
+            const ga = m.geometry.attributes;
+            return {
+                n: ga.position.count,
+                pos: kopie(ga.position.array),
+                nrm: ga.normal ? kopie(ga.normal.array) : null,
+                si: kopie(ga.skinIndex.array),
+                sw: kopie(ga.skinWeight.array),
+                swN: !!ga.skinWeight.normalized,
+                idx: m.geometry.index ? kopie(m.geometry.index.array) : null,
+                bind: Array.from(m.bindMatrix.elements),
+            };
+        };
+        const msg = {
+            type: "tuch-gitter",
+            sim: sim.map(form),
+            folge: folge.map(form),
+            haut: haut.map(form),
+            webe: this._tuchWebe(sim),
+        };
+        flug.set(key, true);
+        this._voxelFadenAuftrag(worker, msg, transfer).then(
+            (g) => {
+                const memo = AnazhRealm._tuchGitterMemo || (AnazhRealm._tuchGitterMemo = new WeakMap());
+                if (!memo.get(key)) {
+                    memo.set(key, g);
+                    (AnazhRealm._tuchGitterZeit || (AnazhRealm._tuchGitterZeit = new Map())).set(key, null);
+                }
+            },
+            (e) => (flug.set(key, "gefallen"), this._stoffBruch("das Tuch-Gitter im Faden", e))
+        );
+        return false;
+    }
+    // DIE RUHE DES GITTERS (w28-heap-dorf, „gehalten wird nur, was ein Leser liest“): ein Gitter lebt, solange ein Zustand es
+    // trägt — die Leiber der Nah-Wahl (`_tuchWahl`) und der eigene Leib (sein Tuch schläft im Ego, der Zustand bleibt).
+    // `TUCH_GITTER_RUHE_MS` ohne Zustand, und es fällt samt seinem Flug; der nächste Leib der Tracht bestellt es neu im Faden
+    // (`_tuchTakt`, `_tuchVorbau`). Bis hier hielt das Gedächtnis jede Tracht, die je nah kam, solange ihre Vorlage lebt (der
+    // Foundry-Cache): am Dorfplatz nach der Probe der Bewohner 7 Gitter ohne Leser, 31,6 MB im Dominator-Baum (Radeon, c8c840c9).
+    _tuchGitterRuhe() {
+        const T = AnazhRealm._tuchGitterZeit;
+        const jetzt = performance.now();
+        if (jetzt < (this._tuchRuheNaechst || 0)) return;
+        this._tuchRuheNaechst = jetzt + 1000;
+        const lebt = new Set();
+        for (const g of AnazhRealm._tuchWahl ? AnazhRealm._tuchWahl.keys() : [])
+            if (g.userData._tuch) lebt.add(g.userData._tuch.gitter);
+        const p = this.state.playerMesh;
+        if (p && p.userData._tuch) lebt.add(p.userData._tuch.gitter);
+        const memo = AnazhRealm._tuchGitterMemo;
+        const flug = AnazhRealm._tuchGitterFlug;
+        for (const [key, seit] of T) {
+            const g = memo && memo.get(key);
+            if (!g) T.delete(key);
+            else if (seit == null || lebt.has(g)) T.set(key, jetzt);
+            else if (jetzt - seit > AnazhRealm.TUCH_GITTER_RUHE_MS) {
+                memo.delete(key);
+                if (flug) flug.delete(key);
+                T.delete(key);
+            }
+        }
     }
     // Das Tuch ruht in der Pose: die Ruhe-Lage, die Geometrie der Vorlage kehrt zurück, der Zustand fällt
     _tuchLoesen(group) {
@@ -3154,3 +3249,5 @@ AnazhRealm.FOCUSING_SONNE_W_M2 = 1000;
 AnazhRealm.FOCUSING_FLECK_M3 = 2e-5;
 AnazhRealm.FOCUSING_VERLUST_W_K = 0.85;
 AnazhRealm.FOCUSING_RUHE_K = 1;
+// DIE RUHE DES TUCH-GITTERS (w28-heap-dorf, `_tuchGitterRuhe`): so lange (ms) trägt kein Zustand ein Gitter, dann fällt es aus dem Gedächtnis
+AnazhRealm.TUCH_GITTER_RUHE_MS = 10000;

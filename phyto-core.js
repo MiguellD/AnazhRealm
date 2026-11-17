@@ -1378,10 +1378,50 @@
     }
     // Die Lagen beliebiger Karten (je Karte vier Ecken in Bau-Reihenfolge, Dreiecke 0-1-2 und 0-2-3): die Strähnen der
     // Trauer-Krone und der Wedel lesen dasselbe Raster wie die Laub-Karten.
+    // DIE PROBE NUR AM RAND (w28-ankunft-faden): das Raster zählt je Pixel die Lagen, das Ergebnis ist die Summe ganzer
+    // Zahlen — bit-gleich, solange jedes Pixel dasselbe Urteil trägt. Bis hier fragte jedes Dreieck JEDES Pixel seines Rechtecks
+    // von floor(min) bis ceil(max) mit zwei Divisionen (die Karten einer Krone sind groß: 261 Proben je Dreieck für 96 Treffer;
+    // GTX 1050 kalt 6,2 CPU-s Selbstzeit auf den beiden Foundry-Fäden vor dem ersten Bild, die Hälfte jedes Laub-Körpers).
+    // Jetzt je Zeile des Dreiecks — die drei Gewichte sind entlang einer Zeile LINEAR, g_i(x) = m_i + x · s_i:
+    //   (1) Tragen zwei Pixel einer Zeile alle drei Gewichte ≥ LAGEN_FEST (die Rundung der Probe liegt ≥ 6-fach darunter),
+    //       tragen es alle Pixel dazwischen: sie zählen ohne Probe. Die Kandidaten kommen aus den Nullstellen der Gewichte,
+    //       der Beweis ist allein die Probe der zwei Enden.
+    //   (2) Von dort nach links und nach rechts trägt jedes Pixel das Urteil, wie es stand — im Saum |g| < LAGEN_FEST mit den
+    //       Quotienten selbst (n/fl < 0 ⟺ n und fl tragen verschiedene Vorzeichen: der Zähler ist 0 oder ≥ 2⁻¹⁵⁸, der Quotient
+    //       läuft nie unter), außerhalb des Saums entscheidet das Vorzeichen allein —, bis ein Gewicht ≤ −LAGEN_FEST steht,
+    //       das in der Lauf-Richtung weiter fällt: dahinter fällt jedes Pixel. Eine Zeile ohne festes Inneres (die Spitze,
+    //       die flache Kante) läuft so von ihrer Mitte aus.
+    //   (3) Spalten und Zeilen, deren Pixel-Mitte ≥ LAGEN_RAND außerhalb des Rechtecks der Ecken liegt, tragen ein Gewicht
+    //       ≤ −LAGEN_RAND/(2·D) (D die Raster-Kante) und fielen immer.
+    //   (4) Wo der Beweis nicht trägt — der Splitter (|fl| < LAGEN_SPLITTER·D³: dort urteilt die Rundung), eine Ecke ohne
+    //       Zahl —, bleibt das Urteil je Pixel über das ganze Rechteck, wie es stand.
+    // Die Lagen stehen als Stufen je Zeile (+1 am Anfang einer Spanne, −1 dahinter), die Summe läuft am Ende einmal durch.
+    // `lagenZaehler` zählt Dreiecke, Proben und Treffer (Leser: gate:asset-contract, die Wand der Lagen-Kosten).
+    const LAGEN_RAND = 0.25;
+    const LAGEN_FEST = 1e-6;
+    const LAGEN_SPLITTER = 1e-9;
+    const _lagenZahl = { rufe: 0, dreiecke: 0, proben: 0, treffer: 0 };
+    function lagenZaehler(leeren) {
+        const z = {
+            rufe: _lagenZahl.rufe,
+            dreiecke: _lagenZahl.dreiecke,
+            proben: _lagenZahl.proben,
+            treffer: _lagenZahl.treffer,
+        };
+        if (leeren) _lagenZahl.rufe = _lagenZahl.dreiecke = _lagenZahl.proben = _lagenZahl.treffer = 0;
+        return z;
+    }
     function quadLagen(P, n, aufl) {
         if (!n) return 0;
         const U = new Float32Array(n * 4),
             V = new Float32Array(n * 4);
+        const X = new Float64Array(n * 4),
+            Y = new Float64Array(n * 4);
+        const Z = _lagenZahl;
+        const boden = Math.floor,
+            decke = Math.ceil,
+            fern = Infinity;
+        Z.rufe++;
         let sQ = 0,
             nQ = 0;
         for (let k = 0; k < 8; k++) {
@@ -1408,39 +1448,174 @@
             if (!(px > 0)) continue;
             const W = Math.ceil((u1 - u0) / px) + 2,
                 H = Math.ceil((v1 - v0) / px) + 2;
-            const buf = new Uint16Array(W * H);
+            const buf = new Int32Array(W * H + 1); // die Stufen: +1 am Anfang einer Spanne, −1 hinter ihr
+            for (let i = 0; i < n * 4; i++) {
+                X[i] = (U[i] - u0) / px;
+                Y[i] = (V[i] - v0) / px;
+            }
+            const D = Math.max(W, H);
+            const splitter = Math.max(LAGEN_SPLITTER * D * D * D, 1e-6);
+            let proben = 0;
             for (let c = 0; c < n; c++)
                 for (let d = 0; d < 2; d++) {
                     const a = c * 4,
                         b = c * 4 + 1 + d,
                         f = c * 4 + 2 + d;
-                    const ax = (U[a] - u0) / px,
-                        ay = (V[a] - v0) / px,
-                        bx = (U[b] - u0) / px,
-                        by = (V[b] - v0) / px,
-                        qx = (U[f] - u0) / px,
-                        qy = (V[f] - v0) / px;
+                    const ax = X[a],
+                        ay = Y[a],
+                        bx = X[b],
+                        by = Y[b],
+                        qx = X[f],
+                        qy = Y[f];
                     const fl = (bx - ax) * (qy - ay) - (by - ay) * (qx - ax);
                     if (Math.abs(fl) < 1e-12) continue;
-                    const xa = Math.max(0, Math.floor(Math.min(ax, bx, qx))),
-                        xb = Math.min(W - 1, Math.ceil(Math.max(ax, bx, qx))),
-                        ya = Math.max(0, Math.floor(Math.min(ay, by, qy))),
-                        yb = Math.min(H - 1, Math.ceil(Math.max(ay, by, qy)));
-                    for (let y = ya; y <= yb; y++)
-                        for (let x = xa; x <= xb; x++) {
-                            const sx = x + 0.5,
-                                sy = y + 0.5;
-                            const w0 = ((bx - sx) * (qy - sy) - (by - sy) * (qx - sx)) / fl,
-                                w1 = ((qx - sx) * (ay - sy) - (qy - sy) * (ax - sx)) / fl;
-                            if (w0 < 0 || w1 < 0 || 1 - w0 - w1 <= 0) continue;
-                            buf[y * W + x]++;
+                    const x0 = Math.min(ax, bx, qx),
+                        x1 = Math.max(ax, bx, qx),
+                        y0 = Math.min(ay, by, qy),
+                        y1 = Math.max(ay, by, qy);
+                    let xa = Math.max(0, Math.floor(x0)),
+                        xb = Math.min(W - 1, Math.ceil(x1)),
+                        ya = Math.max(0, Math.floor(y0)),
+                        yb = Math.min(H - 1, Math.ceil(y1));
+                    Z.dreiecke++;
+                    if (!(Math.abs(fl) >= splitter) || fl - fl !== 0) {
+                        // der Splitter und die Ecke ohne Zahl: das Urteil der Quotienten über das ganze Rechteck, wie es stand
+                        for (let y = ya; y <= yb; y++)
+                            for (let x = xa; x <= xb; x++) {
+                                const sx = x + 0.5,
+                                    sy = y + 0.5;
+                                const w0 = ((bx - sx) * (qy - sy) - (by - sy) * (qx - sx)) / fl,
+                                    w1 = ((qx - sx) * (ay - sy) - (qy - sy) * (ax - sx)) / fl;
+                                proben++;
+                                if (w0 < 0 || w1 < 0 || 1 - w0 - w1 <= 0) continue;
+                                buf[y * W + x]++;
+                                buf[y * W + x + 1]--;
+                            }
+                        continue;
+                    }
+                    if (x0 - (xa + 0.5) >= LAGEN_RAND) xa++;
+                    if (xb + 0.5 - x1 >= LAGEN_RAND) xb--;
+                    if (xb + 0.5 - x1 >= LAGEN_RAND) xb--;
+                    if (y0 - (ya + 0.5) >= LAGEN_RAND) ya++;
+                    if (yb + 0.5 - y1 >= LAGEN_RAND) yb--;
+                    if (yb + 0.5 - y1 >= LAGEN_RAND) yb--;
+                    if (xb < xa || yb < ya) continue;
+                    // mit dem Vorzeichen der Fläche: g_i = sg · n_i, innen ⟺ jedes g_i ≥ 0, ihre Summe ist fa
+                    const sg = fl > 0 ? 1 : -1,
+                        fa = sg * fl,
+                        fest = LAGEN_FEST * fa;
+                    const s0 = sg * (by - qy),
+                        s1 = sg * (qy - ay),
+                        s2 = sg * (ay - by);
+                    const i0 = s0 !== 0 ? -1 / s0 : 0,
+                        i1 = s1 !== 0 ? -1 / s1 : 0,
+                        i2 = s2 !== 0 ? -1 / s2 : 0;
+                    for (let y = ya; y <= yb; y++) {
+                        const sy = y + 0.5,
+                            zeile = y * W;
+                        const m0 = sg * (bx * (qy - sy) - (by - sy) * qx),
+                            m1 = sg * (qx * (ay - sy) - (qy - sy) * ax),
+                            m2 = sg * (ax * (by - sy) - (ay - sy) * bx);
+                        // die Kandidaten des festen Inneren: zwischen den Nullstellen der drei Gewichte
+                        let lo = -fern,
+                            hi = fern,
+                            w;
+                        if (s0 > 0) lo = m0 * i0;
+                        else if (s0 < 0) hi = m0 * i0;
+                        else if (m0 < 0) hi = -fern;
+                        if (s1 > 0) {
+                            if ((w = m1 * i1) > lo) lo = w;
+                        } else if (s1 < 0) {
+                            if ((w = m1 * i1) < hi) hi = w;
+                        } else if (m1 < 0) hi = -fern;
+                        if (s2 > 0) {
+                            if ((w = m2 * i2) > lo) lo = w;
+                        } else if (s2 < 0) {
+                            if ((w = m2 * i2) < hi) hi = w;
+                        } else if (m2 < 0) hi = -fern;
+                        let cl = decke(lo - 0.5),
+                            cr = boden(hi - 0.5);
+                        if (!(cl >= xa)) cl = xa;
+                        if (!(cr <= xb)) cr = xb;
+                        let innen = cl <= cr;
+                        if (innen) {
+                            // der Beweis: beide Enden tragen alle drei Gewichte ≥ LAGEN_FEST (× |fl|, ohne Division)
+                            const sl = cl + 0.5,
+                                sr = cr + 0.5;
+                            proben += 2;
+                            innen =
+                                m0 + sl * s0 >= fest &&
+                                m1 + sl * s1 >= fest &&
+                                m2 + sl * s2 >= fest &&
+                                m0 + sr * s0 >= fest &&
+                                m1 + sr * s1 >= fest &&
+                                m2 + sr * s2 >= fest;
                         }
+                        if (innen) {
+                            buf[zeile + cl]++;
+                            buf[zeile + cr + 1]--;
+                        } else {
+                            // kein festes Inneres: die Zeile läuft von ihrer Mitte aus
+                            cr = boden((lo + hi) * 0.5);
+                            if (!(cr >= xa)) cr = xa;
+                            if (cr > xb) cr = xb;
+                            cl = cr + 1;
+                        }
+                        for (let x = cl - 1; x >= xa; x--) {
+                            const sx = x + 0.5;
+                            const n0 = (bx - sx) * (qy - sy) - (by - sy) * (qx - sx),
+                                n1 = (qx - sx) * (ay - sy) - (qy - sy) * (ax - sx);
+                            const g0 = sg * n0,
+                                g1 = sg * n1,
+                                g2 = fa - g0 - g1;
+                            proben++;
+                            if (g0 >= fest && g1 >= fest && g2 >= fest) {
+                                buf[zeile + x]++;
+                                buf[zeile + x + 1]--;
+                            } else if (g0 > -fest && g1 > -fest && g2 > -fest) {
+                                // der Saum: das Urteil der Quotienten, wie es stand
+                                if (!(g0 < 0 || g1 < 0 || 1 - n0 / fl - n1 / fl <= 0)) {
+                                    buf[zeile + x]++;
+                                    buf[zeile + x + 1]--;
+                                }
+                            } else if ((g0 <= -fest && s0 >= 0) || (g1 <= -fest && s1 >= 0) || (g2 <= -fest && s2 >= 0))
+                                break;
+                        }
+                        for (let x = cr + 1; x <= xb; x++) {
+                            const sx = x + 0.5;
+                            const n0 = (bx - sx) * (qy - sy) - (by - sy) * (qx - sx),
+                                n1 = (qx - sx) * (ay - sy) - (qy - sy) * (ax - sx);
+                            const g0 = sg * n0,
+                                g1 = sg * n1,
+                                g2 = fa - g0 - g1;
+                            proben++;
+                            if (g0 >= fest && g1 >= fest && g2 >= fest) {
+                                buf[zeile + x]++;
+                                buf[zeile + x + 1]--;
+                            } else if (g0 > -fest && g1 > -fest && g2 > -fest) {
+                                if (!(g0 < 0 || g1 < 0 || 1 - n0 / fl - n1 / fl <= 0)) {
+                                    buf[zeile + x]++;
+                                    buf[zeile + x + 1]--;
+                                }
+                            } else if ((g0 <= -fest && s0 <= 0) || (g1 <= -fest && s1 <= 0) || (g2 <= -fest && s2 <= 0))
+                                break;
+                        }
+                    }
                 }
-            for (let i = 0; i < buf.length; i++)
-                if (buf[i]) {
-                    sQ += buf[i];
+            // die Stufen laufen durch: je Pixel seine Lagen (gezählt wie zuvor in 16 Bit)
+            let lagen = 0,
+                treffer = 0;
+            for (let i = 0; i < W * H; i++) {
+                lagen += buf[i];
+                treffer += lagen;
+                const z = lagen & 65535;
+                if (z) {
+                    sQ += z;
                     nQ++;
                 }
+            }
+            Z.proben += proben;
+            Z.treffer += treffer;
         }
         return nQ ? sQ / nQ : 0;
     }
@@ -2796,12 +2971,13 @@
     const _deckWert = new Float64Array(_deckNQ + _deckNU); // die geklemmte Größe je Stufe (je Ruf aus sd)
     const _deckFaktor = new Float64Array(_deckNQ + _deckNU); // der Matérn-Faktor je Stufe (je Art)
     const _deckHat = new Uint8Array(_deckNQ + _deckNU);
-    function forestKronenDeckung(sd, geburt, kronen, F, st, schnee, ort) {
+    function forestKronenDeckung(sd, geburt, kronen, F, st, schnee, ort, wald) {
         // der Bestand am Standort (FOREST_PACK.bestand, `st` der Stand): Lichtung und Schluss wie in planForestCell / forestSteht;
-        // die Waldgrenze im Schnee des Sommers (`forestWaldgrenze`, `schnee` der Anteil des Gelände-Kerns zur Sommer-Mitte); der
-        // Saum am Siedlungsrand (`forestOrt`, `ort` der Abstand jenseits des nächsten Rands, `forestOrtAbstand`)
+        // die Waldgrenze im Schnee des Sommers und im Klima des Orts (`forestWaldgrenze`, `schnee` der Anteil des Gelände-Kerns zur
+        // Sommer-Mitte, `wald` der Wald-Anteil seines Ort-Gesetzes); der Saum am Siedlungsrand (`forestOrt`, `ort` der Abstand
+        // jenseits des nächsten Rands, `forestOrtAbstand`)
         const schluss = forestSchluss(st);
-        const g = geburt * forestLichtung(st) * forestWaldgrenze(schnee) * forestOrt(ort);
+        const g = geburt * forestLichtung(st) * forestWaldgrenze(schnee, wald) * forestOrt(ort);
         const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (g > 0 ? g : 0);
         if (!(lambda > 0) || !kronen || !kronen.length) return 0;
         let wSumme = 0;
@@ -2860,7 +3036,10 @@
     // Höhen-Trockenheit und Offenheit am Ort (x, z) auf der Oberfläche surfaceY bei Bestandsdichte sd → die Arten-
     // Gewichte der fünf Wald-Arten (wF Kiefer · wT Tanne · wE Eiche · wB Birke · wW Erle, ohne die Auto-Arten) samt
     // clim/patch/feu. planForestCell würfelt daraus die Art, die Fernform des Hosts mischt daraus die Kronen-Farbe.
-    // Keine rng-Aufrufe. ctx = { F (dryScale), baseH, fbm(px,pz), feuchteAt(x,z,surfY), fussM? }.
+    // Keine rng-Aufrufe. ctx = { F (dryScale), baseH, fbm(px,pz), feuchteAt(x,z,surfY), wuchs, fussM? }.
+    // DER WUCHS DES ORTS (Reise, Welle 3 — `ctx.wuchs`, Pflicht: gelaende-core `ortGesetz(teil).wuchs`): das Nadelholz (Kiefer,
+    // Tanne) trägt den Faktor `nadel` (es meidet die Tropen), der Laubbaum (Eiche, Birke, Erle) `laub` (vor der Zeit der
+    // Bedecktsamer steht Nadelholz) — in der Heimat beide 1, jedes Gewicht Bit für Bit wie zuvor.
     // DER FUSSABDRUCK (K16, die Fern-Farbe): `ctx.fussM` = die Kante der Fläche, für die der Ort steht (eine Masche des Fern-
     // Rings, ein Texel des Feld-Passes). Das Bestands-Mosaik (λ 20 m) und das Klima (λ 83 m) tragen darunter ihr Mittel
     // (forestMosaikMittel, forestOktavMittel): ihr Wert wechselte unter einer 13 × 39-m-Masche je Punkt die Art, und jede
@@ -2897,16 +3076,26 @@
                   }
                 : { ss }
         );
+        const W = forestWuchs(ctx);
         return {
-            wF: NW.wF,
-            wT: NW.wT,
-            wE: NW.wE,
-            wB: NW.wB,
-            wW: NW.wW + feu * feu * 6.0, // Host: waterProx = feu
+            wF: NW.wF * W.nadel,
+            wT: NW.wT * W.nadel,
+            wE: NW.wE * W.laub,
+            wB: NW.wB * W.laub,
+            wW: (NW.wW + feu * feu * 6.0) * W.laub, // Host: waterProx = feu
             clim,
             patch,
             feu,
         };
+    }
+    // Der Wuchs des Orts im ctx des Walds — Pflicht wie Schnee und Ort: ohne ihn bricht der Wald beim Namen, nie der der Heimat als Ersatz.
+    function forestWuchs(ctx) {
+        const W = ctx && ctx.wuchs;
+        if (!W || !Number.isFinite(W.wald) || !Number.isFinite(W.laub) || !Number.isFinite(W.nadel))
+            throw new Error(
+                "phyto-core: der Wuchs des Orts fehlt im ctx des Walds (wuchs: wald · laub · nadel, KERN-PFLICHT)"
+            );
+        return W;
     }
 
     // reverse-J Größe + Selbstausdünnung + seltene Überhälter. RNG-REIHENFOLGE heilig
@@ -3032,12 +3221,17 @@
     // 46 Bäume binnen 25 m, Kronen-Deckung 0,285 — der Blick vom Gipfel stand im Wald; jetzt 0 Bäume binnen 25 m, der
     // Blick-Strahl zur Stadt frei bis 120 m); die Geburt allein (1 − schnee) hob ihn auf 49 (Matérn sättigt: weniger Dach,
     // mehr freie Darts).
-    function forestWaldgrenze(schnee) {
+    // DIE TROCKENGRENZE (Reise, Welle 3): `wald` ist der Wald-Anteil, den das Klima des Orts trägt (gelaende-core
+    // `ortGesetz(teil).wuchs.wald`: der Niederschlag gegen die Verdunstung, in der Heimat 1) — die Geburt trägt ihn als Faktor:
+    // die Wüste gebiert keinen Baum, die Savanne wenige. In der Heimat (× 1) ist jeder Wurf, wie er war.
+    function forestWaldgrenze(schnee, wald) {
         if (!Number.isFinite(schnee))
             throw new Error("phyto-core forestWaldgrenze: der Schnee-Anteil fehlt (KERN-PFLICHT)");
+        if (!Number.isFinite(wald))
+            throw new Error("phyto-core forestWaldgrenze: der Wald-Anteil des Klimas fehlt (KERN-PFLICHT)");
         let t = schnee / FOREST_PACK.bestand.waldgrenze;
         t = t < 0 ? 0 : t > 1 ? 1 : t;
-        return 1 - t * t * (3 - 2 * t);
+        return (1 - t * t * (3 - 2 * t)) * wald;
     }
     // DER WALD AM SIEDLUNGSRAND (w20-wald-kosten, der Befund KOSTEN der vp-0611h: das Dorf trug 1 117 statt 486 Bäume binnen
     // 150 m): ein Ort trägt seine Dichte — sein Rand ist die Reichweite nach dem Ort-Gesetz (fachwerk `siedlungsReich`: 30 +
@@ -3431,7 +3625,7 @@
     // Arten-Nische (Klima × Patch-Mosaik × Feuchte × Höhen-Trockenheit × Offenheit, inkl. der
     // AUTO-Arten aus dem Rezeptbuch via ctx.extras) → reverse-J-Größe → Mammut-Promotion.
     // ctx = { F, baseH, extras, fbm(px,pz), surfaceYAt(x,z), waterYAt(x,z), slopeAt(x,z),
-    // feuchteAt(x,z,surfY), stand(x,z), schnee(x,z,y), ort(x,z), ortFrei?(x,z,T) }. Die rng()-Aufruf-REIHENFOLGE ist heilig
+    // feuchteAt(x,z,surfY), stand(x,z), schnee(x,z,y), ort(x,z), wuchs, ortFrei?(x,z,T) }. Die rng()-Aufruf-REIHENFOLGE ist heilig
     // (byte-deterministisch).
     // FOREST_TOPOLOGY.host = "cell" — cell-darts + Host shy prio-max; Feel-Entscheid .116; no fake merge with Lab disk.
     function planForestCell(cx, cz, seedInt, ctx) {
@@ -3444,6 +3638,7 @@
             return t * t * (3 - 2 * t);
         };
         const extras = ctx.extras || [];
+        const wuchs = forestWuchs(ctx); // der Wuchs des Orts (Pflicht): die Trockengrenze und die Arten nach Klima und Zeit
         const out = [];
         for (let i = 0; i < F.dartsPerCell; i++) {
             const x = (cx + rng()) * CELL;
@@ -3462,7 +3657,7 @@
             if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
             // die Waldgrenze (`forestWaldgrenze`): derselbe Wurf gegen die Geburt im Schnee des Sommers am Boden des Darts —
             // ohne Schnee bleibt jeder Wurf, wie er war
-            const grenze = geburt * forestWaldgrenze(ctx.schnee(x, z, surfaceY));
+            const grenze = geburt * forestWaldgrenze(ctx.schnee(x, z, surfaceY), wuchs.wald);
             if (wurf > grenze) continue;
             const above = surfaceY - waterY;
             if (above <= 0.4) continue; // im offenen/flachen Wasser wächst NICHTS (Vorlage _de<-0.2)
@@ -3488,6 +3683,9 @@
                 wXsum += extras[xi].w0 * (0.2 + 3.6 * pf(extras[xi].center));
             }
             const wsum = wF + wT + wE + wB + wW + wXsum;
+            // trägt der Ort keine Art (Klima und Zeit nehmen Nadel- UND Laubholz, kein Auto-Rezept streut), steht kein Baum —
+            // in der Heimat nie (jedes Gewicht trägt seinen Sockel > 0)
+            if (!(wsum > 0)) continue;
             let pick = rng() * wsum;
             let sp;
             // pick strings Host-lokal (RNG heilig) — Lab-Zwilling fichte via FOREST_SPECIES.labToHost
@@ -4097,7 +4295,11 @@
     var WX_VIS = { lab: "wx-4", host: "WEATHER_FIELD" };
     // K2 (rein additiv): das LICHT des Wetters — die Sonne der Zeile dimmt das Richtlicht auf sockel + sonne·sun (Labor:
     // keyLight und Spiegel-Farbe, Welt: WEATHER_TINTS.lightMul); den Himmel der Welt dimmt die Sonne der Zeile selbst (skyMul).
-    var WX_LICHT = { sockel: 0.35, sonne: 0.65 };
+    // w28-licht-regen (rein additiv): sockel + sonne·sun ist das GESAMTE Licht der Zeile. Die Decke (grey) teilt es: von der
+    // direkten Sonne bleibt (1 − grey)^direktHoch (unter Regen 6 %, unter Sturm 0,2 % — der harte Schatten weicht), der Himmel
+    // traegt den Rest als diffuses Licht (× 1 + himmelHub·grey, wie das Hemi-Licht des Labors) und ergraut mit himmelGrau·grey
+    // (wie der Himmel des Labors zur Decke lerpt).
+    var WX_LICHT = { sockel: 0.35, sonne: 0.65, direktHoch: 3, himmelHub: 0.35, himmelGrau: 0.82 };
 
     // DER EINE WIND UND DIE FRONT (wetter.K5 · wetter.K1, rein additiv — kein bestehender Wert bewegt sich). Die RICHTUNG des
     // Winds ist eine Funktion der Saat und der Zeit: θ(t) = θ0 + 0,5·sin(0,009·t + φ1) + 0,22·sin(0,0257·t + φ2), ±41° Mäander
@@ -4160,7 +4362,65 @@
         var w = windSaat(saat);
         return { x: Math.sin(w.t0), z: Math.cos(w.t0) };
     }
-    function wetterAt(saat, x, z, t) {
+    // DIE VERTEILUNG DES WETTERS AM ORT (Reise, rein additiv — ohne `ort` bewegt sich kein Wert): `ort` ist das Δ des Planeten
+    // zum Anker (gelaende-core `ortGesetz(teil).wetter`: `regenQuote` der Anteil der nassen Zeit, `sturmQuote` der des Sturms).
+    // Die Stufe am Ort ist die Stufe der Heimat plus der Weg des Quantils der Front: Q(1 − Anteil − Δ) − Q(1 − Anteil), der Anteil
+    // aus derselben Verteilung gelesen (die drei Wellen mit unabhängiger Phase, 48³ Punkte, einmal je Faden) — am Anker ist der
+    // Weg Q(x) − Q(x) = 0. Gemerkt je Δ-Objekt. Leser: `wetterAt`.
+    var _frontV = null;
+    function frontVerteilung() {
+        if (_frontV) return _frontV;
+        var W = WIND_FELD.front.wellen,
+            N = 48,
+            sw = 0;
+        for (var i = 0; i < W.length; i++) sw += W[i][1];
+        var v = new Float64Array(N * N * N),
+            k = 0;
+        for (var a = 0; a < N; a++)
+            for (var b = 0; b < N; b++)
+                for (var c = 0; c < N; c++) {
+                    var f =
+                        W[0][1] * Math.sin((2 * Math.PI * (a + 0.5)) / N) +
+                        W[1][1] * Math.sin((2 * Math.PI * (b + 0.5)) / N) +
+                        W[2][1] * Math.sin((2 * Math.PI * (c + 0.5)) / N);
+                    v[k++] = 0.5 + (0.5 * f) / sw;
+                }
+        v.sort();
+        return (_frontV = v);
+    }
+    function frontAnteil(V, stufe) {
+        var lo = 0,
+            hi = V.length;
+        while (lo < hi) {
+            var m = (lo + hi) >> 1;
+            if (V[m] < stufe) lo = m + 1;
+            else hi = m;
+        }
+        return (V.length - lo) / V.length;
+    }
+    function frontQuantil(V, p) {
+        if (p >= 1) return 1.01;
+        if (p <= 0) return -0.01;
+        return V[Math.min(V.length - 1, Math.floor(p * V.length))];
+    }
+    var _wetterVersatzJe = new WeakMap();
+    function wetterVersatz(ort) {
+        var vs = _wetterVersatzJe.get(ort);
+        if (vs) return vs;
+        if (!(Number.isFinite(ort.regenQuote) && Number.isFinite(ort.sturmQuote)))
+            throw new Error("wetterAt: das Δ des Orts trägt regenQuote oder sturmQuote nicht");
+        var V = frontVerteilung(),
+            st = WIND_FELD.front.stufen;
+        var weg = function (stufe, d) {
+            var a = frontAnteil(V, stufe);
+            var z = Math.min(1, Math.max(0, a + d));
+            return frontQuantil(V, 1 - z) - frontQuantil(V, 1 - a);
+        };
+        vs = { regen: weg(st.regen, ort.regenQuote), sturm: weg(st.sturm, ort.sturmQuote) };
+        _wetterVersatzJe.set(ort, vs);
+        return vs;
+    }
+    function wetterAt(saat, x, z, t, ort) {
         if (!(Number.isFinite(x) && Number.isFinite(z) && Number.isFinite(t)))
             throw new Error("wetterAt: Ort und Zeit sind endlich (" + x + ", " + z + ", " + t + ")");
         var F = WIND_FELD.front;
@@ -4178,9 +4438,16 @@
         f = 0.5 + (0.5 * f) / sw;
         var feuchte = 0.5 + 0.5 * Math.sin((2 * Math.PI * s) / F.feuchteM + w.feuchte);
         var st = F.stufen;
+        var stSturm = st.sturm,
+            stRegen = st.regen;
+        if (ort) {
+            var vs = wetterVersatz(ort);
+            stSturm += vs.sturm;
+            stRegen += vs.regen;
+        }
         var zeile = "klar";
-        if (f >= st.sturm) zeile = "sturm";
-        else if (f >= st.regen) zeile = "regen";
+        if (f >= stSturm) zeile = "sturm";
+        else if (f >= stRegen) zeile = "regen";
         else if (f >= st.bewoelkt) zeile = "bewoelkt";
         else if (feuchte >= st.nebel) zeile = "nebel";
         return { zeile: zeile, front: f, feuchte: feuchte };
@@ -6726,11 +6993,20 @@
             return { slope: w(0), moisture: w(1), lebendig: w(2) };
         };
     }
+    // DER WUCHS DES ORTS (Reise, Welle 3 — `a.wuchs`, Pflicht: gelaende-core `ortGesetz(teil).wuchs`): der Wurf der Baum-Schicht
+    // trägt den Wald-Anteil des Orts (`wald`), der der Kraut- und Strauch-Schicht den der Krautschicht (`decke`), der Fels keinen —
+    // in der Heimat 1, jeder Wurf wie zuvor.
     function streuRegion(a) {
         const SC = a.SC;
+        const W = a.wuchs;
+        if (!W || !Number.isFinite(W.wald) || !Number.isFinite(W.decke))
+            throw new Error(
+                "phyto-core streuRegion: der Wuchs des Orts fehlt im Auftrag (wuchs: wald · decke, KERN-PFLICHT)"
+            );
         const feld = streuFelder(a.bake, a.leser);
         return a.layers.map((layer) => {
             const out = [];
+            const klima = layer.kind === "rock" ? 1 : layer.kind === "tree" ? W.wald : W.decke;
             const cellM = layer.cellM;
             const n = Math.round(SC.regionM / cellM);
             const bx = Math.round((a.regX * SC.regionM) / cellM);
@@ -6759,7 +7035,7 @@
                                           dScale
                               )
                             : Math.min(0.95, floor + f.lebendig * SC.densityScale);
-                    if (streuPcgFloat(cellX ^ salt, cellZ, 9) >= prob * a.fdScale) continue;
+                    if (streuPcgFloat(cellX ^ salt, cellZ, 9) >= prob * a.fdScale * klima) continue;
                     const h = streuPcg((cellX ^ a.seedHash ^ salt) >>> 0, (cellZ * 2654435761) >>> 0);
                     out.push(cellX, cellZ, tf.x, tf.z, tf.yaw, tf.scale, h, f.lebendig, f.moisture);
                 }
@@ -6858,6 +7134,7 @@
         mulberry32: mulberry32, // der Vorlagen-RNG (der Strom des Wuchses; gate:pflanzen-nah wächst dasselbe Skelett)
         kronenLagen: kronenLagen, // S3: die Lagen einer Krone — der Bau-Regler der Karten-Wahl (foundry-core __lagenWahl)
         quadLagen: quadLagen, // S3: die Lagen beliebiger Karten (Strähnen der Trauer-Krone)
+        lagenZaehler: lagenZaehler, // die Arbeit des Lagen-Rasters: Rufe · Dreiecke · Proben · Treffer (gate:asset-contract)
         BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Zellen + Kern + Füllung) der Breitblatt-Zellen
         BLATT_ATLAS_WEDEL: BLATT_ATLAS_WEDEL, // der Atlas-Steckbrief (Zelle + Kern + Füllung) des Wedels (S3: Zelle 3)
         buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0

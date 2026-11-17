@@ -59,7 +59,7 @@ const server = statikServer({ root, keinCache: true, wandle: kernWandle });
 // Die Probe in der Seite: Orte × LOD 0–3, Main gegen Worker, Bitmuster je Wort.
 async function probe(page, welt, mitAbdruck, zwilling = false) {
     return page.evaluate(
-        async (welt, mitAbdruck, punkte, messorte, N_TURM, zwilling) => {
+        async (welt, mitAbdruck, punkte, messorte, N_TURM, zwilling, RANG_REIHE) => {
             const s = st;
             r._gameLoopTick = () => {}; // die Welt steht still: kein Stream, kein Takt zwischen Main und Worker
             const out = {
@@ -415,6 +415,67 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                         }
                     }
                 }
+                // DIE MASCHE DES FELDS (w28-feld-fuss): die vier innersten Reihen des Feld-Passes um den Spieler, wie
+                // `_feldPassMal` sie bestellt, beim Feld-Faden — und dieselben Punkte als Ring (`ring`) und als reines Gesetz
+                // (`teile`). Der Ring fragt OHNE Fuß (Wort für Wort das Gesetz), die Reihe an der Naht trägt die Zahl des
+                // Rings (Gesetz → Gewässer-Form → Spiegel, bis auf die f32-Ablage des Felds), dahinter liest das Feld die
+                // Stufe seiner Masche (sonst zählt der Fuß nichts: die Kosten der Ebene 2 stehen wieder im Bild). Nur die
+                // Standard-Welt trägt das Netz der Wildnis. Der Ring rechnet jede Ecke zweimal: als Punkt (Masche 0, der
+                // Bezug des Felds — den verfälscht auch ein Ring nicht, der seinen Fuß nennt: der Selbsttest nimmt alle
+                // drei Zeilen im selben Boot) und mit der Masche des Rings dort (gegen das reine Gesetz).
+            }
+            if (r._getVoxelWorker() && welt === "standard") {
+                const pm = s.playerMesh ? s.playerMesh.position : { x: 0, z: 0 };
+                const [FP, FR] = [AnazhRealm.FELD_PASS, AnazhRealm.FERN_RING];
+                const rMin = FR.schalen[FR.schalen.length - 1].aussen;
+                const hrF = (FP.rMaxM - rMin) / (2 * FP.rad);
+                const REIHEN = 4;
+                const nF = FP.az * REIHEN;
+                const pF = new Float32Array(nF * 2);
+                const [ht, hr, rad, ang, q] = [0, 0, 0, 0, 0].map(() => new Float64Array(nF * 2));
+                for (let iy = 0, k = 0; iy < REIHEN; iy++)
+                    for (let ix = 0; ix < FP.az; ix++, k++) {
+                        const rr = rMin + ((iy + 0.5) / FP.rad) * (FP.rMaxM - rMin);
+                        const a = ((ix + 0.5) / FP.az - 0.5) * 2 * Math.PI;
+                        pF[k * 2] = pm.x + Math.cos(a) * rr;
+                        pF[k * 2 + 1] = pm.z + Math.sin(a) * rr;
+                        [rad[k], ang[k], q[k]] = [rad[nF + k], ang[nF + k], q[nF + k]] = [rr, a, 1.1];
+                        ht[nF + k] = hr[nF + k] = (Math.PI * rr) / FP.az;
+                    }
+                const kopf = { ax: pm.x, az: pm.z };
+                const feld = await r._fernAuftrag("feld", {
+                    ...kopf,
+                    punkte: pF.slice(),
+                    azN: FP.az,
+                    hr: hrF,
+                    naht: rMin,
+                    saison: r._fernSaison({ r: 1, g: 1, b: 1 }),
+                    praesenz: r._fernPraesenz(),
+                });
+                const ring = await r._fernAuftrag("ring", {
+                    ...kopf,
+                    punkte: Float64Array.from([...pF, ...pF]),
+                    ht,
+                    hr,
+                    rad,
+                    ang,
+                    q,
+                    zone: new Uint8Array(nF * 2),
+                    deckZoneRad: 0,
+                    memo: r._fernMemoGen | 0,
+                });
+                const rein = await r._fernAuftrag("teile", { punkte: Float64Array.from(pF), detail: false, nurHoehe: true });
+                const [rb, tb] = [new BigUint64Array(ring.law.buffer), new BigUint64Array(rein.law.buffer)];
+                const ma = (out.masche = { n: nF, ringUngleich: 0, naht: 0, liest: 0, groesste: 0 });
+                for (let k = 0; k < nF; k++) {
+                    if (rb[nF + k] !== tb[k]) ma.ringUngleich++;
+                    const d = Math.abs(feld.daten[k * 4] - (ring.nassY[k] < ring.spiegel[k] ? ring.spiegel[k] : ring.nassY[k]));
+                    if (k < FP.az) ma.naht = Math.max(ma.naht, d);
+                    else {
+                        if (d > 1e-3) ma.liest++;
+                        ma.groesste = Math.max(ma.groesste, d);
+                    }
+                }
             }
             // TEIL W — DER BESTAND DES WALDS: die stehenden Darts der Wald-Zellen um jeden Ort (9 × 9 Zellen; die geborenen
             // und das Urteil der Kronen-Schüchternheit, phyto-core `forestStehende`) im Main (`_forestCellDarts`, frisches
@@ -453,6 +514,24 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     }
                 }
             }
+            // TEIL R — DIE WAHL DES WALD-FADENS (w28-wald-rang): vier Aufträge in EINER Aufgabe, der fernste zuerst gesendet, der
+            // nächste zuletzt (`rang` = Abstand², wie `_waldFadenSchicken` ihn reicht) — der Faden liefert nah zuerst, aufsteigend
+            // nach Rang, nie in der Reihe der Ankunft. `out.rang` = die Abstände (m) in der Reihe der Lieferung. Der Fund (GTX 1050
+            // kalt, main 63655917): die Reihe des Fadens reichte seiner Schlange je Takt EINEN Auftrag, die Wahl hatte nie eine
+            // Wahl — die 16 Zellen unter dem Spieler kamen hinter acht Aufträgen in 210–424 m, sein Wald-Stück pflanzte zuletzt.
+            if (r._getVoxelWorker() && r._forestGesetzWahr()) {
+                const seedInt = r._forestSeedInt();
+                const C = AnazhRealm.FOREST.cell;
+                const [gx0, gz0] = [Math.floor(orte[0].x / C), Math.floor(orte[0].z / C)];
+                const kam = (out.rang = []);
+                await Promise.all(
+                    RANG_REIHE.map((m, k) => {
+                        const zellen = [];
+                        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) zellen.push(gx0 + 40 + 10 * k + i, gz0 + j);
+                        return r._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, r._forestExtraSpecies(), m * m).then(() => kam.push(m));
+                    })
+                );
+            }
             // TEIL B — DER WUCHS IM FADEN (w4-b-pflanzen): jedes Skelett im Vorrat (`_wuchsVorrat`: gepackt vom Wald-Faden im Boot,
             // die Saat wartet auf ihn; Schlüssel `<Art>|<Same>|…`) gegen den Wuchs desselben Plans im Haupt-Faden (`_wuchsPlan` →
             // phyto-core `growSkeleton` am Strom `_rollGenome(...).seq`) — Bit für Bit (die Wörter des Float64Array); `out.wuchs` =
@@ -472,7 +551,8 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
         mitAbdruck ? abdruckPunkte() : [],
         ["wiese", "genesis"].map((id) => ((o) => ({ id, x: o.x, z: o.z }))(messort(id))),
         10,
-        zwilling
+        zwilling,
+        RANG_REIHE
     );
 }
 
@@ -524,11 +604,13 @@ const spalteEinmal = (page, vergisst) =>
 // Der Selbsttest: der Voxel-Faden lädt den Kern mit der Höhe + 1 cm — die Probe MUSS ihn bei Ort, Gitter, Ferne und Wald nennen.
 async function probeVerfaelscht(page, url) {
     KERN_MODUS.faden = "Höhen-Versatz";
+    KERN_MODUS.wald = true;
     try {
         await frischBoot(page, url);
         return await probe(page, "standard", false, true);
     } finally {
         KERN_MODUS.faden = null;
+        KERN_MODUS.wald = false;
     }
 }
 // Eine frische Standard-Welt (kein Rest im Profil), bis Main und Faden stehen.
@@ -575,12 +657,53 @@ const KERN_MUTATIONEN = {
     "Edit-Radius": ["if (!(ed.r > 0)) return n;", "if (!(ed.r > 0)) return n;\n        ed = { ...ed, r: ed.r * 1.1 };"],
     "Dichte-Versatz": ["let d = surf - y;", "let d = surf - y + 0.25;"],
     "See-Spiegel": ["const y = h.water.waterY[i];", "const y = h.water.waterY[i] + 0.5;"],
-    "Höhen-Versatz": ["let h = hoeheGrund(L, x, z, mitDetail, aus);", "let h = hoeheGrund(L, x, z, mitDetail, aus) + 0.01;"],
+    "Höhen-Versatz": ["let h = hoeheGrund(L, x, z, mitDetail, aus, fuss);", "let h = hoeheGrund(L, x, z, mitDetail, aus, fuss) + 0.01;"],
 };
-const KERN_MODUS = { haupt: null, faden: null, probe: null }; // je Boot die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe
+const KERN_MODUS = { haupt: null, faden: null, probe: null, wald: false }; // je Boot die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe; `wald`: der Faden ohne „die Reihe zuerst“
+// TEIL R: die Abstände (m) der vier Aufträge in der Reihe des Sendens — und die Zeile des Fadens, die seiner Wahl die Wahl gibt
+// (der Selbsttest nimmt sie ihm: er muss in der Reihe der Ankunft liefern)
+const RANG_REIHE = [500, 400, 300, 1];
+const RANG_SOLL = RANG_REIHE.slice().sort((a, b) => a - b).join(" · ");
+const WALD_REIHE_ZUERST = "if (reihe.length && !reiheHaelt) return void waldWecken();";
+// DIE MASCHE DES FELDS (w28-feld-fuss): die drei Zeilen des Fern-Fadens, die der Selbsttest ihm im selben Boot nimmt — der
+// Ring nennt dem Gesetz einen Fuß (ROT am bit-Diff) · die Reihe an der Naht fragt mit einem Fuß (ROT an der Naht) · das Feld
+// hinter der Naht fragt mit Fuß 0 (ROT: es liest die ganze Stufe, die Kosten der Ebene 2 stehen wieder im Bild).
+const MASCHE_MUTANTEN = {
+    ring: ["let L = G.hoehe(state, x, z, false, aus);", "let L = G.hoehe(state, x, z, false, aus, 2 * Math.max(msg.ht[k], msg.hr[k]));"],
+    naht: ["< 2 * msg.hr ? 0 :", "< 2 * msg.hr ? 300 :"],
+    fuss: ["Math.sqrt(4 * fuss.ht * msg.hr)", "0"],
+};
+const MASCHE_NAHT_M = 1e-3; // die f32-Ablage des Felds (ein Schritt bei 255 m: 1,5e-5 m)
+function mascheUrteil(ma) {
+    if (!ma) return { gut: false, rot: ["leer"], taeter: "kein Voxel-Faden — keine Probe der Masche" };
+    const rot = [];
+    const namen = [];
+    if (ma.ringUngleich !== 0) {
+        rot.push("ring");
+        namen.push(`der Ring fragt das Gesetz mit einem Fuß: ${ma.ringUngleich} von ${ma.n} Punkten weichen vom reinen Gesetz ab (voxel-worker fernAuftrag „ring“)`);
+    }
+    if (!(ma.naht <= MASCHE_NAHT_M)) {
+        rot.push("naht");
+        namen.push(`die Reihe des Felds an der Naht trägt nicht die Zahl des Rings: größte Differenz ${ma.naht.toFixed(3)} m (voxel-worker fernAuftrag „feld“: die Masche an \`msg.naht\` fragt ohne Fuß)`);
+    }
+    if (!(ma.liest > 0)) {
+        rot.push("fuss");
+        namen.push("das Feld hinter der Naht liest die ganze Stufe des Netzes: kein Punkt weicht vom Ring-Gesetz ab (voxel-worker fernAuftrag „feld“ nennt gelaende-core `hoehe` seine Masche nicht)");
+    }
+    return { gut: !rot.length, rot, taeter: namen.join(" · ") };
+}
 const kernQuelle = (wurzel = root) => ausDatei(path.join(wurzel, "gelaende-core.js")); // der EINE Leser des Kerns
 const kernMutiert = (roh, name) => String(roh).replace(...(KERN_MUTATIONEN[name] || ["", ""]));
 function kernWandle(p, roh) {
+    if (p === "/voxel-worker.js" && KERN_MODUS.wald && roh) {
+        if (String(roh).split(WALD_REIHE_ZUERST).length !== 2) throw new Error("Teil R: der Selbsttest findet die Zeile „die Reihe zuerst“ nicht in voxel-worker.js");
+        let text = String(roh).replace(WALD_REIHE_ZUERST, "");
+        for (const [name, [alt, neu]] of Object.entries(MASCHE_MUTANTEN)) {
+            if (text.split(alt).length !== 2) throw new Error(`die Masche des Felds: der Selbsttest findet die Zeile „${name}“ nicht in voxel-worker.js`);
+            text = text.replace(alt, neu);
+        }
+        return text;
+    }
     if (p === "/gelaende-core.js" && KERN_MODUS.haupt) return kernMutiert(roh, KERN_MODUS.haupt);
     if (p === "/gelaende-core.faden.js") return kernMutiert(kernQuelle(), KERN_MODUS.faden);
     // die Fäden des Gesetzes holen ihre Kerne aus der EINEN Quelle, deren Liste der Stamm nennt (`FADEN_QUELLE`, w28-faden-quelle):
@@ -778,6 +901,7 @@ function realismusLage(K, Z, saat) {
         seed: saat,
         baseHeight: g.basis,
         waterLevel: g.basis - g.meerUnterBasis,
+        ort: null, // die Heimat (Reise: der Teil `ort` jeder Lage)
         erbgut: { terme: K.G.erbgutNormal(undefined), wildnis: 1 },
         regionSize: g.kachel,
     };
@@ -896,6 +1020,70 @@ function presetsAnSaaten(K, Z) {
     }
     return { befunde, je };
 }
+// DAS NETZ (w28-ankunft-faden; die Summe der Ankunft: das Feld-Panorama baute je neuer Zelle die Talprofile ihrer 25 bzw. 49
+// Knoten neu und zählte je Rinnen-Knoten ein Einzugsgebiet ohne Leser — 6,4 CPU-s vor dem ersten Bild der GTX 1050). Die Wand:
+// der Kern zählt selbst (`netzZaehler`), jedes Profil ist EINMAL gebaut, kein Knoten der Ebene 2 trägt ein Einzugsgebiet.
+// Der Selbsttest nimmt dem Kern je eine Zeile (`NETZ_MUTANTEN`): jeder Mutant fällt beim EIGENEN Namen ROT.
+const NETZ_MUTANTEN = {
+    profil: ["if (kn.seg !== undefined) return kn.seg;", ""],
+    einzug: ["kn.k <= 1 ? knotenA(N, kn) * S * S : 0", "knotenA(N, kn) * S * S"],
+    fuss: ["if (fuss > 0) while (k > 0 && N.S[k] * NETZ_TRAGT < fuss) k--;", ""],
+};
+// DIE STUFE DES FRAGERS (w28-feld-fuss): 192 Fragen auf dem 20-km-Kreis mit der Masche des Felds dort (600 m) an eine frische
+// Lage — die Ebene 2 (Kante 100 m) trägt diese Masche nicht, der Kern baut keinen ihrer Knoten (das Feld der Ferne las sie:
+// 463 636 Knoten, 3,1 s je Bild).
+const NETZ_FUSS = { kreisM: 20000, fragen: 192, mascheM: 600 };
+function netzUrteil(G, L, frisch) {
+    const z = typeof G.netzZaehler === "function" ? G.netzZaehler(L) : null;
+    if (!z) return { gut: false, rot: ["zaehler"], taeter: "der Kern zählt sein Netz nicht (gelaende-core `netzZaehler` fehlt)" };
+    const mehrfach = z.profilBau.map((b, k) => b - z.profile[k]);
+    const rot = [];
+    const namen = [];
+    if (!(z.profile[0] + z.profile[1] > 0) || !(z.knoten[2] > 0)) {
+        rot.push("leer");
+        namen.push(`die Messung fragte das Netz nicht (Profile ${z.profile.join(" · ")} an ${z.knoten.join(" · ")} Knoten)`);
+    }
+    if (mehrfach.some((m) => m !== 0)) {
+        rot.push("profil");
+        namen.push(`segment baut das Talprofil eines Knotens mehrfach: je Ebene ${z.profilBau.join(" · ")} Bauten für ${z.profile.join(" · ")} Knoten mit Profil (das Gedächtnis \`kn.seg\` fehlt)`);
+    }
+    if (z.einzugOhneLeser !== 0) {
+        rot.push("einzug");
+        namen.push(`${z.einzugOhneLeser} Knoten der Ebene 2 zählen ihr Einzugsgebiet ohne Leser (segmentNeu: knotenA nur für die Ebenen 0 und 1)`);
+    }
+    let fuss = null;
+    if (frisch) {
+        for (let i = 0; i < NETZ_FUSS.fragen; i++) {
+            const a = (i / NETZ_FUSS.fragen) * 2 * Math.PI;
+            G.hoehe(frisch, Math.cos(a) * NETZ_FUSS.kreisM, Math.sin(a) * NETZ_FUSS.kreisM, false, undefined, NETZ_FUSS.mascheM);
+        }
+        fuss = G.netzZaehler(frisch).knoten;
+        if (!(fuss[1] > 0) || fuss[2] !== 0) {
+            rot.push("fuss");
+            namen.push(`ein Frager mit der Masche ${NETZ_FUSS.mascheM} m baut ${fuss[2]} Knoten der Ebene 2 (Soll 0; Knoten je Ebene ${fuss.join(" · ")}) — gelaende-core netzStufe liest den Fuß nicht`);
+        }
+    }
+    return { ...z, fuss, gut: !rot.length, rot, taeter: namen.join(" · ") };
+}
+// Der Selbsttest der Netz-Wand: der Kern der gemessenen Wurzel mit je EINER genommenen Zeile, 41 × 41 Fragen im 100-m-Raster.
+function netzSelbsttest(wurzel, saat) {
+    const simplex = ausDatei(path.join(wurzel, "vendor", "simplex-noise.js"));
+    const je = {};
+    for (const [name, [alt, neu]] of Object.entries(NETZ_MUTANTEN)) {
+        const roh = String(kernQuelle(wurzel));
+        if (roh.split(alt).length !== 2) {
+            je[name] = { anker: false, rot: [], sieht: false };
+            continue;
+        }
+        const c = require("./lib/asset-worker-harness.cjs").kernAusText([simplex, roh.replace(alt, neu)]);
+        const M = { G: c.__gelaendeCore, SimplexNoise: c.SimplexNoise };
+        const L = realismusLage(M, M.G, saat);
+        for (let j = 0; j <= 40; j++) for (let i = 0; i <= 40; i++) M.G.hoehe(L, -2000 + i * 100, -2000 + j * 100, false);
+        const u = netzUrteil(M.G, L, realismusLage(M, M.G, saat));
+        je[name] = { anker: true, rot: u.rot, sieht: u.rot.length === 1 && u.rot[0] === name, taeter: u.taeter };
+    }
+    return { je, sieht: Object.values(je).every((m) => m.sieht) };
+}
 function realismus() {
     // Das Gesetz kommt aus der gemessenen Wurzel (`--wurzel`: ein anderer Stand), die Linse (statistik, hangBaender)
     // immer aus DIESEM Baum — vorher und nachher misst dieselbe Rechnung.
@@ -935,8 +1123,10 @@ function realismus() {
             m.lambdaBreiten <= 14 &&
             m.rcBreiten >= 2 &&
             m.rcBreiten <= 3;
-        const urteil = { ...Z.urteil(st, sm), maeander: maeanderGut(maeander), kosten: kosten.imBudget };
+        const netz = netzUrteil(G, L, realismusLage(K, Z, saat)); // nach Raster und Läufen: das Netz dieser Lage hat gearbeitet
+        const urteil = { ...Z.urteil(st, sm), maeander: maeanderGut(maeander), kosten: kosten.imBudget, netz: netz.gut };
         const taeter = {
+            netz: netz.taeter,
             senken: "geschlossene Mulden ohne Auslass (flaeche: ein Profil-Minimum ohne Netz-Abfluss, oder das Detail T3)",
             flint: "das Gefälle folgt dem Einzugsgebiet nicht (knotenSohle: das Bett steigt nicht mit S = ks·A^−θ je Flächen-Klasse)",
             hammond: "keine Ebenen (RELIEF_KNOTEN hoch im Tiefland, Aue F zu schmal)",
@@ -973,6 +1163,7 @@ function realismus() {
             schicht,
             urteil,
             maeander,
+            netz: { knoten: netz.knoten, profile: netz.profile, profilBau: netz.profilBau, einzugOhneLeser: netz.einzugOhneLeser, fuss: netz.fuss },
             stoerung: stoer && {
                 senken1mJeKm2: stoer.senken1mJeKm2,
                 minimaJeKm2: stoer.minimaJeKm2,
@@ -994,6 +1185,10 @@ function realismus() {
         console.log(
             `    Mäander: ${maeander.glieder} Flachland-Glieder · Sinuosität ${maeander.sinuositaet} · λ ${maeander.lambdaBreiten} Breiten · Rc ${maeander.rcBreiten} Breiten (Soll ≥ 1,3 · 10–14 · 2–3)`
         );
+        if (netz.knoten)
+            console.log(
+                `    Netz: Knoten je Ebene ${netz.knoten.join(" · ")} · Talprofile ${netz.profile.join(" · ")}, gebaut ${netz.profilBau.join(" · ")} (Soll eins je Knoten) · Einzug ohne Leser ${netz.einzugOhneLeser} (Soll 0) · Masche ${NETZ_FUSS.mascheM} m: Knoten ${(netz.fuss || []).join(" · ")} (Soll Ebene 2: 0)`
+            );
         if (stoer)
             console.log(
                 `    Selbsttest-Störung: Senken>1m ${stoer.senken1mJeKm2}/km² · die Gerade (Glieder ohne Bahn): Mäander ${stoer.maeanderGerade}`
@@ -1020,14 +1215,21 @@ function realismus() {
                     presets: presets && presets.je,
                 });
     if (SELBSTTEST) {
-        const blind = welten.some(
-            (w) =>
-                !(w.stoerung && w.stoerung.senken1mJeKm2 > 1) ||
-                !(w.kostenLast && !w.kostenLast.imBudget) ||
-                w.stoerung.maeanderGerade !== "rot"
-        );
+        const ns = netzSelbsttest(root, REALISMUS_SAATEN[0]);
+        for (const [name, m] of Object.entries(ns.je))
+            console.log(
+                `  Selbsttest-Netz „${name}" (der Kern ohne die Zeile): ${!m.anker ? "⛔ kein Anker im Kern" : m.sieht ? "✅ fällt beim Namen ROT — " + m.taeter : "⛔ BLIEB BLIND (rot: " + (m.rot.join(", ") || "nichts") + ")"}`
+            );
+        const blind =
+            !ns.sieht ||
+            welten.some(
+                (w) =>
+                    !(w.stoerung && w.stoerung.senken1mJeKm2 > 1) ||
+                    !(w.kostenLast && !w.kostenLast.imBudget) ||
+                    w.stoerung.maeanderGerade !== "rot"
+            );
         console.log(
-            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung, die Kosten-Last oder die Gerade blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget, die Gerade färbt den Mäander rot"}\n`
+            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung, die Kosten-Last, die Gerade oder ein Netz-Mutant blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget, die Gerade färbt den Mäander rot, das Netz ohne Gedächtnis, der Einzug ohne Leser und der Frager ohne Stufe fallen beim Namen"}\n`
         );
         return blind ? 1 : 0;
     }
@@ -1671,6 +1873,10 @@ async function gebaut(page) {
 // K5: `fadenHuelle` vor dem Quelltext jedes Fadens heftet jeder Nachricht ihre Klon-Bytes an (Transfer zählt nicht);
 //     der Main summiert sie am Empfang je Faden und Art in beiden Richtungen, dazu jede Kopie empfangener Bytes (jeder
 //     Tiefe, `da`: auch ihr Klon) und die Platte — je Minute im Kalt-Boot und in einer Minute Fahrt, Soll ≤ 5 MB/min.
+// K6: der Planet im Faden (Reise) — die Welt kennt ihren Ort, sein Anker trägt die Bytes des Kerns (Kopf von `planetSeite`).
+// K7 (`--faden --planet`): der Wuchs des Orts — die Reise an den heißen, trockenen Ort und heim (Kopf von `wuchsSeite`).
+//   --faden --planet [--echt] [--selftest]   NUR K6 nach dem Boot (ohne Gang, Fahrt und Damm): die gezielte Probe, an der echten
+//                          GPU die Zeit des Planeten im Faden und seine Geburt nach dem ersten Weltbild.
 //   --faden [--echt] [--selftest]   ein injizierter Hydro-Bau, ein Fußabdruck an einer unbenannten Sync-Stelle, ein Guss, ein
 //                          Wuchs eines Spawn-Bauplans (w4-b-pflanzen), die Naht und der Satz eines Faden-Netzes im Haupt-Faden
 //                          (w4-b-boden2), ein Stau-Feld, Klon (3 MB tief in einer Nachricht, 3 MB in 300 Krumen, zwei Kopien)
@@ -1691,9 +1897,24 @@ function klonBytes(v, frei, seen, da) {
 // läuft VOR dem Quelltext jedes Fadens: jede ausgehende Nachricht trägt ihre Klon-Bytes (`__klon`)
 function fadenHuelle(klonBytes) {
     const roh = self.postMessage.bind(self);
+    // K6: die Zeit des Planeten im Faden — vom späten Laden des Kerns bis zur Antwort des Ankers. Die Linse misst sie hier, das
+    // Gesetz des Fadens liest keine Uhr (`planetAnker` steht nicht in der Tafel der Gerätezeit).
+    let planetAb = null;
+    const lade = self.importScripts.bind(self);
+    self.importScripts = function (...u) {
+        const Q = self.__anazhQuelle;
+        if (planetAb === null && Q && Q.spaet && u[0] === Q.spaet.planet) planetAb = performance.now();
+        return lade(...u);
+    };
     self.postMessage = function (m, tr) {
         const frei = new Set(Array.isArray(tr) ? tr : tr?.transfer || []);
-        if (m && typeof m === "object" && !ArrayBuffer.isView(m)) m.__klon = klonBytes(m, frei, new Set());
+        if (m && typeof m === "object" && !ArrayBuffer.isView(m)) {
+            if (m.type === "planet-anker-result" && planetAb !== null) {
+                m.__planetMs = performance.now() - planetAb; // nur der erste Auftrag: er lädt den Kern
+                planetAb = null;
+            }
+            m.__klon = klonBytes(m, frei, new Set());
+        }
         return roh(m, tr);
     };
 }
@@ -1787,7 +2008,10 @@ function fadenSeite(bytesQ, huelleQ) {
         // DER STAND DES SPEICHERS JE TEIL (streaming-k5): die Stücke seiner Zeichenkette (`daten`, je Teil der Tafel, Kopf-Feld
         // und Glied, Glied einer Liste) heißen nach ihrem Teil — bis streaming-k5 hieß jeder Stand „speicher:?", und der Täter
         // (je Bau-Klick der ganze worldMeta) stand in keiner Zeile
-        const namen = m && m.daten && [...m.teile, ...Object.entries(m.listen).flatMap(([l, L]) => L.teile.map(() => l))];
+        // nur der Stand des Speichers trägt `daten` als Zeichenkette mit `teile`: die Fern-Teilung reist mit `daten` als Feld (an
+        // der echten GPU; am Null-Renderer nie) — bis hier warf dieser Haken dort in jedem Auftrag, und `--faden --echt` stand
+        const namen =
+            m && typeof m.daten === "string" && m.daten && Array.isArray(m.teile) && [...m.teile, ...Object.entries(m.listen).flatMap(([l, L]) => L.teile.map(() => l))];
         if (namen)
             m.daten.split("\u0001").forEach((x, i) => {
                 zu("gesendet", art + ":" + namen[i].replace(/\u0002/g, "."), x.length);
@@ -1912,6 +2136,360 @@ function fadenSeite(bytesQ, huelleQ) {
         set: (r) => haken((real = r)),
     });
 }
+// ── K6 DER PLANET IM FADEN (Reise) ──
+// Die Welt kennt ihren Ort: der Satz „reise“ der Konsole gebiert den Planet-Faden (`_planetAuftrag`: schlank, OHNE den Stand der
+// Welt) und sagt den Anker des Samens des Planeten (`_planetSamen`; voxel-worker `planetAnker` am Ort-Gesetz `ortGesetz()`).
+// ROT beim Namen: der Wirt trägt keinen Leser (`_planetAnker` fehlt) · der Faden rechnete einen anderen Samen als den des Planeten
+// (Gegner F1) · der Anker im Faden ist nicht der Anker des Kerns in node (Float64-Bitmuster, Version) · der Planet-Faden stand vor
+// dem Satz (die Welt bestellte ihn ohne Leser, Gegner F8) · der Planet-Faden bekam eine Nachricht des Welt-Stands (`state-set`,
+// `state-update`, `hydro`, `hydro-an`: er rechnete die Welt mit, Gegner F2) · der Haupt-Faden trägt den Kern (`__planetCore`) ·
+// der Satz „reise“ sagt die Lage nicht. Die Zeit im Faden (`__planetMs` aus `fadenHuelle`) ist ein Lesewert, kein Urteil.
+// `--selftest` (Gegner F9: jeder Täter ist in die WELT gepflanzt und geht durch denselben Leser): ein fremder Samen im echten
+// Faden, eine Nachricht des Stands an den echten Faden, der Faden, der vor dem zweiten Satz schon steht, der Kern im Haupt-Faden
+// und der Satz „reise heim“ (er sagt keine Lage) — dazu ein Wirt ohne Leser.
+async function planetSeite(mutant) {
+    if (typeof r._planetAnker !== "function" || typeof r._planetAuftrag !== "function") return { fehlt: true };
+    const bits = (x) => Array.from(new Uint8Array(new Float64Array([x]).buffer), (b) => b.toString(16).padStart(2, "0")).join("");
+    const planetSamen = r._planetSamen();
+    const vorSatz = !!r._planetFadenStand;
+    const F = window.__faden || {};
+    const posten = () => (F.planetPost = F.planetPost || []);
+    // jede Nachricht an den Planet-Faden beim Typ (der Haken am echten Faden, nach seiner Geburt)
+    const haken = () => {
+        const f = r._planetFadenStand;
+        if (!f || f.worker.__k6) return;
+        const roh = f.worker.postMessage.bind(f.worker);
+        f.worker.postMessage = (m, tr) => (posten().push(m && m.type), roh(m, tr));
+        f.worker.__k6 = true;
+    };
+    // die Geburt des Fadens im Haupt-Faden (ihr erster Auftrag) — Lesewert
+    let geburtMs = null;
+    const auftrag = r._planetAuftrag;
+    r._planetAuftrag = function (m) {
+        const neu = !this._planetFadenStand;
+        const t0 = performance.now();
+        const p = auftrag.call(this, m);
+        if (neu) (geburtMs = performance.now() - t0), haken();
+        return p;
+    };
+    r.processChatCommand(mutant ? "reise heim" : "reise"); // der echte Weg des Spielers: die Konsole, alle Routen vor der System-Tafel
+    let a;
+    try {
+        a = await r._planetAnker();
+    } finally {
+        delete r._planetAuftrag;
+    }
+    haken();
+    if (mutant) {
+        a = await r._planetAuftrag({ type: "planet-anker", samen: planetSamen + "~selbsttest" });
+        r._planetFadenStand.worker.postMessage({ type: "state-update", delta: {} });
+        globalThis.__planetCore = {};
+    }
+    const haupt = typeof globalThis.__planetCore !== "undefined";
+    if (mutant) delete globalThis.__planetCore;
+    await sleep(0);
+    const aus = document.getElementById("chat-output");
+    const zeile = aus && aus.lastElementChild ? aus.lastElementChild.textContent : "";
+    const stand = posten().filter((t) => ["init", "state-set", "state-update", "hydro", "hydro-an"].includes(t));
+    return {
+        samen: a.samen,
+        planetSamen,
+        weltSamen: r._gelaende().seed,
+        version: a.version,
+        breite: a.breite,
+        laenge: a.laenge,
+        kuesteKm: a.kuesteKm,
+        bits: bits(a.breite) + bits(a.laenge),
+        vorSatz,
+        stand,
+        geburtMs,
+        haupt,
+        zeile,
+        ms: typeof a.__planetMs === "number" ? a.__planetMs : null,
+    };
+}
+// der Anker des Kerns in node, am Stand der gemessenen Wurzel: derselbe Kern, dieselbe Tafel des Ort-Gesetzes (kein Nachbau)
+function planetSoll(wurzel, samen) {
+    const P = require(path.join(wurzel, "planet-core.js"));
+    const og = gelaendeKern(wurzel).G.ortGesetz();
+    const A = P.planetAnker(P.planetPlan(samen, P.PLANET_ERDE), 0, og);
+    const bits = (x) => Buffer.from(new Float64Array([x]).buffer).toString("hex");
+    const grad = (x) => Math.abs((x * 180) / Math.PI).toFixed(2).replace(".", ",");
+    return {
+        version: P.VERSION,
+        breite: A.breite,
+        laenge: A.laenge,
+        kuesteKm: A.kuesteKm,
+        bits: bits(A.breite) + bits(A.laenge),
+        lage: [`${grad(A.breite)}° ${A.breite < 0 ? "S" : "N"}`, `${grad(A.laenge)}° ${A.laenge < 0 ? "W" : "O"}`, `${A.kuesteKm.toFixed(0)} km`],
+    };
+}
+function planetUrteil(spiel, soll) {
+    if (!spiel || spiel.fehlt) return ["die Welt kennt ihren Ort nicht — der Wirt trägt keinen Leser des Planeten (`_planetAnker` fehlt)"];
+    const rot = [];
+    const grad = (x) => ((x * 180) / Math.PI).toFixed(3) + "°";
+    if (spiel.samen !== spiel.planetSamen)
+        rot.push(`der Planet rechnete den Samen „${spiel.samen}“, der Planet der Welt trägt „${spiel.planetSamen}“`);
+    if (spiel.version !== soll.version) rot.push(`der Faden rechnet den Kern ${spiel.version}, der Baum trägt ${soll.version}`);
+    if (spiel.bits !== soll.bits)
+        rot.push(
+            `der Anker im Faden (${grad(spiel.breite)} · ${grad(spiel.laenge)}) ist nicht der Anker des Kerns in node (${grad(soll.breite)} · ${grad(soll.laenge)}) — die Bytes weichen ab`
+        );
+    if (spiel.vorSatz) rot.push("der Planet-Faden stand VOR dem Satz — die Welt zahlt den Planeten ohne Leser");
+    if (spiel.stand.length) rot.push(`der Planet-Faden bekam den Stand der Welt (${spiel.stand.join(", ")}) — er rechnet die Welt mit`);
+    if (spiel.haupt) rot.push("der Haupt-Faden trägt den Kern (`__planetCore`) — der Planet lebt nur im Faden");
+    const fehlt = soll.lage.filter((t) => !String(spiel.zeile).includes(t));
+    if (fehlt.length) rot.push(`der Satz „reise“ sagt die Lage nicht: „${spiel.zeile}“ (es fehlt ${fehlt.join(" · ")})`);
+    return rot;
+}
+// die Zeile K6 und ihre Täter
+function planetZeile(ist, soll, rot) {
+    if (!ist.fehlt) {
+        const g = (x) => ((x * 180) / Math.PI).toFixed(3) + "°";
+        const geb = typeof ist.geburtMs === "number" ? ist.geburtMs.toFixed(1) + " ms" : "ungemessen";
+        console.log(
+            `  Planet (K6): Anker im Faden ${g(ist.breite)} · ${g(ist.laenge)}, Küste ${ist.kuesteKm.toFixed(1)} km, Kern ${ist.version}, Samen „${ist.samen}“ — der Kern in node ${ist.bits === soll.bits ? "trägt dieselben Bytes" : "WEICHT AB"} · Faden vor dem Satz ${ist.vorSatz ? "JA" : "nein"}, Nachrichten des Stands an ihn ${ist.stand.length}, seine Geburt hielt den Haupt-Faden ${geb} · im Faden ${ist.ms == null ? "ungemessen" : ist.ms.toFixed(0) + " ms (Laden + Plan + Scheibe + Anker)"} · der Satz: „${ist.zeile}“`
+        );
+    }
+    for (const t of rot) console.log(`  ⛔ K6: ${t}`);
+}
+// K6 `--selftest`: die gepflanzten Täter des Planeten durch DENSELBEN Leser (Kopf von `planetSeite`) — sieht er jeden?
+async function planetSelbst(page, ist, soll) {
+    const M = ist.fehlt ? [] : planetUrteil(await page.evaluate(planetSeite, true), soll);
+    const ohne = planetUrteil({ fehlt: true }, null);
+    const taeter = ["rechnete den Samen", "die Bytes weichen ab", "VOR dem Satz", "bekam den Stand der Welt", "Haupt-Faden trägt den Kern", "sagt die Lage nicht"];
+    const sieht = taeter.every((t) => M.some((x) => x.includes(t))) && ohne.some((x) => x.includes("kennt ihren Ort nicht"));
+    console.log(
+        `  SELBSTTEST K6: fremder Samen im Faden, Stand an den Faden, Faden vor dem Satz, Kern im Haupt-Faden, Satz ohne Lage, Wirt ohne Leser ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR (" + M.length + " von " + taeter.length + " genannt)"}`
+    );
+    return sieht;
+}
+// K7 DER WUCHS DES ORTS (Reise, Welle 3 — Bewuchs und Grund nach Klima): der Spieler reist mit dem Satz der Konsole an den heißen,
+// trockenen Ort seines Planeten (`WUCHS_ORT`: der Planet sagt dort Wüste, Wald-Anteil 0) und heim. Gelesen wird durch die Leser
+// des Spiels: die Tafel der Lage (`_gelaende().ort.wuchs`), der Wald der 25 Zellen um die Ankunft (`_forestGeborene`, dieselbe
+// Regel wie der Faden) und der Grund an 81 Punkten (`_bodenFarbeAt` unter der Wiesen-Wache).
+// ROT beim Namen: die Reise kam nicht an · der Ort trägt den Wuchs der Heimat (Wald 1, Krautschicht 1 — die Tafel reicht ihn
+// nicht) · am Ort ohne Wald-Anteil stehen Bäume · der kahle Grund liest als Wiese (Grün-Anteil über Krautschicht + 25 Punkte,
+// der Saum am Wasser) · die Heimat ist nach der Rückkehr nicht byte-gleich (Höhe und Boden-Farbe an 81 Punkten).
+// `--selftest`: derselbe Leser am Ort mit der gepflanzten Tafel der Heimat (die Lage des Wirts reicht `wuchs` der Heimat —
+// der Fall „der heiße Ort trägt den Wald der Heimat“) fällt ROT an Wald und Grund.
+const WUCHS_ORT = "reise 17.09 61.93";
+async function wuchsSeite(satz, mutant) {
+    const G = globalThis.__gelaendeCore;
+    const lesen = () => {
+        const L = r._gelaende(), pm = r.state.playerMesh.position, C = AnazhRealm.FOREST.cell, seedInt = r._forestSeedInt();
+        const [cx0, cz0] = [Math.floor(pm.x / C), Math.floor(pm.z / C)];
+        let baeume = 0;
+        for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) baeume += r._forestGeborene(cx0 + dx + 20, cz0 + dz + 20, seedInt).length;
+        const WG = AnazhRealm.WIESEN_GRUND, c = [0, 0, 0];
+        let [land, gruen, h, f] = [0, 0, 0, 0];
+        for (let i = -4; i <= 4; i++)
+            for (let k = -4; k <= 4; k++) {
+                const [x, z] = [pm.x + 500 + i * 64, pm.z + 500 + k * 64];
+                const y = G.hoehe(L, x, z, true);
+                h = (h * 31 + Math.round(y * 1000)) | 0;
+                if (y < L.waterLevel) continue;
+                land++;
+                r._bodenFarbeAt(x, y, z, c);
+                f = (f * 31 + Math.round(c[0] * 1e6) + 7 * Math.round(c[1] * 1e6) + 13 * Math.round(c[2] * 1e6)) | 0;
+                if (c[1] - 0.5 * (c[0] + c[2]) > 0.5 * WG.schwelle) gruen++;
+            }
+        // ein Stand ohne den Teil `wuchs` der Tafel trägt an jedem Ort den Wuchs der Heimat (der Täter vor Welle 3)
+        const W = L.ort.wuchs || { wald: 1, decke: 1 };
+        return { teil: !!L.ort.teil, wald: W.wald, decke: W.decke, baeume, land, gruen, abdruck: h + "|" + f, welt: r.state.worldMeta.worldId };
+    };
+    const tausch = async (s) => {
+        const st0 = r.state;
+        const p = r.processChatCommand(s);
+        if (p && typeof p.then === "function") await p.catch(() => null);
+        for (const weiter = __deckel("der Tausch am Ort (" + s + ")", 6000); weiter(); ) {
+            await __seitenTakt();
+            const z = r.state;
+            if (z !== st0 && !r._weltTausch && z.voxelChunks && z.voxelChunks.size > 4 && z.voxelWorkerReady && z.voxelWorkerWorldgenSynced)
+                return true;
+        }
+        return false;
+    };
+    const heim0 = lesen();
+    const an = await tausch(satz);
+    let ort = an ? lesen() : null;
+    let gepflanzt = null;
+    if (an && mutant) {
+        // der Täter in der Welt: die Lage des Wirts reicht am Ort den Wuchs der Heimat — durch dieselben Leser
+        const [roh, heimW] = [r._gelaende, G.ortGesetz(null).wuchs];
+        r._gelaende = function () {
+            const L = roh.call(this);
+            return Object.defineProperty(Object.create(L), "ort", { value: Object.assign({}, L.ort, { wuchs: heimW }) });
+        };
+        try {
+            gepflanzt = lesen();
+        } finally {
+            delete r._gelaende;
+        }
+    }
+    const zurueck = an ? await tausch("reise heim") : false;
+    return { heim0, an, ort, gepflanzt, zurueck, heim1: zurueck ? lesen() : null };
+}
+function wuchsUrteil(w, mutant) {
+    const rot = [];
+    if (!w || !w.an || !w.ort || !w.ort.teil) return ["die Reise kam nicht an — der Satz „" + WUCHS_ORT + "“ führte in keine Welt des Planeten"];
+    const o = mutant ? w.gepflanzt : w.ort;
+    if (!o) return ["der gepflanzte Täter las nichts"];
+    if (o.wald === 1 && o.decke === 1) rot.push("der Ort trägt den Wuchs der Heimat (Wald 1, Krautschicht 1) — die Tafel `ortGesetz(teil).wuchs` reicht den des Orts nicht");
+    if (!(w.ort.wald > 0) && o.baeume > 0)
+        rot.push(`am Ort ohne Wald-Anteil stehen ${o.baeume} Bäume in 25 Zellen (die Heimat ${w.heim0.baeume}) — der Wald liest das Klima des Orts nicht`);
+    const pct = o.land ? (100 * o.gruen) / o.land : 0;
+    if (pct > 100 * w.ort.decke + 25)
+        rot.push(`der kahle Grund liest als Wiese: ${pct.toFixed(0)} % Grün unter der Wiesen-Wache bei Krautschicht ${(100 * w.ort.decke).toFixed(1)} % — die Boden-Farbe liest das Klima des Orts nicht`);
+    if (!mutant && !(w.zurueck && w.heim1 && w.heim1.abdruck === w.heim0.abdruck && w.heim1.welt === w.heim0.welt))
+        rot.push("die Heimat ist nach „reise heim“ nicht byte-gleich (Höhe und Boden-Farbe an 81 Punkten, Welt-Id)");
+    return rot;
+}
+async function wuchsProbe(page) {
+    const w = await page.evaluate(wuchsSeite, WUCHS_ORT, SELBSTTEST);
+    const rot = wuchsUrteil(w, false);
+    if (w && w.ort) {
+        const pct = (o) => (o.land ? ((100 * o.gruen) / o.land).toFixed(0) : "—");
+        console.log(
+            `  Wuchs (K7): „${WUCHS_ORT}“ — Wald-Anteil ${w.ort.wald}, Krautschicht ${w.ort.decke.toFixed(3)}; Bäume in 25 Zellen ${w.ort.baeume} (Heimat ${w.heim0.baeume}), Grün unter der Wiesen-Wache ${pct(w.ort)} % (Heimat ${pct(w.heim0)} %); heim ${w.zurueck && w.heim1 && w.heim1.abdruck === w.heim0.abdruck ? "byte-gleich" : "NICHT byte-gleich"}`
+        );
+    }
+    for (const t of rot) console.log(`  ⛔ K7: ${t}`);
+    let sieht = true;
+    if (SELBSTTEST) {
+        const M = wuchsUrteil(w, true);
+        sieht = ["trägt den Wuchs der Heimat", "stehen", "liest als Wiese"].every((t) => M.some((x) => x.includes(t)));
+        console.log(
+            `  SELBSTTEST K7: der Ort mit der gepflanzten Tafel der Heimat (${w && w.gepflanzt ? w.gepflanzt.baeume + " Bäume, " + w.gepflanzt.gruen + " von " + w.gepflanzt.land + " Punkten grün" : "nichts gelesen"}) ${sieht ? "fällt ROT beim Namen" : "BLIEB UNSICHTBAR (" + M.join(" | ") + ")"}`
+        );
+    }
+    return rot.length > 0 || !sieht;
+}
+// K7 DIE SIEDLUNG DES ORTS (Reise, w28-reise-ort — was am Ort steht, liest das Gesetz des Orts): der Spieler reist an den kalten Ort
+// (`SIEDLUNG_EIS`, Dauer-Frost) und an den heißen (`WUCHS_ORT`) und heim. Gelesen wird durch die Leser des Spiels: der Plan des
+// Prüfplatzes (`_genesisPlan`) und die Ankunft auf Grund (`_genesisMitte`, `_landAt`), die Dorf-Zellen im Umkreis von 2 km (die Wahl
+// der Zelle und ihres Grunds: `_autoSettlementCellInfo` → `_autoSettlementFindSite`) und der Hof-Baum an 81 Plätzen der Wüste im
+// selben Umkreis (`_hofBaumTraegt` je Platz und Samen gegen den Baum des Orts dort, gelaende-core `ortBaum`).
+// ROT beim Namen: das Eis trägt den Prüfplatz · die Ankunft steht nicht auf Grund · das Eis trägt ein Dorf · in der Wüste steht der
+// Hof-Baum außerhalb des Bands am Wasser (oder der Hof-Baum liest das Klima nicht: kein Leser `_hofBaumTraegt`).
+// `--selftest`: derselbe Leser mit der gepflanzten Tafel der Heimat (die Lage des Wirts reicht `siedlung` und `wuchs` der Heimat)
+// fällt ROT an „Dorf auf dem Eis“ und „Baum in der Wüste“.
+const SIEDLUNG_EIS = "reise 79.07 0.56";
+async function siedlungSeite(eis, wueste, mutant) {
+    const G = globalThis.__gelaendeCore;
+    const tausch = async (s) => {
+        const st0 = r.state;
+        const p = r.processChatCommand(s);
+        if (p && typeof p.then === "function") await p.catch(() => null);
+        for (const weiter = __deckel("der Tausch am Ort (" + s + ")", 6000); weiter(); ) {
+            await __seitenTakt();
+            const z = r.state;
+            if (z !== st0 && !r._weltTausch && z.voxelChunks && z.voxelChunks.size > 4 && z.voxelWorkerReady && z.voxelWorkerWorldgenSynced)
+                return true;
+        }
+        return false;
+    };
+    const gepflanzt = (f) => {
+        if (!mutant) return f();
+        const [roh, H] = [r._gelaende, G.ortGesetz(null)];
+        r._gelaende = function () {
+            const L = roh.call(this);
+            return Object.defineProperty(Object.create(L), "ort", { value: Object.assign({}, L.ort, { wuchs: H.wuchs, siedlung: H.siedlung }) });
+        };
+        try {
+            return f();
+        } finally {
+            delete r._gelaende;
+        }
+    };
+    const dorfZellen = () => {
+        const A = AnazhRealm._siedlungGesetz(), M = r._genesisMitte() || { x: 0, z: 0 };
+        let n = 0;
+        if (!A) return -1;
+        const R = Math.ceil(2000 / A.cellM);
+        for (let dz = -R; dz <= R; dz++)
+            for (let dx = -R; dx <= R; dx++) {
+                const [cx, cz] = [Math.floor(M.x / A.cellM) + dx, Math.floor(M.z / A.cellM) + dz];
+                const info = r._autoSettlementCellInfo(cx, cz);
+                if (info && Math.hypot(info.x - M.x, info.z - M.z) <= 2000 && r._autoSettlementFindSite(info)) n++;
+            }
+        return n;
+    };
+    const aus = { eis: null, wueste: null };
+    if (await tausch(eis)) {
+        // der Wald des Eises, wie die Welt ihn pflanzt (die Schlange des Walds und sein Faden, `_tickWaldPlan`): 600 Takte
+        for (let i = 0; i < 600; i++) await __seitenTakt();
+        const M = r._genesisMitte();
+        aus.eis = {
+            teil: !!r._gelaende().ort.teil,
+            platz: !!r._genesisPlan,
+            grund: !!M && r._landAt(M.x, M.z, 0.2),
+            doerfer: gepflanzt(dorfZellen),
+            baeume: (r.state.architectures || []).filter((a) => /^baum_/.test(a.type)).length,
+        };
+    }
+    if (await tausch(wueste)) {
+        const M = r._genesisMitte() || { x: 0, z: 0 };
+        const W = r._gelaende().ort.wuchs;
+        let [plaetze, aussen, nass] = [0, 0, 0];
+        const leser = typeof r._hofBaumTraegt === "function";
+        for (let i = -4; i <= 4; i++)
+            for (let k = -4; k <= 4; k++) {
+                const [x, z] = [M.x + i * 220, M.z + k * 220];
+                const y = r.getTerrainHeightAt(x, z);
+                if (!Number.isFinite(y) || !r._landAt(x, z, 0.2)) continue;
+                plaetze++;
+                // das Band am Wasser: der Baum des Orts dort (gelaende-core `ortBaum`; an einem Stand ohne ihn dieselbe Zeile)
+                const F = AnazhRealm.FEUCHTE, t = Math.max(0, Math.min(1, (r._feuchteAt(x, z, y) - F.sichtbarLo) / (F.sichtbarHi - F.sichtbarLo)));
+                const baum = G.ortBaum || ((Wb, n) => Wb.laub * (Wb.wald + (Wb.oase - Wb.wald) * n));
+                const band = baum(W, t * t * (3 - 2 * t), false) > 0;
+                if (band) nass++;
+                // je Platz 16 Samen des Hof-Baums: steht einer außerhalb des Bands am Wasser?
+                for (let s = 0; s < 16 && !band; s++)
+                    if (!leser || gepflanzt(() => r._hofBaumTraegt(x, z, y, (s * 2654435761 + 12345) >>> 0))) {
+                        aussen++;
+                        break;
+                    }
+            }
+        aus.wueste = { teil: !!r._gelaende().ort.teil, plaetze, aussen, nass, leser, doerfer: dorfZellen() };
+    }
+    // an einem Stand, der den Ort beim Speichern verlor (die Rückkehr trug die Heimat), führt „reise heim“ nirgends hin
+    aus.zurueck = r._gelaende().ort.teil ? await tausch("reise heim") : false;
+    return aus;
+}
+function siedlungUrteil(s) {
+    const rot = [];
+    if (!s || !s.eis || !s.eis.teil) return ["die Reise kam nicht an — der Satz „" + SIEDLUNG_EIS + "“ führte in keine Welt des Planeten"];
+    if (s.eis.platz) rot.push("das Eis trägt den Prüfplatz — der Plan des Genesis-Orts liest `ortGesetz(teil).siedlung.platz` nicht");
+    if (!s.eis.grund) rot.push("die Ankunft auf dem Eis steht nicht auf Grund (Wasser an der Mitte des Orts)");
+    if (s.eis.baeume > 0)
+        rot.push(`Baum auf dem Eis: ${s.eis.baeume} Bäume stehen, wo das Gesetz keinen Wald trägt — der Wald-Faden pflanzt die Darts einer anderen Welt (sein Stand ohne die Welt, \`_waldStandSchluessel\`)`);
+    if (s.eis.doerfer !== 0) rot.push(`Dorf auf dem Eis: ${s.eis.doerfer} Dorf-Zellen im Umkreis von 2 km — die Wahl der Zelle liest \`siedlung.bau\` nicht`);
+    if (!s.wueste) rot.push("die Reise in die Wüste kam nicht an");
+    else if (!s.wueste.teil) rot.push("die Rückkehr in die Wüste trägt das Gesetz der Heimat — der Stand der Reise-Welt verlor `gesetz.ort` beim Speichern");
+    else if (!s.wueste.leser) rot.push("Baum in der Wüste: der Hof-Baum liest das Klima des Orts nicht (kein Leser `_hofBaumTraegt`)");
+    else if (s.wueste.aussen > 0) rot.push(`Baum in der Wüste: an ${s.wueste.aussen} von ${s.wueste.plaetze} Plätzen außerhalb des Bands am Wasser steht der Hof-Baum`);
+    return rot;
+}
+async function siedlungProbe(page) {
+    const s = await page.evaluate(siedlungSeite, SIEDLUNG_EIS, WUCHS_ORT, false);
+    const rot = siedlungUrteil(s);
+    if (s && s.eis)
+        console.log(
+            `  Siedlung (K7): „${SIEDLUNG_EIS}“ — Bäume ${s.eis.baeume}, Prüfplatz ${s.eis.platz ? "JA" : "nein"}, Ankunft auf Grund ${s.eis.grund ? "ja" : "NEIN"}, Dorf-Zellen in 2 km ${s.eis.doerfer}; „${WUCHS_ORT}“ — Hof-Baum außerhalb des Bands an ${s.wueste ? s.wueste.aussen : "—"} von ${s.wueste ? s.wueste.plaetze : "—"} Plätzen (im Band ${s.wueste ? s.wueste.nass : "—"}), Dorf-Zellen am Wasser ${s.wueste ? s.wueste.doerfer : "—"}`
+        );
+    for (const t of rot) console.log(`  ⛔ K7: ${t}`);
+    let sieht = true;
+    if (SELBSTTEST) {
+        const m = await page.evaluate(siedlungSeite, SIEDLUNG_EIS, WUCHS_ORT, true);
+        const M = siedlungUrteil(m);
+        sieht = ["Dorf auf dem Eis", "Baum in der Wüste"].every((t) => M.some((x) => x.includes(t)));
+        console.log(
+            `  SELBSTTEST K7: die gepflanzte Tafel der Heimat (Dorf-Zellen auf dem Eis ${m && m.eis ? m.eis.doerfer : "—"}, Hof-Baum außerhalb des Bands ${m && m.wueste ? m.wueste.aussen : "—"}) ${sieht ? "fällt ROT beim Namen" : "BLIEB UNSICHTBAR (" + M.join(" | ") + ")"}`
+        );
+    }
+    return rot.length > 0 || !sieht;
+}
 async function faden(page, url) {
     // KALT: der Ursprung ohne Welt räumt Abbild und Platten, dann der erste Boot
     await page.evaluateOnNewDocument(fadenSeite, String(klonBytes), String(fadenHuelle));
@@ -1948,6 +2526,22 @@ async function faden(page, url) {
         }, n, dx, dz);
     const fenster = async (name) => page.evaluate((n) => (window.__faden.fenster = n), name);
     const dauer = { boot: await takt(0) };
+    // K6 DER PLANET IM FADEN: die Welt steht — ihr Anker aus dem Faden gegen den Kern in node
+    const planetIst = await page.evaluate(planetSeite, false);
+    const planetSollWert = planetIst.fehlt ? null : planetSoll(root, planetIst.planetSamen);
+    const planetRot = planetUrteil(planetIst, planetSollWert);
+    // `--faden --planet`: NUR K6 — die gezielte Probe (an der echten GPU mit `--echt`: die Zeit im Faden, die Geburt nach dem Bild)
+    if (argv.includes("--planet")) {
+        console.log("\n=== DER PLANET IM FADEN (K6) ===");
+        planetZeile(planetIst, planetSollWert, planetRot);
+        let rotK6 = planetRot.length > 0 || (SELBSTTEST && !(await planetSelbst(page, planetIst, planetSollWert)));
+        // K7 DER WUCHS DES ORTS: die Reise an den heißen, trockenen Ort und heim (nach K6: der Planet-Faden steht)
+        if (!planetIst.fehlt) rotK6 = (await wuchsProbe(page)) || rotK6;
+        // K7 DIE SIEDLUNG DES ORTS (w28-reise-ort): Eis und Wüste und heim
+        if (!planetIst.fehlt) rotK6 = (await siedlungProbe(page)) || rotK6;
+        console.log(`\n${rotK6 ? "⛔ PLANET ROT" : "✅ PLANET GRÜN: der Anker im Faden = der Kern, der Faden schlank und geboren mit dem Satz, der Satz sagt die Lage · K7 der trockene Ort trägt weder den Wald noch die Wiese der Heimat, heim byte-gleich; das Eis trägt weder Prüfplatz noch Dorf, der Hof-Baum der Wüste steht nur am Wasser"}\n`);
+        return rotK6 ? 1 : 0;
+    }
     await fenster("gang");
     dauer.gang = await takt(3600, 0, 240);
     await fenster("fahrt");
@@ -2060,7 +2654,8 @@ async function faden(page, url) {
         (!summe((F.t.fahrt || {}).empfang) && "kein Empfang in der Fahrt") ||
         (F.klick.length < 6 && "die Bau-Klicks der Fahrt bauten nicht") ||
         (!F.stau.faden && "kein Feld des Staus aus dem Faden");
-    let rot = !!blind || k4 > 0 || proMin.fahrt > FADEN_SOLL;
+    let rot = !!blind || k4 > 0 || proMin.fahrt > FADEN_SOLL || planetRot.length > 0;
+    planetZeile(planetIst, planetSollWert, planetRot);
     if (blind) console.log(`  ⛔ BLIND: ${blind}`);
     if (k4) console.log(`  ⛔ K4: ${k4} synchrone Bauten im Haupt-Faden, obwohl ein Faden zuständig ist`);
     if (proMin.fahrt > FADEN_SOLL)
@@ -2083,9 +2678,10 @@ async function faden(page, url) {
             `  SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Guss, Wuchs, Boden, Stau-Feld, Stand (${mb(kopf)} MB) und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
         );
         rot = rot || !sieht;
+        rot = rot || !(await planetSelbst(page, planetIst, planetSollWert));
     }
     console.log(
-        `\n${rot ? "⛔ FADEN ROT" : "✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 " + mb(proMin.fahrt) + " MB/min ≤ 5 in der Fahrt"}\n`
+        `\n${rot ? "⛔ FADEN ROT" : "✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 " + mb(proMin.fahrt) + " MB/min ≤ 5 in der Fahrt · K6 der Anker des Planeten im Faden = der Kern, der Faden schlank und geboren mit dem Satz"}\n`
     );
     return rot ? 1 : 0;
 }
@@ -2202,6 +2798,11 @@ hauptLauf(async () => {
                 : "    Höhen der Ferne: kein Voxel-Faden — keine Probe"
         );
         if (!fe || fe.abweichend > 0) rot = true;
+        const mu = welt === "standard" ? mascheUrteil(rep.masche) : { gut: true };
+        if (welt === "standard") console.log(
+            `    Masche des Felds: ${rep.masche ? `Ring ≠ Gesetz ${rep.masche.ringUngleich} von ${rep.masche.n} · Naht Feld ↔ Ring ${rep.masche.naht.toExponential(1)} m (Soll ≤ ${MASCHE_NAHT_M}) · hinter der Naht lesen ${rep.masche.liest} Punkte die Stufe ihrer Masche (größte ${rep.masche.groesste.toFixed(1)} m)` : "keine Probe"}${mu.gut ? "" : " — ⛔ " + mu.rot.join(" · ").toUpperCase() + ": " + mu.taeter}`
+        );
+        if (!mu.gut) rot = true;
         const wa = rep.wald;
         const wu = rep.wuchs || [];
         console.log(
@@ -2213,6 +2814,14 @@ hauptLauf(async () => {
                 : "    Stoff des Walds: kein Voxel-Faden oder keine Wahrheit — keine Probe"
         );
         if (welt === "standard" && (!wa || !(wa.darts > 0) || wa.abweichend > 0 || !wu[0] || wu[1])) rot = true;
+        if (welt === "standard") {
+            const kam = (rep.rang || []).join(" · ");
+            const gut = kam === RANG_SOLL;
+            console.log(
+                `    Wahl des Wald-Fadens (Teil R, gesendet ${RANG_REIHE.join(" · ")} m): geliefert ${kam || "nichts"} — ${gut ? "nah zuerst" : "⛔ RANG: der Wald-Faden liefert nicht nah zuerst (Soll " + RANG_SOLL + ")"}`
+            );
+            if (!gut) rot = true;
+        }
         if (rep.abweichend > 0 || rep.befunde.length) rot = true;
         if (SELBSTTEST && welt === "standard") {
             const v = await probeVerfaelscht(page, url);
@@ -2221,8 +2830,10 @@ hauptLauf(async () => {
                 maxDiff: v.maxDiff,
                 gitter: v.gitter,
                 ferne: v.ferne ? v.ferne.abweichend : 0,
+                masche: mascheUrteil(v.masche).rot.join(" · "),
                 wald: v.wald ? v.wald.abweichend : 0,
                 wuchs: v.wuchs?.[1],
+                rang: (v.rang || []).join(" · "),
                 namen: ["FERN-RING"].filter((n) => v.befunde.some((b) => b.startsWith(n))).join(),
             };
             console.log(
@@ -2272,14 +2883,18 @@ hauptLauf(async () => {
             selbst &&
             selbst.abweichend > 0 &&
             selbst.ferne > 0 &&
+            selbst.masche === Object.keys(MASCHE_MUTANTEN).join(" · ") &&
             selbst.wald > 0 &&
             selbst.wuchs > 0 &&
             urform &&
             urform.endsWith("Reihe verzögert") &&
             vergisst === "1,1,1" &&
+            selbst.rang === RANG_REIHE.join(" · ") &&
             selbst.namen === "FERN-RING";
         console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen · Wuchs ${selbst?.wuchs} (Soll > 0)`);
         console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);
+        console.log(`  SELBSTTEST Masche des Felds (drei Zeilen des Fadens genommen): rot ${selbst ? selbst.masche || "nichts" : "?"} (Soll ${Object.keys(MASCHE_MUTANTEN).join(" · ")})`);
+        console.log(`  SELBSTTEST Wahl des Wald-Fadens (ohne „die Reihe zuerst“): geliefert ${selbst ? selbst.rang : "?"} (Soll die Reihe der Ankunft ${RANG_REIHE.join(" · ")})`);
         console.log(
             `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: der saubere Spiegel ist byte-gleich, der verfälschte Worker-Term fällt rot" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "die Verfälschung blieb unentdeckt (die Linse ist blind)")}\n`
         );

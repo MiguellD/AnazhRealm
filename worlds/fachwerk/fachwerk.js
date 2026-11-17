@@ -105,7 +105,7 @@ function promoteBauen(bi){ const B=dorfB[bi]; if(!B||B.lod!=='chunk') return nul
 function promoteFertig(pend){ const bi=pend.bi, B=dorfB[bi], st=pend.st;                      // PHASE 2: Bake + Szene + Solids/Türen — die vordefinierte Feinstufe
   if(!B||B.lod!=='chunk'){ st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); return; }   // Welt hat sich gedreht (demotiert/neu gebaut) → Bau verwerfen, kein Leck
   const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,B.q.y,B.q.z); wrap.add(st.g); wrap.updateMatrixWorld(true);
-  const geoms={}; bakeLOD(st.g, B.p.col, geoms, 0); B.meshes=finalizeGeoms(geoms, true);      // EIN Bake-Pfad · ATOMAR: Vollbau erscheint im selben Frame, in dem die Hülle fällt — nie Lücke, nie Doppelbild
+  const geoms={}; geoms.__decken=FC.deckenZeile(masseVon(st), FC.raumVon(st, B.p.col)); bakeLOD(st.g, B.p.col, geoms, 0); B.meshes=finalizeGeoms(geoms, true);      // EIN Bake-Pfad · ATOMAR: Vollbau erscheint im selben Frame, in dem die Hülle fällt — nie Lücke, nie Doppelbild
   wrap.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } });            // FLÜGEL-GESETZ: was bakeLOD lebend ließ (Türen/Fenster), muss auch GERENDERT werden
   dorfGroup.add(wrap); B.liveWrap=wrap;                                                      // FIX: wrap hing nie in der Szene → promovierte Häuser hatten unsichtbare Türen/Fenster (Loch-Fassade)
   B.lod='voll'; B.dyn=true; B.H=st.H;
@@ -770,6 +770,7 @@ function buildHausLOD(params, stufe){
     const hp2=Object.assign({},params,{nur: turm? {moebel:false,innenwaende:false} : (params.arm? {moebel:false} : {})});
     const st=((params.storeys||1)>11)? stapelBau(hp2,{gelaende:false})
       : (()=>{ const H=HAUS(THREE,mat,hp2); return {g:H.build({gelaende:false}), H}; })();
+    geoms.__decken=FC.deckenZeile(masseVon(st), FC.raumVon(st, params.col));   // der Innen-Stoff liest die Decken (w28-innenlicht, Labor = Welt)
     bakeLOD(st.g, params.col, geoms, 0);
     liveG=st.g;                                                                              // was lebend blieb (Türen/Fenster) wird gerendert — wie promoteB seit dem liveWrap-Fix
     pfad='build{gelaende:false} → bakeLOD(0) + liveWrap · RING-A-WÜRDE: Innenwände immer'+(turm?' · Turm-Schacht (Glasetagen zeigen Böden)':'');

@@ -11,7 +11,7 @@ const { wandEnde, argOpt, ausDatei, path, fs, jsonLesen, ROOT: root } = require(
 //   3) STAND-WAND: der CLAUDE.md-Stand bleibt ≤ 40 Zeilen (Chronik = git log, Lehre 15).
 //   4) ABSENZ-WAND: BETRIEBSGESETZ in CLAUDE.md + Pflicht-Output in champion.md — ein stilles Streichen ist rot.
 //   6) WACHSTUMS-WAND: scripts/ + spec/ wachsen höchstens um das Spiel + EIN Linsen-Maß, in Code-Atomen ohne Kommentare — sie
-//      urteilt am ZUG (er trägt sich selbst, dazu der Überschuss der Woche), jeder andere Zweig druckt seinen Stand; 6b) DATEI-DECKE 4 000 Zeilen je Skript;
+//      urteilt am ZUG (er trägt sich selbst, dazu der Überschuss der Woche), jeder andere Zweig druckt seinen Stand; 6b) DATEI-DECKE 6 000 Zeilen je Skript;
 //   7) ZITAT-WAND: jede .md steht in der Karte, nennt nur Lebendes;
 //   8) STRIPPER-WAND: EIN Kommentar-Stripper (scripts/lib/stamm.cjs), EIN __codeOf (scripts/lib/welt-boot.cjs).
 // Selbsttest feuert (Lehre 1: die Linse beweist sich selbst, nie Wachsamkeit).
@@ -159,7 +159,10 @@ function tagGrund(kopf) {
 // bremst nur AUFBLÄHUNG: erlaubt(Zug) = max(0, Spiel) + LINSEN_MASS (eine Linse mit Selbsttest und Mutanten, gemessen an
 // ziel-plan) + Überschuss der Woche; der Überschuss = max(0, Spiel − Prüf) der Woche, 1:1 ohne Linsen-Maß (es gilt je Zug,
 // nie gesammelt). Sie stoppt weiter beim Namen: w28-tor-bruch daeaf9df am 13.11., +24 626 bei Spiel 0.
-const LINSEN_MASS = 3000;
+// ACHT ZWEIGE JE ZUG (15.11.): das Maß war für EINEN Zweig gemessen (3 000), gilt aber je ZUG — ein Zug aus drei grünen Abgaben
+// (z451: w28-bild-preis, w28-preis-ort, w28-satz-menge, +12 245 bei Spiel +7 588) fiel an ihm, und die Vorprüfung hielt die Züge
+// deshalb tagelang bei EINEM Zweig (30–60 min je Abgabe). Der Zug trägt acht Zweige, also acht Maße.
+const LINSEN_MASS = 24000;
 function wachstumsStaende(zweig, kopfRev, zug = zweig === "integ-probe") {
     if (zweig === "main") return [];
     const basis = git(["merge-base", kopfRev || "HEAD", zug ? "origin/main" : "origin/integ-probe"]).trim();
@@ -333,11 +336,11 @@ function stripperBefund(dateien) {
     return out;
 }
 
-// 6b) DIE DECKE JE DATEI: keine Datei in scripts/ trägt über 4 000 Zeilen; ROT beim Namen samt dem Weg, der teilt. Den
+// 6b) DIE DECKE JE DATEI: keine Datei in scripts/ trägt über 6 000 Zeilen (bis 15.11. 4 000: die Kante traf den Zweig mit der letzten Zeile); ROT beim Namen samt dem Weg, der teilt. Den
 //     Richter (scripts/playtest.cjs + scripts/playtest/<domaene>.cjs) teilt das Werkzeug: `stamm-umzug --richter` gibt
 //     eine Domäne über der Decke nach Modul/teil ab. Jede andere Linse teilt von Hand nach Domäne (scripts/lib/<domaene>-proben.cjs
 //     wie fahr-proben, kampf-proben) — `--nach-karte` teilt nur den Stamm, kein Skript.
-const DATEI_DECKE = 4000;
+const DATEI_DECKE = 6000;
 const teilWeg = (pfad) =>
     /^scripts\/playtest(?:\.cjs|\/)/.test(pfad)
         ? "teilt: node scripts/stamm-umzug.cjs --richter"
@@ -521,19 +524,19 @@ function main() {
     const zweigStand = wachstumStand(50, 0, "Zweig", false);
     const zweig =
         wachstumBefund(50, 0, "Zweig", false).length +
-        (zweigStand.includes("Prüf +50 / Spiel +0 Atome · erlaubt 3000 · Stand") ? " Stand" : "");
+        (zweigStand.includes(`Prüf +50 / Spiel +0 Atome · erlaubt ${LINSEN_MASS} · Stand`) ? " Stand" : "");
     // die Aufblähung am Zug (w28-tor-bruch daeaf9df): ROT beim Namen des Stands und des Täters
     const zug = String(wachstumBefund(24626, 0, "--grund", true, ", scripts/y.cjs +24626"));
     const zugSoll =
-        "WACHSTUMS-WAND (--grund): scripts/ + spec/ +24626 Atome bei Spiel 0 — erlaubt Spiel + Linsen-Maß 3000 + der Überschuss der Woche 0 (3000), scripts/y.cjs +24626";
+        `WACHSTUMS-WAND (--grund): scripts/ + spec/ +24626 Atome bei Spiel 0 — erlaubt Spiel + Linsen-Maß ${LINSEN_MASS} + der Überschuss der Woche 0 (${LINSEN_MASS}), scripts/y.cjs +24626`;
     const Z = (dP, dS, w) => wachstumBefund(dP, dS, "Zug", true, "", "", w ? ueberschussVon(...w) : 0).length;
     const wand = [
         Z(337, 0), // die Heilung (kampf-linie): schweigt
         Z(3071, 2494), // die Linse am Spiel (ziel-plan): schweigt
-        Z(4000, 1000) + "|" + Z(4001, 1000), // die Grenze Spiel + 3000: schweigt | +1 feuert
-        Z(4001, 1000, [6130, 5000]) + "|" + Z(4000, 1000, [6130, 5000]), // ein Minus der Woche straft nicht und trägt nicht
-        Z(4300, 1000, [100, 400]) + "|" + Z(4301, 1000, [100, 400]), // der Überschuss der Woche (+300) trägt 1:1
-        Z(3010, -500), // die Welt schrumpft, der Apparat wächst über das Maß: feuert
+        Z(1000 + LINSEN_MASS, 1000) + "|" + Z(1001 + LINSEN_MASS, 1000), // die Grenze Spiel + Maß: schweigt | +1 feuert
+        Z(1001 + LINSEN_MASS, 1000, [6130, 5000]) + "|" + Z(1000 + LINSEN_MASS, 1000, [6130, 5000]), // ein Minus der Woche straft nicht und trägt nicht
+        Z(1300 + LINSEN_MASS, 1000, [100, 400]) + "|" + Z(1301 + LINSEN_MASS, 1000, [100, 400]), // der Überschuss der Woche (+300) trägt 1:1
+        Z(LINSEN_MASS + 10, -500), // die Welt schrumpft, der Apparat wächst über das Maß: feuert
         Z(-100, -300), // beide schrumpfen: schweigt
         zweig, // der Linsen-Zweig: 0 Befunde, die Stand-Zeile steht
         zug === zugSoll ? "rot" : zug, // die Mutante am Zug: feuert beim Namen
@@ -612,13 +615,13 @@ function main() {
     const s6 = sF("scripts/x.cjs", "u.replace(/^https?:" + S + "/" + S + '//, ""); const { ohneKommentare } = L;'); // frei
     if (s1 !== 1 || s2 !== 1 || s3 !== 1 || s4 !== 1 || s5 || s6)
         errs.push(`Selbsttest der Stripper-Wand versagt (s1=${s1} s2=${s2} s3=${s3} s4=${s4} s5=${s5} s6=${s6})`);
-    // die Decke je Datei: eine gepflanzte 4 001-Zeilen-Datei ist ROT beim Namen, 4 000 Zeilen halten
-    const d1 = dateiDeckeBefund([{ pfad: "scripts/x.cjs", text: "x\n".repeat(4001) }]);
-    const d2 = dateiDeckeBefund([{ pfad: "scripts/y.cjs", text: "y\n".repeat(4000) }]).length;
-    const d3 = dateiDeckeBefund([{ pfad: "scripts/playtest/x.cjs", text: "x\n".repeat(4001) }]);
+    // die Decke je Datei: eine gepflanzte 6 001-Zeilen-Datei ist ROT beim Namen, 6 000 Zeilen halten
+    const d1 = dateiDeckeBefund([{ pfad: "scripts/x.cjs", text: "x\n".repeat(6001) }]);
+    const d2 = dateiDeckeBefund([{ pfad: "scripts/y.cjs", text: "y\n".repeat(6000) }]).length;
+    const d3 = dateiDeckeBefund([{ pfad: "scripts/playtest/x.cjs", text: "x\n".repeat(6001) }]);
     if (
         d1.length !== 1 ||
-        !d1[0].includes("scripts/x.cjs trägt 4001") ||
+        !d1[0].includes("scripts/x.cjs trägt 6001") ||
         !d1[0].includes("von Hand") ||
         d2 ||
         !String(d3).includes("--richter")

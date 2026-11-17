@@ -207,8 +207,6 @@ class AnazhRealm_feld_dsl {
                 "spawn_waterfall",
                 "spawn_fractal",
                 "spawn_blueprint",
-                "spawn_island",
-                "spawn_ufo",
                 "spawn_tree",
                 "spawn_studio",
                 "remove_architecture",
@@ -237,6 +235,21 @@ class AnazhRealm_feld_dsl {
             node.length > 0 &&
             !this._dslContainsAnyOp(node, AnazhRealm.RULE_FORBIDDEN_EFFECT_OPS)
         );
+    }
+
+    // DAS GESETZ EINER FÄHIGKEIT (erleben.schoepfen.schutz): ein Name, der Schlüssel werden kann, und ein Programm, das der
+    // Interpreter als Tat kennt — sein Kopf ist ein Verb der Op-Tafel (`dslEffects`, die EINE Quelle der Taten; sonst
+    // `unknown_op` bei jedem Ruf) und nirgends steht eine souveräne Aktion (`SOVEREIGN_ACTIONS`, sonst `sovereign_blocked`).
+    // Leser: die Geburt (`define_ability`), das Laden des eigenen Stands (`_loadStateRestoreEmotionsAndDsl`, die Lade-Wand spricht)
+    // und die Wand der Tür (`_weltEinlass`: eine fremde Welt mit solch einer Fähigkeit fällt ganz). → Grund | null
+    _faehigkeitGrund(name, program) {
+        if (typeof name !== "string" || name.length === 0 || name.length > 40) return "kein Name (1–40 Zeichen)";
+        if (!Array.isArray(program) || program.length === 0) return "kein Programm";
+        const kopf = program[0];
+        if (typeof kopf !== "string" || !Object.prototype.hasOwnProperty.call(this.dslEffects, kopf))
+            return `unbekannte Tat „${String(kopf).slice(0, 40)}“`;
+        const souveraen = AnazhRealm.SOVEREIGN_ACTIONS.find((op) => this._dslContainsAnyOp(program, new Set([op])));
+        return souveraen ? `souveräne Tat „${souveraen}“` : null;
     }
 
     // gegen CREATURE_PROPOSED_OPS. Liefert {ok, forbiddenOp?}.
@@ -370,7 +383,7 @@ class AnazhRealm_feld_dsl {
     // sich seinen Ort im Kontext (`ctx.orte`): der Absender schickt ihn mit (V-k6, `_dslMitOrten`).
     // DAS FELD HAT KEINEN ORT, WO DIE WILDNIS NICHT TRÄGT: wählt das Feld selbst (`_feldHandelt` — der Nexus und seine
     // Regeln) einen Ort, den die Wildnis nicht trägt (`_wildnisTraegt`), gibt es ihn nicht — jeder Wurf daran (Tier, Baum,
-    // Werk, Insel, UFO, Dorf, Tempel, Wasserfall, Bauplan, Fraktal, Kugel) bricht hier benannt ab; Akte setzen überall.
+    // Werk, Dorf, Tempel, Wasserfall, Bauplan, Fraktal, Kugel) bricht hier benannt ab; Akte setzen überall.
     // Bis 10.10. fragte nur die Tier-Geburt: auf einer Welt ohne Wildnis-Term warfen 18 von 20 Nexus-Würfen (ein Dorf aus
     // 33 Bauten, Tempel, Wasserfall, Fraktal, Insel, UFO, Baum, Werk) — die Linse der Feld-Würfe nennt jeden beim Namen.
     dslEvalPos(node, ctx) {
@@ -1020,7 +1033,7 @@ class AnazhRealm_feld_dsl {
             },
             // spawn_tree läuft durch denselben Pfad wie jede Struktur (spawnArchitecture mit baum_eiche/
             // baum_kiefer) — kein Parallelcode: Compound-Tags, Welt-Effekte, Save, Werkstatt, Culling und
-            // Kollision kommen geschenkt. spawn_island/spawn_ufo bleiben eigen (Inseln = Noise-Heightfields).
+            // Kollision kommen geschenkt.
             spawn_tree: ([positionNode, count, kind, seed], ctx) => {
                 const n = c(count, 1, 20);
                 const pos = this.dslEvalPos(positionNode, ctx);
@@ -1071,67 +1084,6 @@ class AnazhRealm_feld_dsl {
             // die Signatur ist die Form des Verbs (`_dslForm`: Prompt und Antwort-Form der Welt-KI lesen sie) — sie bleibt hier
             spawn_studio: ([what, positionNode, count, seed, ov], ctx) =>
                 this._spawnStudioWerk([what, positionNode, count, seed, ov], ctx),
-            spawn_island: ([positionNode, height, seed, size], ctx) => {
-                const pos = this.dslEvalPos(positionNode, ctx);
-                if (ctx.budget.spawnsLeft <= 0) {
-                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
-                    this._setzErgebnis(ctx, "spawn_island", 1, 0, { budget: 1 }, ["ergebnis.ding.insel"], "gesetzt");
-                    return;
-                }
-                ctx.budget.spawnsLeft--;
-                const h = c(height, 1, 200);
-                // Ring 11 V2.1-Stil: optionales Seed-Argument für Multi-User-
-                // Determinismus. Wenn nicht gesetzt, würfeln. Chat-Pattern
-                // „setze insel hier" embedded das Seed bei Build-Zeit.
-                const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                // V9.42-b — `size` (Durchmesser in m) ist DSL-erreichbar, 6..48.
-                const sz = Number.isFinite(Number(size)) ? c(Number(size), 6, 48) : undefined;
-                // Islands spawnen ein Stück über dem angegebenen Punkt —
-                // sonst würde der at_player-Pfad sie auf Spieler-Höhe legen
-                // und der Spieler stünde im Erd-Inneren der Insel.
-                const opts = { seed: s };
-                if (sz !== undefined) opts.size = sz;
-                const island = this.spawnIslandAt(pos.x, pos.y + 12, pos.z, h, opts);
-                ctx.log.push({
-                    event: "spawned_island",
-                    pos: island ? { x: island.position.x, y: island.position.y, z: island.position.z } : pos,
-                    height: h,
-                    size: sz,
-                    seed: s,
-                });
-                this._setzErgebnis(
-                    ctx,
-                    "spawn_island",
-                    1,
-                    island ? 1 : 0,
-                    island ? {} : { buehne: 1 },
-                    ["ergebnis.ding.insel"],
-                    "gesetzt"
-                );
-            },
-            spawn_ufo: ([positionNode], ctx) => {
-                const pos = this.dslEvalPos(positionNode, ctx);
-                if (ctx.budget.spawnsLeft <= 0) {
-                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
-                    this._setzErgebnis(ctx, "spawn_ufo", 1, 0, { budget: 1 }, ["ergebnis.ding.ufo"], "gerufen");
-                    return;
-                }
-                ctx.budget.spawnsLeft--;
-                const ufo = this.spawnUfoAt(pos.x, pos.y + 18, pos.z);
-                ctx.log.push({
-                    event: "spawned_ufo",
-                    pos: ufo ? { x: ufo.position.x, y: ufo.position.y, z: ufo.position.z } : pos,
-                });
-                this._setzErgebnis(
-                    ctx,
-                    "spawn_ufo",
-                    1,
-                    ufo ? 1 : 0,
-                    ufo ? {} : { buehne: 1 },
-                    ["ergebnis.ding.ufo"],
-                    "gerufen"
-                );
-            },
             // Bau-Primitive: Position über die Selektor-Form (at_player, at_origin, near_player N), jeder Bau
             // = 1 Spawn-Budget. Optionales Seed für deterministische Visuals; beim Broadcast bettet der Sender
             // das verwendete Seed ein, damit alle Peers DIESELBEN Häuser sehen. spawn_village hebt das
@@ -1729,8 +1681,9 @@ class AnazhRealm_feld_dsl {
                     ctx.log.push({ event: "invalid_ability_name", name });
                     return;
                 }
-                if (!Array.isArray(program) || program.length === 0) {
-                    ctx.log.push({ event: "invalid_ability_program", name });
+                const grund = this._faehigkeitGrund(name, program); // das Gesetz der Fähigkeit, wie beim Laden und an der Tür
+                if (grund) {
+                    ctx.log.push({ event: "invalid_ability_program", name, grund });
                     return;
                 }
                 // Sandbox: Tiefen-Cap und kein verschachteltes define_*.
@@ -2476,8 +2429,6 @@ AnazhRealm.DSL_WELTAKTE = Object.freeze([
     "spawn_creature",
     "spawn_tree",
     "spawn_studio",
-    "spawn_island",
-    "spawn_ufo",
     "spawn_village",
     "spawn_temple",
     "spawn_waterfall",

@@ -29,12 +29,14 @@ class AnazhRealm_vegetation_streu {
         let seedHash = 2166136261 >>> 0;
         for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
         const { regionM, innerM, outerM, slopeMax, densityFloor, densityScale } = SC;
+        const W = this._gelaende().ort.wuchs; // der Wuchs des Orts (Reise: die Tafel `ortGesetz`; die Heimat 1) — reine Zahlen, sie reisen
         return {
             regX,
             regZ,
             px,
             pz,
             fdScale,
+            wuchs: { wald: W.wald, decke: W.decke },
             seedHash,
             layers: SC.layers,
             bake: this._bakeRegionConfig(),
@@ -93,14 +95,15 @@ class AnazhRealm_vegetation_streu {
     // V18.220 — Cell-Key in Welt-Koords (deterministisch, P2P-sicher).
     // Layer ∈ {"tree", "under", "stone"}; das Cell-Raster pro Layer.
     _scatterCellKeyAt(x, z, layer) {
-        const cfg = this._scatterConfig();
-        let cell;
-        if (layer === "under") cell = cfg.underCellM;
-        else if (layer === "stone") cell = cfg.stoneCellM;
-        else cell = cfg.treeCellM;
+        const cell = this._streuZelleM(layer);
         const cx = Math.floor(x / cell);
         const cz = Math.floor(z / cell);
         return `${layer}:${cx},${cz}`;
+    }
+    // Das Zellmaß der Schicht (m) — der Schlüssel der Streu und die Tafel der Zell-Gedächtnisse (`ZELL_GEDAECHTNISSE`) lesen es.
+    _streuZelleM(layer) {
+        const cfg = this._scatterConfig();
+        return layer === "under" ? cfg.underCellM : layer === "stone" ? cfg.stoneCellM : cfg.treeCellM;
     }
 
     // V18.220 — die PROMOTED-Bitmask. Plan §2 + §8: ein Cell, das via Ω-H
@@ -193,25 +196,37 @@ class AnazhRealm_vegetation_streu {
 
     // Baum-Spezies je Scatter-Cell aus Feld-Bändern statt voller spawnAffinity (zu teuer × Tausende):
     // feucht → Erle/Birke, hoch lebendig → Buche/Eiche, sonst Tanne/Kiefer; der Hash streut die Varianz.
+    // DIE ART NACH KLIMA UND ZEIT DES ORTS (Reise, Welle 3: die Tafel `ortGesetz(teil).wuchs`, die Heimat 1): das Nadelholz trägt
+    // den Anteil `nadel` (es meidet die Tropen — dort steht die Palme, wo es stünde), der Laubbaum `laub` (vor der Zeit der
+    // Bedecktsamer steht Nadelholz); ein eigener Wurf aus dem Hash der Zelle entscheidet, in der Heimat fällt er nie.
     _scatterSpeciesForCell(lebendig, moisture, hash) {
         const pick = (hash >>> 7) & 0xff;
-        if (moisture > 0.6) {
-            return pick < 128 ? "baum_erle" : "baum_birke";
-        }
-        if (lebendig > 0.62) {
-            return pick < 110 ? "baum_buche" : pick < 200 ? "baum_eiche" : "baum_birke";
-        }
-        if (lebendig > 0.4) {
-            // T1 (wahrerwuchs §4.1) — eine PALME in milder Zone (die Blatt-Typ-Vielfalt
-            // sichtbar; selten → ein gefundener Hain, kein Klon-Teppich).
-            if (pick >= 232) return "baum_palme";
-            return pick < 120 ? "baum_eiche" : pick < 200 ? "baum_kiefer" : "baum_tanne";
-        }
-        // karger Boden → Nadelwald + Karst + (selten) säulen-förmige ZYPRESSE (Schuppen-Laub)
-        if (pick < 140) return "baum_tanne";
-        if (pick < 190) return "baum_kiefer";
-        if (pick < 214) return "baum_zypresse"; // T1: mediterrane Säulen-Zypresse
-        return "baum_karst";
+        const amFeld = () => {
+            if (moisture > 0.6) {
+                return pick < 128 ? "baum_erle" : "baum_birke";
+            }
+            if (lebendig > 0.62) {
+                return pick < 110 ? "baum_buche" : pick < 200 ? "baum_eiche" : "baum_birke";
+            }
+            if (lebendig > 0.4) {
+                // T1 (wahrerwuchs §4.1) — eine PALME in milder Zone (die Blatt-Typ-Vielfalt
+                // sichtbar; selten → ein gefundener Hain, kein Klon-Teppich).
+                if (pick >= 232) return "baum_palme";
+                return pick < 120 ? "baum_eiche" : pick < 200 ? "baum_kiefer" : "baum_tanne";
+            }
+            // karger Boden → Nadelwald + Karst + (selten) säulen-förmige ZYPRESSE (Schuppen-Laub)
+            if (pick < 140) return "baum_tanne";
+            if (pick < 190) return "baum_kiefer";
+            if (pick < 214) return "baum_zypresse"; // T1: mediterrane Säulen-Zypresse
+            return "baum_karst";
+        };
+        const art = amFeld();
+        const W = this._gelaende().ort.wuchs;
+        const u = ((hash >>> 15) & 0xff) / 256;
+        const nadel = AnazhRealm.STREU_NADEL.includes(art);
+        if (nadel && u >= W.nadel) return W.laub > 0 ? "baum_palme" : art;
+        if (!nadel && u >= W.laub) return (hash >>> 23) & 1 ? "baum_tanne" : "baum_kiefer";
+        return art;
     }
 
     // V18.225 — die Spezies-Wahl pro SCHICHT. Canopy nutzt den Baum-Picker; Understory verteilt
@@ -221,7 +236,10 @@ class AnazhRealm_vegetation_streu {
     _scatterSpeciesForLayer(kind, lebendig, moisture, hash) {
         if (kind === "under") {
             if (moisture > 0.55) return "farn_busch"; // Kraut-Stratum (feuchte Senken)
-            if (lebendig > 0.5) return "blume_gross"; // Bodenflora (üppige Lichtungen)
+            // Bodenflora (üppige Lichtungen) — die Blume ist ein Bedecktsamer (w28-reise-ort): vor ihrer Zeit (`wuchs.laub` des
+            // Orts, die Heimat 1) steht an ihrem Platz der Strauch
+            if (lebendig > 0.5)
+                return ((hash >>> 7) & 0xff) / 256 < this._gelaende().ort.wuchs.laub ? "blume_gross" : "busch_hazel";
             return "busch_hazel"; // Strauch-Stratum (Standard-Understory)
         }
         if (kind === "rock") {
@@ -364,7 +382,7 @@ class AnazhRealm_vegetation_streu {
             // Die Churn-Linse ist Aktuator: ein bekannter Wiederkehrer (Mint-Zahl ≥ 2) bekommt Frist × Mints,
             // gedeckelt ×6 (60 s). Eine leere Hülle im Bundle ist ≈ frei; der Reaper bleibt die harte Schranke.
             const _mc = (this._archGruppenMintMap && this._archGruppenMintMap.get(key)) || 1;
-            if (now - g._leerSeit >= gnade * Math.min(6, Math.max(1, _mc))) {
+            if (now - g._leerSeit >= gnade * Math.min(AnazhRealm.ARCH_LEER_MINT_DECKEL, Math.max(1, _mc))) {
                 this._disposeArchInstanceGroup(key);
                 kand.delete(key);
             }
@@ -2993,6 +3011,10 @@ AnazhRealm._wechselHaushalt = function (kind, stufe) {
     return kind === "tree" ? d / L.ref : d;
 };
 
+// STREU_NADEL — das Nadelholz unter den Arten, die die Baum-Schicht der Streu wählt (`_scatterSpeciesForCell`): es trägt den
+// Anteil `nadel` des Orts, jede andere Art `laub` (Reise: die Tafel `ortGesetz(teil).wuchs`).
+AnazhRealm.STREU_NADEL = Object.freeze(["baum_kiefer", "baum_tanne", "baum_zypresse"]);
+
 // STAMM_RIPPEN — die Rippen-Zahl des Wurzelanlaufs der Werkstatt-Röhre (sin(Winkel·Rippen)·P.flare, phyto-core
 // buildBarkTubeArrays). Die Amplitude ist das Gesetz der Art (P.flare); die Rippen sind ein Maß der Röhre, kein Gesetz (der
 // Stamm des Studios ist glatt). Die Hand-Tafeln SPECIES_PALETTE_DEFAULT (Rinde/Laub) und DEFAULT_TREE_FLARE fielen K24-N1.
@@ -3020,3 +3042,6 @@ AnazhRealm.PERF_FOLIAGE_DENSITY_MIN = 0.22; // V18.303 0.4→0.22: das Laub ist 
 // oszillieren beim Wandern/LOD-Wechsel um liveCount 0 — ein Sofort-Reap machte jede Oszillation zu
 // Voll-Dispose + Re-Mint (Pipeline-Cache, Matrix-Upload, Heap-Müll). 10 s deckt jede Oszillation.
 AnazhRealm.ARCH_LEER_GNADE_MS = 10000;
+// Die Frist eines bekannten Wiederkehrers (Mint-Zahl ≥ 2) wächst mit seinen Mints bis zu diesem Vielfachen (60 s): die längste
+// Rückkehr, die die Churn-Linse einer Hülle gewährt. Leser: der Reaper und die Ruhezeit des Foundry-Cache (`_foundryRuheDeckel`).
+AnazhRealm.ARCH_LEER_MINT_DECKEL = 6;

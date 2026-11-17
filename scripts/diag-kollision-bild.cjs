@@ -502,7 +502,7 @@ async function tempo(K) {
     // an der Mess-Wiese zur Uhr 0 Regen — die Nässe senkt die Haftung am Rad (`_fahrHaft`), der GT bei vmax blieb 0,051 m vor dem
     // Mammut stehen. Das Wort des Spielers hält Sonne, die Nässe steht trocken; die Nässe am Rad misst gate:fahr-leben W.
     r._setWeather("sunny", "human");
-    st.weatherTransition = null;
+    window.__uebergangFaellt(r);
     r._naesseTakt(1e6);
     // DAS EINDRINGEN zweier konvexer Vielecke (Ecken im Umlauf, Welt-XZ): die kleinste Überlappung über die Normalen jeder Kante
     // (getrennt negativ); eine Box ihre vier Ecken in ihrem Rahmen (`lok`), die Achse eines Leibs ihr Kreis als 24-Eck

@@ -205,7 +205,7 @@ async function checkBandRing8({ page, check }) {
                 zahl: /keine Zahl/.test(wirft({ terme: [{ art: "insel", x: 0 }] })),
             };
         }
-        // DIE TÜREN DES ERBGUTS (`_erbgutEinlass`, Gegenprüfung 10.10.): eine Welt mit einer Term-Art, die dieser Build
+        // DIE TÜREN DES ERBGUTS (die Wand der Tür `_weltEinlass`, Gegenprüfung 10.10.): eine Welt mit einer Term-Art, die dieser Build
         // nicht trägt, betritt den Speicher nie — weder über das Welt-Tor (daneben) noch als Einladung noch als
         // Snapshot eines Mitspielers; Index, Zeiger der aktiven Welt und die lebende Welt bleiben.
         {

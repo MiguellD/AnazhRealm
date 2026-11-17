@@ -398,6 +398,9 @@ function werkzeug() {
         await fang("treffer", () => r._trefferPaar("stahl", "stein"));
         // Wasser strömt zurück — am Wasser des Seeufers; auf der trockenen Wiese (das Ohr steht dort) bleibt es still.
         const wp = W.wasserPunkt;
+        // die Kachel des Ufers steht beim Fragen (der Ort liegt fern vom Ohr): die Welt hält nur die Kacheln in der Reichweite
+        // ihrer Leser (w28-speicher-ring, `ZELL_GEDAECHTNISSE`) — wer fern fragt, bestellt sie, wie die Suche des Ufers oben
+        if (wp) await __weltDa(() => !r._ensureHydroTilesAround(wp.x, wp.z, 32));
         await fang("wasser", () => r._playWaterReactionPing(wp ? [{ cx: wp.x, cz: wp.z, r: 1 }] : []));
         const pm0 = st.playerMesh.position;
         await fang("wasserTrocken", () => r._playWaterReactionPing([{ cx: pm0.x, cz: pm0.z, r: 1 }]), 0, true);
@@ -646,7 +649,7 @@ async function messeOrt(page, name, ort, stubs) {
                 const baeume = W.bestand(p.x, p.z, 15);
                 // (Ü) die gespielten Stimmen, deren Satz in keiner stehenden Zeile steht
                 const ut = document.getElementById("untertitel").textContent;
-                const ohneZeile = (zensus ? zensus.stimmen : []).filter((v) => v.an && !ut.includes(AnazhRealm.UNTERTITEL.stimme[v.name])).map((v) => v.name);
+                const ohneZeile = (zensus ? zensus.stimmen : []).filter((v) => v.an && !ut.includes(AnazhRealm._t(AnazhRealm.UNTERTITEL.stimme[v.name]))).map((v) => v.name);
                 return { name, ort, um, laufend, zensus, baeume, hauptSynthese: syn1 - syn0, ohneZeile };
             } finally {
                 halt.vor = halt.zurueck = W.szene = false;

@@ -148,7 +148,11 @@ function wetterBuch(seit) {
 // taut für DIESEN Zug (im Buch Quelle „buehne") und steht danach wieder, wie sie stand (oder eingefroren). Der Cross-Fade
 // fällt. Die Bühne spricht wie der Spieler („setze wetter sonnig", wie jede Spur der Leben-Schau): das Gesetz der Schreiber
 // lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs. `zug`: der Übergang des Spiels
-// bleibt (der Wetter-Zug der Licht-Linse).
+// bleibt (der Wetter-Zug der Licht-Linse). Ohne Zug fällt der Übergang im Bild UND auf dem Weg des Regens: `__uebergangFaellt`
+// (welt-boot.cjs, in jeder Seite: der Zweig des Spiels für ein Wort ohne Übergang). Bis
+// w28-wetter-ohne-rampe fiel nur der Übergang des Bilds, die Stempel blieben als Rampe von 45 s ± Gemüt liegen (`_setWeather` hatte
+// sie gelegt): 10 s Niesel stempelten 23,6–24,4 s, jeder Leser von Pegel und Abfluss nach der Bühne las die Rampe mit
+// (planet.wasser.kreislauf S1: Bilanz 2,087 / 2,332 statt ≈ 1).
 function wetterSetzen(wort, zug) {
     const S = window.__wetterSpion();
     const uhr = st.weatherEffectTime;
@@ -161,7 +165,7 @@ function wetterSetzen(wort, zug) {
     }
     st.weatherEffectTime = uhr;
     window.__wetterHalten();
-    if (!zug) st.weatherTransition = null;
+    if (!zug) window.__uebergangFaellt(r);
     return st.weather;
 }
 
@@ -524,11 +528,14 @@ function membranOhneFilm(an) {
 // Die Marke trägt die Hülle, nie der Prototyp: er trägt nie Stand (`_weltAbschied` bricht beim Namen) — bis 30.10. lag
 // `__tiereGehalten` auf ihm, und jeder Tausch am Ort nach einem gehaltenen Lauf brach an dieser Marke. Offen rechnet der
 // Spiegel in jedem Frame des Schusses neu (die Rausch-Linse der Station zug/a-spawn.cjs misst so seinen Lauf).
+// Die Hülle ist ein Instrument der Werkbank, keine Probe: sie trägt ihre Absicht für die Wirt-Wache (`__wirtBleibt`, lib/wirt-wache.cjs)
+// — ohne gehaltene Quelle reicht sie durch, und was gehalten bleibt, gibt der Halt der Sitzung frei (punkte.cjs `messHaltRuf`)
 function halten(quellen) {
     const P = Object.getPrototypeOf(r),
         H = (window.__gehalten ||= new Set()),
         zu = (q) => H.has(q) && !window.__offen?.has(q),
-        huelle = (m, f) => P[m].__gehalten || (P[m] = Object.assign(f(P[m]), { __gehalten: true }));
+        bleibt = "die Hülle des Halters der Werkbank (ausgabe-aufnahme halten)",
+        huelle = (m, f) => P[m].__gehalten || (P[m] = Object.assign(f(P[m]), { __gehalten: true, __wirtBleibt: bleibt }));
     for (const q of quellen || ["tiere"]) H.add(q);
     huelle("updateCreatures", (g) =>
         function (d) {
@@ -547,6 +554,12 @@ function halten(quellen) {
     huelle("animatePlayerSoul", (g) =>
         function (t) {
             g.call(this, zu("leib") ? (H.t ??= t) : (H.t = t));
+        });
+    // DIE SKALA DES SCHUSSES (w28-bild-preis, `ausgabeAufnahme`): gehalten zeichnet die Szene in `SZENE_SKALA`, nie in der am Gerät
+    // eingemessenen (`_szeneSkalaMessen`); der Wert des Spielers gilt immer, ohne zeitliche Auflösung ist sie 1 wie im Spiel
+    huelle("_szeneSkalaWirk", (g) =>
+        function () {
+            return zu("skala") && this.state._traa && this.state.szeneSkala == null ? this.constructor.SZENE_SKALA : g.call(this);
         });
     // im Schuss rechnet der Pass gehalten nur über den Sprung des ersten gezählten Frames (`_traaR.neu` → `L.an` 0), offen in jedem
     huelle("_spiegelPassWach", (g) =>
@@ -904,6 +917,13 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // Aufnahme stand das Aufnahme-Ziel als aktuelles Ziel, jeder folgende Frame schrieb in das entsorgte Ziel und jede
         // weitere Aufnahme las ein nie beschriebenes (`copyTextureToBuffer: format of undefined`).
         const prevZiel = rend.getRenderTarget();
+        // DAS BILD URTEILT DEN INHALT, NIE DAS GERÄT (w28-bild-preis): die Szenen-Skala misst sich je Sitzung am Gerät ein
+        // (`_szeneSkalaMessen`, die Radeon an der Wiese 0,5) — jede Station, die Schärfe am Bild misst (material.K2#1, laub-kante,
+        // vegetation.K2#1, Pop), verschöbe sich am Gerät, ohne dass sich der Inhalt ändert. Der Schuss hält darum die Skala am
+        // Standard (`__halten` skala: `SZENE_SKALA`, solange der Spieler keine gesetzt hat) — ab dem Einschwingen und der Blick-Wahl
+        // und über den Schuss hinaus für jede Lesung derselben Linse (die Tiefen der Klassen-Teilung lesen nach der Aufnahme);
+        // der Preis-Lauf und die GPU-Bank öffnen sie (`lauf`, `gpuBank` in scripts/lib/zerlege-linse.cjs) und urteilen das Gerät.
+        window.__halten(["skala"]);
         // DIE WELT STEHT (A9): unter der Bühne wartet jeder Beweis-Schuss auf sie (Mess-Frames eines Satzes schießen in derselben)
         // … außer im Bild AUS BEWEGUNG (`opt.bewegt`, `werkbank bild --bewegung`): die Welt steht dort nie, der Schuss friert sie ein
         const weltTakte =

@@ -121,23 +121,61 @@ class AnazhRealm_kreatur_furcht {
         von.z = pm.z;
         von.r = NAT.fleeRadius * weit;
         const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
-        if (!fearActive && dist > witterung) return 0; // fern → neutral, das Wesen wandert
         const e = (this.state.player && this.state.player.emotions) || {};
         // DIE BEDROHUNG der Aura (tetrapoda bedrohung — dieselbe, die den Abdruck am Ort wiegt). DIE FURCHT DER BEUTE SCHRECKT
         // IHREN JÄGER NIE (oekologie.K4#2): wer den Spieler jetzt pirscht oder hetzt, liest seine Aura nicht — er ist Beute wie
         // jedes Tier (keine Beute trägt ihre Aura in die Wariness ihres Jägers); der Hieb (fearActive) und die Erinnerung
         // schrecken weiter. Bis oekologie.K4#2 verscheuchte die Furcht des Umstellten (chaos × menaceFromChaos) sein Rudel.
-        const menace = (this._spielerJaeger || []).includes(creature) ? 0 : FG.bedrohung(e, NAT);
-        // DIE NATUR des Wesens ist das Temperament seiner Gattung (Welle LF 08.10.): der Mut der Art (_kreaturMut) macht
-        // kühn oder scheu, Bindung macht mutig. Vorher lasen hier die Substanz-Tags (dichte · härte · lebendig), die für
-        // alle Tiere gleich sind (Lehre 8) — jeder Hirsch stand mit Wariness −1,0 neugierig am Spieler.
-        const boldness = (this._kreaturMut(creature) * 2 - 1) * NAT.mutGewicht + (ud.bond || 0) * NAT.boldFromBond;
+        const jaegt = (this._spielerJaeger || []).includes(creature);
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
-        const modeMul = mode === "pfad" ? 1 : mode === "frieden" ? NAT.friedenMenace : NAT.schoepferMenace;
-        const proximity = Math.max(0, 1 - dist / witterung);
-        let wariness = (menace * modeMul - boldness + erinnert) * (fearActive ? 1 : proximity);
-        if (fearActive) wariness = Math.max(wariness, NAT.combatFearWariness);
-        return wariness;
+        let wariness = 0; // fern → neutral, das Wesen wandert
+        if (fearActive || dist <= witterung) {
+            const menace = jaegt ? 0 : FG.bedrohung(e, NAT);
+            // DIE NATUR des Wesens ist das Temperament seiner Gattung (Welle LF 08.10.): der Mut der Art (_kreaturMut) macht
+            // kühn oder scheu, Bindung macht mutig. Vorher lasen hier die Substanz-Tags (dichte · härte · lebendig), die für
+            // alle Tiere gleich sind (Lehre 8) — jeder Hirsch stand mit Wariness −1,0 neugierig am Spieler.
+            const boldness = (this._kreaturMut(creature) * 2 - 1) * NAT.mutGewicht + (ud.bond || 0) * NAT.boldFromBond;
+            const modeMul = mode === "pfad" ? 1 : mode === "frieden" ? NAT.friedenMenace : NAT.schoepferMenace;
+            const proximity = Math.max(0, 1 - dist / witterung);
+            wariness = (menace * modeMul - boldness + erinnert) * (fearActive ? 1 : proximity);
+            if (fearActive) wariness = Math.max(wariness, NAT.combatFearWariness);
+        }
+        // DER MENSCH IST DER SUPER-RÄUBER (leben.tiere.mensch S1, tetrapoda fluchtDistanz): im pfad flieht jedes Wesen den
+        // Spieler ab der Fluchtdistanz seiner Gattung (`_kreaturMenschFlucht`); ihr Radius ist der Radius der Flucht.
+        const D =
+            mode === "pfad" && !jaegt
+                ? this._kreaturMenschFlucht(creature, dist, erinnert, FG.bedrohung(e, NAT), wariness)
+                : 0;
+        if (!(D > 0)) return wariness;
+        if (D > von.r) von.r = D;
+        return Math.max(wariness, NAT.fleeThreshold);
+    }
+
+    // DIE FLUCHTDISTANZ VOR DEM MENSCHEN (leben.tiere.mensch S1, tetrapoda FURCHT_GESETZ.fluchtDistanzM + fluchtDistanz): der
+    // Radius (m), in dem das Wesen den Spieler jetzt flieht, oder 0. Das Feldmaß seiner Gattung (Hirsch 120 · Wolf 106 · Bär 55 ·
+    // Fuchs 40 m), geweitet von erinnerter Furcht (`erinnert`) und drohender Aura (`menace`), aufgehoben von Gabe und Bindung.
+    // Nur im pfad, wo der Mensch jagt und gejagt wird (wie die Jagd auf ihn, `_creatureScentHuntDir`) — frieden und schöpfer
+    // tragen die Aura-Algebra allein. Wer ihn jagen will (`_kreaturJagdBereit` bei seiner Wariness `w`, und der Spieler ist
+    // seine Beute), flieht ihn nicht. Vorher floh jede Gattung bei EINEM fleeRadius 14 m aus der Natur scheu, Wolf und Bär
+    // nie: ein Rothirsch ließ den Spieler auf 14 m heran, wo er im Feld bei 100–200 m geht.
+    _kreaturMenschFlucht(creature, dist, erinnert, menace, w) {
+        // der leere Anker (bis der Guss des Spielers steht, `_deferredAvatarSoul`) ist kein Leib: niemand flieht und jagt ihn
+        if (this.state._deferredAvatarSoul) return 0;
+        const FG = AnazhRealm._furchtGesetz();
+        const g = this._kreaturGattung(creature);
+        const d0 = FG.F.fluchtDistanzM[g];
+        if (!(d0 > 0)) return AnazhRealm._kernPflichtBruch("tetrapoda:FURCHT_GESETZ.fluchtDistanzM." + g);
+        const D = FG.fluchtDistanz(d0, erinnert, menace, creature.userData.bond || 0, FG.F);
+        if (!(dist < D)) return 0;
+        // DIE NÄHERUNG (FURCHT_GESETZ.naeherungMS): die Fluchtdistanz antwortet dem, der auf das Tier ZUGEHT — sein Lauf dieses
+        // Takts (`_spielerLageAlt`, gleich welcher Weg ihn bewegt) auf das Tier zu; wer steht oder schleicht, wird beäugt, nicht
+        // geflohen (Stankowich & Blumstein 2005: langsame Näherung, kürzere Flucht)
+        const pm = this.state.playerMesh;
+        const sa = this._spielerLageAlt;
+        const p = pm.position;
+        const zu = sa ? (sa.vx * (creature.position.x - p.x) + sa.vz * (creature.position.z - p.z)) / (dist || 1) : 0;
+        if (!(zu >= FG.F.naeherungMS)) return 0;
+        return this._kreaturJagdBereit(creature, w) && this._kreaturIstBeute(creature, pm) ? 0 : D;
     }
 
     // Die erinnerte Furcht des Wesens vor dem Spieler (tetrapoda furchtErinnert über `userData.memory`: geschlagen ·
