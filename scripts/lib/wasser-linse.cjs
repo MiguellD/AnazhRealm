@@ -1,5 +1,6 @@
 const { WELT_ORTE_INSTALL } = require("./welt-orte.cjs");
 const { luma709 } = require("./abnahme-urteil.cjs");
+const { uebergangFaellt } = require("./ausgabe-aufnahme.cjs");
 // wasser-linse.cjs — DIE PROBEN DER WASSER-WAND (scripts/diag-wasser-leben.cjs, Welle L Q6 + Q7 bis F3): je Probe eine Seiten-
 // Funktion `window.__wasser*` (WASSER_INSTALL), die den Chokepoint selbst ruft (nie einen Stub); was sie misst und warum, steht
 // über ihr. Werkbank (echte GPU, sichtbar): `werkbank eval` mit WASSER_INSTALL.
@@ -491,7 +492,7 @@ function wasserSchmelze(r, x, z, P) {
         // Danach fallen die Stempel des Regens mit der Probe (die Welt der Linse beginnt ihren Regen neu, der Grund im Mittel des
         // Klimas): der Sturm flösse über die Lag-Zeit seines Laufs ab (gelaende-core `pegelLauf`), das Jahr danach (P3) misst ohne ihn.
         const sturm = () => {
-            const wort = (w, s) => (r._setWeather(w, "human"), (st.weatherTransition = null), r._naesseTakt(s));
+            const wort = (w, s) => (r._setWeather(w, "human"), window.__uebergangFaellt(r), r._naesseTakt(s));
             const [vor, p0] = [(wort("sunny", 1e6), r._waterLevelAt(...P.fluss)), pg.post];
             wort("stormy", 0);
             for (let k = 0; k < 240; k++) (st.spielZeit += 5), r._tickRain();
@@ -1511,7 +1512,7 @@ async function wasserRegen(o = {}) {
         eltern = null;
     try {
         r._setWeather("stormy", "human");
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         st.camera = cam;
         r._bildZeit = t; // die Bild-Uhr (A9), die der Regen liest
         r._tickRain();
@@ -1530,7 +1531,7 @@ async function wasserRegen(o = {}) {
         if (mesh && eltern) eltern.add(mesh);
         st.camera = camAlt;
         r._setWeather(wetterAlt, "human");
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         rt.dispose();
     }
     const lit = new Uint8Array(W * H);
@@ -3236,7 +3237,7 @@ async function wasserOrte(o = {}) {
 module.exports = {
     WASSER_INSTALL:
         WELT_ORTE_INSTALL +
-        `var BACH_PROBE_M = ${BACH_PROBE_M}; window.luma709 = ${luma709};` +
+        `var BACH_PROBE_M = ${BACH_PROBE_M}; window.luma709 = ${luma709}; window.__uebergangFaellt = ${uebergangFaellt};` +
         wasserRund +
         wasserFlaechen +
         wasserBoot +
