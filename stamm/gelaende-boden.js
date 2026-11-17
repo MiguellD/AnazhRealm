@@ -312,7 +312,15 @@ class AnazhRealm_gelaende_boden {
     _hydroBestellen(key, origin) {
         const B = this._hydroBestellt || this._hydroKacheln().bestellt;
         const da = B.get(key);
-        if (da) return da.zusage;
+        if (da) {
+            // DIE GEPARKTE BESTELLUNG GEHT MIT DEM NÄCHSTEN RUF (w28-speicher-ring; gate:werk-im-wasser am 8b60d653: die Kachel
+            // -1,-1 „vorBestellt true gepostet false worker true“, 15 000 Fragen in 900 s): eine Kachel, die ohne Faden bestellt
+            // wurde, wartet auf seine Geburt (`_hydroWarte`) — steht der Faden beim nächsten Ruf schon, ohne geboren zu werden
+            // (ein Bau im Haupt-Faden hängt ihn aus und wieder ein), reiste sie nie. Bis zum Ring fiel keine Kachel, also
+            // bestellte dort niemand neu.
+            if (!da.gepostet && this.state.voxelWorker) da.post();
+            return da.zusage;
+        }
         const welt = this._hydroWelt | 0;
         const e = { ab: null, origin, gepostet: false };
         const zusage = new Promise((ok, ab) => {
@@ -327,7 +335,8 @@ class AnazhRealm_gelaende_boden {
         e.zusage = zusage.then((msg) => this._hydroAn(key, msg.region, welt));
         B.set(key, e);
         if (this.state.voxelWorker) e.post();
-        else if (this._voxelWeltWartet) (this._hydroWarte || (this._hydroWarte = [])).push(e.post);
+        else if (this._voxelWeltWartet)
+            (this._hydroWarte || (this._hydroWarte = [])).push(() => e.gepostet || e.post());
         else {
             this._bruchMelden(
                 `HYDRO-FADEN: die Hydrosphäre (${key}) ohne Voxel-Faden — der Haupt-Faden rechnet sie nie (Lehre 14)`
