@@ -539,6 +539,7 @@ function selbsttest() {
         ["kein Brand fängt (die Basis: kein Takt im Stamm)", ["simWecken.brand.start=", false], /LEER: an der Mess-Wiese fing kein Brand/],
         ["der Brand ohne Takt", (b) => b.simWecken.brand.einheiten.fill(0), /STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt/],
         ["der Brand fegt die Welt", ["simWecken.brand.einheiten.3=", 4000], /BRAND-ZELLEN: Schritt 4 kostete 4000 Einheiten bei 3 brennenden/],
+        ["eine Bett-Maske entschuldigt die Welt nicht", (b) => ((b.simWecken.brand.einheiten[3] = 9000), (b.simWecken.brand.masken = [0, 0, 0, 1, 0, 0])), /BRAND-ZELLEN: Schritt 4 kostete 9000 Einheiten bei 3 brennenden Zellen .*je gemessene Bett-Maske, hier 1/],
         ["der Brand erlischt im Regen nicht", ["simWecken.brand.brennt=", 7], /BRAND-ERLISCHT: im Regen brennen noch 7/],
         ["die Front kriecht mit dem Wind", ["simWecken.brand.mit=", 0.3], /FRONT-MIT: .* 0.3 m\/s/],
         ["die Front läuft gegen den Wind", ["simWecken.brand.gegen=", 0.3], /FRONT-GEGEN: .* 0.3 m\/s/],
@@ -2902,7 +2903,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         // die die nahen Regionen danach nachholen, steht dem Entfachen nicht voran (`_feldFolgeSteht`, wie in `brandSeite`)
                         r._feldFolgeSteht = () => true;
                         const lauf = async (n) => {
-                            const [Z, H, bf] = [{ zellen: [], einheiten: [], start: !!r._brandEntfachen(MESS.x, MESS.z) }, new Map(), st.brandFeld];
+                            const [Z, H, bf, gesehen] = [{ zellen: [], einheiten: [], masken: [], start: !!r._brandEntfachen(MESS.x, MESS.z) }, new Map(), st.brandFeld, new Set()];
                             S.frame();
                             for (let i = 0; i < n && bf.size; i++) {
                                 const vor = bf.size;
@@ -2910,6 +2911,11 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 takt();
                                 Z.zellen.push(Math.max(vor, bf.size));
                                 Z.einheiten.push(S.frame().brand);
+                                // die Zellen, die in diesem Schritt die Maske ihres Betts maßen (eine Zelle mit Bett-Kante, einmal je Brand):
+                                // die neuen Einträge des Gemessenen (`_brandBett`) mit Brennstoff UND Kahlem
+                                let masken = 0;
+                                for (const [k, f] of r._brandBett || []) if (f && f.anteil > 0 && f.anteil < 1 && !gesehen.has(k)) gesehen.add(k), masken++;
+                                Z.masken.push(masken);
                                 for (const [k, c] of bf) {
                                     const q = bf.get(c.von);
                                     const [dx, dz] = q && q.t0 !== null ? [c.ex - q.ex, c.ez - q.ez] : [0, 0];

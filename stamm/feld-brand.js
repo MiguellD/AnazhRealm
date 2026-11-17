@@ -232,21 +232,34 @@ class AnazhRealm_feld_brand {
             // einer Wiese von 16 m ihr Bett); w28-lava-zuendet las fünf Punkte und gab den Anteil als LAST ins Gesetz: eine
             // Zelle mit einem Fünftel Gras brannte mit einem Fünftel der Flamme und legte die Asche über ihre ganze Fläche
             // (Mess-Wiese −248/−1080: 25 Flammen, +0 Flammen-Pixel, 94,6 % des Ausschnitts Asche, auch der kahle Kies)
-            const G = AnazhRealm.BRAND.bettGitter;
-            const [bett, je] = [new Uint8Array(G * G), new Map()];
-            for (let k = 0; k < G * G; k++) {
-                const [dx, dz] = [(((k % G) + 0.5) / G - 0.5) * cs, ((Math.floor(k / G) + 0.5) / G - 0.5) * cs];
-                const s = this._stoff(this._kontaktStoffAt(x + dx, z + dz, y + gx * dx + gz * dz));
-                if (s && s.brenn) ((bett[k] = 1), je.set(s, (je.get(s) || 0) + 1));
-            }
-            const n = bett.reduce((a, b) => a + b, 0);
+            // DAS FEINE GITTER NUR, WO DAS BETT EINE KANTE HAT: zuerst die fünf Punkte `bettGrob` (Mitte und Viertel, wie
+            // w28-lava-zuendet) — tragen alle Brennstoff, liegt das Bett auf der ganzen Zelle, trägt keiner, liegt keins; nur
+            // gemischt misst die Zelle ihre Maske. Die Stand-Linse BRAND-ZELLEN (Soll ≤ 64 Einheiten je Zelle und Schritt) nannte
+            // 64 Punkte je Zündung mit 4 945 Einheiten bei 16 brennenden Zellen, 16 Punkte mit 2 609.
+            const B = AnazhRealm.BRAND;
+            const messen = (P) => {
+                const [bett, je] = [new Uint8Array(P.length), new Map()];
+                P.forEach(([px, pz], k) => {
+                    const [dx, dz] = [px * cs, pz * cs];
+                    const s = this._stoff(this._kontaktStoffAt(x + dx, z + dz, y + gx * dx + gz * dz));
+                    if (s && s.brenn) ((bett[k] = 1), je.set(s, (je.get(s) || 0) + 1));
+                });
+                return { N: P.length, bett, je, n: bett.reduce((a, b) => a + b, 0) };
+            };
+            const fein = () =>
+                Array.from({ length: B.bettGitter ** 2 }, (_, k) => [
+                    ((k % B.bettGitter) + 0.5) / B.bettGitter - 0.5,
+                    (Math.floor(k / B.bettGitter) + 0.5) / B.bettGitter - 0.5,
+                ]);
+            const grob = messen(B.bettGrob);
+            const { N, bett, je, n } = grob.n > 0 && grob.n < grob.N ? messen(fein()) : grob;
             const zeile = [...je].sort((a, b) => b[1] - a[1]).map((e) => e[0])[0];
             if (zeile)
                 f = {
                     zeile,
                     leb,
-                    anteil: n / (G * G),
-                    bett: n < G * G ? bett : null,
+                    anteil: n / N,
+                    bett: n < N ? bett : null,
                     x,
                     z,
                     y,
@@ -885,7 +898,17 @@ AnazhRealm.BRAND = Object.freeze({
     versengt: Object.freeze([0.9, 0.4, 0.2]), // der Ton (× die Farbe des Halms) des versengten Halms im Saum der Narbe (`_nahWieseKachelBueschel`)
     wieseS: 3, // so oft höchstens baut die Nah-Wiese über einer brennenden Zelle neu (`_brandMalen`)
     minStoff: 0.15,
-    bettGitter: 8, // so fein misst die Zelle ihr Bett (`_brandStoff`: 8² Punkte, 2 m) …
+    // zuerst misst die Zelle ihr Bett grob (`_brandStoff`: Mitte und vier Viertel, in Zellen) — nur mit Brennstoff UND Kahlem darin …
+    bettGrob: Object.freeze(
+        [
+            [0, 0],
+            [-0.25, -0.25],
+            [0.25, -0.25],
+            [-0.25, 0.25],
+            [0.25, 0.25],
+        ].map(Object.freeze)
+    ),
+    bettGitter: 8, // … misst sie die Maske fein (8² Punkte, 2 m) …
     bettKante: Object.freeze([0.35, 0.65]), // … und über diese Spanne der bilinearen Maske fällt seine Kante (`_brandBettFn`)
     licht: 4,
     budgetMs: 0.25, // so viel Arbeit eines Schritts geht je Bild (`_brandArbeit`) …
