@@ -3106,7 +3106,6 @@ class AnazhRealm_feld_leben {
                     w: Math.min(R.wMax, Math.cbrt((9.81 * f.I * 1000) / (1.2 * 1005 * 300))),
                     a: R.a0,
                     alt: 0,
-                    saat: (h >>> 8) / 16777216, // das Muster des Ballens (`_rauchZeichnen`), aus demselben Samen
                 });
             }
         }
@@ -3116,12 +3115,13 @@ class AnazhRealm_feld_leben {
             p.y += p.w * s;
             p.x += w.x * w.ms * s;
             p.z += w.z * w.ms * s;
+            [p.zx, p.zy, p.zz] = [w.x * w.ms, p.w, w.z * w.ms]; // sein Zug in m/s (`_rauchZeichnen`)
             p.alt += s;
             p.s = p.b0 + R.alpha * (p.y - p.y0);
             p.a = (R.a0 * p.b0) / p.s;
             if (p.a < R.aKill || p.alt > R.lebenS) T.splice(k, 1);
         }
-        this._rauchZeichnen(R, T, "brandRauchSatz");
+        this._rauchZeichnen(R, T, "brandRauchSatz", R.maxTeilchen, R.steigMs);
     }
 
     // Die Flammen des Bilds (`_brandBild`) als EIN Satz. DIE ZUNGE IST DER DREHKÖRPER des Flammen-Gesetzes (fachwerk `FLAMME`),
@@ -3910,7 +3910,7 @@ AnazhRealm.BRAND = Object.freeze({
     // Sekunde, der Saum gegen die Tiefe `saumM`. Der Rauch: `jeS` Ballen je Zelle und Sekunde bei voller Glut, höchstens `max` (ein
     // großer Brand je Zelle seltener, bis `kMax` × größer), die Ballen beginnen mit `b0` × Flammen-Länge, wachsen um `alpha` je Meter Steigen, decken anfangs `a0` und fallen unter
     // `aKill` oder nach `lebenS`; Steigen höchstens `wMax` m/s; der Satz (Ballen, Stoff `color`, Radius je Einheit `size`) zeichnet das
-    // EINE Rauch-Bild der Welt (`_rauchZeichnen`, RAUCH_BILD)
+    // EINE Rauch-Bild der Welt (`_rauchZeichnen`, RAUCH_BILD), sein Muster steigt mit `steigMs` m/s
     bild: Object.freeze({
         weiteM: 160,
         winkel: 96,
@@ -3946,6 +3946,7 @@ AnazhRealm.BRAND = Object.freeze({
             lebenS: 25,
             kMax: 3,
             wMax: 7,
+            steigMs: 2.5,
             color: 0x8d8881,
             size: 1,
             maxTeilchen: 600,
