@@ -39,7 +39,13 @@
 //             für die Sprosse keine klasse („KLASSE FEHLT“, laut im Bericht) → Kern (Z5)
 //   PUNKT   : beide GRÜN und der Preis hält an beiden Geräten         → Punkt (Z2)
 // Die Fahrten einer Sprosse laufen nach Datum; jede ROT-, KERN- oder PUNKT-Fahrt setzt den Stand, „nichts“ lässt ihn (Ratsche Z4) —
-// unter dem Gesetz der KOPF-FOLGE:
+// AUSSER der LAST-FAHRT (17.11., der Koordinator: vier Sprossen fielen PUNKT → KERN bei Richter GRÜN an beiden und einem Preis, der nur
+// „UNGEMESSEN unter Last“ war): eine KERN-Fahrt, deren Preis an keinem Gerät GEMESSEN ROT ist und an keinem fehlt — jeder Preis, der
+// nicht GRÜN ist, heißt „UNGEMESSEN unter Last ×f“ —, nimmt einer PUNKT-Sprosse nichts. Der Punkt hält, der Bericht nennt sie laut
+// („Preis am Kopf offen (Last): <kopf> <gerät> ×f“), ihr Kopf zählt für die KOPF-FOLGE als Urteil. Sie HEBT weiter nur bis KERN
+// (aus 0 wird KERN, nie PUNKT). Ein gemessen ROTER Preis, eine fehlende oder unvollständige Preis-Zahl (R3), „UNGEMESSEN ohne
+// Referenz“ und jedes Richter-ROT nehmen wie bisher. Gesetz: ROT unter Last ist kein Urteil (Referenzfahrt, einseitige Logik) —
+// es kann darum auch keinen Punkt nehmen. Unter dem Gesetz der KOPF-FOLGE:
 //
 // ── DIE KOPF-FOLGE (16.11.) ── Der Stand folgt dem Code, nicht der Uhr. Bis hier setzte eine spätere Messung an ÄLTEREM Code das Urteil
 // über neueren (GTX 16.11.: 13:14 am a635bfee Preis ROT, Heap 491 MB → Kern; 14:11 am Vorfahren e4eeee08 Preis GRÜN → hob die Sprosse
@@ -171,7 +177,7 @@ const URTEIL = new Set(["GRÜN", "ROT"]);
 // von punkte.cjs referenzBericht vor und nach dem Preis-Lauf); das Band der Ruhe ist das der Punkte-Maschine (EINE Quelle):
 //   Zeit-Zahl ≤ Soll                         → GRÜN, egal welche Last (Last macht nie schneller)
 //   Zeit-Zahl > Soll, Referenz f ≤ Band      → ROT
-//   Zeit-Zahl > Soll, Referenz f > Band      → „UNGEMESSEN unter Last ×f“ — zählt wie ein fehlender Preis: kein Punkt, kein Kern-Verlust
+//   Zeit-Zahl > Soll, Referenz f > Band      → „UNGEMESSEN unter Last ×f“ — kein Punkt, kein Kern-Verlust, kein Punkt-Verlust (LAST-FAHRT)
 //   Zeit-Zahl > Soll, keine Referenz         → „UNGEMESSEN ohne Referenz“ — nie ein Urteil ohne Maßstab
 const REFERENZ_RUHE_BAND = require(path.join(__dirname, "..", "meisterkarte-quelle", "punkte", "punkte.cjs")).REFERENZ_RUHE_BAND;
 if (!(REFERENZ_RUHE_BAND >= 1)) bruch("punkte.cjs exportiert kein REFERENZ_RUHE_BAND — die Last am Preis hätte keinen Maßstab");
@@ -254,7 +260,10 @@ function fahrtUrteil(f, sprosse, T, wo) {
         const grund = preise[i] === "GRÜN" ? "" : preisGrund(g.preis, T, sprosse.klasse);
         return g.geraet + " " + preise[i] + (grund ? " (" + grund + ")" : "");
     };
-    return { u: "KERN", warum: `Richter GRÜN an beiden, Preis ${je.map(mitGrund).join(" · ")} ${am} — Kern (Z5)` };
+    // die LAST-FAHRT (Kopf-Kommentar): jeder Preis, der nicht GRÜN ist, ist „UNGEMESSEN unter Last ×f“ — kein gemessenes ROT, keine fehlende Zahl
+    const offen = je.map((g, i) => [g, preise[i]]).filter(([, p]) => p !== "GRÜN");
+    const last = offen.every(([, p]) => /^UNGEMESSEN unter Last ×/.test(p)) ? offen.map(([g, p]) => `${g.geraet} ${p.replace(/^UNGEMESSEN unter Last /, "")}`).join(" · ") : null;
+    return { u: "KERN", warum: `Richter GRÜN an beiden, Preis ${je.map(mitGrund).join(" · ")} ${am} — Kern (Z5)`, last };
 }
 
 // die Fahrten einer Sprosse: je SHA EINE Fahrt (die Geräte verschiedener Akten-Dateien vereint, je Gerät die jüngste), nach Datum
@@ -262,20 +271,37 @@ const geraetKlasse = (name) => {
     const S = STANDARD.find((S) => S.muster.test(String(name || "")));
     return S ? S.name : String(name);
 };
-function fahrtenJeSha(liste) {
+// DIE LAST-FAHRT AM SELBEN KOPF (Kopf-Kommentar): preisVon(x) urteilt den Preis einer Geräte-Messung; die jüngere Messung eines Geräts
+// mit Richter GRÜN und Preis „UNGEMESSEN unter Last“ ersetzt eine ältere desselben Geräts mit Richter GRÜN und Preis GRÜN nicht — sie
+// steht laut in `lastGehalten`. Ohne preisVon (Probe) gilt die jüngste.
+function fahrtenJeSha(liste, preisVon) {
     const je = new Map();
     for (const f of liste) {
         const k = String(f.sha).slice(0, 8);
         if (!je.has(k)) je.set(k, []);
         je.get(k).push(f);
     }
+    const gruen = (x) => x.richter && x.richter.urteil === "GRÜN";
     return [...je.values()]
         .map((teile) => {
             teile.sort((a, b) => Date.parse(a.datum) - Date.parse(b.datum));
-            const g = new Map();
-            for (const t of teile) for (const x of t.geraete || []) g.set(geraetKlasse(x.geraet), x);
+            const g = new Map(),
+                lastGehalten = [];
+            for (const t of teile)
+                for (const x of t.geraete || []) {
+                    const k = geraetKlasse(x.geraet),
+                        vor = g.get(k);
+                    if (preisVon && vor && gruen(vor) && gruen(x) && preisVon(vor) === "GRÜN") {
+                        const p = preisVon(x);
+                        if (/^UNGEMESSEN unter Last ×/.test(p)) {
+                            lastGehalten.push(`${x.geraet} ${p.replace(/^UNGEMESSEN unter Last /, "")}`);
+                            continue;
+                        }
+                    }
+                    g.set(k, x);
+                }
             const letzte = teile[teile.length - 1];
-            return { ...letzte, sha: teile.map((t) => t.sha).sort((a, b) => b.length - a.length)[0], geraete: [...g.values()], teile };
+            return { ...letzte, sha: teile.map((t) => t.sha).sort((a, b) => b.length - a.length)[0], geraete: [...g.values()], teile, lastGehalten };
         })
         .sort((a, b) => Date.parse(a.datum) - Date.parse(b.datum));
 }
@@ -429,13 +455,19 @@ function rechne(karte, akten, kern0, kopf) {
             warum = "";
         const notiz = [], // was nicht setzte, laut: Zweig-Köpfe und überholte Köpfe
             setzer = []; // die vollen SHA der Fahrten, die den Stand dieser Sprosse schon setzten (ROT, KERN, PUNKT)
-        fahrtenJeSha(liste).forEach((f, i) => {
+        fahrtenJeSha(liste, (x) => preisUrteil(x.preis, T, `Sprosse ${id} S ${nr} ${x.geraet}`, sp.klasse)).forEach((f, i) => {
             const r = fahrtUrteil(f, sp, T, `Sprosse ${id} S ${nr} Fahrt ${i + 1}`); // auch die nicht setzende Fahrt bricht laut
             const h = kopf.voll(f.sha),
                 h8 = h.slice(0, 8);
+            if (f.lastGehalten.length) notiz.push(`Preis am Kopf offen (Last): ${h8} ${f.lastGehalten.join(" · ")} — die GRÜNE Preis-Messung desselben Kopfes hält (Z4)`);
             if (!kopf.aufMain(h)) return void notiz.push(`nicht auf der main-Linie: ${h8} (${r.u}) setzt nichts`);
             const neuer = setzer.find((g) => kopf.istAhn(h, g));
             if (neuer) return void notiz.push(`überholt: ${h8} (${r.u}) ist Vorfahre von ${neuer.slice(0, 8)}`);
+            if (r.u === "KERN" && r.last && s === "PUNKT") {
+                // die LAST-FAHRT nimmt dem Punkt nichts (Z4: nur ein gemessenes ROT nimmt); ihr Kopf trägt ein Urteil des Richters
+                setzer.push(h);
+                return void notiz.push(`Preis am Kopf offen (Last): ${h8} ${r.last} — Richter GRÜN an beiden, der Punkt hält (Z4)`);
+            }
             warum = r.warum;
             if (r.u === "NICHTS") return;
             setzer.push(h);
@@ -647,6 +679,59 @@ function selbsttest() {
         /^UNGEMESSEN ohne Referenz/.test(preisUrteil(preis({ bild_p95_ms: 40, urteil: undefined }), treppeLesen(neu()), "t", "Ort")) || "falsch");
     pruefe("LAST: Mutant „UNGEMESSEN“ über ruhiger Referenz behauptet: bricht laut", () =>
         bricht({ [A + ".1"]: fahrt(A, 1, { preis: { bild_p95_ms: 40, referenz: ruhig, urteil: "UNGEMESSEN unter Last ×1,05" } }) }, /widerspricht den eigenen Zahlen/));
+    // ── DIE LAST-FAHRT (17.11.): ROT unter Last ist kein Urteil — es nimmt keinen Punkt, es hebt nur bis Kern ──
+    const lastPreis = { bild_p95_ms: 58.8, bild_max_ms: 134, referenz: unterLast, urteil: "UNGEMESSEN unter Last ×1,84" };
+    // der Punkt am ALT, die spätere Fahrt am Nachfahren NEU (jüngerer Code — sonst vereint fahrtenJeSha beide zu EINER Fahrt)
+    const punktDann = (spaet) => ({ [A + ".1"]: [fahrt(A, 1, { sha: ALT, datum: "2026-11-14T10:00:00Z" }), Object.assign(spaet, { sha: NEU, datum: "2026-11-20T10:00:00Z" })] });
+    pruefe("LAST-FAHRT: PUNKT + Last-Fahrt → PUNKT hält, laut „Preis am Kopf offen (Last)“ mit Kopf und Faktor", () => {
+        const { L, z } = lauf(punktDann(fahrt(A, 1, { preis: lastPreis })));
+        const b = z.bericht[0];
+        return L(A).heute === 1 && L(A).kern === 0 && b.stand === "PUNKT" && /^Preis am Kopf offen \(Last\): a635bfee Radeon 890M ×1,84 · GTX 1060 ×1,84/.test(b.notiz.join()) && /GRÜN an beiden Geräten/.test(b.warum)
+            ? true
+            : `heute ${L(A).heute} kern ${L(A).kern} · ${b.warum} · ${b.notiz}`;
+    });
+    pruefe("LAST-FAHRT: 0 + Last-Fahrt → KERN, nie PUNKT", () => {
+        const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: lastPreis }) });
+        return L(A).heute === 0 && L(A).kern === 1 && !z.bericht[0].notiz.length && /UNGEMESSEN unter Last ×1,84/.test(z.bericht[0].warum) ? true : `heute ${L(A).heute} kern ${L(A).kern} · ${z.bericht[0].notiz}`;
+    });
+    pruefe("LAST-FAHRT Mutant: PUNKT + Preis GEMESSEN ROT (Referenz im Band) → KERN", () => {
+        const { L } = lauf(punktDann(fahrt(A, 1, { preis: { bild_p95_ms: 40, referenz: ruhig, urteil: "ROT" } })));
+        return L(A).heute === 0 && L(A).kern === 1 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
+    });
+    pruefe("LAST-FAHRT Mutant: PUNKT + Preis-Zahl fehlt (R3) → KERN", () => {
+        const a = lauf(punktDann(fahrt(A, 1, { ohnePreis: "GTX 1060" })));
+        const b = lauf(punktDann(fahrt(A, 1, { preis: { heap_mb: undefined, urteil: undefined } })));
+        return a.L(A).heute === 0 && a.L(A).kern === 1 && b.L(A).heute === 0 && b.L(A).kern === 1 ? true : `fehlt: heute ${a.L(A).heute} kern ${a.L(A).kern} · unvollständig: heute ${b.L(A).heute} kern ${b.L(A).kern}`;
+    });
+    pruefe("LAST-FAHRT Mutant: PUNKT + Last an der Radeon, Heap gemessen ROT an der GTX → KERN (ein Gerät gemessen ROT nimmt)", () => {
+        const f = fahrt(A, 1, { preis: lastPreis });
+        f.geraete[1].preis = preis({ heap_mb: 491, urteil: "ROT" });
+        const { L } = lauf(punktDann(f));
+        return L(A).heute === 0 && L(A).kern === 1 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
+    });
+    pruefe("LAST-FAHRT Mutant: PUNKT + UNGEMESSEN ohne Referenz → KERN (ohne Maßstab ist auch Last kein Beleg)", () => {
+        const { L } = lauf(punktDann(fahrt(A, 1, { preis: { bild_p95_ms: 40, urteil: undefined } })));
+        return L(A).heute === 0 && L(A).kern === 1 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
+    });
+    pruefe("LAST-FAHRT am selben Kopf: die spätere Last-Messung eines Geräts ersetzt seine GRÜNE Preis-Messung nicht — PUNKT, laut", () => {
+        const { L, z } = lauf({
+            [A + ".1.7f778d44-radeon"]: [fahrt(A, 1, { geraete: ["Radeon 890M"], datum: "2026-11-14T10:00:00Z" }), fahrt(A, 1, { geraete: ["Radeon 890M"], datum: "2026-11-14T12:00:00Z", preis: lastPreis })],
+            [A + ".1.7f778d44-gtx"]: fahrt(A, 1, { geraete: ["GTX 1060"], datum: "2026-11-14T11:00:00Z" }),
+        });
+        const b = z.bericht[0];
+        return L(A).heute === 1 && /Preis am Kopf offen \(Last\): 7f778d44 Radeon 890M ×1,84 — die GRÜNE Preis-Messung desselben Kopfes hält/.test(b.notiz.join()) ? true : `heute ${L(A).heute} kern ${L(A).kern} · ${b.notiz}`;
+    });
+    pruefe("LAST-FAHRT am selben Kopf Mutant: die spätere Messung mit Preis GEMESSEN ROT ersetzt die GRÜNE — KERN", () => {
+        const { L } = lauf({
+            [A + ".1.7f778d44-radeon"]: [fahrt(A, 1, { geraete: ["Radeon 890M"], datum: "2026-11-14T10:00:00Z" }), fahrt(A, 1, { geraete: ["Radeon 890M"], datum: "2026-11-14T12:00:00Z", preis: { bild_p95_ms: 40, referenz: ruhig, urteil: "ROT" } })],
+            [A + ".1.7f778d44-gtx"]: fahrt(A, 1, { geraete: ["GTX 1060"], datum: "2026-11-14T11:00:00Z" }),
+        });
+        return L(A).heute === 0 && L(A).kern === 1 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
+    });
+    pruefe("LAST-FAHRT Mutant: PUNKT + Last-Fahrt + Richter ROT → 0", () => {
+        const { L } = lauf(punktDann(fahrt(A, 1, { preis: lastPreis, rot: "GTX 1060" })));
+        return L(A).heute === 0 && L(A).kern === 0 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
+    });
     pruefe("Mutant Stadt-Preis ohne Ankunft: Kern statt Punkt", () => {
         const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { preis: { stufe: "Stadt", urteil: undefined } }) }, { klasse: "Stadt" });
         return L(A).heute === 0 && L(A).kern === 1 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
