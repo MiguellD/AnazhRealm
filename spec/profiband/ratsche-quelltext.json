@@ -119,6 +119,10 @@
             "zweck": "Messung: die Version des Stamms im Stempel des Beweisbilds",
             "datei": 1
         },
+        "scripts/lib/speicher-proben.cjs": {
+            "zweck": "Struktur: der Runden-Zensus (werkbank runde) nennt je wachsendem Behälter die Zeile seiner Anlage — die Zuweisung im virtuellen Stamm, über ort() auf Datei:Zeile",
+            "stamm": 1
+        },
         "scripts/lib/stamm.cjs": {
             "zweck": "die EINE Lese-Schnittstelle des Stamms: index.html nennt seine Dateien",
             "datei": 2
