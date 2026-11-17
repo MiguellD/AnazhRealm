@@ -8038,10 +8038,13 @@ async function selbsttest(o = {}) {
         // 2 s“, weil der Konsum-Zeuge vor ihrer ersten Zeile rechnete): eine STUMME Probe aus zwei node-Prozessen nacheinander (je 1,5 s)
         // fällt an der Leine (Grund 2 s, Stille 3 s) nicht — Start und Ende jedes Prozesses meldet der Zeuge (`.offen`, „bereit“,
         // „endet“), und jedes zählt wie eine Zeile; dieselbe Stille ohne node-Prozess (die Mutante) fällt nach 3 s beim Namen. Die
-        // Fristen tragen einen Prozess-Start von bis zu 2,7 s (das ausgelastete Mess-Gerät)
+        // Fristen tragen einen Prozess-Start von bis zu 2,7 s (das ausgelastete Mess-Gerät). DER START DER PROBE (17.11., Laptop: ROT
+        // „Stille seit 3 s nach 3 s“ — der Start von bash.exe und der Fork von `sleep` fraßen die 3 s ab der Wanduhr des Läufers, bevor
+        // der erste node-Prozess lebte): beide Proben setzen ihren Start selbst (`echo` als Builtin, die erste Zeile), die Stille von 3 s
+        // zählt ab da — die Frist bleibt 3 s, gemessen wird nur die Stille ZWISCHEN den Lebenszeichen, nie der Start der Shell
         if (findeBash()) {
-            const stumm = ["bash", "-c", "sleep 0.3; node -e \"setTimeout(() => {}, 1500)\"; exec node -e \"setTimeout(() => require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0 })), 1500)\" \"$0\"", "{AUS}"];
-            const ohneZeugen = ["bash", "-c", "sleep 3.4; echo '{\"n\":0}' > \"$0\"", "{AUS}"];
+            const stumm = ["bash", "-c", "echo start; node -e \"setTimeout(() => {}, 1500)\"; exec node -e \"setTimeout(() => require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0 })), 1500)\" \"$0\"", "{AUS}"];
+            const ohneZeugen = ["bash", "-c", "echo start; sleep 3.4; echo '{\"n\":0}' > \"$0\"", "{AUS}"];
             const rL = await lauf([[S("a.K1", 1, { befehl: stumm, sek: 2 }, nN)], [S("b.K1", 1, { befehl: ohneZeugen, sek: 2 }, nN)]], "gut", null, null, false, { stilleS: 3 });
             const [la, lb] = [rL.es["a.K1#1"] || {}, rL.es["b.K1#1"] || {}];
             pruef("LEBENSZEICHEN DES ZEUGEN: die stumme Probe aus zwei node-Prozessen (über 3 s ohne Zeile) misst GRÜN — Start und Ende jedes Prozesses zählen an der Leine; dieselbe Stille ohne Zeugen fällt nach 3 s beim Namen (Mutante)",
