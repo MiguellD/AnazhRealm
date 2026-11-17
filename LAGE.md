@@ -2,8 +2,12 @@
 
 Stand 15.11.2026 20:27 (Systemuhr) · main = integ-probe 9b3750ba [z451 (`w28-bild-preis`, `w28-preis-ort`, `w28-satz-menge`) FIEL 20:12 an der Wachstums-Wand; die drei warten auf `w28-wand-acht` b8700e9e (Code-Check läuft) und fahren dann zu viert. Vor dem Zug außerdem: `w28-reise-ort` eb8f82c7 (geheilt, trägt `w28-planet-kern` — der fährt nicht einzeln) · OMEN `w28-stadt-netz` 3266c01f (Kapsel-Liste) · GTX 1050 `w28-wald-rang` f78073c5 (GPU-Probe Radeon ROT). Ruht: `w28-fruehbild` (GTX 1050 baut stattdessen den „Gast des Bilds“: Fern-Ring und Karten-Atlas bauen ihre Pipelines unter dem Ladeschirm) · `w28-reise-raeumt` 80887216 (kein Schnitt gelandet, Halter der alten Render-Objekte beim Namen im Fund-Register)] · Konto 14 · Chronik dieser Seite: `git log origin/koordination -- LAGE.md`.
 
-**STAND 17.11. 06:45 (Systemuhr) — main = 389a6496. Karte 2: 30 von 1 718, Kern 9.**
-- **sternhimmel#1 für die GTX:** Maschine ≥ 0e443909 (der WEG zählt mit − ohne Sternfeld, kurz und voll je eigene Ohne-Aufnahme); Radeon GRÜN am 389a6496 (Nacht 72↔81 43↔50 49↔55 19↔20, Preis p95 33,45 ms) — die GTX-Hälfte am 389a6496 bucht das Paar.
+**STAND 17.11. 08:19 (Systemuhr) — main = bcc2cadc; die Radeon-Stücke fuhren am 389a6496 (Spiel byte-gleich zu ee9c1965). Karte 2: 30 von 1 718, Kern 9.**
+- **Gebucht 27 → 30:** `same.physik.verformung` S 1 am ee9c1965 · `mensch.zeit.erleben` S 1 am 884c6a25 (Radeon nachgefahren) · `leben.tiere.mensch` S 1 am ee9c1965.
+- **GTX-Hälften, die ein Paar ergäben:** `sternhimmel#1` am 389a6496, Maschine ≥ 0e443909 (Radeon GRÜN, Nacht mit − ohne 72↔81 43↔50 49↔55 19↔20, p95 33,45 ms) — der einzige neue Punkt; Kern → Paar: `wahrnehmung#1` am 389a6496, `menge.bild#1` am ee9c1965.
+- **Stationen geheilt (Selbsttest 248/248):** `sternhimmel#1` WEG auf dem Differenzbild (0e443909) · `rolle#1` die Welt wach vor der Tat (26ac1e83): die Schüsse vor der Tat hielten sie (/bild ruht den Loop, Halt −1e9, dslEval verweigert Werk/Wagen) — Radeon 0/4 → 2/4, Aufstellung ≤ 0,09 s; offen bauen Δ 0,38 % < 0,43 % und kämpfen hp = hp0.
+- **`preis.ausdauer#1` GTX UNGEMESSEN:** die ruhige Fahrt lud die Seite neu (2 Seiten); unter Last urteilt die Maschine nur ein reißendes Maß, „2 Seiten“ ist eine Bedingung ohne Zahl → kein Urteil.
+- **Radeon `--offen` ee9c1965** an der Stations-Grenze geschnitten (61 gemessen), danach Stücke st · 00–04 am 389a6496; offen rund 70 Stationen (`punkte.cjs run --offen --trocken` nennt sie). Läufer-Tod 0xC0000409 zweimal (Stück 02, himmelsmechanik#1).
 
 **STAND 17.11. 03:52 (Systemuhr) — main = ee9c1965 (z590 `w28-flegel-hand`). Karte 2: 27 von 1 718, Kern 9.**
 - **Gebucht 24 → 27:** `erleben.schoepfen.schutz` S 1 + `teilen` S 1 am 4e11d3e7, `planet.wasser.kreislauf` S 1 am f5ce1579 (Richter und Preis GRÜN an beiden Geräten).
