@@ -2632,8 +2632,16 @@ class AnazhRealm_feld_leben {
         let f = null;
         if (leb >= AnazhRealm.BRAND.minStoff && !this._nassAt(x, z)) {
             const y = this._voxelSurfaceY(x, z);
-            const zeile = this._stoff(this._kontaktStoffAt(x, z, y));
-            if (zeile && zeile.brenn) {
+            // das Bett ist, was die MEHRHEIT der Zelle trägt (Mitte und vier Viertel-Punkte): bis w28-lava-zuendet las sie nur
+            // ihre Mitte — ein Stein dort nahm einer Wiese von 16 m ihr Bett, die Front hielt vor grünem Gras
+            const B5 = [0, 1, 2, 3, 4]
+                .map((k) => [k ? (k & 1 ? cs : -cs) / 4 : 0, k ? (k > 2 ? cs : -cs) / 4 : 0])
+                .map(([dx, dz]) =>
+                    this._stoff(this._kontaktStoffAt(x + dx, z + dz, this._voxelSurfaceY(x + dx, z + dz)))
+                )
+                .filter((s) => s && s.brenn);
+            const zeile = B5.length > 2 ? B5[0] : null;
+            if (zeile) {
                 const h = cs / 2;
                 const [gx, gz] = [(this._voxelSurfaceY(x + h, z) - y) / h, (this._voxelSurfaceY(x, z + h) - y) / h];
                 f = { zeile, leb, x, z, y, gx, gz, boden: this._feuchteAt(x, z, y) };

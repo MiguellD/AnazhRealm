@@ -616,6 +616,34 @@ class AnazhRealm_siedlung_wege {
         );
     }
 
+    // DIE LAVA ZÜNDET (w28-lava-zuendet, aus `_lavaTakt`): solange ihre Decke heißer ist als die Zünd-Temperatur des Betts
+    // daneben (die Zeile seines Stoffs, `tZuend` — dieselbe Zahl, aus der die Front ihre Zünd-Wärme rechnet), fängt jede der acht
+    // Zellen um sie am nächsten Punkt ihres Rands zur Decke (`_brandEntfachen`: der Herd am Ort der Hitze, die Front läuft von
+    // dort). Sie fragt wieder, wenn sich ändert, was ein Bett trägt oder erstickt: eine Tat heilt (`_tatGen`), die Nässe der
+    // Welt wandert (in Zwanzigsteln) — in Ruhe kostet die heiße Decke einen Vergleich. Bis hier stand das Gras grün am Rand
+    // der 1 377 °C heißen Decke. Rückgabe: wie viele Zellen fingen.
+    _lavaZuendet(a) {
+        const stand = (this._tatGen || 0) + "|" + Math.round((this.state.naesse || 0) * 20);
+        const G = this._lavaGefragt || (this._lavaGefragt = new WeakMap());
+        if (G.get(a) === stand) return 0;
+        G.set(a, stand);
+        const tK = this._lavaZustand(a).temperatur + 273.15;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const [cx, cz] = [Math.floor(a.x / cs), Math.floor(a.z / cs)];
+        let n = 0;
+        for (let dz = -1; dz <= 1; dz++)
+            for (let dx = -1; dx <= 1; dx++) {
+                const f = this._brandStoff(cx + dx, cz + dz);
+                if (!f || !(tK > f.zeile.tZuend)) continue;
+                if (!dx && !dz) continue; // ihre eigene Zelle ist Decke, kein Bett
+                // der nächste Punkt der Nachbarin zur Mitte der Decke, einen Hauch in ihr
+                const ex = (cx + (dx > 0 ? 1 : dx < 0 ? 0 : 0.5)) * cs + dx * 0.01;
+                const ez = (cz + (dz > 0 ? 1 : dz < 0 ? 0 : 0.5)) * cs + dz * 0.01;
+                if (this._brandEntfachen(ex, ez)) n++;
+            }
+        return n;
+    }
+
     // DER TAKT DER LAVA (aus `_tickWegeKarte`, höchstens je `LAUB_STREU.uploadMs`): die Temperatur jeder Decke ist eine Funktion
     // der Welt-Zeit (`_lavaZustand`) — ändert sich ihr Byte (sie kühlt, ein Sprung der Uhr, ein neuer Guss), malt ihre Zelle neu; eine
     // andere Liste der Taten (eine geladene Welt) leert die Decken und malt jede Lava neu. Ohne Lava kostet er einen Vergleich.
@@ -641,6 +669,7 @@ class AnazhRealm_siedlung_wege {
         const cs = AnazhRealm.LIFE_FIELD.cell;
         const [neu, zelle] = [new Set(), this._lavaJeZelle()];
         for (const a of I.lava) {
+            this._lavaZuendet(a); // der Rand der heißen Decke zündet das Bett daneben (feld-leben)
             const g = Math.round(this._lavaWaerme(a) * 255);
             if (gemalt.get(a) === g) continue;
             gemalt.set(a, g);
