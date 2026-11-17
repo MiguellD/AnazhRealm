@@ -1,0 +1,178 @@
+{
+ "proben": {
+  "schneejahr": {
+   "schuesse": [
+    {
+     "name": "winter",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\buch-tree\\meisterkarte-quelle\\punkte\\messung\\roh\\ee9c1965-radeon\\karte2.planet.kopplung.bahn-klima_1-schneejahr-s1.png"
+    },
+    {
+     "name": "fruehling",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\buch-tree\\meisterkarte-quelle\\punkte\\messung\\roh\\ee9c1965-radeon\\karte2.planet.kopplung.bahn-klima_1-schneejahr-s2.png"
+    },
+    {
+     "name": "sommer",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\buch-tree\\meisterkarte-quelle\\punkte\\messung\\roh\\ee9c1965-radeon\\karte2.planet.kopplung.bahn-klima_1-schneejahr-s3.png"
+    },
+    {
+     "name": "herbst",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\buch-tree\\meisterkarte-quelle\\punkte\\messung\\roh\\ee9c1965-radeon\\karte2.planet.kopplung.bahn-klima_1-schneejahr-s4.png"
+    }
+   ],
+   "wl": -3,
+   "jahr": {
+    "winter": {
+     "versatz": -160,
+     "weiss": 1068,
+     "linieBild": 160.984,
+     "linieGesetz": 161.206,
+     "gesetzN": 1107,
+     "treffer": 0.965,
+     "freiN": 0,
+     "falsch": null
+    },
+    "fruehling": {
+     "versatz": -106,
+     "weiss": 1011,
+     "linieBild": 160.406,
+     "linieGesetz": 161.206,
+     "gesetzN": 1107,
+     "treffer": 0.913,
+     "freiN": 0,
+     "falsch": null
+    },
+    "sommer": {
+     "versatz": 0,
+     "weiss": 972,
+     "linieBild": 160.811,
+     "linieGesetz": 165.823,
+     "gesetzN": 981,
+     "treffer": 0.877,
+     "freiN": 21,
+     "falsch": 0.81
+    },
+    "herbst": {
+     "versatz": -24,
+     "weiss": 1036,
+     "linieBild": 160.512,
+     "linieGesetz": 161.277,
+     "gesetzN": 1106,
+     "treffer": 0.936,
+     "freiN": 0,
+     "falsch": null
+    }
+   },
+   "meer": {
+    "sommer": 18,
+    "winter": -4
+   },
+   "wahl": {
+    "je": [
+     {
+      "k": 0,
+      "frei": 273,
+      "hoehe": 156.434
+     },
+     {
+      "k": 1,
+      "frei": 350,
+      "hoehe": 153.959
+     },
+     {
+      "k": 2,
+      "frei": 188,
+      "hoehe": 148.971
+     },
+     {
+      "k": 3,
+      "frei": 181,
+      "hoehe": 128.85
+     },
+     {
+      "k": 4,
+      "frei": 185,
+      "hoehe": 134.32
+     },
+     {
+      "k": 5,
+      "frei": 263,
+      "hoehe": 161.951
+     },
+     {
+      "k": 6,
+      "frei": 295,
+      "hoehe": 178.195
+     },
+     {
+      "k": 7,
+      "frei": 347,
+      "hoehe": 176.361
+     },
+     {
+      "k": 8,
+      "frei": 293,
+      "hoehe": 177.511
+     },
+     {
+      "k": 9,
+      "frei": 106,
+      "hoehe": 184.041
+     },
+     {
+      "k": 10,
+      "frei": 110,
+      "hoehe": 149.901
+     },
+     {
+      "k": 11,
+      "frei": 24,
+      "hoehe": 90.728
+     },
+     {
+      "k": 12,
+      "frei": 9,
+      "hoehe": 55.424
+     },
+     {
+      "k": 13,
+      "frei": 103,
+      "hoehe": 84.016
+     },
+     {
+      "k": 14,
+      "frei": 233,
+      "hoehe": 167.696
+     },
+     {
+      "k": 15,
+      "frei": 289,
+      "hoehe": 173.223
+     }
+    ],
+    "k": 1,
+    "frei": 350
+   },
+   "verdeckt": 746,
+   "gipfel": [
+    -3880.4,
+    198.937,
+    -3745.6
+   ],
+   "kamera": [
+    -3492.4,
+    186,
+    -3584.9,
+    -3723.3,
+    189.7,
+    -3680.5
+   ],
+   "punkte": 1107,
+   "hoehen": [
+    141.783,
+    199.31
+   ],
+   "sek": 32.8
+  }
+ },
+ "fehler": []
+}
