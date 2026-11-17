@@ -1547,3 +1547,4 @@ omen-gtx-gtx-31d156e8-15-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · o
 omen-gtx-gtx-31d156e8-16-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag vegetation.K4#1 (punkte-maschine 2fa319f3 messung/31d156e8-gtx.json)
 omen-gtx-gtx-31d156e8-17-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag breite.siedlung#1 (punkte-maschine 2fa319f3 messung/31d156e8-gtx.json)
 omen-gtx-gtx-31d156e8-18-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag siedlung.K4#2 (punkte-maschine 2fa319f3 messung/31d156e8-gtx.json)
+omen-gtx-gtx-31d156e8-19-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag karte2.planet.kosmos.sternhimmel#1 (punkte-maschine 2fa319f3 messung/31d156e8-gtx.json)
