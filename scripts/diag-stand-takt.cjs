@@ -1427,7 +1427,7 @@ if (SELBSTTEST) {
             ...falsch(
                 narbeUrteil,
                 {
-                    n1: { zuend: 1, fern: 0, s: 20, tr: 6.6, brennt: true, brennend: 4, fernOrt: [-287, -1055], fernAn: 41.2, mutanteWartet: { zuend: 0, fern: 0 }, mutanteQuadrat: { zuend: 1, fern: 0.9 } },
+                    n1: { zuend: 1, fern: 0, s: 20, tr: 6.6, brennt: true, brennend: 4, fernOrt: "fern", fernAn: 41.2, mutanteWartet: { zuend: 0, fern: 0 }, mutanteQuadrat: { zuend: 1, fern: 0.9 } },
                     n2: { dauer: 52.4, ecken: 45.8, kopf: 31.5, mutante: { dauer: 31.5, ecken: 45.8, kopf: 31.5 } },
                     n3: { lichter: 4, flammen: 60, gemessen: 4, max: 0, mitte: false, mutante: { lichter: 4, flammen: 60, gemessen: 4, max: 5.3, mitte: true } },
                     n4: { abrufe: 1, gebaut: true, rauheit: 0.96, mutante: 0 },
