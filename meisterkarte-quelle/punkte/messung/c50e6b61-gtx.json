@@ -1,7 +1,7 @@
 {
  "sha": "c50e6b61b445196a2316565e29a8e4989a939eef",
  "geraet": "gtx",
- "zeit": "2026-11-17T23:28:47.754Z",
+ "zeit": "2026-11-17T23:34:16.503Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.same.preis.ankunft#1": {
@@ -446,23 +446,136 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.spieler.praesenz#1": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,643 (Faden 1,643 · alle Kerne 1,468; vor 148,5/339,5 ms, nach 93,9/267,3 ms, Ruhe 90,4/231,3 ms seit 2026-11-15) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 288,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 91,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 74,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 84,9 CPU-s · svchost.exe 53,0 CPU-s · SearchIndexer.exe 2,6 CPU-s — unscharf unter Last: ego/gehen p95 ms roh 57,9, entlastet ≥ 28,95 (÷ 2, Karte), Schwelle ≤ 50 · third/gehen p95 ms roh 74,9, entlastet ≥ 37,45 (÷ 2, Karte), Schwelle ≤ 50 — kein Urteil, UNGEMESSEN (die Probe sah: ❌ Taste→Bild p95 ego/gehen 57.9 ms (n 15) · third/gehen 74.9 ms (n 15) · Bild 25.62 ms · ✅ Fuß p95 wiese fuss 0.9 (n 200) · wiese falllinie 0.4 (n 200) · hang fuss 1 (n 200) · hang falllinie 0.8 (n 200) cm am Hang 24.4° · ✅ Kamera im Fels: ) · Wirt-Wache: den Kontext der Probe hält noch: if (!window.__zeigerDerProbe) { const stand = (window.__zeigerDerProbe = { el: null, rpl: HTMLCanvasElement.prototype.re — Heap nach der Rücknahme 227.5 → 338.6 MB (+111.1 > 64)",
+   "exit": 1,
+   "minuten": 7.36,
+   "grund": "Last: Referenz f 1,643 (Faden 1,643 · alle Kerne 1,468; vor 148,5/339,5 ms, nach 93,9/267,3 ms, Ruhe 90,4/231,3 ms seit 2026-11-15) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 288,8 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 91,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 74,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 84,9 CPU-s · svchost.exe 53,0 CPU-s · SearchIndexer.exe 2,6 CPU-s — unscharf unter Last: ego/gehen p95 ms roh 57,9, entlastet ≥ 28,95 (÷ 2, Karte), Schwelle ≤ 50 · third/gehen p95 ms roh 74,9, entlastet ≥ 37,45 (÷ 2, Karte), Schwelle ≤ 50 — kein Urteil, UNGEMESSEN (die Probe sah: ❌ Taste→Bild p95 ego/gehen 57.9 ms (n 15) · third/gehen 74.9 ms (n 15) · Bild 25.62 ms · ✅ Fuß p95 wiese fuss 0.9 (n 200) · wiese falllinie 0.4 (n 200) · hang fuss 1 (n 200) · hang falllinie 0.8 (n 200) cm am Hang 24.4° · ✅ Kamera im Fels: ) · keine Wiederholung: die Probe mutiert die Welt · Wirt-Wache: den Kontext der Probe hält noch: if (!window.__zeigerDerProbe) { const stand = (window.__zeigerDerProbe = { el: null, rpl: HTMLCanvasElement.prototype.re — Heap nach der Rücknahme 227.5 → 338.6 MB (+111.1 > 64)",
+   "mass": [
+    {
+     "wort": "ego/gehen p95 ms",
+     "wert": 57.9,
+     "soll": 50
+    },
+    {
+     "wort": "third/gehen p95 ms",
+     "wert": 74.9,
+     "soll": 50
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "kd096e1fe68fb",
+   "konsumN": 32,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "k71df1215626e",
+   "s": 440.6,
+   "fremd": {
+    "s": 445,
+    "takte": 205,
+    "fremdS": 545.39,
+    "kerne": 1.226,
+    "fensterKerne": 1.991,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      288.81
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      91.81
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      74.91
+     ]
+    ],
+    "dienerS": 155.86,
+    "diener": [
+     [
+      "System",
+      67.86
+     ],
+     [
+      "dwm.exe",
+      53.59
+     ]
+    ],
+    "geraetS": 143.75,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      84.94
+     ],
+     [
+      "svchost.exe",
+      53.03
+     ],
+     [
+      "SearchIndexer.exe",
+      2.58
+     ]
+    ],
+    "eigenS": 702.63,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.792,
+     "nach": 0.77,
+     "station": 2.308
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 148.5,
+     "alle": 339.5,
+     "cpuEin": 156
+    },
+    "nach": {
+     "ein": 93.9,
+     "alle": 267.3,
+     "cpuEin": 94
+    },
+    "ruhe": {
+     "ein": 90.4,
+     "alle": 231.3,
+     "n": 590,
+     "von": "2026-11-15"
+    },
+    "f": 1.643,
+    "fEin": 1.643,
+    "fAlle": 1.468,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-17T23:34:16.503Z",
+   "abdruck": "0ee80dd36a77",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-17T23:28:07.005Z",
-  "ordner": "sitzung-20261118-002807",
+  "start": "2026-11-17T23:33:35.252Z",
+  "ordner": "sitzung-20261118-003335",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 8,
+  "bootS": 7.6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "karte2.planet.kosmos.welten#1",
-    "s": 29.8,
-    "takte": 698,
+    "vor": "karte2.erleben.spieler.praesenz#1",
+    "s": 30.6,
+    "takte": 593,
     "chunks": 81,
     "nach": null
    }
@@ -470,49 +583,120 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.planet.kosmos.welten#1",
+    "probe": "karte2.erleben.spieler.praesenz#1",
     "anders": [
-     "r._lavaKrusteFn",
-     "r._editGen",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
+     "r.spawnCreatureAt",
+     "r.spawnArchitecture",
+     "window.__kameraZeichnet",
+     "window.__istLeib",
+     "window.__nahDeckung",
+     "window.luma709",
      "window.__wieseMessen",
      "window.__wieseUrteil",
-     "window.__ortSchritt"
+     "window.__weltOrte",
+     "window.__weltOrt",
+     "window.__strecke",
+     "window.__ortSchritt",
+     "window.__eignerKarte",
+     "window.__gezeichnet",
+     "window.__wasserOrte",
+     "window.__wasserLeser",
+     "window.__wasserLeib",
+     "window.__wasserMutation",
+     "window.__wasserKarte",
+     "window.__wasserLaeufe",
+     "window.__wasserTreibt",
+     "window.__wasserHoehle",
+     "window.__wasserWagen",
+     "window.__wasserSichtNetz",
+     "window.__wasserFlora",
+     "window.__wasserSee",
+     "window.__wasserQuelle",
+     "window.__wasserQuellTeil",
+     "window.__wasserBach",
+     "window.__wasserBank",
+     "window.__wasserFluss",
+     "window.__wasserKroneVon",
+     "window.__wasserUfer",
+     "window.__wasserStrom",
+     "window.__wasserFlussNah",
+     "window.__wasserGraben",
+     "window.__wasserDamm",
+     "window.__wasserUferFarbe",
+     "window.__wasserKoerper",
+     "window.__wasserBild",
+     "window.__wasserSeeAm",
+     "window.__wasserLicht",
+     "window.__wasserRegen"
     ],
     "wie": {
-     "r._lavaKrusteFn": "getauscht: [object Function]",
-     "r._editGen": "getauscht: () => (this._editGenZaehler = (this._editGenZaehler || 0) + 1)",
-     "r._wolkenZeit": "fehlt",
-     "r._weltaktGehalten": "fehlt",
-     "r._setWeather": "fehlt",
+     "r.spawnCreatureAt": "neu: spawnCreatureAt(x, y, z, emotion = \"happy\", soulName = null, opts = {}) { // Wel",
+     "r.spawnArchitecture": "neu: spawnArchitecture(type, position, opts = {}) { // JEDE ABSAGE DER WURZEL TRÄGT I",
+     "window.__kameraZeichnet": "getauscht: (o, cam) => o.isMesh && o.geometry?.attributes.position && o.material?.visible !",
+     "window.__istLeib": "getauscht: (o) => !!(o.isSkinnedMesh || o.userData?.gang || /^(spieler|bewohner|tier:)/.tes",
+     "window.__nahDeckung": "getauscht: function nahDeckungInSeite(o) { const T = window.THREE; const K = AnazhRealm; co",
+     "window.luma709": "getauscht: (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2]",
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__weltOrte": "getauscht: function weltOrte(art, opts) { const o = opts || {}; const [mx, mz] = o.mitte ||",
+     "window.__weltOrt": "getauscht: function weltOrt(art, opts) { return window.__weltOrte(art, Object.assign({}, op",
+     "window.__strecke": "getauscht: function strecke(mitte, ringe, stufeMax = Infinity, querMax = Infinity, naechste",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__eignerKarte": "neu: function eignerKarte(r, x, z, aus) { const span = r._voxelChunkConfig(0).span; c",
+     "window.__gezeichnet": "neu: function gezeichnet(r, x, z) { const T = window.THREE; const G = window.__gezeic",
+     "window.__wasserOrte": "neu: async function wasserOrte(o = {}) { const G = window.__gelaendeCore; const mitte",
+     "window.__wasserLeser": "neu: async function wasserLeser(o = {}) { if (!st.hydrosphere || !st.hydrosphere.read",
+     "window.__wasserLeib": "neu: function wasserLeib() { const [r, A] = [window.anazhRealm, window.anazhRealm.con",
+     "window.__wasserMutation": "neu: async function wasserMutation(o = {}) { const A = AnazhRealm; const [RHO, TIEF] ",
+     "window.__wasserKarte": "neu: async function wasserKarte(o) { const [orte, zufall] = [[], window.__phytoCore.m",
+     "window.__wasserLaeufe": "neu: async function wasserLaeufe() { const [G, L] = [window.__gelaendeCore, r._gelaen",
+     "window.__wasserTreibt": "neu: async function wasserTreibt(o) { const [r, A] = [window.anazhRealm, window.anazh",
+     "window.__wasserHoehle": "neu: async function wasserHoehle(o = {}) { const A = AnazhRealm; const cfg = r._voxel",
+     "window.__wasserWagen": "neu: async function wasserWagen(o = {}) { const ziel = o.see || (await window.__wasse",
+     "window.__wasserSichtNetz": "neu: function wasserSichtNetz() { const cfg = r._voxelChunkConfig(0); const span = cf",
+     "window.__wasserFlora": "neu: function wasserFlora(o = {}) { const sicht = o.sicht || window.__wasserSichtNetz",
+     "window.__wasserSee": "neu: async function wasserSee(o = {}) { const f = o.fenster || (await window.__wasser",
+     "window.__wasserQuelle": "neu: async function wasserQuelle(o = {}) { if (!st.hydrosphere || !st.hydrosphere.rea",
+     "window.__wasserQuellTeil": "neu: function wasserQuellTeil(p, n) { const h = (Math.imul(Math.round(p.x * 4), 73856",
+     "window.__wasserBach": "neu: async function wasserBach(o = {}) { const R = wasserRund(2); const bachOrt = Num",
+     "window.__wasserBank": "neu: async function wasserBank(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
+     "window.__wasserFluss": "neu: function wasserFluss() { const h = st.hydrosphere; if (!h || !h.ready || !Array.",
+     "window.__wasserKroneVon": "neu: function __wasserKroneVon(r, p) { const A = r.constructor; const HC = A.HYDROSPH",
+     "window.__wasserUfer": "neu: async function wasserUfer(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
+     "window.__wasserStrom": "neu: async function wasserStrom(ort, hoehe) { const zurueck = [leihe(st, { postProces",
+     "window.__wasserFlussNah": "neu: function __wasserFlussNah(r, x, z) { const st = r.state; const fluesse = []; for",
+     "window.__wasserGraben": "neu: async function wasserGraben(o = {}) { const K = AnazhRealm.NAH_WIESE.kachel; con",
+     "window.__wasserDamm": "neu: async function wasserDamm(o = {}) { const f2 = wasserRund(2); const S = (q) => r",
+     "window.__wasserUferFarbe": "neu: async function wasserUferFarbe(o = {}) { const h = st.hydrosphere; if (!h || !h.",
+     "window.__wasserKoerper": "neu: async function wasserKoerper(o = {}) { const A = AnazhRealm; const DT = A.FIXED_",
+     "window.__wasserBild": "neu: async function wasserBild(o = {}) { const T = window.THREE; const renderer = st.",
+     "window.__wasserSeeAm": "neu: function __wasserSeeAm(r, ziel) { const st = r.state; const h = r._hydroFor(ziel",
+     "window.__wasserLicht": "neu: async function wasserLicht(o = {}) { if (!st.renderer || st.renderer._isHeadless",
+     "window.__wasserRegen": "neu: async function wasserRegen(o = {}) { const T = window.THREE; const renderer = st"
     },
-    "haelt": [],
-    "heap": [
-     230.5,
-     313.5
+    "haelt": [
+     "if (!window.__zeigerDerProbe) { const stand = (window.__zeigerDerProbe = { el: null, rpl: HTMLCanvasElement.prototype.re"
     ],
-    "ungemessen": null
+    "heap": [
+     227.5,
+     338.6
+    ],
+    "ungemessen": "den Kontext der Probe hält noch: if (!window.__zeigerDerProbe) { const stand = (window.__zeigerDerProbe = { el: null, rpl: HTMLCanvasElement.prototype.re — Heap nach der Rücknahme 227.5 → 338.6 MB (+111.1 > 64)"
    }
   ],
   "wanderung": [
    {
-    "probe": "karte2.planet.kosmos.welten#1",
+    "probe": "karte2.erleben.spieler.praesenz#1",
     "ort": "wiese",
-    "m": 0,
-    "dreh": 1.972
+    "m": 312.34,
+    "dreh": 5.894
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.planet.kosmos.welten#1",
+    "probe": "karte2.erleben.spieler.praesenz#1",
     "gehalten": [
-     "skala",
-     "spiegel"
+     "tiere"
     ],
     "offen": []
    }
@@ -520,34 +704,35 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 102,
-   "frameP95": 499.99,
-   "taktP95": 147.27,
-   "vramMax": 130.7,
+   "bilder": 694,
+   "frameP95": 50,
+   "taktP95": 38.93,
+   "vramMax": 134.1,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.planet.kosmos.welten#1",
-     "m": 1083,
+     "probe": "karte2.erleben.spieler.praesenz#1",
+     "m": 322,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 69,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 393,
+   "luecken": 3,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 81.5,
-  "minuten": 1.44
+  "fahrtS": 483.6,
+  "minuten": 8.14
  },
  "konsumTafel": {
   "k147d51bfc901": "dVXbjpswEP2XPO6WdQI4OJb2wVlWTatWTT5hbMbAhkBkQ6hS9d8rCCRctvOUWGc8Z84ZD38WqjBoX06Qpxpt+fJhi3zBF0+LL4szqCPEODyycEHHormgefmwC75YKh8o4+IWRAjx1sCUSc+lJVEKsSOLonRs2dyk2pynASJLJQGZQ3JCpzIlplkHWimGgJzUP0W9J2RPArKtX1+nqZnEqHBK0NgnysgNPOBTYGVjkOhApdtiHZj6K9+jnLTBQrH/IH2IgxCkfp9WlJBHY6baA6pXrQTvYsYwSgFLJ0tz29dUEZWey++F5l1FBmrnCphkaLok5gVr905UCBHW+3miziprR8WYF1GXcUI2ZIKN0aYqKZ2zKSTmvXgbN1gB/0Tp+Fw5esgIpAQmpzongHmMZswh8KnyOfnNppce4YQGnBySDrpZeoErH9oQQnZzLllLvC3RE2eR3AR6lNh4uKsbW0LW/Invx2x3G9cwFo84TIpYlaTmNJZHaxrBkv+YU7IJRGicY2HLO9pjzAWvexthO1Bi74fTzEczXZ4r10vKBr0wInYz7WyhyxoMOvG56hLRRxpQLsS3GbiE06lvQrnI6NQ4WzaDPaSxDFxKWy/i//hwewbOFdOsTwqUWnnI336KaZ8XAycHZGxSrXu3JVV689lw1piV7eLokV4EnuLkSvKBLEIcxPbhYFgX6utbfBDj2Iop7/b2wpT3LSDXS+1zfWleo5qhU1M6Naikh/ve2nNX/BPoFU2GMY5kjHzpQdSgB0z9/sfzaF6vM5evKTYC57ay/aRvgmjTTfrYkhrNUUJ+7P2LqKfhNn57ETarOf4ePm/riT4iFL/qbS224nl4euh22RkVOZtCp83mIwlUNoFs8J34+w8=",
   "k71df1215626e": "fVTBjpswEP2XHLtlnWAcHEt7cMqq2ZVWzZ6qHsdmDGwIRDYs21T99yoEkgBt55Sg92bezDzPr9kB9A4SvH9zZTETs0+zzzMH7+g5tO9o79/cTMzmOgDGhTwHkVJ+PcG0zQ6VI3mmCKgC0j16ta0wy+91S1tojoCCNI+y2RKyJSFZN/ISa/nwME6TK4xLrwKDfRIV+yEFMQbWLgGFHtSmLdyBWbAIKBOkDR7J7RvpQ75KSZrHcUUFRTxUbSgwsxBPjZSPU4VxBlh5eVa4vqaOmaK+uBRqphwLjXcETHO0HYnTcOlfhEopo2Y7JZq8dm5QjNOY+VwQsiIjbIIu02nlHWypsOiHt/LDBYj1NHVyqD1zqwiUAq7Gc04BiwTtUEMYMB0I8sHHSXewRwteAWkHXc1p6KvrbAghm6mWvBXeluiF81itQjMgEkKSTWufiLd/Lp/55myoKLmaS76OijidZnY/HI8xLIb5uGeXQozW25WuuiAp5z7Q7gVErZnkNojGzGsjHc9XyznjN31wIjeTubnSVA1Y9JJD3RExQBYyIZOXCbiC/b5vQPvI2aSB6mTqWxnz0Ges3UPyjx2cn4B3xCzvSaHWC4riy4sc9/luYe+BSmxmTL9pxbRZ/c2YDeaVp8qy6pE0BqoFoaS4TGXFpfwh19ftRceSf/+5+7jdqJTyuRzrbrOXtrpcALWcm0CY9iXqCTqzldeATnt4QJfUX4wHeESbY4KDEcaBohAL0ugblUH/427g0+Nkw8cMT8MtXO16h6/CeNU5vDuKT8Nz06DdKSh2/Q5jRg2I1uZbGclvUibP0d3tRf1fJPJ8+w6oycGWJjtdPpJC7VLIq+v5//0H",
   "k0dc27f120f48": "dVXbjpswEP2XPO7W6wRDcJD2wVlWTauulHzC2IyBDYHIhlCl6r9XEEi4bOcpsc54zpwzHv4sVGHQvpwgTzXa8uXTFvkiWDwtvi3OoI4Q4/DIwgWJRXNB8/JpF8FiqVzweCBuQYUQbw1MmfRcWhqlEBNZFCWxZXOTanOeBogslRRkDskJSWVKTLMOtFIcAQNaf4h6T+me+nRbv75OUzOJUUFK0NgnysjxGQRTYGVjkEig0m2xDuy5K5d5AW2Dh2L/SfsQByFo/T6tKCGPxkw1A0+vWgnexYxhlAKWJEtz29dUkSeZE9wLzbuKDNTkCphkaLokzvy1cycqhAjr/TxRZ5W1o2KcRZ7DA0o3dIKN0aYqKcnZFBLzXryN468g+ELp+FwRPWQEUgKXU50TwDxGM+bgu55yA/qbTy89wgkNkBySDrpZMt+RD20opbs5l6wl3pboifNIbnw9Smw83NWNLSFv/sT3Y767jWsYi0ccJkWsSlJzGsujtRfBMvg1p2QTiNCQY2HLO5px7gDr3kbYDpTYu+E089FMl+fI9dLjg144FbuZdrbQZQ0GSXyuukR00fO9QIgfM3AJp1PfhHKQe1PjbNkM9pDG0nc8r/Ui/o8Pt2dArphmfZKv1Iph8PYhpn1eDJwIyNikWvduS0/pzVfDWWNWtoujR7IImAroleYDWYQ4iO3DwbAu1Pe3+CDGsRVT3u3thSnvW0Cul9oN9KV5jWqGTk1JalBJD3fZmjmr4AvoFU2GMY5kjFzJIGrQA6Zu/+N5NK/XmcvXFBuBc1vZftI3frTpJn1sSY3mKCE/9v5FHtNwG7+9CJvVHP8Mn7f1RB8RCqy3tdiK5+HpodtlZ1T0bAqdNpuPJlDZBLLBd+LvPw==",
   "k9d9d6339f8ee": "dVTRjpswEPyXPPbKOcE4GEv34BynplWlJp+wNmvgQiCySahS9d8rOEgCXPcJ0Aw7O7P2n8UJ9AFSfH53VbkQiy+LrwsHF/Qc2gva53e3EIulDoBxIT+KSClfW5i2+al2pMgVAVVCdkTvbGvMi2fd0VaaI6AgzZtsdoTsSEg2zcvLlFooTCqvBoMDUSV+SEFMgWeXgkIPzqZr1oNZsAooE6QrHsvdOxlK7qUkzdu0o4IyGSs1FJhZdQO+yZnCJAesvSIv3dBTJ0xRX9wazadKLDTeFTAr0PYkTsO1fxMqpYyb3ZxoirNzo2acJszngpCITLApulxntXeylcJyMC/ywxWIT5xOT2fPPCoCpYCrqc8ZYJmiHWsIA6YDQX7z6U8PcEQLXglZD42WNPTV3RtCyHaupeiEdy0G4TxRUWhGxDbDbdPGEvP2Jb195tuPZYxTea/9pInTWW6PY3uMYQksxc+5JJdBgtY7VK6+oSnnPtB+8+NuoeQuiKfM+zA9z1frJeMPs3AitzPvXGXqBix66encEzFAFjIh5fcZuIbjcRhC+8jZNDhXt4v9KGMZ+ox1WaT/yeHjGHhXzIuBFGq9oihepZzOebFw9EClNjdmSFsxbaLPlrPBovZUVdUDkiZAtSBXUt5cidpjIDf3BOOm0t9e0/1MZ/e3yta3U6/WSxMIc2lPn56hc1t7DehsgAd0Tf2V+AR6RVtgiiPbkkBRSFr0g7JgeHga7ed1luo1x9bQ0p3dsNlRmET9Zo8jaNAeFJSHIa+EUQMf67aTcXvRpj/ip00jJxXLX82mkRv59Ph1399dJ9TkZCuTtzcdyeDsMijq+xX/9x8=",
-  "ka8c354b0c5fd": "dVXRjpswEPyXPPbKOcEQjKV7cI5UOakn5T5hbdZAQiCy4WhT9d+rECABrvsEaHZ3PDte/izOoI6Q4PPBlsWCL74tvi8sfKJj0XyieT7YBV8slQc+4+IWRAjxeoUpk50rS/JMEpAFpCd0alNhlj+rNm2lGAJy0mxFsydkTwKyacQQG/HyMi2TS4xLpwKNfREZuwEFPgXWNgGJDtS6bdyBfW/lUZ+TNlgk9gfSh/gQgjTbaUcJRTxmrSn4esXffguxnTOMM8DKybPC9j1V7Evq8qFRM88x0DgXwDRH0yUxGqzdgagQImr280Sd19aOmjEa+y7jhIRkgk3QZiqtnLMpJRa9eKEbrIBv5qWTc+3oR0YgJTA51TkFLBI0Yw6B5yuPk19sWvQIJzTgFJB20HBJA1fetSGE7OZc8pZ426InzmIZBnqUSAhJdq19Ita+DJ/Z7maoKLmbS3xMmliVZuY0lkdrP4Yl/zmnZFOI0TjH0lYDmjLmAu1uQdQaSuy9aJp5P0yX58r10mcPZ2FE7Gba2VJXDRh0knPdJaKHfuBzId5m4ApOp/4QykXmTwdnq6uxH2ksA9f321kk/5nD7Ro4F8zyPilQakWRv76L6Tk/DZwckInJtO6nLX2lw6/M2WBeObIsqx5JY6CKE0qKQZWQ3ZbCEFFTqu1r8iHGsTGJmHNvO5SmGjaBXC+1x3V7I9UMnZnKaUClPdyja+qu+BfQC5ocExxJGXuSQnxFP7D1+oenkWcvs0lfMryKXNja9m4Pgzjs3N4tyLfx6mnQHCUUx36WsU818KvlfxARdY3XG3Igu+ZRrEjsGyG2G/E0FvG9LX5GRc6m1Nl1C5IUaptCXt1/BX//AQ=="
+  "ka8c354b0c5fd": "dVXRjpswEPyXPPbKOcEQjKV7cI5UOakn5T5hbdZAQiCy4WhT9d+rECABrvsEaHZ3PDte/izOoI6Q4PPBlsWCL74tvi8sfKJj0XyieT7YBV8slQc+4+IWRAjxeoUpk50rS/JMEpAFpCd0alNhlj+rNm2lGAJy0mxFsydkTwKyacQQG/HyMi2TS4xLpwKNfREZuwEFPgXWNgGJDtS6bdyBfW/lUZ+TNlgk9gfSh/gQgjTbaUcJRTxmrSn4esXffguxnTOMM8DKybPC9j1V7Evq8qFRM88x0DgXwDRH0yUxGqzdgagQImr280Sd19aOmjEa+y7jhIRkgk3QZiqtnLMpJRa9eKEbrIBv5qWTc+3oR0YgJTA51TkFLBI0Yw6B5yuPk19sWvQIJzTgFJB20HBJA1fetSGE7OZc8pZ426InzmIZBnqUSAhJdq19Ita+DJ/Z7maoKLmbS3xMmliVZuY0lkdrP4Yl/zmnZFOI0TjH0lYDmjLmAu1uQdQaSuy9aJp5P0yX58r10mcPZ2FE7Gba2VJXDRh0knPdJaKHfuBzId5m4ApOp/4QykXmTwdnq6uxH2ksA9f321kk/5nD7Ro4F8zyPilQakWRv76L6Tk/DZwckInJtO6nLX2lw6/M2WBeObIsqx5JY6CKE0qKQZWQ3ZbCEFFTqu1r8iHGsTGJmHNvO5SmGjaBXC+1x3V7I9UMnZnKaUClPdyja+qu+BfQC5ocExxJGXuSQnxFP7D1+oenkWcvs0lfMryKXNja9m4Pgzjs3N4tyLfx6mnQHCUUx36WsU818KvlfxARdY3XG3Igu+ZRrEjsGyG2G/E0FvG9LX5GRc6m1Nl1C5IUaptCXt1/BX//AQ==",
+  "kd096e1fe68fb": "fVXRbqMwEPyXPPbOdYIhOJb64JZIPelOSj9hba+BhEBkQ+nldP9+CoG0QHv7lEQzzOzuLPmzOIE+QIr3e1+VC7G4W3xfeHhF4tG9orvf+4VYLHUIERfyWlRK+XSBaZefak9NDik5wBEdkAIada870t0MUqE7oSO+htJ8AipyRUGVkB2RNK7GvOhBK80RUNB2K9sdpTsa08f24WFKLRSaitRgcSAqE8QMxBTY+BQUEmhsJ9aDo3AVskjQrngid3s6lHyRkrbbqaKC0oydWgaRXYkfv6XcyplDkwPWpMhLP2hqEykWiJvQvCvjoCVnwKxA15M4i9fBzaiUMml3c6ItGu9HYpyZKOCC0g2dYFP0uc5qcnKVwnIY3iaIVyA+mXR6aoj96AiUAq6mc84AyxTd2EMcRjoU9I3Lr4q+UrqbD7sPWAlZ/6jNksWBep8dpfR57rXoGussDI1xozaxHREvO35uL+oJv3xJbz/z56urJP1g8WUi4nWWu+N4fNZGBpbi59ySz8CgI4fK1zc04zwA1l9Y0gVO7sJkynxvpucFar2M+IdeOJXPfKZY2boFhyQ9NT0RQ4ziSEj5Ywau4XgcmtAB8mi62O6ARzaWcRBF3S7SL/ZwPRNyxrwYSLHWK4bi6Zec9vnq4EhApS63dti2irTdfBbeFryfpGzJLGA83fCokva66f+cXotFTVRV1YMFZoBpQRktb6xNl+PH92gkbaW3T+nLNNX7VH6hULn69gpS66UNhe386Bk6dzVpQWcDPGRrFqzEJ9AzugJTHA3FhIqBuaA/uA2HD99GwzjPInTO8bK90jd+OKNNbDb9GY1ba9EdFJSHYRsmYhau2d7JpBdcP9I9vd7czY3cvXm5fZTfLg87oaYnV9n88pqlGTQ+g6J+/5/6+w8="
  }
 }
