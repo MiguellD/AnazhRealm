@@ -1695,12 +1695,122 @@ const lavaRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWELT
 // ───────── KARTE 2, Welle 3 (vorrat3-stationen-g1, 16.11.): vier Richter im echten Fenster — gebaut, headless nur im Selbsttest
 // der Punkte-Maschine geprüft, am Fenster beider Geräte ungemessen ─────────
 
+// DER KURZE GRUND (17.11., Radeon am 59718110: der Schuss des Flegels stand in der Kamera des Spiels ~8 m hinter dem Leib, die Figur
+// ~70 px hoch im hüfthohen Gras der Mess-Wiese, die Hand IM Gras — vom Flegel kein Pixel): die nächste Stelle um `mitte` (Ringe je 2 m
+// bis `rMax`), an der kein Halm steht — der gezeichnete Boden ohne Grün (`_bodenSichtAt`, `gruen` ≤ 0,1: der Leser, aus dem der Grund
+// sein Grün malt), kein Laub, keine Glut, kein Eis, trocken — an der Stelle, 1,5 m ringsum und auf 16 Strahlen bis 3 m (je 0,25 m,
+// ±0,5 m quer, die Stufe zur Stelle < 0,8 m): dort steht der Leib, die Kamera hat jede Richtung frei. Null-Renderer am Kopf 59718110:
+// 6 Stellen 48–56 m um die Mess-Wiese (Stein, Quarz), die erste mit allen 16 Strahlen 54 m. Läuft als Helfer in der Seite.
+function kurzerGrund(r, mitte, rMax) {
+    const g = {};
+    const kurz = (x, z) => {
+        const y = r._bodenSichtAt(x, z, g);
+        if (y === null || !(g.gruen <= 0.1)) return false;
+        const st = r._kontaktStoffAt(x, z, y);
+        return st !== "laub" && st !== "glut" && st !== "eis" && !r._nassAt(x, z, 0.1, y);
+    };
+    for (let rr = 0; rr <= rMax; rr += 2) {
+        const n = Math.max(1, Math.round(Math.PI * rr));
+        for (let q = 0; q < n; q++) {
+            const a = (q / n) * Math.PI * 2 + rr * 0.37;
+            const [x, z] = [mitte.x + Math.cos(a) * rr, mitte.z + Math.sin(a) * rr];
+            if (!kurz(x, z)) continue;
+            const y0 = r._voxelSurfaceY(x, z);
+            let frei = [0, 1, 2, 3, 4, 5, 6, 7].every((k) => kurz(x + Math.cos((k * Math.PI) / 4) * 1.5, z + Math.sin((k * Math.PI) / 4) * 1.5));
+            for (let k = 0; k < 16 && frei; k++) {
+                const [cx, cz] = [Math.cos((k * Math.PI) / 8), Math.sin((k * Math.PI) / 8)];
+                for (let d = 0.5; d <= 3 && frei; d += 0.25)
+                    frei = Math.abs(r._voxelSurfaceY(x + cx * d, z + cz * d) - y0) < 0.8 && [-0.5, 0, 0.5].every((l) => kurz(x + cx * d - cz * l, z + cz * d + cx * l));
+            }
+            if (frei) return { x, z, abstand: rr };
+        }
+    }
+    return null;
+}
+// DER FLEGEL IM SCHUSS, SICHTBAR: die Kamera nah am Leib — 2,6 m vom Leib zur Seite der rechten Hand (das Gelenk `armR.wrist`, sonst die
+// Gestalt), 1,25 m über dem Grund, der Blick auf 0,8 m über dem Grund am Leib: die Figur (1,8 m bei 75° Sichtfeld) füllt ~0,45 der
+// Bildhöhe. Drei Schüsse DERSELBEN Kamera ohne Takt dazwischen (960×540, `__ausgabeAufnahme`): MIT der Gestalt, noch einmal MIT (das
+// Rauschen des Bilds: Wind, Zittern), OHNE (die Gestalt `heldMesh` unsichtbar). Gemessen: die Höhe der Figur in Pixeln (die Ecken ihrer
+// Box ohne die Gestalt, projiziert), im Ausschnitt der Gestalt (ihre Box projiziert, ±6 px) die Pixel, die MIT ↔ OHNE um ≥ 48 (Summe
+// |ΔR|+|ΔG|+|ΔB|) abweichen, dasselbe MIT ↔ MIT (das Rauschen), und je Seil-Teil, ob an seiner projizierten Mitte (9×9) ≥ 8 Pixel
+// MIT ↔ OHNE abweichen (das Teil ist zu sehen, nicht nur im Kegel). Läuft als Helfer in der Seite.
+async function flegelSicht(r, T, W, H) {
+    const s = r.state;
+    const pm = s.playerMesh;
+    const h = pm.userData && pm.userData.heldMesh;
+    if (!h) return { fehler: "keine Gestalt in der Hand zum Schuss" };
+    pm.updateMatrixWorld(true);
+    const p = pm.position;
+    const fy = r._voxelSurfaceY(p.x, p.z);
+    const rig = pm.userData.rig;
+    const hw = ((rig && rig.armR && rig.armR.wrist) || h).getWorldPosition(new T.Vector3());
+    const l = Math.hypot(hw.x - p.x, hw.z - p.z);
+    const [dx, dz] = l > 0.05 ? [(hw.x - p.x) / l, (hw.z - p.z) / l] : [1, 0];
+    const [cx, cz] = [p.x + dx * 2.6, p.z + dz * 2.6];
+    const kam = [cx, Math.max(fy + 1.25, r._voxelSurfaceY(cx, cz) + 0.8), cz, p.x + dx * 0.3, fy + 0.8, p.z + dz * 0.3];
+    const cam = s.camera;
+    const stellen = () => (cam.position.set(kam[0], kam[1], kam[2]), cam.lookAt(kam[3], kam[4], kam[5]), cam.updateMatrixWorld(true));
+    stellen();
+    const auf = (v) => ((q) => [((q.x + 1) / 2) * W, ((1 - q.y) / 2) * H])(v.clone().project(cam));
+    const ecken = (b) => [0, 1, 2, 3, 4, 5, 6, 7].map((i) => auf(new T.Vector3(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z)));
+    const inH = (m) => {
+        for (let q = m; q; q = q.parent) if (q === h) return true;
+        return false;
+    };
+    // die Box je Mesh OHNE seine Kinder (die Gestalt hängt am Gelenk), ein Leib in seiner Pose (`SkinnedMesh.computeBoundingBox`)
+    const fig = new T.Box3();
+    pm.traverse((m) => {
+        if (!m.isMesh || !m.visible || inH(m) || !m.geometry) return;
+        if (m.isSkinnedMesh) m.computeBoundingBox();
+        else if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+        fig.union(new T.Box3().copy(m.isSkinnedMesh ? m.boundingBox : m.geometry.boundingBox).applyMatrix4(m.matrixWorld));
+    });
+    const fe = ecken(fig).map((e) => e[1]);
+    const he = ecken(new T.Box3().setFromObject(h));
+    const roi = [
+        Math.max(0, Math.floor(Math.min(...he.map((e) => e[0])) - 6)),
+        Math.max(0, Math.floor(Math.min(...he.map((e) => e[1])) - 6)),
+        Math.min(W, Math.ceil(Math.max(...he.map((e) => e[0])) + 6)),
+        Math.min(H, Math.ceil(Math.max(...he.map((e) => e[1])) + 6)),
+    ];
+    const teile = [];
+    h.traverse((m) => m.isMesh && m.userData && Number.isInteger(m.userData.__seil) && teile.push(auf(new T.Box3().setFromObject(m).getCenter(new T.Vector3()))));
+    const schuss = async () => (stellen(), (await window.__ausgabeAufnahme(W, H)).u8);
+    const mit = await schuss();
+    const mit2 = await schuss();
+    h.visible = false;
+    let ohne;
+    try {
+        ohne = await schuss();
+    } finally {
+        h.visible = true;
+    }
+    const ab = (a, b, x, y) => {
+        const i = (y * W + x) * 4;
+        return Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) >= 48;
+    };
+    let [pixel, rauschen] = [0, 0];
+    for (let y = roi[1]; y < roi[3]; y++)
+        for (let x = roi[0]; x < roi[2]; x++) (pixel += ab(mit, ohne, x, y)), (rauschen += ab(mit, mit2, x, y));
+    const sichtbar = teile.filter(([x, y]) => {
+        let n = 0;
+        for (let a = -4; a <= 4; a++)
+            for (let b = -4; b <= 4; b++) {
+                const [X, Y] = [Math.round(x) + a, Math.round(y) + b];
+                if (X >= 0 && Y >= 0 && X < W && Y < H) n += ab(mit, ohne, X, Y);
+            }
+        return n >= 8;
+    }).length;
+    const r1 = (v) => Math.round(v * 10) / 10;
+    return { mit, ohne, kamera: kam.map(r1), figurPx: Math.round(Math.max(...fe) - Math.min(...fe)), roi, pixel, rauschen, teile: teile.length, sichtbar };
+}
 // DAS SEIL IM ECHTEN FENSTER (Karte 2 same.physik.verformung S1 „Flegel schwingt am Leib des Spielers, Seillänge im Bild ±2 %, beide
 // Geräte“): dieselbe Seiten-Funktion wie physik.K4#1 (`seilProbe` oben, byte-gleich — ihr Abdruck und der der Welt-Probe bleiben), aber
 // in der EINEN warmen Welt der Sitzung — je Takt die Lage der GEZEICHNETEN Seil-Teile (`userData.__seil`, ihre Welt-Matrix nach
 // `_seilTakt`) längs vom Anker. Der Takt des Grunds trägt hier dazu IM BILD: je Takt mit einem Seil in der Hand, ob jedes Seil-Teil
 // sichtbar (die Kette der Eltern) mit seiner Mitte im Kegel der Kamera des Spiels liegt (je Gattung, die `equipHeld` zuletzt nahm);
-// danach je Flegel noch einmal in die Hand, 1,5 s Gang, 0,5 s Stand und EIN Schuss des Ausgabe-Pfads (960×540).
+// danach steht der Leib auf kurzem Grund (`kurzerGrund`), je Flegel noch einmal in die Hand, 0,5 s Stand und der Schuss nah am Leib,
+// der die Sichtbarkeit misst (`flegelSicht`: die Figur in Pixeln, die Gestalt MIT ↔ OHNE über dem Rauschen, je Seil-Teil).
 async function seilBildProbe(r, T, o, G) {
     const s = G.s;
     const kegel = new T.Frustum();
@@ -1775,6 +1885,11 @@ async function seilBildProbe(r, T, o, G) {
     }
     aus.griff = griff;
     aus.schuesse = [];
+    // DER SCHUSS ZEIGT DEN FLEGEL: der Leib steht auf kurzem Grund (`kurzerGrund` um die Mess-Wiese), die Kamera nah an ihm
+    // (`flegelSicht`); ohne kurzen Grund bleibt er an der Wiese, und der Schuss urteilt, was dort zu sehen ist
+    const K = kurzerGrund(r, o.orte.wiese, 160);
+    aus.grund = K && { x: Math.round(K.x * 10) / 10, z: Math.round(K.z * 10) / 10, abstand: K.abstand };
+    if (K) await G.stehen(K.x, K.z);
     for (const [name, x] of Object.entries(aus.je || {})) {
         if (x.fehler) continue;
         x.imBild = zaehl[name] && zaehl[name][1] ? G.r3(zaehl[name][0] / zaehl[name][1]) : 0;
@@ -1782,13 +1897,14 @@ async function seilBildProbe(r, T, o, G) {
         if (!/flegel/i.test(name)) continue;
         r.equipHeld(name);
         for (let i = 0; i < 400 && !seilTeile().length; i++) G.takt(), await new Promise((ok) => setTimeout(ok, 10));
-        s.verbTafel.gehalten.vor = true;
-        G.takt(90);
-        s.verbTafel.gehalten.vor = false;
         G.takt(30);
         try {
-            const { u8 } = await window.__ausgabeAufnahme(960, 540);
-            aus.schuesse.push({ name, url: window.__png(u8, 960, 540) });
+            const v = await flegelSicht(r, T, 960, 540);
+            if (v.fehler) aus.schuesse.push({ name, fehler: v.fehler });
+            else {
+                const { mit, ohne, ...rest } = v;
+                aus.schuesse.push(Object.assign({ name, url: window.__png(mit, 960, 540) }, rest));
+            }
         } catch (e) {
             aus.schuesse.push({ name, fehler: String((e && e.message) || e).split("\n")[0].slice(0, 200) });
         }
@@ -1797,7 +1913,7 @@ async function seilBildProbe(r, T, o, G) {
     r.setCameraMode(sicht);
     return aus;
 }
-const SEIL_SITZUNG = { befehl: weltSitzungBefehl([["seil", seilBildProbe]], [seilProbe]), sek: 60, mutiert: true };
+const SEIL_SITZUNG = { befehl: weltSitzungBefehl([["seil", seilBildProbe]], [seilProbe, kurzerGrund, flegelSicht]), sek: 60, mutiert: true };
 // das Urteil: ein Flegel der Schmiede (Name `flegel`), sein Gesetz im Buch (der Anker), Schwung ≥ 0,05 m, die Länge LÄNGS des Seils vom
 // Anker hält ±2 % (größte ≤ 1,02 × kleinste über 180 Takte), der Schwung klingt ab (die Tiefe der Sprosse: v² der letzten ≤ ½ der ersten
 // Sekunde), in ≥ 90 % der Takte jedes Teil im Bild, sein Schuss ohne Fehler, eine echte Karte
@@ -1812,22 +1928,34 @@ function seilBildUrteil(j, lauf) {
     const gut = fl.filter(
         ([n, x]) =>
             Array.isArray(x.anker) && x.laengeArt === "längs" && x.schwungM >= 0.05 && x.laengeM[0] > 0 && x.laengeM[1] <= 1.02 * x.laengeM[0] &&
-            x.energie[0] > 0 && x.energie[1] <= 0.5 * x.energie[0] && x.imBild >= 0.9 && S.some((s) => s.name === n && s.datei && !s.fehler) &&
+            x.energie[0] > 0 && x.energie[1] <= 0.5 * x.energie[0] && x.imBild >= 0.9 && S.some((s) => s.name === n && s.datei && !s.fehler && seilSicht(s)) &&
             // der erste Griff: die Gestalt kam, und die Hand war in keinem Takt leer (`griff`, seilBildProbe)
             !!(e.griff && e.griff[n] && e.griff[n].gestalt && e.griff[n].leer === 0)
     );
     const gr = Object.entries(e.griff || {}).map(([n, z]) => n + " " + (z.gestalt ? "Gestalt nach " : "KEINE Gestalt nach ") + z.takte + " Takten/" + z.ms + " ms (leer " + z.leer + ", Part-Bau " + z.teile + ")");
+    const sc = S.filter((q) => /flegel/i.test(q.name || "")).map((q) =>
+        q.fehler ? q.name + " FEHLER " + q.fehler : q.name + " Figur " + q.figurPx + " px, Gestalt " + (q.pixel - q.rauschen) + " px über dem Rauschen " + q.rauschen + ", Seil-Teile zu sehen " + q.sichtbar + "/" + q.teile);
     return {
         gruen: hw && gut.length > 0,
         zahl: (fl.length ? "" : "KEIN Flegel am Leib · ") + u.zahl + " · im Bild " + (fl.map(([n, x]) => n + " " + x.imBild).join(", ") || "—") +
-            " (Soll ≥ 0,9 der Takte, die Länge längs, ein Schuss je Flegel) · erster Griff " + (gr.join(", ") || "—") + " (Soll: leer 0) · " + ad,
+            " (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff " + (gr.join(", ") || "—") + " (Soll: leer 0) · Schuss " + (sc.join(", ") || "—") +
+            " (Soll: Figur ≥ 180 px, Gestalt ≥ " + SEIL_SICHT_N + " px, jedes Seil-Teil zu sehen) · " + ad,
     };
 }
+// DER FLEGEL IST ZU SEHEN (17.11., Radeon am 59718110: „im Bild 1“ zählte den Kegel, der Schuss zeigte keinen Pixel des Flegels): die
+// Figur ≥ ⅓ der Bildhöhe (180 von 540 px), die Gestalt MIT ↔ OHNE in ≥ SEIL_SICHT_N Pixeln mehr als das Rauschen MIT ↔ MIT, jedes
+// Seil-Teil an seiner Mitte zu sehen (`flegelSicht`). Die Zahl aus der Messung (Radeon 890M am 59718110, die Probe mit diesem Schnitt
+// im Fenster der Werkbank): auf kurzem Grund 54 m von der Mess-Wiese Figur 284 px, Gestalt 643 px, Rauschen 0, Seil-Teile 8/8; dieselbe
+// nahe Kamera im Gras der Mess-Wiese 688 px, 8/8 (die Kette über den Halmen, der Kopf darin); die ferne Kamera des Spiels vorher: Figur
+// ~70 px, die Gestalt 0 px. N = 200: ein Drittel der gemessenen Gestalt — ein Flegel, den Halme oder Ferne zu zwei Dritteln schlucken, ist ROT
+const SEIL_SICHT_N = 200;
+const seilSicht = (q) => q.figurPx >= 180 && q.pixel - q.rauschen >= SEIL_SICHT_N && q.teile > 0 && q.sichtbar === q.teile;
 const SEIL_ROH = {
     klingen: 23,
     seile: ["klinge_flegel"],
     je: { klinge_flegel: { teile: 16, anker: [0.545, 0, 0], laengeArt: "längs", schwungM: 0.476, laengeM: [0.328, 0.329], energie: [3.183, 0.257], imBild: 1 } },
-    schuesse: [{ name: "klinge_flegel", datei: "x-seil-s1.png" }],
+    schuesse: [{ name: "klinge_flegel", datei: "x-seil-s1.png", kamera: [-238.3, 27.6, -1075.9, -238.8, 27.2, -1073.7], figurPx: 284, roi: [440, 251, 540, 366], pixel: 643, rauschen: 0, teile: 8, sichtbar: 8 }],
+    grund: { x: -238.8, z: -1073.4, abstand: 50 },
     griff: { klinge_flegel: { takte: 24, leer: 0, teile: 23, ms: 1356, gestalt: true } },
 };
 const seilRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWELTPROBE seil " + JSON.stringify(aendern(JSON.parse(JSON.stringify(SEIL_ROH))));
@@ -5224,6 +5352,10 @@ module.exports = [
             { name: "der erste Griff ließ die Hand leer (die Faust ohne Hand-Mitte am Grob-Leib)", stdout: seilRoh((x) => ((x.griff.klinge_flegel.leer = 380), x)), gruen: false },
             { name: "der erste Griff ohne Studio-Gestalt", stdout: seilRoh((x) => ((x.griff.klinge_flegel.gestalt = false), x)), gruen: false },
             { name: "ohne den ersten Griff (die Probe vor w28-flegel)", stdout: seilRoh((x) => (delete x.griff, x)), gruen: false },
+            { name: "der Flegel im Gras verdeckt (die Gestalt kaum über dem Rauschen, kein Seil-Teil zu sehen)", stdout: seilRoh((x) => (Object.assign(x.schuesse[0], { pixel: 14, rauschen: 3, sichtbar: 0 }), x)), gruen: false },
+            { name: "die Figur fern (70 px, die Kamera des Spiels an der Mess-Wiese, Radeon 59718110)", stdout: seilRoh((x) => ((x.schuesse[0].figurPx = 70), x)), gruen: false },
+            { name: "ein Seil-Teil im Gras (7 von 8 zu sehen)", stdout: seilRoh((x) => ((x.schuesse[0].sichtbar = 7), x)), gruen: false },
+            { name: "der Schuss ohne Sicht-Messung (die Probe vor Patch 3: nur der Kegel)", stdout: seilRoh((x) => ((x.schuesse[0] = { name: "klinge_flegel", datei: "x-seil-s1.png" }), x)), gruen: false },
             { name: "keine Zeile", stdout: "[linse-gpu] amd/rdna-3 (Probe)", gruen: false },
             { name: "swiftshader", stdout: seilRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
         ],
