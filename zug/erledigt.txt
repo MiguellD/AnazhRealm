@@ -1401,3 +1401,4 @@ omen-gtx-gtx-884c6a25-1-884c6a25 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN w
 2026-11-17 03:10 landung ABGEBROCHEN main 884c6a25: sg-takt wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 51 stellen sich hinten an
 2026-11-17 03:14 landung Zwischenstand main ee9c1965: misst 52 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (52) je allein (0 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-paar-4e-1-4e11d3e7 GRÜN 2 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN karte2.erleben.schoepfen.schutz#1 karte2.erleben.schoepfen.teilen#1 (punkte-maschine 738e709c messung/4e11d3e7-gtx.json)
+omen-gtx-gtx-ee9c1965-1-ee9c1965 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN luftwasser.K3#1 ‖ luftwasser.K3#1: Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer) (punkte-maschine 2ef8167a messung/ee9c1965-gtx.json)
