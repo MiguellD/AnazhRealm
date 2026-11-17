@@ -5221,7 +5221,7 @@
   },
   "karte2.leben.tiere.lebenszyklus": {
    "punkte": 0,
-   "beleg": "Maschine: 8 Saaten · Grundbestand min 9.43 · halbe Nahrung -0.355 [-0.474, -0.205] · 17313 Hungertode, 17313 die Ältesten · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.tiere.lebenszyklus#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 8 Saaten · Grundbestand min 9.43 · halbe Nahrung -0.355 [-0.474, -0.205] · 17313 Hungertode, 17313 die Ältesten · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon · 8 Saaten · Grundbestand min 9.43 · halbe Nahrung -0.355 [-0.474, -0.205] · 17313 Hungertode, 17313 die Ältesten · Takte an der Kappe 0 · [linse-gpu] nvidia/pascal an 7de938ab gtx",
    "stationen": [
     {
      "id": "karte2.leben.tiere.lebenszyklus#1",
@@ -5236,18 +5236,18 @@
     {
      "id": "karte2.leben.tiere.lebenszyklus#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "8 Saaten · Grundbestand min 9.43 · halbe Nahrung -0.355 [-0.474, -0.205] · 17313 Hungertode, 17313 die Ältesten · Takte an der Kappe 0 · [linse-gpu] nvidia/pascal",
+     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
   },
   "karte2.leben.tiere.masse": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.1 m: 46.6 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (89 px) · 51.2 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (163 px) · 55.6 m 5/5 fliehen, 3 sichtbar, 2 Fleck(en) (185 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] amd/rdna-3 an 7de938ab · karte2.leben.tiere.masse#1 gtx: Konsum seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kreatur-proben.cjs +14)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.1 m: 46.6 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (89 px) · 51.2 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (163 px) · 55.6 m 5/5 fliehen, 3 sichtbar, 2 Fleck(en) (185 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] amd/rdna-3 an 7de938ab · karte2.leben.tiere.masse#1 gtx: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.8 m: 46.7 m 5/5 fliehen, 3 sichtbar, 2 Fleck(en) (89 px) · 51 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (113 px) · 55.2 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (151 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal an 7de938ab",
    "stationen": [
     {
      "id": "karte2.leben.tiere.masse#1",
@@ -5263,10 +5263,9 @@
      "id": "karte2.leben.tiere.masse#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kreatur-proben.cjs +14)",
-     "ungemessen": true,
+     "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.8 m: 46.7 m 5/5 fliehen, 3 sichtbar, 2 Fleck(en) (89 px) · 51 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (113 px) · 55.2 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (151 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
+     "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.8 m: 46.7 m 5/5 fliehen, 3 sichtbar, 2 Fleck(en) (89 px) · 51 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (113 px) · 55.2 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (151 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     }
@@ -5274,7 +5273,7 @@
   },
   "karte2.leben.tiere.mensch": {
    "punkte": 0,
-   "beleg": "Maschine: Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.576 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.916 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.tiere.mensch#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.576 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.916 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · Annäherung im Fenster: deer flieht ab 113.902 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.575 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.205 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.956 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] nvidia/pascal an 7de938ab gtx",
    "stationen": [
     {
      "id": "karte2.leben.tiere.mensch#1",
@@ -5289,18 +5288,18 @@
     {
      "id": "karte2.leben.tiere.mensch#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "Annäherung im Fenster: deer flieht ab 113.902 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.575 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.205 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.956 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] nvidia/pascal",
+     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
   },
   "karte2.leben.tiere.verhalten": {
    "punkte": 0,
-   "beleg": "Maschine: 4 Gattungen · Budget deer ruhen 0.399/0.4 · deer nahrung 0.506/0.5 · deer ziehen 0.096/0.1 · bear ruhen 0.445/0.45 · bear nahrung 0.404/0.4 · bear ziehen 0.152/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.603/0.6 · wolf nahrung 0/0 · wolf ziehen 0.397/0.4 · Trünke 10,10,10,10,9,10,10,10,10,10,10,10 (am Wasser 119, Durst aus 0) · Ruhe bewegt 7274/654873 · Riss je Jagd einWolf 0/20 (HP 168) · rudel 24/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 52.9 s · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.tiere.verhalten#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 4 Gattungen · Budget deer ruhen 0.399/0.4 · deer nahrung 0.506/0.5 · deer ziehen 0.096/0.1 · bear ruhen 0.445/0.45 · bear nahrung 0.404/0.4 · bear ziehen 0.152/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.603/0.6 · wolf nahrung 0/0 · wolf ziehen 0.397/0.4 · Trünke 10,10,10,10,9,10,10,10,10,10,10,10 (am Wasser 119, Durst aus 0) · Ruhe bewegt 7274/654873 · Riss je Jagd einWolf 0/20 (HP 168) · rudel 24/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 52.9 s · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.tiere.verhalten#1 gtx: ROT: 4 Gattungen · Budget deer ruhen 0.399/0.4 · deer nahrung 0.506/0.5 · deer ziehen 0.096/0.1 · bear ruhen 0.445/0.45 · bear nahrung 0.404/0.4 · bear ziehen 0.152/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.603/0.6 · wolf nahrung 0/0 · wolf ziehen 0.397/0.4 · Trünke 10,10,10,10,9,10,10,10,10,10,10,10 (am Wasser 119, Durst aus 0) · Ruhe bewegt 7274/654873 · Riss je Jagd einWolf 0/20 (HP 168) · ✗ rudel 25/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 36.9 s · [linse-gpu] nvidia/pascal an 7de938ab",
    "stationen": [
     {
      "id": "karte2.leben.tiere.verhalten#1",
@@ -5316,17 +5315,17 @@
      "id": "karte2.leben.tiere.verhalten#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "4 Gattungen · Budget deer ruhen 0.399/0.4 · deer nahrung 0.506/0.5 · deer ziehen 0.096/0.1 · bear ruhen 0.445/0.45 · bear nahrung 0.404/0.4 · bear ziehen 0.152/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.603/0.6 · wolf nahrung 0/0 · wolf ziehen 0.397/0.4 · Trünke 10,10,10,10,9,10,10,10,10,10,10,10 (am Wasser 119, Durst aus 0) · Ruhe bewegt 7274/654873 · Riss je Jagd einWolf 0/20 (HP 168) · ✗ rudel 25/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 36.9 s · [linse-gpu] nvidia/pascal",
+     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
+     "grund": "ROT: 4 Gattungen · Budget deer ruhen 0.399/0.4 · deer nahrung 0.506/0.5 · deer ziehen 0.096/0.1 · bear ruhen 0.445/0.45 · bear nahrung 0.404/0.4 · bear ziehen 0.152/0.15 · fox ruhen 0.602/0.6 · fox nahrung 0/0 · fox ziehen 0.398/0.4 · wolf ruhen 0.603/0.6 · wolf nahrung 0/0 · wolf ziehen 0.397/0.4 · Trünke 10,10,10,10,9,10,10,10,10,10,10,10 (am Wasser 119, Durst aus 0) · Ruhe bewegt 7274/654873 · Riss je Jagd einWolf 0/20 (HP 168) · ✗ rudel 25/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 36.9 s · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
   },
   "karte2.leben.tiere.wanderung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.wanderung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +36) · karte2.leben.tiere.wanderung#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/diag-kreatur-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.wanderung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, koerper-core.js +36) · karte2.leben.tiere.wanderung#1 gtx: ROT: 4 Gattungen · deer 107 m² = 0.53× π·8², im Lebensraum 0.906, 1440 Punkte · deer 122 m² = 0.61× π·8², im Lebensraum 0.999, 1440 Punkte · deer 138 m² = 0.68× π·8², im Lebensraum 1, 1440 Punkte · ✗ bear 492 m² = 0.20× π·28², im Lebensraum 0.998, 1440 Punkte · ✗ bear 1111 m² = 0.45× π·28², im Lebensraum 1, 1440 Punkte · ✗ bear 979 m² = 0.40× π·28², im Lebensraum 1, 1440 Punkte · fox 118 m² = 0.59× π·8², im Lebensraum 0.999, 1440 Punkte · fox 167 m² = 0.83× π·8², im Lebensraum 1, 1440 Punkte · fox 162 m² = 0.81× π·8², im Lebensraum 1, 1440 Punkte · wolf 1220 m² = 0.64× π·24.67², im Lebensraum 1, 1440 Punkte · ✗ wolf 571 m² = 0.30× π·24.67², im Lebensraum 0.998, 1440 Punkte · wolf 990 m² = 0.52× π·24.67², im Lebensraum 0.999, 1440 Punkte · [linse-gpu] nvidia/pascal an 7de938ab",
    "stationen": [
     {
      "id": "karte2.leben.tiere.wanderung#1",
@@ -5343,10 +5342,9 @@
      "id": "karte2.leben.tiere.wanderung#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/diag-kreatur-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
-     "ungemessen": true,
+     "zahl": "4 Gattungen · deer 107 m² = 0.53× π·8², im Lebensraum 0.906, 1440 Punkte · deer 122 m² = 0.61× π·8², im Lebensraum 0.999, 1440 Punkte · deer 138 m² = 0.68× π·8², im Lebensraum 1, 1440 Punkte · ✗ bear 492 m² = 0.20× π·28², im Lebensraum 0.998, 1440 Punkte · ✗ bear 1111 m² = 0.45× π·28², im Lebensraum 1, 1440 Punkte · ✗ bear 979 m² = 0.40× π·28², im Lebensraum 1, 1440 Punkte · fox 118 m² = 0.59× π·8², im Lebensraum 0.999, 1440 Punkte · fox 167 m² = 0.83× π·8², im Lebensraum 1, 1440 Punkte · fox 162 m² = 0.81× π·8², im Lebensraum 1, 1440 Punkte · wolf 1220 m² = 0.64× π·24.67², im Lebensraum 1, 1440 Punkte · ✗ wolf 571 m² = 0.30× π·24.67², im Lebensraum 0.998, 1440 Punkte · wolf 990 m² = 0.52× π·24.67², im Lebensraum 0.999, 1440 Punkte · [linse-gpu] nvidia/pascal",
+     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
+     "grund": "ROT: 4 Gattungen · deer 107 m² = 0.53× π·8², im Lebensraum 0.906, 1440 Punkte · deer 122 m² = 0.61× π·8², im Lebensraum 0.999, 1440 Punkte · deer 138 m² = 0.68× π·8², im Lebensraum 1, 1440 Punkte · ✗ bear 492 m² = 0.20× π·28², im Lebensraum 0.998, 1440 Punkte · ✗ bear 1111 m² = 0.45× π·28², im Lebensraum 1, 1440 Punkte · ✗ bear 979 m² = 0.40× π·28², im Lebensraum 1, 1440 Punkte · fox 118 m² = 0.59× π·8², im Lebensraum 0.999, 1440 Punkte · fox 167 m² = 0.83× π·8², im Lebensraum 1, 1440 Punkte · fox 162 m² = 0.81× π·8², im Lebensraum 1, 1440 Punkte · wolf 1220 m² = 0.64× π·24.67², im Lebensraum 1, 1440 Punkte · ✗ wolf 571 m² = 0.30× π·24.67², im Lebensraum 0.998, 1440 Punkte · wolf 990 m² = 0.52× π·24.67², im Lebensraum 0.999, 1440 Punkte · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     }
@@ -6319,12 +6317,10 @@
    ]
   }
  },
- "rueckfall": [
-  "gelaende.K3#1 radeon: spiegelTreue -0.9926 (wasserSatz 11808 px, spiegelEbene 1.088) in 1920×1080, Pose = Kamera des Spiels, Ziel auf dem Wasser in 51.0 m (Gier-Versatz 0°), ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Wasser im Bild frei 51.05 m · Luma 84.8 σ 32 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 an 7de938ab (grün gebucht an 389a6496)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 204,
+  "konsum": 207,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6493,10 +6489,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 137
+  "ohne": 134
  },
  "kopfVoll": "7de938ab63f59822e48b121a70a15d31f16f2489",
- "zeit": "2026-11-17T11:35:27.573Z",
+ "zeit": "2026-11-17T11:41:16.149Z",
  "vorher": "7de938ab",
  "bilanz": {
   "gewinn": [],
