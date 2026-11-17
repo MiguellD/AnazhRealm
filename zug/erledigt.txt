@@ -1556,3 +1556,4 @@ omen-gtx-gtx-d39e0d6e-2-d39e0d6e GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN k
 omen-gtx-kk8a-1-31d156e8 ROT 0 GRÜN / 2 ROT / 0 UNGEMESSEN · ROT karte2.mensch.menge.kollektiv#1 karte2.erleben.kopplung.bild#1 (punkte-maschine df989eb4 messung/31d156e8-gtx.json)
 omen-gtx-gtx-d39e0d6e-3-d39e0d6e GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN karte2.mensch.zeit.erleben#1 ‖ karte2.mensch.zeit.erleben#1: Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 95 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal (punkte-maschine 9e5f826d messung/d39e0d6e-gtx.json)
 omen-gtx-d39aa-1-d39e0d6e GRÜN 2 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN karte2.mensch.stadt.siedlungsnetz#1 vegetation.K4#1 (punkte-maschine 76c4a099 messung/d39e0d6e-gtx.json)
+omen-gtx-gtx-d39e0d6e-4-d39e0d6e UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag karte2.mensch.bau.innen#1 (punkte-maschine 76c4a099 messung/d39e0d6e-gtx.json)
