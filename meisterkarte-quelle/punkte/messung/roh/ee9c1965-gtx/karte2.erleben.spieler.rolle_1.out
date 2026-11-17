@@ -391,15 +391,15 @@ H.fahre(async function probeRolle(H) {
     function rolleSichtbar(z, S) {
         return [z.rausch, z.diff].every(Number.isFinite) && z.diff > S.faktor * z.rausch + S.rand;
     }
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\ee9c1965-gtx\karte2.erleben.spieler.rolle_1.json 1772
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\ee9c1965-gtx\karte2.erleben.spieler.rolle_1.json 1771
 [linse-gpu] nvidia/pascal
-  ❌ gehen: Änderung NEIN {"flucht":false,"d":16,"zustand":null} · Δ Bild 0.000534 · Rauschen 0.000534 · 13.3 s
-  ❌ bauen: Änderung NEIN {"fehler":"kein Werk bank_sitzbank am Ort"} · Δ Bild undefined · Rauschen 0 — kein Werk bank_sitzbank am Ort · 15 s
-  ❌ fahren: Änderung NEIN {} · Δ Bild undefined · Rauschen undefined — kein Wagen fahrzeug_gt am Ort · 15 s
-  ❌ kaempfen: Änderung NEIN {"schwung":true,"hp":137.72673503531334,"hp0":137.72673503531334} · Δ Bild 0.001727 · Rauschen 0.003511 · 20.2 s
+  ❌ gehen: Änderung NEIN {"flucht":false,"d":16,"zustand":null} · Δ Bild 0.000525 · Rauschen 0.000525 · 13.3 s
+  ❌ bauen: Änderung NEIN {"fehler":"kein Werk bank_sitzbank am Ort"} · Δ Bild undefined · Rauschen 0 — kein Werk bank_sitzbank am Ort · 14.9 s
+  ❌ fahren: Änderung NEIN {} · Δ Bild undefined · Rauschen undefined — kein Wagen fahrzeug_gt am Ort · 14.9 s
+  ❌ kaempfen: Änderung NEIN {"schwung":true,"hp":140.71347254629555,"hp0":140.71347254629555} · Δ Bild 0.001949 · Rauschen 0.003733 · 20 s
 
 --- stderr ---
-❌ URTEILS-WACHE: 4 ROTE Zeile(n) bei Exit 0 — die erste: ❌ gehen: Änderung NEIN {"flucht":false,"d":16,"zustand":null} · Δ Bild 0.000534 · Rauschen 0.000534 · 13.3 s (Exit wird 1; ein Vermerk heißt nie ROT/❌)
+❌ URTEILS-WACHE: 4 ROTE Zeile(n) bei Exit 0 — die erste: ❌ gehen: Änderung NEIN {"flucht":false,"d":16,"zustand":null} · Δ Bild 0.000525 · Rauschen 0.000525 · 13.3 s (Exit wird 1; ein Vermerk heißt nie ROT/❌)
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
