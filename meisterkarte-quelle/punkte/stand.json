@@ -5679,8 +5679,9 @@
      "gruen": true,
      "zahl": "Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 89 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3",
      "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
      "gehalten": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6077,8 +6078,9 @@
      "gruen": true,
      "zahl": "Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
      "gehalten": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6343,7 +6345,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 211,
+  "konsum": 213,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6512,10 +6514,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 130
+  "ohne": 128
  },
  "kopfVoll": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
- "zeit": "2026-11-17T13:42:18.715Z",
+ "zeit": "2026-11-17T13:53:17.278Z",
  "vorher": "b7b0f8fe",
  "bilanz": {
   "gewinn": [],
