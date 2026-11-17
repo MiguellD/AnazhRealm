@@ -6289,9 +6289,7 @@
    ]
   }
  },
- "rueckfall": [
-  "schatten.K3#1 radeon: fuss Band 92.8 % des freien Bodens (frei mit/ohne 1.0153, 18 Punkte gesehen, Sicht 0.9) · sockel Band 40.8 % des freien Bodens (frei mit/ohne 1, 12 Punkte gesehen, Sicht 0.6) (Soll 30–60 %, Himmel allein; Platz [-584.2,-964] Grün 0) · Ort [-704.2,-880] · 0.83 s · [linse-gpu] amd/rdna-3 an ee9c1965 (grün gebucht an 63655917)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 507,
   "konsum": 209,
@@ -6467,20 +6465,11 @@
   "ohne": 131
  },
  "kopfVoll": "ee9c196544e4376ea20c95921c852ad931bc1604",
- "zeit": "2026-11-17T04:08:58.300Z",
+ "zeit": "2026-11-17T04:24:49.741Z",
  "vorher": "ee9c1965",
  "bilanz": {
-  "gewinn": [
-   "gelaende.K4 1→2",
-   "licht.K4 0→1",
-   "lod.K4 0→1",
-   "mensch.K1 0→1",
-   "schatten.K5 0→1",
-   "vegetation.K4 0→1"
-  ],
-  "fall": [
-   "schatten.K3 1→0 (schatten.K3#1 radeon: ROT: fuss Band 92.8 % des freien Bodens (frei mit/ohne 1.015)"
-  ],
+  "gewinn": [],
+  "fall": [],
   "massenFall": false
  },
  "pflicht": {
