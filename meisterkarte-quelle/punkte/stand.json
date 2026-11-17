@@ -5384,7 +5384,7 @@
   },
   "karte2.mensch.bau.innen": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an c8c840c9 radeon · gehalten: 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an c8c840c9 gtx",
+   "beleg": "Maschine: gehalten: 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an c8c840c9 radeon · 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an ee9c1965 gtx",
    "stationen": [
     {
      "id": "karte2.mensch.bau.innen#1",
@@ -5402,9 +5402,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet",
-     "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/abnahme-urteil.cjs +14)",
-     "gehalten": true,
+     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -6497,7 +6496,7 @@
   "ohne": 156
  },
  "kopfVoll": "ee9c196544e4376ea20c95921c852ad931bc1604",
- "zeit": "2026-11-17T03:09:41.941Z",
+ "zeit": "2026-11-17T03:30:37.973Z",
  "vorher": "ee9c1965",
  "bilanz": {
   "gewinn": [],
