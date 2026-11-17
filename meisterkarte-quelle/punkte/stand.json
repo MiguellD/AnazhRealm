@@ -5558,16 +5558,15 @@
   },
   "karte2.mensch.menge.bild": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 33.9 fps · [linse-gpu] amd/rdna-3 an ee9c1965 radeon · 25 Menschen im Bild, 14 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 19.2 fps · [linse-gpu] nvidia/pascal an e489088a gtx",
+   "beleg": "Maschine: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 34.3 fps · [linse-gpu] amd/rdna-3 an e489088a radeon · 25 Menschen im Bild, 14 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 19.2 fps · [linse-gpu] nvidia/pascal an e489088a gtx",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bild#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 33.9 fps · [linse-gpu] amd/rdna-3",
-     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +1)",
-     "gehalten": true,
+     "zahl": "25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 34.3 fps · [linse-gpu] amd/rdna-3",
+     "sha": "e489088a9bfca46817cd159efd64ffc1be80dbd4",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -6549,7 +6548,7 @@
   "ohne": 112
  },
  "kopfVoll": "33814d2522c8f7e4bc6b15c61d23a842e4054408",
- "zeit": "2026-11-17T09:39:04.882Z",
+ "zeit": "2026-11-17T09:44:49.244Z",
  "vorher": "33814d25",
  "bilanz": {
   "gewinn": [],
