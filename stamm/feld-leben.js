@@ -2642,21 +2642,17 @@ class AnazhRealm_feld_leben {
         const leb = this.auraAt(x, z).lebendig;
         let f = null;
         if (leb >= AnazhRealm.BRAND.minStoff && !this._nassAt(x, z)) {
-            const y = this._voxelSurfaceY(x, z);
+            const [y, h] = [this._voxelSurfaceY(x, z), cs / 2];
+            const [gx, gz] = [(this._voxelSurfaceY(x + h, z) - y) / h, (this._voxelSurfaceY(x, z + h) - y) / h];
             // das Bett liegt, wo die Zelle Brennstoff trägt (Mitte und vier Viertel-Punkte), ihr ANTEIL geht als Last ins Gesetz
-            // (`leb`). Bis w28-lava-zuendet las sie nur ihre Mitte — ein Stein dort nahm einer Wiese von 16 m ihr Bett
+            // (`leb`). Bis w28-lava-zuendet las sie nur ihre Mitte — ein Stein dort nahm einer Wiese von 16 m ihr Bett. Die
+            // Viertel-Punkte lesen ihren Stoff auf der Ebene des Gefälles (keine eigene Höhe: je Punkt 47 Einheiten des Takts)
             const B5 = [0, 1, 2, 3, 4]
                 .map((k) => [k ? (k & 1 ? cs : -cs) / 4 : 0, k ? (k > 2 ? cs : -cs) / 4 : 0])
-                .map(([dx, dz]) =>
-                    this._stoff(this._kontaktStoffAt(x + dx, z + dz, this._voxelSurfaceY(x + dx, z + dz)))
-                )
+                .map(([dx, dz]) => this._stoff(this._kontaktStoffAt(x + dx, z + dz, y + gx * dx + gz * dz)))
                 .filter((s) => s && s.brenn);
             const zeile = B5[0];
-            if (zeile) {
-                const h = cs / 2;
-                const [gx, gz] = [(this._voxelSurfaceY(x + h, z) - y) / h, (this._voxelSurfaceY(x, z + h) - y) / h];
-                f = { zeile, leb: (leb * B5.length) / 5, x, z, y, gx, gz, boden: this._feuchteAt(x, z, y) };
-            }
+            if (zeile) f = { zeile, leb: (leb * B5.length) / 5, x, z, y, gx, gz, boden: this._feuchteAt(x, z, y) };
         }
         M.set(key, f);
         return f;
