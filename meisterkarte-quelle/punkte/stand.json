@@ -4581,7 +4581,7 @@
   },
   "vegetation.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 104465 px · winter 1911 px · fruehling 76645 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an c8c840c9 radeon · gehalten: Krone sommer 104170 px · winter 2254 px · fruehling 76353 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 389a6496 gtx",
+   "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 104465 px · winter 1911 px · fruehling 76645 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an c8c840c9 radeon · Krone sommer 104175 px · winter 2252 px · fruehling 76347 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an d39e0d6e gtx",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -4616,10 +4616,9 @@
      "id": "vegetation.K5#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Krone sommer 104170 px · winter 2254 px · fruehling 76353 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
-     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +18)",
-     "gehalten": true,
+     "zahl": "Krone sommer 104175 px · winter 2252 px · fruehling 76347 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -6504,7 +6503,7 @@
   "ohne": 148
  },
  "kopfVoll": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
- "zeit": "2026-11-17T19:41:57.047Z",
+ "zeit": "2026-11-17T19:48:21.776Z",
  "vorher": "d39e0d6e",
  "bilanz": {
   "gewinn": [],
