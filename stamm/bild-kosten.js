@@ -2180,15 +2180,48 @@ class AnazhRealm_bild_kosten {
         const [T, NA] = [THREE.TSL, AnazhRealm.NACHT_AUGE];
         const nacht = this._nachtAugeU || (this._nachtAugeU = T.uniform(0));
         if (!farbe) return nacht;
-        const lum = T.luminance(farbe);
-        const zapfen = T.log(
-            lum.mul(T.float(NA.luxJeEinheit)).max(T.float(NA.staebchenCd)).div(T.float(NA.staebchenCd))
-        )
-            .div(T.float(Math.log(NA.zapfenCd / NA.staebchenCd)))
-            .clamp(0, 1);
-        const s = T.float(1).sub(zapfen).mul(nacht);
-        if (vor) return farbe.sub(lum.mul(s)).div(T.float(1).sub(s).max(0.1)).max(0);
-        return T.vec3(lum, lum, lum).sub(farbe).mul(s);
+        // der Stäbchen-ANTEIL eines Pixels der photopischen Leuchtdichte l: das mesopische Band der Leuchtdichte …
+        const sVon = (l) => {
+            const zapfen = T.log(
+                l.mul(T.float(NA.luxJeEinheit)).max(T.float(NA.staebchenCd)).div(T.float(NA.staebchenCd))
+            )
+                .div(T.float(Math.log(NA.zapfenCd / NA.staebchenCd)))
+                .clamp(0, 1);
+            // … und am BILD (w28-glut-nacht): ein Pixel, das die Belichtung der Nacht über Mittelgrau hebt, sieht das Auge mit
+            // den Zapfen — der Anteil blendet von `bildZapfen[0]` bis `bildZapfen[1]` (Leuchtdichte × Belichtung) aus. Die
+            // Skala der Leuchtdichte allein legt die Zapfen-Schwelle auf das 29-Fache von Bild-Weiß: der Feuerschein stand rosa
+            const hell = T.smoothstep(NA.bildZapfen[0], NA.bildZapfen[1], l.mul(T.toneMappingExposure));
+            return T.float(1).sub(zapfen).mul(nacht).mul(T.float(1).sub(hell));
+        };
+        // DAS GRAU DER STÄBCHEN IST SKOTOPISCH (w28-glut-nacht; CIE 191:2010: L_mes = m·L_p + (1 − m)·L_s): die Stäbchen sehen
+        // Rot-Orange kaum (V′, Gipfel 507 nm) — ihr Grau ist die skotopische Leuchtdichte der Farbe (`NACHT_AUGE.skotopisch`),
+        // in der Stärke `NACHT_AUGE.staebchenStaerke` (ihr Anker steht an der Tafel). Feuerschein hebt das Grau um sein S/P-Verhältnis
+        // weniger, Gelb-Grün und Rot stehen nachts dunkler, Blau heller (Purkinje). Der Stäbchen-ANTEIL bleibt photopisch.
+        const w = NA.skotopisch.map((g) => g * NA.staebchenStaerke);
+        const skot = farbe.dot(T.vec3(w[0], w[1], w[2]));
+        // DIE UMKEHR: gesehen = f·(1 − s) + skot(f)·s mit s am Urbild f; skot ist linear → skot(f) = skot(gesehen) ÷ (1 − s +
+        // s·Σw). Die Leuchtdichte bleibt unter dem skotopischen Grau NICHT gleich (ein dunkles Rot verliert sie): s am gesehenen
+        // Ton gelesen schoss über (Linse (j) TOR Dunkelrot 93 → 119) — der Anteil folgt dem Urbild in `umkehrSchritte` Schritten.
+        if (vor) {
+            const ur = (s) =>
+                farbe
+                    .sub(
+                        skot
+                            .div(
+                                T.float(1)
+                                    .sub(s)
+                                    .add(s.mul(w[0] + w[1] + w[2]))
+                            )
+                            .mul(s)
+                    )
+                    .div(T.float(1).sub(s).max(0.1))
+                    .max(0);
+            let s = sVon(T.luminance(farbe));
+            for (let i = 0; i < NA.umkehrSchritte; i++) s = sVon(T.luminance(ur(s)));
+            return ur(s);
+        }
+        const s = sVon(T.luminance(farbe));
+        return T.vec3(skot, skot, skot).sub(farbe).mul(s);
     }
 
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
@@ -2936,7 +2969,24 @@ AnazhRealm._atmoKern = function () {
 // der CIE 191:2010 — unter `staebchenCd` sieht das Auge ohne Farbe (Stäbchen), über `zapfenCd` voll (Zapfen); `luxJeEinheit`
 // die Eichung der Nacht (Vollmond 0,26 lx ≙ der Nacht-Bestrahlung der Welt 0,224, fachwerk LICHT_GESETZ) — eine Leuchtdichte
 // der Welt (Albedo/π · Bestrahlung) mal ihr ist cd/m².
-AnazhRealm.NACHT_AUGE = Object.freeze({ luxJeEinheit: 0.26 / 0.224, staebchenCd: 0.005, zapfenCd: 5 });
+// `bildZapfen`: die Helligkeit am Bild (Leuchtdichte × Belichtung), von der an bis zu der das Auge ganz mit den Zapfen
+// sieht — Mittelgrau (die Eichung der Belichtung, Lehre 21) bis Weiß.
+// `skotopisch`: die Gewichte der skotopischen Leuchtdichte für lineares sRGB — die Zeile V′ = −0,702·X + 1,039·Y + 0,433·Z
+// (Pattanaik et al. 1998, auch Jensen et al. 2000 „Night Rendering") durch die sRGB→XYZ-Matrix (D65): R −0,0603 · G 0,5437 ·
+// B 0,3599; das Rot steht auf 0 (eine Erregung ist nie negativ).
+// `staebchenStaerke`: die EINE Stärke des Stäbchen-Graus. Ihr Zweck war immer „der Boden bleibt nachts lesbar": ANKER = der Boden
+// 1–3 m der Prüfbühne S0 um Mitternacht ohne Feuer trägt dieselbe Luma wie main (24,1 ± 0,3; gate:pruefbuehne-licht, Soll ≥ 22).
+// Der Mondton war die Herleitung für die FORM (V′), der Boden ist der Zweck der STÄRKE (Koordinator 17.11.).
+// `umkehrSchritte`: so oft liest die Umkehr den Stäbchen-Anteil an ihrem Urbild neu (Fixpunkt; gemessen an der Linse (j)).
+AnazhRealm.NACHT_AUGE = Object.freeze({
+    luxJeEinheit: 0.26 / 0.224,
+    staebchenCd: 0.005,
+    zapfenCd: 5,
+    bildZapfen: Object.freeze([0.18, 1]),
+    skotopisch: Object.freeze([0, 0.5437, 0.3599]),
+    staebchenStaerke: 1.22,
+    umkehrSchritte: 3,
+});
 // DIE EINE SZENEN-SKALA (K50, `_szeneSkalaWirk`): die Szene rendert in SZENE_SKALA × Ausgabe, die zeitliche Auflösung
 // (`_zeitAufloesung`, TAAU) löst auf die Ausgabe auf. 0,75 = 56 % der Pixel-Arbeit; der Spieler stellt sie im Menü (0,5..1).
 AnazhRealm.SZENE_SKALA = 0.75;
