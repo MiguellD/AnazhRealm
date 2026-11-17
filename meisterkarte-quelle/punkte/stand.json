@@ -5277,6 +5277,32 @@
     }
    ]
   },
+  "karte2.leben.tiere.mensch": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.mensch#1 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.leben.tiere.mensch#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.leben.tiere.mensch#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    }
+   ]
+  },
   "karte2.leben.tiere.verhalten": {
    "punkte": 0,
    "beleg": "Maschine: 0 — offen: karte2.leben.tiere.verhalten#1 radeon: Station seit der Messung geändert · karte2.leben.tiere.verhalten#1 gtx: Station seit der Messung geändert",
@@ -5708,7 +5734,7 @@
   },
   "karte2.planet.kopplung.bahn-klima": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.bahn-klima#1 radeon: Konsum seit der Messung geändert (R6: stamm/daten.js) · karte2.planet.kopplung.bahn-klima#1 gtx: Konsum seit der Messung geändert (R6: stamm/daten.js)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.bahn-klima#1 radeon: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.bahn-klima#1",
@@ -5716,9 +5742,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -5727,9 +5752,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5896,7 +5920,7 @@
   },
   "karte2.planet.wetter.klimazonen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.klimazonen#1 radeon: Konsum seit der Messung geändert (R6: stamm/daten.js) · karte2.planet.wetter.klimazonen#1 gtx: Konsum seit der Messung geändert (R6: stamm/daten.js)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.klimazonen#1 radeon: Station seit der Messung geändert · karte2.planet.wetter.klimazonen#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.wetter.klimazonen#1",
@@ -5904,9 +5928,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -5915,9 +5938,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6304,8 +6326,8 @@
  },
  "rueckfall": [],
  "r6": {
-  "haelften": 505,
-  "konsum": 182,
+  "haelften": 507,
+  "konsum": 178,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6475,11 +6497,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 156
+  "ohne": 162
  },
  "kopfVoll": "ee9c196544e4376ea20c95921c852ad931bc1604",
- "zeit": "2026-11-17T02:18:28.828Z",
- "vorher": "884c6a25",
+ "zeit": "2026-11-17T02:34:36.751Z",
+ "vorher": "ee9c1965",
  "bilanz": {
   "gewinn": [],
   "fall": [],
