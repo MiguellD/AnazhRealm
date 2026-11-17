@@ -464,7 +464,7 @@ class AnazhRealm_siedlung_wege {
         let neu = 0;
         for (const stufe of wk.stufen) if (stufe.zentriert) neu = Math.max(neu, flaeche(stufe, x0, z0, x1, z1));
         // auf der Decke wächst nichts: die Nah-Wiese und die Nah-Streu (Blumen, Kiesel, Totholz) würfeln darüber neu
-        if (neu >= 2) this._nahRingNeuIn(x0, z0, x1, z1), this._nahStreuNeuIn(x0, z0, x1, z1);
+        if (neu >= 2) (this._nahRingNeuIn(x0, z0, x1, z1), this._nahStreuNeuIn(x0, z0, x1, z1));
         return neu > 0;
     }
 
@@ -573,7 +573,11 @@ class AnazhRealm_siedlung_wege {
                 let z = null;
                 if (a) {
                     const L = this._lavaZustand(a);
-                    z = { asche: Math.exp(-Math.max(0, L.alterS) / L.tau), busch: this._temperaturAt(a.y, 0) + 273.15, wald: 0 };
+                    z = {
+                        asche: Math.exp(-Math.max(0, L.alterS) / L.tau),
+                        busch: this._temperaturAt(a.y, 0) + 273.15,
+                        wald: 0,
+                    };
                 }
                 M.set(k, (c = z));
             }
@@ -1139,7 +1143,12 @@ class AnazhRealm_siedlung_wege {
             const deckung = p.add(_lava);
             const je = _T.float(1).div(_T.max(deckung, 1e-3));
             const kipp = (stein.kipp ? stein.kipp.mul(p).add(kruste.kipp.mul(_lava)) : kruste.kipp.mul(_lava)).mul(je);
-            aus.stein = { farbe: pflaster.mul(p).add(kruste.farbe.mul(_lava)).mul(je), deckung, kipp, korn: stein.korn };
+            aus.stein = {
+                farbe: pflaster.mul(p).add(kruste.farbe.mul(_lava)).mul(je),
+                deckung,
+                kipp,
+                korn: stein.korn,
+            };
             aus.glut = kruste.glut.mul(_lava);
         }
         return _T.mix(_T.mix(mitAcker, pflaster, _pflaster), kruste.farbe, _lava);
@@ -1165,7 +1174,10 @@ class AnazhRealm_siedlung_wege {
         const n = n1.x.add(n2.x.mul(K.rissAnteil));
         const c = n.abs();
         // die Neigung von |n| in der Welt (1/m): die Ableitungen der Oktaven durch ihre Wellenlänge, mit dem Vorzeichen von n
-        const grad = n1.yz.div(K.schollenM).add(n2.yz.mul(K.rissAnteil / K.rissM)).mul(n.div(c.add(1e-4)));
+        const grad = n1.yz
+            .div(K.schollenM)
+            .add(n2.yz.mul(K.rissAnteil / K.rissM))
+            .mul(n.div(c.add(1e-4)));
         const aa = _T.fwidth(c);
         const rand = _T.smoothstep(_T.float(K.randDicke[0]), _T.float(K.randDicke[1]), decke);
         const offen = w.mul(K.offen).mul(rand);
@@ -1180,7 +1192,10 @@ class AnazhRealm_siedlung_wege {
         // die Scholle wölbt sich über der Fuge: h = smoothstep(0, 2·fuge, |n|) · relief, die Normale kippt gegen ∇h
         const t = c.div(2 * K.fuge).clamp(0.0, 1.0);
         const sicht = _T.float(1).sub(_T.smoothstep(_T.float(K.fuge), _T.float(4 * K.fuge), aa));
-        const steil = t.mul(_T.float(1).sub(t)).mul((6 * K.relief) / (2 * K.fuge)).mul(sicht);
+        const steil = t
+            .mul(_T.float(1).sub(t))
+            .mul((6 * K.relief) / (2 * K.fuge))
+            .mul(sicht);
         const kipp = _T.vec3(grad.x.mul(steil).negate(), 0, grad.y.mul(steil).negate());
         return { farbe, kipp, glut };
     }
