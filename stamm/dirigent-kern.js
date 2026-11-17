@@ -1807,14 +1807,17 @@ class AnazhRealm {
             const F = this._flammenLicht(Math.min(cs / 2, a * Math.pow(Math.max(0, 1 - b.ecc * b.ecc), 0.25)));
             nimm(b, { quelle: "brand", x: o.x, y: o.y, z: o.z, L: F.L, masse: F.masse * b.glut, phase: o.phase });
         });
-        // DIE LAVA (stoffe.K3-2): jede glühende Decke leuchtet als Feuer über ihrem Ort, die Masse folgt ihrer Glut (`_lavaZustand`)
+        // DIE LAVA (stoffe.K3-2 · w28-lava-zuendet): jede glühende Decke leuchtet als FLAMMEN-FLÄCHE ihrer Zelle (`_flammenLicht`,
+        // der Weg des Brands: an der Decke die Bestrahlung `schein`, fern wächst ihr Licht mit ihrer Fläche), die Masse folgt ihrer
+        // Glut (`_lavaZustand`). Bis hier stand sie als Herdfeuer-Punkt × `BRAND.licht` 1 m über ihrer Mitte: nachts brannte die
+        // Kruste dort weiß-rosa aus, die Risse verloren ihr Orange, und der Schein reichte kaum über ihren Rand.
+        const lavaLicht = this._flammenLicht(cs / 2);
         for (const a of this._tatIndex().lava) {
             if ((a.x - x) * (a.x - x) + (a.z - z) * (a.z - z) > R * R) continue;
             const g = this._lavaZustand(a).glut;
             if (!(g > 0)) continue;
             const phase = (((a.x * 12.9898 + a.z * 78.233) % 6.2832) + 6.2832) % 6.2832;
-            const L = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
-            nimm(a, { quelle: "lava", x: a.x, y: a.y + 1, z: a.z, L, masse: AnazhRealm.BRAND.licht * g, phase });
+            nimm(a, { quelle: "lava", x: a.x, y: a.y, z: a.z, L: lavaLicht.L, masse: lavaLicht.masse * g, phase });
         }
         // DER STAHL DER ESSE (stoffe.K3-2): das glühende Gerät leuchtet an der Hand in der Farbe seiner Temperatur (`_stahlGlut`)
         const stahl = this._stahlGlut();
@@ -1930,7 +1933,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.323";
+AnazhRealm.VERSION = "18.546.327";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

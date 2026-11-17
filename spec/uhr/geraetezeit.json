@@ -35,7 +35,7 @@
   "dirigent-takt": "frist _bauPflichtGang:2 _bauer:2 _buildDeferrableJobs:9 _fristAufgabe _fristRest _kappeOffen _ladeBildFaellig _ladeFrist:2 · messung _gpuLeineBinden _gpuLeineFrei:2 _loopWeatherAndGrowth · gpu _loopRender · takt startEternalLoop:10",
   "feld-dsl": "anzeige grokSpeakFromJournal:3",
   "feld-leben": "messung _analogEMetrologieStempelLog · frist _brandArbeit _tickBrand · speicher chatSystemPatterns",
-  "feld-nexus": "ki _buildCreaturePersonaPrompt llmBuildSystemPrompt maybeAnswerWithLlm",
+  "feld-nexus": "ki llmBuildSystemPrompt maybeAnswerWithLlm",
   "gelaende-boden": "messung _ortWahlImFaden:2",
   "gelaende-chunks": "messung _acquireVoxelChunkBuild:2 _faedenStumm _nebenFaden:2 · frist _tickFoliageGrowth:2 _tickVoxelChunkStreaming:4",
   "gelaende-fern": "messung _ensureFarWaterSheet:2 · frist _fernRingEinhaengen:2 _pruneDistantVoxelChunks _saatGehtZuEnde",

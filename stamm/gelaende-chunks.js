@@ -161,6 +161,9 @@ class AnazhRealm_gelaende_chunks {
                         this.state.voxelWorkerPending.delete(msg.requestId);
                         pending.resolve(msg);
                     }
+                } else if (msg.type === "stau-result") {
+                    // DER STAU AUS DEM FADEN (`_stauFelder`): die Felder gehen in den Zustand (`_stauAn`)
+                    this._stauAn(msg);
                 } else if (msg.type === "boden-morph") {
                     // DER GEOMORPH AUS DEM FADEN (w4-b-boden2): je gemorphtem Netz die fertigen Puffer — der Takt legt sie an
                     this._bodenAntwort(msg);
@@ -182,6 +185,7 @@ class AnazhRealm_gelaende_chunks {
                         }
                     }
                     this.log(`Voxel-Worker-Fehler (${msg.op}): ${msg.message}`, "ERROR");
+                    if (msg.op === "stau") this._stauAn(msg); // der Stau bricht laut (`_stauAn`: `_bruchMelden`)
                 }
             };
             worker.onerror = (err) => {

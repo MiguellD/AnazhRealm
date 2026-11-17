@@ -1406,18 +1406,22 @@ class AnazhRealm_kreatur_verhalten {
         const dz = ud.wanderAnchor.z - creature.position.z;
         const d = Math.hypot(dx, dz);
         // das Wandern zeigt die Tätigkeit des Tiers (Tiere K4, _kreaturTaetigkeit) — in seiner Leine; jenseits zieht es heim:
-        // es ruht und äst nur in seinem Revier (vorher graste das scheue Kitz 45 m vor dem Anker im Tempo des Grasens weiter)
-        ud._gezeigt = zeigt && ud._taetigkeit ? (d > leash ? "ziehen" : ud._taetigkeit) : null;
-        if (ud._wanderSlot !== slot || !Number.isFinite(ud._wanderHeading)) {
+        // es ruht und äst nur in seinem Revier (vorher graste das scheue Kitz 45 m vor dem Anker im Tempo des Grasens weiter) und
+        // nur, wo sein Lebensraum es trägt (_kreaturRevierTraegt, je Slot): außerhalb zieht es (vorher äste der erste Bär eine
+        // Spielminute lang durch die Lücke zwischen den Teilen seines Reviers, 1,8 % seines Tags draußen)
+        const neu = ud._wanderSlot !== slot || !Number.isFinite(ud._wanderHeading);
+        const p = creature.position;
+        if (neu) ud._draussen = !this._kreaturRevierTraegt(creature, p.x, p.z, true);
+        ud._gezeigt = zeigt && ud._taetigkeit ? (d > leash || ud._draussen ? "ziehen" : ud._taetigkeit) : null;
+        if (neu) {
             ud._wanderSlot = slot;
             const idNum = parseInt(String(ud.netId || "c0").slice(1), 10) || 0;
             // der Weg dieses Slots im Tempo der Tätigkeit, die das Tier zeigt (äsen schleicht), wenigstens sein Raum
             const blick = Math.max(this._kreaturRaum(creature), mag * stride * this._kreaturTaetigkeitTempo(creature));
             const Z = this._kreaturWanderZiel(creature, idNum, slot, blick, leash);
-            const p = creature.position;
             const h = Math.sin((idNum * 131 + slot) * 12.9898) * 43758.5453;
             const kurs = Z ? Math.atan2(Z.z - p.z, Z.x - p.x) : (h - Math.floor(h)) * Math.PI * 2;
-            ud._wanderHeading = this._kreaturWanderKurs(creature, kurs, blick, leash);
+            ud._wanderHeading = this._kreaturWanderKurs(creature, kurs, blick, leash, Z);
         }
         direction.set(Math.cos(ud._wanderHeading) * mag, 0, Math.sin(ud._wanderHeading) * mag);
         if (d > leash) {
@@ -2856,10 +2860,12 @@ class AnazhRealm_kreatur_verhalten {
 
     // Gehört dieses Tier dem Feld? Nur FERN und sobald ein Bake-Versuch lief (mit Gliedern oder
     // gescheitert); nah und in der Bake-Rampe ist das Studio-Tier sichtbar, three cullt es je Pass. Ein Bewohner in seinem
-    // Haus (`_drinnen`, mensch.K2) gehört keinem Feld.
+    // Haus (`_drinnen`, mensch.K2) gehört keinem Feld, einer am Steuer auch nicht — sein Leib gehört dem Wagen (`_verkehrSitz`).
     _kzBesitztFeld(cr) {
         const u = cr && cr.userData;
-        return !!(u && u._kzNah !== true && u._drinnen !== true && (u._kzGlieder || u._kzVersuch));
+        if (!u || u._kzNah === true || u._drinnen === true || (u._feldLageVon && u._feldLageVon.b.amSteuer))
+            return false;
+        return !!(u._kzGlieder || u._kzVersuch);
     }
 
     // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): das Fell (die Schalen, dazu Rest-Strähnen wie der

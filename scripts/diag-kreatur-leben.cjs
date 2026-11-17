@@ -1066,10 +1066,11 @@ async function lebenBuehnen() {
                 const tuer = st && tueren.find((q) => ab(q, st.anker) < 0.05);
                 const fernM = tuer ? ab(st.ur || st, tuer) : 0;
                 if (fernM > ringM && !fern.some((f) => f.st === st)) fern.push({ st, text: `${wer(b)}: ${q3(fernM)} m von ${tuer.k}` }); // prettier-ignore
-                // (der Stand neben dem eigenen Wagen ist der Ort des Fahrers, `_verkehrAnlegen` — kein Haus daneben)
+                // (der Stand neben dem eigenen Wagen ist der Ort des Fahrers, `_verkehrAnlegen` — kein Haus daneben; am Steuer
+                // ist es der Wagen selbst, `_bewohnerSoll`: kein Haus, an dem er vorbeifährt)
                 const o = tuer
                     ? { k: tuer.k, rolle: tuer.rolle, haus: true }
-                    : b.wagen && ziel === b.orte.werk
+                    : b.wagen && (ziel === b.orte.werk || ziel === (b.wagen.entry && b.wagen.entry.position))
                       ? null
                       : ortVon(ziel, "haus#" + b.heim);
                 const dort = b.amSteuer || (drinnen ? !!b.drinnen : !b.weg && ab(b.leib.position, ziel) < 1.5);
