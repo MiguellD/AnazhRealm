@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-17",
-  "kopf": "389a6496",
-  "version": "V18.546.317",
+  "kopf": "bcc2cadc",
+  "version": "V18.546.318",
   "skala": "2.0",
   "summe": 222,
   "max": 330,
   "maschine": {
-    "kopf": "389a6496",
-    "zeit": "2026-11-17T05:54:23.389Z",
+    "kopf": "bcc2cadc",
+    "zeit": "2026-11-17T06:01:09.229Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -196,7 +196,7 @@
           {
             "station": "lod.K1#1",
             "geraet": "radeon",
-            "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\""
+            "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"cre"
           },
           {
             "station": "lod.K1#1",
@@ -289,7 +289,7 @@
           {
             "station": "pflicht.C#2",
             "geraet": "radeon",
-            "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)"
+            "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)"
           },
           {
             "station": "pflicht.C#2",
@@ -319,7 +319,7 @@
           {
             "station": "profiband.K1#1",
             "geraet": "radeon",
-            "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)"
+            "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)"
           },
           {
             "station": "profiband.K1#1",
@@ -329,7 +329,7 @@
           {
             "station": "profiband.K2#1",
             "geraet": "radeon",
-            "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)"
+            "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)"
           },
           {
             "station": "profiband.K2#1",
@@ -339,7 +339,7 @@
           {
             "station": "profiband.K3#1",
             "geraet": "radeon",
-            "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)"
+            "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)"
           },
           {
             "station": "profiband.K3#1",
@@ -349,7 +349,7 @@
           {
             "station": "pflicht.E#1",
             "geraet": "radeon",
-            "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 75aae46a: Last: Referenz f 1,234 (Faden 1,127 · alle Kerne 1,234; vor 106,8/286 ms, nach 115,3/328,9 ms, Ruhe 102,3/266,5 ms sei"
+            "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 75aae46a: Last: Referenz f 1,234 (Faden 1,127 · alle Kerne 1,234; vor 106,8/286 ms, nach 115,3/328,9 ms, Ru"
           },
           {
             "station": "pflicht.E#1",
@@ -1067,7 +1067,7 @@
           "punkte": 0,
           "staffel": "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget · 2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte",
           "messung": "werkbank bild --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah mit FESTEN Ringen 2–5 / 5–10 / 10–20 / 20–40 m (nicht NAH_WIESE.radius): laiWirk ≥ 1,7 je Ring, Saum-Sprung |ΔLAI| ≤ 15 % zwischen Nachbar-Ringen, farbtonStreuung ≥ 10,7° in 2–5 m; Kamera des Spiels, Ausgabe-Größe; Budget über werkbank zaehlen: nahWiese ≤ 4 Befehle / 80k Dreiecke.",
-          "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · vegetation.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +32)",
+          "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · vegetation.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +32)",
           "schlupfloch": "Die alte Tafel zählte nur im Ring NAH_WIESE.radius der gemessenen Welt: ein kleinerer Radius machte die Linse grüner, den Saum bei 14–18 m wertete sie nie. Feste Ringe, Genesis als Pflicht-Pose, „+geaendert“ zählt nicht, die Dreiecks-Grenze und das ABAB gegen Budget-Schieben.",
           "aenderung": "Synthese gab 1 auf einem veralteten Stand, den das neue Lineal selbst ROT nennt → 0 (B25); das ROT am Ring 5–10 m ist das Vorher von H1.",
           "maschine": true
@@ -1087,7 +1087,7 @@
           "punkte": 0,
           "staffel": "1 = im Mischwald (Ego, Mittag) Stamm-Dichte und Unterholz-Deckung im Band der REF und Licht-Flecken am Boden aus der Kaskade, an einem Gerät · 2 = auch im Gegenlicht (Strahlen durch die Kronen, Uhr 0,3) und an einer Lichtung, beide Geräte, im Haushalt baum ≤ 40 Befehle / 150k Dreiecke",
           "messung": "werkbank bild an der Spielgang-Station wald gegen REF real-mischwald: Stämme je Bildbreite, Unterholz-Deckung 0–2 m, Licht-Flecken-Anteil (Varianz der Boden-Luma unter Kronen gegen offenen Boden), Strahl-Kontrast im Gegenlicht ≥ 1,1; die Flecken müssen mit der Sonne wandern (zwei Uhrzeiten).",
-          "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
           "schlupfloch": "Ein gemaltes Licht-Fleck-Muster bewegt sich nicht mit der Sonne: die Flecken kommen aus der Kaskade, zwei Uhrzeiten verschieben sie; Luft-Nebel als Strahl-Ersatz scheitert am Gegenlicht-Kontrast.",
           "aenderung": "Neu (V21): der Umriss zählt LOD K1, der Kamm-Saum Ferne K3 — frei wurde die Tiefe, die RDR2 und Tsushima tragen und die keine Karte maß.",
           "maschine": true
@@ -1224,7 +1224,7 @@
           "punkte": 1,
           "staffel": "1 = ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät · 2 = dazu eine Herde ≥ 20 im Bild in 30 min, updateCreatures ≤ 1,0 ms p95 bei 150 Tieren im 500-m-Ring an der GTX, die Ratsche tier eingerastet, beide Geräte",
           "messung": "Spielgang über 10 Spielminuten (werkbank lauf --wandern kreis, Ego und Third) an Wiese und Genesis; Sichtung = Klassen-Maske tier ≥ 200 px; kein Tier erscheint im Blick; Kosten beim Namen über werkbank zerlegen/takt in Bau-Ereignissen; Prüfbühne mit fester Herde für die Ratsche.",
-          "beleg": "Maschine: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 482 px 42 m 419 s · wesen 247 px 33 m 419 s · wesen 232 px 38 m 516 s · wolf 207 px 36 m 551 s), 631 Prüfungen, 61 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wolf 317 px 38 m 32 s · wesen 249 px 29 m 34 s · wolf 241 px 32 m 41 s · wolf 217 px 32 m 43 s · wesen 299 px 68 m 259 s · wesen 328 px 58 m 262 s · baer 546 px 9 m 276 s · wesen 253 px 48 m 510 s · wesen 206 px 45 m 519 s · wesen 386 px 24 m 543 s), 634 Prüfungen, 67 Masken, Bestand bis 20, im Blick erschienen 0 an 389a6496 gtx",
+          "beleg": "Maschine: gehalten: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 482 px 42 m 419 s · wesen 247 px 33 m 419 s · wesen 232 px 38 m 516 s · wolf 207 px 36 m 551 s), 631 Prüfungen, 61 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wolf 317 px 38 m 32 s · wesen 249 px 29 m 34 s · wolf 241 px 32 m 41 s · wolf 217 px 32 m 43 s · wesen 299 px 68 m 259 s · wesen 328 px 58 m 262 s · baer 546 px 9 m 276 s · wesen 253 px 48 m 510 s · wesen 206 px 45 m 519 s · wesen 386 px 24 m 543 s), 634 Prüfungen, 67 Masken, Bestand bis 20, im Blick erschienen 0 an 389a6496 gtx",
           "schlupfloch": "„≥ 150 im 500-m-Ring“ erfüllen Tiere hinter dem Hügel: gezählt werden Sichtungen im Ausgabe-Bild; die frei-Ratsche versteckte die Kosten, die Prüfbühne mit fester Herde schließt das.",
           "maschine": true
         }
@@ -1533,7 +1533,7 @@
           "punkte": 0,
           "staffel": "1 = jede Tat von Nexus oder KI im Blick schreibt eine Zeile mit Ort, Ursache und Gesetz in die Dialog-Box, Faktentreue gegen state 100 %, ≤ 1 Zeile je 30 s (Vorlage ohne Modell) · 2 = „warum regnet es?“ nennt den wahren Schreiber, mit Modell erzählend (Korpus-Prädikat), beide Geräte",
           "messung": "Spielgang über 30 Spielminuten mit Nexus; automatische Prüfung jeder Zeile gegen state (Ort, Regel, Schreiber).",
-          "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Station seit der Messung geändert · affekt.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · affekt.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9)",
+          "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Station seit der Messung geändert · affekt.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · affekt.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9)",
           "schlupfloch": "Generische Zeilen klingen lebendig: geprüft wird die Faktentreue gegen state und der wahre Schreiber.",
           "aenderung": "Neu (V12).",
           "maschine": true
@@ -1883,7 +1883,7 @@
           "punkte": 1,
           "staffel": "1 = Karte und Fern-Ring je Uhr 0,5/0,27/0,05 im Band 0,9–1,1 an einem Gerät · 2 = auch Feld-Pass, Panorama und Wasser, beide Geräte",
           "messung": "Die F6-Linse (werkbank licht --laub fichte,tanne,ring,haus --karte --uhr), erweitert um Feld-Pass, Panorama und Wasser: Luma-Verhältnis Fernstufe/Gestalt an der Naht je Uhr 0,5/0,27/0,05. Die Sicht im Wetter zählt Ferne K5.",
-          "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · licht.K3#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, index.html +38) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+          "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · licht.K3#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, index.html +38) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
           "schlupfloch": "Der Mittag versteckt jeden Hand-Term (bei hoher Sonne fallen 0,3 + 0,7·N·L und Lambert fast zusammen): die Spalten 0,27 und 0,05. Eine Absenz-Probe auf Text wäre Linsen-Kosmetik: es urteilt das Bild-Verhältnis.",
           "aenderung": "Die F6-Messung zählte zweimal (Licht K3, Ferne K5) — EIN Heim hier.",
           "maschine": true
@@ -2014,7 +2014,7 @@
           "punkte": 0,
           "staffel": "1 = am Kamm in 0,4–4 km Kohärenz des Struktur-Tensors < 0,3 gegen REF real-mischwald und Umriss-Schwankung ≥ 3 m bei 2 km, an einem Gerät · 2 = Kronen-Relief ≥ 10 m bis 8 km, Kammlinie ≤ 0,22 wie REF real-felsen, 4 Azimute, 0,5/1/3/8 km, beide Geräte, im Boden-Haushalt",
           "messung": "Station Hügel: Grat-Linie im Ausgabe-Bild mit und ohne Wald (Schuss ohne die Kronen-Teile des Fern-Rings); Posen Wiese und Genesis, Mittag und Gegenlicht.",
-          "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
           "schlupfloch": "Ein gemaltes Sägezahn-Band oder ein Kronendach-Mesh nur am Messort: der Schuss mit/ohne Wald an vier Azimuten und drei Distanzen verlangt das Gesetz überall, die Kosten-Grenze verbietet das Mesh-Pflaster; Luft-Nebel glättet den Kamm und ist damit ROT.",
           "aenderung": "EIN Heim des Fern-Saums (vorher auch Vegetation K3; B26, V21).",
           "maschine": true
@@ -2125,7 +2125,7 @@
           "punkte": 0,
           "staffel": "1 = alle Zeilen Welt/Labor 0,9–1,1 und im realen Band, beide Seiten --echt, an einem Gerät · 2 = beide Geräte, Eichung Karte 0,180",
           "messung": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, beide Seiten auf echter GPU, ≤ 3 min je Gerät.",
-          "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an fe885d9d: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] amd/rdna-3) · Täter: @@ 84 s · Labor: Protocol · material.K1#1 gtx: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +89) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · material.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#2 gtx: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +89)",
+          "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an fe885d9d: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] amd/rdna-3) · Täter: @@ 84 s · Labor: Protocol · material.K1#1 gtx: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +89) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · material.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#2 gtx: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +89)",
           "schlupfloch": "Labor und Welt mit derselben falschen Eichung wären gleich und trotzdem falsch: zusätzlich das reale Band je Klasse; der Ersatz-Renderer verbirgt Präzision und Ton: beide Seiten --echt.",
           "maschine": true
         },
@@ -2273,7 +2273,7 @@
           "punkte": 0,
           "staffel": "1 = Kontaktband (0–20 cm) 30–60 % des freien Bodens an Fuß und Sockel an einem Gerät · 2 = auch Stammfuß und Tor-Fuß, klar UND bedeckt, ≤ 0,5 ms an der GTX, beide Geräte",
           "messung": "werkbank bild mit Armlängen-Schüssen auf Fuß des Spielers, Haus-Sockel, Stammfuß und Tor-Fuß, Uhr 0,5, klar und bedeckt.",
-          "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
           "schlupfloch": "Ein in jeden Stoff gemalter dunkler Ring bricht am Hang und am Wasser: vier Familien und bedeckter Himmel, wo nur die Verdeckung trägt.",
           "maschine": true
         },
@@ -2398,7 +2398,7 @@
           "punkte": 0,
           "staffel": "1 = kante ≤ 0,22 je Teil-Klasse (die schlechteste urteilt) an der Tafel-Pose UND einem Spielgang-Bild an einem Gerät, frisch am Kopf · 2 = Ego mit Blick 15° hoch, Third und Hügel, Haus- und Tor-Stufen L1–L3 halten milchweiss und zielTreue, beide Geräte",
           "messung": "werkbank bild --klasse 'Laub L0/L1/L2' --ist laub-kante an der Tafel-Pose und an Spielgang-Bildern; Kamera des Spiels.",
-          "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · lod.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +33)",
+          "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · lod.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +33)",
           "schlupfloch": "Das Mittel über alle Stufen (0,1862) versteckt den Täter: die schlechteste Teil-Klasse urteilt; eine Pose ohne sichtbare Karte umgeht die Stufe: der Spielgang wählt die Bilder. Alpha-Dither senkt die Kohärenz ohne Gestalt: zweiton muss zugleich 0 sein.",
           "aenderung": "EIN Heim von laub-kante (vorher auch Vegetation K3, Pipeline K2, Klassen K1; B26, V21).",
           "maschine": true
@@ -3971,7 +3971,7 @@
           "punkte": 0,
           "staffel": "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten · 2 = ≤ 16,7 ms in jeder Zelle",
           "messung": "`werkbank lauf` in Bewegung, ABAB 4 Boots je Gerät, Regler voll, Tiere frei, 1920×1080. Zellen: Gehen 4 m/s (Wiese Ego, Genesis Third), Sprint, GT-Fahrt mit Third↔Ego, Sturm mit 50 Tieren (Feld K3), Messort stadt (nH ≥ 120, dorfZug an) gehend durch die Hauptgasse.",
-          "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K1#1 gtx: Station seit der Messung geändert · profiband.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K1#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K1#1 gtx: Station seit der Messung geändert · profiband.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K1#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Regler herunter, Sicht kürzen, Tiere anhalten, leeres Gelände: Regler voll und Tiere frei fest, die Bahn fest, und dieselbe Sitzung hält die A-Klassen am Ausgabe-Bild.",
           "aenderung": "EIN Heim des Bands (V26): LOD K5, Spielgang K3, der Band-Teil von Fahrzeug K2, Siedlung K5(b) und Feld K3 (Sturm) zählen hier als Zellen. Karte 1.0 maß im Stand (B63).",
           "maschine": true
@@ -3981,7 +3981,7 @@
           "punkte": 0,
           "staffel": "1 = stehend ≤ 5,8 ms an einem Gerät · 2 = stehend ≤ 5,8 UND bewegt ≤ 8 ms an beiden",
           "messung": "Trace der Haupt-Faden-Belegung zwischen zwei Bildern (LongTask/CDP), nie `_gameLoopTick`; dieselben Läufe wie K1. Die Zerlegung nach Herkunft (Stamm-Zone je Methode) ist ein Spiegel ohne Punkte, der den Täter nennt.",
-          "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K2#1 gtx: Station seit der Messung geändert · profiband.K2#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K2#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K2#1 gtx: Station seit der Messung geändert · profiband.K2#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K2#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Arbeit in requestIdleCallback, setTimeout oder Worker-Rückrufe zwischen den Takten schieben: gezählt wird die ganze Belegung des Intervalls.",
           "aenderung": "Die 1 der Synthese stand auf der Takt-Funktion (B66) → 0; die Radeon-Belegung (M12) gemessen 21.10.: p95 10,4 ms je Bild, ROT — das Vorher.",
           "maschine": true
@@ -3991,7 +3991,7 @@
           "punkte": 0,
           "staffel": "1 = im Stand an beiden Geräten frisch am Kopf (Ratsche + gpu-bank) · 2 = alle Zellen samt Bewegung",
           "messung": "`werkbank band` und die Ratsche je Ort × Gerät × Sicht (12 Dateien `spec/profiband/ratsche-*.json`) plus dieselbe Zählung in Bewegung mit gpu-bank: Befehle ≤ 208, Dreiecke ≤ 680k, VRAM ≤ 118 MB, GPU p95 ≤ 12 ms.",
-          "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K3#1 gtx: Station seit der Messung geändert · profiband.K3#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K3#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K3#1 gtx: Station seit der Messung geändert · profiband.K3#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K3#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Kaskaden oder Karten abschalten, `SZENE_SKALA` unter 0,75 senken: die EINE Skala ist fest, A urteilt in derselben Sitzung.",
           "aenderung": "Der Punkt stand auf veralteten Zahlen (R6) → 0; die Neumessung (M13, 21.10.) stellte ihn nicht wieder her: ROT an beiden Geräten — das Vorher.",
           "maschine": true
@@ -4001,7 +4001,7 @@
           "punkte": 1,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
-          "beleg": "Maschine: gehalten: Gehen 99 Bilder · max 50.13 ms · 24.24 % > 33 ms · Fahrt 82 Bilder · max 66.95 ms · 42.68 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 24.24 % > 33 ms | Fahrt: 42.68 % > 33 ms an ee9c1965 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 77e079ae: Last: Referenz f 1,267 (Faden 1,175 · alle Kerne 1,267; vor 121/319,9 ms, nach 99,9/337,1 ms, Ruhe 103/266,1 ms seit 2026-11-14) · fremd: node scripts/diag-altlasten.cjs --selftest 48,8 CPU-s · Claude · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 77e079ae: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,249; vor 121,2/297,8 ms, nach 90,1/229,1 ms, Ruhe 92,1/238,5 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
+          "beleg": "Maschine: gehalten: Gehen 99 Bilder · max 50.13 ms · 24.24 % > 33 ms · Fahrt 82 Bilder · max 66.95 ms · 42.68 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 24.24 % > 33 ms | Fahrt: 42.68 % > 33 ms an ee9c1965 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 77e079ae: Last: Referenz f 1,267 (Faden 1,175 · alle Kerne 1,267; vor 121/319,9 ms, nach 99,9/337,1 ms, Ruhe 103/266,1 ms seit 2026-11-14) · fremd: node scripts/diag-altlasten.cjs --selftest 48,8 CPU-s · Claude · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 77e079ae: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,249; vor 121,2/297,8 ms, nach 90,1/229,1 ms, Ruhe 92,1/238,5 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt; den Regler auf voll stellen, um den Spieler-Takt zu meiden: R8 fährt den Regler des Spielers.",
           "aenderung": "Gemessen 0 → 1 (M29, e5003509, GTX, Regler des Spielers): kein Schnitt, die Messung am Kopf; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an b0b2d8ed gemessen (M34) 22.10. 0 → 1.; nach R6 (stadt-takt, fahrt-takt-Folge-Morphs, 16dd81d0) 23.10. 1 → 0.",
           "maschine": true
@@ -4011,7 +4011,7 @@
           "punkte": 0,
           "staffel": "1 = an einem Gerät · 2 = an beiden",
           "messung": "Spielgang 20 min am Stück (ankommen, gehen, fahren, bauen, Tor, Nacht, Weg ≥ 5 km): p95 der letzten 5 min ≤ p95 der ersten 5 min × 1,05; VRAM-Drift ≤ 2 MB zurück am Start; `buf:ruhend` und `buf:verwaist` = 0 (`werkbank puffer`); Takt und Drossel beim Namen.",
-          "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K5#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K5#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Die Sitzung im Stand verbringen: feste Stationen mit Pflicht-Weg.",
           "maschine": true
         }
@@ -4806,7 +4806,7 @@
     },
     {
       "stand": "2026-11-17",
-      "kopf": "389a6496",
+      "kopf": "bcc2cadc",
       "summe": 222,
       "max": 330,
       "skala": "2.0",
@@ -4814,7 +4814,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 17.11.2026, Kopf main 389a6496 (V18.546.317)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 17.11.2026, Kopf main bcc2cadc (V18.546.318)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",

@@ -1,5 +1,5 @@
 {
- "kopf": "389a6496",
+ "kopf": "bcc2cadc",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -21,7 +21,7 @@
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.62 dB · töten -0.03 -1.15 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.12 dB · pflegen 0.25 8.99 dB · nach 30 min 0.2463 8.75 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.6 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 1 s (≤ 2) [2.6 -0.68 -0.47 -0.32 -0.2 -0.14 -0.1 -0.06 -0.04 0] GRÜN",
      "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -31,7 +31,7 @@
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.72 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.63 dB · töten -0.03 -1.18 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.78 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.467 s (≤ 2) [2.78 -0.79 -0.53 -0.35 -0.23 -0.15 -0.1 -0.07 -0.05 0] GRÜN",
      "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -70,7 +70,7 @@
   },
   "affekt.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Station seit der Messung geändert · affekt.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · affekt.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9)",
+   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Station seit der Messung geändert · affekt.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · affekt.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +9)",
    "stationen": [
     {
      "id": "affekt.K4#1",
@@ -87,7 +87,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -788,7 +788,7 @@
   },
   "ferne.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
    "stationen": [
     {
      "id": "ferne.K3#1",
@@ -796,7 +796,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -812,7 +812,7 @@
      "gruen": true,
      "zahl": "Schatten-/Lichthang 0.1998 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 15/64 Orten im Bild, Auge 1500 m, Grat 5.9305 km, Sonne 5.0087° (Uhr 0.735) · Ort [-704.2,-880] · 0.43 s · [linse-gpu] amd/rdna-3",
      "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -1827,7 +1827,7 @@
   },
   "licht.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · licht.K3#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, index.html +38) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · licht.K3#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, index.html +38) — zuletzt an 1cd1c408: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "licht.K3#1",
@@ -1855,7 +1855,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1881,7 +1881,7 @@
      "gruen": true,
      "zahl": "Maß durchlass: r 0.9895 bei Verschiebung [-1,-3] Blöcke à 18.6722 m in 5 s (11.8093 m/s; ohne Verschiebung 0.8672; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.9212 der Änderung 0.0383 (≥ 0,5), Durchlass-σ 0.0743 (≥ 0,03) über 0.9428 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-704.2,-880] · 0.86 s · [linse-gpu] amd/rdna-3",
      "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -1914,7 +1914,7 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · lod.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +33)",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · lod.K1#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +33)",
    "stationen": [
     {
      "id": "lod.K1#1",
@@ -1922,7 +1922,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1989,7 +1989,7 @@
      "gruen": true,
      "zahl": "Luma-Sprung 1.32 % (Soll < 2 %) über 3838 px, die der Wechsel ändert (Auge -4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-704.2,-880] · 1.14 s · [linse-gpu] amd/rdna-3",
      "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -2231,7 +2231,7 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an fe885d9d: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] amd/rdna-3) · Täter: @@ 84 s · Labor: Protocol · material.K1#1 gtx: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +89) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · material.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#2 gtx: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +89)",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an fe885d9d: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] amd/rdna-3) · Täter: @@ 84 s · Labor: Protocol · material.K1#1 gtx: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +89) — zuletzt an 5096d179: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · material.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · material.K1#2 gtx: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +89)",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -2239,7 +2239,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an fe885d9d: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] amd/rdna-3) · Täter: @@ 84 s · Labor: Protocol",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an fe885d9d: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] amd/rdna-3) · Täter: @@ 84 s · Labor: Protocol",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2259,7 +2259,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2944,7 +2944,7 @@
   },
   "profiband.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K1#1 gtx: Station seit der Messung geändert · profiband.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K1#1 gtx: Station seit der Messung geändert · profiband.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K1#1",
@@ -2952,7 +2952,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -2973,7 +2973,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2990,7 +2990,7 @@
   },
   "profiband.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K2#1 gtx: Station seit der Messung geändert · profiband.K2#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K2#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K2#1 gtx: Station seit der Messung geändert · profiband.K2#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K2#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K2#1",
@@ -2998,7 +2998,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3017,7 +3017,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3034,7 +3034,7 @@
   },
   "profiband.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K3#1 gtx: Station seit der Messung geändert · profiband.K3#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K3#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K3#1 gtx: Station seit der Messung geändert · profiband.K3#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K3#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K3#1",
@@ -3042,7 +3042,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -3063,7 +3063,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3080,7 +3080,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 99 Bilder · max 50.13 ms · 24.24 % > 33 ms · Fahrt 82 Bilder · max 66.95 ms · 42.68 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 24.24 % > 33 ms | Fahrt: 42.68 % > 33 ms an ee9c1965 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 77e079ae: Last: Referenz f 1,267 (Faden 1,175 · alle Kerne 1,267; vor 121/319,9 ms, nach 99,9/337,1 ms, Ruhe 103/266,1 ms seit 2026-11-14) · fremd: node scripts/diag-altlasten.cjs --selftest 48,8 CPU-s · Claude · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 77e079ae: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,249; vor 121,2/297,8 ms, nach 90,1/229,1 ms, Ruhe 92,1/238,5 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
+   "beleg": "Maschine: gehalten: Gehen 99 Bilder · max 50.13 ms · 24.24 % > 33 ms · Fahrt 82 Bilder · max 66.95 ms · 42.68 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 24.24 % > 33 ms | Fahrt: 42.68 % > 33 ms an ee9c1965 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 77e079ae: Last: Referenz f 1,267 (Faden 1,175 · alle Kerne 1,267; vor 121/319,9 ms, nach 99,9/337,1 ms, Ruhe 103/266,1 ms seit 2026-11-14) · fremd: node scripts/diag-altlasten.cjs --selftest 48,8 CPU-s · Claude · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 77e079ae: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,249; vor 121,2/297,8 ms, nach 90,1/229,1 ms, Ruhe 92,1/238,5 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3088,7 +3088,7 @@
      "gruen": true,
      "zahl": "Gehen 99 Bilder · max 50.13 ms · 24.24 % > 33 ms · Fahrt 82 Bilder · max 66.95 ms · 42.68 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 24.24 % > 33 ms | Fahrt: 42.68 % > 33 ms",
      "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3098,7 +3098,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3108,7 +3108,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 77e079ae: Last: Referenz f 1,267 (Faden 1,175 · alle Kerne 1,267; vor 121/319,9 ms, nach 99,9/337,1 ms, Ruhe 103/266,1 ms seit 2026-11-14) · fremd: node scripts/diag-altlasten.cjs --selftest 48,8 CPU-s · Claude",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 77e079ae: Last: Referenz f 1,267 (Faden 1,175 · alle Kerne 1,267; vor 121/319,9 ms, nach 99,9/337,1 ms, Ruhe 103/266,1 ms seit 2026-11-14) · fremd: node scripts/diag-altlasten.cjs --selftest 48,8 CPU-s · Claude",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3118,7 +3118,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 77e079ae: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,249; vor 121,2/297,8 ms, nach 90,1/229,1 ms, Ruhe 92,1/238,5 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 77e079ae: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,249; vor 121,2/297,8 ms, nach 90,1/229,1 ms, Ruhe 92,1/238,5 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -3126,7 +3126,7 @@
   },
   "profiband.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · profiband.K5#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · profiband.K5#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "profiband.K5#1",
@@ -3134,7 +3134,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3153,7 +3153,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3224,7 +3224,7 @@
      "gruen": true,
      "zahl": "Maß reprojektion: unerklärt je Bild max 0.02 %, Mittel 0.01 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.007) über 15 Bilder Gang 4 m/s, Schatten im Bild 6.8 % (≥ 1 %) · Ort [-704.2,-880] · 0.57 s · [linse-gpu] amd/rdna-3",
      "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -3232,7 +3232,7 @@
   },
   "schatten.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
    "stationen": [
     {
      "id": "schatten.K3#1",
@@ -3240,7 +3240,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -3256,7 +3256,7 @@
      "gruen": true,
      "zahl": "Gewinn 31.9 % (Wand 0.1891 gegen 0.1434 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.321, Platte sicht, Hub 0.6748 m · Ort [-704.2,-880] · 0.82 s · [linse-gpu] amd/rdna-3",
      "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -3272,7 +3272,7 @@
      "gruen": true,
      "zahl": "Kontrast 9.0259:1 (Soll ≥ 3:1) am Pfosten 2 m von laterne_dorf (2.45 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.75), ohne Pfosten 0.9012, Uhr 0 · Ort [-704.2,-880] · 1.78 s · [linse-gpu] amd/rdna-3",
      "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -3586,7 +3586,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +134)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +135)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3622,7 +3622,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +134)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +135)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3632,7 +3632,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +134)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +135)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -4268,7 +4268,7 @@
   },
   "tiere.K5": {
    "punkte": 1,
-   "beleg": "Maschine: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 482 px 42 m 419 s · wesen 247 px 33 m 419 s · wesen 232 px 38 m 516 s · wolf 207 px 36 m 551 s), 631 Prüfungen, 61 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wolf 317 px 38 m 32 s · wesen 249 px 29 m 34 s · wolf 241 px 32 m 41 s · wolf 217 px 32 m 43 s · wesen 299 px 68 m 259 s · wesen 328 px 58 m 262 s · baer 546 px 9 m 276 s · wesen 253 px 48 m 510 s · wesen 206 px 45 m 519 s · wesen 386 px 24 m 543 s), 634 Prüfungen, 67 Masken, Bestand bis 20, im Blick erschienen 0 an 389a6496 gtx",
+   "beleg": "Maschine: gehalten: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 482 px 42 m 419 s · wesen 247 px 33 m 419 s · wesen 232 px 38 m 516 s · wolf 207 px 36 m 551 s), 631 Prüfungen, 61 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wolf 317 px 38 m 32 s · wesen 249 px 29 m 34 s · wolf 241 px 32 m 41 s · wolf 217 px 32 m 43 s · wesen 299 px 68 m 259 s · wesen 328 px 58 m 262 s · baer 546 px 9 m 276 s · wesen 253 px 48 m 510 s · wesen 206 px 45 m 519 s · wesen 386 px 24 m 543 s), 634 Prüfungen, 67 Masken, Bestand bis 20, im Blick erschienen 0 an 389a6496 gtx",
    "stationen": [
     {
      "id": "tiere.K5#1",
@@ -4286,7 +4286,8 @@
      "gruen": true,
      "zahl": "ego (first) 4 Sichtungen in 601 Spiel-s (wesen 482 px 42 m 419 s · wesen 247 px 33 m 419 s · wesen 232 px 38 m 516 s · wolf 207 px 36 m 551 s), 631 Prüfungen, 61 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wolf 317 px 38 m 32 s · wesen 249 px 29 m 34 s · wolf 241 px 32 m 41 s · wolf 217 px 32 m 43 s · wesen 299 px 68 m 259 s · wesen 328 px 58 m 262 s · baer 546 px 9 m 276 s · wesen 253 px 48 m 510 s · wesen 206 px 45 m 519 s · wesen 386 px 24 m 543 s), 634 Prüfungen, 67 Masken, Bestand bis 20, im Blick erschienen 0",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/shader-kosten.cjs, scripts/lib/welt-boot.cjs +12) — zuletzt an 71839b1e: Deckel 76 s gerissen: Stille seit 15 s nach 79.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) in Teil 1/5 — beendet, UNGEMESSEN (zuletzt: KREIS-ego EXIT=0 (62.8 s Wanduhr, Zeitraf",
+     "gehalten": true,
      "r6": "konsum"
     }
    ]
@@ -4497,7 +4498,7 @@
   },
   "vegetation.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · vegetation.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +32)",
+   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN · vegetation.K1#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +32)",
    "stationen": [
     {
      "id": "vegetation.K1#1",
@@ -4505,7 +4506,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4549,7 +4550,7 @@
   },
   "vegetation.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
    "stationen": [
     {
      "id": "vegetation.K3#1",
@@ -4557,7 +4558,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -4692,7 +4693,7 @@
      "gruen": true,
      "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6)",
      "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -4924,7 +4925,7 @@
   },
   "karte2.erleben.bild.flaeche": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.bild.flaeche#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · karte2.erleben.bild.flaeche#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.bild.flaeche#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · karte2.erleben.bild.flaeche#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.erleben.bild.flaeche#1",
@@ -4932,7 +4933,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -5006,7 +5007,7 @@
   },
   "karte2.erleben.kopplung.wahrnehmung": {
    "punkte": 0,
-   "beleg": "Maschine: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.6/12.1/12/12.1/12.1/12.2/14.6/12.3 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.3/12.1/12.2/12.2/12.4/12.1/14.6/12.1 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal an 77e079ae gtx",
+   "beleg": "Maschine: gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.6/12.1/12/12.1/12.1/12.2/14.6/12.3 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.3/12.1/12.2/12.2/12.4/12.1/14.6/12.1 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal an 77e079ae gtx",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.wahrnehmung#1",
@@ -5014,7 +5015,8 @@
      "gruen": true,
      "zahl": "mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.6/12.1/12/12.1/12.1/12.2/14.6/12.3 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] amd/rdna-3",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/daten.js +5)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -5690,7 +5692,7 @@
      "gruen": true,
      "zahl": "Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 89 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3",
      "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -5701,7 +5703,7 @@
      "gruen": true,
      "zahl": "Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 89 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal",
      "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -5975,7 +5977,7 @@
   },
   "karte2.same.entfaltung.schirm": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an b5681770: Last: Referenz f 1,224 (Faden 1,224 · alle Kerne 1,082; vor 100,6/224 ms, nach 112,2/255,4 ms, Ruhe 91,7/236,1 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --u",
+   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an b5681770: Last: Referenz f 1,224 (Faden 1,224 · alle Kerne 1,082; vor 100,6/224 ms, nach 112,2/255,4 ms, Ruhe 91,7/236,1 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --u",
    "stationen": [
     {
      "id": "karte2.same.entfaltung.schirm#1",
@@ -5983,7 +5985,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -6029,15 +6031,16 @@
   },
   "karte2.same.kopplung.ereignis": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.ereignis#1 radeon: ROT: Guss -268,-1046: Glut R/G 0.965 (Soll ≥ 2), Luma 0.168, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.962 (Soll ≤ 1,25), Luma 0.169, Stoff stein · [linse-gpu] amd/rdna-3 an 389a6496 · karte2.same.kopplung.ereignis#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +3)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.ereignis#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +4) · karte2.same.kopplung.ereignis#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +3)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.ereignis#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Guss -268,-1046: Glut R/G 0.965 (Soll ≥ 2), Luma 0.168, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.962 (Soll ≤ 1,25), Luma 0.169, Stoff stein · [linse-gpu] amd/rdna-3",
-     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "ROT: Guss -268,-1046: Glut R/G 0.965 (Soll ≥ 2), Luma 0.168, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.962 (Soll ≤ 1,25), Luma 0.169, Stoff stein · [linse-gpu] amd/rdna-3",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +4)",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     },
@@ -6056,7 +6059,7 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · karte2.same.kopplung.kaskade#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · karte2.same.kopplung.kaskade#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
@@ -6064,7 +6067,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -6075,7 +6078,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -6084,7 +6087,7 @@
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 884c6a25 gtx",
+   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 884c6a25 gtx",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
@@ -6092,7 +6095,8 @@
      "gruen": true,
      "zahl": "Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -6102,7 +6106,7 @@
      "gruen": true,
      "zahl": "Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
      "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -6211,7 +6215,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an ee9c1965: Last: Referenz f 1,558 (Faden 1,558 · alle Kerne 1,329; vor 141,2/310,8 ms, nach 92,1/254,7 ms, Ruhe 90,6/233,8 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an ee9c1965: Last: Referenz f 1,558 (Faden 1,558 · alle Kerne 1,329; vor 141,2/310,8 ms, nach 92,1/254,7 ms, Ruhe 90,6/233,8 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -6219,7 +6223,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -6230,7 +6234,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an ee9c1965: Last: Referenz f 1,558 (Faden 1,558 · alle Kerne 1,329; vor 141,2/310,8 ms, nach 92,1/254,7 ms, Ruhe 90,6/233,8 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an ee9c1965: Last: Referenz f 1,558 (Faden 1,558 · alle Kerne 1,329; vor 141,2/310,8 ms, nach 92,1/254,7 ms, Ruhe 90,6/233,8 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -6295,7 +6299,7 @@
   },
   "pflicht.C": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pflicht.C#1 headless: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +15) · pflicht.C#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · pflicht.C#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: pflicht.C#1 headless: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +15) · pflicht.C#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) · pflicht.C#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "pflicht.C#1",
@@ -6313,7 +6317,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -6330,7 +6334,7 @@
   },
   "pflicht.E": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 75aae46a: Last: Referenz f 1,234 (Faden 1,127 · alle Kerne 1,234; vor 106,8/286 ms, nach 115,3/328,9 ms, Ruhe 102,3/266,5 ms seit 2026-11-15) · fremd: node.exe watch-repro.cjs 79,6 CPU-s · Claude.exe --type=gpu · pflicht.E#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 75aae46a: Last: Referenz f 1,234 (Faden 1,127 · alle Kerne 1,234; vor 106,8/286 ms, nach 115,3/328,9 ms, Ruhe 102,3/266,5 ms seit 2026-11-15) · fremd: node.exe watch-repro.cjs 79,6 CPU-s · Claude.exe --type=gpu · pflicht.E#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "pflicht.E#1",
@@ -6338,7 +6342,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 75aae46a: Last: Referenz f 1,234 (Faden 1,127 · alle Kerne 1,234; vor 106,8/286 ms, nach 115,3/328,9 ms, Ruhe 102,3/266,5 ms seit 2026-11-15) · fremd: node.exe watch-repro.cjs 79,6 CPU-s · Claude.exe --type=gpu",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 75aae46a: Last: Referenz f 1,234 (Faden 1,127 · alle Kerne 1,234; vor 106,8/286 ms, nach 115,3/328,9 ms, Ruhe 102,3/266,5 ms seit 2026-11-15) · fremd: node.exe watch-repro.cjs 79,6 CPU-s · Claude.exe --type=gpu",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -6531,8 +6535,8 @@
   ],
   "ohne": 124
  },
- "kopfVoll": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
- "zeit": "2026-11-17T05:54:23.389Z",
+ "kopfVoll": "bcc2cadc2742edb5c337dde7fd11b7d79997f9fe",
+ "zeit": "2026-11-17T06:01:09.229Z",
  "vorher": "389a6496",
  "bilanz": {
   "gewinn": [],
@@ -6562,7 +6566,7 @@
      {
       "station": "lod.K1#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\""
+      "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"cre"
      },
      {
       "station": "lod.K1#1",
@@ -6655,7 +6659,7 @@
      {
       "station": "pflicht.C#2",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)"
+      "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)"
      },
      {
       "station": "pflicht.C#2",
@@ -6685,7 +6689,7 @@
      {
       "station": "profiband.K1#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)"
+      "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)"
      },
      {
       "station": "profiband.K1#1",
@@ -6695,7 +6699,7 @@
      {
       "station": "profiband.K2#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)"
+      "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)"
      },
      {
       "station": "profiband.K2#1",
@@ -6705,7 +6709,7 @@
      {
       "station": "profiband.K3#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)"
+      "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js)"
      },
      {
       "station": "profiband.K3#1",
@@ -6715,7 +6719,7 @@
      {
       "station": "pflicht.E#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 75aae46a: Last: Referenz f 1,234 (Faden 1,127 · alle Kerne 1,234; vor 106,8/286 ms, nach 115,3/328,9 ms, Ruhe 102,3/266,5 ms sei"
+      "zeile": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/feld-leben.js) — zuletzt an 75aae46a: Last: Referenz f 1,234 (Faden 1,127 · alle Kerne 1,234; vor 106,8/286 ms, nach 115,3/328,9 ms, Ru"
      },
      {
       "station": "pflicht.E#1",
