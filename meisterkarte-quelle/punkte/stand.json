@@ -6206,7 +6206,7 @@
   },
   "karte2.same.preis.bytes": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Kalt-Boots, roh je Boot 32.11 MB · 32.11 MB · 32.11 MB · 32.11 MB (max 32.11 MB, Soll ≤ 50.00 MB), am größten 16.85 MB Draht, 179 Anfragen, bis zur Kontrolle 32.11 MB, 25 Ziele (24 Worker), am schwersten /fachwerk-core.js?v=18.546.317 0.98 MB | /fachwerk-core.js?v=18.546.317 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker+worker · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, roh je Boot 32.18 MB · 32.18 MB · 32.18 MB · 32.18 MB (max 32.18 MB, Soll ≤ 50.00 MB), am größten 16.88 MB Draht, 179 Anfragen, bis zur Kontrolle 32.18 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.321 0.98 MB | /fachwerk-core.js?v=18.546.321 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker+worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal an 7de938ab gtx",
+   "beleg": "Maschine: gehalten: 4 Kalt-Boots, roh je Boot 32.11 MB · 32.11 MB · 32.11 MB · 32.11 MB (max 32.11 MB, Soll ≤ 50.00 MB), am größten 16.85 MB Draht, 179 Anfragen, bis zur Kontrolle 32.11 MB, 25 Ziele (24 Worker), am schwersten /fachwerk-core.js?v=18.546.317 0.98 MB | /fachwerk-core.js?v=18.546.317 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker+worker · [linse-gpu] amd/rdna-3 an 389a6496 radeon · 4 Kalt-Boots, roh je Boot 32.25 MB · 32.25 MB · 32.25 MB · 32.25 MB (max 32.25 MB, Soll ≤ 50.00 MB), am größten 16.92 MB Draht, 179 Anfragen, bis zur Kontrolle 32.25 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.329 0.98 MB | /fachwerk-core.js?v=18.546.329 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal an c50e6b61 gtx",
    "stationen": [
     {
      "id": "karte2.same.preis.bytes#1",
@@ -6223,10 +6223,9 @@
      "id": "karte2.same.preis.bytes#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "4 Kalt-Boots, roh je Boot 32.18 MB · 32.18 MB · 32.18 MB · 32.18 MB (max 32.18 MB, Soll ≤ 50.00 MB), am größten 16.88 MB Draht, 179 Anfragen, bis zur Kontrolle 32.18 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.321 0.98 MB | /fachwerk-core.js?v=18.546.321 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker+worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal",
-     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs +6) — zuletzt an e489088a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2703 s Warten) — ungemessen",
-     "gehalten": true,
+     "zahl": "4 Kalt-Boots, roh je Boot 32.25 MB · 32.25 MB · 32.25 MB · 32.25 MB (max 32.25 MB, Soll ≤ 50.00 MB), am größten 16.92 MB Draht, 179 Anfragen, bis zur Kontrolle 32.25 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.329 0.98 MB | /fachwerk-core.js?v=18.546.329 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal",
+     "sha": "c50e6b61b445196a2316565e29a8e4989a939eef",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -6253,7 +6252,7 @@
      "gruen": true,
      "zahl": "0 harte UI-Zeilen im DOM von 637 Zeilen (625 aus der Tafel, 12 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2431, en 2431) · [linse-gpu] nvidia/pascal",
      "sha": "fe885d9de1ae25cb5b5caf0e929dd71bdcfeaedb",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/shader-kosten.cjs +35)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/shader-kosten.cjs +35) — zuletzt an c50e6b61: Wirt-Wache: den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. — Heap nach der Rücknahme 190.8 → 369 MB (",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -6489,7 +6488,7 @@
   "ohne": 166
  },
  "kopfVoll": "c50e6b61b445196a2316565e29a8e4989a939eef",
- "zeit": "2026-11-17T23:22:45.160Z",
+ "zeit": "2026-11-17T23:29:32.411Z",
  "vorher": "c50e6b61",
  "bilanz": {
   "gewinn": [],
