@@ -1501,3 +1501,4 @@ omen-gtx-gtx-b7b0f8fe-w1500-1-b7b0f8fe ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT
 2026-11-17 15:19 landung ABGEBROCHEN main b7b0f8fe: sg-kalt-fern-ring wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 51 stellen sich hinten an
 2026-11-17 15:19 w28-tor-nacht Abgabe 071aba67 (neu, ersetzt 1877f75e) — das Zielbild des Tors vor dem Auge der Nacht, Linse (j) um das Tor; gestapelt auf den Heil-Kopf w28-rauch-probe d4bfe830; Bericht bericht/1711-tor-nacht/
 2026-11-17 15:20 landung Zwischenstand main b7b0f8fe: misst 51 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (3 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
+omen-gtx-same2a-1-7de938ab UNGEMESSEN 3 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN karte2.same.preis.ankunft#2 · GRÜN karte2.same.preis.zugang#1 karte2.same.preis.ankunft#1 karte2.same.preis.bytes#1 (punkte-maschine 4e98b56b messung/7de938ab-gtx.json)
