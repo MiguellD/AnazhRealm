@@ -5887,7 +5887,7 @@
   },
   "karte2.planet.relief.grossform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) · karte2.planet.relief.grossform#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) · karte2.planet.relief.grossform#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.relief.grossform#1",
@@ -5905,7 +5905,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
      "beide": true
     }
@@ -6517,7 +6517,7 @@
   "ohne": 151
  },
  "kopfVoll": "7de938ab63f59822e48b121a70a15d31f16f2489",
- "zeit": "2026-11-17T10:21:51.763Z",
+ "zeit": "2026-11-17T10:27:41.314Z",
  "vorher": "7de938ab",
  "bilanz": {
   "gewinn": [],
