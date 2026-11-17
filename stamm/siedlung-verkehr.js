@@ -785,7 +785,15 @@ class AnazhRealm_siedlung_verkehr {
                     Math.hypot(g.position.x - werk.x, g.position.z - werk.z) < V.einsteigM
                 )
                     this._verkehrEinsteigen(S, W);
-                else if (b.amSteuer && W.zustand === "faehrt" && !W.heim && b.ziel !== werk) this._verkehrHeim(S, W);
+                // heim fährt, wessen Soll vom Werk ging — am Steuer ist sein Werk sein Wagen (`_bewohnerSoll`), davor der Stand
+                else if (
+                    b.amSteuer &&
+                    W.zustand === "faehrt" &&
+                    !W.heim &&
+                    b.ziel !== werk &&
+                    b.ziel !== W.entry.position
+                )
+                    this._verkehrHeim(S, W);
                 else if (b.amSteuer && W.zustand === "steht") this._verkehrAussteigen(S, b);
                 if (b.amSteuer) this._verkehrSitz(W, p);
             }
@@ -837,8 +845,10 @@ class AnazhRealm_siedlung_verkehr {
     }
 
     // DER FAHRER STEIGT EIN: er verlässt das Gedränge (kein Kreis, kein Satz, kein Feld, keine Ankunft im Takt — sein Leib gehört
-    // dem Wagen), der Wagen verlässt die Wand der Wege (`_verkehrFaehrt`: ab hier ist er ein Leib mit Vorrang; die Wache
-    // erfährt, dass seine Hülle vom Platz ging), und er fährt los — vom Platz über die Wende auf die Trasse. Die ERSTE Fahrt
+    // dem Wagen; er ist nicht drinnen wie im Haus, sondern am Steuer: sein Ort ist der Wagen, `_bewohnerSoll`, gezeichnet in
+    // dessen 3D-Stufe, `_verkehrSitz`; kein Feld trägt ihn, `_kzBesitztFeld`), der Wagen verlässt die Wand der Wege
+    // (`_verkehrFaehrt`: ab hier ist er ein Leib mit Vorrang; die Wache erfährt, dass seine Hülle vom Platz ging), und er fährt
+    // los — vom Platz über die Wende auf die Trasse. Die ERSTE Fahrt
     // nach der Ankunft der Siedlung beginnt, wo sein Tag ihn sähe (`_verkehrAnkunft`): unterwegs auf seiner Route.
     _verkehrEinsteigen(S, W) {
         const b = W.b;
@@ -847,7 +857,6 @@ class AnazhRealm_siedlung_verkehr {
         b.amSteuer = true;
         [b.kreis, b.nah, b.weg, b.drehen, b.vx, b.vz, b.platz] = [false, false, null, null, 0, 0, false];
         this._bewohnerRasterLage(S, b);
-        g.userData._drinnen = true; // kein Feld trägt ihn (`_kzBesitztFeld`)
         if (g.userData._kzGlieder) for (const gl of g.userData._kzGlieder) this._weltFeldAktiv(gl.handle, false);
         g.visible = false;
         (e._passagiere || (e._passagiere = new Set())).add(g); // das Komposit: er zeigt sich nur mit der Stufe des Wagens
@@ -983,7 +992,6 @@ class AnazhRealm_siedlung_verkehr {
         const werk = b.orte.werk;
         this._bewohnerStellen(b, g, werk.x, werk.z);
         g.rotation.set(0, werk.blick, 0);
-        g.userData._drinnen = false;
         g.visible = false;
         this._leibMatrix(g);
         Object.assign(b, { stand: werk, da: b.ziel === werk, weg: null, tagVon: null, zielUhr: NaN, lageNeu: true });
