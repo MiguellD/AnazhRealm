@@ -1,0 +1,148 @@
+{
+ "sha": "d3ddb51c3c2cf097ccfd248872ca02e8266d0094",
+ "geraet": "gtx",
+ "zeit": "2026-11-17T22:16:04.416Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.planet.kopplung.wetter-welt#1": {
+   "gruen": true,
+   "zahl": "✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.145 (0.0468/0.3222, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.58,
+   "gpu": "nvidia/pascal",
+   "konsum": "kcd79a7de234b",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "k71df1215626e",
+   "s": 33.8,
+   "fremd": {
+    "s": 37.5,
+    "takte": 17,
+    "fremdS": 42.55,
+    "kerne": 1.136,
+    "fensterKerne": 1.624,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      22.64
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6.36
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.8
+     ]
+    ],
+    "dienerS": 15.22,
+    "diener": [
+     [
+      "System",
+      8.83
+     ],
+     [
+      "dwm.exe",
+      3.56
+     ]
+    ],
+    "geraetS": 13.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.22
+     ],
+     [
+      "svchost.exe",
+      4.83
+     ],
+     [
+      "SearchIndexer.exe",
+      0.34
+     ]
+    ],
+    "eigenS": 104.36,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-17T22:16:04.416Z",
+   "abdruck": "e2aeea219873",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kcd79a7de234b": "dVTRbqMwEPyXPLZHnWAcjKU+OKVSKl2l9BPWZg00BCIbyl1O9+8nKKQBevsE1szueHa9f1Zn0EdI8eHdVeVKrO5WP1YOPtBzaD/QPry7lVitdQCMC/kZREr51MG0zc+1I0WuCKgSshN6ja0xLx50T9tojoCCtM+yPRByICHZtfIaO/n4OE9TKEwqrwaDYxKV+CEFMQc2LgWFHjSmLzyA72YwBWUy1WQoMLMRL7+lfF7WT3LA2ivy0o0ZdcIU9QUZo11yLLTeBTAr0A4kTsOtzwYSl1LG7WFJNEXj3KQYpwnzuSAkIjNsii7XWe2dbaWwHK2J/HADYrdMnZ4bz9wqAqWAq7mLGWCZop1qCAOmA0F+8XnSI5zQgldCNkCjNQ199eUNIWS/1FL0wvsSo3CeqCg0EyIhJN33wxHz/ud6fL8n3fnhQkz3Szs/5dusiNNZbk9Te4xhCazFz6Ukl0GC1jtWrr6iKec+0GHGYyLfuppBPGd+XWbg+Wq7ZvzmLpzI/cI7V5m6BYteem4GIgbIQiakfFmAazidxktoHzmbN87V3WDfyliHPmN9L9L/9OHzGXgXzIuRFGq9oSieXuX8nh8WTh6o1ObGjN1WTJvou+Fssag9VVX1iKQJUN1pKa+uRPzzyV8jbiv9/JS+ydt4ljubyqX2vkJl61E4U9u1CUQ/EK1eoHNbey3obIQHdEv9jfgGekFbYIoTK5NAUUg69I3aYPy4n8zsZdHpS46dyaVr3DjtUZhEw7QP6+9lunpatEcF5XHsZcKoARHLODVExkPh7Y68k317a1csD23v6v3ERfl63W1n1MSAVUiKxtSeRYMWy8tk23eYs61M3m1LkkHjMijqL8jffw==",
+  "k71df1215626e": "fVTBjpswEP2XHLtlnWAcHEt7cMqq2ZVWzZ6qHsdmDGwIRDYs21T99yoEkgBt55Sg92bezDzPr9kB9A4SvH9zZTETs0+zzzMH7+g5tO9o79/cTMzmOgDGhTwHkVJ+PcG0zQ6VI3mmCKgC0j16ta0wy+91S1tojoCCNI+y2RKyJSFZN/ISa/nwME6TK4xLrwKDfRIV+yEFMQbWLgGFHtSmLdyBWbAIKBOkDR7J7RvpQ75KSZrHcUUFRTxUbSgwsxBPjZSPU4VxBlh5eVa4vqaOmaK+uBRqphwLjXcETHO0HYnTcOlfhEopo2Y7JZq8dm5QjNOY+VwQsiIjbIIu02nlHWypsOiHt/LDBYj1NHVyqD1zqwiUAq7Gc04BiwTtUEMYMB0I8sHHSXewRwteAWkHXc1p6KvrbAghm6mWvBXeluiF81itQjMgEkKSTWufiLd/Lp/55myoKLmaS76OijidZnY/HI8xLIb5uGeXQozW25WuuiAp5z7Q7gVErZnkNojGzGsjHc9XyznjN31wIjeTubnSVA1Y9JJD3RExQBYyIZOXCbiC/b5vQPvI2aSB6mTqWxnz0Ges3UPyjx2cn4B3xCzvSaHWC4riy4sc9/luYe+BSmxmTL9pxbRZ/c2YDeaVp8qy6pE0BqoFoaS4TGXFpfwh19ftRceSf/+5+7jdqJTyuRzrbrOXtrpcALWcm0CY9iXqCTqzldeATnt4QJfUX4wHeESbY4KDEcaBohAL0ugblUH/427g0+Nkw8cMT8MtXO16h6/CeNU5vDuKT8Nz06DdKSh2/Q5jRg2I1uZbGclvUibP0d3tRf1fJPJ8+w6oycGWJjtdPpJC7VLIq+v5//0H"
+ },
+ "sitzung": {
+  "start": "2026-11-17T22:15:30.491Z",
+  "ordner": "sitzung-20261117-231530",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.6,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "karte2.planet.kopplung.wetter-welt#1",
+    "s": 24.3,
+    "takte": 573,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wirt": [
+   {
+    "probe": "karte2.planet.kopplung.wetter-welt#1",
+    "anders": [
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     220.3,
+     248.4
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.planet.kopplung.wetter-welt#1",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 3430,
+   "frameP95": 24.96,
+   "taktP95": 9.41,
+   "vramMax": 129.5,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 136,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 145.1,
+  "minuten": 2.49
+ }
+}
