@@ -810,7 +810,7 @@ const S0_LUMA_2M = 0.15;
 // die Nacht mit — die Glut-Palette des Selbsttests stand gemischt bei 35° im Band (BLIND). Gemessen wird das Licht des Feuers:
 // derselbe Ring im Schuss mit Feuer minus im Schuss ohne (`nacht`, dieselbe Kamera, dieselben Pixel), je Kanal in der Ausgabe
 // (sRGB, ≥ 0).
-const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 } };
+const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 }, paletteUnter: 2 };
 // ZWEI GRÖSSEN, ZWEI LESER (D3-2 mit K66): der FARBTON ist das Licht des Feuers (netto, die Nacht abgezogen — die Farbtemperatur
 // des Gesetzes), die SÄTTIGUNG ist, was das Auge sieht (brutto, das Bild mit der Nacht — die Wand des Auges der Nacht). Netto
 // gemessen trägt jedes Licht seine volle Sättigung (das Feuer allein, ohne den Boden der Nacht: 0,96).
@@ -1593,9 +1593,15 @@ async function lichtLauf() {
         const fb = ergebnis.farbe;
         // das Feuer bis K11b reißt am Farbton (netto), das Auge des Tages an der Sättigung (brutto) bei Farbton im Band
         const fbTon = fb && !fb.fehler ? s0Ton(fb, ergebnis.nacht) : null;
-        const farbGetroffen = !!fbTon && !s0TonImBand(fbTon);
+        // DIE DIFFERENZ IM SELBEN LAUF (w28-glut-nacht): die Mutante gilt als gefangen, wenn ihr Farbton netto mindestens
+        // `S0_TON.paletteUnter` Grad UNTER dem des Kopfs im selben Lauf liegt (Gerät und Lauf kürzen sich heraus). Bis hierher
+        // musste sie aus dem Band 28–45° fallen — das fing sie nur, weil das Rosa des alten Auges der Nacht sie unter 28° zog:
+        // die Linse lehnte am Fehler. Ohne das Rosa liest sie 29,1° (im Band), der Kopf 32,2°. Das Band bleibt dem Kopf.
+        const kopfTon = sauber && !sauber.fehler ? s0Ton(sauber, ergebnis.nacht) : null;
+        const fbUnter = fbTon && kopfTon ? +(kopfTon.hue - fbTon.hue).toFixed(1) : null;
+        const farbGetroffen = fbUnter != null && fbUnter >= S0_TON.paletteUnter;
         console.log(
-            `  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette und nacht 12): ${farbGetroffen ? `getroffen — das Licht des Feuers fällt netto auf Farbton ${fbTon.hue}°: die Farbtemperatur trägt ihn` : "BLIND " + JSON.stringify(fbTon)}`
+            `  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette und nacht 12): ${farbGetroffen ? `getroffen — das Licht des Feuers fällt netto auf Farbton ${fbTon.hue}°, ${fbUnter}° unter dem Kopf (${kopfTon.hue}°, Soll ≥ ${S0_TON.paletteUnter}°): die Farbtemperatur trägt ihn` : `BLIND — ${fbUnter}° unter dem Kopf (Soll ≥ ${S0_TON.paletteUnter}°) ` + JSON.stringify({ kopf: kopfTon, mutante: fbTon })}`
         );
         const tg = ergebnis.tag;
         const tgTon = tg && !tg.fehler ? s0Ton(tg, ergebnis.nacht) : null;
