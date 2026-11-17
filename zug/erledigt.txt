@@ -1532,3 +1532,4 @@ omen-gtx-kk6a-1-602607bb UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintr
 omen-gtx-gtx-31d156e8-4-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag karte2.mensch.zeit.erleben#1 (punkte-maschine 160aa71f messung/31d156e8-gtx.json)
 omen-gtx-gtx-31d156e8-5-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag karte2.mensch.bau.innen#1 (punkte-maschine 160aa71f messung/31d156e8-gtx.json)
 omen-gtx-gtx-31d156e8-6-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag gelaende.K4#2 (punkte-maschine 160aa71f messung/31d156e8-gtx.json)
+omen-gtx-gtx-31d156e8-7-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag mensch.K2#2 (punkte-maschine 160aa71f messung/31d156e8-gtx.json)
