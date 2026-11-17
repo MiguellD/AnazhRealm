@@ -358,15 +358,14 @@ class AnazhRealm_bild_himmel {
             const sizeRoll = rng();
             const size = 3.0 + Math.pow(sizeRoll, 2) * 3.5; // 3..6.5 px, AA-sicher
             sizes[i] = size;
-            // Helligkeit traegt die Stern-Variation (statt der Groesse):
-            // pow³-biased → die meisten Sterne dim, wenige hell.
-            const bright = 0.32 + Math.pow(sizeRoll, 3) * 0.68;
-            colors[i * 3] = tmpCol.r * bright;
-            colors[i * 3 + 1] = tmpCol.g * bright;
-            colors[i * 3 + 2] = tmpCol.b * bright;
-            // Die Größenklasse aus demselben Wurf: die meisten Sterne lichtschwach (6), wenige hell (bis −1).
-            mags[i] =
-                AnazhRealm.HIMMEL.sternMagSchwach - (AnazhRealm.HIMMEL.sternMagSchwach + 1) * Math.pow(sizeRoll, 3);
+            // DIE STERNZÄHLUNG (w28-sternhimmel): die Größenklasse aus demselben Wurf nach dem Gesetz des Himmels — die Zahl der
+            // Sterne heller als m wächst wie 10^(sternZaehlung · m), geankert an den FIX_COUNT Sternen bis sternMagSchwach. Der
+            // alte Wurf (6 − 7·roll³) trug 141 Sterne heller als 0 (der Himmel 4): in der Dämmerung stand ein Nachthimmel.
+            // Die Farbe trägt nur den Ton; die Helligkeit folgt im Stoff aus Größenklasse gegen Grenzgröße (`sichtbar`).
+            colors[i * 3] = tmpCol.r;
+            colors[i * 3 + 1] = tmpCol.g;
+            colors[i * 3 + 2] = tmpCol.b;
+            mags[i] = AnazhRealm._sternMag(1 - sizeRoll, FIX_COUNT);
             if (w) {
                 // Ein Wandelstern: dieselbe Kugel-Verteilung, eigene Farbe, eigene Helligkeit, ein Hauch größer.
                 sizes[i] = w.groesse;
@@ -385,8 +384,9 @@ class AnazhRealm_bild_himmel {
         const { uniform, attribute, vec2, vec4, float, length, smoothstep } = TSL;
 
         const uOpacity = uniform(0.5);
-        // Die Grenzgröße des Himmels (der Kanal `grenze` der EINEN Tag-Achse, `_tagAchse`): ein Punkt leuchtet, wenn er heller ist als sie
-        // (weich über ±0,5 Größenklassen).
+        // Die Grenzgröße des Himmels (der Kanal `grenze` der EINEN Tag-Achse, `_tagAchse`): ein Punkt leuchtet, wenn sein Licht über
+        // der Schwelle des Auges steht (½ Klasse unter der Grenzgröße) — und so hell, wie sein Fluss sie übersteigt
+        // (10^(−0,4·Δm), gesättigt über `sternKontrast`): an der Schwelle 0, eine Klasse darüber schon deutlich.
         const uGrenze = uniform(-10);
 
         const planeGeo = new THREE.PlaneGeometry(1, 1);
@@ -401,7 +401,13 @@ class AnazhRealm_bild_himmel {
         // Attribute (gesetzt via mesh.setColorAt(i, color), gebunden im
         // Shader via attribute("instanceColor", "vec3")).
         const instColor = attribute("instanceColor", "vec3");
-        const sichtbar = uGrenze.sub(attribute("aMag", "float")).add(0.5).clamp(0.0, 1.0);
+        const ueber = TSL.exp2(
+            uGrenze
+                .sub(attribute("aMag", "float"))
+                .add(0.5)
+                .mul(0.4 * Math.log2(10))
+        ).sub(1.0); // Fluss über der Schwelle
+        const sichtbar = float(1.0).sub(TSL.exp(ueber.max(0.0).mul(-AnazhRealm.HIMMEL.sternKontrast)));
         starMat.colorNode = vec4(instColor, falloff.mul(uOpacity).mul(sichtbar));
 
         // Material-Properties: identisch zur V10.0-f-2-PointsMaterial-Variante.
@@ -804,8 +810,8 @@ class AnazhRealm_bild_himmel {
     // des Tors; die CPU (`_himmelsIrradianz`) ihre Werte. Bis licht.K5 backte die Neuzeichnung beide ein, höchstens je 6 s
     // Wanduhr: im Wetter-Zug sprang das Bild, sobald die Umgebung nachzog (GTX 0,230 EV/s, takt24c). Das Gesetz lebt EINMAL im
     // Baustein der Engine (welt-licht.js `umgebungLicht`, die Bühne der Studios liest dasselbe).
-    _umgebungLicht() {
-        return __weltLicht.umgebungLicht(this._atmoLutBau().U);
+    _umgebungLicht(farbe) {
+        return __weltLicht.umgebungLicht(this._atmoLutBau().U, farbe);
     }
 
     // DIE KRONE EINES BAUM-KÖRPERS (D10) aus dem Kronen-Buch (`_foundryCacheSet`, Beipack `__krone` der Höhen-Stufe): die
@@ -1158,7 +1164,7 @@ class AnazhRealm_bild_himmel {
         this._dayNightApplyStarField(achse, tint.skyMul);
         this._dayNightApplyDirectionalLight(sunDir, tint, moonDir, atm, achse);
         this._dayNightApplyAmbient(achse);
-        this._updateCelestialBodies(angle, tint.lightMul, achse);
+        this._updateCelestialBodies(angle, tint.lightMul * tint.direkt, achse);
         this._dayNightApplyHemiUndLuft(achse, tint);
         // DIE HIMMELS-UMGEBUNG malt sich aus BEIDEN Quellen, die jetzt gelten — dem Zenit (die Skybox-Tönung, oben) und dem
         // Horizont (die Luft-Farbe, eben): erst danach, und vor jedem Leser ihrer Bestrahlung (Wasser, Belichtung). Bis K10
@@ -1177,17 +1183,24 @@ class AnazhRealm_bild_himmel {
         // Schicht 1 — Wetter-Tint
         const wt = this.state.weatherTransition;
         const tints = this.constructor.WEATHER_TINTS;
-        let skyMul, lightMul;
+        // die Zeile des Wetter-Lichts (WEATHER_TINTS ← das EINE Wetter-Feld): das gesamte Licht, der Anteil der direkten Sonne,
+        // Hub und Ergrauen des Himmels — über den Übergang des Worts gelerpt
+        let skyMul, lightMul, direkt, himmel, grau;
         if (wt && wt.from && wt.to) {
             const fromT = tints[wt.from] || tints.sunny;
             const toT = tints[wt.to] || tints.sunny;
             const p = Math.max(0, Math.min(1, wt.progress || 0));
-            skyMul = fromT.skyMul + (toT.skyMul - fromT.skyMul) * p;
-            lightMul = fromT.lightMul + (toT.lightMul - fromT.lightMul) * p;
+            const l = (k) => fromT[k] + (toT[k] - fromT[k]) * p;
+            [skyMul, lightMul, direkt, himmel, grau] = [
+                l("skyMul"),
+                l("lightMul"),
+                l("direkt"),
+                l("himmel"),
+                l("grau"),
+            ];
         } else {
-            const currentTint = tints[this.state.weather] || tints.sunny;
-            skyMul = currentTint.skyMul;
-            lightMul = currentTint.lightMul;
+            const c = tints[this.state.weather] || tints.sunny;
+            [skyMul, lightMul, direkt, himmel, grau] = [c.skyMul, c.lightMul, c.direkt, c.himmel, c.grau];
         }
         // DER NENNER DER TÖNUNG (D3, S7): der Himmel des Studios (`_studioSky.top`, Vorlage 0x6a9ed0) — EINE Farbe, keine
         // Tafel nach der Uhr: der Himmel selbst ist die Himmels-Sicht der EINEN Atmosphäre, die Schichten tönen ihn relativ.
@@ -1266,8 +1279,8 @@ class AnazhRealm_bild_himmel {
             skyColor.r = Math.max(0, Math.min(1, skyColor.r + flutter));
             skyColor.g = Math.max(0, Math.min(1, skyColor.g - flutter * 0.7));
         }
-        // grey entsättigt das LICHT, NIE den Himmel (skyColor bleibt unberührt): der grey-Kanal zieht das
-        // finale Richtlicht luminanz-erhaltend Richtung Neutralgrau. Läuft nach allen Tint-Schichten.
+        // grey zieht das finale Richtlicht luminanz-erhaltend Richtung Neutralgrau (nach allen Tint-Schichten); den Himmel
+        // ergraut die Zeile des Wetter-Lichts (`grau`), seinen Anteil am Licht tragen `direkt` und `himmel`.
         {
             const wf = this._weatherFieldFor(this.state.weather);
             if (wf.grey > 0) {
@@ -1285,9 +1298,11 @@ class AnazhRealm_bild_himmel {
             skyMul,
             lightMul,
             auraK, // V18.236 — gated auch den Mood/DSL-skyTint-Blend in _dayNightApplySkybox
-            skyR: skyColor.r * skyMul,
-            skyG: skyColor.g * skyMul,
-            skyB: skyColor.b * skyMul,
+            direkt, // der Anteil der direkten Sonne unter der Decke (Richtlicht, Scheibe, Mond)
+            grau, // das Ergrauen des Himmels unter der Decke (`atmoLut.U.grau`: Kuppel, Umgebung, Bestrahlung)
+            skyR: skyColor.r * himmel,
+            skyG: skyColor.g * himmel,
+            skyB: skyColor.b * himmel,
             basis, // der Himmel des Studios ohne Wetter, Feld und Gefühl: der Nenner der Tönung (D3)
         };
     }
@@ -1738,6 +1753,7 @@ class AnazhRealm_bild_himmel {
                 const nc = u.himmelTint.value;
                 const q = (x, y) => Math.max(0, Math.min(4, y > 1e-4 ? x / y : 1));
                 A.U.toenung.value.set(q(nc.r, b.r), q(nc.g, b.g), q(nc.b, b.b));
+                A.U.grau.value = tint.grau;
             }
         }
         if (u.cloudCover) {
@@ -1865,12 +1881,10 @@ class AnazhRealm_bild_himmel {
         // (Wetter-lightMul + Emotion) moduliert; Ziel dir/(amb+hemi) ≥ 3:1 am Tag (nachts 0,67: `_dayNightApplyAmbient`).
         const a = atm || this._atmoSonne(sunDir.y);
         if (sunUp) {
-            dl.color.setRGB(
-                a.col.r * tint.lightColor.r * tint.lightMul,
-                a.col.g * tint.lightColor.g * tint.lightMul,
-                a.col.b * tint.lightColor.b * tint.lightMul
-            );
-            dl.intensity = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightIntensity;
+            dl.color.setRGB(a.col.r * tint.lightColor.r, a.col.g * tint.lightColor.g, a.col.b * tint.lightColor.b);
+            // das gesamte Licht der Wetter-Zeile (`lightIntensity`) × der Anteil, den die Decke direkt lässt (`direkt`); bis
+            // w28-licht-regen lightMul in Farbe UND Stärke (lightMul²) ohne Anteil — der harte Schatten stand im Regen
+            dl.intensity = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightIntensity * tint.direkt;
         } else {
             const M = AnazhRealm.MOONLIGHT;
             // Mond-Pfad: Richtung aus der EINEN Quelle, Intensität MOONLIGHT·Wetter·sein Durchlass; `atm.col`
@@ -1878,7 +1892,7 @@ class AnazhRealm_bild_himmel {
             dl.color.setRGB(a.col.r, a.col.g, a.col.b);
             // V18.378 — der Durchlass liest die ECHTE Mond-Höhe (md.y), nicht −sunDir.y (die
             // z-Bogen-Formel gibt dem Mond eine eigene Normierung → eigene Höhe).
-            dl.intensity = M.intensity * tint.lightMul * this._mondDurchlass(md.y);
+            dl.intensity = M.intensity * tint.lightMul * tint.direkt * this._mondDurchlass(md.y);
         }
         // `nightFactor` 0 = Tag → 1 = Nacht: das Auge der Nacht der Post-Kette (K66, mesopisch) liest ihn — am Tag fällt es. Es
         // ist das Auge der EINEN Tag-Achse (`tag`): es gleitet über die Sonnenhöhe vom Tag in die Nacht (mit
@@ -3311,6 +3325,8 @@ AnazhRealm._schirmDreieck = __weltLicht.schirmDreieck; // der Baustein der Engin
 AnazhRealm.HIMMEL = Object.freeze({
     grenzgroesse: __weltLicht.GRENZGROESSE, // die Anker der EINEN Tag-Achse (welt-licht.js `tagAchse`)
     sternMagSchwach: 6,
+    sternZaehlung: 0.47, // d log10 N(< m) / dm: die Zahl der Sterne heller als m (Sternzählung des bloßen Auges)
+    sternKontrast: 0.6, // die Sättigung der Punkt-Helligkeit über dem Fluss an der Schwelle (1 − e^(−k · (Fluss/Schwelle − 1)))
     wandelsterne: Object.freeze([
         Object.freeze({ mag: -4.2, farbe: Object.freeze([1.0, 0.97, 0.88]), groesse: 7.5 }),
         Object.freeze({ mag: -2.3, farbe: Object.freeze([1.0, 0.94, 0.82]), groesse: 7.0 }),
@@ -3324,9 +3340,14 @@ AnazhRealm.HIMMEL = Object.freeze({
     sonneWinkelGrad: 0.53,
     sonneLeucht: 4,
 });
-// DER HELLSTE PUNKT DES FELDS (`_buildStarField`): die Größenklasse eines Sterns liegt in [−1, sternMagSchwach] (sein Wurf
-// `sternMagSchwach − (sternMagSchwach + 1) · roll³`), ein Wandelstern trägt seine eigene — der kleinste Wert des Gesetzes, nie
-// gezählt am gebauten Feld (der Bau des Felds fragt ihn, bevor es steht).
+// DIE GRÖSSENKLASSE EINES STERNS (`_buildStarField`): sein Rang-Anteil a ∈ (0, 1] im Feld von n Sternen → die Klasse, bis zu der
+// der Himmel diesen Anteil trägt (N(< m) ∝ 10^(sternZaehlung · m)), nie heller als −1.
+AnazhRealm._sternMag = (anteil, n) => {
+    const H = AnazhRealm.HIMMEL;
+    return Math.max(-1, H.sternMagSchwach + Math.log10(Math.max(anteil, 0.5 / n)) / H.sternZaehlung);
+};
+// DER HELLSTE PUNKT DES FELDS: die Größenklasse eines Sterns liegt in [−1, sternMagSchwach] (`_sternMag`), ein Wandelstern trägt
+// seine eigene — der kleinste Wert des Gesetzes, nie gezählt am gebauten Feld (der Bau des Felds fragt ihn, bevor es steht).
 AnazhRealm.STERN_HELLSTE = Math.min(-1, ...AnazhRealm.HIMMEL.wandelsterne.map((w) => w.mag));
 // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle (gegenüber der Sonne, kühl + gedämpft →
 // gerichtete Nacht-Schattierung mit tiefen Schwärzen) statt die Nacht per Post-FX aufzuhellen.

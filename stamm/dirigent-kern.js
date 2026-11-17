@@ -1759,13 +1759,18 @@ class AnazhRealm {
             const L = this._lichtDatum(e);
             if (!L) continue; // das Datum ging mit dem Bauplan (das Verzeichnis stempelt beim Eintritt)
             const sk = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
-            const a = this._lichtDatumDerGestalt(e) ? 0 : this._glutFlaeche(e);
+            const gestalt = !!this._lichtDatumDerGestalt(e);
+            const a = gestalt ? 0 : this._glutFlaeche(e);
+            // DER LEIB DER QUELLE (schatten.K5): die Gestalt trägt ihren Kopf (fachwerk `lichtLeib`, die nahe Ebene des Wurfs); eine
+            // Glut ohne Gestalt brennt `hoeheM` über IHREM Bett (`_glutBett`) — das Licht der Esse stand 0,35 m über dem Boden IN
+            // ihrem Herd (Feuerbox 1,1 m, das Bett darauf), und jede Wand des Herds warf ihr ganzes Licht
             nimm(e, {
                 quelle: e.type,
                 x: p.x,
-                y: p.y - 0.5 + (L.hoeheM || 0) * sk,
+                y: p.y - 0.5 + ((gestalt ? 0 : this._glutBett(e)) + (L.hoeheM || 0)) * sk,
                 z: p.z,
                 L,
+                leibM: gestalt ? this._lichtLeibDerGestalt(e) * sk : 0,
                 masse: a > 0 ? a / bezug : sk * sk,
                 phase: (((p.x * 12.9898 + p.z * 78.233) % 6.2832) + 6.2832) % 6.2832,
             });
@@ -1818,6 +1823,30 @@ class AnazhRealm {
         const bp = this.state.blueprints && typeof entry.type === "string" ? this.state.blueprints[entry.type] : null;
         const pre = bp && typeof bp.studioGestalt === "string" ? FC.PRESETS[bp.studioGestalt] : null;
         return pre && pre.fx && pre.fx.licht ? pre.fx.licht : null;
+    }
+
+    // Der Leib der Studio-Gestalt eines Eintrags um ihren Licht-Mittelpunkt (fachwerk `lichtLeib`: der Glas-Kopf einer Leuchte;
+    // 0 für eine Gestalt ohne Kopf, die Feuerstelle) — in der Größe des Rezepts, die Skala des Eintrags trägt der Rufer.
+    _lichtLeibDerGestalt(entry) {
+        const bp = this.state.blueprints && typeof entry.type === "string" ? this.state.blueprints[entry.type] : null;
+        return bp && typeof bp.studioGestalt === "string" ? globalThis.__fachwerkCore.lichtLeib(bp.studioGestalt) : 0;
+    }
+
+    // DAS BETT EINER GLUT ohne Gestalt (m, vor der Skala des Eintrags): der tiefste Fuß ihrer Glut-Teile (`material` glut, die
+    // Teile, deren Fläche `_glutFlaeche` misst) — dort brennt das Herdfeuer des Gesetzbuchs (LICHT_GESETZ.feuer `hoeheM` „über
+    // dem Bett"). Auf dem Boden 0 (der Glutbrunnen: Kugel 0,18 ± 0,18), die Esse trägt ihr Bett auf dem Herd. Je Bauplan gemerkt.
+    _glutBett(entry) {
+        const memo = this._glutBettMemo || (this._glutBettMemo = new Map());
+        let b = memo.get(entry.type);
+        if (b === undefined) {
+            const bp = this.state.blueprints && this.state.blueprints[entry.type];
+            const fuesse = (bp && Array.isArray(bp.parts) ? bp.parts : [])
+                .filter((pt) => pt && pt.material === "glut" && pt.size && pt.position)
+                .map((pt) => (+pt.position.y || 0) - (+pt.size.y || 0) / 2);
+            b = fuesse.length ? Math.max(0, Math.min(...fuesse)) : 0;
+            memo.set(entry.type, b);
+        }
+        return b;
     }
 
     // DIE EINE ÜBERSETZUNG LABOR → WELT eines Punktlichts (K11): das r128-Labor rechnet ohne 1/π-Normierung — derselbe EINE
@@ -1885,7 +1914,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.308";
+AnazhRealm.VERSION = "18.546.314";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

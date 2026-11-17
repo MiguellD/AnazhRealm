@@ -3996,21 +3996,44 @@
             // der Wasserschlag sperrt die Antriebsraeder: Haftung wie die Handbremse, nie ueber den Stand hinaus (sie haelt,
             // sie schiebt nicht zurueck)
             else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;
-            const capL = cap * m * gN;
-            let Fx = Math.max(-capL, Math.min(capL, Fr));
-            // Rollwiderstand (die Reibung der Zeit) und das Schleppmoment, STETIG im Zug: der Motor trägt zieht · Antrieb −
-            // (1 − zieht) · Schlepp (Volllast ist netto, geschlossen bremst er — unter Bremse und Handbremse weiter, die Kupplung
-            // bleibt; heute zusammen FAHR.rollDecel: das Ausrollen von gestern bleibt); zieht = das Gas, im Rückwärtsgang voll.
-            // Vorher sprang der Schlepp bei Gas 0 → 0,001 von 0,87 auf 0 m/s² und fiel unter der Handbremse fort (Pad-Wagen:
-            // Auslauf mit Handbremse 1,088 gegen 0,873 m/s ohne, gate:playtest leib.K5).
+            // Das Schleppmoment (bzw. das haltende Gespann), STETIG im Zug: der Motor trägt zieht · Antrieb − (1 − zieht) ·
+            // Schlepp (Volllast ist netto, geschlossen bremst er — unter Bremse und Handbremse weiter, die Kupplung bleibt; mit
+            // dem Rollwiderstand zusammen FAHR.rollDecel: das Ausrollen von gestern bleibt); zieht = das Gas, im Rückwärtsgang
+            // voll. Vorher sprang der Schlepp bei Gas 0 → 0,001 von 0,87 auf 0 m/s² und fiel unter der Handbremse fort
+            // (Pad-Wagen: Auslauf mit Handbremse 1,088 gegen 0,873 m/s ohne, gate:playtest leib.K5).
             const zieht = brk > 0 && vL <= S.bremsV && motor ? 1 : thr;
-            if (Math.abs(vL) > 0.02) Fx -= (G.reibung + (1 - zieht) * G.schlepp) * m * sgn;
+            const rollt = Math.abs(vL) > 0.02;
+            if (rollt) Fr -= (1 - zieht) * G.schlepp * m * sgn;
             // SCHAU 2 (10.10., fahr-bahn) — UNTER SCHRITTTEMPO ROLLT DAS GELENKTE RAD KINEMATISCH: die Gier ist dort
             // kinematisch geblendet (lowBlendV, unten), der Schlupf im Nenner gedaempft (slipEps) — er meldet am Stand den
             // vollen Einschlag als Schlupf, und die gesaettigte Seitenkraft des Vorderrads bremste mit ihrem Laengsanteil
             // die Fahrt, die es nicht gibt: rueckwaerts mit Gegenlenkung stand jeder Wagen (GT eben 0,40 m in 1,3 s). Der
             // Laengsanteil folgt derselben Blende; geradeaus (Einschlag 0) und ueber Schritttempo byte-gleich.
             const lowF = Math.max(0, Math.min(1, 1 - Math.hypot(z.vlong, z.vlat) / G.lowBlendV));
+            // DER REIBKREIS DER VEKTOR-SUMME (vorrat5-bremsweg): Antrieb, Bremse, Handbremse, Schlepp und Fahrwiderstand
+            // laufen ueber den Reifen — ihre Summe teilt sich μ·N mit der Seitenkraft der Achsen (die Kurve zuerst, die
+            // Laenge im Rest: √(μ²N² − Q²) mit Q = |Seitenkraft vorn| + |hinten|, und die Summe mit dem Seitenkraft-Vektor
+            // (p, q) — dem Laengsanteil des gelenkten Rads samt der Querkraft — bleibt im Kreis: |(Fx + p, q)| ≤ μ·N; unter
+            // Schritttempo beide mit derselben Blende wie der Laengsanteil des Lenkrads). Ausserhalb wirkt nur der
+            // Rollwiderstand (cr · g). Vorher zog das Schleppmoment NACH dem Deckel: die volle Bremse stand bei μ·g + 1,0 m/s²
+            // (GT 50 → 0 km/h auf μ 0,6: 13,90 m gegen v²/(2μg) 16,40 m, −15,2 %), und Laenge und Kurve griffen je fuer sich
+            // bis μ·N (Kurvenbremse bis 1,56 μg). Geradeaus ohne Deckel (Ausrollen, Gas, vmax) dieselbe Zahl.
+            const capL = cap * m * gN;
+            const blende = 1 - lowF;
+            const Q = (Math.abs(FlatF) + Math.abs(FlatR)) * blende;
+            let lo = -capL,
+                hi = capL;
+            if (Q > 0) {
+                const capX = Math.sqrt(Math.max(0, capL * capL - Q * Q)),
+                    p = -FlatF * Math.sin(z.steer) * blende,
+                    q = (FlatF * Math.cos(z.steer) + FlatR) * blende,
+                    r = Math.sqrt(Math.max(0, capL * capL - q * q));
+                lo = Math.max(-capX, -p - r);
+                hi = Math.min(capX, -p + r);
+                if (lo > hi) lo = hi = Math.max(-capX, Math.min(capX, -p)); // die Kurve fuellt den Kreis: die Laenge so klein wie moeglich
+            }
+            let Fx = Math.max(lo, Math.min(hi, Fr));
+            if (rollt) Fx -= G.reibung * m * sgn;
             Fx -= FlatF * Math.sin(z.steer) * (1 - lowF);
             const Fy = FlatF * Math.cos(z.steer) + FlatR;
             // ── Newton-Euler im Koerperframe (mit Rotationskopplung vlat·ω / vlong·ω) ──
