@@ -37,6 +37,15 @@
 //       (Suche nach ihren Uniformen), der Rückweg auf aus byte-gleich im Fragment, die Lauf-Grenze des Resolve eine Konstante.
 //       Steil in den Himmel mit einer blauen Kiste: Tritanopie und Deuteranopie ändern kein Himmels-Pixel (die EINE
 //       Himmels-Maske), die Tritanopie ändert die Kiste (sonst blind).
+//   (j) FLAMME (K66, w28-brand-kern) — der Ton der Brand-Flamme steht VOR dem Auge der Nacht: eine flache Fläche füllt das Bild
+//       (wie (h)), ihr Stoff trägt `_nachtAuge(c, true)` mit c = der Ton der Flamme vor der Tonkurve (fachwerk lichtFarbe(K) ×
+//       (K/kelvin[0])⁴ × BRAND.bild.flamme.ziel ÷ Belichtung, wie die Tafel in `_brandFlammenZeichnen`) für KERN (kelvin[0]) und
+//       MANTEL (2350 K, die Mitte der Tafel); gemessen die Bild-Mitte nach der ganzen Kette bei fester Belichtung 1,5.
+//       (j1) NACHT = TAG je Ton (nightFactor 1 gegen 0, je Kanal ≤ FLAMME_TOL); MUTANTE-J im selben Lauf: derselbe Ton OHNE die
+//       Umkehr reißt bei nightFactor 1 (die Nacht entsättigt — sonst ist die Probe blind).
+//       (j2) der Ton liest sich als Feuer: KERN gelb-orange, MANTEL orange-rot (Farbton und Sättigung HSV in ihren Bändern).
+//       (j3) EINE QUELLE: die Schwellen `NACHT_AUGE` liest im ganzen Stamm nur `_nachtAuge` (`stammLib.fehlt` außer dem Glied),
+//       seine Uniform ist die der Kette; die Post-Kette ruft es, die Flamme ruft seine Umkehr (`__fehlt` am lebenden Code).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
 // Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette)
@@ -49,6 +58,7 @@ const { statikServer, starteBrowser, postKetteBereit, laufUhr, taeterFaelle, sel
 const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
+const STAMM = require("./lib/stamm.cjs");
 
 const N_FRAMES = 4;
 const BUDGET_AUSGABE = { unbedingtMax: 9, zweigMin: 5 };
@@ -79,6 +89,25 @@ const DUNKEL_TOL = 1.5;
 // Tag-Kurve bei 0,028) bei nightFactor 1 zeigt mindestens DUNKEL_LUMA_MIN Luma — der Kontrast fadet zur Nacht aus wie die
 // Entgrauung.
 const DUNKEL_NACHT_LICHT = 0.02;
+// (j) Die Flamme: beide Töne bei Belichtung FLAMME_PROBE.k (eine Nacht-Belichtung — Tag und Nacht unterscheidet NUR das Auge der
+// Nacht), der MANTEL bei FLAMME_PROBE.mantelK. FLAMME_TOL: so weit darf die Bild-Mitte je Kanal (8 Bit) zwischen nightFactor 0 und 1
+// auseinanderliegen — und um mehr muss die Mutante ohne Umkehr reißen. FLAMME_BAND: Farbton (Grad) und Sättigung (HSV) je Ton.
+const FLAMME_PROBE = { k: 1.5, mantelK: 2350 };
+// Gemessen (swiftshader, dfa9edee): KERN Tag [249,184,122] ↔ Nacht [249,184,124], Δ 2 (ohne Umkehr Δ 29); der MANTEL reißt — Tag
+// [200,118,18] ↔ Nacht [199,115,85], Δ 67 (ohne Umkehr Δ 73): sein Blau liegt unter Leuchtdichte × Stäbchen-Anteil, die Umkehr
+// klemmt bei 0 (Farbton 15,8°, Sättigung 0,573; ohne Umkehr 0,474). DIE GRENZE DER UMKEHR, benannt: unter einem Auge, das je
+// Pixel nach der Leuchtdichte entsättigt, gibt es einen dunklen gesättigten Ton nicht — jeder Kanal trägt mindestens Leuchtdichte ×
+// Stäbchen-Anteil. Der KERN (hell) kommt ganz zurück, der MANTEL nur zum Teil: er wird an seiner SÄTTIGUNG der Nacht geurteilt
+// (`nachtSatt`, zwischen mit und ohne Umkehr), nicht an Tag = Nacht. Die Bänder (j2) liegen um das Gemessene am Tag.
+const FLAMME_TOL = 6;
+const FLAMME_BAND = { kern: { ton: [22, 40], satt: 0.42, name: "gelb-orange" }, mantel: { ton: [22, 42], satt: 0.75, name: "orange", nachtSatt: 0.53 } };
+const hsv = ([r, g, b]) => {
+    const [mx, mn] = [Math.max(r, g, b), Math.min(r, g, b)];
+    const d = mx - mn;
+    const h = d === 0 ? 0 : mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return { ton: +(60 * h).toFixed(1), satt: mx ? +(d / mx).toFixed(3) : 0 };
+};
+const kanalAbstand = (a, b) => (a && b ? +Math.max(...[0, 1, 2].map((c) => Math.abs(a[c] - b[c]))).toFixed(1) : NaN);
 
 function urteil(z) {
     const v = [];
@@ -236,6 +265,60 @@ function urteil(z) {
         v.push(
             `DUNKEL: das Licht der Nacht (${DUNKEL_NACHT_LICHT} bei Belichtung 1, nightFactor 1) zeigt Luma ${dk.lumaNacht} (Soll ≥ ${DUNKEL_LUMA_MIN}) — der Kontrast des Gradings schwärzt die Nacht (Post-Kette 25c: er fadet nicht über nightFactor)`
         );
+    // (j) DIE FLAMME VOR DEM AUGE DER NACHT
+    const fl = z.flamme;
+    if (!fl) v.push("FLAMME: die Probe lief nicht");
+    else if (fl.abbruch) v.push(`FLAMME: ABBRUCH — ${fl.abbruch}`);
+    else {
+        for (const [name, band] of Object.entries(FLAMME_BAND)) {
+            const tn = (fl.toene || {})[name];
+            const N = name.toUpperCase();
+            if (!tn) {
+                v.push(`FLAMME: ${N} — nicht gemessen`);
+                continue;
+            }
+            if (!(tn.k === FLAMME_PROBE.k && tn.nfTag === 0 && tn.nfNacht === 1 && tn.nfOhne === 1)) {
+                v.push(
+                    `FLAMME: ${N} — die Belichtung stand bei ${tn.k} statt ${FLAMME_PROBE.k} oder nightFactor bei ${tn.nfTag} / ${tn.nfNacht} / ${tn.nfOhne} statt 0 / 1 / 1 (die Probe ist blind)`
+                );
+                continue;
+            }
+            const [d, dM, f] = [kanalAbstand(tn.tag, tn.nacht), kanalAbstand(tn.tag, tn.ohne), hsv(tn.tag)];
+            if (band.nachtSatt) {
+                const [sN, sO] = [hsv(tn.nacht).satt, hsv(tn.ohne).satt];
+                if (!(sN >= band.nachtSatt))
+                    v.push(
+                        `FLAMME: ${N} (${tn.kelvin} K) — in der Nacht ${JSON.stringify(tn.nacht)} mit Sättigung ${sN} < ${band.nachtSatt} (am Tag ${JSON.stringify(tn.tag)}) — die Flamme steht nicht vor dem Auge der Nacht: jemand änderte \`_nachtAuge\`, ohne dass seine Umkehr (\`_nachtAuge(farbe, true)\`) folgt`
+                    );
+                if (!(sO < band.nachtSatt))
+                    v.push(
+                        `FLAMME: ${N} — MUTANTE-J (der Ton OHNE die Umkehr, nightFactor 1) zeigt ${JSON.stringify(tn.ohne)} mit Sättigung ${sO} ≥ ${band.nachtSatt} — das Auge der Nacht entsättigt die Flamme nicht (die Probe ist blind)`
+                    );
+            } else if (!(d <= FLAMME_TOL))
+                v.push(
+                    `FLAMME: ${N} (${tn.kelvin} K) — am Tag ${JSON.stringify(tn.tag)}, in der Nacht ${JSON.stringify(tn.nacht)} (Δ ${d} > ${FLAMME_TOL} je Kanal) — die Flamme steht nicht vor dem Auge der Nacht: jemand änderte \`_nachtAuge\`, ohne dass seine Umkehr (\`_nachtAuge(farbe, true)\`) folgt, oder die Umkehr klemmt (ein Kanal unter Leuchtdichte × Stäbchen-Anteil: diesen Ton zeigt das Auge der Nacht nicht)`
+                );
+            if (!band.nachtSatt && !(dM > FLAMME_TOL))
+                v.push(
+                    `FLAMME: ${N} — MUTANTE-J (der Ton OHNE die Umkehr, nightFactor 1) zeigt ${JSON.stringify(tn.ohne)} gegen den Tag ${JSON.stringify(tn.tag)} (Δ ${dM} ≤ ${FLAMME_TOL}) — das Auge der Nacht entsättigt die Flamme nicht (die Probe ist blind)`
+                );
+            if (!(f.ton >= band.ton[0] && f.ton <= band.ton[1] && f.satt >= band.satt))
+                v.push(
+                    `FLAMME: ${N} (${tn.kelvin} K) liest sich nicht als Feuer — ${JSON.stringify(tn.tag)}: Farbton ${f.ton}° (Soll ${band.ton[0]}–${band.ton[1]}°, ${band.name}), Sättigung ${f.satt} (Soll ≥ ${band.satt})`
+                );
+        }
+        const q = fl.quelle || {};
+        if (q.zwilling !== null)
+            v.push(
+                `FLAMME: EINE QUELLE — die Schwellen des Auges (\`NACHT_AUGE\`) liest der Stamm außerhalb von \`_nachtAuge\`: ${q.zwilling} — ein Zwilling rechnet das Auge der Nacht neben dem EINEN Glied`
+            );
+        if (q.augeLiest !== true) v.push("FLAMME: EINE QUELLE — `_nachtAuge` liest `NACHT_AUGE.staebchenCd` nicht (die Absenz des Zwillings misst nichts — die Probe ist blind)");
+        if (q.uniform !== true) v.push("FLAMME: EINE QUELLE — die Uniform von `_nachtAuge()` ist nicht `postProcessingUniforms.nightFactor` (zwei Nächte: die Umkehr folgt einer anderen als die Kette)");
+        if (q.kette !== true)
+            v.push("FLAMME: EINE QUELLE — `_ensurePostProcessing` ruft `_nachtAuge(farbe)` nicht (die Post-Kette rechnet das Auge der Nacht selbst)");
+        if (q.umkehr !== true)
+            v.push("FLAMME: EINE QUELLE — `_brandFlammenZeichnen` ruft die Umkehr `_nachtAuge(…, true)` nicht (die Flamme steht nicht vor dem Auge der Nacht)");
+    }
     const zg = z.zugang || { abbruch: "lief nicht" };
     const t = zg.tritanopie || {};
     if (zg.abbruch || zg.ausTraegt) v.push(`ZUGANG: ${zg.abbruch || "aus trägt den Knoten der Farbsicht (vp-0611g)"}`);
@@ -332,6 +415,13 @@ function selbsttest() {
         saum: { leinwand: [321, 241], kanten: 30, abweichend: 0, dMax: 3, paritaeten: 2, gpuFehler: [] },
         rahmenEnde: { ziele: 0, n: 0, mb: 0 },
         dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8, nachtFaktor: 1, lumaNacht: 6 },
+        flamme: {
+            toene: {
+                kern: { kelvin: 3000, k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [250, 190, 110], nacht: [250, 190, 110], ohne: [240, 200, 150] },
+                mantel: { kelvin: 2350, k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [200, 118, 18], nacht: [199, 115, 85], ohne: [173, 124, 91] },
+            },
+            quelle: { uniform: true, augeLiest: true, zwilling: null, kette: true, umkehr: true },
+        },
         zugang: {
             himmel: ["himmel"],
             anTraegt: true,
@@ -392,6 +482,24 @@ function selbsttest() {
         ["Dunkel-Probe fehlt", ["dunkel"], /DUNKEL: die Probe lief nicht/],
         ["Kontrast schwärzt die Nacht", ["dunkel.lumaNacht=", 0], /DUNKEL: das Licht der Nacht .*Post-Kette 25c/],
         ["Nacht-Probe blind", ["dunkel.nachtFaktor=", 0], /DUNKEL: die Nacht stand bei nightFactor 0/],
+        // (j) w28-brand-kern: das Auge der Nacht las den Bild-Ton der Flamme als 0,7 cd/m² und nahm ihr 30 % Farbe (cremeweiß)
+        ["Flamme nicht vor dem Auge der Nacht (MUTANTE-J: ohne Umkehr)", (z) => (z.flamme.toene.kern.nacht = z.flamme.toene.kern.ohne), /FLAMME: KERN \(3000 K\) — .*steht nicht vor dem Auge der Nacht/],
+        ["Mantel entsättigt in der Nacht", (z) => (z.flamme.toene.mantel.nacht = z.flamme.toene.mantel.ohne), /FLAMME: MANTEL \(2350 K\) — .*ohne dass seine Umkehr/],
+        ["Flammen-Mutante reißt nicht (blind)", (z) => (z.flamme.toene.kern.ohne = z.flamme.toene.kern.tag), /FLAMME: KERN — MUTANTE-J .*die Probe ist blind/],
+        ["Flammen-Probe ohne Nacht (blind)", ["flamme.toene.mantel.nfNacht=", 0], /FLAMME: MANTEL — .*nightFactor bei 0 \/ 0 \/ 1/],
+        ["Flammen-Probe bei fremder Belichtung (blind)", ["flamme.toene.kern.k=", 1], /FLAMME: KERN — die Belichtung stand bei 1 statt 1\.5/],
+        ["Kern cremeweiß", (z) => (z.flamme.toene.kern.tag = z.flamme.toene.kern.nacht = [250, 235, 200]), /FLAMME: KERN \(3000 K\) liest sich nicht als Feuer .*Sättigung 0\.2/],
+        ["Mantel gelb statt orange-rot", (z) => (z.flamme.toene.mantel.tag = z.flamme.toene.mantel.nacht = [220, 190, 40]), /FLAMME: MANTEL \(2350 K\) liest sich nicht als Feuer — .*Farbton 50°/],
+        // 46f69d7b: die Rechnung stand inline in der Post-Kette — neben dem Glied wäre sie der Zwilling
+        ["ein Zwilling liest die Stäbchen-Schwelle", ["flamme.quelle.zwilling=", "stamm/bild-kosten.js:2431 `.staebchenCd`"], /EINE QUELLE — .*außerhalb von `_nachtAuge`: stamm\/bild-kosten\.js:2431/],
+        ["Zwilling ungemessen", ["flamme.quelle.zwilling"], /EINE QUELLE — .*außerhalb von `_nachtAuge`: undefined/],
+        ["das Glied liest die Schwelle nicht (blind)", ["flamme.quelle.augeLiest=", false], /`_nachtAuge` liest `NACHT_AUGE\.staebchenCd` nicht .*blind/],
+        ["zwei Uniformen der Nacht", ["flamme.quelle.uniform=", false], /die Uniform von `_nachtAuge\(\)` ist nicht `postProcessingUniforms\.nightFactor`/],
+        ["die Post-Kette rechnet das Auge selbst", ["flamme.quelle.kette=", false], /`_ensurePostProcessing` ruft `_nachtAuge\(farbe\)` nicht/],
+        ["die Flamme ohne Umkehr im Stamm", ["flamme.quelle.umkehr=", false], /`_brandFlammenZeichnen` ruft die Umkehr/],
+        ["Flammen-Ton ungemessen", ["flamme.toene.mantel"], /FLAMME: MANTEL — nicht gemessen/],
+        ["Flammen-Probe bricht ab", ["flamme.abbruch=", "TypeError: r._nachtAuge is not a function"], /FLAMME: ABBRUCH — TypeError/],
+        ["Flammen-Probe fehlt", ["flamme"], /FLAMME: die Probe lief nicht/],
         // vp-0611g (OMEN, w15-farbsicht 1c39aada): der Zweig der Farbsicht stand aus im Graphen, die Tritanopie färbte den Himmel
         ["aus trägt die Farbsicht", ["zugang.ausTraegt=", true], /Knoten der Farbsicht/],
         ["Tritanopie färbt den Himmel", ["zugang.tritanopie", { himmel: 9 }], /tritanopie färbt/],
@@ -509,7 +617,7 @@ function saumProbe(ort) {
 }
 
 // DIE BÜHNE (Seiten-Kontext): die echte Welt-Szene, der echte Frame, eigene Gegenstände vor der Kamera.
-function buehne(nFrames, nachtLicht) {
+function buehne(nFrames, nachtLicht, flammeProbe) {
     return (async () => {
         const T = window.THREE;
         const rend = st.renderer;
@@ -855,6 +963,61 @@ function buehne(nFrames, nachtLicht) {
                 // die Nacht (D3-2): das Licht des Bodens im Mondlicht unter dem Schnitt der Tag-Kurve, nightFactor 1
                 const n = await dunkel(1, nachtLicht, true);
                 aus.dunkel = { k1: a.k, luma1: a.luma, k4: b.k, luma4: b.luma, nachtFaktor: n.nacht, lumaNacht: n.luma };
+                // (j) DIE FLAMME VOR DEM AUGE DER NACHT: dieselbe Fläche, ihr Stoff der Ton der Flamme vor der Tonkurve — wie die Tafel
+                // in `_brandFlammenZeichnen` ihn rechnet (lichtFarbe(K) × (K/kelvin[0])⁴ in 8 Bit, × ziel ÷ Belichtung) —, mit der Umkehr
+                // des Auges (`_nachtAuge(c, true)`) und ohne sie (MUTANTE-J); je Ton die Bild-Mitte bei nightFactor 0 und 1.
+                const FL = (aus.flamme = { toene: {} });
+                const stoffVor = flach.material;
+                const stoffe = [];
+                try {
+                    if (!nachtU) throw new Error("die Post-Kette trägt keine Uniform nightFactor");
+                    const [BF, FW, L] = [r.constructor.BRAND.bild.flamme, globalThis.__fachwerkCore, T.TSL];
+                    const flammenStoff = (K, umkehr) => {
+                        const [c, w] = [FW.lichtFarbe(K), Math.pow(K / BF.kelvin[0], 4)];
+                        const ton = L.vec3(...[0, 1, 2].map((i) => Math.round(255 * c[i] * w) / 255)).mul(L.float(BF.ziel).div(L.toneMappingExposure));
+                        const m = new T.MeshBasicNodeMaterial();
+                        m.fog = false;
+                        m.colorNode = L.vec4(umkehr ? r._nachtAuge(ton, true) : ton, 1);
+                        stoffe.push(m);
+                        return m;
+                    };
+                    const mitte = async (m, nacht) => {
+                        flach.material = m;
+                        rend.toneMappingExposure = flammeProbe.k;
+                        for (let i = 0; i < nFrames; i++) {
+                            nachtU.value = nacht;
+                            setzeKamera();
+                            frame();
+                        }
+                        setzeKamera();
+                        const { u8 } = await window.__ausgabeAufnahme(32, 24, 1, { satz: "messung" });
+                        const zellen = [15, 16].flatMap((x) => [11, 12].map((y) => (y * 32 + x) * 4));
+                        return {
+                            rgb: [0, 1, 2].map((c) => +(zellen.reduce((s, i) => s + u8[i + c], 0) / 4).toFixed(1)),
+                            k: rend.toneMappingExposure,
+                            nf: nachtU.value,
+                        };
+                    };
+                    for (const [name, K] of [["kern", BF.kelvin[0]], ["mantel", flammeProbe.mantelK]]) {
+                        const [mit, ohneUmkehr] = [flammenStoff(K, true), flammenStoff(K, false)];
+                        const [tag, nacht, ohne] = [await mitte(mit, 0), await mitte(mit, 1), await mitte(ohneUmkehr, 1)];
+                        const k = [tag, nacht, ohne].every((x) => x.k === flammeProbe.k) ? flammeProbe.k : [tag.k, nacht.k, ohne.k].join("/");
+                        FL.toene[name] = { kelvin: K, k, nfTag: tag.nf, nfNacht: nacht.nf, nfOhne: ohne.nf, tag: tag.rgb, nacht: nacht.rgb, ohne: ohne.rgb };
+                    }
+                    // (j3) EINE QUELLE am lebenden Code (ohne Kommentare, `__fehlt`): die Uniform des Glieds IST die der Kette, das Glied
+                    // liest die Stäbchen-Schwelle, die Kette ruft das Glied mit ihrer Farbe, die Flamme ruft seine Umkehr
+                    FL.quelle = {
+                        uniform: r._nachtAuge(null) === nachtU,
+                        augeLiest: !window.__fehlt(r._nachtAuge, /\.staebchenCd\b/),
+                        kette: !window.__fehlt(r._ensurePostProcessing, /_nachtAuge\(\s*(?!null\b)[A-Za-z_]/),
+                        umkehr: !window.__fehlt(r._brandFlammenZeichnen, /_nachtAuge\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*,\s*true\s*\)/),
+                    };
+                } catch (e) {
+                    FL.abbruch = fehlerStapel(e).split("\n").slice(0, 4).join(" ← ");
+                } finally {
+                    flach.material = stoffVor;
+                    for (const m of stoffe) m.dispose();
+                }
             } finally {
                 cam.layers.mask = maskeVor;
                 if (nachtU) nachtU.value = nachtVor;
@@ -959,7 +1122,19 @@ function zugangProbe() {
         await postKetteBereit(page, log, "die Leinwand-Tiefe lebt nur dort, die Wand wäre blind");
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(SK.SHADER_INSTALL);
-        out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT);
+        out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT, FLAMME_PROBE);
+        // (j3) der GANZE Stamm (Lehre 12: über scripts/lib/stamm.cjs, ohne Kommentare): außerhalb von `_nachtAuge` liest niemand
+        // die Schwellen des Auges (`fehlt.wo` nennt den Zwilling mit Datei und Zeile)
+        if (out.flamme && out.flamme.quelle)
+            out.flamme.quelle.zwilling = STAMM.fehlt({ ausser: "_nachtAuge" }, /\.(?:staebchenCd|zapfenCd|luxJeEinheit)\b/) ? null : STAMM.fehlt.wo;
+        for (const [name, tn] of Object.entries((out.flamme && out.flamme.toene) || {})) {
+            const [fT, fN] = [hsv(tn.tag), hsv(tn.nacht)];
+            log(
+                `Flamme ${name.toUpperCase()} (${tn.kelvin} K, Belichtung ${tn.k}): Tag ${JSON.stringify(tn.tag)} (Farbton ${fT.ton}°, Sättigung ${fT.satt}) ↔ Nacht ${JSON.stringify(tn.nacht)} (Farbton ${fN.ton}°, Sättigung ${fN.satt}) · Δ ${kanalAbstand(tn.tag, tn.nacht)} je Kanal (${FLAMME_BAND[name].nachtSatt ? `Grenze der Umkehr: Soll Sättigung der Nacht ≥ ${FLAMME_BAND[name].nachtSatt}` : `Soll ≤ ${FLAMME_TOL}`}) · ` +
+                    `MUTANTE-J ohne Umkehr ${JSON.stringify(tn.ohne)} (Sättigung ${hsv(tn.ohne).satt}) · Δ ${kanalAbstand(tn.tag, tn.ohne)}`
+            );
+        }
+        if (out.flamme) log(`Flamme, EINE QUELLE: ${JSON.stringify(out.flamme.quelle)}${out.flamme.abbruch ? " · ABBRUCH " + out.flamme.abbruch : ""}`);
         if (out.abbruch) log(`ABBRUCH: ${out.abbruch}`);
         // (f) die ungerade Leinwand: die Seite wächst um ein Pixel je Achse, die Welt zieht nach (Resize, Leser neu gebunden)
         await page.setViewport({ width: 321, height: 241 });
@@ -1025,6 +1200,9 @@ function zugangProbe() {
             `die Ausgabe tastet unbedingt ${a.unbedingt}×, ${a.zweig}× nur hinter ihrer Stärke; die Godrays tragen mit der Sonne im Bild ` +
             `(${out.godray.aenderungPct} % der Pixel gegen ${out.godray.rauschenPct} % Rauschen), ihr Schacht lief ${out.godray.schacht.laeufeMit}× mit und 0× ohne Stärke; das Wasser liest das Tiefen-Abbild wie r184s Tiefe ` +
             `(${JSON.stringify(out.wasser.abbild)} gegen ${JSON.stringify(out.wasser.r184)}, ohne Grund ${JSON.stringify(out.wasser.ohneGrund)}); ` +
-            `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4, die Nacht ${out.dunkel.lumaNacht}); der Zugang aus ohne Farbsicht-Knoten, der Himmel bleibt.`
+            `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4, die Nacht ${out.dunkel.lumaNacht}); ` +
+            `die Flamme steht vor dem Auge der Nacht (${Object.entries(out.flamme.toene)
+                .map(([n, tn]) => `${n.toUpperCase()} Tag ${JSON.stringify(tn.tag)} ↔ Nacht ${JSON.stringify(tn.nacht)} Δ ${kanalAbstand(tn.tag, tn.nacht)}, ohne Umkehr Δ ${kanalAbstand(tn.tag, tn.ohne)}`)
+                .join(" · ")}; Soll ≤ ${FLAMME_TOL}), die Schwellen des Auges liest nur \`_nachtAuge\`; der Zugang aus ohne Farbsicht-Knoten, der Himmel bleibt.`
     );
 })();

@@ -2169,6 +2169,28 @@ class AnazhRealm_bild_kosten {
             traa.laufPxSetzen(Z.unschaerfe === false ? AnazhRealm.ZUGANG.laufPxAus : traa.maxVelocityLength);
     }
 
+    // DAS AUGE DER NACHT ALS EIN GLIED (K66, w28-brand-kern; `NACHT_AUGE`): ohne Farbe → die Uniform der Nacht (0 = Tag … 1 =
+    // Nacht, EIN Schreiber `_dayNightApplyDirectionalLight` über die Post-Kette); mit `farbe` → der Versatz, den das Auge ihr
+    // gibt (zum Grau ihrer Leuchtdichte, × Stäbchen-Anteil × Nacht — die Post-Kette addiert ihn). `vor`: der Ton, den das Auge
+    // als `farbe` SIEHT (seine Umkehr — die Leuchtdichte bleibt unter dem Auge gleich, also derselbe Stäbchen-Anteil s:
+    // (farbe − L·s)/(1 − s)). Leser der Umkehr: die Flamme des Brands (`_brandFlammenZeichnen`) — ihr Ton ist an das BILD
+    // gebunden (`ziel` ÷ Belichtung, vor der Tonkurve), nicht an die Leuchtdichte einer Flamme: das Auge las sie nachts als
+    // 0,7 cd/m² (eine Flamme trägt Tausende) und nahm ihr 30 % der Farbe — cremeweiße Tropfen statt Feuer.
+    _nachtAuge(farbe, vor) {
+        const [T, NA] = [THREE.TSL, AnazhRealm.NACHT_AUGE];
+        const nacht = this._nachtAugeU || (this._nachtAugeU = T.uniform(0));
+        if (!farbe) return nacht;
+        const lum = T.luminance(farbe);
+        const zapfen = T.log(
+            lum.mul(T.float(NA.luxJeEinheit)).max(T.float(NA.staebchenCd)).div(T.float(NA.staebchenCd))
+        )
+            .div(T.float(Math.log(NA.zapfenCd / NA.staebchenCd)))
+            .clamp(0, 1);
+        const s = T.float(1).sub(zapfen).mul(nacht);
+        if (vor) return farbe.sub(lum.mul(s)).div(T.float(1).sub(s).max(0.1)).max(0);
+        return T.vec3(lum, lum, lum).sub(farbe).mul(s);
+    }
+
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
     // aus TSL-Primitiven selbst gebaut (kein Vendor-Addon). Lazy nach rendererReady; bei jedem Fehler
     // postProcessingFailed=true → der Loop rendert direkt renderer.render() (nie schwarzer Schirm).
@@ -2259,7 +2281,7 @@ class AnazhRealm_bild_kosten {
                 bloomStrength: uniform(0.38),
                 bloomRadius: uniform(2.2),
                 // 0 = Tag → 1 = Nacht (`_dayNightApplyDirectionalLight`): das Auge der Nacht liest ihn (unten).
-                nightFactor: uniform(0),
+                nightFactor: this._nachtAuge(null),
                 // Der lokale Kontrast (Unsharp-Mask) ist NUR der Spieler-Regler „Kanten-Schärfe" (`kantenSchaerfe`, Default 0 —
                 // die Foto-Kette F1: das Bild trägt die Kante, die der Stoff zeichnet; aus = der Zweig fällt mit seinen 4 Abtastungen).
                 localContrast: uniform(
@@ -2406,17 +2428,7 @@ class AnazhRealm_bild_kosten {
             // (log-linear 0 … 1); die Leuchtdichte des Pixels in cd/m² aus der Eichung der Nacht (der Stoff rechnet Albedo/π ·
             // Bestrahlung in Welt-Einheiten). Es ist die EINE Sättigung der Kette und nur ein Knoten der Nacht: am Tag
             // (`nightFactor` 0) fällt der Zweig (`nurBeiStaerke`), das Bild geht unberührt in die Tonkurve.
-            const NA = AnazhRealm.NACHT_AUGE;
-            const staebchenSicht = () => {
-                const lum = luminance(combined);
-                const zapfen = TSL.log(
-                    lum.mul(float(NA.luxJeEinheit)).max(float(NA.staebchenCd)).div(float(NA.staebchenCd))
-                )
-                    .div(float(Math.log(NA.zapfenCd / NA.staebchenCd)))
-                    .clamp(0, 1);
-                return vec3(lum, lum, lum).sub(combined).mul(float(1).sub(zapfen).mul(u.nightFactor));
-            };
-            const gesehen = combined.add(nurBeiStaerke(staebchenSicht(), u.nightFactor));
+            const gesehen = combined.add(nurBeiStaerke(this._nachtAuge(combined), u.nightFactor));
             const graded = gesehen.max(vec3(0, 0, 0));
             // DIE FARBSICHT (spielgang.K4, `AnazhRealm.FARBSICHT`): die Daltonisierung als die LETZTE Abbildung des Lichts vor der
             // Tonkurve, Δ = v · max(e · Bild, 0) — Weiß-treu (Grau trägt e = 0) und je Seite linear: sie vertauscht mit dem Versatz
