@@ -5809,7 +5809,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 7de938ab: Last: Referenz f 1,268 (Faden 1,118 · alle Kerne 1,147 · Stoß in der Station 6,42 Kerne fremd → 1,268; vor 90,2/301,3 ms, nach 80,1/276,8 ms, Ruhe 80,7/262,6 ms seit 2026-11-17) · fremd: Claude.exe -- · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 7de938ab: Last: Referenz f 1,268 (Faden 1,118 · alle Kerne 1,147 · Stoß in der Station 6,42 Kerne fremd → 1,268; vor 90,2/301,3 ms, nach 80,1/276,8 ms, Ruhe 80,7/262,6 ms seit 2026-11-17) · fremd: Claude.exe -- · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an d39e0d6e: Last: Referenz f 1,308 (Faden 1,308 · alle Kerne 1,297; vor 98,5/300,5 ms, nach 118,2/245,6 ms, Ruhe 90,4/231,6 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -5827,7 +5827,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an d39e0d6e: Last: Referenz f 1,308 (Faden 1,308 · alle Kerne 1,297; vor 98,5/300,5 ms, nach 118,2/245,6 ms, Ruhe 90,4/231,6 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
      "ungemessen": true,
      "beide": true
     }
@@ -6522,7 +6522,7 @@
   "ohne": 135
  },
  "kopfVoll": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
- "zeit": "2026-11-17T18:49:01.671Z",
+ "zeit": "2026-11-17T18:55:12.105Z",
  "vorher": "d39e0d6e",
  "bilanz": {
   "gewinn": [],
