@@ -198,8 +198,12 @@ const kanalAbstand = (a, b) => (a && b ? +Math.max(...[0, 1, 2].map((c) => Math.
 // die Wand `wandM` dahinter (hell: `wand` vor der Tonkurve); die Quelle des Licht-Pools `licht` [rechts, hoch, zum Auge] m neben
 // der Mitte des Ballens, eine Flammen-Fläche vom Halbmesser `flammeM`; (k2) die Mitten `versatz` Radien auseinander, gewertet
 // innerhalb `rand` Radien; (k3) der Zug so schnell, dass die Tafel um `streck` Radien streckt; je Schuss `frames` Bilder (die
-// zeitliche Glättung der Kette schwingt ein).
-const RAUCH_PROBE = { uhr: 0, abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, frames: 6 };
+// zeitliche Glättung der Kette schwingt ein). Die Probe zeichnet in ihrer EIGENEN Schicht (Wand, Ballen, die Lichter der Szene):
+// die Welt des Orts steht nicht im Bild. Vorher las sie die Wand in den Ecken des GANZEN Weltbilds — am Zug z598 (GTX 1060) stand
+// dort Welt im Schein der Quelle (Ecken-Mittel 9,69 vor Schwarz), fünf Zeilen rissen. `stoerer` ist der Ton eines Streifens Welt
+// im unteren Viertel, der die ganze Probe über steht (die alte Probe misst mit ihm 49,78 / Hub 0,0147 / Form 0,234 und 0,224 —
+// dieselben fünf Zeilen); (k0) prüft jede Ecke gegen die Wand, MUTANTE-K0 stellt den Störer in die Schicht.
+const RAUCH_PROBE = { uhr: 0, abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, stoerer: 0.05, frames: 6 };
 // GEMESSEN (swiftshader, c5713056, Leinwand 321×241, der Lauf zweimal Zahl für Zahl gleich) — der Kopf und, im selben Lauf, jede
 // Mutante; der Selbsttest urteilt an genau diesen Zahlen (grün am Kopf, rot an jeder Mutanten-Zahl an seiner Stelle). Auf der
 // Karte (GTX 1050, ein Lauf): unten ÷ oben 5,97 / flach 3,28 · Korrelation 0,749 / −0,318 · Höhe zu Breite 2 / 0,926 / 0,926.
@@ -212,10 +216,11 @@ const RAUCH_GEMESSEN = {
         leinwand: [321, 241],
         radiusPx: 34.9,
         licht: [{ quelle: "brand", staerke: 17.177, blende: 1, reichweite: 23.68 }],
-        unten: { unten: 41.4, oben: 6.96, grund: 0, px: 4496 },
-        dunkel: { unten: 0.24, oben: 1, grund: 0, px: 4496 },
-        mutUnten: { unten: 47.5, oben: 14.5, grund: 0, px: 4496 },
-        koerper: { gleich: 0.749, px: 1491, hub: 0.0964, wand: 139.1, boden: 1 },
+        unten: { unten: 41.4, oben: 6.96, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
+        mutWand: [0, 0, 33.02, 33.01],
+        dunkel: { unten: 0.24, oben: 1, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
+        mutUnten: { unten: 47.5, oben: 14.5, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
+        koerper: { gleich: 0.749, px: 1491, hub: 0.0964, wand: 139.1, ecken: [139.04, 139.04, 139.03, 139.04], boden: 1 },
         mutKoerper: { gleich: -0.316, px: 1491, hub: 0.0783, wand: 139.1 },
         zug: { tempo: 1.667, quer: { form: 2, hoch: 96, breit: 48, masse: 0.122 }, laengs: { form: 0.926, hoch: 50, breit: 54, masse: 0.094 } },
         mutZug: { quer: { form: 0.926, hoch: 50, breit: 54, masse: 0.094 } },
@@ -236,7 +241,7 @@ const RAUCH_GEMESSEN = {
 // (1491), `pxMin` der Radius im Bild (34,9). (k3) Höhe zu Breite: `quer` Kopf 2,00 (96 Zeilen / 48 Spalten; die Tafel streckt um
 // 1 Radius: 1 + 1), `laengs` 0,926 (50 / 54 — der runde Ballen misst nicht 1: das Muster der Welt franst seinen Rand), MUTANTE-K3
 // 0,926; `masseMin` die Deckung über seiner Scheibe (0,094).
-const RAUCH_BAND = { unten: [4.8, 7.2], lichtMin: 20, gleich: 0.5, boden: 0.95, hubMin: 0.03, pxMin: 25, kPxMin: 1000, masseMin: 0.05, quer: [1.7, 2.3], laengs: [0.8, 1.15] };
+const RAUCH_BAND = { unten: [4.8, 7.2], lichtMin: 20, gleich: 0.5, boden: 0.95, hubMin: 0.03, pxMin: 25, kPxMin: 1000, masseMin: 0.05, quer: [1.7, 2.3], laengs: [0.8, 1.15], eckeSchwarz: 1, eckeHell: [134, 144] };
 const rauchVerh = (u) => (u ? +((u.unten - u.grund) / Math.max(0.5, u.oben - u.grund)).toFixed(2) : NaN);
 const RAUCH_ORT = "stamm/siedlung-bewohner.js `_rauchStoff`";
 // (k) DAS URTEIL ÜBER DEN RAUCH: je Zeile der Täter (Datei, Glied, Zahl); eine Mutante, die ihr Band nicht reißt, ist „blind".
@@ -248,6 +253,22 @@ function rauchUrteil(ra) {
     if (ra.gpuFehler?.length) v.push(`RAUCH: ${ra.gpuFehler.length} GPU-Validierungs-Fehler: ${ra.gpuFehler[0]}`);
     if (!(ra.uhr === P.uhr && ra.nf === 1)) v.push(`RAUCH: die Bühne stand bei Uhr ${ra.uhr} / nightFactor ${ra.nf} statt ${P.uhr} / 1 — Sonne und Himmel reden mit (die Probe ist blind)`);
     if (!(ra.radiusPx >= B.pxMin)) v.push(`RAUCH: der Ballen misst ${ra.radiusPx} Pixel Radius im Bild (Soll ≥ ${B.pxMin}) — die Probe ist blind`);
+    // (k0) DIE WAND: jede Ecke des Bilds zeigt die Wand der Probe und nichts sonst — schwarz bleibt schwarz (auch im Schein der
+    // Quelle), hell steht in ihrem Ton. Reißt eine Ecke, steht etwas im Bild, das nicht zur Probe gehört, oder die Post-Kette hebt
+    // das Schwarz: die Zeilen (k1)–(k3) lesen dann eine falsche Wand
+    const [ws, wh] = [ra.unten && ra.unten.ecken, ra.koerper && ra.koerper.ecken];
+    if (![ws, wh].every((e) => Array.isArray(e) && e.length === 4 && e.every(Number.isFinite))) v.push("RAUCH: WAND — die Ecken des Bilds sind nicht gemessen");
+    else
+        ["oben links", "oben rechts", "unten links", "unten rechts"].forEach((ecke, i) => {
+            if (!(ws[i] <= B.eckeSchwarz))
+                v.push(`RAUCH: WAND — die Ecke ${ecke} zeigt vor der SCHWARZEN Wand Luma ${ws[i]} (Soll ≤ ${B.eckeSchwarz}; alle vier ${JSON.stringify(ws)}) — dort steht etwas im Bild, das nicht zur Probe gehört (scripts/diag-post-kette.cjs \`rauchProbe\`: die Schicht der Probe hält die Welt nicht fern), oder die Post-Kette / die Umkehr von \`_nachtAuge\` (stamm/bild-kosten.js) hebt das Schwarz`);
+            if (!im(wh[i], B.eckeHell))
+                v.push(`RAUCH: WAND — die Ecke ${ecke} zeigt vor der HELLEN Wand Luma ${wh[i]} außerhalb ${B.eckeHell[0]}–${B.eckeHell[1]} (alle vier ${JSON.stringify(wh)}) — dort steht etwas vor der Wand, oder ihr Ton (\`RAUCH_PROBE.wand\` ÷ Belichtung) kommt nicht durch die Tonkurve wie gemessen; die Deckung von (k2) und (k3) teilt durch diese Zahl`);
+        });
+    const wm = ra.mutWand;
+    if (!(Array.isArray(wm) && wm.length === 4 && wm.every(Number.isFinite))) v.push("RAUCH: WAND — MUTANTE-K0 (der Störer in der Schicht der Probe) ist nicht gemessen");
+    else if (!(Math.max(wm[2], wm[3]) > B.eckeSchwarz))
+        v.push(`RAUCH: WAND — MUTANTE-K0 (der helle Streifen im unteren Viertel, in der Schicht der Probe) zeigt in den unteren Ecken Luma ${wm[2]} / ${wm[3]} ≤ ${B.eckeSchwarz} — die Ecken-Zeile sieht nicht, was vor der Wand steht (blind)`);
     // (k1) UNTERSEITE
     const [li, u, d, mu] = [ra.licht || [], ra.unten, ra.dunkel, ra.mutUnten];
     if (!(li.length === 1 && li[0].quelle === "brand" && li[0].staerke > 0 && li[0].blende === 1))
@@ -315,6 +336,7 @@ function rauchZeilen(ra) {
     const j = JSON.stringify;
     return [
         `Rauch (Uhr ${ra.uhr}, nightFactor ${ra.nf}, Belichtung ${ra.k}, Leinwand ${ra.leinwand.join("×")}, Radius ${ra.radiusPx} Pixel) · Licht-Pool ${j(ra.licht)}`,
+        `Rauch (k0) WAND: die Ecken (oben links, oben rechts, unten links, unten rechts) schwarz ${j(ra.unten.ecken)} (Soll ≤ ${B.eckeSchwarz}) · hell ${j(ra.koerper.ecken)} (Soll ${B.eckeHell[0]}–${B.eckeHell[1]}) · MUTANTE-K0 der Störer in der Schicht der Probe: ${j(ra.mutWand)}`,
         `Rauch (k1) UNTERSEITE: unten ${ra.unten.unten} / oben ${ra.unten.oben} (Wand ${ra.unten.grund}) = ${rauchVerh(ra.unten)} (Soll ${B.unten[0]}–${B.unten[1]}) · ohne Quelle unten ${ra.dunkel.unten} / oben ${ra.dunkel.oben} · MUTANTE-K1 woelbung 0: unten ${ra.mutUnten.unten} / oben ${ra.mutUnten.oben} = ${rauchVerh(ra.mutUnten)}`,
         `Rauch (k2) EIN KÖRPER: Korrelation ${ra.koerper.gleich} (Soll ≥ ${B.gleich}; ${ra.koerper.px} Pixel, Hub ${ra.koerper.hub}, Wand ${ra.koerper.wand}, derselbe zweimal ${ra.koerper.boden}) · MUTANTE-K2 am Ballen: ${ra.mutKoerper.gleich} (${ra.mutKoerper.px} Pixel, Hub ${ra.mutKoerper.hub})`,
         `Rauch (k3) ZUG ${ra.zug.tempo} m/s: quer ${j(ra.zug.quer)} (Soll ${B.quer[0]}–${B.quer[1]}) · längs ${j(ra.zug.laengs)} (Soll ${B.laengs[0]}–${B.laengs[1]}) · MUTANTE-K3 ohne Streckung: quer ${j(ra.mutZug.quer)}`,
@@ -747,6 +769,14 @@ function selbsttest() {
         ["Tor-Ton ungemessen", ["flamme.tor.toene.dunkelrot"], /TOR: DUNKELROT — nicht gemessen/],
         ["Tor-Probe bricht ab", ["flamme.tor.abbruch=", "TypeError: r._torZielEinsetzen is not a function"], /TOR: ABBRUCH — TypeError/],
         ["Tor-Probe fehlt", ["flamme.tor"], /TOR: die Probe lief nicht/],
+        // (k0) w28-rauch-probe: die Wand in den Ecken — die Zahlen der alten Probe mit einem Streifen Welt im unteren Viertel
+        // (GTX 1050, b7b0f8fe: Ecken-Mittel 16,51 vor Schwarz, 86 vor Hell; der Zug z598 maß 9,69 an der GTX 1060)
+        ["Welt im Bild vor der schwarzen Wand (z598)", ["rauch.unten.ecken=", [0, 0, 33.02, 33.01]], /RAUCH: WAND — die Ecke unten links zeigt vor der SCHWARZEN Wand Luma 33.02 .*das nicht zur Probe gehört/],
+        ["die Post-Kette hebt das Schwarz der Wand", ["rauch.unten.ecken=", [9.69, 9.69, 9.69, 9.69]], /RAUCH: WAND — die Ecke oben rechts zeigt vor der SCHWARZEN Wand Luma 9.69/],
+        ["Welt im Bild vor der hellen Wand", ["rauch.koerper.ecken=", [139.04, 139.04, 33.02, 33.01]], /RAUCH: WAND — die Ecke unten rechts zeigt vor der HELLEN Wand Luma 33.01 außerhalb 134–144/],
+        ["MUTANTE-K0 reißt nicht (blind)", ["rauch.mutWand=", [0, 0, 0, 0]], /RAUCH: WAND — MUTANTE-K0 .*blind/],
+        ["Ecken der Wand ungemessen", ["rauch.unten.ecken"], /RAUCH: WAND — die Ecken des Bilds sind nicht gemessen/],
+        ["MUTANTE-K0 ungemessen", ["rauch.mutWand"], /RAUCH: WAND — MUTANTE-K0 .*nicht gemessen/],
         // (k) w28-rauch-bild: jede Mutanten-Zahl des Laufs an der Stelle des Kopfs ist rot beim Täter
         ["Rauch als flache Scheibe zum Auge (die Zahl von MUTANTE-K1)", (z) => (z.rauch.unten = jsonKlon(RM.kopf.mutUnten)), /RAUCH: UNTERSEITE — über dem Feuer .*stamm\/siedlung-bewohner\.js `_rauchStoff`: die Normale/],
         ["Rauch-Muster je Ballen (die Zahl von MUTANTE-K2)", (z) => (z.rauch.koerper.gleich = RM.kopf.mutKoerper.gleich), /RAUCH: EIN KÖRPER — zwei Ballen, die sich decken, .*das Rausch-Muster steht nicht in der Welt/],
@@ -1473,6 +1503,25 @@ function rauchProbe(ort, P) {
         wand.name = "post-kette:RAUCH";
         wand.frustumCulled = false;
         wand.position.set(x0, y0, M.z - P.wandM);
+        // DIE EIGENE SCHICHT (wie die Flamme in (j)): das Auge zeichnet nur Wand und Ballen. Die Welt des Orts steht nicht im Bild —
+        // ihr Strom-Stand (welcher Boden, welcher Halm zwischen Auge und Wand im Schein der Quelle liegt) hängt an Karte und Laufzeit
+        const SCHICHT = 31;
+        wand.layers.set(SCHICHT);
+        const maskeVor = cam.layers.mask;
+        // DER STÖRER: ein heller Streifen der WELT (Schicht 0) im unteren Viertel des Bilds, 3 m vor dem Auge — er steht die ganze
+        // Probe über da, wie Boden im Schein der Quelle (z598 an der GTX 1060: ein Streifen von 0,19 der Bildbreite Höhe). Der
+        // Kopf misst an ihm vorbei; MUTANTE-K0 stellt ihn in die Schicht der Probe, die Ecken reißen
+        const stoerStoff = new T.MeshBasicNodeMaterial();
+        stoerStoff.fog = false;
+        stoerStoff.colorNode = L.vec4(L.vec3(P.stoerer).div(L.toneMappingExposure), 1);
+        const stoerer = new T.Mesh(new T.PlaneGeometry(40, 10), stoerStoff);
+        stoerer.name = "post-kette:RAUCH-STOERER";
+        stoerer.frustumCulled = false;
+        stoerer.position.set(x0, y0 - 5 - 1.5 * Math.tan((cam.fov * Math.PI) / 360), z0 - 3);
+        // … das LICHT der Nacht bleibt (r184 liest ein Licht nur in einer Schicht des Auges): jedes Licht der Szene tritt für die
+        // Dauer der Probe in ihre Schicht
+        const lichter = [];
+        st.scene.traverse((o) => o.isLight && !o.layers.isEnabled(SCHICHT) && lichter.push(o));
         // der Abschied eines Satzes, wie `_rauchZeichnen` ihn vor einem Neubau nimmt
         const abschied = (satz) => {
             const S = st[satz];
@@ -1495,6 +1544,9 @@ function rauchProbe(ort, P) {
             r._applyDayNightToScene();
             setzeKamera();
             st.scene.add(wand);
+            st.scene.add(stoerer);
+            for (const o of lichter) o.layers.enable(SCHICHT);
+            cam.layers.set(SCHICHT);
             abschied("brandRauchSatz");
             abschied("dorfRauchSatz");
             // (k4) DER MITHÖRER AM BAUER: jeder Stoff, den `_rauchStoff` liefert, mit Gesetz und Steigen
@@ -1568,12 +1620,14 @@ function rauchProbe(ort, P) {
             setzeKamera();
             const rp = Math.abs(pix(M.clone().add(new T.Vector3(0, P.radiusM, 0)))[1] - pix(M)[1]); // der Radius im Bild (Pixel)
             // der Ton der Wand: das Mittel der vier Ecken des Bilds (fern vom Ballen)
-            const ecken = (l, n = 12) => {
-                let s = 0;
-                for (const [ex, ey] of [[0, 0], [W - n, 0], [0, H - n], [W - n, H - n]])
+            const ecken4 = (l, n = 12) =>
+                [[0, 0], [W - n, 0], [0, H - n], [W - n, H - n]].map(([ex, ey]) => {
+                    let s = 0;
                     for (let y = ey; y < ey + n; y++) for (let x = ex; x < ex + n; x++) s += l[y * W + x];
-                return s / (4 * n * n);
-            };
+                    return s / (n * n);
+                });
+            const ecken = (l) => ecken4(l).reduce((s, x) => s + x, 0) / 4;
+            const runde4 = (l) => ecken4(l).map((x) => +x.toFixed(2));
             // je Pixel im Ballen (ρ < `rand`): `f(p, dx, dy, ρ)`, dx / dy in Radien von der Mitte (dy > 0 = unten im Bild)
             const imBallen = ([cx, cy], f, grenze = P.rand) => {
                 for (let y = Math.max(0, Math.floor(cy - rp)); y < Math.min(H, Math.ceil(cy + rp)); y++)
@@ -1584,7 +1638,10 @@ function rauchProbe(ort, P) {
                     }
             };
             const ballen = (m, zug = [0, 0, 0]) => ({ x: m.x, y: m.y, z: m.z, s: P.radiusM / R.size, a: P.deck, zx: zug[0], zy: zug[1], zz: zug[2] });
-            const zeichne = (liste) => r._rauchZeichnen(R, liste, "brandRauchSatz", R.maxTeilchen, R.steigMs);
+            const zeichne = (liste) => {
+                r._rauchZeichnen(R, liste, "brandRauchSatz", R.maxTeilchen, R.steigMs);
+                st.brandRauchSatz.mesh.layers.set(SCHICHT);
+            };
             // DIE QUELLE DES LICHT-POOLS: eine Flammen-Fläche (`_flammenLicht`) unter dem Ballen — durch den EINEN Schreiber, bis
             // zum Fixpunkt ihrer Blende (wie die Bühne mit Uhr)
             const F = r._flammenLicht(P.flammeM);
@@ -1613,7 +1670,7 @@ function rauchProbe(ort, P) {
                     if (dy > 0.15) ((s.unten += l[p]), s.nu++);
                     else if (dy < -0.15) ((s.oben += l[p]), s.no++);
                 });
-                return { unten: +(s.unten / s.nu).toFixed(2), oben: +(s.oben / s.no).toFixed(2), grund: +ecken(l).toFixed(2), px: s.nu + s.no };
+                return { unten: +(s.unten / s.nu).toFixed(2), oben: +(s.oben / s.no).toFixed(2), grund: +ecken(l).toFixed(2), ecken: runde4(l), px: s.nu + s.no };
             };
             // die Deckung je Pixel vor der hellen Wand: 1 − Luma / Wand
             const deckung = (l) => {
@@ -1651,12 +1708,13 @@ function rauchProbe(ort, P) {
             const koerper = async (mitBoden) => {
                 const bild = async (m) => {
                     zeichne([ballen(m)]);
-                    const c = deckung(await schuss());
-                    return { m: muster(c, pix(m)), wand: c.wand };
+                    const l = await schuss();
+                    const c = deckung(l);
+                    return { m: muster(c, pix(m)), wand: c.wand, ecken: runde4(l) };
                 };
                 const [A, B] = [await bild(mitten[0]), await bild(mitten[1])];
                 const k = korr(A.m, B.m);
-                const aus2 = { gleich: k.r, px: k.px, hub: k.hub, wand: +A.wand.toFixed(1) };
+                const aus2 = { gleich: k.r, px: k.px, hub: k.hub, wand: +A.wand.toFixed(1), ecken: A.ecken };
                 if (mitBoden) aus2.boden = korr(A.m, (await bild(mitten[0])).m).r;
                 return aus2;
             };
@@ -1687,6 +1745,10 @@ function rauchProbe(ort, P) {
             aus.licht = licht(true);
             aus.k = +rend.toneMappingExposure.toFixed(3);
             aus.unten = await haelften();
+            // MUTANTE-K0: der Störer tritt in die Schicht der Probe — dasselbe Bild wie der Kopf, die unteren Ecken zeigen ihn
+            stoerer.layers.set(SCHICHT);
+            aus.mutWand = (await haelften()).ecken;
+            stoerer.layers.set(0);
             licht(false);
             aus.dunkel = await haelften();
             wandU.value = P.wand;
@@ -1730,7 +1792,12 @@ function rauchProbe(ort, P) {
                     aus.abbruch = aus.abbruch || "Abschied " + satz + ": " + fehlerText(e);
                 }
             }
+            cam.layers.mask = maskeVor;
+            for (const o of lichter) o.layers.disable(SCHICHT);
             st.scene.remove(wand);
+            st.scene.remove(stoerer);
+            stoerer.geometry.dispose();
+            stoerStoff.dispose();
             wand.geometry.dispose();
             wandStoff.dispose();
             if (r._leuchtPool) r._leuchtPool.t = -Infinity;
