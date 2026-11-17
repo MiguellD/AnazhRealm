@@ -5785,7 +5785,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an ee9c1965: Last: Referenz f 1,297 (Faden 1,14 · alle Kerne 1,297; vor 102,6/280,2 ms, nach 103,7/303,7 ms, Ruhe 91/234,1 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.f",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -5803,7 +5803,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an ee9c1965: Last: Referenz f 1,297 (Faden 1,14 · alle Kerne 1,297; vor 102,6/280,2 ms, nach 103,7/303,7 ms, Ruhe 91/234,1 ms seit 2026-11-12) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.f",
      "ungemessen": true,
      "beide": true
     }
@@ -6496,7 +6496,7 @@
   "ohne": 156
  },
  "kopfVoll": "ee9c196544e4376ea20c95921c852ad931bc1604",
- "zeit": "2026-11-17T03:56:47.997Z",
+ "zeit": "2026-11-17T04:02:55.674Z",
  "vorher": "ee9c1965",
  "bilanz": {
   "gewinn": [],
