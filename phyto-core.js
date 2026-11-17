@@ -5928,7 +5928,7 @@
         // der Flatten verschmilzt Teile EINES Stoffs nur bis zu dieser Summe (sonst je Teil) — die EINE Zahl, der Wirt
         // liest sie (`_foundryFlatVerschmelzen`)
         verschmelzVerts: 65536,
-        formAttr: ["uv", "aWurzel", "aSchale", "skinIndex"], // die Attribute, die der Wirt nur trägt, wo sie reisen
+        formAttr: ["uv", "aWurzel", "aSchale", "skinIndex", "aVerband"], // die Attribute, die der Wirt nur trägt, wo sie reisen
         // DIE SEH-KLASSEN (Integration W8, 05.10.): was ein Stoff dem AUGE ist. Jedes Gesetzbuch stempelt sie an seinen
         // Stoff (`material.userData.__seh`), der Extraktor reicht sie als `mat.seh`; gefaltet wird nur innerhalb EINER.
         //   stoff  Holz · Putz · Stein · Textil · Gummi · Kunststoff — das Matte, Dielektrische
@@ -6019,10 +6019,17 @@
             // das Gesetzbuch sie trägt — sonst byte-alt)
             (R.ub ? "|ub" : "") +
             (mp && typeof mp.stein === "string" ? "|st:" + mp.stein : "") +
+            // w28-haus-stoff: der Verband (fachwerk VERBAND_GESETZ, die Nummer seiner Zeile) ist Teil der Identität — der Stoff
+            // webt Stein, Fuge und Ton seiner Zeile (nur wo das Gesetzbuch ihn trägt — sonst byte-alt)
+            (mp && mp.verband > 0 ? "|vb:" + (mp.verband | 0) : "") +
             // die Seh-Klasse gehört zur Identität: zwei Stoffe gleicher Regler und verschiedener Funktion (Klaue und
             // Pupille, beide 0,2 matt-schwarz) sind zwei Materialien — sonst trüge die Pupille die Klaue in den Stoff
             (budgetSeh(mp) ? "|v:" + mp.seh : "")
         );
+    }
+    // Der Verband eines Stoffs (`mat.verband` aus dem Gesetzbuch, fachwerk VERBAND_GESETZ): die Nummer seiner Zeile — 0 ohne.
+    function budgetVerband(mp) {
+        return mp && mp.verband > 0 ? mp.verband | 0 : 0;
     }
     // Die Seh-Klasse eines Stoffs (`mat.seh` aus dem Gesetzbuch) — null, wenn er keine gültige trägt (ein Bruch).
     function budgetSeh(mp) {
@@ -6293,7 +6300,8 @@
         }
         const out = { kind: ziel.kind, mat: Object.assign({}, ziel.mat) };
         const A = {};
-        for (const a of attrs) A[a.name] = new Float32Array(nV * a.size);
+        // (der Verband je Ecke ist eine Nummer 0 … 255: ein Byte je Ecke, nie vier)
+        for (const a of attrs) A[a.name] = a.name === "aVerband" ? new Uint8Array(nV) : new Float32Array(nV * a.size);
         const index = new Uint32Array(nI);
         let ov = 0,
             oi = 0;
@@ -6318,6 +6326,9 @@
                             dst[(ov + q) * 3 + 1] = c[1];
                             dst[(ov + q) * 3 + 2] = c[2];
                         }
+                    } else if (a.name === "aVerband" && !(m.aVerband && m.aVerband.array)) {
+                        // der Verband des Teils (w28-haus-stoff): die Nummer der Zeile seines Stoffs in jede seiner Ecken
+                        dst.fill(budgetVerband(m.mat), ov, ov + v);
                     } else {
                         const src = m[a.name].array;
                         const si = m[a.name].itemSize || s;
@@ -6489,6 +6500,15 @@
                 if (g.teile.every((p) => p.m[a] && p.m[a].array && p.m[a].itemSize === at.itemSize))
                     attrs.push({ name: a, size: at.itemSize });
             }
+            // DER VERBAND JE ECKE (w28-haus-stoff, fachwerk VERBAND_GESETZ): faltet die Gruppe Stoffe verschiedener Verbände (das
+            // Dach, den Sockel und das Holz in den Putz), trägt jede Ecke die Nummer der Zeile IHRES Stoffs (`aVerband`) — der Wirt
+            // legt sie in ein freies Byte seines Satzes und webt den Verband je Fläche. Tragen alle Teile denselben (oder keinen),
+            // reist kein Attribut: der Stoff der Gruppe nennt ihn (`mat.verband`) — byte-alt.
+            if (
+                !attrs.some((x) => x.name === "aVerband") &&
+                g.teile.some((p) => budgetVerband(p.m.mat) !== budgetVerband(g.mat))
+            )
+                attrs.push({ name: "aVerband", size: 1 });
             for (const p of g.teile) p.rueck = p.seite === 2 && g.seite !== 2;
             // Je Gelenk ein Eimer (geometrisch faltet nur, was am selben Gelenk hängt; der Ofen bindet die Eimer
             // eines Stoffs starr zu EINEM Draw). Unverändert reist ein Teil, an dem nichts zu tun ist: allein im

@@ -1805,48 +1805,131 @@
     //  Quaderverband). document-gegated (try/catch → null): Worker/Node backen
     //  kartenlos, die Vertex-Farben tragen den Ton (die Karte nur ihr Relief, Kopf (d)).
     // ═══════════════════════════════════════════════════════════════════════
+    // DAS VERBAND-GESETZ (w28-haus-stoff): der Verband einer Fläche als ZAHLEN — Stein, Fuge, Versatz der Reihen, Ton je Stein.
+    // EIN Gesetz, zwei Leser: die vier Maler des Labors (unten) malen daraus ihre Karte, die Welt webt denselben Verband als
+    // FUNKTION im Stoff des Hauses (`verbandZeilen` → der Wirt, `_verbandStoff`) — keine Karte, kein uv, kein Speicher je Haus.
+    // Bis hier standen die Zahlen als Literale in den Malern, und die laufen nur mit `document`: der Faden backte kartenlos,
+    // die Welt zeichnete Dach, Putz, Sockel und Mauerwerk in EINEM Ton je Fläche (Messort dorf, 17.11.).
+    //   pxJeM            das Raster der Maler (Pixel je Meter; ihre Karte misst 2 m)
+    //   steinM · hoeheM  der Stein ohne Fuge (m) · fugeM die Fuge (m) · versatz der Reihen (Anteil des Steins)
+    //   ton [t0, dt]     der Ton je Stein: t0 + Zufall · dt (sRGB, mal die Farbe `grund` bzw. `stein`)
+    //   mauerwerk        Läuferverband NF · fuge die Farbe des Mörtels, grund die des Steins (die Farbe der Rolle backstein)
+    //   deckung          Biberschwanz: breiteM × deckM · spaltPx der Spalt zwischen zwei Ziegeln, reihePx die offene Fuge der
+    //                    Reihe (beide schwarz) · schattenPx die Schattenfuge der Überdeckung über ihr (Schwärze `schatten`) ·
+    //                    grund die Farbe der Rolle ziegel
+    //   putz             Kellenwurf auf `grund`: `sprenkel` Körner von kornPx[0] … kornPx[0] + kornPx[1] − 1 Pixeln im Ton
+    //                    (× `korn` je Kanal, Deckung `deck`), die Kellenzüge alle zug[0] + ⌊Zufall · zug[1]⌋ Pixel, einen Pixel
+    //                    stark, in `zugFarbe` mit der Deckung `zugDeck`
+    //   naturstein       Quaderverband · fuge die Farbe der Fuge, stein der Ton des Quaders je Kanal (× 255 · t)
+    //   reihe            die NUMMER eines Verbands (0 = keiner): sie reist je Ecke zur Welt · rolle: welche Rolle welchen trägt
+    var VERBAND_GESETZ = {
+        pxJeM: 128,
+        mauerwerk: { steinM: 0.24, hoeheM: 0.071, fugeM: 0.011, versatz: 0.5, ton: [0.84, 0.3], fuge: 0xb7b0a2, grund: 0x964e3e },
+        deckung: { breiteM: 0.18, deckM: 0.32, spaltPx: 2, reihePx: 1, schattenPx: 3, schatten: 0.27, versatz: 0.5, ton: [0.82, 0.32], grund: 0x9c4a35 },
+        putz: { sprenkel: 5200, ton: [0.86, 0.2], korn: [255, 255, 252], deck: 0.5, kornPx: [1, 2], zug: [9, 7], zugFarbe: [120, 116, 108], zugDeck: 0.1, grund: 0xffffff },
+        naturstein: { steinM: 0.46, hoeheM: 0.28, fugeM: 0.016, versatz: 0.5, ton: [0.88, 0.24], fuge: 0x6f6a60, stein: [0.92, 0.9, 0.86] },
+        reihe: ["", "mauerwerk", "deckung", "putz", "naturstein"],
+        rolle: { backstein: "mauerwerk", ziegel: "deckung", ziegel2: "deckung", putz: "putz", stein: "naturstein" },
+    };
+    function _verbandHex(hx) { return "#" + (hx + 0x1000000).toString(16).slice(1); }
+    // Der Ton eines Steins im Licht: die Farbe `g` (0 … 255 je Kanal) mal t0 + Zufall · dt, wie der Maler sie setzt (ganze Zahl,
+    // gedeckelt bei 255), durch die EINE Kurve `_lin` — das Mittel je Kanal über den Zufall und die halbe Spanne gegen das Mittel
+    // (über die Kanäle gemittelt). `mal` (optional): ein Faktor auf den sRGB-Wert (die Schattenfuge der Deckung).
+    function _verbandTon(g, ton, mal) {
+        var N = 64, mittel = [0, 0, 0], sp = 0;
+        for (var k = 0; k < 3; k++) {
+            var wert = function (t) { return _lin((Math.min(255, (g[k] * t) | 0) * (mal == null ? 1 : mal)) / 255); };
+            for (var i = 0; i < N; i++) mittel[k] += wert(ton[0] + ((i + 0.5) / N) * ton[1]) / N;
+            sp += (wert(ton[0] + ton[1]) - wert(ton[0])) / 2 / Math.max(mittel[k], 1e-9) / 3;
+        }
+        return { mittel: mittel, spanne: sp };
+    }
+    // DIE ZEILEN DES VERBANDS FÜR DIE WELT (Leser: der Wirt, `_verbandStoff`): je Nummer der Reihe EINE Zeile in Metern und
+    // linearen Faktoren, gerechnet aus den Zahlen der Tafel wie die Karte des Malers sie trägt (das Karten-Gesetz: die Karte ist
+    // Relief um das Mittel 1, die Farbe steht im Stoff):
+    //   lM · hM          das Raster: der Stein samt seiner Fuge (quer · längs der Falllinie der Fläche)
+    //   fugeU · fugeV    die HALBE Fuge je Achse (m) · versatz der Reihen
+    //   ton              die halbe Spanne des Tons je Stein um sein Mittel
+    //   tonU · tonV      der Faktor der Fuge gegen das Mittel des Steins je Kanal (U: die Stoßfuge, V: die Lagerfuge)
+    //   eins             der Kehrwert des Mittels der Fläche je Kanal: Stein und Fugen mal `eins` mitteln auf 1
+    // Die Zeile 0 trägt keinen Verband (null).
+    function verbandZeilen() {
+        var V = VERBAND_GESETZ, px = 1 / V.pxJeM, kan = function (hx) { return [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]; };
+        var zeile = function (lM, hM, fU, fV, versatz, ton, tonU, tonV) {
+            var cU = (2 * fU) / lM, cV = (2 * fV) / hM, eins = [0, 0, 0];
+            for (var k = 0; k < 3; k++) eins[k] = 1 / ((1 - cU + cU * tonU[k]) * (1 - cV + cV * tonV[k]));
+            return { lM: lM, hM: hM, fugeU: fU, fugeV: fV, versatz: versatz, ton: ton, tonU: tonU, tonV: tonV, eins: eins };
+        };
+        var gegen = function (a, b) { return [a[0] / b[0], a[1] / b[1], a[2] / b[2]]; };
+        var m = V.mauerwerk, d = V.deckung, p = V.putz, n = V.naturstein;
+        // Mauerwerk und Naturstein: der Mörtel gegen das Mittel des Steins, auf beiden Achsen derselbe
+        var mT = _verbandTon(kan(m.grund), m.ton), mF = gegen(_linHex(m.fuge), mT.mittel);
+        var nT = _verbandTon([255 * n.stein[0], 255 * n.stein[1], 255 * n.stein[2]], n.ton), nF = gegen(_linHex(n.fuge), nT.mittel);
+        // Deckung: der Spalt ist offen (schwarz); die Fuge der Reihe misst die Schattenfuge, davon die offene Fuge schwarz
+        var dT = _verbandTon(kan(d.grund), d.ton), dS = gegen(_verbandTon(kan(d.grund), d.ton, 1 - d.schatten).mittel, dT.mittel);
+        var dV = dS.map(function (s) { return (s * (d.schattenPx - d.reihePx)) / d.schattenPx; });
+        // Putz: das Mittel der Fläche unter den Körnern (ihre Deckung 1 − e^(−Körner · Fläche / Karte)), der Kellenzug dagegen;
+        // das Korn selbst (1,2 cm) mittelt in jeder Zelle des Zugs auf seinen Ton — der Verband des Putzes ist der Zug
+        var seite = 2 * V.pxJeM, kornFl = Math.pow(p.kornPx[0] + (p.kornPx[1] - 1) / 2, 2), deckt = 1 - Math.exp((-p.sprenkel * kornFl) / (seite * seite));
+        var pG = _linHex(p.grund), pK = [0, 0, 0], pZ = [0, 0, 0], zugM = (p.zug[0] + (p.zug[1] - 1) / 2) * px;
+        for (var k = 0; k < 3; k++) {
+            for (var i = 0; i < 64; i++) pK[k] += _lin((1 - p.deck) * (((p.grund >> (16 - 8 * k)) & 255) / 255) + p.deck * Math.min(1, ((p.korn[k] * (p.ton[0] + ((i + 0.5) / 64) * p.ton[1])) | 0) / 255)) / 64;
+            var mittel = (1 - deckt) * pG[k] + deckt * pK[k];
+            pZ[k] = _lin((1 - p.zugDeck) * (((p.grund >> (16 - 8 * k)) & 255) / 255) + (p.zugDeck * p.zugFarbe[k]) / 255) / mittel;
+        }
+        return [
+            null,
+            zeile(m.steinM + m.fugeM, m.hoeheM + m.fugeM, m.fugeM / 2, m.fugeM / 2, m.versatz, mT.spanne, mF, mF),
+            zeile(d.breiteM, d.deckM, (d.spaltPx * px) / 2, (d.schattenPx * px) / 2, d.versatz, dT.spanne, [0, 0, 0], dV),
+            zeile(zugM, zugM, 0, px / 2, 0, 0, [1, 1, 1], pZ),
+            zeile(n.steinM + n.fugeM, n.hoeheM + n.fugeM, n.fugeM / 2, n.fugeM / 2, n.versatz, nT.spanne, nF, nF),
+        ];
+    }
+    // DIE NUMMER DES VERBANDS EINER ROLLE (0: sie trägt keinen)
+    function verbandReihe(rolle) { var i = VERBAND_GESETZ.reihe.indexOf(VERBAND_GESETZ.rolle[rolle] || "?"); return i > 0 ? i : 0; }
     // prettier-ignore
     function texZiegelwand(grund,seed2){ try{                                                     // TEXTUR-SAME MAUERWERK: Läuferverband aus NF-Regeln (24×7.1cm, Fuge 1.1cm, Halbstein-Versatz, Brandton je Stein) — wächst aus demselben Wissen wie die Stein-für-Stein-Geometrie
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
-  const M1=128, sw=0.24*M1, sh=0.071*M1, fu=0.011*M1;
+  const V=VERBAND_GESETZ.mauerwerk, M1=VERBAND_GESETZ.pxJeM, sw=V.steinM*M1, sh=V.hoeheM*M1, fu=V.fugeM*M1;
   let hh=(seed2*2654435761)>>>0; const r2=()=>{hh^=hh<<13;hh^=hh>>>17;hh^=hh<<5;hh>>>=0;return (hh&0xffff)/0x10000;};
   const gr=grund>>16&255, gg=grund>>8&255, gb=grund&255;
-  cx.fillStyle='#b7b0a2'; cx.fillRect(0,0,256,256);
-  for(let y=0,reihe=0;y<256;y+=sh+fu,reihe++){ const off=(reihe%2)*(sw+fu)/2;
-    for(let x=-sw;x<256+sw;x+=sw+fu){ const t=0.84+r2()*0.3;
+  cx.fillStyle=_verbandHex(V.fuge); cx.fillRect(0,0,256,256);
+  for(let y=0,reihe=0;y<256;y+=sh+fu,reihe++){ const off=(reihe%2)*(sw+fu)*V.versatz;
+    for(let x=-sw;x<256+sw;x+=sw+fu){ const t=V.ton[0]+r2()*V.ton[1];
       cx.fillStyle='rgb('+Math.min(255,gr*t|0)+','+Math.min(255,gg*t|0)+','+Math.min(255,gb*t|0)+')';
       cx.fillRect(x+off,y,sw,sh); } }
   return _karte(cv); }catch(e){ return null; } }
     // prettier-ignore
     function texDach(grund,seed2){ try{                                                           // TEXTUR-SAME DECKUNG: Biberschwanz (Deckmaß 0.32m, Breite 0.18, Halbversatz, Schattenfuge = Reihenüberdeckung)
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
-  const M1=128, rw=0.32*M1, zb=0.18*M1;
+  const V=VERBAND_GESETZ.deckung, M1=VERBAND_GESETZ.pxJeM, rw=V.deckM*M1, zb=V.breiteM*M1;
   let hh=(seed2*40503)>>>0; const r2=()=>{hh^=hh<<13;hh^=hh>>>17;hh^=hh<<5;hh>>>=0;return (hh&0xffff)/0x10000;};
   const gr=grund>>16&255, gg=grund>>8&255, gb=grund&255;
-  for(let y=256,reihe=0;y>-rw;y-=rw,reihe++){ const off=(reihe%2)*zb/2;
-    for(let x=-zb;x<256+zb;x+=zb){ const t=0.82+r2()*0.32;
+  for(let y=256,reihe=0;y>-rw;y-=rw,reihe++){ const off=(reihe%2)*zb*V.versatz;
+    for(let x=-zb;x<256+zb;x+=zb){ const t=V.ton[0]+r2()*V.ton[1];
       cx.fillStyle='rgb('+Math.min(255,gr*t|0)+','+Math.min(255,gg*t|0)+','+Math.min(255,gb*t|0)+')';
-      cx.fillRect(x+off,y-rw,zb-2,rw-1);
-      cx.fillStyle='rgba(0,0,0,0.27)'; cx.fillRect(x+off,y-3,zb-2,3); } }
+      cx.fillRect(x+off,y-rw,zb-V.spaltPx,rw-V.reihePx);
+      cx.fillStyle='rgba(0,0,0,'+V.schatten+')'; cx.fillRect(x+off,y-V.schattenPx,zb-V.spaltPx,V.schattenPx); } }
   return _karte(cv); }catch(e){ return null; } }
     // prettier-ignore
     function texPutz(seed2){ try{                                                                /*TEXTUR-SAME PUTZ: Kellenwurf — koernige Sprenkel + horizontale Kellenzuege, deterministisch*/
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
+  const V=VERBAND_GESETZ.putz, Z=V.zugFarbe;
   let hh=(seed2*747796405)>>>0; const r2=()=>{hh^=hh<<13;hh^=hh>>>17;hh^=hh<<5;hh>>>=0;return (hh&0xffff)/0x10000;};
-  cx.fillStyle='#ffffff'; cx.fillRect(0,0,256,256);
-  for(let k=0;k<5200;k++){ const t=0.86+r2()*0.20; cx.fillStyle='rgba('+(255*t|0)+','+(255*t|0)+','+(252*t|0)+',0.5)';
-    cx.fillRect((r2()*256)|0,(r2()*256)|0, 1+((r2()*2)|0), 1+((r2()*2)|0)); }
-  for(let y=0;y<256;y+=9+((r2()*7)|0)){ cx.fillStyle='rgba(120,116,108,0.10)'; cx.fillRect(0,y,256,1); }
+  cx.fillStyle=_verbandHex(V.grund); cx.fillRect(0,0,256,256);
+  for(let k=0;k<V.sprenkel;k++){ const t=V.ton[0]+r2()*V.ton[1]; cx.fillStyle='rgba('+(V.korn[0]*t|0)+','+(V.korn[1]*t|0)+','+(V.korn[2]*t|0)+','+V.deck+')';
+    cx.fillRect((r2()*256)|0,(r2()*256)|0, V.kornPx[0]+((r2()*V.kornPx[1])|0), V.kornPx[0]+((r2()*V.kornPx[1])|0)); }
+  for(let y=0;y<256;y+=V.zug[0]+((r2()*V.zug[1])|0)){ cx.fillStyle='rgba('+Z[0]+','+Z[1]+','+Z[2]+','+V.zugDeck.toFixed(2)+')'; cx.fillRect(0,y,256,1); }
   return _karte(cv); }catch(e){ return null; } }
     // prettier-ignore
     function texStein(seed2){ try{                                                                /*TEXTUR-SAME NATURSTEIN: Quaderverband 46×28cm, Fuge 1.6, Halbversatz, Bruchton je Stein*/
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
-  const M1=128, sw=0.46*M1, sh=0.28*M1, fu=0.016*M1;
+  const V=VERBAND_GESETZ.naturstein, M1=VERBAND_GESETZ.pxJeM, sw=V.steinM*M1, sh=V.hoeheM*M1, fu=V.fugeM*M1;
   let hh=(seed2*2654435761)>>>0; const r2=()=>{hh^=hh<<13;hh^=hh>>>17;hh^=hh<<5;hh>>>=0;return (hh&0xffff)/0x10000;};
-  cx.fillStyle='#6f6a60'; cx.fillRect(0,0,256,256);
-  for(let y=0,reihe=0;y<256;y+=sh+fu,reihe++){ const off=(reihe%2)*(sw+fu)/2;
-    for(let x=-sw;x<256+sw;x+=sw+fu){ const t=0.88+r2()*0.24;
-      cx.fillStyle='rgb('+(255*t*0.92|0)+','+(255*t*0.90|0)+','+(255*t*0.86|0)+')';
+  cx.fillStyle=_verbandHex(V.fuge); cx.fillRect(0,0,256,256);
+  for(let y=0,reihe=0;y<256;y+=sh+fu,reihe++){ const off=(reihe%2)*(sw+fu)*V.versatz;
+    for(let x=-sw;x<256+sw;x+=sw+fu){ const t=V.ton[0]+r2()*V.ton[1];
+      cx.fillStyle='rgb('+(255*t*V.stein[0]|0)+','+(255*t*V.stein[1]|0)+','+(255*t*V.stein[2]|0)+')';
       cx.fillRect(x+off,y,sw,sh); } }
   return _karte(cv); }catch(e){ return null; } }
     // DAS KARTEN-GESETZ (A6, Kopf (d)): eine Karte trägt nur ihr Relief, nie die Farbe. Der Maler malt sRGB; die Karte liegt
@@ -1919,7 +2002,7 @@
     };
     // prettier-ignore
     function materials(){ if(M) return M;
-      _texBk=texZiegelwand(0x964e3e,7); _texZi=texDach(0x9c4a35,11); _texZi2=texDach(0x803a28,13); _texPu=texPutz(17); _texSt=texStein(23);
+      _texBk=texZiegelwand(VERBAND_GESETZ.mauerwerk.grund,7); _texZi=texDach(VERBAND_GESETZ.deckung.grund,11); _texZi2=texDach(0x803a28,13); _texPu=texPutz(17); _texSt=texStein(23);
       M={
   holz:   new THREE.MeshStandardMaterial({color:0x5a4632,roughness:.88,metalness:0,vertexColors:true,side:THREE.DoubleSide}),
   blockholz: new THREE.MeshStandardMaterial({color:0x8a6a3e,roughness:.9,metalness:0,vertexColors:true,side:THREE.DoubleSide}),   // Blockholz-Wand: warmes Braun, vertexColors + material-basiertes tintWood = Patina wie holz, Kontrast zum Rahmen
@@ -1951,6 +2034,7 @@
       };
       for(const _k in M) _roleByMat.set(M[_k],_k);
       for(const _k in M) if(SEH_DER_ROLLE[_k]) M[_k].userData.__seh=SEH_DER_ROLLE[_k];
+      for(const _k in M) if(verbandReihe(_k)) M[_k].userData.__verband=verbandReihe(_k);   // DAS VERBAND-GESETZ: die Nummer des Verbands reist mit dem Stoff (mat.verband) — die Welt webt ihn als Funktion, wo das Labor seine Karte trägt
       for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); _karteEins(M[_k]); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
       M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 1900 K, Zeitplan abends 1) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
       M.glas.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
@@ -11757,6 +11841,9 @@
         ZEIT_VIS: ZEIT_VIS,
         // K11 — das Leuchtquellen-Gesetz (Labor und Welt lesen dasselbe Datum)
         LICHT_GESETZ: LICHT_GESETZ,
+        // DAS VERBAND-GESETZ (w28-haus-stoff): die Tafel der Maler und ihre Zeilen für die Welt (Leser: der Wirt, `_verbandStoff`)
+        VERBAND_GESETZ: VERBAND_GESETZ,
+        verbandZeilen: verbandZeilen,
         // das Leucht-Gesetz der Glut (Leuchtdichte = lineare Farbe × LEUCHT_FEUER): die Welt webt es in jede Glut ihres Bodens (die Lava)
         LEUCHT_FEUER: LEUCHT_FEUER,
         BOGEN_GESETZ: BOGEN_GESETZ,
