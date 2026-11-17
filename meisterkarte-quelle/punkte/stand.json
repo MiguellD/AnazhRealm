@@ -5099,7 +5099,7 @@
   },
   "karte2.erleben.spieler.rolle": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.2 s, kaempfen 0.01 s · gehen Änderung Δ 3.32 % (Rauschen 0.05 %) · bauen Änderung Δ 2.12 % (Rauschen 0.00 %) · fahren Änderung Δ 3.55 % (Rauschen 0.04 %) · kaempfen Änderung Δ 0.82 % (Rauschen 0.20 %) · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.erleben.spieler.rolle#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.2 s, kaempfen 0.01 s · gehen Änderung Δ 3.32 % (Rauschen 0.05 %) · bauen Änderung Δ 2.12 % (Rauschen 0.00 %) · fahren Änderung Δ 3.55 % (Rauschen 0.04 %) · kaempfen Änderung Δ 0.82 % (Rauschen 0.20 %) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · 4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.03 s, bauen 0 s, fahren 0.32 s, kaempfen 0.01 s · gehen Änderung Δ 3.32 % (Rauschen 0.06 %) [Wesen gattung deer, groesse 0.81, temperament scheu, task wander, ruht false, nah true, satz false, sichtbar true, zustand flucht, 13.9 m] · bauen Änderung Δ 2.07 % (Rauschen 0.00 %) · fahren Änderung Δ 3.51 % (Rauschen 0.04 %) · kaempfen Änderung Δ 0.82 % (Rauschen 0.21 %) · [linse-gpu] nvidia/pascal an d3ddb51c gtx",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.rolle#1",
@@ -5114,11 +5114,11 @@
     {
      "id": "karte2.erleben.spieler.rolle#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.03 s, bauen 0 s, fahren 0.32 s, kaempfen 0.01 s · gehen Änderung Δ 3.32 % (Rauschen 0.06 %) [Wesen gattung deer, groesse 0.81, temperament scheu, task wander, ruht false, nah true, satz false, sichtbar true, zustand flucht, 13.9 m] · bauen Änderung Δ 2.07 % (Rauschen 0.00 %) · fahren Änderung Δ 3.51 % (Rauschen 0.04 %) · kaempfen Änderung Δ 0.82 % (Rauschen 0.21 %) · [linse-gpu] nvidia/pascal",
+     "sha": "d3ddb51c3c2cf097ccfd248872ca02e8266d0094",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6325,7 +6325,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 181,
+  "konsum": 182,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6487,11 +6487,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 167
+  "ohne": 166
  },
  "kopfVoll": "c50e6b61b445196a2316565e29a8e4989a939eef",
- "zeit": "2026-11-17T22:58:04.140Z",
- "vorher": "d3ddb51c",
+ "zeit": "2026-11-17T23:04:35.983Z",
+ "vorher": "c50e6b61",
  "bilanz": {
   "gewinn": [],
   "fall": [],
