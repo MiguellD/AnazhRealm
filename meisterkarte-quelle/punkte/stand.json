@@ -5148,7 +5148,7 @@
   },
   "karte2.erleben.spieler.rolle": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.rolle#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, stamm/dirigent-kern.js) · karte2.erleben.spieler.rolle#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.rolle#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, stamm/dirigent-kern.js) · karte2.erleben.spieler.rolle#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, stamm/dirigent-kern.js)",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.rolle#1",
@@ -5167,8 +5167,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, stamm/dirigent-kern.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6383,7 +6384,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 230,
+  "konsum": 231,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6553,10 +6554,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 110
+  "ohne": 109
  },
  "kopfVoll": "e489088a9bfca46817cd159efd64ffc1be80dbd4",
- "zeit": "2026-11-17T08:39:17.832Z",
+ "zeit": "2026-11-17T08:50:09.156Z",
  "vorher": "e489088a",
  "bilanz": {
   "gewinn": [],
