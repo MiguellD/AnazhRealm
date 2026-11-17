@@ -3,11 +3,11 @@
   "kopf": "7de938ab",
   "version": "V18.546.321",
   "skala": "2.0",
-  "summe": 222,
+  "summe": 220,
   "max": 330,
   "maschine": {
     "kopf": "7de938ab",
-    "zeit": "2026-11-17T11:03:15.534Z",
+    "zeit": "2026-11-17T11:19:32.595Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -398,7 +398,7 @@
     {
       "key": "leben",
       "titel": "II · LEBEN — Pflanze, Tier, Ökologie, Mensch, Affekt, Haar und Fell, Luft und Wasser",
-      "summe": 49,
+      "summe": 47,
       "max": 70,
       "bereiche": [
         "vegetation",
@@ -1169,7 +1169,7 @@
       "key": "tiere",
       "titel": "Tiere — Verband, Jagd, Gang, Lebensraum, Begegnung",
       "gruppe": "leben",
-      "punkte": 8,
+      "punkte": 6,
       "pfad": "Feature-Stopp bis v1.0 — außer der Kosten-Seite (E)",
       "dateien": "`tetrapoda-core.js` · `stamm/kreatur-*.js` · `scripts/lib/kreatur-proben.cjs` · `worlds/tetrapoda`",
       "aaaa": "Die Herde ist ein DATUM des Gesetzbuchs. 20–30 Hirsche ziehen als Verband mit Leittier über den Hang; der erste, der den Wolf wittert, hebt den Kopf, und binnen 1 s flieht der ganze Verband ausgerichtet (Φ ≥ 0,8, Kohäsion ≥ 0,9) und sammelt sich hinter der Kuppe. Das Rudel aus vier Wölfen umstellt und reißt mit der Quote der Natur (20–40 % gegen den erwachsenen Hirsch) und frisst ≥ 60 s; der Fuchs kommt binnen 120 s ans Aas. Die Fußfolge wechselt mit der Froude-Zahl (Schritt → Trab bei Fr ≈ 0,5, Trab → Galopp bei 2–3). Der Bär steht am Fluss, der Hirsch äst ≈ 50 % des Tages. Auf 10 Spielminuten Gang sieht der Spieler ≥ 3 Tiere, in 30 min eine Herde ≥ 20 — bei ≤ 1 ms KI je 150 Tiere an der GTX. **Wo wir die Besten schlagen:** RDR2 (≈ 6 300 Motions, Tags von Hand) und Horizon (Rollen von Hand); bei uns kommt der Gang aus Froude, der Verband aus Couzin, die Jagd aus MacNulty, der Lebensraum aus dem Gelände-Kern — jede neue Gattung aus dem Studio trägt das ohne eine Zeile Animation, und das Labor zeigt dieselbe Herde.",
@@ -1185,26 +1185,26 @@
           "punkte": 1,
           "staffel": "1 = (a) Kohäsion an einem Gerät · 2 = (a)–(d) auf beiden Geräten mit der Bild-Serie „Herde am Hang“",
           "messung": "Band herde in `scripts/lib/kreatur-proben.cjs` mit dem echten Wurf `_kreaturWurf` (scheue Hirsche, Wurf 3–7), wandernd UND fliehend: (a) Kohäsion beim Wandern ≥ 0,9, auf der Flucht ≥ 0,8; (b) Ausrichtung Φ = |Σv̂|/N ≥ 0,8 über laufende Glieder (|v| > 1 m/s); (c) der letzte Flüchter läuft ≤ 1,0 s nach dem ersten; (d) die Verbands-ID hält 600 s, fremde Verbände verschmelzen nie. Spielgang-Station Herde am Hang: Ego auf 40 m, die Herde flieht als EIN Pulk im Bild.",
-          "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.1 m: 46.6 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (89 px) · 51.2 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (163 px) · 55.6 m 5/5 fliehen, 3 sichtbar, 2 Fleck(en) (185 px) an 7de938ab · tiere.K1#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +39) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+          "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.1 m: 46.6 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (89 px) · 51.2 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (163 px) · 55.6 m 5/5 fliehen, 3 sichtbar, 2 Fleck(en) (185 px) an 7de938ab · tiere.K1#2 gtx: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.8 m: 46.8 m 5/5 fliehen, 0 sichtbar, 1 Fleck(en) (81 px) · 51.5 m 5/5 fliehen, 0 sichtbar, 1 Fleck(en) (78 px) · 56.2 m 5/5 fliehen, 0 sichtbar, 1 Fleck(en) (103 px) an 7de938ab",
           "schlupfloch": "Glieder, die an einem Punkt kleben, ergeben Kohäsion 1 und ein triviales Φ: das Band ist ROT bei vakuöser Probe (Glieder ≥ 3, Fluchtanteil ≥ 0,1), dazu Mindestabstand, Fluchtweg ≥ 30 m und Φ nur über laufende Tiere.",
           "maschine": true
         },
         {
           "name": "Der Jagd-Kreislauf: Pirsch, Umstellen, Hetze, Riss, Fressen, Aas",
-          "punkte": 2,
+          "punkte": 1,
           "staffel": "1 = Hetze und Riss mit HP aus dem Leib-Gesetz, Quote im Band über ≥ 10 Seeds · 2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte",
           "messung": "Jagd-Band C mit echter HP aus dem Leib (Masse), 20 Seeds: 4 Wölfe gegen den erwachsenen Hirsch 20–40 %, 1 Wolf < 10 %, gegen ein Kitz > 60 % (MacNulty); der Kadaver wird Geruchs-Quelle (`_scentAt`).",
-          "beleg": "Maschine: gehalten: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 43.5 s an d3708675 headless · Fressen 116.7 s nach dem Riss bei 26 s, am Aas fuchs 19.9 s, baer 16.6 s · Wolfsrevier wald, Riss 13.7 s, 3 fressen: tier:wolf 6995 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.27 m · Luma 86.5 σ 27.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 7de938ab radeon · gehalten: Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 12459 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 715754fc gtx",
+          "beleg": "Maschine: gehalten: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 43.5 s an d3708675 headless · Fressen 116.7 s nach dem Riss bei 26 s, am Aas fuchs 19.9 s, baer 16.6 s · Wolfsrevier wald, Riss 13.7 s, 3 fressen: tier:wolf 6995 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.27 m · Luma 86.5 σ 27.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 7de938ab radeon — offen: tiere.K2#2 gtx: ROT: Fressen 121 s nach dem Riss bei 51.8 s, am Aas fuchs 20 s, baer 17.5 s · Wolfsrevier wald, Riss 17.6 s, 3 fressen: tier:wolf 110 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 90.7 σ 29.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 7de938ab",
           "schlupfloch": "Mit hp = 1e6 zählte ein Biss als Jagd; mit HP 1 wäre die Quote 100 %: die Quote hat ein Band nach oben UND unten, die HP kommt aus dem Leib, und der Kadaver muss gelesen werden (Ankunft des Fuchses).",
           "aenderung": "Die 1 der Synthese stand auf einer Pose ohne Spieler (hp 1e6) → 0 (B27).",
           "maschine": true
         },
         {
           "name": "Gang und Leib: der Fuß steht, die Gangart folgt dem Tempo, Labor = Welt",
-          "punkte": 2,
+          "punkte": 1,
           "staffel": "1 = der Fuß steht (Schlupf ≤ 0,05) · 2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m",
           "messung": "gate:tier-gang (Schlupf des Stand-Fußes ≤ 0,05; Gangart und Tastgrad je Gattung bei v̂ 0,3 · 0,74 · 1,2 · 3,5 in Welt UND Labor, REF Schritt 0,6–0,7, Trab 0,4–0,6, Galopp 0,25–0,35; Welt − Labor ≤ 0,05 Zyklus) + gate:kreatur-takt Teil querhang (Hang 20,8° und Rampe 29,9°: Bein-Lot ≤ 10°, Schlupf ≤ 0,05); Schritt → Trab bei Fr ≈ 0,5, Trab → Galopp bei 2–3; Kreuz-Probe Stimmung × Tempo; das Gang-Bild aus 10 m (`werkbank bild … --ziel gang` mit der Bühne `gang-buehne.js`, je Tier drei Füße am Boden).",
-          "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen) an 6aa7a5a6 headless · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2669/1081/5775/3407 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.15 m · Luma 66.8 σ 28.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 7de938ab radeon · gehalten: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2919/1237/6555/3783 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 65.4 σ 32.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.245 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 6aa7a5a6 gtx",
+          "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen) an 6aa7a5a6 headless · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2669/1081/5775/3407 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.15 m · Luma 66.8 σ 28.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 7de938ab radeon — offen: tiere.K3#2 gtx: ROT: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 20/8/101/104 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.15 m · Luma 66.4 σ 28.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 7de938ab",
           "schlupfloch": "Den Galopp an die Stimmung flee zu hängen bestünde beim Flucht-Tempo zufällig: die Kreuz-Probe Stimmung × Tempo zeigt, dass nur Fr entscheidet; Labor = Welt wird über die Phasen gemessen, nie über den Code-Text; der Tastgrad ist ein Band nach oben UND unten je Gangart, nie eine Zeile im Gesetz.",
           "aenderung": "Die 1 stand auf dem Schlupf; geschnitten 1 → 2 (tier-gang-k3, e5003509): der Tastgrad kommt aus dem Gesetz, beide Geräte im Bild.; nach R6 (tier-satz, `_tierSatzGang`) 23.10. 2 → 1.",
           "maschine": true
@@ -1224,7 +1224,7 @@
           "punkte": 1,
           "staffel": "1 = ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät · 2 = dazu eine Herde ≥ 20 im Bild in 30 min, updateCreatures ≤ 1,0 ms p95 bei 150 Tieren im 500-m-Ring an der GTX, die Ratsche tier eingerastet, beide Geräte",
           "messung": "Spielgang über 10 Spielminuten (werkbank lauf --wandern kreis, Ego und Third) an Wiese und Genesis; Sichtung = Klassen-Maske tier ≥ 200 px; kein Tier erscheint im Blick; Kosten beim Namen über werkbank zerlegen/takt in Bau-Ereignissen; Prüfbühne mit fester Herde für die Ratsche.",
-          "beleg": "Maschine: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 446 px 56 m 61 s · wesen 293 px 63 m 227 s · wesen 230 px 62 m 227 s · wolf 204 px 53 m 512 s), 615 Prüfungen, 29 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 7 Sichtungen in 600 Spiel-s (wesen 297 px 54 m 58 s · baer 230 px 22 m 279 s · wolf 254 px 29 m 396 s · wesen 371 px 38 m 485 s · wesen 263 px 38 m 507 s · fuchs 241 px 16 m 514 s · wesen 246 px 29 m 540 s), 628 Prüfungen, 56 Masken, Bestand bis 20, im Blick erschienen 0 an 7de938ab radeon · gehalten: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 482 px 42 m 419 s · wesen 247 px 33 m 419 s · wesen 232 px 38 m 516 s · wolf 207 px 36 m 551 s), 631 Prüfungen, 61 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wolf 317 px 38 m 32 s · wesen 249 px 29 m 34 s · wolf 241 px 32 m 41 s · wolf 217 px 32 m 43 s · wesen 299 px 68 m 259 s · wesen 328 px 58 m 262 s · baer 546 px 9 m 276 s · wesen 253 px 48 m 510 s · wesen 206 px 45 m 519 s · wesen 386 px 24 m 543 s), 634 Prüfungen, 67 Masken, Bestand bis 20, im Blick erschienen 0 an 389a6496 gtx",
+          "beleg": "Maschine: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 446 px 56 m 61 s · wesen 293 px 63 m 227 s · wesen 230 px 62 m 227 s · wolf 204 px 53 m 512 s), 615 Prüfungen, 29 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 7 Sichtungen in 600 Spiel-s (wesen 297 px 54 m 58 s · baer 230 px 22 m 279 s · wolf 254 px 29 m 396 s · wesen 371 px 38 m 485 s · wesen 263 px 38 m 507 s · fuchs 241 px 16 m 514 s · wesen 246 px 29 m 540 s), 628 Prüfungen, 56 Masken, Bestand bis 20, im Blick erschienen 0 an 7de938ab radeon · ego (first) 3 Sichtungen in 600 Spiel-s (wesen 203 px 62 m 228 s · wesen 270 px 64 m 228 s · wolf 462 px 19 m 556 s), 610 Prüfungen, 20 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wesen 231 px 51 m 64 s · wesen 1112 px 66 m 266 s · baer 3151 px 5 m 279 s · wolf 300 px 25 m 301 s · wolf 283 px 18 m 400 s · wesen 305 px 94 m 458 s · wesen 426 px 34 m 482 s · fuchs 3353 px 4 m 501 s · wesen 386 px 37 m 501 s · wesen 579 px 29 m 531 s), 633 Prüfungen, 65 Masken, Bestand bis 20, im Blick erschienen 0 an 7de938ab gtx",
           "schlupfloch": "„≥ 150 im 500-m-Ring“ erfüllen Tiere hinter dem Hügel: gezählt werden Sichtungen im Ausgabe-Bild; die frei-Ratsche versteckte die Kosten, die Prüfbühne mit fester Herde schließt das.",
           "maschine": true
         }
@@ -4555,8 +4555,8 @@
     }
   ],
   "bestaetigung": {
-    "voll": 188,
-    "offen": 34,
+    "voll": 184,
+    "offen": 36,
     "kriterien": [
       "ankunft.K2+1",
       "bauen.K1+1",
@@ -4584,20 +4584,24 @@
       "studios.K2+1",
       "studios.K3+1",
       "tiere.K1+1",
+      "tiere.K2+1",
+      "tiere.K3+1",
       "vegetation.K4+1",
       "wetter.K2+2"
     ],
     "art": {
       "linse": 1,
       "ungemessen": 20,
-      "rot": 1,
-      "anderes": 23
+      "rot": 4,
+      "anderes": 22
     }
   },
   "ohneHebel": [
     "vegetation.K1+1",
     "vegetation.K3+1",
     "vegetation.K4+1",
+    "tiere.K2+1",
+    "tiere.K3+1",
     "affekt.K4+1",
     "haar.K2+1",
     "luftwasser.K4+1",
@@ -4806,7 +4810,7 @@
     {
       "stand": "2026-11-17",
       "kopf": "7de938ab",
-      "summe": 222,
+      "summe": 220,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."

@@ -4121,7 +4121,7 @@
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.1 m: 46.6 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (89 px) · 51.2 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (163 px) · 55.6 m 5/5 fliehen, 3 sichtbar, 2 Fleck(en) (185 px) an 7de938ab · tiere.K1#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +39) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.1 m: 46.6 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (89 px) · 51.2 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (163 px) · 55.6 m 5/5 fliehen, 3 sichtbar, 2 Fleck(en) (185 px) an 7de938ab · tiere.K1#2 gtx: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.8 m: 46.8 m 5/5 fliehen, 0 sichtbar, 1 Fleck(en) (81 px) · 51.5 m 5/5 fliehen, 0 sichtbar, 1 Fleck(en) (78 px) · 56.2 m 5/5 fliehen, 0 sichtbar, 1 Fleck(en) (103 px) an 7de938ab",
    "stationen": [
     {
      "id": "tiere.K1#1",
@@ -4146,17 +4146,16 @@
      "id": "tiere.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, scripts/diag-kreatur-leben.cjs +39) — zuletzt an 1e00bfdb: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.8 m: 46.8 m 5/5 fliehen, 0 sichtbar, 1 Fleck(en) (81 px) · 51.5 m 5/5 fliehen, 0 sichtbar, 1 Fleck(en) (78 px) · 56.2 m 5/5 fliehen, 0 sichtbar, 1 Fleck(en) (103 px)",
+     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
+     "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.8 m: 46.8 m 5/5 fliehen, 0 sichtbar, 1 Fleck(en) (81 px) · 51.5 m 5/5 fliehen, 0 sichtbar, 1 Fleck(en) (78 px) · 56.2 m 5/5 fliehen, 0 sichtbar, 1 Fleck(en) (103 px)",
      "r6": "konsum"
     }
    ]
   },
   "tiere.K2": {
-   "punkte": 2,
-   "beleg": "Maschine: gehalten: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 43.5 s an d3708675 headless · Fressen 116.7 s nach dem Riss bei 26 s, am Aas fuchs 19.9 s, baer 16.6 s · Wolfsrevier wald, Riss 13.7 s, 3 fressen: tier:wolf 6995 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.27 m · Luma 86.5 σ 27.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 7de938ab radeon · gehalten: Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 12459 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 715754fc gtx",
+   "punkte": 1,
+   "beleg": "Maschine: gehalten: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 43.5 s an d3708675 headless · Fressen 116.7 s nach dem Riss bei 26 s, am Aas fuchs 19.9 s, baer 16.6 s · Wolfsrevier wald, Riss 13.7 s, 3 fressen: tier:wolf 6995 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.27 m · Luma 86.5 σ 27.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 7de938ab radeon — offen: tiere.K2#2 gtx: ROT: Fressen 121 s nach dem Riss bei 51.8 s, am Aas fuchs 20 s, baer 17.5 s · Wolfsrevier wald, Riss 17.6 s, 3 fressen: tier:wolf 110 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 90.7 σ 29.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 7de938ab",
    "stationen": [
     {
      "id": "tiere.K2#1",
@@ -4180,18 +4179,17 @@
     {
      "id": "tiere.K2#2",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 12459 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
-     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +35) — zuletzt an dbf081c5: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
-     "gehalten": true,
-     "r6": "naehe"
+     "gruen": false,
+     "zahl": "Fressen 121 s nach dem Riss bei 51.8 s, am Aas fuchs 20 s, baer 17.5 s · Wolfsrevier wald, Riss 17.6 s, 3 fressen: tier:wolf 110 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 90.7 σ 29.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
+     "grund": "ROT: Fressen 121 s nach dem Riss bei 51.8 s, am Aas fuchs 20 s, baer 17.5 s · Wolfsrevier wald, Riss 17.6 s, 3 fressen: tier:wolf 110 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 90.7 σ 29.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+     "r6": "konsum"
     }
    ]
   },
   "tiere.K3": {
-   "punkte": 2,
-   "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen) an 6aa7a5a6 headless · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2669/1081/5775/3407 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.15 m · Luma 66.8 σ 28.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 7de938ab radeon · gehalten: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2919/1237/6555/3783 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 65.4 σ 32.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.245 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 6aa7a5a6 gtx",
+   "punkte": 1,
+   "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen) an 6aa7a5a6 headless · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2669/1081/5775/3407 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.15 m · Luma 66.8 σ 28.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 7de938ab radeon — offen: tiere.K3#2 gtx: ROT: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 20/8/101/104 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.15 m · Luma 66.4 σ 28.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 7de938ab",
    "stationen": [
     {
      "id": "tiere.K3#1",
@@ -4215,11 +4213,11 @@
     {
      "id": "tiere.K3#2",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2919/1237/6555/3783 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 65.4 σ 32.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.245 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
-     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "gruen": false,
+     "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 20/8/101/104 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.15 m · Luma 66.4 σ 28.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
+     "grund": "ROT: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 20/8/101/104 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.15 m · Luma 66.4 σ 28.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+     "r6": "konsum"
     }
    ]
   },
@@ -4251,7 +4249,7 @@
   },
   "tiere.K5": {
    "punkte": 1,
-   "beleg": "Maschine: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 446 px 56 m 61 s · wesen 293 px 63 m 227 s · wesen 230 px 62 m 227 s · wolf 204 px 53 m 512 s), 615 Prüfungen, 29 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 7 Sichtungen in 600 Spiel-s (wesen 297 px 54 m 58 s · baer 230 px 22 m 279 s · wolf 254 px 29 m 396 s · wesen 371 px 38 m 485 s · wesen 263 px 38 m 507 s · fuchs 241 px 16 m 514 s · wesen 246 px 29 m 540 s), 628 Prüfungen, 56 Masken, Bestand bis 20, im Blick erschienen 0 an 7de938ab radeon · gehalten: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 482 px 42 m 419 s · wesen 247 px 33 m 419 s · wesen 232 px 38 m 516 s · wolf 207 px 36 m 551 s), 631 Prüfungen, 61 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wolf 317 px 38 m 32 s · wesen 249 px 29 m 34 s · wolf 241 px 32 m 41 s · wolf 217 px 32 m 43 s · wesen 299 px 68 m 259 s · wesen 328 px 58 m 262 s · baer 546 px 9 m 276 s · wesen 253 px 48 m 510 s · wesen 206 px 45 m 519 s · wesen 386 px 24 m 543 s), 634 Prüfungen, 67 Masken, Bestand bis 20, im Blick erschienen 0 an 389a6496 gtx",
+   "beleg": "Maschine: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 446 px 56 m 61 s · wesen 293 px 63 m 227 s · wesen 230 px 62 m 227 s · wolf 204 px 53 m 512 s), 615 Prüfungen, 29 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 7 Sichtungen in 600 Spiel-s (wesen 297 px 54 m 58 s · baer 230 px 22 m 279 s · wolf 254 px 29 m 396 s · wesen 371 px 38 m 485 s · wesen 263 px 38 m 507 s · fuchs 241 px 16 m 514 s · wesen 246 px 29 m 540 s), 628 Prüfungen, 56 Masken, Bestand bis 20, im Blick erschienen 0 an 7de938ab radeon · ego (first) 3 Sichtungen in 600 Spiel-s (wesen 203 px 62 m 228 s · wesen 270 px 64 m 228 s · wolf 462 px 19 m 556 s), 610 Prüfungen, 20 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wesen 231 px 51 m 64 s · wesen 1112 px 66 m 266 s · baer 3151 px 5 m 279 s · wolf 300 px 25 m 301 s · wolf 283 px 18 m 400 s · wesen 305 px 94 m 458 s · wesen 426 px 34 m 482 s · fuchs 3353 px 4 m 501 s · wesen 386 px 37 m 501 s · wesen 579 px 29 m 531 s), 633 Prüfungen, 65 Masken, Bestand bis 20, im Blick erschienen 0 an 7de938ab gtx",
    "stationen": [
     {
      "id": "tiere.K5#1",
@@ -4266,10 +4264,9 @@
      "id": "tiere.K5#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "ego (first) 4 Sichtungen in 601 Spiel-s (wesen 482 px 42 m 419 s · wesen 247 px 33 m 419 s · wesen 232 px 38 m 516 s · wolf 207 px 36 m 551 s), 631 Prüfungen, 61 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wolf 317 px 38 m 32 s · wesen 249 px 29 m 34 s · wolf 241 px 32 m 41 s · wolf 217 px 32 m 43 s · wesen 299 px 68 m 259 s · wesen 328 px 58 m 262 s · baer 546 px 9 m 276 s · wesen 253 px 48 m 510 s · wesen 206 px 45 m 519 s · wesen 386 px 24 m 543 s), 634 Prüfungen, 67 Masken, Bestand bis 20, im Blick erschienen 0",
-     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/shader-kosten.cjs, scripts/lib/welt-boot.cjs +13) — zuletzt an 71839b1e: Deckel 76 s gerissen: Stille seit 15 s nach 79.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) in Teil 1/5 — beendet, UNGEMESSEN (zuletzt: KREIS-ego EXIT=0 (62.8 s Wanduhr, Zeitraf",
-     "gehalten": true,
+     "zahl": "ego (first) 3 Sichtungen in 600 Spiel-s (wesen 203 px 62 m 228 s · wesen 270 px 64 m 228 s · wolf 462 px 19 m 556 s), 610 Prüfungen, 20 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wesen 231 px 51 m 64 s · wesen 1112 px 66 m 266 s · baer 3151 px 5 m 279 s · wolf 300 px 25 m 301 s · wolf 283 px 18 m 400 s · wesen 305 px 94 m 458 s · wesen 426 px 34 m 482 s · fuchs 3353 px 4 m 501 s · wesen 386 px 37 m 501 s · wesen 579 px 29 m 531 s), 633 Prüfungen, 65 Masken, Bestand bis 20, im Blick erschienen 0",
+     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -6330,10 +6327,13 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "tiere.K2#2 gtx: Fressen 121 s nach dem Riss bei 51.8 s, am Aas fuchs 20 s, baer 17.5 s · Wolfsrevier wald, Riss 17.6 s, 3 fressen: tier:wolf 110 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 90.7 σ 29.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 7de938ab (grün gebucht an 715754fc)",
+  "tiere.K3#2 gtx: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 20/8/101/104 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.15 m · Luma 66.4 σ 28.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 7de938ab (grün gebucht an 6aa7a5a6)"
+ ],
  "r6": {
   "haelften": 507,
-  "konsum": 201,
+  "konsum": 203,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6479,7 +6479,6 @@
    "studios.K5#2 headless",
    "tiere.K1#1 headless",
    "tiere.K2#1 headless",
-   "tiere.K2#2 gtx",
    "tiere.K3#1 headless",
    "tiere.K4#1 headless",
    "tiere.K4#2 headless",
@@ -6503,14 +6502,17 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 139
+  "ohne": 138
  },
  "kopfVoll": "7de938ab63f59822e48b121a70a15d31f16f2489",
- "zeit": "2026-11-17T11:03:15.534Z",
+ "zeit": "2026-11-17T11:19:32.595Z",
  "vorher": "7de938ab",
  "bilanz": {
   "gewinn": [],
-  "fall": [],
+  "fall": [
+   "tiere.K2 2→1 (tiere.K2#2 gtx: ROT: Fressen 121 s nach dem Riss bei 51.8 s, am Aas fuchs 20)",
+   "tiere.K3 2→1 (tiere.K3#2 gtx: ROT: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 1)"
+  ],
   "massenFall": false
  },
  "pflicht": {
