@@ -10149,11 +10149,11 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 3,
-    "kern": 5,
-    "kernDazu": 5,
-    "anteilHeute": 1.1,
-    "anteilKern": 2.1
+    "heute": 6,
+    "kern": 2,
+    "kernDazu": 2,
+    "anteilHeute": 2.4,
+    "anteilKern": 0.8
    },
    "perspektiven": [
     {
@@ -11067,8 +11067,8 @@
        "richter": "fremder Nachbau, Stichprobe 100 Welten: Welt-Bild an gleicher Pose gleich in 100 %"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "Welt 1 041 B, Regel 335 B, Bauplan 428 B, signiert, forkbar; Fusion byte-gleich auf zwei Geräten (§28.K2) — headless; fremdes Gerät mit frischem Profil ungemessen (§22.K5 1/2). — KARTE: 0 — headless (R2).",
      "alt": [
@@ -11128,8 +11128,8 @@
        "richter": "manipulierter Klient in Stichprobe: 100 % benannt, 0 Fremd-Zustand verändert"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "RULE_FORBIDDEN_EFFECT_OPS (stamm/feld-dsl.js:194); 0 von 7 Injektionen erreichen das Modell (§28.K5) — headless, Korpus zu klein für S2. — KARTE: 0 — headless (R2).",
      "alt": [
@@ -12621,8 +12621,8 @@
        "richter": "100 Saaten: „lebendig und eigen\" ≥ 80 %, Paare unterscheidbar ≥ 90 %; Ruftonhöhe ↔ Körpergröße Allometrie-Steigung ±20 %"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "neun Textur-Gesetze (klang-core.js:668-766), Tier-Ruf f0 ∝ L^−0,9 (:495-497), Wind r 0,81/0,79 (§32.K1, K2 je 2/2); Verkehr K-nah (stamm/klang.js:1092-1110); keine Bewohner-Klänge, kein Stadtteppich; Preis Radeon ROT. — KARTE: Kern 1 — Zensus am Abgriff, Wind gesehen = gehört an beiden Geräten (klang.K1, klang.K2); Bild-Preis in der Szene nicht gemessen; das alte Klang-Budget ist kein Preis mehr (R8).",
      "alt": [
@@ -14778,11 +14778,11 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 6,
-    "kern": 3,
-    "kernDazu": 3,
-    "anteilHeute": 2.9,
-    "anteilKern": 1.6
+    "heute": 7,
+    "kern": 2,
+    "kernDazu": 2,
+    "anteilHeute": 3.2,
+    "anteilKern": 1.3
    },
    "perspektiven": [
     {
@@ -16694,8 +16694,8 @@
        "richter": "Flug Krater → Antipode ohne Ladebild; Bildvergleich gegen Chicxulub-Modellierung"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Lava-Zelle glüht und erstarrt als Spieler-Tat (gelaende-core.js:1787-1801); Frame-p95 im brennenden Hektar und Flucht der Bewohner nie gemessen.",
      "alt": []
@@ -16885,12 +16885,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 34,
+  "heute": 38,
   "davonKopplungen": 33,
-  "kern": 12,
-  "kernDazu": 12,
-  "anteilHeute": 2.1,
-  "anteilKern": 0.6,
+  "kern": 8,
+  "kernDazu": 8,
+  "anteilHeute": 2.3,
+  "anteilKern": 0.4,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
