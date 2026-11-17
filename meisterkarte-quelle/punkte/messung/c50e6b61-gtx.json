@@ -1,0 +1,186 @@
+{
+ "sha": "c50e6b61b445196a2316565e29a8e4989a939eef",
+ "geraet": "gtx",
+ "zeit": "2026-11-17T23:06:46.285Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {},
+ "ungemessen": {
+  "karte2.same.entfaltung.schirm#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 381 s gerissen: Stille seit 39.5 s nach 381 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT dorf 341.2 s)",
+   "exit": 1,
+   "minuten": 6.35,
+   "grund": "Deckel 381 s gerissen: Stille seit 39.5 s nach 381 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT dorf 341.2 s)",
+   "s": 381.1,
+   "fremd": {
+    "s": 383,
+    "takte": 172,
+    "fremdS": 550.63,
+    "kerne": 1.438,
+    "fensterKerne": 2.86,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      254.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      89.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      75.55
+     ]
+    ],
+    "dienerS": 207,
+    "diener": [
+     [
+      "dwm.exe",
+      89.91
+     ],
+     [
+      "System",
+      81.92
+     ]
+    ],
+    "geraetS": 183.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      112.63
+     ],
+     [
+      "svchost.exe",
+      62.31
+     ],
+     [
+      "SearchIndexer.exe",
+      4.8
+     ]
+    ],
+    "eigenS": 1009.84,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.511,
+     "nach": 1.458,
+     "station": 3.627
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 114.4,
+     "alle": 271.9,
+     "cpuEin": 108
+    },
+    "nach": {
+     "ein": 110.3,
+     "alle": 324.2,
+     "cpuEin": 110
+    },
+    "ruhe": {
+     "ein": 90.4,
+     "alle": 231.2,
+     "n": 590,
+     "von": "2026-11-15"
+    },
+    "f": 1.402,
+    "fEin": 1.265,
+    "fAlle": 1.402,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-17T23:06:46.285Z",
+   "abdruck": "a16a54631e99",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-17T23:06:10.502Z",
+  "ordner": "sitzung-20261118-000610",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 7.6,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "karte2.same.entfaltung.schirm#1",
+    "s": 25.3,
+    "takte": 831,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wirt": [
+   {
+    "probe": "karte2.same.entfaltung.schirm#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     186.5,
+     479.8
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.same.entfaltung.schirm#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 942,
+   "frameP95": 41.57,
+   "taktP95": 31.69,
+   "vramMax": 135.5,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.same.entfaltung.schirm#1",
+     "m": 1204,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 399,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 423.6,
+  "minuten": 7.14
+ }
+}
