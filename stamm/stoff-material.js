@@ -395,13 +395,11 @@ class AnazhRealm_stoff_material {
         return fn;
     }
 
-    // DAS RECHENWERK DES FELS-GESETZES IM SHADER (K17, Nachbesserung 2): gelaende-core rechnet seinen Fein-Term (`felsFein`,
-    // `schuttKorn`) über ein Rechenwerk — hier dieselben Schritte als TSL-Knoten, die Ziehung `zufall` als dieselben 32-Bit-
-    // Ganzzahl-Schritte (u32: Multiplikation modulo 2^32, Xor, logisches Schieben), `rausch` als EINE Probe im Rausch-Atlas
-    // (`raum` aus `_rauschAtlas`, gelaende-core `rauschRaum` auf der CPU). EIN Rechenwerk je TSL-Modul und Atlas.
     // DIE KÜRZESTE ZAHL DESSELBEN f32: eine Konstante des Shaders trägt die wenigsten Stellen, die zum selben f32 runden — das
     // Programm rechnet bitgleich, nur kürzer (r184 schreibt die volle Doppel-Genauigkeit, 0.8253356149096783 statt 0.8253356;
-    // jedes Zeichen übersetzt der GPU-Prozess vor dem ersten Bild, `S0_ZEICHEN`).
+    // jedes Zeichen übersetzt der GPU-Prozess vor dem ersten Bild, `S0_ZEICHEN`). Nur an Konstanten, die
+    // allein der Shader liest — nie im Rechenwerk des Fels-Gesetzes: das rechnet die Zahlen des Gesetzes (gate:hoehlen-sicht
+    // wertet `_felsRechenwerkTSL` in f64 gegen gelaende-core aus, Abstand ≤ 1e-6; gekürzt 6,2e-4 an 400 Punkten).
     static _f32(v) {
         const f = Math.fround(v);
         for (let p = 1; p < 9; p++) {
@@ -411,12 +409,16 @@ class AnazhRealm_stoff_material {
         return +f.toPrecision(9);
     }
 
+    // DAS RECHENWERK DES FELS-GESETZES IM SHADER (K17, Nachbesserung 2): gelaende-core rechnet seinen Fein-Term (`felsFein`,
+    // `schuttKorn`) über ein Rechenwerk — hier dieselben Schritte als TSL-Knoten, die Ziehung `zufall` als dieselben 32-Bit-
+    // Ganzzahl-Schritte (u32: Multiplikation modulo 2^32, Xor, logisches Schieben), `rausch` als EINE Probe im Rausch-Atlas
+    // (`raum` aus `_rauschAtlas`, gelaende-core `rauschRaum` auf der CPU). EIN Rechenwerk je TSL-Modul und Atlas.
     static _felsRechenwerkTSL(T, raum) {
         if (typeof raum !== "function")
             throw new Error("_felsRechenwerkTSL: ohne Rausch-Atlas kein Rechenwerk (raum fehlt)");
         if (AnazhRealm._felsRwMemo && AnazhRealm._felsRwMemo.T === T && AnazhRealm._felsRwMemo.raum === raum)
             return AnazhRealm._felsRwMemo.o;
-        const N = (v) => (typeof v === "number" ? T.float(AnazhRealm._f32(v)) : v);
+        const N = (v) => (typeof v === "number" ? T.float(v) : v);
         // gelaende-core `zufall(sh, i, j, k)` als EINE WGSL-Funktion: h = sh ^ i·0x27d4eb2d ^ j·0x165667b1 ^ (k + 1)·0x9e3779b1,
         // zwei Misch-Runden (u32: Multiplikation modulo 2^32, Xor, logisches Schieben) — i, j, k ganz, als f32 gereicht
         const zufallFn = T.Fn(([sh, i, j, k]) => {
