@@ -1455,3 +1455,7 @@ omen-gtx-gtx-bcc2cadc-w0813-1-bcc2cadc GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · G
 2026-11-17 09:01 landung Zwischenstand main e489088a: misst 54 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (0 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-stern3a-1-389a6496 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN karte2.planet.kosmos.sternhimmel#1 (punkte-maschine 5a2ea67a messung/389a6496-gtx.json)
 2026-11-17 09:24 w28-brand-kern Abgabe f4d46124 — heller Kern, orange-roter Mantel, die Flamme vor dem Auge der Nacht (_nachtAuge EIN Glied), Linse gate:post-kette (j); Bericht bericht/1711-brand-kern/
+omen-gtx-gtx-e489088a-1-e489088a GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN karte2.mensch.menge.bild#1 ‖ karte2.mensch.menge.bild#1: 25 Menschen im Bild, 14 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 19.2 fps · [linse-gpu] nvidia/pascal (punkte-maschine ce6c9eb1 messung/e489088a-gtx.json)
+2026-11-17 09:38 landung ABGEBROCHEN main e489088a: sg-klang wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 53 stellen sich hinten an
+2026-11-17 09:39 landung Zwischenstand main e489088a: misst 53 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (1 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
+omen-gtx-wahra-1-389a6496 ROT 1 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte2.erleben.spieler.rolle#1 · GRÜN karte2.erleben.kopplung.wahrnehmung#1 (punkte-maschine 86c10c3d messung/389a6496-gtx.json)
