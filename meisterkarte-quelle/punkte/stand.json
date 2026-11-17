@@ -5279,16 +5279,16 @@
   },
   "karte2.leben.tiere.mensch": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.mensch#1 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: Annäherung im Fenster: deer flieht ab 113.91 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.63 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.174 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.916 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] amd/rdna-3 an ee9c1965 radeon — offen: karte2.leben.tiere.mensch#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.tiere.mensch#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "Annäherung im Fenster: deer flieht ab 113.91 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.63 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.174 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.916 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] amd/rdna-3",
+     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -5656,7 +5656,7 @@
   },
   "karte2.mensch.zeit.erleben": {
    "punkte": 0,
-   "beleg": "Maschine: Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 89 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3 an 884c6a25 radeon — offen: karte2.mensch.zeit.erleben#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 89 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3 an 884c6a25 radeon — offen: karte2.mensch.zeit.erleben#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.zeit.erleben#1",
@@ -5664,8 +5664,8 @@
      "gruen": true,
      "zahl": "Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 89 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3",
      "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": null,
-     "r6": "konsum",
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true,
      "beide": true
     },
     {
@@ -5893,7 +5893,7 @@
   },
   "karte2.planet.wasser.kreislauf": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wasser.kreislauf#1 radeon: Konsum seit der Messung geändert (R6: stamm/daten.js) · karte2.planet.wasser.kreislauf#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wasser.kreislauf#1 radeon: Konsum seit der Messung geändert (R6: stamm/daten.js) · karte2.planet.wasser.kreislauf#1 gtx: Konsum seit der Messung geändert (R6: stamm/daten.js)",
    "stationen": [
     {
      "id": "karte2.planet.wasser.kreislauf#1",
@@ -5912,8 +5912,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6027,16 +6028,16 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +0 Pixel (Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3 an 884c6a25 · karte2.same.kopplung.kaskade#1 gtx: Konsum seit der Messung geändert (R6: stamm/feld-dsl.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.kaskade#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "trocken nach 60 s 1 brennende Zellen, Flammen im Bild +0 Pixel (Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3",
-     "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": "ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +0 Pixel (Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3",
-     "r6": "konsum",
+     "zahl": null,
+     "sha": null,
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true,
      "beide": true
     },
     {
@@ -6045,16 +6046,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-dsl.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     }
    ]
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an 884c6a25 radeon — offen: karte2.same.kopplung.stoerung#1 gtx: Konsum seit der Messung geändert (R6: stamm/feld-dsl.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
+   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an 884c6a25 radeon — offen: karte2.same.kopplung.stoerung#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
@@ -6062,8 +6062,8 @@
      "gruen": true,
      "zahl": "Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3",
      "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": null,
-     "r6": "konsum",
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true,
      "beide": true
     },
     {
@@ -6072,9 +6072,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-dsl.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6109,16 +6108,15 @@
   },
   "karte2.same.physik.verformung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.verformung#1 radeon: Konsum seit der Messung geändert (R6: schmiede-core.js, stamm/daten.js, stamm/koerper-seele.js) · karte2.same.physik.verformung#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: klinge_flegel Schwung 0.41 m, Länge (längs) 0.328–0.328 m, v² 2.922 → 0.144 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/172 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 649 px über dem Rauschen 0, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] amd/rdna-3 an ee9c1965 radeon — offen: karte2.same.physik.verformung#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.verformung#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: schmiede-core.js, stamm/daten.js, stamm/koerper-seele.js)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "klinge_flegel Schwung 0.41 m, Länge (längs) 0.328–0.328 m, v² 2.922 → 0.144 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/172 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 649 px über dem Rauschen 0, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] amd/rdna-3",
+     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -6327,7 +6325,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 179,
+  "konsum": 176,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6497,15 +6495,13 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 161
+  "ohne": 164
  },
  "kopfVoll": "ee9c196544e4376ea20c95921c852ad931bc1604",
- "zeit": "2026-11-17T02:40:17.358Z",
+ "zeit": "2026-11-17T02:46:12.773Z",
  "vorher": "ee9c1965",
  "bilanz": {
-  "gewinn": [
-   "luftwasser.K3 0→2"
-  ],
+  "gewinn": [],
   "fall": [],
   "massenFall": false
  },
