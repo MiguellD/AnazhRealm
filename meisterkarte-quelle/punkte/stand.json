@@ -3,7 +3,7 @@
  "je": {
   "affekt.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.62 dB · töten -0.03 -1.15 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.12 dB · pflegen 0.25 8.99 dB · nach 30 min 0.2463 8.75 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.6 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 1 s (≤ 2) [2.6 -0.68 -0.47 -0.32 -0.2 -0.14 -0.1 -0.06 -0.04 0] GRÜN an c8c840c9 radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.72 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.63 dB · töten -0.03 -1.18 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.78 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.467 s (≤ 2) [2.78 -0.79 -0.53 -0.35 -0.23 -0.15 -0.1 -0.07 -0.05 0] GRÜN an ee9c1965 gtx",
+   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.62 dB · töten -0.03 -1.15 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.12 dB · pflegen 0.25 8.99 dB · nach 30 min 0.2463 8.75 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.6 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 1 s (≤ 2) [2.6 -0.68 -0.47 -0.32 -0.2 -0.14 -0.1 -0.06 -0.04 0] GRÜN an c8c840c9 radeon · Tag first GRÜN: fällen -0.12 -4.73 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.73 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.81 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.4 s (≤ 2) [2.81 -0.81 -0.54 -0.35 -0.24 -0.16 -0.1 -0.07 -0.05 0] GRÜN an d39e0d6e gtx",
    "stationen": [
     {
      "id": "affekt.K1#1",
@@ -29,10 +29,9 @@
      "id": "affekt.K1#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Tag first GRÜN: fällen -0.12 -4.72 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.63 dB · töten -0.03 -1.18 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.78 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.467 s (≤ 2) [2.78 -0.79 -0.53 -0.35 -0.23 -0.15 -0.1 -0.07 -0.05 0] GRÜN",
-     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/welt-boot.cjs +3)",
-     "gehalten": true,
+     "zahl": "Tag first GRÜN: fällen -0.12 -4.73 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.73 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.81 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.4 s (≤ 2) [2.81 -0.81 -0.54 -0.35 -0.24 -0.16 -0.1 -0.07 -0.05 0] GRÜN",
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -6522,7 +6521,7 @@
   "ohne": 135
  },
  "kopfVoll": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
- "zeit": "2026-11-17T18:55:12.105Z",
+ "zeit": "2026-11-17T19:21:49.142Z",
  "vorher": "d39e0d6e",
  "bilanz": {
   "gewinn": [],
