@@ -2521,7 +2521,7 @@
   },
   "mensch.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 105c9bd3 radeon · gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 3e4f99cd gtx",
+   "beleg": "Maschine: gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 105c9bd3 radeon · rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 389a6496 gtx",
    "stationen": [
     {
      "id": "mensch.K5#1",
@@ -2538,9 +2538,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1)",
-     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/diag-kreatur-leben.cjs +25)",
-     "gehalten": true,
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": "GRÜN trotz Last: Referenz f 1,202 (Faden 1,103 · alle Kerne 1,202; vor 98,2/281,1 ms, nach 99,9/235,9 ms, Ruhe 90,6/233,8 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 8,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,0 CPU-s · Explorer.EXE 2,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,7 CPU-s · svchost.exe 6,3 CPU-s · SearchIndexer.exe 1,8 CPU-s",
      "r6": "konsum"
     }
    ]
@@ -5007,16 +5006,15 @@
   },
   "karte2.erleben.kopplung.wahrnehmung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.6/18.6/11.9/11.9/12.1/12.6/14.2/12.4 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] amd/rdna-3 an 77e079ae radeon · gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.3/12.1/12.2/12.2/12.4/12.1/14.6/12.1 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal an 77e079ae gtx",
+   "beleg": "Maschine: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.6/12.1/12/12.1/12.1/12.2/14.6/12.3 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.3/12.1/12.2/12.2/12.4/12.1/14.6/12.1 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal an 77e079ae gtx",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.wahrnehmung#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.6/18.6/11.9/11.9/12.1/12.6/14.2/12.4 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] amd/rdna-3",
-     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/daten.js +5)",
-     "gehalten": true,
+     "zahl": "mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.6/12.1/12/12.1/12.1/12.2/14.6/12.3 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] amd/rdna-3",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -5170,16 +5168,16 @@
   },
   "karte2.leben.kopplung.leben-formt-planet": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.leben-formt-planet#1 radeon: ungemessen (R10) · karte2.leben.kopplung.leben-formt-planet#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +6)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.kopplung.leben-formt-planet#1 radeon: ROT: nach 100 Gängen (Soll 100): Gras im Bild Weg 1454752 → 1071186 px, daneben 1581636 → 1581524 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.677 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] amd/rdna-3 an 389a6496 · karte2.leben.kopplung.leben-formt-planet#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +6)",
    "stationen": [
     {
      "id": "karte2.leben.kopplung.leben-formt-planet#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "nach 100 Gängen (Soll 100): Gras im Bild Weg 1454752 → 1071186 px, daneben 1581636 → 1581524 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.677 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] amd/rdna-3",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": "ROT: nach 100 Gängen (Soll 100): Gras im Bild Weg 1454752 → 1071186 px, daneben 1581636 → 1581524 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.677 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] amd/rdna-3",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -5522,16 +5520,16 @@
   },
   "karte2.mensch.menge.bevoelkerung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bevoelkerung#1 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/daten.js +4)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bevoelkerung#1 radeon: ROT: Zählung: kein Start-Dorf · [linse-gpu] amd/rdna-3 an 389a6496 · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/daten.js +4)",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bevoelkerung#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "Zählung: kein Start-Dorf · [linse-gpu] amd/rdna-3",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": "ROT: Zählung: kein Start-Dorf · [linse-gpu] amd/rdna-3",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -5577,16 +5575,16 @@
   },
   "karte2.mensch.menge.kollektiv": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.kollektiv#1 radeon: ungemessen (R10) · karte2.mensch.menge.kollektiv#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/daten.js +6)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.kollektiv#1 radeon: ROT: Zeugen-Gang: kein Start-Dorf · [linse-gpu] amd/rdna-3 an 389a6496 · karte2.mensch.menge.kollektiv#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/daten.js +6)",
    "stationen": [
     {
      "id": "karte2.mensch.menge.kollektiv#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "Zeugen-Gang: kein Start-Dorf · [linse-gpu] amd/rdna-3",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": "ROT: Zeugen-Gang: kein Start-Dorf · [linse-gpu] amd/rdna-3",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -5897,7 +5895,7 @@
   },
   "karte2.planet.relief.grossform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) · karte2.planet.relief.grossform#1 gtx: ungemessen (R10) — zuletzt an 4167e10c: Deckel 278 s gerissen: Stille seit 277.9 s nach 278 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Deckel 180 s gerissen: Stille seit 179.8 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · karte2.planet.relief.grossform#1 gtx: ungemessen (R10) — zuletzt an 4167e10c: Deckel 278 s gerissen: Stille seit 277.9 s nach 278 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "karte2.planet.relief.grossform#1",
@@ -5905,7 +5903,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 389a6496: Deckel 180 s gerissen: Stille seit 179.8 s nach 180 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true,
      "beide": true
     },
@@ -5923,16 +5921,15 @@
   },
   "karte2.planet.wasser.kreislauf": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wasser.kreislauf#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/daten.js) · karte2.planet.wasser.kreislauf#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/daten.js)",
+   "beleg": "Maschine: Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145509 → 381700 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.62 ↔ 1.033 Spielstunden (×1.67, Erd-Band 1.62–2.06; Schwerpunkt 1.236 ↔ 2.138) · Bilanz 0.971 / 0.993 (Soll 0,9–1,1; 3.8 ↔ 3.7 / 19.2 ↔ 19.1 m³) · Niesel auf dem Weg 10 s (Soll 10 ± 0,5) · [linse-gpu] amd/rdna-3 an 389a6496 radeon — offen: karte2.planet.wasser.kreislauf#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/daten.js)",
    "stationen": [
     {
      "id": "karte2.planet.wasser.kreislauf#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/daten.js)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145509 → 381700 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.62 ↔ 1.033 Spielstunden (×1.67, Erd-Band 1.62–2.06; Schwerpunkt 1.236 ↔ 2.138) · Bilanz 0.971 / 0.993 (Soll 0,9–1,1; 3.8 ↔ 3.7 / 19.2 ↔ 19.1 m³) · Niesel auf dem Weg 10 s (Soll 10 ± 0,5) · [linse-gpu] amd/rdna-3",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -6005,16 +6002,16 @@
   },
   "karte2.same.gedaechtnis.pfad": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.gedaechtnis.pfad#1 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +6)",
+   "beleg": "Maschine: 0 — offen: karte2.same.gedaechtnis.pfad#1 radeon: ROT: nach 100 Gängen (Soll 100): Gras im Bild Weg 1454752 → 1071186 px, daneben 1581636 → 1581524 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] amd/rdna-3 an 389a6496 · karte2.same.gedaechtnis.pfad#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +6)",
    "stationen": [
     {
      "id": "karte2.same.gedaechtnis.pfad#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "nach 100 Gängen (Soll 100): Gras im Bild Weg 1454752 → 1071186 px, daneben 1581636 → 1581524 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] amd/rdna-3",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": "ROT: nach 100 Gängen (Soll 100): Gras im Bild Weg 1454752 → 1071186 px, daneben 1581636 → 1581524 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] amd/rdna-3",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6032,16 +6029,15 @@
   },
   "karte2.same.kopplung.ereignis": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.ereignis#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +4) · karte2.same.kopplung.ereignis#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +3)",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.ereignis#1 radeon: ROT: Guss -268,-1046: Glut R/G 0.965 (Soll ≥ 2), Luma 0.168, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.962 (Soll ≤ 1,25), Luma 0.169, Stoff stein · [linse-gpu] amd/rdna-3 an 389a6496 · karte2.same.kopplung.ereignis#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +3)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.ereignis#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +4)",
-     "ungemessen": true,
+     "zahl": "Guss -268,-1046: Glut R/G 0.965 (Soll ≥ 2), Luma 0.168, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.962 (Soll ≤ 1,25), Luma 0.169, Stoff stein · [linse-gpu] amd/rdna-3",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": "ROT: Guss -268,-1046: Glut R/G 0.965 (Soll ≥ 2), Luma 0.168, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.962 (Soll ≤ 1,25), Luma 0.169, Stoff stein · [linse-gpu] amd/rdna-3",
      "r6": "konsum",
      "beide": true
     },
@@ -6088,16 +6084,16 @@
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an 884c6a25 radeon · gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 884c6a25 gtx",
+   "beleg": "Maschine: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 884c6a25 gtx",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3",
-     "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6215,7 +6211,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an ee9c1965: Last: Referenz f 1,558 (Faden 1,558 · alle Kerne 1,329; vor 141,2/310,8 ms, nach 92,1/254,7 ms, Ruhe 90,6/233,8 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -6234,7 +6230,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an ee9c1965: Last: Referenz f 1,558 (Faden 1,558 · alle Kerne 1,329; vor 141,2/310,8 ms, nach 92,1/254,7 ms, Ruhe 90,6/233,8 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -6363,7 +6359,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 211,
+  "konsum": 216,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6533,10 +6529,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 129
+  "ohne": 124
  },
  "kopfVoll": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
- "zeit": "2026-11-17T05:26:01.145Z",
+ "zeit": "2026-11-17T05:37:52.338Z",
  "vorher": "389a6496",
  "bilanz": {
   "gewinn": [],
