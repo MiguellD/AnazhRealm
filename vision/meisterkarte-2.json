@@ -2530,10 +2530,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 4,
+    "heute": 5,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 2.7,
+    "anteilHeute": 3.1,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -3419,7 +3419,7 @@
        "richter": "100 fremde Saaten: jede Art spielbar, Tempo ±10 %, Panel ≥ 0,7"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Fluchtdistanz aus dem Furcht-Gesetz und ein gebundenes Tier folgt 600 s (alte Ökologie K3/K5) — headless; das Rudel pirscht und umstellt den Spieler im Bild an beiden Geräten (oekologie.K4), die Annäherungs-Probe von Sprosse 1 ist ungefahren; Reit-, Haus-, Spiel-Tiere: nichts.",
@@ -16885,11 +16885,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 29,
+  "heute": 30,
   "davonKopplungen": 33,
   "kern": 9,
   "kernDazu": 9,
-  "anteilHeute": 1.5,
+  "anteilHeute": 1.6,
   "anteilKern": 0.4,
   "kapitel": 7,
   "perspektiven": 42,
