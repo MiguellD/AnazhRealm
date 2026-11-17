@@ -25,7 +25,7 @@
 // Gehen, verhungernder Strom, eine Sim, die in Ruhe zählt oder nach ihrem Ereignis nicht schläft, ein Automat, der am
 // Fixpunkt wach bleibt, Page-Error — MUSS rot fallen und ihn beim Namen nennen.
 //   node scripts/diag-stand-takt.cjs [--selftest | --tat | --nachwuchs | --brand | --narbe]   (npm run gate:stand-takt; Port STAND_TAKT_PORT;
-//   --tat: (K4), --nachwuchs: (K5), --brand: (K2#2 · K5#2), --narbe: (N1–N4, w28-brand-bild) unten; --narbe: ROT Exit 1, Absturz Exit 2)
+//   --tat: (K4), --nachwuchs: (K5), --brand: (K2#2 · K5#2), --narbe: (N1–N5, w28-brand-bild · -saum) unten; --narbe: ROT Exit 1, Absturz Exit 2)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -1191,9 +1191,16 @@ async function brandSeite(MESS) {
 //   N4 — der Stoff des Chunk-Bodens, frisch gebaut über seinen Bauer (`_getVoxelChunkMaterial`, mit Wege-Karte), ruft
 //   `STOFF_GESETZ.zeile("asche")` ≥ 1-mal (gezählt am Kern der Seite, kein Quelltext); die Mutante nimmt dem Boden-Stoff die
 //   Asche-Decke (`_wegeBodenFarbe` ohne `aus.asche`) und liest 0.
+//   N5 (w28-brand-saum) — die Front ist ein geschlossener Saum: in demselben Bild stehen die Flammen der Herd-Zelle längs ihrer
+//   Front im Median ihrer Paare ≤ `NARBE_SAUM` × die volle Breite ihrer Zungen auseinander (2 × `BRAND.bild.breite` × Länge ×
+//   rMax der Zunge `FLAMME.zunge`, wie `_brandFlammenZeichnen`; ≥ 8 Paare). Gemessen 1,162 (0,69 m bei 0,594 m); die Mutante
+//   (`abstandMinM` 0,5 m, die Tafel zur Laufzeit ersetzt) 1,675 (0,564 m bei 0,336 m): die kleinen Zungen der Flanken stehen als einzelne Punkte.
+// so weit dürfen Nachbarn stehen, je volle Breite der Zunge: das Rauschen weitet ihren Radius bis × `weit` (2), der Saum schließt
+// also schon im Mittel dieses Hubs; 1,4 liegt zwischen den beiden gemessenen Ständen
+const NARBE_SAUM = 1.4;
 function narbeUrteil(b) {
-    const [a, e, l, s] = [b?.n1, b?.n2, b?.n3, b?.n4];
-    if (!a || !e || !l || !s) return ["LEER: " + JSON.stringify(b && Object.keys(b))];
+    const [a, e, l, s, n] = [b?.n1, b?.n2, b?.n3, b?.n4, b?.n5];
+    if (!a || !e || !l || !s || !n) return ["LEER: " + JSON.stringify(b && Object.keys(b))];
     const [mw, mq] = [a.mutanteWartet, a.mutanteQuadrat];
     return [
         a.brennt && a.s >= a.tr && a.fernAn > a.s ? "" : `N1-LEER: die Herd-Zelle ${a.brennt ? "brennt" : "brennt nicht mehr"} nach ${a.s} s (Verweilzeit ${a.tr} s), der ferne Ort fängt nach ${a.fernAn} s`,
@@ -1209,6 +1216,9 @@ function narbeUrteil(b) {
         s.gebaut ? "" : `N4-LEER: der Bauer des Chunk-Bodens (_getVoxelChunkMaterial) baute keinen frischen Stoff`,
         s.abrufe >= 1 ? "" : `N4-ZEILE: der Boden liest die Asche-Zeile nicht: ${s.abrufe} Abrufe zeile("asche") beim Bau des Chunk-Boden-Stoffs (Rauheit der Zeile ${s.rauheit})`,
         s.mutante === 0 ? "" : `MUTANTE-N4: ohne Asche-Decke zählt die Linse ${s.mutante} Abrufe zeile("asche") — sie zählt einen anderen Leser`,
+        n.paare >= 8 && n.mass > 0 ? "" : `N5-LEER: keine Messung des Saums: ${n.paare} Paare benachbarter Flammen in der Herd-Zelle (${n.flammen} Flammen; verlangt ≥ 8)`,
+        !(n.mass > NARBE_SAUM) ? "" : `N5-SAUM: die Front steht als einzelne Punkte: Flammen-Abstand ${n.abstand} m > Zungen-Breite ${n.breite} m × ${NARBE_SAUM} (Verhältnis ${n.mass} im Median von ${n.paare} Paaren, BRAND.bild.abstandMinM ${n.minM} m)`,
+        n.mutante?.paare >= 8 && n.mutante?.mass > NARBE_SAUM ? "" : `MUTANTE-N5: mit abstandMinM 0,5 m liest die Linse Flammen-Abstand ${n.mutante?.abstand} m bei Zungen-Breite ${n.mutante?.breite} m (Verhältnis ${n.mutante?.mass}, ${n.mutante?.paare} Paare) — sie sieht die Lücken nicht`,
     ].filter(Boolean);
 }
 
@@ -1324,6 +1334,27 @@ async function narbeSeite(MESS) {
         N3.mutante = bild();
         delete r._brandBild;
         bild();
+        // N5: die Flammen der Herd-Zelle in demselben Bild, in ihrer Reihenfolge längs der Front: je Paar von Nachbarn ihr Abstand (xz)
+        // und die volle Breite ihrer Zungen, gerechnet wie `_brandFlammenZeichnen` (2 × `breite` × Länge × rMax der Zunge des
+        // Fachwerks, die Länge das Mittel des Paars); das Paar am Median des Verhältnisses trägt das Urteil
+        const saum = () => {
+            const Bb = C.BRAND.bild;
+            const F = (r._brandFlammen || []).filter((f) => Math.floor(f.x / cs) === hx && Math.floor(f.z / cs) === hz);
+            const rMax = Math.max(...globalThis.__fachwerkCore.FLAMME.zunge.map((p) => p[0]));
+            const paare = F.slice(1).map((g, i) => [Math.hypot(g.x - F[i].x, g.z - F[i].z), Bb.breite * (F[i].lang + g.lang) * rMax]);
+            const [d, w] = paare.sort((u, v) => u[0] / u[1] - v[0] / v[1])[paare.length >> 1] || [NaN, NaN];
+            return { flammen: F.length, paare: paare.length, abstand: r3(d), breite: r3(w), mass: r3(d / w), weit: r3(1 + 1.25 * Bb.flamme.rausch[2]), minM: Bb.abstandMinM };
+        };
+        const N5 = (aus.n5 = saum());
+        // die Mutante: die Tafel des Bilds mit dem Mindest-Abstand 0,5 m (der Stand bis w28-brand-saum)
+        C.BRAND = Object.freeze({ ...B, bild: Object.freeze({ ...B.bild, abstandMinM: 0.5 }) });
+        try {
+            bild();
+            N5.mutante = saum();
+        } finally {
+            C.BRAND = B;
+        }
+        bild();
         // N2, die Mutante: derselbe Herd, `ende` auf den Durchlauf des Kopfs gestutzt
         r._brandZuenden = function (...a) {
             const z = P._brandZuenden.apply(this, a);
@@ -1431,8 +1462,9 @@ if (SELBSTTEST) {
                     n2: { dauer: 52.4, ecken: 45.8, kopf: 31.5, mutante: { dauer: 31.5, ecken: 45.8, kopf: 31.5 } },
                     n3: { lichter: 4, flammen: 60, gemessen: 4, max: 0, mitte: false, mutante: { lichter: 4, flammen: 60, gemessen: 4, max: 5.3, mitte: true } },
                     n4: { abrufe: 1, gebaut: true, rauheit: 0.96, mutante: 0 },
+                    n5: { flammen: 27, paare: 26, abstand: 0.69, breite: 0.594, mass: 1.162, weit: 2, minM: 0.2, mutante: { flammen: 22, paare: 21, abstand: 0.564, breite: 0.336, mass: 1.675, weit: 2, minM: 0.5 } },
                 },
-                [["N1-LEER", "n1.brennt", false], ["N1-LEER", "n1.s", 3], ["N1-LEER", "n1.fernAn", 12], ["N1-WARTET", "n1.zuend", 0], ["N1-QUADRAT", "n1.fern", 0.9], ["MUTANTE-N1-WARTET", "n1.mutanteWartet.zuend", 1], ["MUTANTE-N1-QUADRAT", "n1.mutanteQuadrat.fern", 0], ["N2-ENDE", "n2.dauer", 31.5], ["MUTANTE-N2", "n2.mutante.dauer", 52.4], ["MUTANTE-N2", "n2.mutante", null], ["N3-LEER", "n3.gemessen", 0], ["N3-LICHT", "n3.max", 5.3, "n3.mitte", true], ["MUTANTE-N3", "n3.mutante.max", 0], ["N4-LEER", "n4.gebaut", false], ["N4-ZEILE", "n4.abrufe", 0], ["MUTANTE-N4", "n4.mutante", 1]]
+                [["N1-LEER", "n1.brennt", false], ["N1-LEER", "n1.s", 3], ["N1-LEER", "n1.fernAn", 12], ["N1-WARTET", "n1.zuend", 0], ["N1-QUADRAT", "n1.fern", 0.9], ["MUTANTE-N1-WARTET", "n1.mutanteWartet.zuend", 1], ["MUTANTE-N1-QUADRAT", "n1.mutanteQuadrat.fern", 0], ["N2-ENDE", "n2.dauer", 31.5], ["MUTANTE-N2", "n2.mutante.dauer", 52.4], ["MUTANTE-N2", "n2.mutante", null], ["N3-LEER", "n3.gemessen", 0], ["N3-LICHT", "n3.max", 5.3, "n3.mitte", true], ["MUTANTE-N3", "n3.mutante.max", 0], ["N4-LEER", "n4.gebaut", false], ["N4-ZEILE", "n4.abrufe", 0], ["MUTANTE-N4", "n4.mutante", 1], ["N5-LEER", "n5.paare", 2], ["N5-LEER", "n5.mass", null], ["N5-SAUM", "n5.mass", 1.675, "n5.abstand", 0.564, "n5.breite", 0.336], ["MUTANTE-N5", "n5.mutante.mass", 1.162], ["MUTANTE-N5", "n5.mutante.paare", 2], ["MUTANTE-N5", "n5.mutante", null]]
             ),
         ],
         "die Tat-, Nachwuchs-, Brand-, Sukzessions- und Narbe-Linse nennen jeden Täter."
@@ -2539,7 +2571,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
         if (!befund || befund.fehler) absturz(befund ? befund.fehler : "kein Befund");
         console.log("NARBE " + JSON.stringify(befund));
         const v = narbeUrteil(befund);
-        urteilEnde(v.length, `❌ NARBE ROT — ${v.join(" | ")}`, "✅ NARBE GRÜN — die Narbe folgt der Front, die Zelle brennt, bis ihre Front sie deckt, das Licht steht bei den Flammen, der Boden liest die Asche-Zeile");
+        urteilEnde(v.length, `❌ NARBE ROT — ${v.join(" | ")}`, "✅ NARBE GRÜN — die Narbe folgt der Front, die Zelle brennt, bis ihre Front sie deckt, das Licht steht bei den Flammen, der Boden liest die Asche-Zeile, die Front ist ein geschlossener Saum");
     }
     await seiteZu(browser, server, befund, null, "fehler");
     if (TAT || NACHWUCHS) {
