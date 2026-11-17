@@ -529,7 +529,18 @@ const rahmen = (b) =>
         hx: (b.maxX - b.minX) / 2,
         hz: (b.maxZ - b.minZ) / 2,
     };
-const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__pufferLesen = ${pufferLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__eichMs = ${eichMs}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+// DER ÜBERGANG FÄLLT (`window.__uebergangFaellt(r)`, in jeder Seite, `WARTEN_SEITE`): jede Probe, die das Wetter ohne Übergang will —
+// die Bühne (`__wetterSetzen` ohne Zug, ausgabe-aufnahme.cjs), die Wasser-Linse, jede Linse mit eigenem Wort oder eigener Leinwand des
+// Übergangs. Das Wort, das gilt (`state.weather`), steht ab jetzt im Bild UND auf dem Weg des Regens — der Zweig des Spiels für ein
+// Wort ohne Übergang (`requestWeatherTransition` from === target: Übergang null, `_regenWeg(w, w, jetzt, 0)`); vorher fällt der
+// laufende Übergang, sonst nähme das Spiel denselben Zielwert als „schon unterwegs“ und ließe die Rampe liegen. Bis w28-wetter-ohne-
+// rampe nullte jede Probe nur `weatherTransition` (13 Stellen): die Stempel, die `_setWeather` schon als Rampe von 45 s ± Gemüt gelegt
+// hatte, blieben liegen — 10 s Niesel stempelten 23,6–24,4 s (planet.wasser.kreislauf S1: Bilanz 2,087 / 2,332 statt ≈ 1).
+function uebergangFaellt(r) {
+    r.state.weatherTransition = null;
+    r.requestWeatherTransition(r.state.weather, 0, r.state.weather);
+}
+const WARTEN_SEITE = `${weltR} window.__uebergangFaellt = ${uebergangFaellt}; window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__pufferLesen = ${pufferLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__eichMs = ${eichMs}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");

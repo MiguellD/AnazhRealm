@@ -179,6 +179,13 @@ class AnazhRealm_vegetation_wiese {
                 // dem Wagen (`_imWagen`, er hält: `_wagenGrund`) und dem Bau mit Boxen (`_imGrundriss` "bau": Tor, Esse, Brunnen)
                 if (this._imWagen(x, z, reich * sb) || this._imGrundriss(x, z, reich * sb) === "bau") continue;
                 const f = WT(x, z, L, m, [1, 1, 1], 0);
+                // DER VERSENGTE HALM (w28-brand-bild): im Saum der Narbe (dieselbe Asche, die den Wurf dünnt) steht das Büschel
+                // braun gesengt — bis hier war ein Halm grün oder weg, die Narbe endete als Schnitt im Grün
+                const av = this._ascheAt(x, z);
+                if (av > 0) {
+                    const [V, k] = [AnazhRealm.BRAND.versengt, Math.min(1, av * 2)];
+                    for (let c = 0; c < 3; c++) f[c] *= 1 + (V[c] - 1) * k;
+                }
                 out.push({ x, y, z, s: sb, rot, vorlage, o, f, gi, gj, gx: eb.gx, gz: eb.gz });
             }
         }

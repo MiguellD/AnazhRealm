@@ -164,7 +164,7 @@ class AnazhRealm_speicher_welten {
         // Stufen: 1 Legacy · 2 Feuchte · 3 Makro-Geographie · 4 prozedurale Baum-Baupläne · 5 Skeleton-
         // Wuchs aus dem Gesetz (_phytoArt → treeParams) · 6 Mesh-Merge · 7 Tube-Geometrie/Foliage-Cards/Wind ·
         // 8 Palette/Tag-Vektoren/Understory · 9 baum_karst + Busch-Baupläne.
-        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 9;
+        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = AnazhRealm.GEN_VERSION;
         // Seed und Voxel-Boden heilt das EINE Heil jeder Welt (`_weltMetaHeil`, auch jede geladene); Journal-Eintrag nur
         // bei `!fresh` (geladene Welt verdichtet sich), die frische Welt schreibt nur „Ich erwache als <slug>".
         const warVoxel = m.voxelTerrain === true;
@@ -439,7 +439,7 @@ class AnazhRealm_speicher_welten {
         // behalten ihr Gesicht (Genese ist Welt-Identität). Der Varianten-Pool (variantSeed[]) ist
         // Genese-Konstante: je Art eine Zeile, gepinnt beim ersten Wuchs der Art (_variantSeedsFor).
         const variantSeed = {};
-        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 9, variantSeed };
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: AnazhRealm.GEN_VERSION, variantSeed };
     }
 
     // Snapshot einer leeren Welt mit gegebenem worldMeta (optional mit Player-Snapshot für „Person
@@ -524,10 +524,10 @@ class AnazhRealm_speicher_welten {
             snap.tools = Object.values(this.state.tools || {})
                 .filter((t) => t && !t.builtIn)
                 .map((t) => this._serializeTool(t));
-            // Eigene Baupläne wandern mit (Schöpfer-Wissen); die Hotbar bleibt leer (welt-spezifisch).
-            // Nur über _serializeBlueprint — sonst gehen Portal-Rolle + Signatur still verloren.
-            snap.blueprints = this._bauplaeneDesStands(
-                new Set(snap.tools.map((t) => t.sourceBlueprint).filter(Boolean))
+            // Eigene Baupläne wandern mit, nur über _serializeBlueprint (Portal-Rolle + Signatur); der Gang ist ein Generator, in EINEM
+            // Zug getrieben (`_standZug` — 05.11.–16.11. reiste er ungetrieben als `{}`, die Person verlor ihre Baupläne).
+            snap.blueprints = this._standZug(
+                this._bauplaeneDesStands(null, new Set(snap.tools.map((t) => t.sourceBlueprint).filter(Boolean)))
             ).map((bp) => this._serializeBlueprint(bp));
         }
         return snap;
@@ -673,9 +673,9 @@ class AnazhRealm_speicher_welten {
     // kommt. Bis w8-snapshot-schlank reiste jede Art: an der Playtest-Welt trugen 125 Arten 154 082 von 262 028 B des Stands (59 %),
     // der Pin der Welt (`pinCurrentWorld`, 256 KiB) hatte 116 B Luft. IN SCHRITTEN (speicher.K2#2): je vier Baupläne ein Schritt samt
     // seinem Werk (das Urteil der Geburt zählt seins, `_bauplanAusBuch`) — die Menge der Playtest-Welt (196 Baupläne) kostete als
-    // EIN Schritt 0,29 ms. `K` der Kontext des Stands. → (am Ende) die Baupläne
-    *_bauplaeneDesStands(K) {
-        const bezug = yield* this._standBezug(K);
+    // EIN Schritt 0,29 ms. `K` der Kontext des Stands, `bezug` ohne Stand (die Geburt mit der Person). → (am Ende) die Baupläne
+    *_bauplaeneDesStands(K, bezug = null) {
+        bezug ||= yield* this._standBezug(K);
         const S = this._speicher || { werk: 0 };
         const out = [];
         let i = 0;

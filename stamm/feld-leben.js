@@ -40,7 +40,8 @@ class AnazhRealm_feld_leben {
             for (let k = 0; k < 4; k++) {
                 const w = (k & 1 ? a : 1 - a) * (k & 2 ? b : 1 - b);
                 const c = w > 0 ? zelle(i + (k & 1), j + (k >> 1)) : null;
-                if (c) ((o += w), (as += w * c.asche), (bu += w * c.busch), (wa += w * c.wald));
+                const g = c ? (c.front ? w * c.front(x, z) : w) : 0; // die brennende Zelle: so weit ihre Front kam (`_brandFront`)
+                if (g > 0) ((o += g), (as += g * c.asche), (bu += g * c.busch), (wa += g * c.wald));
             }
             if (!(o > 0)) return null;
             // das Rauschen wirkt am Rand (4·o·(1 − o)): im Innern einer Brandfläche bleibt sie ganz, fern von ihr ganz frei —
@@ -78,13 +79,48 @@ class AnazhRealm_feld_leben {
         return c;
     }
     _brandZellen() {
-        const M = new Map();
+        const [M, bf] = [new Map(), this.state.brandFeld];
         return (cx, cz) => {
             const k = (cx + 32768) * 65536 + cz + 32768;
             let c = M.get(k);
-            if (c === undefined) M.set(k, (c = this._brandZelle(cx, cz)));
+            if (c === undefined) {
+                const b = bf && bf.size ? bf.get(cx + "," + cz) : null;
+                c = this._brandZelle(cx, cz) || (b && b.t0 !== null ? this._brandFront(b) : null);
+                M.set(k, c);
+            }
             return c;
         };
+    }
+
+    // DIE FRONT EINER BRENNENDEN ZELLE ALS NARBE (w28-brand-bild): wie weit die Ellipse ihres Eintritts (`_brandZuenden`) den Ort zur
+    // Uhr des Brands verzehrte — 0 vor der Flamme, über ihre Verweilzeit `tr` auf 1 (der versengte Saum). Bis hier trug nur die
+    // ausgebrannte Zelle Asche: die Halme standen grün vor den Flammen, bis das Quadrat auf einmal grau fiel.
+    _brandFront(b) {
+        const [k, s, t, px, pz] = [1 / (b.R * (1 - b.ecc)), Math.max(b.tr, 1), this._brandUhr, b.kopf[0], b.kopf[1]];
+        const front = (x, z) => {
+            const q =
+                (t - b.t0 - (Math.hypot(x - b.ex, z - b.ez) - b.ecc * ((x - b.ex) * px + (z - b.ez) * pz)) * k) / s;
+            return q <= 0 ? 0 : q >= 1 ? 1 : q;
+        };
+        return { asche: 1, busch: 0, wald: 0, front };
+    }
+
+    // DIE ASCHE FOLGT DER FRONT (w28-brand-bild): je Bild malt der Takt EIN Viertel der Fläche EINER glühenden Zelle (±½ Zelle,
+    // reihum) in die Boden-Decke — es kostet, was brennt; die Nah-Wiese darüber baut neu, je Zelle höchstens alle `BRAND.wieseS` s.
+    _brandMalen() {
+        const [bf, wk] = [this.state.brandFeld, this.state.wegeKarte];
+        const G = bf && bf.glueht;
+        if (!G || !G.length || !wk) return;
+        const n = (bf.malN = ((bf.malN || 0) + 1) % (4 * G.length));
+        const [b, v, cs] = [G[n >> 2], n & 3, AnazhRealm.LIFE_FIELD.cell];
+        const [x0, z0] = [(b.cx - 0.5 + (v & 1)) * cs, (b.cz - 0.5 + (v >> 1)) * cs];
+        const zelle = this._brandZellen();
+        for (const stufe of wk.stufen)
+            if (stufe.zentriert && this._ascheFlaeche(stufe, x0, z0, x0 + cs, z0 + cs, zelle)) b.wieseNeu = true;
+        if (b.wieseNeu && !(this._brandUhr - b.wieseT < AnazhRealm.BRAND.wieseS)) {
+            [b.wieseNeu, b.wieseT] = [false, this._brandUhr];
+            this._nahRingNeuIn((b.cx - 0.5) * cs, (b.cz - 0.5) * cs, (b.cx + 1.5) * cs, (b.cz + 1.5) * cs);
+        }
     }
 
     // DIE ASCHE MALEN (stoffe.K2#2): die Asche der Zelle (cx, cz) und ihrer Ränder in jeder zentrierten Stufe — der Kanal G
@@ -2777,13 +2813,14 @@ class AnazhRealm_feld_leben {
             return best;
         };
         const [x0, z0] = [cx * cs, cz * cs];
-        const quer = Math.max(
-            ...[x0, x0 + cs].flatMap((x) => [z0, z0 + cs].map((z) => (x - ex) * T.px + (z - ez) * T.pz))
-        );
+        // DIE ZELLE BRENNT, BIS IHRE FRONT SIE GANZ VERZEHRTE (w28-brand-bild: die späteste Ankunft der Ellipse an ihren Ecken) — bis
+        // hier fiel sie mit dem KOPF, die Flanken hatten erst einen Keil gebrannt (Dorf-Wiese 300 s: 1 Zelle, 7 Flammen → 9, 106)
+        const ecken = [x0, x0 + cs].flatMap((x) => [z0, z0 + cs].map((z) => [x, z]));
+        const quer = Math.max(...ecken.map(([x, z]) => (x - ex) * T.px + (z - ez) * T.pz));
         const zelle = Object.assign(bf.get(key) || { cx, cz, y: null }, {
             t0: t,
             an: t,
-            ende: t + quer / T.R + T.tr,
+            ende: t + Math.max(quer / T.R, ...ecken.map(([x, z]) => zeit(x, z))) + T.tr,
             glut: 0,
             mx: f.zeile.brenn.mx,
             boden: f.boden,
@@ -2841,6 +2878,7 @@ class AnazhRealm_feld_leben {
         // Herd trug 0 bis 95 Aschen)
         while (this._brandArbeit(frist) && bf.size && this.state.spielZeit - this._brandUhr >= B.schrittS - 1e-9)
             this._brandSchritt((this._brandUhr += B.schrittS));
+        this._brandMalen();
         if (!bf.size && !this._brandRest) this._brandBett = null; // erloschen: das Gemessene fällt
     }
 
@@ -2875,7 +2913,7 @@ class AnazhRealm_feld_leben {
             if (L) L.push(z);
             else G.set(k, [z]);
         }
-        bf.glutBlock = G;
+        [bf.glutBlock, bf.glueht] = [G, glueht];
         this._brandRest = { t, aschen, faellig, i: 0 };
     }
 
@@ -3030,7 +3068,14 @@ class AnazhRealm_feld_leben {
                 f.I = b.iw * Rt;
                 fl.push(f);
             }
-            if (fl.length > n0) qu.push({ b, von: n0, bis: fl.length });
+            if (fl.length > n0) {
+                qu.push({ b, von: n0, bis: fl.length });
+                // DAS LICHT STEHT BEI DEN FLAMMEN (w28-brand-bild): 1 m über der stärksten der Zelle — bis hier über der Zell-Mitte
+                let k = n0;
+                for (let i = n0 + 1; i < fl.length; i++) if (fl[i].I > fl[k].I) k = i;
+                const o = b.ort || this._brandOrt(b);
+                [o.x, o.y, o.z] = [fl[k].x, fl[k].y + 1, fl[k].z];
+            }
         }
         this._brandFlammenZeichnen(fl);
         this._brandRauch(dt, qu, wind);
@@ -3848,6 +3893,9 @@ AnazhRealm.FELD_LEER = Object.freeze({});
 AnazhRealm.BRAND = Object.freeze({
     schrittS: 1,
     aufS: 4,
+    ascheKorn: 0.3, // so viel vom Korn des Erdreichs zeigt die Asche-Decke (`_terrainGeologyAlbedo`)
+    versengt: Object.freeze([0.9, 0.4, 0.2]), // der Ton (× die Farbe des Halms) des versengten Halms im Saum der Narbe (`_nahWieseKachelBueschel`)
+    wieseS: 3, // so oft höchstens baut die Nah-Wiese über einer brennenden Zelle neu (`_brandMalen`)
     minStoff: 0.15,
     licht: 4,
     budgetMs: 0.25, // so viel Arbeit eines Schritts geht je Bild (`_brandArbeit`) …
