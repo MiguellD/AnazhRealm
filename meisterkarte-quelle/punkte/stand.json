@@ -21,8 +21,9 @@
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.62 dB · töten -0.03 -1.15 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.12 dB · pflegen 0.25 8.99 dB · nach 30 min 0.2463 8.75 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.6 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 1 s (≤ 2) [2.6 -0.68 -0.47 -0.32 -0.2 -0.14 -0.1 -0.06 -0.04 0] GRÜN",
      "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/werkbank.cjs)",
+     "gehalten": true,
+     "r6": "konsum"
     },
     {
      "id": "affekt.K1#2",
@@ -1502,8 +1503,9 @@
      "gruen": true,
      "zahl": "✅ Schritte gras 6208 Hz (n 6) · laub 8919 Hz (n 6) · stein 4798 Hz (n 6), kleinster Abstand 1410 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9710/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505)",
      "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/werkbank.cjs)",
+     "gehalten": true,
+     "r6": "konsum"
     },
     {
      "id": "klang.K4#2",
@@ -5520,7 +5522,7 @@
      "gruen": true,
      "zahl": "25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 34.3 fps · [linse-gpu] amd/rdna-3",
      "sha": "e489088a9bfca46817cd159efd64ffc1be80dbd4",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-kreatur-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs +12) — zuletzt an d39e0d6e: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Platz-Bild um 8 Uhr (platzAcht / b64png, Exit 1) · [linse-gpu] amd/rdna-3) · Täter: Node.js v24.15.0",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-kreatur-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -6323,7 +6325,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 182,
+  "konsum": 184,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6485,10 +6487,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 166
+  "ohne": 164
  },
  "kopfVoll": "c50e6b61b445196a2316565e29a8e4989a939eef",
- "zeit": "2026-11-17T23:36:47.721Z",
+ "zeit": "2026-11-17T23:43:39.466Z",
  "vorher": "c50e6b61",
  "bilanz": {
   "gewinn": [],
