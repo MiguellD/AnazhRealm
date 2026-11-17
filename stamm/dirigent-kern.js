@@ -1711,18 +1711,16 @@ class AnazhRealm {
         return c.set(L.farbe);
     }
 
-    // DAS LICHT EINER FLAMMEN-FLÄCHE (w28-brand-nacht) vom Halbmesser `r` m → { L, masse }. Was eine Flamme beleuchtet, strahlt
-    // nie heller zurück als sie selbst: füllt sie den Halbraum einer Fläche, trägt die höchstens π × ihre Strahldichte als
-    // Bestrahlung. Die Strahldichte der Flamme ist die ihres Bilds (`BRAND.bild.flamme.ziel` ÷ Belichtung, `_brandFlammenZeichnen`
-    // — EINE Zahl für Flamme und Licht), also gilt AN der Flamme (d → 0): Masse·(1 + k²)/k² = schein·ziel/Belichtung, mit dem KERN k =
-    // ihrem Halbmesser (fachwerk `lichtAbfall`: die Ausdehnung der Quelle, wie die Membran des Tors). `schein` (BRAND.bild.flamme)
-    // ist ihr Licht je Bild-Ton: die Flamme steht im Bild an der Decke der Tonkurve, ihr Kern strahlt darüber — geeicht am
-    // Bildpaar der Nacht (1 = das Gras bleibt dunkel, 7 = Feuerton in 1–3 m unter der Flamme, 27 = weiß). Fern wächst ihr Licht mit
-    // ihrer Fläche (∝ k²/d²), ihre Reichweite mit ihrem Halbmesser (höchstens zwei Zellen). Farbe, Abfall und Flackern sind die
-    // des Feuers (`LICHT_GESETZ.feuer`), sein Zeitplan nicht: der hebt das Herdfeuer nachts × 45 über einen Platz aus Stein.
-    // Bis hier leuchtete der Brand als Herdfeuer-Punkt × `BRAND.licht` 4 × Zeitplan: nachts stand die Bestrahlung in 1 m bei
-    // 565 statt 3 (Belichtung 1,5), das Gras 1–6 m um die Front brannte weiß aus, die Flammen gingen unter, der Rauch stand als
-    // helle Scheiben. Je Viertelmeter ein Datum, gemerkt.
+    // DAS LICHT EINER FLAMMEN-FLÄCHE (w28-brand-nacht) vom Halbmesser `r` m → { L, masse }. AN der Flamme (d → 0) trägt eine
+    // Fläche die Bestrahlung `BRAND.bild.flamme.schein` — EINE Zahl in Welt-Einheiten, bei Tag und Nacht dieselbe (das Licht einer
+    // Flamme hängt weder an der Stunde noch an der Belichtung der Kamera): Masse·(1 + k²)/k² = schein, mit dem KERN k = ihrem
+    // Halbmesser (fachwerk `lichtAbfall`: die Ausdehnung der Quelle, wie die Membran des Tors). Nah bleibt ihr Licht so unter
+    // dem Deckel, fern wächst es mit ihrer Fläche (∝ k²/d²), ihre Reichweite mit ihrem Halbmesser (höchstens zwei Zellen).
+    // Farbe, Abfall und Flackern sind die des Feuers (`LICHT_GESETZ.feuer`), sein Zeitplan nicht: der hebt das Herdfeuer
+    // nachts × 45 über einen Platz aus Stein. Bis hier leuchtete der Brand als Herdfeuer-Punkt × `BRAND.licht` 4 × Zeitplan:
+    // nachts stand die Bestrahlung in 1 m bei 565 (am Tag 6,4), das Gras 1–6 m um die Front brannte weiß aus, die Flammen gingen
+    // unter, der Rauch stand als helle Scheiben. WIDERLEGT: das Licht am Bild-Ton der Flamme (× ziel ÷ Belichtung) — die Nacht
+    // stimmte, am Tag (Belichtung 0,51) trug die Flamme 22 statt 7,5 und färbte Gras und Rauch orange. Je Viertelmeter ein Datum.
     _flammenLicht(r) {
         const Lf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
         const k = Math.max(Lf.kernM, Math.round(r * 4) / 4);
@@ -1731,10 +1729,7 @@ class AnazhRealm {
             const reichweiteM = Math.min(2 * AnazhRealm.LIFE_FIELD.cell, (Lf.reichweiteM * k) / Lf.kernM);
             M.set(k, Object.freeze({ ...Lf, staerke: 1, zeit: null, kernM: k, reichweiteM }));
         }
-        const rend = this.state.renderer;
-        const [BF, belichtung] = [AnazhRealm.BRAND.bild.flamme, (rend && rend.toneMappingExposure) || 1];
-        const hell = (BF.schein * BF.ziel) / belichtung;
-        return { L: M.get(k), masse: (hell * k * k) / (1 + k * k) };
+        return { L: M.get(k), masse: (AnazhRealm.BRAND.bild.flamme.schein * k * k) / (1 + k * k) };
     }
 
     // DIE STÄRKE einer Quelle zur Bild-Uhr t (K11, A9): Datum × Flackern × Zeitplan über die EINE Übersetzung Labor → Welt × Masse.

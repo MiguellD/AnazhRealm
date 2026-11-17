@@ -3906,7 +3906,7 @@ AnazhRealm.BRAND = Object.freeze({
     // nächsten zuerst (ein Brand von 2 000 Zellen kostet das Bild, nie die Welt); die Spitze der Zunge pulst um ± `puls` ihrer Länge; `flammenWind` der Wind auf Flammenhöhe je Wind
     // in 10 m (Albini–Baughman 1979, offenes Gras); die Zunge `breite` × Länge breit, ihre Deckung
     // fällt zur Spitze mit (1 − h)^spitze; ihr Bild `flamme` (`_brandFlammenZeichnen`): die Temperatur `kelvin` [Wurzel, Spitze], `ziel` ihr Ton vor der
-    // Tonkurve, `schein` ihr Licht je Bild-Ton (`_flammenLicht`: die Bestrahlung an der Flamme = schein × ziel ÷ Belichtung), die Dicke `dicke`, ihr Fall zum Rand (1 − ξ²)^`rand`, die Tafel der Zunge in `tafel` Texeln, das Rausch-Gesetz `rausch` [Skala quer, hoch, Hub], steigend mit `zug` Längen je
+    // Tonkurve, `schein` ihr Licht (`_flammenLicht`: die Bestrahlung an der Flamme in Welt-Einheiten, bei Tag und Nacht dieselbe; der Mond trägt 0,224), die Dicke `dicke`, ihr Fall zum Rand (1 − ξ²)^`rand`, die Tafel der Zunge in `tafel` Texeln, das Rausch-Gesetz `rausch` [Skala quer, hoch, Hub], steigend mit `zug` Längen je
     // Sekunde, der Saum gegen die Tiefe `saumM`. Der Rauch: `jeS` Ballen je Zelle und Sekunde bei voller Glut, höchstens `max` (ein
     // großer Brand je Zelle seltener, bis `kMax` × größer), die Ballen beginnen mit `b0` × Flammen-Länge, wachsen um `alpha` je Meter Steigen, decken anfangs `a0` und fallen unter
     // `aKill` oder nach `lebenS`; Steigen höchstens `wMax` m/s; der Satz (Ballen, Stoff `color`, Radius je Einheit `size`) zeichnet das
@@ -3927,7 +3927,7 @@ AnazhRealm.BRAND = Object.freeze({
         flamme: Object.freeze({
             kelvin: Object.freeze([3000, 1700]),
             ziel: 1.6,
-            schein: 7,
+            schein: 7.5,
             dicke: 6,
             rand: 1.5,
             rausch: Object.freeze([1.6, 2.5, 0.8]),
