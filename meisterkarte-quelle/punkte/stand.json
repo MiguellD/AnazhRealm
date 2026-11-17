@@ -4146,7 +4146,7 @@
   },
   "tiere.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 43.5 s an d3708675 headless · gehalten: Fressen 116.7 s nach dem Riss bei 26 s, am Aas fuchs 19.9 s, baer 16.6 s · Wolfsrevier wald, Riss 13.7 s, 3 fressen: tier:wolf 6995 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.27 m · Luma 86.5 σ 27.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 7de938ab radeon — offen: tiere.K2#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 43.5 s an d3708675 headless · gehalten: Fressen 116.7 s nach dem Riss bei 26 s, am Aas fuchs 19.9 s, baer 16.6 s · Wolfsrevier wald, Riss 13.7 s, 3 fressen: tier:wolf 6995 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.27 m · Luma 86.5 σ 27.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 7de938ab radeon — offen: tiere.K2#2 gtx: Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/vegetation-wiese.js)",
    "stationen": [
     {
      "id": "tiere.K2#1",
@@ -4174,14 +4174,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/vegetation-wiese.js)",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "tiere.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen) an 6aa7a5a6 headless · gehalten: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2669/1081/5775/3407 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.15 m · Luma 66.8 σ 28.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 7de938ab radeon — offen: tiere.K3#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen) an 6aa7a5a6 headless · gehalten: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2669/1081/5775/3407 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.15 m · Luma 66.8 σ 28.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 7de938ab radeon — offen: tiere.K3#2 gtx: Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
    "stationen": [
     {
      "id": "tiere.K3#1",
@@ -4209,8 +4210,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
@@ -5914,7 +5916,7 @@
   },
   "karte2.planet.wasser.kreislauf": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145509 → 381700 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.62 ↔ 1.033 Spielstunden (×1.67, Erd-Band 1.62–2.06; Schwerpunkt 1.236 ↔ 2.138) · Bilanz 0.971 / 0.993 (Soll 0,9–1,1; 3.8 ↔ 3.7 / 19.2 ↔ 19.1 m³) · Niesel auf dem Weg 10 s (Soll 10 ± 0,5) · [linse-gpu] amd/rdna-3 an 389a6496 radeon — offen: karte2.planet.wasser.kreislauf#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145509 → 381700 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.62 ↔ 1.033 Spielstunden (×1.67, Erd-Band 1.62–2.06; Schwerpunkt 1.236 ↔ 2.138) · Bilanz 0.971 / 0.993 (Soll 0,9–1,1; 3.8 ↔ 3.7 / 19.2 ↔ 19.1 m³) · Niesel auf dem Weg 10 s (Soll 10 ± 0,5) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145491 → 381682 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.6 ↔ 1.073 Spielstunden (×1.79, Erd-Band 1.62–2.06; Schwerpunkt 1.153 ↔ 1.901) · Bilanz 1.003 / 0.977 (Soll 0,9–1,1; 3.8 ↔ 3.9 / 19.2 ↔ 18.8 m³) · Niesel auf dem Weg 10 s (Soll 10 ± 0,5) · [linse-gpu] nvidia/pascal an 31d156e8 gtx",
    "stationen": [
     {
      "id": "karte2.planet.wasser.kreislauf#1",
@@ -5929,11 +5931,11 @@
     {
      "id": "karte2.planet.wasser.kreislauf#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145491 → 381682 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.6 ↔ 1.073 Spielstunden (×1.79, Erd-Band 1.62–2.06; Schwerpunkt 1.153 ↔ 1.901) · Bilanz 1.003 / 0.977 (Soll 0,9–1,1; 3.8 ↔ 3.9 / 19.2 ↔ 18.8 m³) · Niesel auf dem Weg 10 s (Soll 10 ± 0,5) · [linse-gpu] nvidia/pascal",
+     "sha": "31d156e8bdca4dff4db6170f2515975c120af605",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6349,7 +6351,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 198,
+  "konsum": 201,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6517,10 +6519,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 144
+  "ohne": 141
  },
  "kopfVoll": "31d156e8bdca4dff4db6170f2515975c120af605",
- "zeit": "2026-11-17T17:01:21.809Z",
+ "zeit": "2026-11-17T17:12:39.324Z",
  "vorher": "31d156e8",
  "bilanz": {
   "gewinn": [],
