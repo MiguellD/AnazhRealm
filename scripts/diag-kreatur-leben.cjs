@@ -724,14 +724,17 @@ async function lebenBuehnen() {
         r._uhrSetzen(0.5, "regler");
         const takte = Math.round((0.1 / 24) * (s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES) * 600);
         const z = { budget: {}, soll: {}, ruhe: [0, 0] };
-        const tagLauf = (seelen, ein, mess, z) => {
+        const amUfer = (seele, i) => ({
+            x: U.x + Math.cos(i * 2.1 + seele.length) * 6,
+            z: U.z + Math.sin(i * 2.1 + seele.length) * 6,
+        });
+        const tagLauf = (seelen, ein, mess, z, ort = amUfer) => {
             const tiere = seelen.flatMap((seele) =>
                 [0, 1, 2].map((i) => {
-                    const x = U.x + Math.cos(i * 2.1 + seele.length) * 6,
-                        zz = U.z + Math.sin(i * 2.1 + seele.length) * 6;
+                    const { x, z: zz } = ort(seele, i);
                     const c = tier({ x, y: boden(x, zz), z: zz }, seele, 1);
                     ruhig(c);
-                    return { c, g: A.TETRAPODA_SOUL_MAP[seele], x, z: zz, ruhK: 0, trunk: 0, nass: 0 };
+                    return { c, g: A.TETRAPODA_SOUL_MAP[seele], x, z: zz, ruhK: 0, trunk: 0, nass: 0, spur: [] };
                 })
             );
             pm.set(U.x, r.getTerrainHeightAt(U.x, U.z + 90) + 0.5, U.z + 90);
@@ -740,7 +743,10 @@ async function lebenBuehnen() {
                 for (let k = 0; k < takte; k++) {
                     ruhigSpieler();
                     takt(0.1);
+                    // die Lage je Spiel-Minute (der Schritt der Uhr: 0,1 Spielstunde = 6 Minuten in `takte` Takten)
+                    const minute = i >= ein * 10 && Math.floor(((k + 1) * 6) / takte) > Math.floor((k * 6) / takte);
                     for (const t of tiere) {
+                        if (minute) t.spur.push({ x: t.c.position.x, z: t.c.position.z });
                         const ud = t.c.userData,
                             p = t.c.position;
                         if (t.g0 !== undefined && ud._getrunken !== t.g0)
@@ -757,7 +763,13 @@ async function lebenBuehnen() {
                     }
                 }
             }
-            for (const t of tiere) r.removeCreature(t.c);
+            for (const t of tiere) {
+                // der Anker und die Leine, wie der Takt sie liest (_creatureCharacterWander: wanderAnchor, leashM)
+                const ud = t.c.userData;
+                t.anker = ud.wanderAnchor ? { x: ud.wanderAnchor.x, z: ud.wanderAnchor.z } : null;
+                t.leineM = r._creatureMoveCharacter(t.c).leashM;
+                r.removeCreature(t.c);
+            }
             return tiere;
         };
         const tiere = tagLauf(["wesen", "baer", "fuchs", "wolf"], ...(taeter ? [2, 12] : [12, 72]), z);
@@ -770,6 +782,70 @@ async function lebenBuehnen() {
         }
         z.truenke = tiere.map((t) => t.trunk);
         z.amWasser = tiere.reduce((a, t) => a + t.nass, 0);
+        // DIE WANDERUNG (leben.tiere.wanderung S1): je Gattung drei Tiere, geboren, wo die Geburt des Spiels wirft — in ihrem
+        // Lebensraum (_bodenKlasseAt × LG.lebensraum > 0), auf trockenem Land, ≥ CREATURE_SPAWN_FAR_MIN vom Spieler, gleichverteilt
+        // im Quadrat 400 m um das Ufer (die Folge des goldenen Schnitts: kein Ort ist gewählt, auch der Saum nicht) — über 24
+        // Spielstunden nach 2 Einlauf. Je Tier die Aufenthaltsfläche aus seiner Spur, die konvexe Hülle der 95 % ankernächsten Lagen
+        // (MCP 95, Hülle und Fläche des Spiels: _convexHull2D, _polygonArea2D), gegen seine Leine, und der Anteil der Lagen in
+        // seinem Lebensraum. Die Probe 68f84acf maß am Ufer U und setzte die Tiere an den ufernächsten Ort ihres Lebensraums, den
+        // Saum (die halbe Leine draußen, das Wasser jenseits trinkSuchM: Hirsch, Fuchs und Wolf tranken nie) — der Tag am Ufer
+        // (Ethogramm, Durst) blieb, wie er war
+        if (!taeter) {
+            const lebt = (g, x, zz) => LG.lebensraum(g, r._bodenKlasseAt(x, zz), LG.L) > 0;
+            const spieler = { x: U.x, z: U.z + 90 };
+            const orte = {};
+            const imRaum = (seele, i) => {
+                const g = A.TETRAPODA_SOUL_MAP[seele];
+                const O = orte[g] || (orte[g] = []);
+                for (let k = O.k || 0; O.length <= i && k < 20000; k++) {
+                    const x = U.x + (((k * 0.6180339887) % 1) - 0.5) * 400,
+                        zz = U.z + (((k * 0.7548776662) % 1) - 0.5) * 400;
+                    O.k = k + 1;
+                    if (Math.hypot(x - spieler.x, zz - spieler.z) < A.CREATURE_SPAWN_FAR_MIN) continue;
+                    if (r._landAt(x, zz) && !r._nassAt(x, zz) && lebt(g, x, zz)) O.push({ x, z: zz });
+                }
+                if (!O[i]) throw new Error("kein Lebensraum der Gattung " + g + " im Quadrat 400 m um das Ufer");
+                return O[i];
+            };
+            z.wander = tagLauf(["wesen", "baer", "fuchs", "wolf"], 2, 24, { budget: {}, ruhe: [0, 0] }, imRaum).map((t) => {
+                const w = { g: t.g, leineM: rund(t.leineM, 2), punkte: t.spur.length, flaecheM2: null, anteil: null };
+                if (!t.anker || !t.spur.length) return Object.assign(w, { fehler: "kein Anker der Leine" });
+                const nah = t.spur
+                    .map((p) => [Math.hypot(p.x - t.anker.x, p.z - t.anker.z), p])
+                    .sort((a, b) => a[0] - b[0])
+                    .slice(0, Math.ceil(0.95 * t.spur.length))
+                    .map((e) => e[1]);
+                w.flaecheM2 = rund(r._polygonArea2D(r._convexHull2D(nah)), 1);
+                w.anteil = rund(t.spur.filter((p) => lebt(t.g, p.x, p.z)).length / t.spur.length, 3);
+                // der Anker gegen das Ufer U (der Ort im Bild der Spur)
+                w.anker = [rund(t.anker.x - U.x, 1), rund(t.anker.z - U.z, 1)];
+                // DIE GETRAGENE SCHEIBE (der Maßstab der Fläche): im Raster zu Leine/10 der Anteil der Leinen-Scheibe um den Anker,
+                // den der Lebensraum auf trockenem Grund trägt (traegt), und davon der vom Anker aus über ihn erreichbare (erreicht:
+                // vier Nachbarn, Wasser trennt): trägt er ≥ 0,5, ist die Fläche ≥ 0,5·π·Leine² dort erreichbar, und ihr Fehlen ist
+                // das Wandern, nicht der Ort (17.11.: getragen 0,64–0,97 je Tier, die Bären 0,74/0,92/0,85)
+                const G = new Map();
+                for (let i = -10; i <= 10; i++)
+                    for (let j = -10; j <= 10; j++) {
+                        if (i * i + j * j > 100) continue;
+                        const [x, zz] = [t.anker.x + (i * t.leineM) / 10, t.anker.z + (j * t.leineM) / 10];
+                        G.set(i + "," + j, lebt(t.g, x, zz) && !r._nassAt(x, zz));
+                    }
+                const [zu, weg] = [[[0, 0]], new Set(["0,0"])];
+                let n = 0;
+                while (zu.length) {
+                    const [i, j] = zu.pop();
+                    if (!G.get(i + "," + j)) continue;
+                    n++;
+                    for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                        const k = i + a + "," + (j + b);
+                        if (G.has(k) && !weg.has(k)) (weg.add(k), zu.push([i + a, j + b]));
+                    }
+                }
+                w.traegt = rund([...G.values()].filter(Boolean).length / G.size, 3);
+                w.erreicht = rund(n / G.size, 3);
+                return w;
+            });
+        }
         durstAus();
         z.durstAus = tagLauf(["wesen"], 0, 10, { budget: {}, ruhe: [0, 0] }).reduce((a, t) => a + t.trunk, 0);
         return z;
