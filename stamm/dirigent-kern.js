@@ -1711,6 +1711,32 @@ class AnazhRealm {
         return c.set(L.farbe);
     }
 
+    // DAS LICHT EINER FLAMMEN-FLÄCHE (w28-brand-nacht) vom Halbmesser `r` m → { L, masse }. Was eine Flamme beleuchtet, strahlt
+    // nie heller zurück als sie selbst: füllt sie den Halbraum einer Fläche, trägt die höchstens π × ihre Strahldichte als
+    // Bestrahlung. Die Strahldichte der Flamme ist die ihres Bilds (`BRAND.bild.flamme.ziel` ÷ Belichtung, `_brandFlammenZeichnen`
+    // — EINE Zahl für Flamme und Licht), also gilt AN der Flamme (d → 0): Masse·(1 + k²)/k² = schein·ziel/Belichtung, mit dem KERN k =
+    // ihrem Halbmesser (fachwerk `lichtAbfall`: die Ausdehnung der Quelle, wie die Membran des Tors). `schein` (BRAND.bild.flamme)
+    // ist ihr Licht je Bild-Ton: die Flamme steht im Bild an der Decke der Tonkurve, ihr Kern strahlt darüber — geeicht am
+    // Bildpaar der Nacht (1 = das Gras bleibt dunkel, 7 = Feuerton in 1–3 m unter der Flamme, 27 = weiß). Fern wächst ihr Licht mit
+    // ihrer Fläche (∝ k²/d²), ihre Reichweite mit ihrem Halbmesser (höchstens zwei Zellen). Farbe, Abfall und Flackern sind die
+    // des Feuers (`LICHT_GESETZ.feuer`), sein Zeitplan nicht: der hebt das Herdfeuer nachts × 45 über einen Platz aus Stein.
+    // Bis hier leuchtete der Brand als Herdfeuer-Punkt × `BRAND.licht` 4 × Zeitplan: nachts stand die Bestrahlung in 1 m bei
+    // 565 statt 3 (Belichtung 1,5), das Gras 1–6 m um die Front brannte weiß aus, die Flammen gingen unter, der Rauch stand als
+    // helle Scheiben. Je Viertelmeter ein Datum, gemerkt.
+    _flammenLicht(r) {
+        const Lf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        const k = Math.max(Lf.kernM, Math.round(r * 4) / 4);
+        const M = this._flammenLichter || (this._flammenLichter = new Map());
+        if (!M.has(k)) {
+            const reichweiteM = Math.min(2 * AnazhRealm.LIFE_FIELD.cell, (Lf.reichweiteM * k) / Lf.kernM);
+            M.set(k, Object.freeze({ ...Lf, staerke: 1, zeit: null, kernM: k, reichweiteM }));
+        }
+        const rend = this.state.renderer;
+        const [BF, belichtung] = [AnazhRealm.BRAND.bild.flamme, (rend && rend.toneMappingExposure) || 1];
+        const hell = (BF.schein * BF.ziel) / belichtung;
+        return { L: M.get(k), masse: (hell * k * k) / (1 + k * k) };
+    }
+
     // DIE STÄRKE einer Quelle zur Bild-Uhr t (K11, A9): Datum × Flackern × Zeitplan über die EINE Übersetzung Labor → Welt × Masse.
     _leuchtStaerke(q, t) {
         const L = q.L;
@@ -1776,20 +1802,15 @@ class AnazhRealm {
             });
         }
         // DER BRAND (feld.K3#2): jede glühende Zelle des Felds um das Auge (`_brandGlutUm`, die Blöcke ihres letzten Schritts) leuchtet
-        // als Feuer über ihrer Mitte (`_brandOrt`), die Masse folgt der Glut
-        const Lf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        // als FLAMMEN-FLÄCHE (`_flammenLicht`) vom Ort ihrer stärksten Flamme (`_brandOrt`): ihr Halbmesser ist der der Ellipse
+        // ihrer Front (a = Alter·R/(1 + ecc), b = a·√(1 − ecc²), √(a·b)), höchstens die halbe Zelle; die Masse folgt der Glut
+        const cs = AnazhRealm.LIFE_FIELD.cell;
         this._brandGlutUm(x, z, R, (b) => {
             const o = b.ort || this._brandOrt(b);
             if ((o.x - x) * (o.x - x) + (o.z - z) * (o.z - z) > R * R) return;
-            nimm(b, {
-                quelle: "brand",
-                x: o.x,
-                y: o.y,
-                z: o.z,
-                L: Lf,
-                masse: AnazhRealm.BRAND.licht * b.glut,
-                phase: o.phase,
-            });
+            const a = (Math.max(0, this.state.spielZeit - b.t0) * b.R) / (1 + b.ecc);
+            const F = this._flammenLicht(Math.min(cs / 2, a * Math.pow(Math.max(0, 1 - b.ecc * b.ecc), 0.25)));
+            nimm(b, { quelle: "brand", x: o.x, y: o.y, z: o.z, L: F.L, masse: F.masse * b.glut, phase: o.phase });
         });
         // DIE LAVA (stoffe.K3-2): jede glühende Decke leuchtet als Feuer über ihrem Ort, die Masse folgt ihrer Glut (`_lavaZustand`)
         for (const a of this._tatIndex().lava) {
