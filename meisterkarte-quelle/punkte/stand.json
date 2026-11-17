@@ -5386,7 +5386,7 @@
   },
   "karte2.mensch.fahrzeug.medium": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 10,70 ms (Soll ≤ 33), größtes 196,60 ms, 3171 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an f5ce1579 radeon — offen: karte2.mensch.fahrzeug.medium#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 10,70 ms (Soll ≤ 33), größtes 196,60 ms, 3171 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an f5ce1579 radeon — offen: karte2.mensch.fahrzeug.medium#1 gtx: Konsum seit der Messung geändert (R6: stamm/vegetation-wiese.js)",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.medium#1",
@@ -5405,8 +5405,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/vegetation-wiese.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5705,7 +5706,7 @@
   },
   "karte2.planet.kopplung.bahn-klima": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.bahn-klima#1 radeon: Konsum seit der Messung geändert (R6: stamm/daten.js) · karte2.planet.kopplung.bahn-klima#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.bahn-klima#1 radeon: Konsum seit der Messung geändert (R6: stamm/daten.js) · karte2.planet.kopplung.bahn-klima#1 gtx: Konsum seit der Messung geändert (R6: stamm/daten.js)",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.bahn-klima#1",
@@ -5724,8 +5725,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5891,7 +5893,7 @@
   },
   "karte2.planet.wetter.klimazonen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.klimazonen#1 radeon: Konsum seit der Messung geändert (R6: stamm/daten.js) · karte2.planet.wetter.klimazonen#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.klimazonen#1 radeon: Konsum seit der Messung geändert (R6: stamm/daten.js) · karte2.planet.wetter.klimazonen#1 gtx: Konsum seit der Messung geändert (R6: stamm/daten.js)",
    "stationen": [
     {
      "id": "karte2.planet.wetter.klimazonen#1",
@@ -5910,8 +5912,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5999,7 +6002,7 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +0 Pixel (Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3 an 884c6a25 · karte2.same.kopplung.kaskade#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +0 Pixel (Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3 an 884c6a25 · karte2.same.kopplung.kaskade#1 gtx: Konsum seit der Messung geändert (R6: stamm/feld-dsl.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
@@ -6017,15 +6020,16 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-dsl.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an 884c6a25 radeon — offen: karte2.same.kopplung.stoerung#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an 884c6a25 radeon — offen: karte2.same.kopplung.stoerung#1 gtx: Konsum seit der Messung geändert (R6: stamm/feld-dsl.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
@@ -6043,8 +6047,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-dsl.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6294,7 +6299,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 172,
+  "konsum": 177,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6464,10 +6469,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 166
+  "ohne": 161
  },
  "kopfVoll": "884c6a25c7125ccb50678de22a29e6584ca498de",
- "zeit": "2026-11-17T01:34:26.055Z",
+ "zeit": "2026-11-17T01:40:04.062Z",
  "vorher": "884c6a25",
  "bilanz": {
   "gewinn": [],
