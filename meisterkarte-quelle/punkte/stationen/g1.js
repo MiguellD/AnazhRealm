@@ -1740,6 +1740,32 @@ async function seilBildProbe(r, T, o, G) {
     // dort, wo das Bild den Leib zeigt; die Sicht der Sitzung kehrt danach zurück
     const sicht = s.cameraMode;
     r.setCameraMode("third");
+    // DER GRIFF UND DER LEIB STEHEN VOR DER MESSUNG: trägt der Leib nah noch die Grobstufe (der Ego-Boot, B5), tauscht der Leerlauf
+    // die feine ein, sobald die Welt steht (`_vorbauBedienung` → `applyPlayerSoul`) — ein NEUER Leib, und `seilProbe` hielte den alten
+    // (sie liest den Leib einmal vor ihrem `stehen`: dort „keine Gestalt in der Hand“, Radeon am d6babbb0; Null-Renderer am Grob-Leib
+    // 3 von 3 Fällen, die Hand des neuen Leibs trug die Gestalt). Der erste Griff je Flegel geht darum hier, am LEBENDEN Leib, bis die
+    // Studio-Gestalt in der Hand liegt; je Takt, was die Hand bis dahin zeigt (`griff`: Takte bis zur Gestalt, davon leer und Part-Bau,
+    // ms); dann steht der Spieler an der Mess-Wiese (der Leerlauf tauscht dort, wie bei jedem Spieler, der steht) — und `seilProbe`
+    // misst am Leib, der bleibt
+    const griff = {};
+    for (const name of Object.keys(s.blueprints || {}).filter((k) => /^klinge_/.test(k) && /flegel/i.test(k))) {
+        const t0 = performance.now();
+        const z = { takte: 0, leer: 0, teile: 0 };
+        eq.call(r, name);
+        const hand = () => s.playerMesh.userData && s.playerMesh.userData.heldMesh;
+        for (; z.takte < 600 && !(hand() && hand().userData.foundryHeld); z.takte++) {
+            G.takt();
+            await new Promise((ok) => setTimeout(ok, 10));
+            if (!hand()) z.leer++;
+            else if (!hand().userData.foundryHeld) z.teile++;
+        }
+        z.ms = Math.round(performance.now() - t0);
+        z.gestalt = !!(hand() && hand().userData.foundryHeld);
+        griff[name] = z;
+        eq.call(r, null);
+        G.takt(2);
+    }
+    await G.stehen(o.orte.wiese.x, o.orte.wiese.z);
     let aus;
     try {
         aus = await seilProbe(r, T, o, Object.assign({}, G, { takt }));
@@ -1747,6 +1773,7 @@ async function seilBildProbe(r, T, o, G) {
         if (eigen) r.equipHeld = eq;
         else delete r.equipHeld;
     }
+    aus.griff = griff;
     aus.schuesse = [];
     for (const [name, x] of Object.entries(aus.je || {})) {
         if (x.fehler) continue;
@@ -1785,12 +1812,15 @@ function seilBildUrteil(j, lauf) {
     const gut = fl.filter(
         ([n, x]) =>
             Array.isArray(x.anker) && x.laengeArt === "längs" && x.schwungM >= 0.05 && x.laengeM[0] > 0 && x.laengeM[1] <= 1.02 * x.laengeM[0] &&
-            x.energie[0] > 0 && x.energie[1] <= 0.5 * x.energie[0] && x.imBild >= 0.9 && S.some((s) => s.name === n && s.datei && !s.fehler)
+            x.energie[0] > 0 && x.energie[1] <= 0.5 * x.energie[0] && x.imBild >= 0.9 && S.some((s) => s.name === n && s.datei && !s.fehler) &&
+            // der erste Griff: die Gestalt kam, und die Hand war in keinem Takt leer (`griff`, seilBildProbe)
+            !!(e.griff && e.griff[n] && e.griff[n].gestalt && e.griff[n].leer === 0)
     );
+    const gr = Object.entries(e.griff || {}).map(([n, z]) => n + " " + (z.gestalt ? "Gestalt nach " : "KEINE Gestalt nach ") + z.takte + " Takten/" + z.ms + " ms (leer " + z.leer + ", Part-Bau " + z.teile + ")");
     return {
         gruen: hw && gut.length > 0,
         zahl: (fl.length ? "" : "KEIN Flegel am Leib · ") + u.zahl + " · im Bild " + (fl.map(([n, x]) => n + " " + x.imBild).join(", ") || "—") +
-            " (Soll ≥ 0,9 der Takte, die Länge längs, ein Schuss je Flegel) · " + ad,
+            " (Soll ≥ 0,9 der Takte, die Länge längs, ein Schuss je Flegel) · erster Griff " + (gr.join(", ") || "—") + " (Soll: leer 0) · " + ad,
     };
 }
 const SEIL_ROH = {
@@ -1798,6 +1828,7 @@ const SEIL_ROH = {
     seile: ["klinge_flegel"],
     je: { klinge_flegel: { teile: 16, anker: [0.545, 0, 0], laengeArt: "längs", schwungM: 0.476, laengeM: [0.328, 0.329], energie: [3.183, 0.257], imBild: 1 } },
     schuesse: [{ name: "klinge_flegel", datei: "x-seil-s1.png" }],
+    griff: { klinge_flegel: { takte: 24, leer: 0, teile: 23, ms: 1356, gestalt: true } },
 };
 const seilRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWELTPROBE seil " + JSON.stringify(aendern(JSON.parse(JSON.stringify(SEIL_ROH))));
 
@@ -5190,6 +5221,9 @@ module.exports = [
             { name: "der Schwung klingt nicht ab", stdout: seilRoh((x) => ((x.je.klinge_flegel.energie = [3.1, 2.9]), x)), gruen: false },
             { name: "die Teile außerhalb des Bilds (40 % der Takte im Kegel)", stdout: seilRoh((x) => ((x.je.klinge_flegel.imBild = 0.4), x)), gruen: false },
             { name: "kein Schuss", stdout: seilRoh((x) => ((x.schuesse = []), x)), gruen: false },
+            { name: "der erste Griff ließ die Hand leer (die Faust ohne Hand-Mitte am Grob-Leib)", stdout: seilRoh((x) => ((x.griff.klinge_flegel.leer = 380), x)), gruen: false },
+            { name: "der erste Griff ohne Studio-Gestalt", stdout: seilRoh((x) => ((x.griff.klinge_flegel.gestalt = false), x)), gruen: false },
+            { name: "ohne den ersten Griff (die Probe vor w28-flegel)", stdout: seilRoh((x) => (delete x.griff, x)), gruen: false },
             { name: "keine Zeile", stdout: "[linse-gpu] amd/rdna-3 (Probe)", gruen: false },
             { name: "swiftshader", stdout: seilRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
         ],
