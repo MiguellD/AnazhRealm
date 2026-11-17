@@ -976,8 +976,9 @@ async function checkBandV18210Verdrahtung({ page, check }) {
 // DAS RAUSCH-GESETZ (der Boden-Stoff): Boden-, Substanz- und Mikro-Stoffe lesen EIN Gradienten-Rauschen aus dem
 // Rausch-Atlas (`_rauschAtlas`), nie das Hash-Rauschen `mx_noise_float` (je Aufruf 8 Gitter-Hashes, 26 je Boden-Fragment).
 // Proben: Absenz im Code der fünf Stoff-Bauer · KONSUM im Knoten-Graph des GEZEICHNETEN Boden-Stoffs (die Shader-Kosten-
-// Linse `__stoffGraph`, scripts/lib/shader-kosten.cjs: kein Rausch-Funktions-Knoten, die 70 Ladungen des Atlas im Graph — 7 Raum-
-// Werte × 6 + 14 Ebenen × 2 = 70 (material.K2 `ebeneNeigung` 76 → 70; K53: der Fleck des Wiesen-Grunds ging mit ihm ins Gesetz, `_bodenFarbeAt`, 78 → 76;
+// Linse `__stoffGraph`, scripts/lib/shader-kosten.cjs: kein Rausch-Funktions-Knoten, die 74 Ladungen des Atlas im Graph — 7 Raum-
+// Werte × 6 + 16 Ebenen × 2 = 74 (w28-lava-kruste: Schollen und Risse der Lava-Kruste, `_lavaKruste` in stamm/siedlung-wege.js,
+// lesen zwei Ebenen mit Neigung aus DEMSELBEN Atlas, Schicht 13 und 17, 70 → 74; material.K2 `ebeneNeigung` 76 → 70; K53: der Fleck des Wiesen-Grunds ging mit ihm ins Gesetz, `_bodenFarbeAt`, 78 → 76;
 // K17-3 Runde 2: die acht Halm-Schichten der Wiese stehen wieder ausgeschrieben, ihre Mischung in
 // der reinen Funktion `rauschEbene` — als Schleife in `wieseRelief` las eine Layout-Funktion die Bindung des Atlas); die siebte Raum-Probe ist die Welle der Fels-Bänke, `rausch` des Rechenwerks, auf der CPU
 // gelaende-core `rauschRaum` —, kein verborgener Fn-Rumpf (der Fels-Term rechnet im Zweig des Stamms, `_zweigTSL`: sein Inhalt
@@ -1095,8 +1096,8 @@ async function checkBandRauschGesetz({ page, check }) {
         .map(([f, c]) => f + " ×" + c)
         .join(", ");
     check(
-        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 70), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0; ${g.gelesen} Rümpfe gelesen, ${g.zweig} Zweige des Stamms) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
-        !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 70
+        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 74), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0; ${g.gelesen} Rümpfe gelesen, ${g.zweig} Zweige des Stamms) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
+        !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 74
     );
     // die Linse LIEST die Rümpfe (w28-baum-programm): ihre Mutanten in der echten TSL — ein Rauschen im Rumpf, im Zweig, in der
     // Schleife zählt, kein Rumpf bleibt dabei verborgen; ein Rumpf, der den Bauer liest, bleibt es
