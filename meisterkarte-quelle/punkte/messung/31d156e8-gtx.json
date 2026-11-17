@@ -1,7 +1,7 @@
 {
  "sha": "31d156e8bdca4dff4db6170f2515975c120af605",
  "geraet": "gtx",
- "zeit": "2026-11-17T17:08:17.943Z",
+ "zeit": "2026-11-17T17:48:17.441Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.wasser.kreislauf#1": {
@@ -79,20 +79,20 @@
   "k01f1e576c614": "fVTBcpswEP0XH5sS2YCC0EwOcsnUyUymzqnT40paATEGjwQhdaf/3jEB20DbPQGzb/ft28f+WhxA7SDF21dXlQu++LT4vHDwhp5D+4b29tUt+GKpQqCMi48gQoivpzRl80PtSJFLArKEbI9eY2vMi1vVwVaKISAn7YNot4RsSUTWrTjHWtzfT8sUEnXl1WBwKCK1HwXAp4mNS0GiB43pGvfJMVIdS066YInYvpIhxIsQpH2YdpRQ6jFrEwA1K/7YCvEwZ6hzwNor8tINPZWmMvD5uVE7x1hovSNgVqDtQeyO6mA1EJ0CTNE4N2rCAk19xgmJySQ3RZerrPYOtpJYDqLFfrQCvp5zSQ+NZ66ZgJTA5FTfDLBM0Y45RCFVISfvM7472KMFr4Rs2MMyiHx50YQQsplzKTriXYuBONMyjswISAhJN51tEta9nD+zzYeRkvRiKvEyaeJUltv9WB5jqIbldGaXgUbr7SpXnzMDxnwIeucnnYnENkymyMsgPc6Xd0vKruZgRGxmurnK1C1Y9NJD0wMxRBpRLtLnWXIN+/0wgPKR0dkA9cnM1zSWkU9pt4f0Hzv4sL53xLwYQJFSqwD5l2cxnfPNwt4DmdrcmGHTkioT/82YLRa1J6uqHjIDDYHiJCDlWZWYCfFDrC/bS44V+/5z9369USHEUzXl3VWvbD2QpvJuaUJuuj9QTbOPaAtMcaSNDmUAmpNWXbUPh4ebkQGPs9UdczypVrrGDdaNIx331u2v3OP4frRodxLK3aDzyqyU5p1/tyIR34RIn5Kb6xP5v0j64gdU5GArk59OGcmgcRkU9eWe//4D"
  },
  "sitzung": {
-  "start": "2026-11-17T17:07:46.913Z",
-  "ordner": "sitzung-20261117-180746",
+  "start": "2026-11-17T17:47:36.895Z",
+  "ordner": "sitzung-20261117-184736",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 5.8,
+  "warten": 0.02,
+  "bootS": 7.6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "karte2.planet.wasser.kreislauf#1",
-    "s": 23.2,
-    "takte": 605,
+    "vor": "karte2.planet.relief.grossform#1",
+    "s": 29.9,
+    "takte": 718,
     "chunks": 81,
     "nach": null
    }
@@ -100,19 +100,18 @@
   "wegeTueren": [],
   "wanderung": [
    {
-    "probe": "karte2.planet.wasser.kreislauf#1",
+    "probe": "karte2.planet.relief.grossform#1",
     "ort": "wiese",
-    "m": 86.92,
+    "m": 3852.48,
     "dreh": 0
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.planet.wasser.kreislauf#1",
+    "probe": "karte2.planet.relief.grossform#1",
     "gehalten": [
      "skala",
-     "spiegel",
-     "tiere"
+     "spiegel"
     ],
     "offen": []
    }
@@ -120,20 +119,92 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3188,
-   "frameP95": 25.03,
-   "taktP95": 11.61,
-   "vramMax": 129.3,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 120,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.planet.relief.grossform#1",
+     "m": 5046,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 383,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 126.5,
-  "minuten": 2.2
+  "fahrtS": 394.8,
+  "minuten": 6.68
+ },
+ "ungemessen": {
+  "karte2.planet.relief.grossform#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 5.92,
+   "grund": "Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 355.2,
+   "fremd": {
+    "s": 357.8,
+    "takte": 160,
+    "fremdS": 505.64,
+    "kerne": 1.413,
+    "fensterKerne": 2.197,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      234.66
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      74.08
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      61.45
+     ]
+    ],
+    "dienerS": 200.72,
+    "diener": [
+     [
+      "System",
+      90.25
+     ],
+     [
+      "dwm.exe",
+      54.42
+     ]
+    ],
+    "geraetS": 173.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      91.03
+     ],
+     [
+      "svchost.exe",
+      56.19
+     ],
+     [
+      "SearchIndexer.exe",
+      14.78
+     ]
+    ],
+    "eigenS": 1074.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-17T17:48:17.441Z",
+   "abdruck": "9d14fbd22724",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
