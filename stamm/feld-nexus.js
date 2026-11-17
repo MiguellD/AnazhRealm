@@ -1214,7 +1214,9 @@ class AnazhRealm_feld_nexus {
         const eqLine = eqParts.length > 0 ? eqParts.join(", ") : "unbewaffnet, ohne Rüstung";
         // Aktive Boosts
         const boosts = Array.isArray(ud.boosts) ? ud.boosts : [];
-        const nowSec = performance.now() / 1000;
+        // die EINE Uhr der Boosts: `applyCreatureBoost` schreibt `expiresAt` in Spielzeit (`state.spielZeit`), der Takt räumt in
+        // ihr — bis hier las der Prompt die Wanduhr der Seite, und nach `spielZeit + Dauer` Sekunden Seitenleben fehlte jeder Trank
+        const nowSec = this.state.spielZeit;
         const boostList = boosts.filter((b) => b && b.expiresAt > nowSec);
         const boostLine =
             boostList.length > 0
