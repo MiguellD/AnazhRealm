@@ -2186,7 +2186,11 @@ class AnazhRealm_bild_kosten {
         )
             .div(T.float(Math.log(NA.zapfenCd / NA.staebchenCd)))
             .clamp(0, 1);
-        const s = T.float(1).sub(zapfen).mul(nacht);
+        // … und am BILD (w28-glut-nacht): ein Pixel, das die Belichtung der Nacht über Mittelgrau hebt, sieht das Auge mit den
+        // Zapfen — der Stäbchen-Anteil blendet von `bildZapfen[0]` bis `bildZapfen[1]` (Leuchtdichte × Belichtung) aus. Die
+        // Skala der Leuchtdichte allein legt die Zapfen-Schwelle auf das 29-Fache von Bild-Weiß: der Feuerschein stand rosa
+        const hell = T.smoothstep(NA.bildZapfen[0], NA.bildZapfen[1], lum.mul(T.toneMappingExposure));
+        const s = T.float(1).sub(zapfen).mul(nacht).mul(T.float(1).sub(hell));
         if (vor) return farbe.sub(lum.mul(s)).div(T.float(1).sub(s).max(0.1)).max(0);
         return T.vec3(lum, lum, lum).sub(farbe).mul(s);
     }
@@ -2936,7 +2940,14 @@ AnazhRealm._atmoKern = function () {
 // der CIE 191:2010 — unter `staebchenCd` sieht das Auge ohne Farbe (Stäbchen), über `zapfenCd` voll (Zapfen); `luxJeEinheit`
 // die Eichung der Nacht (Vollmond 0,26 lx ≙ der Nacht-Bestrahlung der Welt 0,224, fachwerk LICHT_GESETZ) — eine Leuchtdichte
 // der Welt (Albedo/π · Bestrahlung) mal ihr ist cd/m².
-AnazhRealm.NACHT_AUGE = Object.freeze({ luxJeEinheit: 0.26 / 0.224, staebchenCd: 0.005, zapfenCd: 5 });
+// `bildZapfen`: die Helligkeit am Bild (Leuchtdichte × Belichtung), von der an bis zu der das Auge ganz mit den Zapfen
+// sieht — Mittelgrau (die Eichung der Belichtung, Lehre 21) bis Weiß.
+AnazhRealm.NACHT_AUGE = Object.freeze({
+    luxJeEinheit: 0.26 / 0.224,
+    staebchenCd: 0.005,
+    zapfenCd: 5,
+    bildZapfen: Object.freeze([0.18, 1]),
+});
 // DIE EINE SZENEN-SKALA (K50, `_szeneSkalaWirk`): die Szene rendert in SZENE_SKALA × Ausgabe, die zeitliche Auflösung
 // (`_zeitAufloesung`, TAAU) löst auf die Ausgabe auf. 0,75 = 56 % der Pixel-Arbeit; der Spieler stellt sie im Menü (0,5..1).
 AnazhRealm.SZENE_SKALA = 0.75;
