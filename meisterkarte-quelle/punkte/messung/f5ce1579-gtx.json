@@ -1,7 +1,7 @@
 {
  "sha": "f5ce15797c46573e623f236fd04791f6363e21a2",
  "geraet": "gtx",
- "zeit": "2026-11-17T02:37:27.084Z",
+ "zeit": "2026-11-17T02:45:06.796Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -75,10 +75,10 @@
   },
   "karte2.planet.kosmos.sternhimmel#1": {
    "gruen": false,
-   "zahl": "✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 62 Median 76 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.99 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 21 Median 33 · halbe Nacht bei Sonne -15.4° | -15.8° · γ 0.92 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 35 Median 45 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 13 Median 19 · halbe Nacht bei Sonne -14.0° | -15.1° · γ 0.90 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG ROT Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0249,\"X\":0.0077,\"rb\":0.0046} | Uhr 0.25 weicht ab: {\"uhr\":0.25,\"bi · [linse-gpu] nvidia/pascal",
+   "zahl": "✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 62 Median 77 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.99 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 21 Median 33 · halbe Nacht bei Sonne -15.4° | -15.8° · γ 0.92 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 35 Median 45 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 13 Median 19 · halbe Nacht bei Sonne -14.0° | -15.1° · γ 0.90 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne ROT Nacht kurz 29 ↔ voll 18 · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0249,\"X\":0.0077,\"rb\":0.004 · [linse-gpu] nvidia/pascal",
    "exit": 1,
-   "minuten": 4.75,
-   "grund": "ROT: ✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 62 Median 76 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.99 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 21 Median 33 · halbe Nacht bei Sonne -15.4° | -15.8° · γ 0.92 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 35 Median 45 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 13 Median 19 · halbe Nacht bei Sonne -14.0° | -15.1° · γ 0.90 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG ROT Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0249,\"X\":0.0077,\"rb\":0.0046} | Uhr 0.25 weicht ab: {\"uhr\":0.25,\"bi · [linse-gpu] nvidia/pascal",
+   "minuten": 4.2,
+   "grund": "ROT: ✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 62 Median 77 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.99 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 21 Median 33 · halbe Nacht bei Sonne -15.4° | -15.8° · γ 0.92 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 35 Median 45 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 13 Median 19 · halbe Nacht bei Sonne -14.0° | -15.1° · γ 0.90 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne ROT Nacht kurz 29 ↔ voll 18 · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0249,\"X\":0.0077,\"rb\":0.004 · [linse-gpu] nvidia/pascal",
    "gpu": "nvidia/pascal",
    "konsum": "k58950a0e5222",
    "konsumN": 29,
@@ -86,59 +86,59 @@
    "konsumGanz": {
     "gelesen": 5
    },
-   "konsumBoot": "kbaac1f1f4632",
-   "s": 284.6,
+   "konsumBoot": "k99b1b7162324",
+   "s": 251.6,
    "fremd": {
-    "s": 289.1,
-    "takte": 131,
-    "fremdS": 316.08,
-    "kerne": 1.093,
-    "fensterKerne": 3.414,
+    "s": 254.1,
+    "takte": 118,
+    "fremdS": 53.66,
+    "kerne": 0.211,
+    "fensterKerne": 0.429,
     "namen": [
      [
-      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
-      72.59
-     ],
-     [
       "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      62.25
+      11.41
      ],
      [
-      "node.exe punkte.cjs gtx-nutzen --kopf 884c6a25c7125ccb50678de22a29e6584ca498de",
-      33.66
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.17
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      7.3
      ]
     ],
-    "dienerS": 136.67,
+    "dienerS": 59.09,
     "diener": [
      [
       "System",
-      78.8
+      37.47
      ],
      [
-      "dwm.exe",
-      35.23
+      "WmiPrvSE.exe",
+      11.86
      ]
     ],
-    "geraetS": 139.48,
+    "geraetS": 59.39,
     "geraet": [
      [
       "MsMpEng.exe",
-      77.58
+      32.83
      ],
      [
       "svchost.exe",
-      50.75
+      21.69
      ],
      [
       "SearchIndexer.exe",
-      6.77
+      2.5
      ]
     ],
-    "eigenS": 493.05,
+    "eigenS": 411.73,
     "rechnerKerne": 12
    },
-   "zeit": "2026-11-17T01:18:12.890Z",
-   "abdruck": "bf3886fe41bc",
+   "zeit": "2026-11-17T02:45:06.796Z",
+   "abdruck": "a5787a0c9697",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -644,20 +644,20 @@
   "k702ce0a0a961": "dVTRjpswEPyXPLblnAAOjqV7cJJT76pWSqT+wNpeAwmByIajTdV/ryCQBLjuU4JmmPHs4D+zM6gjxPh0cEU+47NPsy8zB+/oObTvaJ8ObsZncxUCZVxchwghNg1M2fRcOpKlkoDMITmhV9kS0+xJtbSFYgjISf0i6h0hOxKRdS1usxHPz+PXZBJ14ZVgsH+J1H4UAB8DKxeDRA8q0wp3YLNcRn7ASTtsK3YH0o/YC9E4+UBVQq6Hzk0A1Cz4228hXqZ4nQKWXpbmrtdVmsrA5zexesqxUHsXwCRD25HYkupg0ZsdE0xWOTcQYYGmPuOErMgIG6NLVVJ6Z1tIzPvgVn60AL6eeonPlWcenYCUwOQ44wQwj9EOPUQhVSEnvyZ+j3BCC14OSQddzYPIl/dMCCGvUy9Za7yV6I0zLVeRGRCb/b221dmy5k98e8xer2Xaxvdiif1IxKkktadhPMZQDXP+fWrJJaDResfClTd0wJgPQfcFbNsyiV24HTPvh+l4vlzOKXs4CyPidZKdK0xZg0UvPlcdEUOkEeVCvE3AJZxO/SGUj4yOF+fKptCPNuaRT2m7i/g/e7jW37tgmvWkSKlFgHzzQ4zP+W7h5IGMbWpMv21JlVl9VM4as9KTRVH2SKOX10jyWyoBE+LtYYFiG86/btZ7MZ6ftdhPvLcKhS1741Qu5ybkpv0S1Rh9QZthjIN8dCgD0JzU6tFC/+PzoIiXyfouKTbJ5a5yfYVXkV51FR5mXaM9SsiPfcYLs1Caf2t0dmLbCS7X5EDGs6uF+LG+3rxnVORsC5M2VxdJoHIJZOX9Dv/7Dw=="
  },
  "sitzung": {
-  "start": "2026-11-17T02:36:56.188Z",
-  "ordner": "sitzung-20261117-033656",
+  "start": "2026-11-17T02:44:38.162Z",
+  "ordner": "sitzung-20261117-034438",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.8,
+  "bootS": 6.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "karte2.planet.wasser.kreislauf#1",
-    "s": 23.1,
-    "takte": 611,
+    "ort": "genesis",
+    "vor": "karte2.planet.kosmos.sternhimmel#1",
+    "s": 20,
+    "takte": 599,
     "chunks": 81,
     "nach": null
    }
@@ -665,15 +665,15 @@
   "wegeTueren": [],
   "wanderung": [
    {
-    "probe": "karte2.planet.wasser.kreislauf#1",
-    "ort": "wiese",
-    "m": 86.92,
-    "dreh": 0
+    "probe": "karte2.planet.kosmos.sternhimmel#1",
+    "ort": "genesis",
+    "m": 1082.54,
+    "dreh": 0.401
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.planet.wasser.kreislauf#1",
+    "probe": "karte2.planet.kosmos.sternhimmel#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -685,20 +685,27 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2980,
-   "frameP95": 25.24,
-   "taktP95": 11.19,
-   "vramMax": 129.3,
+   "bilder": 2726,
+   "frameP95": 25.37,
+   "taktP95": 10.63,
+   "vramMax": 142.4,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 116,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.planet.kosmos.sternhimmel#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 346,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 122.2,
-  "minuten": 2.12
+  "fahrtS": 355.5,
+  "minuten": 6.03
  }
 }
