@@ -46,6 +46,13 @@
 //       (j2) der Ton liest sich als Feuer: KERN gelb-orange, MANTEL orange-rot (Farbton und Sättigung HSV in ihren Bändern).
 //       (j3) EINE QUELLE: die Schwellen `NACHT_AUGE` liest im ganzen Stamm nur `_nachtAuge` (`stammLib.fehlt` außer dem Glied),
 //       seine Uniform ist die der Kette; die Post-Kette ruft es, die Flamme ruft seine Umkehr (`__fehlt` am lebenden Code).
+//       DAS TOR (w28-tor-nacht) — das Zielbild der Tor-Membran ist dieselbe Klasse (ein Ton am BILD, ÷ Belichtung) und steht
+//       über dieselbe Umkehr vor dem Auge: gemessen am echten Ziel-Knoten des Membran-Graphen (`_membranGraph` → `ohneFilm`, das
+//       Zielbild ohne den Film) am echten Stoff der Membran, aus einem eigenen Atlas der Ziele (`_torZiele`, `_torZielEinsetzen`)
+//       mit je einer Zeile GOLD und DUNKELROT. GOLD steht Nacht = Tag (≤ FLAMME_TOL); DUNKELROT ist die Grenze der Umkehr — seine
+//       Sättigung der Nacht eine Ratsche (`nachtSatt`), seine Helle die Wand (`nachtHell`). MUTANTE-TOR im selben Lauf: derselbe
+//       Graph, neu gebaut, während die Umkehr den Ton durchreicht → GOLD grauweiß, DUNKELROT dunkel. EINE QUELLE zur Laufzeit:
+//       ein Mithörer an `_nachtAuge` zählt die Rufe der Umkehr beim Bau des Graphen (≥ 1).
 //   (k) RAUCH (w28-rauch-bild) — das EINE Rauch-Bild der Welt (`_rauchZeichnen` / `_rauchStoff`, Tafel `RAUCH_BILD`) am Bild
 //       der Ausgabe, nachts (Sonne und Himmel reden nicht mit), der Ballen 6 m vor dem Auge vor einer eigenen Wand; gezeichnet wird
 //       der Satz der Brand-Fahne (`brandRauchSatz`), den der echte Leser `_brandRauch` gebaut hat. Jede MUTANTE baut den Stoff
@@ -117,6 +124,69 @@ const FLAMME_PROBE = { k: 1.5, mantelK: 2350 };
 // (`nachtSatt`, zwischen mit und ohne Umkehr), nicht an Tag = Nacht. Die Bänder (j2) liegen um das Gemessene am Tag.
 const FLAMME_TOL = 6;
 const FLAMME_BAND = { kern: { ton: [22, 40], satt: 0.42, name: "gelb-orange" }, mantel: { ton: [22, 42], satt: 0.75, name: "orange", nachtSatt: 0.53 } };
+// (j) Das Tor: je Ton der Wert des Zielbilds (lineares Licht der Ziel-Welt, wie der Atlas der Ziele es trägt), bei derselben
+// Belichtung FLAMME_PROBE.k und derselben Toleranz FLAMME_TOL wie die Flamme. Gemessen (swiftshader, d06ad11e, Gestalt drachentor,
+// zwei Läufe Zahl für Zahl gleich): GOLD Tag [235,198,125] ↔ Nacht [235,198,125], Δ 0 — MUTANTE-TOR (die Umkehr reicht den Ton
+// durch, das Zielbild wie vor w28-tor-nacht) [228,202,159], Δ 34, Sättigung 0,468 → 0,303 (grauweiß). DUNKELROT Tag [93,9,2]
+// (Sättigung 0,978) ↔ Nacht [111,35,35] (0,685) — MUTANTE-TOR [50,17,16] (0,68). DIE GRENZE DER UMKEHR, benannt wie am Mantel der
+// Flamme: Grün und Blau des dunklen Tons liegen unter Leuchtdichte × Stäbchen-Anteil, die Umkehr klemmt bei 0, die Sättigung
+// kommt nachts NICHT zurück (mit und ohne Umkehr gleich: 0,685 / 0,68) — `nachtSatt` ist darum eine Ratsche am Gemessenen, keine
+// Wand gegen die Mutante; was die Umkehr dem dunklen Ton gibt, ist seine HELLE (der größte Kanal 111 statt 50, am Tag 93):
+// `nachtHell` liegt zwischen beiden, die Mutante muss darunter fallen. Die Bänder `ton` / `satt` liegen um das Gemessene am Tag
+// (GOLD 39,8° / 0,468; DUNKELROT 4,6° / 0,978 — der Farbton läuft über 0°, das Band auch). Auf der Karte (GTX 1050, ein Lauf):
+// GOLD [235,197,125] ↔ [235,197,125], Δ 0, MUTANTE-TOR [228,202,158,5], Δ 33,5; DUNKELROT Zahl für Zahl wie swiftshader.
+const TOR_PROBE = { toene: { gold: [0.9, 0.62, 0.25], dunkelrot: [0.12, 0.012, 0.01] } };
+const TOR_BAND = { gold: { ton: [32, 48], satt: 0.4, name: "gold" }, dunkelrot: { ton: [350, 15], satt: 0.9, name: "dunkelrot", nachtSatt: 0.6, nachtHell: 85 } };
+const TOR_ORT = "stamm/siedlung-tor.js `_membranGraph`, das Zielbild (`ziel`)";
+// (j) DAS URTEIL ÜBER DAS TOR: je Zeile der Täter; eine Mutante, die ihr Band nicht reißt, ist „blind".
+function torUrteil(to) {
+    if (!to) return ["TOR: die Probe lief nicht"];
+    if (to.abbruch) return [`TOR: ABBRUCH — ${to.abbruch}`];
+    const v = [];
+    const belicht = +(1 / FLAMME_PROBE.k).toFixed(4);
+    if (!(to.zeilen === Object.keys(TOR_BAND).length && to.belicht === belicht))
+        v.push(`TOR: der Atlas der Probe trägt ${to.zeilen} Zeilen (Soll ${Object.keys(TOR_BAND).length}) und teilt durch die Belichtung mit ${to.belicht} (Soll ${belicht}) — die Probe ist blind`);
+    for (const [name, band] of Object.entries(TOR_BAND)) {
+        const [tn, N] = [(to.toene || {})[name], name.toUpperCase()];
+        if (!tn) {
+            v.push(`TOR: ${N} — nicht gemessen`);
+            continue;
+        }
+        if (!(tn.k === FLAMME_PROBE.k && tn.nfTag === 0 && tn.nfNacht === 1 && tn.nfOhne === 1)) {
+            v.push(`TOR: ${N} — die Belichtung stand bei ${tn.k} statt ${FLAMME_PROBE.k} oder nightFactor bei ${tn.nfTag} / ${tn.nfNacht} / ${tn.nfOhne} statt 0 / 1 / 1 (die Probe ist blind)`);
+            continue;
+        }
+        const [d, dM, f] = [kanalAbstand(tn.tag, tn.nacht), kanalAbstand(tn.tag, tn.ohne), hsv(tn.tag)];
+        const imTon = band.ton[0] <= band.ton[1] ? f.ton >= band.ton[0] && f.ton <= band.ton[1] : f.ton >= band.ton[0] || f.ton <= band.ton[1];
+        if (!(imTon && f.satt >= band.satt))
+            v.push(
+                `TOR: ${N} — der Ton der Probe liest sich am Tag nicht als ${band.name}: ${JSON.stringify(tn.tag)}, Farbton ${f.ton}° (Soll ${band.ton[0]}–${band.ton[1]}°), Sättigung ${f.satt} (Soll ≥ ${band.satt}) — der Atlas der Ziele oder der Weg des Zielbilds trägt die Zeile nicht (die Probe ist blind)`
+            );
+        if (band.nachtSatt) {
+            const [sN, hN, hO] = [hsv(tn.nacht).satt, Math.max(...tn.nacht), Math.max(...tn.ohne)];
+            if (!(sN >= band.nachtSatt))
+                v.push(
+                    `TOR: ${N} — in der Nacht ${JSON.stringify(tn.nacht)} mit Sättigung ${sN} < ${band.nachtSatt} (am Tag ${JSON.stringify(tn.tag)}) — die Grenze der Umkehr ist enger geworden: ${TOR_ORT} oder \`_nachtAuge\` (stamm/bild-kosten.js) nimmt dem dunklen gesättigten Ton mehr Farbe als gemessen`
+                );
+            if (!(hN >= band.nachtHell))
+                v.push(
+                    `TOR: ${N} — in der Nacht ${JSON.stringify(tn.nacht)}, der größte Kanal ${hN} < ${band.nachtHell} (am Tag ${JSON.stringify(tn.tag)}) — das Zielbild des Tors steht nicht vor dem Auge der Nacht: ${TOR_ORT} ruft die Umkehr \`_nachtAuge(…, true)\` nicht`
+                );
+            if (!(hO < band.nachtHell))
+                v.push(`TOR: ${N} — MUTANTE-TOR (das Zielbild OHNE die Umkehr, nightFactor 1) zeigt ${JSON.stringify(tn.ohne)}, der größte Kanal ${hO} ≥ ${band.nachtHell} — das Auge der Nacht dunkelt den Ton nicht (die Probe ist blind)`);
+            continue;
+        }
+        if (!(d <= FLAMME_TOL))
+            v.push(
+                `TOR: ${N} — am Tag ${JSON.stringify(tn.tag)}, in der Nacht ${JSON.stringify(tn.nacht)} (Δ ${d} > ${FLAMME_TOL} je Kanal) — das Zielbild des Tors steht nicht vor dem Auge der Nacht: ${TOR_ORT} ruft die Umkehr \`_nachtAuge(…, true)\` nicht, oder jemand änderte \`_nachtAuge\`, ohne dass seine Umkehr folgt`
+            );
+        if (!(dM > FLAMME_TOL))
+            v.push(`TOR: ${N} — MUTANTE-TOR (das Zielbild OHNE die Umkehr, nightFactor 1) zeigt ${JSON.stringify(tn.ohne)} gegen den Tag ${JSON.stringify(tn.tag)} (Δ ${dM} ≤ ${FLAMME_TOL}) — das Auge der Nacht entsättigt das Zielbild nicht (die Probe ist blind)`);
+    }
+    if (!(to.rufe >= 1))
+        v.push(`TOR: EINE QUELLE — beim Bau des Membran-Graphen rief ${TOR_ORT} die Umkehr \`_nachtAuge(…, true)\` ${to.rufe}× (Soll ≥ 1) — das Zielbild steht nicht vor dem Auge der Nacht oder rechnet es selbst`);
+    return v;
+}
 const hsv = ([r, g, b]) => {
     const [mx, mn] = [Math.max(r, g, b), Math.min(r, g, b)];
     const d = mx - mn;
@@ -128,8 +198,12 @@ const kanalAbstand = (a, b) => (a && b ? +Math.max(...[0, 1, 2].map((c) => Math.
 // die Wand `wandM` dahinter (hell: `wand` vor der Tonkurve); die Quelle des Licht-Pools `licht` [rechts, hoch, zum Auge] m neben
 // der Mitte des Ballens, eine Flammen-Fläche vom Halbmesser `flammeM`; (k2) die Mitten `versatz` Radien auseinander, gewertet
 // innerhalb `rand` Radien; (k3) der Zug so schnell, dass die Tafel um `streck` Radien streckt; je Schuss `frames` Bilder (die
-// zeitliche Glättung der Kette schwingt ein).
-const RAUCH_PROBE = { uhr: 0, abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, frames: 6 };
+// zeitliche Glättung der Kette schwingt ein). Die Probe zeichnet in ihrer EIGENEN Schicht (Wand, Ballen, die Lichter der Szene):
+// die Welt des Orts steht nicht im Bild. Vorher las sie die Wand in den Ecken des GANZEN Weltbilds — am Zug z598 (GTX 1060) stand
+// dort Welt im Schein der Quelle (Ecken-Mittel 9,69 vor Schwarz), fünf Zeilen rissen. `stoerer` ist der Ton eines Streifens Welt
+// im unteren Viertel, der die ganze Probe über steht (die alte Probe misst mit ihm 49,78 / Hub 0,0147 / Form 0,234 und 0,224 —
+// dieselben fünf Zeilen); (k0) prüft jede Ecke gegen die Wand, MUTANTE-K0 stellt den Störer in die Schicht.
+const RAUCH_PROBE = { uhr: 0, abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, stoerer: 0.05, frames: 6 };
 // GEMESSEN (swiftshader, c5713056, Leinwand 321×241, der Lauf zweimal Zahl für Zahl gleich) — der Kopf und, im selben Lauf, jede
 // Mutante; der Selbsttest urteilt an genau diesen Zahlen (grün am Kopf, rot an jeder Mutanten-Zahl an seiner Stelle). Auf der
 // Karte (GTX 1050, ein Lauf): unten ÷ oben 5,97 / flach 3,28 · Korrelation 0,749 / −0,318 · Höhe zu Breite 2 / 0,926 / 0,926.
@@ -142,10 +216,11 @@ const RAUCH_GEMESSEN = {
         leinwand: [321, 241],
         radiusPx: 34.9,
         licht: [{ quelle: "brand", staerke: 17.177, blende: 1, reichweite: 23.68 }],
-        unten: { unten: 41.4, oben: 6.96, grund: 0, px: 4496 },
-        dunkel: { unten: 0.24, oben: 1, grund: 0, px: 4496 },
-        mutUnten: { unten: 47.5, oben: 14.5, grund: 0, px: 4496 },
-        koerper: { gleich: 0.749, px: 1491, hub: 0.0964, wand: 139.1, boden: 1 },
+        unten: { unten: 41.4, oben: 6.96, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
+        mutWand: [0, 0, 33.02, 33.01],
+        dunkel: { unten: 0.24, oben: 1, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
+        mutUnten: { unten: 47.5, oben: 14.5, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
+        koerper: { gleich: 0.749, px: 1491, hub: 0.0964, wand: 139.1, ecken: [139.04, 139.04, 139.03, 139.04], boden: 1 },
         mutKoerper: { gleich: -0.316, px: 1491, hub: 0.0783, wand: 139.1 },
         zug: { tempo: 1.667, quer: { form: 2, hoch: 96, breit: 48, masse: 0.122 }, laengs: { form: 0.926, hoch: 50, breit: 54, masse: 0.094 } },
         mutZug: { quer: { form: 0.926, hoch: 50, breit: 54, masse: 0.094 } },
@@ -166,7 +241,7 @@ const RAUCH_GEMESSEN = {
 // (1491), `pxMin` der Radius im Bild (34,9). (k3) Höhe zu Breite: `quer` Kopf 2,00 (96 Zeilen / 48 Spalten; die Tafel streckt um
 // 1 Radius: 1 + 1), `laengs` 0,926 (50 / 54 — der runde Ballen misst nicht 1: das Muster der Welt franst seinen Rand), MUTANTE-K3
 // 0,926; `masseMin` die Deckung über seiner Scheibe (0,094).
-const RAUCH_BAND = { unten: [4.8, 7.2], lichtMin: 20, gleich: 0.5, boden: 0.95, hubMin: 0.03, pxMin: 25, kPxMin: 1000, masseMin: 0.05, quer: [1.7, 2.3], laengs: [0.8, 1.15] };
+const RAUCH_BAND = { unten: [4.8, 7.2], lichtMin: 20, gleich: 0.5, boden: 0.95, hubMin: 0.03, pxMin: 25, kPxMin: 1000, masseMin: 0.05, quer: [1.7, 2.3], laengs: [0.8, 1.15], eckeSchwarz: 1, eckeHell: [134, 144] };
 const rauchVerh = (u) => (u ? +((u.unten - u.grund) / Math.max(0.5, u.oben - u.grund)).toFixed(2) : NaN);
 const RAUCH_ORT = "stamm/siedlung-bewohner.js `_rauchStoff`";
 // (k) DAS URTEIL ÜBER DEN RAUCH: je Zeile der Täter (Datei, Glied, Zahl); eine Mutante, die ihr Band nicht reißt, ist „blind".
@@ -178,6 +253,22 @@ function rauchUrteil(ra) {
     if (ra.gpuFehler?.length) v.push(`RAUCH: ${ra.gpuFehler.length} GPU-Validierungs-Fehler: ${ra.gpuFehler[0]}`);
     if (!(ra.uhr === P.uhr && ra.nf === 1)) v.push(`RAUCH: die Bühne stand bei Uhr ${ra.uhr} / nightFactor ${ra.nf} statt ${P.uhr} / 1 — Sonne und Himmel reden mit (die Probe ist blind)`);
     if (!(ra.radiusPx >= B.pxMin)) v.push(`RAUCH: der Ballen misst ${ra.radiusPx} Pixel Radius im Bild (Soll ≥ ${B.pxMin}) — die Probe ist blind`);
+    // (k0) DIE WAND: jede Ecke des Bilds zeigt die Wand der Probe und nichts sonst — schwarz bleibt schwarz (auch im Schein der
+    // Quelle), hell steht in ihrem Ton. Reißt eine Ecke, steht etwas im Bild, das nicht zur Probe gehört, oder die Post-Kette hebt
+    // das Schwarz: die Zeilen (k1)–(k3) lesen dann eine falsche Wand
+    const [ws, wh] = [ra.unten && ra.unten.ecken, ra.koerper && ra.koerper.ecken];
+    if (![ws, wh].every((e) => Array.isArray(e) && e.length === 4 && e.every(Number.isFinite))) v.push("RAUCH: WAND — die Ecken des Bilds sind nicht gemessen");
+    else
+        ["oben links", "oben rechts", "unten links", "unten rechts"].forEach((ecke, i) => {
+            if (!(ws[i] <= B.eckeSchwarz))
+                v.push(`RAUCH: WAND — die Ecke ${ecke} zeigt vor der SCHWARZEN Wand Luma ${ws[i]} (Soll ≤ ${B.eckeSchwarz}; alle vier ${JSON.stringify(ws)}) — dort steht etwas im Bild, das nicht zur Probe gehört (scripts/diag-post-kette.cjs \`rauchProbe\`: die Schicht der Probe hält die Welt nicht fern), oder die Post-Kette / die Umkehr von \`_nachtAuge\` (stamm/bild-kosten.js) hebt das Schwarz`);
+            if (!im(wh[i], B.eckeHell))
+                v.push(`RAUCH: WAND — die Ecke ${ecke} zeigt vor der HELLEN Wand Luma ${wh[i]} außerhalb ${B.eckeHell[0]}–${B.eckeHell[1]} (alle vier ${JSON.stringify(wh)}) — dort steht etwas vor der Wand, oder ihr Ton (\`RAUCH_PROBE.wand\` ÷ Belichtung) kommt nicht durch die Tonkurve wie gemessen; die Deckung von (k2) und (k3) teilt durch diese Zahl`);
+        });
+    const wm = ra.mutWand;
+    if (!(Array.isArray(wm) && wm.length === 4 && wm.every(Number.isFinite))) v.push("RAUCH: WAND — MUTANTE-K0 (der Störer in der Schicht der Probe) ist nicht gemessen");
+    else if (!(Math.max(wm[2], wm[3]) > B.eckeSchwarz))
+        v.push(`RAUCH: WAND — MUTANTE-K0 (der helle Streifen im unteren Viertel, in der Schicht der Probe) zeigt in den unteren Ecken Luma ${wm[2]} / ${wm[3]} ≤ ${B.eckeSchwarz} — die Ecken-Zeile sieht nicht, was vor der Wand steht (blind)`);
     // (k1) UNTERSEITE
     const [li, u, d, mu] = [ra.licht || [], ra.unten, ra.dunkel, ra.mutUnten];
     if (!(li.length === 1 && li[0].quelle === "brand" && li[0].staerke > 0 && li[0].blende === 1))
@@ -245,6 +336,7 @@ function rauchZeilen(ra) {
     const j = JSON.stringify;
     return [
         `Rauch (Uhr ${ra.uhr}, nightFactor ${ra.nf}, Belichtung ${ra.k}, Leinwand ${ra.leinwand.join("×")}, Radius ${ra.radiusPx} Pixel) · Licht-Pool ${j(ra.licht)}`,
+        `Rauch (k0) WAND: die Ecken (oben links, oben rechts, unten links, unten rechts) schwarz ${j(ra.unten.ecken)} (Soll ≤ ${B.eckeSchwarz}) · hell ${j(ra.koerper.ecken)} (Soll ${B.eckeHell[0]}–${B.eckeHell[1]}) · MUTANTE-K0 der Störer in der Schicht der Probe: ${j(ra.mutWand)}`,
         `Rauch (k1) UNTERSEITE: unten ${ra.unten.unten} / oben ${ra.unten.oben} (Wand ${ra.unten.grund}) = ${rauchVerh(ra.unten)} (Soll ${B.unten[0]}–${B.unten[1]}) · ohne Quelle unten ${ra.dunkel.unten} / oben ${ra.dunkel.oben} · MUTANTE-K1 woelbung 0: unten ${ra.mutUnten.unten} / oben ${ra.mutUnten.oben} = ${rauchVerh(ra.mutUnten)}`,
         `Rauch (k2) EIN KÖRPER: Korrelation ${ra.koerper.gleich} (Soll ≥ ${B.gleich}; ${ra.koerper.px} Pixel, Hub ${ra.koerper.hub}, Wand ${ra.koerper.wand}, derselbe zweimal ${ra.koerper.boden}) · MUTANTE-K2 am Ballen: ${ra.mutKoerper.gleich} (${ra.mutKoerper.px} Pixel, Hub ${ra.mutKoerper.hub})`,
         `Rauch (k3) ZUG ${ra.zug.tempo} m/s: quer ${j(ra.zug.quer)} (Soll ${B.quer[0]}–${B.quer[1]}) · längs ${j(ra.zug.laengs)} (Soll ${B.laengs[0]}–${B.laengs[1]}) · MUTANTE-K3 ohne Streckung: quer ${j(ra.mutZug.quer)}`,
@@ -461,6 +553,8 @@ function urteil(z) {
             v.push("FLAMME: EINE QUELLE — `_ensurePostProcessing` ruft `_nachtAuge(farbe)` nicht (die Post-Kette rechnet das Auge der Nacht selbst)");
         if (q.umkehr !== true)
             v.push("FLAMME: EINE QUELLE — `_brandFlammenZeichnen` ruft die Umkehr `_nachtAuge(…, true)` nicht (die Flamme steht nicht vor dem Auge der Nacht)");
+        // (j) DAS TOR: das Zielbild der Membran vor dem Auge der Nacht
+        for (const x of torUrteil(fl.tor)) v.push(x);
     }
     // (k) DER RAUCH
     for (const x of rauchUrteil(z.rauch)) v.push(x);
@@ -566,6 +660,17 @@ function selbsttest() {
                 mantel: { kelvin: 2350, k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [200, 118, 18], nacht: [199, 115, 85], ohne: [173, 124, 91] },
             },
             quelle: { uniform: true, augeLiest: true, zwilling: null, kette: true, umkehr: true },
+            // (j) das Tor: die Zahlen des gemessenen Laufs (swiftshader, d06ad11e), `ohne` = MUTANTE-TOR im selben Lauf
+            tor: {
+                gestalt: "drachentor",
+                rufe: 1,
+                zeilen: 2,
+                belicht: 0.6667,
+                toene: {
+                    gold: { wert: [0.9, 0.62, 0.25], k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [235, 198, 125], nacht: [235, 198, 125], ohne: [228, 202, 159] },
+                    dunkelrot: { wert: [0.12, 0.012, 0.01], k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [93, 9, 2], nacht: [111, 35, 35], ohne: [50, 17, 16] },
+                },
+            },
         },
         zugang: {
             himmel: ["himmel"],
@@ -647,6 +752,31 @@ function selbsttest() {
         ["Flammen-Ton ungemessen", ["flamme.toene.mantel"], /FLAMME: MANTEL — nicht gemessen/],
         ["Flammen-Probe bricht ab", ["flamme.abbruch=", "TypeError: r._nachtAuge is not a function"], /FLAMME: ABBRUCH — TypeError/],
         ["Flammen-Probe fehlt", ["flamme"], /FLAMME: die Probe lief nicht/],
+        // (j) w28-tor-nacht: das Auge der Nacht nahm dem Zielbild des Tors nachts die Farbe (grauweiß statt gold) — jede Zahl von
+        // MUTANTE-TOR an der Stelle des Kopfs ist rot beim Täter
+        ["Tor-Zielbild nicht vor dem Auge der Nacht (die Zahl von MUTANTE-TOR)", (z) => (z.flamme.tor.toene.gold.nacht = z.flamme.tor.toene.gold.ohne), /TOR: GOLD — .*Δ 34 > 6 je Kanal.*stamm\/siedlung-tor\.js `_membranGraph`, das Zielbild \(`ziel`\) ruft die Umkehr/],
+        ["Tor-Zielbild dunkelt nachts (die Zahl von MUTANTE-TOR)", (z) => (z.flamme.tor.toene.dunkelrot.nacht = z.flamme.tor.toene.dunkelrot.ohne), /TOR: DUNKELROT — .*der größte Kanal 50 < 85 .*stamm\/siedlung-tor\.js `_membranGraph`/],
+        ["die Grenze der Umkehr wird enger", (z) => (z.flamme.tor.toene.dunkelrot.nacht = [111, 60, 60]), /TOR: DUNKELROT — .*Sättigung 0\.459 < 0\.6 .*die Grenze der Umkehr ist enger geworden/],
+        ["MUTANTE-TOR reißt am Gold nicht (blind)", (z) => (z.flamme.tor.toene.gold.ohne = z.flamme.tor.toene.gold.tag), /TOR: GOLD — MUTANTE-TOR .*die Probe ist blind/],
+        ["MUTANTE-TOR reißt am Dunkelrot nicht (blind)", (z) => (z.flamme.tor.toene.dunkelrot.ohne = z.flamme.tor.toene.dunkelrot.nacht), /TOR: DUNKELROT — MUTANTE-TOR .*der größte Kanal 111 ≥ 85 .*blind/],
+        ["das Tor ruft die Umkehr nicht", ["flamme.tor.rufe=", 0], /TOR: EINE QUELLE — .*stamm\/siedlung-tor\.js `_membranGraph`, das Zielbild \(`ziel`\) die Umkehr `_nachtAuge\(…, true\)` 0×/],
+        ["Tor-Rufe ungemessen", ["flamme.tor.rufe"], /TOR: EINE QUELLE — .*undefined×/],
+        ["Tor-Probe ohne Nacht (blind)", ["flamme.tor.toene.gold.nfNacht=", 0], /TOR: GOLD — .*nightFactor bei 0 \/ 0 \/ 1/],
+        ["Tor-Probe bei fremder Belichtung (blind)", ["flamme.tor.toene.dunkelrot.k=", 1], /TOR: DUNKELROT — die Belichtung stand bei 1 statt 1\.5/],
+        ["der Atlas der Probe trägt die Zeile nicht (blind)", (z) => (z.flamme.tor.toene.gold.tag = z.flamme.tor.toene.gold.nacht = [0, 0, 0]), /TOR: GOLD — der Ton der Probe liest sich am Tag nicht als gold/],
+        ["das Tor liest die Zeile des Nachbarn (blind)", (z) => (z.flamme.tor.toene.dunkelrot.tag = [235, 198, 125]), /TOR: DUNKELROT — der Ton der Probe liest sich am Tag nicht als dunkelrot: .*Farbton 39\.8°/],
+        ["der Atlas der Probe ohne Belichtung (blind)", ["flamme.tor.belicht=", 1], /TOR: der Atlas der Probe trägt 2 Zeilen .*mit 1 \(Soll 0\.6667\)/],
+        ["Tor-Ton ungemessen", ["flamme.tor.toene.dunkelrot"], /TOR: DUNKELROT — nicht gemessen/],
+        ["Tor-Probe bricht ab", ["flamme.tor.abbruch=", "TypeError: r._torZielEinsetzen is not a function"], /TOR: ABBRUCH — TypeError/],
+        ["Tor-Probe fehlt", ["flamme.tor"], /TOR: die Probe lief nicht/],
+        // (k0) w28-rauch-probe: die Wand in den Ecken — die Zahlen der alten Probe mit einem Streifen Welt im unteren Viertel
+        // (GTX 1050, b7b0f8fe: Ecken-Mittel 16,51 vor Schwarz, 86 vor Hell; der Zug z598 maß 9,69 an der GTX 1060)
+        ["Welt im Bild vor der schwarzen Wand (z598)", ["rauch.unten.ecken=", [0, 0, 33.02, 33.01]], /RAUCH: WAND — die Ecke unten links zeigt vor der SCHWARZEN Wand Luma 33.02 .*das nicht zur Probe gehört/],
+        ["die Post-Kette hebt das Schwarz der Wand", ["rauch.unten.ecken=", [9.69, 9.69, 9.69, 9.69]], /RAUCH: WAND — die Ecke oben rechts zeigt vor der SCHWARZEN Wand Luma 9.69/],
+        ["Welt im Bild vor der hellen Wand", ["rauch.koerper.ecken=", [139.04, 139.04, 33.02, 33.01]], /RAUCH: WAND — die Ecke unten rechts zeigt vor der HELLEN Wand Luma 33.01 außerhalb 134–144/],
+        ["MUTANTE-K0 reißt nicht (blind)", ["rauch.mutWand=", [0, 0, 0, 0]], /RAUCH: WAND — MUTANTE-K0 .*blind/],
+        ["Ecken der Wand ungemessen", ["rauch.unten.ecken"], /RAUCH: WAND — die Ecken des Bilds sind nicht gemessen/],
+        ["MUTANTE-K0 ungemessen", ["rauch.mutWand"], /RAUCH: WAND — MUTANTE-K0 .*nicht gemessen/],
         // (k) w28-rauch-bild: jede Mutanten-Zahl des Laufs an der Stelle des Kopfs ist rot beim Täter
         ["Rauch als flache Scheibe zum Auge (die Zahl von MUTANTE-K1)", (z) => (z.rauch.unten = jsonKlon(RM.kopf.mutUnten)), /RAUCH: UNTERSEITE — über dem Feuer .*stamm\/siedlung-bewohner\.js `_rauchStoff`: die Normale/],
         ["Rauch-Muster je Ballen (die Zahl von MUTANTE-K2)", (z) => (z.rauch.koerper.gleich = RM.kopf.mutKoerper.gleich), /RAUCH: EIN KÖRPER — zwei Ballen, die sich decken, .*das Rausch-Muster steht nicht in der Welt/],
@@ -790,7 +920,7 @@ function saumProbe(ort) {
 }
 
 // DIE BÜHNE (Seiten-Kontext): die echte Welt-Szene, der echte Frame, eigene Gegenstände vor der Kamera.
-function buehne(nFrames, nachtLicht, flammeProbe) {
+function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
     return (async () => {
         const T = window.THREE;
         const rend = st.renderer;
@@ -1185,6 +1315,74 @@ function buehne(nFrames, nachtLicht, flammeProbe) {
                         kette: !window.__fehlt(r._ensurePostProcessing, /_nachtAuge\(\s*(?!null\b)[A-Za-z_]/),
                         umkehr: !window.__fehlt(r._brandFlammenZeichnen, /_nachtAuge\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*,\s*true\s*\)/),
                     };
+                    // (j) DAS TOR: das Zielbild der Membran am ECHTEN Knoten des Stamms. Ein eigener Atlas der Ziele (der echte
+                    // Bauer `_torZiele`, der echte Schreiber `_torZielEinsetzen`: je Ton EINE Zeile, die ganze Zeile dieser Ton),
+                    // der echte Stoff der Membran (`_membranMaterialFor` an einem Gesetz des Kerns porta) und als Farbe der
+                    // Ziel-Knoten seines Graphen (`ohneFilm` — das Zielbild allein, wie die Linse milchweiss es liest; der Film
+                    // färbt nicht mit) auf der flachen Fläche. Der Graph entsteht frisch (eine Kopie des Gesetzes als Schlüssel),
+                    // ein Mithörer an `_nachtAuge` zählt seine Rufe der Umkehr (j3, zur Laufzeit). MUTANTE-TOR: derselbe Bau, die
+                    // Umkehr reicht den Ton unverändert durch (`_nachtAuge` der Seite überschrieben) — das Zielbild wie vor
+                    // w28-tor-nacht.
+                    const TOR = (FL.tor = { toene: {} });
+                    const [atlasEigen, atlasVor, augeEigen] = [Object.hasOwn(r, "_torZielAtlas"), r._torZielAtlas, Object.hasOwn(r, "_nachtAuge")];
+                    let atlas = null;
+                    try {
+                        if (augeEigen) throw new Error("`_nachtAuge` ist an der Instanz schon überschrieben");
+                        const [AR, PC] = [r.constructor, globalThis.__portaCore];
+                        const gestalt = Object.keys(PC.PRESETS).filter((k) => PC.PRESETS[k].kind === "gate").sort()[0];
+                        const tor = r._torGesetzFor({ type: AR.KIND_POLICY.gate.prefix + gestalt });
+                        if (!tor) throw new Error("kein Tor-Gesetz für die Gestalt " + gestalt);
+                        r._torZielAtlas = null;
+                        atlas = r._torZiele();
+                        const [GZ, namen] = [AR.TOR_ZIEL, Object.keys(torProbe.toene)];
+                        r._torZielEinsetzen(
+                            namen.map((name) => {
+                                const daten = new Uint16Array(GZ.w * GZ.h * 4);
+                                const h = [...torProbe.toene[name], 1].map((x) => T.DataUtils.toHalfFloat(x));
+                                for (let i = 0; i < daten.length; i++) daten[i] = h[i & 3];
+                                return [{ world: "gate:post-kette " + name }, daten];
+                            })
+                        );
+                        const augeAlt = r._nachtAuge;
+                        const torStoff = (auge) => {
+                            r._nachtAuge = auge;
+                            try {
+                                const gesetz = Object.assign({}, tor.gesetz);
+                                const { mat } = r._membranMaterialFor(Object.assign({}, tor, { gesetz }), 0, 0);
+                                stoffe.push(mat);
+                                const G = r._membranGraph(gesetz);
+                                if (!G.ohneFilm) throw new Error("der Graph der Membran trägt keinen Ziel-Knoten `ohneFilm`");
+                                [mat.colorNode, mat.positionNode, mat.opacityNode, mat.alphaTest, mat.fog] = [G.ohneFilm, null, null, 0, false];
+                                return mat;
+                            } finally {
+                                delete r._nachtAuge;
+                            }
+                        };
+                        let rufe = 0;
+                        const kopf = torStoff(function (f, vor) {
+                            if (f && vor === true) rufe++;
+                            return augeAlt.call(this, f, vor);
+                        });
+                        const mutante = torStoff(function (f, vor) {
+                            return f && vor === true ? f : augeAlt.call(this, f, vor);
+                        });
+                        for (const [zeile, name] of namen.entries()) {
+                            kopf.userData.tor.ziel = mutante.userData.tor.ziel = zeile;
+                            // die Belichtung der Heimat teilt das Zielbild (der Schreiber `_tickPortalMembranes`: 1 ÷ Belichtung)
+                            const schuss = (m, nacht) => ((atlas.uBelicht.value = 1 / flammeProbe.k), mitte(m, nacht));
+                            const [tag, nacht, ohne] = [await schuss(kopf, 0), await schuss(kopf, 1), await schuss(mutante, 1)];
+                            const k = [tag, nacht, ohne].every((x) => x.k === flammeProbe.k) ? flammeProbe.k : [tag.k, nacht.k, ohne.k].join("/");
+                            TOR.toene[name] = { wert: torProbe.toene[name], k, nfTag: tag.nf, nfNacht: nacht.nf, nfOhne: ohne.nf, tag: tag.rgb, nacht: nacht.rgb, ohne: ohne.rgb };
+                        }
+                        Object.assign(TOR, { gestalt, rufe, zeilen: atlas.uZeilen.value, belicht: +atlas.uBelicht.value.toFixed(4) });
+                    } catch (e) {
+                        TOR.abbruch = fehlerStapel(e).split("\n").slice(0, 4).join(" ← ");
+                    } finally {
+                        if (!augeEigen) delete r._nachtAuge;
+                        if (atlas && atlas !== atlasVor && atlas.tex) atlas.tex.dispose();
+                        if (atlasEigen) r._torZielAtlas = atlasVor;
+                        else delete r._torZielAtlas;
+                    }
                 } catch (e) {
                     FL.abbruch = fehlerStapel(e).split("\n").slice(0, 4).join(" ← ");
                 } finally {
@@ -1305,6 +1503,25 @@ function rauchProbe(ort, P) {
         wand.name = "post-kette:RAUCH";
         wand.frustumCulled = false;
         wand.position.set(x0, y0, M.z - P.wandM);
+        // DIE EIGENE SCHICHT (wie die Flamme in (j)): das Auge zeichnet nur Wand und Ballen. Die Welt des Orts steht nicht im Bild —
+        // ihr Strom-Stand (welcher Boden, welcher Halm zwischen Auge und Wand im Schein der Quelle liegt) hängt an Karte und Laufzeit
+        const SCHICHT = 31;
+        wand.layers.set(SCHICHT);
+        const maskeVor = cam.layers.mask;
+        // DER STÖRER: ein heller Streifen der WELT (Schicht 0) im unteren Viertel des Bilds, 3 m vor dem Auge — er steht die ganze
+        // Probe über da, wie Boden im Schein der Quelle (z598 an der GTX 1060: ein Streifen von 0,19 der Bildbreite Höhe). Der
+        // Kopf misst an ihm vorbei; MUTANTE-K0 stellt ihn in die Schicht der Probe, die Ecken reißen
+        const stoerStoff = new T.MeshBasicNodeMaterial();
+        stoerStoff.fog = false;
+        stoerStoff.colorNode = L.vec4(L.vec3(P.stoerer).div(L.toneMappingExposure), 1);
+        const stoerer = new T.Mesh(new T.PlaneGeometry(40, 10), stoerStoff);
+        stoerer.name = "post-kette:RAUCH-STOERER";
+        stoerer.frustumCulled = false;
+        stoerer.position.set(x0, y0 - 5 - 1.5 * Math.tan((cam.fov * Math.PI) / 360), z0 - 3);
+        // … das LICHT der Nacht bleibt (r184 liest ein Licht nur in einer Schicht des Auges): jedes Licht der Szene tritt für die
+        // Dauer der Probe in ihre Schicht
+        const lichter = [];
+        st.scene.traverse((o) => o.isLight && !o.layers.isEnabled(SCHICHT) && lichter.push(o));
         // der Abschied eines Satzes, wie `_rauchZeichnen` ihn vor einem Neubau nimmt
         const abschied = (satz) => {
             const S = st[satz];
@@ -1327,6 +1544,9 @@ function rauchProbe(ort, P) {
             r._applyDayNightToScene();
             setzeKamera();
             st.scene.add(wand);
+            st.scene.add(stoerer);
+            for (const o of lichter) o.layers.enable(SCHICHT);
+            cam.layers.set(SCHICHT);
             abschied("brandRauchSatz");
             abschied("dorfRauchSatz");
             // (k4) DER MITHÖRER AM BAUER: jeder Stoff, den `_rauchStoff` liefert, mit Gesetz und Steigen
@@ -1400,12 +1620,14 @@ function rauchProbe(ort, P) {
             setzeKamera();
             const rp = Math.abs(pix(M.clone().add(new T.Vector3(0, P.radiusM, 0)))[1] - pix(M)[1]); // der Radius im Bild (Pixel)
             // der Ton der Wand: das Mittel der vier Ecken des Bilds (fern vom Ballen)
-            const ecken = (l, n = 12) => {
-                let s = 0;
-                for (const [ex, ey] of [[0, 0], [W - n, 0], [0, H - n], [W - n, H - n]])
+            const ecken4 = (l, n = 12) =>
+                [[0, 0], [W - n, 0], [0, H - n], [W - n, H - n]].map(([ex, ey]) => {
+                    let s = 0;
                     for (let y = ey; y < ey + n; y++) for (let x = ex; x < ex + n; x++) s += l[y * W + x];
-                return s / (4 * n * n);
-            };
+                    return s / (n * n);
+                });
+            const ecken = (l) => ecken4(l).reduce((s, x) => s + x, 0) / 4;
+            const runde4 = (l) => ecken4(l).map((x) => +x.toFixed(2));
             // je Pixel im Ballen (ρ < `rand`): `f(p, dx, dy, ρ)`, dx / dy in Radien von der Mitte (dy > 0 = unten im Bild)
             const imBallen = ([cx, cy], f, grenze = P.rand) => {
                 for (let y = Math.max(0, Math.floor(cy - rp)); y < Math.min(H, Math.ceil(cy + rp)); y++)
@@ -1416,7 +1638,10 @@ function rauchProbe(ort, P) {
                     }
             };
             const ballen = (m, zug = [0, 0, 0]) => ({ x: m.x, y: m.y, z: m.z, s: P.radiusM / R.size, a: P.deck, zx: zug[0], zy: zug[1], zz: zug[2] });
-            const zeichne = (liste) => r._rauchZeichnen(R, liste, "brandRauchSatz", R.maxTeilchen, R.steigMs);
+            const zeichne = (liste) => {
+                r._rauchZeichnen(R, liste, "brandRauchSatz", R.maxTeilchen, R.steigMs);
+                st.brandRauchSatz.mesh.layers.set(SCHICHT);
+            };
             // DIE QUELLE DES LICHT-POOLS: eine Flammen-Fläche (`_flammenLicht`) unter dem Ballen — durch den EINEN Schreiber, bis
             // zum Fixpunkt ihrer Blende (wie die Bühne mit Uhr)
             const F = r._flammenLicht(P.flammeM);
@@ -1445,7 +1670,7 @@ function rauchProbe(ort, P) {
                     if (dy > 0.15) ((s.unten += l[p]), s.nu++);
                     else if (dy < -0.15) ((s.oben += l[p]), s.no++);
                 });
-                return { unten: +(s.unten / s.nu).toFixed(2), oben: +(s.oben / s.no).toFixed(2), grund: +ecken(l).toFixed(2), px: s.nu + s.no };
+                return { unten: +(s.unten / s.nu).toFixed(2), oben: +(s.oben / s.no).toFixed(2), grund: +ecken(l).toFixed(2), ecken: runde4(l), px: s.nu + s.no };
             };
             // die Deckung je Pixel vor der hellen Wand: 1 − Luma / Wand
             const deckung = (l) => {
@@ -1483,12 +1708,13 @@ function rauchProbe(ort, P) {
             const koerper = async (mitBoden) => {
                 const bild = async (m) => {
                     zeichne([ballen(m)]);
-                    const c = deckung(await schuss());
-                    return { m: muster(c, pix(m)), wand: c.wand };
+                    const l = await schuss();
+                    const c = deckung(l);
+                    return { m: muster(c, pix(m)), wand: c.wand, ecken: runde4(l) };
                 };
                 const [A, B] = [await bild(mitten[0]), await bild(mitten[1])];
                 const k = korr(A.m, B.m);
-                const aus2 = { gleich: k.r, px: k.px, hub: k.hub, wand: +A.wand.toFixed(1) };
+                const aus2 = { gleich: k.r, px: k.px, hub: k.hub, wand: +A.wand.toFixed(1), ecken: A.ecken };
                 if (mitBoden) aus2.boden = korr(A.m, (await bild(mitten[0])).m).r;
                 return aus2;
             };
@@ -1519,6 +1745,10 @@ function rauchProbe(ort, P) {
             aus.licht = licht(true);
             aus.k = +rend.toneMappingExposure.toFixed(3);
             aus.unten = await haelften();
+            // MUTANTE-K0: der Störer tritt in die Schicht der Probe — dasselbe Bild wie der Kopf, die unteren Ecken zeigen ihn
+            stoerer.layers.set(SCHICHT);
+            aus.mutWand = (await haelften()).ecken;
+            stoerer.layers.set(0);
             licht(false);
             aus.dunkel = await haelften();
             wandU.value = P.wand;
@@ -1562,7 +1792,12 @@ function rauchProbe(ort, P) {
                     aus.abbruch = aus.abbruch || "Abschied " + satz + ": " + fehlerText(e);
                 }
             }
+            cam.layers.mask = maskeVor;
+            for (const o of lichter) o.layers.disable(SCHICHT);
             st.scene.remove(wand);
+            st.scene.remove(stoerer);
+            stoerer.geometry.dispose();
+            stoerStoff.dispose();
             wand.geometry.dispose();
             wandStoff.dispose();
             if (r._leuchtPool) r._leuchtPool.t = -Infinity;
@@ -1595,7 +1830,7 @@ function rauchProbe(ort, P) {
         await postKetteBereit(page, log, "die Leinwand-Tiefe lebt nur dort, die Wand wäre blind");
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(SK.SHADER_INSTALL);
-        out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT, FLAMME_PROBE);
+        out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT, FLAMME_PROBE, TOR_PROBE);
         // (j3) der GANZE Stamm (Lehre 12: über scripts/lib/stamm.cjs, ohne Kommentare): außerhalb von `_nachtAuge` liest niemand
         // die Schwellen des Auges (`fehlt.wo` nennt den Zwilling mit Datei und Zeile)
         if (out.flamme && out.flamme.quelle)
@@ -1607,7 +1842,16 @@ function rauchProbe(ort, P) {
                     `MUTANTE-J ohne Umkehr ${JSON.stringify(tn.ohne)} (Sättigung ${hsv(tn.ohne).satt}) · Δ ${kanalAbstand(tn.tag, tn.ohne)}`
             );
         }
-        if (out.flamme) log(`Flamme, EINE QUELLE: ${JSON.stringify(out.flamme.quelle)}${out.flamme.abbruch ? " · ABBRUCH " + out.flamme.abbruch : ""}`);
+        const torAus = (out.flamme && out.flamme.tor) || {};
+        for (const [name, tn] of Object.entries(torAus.toene || {})) {
+            const [fT, fN] = [hsv(tn.tag), hsv(tn.nacht)];
+            log(
+                `Tor-Zielbild ${name.toUpperCase()} (Wert ${JSON.stringify(tn.wert)}, Belichtung ${tn.k}): Tag ${JSON.stringify(tn.tag)} (Farbton ${fT.ton}°, Sättigung ${fT.satt}) ↔ Nacht ${JSON.stringify(tn.nacht)} (Farbton ${fN.ton}°, Sättigung ${fN.satt}) · Δ ${kanalAbstand(tn.tag, tn.nacht)} je Kanal · ` +
+                    `MUTANTE-TOR ohne Umkehr ${JSON.stringify(tn.ohne)} (Sättigung ${hsv(tn.ohne).satt}) · Δ ${kanalAbstand(tn.tag, tn.ohne)}`
+            );
+        }
+        if (out.flamme) log(`Tor: ${JSON.stringify({ gestalt: torAus.gestalt, rufe: torAus.rufe, zeilen: torAus.zeilen, belicht: torAus.belicht })}${torAus.abbruch ? " · ABBRUCH " + torAus.abbruch : ""}`);
+        if (out.flamme) log(`Flamme, EINE QUELLE:${JSON.stringify(out.flamme.quelle)}${out.flamme.abbruch ? " · ABBRUCH " + out.flamme.abbruch : ""}`);
         if (out.abbruch) log(`ABBRUCH: ${out.abbruch}`);
         // (f) die ungerade Leinwand: die Seite wächst um ein Pixel je Achse, die Welt zieht nach (Resize, Leser neu gebunden)
         await page.setViewport({ width: 321, height: 241 });
@@ -1682,7 +1926,9 @@ function rauchProbe(ort, P) {
             `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4, die Nacht ${out.dunkel.lumaNacht}); ` +
             `die Flamme steht vor dem Auge der Nacht (${Object.entries(out.flamme.toene)
                 .map(([n, tn]) => `${n.toUpperCase()} Tag ${JSON.stringify(tn.tag)} ↔ Nacht ${JSON.stringify(tn.nacht)} Δ ${kanalAbstand(tn.tag, tn.nacht)}, ohne Umkehr Δ ${kanalAbstand(tn.tag, tn.ohne)}`)
-                .join(" · ")}; Soll ≤ ${FLAMME_TOL}), die Schwellen des Auges liest nur \`_nachtAuge\`; der Zugang aus ohne Farbsicht-Knoten, der Himmel bleibt; ` +
+                .join(" · ")}; Soll ≤ ${FLAMME_TOL}), das Zielbild des Tors auch (${Object.entries(out.flamme.tor.toene)
+                .map(([n, tn]) => `${n.toUpperCase()} Tag ${JSON.stringify(tn.tag)} ↔ Nacht ${JSON.stringify(tn.nacht)}, ohne Umkehr ${JSON.stringify(tn.ohne)}`)
+                .join(" · ")}), die Schwellen des Auges liest nur \`_nachtAuge\`; der Zugang aus ohne Farbsicht-Knoten, der Himmel bleibt; ` +
             `der Rauch ist EIN Bild (Unterseite ${rauchVerh(out.rauch.unten)}× die Oberseite, flach ${rauchVerh(out.rauch.mutUnten)}×; zwei Ballen ein Muster ${out.rauch.koerper.gleich}, am Ballen ${out.rauch.mutKoerper.gleich}; ` +
             `der Zug streckt ${out.rauch.zug.quer.form}, längs des Blicks ${out.rauch.zug.laengs.form}, ohne Streckung ${out.rauch.mutZug.quer.form}; Fahne und Kamin aus \`_rauchStoff\`).`
     );
