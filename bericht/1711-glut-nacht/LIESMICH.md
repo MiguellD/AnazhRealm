@@ -1,4 +1,4 @@
-# w28-glut-nacht — ZWISCHENSTAND (GTX 1050, 17.11., auf main 31d156e8)
+# w28-glut-nacht — ZWISCHENSTAND (GTX 1050, 17.11., auf main d39e0d6e, V18.546.326)
 
 Anlass: Auftrag des Koordinators (Kopf 1 von zweien) — der Feuerschein steht nachts rosa an Brunnen, Flamme + Rauch,
 Lava-Rissen und Tor; schneiden an der EINEN Stelle (`stamm/bild-kosten.js` `_nachtAuge`), kein Weg je Leser. Kopf 2
@@ -31,6 +31,11 @@ Bild-Weiß) — Kopf 2. Die Brunnen-Flamme ist KEIN Konsum-Verlust: der Glut-Sto
   in Ruhe: er muss ohne Umkehr HALTEN (Δ ≤ 6). Reißt er, fehlt die Blende und der Feuerschein steht wieder rosa — der
   Stand von main (Δ 29) ist Selbsttest-Fall und fällt rot beim Namen. Dass die Probe sieht, beweist weiter der Mantel
   (ohne Umkehr Sättigung 0,638 < 0,75).
+- **Linse `gate:pruefbuehne-licht`, die Mutante „Glut-Palette" urteilt an der DIFFERENZ** (`S0_TON.paletteUnter` 2°): sie gilt als
+  gefangen, wenn ihr Farbton mindestens 2° UNTER dem des Kopfs im selben Lauf liegt; das Band 28–45° bleibt für den Kopf
+  unberührt. Die alte Fassung fing die Mutante nur, weil das Rosa des alten Auges sie unter 28° zog — die Linse lehnte am
+  Fehler (am neuen Auge steht die Mutante bei 29,1° im Band, BLIND). Drei Läufe auf der Karte: Mutante 29,1°, Kopf 32,2°,
+  Differenz 3,1 · 3,1 · 3,1 (Bedingung des Koordinators: die kleinste ≥ 2,5).
 
 ## Gemessen (Mess-Wiese, 960 × 540, Sommer trocken, Mitternacht; main 16f45362 ↔ Endkopf; Bilder `glut-m-*` ↔ `glut-e-*`)
 
@@ -66,8 +71,19 @@ Bild-Weiß) — Kopf 2. Die Brunnen-Flamme ist KEIN Konsum-Verlust: der Glut-Sto
    der Farbe): 8 Byte je Ecke (float16x4), 1 960 Byte je Feuerstelle im Umkreis der Messung.
 7. **kaskade p95 an einer Brand-Szene ist nicht gemessen.** Die Post-Kette am Flammen-Bild: Kopf 0,97–1,05 ms ↔ main
    1,00–1,01 ms je Bild (40 Bilder × 6 Runden) — kein Unterschied über dem Rauschen; die absolute Zahl ist keine Bildzeit.
-8. **kaskade#1 und ereignis#1 sind an beiden Geräten neu zu messen** (sie urteilen über Farbe).
+8. **kaskade#1 und ereignis#1 sind an beiden Geräten neu zu messen.** Auf der GTX 1050 gemessen (`stationen-nach-lava-zuendet.md`):
+   der Glut-Kopf verschiebt keine der beiden Zahlen (beide Schüsse am Mittag, das Auge trägt dort 0) — kaskade +3 ↔
+   31d156e8 +0 (Soll ≥ 200), ereignis an beiden Köpfen verweigert („Welt steht nicht"); beide Röten kamen mit w28-lava-zuendet.
 9. Fenster / Feuerschein im Dorf: 0 Quellen „fenster"/„herd" im Umkreis 90 m um den Dorf-Messort — dieser Leser ist nicht
    belegt.
 10. Vom Koordinator am Bild benannt, nicht in diesem Kopf: der Rauch trägt bis in die oberste Wolke dasselbe helle Orange,
     der Schein färbt den ganzen Vordergrund gleich stark.
+
+## Tore am Endkopf (GTX 1050)
+
+Am Kopf 83795c09 (WIP 8d0fe947 + main d39e0d6e gemergt), 17.11. 19:53–20:21, je EXIT=0: format:check · check · gate:welt-boot ·
+playtest · gate:stand-takt (mit --narbe) · gate:post-kette (Selbsttest + swiftshader) · gate:post-kette auf der Karte (29 s:
+KERN Δ 1 · MANTEL Sättigung 0,794 · GOLD Δ 0 · DUNKELROT Δ 1) · gate:pruefbuehne-licht auf der Karte (64 s: S0 BILD GRÜN, der
+Feuerkreis aus 2 m in der Ausgabe am Tag, Nacht ohne Feuer Luma 24,1, schwarz 0; Mutante Glut-Palette 29,1° ↔ Kopf 32,2°,
+3,1° darunter; Mutante „Auge des Tages" reißt an Sättigung 0,781).
+Das Schild der Abgabe trägt `gate:pruefbuehne-licht`: die GTX 1060 liest die neue Zeile der Linse vor dem Zug.
