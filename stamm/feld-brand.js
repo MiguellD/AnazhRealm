@@ -68,13 +68,16 @@ class AnazhRealm_feld_brand {
         for (const a of I.brand.length ? I.je.get(cx + "," + cz) || [] : []) {
             if (a.tat !== "brand") continue;
             const s = this._sukzession(a);
+            // die Asche liegt, wo das Bett lag (die Maske ihrer Tat, `_brandBettFn`; `_brandNarbeFn` liest `front`)
+            const front = a.bett ? this._brandBettFn(a.bett, cx, cz) : undefined;
             c = c
                 ? {
                       asche: Math.max(c.asche, s.asche),
                       busch: Math.min(c.busch, s.busch),
                       wald: Math.min(c.wald, s.wald),
+                      front: c.front && front,
                   }
-                : { asche: s.asche, busch: s.busch, wald: s.wald };
+                : { asche: s.asche, busch: s.busch, wald: s.wald, front };
         }
         return c;
     }
@@ -108,12 +111,34 @@ class AnazhRealm_feld_brand {
     }
     _brandFront(b) {
         const [k, s, t, px, pz] = [1 / (b.R * (1 - b.ecc)), Math.max(b.tr, 1), this._brandUhr, b.kopf[0], b.kopf[1]];
-        const weg = this._brandWeg(b, b.ecc, px, pz);
+        const [weg, bett] = [this._brandWeg(b, b.ecc, px, pz), this._brandBettFn(b.bett, b.cx, b.cz)];
         const front = (x, z) => {
             const q = (t - b.t0 - weg(x, z) * k) / s;
-            return q <= 0 ? 0 : q >= 1 ? 1 : q;
+            return q <= 0 ? 0 : (q >= 1 ? 1 : q) * (bett ? bett(x, z) : 1);
         };
         return { asche: 1, busch: 0, wald: 0, front };
+    }
+
+    // DAS BETT EINER ZELLE ALS FLÄCHE (w28-lava-nachlauf) → null (die ganze Zelle trägt Bett) oder die Funktion (x, z) ∈ [0, 1]:
+    // ihre Maske (`_brandStoff` `bett`, in der Tat als Hex-Wort) bilinear zwischen den Punkten ihres Gitters, über die weiche
+    // Kante `BRAND.bettKante` — 1 auf dem Brennstoff, 0 auf dem Kies; außerhalb der Zelle gilt ihr Rand. Die EINE Lese-Stelle
+    // für Flammen (`_brandBild`), Front (`_brandFront`) und Asche (`_brandZelle`).
+    _brandBettFn(bett, cx, cz) {
+        if (!bett) return null;
+        const [G, cs, K] = [AnazhRealm.BRAND.bettGitter, AnazhRealm.LIFE_FIELD.cell, AnazhRealm.BRAND.bettKante];
+        const m =
+            typeof bett === "string"
+                ? Array.from({ length: G * G }, (_, k) => (parseInt(bett[k >> 2], 16) >> (k & 3)) & 1)
+                : bett;
+        const an = (i, j) => m[Math.min(G - 1, Math.max(0, j)) * G + Math.min(G - 1, Math.max(0, i))];
+        return (x, z) => {
+            const [u, v] = [(x / cs - cx) * G - 0.5, (z / cs - cz) * G - 0.5];
+            const [i, j] = [Math.floor(u), Math.floor(v)];
+            const [a, c] = [u - i, v - j];
+            const w =
+                (an(i, j) * (1 - a) + an(i + 1, j) * a) * (1 - c) + (an(i, j + 1) * (1 - a) + an(i + 1, j + 1) * a) * c;
+            return w <= K[0] ? 0 : w >= K[1] ? 1 : ((q) => q * q * (3 - 2 * q))((w - K[0]) / (K[1] - K[0]));
+        };
     }
 
     // DIE ASCHE FOLGT DER FRONT (w28-brand-bild): je Bild malt der Takt EIN Viertel der Fläche EINER glühenden Zelle (±½ Zelle,
@@ -199,15 +224,36 @@ class AnazhRealm_feld_brand {
         if (leb >= AnazhRealm.BRAND.minStoff && !this._nassAt(x, z)) {
             const [y, h] = [this._voxelSurfaceY(x, z), cs / 2];
             const [gx, gz] = [(this._voxelSurfaceY(x + h, z) - y) / h, (this._voxelSurfaceY(x, z + h) - y) / h];
-            // das Bett liegt, wo die Zelle Brennstoff trägt (Mitte und vier Viertel-Punkte), ihr ANTEIL geht als Last ins Gesetz
-            // (`leb`). Bis w28-lava-zuendet las sie nur ihre Mitte — ein Stein dort nahm einer Wiese von 16 m ihr Bett. Die
-            // Viertel-Punkte lesen ihren Stoff auf der Ebene des Gefälles (keine eigene Höhe: je Punkt 47 Einheiten des Takts)
-            const B5 = [0, 1, 2, 3, 4]
-                .map((k) => [k ? (k & 1 ? cs : -cs) / 4 : 0, k ? (k > 2 ? cs : -cs) / 4 : 0])
-                .map(([dx, dz]) => this._stoff(this._kontaktStoffAt(x + dx, z + dz, y + gx * dx + gz * dz)))
-                .filter((s) => s && s.brenn);
-            const zeile = B5[0];
-            if (zeile) f = { zeile, leb: (leb * B5.length) / 5, x, z, y, gx, gz, boden: this._feuchteAt(x, z, y) };
+            // DAS BETT LIEGT, WO DIE ZELLE BRENNSTOFF TRÄGT (w28-lava-nachlauf): die Zelle misst ihr Bett auf einem Gitter von
+            // `bettGitter`² Punkten (der Stoff je Punkt auf der Ebene des Gefälles) — `bett` ist seine Maske (null: die ganze
+            // Zelle), `anteil` seine Fläche, die Zeile die des häufigsten Brennstoffs. DIE LAST BLEIBT GANZ (`leb`): wo Bett liegt,
+            // brennt es mit seiner vollen Last; der Anteil trägt nur FLÄCHE — Flammen und Narbe stehen auf dem Bett
+            // (`_brandBettFn`), nie auf dem Kies daneben. Bis w28-lava-zuendet las die Zelle nur ihre Mitte (ein Stein dort nahm
+            // einer Wiese von 16 m ihr Bett); w28-lava-zuendet las fünf Punkte und gab den Anteil als LAST ins Gesetz: eine
+            // Zelle mit einem Fünftel Gras brannte mit einem Fünftel der Flamme und legte die Asche über ihre ganze Fläche
+            // (Mess-Wiese −248/−1080: 25 Flammen, +0 Flammen-Pixel, 94,6 % des Ausschnitts Asche, auch der kahle Kies)
+            const G = AnazhRealm.BRAND.bettGitter;
+            const [bett, je] = [new Uint8Array(G * G), new Map()];
+            for (let k = 0; k < G * G; k++) {
+                const [dx, dz] = [(((k % G) + 0.5) / G - 0.5) * cs, ((Math.floor(k / G) + 0.5) / G - 0.5) * cs];
+                const s = this._stoff(this._kontaktStoffAt(x + dx, z + dz, y + gx * dx + gz * dz));
+                if (s && s.brenn) ((bett[k] = 1), je.set(s, (je.get(s) || 0) + 1));
+            }
+            const n = bett.reduce((a, b) => a + b, 0);
+            const zeile = [...je].sort((a, b) => b[1] - a[1]).map((e) => e[0])[0];
+            if (zeile)
+                f = {
+                    zeile,
+                    leb,
+                    anteil: n / (G * G),
+                    bett: n < G * G ? bett : null,
+                    x,
+                    z,
+                    y,
+                    gx,
+                    gz,
+                    boden: this._feuchteAt(x, z, y),
+                };
         }
         M.set(key, f);
         return f;
@@ -376,6 +422,7 @@ class AnazhRealm_feld_brand {
             gz: f.gz,
             // H·w (kJ/m²): die Wärme des Betts je Fläche — mal dem Tempo die Intensität der Front (Byram), die das Bild liest
             iw: (f.zeile.brenn.heiz / 1000) * f.zeile.brenn.last * Math.min(1, f.leb),
+            bett: f.bett, // die Maske ihres Betts (`_brandStoff`): Flammen, Front und Asche stehen auf ihr (`_brandBettFn`)
         });
         bf.set(key, zelle);
         for (const [dx, dz] of AnazhRealm.BRAND.nachbarn) {
@@ -484,7 +531,19 @@ class AnazhRealm_feld_brand {
             if (R.i < n) {
                 const z = R.aschen[R.i];
                 const [ax, az] = [(z.cx + 0.5) * cs, (z.cz + 0.5) * cs];
-                this._tatSchreiben("brand", ax, az, { w: Math.round(this._wuchsAt(ax, az, z.boden) * 1e3) / 1e3 });
+                const w = Math.round(this._wuchsAt(ax, az, z.boden) * 1e3) / 1e3;
+                // die Maske des Betts reist mit der Tat (je vier Punkte eine Hex-Ziffer): die Asche liegt nach jedem Laden, wo es lag
+                const hex =
+                    z.bett &&
+                    Array.from({ length: z.bett.length >> 2 }, (_, i) =>
+                        (
+                            z.bett[4 * i] |
+                            (z.bett[4 * i + 1] << 1) |
+                            (z.bett[4 * i + 2] << 2) |
+                            (z.bett[4 * i + 3] << 3)
+                        ).toString(16)
+                    ).join("");
+                this._tatSchreiben("brand", ax, az, hex ? { w, bett: hex } : { w });
                 continue;
             }
             const z = R.faellig[R.i - n];
@@ -582,6 +641,7 @@ class AnazhRealm_feld_brand {
             const N = Math.max(B.winkelMin, Math.min(B.winkel, Math.round((B.winkel * B.nahM) / d), umfang));
             const wt = tafel(N);
             let [s, naechste, vx, vz] = [0, 0, null, null];
+            const bett = this._brandBettFn(b.bett, b.cx, b.cz); // die Flamme steht, wo Bett liegt
             const [E, weg] = [b.ein || [b.ex, b.ez], b.ein && this._brandWeg(b, b.ecc, px, pz)]; // je Eintritt seine Ellipse, gezeichnet, wo keine andere sie schon verzehrte
             for (let j = 0; j < E.length; j += 2)
                 for (let i = 0; i <= N; i++) {
@@ -593,7 +653,8 @@ class AnazhRealm_feld_brand {
                     if (weg && weg(x, z) < (t - b.t0) * b.R * (1 - b.ecc) - 0.01) continue;
                     if (vx !== null) s += Math.sqrt((x - vx) * (x - vx) + (z - vz) * (z - vz));
                     [vx, vz] = [x, z];
-                    if (s < naechste || x < x0 || x >= x0 + K || z < z0 || z >= z0 + K) continue;
+                    if (s < naechste || x < x0 || x >= x0 + K || z < z0 || z >= z0 + K || (bett && bett(x, z) < 0.5))
+                        continue;
                     const lang = 0.0775 * Math.pow(b.iw * Rt, 0.46);
                     naechste = s + Math.max(B.abstandMinM, B.abstand * lang);
                     const phase = (((x * 12.9898 + z * 78.233) % 6.2832) + 6.2832) % 6.2832;
@@ -807,6 +868,8 @@ AnazhRealm.BRAND = Object.freeze({
     versengt: Object.freeze([0.9, 0.4, 0.2]), // der Ton (× die Farbe des Halms) des versengten Halms im Saum der Narbe (`_nahWieseKachelBueschel`)
     wieseS: 3, // so oft höchstens baut die Nah-Wiese über einer brennenden Zelle neu (`_brandMalen`)
     minStoff: 0.15,
+    bettGitter: 8, // so fein misst die Zelle ihr Bett (`_brandStoff`: 8² Punkte, 2 m) …
+    bettKante: Object.freeze([0.35, 0.65]), // … und über diese Spanne der bilinearen Maske fällt seine Kante (`_brandBettFn`)
     licht: 4,
     budgetMs: 0.25, // so viel Arbeit eines Schritts geht je Bild (`_brandArbeit`) …
     mindestJeBild: 8, // … und mindestens so viele Aschen und Zündungen (ein kleiner Brand geht seinen Schritt in einem Bild)
