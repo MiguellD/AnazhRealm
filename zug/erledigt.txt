@@ -1528,3 +1528,4 @@ omen-gtx-gtx-31d156e8-1-31d156e8 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN k
 omen-gtx-tl6a-1-602607bb ROT 2 GRÜN / 3 ROT / 0 UNGEMESSEN · ROT karte2.leben.tiere.masse#1 karte2.leben.tiere.verhalten#1 karte2.leben.tiere.wanderung#1 · GRÜN karte2.leben.tiere.lebenszyklus#1 karte2.leben.tiere.mensch#1 (punkte-maschine 5d870a90 messung/602607bb-gtx.json)
 omen-gtx-gtx-31d156e8-2-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag affekt.K1#2 (punkte-maschine 5d870a90 messung/31d156e8-gtx.json)
 omen-gtx-gtx-31d156e8-3-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag klang.K4#2 (punkte-maschine 160aa71f messung/31d156e8-gtx.json)
+omen-gtx-kk6a-1-602607bb UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag karte2.mensch.menge.kollektiv#1 karte2.erleben.kopplung.bild#1 (punkte-maschine 160aa71f messung/602607bb-gtx.json)
