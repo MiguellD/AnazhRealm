@@ -4964,7 +4964,7 @@
   },
   "karte2.erleben.kopplung.bild": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.bild#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Deckel 90 s gerissen: Stille seit 88.7 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · karte2.erleben.kopplung.bild#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +7)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.bild#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Deckel 90 s gerissen: Stille seit 88.7 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · karte2.erleben.kopplung.bild#1 gtx: ROT: ❌ größter Sprung an markierten Stufenwechseln 194.0 % (6 Wechsel) · an den übrigen Schritten 1057.0 % (Soll an jedem ≤ 5 %) · der größte bei 900 m · 40/40 Schritte mit Fenster · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · [linse-gpu] nvidia/pascal an b7b0f8fe",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.bild#1",
@@ -4980,10 +4980,9 @@
      "id": "karte2.erleben.kopplung.bild#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +7)",
-     "ungemessen": true,
+     "zahl": "❌ größter Sprung an markierten Stufenwechseln 194.0 % (6 Wechsel) · an den übrigen Schritten 1057.0 % (Soll an jedem ≤ 5 %) · der größte bei 900 m · 40/40 Schritte mit Fenster · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · [linse-gpu] nvidia/pascal",
+     "sha": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
+     "grund": "ROT: ❌ größter Sprung an markierten Stufenwechseln 194.0 % (6 Wechsel) · an den übrigen Schritten 1057.0 % (Soll an jedem ≤ 5 %) · der größte bei 900 m · 40/40 Schritte mit Fenster · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     }
@@ -6515,7 +6514,7 @@
   "ohne": 124
  },
  "kopfVoll": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
- "zeit": "2026-11-17T14:39:24.099Z",
+ "zeit": "2026-11-17T14:45:18.730Z",
  "vorher": "b7b0f8fe",
  "bilanz": {
   "gewinn": [],
