@@ -162,7 +162,7 @@ async function probeLeben(expected) {
     // Das Wort des Spielers hält Sonne und Trockenheit über den EINEN Schreiber; die Nässe am Rad misst die Kette W (feld.K1).
     const wetter = (wort, s) => {
         r._setWeather(wort, "human");
-        st.weatherTransition = null; // der Übergang fällt: das Wort steht ab diesem Takt
+        window.__uebergangFaellt(r); // der Übergang fällt im Bild und auf dem Weg des Regens: das Wort steht ab diesem Takt
         r._naesseTakt(s);
     };
     wetter("sunny", 1e6);
