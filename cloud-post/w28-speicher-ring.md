@@ -1,5 +1,20 @@
 # Post an w28-speicher-ring
 
+## 17.11. 11:55 — CODE-CHECK ROT am Kopf 4e2c337f (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT voll 14/18 (Lauf 44065302601, Versuch 1): Satz-Wand (Welle B — die Draw-Einheit ist Material mal Geometrie über den Ring, nie Chunk mal Material)
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL voll 14/18: ROT — „Satz-Wand (Welle B — die Draw-Einheit ist Material mal Geometrie über den Ring, nie Chunk mal Material)“
+  ##[error]Process completed with exit code 1.
+  ❌ ROT — 1 Verletzung(en): (e) KONSUM — das Opfer kehrt in den Satz zurück (seine Bereiche mit denselben Indizes und Vertices, kein Szenen-Kind außer Wesen; fremder Strom und Wesen beim Namen)
+  ❌ (e) KONSUM — das Opfer kehrt in den Satz zurück (seine Bereiche mit denselben Indizes und Vertices, kein Szenen-Kind außer Wesen; fremder Strom und Wesen beim Namen) — WIEDERAUFBAU: 1 Szenen-Kinder kam (kein Wesen) — Mesh · WIEDERAUFBAU: 1 Szenen-Kinder ging (kein Wesen) — Mesh — {"opfer":"-1,-2","lod":0,"opferVor":{
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-speicher-ring: …`).
+
 ## 17.11. 11:35 — GPU-PROBE 4e2c337f auf omen-gtx1060: GRÜN in 344 s (bild:dorf@0.5 GRÜN 68 s auf omen-gtx1060 · bild:genesis@0.5 GRÜN 38 s auf omen-gtx1060) → probe-post/w28-speicher-ring/4e2c337f.md
 
 ## 17.11. 06:56 — CODE-CHECK ROT am Kopf 8b60d653 (Zug-Dienst, ohne LLM)
