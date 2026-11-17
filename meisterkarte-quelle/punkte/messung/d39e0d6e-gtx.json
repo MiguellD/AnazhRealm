@@ -1,7 +1,7 @@
 {
  "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
  "geraet": "gtx",
- "zeit": "2026-11-17T19:58:49.266Z",
+ "zeit": "2026-11-17T20:01:50.167Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "klang.K4#2": {
@@ -1811,43 +1811,58 @@
   "k0b12ae7ff70b": "dVXbjpswEP2XPLZlnXAJBmkfnLBqWnXV5BPG9hjYEIhsCFKq/nsFwUmA7Twl1hmfM2dmzJ+FqDSalxOUuUJTv3yYqlzEiy+LbwsFImtRH50O8vJhhuMziCOk+Iw0cEHHoL6gvuGWwoeAxuwWhDG27WBC5+faEJlD6vCqqh1TdzeJ+90WUeScAC8hO6HT6BrzYgCtBEXAmLTvrN0Tsich2bSvr9PUgqOsnBoU2kQu3dCDeApsTAocHWhUTzaAIwxkxGPSB03Y/oPYYAfGSPs2ZeRQyrFS5UGgVr0Fb2ymUOaAtVPkpbGcQgbcc+M70bwqqaF1roBZgXpIol64dgMrlDGWtPt5oioaY0Zk1JOBS2NCIjLBpmhykdXOWVccS2te5IYriD9xOj03jnpWBJwD5VOfM8AyRT3WEPqB8G/a6duG2fidhKQVU6IjnFCDU0Jme7T0Qpc//CKE7Ob6ir6YntYWQyWPQjVK7Pq6azvyhHZ/0vsx3d1EJSl7xGFCYkSW69PYMqUCCcv411ySyUCido6Vqe9oj1IXvGFfkn7I2N5PppmPYoY8l6+XAX2qhRK2ozPGStUtaHTSczMkoo9BGMSM/ZiBazidbBHCRRrEbBaz+Td1twDP0pahGwR9f9L/9Oa2Ls4V88ImhUKsPIy372xa+0XDyQGe6lwpOwE8ECr6bIhbLOr+gbFIT4InYnIl5ZNVjB3YY+xY0lbi+zY9TErdsKnu/vZK11Z0wNdL5cfq0m3tbHCvqAtMceSN9LkHMiateKL37Y+vo8G8ztp5zbFzrTSNsSMdhTIaRnrsc/d+cyiPtu3KQy5vDd2zpHuX2c9kvWmnDU7Y73bTsg3bjo7T2+VnFOSsK5V3zx7JoDEZFE/fjr//AA=="
  },
  "sitzung": {
-  "start": "2026-11-17T19:58:18.684Z",
-  "ordner": "sitzung-20261117-205818",
+  "start": "2026-11-17T20:01:18.922Z",
+  "ordner": "sitzung-20261117-210118",
   "port": 7804,
-  "warten": 0.03,
-  "bootS": 7.4,
+  "warten": 0.01,
+  "bootS": 5.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "ankunft.K1#1",
-    "s": 20.2,
-    "takte": 784,
+    "ort": "wiese",
+    "vor": "gelaende.K2#1",
+    "s": 23.2,
+    "takte": 588,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "gelaende.K2#1",
+    "ort": "wiese",
+    "m": 1718.5,
+    "dreh": 0
+   }
+  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 567,
-   "frameP95": 224.99,
-   "taktP95": 142.65,
-   "vramMax": 143.2,
-   "seiten": 5,
+   "bilder": 252,
+   "frameP95": 50.03,
+   "taktP95": 42.43,
+   "vramMax": 135.6,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 63,
-   "luecken": 4,
-   "letzteLuecke": "THREE is not defined"
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K2#1",
+     "m": 1718,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 49,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 73.1,
-  "minuten": 1.32
+  "fahrtS": 54.9,
+  "minuten": 1.01
  },
  "ungemessen": {
   "profiband.K4#2": {
@@ -2280,6 +2295,100 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "ankunft.K1#1",
+   "modus": "session"
+  },
+  "gelaende.K2#1": {
+   "gruen": false,
+   "zahl": "die Seite warf: (b)(d) 14.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,842 (Faden 1,627 · alle Kerne 1,842; vor 90,7/215,4 ms, nach 147,1/426,6 ms, Ruhe 90,4/231,6 ms seit 2026-11-15) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 3,7 CPU-s · Explorer.EXE 1,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 4,7 CPU-s · svchost.exe 3,1 CPU-s · SearchIndexer.exe 0,6 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 14.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "exit": 1,
+   "minuten": 0.38,
+   "grund": "die Seite warf: (b)(d) 14.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,842 (Faden 1,627 · alle Kerne 1,842; vor 90,7/215,4 ms, nach 147,1/426,6 ms, Ruhe 90,4/231,6 ms seit 2026-11-15) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,3 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 3,7 CPU-s · Explorer.EXE 1,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 4,7 CPU-s · svchost.exe 3,1 CPU-s · SearchIndexer.exe 0,6 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 14.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 19436",
+   "s": 23,
+   "fremd": {
+    "s": 26.1,
+    "takte": 12,
+    "fremdS": 11.64,
+    "kerne": 0.446,
+    "fensterKerne": 0.55,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.28
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.72
+     ],
+     [
+      "Explorer.EXE",
+      1.08
+     ]
+    ],
+    "dienerS": 9.23,
+    "diener": [
+     [
+      "dwm.exe",
+      4.25
+     ],
+     [
+      "System",
+      3.5
+     ]
+    ],
+    "geraetS": 8.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.69
+     ],
+     [
+      "svchost.exe",
+      3.05
+     ],
+     [
+      "SearchIndexer.exe",
+      0.63
+     ]
+    ],
+    "eigenS": 101.84,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.372,
+     "nach": 0.423,
+     "station": 0.958
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 90.7,
+     "alle": 215.4,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 147.1,
+     "alle": 426.6,
+     "cpuEin": 141
+    },
+    "ruhe": {
+     "ein": 90.4,
+     "alle": 231.6,
+     "n": 590,
+     "von": "2026-11-15"
+    },
+    "f": 1.842,
+    "fEin": 1.627,
+    "fAlle": 1.842,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-17T20:01:50.167Z",
+   "abdruck": "47cc56a17829",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  }
