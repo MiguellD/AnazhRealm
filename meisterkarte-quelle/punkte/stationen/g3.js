@@ -4229,14 +4229,16 @@ const stationen = [
             }
             const ORTE = ["genesis", "wiese", "genesis:third", "wiese:third"];
             if (!j || ORTE.every((o) => !j[o])) return { gruen: false, zahl: "keine Kurve der Tag-Achse (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
-            // DER WEG DER STERNE: die Kürzung zählt am Himmel dieselben Punkte wie das volle Bild (je Ort vier Uhren, |kurz − voll| ≤
-            // max(1, 10 % von voll)); der Boden der unteren Hälfte (`weg.rot`) gehört der Licht-Kurve (licht.K1#1, himmelsmechanik#1)
-            // und steht hier als Lesewert
-            const sw = (weg && Array.isArray(weg.sterne) ? weg.sterne : []).filter((z) => Number.isFinite(z.kurz) && Number.isFinite(z.voll));
-            const swRot = sw.filter((z) => Math.abs(z.kurz - z.voll) > Math.max(1, 0.1 * z.voll)).map((z) => "Uhr " + z.uhr + " kurz " + z.kurz + " ↔ voll " + z.voll);
-            const wegOk = sw.length >= 4 * ORTE.length && !swRot.length;
+            // DER WEG DER STERNE: in der Nacht des Wegs (Uhr 0, Sonne −60°, je Ort eine Zeile) zählt die Kürzung am Himmel dieselben
+            // Punkte wie das volle Bild bis auf das Zählrauschen, |kurz − voll| ≤ 2·√voll (Radeon f5ce1579: 47 ↔ 52 · 25 ↔ 22 · 29 ↔ 25 ·
+            // 23 ↔ 24, beide Vorzeichen). Die Tag-Zeilen des Wegs zählen rohe Lichtpunkte (Laub, Wolkenkante: 0–7), die keine Sterne
+            // sind — die Sterne des Tags urteilt die Tafel an der Differenz mit − ohne Sternfeld. Der Boden der unteren Hälfte
+            // (`weg.rot`) gehört der Licht-Kurve (licht.K1#1, himmelsmechanik#1) und steht hier als Lesewert
+            const sw = (weg && Array.isArray(weg.sterne) ? weg.sterne : []).filter((z) => z.uhr === 0 && Number.isFinite(z.kurz) && Number.isFinite(z.voll));
+            const swRot = sw.filter((z) => Math.abs(z.kurz - z.voll) > 2 * Math.sqrt(Math.max(z.voll, 1))).map((z) => "Nacht kurz " + z.kurz + " ↔ voll " + z.voll);
+            const wegOk = sw.length >= ORTE.length && !swRot.length;
             const wegText =
-                (wegOk ? "gleich (" + sw.length + " Zeilen, Nacht kurz ↔ voll " + sw.filter((z) => z.uhr === 0).map((z) => z.kurz + "↔" + z.voll).join(" ") + ")" : "ROT " + (sw.length < 4 * ORTE.length ? sw.length + " von " + 4 * ORTE.length + " Zeilen" : swRot.join(" | ").slice(0, 160))) +
+                (wegOk ? "gleich (Nacht kurz ↔ voll " + sw.map((z) => z.kurz + "↔" + z.voll).join(" ") + ")" : "ROT " + (sw.length < ORTE.length ? sw.length + " von " + ORTE.length + " Nacht-Zeilen" : swRot.join(" | ").slice(0, 160))) +
                 " · Boden (Lesewert) " + (weg ? (weg.rot ? String(weg.rot).slice(0, 80) : "gleich") : "fehlt");
             let gruen = hw && wegOk;
             const gamma = (a, b) => {
@@ -4313,9 +4315,10 @@ const stationen = [
                 { name: "der Weg ohne die Sterne (die Probe bis 16.11.)", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ rot: "Uhr 0.25 weicht ab" }) + "\n", j: welt(), gruen: false },
                 // GTX e2a28364: der Boden der Wiese weicht an jeder Uhr ab (Y 0,0249 EV), die Sterne lesen ihn nie
                 { name: "der Boden der Wiese weicht ab, die Sterne kurz = voll", stdout: wegZeile({ rot: "Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0249}" }), j: welt(), gruen: true },
-                { name: "die Kürzung zählt nachts 52 statt 40 Punkte (wiese Third)", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i === 12 ? { ...z, kurz: 52 } : z)) }), j: welt(), gruen: false },
-                { name: "ein Punkt mehr am Taghimmel der Kürzung (die Schwelle: 1)", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i === 6 ? { ...z, kurz: 1 } : z)) }), j: welt(), gruen: true },
-                { name: "der Weg der Sterne an zwei Orten (8 von 16 Zeilen)", stdout: wegZeile({ sterne: sterneWeg().slice(0, 8) }), j: welt(), gruen: false },
+                { name: "die Kürzung zählt nachts 20 statt 40 Punkte (wiese Third)", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i === 12 ? { ...z, kurz: 20 } : z)) }), j: welt(), gruen: false },
+                { name: "die Nacht der Kürzung im Zählrauschen (Radeon f5ce1579: 47 ↔ 52 · 25 ↔ 22 · 29 ↔ 25 · 23 ↔ 24)", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i % 4 ? z : { ...z, ...[{ kurz: 47, voll: 52 }, { kurz: 25, voll: 22 }, { kurz: 29, voll: 25 }, { kurz: 23, voll: 24 }][i / 4] })) }), j: welt(), gruen: true },
+                { name: "rohe Lichtpunkte am Taghimmel, kurz 7 ↔ voll 1 (keine Sterne: der Tag zählt im Weg nicht)", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i === 6 ? { ...z, kurz: 7, voll: 1 } : z)) }), j: welt(), gruen: true },
+                { name: "der Weg der Sterne an zwei Orten (2 von 4 Nacht-Zeilen)", stdout: wegZeile({ sterne: sterneWeg().slice(0, 8) }), j: welt(), gruen: false },
                 { name: "swiftshader", stdout: "[linse-gpu] google/swiftshader (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null, sterne: sterneWeg() }) + "\n", j: welt(), gruen: false },
                 { name: "keine Kurve", stdout: ad, j: null, gruen: false },
             ];
