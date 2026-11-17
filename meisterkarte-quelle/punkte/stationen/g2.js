@@ -23,15 +23,28 @@ const probeZeile = (stdout, probe) => jsonZeile(stdout, new RegExp("^\\s*(✅|�
 // Start-Dorfs stand im Bild — GTX b4bcf19c ≥ 90 s. DIE SCHÜSSE (w4-ssa-C): nur, was eine Zahl liest — je Box-Blick die Maske des
 // Bodens (ohne Büschel an der Box ist sie das Bild des Blicks: G und O wären dasselbe Bild, der Halm 0), Third nur mit Büscheln an
 // den Boxen, die Gegenprobe und je Wasser-Blick vier; das Innen-Bild (W10) misst siedlung.K1#2. 404 → 112 Aufnahmen (43 Häuser).
+// DER SPIEGEL ALS UNTERSCHIED (Vorarbeiter 10, 17.11.; Radeon 7de938ab vegetation.K4#2: Spiegel 0 · Halm 0 · Boden 0 in allen vier
+// Wasser-Blicken, die Gegen-Zählung daneben 7 355 / 24 372 / 20 202 / 61 919 px; am 29.10. Spiegel 41 180, seit e6f0cf7e 0): die Maske
+// der Linse färbt `state.hydroSurfaceMaterial` (einen Stoff, der das Wasser im Bild nicht mehr zeichnet — es zeichnen `wasserSatz`,
+// `farWater`, `chunk-water-*`, die Hydrosphäre) und fand 0 px. Die Station fragt das Wasser so, wie die Klassen-Maske der Abnahme es
+// zählt: jedes sichtbare Wasser-Netz (dieselbe Regel wie ausgabe-aufnahme), ein Schuss mit ihm, einer ohne — Spiegel ist jeder Pixel,
+// den das Wasser ändert (die Schwelle der Linse, `anders` > 18); dieselben Netze verbirgt der Blick danach (G, O, Maske des Bodens).
+// Steht die alte Maske nicht mehr in der Linse, wirft die Probe beim Namen (UNGEMESSEN), nie ein stilles Weiter. (In der Art: die Probe
+// trägt keine freien Namen außer H, fs, path, require — seite.cjs `seiteProbe`.)
 async function vegetationK4Seite(H) {
     const D = H.quelle("scripts/diag-haus-welt.cjs", ["proben"]);
+    const MASKE_ALT = /const Wm = await maske\(s\.hydroSurfaceMaterial, \(\) => TSL\.vec3\(0, 0, 1\), \[\]\);\s*s\.scene\.traverse\(\(m\) => m\.isMesh && m\.material === s\.hydroSurfaceMaterial && wasser\.push\(m\)\);/;
+    const MASKE_NEU =
+        "s.scene.traverseVisible((m) => m.isMesh && (m.userData.isHydrosphere || m.material === s.hydroSurfaceMaterial || /^(wasserSatz|farWater|chunk-water-)/.test(r._taeterKlasse(m))) && wasser.push(m)); const [Wg, Wo] = [await schuss([], []), await schuss(wasser, [])]; const Wm = new Uint8Array(Wg.length); for (let k = 0; k < Wg.length; k += 4) if (anders(Wg, Wo, k)) Wm[k + 2] = 255;";
+    if (!MASKE_ALT.test(String(D.proben))) throw new Error("diag-haus-welt proben: die Wasser-Maske steht nicht mehr, wie die Station sie heilt (MASKE_ALT)");
+    const proben = String(D.proben).replace(MASKE_ALT, MASKE_NEU);
     const WA = require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL;
     await H.ruf("/fenster", { w: 640, h: 360 });
     await H.frist();
     await H.ruf("/umstellen", { ort: "genesis", sicht: "ego" });
     await H.seite("await window.__weltStehtNach(() => { try { r._gameLoopTick(performance.now()); } catch (e) {} });\n" + WA + "\nreturn 1;");
     H.schritt("welt");
-    const o = await H.seite("return await (" + D.proben + ")([\"grund\", \"bild\", \"start\"]);");
+    const o = await H.seite("return await (" + proben + ")([\"grund\", \"bild\", \"start\"]);");
     H.schritt("grund");
     const bild = (x, name) => {
         for (const [v, png] of [].concat(x.png || []).entries()) H.WB.pngDatei(H.aus + "-" + name + "-" + v + ".png", png);
