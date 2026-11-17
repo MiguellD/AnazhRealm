@@ -1,0 +1,139 @@
+{
+ "sha": "e489088a9bfca46817cd159efd64ffc1be80dbd4",
+ "geraet": "gtx",
+ "zeit": "2026-11-17T08:33:46.364Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.mensch.menge.bild#1": {
+   "gruen": true,
+   "zahl": "25 Menschen im Bild, 14 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 19.2 fps · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.77,
+   "gpu": "nvidia/pascal",
+   "konsum": "k2a0a7286c0b7",
+   "konsumN": 33,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k01f1e576c614",
+   "s": 105.4,
+   "fremd": {
+    "s": 109.1,
+    "takte": 49,
+    "fremdS": 178.72,
+    "kerne": 1.638,
+    "fensterKerne": 1.965,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      81.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      28.83
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.98
+     ]
+    ],
+    "dienerS": 61.41,
+    "diener": [
+     [
+      "System",
+      32.58
+     ],
+     [
+      "dwm.exe",
+      19.05
+     ]
+    ],
+    "geraetS": 63.02,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      39.58
+     ],
+     [
+      "svchost.exe",
+      18.34
+     ],
+     [
+      "SearchIndexer.exe",
+      3.38
+     ]
+    ],
+    "eigenS": 335.73,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-17T08:33:46.364Z",
+   "abdruck": "b5efe0b032a4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k2a0a7286c0b7": "pVVNj5swEP0vObZlnfARjKUenGXbrNRK2WOPY3sMbAhENixtqv73KgRnA+yqh84J0Hy8efNm+L04gtxDhnfPtq4WbPFh8Wlh4QU9i+YFzd2zXbDFUoYQUcYvRjjn92c3aYpjY4kqIPP2BqFpjVeiwOpO9mFShiu6ZORf9pN+fi9dA/tmyOYnASKwTcb5d/75NqIsBAFRQX5ArzUNFuUQspIUARnpHni3I2RHYrLp+NU2b6QpBaraa0CjSyKUHwfApo6tzUCgB63uCw/OCUYqEUPLNOW752uX/Ilz0j1MKwqo1Bi1DiDSK/b4i/OHOUJVADZeWVTW1ZQqEoH/SnM3jzHQeSfAvEQzBNF1pIKVAzoN0GVr7agIDVTkU0ZIQia+GdpC5o13NPXr6EXixytgmzmW7Nh6+hYJCAFUTPnNAasMzRhDHEYyZBO9nL33cEADXgW5m8MyiH0xkt52jsWp7ICVlS5UL9eBlP9WLSFk937KMRuRCkXA+P/a44/NpFzZU9+T5IpRJZJYT/Fn2174Ke1frp/p9pI5zW7KPE2KWJkX5jBuSetIwZJ9mzNgc1BovH1tm6t3QKkPjoC0XwW+C9Np5GszbufFehnRm14o4dvZ9G2tmw4MetmxHQIxxCiOGOePM+cGDgfXhPSRRm/O5Q3l2ua8qrfwlrEfRb3KsncUdlls74RF6YJiKVcBsvvvfNr/i4GDByIzhdZOxyKSOnlr7TosG0/UtTuPSaAgkIwEpLqyldDLmbta2tXy4T57mjS7NVk6x95XqE3jgEdivdQh0/2NkVPvE5oSMxzxc1Y9KEY6eQMhdA8fRwI9zcZ6KvDMXGVb66SdxCoZpD3c8cfxhezQ7AVUe8f1Sq+kYmd9fyE8HQqvN+SZbLtbBlK+63qq7m+/fh2SH1GSo6l1cT7WJIfW5lA2o1/mxaVFLVrMKzyLpSnqCqtXrz9/AQ==",
+  "k01f1e576c614": "fVTBcpswEP0XH5sS2YCC0EwOcsnUyUymzqnT40paATEGjwQhdaf/3jEB20DbPQGzb/ft28f+WhxA7SDF21dXlQu++LT4vHDwhp5D+4b29tUt+GKpQqCMi48gQoivpzRl80PtSJFLArKEbI9eY2vMi1vVwVaKISAn7YNot4RsSUTWrTjHWtzfT8sUEnXl1WBwKCK1HwXAp4mNS0GiB43pGvfJMVIdS066YInYvpIhxIsQpH2YdpRQ6jFrEwA1K/7YCvEwZ6hzwNor8tINPZWmMvD5uVE7x1hovSNgVqDtQeyO6mA1EJ0CTNE4N2rCAk19xgmJySQ3RZerrPYOtpJYDqLFfrQCvp5zSQ+NZ66ZgJTA5FTfDLBM0Y45RCFVISfvM7472KMFr4Rs2MMyiHx50YQQsplzKTriXYuBONMyjswISAhJN51tEta9nD+zzYeRkvRiKvEyaeJUltv9WB5jqIbldGaXgUbr7SpXnzMDxnwIeucnnYnENkymyMsgPc6Xd0vKruZgRGxmurnK1C1Y9NJD0wMxRBpRLtLnWXIN+/0wgPKR0dkA9cnM1zSWkU9pt4f0Hzv4sL53xLwYQJFSqwD5l2cxnfPNwt4DmdrcmGHTkioT/82YLRa1J6uqHjIDDYHiJCDlWZWYCfFDrC/bS44V+/5z9369USHEUzXl3VWvbD2QpvJuaUJuuj9QTbOPaAtMcaSNDmUAmpNWXbUPh4ebkQGPs9UdczypVrrGDdaNIx331u2v3OP4frRodxLK3aDzyqyU5p1/tyIR34RIn5Kb6xP5v0j64gdU5GArk59OGcmgcRkU9eWe//4D"
+ },
+ "sitzung": {
+  "start": "2026-11-17T08:17:58.278Z",
+  "ordner": "sitzung-20261117-091758",
+  "port": 7804,
+  "warten": 15.32,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "karte2.mensch.menge.bild#1",
+    "s": 22.2,
+    "takte": 573,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "karte2.mensch.menge.bild#1",
+    "ort": "genesis",
+    "m": 185.18,
+    "dreh": 3.189
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.mensch.menge.bild#1",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 3248,
+   "frameP95": 25.07,
+   "taktP95": 19.83,
+   "vramMax": 181.9,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 172,
+   "luecken": 3,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 214.9,
+  "minuten": 18.99
+ }
+}
