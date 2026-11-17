@@ -107,6 +107,7 @@ const { WIESE_INSTALL } = require("./lib/welt-orte.cjs");
 const { vramAbgriff } = require("./lib/vram-abgriff.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 const HL = require("./lib/haenger-linse.cjs");
+const WW = require("./lib/wirt-wache.cjs");
 
 // DIE MESSUNG IN DIE SOLL-TAFEL (`bild --klasse … --ist <id>[:L<n>|:wirkung]`, `licht --ist <id>`): das Werkzeug
 // schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
@@ -532,6 +533,7 @@ async function starte() {
     const seite = (name, k) => page.evaluate((n, k) => window[n](k), name, k);
     if (!ECHT) await page.setViewport(START_FENSTER);
     const spur = { an: null }; // DIE BELEGUNG: der Lauf ruft die Spur vor seinem ersten gemessenen Takt an (`/lauf`)
+    let wirt = null; // DIE WIRT-WACHE zwischen `/wirt` nimm und gib: { heapVor } — solange trägt jeder `/eval` die Marke
     await page.exposeFunction("__spurAn", () => spur.an && spur.an());
     await page.evaluateOnNewDocument(WARTEN_SEITE); // die Seiten-Werkzeuge jeder Seite (`r`, sleep, das Warten), wie welt-boot
     await page.evaluateOnNewDocument(FALTE_INSTALL);
@@ -2216,16 +2218,43 @@ async function starte() {
                     if (U.u === "ROT") throw new Error(`${zeile} · ROT-Bild ${datei}`);
                     return send(Object.assign(o, { abnahme: zeile, datei, gesamtMs: Date.now() - t0 }));
                 }
+                // zwischen `/wirt` nimm und gib trägt jeder Rumpf die Marke der Wirt-Wache (scripts/lib/wirt-wache.cjs `evalRumpf`)
                 if (req.url === "/eval") {
                     const o = await page.evaluate(
-                        (code) =>
-                            new Function("r", "T", `return (async () => { ${code} })();`)(
-                                r,
-                                THREE
-                            ),
-                        b.code
+                        (rumpf, code, marke) =>
+                            new Function("r", "T", "__wirtMarke", rumpf)(r, THREE, marke ? (0, eval)(`(${marke})`)(window, code) : null),
+                        WW.evalRumpf(b.code),
+                        b.code,
+                        wirt ? String(WW.wirtMarke) : null
                     );
                     return send({ ergebnis: o });
+                }
+                // DIE WIRT-WACHE (scripts/lib/wirt-wache.cjs; Leser: der Läufer der Punkte-Maschine vor dem Preis-Lauf): `nimm` vor der
+                // Probe (das Gedächtnis der Seite, der Heap nach dem Collector, die Marken an), `gib` nach ihr — jede Abweichung am Wirt
+                // beim Namen und zurück, die Marken, deren Kontext noch jemand hält, der Heap danach und das Urteil (UNGEMESSEN beim Grund)
+                if (req.url === "/wirt") {
+                    const heap = async () => {
+                        const cdp = await page.target().createCDPSession();
+                        for (let i = 0; i < 3; i++) await cdp.send("HeapProfiler.collectGarbage");
+                        const u = await cdp.send("Runtime.getHeapUsage");
+                        await cdp.detach();
+                        return +((u.usedSize + u.backingStorageSize) / 1048576).toFixed(1);
+                    };
+                    const lies = (gib) => page.evaluate((c) => new Function("r", c)(r), WW.wirtCode(gib));
+                    if (!b.gib) {
+                        const g = await lies(false);
+                        wirt = { heapVor: b.heap ? await heap() : null };
+                        await page.evaluate(() => delete window.__wirtMarken);
+                        return send({ genommen: true, glieder: g.glieder, heapVor: wirt.heapVor });
+                    }
+                    const vor = wirt;
+                    wirt = null;
+                    let ab = await lies(true);
+                    // die Seite ist neu seit `nimm` (eine Probe lud sie): an ihr steht nichts der Probe; das Gedächtnis nimmt der nächste `nimm`
+                    if (vor && ab.fehler) ab = { anders: [], wie: {}, erklaert: [], bleibt: [], neu: true };
+                    const heapNach = b.heap ? await heap() : null;
+                    const haelt = await page.evaluate((m) => (0, eval)(`(${m})`)(window), String(WW.markenLies));
+                    return send(Object.assign(WW.wirtUrteil({ ab: vor ? ab : { fehler: "nimm fehlt" }, haelt, heapVor: vor && vor.heapVor, heapNach }), { neu: !!ab.neu }));
                 }
                 if (req.url === "/methode") {
                     // `--quelle <datei>`: die Methode aus einem anderen Stand (die Basis eines A/B in EINER Welt)
@@ -3715,6 +3744,10 @@ hauptLauf(async () => {
         console.log(JSON.stringify(o, null, 1));
         endeMit(o.urteil && !o.urteil.length ? "GANG GRÜN" : "GANG ROT", o.urteil && !o.urteil.length);
     } else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
+    else if (cmd === "wirt" && SELBST) {
+        selbsttestEnde(await WW.wirtSelbsttest(), "die Wirt-Wache nennt jeden Haken am Wirt (r, Prototyp, r.state, window) und setzt ihn zurück, die Marke sieht den Kontext, den eine Probe hält, ein Heap über der Schwelle ist UNGEMESSEN; die Mutante von main (der Haken der Hülle) besteht nicht");
+        process.exit(0);
+    } else if (cmd === "wirt") o = await rufe("/wirt", { gib: hat("gib"), heap: hat("heap") });
     else if (cmd === "diaet") {
         if (SELBST) {
             const f = DIAET.selbsttest();

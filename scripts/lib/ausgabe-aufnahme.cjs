@@ -528,11 +528,14 @@ function membranOhneFilm(an) {
 // Die Marke trägt die Hülle, nie der Prototyp: er trägt nie Stand (`_weltAbschied` bricht beim Namen) — bis 30.10. lag
 // `__tiereGehalten` auf ihm, und jeder Tausch am Ort nach einem gehaltenen Lauf brach an dieser Marke. Offen rechnet der
 // Spiegel in jedem Frame des Schusses neu (die Rausch-Linse der Station zug/a-spawn.cjs misst so seinen Lauf).
+// Die Hülle ist ein Instrument der Werkbank, keine Probe: sie trägt ihre Absicht für die Wirt-Wache (`__wirtBleibt`, lib/wirt-wache.cjs)
+// — ohne gehaltene Quelle reicht sie durch, und was gehalten bleibt, gibt der Halt der Sitzung frei (punkte.cjs `messHaltRuf`)
 function halten(quellen) {
     const P = Object.getPrototypeOf(r),
         H = (window.__gehalten ||= new Set()),
         zu = (q) => H.has(q) && !window.__offen?.has(q),
-        huelle = (m, f) => P[m].__gehalten || (P[m] = Object.assign(f(P[m]), { __gehalten: true }));
+        bleibt = "die Hülle des Halters der Werkbank (ausgabe-aufnahme halten)",
+        huelle = (m, f) => P[m].__gehalten || (P[m] = Object.assign(f(P[m]), { __gehalten: true, __wirtBleibt: bleibt }));
     for (const q of quellen || ["tiere"]) H.add(q);
     huelle("updateCreatures", (g) =>
         function (d) {
