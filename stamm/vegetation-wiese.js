@@ -776,9 +776,11 @@ class AnazhRealm_vegetation_wiese {
     // stoffe.K3-2: glühend und erstarrt Stein), im Wasser steht nie einer (`_nassAt`, das EINE Urteil wie die Nah-Streu). Der
     // Wurf der Nähe liest es (× das Gesetz der Bodenschicht); die Ferne zeichnet dieselben Büschel — dieselben Masken.
     _wieseGrund(x, z, y, gruen) {
-        if (!(gruen > 0) || this._nassAt(x, z, 0.1, y)) return 0;
+        // wo die Decke der Lava liegt, auch in ihrem dünnen Rand, steht kein Halm (w28-lava-zuendet: bis hier dünnte sie nur —
+        // Büschel standen grün im glühenden Rand)
+        if (!(gruen > 0) || this._nassAt(x, z, 0.1, y) || this._lavaDeckeAt(x, z) > 0) return 0;
         const pfad = 1 - this._pfadFeldAt(x, z, y) * AnazhRealm.NAH_WIESE.pfadDuennt;
-        return gruen * pfad * (1 - this._ascheAt(x, z)) * (1 - this._lavaDeckeAt(x, z));
+        return gruen * pfad * (1 - this._ascheAt(x, z));
     }
 
     // DIE KACHEL DER FERNE BEGINNT ERST, WENN DA IST, WAS SIE LIEST (w25-ankunft-block-2, die Klasse „ein Bau fällt auf null“): die

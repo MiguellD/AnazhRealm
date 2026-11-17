@@ -95,11 +95,22 @@ class AnazhRealm_feld_leben {
     // DIE FRONT EINER BRENNENDEN ZELLE ALS NARBE (w28-brand-bild): wie weit die Ellipse ihres Eintritts (`_brandZuenden`) den Ort zur
     // Uhr des Brands verzehrte — 0 vor der Flamme, über ihre Verweilzeit `tr` auf 1 (der versengte Saum). Bis hier trug nur die
     // ausgebrannte Zelle Asche: die Halme standen grün vor den Flammen, bis das Quadrat auf einmal grau fiel.
+    // Der Weg der Front von ihrem Eintritt im Maß ihrer Ellipse → die Funktion (x, z) in m: |v| − ecc·v·ψ, das Minimum über ihre
+    // Eintritte (`ein` [x, z, …]: der Rand der Lava zündet auf seiner Länge, `_lavaZuendet`; sonst der EINE Punkt). EIN Ruf je Leser.
+    _brandWeg(b, ecc, px, pz) {
+        const E = b.ein || [b.ex, b.ez];
+        return (x, z) => {
+            let m = Infinity;
+            for (let i = 0; i < E.length; i += 2)
+                m = Math.min(m, Math.hypot(x - E[i], z - E[i + 1]) - ecc * ((x - E[i]) * px + (z - E[i + 1]) * pz));
+            return m;
+        };
+    }
     _brandFront(b) {
         const [k, s, t, px, pz] = [1 / (b.R * (1 - b.ecc)), Math.max(b.tr, 1), this._brandUhr, b.kopf[0], b.kopf[1]];
+        const weg = this._brandWeg(b, b.ecc, px, pz);
         const front = (x, z) => {
-            const q =
-                (t - b.t0 - (Math.hypot(x - b.ex, z - b.ez) - b.ecc * ((x - b.ex) * px + (z - b.ez) * pz)) * k) / s;
+            const q = (t - b.t0 - weg(x, z) * k) / s;
             return q <= 0 ? 0 : q >= 1 ? 1 : q;
         };
         return { asche: 1, busch: 0, wald: 0, front };
@@ -2465,7 +2476,7 @@ class AnazhRealm_feld_leben {
         st.spielZeit = akt.w;
         try {
             if (akt.art === "leben") return void this._depositLife(akt.x, akt.z, akt.a);
-            if (akt.art === "brand") return this._brandFangen(akt.x, akt.z);
+            if (akt.art === "brand") return this._brandFangen(akt.x, akt.z, akt.ein);
             const R = this._bestandRegion(akt.key, false);
             if (akt.art === "annahme") {
                 const offen = this._annahmeOffen && this._annahmeOffen.get(akt.id);
@@ -2631,13 +2642,17 @@ class AnazhRealm_feld_leben {
         const leb = this.auraAt(x, z).lebendig;
         let f = null;
         if (leb >= AnazhRealm.BRAND.minStoff && !this._nassAt(x, z)) {
-            const y = this._voxelSurfaceY(x, z);
-            const zeile = this._stoff(this._kontaktStoffAt(x, z, y));
-            if (zeile && zeile.brenn) {
-                const h = cs / 2;
-                const [gx, gz] = [(this._voxelSurfaceY(x + h, z) - y) / h, (this._voxelSurfaceY(x, z + h) - y) / h];
-                f = { zeile, leb, x, z, y, gx, gz, boden: this._feuchteAt(x, z, y) };
-            }
+            const [y, h] = [this._voxelSurfaceY(x, z), cs / 2];
+            const [gx, gz] = [(this._voxelSurfaceY(x + h, z) - y) / h, (this._voxelSurfaceY(x, z + h) - y) / h];
+            // das Bett liegt, wo die Zelle Brennstoff trägt (Mitte und vier Viertel-Punkte), ihr ANTEIL geht als Last ins Gesetz
+            // (`leb`). Bis w28-lava-zuendet las sie nur ihre Mitte — ein Stein dort nahm einer Wiese von 16 m ihr Bett. Die
+            // Viertel-Punkte lesen ihren Stoff auf der Ebene des Gefälles (keine eigene Höhe: je Punkt 47 Einheiten des Takts)
+            const B5 = [0, 1, 2, 3, 4]
+                .map((k) => [k ? (k & 1 ? cs : -cs) / 4 : 0, k ? (k > 2 ? cs : -cs) / 4 : 0])
+                .map(([dx, dz]) => this._stoff(this._kontaktStoffAt(x + dx, z + dz, y + gx * dx + gz * dz)))
+                .filter((s) => s && s.brenn);
+            const zeile = B5[0];
+            if (zeile) f = { zeile, leb: (leb * B5.length) / 5, x, z, y, gx, gz, boden: this._feuchteAt(x, z, y) };
         }
         M.set(key, f);
         return f;
@@ -2717,7 +2732,7 @@ class AnazhRealm_feld_leben {
     }
 
     // Die Zelle unter (x, z) fängt Feuer → die Zelle oder null (sie brennt schon, trägt kein Bett, die Welt ist zu nass).
-    _brandFangen(x, z) {
+    _brandFangen(x, z, ein) {
         const st = this.state;
         const bf = st.brandFeld || (st.brandFeld = new Map());
         const cs = AnazhRealm.LIFE_FIELD.cell;
@@ -2730,7 +2745,7 @@ class AnazhRealm_feld_leben {
             if (this._brandRest) this._brandArbeit(Infinity);
             [this._brandUhr, this._brandBett, this._brandRest, bf.glutBlock] = [st.spielZeit, null, null, null];
         }
-        return this._brandZuenden(cx, cz, st.spielZeit, x, z);
+        return this._brandZuenden(cx, cz, st.spielZeit, x, z, ein);
     }
 
     // Die Front erreicht die Zelle zur Zeit t am Punkt (ex, ez) ihres Rands (der Herd: am Ort der Tat). Ihr Bett und ihr Tempo
@@ -2742,7 +2757,7 @@ class AnazhRealm_feld_leben {
     // der Spitze). Die Zelle brennt, bis die Spitze sie längs ihres Kopfs durchquert hat (bis an ihre fernste Ecke), und die
     // Flamme ihre Verweilzeit; was langsamer in sie zurückläuft (Flanke, Rückfeuer), trägt die Ankunft ihrer Nachbarinnen, nicht
     // ihr Brennen. Ohne Bett oder Tempo fällt sie aus dem Feld (null).
-    _brandZuenden(cx, cz, t, ex, ez) {
+    _brandZuenden(cx, cz, t, ex, ez, ein = null) {
         const bf = this.state.brandFeld;
         const key = cx + "," + cz;
         const f = this._brandStoff(cx, cz);
@@ -2753,7 +2768,8 @@ class AnazhRealm_feld_leben {
         }
         const cs = AnazhRealm.LIFE_FIELD.cell;
         const k = 1 / (T.R * (1 - T.ecc));
-        const zeit = (x, z) => (Math.hypot(x - ex, z - ez) - T.ecc * ((x - ex) * T.px + (z - ez) * T.pz)) * k;
+        const weg = this._brandWeg({ ex, ez, ein }, T.ecc, T.px, T.pz);
+        const zeit = (x, z) => weg(x, z) * k;
         // die erste Berührung der Fläche [x0, x0 + cs] × [z0, z0 + cs] → [Zeit, x, z]
         const ankunft = (x0, z0) => {
             const [x1, z1] = [x0 + cs, z0 + cs];
@@ -2796,6 +2812,7 @@ class AnazhRealm_feld_leben {
             stoff: f.zeile.name,
             ex,
             ez,
+            ein,
             R: T.R,
             kopf: [T.px, T.pz],
             ecc: T.ecc,
@@ -3010,30 +3027,34 @@ class AnazhRealm_feld_leben {
             const N = Math.max(B.winkelMin, Math.min(B.winkel, Math.round((B.winkel * B.nahM) / d), umfang));
             const wt = tafel(N);
             let [s, naechste, vx, vz] = [0, 0, null, null];
-            for (let i = 0; i <= N; i++) {
-                const [c, sn] = [wt[2 * i], wt[2 * i + 1]];
-                const Rt = (b.R * (1 - b.ecc)) / (1 - b.ecc * c);
-                const r = (t - b.t0) * Rt;
-                const [x, z] = [b.ex + r * (px * c - pz * sn), b.ez + r * (pz * c + px * sn)];
-                if (vx !== null) s += Math.sqrt((x - vx) * (x - vx) + (z - vz) * (z - vz));
-                [vx, vz] = [x, z];
-                if (s < naechste || x < x0 || x >= x0 + K || z < z0 || z >= z0 + K) continue;
-                const lang = 0.0775 * Math.pow(b.iw * Rt, 0.46);
-                naechste = s + Math.max(B.abstandMinM, B.abstand * lang);
-                const phase = (((x * 12.9898 + z * 78.233) % 6.2832) + 6.2832) % 6.2832;
-                const f = vorrat[fl.length] || (vorrat[fl.length] = {});
-                f.x = x;
-                f.y = b.y + b.gx * (x - xc) + b.gz * (z - zc);
-                f.z = z;
-                const takt = (Math.PI * s) / lang - uhr / Math.sqrt(Math.max(0.05, Rt * b.tr)) + Math.sin(phase);
-                f.lang = lang * (1 + puls * Math.sin(takt));
-                f.kipp = Math.atan(u / Math.sqrt(9.81 * lang));
-                f.wx = w.x;
-                f.wz = w.z;
-                f.dreh = phase;
-                f.I = b.iw * Rt;
-                fl.push(f);
-            }
+            const [E, weg] = [b.ein || [b.ex, b.ez], b.ein && this._brandWeg(b, b.ecc, px, pz)]; // je Eintritt seine Ellipse, gezeichnet, wo keine andere sie schon verzehrte
+            for (let j = 0; j < E.length; j += 2)
+                for (let i = 0; i <= N; i++) {
+                    if (!i) [s, naechste, vx, vz] = [0, 0, null, null];
+                    const [c, sn] = [wt[2 * i], wt[2 * i + 1]];
+                    const Rt = (b.R * (1 - b.ecc)) / (1 - b.ecc * c);
+                    const r = (t - b.t0) * Rt;
+                    const [x, z] = [E[j] + r * (px * c - pz * sn), E[j + 1] + r * (pz * c + px * sn)];
+                    if (weg && weg(x, z) < (t - b.t0) * b.R * (1 - b.ecc) - 0.01) continue;
+                    if (vx !== null) s += Math.sqrt((x - vx) * (x - vx) + (z - vz) * (z - vz));
+                    [vx, vz] = [x, z];
+                    if (s < naechste || x < x0 || x >= x0 + K || z < z0 || z >= z0 + K) continue;
+                    const lang = 0.0775 * Math.pow(b.iw * Rt, 0.46);
+                    naechste = s + Math.max(B.abstandMinM, B.abstand * lang);
+                    const phase = (((x * 12.9898 + z * 78.233) % 6.2832) + 6.2832) % 6.2832;
+                    const f = vorrat[fl.length] || (vorrat[fl.length] = {});
+                    f.x = x;
+                    f.y = b.y + b.gx * (x - xc) + b.gz * (z - zc);
+                    f.z = z;
+                    const takt = (Math.PI * s) / lang - uhr / Math.sqrt(Math.max(0.05, Rt * b.tr)) + Math.sin(phase);
+                    f.lang = lang * (1 + puls * Math.sin(takt));
+                    f.kipp = Math.atan(u / Math.sqrt(9.81 * lang));
+                    f.wx = w.x;
+                    f.wz = w.z;
+                    f.dreh = phase;
+                    f.I = b.iw * Rt;
+                    fl.push(f);
+                }
             if (fl.length > n0) {
                 qu.push({ b, von: n0, bis: fl.length });
                 // DAS LICHT STEHT BEI DEN FLAMMEN (w28-brand-bild): 1 m über der stärksten der Zelle — bis hier über der Zell-Mitte

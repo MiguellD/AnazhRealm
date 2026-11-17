@@ -3218,57 +3218,232 @@ class AnazhRealm_kreatur_leben {
 
     // DAS ZIEL DES ZUGS (_creatureCharacterWander): ein Ort in der Leine um den Anker, gleichverteilt in ihrer Fläche (Radius
     // Leine·√u), deterministisch aus netId × der Zahl der Ziele (sin-Hash wie der Kurs), der erste von sechs Würfen, den das Revier
-    // trägt (`_kreaturRevierTraegt`), sonst der Anker. Es gilt, bis das Tier es auf `blick` erreicht (dann null: es streift dort)
-    // oder 4 Leinen in Schritten zu `blick` vergangen sind. Liefert das Ziel { x, z, n, bis } oder null.
+    // trägt (`_kreaturRevierTraegt`) und — steht das Netz des Reviers (`_kreaturRevierNetz`) — zu dem vom Tier aus ein Weg durch
+    // den Lebensraum führt (sein Feld, `_kreaturNetzFeld`); sonst der Anker, auch über eine Lücke. Es gilt, bis das Tier es auf
+    // `blick` erreicht (dann null: es streift dort) oder 4 Leinen in Schritten zu `blick` vergangen sind. Ein Ziel von vorher
+    // bekommt sein Feld, sobald das Netz steht. Liefert das Ziel { x, z, n, bis, feld } oder null.
     _kreaturWanderZiel(creature, idNum, slot, blick, leash) {
         if (!(blick > 0)) return null;
         const ud = creature.userData;
         const p = creature.position;
         const Z = ud._wanderZiel;
-        if (Z && slot < Z.bis) return Math.hypot(Z.x - p.x, Z.z - p.z) > blick ? Z : null;
+        const N = this._kreaturRevierNetz(creature, leash);
+        const feldZu = (x, z) => {
+            const kz = N ? this._kreaturNetzZelle(N, x, z) : -1;
+            return kz >= 0 && N.zelle[kz] >= 2 ? this._kreaturNetzFeld(N, kz) : null;
+        };
+        if (Z && slot < Z.bis) {
+            if (N && Z.feld === undefined) Z.feld = feldZu(Z.x, Z.z);
+            return Math.hypot(Z.x - p.x, Z.z - p.z) > blick ? Z : null;
+        }
         const a = ud.wanderAnchor;
         const n = Z ? Z.n + 1 : 0;
         const wurf = (j) => {
             const h = Math.sin((idNum * 131 + n * 977 + j) * 78.233) * 43758.5453;
             return h - Math.floor(h);
         };
+        const kp = N ? this._kreaturNetzZelle(N, p.x, p.z) : -1;
         let ziel = null;
         for (let j = 0; j < 6 && !ziel; j++) {
             const r = leash * Math.sqrt(wurf(2 * j));
             const w = wurf(2 * j + 1) * Math.PI * 2;
             const x = a.x + Math.cos(w) * r;
             const z = a.z + Math.sin(w) * r;
-            if (this._kreaturRevierTraegt(creature, x, z)) ziel = { x, z };
+            if (!this._kreaturRevierTraegt(creature, x, z)) continue;
+            const feld = kp >= 0 ? feldZu(x, z) : undefined;
+            if (feld === undefined || (feld && this._kreaturNetzStufe(N, feld, kp) >= 0)) ziel = { x, z, feld };
         }
-        ud._wanderZiel = Object.assign(ziel || { x: a.x, z: a.z }, { n, bis: slot + Math.ceil((4 * leash) / blick) });
+        if (!ziel) ziel = { x: a.x, z: a.z, feld: N ? feldZu(a.x, a.z) : undefined };
+        ud._wanderZiel = Object.assign(ziel, { n, bis: slot + Math.ceil((4 * leash) / blick) });
         return ud._wanderZiel;
     }
 
-    // DER KURS IM REVIER (_creatureCharacterWander): vom Kurs `kurs` aus abwechselnd links und rechts die Kurse des Sechsecks; der
-    // erste, dessen Ende (`weg` m voraus) das Revier trägt und der die Leine nicht nach außen verlässt; trägt keiner, bleibt
-    // `kurs`. Ein freier Anker hält jeden Kurs.
-    _kreaturWanderKurs(creature, kurs, weg, leash) {
+    // DER KURS IM REVIER (_creatureCharacterWander): vom Kurs `kurs` aus abwechselnd links und rechts die Kurse des Sechsecks,
+    // der erste, dessen Ende (`weg` m voraus) das Revier trägt und der die Leine nicht nach außen verlässt; trägt keiner, bleibt
+    // der Kurs. Trägt das Ziel `Z` sein Feld, ist der Kurs der des Wegs (`_kreaturNetzKurs`): auf ihm trägt auch das Wasser des
+    // Lebensraums, und er weicht höchstens ein Sechstel — der Weg geht nie zurück (sonst pendelte das Tier am Saum, wo die
+    // Mitte einer Zelle trägt und ihr Rand nicht: der erste Bär 60 Spielminuten auf der Stelle); neben dem Weg geht es
+    // geradewegs zu ihm. Ein freier Anker hält jeden Kurs. Vorher wich jeder Zug nur `weg` voraus vom geraden Kurs zum Ziel: am
+    // Saum zwischen Ufer und Hang, am Fluss und am Waldrand glitt das Tier am Rand entlang und kam dem Ziel nicht näher
+    // (headless, Probe tagesbudget, 24 Spielstunden: der erste Bär ging 432 seiner 683 m in Zielen, deren Kurs auswich, und kam
+    // ihnen 83 m näher; der zweite Wolf 420 m, 30 m).
+    _kreaturWanderKurs(creature, kurs, weg, leash, Z) {
         const a = creature.userData.wanderAnchor;
         if (a.frei) return kurs;
+        const N = Z && Z.feld ? this._kreaturRevierNetz(creature, leash) : null;
+        const wN = N ? this._kreaturNetzKurs(creature, N, Z, weg) : null;
+        if (wN !== null && Z.neben) return wN;
+        if (wN !== null) kurs = wN;
         const p = creature.position;
-        for (let k = 0; k < 6; k++) {
+        for (let k = 0; k < (wN !== null ? 3 : 6); k++) {
             const w = kurs + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (Math.PI / 3);
             const x = p.x + Math.cos(w) * weg;
             const z = p.z + Math.sin(w) * weg;
             if (Math.hypot(x - a.x, z - a.z) > leash && Math.cos(w) * (p.x - a.x) + Math.sin(w) * (p.z - a.z) > 0)
                 continue;
-            if (this._kreaturRevierTraegt(creature, x, z)) return w;
+            if (this._kreaturRevierTraegt(creature, x, z, wN !== null)) return w;
         }
         return kurs;
     }
 
-    // trägt das Revier des Tiers den Ort (x, z): sein Lebensraum auf trockenem Grund, am freien Anker jeder Ort
-    _kreaturRevierTraegt(creature, x, z) {
+    // trägt das Revier des Tiers den Ort (x, z): sein Lebensraum auf trockenem Grund — auf dem Weg (`weg`) auch sein Wasser —,
+    // am freien Anker jeder Ort
+    _kreaturRevierTraegt(creature, x, z, weg = false) {
         if (creature.userData.wanderAnchor.frei) return true;
         const LG = AnazhRealm._lebensraumGesetz();
         return (
-            LG.lebensraum(this._kreaturGattung(creature), this._bodenKlasseAt(x, z), LG.L) > 0 && !this._nassAt(x, z)
+            LG.lebensraum(this._kreaturGattung(creature), this._bodenKlasseAt(x, z), LG.L) > 0 &&
+            (weg || !this._nassAt(x, z))
         );
+    }
+
+    // DAS NETZ DES REVIERS (_kreaturWanderZiel, _kreaturWanderKurs): die Leinen-Scheibe um den Anker als Gitter zu Leine/10 bis
+    // 1,2 Leinen (die Zellen der Probe tagesbudget), je Zelle, was der Lebensraum der Gattung an ihrer Mitte trägt — 1 nichts,
+    // 2 den Weg (Wasser, wo der Lebensraum es trägt: der Bär lebt am Fluss und durchquert ihn), 3 auch den Aufenthalt
+    // (trockener Grund; 0 liegt außerhalb). Es wächst im Takt — je Bild höchstens 8 Zellen für alle Tiere, ein Wurf wird nie
+    // zur Spitze — und gilt für jedes Tier mit diesem Anker, dieser Leine und dieser Gattung (der Verband teilt es). Liefert das
+    // fertige Netz oder null (ein freier Anker hat keines).
+    _kreaturRevierNetz(creature, leash) {
+        const ud = creature.userData;
+        const a = ud.wanderAnchor;
+        if (!a || a.frei) return null;
+        const g = this._kreaturGattung(creature);
+        const gleich = (M) => M && M.x === a.x && M.z === a.z && M.leine === leash && M.g === g;
+        let N = ud._revierNetz;
+        if (!gleich(N)) {
+            N = null;
+            for (const o of this._kreaturVerbandGlieder(creature) || [])
+                if (gleich(o.userData._revierNetz)) N = o.userData._revierNetz;
+            const R = 12;
+            N = ud._revierNetz = N || { x: a.x, z: a.z, leine: leash, g, h: leash / 10, R, W: 2 * R + 1, k: 0 };
+            if (!N.zelle) N.zelle = new Uint8Array(N.W * N.W);
+        }
+        const n = N.W * N.W;
+        if (N.k >= n) return N;
+        if (this._kreaturNetzBild !== this._creatureAiFrame) {
+            this._kreaturNetzBild = this._creatureAiFrame;
+            this._kreaturNetzRest = 8;
+        }
+        const LG = AnazhRealm._lebensraumGesetz();
+        while (N.k < n && this._kreaturNetzRest > 0) {
+            const k = N.k++;
+            const i = (k % N.W) - N.R;
+            const j = (k - (k % N.W)) / N.W - N.R;
+            if (i * i + j * j > N.R * N.R) continue;
+            this._kreaturNetzRest--;
+            const x = N.x + i * N.h;
+            const z = N.z + j * N.h;
+            N.zelle[k] = LG.lebensraum(g, this._bodenKlasseAt(x, z), LG.L) > 0 ? (this._nassAt(x, z) ? 2 : 3) : 1;
+        }
+        return N.k >= n ? N : null;
+    }
+
+    // die Zelle des Netzes `N` am Ort (x, z), -1 außerhalb
+    _kreaturNetzZelle(N, x, z) {
+        const i = Math.round((x - N.x) / N.h) + N.R;
+        const j = Math.round((z - N.z) / N.h) + N.R;
+        if (i < 0 || j < 0 || i >= N.W || j >= N.W || !N.zelle[j * N.W + i]) return -1;
+        return j * N.W + i;
+    }
+
+    // DAS FELD DES ZIELS: die Schritte jeder Zelle des Netzes `N` bis zur Ziel-Zelle `kz` über Zellen, die den Weg tragen (acht
+    // Nachbarn, keine Ecke durch eine Zelle ohne Weg; -1 ohne Weg). Mit dem Feld `F0` statt der Ziel-Zelle: die Schritte über
+    // jede Zelle der Scheibe bis zum nächsten Ort, den `F0` erreicht — der kürzeste Weg über die Lücke.
+    _kreaturNetzFeld(N, kz, F0) {
+        const W = N.W;
+        const ab = F0 ? 1 : 2;
+        const F = new Int16Array(W * W).fill(-1);
+        const Q = new Int16Array(W * W);
+        let [q0, q1] = [0, 0];
+        if (F0) {
+            for (let m = 0; m < W * W; m++) if (F0[m] >= 0) [F[m], Q[q1++]] = [0, m];
+        } else [F[kz], Q[q1++]] = [0, kz];
+        while (q0 < q1) {
+            const k = Q[q0++];
+            const i = k % W;
+            const j = (k - i) / W;
+            for (let di = -1; di <= 1; di++)
+                for (let dj = -1; dj <= 1; dj++) {
+                    const [ii, jj] = [i + di, j + dj];
+                    if ((!di && !dj) || ii < 0 || jj < 0 || ii >= W || jj >= W) continue;
+                    const m = jj * W + ii;
+                    if (F[m] >= 0 || N.zelle[m] < ab) continue;
+                    if (di && dj && (N.zelle[j * W + ii] < ab || N.zelle[jj * W + i] < ab)) continue;
+                    F[m] = F[k] + 1;
+                    Q[q1++] = m;
+                }
+        }
+        return F;
+    }
+
+    // die Zelle, von der aus das Tier in Zelle `k` dem Feld `F` folgt: sie selbst, wenn das Feld sie erreicht, sonst der
+    // Nachbar mit dem kürzesten Weg (das Tier steht am Saum, wo die Mitte seiner Zelle draußen liegt); -1 ohne
+    _kreaturNetzStufe(N, F, k) {
+        if (k < 0 || F[k] >= 0) return k;
+        const W = N.W;
+        const i = k % W;
+        const j = (k - i) / W;
+        let best = -1;
+        for (let di = -1; di <= 1; di++)
+            for (let dj = -1; dj <= 1; dj++) {
+                const [ii, jj] = [i + di, j + dj];
+                if (ii < 0 || jj < 0 || ii >= W || jj >= W) continue;
+                const m = jj * W + ii;
+                if (F[m] >= 0 && (best < 0 || F[m] < F[best])) best = m;
+            }
+        return best;
+    }
+
+    // DER KURS DES WEGS: von der Zelle des Tiers den Schritten des Felds nach — je Schritt der Nachbar näher am Ziel, unter
+    // gleich nahen der dem Ziel geradeste — wenigstens `weg` (eine Zelle) voraus und weiter, solange die Strecke vom Tier dorthin
+    // frei ist (im offenen Revier geht es geradewegs zum Ziel wie vorher), oder bis zum Ziel; der Kurs zeigt auf sie. Erreicht das Feld des Ziels das Tier nicht (nach Flucht oder Trunk jenseits einer Lücke), führt das Feld
+    // über die Lücke (`_kreaturNetzFeld` mit F0) zum nächsten Ort des Wegs, und `Z.neben` sagt es. null außerhalb des Netzes.
+    _kreaturNetzKurs(creature, N, Z, weg) {
+        const p = creature.position;
+        let k = this._kreaturNetzStufe(N, Z.feld, this._kreaturNetzZelle(N, p.x, p.z));
+        Z.neben = k < 0;
+        if (Z.neben) k = this._kreaturNetzZelle(N, p.x, p.z);
+        if (k < 0) return null;
+        const F = Z.neben ? Z.zuFeld || (Z.zuFeld = this._kreaturNetzFeld(N, -1, Z.feld)) : Z.feld;
+        if (F[k] < 0) return null;
+        const W = N.W;
+        const ab = Z.neben ? 1 : 2;
+        const mitte = (m) => [N.x + ((m % W) - N.R) * N.h, N.z + ((m - (m % W)) / W - N.R) * N.h];
+        const vor = Math.max(weg, N.h);
+        // frei: jede Zelle auf der Strecke vom Tier zum Ort (x, z) trägt den Weg (Proben zu einer halben Zelle)
+        const frei = (x, z) => {
+            const n = Math.ceil((2 * Math.hypot(x - p.x, z - p.z)) / N.h);
+            for (let s = 1; s <= n; s++) {
+                const m = this._kreaturNetzZelle(N, p.x + ((x - p.x) * s) / n, p.z + ((z - p.z) * s) / n);
+                if (m < 0 || N.zelle[m] < ab) return false;
+            }
+            return true;
+        };
+        let [tx, tz] = mitte(k);
+        while (F[k] > 0) {
+            const i = k % W;
+            const j = (k - i) / W;
+            let next = -1;
+            let nd = Infinity;
+            for (let di = -1; di <= 1; di++)
+                for (let dj = -1; dj <= 1; dj++) {
+                    const [ii, jj] = [i + di, j + dj];
+                    if (ii < 0 || jj < 0 || ii >= W || jj >= W) continue;
+                    const m = jj * W + ii;
+                    if (F[m] !== F[k] - 1) continue;
+                    if (di && dj && (N.zelle[j * W + ii] < ab || N.zelle[jj * W + i] < ab)) continue;
+                    const [mx, mz] = mitte(m);
+                    const d = Math.hypot(mx - Z.x, mz - Z.z);
+                    if (d < nd) [next, nd] = [m, d];
+                }
+            if (next < 0) break;
+            const [mx, mz] = mitte(next);
+            if (Math.hypot(tx - p.x, tz - p.z) >= vor && !frei(mx, mz)) break;
+            [k, tx, tz] = [next, mx, mz];
+        }
+        if (!Z.neben && F[k] === 0) [tx, tz] = [Z.x, Z.z];
+        if (Math.hypot(tx - p.x, tz - p.z) < 1e-6) return null;
+        return Math.atan2(tz - p.z, tx - p.x);
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_kreatur_leben]);

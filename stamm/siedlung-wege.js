@@ -616,6 +616,46 @@ class AnazhRealm_siedlung_wege {
         );
     }
 
+    // DIE LAVA ZÜNDET (w28-lava-zuendet, aus `_lavaTakt`): solange ihre Decke heißer ist als die Zünd-Temperatur des Betts
+    // daneben (die Zeile seines Stoffs, `tZuend` — dieselbe Zahl, aus der die Front ihre Zünd-Wärme rechnet), fängt jede der acht
+    // Zellen um sie am nächsten Punkt ihres Rands zur Decke (`_brandEntfachen`: der Herd am Ort der Hitze, die Front läuft von
+    // dort). Sie fragt wieder, wenn sich ändert, was ein Bett trägt oder erstickt: eine Tat heilt (`_tatGen`), die Nässe der
+    // Welt wandert (in Zwanzigsteln) — in Ruhe kostet die heiße Decke einen Vergleich. Bis hier stand das Gras grün am Rand
+    // der 1 377 °C heißen Decke. Rückgabe: wie viele Zellen fingen.
+    _lavaZuendet(a) {
+        const stand = (this._tatGen || 0) + "|" + Math.round((this.state.naesse || 0) * 20);
+        const G = this._lavaGefragt || (this._lavaGefragt = new WeakMap());
+        if (G.get(a) === stand) return 0;
+        G.set(a, stand);
+        const tK = this._lavaZustand(a).temperatur + 273.15;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const [cx, cz] = [Math.floor(a.x / cs), Math.floor(a.z / cs)];
+        let n = 0;
+        for (let dz = -1; dz <= 1; dz++)
+            for (let dx = -1; dx <= 1; dx++) {
+                const f = this._brandStoff(cx + dx, cz + dz);
+                if (!f || !(tK > f.zeile.tZuend)) continue;
+                if (!dx && !dz) continue; // ihre eigene Zelle ist Decke, kein Bett
+                // der nächste Punkt der Nachbarin zur Mitte der Decke, einen Hauch in ihr; teilt sie eine Kante mit der Decke, zündet
+                // der RAND der Decke auf seiner Länge (`ein`, je Achtel der Zelle ein Eintritt, `_brandWeg`): jeder dort, wo die
+                // Decke nach außen endet (`_lavaDeckeAt` 0 — ab dort steht der Halm, `_wieseGrund`), im Viertelmeter gesucht
+                const ex = (cx + (dx > 0 ? 1 : dx < 0 ? 0 : 0.5)) * cs + dx * 0.01;
+                const ez = (cz + (dz > 0 ? 1 : dz < 0 ? 0 : 0.5)) * cs + dz * 0.01;
+                const ein = [];
+                if (!dx !== !dz)
+                    for (let i = -4; i <= 4; i++) {
+                        const [qx, qz] = [ex + (dx ? 0 : (i * cs) / 8.02), ez + (dz ? 0 : (i * cs) / 8.02)];
+                        let d = -cs / 8;
+                        while (d < cs / 4 && this._lavaDeckeAt(qx + dx * d, qz + dz * d) > 0) d += 0.25;
+                        ein.push(qx + dx * d, qz + dz * d);
+                    }
+                // ein Akt DIESER Seite (jede Seite trägt die Tat der Lava und zündet aus ihr), zur Uhr des Felds
+                const akt = { art: "brand", w: this.state.spielZeit, x: ex, z: ez, ein: ein.length ? ein : null };
+                if (this._feldAkt(akt, false)) n++;
+            }
+        return n;
+    }
+
     // DER TAKT DER LAVA (aus `_tickWegeKarte`, höchstens je `LAUB_STREU.uploadMs`): die Temperatur jeder Decke ist eine Funktion
     // der Welt-Zeit (`_lavaZustand`) — ändert sich ihr Byte (sie kühlt, ein Sprung der Uhr, ein neuer Guss), malt ihre Zelle neu; eine
     // andere Liste der Taten (eine geladene Welt) leert die Decken und malt jede Lava neu. Ohne Lava kostet er einen Vergleich.
@@ -649,6 +689,9 @@ class AnazhRealm_siedlung_wege {
             neu.add(cx + "," + cz);
             this._deckeMalen(cx, cz, (s, x0, z0, x1, z1) => this._lavaFlaeche(s, x0, z0, x1, z1, zelle));
         }
+        // der Rand der heißen Decke zündet das Bett daneben — NACH dem Malen: er sucht sein Ende in den Bytes der Decke
+        // (`_lavaZuendet`; davor lagen sie leer, die Eintritte standen 2 m in der Zelle der Lava: gate:stand-takt L2-DECKE)
+        for (const a of I.lava) this._lavaZuendet(a);
     }
 
     // Die EINE Ausdehnung einer Form um ihre Achse (Malen und Siedlungs-Hülle): ein gedrehter Kasten reicht bis zur
@@ -1252,6 +1295,8 @@ class AnazhRealm_siedlung_wege {
         return {
             farbe: _T.vec3(b[0], b[1], b[2]).mul(q.x),
             kipp: _T.vec3(q.z, 0, q.w),
+            // WIDERLEGT (w28-lava-zuendet): die Glut über die Umkehr des Nacht-Auges (`_nachtAuge(…, true)`) — die dunklen Schollen
+            // stehen unter dem Stäbchen-Anteil, die Umkehr hob sie nachts zehnfach ins Rosa-Rot, die Risse blieben blass
             glut: this._lavaGlutNode(_T, q.y),
         };
     }
