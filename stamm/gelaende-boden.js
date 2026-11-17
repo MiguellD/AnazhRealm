@@ -310,7 +310,7 @@ class AnazhRealm_gelaende_boden {
     // (`_bruchMelden`); kommt der Faden über den Blob-Weg, wartet die Bestellung auf ihn.
     // → das Versprechen der Region (eine schon bestellte gibt ihres zurück; null, wenn eine neuere Welt ihr zuvorkam).
     _hydroBestellen(key, origin) {
-        const B = (this._hydroGefragt && this._hydroBestellt) || this._hydroKacheln().bestellt;
+        const B = this._hydroBestellt || this._hydroKacheln().bestellt;
         const da = B.get(key);
         if (da) return da.zusage;
         const welt = this._hydroWelt | 0;
@@ -604,15 +604,12 @@ class AnazhRealm_gelaende_boden {
         const r1x = Math.floor((x + r + half) / size);
         const r0z = Math.floor((z - r + half) / size);
         const r1z = Math.floor((z + r + half) / size);
-        if (!this.state.hydroTiles || !this._hydroGefragt) this._hydroKacheln();
-        const gefragt = this._hydroGefragt;
-        const jetzt = performance.now();
+        if (!this.state.hydroTiles) this._hydroKacheln();
         let fehlt = 0;
         for (let rx = r0x; rx <= r1x; rx++) {
             for (let rz = r0z; rz <= r1z; rz++) {
                 if (rx === 0 && rz === 0) continue;
                 const key = `${rx},${rz}`;
-                gefragt.set(key, jetzt); // der Leser hält, was er fragt (`_hydroGefragtHaelt`)
                 if (this.state.hydroTiles.has(key)) continue;
                 fehlt++;
                 this._hydroBestellen(key, { x: rx * size - half, z: rz * size - half });
@@ -629,22 +626,8 @@ class AnazhRealm_gelaende_boden {
     // aus jedem Faden und rechnet das Band neu. Der nächste Bau bestellt sie neu. Geleert wird beides mit jeder Welt.
     _hydroKacheln() {
         this._hydroBestellt = new Map();
-        this._hydroGefragt = new Map();
         this.state.hydroTiles = new Map();
         return { bestellt: this._hydroBestellt, kacheln: this.state.hydroTiles };
-    }
-    // DER FERNE LESER HÄLT SEINE KACHEL (Code-Check 8b60d653, gate:werk-im-wasser: `__weltDa` wartete 900 s auf
-    // `_ensureHydroTilesAround(X, Z, 2048)`): ein Leser fern vom Spieler — der Plan eines Orts, ein Werk am Ufer, die Wanderung
-    // eines Tiers — fragt seine Kacheln, bis sie stehen, und liest sie danach. Die Reichweite um den Spieler kennt ihn nicht:
-    // der Abschied nahm ihm die Kachel zwischen Bestellung und Lesen, die nächste Frage bestellte sie neu, ohne Ende. Die
-    // Frage selbst ist sein Anspruch: eine Kachel bleibt `HYDRO_FRAGE_HAELT_MS` nach ihrer letzten Frage (`_ensureHydroTilesAround`
-    // stempelt jede Kachel seines Rechtecks); danach fällt ihr Stempel mit ihr. → hält die Frage die Kachel noch?
-    _hydroGefragtHaelt(key) {
-        const t = this._hydroGefragt.get(key);
-        if (t === undefined) return false;
-        if (performance.now() - t <= AnazhRealm.HYDRO_FRAGE_HAELT_MS) return true;
-        this._hydroGefragt.delete(key);
-        return false;
     }
     // DIE REICHWEITE DER KACHEL-LESER um den Spieler (m): der Takt der Wache (Ring + ½ Chunk + 300 m), das Fern-Wasser
     // (`_ensureFarWaterSheet`: Ring + 2,5 Chunks, mindestens `FAR_WATER.maxRadius`), die Streu bis an ihren Horizont samt
