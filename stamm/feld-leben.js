@@ -3141,8 +3141,7 @@ class AnazhRealm_feld_leben {
     // Längen je Sekunde steigt (`rausch`: Skala quer, hoch, Hub zur Spitze hin; zwei Lagen des EINEN Rausch-Atlas); die Deckung
     // 1 − exp(−`dicke` · Dicke), gemischt vormultipliert (Licht × Deckung + Grund × (1 − Deckung)): wie viele Zungen sich auch decken,
     // keine strahlt heller als ihr Ton. Der Ton steht im Bild bei `ziel` vor der Tonkurve (÷ Belichtung): die Kurve rollt ihn nie ins
-    // Weiß. Gegen Gras und Boden läuft sie über `saumM` aus (`_tiefenSaum`). Bis w12-brand-rauch: der Drehkörper selbst (6 Kanten),
-    // Ton × LEUCHT_FEUER additiv — gedeckte Zungen sättigten weiß, jede Kante stand hart.
+    // Weiß. Gegen Gras und Boden läuft sie über `saumM` aus (`_tiefenSaum`). DER KERN (w28-brand-kern): die Temperatur fällt auch QUER zur Achse — bei ξ liest der Ton die Tafel bei h + (1 − h)·`mantel`·ξ² (die Achse heiß, der Mantel orange bis rot); und der Ton steht VOR dem Auge der Nacht (`_nachtAuge`, bild-kosten).
     _brandFlammenZeichnen(fl) {
         const st = this.state;
         let S = st.brandFlammenSatz;
@@ -3208,8 +3207,9 @@ class AnazhRealm_feld_leben {
                 .pow(BF.rand)
                 .mul(T.float(1).sub(h).pow(B.spitze))
                 .mul(T.float(1).add(rausch.mul(0.5)).max(0));
+            const ton = T.texture(tafel, T.vec2(h.add(h.oneMinus().mul(x.div(r).pow2().min(1)).mul(BF.mantel)), 0.5)).rgb; // prettier-ignore
             mat.colorNode = T.vec4(
-                z.rgb.mul(T.float(BF.ziel).div(T.toneMappingExposure)),
+                this._nachtAuge(ton.mul(T.float(BF.ziel).div(T.toneMappingExposure)), true),
                 T.float(1)
                     .sub(T.exp(dicke.mul(BF.dicke).negate()))
                     .mul(this._tiefenSaum(BF.saumM))
@@ -3928,6 +3928,7 @@ AnazhRealm.BRAND = Object.freeze({
             kelvin: Object.freeze([3000, 1700]),
             ziel: 1.6,
             schein: 7,
+            mantel: 1,
             dicke: 6,
             rand: 1.5,
             rausch: Object.freeze([1.6, 2.5, 0.8]),
