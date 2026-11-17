@@ -2104,8 +2104,9 @@
      "gruen": true,
      "zahl": "Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer)",
      "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js)",
+     "gehalten": true,
+     "r6": "konsum"
     },
     {
      "id": "luftwasser.K3#2",
@@ -6348,7 +6349,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 197,
+  "konsum": 198,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6516,11 +6517,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 145
+  "ohne": 144
  },
  "kopfVoll": "31d156e8bdca4dff4db6170f2515975c120af605",
- "zeit": "2026-11-17T16:55:14.441Z",
- "vorher": "602607bb",
+ "zeit": "2026-11-17T17:01:21.809Z",
+ "vorher": "31d156e8",
  "bilanz": {
   "gewinn": [],
   "fall": [],
