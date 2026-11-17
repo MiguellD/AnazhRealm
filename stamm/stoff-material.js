@@ -395,6 +395,20 @@ class AnazhRealm_stoff_material {
         return fn;
     }
 
+    // DIE KÜRZESTE ZAHL DESSELBEN f32: eine Konstante des Shaders trägt die wenigsten Stellen, die zum selben f32 runden — das
+    // Programm rechnet bitgleich, nur kürzer (r184 schreibt die volle Doppel-Genauigkeit, 0.8253356149096783 statt 0.8253356;
+    // jedes Zeichen übersetzt der GPU-Prozess vor dem ersten Bild, `S0_ZEICHEN`). Nur an Konstanten, die
+    // allein der Shader liest — nie im Rechenwerk des Fels-Gesetzes: das rechnet die Zahlen des Gesetzes (gate:hoehlen-sicht
+    // wertet `_felsRechenwerkTSL` in f64 gegen gelaende-core aus, Abstand ≤ 1e-6; gekürzt 6,2e-4 an 400 Punkten).
+    static _f32(v) {
+        const f = Math.fround(v);
+        for (let p = 1; p < 9; p++) {
+            const k = +v.toPrecision(p);
+            if (Math.fround(k) === f) return k;
+        }
+        return +f.toPrecision(9);
+    }
+
     // DAS RECHENWERK DES FELS-GESETZES IM SHADER (K17, Nachbesserung 2): gelaende-core rechnet seinen Fein-Term (`felsFein`,
     // `schuttKorn`) über ein Rechenwerk — hier dieselben Schritte als TSL-Knoten, die Ziehung `zufall` als dieselben 32-Bit-
     // Ganzzahl-Schritte (u32: Multiplikation modulo 2^32, Xor, logisches Schieben), `rausch` als EINE Probe im Rausch-Atlas
@@ -943,6 +957,9 @@ class AnazhRealm_stoff_material {
                                 _alb = _alb.mul(_Ta.float(1.0).sub(_nass));
                                 mat.emissiveNode = this._fernWasserBlickNode(_Ta).mul(_nass);
                             }
+                            // DIE GLUT DER LAVA (stoffe.K3-2, `_lavaGlutNode`): wo ihre Decke liegt, leuchtet der Boden
+                            if (_weg.glut)
+                                mat.emissiveNode = mat.emissiveNode ? mat.emissiveNode.add(_weg.glut) : _weg.glut;
                             albedoNode = _alb;
                             mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
@@ -2394,9 +2411,16 @@ class AnazhRealm_stoff_material {
         // die Komponente c der vier Ecken der Zelle (i, j): EIN Texel, roh geladen — die Ladung steht im Programm, das die
         // Probe ruft (eine Bindung lebt nie in einer Layout-Funktion: r184 baut sie EINMAL je Builder-Klasse, jedes weitere
         // Programm erbte den Namen der Textur aus dem ersten)
-        const ecken = (i, j, c) => T.textureLoad(tex, T.ivec2(i.mul(3).add(c), j));
-        // 0 · 127 · 254 → −1 · 0 · +1
-        const dekod = (e) => e.mul(255 / 127).sub(1.0);
+        // Die Zelle (i, j) ist EIN ivec2 `ij` (die Lage im Atlas als Vektor, ein Wert je Probe statt zwei: jedes Zeichen des
+        // Boden-Programms zählt, `S0_ZEICHEN`), c = 0 ohne „+ 0“.
+        const AB = T.ivec2(A, B);
+        const ecken = (ij, c) => T.textureLoad(tex, T.ivec2(c ? ij.x.mul(3).add(c) : ij.x.mul(3), ij.y));
+        // 0 · 127 · 254 → −1 · 0 · +1, als EINE reine Funktion (die Mischungen rufen sie zehnmal)
+        const dekod = T.Fn(([e]) => e.mul(AnazhRealm._f32(255 / 127)).sub(1.0)).setLayout({
+            name: "rauschDekod",
+            type: "vec4",
+            inputs: [{ name: "e", type: "vec4" }],
+        });
         const blende = (t) =>
             t
                 .mul(t)
@@ -2470,27 +2494,24 @@ class AnazhRealm_stoff_material {
         const ebeneProbe = (misch) => (p, k, achse) => {
             const c = T.floor(p);
             const ci = T.ivec2(c);
-            const i0 = ci.x.add(A * k).bitAnd(m);
-            const j0 = ci.y.add(B * k).bitAnd(m);
-            return misch(p.sub(c), ecken(i0, j0, 0), ecken(i0, j0, achse === "z" ? 2 : 1));
+            const ij = (k ? ci.add(T.ivec2(A * k, B * k)) : ci).bitAnd(m);
+            return misch(p.sub(c), ecken(ij, 0), ecken(ij, achse === "z" ? 2 : 1));
         };
         const ebene = ebeneProbe(ebeneMisch);
         const ebeneNeigung = ebeneProbe(ebeneNeigungMisch);
         const raum = (p) => {
             const c = T.floor(p);
             const ci = T.ivec3(c);
-            const i0 = ci.x.add(ci.z.mul(A)).bitAnd(m);
-            const j0 = ci.y.add(ci.z.mul(B)).bitAnd(m);
-            const i1 = i0.add(A).bitAnd(m);
-            const j1 = j0.add(B).bitAnd(m);
+            const ij0 = ci.xy.add(AB.mul(ci.z)).bitAnd(m);
+            const ij1 = ij0.add(AB).bitAnd(m);
             return raumMisch(
                 p.sub(c),
-                ecken(i0, j0, 0),
-                ecken(i0, j0, 1),
-                ecken(i0, j0, 2),
-                ecken(i1, j1, 0),
-                ecken(i1, j1, 1),
-                ecken(i1, j1, 2)
+                ecken(ij0, 0),
+                ecken(ij0, 1),
+                ecken(ij0, 2),
+                ecken(ij1, 0),
+                ecken(ij1, 1),
+                ecken(ij1, 2)
             );
         };
         // DIE STREUUNG EINER EBENE (`streu`, σ 0,237) aus dem Gitter des Kerns, nie getippt: der Wert der Ebene (x | z) ist die
@@ -2552,18 +2573,19 @@ class AnazhRealm_stoff_material {
             [T.exp2(L0.sub(2.0)), aus, T.sqrt(aus).mul(mH * mH)],
         ].map(([f, w, h]) => [f, w.mul(-B.mikro), h]);
         const stufe = T.pow(T.float(mH), fr).mul(B.streu / (ra.streu * Math.sqrt(mH * mH + mH ** 4)));
-        if (!n)
-            oktaven.push(
-                [T.float(B.freq), T.float(-B.strength), T.float(0.0)],
-                [T.float(B.freq2), T.float(-B.strength2), T.float(0.0)]
-            );
-        // je Ebene (a, b) die Neigung (x, y) und die Höhe (z)
+        // die festen Oktaven des Bodens (Klumpen, Kiesel) sind EINE Probe je Welt-Lage (`_mikroFestProbe`): ihre Leser teilen sie
+        if (!n) oktaven.push([B.freq, T.float(-B.strength), 0], [B.freq2, T.float(-B.strength2), 0]);
+        // je Ebene (a, b) die Neigung (x, y) und die Höhe (z) — die festen Oktaven tragen keine Höhe (0, kein Glied im Programm),
+        // die Summe beginnt bei der ersten Oktave (kein „vec3(0) +“: jedes Zeichen des Boden-Programms zählt, `S0_ZEICHEN`)
         const ebene = (a, b) => {
-            let g = T.vec3(0.0, 0.0, 0.0);
+            let g = null;
             for (const [f, w, h] of oktaven) {
-                const q = T.vec2(a, b).mod(T.float(P).div(f)).mul(f).add(T.vec2(0.37, 0.71));
-                const e = ra.ebeneNeigung(q, 0, "z");
-                g = g.add(T.vec3(e.y.mul(w), e.z.mul(w), e.x.mul(h)));
+                const e =
+                    typeof f === "number"
+                        ? this._mikroFestProbe(T, wp, f)
+                        : ra.ebeneNeigung(T.vec2(a, b).mod(T.float(P).div(f)).mul(f).add(T.vec2(0.37, 0.71)), 0, "z");
+                const o = T.vec3(e.y.mul(w), e.z.mul(w), h === 0 ? 0 : e.x.mul(h));
+                g = g ? g.add(o) : o;
             }
             return g;
         };
@@ -2584,6 +2606,23 @@ class AnazhRealm_stoff_material {
         // 0,71 der Streuung, das Bild der schrägen Fläche wäre flacher als das der geraden
         const hoehe = gx.z.mul(w.x).add(gy.z.mul(w.y)).add(gz.z.mul(w.z));
         return { neigung: g.sub(n.mul(n.dot(g))), hoehe: hoehe.mul(stufe).mul(T.inverseSqrt(w.dot(w))) };
+    }
+
+    // DIE FESTE OKTAVE DES BODENS (`_mikroRelief` ohne `n`: Klumpen `freq`, Kiesel `freq2` je Meter) als EIN Knoten je Welt-Lage
+    // `wp` und Frequenz: Wert und Neigung der Ebene (x, z) — `ebeneNeigung`, die Neigung je Zelle (mal `f` je Meter). Wer an
+    // demselben Fragment dieselbe Oktave liest, liest DIESELBE Probe (die Kruste der Lava, `_lavaKruste`: ihre Risse sind die
+    // Kiesel-Oktave) — der Graph lädt sie einmal, keine zweite Ladung des Atlas.
+    _mikroFestProbe(T, wp, f) {
+        const c = this._mikroFestCache || (this._mikroFestCache = new WeakMap());
+        let je = c.get(wp);
+        if (!je) c.set(wp, (je = new Map()));
+        let e = je.get(f);
+        if (!e) {
+            const P = AnazhRealm.RAUSCH_GESETZ.P;
+            const q = T.vec2(wp.x, wp.z).mod(T.float(P).div(f)).mul(f).add(T.vec2(0.37, 0.71));
+            je.set(f, (e = this._rauschAtlas().ebeneNeigung(q, 0, "z")));
+        }
+        return e;
     }
 
     // DER STOFF des Mikro-Reliefs — EIN BILD EINER HÖHE (`hoehe`, ausgeblendet mit `k`): DAS KORN in der Albedo (colorNode: die
@@ -2678,7 +2717,7 @@ class AnazhRealm_stoff_material {
             const sp = (s || T.fwidth(x)).max(1e-5); // die Spanne des Pixels in Einheiten
             // die Maße der Zeile in Einheiten der Lage — eine Länge als Zahl ist gefaltet (kurze Literale: jedes Zeichen des
             // Boden-Programms zählt, `S0_ZEICHEN`)
-            const inE = (meter) => (typeof m === "number" ? f(+(meter / m).toPrecision(7)) : f(meter).div(m));
+            const inE = (meter) => (typeof m === "number" ? f(AnazhRealm._f32(meter / m)) : f(meter).div(m));
             const [j, j2] = [inE(G.fuge), inE(2 * G.fuge)]; // die halbe und die ganze Fuge
             // die zwei Ränder des Pixels, um ½ versetzt: `floor` zählt die Fugen davor, `fract` − ½ ist der Weg zur nächsten
             const [xP, xM] = [x.add(sp.mul(0.5).add(0.5)), x.sub(sp.mul(0.5).sub(0.5))];

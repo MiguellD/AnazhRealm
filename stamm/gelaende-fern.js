@@ -1263,8 +1263,8 @@ class AnazhRealm_gelaende_fern {
                         const k = (j + 1) * M + i + 1;
                         const [nx, ny, nz] = [h[k - 1] - h[k + 1], 2 * d, h[k - M] - h[k + M]];
                         const l = Math.hypot(nx, ny, nz);
-                        D[(j * N + i) * 2] = zu8(nx / l);
-                        D[(j * N + i) * 2 + 1] = zu8(nz / l);
+                        D[(j * N + i) * 4] = zu8(nx / l); // vier Kanäle je Texel, R/G die Normale
+                        D[(j * N + i) * 4 + 1] = zu8(nz / l);
                     }
                 this._wegeSchichtHoch(K.karte.tex, K.karte.schicht);
                 K.U.ursprung.value.set(ux, uz);
