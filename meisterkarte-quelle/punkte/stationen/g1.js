@@ -2769,9 +2769,13 @@ async function laeufeSitzungProbe(r, T, o, G) {
     };
     const klasse = "^(wasserSatz|chunk-water-[a-z]+)$";
     aus.orte = orte.map((p) => [R(p.x), R(p.z)]);
+    // DIE KAMERA ÜBER DEM WASSER (Vorarbeiter 9, 17.11.; GTX 7de938ab: 15/20 Orte, der Schuss ABNAHME ROT „Sicht verdeckt 40,9 % Laub
+    // baum_erle, Ziel verdeckt von Rinde baum_eiche in 1,53 m“): bis hier stand sie fest 6 m nordöstlich am Ufer — dort wachsen die Erlen
+    // des Ufers. Jetzt die erste der acht Richtungen, deren Punkt in 6 m nass ist (im Wasser steht kein Baum); ohne eine die alte Pose
     aus.bilder = orte.map((p) => {
         const S = r._atlasWaterLevelAt(p.x, p.z, r._voxelSurfaceY(p.x, p.z));
-        return { vor: [p.x, p.z], kamera: [p.x + 6, S + 4, p.z + 6, p.x, S, p.z].map(R), klasse };
+        const d = [0, 1, 2, 3, 4, 5, 6, 7].map((k) => [Math.cos((k * Math.PI) / 4) * 6, Math.sin((k * Math.PI) / 4) * 6]).find(([dx, dz]) => r._nassAt(p.x + dx, p.z + dz)) || [6, 6];
+        return { vor: [p.x, p.z], kamera: [p.x + d[0], S + 4, p.z + d[1], p.x, S, p.z].map(R), klasse };
     });
     return aus;
 }
@@ -3668,6 +3672,11 @@ module.exports = [
     // Spiegel); das Auge des Spiels dreht Gier und Neigung dorthin (`_loopCamera`), das Ziel liegt auf seinem Strahl im Abstand des
     // Wassers. Die Zeile WASSER nennt Spiegel, Nässe, Gier-Versatz und die Zahl der gefragten nassen Stellen; das Urteil verlangt das
     // Ziel ≤ 0,1 m am Spiegel einer nassen Stelle.
+    // DIE STICHPROBE DES SPIEGELS (Vorarbeiter 9, 17.11.): am 7de938ab ROT spiegelTreue −0,99 aus 9 Blöcken mit Spiegel-Partner, am
+    // 389a6496 (Spiel am Wasser byte-gleich) GRÜN 0,82 aus 20 — dieselbe Pose, ein Streifen Wasser in 47–51 m hinter dem Schilf. Das
+    // Maß (abnahme-urteil `spiegelPearson`, Pearson je Block-Zeile ab 2 Blöcken) ist auf Zeilen zu 2 Blöcken ±1 per Bau: unter 16
+    // Blöcken (das Doppelte seines Minimums 8) urteilt es die Pose, nie den Spiegel — der Läufer sagt es mit der Marke MESSORT
+    // (UNGEMESSEN beim Namen, nie ROT, nie GRÜN).
     {
         kriterium: "gelaende.K3",
         staffel: 1,
@@ -3675,7 +3684,7 @@ module.exports = [
         probe: { sek: 26, befehl: [
             "bash",
             "-c",
-            `set -u; A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; W() { node scripts/werkbank.cjs "$@"; }; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen 1866.6 -6193.9 > "$D/umstellen.txt" 2>&1; W eval '${WASSER_ZIEL}' > "$D/kamera.txt" 2>&1; node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); let o = {}; try { o = JSON.parse(t.slice(t.indexOf("{"))).ergebnis || {}; } catch (_e) { o = {}; } console.log((o.kamera || []).join(" ")); console.log("WASSER " + JSON.stringify(o.wasser || { fehler: t.slice(0, 300) }))' "$D/kamera.txt" > "$D/ziel.txt" 2>&1; KAM=$(head -1 "$D/ziel.txt"); echo "KAMERA $KAM"; tail -1 "$D/ziel.txt"; [ -n "$KAM" ] || exit 1; W bild $KAM --w 1920 --h 1080 --wahl 0 --fuss false --ziel Wasser --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --datei "$D/wasser.png" > "$D/bild.txt" 2>&1; E=$?; echo "BILD $(tr -d '\\n' < "$D/bild.txt" | cut -c1-600)"; cp "$D/wasser.abnahme.json" "$A" 2>/dev/null; exit $E`,
+            `set -u; A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; W() { node scripts/werkbank.cjs "$@"; }; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen 1866.6 -6193.9 > "$D/umstellen.txt" 2>&1; W eval '${WASSER_ZIEL}' > "$D/kamera.txt" 2>&1; node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); let o = {}; try { o = JSON.parse(t.slice(t.indexOf("{"))).ergebnis || {}; } catch (_e) { o = {}; } console.log((o.kamera || []).join(" ")); console.log("WASSER " + JSON.stringify(o.wasser || { fehler: t.slice(0, 300) }))' "$D/kamera.txt" > "$D/ziel.txt" 2>&1; KAM=$(head -1 "$D/ziel.txt"); echo "KAMERA $KAM"; tail -1 "$D/ziel.txt"; [ -n "$KAM" ] || exit 1; W bild $KAM --w 1920 --h 1080 --wahl 0 --fuss false --ziel Wasser --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --datei "$D/wasser.png" > "$D/bild.txt" 2>&1; E=$?; echo "BILD $(tr -d '\\n' < "$D/bild.txt" | cut -c1-600)"; cp "$D/wasser.abnahme.json" "$A" 2>/dev/null; node -e 'const fs = require("fs"); let j = {}; try { j = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch (_e) { j = {}; } const w = ((j.klasse || {}).klassen || {}).wasserSatz || {}; const n = (w.sp || [])[0]; if (Number.isFinite(n) && n < 16) console.log("@@PUNKTE@@ MESSORT die Pose zeigt zu wenig Spiegel: " + n + " Bloecke mit Spiegel-Partner < 16 (spiegelTreue " + w.spiegelTreue + " aus Zeilen zu 2-3 Bloecken)");' "$A"; exit $E`,
         ] },
         gpu: true,
         zeit: false,
@@ -3741,6 +3750,14 @@ module.exports = [
             { name: "MUTANTE das Ziel 2 m über dem Spiegel", stdout: k3Wasser({ y: -0.23 }), j: K3_ROH.neu.j, gruen: false, zahl: /Ziel OHNE Bezug zum Wasser/ },
             { name: "MUTANTE das Ziel auf trockenem Grund", stdout: k3Wasser({ nass: false }), j: K3_ROH.neu.j, gruen: false, zahl: /Ziel OHNE Bezug zum Wasser/ },
             { name: "MUTANTE kein Wasser im Bild der Ego-Pose", stdout: ["KAMERA ", "WASSER " + JSON.stringify({ fehler: "kein Wasser im Bild der Ego-Pose (8 nasse Stellen verdeckt)", gefragt: 8 })].join("\n"), j: null, gruen: false, zahl: /kein Wasser im Bild der Ego-Pose/ },
+            // der Fall 7de938ab: 9 Blöcke, r −0,99 — das Urteil allein bliebe ROT; der Läufer setzt davor die Marke MESSORT (UNGEMESSEN)
+            {
+                name: "MUTANTE dünne Stichprobe (9 Blöcke, r −0,99 am 7de938ab)",
+                stdout: K3_ROH.neu.stdout + "\n@@PUNKTE@@ MESSORT die Pose zeigt zu wenig Spiegel: 9 Bloecke mit Spiegel-Partner < 16",
+                j: { ...K3_ROH.neu.j, klasse: { klassen: { wasserSatz: { spiegelTreue: -0.9926, pixel: 11808, spiegelEbene: 1.088, sp: [9, 0, 0, 2775.94, 2775.94, -2755.39] } } } },
+                gruen: false,
+                zahl: /spiegelTreue -0\.9926/,
+            },
         ],
         quelle: "1 = spiegelTreue ≥ 0,6 an einer Pose in Ausgabe-Größe mit der Kamera des Spiels an einem Gerät",
     },

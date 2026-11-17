@@ -1321,7 +1321,11 @@ async function rolleSeite(o) {
         if (!c) return { fehler: "kein Wolf am Ort (spawnCreatureAt wolf: " + R.absage + ")" };
         R.ziel = c;
         R.hp0 = c.userData.hp;
-        R.schlag = { schwuenge: 0, dHieb: null, dMin: null, reach: +r._kampfBladeReach().toFixed(2), jagt: false, zustaende: [] };
+        // DER LEIB DES ZIELS IN DER KLINGE (Vorarbeiter 9, 17.11.; GTX 7de938ab: ein Wolf mit hp 754 statt 127 hetzte und hielt in
+        // 1,80 m, wo sein Maul den Spieler erreicht — die Probe schlug nur bis Klinge + 0,6 m = 1,26 m und schwang nie): der Hieb
+        // fällt, wo das Grob-Tor des Spiels ihn zulässt — Klinge + die Reichweite des Leibs (`_trefferErreichbar`, `_kreaturLeib`)
+        const leib = r._kreaturLeib(c, 0, {});
+        R.schlag = { schwuenge: 0, dHieb: null, dMin: null, reach: +r._kampfBladeReach().toFixed(2), leibR: +leib.reichweite.toFixed(2), jagt: false, zustaende: [] };
         st.player.stamina = st.player.staminaMax;
         return { ...kam(q), hp: R.hp0, seele: "wolf", temperament: r._creatureTemperament(c), beute: r._kreaturIstBeute(c, st.playerMesh), modus: r.getGameMode() };
     }
@@ -1340,11 +1344,11 @@ async function rolleSeite(o) {
         if ((r._spielerJaeger || []).includes(c) || (c.userData && c.userData._jagdZiel != null)) S.jagt = true;
         S.dMin = S.dMin == null ? +d.toFixed(2) : Math.min(S.dMin, +d.toFixed(2));
         const frei = !(p._swing && p._swing.t < p._swing.dauer);
-        if (frei && d <= S.reach + 0.6 && c.userData.hp > 0) {
+        if (frei && r._trefferErreichbar(c, pm.x, pm.z, S.reach) && c.userData.hp > 0) {
             p.stamina = p.staminaMax;
             if (r._playerAttackCreature(c) !== false) (S.schwuenge += 1), (S.dHieb = +d.toFixed(2));
         }
-        return { d: +d.toFixed(2), nah: d <= S.reach + 1.5, hp: c.userData.hp, getroffen: c.userData.hp < R.hp0 };
+        return { d: +d.toFixed(2), nah: d <= S.reach + S.leibR + 0.9, hp: c.userData.hp, getroffen: c.userData.hp < R.hp0 };
     }
     if (s === "kampfNach") {
         const c = R.ziel;
@@ -3212,6 +3216,7 @@ const alle = [
             { name: "die Aufstellung ohne Zahl (bauen)", j: rolleRoh({ bauen: { aufstellungS: undefined } }), stdout: PAAR_KARTE, gruen: false },
             // der Mutant der Klasse (17.11.): das Ziel nach dem Furcht-Gesetz floh vor dem Schwung, die hp blieben (Radeon e489088a)
             { name: "das Ziel flieht vor der Klinge, kein Treffer (3,39 m beim Hieb, Klinge 0,66 m)", j: rolleRoh({ kaempfen: { aenderung: false, welt: { schwung: true, hp: 30, hp0: 30, dHieb: 3.39, reach: 0.66, zustand: "flucht" } } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "der große Wolf hält vor der Klinge, kein Schwung (GTX 7de938ab: hp 754, dMin 1,80 m, Klinge 0,66 m)", j: rolleRoh({ kaempfen: { aenderung: false, welt: { schwung: false, schwuenge: 0, hp: 754.4, hp0: 754.4, dMin: 1.8, reach: 0.66, leibR: 1.2, jagt: true, zustand: "hetzen" } } }), stdout: PAAR_KARTE, gruen: false },
             { name: "ein gestelltes Ziel (sanft, im frieden): der Treffer zählt nicht", j: rolleRoh({ kaempfen: { ziel: { seele: "wesen", temperament: "sanft", beute: false, modus: "frieden" } } }), stdout: PAAR_KARTE, gruen: false, zahl: /gestelltes Ziel/ },
             { name: "die Aufstellung des Wagens 12,5 s — der Befund steht beim Namen, das Urteil bleibt", j: rolleRoh({ fahren: { aufstellungS: 12.5 } }), stdout: PAAR_KARTE, gruen: true, zahl: /Aufstellung > 10 s: fahren 12\.5 s/ },
         ],
