@@ -184,7 +184,7 @@ class AnazhRealm_gelaende_fern {
             const bp = st.blueprints && st.blueprints[e.type];
             if (bp && bp._isGrown) halten.add(this._scatterCellKeyAt(e.position.x, e.position.z, "tree"));
         }
-        for (const { karte: lies, zelle, reichweite, geht: abschied } of AnazhRealm.ZELL_GEDAECHTNISSE) {
+        for (const { karte: lies, zelle, reichweite, haelt, geht: abschied } of AnazhRealm.ZELL_GEDAECHTNISSE) {
             const karte = lies(this);
             if (!karte || !karte.size) continue;
             const rw = reichweite ? reichweite(this) : 0;
@@ -203,6 +203,7 @@ class AnazhRealm_gelaende_fern {
                 const [x0, z0] = [i * m + ab, j * m + ab];
                 const mitte = Math.floor((x0 + m / 2) / span) + "," + Math.floor((z0 + m / 2) / span);
                 if (!(m <= span && geht.has(mitte)) && behalten(x0, z0, x0 + m, z0 + m, rw)) continue;
+                if (haelt && haelt(this, k)) continue; // die Frage eines fernen Lesers hält sie (`_hydroGefragtHaelt`)
                 karte.delete(k);
                 fiel.push(k);
             }
@@ -2343,14 +2344,20 @@ AnazhRealm.ZELL_GEDAECHTNISSE = Object.freeze([
         karte: (r) => r._hydroBestellt,
         zelle: () => AnazhRealm._hydroKachelZelle(),
         reichweite: (r) => r._hydroReichweite(),
+        haelt: (r, k) => r._hydroGefragtHaelt(k),
     },
     {
         karte: (r) => r.state.hydroTiles,
         zelle: () => AnazhRealm._hydroKachelZelle(),
         reichweite: (r) => r._hydroReichweite(),
+        haelt: (r, k) => r._hydroGefragtHaelt(k),
         geht: (r, schluessel) => r._hydroGeht(schluessel),
     },
 ]);
+// die Frist, die eine gefragte Hydro-Kachel jenseits der Reichweite des Spielers bleibt (`_hydroGefragtHaelt`): länger als jede
+// Bestellung im Faden (235 ms je Kachel, neun in der Reihe) samt dem Lesen danach, kürzer als eine Reise (die K4-Probe wirft
+// ihre 400 Orte über Minuten — ihre Kacheln fallen weiter)
+AnazhRealm.HYDRO_FRAGE_HAELT_MS = 30000;
 AnazhRealm._hydroKachelZelle = () => ({
     m: AnazhRealm.HYDROSPHERE.regionSize,
     ab: -AnazhRealm.HYDROSPHERE.regionSize / 2,
