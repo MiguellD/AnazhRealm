@@ -1,7 +1,7 @@
 {
  "sha": "e489088a9bfca46817cd159efd64ffc1be80dbd4",
  "geraet": "gtx",
- "zeit": "2026-11-17T08:33:46.364Z",
+ "zeit": "2026-11-17T10:07:24.863Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.menge.bild#1": {
@@ -79,61 +79,29 @@
   "k01f1e576c614": "fVTBcpswEP0XH5sS2YCC0EwOcsnUyUymzqnT40paATEGjwQhdaf/3jEB20DbPQGzb/ft28f+WhxA7SDF21dXlQu++LT4vHDwhp5D+4b29tUt+GKpQqCMi48gQoivpzRl80PtSJFLArKEbI9eY2vMi1vVwVaKISAn7YNot4RsSUTWrTjHWtzfT8sUEnXl1WBwKCK1HwXAp4mNS0GiB43pGvfJMVIdS066YInYvpIhxIsQpH2YdpRQ6jFrEwA1K/7YCvEwZ6hzwNor8tINPZWmMvD5uVE7x1hovSNgVqDtQeyO6mA1EJ0CTNE4N2rCAk19xgmJySQ3RZerrPYOtpJYDqLFfrQCvp5zSQ+NZ66ZgJTA5FTfDLBM0Y45RCFVISfvM7472KMFr4Rs2MMyiHx50YQQsplzKTriXYuBONMyjswISAhJN51tEta9nD+zzYeRkvRiKvEyaeJUltv9WB5jqIbldGaXgUbr7SpXnzMDxnwIeucnnYnENkymyMsgPc6Xd0vKruZgRGxmurnK1C1Y9NJD0wMxRBpRLtLnWXIN+/0wgPKR0dkA9cnM1zSWkU9pt4f0Hzv4sL53xLwYQJFSqwD5l2cxnfPNwt4DmdrcmGHTkioT/82YLRa1J6uqHjIDDYHiJCDlWZWYCfFDrC/bS44V+/5z9369USHEUzXl3VWvbD2QpvJuaUJuuj9QTbOPaAtMcaSNDmUAmpNWXbUPh4ebkQGPs9UdczypVrrGDdaNIx331u2v3OP4frRodxLK3aDzyqyU5p1/tyIR34RIn5Kb6xP5v0j64gdU5GArk59OGcmgcRkU9eWe//4D"
  },
  "sitzung": {
-  "start": "2026-11-17T08:17:58.278Z",
-  "ordner": "sitzung-20261117-091758",
+  "start": "2026-11-17T09:22:21.243Z",
+  "ordner": "sitzung-20261117-102221",
   "port": 7804,
-  "warten": 15.32,
-  "bootS": 5.8,
+  "warten": 45.06,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 0,
   "freigaben": [],
-  "orte": [
-   {
-    "ort": "genesis",
-    "vor": "karte2.mensch.menge.bild#1",
-    "s": 22.2,
-    "takte": 573,
-    "chunks": 81,
-    "nach": null
-   }
-  ],
-  "wegeTueren": [],
-  "wanderung": [
-   {
-    "probe": "karte2.mensch.menge.bild#1",
-    "ort": "genesis",
-    "m": 185.18,
-    "dreh": 3.189
-   }
-  ],
-  "messHalt": [
-   {
-    "probe": "karte2.mensch.menge.bild#1",
-    "gehalten": [
-     "skala",
-     "spiegel",
-     "tiere"
-    ],
-    "offen": []
-   }
-  ],
-  "ciBlicke": 2,
-  "strom": {
-   "datei": "strom.ndjson",
-   "bilder": 3248,
-   "frameP95": 25.07,
-   "taktP95": 19.83,
-   "vramMax": 181.9,
-   "seiten": 1,
-   "marken": 0,
-   "fehler": 0,
-   "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 172,
-   "luecken": 3,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
-  },
-  "fahrtS": 214.9,
-  "minuten": 18.99
+  "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2703 s Warten) — ungemessen",
+  "minuten": 45.06
+ },
+ "ungemessen": {
+  "karte2.same.preis.bytes#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2703 s Warten) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2703 s Warten) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-17T10:07:24.863Z",
+   "abdruck": "6cb47dc0dc76",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
