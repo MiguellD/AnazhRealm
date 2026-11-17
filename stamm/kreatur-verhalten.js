@@ -2860,10 +2860,12 @@ class AnazhRealm_kreatur_verhalten {
 
     // Gehört dieses Tier dem Feld? Nur FERN und sobald ein Bake-Versuch lief (mit Gliedern oder
     // gescheitert); nah und in der Bake-Rampe ist das Studio-Tier sichtbar, three cullt es je Pass. Ein Bewohner in seinem
-    // Haus (`_drinnen`, mensch.K2) gehört keinem Feld.
+    // Haus (`_drinnen`, mensch.K2) gehört keinem Feld, einer am Steuer auch nicht — sein Leib gehört dem Wagen (`_verkehrSitz`).
     _kzBesitztFeld(cr) {
         const u = cr && cr.userData;
-        return !!(u && u._kzNah !== true && u._drinnen !== true && (u._kzGlieder || u._kzVersuch));
+        if (!u || u._kzNah === true || u._drinnen === true || (u._feldLageVon && u._feldLageVon.b.amSteuer))
+            return false;
+        return !!(u._kzGlieder || u._kzVersuch);
     }
 
     // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): das Fell (die Schalen, dazu Rest-Strähnen wie der
