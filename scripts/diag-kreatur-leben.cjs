@@ -4,8 +4,11 @@
 "use strict";
 
 // ── furcht (Ökologie K3, tetrapoda FURCHT_GESETZ): (A) je Ort und Rolle ein Tier allein — geschlagen, gefüttert, gebunden,
-// zur Kontrolle, der Bär vor ruhiger, zorniger, friedlicher Aura — über den Speicherstand, dann geht der Spieler bis 8 m
-// heran und steht 15 s: der Median des Abstands. (B) ein Rudel um einen Riss: sein Aufenthalt in dessen Zelle über 90 s,
+// zur Kontrolle, der Bär vor ruhiger, zorniger, friedlicher Aura, Wolf und Fuchs fremd — über den Speicherstand, dann geht der
+// Spieler in Stufen aus 480 m auf es zu, bis es flieht (der Abstand dann: die Fluchtdistanz, tetrapoda fluchtDistanz) oder bis 8 m, und
+// steht 15 s: der Median des Abstands. Seit leben.tiere.mensch S1 flieht jedes Wild den gehenden Menschen ab der Distanz seiner
+// Gattung, Gedächtnis und Aura weiten sie; vorher ging er aus 30 m bis 8 m heran, und der Median nach 40 s Hetze maß den Sprint
+// des Tiers, nicht sein Gedächtnis (Kontrolle 342 m, geschlagen 358 m). (B) ein Rudel um einen Riss: sein Aufenthalt in dessen Zelle über 90 s,
 // gegen den Gegenlauf ohne Feld-Furcht. (C) eine Herde 15 m vom Herd eines Brands: wer binnen 10 s flieht, gegen den Lauf ohne
 // Brand (w28-brand-flucht: vorher las die Furcht die Glut nie) ──
 // Die Bühnen stehen an der Marke LEBEN_BUEHNEN im Leib von `kreaturProben` (scripts/lib/kreatur-proben.cjs): r, s, A, pm, buehne,
@@ -16,6 +19,7 @@ async function lebenBuehnen() {
     await buehne("furcht", async (restore) => {
         if (taeter === "furcht-gedaechtnis") decke("_kreaturFurchtErinnert", () => () => 0);
         if (taeter === "furcht-ort") decke("_kreaturFurchtOrt", () => (c, NAT, von, w) => w);
+        if (taeter === "furcht-mensch") decke("_kreaturMenschFlucht", () => () => 0);
         if (taeter === "furcht-speicher")
             decke("_serializeCreature", (alt) => (c) => Object.assign(alt.call(r, c), { memory: [] }));
         if (taeter === "furcht-aura") {
@@ -38,10 +42,12 @@ async function lebenBuehnen() {
             baerRuhig: ["baer"],
             baerZornig: ["baer", zorn],
             baerFrieden: ["baer", zorn, "frieden"],
+            wolf: ["wolf"], // satt
+            fuchs: ["fuchs"],
         };
         const erinnert = {};
         for (const [rolle, [seele, e, modus]] of Object.entries(rollen)) {
-            const R = { abstand: [], naeher: [], erinnerungen: [] };
+            const R = { abstand: [], naeher: [], erinnerungen: [], flucht: [] };
             r.setGameMode(modus || "pfad");
             for (let o = 0; o < 4; o++) {
                 s.creatureAnimationTime = 100;
@@ -60,15 +66,26 @@ async function lebenBuehnen() {
                 const c = r._restoreCreatureFromSnapshot(snap);
                 ruhig(c);
                 if (rolle === "gebunden") c.userData.bond = 1;
+                // der Wolf satt (VERHALTEN.aas): ein hungriger jagt den Spieler und flieht ihn nicht (`_kreaturJagdBereit`)
+                if (rolle === "wolf") c.userData.magen = r._kreaturMagenVoll(c);
                 R.erinnerungen.push((c.userData.memory || []).length);
-                pm.set(c.position.x + 30, boden(c.position.x + 30, c.position.z), c.position.z);
-                for (let k = 0, d = 30; k < 2400 && d > 8; k++) {
-                    d = ab(c.position, pm);
-                    pm.x += ((c.position.x - pm.x) / d) * s.speed * dt;
-                    pm.z += ((c.position.z - pm.z) / d) * s.speed * dt;
-                    pm.y = boden(pm.x, pm.z);
-                    lauf(1, e);
+                // DIE LEITER DER NÄHERUNG: der Spieler tritt in Stufen aus 480 m heran (je Stufe 12 % näher am Tier), geht dort 1 s
+                // in seinem Lauf auf es zu, bis es flieht (`_motionZustand` "flucht"): `fluchtM` (0 = es floh nicht); sonst steht
+                // er nach der letzten Stufe bei 8 m (ein Gang aus 480 m wären bei s.speed Minuten je Tier)
+                let fluchtM = 0;
+                for (let d = 480; !fluchtM; d = Math.max(8, d * 0.88)) {
+                    pm.set(c.position.x + d, boden(c.position.x + d, c.position.z), c.position.z);
+                    for (let k = 0; k < 60 && !fluchtM; k++) {
+                        const dk = ab(c.position, pm);
+                        pm.x += ((c.position.x - pm.x) / dk) * s.speed * dt;
+                        pm.z += ((c.position.z - pm.z) / dk) * s.speed * dt;
+                        pm.y = boden(pm.x, pm.z);
+                        lauf(1, e);
+                        if (c.userData._motionZustand === "flucht") fluchtM = ab(c.position, pm);
+                    }
+                    if (d === 8) break;
                 }
+                R.flucht.push(rund(fluchtM, 1));
                 const d0 = ab(c.position, pm);
                 for (let k = 0; k < 900; k++) {
                     lauf(1, e);
@@ -80,6 +97,8 @@ async function lebenBuehnen() {
             erinnert[rolle] = {
                 medianM: rund(quantil(R.abstand, 0.5), 2),
                 naeherM: rund(quantil(R.naeher, 0.5), 2),
+                fluchtM: rund(quantil(R.flucht, 0.5), 1),
+                flucht: R.flucht,
                 erinnerungen: R.erinnerungen,
             };
         }
@@ -173,6 +192,7 @@ async function lebenBuehnen() {
         const mittel = (a) => rund(a.reduce(addiere, 0) / a.length, 3);
         return {
             erinnert,
+            witterungM: A._verhaltenGesetz().furcht.noticeRadius,
             ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) },
             brand: { flieht: mittel(brand.feuer), gegenlauf: mittel(brand.gegenlauf), herde: orte.length, je: brand.feuer },
         };
@@ -1214,23 +1234,33 @@ function lebenUrteil(name, z, soll) {
     }
     if (name !== "furcht") return;
     const { kontrolle: K, geschlagen: G, gefuettert: F, gebunden: B, baerRuhig, baerZornig, baerFrieden } = z.erinnert;
+    const { wolf: W, fuchs: Fu } = z.erinnert;
     soll(
         [...G.erinnerungen, ...F.erinnerungen].every((n) => n >= 1),
         `das Gedächtnis reist nicht über den Speicherstand: geschlagen ${G.erinnerungen}, gefüttert ${F.erinnerungen}`
     );
     soll(K.medianM >= 5, `der Kontroll-Hirsch hält keinen Abstand (Median ${K.medianM} m, vakuös)`);
+    // DER MENSCH IST DER SUPER-RÄUBER (leben.tiere.mensch S1): das Wild flieht den gehenden Fremden jenseits der Witterung der
+    // Aura (VERHALTEN.furcht.noticeRadius) — vorher floh der Hirsch erst bei 14 m, Wolf und Bär nie
     soll(
-        G.medianM >= 2 * K.medianM,
-        `das Wesen vergisst, wer es schlug: ${G.medianM} m gegen ${K.medianM} m der Kontrolle (Soll ≥ 2×)`
+        [K, baerRuhig, W, Fu].every((R) => R.fluchtM > z.witterungM),
+        `das Wild flieht den Menschen nicht: Hirsch ab ${K.fluchtM} m, Bär ${baerRuhig.fluchtM} m, Wolf ${W.fluchtM} m, Fuchs ${Fu.fluchtM} m (Soll > ${z.witterungM} m)`
     );
     soll(
-        F.medianM <= 0.5 * K.medianM && F.naeherM >= 2,
-        `das gefütterte Wesen nähert sich nicht: ${F.medianM} m (Soll ≤ ½×), selbst ${F.naeherM} m näher (Soll ≥ 2 m)`
+        G.fluchtM >= 2 * K.fluchtM,
+        `das Wesen vergisst, wer es schlug: es flieht ab ${G.fluchtM} m gegen ${K.fluchtM} m der Kontrolle (Soll ≥ 2×)`
     );
-    soll(B.medianM <= 0.8 * K.medianM, `die Bindung macht nicht mutig: ${B.medianM} m`);
     soll(
-        baerZornig.medianM >= 2 * baerRuhig.medianM && baerFrieden.medianM <= 0.5 * baerZornig.medianM,
-        `die Aura treibt die Furcht nicht: der Bär ruhig ${baerRuhig.medianM} m, zornig ${baerZornig.medianM} m, im frieden ${baerFrieden.medianM} m`
+        F.medianM <= 0.5 * K.medianM && F.naeherM >= 2 && F.fluchtM <= 0.5 * K.fluchtM,
+        `das gefütterte Wesen nähert sich nicht: ${F.medianM} m (Soll ≤ ½×), selbst ${F.naeherM} m näher (Soll ≥ 2 m), flieht ab ${F.fluchtM} m (Soll ≤ ½×)`
+    );
+    soll(
+        B.medianM <= 0.8 * K.medianM && B.fluchtM <= 0.8 * K.fluchtM,
+        `die Bindung macht nicht mutig: ${B.medianM} m, flieht ab ${B.fluchtM} m`
+    );
+    soll(
+        baerZornig.fluchtM >= 2 * baerRuhig.fluchtM && baerFrieden.fluchtM <= 0.5 * baerZornig.fluchtM,
+        `die Aura treibt die Furcht nicht: der Bär flieht ruhig ab ${baerRuhig.fluchtM} m, zornig ${baerZornig.fluchtM} m, im frieden ${baerFrieden.fluchtM} m`
     );
     const O = z.ort;
     soll(O.gegenlauf >= 0.2, `das Rudel steht im Gegenlauf nicht am Riss-Ort (${O.gegenlauf}, vakuös)`);
@@ -1293,6 +1323,7 @@ module.exports = {
         furcht: [
             ["furcht-gedaechtnis", /vergisst, wer es schlug[\s\S]*nähert sich nicht/],
             ["furcht-ort", /meidet den Riss nicht/],
+            ["furcht-mensch", /das Wild flieht den Menschen nicht/],
             ["furcht-speicher", /reist nicht über den Speicherstand/],
             ["furcht-aura", /die Aura treibt die Furcht nicht/],
             ["brand-flucht", /die Glut ist keine Bedrohung/],

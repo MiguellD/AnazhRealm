@@ -2900,6 +2900,8 @@
             glut:       [{ C: 1 },             "kovalent",    400,   3e9,     5e6,    2e6,    null,   null, 1000, null,   0.05, 0.9],
             laub:       [null,                 "faser",       300,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3, 0.9],
             erde:       [null,                 "korn",        1500,  5e7,     2e5,    2e4,    null,   null, 800,  null,   0.2, 0.755],
+            // Holz- und Gras-Asche, lose geschüttet (Schüttdichte 500–700 kg/m³, c ≈ 840 J/kg·K): ein trockenes Pulver, matt
+            asche:      [null,                 "korn",        600,   1e7,     5e4,    5e3,    null,   null, 840,  null,   0.3, 0.96],
             kraut:      [null,                 "faser",       400,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3, 0.9],
             essenz:     [null,                 "wasserstoff", 1000,  2.2e9,   null,   null,   1.333,  55.8, 4186, null,   0.03, 0.76],
             gras:       [null,                 "faser",       350,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3, 0.9]

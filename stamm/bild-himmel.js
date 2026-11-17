@@ -358,15 +358,14 @@ class AnazhRealm_bild_himmel {
             const sizeRoll = rng();
             const size = 3.0 + Math.pow(sizeRoll, 2) * 3.5; // 3..6.5 px, AA-sicher
             sizes[i] = size;
-            // Helligkeit traegt die Stern-Variation (statt der Groesse):
-            // pow³-biased → die meisten Sterne dim, wenige hell.
-            const bright = 0.32 + Math.pow(sizeRoll, 3) * 0.68;
-            colors[i * 3] = tmpCol.r * bright;
-            colors[i * 3 + 1] = tmpCol.g * bright;
-            colors[i * 3 + 2] = tmpCol.b * bright;
-            // Die Größenklasse aus demselben Wurf: die meisten Sterne lichtschwach (6), wenige hell (bis −1).
-            mags[i] =
-                AnazhRealm.HIMMEL.sternMagSchwach - (AnazhRealm.HIMMEL.sternMagSchwach + 1) * Math.pow(sizeRoll, 3);
+            // DIE STERNZÄHLUNG (w28-sternhimmel): die Größenklasse aus demselben Wurf nach dem Gesetz des Himmels — die Zahl der
+            // Sterne heller als m wächst wie 10^(sternZaehlung · m), geankert an den FIX_COUNT Sternen bis sternMagSchwach. Der
+            // alte Wurf (6 − 7·roll³) trug 141 Sterne heller als 0 (der Himmel 4): in der Dämmerung stand ein Nachthimmel.
+            // Die Farbe trägt nur den Ton; die Helligkeit folgt im Stoff aus Größenklasse gegen Grenzgröße (`sichtbar`).
+            colors[i * 3] = tmpCol.r;
+            colors[i * 3 + 1] = tmpCol.g;
+            colors[i * 3 + 2] = tmpCol.b;
+            mags[i] = AnazhRealm._sternMag(1 - sizeRoll, FIX_COUNT);
             if (w) {
                 // Ein Wandelstern: dieselbe Kugel-Verteilung, eigene Farbe, eigene Helligkeit, ein Hauch größer.
                 sizes[i] = w.groesse;
@@ -385,8 +384,9 @@ class AnazhRealm_bild_himmel {
         const { uniform, attribute, vec2, vec4, float, length, smoothstep } = TSL;
 
         const uOpacity = uniform(0.5);
-        // Die Grenzgröße des Himmels (der Kanal `grenze` der EINEN Tag-Achse, `_tagAchse`): ein Punkt leuchtet, wenn er heller ist als sie
-        // (weich über ±0,5 Größenklassen).
+        // Die Grenzgröße des Himmels (der Kanal `grenze` der EINEN Tag-Achse, `_tagAchse`): ein Punkt leuchtet, wenn sein Licht über
+        // der Schwelle des Auges steht (½ Klasse unter der Grenzgröße) — und so hell, wie sein Fluss sie übersteigt
+        // (10^(−0,4·Δm), gesättigt über `sternKontrast`): an der Schwelle 0, eine Klasse darüber schon deutlich.
         const uGrenze = uniform(-10);
 
         const planeGeo = new THREE.PlaneGeometry(1, 1);
@@ -401,7 +401,13 @@ class AnazhRealm_bild_himmel {
         // Attribute (gesetzt via mesh.setColorAt(i, color), gebunden im
         // Shader via attribute("instanceColor", "vec3")).
         const instColor = attribute("instanceColor", "vec3");
-        const sichtbar = uGrenze.sub(attribute("aMag", "float")).add(0.5).clamp(0.0, 1.0);
+        const ueber = TSL.exp2(
+            uGrenze
+                .sub(attribute("aMag", "float"))
+                .add(0.5)
+                .mul(0.4 * Math.log2(10))
+        ).sub(1.0); // Fluss über der Schwelle
+        const sichtbar = float(1.0).sub(TSL.exp(ueber.max(0.0).mul(-AnazhRealm.HIMMEL.sternKontrast)));
         starMat.colorNode = vec4(instColor, falloff.mul(uOpacity).mul(sichtbar));
 
         // Material-Properties: identisch zur V10.0-f-2-PointsMaterial-Variante.
@@ -3319,6 +3325,8 @@ AnazhRealm._schirmDreieck = __weltLicht.schirmDreieck; // der Baustein der Engin
 AnazhRealm.HIMMEL = Object.freeze({
     grenzgroesse: __weltLicht.GRENZGROESSE, // die Anker der EINEN Tag-Achse (welt-licht.js `tagAchse`)
     sternMagSchwach: 6,
+    sternZaehlung: 0.47, // d log10 N(< m) / dm: die Zahl der Sterne heller als m (Sternzählung des bloßen Auges)
+    sternKontrast: 0.6, // die Sättigung der Punkt-Helligkeit über dem Fluss an der Schwelle (1 − e^(−k · (Fluss/Schwelle − 1)))
     wandelsterne: Object.freeze([
         Object.freeze({ mag: -4.2, farbe: Object.freeze([1.0, 0.97, 0.88]), groesse: 7.5 }),
         Object.freeze({ mag: -2.3, farbe: Object.freeze([1.0, 0.94, 0.82]), groesse: 7.0 }),
@@ -3332,9 +3340,14 @@ AnazhRealm.HIMMEL = Object.freeze({
     sonneWinkelGrad: 0.53,
     sonneLeucht: 4,
 });
-// DER HELLSTE PUNKT DES FELDS (`_buildStarField`): die Größenklasse eines Sterns liegt in [−1, sternMagSchwach] (sein Wurf
-// `sternMagSchwach − (sternMagSchwach + 1) · roll³`), ein Wandelstern trägt seine eigene — der kleinste Wert des Gesetzes, nie
-// gezählt am gebauten Feld (der Bau des Felds fragt ihn, bevor es steht).
+// DIE GRÖSSENKLASSE EINES STERNS (`_buildStarField`): sein Rang-Anteil a ∈ (0, 1] im Feld von n Sternen → die Klasse, bis zu der
+// der Himmel diesen Anteil trägt (N(< m) ∝ 10^(sternZaehlung · m)), nie heller als −1.
+AnazhRealm._sternMag = (anteil, n) => {
+    const H = AnazhRealm.HIMMEL;
+    return Math.max(-1, H.sternMagSchwach + Math.log10(Math.max(anteil, 0.5 / n)) / H.sternZaehlung);
+};
+// DER HELLSTE PUNKT DES FELDS: die Größenklasse eines Sterns liegt in [−1, sternMagSchwach] (`_sternMag`), ein Wandelstern trägt
+// seine eigene — der kleinste Wert des Gesetzes, nie gezählt am gebauten Feld (der Bau des Felds fragt ihn, bevor es steht).
 AnazhRealm.STERN_HELLSTE = Math.min(-1, ...AnazhRealm.HIMMEL.wandelsterne.map((w) => w.mag));
 // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle (gegenüber der Sonne, kühl + gedämpft →
 // gerichtete Nacht-Schattierung mit tiefen Schwärzen) statt die Nacht per Post-FX aufzuhellen.
