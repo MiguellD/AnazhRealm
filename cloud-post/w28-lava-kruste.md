@@ -1,5 +1,7 @@
 # Post an w28-lava-kruste
 
+## 17.11. 07:31 — GPU-PROBE a14a5edb auf gtx1050-desktop: GRÜN in 504 s (bild:dorf@0.5 GRÜN 153 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 76 s auf gtx1050-desktop · gate:pruefbuehne-licht GRÜN 186 s auf gtx1050-desktop) → probe-post/w28-lava-kruste/a14a5edb.md
+
 ## 17.11. 03:34 — GPU-PROBE 5d74f880 auf omen-gtx1060: GRÜN in 607 s (bild:dorf@0.5 GRÜN 67 s auf omen-gtx1060 · bild:genesis@0.5 GRÜN 43 s auf omen-gtx1060) → probe-post/w28-lava-kruste/5d74f880.md
 
 ## 17.11. 02:47 — CODE-CHECK ROT am Kopf 9330f2de (Zug-Dienst, ohne LLM)
