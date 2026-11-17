@@ -1,0 +1,143 @@
+{
+ "sha": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
+ "geraet": "gtx",
+ "zeit": "2026-11-17T13:23:14.272Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.mensch.macht.wehrbau#1": {
+   "gruen": true,
+   "zahl": "✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.97,
+   "gpu": "nvidia/pascal",
+   "konsum": "k5a610c99bf22",
+   "konsumN": 38,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k27849735a253",
+   "s": 57.1,
+   "fremd": {
+    "s": 60.8,
+    "takte": 25,
+    "fremdS": 96.44,
+    "kerne": 1.587,
+    "fensterKerne": 2.109,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      29.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      27.63
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      13.48
+     ]
+    ],
+    "dienerS": 29.06,
+    "diener": [
+     [
+      "System",
+      14.33
+     ],
+     [
+      "dwm.exe",
+      9.81
+     ]
+    ],
+    "geraetS": 32.27,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      16.97
+     ],
+     [
+      "svchost.exe",
+      9.72
+     ],
+     [
+      "SearchIndexer.exe",
+      3.33
+     ]
+    ],
+    "eigenS": 356.38,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-17T13:23:14.272Z",
+   "abdruck": "91d02c40c141",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k5a610c99bf22": "dVXJkqNGEP0XHd2DUmxNQUQfSo1iJIc7hg6f7FstWUCLRVGFxIQc/ncHCLpZxnlC4mXmy0cu/2xErdFsS1blCk2z/TB1tYk2v22+bRQTWYv6bHWQ7YfZRBvXF55LIgAFYBMDR3Kkyd0FeILe2iRtjzeApxAojVNKAw/uhI7mJQAh3DwAkngqgKO7i+EGHtj499v3v+iJ7lNK41a8Dw7JHeDpR3yHCgACCN5FeqJ0T5MYMpccHpg/+3df9nSPW0qzlE5s31LV8Wi7JzoA8/THD3V5n8BOh5fNt01eSfy5zZqyGJS4MHFmKU7FMeyGlkF9Q/2QZic85pNoCASU0tcOJnR+aQzInKWWwaYpsMSq2Yrehwm1s2UEFaEzex1Z05dJjCLnwHjFshKtq24wL4YwtiDIMIL2QNsEIIEAuipHi+nLKkzBUdZWwxSOQbh0ApdFS+DVpIyjxa6qTzyAQ/RlyKOHjCSmycen+vSd0o7J6zorZ5WcM1cu85UdnVpKD2u8zBk2VpFXZswrpM9dJ/pM1q59NGutO8OsQD04kWdfuvZIdumgiqsxsyTElb7TNXkIC2yKJhdZY110zbEahQudwGbRfs0lvVwtNWXCOGeELzXOGFYp6jmHwPOFF8HPFd8zK1Ezq2LZ+C12buDwaDIAcFxzKXrifYqROJE8DNTMEQDSY986Mel/fP5NjkMzTcfqfZmkNnNtQs/2d7gsuNYLCYnnuBhG46gu4EZkuS7nHkr5ku2iP9aFmoxJ1Na5Ns0n2iXEYe4QP+5blCZevPT8kmjwc/jzzicThQjQ4+qLmFo1LdNopZfr4Ige+oEfUXpagRsmF9U/+0oJtRTJNKwsx2qFg8T/BaKSM767wPH9vhXS/2mDx/RZd8yL0SkQwnYxen2jS0FuqM+YaVNhc59TDrjn7OSS0E2z0mI81blSYwNwX6jwV7PUYtFYvK7HXRi6krmi415N9Fb9FvxaZW0tDq/p18p+e7SMTum61j5DrZuxUJ8/75QXqX5xiCX6jrrAFGd6So+7TEbQigkFb3x4ms3NfdUX9xw7pStzNWOfh4EMh4kbFvRpvva6e8tZdR51tpUtZPQ7jdMD0HhI/LyHD1ha0lJ62n+ejt6+D8EvKOCia5V3GxgydjUZK2a3/oaVrDU0mUbc9ve+zKvHYVu9Lmt5LSYA5rJQOtHm3/8A",
+  "k27849735a253": "fVTBcpswEP0XH9sS2YCC0EwOcsnUyUwmzqnT40paATEGjwQhdaf/3jEB20DbPQGzb/ft28f+WhxA7SDFm1dXlQu++LT4snDwhp5D+4b25tUt+GKpQqCMi48gQohvpzRl80PtSJFLArKEbI9eY2vMixvVwVaKISAn7b1ot4RsSUTWrTjHWtzdTcsUEnXl1WBwKCK1HwXAp4mNS0GiB43pGvfJMVIdS066YInYvpIhxIsQpL2fdpRQ6jFrEwA1K/7QCnE/Z6hzwNor8tINPZWmMvD5uVE7x1hovSNgVqDtQeyW6mA1EJ0CTNE4N2rCAk19xgmJySQ3RZerrPYOtpJYDqLFfrQCvp5zSQ+NZ66ZgJTA5FTfDLBM0Y45RCFVISfvM7472KMFr4Rs2MMyiHx50YQQsplzKTriXYuBONMyjswISAhJN51tEta9nD+zzYeRkvRiKvEyaeJUltv9WB5jqIbldGaXgUbr7SpXnzMDxnwIeucnnYnENkymyMsgPc6Xt0vKruZgRGxmurnK1C1Y9NJD0wMxRBpRLtKnWXIN+/0wgPKR0dkA9cnM1zSWkU9pt4f0Hzv4sL53xLwYQJFSqwD51ycxnfPNwt4DmdrcmGHTkioT/82YLRa1J6uqHjIDDYHiJCDlWZWYCfFDrM/Le06OFfv+c/d+vVEhxGM15d1Vr2w9kKbydmlCbro/UE2zj2gLTHGkjQ5lAJqTVl36JOHw8HlkwONsdcccT6qVrnGDdeNIx711+yv3ML4fLdqdhHI36LwyK6V559+tSMSzEOlj8vn6RP4vkr74ARU52Mrkp1NGMmhcBkV9uee//wA="
+ },
+ "sitzung": {
+  "start": "2026-11-17T13:22:42.126Z",
+  "ordner": "sitzung-20261117-142242",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 7.4,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "karte2.mensch.macht.wehrbau#1",
+    "s": 22.3,
+    "takte": 780,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "messHalt": [
+   {
+    "probe": "karte2.mensch.macht.wehrbau#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.mensch.macht.wehrbau#1",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 3239,
+   "frameP95": 25.05,
+   "taktP95": 18.93,
+   "vramMax": 140.8,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.mensch.macht.wehrbau#1",
+     "m": 1349,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 161,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 168.3,
+  "minuten": 2.89
+ }
+}
