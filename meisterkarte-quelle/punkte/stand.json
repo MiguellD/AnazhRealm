@@ -5180,7 +5180,7 @@
   },
   "karte2.leben.oeko.dynamik": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 8 Saaten · hirsche 0.354 [0.16, 0.556] · jungwuchs -0.225 [-0.334, -0.113] · woelfe -0.428 [-0.597, -0.26] · mutante 0.579 [0.513, 0.65] · Mutante ROT · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.dynamik#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 8 Saaten · hirsche 0.354 [0.16, 0.556] · jungwuchs -0.225 [-0.334, -0.113] · woelfe -0.428 [-0.597, -0.26] · mutante 0.579 [0.513, 0.65] · Mutante ROT · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.dynamik#1 gtx: Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
    "stationen": [
     {
      "id": "karte2.leben.oeko.dynamik#1",
@@ -5199,15 +5199,16 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
   },
   "karte2.leben.oeko.netz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.leben.oeko.netz#1 gtx: Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
    "stationen": [
     {
      "id": "karte2.leben.oeko.netz#1",
@@ -5226,8 +5227,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6342,7 +6344,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 209,
+  "konsum": 211,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6511,10 +6513,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 132
+  "ohne": 130
  },
  "kopfVoll": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
- "zeit": "2026-11-17T13:14:46.309Z",
+ "zeit": "2026-11-17T13:25:43.792Z",
  "vorher": "b7b0f8fe",
  "bilanz": {
   "gewinn": [],
