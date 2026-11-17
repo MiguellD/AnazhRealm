@@ -3,7 +3,7 @@ class AnazhRealm_feld_leben {
     // DIE ASCHE an (x, z) ∈ [0, 1] (stoffe.K2#2) — der Kanal G derselben Karte, bilinear aus denselben Bytes, die der Boden-Stoff
     // liest (`_wegeBodenFarbe`): 1 frisch verbrannt, 0 nachgegrünt. Die Nah-Wiese liest sie (auf der Asche steht kein Halm).
     _ascheAt(x, z) {
-        return this._bodenDeckeAt(x, z, true);
+        return this._bodenDeckeAt(x, z, "asche");
     }
 
     // DIE NARBE DES BRANDS an (x, z) (stoffe.K2#2) → { m, asche, busch, wald } oder null (kein Brand um den Ort): die verbrannte
@@ -128,63 +128,31 @@ class AnazhRealm_feld_leben {
     // ihrer Nachbarinnen, gemalt wird die Fläche ±½ Zelle um sie. Wo sich ein Texel ändert, baut die Nah-Wiese darüber neu (auf
     // der Asche steht kein Halm, über die Grenze dünnen sie aus). Rückgabe: ob sich ein Texel änderte.
     _ascheMalen(cx, cz) {
-        const wk = this.state.wegeKarte;
-        if (!wk) return false;
-        const cs = AnazhRealm.LIFE_FIELD.cell;
-        const [x0, z0, x1, z1] = [(cx - 0.5) * cs, (cz - 0.5) * cs, (cx + 1.5) * cs, (cz + 1.5) * cs];
         const zelle = this._brandZellen();
-        let neu = false;
-        for (const stufe of wk.stufen)
-            if (stufe.zentriert && this._ascheFlaeche(stufe, x0, z0, x1, z1, zelle)) neu = true;
-        if (neu) this._nahRingNeuIn(x0, z0, x1, z1);
-        return neu;
+        return this._deckeMalen(cx, cz, (s, x0, z0, x1, z1) => this._ascheFlaeche(s, x0, z0, x1, z1, zelle));
     }
 
     // Die Fläche [x0, x1) × [z0, z1) in EINE Stufe malen: jedes Texel, dessen Mitte in ihr liegt, trägt die Asche der Narbe an
-    // seiner Mitte. Rückgabe: ob sich ein Texel änderte.
+    // seiner Mitte. Rückgabe: 2, wenn sich ein Texel änderte, sonst 0.
     _ascheFlaeche(stufe, x0, z0, x1, z1, zelle) {
-        const kr = stufe.kronen;
-        const N = kr.N;
-        const t = stufe.S.fensterM / N;
-        const x0w = stufe.mitteX - stufe.S.fensterM / 2;
-        const z0w = stufe.mitteZ - stufe.S.fensterM / 2;
-        const i0 = Math.max(0, Math.ceil((x0 - x0w) / t - 0.5));
-        const i1 = Math.min(N - 1, Math.ceil((x1 - x0w) / t - 0.5) - 1);
-        const j0 = Math.max(0, Math.ceil((z0 - z0w) / t - 0.5));
-        const j1 = Math.min(N - 1, Math.ceil((z1 - z0w) / t - 0.5) - 1);
-        if (i1 < i0 || j1 < j0) return false;
-        const [A, narbe] = [kr.asche, this._brandNarbeFn(zelle)];
-        let neu = false;
-        for (let j = j0; j <= j1; j++)
-            for (let i = i0; i <= i1; i++) {
-                const n = narbe(x0w + (i + 0.5) * t, z0w + (j + 0.5) * t);
-                const v = n ? Math.round(n.m * n.asche * 255) : 0;
-                if (v !== A[j * N + i]) ((A[j * N + i] = v), (neu = true));
-            }
-        if (neu) AnazhRealm._kronenSchmutz(kr, i0, i1, j0, j1);
-        return neu;
+        const [A, narbe] = [stufe.kronen.asche, this._brandNarbeFn(zelle)];
+        return this._deckeTexel(stufe, x0, z0, x1, z1, (k, x, z) => {
+            const n = narbe(x, z);
+            const v = n ? Math.round(n.m * n.asche * 255) : 0;
+            if (v === A[k]) return 0;
+            A[k] = v;
+            return 2;
+        });
     }
 
     // Die Asche EINER zentrierten Stufe ganz neu (nach ihrem Umzug, einer geladenen Welt): leeren, jede Tat `brand` im Fenster
     // malt die vier Flächen zwischen den Zell-Mitten um ihre Zelle, jede Fläche einmal — die Kosten tragen die Aschen, nie die Welt.
     _ascheStufeMalen(stufe) {
-        const kr = stufe.kronen;
-        kr.asche.fill(0);
-        const cs = AnazhRealm.LIFE_FIELD.cell;
-        const h = stufe.S.fensterM / 2 + cs;
-        const [zelle, gemalt] = [this._brandZellen(), new Set()];
-        for (const a of this._tatIndex().brand) {
-            if (Math.abs(a.x - stufe.mitteX) > h || Math.abs(a.z - stufe.mitteZ) > h) continue;
-            const [cx, cz] = [Math.floor(a.x / cs), Math.floor(a.z / cs)];
-            for (let qj = cz - 1; qj <= cz; qj++)
-                for (let qi = cx - 1; qi <= cx; qi++) {
-                    if (gemalt.has(qi + "," + qj)) continue;
-                    gemalt.add(qi + "," + qj);
-                    const [x0, z0] = [(qi + 0.5) * cs, (qj + 0.5) * cs];
-                    this._ascheFlaeche(stufe, x0, z0, x0 + cs, z0 + cs, zelle);
-                }
-        }
-        kr.schmutz = [0, kr.N - 1, 0, kr.N - 1];
+        stufe.kronen.asche.fill(0);
+        const zelle = this._brandZellen();
+        this._deckeStufeMalen(stufe, this._tatIndex().brand, (s, x0, z0, x1, z1) =>
+            this._ascheFlaeche(s, x0, z0, x1, z1, zelle)
+        );
     }
 
     creatureJump(creature, ansprung = false) {
@@ -3256,18 +3224,24 @@ class AnazhRealm_feld_leben {
     _lavaGiessen(x, z) {
         const y = this._voxelSurfaceY(x, z);
         const wasser = this._nassAt(x, z) ? 1 : 0;
+        this._lavaTaktT = -Infinity; // der nächste Takt malt die neue Decke in den Boden (`_lavaTakt`)
         return this._tatSchreiben("lava", x, z, { y: Math.round(y * 100) / 100, wasser });
     }
 
     // Die Decke der Zelle unter (x, z) — der Zustand ihrer jüngsten Lava (`temperatur` °C, `glut` 0…1, `erstarrt`, `dampf`,
     // `alterS`) oder null ohne Lava.
     _lavaAt(x, z) {
+        const a = this._lavaJuengste(this._lifeCellKey(x, z));
+        return a ? this._lavaZustand(a) : null;
+    }
+    // Die jüngste Lava-Tat der Zelle mit dem Schlüssel `k` (`_lifeCellKey`) oder null — die EINE Wahl der Decke.
+    _lavaJuengste(k) {
         const I = this._tatIndex();
         if (!I.lava.length) return null;
-        const je = I.je.get(this._lifeCellKey(x, z));
+        const je = I.je.get(k);
         let a = null;
         if (je) for (const t of je) if (t.tat === "lava" && !(a && a.h >= t.h)) a = t;
-        return a ? this._lavaZustand(a) : null;
+        return a;
     }
     _lavaZustand(a) {
         const alterS = (this._weltStunde() - a.h) * 3600;
