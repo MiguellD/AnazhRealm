@@ -1,5 +1,5 @@
 {
- "kopf": "602607bb",
+ "kopf": "31d156e8",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -963,7 +963,7 @@
      "gruen": true,
      "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3208,7 +3208,7 @@
   },
   "schatten.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js, stamm/siedlung-verkehr.js)",
+   "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/siedlung-bewohner.js, stamm/siedlung-tor.js +3)",
    "stationen": [
     {
      "id": "schatten.K3#1",
@@ -3216,7 +3216,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js, stamm/siedlung-verkehr.js)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/siedlung-bewohner.js, stamm/siedlung-tor.js +3)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -3560,7 +3560,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +141)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +142)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3596,7 +3596,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +141)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +142)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3606,7 +3606,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +141)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +142)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -4163,8 +4163,9 @@
      "gruen": true,
      "zahl": "Fressen 116.7 s nach dem Riss bei 26 s, am Aas fuchs 19.9 s, baer 16.6 s · Wolfsrevier wald, Riss 13.7 s, 3 fressen: tier:wolf 6995 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.27 m · Luma 86.5 σ 27.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/vegetation-wiese.js)",
+     "gehalten": true,
+     "r6": "konsum"
     },
     {
      "id": "tiere.K2#2",
@@ -4197,8 +4198,9 @@
      "gruen": true,
      "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.022} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2669/1081/5775/3407 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.15 m · Luma 66.8 σ 28.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.321 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
+     "gehalten": true,
+     "r6": "konsum"
     },
     {
      "id": "tiere.K3#2",
@@ -4495,7 +4497,7 @@
   },
   "vegetation.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kamm 405.8 über Rausch-Boden 0.000 (×405.8), Tal 68.4 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an 105c9bd3 radeon · Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an b7b0f8fe gtx",
+   "beleg": "Maschine: gehalten: Kamm 405.8 über Rausch-Boden 0.000 (×405.8), Tal 68.4 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an 105c9bd3 radeon · gehalten: Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an b7b0f8fe gtx",
    "stationen": [
     {
      "id": "vegetation.K2#1",
@@ -4513,7 +4515,8 @@
      "gruen": true,
      "zahl": "Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s",
      "sha": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/daten.js +2)",
+     "gehalten": true,
      "r6": "konsum"
     }
    ]
@@ -4622,7 +4625,7 @@
   },
   "wetter.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an d3708675 headless · gehalten: Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an d3708675 headless · gehalten: Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6) an 105c9bd3 radeon · Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6) an 602607bb gtx",
+   "beleg": "Maschine: gehalten: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an d3708675 headless · gehalten: Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an d3708675 headless · gehalten: Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6) an 105c9bd3 radeon · gehalten: Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6) an 602607bb gtx",
    "stationen": [
     {
      "id": "wetter.K1#1",
@@ -4659,7 +4662,8 @@
      "gruen": true,
      "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6)",
      "sha": "602607bbef764577ff6abf3b6bc8f29185ca1ef8",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js)",
+     "gehalten": true,
      "r6": "konsum"
     }
    ]
@@ -4864,7 +4868,7 @@
   },
   "karte2.erleben.bild.auge": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.bild.auge#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, stamm/bild-kosten.js, stamm/dirigent-kern.js +3) · karte2.erleben.bild.auge#1 gtx: ROT: ❌ über Schwelle (Spanne > 18 Luma) 3.27 % der ruhenden Fläche (42162 px, Soll ≤ 1 %) · ruhend 62.2 % des Bilds (≥ 50 %) · 16/16 Bilder · 1920×1080 · Uhr 0.5 sunny · [linse-gpu] nvidia/pascal an 7de938ab",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.bild.auge#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, stamm/bild-kosten.js, stamm/dirigent-kern.js +3) · karte2.erleben.bild.auge#1 gtx: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/vegetation-wiese.js)",
    "stationen": [
     {
      "id": "karte2.erleben.bild.auge#1",
@@ -4881,9 +4885,10 @@
      "id": "karte2.erleben.bild.auge#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "❌ über Schwelle (Spanne > 18 Luma) 3.27 % der ruhenden Fläche (42162 px, Soll ≤ 1 %) · ruhend 62.2 % des Bilds (≥ 50 %) · 16/16 Bilder · 1920×1080 · Uhr 0.5 sunny · [linse-gpu] nvidia/pascal",
-     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "ROT: ❌ über Schwelle (Spanne > 18 Luma) 3.27 % der ruhenden Fläche (42162 px, Soll ≤ 1 %) · ruhend 62.2 % des Bilds (≥ 50 %) · 16/16 Bilder · 1920×1080 · Uhr 0.5 sunny · [linse-gpu] nvidia/pascal",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/vegetation-wiese.js)",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     }
@@ -4891,7 +4896,7 @@
   },
   "karte2.erleben.bild.flaeche": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.bild.flaeche#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +13) · karte2.erleben.bild.flaeche#1 gtx: Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js +3)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.bild.flaeche#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +13) · karte2.erleben.bild.flaeche#1 gtx: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/kreatur-leben.js +6)",
    "stationen": [
     {
      "id": "karte2.erleben.bild.flaeche#1",
@@ -4910,7 +4915,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js +3)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/kreatur-leben.js +6)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -4927,7 +4932,7 @@
      "gruen": true,
      "zahl": "✅ Wind r 0.65 bei Lag 0 (n 104, CV Bild 0.29 / Ohr 0.63, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42 dB aus 13 Leibern (13 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2",
      "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs +30) — zuletzt an 389a6496: Last: Referenz f 1,633 (Faden 1,091 · alle Kerne 1,047 · Stoß in der Station 15,19 Kerne fremd → 1,633; vor 91,1/266,2 ms, nach 71,8/275,1 ms, Ruhe 83,5/262,7 ms seit 2026-11-16) · fremd: git pack-obj",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/kreatur-leben.js +6) — zuletzt an 389a6496: Last: Referenz f 1,633 (Faden 1,091 · alle Kerne 1,047 · Stoß in der Station 15,19 Kerne fremd → 1,633; vor 91,1/266,2 ms, nach 71,8/275,1 ms, Ruhe 83,5/262,7 ms seit 2026-11-16) · fremd: git pack-obj",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -4947,7 +4952,7 @@
   },
   "karte2.erleben.kopplung.bild": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.bild#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Deckel 90 s gerissen: Stille seit 88.7 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · karte2.erleben.kopplung.bild#1 gtx: ROT: ❌ größter Sprung an markierten Stufenwechseln 194.0 % (6 Wechsel) · an den übrigen Schritten 1057.0 % (Soll an jedem ≤ 5 %) · der größte bei 900 m · 40/40 Schritte mit Fenster · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · [linse-gpu] nvidia/pascal an b7b0f8fe",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.bild#1 radeon: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/vegetation-wiese.js) — zuletzt an 389a6496: Deckel 90 s gerissen: Stille seit 88.7 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · karte2.erleben.kopplung.bild#1 gtx: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/vegetation-wiese.js)",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.bild#1",
@@ -4955,17 +4960,19 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 389a6496: Deckel 90 s gerissen: Stille seit 88.7 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/vegetation-wiese.js) — zuletzt an 389a6496: Deckel 90 s gerissen: Stille seit 88.7 s nach 90 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
      "id": "karte2.erleben.kopplung.bild#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "❌ größter Sprung an markierten Stufenwechseln 194.0 % (6 Wechsel) · an den übrigen Schritten 1057.0 % (Soll an jedem ≤ 5 %) · der größte bei 900 m · 40/40 Schritte mit Fenster · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · [linse-gpu] nvidia/pascal",
-     "sha": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
-     "grund": "ROT: ❌ größter Sprung an markierten Stufenwechseln 194.0 % (6 Wechsel) · an den übrigen Schritten 1057.0 % (Soll an jedem ≤ 5 %) · der größte bei 900 m · 40/40 Schritte mit Fenster · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · [linse-gpu] nvidia/pascal",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/vegetation-wiese.js)",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     }
@@ -4992,7 +4999,7 @@
      "gruen": true,
      "zahl": "mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.3/12.1/12.2/12.2/12.4/12.1/14.6/12.1 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal",
      "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js +3)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/kreatur-leben.js +6)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -5001,7 +5008,7 @@
   },
   "karte2.erleben.schoepfen.schutz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.schutz#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/diag-werkstatt-weg.cjs +6) · karte2.erleben.schoepfen.schutz#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/diag-werkstatt-weg.cjs +11)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.schutz#1 radeon: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js) · karte2.erleben.schoepfen.schutz#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/diag-werkstatt-weg.cjs +11)",
    "stationen": [
     {
      "id": "karte2.erleben.schoepfen.schutz#1",
@@ -5009,7 +5016,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/diag-werkstatt-weg.cjs +6)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -5029,7 +5036,7 @@
   },
   "karte2.erleben.schoepfen.teilen": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 2/2 Werke: Original ↔ Import an derselben Kamera gleich · bank_sitzbank Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 11.7 % · eigen_bruecke Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 17.2 % · [linse-gpu] nvidia/pascal an b5681770 gtx — offen: karte2.erleben.schoepfen.teilen#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/diag-werkstatt-weg.cjs +6)",
+   "beleg": "Maschine: gehalten: 2/2 Werke: Original ↔ Import an derselben Kamera gleich · bank_sitzbank Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 11.7 % · eigen_bruecke Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 17.2 % · [linse-gpu] nvidia/pascal an b5681770 gtx — offen: karte2.erleben.schoepfen.teilen#1 radeon: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js)",
    "stationen": [
     {
      "id": "karte2.erleben.schoepfen.teilen#1",
@@ -5037,7 +5044,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/diag-werkstatt-weg.cjs +6)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -5057,7 +5064,7 @@
   },
   "karte2.erleben.sinn.takt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.sinn.takt#1 radeon: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/kreatur-leben.js +1) · karte2.erleben.sinn.takt#1 gtx: Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.sinn.takt#1 radeon: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/kreatur-leben.js +1) · karte2.erleben.sinn.takt#1 gtx: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/kreatur-leben.js +1)",
    "stationen": [
     {
      "id": "karte2.erleben.sinn.takt#1",
@@ -5076,7 +5083,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/kreatur-leben.js +1)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -5085,7 +5092,7 @@
   },
   "karte2.erleben.spieler.praesenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,653 (Faden 1,08 · alle Kerne 1,252 · Stoß in der Station 15,67 Kerne fremd → 1,653; vor 90,6/328,8 ms, nach 88,8/297,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe -- · karte2.erleben.spieler.praesenz#1 gtx: Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js, stamm/siedlung-bewohner.js +2) — zuletzt an 389a6496: Last: Referenz f 2,387 (Faden 2,387 · alle Kerne 1,742; vor 216,5/407,7 ms, nach 87,2/211,3 ms, Ruhe 90,7/234,1 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,653 (Faden 1,08 · alle Kerne 1,252 · Stoß in der Station 15,67 Kerne fremd → 1,653; vor 90,6/328,8 ms, nach 88,8/297,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe -- · karte2.erleben.spieler.praesenz#1 gtx: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js +5) — zuletzt an 389a6496: Last: Referenz f 2,387 (Faden 2,387 · alle Kerne 1,742; vor 216,5/407,7 ms, nach 87,2/211,3 ms, Ruhe 90,7/234,1 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.praesenz#1",
@@ -5103,7 +5110,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js, stamm/siedlung-bewohner.js +2) — zuletzt an 389a6496: Last: Referenz f 2,387 (Faden 2,387 · alle Kerne 1,742; vor 216,5/407,7 ms, nach 87,2/211,3 ms, Ruhe 90,7/234,1 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js +5) — zuletzt an 389a6496: Last: Referenz f 2,387 (Faden 2,387 · alle Kerne 1,742; vor 216,5/407,7 ms, nach 87,2/211,3 ms, Ruhe 90,7/234,1 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -5138,7 +5145,7 @@
   },
   "karte2.leben.kopplung.leben-formt-planet": {
    "punkte": 0,
-   "beleg": "Maschine: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.182 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243163 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.182 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] nvidia/pascal an 7de938ab gtx",
+   "beleg": "Maschine: gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.182 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243163 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.182 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] nvidia/pascal an 7de938ab gtx",
    "stationen": [
     {
      "id": "karte2.leben.kopplung.leben-formt-planet#1",
@@ -5146,7 +5153,8 @@
      "gruen": true,
      "zahl": "nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.182 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] amd/rdna-3",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/siedlung-wege.js, stamm/vegetation-wiese.js)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -5156,7 +5164,8 @@
      "gruen": true,
      "zahl": "nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243163 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.182 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] nvidia/pascal",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/siedlung-wege.js, stamm/vegetation-wiese.js)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     }
@@ -5284,7 +5293,7 @@
      "gruen": true,
      "zahl": "Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.576 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.916 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] amd/rdna-3",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -5295,7 +5304,7 @@
      "gruen": true,
      "zahl": "Annäherung im Fenster: deer flieht ab 113.894 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.617 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.178 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.963 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] nvidia/pascal",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/kreatur-leben.js, stamm/kreatur-verhalten.js)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -5415,7 +5424,7 @@
   },
   "karte2.mensch.fahrzeug.medium": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 14,40 ms (Soll ≤ 33), größtes 272,70 ms, 2840 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an 16f45362 gtx",
+   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 14,40 ms (Soll ≤ 33), größtes 272,70 ms, 2840 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an 16f45362 gtx",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.medium#1",
@@ -5434,7 +5443,8 @@
      "gruen": true,
      "zahl": "✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 14,40 ms (Soll ≤ 33), größtes 272,70 ms, 2840 Bilder · Exit 0 · [linse-gpu] nvidia/pascal",
      "sha": "16f45362d3834812d60601440e6793ef2d65fb70",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/fahr-proben.cjs, scripts/lib/wasser-linse.cjs +5)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     }
@@ -5469,7 +5479,7 @@
   },
   "karte2.mensch.macht.wehrbau": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 389a6496 radeon · ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an b7b0f8fe gtx",
+   "beleg": "Maschine: gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an b7b0f8fe gtx",
    "stationen": [
     {
      "id": "karte2.mensch.macht.wehrbau#1",
@@ -5488,7 +5498,8 @@
      "gruen": true,
      "zahl": "✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal",
      "sha": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-wege.js)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     }
@@ -5496,7 +5507,7 @@
   },
   "karte2.mensch.menge.bevoelkerung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js, stamm/siedlung-verkehr.js) · karte2.mensch.menge.bevoelkerung#1 gtx: ROT: 77 Bewohner, 20 Stichproben (5 Orte × 4 Uhren), Σ Soll 12 · jede Stichprobe ±10 %, niemand fehlt · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] nvidia/pascal an 602607bb",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js, stamm/siedlung-verkehr.js +1) · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js, stamm/siedlung-verkehr.js +1)",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bevoelkerung#1",
@@ -5504,7 +5515,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js, stamm/siedlung-verkehr.js)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js, stamm/siedlung-verkehr.js +1)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -5513,9 +5524,10 @@
      "id": "karte2.mensch.menge.bevoelkerung#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "77 Bewohner, 20 Stichproben (5 Orte × 4 Uhren), Σ Soll 12 · jede Stichprobe ±10 %, niemand fehlt · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] nvidia/pascal",
-     "sha": "602607bbef764577ff6abf3b6bc8f29185ca1ef8",
-     "grund": "ROT: 77 Bewohner, 20 Stichproben (5 Orte × 4 Uhren), Σ Soll 12 · jede Stichprobe ±10 %, niemand fehlt · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] nvidia/pascal",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js, stamm/siedlung-verkehr.js +1)",
+     "ungemessen": true,
      "r6": "konsum",
      "beide": true
     }
@@ -5542,7 +5554,7 @@
      "gruen": true,
      "zahl": "25 Menschen im Bild, 14 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 19.1 fps · [linse-gpu] nvidia/pascal",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/lib/kreatur-proben.cjs, stamm/kreatur-leben.js +4)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/lib/kreatur-proben.cjs, stamm/kreatur-leben.js +5)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -5551,7 +5563,7 @@
   },
   "karte2.mensch.menge.kollektiv": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.kollektiv#1 radeon: Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js, stamm/siedlung-bewohner.js +2) · karte2.mensch.menge.kollektiv#1 gtx: Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js, stamm/siedlung-bewohner.js +2)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.kollektiv#1 radeon: Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js, stamm/siedlung-bewohner.js +3) · karte2.mensch.menge.kollektiv#1 gtx: Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js, stamm/siedlung-bewohner.js +3)",
    "stationen": [
     {
      "id": "karte2.mensch.menge.kollektiv#1",
@@ -5559,7 +5571,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js, stamm/siedlung-bewohner.js +2)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js, stamm/siedlung-bewohner.js +3)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -5570,7 +5582,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js, stamm/siedlung-bewohner.js +2)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js, stamm/siedlung-bewohner.js +3)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -5667,7 +5679,7 @@
      "gruen": true,
      "zahl": "Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 89 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3",
      "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -5740,7 +5752,7 @@
   },
   "karte2.planet.kopplung.bahn-klima": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.84 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.416 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.841 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.294 m · Gesetz 152.999 m (Versatz -24, Treffer 0.849 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an e489088a gtx",
+   "beleg": "Maschine: gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.84 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.416 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.841 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.294 m · Gesetz 152.999 m (Versatz -24, Treffer 0.849 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an e489088a gtx",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.bahn-klima#1",
@@ -5758,7 +5770,8 @@
      "gruen": true,
      "zahl": "Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.841 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.294 m · Gesetz 152.999 m (Versatz -24, Treffer 0.849 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal",
      "sha": "e489088a9bfca46817cd159efd64ffc1be80dbd4",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     }
@@ -5766,7 +5779,7 @@
   },
   "karte2.planet.kopplung.wetter-welt": {
    "punkte": 0,
-   "beleg": "Maschine: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.143 (0.0463/0.3233, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.145 (0.0468/0.3222, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] nvidia/pascal an 7de938ab gtx",
+   "beleg": "Maschine: gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.143 (0.0463/0.3233, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: ✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.145 (0.0468/0.3222, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] nvidia/pascal an 7de938ab gtx",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.wetter-welt#1",
@@ -5774,7 +5787,8 @@
      "gruen": true,
      "zahl": "✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.143 (0.0463/0.3233, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] amd/rdna-3",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs +12)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -5784,7 +5798,8 @@
      "gruen": true,
      "zahl": "✅ Richtlicht Sturm/klar 0.000 (0.0008/6.3409, Soll ≤ 0,5) · ✅ Himmel Sättigung Sturm/klar 0.145 (0.0468/0.3222, Soll ≤ 0,5) · ✅ Pose pitch 0/0 · ✅ klarer Himmel farbig (≥ 0,1) · 125 Aufnahmen · ZUG GRUEN (licht.K5) · [linse-gpu] nvidia/pascal",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +16)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     }
@@ -5924,7 +5939,7 @@
   },
   "karte2.planet.wetter.klimazonen": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an e489088a gtx",
+   "beleg": "Maschine: gehalten: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an e489088a gtx",
    "stationen": [
     {
      "id": "karte2.planet.wetter.klimazonen#1",
@@ -5942,7 +5957,8 @@
      "gruen": true,
      "zahl": "am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal",
      "sha": "e489088a9bfca46817cd159efd64ffc1be80dbd4",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     }
@@ -5976,7 +5992,7 @@
   },
   "karte2.same.gedaechtnis.pfad": {
    "punkte": 0,
-   "beleg": "Maschine: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243128 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] nvidia/pascal an 7de938ab gtx",
+   "beleg": "Maschine: gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243128 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] nvidia/pascal an 7de938ab gtx",
    "stationen": [
     {
      "id": "karte2.same.gedaechtnis.pfad#1",
@@ -5984,7 +6000,8 @@
      "gruen": true,
      "zahl": "nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] amd/rdna-3",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/siedlung-wege.js, stamm/vegetation-wiese.js)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -5994,7 +6011,8 @@
      "gruen": true,
      "zahl": "nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243128 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] nvidia/pascal",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/siedlung-wege.js, stamm/vegetation-wiese.js)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     }
@@ -6002,7 +6020,7 @@
   },
   "karte2.same.kopplung.ereignis": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3 an e489088a radeon — offen: karte2.same.kopplung.ereignis#1 gtx: Konsum seit der Messung geändert (R6: stamm/bild-kosten.js, stamm/feld-leben.js)",
+   "beleg": "Maschine: gehalten: Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3 an e489088a radeon — offen: karte2.same.kopplung.ereignis#1 gtx: Konsum seit der Messung geändert (R6: stamm/bild-kosten.js, stamm/dirigent-kern.js, stamm/feld-leben.js)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.ereignis#1",
@@ -6010,8 +6028,9 @@
      "gruen": true,
      "zahl": "Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3",
      "sha": "e489088a9bfca46817cd159efd64ffc1be80dbd4",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js)",
      "gehalten": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6020,7 +6039,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-kosten.js, stamm/feld-leben.js)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-kosten.js, stamm/dirigent-kern.js, stamm/feld-leben.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -6029,7 +6048,7 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +244 Pixel je Pixel (neu 244 − Rauschen 0, bei laufender Schleife 989; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.same.kopplung.kaskade#1 gtx: Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
+   "beleg": "Maschine: gehalten: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +244 Pixel je Pixel (neu 244 − Rauschen 0, bei laufender Schleife 989; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.same.kopplung.kaskade#1 gtx: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
@@ -6037,7 +6056,7 @@
      "gruen": true,
      "zahl": "trocken nach 60 s 1 brennende Zellen, Flammen im Bild +244 Pixel je Pixel (neu 244 − Rauschen 0, bei laufender Schleife 989; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -6048,7 +6067,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -6065,7 +6084,7 @@
      "gruen": true,
      "zahl": "Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -6076,7 +6095,7 @@
      "gruen": true,
      "zahl": "Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
      "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/vegetation-wiese.js)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -6139,7 +6158,7 @@
   },
   "karte2.same.preis.ankunft": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · 4 Kalt-Boots, 4 mit Kontrolle von außen: 10.44 s · 7.91 s · 7.50 s · 8.18 s (max 10.44 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an 7de938ab gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,623 (Faden 1,623 · alle Kerne 1,251; vor 92,7/275,3 ms, nach 135,5/328,6 ms, Ruhe 83,5/262,7 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf bcc2cadc2742edb5c3 · karte2.same.preis.ankunft#2 gtx: ungemessen (R10) — zuletzt an 7de938ab: Last: Referenz f 1,538 (Faden 1,433 · alle Kerne 1,538; vor 111,1/306,4 ms, nach 130/358,9 ms, Ruhe 90,7/233,4 ms seit 2026-11-16) · fremd: node.exe punkte.cjs gtx-nutzen --kopf b7b0f8fef2dd1a932fe86f",
+   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 10.44 s · 7.91 s · 7.50 s · 8.18 s (max 10.44 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an 7de938ab gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,623 (Faden 1,623 · alle Kerne 1,251; vor 92,7/275,3 ms, nach 135,5/328,6 ms, Ruhe 83,5/262,7 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf bcc2cadc2742edb5c3 · karte2.same.preis.ankunft#2 gtx: ungemessen (R10) — zuletzt an 7de938ab: Last: Referenz f 1,538 (Faden 1,433 · alle Kerne 1,538; vor 111,1/306,4 ms, nach 130/358,9 ms, Ruhe 90,7/233,4 ms seit 2026-11-16) · fremd: node.exe punkte.cjs gtx-nutzen --kopf b7b0f8fef2dd1a932fe86f",
    "stationen": [
     {
      "id": "karte2.same.preis.ankunft#1",
@@ -6158,7 +6177,8 @@
      "gruen": true,
      "zahl": "4 Kalt-Boots, 4 mit Kontrolle von außen: 10.44 s · 7.91 s · 7.50 s · 8.18 s (max 10.44 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "GRÜN trotz Last: Referenz f 1,538 (Faden 1,433 · alle Kerne 1,538; vor 111,1/306,4 ms, nach 130/358,9 ms, Ruhe 90,7/233,4 ms seit 2026-11-16) · fremd: node.exe punkte.cjs gtx-nutzen --kopf b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f 32,8 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 11,9 CPU-s · node.exe punkte/punkte.cjs run --sha b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f --geraet gtx 7,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 25,5 CPU-s · SearchIndexer.exe 23,0 CPU-s · svchost.exe 13,1 CPU-s",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-kosten.js, stamm/dirigent-kern.js, stamm/gelaende-fern.js)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -6210,7 +6230,7 @@
   },
   "karte2.same.preis.bytes": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Kalt-Boots, roh je Boot 32.11 MB · 32.11 MB · 32.11 MB · 32.11 MB (max 32.11 MB, Soll ≤ 50.00 MB), am größten 16.85 MB Draht, 179 Anfragen, bis zur Kontrolle 32.11 MB, 25 Ziele (24 Worker), am schwersten /fachwerk-core.js?v=18.546.317 0.98 MB | /fachwerk-core.js?v=18.546.317 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker+worker · [linse-gpu] amd/rdna-3 an 389a6496 radeon · 4 Kalt-Boots, roh je Boot 32.18 MB · 32.18 MB · 32.18 MB · 32.18 MB (max 32.18 MB, Soll ≤ 50.00 MB), am größten 16.88 MB Draht, 179 Anfragen, bis zur Kontrolle 32.18 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.321 0.98 MB | /fachwerk-core.js?v=18.546.321 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker+worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal an 7de938ab gtx",
+   "beleg": "Maschine: gehalten: 4 Kalt-Boots, roh je Boot 32.11 MB · 32.11 MB · 32.11 MB · 32.11 MB (max 32.11 MB, Soll ≤ 50.00 MB), am größten 16.85 MB Draht, 179 Anfragen, bis zur Kontrolle 32.11 MB, 25 Ziele (24 Worker), am schwersten /fachwerk-core.js?v=18.546.317 0.98 MB | /fachwerk-core.js?v=18.546.317 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker+worker · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, roh je Boot 32.18 MB · 32.18 MB · 32.18 MB · 32.18 MB (max 32.18 MB, Soll ≤ 50.00 MB), am größten 16.88 MB Draht, 179 Anfragen, bis zur Kontrolle 32.18 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.321 0.98 MB | /fachwerk-core.js?v=18.546.321 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker+worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal an 7de938ab gtx",
    "stationen": [
     {
      "id": "karte2.same.preis.bytes#1",
@@ -6218,7 +6238,7 @@
      "gruen": true,
      "zahl": "4 Kalt-Boots, roh je Boot 32.11 MB · 32.11 MB · 32.11 MB · 32.11 MB (max 32.11 MB, Soll ≤ 50.00 MB), am größten 16.85 MB Draht, 179 Anfragen, bis zur Kontrolle 32.11 MB, 25 Ziele (24 Worker), am schwersten /fachwerk-core.js?v=18.546.317 0.98 MB | /fachwerk-core.js?v=18.546.317 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker+worker · [linse-gpu] amd/rdna-3",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-kosten.js +3)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -6229,7 +6249,8 @@
      "gruen": true,
      "zahl": "4 Kalt-Boots, roh je Boot 32.18 MB · 32.18 MB · 32.18 MB · 32.18 MB (max 32.18 MB, Soll ≤ 50.00 MB), am größten 16.88 MB Draht, 179 Anfragen, bis zur Kontrolle 32.18 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.321 0.98 MB | /fachwerk-core.js?v=18.546.321 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker+worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js) — zuletzt an e489088a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2703 s Warten) — ungemessen",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     }
@@ -6327,7 +6348,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 193,
+  "konsum": 197,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6495,10 +6516,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 149
+  "ohne": 145
  },
- "kopfVoll": "602607bbef764577ff6abf3b6bc8f29185ca1ef8",
- "zeit": "2026-11-17T16:49:13.157Z",
+ "kopfVoll": "31d156e8bdca4dff4db6170f2515975c120af605",
+ "zeit": "2026-11-17T16:55:14.441Z",
  "vorher": "602607bb",
  "bilanz": {
   "gewinn": [],
