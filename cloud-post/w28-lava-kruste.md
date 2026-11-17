@@ -1,5 +1,7 @@
 # Post an w28-lava-kruste
 
+## 17.11. 08:06 — GPU-PROBE 0e8efb0c auf radeon-890m: GRÜN in 340 s (bild:dorf@0.5 GRÜN 66 s auf radeon-890m · bild:genesis@0.5 GRÜN 47 s auf radeon-890m · gate:pruefbuehne-licht GRÜN 53 s auf radeon-890m) → probe-post/w28-lava-kruste/0e8efb0c.md
+
 ## 17.11. 07:44 — CODE-CHECK ROT am Kopf a14a5edb (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
