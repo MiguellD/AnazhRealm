@@ -1450,8 +1450,9 @@ class AnazhRealm_stoff_instanz {
                 weg(this._rend, this._ind);
                 this._zuege.clear();
                 this._zuegeB.clear();
-                // ihre Bindegruppen (Uniform-Puffer) fallen nach dem Submit des Frames, wie jeder Puffer der Arena
-                setTimeout(() => AnazhRealm._renderObjekteLoesen(this), 0);
+                // ihre Bindegruppen (Uniform-Puffer) fallen nach dem Submit des Frames, wie jeder Puffer der Arena, danach ihre
+                // Geometrie (ihr Entsorgen bucht nur den Abgang: die Puffer gab die Zeile davor frei)
+                setTimeout(() => (AnazhRealm._renderObjekteLoesen(this), this.geometry.dispose()), 0);
             }
             _gestaltNehmen(m) {
                 const g = m.geometry,
@@ -1475,6 +1476,11 @@ class AnazhRealm_stoff_instanz {
                 this._fassade(g);
                 this.geometry = g;
                 this._neuAuf(); // neue Vertex-/Index-Puffer
+                // DIE ALTE GEOMETRIE GEHT (Gegner Speicher F7, Runden-Zensus 16.11.): ihre Puffer gehören dem Lager und der neuen
+                // Geometrie (der Geometrie-Hörer des r184 fiel, `_renderObjektRegister`), ihr Entsorgen bucht nur ihren Abgang —
+                // bis hier fiel sie dem GC ohne `dispose`, und `info.memory.geometries` zählte sie für immer (GTX, Runde Wiese ·
+                // Ost · Dorf · West: 272 → 585 → 832, davon 608 Geometrien dieser Zeile ohne Halter)
+                if (alt && alt !== g) alt.dispose();
             }
             // DIE INSTANZ-SEITE: je Glied ein Block nach seiner Zahl (`_blockFuer`) — den Speicher-Puffer der Matrizen bindet
             // r184 in die Bindegruppe jedes Render-Objekts: die Arena tauscht ihn nie. Ein Block zieht um, wenn die Zahl über
@@ -2051,6 +2057,8 @@ class AnazhRealm_stoff_instanz {
         AnazhRealm._renderObjekteLoesen(mesh);
         // gezeichnet hat ihr Zeichner (1410-1): seine Render-Objekte lösen sich ebenso
         if (mesh.__zeichner) AnazhRealm._renderObjekteLoesen(mesh.__zeichner);
+        // und seine Fassade geht mit ihm (sie hält nur die geteilte Marke; ohne `dispose` zählte sie im Info für immer)
+        if (mesh.__zeichner) mesh.__zeichner.__fassade.dispose();
         if (mesh.__arena) mesh.__arena.lassen(mesh, false);
         if (AnazhRealm.__arenaKommt) AnazhRealm.__arenaKommt.delete(mesh);
         mesh.dispose();
