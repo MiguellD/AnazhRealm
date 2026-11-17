@@ -224,10 +224,13 @@ class AnazhRealm_siedlung_bewohner {
         const tau = T.varying(T.float(1).sub(D.x.clamp(0, W.deckMax)).log().negate());
         // DER BALLEN IST LÄNGS SEINES ZUGS GESTRECKT (`aZug`: seine Richtung × Streckung, im Blick auf die Fläche gelegt —
         // längs des Blicks bleibt er rund): aufeinander folgende Ballen einer Quelle schließen zur Fahne
+        // — er wird dabei schmaler (`schmal`: längs × (1 + m)^(1 − schmal), quer ÷ (1 + m)^schmal, m die Streckung im Blick):
+        // der Schirm zahlt die Fahne nicht mit der vollen Fläche der Streckung
         const zv = T.cameraViewMatrix.mul(T.vec4(T.attribute("aZug", "vec3"), 0)).xy;
+        const m = zv.length();
         const ecke = T.positionGeometry.xy;
         const flach = T.cameraWorldMatrix.mul(
-            T.vec4(ecke.add(zv.mul(ecke.dot(zv).div(zv.length().max(1e-4)))), 0, 0)
+            T.vec4(ecke.add(zv.mul(ecke.dot(zv).div(m.max(1e-4)))).div(m.add(1).pow(W.schmal)), 0, 0)
         ).xyz;
         mat.positionNode = flach;
         const naht = this._weltNaht(T);
@@ -238,7 +241,10 @@ class AnazhRealm_siedlung_bewohner {
         // das Muster steht in der WELT und steigt mit der Fahne (`steigMs` × `zug`): zwei Ballen, die sich decken, lesen an
         // derselben Stelle dasselbe Rauschen — ihre Löcher und Wülste gehen ineinander über, die Fahne ist EIN Körper
         const p = lage.sub(T.vec3(0, uZeit.mul(steigMs * zug), 0)).mul(skala / G.size);
-        const rausch = ra.raum(p).add(ra.raum(p.mul(2.03).add(T.vec3(17.1, 5.3, 9.7))).mul(0.5));
+        // die grobe Oktave im Raum (6 Texel), die feine als Ebene der Welt (x + z | y, 2 Texel)
+        const rausch = ra
+            .raum(p)
+            .add(ra.ebene(T.vec2(p.x.add(p.z), p.y).mul(2.03).add(T.vec2(17.1, 5.3)), 7, "y").mul(0.5));
         const faser = T.float(1).add(rausch.mul(D.z.mul(hub[1] - hub[0]).add(hub[0])));
         const rr = q.dot(q);
         const dicke = T.float(1).sub(rr).max(0).pow(W.profil).mul(faser.max(0));
@@ -3803,7 +3809,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // (`rausch`: Wellen je Größe des Satzes `size` in Metern, Hub [jung, ausgedünnt], Anteil des Steigens der Quelle, mit dem das Muster
 // zieht), der Saum gegen die Szene ist `saum` × Radius, gegen das Auge `nah` × Radius, die Normale neigt sich um `woelbung` × ρ
 // gegen (1 − ρ²) (bei halbem Radius 45°), der Ballen ist längs seines Zugs gestreckt um den Weg von `zug`[0] Sekunden je Radius,
-// höchstens `zug`[1], die Albedo steigt mit dem Alter von `dunkel` auf 1 (jung dicht und rußig), die Deckung im Kern höchstens
+// höchstens `zug`[1], und um (1 + Streckung)^`schmal` schmaler, die Albedo steigt mit dem Alter von `dunkel` auf 1 (jung dicht und rußig), die Deckung im Kern höchstens
 // `deckMax` (τ endlich).
 AnazhRealm.RAUCH_BILD = Object.freeze({
     labHz: 60,
@@ -3815,6 +3821,7 @@ AnazhRealm.RAUCH_BILD = Object.freeze({
     nah: 3,
     woelbung: 1.5,
     zug: Object.freeze([0.6, 2]),
+    schmal: 0.25,
     dunkel: 0.8,
     deckMax: 0.995,
 });
