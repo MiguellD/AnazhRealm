@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "7de938ab",
-    "zeit": "2026-11-17T10:38:38.393Z",
+    "zeit": "2026-11-17T10:45:05.169Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1224,7 +1224,7 @@
           "punkte": 1,
           "staffel": "1 = ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät · 2 = dazu eine Herde ≥ 20 im Bild in 30 min, updateCreatures ≤ 1,0 ms p95 bei 150 Tieren im 500-m-Ring an der GTX, die Ratsche tier eingerastet, beide Geräte",
           "messung": "Spielgang über 10 Spielminuten (werkbank lauf --wandern kreis, Ego und Third) an Wiese und Genesis; Sichtung = Klassen-Maske tier ≥ 200 px; kein Tier erscheint im Blick; Kosten beim Namen über werkbank zerlegen/takt in Bau-Ereignissen; Prüfbühne mit fester Herde für die Ratsche.",
-          "beleg": "Maschine: gehalten: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 482 px 42 m 419 s · wesen 247 px 33 m 419 s · wesen 232 px 38 m 516 s · wolf 207 px 36 m 551 s), 631 Prüfungen, 61 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wolf 317 px 38 m 32 s · wesen 249 px 29 m 34 s · wolf 241 px 32 m 41 s · wolf 217 px 32 m 43 s · wesen 299 px 68 m 259 s · wesen 328 px 58 m 262 s · baer 546 px 9 m 276 s · wesen 253 px 48 m 510 s · wesen 206 px 45 m 519 s · wesen 386 px 24 m 543 s), 634 Prüfungen, 67 Masken, Bestand bis 20, im Blick erschienen 0 an 389a6496 gtx",
+          "beleg": "Maschine: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 446 px 56 m 61 s · wesen 293 px 63 m 227 s · wesen 230 px 62 m 227 s · wolf 204 px 53 m 512 s), 615 Prüfungen, 29 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 7 Sichtungen in 600 Spiel-s (wesen 297 px 54 m 58 s · baer 230 px 22 m 279 s · wolf 254 px 29 m 396 s · wesen 371 px 38 m 485 s · wesen 263 px 38 m 507 s · fuchs 241 px 16 m 514 s · wesen 246 px 29 m 540 s), 628 Prüfungen, 56 Masken, Bestand bis 20, im Blick erschienen 0 an 7de938ab radeon · gehalten: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 482 px 42 m 419 s · wesen 247 px 33 m 419 s · wesen 232 px 38 m 516 s · wolf 207 px 36 m 551 s), 631 Prüfungen, 61 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wolf 317 px 38 m 32 s · wesen 249 px 29 m 34 s · wolf 241 px 32 m 41 s · wolf 217 px 32 m 43 s · wesen 299 px 68 m 259 s · wesen 328 px 58 m 262 s · baer 546 px 9 m 276 s · wesen 253 px 48 m 510 s · wesen 206 px 45 m 519 s · wesen 386 px 24 m 543 s), 634 Prüfungen, 67 Masken, Bestand bis 20, im Blick erschienen 0 an 389a6496 gtx",
           "schlupfloch": "„≥ 150 im 500-m-Ring“ erfüllen Tiere hinter dem Hügel: gezählt werden Sichtungen im Ausgabe-Bild; die frei-Ratsche versteckte die Kosten, die Prüfbühne mit fester Herde schließt das.",
           "maschine": true
         }
@@ -1316,7 +1316,7 @@
           "punkte": 2,
           "staffel": "1 = im Wolfsrevier wird der Spieler in 10 Spielminuten ≥ 1× gepirscht und umstellt (im Bild) · 2 = seine Emotion-Achsen antworten (Furcht beim Umstellen, Triumph nach dem Fall des Jägers) gegen einen Gegenlauf, beide Geräte",
           "messung": "Spielgang-Station Wolfsrevier, Ego und Third; die Emotion aus der Situation (`_playerSituationWohl`), nie gestempelt.",
-          "beleg": "Maschine: gehalten: 6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.9 s · Lücke beim ersten Biss 86° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0) an d3708675 headless · gehalten: first GRÜN: Wurf 6 Wölfe, umstellt 17 s, Furcht chaos 1 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.625 (Gegenlauf 0) an 4ee205bd radeon · gehalten: first GRÜN: Wurf 6 Wölfe, umstellt 16.85 s, Furcht chaos 0.908 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.42 (Gegenlauf 0) an eeb5d2bf gtx",
+          "beleg": "Maschine: gehalten: 6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.9 s · Lücke beim ersten Biss 86° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0) an d3708675 headless · first GRÜN: Wurf 6 Wölfe, umstellt 19.6 s, Furcht chaos 1 (Gegenlauf 0), 6 Jäger fallen, Triumph joy+hope 0.754 (Gegenlauf 0) an 7de938ab radeon · gehalten: first GRÜN: Wurf 6 Wölfe, umstellt 16.85 s, Furcht chaos 0.908 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.42 (Gegenlauf 0) an eeb5d2bf gtx",
           "schlupfloch": "Einen Affekt zu stempeln (fear setzen) täuscht: gelesen wird δ aus der Situation.",
           "aenderung": "Neu (V13).",
           "maschine": true
@@ -2273,7 +2273,7 @@
           "punkte": 0,
           "staffel": "1 = Kontaktband (0–20 cm) 30–60 % des freien Bodens an Fuß und Sockel an einem Gerät · 2 = auch Stammfuß und Tor-Fuß, klar UND bedeckt, ≤ 0,5 ms an der GTX, beide Geräte",
           "messung": "werkbank bild mit Armlängen-Schüssen auf Fuß des Spielers, Haus-Sockel, Stammfuß und Tor-Fuß, Uhr 0,5, klar und bedeckt.",
-          "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: ROT: fuss Band 92.8 % des freien Bodens (frei mit/ohne 1.0153, 18 Punkte gesehen, Sicht 0.9) · sockel Band 40.8 % des freien Bodens (frei mit/ohne 1, 12 Punkte gesehen, Sicht 0.6) (Soll 30–60 %, Himmel allein; Platz [-584.2,-964] Grün 0) · Ort [-704.2,-880] · 0.85 s · [linse-gpu] amd/rdna-3 an 7de938ab",
           "schlupfloch": "Ein in jeden Stoff gemalter dunkler Ring bricht am Hang und am Wasser: vier Familien und bedeckter Himmel, wo nur die Verdeckung trägt.",
           "maschine": true
         },
@@ -4555,8 +4555,8 @@
     }
   ],
   "bestaetigung": {
-    "voll": 187,
-    "offen": 35,
+    "voll": 188,
+    "offen": 34,
     "kriterien": [
       "ankunft.K2+1",
       "bauen.K1+1",
@@ -4584,7 +4584,6 @@
       "studios.K2+1",
       "studios.K3+1",
       "tiere.K1+1",
-      "tiere.K5+1",
       "vegetation.K4+1",
       "wetter.K2+2"
     ],
@@ -4592,7 +4591,7 @@
       "linse": 1,
       "ungemessen": 21,
       "rot": 0,
-      "anderes": 24
+      "anderes": 23
     }
   },
   "ohneHebel": [
