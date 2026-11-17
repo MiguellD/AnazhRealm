@@ -4698,11 +4698,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 9,
-    "kern": 5,
-    "kernDazu": 5,
-    "anteilHeute": 1.6,
-    "anteilKern": 0.9
+    "heute": 10,
+    "kern": 4,
+    "kernDazu": 4,
+    "anteilHeute": 1.7,
+    "anteilKern": 0.7
    },
    "perspektiven": [
     {
@@ -6209,8 +6209,8 @@
        "richter": "Bildpaare 10 m bis 10 km gegen Fotos realer Großstädte; Zählung ≥ 10⁷"
       }
      ],
-     "heute": 0,
-     "kern": 1,
+     "heute": 1,
+     "kern": 0,
      "fuss": "gemessen",
      "beleg": "18 Menschen am Dorfplatz, 0 gehend, 26,9 fps Radeon; voll lebendig höchstens 4 Leiber im 8-m-Kreis (nahLeiber, siedlung-bewohner.js:1551)",
      "alt": [
@@ -16885,10 +16885,10 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 32,
+  "heute": 33,
   "davonKopplungen": 33,
-  "kern": 8,
-  "kernDazu": 8,
+  "kern": 7,
+  "kernDazu": 7,
   "anteilHeute": 1.9,
   "anteilKern": 0.3,
   "kapitel": 7,
