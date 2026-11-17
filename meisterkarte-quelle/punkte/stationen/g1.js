@@ -2186,6 +2186,28 @@ const schneeJahrRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") =>
 // Mehr-Abflusses) hinter dem Schwerpunkt des Regens, je Bach. Danach das Bildpaar am Bach (wie die Karten-Hälfte von wetter.K3#2: 7 m quer
 // zu seinem Lauf, Augenhöhe, die Klassen des gezeichneten Wassers) trocken und nach 20 min Sturm der Welt-Uhr (`__vorBild` stellt die
 // Welt vor dem Schuss: „trocken“ · „sturm“).
+// DER WEG DES REGENS IST DAS WORT (17.11.): die Bühne (`__wetterSetzen` ohne Zug) schneidet den Übergang des Bilds, nie den Weg des
+// Regens, den `_setWeather` → `requestWeatherTransition` schon gelegt hat (`_regenWeg` über 45 s ± Gemüt, seit w18-pegel-peers) — der
+// Niesel von 10 s stempelte am main f5ce1579 headless 24,4 s (Bilanz gegen die 10 s 2,141 / 2,423, gegen den Stempel 0,877 / 0,993: der
+// kleine Bach lief an der Krone über). `wort` legt darum den Weg des Worts, wie das Spiel selbst ihn für ein Wort ohne Übergang legt
+// (`_regenWeg(w, w, jetzt, 0)`, der Zweig `from === target`), und der Regen der Bilanz ist das Integral der Stempel (mit − ohne), nie
+// eine angenommene Zahl; der Schwerpunkt des Regens ebenso.
+function regenIntegral(S, a, b) {
+    // ∫ und ∫t des Wegs [t0, r0, t1, r1, …] über [a, b]: linear zwischen den Knoten, nach dem letzten gehalten, vor dem ersten nichts
+    let [s, st] = [0, 0];
+    const n = S.length >> 1;
+    for (let i = 0; i < n; i++) {
+        const [t0, r0] = [S[2 * i], S[2 * i + 1]];
+        const [t1, r1] = i + 1 < n ? [S[2 * i + 2], S[2 * i + 3]] : [Math.max(b, t0), r0];
+        const [x0, x1] = [Math.max(a, t0), Math.min(b, t1)];
+        if (!(x1 > x0 && t1 > t0)) continue;
+        const m = (r1 - r0) / (t1 - t0);
+        const f = (x) => r0 + m * (x - t0);
+        s += ((f(x0) + f(x1)) / 2) * (x1 - x0);
+        st += (r0 - m * t0) * (x1 * x1 - x0 * x0) / 2 + (m * (x1 * x1 * x1 - x0 * x0 * x0)) / 3;
+    }
+    return [s, st];
+}
 async function kreislaufSitzungProbe(r, T, o) {
     const st = r.state;
     const K = globalThis.__gelaendeCore;
@@ -2193,6 +2215,7 @@ async function kreislaufSitzungProbe(r, T, o) {
     const P = [-258.4, -1132.8];
     const wort = (w, sek) => {
         if (window.__wetterSetzen(w) !== w) throw new Error("das Wetter der Probe gilt nicht: " + w + " (es gilt " + st.weather + ")");
+        r._regenWeg(st.weather, st.weather, st.spielZeit, 0);
         r._naesseTakt(sek);
     };
     const uhr = () => [st.spielZeit, st.regenStempel && st.regenStempel.slice()];
@@ -2223,21 +2246,30 @@ async function kreislaufSitzungProbe(r, T, o) {
                 r._pegelTakt();
                 y.push(hub());
             }
+            y.S = st.regenStempel.slice();
             return y;
         };
         const [mit, ohne] = [reihe(true), reihe(false)];
         const mehr = (i) => mit.map((y, k) => Q(y[i]) - Q(ohne[k][i]));
         const V = [0, 1].map((i) => (mehr(i).reduce((s, q) => s + q, 0) * 2) / tagS);
-        const D = (K.PEGEL.regen * r.constructor.WEATHER_FIELD.cloudy.rain * 10) / tagS;
-        // Spielstunden hinter dem Schwerpunkt des Regens (15 s der Welt-Uhr): der Schwerpunkt der Ganglinie und ihr Scheitel
-        const std = (sek) => ((sek - 15) * 24) / tagS;
+        // der Regen, der fiel: die Stempel mit − ohne über die Reihe (in s der Welt-Uhr ab `eins`), sein Schwerpunkt
+        const ende = eins[0] + tagS / 2 + 2;
+        const [Im, Io] = [regenIntegral(mit.S, eins[0], ende), regenIntegral(ohne.S, eins[0], ende)];
+        const D = (K.PEGEL.regen * (Im[0] - Io[0])) / tagS;
+        const mitte = Im[0] - Io[0] > 0 ? (Im[1] - Io[1]) / (Im[0] - Io[0]) - eins[0] : NaN;
+        // Spielstunden hinter dem Schwerpunkt des Regens: der Schwerpunkt der Ganglinie und ihr Scheitel — die Mitte der Stufe des
+        // größten Mehr-Abflusses (der Hub steht auf 1 cm quantisiert, `PEGEL.stufe`: der erste Schritt der Stufe lag bis 49 % vor dem
+        // Gipfel der Kaskade, ihre Mitte trifft ihn auf ≤ 4 %)
+        const std = (sek) => ((sek - mitte) * 24) / tagS;
         const lag = V.map((v, i) => (v > 0 ? std((mehr(i).reduce((s, q, k) => s + q * 2 * k, 0) * 2) / tagS / v) : 0));
         const scheitel = [0, 1].map((i) => {
             const m = mehr(i);
-            return std(2 * m.reduce((b, q, k) => (q > m[b] ? k : b), 0));
+            const g = Math.max(...m);
+            return std(m.indexOf(g) + m.lastIndexOf(g));
         });
         Object.assign(aus, {
             A: orte.map((q) => R(q.A / 1e6)),
+            regen: R((Im[0] - Io[0]) / r.constructor.WEATHER_FIELD.cloudy.rain),
             lag: lag.map(R),
             scheitel: scheitel.map(R),
             bilanz: V.map((v) => R(v / D)),
@@ -2268,7 +2300,7 @@ async function kreislaufSitzungProbe(r, T, o) {
     const klasse = "^(wasserSatz|chunk-water-[a-z]+)$";
     return Object.assign(aus, { bach: P, bilder: [{ vor: ["trocken"], kamera, klasse }, { vor: ["sturm"], kamera, klasse }] });
 }
-const KREISLAUF_SITZUNG = { befehl: weltSitzungBefehl([["kreislauf", kreislaufSitzungProbe]]), sek: 90, mutiert: true };
+const KREISLAUF_SITZUNG = { befehl: weltSitzungBefehl([["kreislauf", kreislaufSitzungProbe]], [regenIntegral]), sek: 90, mutiert: true };
 // das Urteil: der Pegel am Bach +≥ 0,15 m nach dem Sturm und das gezeichnete Wasser im zweiten Bild ≥ 5 % mehr Pixel (wetter.K3#2, die
 // Karten-Hälfte); A-Verhältnis ≥ 4 und das Verhältnis der Scheitel-Verzüge im Erd-Band (Snyder mit Hack: t ∝ A^0,3…0,45); die Bilanz
 // Regen × Fläche ↔ ΔVolumen je Bach in [0,9; 1,1]; eine echte Karte
@@ -2289,16 +2321,19 @@ function kreislaufUrteil(j, lauf) {
     const sV = e.scheitel[0] > 0 ? e.scheitel[1] / e.scheitel[0] : 0;
     const band = aV > 1 ? [Math.pow(aV, 0.3), Math.pow(aV, 0.45)] : [Infinity, Infinity];
     const bil = (e.bilanz || []).length === 2 && e.bilanz.every((b) => b >= 0.9 && b <= 1.1);
+    // der Niesel ist das Wort: 10 s Regen auf dem Weg der Welt (die Stempel), sonst misst die Bilanz einen anderen Regen als den der Probe
+    const niesel = Number.isFinite(e.regen) && Math.abs(e.regen - 10) <= 0.5;
     return {
-        gruen: hw && hub != null && hub >= 0.15 && p0 > 0 && p1 >= 1.05 * p0 && aV >= 4 && sV >= band[0] && sV <= band[1] && bil,
+        gruen: hw && hub != null && hub >= 0.15 && p0 > 0 && p1 >= 1.05 * p0 && aV >= 4 && sV >= band[0] && sV <= band[1] && bil && niesel,
         zahl: "Bach +" + hub + " m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild " + p0 + " → " + p1 + " px (×" + (p0 ? (p1 / p0).toFixed(2) : "—") + ", Soll ≥ 1,05) · A " +
             e.A.join(" ↔ ") + " km² (×" + aV.toFixed(1) + ") · Scheitel " + e.scheitel.join(" ↔ ") + " Spielstunden (×" + sV.toFixed(2) + ", Erd-Band " +
             band.map((v) => v.toFixed(2)).join("–") + "; Schwerpunkt " + (e.lag || []).join(" ↔ ") + ") · Bilanz " + (e.bilanz || []).join(" / ") + " (Soll 0,9–1,1; " +
-            (e.volumen || []).map((x) => x.join(" ↔ ")).join(" / ") + " m³) · " + ad,
+            (e.volumen || []).map((x) => x.join(" ↔ ")).join(" / ") + " m³) · Niesel auf dem Weg " + e.regen + " s (Soll 10 ± 0,5) · " + ad,
     };
 }
 const KREISLAUF_ROH = {
     A: [0.16, 0.8],
+    regen: 10,
     lag: [1, 1.9],
     scheitel: [0.8, 1.5],
     bilanz: [1.006, 0.978],
@@ -2836,8 +2871,10 @@ function k3Ganglinie() {
     // Schwerpunkt der Ganglinie hinter dem des Regens (Spielstunden) · BILANZ das Volumen durch den Pegel gegen den Abfluss des
     // Regens über derselben Fläche (der Niesel × `PEGEL.regen`, Beiwert der Wiese) · DÜRRE der Spiegel an Bach, Fluss und See P.see
     // (`_waterLevelAt`) 14 Spieltage Sonne später. Welt-Uhr und Stempel kehren danach zurück.
+    // Das Wort fällt ohne Übergang auch auf dem Weg des Regens (`_regenWeg(w, w, jetzt, 0)`, DER WEG DES REGENS IST DAS WORT bei
+    // `kreislaufSitzungProbe`): main f5ce1579 headless 24,4 s statt 10 s Niesel, Bilanz 2,141 / 2,423, gehalten 12,3 / 12,2 → 1,006 / 0,98, 0 / 0.
     const probe = () => {
-        const wort = (w, s) => (r._setWeather(w, "human"), (st.weatherTransition = null), r._naesseTakt(s));
+        const wort = (w, s) => (r._setWeather(w, "human"), (st.weatherTransition = null), r._regenWeg(st.weather, st.weather, st.spielZeit, 0), r._naesseTakt(s));
         const uhr = () => [st.spielZeit, st.regenStempel && st.regenStempel.slice()];
         const zu = ([t, S]) => ((st.spielZeit = t), (st.regenStempel = S && S.slice()), r._pegelTakt());
         const [L, tagS, u] = [r._gelaende(), r.constructor.DAY_LENGTH_DEFAULT_MINUTES * 60, uhr()];
@@ -5430,6 +5467,8 @@ module.exports = [
             { name: "der Scheitel linear in A (×5)", stdout: kreislaufRoh((x) => ((x.scheitel = [0.4, 2]), x)), gruen: false },
             { name: "die Bilanz 1,25 (in ±30 %, nicht in ±10 %)", stdout: kreislaufRoh((x) => ((x.bilanz = [1.25, 0.978]), x)), gruen: false },
             { name: "ein Bild fehlt", stdout: kreislaufRoh((x) => ((x.bilder = x.bilder.slice(0, 1)), x)), gruen: false },
+            { name: "der Weg des Regens trägt den Übergang (24,4 s statt des Niesels von 10 s, die Bilanz am Stempel 0,877 / 0,993)", stdout: kreislaufRoh((x) => ((x.regen = 24.4), (x.bilanz = [0.877, 0.993]), x)), gruen: false },
+            { name: "die Messung am main 77e079ae Radeon (Bilanz gegen die angenommenen 10 s, ohne Weg des Regens)", stdout: kreislaufRoh((x) => (delete x.regen, (x.A = [0.16, 0.64]), (x.scheitel = [0.367, 1.073]), (x.bilanz = [2.087, 2.332]), x)), gruen: false },
             { name: "kein zweiter Bach", stdout: kreislaufRoh((x) => ({ fehler: "keine zwei Bäche mit A-Verhältnis ≥ 4 um den Bach der Mess-Wiese" })), gruen: false },
             { name: "swiftshader", stdout: kreislaufRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
         ],
