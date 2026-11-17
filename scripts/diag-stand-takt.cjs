@@ -25,7 +25,7 @@
 // Gehen, verhungernder Strom, eine Sim, die in Ruhe zählt oder nach ihrem Ereignis nicht schläft, ein Automat, der am
 // Fixpunkt wach bleibt, Page-Error — MUSS rot fallen und ihn beim Namen nennen.
 //   node scripts/diag-stand-takt.cjs [--selftest | --tat | --nachwuchs | --brand | --narbe]   (npm run gate:stand-takt; Port STAND_TAKT_PORT;
-//   --tat: (K4), --nachwuchs: (K5), --brand: (K2#2 · K5#2), --narbe: (N1–N4, w28-brand-bild) unten; --narbe: ROT Exit 1, Absturz Exit 2)
+//   --tat: (K4), --nachwuchs: (K5), --brand: (K2#2 · K5#2), --narbe: (N1–N7, w28-brand-bild · -saum · -zunge · -nacht) unten; --narbe: ROT Exit 1, Absturz Exit 2)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -1191,9 +1191,33 @@ async function brandSeite(MESS) {
 //   N4 — der Stoff des Chunk-Bodens, frisch gebaut über seinen Bauer (`_getVoxelChunkMaterial`, mit Wege-Karte), ruft
 //   `STOFF_GESETZ.zeile("asche")` ≥ 1-mal (gezählt am Kern der Seite, kein Quelltext); die Mutante nimmt dem Boden-Stoff die
 //   Asche-Decke (`_wegeBodenFarbe` ohne `aus.asche`) und liest 0.
+//   N5 (w28-brand-saum) — die Front ist ein geschlossener Saum: in demselben Bild stehen die Flammen der Herd-Zelle längs ihrer
+//   Front im Median ihrer Paare ≤ `NARBE_SAUM` × die volle Breite ihrer Zungen auseinander (2 × `BRAND.bild.breite` × Länge ×
+//   rMax der Zunge `FLAMME.zunge`, wie `_brandFlammenZeichnen`; die Länge die ruhende nach Byram 0,0775·I^0,46 aus `f.I`, nicht
+//   die pulsende `f.lang`; ≥ 8 Paare). Gemessen 1,187 (0,427 m bei 0,36 m); die Mutante (`abstandMinM` 0,5 m, die Tafel zur
+//   Laufzeit ersetzt) 1,6 (1,123 m bei 0,702 m): die kleinen Zungen der Flanken stehen als einzelne Punkte.
+//   N6 (w28-brand-zunge) — die Zungen pulsen: in demselben Bild streut die Länge der Flammen der Herd-Zelle je ihrer Byram-Länge
+//   (q = `f.lang` ÷ 0,0775·I^0,46) mit σ ≥ `NARBE_PULS` (≥ 8 Flammen). Gemessen σ 0,246 bei der Bild-Uhr 0 (q 0,652 … 1,35; der
+//   Ort-Term des Takts trägt allein), 0,259 nach 1,3 s; erwartet puls/√2 = 0,247. Die Mutante (`BRAND.bild.puls` 0) σ 0: die
+//   Front steht als Band gleicher Höhe.
+//   N7 (w28-brand-nacht) — das Schein-Maß: NACHTS (Uhr 0) trägt jede Leuchtquelle des Brands (`_leuchtQuellen`) AN der Flamme
+//   die Bestrahlung `_leuchtStaerke` ÷ π × (1 + k²)/k² (k = ihr Kern `L.kernM`) in Welt-Einheiten (`BRAND.bild.flamme.schein`);
+//   das Maximum über die Quellen und acht Bild-Uhren liegt in [`NARBE_SCHEIN_MIN`, `NARBE_SCHEIN_MAX`], und keine
+//   trägt einen Zeitplan (`L.zeit`). Die Mutante (`_flammenLicht` → das Herdfeuer × `BRAND.licht`, der Stand bis
+//   w28-brand-nacht): der Zeitplan der Nacht hebt den Brand über das Band. N7-UHR: am Mittag trägt derselbe Brand denselben
+//   Schein (± 2 %); die Mutante „am Bild-Ton“ (Masse ÷ Belichtung, der widerlegte Stand 63c7e567: am Tag färbte der Brand Gras
+//   und Rauch orange) lässt Tag und Nacht auseinanderfallen.
+// so weit dürfen Nachbarn stehen, je volle Breite der Zunge: das Rauschen weitet ihren Radius bis × `weit` (2), der Saum schließt
+// also schon im Mittel dieses Hubs; 1,4 liegt zwischen den beiden gemessenen Ständen
+const NARBE_SAUM = 1.4;
+// so weit streut die Länge der Zungen mindestens je Byram-Länge: gut die Hälfte der Streuung eines vollen Sinus mit `puls` 0,35
+const NARBE_PULS = 0.15;
+// das Band des Scheins: die Bestrahlung an der Flamme in Welt-Einheiten — `schein` 7,5 × Flackern (± 0,18) × Glut liegt
+// darin; unter 3 bleibt das Gras der Nacht dunkel, 27 brennt es weiß aus, der Herdfeuer-Punkt mit Zeitplan trägt Hunderte
+const [NARBE_SCHEIN_MIN, NARBE_SCHEIN_MAX] = [3, 10.5];
 function narbeUrteil(b) {
-    const [a, e, l, s] = [b?.n1, b?.n2, b?.n3, b?.n4];
-    if (!a || !e || !l || !s) return ["LEER: " + JSON.stringify(b && Object.keys(b))];
+    const [a, e, l, s, n, z, h] = [b?.n1, b?.n2, b?.n3, b?.n4, b?.n5, b?.n6, b?.n7];
+    if (!a || !e || !l || !s || !n || !z || !h) return ["LEER: " + JSON.stringify(b && Object.keys(b))];
     const [mw, mq] = [a.mutanteWartet, a.mutanteQuadrat];
     return [
         a.brennt && a.s >= a.tr && a.fernAn > a.s ? "" : `N1-LEER: die Herd-Zelle ${a.brennt ? "brennt" : "brennt nicht mehr"} nach ${a.s} s (Verweilzeit ${a.tr} s), der ferne Ort fängt nach ${a.fernAn} s`,
@@ -1209,6 +1233,18 @@ function narbeUrteil(b) {
         s.gebaut ? "" : `N4-LEER: der Bauer des Chunk-Bodens (_getVoxelChunkMaterial) baute keinen frischen Stoff`,
         s.abrufe >= 1 ? "" : `N4-ZEILE: der Boden liest die Asche-Zeile nicht: ${s.abrufe} Abrufe zeile("asche") beim Bau des Chunk-Boden-Stoffs (Rauheit der Zeile ${s.rauheit})`,
         s.mutante === 0 ? "" : `MUTANTE-N4: ohne Asche-Decke zählt die Linse ${s.mutante} Abrufe zeile("asche") — sie zählt einen anderen Leser`,
+        n.paare >= 8 && n.mass > 0 ? "" : `N5-LEER: keine Messung des Saums: ${n.paare} Paare benachbarter Flammen in der Herd-Zelle (${n.flammen} Flammen; verlangt ≥ 8)`,
+        !(n.mass > NARBE_SAUM) ? "" : `N5-SAUM: die Front steht als einzelne Punkte: Flammen-Abstand ${n.abstand} m > Zungen-Breite ${n.breite} m × ${NARBE_SAUM} (Verhältnis ${n.mass} im Median von ${n.paare} Paaren, BRAND.bild.abstandMinM ${n.minM} m)`,
+        n.mutante?.paare >= 8 && n.mutante?.mass > NARBE_SAUM ? "" : `MUTANTE-N5: mit abstandMinM 0,5 m liest die Linse Flammen-Abstand ${n.mutante?.abstand} m bei Zungen-Breite ${n.mutante?.breite} m (Verhältnis ${n.mutante?.mass}, ${n.mutante?.paare} Paare) — sie sieht die Lücken nicht`,
+        z.flammen >= 8 && (z.sigma > 0 || z.sigma === 0) ? "" : `N6-LEER: keine Messung des Pulses: ${z.flammen} Flammen in der Herd-Zelle (σ ${z.sigma}; verlangt ≥ 8)`,
+        !(z.sigma < NARBE_PULS) ? "" : `N6-BAND: die Front steht als Band gleicher Höhe: σ ${z.sigma} < ${NARBE_PULS} (Länge je Byram-Länge ${z.min} … ${z.max} über ${z.flammen} Flammen, BRAND.bild.puls ${z.puls})`,
+        z.mutante?.flammen >= 8 && z.mutante?.sigma < NARBE_PULS ? "" : `MUTANTE-N6: ohne Puls liest die Linse σ ${z.mutante?.sigma} über ${z.mutante?.flammen} Flammen — sie misst nicht den Puls`,
+        h.quellen >= 1 && h.max > 0 && h.herd > 1 ? "" : `N7-LEER: keine Messung des Scheins: ${h.quellen} Leuchtquellen des Brands (Schein ${h.max}), der Zeitplan des Herdfeuers steht bei ${h.herd} (verlangt > 1: die Nacht)`,
+        !(h.max > NARBE_SCHEIN_MAX) && h.zeit === 0 ? "" : `N7-SCHEIN: der Brand leuchtet als Herdfeuer-Punkt × BRAND.licht × Zeitplan: Schein ${h.max} > ${NARBE_SCHEIN_MAX} oder Zeitplan an ${h.zeit} von ${h.quellen} Quellen (nachts, Zeitplan des Herdfeuers × ${h.herd}, Kern ${h.kern} m, Belichtung ${h.belichtung}, BRAND.bild.flamme.schein ${h.soll})`,
+        !(h.max < NARBE_SCHEIN_MIN) ? "" : `N7-DUNKEL: der Brand leuchtet nicht als Flamme: Schein ${h.max} < ${NARBE_SCHEIN_MIN} (${h.quellen} Quellen, Kern ${h.kern} m, Belichtung ${h.belichtung}, BRAND.bild.flamme.schein ${h.soll})`,
+        Math.abs(h.tag - h.max) <= 0.02 * h.max ? "" : `N7-UHR: das Licht des Brands hängt an der Stunde oder der Belichtung: Schein am Mittag ${h.tag} ↔ nachts ${h.max} (verlangt gleich ± 2 %)`,
+        Math.abs(h.mutanteTon?.tag - h.mutanteTon?.nacht) > 0.2 * h.mutanteTon?.nacht ? "" : `MUTANTE-N7-TON: mit der Masse ÷ Belichtung liest die Linse am Mittag ${h.mutanteTon?.tag} ↔ nachts ${h.mutanteTon?.nacht} — sie sieht das Licht am Bild-Ton nicht`,
+        h.mutante?.quellen >= 1 && h.mutante?.max > NARBE_SCHEIN_MAX && h.mutante?.zeit >= 1 ? "" : `MUTANTE-N7: als Herdfeuer-Punkt × BRAND.licht × Zeitplan liest die Linse Schein ${h.mutante?.max} (Zeitplan an ${h.mutante?.zeit} von ${h.mutante?.quellen} Quellen) — sie sieht den Herdfeuer-Punkt nicht`,
     ].filter(Boolean);
 }
 
@@ -1324,6 +1360,87 @@ async function narbeSeite(MESS) {
         N3.mutante = bild();
         delete r._brandBild;
         bild();
+        // N5: die Flammen der Herd-Zelle in demselben Bild, in ihrer Reihenfolge längs der Front: je Paar von Nachbarn ihr Abstand (xz)
+        // und die volle Breite ihrer Zungen, gerechnet wie `_brandFlammenZeichnen` (2 × `breite` × Länge × rMax der Zunge des
+        // Fachwerks, die Länge das Mittel des Paars); das Paar am Median des Verhältnisses trägt das Urteil
+        const byram = (f) => 0.0775 * Math.pow(f.I, 0.46);
+        const saum = () => {
+            const Bb = C.BRAND.bild;
+            const F = (r._brandFlammen || []).filter((f) => Math.floor(f.x / cs) === hx && Math.floor(f.z / cs) === hz);
+            const rMax = Math.max(...globalThis.__fachwerkCore.FLAMME.zunge.map((p) => p[0]));
+            const paare = F.slice(1).map((g, i) => [Math.hypot(g.x - F[i].x, g.z - F[i].z), Bb.breite * (byram(F[i]) + byram(g)) * rMax]);
+            const [d, w] = rang(paare.sort((u, v) => u[0] / u[1] - v[0] / v[1]), 0.5) || [NaN, NaN];
+            return { flammen: F.length, paare: paare.length, abstand: r3(d), breite: r3(w), mass: r3(d / w), weit: r3(1 + 1.25 * Bb.flamme.rausch[2]), minM: Bb.abstandMinM };
+        };
+        const N5 = (aus.n5 = saum());
+        // die Mutante: die Tafel des Bilds mit dem Mindest-Abstand 0,5 m (der Stand bis w28-brand-saum)
+        C.BRAND = Object.freeze({ ...B, bild: Object.freeze({ ...B.bild, abstandMinM: 0.5 }) });
+        try {
+            bild();
+            N5.mutante = saum();
+        } finally {
+            C.BRAND = B;
+        }
+        bild();
+        // N6: dieselben Flammen der Herd-Zelle, je Flamme ihre Länge im Bild je Byram-Länge ihrer Intensität (q = `f.lang` ÷
+        // 0,0775·I^0,46); die Streuung von q über die Front. `uhr`: dieselbe Streuung 1,3 s Bild-Uhr später (nur gemeldet)
+        const pulsen = () => {
+            const q = (r._brandFlammen || []).filter((f) => Math.floor(f.x / cs) === hx && Math.floor(f.z / cs) === hz).map((f) => f.lang / byram(f));
+            const mi = q.reduce((a, v) => a + v, 0) / Math.max(1, q.length);
+            return { flammen: q.length, sigma: r3(Math.sqrt(q.reduce((a, v) => a + (v - mi) * (v - mi), 0) / Math.max(1, q.length))), min: r3(Math.min(...q)), max: r3(Math.max(...q)), puls: C.BRAND.bild.puls };
+        };
+        const N6 = (aus.n6 = pulsen());
+        r._bildZeit = 1.3;
+        r._brandBild(0.1);
+        N6.uhr = pulsen().sigma;
+        // die Mutante: die Tafel des Bilds ohne Puls (jede Zunge steht auf ihrer Byram-Länge)
+        C.BRAND = Object.freeze({ ...B, bild: Object.freeze({ ...B.bild, puls: 0 }) });
+        try {
+            bild();
+            N6.mutante = pulsen();
+        } finally {
+            C.BRAND = B;
+        }
+        bild();
+        // N7: derselbe Brand NACHTS (die Uhr als Spieler-Wort auf 0 — `setTimeOfDay` wendet den Tag samt Belichtung an). Je
+        // Leuchtquelle des Brands, frisch gelesen (`_leuchtQuellen`, nicht die Wahl des Pools) und über acht Bild-Uhren des
+        // Flackerns: ihre Bestrahlung AN der Flamme; das Maximum trägt das Urteil. `herd`: der Zeitplan des
+        // Herdfeuers zu dieser Uhr (die Nacht steht), `zeit`: die Quellen des Brands, die einen Zeitplan tragen
+        const LGf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        const schein = () => {
+            const [BF, bel] = [C.BRAND.bild.flamme, (st.renderer && st.renderer.toneMappingExposure) || 1];
+            const Q = r._leuchtQuellen(pm.x, pm.y, pm.z, 64).filter((q) => q.quelle === "brand");
+            const mass = (q, t, k = q.L.kernM) => ((r._leuchtStaerke(q, t) / Math.PI) * (1 + k * k)) / (k * k);
+            const W = Q.flatMap((q) => [0, 0.37, 0.9, 1.3, 2.1, 3.3, 4.7, 6.1].map((t) => mass(q, t)));
+            return { quellen: Q.length, max: r3(Math.max(0, ...W)), min: r3(Math.min(...W)), kern: r3(Math.max(0, ...Q.map((q) => q.L.kernM))), zeit: Q.filter((q) => q.L.zeit != null).length, herd: r3(r._lichtZeitplan(LGf.zeit)), belichtung: r3(bel), soll: BF.schein };
+        };
+        const tagSchein = schein().max; // derselbe Brand am Mittag (die Uhr der Sitzung): das Licht der Flamme hängt nicht an der Stunde
+        r.setTimeOfDay(0, "regler");
+        const N7 = (aus.n7 = schein());
+        N7.tag = tagSchein;
+        // die Mutante „am Bild-Ton": die Masse ÷ Belichtung (der widerlegte Stand 63c7e567) — Tag und Nacht fallen auseinander
+        const F0 = P._flammenLicht;
+        const amTon = () => {
+            r._flammenLicht = function (...a) {
+                const F = F0.apply(this, a);
+                return { L: F.L, masse: F.masse / ((st.renderer && st.renderer.toneMappingExposure) || 1) };
+            };
+            return schein().max;
+        };
+        try {
+            N7.mutanteTon = { nacht: amTon(), tag: (r.setTimeOfDay(0.5, "regler"), amTon()) };
+        } finally {
+            delete r._flammenLicht;
+            r.setTimeOfDay(0, "regler");
+        }
+        // die Mutante: der Brand als Herdfeuer-Punkt × `BRAND.licht` mit dem Zeitplan des Feuers (der Stand bis w28-brand-nacht)
+        r._flammenLicht = () => ({ L: LGf, masse: C.BRAND.licht });
+        try {
+            N7.mutante = schein();
+        } finally {
+            delete r._flammenLicht;
+            r.setTimeOfDay(0.5, "regler");
+        }
         // N2, die Mutante: derselbe Herd, `ende` auf den Durchlauf des Kopfs gestutzt
         r._brandZuenden = function (...a) {
             const z = P._brandZuenden.apply(this, a);
@@ -1367,7 +1484,7 @@ async function narbeSeite(MESS) {
         delete r._wegeBodenFarbe;
         return aus;
     } finally {
-        for (const k of ["_naesseTakt", "_feuchteAt", "_feldFolgeSteht", "_brandFront", "_brandBild", "_brandZuenden", "_wegeBodenFarbe"]) delete r[k];
+        for (const k of ["_naesseTakt", "_feuchteAt", "_feldFolgeSteht", "_brandFront", "_brandBild", "_brandZuenden", "_wegeBodenFarbe", "_flammenLicht"]) delete r[k];
         leer();
         st.weatherEffectTime = uhr;
         st.autoSeason = jahr;
@@ -1431,8 +1548,11 @@ if (SELBSTTEST) {
                     n2: { dauer: 52.4, ecken: 45.8, kopf: 31.5, mutante: { dauer: 31.5, ecken: 45.8, kopf: 31.5 } },
                     n3: { lichter: 4, flammen: 60, gemessen: 4, max: 0, mitte: false, mutante: { lichter: 4, flammen: 60, gemessen: 4, max: 5.3, mitte: true } },
                     n4: { abrufe: 1, gebaut: true, rauheit: 0.96, mutante: 0 },
+                    n5: { flammen: 27, paare: 26, abstand: 0.427, breite: 0.36, mass: 1.187, weit: 2, minM: 0.2, mutante: { flammen: 22, paare: 21, abstand: 1.123, breite: 0.702, mass: 1.6, weit: 2, minM: 0.5 } },
+                    n6: { flammen: 27, sigma: 0.246, min: 0.652, max: 1.35, puls: 0.35, uhr: 0.259, mutante: { flammen: 27, sigma: 0, min: 1, max: 1, puls: 0 } },
+                    n7: { quellen: 4, max: 8.2, min: 5.7, tag: 8.2, mutanteTon: { nacht: 5.5, tag: 16 }, kern: 2, zeit: 0, herd: 45, belichtung: 1.5, soll: 7.5, mutante: { quellen: 4, max: 460, min: 300, kern: 0.76, zeit: 4, herd: 45, belichtung: 1.5, soll: 7 } },
                 },
-                [["N1-LEER", "n1.brennt", false], ["N1-LEER", "n1.s", 3], ["N1-LEER", "n1.fernAn", 12], ["N1-WARTET", "n1.zuend", 0], ["N1-QUADRAT", "n1.fern", 0.9], ["MUTANTE-N1-WARTET", "n1.mutanteWartet.zuend", 1], ["MUTANTE-N1-QUADRAT", "n1.mutanteQuadrat.fern", 0], ["N2-ENDE", "n2.dauer", 31.5], ["MUTANTE-N2", "n2.mutante.dauer", 52.4], ["MUTANTE-N2", "n2.mutante", null], ["N3-LEER", "n3.gemessen", 0], ["N3-LICHT", "n3.max", 5.3, "n3.mitte", true], ["MUTANTE-N3", "n3.mutante.max", 0], ["N4-LEER", "n4.gebaut", false], ["N4-ZEILE", "n4.abrufe", 0], ["MUTANTE-N4", "n4.mutante", 1]]
+                [["N1-LEER", "n1.brennt", false], ["N1-LEER", "n1.s", 3], ["N1-LEER", "n1.fernAn", 12], ["N1-WARTET", "n1.zuend", 0], ["N1-QUADRAT", "n1.fern", 0.9], ["MUTANTE-N1-WARTET", "n1.mutanteWartet.zuend", 1], ["MUTANTE-N1-QUADRAT", "n1.mutanteQuadrat.fern", 0], ["N2-ENDE", "n2.dauer", 31.5], ["MUTANTE-N2", "n2.mutante.dauer", 52.4], ["MUTANTE-N2", "n2.mutante", null], ["N3-LEER", "n3.gemessen", 0], ["N3-LICHT", "n3.max", 5.3, "n3.mitte", true], ["MUTANTE-N3", "n3.mutante.max", 0], ["N4-LEER", "n4.gebaut", false], ["N4-ZEILE", "n4.abrufe", 0], ["MUTANTE-N4", "n4.mutante", 1], ["N5-LEER", "n5.paare", 2], ["N5-LEER", "n5.mass", null], ["N5-SAUM", "n5.mass", 1.6, "n5.abstand", 1.123, "n5.breite", 0.702], ["MUTANTE-N5", "n5.mutante.mass", 1.187], ["MUTANTE-N5", "n5.mutante.paare", 2], ["MUTANTE-N5", "n5.mutante", null], ["N6-LEER", "n6.flammen", 3], ["N6-LEER", "n6.sigma", null], ["N6-BAND", "n6.sigma", 0, "n6.min", 1, "n6.max", 1], ["MUTANTE-N6", "n6.mutante.sigma", 0.246], ["MUTANTE-N6", "n6.mutante.flammen", 3], ["MUTANTE-N6", "n6.mutante", null], ["N7-UHR", "n7.tag", 16], ["MUTANTE-N7-TON", "n7.mutanteTon.tag", 5.6], ["N7-LEER", "n7.quellen", 0], ["N7-LEER", "n7.herd", 1], ["N7-SCHEIN", "n7.max", 460], ["N7-SCHEIN", "n7.zeit", 4], ["N7-DUNKEL", "n7.max", 1], ["MUTANTE-N7", "n7.mutante.max", 8.2], ["MUTANTE-N7", "n7.mutante.zeit", 0], ["MUTANTE-N7", "n7.mutante", null]]
             ),
         ],
         "die Tat-, Nachwuchs-, Brand-, Sukzessions- und Narbe-Linse nennen jeden Täter."
@@ -2539,7 +2659,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
         if (!befund || befund.fehler) absturz(befund ? befund.fehler : "kein Befund");
         console.log("NARBE " + JSON.stringify(befund));
         const v = narbeUrteil(befund);
-        urteilEnde(v.length, `❌ NARBE ROT — ${v.join(" | ")}`, "✅ NARBE GRÜN — die Narbe folgt der Front, die Zelle brennt, bis ihre Front sie deckt, das Licht steht bei den Flammen, der Boden liest die Asche-Zeile");
+        urteilEnde(v.length, `❌ NARBE ROT — ${v.join(" | ")}`, "✅ NARBE GRÜN — die Narbe folgt der Front, die Zelle brennt, bis ihre Front sie deckt, das Licht steht bei den Flammen, der Boden liest die Asche-Zeile, die Front ist ein geschlossener Saum, die Zungen pulsen, der Brand leuchtet nachts als Flammen-Fläche");
     }
     await seiteZu(browser, server, befund, null, "fehler");
     if (TAT || NACHWUCHS) {

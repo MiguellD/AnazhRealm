@@ -1711,6 +1711,27 @@ class AnazhRealm {
         return c.set(L.farbe);
     }
 
+    // DAS LICHT EINER FLAMMEN-FLÄCHE (w28-brand-nacht) vom Halbmesser `r` m → { L, masse }. AN der Flamme (d → 0) trägt eine
+    // Fläche die Bestrahlung `BRAND.bild.flamme.schein` — EINE Zahl in Welt-Einheiten, bei Tag und Nacht dieselbe (das Licht einer
+    // Flamme hängt weder an der Stunde noch an der Belichtung der Kamera): Masse·(1 + k²)/k² = schein, mit dem KERN k = ihrem
+    // Halbmesser (fachwerk `lichtAbfall`: die Ausdehnung der Quelle, wie die Membran des Tors). Nah bleibt ihr Licht so unter
+    // dem Deckel, fern wächst es mit ihrer Fläche (∝ k²/d²), ihre Reichweite mit ihrem Halbmesser (höchstens zwei Zellen).
+    // Farbe, Abfall und Flackern sind die des Feuers (`LICHT_GESETZ.feuer`), sein Zeitplan nicht: der hebt das Herdfeuer
+    // nachts × 45 über einen Platz aus Stein. Bis hier leuchtete der Brand als Herdfeuer-Punkt × `BRAND.licht` 4 × Zeitplan:
+    // nachts stand die Bestrahlung in 1 m bei 565 (am Tag 6,4), das Gras 1–6 m um die Front brannte weiß aus, die Flammen gingen
+    // unter, der Rauch stand als helle Scheiben. WIDERLEGT: das Licht am Bild-Ton der Flamme (× ziel ÷ Belichtung) — die Nacht
+    // stimmte, am Tag (Belichtung 0,51) trug die Flamme 22 statt 7,5 und färbte Gras und Rauch orange. Je Viertelmeter ein Datum.
+    _flammenLicht(r) {
+        const Lf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        const k = Math.max(Lf.kernM, Math.round(r * 4) / 4);
+        const M = this._flammenLichter || (this._flammenLichter = new Map());
+        if (!M.has(k)) {
+            const reichweiteM = Math.min(2 * AnazhRealm.LIFE_FIELD.cell, (Lf.reichweiteM * k) / Lf.kernM);
+            M.set(k, Object.freeze({ ...Lf, staerke: 1, zeit: null, kernM: k, reichweiteM }));
+        }
+        return { L: M.get(k), masse: (AnazhRealm.BRAND.bild.flamme.schein * k * k) / (1 + k * k) };
+    }
+
     // DIE STÄRKE einer Quelle zur Bild-Uhr t (K11, A9): Datum × Flackern × Zeitplan über die EINE Übersetzung Labor → Welt × Masse.
     _leuchtStaerke(q, t) {
         const L = q.L;
@@ -1776,20 +1797,15 @@ class AnazhRealm {
             });
         }
         // DER BRAND (feld.K3#2): jede glühende Zelle des Felds um das Auge (`_brandGlutUm`, die Blöcke ihres letzten Schritts) leuchtet
-        // als Feuer über ihrer Mitte (`_brandOrt`), die Masse folgt der Glut
-        const Lf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        // als FLAMMEN-FLÄCHE (`_flammenLicht`) vom Ort ihrer stärksten Flamme (`_brandOrt`): ihr Halbmesser ist der der Ellipse
+        // ihrer Front (a = Alter·R/(1 + ecc), b = a·√(1 − ecc²), √(a·b)), höchstens die halbe Zelle; die Masse folgt der Glut
+        const cs = AnazhRealm.LIFE_FIELD.cell;
         this._brandGlutUm(x, z, R, (b) => {
             const o = b.ort || this._brandOrt(b);
             if ((o.x - x) * (o.x - x) + (o.z - z) * (o.z - z) > R * R) return;
-            nimm(b, {
-                quelle: "brand",
-                x: o.x,
-                y: o.y,
-                z: o.z,
-                L: Lf,
-                masse: AnazhRealm.BRAND.licht * b.glut,
-                phase: o.phase,
-            });
+            const a = (Math.max(0, this.state.spielZeit - b.t0) * b.R) / (1 + b.ecc);
+            const F = this._flammenLicht(Math.min(cs / 2, a * Math.pow(Math.max(0, 1 - b.ecc * b.ecc), 0.25)));
+            nimm(b, { quelle: "brand", x: o.x, y: o.y, z: o.z, L: F.L, masse: F.masse * b.glut, phase: o.phase });
         });
         // DIE LAVA (stoffe.K3-2): jede glühende Decke leuchtet als Feuer über ihrem Ort, die Masse folgt ihrer Glut (`_lavaZustand`)
         for (const a of this._tatIndex().lava) {
@@ -1914,7 +1930,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.317";
+AnazhRealm.VERSION = "18.546.319";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([
