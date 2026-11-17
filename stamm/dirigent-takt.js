@@ -2228,7 +2228,6 @@ class AnazhRealm_dirigent_takt {
         setze(this._weltRegung | 0, true);
         setze(this._waldPlanRegung | 0, true); // die Schlange des Walds (K69): ihre Zellen tragen die Gestalt jedes wartenden Baums
         setze(st._foliageDensityScale); // der EINE Regler: Wahrnehmungs-Faktor der Stufen-Wahl und Verdeckungs-Schwelle
-        setze(this._ankunftsFerne()); // die Ankunft aus der Ferne (B2): bis zum Bild aus der Ferne, danach am Abstand
         setze(st.lodRef);
         setze(st.chunkRingRadius);
         setze(st._activeRingRadius); // der Boot-Ring wächst bis zum Ziel (`_voxelChunkConfig`)
@@ -2479,7 +2478,6 @@ class AnazhRealm_dirigent_takt {
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
             if (_lu.uLodMaskOn) _lu.uLodMaskOn.value = this.state.lodMaskOn === false ? 0 : 1;
             if (_lu.uLodAuge && this.state.camera) _lu.uLodAuge.value.copy(this._lodAuge());
-            if (_lu.uLodPerf) _lu.uLodPerf.value = this._ankunftsFerne();
             if (_lu.uLodTakt) _lu.uLodTakt.value = this.state.weltTakt; // die Welt-Uhr des Eintritts (`aEin`)
             // W5.4 (Schritt 3) — die Band-Zahlen spiegeln LIVE die EINE Quelle LOD_DISTANCES
             // (der Studio-Ingest mutiert sie → die Foundry-Maske folgt ohne Material-Rebuild).

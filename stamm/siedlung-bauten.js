@@ -141,7 +141,7 @@ class AnazhRealm_siedlung_bauten {
         if (atmo && atmo.treeLOD === false) return 0;
         const pm = auge;
         if (!pm) return 0;
-        // in der Ankunft (vor dem Weltbild: aus der Ferne, dann am Abstand) wechselt die Wahl im Takt der Ankunft
+        // in der Ankunft (vor dem Weltbild) wechselt die Wahl im Takt der Ankunft
         if (!this.state._weltbildDa) maxSwitchesPerFrame = Math.max(maxSwitchesPerFrame, AnazhRealm.ANKUNFT_TAKT.bau);
         this._buendelAnkerPruefen(pm); // DIE REIHE NACH ABSTAND (1310-9): neu nur beim Anker-Wechsel
         const archs = this.state.architectures;
@@ -259,8 +259,7 @@ class AnazhRealm_siedlung_bauten {
     }
 
     // DIE WACHE DER STUFEN (`_tickArchitectureLOD`): je Epoche — der Bestand (`state.architectures`), die Grenzen der Bäume
-    // (`_stufenSchirm`), der Schirm der Bau-Grenzen und der Stand des Wunschs (Buch, Wahrnehmung, Regler, die Ankunft aus der
-    // Ferne: solange sie misst, schläft keiner) — die wachen Einträge (`wach`) und die schlafenden in Eimern
+    // (`_stufenSchirm`), der Schirm der Bau-Grenzen und der Stand des Wunschs (Buch, Wahrnehmung, Regler) — die wachen Einträge (`wach`) und die schlafenden in Eimern
     // des Wegs (`eimer`: Eimer b weckt, sobald der Weg `odo` b · CULL_EIMER_M erreicht; `_stufeEimer` am Eintrag nennt seinen
     // Eimer, −1 den Abbau; wer auf eine Zusage wartet, schläft auf ihr und in seinem Eimer). Der Weg zählt den weiteren der Wege beider Enden der Strecke, die das Auge binnen des Vorlaufs
     // fährt (`_bedarfAbstand` misst zu ihr: kein Punkt der Strecke ging weiter). Eine neue Epoche weckt alle.
@@ -384,12 +383,11 @@ class AnazhRealm_siedlung_bauten {
     // DER SPIELRAUM DER STUFE (m): wie weit der Abstand `dist` eines Eintrags wandern darf, ehe seine Wahl anders urteilen kann
     // — der Abstand zur nächsten Grenze, die sie liest: die Grenzen der Art samt Hysterese (hinein und zurück), beim Baum die
     // Ränder des Bands der Maske (`_lodBandPartnerFor`, die Blatt-Kappe an der L0) in Wahrnehmungs-Metern, und der Rand der
-    // Verdeckung (`OCCLUSION.occDist`). −1: der Eintrag bleibt wach (die Ferne misst, sein Abstand ist nicht bestätigt, er ist
-    // Brücke oder im Vorlauf, die Verdeckung urteilt über ihn). Die Ränder des Bands misst `distAuge` (das Auge der Maske,
-    // w22-pop-heil), die Grenzen der Wahl `dist` (die Bahn).
+    // Verdeckung (`OCCLUSION.occDist`). −1: der Eintrag bleibt wach (sein Abstand ist nicht bestätigt, er ist Brücke, die
+    // Verdeckung urteilt über ihn). Die Ränder des Bands misst `distAuge` (das Auge der Maske, w22-pop-heil), die Grenzen
+    // der Wahl `dist` (die Bahn).
     _archStufeSpiel(entry, dist, visH, grenzen, wahl, occlOn, distAuge = dist) {
-        if (entry._lodAmAbstand !== true || entry._bruecke || this._imStufenVorlauf(entry)) return -1;
-        if (this._ankunftsFerne() > 1) return -1;
+        if (entry._lodAmAbstand !== true || entry._bruecke) return -1;
         const O = AnazhRealm.OCCLUSION;
         if (occlOn && wahl < 2 && dist > O.occDist) return -1;
         let spiel = occlOn ? Math.abs(dist - O.occDist) : Infinity;
@@ -468,21 +466,15 @@ class AnazhRealm_siedlung_bauten {
         // Die BRÜCKE trägt keinen Hysterese-Zustand: ihre Stufe 2 ist die gedockte Karte, nicht die Wahl. Mit ihr als
         // Zustand blieb die Wahl im Band [thresh12 − hyst, thresh12] (22,6–26 m) auf 2, die Brücke löste sich als
         // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
-        // DIE GRENZEN DES GESETZBUCHS (K43): nennt die Art ihre Stufen-Grenzen (B2c `ab`), wählt der Takt nach ihnen — in
-        // der Ankunft aus der Ferne (`_ankunftsFerne`, B2) die Grobstufe
-        // DIE FERNE IST KEIN ZUSTAND (w4-genesis-tore): die Hysterese hält eine Stufe gegen das Zittern eines BEWEGTEN Auges —
-        // sie gilt nur für eine Stufe, die die Wahl am echten Abstand bestätigt hat (`_lodAmAbstand`). Was die Ankunft setzte
-        // (der Kalt-Schätzer `_foundryLodForEntry` und jede Wahl, solange die Ferne > 1 misst), wählt danach am Abstand ohne
-        // Zustand, bis die Stufe steht. Bis hier hielt das Band der Grobstufe (12 m ± 10 %) jedes Ring-Tor in 11 m auf der L2
-        // der Ankunft — für immer (Genesis Ego: 7 von 7 Studio-Toren L2, 20 px Umriss-Fehler; die Wahl am Abstand ist die L1).
-        // Dieselbe Klasse am Baum: was im Band seiner Schwelle stand, hielt die Karte der Ankunft.
-        const ferne = this._ankunftsFerne();
-        if (ferne > 1) entry._lodAmAbstand = false;
+        // DIE GRENZEN DES GESETZBUCHS (K43): nennt die Art ihre Stufen-Grenzen (B2c `ab`), wählt der Takt nach ihnen
+        // DIE ERSTE STUFE IST KEIN ZUSTAND (w4-genesis-tore): die Hysterese hält eine Stufe gegen das Zittern eines BEWEGTEN
+        // Auges — sie gilt nur für eine Stufe, die die Wahl am echten Abstand bestätigt hat (`_lodAmAbstand`). Was der
+        // Kalt-Schätzer `_foundryLodForEntry` setzte, wählt danach am Abstand ohne Zustand, bis die Stufe steht.
         const zustand = entry._lodAmAbstand === true ? entry._lodLevel : undefined;
         const grenzen = treeLike ? null : this._archStufenGrenzen(entry);
         let newLOD = grenzen
             ? AnazhRealm._stufeNachGrenzen(
-                  dist * ferne,
+                  dist,
                   zustand,
                   grenzen,
                   Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
@@ -529,10 +521,8 @@ class AnazhRealm_siedlung_bauten {
             this._lodSlotOcclusionRefresh(entry);
             z.regung++;
         }
-        // DER STUFEN-VORLAUF (`_stufenVorlaufWahl`): unter dem Ladeschirm trägt der Baum seiner Art die L1
-        if (this._imStufenVorlauf(entry)) newLOD = 1;
-        // steht der Eintrag auf der Wahl am Abstand (ohne Ferne), ist seine Stufe ab jetzt ein Zustand der Hysterese
-        if (ferne <= 1 && newLOD === entry._lodLevel) entry._lodAmAbstand = true;
+        // steht der Eintrag auf der Wahl am Abstand, ist seine Stufe ab jetzt ein Zustand der Hysterese
+        if (newLOD === entry._lodLevel) entry._lodAmAbstand = true;
         if (newLOD === entry._lodLevel) {
             // Die Distanz-Wahl ist selbst die Karte: die Brücke ist keine mehr, die Karte blendet wie jede Fernstufe.
             if (entry._bruecke) {
@@ -763,7 +753,6 @@ class AnazhRealm_siedlung_bauten {
                 desired = this._foundryLodBandPartner(entry, dist);
                 if (desired === undefined) return false; // die Höhen-Stufe lädt: das Band bleibt, wie es ist
                 if (desired === entry._lodLevel) desired = null; // defensiv: Partner nie == Primär
-                if (this._imStufenVorlauf(entry)) desired = null; // der Vorlauf hält seine L1 voll, ohne Partner
             }
         }
         const cur = Number.isFinite(entry && entry._lodBandLevel) ? entry._lodBandLevel : null;

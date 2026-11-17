@@ -1121,7 +1121,7 @@ class AnazhRealm_vegetation_streu {
     _tickScatterLod(playerPos, maxRealloc = 4, maxScan = 160) {
         const map = this.state.scatterRegions;
         if (!map || !playerPos) return 0; // eine leere Karte geht durch die Wache (Runde 0), nie an ihr vorbei
-        // in der Ankunft (vor dem Weltbild: aus der Ferne, dann am Abstand) folgt der Fernwald im selben Schritt wie die Bauten
+        // in der Ankunft (vor dem Weltbild) folgt der Fernwald im selben Schritt wie die Bauten
         if (!this.state._weltbildDa) {
             maxRealloc = Math.max(maxRealloc, AnazhRealm.ANKUNFT_TAKT.streu);
             maxScan = Math.max(maxScan, AnazhRealm.ANKUNFT_TAKT.streuScan);
@@ -1158,7 +1158,7 @@ class AnazhRealm_vegetation_streu {
         const Z = this._streuLodZusagen || (this._streuLodZusagen = new Map());
         // DIE EPOCHE DER GEMERKTEN WAHL: was eine ruhige Zelle außer ihrem Abstand liest — der Stand des Wunschs (Buch,
         // Wahrnehmung, Regler, Ankunft), der Ort-Same, der Wald-Plan, die Grenzen der Bäume und des Felds (je Schirm), die
-        // Referenz der Wahrnehmung, das Band und die Streckung der Ankunft; eine neue Epoche lässt jede Zelle neu urteilen
+        // Referenz der Wahrnehmung und das Band; eine neue Epoche lässt jede Zelle neu urteilen
         this._stufenSchirm();
         const rv = [
             this._standStempelWunsch(),
@@ -1168,7 +1168,6 @@ class AnazhRealm_vegetation_streu {
             this._feldGrenzen(false),
             this.state.lodRef,
             this.state.foundryCrossfade === true,
-            this._ankunftsFerne(),
             this._foundryEnabled(),
         ];
         let ruh = this._streuRuh;
@@ -1828,7 +1827,7 @@ class AnazhRealm_vegetation_streu {
     // `vLodD = camDist·min(uLodRef/(aH0·instScale),1)`): min(lodRef/visHeight, 1) — ein größerer Baum schaltet später, ein
     // kleiner nie früher als nominal; die Schwellen, gegen die sie misst, legt das Gesetz des Schirms (`_stufenSchirm`). Kein
     // Regler-Term (lod.K5): bis w3v-lod dehnte die Laub-Dichte des Reglers sie bis ×1,3 — unter Last schalteten alle früher,
-    // die Stufe folgte der Bildrate. Allein die Ankunft aus der Ferne (`_ankunftsFerne`, B2) streckt sie bis zum ersten Bild.
+    // die Stufe folgte der Bildrate.
     _lodPerceptionDistance(rawDist, visHeight) {
         const cfg = AnazhRealm.LOD_DISTANCES;
         if (!cfg) return rawDist;
@@ -1845,7 +1844,7 @@ class AnazhRealm_vegetation_streu {
         const stretchMax = cfg.visStretchMax;
         const h = Math.min(hRaw, lodRef * stretchMax);
         const heightFactor = Math.min(lodRef / Math.max(h, 1e-4), 1);
-        return rawDist * heightFactor * this._ankunftsFerne();
+        return rawDist * heightFactor;
     }
 
     // DAS GESETZ DES WECHSELS (lod.K5, `AnazhRealm._wechselGesetz`): eine Stufe gilt ab dem Abstand, an dem ihr Kanten-Versatz

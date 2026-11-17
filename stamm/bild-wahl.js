@@ -159,7 +159,6 @@ class AnazhRealm_bild_wahl {
                 an: false,
                 ex: 0,
                 ez: 0,
-                perf: 1,
                 ref: 1,
                 kanten: null,
                 halt: 0,
@@ -191,14 +190,13 @@ class AnazhRealm_bild_wahl {
         // hält über die Stufen der Sonne, solange die Drehung des Lichts seit der Wahl jeden Schatten um weniger als die
         // Hälfte davon verschiebt (`_passLageHaelt`); die gehaltene Lage wählt mit dem Rand ihres Ankers weiter
         L.licht = L.fit ? PW.lichtRandTexel * L.fit.texelMin : 0;
-        // DIE BLENDE: die LIVE-Uniforms, die jede Maske liest (dasselbe Auge, derselbe Perf-Streck), und die Kanten des
+        // DIE BLENDE: die LIVE-Uniforms, die jede Maske liest (dasselbe Auge, derselbe Bezug), und die Kanten des
         // Fensters aus dem EINEN Blend-Gesetz (`_blendeKanten`, je Band-Satz einmal).
         const lu = this.state.lodUniforms;
-        L.an = !!(lu && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5 && lu.uLodAuge && lu.uLodPerf);
+        L.an = !!(lu && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5 && lu.uLodAuge && lu.uLodRef);
         if (L.an) {
             L.ex = lu.uLodAuge.value.x;
             L.ez = lu.uLodAuge.value.z;
-            L.perf = lu.uLodPerf.value;
             L.ref = lu.uLodRef.value;
             const d0 = lu.uLodD0.value,
                 d1 = lu.uLodD1.value,
@@ -285,7 +283,7 @@ class AnazhRealm_bild_wahl {
     // Auflösung (TRAA verschiebt die Projektion je Frame um einen halben Pixel, die Elemente 8 und 9 einer Perspektive — den
     // Rand dafür trägt `sichtRand`), das Auge, die Drehung der Kamera (die Licht-Kacheln der Höhlen-Sicht lesen sie), im
     // Kaskaden-Pass die Wahl-Scheibe (`fit.ebenen`, `zb`, `saum`, die Licht-Basis) und das Licht, dazu die Blende (Auge der
-    // Maske, Perf-Streck, Bezug, die Kanten des Blend-Gesetzes). Sie STEHT gegen den Anker der letzten Wahl dieses Passes
+    // Maske, Bezug, die Kanten des Blend-Gesetzes). Sie STEHT gegen den Anker der letzten Wahl dieses Passes
     // (haupt · k<i> · anders), solange jede Richtung gleich ist (bis auf die Rundung, 1e-9) und jeder Ort — das Auge, jede
     // Ebene, der Boden der Kaskaden-Box — um höchstens `haltM` gewandert ist: das Auge der Spiel-Kamera atmet im Stand um
     // Millimeter, die Kaskaden-Box steigt mit ihm. Den Halt trägt das Gesetz als Rand (`L.halt` in `_passTrifft`). Eine
@@ -359,7 +357,7 @@ class AnazhRealm_bild_wahl {
         s[66] = L.an ? 1 : 0;
         s[67] = L.an ? L.ex : 0;
         s[68] = L.an ? L.ez : 0;
-        s[69] = L.an ? L.perf : 0;
+        // 69 ist frei (bis w28-ankunft-block der Streck der Ankunft aus der Ferne)
         s[70] = L.an ? L.ref : 0;
         s[71] = K ? K.d0 : 0;
         s[72] = K ? K.d1 : 0;
@@ -497,9 +495,9 @@ class AnazhRealm_bild_wahl {
         return this._blendeHaelt(a, s, anker);
     }
 
-    // HÄLT DIE BLENDE (66…74) gegen ihren Anker? Ihr Auge (das Auge jeder Maske, `uLodAuge` in XZ — 67, 68) ist ein Ort der
+    // HÄLT DIE BLENDE (66…68, 70…74) gegen ihren Anker? Ihr Auge (das Auge jeder Maske, `uLodAuge` in XZ — 67, 68) ist ein Ort der
     // Lage wie das Auge der Kamera: es hält nach dem Gesetz des Halts, höchstens den halben Halt vom Anker (`_wahlHaelt` gegen
-    // haltM); an, Perf-Streck, Bezug und die Kanten des Blend-Gesetzes gleich. Das Fenster jeder Wahl trägt den Halt als
+    // haltM); an, Bezug und die Kanten des Blend-Gesetzes gleich. Das Fenster jeder Wahl trägt den Halt als
     // Rand (`_instanzFenster`), und unter der gehaltenen Lage urteilt jeder Leser vom Auge des Ankers (`_passLageGen`).
     // Gegenprüfung 07.10.: der Vergleich war exakt — eine zweite Signatur neben dem Halt-Gesetz; atmete das Auge ±1 mm
     // quer (die Kamera hielt), wählte jeder Pass in jedem Frame jede Wahl neu (gate:sicht-arbeit, atmendes Auge: 14 999
@@ -508,7 +506,7 @@ class AnazhRealm_bild_wahl {
     _blendeHaelt(a, s, anker) {
         if (s[66] !== a[66]) return false;
         if (!this._aufStrecke(s[67] - a[67], 0, s[68] - a[68], anker.blende)) return false;
-        for (let i = 69; i < 75; i++) if (s[i] !== a[i]) return false;
+        for (let i = 70; i < 75; i++) if (s[i] !== a[i]) return false;
         return true;
     }
 
@@ -854,14 +852,14 @@ class AnazhRealm_bild_wahl {
             aus.set([d.x, d.y, d.z, 1, f.saum + 2 * L.halt + L.licht, 0, 0, 0], 60);
         }
         // DAS FENSTER DER STUFE (w25-gpu-wahl): der Rand der Blende (`haltBlende`), ob die Maske gilt (`L.an`), die Kanten des EINEN Blend-Gesetzes
-        // (`_blendeKanten`, eine offene Kante als größte Zahl) und die Blende — das Auge der Maske, Perf-Streck, Bezug
+        // (`_blendeKanten`, eine offene Kante als größte Zahl) und die Blende — das Auge der Maske und der Bezug
         // eine Lage ohne ihn ist ein Bruch, nie ein stilles NaN im Fenster (z327: eine von Hand gebaute Lage trug nur `halt`)
         if (typeof L.haltBlende !== "number")
             throw new Error("_wahlLage: die Lage trägt keinen Rand der Blende (`haltBlende`)");
         [aus[65], aus[66]] = [L.haltBlende, L.an ? 1 : 0];
         const K = L.an ? L.kanten : null;
         aus.set(K ? [K.l0Aus, K.l1Ein, K.l1Aus, K.karteEin].map((x) => Math.min(x, 1e30)) : [0, 0, 0, 0], 68);
-        aus.set(L.an ? [L.ex, L.ez, L.perf, L.ref] : [0, 0, 0, 0], 72);
+        aus.set(L.an ? [L.ex, L.ez, L.ref, 0] : [0, 0, 0, 0], 72);
         return aus;
     }
 
@@ -912,7 +910,7 @@ AnazhRealm.PASS_WAHL = Object.freeze({
     weg: Object.freeze({ zeitS: 0.5, wegMax: 12, querM: 0.25, lotM: 0.5, drehRad: 0.05, kaskadeAb: 10 }),
 });
 // die Felder, die die Lage des Auges mit der des Wegs teilt (`_passWahlLage`): Ebenen, Kapsel, Licht und Blende dieses Passes
-AnazhRealm.LAGE_GETEILT = Object.freeze(["fr", "ax", "ay", "az", "rand", "halt", "haltBlende", "dreh", "fit", "dir", "licht", "an", "ex", "ez", "perf", "ref", "kanten"]); // prettier-ignore
+AnazhRealm.LAGE_GETEILT = Object.freeze(["fr", "ax", "ay", "az", "rand", "halt", "haltBlende", "dreh", "fit", "dir", "licht", "an", "ex", "ez", "ref", "kanten"]); // prettier-ignore
 // die Drehung der Licht-Basis im Abdruck einer Lage (`_wahlAbdruck`): die Elemente ihrer 3 × 3
 AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // DAS GESETZ DER PASS-WAHL AUF DER GPU (`_passTrifft` für die Kugel, h = 0; `_instanzWahlGpu`): je Instanz eines Auftrags
@@ -925,7 +923,7 @@ AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // ordnete sich je Bild anders (Spike w25: die Pop-Treue brach um 109–128 Bytes, zwei Aufnahmen derselben Pose wichen ab).
 // DAS FENSTER DER STUFE (`__wahlFenster`, `_wahlFenster`): behält die Maske der Blende vom Auge auf der Instanz etwas? Das Maß
 // je Instanz aus dem Speicher der Arena (`aH0`/`aH0L`, die Karte `aKarte`: Höhe, Halbbreite, ±Sichthöhe), die Distanz vom Auge
-// der Maske zum Ursprung der Instanz in XZ × Perf × min(Bezug/Sichthöhe, 1), mit dem Halt als Rand — und das Urteil an den
+// der Maske zum Ursprung der Instanz in XZ × min(Bezug/Sichthöhe, 1), mit dem Halt als Rand — und das Urteil an den
 // Kanten des EINEN Blend-Gesetzes (`_blendeKanten` → `_blendeBehaelt`, dieselbe Folge der Bedingungen; die Kanten trägt die
 // Lage). Die Karte wählt ihr Quad auf der Stammachse als Kugel. Das Fenster gilt je Pass-Art (Hauptbild · Kaskade).
 // DIE NÄHE (Art 5, `_bestandFamilie`: die Nah-Wiese und die Nah-Streu): ein toter Platz (Element 11 < 0) fällt, sonst trägt
@@ -967,16 +965,16 @@ fn haelt(art: u32, sLo: f32, sHi: f32, lLo: f32, lHi: f32) -> bool {
 fn fenster(art: u32, i: u32, m: mat4x4f) -> bool {
     let B = lage.blende;
     let d = length(vec2f(m[3].x - B.x, m[3].z - B.y));
-    let lo = max(0.0, d - lage.saum.y) * B.z;
-    let hi = (d + lage.saum.y) * B.z;
+    let lo = max(0.0, d - lage.saum.y);
+    let hi = d + lage.saum.y;
     if (art == 4u) {
         let s = karte[i].w;
-        let k = min(B.w / max(abs(s), 1e-3), 1.0);
+        let k = min(B.z / max(abs(s), 1e-3), 1.0);
         return s < 0.0 || haelt(art, lo * k, hi * k, lo * k, hi * k);
     }
     let hl = h0l[i];
-    let kS = min(B.w / max(h0[i], 1e-3), 1.0);
-    let kL = min(B.w / max(abs(hl), 1e-3), 1.0);
+    let kS = min(B.z / max(h0[i], 1e-3), 1.0);
+    let kL = min(B.z / max(abs(hl), 1e-3), 1.0);
     return hl < 0.0 || haelt(art, lo * kS, hi * kS, lo * kL, hi * kL);
 }
 fn behalten(a: Auftrag, i: u32, j: u32) -> bool {

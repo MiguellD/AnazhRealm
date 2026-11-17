@@ -550,7 +550,7 @@ async function leibWiese(arg) {
     try {
         await r._foundryAwaitBook(45000);
         out.fehlt = await L.hin(arg.x, arg.z, 60000);
-        // ab dem Weltbild wählt der Stamm jede Stufe am Abstand (`_ankunftsFerne` 1): die Häuser der Wiese und der Gang (K4)
+        // der Stamm wählt jede Stufe am Abstand: die Häuser der Wiese und der Gang (K4)
         // messen die angekommene Welt
         out.haeuser = [];
         for (const [typ, dx, dz] of [

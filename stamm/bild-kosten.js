@@ -625,10 +625,10 @@ class AnazhRealm_bild_kosten {
                 // WER NICHT ZEICHNET, ARBEITET NICHT (Gebot 7): ein Objekt ohne Instanz baut, frischt und zieht nichts, eines,
                 // dessen Pipeline noch im Bau steht, läuft durch keinen Knoten (`zeichne`) — kein Zug der Szenen-Tiefe, kein
                 // Schatten, keine Kopie ohne Draw (der leere Welt-March zog das Tiefen-Abbild je Frame: ziel-zensus OHNE LESER)
-                // — außer im VORBAU des Stufen-Vorlaufs (`_stufenVorlaufWahl`): unter dem Ladeschirm baut eine Arena, deren Form
-                // steht, ihr Programm auch in dem Pass, in den gerade keine ihrer Instanzen fällt, ohne Draw. Jede Kaskade rendert
-                // in ihr eigenes Ziel (der Schlüssel trägt den Render-Kontext): der Vorlauf-Baum in 30 m fällt in keine nahe — kam
-                // er im Gang näher, kompilierte sie dort kalt. Seit w4-b-knoten baut er nach dem Bild (`_vorbauWahl`).
+                // — außer im VORBAU nach dem Bild (`_vorbauWahl`): eine Arena, deren Form steht, baut ihr Programm auch in dem
+                // Pass, in den gerade keine ihrer Instanzen fällt, ohne Draw. Jede Kaskade rendert in ihr eigenes Ziel (der
+                // Schlüssel trägt den Render-Kontext): ein Baum in 30 m fällt in keine nahe — käme er im Gang näher, kompilierte
+                // sie dort kalt.
                 // DER GAST DER BEDIENUNG (spielgang.K3, `_vorbauBedienung`): was die nächste Eingabe zeigen wird (der Geist eines
                 // Hotbar-Bauplans, der Leib einer Seele), baut hier vorab ohne Draw wie die Arena — nach dem Bild, unter der Frist
                 // des Render-Aufrufs und nur, wenn die Eingabe ruht (`_eingabeRuht`); der Klick findet Knoten und Pipeline vor.

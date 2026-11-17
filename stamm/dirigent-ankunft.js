@@ -844,22 +844,14 @@ class AnazhRealm_dirigent_ankunft {
                     (taeter.length ? ` Täter: ${taeter.join(" · ")}` : ""),
                 "WARN"
             );
-        } else if (this._fernbildVoraus()) {
-            // DAS BILD AUS DER FERNE STEHT (B2, `_fernbildDa`): jedes Ding im Blick trägt seine billigste ganze Stufe — der
-            // Schirm bleibt, ab jetzt wählt jedes seine Stufe am Abstand und die Lücken zählen sie (`_stufeOffen`). Bis hier
-            // wich er hier, und die Kronen glitten über 90 Bilder unter der Hand des Spielers von der Karte zu ihrer Stufe
-            // (ankunft.K2, Radeon kalt 8ef49bef: 2,86 % Lücke, 85 % davon in den Kronen der drei nahen Laubbäume). Radeon kalt
-            // ABAB je 3 Läufe: Lücke 1,17–3,03 → 0,02–0,04 %, t(Kontrolle) kalt 11,6–15,6 → 11,8–12,5 s (5322b4d2).
-            st._fernbildDa = performance.now();
-            return false;
         }
         this._weltbildSteht();
         return true;
     }
 
     // DER TÄTER EINER LÜCKE beim Namen (Gebot 10): das erste Ding, das sie offen hält (`zeuge` aus `_weltbildLuecken`) — seine Art,
-    // Stufe und Abstand und warum es hält: ungebaut (keine Instanz, kein Mesh), vor seiner Stufe am Abstand (nach dem Bild aus der
-    // Ferne) oder eine Stufe, deren Arena weder zeichnete noch vorbaute (`_stufeOffen`, ihr Schlüssel). null ohne Zeugen.
+    // Stufe und Abstand und warum es hält: ungebaut (keine Instanz, kein Mesh), vor seiner Stufe am Abstand oder eine Stufe,
+    // deren Arena weder zeichnete noch vorbaute (`_stufeOffen`, ihr Schlüssel). null ohne Zeugen.
     _lueckeTaeter(l) {
         const e = l && l.zeuge;
         // der Wartende des Bilds (`_bildWartet`, der Term „zeichnung"): sein Objekt, sein Stoff, das Etikett seiner Pipeline
@@ -868,7 +860,7 @@ class AnazhRealm_dirigent_ankunft {
         const p = this.state.playerMesh ? this.state.playerMesh.position : e.position;
         const wer = `${this._foundryPresetForEntry(e) || e.type} L${e._lodLevel} in ${Math.round(Math.hypot(e.position.x - p.x, e.position.z - p.z))} m`;
         if (!this._archIsRendered(e)) return `${wer} ungebaut`;
-        if (!this._imStufenVorlauf(e) && e._lodAmAbstand !== true) return `${wer} vor seiner Stufe am Abstand`;
+        if (e._lodAmAbstand !== true) return `${wer} vor seiner Stufe am Abstand`;
         const E = this._erstZeichnung;
         const G = this.state.archInstanceGroups;
         const offen = (e.instSlots || [])
@@ -876,11 +868,11 @@ class AnazhRealm_dirigent_ankunft {
             .filter(([, g]) => g && g.mesh.layers.mask & 1)
             .filter(([, g]) => !(g.mesh.__arena && E && this._arenaImBild(E, g.mesh.__arena)))
             .map(([k]) => k);
-        return `${wer} ${this._imStufenVorlauf(e) ? "im Stufen-Vorlauf" : "auf seiner Stufe"}, ${offen.length ? "Arena ohne Programm: " + offen.join(", ") : "wartet auf das Bild nach seinen Arenen"}`;
+        return `${wer} auf seiner Stufe, ${offen.length ? "Arena ohne Programm: " + offen.join(", ") : "wartet auf das Bild nach seinen Arenen"}`;
     }
 
     // Der EINE Schreiber des ersten Weltbilds: seine Zeit (`_weltbildDa`, ab Navigation — gate:boot-stage liest sie), das
-    // Ereignis für jeden Wartenden (`_weltbildKommt`), dann weicht der Ladeschirm — über der Stufe am Abstand (`_fernbildDa`).
+    // Ereignis für jeden Wartenden (`_weltbildKommt`), dann weicht der Ladeschirm — über der Stufe am Abstand (`_stufeOffen`).
     _weltbildSteht() {
         const st = this.state;
         st._weltbildDa = performance.now();
@@ -901,95 +893,27 @@ class AnazhRealm_dirigent_ankunft {
         if (this.state._deferredAvatarSoul) this._ofenSpielerVorlagen();
     }
 
-    // DIE ANKUNFT AUS DER FERNE (B2, die EINE Zahl der Ankunfts-Stufe): bis das Bild aus der Ferne steht (`_fernbildDa`), misst
-    // jede Stufen-Wahl jedes Ding, als stünde der Spieler ANKUNFT_FERNE-mal weiter weg — der Baum trägt seine Karte (die
-    // Höhen-Stufe L1 und der Bake, nie die L0), der Bau seine Grobstufe (die L2 und ihr Wurf): dieses Bild wartet auf keine
-    // feinere Stufe als die billigste ganze. Danach misst sie am Abstand (1), noch unter dem Ladeschirm: jede Baum-Gestalt
-    // verfeinert durch ihr bestehendes Band (Lehre 26), der Bau nach seinen Grenzen, und das erste Weltbild steht erst über
-    // der Stufe am Abstand (`_stufeOffen`). Bis ankunft.K2 glitt der Faktor erst nach dem Weltbild über 90 gezeichnete Bilder
-    // auf 1 — der Spieler hielt die Kontrolle über Kronen mitten im Band-Wechsel. Die Ferne ist kein Zustand der Hysterese
-    // (`_archStufeUrteil`, w4-genesis-tore): was sie setzte, wählt danach am Abstand — das Ring-Tor in 11 m trägt seine L1, nie
-    // die L2 der Ankunft. Zwei Leser, EINE Zahl: die Wahrnehmungs-Distanz der Karten-Arten (`_lodPerceptionDistance`, CPU-Wahl
-    // UND Shader-Maske `uLodPerf`) und die Grenzen der Bauten (`_tickArchitectureLOD`, `_foundryLodForEntry`). Ohne
-    // Studio-Welt trägt keine Karte: 1.
-    _ankunftsFerne() {
-        const st = this.state;
-        return !st._weltbildDa && !st._fernbildDa && this._foundryEnabled() ? AnazhRealm.ANKUNFT_FERNE : 1;
-    }
-    // Steht das Bild aus der Ferne noch aus? Unter dem Ladeschirm, solange jede Stufen-Wahl die Ferne misst — die EINE Frage für
-    // den Schritt in `_ankunftsBild` und den Term „zeichnung" (`_weltbildLuecken`); der Null-Renderer kennt die Stufe nicht.
-    _fernbildVoraus() {
-        return this._ankunftsFerne() > 1 && this._ladeTakt();
-    }
-
-    // DER STUFEN-VORLAUF (profiband K4 „keine Hänger", Hänger-Linse 25.10.) — das Gegenstück der Ferne: unter dem Ladeschirm
-    // trägt je Karten-Art der nächste Baum im ersten Blick seine L1 (die Höhen-Stufe, die seine Karte schon dockte), voll
-    // gehalten und ohne Band-Partner, damit das Programm jeder Stufen-Arena in jedem Pass entsteht, bevor der Spieler die
-    // Kontrolle hat. Befund headless (Mess-Wiese, `haenger 60 --wandern bahn`, 4 von 4 Sitzungen): der EINE einmalige Auftrag
-    // im Gang war der kalte Programm-Schlüssel der Tannen-Arena (1–2 Knoten-Bauten Σ 52–158 ms, 2–4 Shader-Module, 1–2
-    // Pipelines); die Radeon (loadScale 0,01–0,06) trifft die L1-Grenze erst im Gang — je Sitzung EIN GPU-Hänger 200–243 ms —,
-    // die GTX (0,29–0,57) vor der Messung. Einmal gebaut, bleibt das Programm der Sitzung (`_renderObjekteLoesen`: der
-    // Knoten-Bau gehört seinem Schlüssel, die Pipeline dem Cache). Die Wahl läuft je Lade-Bild mit den Lücken
-    // (`_weltbildLuecken`), der Baum hält das Bild als wachsender („bauten"), bis seine Arenen zeichneten (`_stufeOffen`);
-    // die Kaskaden, deren Box er nicht trifft, baut der Vorbau der Erst-Zeichnung nach dem Bild (`_vorbauWahl`). Er trägt seine L1
-    // bis zum Bild aus der Ferne (`_fernbildDa`) — danach wählt er unter dem Ladeschirm am Abstand. Der Null-Renderer baut keine
-    // Programme: dort wählt sie nie.
-    _stufenVorlaufWahl(p, R, imBlick) {
-        const st = this.state;
-        if (st._weltbildDa || st._fernbildDa || !st.renderer || st.renderer._isHeadlessNull) return;
-        const V =
-            this._vorlauf ||
-            (this._vorlauf = {
-                arten: new Map(),
-                eintraege: new WeakSet(),
-                artVon: new Map(),
-                t: 0,
-            });
-        const jetzt = performance.now();
-        if (jetzt - V.t < AnazhRealm.LADE_BILD_MS) return;
-        V.t = jetzt;
-        const best = new Map();
-        for (const e of st.architectures || []) {
-            if (!e || !e.position || !e._lodSpecies || !Number.isFinite(e._lodVariantIndex)) continue;
-            const d2 = (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2;
-            if (d2 > R * R || !imBlick(e.position.x, e.position.z)) continue;
-            if (!V.artVon.has(e._lodSpecies)) {
-                const preset = this._foundryPresetForEntry(e);
-                V.artVon.set(e._lodSpecies, preset && this._foundryPresetIsTree(preset) ? preset : null);
-            }
-            const preset = V.artVon.get(e._lodSpecies);
-            if (!preset || V.arten.has(preset) || (best.has(preset) && best.get(preset).d2 <= d2)) continue;
-            if (this._foundryStufeBereit(e, preset, 1)) best.set(preset, { e, d2 });
-        }
-        for (const [preset, { e }] of best) {
-            V.arten.set(preset, e);
-            V.eintraege.add(e);
-            this._cullWecken(e); // seine Wunsch-Stufe wechselt: schlief er auf einer Zusage (`_schlafen`), fragt er neu
-        }
-        if (best.size) this._bauRegt(); // die Stufen-Wahl geht
-    }
-    _imStufenVorlauf(e) {
-        const st = this.state;
-        return !!this._vorlauf && !st._weltbildDa && !st._fernbildDa && this._vorlauf.eintraege.has(e);
-    }
-    // STEHT DIE STUFE IM BILD? (unter dem Ladeschirm, „bauten" in `_weltbildLuecken`) — der Vorlauf-Baum trägt seine L1, nach
-    // dem Bild aus der Ferne (`_fernbildDa`) jedes Ding, dessen Stufe der Takt wählt (`_archStufeWaehlt`), seine Wahl am Abstand
-    // (`_lodAmAbstand`, `_archStufeUrteil`). Trägt ein Baum dann eine feine Stufe (L0, L1 — seine Karte stand schon im Bild aus
-    // der Ferne), tritt die Probe seines Programms dazu wie beim Vorlauf; ein Bau nicht (ein Fels auf seiner Grobstufe zeichnet nie
-    // im Hauptbild: zacken L2 in 38 m hielt den Schirm bis zur Ruhe-Uhr, Radeon kalt ae066b23). Die Probe: jede seiner Gruppen,
-    // die das Hauptbild sieht, trat in ihre Arena, die Arena zeichnete (`gezeichnet` der Erst-Zeichnung) ODER fand sich ohne
-    // Draw (`_arenaImBild`: keine ihrer Instanzen fällt in den Kegel der Kamera — ihr Vorbau ist vorgemerkt und baut nach dem
-    // Bild), und danach lief ein weiteres Bild auf dieser Stufe (die GPU-Leine zählt sie): in ihm zeichnete jede Kaskade, in die
-    // er wirft — ein Wurf-Teil (Ebene 0 aus) lebt nur in den Kaskaden. Befund b-ankunft (Radeon kalt, main 8f1802b1, 4 von 4 Läufen): die Rinde der Birke in 31 m am Rand des Blicks
-    // zeichnete nie, ihr Programm stand vorgebaut — der Baum hielt das Bild, bis die Ruhe-Uhr nach 15 s laut wich (das halbe
+    // STEHT DIE STUFE IM BILD? (unter dem Ladeschirm, „bauten“ in `_weltbildLuecken`) — jedes Ding, dessen Stufe der Takt wählt
+    // (`_archStufeWaehlt`), trägt seine Wahl am Abstand (`_lodAmAbstand`, `_archStufeUrteil`). Trägt ein Baum eine feine Stufe (L0,
+    // L1), tritt die Probe seines Programms dazu; ein Bau nicht (ein Fels auf seiner Grobstufe zeichnet nie im Hauptbild: zacken L2
+    // in 38 m hielt den Schirm bis zur Ruhe-Uhr, Radeon kalt ae066b23). Die Probe: jede seiner Gruppen, die das Hauptbild sieht, trat
+    // in ihre Arena, die Arena zeichnete (`gezeichnet` der Erst-Zeichnung) ODER fand sich ohne Draw (`_arenaImBild`: keine ihrer
+    // Instanzen fällt in den Kegel der Kamera — ihr Vorbau ist vorgemerkt und baut nach dem Bild), und danach lief ein weiteres Bild
+    // auf dieser Stufe (die GPU-Leine zählt sie): in ihm zeichnete jede Kaskade, in die er wirft — ein Wurf-Teil (Ebene 0 aus) lebt
+    // nur in den Kaskaden. Befund b-ankunft (Radeon kalt, main 8f1802b1, 4 von 4 Läufen): die Rinde der Birke in 31 m am Rand des
+    // Blicks zeichnete nie, ihr Programm stand vorgebaut — der Baum hielt das Bild, bis die Ruhe-Uhr nach 15 s laut wich (das halbe
     // Weltbild). Ohne Arena (WebGL2) zeichnet der Zeichner im Bild.
+    // EIN BILD UNTER DEM SCHIRM, NIE ZWEI (w28-ankunft-block): bis hier baute die Ankunft zuerst ein Bild AUS DER FERNE (B2: jede
+    // Stufen-Wahl × 128, jeder Baum als Karte, jeder Bau auf der Grobstufe, dazu je Karten-Art ein Baum auf seiner L1 im Stufen-
+    // Vorlauf), das kein Spieler sah — der Schirm blieb über ihm —, und erst danach das Bild am Abstand mit seinen Programmen.
+    // Radeon kalt main 7de938ab: das Bild aus der Ferne stand nach 9,57 s (davon 2,1 s allein auf die sechs Vorlauf-Bäume), das
+    // Bild am Abstand bestellte seine letzten neun Programme erst danach (8,9–10,0 s, je 1,5–2,2 s Übersetzung), Weltbild 11,82 s.
+    // Jetzt wählt jedes Ding vom ersten Takt an am Abstand, und das erste Bild wartet auf genau die Stufen, die es zeigt.
     _stufeOffen(e) {
         const st = this.state;
-        const vorlauf = this._imStufenVorlauf(e);
-        if (!vorlauf && !(st._fernbildDa && !st._weltbildDa && this._archStufeWaehlt(e))) return false;
-        if (vorlauf ? e._lodLevel !== 1 : e._lodAmAbstand !== true) return true;
-        if (!e.instSlots || !e.instSlots.length) return vorlauf;
-        if (!vorlauf && !(e._lodSpecies && e._lodLevel <= 1)) return false;
+        if (st._weltbildDa || !this._archStufeWaehlt(e)) return false;
+        if (e._lodAmAbstand !== true) return true;
+        if (!e.instSlots || !e.instSlots.length || !(e._lodSpecies && e._lodLevel <= 1)) return false;
         const L = this._gpuLeine;
         if (AnazhRealm.__arenaOhne || !L) return false;
         const G = st.archInstanceGroups;
@@ -1124,9 +1048,7 @@ class AnazhRealm_dirigent_ankunft {
     // keine wartet auf ihr Asset), keine Karte offen, deren Leser im Blick steht, kein Dorf der Ankunft im Werden (fällig, im
     // Export oder mit Häusern im Blick in der Schlange). Was dahinter liegt, folgt nah zuerst (der Rundblick, gate:ankunft L2a).
     // Jede Lücke hat ihren Leser im ersten Frame; der Vorrat (`_foundryPrefetchLibrary`) hat keinen und hält das Bild nie
-    // (K30: das Tor wartete auf `f._prefetching` — Wagen, Siedlungs-Probe, alle Gestalten des Buchs; kalt 25–30 s). Der
-    // Stufen-Vorlauf (`_stufenVorlaufWahl`) hält es als wachsender Baum: sein Leser ist der erste Schritt in den Wald, je
-    // Karten-Art EIN Baum, gedockt mit seiner Karte.
+    // (K30: das Tor wartete auf `f._prefetching` — Wagen, Siedlungs-Probe, alle Gestalten des Buchs; kalt 25–30 s).
     _weltbildFehlt(rundum) {
         return this._weltbildLuecken(rundum).map((l) => l.satz);
     }
@@ -1208,11 +1130,9 @@ class AnazhRealm_dirigent_ankunft {
         // DAS BILD IST GEZEICHNET (w28-bild-ganz): jeder Term hier zählt, was GESETZT ist — dieser, was das letzte Bild der
         // Welt-Szene zeichnen wollte und nicht zeichnete (`_bildWartet`: sein Knoten-Bau wartet oder seine Pipeline entsteht).
         // Ohne ihn stand das erste Weltbild ohne Karten-Wald, am Zweit-Boot ohne Boden (GTX 1050). Er arbeitet, solange er
-        // offen ist (der GPU-Prozess übersetzt): die Ruhe-Uhr steht, der Deckel bricht beim Namen (`_ankunftsBild`). Er gilt dem
-        // BILD, das der Ladeschirm freigibt: das Bild aus der Ferne davor (`_fernbildVoraus`) ist eine Stufe des Baus — hielte er
-        // sie, entstünden die Programme der Stufen am Abstand erst nach denen der Ferne, eins nach dem andern statt zugleich;
-        // und der Nachlauf (`rundum`) fragt die Welt hinter dem Spieler, dort zeichnet keiner.
-        const wartet = rundum || this._fernbildVoraus() ? { n: 0 } : this._bildWartet();
+        // offen ist (der GPU-Prozess übersetzt): die Ruhe-Uhr steht, der Deckel bricht beim Namen (`_ankunftsBild`). Der
+        // Nachlauf (`rundum`) fragt die Welt hinter dem Spieler, dort zeichnet keiner.
+        const wartet = rundum ? { n: 0 } : this._bildWartet();
         if (wartet.n)
             luecke(
                 "zeichnung",
@@ -1229,7 +1149,6 @@ class AnazhRealm_dirigent_ankunft {
         }
         const p = pm.position;
         const R = Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : 150;
-        this._stufenVorlaufWahl(p, R, imBlick);
         let ungebaut = 0;
         let zeuge = null;
         for (const e of st.architectures || []) {
@@ -1912,10 +1831,6 @@ AnazhRealm.WELTBILD_DECKEL_MS = 60000;
 // Die Ruhe der Eingabe (ms, spielgang.K3): so lange nach der letzten Taste und dem letzten Zeiger-Druck baut kein Vorbau der
 // Bedienung (`_eingabeRuht`).
 AnazhRealm.VORBAU_RUHE_MS = 300;
-// DIE ANKUNFT AUS DER FERNE (B2, `_ankunftsFerne`): bis das Bild aus der Ferne steht (`_fernbildDa`), misst jede Stufen-Wahl
-// so, als stünde der Spieler ANKUNFT_FERNE-mal weiter weg — jedes Ding trägt seine billigste GANZE Stufe (der Baum seine Karte,
-// der Bau seine Grobstufe); danach, noch unter dem Ladeschirm, am Abstand.
-AnazhRealm.ANKUNFT_FERNE = 128;
 // DER BLICK DES ERSTEN BILDS (B3d, `_ersterBlick`): der Rand je Seite über den halben Bildwinkel (Grad), die Kugel um das
 // Auge über den Abstand zum Spieler hinaus (m), der Radius eines Dings (m) und der Schlüssel, den ein Auftrag außer Blick vor
 // dem Bild auf seinem Rang trägt (d², über jeder Welt-Distanz). Der RUNDBLICK (gate:ankunft L2a): gleich nach der Kontrolle

@@ -759,8 +759,7 @@ class AnazhRealm_studio_gestalt {
     // warteten — die Karte selbst ist die Arbeit der GPU, das Fragen war Leerlauf.
     // DER STAND DES WUNSCHS (`wunsch`, w4-b-streu): wer auf seine Zusagen schläft (`_schlafen`), dem bringen sie die Lieferung —
     // ihn weckt nur, was seine Wunsch-Stufe oder Gestalt verschiebt: der Stand-Stempel ohne Regung und Ankunft
-    // (`_standStempelWunsch`), die Gestalt seines Orts und das Auge. Eine Karte und der Vorlauf tragen ihre eigene Zusage bzw.
-    // wecken ihre Einträge selbst (`_stufenVorlaufWahl`).
+    // (`_standStempelWunsch`), die Gestalt seines Orts und das Auge. Eine Karte trägt ihre eigene Zusage.
     _bereitStand(auge, wunsch) {
         const B = wunsch
             ? this._wunschWert || (this._wunschWert = { v: [], id: 0, ax: NaN, az: NaN })

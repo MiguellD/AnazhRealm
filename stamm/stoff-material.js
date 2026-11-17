@@ -3517,7 +3517,7 @@ class AnazhRealm_stoff_material {
                     const _cam = _lu.uLodAuge; // das AUGE, nie die Pass-Kamera (Schattenpass = Kaskaden-Kamera)
                     // xz-Distanz Auge → URSPRUNG der Instanz (`_instanzMitteNode`, Studio `_iw`), nie zum Vertex
                     const _mitte = this._instanzMitteNode(_Tl);
-                    const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_mitte.x), _cam.z.sub(_mitte.y))).mul(_lu.uLodPerf);
+                    const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_mitte.x), _cam.z.sub(_mitte.y)));
                     const _ref = _lu.uLodRef;
                     const _lk = _ref.div(_aH0.max(_Tl.float(1e-3))).min(_Tl.float(1.0));
                     const _lkL = _ref.div(_aH0L.abs().max(_Tl.float(1e-3))).min(_Tl.float(1.0)); // |aH0L|: Vorzeichen = Halt

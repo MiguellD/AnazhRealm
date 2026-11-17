@@ -35,9 +35,6 @@ class AnazhRealm_stoff_karte {
             // dem höchsten Werfer): dort lagen nahe Bäume 145 m „weit", jenseits jeder Stufe, und die Maske
             // verwarf ihre Schatten-Fragmente alle.
             uLodAuge: _T.uniform(new THREE.Vector3()),
-            // DER STRECK der Wahrnehmungs-Distanz (die Ankunft aus der Ferne `_ankunftsFerne`, je Frame gespiegelt; kein Regler,
-            // lod.K5): jede Maske misst die Auge-Distanz × uLodPerf — dieselbe Distanz, nach der die CPU die Stufen legt.
-            uLodPerf: _T.uniform(1),
             // DAS ZIEL DER DURCHSICHT (xyz) und ihr Radius (w), dazu das Auge, für das es gilt (`uKamAuge`: die
             // Stellung der Spieler-Kamera, nie die Kamera einer Sonde): `_kamZielSetzen` aus `_loopCamera`,
             // gelesen von `_kameraDurchsichtNode` (der Sicht-Strahl vom Auge zum Ziel).
@@ -140,16 +137,7 @@ class AnazhRealm_stoff_karte {
             const _lu = this._ensureLodUniforms();
             if (!T || !_lu)
                 throw this._blendeBruch(!T ? "TSL fehlt" : "der LOD-Uniform-Satz fehlt (_ensureLodUniforms)");
-            const _fehlt = [
-                "uLodRef",
-                "uLodMaskOn",
-                "uDitherT",
-                "uLodD0",
-                "uLodD1",
-                "uLodFade",
-                "uLodFade0",
-                "uLodPerf",
-            ]
+            const _fehlt = ["uLodRef", "uLodMaskOn", "uDitherT", "uLodD0", "uLodD1", "uLodFade", "uLodFade0"]
                 .filter((k) => !_lu[k])
                 .concat(
                     ["float", "fract", "screenCoordinate", "cameraProjectionMatrix", "step", "mix"]
@@ -171,9 +159,9 @@ class AnazhRealm_stoff_karte {
                 // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
                 const _dist = opts.distNode;
                 if (!_dist) throw this._blendeBruch("die Karte reicht keine Distanz (opts.distNode)");
-                let _vCD = _dist.mul(_lu.uLodPerf); // derselbe Streck wie die CPU (`_lodPerceptionDistance`)
+                let _vCD = _dist; // dieselbe Distanz wie die CPU (`_lodPerceptionDistance`)
                 if (opts.visHeightNode) {
-                    // × min(uLodRef/Sichthöhe, 1) AUF die gestreckte Distanz — bis 04.10. ersetzte dieser Zweig sie
+                    // × min(uLodRef/Sichthöhe, 1) AUF die Distanz — bis 04.10. ersetzte dieser Zweig sie
                     // durch die rohe: unter Last (Perf ×1,3) blendete die L1 nach der gestreckten Distanz aus, das
                     // Billboard ohne Streck ein, bei 20 m stand der Baum zu 50 % durchsichtig.
                     const _k = _lu.uLodRef.div(opts.visHeightNode.max(T.float(1e-3))).min(T.float(1.0));
@@ -195,10 +183,10 @@ class AnazhRealm_stoff_karte {
             // die Instanz-Größen über den EINEN Leser (`_senkenKnoten().attribut`: in der Wahl am Index der Liste)
             const _aH0 = AnazhRealm._senkenKnoten().attribut("aH0", "float");
             const _aH0L = AnazhRealm._senkenKnoten().attribut("aH0L", "float");
-            // × uLodPerf: dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (`_lodPerceptionDistance`) — vom Auge zum
+            // dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (`_lodPerceptionDistance`) — vom Auge zum
             // URSPRUNG der Instanz (`_instanzMitteNode`), wie das Studio und die CPU, nie zum Fragment.
             const _mitte = this._instanzMitteNode(T);
-            const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y))).mul(_lu.uLodPerf);
+            const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y)));
             const _lk = _lu.uLodRef.div(_aH0.max(T.float(1e-3))).min(T.float(1.0));
             // |aH0L|: das Vorzeichen trägt den HALT (`_lodSlotStamp`), der Betrag die Blatt-Sichthöhe
             const _lkL = _lu.uLodRef.div(_aH0L.abs().max(T.float(1e-3))).min(T.float(1.0));
@@ -707,7 +695,6 @@ class AnazhRealm_stoff_karte {
                 ? {
                       ex: Math.round(auge.x),
                       ez: Math.round(auge.z),
-                      perf: lu.uLodPerf.value,
                       ref: lu.uLodRef.value,
                       kanten: this._blendeK,
                   }
@@ -721,9 +708,9 @@ class AnazhRealm_stoff_karte {
             for (let i = 0; i < n; i++) {
                 const o = i * 16;
                 // das Fenster der Karte (das EINE Blend-Gesetz `_blendeBehaelt`, wie die Wahl der GPU es rechnet, `PASS_WAHL_WGSL`):
-                // der Abstand ihres Ankers vom Auge der Maske × Perf × min(Bezug/Sichthöhe, 1); verdeckt (Sichthöhe < 0) behält sie
+                // der Abstand ihres Ankers vom Auge der Maske × min(Bezug/Sichthöhe, 1); verdeckt (Sichthöhe < 0) behält sie
                 const sicht = ak[i * 4 + 3];
-                const dS = Lm && Math.hypot(a[o + 12] - Lm.ex, a[o + 14] - Lm.ez) * Lm.perf * Math.min(Lm.ref / Math.max(Math.abs(sicht), 1e-3), 1); // prettier-ignore
+                const dS = Lm && Math.hypot(a[o + 12] - Lm.ex, a[o + 14] - Lm.ez) * Math.min(Lm.ref / Math.max(Math.abs(sicht), 1e-3), 1); // prettier-ignore
                 if (Lm && !AnazhRealm._blendeBehaelt(Lm.kanten, "karte", dS, dS, dS, dS, sicht < 0)) continue;
                 const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
                 const c = nadel[Math.floor(ak[i * 4] + 0.5)] ? 1 : laub;

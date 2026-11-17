@@ -848,7 +848,7 @@ hauptLauf(async () => {
                     return alt.call(this, b, off, data, dOff, size);
                 };
                 performance.now = () => p0() + plus;
-                // der Regler hält seine Stufe (die gesprungene Uhr läse er als Bild von 2,5 s und senkte `uLodPerf` — die Lage
+                // der Regler hält seine Stufe (die gesprungene Uhr läse er als Bild von 2,5 s und senkte den Streck der Masken — die Lage
                 // jedes Passes wechselte, kein Stand)
                 const eigen = Object.hasOwn(r, "_nexusPerfActuate");
                 const akt = r._nexusPerfActuate;
