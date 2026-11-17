@@ -1410,17 +1410,30 @@ async function brandSitzungProbe(r, T, o) {
         if ((roi[2] - roi[0]) * (roi[3] - roi[1]) < 100) return { fehler: "der Ausschnitt der Herd-Zelle trägt < 100 Pixel: " + roi.join(",") };
         const LUT = Array.from({ length: 256 }, (_, i) => ((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))(i / 255));
         const Y = {};
+        // die warme Maske des Bilds (1 je Pixel: R ≥ 150, R ≥ 1,3 G, G ≥ 1,15 B) und ihre Zahl
         const warm = (u8) => {
+            const m = new Uint8Array(W * H);
             let n = 0;
             for (let i = 0; i < W * H; i++) {
                 const [R, G, Bl] = [u8[4 * i], u8[4 * i + 1], u8[4 * i + 2]];
-                if (R >= 150 && R >= 1.3 * G && G >= 1.15 * Bl) n++;
+                if (R >= 150 && R >= 1.3 * G && G >= 1.15 * Bl) (m[i] = 1), n++;
             }
+            return { m, n };
+        };
+        // die Pixel, die in a warm und in b nicht warm sind
+        const neuWarm = (a, b) => {
+            let n = 0;
+            for (let i = 0; i < W * H; i++) if (a.m[i] && !b.m[i]) n++;
             return n;
         };
         // DIE FLAMMEN SIND EMISSION (16.11., Radeon b68b59cf: nach dem Regen 0 brennende Zellen und doch +40 „Flammen-Pixel“ — die warme
         // Farb-Regel zählt die besonnte grau-braune Asche mit): je Schuss ein zweites Bild derselben Kamera ohne den Flammen-Satz
         // (`brandFlammenSatz.mesh`, _brandFlammenZeichnen); Flammen = warme Pixel mit − ohne ihn. Ohne Satz steht keine Flamme in der Welt (0).
+        // JE PIXEL, NIE DIE SUMME (17.11., GTX 1050 an aa93757f, die Pose der Station: die warmen Pixel OHNE Satz schwanken von Schuss zu
+        // Schuss 539 ↔ 694 — gelbes Gras im Wind erfüllt die warme Regel, 12 000–20 000 Pixel ändern sich zwischen zwei Schüssen —, die
+        // Flammen trugen +297 / +274 in der Summe, und `max(0, mit − ohne)` schnitt den negativen Fall auf +0: „+0 bei 22 Flammen“ an
+        // beiden Geräten): Flammen = Pixel warm MIT und nicht warm OHNE (`neu`) − dieselbe Zählung zwischen zwei Schüssen OHNE (`rauschen`:
+        // was Gras und Jitter allein so färben), ohne Takt zwischen den drei Schüssen; ohne Satz 0.
         const schuss = async (name) => {
             stellen();
             const { u8 } = await window.__ausgabeAufnahme(W, H);
@@ -1431,21 +1444,24 @@ async function brandSitzungProbe(r, T, o) {
                     L.push(0.2126 * LUT[u8[i]] + 0.7152 * LUT[u8[i + 1]] + 0.0722 * LUT[u8[i + 2]]);
                 }
             const w = warm(u8), S = st.brandFlammenSatz, m = S && S.mesh;
-            let ohne = w;
+            let [neu, rauschen] = [0, 0];
             if (m && m.visible) {
                 m.visible = false;
                 try {
                     stellen();
-                    ohne = warm((await window.__ausgabeAufnahme(W, H)).u8);
+                    const o1 = warm((await window.__ausgabeAufnahme(W, H)).u8);
+                    stellen();
+                    const o2 = warm((await window.__ausgabeAufnahme(W, H)).u8);
+                    [neu, rauschen] = [neuWarm(w, o1), neuWarm(o2, o1)];
                 } finally {
                     m.visible = true;
                 }
             }
             Y[name] = L;
             aus.schuesse.push({ name, url: window.__png(u8, W, H) });
-            return { luma: r3(L.reduce((s, v) => s + v, 0) / Math.max(1, L.length)), warm: w, flammen: Math.max(0, w - ohne) };
+            return { luma: r3(L.reduce((s, v) => s + v, 0) / Math.max(1, L.length)), warm: w.n, neu, rauschen, flammen: neu - rauschen };
         };
-        aus.flammenArt = "emission";
+        aus.flammenArt = "emission-pixel";
         await window.__weltStehtNach(takt, 900);
         aus.vor = await schuss("vor");
         const n0 = (st.worldMeta.taten ||= []).length;
@@ -1490,7 +1506,7 @@ function brandBildLesen(j, lauf) {
     // (Schatten VOR, Sonne ERLOSCHEN), eine ohne Emissions-Flammen zählte die Asche als Flamme — beides urteilt kein Bild
     if (!(e.krone != null && e.krone <= 0.05))
         return { fehler: "der Herd " + (e.herd || []).join(",") + " unter dem Kronendach " + (e.krone == null ? "ungemessen" : e.krone) + " (Soll ≤ 0,05: dasselbe Licht vor und nach dem Brand) · " + ad };
-    if (e.flammenArt !== "emission") return { fehler: "die Flammen im Bild sind keine Emission (warme Pixel zählen die Asche mit) · " + ad };
+    if (!/^emission/.test(e.flammenArt || "")) return { fehler: "die Flammen im Bild sind keine Emission (warme Pixel zählen die Asche mit) · " + ad };
     return { e, ad, hw };
 }
 // same.kopplung.stoerung S1: die Zelle nach dem Brand im Bild dunkler — lineare Luma ERLOSCHEN ÷ VOR ≤ 0,5, die Asche an der Mitte ≥ 0,99
@@ -1511,10 +1527,12 @@ function kaskadeUrteil(j, lauf) {
     const l = brandBildLesen(j, lauf);
     if (l.fehler) return { gruen: false, zahl: l.fehler };
     const { e, ad, hw } = l;
+    // JE PIXEL (brandSitzungProbe, 17.11.): eine Zeile mit der Summe (flammenArt „emission“) vergleicht im Gras-Rauschen — kein Urteil
+    if (e.flammenArt !== "emission-pixel") return { gruen: false, zahl: "die Flammen im Bild als Summe gezählt (warme Pixel mit − ohne, im Rauschen des Grases ±150) — nie je Pixel · " + ad };
     const [fB, fC] = [e.brennt.flammen - e.vor.flammen, e.erloschen.flammen - e.vor.flammen];
     return {
         gruen: hw && e.trockenS >= 60 && e.brennt.zellen >= 1 && fB >= 200 && e.regenS <= 60 && e.nachRegen === 0 && e.erloschen.zellen === 0 && fC <= 20,
-        zahl: "trocken nach " + e.trockenS + " s " + e.brennt.zellen + " brennende Zellen, Flammen im Bild +" + fB + " Pixel (Soll ≥ 200; " + e.brennt.flammenListe +
+        zahl: "trocken nach " + e.trockenS + " s " + e.brennt.zellen + " brennende Zellen, Flammen im Bild +" + fB + " Pixel je Pixel (neu " + e.brennt.neu + " − Rauschen " + e.brennt.rauschen + "; Soll ≥ 200; " + e.brennt.flammenListe +
             " Flammen gezeichnet) · Regen löscht nach " + e.regenS + " s (Soll ≤ 60), danach " + e.erloschen.zellen + " Zellen, Flammen im Bild (Emission) " + (fC >= 0 ? "+" : "") + fC + " (Soll ≤ 20; warm " + e.erloschen.warm + ") · " + ad,
     };
 }
@@ -1531,15 +1549,15 @@ function erlebenUrteil(j, lauf) {
 // die Roh-Zeile der Proben (ein erfundener GRÜN-Lauf der Form, nie eine Messung) und ihre Mutanten
 const BRAND_ROH = {
     schuesse: [{ name: "vor", datei: "x-brand-s1.png" }, { name: "brennt", datei: "x-brand-s2.png" }, { name: "erloschen", datei: "x-brand-s3.png" }],
-    vor: { luma: 0.12, warm: 4, flammen: 0 },
+    vor: { luma: 0.12, warm: 4, neu: 3, rauschen: 3, flammen: 0 },
     entfacht: true,
     trockenS: 60,
-    brennt: { zellen: 6, flammenListe: 22, luma: 0.2, warm: 1840, flammen: 1800 },
+    brennt: { zellen: 6, flammenListe: 22, luma: 0.2, warm: 1840, neu: 1990, rauschen: 190, flammen: 1800 },
     regenS: 7,
     nachRegen: 0,
-    erloschen: { zellen: 0, lebt: false, luma: 0.03, warm: 10, flammen: 0 },
+    erloschen: { zellen: 0, lebt: false, luma: 0.03, warm: 10, neu: 180, rauschen: 182, flammen: -2 },
     krone: 0,
-    flammenArt: "emission",
+    flammenArt: "emission-pixel",
     asche: 0.995,
     aschen: 9,
     veraendert: 0.82,
@@ -2047,24 +2065,39 @@ async function schneeJahrSitzungProbe(r, T, o, G) {
         return { E, Z, punkte, verdeckt };
     };
     // DIE POSE IM FREIEN (17.11., Radeon und GTX am f5ce1579: „nur 24 freie Punkte des Hangs“, 2 379 von 2 403 hinter Kronen — die Pose
-    // war der TIEFSTE der 16 Standorte, nie der freie): je Standort 420 m um den Gipfel (Land, trocken) derselbe Hang im Kegel, gezählt
-    // je 20 m auf dem Makro-Grund; gewählt wird der Standort mit den meisten freien Punkten (bei Gleichstand der tiefere). Die Kronen-Karte
-    // liegt um den Spieler (die ferne Stufe ±1 024 m): erst steht er am Gipfel, dann zählt jeder Standort in derselben Karte.
+    // war der TIEFSTE der 16 Standorte, nie der freie): je Standort (16 Richtungen × 420 und 800 m um den Gipfel, Land, trocken) derselbe
+    // Hang im Kegel, gezählt je 20 m auf dem Makro-Grund. DER HANG ÜBER DIE GANZE HÖHE (Radeon ee9c1965, die Wahl nach den meisten freien
+    // Punkten allein: 1 107 frei, aber nur 141–199 m über dem Meer — die Kuppe liegt in allen vier Saisons über der Linie, Sommer − Winter
+    // −0,2 m, kein Urteil über das Wandern): gewählt wird der Standort, dessen freie Punkte die meisten 20-m-Bänder vom Meer bis zum Gipfel
+    // mit je ≥ 5 Punkten belegen, dann der mit den meisten freien Punkten. Die Kronen-Karte liegt um den Spieler (die ferne Stufe
+    // ±1 024 m): erst steht er am Gipfel, dann zählt jeder Standort in derselben Karte.
     await stehen(g.x, g.z);
     const makro = (x, z) => r._terrainMacroSurfaceY(x, z);
     const probeKam = s.camera.clone();
+    const BAND_M = 20;
+    const baender = (P) => {
+        const n = new Map();
+        for (const p of P) {
+            const b = Math.floor((p.y - wl) / BAND_M);
+            if (b >= 0) n.set(b, (n.get(b) || 0) + 1);
+        }
+        return [...n.values()].filter((v) => v >= 5).length;
+    };
     const kand = [];
-    for (let k = 0; k < 16; k++) {
-        const [ux, uz] = [Math.cos((k * Math.PI) / 8), Math.sin((k * Math.PI) / 8)];
-        const [cx, cz] = [g.x + ux * 420, g.z + uz * 420];
-        if (!r._landAt(cx, cz, 1) || r._nassAt(cx, cz)) continue;
-        const pose = { k, ux, uz, cx, cz, cy: makro(cx, cz) };
-        pose.frei = hang(pose, probeKam, 20, makro).punkte.length;
-        kand.push(pose);
-    }
-    if (!kand.length) return Object.assign(aus, { fehler: "kein trockenes Land 420 m um den Gipfel " + [g.x, g.z].map(Math.round).join("/") });
-    const pose = kand.reduce((a, b) => (b.frei > a.frei || (b.frei === a.frei && b.cy < a.cy) ? b : a));
-    aus.wahl = { je: kand.map((p) => ({ k: p.k, frei: p.frei, hoehe: r3(p.cy - wl) })), k: pose.k, frei: pose.frei };
+    for (const weit of [420, 800])
+        for (let k = 0; k < 16; k++) {
+            const [ux, uz] = [Math.cos((k * Math.PI) / 8), Math.sin((k * Math.PI) / 8)];
+            const [cx, cz] = [g.x + ux * weit, g.z + uz * weit];
+            if (!r._landAt(cx, cz, 1) || r._nassAt(cx, cz)) continue;
+            const pose = { k: k + (weit > 420 ? 16 : 0), ux, uz, cx, cz, cy: makro(cx, cz) };
+            const P = hang(pose, probeKam, 20, makro).punkte;
+            Object.assign(pose, { frei: P.length, baender: baender(P) });
+            kand.push(pose);
+        }
+    if (!kand.length) return Object.assign(aus, { fehler: "kein trockenes Land 420/800 m um den Gipfel " + [g.x, g.z].map(Math.round).join("/") });
+    const besser = (b, a) => b.baender > a.baender || (b.baender === a.baender && (b.frei > a.frei || (b.frei === a.frei && b.cy < a.cy)));
+    const pose = kand.reduce((a, b) => (besser(b, a) ? b : a));
+    aus.wahl = { je: kand.map((p) => ({ k: p.k, frei: p.frei, baender: p.baender, hoehe: r3(p.cy - wl) })), k: pose.k, frei: pose.frei, baender: pose.baender, bandM: BAND_M };
     await stehen(pose.cx, pose.cz);
     const cam = s.camera;
     const { E, Z, punkte, verdeckt } = hang(pose, cam, 10, (x, z) => r._voxelSurfaceY(x, z));
@@ -2138,8 +2171,12 @@ function schneeJahrLesen(j, lauf) {
     const w = e.wahl;
     if (!w && !e.fehler) return { fehler: "die Pose nennt keine Wahl der Standorte (die Probe vor dem Schnitt wählte den tiefsten, nie den freien) · " + ad };
     if (w) {
-        const best = (w.je || []).reduce((a, x) => (x.frei > a.frei ? x : a), { frei: -1 });
-        if (!(w.frei >= best.frei)) return { fehler: "die Pose im Wald: Standort " + w.k + " mit " + w.frei + " freien Punkten, Standort " + best.k + " trägt " + best.frei + " · " + ad };
+        // der beste Standort: die meisten belegten Höhen-Bänder, dann die meisten freien Punkte; eine Zeile ohne Bänder (vor dem 17.11.
+        // 04:00) wählte nach den freien Punkten allein — die Kuppe über der Linie
+        if (!(w.baender >= 0)) return { fehler: "die Pose nennt keine Höhen-Bänder (die Wahl nach den freien Punkten allein sah nur die Kuppe über der Linie) · " + ad };
+        const best = (w.je || []).reduce((a, x) => (x.baender > a.baender || (x.baender === a.baender && x.frei > a.frei) ? x : a), { frei: -1, baender: -1 });
+        if (w.baender < best.baender || (w.baender === best.baender && w.frei < best.frei))
+            return { fehler: "die Pose im Wald: Standort " + w.k + " mit " + w.frei + " freien Punkten in " + w.baender + " Bändern, Standort " + best.k + " trägt " + best.frei + " in " + best.baender + " · " + ad };
     }
     if (e.fehler) return { fehler: "Probe: " + e.fehler + (w ? " (Standort " + w.k + " von " + (w.je || []).length + ", " + w.frei + " frei im groben Gitter)" : "") + " · " + ad, e, ad, hw };
     const S = e.schuesse || [];
@@ -2196,7 +2233,7 @@ const SCHNEE_JAHR_ROH = {
     kamera: [1500, 60, -500, 1300, 120, -700],
     punkte: 640,
     hoehen: [4, 192],
-    wahl: { je: [{ k: 0, frei: 6, hoehe: 40 }, { k: 4, frei: 171, hoehe: 62 }, { k: 9, frei: 88, hoehe: 31 }], k: 4, frei: 171 },
+    wahl: { je: [{ k: 0, frei: 6, baender: 1, hoehe: 40 }, { k: 4, frei: 171, baender: 9, hoehe: 62 }, { k: 9, frei: 380, baender: 3, hoehe: 150 }], k: 4, frei: 171, baender: 9, bandM: 20 },
     jahr: {
         winter: { versatz: -160, weiss: 420, linieBild: 12, linieGesetz: 9, gesetzN: 600, treffer: 0.71, freiN: 0, falsch: null },
         fruehling: { versatz: -120, weiss: 300, linieBild: 41, linieGesetz: 38, gesetzN: 420, treffer: 0.7, freiN: 150, falsch: 0.02 },
@@ -5493,6 +5530,9 @@ module.exports = [
             // die Fassung vor dem Schnitt: die besonnte Asche trägt +40 warme Pixel, Emission 0 — sie urteilte ROT ohne Flamme
             { name: "erloschen, die besonnte Asche warm (+40 Pixel), keine Emission (Radeon b68b59cf)", stdout: brandRoh((x) => ((x.erloschen.warm = 44), x)), gruen: true },
             { name: "die Zeile der Probe vor dem Schnitt (warme Pixel statt Emission)", stdout: brandRoh((x) => (delete x.flammenArt, x)), gruen: false },
+            // die Fassung vor dem 17.11. urteilte diese GRÜN: die Summe mit − ohne im Rauschen des Grases (+297 Flammen gegen ±150 Gras)
+            { name: "Summen-Vergleich im Gras-Rauschen (flammenArt emission: +240 in der Summe, je Pixel ungemessen)", stdout: brandRoh((x) => ((x.flammenArt = "emission"), Object.assign(x.brennt, { flammen: 240 }), delete x.brennt.neu, delete x.brennt.rauschen, x)), gruen: false },
+            { name: "je Pixel: die Flammen tragen nur 120 Pixel über dem Rauschen", stdout: brandRoh((x) => (Object.assign(x.brennt, { neu: 310, rauschen: 190, flammen: 120 }), x)), gruen: false },
         ],
         pfad: BRAND_PFAD,
         quelle: "KARTE2 same.kopplung.kaskade S1 = Bildpaar: Brand erlischt im Regen, hält im Trockenen, beide Geräte",
@@ -5605,8 +5645,10 @@ module.exports = [
             { name: "zu wenige freie Punkte", stdout: schneeJahrRoh((x) => ((x.fehler = "nur 40 freie Punkte des Hangs im Bild (Soll ≥ 150)"), x)), gruen: false },
             { name: "swiftshader", stdout: schneeJahrRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
             // die Fassung vor dem Schnitt urteilte diese zwei GRÜN: sie nahm den tiefsten Standort, frei oder im Wald
-            { name: "die Pose im Wald (Standort 0 mit 6 freien Punkten, Standort 4 trägt 171)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 0, frei: 6 }) && x), gruen: false },
+            { name: "die Pose im Wald (Standort 0 mit 6 freien Punkten, Standort 4 trägt 171)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 0, frei: 6, baender: 1 }) && x), gruen: false },
             { name: "die Zeile der Probe vor dem Schnitt (keine Wahl der Standorte)", stdout: schneeJahrRoh((x) => (delete x.wahl, x)), gruen: false },
+            { name: "die Kuppe über der Linie (Standort 9: 380 frei in 3 Bändern, Standort 4 belegt 9)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 9, frei: 380, baender: 3 }) && x), gruen: false },
+            { name: "die Wahl ohne Höhen-Bänder (nach den freien Punkten allein, Radeon ee9c1965)", stdout: schneeJahrRoh((x) => ((x.wahl = { je: [{ k: 1, frei: 350 }], k: 1, frei: 350 }), x)), gruen: false },
         ],
         pfad: ["gelaende-core.js", "stamm/bild-himmel.js", "stamm/gelaende-*.js", "stamm/siedlung-ort.js", "stamm/wasser-*.js", "voxel-worker.js", "scripts/werkbank.cjs", ...WELT_PFAD],
         quelle: "KARTE2 planet.kopplung.bahn-klima S1 = Schneelinie wandert über das Jahr im Bild",
@@ -5630,8 +5672,10 @@ module.exports = [
             { name: "die Grenze folgt der Saison nicht (Sommer wie Winter)", stdout: schneeJahrRoh((x) => Object.assign(x.jahr.sommer, { linieBild: 20, linieGesetz: 20 }) && x), gruen: false },
             { name: "Weiß ohne Schnee im Sommer", stdout: schneeJahrRoh((x) => ((x.jahr.sommer.falsch = 0.4), x)), gruen: false },
             { name: "swiftshader", stdout: schneeJahrRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
-            { name: "die Pose im Wald (Standort 0 mit 6 freien Punkten, Standort 4 trägt 171)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 0, frei: 6 }) && x), gruen: false },
+            { name: "die Pose im Wald (Standort 0 mit 6 freien Punkten, Standort 4 trägt 171)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 0, frei: 6, baender: 1 }) && x), gruen: false },
             { name: "die Zeile der Probe vor dem Schnitt (keine Wahl der Standorte)", stdout: schneeJahrRoh((x) => (delete x.wahl, x)), gruen: false },
+            { name: "die Kuppe über der Linie (Standort 9: 380 frei in 3 Bändern, Standort 4 belegt 9)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 9, frei: 380, baender: 3 }) && x), gruen: false },
+            { name: "die Wahl ohne Höhen-Bänder (nach den freien Punkten allein, Radeon ee9c1965)", stdout: schneeJahrRoh((x) => ((x.wahl = { je: [{ k: 1, frei: 350 }], k: 1, frei: 350 }), x)), gruen: false },
         ],
         pfad: ["gelaende-core.js", "stamm/bild-himmel.js", "stamm/gelaende-*.js", "stamm/siedlung-ort.js", "stamm/wasser-*.js", "voxel-worker.js", "scripts/werkbank.cjs", ...WELT_PFAD],
         quelle: "KARTE2 planet.wetter.klimazonen S1 = Temperatur am Meer 18/−4 °C, Schneegrenze folgt der Saison",
