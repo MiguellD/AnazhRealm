@@ -1481,3 +1481,4 @@ omen-gtx-gtx-7de938ab-w1147-2-7de938ab UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN
 2026-11-17 12:05 landung Zwischenstand main 7de938ab: misst 50 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (4 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 2026-11-17 12:06 landung ABGEBROCHEN main 7de938ab: sg-sw-ring3 wartete am GPU-Schloss — BEHALTEN 0 Station(en) (gepusht), 50 stellen sich hinten an
 2026-11-17 12:15 landung Zwischenstand main 7de938ab: misst 50 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (4 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
+omen-gtx-tier1a-1-7de938ab ROT 1 GRÜN / 3 ROT / 0 UNGEMESSEN · ROT tiere.K1#2 tiere.K2#2 tiere.K3#2 · GRÜN tiere.K5#1 (punkte-maschine 60f6f887 messung/7de938ab-gtx.json)
