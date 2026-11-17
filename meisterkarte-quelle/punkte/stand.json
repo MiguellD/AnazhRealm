@@ -4833,7 +4833,7 @@
   },
   "breite.siedlung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: breite.siedlung#1 radeon: ungemessen (R10) — zuletzt an fe885d9d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „5“: der Läufer ersetzt den Platzhalter SEK) · breite.siedlung#1 gtx: ungemessen (R10) — zuletzt an bcc2cadc: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
+   "beleg": "Maschine: 0 — offen: breite.siedlung#1 radeon: ungemessen (R10) — zuletzt an fe885d9d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „5“: der Läufer ersetzt den Platzhalter SEK) · breite.siedlung#1 gtx: ungemessen (R10) — zuletzt an 08a8397b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
    "stationen": [
     {
      "id": "breite.siedlung#1",
@@ -4850,7 +4850,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an bcc2cadc: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
+     "grund": "ungemessen (R10) — zuletzt an 08a8397b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
      "ungemessen": true
     }
    ]
@@ -6509,7 +6509,7 @@
   "ohne": 140
  },
  "kopfVoll": "08a8397ba498a8c89c72ce9cd287232ccf6591ae",
- "zeit": "2026-11-17T20:50:30.556Z",
+ "zeit": "2026-11-17T20:56:56.720Z",
  "vorher": "08a8397b",
  "bilanz": {
   "gewinn": [],
