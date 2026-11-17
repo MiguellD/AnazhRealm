@@ -54,11 +54,12 @@ class AnazhRealm_siedlung_wege {
         const N = raster(W.stufen.map((S) => S.texelM));
         const kN = raster(AnazhRealm.LAUB_STREU.texelM);
         const wege = karte(N, 2, THREE.RGFormat, "wege-karte", W.null);
-        // DIE DECKE DES BODENS (stoffe.K2#2): die Kronen-Karte trägt zwei Kanäle derselben Fläche — R die Laubstreu unter den Kronen,
-        // G die Asche des Brands (`_ascheMalen`); EIN Sampler, EIN Abgriff je Stufe im Boden-Stoff. Hinter den Stufen trägt sie
-        // eine Schicht im selben Raster: DIE NEIGUNG DES GESETZES für den Fern-Ring (`_fernNeigungTakt`, R/G die Normale x/z) —
-        // der Ring-Stoff trägt 16 von 16 Texturen, eine eigene Karte bände er nie (WebGPU 16 je Stufe, WebGL2 16 Einheiten).
-        const streu = karte(kN, 2, THREE.RGFormat, "kronen-streu", 0, W.stufen.length + 1);
+        // DIE DECKE DES BODENS (stoffe.K2#2, stoffe.K3-2): die Kronen-Karte trägt vier Kanäle derselben Fläche — R die Laubstreu
+        // unter den Kronen, G die Asche des Brands (`_ascheMalen`), B die Decke der Lava und A ihre Glut (`_lavaMalen`); EIN
+        // Sampler, EIN Abgriff je Stufe im Boden-Stoff. Hinter den Stufen trägt sie eine Schicht im selben Raster: DIE NEIGUNG DES
+        // GESETZES für den Fern-Ring (`_fernNeigungTakt`, R/G die Normale x/z) — der Ring-Stoff trägt 16 von 16 Texturen, eine
+        // eigene Karte bände er nie (WebGPU 16 je Stufe, WebGL2 16 Einheiten): darum trägt die Lava ihre Kanäle HIER (B/A).
+        const streu = karte(kN, 4, THREE.RGBAFormat, "kronen-streu", 0, W.stufen.length + 1);
         const fluesse = karte(N, 1, THREE.RedFormat, "fluss-karte");
         const stufen = W.stufen.map((S, si) => {
             const daten = wege.schicht(si);
@@ -66,11 +67,14 @@ class AnazhRealm_siedlung_wege {
             // DIE KRONEN-STREU dieser Stufe: dasselbe Fenster, dieselbe Mitte (also dasselbe UV), eigenes Raster.
             // `summe` ist die Wahrheit (die ungekappte Summe aller Kronen-Beiträge je Texel — eine Krone fällt exakt
             // heraus), `daten` ihr gekapptes Abbild für die Karte, nachgezogen im Schmutz-Rechteck beim Upload.
-            // `asche` ist die Wahrheit des Kanals G (die Asche je Texel, 0…255, gemalt aus den Taten `brand`).
+            // `asche` ist die Wahrheit des Kanals G (die Asche je Texel, 0…255, gemalt aus den Taten `brand`), `lava` und `glut`
+            // die der Kanäle B und A (die Decke der Lava und ihre Glut je Texel, gemalt aus den Taten `lava`).
             const kronen = {
                 N: kN,
                 summe: new Uint16Array(kN * kN),
                 asche: new Uint8Array(kN * kN),
+                lava: new Uint8Array(kN * kN),
+                glut: new Uint8Array(kN * kN),
                 daten: streu.schicht(si),
                 tex: streu.tex,
                 schmutz: null,
@@ -405,6 +409,7 @@ class AnazhRealm_siedlung_wege {
             }
         }
         this._ascheStufeMalen(stufe); // die Asche des Fensters neu (die Aschen der Taten, nie die Welt)
+        this._lavaStufeMalen(stufe); // die Lava des Fensters neu (die Laven der Taten)
         kr.schmutz = [0, N - 1, 0, N - 1]; // das ganze Abbild zog um
         kr.upload = -Infinity; // nach dem Umzug sofort hochladen
     }
@@ -414,12 +419,12 @@ class AnazhRealm_siedlung_wege {
     // (0 offen, 0,6 unter einer Krone, 1 wo Kronen sich schließen) — Boden, Nah-Wiese und Klang lesen sie, nie das
     // Kronenlicht-Feld der Platzierung (`_canopyLightAt` sagt, wo Bäume wachsen DÜRFEN, nicht wo sie stehen).
     _kronenStreuAt(x, z) {
-        return this._bodenDeckeAt(x, z, false);
+        return this._bodenDeckeAt(x, z, "summe");
     }
 
     // Der EINE Leser der Kronen-Karte: die Stufe wie `_wegeFeldAt`, bilinear über R (die Laubstreu aus der Summe, gekappt wie
-    // die Karte) oder G (die Asche).
-    _bodenDeckeAt(x, z, asche) {
+    // die Karte, `kanal` "summe"), G (die Asche, "asche") oder B (die Decke der Lava, "lava").
+    _bodenDeckeAt(x, z, kanal) {
         const wk = this.state.wegeKarte;
         if (!wk) return 0;
         const [nah, fern] = wk.stufen;
@@ -438,12 +443,212 @@ class AnazhRealm_siedlung_wege {
         if (i < 0 || j < 0 || i >= N - 1 || j >= N - 1) return 0;
         const tx = fx - i;
         const tz = fz - j;
-        // aus der Summe, gekappt wie die Karte (die `daten` ziehen erst beim gebündelten Upload nach), oder aus der Asche
-        const at = asche ? (a, b) => kr.asche[b * N + a] / 255 : (a, b) => Math.min(255, kr.summe[b * N + a]) / 255;
+        // aus der Summe, gekappt wie die Karte (die `daten` ziehen erst beim gebündelten Upload nach), oder aus der Asche, der Lava
+        const A = kr[kanal];
+        if (!A) throw new Error("_bodenDeckeAt: die Kronen-Karte trägt keinen Kanal „" + kanal + "“");
+        const at = kanal === "summe" ? (a, b) => Math.min(255, A[b * N + a]) / 255 : (a, b) => A[b * N + a] / 255;
         return (
             (at(i, j) * (1 - tx) + at(i + 1, j) * tx) * (1 - tz) +
             (at(i, j + 1) * (1 - tx) + at(i + 1, j + 1) * tx) * tz
         );
+    }
+
+    // DIE DECKE EINER ZELLE (die Asche, die Lava): `flaeche` malt die Fläche ±½ Zelle um (cx, cz) in jede zentrierte Stufe und
+    // nennt, was sich änderte (0 nichts, 1 nur das Leuchten, 2 die Decke); wo die Decke sich änderte, baut die Nah-Wiese darüber
+    // neu. Rückgabe: ob sich ein Texel änderte.
+    _deckeMalen(cx, cz, flaeche) {
+        const wk = this.state.wegeKarte;
+        if (!wk) return false;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const [x0, z0, x1, z1] = [(cx - 0.5) * cs, (cz - 0.5) * cs, (cx + 1.5) * cs, (cz + 1.5) * cs];
+        let neu = 0;
+        for (const stufe of wk.stufen) if (stufe.zentriert) neu = Math.max(neu, flaeche(stufe, x0, z0, x1, z1));
+        // auf der Decke wächst nichts: die Nah-Wiese und die Nah-Streu (Blumen, Kiesel, Totholz) würfeln darüber neu
+        if (neu >= 2) (this._nahRingNeuIn(x0, z0, x1, z1), this._nahStreuNeuIn(x0, z0, x1, z1));
+        return neu > 0;
+    }
+
+    // Die Texel der Kronen-Karte EINER Stufe, deren Mitte in [x0, x1) × [z0, z1) liegt: `je(k, x, z)` schreibt das Texel k an
+    // seiner Mitte (x, z) und nennt, was sich änderte (0, 1, 2); das Größte kommt zurück, ein geändertes Rechteck geht hoch.
+    _deckeTexel(stufe, x0, z0, x1, z1, je) {
+        const kr = stufe.kronen;
+        const N = kr.N;
+        const t = stufe.S.fensterM / N;
+        const x0w = stufe.mitteX - stufe.S.fensterM / 2;
+        const z0w = stufe.mitteZ - stufe.S.fensterM / 2;
+        const i0 = Math.max(0, Math.ceil((x0 - x0w) / t - 0.5));
+        const i1 = Math.min(N - 1, Math.ceil((x1 - x0w) / t - 0.5) - 1);
+        const j0 = Math.max(0, Math.ceil((z0 - z0w) / t - 0.5));
+        const j1 = Math.min(N - 1, Math.ceil((z1 - z0w) / t - 0.5) - 1);
+        if (i1 < i0 || j1 < j0) return 0;
+        let neu = 0;
+        for (let j = j0; j <= j1; j++)
+            for (let i = i0; i <= i1; i++) neu = Math.max(neu, je(j * N + i, x0w + (i + 0.5) * t, z0w + (j + 0.5) * t));
+        if (neu > 0) AnazhRealm._kronenSchmutz(kr, i0, i1, j0, j1);
+        return neu;
+    }
+
+    // Jede Tat der Liste im Fenster der Stufe malt die vier Flächen zwischen den Zell-Mitten um ihre Zelle (`flaeche`), jede
+    // Fläche einmal; danach geht das ganze Abbild hoch.
+    _deckeStufeMalen(stufe, taten, flaeche) {
+        const kr = stufe.kronen;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const h = stufe.S.fensterM / 2 + cs;
+        const gemalt = new Set();
+        for (const a of taten) {
+            if (Math.abs(a.x - stufe.mitteX) > h || Math.abs(a.z - stufe.mitteZ) > h) continue;
+            const [cx, cz] = [Math.floor(a.x / cs), Math.floor(a.z / cs)];
+            for (let qj = cz - 1; qj <= cz; qj++)
+                for (let qi = cx - 1; qi <= cx; qi++) {
+                    if (gemalt.has(qi + "," + qj)) continue;
+                    gemalt.add(qi + "," + qj);
+                    const [x0, z0] = [(qi + 0.5) * cs, (qj + 0.5) * cs];
+                    flaeche(stufe, x0, z0, x0 + cs, z0 + cs);
+                }
+        }
+        kr.schmutz = [0, kr.N - 1, 0, kr.N - 1];
+    }
+
+    // === DIE LAVA IM BODEN (stoffe.K3-2): die Decke liegt im Bild, glühend und erstarrt ===
+    // Bis hier trug die Lava nur das Licht über ihr (`_leuchtQuellen`) und die glut-Achse (`auraAt`): der Boden unter dem Guss
+    // blieb Wiese, die Halme standen durch, glühend und erstarrt sahen gleich aus (Radeon fe885d9d, Station
+    // karte2.same.kopplung.ereignis: Glut R/G 0,969, erstarrt 0,962). Jetzt liegt jede Decke in der Kronen-Karte (B die Decke,
+    // A ihre Temperatur, `_wegeKarteEnsure`): der Boden-Stoff zeichnet dort die Kruste der Boden-Palette (`kruste`, Basaltglas)
+    // und darauf das Leuchten ihrer Temperatur (`_lavaKruste`: Schollen und glühende Risse), Nah-Wiese und Nah-Streu tragen auf
+    // ihr nichts (`_lavaDeckeAt`).
+    // Ihr Rand ist das EINE Rand-Gesetz einer Tat auf den Zellen des Felds (`_brandNarbeFn`: die weiche, verrauschte Grenze statt
+    // des 16-m-Quadrats), ihre Temperatur je Texel der Gang des Kerns an der Dicke der Decke dort (`_lavaFlaeche`).
+    // Die Decke an (x, z) ∈ [0, 1] — dieselben Bytes, die der Boden-Shader liest (`_bodenDeckeAt`).
+    _lavaDeckeAt(x, z) {
+        return this._bodenDeckeAt(x, z, "lava");
+    }
+
+    // Die Spanne, in der die Lava sichtbar glüht (K): vom Draper-Punkt des Kerns (`LAVA.glueht`) bis zum Ausbruch, die Zeile stein
+    // der Stoff-Tafel über ihrem Schmelzen um die Überhitzung des Kerns (`LAVA.ueberhitzung`) — dieselben Zahlen wie der Gang.
+    _lavaSpanne() {
+        const L = globalThis.__gelaendeCore.LAVA;
+        const S = globalThis.__schmiedeCore && globalThis.__schmiedeCore.STOFF_GESETZ.zeile("stein");
+        if (!S || !(S.tSchmelz > L.glueht))
+            throw new Error("_lavaSpanne: die Zeile stein der Stoff-Tafel trägt kein Schmelzen");
+        return [L.glueht, S.tSchmelz + L.ueberhitzung];
+    }
+
+    // Die Temperatur der Lava-Tat `a` in ihrer Spanne (`_lavaSpanne`) ∈ [0, 1]: 0 am Draper-Punkt und darunter (sie glüht nicht
+    // mehr), 1 beim Ausbruch — im Innern der Decke das Byte A der Kronen-Karte; ändert es sich, malt der Takt neu (`_lavaTakt`).
+    _lavaWaerme(a) {
+        const [td, t0] = this._lavaSpanne();
+        const T = this._lavaZustand(a).temperatur + 273.15;
+        return Math.min(1, Math.max(0, (T - td) / (t0 - td)));
+    }
+
+    // DAS LEUCHTEN DER LAVA (TSL, Leser `_lavaKruste`) aus der Temperatur `w` ihrer Oberfläche in der Spanne: beim Ausbruch t0
+    // leuchtet sie im Leucht-Gesetz der Glut (fachwerk `LEUCHT_FEUER`: Leuchtdichte = lineare Farbe × Stärke, das Glutbett des
+    // Herdfeuers) in der Farbe ihrer Temperatur (fachwerk `lichtFarbe`, der Planck-Ort); kühler fällt jeder Kanal mit dem
+    // Planck-Gesetz an seiner Wellenlänge (`GLUT_BILD`, die Wien-Näherung: e^(c₂/λ · (1/t0 − 1/T)), c₂/(λ·T) ≥ 14 in der ganzen
+    // Spanne) — Grün und Blau schneller als Rot: die Lava glüht orange aus, kirschrot, dunkel am Draper-Punkt (dort trägt der rote
+    // Kanal 10⁻⁷ des Ausbruchs). Der Planck-Ort des Kerns reicht ab 1 667 K, der Ausbruch liegt darunter (1 650 K): seine Farbe ist
+    // die des Orts an seinem Rand (1, 0,176, 0), ein Kanal ohne Farbe ist 0 (kein Glied im Programm). Bis hier trug der Boden
+    // unter der Lava kein Leuchten. `kalt` = 1/t0 − 1/T (1/K) der Oberfläche, T in der Spanne (`_lavaKruste` rechnet ihn).
+    _lavaGlutNode(_T, kalt) {
+        const FW = globalThis.__fachwerkCore;
+        if (!FW || !(FW.LEUCHT_FEUER > 0) || typeof FW.lichtFarbe !== "function")
+            throw new Error("_lavaGlutNode: fachwerk trägt das Leucht-Gesetz der Glut oder den Planck-Ort nicht");
+        const t0 = this._lavaSpanne()[1];
+        const G = AnazhRealm.GLUT_BILD;
+        const farbe = FW.lichtFarbe(t0);
+        const k7 = AnazhRealm._f32; // die kürzeste Zahl desselben f32 (`_f32`)
+        const kanal = (k) =>
+            farbe[k] > 0
+                ? _T.exp(kalt.mul(k7(G.c2 / (G.lambdaNm[k] * 1e-9)))).mul(k7(farbe[k] * FW.LEUCHT_FEUER))
+                : _T.float(0);
+        return _T.vec3(kanal(0), kanal(1), kanal(2));
+    }
+
+    // Die Zelle (cx, cz) → { asche: ihre Rest-Wärme q = e^(−t/τ) (der Gang des Kerns, `_lavaZustand`), busch: die Luft T_u (K),
+    // wald: 0 } (die Form, die `_brandNarbeFn` mittelt) ihrer jüngsten Lava oder null; der Speicher für EINEN Gang.
+    _lavaJeZelle() {
+        const M = new Map();
+        return (cx, cz) => {
+            const k = cx + "," + cz;
+            let c = M.get(k);
+            if (c === undefined) {
+                const a = this._lavaJuengste(k);
+                let z = null;
+                if (a) {
+                    const L = this._lavaZustand(a);
+                    z = {
+                        asche: Math.exp(-Math.max(0, L.alterS) / L.tau),
+                        busch: this._temperaturAt(a.y, 0) + 273.15,
+                        wald: 0,
+                    };
+                }
+                M.set(k, (c = z));
+            }
+            return c;
+        };
+    }
+
+    // Die Fläche [x0, x1) × [z0, z1) in EINE Stufe: B die Decke (der Rand `m` der Narbe), A ihre Temperatur in der Spanne
+    // (`_lavaSpanne`). DIE DECKE KÜHLT VOM RAND HER: `m` ist ihre Dicke (1 im Innern, zum Rand dünn) und der Gang des Kerns hat
+    // τ = ρ·c·d / α — die dünne Decke kühlt im Verhältnis ihrer Dicke schneller, ihre Rest-Wärme ist q^(1/m) (q die der Zelle).
+    // Rückgabe: 2, wenn sich eine Decke änderte, 1 nur ein Leuchten, sonst 0.
+    _lavaFlaeche(stufe, x0, z0, x1, z1, zelle) {
+        const [B, A, rand] = [stufe.kronen.lava, stufe.kronen.glut, this._brandNarbeFn(zelle)];
+        const [td, t0] = this._lavaSpanne();
+        return this._deckeTexel(stufe, x0, z0, x1, z1, (k, x, z) => {
+            const n = rand(x, z);
+            const d = n ? Math.round(n.m * 255) : 0;
+            const T = d > 0 ? n.busch + (t0 - n.busch) * n.asche ** (255 / d) : 0;
+            const g = d > 0 ? Math.round(Math.min(1, Math.max(0, (T - td) / (t0 - td))) * 255) : 0;
+            const aus = d !== B[k] ? 2 : g !== A[k] ? 1 : 0;
+            [B[k], A[k]] = [d, g];
+            return aus;
+        });
+    }
+
+    // Die Lava EINER zentrierten Stufe ganz neu (nach ihrem Umzug, einer geladenen Welt).
+    _lavaStufeMalen(stufe) {
+        stufe.kronen.lava.fill(0);
+        stufe.kronen.glut.fill(0);
+        const zelle = this._lavaJeZelle();
+        this._deckeStufeMalen(stufe, this._tatIndex().lava, (s, x0, z0, x1, z1) =>
+            this._lavaFlaeche(s, x0, z0, x1, z1, zelle)
+        );
+    }
+
+    // DER TAKT DER LAVA (aus `_tickWegeKarte`, höchstens je `LAUB_STREU.uploadMs`): die Temperatur jeder Decke ist eine Funktion
+    // der Welt-Zeit (`_lavaZustand`) — ändert sich ihr Byte (sie kühlt, ein Sprung der Uhr, ein neuer Guss), malt ihre Zelle neu; eine
+    // andere Liste der Taten (eine geladene Welt) leert die Decken und malt jede Lava neu. Ohne Lava kostet er einen Vergleich.
+    _lavaTakt(jetzt) {
+        if (jetzt - (this._lavaTaktT || -Infinity) < AnazhRealm.LAUB_STREU.uploadMs) return;
+        this._lavaTaktT = jetzt;
+        const wk = this.state.wegeKarte;
+        const L = this.state.worldMeta && this.state.worldMeta.taten;
+        if (L !== this._lavaListe) {
+            // eine andere Welt: ihre Laven fallen, jede Decke der neuen malt ihre Zelle (und die Nah-Wiese darüber) neu
+            this._lavaListe = L;
+            this._lavaGemalt = new WeakMap();
+            for (const stufe of wk ? wk.stufen : []) {
+                const kr = stufe.kronen;
+                kr.lava.fill(0);
+                kr.glut.fill(0);
+                kr.schmutz = [0, kr.N - 1, 0, kr.N - 1];
+            }
+        }
+        const gemalt = this._lavaGemalt;
+        const I = this._tatIndex();
+        if (!I.lava.length) return;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const [neu, zelle] = [new Set(), this._lavaJeZelle()];
+        for (const a of I.lava) {
+            const g = Math.round(this._lavaWaerme(a) * 255);
+            if (gemalt.get(a) === g) continue;
+            gemalt.set(a, g);
+            const [cx, cz] = [Math.floor(a.x / cs), Math.floor(a.z / cs)];
+            if (neu.has(cx + "," + cz)) continue;
+            neu.add(cx + "," + cz);
+            this._deckeMalen(cx, cz, (s, x0, z0, x1, z1) => this._lavaFlaeche(s, x0, z0, x1, z1, zelle));
+        }
     }
 
     // Die EINE Ausdehnung einer Form um ihre Achse (Malen und Siedlungs-Hülle): ein gedrehter Kasten reicht bis zur
@@ -608,6 +813,7 @@ class AnazhRealm_siedlung_wege {
             this._trittTag = tag;
             this._trittErholen();
         }
+        this._lavaTakt(jetzt); // die Glut der Lava im Boden folgt der Welt-Zeit (`_lavaTakt`)
         const hydroN = this._flussKarteStand();
         for (const stufe of wk.stufen) {
             const S = stufe.S;
@@ -637,8 +843,8 @@ class AnazhRealm_siedlung_wege {
                 [stufe.trittHoch, stufe.trittUpload] = [false, jetzt];
             }
             if (stufe.fluss.hydroN !== hydroN) this._flussKarteMalen(stufe, hydroN);
-            // Neu gemalte Kronen und Aschen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`): das Abbild
-            // zieht nur im Schmutz-Rechteck aus der Summe (R, gekappt bei 255) und der Asche (G) nach.
+            // Neu gemalte Kronen, Aschen und Laven gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`): das Abbild
+            // zieht nur im Schmutz-Rechteck aus der Summe (R, gekappt bei 255), der Asche (G) und der Lava (B Decke, A Glut) nach.
             const kr = stufe.kronen;
             if (kr.schmutz && jetzt - kr.upload >= AnazhRealm.LAUB_STREU.uploadMs) {
                 const [i0, i1, j0, j1] = kr.schmutz;
@@ -646,8 +852,10 @@ class AnazhRealm_siedlung_wege {
                 for (let j = j0; j <= j1; j++)
                     for (let k = j * N + i0, e = j * N + i1; k <= e; k++) {
                         const v = kr.summe[k];
-                        kr.daten[2 * k] = v > 255 ? 255 : v;
-                        kr.daten[2 * k + 1] = kr.asche[k];
+                        kr.daten[4 * k] = v > 255 ? 255 : v;
+                        kr.daten[4 * k + 1] = kr.asche[k];
+                        kr.daten[4 * k + 2] = kr.lava[k];
+                        kr.daten[4 * k + 3] = kr.glut[k];
                     }
                 this._wegeSchichtHoch(kr.tex, stufe.schicht);
                 kr.schmutz = null;
@@ -864,6 +1072,8 @@ class AnazhRealm_siedlung_wege {
         if (!wk || !wk.stufen[0].U || !_T.texture || !_T.positionWorld || !_T.normalWorldGeometry)
             throw new Error("Wege-Karte: der Boden-Stoff braucht Karte, Uniforms und TSL (texture/positionWorld)");
         const P = AnazhRealm.BODEN_FARBE;
+        // die Farben der Palette als Konstanten mit 7 Stellen (die Genauigkeit von f32): jedes Zeichen des Boden-Programms zählt
+        const farbe = (c) => _T.vec3(AnazhRealm._f32(c[0]), AnazhRealm._f32(c[1]), AnazhRealm._f32(c[2]));
         const [nah, fern] = wk.stufen;
         const xz = _T.positionWorld.xz;
         const relNah = xz.sub(nah.U.mitte).div(nah.U.groesse);
@@ -890,7 +1100,7 @@ class AnazhRealm_siedlung_wege {
         // DER RASEN (das Gras-Gesetz): wo der Plan Rasen erklärt, ist der Grund das Mittel des Halms (`WIESEN_GRUND`) — die
         // Geologie legt das Relief der Halme darauf (Grün × Flachheit), die Nah-Wiese ihre Büschel (`_bodenSichtAt`: er grünt)
         const _wg = AnazhRealm.WIESEN_GRUND.farbe;
-        const mitRasen = _T.mix(vc, _T.vec3(_wg[0], _wg[1], _wg[2]), _rasen);
+        const mitRasen = _T.mix(vc, farbe(_wg), _rasen);
         // DIE KRONEN-STREU (`_kronenStreuNeu`): unter den echten Kronen die Laubstreu der Palette (`lit`) — zuerst, die
         // Wege liegen darüber. Dieselbe Stufen-Wahl, dasselbe UV (dasselbe Fenster). Derselbe Abgriff trägt in G die Asche.
         const dNah = _T.texture(nah.kronen.tex, relNah.add(0.5)).depth(_T.int(nah.schicht));
@@ -898,9 +1108,8 @@ class AnazhRealm_siedlung_wege {
         const kNah = dNah.r;
         const kFern = dFern.r;
         // Der Rand ist keine Scheibe: das Laub liegt in Zungen und Flecken (Rauschen λ ≈ 1,4 m verschiebt die Kante).
-        const _laubRausch = this._rauschAtlas()
-            .raum(_T.vec3(xz.x.mul(0.7), xz.y.mul(0.7), _T.float(3.3)))
-            .mul(0.3);
+        const _laubFeld = this._rauschAtlas().raum(_T.vec3(xz.x.mul(0.7), xz.y.mul(0.7), _T.float(3.3)));
+        const _laubRausch = _laubFeld.mul(0.3);
         const _k = _T
             .smoothstep(_T.float(0.15), _T.float(0.85), _T.mix(kFern, kNah, innen).add(_laubRausch))
             .mul(_begehbar)
@@ -910,32 +1119,141 @@ class AnazhRealm_siedlung_wege {
         // Unter der Krone liegt die Streu — ihre Albedo, nie ein Schatten: das Labor dunkelt seinen Bestandeskern
         // (`c.multiplyScalar(0.58 + 0.46 · Licht)` in worlds/terrain), die Welt hat die echte Schattenkarte der Kronen
         // (Lehre 21: nie doppelt; bis 06.10. lag die Streu so bei Y 0,065 unter dem Soll 0,08–0,15).
-        const mitStreu = _T.mix(mitRasen, _T.vec3(l[0], l[1], l[2]), _k);
+        const mitStreu = _T.mix(mitRasen, farbe(l), _k);
         // DIE ASCHE DES BRANDS (stoffe.K2#2, `_ascheMalen`): wo die Front ein Bett verzehrte, liegt die Asche der Palette über
         // Wiese und Streu, bis sie nachgrünt (`_sukzession`) — nur auf Begehbarem (die Wand des Hangs trug kein Bett). Dieselben
         // Bytes liest die Nah-Wiese (`_ascheAt`): auf der Asche steht kein Halm.
         const s = P.asche;
         const _a = _T.mix(dFern.g, dNah.g, innen).mul(_begehbar).mul(imFenster);
-        const mitAsche = _T.mix(mitStreu, _T.vec3(s[0], s[1], s[2]), _a);
+        const mitAsche = _T.mix(mitStreu, farbe(s), _a);
         const e = P.dirt;
         const a = P.wet;
-        const mitErde = _T.mix(mitAsche, _T.vec3(e[0], e[1], e[2]), _erde);
-        const mitAcker = _T.mix(mitErde, _T.vec3(a[0], a[1], a[2]), _acker);
+        const mitErde = _T.mix(mitAsche, farbe(e), _erde);
+        const mitAcker = _T.mix(mitErde, farbe(a), _acker);
         // DAS PFLASTER deckt jeden Grund (porta STEIN_GESETZ.kopfstein). DER STEIN IST KEIN ERDREICH (w28-stein-kamm): der Boden-Stoff
         // legt danach sein Korn, seine Kavität und sein Mikro-Relief über jede Farbe — `aus.stein` nennt ihm den Belag (Albedo,
         // Deckung, die Kante als Kipp der Normale, das Korn seiner Zeile), er hält unter ihm den Stein (`_buildPbrNodeMaterial`)
         const stein = {};
         const pflaster = this._kopfsteinFarbe(_T, xz, stein);
-        if (aus) aus.stein = { farbe: pflaster, deckung: _pflaster, kipp: stein.kipp, korn: stein.korn };
-        // DIE ASCHE IST KEIN NASSER FELS (w28-brand-bild): der Boden-Stoff legt danach Korn, Kavität und den Glanz der „nassen
-        // kahlen Niederung" über jede dunkle, nicht grüne Farbe — `aus.asche` nennt ihm die Decke (Albedo, Deckung unter Weg,
-        // Acker und Pflaster), er hält auf ihr die Rauheit ihrer Zeile im Stoff-Gesetz und ihre Farbe (`_terrainGeologyAlbedo`)
-        if (aus)
-            aus.asche = {
-                farbe: _T.vec3(s[0], s[1], s[2]),
-                deckung: _a.mul(_T.float(1).sub(_erde.add(_acker).add(_pflaster).clamp(0.0, 1.0))),
+        // DIE LAVA (stoffe.K3-2, `_lavaFlaeche`): ihre Decke (B) liegt über jedem Grund, auch über Weg und Pflaster — ihre Kruste
+        // aus Basalt mit den Rissen, die ihre Temperatur (A) öffnet (`_lavaKruste`); der Boden-Stoff trägt die Kruste als Belag aus
+        // Stein (`aus.stein`: das Stein-Gesetz unter ihr, die Kanten der Schollen kippen die Normale) und die Glut als sein
+        // Leuchten (`aus.glut`). Nur auf Begehbarem (die Decke fließt vom Hang, sie haftet nicht an der Wand).
+        const _lava = _T.mix(dFern.b, dNah.b, innen).mul(_begehbar).mul(imFenster);
+        const kruste = this._lavaKruste(_T, _laubFeld, _T.mix(dFern.a, dNah.a, innen), _lava);
+        if (aus) {
+            // EIN Belag aus Stein: das Pflaster, wo keine Decke liegt, darüber die Kruste — Farbe und Kipp je Deckung gewichtet
+            // (die Deckung pflaster · (1 − lava) + lava, der Anteil der Kruste an ihr `k`)
+            const deckung = _T.mix(_pflaster, _T.float(1), _lava);
+            const k = _lava.div(_T.max(deckung, 1e-3));
+            aus.stein = {
+                farbe: _T.mix(pflaster, kruste.farbe, k),
+                deckung,
+                kipp: stein.kipp ? _T.mix(stein.kipp, kruste.kipp, k) : kruste.kipp.mul(k),
+                korn: stein.korn,
             };
-        return _T.mix(mitAcker, pflaster, _pflaster);
+            aus.glut = kruste.glut.mul(_lava);
+            // DIE ASCHE IST KEIN NASSER FELS (w28-brand-bild): der Boden-Stoff legt danach Korn, Kavität und den Glanz der „nassen
+            // kahlen Niederung" über jede dunkle, nicht grüne Farbe — `aus.asche` nennt ihm die Decke (Albedo, Deckung unter Weg,
+            // Acker, Pflaster und der Decke der Lava), er hält auf ihr die Rauheit ihrer Zeile im Stoff-Gesetz und ihre Farbe
+            // (`_terrainGeologyAlbedo`)
+            aus.asche = {
+                farbe: farbe(s),
+                deckung: _a
+                    .mul(_T.float(1).sub(_erde.add(_acker).add(_pflaster).clamp(0.0, 1.0)))
+                    .mul(_T.float(1).sub(_lava)),
+            };
+        }
+        return _T.mix(_T.mix(mitAcker, pflaster, _pflaster), kruste.farbe, _lava);
+    }
+
+    // DIE KRUSTE DER LAVA (TSL, Leser `_wegeBodenFarbe`): EIN Gesetz aus der Temperatur `w` (das Byte A, `_lavaFlaeche`: der Gang
+    // des Kerns an der Dicke der Decke) und EINEM Feld in Welt-Lage aus Proben, die der Boden-Stoff an diesem Fragment OHNEHIN lädt
+    // (keine eigene Ladung des Atlas — die Kosten des Bodens fern der Lava bleiben, wie sie waren, RAUSCH-GESETZ (B) 70): die
+    // Schollen sind das Feld, das den Rand der Laubstreu zerreißt (`schollen`, Raum-Probe λ ≈ 1,4 m), die feinen Risse die
+    // Kiesel-Oktave des Mikro-Reliefs (`_mikroFestProbe`, `TERRAIN_BUMP.freq2`, ihr Anteil `rissAnteil`). Die Oberfläche erstarrt
+    // sofort zur Kruste; wo das Feld seine Null kreuzt, reißt sie: die Risse sind das Band |n| < `offen` · w — heiß weit offen (die
+    // Schmelze steht zwischen treibenden Schollen), kühler enger, kalt zu. Die Haut der Scholle trägt `platte` der Temperatur des
+    // Innern (sie isoliert), am dünnen Rand der Decke weniger, der Riss das Innere ganz; ihr Leuchten ist das der Temperatur der
+    // Oberfläche (`_lavaGlutNode`, Planck je Kanal): der Riss glüht hell orange, die Scholle kirschrot bis schwarz, am Rand der
+    // Decke ist sie dunkel (dort reißt nichts, `randDicke`). Die Farbe ist die Kruste der Boden-Palette (`kruste`, Basaltglas), je
+    // Scholle im Ton verschieden, in der kalten Fuge dunkel; die Kante der Scholle kippt die Normale (`relief`, sichtbar nur,
+    // solange der Pixel die Fuge trägt — fern glatt, kein Flimmern). Rückgabe { farbe, kipp, glut }.
+    // DIE KRUSTE IST EINE WGSL-FUNKTION (`lavaKruste`, wie die Mischungen des Rausch-Atlas, K17-3 Runde 2): rein — die Proben
+    // (Schollen `s`, Risse `r`), die Bytes (Temperatur `w`, Decke `L`) und die Welt-Lage `xz` als Parameter, keine Bindung —, ihre
+    // Zwischenwerte leben in ihr statt als Variablen des Boden-Programms (ausgeschrieben trug die Kruste 2 943 Zeichen WGSL und
+    // riss die Ratsche des Boden-Programms, gate:pruefbuehne-licht 101 675 > 100 062; mit der Atlas-Lage als ivec2 und den
+    // kürzesten f32-Zahlen, `_rauschAtlas` · `_f32`, trägt das Programm 98 415, main 98 732). Rückgabe vec4: der Ton der
+    // Kruste, `kalt` (1/t0 − 1/T der Oberfläche, `_lavaGlutNode`) und der Kipp (x, z).
+    _lavaKruste(_T, schollen, w, decke) {
+        const K = AnazhRealm.LAVA_KRUSTE;
+        const f2 = AnazhRealm.TERRAIN_BUMP.freq2;
+        const n2 = this._mikroFestProbe(_T, _T.positionWorld, f2);
+        // die Zahlen kurz (die kürzeste desselben f32): jedes Zeichen des Boden-Programms zählt (`S0_ZEICHEN`)
+        const k7 = AnazhRealm._f32;
+        const fn =
+            this._lavaKrusteFn ||
+            (this._lavaKrusteFn = _T
+                .Fn(([s, r, w, L, xz]) => {
+                    const n = s.add(r.x.mul(K.rissAnteil));
+                    const c = n.abs();
+                    const aa = _T.fwidth(c);
+                    const rand = _T.smoothstep(_T.float(K.randDicke[0]), _T.float(K.randDicke[1]), L);
+                    const riss = _T.float(1).sub(_T.smoothstep(_T.float(0), w.mul(K.offen).mul(rand).add(aa), c));
+                    // die Temperatur der Oberfläche (die Haut der Scholle `platte` des Innern, der Riss das Innere) als `kalt`
+                    const [td, t0] = this._lavaSpanne();
+                    const T = w
+                        .mul(_T.mix(rand.mul(K.platte), _T.float(1), riss))
+                        .mul(t0 - td)
+                        .add(td);
+                    const kalt = _T.float(k7(1 / t0)).sub(_T.float(1).div(T));
+                    // der Ton: je Scholle verschieden, in der kalten Fuge dunkel (mix(fugeTon, 1, 1 − fuge))
+                    const ton = s
+                        .mul(K.ton)
+                        .add(1)
+                        .mul(
+                            _T
+                                .smoothstep(_T.float(0), aa.add(K.fuge), c)
+                                .mul(1 - K.fugeTon)
+                                .add(K.fugeTon)
+                        );
+                    // die Neigung von |n| in der Welt (1/m), mit dem Vorzeichen von n: die der Schollen aus den Ableitungen am
+                    // Schirm durch die der Welt-Lage (J⁻¹, det/max(det², ε²) statt eines Zweigs; die Raum-Probe trägt keine
+                    // Neigung, λ 1,4 m ist glatt über ein Pixel-Quad), die der Risse aus ihrer Probe (`r.yz` je Zelle, mal f2)
+                    const [px, py, sx, sy] = [_T.dFdx(xz), _T.dFdy(xz), _T.dFdx(s), _T.dFdy(s)];
+                    const det = px.x.mul(py.y).sub(px.y.mul(py.x));
+                    const grad = _T
+                        .vec2(sx.mul(py.y).sub(sy.mul(px.y)), sy.mul(px.x).sub(sx.mul(py.x)))
+                        .mul(det.div(det.mul(det).max(1e-24)))
+                        .add(r.yz.mul(k7(K.rissAnteil * f2)))
+                        .mul(n.div(c.add(1e-4)));
+                    // die Scholle wölbt sich über der Fuge: h = smoothstep(0, 2·fuge, |n|) · relief, die Normale kippt gegen ∇h
+                    // (sichtbar, solange der Pixel die Fuge trägt)
+                    const t = c.div(2 * K.fuge).clamp(0.0, 1.0);
+                    const steil = t
+                        .mul(_T.float(1).sub(t))
+                        .mul(k7((-6 * K.relief) / (2 * K.fuge)))
+                        .mul(_T.float(1).sub(_T.smoothstep(_T.float(K.fuge), _T.float(4 * K.fuge), aa)));
+                    return _T.vec4(ton, kalt, grad.mul(steil));
+                })
+                .setLayout({
+                    name: "lavaKruste",
+                    type: "vec4",
+                    inputs: [
+                        { name: "s", type: "float" },
+                        { name: "r", type: "vec3" },
+                        { name: "w", type: "float" },
+                        { name: "L", type: "float" },
+                        { name: "xz", type: "vec2" },
+                    ],
+                }));
+        const q = fn(schollen, n2, w, decke, _T.positionWorld.xz);
+        const b = AnazhRealm.BODEN_FARBE.kruste.map(k7);
+        return {
+            farbe: _T.vec3(b[0], b[1], b[2]).mul(q.x),
+            kipp: _T.vec3(q.z, 0, q.w),
+            glut: this._lavaGlutNode(_T, q.y),
+        };
     }
 
     // DAS KOPFSTEIN (porta STEIN_GESETZ.kopfstein, der Belag `pflaster` der Wege-Karte): Granit-Kleinpflaster im Segmentbogen als
@@ -965,7 +1283,7 @@ class AnazhRealm_siedlung_wege {
             sV: _T.fwidth(v),
             rU: _T.vec3(1, 0, 0),
             // ∇v: der Lauf der Reihe steigt mit −4 · t · Stich ÷ Sehne (die Zahl kurz: jedes Zeichen des Boden-Programms zählt)
-            rV: _T.normalize(_T.vec3(t.mul(+((-4 * K.stichM) / K.sehneM).toPrecision(7)), 0, 1)),
+            rV: _T.normalize(_T.vec3(t.mul(AnazhRealm._f32((-4 * K.stichM) / K.sehneM)), 0, 1)),
         });
         if (aus) [aus.kipp, aus.korn] = [S.kipp, K.korn];
         return _T.vec3(c[0], c[1], c[2]).mul(S.farbe);
@@ -1841,6 +2159,8 @@ class AnazhRealm_siedlung_wege {
                 this._wegeSchichtHoch(stufe.tex, stufe.schicht);
                 stufe.kronen.summe.fill(0);
                 stufe.kronen.asche.fill(0);
+                stufe.kronen.lava.fill(0);
+                stufe.kronen.glut.fill(0);
                 stufe.kronen.daten.fill(0);
                 stufe.kronen.schmutz = null;
                 this._wegeSchichtHoch(stufe.kronen.tex, stufe.schicht);
@@ -1894,6 +2214,28 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
         gras: Object.freeze({ kanal: 0, wert: -1 }),
         pflaster: Object.freeze({ kanal: 1, wert: -1 }),
     }),
+});
+// DAS BILD DER GLUT (`_lavaGlutNode`): die zweite Strahlungskonstante des Planck-Gesetzes c₂ = h·c/k (m·K, CODATA 2018) und die
+// dominanten Wellenlängen der Primärfarben des Bilds (nm; sRGB, IEC 61966-2-1: R x 0,64 y 0,33 · G 0,30/0,60 · B 0,15/0,06) — an
+// ihnen fällt das Leuchten eines Körpers je Kanal mit seiner Temperatur.
+AnazhRealm.GLUT_BILD = Object.freeze({
+    c2: 1.438777e-2,
+    lambdaNm: Object.freeze([611, 549, 464]),
+});
+// DIE KRUSTE DER LAVA (`_lavaKruste`): das Feld der Schollen (die Raum-Probe des Laub-Rands, λ ≈ 1,4 m) und der feinen Risse (die
+// Kiesel-Oktave des Mikro-Reliefs, `TERRAIN_BUMP.freq2`, ihr Anteil `rissAnteil`) — beide lädt der Boden-Stoff ohnehin; der Riss
+// ist offen bis |n| < `offen` · w (beim Ausbruch etwa die Hälfte der Fläche im weichen Band, σ des Felds 0,25), die Haut der
+// Scholle hat `platte` der Temperatur des Innern; am Rand der Decke (Dicke unter `randDicke`) reißt nichts. Die kalte Fuge
+// (|n| < `fuge`) dunkelt die Kruste auf `fugeTon`, die Schollen streuen ±`ton` im Ton, ihre Kante hebt sich um `relief` (m).
+AnazhRealm.LAVA_KRUSTE = Object.freeze({
+    rissAnteil: 0.2,
+    offen: 0.17,
+    platte: 0.62,
+    randDicke: Object.freeze([0.5, 1]),
+    fuge: 0.035,
+    fugeTon: 0.45,
+    ton: 0.25,
+    relief: 0.06,
 });
 // DIE LAUB-STREU UNTER DEN KRONEN (`_kronenStreuNeu`, Welle 5 Boden): je Wege-Stufe eine R8-Karte im selben Fenster — `texelM` je Stufe
 // (nah 1 m, fern 4 m: 512² = 256 KB je Stufe); eine Krone legt `dichte` Laubstreu bis `kern` × Kronen-Radius, weich
