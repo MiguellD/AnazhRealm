@@ -399,12 +399,24 @@ class AnazhRealm_stoff_material {
     // `schuttKorn`) über ein Rechenwerk — hier dieselben Schritte als TSL-Knoten, die Ziehung `zufall` als dieselben 32-Bit-
     // Ganzzahl-Schritte (u32: Multiplikation modulo 2^32, Xor, logisches Schieben), `rausch` als EINE Probe im Rausch-Atlas
     // (`raum` aus `_rauschAtlas`, gelaende-core `rauschRaum` auf der CPU). EIN Rechenwerk je TSL-Modul und Atlas.
+    // DIE KÜRZESTE ZAHL DESSELBEN f32: eine Konstante des Shaders trägt die wenigsten Stellen, die zum selben f32 runden — das
+    // Programm rechnet bitgleich, nur kürzer (r184 schreibt die volle Doppel-Genauigkeit, 0.8253356149096783 statt 0.8253356;
+    // jedes Zeichen übersetzt der GPU-Prozess vor dem ersten Bild, `S0_ZEICHEN`).
+    static _f32(v) {
+        const f = Math.fround(v);
+        for (let p = 1; p < 9; p++) {
+            const k = +v.toPrecision(p);
+            if (Math.fround(k) === f) return k;
+        }
+        return +f.toPrecision(9);
+    }
+
     static _felsRechenwerkTSL(T, raum) {
         if (typeof raum !== "function")
             throw new Error("_felsRechenwerkTSL: ohne Rausch-Atlas kein Rechenwerk (raum fehlt)");
         if (AnazhRealm._felsRwMemo && AnazhRealm._felsRwMemo.T === T && AnazhRealm._felsRwMemo.raum === raum)
             return AnazhRealm._felsRwMemo.o;
-        const N = (v) => (typeof v === "number" ? T.float(v) : v);
+        const N = (v) => (typeof v === "number" ? T.float(AnazhRealm._f32(v)) : v);
         // gelaende-core `zufall(sh, i, j, k)` als EINE WGSL-Funktion: h = sh ^ i·0x27d4eb2d ^ j·0x165667b1 ^ (k + 1)·0x9e3779b1,
         // zwei Misch-Runden (u32: Multiplikation modulo 2^32, Xor, logisches Schieben) — i, j, k ganz, als f32 gereicht
         const zufallFn = T.Fn(([sh, i, j, k]) => {
@@ -2397,9 +2409,16 @@ class AnazhRealm_stoff_material {
         // die Komponente c der vier Ecken der Zelle (i, j): EIN Texel, roh geladen — die Ladung steht im Programm, das die
         // Probe ruft (eine Bindung lebt nie in einer Layout-Funktion: r184 baut sie EINMAL je Builder-Klasse, jedes weitere
         // Programm erbte den Namen der Textur aus dem ersten)
-        const ecken = (i, j, c) => T.textureLoad(tex, T.ivec2(i.mul(3).add(c), j));
-        // 0 · 127 · 254 → −1 · 0 · +1
-        const dekod = (e) => e.mul(255 / 127).sub(1.0);
+        // Die Zelle (i, j) ist EIN ivec2 `ij` (die Lage im Atlas als Vektor, ein Wert je Probe statt zwei: jedes Zeichen des
+        // Boden-Programms zählt, `S0_ZEICHEN`), c = 0 ohne „+ 0“.
+        const AB = T.ivec2(A, B);
+        const ecken = (ij, c) => T.textureLoad(tex, T.ivec2(c ? ij.x.mul(3).add(c) : ij.x.mul(3), ij.y));
+        // 0 · 127 · 254 → −1 · 0 · +1, als EINE reine Funktion (die Mischungen rufen sie zehnmal)
+        const dekod = T.Fn(([e]) => e.mul(AnazhRealm._f32(255 / 127)).sub(1.0)).setLayout({
+            name: "rauschDekod",
+            type: "vec4",
+            inputs: [{ name: "e", type: "vec4" }],
+        });
         const blende = (t) =>
             t
                 .mul(t)
@@ -2473,27 +2492,24 @@ class AnazhRealm_stoff_material {
         const ebeneProbe = (misch) => (p, k, achse) => {
             const c = T.floor(p);
             const ci = T.ivec2(c);
-            const i0 = ci.x.add(A * k).bitAnd(m);
-            const j0 = ci.y.add(B * k).bitAnd(m);
-            return misch(p.sub(c), ecken(i0, j0, 0), ecken(i0, j0, achse === "z" ? 2 : 1));
+            const ij = (k ? ci.add(T.ivec2(A * k, B * k)) : ci).bitAnd(m);
+            return misch(p.sub(c), ecken(ij, 0), ecken(ij, achse === "z" ? 2 : 1));
         };
         const ebene = ebeneProbe(ebeneMisch);
         const ebeneNeigung = ebeneProbe(ebeneNeigungMisch);
         const raum = (p) => {
             const c = T.floor(p);
             const ci = T.ivec3(c);
-            const i0 = ci.x.add(ci.z.mul(A)).bitAnd(m);
-            const j0 = ci.y.add(ci.z.mul(B)).bitAnd(m);
-            const i1 = i0.add(A).bitAnd(m);
-            const j1 = j0.add(B).bitAnd(m);
+            const ij0 = ci.xy.add(AB.mul(ci.z)).bitAnd(m);
+            const ij1 = ij0.add(AB).bitAnd(m);
             return raumMisch(
                 p.sub(c),
-                ecken(i0, j0, 0),
-                ecken(i0, j0, 1),
-                ecken(i0, j0, 2),
-                ecken(i1, j1, 0),
-                ecken(i1, j1, 1),
-                ecken(i1, j1, 2)
+                ecken(ij0, 0),
+                ecken(ij0, 1),
+                ecken(ij0, 2),
+                ecken(ij1, 0),
+                ecken(ij1, 1),
+                ecken(ij1, 2)
             );
         };
         // DIE STREUUNG EINER EBENE (`streu`, σ 0,237) aus dem Gitter des Kerns, nie getippt: der Wert der Ebene (x | z) ist die
@@ -2556,17 +2572,18 @@ class AnazhRealm_stoff_material {
         ].map(([f, w, h]) => [f, w.mul(-B.mikro), h]);
         const stufe = T.pow(T.float(mH), fr).mul(B.streu / (ra.streu * Math.sqrt(mH * mH + mH ** 4)));
         // die festen Oktaven des Bodens (Klumpen, Kiesel) sind EINE Probe je Welt-Lage (`_mikroFestProbe`): ihre Leser teilen sie
-        if (!n)
-            oktaven.push([B.freq, T.float(-B.strength), T.float(0.0)], [B.freq2, T.float(-B.strength2), T.float(0.0)]);
-        // je Ebene (a, b) die Neigung (x, y) und die Höhe (z)
+        if (!n) oktaven.push([B.freq, T.float(-B.strength), 0], [B.freq2, T.float(-B.strength2), 0]);
+        // je Ebene (a, b) die Neigung (x, y) und die Höhe (z) — die festen Oktaven tragen keine Höhe (0, kein Glied im Programm),
+        // die Summe beginnt bei der ersten Oktave (kein „vec3(0) +“: jedes Zeichen des Boden-Programms zählt, `S0_ZEICHEN`)
         const ebene = (a, b) => {
-            let g = T.vec3(0.0, 0.0, 0.0);
+            let g = null;
             for (const [f, w, h] of oktaven) {
                 const e =
                     typeof f === "number"
                         ? this._mikroFestProbe(T, wp, f)
                         : ra.ebeneNeigung(T.vec2(a, b).mod(T.float(P).div(f)).mul(f).add(T.vec2(0.37, 0.71)), 0, "z");
-                g = g.add(T.vec3(e.y.mul(w), e.z.mul(w), e.x.mul(h)));
+                const o = T.vec3(e.y.mul(w), e.z.mul(w), h === 0 ? 0 : e.x.mul(h));
+                g = g ? g.add(o) : o;
             }
             return g;
         };
@@ -2698,7 +2715,7 @@ class AnazhRealm_stoff_material {
             const sp = (s || T.fwidth(x)).max(1e-5); // die Spanne des Pixels in Einheiten
             // die Maße der Zeile in Einheiten der Lage — eine Länge als Zahl ist gefaltet (kurze Literale: jedes Zeichen des
             // Boden-Programms zählt, `S0_ZEICHEN`)
-            const inE = (meter) => (typeof m === "number" ? f(+(meter / m).toPrecision(7)) : f(meter).div(m));
+            const inE = (meter) => (typeof m === "number" ? f(AnazhRealm._f32(meter / m)) : f(meter).div(m));
             const [j, j2] = [inE(G.fuge), inE(2 * G.fuge)]; // die halbe und die ganze Fuge
             // die zwei Ränder des Pixels, um ½ versetzt: `floor` zählt die Fugen davor, `fract` − ½ ist der Weg zur nächsten
             const [xP, xM] = [x.add(sp.mul(0.5).add(0.5)), x.sub(sp.mul(0.5).sub(0.5))];
