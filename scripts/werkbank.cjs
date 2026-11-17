@@ -3745,7 +3745,7 @@ hauptLauf(async () => {
         endeMit(o.urteil && !o.urteil.length ? "GANG GRÜN" : "GANG ROT", o.urteil && !o.urteil.length);
     } else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
     else if (cmd === "wirt" && SELBST) {
-        selbsttestEnde(await WW.wirtSelbsttest(), "die Wirt-Wache nennt jeden Haken am Wirt (r, Prototyp, r.state, window) und setzt ihn zurück, die Marke sieht den Kontext, den eine Probe hält, ein Heap über der Schwelle ist UNGEMESSEN; die Mutante von main (der Haken der Hülle) besteht nicht");
+        selbsttestEnde(await WW.wirtSelbsttest(), "die Wirt-Wache nennt jeden Haken am Wirt (r, Prototyp, r.state, window) und setzt ihn zurück, die Marke sieht den Kontext, den eine Probe hält, hält sie ihn über der Schwelle, ist der Preis UNGEMESSEN — die Welt, die sie baute, nicht; die Mutante von main (der Haken der Hülle) besteht nicht");
         process.exit(0);
     } else if (cmd === "wirt") o = await rufe("/wirt", { gib: hat("gib"), heap: hat("heap") });
     else if (cmd === "diaet") {

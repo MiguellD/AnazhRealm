@@ -13,13 +13,14 @@
 // DIE MARKE (`/eval` der Werkbank zwischen `nimm` und `gib`): jeder Rumpf trägt eine Marke in seinem äußersten Kontext (`evalRumpf`,
 // `__wirtMarke`); jeder Abschluss, den die Probe irgendwo stehen ließ, hält die Kette seiner Kontexte und damit die Marke. Nach der
 // Rücknahme und dem Collector lebt eine Marke nur, wenn noch etwas den Kontext ihrer Probe hält — sie steht beim Kopf ihres Codes.
-// DAS URTEIL (`wirtUrteil`, Leser: der Läufer der Punkte-Maschine vor dem Preis-Lauf): jede Abweichung beim Namen; hält der Heap nach
-// der Rücknahme mehr als WIRT_SCHWELLE_MB über dem Stand vor der Probe, ist der Preis UNGEMESSEN beim Grund — nie fail-soft.
+// DAS URTEIL (`wirtUrteil`, Leser: der Läufer der Punkte-Maschine vor dem Preis-Lauf): jede Abweichung beim Namen; lebt nach der
+// Rücknahme eine Marke und hält der Heap mehr als WIRT_SCHWELLE_MB über dem Stand vor der Probe, ist der Preis UNGEMESSEN beim Grund —
+// nie fail-soft. Der Zuwachs ohne lebende Marke ist die Welt, die die Probe baute; ihn misst der Preis mit Recht.
 "use strict";
 
-// DIE SCHWELLE (MB, Heap nach drei Collector-Läufen, nach der Rücknahme − vor der Probe): aus der Streuung derselben Pose an der Radeon
-// (w28-probe-wirt, siehe Bericht) — zwei Messungen derselben Pose ohne Probe streuten um höchstens 13 MB, eine Probe, die ihren Kontext
-// hielt, um +865 MB
+// DIE SCHWELLE (MB, Heap nach drei Collector-Läufen, nach der Rücknahme − vor der Probe): aus der Streuung an der Radeon (w28-probe-wirt):
+// ein Leerlauf ohne Probe +23,4 / +1,8 MB, dieselbe Pose zweimal +8,8 MB, die Pose von vegetation.K4#1 nach der Rücknahme 548,9 gegen
+// 522,6 MB am Kopf ohne Haken (+26,3) — die Schwelle steht über dem Doppelten der größten Streuung; der Haken von main hielt +1 200 MB
 const WIRT_SCHWELLE_MB = 64;
 
 // ── Seite ─────────────────────────────────────────────────────────────
@@ -118,9 +119,11 @@ function wirtUrteil({ ab = {}, haelt = [], heapVor = null, heapNach = null, schw
     const gruende = [];
     if (ab.fehler) gruende.push("die Wache blind: " + ab.fehler);
     if ((ab.bleibt || []).length) gruende.push("nicht zurück: " + ab.bleibt.join(", "));
-    if (deltaMB != null && deltaMB > schwelle)
-        gruende.push("der Heap hält nach der Rücknahme " + deltaMB + " MB > " + schwelle + " (" + heapVor + " → " + heapNach + " MB)" +
-            (haelt.length ? "; den Kontext hält noch: " + haelt.slice(0, 3).join(" | ") : ""));
+    // der Heap-Zuwachs allein ist die Welt (eine Probe baut, stellt um, lädt eine andere Pose — vegetation.K4#1: +309,8 MB nach der
+    // Rücknahme, gleich dem Kopf ohne Haken); was die PROBE hält, sagt die Marke — lebt eine, ist der Zuwachs ihre obere Schranke
+    if (haelt.length && !(deltaMB != null && deltaMB <= schwelle))
+        gruende.push("den Kontext der Probe hält noch: " + haelt.slice(0, 3).join(" | ") +
+            (deltaMB != null ? " — Heap nach der Rücknahme " + heapVor + " → " + heapNach + " MB (+" + deltaMB + " > " + schwelle + ")" : " — Heap ungemessen"));
     const zeile = (anders.length ? "die Probe ließ stehen: " + anders.map((k) => k + " (" + wie[k] + ")").join(" · ") : "nichts am Wirt") +
         (haelt.length ? " · Kontext gehalten: " + haelt.length : "") +
         (deltaMB != null ? " · Heap " + heapVor + " → " + heapNach + " MB (" + (deltaMB >= 0 ? "+" : "") + deltaMB + ")" : "");
@@ -194,9 +197,12 @@ async function wirtSelbsttest() {
     // ein Abschluss in einem Datenfeld (kein Funktions-Feld): die Wache sieht ihn nicht, die Marke lebt — mit Heap über der Schwelle UNGEMESSEN
     const daten = await fahre("const gebaut = new Array(1e5).fill(1); W.gross = { f: () => gebaut.length }; return 1;");
     const u = wirtUrteil({ ab: daten.ab, haelt: daten.haelt, heapVor: 522.6, heapNach: 1386.3 });
-    pruef("Mutante ein Abschluss im Datenfeld hält den Kontext", daten.haelt.length === 1 && /W\.gross/.test(daten.haelt[0]) && /UNGEMESSEN|hält nach der Rücknahme 863\.7 MB/.test(u.ungemessen || ""),
+    pruef("Mutante ein Abschluss im Datenfeld hält den Kontext", daten.haelt.length === 1 && /W\.gross/.test(daten.haelt[0]) && /hält noch: .*\+863\.7 > 64/.test(u.ungemessen || ""),
         "lebt: " + daten.haelt.join(" | ") + " → " + u.ungemessen);
-    pruef("unter der Schwelle gemessen", !wirtUrteil({ ab: g.ab, heapVor: 522.6, heapNach: 531.4 }).ungemessen, "+8,8 MB");
+    pruef("Mutante Kontext gehalten, Heap ungemessen", /Heap ungemessen/.test(wirtUrteil({ ab: daten.ab, haelt: daten.haelt }).ungemessen || ""), "UNGEMESSEN");
+    pruef("gehaltener Kontext unter der Schwelle gemessen", !wirtUrteil({ ab: g.ab, haelt: ["x"], heapVor: 522.6, heapNach: 531.4 }).ungemessen, "+8,8 MB");
+    // die Welt wächst, die Probe hält nichts (vegetation.K4#1 an der Radeon, w28-probe-wirt: 239,1 → 548,9 MB, keine Marke lebt): gemessen
+    pruef("die Welt wächst ohne gehaltenen Kontext", !wirtUrteil({ ab: haken.ab, haelt: [], heapVor: 239.1, heapNach: 548.9 }).ungemessen, "+309,8 MB ist die Welt");
     pruef("Mutante die Wache blind", /blind/.test(wirtUrteil({ ab: wirtWache(new Welt(), true, {}) }).ungemessen || ""), "ohne nimm UNGEMESSEN");
     return fehler;
 }
