@@ -1579,3 +1579,4 @@ omen-gtx-gtx-d39e0d6e-w1954-6-d39e0d6e ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT
 2026-11-17 21:27 landung Zwischenstand main 08a8397b: misst 54 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (0 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-ank1b-1-d39e0d6e ROT 0 GRÜN / 1 ROT / 1 UNGEMESSEN · ROT ankunft.K1#2 · UNGEMESSEN ankunft.K1#1 (punkte-maschine 08f9aa2b messung/d39e0d6e-gtx.json)
 omen-gtx-gtx-08a8397b-1-08a8397b GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN luftwasser.K3#2 ‖ luftwasser.K3#2: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.815 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 8052 / 0 px (punkte-maschine c5a6cfd0 messung/08a8397b-gtx.json)
+omen-gtx-ankn1a-1-08a8397b ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT ankunft.K1#2 (punkte-maschine c5a6cfd0 messung/08a8397b-gtx.json)
