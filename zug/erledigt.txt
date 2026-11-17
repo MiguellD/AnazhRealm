@@ -1404,3 +1404,4 @@ omen-gtx-paar-4e-1-4e11d3e7 GRÜN 2 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN karte2
 omen-gtx-gtx-ee9c1965-1-ee9c1965 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN luftwasser.K3#1 ‖ luftwasser.K3#1: Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer) (punkte-maschine 2ef8167a messung/ee9c1965-gtx.json)
 omen-gtx-paar-f5-wk-1-f5ce1579 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN karte2.planet.wasser.kreislauf#1 (punkte-maschine 2ef8167a messung/f5ce1579-gtx.json)
 omen-gtx-gtx-ee9c1965-2-ee9c1965 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag vegetation.K5#2 (punkte-maschine 6321c9c5 messung/ee9c1965-gtx.json)
+omen-gtx-paar-f5-st-1-f5ce1579 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte2.planet.kosmos.sternhimmel#1 (punkte-maschine 39139f1d messung/f5ce1579-gtx.json)
