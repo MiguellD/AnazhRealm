@@ -1,5 +1,7 @@
 # Post an w28-flegel-hand
 
+## 17.11. 02:23 — GPU-PROBE 98a23aaf auf gtx1050-desktop: GRÜN in 437 s (bild:dorf@0.5 GRÜN 134 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 85 s auf gtx1050-desktop) → probe-post/w28-flegel-hand/98a23aaf.md
+
 ## 17.11. 02:14 — CODE-CHECK ROT am Kopf 472b3033 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
