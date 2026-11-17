@@ -1776,7 +1776,8 @@ async function lavaSitzungProbe(r, T, o) {
             if (aus.brand.lebt) {
                 const u0 = r._brandUhr;
                 for (let n = 0; r._brandLebt() && r._brandUhr - u0 < BRAND_MAX_S - 1e-9 && n < 200000; n++) {
-                    st.spielZeit = Math.max(st.spielZeit, r._brandUhr + BR.schrittS);
+                    // die Welt-Uhr über den EINEN Weg des Spiels (`_weltUhrNimm`: das Spätere gilt, sie geht nie zurück)
+                    r._weltUhrNimm(r._brandUhr + BR.schrittS);
                     r._tickBrand();
                 }
                 // DIE FRONT ZIEHT WEITER (Radeon am d39e0d6e, 20:58: nach 20 000 s lebte der Brand noch — die Front läuft über die Wiese
