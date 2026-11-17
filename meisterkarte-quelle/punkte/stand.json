@@ -3061,16 +3061,16 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 99 Bilder · max 50.13 ms · 24.24 % > 33 ms · Fahrt 82 Bilder · max 66.95 ms · 42.68 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 24.24 % > 33 ms | Fahrt: 42.68 % > 33 ms an ee9c1965 radeon · Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms an d39e0d6e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert · profiband.K4#2 gtx: ROT: Gehen 131 Bilder · max 58.34 ms · 8.40 % > 33 ms · Fahrt ? (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 8.40 % > 33 ms | Fahrt: brach: /umstellen: DIE WELT STEHT NICHT nach 3601 Takten: Ruhe 0, zuletzt brach sie: Bau-Regung (DIE WELT HÄNGT: die Welt nach 3601 Takten — offen {\"foundry\":0,\"chunks\":0,\"wald\":108,\"karten\":0,\"spiegel\":23,\" an d39e0d6e",
+   "beleg": "Maschine: Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms an d39e0d6e radeon · Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms an d39e0d6e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an d39e0d6e: Last: Referenz f 1,365 (Faden 1,166 · alle Kerne 1,365; vor 92,2/358,5 ms, nach 90,3/283,7 ms, Ruhe 79,1/262,6 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf · profiband.K4#2 gtx: ROT: Gehen 131 Bilder · max 58.34 ms · 8.40 % > 33 ms · Fahrt ? (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 8.40 % > 33 ms | Fahrt: brach: /umstellen: DIE WELT STEHT NICHT nach 3601 Takten: Ruhe 0, zuletzt brach sie: Bau-Regung (DIE WELT HÄNGT: die Welt nach 3601 Takten — offen {\"foundry\":0,\"chunks\":0,\"wald\":108,\"karten\":0,\"spiegel\":23,\" an d39e0d6e",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gehen 99 Bilder · max 50.13 ms · 24.24 % > 33 ms · Fahrt 82 Bilder · max 66.95 ms · 42.68 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 24.24 % > 33 ms | Fahrt: 42.68 % > 33 ms",
-     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms",
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": "GRÜN trotz Last: Referenz f 1,365 (Faden 1,166 · alle Kerne 1,365; vor 92,2/358,5 ms, nach 90,3/283,7 ms, Ruhe 79,1/262,6 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 22,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 16,1 CPU-s · sh.exe dienst/zug-dienst.sh 6,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 34,1 CPU-s · svchost.exe 14,7 CPU-s · SearchIndexer.exe 3,7 CPU-s",
+     "r6": "konsum"
     },
     {
      "id": "profiband.K4#1",
@@ -3087,7 +3087,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an d39e0d6e: Last: Referenz f 1,365 (Faden 1,166 · alle Kerne 1,365; vor 92,2/358,5 ms, nach 90,3/283,7 ms, Ruhe 79,1/262,6 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf",
      "ungemessen": true
     },
     {
@@ -4538,16 +4538,16 @@
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20519 px an 7de938ab radeon · 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20494 px an d39e0d6e gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert · vegetation.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20586 px an d39e0d6e radeon · 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20494 px an d39e0d6e gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert · vegetation.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "vegetation.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20519 px",
-     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20586 px",
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "vegetation.K4#1",
@@ -5605,16 +5605,15 @@
   },
   "karte2.mensch.stadt.siedlungsnetz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an 77e079ae radeon · ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an d39e0d6e gtx",
+   "beleg": "Maschine: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an d39e0d6e radeon · ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an d39e0d6e gtx",
    "stationen": [
     {
      "id": "karte2.mensch.stadt.siedlungsnetz#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km",
-     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +2)",
-     "gehalten": true,
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -5658,16 +5657,16 @@
   },
   "karte2.mensch.zeit.erleben": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 89 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3 an 884c6a25 radeon · gehalten: Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 95 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal an d39e0d6e gtx",
+   "beleg": "Maschine: Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 91 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon · gehalten: Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 95 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal an d39e0d6e gtx",
    "stationen": [
     {
      "id": "karte2.mensch.zeit.erleben#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 89 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3",
-     "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "zahl": "Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 91 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3",
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6014,7 +6013,7 @@
      "gruen": true,
      "zahl": "Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3",
      "sha": "e489088a9bfca46817cd159efd64ffc1be80dbd4",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an d39e0d6e: Messort: lava: der Brand um den Guss lebt nach 20000 s auf seiner Uhr — der Schuss erstarrt sähe sein Feuer, nie die Decke — kein Urteil, UNGEMESSEN (die Probe sah: Probe: der Brand um den Guss lebt n",
      "gehalten": true,
      "beide": true
     },
@@ -6032,16 +6031,16 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +244 Pixel je Pixel (neu 244 − Rauschen 0, bei laufender Schleife 989; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.same.kopplung.kaskade#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +261 Pixel je Pixel, Median aus 5 Sätzen (Spanne 261–261; neu 261 − Rauschen 0, bei laufender Schleife 70; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 625) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon — offen: karte2.same.kopplung.kaskade#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "trocken nach 60 s 1 brennende Zellen, Flammen im Bild +244 Pixel je Pixel (neu 244 − Rauschen 0, bei laufender Schleife 989; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3",
-     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "zahl": "Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +261 Pixel je Pixel, Median aus 5 Sätzen (Spanne 261–261; neu 261 − Rauschen 0, bei laufender Schleife 70; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 625) · [linse-gpu] amd/rdna-3",
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6058,16 +6057,16 @@
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 884c6a25 gtx",
+   "beleg": "Maschine: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.058 (÷ 0.320, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an d39e0d6e radeon · gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 884c6a25 gtx",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3",
-     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "zahl": "Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.058 (÷ 0.320, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3",
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6184,7 +6183,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert · karte2.same.preis.ausdauer#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert — zuletzt an d39e0d6e: Messort: die Dauer trug ihre Minute nicht: 0.84 min am Stück < 1 · Heap-Kurve blind (19 Punkte über 0.64 min) — kein Urteil, UNGEMESSEN (die Probe sah: BLIND, kein Urteil über die Steigung · Spielgang · karte2.same.preis.ausdauer#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -6192,7 +6191,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an d39e0d6e: Messort: die Dauer trug ihre Minute nicht: 0.84 min am Stück < 1 · Heap-Kurve blind (19 Punkte über 0.64 min) — kein Urteil, UNGEMESSEN (die Probe sah: BLIND, kein Urteil über die Steigung · Spielgang",
      "ungemessen": true,
      "beide": true
     },
@@ -6328,7 +6327,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 195,
+  "konsum": 200,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6496,10 +6495,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 147
+  "ohne": 142
  },
  "kopfVoll": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
- "zeit": "2026-11-17T20:06:04.233Z",
+ "zeit": "2026-11-17T20:17:09.837Z",
  "vorher": "d39e0d6e",
  "bilanz": {
   "gewinn": [],
