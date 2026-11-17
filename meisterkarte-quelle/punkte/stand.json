@@ -3064,7 +3064,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 99 Bilder · max 50.13 ms · 24.24 % > 33 ms · Fahrt 82 Bilder · max 66.95 ms · 42.68 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 24.24 % > 33 ms | Fahrt: 42.68 % > 33 ms an ee9c1965 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert · profiband.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Gehen 99 Bilder · max 50.13 ms · 24.24 % > 33 ms · Fahrt 82 Bilder · max 66.95 ms · 42.68 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 24.24 % > 33 ms | Fahrt: 42.68 % > 33 ms an ee9c1965 radeon · Gehen 131 Bilder · max 58.34 ms · 8.40 % > 33 ms · Fahrt ? (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 8.40 % > 33 ms | Fahrt: brach: /umstellen: DIE WELT STEHT NICHT nach 3601 Takten: Ruhe 0, zuletzt brach sie: Bau-Regung (DIE WELT HÄNGT: die Welt nach 3601 Takten — offen {\"foundry\":0,\"chunks\":0,\"wald\":108,\"karten\":0,\"spiegel\":23,\" an d39e0d6e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert · profiband.K4#2 gtx: ROT: Gehen 131 Bilder · max 58.34 ms · 8.40 % > 33 ms · Fahrt ? (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 8.40 % > 33 ms | Fahrt: brach: /umstellen: DIE WELT STEHT NICHT nach 3601 Takten: Ruhe 0, zuletzt brach sie: Bau-Regung (DIE WELT HÄNGT: die Welt nach 3601 Takten — offen {\"foundry\":0,\"chunks\":0,\"wald\":108,\"karten\":0,\"spiegel\":23,\" an d39e0d6e",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3078,11 +3078,11 @@
     {
      "id": "profiband.K4#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Gehen 131 Bilder · max 58.34 ms · 8.40 % > 33 ms · Fahrt ? (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 8.40 % > 33 ms | Fahrt: brach: /umstellen: DIE WELT STEHT NICHT nach 3601 Takten: Ruhe 0, zuletzt brach sie: Bau-Regung (DIE WELT HÄNGT: die Welt nach 3601 Takten — offen {\"foundry\":0,\"chunks\":0,\"wald\":108,\"karten\":0,\"spiegel\":23,\"",
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "profiband.K4#2",
@@ -3097,10 +3097,10 @@
      "id": "profiband.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "Gehen 131 Bilder · max 58.34 ms · 8.40 % > 33 ms · Fahrt ? (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 8.40 % > 33 ms | Fahrt: brach: /umstellen: DIE WELT STEHT NICHT nach 3601 Takten: Ruhe 0, zuletzt brach sie: Bau-Regung (DIE WELT HÄNGT: die Welt nach 3601 Takten — offen {\"foundry\":0,\"chunks\":0,\"wald\":108,\"karten\":0,\"spiegel\":23,\"",
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": "ROT: Gehen 131 Bilder · max 58.34 ms · 8.40 % > 33 ms · Fahrt ? (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 8.40 % > 33 ms | Fahrt: brach: /umstellen: DIE WELT STEHT NICHT nach 3601 Takten: Ruhe 0, zuletzt brach sie: Bau-Regung (DIE WELT HÄNGT: die Welt nach 3601 Takten — offen {\"foundry\":0,\"chunks\":0,\"wald\":108,\"karten\":0,\"spiegel\":23,\"",
+     "r6": "konsum"
     }
    ]
   },
@@ -6208,7 +6208,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert · karte2.same.preis.ausdauer#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Station seit der Messung geändert · karte2.same.preis.ausdauer#1 gtx: Station seit der Messung geändert — zuletzt an d39e0d6e: Last: Referenz f 1,738 (Faden 1,738 · alle Kerne 1,355; vor 157,3/314,2 ms, nach 97,1/269,7 ms, Ruhe 90,5/231,8 ms seit 2026-11-15) · fremd: updater.exe 29,9 CPU-s · Claude.exe --type=gpu-process --gp",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -6226,7 +6226,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an d39e0d6e: Last: Referenz f 1,738 (Faden 1,738 · alle Kerne 1,355; vor 157,3/314,2 ms, nach 97,1/269,7 ms, Ruhe 90,5/231,8 ms seit 2026-11-15) · fremd: updater.exe 29,9 CPU-s · Claude.exe --type=gpu-process --gp",
      "ungemessen": true,
      "beide": true
     }
@@ -6352,7 +6352,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 204,
+  "konsum": 206,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6520,10 +6520,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 138
+  "ohne": 136
  },
  "kopfVoll": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
- "zeit": "2026-11-17T18:35:49.425Z",
+ "zeit": "2026-11-17T18:42:18.985Z",
  "vorher": "d39e0d6e",
  "bilanz": {
   "gewinn": [],
