@@ -148,9 +148,9 @@ function wetterBuch(seit) {
 // taut für DIESEN Zug (im Buch Quelle „buehne") und steht danach wieder, wie sie stand (oder eingefroren). Der Cross-Fade
 // fällt. Die Bühne spricht wie der Spieler („setze wetter sonnig", wie jede Spur der Leben-Schau): das Gesetz der Schreiber
 // lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs. `zug`: der Übergang des Spiels
-// bleibt (der Wetter-Zug der Licht-Linse). Ohne Zug fällt der Übergang im Bild UND auf dem Weg des Regens: über den Zweig des Spiels
-// für ein Wort ohne Übergang (`requestWeatherTransition` mit from === target: der Übergang null, `_regenWeg(w, w, jetzt, 0)`). Bis
-// vorrat6-wasser-bilanz fiel nur der Übergang des Bilds, die Stempel blieben als Rampe von 45 s ± Gemüt liegen (`_setWeather` hatte
+// bleibt (der Wetter-Zug der Licht-Linse). Ohne Zug fällt der Übergang im Bild UND auf dem Weg des Regens: `__uebergangFaellt`
+// (welt-boot.cjs, in jeder Seite: der Zweig des Spiels für ein Wort ohne Übergang). Bis
+// w28-wetter-ohne-rampe fiel nur der Übergang des Bilds, die Stempel blieben als Rampe von 45 s ± Gemüt liegen (`_setWeather` hatte
 // sie gelegt): 10 s Niesel stempelten 23,6–24,4 s, jeder Leser von Pegel und Abfluss nach der Bühne las die Rampe mit
 // (planet.wasser.kreislauf S1: Bilanz 2,087 / 2,332 statt ≈ 1).
 function wetterSetzen(wort, zug) {
@@ -167,16 +167,6 @@ function wetterSetzen(wort, zug) {
     window.__wetterHalten();
     if (!zug) window.__uebergangFaellt(r);
     return st.weather;
-}
-
-// DER ÜBERGANG FÄLLT (`window.__uebergangFaellt(r)`: die Bühne ohne Zug und jede Linse, die das Wort ohne Übergang setzt — die
-// Wasser-Linse über WASSER_INSTALL): das Wort, das gilt, steht ab jetzt im Bild und auf dem Weg des Regens — der Zweig des Spiels
-// (`requestWeatherTransition` from === target); vorher fällt der laufende Übergang, sonst nähme das Spiel denselben Zielwert als
-// „schon unterwegs“ (idempotent) und ließe die Rampe liegen.
-function uebergangFaellt(r) {
-    const st = r.state;
-    st.weatherTransition = null;
-    r.requestWeatherTransition(st.weather, 0, st.weather);
 }
 
 // DER UHR-SPION (die Linse der Uhr, Leben-Schau 2): JEDER Schreiber der Tageszeit (`state.timeOfDay`) beim Namen.
@@ -1854,7 +1844,6 @@ async function bildLinsenSelbsttest() {
 
 module.exports = {
     bildLinsenSelbsttest,
-    uebergangFaellt,
     stufenUrteil,
     stufenAbweichung,
     inhaltFamilie,
@@ -1885,7 +1874,7 @@ module.exports = {
         `window.__weltaktBuch = ${weltaktBuch};` +
         `window.__wetterSpion = ${wetterSpion};` +
         `window.__wetterBuch = ${wetterBuch};` +
-        `window.__wetterSetzen = ${wetterSetzen}; window.__uebergangFaellt = ${uebergangFaellt};` +
+        `window.__wetterSetzen = ${wetterSetzen};` +
         `window.__wetterHalten = ${wetterHalten};` +
         `window.__uhrSpion = ${uhrSpion};` +
         `window.__bildUhren = ${bildUhren};` +

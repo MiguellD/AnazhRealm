@@ -135,7 +135,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
 
         // Setze sunny als Ausgangspunkt
         st.weather = "sunny";
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         // der Satz des Spielers blendet vom Wetter davor über
         r.dslRun(["weather", "rainy"], { source: "human" });
         out.weatherTransitionFromSunny = st.weatherTransition && st.weatherTransition.from === "sunny";
@@ -285,7 +285,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         st.player.emotions.joy = 0;
         st.player.emotions.sorrow = 0;
         st.weather = "sunny";
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         // der Tint liest jetzt die RÄUMLICHE emotion-Achse (`aura.emotion`,
         // global + lokaler Abdruck). Diese Probe misst die GLOBALE Emotion→Tint-
         // Kopplung isoliert → das emotionField clearen (sonst blenden Orts-Abdrücke
@@ -328,22 +328,22 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         st.player.emotions.peace = 0;
         st.player.emotions.chaos = 0;
         st.weather = "sunny";
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         r.requestWeatherTransition("rainy"); // Default-Dauer (sollte ~45000)
         const defaultDur = st.weatherTransition && st.weatherTransition.duration;
-        st.weatherTransition = null;
         st.weather = "sunny";
+        window.__uebergangFaellt(r);
         st.player.emotions.peace = 1.0;
         r.requestWeatherTransition("rainy");
         const peaceDur = st.weatherTransition && st.weatherTransition.duration;
-        st.weatherTransition = null;
         st.weather = "sunny";
+        window.__uebergangFaellt(r);
         st.player.emotions.peace = 0;
         st.player.emotions.chaos = 1.0;
         r.requestWeatherTransition("rainy");
         const chaosDur = st.weatherTransition && st.weatherTransition.duration;
-        st.weatherTransition = null;
         st.weather = "sunny";
+        window.__uebergangFaellt(r);
         st.player.emotions.chaos = 0;
         out.peaceSlowsWeather = peaceDur > defaultDur * 1.2;
         out.chaosSpeedsWeather = chaosDur < defaultDur * 0.7;
@@ -558,12 +558,12 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         // --- Phase D: Wolken + Wasser ---
         // Wolken-Cover (der Uniform-Knoten in state.skyboxUniforms) folgt weather (liest state.skyboxUniforms). weatherTransition leeren: eine aktive
         // Warmup-Transition überstimmt state.weather in `_weatherBlendedValue` (beide Lesungen gleich).
-        st.weatherTransition = null;
         st.weather = "rainy";
+        window.__uebergangFaellt(r);
         r._applyDayNightToScene();
         const cloudRainy = st.skyboxUniforms.cloudCover.value;
-        st.weatherTransition = null;
         st.weather = "sunny";
+        window.__uebergangFaellt(r);
         r._applyDayNightToScene();
         const cloudSunny = st.skyboxUniforms.cloudCover.value;
         out.cloudsFollowWeather = cloudRainy > cloudSunny;
@@ -1543,7 +1543,7 @@ async function checkBandWetterVektor({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         await __weltDa();
         // Keine laufende Transition — die Wort-Vorgabe führt.
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         const sunny = r._weatherFieldFor("sunny");
         const rainy = r._weatherFieldFor("rainy");
         const stormy = r._weatherFieldFor("stormy");
@@ -1553,7 +1553,7 @@ async function checkBandWetterVektor({ page, check }) {
             st.weatherTransition = { from: "sunny", to: "stormy", progress: p };
             fogRamp.push(r._weatherFieldFor("sunny").fog);
         }
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         return { sunny, rainy, stormy, fogRamp };
     });
     const fails = [];
@@ -1741,7 +1741,7 @@ async function checkBandHimmelTag({ page, check }) {
             st.timeOfDay = t;
             if (st.world) st.world.timeOfDay = t;
             r._setWeather("sunny", "human");
-            st.weatherTransition = null;
+            window.__uebergangFaellt(r);
             r._applyDayNightToScene();
         };
         const sf = st.starField;

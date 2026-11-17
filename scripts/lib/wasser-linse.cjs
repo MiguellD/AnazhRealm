@@ -1,6 +1,5 @@
 const { WELT_ORTE_INSTALL } = require("./welt-orte.cjs");
 const { luma709 } = require("./abnahme-urteil.cjs");
-const { uebergangFaellt } = require("./ausgabe-aufnahme.cjs");
 // wasser-linse.cjs — DIE PROBEN DER WASSER-WAND (scripts/diag-wasser-leben.cjs, Welle L Q6 + Q7 bis F3): je Probe eine Seiten-
 // Funktion `window.__wasser*` (WASSER_INSTALL), die den Chokepoint selbst ruft (nie einen Stub); was sie misst und warum, steht
 // über ihr. Werkbank (echte GPU, sichtbar): `werkbank eval` mit WASSER_INSTALL.
@@ -3237,7 +3236,7 @@ async function wasserOrte(o = {}) {
 module.exports = {
     WASSER_INSTALL:
         WELT_ORTE_INSTALL +
-        `var BACH_PROBE_M = ${BACH_PROBE_M}; window.luma709 = ${luma709}; window.__uebergangFaellt = ${uebergangFaellt};` +
+        `var BACH_PROBE_M = ${BACH_PROBE_M}; window.luma709 = ${luma709};` +
         wasserRund +
         wasserFlaechen +
         wasserBoot +
