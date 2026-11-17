@@ -2644,8 +2644,9 @@
      "gruen": true,
      "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 16.85 s, Furcht chaos 0.908 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.42 (Gegenlauf 0)",
      "sha": "eeb5d2bfbcdae181388a990d13c434cd67b923a0",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js, stamm/feld-leben.js)",
+     "gehalten": true,
+     "r6": "konsum"
     }
    ]
   },
@@ -6299,7 +6300,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 177,
+  "konsum": 178,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6469,10 +6470,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 161
+  "ohne": 160
  },
  "kopfVoll": "884c6a25c7125ccb50678de22a29e6584ca498de",
- "zeit": "2026-11-17T01:40:04.062Z",
+ "zeit": "2026-11-17T01:50:48.188Z",
  "vorher": "884c6a25",
  "bilanz": {
   "gewinn": [],
