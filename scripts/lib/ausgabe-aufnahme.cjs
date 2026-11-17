@@ -148,7 +148,11 @@ function wetterBuch(seit) {
 // taut für DIESEN Zug (im Buch Quelle „buehne") und steht danach wieder, wie sie stand (oder eingefroren). Der Cross-Fade
 // fällt. Die Bühne spricht wie der Spieler („setze wetter sonnig", wie jede Spur der Leben-Schau): das Gesetz der Schreiber
 // lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs. `zug`: der Übergang des Spiels
-// bleibt (der Wetter-Zug der Licht-Linse).
+// bleibt (der Wetter-Zug der Licht-Linse). Ohne Zug fällt der Übergang im Bild UND auf dem Weg des Regens: `__uebergangFaellt`
+// (welt-boot.cjs, in jeder Seite: der Zweig des Spiels für ein Wort ohne Übergang). Bis
+// w28-wetter-ohne-rampe fiel nur der Übergang des Bilds, die Stempel blieben als Rampe von 45 s ± Gemüt liegen (`_setWeather` hatte
+// sie gelegt): 10 s Niesel stempelten 23,6–24,4 s, jeder Leser von Pegel und Abfluss nach der Bühne las die Rampe mit
+// (planet.wasser.kreislauf S1: Bilanz 2,087 / 2,332 statt ≈ 1).
 function wetterSetzen(wort, zug) {
     const S = window.__wetterSpion();
     const uhr = st.weatherEffectTime;
@@ -161,7 +165,7 @@ function wetterSetzen(wort, zug) {
     }
     st.weatherEffectTime = uhr;
     window.__wetterHalten();
-    if (!zug) st.weatherTransition = null;
+    if (!zug) window.__uebergangFaellt(r);
     return st.weather;
 }
 

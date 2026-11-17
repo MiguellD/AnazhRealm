@@ -2936,8 +2936,8 @@ class AnazhRealm_feld_leben {
     // Fahne. DIE FRONT einer Zelle zur Spielzeit t ist die Ellipse ihres Eintritts (`_brandZuenden`: der Brennpunkt am Eintritt,
     // die Spitze längs `kopf`): r(θ) = (t − t0)·R(θ), R(θ) = R·(1 − ecc)/(1 − ecc·cos θ). Die Flammen stehen auf ihr, soweit sie
     // in der Zelle liegt, je eine halbe Länge auseinander; die Länge nach Byram 1959 (L = 0,0775·I^0,46, I = H·w·R(θ) in kW/m aus
-    // der Zeile des Betts), geneigt mit dem EINEN Wind (Froude: tan φ = u/√(g·L)), flackernd nach dem Datum des Feuer-Lichts
-    // (fachwerk `lichtFlackern`), Gestalt und Ton aus dem Flammen-Gesetz des Fachwerks (`FLAMME`, wie die Feuerstelle). DER RAUCH
+    // der Zeile des Betts), geneigt mit dem EINEN Wind (Froude: tan φ = u/√(g·L)), pulsend in Gipfeln und Tälern
+    // (`BRAND.bild.puls`), Gestalt und Ton aus dem Flammen-Gesetz des Fachwerks (`FLAMME`, wie die Feuerstelle). DER RAUCH
     // ist eine Linien-Fahne (Morton–Taylor–Turner 1956): je glühende Zelle Ballen im Takt ihrer Glut von ihren Flammen, sie
     // steigen mit der Auftriebs-Geschwindigkeit der Front w = (g·I/(ρ·c·T))^⅓, wachsen mit der Höhe (b = b0 + α·Δz), verdünnen
     // (Deckung ∝ b0/b) und ziehen mit dem Wind. Bis w3v-brand-bild las nur der Kamin-Rauch die Zelle (Kistchen à 0,34 m, 26 für
@@ -2956,15 +2956,12 @@ class AnazhRealm_feld_leben {
         fl.length = 0;
         const qu = [];
         const [B, K, t] = [AnazhRealm.BRAND.bild, AnazhRealm.LIFE_FIELD.cell, st.spielZeit];
-        const FW = globalThis.__fachwerkCore;
-        const L = FW.LICHT_GESETZ.feuer;
-        // das Flackern des Licht-Gesetzes in `flackerPhasen` Phasen je Bild (jede Flamme trägt eine), die Winkel der Front je
-        // Abtastung N EINMAL (cos, sin, gemerkt an der Instanz)
-        const P = B.flackerPhasen;
-        const fla = Array.from(
-            { length: P },
-            (_, k) => 1 + L.flacker.amp * FW.lichtFlackern(L, this._bildZeit, (2 * Math.PI * k) / P)
-        );
+        // DIE ZUNGE PULST (w28-brand-zunge): eine Flammen-Front brennt nicht als Band gleicher Höhe — sie steht in Gipfeln und
+        // Tälern im Abstand ihrer Länge (Finney et al. 2015), und jede Zunge pufft mit f = 1,5/√D Hz über der Tiefe D = R(θ)·tr
+        // ihrer Flammen-Zone (Cetegen & Ahmed 1993); die Spitze geht dabei um ± `puls` um die Byram-Länge (Zukoski: die
+        // Spanne der Intermittenz). Bis hier atmete sie mit dem Herdfeuer-Licht (± 18 % in 6–10 Hz, acht Phasen): aus der Nähe
+        // ein flaches oranges Band. Die Winkel der Front je Abtastung N EINMAL (cos, sin, gemerkt an der Instanz).
+        const [puls, uhr] = [B.puls, 9.42 * (this._bildZeit || 0)];
         const tafeln = this._brandWinkel || (this._brandWinkel = new Map());
         const tafel = (N) => {
             if (!tafeln.has(N))
@@ -3028,7 +3025,8 @@ class AnazhRealm_feld_leben {
                 f.x = x;
                 f.y = b.y + b.gx * (x - xc) + b.gz * (z - zc);
                 f.z = z;
-                f.lang = lang * fla[Math.floor((phase / 6.2832) * P) % P];
+                const takt = (Math.PI * s) / lang - uhr / Math.sqrt(Math.max(0.05, Rt * b.tr)) + Math.sin(phase);
+                f.lang = lang * (1 + puls * Math.sin(takt));
                 f.kipp = Math.atan(u / Math.sqrt(9.81 * lang));
                 f.wx = w.x;
                 f.wz = w.z;
@@ -3879,7 +3877,7 @@ AnazhRealm.BRAND = Object.freeze({
     // das Bild (`_brandBild`): bis `weiteM` um das Auge, die Front in `winkel` Schritten abgetastet (jenseits von `nahM` je
     // Abstand gröber, nie unter `winkelMin`), je Flamme ein Abstand von
     // `abstand` × ihrer Länge (mindestens `abstandMinM`), höchstens `flammenMax` je Bild aus höchstens `zellenMax` Zellen, die
-    // nächsten zuerst (ein Brand von 2 000 Zellen kostet das Bild, nie die Welt); das Flackern in `flackerPhasen`; `flammenWind` der Wind auf Flammenhöhe je Wind
+    // nächsten zuerst (ein Brand von 2 000 Zellen kostet das Bild, nie die Welt); die Spitze der Zunge pulst um ± `puls` ihrer Länge; `flammenWind` der Wind auf Flammenhöhe je Wind
     // in 10 m (Albini–Baughman 1979, offenes Gras); die Zunge `breite` × Länge breit, ihre Deckung
     // fällt zur Spitze mit (1 − h)^spitze; ihr Bild `flamme` (`_brandFlammenZeichnen`): die Temperatur `kelvin` [Wurzel, Spitze], `ziel` ihr Ton vor der
     // Tonkurve, die Dicke `dicke`, ihr Fall zum Rand (1 − ξ²)^`rand`, die Tafel der Zunge in `tafel` Texeln, das Rausch-Gesetz `rausch` [Skala quer, hoch, Hub], steigend mit `zug` Längen je
@@ -3893,10 +3891,10 @@ AnazhRealm.BRAND = Object.freeze({
         winkelMin: 4,
         nahM: 12,
         abstand: 0.45,
-        abstandMinM: 0.5,
+        abstandMinM: 0.2,
         flammenMax: 384,
         zellenMax: 32,
-        flackerPhasen: 8,
+        puls: 0.35,
         flammenWind: 0.4,
         breite: 0.42,
         spitze: 0.8,

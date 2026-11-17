@@ -217,10 +217,11 @@ class AnazhRealm_kampf {
         return o;
     }
 
-    // Die Hand-Mitte der rechten Hand in Welt (dort sitzt der Griff der Faust, Ofen-Beipack rig.handMitte), sonst das Handgelenk.
+    // Die Hand-Mitte der rechten Hand in Welt (dort sitzt der Griff der Faust, der EINE Leser `_leibHandMitte`), sonst das Handgelenk.
     _kampfHandMitte(rig, out) {
         const w = rig.armR.wrist;
-        const hm = rig.handMitte && rig.handMitte[w.name];
+        const H = this._leibHandMitte(rig);
+        const hm = H && H[w.name];
         return hm ? w.localToWorld(out.set(hm[0], hm[1], hm[2])) : w.getWorldPosition(out);
     }
 

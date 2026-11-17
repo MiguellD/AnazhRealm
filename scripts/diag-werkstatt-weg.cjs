@@ -1103,7 +1103,7 @@ function wegHelfer(arg) {
         // die offene Schublade nach oben (das Rad zum Teilen-Knopf scrollte sie, der Rand der Auswahl läge sonst unter dem Kopf)
         oben: () => document.querySelectorAll(".drawer-scroll").forEach((d) => (d.scrollTop = 0)),
         // das Wort des Spielers hält Mittag, Sonne und Sommer (die Nässe senkt die Haftung am Rad, `fahr-proben` wetter)
-        wort: () => (r.setTimeOfDay(0.5, "human"), r._setWeather("sunny", "human"), (st.weatherTransition = null), r._naesseTakt(1e6), r.setSeason("sommer")),
+        wort: () => (r.setTimeOfDay(0.5, "human"), r._setWeather("sunny", "human"), window.__uebergangFaellt(r), r._naesseTakt(1e6), r.setSeason("sommer")),
         // die Herkunft eines Satzes; die KI antwortet auf ihn mit dem Programm des Werks (`maybeAnswerWithLlm`, ihr Endpunkt ist
         // die Antwort): das Wort hinter dem Art-Präfix über spawn_studio, das eigene Werk über spawn_blueprint
         herkunft(h, name) {
