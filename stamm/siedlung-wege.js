@@ -927,6 +927,14 @@ class AnazhRealm_siedlung_wege {
         const stein = {};
         const pflaster = this._kopfsteinFarbe(_T, xz, stein);
         if (aus) aus.stein = { farbe: pflaster, deckung: _pflaster, kipp: stein.kipp, korn: stein.korn };
+        // DIE ASCHE IST KEIN NASSER FELS (w28-brand-bild): der Boden-Stoff legt danach Korn, Kavität und den Glanz der „nassen
+        // kahlen Niederung" über jede dunkle, nicht grüne Farbe — `aus.asche` nennt ihm die Decke (Albedo, Deckung unter Weg,
+        // Acker und Pflaster), er hält auf ihr die Rauheit ihrer Zeile im Stoff-Gesetz und ihre Farbe (`_terrainGeologyAlbedo`)
+        if (aus)
+            aus.asche = {
+                farbe: _T.vec3(s[0], s[1], s[2]),
+                deckung: _a.mul(_T.float(1).sub(_erde.add(_acker).add(_pflaster).clamp(0.0, 1.0))),
+            };
         return _T.mix(mitAcker, pflaster, _pflaster);
     }
 
