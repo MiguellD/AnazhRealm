@@ -1,0 +1,137 @@
+{
+ "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+ "geraet": "gtx",
+ "zeit": "2026-11-17T18:01:48.372Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "klang.K4#2": {
+   "gruen": true,
+   "zahl": "✅ Schritte gras 6119 Hz (n 6) · laub 8714 Hz (n 6) · stein 4756 Hz (n 5), kleinster Abstand 1363 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 1.0001 r 1.0000 (-9 m 21.4 m/s 1.0665/1.0665 · -4.5 m 16.4 m/s 1.0504/1.0504 · -2 m 9.8 m/s 1.0294/1.0294 · 2 m -9.9 m/s 0.9719/0.9719 · 4.5 m -15.9 m/s 0.9557/0.9557 · 9 m -18.7 m/s 0.9484/0.9484)",
+   "exit": 0,
+   "minuten": 0.52,
+   "gpu": "nvidia/pascal",
+   "konsum": "k00364c1f29b8",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k2a15f73e7009",
+   "s": 30.4,
+   "fremd": {
+    "s": 32.4,
+    "takte": 15,
+    "fremdS": 14.61,
+    "kerne": 0.451,
+    "fensterKerne": 0.617,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.56
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.39
+     ]
+    ],
+    "dienerS": 10.31,
+    "diener": [
+     [
+      "dwm.exe",
+      4.02
+     ],
+     [
+      "System",
+      3.61
+     ]
+    ],
+    "geraetS": 7.75,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.44
+     ],
+     [
+      "svchost.exe",
+      2.58
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.31
+     ]
+    ],
+    "eigenS": 59.28,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-17T18:01:48.372Z",
+   "abdruck": "16fd370eb530",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k00364c1f29b8": "dVRdj5swEPwvebzW54SPw1i6B+eIlEqtmvsJa3sNJAQiG442Vf97FQJJgOs+AZphZmfX/rM4gTpAis97V5ULvnhafF04+EDi0H6gfd67BV8sVQAh4+JaVAjxdoEpm59qR3UOKTkUUKbkjKVr3LPqWE8PmCKXFGQJ2RFJY2vMix60UgwBOW03ot1RuqMRXbevr1NqIVFXpAaDA1FqL/KBT4GNS0EigcZ0Yj04xlDHktOuWCJ2ezqUeBeCtpupooRSj50aH0Kz4t9+C7ERM4c6B6xJkZdu0FQ6lL7Hb0LzrrSFlpwBswJtT2J+9OKFg1EhRNLu5kRTNM6NxJivQ49xSmM6wabocpXV5GQrieUQXuxFK+CfJJ2eGmIeHYGUwOQ05wywTNGOPURBqAJOf7HpTw9wRAukhGyYx9KPPHnPhlK6nXspOuOdxGCcaRlHZkS8zHDbXhYzYZeX9PaZba8Lm6TiXu8TEaey3B7H8RgTaljy73NLLgONlhwqV9/QPmMe+P3pSLqFErsgmTLvzfQ8T74sQ/bQC6NiO8vOVaZuwSJJT01PxADDKORCfJuBazgehyaUhyycDs7Vl8V+tLGMvDDsZpH+Zw7XY0DOmBcDKVJq5SN/+yGmfX5YOBKQqc2NGaYtQ2Xiz5azxaImsqrqAelr8BWnPi1vqcSXYyDW9wkmbaU2b+m7mFQ69d39vbL1YDqUL0sTcNOdRjVFn9EWmOIoGx1IHzSnrXqQD4aHL6MlPM9Gd86xGF+JLI503K/vOOcW7UFCeRhGbHyU+rpTO5H0gi9ruqfXXb+5ET9bITbr6418QkVPtjL55fqiGTQug6K+3+1//wE=",
+  "k2a15f73e7009": "fVTBcpswEP0XH5sS2YCC0EwOcsnUyUymzqnT40qsgBiDR4KQutN/75gg20DbPdnMvn1vd5/21+IAagcZ3r7aulrwxafF54WFN/Qsmjc0t692wRdLFQJlXHwEEUJ8PaUpUxwaS8pCEpAV5Hv0WtNgUd6qHrZSDAE56R5EtyVkSyKy7sQ51uL+flqmlJjWXgMaXRGZ+lEAfJrY2gwketDqnnhIjpGmseSkD5aI7StxIV6EIN3DlFFClY5V6wCoXvHHToiHucK0AGy8sqis41QplYHPz0TdHGOg846AeYlmALEguvOpEyqESLrtHKjL1toRGQtS6jNOSEwmuRnaQuWNdzC1xMoNL/ajFfD1vHR2aD19rQikBCanc84BqwzNWEMUUhVy8s6mRXewRwNeBbnbxzKIfHmZDSFkM9dS9sJ7CiecpTKO9AhICMk2vX0S1v85f2abD0Ml2cVc4mVCYlVemP14PFrTFJbTnm0OKRpvV9vmnBkw5kMwvICkN5PYhskUeWlkwPnybknZVR+MiM1sbrbWTQcGvezQDkAMkUaUi+x5ltzAfu8aUD4yOmugOZn6WsYy8int95D9YwcfT8A7YlE6UKTUKkD+5VlM+3wzsPdAZqbQ2m1aUqXjvxmzw7LxZF03LjNIIVCcBKQ6TyVmQvwQ68v2kmPNvv/cvV9vVAjxVE9199Vr0zjRVN4tdch1/xLVNPuIpsQMR7NJQxlAykmnruhD9+NmZMDjbHXHAk9Tq2xrnXXjKI0H6w7X7nF8Rzo0OwnVzq1aByhT3vt3KxLxTYjsKbm5PpX/i2QofkBFDqbWxemkkRxam0PZXO767z8="
+ },
+ "sitzung": {
+  "start": "2026-11-17T18:01:16.192Z",
+  "ordner": "sitzung-20261117-190116",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 7,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "klang.K4#2",
+    "s": 23,
+    "takte": 542,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wanderung": [
+   {
+    "probe": "klang.K4#2",
+    "ort": "wiese",
+    "m": 4,
+    "dreh": 0.401
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "klang.K4#2",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 2711,
+   "frameP95": 33.4,
+   "taktP95": 17.46,
+   "vramMax": 140.1,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 126,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 136.1,
+  "minuten": 2.35
+ }
+}
