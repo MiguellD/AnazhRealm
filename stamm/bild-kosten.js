@@ -2191,8 +2191,33 @@ class AnazhRealm_bild_kosten {
         // Skala der Leuchtdichte allein legt die Zapfen-Schwelle auf das 29-Fache von Bild-Weiß: der Feuerschein stand rosa
         const hell = T.smoothstep(NA.bildZapfen[0], NA.bildZapfen[1], lum.mul(T.toneMappingExposure));
         const s = T.float(1).sub(zapfen).mul(nacht).mul(T.float(1).sub(hell));
-        if (vor) return farbe.sub(lum.mul(s)).div(T.float(1).sub(s).max(0.1)).max(0);
-        return T.vec3(lum, lum, lum).sub(farbe).mul(s);
+        // DAS GRAU DER STÄBCHEN IST SKOTOPISCH (w28-glut-nacht; CIE 191:2010: L_mes = m·L_p + (1 − m)·L_s): die Stäbchen sehen
+        // Rot-Orange kaum (V′, Gipfel 507 nm) — ihr Grau ist die skotopische Leuchtdichte der Farbe (`NACHT_AUGE.skotopisch`),
+        // geeicht am Ton des Mondlichts (das Schlüssellicht der Nacht, `ATMO_GESETZ.nacht.mond`: eine neutrale Fläche im Mond
+        // trägt dasselbe Grau wie unter der photopischen Leuchtdichte). Feuerschein hebt das Grau um sein S/P-Verhältnis
+        // weniger, Grün steht nachts heller, Rot dunkler (Purkinje). Der Stäbchen-ANTEIL s bleibt photopisch.
+        const mond = AnazhRealm._atmoKern().nacht.mond;
+        const [lumVon, skVon] = [
+            (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2],
+            (c) => NA.skotopisch.reduce((a, w, i) => a + w * c[i], 0),
+        ];
+        const w = NA.skotopisch.map((g) => (g * lumVon(mond)) / skVon(mond));
+        const skot = farbe.dot(T.vec3(w[0], w[1], w[2]));
+        // die Umkehr: gesehen = farbe·(1 − s) + skot(farbe)·s, skot linear → skot(farbe) = skot(gesehen) ÷ (1 − s + s·Σw)
+        if (vor)
+            return farbe
+                .sub(
+                    skot
+                        .div(
+                            T.float(1)
+                                .sub(s)
+                                .add(s.mul(w[0] + w[1] + w[2]))
+                        )
+                        .mul(s)
+                )
+                .div(T.float(1).sub(s).max(0.1))
+                .max(0);
+        return T.vec3(skot, skot, skot).sub(farbe).mul(s);
     }
 
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
@@ -2942,11 +2967,15 @@ AnazhRealm._atmoKern = function () {
 // der Welt (Albedo/π · Bestrahlung) mal ihr ist cd/m².
 // `bildZapfen`: die Helligkeit am Bild (Leuchtdichte × Belichtung), von der an bis zu der das Auge ganz mit den Zapfen
 // sieht — Mittelgrau (die Eichung der Belichtung, Lehre 21) bis Weiß.
+// `skotopisch`: die Gewichte der skotopischen Leuchtdichte für lineares sRGB — die Zeile V′ = −0,702·X + 1,039·Y + 0,433·Z
+// (Pattanaik et al. 1998, auch Jensen et al. 2000 „Night Rendering") durch die sRGB→XYZ-Matrix (D65): R −0,0603 · G 0,5437 ·
+// B 0,3599; das Rot steht auf 0 (eine Erregung ist nie negativ). `_nachtAuge` eicht sie am Ton des Mondlichts.
 AnazhRealm.NACHT_AUGE = Object.freeze({
     luxJeEinheit: 0.26 / 0.224,
     staebchenCd: 0.005,
     zapfenCd: 5,
     bildZapfen: Object.freeze([0.18, 1]),
+    skotopisch: Object.freeze([0, 0.5437, 0.3599]),
 });
 // DIE EINE SZENEN-SKALA (K50, `_szeneSkalaWirk`): die Szene rendert in SZENE_SKALA × Ausgabe, die zeitliche Auflösung
 // (`_zeitAufloesung`, TAAU) löst auf die Ausgabe auf. 0,75 = 56 % der Pixel-Arbeit; der Spieler stellt sie im Menü (0,5..1).
