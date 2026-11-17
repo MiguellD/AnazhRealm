@@ -5496,7 +5496,7 @@
   },
   "karte2.mensch.menge.bevoelkerung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js, stamm/siedlung-verkehr.js) · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js, stamm/siedlung-verkehr.js)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js, stamm/siedlung-verkehr.js) · karte2.mensch.menge.bevoelkerung#1 gtx: ROT: 77 Bewohner, 20 Stichproben (5 Orte × 4 Uhren), Σ Soll 12 · jede Stichprobe ±10 %, niemand fehlt · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] nvidia/pascal an 602607bb",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bevoelkerung#1",
@@ -5513,10 +5513,9 @@
      "id": "karte2.mensch.menge.bevoelkerung#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js, stamm/siedlung-verkehr.js)",
-     "ungemessen": true,
+     "zahl": "77 Bewohner, 20 Stichproben (5 Orte × 4 Uhren), Σ Soll 12 · jede Stichprobe ±10 %, niemand fehlt · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] nvidia/pascal",
+     "sha": "602607bbef764577ff6abf3b6bc8f29185ca1ef8",
+     "grund": "ROT: 77 Bewohner, 20 Stichproben (5 Orte × 4 Uhren), Σ Soll 12 · jede Stichprobe ±10 %, niemand fehlt · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     }
@@ -6499,8 +6498,8 @@
   "ohne": 150
  },
  "kopfVoll": "602607bbef764577ff6abf3b6bc8f29185ca1ef8",
- "zeit": "2026-11-17T16:15:52.688Z",
- "vorher": "16f45362",
+ "zeit": "2026-11-17T16:22:21.738Z",
+ "vorher": "602607bb",
  "bilanz": {
   "gewinn": [],
   "fall": [],
