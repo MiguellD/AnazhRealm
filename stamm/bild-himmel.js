@@ -388,6 +388,11 @@ class AnazhRealm_bild_himmel {
         // der Schwelle des Auges steht (½ Klasse unter der Grenzgröße) — und so hell, wie sein Fluss sie übersteigt
         // (10^(−0,4·Δm), gesättigt über `sternKontrast`): an der Schwelle 0, eine Klasse darüber schon deutlich.
         const uGrenze = uniform(-10);
+        // DAS MASS DES PUNKTS (w28-stern-punkt): die Größen des Wurfs sind Pixel bei 720 Zeilen (`HIMMEL.sternBezugZeilen`). Rendert
+        // die Szene in weniger Zeilen (kleines Fenster × Szenen-Skala), wächst das Quad um 720 ÷ Zeilen — der kleinste Stern deckt
+        // so immer seine 3 Texel. Ein Punkt von EINEM Texel fällt unter die Varianz-Klemme der Zeit-Auflösung (er steht nach
+        // zehn Bildern auf der Hälfte): die GTX zählte nachts 29 Sterne im frischen Bild und 18 im gesetzten.
+        const uMass = uniform(1);
 
         const planeGeo = new THREE.PlaneGeometry(1, 1);
 
@@ -424,6 +429,7 @@ class AnazhRealm_bild_himmel {
         // Vorderseite) — jedes Quad zeigt der Kamera genau eine Seite, die additive Mischung vertauscht: ein Durchgang
         // ist dasselbe Bild.
         starMat.forceSinglePass = true;
+        starMat.positionNode = TSL.positionLocal.mul(TSL.vec3(uMass, uMass, 1.0)); // vor der Instanz-Matrix: um die Mitte des Quads (Lehre 22)
         AnazhRealm._himmelImUnendlichen(starMat);
 
         // Der hellste Punkt des Himmels ist Gesetz (`STERN_HELLSTE`): liegt die Grenzgröße mehr als ½ Klasse darüber, ist kein
@@ -431,6 +437,7 @@ class AnazhRealm_bild_himmel {
         this.state.starFieldUniforms = {
             opacity: uOpacity,
             grenze: uGrenze,
+            mass: uMass,
         };
 
         const starField = AnazhRealm._instanzMesh(planeGeo, starMat, STAR_COUNT);
@@ -1787,6 +1794,9 @@ class AnazhRealm_bild_himmel {
         if (!u || !u.opacity) return;
         u.opacity.value = skyMul;
         if (u.grenze) u.grenze.value = achse.grenze;
+        const rd = this.state.renderer;
+        const zeilen = rd && rd.domElement ? rd.domElement.height * this._szeneSkalaWirk() : 0;
+        if (u.mass) u.mass.value = zeilen > 0 ? Math.max(1, AnazhRealm.HIMMEL.sternBezugZeilen / zeilen) : 1;
         const sf = this.state.starField;
         if (sf && u.grenze) sf.visible = zeigt;
     }
@@ -3326,6 +3336,7 @@ AnazhRealm.HIMMEL = Object.freeze({
     grenzgroesse: __weltLicht.GRENZGROESSE, // die Anker der EINEN Tag-Achse (welt-licht.js `tagAchse`)
     sternMagSchwach: 6,
     sternZaehlung: 0.47, // d log10 N(< m) / dm: die Zahl der Sterne heller als m (Sternzählung des bloßen Auges)
+    sternBezugZeilen: 720, // die Zeilen, bei denen die Größen des Wurfs Pixel sind (darunter wächst das Quad, `uMass`)
     sternKontrast: 0.6, // die Sättigung der Punkt-Helligkeit über dem Fluss an der Schwelle (1 − e^(−k · (Fluss/Schwelle − 1)))
     wandelsterne: Object.freeze([
         Object.freeze({ mag: -4.2, farbe: Object.freeze([1.0, 0.97, 0.88]), groesse: 7.5 }),
