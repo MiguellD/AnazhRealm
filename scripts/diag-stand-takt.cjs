@@ -595,7 +595,7 @@ async function seite() {
     const y = (x, z) => r._voxelSurfaceY(x, z);
     const stehen = (p) => (pm.set(p.x, y(p.x, p.z) + 1.8, p.z), __weltStehtNach(takt));
     // das Wort des Spielers über den EINEN Schreiber ohne Übergang (die Bühne)
-    const wort = (w) => ((st.weatherEffectTime = 0), r._setWeather(w, "human"), (st.weatherEffectTime = -1e9), (st.weatherTransition = null));
+    const wort = (w) => ((st.weatherEffectTime = 0), r._setWeather(w, "human"), (st.weatherEffectTime = -1e9), window.__uebergangFaellt(r));
     // die Punkte der Flüsse (ohne See) binnen R um M, der nächste zuerst
     const fluss = (M, R = Infinity, d = (q) => Math.hypot(q.x - M.x, q.z - M.z)) =>
         (st.hydrosphere?.rivers || []).flatMap((rv) => rv.points.filter((q) => !q.inLake && d(q) < R)).sort((p, q) => d(p) - d(q));

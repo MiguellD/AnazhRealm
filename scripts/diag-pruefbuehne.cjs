@@ -247,7 +247,7 @@ async function s0Probe(page, station, schein) {
             delete r._punktLichtBrdf;
             out.poolRuftBrdf = brdf > 0;
             r._setWeather("sunny", "human");
-            s.weatherTransition = null;
+            window.__uebergangFaellt(r);
             // die Uhr springt über den Pfad des Spielers (sein Satz, `setTimeOfDay`): EIN Anwenden des Tags, kein Nachmalen
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
@@ -1000,7 +1000,7 @@ async function himmelProbe(page, taub) {
             };
             const lum = luma709;
             r._setWeather("sunny", "human");
-            s.weatherTransition = null;
+            window.__uebergangFaellt(r);
             uhr(0.3);
             if (!(await r._himmelFrisch())) {
                 out.befunde.push("S0 Himmel: keine Lesung der Umgebung (`_himmelFrisch`) — die Probe ist blind");
