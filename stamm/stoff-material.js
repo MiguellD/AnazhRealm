@@ -2555,17 +2555,17 @@ class AnazhRealm_stoff_material {
             [T.exp2(L0.sub(2.0)), aus, T.sqrt(aus).mul(mH * mH)],
         ].map(([f, w, h]) => [f, w.mul(-B.mikro), h]);
         const stufe = T.pow(T.float(mH), fr).mul(B.streu / (ra.streu * Math.sqrt(mH * mH + mH ** 4)));
+        // die festen Oktaven des Bodens (Klumpen, Kiesel) sind EINE Probe je Welt-Lage (`_mikroFestProbe`): ihre Leser teilen sie
         if (!n)
-            oktaven.push(
-                [T.float(B.freq), T.float(-B.strength), T.float(0.0)],
-                [T.float(B.freq2), T.float(-B.strength2), T.float(0.0)]
-            );
+            oktaven.push([B.freq, T.float(-B.strength), T.float(0.0)], [B.freq2, T.float(-B.strength2), T.float(0.0)]);
         // je Ebene (a, b) die Neigung (x, y) und die Höhe (z)
         const ebene = (a, b) => {
             let g = T.vec3(0.0, 0.0, 0.0);
             for (const [f, w, h] of oktaven) {
-                const q = T.vec2(a, b).mod(T.float(P).div(f)).mul(f).add(T.vec2(0.37, 0.71));
-                const e = ra.ebeneNeigung(q, 0, "z");
+                const e =
+                    typeof f === "number"
+                        ? this._mikroFestProbe(T, wp, f)
+                        : ra.ebeneNeigung(T.vec2(a, b).mod(T.float(P).div(f)).mul(f).add(T.vec2(0.37, 0.71)), 0, "z");
                 g = g.add(T.vec3(e.y.mul(w), e.z.mul(w), e.x.mul(h)));
             }
             return g;
@@ -2587,6 +2587,23 @@ class AnazhRealm_stoff_material {
         // 0,71 der Streuung, das Bild der schrägen Fläche wäre flacher als das der geraden
         const hoehe = gx.z.mul(w.x).add(gy.z.mul(w.y)).add(gz.z.mul(w.z));
         return { neigung: g.sub(n.mul(n.dot(g))), hoehe: hoehe.mul(stufe).mul(T.inverseSqrt(w.dot(w))) };
+    }
+
+    // DIE FESTE OKTAVE DES BODENS (`_mikroRelief` ohne `n`: Klumpen `freq`, Kiesel `freq2` je Meter) als EIN Knoten je Welt-Lage
+    // `wp` und Frequenz: Wert und Neigung der Ebene (x, z) — `ebeneNeigung`, die Neigung je Zelle (mal `f` je Meter). Wer an
+    // demselben Fragment dieselbe Oktave liest, liest DIESELBE Probe (die Kruste der Lava, `_lavaKruste`: ihre Risse sind die
+    // Kiesel-Oktave) — der Graph lädt sie einmal, keine zweite Ladung des Atlas.
+    _mikroFestProbe(T, wp, f) {
+        const c = this._mikroFestCache || (this._mikroFestCache = new WeakMap());
+        let je = c.get(wp);
+        if (!je) c.set(wp, (je = new Map()));
+        let e = je.get(f);
+        if (!e) {
+            const P = AnazhRealm.RAUSCH_GESETZ.P;
+            const q = T.vec2(wp.x, wp.z).mod(T.float(P).div(f)).mul(f).add(T.vec2(0.37, 0.71));
+            je.set(f, (e = this._rauschAtlas().ebeneNeigung(q, 0, "z")));
+        }
+        return e;
     }
 
     // DER STOFF des Mikro-Reliefs — EIN BILD EINER HÖHE (`hoehe`, ausgeblendet mit `k`): DAS KORN in der Albedo (colorNode: die

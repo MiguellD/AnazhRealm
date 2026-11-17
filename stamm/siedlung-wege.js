@@ -1103,9 +1103,8 @@ class AnazhRealm_siedlung_wege {
         const kNah = dNah.r;
         const kFern = dFern.r;
         // Der Rand ist keine Scheibe: das Laub liegt in Zungen und Flecken (Rauschen λ ≈ 1,4 m verschiebt die Kante).
-        const _laubRausch = this._rauschAtlas()
-            .raum(_T.vec3(xz.x.mul(0.7), xz.y.mul(0.7), _T.float(3.3)))
-            .mul(0.3);
+        const _laubFeld = this._rauschAtlas().raum(_T.vec3(xz.x.mul(0.7), xz.y.mul(0.7), _T.float(3.3)));
+        const _laubRausch = _laubFeld.mul(0.3);
         const _k = _T
             .smoothstep(_T.float(0.15), _T.float(0.85), _T.mix(kFern, kNah, innen).add(_laubRausch))
             .mul(_begehbar)
@@ -1136,7 +1135,7 @@ class AnazhRealm_siedlung_wege {
         // Stein (`aus.stein`: das Stein-Gesetz unter ihr, die Kanten der Schollen kippen die Normale) und die Glut als sein
         // Leuchten (`aus.glut`). Nur auf Begehbarem (die Decke fließt vom Hang, sie haftet nicht an der Wand).
         const _lava = _T.mix(dFern.b, dNah.b, innen).mul(_begehbar).mul(imFenster);
-        const kruste = this._lavaKruste(_T, xz, _T.mix(dFern.a, dNah.a, innen), _lava);
+        const kruste = this._lavaKruste(_T, _laubFeld, _T.mix(dFern.a, dNah.a, innen), _lava);
         if (aus) {
             // EIN Belag aus Stein: das Pflaster, wo keine Decke liegt, darüber die Kruste — Farbe und Kipp je Deckung gewichtet
             const p = _pflaster.mul(_T.float(1).sub(_lava));
@@ -1165,29 +1164,32 @@ class AnazhRealm_siedlung_wege {
     }
 
     // DIE KRUSTE DER LAVA (TSL, Leser `_wegeBodenFarbe`): EIN Gesetz aus der Temperatur `w` (das Byte A, `_lavaFlaeche`: der Gang
-    // des Kerns an der Dicke der Decke) und EINEM Feld in Welt-Lage — dem Rausch-Gesetz in zwei Oktaven (`LAVA_KRUSTE`: die
-    // Schollen, die feinen Risse). Die Oberfläche erstarrt sofort zur Kruste; wo das Feld seine Null kreuzt, reißt sie: die Risse
-    // sind das Band |n| < `offen` · w — heiß weit offen (die Schmelze steht zwischen treibenden Schollen), kühler enger, kalt zu.
-    // Die Haut der Scholle trägt `platte` der Temperatur des Innern (sie isoliert), am dünnen Rand der Decke weniger, der Riss das
-    // Innere ganz; ihr Leuchten ist das der Temperatur der Oberfläche (`_lavaGlutNode`, Planck je Kanal): der Riss glüht hell
-    // orange, die Scholle kirschrot bis schwarz, am Rand der Decke ist sie dunkel (dort reißt nichts, `randDicke`). Die Farbe ist
-    // die Kruste der Boden-Palette (`kruste`, Basaltglas), je Scholle im Ton verschieden, in der kalten Fuge dunkel; die Kante der
-    // Scholle kippt die Normale (`relief`, sichtbar nur, solange der Pixel die Fuge trägt — fern glatt, kein Flimmern).
-    // Rückgabe { farbe, kipp, glut }.
-    _lavaKruste(_T, xz, w, decke) {
+    // des Kerns an der Dicke der Decke) und EINEM Feld in Welt-Lage aus Proben, die der Boden-Stoff an diesem Fragment OHNEHIN lädt
+    // (keine eigene Ladung des Atlas — die Kosten des Bodens fern der Lava bleiben, wie sie waren, RAUSCH-GESETZ (B) 70): die
+    // Schollen sind das Feld, das den Rand der Laubstreu zerreißt (`schollen`, Raum-Probe λ ≈ 1,4 m), die feinen Risse die
+    // Kiesel-Oktave des Mikro-Reliefs (`_mikroFestProbe`, `TERRAIN_BUMP.freq2`, ihr Anteil `rissAnteil`). Die Oberfläche erstarrt
+    // sofort zur Kruste; wo das Feld seine Null kreuzt, reißt sie: die Risse sind das Band |n| < `offen` · w — heiß weit offen (die
+    // Schmelze steht zwischen treibenden Schollen), kühler enger, kalt zu. Die Haut der Scholle trägt `platte` der Temperatur des
+    // Innern (sie isoliert), am dünnen Rand der Decke weniger, der Riss das Innere ganz; ihr Leuchten ist das der Temperatur der
+    // Oberfläche (`_lavaGlutNode`, Planck je Kanal): der Riss glüht hell orange, die Scholle kirschrot bis schwarz, am Rand der
+    // Decke ist sie dunkel (dort reißt nichts, `randDicke`). Die Farbe ist die Kruste der Boden-Palette (`kruste`, Basaltglas), je
+    // Scholle im Ton verschieden, in der kalten Fuge dunkel; die Kante der Scholle kippt die Normale (`relief`, sichtbar nur,
+    // solange der Pixel die Fuge trägt — fern glatt, kein Flimmern). Rückgabe { farbe, kipp, glut }.
+    _lavaKruste(_T, schollen, w, decke) {
         const K = AnazhRealm.LAVA_KRUSTE;
-        const ra = this._rauschAtlas();
-        // die Lage modulo der Periode des Gesetzes (P Zellen): dasselbe Feld, kleine Zahlen (die Genauigkeit fern vom Ursprung)
-        const P = AnazhRealm.RAUSCH_GESETZ.P;
-        const n1 = ra.ebeneNeigung(xz.div(K.schollenM).mod(P), K.schicht[0], "x");
-        const n2 = ra.ebeneNeigung(xz.div(K.rissM).mod(P), K.schicht[1], "x");
-        const n = n1.x.add(n2.x.mul(K.rissAnteil));
+        const f2 = AnazhRealm.TERRAIN_BUMP.freq2;
+        const n2 = this._mikroFestProbe(_T, _T.positionWorld, f2);
+        const n = schollen.add(n2.x.mul(K.rissAnteil));
         const c = n.abs();
-        // die Neigung von |n| in der Welt (1/m): die Ableitungen der Oktaven durch ihre Wellenlänge, mit dem Vorzeichen von n
-        const grad = n1.yz
-            .div(K.schollenM)
-            .add(n2.yz.mul(K.rissAnteil / K.rissM))
-            .mul(n.div(c.add(1e-4)));
+        // die Neigung von |n| in der Welt (1/m), mit dem Vorzeichen von n: die der Schollen aus den Ableitungen am Schirm (die
+        // Raum-Probe trägt keine Neigung; λ 1,4 m ist glatt über ein Pixel-Quad), die der Risse aus ihrer Probe (je Zelle, mal f2)
+        const xz = _T.positionWorld.xz;
+        const [px, py, sx, sy] = [_T.dFdx(xz), _T.dFdy(xz), _T.dFdx(schollen), _T.dFdy(schollen)];
+        const det = px.x.mul(py.y).sub(px.y.mul(py.x));
+        const gS = _T
+            .vec2(sx.mul(py.y).sub(sy.mul(px.y)), sy.mul(px.x).sub(sx.mul(py.x)))
+            .div(_T.select(det.abs().greaterThan(1e-12), det, _T.float(1e-12)));
+        const grad = gS.add(n2.yz.mul(K.rissAnteil * f2)).mul(n.div(c.add(1e-4)));
         const aa = _T.fwidth(c);
         const rand = _T.smoothstep(_T.float(K.randDicke[0]), _T.float(K.randDicke[1]), decke);
         const offen = w.mul(K.offen).mul(rand);
@@ -1197,7 +1199,7 @@ class AnazhRealm_siedlung_wege {
         const b = AnazhRealm.BODEN_FARBE.kruste;
         const farbe = _T
             .vec3(b[0], b[1], b[2])
-            .mul(n1.x.mul(K.ton).add(1))
+            .mul(schollen.mul(K.ton).add(1))
             .mul(_T.mix(_T.float(1), _T.float(K.fugeTon), fuge));
         // die Scholle wölbt sich über der Fuge: h = smoothstep(0, 2·fuge, |n|) · relief, die Normale kippt gegen ∇h
         const t = c.div(2 * K.fuge).clamp(0.0, 1.0);
@@ -2176,16 +2178,13 @@ AnazhRealm.GLUT_BILD = Object.freeze({
     c2: 1.438777e-2,
     lambdaNm: Object.freeze([611, 549, 464]),
 });
-// DIE KRUSTE DER LAVA (`_lavaKruste`): das Feld der Schollen (Wellenlänge `schollenM`, m) und der feinen Risse (`rissM`, ihr Anteil
-// `rissAnteil`) in den Schichten `schicht` des Rausch-Gesetzes; der Riss ist offen bis |n| < `offen` · w (beim Ausbruch etwa die
-// Hälfte der Fläche im weichen Band, σ des Felds 0,25), die Haut der Scholle hat `platte` der Temperatur des Innern; am Rand der Decke (Dicke
-// unter `randDicke`) reißt nichts. Die kalte Fuge (|n| < `fuge`) dunkelt die Kruste auf `fugeTon`, die Schollen streuen ±`ton`
-// im Ton, ihre Kante hebt sich um `relief` (m).
+// DIE KRUSTE DER LAVA (`_lavaKruste`): das Feld der Schollen (die Raum-Probe des Laub-Rands, λ ≈ 1,4 m) und der feinen Risse (die
+// Kiesel-Oktave des Mikro-Reliefs, `TERRAIN_BUMP.freq2`, ihr Anteil `rissAnteil`) — beide lädt der Boden-Stoff ohnehin; der Riss
+// ist offen bis |n| < `offen` · w (beim Ausbruch etwa die Hälfte der Fläche im weichen Band, σ des Felds 0,25), die Haut der
+// Scholle hat `platte` der Temperatur des Innern; am Rand der Decke (Dicke unter `randDicke`) reißt nichts. Die kalte Fuge
+// (|n| < `fuge`) dunkelt die Kruste auf `fugeTon`, die Schollen streuen ±`ton` im Ton, ihre Kante hebt sich um `relief` (m).
 AnazhRealm.LAVA_KRUSTE = Object.freeze({
-    schollenM: 1.8,
-    rissM: 0.6,
-    rissAnteil: 0.35,
-    schicht: Object.freeze([13, 17]),
+    rissAnteil: 0.2,
     offen: 0.17,
     platte: 0.62,
     randDicke: Object.freeze([0.5, 1]),
