@@ -6108,7 +6108,7 @@
   },
   "karte2.same.physik.verformung": {
    "punkte": 0,
-   "beleg": "Maschine: klinge_flegel Schwung 0.41 m, Länge (längs) 0.328–0.328 m, v² 2.922 → 0.144 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/172 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 649 px über dem Rauschen 0, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] amd/rdna-3 an ee9c1965 radeon — offen: karte2.same.physik.verformung#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: klinge_flegel Schwung 0.41 m, Länge (längs) 0.328–0.328 m, v² 2.922 → 0.144 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/172 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 649 px über dem Rauschen 0, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] amd/rdna-3 an ee9c1965 radeon · klinge_flegel Schwung 0.412 m, Länge (längs) 0.328–0.328 m, v² 3.286 → 0.232 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/253 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 647 px über dem Rauschen 0, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal an ee9c1965 gtx",
    "stationen": [
     {
      "id": "karte2.same.physik.verformung#1",
@@ -6123,11 +6123,11 @@
     {
      "id": "karte2.same.physik.verformung#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "klinge_flegel Schwung 0.412 m, Länge (längs) 0.328–0.328 m, v² 3.286 → 0.232 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/253 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 647 px über dem Rauschen 0, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal",
+     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6325,7 +6325,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 180,
+  "konsum": 181,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6495,10 +6495,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 160
+  "ohne": 159
  },
  "kopfVoll": "ee9c196544e4376ea20c95921c852ad931bc1604",
- "zeit": "2026-11-17T02:57:35.107Z",
+ "zeit": "2026-11-17T03:03:24.063Z",
  "vorher": "ee9c1965",
  "bilanz": {
   "gewinn": [],
