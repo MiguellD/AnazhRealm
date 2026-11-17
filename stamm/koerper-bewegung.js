@@ -210,7 +210,7 @@ class AnazhRealm_koerper_bewegung {
         // die Höhe des Sitzes und die Dicke der Glieder misst der Kern an der gegossenen Haut des Spielers (koerper `leibSitz` ·
         // `leibGlieder`, dieselbe Messung wie das Labor)
         const KC = AnazhRealm._leibTakt();
-        const sk = { joints, root: "mensch", handMitte: rig.handMitte };
+        const sk = { joints, root: "mensch", handMitte: this._leibHandMitte(rig) };
         sk.sitz = KC.leibSitz(pm, sk, teile);
         sk.glieder = KC.leibGlieder(pm, sk, teile);
         if (!sk.sitz || !sk.glieder)
