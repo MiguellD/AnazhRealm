@@ -5129,7 +5129,7 @@
   },
   "karte2.erleben.spieler.rolle": {
    "punkte": 0,
-   "beleg": "Maschine: 4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.2 s, kaempfen 0.01 s · gehen Änderung Δ 3.32 % (Rauschen 0.05 %) · bauen Änderung Δ 2.12 % (Rauschen 0.00 %) · fahren Änderung Δ 3.55 % (Rauschen 0.04 %) · kaempfen Änderung Δ 0.82 % (Rauschen 0.20 %) · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.erleben.spieler.rolle#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.2 s, kaempfen 0.01 s · gehen Änderung Δ 3.32 % (Rauschen 0.05 %) · bauen Änderung Δ 2.12 % (Rauschen 0.00 %) · fahren Änderung Δ 3.55 % (Rauschen 0.04 %) · kaempfen Änderung Δ 0.82 % (Rauschen 0.20 %) · [linse-gpu] amd/rdna-3 an 7de938ab radeon — offen: karte2.erleben.spieler.rolle#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, stamm/dirigent-kern.js, stamm/kreatur-leben.js +1)",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.rolle#1",
@@ -5147,8 +5147,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, stamm/dirigent-kern.js, stamm/kreatur-leben.js +1)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6343,7 +6344,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 200,
+  "konsum": 201,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6513,10 +6514,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 140
+  "ohne": 139
  },
  "kopfVoll": "7de938ab63f59822e48b121a70a15d31f16f2489",
- "zeit": "2026-11-17T10:50:55.612Z",
+ "zeit": "2026-11-17T10:56:40.234Z",
  "vorher": "7de938ab",
  "bilanz": {
   "gewinn": [],
