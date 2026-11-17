@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 0,
+  "weltTakte": 750,
   "zeilen": 1080
  },
  "geraet": {
@@ -48,7 +48,7 @@
   "leiber": null,
   "abstand": 22.31,
   "gestalt": [
-   "tier:wesen 0"
+   "tier:wesen 8"
   ],
   "gezeichnet": true
  },

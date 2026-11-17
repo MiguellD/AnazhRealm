@@ -286,6 +286,8 @@ rolleSeite: async function rolleSeite(o) {
         const q = vorn(5);
         const E = werk(o.name, q);
         if (!E) return { fehler: "kein Wagen " + o.name + " am Ort" };
+        // der Wagen steht, wenn sein Körper in der Szene hängt (der Stempel des Studios kommt asynchron): auf das Ereignis, wie das Werk
+        await window.__gebautNach("der Wagen " + E.type, { fertig: () => !!(E.mesh && E.mesh.parent) || !!(E.instFoundry || (E.instSlots && E.instSlots.length)), bau: () => {} });
         R.wagen = E;
         R.p0 = [E.position.x, E.position.z];
         const k = kam({ x: E.position.x, z: E.position.z });
@@ -339,6 +341,11 @@ H.fahre(async function probeRolle(H) {
     };
     const diff = (A, B) => AB.bildRauschen(A.u8, B.u8, A.W, A.H, S.schwelle).anteil;
     const j = (H.teil = { adapter: ad, soll: S, gruppen: {} });
+    // DIE WELT WACH VOR JEDER TAT (17.11., GTX und Radeon ee9c1965/389a6496 0/4 an der AUFSTELLUNG): jedes `/bild` der Werkbank lässt
+    // den Loop ruhen und hält die Welt (weatherEffectTime −1e9, `wetterHalten`), unter dem Halt verweigert dslEval jeden Welt-Akt —
+    // die Schüsse vor der Tat froren Gang, Hieb, Werk und Wagen ein. Vor der Aufstellung und nach den Schüssen läuft die Schleife des
+    // Spiels wieder, der Halt steht auf 0; `halt` nennt ihn an der Tat
+    const wach = () => page.evaluate(() => { const r = window.anazhRealm; r.state.weatherEffectTime = 0; r.state.renderer.setAnimationLoop((t) => r._gameLoopTick(t)); return r.state.weatherEffectTime; }); // prettier-ignore
     for (const g of H.seite.GRUPPEN) {
         if (H.rest() < 25) {
             j.gruppen[g] = { fehler: "Frist der Probe vor der Gruppe (" + H.sek() + " s)" };
@@ -346,10 +353,14 @@ H.fahre(async function probeRolle(H) {
         }
         const z = (j.gruppen[g] = {});
         try {
+            await wach();
+            const tA = Date.now();
             const an = await seite({ schritt: { gehen: "gehenAn", bauen: "bauenAn", fahren: "fahrenAn", kaempfen: "kampfAn" }[g], seele: "wesen", name: g === "fahren" ? WERKE.GT : "bank_sitzbank" });
+            z.aufstellungS = +((Date.now() - tA) / 1000).toFixed(2);
             if (an.fehler) throw new Error(an.fehler);
             const A = await schuss(an, g + "-vor");
             z.rausch = diff(A, await schuss(an, g + "-vor-2"));
+            z.halt = await wach();
             const t0 = Date.now();
             if (g === "gehen") {
                 await page.keyboard.down("KeyW");
@@ -391,15 +402,15 @@ H.fahre(async function probeRolle(H) {
     function rolleSichtbar(z, S) {
         return [z.rausch, z.diff].every(Number.isFinite) && z.diff > S.faktor * z.rausch + S.rand;
     }
-}); 7804 C:\Users\micha\AppData\Local\Temp\claude\bdc204a033231caa\3f59870c-5b2c-4386-8f3b-a749a5db56d4\scratchpad\buch-tree\meisterkarte-quelle\punkte\messung\roh\389a6496-radeon\karte2.erleben.spieler.rolle_1.json 281
+}); 7804 C:\Users\micha\AppData\Local\Temp\claude\bdc204a033231caa\3f59870c-5b2c-4386-8f3b-a749a5db56d4\scratchpad\buch-tree\meisterkarte-quelle\punkte\messung\roh\389a6496-radeon\karte2.erleben.spieler.rolle_1.json 448
 [linse-gpu] amd/rdna-3
-  ❌ gehen: Änderung NEIN {"flucht":false,"d":16,"zustand":null} · Δ Bild 0.000516 · Rauschen 0.000516 · 14.3 s
-  ❌ bauen: Änderung NEIN {"fehler":"kein Werk bank_sitzbank am Ort"} · Δ Bild undefined · Rauschen 0 — kein Werk bank_sitzbank am Ort · 17 s
-  ❌ fahren: Änderung NEIN {} · Δ Bild undefined · Rauschen undefined — kein Wagen fahrzeug_gt am Ort · 17 s
-  ❌ kaempfen: Änderung NEIN {"schwung":true,"hp":163.40198718138018,"hp0":163.40198718138018} · Δ Bild 0 · Rauschen 0 · 22.7 s
+  ✅ gehen: Änderung ja {"flucht":true,"d":13.94,"zustand":"flucht"} · Δ Bild 0.033689 · Rauschen 0.000512 · 14.9 s
+  ❌ bauen: Änderung ja {"id":"w-bank_sitzbank-5ax31z","n":1} · Δ Bild 0.003785 · Rauschen 0.001662 · 20.3 s
+  ✅ fahren: Änderung ja {"m":64.66} · Δ Bild 0.034466 · Rauschen 0.00043 · 38.7 s
+  ❌ kaempfen: Änderung NEIN {"schwung":true,"hp":165.30241180036376,"hp0":165.30241180036376} · Δ Bild 0.005373 · Rauschen 0.001827 · 44.4 s
 
 --- stderr ---
-❌ URTEILS-WACHE: 4 ROTE Zeile(n) bei Exit 0 — die erste: ❌ gehen: Änderung NEIN {"flucht":false,"d":16,"zustand":null} · Δ Bild 0.000516 · Rauschen 0.000516 · 14.3 s (Exit wird 1; ein Vermerk heißt nie ROT/❌)
+❌ URTEILS-WACHE: 2 ROTE Zeile(n) bei Exit 0 — die erste: ❌ bauen: Änderung ja {"id":"w-bank_sitzbank-5ax31z","n":1} · Δ Bild 0.003785 · Rauschen 0.001662 · 20.3 s (Exit wird 1; ein Vermerk heißt nie ROT/❌)
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

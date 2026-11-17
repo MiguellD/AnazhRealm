@@ -48,7 +48,7 @@
   "leiber": null,
   "abstand": 22.31,
   "gestalt": [
-   "tier:wesen 0"
+   "tier:wesen 8"
   ],
   "gezeichnet": true
  },
@@ -68,13 +68,13 @@
  "bild": {
   "w": 640,
   "h": 360,
-  "mittel": 67.1,
-  "sigma": 26.4,
+  "mittel": 67.6,
+  "sigma": 26.3,
   "schwarz": 0,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 22.31 m · Luma 67.1 σ 26.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.317 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 22.31 m · Luma 67.6 σ 26.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.317 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
  "rot": [],
  "urteil": "GRÜN"
 }
