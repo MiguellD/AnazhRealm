@@ -4635,7 +4635,7 @@
   },
   "wetter.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an d3708675 headless · gehalten: Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an d3708675 headless · gehalten: Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6) an 105c9bd3 radeon · gehalten: Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6) an 105c9bd3 gtx",
+   "beleg": "Maschine: gehalten: saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy), saat-b anders an d3708675 headless · gehalten: Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm an d3708675 headless · gehalten: Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6) an 105c9bd3 radeon · Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6) an 884c6a25 gtx",
    "stationen": [
     {
      "id": "wetter.K1#1",
@@ -4671,9 +4671,9 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6)",
-     "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
+     "grund": null,
+     "r6": "konsum"
     }
    ]
   },
@@ -6303,7 +6303,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 181,
+  "konsum": 182,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6473,10 +6473,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 157
+  "ohne": 156
  },
  "kopfVoll": "884c6a25c7125ccb50678de22a29e6584ca498de",
- "zeit": "2026-11-17T01:56:39.561Z",
+ "zeit": "2026-11-17T02:12:19.941Z",
  "vorher": "884c6a25",
  "bilanz": {
   "gewinn": [],
