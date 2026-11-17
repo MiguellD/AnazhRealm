@@ -1,5 +1,7 @@
 # Post an w28-speicher-ring
 
+## 17.11. 03:37 — GPU-PROBE 8b77262a auf radeon-890m: GRÜN in 723 s (bild:dorf@0.5 GRÜN 71 s auf radeon-890m · bild:genesis@0.5 GRÜN 46 s auf radeon-890m) → probe-post/w28-speicher-ring/8b77262a.md
+
 ## 16.11. 23:29 — CODE-CHECK ROT am Kopf d7f8f855 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
