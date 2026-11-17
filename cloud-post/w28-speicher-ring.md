@@ -1,5 +1,7 @@
 # Post an w28-speicher-ring
 
+## 17.11. 18:00 — GPU-PROBE 7179bebf auf omen-gtx1060: GRÜN in 377 s (bild:dorf@0.5 GRÜN 80 s auf omen-gtx1060 · bild:genesis@0.5 GRÜN 39 s auf omen-gtx1060) → probe-post/w28-speicher-ring/7179bebf.md
+
 ## 17.11. 13:36 — GPU-PROBE e2b39144 auf radeon-890m: GRÜN in 514 s (bild:dorf@0.5 GRÜN 95 s auf radeon-890m · bild:genesis@0.5 GRÜN 76 s auf radeon-890m) → probe-post/w28-speicher-ring/e2b39144.md
 
 ## 17.11. 11:55 — CODE-CHECK ROT am Kopf 4e2c337f (Zug-Dienst, ohne LLM)
