@@ -19,8 +19,9 @@
 "use strict";
 
 // DIE SCHWELLE (MB, Heap nach drei Collector-Läufen, nach der Rücknahme − vor der Probe): aus der Streuung an der Radeon (w28-probe-wirt):
-// ein Leerlauf ohne Probe +23,4 / +1,8 MB, dieselbe Pose zweimal +8,8 MB, die Pose von vegetation.K4#1 nach der Rücknahme 548,9 gegen
-// 522,6 MB am Kopf ohne Haken (+26,3) — die Schwelle steht über dem Doppelten der größten Streuung; der Haken von main hielt +1 200 MB
+// ein Leerlauf ohne Probe als erster nach dem Boot +23,0 bis +33,1 MB, danach +1,3 bis +1,8, dieselbe Pose zweimal +8,8, die Pose von
+// vegetation.K4#1 nach der Rücknahme 548,9 gegen 522,6 MB am Kopf ohne Haken (+26,3) — die Schwelle steht beim Doppelten der größten
+// Streuung; der Haken von main hielt am Preis +840 bis +1 500 MB
 const WIRT_SCHWELLE_MB = 64;
 
 // ── Seite ─────────────────────────────────────────────────────────────
@@ -57,6 +58,8 @@ function wirtWache(r, gib, W) {
     if (!L || L.r !== r) return { fehler: "kein Gedächtnis der Seite (nimm fehlt)" };
     const gleich = (a, b) => a.value === b.value && a.get === b.get && a.set === b.set;
     const anders = [], wie = {}, erklaert = [], bleibt = [];
+    // eine globale Deklaration (`function f() {}` im Skript der Seite, fahrzeug.medium#1: `window.wasserRund` …) ist nicht löschbar,
+    // aber schreibbar: zurück heißt dann der alte Wert, ein neues Feld fällt auf `undefined` (es hält nichts und ruft niemand)
     const zurueck = (o, k, v, name) => {
         try {
             if (v) Object.defineProperty(o, k, v);
@@ -64,8 +67,17 @@ function wirtWache(r, gib, W) {
         } catch (_e) {
             /* unten geprüft */
         }
-        const d = Object.getOwnPropertyDescriptor(o, k);
-        if (v ? !(d && gleich(d, v)) : d) bleibt.push(name);
+        let d = Object.getOwnPropertyDescriptor(o, k);
+        if (d && d.writable && !d.configurable && (v ? !gleich(d, v) && "value" in v : true)) {
+            try {
+                o[k] = v ? v.value : undefined;
+            } catch (_e) {
+                /* unten geprüft */
+            }
+            d = Object.getOwnPropertyDescriptor(o, k);
+            if (!v) wie[name] += " (globale Deklaration, auf undefined)";
+        }
+        if (v ? !(d && gleich(d, v)) : d && (d.value !== undefined || d.get || d.set)) bleibt.push(name);
     };
     for (const [n, o, vor] of L.glieder) {
         const jetzt = fns(o);
@@ -191,6 +203,10 @@ async function wirtSelbsttest() {
     pruef("Mutante r.state", zustand.ab.anders.includes("r.state.tick") && zustand.ab.anders.includes("r.state.neu") && !("neu" in zustand.r.state), zustand.ab.anders.join(", "));
     const fenster = await fahre("W.__halten = (q) => q; return 1;");
     pruef("Mutante window", fenster.ab.anders.includes("window.__halten") && !("__halten" in fenster.W), fenster.ab.anders.join(", "));
+    // eine globale Deklaration (nicht löschbar, schreibbar — fahrzeug.medium#1 an der Radeon): sie fällt auf undefined, nie „nicht zurück“
+    const dekl = await fahre("Object.defineProperty(W, 'wasserRund', { value: () => 1, writable: true, enumerable: true, configurable: false }); return 1;");
+    pruef("Mutante globale Deklaration", dekl.ab.anders.includes("window.wasserRund") && !dekl.ab.bleibt.length && dekl.W.wasserRund === undefined,
+        dekl.ab.wie["window.wasserRund"] + " · bleibt " + dekl.ab.bleibt.length);
     const erkl = await fahre("const hs = r._hausHuelleSetzen; const f = function (en) { return hs.call(this, en); }; f.__wirtBleibt = 'der Preis misst mit dem Haken'; r._hausHuelleSetzen = f; return 1;");
     pruef("erklärte Absicht bleibt", !erkl.ab.anders.length && erkl.ab.erklaert.length === 1 && Object.prototype.hasOwnProperty.call(erkl.r, "_hausHuelleSetzen"),
         "erklärt: " + erkl.ab.erklaert.join(", "));
