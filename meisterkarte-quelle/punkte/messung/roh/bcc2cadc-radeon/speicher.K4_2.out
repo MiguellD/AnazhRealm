@@ -162,7 +162,7 @@ const speicherBildSeite = async function speicherBildSeite(setzen, wasser, stein
     console.log("(B) bild-diff " + j.diff.toFixed(2) + " % nach dem Neuladen (" + reloadMs + " ms), Rauschen " + j.rauschen.toFixed(2) + " %, Pflicht vor " + JSON.stringify(j.vor) + " · nach " + JSON.stringify(j.nach) +
         " · Stein des Spielers " + JSON.stringify(j.stein));
     return j;
-}); C:\Users\micha\AppData\Local\Temp\claude\bdc204a033231caa\3f59870c-5b2c-4386-8f3b-a749a5db56d4\scratchpad\buch-tree\meisterkarte-quelle\punkte\messung\roh\bcc2cadc-radeon\speicher.K4_2.json C:\Users\micha\AppData\Local\Temp\claude\bdc204a033231caa\3f59870c-5b2c-4386-8f3b-a749a5db56d4\scratchpad\buch-tree
+}); %TEMP%\claude\bdc204a033231caa\3f59870c-5b2c-4386-8f3b-a749a5db56d4\scratchpad\buch-tree\meisterkarte-quelle\punkte\messung\roh\bcc2cadc-radeon\speicher.K4_2.json %TEMP%\claude\bdc204a033231caa\3f59870c-5b2c-4386-8f3b-a749a5db56d4\scratchpad\buch-tree
 [linse-gpu] amd/rdna-3
 (B) bild-diff 0.68 % nach dem Neuladen (1116 ms), Rauschen 0.19 %, Pflicht vor {"bau":50,"grube":50,"wasser":2,"soll":100} · nach {"bau":50,"grube":50,"wasser":2,"soll":100} · Stein des Spielers {"steine":50,"gruben":50,"erster":[-265.8,-1119.1],"sperre":{"wand":"bau","gesperrt":2,"bauten":["glutbrunnen -270.0/-1121.0"]}}
 PROBE 33.8 s

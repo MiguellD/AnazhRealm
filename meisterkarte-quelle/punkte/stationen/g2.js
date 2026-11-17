@@ -1965,7 +1965,13 @@ async function dorfZaehlung(r, T) {
             doppelt = Math.max(doppelt, [...je.values()].filter((n) => n > 1).length);
             const sollL = L.filter((b) => { const z = zielVon(b, h); return z && schl(z) === ok; });
             const fehlt = sollL.filter((b) => !amOrt.has(b)).length;
-            proben.push({ uhr: h, ort: oi, tod: +s.timeOfDay.toFixed(4), soll: sollL.length, ist, fehlt, imBild: !!stand, stand: stand ? [+stand.x.toFixed(1), +stand.z.toFixed(1)] : null, takte });
+            // WER FEHLT (Lesewert, 17.11.: Ort 0 und 1 trugen zu JEDER Uhr Soll 1, Ist 0 — auch um 3 Uhr, wenn alle drinnen sind): je
+            // Fehlender sein Leib in der Szene, sein Abstand zum Ort, gezeichnet, drinnen, und das Wort des Plans (Rolle, Ziel)
+            const wer = sollL.filter((b) => !amOrt.has(b)).slice(0, 3).map((b) => {
+                const g = leiber().find((x) => x.userData._feldLageVon.b === b), z = r._bewohnerSoll(b, h);
+                return { rolle: b.rolle || b.beruf || b.role || null, leib: !!g, dO: g ? +Math.hypot(g.position.x - O.x, g.position.z - O.z).toFixed(1) : null, gez: gez(g), drinnen: g ? !!g.userData._drinnen : null, plan: z && (z.tat || z.was || z.art || null), posten: !!(z && z.posten) };
+            });
+            proben.push({ uhr: h, ort: oi, tod: +s.timeOfDay.toFixed(4), soll: sollL.length, ist, fehlt, imBild: !!stand, stand: stand ? [+stand.x.toFixed(1), +stand.z.toFixed(1)] : null, takte, ...(wer.length ? { wer } : {}) });
         }
     }
     return { bewohner: L.length, orte: orte.map((o) => [+o.x.toFixed(1), +o.z.toFixed(1), o.n]), rM: R_M, samenDoppelt, doppelt, sicht: s.cameraMode, proben, version: A.VERSION };

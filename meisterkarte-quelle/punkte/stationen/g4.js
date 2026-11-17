@@ -1215,10 +1215,11 @@ const TAKT_PFAD = [
 //   bauen    das Werk der Bank (`spawn_blueprint` mit Same und Stempel, Quelle „spieler“, wie das Bildpaar) 10 m voraus: ein Werk mehr
 //   fahren   der Wagen der Werkstatt (WERKE.GT der Linse) 5 m voraus, der Spieler 2 m davor: E (die echte Taste, Aufstieg),
 //            W ≤ 5 s, E — der Wagen steht ≥ 10 m weiter
-//   kämpfen  ein Wesen in Reichweite der Klinge, der Hieb (`_beginPlayerSwing`, der Ruf des Klicks — die Probe klickt nie: kein
-//            Zeiger-Fang), ≤ 2 s Schleife: seine hp sinken
+//   kämpfen  im pfad ein hungriger Wolf 8 m voraus, der den Spieler nach dem Gesetz jagt; der Spieler dreht sich zu ihm, geht auf
+//            ihn zu, solange er fern ist (W), und schlägt, sobald er in der Klinge steht (`_playerAttackCreature` mit dem Tier als
+//            Ziel, der Ruf des Klicks — die Probe klickt nie: kein Zeiger-Fang), ≤ 12 s Schleife: seine hp sinken
 // Die 15 min des Richters sind Obergrenze; die Probe endet je Gruppe bei der ersten Änderung. GRÜN bei 4/4 Gruppen mit Änderung UND Bild.
-const ROLLE_SOLL = { faktor: 2, rand: 0.001, schwelle: 24, w: 640, h: 360, fov: 50, fahrM: 10, gehenS: 8, fahrS: 5, kampfS: 2 };
+const ROLLE_SOLL = { faktor: 2, rand: 0.001, schwelle: 24, w: 640, h: 360, fov: 50, fahrM: 10, gehenS: 8, fahrS: 5, kampfS: 12 };
 const ROLLE_GRUPPEN = ["gehen", "bauen", "fahren", "kaempfen"];
 async function rolleSeite(o) {
     const r = window.anazhRealm, st = r.state;
@@ -1305,38 +1306,55 @@ async function rolleSeite(o) {
         const p = R.wagen.position;
         return { m: +Math.hypot(p.x - R.p0[0], p.z - R.p0[1]).toFixed(2) };
     }
+    // DER KAMPF WIE EIN SPIELER KÄMPFT (17.11., Radeon e489088a: das Wesen 0,83 m vor der Klinge floh vor dem Schwung nach dem
+    // Furcht-Gesetz — Abstand 3,39 m beim Auslösen, Klinge 0,66 m, Zustand „flucht“): kein gestelltes Ziel. Im pfad (dem Modus, in dem
+    // der Mensch jagt und gejagt wird, `_kreaturJagdBereit`) steht 8 m voraus ein Wolf — wild, hungrig, der Spieler ist seine Beute
+    // (`_kreaturIstBeute`: die Masse des Leibs ≤ jagd.beuteMasse × die des Wolfs); er jagt ihn nach dem Gesetz der Jagd. Der Spieler
+    // dreht sich zu ihm (der Blick, `st.yaw`), geht auf ihn zu, solange er fern ist (die echte Taste W), und schlägt, sobald er in der
+    // Klinge steht — der Ruf des Klicks mit dem Tier als Ziel (`_playerAttackCreature`, die Probe klickt nie: kein Zeiger-Fang).
     if (s === "kampfAn") {
-        const q = vorn(0.5 * r._kampfBladeReach() + 0.5);
-        const c = r.spawnCreatureAt(q.x, boden(q), q.z, "happy", "wesen", { absage: (g) => (R.absage = g) });
-        if (!c) return { fehler: "kein Wesen in Reichweite (spawnCreatureAt: " + R.absage + ")" };
+        R.modus = typeof r.getGameMode === "function" ? r.getGameMode() : null;
+        R.php = st.player.hp;
+        r.setGameMode("pfad");
+        const q = vorn(8);
+        const c = r.spawnCreatureAt(q.x, boden(q), q.z, "calm", "wolf", { absage: (g) => (R.absage = g) });
+        if (!c) return { fehler: "kein Wolf am Ort (spawnCreatureAt wolf: " + R.absage + ")" };
         R.ziel = c;
         R.hp0 = c.userData.hp;
+        R.schlag = { schwuenge: 0, dHieb: null, dMin: null, reach: +r._kampfBladeReach().toFixed(2), jagt: false, zustaende: [] };
         st.player.stamina = st.player.staminaMax;
-        return { ...kam(q), hp: R.hp0 };
+        return { ...kam(q), hp: R.hp0, seele: "wolf", temperament: r._creatureTemperament(c), beute: r._kreaturIstBeute(c, st.playerMesh), modus: r.getGameMode() };
     }
-    // WO STEHT DAS ZIEL BEIM SCHLAG (Lesewert, 17.11.: Radeon 389a6496 hp = hp0 bei Schwung, im Bild danach stand das Wesen nicht
-    // mehr vor dem Spieler): Abstand Spieler ↔ Wesen beim Auslösen, zu Beginn der Strike-Phase und danach, die Reichweite der Klinge
-    // und der Zustand des Wesens — trennt „das Ziel ging aus der Reichweite“ (Pose) von „in Reichweite, kein Treffer“ (Sweep)
-    if (s === "hieb") {
-        const c = R.ziel, p = st.player;
-        const d = () => +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(2);
-        R.schlag = { dHieb: d(), reach: +r._kampfBladeReach().toFixed(2), dStrike: null, zustandStrike: null };
-        const schwung = r._beginPlayerSwing() !== false;
-        const sw0 = p._swing;
-        const blick = () => {
-            const sw = p._swing;
-            if (R.schlag.dStrike == null && sw === sw0 && sw && sw.t >= sw.windupSec) {
-                R.schlag.dStrike = d();
-                R.schlag.zustandStrike = (c.userData && c.userData._motionZustand) || null;
-            }
-            if (sw === sw0 && sw) requestAnimationFrame(blick);
-        };
-        if (schwung && sw0) requestAnimationFrame(blick);
-        return { schwung, ...R.schlag };
+    // EIN TAKT DES KÄMPFERS (je 100 ms aus der Probe): Blick auf den Wolf, sein Abstand und Zustand; steht er in der Klinge und läuft
+    // kein Schwung, der Hieb. `nah` sagt der Probe, ob die Taste W ruhen soll (der Spieler geht nur auf den fernen Wolf zu).
+    if (s === "kampfTakt") {
+        const c = R.ziel, p = st.player, S = R.schlag;
+        const [dx, dz] = [c.position.x - pm.x, c.position.z - pm.z];
+        const d = Math.hypot(dx, dz);
+        const soll = Math.atan2(dx, dz), ist = ((w) => Math.atan2(w.x, w.z))(r._blickVorn(st.yaw, 0));
+        const y1 = st.yaw + (soll - ist), y2 = st.yaw - (soll - ist);
+        const fehl = (y) => Math.abs(Math.atan2(Math.sin(Math.atan2(r._blickVorn(y, 0).x, r._blickVorn(y, 0).z) - soll), Math.cos(Math.atan2(r._blickVorn(y, 0).x, r._blickVorn(y, 0).z) - soll)));
+        st.yaw = fehl(y1) <= fehl(y2) ? y1 : y2;
+        const z = (c.userData && c.userData._motionZustand) || null;
+        if (z && S.zustaende[S.zustaende.length - 1] !== z) S.zustaende.push(z);
+        if ((r._spielerJaeger || []).includes(c) || (c.userData && c.userData._jagdZiel != null)) S.jagt = true;
+        S.dMin = S.dMin == null ? +d.toFixed(2) : Math.min(S.dMin, +d.toFixed(2));
+        const frei = !(p._swing && p._swing.t < p._swing.dauer);
+        if (frei && d <= S.reach + 0.6 && c.userData.hp > 0) {
+            p.stamina = p.staminaMax;
+            if (r._playerAttackCreature(c) !== false) (S.schwuenge += 1), (S.dHieb = +d.toFixed(2));
+        }
+        return { d: +d.toFixed(2), nah: d <= S.reach + 1.5, hp: c.userData.hp, getroffen: c.userData.hp < R.hp0 };
     }
     if (s === "kampfNach") {
         const c = R.ziel;
-        return { hp: c.userData.hp, hp0: R.hp0, ...(R.schlag || {}), dNach: +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(2), zustand: (c.userData && c.userData._motionZustand) || null };
+        return { hp: c.userData.hp, hp0: R.hp0, schwung: R.schlag.schwuenge > 0, ...R.schlag, dNach: +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(2), zustand: (c.userData && c.userData._motionZustand) || null };
+    }
+    if (s === "kampfZurueck") {
+        if (R.ziel && (st.creatures || []).includes(R.ziel)) r.removeCreature(R.ziel);
+        if (R.modus) r.setGameMode(R.modus);
+        if (Number.isFinite(R.php)) st.player.hp = R.php;
+        return 1;
     }
     return { fehler: "kein Schritt " + s };
 }
@@ -1410,9 +1428,24 @@ async function probeRolle(H) {
                 z.welt = await seite({ schritt: "fahrenNach" });
                 z.aenderung = z.sitzt === true && z.welt.m >= S.fahrM;
             } else {
-                z.welt = await seite({ schritt: "hieb" });
-                await H.schlaf(S.kampfS * 1000);
-                Object.assign(z.welt, await seite({ schritt: "kampfNach" }));
+                H.beimAbbau(() => seite({ schritt: "kampfZurueck" }));
+                z.ziel = { seele: an.seele, temperament: an.temperament, beute: an.beute, modus: an.modus };
+                let w = false, k = null, getroffenS = null;
+                try {
+                    while (Date.now() - t0 < S.kampfS * 1000) {
+                        k = await seite({ schritt: "kampfTakt" });
+                        if (k.getroffen) {
+                            getroffenS = +((Date.now() - t0) / 1000).toFixed(1);
+                            await H.schlaf(300);
+                            break;
+                        }
+                        if (!k.nah !== w) await (w ? page.keyboard.up("KeyW") : page.keyboard.down("KeyW")), (w = !w);
+                        await H.schlaf(100);
+                    }
+                } finally {
+                    if (w) await page.keyboard.up("KeyW");
+                }
+                z.welt = { ...(await seite({ schritt: "kampfNach" })), getroffenS };
                 z.aenderung = z.welt.schwung === true && Number.isFinite(z.welt.hp) && z.welt.hp < z.welt.hp0;
             }
             z.sek = +((Date.now() - t0) / 1000).toFixed(1);
@@ -1433,7 +1466,7 @@ const rolleSichtbar = (z, S = ROLLE_SOLL) => !!z && !z.fehler && [z.rausch, z.di
 const rolleRoh = (o = {}) => ({
     adapter: "amd/rdna-3",
     soll: ROLLE_SOLL,
-    gruppen: Object.fromEntries(ROLLE_GRUPPEN.map((g) => [g, { rausch: 0.0004, diff: 0.03, aenderung: true, welt: {}, halt: 0, aufstellungS: 0.4, ...(o[g] || {}) }])),
+    gruppen: Object.fromEntries(ROLLE_GRUPPEN.map((g) => [g, { rausch: 0.0004, diff: 0.03, aenderung: true, welt: {}, halt: 0, aufstellungS: 0.4, ...(g === "kaempfen" ? { ziel: { seele: "wolf", temperament: "wild", beute: true, modus: "pfad" } } : {}), ...(o[g] || {}) }])),
 });
 const ROLLE_PFAD = [
     "stamm/kreatur-*.js",
@@ -3149,7 +3182,11 @@ const alle = [
             // die Tat in der wachen Welt (`halt` ≥ 0 nach den Schüssen) und die Aufstellung als Zahl je Gruppe (Werk, Wagen, Tier bis zum
             // Ereignis) — über 10 s ist sie der Befund für den Spieler, nie ein Grund zu warten
             const wachOk = (z) => !!z && Number.isFinite(z.halt) && z.halt >= 0 && Number.isFinite(z.aufstellungS);
-            const ja = ROLLE_GRUPPEN.filter((g) => G[g] && G[g].aenderung === true && rolleSichtbar(G[g]) && wachOk(G[g]));
+            // DER GEGNER NACH DEM GESETZ (17.11.): der Kampf zählt nur gegen ein Tier, das im pfad jagt — wild, der Spieler seine Beute;
+            // ein gestelltes Ziel (sanft, im frieden, ohne Beute) ist kein Kampf eines Spielers
+            const gegnerOk = (g) => g !== "kaempfen" || (!!G[g].ziel && G[g].ziel.temperament === "wild" && G[g].ziel.modus === "pfad" && G[g].ziel.beute === true);
+            const ja = ROLLE_GRUPPEN.filter((g) => G[g] && G[g].aenderung === true && rolleSichtbar(G[g]) && wachOk(G[g]) && gegnerOk(g));
+            const gestellt = G.kaempfen && !G.kaempfen.fehler && !gegnerOk("kaempfen") ? " · kämpfen gegen ein gestelltes Ziel (" + JSON.stringify(G.kaempfen.ziel || null) + ", Soll wild · pfad · Beute)" : "";
             const ohneWach = ROLLE_GRUPPEN.filter((g) => G[g] && !G[g].fehler && !wachOk(G[g]));
             const auf = ROLLE_GRUPPEN.filter((g) => G[g] && Number.isFinite(G[g].aufstellungS)).map((g) => g + " " + G[g].aufstellungS + " s");
             const lang = ROLLE_GRUPPEN.filter((g) => G[g] && G[g].aufstellungS > 10).map((g) => g + " " + G[g].aufstellungS + " s");
@@ -3158,7 +3195,7 @@ const alle = [
                 zahl:
                     ja.length + "/" + ROLLE_GRUPPEN.length + " Verb-Gruppen ändern die Welt sichtbar · Aufstellung " + (auf.join(", ") || "ohne Zahl") +
                     (lang.length ? " (Aufstellung > 10 s: " + lang.join(", ") + ")" : "") +
-                    (ohneWach.length ? " · die Tat ohne wache Welt (Halt oder Aufstellung ohne Zahl): " + ohneWach.join(", ") : "") + " · " +
+                    (ohneWach.length ? " · die Tat ohne wache Welt (Halt oder Aufstellung ohne Zahl): " + ohneWach.join(", ") : "") + gestellt + " · " +
                     ROLLE_GRUPPEN.map((g) => { const z = G[g]; return g + " " + (!z ? "nicht gelaufen" : z.fehler ? String(z.fehler).slice(0, 80) : (z.aenderung ? "Änderung" : "OHNE ÄNDERUNG") + " Δ " + (Number.isFinite(z.diff) ? (100 * z.diff).toFixed(2) + " %" : "–") + " (Rauschen " + (Number.isFinite(z.rausch) ? (100 * z.rausch).toFixed(2) + " %" : "–") + ")"); }).join(" · ") + // prettier-ignore
                     " · " + ad,
             };
@@ -3173,6 +3210,9 @@ const alle = [
             // GTX und Radeon ee9c1965/389a6496: die Schüsse vor der Tat hielten die Welt (weatherEffectTime −1e9), die Tat lief im Halt
             { name: "die Tat unter dem Halt der Messung (gehen −1e9)", j: rolleRoh({ gehen: { halt: -1e9 } }), stdout: PAAR_KARTE, gruen: false },
             { name: "die Aufstellung ohne Zahl (bauen)", j: rolleRoh({ bauen: { aufstellungS: undefined } }), stdout: PAAR_KARTE, gruen: false },
+            // der Mutant der Klasse (17.11.): das Ziel nach dem Furcht-Gesetz floh vor dem Schwung, die hp blieben (Radeon e489088a)
+            { name: "das Ziel flieht vor der Klinge, kein Treffer (3,39 m beim Hieb, Klinge 0,66 m)", j: rolleRoh({ kaempfen: { aenderung: false, welt: { schwung: true, hp: 30, hp0: 30, dHieb: 3.39, reach: 0.66, zustand: "flucht" } } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "ein gestelltes Ziel (sanft, im frieden): der Treffer zählt nicht", j: rolleRoh({ kaempfen: { ziel: { seele: "wesen", temperament: "sanft", beute: false, modus: "frieden" } } }), stdout: PAAR_KARTE, gruen: false, zahl: /gestelltes Ziel/ },
             { name: "die Aufstellung des Wagens 12,5 s — der Befund steht beim Namen, das Urteil bleibt", j: rolleRoh({ fahren: { aufstellungS: 12.5 } }), stdout: PAAR_KARTE, gruen: true, zahl: /Aufstellung > 10 s: fahren 12\.5 s/ },
         ],
         pfad: ROLLE_PFAD,

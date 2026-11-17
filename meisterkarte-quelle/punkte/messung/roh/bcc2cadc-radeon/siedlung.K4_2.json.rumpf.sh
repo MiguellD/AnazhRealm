@@ -3,7 +3,7 @@ WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
 L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
 boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
 teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
-A=$(cygpath -m 'C:\Users\micha\AppData\Local\Temp\claude\bdc204a033231caa\3f59870c-5b2c-4386-8f3b-a749a5db56d4\scratchpad\buch-tree\meisterkarte-quelle\punkte\messung\roh\bcc2cadc-radeon\siedlung.K4_2.json')
+A=$(cygpath -m '%TEMP%\claude\bdc204a033231caa\3f59870c-5b2c-4386-8f3b-a749a5db56d4\scratchpad\buch-tree\meisterkarte-quelle\punkte\messung\roh\bcc2cadc-radeon\siedlung.K4_2.json')
 node scripts/diag-settlement.cjs --nur-w > "$L/teil-w.txt" 2>&1 & WPID=$!; trap 'wait $WPID; WX=$?; echo "@@PUNKTE@@ W"; cat "$L/teil-w.txt"; echo "@@PUNKTE@@ EXIT $WX"' EXIT
 boot
 timeout 60 $W fenster 1600 900 > /dev/null 2>&1

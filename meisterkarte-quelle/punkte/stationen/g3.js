@@ -1619,7 +1619,9 @@ async function neunSeite(r, T, C, kammSaum) {
                         sicht: r4(Math.min(sb.length / d.band.length, sf.length / d.frei.length)),
                     };
                 });
-                return { je, platz: [+M.x.toFixed(1), +M.z.toFixed(1)], hang: M.hang, gruen: r4(gruen(M.x, M.z)) };
+                // DAS EINE BILD (17.11.): der Schuss MIT Fuß und Sockel, die Sonne aus — was ein Spieler am Kontakt sieht (Lesewert, die Datei
+                // neben {AUS}: -schatten.K3.png)
+                return { je, platz: [+M.x.toFixed(1), +M.z.toFixed(1)], hang: M.hang, gruen: r4(gruen(M.x, M.z)), bild: typeof window.__png === "function" ? window.__png(mit, W, H) : null };
             } finally {
                 dl.intensity = I0;
             }
@@ -2309,6 +2311,13 @@ async function neunProbe() {
         await lauf("B", { teile: [] });
     } finally {
         await ruf("/fenster", { w: 1920, h: 1080 }, 30000).catch(() => {});
+        // ein Teil mit Bild (`bild`: PNG als data-URL) legt es neben {AUS} ab; die Zeile trägt den Namen der Datei
+        for (const [k, v] of Object.entries(j.teile))
+            if (v && typeof v.bild === "string" && v.bild.startsWith("data:")) {
+                const d = aus.replace(/\.json$/, "") + "-" + k + ".png";
+                fs.writeFileSync(d, Buffer.from(v.bild.split(",")[1], "base64"));
+                v.bild = d.split(/[\\/]/).pop();
+            }
         fs.writeFileSync(aus, JSON.stringify(j));
     }
     for (const [k, v] of Object.entries(j.teile)) console.log("NEUN " + k + " " + JSON.stringify(Object.assign({ ort: j.ort }, v)));

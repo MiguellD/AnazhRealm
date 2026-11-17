@@ -1229,9 +1229,49 @@ async function weltSitzungLauf() {
                     }
                     const [px, py, pz, lx, ly, lz] = b.kamera;
                     const datei = B + "-" + name + "-" + (i + 1) + ".png";
-                    const q = await werkbankRuf(W, "/bild", { px, py, pz, lx, ly, lz, klasse: b.klasse, wahl: 0, datei, nurPixel: true, ...Object.fromEntries(["wetter", "uhr", "saison"].filter((k) => b[k] != null).map((k) => [k, b[k]])) });
+                    const q = await werkbankRuf(W, "/bild", { px, py, pz, lx, ly, lz, klasse: b.klasse, wahl: 0, datei, nurPixel: true, ...Object.fromEntries(["wetter", "uhr", "saison", "fov"].filter((k) => b[k] != null).map((k) => [k, b[k]])) });
                     Object.assign(b, { datei, fehler: (q && q.fehler) || null,
                         klassen: q && q.klasse ? Object.fromEntries(Object.entries(q.klasse.klassen || {}).map(([k, v]) => [k, { pixel: v.pixel, objekte: v.objekte }])) : null });
+                    // DER STREIFEN (`streifen`: { links, rechts } Welt-Punkte zweier Kanten am Boden, `fov` des Schusses): die Pixel der Klasse
+                    // nur zwischen den Kanten — die Maske der Werkbank (Nicht-Klasse: R = G, B = R + 40) zeilenweise zwischen den projizierten
+                    // Kanten gezählt; `alle` zählt die ganze Maske als Gegenprobe zur Summe der Klassen
+                    if (b.streifen && b.fov && q && q.klasse && typeof q.klasse.maske === "string" && fs.existsSync(q.klasse.maske)) {
+                        const AB = require(path.resolve("scripts/lib/abnahme-urteil.cjs"));
+                        const M = AB.pngLesen(fs.readFileSync(q.klasse.maske));
+                        const [cx, cy, cz] = [px, py, pz];
+                        const n3 = (v) => ((l) => v.map((x) => x / l))(Math.hypot(...v) || 1);
+                        const f = n3([lx - cx, ly - cy, lz + 1e-4 - cz]);
+                        const re = n3([f[1] * 0 - f[2] * 1, f[2] * 0 - f[0] * 0, f[0] * 1 - f[1] * 0]); // f × (0,1,0)
+                        const up = [re[1] * f[2] - re[2] * f[1], re[2] * f[0] - re[0] * f[2], re[0] * f[1] - re[1] * f[0]];
+                        const t = Math.tan((b.fov * Math.PI) / 360), asp = M.W / M.H;
+                        const proj = (P) => {
+                            const d = [P[0] - cx, P[1] - cy, P[2] - cz];
+                            const zc = d[0] * f[0] + d[1] * f[1] + d[2] * f[2];
+                            if (!(zc > 0.05)) return null;
+                            const [xc, yc] = [d[0] * re[0] + d[1] * re[1] + d[2] * re[2], d[0] * up[0] + d[1] * up[1] + d[2] * up[2]];
+                            return [((xc / (zc * t * asp) + 1) / 2) * M.W, ((1 - yc / (zc * t)) / 2) * M.H];
+                        };
+                        const kante = (L) => L.map(proj).filter(Boolean).sort((a2, b2) => a2[1] - b2[1]);
+                        const xBei = (K, y) => {
+                            for (let k = 1; k < K.length; k++)
+                                if (K[k - 1][1] <= y && y <= K[k][1]) return K[k - 1][0] + ((K[k][0] - K[k - 1][0]) * (y - K[k - 1][1])) / Math.max(1e-9, K[k][1] - K[k - 1][1]);
+                            return null;
+                        };
+                        const [KL, KR] = [kante(b.streifen.links), kante(b.streifen.rechts)];
+                        const klasse = (i) => !(M.u8[i] === M.u8[i + 1] && M.u8[i + 2] === M.u8[i] + 40);
+                        let [n, flaeche, alle] = [0, 0, 0];
+                        for (let y = 0; y < M.H; y++) {
+                            const [xa, xb] = [xBei(KL, y + 0.5), xBei(KR, y + 0.5)];
+                            const [x0, x1] = xa == null || xb == null ? [1, 0] : [Math.max(0, Math.ceil(Math.min(xa, xb) - 0.5)), Math.min(M.W - 1, Math.floor(Math.max(xa, xb) - 0.5))];
+                            for (let x = 0; x < M.W; x++) {
+                                const k = klasse((y * M.W + x) * 4);
+                                alle += k;
+                                if (x >= x0 && x <= x1) (flaeche += 1), (n += k);
+                            }
+                        }
+                        b.streifenPixel = { klasse: n, flaeche, alle, anteil: flaeche ? +(n / flaeche).toFixed(4) : null };
+                        delete b.streifen;
+                    }
                 }
                 // `schuesse`: Bilder, die die Probe in der Seite selbst schoss (`url`, PNG) — neben {AUS}, die Ausgabe trägt den Namen der Datei
                 for (const [i, q] of (Array.isArray(e.schuesse) ? e.schuesse : []).entries())
@@ -1434,34 +1474,89 @@ async function brandSitzungProbe(r, T, o) {
         // Flammen trugen +297 / +274 in der Summe, und `max(0, mit − ohne)` schnitt den negativen Fall auf +0: „+0 bei 22 Flammen“ an
         // beiden Geräten): Flammen = Pixel warm MIT und nicht warm OHNE (`neu`) − dieselbe Zählung zwischen zwei Schüssen OHNE (`rauschen`:
         // was Gras und Jitter allein so färben), ohne Takt zwischen den drei Schüssen; ohne Satz 0.
+        // DASSELBE LICHT IN MIT UND OHNE (17.11., Radeon am e489088a: neu 542 − Rauschen 1 105 bei 32 gezeichneten Flammen): seit
+        // w28-brand-nacht trägt jede Flamme ihr Licht (`_flammenLicht`, LICHT_GESETZ.feuer flacker 0,18 in 6–10 Hz auf der Bild-Uhr,
+        // `_leuchtStaerke`); liefe die Schleife der Werkbank zwischen den Schüssen weiter, stünde die Bild-Uhr je Schuss woanders,
+        // das Gras um den Herd läge je Schuss unter einem anderen Licht und erfüllte die warme Regel bald hier, bald dort. Die drei
+        // Schüsse eines Bilds ruhen darum die Schleife (`setAnimationLoop(null)`, danach zurück): die Bild-Uhr steht, das Licht der
+        // Flammen brennt in allen dreien gleich, nur ihr gezeichneter Satz fehlt im OHNE. `uhr` nennt die Bild-Uhr je Schuss.
+        // DER POOL AM FIXPUNKT (17.11., Radeon am 33814d25: die Schleife lief NICHT — `schleife:false`, die Bühne hält die Bild-Uhr
+        // —, und doch trug das alte Paar Rauschen 81, das ruhende 0): Wahl (0,25 s) und Blende (0,5 s) des Licht-Pools
+        // (`_leuchtTakt`, LICHT_POOL) gehen auf der WANDUHR — gleich nachdem die Flammen stehen, blendet ihr Licht noch ein, und
+        // MIT und OHNE lagen unter verschiedener Blende. Vor den drei Schüssen läuft der Pool darum zu seinem Fixpunkt
+        // (jeder gehaltene Platz Blende 1, dieselben Halter ≥ wahlS, Deckel 3 s); `pool` nennt Blenden und Wartezeit.
+        const poolFix = async () => {
+            const LP = (typeof AnazhRealm !== "undefined" && AnazhRealm.LICHT_POOL) || (r.constructor && r.constructor.LICHT_POOL), t0 = performance.now();
+            if (!LP || typeof r._leuchtTakt !== "function") return { fix: false, ms: 0, grund: "kein Licht-Pool" };
+            let ids = "", seit = t0;
+            for (;;) {
+                r._leuchtTakt();
+                const P = r._leuchtPool, jetzt = performance.now();
+                const neu = P.halter.map((h) => (h ? h.id : "-")).join("|");
+                if (neu !== ids) [ids, seit] = [neu, jetzt];
+                const voll = P.halter.every((h, k) => !h || P.blende[k] === 1);
+                if ((voll && jetzt - seit >= LP.wahlS * 1000) || jetzt - t0 > 3000)
+                    return { fix: voll && jetzt - seit >= LP.wahlS * 1000, ms: Math.round(jetzt - t0), blende: Array.from(P.blende, r3), halter: P.halter.filter(Boolean).length };
+                await new Promise((ok) => setTimeout(ok, 40));
+            }
+        };
+        const ruhend = async (f) => {
+            const R = st.renderer, lp = R.getAnimationLoop ? R.getAnimationLoop() : null;
+            if (lp) R.setAnimationLoop(null);
+            try {
+                return await f(!!lp, await poolFix());
+            } finally {
+                if (lp) R.setAnimationLoop(lp);
+            }
+        };
         const schuss = async (name) => {
-            stellen();
-            const { u8 } = await window.__ausgabeAufnahme(W, H);
-            const L = [];
-            for (let y = roi[1]; y < roi[3]; y++)
-                for (let x = roi[0]; x < roi[2]; x++) {
-                    const i = (y * W + x) * 4;
-                    L.push(0.2126 * LUT[u8[i]] + 0.7152 * LUT[u8[i + 1]] + 0.0722 * LUT[u8[i + 2]]);
-                }
-            const w = warm(u8), S = st.brandFlammenSatz, m = S && S.mesh;
-            let [neu, rauschen] = [0, 0];
-            if (m && m.visible) {
+            // VORHER, im selben Zustand (nur im Schuss BRENNT): zwei Schüsse OHNE Satz bei laufender Schleife — das Rauschen der alten Zählung
+            const S = st.brandFlammenSatz, m = S && S.mesh;
+            let laufend = null;
+            if (name === "brennt" && m && m.visible) {
                 m.visible = false;
                 try {
                     stellen();
-                    const o1 = warm((await window.__ausgabeAufnahme(W, H)).u8);
+                    const a1 = warm((await window.__ausgabeAufnahme(W, H)).u8);
                     stellen();
-                    const o2 = warm((await window.__ausgabeAufnahme(W, H)).u8);
-                    [neu, rauschen] = [neuWarm(w, o1), neuWarm(o2, o1)];
+                    const a2 = warm((await window.__ausgabeAufnahme(W, H)).u8);
+                    laufend = neuWarm(a2, a1);
                 } finally {
                     m.visible = true;
                 }
             }
-            Y[name] = L;
-            aus.schuesse.push({ name, url: window.__png(u8, W, H) });
-            return { luma: r3(L.reduce((s, v) => s + v, 0) / Math.max(1, L.length)), warm: w.n, neu, rauschen, flammen: neu - rauschen };
+            return await ruhend(async (lief, pool) => {
+                stellen();
+                const uhr = [r3(r._bildZeit)];
+                const { u8 } = await window.__ausgabeAufnahme(W, H);
+                const L = [];
+                for (let y = roi[1]; y < roi[3]; y++)
+                    for (let x = roi[0]; x < roi[2]; x++) {
+                        const i = (y * W + x) * 4;
+                        L.push(0.2126 * LUT[u8[i]] + 0.7152 * LUT[u8[i + 1]] + 0.0722 * LUT[u8[i + 2]]);
+                    }
+                const w = warm(u8);
+                let [neu, rauschen] = [0, 0];
+                if (m && m.visible) {
+                    m.visible = false;
+                    try {
+                        stellen();
+                        uhr.push(r3(r._bildZeit));
+                        const o1 = warm((await window.__ausgabeAufnahme(W, H)).u8);
+                        stellen();
+                        uhr.push(r3(r._bildZeit));
+                        const o2 = warm((await window.__ausgabeAufnahme(W, H)).u8);
+                        [neu, rauschen] = [neuWarm(w, o1), neuWarm(o2, o1)];
+                    } finally {
+                        m.visible = true;
+                    }
+                }
+                Y[name] = L;
+                aus.schuesse.push({ name, url: window.__png(u8, W, H) });
+                return { luma: r3(L.reduce((s, v) => s + v, 0) / Math.max(1, L.length)), warm: w.n, neu, rauschen, flammen: neu - rauschen, uhr, schleife: lief, pool, ...(laufend == null ? {} : { rauschenLaufend: laufend }) };
+            });
         };
-        aus.flammenArt = "emission-pixel";
+        aus.flammenArt = "emission-pixel-ruhe";
         await window.__weltStehtNach(takt, 900);
         aus.vor = await schuss("vor");
         const n0 = (st.worldMeta.taten ||= []).length;
@@ -1528,11 +1623,16 @@ function kaskadeUrteil(j, lauf) {
     if (l.fehler) return { gruen: false, zahl: l.fehler };
     const { e, ad, hw } = l;
     // JE PIXEL (brandSitzungProbe, 17.11.): eine Zeile mit der Summe (flammenArt „emission“) vergleicht im Gras-Rauschen — kein Urteil
-    if (e.flammenArt !== "emission-pixel") return { gruen: false, zahl: "die Flammen im Bild als Summe gezählt (warme Pixel mit − ohne, im Rauschen des Grases ±150) — nie je Pixel · " + ad };
+    if (e.flammenArt === "emission-pixel") return { gruen: false, zahl: "die Flammen je Pixel bei laufender Schleife gezählt (das Licht der Flammen flackert zwischen MIT und OHNE, das Gras um den Herd zählt mit) — nie unter demselben Licht · " + ad };
+    if (e.flammenArt !== "emission-pixel-ruhe") return { gruen: false, zahl: "die Flammen im Bild als Summe gezählt (warme Pixel mit − ohne, im Rauschen des Grases ±150) — nie je Pixel · " + ad };
+    // DASSELBE LICHT (brandSitzungProbe `ruhend`): die Bild-Uhr der drei Schüsse BRENNT steht — sonst flackerte das Licht dazwischen
+    const uhr = e.brennt.uhr || [];
+    if (uhr.length !== 3 || uhr.some((u) => u !== uhr[0]))
+        return { gruen: false, zahl: "die Bild-Uhr lief zwischen MIT und OHNE (" + (uhr.join(" → ") || "ungemessen") + ") — das Licht der Flammen stand nicht still · " + ad };
     const [fB, fC] = [e.brennt.flammen - e.vor.flammen, e.erloschen.flammen - e.vor.flammen];
     return {
-        gruen: hw && e.trockenS >= 60 && e.brennt.zellen >= 1 && fB >= 200 && e.regenS <= 60 && e.nachRegen === 0 && e.erloschen.zellen === 0 && fC <= 20,
-        zahl: "trocken nach " + e.trockenS + " s " + e.brennt.zellen + " brennende Zellen, Flammen im Bild +" + fB + " Pixel je Pixel (neu " + e.brennt.neu + " − Rauschen " + e.brennt.rauschen + "; Soll ≥ 200; " + e.brennt.flammenListe +
+        gruen: hw && e.trockenS >= 60 && e.brennt.zellen >= 1 && e.brennt.flammenListe >= 1 && fB >= 200 && e.regenS <= 60 && e.nachRegen === 0 && e.erloschen.zellen === 0 && fC <= 20,
+        zahl: "trocken nach " + e.trockenS + " s " + e.brennt.zellen + " brennende Zellen, Flammen im Bild +" + fB + " Pixel je Pixel (neu " + e.brennt.neu + " − Rauschen " + e.brennt.rauschen + (e.brennt.rauschenLaufend != null ? ", bei laufender Schleife " + e.brennt.rauschenLaufend : "") + "; Soll ≥ 200; " + e.brennt.flammenListe +
             " Flammen gezeichnet) · Regen löscht nach " + e.regenS + " s (Soll ≤ 60), danach " + e.erloschen.zellen + " Zellen, Flammen im Bild (Emission) " + (fC >= 0 ? "+" : "") + fC + " (Soll ≤ 20; warm " + e.erloschen.warm + ") · " + ad,
     };
 }
@@ -1552,12 +1652,12 @@ const BRAND_ROH = {
     vor: { luma: 0.12, warm: 4, neu: 3, rauschen: 3, flammen: 0 },
     entfacht: true,
     trockenS: 60,
-    brennt: { zellen: 6, flammenListe: 22, luma: 0.2, warm: 1840, neu: 1990, rauschen: 190, flammen: 1800 },
+    brennt: { zellen: 6, flammenListe: 22, luma: 0.2, warm: 1840, neu: 1990, rauschen: 190, flammen: 1800, uhr: [812.4, 812.4, 812.4], schleife: true, rauschenLaufend: 1105 },
     regenS: 7,
     nachRegen: 0,
     erloschen: { zellen: 0, lebt: false, luma: 0.03, warm: 10, neu: 180, rauschen: 182, flammen: -2 },
     krone: 0,
-    flammenArt: "emission-pixel",
+    flammenArt: "emission-pixel-ruhe",
     asche: 0.995,
     aschen: 9,
     veraendert: 0.82,
@@ -2711,6 +2811,21 @@ const laeufeRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWE
 // dem Bild: je Streifen EINE Kamera 1,6 m über seiner Mitte, der Blick steil hinab 0,4 m längs des Wegs voraus (die Bild-Senkrechte folgt
 // dem Weg), die Sitzung zählt die Pixel der Klassen der Nah-Wiese (`^nahWiese`) — `pfad-vor` vor dem ersten Gang, `pfad-nach` nach dem
 // hundertsten; der Spieler steht für die Bilder 12 m quer zur anderen Seite.
+// DER TRITTSTREIFEN IM BILD (17.11., Radeon 389a6496: im Bild ein kahler Weg, die Büschel 13 → 3, doch das ganze Bild zählte Gras
+// 1 454 752 → 1 071 186 px, −26 % — die Kamera 1,6 m über dem Weg sieht das Gras ±1,5 m daneben mit): die Kanten des Streifens ±0,5 m um
+// die Linie des Wegs (quer versetzt um `quer`), am Boden, längs der 8 m des Gangs ab a — der Lauf zählt die Pixel der Klasse nur zwischen ihnen
+function pfadStreifen(r, a, b, ux, uz, quer) {
+    const [mx, mz] = [a[0] - uz * quer, a[1] + ux * quer];
+    const kante = (s) => {
+        const L = [];
+        for (let t = 0; t <= 8 + 1e-9; t += 0.25) {
+            const [x, z] = [mx + ux * t - uz * s, mz + uz * t + ux * s];
+            L.push([x, r._voxelSurfaceY(x, z), z].map((v) => Math.round(v * 1e3) / 1e3));
+        }
+        return L;
+    };
+    return { links: kante(-0.5), rechts: kante(0.5) };
+}
 async function pfadVorSitzungProbe(r, T, o, G) {
     const { s, takt, stehen, r3 } = G;
     const W = o.orte.wiese;
@@ -2746,7 +2861,8 @@ async function pfadVorSitzungProbe(r, T, o, G) {
         return { steht: true };
     };
     const klasse = "^nahWiese";
-    return { plan, gras: alterSpurMessen(r, T, G, plan).gras, bilder: [{ vor: [], kamera: kamera(0), klasse }, { vor: [], kamera: kamera(4), klasse }] };
+    const fov = r3(s.camera.fov);
+    return { plan, gras: alterSpurMessen(r, T, G, plan).gras, bilder: [{ vor: [], kamera: kamera(0), klasse, fov, streifen: pfadStreifen(r, a, b, ux, uz, 0) }, { vor: [], kamera: kamera(4), klasse, fov, streifen: pfadStreifen(r, a, b, ux, uz, 4) }] };
 }
 async function pfadNachSitzungProbe(r, T, o, G) {
     const { s, A, takt, stehen, r3 } = G;
@@ -2780,10 +2896,11 @@ async function pfadNachSitzungProbe(r, T, o, G) {
         return { steht: true };
     };
     const klasse = "^nahWiese";
-    return { gaenge, gras, bilder: [{ vor: [], kamera: kamera(0), klasse }, { vor: [], kamera: kamera(4), klasse }] };
+    const fov = r3(s.camera.fov);
+    return { gaenge, gras, bilder: [{ vor: [], kamera: kamera(0), klasse, fov, streifen: pfadStreifen(r, a, b, ux, uz, 0) }, { vor: [], kamera: kamera(4), klasse, fov, streifen: pfadStreifen(r, a, b, ux, uz, 4) }] };
 }
 const PFAD_SITZUNG = {
-    befehl: weltSitzungBefehl([["pfad-vor", pfadVorSitzungProbe], ["pfad-nach", pfadNachSitzungProbe]], [alterSpurMessen]),
+    befehl: weltSitzungBefehl([["pfad-vor", pfadVorSitzungProbe], ["pfad-nach", pfadNachSitzungProbe]], [alterSpurMessen, pfadStreifen]),
     sek: 300,
     mutiert: true,
 };
@@ -2793,14 +2910,18 @@ function pfadLesen(j, lauf) {
     const [v, n] = [weltZeile(j, lauf, "pfad-vor"), weltZeile(j, lauf, "pfad-nach")];
     if (!v || !n) return { fehler: "keine Zeile WELTPROBE " + (v ? "pfad-nach" : "pfad-vor") + " (Exit " + (lauf && lauf.exit) + ") · " + ad };
     if (v.fehler || n.fehler) return { fehler: "Probe: " + (v.fehler || n.fehler) + " · " + ad };
-    const px = (x) => Object.entries((x && x.klassen) || {}).reduce((s, [k, w]) => s + (/^nahWiese/.test(k) ? w.pixel || 0 : 0), 0);
+    // DAS GRAS IM TRITTSTREIFEN (pfadStreifen, 17.11.): die Pixel der Nah-Wiese zwischen den Kanten ±0,5 m — eine Zeile, die das ganze
+    // Bild zählt (das Gras ±1,5 m daneben im Rahmen, Radeon 389a6496 Weg −26 % bei Büscheln 13 → 3), urteilt den Streifen nicht
+    const px = (x) => (x && x.streifenPixel ? x.streifenPixel.klasse : null);
     const B = [...(v.bilder || []), ...(n.bilder || [])];
     const bilder = B.filter((x) => x.datei && !x.fehler && x.klassen).length;
     if (bilder < 4) return { fehler: "Bilder " + bilder + "/4 (Weg und daneben, vor und nach) · " + ad };
+    const ohne = B.filter((x) => !(x.streifenPixel && x.streifenPixel.flaeche > 0)).length;
+    if (ohne) return { fehler: "das Gras im ganzen Bild gezählt, nicht im Trittstreifen ±0,5 m (" + ohne + " von 4 Bildern ohne Streifen) · " + ad };
     const bild = { weg: [px(v.bilder[0]), px(n.bilder[0])], neben: [px(v.bilder[1]), px(n.bilder[1])] };
     const gv = v.gras || {};
     const gn = n.gras || {};
-    const zeile = "nach " + n.gaenge + " Gängen (Soll 100): Gras im Bild Weg " + bild.weg.join(" → ") + " px, daneben " + bild.neben.join(" → ") + " px · Büschel Weg " + gv.weg + " → " + gn.weg +
+    const zeile = "nach " + n.gaenge + " Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg " + bild.weg.join(" → ") + " px, daneben " + bild.neben.join(" → ") + " px · Büschel Weg " + gv.weg + " → " + gn.weg +
         ", daneben " + gv.neben + " → " + gn.neben;
     return { ad, hw, v, n, bild, gv, gn, zeile, gaenge: n.gaenge >= 100 };
 }
@@ -2830,9 +2951,9 @@ function lebenFormtUrteil(j, lauf) {
 }
 const PFAD_ROH = {
     vor: { plan: { bloecke: {}, weg: { a: [-280.4, -1045.6], b: [-280.4, -1037.6] } }, gras: { weg: 13, neben: 17 },
-        bilder: [{ datei: "x-pfad-vor-1.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 300000, objekte: 4 } } }, { datei: "x-pfad-vor-2.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 320000, objekte: 4 } } }] },
+        bilder: [{ datei: "x-pfad-vor-1.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 1200000, objekte: 4 } }, streifenPixel: { klasse: 300000, flaeche: 460000, alle: 1200000, anteil: 0.6522 } }, { datei: "x-pfad-vor-2.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 1280000, objekte: 4 } }, streifenPixel: { klasse: 320000, flaeche: 460000, alle: 1280000, anteil: 0.6957 } }] },
     nach: { gaenge: 100, gras: { weg: 3, neben: 17 },
-        bilder: [{ datei: "x-pfad-nach-1.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 60000, objekte: 4 } } }, { datei: "x-pfad-nach-2.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 318000, objekte: 4 } } }] },
+        bilder: [{ datei: "x-pfad-nach-1.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 960000, objekte: 4 } }, streifenPixel: { klasse: 60000, flaeche: 460000, alle: 240000, anteil: 0.1304 } }, { datei: "x-pfad-nach-2.png", fehler: null, klassen: { "nahWiese:L0": { pixel: 1272000, objekte: 4 } }, streifenPixel: { klasse: 318000, flaeche: 460000, alle: 1272000, anteil: 0.6913 } }] },
 };
 const pfadRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => {
     const x = aendern(JSON.parse(JSON.stringify(PFAD_ROH)));
@@ -5602,6 +5723,10 @@ module.exports = [
             // die Fassung vor dem 17.11. urteilte diese GRÜN: die Summe mit − ohne im Rauschen des Grases (+297 Flammen gegen ±150 Gras)
             { name: "Summen-Vergleich im Gras-Rauschen (flammenArt emission: +240 in der Summe, je Pixel ungemessen)", stdout: brandRoh((x) => ((x.flammenArt = "emission"), Object.assign(x.brennt, { flammen: 240 }), delete x.brennt.neu, delete x.brennt.rauschen, x)), gruen: false },
             { name: "je Pixel: die Flammen tragen nur 120 Pixel über dem Rauschen", stdout: brandRoh((x) => (Object.assign(x.brennt, { neu: 310, rauschen: 190, flammen: 120 }), x)), gruen: false },
+            // der Mutant der Klasse (17.11.): keine Flamme gezeichnet, das Licht der Glut färbt das Gras — MIT gleich OHNE bis aufs Rauschen
+            { name: "keine Flammen gezeichnet, nur das Licht des Brands auf dem Gras", stdout: brandRoh((x) => (Object.assign(x.brennt, { flammenListe: 0, neu: 196, rauschen: 190, flammen: 6 }), x)), gruen: false },
+            { name: "die Zeile vor dem 17.11. (je Pixel bei laufender Schleife: neu 542 − Rauschen 1 105)", stdout: brandRoh((x) => ((x.flammenArt = "emission-pixel"), x)), gruen: false },
+            { name: "die Bild-Uhr lief zwischen MIT und OHNE", stdout: brandRoh((x) => ((x.brennt.uhr = [812.4, 813.1, 813.9]), x)), gruen: false },
         ],
         pfad: BRAND_PFAD,
         quelle: "KARTE2 same.kopplung.kaskade S1 = Bildpaar: Brand erlischt im Regen, hält im Trockenen, beide Geräte",
@@ -5846,13 +5971,17 @@ module.exports = [
         urteil: pfadUrteil,
         proben: [
             { name: "der Weg verliert sein Gras im Bild und in der Liste, daneben bleibt es", stdout: pfadRoh((x) => x), gruen: true },
-            { name: "100 Gänge lassen das Gras im Bild stehen (die Messung am main 5fba36ea, headless 13 → 13)", stdout: pfadRoh((x) => ((x.nach.bilder[0].klassen["nahWiese:L0"].pixel = 298000), (x.nach.gras.weg = 13), x)), gruen: false },
-            { name: "die Liste dünnt, das Bild nicht (die Wiese zeichnet die alte Kachel)", stdout: pfadRoh((x) => ((x.nach.bilder[0].klassen["nahWiese:L0"].pixel = 290000), x)), gruen: false },
+            { name: "100 Gänge lassen das Gras im Bild stehen (die Messung am main 5fba36ea, headless 13 → 13)", stdout: pfadRoh((x) => ((x.nach.bilder[0].streifenPixel.klasse = 298000), (x.nach.gras.weg = 13), x)), gruen: false },
+            { name: "die Liste dünnt, das Bild nicht (die Wiese zeichnet die alte Kachel)", stdout: pfadRoh((x) => ((x.nach.bilder[0].streifenPixel.klasse = 290000), x)), gruen: false },
             { name: "das Bild dünnt, die Liste nicht", stdout: pfadRoh((x) => ((x.nach.gras.weg = 12), x)), gruen: false },
-            { name: "daneben fällt das Gras mit (ein Regler über alles)", stdout: pfadRoh((x) => ((x.nach.bilder[1].klassen["nahWiese:L0"].pixel = 120000), x)), gruen: false },
+            { name: "daneben fällt das Gras mit (ein Regler über alles)", stdout: pfadRoh((x) => ((x.nach.bilder[1].streifenPixel.klasse = 120000), x)), gruen: false },
             { name: "nur 60 Gänge", stdout: pfadRoh((x) => ((x.nach.gaenge = 60), x)), gruen: false },
             { name: "ein Bild fehlt", stdout: pfadRoh((x) => ((x.nach.bilder = x.nach.bilder.slice(0, 1)), x)), gruen: false },
-            { name: "kein Gras im Bild vor dem Gang", stdout: pfadRoh((x) => ((x.vor.bilder[0].klassen = {}), x)), gruen: false },
+            { name: "kein Gras im Bild vor dem Gang", stdout: pfadRoh((x) => ((x.vor.bilder[0].streifenPixel.klasse = 0), x)), gruen: false },
+            // der Mutant der Klasse (17.11., Radeon 389a6496): im ganzen Bild −26 % (das Gras daneben im Rahmen), im Streifen ±0,5 m −74 %
+            { name: "die Zeile vor dem 17.11. (das ganze Bild gezählt, kein Streifen)", stdout: pfadRoh((x) => (x.vor.bilder.concat(x.nach.bilder).forEach((b) => delete b.streifenPixel), x)), gruen: false },
+            { name: "Radeon 389a6496: im Streifen 243 725 → 62 713 px, daneben 343 225 → 343 225, Büschel 13 → 3", stdout: pfadRoh((x) => ((x.vor.bilder[0].streifenPixel.klasse = 243725), (x.nach.bilder[0].streifenPixel.klasse = 62713), (x.vor.bilder[1].streifenPixel.klasse = 343225), (x.nach.bilder[1].streifenPixel.klasse = 343225), x)), gruen: true },
+            { name: "im Streifen bleibt das Gras, nur der Rand im Rahmen dünnt", stdout: pfadRoh((x) => ((x.nach.bilder[0].streifenPixel.klasse = 290000), (x.nach.bilder[0].klassen["nahWiese:L0"].pixel = 700000), x)), gruen: false },
             { name: "swiftshader", stdout: pfadRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
         ],
         pfad: ["stamm/siedlung-wege.js", "stamm/vegetation-*.js", "stamm/dirigent-*.js", "stamm/koerper-*.js", "stamm/bild-*.js", "stamm/gelaende-*.js", "scripts/werkbank.cjs",
@@ -5872,8 +6001,8 @@ module.exports = [
         urteil: lebenFormtUrteil,
         proben: [
             { name: "auf dem Weg 19 % des Grases daneben im Bildpaar", stdout: pfadRoh((x) => x), gruen: true },
-            { name: "der Weg trägt nach dem Gang 60 % des Grases daneben", stdout: pfadRoh((x) => ((x.nach.bilder[0].klassen["nahWiese:L0"].pixel = 190000), x)), gruen: false },
-            { name: "der Weg war schon vorher kahl (kein Gang hat ihn geformt)", stdout: pfadRoh((x) => ((x.vor.bilder[0].klassen["nahWiese:L0"].pixel = 70000), x)), gruen: false },
+            { name: "der Weg trägt nach dem Gang 60 % des Grases daneben", stdout: pfadRoh((x) => ((x.nach.bilder[0].streifenPixel.klasse = 190000), x)), gruen: false },
+            { name: "der Weg war schon vorher kahl (kein Gang hat ihn geformt)", stdout: pfadRoh((x) => ((x.vor.bilder[0].streifenPixel.klasse = 70000), x)), gruen: false },
             { name: "nur 60 Gänge", stdout: pfadRoh((x) => ((x.nach.gaenge = 60), x)), gruen: false },
             { name: "keine Zeile pfad-nach", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWELTPROBE pfad-vor " + JSON.stringify(PFAD_ROH.vor), gruen: false },
             { name: "swiftshader", stdout: pfadRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },

@@ -359,7 +359,7 @@ H.fahre(async function probeAnkunftVier(H) {
     j.zurueck = z && z.neu === true ? { ms: z.ms } : { fehler: (z && z.fehler) || "ohne Antwort" };
     H.zeile("die Welt der Werkbank zurück: " + JSON.stringify(j.zurueck));
     return j;
-}); 7804 C:\Users\micha\AppData\Local\Temp\claude\bdc204a033231caa\3f59870c-5b2c-4386-8f3b-a749a5db56d4\scratchpad\buch-tree\meisterkarte-quelle\punkte\messung\roh\bcc2cadc-radeon\karte2.same.preis.ankunft_1.json 1614
+}); 7804 %TEMP%\claude\bdc204a033231caa\3f59870c-5b2c-4386-8f3b-a749a5db56d4\scratchpad\buch-tree\meisterkarte-quelle\punkte\messung\roh\bcc2cadc-radeon\karte2.same.preis.ankunft_1.json 1614
 @@ 15.1 s · Kalt-Boot 1: Lücke 0.86 % (Kachel 6/1) nach 5 s bis zur Ruhe der Foundry, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt
 @@ 15.1 s · Kalt-Boot 1: t(Kontrolle) 7.06 s von außen · Netz 32.11 MB roh, 16.85 MB Draht, 179 Anfragen (0 offen), 25 Ziele (24 Worker)
 @@ 26.9 s · Kalt-Boot 2: Lücke 0.10 % (Kachel 4/3) nach 1.7 s bis zur Ruhe der Foundry, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt

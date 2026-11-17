@@ -164,7 +164,7 @@ $ C:/Program Files/Git/bin/bash.exe -c . "$PUNKTE_RUMPF_SH"
  "klasse": null,
  "zeit": null,
  "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 99.7 σ 21.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.318 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 11 Posen",
- "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-27804\\ring.png",
+ "datei": "%TEMP%\\punkte-g5-27804\\ring.png",
  "gesamtMs": 3467
 }
 @@PUNKTE@@ EXIT 0
