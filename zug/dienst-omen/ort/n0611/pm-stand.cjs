@@ -30,15 +30,22 @@ function mischeMessung(lokal, gepusht) {
     return genommen.length || jung ? Object.assign(aus, { __genommen: genommen }) : null;
 }
 
+// DIE FRAGE AN DEN BAUM (17.11.): nur die Akten und die Mess-Dateien selbst — nie der Ordner der Messung. Die Frage über den ganzen
+// Ordner zählte jede unversionierte Roh-Datei (messung/roh/<kopf>/…, 11 090 Stück = 1 051 348 Bytes) und riss an Nodes Puffer von
+// 1 MB: „spawnSync git ENOBUFS“, jede Fahrt der GTX 18:26–18:50 „ohne Eintrag“. `:(glob)` — der Stern greift nicht über „/“.
+const FRAGE = [":(glob)" + AKTEN + "/**/*.json", ":(glob)" + MESSUNG + "/*.json"];
+const PUFFER = 268435456; // der Gurt, nicht die Lösung: die Kosten der Frage hängen an den Mess-Dateien, nicht am Baum
+const fragt = (pm, wonach = FRAGE) => cp.execFileSync("git", ["status", "--porcelain", "--untracked-files=all", "--", ...wonach], { cwd: pm, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: PUFFER });
+
 // holt den Stand; Rückgabe { kopf, behalten: [Text je Datei] }
 function holeStand(pm = PM_ORT, o = {}) {
-    const git = (a) => cp.execFileSync("git", a, { cwd: pm, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+    const git = (a) => cp.execFileSync("git", a, { cwd: pm, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: PUFFER }).trim();
     const ref = o.ref || "refs/omen/dauer-pm";
     if (!o.ohneFetch) git(["fetch", "-q", "origin", "+refs/heads/punkte-maschine:" + ref]);
     // was im Baum vom Kopf abweicht oder ihm fremd ist, unter den zwei Orten der Messung
     const lokal = [];
     // (roh gelesen: `trim` über die ganze Ausgabe nähme der ersten Zeile „ M pfad“ ihr führendes Leerzeichen)
-    const status = cp.execFileSync("git", ["status", "--porcelain", "--untracked-files=all", "--", AKTEN, MESSUNG], { cwd: pm, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    const status = fragt(pm);
     for (const z of status.split(/\r?\n/)) {
         const p = ((/^.. (.+)$/.exec(z) || [])[1] || "").trim().replace(/^"|"$/g, "");
         if (!p || !(istAkte(p) || istMess(p)) || !fs.existsSync(path.join(pm, p))) continue;
@@ -112,6 +119,16 @@ function selbsttest() {
     fs.rmSync(path.join(pm, C), { force: true });
     const leer = holeStand(pm, { ref: "refs/omen/t" });
     pruef("ohne Messung im Baum bleibt nichts zurück", leer.behalten.length === 0 && sh(pm, ["status", "--porcelain"]) === "", JSON.stringify(leer.behalten));
+    // DIE FRAGE ZÄHLT KEINE ROH-DATEI (17.11.): 40 unversionierte Roh-Dateien und eine Mess-Datei im Baum — die Frage nennt nur die
+    // Mess-Datei; die Mutante (die Frage über den ganzen Ordner) nennt alle 41
+    for (let i = 0; i < 40; i++) schreibe(pm, MESSUNG + "/roh/aaaaaaaa-gtx/s" + i + "_1.out", "roh " + i);
+    schreibe(pm, MESSUNG + "/bbbbbbbb-gtx.json", { sha: "b".repeat(40), zeit: t(20), je: {} });
+    const zeilen = (s) => s.split(/\r?\n/).filter(Boolean);
+    const gezielt = zeilen(fragt(pm)), ganz = zeilen(fragt(pm, [AKTEN, MESSUNG]));
+    pruef("die Frage nennt die Mess-Datei und keine Roh-Datei (1 Zeile bei 40 Roh-Dateien)", gezielt.length === 1 && /bbbbbbbb-gtx\.json/.test(gezielt[0]), JSON.stringify(gezielt.slice(0, 4)));
+    pruef("MUTANTE „die Frage über den ganzen Ordner“ ist ROT (sie zählt jede Roh-Datei: 41 Zeilen)", ganz.length === 41, String(ganz.length));
+    fs.rmSync(path.join(pm, MESSUNG, "roh"), { recursive: true, force: true });
+    fs.rmSync(path.join(pm, MESSUNG, "bbbbbbbb-gtx.json"), { force: true });
     // DIE MUTANTE: der alte Weg (fetch + checkout --force) — die jüngere Akte und der jüngere Eintrag fallen
     const alt = lauf(() => { sh(pm, ["fetch", "-q", "origin", "+refs/heads/punkte-maschine:refs/omen/t"]); sh(pm, ["checkout", "-q", "--detach", "--force", "refs/omen/t"]); return { behalten: [] }; });
     const mutRot = !(alt.a && alt.a.wert === "sitzung-2") && !(alt.m && alt.m.je["x.K1#1"].zahl === "z20");
@@ -119,7 +136,7 @@ function selbsttest() {
     try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (_e) {}
     for (const z of faelle) console.log("  " + z);
     const rot = faelle.filter((z) => z.startsWith("ROT")).length;
-    console.log(rot ? "pm-stand SELBSTTEST ROT (" + rot + " von " + faelle.length + ")" : "pm-stand SELBSTTEST GRÜN: " + faelle.length + " Fälle, die Mutante ROT");
+    console.log(rot ? "pm-stand SELBSTTEST ROT (" + rot + " von " + faelle.length + ")" : "pm-stand SELBSTTEST GRÜN: " + faelle.length + " Fälle, beide Mutanten ROT");
     return rot ? 1 : 0;
 }
 
