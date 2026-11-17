@@ -1212,10 +1212,12 @@ class AnazhRealm_bild_kosten {
     // fällig, `ladeSchuld`) und jeder Wartende des WebGL2-Rückfalls (dort führt die Warteschlange keine Pipeline).
     // DAS BESTELLTE LADE-BILD (w28-ankunft-kette, `DAS LADE-BILD BESTELLT`): unter dem Ladeschirm baut und bestellt die Welt-Szene,
     // sie rastert nicht — außer im Bild, auf dem das erste Weltbild stehen soll (`ladeGanz`). Die Leser: die Erst-Zeichnung
-    // (`zeichne`), die Kaskaden (`_loopShadowUpdate`) und die Geschichte der zeitlichen Auflösung (`_anlauf`).
+    // (`zeichne`), die Kaskaden (`_loopShadowUpdate`) und die Geschichte der zeitlichen Auflösung (`_anlauf`). Nur im Takt des Loops
+    // (`_imTakt`, wie `_psoVorbau`): wer außerhalb zeichnet, liest danach (Probe, Aufnahme, `_himmelFrisch`) — er zeichnet ganz
+    // (gate:post-kette: Rauch, Zugang und Godrays maßen unter dem Ladeschirm ein leeres Bild).
     _ladeBestellt() {
         const E = this._erstZeichnung;
-        return this._ladeTakt() && !(E && E.ladeGanz);
+        return this._imTakt === true && this._ladeTakt() && !(E && E.ladeGanz);
     }
     _bildWartet() {
         const E = this._erstZeichnung;
