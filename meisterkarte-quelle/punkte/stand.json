@@ -3279,7 +3279,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an a996d0ae: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: … bild 13/17 haus_schwarzwald · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +22)",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an a996d0ae: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: … bild 13/17 haus_schwarzwald · siedlung.K1#2 gtx: ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.007 · Median 0.017 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.005669636273816779/undefined · haus_schwarzwald 0.008145415041473569/0.8576727160968027 · haus_schwarzwald 0.01312415664498222/0.8749382846113758 · haus_schwarzwald 0.01932293302628296/undefined · haus_schwarzwald 0.008852778068101074/0.9476363610602552 · haus_schwarzwald 0.012247319835581104/0.7352476328738764 · haus_schwarzwald 0.005923855769823326/0.8743832817480667 · haus_alpenchalet 0.028732539432160534/undefined · haus_alpenchalet 0.01636334376131761/0.9506745702951223 · haus_alpenchalet 0.009787923598351775/undefined · haus_schwarzwald 0.015069545548994525/0.8858993048162613 · haus_schwarzwald 0.016304603780254005/0.9321538800047633 · haus_schwarzwald 0.018605004381191656/undefined · haus_skandinavisch undefined/0.9728579394069264 · haus_alpenchalet 0.018977963963833173/undefined · haus_skandinavisch 0.011180283997975304/undefined an bcc2cadc",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -3305,10 +3305,9 @@
      "id": "siedlung.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +22)",
-     "ungemessen": true,
+     "zahl": "17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.007 · Median 0.017 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.005669636273816779/undefined · haus_schwarzwald 0.008145415041473569/0.8576727160968027 · haus_schwarzwald 0.01312415664498222/0.8749382846113758 · haus_schwarzwald 0.01932293302628296/undefined · haus_schwarzwald 0.008852778068101074/0.9476363610602552 · haus_schwarzwald 0.012247319835581104/0.7352476328738764 · haus_schwarzwald 0.005923855769823326/0.8743832817480667 · haus_alpenchalet 0.028732539432160534/undefined · haus_alpenchalet 0.01636334376131761/0.9506745702951223 · haus_alpenchalet 0.009787923598351775/undefined · haus_schwarzwald 0.015069545548994525/0.8858993048162613 · haus_schwarzwald 0.016304603780254005/0.9321538800047633 · haus_schwarzwald 0.018605004381191656/undefined · haus_skandinavisch undefined/0.9728579394069264 · haus_alpenchalet 0.018977963963833173/undefined · haus_skandinavisch 0.011180283997975304/undefined",
+     "sha": "bcc2cadc2742edb5c337dde7fd11b7d79997f9fe",
+     "grund": "ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.007 · Median 0.017 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.005669636273816779/undefined · haus_schwarzwald 0.008145415041473569/0.8576727160968027 · haus_schwarzwald 0.01312415664498222/0.8749382846113758 · haus_schwarzwald 0.01932293302628296/undefined · haus_schwarzwald 0.008852778068101074/0.9476363610602552 · haus_schwarzwald 0.012247319835581104/0.7352476328738764 · haus_schwarzwald 0.005923855769823326/0.8743832817480667 · haus_alpenchalet 0.028732539432160534/undefined · haus_alpenchalet 0.01636334376131761/0.9506745702951223 · haus_alpenchalet 0.009787923598351775/undefined · haus_schwarzwald 0.015069545548994525/0.8858993048162613 · haus_schwarzwald 0.016304603780254005/0.9321538800047633 · haus_schwarzwald 0.018605004381191656/undefined · haus_skandinavisch undefined/0.9728579394069264 · haus_alpenchalet 0.018977963963833173/undefined · haus_skandinavisch 0.011180283997975304/undefined",
      "r6": "konsum"
     }
    ]
@@ -4564,7 +4563,7 @@
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 16308 px an ee9c1965 radeon — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/wasser-linse.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +41)",
+   "beleg": "Maschine: gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 16308 px an ee9c1965 radeon · 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20478 px an bcc2cadc gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/wasser-linse.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 63655917: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]}}) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +41)",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -4579,11 +4578,10 @@
     {
      "id": "vegetation.K4#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/diag-haus-welt.cjs +17)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20478 px",
+     "sha": "bcc2cadc2742edb5c337dde7fd11b7d79997f9fe",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -5141,16 +5139,16 @@
   },
   "karte2.erleben.spieler.rolle": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.rolle#1 radeon: Station seit der Messung geändert · karte2.erleben.spieler.rolle#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.rolle#1 radeon: ROT: 2/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.09 s, kaempfen 0 s · gehen Änderung Δ 3.37 % (Rauschen 0.05 %) · bauen Änderung Δ 0.38 % (Rauschen 0.17 %) · fahren Änderung Δ 3.45 % (Rauschen 0.04 %) · kaempfen OHNE ÄNDERUNG Δ 0.54 % (Rauschen 0.18 %) · [linse-gpu] amd/rdna-3 an 389a6496 · karte2.erleben.spieler.rolle#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.rolle#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "2/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.09 s, kaempfen 0 s · gehen Änderung Δ 3.37 % (Rauschen 0.05 %) · bauen Änderung Δ 0.38 % (Rauschen 0.17 %) · fahren Änderung Δ 3.45 % (Rauschen 0.04 %) · kaempfen OHNE ÄNDERUNG Δ 0.54 % (Rauschen 0.18 %) · [linse-gpu] amd/rdna-3",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": "ROT: 2/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.09 s, kaempfen 0 s · gehen Änderung Δ 3.37 % (Rauschen 0.05 %) · bauen Änderung Δ 0.38 % (Rauschen 0.17 %) · fahren Änderung Δ 3.45 % (Rauschen 0.04 %) · kaempfen OHNE ÄNDERUNG Δ 0.54 % (Rauschen 0.18 %) · [linse-gpu] amd/rdna-3",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -5469,16 +5467,16 @@
   },
   "karte2.mensch.kopplung.antwort": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.antwort#1 radeon: ungemessen (R10) — zuletzt an fe885d9d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Stand nach der Uhr · [linse-gpu] amd/rdna-3) · Täter: /usr/bin/bash: -c: line 20: unexpected EOF while looking for matching `'' · karte2.mensch.kopplung.antwort#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.antwort#1 radeon: ROT: mit Haus (Kern ja, 1500 s): Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort, binnen 30 m 6 · ohne Haus (B, dieselbe Saat, dieselbe Uhr): 7 neu, Median 48 m von der Stelle / 51 m vom Ort, binnen 30 m 2 · [linse-gpu] amd/rdna-3 an 389a6496 · karte2.mensch.kopplung.antwort#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kopplung.antwort#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an fe885d9d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Stand nach der Uhr · [linse-gpu] amd/rdna-3) · Täter: /usr/bin/bash: -c: line 20: unexpected EOF while looking for matching `''",
-     "ungemessen": true,
+     "zahl": "mit Haus (Kern ja, 1500 s): Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort, binnen 30 m 6 · ohne Haus (B, dieselbe Saat, dieselbe Uhr): 7 neu, Median 48 m von der Stelle / 51 m vom Ort, binnen 30 m 2 · [linse-gpu] amd/rdna-3",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": "ROT: mit Haus (Kern ja, 1500 s): Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort, binnen 30 m 6 · ohne Haus (B, dieselbe Saat, dieselbe Uhr): 7 neu, Median 48 m von der Stelle / 51 m vom Ort, binnen 30 m 2 · [linse-gpu] amd/rdna-3",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -5495,16 +5493,15 @@
   },
   "karte2.mensch.macht.wehrbau": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 77e079ae radeon · gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an 77e079ae gtx",
+   "beleg": "Maschine: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an 77e079ae gtx",
    "stationen": [
     {
      "id": "karte2.mensch.macht.wehrbau#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3",
-     "sha": "77e079ae3904e41db9ae5de45b19ba5ee3abac15",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +1)",
-     "gehalten": true,
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     },
@@ -5713,16 +5710,16 @@
   },
   "karte2.mensch.zeit.kausal": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.zeit.kausal#1 radeon: ungemessen (R10) — zuletzt an fe885d9d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: der Gegenlauf fehlt (Ort B fehlt, Ort C fehlt) · [linse-gpu] amd/rdna-3) · Täter: /usr/bin/bash: -c: line 20: unexpected EOF while loo · karte2.mensch.zeit.kausal#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: mit Gewalt (C: 3 Schläge, 27 Zeugen draußen, 3 Akten): 1412 → 1539, Häuser 12 → 15 (+3) · ohne (B): 1412 → 1724, Häuser 9 → 15 (+6) über dieselbe Uhr · [linse-gpu] amd/rdna-3 an 389a6496 radeon — offen: karte2.mensch.zeit.kausal#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.zeit.kausal#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an fe885d9d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: der Gegenlauf fehlt (Ort B fehlt, Ort C fehlt) · [linse-gpu] amd/rdna-3) · Täter: /usr/bin/bash: -c: line 20: unexpected EOF while loo",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "mit Gewalt (C: 3 Schläge, 27 Zeugen draußen, 3 Akten): 1412 → 1539, Häuser 12 → 15 (+3) · ohne (B): 1412 → 1724, Häuser 9 → 15 (+6) über dieselbe Uhr · [linse-gpu] amd/rdna-3",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -5739,16 +5736,16 @@
   },
   "karte2.mensch.zeit.palimpsest": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.zeit.palimpsest#1 radeon: ungemessen (R10) — zuletzt an fe885d9d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Stand nach der Uhr · [linse-gpu] amd/rdna-3) · Täter: /usr/bin/bash: -c: line 20: unexpected EOF while looking for matching `'' · karte2.mensch.zeit.palimpsest#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: über 1500 s Welt-Uhr: 1412 → 1724, Häuser 12 → 20, die alten erhalten 0.917 (Soll ≥ 0,9) · [linse-gpu] amd/rdna-3 an 389a6496 radeon — offen: karte2.mensch.zeit.palimpsest#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.zeit.palimpsest#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an fe885d9d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Stand nach der Uhr · [linse-gpu] amd/rdna-3) · Täter: /usr/bin/bash: -c: line 20: unexpected EOF while looking for matching `''",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "über 1500 s Welt-Uhr: 1412 → 1724, Häuser 12 → 20, die alten erhalten 0.917 (Soll ≥ 0,9) · [linse-gpu] amd/rdna-3",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6363,7 +6360,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 221,
+  "konsum": 225,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6533,10 +6530,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 119
+  "ohne": 115
  },
  "kopfVoll": "bcc2cadc2742edb5c337dde7fd11b7d79997f9fe",
- "zeit": "2026-11-17T06:24:42.397Z",
+ "zeit": "2026-11-17T06:57:20.931Z",
  "vorher": "bcc2cadc",
  "bilanz": {
   "gewinn": [],
