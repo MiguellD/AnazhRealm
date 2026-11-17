@@ -2521,7 +2521,7 @@
   },
   "mensch.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 105c9bd3 radeon · gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 3e4f99cd gtx",
+   "beleg": "Maschine: gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 105c9bd3 radeon · rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 389a6496 gtx",
    "stationen": [
     {
      "id": "mensch.K5#1",
@@ -2538,9 +2538,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1)",
-     "sha": "3e4f99cddcaf452203702c86511a6d23bce5948b",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/diag-kreatur-leben.cjs +25)",
-     "gehalten": true,
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": "GRÜN trotz Last: Referenz f 1,202 (Faden 1,103 · alle Kerne 1,202; vor 98,2/281,1 ms, nach 99,9/235,9 ms, Ruhe 90,6/233,8 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 8,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,0 CPU-s · Explorer.EXE 2,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,7 CPU-s · svchost.exe 6,3 CPU-s · SearchIndexer.exe 1,8 CPU-s",
      "r6": "konsum"
     }
    ]
@@ -6212,7 +6211,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an ee9c1965: Last: Referenz f 1,558 (Faden 1,558 · alle Kerne 1,329; vor 141,2/310,8 ms, nach 92,1/254,7 ms, Ruhe 90,6/233,8 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -6231,7 +6230,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an ee9c1965: Last: Referenz f 1,558 (Faden 1,558 · alle Kerne 1,329; vor 141,2/310,8 ms, nach 92,1/254,7 ms, Ruhe 90,6/233,8 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -6533,7 +6532,7 @@
   "ohne": 124
  },
  "kopfVoll": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
- "zeit": "2026-11-17T05:31:50.897Z",
+ "zeit": "2026-11-17T05:37:52.338Z",
  "vorher": "389a6496",
  "bilanz": {
   "gewinn": [],
