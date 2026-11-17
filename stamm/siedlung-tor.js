@@ -266,7 +266,8 @@ class AnazhRealm_siedlung_tor {
         // waagrecht umlaufend; die Bild-Werte der Welt durch die Belichtung der Heimat geteilt — die Heimat tont sie, wie die Welt
         // sich selbst zeigt. Das Ziel ist ein BILD, kein Stoff der Nacht: es steht VOR dem Auge der Nacht (`_nachtAuge`, seine
         // Umkehr wie an der Brand-Flamme) — bis w28-tor-nacht las die Post-Kette seine ans Bild gebundenen Werte als dunkle
-        // Leuchtdichte und nahm dem Zielbild nachts die Farbe (grauweiß statt rot, grün und gold)
+        // Leuchtdichte und nahm dem Zielbild nachts die Farbe (grauweiß statt gold). Die Grenze der Umkehr gilt auch hier: ein
+        // dunkler gesättigter Ton (die rote Kuppel) kommt unter dem Auge je Pixel nicht zurück
         const Z = this._torZiele();
         const zv = 0.5 / AnazhRealm.TOR_ZIEL.h;
         const eq = TSL.equirectUV(dir);
