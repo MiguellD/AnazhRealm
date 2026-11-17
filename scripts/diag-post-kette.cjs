@@ -46,13 +46,29 @@
 //       (j2) der Ton liest sich als Feuer: KERN gelb-orange, MANTEL orange-rot (Farbton und Sättigung HSV in ihren Bändern).
 //       (j3) EINE QUELLE: die Schwellen `NACHT_AUGE` liest im ganzen Stamm nur `_nachtAuge` (`stammLib.fehlt` außer dem Glied),
 //       seine Uniform ist die der Kette; die Post-Kette ruft es, die Flamme ruft seine Umkehr (`__fehlt` am lebenden Code).
+//   (k) RAUCH (w28-rauch-bild) — das EINE Rauch-Bild der Welt (`_rauchZeichnen` / `_rauchStoff`, Tafel `RAUCH_BILD`) am Bild
+//       der Ausgabe, nachts (Sonne und Himmel reden nicht mit), der Ballen 6 m vor dem Auge vor einer eigenen Wand; gezeichnet wird
+//       der Satz der Brand-Fahne (`brandRauchSatz`), den der echte Leser `_brandRauch` gebaut hat. Jede MUTANTE baut den Stoff
+//       neu (die Tafel `AnazhRealm.RAUCH_BILD` als Kopie ersetzt bzw. die Naht der Seite überschrieben) und misst ihn im selben Lauf.
+//       (k1) UNTERSEITE: ein Platz des Licht-Pools (das Licht einer Flammen-Fläche, `_flammenLicht`, über den EINEN Schreiber
+//       `_leuchtTakt`) 2 m unter und 3 m vor dem Ballen, schwarze Wand — die untere Hälfte gegen die obere (Luma). MUTANTE-K1: `woelbung` 0
+//       (die Normale zeigt zum Auge) → das Verhältnis fällt unter das Band. Ohne die Quelle ist der Ballen dunkel (sonst blind).
+//       (k2) EIN KÖRPER: zwei gleiche Ballen, die Mitten einen halben Radius auseinander, einzeln vor heller Wand gezeichnet; die
+//       Deckung je Pixel (1 − Luma/Wand) minus ihr Mittel je Ring um die eigene Mitte = das Muster; an den Pixeln, die beide
+//       decken, die Korrelation beider Muster. MUTANTE-K2: das Muster hängt am Ballen statt an der Welt (der Anker der Naht 0,
+//       wie vorher um den Samen) → die Korrelation fällt. Der Boden: derselbe Ballen zweimal.
+//       (k3) ZUG: ein Ballen mit Zug nach oben (quer zum Blick) ist längs des Zugs gestreckt (Höhe zu Breite: die Zeilen gegen
+//       die Spalten des Bilds, in denen er deckt), derselbe mit Zug längs des Blicks bleibt rund. MUTANTE-K3: `zug` [0, …] → auch quer rund.
+//       (k4) BEIDE LESER zur Laufzeit: die Stoffe der Sätze, die `_brandRauch` und `_updateDorfRauch` anlegen, stammen aus dem
+//       EINEN Bauer `_rauchStoff` (ein Mithörer am Glied), jeder mit dem Steigen seiner Quelle; `_rauchStoff` ohne `steigMs`
+//       bricht laut; außerhalb von `_rauchZeichnen` / `_rauchStoff` liest niemand im Stamm die Attribute des Rauchs (`STAMM.fehlt`).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
 // Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, postKetteBereit, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, postKetteBereit, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, fehlerText, seiteZu, rotListe, jsonKlon } = require("./lib/welt-boot.cjs");
 // der Bruch, den die Wand selbst in die Kette wirft (Schritt „Render-Fehler") — der EINE Fehler-Sammler (welt-boot) nennt jeden
 // anderen Bruch der Post-Kette ROT beim Namen, diesen erwartet die Linse und zählt ihn selbst (GENAU einmal, `urteil`)
 const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
@@ -108,6 +124,133 @@ const hsv = ([r, g, b]) => {
     return { ton: +(60 * h).toFixed(1), satt: mx ? +(d / mx).toFixed(3) : 0 };
 };
 const kanalAbstand = (a, b) => (a && b ? +Math.max(...[0, 1, 2].map((c) => Math.abs(a[c] - b[c]))).toFixed(1) : NaN);
+// (k) Der Rauch — die Probe: Mitternacht (`uhr` 0), der Ballen `abstandM` vor dem Auge (Radius `radiusM`, Deckung `deck` im Kern),
+// die Wand `wandM` dahinter (hell: `wand` vor der Tonkurve); die Quelle des Licht-Pools `licht` [rechts, hoch, zum Auge] m neben
+// der Mitte des Ballens, eine Flammen-Fläche vom Halbmesser `flammeM`; (k2) die Mitten `versatz` Radien auseinander, gewertet
+// innerhalb `rand` Radien; (k3) der Zug so schnell, dass die Tafel um `streck` Radien streckt; je Schuss `frames` Bilder (die
+// zeitliche Glättung der Kette schwingt ein).
+const RAUCH_PROBE = { uhr: 0, abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, frames: 6 };
+// GEMESSEN (swiftshader, c5713056, Leinwand 321×241, der Lauf zweimal Zahl für Zahl gleich) — der Kopf und, im selben Lauf, jede
+// Mutante; der Selbsttest urteilt an genau diesen Zahlen (grün am Kopf, rot an jeder Mutanten-Zahl an seiner Stelle). Auf der
+// Karte (GTX 1050, ein Lauf): unten ÷ oben 5,97 / flach 3,28 · Korrelation 0,749 / −0,318 · Höhe zu Breite 2 / 0,926 / 0,926.
+const RAUCH_GEMESSEN = {
+    kopf: {
+        gpuFehler: [],
+        uhr: 0,
+        nf: 1,
+        k: 1.505,
+        leinwand: [321, 241],
+        radiusPx: 34.9,
+        licht: [{ quelle: "brand", staerke: 17.177, blende: 1, reichweite: 23.68 }],
+        unten: { unten: 41.4, oben: 6.96, grund: 0, px: 4496 },
+        dunkel: { unten: 0.24, oben: 1, grund: 0, px: 4496 },
+        mutUnten: { unten: 47.5, oben: 14.5, grund: 0, px: 4496 },
+        koerper: { gleich: 0.749, px: 1491, hub: 0.0964, wand: 139.1, boden: 1 },
+        mutKoerper: { gleich: -0.316, px: 1491, hub: 0.0783, wand: 139.1 },
+        zug: { tempo: 1.667, quer: { form: 2, hoch: 96, breit: 48, masse: 0.122 }, laengs: { form: 0.926, hoch: 50, breit: 54, masse: 0.094 } },
+        mutZug: { quer: { form: 0.926, hoch: 50, breit: 54, masse: 0.094 } },
+        leser: {
+            brand: { teilchen: 1, satz: true, bauer: true, steigMs: 2.5, soll: 2.5, zug: true },
+            kamin: { teilchen: 1, satz: true, bauer: true, steigMs: 1.2, soll: 1.2, zug: true },
+            bruch: "_rauchStoff: der Rauch ohne Steigen (m/s) trägt kein Muster",
+            bauten: 4,
+            zwilling: null,
+        },
+    },
+};
+// Die Bänder um das Gemessene. (k1) `unten`: Luma unten ÷ oben, Kopf 5,95 (41,4 / 6,96), MUTANTE-K1 3,28 (47,5 / 14,5) — DIE GRENZE
+// DES MASSES, benannt: auch die flache Scheibe ist unten heller (die Quelle steht näher an der Unterseite, und der Fuß der Tonkurve
+// spreizt dunkle Töne), das Band liegt darum ±20 % um den Kopf und über der Mutante, nicht bei „oben dunkel"; `lichtMin`: so viel
+// Luma hebt die Quelle die Unterseite mindestens (gemessen 0,24 → 41,4). (k2) `gleich`: die Korrelation der Muster, Kopf 0,749,
+// MUTANTE-K2 −0,316; `boden` derselbe Ballen zweimal (1), `hubMin` die Streuung des Musters (0,096), `kPxMin` gemeinsame Pixel
+// (1491), `pxMin` der Radius im Bild (34,9). (k3) Höhe zu Breite: `quer` Kopf 2,00 (96 Zeilen / 48 Spalten; die Tafel streckt um
+// 1 Radius: 1 + 1), `laengs` 0,926 (50 / 54 — der runde Ballen misst nicht 1: das Muster der Welt franst seinen Rand), MUTANTE-K3
+// 0,926; `masseMin` die Deckung über seiner Scheibe (0,094).
+const RAUCH_BAND = { unten: [4.8, 7.2], lichtMin: 20, gleich: 0.5, boden: 0.95, hubMin: 0.03, pxMin: 25, kPxMin: 1000, masseMin: 0.05, quer: [1.7, 2.3], laengs: [0.8, 1.15] };
+const rauchVerh = (u) => (u ? +((u.unten - u.grund) / Math.max(0.5, u.oben - u.grund)).toFixed(2) : NaN);
+const RAUCH_ORT = "stamm/siedlung-bewohner.js `_rauchStoff`";
+// (k) DAS URTEIL ÜBER DEN RAUCH: je Zeile der Täter (Datei, Glied, Zahl); eine Mutante, die ihr Band nicht reißt, ist „blind".
+function rauchUrteil(ra) {
+    if (!ra) return ["RAUCH: die Probe lief nicht"];
+    if (ra.abbruch) return [`RAUCH: ABBRUCH — ${ra.abbruch}`];
+    const [v, B, P] = [[], RAUCH_BAND, RAUCH_PROBE];
+    const im = (x, [a, b]) => x >= a && x <= b;
+    if (ra.gpuFehler?.length) v.push(`RAUCH: ${ra.gpuFehler.length} GPU-Validierungs-Fehler: ${ra.gpuFehler[0]}`);
+    if (!(ra.uhr === P.uhr && ra.nf === 1)) v.push(`RAUCH: die Bühne stand bei Uhr ${ra.uhr} / nightFactor ${ra.nf} statt ${P.uhr} / 1 — Sonne und Himmel reden mit (die Probe ist blind)`);
+    if (!(ra.radiusPx >= B.pxMin)) v.push(`RAUCH: der Ballen misst ${ra.radiusPx} Pixel Radius im Bild (Soll ≥ ${B.pxMin}) — die Probe ist blind`);
+    // (k1) UNTERSEITE
+    const [li, u, d, mu] = [ra.licht || [], ra.unten, ra.dunkel, ra.mutUnten];
+    if (!(li.length === 1 && li[0].quelle === "brand" && li[0].staerke > 0 && li[0].blende === 1))
+        v.push(`RAUCH: UNTERSEITE — der Licht-Pool trägt nicht GENAU die Flammen-Fläche der Probe (${JSON.stringify(li)}; \`_leuchtTakt\` über \`_leuchtQuellen\`) — die Probe ist blind`);
+    if (!u || !d || !mu) v.push("RAUCH: UNTERSEITE — nicht gemessen");
+    else {
+        const [vk, vm] = [rauchVerh(u), rauchVerh(mu)];
+        if (!(u.unten - d.unten >= B.lichtMin))
+            v.push(`RAUCH: UNTERSEITE — die Quelle des Licht-Pools hebt die Unterseite nur von Luma ${d.unten} auf ${u.unten} (Soll ≥ +${B.lichtMin}) — der Rauch liest den Pool nicht (\`_rauchZeichnen\`: \`_leuchtStoff\`), oder die Probe ist blind`);
+        else if (!im(vk, B.unten))
+            v.push(`RAUCH: UNTERSEITE — über dem Feuer zeigt der Ballen unten Luma ${u.unten}, oben ${u.oben} (Wand ${u.grund}): Verhältnis ${vk} außerhalb ${B.unten[0]}–${B.unten[1]} — ${RAUCH_ORT}: die Normale (q · RAUCH_BILD.woelbung, 1 − ρ²) sieht unten nicht hinab ins Feuer (eine flache Scheibe zum Auge misst ${vm})`);
+        if (!(vm < B.unten[0]))
+            v.push(`RAUCH: UNTERSEITE — MUTANTE-K1 (\`RAUCH_BILD.woelbung\` 0, die Normale zum Auge) misst unten ${mu.unten}, oben ${mu.oben}: Verhältnis ${vm} ≥ ${B.unten[0]} — die Probe unterscheidet den Ballen nicht von der Scheibe (blind)`);
+    }
+    // (k2) EIN KÖRPER
+    const [k, mk] = [ra.koerper, ra.mutKoerper];
+    if (!k || !mk) v.push("RAUCH: EIN KÖRPER — nicht gemessen");
+    else {
+        if (!(k.px >= B.kPxMin && k.hub >= B.hubMin && k.boden >= B.boden))
+            v.push(`RAUCH: EIN KÖRPER — ${k.px} gemeinsame Pixel, Hub des Musters ${k.hub}, derselbe Ballen zweimal ${k.boden} (Soll ≥ ${B.kPxMin} Pixel, Hub ≥ ${B.hubMin}, Boden ≥ ${B.boden}) — das Muster trägt keinen Vergleich (die Probe ist blind)`);
+        else if (!(k.gleich >= B.gleich))
+            v.push(`RAUCH: EIN KÖRPER — zwei Ballen, die sich decken, tragen an derselben Welt-Stelle ein Muster der Korrelation ${k.gleich} < ${B.gleich} — ${RAUCH_ORT}: das Rausch-Muster steht nicht in der Welt (\`lage\` = Naht-Anker + Versatz × Skala, \`ra.raum\`), jeder Ballen trägt wieder sein eigenes (am Ballen gemessen: ${mk.gleich})`);
+        if (!(mk.gleich < B.gleich))
+            v.push(`RAUCH: EIN KÖRPER — MUTANTE-K2 (das Muster am Ballen, der Anker der Naht 0) misst die Korrelation ${mk.gleich} ≥ ${B.gleich} — die Probe unterscheidet Welt und Ballen nicht (blind)`);
+    }
+    // (k3) ZUG
+    const [zg, mz] = [ra.zug, ra.mutZug];
+    if (!zg || !mz) v.push("RAUCH: ZUG — nicht gemessen");
+    else {
+        if (!(zg.quer.masse >= B.masseMin && zg.laengs.masse >= B.masseMin))
+            v.push(`RAUCH: ZUG — der Ballen deckt ${zg.quer.masse} / ${zg.laengs.masse} seiner Scheibe (Soll ≥ ${B.masseMin}) — kein Umriss (die Probe ist blind)`);
+        else {
+            if (!im(zg.quer.form, B.quer))
+                v.push(`RAUCH: ZUG — mit ${zg.tempo} m/s quer zum Blick misst der Umriss Höhe zu Breite ${zg.quer.form} außerhalb ${B.quer[0]}–${B.quer[1]} — stamm/siedlung-bewohner.js \`_rauchZeichnen\` (Attribut \`aZug\` = Richtung × Streckung, \`RAUCH_BILD.zug\`) oder \`_rauchStoff\` (positionNode längs \`aZug\`): der Ballen ist nicht längs seines Zugs gestreckt`);
+            if (!im(zg.laengs.form, B.laengs))
+                v.push(`RAUCH: ZUG — mit ${zg.tempo} m/s längs des Blicks misst der Umriss Höhe zu Breite ${zg.laengs.form} außerhalb ${B.laengs[0]}–${B.laengs[1]} — ${RAUCH_ORT}: die Streckung liegt nicht im Blick auf der Fläche (\`cameraViewMatrix\` × \`aZug\`), der Ballen bleibt nicht rund`);
+        }
+        if (!(mz.quer.form < B.quer[0]))
+            v.push(`RAUCH: ZUG — MUTANTE-K3 (\`RAUCH_BILD.zug\` [0, …], ohne Streckung) misst ${mz.quer.form} ≥ ${B.quer[0]} — die Probe unterscheidet den gestreckten Ballen nicht vom runden (blind)`);
+    }
+    // (k4) BEIDE LESER
+    const le = ra.leser;
+    if (!le) v.push("RAUCH: BEIDE LESER — nicht gemessen");
+    else {
+        for (const [name, glied, x] of [["die Fahne des Brands", "stamm/feld-leben.js `_brandRauch`", le.brand], ["der Kamin", "stamm/siedlung-bewohner.js `_updateDorfRauch`", le.kamin]]) {
+            if (!x || !(x.teilchen > 0 && x.satz)) v.push(`RAUCH: BEIDE LESER — ${name} (${glied}) legte keinen Satz an (${JSON.stringify(x)}) — die Probe ist blind`);
+            else {
+                if (!x.bauer) v.push(`RAUCH: BEIDE LESER — der Stoff, den ${name} (${glied}) zeichnet, stammt nicht aus \`_rauchStoff\` — ein Zwilling baut den Rauch neben dem EINEN Bild`);
+                else if (!(x.steigMs > 0 && Math.abs(x.steigMs - x.soll) < 1e-3))
+                    v.push(`RAUCH: BEIDE LESER — ${name} (${glied}) reicht \`_rauchStoff\` das Steigen ${x.steigMs} m/s statt ${x.soll} — das Muster steigt nicht mit seiner Quelle`);
+                if (!x.zug) v.push(`RAUCH: BEIDE LESER — die Teilchen von ${name} (${glied}) tragen keinen Zug \`zx, zy, zz\` in m/s — \`_rauchZeichnen\` streckt sie nicht`);
+            }
+        }
+        if (!/ohne Steigen/.test(String(le.bruch)))
+            v.push(`RAUCH: BEIDE LESER — \`_rauchStoff\` ohne \`steigMs\` bricht nicht laut (${le.bruch}) — ein Leser ohne Steigen zeichnete still ein stehendes Muster`);
+        if (le.zwilling !== null)
+            v.push(`RAUCH: BEIDE LESER — die Attribute des Rauchs liest der Stamm außerhalb von \`_rauchZeichnen\` / \`_rauchStoff\`: ${le.zwilling} — ein Zwilling zeichnet Rauch neben dem EINEN Bild`);
+    }
+    return v;
+}
+// (k) die Mess-Zeilen des Rauchs (der Lauf schreibt sie, grün wie rot)
+function rauchZeilen(ra) {
+    if (!ra || ra.abbruch) return [`Rauch: ${ra ? "ABBRUCH " + ra.abbruch : "lief nicht"}`];
+    const B = RAUCH_BAND;
+    const j = JSON.stringify;
+    return [
+        `Rauch (Uhr ${ra.uhr}, nightFactor ${ra.nf}, Belichtung ${ra.k}, Leinwand ${ra.leinwand.join("×")}, Radius ${ra.radiusPx} Pixel) · Licht-Pool ${j(ra.licht)}`,
+        `Rauch (k1) UNTERSEITE: unten ${ra.unten.unten} / oben ${ra.unten.oben} (Wand ${ra.unten.grund}) = ${rauchVerh(ra.unten)} (Soll ${B.unten[0]}–${B.unten[1]}) · ohne Quelle unten ${ra.dunkel.unten} / oben ${ra.dunkel.oben} · MUTANTE-K1 woelbung 0: unten ${ra.mutUnten.unten} / oben ${ra.mutUnten.oben} = ${rauchVerh(ra.mutUnten)}`,
+        `Rauch (k2) EIN KÖRPER: Korrelation ${ra.koerper.gleich} (Soll ≥ ${B.gleich}; ${ra.koerper.px} Pixel, Hub ${ra.koerper.hub}, Wand ${ra.koerper.wand}, derselbe zweimal ${ra.koerper.boden}) · MUTANTE-K2 am Ballen: ${ra.mutKoerper.gleich} (${ra.mutKoerper.px} Pixel, Hub ${ra.mutKoerper.hub})`,
+        `Rauch (k3) ZUG ${ra.zug.tempo} m/s: quer ${j(ra.zug.quer)} (Soll ${B.quer[0]}–${B.quer[1]}) · längs ${j(ra.zug.laengs)} (Soll ${B.laengs[0]}–${B.laengs[1]}) · MUTANTE-K3 ohne Streckung: quer ${j(ra.mutZug.quer)}`,
+        `Rauch (k4) BEIDE LESER: ${j(ra.leser)}`,
+    ];
+}
 
 function urteil(z) {
     const v = [];
@@ -319,6 +462,8 @@ function urteil(z) {
         if (q.umkehr !== true)
             v.push("FLAMME: EINE QUELLE — `_brandFlammenZeichnen` ruft die Umkehr `_nachtAuge(…, true)` nicht (die Flamme steht nicht vor dem Auge der Nacht)");
     }
+    // (k) DER RAUCH
+    for (const x of rauchUrteil(z.rauch)) v.push(x);
     const zg = z.zugang || { abbruch: "lief nicht" };
     const t = zg.tritanopie || {};
     if (zg.abbruch || zg.ausTraegt) v.push(`ZUGANG: ${zg.abbruch || "aus trägt den Knoten der Farbsicht (vp-0611g)"}`);
@@ -427,7 +572,9 @@ function selbsttest() {
             anTraegt: true,
             tritanopie: { himmel: 0, himmelPx: 4700, kiste: 90, kistePx: 100 },
         },
+        rauch: jsonKlon(RAUCH_GEMESSEN.kopf),
     };
+    const RM = RAUCH_GEMESSEN;
     const faelle = [
         ["Direktpfad stürzt", (z) => (z.schritte[1].fehler = ["TypeError: Invalid value used as weak map key"]), /Direktpfad — TypeError/],
         ["Direktpfad ohne Tiefe", ["schritte.1.tiefe=", false], /Direktpfad zeichnet ohne Tiefe/],
@@ -500,6 +647,32 @@ function selbsttest() {
         ["Flammen-Ton ungemessen", ["flamme.toene.mantel"], /FLAMME: MANTEL — nicht gemessen/],
         ["Flammen-Probe bricht ab", ["flamme.abbruch=", "TypeError: r._nachtAuge is not a function"], /FLAMME: ABBRUCH — TypeError/],
         ["Flammen-Probe fehlt", ["flamme"], /FLAMME: die Probe lief nicht/],
+        // (k) w28-rauch-bild: jede Mutanten-Zahl des Laufs an der Stelle des Kopfs ist rot beim Täter
+        ["Rauch als flache Scheibe zum Auge (die Zahl von MUTANTE-K1)", (z) => (z.rauch.unten = jsonKlon(RM.kopf.mutUnten)), /RAUCH: UNTERSEITE — über dem Feuer .*stamm\/siedlung-bewohner\.js `_rauchStoff`: die Normale/],
+        ["Rauch-Muster je Ballen (die Zahl von MUTANTE-K2)", (z) => (z.rauch.koerper.gleich = RM.kopf.mutKoerper.gleich), /RAUCH: EIN KÖRPER — zwei Ballen, die sich decken, .*das Rausch-Muster steht nicht in der Welt/],
+        ["Rauch ohne Streckung (die Zahl von MUTANTE-K3)", (z) => (z.rauch.zug.quer = jsonKlon(RM.kopf.mutZug.quer)), /RAUCH: ZUG — mit .* quer zum Blick .*nicht längs seines Zugs gestreckt/],
+        ["Rauch längs des Blicks gestreckt", (z) => (z.rauch.zug.laengs.form = RM.kopf.zug.quer.form), /RAUCH: ZUG — mit .* längs des Blicks .*bleibt nicht rund/],
+        ["MUTANTE-K1 reißt nicht (blind)", (z) => (z.rauch.mutUnten = jsonKlon(RM.kopf.unten)), /RAUCH: UNTERSEITE — MUTANTE-K1 .*blind/],
+        ["MUTANTE-K2 reißt nicht (blind)", (z) => (z.rauch.mutKoerper.gleich = RM.kopf.koerper.gleich), /RAUCH: EIN KÖRPER — MUTANTE-K2 .*blind/],
+        ["MUTANTE-K3 reißt nicht (blind)", (z) => (z.rauch.mutZug.quer = jsonKlon(RM.kopf.zug.quer)), /RAUCH: ZUG — MUTANTE-K3 .*blind/],
+        ["der Rauch liest den Licht-Pool nicht", (z) => (z.rauch.unten = Object.assign(jsonKlon(RM.kopf.dunkel), { grund: 0 })), /RAUCH: UNTERSEITE — die Quelle des Licht-Pools hebt die Unterseite nur/],
+        ["der Licht-Pool ohne die Quelle der Probe (blind)", ["rauch.licht=", []], /RAUCH: UNTERSEITE — der Licht-Pool trägt nicht GENAU die Flammen-Fläche/],
+        ["Rauch-Probe am Tag (blind)", ["rauch.nf=", 0], /RAUCH: die Bühne stand bei Uhr 0 \/ nightFactor 0/],
+        ["Rauch-Muster ohne Hub (blind)", ["rauch.koerper.hub=", 0.001], /RAUCH: EIN KÖRPER — .*das Muster trägt keinen Vergleich/],
+        ["Rauch-Bild rauscht (derselbe Ballen zweimal)", ["rauch.koerper.boden=", 0.6], /RAUCH: EIN KÖRPER — .*derselbe Ballen zweimal 0\.6/],
+        ["Rauch ohne Umriss (blind)", ["rauch.zug.quer.masse=", 0], /RAUCH: ZUG — der Ballen deckt 0 /],
+        ["Ballen zu klein im Bild (blind)", ["rauch.radiusPx=", 6], /RAUCH: der Ballen misst 6 Pixel/],
+        ["die Fahne zeichnet einen Zwillings-Stoff", ["rauch.leser.brand.bauer=", false], /RAUCH: BEIDE LESER — der Stoff, den die Fahne des Brands \(stamm\/feld-leben\.js `_brandRauch`\) zeichnet, stammt nicht aus `_rauchStoff`/],
+        ["der Kamin zeichnet einen Zwillings-Stoff", ["rauch.leser.kamin.bauer=", false], /RAUCH: BEIDE LESER — der Stoff, den der Kamin \(stamm\/siedlung-bewohner\.js `_updateDorfRauch`\) zeichnet, stammt nicht aus `_rauchStoff`/],
+        ["der Kamin reicht ein fremdes Steigen", ["rauch.leser.kamin.steigMs=", 2.5], /RAUCH: BEIDE LESER — der Kamin .* das Steigen 2\.5 m\/s statt 1\.2/],
+        ["die Fahne ohne Zug an den Teilchen", ["rauch.leser.brand.zug=", false], /RAUCH: BEIDE LESER — die Teilchen von die Fahne des Brands .*tragen keinen Zug/],
+        ["der Kamin legt keinen Satz an (blind)", ["rauch.leser.kamin", { teilchen: 0, satz: false }], /RAUCH: BEIDE LESER — der Kamin .* legte keinen Satz an/],
+        ["der Bauer ohne Steigen bricht still", ["rauch.leser.bruch=", null], /RAUCH: BEIDE LESER — `_rauchStoff` ohne `steigMs` bricht nicht laut/],
+        ["ein Zwilling liest die Attribute des Rauchs", ["rauch.leser.zwilling=", "stamm/feld-leben.js:3190 `\"aRauch\"`"], /RAUCH: BEIDE LESER — .*außerhalb von `_rauchZeichnen` \/ `_rauchStoff`: stamm\/feld-leben\.js:3190/],
+        ["Rauch-Zwilling ungemessen", ["rauch.leser.zwilling"], /RAUCH: BEIDE LESER — .*außerhalb .*: undefined/],
+        ["GPU-Validierung im Rauch", (z) => (z.rauch.gpuFehler = ["Binding size mismatch"]), /RAUCH: 1 GPU-Validierungs-Fehler/],
+        ["Rauch-Probe bricht ab", ["rauch.abbruch=", "TypeError: r._rauchZeichnen is not a function"], /RAUCH: ABBRUCH — TypeError/],
+        ["Rauch-Probe fehlt", ["rauch"], /RAUCH: die Probe lief nicht/],
         // vp-0611g (OMEN, w15-farbsicht 1c39aada): der Zweig der Farbsicht stand aus im Graphen, die Tritanopie färbte den Himmel
         ["aus trägt die Farbsicht", ["zugang.ausTraegt=", true], /Knoten der Farbsicht/],
         ["Tritanopie färbt den Himmel", ["zugang.tritanopie", { himmel: 9 }], /tritanopie färbt/],
@@ -1100,9 +1273,309 @@ function zugangProbe() {
     })();
 }
 
+// (k) DER RAUCH (w28-rauch-bild, Seiten-Kontext, nach `buehne`): das EINE Rauch-Bild am Bild der Ausgabe. Die Sätze legen die
+// echten Leser an (`_brandRauch` mit einer gestellten Flamme, `_updateDorfRauch` mit einem gestellten Kamin) — ein Mithörer an
+// `_rauchStoff` nennt den Bauer ihrer Stoffe; gemessen wird der Satz der Brand-Fahne mit gestellten Ballen über `_rauchZeichnen`.
+// Die Quelle des Licht-Pools geht durch den EINEN Schreiber (`_leuchtTakt` liest `_leuchtQuellen` der Seite: nur sie oder keine).
+// Jede Mutante baut den Stoff neu (der Satz nimmt Abschied wie im Stamm) und stellt Tafel und Naht danach zurück.
+function rauchProbe(ort, P) {
+    return (async () => {
+        const T = window.THREE;
+        const [L, AR, rend, cam] = [T.TSL, r.constructor, st.renderer, st.camera];
+        rend.setAnimationLoop(null);
+        const aus = { gpuFehler: [] };
+        const dev = rend.backend.device;
+        const gpuHoer = (e) => aus.gpuFehler.push(String(e.error?.message || e.message || e).slice(0, 240));
+        dev.addEventListener("uncapturederror", gpuHoer);
+        const [R, tafelVor] = [AR.BRAND.bild.rauch, AR.RAUCH_BILD];
+        const { x: x0, y: y0, z: z0 } = ort;
+        const setzeKamera = () => {
+            cam.position.set(x0, y0, z0);
+            cam.up.set(0, 1, 0);
+            cam.lookAt(x0, y0, z0 - 10);
+            cam.updateMatrixWorld(true);
+        };
+        const M = new T.Vector3(x0, y0, z0 - P.abstandM);
+        // die Wand hinter dem Ballen: ihr Ton vor der Tonkurve (÷ Belichtung, wie die Flamme in (j)) — 0 schwarz, `P.wand` hell
+        const wandU = L.uniform(0);
+        const wandStoff = new T.MeshBasicNodeMaterial();
+        wandStoff.fog = false;
+        wandStoff.colorNode = L.vec4(L.vec3(wandU).div(L.toneMappingExposure), 1);
+        const wand = new T.Mesh(new T.PlaneGeometry(80, 60), wandStoff);
+        wand.name = "post-kette:RAUCH";
+        wand.frustumCulled = false;
+        wand.position.set(x0, y0, M.z - P.wandM);
+        // der Abschied eines Satzes, wie `_rauchZeichnen` ihn vor einem Neubau nimmt
+        const abschied = (satz) => {
+            const S = st[satz];
+            if (!S) return;
+            if (S.mesh.parent) S.mesh.parent.remove(S.mesh);
+            r._instanzAbschied(S.mesh);
+            S.geo.dispose();
+            S.mat.dispose();
+            st[satz] = null;
+        };
+        const GLIEDER = ["_rauchStoff", "_leuchtQuellen", "_blockerMit", "_weltNaht"];
+        const vor = { brandRauch: st.brandRauch, flammen: r._brandFlammen, dorfRauch: st.dorfRauch, gemeldet: r._dorfRauchLogged };
+        const fr = st.flightRecorder && typeof st.flightRecorder === "object" ? st.flightRecorder : null;
+        const frVor = fr ? [fr.rauchQuellen, fr.rauchStamp] : null;
+        try {
+            const eigen = GLIEDER.filter((k) => Object.prototype.hasOwnProperty.call(r, k));
+            if (eigen.length) throw new Error(`die Welt trägt schon eine Hülle um ${eigen.join(", ")} — die Probe stellte sie nicht zurück`);
+            window.__buehne({ uhr: P.uhr });
+            await r._himmelFrisch();
+            r._applyDayNightToScene();
+            setzeKamera();
+            st.scene.add(wand);
+            abschied("brandRauchSatz");
+            abschied("dorfRauchSatz");
+            // (k4) DER MITHÖRER AM BAUER: jeder Stoff, den `_rauchStoff` liefert, mit Gesetz und Steigen
+            const bauten = [];
+            const stoffAlt = r._rauchStoff;
+            r._rauchStoff = function (G, uZeit, steigMs) {
+                const m = stoffAlt.apply(this, arguments);
+                bauten.push({ m, G, steigMs });
+                return m;
+            };
+            const leser = (satz, teilchen, soll) => {
+                const S = st[satz];
+                const b = S ? bauten.find((x) => x.m === S.mat) : null;
+                const t = teilchen[0];
+                return {
+                    teilchen: teilchen.length,
+                    satz: !!S,
+                    bauer: !!b,
+                    steigMs: b && Number.isFinite(b.steigMs) ? +b.steigMs.toFixed(4) : null,
+                    soll: +soll.toFixed(4),
+                    zug: !!t && [t.zx, t.zy, t.zz].every(Number.isFinite) && Math.hypot(t.zx, t.zy, t.zz) > 0,
+                };
+            };
+            // die Fahne des Brands: EINE glühende Zelle mit EINER Flamme unter dem Ballen, der echte Leser legt den Satz an
+            st.brandRauch = { teilchen: [], n: 0 };
+            r._brandFlammen = [{ x: M.x, y: M.y - 3, z: M.z, lang: 1, I: 500 }];
+            const zelle = [{ b: { glut: 1 }, von: 0, bis: 1 }];
+            for (let i = 0; i < 20 && !st.brandRauch.teilchen.length; i++) r._brandRauch(0.1, zelle, () => ({ x: 1, z: 0, ms: 1 }));
+            const brand = leser("brandRauchSatz", st.brandRauch.teilchen, R.steigMs);
+            [st.brandRauch, r._brandFlammen] = [vor.brandRauch, vor.flammen];
+            // der Kamin: EIN Eintrag des Verzeichnisses „rauch" am Auge, der echte Leser legt den Satz an
+            const KG = AR.Gesetz("fachwerk:RAUCH_GESETZ", null);
+            const kaminHaus = { id: "post-kette:RAUCH", position: { x: x0, y: y0 - 4, z: z0 - 8 }, rotationY: 0, chimney: { x: 0, y: 1, z: 0 } };
+            const blockerAlt = r._blockerMit;
+            r._blockerMit = function (name) {
+                return name === "rauch" ? [kaminHaus] : blockerAlt.apply(this, arguments);
+            };
+            st.dorfRauch = { quellen: [], teilchen: [] };
+            for (let i = 0; i < 200 && !st.dorfRauch.teilchen.length; i++) r._updateDorfRauch(0.1);
+            const kamin = leser("dorfRauchSatz", st.dorfRauch.teilchen, (KG.vyBase + KG.vyRange / 2) * tafelVor.labHz);
+            delete r._blockerMit;
+            st.dorfRauch = vor.dorfRauch;
+            abschied("dorfRauchSatz"); // der Kamin-Satz zeichnet nie: gemessen wird der Satz der Fahne
+            // … und der Bauer ohne Steigen bricht laut
+            let bruch = null;
+            try {
+                stoffAlt.call(r, R, L.uniform(0)).dispose();
+            } catch (e) {
+                bruch = fehlerText(e);
+            }
+            aus.leser = { brand, kamin, bruch, bauten: bauten.length };
+
+            // DAS BILD: die Leinwand ganz, Luma je Pixel aus dem Ausgabe-Pfad
+            const db = rend.getDrawingBufferSize(new T.Vector2());
+            const [W, H] = [Math.round(db.x), Math.round(db.y)];
+            const schuss = async () => {
+                for (let i = 0; i < P.frames; i++) {
+                    setzeKamera();
+                    window.__loopBild();
+                }
+                setzeKamera();
+                const { u8 } = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" });
+                const l = new Float32Array(W * H);
+                for (let p = 0; p < W * H; p++) l[p] = luma709(u8, p * 4);
+                return l;
+            };
+            const pix = (v) => {
+                const p = v.clone().project(cam);
+                return [(0.5 + p.x / 2) * W, (0.5 - p.y / 2) * H];
+            };
+            setzeKamera();
+            const rp = Math.abs(pix(M.clone().add(new T.Vector3(0, P.radiusM, 0)))[1] - pix(M)[1]); // der Radius im Bild (Pixel)
+            // der Ton der Wand: das Mittel der vier Ecken des Bilds (fern vom Ballen)
+            const ecken = (l, n = 12) => {
+                let s = 0;
+                for (const [ex, ey] of [[0, 0], [W - n, 0], [0, H - n], [W - n, H - n]])
+                    for (let y = ey; y < ey + n; y++) for (let x = ex; x < ex + n; x++) s += l[y * W + x];
+                return s / (4 * n * n);
+            };
+            // je Pixel im Ballen (ρ < `rand`): `f(p, dx, dy, ρ)`, dx / dy in Radien von der Mitte (dy > 0 = unten im Bild)
+            const imBallen = ([cx, cy], f, grenze = P.rand) => {
+                for (let y = Math.max(0, Math.floor(cy - rp)); y < Math.min(H, Math.ceil(cy + rp)); y++)
+                    for (let x = Math.max(0, Math.floor(cx - rp)); x < Math.min(W, Math.ceil(cx + rp)); x++) {
+                        const [dx, dy] = [(x + 0.5 - cx) / rp, (y + 0.5 - cy) / rp];
+                        const rho = Math.hypot(dx, dy);
+                        if (rho < grenze) f(y * W + x, dx, dy, rho);
+                    }
+            };
+            const ballen = (m, zug = [0, 0, 0]) => ({ x: m.x, y: m.y, z: m.z, s: P.radiusM / R.size, a: P.deck, zx: zug[0], zy: zug[1], zz: zug[2] });
+            const zeichne = (liste) => r._rauchZeichnen(R, liste, "brandRauchSatz", R.maxTeilchen, R.steigMs);
+            // DIE QUELLE DES LICHT-POOLS: eine Flammen-Fläche (`_flammenLicht`) unter dem Ballen — durch den EINEN Schreiber, bis
+            // zum Fixpunkt ihrer Blende (wie die Bühne mit Uhr)
+            const F = r._flammenLicht(P.flammeM);
+            const quelle = { quelle: "brand", x: M.x + P.licht[0], y: M.y + P.licht[1], z: M.z + P.licht[2], L: F.L, masse: F.masse, phase: 0, rang: 0 };
+            quelle.id = quelle;
+            let brennt = false;
+            r._leuchtQuellen = () => (brennt ? [quelle] : []);
+            const licht = (an) => {
+                brennt = an;
+                setzeKamera();
+                for (let i = 0; i < 4; i++) {
+                    if (r._leuchtPool) r._leuchtPool.t = -Infinity;
+                    r._leuchtTakt();
+                    const Q = r._leuchtPool;
+                    Q.halter.forEach((h, j) => (Q.blende[j] = h && Q.wahl.some((w) => w.id === h.id) ? 1 : 0));
+                }
+                r._leuchtTakt();
+                return r._leuchtPool.plaetze.map((p) => ({ quelle: p.quelle, staerke: +p.staerke.toFixed(3), blende: p.blende, reichweite: p.reichweite }));
+            };
+            // (k1) UNTERSEITE: die untere Hälfte gegen die obere (je ab 0,15 Radien von der Mitte), dazu der Ton der Wand
+            const haelften = async () => {
+                zeichne([ballen(M)]);
+                const l = await schuss();
+                const s = { unten: 0, nu: 0, oben: 0, no: 0 };
+                imBallen(pix(M), (p, dx, dy) => {
+                    if (dy > 0.15) ((s.unten += l[p]), s.nu++);
+                    else if (dy < -0.15) ((s.oben += l[p]), s.no++);
+                });
+                return { unten: +(s.unten / s.nu).toFixed(2), oben: +(s.oben / s.no).toFixed(2), grund: +ecken(l).toFixed(2), px: s.nu + s.no };
+            };
+            // die Deckung je Pixel vor der hellen Wand: 1 − Luma / Wand
+            const deckung = (l) => {
+                const w = ecken(l);
+                const c = new Float32Array(l.length);
+                for (let p = 0; p < l.length; p++) c[p] = Math.min(1, Math.max(0, 1 - l[p] / w));
+                return Object.assign(c, { wand: w });
+            };
+            // (k2) das MUSTER eines Ballens: seine Deckung minus ihr Mittel je Ring um seine Mitte (das glatte Profil)
+            const muster = (c, mitte) => {
+                const nR = Math.max(4, Math.round(rp / 1.5));
+                const [sum, n] = [new Float64Array(nR), new Float64Array(nR)];
+                const ring = (rho) => Math.min(nR - 1, Math.floor(rho * nR));
+                imBallen(mitte, (p, dx, dy, rho) => ((sum[ring(rho)] += c[p]), n[ring(rho)]++), 1);
+                const m = new Float32Array(c.length).fill(NaN);
+                imBallen(mitte, (p, dx, dy, rho) => (m[p] = c[p] - sum[ring(rho)] / n[ring(rho)]));
+                return m;
+            };
+            // die Korrelation zweier Muster über die Pixel, die beide tragen
+            const korr = (a, b) => {
+                let [n, sa, sb, saa, sbb, sab] = [0, 0, 0, 0, 0, 0];
+                for (let p = 0; p < a.length; p++) {
+                    if (Number.isNaN(a[p]) || Number.isNaN(b[p])) continue;
+                    n++;
+                    sa += a[p];
+                    sb += b[p];
+                    saa += a[p] * a[p];
+                    sbb += b[p] * b[p];
+                    sab += a[p] * b[p];
+                }
+                const [va, vb] = [saa - (sa * sa) / n, sbb - (sb * sb) / n];
+                return { r: n && va > 0 && vb > 0 ? +((sab - (sa * sb) / n) / Math.sqrt(va * vb)).toFixed(3) : NaN, px: n, hub: n ? +Math.sqrt(va / n).toFixed(4) : 0 };
+            };
+            const mitten = [-1, 1].map((s) => new T.Vector3(M.x + (s * P.versatz * P.radiusM) / 2, M.y, M.z));
+            const koerper = async (mitBoden) => {
+                const bild = async (m) => {
+                    zeichne([ballen(m)]);
+                    const c = deckung(await schuss());
+                    return { m: muster(c, pix(m)), wand: c.wand };
+                };
+                const [A, B] = [await bild(mitten[0]), await bild(mitten[1])];
+                const k = korr(A.m, B.m);
+                const aus2 = { gleich: k.r, px: k.px, hub: k.hub, wand: +A.wand.toFixed(1) };
+                if (mitBoden) aus2.boden = korr(A.m, (await bild(mitten[0])).m).r;
+                return aus2;
+            };
+            // (k3) der UMRISS: Höhe zu Breite — die Zeilen gegen die Spalten des Bilds, in denen der Ballen deckt (Deckung > 0,04 in
+            // mindestens 3 Pixeln: ein einzelnes Pixel zählt nicht). Die zweiten Momenten der Deckung taugen hier nicht: das Muster
+            // der Welt verschiebt ihr Gewicht (der runde Ballen maß 0,767 statt 1)
+            const umriss = async (zug) => {
+                zeichne([ballen(M, zug)]);
+                const c = deckung(await schuss());
+                const [zeilen, spalten] = [new Uint16Array(H), new Uint16Array(W)];
+                let s = 0;
+                for (let p = 0; p < c.length; p++)
+                    if (c[p] > 0.04) ((s += c[p]), zeilen[Math.floor(p / W)]++, spalten[p % W]++);
+                const [hoch, breit] = [zeilen, spalten].map((a) => a.reduce((n, x) => n + (x >= 3), 0));
+                return { form: +(hoch / breit).toFixed(3), hoch, breit, masse: +(s / (Math.PI * rp * rp)).toFixed(3) };
+            };
+            const mitTafel = async (aenderung, lauf) => {
+                AR.RAUCH_BILD = Object.freeze({ ...tafelVor, ...aenderung });
+                try {
+                    return await lauf();
+                } finally {
+                    AR.RAUCH_BILD = tafelVor;
+                }
+            };
+            Object.assign(aus, { uhr: st.timeOfDay, nf: st.postProcessingUniforms ? st.postProcessingUniforms.nightFactor.value : null, leinwand: [W, H], radiusPx: +rp.toFixed(1) });
+            // DER KOPF: der Stoff, den der Leser gebaut hat
+            wandU.value = 0;
+            aus.licht = licht(true);
+            aus.k = +rend.toneMappingExposure.toFixed(3);
+            aus.unten = await haelften();
+            licht(false);
+            aus.dunkel = await haelften();
+            wandU.value = P.wand;
+            aus.koerper = await koerper(true);
+            const tempo = (P.streck * P.radiusM) / tafelVor.zug[0]; // m/s: die Tafel streckt um `streck` Radien
+            aus.zug = { tempo: +tempo.toFixed(3), quer: await umriss([0, tempo, 0]), laengs: await umriss([0, 0, -tempo]) };
+            // MUTANTE-K3: die Tafel ohne Streckung (der Satz liest `zug` je Bild — derselbe Stoff, derselbe Ballen)
+            aus.mutZug = await mitTafel({ zug: Object.freeze([0, tafelVor.zug[1]]) }, async () => ({ quer: await umriss([0, tempo, 0]) }));
+            // MUTANTE-K1: die Normale zeigt zum Auge (`woelbung` 0) — der Stoff neu gebaut
+            wandU.value = 0;
+            licht(true);
+            aus.mutUnten = await mitTafel({ woelbung: 0 }, async () => {
+                abschied("brandRauchSatz");
+                return await haelften();
+            });
+            licht(false);
+            // MUTANTE-K2: das Muster hängt am Ballen (der Anker der Naht 0: die Lage zählt ab seiner Mitte, wie vorher um den Samen)
+            wandU.value = P.wand;
+            abschied("brandRauchSatz");
+            const nahtAlt = r._weltNaht;
+            r._weltNaht = function (Tn) {
+                return Object.assign(Object.create(nahtAlt.call(this, Tn)), { anker: Tn.vec3(0, 0, 0) });
+            };
+            try {
+                aus.mutKoerper = await koerper(false);
+            } finally {
+                delete r._weltNaht;
+            }
+            aus.leser.bauten = bauten.length;
+        } catch (e) {
+            aus.abbruch = fehlerStapel(e).split("\n").slice(0, 4).join(" ← ");
+        } finally {
+            for (const k of GLIEDER) delete r[k];
+            AR.RAUCH_BILD = tafelVor;
+            [st.brandRauch, r._brandFlammen, st.dorfRauch, r._dorfRauchLogged] = [vor.brandRauch, vor.flammen, vor.dorfRauch, vor.gemeldet];
+            if (fr) [fr.rauchQuellen, fr.rauchStamp] = frVor;
+            for (const satz of ["brandRauchSatz", "dorfRauchSatz"]) {
+                try {
+                    abschied(satz);
+                } catch (e) {
+                    aus.abbruch = aus.abbruch || "Abschied " + satz + ": " + fehlerText(e);
+                }
+            }
+            st.scene.remove(wand);
+            wand.geometry.dispose();
+            wandStoff.dispose();
+            if (r._leuchtPool) r._leuchtPool.t = -Infinity;
+            dev.removeEventListener("uncapturederror", gpuHoer);
+            window.__buehne();
+        }
+        return aus;
+    })();
+}
+
 (async () => {
     console.log(
-        "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays · Zugang ==="
+        "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays · Zugang · Rauch ==="
     );
     await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: ERZWUNGEN });
@@ -1149,6 +1622,12 @@ function zugangProbe() {
         out.saum = await page.evaluate(saumProbe, b);
         out.zugang = await page.evaluate(zugangProbe);
         log(`Zugang: ${JSON.stringify(out.zugang)}`);
+        // (k) der Rauch zuletzt: er stellt die Nacht und baut drei Stoffe (Kopf und zwei Mutanten)
+        out.rauch = await page.evaluate(rauchProbe, b, RAUCH_PROBE);
+        // (k4) der GANZE Stamm (Lehre 12): die Attribute des Rauchs liest nur das EINE Bild (`fehlt.wo` nennt den Zwilling)
+        if (out.rauch.leser)
+            out.rauch.leser.zwilling = STAMM.fehlt({ ausser: ["_rauchZeichnen", "_rauchStoff"] }, /["'`]a(?:Rauch|Zug)["'`]/) ? null : STAMM.fehlt.wo;
+        for (const z of rauchZeilen(out.rauch)) log(z);
         if (out.saum)
             log(
                 `Saum (ungerade Leinwand ${out.saum.leinwand.join("×")}): ${out.saum.abweichend} von ${out.saum.kanten} Kanten-Pixeln links am Pfahl weichen > 8 Luma ab (größte ${out.saum.dMax}, Paritäten ${out.saum.paritaeten})${out.saum.abbruch ? " · ABBRUCH " + out.saum.abbruch : ""}`
@@ -1203,6 +1682,8 @@ function zugangProbe() {
             `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4, die Nacht ${out.dunkel.lumaNacht}); ` +
             `die Flamme steht vor dem Auge der Nacht (${Object.entries(out.flamme.toene)
                 .map(([n, tn]) => `${n.toUpperCase()} Tag ${JSON.stringify(tn.tag)} ↔ Nacht ${JSON.stringify(tn.nacht)} Δ ${kanalAbstand(tn.tag, tn.nacht)}, ohne Umkehr Δ ${kanalAbstand(tn.tag, tn.ohne)}`)
-                .join(" · ")}; Soll ≤ ${FLAMME_TOL}), die Schwellen des Auges liest nur \`_nachtAuge\`; der Zugang aus ohne Farbsicht-Knoten, der Himmel bleibt.`
+                .join(" · ")}; Soll ≤ ${FLAMME_TOL}), die Schwellen des Auges liest nur \`_nachtAuge\`; der Zugang aus ohne Farbsicht-Knoten, der Himmel bleibt; ` +
+            `der Rauch ist EIN Bild (Unterseite ${rauchVerh(out.rauch.unten)}× die Oberseite, flach ${rauchVerh(out.rauch.mutUnten)}×; zwei Ballen ein Muster ${out.rauch.koerper.gleich}, am Ballen ${out.rauch.mutKoerper.gleich}; ` +
+            `der Zug streckt ${out.rauch.zug.quer.form}, längs des Blicks ${out.rauch.zug.laengs.form}, ohne Streckung ${out.rauch.mutZug.quer.form}; Fahne und Kamin aus \`_rauchStoff\`).`
     );
 })();
