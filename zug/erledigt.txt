@@ -1420,3 +1420,4 @@ omen-gtx-gtx-ee9c1965-w0501-1-ee9c1965 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · G
 2026-11-17 05:29 landung ABGEBROCHEN main ee9c1965: Baum-Sperre:omensitzung-7060 wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 47 stellen sich hinten an
 2026-11-17 05:32 landung Zwischenstand main 389a6496: misst 54 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (0 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-rollea-1-ee9c1965 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte2.erleben.spieler.rolle#1 (punkte-maschine daf45e8e messung/ee9c1965-gtx.json)
+2026-11-17 05:47 w28-brand-saum Abgabe 6b248935 (neu nach rotem Code-Check an edf16a1d) — dichter, pulsender Flammen-Saum, Linse --narbe N5 · N6; Bericht bericht/1711-brand-saum/
