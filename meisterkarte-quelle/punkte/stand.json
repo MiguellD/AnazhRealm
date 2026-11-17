@@ -2080,8 +2080,8 @@
    ]
   },
   "luftwasser.K3": {
-   "punkte": 0,
-   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.973 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 71839b1e gtx — offen: luftwasser.K3#1 radeon: Station seit der Messung geändert · luftwasser.K3#1 gtx: Station seit der Messung geändert",
+   "punkte": 2,
+   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer) an ee9c1965 gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.973 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 71839b1e gtx",
    "stationen": [
     {
      "id": "luftwasser.K3#1",
@@ -2105,11 +2105,11 @@
     {
      "id": "luftwasser.K3#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer)",
+     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "luftwasser.K3#2",
@@ -5277,6 +5277,32 @@
     }
    ]
   },
+  "karte2.leben.tiere.mensch": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.mensch#1 radeon: ungemessen (R10) · karte2.leben.tiere.mensch#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.leben.tiere.mensch#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.leben.tiere.mensch#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    }
+   ]
+  },
   "karte2.leben.tiere.verhalten": {
    "punkte": 0,
    "beleg": "Maschine: 0 — offen: karte2.leben.tiere.verhalten#1 radeon: Station seit der Messung geändert · karte2.leben.tiere.verhalten#1 gtx: Station seit der Messung geändert",
@@ -5708,7 +5734,7 @@
   },
   "karte2.planet.kopplung.bahn-klima": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.bahn-klima#1 radeon: Konsum seit der Messung geändert (R6: stamm/daten.js) · karte2.planet.kopplung.bahn-klima#1 gtx: Konsum seit der Messung geändert (R6: stamm/daten.js)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.bahn-klima#1 radeon: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.bahn-klima#1",
@@ -5716,9 +5742,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -5727,9 +5752,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5896,7 +5920,7 @@
   },
   "karte2.planet.wetter.klimazonen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.klimazonen#1 radeon: Konsum seit der Messung geändert (R6: stamm/daten.js) · karte2.planet.wetter.klimazonen#1 gtx: Konsum seit der Messung geändert (R6: stamm/daten.js)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.klimazonen#1 radeon: Station seit der Messung geändert · karte2.planet.wetter.klimazonen#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.wetter.klimazonen#1",
@@ -5904,9 +5928,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -5915,9 +5938,8 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true,
-     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6304,8 +6326,8 @@
  },
  "rueckfall": [],
  "r6": {
-  "haelften": 505,
-  "konsum": 182,
+  "haelften": 507,
+  "konsum": 179,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6475,13 +6497,15 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 156
+  "ohne": 161
  },
  "kopfVoll": "ee9c196544e4376ea20c95921c852ad931bc1604",
- "zeit": "2026-11-17T02:18:28.828Z",
- "vorher": "884c6a25",
+ "zeit": "2026-11-17T02:40:17.358Z",
+ "vorher": "ee9c1965",
  "bilanz": {
-  "gewinn": [],
+  "gewinn": [
+   "luftwasser.K3 0→2"
+  ],
   "fall": [],
   "massenFall": false
  },

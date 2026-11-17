@@ -3,11 +3,11 @@
   "kopf": "ee9c1965",
   "version": "V18.546.317",
   "skala": "2.0",
-  "summe": 215,
+  "summe": 217,
   "max": 330,
   "maschine": {
     "kopf": "ee9c1965",
-    "zeit": "2026-11-17T02:18:28.828Z",
+    "zeit": "2026-11-17T02:40:17.358Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -398,7 +398,7 @@
     {
       "key": "leben",
       "titel": "II · LEBEN — Pflanze, Tier, Ökologie, Mensch, Affekt, Haar und Fell, Luft und Wasser",
-      "summe": 45,
+      "summe": 47,
       "max": 70,
       "bereiche": [
         "vegetation",
@@ -1749,7 +1749,7 @@
       "key": "luftwasser",
       "titel": "Leben in Luft und Wasser — Vögel, Fische, Insekten",
       "gruppe": "leben",
-      "punkte": 6,
+      "punkte": 8,
       "pfad": "nach v1.0 (ein neues Gesetzbuch)",
       "dateien": "neues Gesetzbuch (ein neuntes Studio) · `tetrapoda-core.js` verbandZug · `klang-core.js` (Vogel-Ruf)",
       "aaaa": "Über der Wiese ziehen Schwärme, im Bach stehen Forellen gegen die Strömung, über dem Feld summen Bestäuber. Jeder Ruf hat einen Körper: was der Spieler hört, kann er sehen. Schwarm und Fischzug folgen derselben Verbands-Zahl wie die Herde (Couzin), Fische lesen die Strömung des Kerns, Vögel fliehen vor dem Spieler und landen auf den Bäumen der Welt, Bestäuber folgen den Blüten des Felds. Fern rechnet ein Schwarm als EIN Agent. **Wo wir die Besten schlagen:** RDR2 setzt ≈ 200 Arten von Hand, Abzû baut Fischschwärme je Szene; bei uns entsteht jede Art aus einem Gesetzbuch und liest die Welt, in der sie lebt.",
@@ -1781,10 +1781,10 @@
         },
         {
           "name": "Fische lesen die Strömung",
-          "punkte": 0,
+          "punkte": 2,
           "staffel": "1 = Fische stehen gegen die Strömung des Kerns (Ausrichtung zur Strömung ≥ 0,8) · 2 = sie meiden den Spieler, folgen dem Pegel und sind unter Wasser sichtbar (Leib K3)",
           "messung": "werkbank eval am Bach: Ausrichtung gegen die Strömung aus gate:kopplung F1.",
-          "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.973 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 71839b1e gtx — offen: luftwasser.K3#1 radeon: Station seit der Messung geändert · luftwasser.K3#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer) an ee9c1965 gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.973 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 71839b1e gtx",
           "schlupfloch": "Fische auf festen Bahnen sähen gut aus: die Mutation der Strömung muss die Ausrichtung ziehen.",
           "maschine": true
         },
@@ -1810,18 +1810,17 @@
       "hebel": [
         {
           "name": "Fische in der Strömung",
-          "bewegt": [
-            "luftwasser.K3+2"
-          ],
-          "punkte": 2,
+          "bewegt": [],
+          "punkte": 0,
           "tage": [
             2,
             2
           ],
-          "p_je_tag": 1,
+          "p_je_tag": 0,
           "wurzel": "Strömung aus `_waterLevelAt`/F1-Chokepoint als Leser der Fisch-Ausrichtung.",
           "pflicht": "—",
-          "v1": false
+          "v1": false,
+          "geerntet": true
         },
         {
           "name": "Bestäuber als Leser von auraAt",
@@ -4557,7 +4556,7 @@
   ],
   "bestaetigung": {
     "voll": 184,
-    "offen": 31,
+    "offen": 33,
     "kriterien": [
       "ankunft.K2+1",
       "bauen.K1+1",
@@ -4574,6 +4573,7 @@
       "licht.K2+1",
       "licht.K3+1",
       "lod.K2+1",
+      "luftwasser.K3+2",
       "material.K4+1",
       "mensch.K4+2",
       "physik.K2+1",
@@ -4591,7 +4591,7 @@
       "linse": 1,
       "ungemessen": 21,
       "rot": 0,
-      "anderes": 21
+      "anderes": 22
     }
   },
   "ohneHebel": [
@@ -4809,7 +4809,7 @@
     {
       "stand": "2026-11-17",
       "kopf": "ee9c1965",
-      "summe": 215,
+      "summe": 217,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."
