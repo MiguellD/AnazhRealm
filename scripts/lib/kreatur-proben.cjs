@@ -3184,7 +3184,10 @@ const TAETER = {
     herde: [
         ["herde", /am Blick/],
         ["herde-artfremd", /Verbands-ID bricht nach 0 s: Verband 0 liest 10 Leiber/],
-        ["herde-zerfall", /zerfällt beim Wandern[\s\S]*zerfällt auf der Flucht[\s\S]*flieht ungerichtet/],
+        // der Verband ohne seinen Zug zerfällt auf der Flucht (0,456 an main, 0,645 mit dem Revier, Soll ≥ 0,8); beim Wandern und
+        // in der Richtung lag er am Rand (main 0,89 / Φ 0,784 gegen 0,9 / 0,8) und fällt mit dem Revier im Lebensraum
+        // (w28-wander-revier: die Glieder ziehen zu Zielen IN der Leine des gemeinsamen Wurf-Ankers, 1 / Φ 0,879) — nicht sein Grund
+        ["herde-zerfall", /zerfällt auf der Flucht: im Mittel 0\.[0-7]/],
         ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
         ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
