@@ -1,0 +1,36 @@
+{
+ "proben": {
+  "lava": {
+   "schuesse": [
+    {
+     "name": "glut",
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\buch2-tree\\meisterkarte-quelle\\punkte\\messung\\roh\\d39e0d6e-radeon\\karte2.same.kopplung.ereignis_1-lava-s1.png"
+    }
+   ],
+   "frei": 0.284,
+   "gegossen": true,
+   "glutBild": {
+    "rgb": [
+     0.258,
+     0.093,
+     0.036
+    ],
+    "luma": 0.124,
+    "rg": 2.765,
+    "glut": 1,
+    "stoff": "glut"
+   },
+   "brand": {
+    "lebt": true,
+    "zellen": 8,
+    "s": 20000,
+    "nachher": true,
+    "aschen": 419
+   },
+   "fehler": "der Brand um den Guss lebt nach 20000 s auf seiner Uhr",
+   "messort": "lava: der Brand um den Guss lebt nach 20000 s auf seiner Uhr — der Schuss erstarrt sähe sein Feuer, nie die Decke",
+   "sek": 5.4
+  }
+ },
+ "fehler": []
+}
