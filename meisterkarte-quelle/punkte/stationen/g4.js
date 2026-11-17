@@ -1287,6 +1287,8 @@ async function rolleSeite(o) {
         const q = vorn(5);
         const E = werk(o.name, q);
         if (!E) return { fehler: "kein Wagen " + o.name + " am Ort" };
+        // der Wagen steht, wenn sein Körper in der Szene hängt (der Stempel des Studios kommt asynchron): auf das Ereignis, wie das Werk
+        await window.__gebautNach("der Wagen " + E.type, { fertig: () => !!(E.mesh && E.mesh.parent) || !!(E.instFoundry || (E.instSlots && E.instSlots.length)), bau: () => {} });
         R.wagen = E;
         R.p0 = [E.position.x, E.position.z];
         const k = kam({ x: E.position.x, z: E.position.z });
@@ -1339,6 +1341,11 @@ async function probeRolle(H) {
     };
     const diff = (A, B) => AB.bildRauschen(A.u8, B.u8, A.W, A.H, S.schwelle).anteil;
     const j = (H.teil = { adapter: ad, soll: S, gruppen: {} });
+    // DIE WELT WACH VOR JEDER TAT (17.11., GTX und Radeon ee9c1965/389a6496 0/4 an der AUFSTELLUNG): jedes `/bild` der Werkbank lässt
+    // den Loop ruhen und hält die Welt (weatherEffectTime −1e9, `wetterHalten`), unter dem Halt verweigert dslEval jeden Welt-Akt —
+    // die Schüsse vor der Tat froren Gang, Hieb, Werk und Wagen ein. Vor der Aufstellung und nach den Schüssen läuft die Schleife des
+    // Spiels wieder, der Halt steht auf 0; `halt` nennt ihn an der Tat
+    const wach = () => page.evaluate(() => { const r = window.anazhRealm; r.state.weatherEffectTime = 0; r.state.renderer.setAnimationLoop((t) => r._gameLoopTick(t)); return r.state.weatherEffectTime; }); // prettier-ignore
     for (const g of H.seite.GRUPPEN) {
         if (H.rest() < 25) {
             j.gruppen[g] = { fehler: "Frist der Probe vor der Gruppe (" + H.sek() + " s)" };
@@ -1346,10 +1353,14 @@ async function probeRolle(H) {
         }
         const z = (j.gruppen[g] = {});
         try {
+            await wach();
+            const tA = Date.now();
             const an = await seite({ schritt: { gehen: "gehenAn", bauen: "bauenAn", fahren: "fahrenAn", kaempfen: "kampfAn" }[g], seele: "wesen", name: g === "fahren" ? WERKE.GT : "bank_sitzbank" });
+            z.aufstellungS = +((Date.now() - tA) / 1000).toFixed(2);
             if (an.fehler) throw new Error(an.fehler);
             const A = await schuss(an, g + "-vor");
             z.rausch = diff(A, await schuss(an, g + "-vor-2"));
+            z.halt = await wach();
             const t0 = Date.now();
             if (g === "gehen") {
                 await page.keyboard.down("KeyW");
@@ -1397,7 +1408,7 @@ const rolleSichtbar = (z, S = ROLLE_SOLL) => !!z && !z.fehler && [z.rausch, z.di
 const rolleRoh = (o = {}) => ({
     adapter: "amd/rdna-3",
     soll: ROLLE_SOLL,
-    gruppen: Object.fromEntries(ROLLE_GRUPPEN.map((g) => [g, { rausch: 0.0004, diff: 0.03, aenderung: true, welt: {}, ...(o[g] || {}) }])),
+    gruppen: Object.fromEntries(ROLLE_GRUPPEN.map((g) => [g, { rausch: 0.0004, diff: 0.03, aenderung: true, welt: {}, halt: 0, aufstellungS: 0.4, ...(o[g] || {}) }])),
 });
 const ROLLE_PFAD = [
     "stamm/kreatur-*.js",
@@ -3110,11 +3121,19 @@ const alle = [
             const { ad, hw } = PAAR_HW(lauf.stdout);
             const G = (j && j.gruppen) || null;
             if (!G) return { gruen: false, zahl: "keine Verb-Gruppe in der Ausgabe der Probe (Exit " + lauf.exit + ") · " + ad };
-            const ja = ROLLE_GRUPPEN.filter((g) => G[g] && G[g].aenderung === true && rolleSichtbar(G[g]));
+            // die Tat in der wachen Welt (`halt` ≥ 0 nach den Schüssen) und die Aufstellung als Zahl je Gruppe (Werk, Wagen, Tier bis zum
+            // Ereignis) — über 10 s ist sie der Befund für den Spieler, nie ein Grund zu warten
+            const wachOk = (z) => !!z && Number.isFinite(z.halt) && z.halt >= 0 && Number.isFinite(z.aufstellungS);
+            const ja = ROLLE_GRUPPEN.filter((g) => G[g] && G[g].aenderung === true && rolleSichtbar(G[g]) && wachOk(G[g]));
+            const ohneWach = ROLLE_GRUPPEN.filter((g) => G[g] && !G[g].fehler && !wachOk(G[g]));
+            const auf = ROLLE_GRUPPEN.filter((g) => G[g] && Number.isFinite(G[g].aufstellungS)).map((g) => g + " " + G[g].aufstellungS + " s");
+            const lang = ROLLE_GRUPPEN.filter((g) => G[g] && G[g].aufstellungS > 10).map((g) => g + " " + G[g].aufstellungS + " s");
             return {
                 gruen: hw && lauf.exit === 0 && ja.length === ROLLE_GRUPPEN.length,
                 zahl:
-                    ja.length + "/" + ROLLE_GRUPPEN.length + " Verb-Gruppen ändern die Welt sichtbar · " +
+                    ja.length + "/" + ROLLE_GRUPPEN.length + " Verb-Gruppen ändern die Welt sichtbar · Aufstellung " + (auf.join(", ") || "ohne Zahl") +
+                    (lang.length ? " (Aufstellung > 10 s: " + lang.join(", ") + ")" : "") +
+                    (ohneWach.length ? " · die Tat ohne wache Welt (Halt oder Aufstellung ohne Zahl): " + ohneWach.join(", ") : "") + " · " +
                     ROLLE_GRUPPEN.map((g) => { const z = G[g]; return g + " " + (!z ? "nicht gelaufen" : z.fehler ? String(z.fehler).slice(0, 80) : (z.aenderung ? "Änderung" : "OHNE ÄNDERUNG") + " Δ " + (Number.isFinite(z.diff) ? (100 * z.diff).toFixed(2) + " %" : "–") + " (Rauschen " + (Number.isFinite(z.rausch) ? (100 * z.rausch).toFixed(2) + " %" : "–") + ")"); }).join(" · ") + // prettier-ignore
                     " · " + ad,
             };
@@ -3126,6 +3145,10 @@ const alle = [
             { name: "der Hieb trifft nicht (die Gruppe warf)", j: rolleRoh({ kaempfen: { fehler: "kein Wesen in Reichweite (spawnCreatureAt: obergrenze)", diff: undefined } }), stdout: PAAR_KARTE, gruen: false },
             { name: "eine Gruppe fehlt (die Frist)", j: { ...rolleRoh(), gruppen: { ...rolleRoh().gruppen, bauen: undefined } }, stdout: PAAR_KARTE, gruen: false },
             { name: "swiftshader", j: rolleRoh(), stdout: "[linse-gpu] google/swiftshader", gruen: false },
+            // GTX und Radeon ee9c1965/389a6496: die Schüsse vor der Tat hielten die Welt (weatherEffectTime −1e9), die Tat lief im Halt
+            { name: "die Tat unter dem Halt der Messung (gehen −1e9)", j: rolleRoh({ gehen: { halt: -1e9 } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "die Aufstellung ohne Zahl (bauen)", j: rolleRoh({ bauen: { aufstellungS: undefined } }), stdout: PAAR_KARTE, gruen: false },
+            { name: "die Aufstellung des Wagens 12,5 s — der Befund steht beim Namen, das Urteil bleibt", j: rolleRoh({ fahren: { aufstellungS: 12.5 } }), stdout: PAAR_KARTE, gruen: true, zahl: /Aufstellung > 10 s: fahren 12\.5 s/ },
         ],
         pfad: ROLLE_PFAD,
         quelle: "KARTE2 erleben.spieler.rolle S1 = 15 min je Verb-Gruppe: ≥ 1 sichtbare Weltänderung (Werk steht, Tier flieht, Fahrzeug fährt), Bildpaar vorher/nachher",
