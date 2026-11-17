@@ -2441,7 +2441,7 @@
      "gruen": true,
      "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
      "sha": "fe885d9de1ae25cb5b5caf0e929dd71bdcfeaedb",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-kreatur-leben.cjs, stamm/bild-himmel.js +8)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs, stamm/daten.js +5)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -6496,7 +6496,7 @@
   "ohne": 156
  },
  "kopfVoll": "ee9c196544e4376ea20c95921c852ad931bc1604",
- "zeit": "2026-11-17T03:30:37.973Z",
+ "zeit": "2026-11-17T03:56:47.997Z",
  "vorher": "ee9c1965",
  "bilanz": {
   "gewinn": [],
