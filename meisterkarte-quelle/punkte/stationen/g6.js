@@ -1765,6 +1765,11 @@ async function pbProbe(art, aus) {
     fs.rmSync(D, { recursive: true, force: true });
     fs.mkdirSync(D, { recursive: true });
     const t0 = Date.now(), uhr = () => (Date.now() - t0) / 1000;
+    // DIE UHR IST DER DECKEL DES LAUFS (Vorarbeiter 10, 17.11.; Radeon 7de938ab schirm#1: der Gang lief 85,5 s, `wiese-third-steht`
+    // ungemessen „die Uhr 84 s trug den Schritt nicht“, am ee9c1965 95,3 s): das Budget war die feste Zahl PB_GANG_SEK − 6, eine
+    // geratene Wanduhr neben dem EINEN Deckel, den der Läufer der Probe gibt (PUNKTE_PROBE_DECKEL_S: ihr Grund-Deckel oder ihr Anteil
+    // der Fahrt, das größere). Jetzt trägt die Uhr bis zu diesem Deckel − 6 s Nachlauf, nie weniger als das alte Budget
+    const BUDGET = Math.max(K.budget, (Number(process.env.PUNKTE_PROBE_DECKEL_S) || 0) - 6);
     const logDatei = process.env.PUNKTE_SITZUNG_LOG;
     const log = logDatei && fs.existsSync(logDatei) ? fs.readFileSync(logDatei, "utf8") : "";
     console.log((/\[linse-gpu\][^\r\n]*/.exec(log) || ["[linse-gpu] ungenannt (kein Log der Sitzung)"])[0]);
@@ -1801,7 +1806,7 @@ async function pbProbe(art, aus) {
     let eRest = 0;
     const B = async (ort, sicht) => {
         const name = ort + "-" + sicht, datei = path.join(D, "band-" + name + ".json");
-        const capMs = eRest > 0 ? Math.max(8000, Math.floor(((K.budget - uhr()) / eRest - 6) * 1000)) : 8000;
+        const capMs = eRest > 0 ? Math.max(8000, Math.floor(((BUDGET - uhr()) / eRest - 6) * 1000)) : 8000;
         eRest = Math.max(0, eRest - 1);
         const o = await ruf("/band", { ort, datei, proben: 1, capMs }, capMs / 1000 + 90);
         const u = JSON.parse(fs.readFileSync(datei, "utf8")), g = {}, m = q(u.messung);
@@ -1837,7 +1842,7 @@ async function pbProbe(art, aus) {
     const gelernt = {};
     const schritt = async (name, est, f, zellen) => {
         const sorte = name.replace(/^[a-z]+-/, "");
-        if (art === "gang" && !PB_TRAEGT(zellen, uhr(), Math.max(est, gelernt[sorte] || 0), K.budget)) return void (offen.push(...zellen), schritte.push([name, "Uhr"]));
+        if (art === "gang" && !PB_TRAEGT(zellen, uhr(), Math.max(est, gelernt[sorte] || 0), BUDGET)) return void (offen.push(...zellen), schritte.push([name, "Uhr"]));
         const a = uhr();
         try {
             await f();
@@ -1983,7 +1988,7 @@ async function pbProbe(art, aus) {
             sichtWechsel: wechsel("sicht"), sattel: bs.map((b) => b.sattel).filter((x, i, a) => !i || x !== a[i - 1]).join(""),
             wetter: [...new Set(bs.map((b) => b.wetter))], buehne: bs.length ? bs.reduce((m, b) => Math.max(m, b.buehne || 0), 0) : null };
     };
-    const zus = { art, sekunden: +uhr().toFixed(1), schritte, offen, fehler, strom: { bloecke: L.bloecke, bilder: B_.length, seiten: L.seiten.length, fehler: L.fehler, verloren: L.verloren } };
+    const zus = { art, sekunden: +uhr().toFixed(1), uhrS: BUDGET, schritte, offen, fehler, strom: { bloecke: L.bloecke, bilder: B_.length, seiten: L.seiten.length, fehler: L.fehler, verloren: L.verloren } };
     if (art === "gang") {
         const orte = Object.fromEntries(JSON.parse(fs.readFileSync("spec/profiband/haushalt.json", "utf8")).messorte.map((o) => [o.id, o.spieler]));
         // fremde Bilder einer Stand-Zelle: jede andere Probe, die dort stand (die Bedingungen der Zelle)
@@ -2111,7 +2116,7 @@ function pbRichter(lauf, { regeln = [], band = false, wagen = false }) {
     const { ad, hw } = HW(t);
     const z = pbZus(lauf, "gang");
     if (!z) return { gruen: false, zahl: "keine Zeile PROFIBAND des Gangs (Exit " + lauf.exit + ") · " + ad };
-    const warum = (n) => (z.offen.includes(n) ? "ungemessen (die Uhr " + PB_KONST.budget + " s trug den Schritt nicht)" : z.fehler[n] ? "brach: " + z.fehler[n] : "ungemessen");
+    const warum = (n) => (z.offen.includes(n) ? "ungemessen (die Uhr " + (z.uhrS || PB_KONST.budget) + " s trug den Schritt nicht)" : z.fehler[n] ? "brach: " + z.fehler[n] : "ungemessen");
     const rot = [], teile = [];
     for (const r of regeln) {
         const werte = r.zellen.map((name) => {
