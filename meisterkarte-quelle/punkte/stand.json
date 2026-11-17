@@ -3597,7 +3597,7 @@
      "gruen": true,
      "zahl": "Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.69 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3",
      "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +20)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -6547,7 +6547,7 @@
   "ohne": 112
  },
  "kopfVoll": "e489088a9bfca46817cd159efd64ffc1be80dbd4",
- "zeit": "2026-11-17T09:06:14.103Z",
+ "zeit": "2026-11-17T09:12:13.955Z",
  "vorher": "e489088a",
  "bilanz": {
   "gewinn": [],
