@@ -17,7 +17,7 @@ EIN Strahler-Gesetz statt zwölf Wege: Licht und Wärme aus derselben Temperatur
 4. Das Auge liest dieselbe Quelle: `_waagrechtIrradianz` nimmt Σ E am Auge aus dem Becken dazu.
 5. Wärme, EIN Leser: die Lava zündet über E(d) gegen `tZuend`; ihre 8-Nachbarn-Regel fällt. Leib, Nässe, Schnee bleiben benannt offen.
 
-Dazu aus der Annahme von `w28-lava-nachlauf` (18.11. 00:20), in diesem Kopf:
+Dazu aus der Annahme von `w28-lava-nachlauf` (18.11. kurz nach Mitternacht), in diesem Kopf:
 - ERSTER Commit: `worldMeta.tag` fällt (einziger Leser ist der Playtest `sprungNimmtTag`, er zieht auf die Prozess-Uhr).
 - Im ersten WIP EINE Zahl: das teuerste Bild, wenn eine Brand-Front in gemischten Grund läuft (Bett-Masken in EINEM Takt × ihr
   Preis). Über 4 ms in einem Takt laufen die Masken über das Budget des Brands (die Zelle brennt grob an fünf Punkten, bis ihre
@@ -33,6 +33,16 @@ auf die Bildpaare. EIN Bericht am Ende mit Prozent je Punkt 1–5.
 Zweig `w28-strahler` lokal auf main c50e6b61, KEIN Commit, nichts gebaut. Gemessen sind nur die Zielbilder unten.
 `w28-lava-nachlauf` (1d835734) ist angenommen und wartet auf den Zug; der Strahler-Schnitt fasst Brand-Code an, der dort in
 `stamm/feld-brand.js` liegt (auf main noch in feld-leben.js) — gebaut wird erst auf einem main, das lava-nachlauf trägt.
+
+## Die Masken-Zahl (gemessen 18.11. 00:22 am Kopf 1d835734 von w28-lava-nachlauf, GTX 1050, Werkbank an der Mess-Wiese)
+
+Brand ab −248/−1064, sonnig, 3 600 Takte zu je 1 s Brand-Uhr (130 Zellen im Feld, 57 Zellen mit Bett-Kante): der teuerste Takt
+kostet **5,19 ms mit 2 Masken** (128 Zellen); nie mehr als 2 Masken in einem Takt. Takte mit Maske: Median 2,3 ms; Takte ohne:
+Median 0,35 ms · p99 1,6 ms · max 3,0 ms. Eine Maske kostet im Spiel also rund 2 ms (die Probe eines einzelnen `_brandStoff`
+nannte 0,6 ms). **5,19 > 4 ms: nach der Regel des Koordinators laufen die Masken über das Budget des Brands (die Zelle brennt
+grob an fünf Punkten, bis ihre Maske dran ist), das Soll BRAND-ZELLEN geht zurück auf 64 je Zelle.** Gebaut ist das noch nicht;
+es ist der zweite Schritt dieses Kopfs nach dem Fall von `worldMeta.tag`. Probe: `k-maskenzahl.js` (im Blatt unten beschrieben:
+je Takt `spielZeit = _brandUhr + schrittS`, `_tickBrand()`, ms des Rufs, neue Einträge von `_brandBett` mit Anteil zwischen 0 und 1).
 
 ## Die Zielbilder an main (960 × 540, Sommer, sonnig, `--uhr 0.5` Mittag ↔ `--uhr 0.0` Mitternacht; Dateien `main-<name>-{tag,nacht}.png`)
 
@@ -83,7 +93,8 @@ EINE Funktion `strahler` trägt den Nahfeld-Term der Fläche, kein zweiter Weg. 
 ## Nächster Schritt
 
 1. Blick des Koordinators auf dieses Blatt (das Zielbild ist der einzige Zwischenbericht).
-2. Sobald main lava-nachlauf trägt: erster Commit `worldMeta.tag` fällt; dann die Masken-Zahl; dann die Zahlen des Befund-Blatts
+2. Sobald main lava-nachlauf trägt: erster Commit `worldMeta.tag` fällt; dann die Masken über das Budget des Brands (Soll zurück
+   auf 64 je Zelle, die Linse L3 und das Bildpaar der Teil-Zelle halten); dann die Zahlen des Befund-Blatts
    an der Quelle prüfen und `strahler(T, A, n)` am Chokepoint bauen.
 
 Werkzeug (lokal, GTX 1050): Befehls-Dateien `gtx1050-werkzeug/tmp/sz-main-{wiese,tor,dorf,dorf2,lava3}.bef` über
