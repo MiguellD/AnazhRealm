@@ -1396,3 +1396,4 @@ omen-gtx-gtx-f5ce1579-1-f5ce1579 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN v
 2026-11-17 02:20 landung ABGEBROCHEN main 884c6a25: sg-klang wartete am GPU-Schloss — BEHALTEN 0 Station(en) (gepusht), 52 stellen sich hinten an
 2026-11-17 02:36 landung Zwischenstand main 884c6a25: misst 52 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (52) je allein (0 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-paar-f5-1-f5ce1579 ROT 2 GRÜN / 4 ROT / 0 UNGEMESSEN · ROT karte2.planet.kosmos.sternhimmel#1 karte2.planet.kopplung.bahn-klima#1 karte2.planet.wetter.klimazonen#1 karte2.same.kopplung.kaskade#1 · GRÜN karte2.mensch.fahrzeug.medium#1 karte2.same.kopplung.stoerung#1 (punkte-maschine 92339cbc messung/f5ce1579-gtx.json)
+omen-gtx-paar-f5-ok4-1-f5ce1579 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN oekologie.K4#2 (punkte-maschine cfb2fba5 messung/f5ce1579-gtx.json)
