@@ -1,7 +1,7 @@
 {
  "sha": "08a8397ba498a8c89c72ce9cd287232ccf6591ae",
  "geraet": "gtx",
- "zeit": "2026-11-17T20:49:40.181Z",
+ "zeit": "2026-11-17T20:52:14.969Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "luftwasser.K3#2": {
@@ -361,20 +361,20 @@
   "k7e4a861f6fef": "dVTRjpswEPyXPLblnAAOxtI9+I5IqVSpuU9Y22sgIRDZENpU/fcKEpIA131K0I5ndnbsP4sTqAOk+LJ3Vbngiy+LbwsHZ/Qc2jPal71b8MVShUAZF9ciQoj3rk3Z/FQ7UuSSgCwhO6LX2Brz4kX1sJViCMhJuxHtjpAdichb+/o6hRYSdeXVYHAASu1HAfBpY+NSkOhBY3qyW3OMVMeSk75YInZ7MpT4EIK0mymjhFKPlZoAqFnx77+F2IiZQp0D1l6Rl27gVJrKwOd3ovlU2kLrXQCzAu0NxIJo7dNBqBAiaXdzoCka50ZkLNDUZ5yQmEx6U3S5ymrvZCuJ5WBe7Ecr4J84nZ4azzwrAimByanPGWCZoh1riEKqQk5+semhBziiBa+EbNjHMoh8+fCGELKdayl64T3FIJxpGUdmBOx2uG270CWs+5PeP7PtNYxJKh71MSFxKsvtcWyPMVTDkv+YS3IZaLTeoXL1vTtgzIfglvykD5TYhckU+RjmhvPleknZ0yyMiO3MO1eZugWLXnpqbkAMkUaUC/F91lzD8TgMoXxkdLo4V3fBfpaxjHxK+12k/9nD9Rp4F8yLARQptQpwevjZwtEDmdrcmGHTkioTfxbMFovak1VVD52BhkBxEpDy7kjcXQHx9the0lZq855+iEmlU8396ZWtB8FUrpcm5Obc3UQ17b6gLTDFkS86lAFoTlr1RB8OP76OAniZre2SY+dY6Ro3RDeOdHyL7tjjFu1BQnkY1msClPqap51IboTrN7In15zf1YifbW9P/9KeUJGTrUzePV0kg8ZlUNSPN/vvPw=="
  },
  "sitzung": {
-  "start": "2026-11-17T20:49:08.666Z",
-  "ordner": "sitzung-20261117-214908",
+  "start": "2026-11-17T20:51:46.837Z",
+  "ordner": "sitzung-20261117-215146",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 5.9,
+  "warten": 0.02,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "breite.siedlung#1",
-    "s": 23.5,
-    "takte": 780,
+    "vor": "profiband.K1#1",
+    "s": 19.2,
+    "takte": 733,
     "chunks": 81,
     "nach": null
    }
@@ -382,7 +382,7 @@
   "wegeTueren": [],
   "messHalt": [
    {
-    "probe": "breite.siedlung#1",
+    "probe": "profiband.K1#1",
     "halt": -1000000000,
     "zurueck": 0
    }
@@ -390,28 +390,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
+   "bilder": 770,
+   "frameP95": 25.33,
+   "taktP95": 17.14,
+   "vramMax": 131.8,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "breite.siedlung#1",
-     "m": 566,
+     "probe": "profiband.K1#1",
+     "m": 1090,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 51,
+   "zapfen": 210,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 56.1,
-  "minuten": 1.03
+  "fahrtS": 216.4,
+  "minuten": 3.72
  },
  "ungemessen": {
   "ankunft.K1#2": {
@@ -584,6 +584,381 @@
    "abdruck": "cd5ba7853ffa",
    "port": 7804,
    "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 187 s gerissen: Stille seit 21.8 s nach 187.1 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 3.12,
+   "grund": "Deckel 187 s gerissen: Stille seit 21.8 s nach 187.1 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 187.2,
+   "fremd": {
+    "s": 192.5,
+    "takte": 89,
+    "fremdS": 72.98,
+    "kerne": 0.379,
+    "fensterKerne": 0.606,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      28.67
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.73
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.98
+     ]
+    ],
+    "dienerS": 72.61,
+    "diener": [
+     [
+      "dwm.exe",
+      40.36
+     ],
+     [
+      "System",
+      21.81
+     ]
+    ],
+    "geraetS": 55.09,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.75
+     ],
+     [
+      "svchost.exe",
+      22.22
+     ],
+     [
+      "SearchIndexer.exe",
+      1.55
+     ]
+    ],
+    "eigenS": 379.28,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.468,
+     "nach": 0.301,
+     "station": 1.382
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 100.9,
+     "alle": 264.2,
+     "cpuEin": 109
+    },
+    "nach": {
+     "ein": 104.5,
+     "alle": 283.9,
+     "cpuEin": 94
+    },
+    "ruhe": {
+     "ein": 90.3,
+     "alle": 231.3,
+     "n": 590,
+     "von": "2026-11-17"
+    },
+    "f": 1.227,
+    "fEin": 1.157,
+    "fAlle": 1.227,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-17T20:52:14.969Z",
+   "abdruck": "6e83f67d5a31",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "pflicht.E#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 187 s gerissen: Stille seit 21.8 s nach 187.1 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 3.12,
+   "grund": "Deckel 187 s gerissen: Stille seit 21.8 s nach 187.1 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 187.2,
+   "fremd": {
+    "s": 192.5,
+    "takte": 89,
+    "fremdS": 72.98,
+    "kerne": 0.379,
+    "fensterKerne": 0.606,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      28.67
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.73
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.98
+     ]
+    ],
+    "dienerS": 72.61,
+    "diener": [
+     [
+      "dwm.exe",
+      40.36
+     ],
+     [
+      "System",
+      21.81
+     ]
+    ],
+    "geraetS": 55.09,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.75
+     ],
+     [
+      "svchost.exe",
+      22.22
+     ],
+     [
+      "SearchIndexer.exe",
+      1.55
+     ]
+    ],
+    "eigenS": 379.28,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.468,
+     "nach": 0.301,
+     "station": 1.382
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 100.9,
+     "alle": 264.2,
+     "cpuEin": 109
+    },
+    "nach": {
+     "ein": 104.5,
+     "alle": 283.9,
+     "cpuEin": 94
+    },
+    "ruhe": {
+     "ein": 90.3,
+     "alle": 231.3,
+     "n": 590,
+     "von": "2026-11-17"
+    },
+    "f": 1.227,
+    "fEin": 1.157,
+    "fAlle": 1.227,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-17T20:52:14.969Z",
+   "abdruck": "f82f9a72ef5e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 187 s gerissen: Stille seit 21.8 s nach 187.1 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 3.12,
+   "grund": "Deckel 187 s gerissen: Stille seit 21.8 s nach 187.1 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 187.2,
+   "fremd": {
+    "s": 192.5,
+    "takte": 89,
+    "fremdS": 72.98,
+    "kerne": 0.379,
+    "fensterKerne": 0.606,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      28.67
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.73
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.98
+     ]
+    ],
+    "dienerS": 72.61,
+    "diener": [
+     [
+      "dwm.exe",
+      40.36
+     ],
+     [
+      "System",
+      21.81
+     ]
+    ],
+    "geraetS": 55.09,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.75
+     ],
+     [
+      "svchost.exe",
+      22.22
+     ],
+     [
+      "SearchIndexer.exe",
+      1.55
+     ]
+    ],
+    "eigenS": 379.28,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.468,
+     "nach": 0.301,
+     "station": 1.382
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 100.9,
+     "alle": 264.2,
+     "cpuEin": 109
+    },
+    "nach": {
+     "ein": 104.5,
+     "alle": 283.9,
+     "cpuEin": 94
+    },
+    "ruhe": {
+     "ein": 90.3,
+     "alle": 231.3,
+     "n": 590,
+     "von": "2026-11-17"
+    },
+    "f": 1.227,
+    "fEin": 1.157,
+    "fAlle": 1.227,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-17T20:52:14.969Z",
+   "abdruck": "e7c0004747b5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 187 s gerissen: Stille seit 21.8 s nach 187.1 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 3.12,
+   "grund": "Deckel 187 s gerissen: Stille seit 21.8 s nach 187.1 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 187.2,
+   "fremd": {
+    "s": 192.5,
+    "takte": 89,
+    "fremdS": 72.98,
+    "kerne": 0.379,
+    "fensterKerne": 0.606,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      28.67
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.73
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.98
+     ]
+    ],
+    "dienerS": 72.61,
+    "diener": [
+     [
+      "dwm.exe",
+      40.36
+     ],
+     [
+      "System",
+      21.81
+     ]
+    ],
+    "geraetS": 55.09,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.75
+     ],
+     [
+      "svchost.exe",
+      22.22
+     ],
+     [
+      "SearchIndexer.exe",
+      1.55
+     ]
+    ],
+    "eigenS": 379.28,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.468,
+     "nach": 0.301,
+     "station": 1.382
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 100.9,
+     "alle": 264.2,
+     "cpuEin": 109
+    },
+    "nach": {
+     "ein": 104.5,
+     "alle": 283.9,
+     "cpuEin": 94
+    },
+    "ruhe": {
+     "ein": 90.3,
+     "alle": 231.3,
+     "n": 590,
+     "von": "2026-11-17"
+    },
+    "f": 1.227,
+    "fEin": 1.157,
+    "fAlle": 1.227,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-17T20:52:14.969Z",
+   "abdruck": "43df0a4d5830",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
    "modus": "session"
   }
  }
