@@ -3,7 +3,7 @@
  "je": {
   "affekt.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.62 dB · töten -0.03 -1.15 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.12 dB · pflegen 0.25 8.99 dB · nach 30 min 0.2463 8.75 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.6 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 1 s (≤ 2) [2.6 -0.68 -0.47 -0.32 -0.2 -0.14 -0.1 -0.06 -0.04 0] GRÜN an c8c840c9 radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.72 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.67 dB · töten -0.03 -1.18 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.8 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.433 s (≤ 2) [2.8 -0.8 -0.53 -0.36 -0.23 -0.16 -0.1 -0.07 -0.05 0] GRÜN an c8c840c9 gtx",
+   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.62 dB · töten -0.03 -1.15 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.12 dB · pflegen 0.25 8.99 dB · nach 30 min 0.2463 8.75 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.6 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 1 s (≤ 2) [2.6 -0.68 -0.47 -0.32 -0.2 -0.14 -0.1 -0.06 -0.04 0] GRÜN an c8c840c9 radeon · Tag first GRÜN: fällen -0.12 -4.72 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.63 dB · töten -0.03 -1.18 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.78 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.467 s (≤ 2) [2.78 -0.79 -0.53 -0.35 -0.23 -0.15 -0.1 -0.07 -0.05 0] GRÜN an ee9c1965 gtx",
    "stationen": [
     {
      "id": "affekt.K1#1",
@@ -29,10 +29,9 @@
      "id": "affekt.K1#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Tag first GRÜN: fällen -0.12 -4.72 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.67 dB · töten -0.03 -1.18 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.8 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.433 s (≤ 2) [2.8 -0.8 -0.53 -0.36 -0.23 -0.16 -0.1 -0.07 -0.05 0] GRÜN",
-     "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs +4)",
-     "gehalten": true,
+     "zahl": "Tag first GRÜN: fällen -0.12 -4.72 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.63 dB · töten -0.03 -1.18 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.78 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.467 s (≤ 2) [2.78 -0.79 -0.53 -0.35 -0.23 -0.15 -0.1 -0.07 -0.05 0] GRÜN",
+     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -5734,16 +5733,16 @@
   },
   "karte2.planet.kopplung.bahn-klima": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.bahn-klima#1 radeon: Station seit der Messung geändert · karte2.planet.kopplung.bahn-klima#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kopplung.bahn-klima#1 radeon: ROT: Gipfel -3880.4/198.937/-3745.6, 1335 freie Punkte 49.024–199.706 m über dem Meer · winter Bild 83.728 m · Gesetz 82.203 m (Versatz -160, Treffer 0.856 aus 1335, Falsch null aus 0) · fruehling Bild 85.026 m · Gesetz 83.935 m (Versatz -106, Treffer 0.836 aus 1314, Falsch 0.25 aus 4) · sommer Bild 156.183 m · Gesetz 160.162 m (Versatz 0, Treffer 0.854 aus 412, Falsch 0.008 aus 787) · herbst Bild 140.679 m · Gesetz 144.567 m (Versatz -24, Treffer 0.848 aus 650, Falsch 0.004 aus 553) · Sommer − Winter 72.455 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an ee9c1965 · karte2.planet.kopplung.bahn-klima#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kopplung.bahn-klima#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "Gipfel -3880.4/198.937/-3745.6, 1335 freie Punkte 49.024–199.706 m über dem Meer · winter Bild 83.728 m · Gesetz 82.203 m (Versatz -160, Treffer 0.856 aus 1335, Falsch null aus 0) · fruehling Bild 85.026 m · Gesetz 83.935 m (Versatz -106, Treffer 0.836 aus 1314, Falsch 0.25 aus 4) · sommer Bild 156.183 m · Gesetz 160.162 m (Versatz 0, Treffer 0.854 aus 412, Falsch 0.008 aus 787) · herbst Bild 140.679 m · Gesetz 144.567 m (Versatz -24, Treffer 0.848 aus 650, Falsch 0.004 aus 553) · Sommer − Winter 72.455 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3",
+     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
+     "grund": "ROT: Gipfel -3880.4/198.937/-3745.6, 1335 freie Punkte 49.024–199.706 m über dem Meer · winter Bild 83.728 m · Gesetz 82.203 m (Versatz -160, Treffer 0.856 aus 1335, Falsch null aus 0) · fruehling Bild 85.026 m · Gesetz 83.935 m (Versatz -106, Treffer 0.836 aus 1314, Falsch 0.25 aus 4) · sommer Bild 156.183 m · Gesetz 160.162 m (Versatz 0, Treffer 0.854 aus 412, Falsch 0.008 aus 787) · herbst Bild 140.679 m · Gesetz 144.567 m (Versatz -24, Treffer 0.848 aus 650, Falsch 0.004 aus 553) · Sommer − Winter 72.455 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -5814,7 +5813,7 @@
   },
   "karte2.planet.kosmos.sternhimmel": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.sternhimmel#1 radeon: Konsum seit der Messung geändert (R6: stamm/daten.js, stamm/stoff-material.js) · karte2.planet.kosmos.sternhimmel#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.sternhimmel#1 radeon: Konsum seit der Messung geändert (R6: stamm/daten.js, stamm/stoff-material.js) · karte2.planet.kosmos.sternhimmel#1 gtx: Konsum seit der Messung geändert (R6: stamm/daten.js, stamm/stoff-material.js)",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.sternhimmel#1",
@@ -5833,8 +5832,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js, stamm/stoff-material.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -5921,16 +5921,16 @@
   },
   "karte2.planet.wetter.klimazonen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.klimazonen#1 radeon: Station seit der Messung geändert · karte2.planet.wetter.klimazonen#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.klimazonen#1 radeon: ROT: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 83.728 m · Gesetz 82.203 m (Versatz -160, Treffer 0.856 aus 1335, Falsch null aus 0) · sommer Bild 156.183 m · Gesetz 160.162 m (Versatz 0, Treffer 0.854 aus 412, Falsch 0.008 aus 787) · Sommer − Winter 72.455 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an ee9c1965 · karte2.planet.wetter.klimazonen#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.wetter.klimazonen#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 83.728 m · Gesetz 82.203 m (Versatz -160, Treffer 0.856 aus 1335, Falsch null aus 0) · sommer Bild 156.183 m · Gesetz 160.162 m (Versatz 0, Treffer 0.854 aus 412, Falsch 0.008 aus 787) · Sommer − Winter 72.455 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3",
+     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
+     "grund": "ROT: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 83.728 m · Gesetz 82.203 m (Versatz -160, Treffer 0.856 aus 1335, Falsch null aus 0) · sommer Bild 156.183 m · Gesetz 160.162 m (Versatz 0, Treffer 0.854 aus 412, Falsch 0.008 aus 787) · Sommer − Winter 72.455 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6028,16 +6028,16 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: Station seit der Messung geändert · karte2.same.kopplung.kaskade#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +76 Pixel je Pixel (neu 426 − Rauschen 350; Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3 an ee9c1965 · karte2.same.kopplung.kaskade#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "trocken nach 60 s 1 brennende Zellen, Flammen im Bild +76 Pixel je Pixel (neu 426 − Rauschen 350; Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3",
+     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
+     "grund": "ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +76 Pixel je Pixel (neu 426 − Rauschen 350; Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6325,7 +6325,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 176,
+  "konsum": 180,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6495,10 +6495,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 164
+  "ohne": 160
  },
  "kopfVoll": "ee9c196544e4376ea20c95921c852ad931bc1604",
- "zeit": "2026-11-17T02:46:12.773Z",
+ "zeit": "2026-11-17T02:57:35.107Z",
  "vorher": "ee9c1965",
  "bilanz": {
   "gewinn": [],
