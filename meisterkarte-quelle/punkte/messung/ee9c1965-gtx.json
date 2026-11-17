@@ -1,7 +1,7 @@
 {
  "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
  "geraet": "gtx",
- "zeit": "2026-11-17T02:33:30.916Z",
+ "zeit": "2026-11-17T02:52:52.022Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "luftwasser.K3#1": {
@@ -72,27 +72,97 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "affekt.K1#2": {
+   "gruen": true,
+   "zahl": "Tag first GRÜN: fällen -0.12 -4.72 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.63 dB · töten -0.03 -1.18 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.78 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.467 s (≤ 2) [2.78 -0.79 -0.53 -0.35 -0.23 -0.15 -0.1 -0.07 -0.05 0] GRÜN",
+   "exit": 0,
+   "minuten": 0.17,
+   "gpu": "nvidia/pascal",
+   "konsum": "k1b02f4b9122c",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k99b1b7162324",
+   "s": 9.4,
+   "fremd": {
+    "s": 10.8,
+    "takte": 5,
+    "fremdS": 3.97,
+    "kerne": 0.368,
+    "fensterKerne": 0.368,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.45
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.75
+     ],
+     [
+      "Explorer.EXE",
+      0.56
+     ]
+    ],
+    "dienerS": 3.42,
+    "diener": [
+     [
+      "dwm.exe",
+      1.16
+     ],
+     [
+      "System",
+      1.09
+     ]
+    ],
+    "geraetS": 2.53,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.69
+     ],
+     [
+      "svchost.exe",
+      0.69
+     ],
+     [
+      "SearchIndexer.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 24.97,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-17T02:52:52.022Z",
+   "abdruck": "10c341532eeb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "k702ce0a0a961": "dVTRjpswEPyXPLblnAAOjqV7cJJT76pWSqT+wNpeAwmByIajTdV/ryCQBLjuU4JmmPHs4D+zM6gjxPh0cEU+47NPsy8zB+/oObTvaJ8ObsZncxUCZVxchwghNg1M2fRcOpKlkoDMITmhV9kS0+xJtbSFYgjISf0i6h0hOxKRdS1usxHPz+PXZBJ14ZVgsH+J1H4UAB8DKxeDRA8q0wp3YLNcRn7ASTtsK3YH0o/YC9E4+UBVQq6Hzk0A1Cz4228hXqZ4nQKWXpbmrtdVmsrA5zexesqxUHsXwCRD25HYkupg0ZsdE0xWOTcQYYGmPuOErMgIG6NLVVJ6Z1tIzPvgVn60AL6eeonPlWcenYCUwOQ44wQwj9EOPUQhVSEnvyZ+j3BCC14OSQddzYPIl/dMCCGvUy9Za7yV6I0zLVeRGRCb/b221dmy5k98e8xer2Xaxvdiif1IxKkktadhPMZQDXP+fWrJJaDResfClTd0wJgPQfcFbNsyiV24HTPvh+l4vlzOKXs4CyPidZKdK0xZg0UvPlcdEUOkEeVCvE3AJZxO/SGUj4yOF+fKptCPNuaRT2m7i/g/e7jW37tgmvWkSKlFgHzzQ4zP+W7h5IGMbWpMv21JlVl9VM4as9KTRVH2SKOX10jyWyoBE+LtYYFiG86/btZ7MZ6ftdhPvLcKhS1741Qu5ybkpv0S1Rh9QZthjIN8dCgD0JzU6tFC/+PzoIiXyfouKTbJ5a5yfYVXkV51FR5mXaM9SsiPfcYLs1Caf2t0dmLbCS7X5EDGs6uF+LG+3rxnVORsC5M2VxdJoHIJZOX9Dv/7Dw==",
-  "k99b1b7162324": "dVRdj5swEPwveeyVM18OjqV7cErUXNVTc7qHSn1bmzVwIRDZcFSp+t+rcJAE6O0ToBnv7OzgP4sjqD2keP9qq3LBF58WnxcW3tCxaN7Q3L/aBV+4KgTKuHgvIoT4eoYpkx9rS4pcEpAlZAd0GlNjXtyrjuYphoCctBvR7gjZkYisW3GptXh4mB5TSEwqpwaNwyEy8aMA+BTY2BQkOtDornEP1stl5AecdMVisXslQ4lnIUi7mXaUUCZj1ToAqj3+2AqxmStMcsDaKfLSDj1VQmXg80ujds4x0DonwKxA05PYkiaBNwidEnTRWDtqwoKE+owTsiITbIo2V1ntHE0lsRxMW/mRB3w915IeG0ffKgEpgcmpvxlgmaIZa4hCqkJOfs/07uGABpwSsh66coPIl1dPCCHbuZaiE961GISzRK4iPSISQtJtF5uYdS+Xz2z7HqQ4vYZKPE+aWJXl5jC2R2uagDud2WaQoHH2la0vyIAxH4I++XEXIrEL4ynzOkjP8+XSpexmDkbEduabrXTdgkEnPTY9EUOkEeUifZqBazgchgGUj4zOBqjPYb6V4UY+pd0e0g928B5954R5MZAipbwA+ZcnMZ3zzcDBAZmaXOth05IqvfpfMFssakdWVT0gdbI8WxKQ8uKKdyfE083yHmPq/vz+6+X55po418ad6u5Or0w9iKZy6eqQ6+4PVFP0CU2BKY68SUIZQMJJq6594nB4uBsF8DRb3SnHs2ulbewQ3VWUrPro9vIfx/dHi2YvodwPPnvaUwnv8rsTsfghRPotvltPZv+o4v7wIypyNJXOz1cZyaCxGRT19T7/+w8="
+  "k99b1b7162324": "dVRdj5swEPwveeyVM18OjqV7cErUXNVTc7qHSn1bmzVwIRDZcFSp+t+rcJAE6O0ToBnv7OzgP4sjqD2keP9qq3LBF58WnxcW3tCxaN7Q3L/aBV+4KgTKuHgvIoT4eoYpkx9rS4pcEpAlZAd0GlNjXtyrjuYphoCctBvR7gjZkYisW3GptXh4mB5TSEwqpwaNwyEy8aMA+BTY2BQkOtDornEP1stl5AecdMVisXslQ4lnIUi7mXaUUCZj1ToAqj3+2AqxmStMcsDaKfLSDj1VQmXg80ujds4x0DonwKxA05PYkiaBNwidEnTRWDtqwoKE+owTsiITbIo2V1ntHE0lsRxMW/mRB3w915IeG0ffKgEpgcmpvxlgmaIZa4hCqkJOfs/07uGABpwSsh66coPIl1dPCCHbuZaiE961GISzRK4iPSISQtJtF5uYdS+Xz2z7HqQ4vYZKPE+aWJXl5jC2R2uagDud2WaQoHH2la0vyIAxH4I++XEXIrEL4ynzOkjP8+XSpexmDkbEduabrXTdgkEnPTY9EUOkEeUifZqBazgchgGUj4zOBqjPYb6V4UY+pd0e0g928B5954R5MZAipbwA+ZcnMZ3zzcDBAZmaXOth05IqvfpfMFssakdWVT0gdbI8WxKQ8uKKdyfE083yHmPq/vz+6+X55po418ad6u5Or0w9iKZy6eqQ6+4PVFP0CU2BKY68SUIZQMJJq6594nB4uBsF8DRb3SnHs2ulbewQ3VWUrPro9vIfx/dHi2YvodwPPnvaUwnv8rsTsfghRPotvltPZv+o4v7wIypyNJXOz1cZyaCxGRT19T7/+w8=",
+  "k1b02f4b9122c": "dVRdj9owEPwvPLbNmXwRx1IfzIHKSa0EUv/A2l4ngZAgO7m0VP3vVUICJLnuE6AZzezs4D+LC8gTJPhytGWxYItPiy8LC+/oWDTvaF6OdsEWSxlASBm/DeGcv7YwabJLZUmeCQKigPSMTm0qzPIX2dFcSRGQkWbLmz0hexKRdfP165SaC1SlU4HGgSiUF/nApsDaJiDQgVp3Yj1Yr1aR5zPSDd3w/ZEMww+ck2Y7VRRQqLFT7UOoXfb2m/MtnzlUGWDl5FlhB02pQuF77C4030oZaJwrYJqj6Ul0FSrfHYxOCTqvrR2JUF+FHmWExGSCTdBmMq2ciykFFkNosRe5wD5IOLnUjn52AkIAFdN8U8AiQTP2EAWhDBj5NfN7gjMacApIe2i89CNPPDIhhOzmXvLOeCcxGKdKxJEeEdvb7Zq2bBvafknuP9PdrYSbhD/mMBGxMs3MeRyP1qGCJfs+t2RTUGicU2mrO9qn1AO/b/ymKxLfB5sp87FMz/PEahnSp10o4btZdrbUVQMGneRS90QMMIxCxvnbDFzB+TwsIT2k4fRwtmoL/WxjGXlh2N0i+c8dbvV3rpjlAymS0vWRvf7g0z3fDZwdEInJtB6uLUKp44/K2WBeOaIsqwGp1aqNxCfFPRWXcv72dEC+CZbfXtcHPp2fDT/MvHcKpakG46FYLXXAdPdPlFP0FU2OCY7yUYHwQTHSyGcLw4fPoyJeZ+e7ZtgmV9jaDhWOIxX3FR5n3aA5CShOQ8audqW69WrPN73gak2O5Nb3uxu+bzjfrm8v7QUluZhSZ+3TRVKobQp59Xiz//4D"
  },
  "sitzung": {
-  "start": "2026-11-17T02:33:00.301Z",
-  "ordner": "sitzung-20261117-033300",
+  "start": "2026-11-17T02:52:20.308Z",
+  "ordner": "sitzung-20261117-035220",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.9,
+  "bootS": 5.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "luftwasser.K3#1",
-    "s": 21.9,
-    "takte": 583,
+    "vor": "affekt.K1#2",
+    "s": 24.1,
+    "takte": 599,
     "chunks": 81,
     "nach": null
    }
@@ -100,18 +170,16 @@
   "wegeTueren": [],
   "wanderung": [
    {
-    "probe": "luftwasser.K3#1",
+    "probe": "affekt.K1#2",
     "ort": "wiese",
-    "m": 223.27,
+    "m": 18.01,
     "dreh": 0
    }
   ],
   "messHalt": [
    {
-    "probe": "luftwasser.K3#1",
+    "probe": "affekt.K1#2",
     "gehalten": [
-     "skala",
-     "spiegel",
      "tiere"
     ],
     "offen": []
@@ -120,20 +188,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3516,
-   "frameP95": 25,
-   "taktP95": 10.19,
-   "vramMax": 126.6,
+   "bilder": 2001,
+   "frameP95": 33.54,
+   "taktP95": 20.27,
+   "vramMax": 137.3,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 130,
+   "zapfen": 103,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 136.8,
-  "minuten": 2.34
+  "fahrtS": 114.2,
+  "minuten": 1.98
  }
 }
