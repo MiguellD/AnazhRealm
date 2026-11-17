@@ -636,10 +636,22 @@ class AnazhRealm_siedlung_wege {
                 const f = this._brandStoff(cx + dx, cz + dz);
                 if (!f || !(tK > f.zeile.tZuend)) continue;
                 if (!dx && !dz) continue; // ihre eigene Zelle ist Decke, kein Bett
-                // der nächste Punkt der Nachbarin zur Mitte der Decke, einen Hauch in ihr
+                // der nächste Punkt der Nachbarin zur Mitte der Decke, einen Hauch in ihr; teilt sie eine Kante mit der Decke, zündet
+                // der RAND der Decke auf seiner Länge (`ein`, je Achtel der Zelle ein Eintritt, `_brandWeg`): jeder dort, wo die
+                // Decke nach außen endet (`_lavaDeckeAt` 0 — ab dort steht der Halm, `_wieseGrund`), im Viertelmeter gesucht
                 const ex = (cx + (dx > 0 ? 1 : dx < 0 ? 0 : 0.5)) * cs + dx * 0.01;
                 const ez = (cz + (dz > 0 ? 1 : dz < 0 ? 0 : 0.5)) * cs + dz * 0.01;
-                if (this._brandEntfachen(ex, ez)) n++;
+                const ein = [];
+                if (!dx !== !dz)
+                    for (let i = -4; i <= 4; i++) {
+                        const [qx, qz] = [ex + (dx ? 0 : (i * cs) / 8.02), ez + (dz ? 0 : (i * cs) / 8.02)];
+                        let d = -cs / 8;
+                        while (d < cs / 4 && this._lavaDeckeAt(qx + dx * d, qz + dz * d) > 0) d += 0.25;
+                        ein.push(qx + dx * d, qz + dz * d);
+                    }
+                // ein Akt DIESER Seite (jede Seite trägt die Tat der Lava und zündet aus ihr), zur Uhr des Felds
+                const akt = { art: "brand", w: this.state.spielZeit, x: ex, z: ez, ein: ein.length ? ein : null };
+                if (this._feldAkt(akt, false)) n++;
             }
         return n;
     }
@@ -1281,6 +1293,8 @@ class AnazhRealm_siedlung_wege {
         return {
             farbe: _T.vec3(b[0], b[1], b[2]).mul(q.x),
             kipp: _T.vec3(q.z, 0, q.w),
+            // WIDERLEGT (w28-lava-zuendet): die Glut über die Umkehr des Nacht-Auges (`_nachtAuge(…, true)`) — die dunklen Schollen
+            // stehen unter dem Stäbchen-Anteil, die Umkehr hob sie nachts zehnfach ins Rosa-Rot, die Risse blieben blass
             glut: this._lavaGlutNode(_T, q.y),
         };
     }
