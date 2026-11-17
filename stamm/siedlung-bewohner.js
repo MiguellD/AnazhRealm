@@ -888,7 +888,7 @@ class AnazhRealm_siedlung_bewohner {
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
                     blick: u, begegnet: u, kopfY: u,
                     ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
-                    drehen: u, platz: u,
+                    drehen: u, platz: u, weichen: null,
                     weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
                     tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
                     wagen: u, amSteuer: u,
@@ -2145,22 +2145,60 @@ class AnazhRealm_siedlung_bewohner {
     // (`damageCreature`), erinnert die Gewalt — das EINE Gedächtnis (`_creatureRemember` auf seinem Leib), das Furcht-Gesetz wiegt
     // sie (`gewalt`); bei der nächsten Begegnung lässt er dem Spieler mehr Raum (`_bewohnerSpielerAbstand`). DER ORT ERINNERT
     // (siedlung.K4 Staffel 2): sah ein Bewohner die Tat, trägt das Gedächtnis seines Orts sie als Akte (`settlementCells[k].akten`,
-    // die Uhr der Welt, die letzten `WACHSTUM.aktenMax`) — ihre Furcht bremst sein Wachstum (fachwerk `wachstum`).
+    // die Uhr der Welt, die letzten `WACHSTUM.aktenMax`) — ihre Furcht bremst sein Wachstum (fachwerk `wachstum`); er weicht.
     _bewohnerZeuge(o) {
         const R2 = AnazhRealm.BEWOHNER.zeugeM ** 2;
         const cells = (this.state.worldMeta || {}).settlementCells || {};
+        const stunde = ((((Number.isFinite(this.state.timeOfDay) ? this.state.timeOfDay : 0.5) % 1) + 1) % 1) * 24; // wie der Takt
         for (const S of (this._bewohnerSiedlungen || new Map()).values()) {
             let sah = false;
+            let belegt = null;
             for (const b of S.liste || [])
                 if (b.leib && !b.drinnen && (b.leib.position.x - o.x) ** 2 + (b.leib.position.z - o.z) ** 2 < R2) {
                     this._creatureRemember(b.leib, "gewalt", { von: "spieler" });
                     sah = true;
+                    this._bewohnerWeichen(S, b, o, stunde, (belegt = belegt || new Set(S.liste.map((x) => x.ziel))));
                 }
             const c = sah && cells[S.key];
             if (!c || !c.wachs) continue;
             c.akten = (c.akten || []).concat([{ t: this.state.spielZeit, type: "gewalt" }]);
             c.akten.splice(0, c.akten.length - globalThis.__fachwerkCore.WACHSTUM.aktenMax);
         }
+    }
+    // DER ZEUGE WEICHT (kollektiv#1, w28-zeugen-weichen): wer die Tat am Ort o sah und sie fürchtet (`_kreaturFurchtErinnert` > 0),
+    // verlässt den Kreis, in dem er sie sah — die Flucht aus zweiter Hand des EINEN Furcht-Gesetzes (tetrapoda `fluchtRadius`, B = die
+    // Tat und `zeugeM`). Sein Soll (`_bewohnerSoll`) nennt bis zur nächsten Wende seines Tags den nächsten Stand jenseits des Kreises,
+    // den keiner zum Ziel hat (`belegt`) und dessen Weg (`_bewohnerStrecke`) ihn nie näher an die Tat führt, als er steht (headless
+    // führte der Weg zum nächsten Stand über das Netz 2 m vor ihr vorbei); dann holt ihn sein Tag zurück (`_bewohnerZiel`). Wer hinein
+    // oder jenseits geht, geht weiter; am Steuer bleibt er im Wagen. Bis hier weitete die Furcht nur den Raum des Vorbeigangs (0,5 m).
+    _bewohnerWeichen(S, b, o, stunde, belegt) {
+        if (b.amSteuer || b.ankunft || !b.ziel || !(this._kreaturFurchtErinnert(b.leib) > 0)) return false;
+        const B = { x: o.x, z: o.z, r: AnazhRealm.BEWOHNER.zeugeM };
+        const R = AnazhRealm._furchtGesetz().fluchtRadius(B, null, false);
+        b.weichen = null;
+        const soll = this._bewohnerSoll(b, stunde);
+        if (soll.drinnen || Math.hypot(soll.ziel.x - o.x, soll.ziel.z - o.z) >= R) return false;
+        const p = { x: b.leib.position.x, z: b.leib.position.z };
+        const [T, d2] = [{ minX: o.x, maxX: o.x, minZ: o.z, maxZ: o.z }, (p.x - o.x) ** 2 + (p.z - o.z) ** 2 - 1e-6];
+        const fern = (w) => !!w && [p, ...w].every((e, i, v) => !i || this._streckeBoxAbstand2(T, v[i - 1].x, v[i - 1].z, e.x, e.z) >= d2); // prettier-ignore
+        const fort = [];
+        for (const x of S.liste)
+            for (const k of AnazhRealm.BEWOHNER.staende) {
+                const q = x.orte[k]; // der billige Filter zuerst: jenseits des Kreises, frei, auf seiner Seite der Tat
+                if (!q || belegt.has(q) || Math.hypot(q.x - o.x, q.z - o.z) < R) continue;
+                if ((q.x - p.x) * (p.x - o.x) + (q.z - p.z) * (p.z - o.z) >= 0)
+                    fort.push([Math.hypot(q.x - p.x, q.z - p.z), q]);
+            }
+        fort.sort((a, c) => a[0] - c[0]);
+        const [, ort] = fort.find(([, q]) => fern(this._bewohnerStrecke(S, { ...p }, q, 0))) || [];
+        if (!ort) return false;
+        const bis = this._bewohnerWende(b, stunde, stunde + 24);
+        b.weichen = { ort, plan: soll.ziel, ab: stunde, dauer: bis === null ? 24 : bis - stunde };
+        belegt.add(ort);
+        this._bewohnerUhrNach(S, b);
+        this._bewohnerZiel(b, stunde, true);
+        this._bewohnerWecken(S, b);
+        return true;
     }
 
     // DAS SOLL DER STUNDE (mensch.K2): der Plan des Gesetzes (koerper-core `tagesPlan`) aus dem Samen, der Rolle seines
@@ -2179,7 +2217,12 @@ class AnazhRealm_siedlung_bewohner {
         const o = b.orte;
         const soll = KC.tagesPlan(b.same, b.rolle, stunde, o, this._weatherFieldFor().rain);
         const ort = b.amSteuer && soll.ort === o.werk ? b.wagen.entry.position : soll.ort;
-        return { ziel: soll.drinnen ? o.tuer : ort, drinnen: soll.drinnen, akt: soll.akt };
+        const ziel = soll.drinnen ? o.tuer : ort;
+        // DER ZEUGE WEICHT (`_bewohnerWeichen`): solange sein Plan das Ziel der Tat nennt, bis zur Wende, der Stand jenseits der Tat
+        const W = b.weichen;
+        if (W && ziel === W.plan && (((stunde - W.ab) % 24) + 24) % 24 < W.dauer)
+            return { ziel: W.ort, drinnen: false, akt: soll.akt };
+        return { ziel, drinnen: soll.drinnen, akt: soll.akt };
     }
 
     // DAS GEMÜT DES BEWOHNERS (w28-mensch-menge — der Leser von `b.akt`): die Haltung seines Akts aus dem Gesetz des Tags (koerper
@@ -2247,6 +2290,7 @@ class AnazhRealm_siedlung_bewohner {
     _bewohnerZiel(b, stunde, tuer = false) {
         const soll = this._bewohnerSoll(b, stunde);
         const ziel = soll.ziel;
+        if (tuer && b.weichen && ziel !== b.weichen.ort) b.weichen = null; // sein Tag holt ihn zurück: das Weichen endet
         b.akt = soll.akt;
         if (ziel === b.ziel) return false;
         // DIE LAGE DES TAGS (mensch.K2 Staffel 2: sein Tag ist f(Same, t)): der neue Weg beginnt, wo ihn die Ankunft begänne

@@ -860,8 +860,10 @@ async function menschBuehnen() {
     // Welt-Matrix, wie das Bild ihn zeichnet; im Fenster nach dem echten Frame `_loopRender`) auf 10° zum Spieler zeigt; der
     // kleinste Abstand des Spielers zu ihm und jede Berührung (näher als zwei Kapseln) mit jedem Bewohner draußen. Der
     // Vorbeigang und zwei Gänge ohne Erinnerung (der dritte die Gegenprobe), dann schlägt der Spieler ein Wesen 5 m neben ihm
-    // (`damageCreature`, Quelle Spieler), dann der vierte Gang.
-    // Täter (Selbsttest, EIN Lauf): der starre Kopf · wer steht, macht keinen Platz · der Zeuge vergisst.
+    // (`damageCreature`, Quelle Spieler), dann der vierte Gang — der Zeuge weicht (`_bewohnerWeichen`, kollektiv#1): sein Stand
+    // liegt im Kreis der Tat, am Ende des Gangs (vor dem Warten) steht er weiter von ihr als sein Stand (`fort`); kommt der Spieler
+    // ihm nicht mehr auf `begegnungM` nahe, wendet sich kein Kopf.
+    // Täter (Selbsttest, EIN Lauf): der starre Kopf · wer steht, macht keinen Platz · der Zeuge vergisst · der Zeuge bleibt stehen.
     await buehne("begegnung", async (restore) => {
         const [dt, tag0] = [1 / 60, s.timeOfDay];
         const S = await startDorf(restore);
@@ -911,6 +913,7 @@ async function menschBuehnen() {
         // selbst MUSS er ihn tragen: dort bricht `kopf()` weiter beim Namen
         const traegt = () => !!g.userData.rig || ab(pm, g.position) <= A.BEWOHNER.nahM;
         // EIN GANG (versatz quer zum Weg): je Takt der Kreatur-Takt und die Bewohner, im Fenster der echte Frame aus Ego
+        let tat = null; // der Ort der Tat (der vierte Gang misst, wie weit der Zeuge von ihr fortging)
         const gang = (v) => {
             const a = { x: w.a.x + w.v.x * v, z: w.a.z + w.v.z * v };
             stell(a.x, a.z);
@@ -928,6 +931,7 @@ async function menschBuehnen() {
                 if (e !== null && z.zuS === null && traegt() && gier() <= 10)
                     [z.zuS, z.imBild] = [Math.round((t - e) * 1000) / 1000, !!b.nah && (!echt || (g.visible && imBlick(kopf()[12], kopf()[13], kopf()[14])))]; // prettier-ignore
             }
+            if (tat) z.fort = Math.round((ab(g.position, tat) - ab(stand, tat)) * 1000) / 1000;
             // der Spieler steht am Ende, bis der Bewohner wieder an seinem Ort steht
             for (let i = 0; i < 1800 && !(b.da && !b.weg && !b.platz && ab(g.position, stand) < 0.5); i++) schritt();
             return z;
@@ -935,15 +939,22 @@ async function menschBuehnen() {
         // DER LAUF: der Vorbeigang, zwei Gänge ohne Erinnerung, der Schlag 5 m neben ihm, der vierte Gang
         const lauf = () => {
             g.userData.memory = [];
+            // wer im Lauf davor (ein Täter des Selbsttests) wich, kehrt erst an seinen Stand zurück (die Uhr der Probe steht: er
+            // liest seinen Plan hier, `_bewohnerZiel`)
+            if (b.weichen) [b.weichen, b.ziel] = [null, null];
+            r._bewohnerZiel(b, (((s.timeOfDay % 1) + 1) % 1) * 24, true);
+            for (let i = 0; i < 3600 && !(b.da && !b.weg && !b.platz && ab(g.position, stand) < 0.5); i++) schritt();
             const G = [gang(1), gang(0), gang(0)];
             const ort = spirale(stand.x + 5 - P0.x, stand.z - P0.z, 4, 1.5, (x, z) => offen(x, z) && neben(x, z));
-            r.damageCreature(tier(ort, "wesen"), 1e9, { source: "player" }); // ohne Ort wirft der Wurf beim Namen
+            const opfer = tier(ort, "wesen"); // ohne Ort wirft der Wurf beim Namen
+            tat = { x: opfer.position.x, z: opfer.position.z };
+            r.damageCreature(opfer, 1e9, { source: "player" });
             const furcht = r._kreaturFurchtErinnert(g);
             G.push(gang(0));
             const je = (k) => G.map((x) => x[k]);
             return {
-                ...{ wer: wer(b), furcht, zuS: je("zuS"), amEreignis: G[0].amEreignis },
-                ...{ imBild: je("imBild"), dMin: je("dMin"), beruehrt: je("beruehrt") },
+                ...{ wer: wer(b), furcht, zuS: je("zuS"), amEreignis: G[0].amEreignis, begegnungM: A.BEWOHNER.begegnungM },
+                ...{ imBild: je("imBild"), dMin: je("dMin"), beruehrt: je("beruehrt"), fort: G[3].fort },
             };
         };
         if (!taeter) return lauf();
@@ -952,6 +963,7 @@ async function menschBuehnen() {
             "begegnung-starr": "_bewohnerKopf",
             "begegnung-steht": "_bewohnerPlatz",
             "begegnung-vergessen": "_bewohnerZeuge",
+            "begegnung-bleibt": "_bewohnerWeichen",
         })) {
             const zurueck = [];
             decke(name, () => () => false, zurueck);
@@ -1057,11 +1069,16 @@ function menschUrteil(name, z, soll) {
     }
     // DIE BEGEGNUNG (mensch.K5 Staffel 1): je Gang (der Vorbeigang 2 m daneben, drei durch seinen Stand) der Kopf auf 10° zum
     // Spieler ≤ 0,5 s ab 3 m (als Leib, im Fenster im Bild), kein Bewohner näher als zwei Kapseln; die Gewalt neben ihm weitet
-    // den Abstand des vierten Gangs um ≥ 0,3 m, die Gegenprobe ohne Erinnerung bleibt auf 0,15 m beim zweiten
+    // den Abstand des vierten Gangs um ≥ 0,3 m, die Gegenprobe ohne Erinnerung bleibt auf 0,15 m beim zweiten; nach der Gewalt WEICHT
+    // der Zeuge (`_bewohnerWeichen`): am Ende des vierten Gangs steht er ≥ begegnungM weiter von der Tat als sein Stand; kam der
+    // Spieler ihm dabei nicht auf begegnungM nahe, gab es keine Begegnung und keinen Kopf zu wenden
     if (name === "begegnung") {
         const [zu, d] = [z.zuS, z.dMin];
+        const begegnet = (i) => i < 3 || d[3] <= z.begegnungM;
         soll(
-            zu.every((t) => t !== null && t <= 0.5) && z.amEreignis >= 30 && z.imBild.every(Boolean),
+            zu.every((t, i) => !begegnet(i) || (t !== null && t <= 0.5)) &&
+                z.amEreignis >= 30 &&
+                z.imBild.every((x, i) => !begegnet(i) || x),
             `Kopf-Zuwendung ab 3 m: ${zu.join(" / ")} s (Soll ≤ 0,5, der Vorbeigang ab ${z.amEreignis}° ≥ 30; als Leib im Bild ${z.imBild})`
         );
         soll(
@@ -1072,6 +1089,7 @@ function menschUrteil(name, z, soll) {
             z.furcht > 0 && d[3] - d[1] >= 0.3 && Math.abs(d[2] - d[1]) <= 0.15,
             `die Erinnerung lenkt den Abstand nicht: ohne ${d[1]} · Gegenprobe ${d[2]} · nach der Gewalt ${d[3]} m (Furcht ${z.furcht})`
         );
+        soll(z.fort >= z.begegnungM, `der Zeuge weicht nicht: ${z.fort} m weiter von der Tat als sein Stand (Soll ≥ begegnungM ${z.begegnungM} m)`);
     }
 }
 
@@ -1111,6 +1129,7 @@ module.exports = {
             ["begegnung-starr", /Kopf-Zuwendung/],
             ["begegnung-steht", /Berührung/],
             ["begegnung-vergessen", /die Erinnerung lenkt den Abstand nicht/],
+            ["begegnung-bleibt", /der Zeuge weicht nicht/],
         ],
     },
     urteil: menschUrteil,
