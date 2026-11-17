@@ -660,7 +660,7 @@ class AnazhRealm_netz_identitaet {
         const vp = this.state.vibePass;
         if (!vp || !vp.ready) return { ok: false, grund: "no_vibepass" };
         const was = {
-            what: this._t("pass.geste.werk.was", { name: String(this._werkLabel(name)) }),
+            what: this._t("pass.geste.werk.was", { name: this._werkLabel(name) }),
             value: this._t("pass.geste.buergt"),
             whom: this._t("pass.geste.code.wem"),
         };
@@ -753,7 +753,7 @@ class AnazhRealm_netz_identitaet {
         this._spielerSagt([
             "pass.werk.steht",
             {
-                werk: String(this._werkLabel(ziel)),
+                werk: this._werkLabel(ziel), // das Etikett bleibt Schlüssel (`{ kopf }`)
                 autor: String(this._vibeFingerprint(h.autor)),
             },
         ]);

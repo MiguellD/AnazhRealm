@@ -2579,7 +2579,7 @@ class AnazhRealm_kampf {
                     "bauen.label-grund",
                     {
                         label: Array.isArray(heldP.etikett) ? heldP.etikett : heldP.label || heldP.name,
-                        grund: this._machTorHint(bauRes),
+                        grund: this._machTorZeile(bauRes),
                     },
                 ]);
             return bauRes.ok;

@@ -227,7 +227,12 @@ class AnazhRealm_werkstatt_vorschau {
             return { ok, werk: t.werk, log: ctx.log };
         }
         const res = this.fertigeBlueprint(t.ziel);
-        if (!res.ok) this._spielerSagt(`${AnazhRealm._namensKopf(t.lab)}: ${this._machTorHint(res)}`);
+        if (!res.ok) {
+            // der Name des Ziels als Schlüssel, wenn sein Bauplan ein Etikett trägt (die Chat-Zeile wechselt mit der Sprache)
+            const bp = this.state.blueprints[t.ziel];
+            const label = bp && Array.isArray(bp.etikett) ? AnazhRealm._namensZeile(bp) : AnazhRealm._namensKopf(t.lab);
+            this._spielerSagt(["bauen.label-grund", { label, grund: this._machTorZeile(res) }]);
+        }
         return res;
     }
 
@@ -2525,7 +2530,10 @@ class AnazhRealm_werkstatt_vorschau {
                 // W-C(a)/R-005 — das Mach-Tor spricht AN DER FERTIGEN-Zeile (derselbe EINE Formatter wie Rüstungs-Slot
                 // + Rezeptbuch) und im Spieler-Kanal (Welle L Folge: das Log ist eingeklappt).
                 this._showMachTorHint(row, res);
-                this._spielerSagt(`${AnazhRealm._namensKopf(bp.label || bp.name)}: ${this._machTorHint(res)}`);
+                this._spielerSagt([
+                    "bauen.label-grund",
+                    { label: AnazhRealm._namensZeile(bp, bp.name), grund: this._machTorZeile(res) },
+                ]);
             }
         });
         row.appendChild(btn);
@@ -2552,12 +2560,20 @@ class AnazhRealm_werkstatt_vorschau {
     // Das Label der Welt-Werkstatt, die eine Domäne bedient (Esse/Brennkolben/…) — für die
     // FERTIGEN-Station-Hinweise. Fällt auf das Domänen-Label zurück, wenn kein Bauplan passt.
     _stationLabelForDomain(domain) {
-        if (!domain) return this._t("ui.werkstatt");
+        const z = this._stationZeileForDomain(domain);
+        return Array.isArray(z) ? this._t(z[0], z[1]) : z;
+    }
+
+    // dieselbe Werkstatt als WERT einer Zeile, die später neu gelesen wird (`_machTorZeile`): das Etikett ihres Bauplans oder
+    // die Zeile der Domäne (eine Zeile der Tafel), sonst der Name des Spielers
+    _stationZeileForDomain(domain) {
+        if (!domain) return ["ui.werkstatt"];
         for (const b of Object.values(this.state.blueprints || {})) {
             if (b && b.role === "workshop-station" && this._computeWorkshopDomain(b) === domain)
-                return b.label || b.name;
+                return Array.isArray(b.etikett) ? b.etikett : b.label || b.name;
         }
-        return AnazhRealm._tafelName(AnazhRealm.TOOL_DOMAIN_LABELS, domain);
+        const k = AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[domain];
+        return k ? [k] : String(domain);
     }
 
     // V18.44 — DAS PROFI-SPEC-SHEET (Header/Body/Footer + ein Balken-Primitiv). Liest das BESTEHENDE

@@ -101,7 +101,8 @@ class AnazhRealm_werkstatt_hof {
                     this.renderRecipeBook();
                     if (!res.ok) {
                         this._showMachTorHint(document.getElementById("inventory-equip"), res);
-                        this.log(`Rüstung: ${this._machTorHint(res)}`, "ERROR");
+                        const z = this._machTorZeile(res);
+                        this.log(`Rüstung: ${z ? AnazhRealm._tIn("de", z[0], z[1]) : ""}`, "ERROR");
                     }
                 });
                 el.appendChild(sel);
@@ -447,7 +448,11 @@ class AnazhRealm_werkstatt_hof {
                 // W-C(a)/R-005 — das Mach-Tor spricht AN DER ZEILE (die Konsole
                 // ist zugeklappt — der Log allein erreichte nie jemanden).
                 this._showMachTorHint(row, res);
-                this._spielerSagt(`${label}: ${this._machTorHint(res)}`);
+                // die Zeile, nie ihr Text: Name und Grund wechseln im Chat mit der Sprache
+                this._spielerSagt([
+                    "bauen.label-grund",
+                    { label: bp && Array.isArray(bp.etikett) ? bp.etikett : label, grund: this._machTorZeile(res) },
+                ]);
             }
         });
         row.appendChild(btn);
@@ -631,16 +636,18 @@ class AnazhRealm_werkstatt_hof {
         } catch {
             /* wariness optional */
         }
-        // Mood-Label aus beiden Quellen (froh/trübe × neugierig/wachsam/scheu) — ehrlich geerdet.
+        // Mood-Label aus beiden Quellen (froh/trübe × neugierig/wachsam/scheu) — ehrlich geerdet. Jedes Wort ist eine Kennung,
+        // gezeigt wird ihr Name der Tafel (`WESEN_STIMMUNG`, `EMOTION_LABEL`) in der Sprache von jetzt.
         const w = prof.wariness;
         const temper = w > 0.5 ? "scheu" : w > 0.15 ? "wachsam" : prof.bond > 0.4 ? "vertraut" : "neugierig";
-        prof.moodLabel = (prof.emotion === "sad" ? "trübe" : "froh") + " · " + temper;
+        const wort = (id) => AnazhRealm._tafelName(AnazhRealm.WESEN_STIMMUNG, id);
+        prof.moodLabel = wort(prof.emotion === "sad" ? "truebe" : "froh") + " · " + wort(temper);
         // V18.107 — D4-VOLL: das SEELEN-Temperament (stabil, aus der Substanz) wird
         // sichtbar — die Hof-Karte zeigt, WER das Wesen IST (nicht nur wie es sich
         // gerade fühlt). Vision-Mechanik sichtbar (V9.95-c-Disziplin).
         try {
             prof.temperament = this._creatureTemperament(creature);
-            if (prof.temperament && prof.temperament !== temper) prof.moodLabel += ` · ${prof.temperament}`;
+            if (prof.temperament && prof.temperament !== temper) prof.moodLabel += ` · ${wort(prof.temperament)}`;
         } catch {
             /* temperament optional */
         }
@@ -652,7 +659,8 @@ class AnazhRealm_werkstatt_hof {
             const es = this._emotionState(vec);
             if (es && es.dominant && es.intensity > 0.12) {
                 prof.emotionState = es;
-                prof.moodLabel += ` · ${es.dominant} ${(es.intensity * 100) | 0}%`;
+                const gefuehl = AnazhRealm._tafelName(AnazhRealm.EMOTION_LABEL, es.dominant);
+                prof.moodLabel += ` · ${gefuehl} ${(es.intensity * 100) | 0}%`;
             }
             // W-B — der VOLLE 6-Achsen-Vektor reist mit (Kopie): die Hof-Karte
             // zeigt das Innenleben als Fenster, nicht mehr nur das Destillat.
@@ -823,6 +831,13 @@ class AnazhRealm_werkstatt_hof {
         host.appendChild(this._hofBuildSpecSheet(this._creatureProfile(creature)));
     }
 
+    // der Name eines getragenen Dings (Werkzeug oder Bauplan der Rüstung): sein `label` liest das Etikett in der Sprache von
+    // jetzt (`_etikett`), ein eigenes trägt den Namen des Spielers — bis hier stand die Kennung im Chip
+    _habeName(n) {
+        const d = (this.state.tools && this.state.tools[n]) || (this.state.blueprints && this.state.blueprints[n]);
+        return (d && d.label) || String(n);
+    }
+
     _natureLevelClass(val) {
         return val >= 2.25 ? "lvl-3" : val >= 1.5 ? "lvl-2" : val >= 0.75 ? "lvl-1" : "lvl-0";
     }
@@ -939,11 +954,14 @@ class AnazhRealm_werkstatt_hof {
             .slice(0, 5);
         const natBars = tagEntries.map(([k, v]) =>
             this._specBar(
-                k,
+                AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, k), // der Name der Achse aus der Tafel, nie die Kennung
                 v / 3,
                 v.toFixed(2),
                 this._natureLevelClass(v),
-                this._t("hof.natur-titel", { tag: k, wert: v.toFixed(2) })
+                this._t("hof.natur-titel", {
+                    tag: AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, k),
+                    wert: v.toFixed(2),
+                })
             )
         );
         if (natBars.length) {
@@ -1009,8 +1027,8 @@ class AnazhRealm_werkstatt_hof {
         // FOOTER — die HABE (Werkzeug/Rüstung/Boosts) als Chips + der würdevolle Abschied.
         const footChildren = [];
         const habe = [];
-        if (prof.equipped && prof.equipped.tool) habe.push("⚒ " + prof.equipped.tool);
-        if (prof.equipped && prof.equipped.armor) habe.push("⛨ " + prof.equipped.armor);
+        if (prof.equipped && prof.equipped.tool) habe.push("⚒ " + this._habeName(prof.equipped.tool));
+        if (prof.equipped && prof.equipped.armor) habe.push("⛨ " + this._habeName(prof.equipped.armor));
         for (const b of prof.boosts || []) if (b && (b.label || b.source)) habe.push("✺ " + (b.label || b.source));
         if (habe.length)
             footChildren.push(
@@ -1113,7 +1131,8 @@ class AnazhRealm_werkstatt_hof {
         return {
             soul,
             soulLabel: (custom && custom.label) || (builtin && builtin.label) || soul,
-            name: typeof p.name === "string" && p.name.trim() ? p.name.trim().slice(0, 48) : this._t("hof.du"),
+            // unbenannt (null) heißt er, wie die Tafel ihn nennt — in der Sprache von jetzt
+            name: typeof p.name === "string" && p.name.trim() ? p.name.trim().slice(0, 48) : this._t("ui.schoepfer-2"),
             mode: typeof this.getGameMode === "function" ? this.getGameMode() : "frieden",
             stats,
             tags: p.statTags || {},
@@ -1140,7 +1159,10 @@ class AnazhRealm_werkstatt_hof {
             { class: "spec-id" },
             this._el("span", { class: "spec-name soul-" + prof.soul, text: prof.name }),
             this._el("span", { class: "spec-soul-label", text: prof.soulLabel }),
-            this._el("span", { class: "ich-mode-chip mode-" + prof.mode, text: prof.mode })
+            this._el("span", {
+                class: "ich-mode-chip mode-" + prof.mode,
+                text: AnazhRealm._tafelName(AnazhRealm.SPIELMODUS_NAMEN, prof.mode),
+            })
         );
         const vigor = prof.hpMax > 0 ? Math.max(0, Math.min(1, prof.hp / prof.hpMax)) : 0;
         const v5 = Math.round(vigor * 5);
@@ -1216,11 +1238,14 @@ class AnazhRealm_werkstatt_hof {
             .slice(0, 6);
         const natBars = tagEntries.map(([k, v]) =>
             this._specBar(
-                k,
+                AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, k), // der Name der Achse aus der Tafel, nie die Kennung
                 v / 3,
                 v.toFixed(2),
                 this._natureLevelClass(v),
-                this._t("hof.natur-titel", { tag: k, wert: v.toFixed(2) })
+                this._t("hof.natur-titel", {
+                    tag: AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, k),
+                    wert: v.toFixed(2),
+                })
             )
         );
         const rightCol = this._el(
@@ -1236,8 +1261,8 @@ class AnazhRealm_werkstatt_hof {
         // FOOTER — die getragene Habe (Werkzeug/Rüstung) als Chips; Boosts leben im EINEN Band
         // (#ich-boosts-host). Das Chip-Glyph steht bewusst nicht hier — die Source-Probe sucht es.
         const habe = [];
-        if (prof.equipped.tool) habe.push("⚒ " + prof.equipped.tool);
-        if (prof.equipped.armor) habe.push("⛨ " + prof.equipped.armor);
+        if (prof.equipped.tool) habe.push("⚒ " + this._habeName(prof.equipped.tool));
+        if (prof.equipped.armor) habe.push("⛨ " + this._habeName(prof.equipped.armor));
         const footer = this._el(
             "div",
             { class: "spec-footer hof-spec-footer" },
@@ -1522,7 +1547,8 @@ class AnazhRealm_werkstatt_hof {
         cmdHost.appendChild(
             this._el("span", {
                 class: "hof-section-cmd-label",
-                text: this._t("hof.alle-sektion", { sektion: labels[active] || active }),
+                // der Name der Sektion als Zeile der Tafel (bis hier stand ihr Schlüssel „hof.sektion-wolf“ im Satz)
+                text: this._t("hof.alle-sektion", { sektion: labels[active] ? [labels[active]] : active }),
             })
         );
         for (const [lbl, task] of [
@@ -2049,6 +2075,19 @@ _stammZonen(AnazhRealm, [AnazhRealm_werkstatt_hof]);
 // gibt sie an die KI/das Journal/die UI als REICHEN Zustand statt sechs Zahlen.
 // Je Achse ihr Schlüssel der Sprach-Tafel (`gefuehl.*`); jeder Leser ruft `_t` — die KI hört das Gefühl in der Sprache
 // des Spielers wie die Leiste.
+// Die Wörter der Stimmung eines Wesens im Hof (`_creatureProfile`): je Kennung (froh/trübe, das Temper aus der Wariness, das
+// Temperament der Gattung, tetrapoda `temperament.profile`) ihr Schlüssel der Sprach-Tafel.
+AnazhRealm.WESEN_STIMMUNG = Object.freeze({
+    froh: "hof.stimmung.froh",
+    truebe: "hof.stimmung.truebe",
+    scheu: "hof.wesen.scheu",
+    wachsam: "hof.wesen.wachsam",
+    vertraut: "hof.wesen.vertraut",
+    neugierig: "hof.wesen.neugierig",
+    wild: "hof.wesen.wild",
+    wehrhaft: "hof.wesen.wehrhaft",
+    sanft: "hof.wesen.sanft",
+});
 AnazhRealm.EMOTION_LABEL = Object.freeze({
     joy: "gefuehl.freude",
     awe: "gefuehl.ehrfurcht",

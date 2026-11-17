@@ -450,7 +450,7 @@ class AnazhRealm_feld_leben {
             spawn_studio: (a) => {
                 const name = typeof a[0] === "string" ? this._studioBlueprintForWord(a[0].toLowerCase()) : null;
                 const bp = name && this.state.blueprints ? this.state.blueprints[name] : null;
-                const was = (bp && bp.label) || (name && this._werkLabel(name)) || s(a[0]);
+                const was = (bp && (bp.etikett || bp.label)) || (name && this._werkLabel(name)) || s(a[0]); // Etikett: Zeile
                 if (name && this._studioWerkVerb(name) === "praegung") return ["tat.praegt", { was }];
                 return ["tat.studio", { n: n(a[2]), was, ort: pos(a[1]) }];
             },
@@ -3629,7 +3629,7 @@ class AnazhRealm_feld_leben {
         const ops = new Map();
         for (const e of log || []) {
             if (!e || e.event !== "ergebnis") continue;
-            const key = e.op + "|" + (e.art || "");
+            const key = e.op + "|" + JSON.stringify(e.art || ""); // die Art: ein Wort, eine Zeile oder `{ kopf }`
             let a = ops.get(key);
             if (!a) ops.set(key, (a = { art: e.art, verb: e.verb, gewollt: 0, gesetzt: 0, gruende: {}, folgt: null }));
             a.gewollt += e.gewollt || 0;
@@ -3693,7 +3693,8 @@ class AnazhRealm_feld_leben {
     _werkLabel(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         const rec = !bp && this._foundry && this._foundry.recipes ? this._foundry.recipes[name] : null;
-        return AnazhRealm._namensKopf((bp && bp.label) || (rec && rec.lab) || name);
+        // ein Etikett bleibt Schlüssel (`{ kopf }`, wechselt mit der Sprache), ein Rezept trägt den Namen seines Studios (Daten)
+        return bp ? AnazhRealm._namensZeile(bp, name) : AnazhRealm._namensKopf((rec && rec.lab) || name);
     }
 
     // Das Grundriss-Gesetz einer Art: { preset, pre (die Zeile des Gesetzbuchs der Architektur), rec (die des Buchs) } für ein

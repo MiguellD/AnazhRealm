@@ -685,9 +685,10 @@ class AnazhRealm {
                 fahrt: null, // { entry, stimme }
             },
             player: {
-                // Avatar-Name (Default "Schöpfer"), editierbar, persistiert in localStorage; der LLM-System-Prompt
-                // nutzt ihn, damit Grok dich beim Namen ansprechen kann.
-                name: "Schöpfer",
+                // Avatar-Name, editierbar, persistiert in localStorage; der LLM-System-Prompt nutzt ihn, damit Grok dich beim
+                // Namen ansprechen kann. null = unbenannt: wer ihn zeigt, liest den Namen der Tafel (`ui.schoepfer-2`) in
+                // der Sprache von jetzt — bis hier stand hier „Schöpfer", ein Wort des Spiels als Daten des Spielers.
+                name: null,
                 // Ring 5 V2 — Spieler-Seele. Der Mensch (human) + koerper_-Baupläne
                 // mit Multi-Mesh-Group + sin/cos-Animation. Ammo-Body bleibt
                 // identisch (rein visuell). Default "human".

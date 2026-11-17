@@ -1572,8 +1572,13 @@ class AnazhRealm_werkstatt_hud {
         name.textContent = activity;
         const source = document.createElement("span");
         source.className = "source";
+        // die Gesetze der Gefühle (`emotion:<achse>`, feld-sprache) heißen wie ihr Gefühl in der Sprache von jetzt — bis hier
+        // stand die Kennung „emotion:joy“ im Hof
+        const quelle = /^emotion:/.test(rule.source || "")
+            ? AnazhRealm._tafelName(AnazhRealm.EMOTION_LABEL, rule.source.slice(8))
+            : rule.source;
         source.textContent =
-            (geber || (src === "nexus" ? this._t("hud.nexus") : src === "llm" ? this._t("hud.grok") : rule.source)) +
+            (geber || (src === "nexus" ? this._t("hud.nexus") : src === "llm" ? this._t("hud.grok") : quelle)) +
             (rule.pinned ? " ★" : "");
         const status = document.createElement("span");
         status.className = "rule-status" + (permanent ? " perma" : "");
@@ -2249,13 +2254,15 @@ class AnazhRealm_werkstatt_hud {
             });
         }
         if (playerInput) {
-            playerInput.value = this.state.player.name || "Schöpfer";
+            // leer = unbenannt: der Platzhalter des Felds trägt den Namen der Tafel (`ui.schoepfer-2`)
+            playerInput.value = this.state.player.name || "";
             playerInput.addEventListener("input", () => {
-                const v = (playerInput.value || "").trim().slice(0, 32) || "Schöpfer";
+                const v = (playerInput.value || "").trim().slice(0, 32) || null;
                 this.state.player.name = v;
                 if (typeof localStorage !== "undefined") {
                     try {
-                        localStorage.setItem("anazh.player.name", v);
+                        if (v) localStorage.setItem("anazh.player.name", v);
+                        else localStorage.removeItem("anazh.player.name");
                     } catch {
                         /* ignore */
                     }
