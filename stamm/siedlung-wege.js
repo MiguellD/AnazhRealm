@@ -681,7 +681,6 @@ class AnazhRealm_siedlung_wege {
         const cs = AnazhRealm.LIFE_FIELD.cell;
         const [neu, zelle] = [new Set(), this._lavaJeZelle()];
         for (const a of I.lava) {
-            this._lavaZuendet(a); // der Rand der heißen Decke zündet das Bett daneben (feld-leben)
             const g = Math.round(this._lavaWaerme(a) * 255);
             if (gemalt.get(a) === g) continue;
             gemalt.set(a, g);
@@ -690,6 +689,9 @@ class AnazhRealm_siedlung_wege {
             neu.add(cx + "," + cz);
             this._deckeMalen(cx, cz, (s, x0, z0, x1, z1) => this._lavaFlaeche(s, x0, z0, x1, z1, zelle));
         }
+        // der Rand der heißen Decke zündet das Bett daneben — NACH dem Malen: er sucht sein Ende in den Bytes der Decke
+        // (`_lavaZuendet`; davor lagen sie leer, die Eintritte standen 2 m in der Zelle der Lava: gate:stand-takt L2-DECKE)
+        for (const a of I.lava) this._lavaZuendet(a);
     }
 
     // Die EINE Ausdehnung einer Form um ihre Achse (Malen und Siedlungs-Hülle): ein gedrehter Kasten reicht bis zur

@@ -95,19 +95,22 @@ class AnazhRealm_feld_leben {
     // DIE FRONT EINER BRENNENDEN ZELLE ALS NARBE (w28-brand-bild): wie weit die Ellipse ihres Eintritts (`_brandZuenden`) den Ort zur
     // Uhr des Brands verzehrte — 0 vor der Flamme, über ihre Verweilzeit `tr` auf 1 (der versengte Saum). Bis hier trug nur die
     // ausgebrannte Zelle Asche: die Halme standen grün vor den Flammen, bis das Quadrat auf einmal grau fiel.
-    // Der Weg der Front von ihrem Eintritt zu (x, z) im Maß ihrer Ellipse (m): |v| − ecc·v·ψ, das Minimum über ihre Eintritte
-    // (`ein` [x, z, …]: ein Rand, der auf seiner Länge zündet — die Lava, `_lavaZuendet`; sonst der EINE Punkt ex/ez).
-    _brandWeg(b, x, z, ecc, px, pz) {
+    // Der Weg der Front von ihrem Eintritt im Maß ihrer Ellipse → die Funktion (x, z) in m: |v| − ecc·v·ψ, das Minimum über ihre
+    // Eintritte (`ein` [x, z, …]: der Rand der Lava zündet auf seiner Länge, `_lavaZuendet`; sonst der EINE Punkt). EIN Ruf je Leser.
+    _brandWeg(b, ecc, px, pz) {
         const E = b.ein || [b.ex, b.ez];
-        let m = Infinity;
-        for (let i = 0; i < E.length; i += 2)
-            m = Math.min(m, Math.hypot(x - E[i], z - E[i + 1]) - ecc * ((x - E[i]) * px + (z - E[i + 1]) * pz));
-        return m;
+        return (x, z) => {
+            let m = Infinity;
+            for (let i = 0; i < E.length; i += 2)
+                m = Math.min(m, Math.hypot(x - E[i], z - E[i + 1]) - ecc * ((x - E[i]) * px + (z - E[i + 1]) * pz));
+            return m;
+        };
     }
     _brandFront(b) {
         const [k, s, t, px, pz] = [1 / (b.R * (1 - b.ecc)), Math.max(b.tr, 1), this._brandUhr, b.kopf[0], b.kopf[1]];
+        const weg = this._brandWeg(b, b.ecc, px, pz);
         const front = (x, z) => {
-            const q = (t - b.t0 - this._brandWeg(b, x, z, b.ecc, px, pz) * k) / s;
+            const q = (t - b.t0 - weg(x, z) * k) / s;
             return q <= 0 ? 0 : q >= 1 ? 1 : q;
         };
         return { asche: 1, busch: 0, wald: 0, front };
@@ -2770,7 +2773,8 @@ class AnazhRealm_feld_leben {
         }
         const cs = AnazhRealm.LIFE_FIELD.cell;
         const k = 1 / (T.R * (1 - T.ecc));
-        const zeit = (x, z) => this._brandWeg({ ex, ez, ein }, x, z, T.ecc, T.px, T.pz) * k;
+        const weg = this._brandWeg({ ex, ez, ein }, T.ecc, T.px, T.pz);
+        const zeit = (x, z) => weg(x, z) * k;
         // die erste Berührung der Fläche [x0, x0 + cs] × [z0, z0 + cs] → [Zeit, x, z]
         const ankunft = (x0, z0) => {
             const [x1, z1] = [x0 + cs, z0 + cs];
@@ -3028,7 +3032,7 @@ class AnazhRealm_feld_leben {
             const N = Math.max(B.winkelMin, Math.min(B.winkel, Math.round((B.winkel * B.nahM) / d), umfang));
             const wt = tafel(N);
             let [s, naechste, vx, vz] = [0, 0, null, null];
-            const E = b.ein || [b.ex, b.ez]; // je Eintritt seine Ellipse, gezeichnet, wo keine andere sie schon verzehrte
+            const [E, weg] = [b.ein || [b.ex, b.ez], b.ein && this._brandWeg(b, b.ecc, px, pz)]; // je Eintritt seine Ellipse, gezeichnet, wo keine andere sie schon verzehrte
             for (let j = 0; j < E.length; j += 2)
                 for (let i = 0; i <= N; i++) {
                     if (!i) [s, naechste, vx, vz] = [0, 0, null, null];
@@ -3036,8 +3040,7 @@ class AnazhRealm_feld_leben {
                     const Rt = (b.R * (1 - b.ecc)) / (1 - b.ecc * c);
                     const r = (t - b.t0) * Rt;
                     const [x, z] = [E[j] + r * (px * c - pz * sn), E[j + 1] + r * (pz * c + px * sn)];
-                    if (b.ein && this._brandWeg(b, x, z, b.ecc, px, pz) < (t - b.t0) * b.R * (1 - b.ecc) - 0.01)
-                        continue;
+                    if (weg && weg(x, z) < (t - b.t0) * b.R * (1 - b.ecc) - 0.01) continue;
                     if (vx !== null) s += Math.sqrt((x - vx) * (x - vx) + (z - vz) * (z - vz));
                     [vx, vz] = [x, z];
                     if (s < naechste || x < x0 || x >= x0 + K || z < z0 || z >= z0 + K) continue;
