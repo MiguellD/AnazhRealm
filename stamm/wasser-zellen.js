@@ -1957,12 +1957,9 @@ class AnazhRealm_wasser_zellen {
         const stand = `${werke.map((cl) => cl.key).join(";")}|${edits.length}|${kacheln}`;
         if (stand === this._stauStand) return;
         this._stauStand = stand;
-        if (this._stauHoert !== w) {
-            this._stauHoert = w;
-            w.addEventListener("message", ({ data: a }) => {
-                if (a && (a.type === "stau-result" || (a.type === "error" && a.op === "stau"))) this._stauAn(a);
-            });
-        }
+        // die Antwort kommt über die EINE Tafel des Fadens (`_getVoxelWorker`: `stau-result` und ein Wurf mit `op` „stau“ →
+        // `_stauAn`) — bis w28-speicher-ring hängte der Leser einen eigenen Hörer an den Faden, den ein Faden ohne
+        // `addEventListener` (der gestaute Stub des Playtests) mit einem Wurf im Takt beantwortete
         this._stauImFlug = w;
         const requestId = this.state.voxelWorkerNextRequestId++;
         this._voxelZustandPost({
