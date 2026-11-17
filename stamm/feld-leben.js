@@ -459,7 +459,9 @@ class AnazhRealm_feld_leben {
             spawn_waterfall: (a) => ["tat.wasserfall", { ort: pos(a[0]) }],
             spawn_blueprint: (a) => {
                 const bp = this.state.blueprints && this.state.blueprints[a[0]];
-                return ["tat.baut", { was: (bp && bp.label) || s(a[0]), ort: pos(a[1]) }]; // das Label, nie die id (V-D8)
+                // der Name, nie die id (V-D8): das Etikett als Zeile (es wechselt mit der Sprache), sonst das Wort als Daten
+                const was = bp && (Array.isArray(bp.etikett) ? bp.etikett : bp.label);
+                return ["tat.baut", { was: was || s(a[0]), ort: pos(a[1]) }];
             },
             remove_architecture: () => ["tat.abbau"],
             spawn_fractal: (a) => ["tat.fraktal", { was: s(a[1]), tiefe: s(a[2]), ort: pos(a[0]) }],

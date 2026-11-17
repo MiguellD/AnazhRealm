@@ -463,12 +463,14 @@ class AnazhRealm_speicher_laden {
                 // die Seele eines Built-in-Bauplans schreibt das Laden aus dem Gesetz ab (`_seelenGesetz`), wie die Verkörperung
                 const gesetz = this._seelenGesetz(key);
                 if (gesetz) {
-                    restored[key] = {
+                    restored[key] = AnazhRealm._etikett({
                         name: key,
-                        label: gesetz.label || key.slice(3),
+                        ...(Array.isArray(gesetz.etikett)
+                            ? { etikett: gesetz.etikett }
+                            : { label: gesetz.label || key.slice(3) }),
                         bodyParts: JSON.parse(JSON.stringify(gesetz.parts)),
                         createdAt: 0,
-                    };
+                    });
                     continue;
                 }
                 const valid = entry && Array.isArray(entry.bodyParts) && this.validateBlueprintParts(entry.bodyParts);
@@ -476,12 +478,18 @@ class AnazhRealm_speicher_laden {
                     this._ladeWeist("speicher.weist.seele");
                     continue;
                 }
-                restored[key] = {
+                // der Name reist als Schlüssel (`etikett`, die Wand am Leser: nur ein Schlüssel der Tafel), sonst als Wort (Daten)
+                const etikett = entry.etikett;
+                if (etikett !== undefined && !(Array.isArray(etikett) && AnazhRealm.TEXTE.de[etikett[0]])) {
+                    this._ladeWeist("speicher.weist.seele");
+                    continue;
+                }
+                restored[key] = AnazhRealm._etikett({
                     name: key,
-                    label: typeof entry.label === "string" ? entry.label : key,
+                    ...(etikett ? { etikett } : { label: typeof entry.label === "string" ? entry.label : key }),
                     bodyParts: valid.parts,
                     createdAt: Number(entry.createdAt) || 0,
-                };
+                });
             }
             this.state.customSouls = restored;
         }
@@ -670,7 +678,7 @@ class AnazhRealm_speicher_laden {
         pl.deathWoundIntensity = anteil(L.wunde, 0);
         for (const n of Array.isArray(L.nahrung) ? L.nahrung : [])
             if (n && String(n.quelle).startsWith("consume:") && n.rest > 0)
-                this.addPlayerBoost({ source: n.quelle, tagDelta: n.tags, durationSeconds: n.rest, label: n.label });
+                this.addPlayerBoost({ source: n.quelle, tagDelta: n.tags, durationSeconds: n.rest }); // der Name folgt aus der Quelle
         this.recomputePlayerStats();
         pl.hp = anteil(L.hp, 1) * pl.hpMax;
         pl.stamina = anteil(L.ausdauer, 1) * pl.staminaMax;
@@ -763,6 +771,23 @@ class AnazhRealm_speicher_laden {
                 // Ω2 — must-preserve NACH der opClass/opName-Wand (isMachine +
                 // künftige Felder überleben den Reload; die Wand bleibt).
                 this._carryUnknown(t, this.state.tools[t.name], AnazhRealm.TOOL_KNOWN_KEYS);
+                // DER NAME AUS DEM SCHLÜSSEL (spielgang.K5): ein Werkzeug heißt wie sein Bauplan. Der Stand trägt sein Etikett; ein
+                // Stand vor V18.546.326 trug den aufgelösten Text — die WANDLUNG: der Schlüssel folgt aus `sourceBlueprint`, wenn
+                // dessen Bauplan ein Etikett trägt (der Text war dessen Auflösung), sonst bleibt das Wort Daten
+                const werk = this.state.tools[t.name];
+                // die Wand am Leser: ein Etikett ohne Schlüssel der Tafel bräche erst am Schirm (`_tIn`) — es weist hier ab
+                if (
+                    werk.etikett !== undefined &&
+                    !(Array.isArray(werk.etikett) && AnazhRealm.TEXTE.de[werk.etikett[0]])
+                ) {
+                    delete this.state.tools[t.name];
+                    this._ladeWeist("speicher.weist.werkzeug");
+                    continue;
+                }
+                const quelle = werk.sourceBlueprint && this.state.blueprints[werk.sourceBlueprint];
+                if (!Array.isArray(werk.etikett) && quelle && Array.isArray(quelle.etikett))
+                    werk.etikett = quelle.etikett;
+                AnazhRealm._etikett(werk);
                 if (!this.state.player.tools.includes(t.name)) this.state.player.tools.push(t.name);
                 restoredTools++;
             }
@@ -798,9 +823,6 @@ class AnazhRealm_speicher_laden {
                 }
             }
             if (!Array.isArray(parts) || parts.length < 4) continue;
-            const speciesLabel = String(entry._grownSpecies || "Baum")
-                .replace(/^baum_/, "")
-                .replace(/^./, (c) => c.toUpperCase());
             // `_isMerged` (gen ≥ 6) und `_skeleton` (gen ≥ 7) folgen aus der WELT-genVersion, nicht aus dem
             // Snapshot; gen < 6 baut Per-Part. `_growTreeBlueprint` setzt `_lastTreeSkeleton` als Side-Effect —
             // hier nach bp._skeleton übernommen.
@@ -818,7 +840,8 @@ class AnazhRealm_speicher_laden {
             const lodLevelRestore = vMatch && vMatch[2] != null ? parseInt(vMatch[2], 10) : 0;
             this.state.blueprints[key] = {
                 name: key,
-                label: typeof entry.label === "string" ? entry.label : `${speciesLabel} (gewachsen)`,
+                // der Name aus der Art (`_gewachsenEtikett`); ein Stand bis V18.546.325 trug ihn als Text — der Leser übergeht ihn
+                etikett: this._gewachsenEtikett(entry._grownSpecies || "baum_eiche", lodLevelRestore),
                 builtIn: true,
                 _isGrown: true,
                 _grownSpecies: entry._grownSpecies || "baum_eiche",
@@ -828,6 +851,7 @@ class AnazhRealm_speicher_laden {
                 instanced: true,
                 parts: parts,
             };
+            AnazhRealm._etikett(this.state.blueprints[key]);
             if (Number.isFinite(variantIndexRestore)) {
                 this.state.blueprints[key]._variantIndex = variantIndexRestore;
                 this.state.blueprints[key]._lodLevel = lodLevelRestore;

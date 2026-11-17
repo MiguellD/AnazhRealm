@@ -141,9 +141,10 @@ class AnazhRealm_koerper_seele {
         return this.computeCompoundTags({ parts: soulDef.bodyParts });
     }
 
-    // addPlayerBoost({source, tagDelta, durationSeconds, label}). Sources: "emotion:<axis>" +
+    // addPlayerBoost({source, tagDelta, durationSeconds}). Sources: "emotion:<axis>" +
     // "world:resonance" (auto via tickPlayerBoosts) · "consume:<name>" (DSL-Op `apply_boost`).
-    // Gleiche source verlängert expiresAt statt eines zweiten Eintrags.
+    // Gleiche source verlängert expiresAt statt eines zweiten Eintrags. Der Boost trägt KEINEN Text: sein Name ist eine
+    // Funktion der Quelle (`_boostZeile`), gelesen am Schirm in der Sprache von jetzt.
     addPlayerBoost(spec) {
         if (!spec || typeof spec !== "object") return false;
         const source = String(spec.source || "").slice(0, 60);
@@ -158,18 +159,45 @@ class AnazhRealm_koerper_seele {
         const duration = Math.max(0.5, Math.min(600, Number(spec.durationSeconds) || 30));
         const now = this.state.spielZeit; // ein Boost läuft auf der Welt-Uhr ab (er reist im Stand)
         const expiresAt = now + duration;
-        const label = String(spec.label || source).slice(0, 80);
         if (!Array.isArray(this.state.player.boosts)) this.state.player.boosts = [];
         const existing = this.state.player.boosts.find((b) => b.source === source);
         if (existing) {
             existing.expiresAt = expiresAt;
             existing.tagDelta = tagDelta;
-            existing.label = label;
         } else {
-            this.state.player.boosts.push({ source, tagDelta, expiresAt, label });
+            this.state.player.boosts.push({ source, tagDelta, expiresAt });
         }
         this.recomputePlayerStats();
         return true;
+    }
+
+    // DER NAME EINES BOOSTS (spielgang.K5) ist eine Funktion seiner Quelle, nie ein gespeicherter Satz: `emotion:<achse>` liest
+    // das Etikett der Achse, `world:resonance` seine Zeile, `consume:<name>` den Namen des Tranks (das Wort der DSL als Daten,
+    // sonst das Etikett seines Bauplans). Zurück kommt ein Wert einer Zeile — `[schlüssel, werte]` oder Daten —, den jeder Leser
+    // in seiner Sprache liest (der Chip `_boostName`, die Stimme als Wert, die Tür zum Modell in der Quell-Sprache). So wechselt
+    // der Chip mit der Sprache, ein Stand trägt nur die Quelle, und ein alter Stand mit Text zeigt den Namen aus der Quelle.
+    _boostZeile(b) {
+        const source = String((b && b.source) || "");
+        const i = source.indexOf(":");
+        const [art, rest] = [source.slice(0, i), source.slice(i + 1)];
+        if (art === "emotion" && AnazhRealm.BOOST_EMOTION_TAG[rest]) return AnazhRealm.BOOST_EMOTION_TAG[rest].etikett;
+        if (source === "world:resonance") return ["seele.boost.resonanz"];
+        // eine Quelle ohne Gesetz ihres Namens (ein Prüf-Boost `test:…`) heißt wie sie selbst — ihre Kennung ist Daten
+        if (art !== "consume") return source;
+        // dieselbe Reihe wie `activateConsumable`: der Bauplan mit Rolle Trank vor der Tafel der DSL
+        const bp = this.state.blueprints && this.state.blueprints[rest];
+        const c = this.state.consumables && this.state.consumables[rest];
+        if (bp && (bp.role === "consumable" || !c)) {
+            const wort = bp.consumableMeta && bp.consumableMeta.label;
+            return typeof wort === "string" && wort ? wort : Array.isArray(bp.etikett) ? bp.etikett : bp.label || rest;
+        }
+        return (c && c.label) || rest;
+    }
+
+    // der Name eines Boosts am Schirm, in der Sprache von jetzt (Daten isoliert)
+    _boostName(b) {
+        const z = this._boostZeile(b);
+        return Array.isArray(z) ? this._t(z[0], z[1]) : AnazhRealm._datum(z);
     }
 
     // 1×/s aus dem Game-Loop: (1) Abgelaufene entfernen, (2) Emotions-Achsen >0.7 → Tag-Delta,
@@ -206,7 +234,6 @@ class AnazhRealm_koerper_seele {
                     source,
                     tagDelta: { [def.tag]: def.delta },
                     expiresAt: now + AnazhRealm.BOOST_EMOTION_DURATION,
-                    label: def.label,
                 });
                 changed = true;
             } else if (!active && lastTrig[source] === undefined) {
@@ -257,7 +284,6 @@ class AnazhRealm_koerper_seele {
                     source: "world:resonance",
                     tagDelta: { resoniert: AnazhRealm.BOOST_RESONANCE_DELTA },
                     expiresAt: now + 3,
-                    label: AnazhRealm.BOOST_RESONANCE_LABEL,
                 });
                 changed = true;
             }
@@ -1385,7 +1411,8 @@ class AnazhRealm_koerper_seele {
         bp.consumableMeta = {
             durationSeconds: dur,
             scale: sc,
-            label: typeof label === "string" ? label.slice(0, 60) : bp.label || name,
+            // das Wort der DSL ist Daten; ohne Wort heißt der Trank wie sein Bauplan (`_boostZeile` liest das Etikett am Schirm)
+            ...(typeof label === "string" && label ? { label: label.slice(0, 60) } : {}),
         };
         return { ok: true, name };
     }
@@ -1488,7 +1515,10 @@ class AnazhRealm_koerper_seele {
             if (!this.cloneBlueprint("welt_portal", bpName)) {
                 return { ok: false, reason: "clone_failed" };
             }
-            this.state.blueprints[bpName].label = `Portal: ${entry.label}`;
+            // der Name des Tors ist eine Zeile mit dem Namen der Welt als Wert (`_weltNameZeile`), er wechselt mit der Sprache
+            const tor = this.state.blueprints[bpName];
+            tor.etikett = ["bau.portal-zu", { welt: this._weltNameZeile(entry) }];
+            AnazhRealm._etikett(tor);
         }
         // Immer (neu) ausrichten: danach trägt der Bauplan garantiert role "portal" + frisches portalMeta —
         // auch ein Portal, das seine Ausrichtung verlor, heilt so.
@@ -1540,7 +1570,6 @@ class AnazhRealm_koerper_seele {
                 source: `consume:${name}`,
                 tagDelta: tagBonus,
                 durationSeconds: meta.durationSeconds || 30,
-                label: meta.label || bp.label || name,
             });
             return { ok };
         }
@@ -1551,7 +1580,6 @@ class AnazhRealm_koerper_seele {
             source: `consume:${c.name}`,
             tagDelta: c.tagBonus,
             durationSeconds: c.durationSeconds,
-            label: c.label,
         });
         return { ok };
     }
@@ -1813,7 +1841,6 @@ AnazhRealm.BOOST_EMOTION_DURATION = 30; // s, läuft mit Emotion mit
 AnazhRealm.BOOST_EMOTION_REFRACT = 60; // s Pause nach Ablauf, sonst Endlos-Pulsen
 AnazhRealm.BOOST_RESONANCE_RADIUS = 18; // m, in deren Nähe das Welt-Effekt-Boost greift
 AnazhRealm.BOOST_RESONANCE_DELTA = 0.15; // +0.15 resoniert auf Spieler-Compound
-AnazhRealm.BOOST_RESONANCE_LABEL = "Welt-Resonanz";
 // Werkzeug-Abnutzung (kein Perpetuum mobile): ein gehaltenes Gerät trägt wear (0..1), der je Hieb
 // sinkt; unter WEAR_KAPUTT_SCHWELLE ist es verbraucht. Reparieren zahlt MATERIAL
 // (REPAIR_COST_FRACTION × Voll-Bau-Kosten × Schaden-Anteil) → wear=1: Bauen → Abbauen → Reparieren

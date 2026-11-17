@@ -2444,7 +2444,8 @@ class AnazhRealm_kampf {
         const n = bf && bf.get(Math.floor(ort.x / cs) + "," + Math.floor(ort.z / cs));
         if (n && n.t0 !== null) return true; // die Zelle brennt schon
         if (this._brandEntfachen(ort.x, ort.z)) return true;
-        this._spielerSagt(["welt.fackel-faengt-nicht", { was: AnazhRealm._namensKopf(bp.label || bp.name) }]);
+        const was = Array.isArray(bp.etikett) ? bp.etikett : AnazhRealm._namensKopf(bp.label || bp.name); // das Etikett wechselt mit
+        this._spielerSagt(["welt.fackel-faengt-nicht", { was }]);
         return false;
     }
 
@@ -2576,7 +2577,10 @@ class AnazhRealm_kampf {
             if (!bauRes.ok)
                 this._spielerSagt([
                     "bauen.label-grund",
-                    { label: heldP.label || heldP.name, grund: this._machTorHint(bauRes) },
+                    {
+                        label: Array.isArray(heldP.etikett) ? heldP.etikett : heldP.label || heldP.name,
+                        grund: this._machTorHint(bauRes),
+                    },
                 ]);
             return bauRes.ok;
         }

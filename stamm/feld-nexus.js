@@ -1219,7 +1219,12 @@ class AnazhRealm_feld_nexus {
         const boostLine =
             boostList.length > 0
                 ? boostList
-                      .map((b) => `${AnazhRealm._datum(b.label || b.source)} (${Math.round(b.expiresAt - nowSec)}s)`)
+                      .map((b) => {
+                          // die Tür zum Modell spricht die Quell-Sprache (de): der Name des Boosts aus seiner Quelle
+                          const z = this._boostZeile(b);
+                          const name = Array.isArray(z) ? AnazhRealm._tIn("de", z[0], z[1]) : z;
+                          return `${AnazhRealm._datum(name)} (${Math.round(b.expiresAt - nowSec)}s)`;
+                      })
                       .join(", ")
                 : "kein aktiver Trank-Effekt";
         // das Gedächtnis, nummeriert (`_creatureGedaechtnis`): die Antwort-Form verlangt eine dieser Zeilen wörtlich

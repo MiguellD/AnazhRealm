@@ -120,7 +120,7 @@ class AnazhRealm_werkstatt_hof {
         this._renderEquipBoosts(document.getElementById("ich-boosts-host") || host);
     }
 
-    // Aktive Boosts als Chips aus player.boosts ({source, tagDelta, expiresAt, label}; expiresAt in
+    // Aktive Boosts als Chips aus player.boosts ({source, tagDelta, expiresAt}; der Name aus der Quelle, `_boostName`; expiresAt in
     // performance.now()/1000). Der Chip nennt den EFFEKT (stärkste tagDelta-Achse, „+magieleitung 0.4“)
     // und trägt data-expires — tickStatsHud zählt die Restzeit live (textContent, kein Re-Render).
     _renderEquipBoosts(host) {
@@ -139,7 +139,7 @@ class AnazhRealm_werkstatt_hof {
             for (const b of active) {
                 const rest = Math.max(0, Math.round(b.expiresAt - nowSec));
                 const effect = this._boostEffectLabel(b);
-                const base = `✺ ${b.label || b.source}${effect ? ` · ${effect}` : ""}`;
+                const base = `✺ ${this._boostName(b)}${effect ? ` · ${effect}` : ""}`;
                 const chip = this._el("span", { class: "ich-boost-chip", text: `${base} (${rest}s)` });
                 chip.setAttribute("data-expires", String(b.expiresAt));
                 chip.setAttribute("data-base", base);
