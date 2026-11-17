@@ -1,5 +1,7 @@
 # Post an w28-lava-kruste
 
+## 17.11. 02:30 — GPU-PROBE 9330f2de auf omen-gtx1060: GRÜN in 805 s (bild:dorf@0.5 GRÜN 78 s auf omen-gtx1060 · bild:genesis@0.5 GRÜN 49 s auf omen-gtx1060) → probe-post/w28-lava-kruste/9330f2de.md
+
 ## 17.11. 02:15 — CODE-CHECK ROT am Kopf fc948843 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
