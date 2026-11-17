@@ -1423,3 +1423,4 @@ omen-gtx-rollea-1-ee9c1965 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte2.erle
 2026-11-17 05:47 w28-brand-saum Abgabe 6b248935 (neu nach rotem Code-Check an edf16a1d) — dichter, pulsender Flammen-Saum, Linse --narbe N5 · N6; Bericht bericht/1711-brand-saum/
 omen-gtx-ausda-1-ee9c1965 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte2.same.preis.ausdauer#1 (punkte-maschine e9345eac messung/ee9c1965-gtx.json)
 omen-gtx-gtx-389a6496-1-389a6496 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN vegetation.K5#2 ‖ vegetation.K5#2: Krone sommer 104170 px · winter 2254 px · fruehling 76353 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer (punkte-maschine e9345eac messung/389a6496-gtx.json)
+2026-11-17 06:01 landung ABGEBROCHEN main 389a6496: sg-klang wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 53 stellen sich hinten an
