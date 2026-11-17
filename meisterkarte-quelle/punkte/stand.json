@@ -5564,7 +5564,7 @@
   },
   "karte2.mensch.menge.kollektiv": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.kollektiv#1 radeon: Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js, stamm/siedlung-bewohner.js) · karte2.mensch.menge.kollektiv#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.kollektiv#1 radeon: Konsum seit der Messung geändert (R6: stamm/kreatur-leben.js, stamm/kreatur-verhalten.js, stamm/siedlung-bewohner.js) · karte2.mensch.menge.kollektiv#1 gtx: ROT: 39 Zeugen, 39 in beiden Gängen · Abstand-Median vorher 10.9 m → nachher 10.9 m ✗ nicht weiter · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal an b7b0f8fe",
    "stationen": [
     {
      "id": "karte2.mensch.menge.kollektiv#1",
@@ -5581,10 +5581,10 @@
      "id": "karte2.mensch.menge.kollektiv#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "39 Zeugen, 39 in beiden Gängen · Abstand-Median vorher 10.9 m → nachher 10.9 m ✗ nicht weiter · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal",
+     "sha": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
+     "grund": "ROT: 39 Zeugen, 39 in beiden Gängen · Abstand-Median vorher 10.9 m → nachher 10.9 m ✗ nicht weiter · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6342,12 +6342,10 @@
    ]
   }
  },
- "rueckfall": [
-  "karte2.same.physik.verformung#1 gtx: klinge_flegel Schwung 0.397 m, Länge (längs) 0.328–0.328 m, v² 2.745 → 0.139 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/248 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 180 px über dem Rauschen 1464, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal an 7de938ab (grün gebucht an ee9c1965)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 216,
+  "konsum": 217,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6516,10 +6514,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 125
+  "ohne": 124
  },
  "kopfVoll": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
- "zeit": "2026-11-17T14:15:22.371Z",
+ "zeit": "2026-11-17T14:21:18.539Z",
  "vorher": "b7b0f8fe",
  "bilanz": {
   "gewinn": [],
