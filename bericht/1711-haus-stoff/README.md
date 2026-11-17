@@ -126,3 +126,19 @@ Messpunkt hinter einem Haus — das Bild selbst ist gültig, das Urteil gilt der
 
 Werkzeug: `p3/n1711/hs/ziel.cjs` (`ZIEL_KAMERA=…/kameras.json` hält die Pose), `labor.cjs`, `werk.sh`, `blatt.cjs`.
 Roh: `p3/n1711/hs/ziel-main2`, `labor-alle`, `labor-nacht`, `werk-main` (OMEN).
+
+## Die Stadt vorher (Messort `stadt-voll`, main d3ddb51c, GTX 1060, Mittag) — 18.11. 00:02
+
+Bilder: `stadt-vorher-gasse.jpg` (die Kamera des Spiels am Messort, der Markt) · `stadt-vorher-fern.jpg` (über die Dächer auf die
+Mitte des Plans, 600 m zurück, 300 m hoch: der Rand der Stadt steht im Bild) · Kameras `stadt-kameras.json` (dieselben nachher).
+
+**Zeile:** Häuser im Plan 326 (309 + 17 in zwei Siedlungen, Radius 401 m) · Häuser mit Bild 326 (am Markt 192 im Satz, der Rest als
+Fernform) · Leiber 1 211 (1 097 draußen) · Frame p95 33,31 ms (p50 16,68 · p99 41,67 · 52,7 fps).
+
+Preis vorher an der Pose: GPU 11,8 ms je Frame (gpu-bank; Band 12,4) · CPU-Takt p95 28,73 ms (p50 16) — die Stadt ist am
+Prozessor gebunden, nicht an der Karte · VRAM 176 MB (Band 118: ROT/ÜBER) · 345 Befehle · 524 433 Dreiecke · Programme 86 Vertex /
+89 Fragment · Speicher des Renderers 172,4 MB (Texturen 92,1 · Attribute 66,9) · 1 149 Bau-Gruppen.
+
+Der Plan des Messorts trägt an diesem Kopf 326 Häuser, nicht 1 641 (Titel der Station: 295 Häuser / 1 092 Bewohner). Der
+Fern-Schuss meldet ABNAHME ROT („Blickziel verdeckt von kamm-krone in 640 m") — das Urteil gilt der Ziel-Probe, das Bild ist gültig.
+Im Fern-Schuss stehen 0 Leiber (die Bewohner-Liste ist 600 m vom Ort leer). Roh: `p3/n1711/hs/stadt-vor-d3ddb51c` (OMEN).
