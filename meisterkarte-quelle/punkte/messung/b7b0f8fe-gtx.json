@@ -1,7 +1,7 @@
 {
  "sha": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
  "geraet": "gtx",
- "zeit": "2026-11-17T14:30:09.907Z",
+ "zeit": "2026-11-17T14:38:43.324Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -212,6 +212,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.kopplung.bild#1": {
+   "gruen": false,
+   "zahl": "❌ größter Sprung an markierten Stufenwechseln 194.0 % (6 Wechsel) · an den übrigen Schritten 1057.0 % (Soll an jedem ≤ 5 %) · der größte bei 900 m · 40/40 Schritte mit Fenster · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.69,
+   "grund": "ROT: ❌ größter Sprung an markierten Stufenwechseln 194.0 % (6 Wechsel) · an den übrigen Schritten 1057.0 % (Soll an jedem ≤ 5 %) · der größte bei 900 m · 40/40 Schritte mit Fenster · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kc6d5ce5ff1f0",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k01f1e576c614",
+   "s": 100.6,
+   "fremd": {
+    "s": 101.6,
+    "takte": 47,
+    "fremdS": 24.69,
+    "kerne": 0.243,
+    "fensterKerne": 0.456,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.8
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.3
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.33
+     ]
+    ],
+    "dienerS": 26.38,
+    "diener": [
+     [
+      "System",
+      13.13
+     ],
+     [
+      "dwm.exe",
+      7.41
+     ]
+    ],
+    "geraetS": 29.33,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.63
+     ],
+     [
+      "svchost.exe",
+      8.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.98
+     ]
+    ],
+    "eigenS": 309.2,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-17T14:38:43.324Z",
+   "abdruck": "622387e51972",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -223,8 +293,8 @@
   "k7c377596e975": "dVTRjpswEPyXPLblnAAOxtI9OCFtTmql3Ces7TWQEIhscrSp+u9VCCQB2n0CtOMZzw77e3YCdYAUX/auKmd89mn2ZebgAz2H9gPty97N+GyuQqCMi1sRIcT62qZsfqodKXJJQJaQHdE72xrz4kW1sIViCMhJsxHNjpAdiciqEfdaidfX8TGFRF15NRjsD5HajwLg48azS0GiB2fTEnfNMVIdS07aYonY7Ulf4l0I0mzGjBJKPVRtAqBmwd9+CbGZKtQ5YO0Veel6TqWpDHx+J2qmGAuNdwHMCrQdiC2pDha90DHAFGfnBiQs0NRnnJCYjHpTdLnKau9kK4llb1rsRwvgq6mW9HT2zLMSkBKYHPubAZYp2qGGKKQq5OTnRO8BjmjBKyHr5zAPIl8+PCGEbKdailZ4S9ELZ1rGkRkACSHpto1NwtqX+2e2vQUpSR+hEu8jEqey3B6H9hhDNcz596kkl4FG6x0qV9+7A8Z8CLr0J22QxC5MxsjHZTqcL5dzyp7uwojYTrxzlakbsOilp3MHxBBpRLkQb5PmGo7H/hLKR0bHg3P1NdDPMuaRT2k7i/Q/c7jF37tgXvSgSKlFgHz9Q4zv+WHh6IFMbW5MP21JlYn/Fc4Gi9qTVVX3nYGGQHESkPLuSsxuy+BeSVOpzTp9F8Na2VRMtbcMla174VQu5ybkpv0T1bj7grbAFAf+6FAGoDlp1JOEsH/4PAjiZTK+S45X50p3dn2E40jHXYS7bfc23CMN2oOE8tB7vTALpfk1x1+JSDri5YrsybZ5diARu0aIzUqsn79+6w4/oSInW5n8utJIBmeXQVE/9vqfvw=="
  },
  "sitzung": {
-  "start": "2026-11-17T14:29:34.838Z",
-  "ordner": "sitzung-20261117-152934",
+  "start": "2026-11-17T14:38:13.910Z",
+  "ordner": "sitzung-20261117-153813",
   "port": 7804,
   "warten": 0.01,
   "bootS": 6.3,
@@ -233,29 +303,22 @@
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "karte2.planet.kosmos.welten#1",
-    "s": 26.8,
-    "takte": 588,
+    "ort": "genesis",
+    "vor": "karte2.erleben.kopplung.bild#1",
+    "s": 21.1,
+    "takte": 606,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "wanderung": [
-   {
-    "probe": "karte2.planet.kosmos.welten#1",
-    "ort": "wiese",
-    "m": 0,
-    "dreh": 1.972
-   }
-  ],
   "messHalt": [
    {
-    "probe": "karte2.planet.kosmos.welten#1",
+    "probe": "karte2.erleben.kopplung.bild#1",
     "gehalten": [
      "skala",
-     "spiegel"
+     "spiegel",
+     "tiere"
     ],
     "offen": []
    }
@@ -263,28 +326,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 98,
-   "frameP95": 508.3,
-   "taktP95": 147.62,
-   "vramMax": 131.1,
+   "bilder": 3067,
+   "frameP95": 25.05,
+   "taktP95": 13.91,
+   "vramMax": 140.4,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.planet.kosmos.welten#1",
-     "m": 1083,
+     "probe": "karte2.erleben.kopplung.bild#1",
+     "m": 1950,
      "ringVor": 4,
      "ringMin": 0
     }
    ],
-   "zapfen": 62,
+   "zapfen": 197,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 71.2,
-  "minuten": 1.28
+  "fahrtS": 204.8,
+  "minuten": 3.48
  },
  "ungemessen": {
   "karte2.planet.kosmos.welten#1": {
