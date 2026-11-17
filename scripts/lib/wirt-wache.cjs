@@ -176,7 +176,7 @@ async function wirtSelbsttest() {
         wirtWache(r, false, W);
         await new Function("r", "W", "__wirtMarke", evalRumpf(probe))(r, W, wirtMarke(W, probe));
         const ab = ohneGib ? { anders: [] } : wirtWache(r, true, W);
-        await new Promise((z) => setTimeout(z, 0));
+        await require("timers/promises").setImmediate();
         gc();
         gc();
         return { r, W, ab, haelt: markenLies(W) };
