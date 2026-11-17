@@ -1485,7 +1485,7 @@
   },
   "klang.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: gras 6169 Hz (n 6) · laub 8867 Hz (n 6) · stein 4735 Hz (n 5) — kleinster Abstand 1434 Hz an 4ee205bd radeon · gehalten: ✅ Schritte gras 6208 Hz (n 6) · laub 8919 Hz (n 6) · stein 4798 Hz (n 6), kleinster Abstand 1410 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9710/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505) an c8c840c9 radeon · gehalten: ✅ Schritte gras 6180 Hz (n 6) · laub 8813 Hz (n 6) · stein 4771 Hz (n 6), kleinster Abstand 1409 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9709/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505) an c8c840c9 gtx",
+   "beleg": "Maschine: gehalten: gras 6169 Hz (n 6) · laub 8867 Hz (n 6) · stein 4735 Hz (n 5) — kleinster Abstand 1434 Hz an 4ee205bd radeon · gehalten: ✅ Schritte gras 6208 Hz (n 6) · laub 8919 Hz (n 6) · stein 4798 Hz (n 6), kleinster Abstand 1410 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9710/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505) an c8c840c9 radeon · ✅ Schritte gras 6198 Hz (n 6) · laub 8769 Hz (n 6) · stein 4855 Hz (n 5), kleinster Abstand 1343 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 1.0001 r 1.0000 (-9 m 21.4 m/s 1.0665/1.0665 · -4.5 m 16.4 m/s 1.0504/1.0504 · -2 m 9.8 m/s 1.0294/1.0294 · 2 m -9.9 m/s 0.9719/0.9719 · 4.5 m -15.9 m/s 0.9557/0.9557 · 9 m -18.7 m/s 0.9484/0.9484) an ee9c1965 gtx",
    "stationen": [
     {
      "id": "klang.K4#1",
@@ -1520,10 +1520,9 @@
      "id": "klang.K4#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "✅ Schritte gras 6180 Hz (n 6) · laub 8813 Hz (n 6) · stein 4771 Hz (n 6), kleinster Abstand 1409 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9709/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505)",
-     "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/shader-kosten.cjs +8)",
-     "gehalten": true,
+     "zahl": "✅ Schritte gras 6198 Hz (n 6) · laub 8769 Hz (n 6) · stein 4855 Hz (n 5), kleinster Abstand 1343 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 1.0001 r 1.0000 (-9 m 21.4 m/s 1.0665/1.0665 · -4.5 m 16.4 m/s 1.0504/1.0504 · -2 m 9.8 m/s 1.0294/1.0294 · 2 m -9.9 m/s 0.9719/0.9719 · 4.5 m -15.9 m/s 0.9557/0.9557 · 9 m -18.7 m/s 0.9484/0.9484)",
+     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -5385,7 +5384,7 @@
   },
   "karte2.mensch.bau.innen": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an c8c840c9 radeon · gehalten: 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an c8c840c9 gtx",
+   "beleg": "Maschine: gehalten: 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an c8c840c9 radeon · 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an ee9c1965 gtx",
    "stationen": [
     {
      "id": "karte2.mensch.bau.innen#1",
@@ -5403,9 +5402,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet",
-     "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/abnahme-urteil.cjs +14)",
-     "gehalten": true,
+     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -5655,7 +5653,7 @@
   },
   "karte2.mensch.zeit.erleben": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 89 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3 an 884c6a25 radeon — offen: karte2.mensch.zeit.erleben#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 89 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3 an 884c6a25 radeon · Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 89 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal an 884c6a25 gtx",
    "stationen": [
     {
      "id": "karte2.mensch.zeit.erleben#1",
@@ -5670,11 +5668,11 @@
     {
      "id": "karte2.mensch.zeit.erleben#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 89 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal",
+     "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6028,7 +6026,7 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +76 Pixel je Pixel (neu 426 − Rauschen 350; Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3 an ee9c1965 · karte2.same.kopplung.kaskade#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.kopplung.kaskade#1 radeon: ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +76 Pixel je Pixel (neu 426 − Rauschen 350; Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3 an ee9c1965 · karte2.same.kopplung.kaskade#1 gtx: ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +46 Pixel je Pixel (neu 151 − Rauschen 105; Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 505) · [linse-gpu] nvidia/pascal an 884c6a25",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
@@ -6044,17 +6042,17 @@
      "id": "karte2.same.kopplung.kaskade#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "trocken nach 60 s 1 brennende Zellen, Flammen im Bild +46 Pixel je Pixel (neu 151 − Rauschen 105; Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 505) · [linse-gpu] nvidia/pascal",
+     "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
+     "grund": "ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +46 Pixel je Pixel (neu 151 − Rauschen 105; Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 505) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an 884c6a25 radeon — offen: karte2.same.kopplung.stoerung#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an 884c6a25 radeon · Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 884c6a25 gtx",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
@@ -6069,11 +6067,11 @@
     {
      "id": "karte2.same.kopplung.stoerung#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
+     "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6325,7 +6323,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 181,
+  "konsum": 184,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6495,10 +6493,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 159
+  "ohne": 156
  },
  "kopfVoll": "ee9c196544e4376ea20c95921c852ad931bc1604",
- "zeit": "2026-11-17T03:03:24.063Z",
+ "zeit": "2026-11-17T03:30:37.973Z",
  "vorher": "ee9c1965",
  "bilanz": {
   "gewinn": [],

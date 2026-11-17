@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "ee9c1965",
-    "zeit": "2026-11-17T03:03:24.063Z",
+    "zeit": "2026-11-17T03:30:37.973Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -4119,7 +4119,7 @@
           "punkte": 2,
           "staffel": "1 = am Abgriff gemessen: der Spektral-Schwerpunkt der Schritte je Stoff ≥ 300 Hz verschieden ODER der Motor-Grundton folgt der Drehzahl (r ≥ 0,9) · 2 = beides, die Landung skaliert mit dem Aufprall, Doppler proportional zur Radialgeschwindigkeit",
           "messung": "Station gang + fahrt mit Klang-Abgriff: Schritte über Erde, Stein, Holz, Wasser; GT-Motor über die Drehzahl; Vorbeifahrt.",
-          "beleg": "Maschine: gehalten: gras 6169 Hz (n 6) · laub 8867 Hz (n 6) · stein 4735 Hz (n 5) — kleinster Abstand 1434 Hz an 4ee205bd radeon · gehalten: ✅ Schritte gras 6208 Hz (n 6) · laub 8919 Hz (n 6) · stein 4798 Hz (n 6), kleinster Abstand 1410 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9710/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505) an c8c840c9 radeon · gehalten: ✅ Schritte gras 6180 Hz (n 6) · laub 8813 Hz (n 6) · stein 4771 Hz (n 6), kleinster Abstand 1409 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9709/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505) an c8c840c9 gtx",
+          "beleg": "Maschine: gehalten: gras 6169 Hz (n 6) · laub 8867 Hz (n 6) · stein 4735 Hz (n 5) — kleinster Abstand 1434 Hz an 4ee205bd radeon · gehalten: ✅ Schritte gras 6208 Hz (n 6) · laub 8919 Hz (n 6) · stein 4798 Hz (n 6), kleinster Abstand 1410 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9710/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505) an c8c840c9 radeon · ✅ Schritte gras 6198 Hz (n 6) · laub 8769 Hz (n 6) · stein 4855 Hz (n 5), kleinster Abstand 1343 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 1.0001 r 1.0000 (-9 m 21.4 m/s 1.0665/1.0665 · -4.5 m 16.4 m/s 1.0504/1.0504 · -2 m 9.8 m/s 1.0294/1.0294 · 2 m -9.9 m/s 0.9719/0.9719 · 4.5 m -15.9 m/s 0.9557/0.9557 · 9 m -18.7 m/s 0.9484/0.9484) an ee9c1965 gtx",
           "schlupfloch": "Ein Rausch-Burst je Schritt ohne Stoff-Bezug: die spektrale Distanz je Stoff.",
           "aenderung": "Die 1 der Synthese war die Existenz der Leser (B70) → 0; am Abgriff gemessen 21.10. 0 → 1 (M15).",
           "maschine": true
