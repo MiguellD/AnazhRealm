@@ -161,6 +161,9 @@ class AnazhRealm_gelaende_chunks {
                         this.state.voxelWorkerPending.delete(msg.requestId);
                         pending.resolve(msg);
                     }
+                } else if (msg.type === "stau-result") {
+                    // DER STAU AUS DEM FADEN (`_stauFelder`): die Felder gehen in den Zustand (`_stauAn`)
+                    this._stauAn(msg);
                 } else if (msg.type === "boden-morph") {
                     // DER GEOMORPH AUS DEM FADEN (w4-b-boden2): je gemorphtem Netz die fertigen Puffer — der Takt legt sie an
                     this._bodenAntwort(msg);
@@ -182,6 +185,7 @@ class AnazhRealm_gelaende_chunks {
                         }
                     }
                     this.log(`Voxel-Worker-Fehler (${msg.op}): ${msg.message}`, "ERROR");
+                    if (msg.op === "stau") this._stauAn(msg); // der Stau bricht laut (`_stauAn`: `_bruchMelden`)
                 }
             };
             worker.onerror = (err) => {
@@ -955,12 +959,7 @@ class AnazhRealm_gelaende_chunks {
                 if (meshData.vonPlatte) {
                     // Diagnose-Zähler (Linse diag-warm-start), keine Spiel-Logik
                     this.state._chunkIdbHits = (this.state._chunkIdbHits | 0) + 1;
-                    if (!this.state._chunkIdbHitByKey)
-                        this.state._chunkIdbHitByKey = this._zellGedaechtnis(
-                            "_chunkIdbHitByKey",
-                            new Map(),
-                            this._voxelChunkConfig(0).span
-                        );
+                    if (!this.state._chunkIdbHitByKey) this.state._chunkIdbHitByKey = new Map();
                     this.state._chunkIdbHitByKey.set(cacheKey, (this.state._chunkIdbHitByKey.get(cacheKey) | 0) + 1);
                 }
             })

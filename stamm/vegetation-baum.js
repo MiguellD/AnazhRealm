@@ -974,7 +974,7 @@ class AnazhRealm_vegetation_baum {
         let memo = null;
         if (this._forestGesetzWahr()) {
             if (this._freistandMemoVon !== this._forestDartMemo || !this._freistandMemo) {
-                this._freistandMemo = this._zellGedaechtnis("_freistandMemo", new Map(), 1, this._streuReichweite);
+                this._freistandMemo = new Map();
                 this._freistandMemoVon = this._forestDartMemo;
             }
             memo = this._freistandMemo;

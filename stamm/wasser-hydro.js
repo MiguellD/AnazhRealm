@@ -284,7 +284,7 @@ class AnazhRealm_wasser_hydro {
             [x0, z1],
             [x1, z1],
         ].map(([x, z]) => K.hydroRegion(L, x, z));
-        if (!this._pegelOrte) this._pegelOrte = this._zellGedaechtnis("_pegelOrte", new Map(), span);
+        if (!this._pegelOrte) this._pegelOrte = new Map();
         let o = this._pegelOrte.get(key);
         if (!o || o.erd !== erd || o.reg.some((h, i) => h !== reg[i])) {
             const y = this._terrainMacroSurfaceY((cx + 0.5) * span, (cz + 0.5) * span, false);

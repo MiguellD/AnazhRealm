@@ -619,22 +619,14 @@ class AnazhRealm_gelaende_boden {
     }
 
     // DIE KACHELN FOLGEN DEM BLICK (w28-speicher-ring; Koordinator 16.11.: `state.hydroTiles` 4,4 → 48,5 MB in der Dreier-Fahrt,
-    // die Fluss-Orte der K4-Probe ±6 km): die Kacheln und ihre Bestellungen sind Zell-Gedächtnisse des EINEN Registers
-    // (`_zellGedaechtnis`, Zelle = die Kachel, `HYDROSPHERE.regionSize`, um die Hälfte versetzt wie `_ensureHydroTilesAround`) —
+    // die Fluss-Orte der K4-Probe ±6 km): die Kacheln und ihre Bestellungen stehen in der EINEN Tafel der
+    // Zell-Gedächtnisse (`ZELL_GEDAECHTNISSE`, Zelle = die Kachel, `HYDROSPHERE.regionSize`, um die Hälfte versetzt wie `_ensureHydroTilesAround`) —
     // BEIDE fallen, das erfüllte Versprechen der Bestellung hielt die Kachel sonst ein zweites Mal. Eine Kachel geht erst, wenn
     // kein Teil von ihr mehr in der Reichweite ihrer Leser liegt (`_hydroReichweite`); ihr Abschied (`_hydroGeht`) nimmt sie
     // aus jedem Faden und rechnet das Band neu. Der nächste Bau bestellt sie neu. Geleert wird beides mit jeder Welt.
     _hydroKacheln() {
-        const size = AnazhRealm.HYDROSPHERE.regionSize;
-        const Z = { m: size, ab: -size / 2 };
-        this._hydroBestellt = this._zellGedaechtnis("_hydroBestellt", new Map(), Z, this._hydroReichweite);
-        this.state.hydroTiles = this._zellGedaechtnis(
-            "hydroTiles",
-            new Map(),
-            Z,
-            this._hydroReichweite,
-            this._hydroGeht
-        );
+        this._hydroBestellt = new Map();
+        this.state.hydroTiles = new Map();
         return { bestellt: this._hydroBestellt, kacheln: this.state.hydroTiles };
     }
     // DIE REICHWEITE DER KACHEL-LESER um den Spieler (m): der Takt der Wache (Ring + ½ Chunk + 300 m), das Fern-Wasser

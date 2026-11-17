@@ -166,30 +166,8 @@ class AnazhRealm_gelaende_fern {
         return n;
     }
 
-    // DAS REGISTER DER ZELL-GEDÄCHTNISSE (Schnitt 2 „der Speicher folgt dem Blick“; Gegner Speicher F2 F3, Runden-Zensus 16.11.):
-    // jedes Gedächtnis mit Zell-Schlüssel meldet sich bei seiner Anlage HIER an — Name, Karte (Map oder Set), Zelle (das Maß m je
-    // Zelle; { m, ab } für ein Raster mit Ursprung; oder eine Funktion der Schicht vor „:“), Reichweite seiner Leser (m um den
-    // Spieler, Zahl oder Funktion) und sein Abschied (`geht(schluessel)`, die Folgen im Faden) — und bekommt seine Karte zurück; eine
-    // neue Karte desselben Namens (ein neuer Stand) ersetzt die alte. Der Schlüssel ist „[schicht:]i,j[,…]“, die Zelle (i, j) das
-    // Rechteck [i·m + ab, (i + 1)·m + ab). Angemeldet: die Marke der Streu und ihr Lookup (`scatterPromoted`, `scatterLookup`), die
-    // Antworten des Freistands (`_freistandMemo`), der Pegel des Chunks (`_pegelOrte`), das flüchtige Gedächtnis der Tritte
-    // (`_trittSchwach` — den Pfad trägt der Stand), die Platten-Treffer des Bodens (`_chunkIdbHitByKey`), die Hydro-Kacheln und
-    // ihre Bestellungen (`hydroTiles`, `_hydroBestellt`). Die Darts der Wald-Zellen (`_forestDartMemo`) melden sich NICHT an: ihr
-    // EINER Räumer ist die Schranke (`_forestDartRaum`, WALD_PLAN.zellen, die fernsten zuerst) — die Streu liest den Plan bis an
-    // ihren Horizont (`SCATTER.outerM`), weit jenseits des Saums der Saat (gate:kreatur-takt schwarm: die Krone s:tree:74,0 ohne
-    // Scheitel, als die Saat ihn mitnahm).
-    _zellGedaechtnis(name, karte, zelle, reichweite = 0, geht = null) {
-        (this._zellGedaechtnisse || (this._zellGedaechtnisse = new Map())).set(name, {
-            karte,
-            zelle,
-            reichweite,
-            geht,
-        });
-        return karte;
-    }
-
     // DIE GEDÄCHTNISSE GEHEN MIT IHREM CHUNK (Gegner Speicher F2 F3, Gegner Bild F1): verlässt ein Chunk den Saum der Saat, fallen
-    // die Einträge seines Gebiets in ALLEN angemeldeten Gedächtnissen (`_zellGedaechtnis`) in EINEM Gang — außer am Ort eines
+    // die Einträge seines Gebiets in ALLEN Gedächtnissen der Tafel (`ZELL_GEDAECHTNISSE`) in EINEM Gang — außer am Ort eines
     // bleibenden gewachsenen Baus (`bleiben`: eine Tat, ein Werk, eine Promotion; seine Zelle der Streu hält). Was wiederkehrt,
     // rechnet sein Leser aus dem Samen neu. Bis hier räumte jeder Halter in eigener Schleife mit eigener Lesart seines Schlüssels —
     // ein Gedächtnis ohne Schleife wuchs mit dem Weg (Radeon 15.11.: Tritte 4 814 → 31 919, Marken 98 → 422, Freistand
@@ -206,9 +184,10 @@ class AnazhRealm_gelaende_fern {
             const bp = st.blueprints && st.blueprints[e.type];
             if (bp && bp._isGrown) halten.add(this._scatterCellKeyAt(e.position.x, e.position.z, "tree"));
         }
-        for (const { karte, zelle, reichweite, geht: abschied } of (this._zellGedaechtnisse || new Map()).values()) {
+        for (const { karte: lies, zelle, reichweite, geht: abschied } of AnazhRealm.ZELL_GEDAECHTNISSE) {
+            const karte = lies(this);
             if (!karte || !karte.size) continue;
-            const rw = typeof reichweite === "function" ? reichweite.call(this) : reichweite;
+            const rw = reichweite ? reichweite(this) : 0;
             const fiel = [];
             for (const k of karte instanceof Map ? karte.keys() : karte) {
                 if (halten.has(k)) continue;
@@ -218,7 +197,7 @@ class AnazhRealm_gelaende_fern {
                 const i = b < 0 ? NaN : +k.slice(a, b);
                 const j = b < 0 ? NaN : +k.slice(b + 1, c < 0 ? k.length : c);
                 if (!Number.isFinite(i) || !Number.isFinite(j)) continue; // kein Zell-Schlüssel (die Heimat „heim“)
-                const Z = typeof zelle === "function" ? zelle.call(this, k.slice(0, Math.max(0, a - 1))) : zelle;
+                const Z = typeof zelle === "function" ? zelle(this, k.slice(0, Math.max(0, a - 1))) : zelle;
                 const m = typeof Z === "number" ? Z : Z.m;
                 const ab = typeof Z === "number" ? 0 : Z.ab;
                 const [x0, z0] = [i * m + ab, j * m + ab];
@@ -227,7 +206,7 @@ class AnazhRealm_gelaende_fern {
                 karte.delete(k);
                 fiel.push(k);
             }
-            if (abschied && fiel.length) abschied.call(this, fiel);
+            if (abschied && fiel.length) abschied(this, fiel);
         }
     }
 
@@ -2329,6 +2308,53 @@ AnazhRealm.FERN_JAHR_LEER = Object.freeze([0, 0, 0, 0, 0, 0, 0, 0]);
 // DER ABSCHIED DER SAAT IN RATEN (`_saatGeht`): so viele Würfe eines gehenden Chunks fallen je Takt auch nach der Frist des
 // Abräumens (0,74 ms je Wurf, gegner-speicher 15.11.) — die Saat geht auch im vollen Takt, nie ungedeckelt.
 AnazhRealm.SAAT_GEHT_MIN = 4;
+// DIE TAFEL DER ZELL-GEDÄCHTNISSE (Schnitt 2 „der Speicher folgt dem Blick“; Gegner Speicher F2 F3, Runden-Zensus 16.11.): jedes
+// Gedächtnis mit Zell-Schlüssel steht HIER beim Namen — sein Leser (`karte(r)`: die Karte, die die Welt gerade trägt, wer auch
+// immer sie legte), seine Zelle (das Maß m je Zelle; { m, ab } für ein Raster mit Ursprung; oder eine Funktion der Schicht vor „:“),
+// die Reichweite seiner Leser (m um den Spieler) und sein Abschied (`geht(r, schluessel)`, die Folgen im Faden). Der Schlüssel
+// ist „[schicht:]i,j[,…]“, die Zelle (i, j) das Rechteck [i·m + ab, (i + 1)·m + ab); `_saatGedaechtnisGeht` räumt sie alle in
+// EINEM Gang. Bis w28-speicher-ring (zweite Fassung) meldete sich jede Karte bei ihrer Anlage an — eine Karte, die ein anderer
+// legte (die Takt-Wand T16, die Fahr-Probe `structuredClone` der Tritte), stand in keinem Register und wuchs. Die Darts der
+// Wald-Zellen (`_forestDartMemo`) stehen NICHT hier: ihr EINER Räumer ist die Schranke (`_forestDartRaum`, WALD_PLAN.zellen, die
+// fernsten zuerst) — die Streu liest den Plan bis an ihren Horizont (`SCATTER.outerM`), weit jenseits des Saums der Saat
+// (gate:kreatur-takt schwarm: die Krone s:tree:74,0 ohne Scheitel, als die Saat ihn mitnahm).
+AnazhRealm.ZELL_GEDAECHTNISSE = Object.freeze([
+    // die Marke der Streu und ihr Lookup (jede Schicht ihr Zellmaß), bis an den Horizont der Streu
+    {
+        karte: (r) => r.state.scatterPromoted,
+        zelle: (r, s) => r._streuZelleM(s),
+        reichweite: (r) => r._streuReichweite(),
+    },
+    {
+        karte: (r) => r.state.scatterLookup,
+        zelle: (r, s) => r._streuZelleM(s),
+        reichweite: (r) => r._streuReichweite(),
+    },
+    // die Antworten des Freistands (Schlüssel in Welt-Metern)
+    { karte: (r) => r._freistandMemo, zelle: 1, reichweite: (r) => r._streuReichweite() },
+    // der Pegel und die Platten-Treffer je Chunk
+    { karte: (r) => r._pegelOrte, zelle: (r) => r._voxelChunkConfig(0).span },
+    { karte: (r) => r.state._chunkIdbHitByKey, zelle: (r) => r._voxelChunkConfig(0).span },
+    // das flüchtige Gedächtnis der Tritte (den Pfad trägt der Stand)
+    { karte: (r) => r._trittSchwach, zelle: () => AnazhRealm.TRITT.zelleM },
+    // die Hydro-Kacheln und ihre Bestellungen (das erfüllte Versprechen hielt die Kachel ein zweites Mal); um die Hälfte versetzt
+    // wie `_ensureHydroTilesAround`, behalten bis an die Reichweite ihrer Leser, ihr Abschied in jeden Faden
+    {
+        karte: (r) => r._hydroBestellt,
+        zelle: () => AnazhRealm._hydroKachelZelle(),
+        reichweite: (r) => r._hydroReichweite(),
+    },
+    {
+        karte: (r) => r.state.hydroTiles,
+        zelle: () => AnazhRealm._hydroKachelZelle(),
+        reichweite: (r) => r._hydroReichweite(),
+        geht: (r, schluessel) => r._hydroGeht(schluessel),
+    },
+]);
+AnazhRealm._hydroKachelZelle = () => ({
+    m: AnazhRealm.HYDROSPHERE.regionSize,
+    ab: -AnazhRealm.HYDROSPHERE.regionSize / 2,
+});
 // DIE NEIGUNG DES RINGS (`_fernNeigungTakt`): `texelM` die Kante eines Texels der Karte (die Schicht der Kronen-Karte, ihr Raster
 // 512² → ±8 km, die Schale 2 ganz; die Station ferne.K4 misst die Neigung des Gesetzes über 50 m, die Karte über 62,5 m), neu nach
 // `nachM` Wanderung des Ankers, das Gitter in Aufträgen à `zeilenJeAuftrag` Zeilen (514² Rufe des Gesetzes, 2,25 µs je Ruf:

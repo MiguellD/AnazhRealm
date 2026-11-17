@@ -100,7 +100,7 @@ class AnazhRealm_vegetation_streu {
         const cz = Math.floor(z / cell);
         return `${layer}:${cx},${cz}`;
     }
-    // Das Zellmaß der Schicht (m) — der Schlüssel der Streu und das Register der Zell-Gedächtnisse (`_zellGedaechtnis`) lesen es.
+    // Das Zellmaß der Schicht (m) — der Schlüssel der Streu und die Tafel der Zell-Gedächtnisse (`ZELL_GEDAECHTNISSE`) lesen es.
     _streuZelleM(layer) {
         const cfg = this._scatterConfig();
         return layer === "under" ? cfg.underCellM : layer === "stone" ? cfg.stoneCellM : cfg.treeCellM;
@@ -111,12 +111,7 @@ class AnazhRealm_vegetation_streu {
     // Doppel-Tree). Snapshot-getragen — die Promotion überlebt den Reload.
     _ensureScatterPromotedSet() {
         if (!this.state.scatterPromoted || !(this.state.scatterPromoted instanceof Set)) {
-            this.state.scatterPromoted = this._zellGedaechtnis(
-                "scatterPromoted",
-                new Set(),
-                (s) => this._streuZelleM(s),
-                this._streuReichweite
-            );
+            this.state.scatterPromoted = new Set();
         }
         return this.state.scatterPromoted;
     }
@@ -161,12 +156,7 @@ class AnazhRealm_vegetation_streu {
     // kann die Promotion die Cell nicht zur Form-Identität auflösen.
     _ensureScatterLookup() {
         if (!this.state.scatterLookup || !(this.state.scatterLookup instanceof Map)) {
-            this.state.scatterLookup = this._zellGedaechtnis(
-                "scatterLookup",
-                new Map(),
-                (s) => this._streuZelleM(s),
-                this._streuReichweite
-            );
+            this.state.scatterLookup = new Map();
         }
         return this.state.scatterLookup;
     }
