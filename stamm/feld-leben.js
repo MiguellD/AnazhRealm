@@ -2643,9 +2643,8 @@ class AnazhRealm_feld_leben {
         let f = null;
         if (leb >= AnazhRealm.BRAND.minStoff && !this._nassAt(x, z)) {
             const y = this._voxelSurfaceY(x, z);
-            // das Bett liegt, wo die Zelle Brennstoff trägt (Mitte und vier Viertel-Punkte): ihr ANTEIL geht als Last in das Gesetz
-            // (`leb`), das entscheidet, ob die Front trägt. Bis w28-lava-zuendet las sie nur ihre Mitte — ein Stein dort nahm einer
-            // Wiese von 16 m ihr Bett, die Front hielt vor grünem Gras
+            // das Bett liegt, wo die Zelle Brennstoff trägt (Mitte und vier Viertel-Punkte), ihr ANTEIL geht als Last ins Gesetz
+            // (`leb`). Bis w28-lava-zuendet las sie nur ihre Mitte — ein Stein dort nahm einer Wiese von 16 m ihr Bett
             const B5 = [0, 1, 2, 3, 4]
                 .map((k) => [k ? (k & 1 ? cs : -cs) / 4 : 0, k ? (k > 2 ? cs : -cs) / 4 : 0])
                 .map(([dx, dz]) =>
