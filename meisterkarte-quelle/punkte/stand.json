@@ -2508,7 +2508,7 @@
   },
   "mensch.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 7de938ab radeon · gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 389a6496 gtx",
+   "beleg": "Maschine: gehalten: rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an 7de938ab radeon · rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1) an d39e0d6e gtx",
    "stationen": [
     {
      "id": "mensch.K5#1",
@@ -2525,9 +2525,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1)",
-     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/diag-kreatur-leben.cjs +30)",
-     "gehalten": true,
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": "GRÜN trotz Last: Referenz f 1,436 (Faden 1,154 · alle Kerne 1,436; vor 104,2/306,3 ms, nach 104,3/332,6 ms, Ruhe 90,4/231,6 ms seit 2026-11-15) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 38,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 13,5 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 12,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 16,4 CPU-s · svchost.exe 8,5 CPU-s · SearchIndexer.exe 2,3 CPU-s",
      "r6": "konsum"
     }
    ]
@@ -4924,7 +4923,7 @@
   },
   "karte2.erleben.klang.landschaft": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Wind r 0.65 bei Lag 0 (n 104, CV Bild 0.29 / Ohr 0.63, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42 dB aus 13 Leibern (13 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an 105c9bd3 radeon · gehalten: ✅ Wind r 0.79 bei Lag 0 (n 104, CV Bild 0.25 / Ohr 0.52, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -41.6 dB aus 17 Leibern (17 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an bcc2cadc gtx",
+   "beleg": "Maschine: gehalten: ✅ Wind r 0.65 bei Lag 0 (n 104, CV Bild 0.29 / Ohr 0.63, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42 dB aus 13 Leibern (13 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an 105c9bd3 radeon · ✅ Wind r 0.81 bei Lag 0 (n 104, CV Bild 0.15 / Ohr 0.55, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -39.5 dB aus 20 Leibern (20 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an d39e0d6e gtx",
    "stationen": [
     {
      "id": "karte2.erleben.klang.landschaft#1",
@@ -4941,10 +4940,9 @@
      "id": "karte2.erleben.klang.landschaft#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "✅ Wind r 0.79 bei Lag 0 (n 104, CV Bild 0.25 / Ohr 0.52, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -41.6 dB aus 17 Leibern (17 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2",
-     "sha": "bcc2cadc2742edb5c337dde7fd11b7d79997f9fe",
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/diag-klang-zensus.cjs, scripts/lib/ausgabe-aufnahme.cjs +26)",
-     "gehalten": true,
+     "zahl": "✅ Wind r 0.81 bei Lag 0 (n 104, CV Bild 0.15 / Ohr 0.55, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -39.5 dB aus 20 Leibern (20 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2",
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": "GRÜN trotz Last: Referenz f 1,247 (Faden 1,098 · alle Kerne 1,247; vor 99,3/258,5 ms, nach 97,8/289,4 ms, Ruhe 90,4/232,1 ms seit 2026-11-15) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 11,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,1 CPU-s · WUDFHost.exe 2,8 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 9,3 CPU-s · svchost.exe 6,2 CPU-s · SearchIndexer.exe 0,5 CPU-s",
      "r6": "konsum",
      "beide": true
     }
@@ -5418,7 +5416,7 @@
   },
   "karte2.mensch.fahrzeug.medium": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 14,40 ms (Soll ≤ 33), größtes 272,70 ms, 2840 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an 16f45362 gtx",
+   "beleg": "Maschine: gehalten: ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 11,10 ms (Soll ≤ 33), größtes 144,40 ms, 2839 Bilder · Exit 0 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · ✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 14,00 ms (Soll ≤ 33), größtes 202,40 ms, 2850 Bilder · Exit 0 · [linse-gpu] nvidia/pascal an d39e0d6e gtx",
    "stationen": [
     {
      "id": "karte2.mensch.fahrzeug.medium#1",
@@ -5435,10 +5433,9 @@
      "id": "karte2.mensch.fahrzeug.medium#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 14,40 ms (Soll ≤ 33), größtes 272,70 ms, 2840 Bilder · Exit 0 · [linse-gpu] nvidia/pascal",
-     "sha": "16f45362d3834812d60601440e6793ef2d65fb70",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/fahr-proben.cjs +8)",
-     "gehalten": true,
+     "zahl": "✅ Bremsweg 50 → 0 km/h Gras 25,43 / Weg 14,28 m = 1,78× (Soll ≥ 1,5) · ✅ nass ÷ trocken Gras 2,07×, Weg 1,57× (Soll ≥ 1,3) · ✅ Bild (Takt) während der Fahrt p95 14,00 ms (Soll ≤ 33), größtes 202,40 ms, 2850 Bilder · Exit 0 · [linse-gpu] nvidia/pascal",
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -5473,7 +5470,7 @@
   },
   "karte2.mensch.macht.wehrbau": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an b7b0f8fe gtx",
+   "beleg": "Maschine: gehalten: ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3 an 389a6496 radeon · ✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal an d39e0d6e gtx",
    "stationen": [
     {
      "id": "karte2.mensch.macht.wehrbau#1",
@@ -5491,9 +5488,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal",
-     "sha": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs, stamm/gelaende-boden.js +1)",
-     "gehalten": true,
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -6116,7 +6112,7 @@
   },
   "karte2.same.physik.verformung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: klinge_flegel Schwung 0.41 m, Länge (längs) 0.328–0.328 m, v² 2.922 → 0.144 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/172 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 649 px über dem Rauschen 0, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] amd/rdna-3 an ee9c1965 radeon — offen: karte2.same.physik.verformung#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: klinge_flegel Schwung 0.41 m, Länge (längs) 0.328–0.328 m, v² 2.922 → 0.144 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/172 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 649 px über dem Rauschen 0, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] amd/rdna-3 an ee9c1965 radeon · klinge_flegel Schwung 0.402 m, Länge (längs) 0.328–0.328 m, v² 2.763 → 0.146 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/275 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 283 px, Gestalt 643 px über dem Rauschen 0 (ohne Gestalt 0, Welt gehalten), Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal an d39e0d6e gtx",
    "stationen": [
     {
      "id": "karte2.same.physik.verformung#1",
@@ -6131,11 +6127,11 @@
     {
      "id": "karte2.same.physik.verformung#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "klinge_flegel Schwung 0.402 m, Länge (längs) 0.328–0.328 m, v² 2.763 → 0.146 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/275 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 283 px, Gestalt 643 px über dem Rauschen 0 (ohne Gestalt 0, Welt gehalten), Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal",
+     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6332,7 +6328,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 194,
+  "konsum": 195,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6500,10 +6496,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 148
+  "ohne": 147
  },
  "kopfVoll": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
- "zeit": "2026-11-17T19:48:21.776Z",
+ "zeit": "2026-11-17T19:59:47.282Z",
  "vorher": "d39e0d6e",
  "bilanz": {
   "gewinn": [],
