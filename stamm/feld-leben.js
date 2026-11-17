@@ -609,11 +609,10 @@ class AnazhRealm_feld_leben {
     }
 
     generateEvolution() {
-        // ### Nexus-Evolution als DSL-Programm ###
-        // Komponiert ein zufälliges DSL-Programm — die DSL ist der einzige Pfad für neue Effekte (keine
-        // Code-Generierung). Mit composeRuleProb wird es eine stehende Regel: der `rule`-Op registriert sie
-        // über denselben dslRun-Pfad in state.worldRules. Der Wurf des Nexus ist ein Strom der Welt (`_bauSame`, Γ5) — die
-        // Komposition darunter zieht aus demselben Strom.
+        // ### Nexus-Evolution als DSL-Programm ### Komponiert ein zufälliges DSL-Programm — die DSL ist der einzige Pfad für neue
+        // Effekte (keine Code-Generierung). Mit composeRuleProb wird es eine stehende Regel: der `rule`-Op registriert sie über
+        // denselben dslRun-Pfad in state.worldRules. Der Wurf des Nexus ist ein Strom der Welt (`_bauSame`, Γ5) — die
+        // Komposition darunter zieht aus demselben Strom. Die Kennung `evo_<n>` ist der Schlüssel, die Seite liest `etikett`.
         const rng = this._samenStrom(this._bauSame("nexus"));
         // Keine Struktur-Batch-Bomben: ≤1 schwerer Welt-Bau (spawn_village/temple/…) pro Evolution, egal wie
         // in repeat/chain verschachtelt — jeder Bau ist ein synchroner Footprint-Remesh (~140 ms), N davon =
@@ -626,8 +625,10 @@ class AnazhRealm_feld_leben {
             const heavyCount = (JSON.stringify(program).match(HEAVY) || []).length;
             if (heavyCount <= 1) break; // frame-sicher → nehmen
         }
+        const n = String(this.state.dsl.nextEntryId++);
         return {
-            name: `evo_${this.state.dsl.nextEntryId++}`,
+            name: `evo_${n}`,
+            etikett: ["hud.geste-nexus", { n }],
             program,
             source: "nexus",
             createdAt: this.state.spielZeit,

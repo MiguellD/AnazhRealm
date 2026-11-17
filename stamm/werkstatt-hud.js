@@ -1475,9 +1475,11 @@ class AnazhRealm_werkstatt_hud {
             kind.className = "ability-kind";
             kind.textContent = this._t("hud.geste");
             kind.title = this._t("hud.geste-titel");
+            // der Name der Geste: ihr Etikett (die Nexus-Geste, Zeile der Tafel), sonst ihr Name (ein Wort des Spielers, Daten)
+            const wort = Array.isArray(ability.etikett) ? ability.etikett : String(ability.name);
             const name = document.createElement("span");
             name.className = "name";
-            name.textContent = ability.name;
+            name.textContent = Array.isArray(wort) ? this._t(wort[0], wort[1]) : wort;
             head.appendChild(kind);
             head.appendChild(name);
             // WANN sie wirkte (Schöpfer-Befund „sehe nicht ob sie feuern") — die Geste ist einmalig, also „vor Xs".
@@ -1491,13 +1493,13 @@ class AnazhRealm_werkstatt_hud {
             run.type = "button";
             run.textContent = "▶";
             run.setAttribute("data-run-ability", ability.name);
-            run.setAttribute("aria-label", this._t("hud.geste-wirken", { name: ability.name }));
+            run.setAttribute("aria-label", this._t("hud.geste-wirken", { name: wort }));
             head.appendChild(run);
             const forget = document.createElement("button");
             forget.type = "button";
             forget.textContent = "✕";
             forget.setAttribute("data-forget-ability", ability.name);
-            forget.setAttribute("aria-label", this._t("hud.geste-vergessen", { name: ability.name }));
+            forget.setAttribute("aria-label", this._t("hud.geste-vergessen", { name: wort }));
             head.appendChild(forget);
             row.appendChild(head);
             // die Beschreibung aus dem Programm, in der Sprache von jetzt (`describeProgram`)

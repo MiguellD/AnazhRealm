@@ -1215,6 +1215,7 @@ class AnazhRealm_daten {
             "hud.gesetze-eigene-leer": ["Noch keine eigenen — sprich eine Regel, oder 📌 adoptiere ein Nexus-Experiment.", "None of your own yet — speak a rule, or 📌 adopt a Nexus experiment."],
             "hud.gesetze-leer": ["Noch keine Gesetze. Sag z. B. „{vorlage}\".", "No laws yet. Try saying “{vorlage}”."],
             "hud.geste": ["✦ Geste", "✦ Gesture"],
+            "hud.geste-nexus": ["Nexus-Geste {n}", "Nexus gesture {n}"],
             "hud.geste-titel": ["Eine einmalige Tat (kein stehendes Gesetz) — ▶ wirkt sie erneut.", "A one-time deed (not a standing law) — ▶ casts it again."],
             "hud.geste-vergessen": ["Geste {name} vergessen", "Forget gesture {name}"],
             "hud.geste-wirken": ["Geste {name} erneut wirken", "Cast gesture {name} again"],
