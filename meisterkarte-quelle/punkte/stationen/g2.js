@@ -1957,7 +1957,8 @@ async function dorfZaehlung(r, T) {
             const auge = cam.getWorldPosition(new T.Vector3());
             const je = new Map();
             let ist = 0;
-            const amOrt = new Set();
+            const amOrt = new Set(),
+                gezaehlt = [];
             for (const g of leiber()) {
                 const b = g.userData._feldLageVon.b;
                 je.set(b, (je.get(b) || 0) + 1);
@@ -1973,7 +1974,7 @@ async function dorfZaehlung(r, T) {
                 const dA = auge.distanceTo(brust);
                 let frei = true, raus = r._imGrundriss(auge.x, auge.z, 0) !== "haus"; // wie platzAcht: ab dem Rand des Grundrisses unter dem Auge
                 for (let t = 0.6; t < dA - 0.6 && frei; t += 0.5) { const f = t / dA, h = r._imGrundriss(auge.x + (brust.x - auge.x) * f, auge.z + (brust.z - auge.z) * f, 0) === "haus"; if (!raus) raus = !h; else if (h) frei = false; }
-                if (frei) ist++;
+                if (frei) ist++, gezaehlt.push(b);
             }
             doppelt = Math.max(doppelt, [...je.values()].filter((n) => n > 1).length);
             const sollL = L.filter((b) => { const z = zielVon(b, h); return z && schl(z) === ok; });
@@ -1984,7 +1985,15 @@ async function dorfZaehlung(r, T) {
                 const g = leiber().find((x) => x.userData._feldLageVon.b === b), z = r._bewohnerSoll(b, h);
                 return { rolle: b.rolle || b.beruf || b.role || null, leib: !!g, dO: g ? +Math.hypot(g.position.x - O.x, g.position.z - O.z).toFixed(1) : null, gez: gez(g), drinnen: g ? !!g.userData._drinnen : null, plan: z && (z.tat || z.was || z.art || null), posten: !!(z && z.posten) };
             });
-            proben.push({ uhr: h, ort: oi, tod: +s.timeOfDay.toFixed(4), soll: sollL.length, ist, fehlt, imBild: !!stand, stand: stand ? [+stand.x.toFixed(1), +stand.z.toFixed(1)] : null, takte, ...(wer.length ? { wer } : {}) });
+            // WER ZU VIEL STEHT (Lesewert, 17.11., Radeon 602607bb: „3 Uhr Ort 2 Ist 1/Soll 0“ ohne den Menschen): je Gezähltem
+            // außerhalb des Solls dieses Orts Rolle, Akt, ob sein Plan ihn drinnen will, ob das Spiel ihn drinnen führt, und sein
+            // Abstand zum eigenen Ziel der Stunde (ein Weg nach Hause oder ein Mensch am falschen Ort)
+            const imSoll = new Set(sollL);
+            const mehr = gezaehlt.filter((b) => !imSoll.has(b)).slice(0, 3).map((b) => {
+                const g = leiber().find((x) => x.userData._feldLageVon.b === b), z = r._bewohnerSoll(b, h);
+                return { rolle: b.rolle || b.beruf || null, akt: z && z.akt != null ? String(z.akt) : null, planDrinnen: !!(z && z.drinnen), drinnen: !!b.drinnen, dZiel: g && z && z.ziel ? +Math.hypot(g.position.x - z.ziel.x, g.position.z - z.ziel.z).toFixed(1) : null };
+            });
+            proben.push({ uhr: h, ort: oi, tod: +s.timeOfDay.toFixed(4), soll: sollL.length, ist, fehlt, imBild: !!stand, stand: stand ? [+stand.x.toFixed(1), +stand.z.toFixed(1)] : null, takte, ...(wer.length ? { wer } : {}), ...(mehr.length ? { mehr } : {}) });
         }
     }
     return { bewohner: L.length, orte: orte.map((o) => [+o.x.toFixed(1), +o.z.toFixed(1), o.n]), rM: R_M, samenDoppelt, doppelt, sicht: s.cameraMode, proben, version: A.VERSION };
@@ -5053,14 +5062,29 @@ const stationen = [
             const paare = new Set(P.map((p) => p.uhr + "@" + p.ort)).size;
             const uhren = new Set(P.map((p) => p.uhr)).size;
             const orte = new Set(P.map((p) => p.ort)).size;
-            const gruen =
-                hw && z.sicht === "third" && z.bewohner >= 10 && paare >= 20 && uhren >= 4 && orte >= 5 && sollSumme >= 20 &&
-                je.every((x) => x.ok) && z.doppelt === 0 && z.samenDoppelt === 0;
-            const rot = je.filter((x) => !x.ok).map((x) => x.p.uhr + " Uhr Ort " + x.p.ort + " Ist " + x.p.ist + "/Soll " + x.p.soll + (x.p.fehlt ? ", fehlt " + x.p.fehlt : "") + (x.p.imBild ? "" : ", Ort nicht im Bild"));
+            // JEDE BEDINGUNG BEIM NAMEN (17.11., GTX 602607bb: ROT bei „jede Stichprobe ±10 %, niemand fehlt“ — gerissen war Σ Soll
+            // 12 < 20, die Zahl nannte die 12, nie die Schranke): das Urteil ist GRÜN genau dann, wenn diese Liste leer ist
+            const reisst = [
+                !hw && "Adapter ohne Karte",
+                z.sicht !== "third" && "Sicht " + z.sicht + " statt third",
+                !(z.bewohner >= 10) && "Bewohner " + z.bewohner + " < 10",
+                !(paare >= 20) && "Stichproben " + paare + " < 20",
+                !(uhren >= 4) && "Uhren " + uhren + " < 4",
+                !(orte >= 5) && "Orte " + orte + " < 5",
+                !(sollSumme >= 20) && "Σ Soll " + sollSumme + " < 20 (die Zählung trägt zu wenig Soll)",
+                z.doppelt !== 0 && "doppelt " + z.doppelt + " Hüllen ≠ 0",
+                z.samenDoppelt !== 0 && "doppelt " + z.samenDoppelt + " Samen ≠ 0",
+            ].filter(Boolean);
+            // WER ZU VIEL STEHT (Lesewert, 17.11., Radeon 602607bb: „3 Uhr Ort 2 Ist 1/Soll 0“ ohne den Menschen): je Gezähltem außerhalb
+            // des Solls Rolle, Akt, Plan drinnen, drinnen im Spiel, Abstand zum eigenen Ziel der Stunde
+            const mehrVon = (p) => (Array.isArray(p.mehr) && p.mehr.length ? ", zu viel: " + p.mehr.map((m) => (m.rolle || "?") + " " + (m.akt || "?") + (m.planDrinnen ? " (Plan drinnen" : " (Plan draußen") + (m.drinnen ? ", drinnen" : "") + (m.dZiel != null ? ", " + m.dZiel + " m vom Ziel" : "") + ")").join(", ") : "");
+            const rot = je.filter((x) => !x.ok).map((x) => x.p.uhr + " Uhr Ort " + x.p.ort + " Ist " + x.p.ist + "/Soll " + x.p.soll + (x.p.fehlt ? ", fehlt " + x.p.fehlt : "") + (x.p.imBild ? "" : ", Ort nicht im Bild") + mehrVon(x.p));
+            const gruen = !reisst.length && !rot.length;
             return {
                 gruen,
                 zahl:
                     z.bewohner + " Bewohner, " + paare + " Stichproben (" + orte + " Orte × " + uhren + " Uhren), Σ Soll " + sollSumme + " · " +
+                    (reisst.length ? "✗ " + reisst.join(" · ") + " · " : "") +
                     (rot.length ? "✗ " + rot.join(" · ") : "jede Stichprobe ±10 %, niemand fehlt") + " · doppelt " + z.doppelt + " Hüllen / " +
                     z.samenDoppelt + " Samen · " + z.sicht + " · " + ad,
             };
@@ -5084,12 +5108,16 @@ const stationen = [
                 { name: "einer zu viel an einem Ort mit Soll 3", stdout: roh((z) => (z.proben[19].ist = 4)), gruen: false },
                 { name: "um 3 Uhr steht einer am Ort (Soll 0)", stdout: roh((z) => (z.proben[0].ist = 1)), gruen: false },
                 { name: "ein Bewohner fehlt am Ort (Ist stimmt durch einen Fremden)", stdout: roh((z) => (z.proben[6].fehlt = 1)), gruen: false },
-                { name: "ein Bewohner mit zwei Hüllen", stdout: roh((z) => (z.doppelt = 1)), gruen: false },
-                { name: "zwei Bewohner mit einem Samen", stdout: roh((z) => (z.samenDoppelt = 1)), gruen: false },
+                { name: "ein Bewohner mit zwei Hüllen", stdout: roh((z) => (z.doppelt = 1)), gruen: false, zahl: /✗ doppelt 1 Hüllen ≠ 0/ },
+                { name: "zwei Bewohner mit einem Samen", stdout: roh((z) => (z.samenDoppelt = 1)), gruen: false, zahl: /✗ doppelt 1 Samen ≠ 0/ },
                 { name: "der Ort nicht im Bild", stdout: roh((z) => (z.proben[12].imBild = false)), gruen: false },
-                { name: "19 Stichproben", stdout: roh((z) => z.proben.pop()), gruen: false },
-                { name: "die Zählung leer (Σ Soll 0)", stdout: roh((z) => z.proben.forEach((p) => (p.soll = p.ist = 0))), gruen: false },
-                { name: "Ego statt Third", stdout: roh((z) => (z.sicht = "first")), gruen: false },
+                { name: "19 Stichproben", stdout: roh((z) => z.proben.pop()), gruen: false, zahl: /✗ Stichproben 19 < 20/ },
+                { name: "die Zählung leer (Σ Soll 0)", stdout: roh((z) => z.proben.forEach((p) => (p.soll = p.ist = 0))), gruen: false, zahl: /✗ Σ Soll 0 < 20/ },
+                // die GTX am 602607bb: jede Stichprobe gleich dem Soll, aber je Ort und Uhr höchstens EIN Mensch — Σ Soll 12; bis hier ROT
+                // unter „jede Stichprobe ±10 %, niemand fehlt“ ohne die gerissene Schranke
+                { name: "die GTX am 602607bb: Σ Soll 12, jede Stichprobe gleich — ROT, die Zahl nennt die Schranke", stdout: roh((z) => z.proben.forEach((p) => (p.soll = p.ist = p.uhr === 3 ? 0 : [1, 1, 1, 0, 1][p.ort]))), gruen: false, zahl: /Σ Soll 12 · ✗ Σ Soll 12 < 20 .* · jede Stichprobe ±10 %, niemand fehlt/ },
+                { name: "die Radeon am 602607bb: um 3 Uhr einer zu viel an Ort 2 — die Zahl nennt ihn", stdout: roh((z) => Object.assign(z.proben[2], { ist: 1, mehr: [{ rolle: "bauer", akt: "heim", planDrinnen: true, drinnen: false, dZiel: 14.2 }] })), gruen: false, zahl: /3 Uhr Ort 2 Ist 1\/Soll 0, zu viel: bauer heim \(Plan drinnen, 14\.2 m vom Ziel\)/ },
+                { name: "Ego statt Third", stdout: roh((z) => (z.sicht = "first")), gruen: false, zahl: /✗ Sicht first statt third/ },
                 { name: "die Probe fand die Orte nicht", stdout: ad + "\nZAEHLUNG " + JSON.stringify({ fehler: "nur 3 Orte mit Soll im Start-Dorf", bewohner: 77 }), gruen: false },
                 { name: "swiftshader", stdout: roh().replace(ad, "[linse-gpu] google/swiftshader"), gruen: false },
                 { name: "der Adapter ungenannt", stdout: roh().replace(ad, "[linse-gpu] ungenannt"), gruen: false },

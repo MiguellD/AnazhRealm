@@ -1053,6 +1053,13 @@ const KOPPLUNG_TEXT =
     " const srgb = (v) => ((v /= 255), v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)), SC = 0.8 - 0.04, DD = 1 - SC;" +
     " const invNeutral = (y) => { const ymin = Math.min(...y), ymax = Math.max(...y); let k = 1; if (ymax >= SC) { const np = Math.min(ymax, 0.9995); k = ((DD * DD) / (1 - np) - DD + SC) / np; } const yu = y.map((v) => v * k), um = ymin * k; const off = um < 0.04 ? (() => { const xm = Math.sqrt(um / 6.25); return xm - 6.25 * xm * xm; })() : 0.04; return yu.map((v) => v + off); };" +
     " const marke = () => { let bau = 0; for (const e of st.architectures || []) if (e && e._lodLevel != null && e.position && Math.hypot(e.position.x - ziel.x, e.position.z - ziel.z) < 200) bau += e._lodLevel * 7 + (e._lodBandLevel | 0); return [typeof r._chunkDecktRing === 'function' ? !!r._chunkDecktRing(ziel.x, ziel.z) : null, bau, st.foliageRadius != null ? +st.foliageRadius.toFixed(1) : null].join('|'); };" +
+    // DIE SICHT AUF DIE MARKE AM BILD (17.11., Radeon 602607bb: Y am Ziel 0,019 ↔ 0,165 zwischen Nachbarschritten bei gleicher Marke —
+    // `frei` prüft nur das Gelände-Gesetz, Laub nahe der Kamera deckt den Fleck): je Schritt nach dem Schuss die Tiefe EINES Bilds
+    // (`__spiegelDaten`, wie die Blick-Wahl) und die Abnahme am Ziel (`__zielMessen`, nurZiel: ohne die Strahlen der Nah-Deckung) an
+    // der Mitte und acht Punkten des Flecks auf 0,7 × FLECK — eine Fläche am Pixel, die näher als der Fleck (r = FLECK) vor ihm steht,
+    // macht den Schritt UNGEMESSEN mit Namen und Abstand des Verdeckers (die Abnahme fragt das Bild ohne Boden-Schicht und ohne Leiber).
+    " const RING = []; for (let k = 0; k < 8; k++) { const a = (k * Math.PI) / 4, qx = ziel.x + Math.cos(a) * FLECK * 0.7, qz = ziel.z + Math.sin(a) * FLECK * 0.7; RING.push([qx, h(qx, qz) + 0.3, qz]); }" +
+    " const sichtAuf = async () => { try { const Sd = (window.__loopBild(), await window.__spiegelDaten()); const m = await window.__zielMessen({ nurZiel: true, ziel: { x: ziel.x, y: ty + 0.3, z: ziel.z, name: 'Fleck', r: FLECK, fuss: false, punkte: RING } }, Sd); const zo = m && m.ziel; return zo ? { frei: zo.frei, imBild: zo.imBild, vor: zo.vor || null, ab: zo.vorAbstand } : { frei: null, vor: 'keine Abnahme' }; } catch (e) { return { frei: null, vor: 'Abnahme warf: ' + String(e && e.message).slice(0, 120) }; } };" +
     " const schritte = []; rend.setAnimationLoop(null); st.playerMesh.visible = false;" +
     " try { for (let d = FERN; d >= NAH; d -= SCHRITT) { const px = ziel.x - ziel.dx * d, pz = ziel.z - ziel.dz * d, py = h(px, pz); pm.set(px, py + 0.05, pz);" +
     " for (let t = 0; t < 30; t++) (r._gameLoopTick(performance.now()), await new Promise((ok) => setTimeout(ok, 5)));" +
@@ -1060,7 +1067,7 @@ const KOPPLUNG_TEXT =
     " const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: 'messung' })).u8, belicht = rend.toneMappingExposure, c = zielV.clone().project(cam);" +
     " const cx = ((c.x + 1) / 2) * W, cy = ((1 - c.y) / 2) * H, rp = (FLECK / Math.hypot(px - ziel.x, py + 1.7 - ty, pz - ziel.z)) * (H / 2) / Math.tan((cam.fov * Math.PI) / 360); let s = 0, n = 0;" +
     " for (let y = Math.max(0, Math.floor(cy - rp)); y < Math.min(H, Math.ceil(cy + rp)); y++) for (let x = Math.max(0, Math.floor(cx - rp)); x < Math.min(W, Math.ceil(cx + rp)); x++) { if ((x - cx) ** 2 + (y - cy) ** 2 > rp * rp) continue; const i = (y * W + x) * 4, l = invNeutral([srgb(u8[i]), srgb(u8[i + 1]), srgb(u8[i + 2])]); s += (0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]) / belicht; n++; }" +
-    " schritte.push({ d, Y: n ? +(s / n).toFixed(5) : null, px: n, marke: marke() }); } }" +
+    " const mk = marke(); schritte.push({ d, Y: n ? +(s / n).toFixed(5) : null, px: n, marke: mk, sicht: await sichtAuf() }); } }" +
     " finally { pm.copy(P0); cam.fov = merk[2]; cam.updateProjectionMatrix(); cam.position.copy(merk[0]); cam.quaternion.copy(merk[1]); cam.updateMatrixWorld(true); st.playerMesh.visible = merk[3]; }" +
     " return { ende: 'ok', ziel: [+ziel.x.toFixed(1), +ty.toFixed(1), +ziel.z.toFixed(1)], gefaelle: +ziel.g.toFixed(3), kand, schritte, uhr: st.timeOfDay, wetter: st.weather };";
 // DER DECKEL (geschätzt, ungemessen an der Karte): 40 Schritte zu 30 Takten (je ~0,7 s) und EINER Aufnahme 1920 × 1080, dazu die Wahl
@@ -3172,13 +3179,22 @@ const stationen = [
             const k = j.schritte && j.schritte.gang;
             const e = k && k.json && k.json.ergebnis;
             if (!e || e.ende !== "ok") return { gruen: false, zahl: "kein Gang (" + String((e && (e.ende + " " + JSON.stringify(e.kand || ""))) || (k && k.rest) || "").slice(-200) + ")" };
-            const S = (e.schritte || []).filter((s) => Number.isFinite(s.Y) && s.Y > 0 && s.px >= 50);
+            // DIE SICHT AUF DIE MARKE (17.11., `sichtAuf` der Probe): ein Schritt, dessen Fleck das Bild nicht frei zeigt, ist UNGEMESSEN
+            // mit Grund — er zählt nicht als Schritt und nicht als Nachbar; verglichen werden nur Nachbarn im Abstand EINES Schritts, die
+            // beide gemessen sind. Eine Akte ohne `sicht` (vor dem 17.11.) urteilt wie bisher.
+            const roh = e.schritte || [];
+            const fenster = (s) => Number.isFinite(s.Y) && s.Y > 0 && s.px >= 50;
+            const gedeckt = (s) => !!s.sicht && s.sicht.frei !== true;
+            const S = roh.filter((s) => fenster(s) && !gedeckt(s));
+            const ungemessen = roh.filter((s) => fenster(s) && gedeckt(s));
+            const SCHRITT = roh.length > 1 ? roh[0].d - roh[1].d : 0;
             const sp = [];
-            for (let i = 1; i < S.length; i++) sp.push({ d: S[i].d, q: Math.abs(S[i].Y / S[i - 1].Y - 1), wechsel: S[i].marke !== S[i - 1].marke });
+            for (let i = 1; i < S.length; i++) if (S[i - 1].d - S[i].d === SCHRITT) sp.push({ d: S[i].d, q: Math.abs(S[i].Y / S[i - 1].Y - 1), wechsel: S[i].marke !== S[i - 1].marke });
             const max = (a) => (a.length ? Math.max(...a.map((x) => x.q)) : null);
             const [mW, mR] = [max(sp.filter((x) => x.wechsel)), max(sp.filter((x) => !x.wechsel))];
             const nW = sp.filter((x) => x.wechsel).length;
-            const gueltig = S.length >= 30 && S.length === (e.schritte || []).length && e.gefaelle >= 0.1 && nW >= 1;
+            const gueltig = S.length >= 30 && roh.filter(fenster).length === roh.length && e.gefaelle >= 0.1 && nW >= 1;
+            const sichtGrund = (s) => s.d + " m " + (s.sicht.frei === false ? (s.sicht.vor || "verdeckt") + (s.sicht.ab != null ? " in " + s.sicht.ab + " m" : "") : "Sicht ungemessen (" + (s.sicht.vor || "?") + ")");
             const gruen = hw && gueltig && sp.every((x) => x.q <= 0.05);
             const pz = (x) => (x == null ? "—" : (100 * x).toFixed(1) + " %");
             const schlimm = sp.reduce((a, x) => (!a || x.q > a.q ? x : a), null);
@@ -3186,7 +3202,7 @@ const stationen = [
                 gruen,
                 zahl:
                     (gruen ? "✅" : "❌") + " größter Sprung an markierten Stufenwechseln " + pz(mW) + " (" + nW + " Wechsel) · an den übrigen Schritten " + pz(mR) + " (Soll an jedem ≤ 5 %)" +
-                    (schlimm ? " · der größte bei " + schlimm.d + " m" : "") + " · " + S.length + "/" + (e.schritte || []).length + " Schritte mit Fenster · Gefälle " + e.gefaelle + " · Ziel " + (e.ziel || []).join("/") +
+                    (schlimm ? " · der größte bei " + schlimm.d + " m" : "") + " · " + S.length + "/" + roh.length + " Schritte mit Fenster" + (ungemessen.length ? " und freier Sicht · UNGEMESSEN " + ungemessen.length + " (Sicht auf den Fleck): " + ungemessen.slice(0, 4).map(sichtGrund).join(", ") + (ungemessen.length > 4 ? ", …" : "") : "") + " · Gefälle " + e.gefaelle + " · Ziel " + (e.ziel || []).join("/") +
                     (gueltig ? "" : " · UNGÜLTIG") + " · " + (j.adapter || "Adapter ungenannt"),
             };
         },
@@ -3208,6 +3224,18 @@ const stationen = [
                 { name: "kein Ziel mit freier Sicht", j: lauf({ ende: "kein Ziel", kand: [[0, 0.2, false]] }), gruen: false },
                 { name: "swiftshader", j: lauf(gang(ruhig), "[linse-gpu] google/swiftshader (Probe)"), gruen: false },
                 { name: "die Folge brach", j: { adapter: "[linse-gpu] amd/rdna-3 (Probe)", schritte: {}, fehler: "umstellen: Exit 1" }, gruen: false },
+                // DIE SICHT AUF DIE MARKE (17.11., Radeon 602607bb: Y 0,019 ↔ 0,165 bei gleicher Marke, der größte bei 1250 m)
+                ...(() => {
+                    const mitSicht = (f, deckt) => gang(f, { schritte: gang(f).schritte.map((s) => ({ ...s, sicht: deckt(s.d) || { frei: true, imBild: true, vor: null, ab: null } })) });
+                    const laub = (d) => (d === 1250 ? { frei: false, imBild: true, vor: "Laub baum_erle", ab: 3.2 } : null);
+                    const sprung = (d) => ruhig(d) * (d === 1250 ? 8.3 : 1);
+                    return [
+                        { name: "MUTANTE Laub vor der Kamera bei 1250 m: Y springt 730 %, die Abnahme am Bild nennt den Verdecker — der Schritt UNGEMESSEN, kein ROT", j: lauf(mitSicht(sprung, laub)), gruen: true, zahl: /39\/40 Schritte mit Fenster und freier Sicht · UNGEMESSEN 1 \(Sicht auf den Fleck\): 1250 m Laub baum_erle in 3\.2 m/ },
+                        { name: "derselbe Sprung bei freier Sicht: ROT beim Schritt", j: lauf(mitSicht(sprung, () => null)), gruen: false, zahl: /an den übrigen Schritten 7\d\d\.\d % .* · der größte bei 1(250|200) m · 40\/40 Schritte mit Fenster ·/ },
+                        { name: "die Abnahme warf an einem Schritt: UNGEMESSEN mit Grund, kein Urteil über ihn", j: lauf(mitSicht(sprung, (d) => (d === 1250 ? { frei: null, vor: "Abnahme warf: x" } : null))), gruen: true, zahl: /1250 m Sicht ungemessen \(Abnahme warf: x\)/ },
+                        { name: "MUTANTE 12 von 40 Schritten verdeckt: der Gang trägt keine 30 — UNGÜLTIG", j: lauf(mitSicht(ruhig, (d) => (d >= 1450 ? { frei: false, vor: "Laub baum_kiefer", ab: 2.1 } : null))), gruen: false, zahl: /28\/40 .*UNGEMESSEN 12 .*UNGÜLTIG/ },
+                    ];
+                })(),
             ];
         })(),
         pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "phyto-core.js", "stamm/bild-himmel.js"],
