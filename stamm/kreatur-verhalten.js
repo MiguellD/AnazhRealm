@@ -1381,7 +1381,13 @@ class AnazhRealm_kreatur_verhalten {
     // (strideSec), Heading deterministisch aus netId × Slot (sin-Hash; ein Goldwinkel-INKREMENT wäre
     // falsch — rotierende Einheitsvektoren summieren sich zum Kreisel). Emotionen modulieren Amplitude
     // + Rhythmus (chaos bis +50 %, sorrow bis −40 %, Boden 0.3); die LEINE (leashM) zieht zum Anker
-    // (Geburtsort, lazy beim ersten freien Tick — Restore-sicher).
+    // (Geburtsort, lazy beim ersten freien Tick — Restore-sicher). DAS REVIER IM LEBENSRAUM (leben.tiere.wanderung S1, „Aufenthalt
+    // folgt dem Lebensraum“): der Anker legt sich einmal in den Lebensraum der Gattung (`_kreaturRevier`), das Tier zieht von
+    // Ziel zu Ziel in seiner Leine, jedes Ziel im Lebensraum (`_kreaturWanderZiel`), am Ziel streift es mit dem gewürfelten
+    // Kurs, und jeder Zug meidet, was der Lebensraum nicht trägt (`_kreaturWanderKurs`). Vorher wanderte es blind für ihn:
+    // headless an der Probe tagesbudget (Lebensraum, 24 Spielstunden) lagen beim Wolf 0,56–0,86, beim Hirsch 0,27–0,96 seiner
+    // Lagen in ihm, der Bär im Rand-Gleichgewicht seiner Leine (Median 17–27 m bei 28 m, 0,20–0,25 × π·Leine²); 3 von 12 Tieren
+    // im Soll, mit dem Revier 8 von 12.
     _creatureCharacterWander(creature, direction, speed, zeigt = true) {
         const K = AnazhRealm._verhaltenGesetz().wandern;
         const ud = creature.userData || {};
@@ -1391,23 +1397,29 @@ class AnazhRealm_kreatur_verhalten {
         const stride = K.strideSec / Math.max(0.5, amp);
         const t = this.state.creatureAnimationTime || 0;
         const slot = Math.floor(t / stride);
-        if (ud._wanderSlot !== slot || !Number.isFinite(ud._wanderHeading)) {
-            ud._wanderSlot = slot;
-            const idNum = parseInt(String(ud.netId || "c0").slice(1), 10) || 0;
-            const h = Math.sin((idNum * 131 + slot) * 12.9898) * 43758.5453;
-            ud._wanderHeading = (h - Math.floor(h)) * Math.PI * 2;
-        }
         const mag = speed * K.wanderSpeedMul * amp;
-        direction.set(Math.cos(ud._wanderHeading) * mag, 0, Math.sin(ud._wanderHeading) * mag);
         // die LEINE: furchtsam bleibt nah am Anker, mutig streift weiter.
         if (!ud.wanderAnchor) ud.wanderAnchor = { x: creature.position.x, z: creature.position.z };
         const leash = this._creatureMoveCharacter(creature).leashM;
+        if (!ud.wanderAnchor.revier) ud.wanderAnchor = this._kreaturRevier(creature, ud.wanderAnchor, leash);
         const dx = ud.wanderAnchor.x - creature.position.x;
         const dz = ud.wanderAnchor.z - creature.position.z;
         const d = Math.hypot(dx, dz);
         // das Wandern zeigt die Tätigkeit des Tiers (Tiere K4, _kreaturTaetigkeit) — in seiner Leine; jenseits zieht es heim:
         // es ruht und äst nur in seinem Revier (vorher graste das scheue Kitz 45 m vor dem Anker im Tempo des Grasens weiter)
         ud._gezeigt = zeigt && ud._taetigkeit ? (d > leash ? "ziehen" : ud._taetigkeit) : null;
+        if (ud._wanderSlot !== slot || !Number.isFinite(ud._wanderHeading)) {
+            ud._wanderSlot = slot;
+            const idNum = parseInt(String(ud.netId || "c0").slice(1), 10) || 0;
+            // der Weg dieses Slots im Tempo der Tätigkeit, die das Tier zeigt (äsen schleicht), wenigstens sein Raum
+            const blick = Math.max(this._kreaturRaum(creature), mag * stride * this._kreaturTaetigkeitTempo(creature));
+            const Z = this._kreaturWanderZiel(creature, idNum, slot, blick, leash);
+            const p = creature.position;
+            const h = Math.sin((idNum * 131 + slot) * 12.9898) * 43758.5453;
+            const kurs = Z ? Math.atan2(Z.z - p.z, Z.x - p.x) : (h - Math.floor(h)) * Math.PI * 2;
+            ud._wanderHeading = this._kreaturWanderKurs(creature, kurs, blick, leash);
+        }
+        direction.set(Math.cos(ud._wanderHeading) * mag, 0, Math.sin(ud._wanderHeading) * mag);
         if (d > leash) {
             const pull = K.anchorPull * speed * Math.min(1, (d - leash) / Math.max(1, leash));
             direction.x += (dx / d) * pull;
