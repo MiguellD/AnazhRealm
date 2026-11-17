@@ -3300,7 +3300,7 @@ class AnazhRealm_kreatur_leben {
     // DAS NETZ DES REVIERS (_kreaturWanderZiel, _kreaturWanderKurs): die Leinen-Scheibe um den Anker als Gitter zu Leine/10 bis
     // 1,2 Leinen (die Zellen der Probe tagesbudget), je Zelle, was der Lebensraum der Gattung an ihrer Mitte trägt — 1 nichts,
     // 2 den Weg (Wasser, wo der Lebensraum es trägt: der Bär lebt am Fluss und durchquert ihn), 3 auch den Aufenthalt
-    // (trockener Grund; 0 liegt außerhalb). Es wächst im Takt — je Bild höchstens 32 Zellen für alle Tiere, ein Wurf wird nie
+    // (trockener Grund; 0 liegt außerhalb). Es wächst im Takt — je Bild höchstens 8 Zellen für alle Tiere, ein Wurf wird nie
     // zur Spitze — und gilt für jedes Tier mit diesem Anker, dieser Leine und dieser Gattung (der Verband teilt es). Liefert das
     // fertige Netz oder null (ein freier Anker hat keines).
     _kreaturRevierNetz(creature, leash) {
@@ -3322,7 +3322,7 @@ class AnazhRealm_kreatur_leben {
         if (N.k >= n) return N;
         if (this._kreaturNetzBild !== this._creatureAiFrame) {
             this._kreaturNetzBild = this._creatureAiFrame;
-            this._kreaturNetzRest = 32;
+            this._kreaturNetzRest = 8;
         }
         const LG = AnazhRealm._lebensraumGesetz();
         while (N.k < n && this._kreaturNetzRest > 0) {
