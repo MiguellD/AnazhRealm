@@ -5892,7 +5892,7 @@
   },
   "karte2.planet.relief.grossform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) · karte2.planet.relief.grossform#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) · karte2.planet.relief.grossform#1 gtx: Station seit der Messung geändert — zuletzt an 31d156e8: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "karte2.planet.relief.grossform#1",
@@ -5910,7 +5910,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 31d156e8: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true,
      "beide": true
     }
@@ -6525,8 +6525,8 @@
   "ohne": 141
  },
  "kopfVoll": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
- "zeit": "2026-11-17T17:50:55.052Z",
- "vorher": "31d156e8",
+ "zeit": "2026-11-17T17:57:28.540Z",
+ "vorher": "d39e0d6e",
  "bilanz": {
   "gewinn": [],
   "fall": [],
