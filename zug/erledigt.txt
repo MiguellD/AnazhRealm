@@ -1475,3 +1475,4 @@ omen-gtx-gtx-7de938ab-w1147-1-7de938ab GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · G
 omen-gtx-menge2a-1-7de938ab GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN karte2.mensch.menge.bild#1 (punkte-maschine 7a2866a5 messung/7de938ab-gtx.json)
 omen-gtx-gtx-7de938ab-w1147-2-7de938ab UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag karte2.mensch.stadt.siedlungsnetz#1 (punkte-maschine 7a2866a5 messung/7de938ab-gtx.json)
 2026-11-17 12:02 landung ABGEBROCHEN main 7de938ab: sg-satz-ring wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 51 stellen sich hinten an
+2026-11-17 12:03 landung Zwischenstand main 7de938ab: misst 50 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (4 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
