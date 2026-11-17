@@ -1,0 +1,136 @@
+{
+ "sha": "bcc2cadc2742edb5c337dde7fd11b7d79997f9fe",
+ "geraet": "radeon",
+ "zeit": "2026-11-17T09:04:01.995Z",
+ "host": "MiguellD",
+ "je": {
+  "speicher.K4#2": {
+   "gruen": true,
+   "zahl": "Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.68 % (Soll ≤ 1; Rauschen ohne Neuladen 0.19 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.58,
+   "gpu": "amd/rdna-3",
+   "konsum": "k520ef4b39595",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k01f1e576c614",
+   "s": 34,
+   "fremd": {
+    "s": 40.8,
+    "takte": 13,
+    "fremdS": 65.63,
+    "kerne": 1.609,
+    "fensterKerne": 1.789,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.5
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      14.16
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… 3f59870c-5b2c-4386-8f3b-a749a5db56d4/",
+      8.34
+     ]
+    ],
+    "dienerS": 30.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      14.16
+     ],
+     [
+      "System",
+      9.16
+     ]
+    ],
+    "geraetS": 18.81,
+    "geraet": [
+     [
+      "svchost.exe",
+      10.66
+     ],
+     [
+      "MsMpEng.exe",
+      7.7
+     ],
+     [
+      "SearchIndexer.exe",
+      0.36
+     ]
+    ],
+    "eigenS": 134.39,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 1.432,
+     "nach": 1.538,
+     "station": 2.218
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 101.2,
+     "alle": 282.4,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 105,
+     "alle": 294.6,
+     "cpuEin": 109
+    },
+    "ruhe": {
+     "ein": 82.3,
+     "alle": 262.7,
+     "n": 592,
+     "von": "2026-11-17"
+    },
+    "f": 1.276,
+    "fEin": 1.276,
+    "fAlle": 1.121,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "grund": "GRÜN trotz Last: Referenz f 1,276 (Faden 1,276 · alle Kerne 1,121; vor 101,2/282,4 ms, nach 105/294,6 ms, Ruhe 82,3/262,7 ms seit 2026-11-17) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 14,5 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 14,2 CPU-s · bash.exe -c source /c/Users/micha/.claude/shell-sna… 3f59870c-5b2c-4386-8f3b-a749a5db56d4/ 8,3 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 10,7 CPU-s · MsMpEng.exe 7,7 CPU-s · SearchIndexer.exe 0,4 CPU-s",
+   "zeit": "2026-11-17T09:04:01.995Z",
+   "abdruck": "56755c752db0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k520ef4b39595": "dVRdj5swEPwveWzLOeHjMJbuwTmi5qpWzf2Etb0GEgKRDaFN1f9eQSAJcN0nsHaY2dnBfxYnkAdI8Glvy2LBFp8WXxYWzuhYNGc0T3u7YIul9CGgjF+LcM5f2zZpslNlSZ4JAqKA9IhObSrM8ifZwVaSIiAjzYY3O0J2JCTr5uVlCs0FqtKpQOMAFMoNPWDTxtomINCBWndkfXOEgYoEI13RmO/2ZCj+zjlpNlNGAYUaK9UeBHrF3n5zvuEzhSoDrJw8K+zAKVUgPJfdiOZTKQONcwFMczQ9iD4HylsNQqcAndfWjkiopwKXMkIiMulN0GYyrZyTKQUWg2mRG66AfeBwcqod/agEhAAqpv6mgEWCZqwh9APpM/JrpvcARzTgFJAOe1h6oSvunhBCtnMteSe8oxiEUyWiUI+A7e62TRu2mLYvye2Ybq8hjBN+r/cJiZVpZo5je7QOFCzZ97kkm4JC4xxKW926PUpd8PrEx12Q+M6Pp8j7MD3OFc/LgD7MQgnfzryzpa4aMOgkp7oHoo9BGDDO32bNFRyPwxDSRRpMF2erNtCPMpahGwTdLpL/7OEaf+eCWT6AQilXHrLXH3w659nA0QGRmEzrYdsikDr6KJwN5pUjyrIaOj0FnmTEI8XNlYi2vq7vG4ybUn59Td77G6ag/Xky1d19vTTVIDoQz0vtM31u/0I57b6gyTHBkTfKFx4oRhr5QO8PD59HIbzMVnfJsHWtsLUd4huFKurjO/a5QXMQUBwGf1d6JdU1Uzsed+N9iz+vyZ5cs35Tw382nG/W11v2hJKcTKmz9toiKdQ2hby639d//wE=",
+  "k01f1e576c614": "fVTBcpswEP0XH5sS2YCC0EwOcsnUyUymzqnT40paATEGjwQhdaf/3jEB20DbPQGzb/ft28f+WhxA7SDF21dXlQu++LT4vHDwhp5D+4b29tUt+GKpQqCMi48gQoivpzRl80PtSJFLArKEbI9eY2vMi1vVwVaKISAn7YNot4RsSUTWrTjHWtzfT8sUEnXl1WBwKCK1HwXAp4mNS0GiB43pGvfJMVIdS066YInYvpIhxIsQpH2YdpRQ6jFrEwA1K/7YCvEwZ6hzwNor8tINPZWmMvD5uVE7x1hovSNgVqDtQeyO6mA1EJ0CTNE4N2rCAk19xgmJySQ3RZerrPYOtpJYDqLFfrQCvp5zSQ+NZ66ZgJTA5FTfDLBM0Y45RCFVISfvM7472KMFr4Rs2MMyiHx50YQQsplzKTriXYuBONMyjswISAhJN51tEta9nD+zzYeRkvRiKvEyaeJUltv9WB5jqIbldGaXgUbr7SpXnzMDxnwIeucnnYnENkymyMsgPc6Xd0vKruZgRGxmurnK1C1Y9NJD0wMxRBpRLtLnWXIN+/0wgPKR0dkA9cnM1zSWkU9pt4f0Hzv4sL53xLwYQJFSqwD5l2cxnfPNwt4DmdrcmGHTkioT/82YLRa1J6uqHjIDDYHiJCDlWZWYCfFDrC/bS44V+/5z9369USHEUzXl3VWvbD2QpvJuaUJuuj9QTbOPaAtMcaSNDmUAmpNWXbUPh4ebkQGPs9UdczypVrrGDdaNIx331u2v3OP4frRodxLK3aDzyqyU5p1/tyIR34RIn5Kb6xP5v0j64gdU5GArk59OGcmgcRkU9eWe//4D"
+ },
+ "ungemessen": {
+  "siedlung.K4#2": {
+   "gruen": false,
+   "zahl": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 45736 nach 4.6 min · letzte Zeile: SITZUNG die Welt vor siedlung.K4#2: 10.1 s (639 Takte, 81 Chunks, nach der Grundstellung)",
+   "exit": 3221226505,
+   "minuten": 4.52,
+   "grund": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 45736 nach 4.6 min · letzte Zeile: SITZUNG die Welt vor siedlung.K4#2: 10.1 s (639 Takte, 81 Chunks, nach der Grundstellung)",
+   "ungemessen": true,
+   "zeit": "2026-11-17T09:07:55.330Z",
+   "bahn": "tod",
+   "host": "MiguellD"
+  },
+  "karte2.same.preis.ankunft#1": {
+   "gruen": false,
+   "zahl": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 45736 nach 4.6 min · letzte Zeile: SITZUNG die Welt vor siedlung.K4#2: 10.1 s (639 Takte, 81 Chunks, nach der Grundstellung)",
+   "exit": 3221226505,
+   "minuten": 4.52,
+   "grund": "UNGEMESSEN: Läufer starb (Exit 0xC0000409 STATUS_STACK_BUFFER_OVERRUN, der Fail-Fast — der node-Prozess stürzte ab, Git-bash meldet 127) · Kind 45736 nach 4.6 min · letzte Zeile: SITZUNG die Welt vor siedlung.K4#2: 10.1 s (639 Takte, 81 Chunks, nach der Grundstellung)",
+   "ungemessen": true,
+   "zeit": "2026-11-17T09:07:55.333Z",
+   "bahn": "tod",
+   "host": "MiguellD"
+  }
+ }
+}
