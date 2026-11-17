@@ -1459,3 +1459,4 @@ omen-gtx-gtx-e489088a-1-e489088a GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN k
 2026-11-17 09:38 landung ABGEBROCHEN main e489088a: sg-klang wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 53 stellen sich hinten an
 2026-11-17 09:39 landung Zwischenstand main e489088a: misst 53 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (1 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-wahra-1-389a6496 ROT 1 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte2.erleben.spieler.rolle#1 · GRÜN karte2.erleben.kopplung.wahrnehmung#1 (punkte-maschine 86c10c3d messung/389a6496-gtx.json)
+omen-gtx-gtx-e489088a-w0939-1-e489088a UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN karte2.same.preis.bytes#1 ‖ karte2.same.preis.bytes#1 UNGEMESSEN roh: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2703 s Warten) — ungemessen (punkte-maschine 72c914d0 messung/e489088a-gtx.json)
