@@ -5075,7 +5075,7 @@
   },
   "karte2.erleben.sinn.takt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.sinn.takt#1 radeon: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/kreatur-leben.js +1) · karte2.erleben.sinn.takt#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.sinn.takt#1 radeon: Konsum seit der Messung geändert (R6: stamm/dirigent-kern.js, stamm/feld-leben.js, stamm/kreatur-leben.js +1) · karte2.erleben.sinn.takt#1 gtx: Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
    "stationen": [
     {
      "id": "karte2.erleben.sinn.takt#1",
@@ -5094,15 +5094,16 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
   },
   "karte2.erleben.spieler.praesenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,653 (Faden 1,08 · alle Kerne 1,252 · Stoß in der Station 15,67 Kerne fremd → 1,653; vor 90,6/328,8 ms, nach 88,8/297,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe -- · karte2.erleben.spieler.praesenz#1 gtx: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 2,387 (Faden 2,387 · alle Kerne 1,742; vor 216,5/407,7 ms, nach 87,2/211,3 ms, Ruhe 90,7/234,1 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,653 (Faden 1,08 · alle Kerne 1,252 · Stoß in der Station 15,67 Kerne fremd → 1,653; vor 90,6/328,8 ms, nach 88,8/297,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe -- · karte2.erleben.spieler.praesenz#1 gtx: Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js) — zuletzt an 389a6496: Last: Referenz f 2,387 (Faden 2,387 · alle Kerne 1,742; vor 216,5/407,7 ms, nach 87,2/211,3 ms, Ruhe 90,7/234,1 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.praesenz#1",
@@ -5120,8 +5121,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 2,387 (Faden 2,387 · alle Kerne 1,742; vor 216,5/407,7 ms, nach 87,2/211,3 ms, Ruhe 90,7/234,1 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/siedlung-bewohner.js, stamm/siedlung-tor.js) — zuletzt an 389a6496: Last: Referenz f 2,387 (Faden 2,387 · alle Kerne 1,742; vor 216,5/407,7 ms, nach 87,2/211,3 ms, Ruhe 90,7/234,1 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6345,7 +6347,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 219,
+  "konsum": 221,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6514,11 +6516,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 122
+  "ohne": 120
  },
  "kopfVoll": "16f45362d3834812d60601440e6793ef2d65fb70",
- "zeit": "2026-11-17T15:06:43.654Z",
- "vorher": "b7b0f8fe",
+ "zeit": "2026-11-17T15:33:13.588Z",
+ "vorher": "16f45362",
  "bilanz": {
   "gewinn": [],
   "fall": [],
