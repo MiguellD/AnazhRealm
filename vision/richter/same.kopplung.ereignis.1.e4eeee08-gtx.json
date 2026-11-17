@@ -9,7 +9,7 @@
   {
    "geraet": "GTX 1060",
    "richter": {
-    "wert": "Probe: eval: {\"ms\":5040,\"fehler\":\"Cannot read properties of null (reading 'erstarrt')\",\"stapel\":[\"lavaSitzungProbe (eval at <anonymous> (:2:29), <anonymous>:61:112)\",\"async eval (eval at <anonymous> (:2:29), <anonymous>:5:8)\",\"at #evaluate (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_ · [linse-gpu] nvidia/pascal",
+    "wert": "Probe: eval: {\"ms\":5040,\"fehler\":\"Cannot read properties of null (reading 'erstarrt')\",\"stapel\":[\"lavaSitzungProbe (eval at <anonymous> (:2:29), <anonymous>:61:112)\",\"async eval (eval at <anonymous> (:2:29), <anonymous>:5:8)\",\"at #evaluate (%USERPROFILE%\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_ · [linse-gpu] nvidia/pascal",
     "urteil": "ROT"
    },
    "preis": {
