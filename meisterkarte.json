@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "d3ddb51c",
-    "zeit": "2026-11-17T22:07:31.075Z",
+    "zeit": "2026-11-17T22:29:50.802Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1224,7 +1224,7 @@
           "punkte": 1,
           "staffel": "1 = ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät · 2 = dazu eine Herde ≥ 20 im Bild in 30 min, updateCreatures ≤ 1,0 ms p95 bei 150 Tieren im 500-m-Ring an der GTX, die Ratsche tier eingerastet, beide Geräte",
           "messung": "Spielgang über 10 Spielminuten (werkbank lauf --wandern kreis, Ego und Third) an Wiese und Genesis; Sichtung = Klassen-Maske tier ≥ 200 px; kein Tier erscheint im Blick; Kosten beim Namen über werkbank zerlegen/takt in Bau-Ereignissen; Prüfbühne mit fester Herde für die Ratsche.",
-          "beleg": "Maschine: gehalten: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 446 px 56 m 61 s · wesen 293 px 63 m 227 s · wesen 230 px 62 m 227 s · wolf 204 px 53 m 512 s), 615 Prüfungen, 29 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 7 Sichtungen in 600 Spiel-s (wesen 297 px 54 m 58 s · baer 230 px 22 m 279 s · wolf 254 px 29 m 396 s · wesen 371 px 38 m 485 s · wesen 263 px 38 m 507 s · fuchs 241 px 16 m 514 s · wesen 246 px 29 m 540 s), 628 Prüfungen, 56 Masken, Bestand bis 20, im Blick erschienen 0 an 7de938ab radeon · gehalten: ego (first) 3 Sichtungen in 600 Spiel-s (wesen 203 px 62 m 228 s · wesen 270 px 64 m 228 s · wolf 462 px 19 m 556 s), 610 Prüfungen, 20 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 10 Sichtungen in 601 Spiel-s (wesen 231 px 51 m 64 s · wesen 1112 px 66 m 266 s · baer 3151 px 5 m 279 s · wolf 300 px 25 m 301 s · wolf 283 px 18 m 400 s · wesen 305 px 94 m 458 s · wesen 426 px 34 m 482 s · fuchs 3353 px 4 m 501 s · wesen 386 px 37 m 501 s · wesen 579 px 29 m 531 s), 633 Prüfungen, 65 Masken, Bestand bis 20, im Blick erschienen 0 an 7de938ab gtx",
+          "beleg": "Maschine: gehalten: ego (first) 4 Sichtungen in 601 Spiel-s (wesen 446 px 56 m 61 s · wesen 293 px 63 m 227 s · wesen 230 px 62 m 227 s · wolf 204 px 53 m 512 s), 615 Prüfungen, 29 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 7 Sichtungen in 600 Spiel-s (wesen 297 px 54 m 58 s · baer 230 px 22 m 279 s · wolf 254 px 29 m 396 s · wesen 371 px 38 m 485 s · wesen 263 px 38 m 507 s · fuchs 241 px 16 m 514 s · wesen 246 px 29 m 540 s), 628 Prüfungen, 56 Masken, Bestand bis 20, im Blick erschienen 0 an 7de938ab radeon · ego (first) 3 Sichtungen in 601 Spiel-s (wesen 285 px 63 m 228 s · wesen 282 px 60 m 228 s · wesen 734 px 51 m 426 s), 618 Prüfungen, 35 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 5 Sichtungen in 601 Spiel-s (wesen 262 px 58 m 64 s · wesen 238 px 90 m 232 s · wesen 250 px 80 m 239 s · baer 246 px 27 m 248 s · wesen 290 px 24 m 507 s), 629 Prüfungen, 57 Masken, Bestand bis 20, im Blick erschienen 0 an d3ddb51c gtx",
           "schlupfloch": "„≥ 150 im 500-m-Ring“ erfüllen Tiere hinter dem Hügel: gezählt werden Sichtungen im Ausgabe-Bild; die frei-Ratsche versteckte die Kosten, die Prüfbühne mit fester Herde schließt das.",
           "maschine": true
         }
