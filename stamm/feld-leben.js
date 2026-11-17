@@ -3919,7 +3919,7 @@ AnazhRealm.BRAND = Object.freeze({
         winkelMin: 4,
         nahM: 12,
         abstand: 0.45,
-        abstandMinM: 0.5,
+        abstandMinM: 0.2,
         flammenMax: 384,
         zellenMax: 32,
         flackerPhasen: 8,
