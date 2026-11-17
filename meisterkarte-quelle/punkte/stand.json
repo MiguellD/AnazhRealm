@@ -4951,7 +4951,7 @@
   },
   "karte2.erleben.klang.landschaft": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Wind r 0.65 bei Lag 0 (n 104, CV Bild 0.29 / Ohr 0.63, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42 dB aus 13 Leibern (13 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an 105c9bd3 radeon · gehalten: ✅ Wind r 0.85 bei Lag 0 (n 104, CV Bild 0.29 / Ohr 0.49, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -41.5 dB aus 15 Leibern (15 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an 71839b1e gtx",
+   "beleg": "Maschine: gehalten: ✅ Wind r 0.65 bei Lag 0 (n 104, CV Bild 0.29 / Ohr 0.63, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42 dB aus 13 Leibern (13 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an 105c9bd3 radeon · ✅ Wind r 0.79 bei Lag 0 (n 104, CV Bild 0.25 / Ohr 0.52, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -41.6 dB aus 17 Leibern (17 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an bcc2cadc gtx",
    "stationen": [
     {
      "id": "karte2.erleben.klang.landschaft#1",
@@ -4968,10 +4968,9 @@
      "id": "karte2.erleben.klang.landschaft#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "✅ Wind r 0.85 bei Lag 0 (n 104, CV Bild 0.29 / Ohr 0.49, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -41.5 dB aus 15 Leibern (15 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2",
-     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/shader-kosten.cjs +17)",
-     "gehalten": true,
+     "zahl": "✅ Wind r 0.79 bei Lag 0 (n 104, CV Bild 0.25 / Ohr 0.52, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -41.6 dB aus 17 Leibern (17 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2",
+     "sha": "bcc2cadc2742edb5c337dde7fd11b7d79997f9fe",
+     "grund": "GRÜN trotz Last: Referenz f 1,315 (Faden 1,271 · alle Kerne 1,315; vor 106,7/288,3 ms, nach 115,3/307,4 ms, Ruhe 90,7/233,8 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 12,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,3 CPU-s · bash.exe sg/kette-liste.sh sr/k-w9.txt 5,6 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 49,9 CPU-s · svchost.exe 13,0 CPU-s · SearchIndexer.exe 1,1 CPU-s",
      "r6": "konsum",
      "beide": true
     }
@@ -6535,7 +6534,7 @@
   "ohne": 124
  },
  "kopfVoll": "bcc2cadc2742edb5c337dde7fd11b7d79997f9fe",
- "zeit": "2026-11-17T06:13:18.963Z",
+ "zeit": "2026-11-17T06:19:08.717Z",
  "vorher": "bcc2cadc",
  "bilanz": {
   "gewinn": [],
