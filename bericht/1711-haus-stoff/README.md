@@ -142,3 +142,29 @@ Prozessor gebunden, nicht an der Karte · VRAM 176 MB (Band 118: ROT/ÜBER) · 3
 Der Plan des Messorts trägt an diesem Kopf 326 Häuser, nicht 1 641 (Titel der Station: 295 Häuser / 1 092 Bewohner). Der
 Fern-Schuss meldet ABNAHME ROT („Blickziel verdeckt von kamm-krone in 640 m") — das Urteil gilt der Ziel-Probe, das Bild ist gültig.
 Im Fern-Schuss stehen 0 Leiber (die Bewohner-Liste ist 600 m vom Ort leer). Roh: `p3/n1711/hs/stadt-vor-d3ddb51c` (OMEN).
+
+## Erstes Bildpaar: d3ddb51c ↔ Kopf 273c3f862 (WIP, Dorf, dieselben Kameras) — 18.11. 00:10
+
+`paar1-tag-nah.jpg` · `paar1-tag-nah-sockel.jpg` (Ausschnitt) · `paar1-tag-fern-dach.jpg` (Ausschnitt ×1,5) · `paar1-nacht-nah.jpg` ·
+`paar1-nacht-fern.jpg` — links vorher, rechts der Kopf. ZWISCHENSTAND, keine Abgabe.
+
+Was der Kopf zeichnet: der Sockel trägt den Quaderverband (Tag und Nacht), das Dach nah seine Reihen, fern geht es je Achse in
+den Mittel-Ton (die Fern-Regel des Kamms am Schirm). Der Putz trägt die Kellenzüge — in diesem Stand als REGELMÄSSIGES Raster
+(9,4 cm): die Wand liest sich als Schalung. Das Labor setzt sie unruhig (9 … 15 Pixel); das heile ich als Nächstes.
+
+Preis an der Pose (Band, vor dem Lauf): GPU 14,90 → 14,94 ms je Frame (gpu-bank 14,78 → 15,26) · VRAM 128,2 → 128,7 MB ·
+Puffer bauSatz 5,84 → 5,76 MB (die Zeile reist im freien Byte: 0 Byte je Ecke) · Programme 85/91 → 87/94 · Befehle 132 ↔ 132.
+Frame p95 am Kopf 25,14 ms (p50 16,68; vorher am Dorf noch ohne Lauf-Messung — das Paar im selben Boot folgt).
+Sonde im Satz (die vierte Stelle von `aRegler` je Ecke): Zeile 2 Deckung 7 170 Ecken · Zeile 3 Putz 40 958 · Zeile 4 Naturstein
+14 828 · ohne Verband 71 294.
+
+**a. Die Quelle des Sockel-Brauns ist die Tonkurve, nicht die Farbe:** im Puffer steht der Sockel grau (linear 0,215/0,198/0,161,
+sRGB #7f7a6f; Putz 0,825/0,807/0,758). Im Schatten der Giebelseite liegt die Wand vor der Tonkurve bei 0,100/0,104/0,111, der
+Sockel bei 0,026/0,026/0,023 — unter dem Knie von Khronos PBR Neutral (0,08), wo die Kurve den gemeinsamen Grau-Anteil abzieht
+(Versatz x − 6,25 x²): aus 26 % der Wand werden 6 %, und die Differenz der Kanäle bleibt stehen — Rechnung 20/18/11, gemessen
+23/16/11 (Wand 71/73/77). Nicht die Faltung auf den Putz-Stoff, nicht AO (die Häuser lesen die Kontakt-Verdeckung nicht).
+Heilen hieße die Tonkurve der Welt anfassen (Licht-Kette, jede Ratsche am Bild) — das schneide ich nicht ohne dein Wort.
+
+**c. Das römische Haus fern ist ein Deckel nach dem Gesetz, kein Hof:** Haus 208 ist die „kirche" des Plans mit `arkade: 1`
+(studioOv, seed 252174); `arkade` stellt das Dach auf flach (fachwerk-core.js:207, ROOFMODE). Nachgebaut ohne Welt (Stufe 2):
+Flachdach in Naturstein x ±7,5 · z ±5,5 · y 3,2 … 5,8 m, darum das Pultdach der Arkade in Ziegel (x ±9,7, y 3,1 … 3,2 m).

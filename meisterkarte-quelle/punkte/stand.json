@@ -5838,7 +5838,7 @@
   },
   "karte2.planet.kosmos.welten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,346 (Faden 1,346 · alle Kerne 1,259; vor 95,9/330,7 ms, nach 112,9/302,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an b7b0f8fe: Last: Referenz f 2,245 (Faden 2,245 · alle Kerne 1,742; vor 203,4/406,5 ms, nach 119,4/316,1 ms, Ruhe 90,6/233,4 ms seit 2026-11-17) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,346 (Faden 1,346 · alle Kerne 1,259; vor 95,9/330,7 ms, nach 112,9/302,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an c50e6b61: Last: Referenz f 1,564 (Faden 1,446 · alle Kerne 1,564; vor 114,6/337,8 ms, nach 130,7/361,7 ms, Ruhe 90,4/231,3 ms seit 2026-11-15) · fremd: node.exe --js-float16array hs/lieferung.cjs n1011-hg lief/",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.welten#1",
@@ -5856,7 +5856,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an b7b0f8fe: Last: Referenz f 2,245 (Faden 2,245 · alle Kerne 1,742; vor 203,4/406,5 ms, nach 119,4/316,1 ms, Ruhe 90,6/233,4 ms seit 2026-11-17) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor",
+     "grund": "ungemessen (R10) — zuletzt an c50e6b61: Last: Referenz f 1,564 (Faden 1,446 · alle Kerne 1,564; vor 114,6/337,8 ms, nach 130,7/361,7 ms, Ruhe 90,4/231,3 ms seit 2026-11-15) · fremd: node.exe --js-float16array hs/lieferung.cjs n1011-hg lief/",
      "ungemessen": true,
      "beide": true
     }
@@ -5945,7 +5945,7 @@
   },
   "karte2.same.entfaltung.schirm": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Station seit der Messung geändert · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Station seit der Messung geändert · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an c50e6b61: Deckel 381 s gerissen: Stille seit 39.5 s nach 381 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT dorf 341.2 s)",
    "stationen": [
     {
      "id": "karte2.same.entfaltung.schirm#1",
@@ -5963,7 +5963,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an c50e6b61: Deckel 381 s gerissen: Stille seit 39.5 s nach 381 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT dorf 341.2 s)",
      "ungemessen": true,
      "beide": true
     }
@@ -6135,7 +6135,7 @@
   },
   "karte2.same.preis.ankunft": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 10.44 s · 7.91 s · 7.50 s · 8.18 s (max 10.44 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an 7de938ab gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,623 (Faden 1,623 · alle Kerne 1,251; vor 92,7/275,3 ms, nach 135,5/328,6 ms, Ruhe 83,5/262,7 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf bcc2cadc2742edb5c3 · karte2.same.preis.ankunft#2 gtx: ungemessen (R10) — zuletzt an 7de938ab: Last: Referenz f 1,538 (Faden 1,433 · alle Kerne 1,538; vor 111,1/306,4 ms, nach 130/358,9 ms, Ruhe 90,7/233,4 ms seit 2026-11-16) · fremd: node.exe punkte.cjs gtx-nutzen --kopf b7b0f8fef2dd1a932fe86f",
+   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.04 s · 8.23 s · 8.33 s · 8.51 s (max 9.04 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an c50e6b61 gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,623 (Faden 1,623 · alle Kerne 1,251; vor 92,7/275,3 ms, nach 135,5/328,6 ms, Ruhe 83,5/262,7 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf bcc2cadc2742edb5c3 · karte2.same.preis.ankunft#2 gtx: ungemessen (R10) — zuletzt an 7de938ab: Last: Referenz f 1,538 (Faden 1,433 · alle Kerne 1,538; vor 111,1/306,4 ms, nach 130/358,9 ms, Ruhe 90,7/233,4 ms seit 2026-11-16) · fremd: node.exe punkte.cjs gtx-nutzen --kopf b7b0f8fef2dd1a932fe86f",
    "stationen": [
     {
      "id": "karte2.same.preis.ankunft#1",
@@ -6152,10 +6152,9 @@
      "id": "karte2.same.preis.ankunft#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "4 Kalt-Boots, 4 mit Kontrolle von außen: 10.44 s · 7.91 s · 7.50 s · 8.18 s (max 10.44 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal",
-     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs +6)",
-     "gehalten": true,
+     "zahl": "4 Kalt-Boots, 4 mit Kontrolle von außen: 9.04 s · 8.23 s · 8.33 s · 8.51 s (max 9.04 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal",
+     "sha": "c50e6b61b445196a2316565e29a8e4989a939eef",
+     "grund": "GRÜN trotz Last: Referenz f 2,336 (Faden 1,735 · alle Kerne 2,336; vor 96,8/449,3 ms, nach 156,8/540,1 ms, Ruhe 90,4/231,2 ms seit 2026-11-15) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 50,6 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 25,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 22,1 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 31,3 CPU-s · svchost.exe 16,7 CPU-s · SearchIndexer.exe 2,8 CPU-s",
      "r6": "konsum",
      "beide": true
     },
@@ -6207,7 +6206,7 @@
   },
   "karte2.same.preis.bytes": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Kalt-Boots, roh je Boot 32.11 MB · 32.11 MB · 32.11 MB · 32.11 MB (max 32.11 MB, Soll ≤ 50.00 MB), am größten 16.85 MB Draht, 179 Anfragen, bis zur Kontrolle 32.11 MB, 25 Ziele (24 Worker), am schwersten /fachwerk-core.js?v=18.546.317 0.98 MB | /fachwerk-core.js?v=18.546.317 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker+worker · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, roh je Boot 32.18 MB · 32.18 MB · 32.18 MB · 32.18 MB (max 32.18 MB, Soll ≤ 50.00 MB), am größten 16.88 MB Draht, 179 Anfragen, bis zur Kontrolle 32.18 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.321 0.98 MB | /fachwerk-core.js?v=18.546.321 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker+worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal an 7de938ab gtx",
+   "beleg": "Maschine: gehalten: 4 Kalt-Boots, roh je Boot 32.11 MB · 32.11 MB · 32.11 MB · 32.11 MB (max 32.11 MB, Soll ≤ 50.00 MB), am größten 16.85 MB Draht, 179 Anfragen, bis zur Kontrolle 32.11 MB, 25 Ziele (24 Worker), am schwersten /fachwerk-core.js?v=18.546.317 0.98 MB | /fachwerk-core.js?v=18.546.317 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker+worker · [linse-gpu] amd/rdna-3 an 389a6496 radeon · 4 Kalt-Boots, roh je Boot 32.25 MB · 32.25 MB · 32.25 MB · 32.25 MB (max 32.25 MB, Soll ≤ 50.00 MB), am größten 16.92 MB Draht, 179 Anfragen, bis zur Kontrolle 32.25 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.329 0.98 MB | /fachwerk-core.js?v=18.546.329 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal an c50e6b61 gtx",
    "stationen": [
     {
      "id": "karte2.same.preis.bytes#1",
@@ -6224,10 +6223,9 @@
      "id": "karte2.same.preis.bytes#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "4 Kalt-Boots, roh je Boot 32.18 MB · 32.18 MB · 32.18 MB · 32.18 MB (max 32.18 MB, Soll ≤ 50.00 MB), am größten 16.88 MB Draht, 179 Anfragen, bis zur Kontrolle 32.18 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.321 0.98 MB | /fachwerk-core.js?v=18.546.321 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker+worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal",
-     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs +6) — zuletzt an e489088a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2703 s Warten) — ungemessen",
-     "gehalten": true,
+     "zahl": "4 Kalt-Boots, roh je Boot 32.25 MB · 32.25 MB · 32.25 MB · 32.25 MB (max 32.25 MB, Soll ≤ 50.00 MB), am größten 16.92 MB Draht, 179 Anfragen, bis zur Kontrolle 32.25 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.329 0.98 MB | /fachwerk-core.js?v=18.546.329 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal",
+     "sha": "c50e6b61b445196a2316565e29a8e4989a939eef",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -6254,7 +6252,7 @@
      "gruen": true,
      "zahl": "0 harte UI-Zeilen im DOM von 637 Zeilen (625 aus der Tafel, 12 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2431, en 2431) · [linse-gpu] nvidia/pascal",
      "sha": "fe885d9de1ae25cb5b5caf0e929dd71bdcfeaedb",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/shader-kosten.cjs +35)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/shader-kosten.cjs +35) — zuletzt an c50e6b61: Wirt-Wache: den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. — Heap nach der Rücknahme 190.8 → 369 MB (",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -6490,7 +6488,7 @@
   "ohne": 166
  },
  "kopfVoll": "c50e6b61b445196a2316565e29a8e4989a939eef",
- "zeit": "2026-11-17T23:04:35.983Z",
+ "zeit": "2026-11-17T23:36:47.721Z",
  "vorher": "c50e6b61",
  "bilanz": {
   "gewinn": [],
