@@ -124,10 +124,10 @@ const FLAMME_PROBE = { k: 1.5, mantelK: 2350 };
 // Stäbchen-Anteil. Der KERN (hell) kommt ganz zurück, der MANTEL nur zum Teil: er wird an seiner SÄTTIGUNG der Nacht geurteilt
 // (`nachtSatt`, zwischen mit und ohne Umkehr), nicht an Tag = Nacht. Die Bänder (j2) liegen um das Gemessene am Tag.
 // SEIT w28-glut-nacht (das Auge blendet am Bild aus, sein Grau ist skotopisch, die Umkehr folgt dem Urbild — gemessen GTX 1050,
-// echte Karte): KERN Tag [249,184,122] ↔ Nacht [249,185,121], Δ 1 — und OHNE Umkehr [249,184,122], Δ 0: der Kern steht über
+// echte Karte, Stärke 1,22): KERN Tag [249,184,122] ↔ Nacht [249,184,121], Δ 1 — und OHNE Umkehr [249,184,122], Δ 0: der Kern steht über
 // Bild-Weiß, das Auge sieht ihn mit den Zapfen (`NACHT_AUGE.bildZapfen`). Das ist sein Soll (`blende`): reißt der Kern ohne
 // Umkehr, steht der Feuerschein wieder rosa — der Täter von main (Δ 29) ist Selbsttest-Fall. MANTEL Tag [200,118,18] ↔ Nacht
-// [199,117,34] (Sättigung 0,829; das Blau klemmt bei 0) — ohne Umkehr [161,102,51] (0,683): die Ratsche `nachtSatt` 0,53 → 0,75.
+// [199,116,41] (Sättigung 0,794; das Blau klemmt bei 0) — ohne Umkehr [163,106,59] (0,638): die Ratsche `nachtSatt` 0,53 → 0,75.
 const FLAMME_TOL = 6;
 const FLAMME_BAND = { kern: { ton: [22, 40], satt: 0.42, name: "gelb-orange", blende: true }, mantel: { ton: [22, 42], satt: 0.75, name: "orange", nachtSatt: 0.75 } };
 // (j) Das Tor: je Ton der Wert des Zielbilds (lineares Licht der Ziel-Welt, wie der Atlas der Ziele es trägt), bei derselben
@@ -141,9 +141,9 @@ const FLAMME_BAND = { kern: { ton: [22, 40], satt: 0.42, name: "gelb-orange", bl
 // `nachtHell` liegt zwischen beiden, die Mutante muss darunter fallen. Die Bänder `ton` / `satt` liegen um das Gemessene am Tag
 // (GOLD 39,8° / 0,468; DUNKELROT 4,6° / 0,978 — der Farbton läuft über 0°, das Band auch). Auf der Karte (GTX 1050, ein Lauf):
 // GOLD [235,197,125] ↔ [235,197,125], Δ 0, MUTANTE-TOR [228,202,158,5], Δ 33,5; DUNKELROT Zahl für Zahl wie swiftshader.
-// SEIT w28-glut-nacht (echte Karte): DUNKELROT Tag [93,9,2] ↔ Nacht [93,8,2], Δ 1 — MUTANTE-TOR [46,4,2], Δ 47; der dunkle
+// SEIT w28-glut-nacht (echte Karte): DUNKELROT Tag [93,9,2] ↔ Nacht [93,8,2], Δ 1 — MUTANTE-TOR [46,4,3], Δ 47; der dunkle
 // gesättigte Ton kommt unter dem skotopischen Grau GANZ zurück (das Rot erregt die Stäbchen nicht), er steht wie GOLD an Tag =
-// Nacht, Ratsche und Wand der Helle sind gefallen. GOLD [235,197,125] ↔ [235,198,125], MUTANTE-TOR [230,5,196,133], Δ 8.
+// Nacht, Ratsche und Wand der Helle sind gefallen. GOLD [235,197,125] ↔ [235,197,125], MUTANTE-TOR [231,5,198,135], Δ 10.
 const TOR_PROBE = { toene: { gold: [0.9, 0.62, 0.25], dunkelrot: [0.12, 0.012, 0.01] } };
 const TOR_BAND = { gold: { ton: [32, 48], satt: 0.4, name: "gold" }, dunkelrot: { ton: [350, 15], satt: 0.9, name: "dunkelrot" } };
 const TOR_ORT = "stamm/siedlung-tor.js `_membranGraph`, das Zielbild (`ziel`)";
@@ -655,8 +655,8 @@ function selbsttest() {
         dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8, nachtFaktor: 1, lumaNacht: 6 },
         flamme: {
             toene: {
-                kern: { kelvin: 3000, k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [249, 184, 122], nacht: [249, 185, 121], ohne: [249, 184, 122] },
-                mantel: { kelvin: 2350, k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [200, 118, 18], nacht: [199, 117, 34], ohne: [161, 102, 51] },
+                kern: { kelvin: 3000, k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [249, 184, 122], nacht: [249, 184, 121], ohne: [249, 184, 122] },
+                mantel: { kelvin: 2350, k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [200, 118, 18], nacht: [199, 116, 41], ohne: [163, 106, 59] },
             },
             quelle: { uniform: true, augeLiest: true, zwilling: null, kette: true, umkehr: true },
             // (j) Flamme und Tor: die Zahlen des gemessenen Laufs (GTX 1050, echte Karte, w28-glut-nacht), `ohne` = MUTANTE-TOR im selben Lauf
@@ -666,8 +666,8 @@ function selbsttest() {
                 zeilen: 2,
                 belicht: 0.6667,
                 toene: {
-                    gold: { wert: [0.9, 0.62, 0.25], k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [235, 197, 125], nacht: [235, 198, 125], ohne: [230.5, 196, 133] },
-                    dunkelrot: { wert: [0.12, 0.012, 0.01], k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [93, 9, 2], nacht: [93, 8, 2], ohne: [46, 4, 2] },
+                    gold: { wert: [0.9, 0.62, 0.25], k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [235, 197, 125], nacht: [235, 197, 125], ohne: [231.5, 198, 135] },
+                    dunkelrot: { wert: [0.12, 0.012, 0.01], k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [93, 9, 2], nacht: [93, 8, 2], ohne: [46, 4, 3] },
                 },
             },
         },
@@ -738,7 +738,7 @@ function selbsttest() {
         ["der Täter von main: das Auge wäscht den Kern über Bild-Weiß (ohne Umkehr Δ 29)", (z) => (z.flamme.toene.kern.ohne = [240, 200, 151]), /FLAMME: KERN — OHNE die Umkehr .*Δ 29 > 6.*`NACHT_AUGE\.bildZapfen`.*rosa/],
         ["Kern ohne Umkehr ungemessen", (z) => delete z.flamme.toene.kern.ohne, /FLAMME: KERN — OHNE die Umkehr .*> 6/],
         ["Mantel entsättigt in der Nacht", (z) => (z.flamme.toene.mantel.nacht = z.flamme.toene.mantel.ohne), /FLAMME: MANTEL \(2350 K\) — .*ohne dass seine Umkehr/],
-        ["Flammen-Mutante reißt nicht (blind)", (z) => (z.flamme.toene.mantel.ohne = z.flamme.toene.mantel.nacht), /FLAMME: MANTEL — MUTANTE-J .*Sättigung 0\.829 ≥ 0\.75 .*die Probe ist blind/],
+        ["Flammen-Mutante reißt nicht (blind)", (z) => (z.flamme.toene.mantel.ohne = z.flamme.toene.mantel.nacht), /FLAMME: MANTEL — MUTANTE-J .*Sättigung 0\.794 ≥ 0\.75.*die Probe ist blind/],
         ["der Mantel am Stand von main (Sättigung 0,573)", (z) => (z.flamme.toene.mantel.nacht = [199, 115, 85]), /FLAMME: MANTEL \(2350 K\) — .*Sättigung 0\.573 < 0\.75/],
         ["Flammen-Probe ohne Nacht (blind)", ["flamme.toene.mantel.nfNacht=", 0], /FLAMME: MANTEL — .*nightFactor bei 0 \/ 0 \/ 1/],
         ["Flammen-Probe bei fremder Belichtung (blind)", ["flamme.toene.kern.k=", 1], /FLAMME: KERN — die Belichtung stand bei 1 statt 1\.5/],
@@ -756,7 +756,7 @@ function selbsttest() {
         ["Flammen-Probe fehlt", ["flamme"], /FLAMME: die Probe lief nicht/],
         // (j) w28-tor-nacht: das Auge der Nacht nahm dem Zielbild des Tors nachts die Farbe (grauweiß statt gold) — jede Zahl von
         // MUTANTE-TOR an der Stelle des Kopfs ist rot beim Täter
-        ["Tor-Zielbild nicht vor dem Auge der Nacht (die Zahl von MUTANTE-TOR)", (z) => (z.flamme.tor.toene.gold.nacht = z.flamme.tor.toene.gold.ohne), /TOR: GOLD — .*Δ 8 > 6 je Kanal.*stamm\/siedlung-tor\.js `_membranGraph`, das Zielbild \(`ziel`\) ruft die Umkehr/],
+        ["Tor-Zielbild nicht vor dem Auge der Nacht (die Zahl von MUTANTE-TOR)", (z) => (z.flamme.tor.toene.gold.nacht = z.flamme.tor.toene.gold.ohne), /TOR: GOLD — .*Δ 10 > 6 je Kanal.*stamm\/siedlung-tor\.js `_membranGraph`, das Zielbild \(`ziel`\) ruft die Umkehr/],
         ["Tor-Zielbild dunkelt nachts (die Zahl von MUTANTE-TOR)", (z) => (z.flamme.tor.toene.dunkelrot.nacht = z.flamme.tor.toene.dunkelrot.ohne), /TOR: DUNKELROT — .*Δ 47 > 6 je Kanal.*stamm\/siedlung-tor\.js `_membranGraph`/],
         ["Dunkelrot am Stand von main (die Umkehr klemmt, grau-rot)", (z) => (z.flamme.tor.toene.dunkelrot.nacht = [111, 35, 35]), /TOR: DUNKELROT — .*Δ 33 > 6 je Kanal/],
         ["die Umkehr schießt über (der Stäbchen-Anteil am gesehenen Ton gelesen)", (z) => (z.flamme.tor.toene.dunkelrot.nacht = [119, 12, 2]), /TOR: DUNKELROT — .*Δ 26 > 6 je Kanal/],

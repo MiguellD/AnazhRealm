@@ -2195,15 +2195,9 @@ class AnazhRealm_bild_kosten {
         };
         // DAS GRAU DER STÄBCHEN IST SKOTOPISCH (w28-glut-nacht; CIE 191:2010: L_mes = m·L_p + (1 − m)·L_s): die Stäbchen sehen
         // Rot-Orange kaum (V′, Gipfel 507 nm) — ihr Grau ist die skotopische Leuchtdichte der Farbe (`NACHT_AUGE.skotopisch`),
-        // geeicht am Ton des Mondlichts (das Schlüssellicht der Nacht, `ATMO_GESETZ.nacht.mond`: eine neutrale Fläche im Mond
-        // trägt dasselbe Grau wie unter der photopischen Leuchtdichte). Feuerschein hebt das Grau um sein S/P-Verhältnis
+        // in der Stärke `NACHT_AUGE.staebchenStaerke` (ihr Anker steht an der Tafel). Feuerschein hebt das Grau um sein S/P-Verhältnis
         // weniger, Gelb-Grün und Rot stehen nachts dunkler, Blau heller (Purkinje). Der Stäbchen-ANTEIL bleibt photopisch.
-        const mond = AnazhRealm._atmoKern().nacht.mond;
-        const [lumVon, skVon] = [
-            (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2],
-            (c) => NA.skotopisch.reduce((a, w, i) => a + w * c[i], 0),
-        ];
-        const w = NA.skotopisch.map((g) => (g * lumVon(mond)) / skVon(mond));
+        const w = NA.skotopisch.map((g) => g * NA.staebchenStaerke);
         const skot = farbe.dot(T.vec3(w[0], w[1], w[2]));
         // DIE UMKEHR: gesehen = f·(1 − s) + skot(f)·s mit s am Urbild f; skot ist linear → skot(f) = skot(gesehen) ÷ (1 − s +
         // s·Σw). Die Leuchtdichte bleibt unter dem skotopischen Grau NICHT gleich (ein dunkles Rot verliert sie): s am gesehenen
@@ -2979,7 +2973,10 @@ AnazhRealm._atmoKern = function () {
 // sieht — Mittelgrau (die Eichung der Belichtung, Lehre 21) bis Weiß.
 // `skotopisch`: die Gewichte der skotopischen Leuchtdichte für lineares sRGB — die Zeile V′ = −0,702·X + 1,039·Y + 0,433·Z
 // (Pattanaik et al. 1998, auch Jensen et al. 2000 „Night Rendering") durch die sRGB→XYZ-Matrix (D65): R −0,0603 · G 0,5437 ·
-// B 0,3599; das Rot steht auf 0 (eine Erregung ist nie negativ). `_nachtAuge` eicht sie am Ton des Mondlichts.
+// B 0,3599; das Rot steht auf 0 (eine Erregung ist nie negativ).
+// `staebchenStaerke`: die EINE Stärke des Stäbchen-Graus. Ihr Zweck war immer „der Boden bleibt nachts lesbar": ANKER = der Boden
+// 1–3 m der Prüfbühne S0 um Mitternacht ohne Feuer trägt dieselbe Luma wie main (24,1 ± 0,3; gate:pruefbuehne-licht, Soll ≥ 22).
+// Der Mondton war die Herleitung für die FORM (V′), der Boden ist der Zweck der STÄRKE (Koordinator 17.11.).
 // `umkehrSchritte`: so oft liest die Umkehr den Stäbchen-Anteil an ihrem Urbild neu (Fixpunkt; gemessen an der Linse (j)).
 AnazhRealm.NACHT_AUGE = Object.freeze({
     luxJeEinheit: 0.26 / 0.224,
@@ -2987,6 +2984,7 @@ AnazhRealm.NACHT_AUGE = Object.freeze({
     zapfenCd: 5,
     bildZapfen: Object.freeze([0.18, 1]),
     skotopisch: Object.freeze([0, 0.5437, 0.3599]),
+    staebchenStaerke: 1.22,
     umkehrSchritte: 3,
 });
 // DIE EINE SZENEN-SKALA (K50, `_szeneSkalaWirk`): die Szene rendert in SZENE_SKALA × Ausgabe, die zeitliche Auflösung
