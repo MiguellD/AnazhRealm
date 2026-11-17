@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "bcc2cadc",
-    "zeit": "2026-11-17T06:07:28.832Z",
+    "zeit": "2026-11-17T06:13:18.963Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1784,7 +1784,7 @@
           "punkte": 2,
           "staffel": "1 = Fische stehen gegen die Strömung des Kerns (Ausrichtung zur Strömung ≥ 0,8) · 2 = sie meiden den Spieler, folgen dem Pegel und sind unter Wasser sichtbar (Leib K3)",
           "messung": "werkbank eval am Bach: Ausrichtung gegen die Strömung aus gate:kopplung F1.",
-          "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer) an ee9c1965 gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.973 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 71839b1e gtx",
+          "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer) an ee9c1965 gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.757 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 5063 / 0 px an bcc2cadc gtx",
           "schlupfloch": "Fische auf festen Bahnen sähen gut aus: die Mutation der Strömung muss die Ausrichtung ziehen.",
           "maschine": true
         },

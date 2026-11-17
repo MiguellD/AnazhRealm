@@ -2085,7 +2085,7 @@
   },
   "luftwasser.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer) an ee9c1965 gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.973 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 71839b1e gtx",
+   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer) an ee9c1965 gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.757 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 5063 / 0 px an bcc2cadc gtx",
    "stationen": [
     {
      "id": "luftwasser.K3#1",
@@ -2140,10 +2140,9 @@
      "id": "luftwasser.K3#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.973 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px",
-     "sha": "71839b1e4073bfc85c8466c6123f48434f6c8c04",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/shader-kosten.cjs, scripts/lib/welt-boot.cjs +10)",
-     "gehalten": true,
+     "zahl": "Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.757 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 5063 / 0 px",
+     "sha": "bcc2cadc2742edb5c337dde7fd11b7d79997f9fe",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -6536,7 +6535,7 @@
   "ohne": 124
  },
  "kopfVoll": "bcc2cadc2742edb5c337dde7fd11b7d79997f9fe",
- "zeit": "2026-11-17T06:07:28.832Z",
+ "zeit": "2026-11-17T06:13:18.963Z",
  "vorher": "bcc2cadc",
  "bilanz": {
   "gewinn": [],
