@@ -1,7 +1,7 @@
 {
  "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
  "geraet": "gtx",
- "zeit": "2026-11-17T19:14:48.581Z",
+ "zeit": "2026-11-17T19:18:39.044Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "klang.K4#2": {
@@ -817,6 +817,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.kopplung.kaskade#1": {
+   "gruen": false,
+   "zahl": "trocken nach 60 s 1 brennende Zellen, Flammen im Bild +0 Pixel je Pixel (neu 0 − Rauschen 0, bei laufender Schleife 102; Soll ≥ 200; 25 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 305) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.5,
+   "grund": "ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +0 Pixel je Pixel (neu 0 − Rauschen 0, bei laufender Schleife 102; Soll ≥ 200; 25 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 305) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kacd54c8a12b0",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2a15f73e7009",
+   "s": 29.5,
+   "fremd": {
+    "s": 32.5,
+    "takte": 15,
+    "fremdS": 11.69,
+    "kerne": 0.36,
+    "fensterKerne": 0.441,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.13
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.98
+     ],
+     [
+      "Explorer.EXE",
+      0.84
+     ]
+    ],
+    "dienerS": 11.5,
+    "diener": [
+     [
+      "System",
+      4.75
+     ],
+     [
+      "dwm.exe",
+      4.7
+     ]
+    ],
+    "geraetS": 8.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.31
+     ],
+     [
+      "svchost.exe",
+      3.45
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 59.13,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-17T19:18:39.044Z",
+   "abdruck": "2610539a62a6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -833,37 +903,31 @@
   "k70fac97e0896": "dVTRbptAEPwXP6a9nA2cwSflYW2sJlIrOZ+wd+wBMQbrDkLrqv9e2QbHQLJPCGZ2Z2eX/Ts7ot5jSo9vripncvYw+z5z+E7MkX0n+/jmZnI21wGKSMI1OABszjBt82PteJErjqrE7ECssTXlxaO+0BY6IiTJ2y20O853POTrFm6xhqencZpCUVKxGg31SVTihT7KMbBxKSpi2JhL4Q78MIIpLJOhJuOjMAv58gdgO62f5Eg1K/LS9Rl1IpTvSd5HO+VYbNkJKSvIdqTID5ee6EgRAMTtbko0RePcoFjkJ8KLJOcrPsKm5HKd1exoK0Vlb83KCxco19PU6bFh5l4RKoWRGruYIZUp2aGGMBA6kPx3NE66xwNZZCVmHXQ190NPfXjDOX+eaikuwi8lyi/G5HSW28OwOWNEgnP5c5rQZZiQZfvK1Te0H0Ue+t2GxhxeAWAXxGPmh5SO56nlXER3LUQcniedu8rULVpi6bHpiBSQCIUEeJmAazwc+ia0R5EY2+7q81rey5iHnhAXJ9MvXLwuMTtRXvSkUOuFT3LzC8Z9vls8MFSpzY3pZ6WENqvPVqulomaqquoe6Sfo67OW8ubKKrr+sLeI20pvN+krDGNtU5hqv1SobN0LF2o5N4E0l/9Jj9EnsgWlNPAnCZSPieStvpMQ9A/f7jeQnybjO+V0dq50jeuXfBUmK3Mde3eRXobXoCW7V1ju+3Ebn1QiY4hTziHuCi/X/I0/t/cOxLBrAbZr2Ny//QHXGR1Jc4NWEa8xZZbM4Oyevx5tZfLz2eIZNi7Dov6A/PsP"
  },
  "sitzung": {
-  "start": "2026-11-17T19:14:09.872Z",
-  "ordner": "sitzung-20261117-201409",
+  "start": "2026-11-17T19:18:04.839Z",
+  "ordner": "sitzung-20261117-201804",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.3,
+  "bootS": 7.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "affekt.K1#2",
-    "s": 29.3,
-    "takte": 740,
+    "vor": "karte2.same.kopplung.kaskade#1",
+    "s": 24.4,
+    "takte": 589,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "wanderung": [
-   {
-    "probe": "affekt.K1#2",
-    "ort": "wiese",
-    "m": 18.01,
-    "dreh": 0
-   }
-  ],
   "messHalt": [
    {
-    "probe": "affekt.K1#2",
+    "probe": "karte2.same.kopplung.kaskade#1",
     "gehalten": [
+     "skala",
+     "spiegel",
      "tiere"
     ],
     "offen": []
@@ -872,21 +936,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1822,
-   "frameP95": 41.68,
-   "taktP95": 27.58,
-   "vramMax": 139.2,
+   "bilder": 2340,
+   "frameP95": 33.32,
+   "taktP95": 16.31,
+   "vramMax": 133.5,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 113,
+   "zapfen": 130,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 129.3,
-  "minuten": 2.25
+  "fahrtS": 137.9,
+  "minuten": 2.38
  },
  "ungemessen": {
   "profiband.K4#2": {
