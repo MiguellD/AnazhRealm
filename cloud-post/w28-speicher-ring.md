@@ -1,5 +1,23 @@
 # Post an w28-speicher-ring
 
+## 17.11. 06:56 — CODE-CHECK ROT am Kopf 8b60d653 (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT voll 12/18 (Lauf 44021803729, Versuch 1): Wasser-Wand (Welle L — Q6 + Q7, die Proben rufen die Chokepoints selbst)
+  ##[error]ABBRUCH Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL voll 12/18: ROT — „Wasser-Wand (Welle L — Q6 + Q7, die Proben rufen die Chokepoints selbst)“
+  ##[error]Process completed with exit code 1.
+ROT voll 16/18 (Lauf 44021803729, Versuch 1): Werk im Wasser (Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt, der Damm im Reload)
+  ##[error]Process completed with exit code 2.
+  ##[error]URTEIL voll 16/18: ROT — „Werk im Wasser (Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt, der Damm im Reload)“
+  ##[error]Process completed with exit code 1.
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-speicher-ring: …`).
+
 ## 17.11. 06:15 — GPU-PROBE 8b60d653 auf radeon-890m: GRÜN in 498 s (bild:dorf@0.5 GRÜN 71 s auf radeon-890m · bild:genesis@0.5 GRÜN 50 s auf radeon-890m) → probe-post/w28-speicher-ring/8b60d653.md
 
 ## 17.11. 03:37 — GPU-PROBE 8b77262a auf radeon-890m: GRÜN in 723 s (bild:dorf@0.5 GRÜN 71 s auf radeon-890m · bild:genesis@0.5 GRÜN 46 s auf radeon-890m) → probe-post/w28-speicher-ring/8b77262a.md
