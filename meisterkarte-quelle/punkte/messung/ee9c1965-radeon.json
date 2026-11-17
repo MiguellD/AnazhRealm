@@ -1,7 +1,7 @@
 {
  "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
  "geraet": "radeon",
- "zeit": "2026-11-17T02:30:37.927Z",
+ "zeit": "2026-11-17T02:47:35.002Z",
  "host": "MiguellD",
  "je": {
   "karte2.same.physik.verformung#1": {
@@ -144,140 +144,140 @@
   },
   "karte2.planet.kopplung.bahn-klima#1": {
    "gruen": false,
-   "zahl": "Gipfel -3880.4/198.937/-3745.6, 1107 freie Punkte 141.783–199.31 m über dem Meer · winter Bild 160.984 m · Gesetz 161.206 m (Versatz -160, Treffer 0.965 aus 1107, Falsch null aus 0) · fruehling Bild 160.406 m · Gesetz 161.206 m (Versatz -106, Treffer 0.913 aus 1107, Falsch null aus 0) · sommer Bild 160.811 m · Gesetz 165.823 m (Versatz 0, Treffer 0.877 aus 981, Falsch 0.81 aus 21) · herbst Bild 160.512 m · Gesetz 161.277 m (Versatz -24, Treffer 0.936 aus 1106, Falsch null aus 0) · Sommer − Winter -0.173 m (Soll ≥ 100) · ROT sommer folgt dem Gesetz nicht · [linse-gpu] amd/rdna-3",
+   "zahl": "Gipfel -3880.4/198.937/-3745.6, 1335 freie Punkte 49.024–199.706 m über dem Meer · winter Bild 83.728 m · Gesetz 82.203 m (Versatz -160, Treffer 0.856 aus 1335, Falsch null aus 0) · fruehling Bild 85.026 m · Gesetz 83.935 m (Versatz -106, Treffer 0.836 aus 1314, Falsch 0.25 aus 4) · sommer Bild 156.183 m · Gesetz 160.162 m (Versatz 0, Treffer 0.854 aus 412, Falsch 0.008 aus 787) · herbst Bild 140.679 m · Gesetz 144.567 m (Versatz -24, Treffer 0.848 aus 650, Falsch 0.004 aus 553) · Sommer − Winter 72.455 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.57,
-   "grund": "ROT: Gipfel -3880.4/198.937/-3745.6, 1107 freie Punkte 141.783–199.31 m über dem Meer · winter Bild 160.984 m · Gesetz 161.206 m (Versatz -160, Treffer 0.965 aus 1107, Falsch null aus 0) · fruehling Bild 160.406 m · Gesetz 161.206 m (Versatz -106, Treffer 0.913 aus 1107, Falsch null aus 0) · sommer Bild 160.811 m · Gesetz 165.823 m (Versatz 0, Treffer 0.877 aus 981, Falsch 0.81 aus 21) · herbst Bild 160.512 m · Gesetz 161.277 m (Versatz -24, Treffer 0.936 aus 1106, Falsch null aus 0) · Sommer − Winter -0.173 m (Soll ≥ 100) · ROT sommer folgt dem Gesetz nicht · [linse-gpu] amd/rdna-3",
+   "minuten": 0.59,
+   "grund": "ROT: Gipfel -3880.4/198.937/-3745.6, 1335 freie Punkte 49.024–199.706 m über dem Meer · winter Bild 83.728 m · Gesetz 82.203 m (Versatz -160, Treffer 0.856 aus 1335, Falsch null aus 0) · fruehling Bild 85.026 m · Gesetz 83.935 m (Versatz -106, Treffer 0.836 aus 1314, Falsch 0.25 aus 4) · sommer Bild 156.183 m · Gesetz 160.162 m (Versatz 0, Treffer 0.854 aus 412, Falsch 0.008 aus 787) · herbst Bild 140.679 m · Gesetz 144.567 m (Versatz -24, Treffer 0.848 aus 650, Falsch 0.004 aus 553) · Sommer − Winter 72.455 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "konsum": "k57de1faa7b59",
+   "konsum": "k37a32bb0e239",
    "konsumN": 28,
    "konsumSeite": false,
    "konsumGanz": {
     "gelesen": 2
    },
-   "konsumBoot": "kbaac1f1f4632",
-   "s": 34,
+   "konsumBoot": "k99b1b7162324",
+   "s": 35.4,
    "fremd": {
-    "s": 39.4,
-    "takte": 13,
-    "fremdS": 103.13,
-    "kerne": 2.617,
-    "fensterKerne": 2.763,
+    "s": 39.8,
+    "takte": 14,
+    "fremdS": 40.36,
+    "kerne": 1.014,
+    "fensterKerne": 1.125,
     "namen": [
      [
-      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-46880-profil-cNTgz1 --no-p",
-      43.08
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.28
      ],
      [
       "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      12.95
+      9.31
      ],
      [
-      "sh.exe dienst/zug-dienst.sh",
-      11.98
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… b20n45lwc.output/\"; for i in $(seq 1 ",
+      3.95
      ]
     ],
-    "dienerS": 25.48,
+    "dienerS": 21.81,
     "diener": [
      [
       "WmiPrvSE.exe",
-      11.67
+      10.16
      ],
      [
       "System",
-      6.81
+      6.16
      ]
     ],
-    "geraetS": 25.25,
+    "geraetS": 15.95,
     "geraet": [
      [
-      "MsMpEng.exe",
-      13.77
+      "svchost.exe",
+      8.31
      ],
      [
-      "svchost.exe",
-      10.81
+      "MsMpEng.exe",
+      6.98
      ],
      [
       "SearchIndexer.exe",
-      0.59
+      0.53
      ]
     ],
-    "eigenS": 103.02,
+    "eigenS": 105.17,
     "rechnerKerne": 24
    },
-   "zeit": "2026-11-17T02:28:38.078Z",
-   "abdruck": "f1120309a313",
+   "zeit": "2026-11-17T02:47:35.002Z",
+   "abdruck": "ceec7d7eb138",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
   },
   "karte2.planet.wetter.klimazonen#1": {
    "gruen": false,
-   "zahl": "am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 160.984 m · Gesetz 161.206 m (Versatz -160, Treffer 0.965 aus 1107, Falsch null aus 0) · sommer Bild 160.811 m · Gesetz 165.823 m (Versatz 0, Treffer 0.877 aus 981, Falsch 0.81 aus 21) · Sommer − Winter -0.173 m (Soll ≥ 100) · ROT sommer folgt dem Gesetz nicht · [linse-gpu] amd/rdna-3",
+   "zahl": "am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 83.728 m · Gesetz 82.203 m (Versatz -160, Treffer 0.856 aus 1335, Falsch null aus 0) · sommer Bild 156.183 m · Gesetz 160.162 m (Versatz 0, Treffer 0.854 aus 412, Falsch 0.008 aus 787) · Sommer − Winter 72.455 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.57,
-   "grund": "ROT: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 160.984 m · Gesetz 161.206 m (Versatz -160, Treffer 0.965 aus 1107, Falsch null aus 0) · sommer Bild 160.811 m · Gesetz 165.823 m (Versatz 0, Treffer 0.877 aus 981, Falsch 0.81 aus 21) · Sommer − Winter -0.173 m (Soll ≥ 100) · ROT sommer folgt dem Gesetz nicht · [linse-gpu] amd/rdna-3",
+   "minuten": 0.59,
+   "grund": "ROT: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 83.728 m · Gesetz 82.203 m (Versatz -160, Treffer 0.856 aus 1335, Falsch null aus 0) · sommer Bild 156.183 m · Gesetz 160.162 m (Versatz 0, Treffer 0.854 aus 412, Falsch 0.008 aus 787) · Sommer − Winter 72.455 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "konsum": "k57de1faa7b59",
+   "konsum": "k37a32bb0e239",
    "konsumN": 28,
    "konsumSeite": false,
    "konsumGanz": {
     "gelesen": 2
    },
-   "konsumBoot": "kbaac1f1f4632",
-   "s": 34,
+   "konsumBoot": "k99b1b7162324",
+   "s": 35.4,
    "fremd": {
-    "s": 39.4,
-    "takte": 13,
-    "fremdS": 103.13,
-    "kerne": 2.617,
-    "fensterKerne": 2.763,
+    "s": 39.8,
+    "takte": 14,
+    "fremdS": 40.36,
+    "kerne": 1.014,
+    "fensterKerne": 1.125,
     "namen": [
      [
-      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-46880-profil-cNTgz1 --no-p",
-      43.08
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.28
      ],
      [
       "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      12.95
+      9.31
      ],
      [
-      "sh.exe dienst/zug-dienst.sh",
-      11.98
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… b20n45lwc.output/\"; for i in $(seq 1 ",
+      3.95
      ]
     ],
-    "dienerS": 25.48,
+    "dienerS": 21.81,
     "diener": [
      [
       "WmiPrvSE.exe",
-      11.67
+      10.16
      ],
      [
       "System",
-      6.81
+      6.16
      ]
     ],
-    "geraetS": 25.25,
+    "geraetS": 15.95,
     "geraet": [
      [
-      "MsMpEng.exe",
-      13.77
+      "svchost.exe",
+      8.31
      ],
      [
-      "svchost.exe",
-      10.81
+      "MsMpEng.exe",
+      6.98
      ],
      [
       "SearchIndexer.exe",
-      0.59
+      0.53
      ]
     ],
-    "eigenS": 103.02,
+    "eigenS": 105.17,
     "rechnerKerne": 24
    },
-   "zeit": "2026-11-17T02:28:38.078Z",
-   "abdruck": "eaa65983db29",
+   "zeit": "2026-11-17T02:47:35.002Z",
+   "abdruck": "e7afd2108fed",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.kopplung.bahn-klima#1",
@@ -351,48 +351,110 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.kopplung.kaskade#1": {
+   "gruen": false,
+   "zahl": "trocken nach 60 s 1 brennende Zellen, Flammen im Bild +76 Pixel je Pixel (neu 426 − Rauschen 350; Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.43,
+   "grund": "ROT: trocken nach 60 s 1 brennende Zellen, Flammen im Bild +76 Pixel je Pixel (neu 426 − Rauschen 350; Soll ≥ 200; 22 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 510) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k1b02f4b9122c",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k99b1b7162324",
+   "s": 25,
+   "fremd": {
+    "s": 29.2,
+    "takte": 9,
+    "fremdS": 116.78,
+    "kerne": 4.003,
+    "fensterKerne": 4.736,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-46808-profil-HnFohj --no-p",
+      38.97
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf ee9c196544e4376ea20c95921c852ad931bc1604",
+      24.81
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.88
+     ]
+    ],
+    "dienerS": 34.05,
+    "diener": [
+     [
+      "System",
+      18.86
+     ],
+     [
+      "WmiPrvSE.exe",
+      9.84
+     ]
+    ],
+    "geraetS": 25.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      16.42
+     ],
+     [
+      "svchost.exe",
+      8.47
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 56.59,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-17T02:45:54.172Z",
+   "abdruck": "421a762ca1d1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "k1b02f4b9122c": "dVRdj9owEPwvPLbNmXwRx1IfzIHKSa0EUv/A2l4ngZAgO7m0VP3vVUICJLnuE6AZzezs4D+LC8gTJPhytGWxYItPiy8LC+/oWDTvaF6OdsEWSxlASBm/DeGcv7YwabJLZUmeCQKigPSMTm0qzPIX2dFcSRGQkWbLmz0hexKRdfP165SaC1SlU4HGgSiUF/nApsDaJiDQgVp3Yj1Yr1aR5zPSDd3w/ZEMww+ck2Y7VRRQqLFT7UOoXfb2m/MtnzlUGWDl5FlhB02pQuF77C4030oZaJwrYJqj6Ul0FSrfHYxOCTqvrR2JUF+FHmWExGSCTdBmMq2ciykFFkNosRe5wD5IOLnUjn52AkIAFdN8U8AiQTP2EAWhDBj5NfN7gjMacApIe2i89CNPPDIhhOzmXvLOeCcxGKdKxJEeEdvb7Zq2bBvafknuP9PdrYSbhD/mMBGxMs3MeRyP1qGCJfs+t2RTUGicU2mrO9qn1AO/b/ymKxLfB5sp87FMz/PEahnSp10o4btZdrbUVQMGneRS90QMMIxCxvnbDFzB+TwsIT2k4fRwtmoL/WxjGXlh2N0i+c8dbvV3rpjlAymS0vWRvf7g0z3fDZwdEInJtB6uLUKp44/K2WBeOaIsqwGp1aqNxCfFPRWXcv72dEC+CZbfXtcHPp2fDT/MvHcKpakG46FYLXXAdPdPlFP0FU2OCY7yUYHwQTHSyGcLw4fPoyJeZ+e7ZtgmV9jaDhWOIxX3FR5n3aA5CShOQ8audqW69WrPN73gak2O5Nb3uxu+bzjfrm8v7QUluZhSZ+3TRVKobQp59Xiz//4D",
   "kbaac1f1f4632": "dVRdj5swEPwveeyVM18OxNI9OCVq7tRTc+pDpb6t7TVwIRDZcFSp+t+rcJAE6O0ToBnv7OzgP4sjyD2keP9qq3LBFp8WnxcW3tCxaN7Q3L/aBVu4MgQaM/5ehHP+9QyTJj/WlhS5ICBKyA7oNKbGvLiXHc2TMQIy0m54uyNkRyKybvml1vzhYXpMIVBVTg0ah0OE8qMA2BTY2BQEOtDornEP1stl5AeMdBUnfPdKhuIvnJN2M+0ooFRj1ToAqj322HK+mStUOWDtFHlph55SURH47NKonXMMtM4JMCvQ9KR4SVXgDUKnBF001o6axIGifswIWZEJNkWby6x2jqYSWA6mrfzIA7aea0mPjaNvlYAQEIupvxlgmaIZa4hCKkNGfs/07uGABpwSsh66coPIF1dPCCHbuZaiE961GITHSqwiPSISQtJtF5sk7l4un+Pte5CS9Boq/jJpYmWWm8PYHq2pAnc6s81AoXH2la0vyCCOfQj65CddiPguTKbM6yA9zxdLl8Y3c8SEb2e+2UrXLRh00mPTEzFEGlHG0+cZuIbDYRhA+hjT2QD1Ocy3MtzIp7TbQ/rBDt6j75wwLwZSJKUXIPvyzKdzvhk4OCBSk2s9bFpQqVf/C2aLRe2IqqoHpFbLsyUBKS+ueHecP98s7ymh7s9vv3683FwT59q4U93d6ZWpB9FULF0dMt39gXKKPqEpMMWRNyoUAShGWnntk4TDw90ogKfZ6k45nl0rbWOH6K4iteqj28t/HN8fLZq9gHI/+OxpTyrW5XfHE/6d8/QpuVtPZv+okv7wI0pyNJXOz1cZyaCxGRT19T7/+w8=",
-  "k57de1faa7b59": "dVRdj5swEPwveWzLOXwFx9I9OJeoOekqJdI99W1tr4GEQGTD0abqf68gkAS47pvRDDs7O/af2RnkEWJ8Otgin7HZl9m3mYUPdCyaDzRPBztjs7kMIKSM73lTO875SwOTJj2XlmSpICBySE7oVKbENHuSLc2VFAEZqTe83hGyIxFZ1c/PY2omUBVOCRp7olBe5AMbAysbg0AHKt0268B6sYg8n5G26JrvDqSvVc05qTfjjgJyNVSqfQi1y15/c77hE4UqBSydLM1t31OqUPgeuzWaTqUM1M4FMMnQdCS6CJXv9kLHBJ1V1g6aUF+FHmWELMkIG6NNZVI6Z1MIzHvTll7kAvvE4fhcOfpRCQgBVIz9TQDzGM1QQxSEMmDk10TvEU5owMkh6aDLuR954u4JIWQ71ZK1wtsWvXCqxDLSAyIhhG/rJmxr2hzi22e6bTPI1zG/137UxMokNaehPVqHCubsbSrJJqDQOMfClje0T6kHPut6kTb5u2A9Zt6H6XieWMxD+jALJXw78c4WuqzBoBOfq46IAYZRyDh/nYBLOJ36IaSHNBwvzpZNoB9lzCMvDNtdxP/ZwzX+zgXTrCdFUro+spcffDznh4GTAyI2qdb9tkUo9fKzcNaYlY4oirJHarVoLPFJfnPFpZy/PiyQr4P597ef+z0f1XvN9xPtbYfClL3wUCzmOmC6vYlyjL6gyTDGgT8qED4oRmp91XOhnO+i7i7rr4MgXibru6TYOJfbyvYRXkZq2UV46HWN5iggP/Yeu9qVinXv6LobcrEiB3LN+80Qvqs536z4y/Usm/wRHl9/fkZJzqbQafOUkQQqm0BW3t/wv/8A",
-  "kd68cfcebe2a8": "dVRNj5swEP0vObZlHb6Cg7SHySbqrtRKidRTb2MzBhICkQ1Lm6r/veIrCbCdm9F7zJs3z/6zuKA8YUxPR1Pki3DxafFlYfCdLEP6nfTT0SzCxVJ66PMQumIA8NLApE4vpWFZKhiKHJMzWZUuKc2eZEuzJSekkNU7qPeM7VnANvXz85SaCYoKq0RFA1FETuBiOAVWJkZBFlaqbdaD1WoVOG7I2uJb2B/ZUJsagNW7aUeBeTRWqlz0lR2+/QbYwUxhlCKVVpbmZugpI1+4TnhrNJ8q0lhbV6QkI92T+MqPXHsQOiWorDJm1IS7ke/wkLE1m2BjMqlMSuuiC0H5YNraCWwMP3A4vlSWelSCQiAXU38TpDwmPdYQeL70QvZrpveEZ9Jo5Zj00PXSDRxx94Qx9jrXkrXC2xaDcB6JdaBGRMYYvNZN2La8OcS3z/y1C+E2hnsdJk2MTFJ9HtujlB/hMvw2l2QSjEhbp8KUN7TLuYNun/gtgwMA7L3tlHkfpuc5YrX0+cMsnMHrzDtTqLJGTVZ8qXoieeQHfgjwNgOXeD4PQ0iHuD9dnCmbQD/KWAaO77e7iP+zhy7+1pXSbCAFUtouhS/fYTrnu8azhSLWqVLDtoUv1fqjcNaUlZYoinJAqmjVWOKy/OaKzQHeHhYIW2/59dvPwwEm9aOGw0x726HQ5SDcF6ul8kLV3kQ5RV9JZxTTyJ/IEy5GIatVp+fKAfZBf5fV51EQr7P1XVNqnMtNZYYIr4No3Ud47HVN+iQwPw0e28qWUZerPWz7IVcbdmRd3m+GwL4G2G3gpTvLJn8M4u7nF5LsoguVNk8ZS7AyCWbl/Q3/+w8="
+  "kd68cfcebe2a8": "dVRNj5swEP0vObZlHb6Cg7SHySbqrtRKidRTb2MzBhICkQ1Lm6r/veIrCbCdm9F7zJs3z/6zuKA8YUxPR1Pki3DxafFlYfCdLEP6nfTT0SzCxVJ66PMQumIA8NLApE4vpWFZKhiKHJMzWZUuKc2eZEuzJSekkNU7qPeM7VnANvXz85SaCYoKq0RFA1FETuBiOAVWJkZBFlaqbdaD1WoVOG7I2uJb2B/ZUJsagNW7aUeBeTRWqlz0lR2+/QbYwUxhlCKVVpbmZugpI1+4TnhrNJ8q0lhbV6QkI92T+MqPXHsQOiWorDJm1IS7ke/wkLE1m2BjMqlMSuuiC0H5YNraCWwMP3A4vlSWelSCQiAXU38TpDwmPdYQeL70QvZrpveEZ9Jo5Zj00PXSDRxx94Qx9jrXkrXC2xaDcB6JdaBGRMYYvNZN2La8OcS3z/y1C+E2hnsdJk2MTFJ9HtujlB/hMvw2l2QSjEhbp8KUN7TLuYNun/gtgwMA7L3tlHkfpuc5YrX0+cMsnMHrzDtTqLJGTVZ8qXoieeQHfgjwNgOXeD4PQ0iHuD9dnCmbQD/KWAaO77e7iP+zhy7+1pXSbCAFUtouhS/fYTrnu8azhSLWqVLDtoUv1fqjcNaUlZYoinJAqmjVWOKy/OaKzQHeHhYIW2/59dvPwwEm9aOGw0x726HQ5SDcF6ul8kLV3kQ5RV9JZxTTyJ/IEy5GIatVp+fKAfZBf5fV51EQr7P1XVNqnMtNZYYIr4No3Ud47HVN+iQwPw0e28qWUZerPWz7IVcbdmRd3m+GwL4G2G3gpTvLJn8M4u7nF5LsoguVNk8ZS7AyCWbl/Q3/+w8=",
+  "k99b1b7162324": "dVRdj5swEPwveeyVM18OjqV7cErUXNVTc7qHSn1bmzVwIRDZcFSp+t+rcJAE6O0ToBnv7OzgP4sjqD2keP9qq3LBF58WnxcW3tCxaN7Q3L/aBV+4KgTKuHgvIoT4eoYpkx9rS4pcEpAlZAd0GlNjXtyrjuYphoCctBvR7gjZkYisW3GptXh4mB5TSEwqpwaNwyEy8aMA+BTY2BQkOtDornEP1stl5AecdMVisXslQ4lnIUi7mXaUUCZj1ToAqj3+2AqxmStMcsDaKfLSDj1VQmXg80ujds4x0DonwKxA05PYkiaBNwidEnTRWDtqwoKE+owTsiITbIo2V1ntHE0lsRxMW/mRB3w915IeG0ffKgEpgcmpvxlgmaIZa4hCqkJOfs/07uGABpwSsh66coPIl1dPCCHbuZaiE961GISzRK4iPSISQtJtF5uYdS+Xz2z7HqQ4vYZKPE+aWJXl5jC2R2uagDud2WaQoHH2la0vyIAxH4I++XEXIrEL4ynzOkjP8+XSpexmDkbEduabrXTdgkEnPTY9EUOkEeUifZqBazgchgGUj4zOBqjPYb6V4UY+pd0e0g928B5954R5MZAipbwA+ZcnMZ3zzcDBAZmaXOth05IqvfpfMFssakdWVT0gdbI8WxKQ8uKKdyfE083yHmPq/vz+6+X55po418ad6u5Or0w9iKZy6eqQ6+4PVFP0CU2BKY68SUIZQMJJq6594nB4uBsF8DRb3SnHs2ulbewQ3VWUrPro9vIfx/dHi2YvodwPPnvaUwnv8rsTsfghRPotvltPZv+o4v7wIypyNJXOz1cZyaCxGRT19T7/+w8=",
+  "k37a32bb0e239": "dVRNj5swFPwvObZlHb6CY2kPziZqVtpKibSn3p7tZyAhENmwtKn63ysIJAG2vhnNaObNG/xndgZ5hBifDrbIZ2z2ZfZtZuEDHYvmA83Twc7YbC4DCCnje96cHef8pYFJk55LS7JUEBA5JCd0KlNimj3JluZKioCM1Bte7wjZkYis6ufnMTUTqAqnBI09USgv8oGNgZWNQaADlW7FOrBeLCLPZ6Q9dM13B9KfVc05qTdjRQG5GjrVPoTaZa+/Od/wiUOVApZOlua215QqFL7HbkLTqZSB2rkAJhmajkQXofLd3uiYoLPK2oEI9VXoUUbIkoywMdpUJqVzNoXAvA9t6UUusE8Sjs+Vox+dgBBAxTjfBDCP0Qw9REEoA0Z+Tfwe4YQGnBySDrqc+5En7pkQQrZTL1lrvJXojVMllpEeEAkhfFs3ZVvT5hLfPtNt20G+jvn97EciViapOQ3j0TpUMGdvU0s2AYXGORa2vKF9Sj3wWadF2ubvgvWYeR+m43liMQ/pwyyU8O0kO1vosgaDTnyuOiIGGEYh4/x1Ai7hdOqHkB7ScLw4WzaFfrQxj7wwbHcR/2cP1/o7F0yznhRJ6frIXn7w8ZwfBk4OiNikWvfbFqHUy8/KWWNWOqIoyh6p1aKJxCf5LRWXcv76sEC+Dubf337u93x03mu+n3hvFQpT9sZDsZjrgOn2T5Rj9AVNhjEO8lGB8EExUuurnwPlfBd1/7L+OijiZbK+S4pNcrmtbF/hZaSWXYWHWddojgLyY5+xq12pWPeOrrshFytyINe+3wLhu5rzzYq/XO+y6V8b9RklOZtCp80zRhKobAJZeX+///4D"
  },
  "sitzung": {
-  "start": "2026-11-17T02:26:42.359Z",
-  "ordner": "sitzung-20261117-032642",
+  "start": "2026-11-17T02:45:12.101Z",
+  "ordner": "sitzung-20261117-034512",
   "port": 7804,
-  "warten": 0.12,
-  "bootS": 6.4,
+  "warten": 0.11,
+  "bootS": 7,
   "grundstellungS": [
-   0.1,
    0.1
   ],
-  "proben": 3,
+  "proben": 2,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "karte2.leben.tiere.mensch#1",
-    "s": 18.9,
-    "takte": 580,
+    "vor": "karte2.same.kopplung.kaskade#1",
+    "s": 22.3,
+    "takte": 757,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "wiese",
     "vor": "karte2.planet.kopplung.bahn-klima#1",
-    "s": 1.6,
-    "takte": 148,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "karte2.mensch.zeit.erleben#1",
-    "s": 12,
-    "takte": 571,
+    "s": 1.9,
+    "takte": 150,
     "chunks": 81,
     "nach": "der Grundstellung"
    }
@@ -400,14 +462,7 @@
   "wegeTueren": [],
   "messHalt": [
    {
-    "probe": "karte2.leben.tiere.mensch#1",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.planet.kopplung.bahn-klima#1",
+    "probe": "karte2.same.kopplung.kaskade#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -416,7 +471,7 @@
     "offen": []
    },
    {
-    "probe": "karte2.mensch.zeit.erleben#1",
+    "probe": "karte2.planet.kopplung.bahn-klima#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -429,17 +484,17 @@
    {
     "probe": "karte2.planet.kopplung.bahn-klima#1",
     "ort": "wiese",
-    "m": 4094.47,
+    "m": 5020.96,
     "dreh": 0
    }
   ],
-  "ciBlicke": 4,
+  "ciBlicke": 3,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 7959,
-   "frameP95": 41.76,
-   "taktP95": 11.85,
-   "vramMax": 132.9,
+   "bilder": 5551,
+   "frameP95": 33.68,
+   "taktP95": 10.82,
+   "vramMax": 140.2,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
@@ -447,16 +502,16 @@
    "ortImDeckel": [
     {
      "probe": "karte2.planet.kopplung.bahn-klima#1",
-     "m": 4500,
+     "m": 5021,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 323,
+   "zapfen": 239,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 325,
-  "minuten": 5.63
+  "fahrtS": 242.2,
+  "minuten": 4.23
  }
 }
