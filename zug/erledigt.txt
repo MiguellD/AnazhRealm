@@ -1394,3 +1394,4 @@ omen-gtx-gtx-f5ce1579-1-f5ce1579 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN v
 2026-11-17 02:17 landung ABGEBROCHEN main f5ce1579: sg-playtest wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 51 stellen sich hinten an
 2026-11-17 02:18 landung Zwischenstand main 884c6a25: misst 52 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (52) je allein (0 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 2026-11-17 02:20 landung ABGEBROCHEN main 884c6a25: sg-klang wartete am GPU-Schloss — BEHALTEN 0 Station(en) (gepusht), 52 stellen sich hinten an
+2026-11-17 02:36 landung Zwischenstand main 884c6a25: misst 52 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (52) je allein (0 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
