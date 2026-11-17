@@ -6151,7 +6151,7 @@
   },
   "karte2.same.preis.ankunft": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 8.41 s · 7.32 s · 7.29 s · 7.08 s (max 8.41 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an bcc2cadc gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,623 (Faden 1,623 · alle Kerne 1,251; vor 92,7/275,3 ms, nach 135,5/328,6 ms, Ruhe 83,5/262,7 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf bcc2cadc2742edb5c3 · karte2.same.preis.ankunft#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · 4 Kalt-Boots, 4 mit Kontrolle von außen: 10.44 s · 7.91 s · 7.50 s · 8.18 s (max 10.44 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an 7de938ab gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,623 (Faden 1,623 · alle Kerne 1,251; vor 92,7/275,3 ms, nach 135,5/328,6 ms, Ruhe 83,5/262,7 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf bcc2cadc2742edb5c3 · karte2.same.preis.ankunft#2 gtx: ungemessen (R10) — zuletzt an 7de938ab: Last: Referenz f 1,538 (Faden 1,433 · alle Kerne 1,538; vor 111,1/306,4 ms, nach 130/358,9 ms, Ruhe 90,7/233,4 ms seit 2026-11-16) · fremd: node.exe punkte.cjs gtx-nutzen --kopf b7b0f8fef2dd1a932fe86f",
    "stationen": [
     {
      "id": "karte2.same.preis.ankunft#1",
@@ -6168,10 +6168,9 @@
      "id": "karte2.same.preis.ankunft#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "4 Kalt-Boots, 4 mit Kontrolle von außen: 8.41 s · 7.32 s · 7.29 s · 7.08 s (max 8.41 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal",
-     "sha": "bcc2cadc2742edb5c337dde7fd11b7d79997f9fe",
-     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-kosten.js, stamm/dirigent-kern.js, stamm/gelaende-fern.js)",
-     "gehalten": true,
+     "zahl": "4 Kalt-Boots, 4 mit Kontrolle von außen: 10.44 s · 7.91 s · 7.50 s · 8.18 s (max 10.44 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal",
+     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
+     "grund": "GRÜN trotz Last: Referenz f 1,538 (Faden 1,433 · alle Kerne 1,538; vor 111,1/306,4 ms, nach 130/358,9 ms, Ruhe 90,7/233,4 ms seit 2026-11-16) · fremd: node.exe punkte.cjs gtx-nutzen --kopf b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f 32,8 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 11,9 CPU-s · node.exe punkte/punkte.cjs run --sha b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f --geraet gtx 7,7 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 25,5 CPU-s · SearchIndexer.exe 23,0 CPU-s · svchost.exe 13,1 CPU-s",
      "r6": "konsum",
      "beide": true
     },
@@ -6190,7 +6189,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 7de938ab: Last: Referenz f 1,538 (Faden 1,433 · alle Kerne 1,538; vor 111,1/306,4 ms, nach 130/358,9 ms, Ruhe 90,7/233,4 ms seit 2026-11-16) · fremd: node.exe punkte.cjs gtx-nutzen --kopf b7b0f8fef2dd1a932fe86f",
      "ungemessen": true
     }
    ]
@@ -6225,7 +6224,7 @@
   },
   "karte2.same.preis.bytes": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4 Kalt-Boots, roh je Boot 32.11 MB · 32.11 MB · 32.11 MB · 32.11 MB (max 32.11 MB, Soll ≤ 50.00 MB), am größten 16.85 MB Draht, 179 Anfragen, bis zur Kontrolle 32.11 MB, 25 Ziele (24 Worker), am schwersten /fachwerk-core.js?v=18.546.317 0.98 MB | /fachwerk-core.js?v=18.546.317 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker+worker · [linse-gpu] amd/rdna-3 an 389a6496 radeon — offen: karte2.same.preis.bytes#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-kosten.js +3) — zuletzt an e489088a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2703 s Warten) — ungemessen",
+   "beleg": "Maschine: gehalten: 4 Kalt-Boots, roh je Boot 32.11 MB · 32.11 MB · 32.11 MB · 32.11 MB (max 32.11 MB, Soll ≤ 50.00 MB), am größten 16.85 MB Draht, 179 Anfragen, bis zur Kontrolle 32.11 MB, 25 Ziele (24 Worker), am schwersten /fachwerk-core.js?v=18.546.317 0.98 MB | /fachwerk-core.js?v=18.546.317 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker+worker · [linse-gpu] amd/rdna-3 an 389a6496 radeon · 4 Kalt-Boots, roh je Boot 32.18 MB · 32.18 MB · 32.18 MB · 32.18 MB (max 32.18 MB, Soll ≤ 50.00 MB), am größten 16.88 MB Draht, 179 Anfragen, bis zur Kontrolle 32.18 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.321 0.98 MB | /fachwerk-core.js?v=18.546.321 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker+worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal an 7de938ab gtx",
    "stationen": [
     {
      "id": "karte2.same.preis.bytes#1",
@@ -6241,11 +6240,10 @@
     {
      "id": "karte2.same.preis.bytes#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/bild-kosten.js +3) — zuletzt an e489088a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2703 s Warten) — ungemessen",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "4 Kalt-Boots, roh je Boot 32.18 MB · 32.18 MB · 32.18 MB · 32.18 MB (max 32.18 MB, Soll ≤ 50.00 MB), am größten 16.88 MB Draht, 179 Anfragen, bis zur Kontrolle 32.18 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.321 0.98 MB | /fachwerk-core.js?v=18.546.321 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker+worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal",
+     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -6517,7 +6515,7 @@
   "ohne": 124
  },
  "kopfVoll": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
- "zeit": "2026-11-17T14:21:18.539Z",
+ "zeit": "2026-11-17T14:27:12.231Z",
  "vorher": "b7b0f8fe",
  "bilanz": {
   "gewinn": [],
