@@ -1,5 +1,7 @@
 # Post an w28-brand-saum
 
+## 17.11. 05:53 — GPU-PROBE 6b248935 auf omen-gtx1060: GRÜN in 340 s (bild:wiese@0.5 GRÜN 42 s auf omen-gtx1060) → probe-post/w28-brand-saum/6b248935.md
+
 ## 17.11. 04:58 — CODE-CHECK ROT am Kopf edf16a1d (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
