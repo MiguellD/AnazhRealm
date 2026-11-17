@@ -819,6 +819,30 @@ async function lebenBuehnen() {
                 w.anteil = rund(t.spur.filter((p) => lebt(t.g, p.x, p.z)).length / t.spur.length, 3);
                 // der Anker gegen das Ufer U (der Ort im Bild der Spur)
                 w.anker = [rund(t.anker.x - U.x, 1), rund(t.anker.z - U.z, 1)];
+                // DIE GETRAGENE SCHEIBE (der Maßstab der Fläche): im Raster zu Leine/10 der Anteil der Leinen-Scheibe um den Anker,
+                // den der Lebensraum auf trockenem Grund trägt (traegt), und davon der vom Anker aus über ihn erreichbare (erreicht:
+                // vier Nachbarn, Wasser trennt): trägt er ≥ 0,5, ist die Fläche ≥ 0,5·π·Leine² dort erreichbar, und ihr Fehlen ist
+                // das Wandern, nicht der Ort (17.11.: getragen 0,64–0,97 je Tier, die Bären 0,74/0,92/0,85)
+                const G = new Map();
+                for (let i = -10; i <= 10; i++)
+                    for (let j = -10; j <= 10; j++) {
+                        if (i * i + j * j > 100) continue;
+                        const [x, zz] = [t.anker.x + (i * t.leineM) / 10, t.anker.z + (j * t.leineM) / 10];
+                        G.set(i + "," + j, lebt(t.g, x, zz) && !r._nassAt(x, zz));
+                    }
+                const [zu, weg] = [[[0, 0]], new Set(["0,0"])];
+                let n = 0;
+                while (zu.length) {
+                    const [i, j] = zu.pop();
+                    if (!G.get(i + "," + j)) continue;
+                    n++;
+                    for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                        const k = i + a + "," + (j + b);
+                        if (G.has(k) && !weg.has(k)) (weg.add(k), zu.push([i + a, j + b]));
+                    }
+                }
+                w.traegt = rund([...G.values()].filter(Boolean).length / G.size, 3);
+                w.erreicht = rund(n / G.size, 3);
                 return w;
             });
         }

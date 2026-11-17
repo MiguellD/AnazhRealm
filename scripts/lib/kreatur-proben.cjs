@@ -958,6 +958,19 @@ async function kreaturProben(r, T, opts) {
         // die alten Defekte: der Verband ohne seinen Zug (Ausrichtung und Kohäsion), ohne den Alarm aus zweiter Hand, die
         // Flucht endet am Radius
         if (taeter === "herde-zerfall") decke("_kreaturVerbandZug", () => () => {});
+        // das Revier je Glied statt je Wurf (w28-wander-revier): jedes Glied legt seinen Anker drei Leinen weit in seine eigene
+        // Richtung — die Herde hat kein gemeinsames Revier mehr und zerfällt beim Wandern (eine Leine weit hielt der Zug des
+        // Verbands sie noch: 1)
+        if (taeter === "herde-revier")
+            decke(
+                "_kreaturRevier",
+                (alt) =>
+                    function (c, a, leash) {
+                        const w = parseInt(String(c.userData.netId || "c0").slice(1), 10) || 0;
+                        const b = { x: a.x + Math.cos(w) * 3 * leash, z: a.z + Math.sin(w) * 3 * leash };
+                        return alt.call(this, c, b, leash);
+                    }
+            );
         if (taeter === "herde-alarm")
             decke(
                 "_kreaturVerbandAlarm",
@@ -3188,6 +3201,7 @@ const TAETER = {
         // in der Richtung lag er am Rand (main 0,89 / Φ 0,784 gegen 0,9 / 0,8) und fällt mit dem Revier im Lebensraum
         // (w28-wander-revier: die Glieder ziehen zu Zielen IN der Leine des gemeinsamen Wurf-Ankers, 1 / Φ 0,879) — nicht sein Grund
         ["herde-zerfall", /zerfällt auf der Flucht: im Mittel 0\.[0-7]/],
+        ["herde-revier", /zerfällt beim Wandern/],
         ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
         ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
