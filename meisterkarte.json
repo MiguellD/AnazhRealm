@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "bcc2cadc",
-    "zeit": "2026-11-17T07:14:59.573Z",
+    "zeit": "2026-11-17T07:20:40.362Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -509,7 +509,7 @@
           "punkte": 1,
           "staffel": "1 = spiegelTreue ≥ 0,6 an einer Pose in Ausgabe-Größe mit der Kamera des Spiels an einem Gerät · 2 = alle 12 Posen (Ego/Third × Mittag/Nacht/Regen × beide Geräte) und Fließ-Anisotropie ≥ 1,5",
           "messung": "werkbank bild --klasse wasser --ist am See 1816/−6168 und an einem Fluss mit Gefälle, 1920×1080, Ausgabe-Pfad, Kamera aus `_loopCamera` (keine Koordinaten im Werkzeug-Text). Soll-Tafel wasser: spiegelTreue ≥ 0,6; Fließ-Bild: Normalen-Anisotropie längs/quer zum Lauf ≥ 1,5 aus Gefälle × Einzugsgebiet. Uhr und Regen als Spieler-Wort (R9).",
-          "beleg": "Maschine: gehalten: spiegelTreue 0.73 (wasserSatz 25525 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 94.5 σ 37.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.212 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal an e84fd1fb gtx — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: spiegelTreue 0.8201 (wasserSatz 13744 px, spiegelEbene 0.883) in 1920×1080, Pose = Kamera des Spiels, Ziel auf dem Wasser in 47.1 m (Gier-Versatz 0°), ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Wasser im Bild frei 47.06 m · Luma 85.8 σ 31.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.317 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 an 389a6496 radeon · gehalten: spiegelTreue 0.73 (wasserSatz 25525 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 94.5 σ 37.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.212 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal an e84fd1fb gtx — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Der Punkt stieg schon einmal am Lineal statt am Wasser (A13, 79e000ba: 0,473 → 0,706 ohne Welt-Byte). Die Neumessung in Ausgabe-Größe steht als Messschuld M1 und schreibt den Ist fest; ein Gewinn verlangt ein Welt-Byte (R6). Die Bühne hält Mittag (Lehre 17) — Pflicht ist die Posen-Liste, nicht die Bühne.",
           "aenderung": "640×360 und eine Kamera, die das Spiel nicht hat, trugen 1 → 0 (B09); gemessen 21.10. in Ausgabe-Größe an der Kamera des Spiels 0 → 1 (M1).",
           "maschine": true
@@ -529,7 +529,7 @@
           "punkte": 2,
           "staffel": "1 = Kontakt p95 ≤ 3 cm für eine Rolle an einem Ort, beide Sichten · 2 = alle Rollen an Mess-Wiese und 25°-Hang, in Fahrt, beide Geräte, jede Rolle ruft benannt EINE Funktion (Ratsche)",
           "messung": "werkbank eval + bild an der Mess-Wiese (spec/profiband/haushalt.json) und am 25°-Hang: Huf, Rad und Streu-Fuß gegen das gezeichnete Mesh an 200 Zufalls-Kontakten, Schweben/Einsinken p95 ≤ 3 cm; Feinform-Fehler gegen das Gesetz ≤ 5 cm. Der Fuß des Spielers zählt Leib K2, das boden-nah-Bild Vegetation K1.",
-          "beleg": "Maschine: gehalten: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 0.9 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an d3708675 headless · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.7 · rad 0.1 | hang fein 4.3 · streu 1 · huf 1.3 · rad 1.2 cm (p95, schlechtere Sicht) an 4ee205bd radeon · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.8 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.8 · rad 1.2 cm (p95, schlechtere Sicht) an 94d9c5a6 gtx",
+          "beleg": "Maschine: gehalten: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 0.9 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an d3708675 headless · alle Rollen im Soll — wiese fein 1.1 · streu 0.6 · huf 0.1 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.6 · rad 1.2 cm (p95, schlechtere Sicht) an 389a6496 radeon · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.8 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.8 · rad 1.2 cm (p95, schlechtere Sicht) an 94d9c5a6 gtx",
           "schlupfloch": "Ein Offset je Art schiebt den Mittelwert auf 0; gezählt wird p95 am Hang und in Fahrt, und jede Rolle ruft benannt EINE Funktion.",
           "aenderung": "Die 1 der Synthese stand auf dem boden-nah-Bild (laiWirk 1,855, veraltet) — das zählt Vegetation K1 (B10); der Kontakt war ungemessen → 0. Am Kopf 57a9f2ab gemessen (Radeon, Ego und Third) → 1; mit der GTX an 2160be58 (M26, 21.10.) → 2; an der strengeren K8 (k8-huf, je Größen-Band das schlechteste Reh) 22.10. → 1.",
           "maschine": true
@@ -602,7 +602,7 @@
           "punkte": 2,
           "staffel": "1 = Boden-Luma nass/trocken 0,5–0,8 nur auf porösem Stoff, im SELBEN Schuss mit trockenem Innenraum unter dem Dach, an einer Pose · 2 = Mess-Wiese und Dorfgasse, Ego/Third, beide Geräte, mit Pfützen und Trocken-Kurve",
           "messung": "werkbank bild an Mess-Wiese und Dorfgasse, klar gegen 10 min Regen (Spieler-Wort; die Bühne hält das Wetter, nicht Mittag): poröse Stoffe (Boden, Putz, Rinde) Luma 0,5–0,8 × trocken, dichte (Metall, Glas) unverändert, Glanz-Anteil ≥ 2×; Pfützen nur in den Senken des Kerns (Korrelation mit der Krümmung r ≥ 0,5) mit spiegelTreue ≥ 0,5; im Haus 0 Regen-Pixel und gleiche Luma; Trocknen 5–15 min Spielzeit ohne Sprung — zählt erst nach gemessener Benetzung; Fall ≤ 9,2 m/s.",
-          "beleg": "Maschine: gehalten: Dorf porös draußen 0.516 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 10 (n 3985/13289) an 4ee205bd radeon · gehalten: Dorf porös draußen 0.571 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809) an b4bcf19c gtx · gehalten: ego r 0.785 (116/223 Ecken Pfütze) · third r 0.736 (111/237 Ecken Pfütze) · Mutante r 0.006 erkannt · benetzt 0.909 → trocken nach 570 s · Fall 9 m/s · Exit 0 an fe57747a headless · gehalten: Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.611 · Regen 146 | third porös 0.79 (n 25910) · Glanz 16 · Regenbild 0.637 · Regen 113 an 4ee205bd radeon · gehalten: Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.627 · Regen 151 | third porös 0.779 (n 25882) · Glanz 16 · Regenbild 0.598 · Regen 94 an a996d0ae gtx",
+          "beleg": "Maschine: gehalten: Dorf porös draußen 0.571 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809) an b4bcf19c gtx · gehalten: ego r 0.785 (116/223 Ecken Pfütze) · third r 0.736 (111/237 Ecken Pfütze) · Mutante r 0.006 erkannt · benetzt 0.909 → trocken nach 570 s · Fall 9 m/s · Exit 0 an fe57747a headless · Wiese ego porös 0.777 (n 25920) · Glanz 16 · Regenbild 0.823 · Regen 150 | third porös 0.774 (n 25878) · Glanz 16 · Regenbild 0.779 · Regen 94 an 389a6496 radeon · gehalten: Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.627 · Regen 151 | third porös 0.779 (n 25882) · Glanz 16 · Regenbild 0.598 · Regen 94 an a996d0ae gtx",
           "schlupfloch": "Ein globales Abdunkeln bestünde den Luma-Teil: darum porös gegen dicht im SELBEN Schuss, der Dach-Test und die Mulden-Korrelation. „Trocken unter dem Dach“ und „trocknet“ sind ohne Nässe wahr: die Trocken-Kurve zählt erst nach der Benetzung (B13).",
           "aenderung": "Nässe stand zweimal (Wetter K2, Material K5) mit zwei Soll und zwei geplanten Quellen — ein Zwilling vor dem Bau (B15, V23); jetzt EIN Kriterium, EIN Zustand; Schnitt naesse 0 → 1 (7670a4a1).",
           "maschine": true
@@ -612,7 +612,7 @@
           "punkte": 2,
           "staffel": "1 = Pegel am Bach +≥ 0,2 m nach 20 min Sturm an einem Ort · 2 = der Lag wächst mit dem Einzugsgebiet A, Volumen-Bilanz Regen × Fläche ≈ ΔVolumen ±30 %, 14 Spieltage Dürre senken, Bild am Bach auf beiden Geräten",
           "messung": "werkbank eval am Kern-Spiegel (`_waterLevelAt`) an Bach, Fluss und See per Spielzeit-Sprung; pegel(x,z,t) ist eine Kern-Funktion, die Mutation des Regen-Felds zieht ihn. Die Leser folgen nach Gelände K4 (nicht hier gezählt).",
-          "beleg": "Maschine: gehalten: Bach +0.2 m nach 20 min Sturm (Spieler-Wort, Welt-Uhr im Takt), 48 Tafeln an den Faden · Regen-Feld gehalten +0 m · Exit 0 an d3708675 headless · gehalten: A 0.16 ↔ 0.8 km² (×5.0) · Lag 1 ↔ 1.9 Spielstunden (Verhältnis 1.647) · Bilanz 1.006 / 0.98 (Regen × Fläche ↔ ΔVolumen 3.8 ↔ 3.9 / 19.2 ↔ 18.8 m³) · Dürre-Δ 14 Spieltage Bach/Fluss/See -0.2 / -0.2 / -0.2 m · Regen-Feld gehalten Bilanz 0 / 0 · Exit 0 an d3708675 headless · gehalten: Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 145509 → 381701 px (×2.62) in 1920×1080 / 1920×1080 an 4ee205bd radeon · gehalten: Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 158085 → 604080 px (×3.82) in 1920×1080 / 1920×1080 an 8efb6318 gtx",
+          "beleg": "Maschine: gehalten: Bach +0.2 m nach 20 min Sturm (Spieler-Wort, Welt-Uhr im Takt), 48 Tafeln an den Faden · Regen-Feld gehalten +0 m · Exit 0 an d3708675 headless · gehalten: A 0.16 ↔ 0.8 km² (×5.0) · Lag 1 ↔ 1.9 Spielstunden (Verhältnis 1.647) · Bilanz 1.006 / 0.98 (Regen × Fläche ↔ ΔVolumen 3.8 ↔ 3.9 / 19.2 ↔ 18.8 m³) · Dürre-Δ 14 Spieltage Bach/Fluss/See -0.2 / -0.2 / -0.2 m · Regen-Feld gehalten Bilanz 0 / 0 · Exit 0 an d3708675 headless · Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 145509 → 381701 px (×2.62) in 1920×1080 / 1920×1080 an 389a6496 radeon · gehalten: Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 158085 → 604080 px (×3.82) in 1920×1080 / 1920×1080 an 8efb6318 gtx",
           "schlupfloch": "Ein Sinus auf dem Pegel bei Regen sähe richtig aus: Lag aus A und Volumen-Bilanz schließen das.",
           "maschine": true
         },
@@ -4555,13 +4555,12 @@
     }
   ],
   "bestaetigung": {
-    "voll": 188,
-    "offen": 34,
+    "voll": 187,
+    "offen": 35,
     "kriterien": [
       "ankunft.K2+1",
       "bauen.K1+1",
       "gelaende.K2+1",
-      "gelaende.K3+1",
       "haar.K1+1",
       "halten.K2+2",
       "halten.K5+2",
@@ -4586,12 +4585,13 @@
       "studios.K3+1",
       "tiere.K1+1",
       "tiere.K5+1",
-      "vegetation.K4+1"
+      "vegetation.K4+1",
+      "wetter.K2+2"
     ],
     "art": {
       "linse": 1,
-      "ungemessen": 21,
-      "rot": 1,
+      "ungemessen": 20,
+      "rot": 2,
       "anderes": 23
     }
   },

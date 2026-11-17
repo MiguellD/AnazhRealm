@@ -914,16 +914,15 @@
   },
   "gelaende.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: spiegelTreue 0.73 (wasserSatz 25525 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 94.5 σ 37.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.212 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal an e84fd1fb gtx — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: spiegelTreue 0.8201 (wasserSatz 13744 px, spiegelEbene 0.883) in 1920×1080, Pose = Kamera des Spiels, Ziel auf dem Wasser in 47.1 m (Gier-Versatz 0°), ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Wasser im Bild frei 47.06 m · Luma 85.8 σ 31.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.317 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 an 389a6496 radeon · gehalten: spiegelTreue 0.73 (wasserSatz 25525 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 94.5 σ 37.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.212 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal an e84fd1fb gtx — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "gelaende.K3#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +84) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "spiegelTreue 0.8201 (wasserSatz 13744 px, spiegelEbene 0.883) in 1920×1080, Pose = Kamera des Spiels, Ziel auf dem Wasser in 47.1 m (Gier-Versatz 0°), ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Wasser im Bild frei 47.06 m · Luma 85.8 σ 31.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.317 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -986,7 +985,7 @@
   },
   "gelaende.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 0.9 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an d3708675 headless · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.7 · rad 0.1 | hang fein 4.3 · streu 1 · huf 1.3 · rad 1.2 cm (p95, schlechtere Sicht) an 4ee205bd radeon · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.8 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.8 · rad 1.2 cm (p95, schlechtere Sicht) an 94d9c5a6 gtx",
+   "beleg": "Maschine: gehalten: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 0.9 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an d3708675 headless · alle Rollen im Soll — wiese fein 1.1 · streu 0.6 · huf 0.1 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.6 · rad 1.2 cm (p95, schlechtere Sicht) an 389a6496 radeon · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.8 · huf 0.2 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.8 · rad 1.2 cm (p95, schlechtere Sicht) an 94d9c5a6 gtx",
    "stationen": [
     {
      "id": "gelaende.K5#1",
@@ -1002,10 +1001,9 @@
      "id": "gelaende.K5#2",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.7 · rad 0.1 | hang fein 4.3 · streu 1 · huf 1.3 · rad 1.2 cm (p95, schlechtere Sicht)",
-     "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, foundry-core.js, gelaende-core.js +46) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
-     "gehalten": true,
+     "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.6 · huf 0.1 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.6 · rad 1.2 cm (p95, schlechtere Sicht)",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -4680,8 +4678,9 @@
      "gruen": true,
      "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6)",
      "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
+     "gehalten": true,
+     "r6": "konsum"
     },
     {
      "id": "wetter.K1#2",
@@ -4697,16 +4696,15 @@
   },
   "wetter.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Dorf porös draußen 0.516 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 10 (n 3985/13289) an 4ee205bd radeon · gehalten: Dorf porös draußen 0.571 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809) an b4bcf19c gtx · gehalten: ego r 0.785 (116/223 Ecken Pfütze) · third r 0.736 (111/237 Ecken Pfütze) · Mutante r 0.006 erkannt · benetzt 0.909 → trocken nach 570 s · Fall 9 m/s · Exit 0 an fe57747a headless · gehalten: Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.611 · Regen 146 | third porös 0.79 (n 25910) · Glanz 16 · Regenbild 0.637 · Regen 113 an 4ee205bd radeon · gehalten: Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.627 · Regen 151 | third porös 0.779 (n 25882) · Glanz 16 · Regenbild 0.598 · Regen 94 an a996d0ae gtx",
+   "beleg": "Maschine: gehalten: Dorf porös draußen 0.571 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809) an b4bcf19c gtx · gehalten: ego r 0.785 (116/223 Ecken Pfütze) · third r 0.736 (111/237 Ecken Pfütze) · Mutante r 0.006 erkannt · benetzt 0.909 → trocken nach 570 s · Fall 9 m/s · Exit 0 an fe57747a headless · Wiese ego porös 0.777 (n 25920) · Glanz 16 · Regenbild 0.823 · Regen 150 | third porös 0.774 (n 25878) · Glanz 16 · Regenbild 0.779 · Regen 94 an 389a6496 radeon · gehalten: Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.627 · Regen 151 | third porös 0.779 (n 25882) · Glanz 16 · Regenbild 0.598 · Regen 94 an a996d0ae gtx",
    "stationen": [
     {
      "id": "wetter.K2#1",
      "geraet": "radeon",
-     "gruen": true,
-     "zahl": "Dorf porös draußen 0.516 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 10 (n 3985/13289)",
-     "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +39) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
-     "gehalten": true,
+     "gruen": false,
+     "zahl": "Dorf porös draußen 0.848 · innen unter dem Dach 1.761 · dicht 1 · Regen innen 13289 / draußen 3975 (n 3688/6906)",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": "ROT: Dorf porös draußen 0.848 · innen unter dem Dach 1.761 · dicht 1 · Regen innen 13289 / draußen 3975 (n 3688/6906)",
      "r6": "konsum"
     },
     {
@@ -4732,10 +4730,9 @@
      "id": "wetter.K2#2",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.611 · Regen 146 | third porös 0.79 (n 25910) · Glanz 16 · Regenbild 0.637 · Regen 113",
-     "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +88) — zuletzt an a996d0ae: Deckel 52 s gerissen: Stille seit 51.8 s nach 52 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
-     "gehalten": true,
+     "zahl": "Wiese ego porös 0.777 (n 25920) · Glanz 16 · Regenbild 0.823 · Regen 150 | third porös 0.774 (n 25878) · Glanz 16 · Regenbild 0.779 · Regen 94",
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -4752,7 +4749,7 @@
   },
   "wetter.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Bach +0.2 m nach 20 min Sturm (Spieler-Wort, Welt-Uhr im Takt), 48 Tafeln an den Faden · Regen-Feld gehalten +0 m · Exit 0 an d3708675 headless · gehalten: A 0.16 ↔ 0.8 km² (×5.0) · Lag 1 ↔ 1.9 Spielstunden (Verhältnis 1.647) · Bilanz 1.006 / 0.98 (Regen × Fläche ↔ ΔVolumen 3.8 ↔ 3.9 / 19.2 ↔ 18.8 m³) · Dürre-Δ 14 Spieltage Bach/Fluss/See -0.2 / -0.2 / -0.2 m · Regen-Feld gehalten Bilanz 0 / 0 · Exit 0 an d3708675 headless · gehalten: Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 145509 → 381701 px (×2.62) in 1920×1080 / 1920×1080 an 4ee205bd radeon · gehalten: Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 158085 → 604080 px (×3.82) in 1920×1080 / 1920×1080 an 8efb6318 gtx",
+   "beleg": "Maschine: gehalten: Bach +0.2 m nach 20 min Sturm (Spieler-Wort, Welt-Uhr im Takt), 48 Tafeln an den Faden · Regen-Feld gehalten +0 m · Exit 0 an d3708675 headless · gehalten: A 0.16 ↔ 0.8 km² (×5.0) · Lag 1 ↔ 1.9 Spielstunden (Verhältnis 1.647) · Bilanz 1.006 / 0.98 (Regen × Fläche ↔ ΔVolumen 3.8 ↔ 3.9 / 19.2 ↔ 18.8 m³) · Dürre-Δ 14 Spieltage Bach/Fluss/See -0.2 / -0.2 / -0.2 m · Regen-Feld gehalten Bilanz 0 / 0 · Exit 0 an d3708675 headless · Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 145509 → 381701 px (×2.62) in 1920×1080 / 1920×1080 an 389a6496 radeon · gehalten: Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 158085 → 604080 px (×3.82) in 1920×1080 / 1920×1080 an 8efb6318 gtx",
    "stationen": [
     {
      "id": "wetter.K3#1",
@@ -4778,9 +4775,8 @@
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 145509 → 381701 px (×2.62) in 1920×1080 / 1920×1080",
-     "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, index.html, save-server.js +28) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
-     "gehalten": true,
+     "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -4956,7 +4952,7 @@
      "gruen": true,
      "zahl": "✅ Wind r 0.65 bei Lag 0 (n 104, CV Bild 0.29 / Ohr 0.63, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42 dB aus 13 Leibern (13 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2",
      "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs +29)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs +29) — zuletzt an 389a6496: Last: Referenz f 1,633 (Faden 1,091 · alle Kerne 1,047 · Stoß in der Station 15,19 Kerne fremd → 1,633; vor 91,1/266,2 ms, nach 71,8/275,1 ms, Ruhe 83,5/262,7 ms seit 2026-11-16) · fremd: git pack-obj",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -6166,7 +6162,7 @@
   },
   "karte2.same.preis.ankunft": {
    "punkte": 0,
-   "beleg": "Maschine: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · 4 Kalt-Boots, 4 mit Kontrolle von außen: 8.41 s · 7.32 s · 7.29 s · 7.08 s (max 8.41 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an bcc2cadc gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) · karte2.same.preis.ankunft#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3 an 389a6496 radeon · 4 Kalt-Boots, 4 mit Kontrolle von außen: 8.41 s · 7.32 s · 7.29 s · 7.08 s (max 8.41 s, Soll ≤ 60 s) · [linse-gpu] nvidia/pascal an bcc2cadc gtx — offen: karte2.same.preis.ankunft#2 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,623 (Faden 1,623 · alle Kerne 1,251; vor 92,7/275,3 ms, nach 135,5/328,6 ms, Ruhe 83,5/262,7 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf bcc2cadc2742edb5c3 · karte2.same.preis.ankunft#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.preis.ankunft#1",
@@ -6194,7 +6190,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,623 (Faden 1,623 · alle Kerne 1,251; vor 92,7/275,3 ms, nach 135,5/328,6 ms, Ruhe 83,5/262,7 ms seit 2026-11-16) · fremd: node.exe punkte/punkte.cjs buchen --kopf bcc2cadc2742edb5c3",
      "ungemessen": true
     },
     {
@@ -6354,10 +6350,12 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "wetter.K2#1 radeon: Dorf porös draußen 0.848 · innen unter dem Dach 1.761 · dicht 1 · Regen innen 13289 / draußen 3975 (n 3688/6906) an 389a6496 (grün gebucht an 4ee205bd)"
+ ],
  "r6": {
   "haelften": 507,
-  "konsum": 228,
+  "konsum": 229,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6527,10 +6525,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 112
+  "ohne": 111
  },
  "kopfVoll": "bcc2cadc2742edb5c337dde7fd11b7d79997f9fe",
- "zeit": "2026-11-17T07:14:59.573Z",
+ "zeit": "2026-11-17T07:20:40.362Z",
  "vorher": "bcc2cadc",
  "bilanz": {
   "gewinn": [],
