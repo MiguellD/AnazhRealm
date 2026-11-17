@@ -1,4 +1,4 @@
-# w28-lava-zuendet — ZWISCHENSTAND (GTX 1050, 17.11., auf main 7de938ab)
+# w28-lava-zuendet — ZWISCHENSTAND (GTX 1050, 17.11., auf main 16f45362 trägt den Stapel)
 
 Anlass: Auftrag des Koordinators — die Lava zündet (Rand der Decke über die Zünd-Temperatur der Brennstoff-Zeile, keine
 zweite Glut-Zahl), die Zeile BRAND.licht × Glut am Herdfeuer-Datum fällt; vor dem ersten Schnitt vier Bilder von main als
@@ -72,4 +72,7 @@ Zielbild, EIN Kopf für die Klasse.
   reisend) — der Gleichlauf der Zünd-Zeit zwischen zwei Seiten ist nicht gemessen.
 - Die Ankunft der Front in den Nachbarn einer Zelle mit Rand-Eintritt rechnet ihren nächsten Punkt und die Achse weiter vom
   EINEN Punkt (ex/ez); die Ecken und Kanten-Mitten lesen das Minimum.
+- Die vier Viertel-Punkte des Betts lesen ihren Stoff auf der Ebene des Gefälles (y + Gefälle × Versatz), nicht an eigener
+  Höhe: ein Bau oder Eis an einem Viertel-Punkt kann verfehlt werden. Grund: mit eigener Höhe je Punkt riss am Stapel-Kopf
+  `gate:stand-takt` BRAND-ZELLEN (Schritt 10: 1 649 Einheiten bei 16 Zellen, Soll ≤ 64 je Zelle; jetzt 62,4 — knapp).
 - Der Blitz zündet nicht (kein Blitz in der Welt) — benannt, nicht gebaut.
