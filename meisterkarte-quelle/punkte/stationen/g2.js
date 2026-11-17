@@ -4338,6 +4338,49 @@ const HAAR_WIND_PROBEN = [
     { name: "das Haar nicht im Bild", stdout: haarWindRoh(() => ({ fehler: "das Haar trägt 73 Pixel im Bild (< 200)", pixel: 73 })), gruen: false },
 ];
 
+// DAS TIER IM BILD-KEGEL (Vorarbeiter 10, 17.11.; GTX 7de938ab: tiere.K2#2 tier:wolf 110 px bei 4 Wölfen ≤ 4 m am Riss, die Radeon am
+// selben Kopf 6 995 px; tiere.K3#2 tier-Pixel 20/8/101/104 statt 2 669/1 081/5 775/3 407): ein Klassen-Maß, dessen Tier nicht vor der
+// Kamera steht, urteilt die Pose, nie das Tier. Nach dem Schuss (die Welt ruht zwischen den Befehlen, der Schuss hält die Tiere an
+// ihrem Ort — werkbank `bild`, `__halten` tiere) liest die Probe je Tier, ob seine Mitte im Kegel der Kamera des Schusses steht (NDC
+// |x|, |y| ≤ 1 vor dem Auge, das Blickfeld des Spiels), seinen Abstand und wie das Spiel es zeichnet: als Leib (Klasse `tier:<art>`)
+// oder im Satz (`tier-satz`, ohne Art — `_tickTierSatz`), sichtbar oder nicht. Bleibt die Klasse einer Art unter ihrem Soll und
+// steht eines ihrer Tiere nicht im Kegel (oder fehlt), sagt der Läufer MESSORT (UNGEMESSEN beim Namen, nie ROT, nie GRÜN); stehen
+// alle im Kegel, bleibt das Urteil der Linse, und die Zahl nennt, wie das Spiel sie zeichnete (Leib/Satz/unsichtbar).
+const TIER_KEGEL_JS =
+    "const s = r.state, c = s.camera.clone(); c.aspect = 1920 / 1080; c.position.set(K[0], K[1], K[2]); c.lookAt(K[3], K[4], K[5]); c.updateMatrixWorld(true); c.updateProjectionMatrix(); return { tiere: s.creatures.map((t) => { const u = t.userData, p = t.position.clone(); p.y += 0.5 * (t.scale.x || 1); const n = p.clone().project(c), d = p.distanceTo(c.position); return { seele: u.soul, d: +d.toFixed(2), ndc: [+n.x.toFixed(2), +n.y.toFixed(2)], kegel: n.z < 1 && Math.abs(n.x) <= 1 && Math.abs(n.y) <= 1, satz: !!u._satz, sichtbar: t.visible !== false }; }) };";
+function tierKegelFehlt(T, j, seelen, soll) {
+    const K = (j && j.klasse && j.klasse.klassen) || {};
+    const t = (T && T.tiere) || [];
+    return seelen
+        .filter((a) => ((K["tier:" + a] || {}).pixel || 0) < soll)
+        .map((a) => [a, t.filter((x) => x.seele === a)])
+        .filter(([, m]) => !m.length || m.some((x) => !x.kegel))
+        .map(([a, m]) => a + " " + (m.length ? m.map((x) => x.d + " m ndc " + x.ndc.join("/")).join(", ") : "fehlt"));
+}
+const tierKegelZahl = (T, seelen) =>
+    !T || !Array.isArray(T.tiere)
+        ? " · ohne TIERE-Zeile"
+        : " · im Kegel " +
+          seelen
+              .map((a) => {
+                  const m = T.tiere.filter((x) => x.seele === a);
+                  const n = (f) => m.filter(f).length;
+                  return a + " " + n((x) => x.kegel) + "/" + m.length + (n((x) => x.satz) ? " Satz " + n((x) => x.satz) : "") + (n((x) => !x.sichtbar) ? " unsichtbar " + n((x) => !x.sichtbar) : "");
+              })
+              .join(", ");
+// die Zeilen der Probe nach dem Schuss: Kamera aus der JSON-Zeile in `$<kv>`, die Abnahme an `$A`; die Marke nur, wo das Maß reißt
+const tierKegelZeilen = (kv, seelen, soll) => [
+    `KAM=$(node -e 'console.log(JSON.parse(process.argv[1]).kamera.join(","))' "$${kv}")`,
+    `T=$(node scripts/werkbank.cjs eval "const K = [$KAM]; ${TIER_KEGEL_JS}" | erg); echo "TIERE $T"`,
+    `node -e 'const fs = require("fs"); const L = (f) => { try { return JSON.parse(f); } catch (_e) { return null; } }; const f = (${tierKegelFehlt})(L(process.argv[1]), L(fs.existsSync(process.argv[2]) ? fs.readFileSync(process.argv[2], "utf8") : "null"), process.argv[3].split(","), +process.argv[4]); if (f.length) console.log("@@PUNKTE@@ MESSORT nicht im Bild-Kegel der Pose: " + f.join(" · "));' "$T" "$A" ${seelen.join(",")} ${soll}`,
+];
+// die Roh-Zeilen der GTX-Fahrt am 7de938ab (OMEN, 11:13–11:14) — die Proben der Familie
+const K2_MAHL = '  ✅ mahl      {"riss":{"quote":{"einWolf":{"jagden":0,"risse":0,"erschoepft":0},"rudel":{"jagden":5,"risse":1,"erschoepft":4,"hp0":168},"kitz":{"jagden":0,"risse":0,"erschoepft":0}},"rissS":51.8,"fleisch0":56.5,"fleischEnde":0,"fressS":121,"gaeste":[{"seele":"fuchs","kommtS":20,"frissS":37.2},{"seele":"baer","kommtS":17.5,"frissS":35.76}]}}';
+const K2_REVIER = 'REVIER {"ort":"wald","kamera":[60.38,91.38,-3.14,52.48,89.66,-4.4],"klasse":"wald","rissS":17.6,"fressen":3,"nah":4,"woelfe":4}';
+const tiereZeile = (l) => "TIERE " + JSON.stringify({ tiere: l.map(([seele, d, x, kegel, satz]) => ({ seele, d, ndc: [x, 0.1], kegel, satz: !!satz, sichtbar: true })) });
+const k2Abnahme = (px) => ({ ok: true, bild: { w: 1920, h: 1080 }, klasse: { klassen: { "tier:wolf": { pixel: px } } }, zeile: "ABNAHME GRÜN" });
+const k3Abnahme = (px) => ({ ok: true, bild: { w: 1920, h: 1080 }, klasse: { klassen: Object.fromEntries(["wolf", "fuchs", "baer", "wesen"].map((a, i) => ["tier:" + a, { pixel: px[i] }])) }, zeile: "ABNAHME GRÜN" });
+
 const stationen = [
     {
         kriterium: "mensch.K3",
@@ -4763,6 +4806,7 @@ const stationen = [
                 "node scripts/werkbank.cjs bild $(node -e 'console.log(JSON.parse(process.argv[1]).kamera.join(\" \"))' \"$G\") --w 1920 --h 1080 --klasse '^tier:' --ziel gang --datei \"$B-gang.png\" > \"$B-bild.txt\" 2>&1",
                 "echo \"BILD $(grep -o '\"abnahme\": \"[^\"]*\"' \"$B-bild.txt\")\"",
                 "cp \"$B-gang.abnahme.json\" \"$A\"",
+                ...tierKegelZeilen("G", ["wolf", "fuchs", "baer", "wesen"], 400),
                 "wait",
                 "cat \"$B-tiergang.out\" \"$B-querhang.out\"",
             ].join("\n"),
@@ -4790,16 +4834,35 @@ const stationen = [
             const px = ["wolf", "fuchs", "baer", "wesen"].map((s) => (K["tier:" + s] || {}).pixel || 0);
             const b = (j && j.bild) || {};
             const bild = T.length === 4 && T.every((t) => t.amBoden >= 3 && t.art === "schritt") && px.every((p) => p >= 400) && b.w === 1920 && b.h === 1080 && j.ok === true;
+            const SE = ["wolf", "fuchs", "baer", "wesen"];
+            const TK = jsonZeile(out, /^TIERE /);
+            const fehlt = tierKegelFehlt(TK, j, SE, 400);
             return {
-                gruen: kern && quer && bild,
+                gruen: kern && quer && bild && !fehlt.length,
                 zahl:
                     "Gangart " + gang.filter((m) => m[1] === "✅").length + "/" + gang.length + " grün (Welt " + je("Welt").length + ", Satz " + je("Satz").length +
                     ", Labor " + je("Labor").length + ", Kreuz " + kreuz + "), Welt − Labor ≤ " + ab("Welt") + ", Satz − Labor ≤ " +
                     ab("Satz") + " Zyklus · Querhang " + (q ? (q.fehler ? "Fehler " + q.fehler : q.hangGrad + "°, Schlupf " + JSON.stringify(q.schlupf)) : "ohne Zeile") +
                     " · Bühne " + (T.length ? T.map((t) => t.seele + " " + t.art + " " + t.amBoden + " Füße").join(", ") : "ohne Zeile") + " · tier-Pixel " + px.join("/") +
-                    " in " + b.w + "×" + b.h + ", " + ((j && j.zeile) || "ohne Abnahme-Zeile"),
+                    " in " + b.w + "×" + b.h + tierKegelZahl(TK, SE) + (fehlt.length ? " · nicht im Bild-Kegel: " + fehlt.join(" · ") : "") +
+                    ", " + ((j && j.zeile) || "ohne Abnahme-Zeile"),
             };
         },
+        proben: (() => {
+            const kern = [
+                ...["Welt", "Satz", "Labor"].flatMap((wo) => ["wolf", "fuchs", "baer", "wesen"].flatMap((a) => [0.3, 0.74, 1.2, 3.5].map((v) => "  ✅ Gangart " + wo + " " + a + " v̂ " + v + (wo === "Labor" ? " · Welt − Labor 0.02 · Satz − Labor 0.01" : "")))),
+                ...["Freude", "Furcht", "Trauer", "Jagd"].flatMap((s) => ["wolf", "fuchs", "baer", "wesen"].map((a) => "  ✅ Gangart Welt " + a + " (" + s + ")")),
+                "TIER-GANG EXIT=0",
+                '  ✅ querhang  {"hangGrad":20.8,"schlupf":{"wolf":0.036,"hirsch":0.022}}',
+                'BUEHNE {"tiere":[{"seele":"wolf","x":1,"art":"schritt","amBoden":3},{"seele":"fuchs","x":4,"art":"schritt","amBoden":3},{"seele":"baer","x":7,"art":"schritt","amBoden":3},{"seele":"wesen","x":10,"art":"schritt","amBoden":4}],"kamera":[4,92,-10,4,90.5,0]}',
+            ];
+            const vier = (k) => tiereZeile([["wolf", 10.2, -0.6], ["fuchs", 10.5, -0.25], ["baer", 10.1, 0.1], ["wesen", 10.4, 0.45]].map(([a, d, x], i) => [a, d, x, k ? k[i] : true]));
+            return [
+                { name: "die Radeon am 7de938ab: vier Tiere im Kegel, 2 669/1 081/5 775/3 407 px", stdout: [...kern, vier()].join("\n"), j: k3Abnahme([2669, 1081, 5775, 3407]), gruen: true, zahl: /im Kegel wolf 1\/1, fuchs 1\/1, baer 1\/1, wesen 1\/1/ },
+                { name: "die GTX am 7de938ab: vier Tiere im Kegel, 20/8/101/104 px — ROT, die Zahl nennt die Zeichnung", stdout: [...kern, vier()].join("\n"), j: k3Abnahme([20, 8, 101, 104]), gruen: false, zahl: /tier-Pixel 20\/8\/101\/104 in 1920×1080 · im Kegel wolf 1\/1/ },
+                { name: "MUTANTE der Fuchs neben dem Kegel, 8 px — die Pose zeigt ihn nicht (der Läufer: MESSORT)", stdout: [...kern, vier([true, false, true, true])].join("\n"), j: k3Abnahme([2669, 8, 5775, 3407]), gruen: false, zahl: /im Kegel wolf 1\/1, fuchs 0\/1, .* · nicht im Bild-Kegel: fuchs 10\.5 m ndc -0\.25\/0\.1,/ },
+            ];
+        })(),
         pfad: [
             ...KREATUR,
             "stamm/stoff-*.js",
@@ -5619,6 +5682,7 @@ const stationen = [
                 "node scripts/werkbank.cjs bild $(node -e 'console.log(JSON.parse(process.argv[1]).kamera.join(\" \"))' \"$R\") --w 1920 --h 1080 --klasse '^tier:' --ziel Riss --datei \"$B-wolfsrevier.png\" > \"$B-bild.txt\" 2>&1",
                 "echo \"BILD $(grep -o '\"abnahme\": \"[^\"]*\"' \"$B-bild.txt\")\"",
                 "cp \"$B-wolfsrevier.abnahme.json\" \"$A\"",
+                ...tierKegelZeilen("R", ["wolf"], 800),
             ].join("\n"),
         ],  mutiert: true },
         gpu: true,
@@ -5634,14 +5698,23 @@ const stationen = [
             const gaeste = (R.gaeste || []).map((G) => G.seele + " " + G.kommtS + " s");
             const mahl = R.rissS != null && R.fressS >= 60 && (R.gaeste || []).some((G) => G.kommtS != null && G.kommtS <= 120);
             const bild = !!rv && rv.ort === "wald" && rv.rissS != null && rv.fressen >= 2 && !!w && w.pixel >= 800 && b.w === 1920 && b.h === 1080 && j.ok === true;
+            const T = jsonZeile(lauf.stdout, /^TIERE /);
+            const fehlt = tierKegelFehlt(T, j, ["wolf"], 800);
             return {
-                gruen: mahl && bild,
+                gruen: mahl && bild && !fehlt.length,
                 zahl:
                     "Fressen " + R.fressS + " s nach dem Riss bei " + R.rissS + " s, am Aas " + gaeste.join(", ") + " · Wolfsrevier " +
                     (rv ? rv.ort + ", Riss " + rv.rissS + " s, " + rv.fressen + " fressen" : "ohne REVIER-Zeile") + ": tier:wolf " +
-                    (w ? w.pixel : 0) + " px in " + b.w + "×" + b.h + ", " + ((j && j.zeile) || "ohne Abnahme-Zeile"),
+                    (w ? w.pixel : 0) + " px in " + b.w + "×" + b.h + tierKegelZahl(T, ["wolf"]) + (fehlt.length ? " · nicht im Bild-Kegel: " + fehlt.join(" · ") : "") +
+                    ", " + ((j && j.zeile) || "ohne Abnahme-Zeile"),
             };
         },
+        proben: [
+            { name: "die Radeon am 7de938ab: vier Wölfe im Kegel, 6 995 px", stdout: [K2_MAHL, K2_REVIER, tiereZeile([["wolf", 8.4, -0.2, true], ["wolf", 9.1, 0.1, true], ["wolf", 7.6, 0.3, true], ["wolf", 10.2, -0.4, true]])].join("\n"), j: k2Abnahme(6995), gruen: true, zahl: /im Kegel wolf 4\/4/ },
+            { name: "die GTX am 7de938ab: vier Wölfe im Kegel, 110 px — das Urteil bleibt ROT, die Zahl nennt die Zeichnung", stdout: [K2_MAHL, K2_REVIER, tiereZeile([["wolf", 8.4, -0.2, true, 1], ["wolf", 9.1, 0.1, true, 1], ["wolf", 7.6, 0.3, true], ["wolf", 10.2, -0.4, true]])].join("\n"), j: k2Abnahme(110), gruen: false, zahl: /tier:wolf 110 px in 1920×1080 · im Kegel wolf 4\/4 Satz 2,/ },
+            { name: "MUTANTE zwei Wölfe hinter der Kamera, 110 px — die Pose zeigt sie nicht (der Läufer: MESSORT)", stdout: [K2_MAHL, K2_REVIER, tiereZeile([["wolf", 8.4, -0.2, true], ["wolf", 3.1, 1.6, false], ["wolf", 2.2, -3.0, false], ["wolf", 10.2, -0.4, true]])].join("\n"), j: k2Abnahme(110), gruen: false, zahl: /nicht im Bild-Kegel: wolf .*3\.1 m ndc 1\.6\/0\.1/ },
+            { name: "die alte Probe ohne TIERE-Zeile, 6 995 px — das Maß hält, die Zahl sagt es", stdout: [K2_MAHL, K2_REVIER].join("\n"), j: k2Abnahme(6995), gruen: true, zahl: /ohne TIERE-Zeile/ },
+        ],
         pfad: [
             ...KREATUR,
             "stamm/bild-*.js",
