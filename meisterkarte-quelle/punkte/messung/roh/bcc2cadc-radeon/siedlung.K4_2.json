@@ -66,8 +66,8 @@
  "bild": {
   "w": 1600,
   "h": 900,
-  "mittel": 98.6,
-  "sigma": 22.7,
+  "mittel": 99.7,
+  "sigma": 21.5,
   "schwarz": 0,
   "weiss": 0
  },
@@ -83,9 +83,9 @@
      457.43
     ],
     "rot": [
-     "Ziel Blickziel verdeckt von siedlung-mauer in 125.77 m"
+     "Ziel Blickziel verdeckt von siedlung-mauer in 125.8 m"
     ],
-    "ms": 100
+    "ms": 84
    },
    {
     "k": 28,
@@ -97,7 +97,7 @@
     "rot": [
      "Ziel Blickziel verdeckt von Natur baum_tanne in 20.52 m"
     ],
-    "ms": 74
+    "ms": 65
    },
    {
     "k": 29,
@@ -107,9 +107,9 @@
      542.144
     ],
     "rot": [
-     "Ziel Blickziel verdeckt von kamm-krone in 26.05 m"
+     "Ziel Blickziel verdeckt von kamm-krone in 26.07 m"
     ],
-    "ms": 76
+    "ms": 66
    },
    {
     "k": 31,
@@ -119,9 +119,9 @@
      561.475
     ],
     "rot": [
-     "Ziel Blickziel verdeckt von Natur baum_eiche in 1.24 m"
+     "Ziel Blickziel verdeckt von siedlung-mauer in 33.81 m"
     ],
-    "ms": 75
+    "ms": 68
    },
    {
     "k": 30,
@@ -131,9 +131,9 @@
      528.684
     ],
     "rot": [
-     "Ziel Blickziel verdeckt von bauSatz in 63.15 m"
+     "Ziel Blickziel verdeckt von bauSatz in 63.12 m"
     ],
-    "ms": 65
+    "ms": 64
    },
    {
     "k": 33,
@@ -143,9 +143,9 @@
      587.634
     ],
     "rot": [
-     "Ziel Blickziel verdeckt von kamm-krone in 2.31 m"
+     "Ziel Blickziel verdeckt von kamm-krone in 87.12 m"
     ],
-    "ms": 70
+    "ms": 71
    },
    {
     "k": 14,
@@ -155,9 +155,9 @@
      498.28
     ],
     "rot": [
-     "Ziel Blickziel verdeckt von siedlung-mauer in 81.02 m"
+     "Ziel Blickziel verdeckt von siedlung-mauer in 84.67 m"
     ],
-    "ms": 68
+    "ms": 65
    },
    {
     "k": 35,
@@ -167,9 +167,9 @@
      618.839
     ],
     "rot": [
-     "Ziel Blickziel verdeckt von siedlung-mauer in 17.93 m"
+     "Ziel Blickziel verdeckt von kamm-krone in 79.56 m"
     ],
-    "ms": 67
+    "ms": 66
    },
    {
     "k": 32,
@@ -181,7 +181,7 @@
     "rot": [
      "Ziel Blickziel verdeckt von siedlung-mauer in 67.64 m"
     ],
-    "ms": 61
+    "ms": 67
    },
    {
     "k": 15,
@@ -191,9 +191,9 @@
      512.26
     ],
     "rot": [
-     "Ziel Blickziel verdeckt von Natur baum_birke in 34.92 m"
+     "Ziel Blickziel verdeckt von Natur baum_birke in 34.82 m"
     ],
-    "ms": 66
+    "ms": 64
    },
    {
     "k": 41,
@@ -203,13 +203,13 @@
      792.4
     ],
     "rot": [],
-    "ms": 1007
+    "ms": 1631
    }
   ],
-  "ms": 1729
+  "ms": 2313
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.6 σ 22.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.318 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 11 Posen",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 99.7 σ 21.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.318 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 11 Posen",
  "rot": [],
  "urteil": "GRÜN"
 }
