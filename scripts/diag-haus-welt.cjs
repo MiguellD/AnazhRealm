@@ -270,6 +270,11 @@ async function proben(phasen) {
     // Stempels vor dem des Eintrags): Diele und Flights — je Haus EINMAL gebaut (w4-ssa-C: die Wahl der Vorlage, W9 und der Abbau
     // bauten dasselbe Haus bis zu dreimal; `HAUS(…).build` ist das Teuerste der Seite neben dem Sim-Schritt)
     const gebaut = new Map();
+    // DER HAKEN DER HÜLLE GEHT MIT DER PROBE (w28-balken-speicher): `setze` legt seinen Lauscher über `r._hausHuelleSetzen`; bis
+    // hier blieb er nach der Probe stehen und hielt ihren ganzen Kontext — `gebaut` mit jedem ungebackenen Haus des Gesetzbuchs
+    // (vegetation.K4#1, Radeon: 243 038 Geometrien, Heap nach drei Bereinigungen 1 387,9 MB, ohne den Haken 520,9 MB). Am Ende
+    // der Probe steht der Wirt, wie sie ihn fand.
+    const hakenVor = Object.getOwnPropertyDescriptor(r, "_hausHuelleSetzen");
     const gesetz = (e) => {
         if (gebaut.has(e)) return gebaut.get(e);
         const kultur = e.type.slice(5);
@@ -1910,6 +1915,9 @@ async function proben(phasen) {
         };
     }
     pm.position.set(start.x, start.y, start.z);
+    if (hakenVor) Object.defineProperty(r, "_hausHuelleSetzen", hakenVor);
+    else delete r._hausHuelleSetzen;
+    gebaut.clear();
     return o;
 }
 

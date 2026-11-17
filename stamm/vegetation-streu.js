@@ -95,14 +95,15 @@ class AnazhRealm_vegetation_streu {
     // V18.220 — Cell-Key in Welt-Koords (deterministisch, P2P-sicher).
     // Layer ∈ {"tree", "under", "stone"}; das Cell-Raster pro Layer.
     _scatterCellKeyAt(x, z, layer) {
-        const cfg = this._scatterConfig();
-        let cell;
-        if (layer === "under") cell = cfg.underCellM;
-        else if (layer === "stone") cell = cfg.stoneCellM;
-        else cell = cfg.treeCellM;
+        const cell = this._streuZelleM(layer);
         const cx = Math.floor(x / cell);
         const cz = Math.floor(z / cell);
         return `${layer}:${cx},${cz}`;
+    }
+    // Das Zellmaß der Schicht (m) — der Schlüssel der Streu und die Tafel der Zell-Gedächtnisse (`ZELL_GEDAECHTNISSE`) lesen es.
+    _streuZelleM(layer) {
+        const cfg = this._scatterConfig();
+        return layer === "under" ? cfg.underCellM : layer === "stone" ? cfg.stoneCellM : cfg.treeCellM;
     }
 
     // V18.220 — die PROMOTED-Bitmask. Plan §2 + §8: ein Cell, das via Ω-H
