@@ -1353,7 +1353,7 @@ async function narbeSeite(MESS) {
             const F = (r._brandFlammen || []).filter((f) => Math.floor(f.x / cs) === hx && Math.floor(f.z / cs) === hz);
             const rMax = Math.max(...globalThis.__fachwerkCore.FLAMME.zunge.map((p) => p[0]));
             const paare = F.slice(1).map((g, i) => [Math.hypot(g.x - F[i].x, g.z - F[i].z), Bb.breite * (byram(F[i]) + byram(g)) * rMax]);
-            const [d, w] = paare.sort((u, v) => u[0] / u[1] - v[0] / v[1])[paare.length >> 1] || [NaN, NaN];
+            const [d, w] = rang(paare.sort((u, v) => u[0] / u[1] - v[0] / v[1]), 0.5) || [NaN, NaN];
             return { flammen: F.length, paare: paare.length, abstand: r3(d), breite: r3(w), mass: r3(d / w), weit: r3(1 + 1.25 * Bb.flamme.rausch[2]), minM: Bb.abstandMinM };
         };
         const N5 = (aus.n5 = saum());
