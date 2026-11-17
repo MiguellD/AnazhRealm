@@ -745,7 +745,8 @@ class AnazhRealm_koerper_seele {
                 (parts && (side === "left" ? parts.leftArm || parts.leftWing : parts.rightArm || parts.rightWing)) ||
                 pm;
             const rig = pm.userData && pm.userData.rig;
-            const imGelenk = !!rig && ((rig.armR && anchor === rig.armR.wrist) || (rig.armL && anchor === rig.armL.wrist));
+            const imGelenk =
+                !!rig && ((rig.armR && anchor === rig.armR.wrist) || (rig.armL && anchor === rig.armL.wrist));
             // DIE FAUST LIEST DIE HAND-MITTE DES LEIBS (`_leibHandMitte`, physik.K4 · same.physik.verformung): an der Grobstufe (B5,
             // der Ego-Boot) die der feinen Vorlage; ist die feine noch im Werk, trägt der Part-Bau wie bei kaltem Buch, bis ihre
             // Ankunft die Hand neu trägt (`_leibFuerHand`). Bis hier fiel jede Studio-Gestalt dort aus der Hand (die Faust ohne
