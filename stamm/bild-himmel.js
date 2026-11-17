@@ -2713,7 +2713,7 @@ class AnazhRealm_bild_himmel {
         let v = Number(t);
         if (!Number.isFinite(v)) return false;
         // der Gang reicht die Uhr UNGEFALTET (`tickDayNight`: Stunde + vergangene Tag-Bruchteile, ein Sprung der Welt-Uhr auch über
-        // ganze Tage): die ganzen Tage zählt hier der Tag der Welt, die Uhr trägt den Rest
+        // ganze Tage): die Uhr trägt den Rest, die ganzen Tage zählt der Tag der Prozesse an der Welt-Uhr (`_weltTag`)
         const ganz = quelle === "uhr" && v >= 1 ? Math.floor(v) : 0;
         v -= ganz;
         if (this._himmelSchreiber(quelle, "uhr") === "welt") {
@@ -2731,20 +2731,12 @@ class AnazhRealm_bild_himmel {
             this._himmelSprung = true;
             if (this._leuchtPool) this._leuchtPool.t = -Infinity;
         }
-        // DER TAG DER WELT (feld.K4, `_weltStunde`): kreuzt die Uhr Mitternacht (der kürzere Bogen), zählt der Tag vor oder
-        // zurück; das Laden setzt nur die Uhr — der Tag reist im worldMeta
-        const d = v - this.state.timeOfDay;
-        const wm = this.state.worldMeta;
-        const tag0 = wm ? wm.tag || 0 : 0;
-        if (quelle === "uhr") {
-            if (wm && ganz) wm.tag = tag0 + ganz;
-        } else {
-            if (quelle !== "laden" && wm && Math.abs(d) > 0.5) wm.tag = (wm.tag || 0) + (d < 0 ? 1 : -1);
-            // ein Schreiber außer dem Gang stellt die Stunde zur Welt-Uhr von JETZT: der Anker des Gangs (`tickDayNight`) folgt ihm
-            this.state._uhrSpielZeit = this.state.spielZeit;
-        }
+        // ein Schreiber außer dem Gang stellt die Stunde zur Welt-Uhr von JETZT: der Anker des Gangs (`tickDayNight`) folgt ihm
+        if (quelle !== "uhr") this.state._uhrSpielZeit = this.state.spielZeit;
         // die Uhr des Spielers ist SICHT (w28-lava-nachlauf): kein Prozess liest sie — die Nässe-Dosis der Welt schreibt der Takt
-        // der Nässe an der Welt-Uhr (`_naesseTakt`), Lava, Taten, Pfad und Werke altern am Tag der Prozesse (`_weltTag`)
+        // der Nässe an der Welt-Uhr (`_naesseTakt`), Lava, Taten, Pfad und Werke altern am Tag der Prozesse (`_weltTag`). Einen
+        // Tag der Sicht zählt sie nicht (w28-strahler: der Zähler im worldMeta fiel, sein letzter Leser war der Playtest) — der
+        // EINE Tag der Welt ist der der Prozesse
         this.state.timeOfDay = v;
         return true;
     }

@@ -523,7 +523,7 @@ function wasserErstarrung(r, orte) {
     const st = r.state;
     const wm = st.worldMeta;
     const n = (wm.taten || []).length;
-    const alt = [st.timeOfDay, wm.tag, st.dayLengthMinutes, st._uhrSpielZeit, st.spielZeit];
+    const alt = [st.timeOfDay, st.dayLengthMinutes, st._uhrSpielZeit, st.spielZeit];
     const aus = orte.map(([x, z]) => ({ x, z, y: r._voxelSurfaceY(x, z), frei: r.auraAt(x, z).glut, reihe: [] }));
     try {
         for (const o of aus) r.dslRun(["lava", o.x, o.y, o.z], { source: "human" });
@@ -538,7 +538,7 @@ function wasserErstarrung(r, orte) {
     } finally {
         wm.taten.splice(n);
         r._tatGen = (r._tatGen | 0) + 1;
-        [st.timeOfDay, wm.tag, st.dayLengthMinutes, st._uhrSpielZeit, st.spielZeit] = alt;
+        [st.timeOfDay, st.dayLengthMinutes, st._uhrSpielZeit, st.spielZeit] = alt;
     }
     for (const o of aus) o.ab = o.reihe.findIndex((s) => s.erstarrt);
     return aus;

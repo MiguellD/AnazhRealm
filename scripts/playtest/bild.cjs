@@ -80,12 +80,14 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         // wie die Welt), ein Sprung der Welt-Uhr (`_weltUhrNimm`) nimmt ihn mit — über Mitternacht zählt der Tag der Welt
         r.setDayLength(1); // 60 s je Tag: der Sprung 45 s = 0,75 Tag
         r.setTimeOfDay(0.4, "human");
-        const tag0 = st.worldMeta ? st.worldMeta.tag || 0 : 0;
+        const tag0 = r._weltTag();
         r.tickDayNight(1e6);
         out.wanduhrHaeltTag = st.timeOfDay === 0.4;
         r._weltUhrNimm(st.spielZeit + 45);
         r.tickDayNight(1e6 + 1);
-        out.sprungNimmtTag = [+st.timeOfDay.toFixed(6), st.worldMeta ? st.worldMeta.tag - tag0 : 1];
+        // der Tag der Welt ist der der Prozesse (`_weltTag`, w28-strahler): der Sprung nimmt ihn um 45 s ÷ `PEGEL_TAG_S` mit — die Uhr
+        // der Sicht (60 s je Tag) kreuzt dabei Mitternacht und zählt nichts
+        out.sprungNimmtTag = [+st.timeOfDay.toFixed(6), r._weltTag() - tag0, 45 / AnazhRealm.PEGEL_TAG_S, st.worldMeta ? "tag" in st.worldMeta : true];
         // DER NACHT-KNOTEN (w28-nacht-licht): unter ihm steht die Belichtung — ein Viertel seines Lichts belichtet wie er selbst
         const EK = AnazhRealm.BELICHTUNG.nachtKnotenE;
         const kb = (E) => __weltLicht.belichtung([E, E, E], 6, -0.7, null, AnazhRealm.BELICHTUNG);
@@ -176,7 +178,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         const S = wave6g3Results.sprungNimmtTag || [];
         check(
             "der Tag an der Welt-Uhr (Täter: `tickDayNight` an der Wanduhr)",
-            wave6g3Results.wanduhrHaeltTag === true && Math.abs(S[0] - 0.15) < 1e-4 && S[1] === 1,
+            wave6g3Results.wanduhrHaeltTag === true && Math.abs(S[0] - 0.15) < 1e-4 && S[2] > 0 && Math.abs(S[1] - S[2]) < 1e-9 && S[3] === false,
             S.join(" ")
         );
         const NK = wave6g3Results.nachtKnoten || [];

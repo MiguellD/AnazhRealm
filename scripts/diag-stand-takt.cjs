@@ -1807,8 +1807,7 @@ async function lavaSeite(MESS) {
         const L6 = (aus.l6 = uhrLauf());
         // die Mutanten: der Tag der Sicht in `_weltTag` (der Stand bis w28-lava-nachlauf) · der Schritt je `schrittS` (ebenso)
         r._weltTag = function () {
-            const w = this.state.worldMeta;
-            return ((w && w.tag) || 0) + (this.state.timeOfDay || 0);
+            return this.state.timeOfDay || 0;
         };
         L6.mutanteSicht = uhrLauf();
         delete r._weltTag;

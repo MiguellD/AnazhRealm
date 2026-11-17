@@ -2607,8 +2607,10 @@ class AnazhRealm_feld_leben {
     // (`_applyLoadedState`); von da an läuft er nur noch an der Welt-Uhr. Eine neue Welt beginnt bei 0.
     _weltTagEichen() {
         const [st, wm] = [this.state, this.state.worldMeta];
-        if (!wm || Number.isFinite(wm.tagNull)) return;
-        wm.tagNull = (wm.tag || 0) + (st.timeOfDay || 0) - (st.spielZeit || 0) / AnazhRealm.PEGEL_TAG_S;
+        if (!wm) return;
+        if (!Number.isFinite(wm.tagNull))
+            wm.tagNull = (wm.tag || 0) + (st.timeOfDay || 0) - (st.spielZeit || 0) / AnazhRealm.PEGEL_TAG_S;
+        delete wm.tag; // der Tag der Sicht eines alten Stands: hier EINMAL gelesen, dann fällt er (w28-strahler)
     }
 
     // DIE WELT-STUNDE: Stunden seit dem ersten Tag der Welt, am Tag der Prozesse (`_weltTag`).

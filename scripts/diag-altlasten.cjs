@@ -25,6 +25,8 @@ const F_SLOPE = "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSic
 const F_GROB_TOR = "Integration L — das Grob-Tor liest den Leib (_trefferErreichbar)";
 const F_K11 = "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)";
 const FORBIDDEN = [
+    ["wm.tag =", "w28-strahler — der Tag der Sicht fiel: der EINE Tag der Welt ist der der Prozesse (_weltTag an spielZeit)"],
+    ["worldMeta.tag =", "w28-strahler — der Tag der Sicht"],
     ["tickPhoenixDeath", "W1a — der Tod ist feld-nativ (_playerDeathRespawn)"],
     ["triggerPhoenixDeath", "W1a"],
     ["preDeathSoul", "W1a — kein Gestalt-Tausch beim Tod"],
