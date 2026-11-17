@@ -1871,8 +1871,22 @@ const BEWOHNER_SITZUNG = { sek: 90, befehl: [
 async function dorfZaehlung(r, T) {
     const UHREN = [3, 10, 15, 20], ORTE_N = 5, R_M = 10;
     const s = r.state, wm = s.worldMeta, pm = s.playerMesh.position, A = r.constructor;
-    const zelle = wm.settlementCells && wm.settlementCells.start;
-    if (!zelle) return { fehler: "kein Start-Dorf" };
+    // DAS START-DORF BESTELLEN (17.11., Radeon 389a6496: „kein Start-Dorf“ an bevoelkerung und kollektiv — die Grundstellung der
+    // Sitzung spielte das Dorf zurück, `umstellen --ort genesis` baut es nicht; die Probe bewohner bestellt es selbst, wie hier):
+    // der Dorf-Zug an (`__anazhAutoSettlement`), `_startDorfBestellen` am Spieler, warten bis die Zelle steht und der Zug leer ist
+    if (!(wm.settlementCells && wm.settlementCells.start)) {
+        const W = window, altHook = W.__anazhAutoSettlement;
+        W.__anazhAutoSettlement = true;
+        try {
+            if (typeof r._startDorfBestellen === "function") r._startDorfBestellen(pm);
+            for (const t0 = Date.now(); (r._autoSettlementPendingKey || !(s.worldMeta.settlementCells && s.worldMeta.settlementCells.start)) && Date.now() - t0 < 120000; ) await new Promise((f) => setTimeout(f, 50));
+            for (let n = 0; r._autoSettlementQueue && n < 4000; n++) r._tickAutoSettlement(pm), await new Promise((f) => setTimeout(f, 0));
+        } finally {
+            W.__anazhAutoSettlement = altHook;
+        }
+    }
+    const zelle = s.worldMeta.settlementCells && s.worldMeta.settlementCells.start;
+    if (!zelle) return { fehler: "kein Start-Dorf (bestellt, nach dem Zug nicht da: Hoffnungslos " + !!r._autoSettlementStartHopeless + ")" };
     s.renderer.setAnimationLoop(null);
     if (s.cameraMode !== "third") r.setCameraMode("third");
     const cam = s.camera;
@@ -1966,8 +1980,22 @@ async function dorfZaehlung(r, T) {
 async function zeugenGang(r, T) {
     const UHR = 10 / 24, V = 1.4;
     const s = r.state, wm = s.worldMeta, pm = s.playerMesh.position, A = r.constructor;
-    const zelle = wm.settlementCells && wm.settlementCells.start;
-    if (!zelle) return { fehler: "kein Start-Dorf" };
+    // DAS START-DORF BESTELLEN (17.11., Radeon 389a6496: „kein Start-Dorf“ an bevoelkerung und kollektiv — die Grundstellung der
+    // Sitzung spielte das Dorf zurück, `umstellen --ort genesis` baut es nicht; die Probe bewohner bestellt es selbst, wie hier):
+    // der Dorf-Zug an (`__anazhAutoSettlement`), `_startDorfBestellen` am Spieler, warten bis die Zelle steht und der Zug leer ist
+    if (!(wm.settlementCells && wm.settlementCells.start)) {
+        const W = window, altHook = W.__anazhAutoSettlement;
+        W.__anazhAutoSettlement = true;
+        try {
+            if (typeof r._startDorfBestellen === "function") r._startDorfBestellen(pm);
+            for (const t0 = Date.now(); (r._autoSettlementPendingKey || !(s.worldMeta.settlementCells && s.worldMeta.settlementCells.start)) && Date.now() - t0 < 120000; ) await new Promise((f) => setTimeout(f, 50));
+            for (let n = 0; r._autoSettlementQueue && n < 4000; n++) r._tickAutoSettlement(pm), await new Promise((f) => setTimeout(f, 0));
+        } finally {
+            W.__anazhAutoSettlement = altHook;
+        }
+    }
+    const zelle = s.worldMeta.settlementCells && s.worldMeta.settlementCells.start;
+    if (!zelle) return { fehler: "kein Start-Dorf (bestellt, nach dem Zug nicht da: Hoffnungslos " + !!r._autoSettlementStartHopeless + ")" };
     const plan = [...(r._ortPlaene || new Map()).values()].find((v) => v && v.ort && Math.abs(v.ort.x - zelle.x) < 0.5 && Math.abs(v.ort.z - zelle.z) < 0.5);
     if (!plan) return { fehler: "kein Plan" };
     const pz = plan.platz, pc = { x: plan.ort.x + pz.cx, z: plan.ort.z + pz.cz };

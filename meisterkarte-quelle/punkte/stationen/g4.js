@@ -1275,7 +1275,10 @@ async function rolleSeite(o) {
     if (s === "bauenAn") {
         R.q = vorn(10);
         R.n0 = st.architectures.filter(Boolean).length;
-        return kam(R.q);
+        // DAS WERK IM RAHMEN (17.11., Radeon 389a6496: die Bank stand im Bild, 37 × 20 px aus 16 m hinter ihr und 4 m hoch — Δ 0,38 %
+        // unter der Schwelle 2 × Rauschen + 0,1 %): die Kamera steht 6 m vor dem Ort des Werks, 3 m hoch, wie das Bildpaar eines
+        // Bauenden, der auf sein Werk sieht; die Schwelle bleibt
+        return { kamera: [R.q.x - v.x * 6, boden(R.q) + 3, R.q.z - v.z * 6], ziel: [R.q.x, boden(R.q) + 0.5, R.q.z] };
     }
     if (s === "bauen") {
         const E = werk(o.name, R.q);
@@ -1311,8 +1314,30 @@ async function rolleSeite(o) {
         st.player.stamina = st.player.staminaMax;
         return { ...kam(q), hp: R.hp0 };
     }
-    if (s === "hieb") return { schwung: r._beginPlayerSwing() !== false };
-    if (s === "kampfNach") return { hp: R.ziel.userData.hp, hp0: R.hp0 };
+    // WO STEHT DAS ZIEL BEIM SCHLAG (Lesewert, 17.11.: Radeon 389a6496 hp = hp0 bei Schwung, im Bild danach stand das Wesen nicht
+    // mehr vor dem Spieler): Abstand Spieler ↔ Wesen beim Auslösen, zu Beginn der Strike-Phase und danach, die Reichweite der Klinge
+    // und der Zustand des Wesens — trennt „das Ziel ging aus der Reichweite“ (Pose) von „in Reichweite, kein Treffer“ (Sweep)
+    if (s === "hieb") {
+        const c = R.ziel, p = st.player;
+        const d = () => +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(2);
+        R.schlag = { dHieb: d(), reach: +r._kampfBladeReach().toFixed(2), dStrike: null, zustandStrike: null };
+        const schwung = r._beginPlayerSwing() !== false;
+        const sw0 = p._swing;
+        const blick = () => {
+            const sw = p._swing;
+            if (R.schlag.dStrike == null && sw === sw0 && sw && sw.t >= sw.windupSec) {
+                R.schlag.dStrike = d();
+                R.schlag.zustandStrike = (c.userData && c.userData._motionZustand) || null;
+            }
+            if (sw === sw0 && sw) requestAnimationFrame(blick);
+        };
+        if (schwung && sw0) requestAnimationFrame(blick);
+        return { schwung, ...R.schlag };
+    }
+    if (s === "kampfNach") {
+        const c = R.ziel;
+        return { hp: c.userData.hp, hp0: R.hp0, ...(R.schlag || {}), dNach: +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(2), zustand: (c.userData && c.userData._motionZustand) || null };
+    }
     return { fehler: "kein Schritt " + s };
 }
 async function probeRolle(H) {

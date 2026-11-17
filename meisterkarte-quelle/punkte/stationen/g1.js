@@ -2015,14 +2015,45 @@ async function schneeJahrSitzungProbe(r, T, o, G) {
     aus.meer = { sommer: mittel("sommer"), winter: mittel("winter") };
     // der Gipfel und die Pose
     // der Gipfel über die Makro-Höhe allein (das Gesetz, je Ort ohne geladene Kachel); erst um ihn lädt die Welt das Wasser (`_landAt`)
+    // DER GIPFEL MIT KÜSTE (17.11., Radeon ee9c1965: der höchste Grund trug kein Land unter 48 m binnen 800 m — im Winter liegt die Linie
+    // des Gesetzes (Versatz −160 bei der Sommer-Linie ~160 m) am Meer, Schnee an ALLEN 1 335 Punkten, die Linie des Bilds war das
+    // 10. Perzentil der Höhen des Felds, nie die Grenze: Sommer − Winter 72,5 m eine untere Schranke): der höchste Grund, von dem in
+    // einer der 16 Richtungen binnen KUESTE_M Land ≤ KUESTE_H über dem Meer liegt; ohne ihn der höchste Grund wie bisher
+    const [KUESTE_M, KUESTE_H] = [1000, 20];
+    const hoch = [];
     let g = null;
     for (let dx = -6000; dx <= 6000; dx += 150)
         for (let dz = -6000; dz <= 6000; dz += 150) {
             const [x, z] = [M.x + dx, M.z + dz];
             const y = r._terrainMacroSurfaceY(x, z);
             if (y > wl + 2 && (!g || y > g.y)) g = { x, z, y };
+            if (y > wl + 190) hoch.push({ x, z, y });
         }
     if (!g) return Object.assign(aus, { fehler: "kein Land binnen 6 km um die Mess-Wiese" });
+    const kueste = (p) => {
+        let best = null;
+        for (let k = 0; k < 16; k++) {
+            const [ux, uz] = [Math.cos((k * Math.PI) / 8), Math.sin((k * Math.PI) / 8)];
+            for (let d = 100; d <= KUESTE_M; d += 50) {
+                const y = r._terrainMacroSurfaceY(p.x + ux * d, p.z + uz * d);
+                if (y <= wl + 0.5) break; // das Meer: dahinter zählt nichts
+                if (y <= wl + KUESTE_H) {
+                    if (!best || d < best) best = d;
+                    break;
+                }
+            }
+        }
+        return best;
+    };
+    hoch.sort((a, b) => b.y - a.y);
+    for (const p of hoch.slice(0, 400)) {
+        const d = kueste(p);
+        if (d != null) {
+            aus.kueste = { m: d, hoechster: r3(g.y - wl) };
+            g = p;
+            break;
+        }
+    }
     await window.__weltDa(() => !r._ensureHydroTilesAround(g.x, g.z, 800));
     // DIE KRONEN VERDECKEN (16.11., Radeon 77e079ae: winter „Bild 79,9 m · Gesetz 102 m, Treffer 0,127 aus 166“, sommer Treffer 0,031 —
     // im Bild liegt der Hang weiß bis zum Fuß, nur vor ihm stehen Bäume, und die Hälfte der Punkte las das Pixel einer Krone): ein Punkt
@@ -2039,12 +2070,14 @@ async function schneeJahrSitzungProbe(r, T, o, G) {
         kam.position.copy(E);
         kam.lookAt(Z);
         kam.updateMatrixWorld(true);
-        const [mx, mz] = [(pose.cx + g.x) / 2, (pose.cz + g.z) / 2];
+        // das Feld: längs der Achse Gipfel → Standort von 80 m hinter dem Gipfel bis 40 m vor den Standort, quer ±300 m (bis hier ±300 m
+        // um die Mitte — ein Standort an der Küste 1 km vor dem Gipfel sah sonst weder Küste noch Gipfel im Feld)
+        const weit = Math.hypot(pose.cx - g.x, pose.cz - g.z);
         const punkte = [];
         let verdeckt = 0;
-        for (let a = -300; a <= 300; a += schritt)
+        for (let a = -80; a <= weit - 40; a += schritt)
             for (let b = -300; b <= 300; b += schritt) {
-                const [x, z] = [mx + a, mz + b];
+                const [x, z] = [g.x + pose.ux * a - pose.uz * b, g.z + pose.uz * a + pose.ux * b];
                 if (r._nassAt(x, z) || !r._landAt(x, z, 0)) continue;
                 const p = new T.Vector3(x, yAt(x, z), z);
                 const q = p.clone().project(kam);
@@ -2083,21 +2116,53 @@ async function schneeJahrSitzungProbe(r, T, o, G) {
         }
         return [...n.values()].filter((v) => v >= 5).length;
     };
-    const kand = [];
-    for (const weit of [420, 800])
-        for (let k = 0; k < 16; k++) {
-            const [ux, uz] = [Math.cos((k * Math.PI) / 8), Math.sin((k * Math.PI) / 8)];
-            const [cx, cz] = [g.x + ux * weit, g.z + uz * weit];
-            if (!r._landAt(cx, cz, 1) || r._nassAt(cx, cz)) continue;
-            const pose = { k: k + (weit > 420 ? 16 : 0), ux, uz, cx, cz, cy: makro(cx, cz) };
-            const P = hang(pose, probeKam, 20, makro).punkte;
-            Object.assign(pose, { frei: P.length, baender: baender(P) });
-            kand.push(pose);
+    // DIE WAHL NACH DEM WEG DES GESETZES (17.11.): je Standort die Linie des Schnee-Gesetzes (dasselbe 10. Perzentil wie das Urteil)
+    // über seinen freien Punkten zur Sommer- und zur Winter-Mitte — gewählt wird der Standort, in dessen Feld die Linie am weitesten
+    // wandert (`wandern`, m), mit ≥ 20 Schnee-Punkten im Sommer (die Sommer-Linie im Feld) und ≥ 40 freien Punkten; dann die meisten
+    // freien Punkte. Liegt die Winter-Linie unter dem tiefsten Punkt eines Felds, ist sein `wandern` die Höhe des Felds über dem
+    // 10. Perzentil — das Feld, das am tiefsten reicht, gewinnt. Standorte: 16 Richtungen × 420 · 800 m und je Richtung die Küste
+    // (das erste Land ≤ KUESTE_H m über dem Meer binnen KUESTE_M m, eben dort, wo der Hang ans Meer reicht)
+    const linieGesetz = (P, v) => {
+        const h = P.filter((p) => K.schnee(L, p.y, p.x, p.z, v) >= 0.5).map((p) => p.y - wl);
+        return { n: h.length, q: h.length ? h.sort((x, y) => x - y)[Math.floor(h.length * 0.1)] : null };
+    };
+    const versatzJe = {};
+    for (const n of ["sommer", "winter"]) {
+        if (!r.setSeason(n)) throw new Error("das Wort " + n + " gilt nicht");
+        versatzJe[n] = r._schneeVersatz();
+    }
+    const orte = [];
+    for (let k = 0; k < 16; k++) {
+        const [ux, uz] = [Math.cos((k * Math.PI) / 8), Math.sin((k * Math.PI) / 8)];
+        for (const weit of [420, 800]) orte.push({ k: k + (weit > 420 ? 16 : 0), ux, uz, weit });
+        for (let d = 100; d <= KUESTE_M; d += 50) {
+            const y = makro(g.x + ux * d, g.z + uz * d);
+            if (y <= wl + 0.5) break;
+            if (y <= wl + KUESTE_H) {
+                orte.push({ k: k + 32, ux, uz, weit: d });
+                break;
+            }
         }
+    }
+    const kand = [];
+    for (const o of orte) {
+        const [cx, cz] = [g.x + o.ux * o.weit, g.z + o.uz * o.weit];
+        if (!r._landAt(cx, cz, 1) || r._nassAt(cx, cz)) continue;
+        const pose = { k: o.k, ux: o.ux, uz: o.uz, cx, cz, cy: makro(cx, cz), weit: o.weit };
+        const P = hang(pose, probeKam, 20, makro).punkte;
+        const [so, wi] = [linieGesetz(P, versatzJe.sommer), linieGesetz(P, versatzJe.winter)];
+        const wandern = P.length >= 40 && so.n >= 20 && so.q != null && wi.q != null ? r3(so.q - wi.q) : null;
+        Object.assign(pose, { frei: P.length, baender: baender(P), wandern });
+        kand.push(pose);
+    }
     if (!kand.length) return Object.assign(aus, { fehler: "kein trockenes Land 420/800 m um den Gipfel " + [g.x, g.z].map(Math.round).join("/") });
-    const besser = (b, a) => b.baender > a.baender || (b.baender === a.baender && (b.frei > a.frei || (b.frei === a.frei && b.cy < a.cy)));
+    const wert = (p) => (p.wandern == null ? -Infinity : p.wandern);
+    const besser = (b, a) => wert(b) > wert(a) || (wert(b) === wert(a) && (b.frei > a.frei || (b.frei === a.frei && b.cy < a.cy)));
     const pose = kand.reduce((a, b) => (besser(b, a) ? b : a));
-    aus.wahl = { je: kand.map((p) => ({ k: p.k, frei: p.frei, baender: p.baender, hoehe: r3(p.cy - wl) })), k: pose.k, frei: pose.frei, baender: pose.baender, bandM: BAND_M };
+    aus.wahl = {
+        je: kand.map((p) => ({ k: p.k, weit: p.weit, frei: p.frei, baender: p.baender, wandern: p.wandern, hoehe: r3(p.cy - wl) })),
+        k: pose.k, weit: pose.weit, frei: pose.frei, baender: pose.baender, wandern: pose.wandern, bandM: BAND_M,
+    };
     await stehen(pose.cx, pose.cz);
     const cam = s.camera;
     const { E, Z, punkte, verdeckt } = hang(pose, cam, 10, (x, z) => r._voxelSurfaceY(x, z));
@@ -2174,9 +2239,13 @@ function schneeJahrLesen(j, lauf) {
         // der beste Standort: die meisten belegten Höhen-Bänder, dann die meisten freien Punkte; eine Zeile ohne Bänder (vor dem 17.11.
         // 04:00) wählte nach den freien Punkten allein — die Kuppe über der Linie
         if (!(w.baender >= 0)) return { fehler: "die Pose nennt keine Höhen-Bänder (die Wahl nach den freien Punkten allein sah nur die Kuppe über der Linie) · " + ad };
-        const best = (w.je || []).reduce((a, x) => (x.baender > a.baender || (x.baender === a.baender && x.frei > a.frei) ? x : a), { frei: -1, baender: -1 });
-        if (w.baender < best.baender || (w.baender === best.baender && w.frei < best.frei))
-            return { fehler: "die Pose im Wald: Standort " + w.k + " mit " + w.frei + " freien Punkten in " + w.baender + " Bändern, Standort " + best.k + " trägt " + best.frei + " in " + best.baender + " · " + ad };
+        // seit 17.11. der Weg des Gesetzes je Standort (`wandern`): eine Zeile ohne ihn wählte nach den Bändern — das Feld endete 48 m
+        // über dem Meer, die Winter-Linie des Gesetzes am Meer lag nie darin
+        if (!(w.je || []).some((x) => "wandern" in x)) return { fehler: "die Pose nennt keinen Weg des Gesetzes je Standort (die Wahl nach den Bändern sah die Winter-Linie nie im Feld) · " + ad };
+        const wert = (x) => (Number.isFinite(x.wandern) ? x.wandern : -Infinity);
+        const best = (w.je || []).reduce((a, x) => (wert(x) > wert(a) || (wert(x) === wert(a) && x.frei > a.frei) ? x : a), { frei: -1, wandern: null });
+        if (wert(w) < wert(best) || (wert(w) === wert(best) && w.frei < best.frei))
+            return { fehler: "die Pose im Wald: Standort " + w.k + " mit " + w.frei + " freien Punkten (Gesetz wandert " + w.wandern + " m), Standort " + best.k + " trägt " + best.frei + " (" + best.wandern + " m) · " + ad };
     }
     if (e.fehler) return { fehler: "Probe: " + e.fehler + (w ? " (Standort " + w.k + " von " + (w.je || []).length + ", " + w.frei + " frei im groben Gitter)" : "") + " · " + ad, e, ad, hw };
     const S = e.schuesse || [];
@@ -2233,7 +2302,7 @@ const SCHNEE_JAHR_ROH = {
     kamera: [1500, 60, -500, 1300, 120, -700],
     punkte: 640,
     hoehen: [4, 192],
-    wahl: { je: [{ k: 0, frei: 6, baender: 1, hoehe: 40 }, { k: 4, frei: 171, baender: 9, hoehe: 62 }, { k: 9, frei: 380, baender: 3, hoehe: 150 }], k: 4, frei: 171, baender: 9, bandM: 20 },
+    wahl: { je: [{ k: 0, frei: 6, baender: 1, wandern: null, hoehe: 40 }, { k: 4, frei: 171, baender: 9, wandern: 138, hoehe: 62 }, { k: 9, frei: 380, baender: 3, wandern: 41, hoehe: 150 }], k: 4, frei: 171, baender: 9, wandern: 138, bandM: 20 },
     jahr: {
         winter: { versatz: -160, weiss: 420, linieBild: 12, linieGesetz: 9, gesetzN: 600, treffer: 0.71, freiN: 0, falsch: null },
         fruehling: { versatz: -120, weiss: 300, linieBild: 41, linieGesetz: 38, gesetzN: 420, treffer: 0.7, freiN: 150, falsch: 0.02 },
@@ -5645,10 +5714,11 @@ module.exports = [
             { name: "zu wenige freie Punkte", stdout: schneeJahrRoh((x) => ((x.fehler = "nur 40 freie Punkte des Hangs im Bild (Soll ≥ 150)"), x)), gruen: false },
             { name: "swiftshader", stdout: schneeJahrRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
             // die Fassung vor dem Schnitt urteilte diese zwei GRÜN: sie nahm den tiefsten Standort, frei oder im Wald
-            { name: "die Pose im Wald (Standort 0 mit 6 freien Punkten, Standort 4 trägt 171)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 0, frei: 6, baender: 1 }) && x), gruen: false },
+            { name: "die Pose im Wald (Standort 0 mit 6 freien Punkten, Standort 4 trägt 171)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 0, frei: 6, baender: 1, wandern: null }) && x), gruen: false },
             { name: "die Zeile der Probe vor dem Schnitt (keine Wahl der Standorte)", stdout: schneeJahrRoh((x) => (delete x.wahl, x)), gruen: false },
-            { name: "die Kuppe über der Linie (Standort 9: 380 frei in 3 Bändern, Standort 4 belegt 9)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 9, frei: 380, baender: 3 }) && x), gruen: false },
+            { name: "die Kuppe über der Linie (Standort 9: 380 frei in 3 Bändern, Standort 4 belegt 9)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 9, frei: 380, baender: 3, wandern: 41 }) && x), gruen: false },
             { name: "die Wahl ohne Höhen-Bänder (nach den freien Punkten allein, Radeon ee9c1965)", stdout: schneeJahrRoh((x) => ((x.wahl = { je: [{ k: 1, frei: 350 }], k: 1, frei: 350 }), x)), gruen: false },
+            { name: "die Wahl nach den Bändern ohne Weg des Gesetzes (Radeon ee9c1965: Feld 49–199 m, Winter-Linie am Meer nie im Feld)", stdout: schneeJahrRoh((x) => (x.wahl.je.forEach((p) => delete p.wandern), delete x.wahl.wandern, x)), gruen: false },
         ],
         pfad: ["gelaende-core.js", "stamm/bild-himmel.js", "stamm/gelaende-*.js", "stamm/siedlung-ort.js", "stamm/wasser-*.js", "voxel-worker.js", "scripts/werkbank.cjs", ...WELT_PFAD],
         quelle: "KARTE2 planet.kopplung.bahn-klima S1 = Schneelinie wandert über das Jahr im Bild",
@@ -5672,10 +5742,11 @@ module.exports = [
             { name: "die Grenze folgt der Saison nicht (Sommer wie Winter)", stdout: schneeJahrRoh((x) => Object.assign(x.jahr.sommer, { linieBild: 20, linieGesetz: 20 }) && x), gruen: false },
             { name: "Weiß ohne Schnee im Sommer", stdout: schneeJahrRoh((x) => ((x.jahr.sommer.falsch = 0.4), x)), gruen: false },
             { name: "swiftshader", stdout: schneeJahrRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
-            { name: "die Pose im Wald (Standort 0 mit 6 freien Punkten, Standort 4 trägt 171)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 0, frei: 6, baender: 1 }) && x), gruen: false },
+            { name: "die Pose im Wald (Standort 0 mit 6 freien Punkten, Standort 4 trägt 171)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 0, frei: 6, baender: 1, wandern: null }) && x), gruen: false },
             { name: "die Zeile der Probe vor dem Schnitt (keine Wahl der Standorte)", stdout: schneeJahrRoh((x) => (delete x.wahl, x)), gruen: false },
-            { name: "die Kuppe über der Linie (Standort 9: 380 frei in 3 Bändern, Standort 4 belegt 9)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 9, frei: 380, baender: 3 }) && x), gruen: false },
+            { name: "die Kuppe über der Linie (Standort 9: 380 frei in 3 Bändern, Standort 4 belegt 9)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 9, frei: 380, baender: 3, wandern: 41 }) && x), gruen: false },
             { name: "die Wahl ohne Höhen-Bänder (nach den freien Punkten allein, Radeon ee9c1965)", stdout: schneeJahrRoh((x) => ((x.wahl = { je: [{ k: 1, frei: 350 }], k: 1, frei: 350 }), x)), gruen: false },
+            { name: "die Wahl nach den Bändern ohne Weg des Gesetzes (Radeon ee9c1965: Feld 49–199 m, Winter-Linie am Meer nie im Feld)", stdout: schneeJahrRoh((x) => (x.wahl.je.forEach((p) => delete p.wandern), delete x.wahl.wandern, x)), gruen: false },
         ],
         pfad: ["gelaende-core.js", "stamm/bild-himmel.js", "stamm/gelaende-*.js", "stamm/siedlung-ort.js", "stamm/wasser-*.js", "voxel-worker.js", "scripts/werkbank.cjs", ...WELT_PFAD],
         quelle: "KARTE2 planet.wetter.klimazonen S1 = Temperatur am Meer 18/−4 °C, Schneegrenze folgt der Saison",
