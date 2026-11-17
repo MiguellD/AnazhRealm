@@ -2635,8 +2635,9 @@
      "gruen": true,
      "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 17 s, Furcht chaos 1 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.625 (Gegenlauf 0)",
      "sha": "4ee205bd32a3417db3af438b3ed437ced2f9f0ad",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js, stamm/feld-leben.js)",
+     "gehalten": true,
+     "r6": "konsum"
     },
     {
      "id": "oekologie.K4#2",
@@ -5789,7 +5790,7 @@
   },
   "karte2.planet.kosmos.sternhimmel": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.sternhimmel#1 radeon: Station seit der Messung geändert · karte2.planet.kosmos.sternhimmel#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.sternhimmel#1 radeon: Konsum seit der Messung geändert (R6: stamm/daten.js, stamm/stoff-material.js) · karte2.planet.kosmos.sternhimmel#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.sternhimmel#1",
@@ -5797,8 +5798,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/daten.js, stamm/stoff-material.js)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6083,7 +6085,7 @@
   },
   "karte2.same.physik.verformung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.verformung#1 radeon: Station seit der Messung geändert · karte2.same.physik.verformung#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.verformung#1 radeon: Konsum seit der Messung geändert (R6: schmiede-core.js, stamm/daten.js, stamm/koerper-bewegung.js +2) · karte2.same.physik.verformung#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.same.physik.verformung#1",
@@ -6091,8 +6093,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: schmiede-core.js, stamm/daten.js, stamm/koerper-bewegung.js +2)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6300,7 +6303,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 505,
-  "konsum": 178,
+  "konsum": 181,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6470,10 +6473,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 160
+  "ohne": 157
  },
  "kopfVoll": "884c6a25c7125ccb50678de22a29e6584ca498de",
- "zeit": "2026-11-17T01:50:48.188Z",
+ "zeit": "2026-11-17T01:56:39.561Z",
  "vorher": "884c6a25",
  "bilanz": {
   "gewinn": [],
