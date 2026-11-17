@@ -5118,7 +5118,7 @@
   },
   "karte2.erleben.spieler.praesenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) — zuletzt an 105c9bd3: Last: Referenz f 1,681 (Faden 1,019 · alle Kerne 1,146 · Stoß in der Station 16,33 Kerne fremd → 1,681; vor 106/303,2 ms, nach 104,5/307,6 ms, Ruhe 104/268,5 ms seit 2026-11-15) · fremd: Claude.exe -- · karte2.erleben.spieler.praesenz#1 gtx: ungemessen (R10) — zuletzt an e4eeee08: Last: Referenz f 1,236 (Faden 1,049 · alle Kerne 1,157 · Stoß in der Station 2,83 Kerne fremd → 1,236; vor 94,4/278 ms, nach 96,9/261 ms, Ruhe 92,4/240,3 ms seit 2026-11-16) · fremd: git.exe -c core.q",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) — zuletzt an 105c9bd3: Last: Referenz f 1,681 (Faden 1,019 · alle Kerne 1,146 · Stoß in der Station 16,33 Kerne fremd → 1,681; vor 106/303,2 ms, nach 104,5/307,6 ms, Ruhe 104/268,5 ms seit 2026-11-15) · fremd: Claude.exe -- · karte2.erleben.spieler.praesenz#1 gtx: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 2,387 (Faden 2,387 · alle Kerne 1,742; vor 216,5/407,7 ms, nach 87,2/211,3 ms, Ruhe 90,7/234,1 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.praesenz#1",
@@ -5136,7 +5136,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an e4eeee08: Last: Referenz f 1,236 (Faden 1,049 · alle Kerne 1,157 · Stoß in der Station 2,83 Kerne fremd → 1,236; vor 94,4/278 ms, nach 96,9/261 ms, Ruhe 92,4/240,3 ms seit 2026-11-16) · fremd: git.exe -c core.q",
+     "grund": "ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 2,387 (Faden 2,387 · alle Kerne 1,742; vor 216,5/407,7 ms, nach 87,2/211,3 ms, Ruhe 90,7/234,1 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
      "ungemessen": true,
      "beide": true
     }
@@ -6537,7 +6537,7 @@
   "ohne": 129
  },
  "kopfVoll": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
- "zeit": "2026-11-17T05:04:00.119Z",
+ "zeit": "2026-11-17T05:20:01.651Z",
  "vorher": "389a6496",
  "bilanz": {
   "gewinn": [],
