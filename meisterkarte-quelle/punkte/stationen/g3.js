@@ -777,6 +777,11 @@ const luftDer = (j) => {
 // kurzen und im vollen Bild — der Weg oben misst den Boden der unteren Hälfte, den die Sterne nie lesen (GTX e2a28364 und Radeon fe885d9d:
 // an der Wiese weicht der Boden an JEDER Uhr ab, auch mittags, Y 0,016–0,027 EV, R/B 3,3 %, Genesis gleich — die Kürzung endet nach 2–5
 // Bildern, das volle Bild mittelt 32; der Himmel war ungeprüft)
+// DER WEG AUF DEM DIFFERENZBILD (17.11., OMEN f5ce1579: der Weg zählte ROH in der oberen Hälfte — mittags 2–7 „Sterne“, an der Wiese
+// Ego im kurzen Bild ~15 Punkte der Dither-Blende des Laubs vor dem Himmel, die erst die volle Geschichte mittelt, GTX 32 ↔ 17): je
+// Weg-Uhr nimmt das Sternfeld aus der Szene und schießt kurz UND voll ein zweites Mal — jede Aufnahme beginnt Folge, Geschichte und
+// Dither von vorn, so löscht die eigene Ohne-Aufnahme das Laub genau; gezählt wird mit − ohne wie in den vier Sichten (TAG_STERNE),
+// die rohe Zahl steht daneben (`rohKurz`, `rohVoll`). Zeichnet das Feld nicht, ist die Zahl 0 — soll es zeigen und fehlt, null.
 const TAG_RUHE = [
     "for (let k = 0; k < nWarm; k++) frame();",
     "window.__ruheBilder = 0;\n" +
@@ -803,11 +808,15 @@ const TAG_WEG = [
         " if (!top) continue; let lo = 1e9, hi = -1, sr = 0; for (let k = 0; k < 16; k++) { const a = (k * Math.PI) / 8, v = L(x + Math.round(3 * Math.cos(a)), y + Math.round(3 * Math.sin(a))); sr += v; lo = Math.min(lo, v); hi = Math.max(hi, v); }" +
         " if (c - sr / 16 >= 8 && hi - lo <= 6) n++; } return n; };\n" +
         "                const P = (window.__wegProbe = window.__wegProbe || { uhren: [0, 0.25, 0.5, 0.75], zeilen: [], bilder: [] });\n" +
-        "                P.bilder.push(window.__ruheBilder);\n" +
+        "                const rb = window.__ruheBilder;\n" +
+        "                P.bilder.push(rb);\n" +
         "                if (P.uhren.includes(u)) {\n" +
         "                    const masse = (b) => { const q = [0, 0, 0, 0, 0]; let n = 0; for (let i = (H / 2) * W * 4; i < W * H * 4; i += 4, n++) { q[0] += luma709(b, i); for (let c = 0; c < 3; c++) q[c + 1] += lin[b[i + c]]; q[4] += vor(luma709([lin[b[i]], lin[b[i + 1]], lin[b[i + 2]]])); } return [q[0] / n, luma709(q.slice(1)) / n, q[4] / n, q[1] / Math.max(q[3], 1e-9)]; };\n" +
         '                    const v8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8, oben = (b) => sternPunkte((x, y) => luma709(b, (y * W + x) * 4));\n' +
-        "                    P.zeilen.push([u, window.__ruheBilder, masse(u8), masse(v8), oben(u8), oben(v8)]);\n" +
+        "                    const sf = st.starField, zeigt = !!(sf && sf.visible && sf.parent); let ok = null, ov = null;\n" +
+        '                    if (zeigt) { const par = sf.parent; par.remove(sf); try { ok = (await window.__aufnahmeRuhig(W, H, 1, { satz: "messung" })).u8; ov = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8; } finally { par.add(sf); } }\n' +
+        "                    const diff = (b, c) => sternPunkte((x, y) => Math.max(0, luma709(b, (y * W + x) * 4) - luma709(c, (y * W + x) * 4))), leer = sf || !r._sterneZeigen ? 0 : null;\n" +
+        "                    P.zeilen.push([u, rb, masse(u8), masse(v8), zeigt ? diff(u8, ok) : leer, zeigt ? diff(v8, ov) : leer, oben(u8), oben(v8)]);\n" +
         "                }",
 ];
 // das Urteil des Wegs in der Seite (nach der Linse): je Zeile [Uhr, Bilder, kurz, voll] mit [hell, Y, X, R/B]
@@ -816,8 +825,8 @@ const TAG_PRUEFE =
     " const ev = (a, b) => Math.abs(Math.log2(Math.max(a, 1e-9) / Math.max(b, 1e-9)));" +
     " const d = P.zeilen.map(([u, n, k, v]) => ({ uhr: u, bilder: n, hell: +Math.abs(k[0] - v[0]).toFixed(2), Y: +ev(k[1], v[1]).toFixed(4), X: +ev(k[2], v[2]).toFixed(4), rb: +Math.abs(k[3] / v[3] - 1).toFixed(4) }));" +
     " const rot = d.filter((x) => x.hell > 0.5 || x.Y > 0.01 || x.X > 0.01 || x.rb > 0.01).map((x) => 'Uhr ' + x.uhr + ' weicht ab: ' + JSON.stringify(x));" +
-    " const sterne = P.zeilen.map(([u, , , , a, b]) => ({ uhr: u, kurz: a, voll: b }));" +
-    " const B = P.bilder; return { aufnahmen: B.length, bilder: B.length ? [Math.min(...B), +(B.reduce((a, b) => a + b, 0) / B.length).toFixed(1), Math.max(...B)] : null, gegen: d, sterne, rot: !d.length ? 'keine Zeile gegen die Geschichte' : rot.length ? rot.join(' | ') : null };";
+    " const sterne = P.zeilen.map(([u, , , , a, b, ra, rv]) => ({ uhr: u, kurz: a, voll: b, rohKurz: ra, rohVoll: rv }));" +
+    " const B = P.bilder; return { aufnahmen: B.length, bilder: B.length ? [Math.min(...B), +(B.reduce((a, b) => a + b, 0) / B.length).toFixed(1), Math.max(...B)] : null, gegen: d, sterne, sterneArt: 'differenz', rot: !d.length ? 'keine Zeile gegen die Geschichte' : rot.length ? rot.join(' | ') : null };";
 // DIE STERNE IM AUSGABE-BILD (Karte 2 planet.kosmos.himmelsmechanik S 1, Tiefe „Sterne nach Grenzgröße“): je Uhr in der oberen
 // Bildhälfte derselben Aufnahme die Punkt-Quellen — ein Pixel, das seine acht Nachbarn überragt (bei Gleichstand zählt der erste),
 // ≥ 8 Luma über dem Mittel seines Rings im Abstand 3 (16 Pixel) und dieser Ring flach (Spanne ≤ 6 Luma: keine Kante, kein Laub);
@@ -852,8 +861,9 @@ const TAG_LINSE = {
 // und EINE Aufnahme bis das Bild steht (640×360, ~3–5 Bilder), je Ort vier volle gegen die Geschichte, die Mess-Wiese kalt (9–18 s,
 // Radeon eich3–6) — 40 s; die RUF-Zeilen je Kurve nennen die Sekunden je Uhr
 // vier Kurven (genesis · wiese je Ego und Third): der Deckel wächst mit, 240 s; mit dem Bild ohne Sternfeld je Uhr, an der das Feld
-// zeichnet, je Kurve ~83 s (Radeon 14ee72dc: die dritte Kurve begann nach 247,6 s statt 157,6 s, der Deckel 240 s riss) — 400 s
-const TAG_PROBE = { sek: 400, befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(TAG_LINSE)) };
+// zeichnet, je Kurve ~83 s (Radeon 14ee72dc: die dritte Kurve begann nach 247,6 s statt 157,6 s, der Deckel 240 s riss) — 400 s;
+// der Weg auf dem Differenzbild schießt je Ort an seinen Nacht-Uhren kurz und voll ohne Sternfeld nach (Radeon f5ce1579 fuhr 313 s) — 440 s
+const TAG_PROBE = { sek: 440, befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(TAG_LINSE)) };
 const LAUB_LINSE = {
     vorher: ["umstellen", "--ort", "dorf", "--sicht", "ego"],
     args: ["licht", "--laub", "ring,feld,feld0,feld90,feld180,panorama,spiegel,spiegel180,wasser,fichte,tanne", "--karte", "--uhr", "0.5,0.27,0.05", "--ort", "dorf"],
@@ -4234,11 +4244,19 @@ const stationen = [
             // 23 ↔ 24, beide Vorzeichen). Die Tag-Zeilen des Wegs zählen rohe Lichtpunkte (Laub, Wolkenkante: 0–7), die keine Sterne
             // sind — die Sterne des Tags urteilt die Tafel an der Differenz mit − ohne Sternfeld. Der Boden der unteren Hälfte
             // (`weg.rot`) gehört der Licht-Kurve (licht.K1#1, himmelsmechanik#1) und steht hier als Lesewert
-            const sw = (weg && Array.isArray(weg.sterne) ? weg.sterne : []).filter((z) => z.uhr === 0 && Number.isFinite(z.kurz) && Number.isFinite(z.voll));
-            const swRot = sw.filter((z) => Math.abs(z.kurz - z.voll) > 2 * Math.sqrt(Math.max(z.voll, 1))).map((z) => "Nacht kurz " + z.kurz + " ↔ voll " + z.voll);
-            const wegOk = sw.length >= ORTE.length && !swRot.length;
+            // DER WEG AUF DEM DIFFERENZBILD (17.11., OMEN f5ce1579: roh zählte er mittags 2–7 und an der Wiese Ego das Laub der kurzen
+            // Geschichte, GTX 32 ↔ 17): gezählt wird mit − ohne Sternfeld, kurz und voll je mit eigener Ohne-Aufnahme (`sterneArt`
+            // „differenz“) — damit urteilt der Weg JEDE seiner Uhren, Tag wie Nacht, an derselben Rauschgrenze; die rohe Zahl ist Lesewert
+            const diffWeg = !!weg && weg.sterneArt === "differenz";
+            const wz = (weg && Array.isArray(weg.sterne) ? weg.sterne : []).filter((z) => Number.isFinite(z.kurz) && Number.isFinite(z.voll));
+            const sw = wz.filter((z) => z.uhr === 0);
+            const swRot = wz.filter((z) => Math.abs(z.kurz - z.voll) > 2 * Math.sqrt(Math.max(z.voll, 1))).map((z) => "Uhr " + z.uhr + " kurz " + z.kurz + " ↔ voll " + z.voll);
+            const wegOk = diffWeg && sw.length >= ORTE.length && !swRot.length;
+            const roh = sw.filter((z) => Number.isFinite(z.rohKurz)).map((z) => z.rohKurz + "↔" + z.rohVoll).join(" ");
             const wegText =
-                (wegOk ? "gleich (Nacht kurz ↔ voll " + sw.map((z) => z.kurz + "↔" + z.voll).join(" ") + ")" : "ROT " + (sw.length < ORTE.length ? sw.length + " von " + ORTE.length + " Nacht-Zeilen" : swRot.join(" | ").slice(0, 160))) +
+                (wegOk
+                    ? "gleich (Nacht kurz ↔ voll mit − ohne " + sw.map((z) => z.kurz + "↔" + z.voll).join(" ") + (roh ? "; roh " + roh : "") + ")"
+                    : "ROT " + (!diffWeg ? "der Weg zählt roh, ohne das Bild ohne Sternfeld" : sw.length < ORTE.length ? sw.length + " von " + ORTE.length + " Nacht-Zeilen" : swRot.join(" | ").slice(0, 160))) +
                 " · Boden (Lesewert) " + (weg ? (weg.rot ? String(weg.rot).slice(0, 80) : "gleich") : "fehlt");
             let gruen = hw && wegOk;
             const gamma = (a, b) => {
@@ -4283,8 +4301,10 @@ const stationen = [
         proben: (() => {
             // je Ort vier Uhren (0 · 0,25 · 0,5 · 0,75), die Nacht trägt Punkte, der Tag keine
             const sterneWeg = (f = (z) => z) => Array.from({ length: 16 }, (_, i) => f({ uhr: [0, 0.25, 0.5, 0.75][i % 4], kurz: i % 4 ? 0 : 40, voll: i % 4 ? 0 : 40 }, i));
-            const wegZeile = (o) => "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null, sterne: sterneWeg(), ...o }) + "\n";
+            const wegZeile = (o) => "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null, sterne: sterneWeg(), sterneArt: "differenz", ...o }) + "\n";
             const ad = wegZeile();
+            // OMEN f5ce1579 (GTX): wiese Ego nachts roh 32 ↔ 17 (das Laub der kurzen Geschichte), die anderen im Rauschen; mittags roh 2–7
+            const rohOmen = (z, i) => ({ ...z, rohKurz: i === 4 ? 32 : i % 4 ? [0, 7, 2][(i % 4) - 1] : z.kurz, rohVoll: i === 4 ? 17 : i % 4 ? 0 : z.voll });
             const sonne = (u) => +(60 * Math.sin(2 * Math.PI * (u - 0.25))).toFixed(2);
             const grenzStern = (s) => (s >= -3 ? 0 : s <= -18 ? 40 : Math.round(40 * ((-3 - s) / 15) ** 2));
             // `punkte` die rohe Zahl des Bilds mit Feld, `pt` Lichtpunkte am Tag, die keine Sterne sind (Wolkenkante, Laub)
@@ -4317,7 +4337,12 @@ const stationen = [
                 { name: "der Boden der Wiese weicht ab, die Sterne kurz = voll", stdout: wegZeile({ rot: "Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0249}" }), j: welt(), gruen: true },
                 { name: "die Kürzung zählt nachts 20 statt 40 Punkte (wiese Third)", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i === 12 ? { ...z, kurz: 20 } : z)) }), j: welt(), gruen: false },
                 { name: "die Nacht der Kürzung im Zählrauschen (Radeon f5ce1579: 47 ↔ 52 · 25 ↔ 22 · 29 ↔ 25 · 23 ↔ 24)", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i % 4 ? z : { ...z, ...[{ kurz: 47, voll: 52 }, { kurz: 25, voll: 22 }, { kurz: 29, voll: 25 }, { kurz: 23, voll: 24 }][i / 4] })) }), j: welt(), gruen: true },
-                { name: "rohe Lichtpunkte am Taghimmel, kurz 7 ↔ voll 1 (keine Sterne: der Tag zählt im Weg nicht)", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i === 6 ? { ...z, kurz: 7, voll: 1 } : z)) }), j: welt(), gruen: true },
+                { name: "rohe Lichtpunkte am Taghimmel, roh 7 ↔ 1, mit − ohne 0 ↔ 0 (keine Sterne: die Differenz löscht sie)", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i === 6 ? { ...z, rohKurz: 7, rohVoll: 1 } : z)) }), j: welt(), gruen: true },
+                { name: "das Laub der kurzen Geschichte (OMEN f5ce1579: wiese Ego roh 32 ↔ 17, mittags roh 2–7), mit − ohne gleich", stdout: wegZeile({ sterne: sterneWeg(rohOmen) }), j: welt(), gruen: true },
+                { name: "der Weg ohne das Bild ohne Sternfeld (roh gezählt, im Rauschen — die Probe bis 17.11.)", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null, sterne: sterneWeg() }) + "\n", j: welt(), gruen: false },
+                { name: "die Kürzung dünnt die Sterne: mit − ohne kurz 20 ↔ voll 40 an der Wiese Ego, roh wie OMEN", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i === 4 ? { ...rohOmen(z, i), kurz: 20 } : rohOmen(z, i))) }), j: welt(), gruen: false },
+                { name: "mittags zeichnet das Feld in der Kürzung (mit − ohne 7 ↔ 0)", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i === 6 ? { ...z, kurz: 7 } : z)) }), j: welt(), gruen: false },
+                { name: "das Feld soll zeigen, die Ohne-Aufnahme fehlt (genesis Nacht kurz null)", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i === 0 ? { ...z, kurz: null } : z)) }), j: welt(), gruen: false },
                 { name: "der Weg der Sterne an zwei Orten (2 von 4 Nacht-Zeilen)", stdout: wegZeile({ sterne: sterneWeg().slice(0, 8) }), j: welt(), gruen: false },
                 { name: "swiftshader", stdout: "[linse-gpu] google/swiftshader (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null, sterne: sterneWeg() }) + "\n", j: welt(), gruen: false },
                 { name: "keine Kurve", stdout: ad, j: null, gruen: false },
