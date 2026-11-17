@@ -101,7 +101,6 @@ class AnazhRealm_siedlung_bewohner {
                     dx: (Math.random() - 0.5) * G.dxSpread,
                     a: G.a0,
                     q: qq.id,
-                    saat: Math.random(), // das Muster des Teilchens (`_rauchZeichnen`)
                 });
         // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen, die Bild-Uhr): der Wind trägt jedes Teilchen mit
         // seiner Geschwindigkeit in m/s × dt windab — in EIN Objekt je Bild gefragt (`_windAt` mit `aus`, w27-takt-gc). Es liest
@@ -114,22 +113,30 @@ class AnazhRealm_siedlung_bewohner {
             T2.y += T2.vy * f;
             T2.x += T2.dx * f + w.x * w.ms * s;
             T2.z += w.z * w.ms * s;
+            [T2.zx, T2.zy, T2.zz] = [T2.dx * W.labHz + w.x * w.ms, T2.vy * W.labHz, w.z * w.ms]; // sein Zug in m/s
             T2.a -= G.fade * f;
             T2.s *= Math.pow(G.scaleMul, f);
             if (T2.a <= G.aKill) dr.teilchen.splice(k, 1);
         }
-        this._rauchZeichnen(G, dr.teilchen, "dorfRauchSatz", G.maxTeilchen * W.kamine);
+        this._rauchZeichnen(
+            G,
+            dr.teilchen,
+            "dorfRauchSatz",
+            G.maxTeilchen * W.kamine,
+            (G.vyBase + G.vyRange / 2) * W.labHz
+        );
     }
 
     // DAS EINE RAUCH-BILD (w12-brand-rauch): Kamin (`dorfRauchSatz`, RAUCH_GESETZ des Labors) und Fahne des Brands
     // (`brandRauchSatz`, BRAND.bild.rauch) zeichnen dasselbe Gesetz — je Satz EINE Instanz-Senke, je Teilchen eine Fläche
     // quer zur Sicht (`_rauchStoff`), ihr Radius G.size × s, ihr Ort, und im Attribut `aRauch` (je Instanz): seine Deckung a
     // im Kern (der Stoff liest sie als optische Dicke τ = −ln(1 − a), Beer-Lambert: Dichte × Weg, dünn am Rand), sein
-    // Same (das Muster), sein Radius in Metern (der Saum gegen die Tiefe) und sein Alter als Weg der Ausdünnung von a0 bis
-    // aKill. Bis w12-brand-rauch zeichnete der Kamin die Kiste des Labors und die Fahne facettierte Ikosaeder (fast deckend
+    // Radius in Metern (der Saum gegen die Tiefe und gegen das Auge) und sein Alter als Weg der Ausdünnung von a0 bis
+    // aKill; im Attribut `aZug` sein Zug (die Richtung seiner Geschwindigkeit × Streckung, `RAUCH_BILD.zug`: jedes Teilchen
+    // trägt `zx, zy, zz` in m/s). `steigMs` ist das Steigen der Quelle (das Muster der Fahne steigt mit ihr). Bis w12-brand-rauch zeichnete der Kamin die Kiste des Labors und die Fahne facettierte Ikosaeder (fast deckend
     // braun, Kugelketten in der Luft, eine Kugelreihe am Boden). Gleichfarbige Teilchen mischen ohne Tiefen-Schreiben fast
     // unabhängig von der Reihenfolge — ohne Sortierung.
-    _rauchZeichnen(G, teilchen, satz = "dorfRauchSatz", kap = G.maxTeilchen) {
+    _rauchZeichnen(G, teilchen, satz, kap, steigMs) {
         const st = this.state;
         let R = st[satz];
         if ((!R && !teilchen.length) || typeof THREE === "undefined" || !st.scene) return; // kein Rauch, kein Mesh
@@ -142,9 +149,12 @@ class AnazhRealm_siedlung_bewohner {
             }
             const cap = kap;
             const geo = new THREE.PlaneGeometry(2, 2);
-            const daten = new THREE.InstancedBufferAttribute(new Float32Array(4 * cap), 4);
+            const daten = new THREE.InstancedBufferAttribute(new Float32Array(3 * cap), 3);
             geo.setAttribute("aRauch", daten);
-            const mat = this._rauchStoff(G);
+            const zug = new THREE.InstancedBufferAttribute(new Float32Array(3 * cap), 3);
+            geo.setAttribute("aZug", zug);
+            const uZeit = THREE.TSL.uniform(0);
+            const mat = this._rauchStoff(G, uZeit, steigMs);
             this._leuchtStoff(mat, null); // der Rauch streut das Licht des Feuers (K11, der Licht-Pool)
             const mesh = AnazhRealm._instanzMesh(geo, mat, cap);
             mesh.name = G.name || "dorf-rauch";
@@ -153,41 +163,55 @@ class AnazhRealm_siedlung_bewohner {
             mesh.receiveShadow = false;
             AnazhRealm._instanzZahl(mesh, 0);
             st.scene.add(mesh);
-            R = st[satz] = { mesh, geo, mat, daten, cap };
+            R = st[satz] = { mesh, geo, mat, daten, zug, cap, uZeit };
         }
         // je Teilchen nur Radius und Ort in seine Matrix (die Senke beginnt mit Einheits-Matrizen, die übrigen Glieder bleiben 0)
         const n = Math.min(teilchen.length, R.cap);
-        const [M, d, weg] = [R.mesh.instanceMatrix.array, R.daten.array, Math.max(1e-6, G.a0 - G.aKill)];
+        const [M, d, z, weg] = [
+            R.mesh.instanceMatrix.array,
+            R.daten.array,
+            R.zug.array,
+            Math.max(1e-6, G.a0 - G.aKill),
+        ];
+        const [zugS, zugMax] = AnazhRealm.RAUCH_BILD.zug;
         for (let k = 0; k < n; k++) {
             const t = teilchen[k];
             const r = G.size * t.s;
-            const [o, i] = [16 * k, 4 * k];
-            M[o] = M[o + 5] = M[o + 10] = d[i + 2] = r;
+            const [o, i] = [16 * k, 3 * k];
+            M[o] = M[o + 5] = M[o + 10] = d[i + 1] = r;
             M[o + 12] = t.x;
             M[o + 13] = t.y;
             M[o + 14] = t.z;
             d[i] = t.a;
-            d[i + 1] = t.saat || 0;
-            d[i + 3] = Math.min(1, Math.max(0, (G.a0 - t.a) / weg));
+            d[i + 2] = Math.min(1, Math.max(0, (G.a0 - t.a) / weg));
+            // die Streckung längs seines Zugs: der Weg von `zug[0]` Sekunden je Radius, höchstens `zug[1]`
+            const v = Math.hypot(t.zx, t.zy, t.zz);
+            const e = v > 0 ? Math.min(zugMax, (v * zugS) / r) / v : 0;
+            [z[i], z[i + 1], z[i + 2]] = [t.zx * e, t.zy * e, t.zz * e];
         }
         AnazhRealm._instanzZahl(R.mesh, n);
+        R.uZeit.value = this._bildZeit || 0;
         if (n > 0) {
             R.mesh.instanceMatrix.needsUpdate = true;
             R.daten.needsUpdate = true;
+            R.zug.needsUpdate = true;
             R.mesh.boundingSphere = null; // die Teilchen steigen: die Hülle folgt (three cullt die Wolke als Ganzes)
         }
     }
 
     // DER STOFF DES RAUCH-BILDS (`_rauchZeichnen`, RAUCH_BILD): die Fläche steht in den Achsen der Kamera (ihre Ecken ±1 längs
     // rechts und oben, `cameraWorldMatrix`; die Instanz trägt Radius und Ort — r184 rechnet den positionNode vor der Instanz,
-    // Lehre 22). Ihre Dicke fällt zum Rand wie die Sehne einer weichen Kugel, (1 − ρ²)^profil, vom Rausch-Gesetz zerfasert —
-    // zwei Ebenen des EINEN Rausch-Atlas, versetzt um den Samen, mit dem Alter steigend (`rausch`: Skala, Hub jung/alt, Zug);
-    // die Deckung ist 1 − exp(−τ · Dicke) (Beer-Lambert) mal dem Saum gegen die Tiefe (`_tiefenSaum`, `saum` × Radius: kein Schnitt
-    // an Gras und Boden). Das Licht ist das der Welt — Sonne, Himmel und Licht-Pool auf rau-Standard (Albedo G.color) —, die
-    // Normale die einer gewölbten Scheibe zum Auge (`woelbung`): die Sonnenseite hell, die Schattenseite im Himmel.
-    _rauchStoff(G) {
+    // Lehre 22), längs des Zugs gestreckt. Ihre Dicke fällt zum Rand wie die Sehne einer weichen Kugel, (1 − ρ²)^profil, vom
+    // Rausch-Gesetz zerfasert — zwei Oktaven des EINEN Rausch-Atlas im Raum der WELT, mit der Fahne steigend (`rausch`: Skala je
+    // Größe, Hub jung/alt, Anteil des Steigens): bis w28-rauch-bild trug jeder Ballen sein eigenes Muster um seinen Samen und
+    // stand als Scheibe für sich. Die Deckung ist 1 − exp(−τ · Dicke) (Beer-Lambert) mal dem Saum gegen die Tiefe
+    // (`_tiefenSaum`, `saum` × Radius: kein Schnitt an Gras und Boden) und gegen das Auge (`nah` × Radius). Das Licht ist das
+    // der Welt — Sonne, Himmel und Licht-Pool auf rau-Standard (Albedo G.color) —, die Normale die eines Ballens
+    // (`woelbung`): seine Unterseite sieht hinab ins Feuer, die Oberseite in den Himmel.
+    _rauchStoff(G, uZeit, steigMs) {
         const T = THREE.TSL;
         const W = AnazhRealm.RAUCH_BILD;
+        if (!(steigMs > 0)) throw new Error("_rauchStoff: der Rauch ohne Steigen (m/s) trägt kein Muster");
         const mat = new THREE.MeshStandardNodeMaterial({
             color: G.color,
             transparent: true,
@@ -195,23 +219,45 @@ class AnazhRealm_siedlung_bewohner {
             roughness: 1,
             metalness: 0,
         });
-        const D = T.attribute("aRauch", "vec4");
+        const D = T.attribute("aRauch", "vec3");
         // die Dicke im Kern τ = −ln(1 − a) je Teilchen (im Vertex; die Deckung a höchstens `deckMax`)
         const tau = T.varying(T.float(1).sub(D.x.clamp(0, W.deckMax)).log().negate());
-        mat.positionNode = T.cameraWorldMatrix.mul(T.vec4(T.positionGeometry.xy, 0, 0)).xyz;
+        // DER BALLEN IST LÄNGS SEINES ZUGS GESTRECKT (`aZug`: seine Richtung × Streckung, im Blick auf die Fläche gelegt —
+        // längs des Blicks bleibt er rund): aufeinander folgende Ballen einer Quelle schließen zur Fahne
+        // — er wird dabei schmaler (`schmal`: längs × (1 + m)^(1 − schmal), quer ÷ (1 + m)^schmal, m die Streckung im Blick):
+        // der Schirm zahlt die Fahne nicht mit der vollen Fläche der Streckung
+        const zv = T.cameraViewMatrix.mul(T.vec4(T.attribute("aZug", "vec3"), 0)).xy;
+        const m = zv.length();
+        const ecke = T.positionGeometry.xy;
+        const flach = T.cameraWorldMatrix.mul(
+            T.vec4(ecke.add(zv.mul(ecke.dot(zv).div(m.max(1e-4)))).div(m.add(1).pow(W.schmal)), 0, 0)
+        ).xyz;
+        mat.positionNode = flach;
+        const naht = this._weltNaht(T);
+        const lage = T.varying(naht.anker.add(flach.mul(naht.skala)));
         const q = T.uv().mul(2).sub(1);
         const ra = this._rauschAtlas();
         const [skala, hub, zug] = W.rausch;
-        const p = q.mul(skala).add(T.vec2(D.y.mul(61.7), D.y.mul(29.3).sub(D.w.mul(zug))));
-        const rausch = ra.ebene(p, 3, "y").add(ra.ebene(p.mul(2.03).add(T.vec2(17.1, 5.3)), 7, "y").mul(0.5));
-        const faser = T.float(1).add(rausch.mul(D.w.mul(hub[1] - hub[0]).add(hub[0])));
-        const dicke = T.float(1).sub(q.dot(q)).max(0).pow(W.profil).mul(faser.max(0));
+        // das Muster steht in der WELT und steigt mit der Fahne (`steigMs` × `zug`): zwei Ballen, die sich decken, lesen an
+        // derselben Stelle dasselbe Rauschen — ihre Löcher und Wülste gehen ineinander über, die Fahne ist EIN Körper
+        const p = lage.sub(T.vec3(0, uZeit.mul(steigMs * zug), 0)).mul(skala / G.size);
+        // die grobe Oktave im Raum (6 Texel), die feine als Ebene der Welt (x + z | y, 2 Texel)
+        const rausch = ra
+            .raum(p)
+            .add(ra.ebene(T.vec2(p.x.add(p.z), p.y).mul(2.03).add(T.vec2(17.1, 5.3)), 7, "y").mul(0.5));
+        const faser = T.float(1).add(rausch.mul(D.z.mul(hub[1] - hub[0]).add(hub[0])));
+        const rr = q.dot(q);
+        const dicke = T.float(1).sub(rr).max(0).pow(W.profil).mul(faser.max(0));
         mat.opacityNode = T.float(1)
             .sub(T.exp(tau.mul(dicke).negate()))
-            .mul(this._tiefenSaum(D.z.mul(W.saum)));
-        mat.normalNode = T.vec3(q.mul(W.woelbung), 1).normalize();
+            .mul(this._tiefenSaum(D.y.mul(W.saum)))
+            // und gegen das Auge: ein Ballen, in dem das Auge steht, läuft aus statt den Schirm zu verhängen (`nah` × Radius)
+            .mul(T.positionView.z.negate().div(D.y.mul(W.nah)).clamp(0, 1));
+        // die Normale der Kugel im Blick: die Unterseite des Ballens sieht hinab (das Feuer leuchtet sie an), die Oberseite
+        // in den Himmel (nachts dunkel, am Tag in der Sonne)
+        mat.normalNode = T.vec3(q.mul(W.woelbung), T.float(1).sub(rr).max(0.02)).normalize();
         // jung dicht und dunkel (Ruß im Kern der Fahne), mit dem Alter heller: die Albedo × mix(dunkel, 1, Alter)
-        mat.colorNode = T.vec4(T.materialColor.mul(T.mix(T.float(W.dunkel), T.float(1), D.w)), 1);
+        mat.colorNode = T.vec4(T.materialColor.mul(T.mix(T.float(W.dunkel), T.float(1), D.z)), 1);
         return mat;
     }
 
@@ -3765,18 +3811,23 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // ===== ATLAS · Siedlung/bewohner — Außen-Konstanten =====
 // DAS RAUCH-BILD (w12-brand-rauch, `_rauchZeichnen`/`_rauchStoff`): EIN Gesetz für jeden Rauch der Welt — der Kamin rechnet das Gefühl des
 // Labors (RAUCH_GESETZ je Bild) bei `labHz` in der Zeit und raucht an den `kamine` Kaminen nächst dem Auge binnen `kamineM`; die Dicke eines Teilchens fällt
-// zum Rand mit (1 − ρ²)^`profil` (die Sehne einer weichen Kugel, 0 am Rand), das Rausch-Gesetz zerfasert sie (`rausch`: Skala je
-// Radius, Hub [jung, ausgedünnt] und Zug des Musters über das Alter), der Saum gegen die Szene ist `saum` × Radius, die Normale
-// wölbt sich um `woelbung` zum Rand, die Albedo steigt mit dem Alter von `dunkel` auf 1 (jung dicht und rußig), die Deckung im Kern höchstens
+// zum Rand mit (1 − ρ²)^`profil` (die Sehne einer weichen Kugel, 0 am Rand), das Rausch-Gesetz zerfasert sie im Raum der Welt
+// (`rausch`: Wellen je Größe des Satzes `size` in Metern, Hub [jung, ausgedünnt], Anteil des Steigens der Quelle, mit dem das Muster
+// zieht), der Saum gegen die Szene ist `saum` × Radius, gegen das Auge `nah` × Radius, die Normale neigt sich um `woelbung` × ρ
+// gegen (1 − ρ²) (bei halbem Radius 45°), der Ballen ist längs seines Zugs gestreckt um den Weg von `zug`[0] Sekunden je Radius,
+// höchstens `zug`[1], und um (1 + Streckung)^`schmal` schmaler, die Albedo steigt mit dem Alter von `dunkel` auf 1 (jung dicht und rußig), die Deckung im Kern höchstens
 // `deckMax` (τ endlich).
 AnazhRealm.RAUCH_BILD = Object.freeze({
     labHz: 60,
     kamine: 8,
     kamineM: 160,
     profil: 2,
-    rausch: Object.freeze([1.1, Object.freeze([1, 1.2]), 1.5]),
+    rausch: Object.freeze([1.2, Object.freeze([1.8, 2.4]), 1]),
     saum: 0.5,
-    woelbung: 0.35,
+    nah: 3,
+    woelbung: 1.5,
+    zug: Object.freeze([0.6, 2]),
+    schmal: 0.25,
     dunkel: 0.8,
     deckMax: 0.995,
 });
