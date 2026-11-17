@@ -25,13 +25,14 @@ class AnazhRealm_gelaende_fern {
         const frist = this._bauFrist("abraeumen");
         let n = 0;
         while (n < drop.length && (n === 0 || performance.now() < frist)) this._disposeVoxelChunk(drop[n++]);
+        const ende = n > 0 && n === drop.length; // die letzte Rate des Abschieds
         drop.length = n;
         // DIE GEDÄCHTNISSE GEHEN AM SELBEN ABSCHIED (w28-halter-register): die gelieferten Netze, der Basis-Density-Cache und die
         // Schichten des Wassers je Chunk räumte bis hier je eine eigene Schleife hier oben — sie stehen jetzt in der EINEN Tafel
         // (`ZELL_GEDAECHTNISSE`, Ring „boden“), die `_zellGedaechtnisGeht` nach der Saat in EINEM Gang räumt.
         const geht = new Set();
         this._saatGeht(pcx, pcz, ringRadius, bleibt, span, vcx, vcz, geht);
-        this._zellGedaechtnisGeht({ pcx, pcz, vcx, vcz, R: ringRadius, span, bleibt, geht, drop: n });
+        this._zellGedaechtnisGeht({ pcx, pcz, vcx, vcz, R: ringRadius, span, bleibt, geht, ende, frist });
     }
 
     // DIE SAAT GEHT MIT IHREM CHUNK (Naht N2 des Gesetzes „der Speicher folgt dem Blick“; Preis des Orts, Schnitt 2): verlässt ein
@@ -131,18 +132,31 @@ class AnazhRealm_gelaende_fern {
     // eine kleinere als ein Chunk auch mit dem Chunk ihrer Mitte, wenn er eben den Saum verließ (`L.geht`); ein Gedächtnis des Rings
     // „boden“ geht mit seinem Chunk, sobald er weder im Ring steht noch gebaut ist. Was wiederkehrt, rechnet sein Leser aus dem
     // Gesetz neu. Nie fällt, was nicht neu wächst: die Zelle der Streu am Ort eines bleibenden gewachsenen Baus (eine Promotion,
-    // eine Tat), ein Eintrag, den sein Gedächtnis als lebend nennt (`lebt`), ein Gedächtnis des Stands (`bestand`, mit Grund) und eins mit
-    // eigener benannter Schranke (`schranke`).
-    // GERÄUMT WIRD, wenn sich etwas bewegt: ein Chunk verließ Saum oder Ring, der Spieler (oder sein Vorlauf) wechselte den Chunk,
-    // die Tafel wuchs seit dem letzten Gang um mehr als `ZELL_RAEUMEN.zuwachs` Einträge, oder sie änderte sich und der letzte
-    // Gang liegt `nachMs` zurück (ein ferner Schreiber — die Tritte der Tiere eines verlassenen Orts). Bis hier räumte die Tafel nur, wenn die Saat einen Chunk abgab, und elf Gedächtnisse
-    // standen in keiner Tafel (Radeon 17.11., Runde reise, Runde 1 → 2: Wald-Kästen 6 162 → 10 639, Ort-Same 119 → 146,
+    // eine Tat), ein Eintrag, den sein Gedächtnis als lebend nennt (`lebt`), ein Gedächtnis des Stands (`bestand`, mit Grund) und
+    // eins mit eigener benannter Schranke (`schranke`).
+    // GERÄUMT WIRD in Raten unter der Frist des Abräumens (je Takt mindestens ein Gedächtnis; Radeon 17.11.: der Gang am Stück
+    // kostete 3–12 ms, an jeder Rate des Abschieds neu), wenn sich etwas bewegt: die letzte Rate eines Abschieds fiel, ein Chunk
+    // verließ den Saum, der Spieler (oder sein Vorlauf) wechselte den Chunk, die Tafel wuchs seit dem letzten Gang um mehr als
+    // `ZELL_RAEUMEN.zuwachs` Einträge, oder sie änderte sich und der letzte Gang liegt `nachMs` zurück (ein ferner Schreiber — die
+    // Tritte der Tiere eines verlassenen Orts). Bis hier räumte die Tafel nur, wenn die Saat einen Chunk abgab, und elf
+    // Gedächtnisse standen in keiner Tafel (Radeon 17.11., Runde reise, Runde 1 → 2: Wald-Kästen 6 162 → 10 639, Ort-Same 119 → 146,
     // Bestands-Klassen 192 → 320, die Zell-Merker der Siedlung 2 267 → 2 662 · 180 → 313 · 180 → 313; die Tritte eines fernen
     // Orts blieben nach der Rückkehr: 909 bei x 2 900 m). → die Zahl der gefallenen Einträge.
     _zellGedaechtnisGeht(L) {
         const st = this.state;
         const T = AnazhRealm.ZELL_GEDAECHTNISSE;
-        const M = this._zellRaeumen || (this._zellRaeumen = { lage: null, summe: 0, t: -Infinity, gaenge: 0, fiel: 0 });
+        const M =
+            this._zellRaeumen ||
+            (this._zellRaeumen = {
+                lage: null,
+                summe: 0,
+                t: -Infinity,
+                gaenge: 0,
+                fiel: 0,
+                weiter: 0,
+                geht: null,
+                nun: 0,
+            });
         let summe = 0;
         for (const E of T) {
             const k = !E.bestand && !E.schranke && E.karte(this);
@@ -152,7 +166,13 @@ class AnazhRealm_gelaende_fern {
         const ZR = AnazhRealm.ZELL_RAEUMEN;
         const jetzt = performance.now();
         const ruhig = summe === M.summe || jetzt - M.t < ZR.nachMs;
-        if (!L.geht.size && !L.drop && lage === M.lage && summe - M.summe <= ZR.zuwachs && ruhig) return 0;
+        const neu = L.geht.size || L.ende || lage !== M.lage || summe - M.summe > ZR.zuwachs || !ruhig;
+        if (!M.weiter && !neu) return 0;
+        // ein Gang in Raten unter der Frist des Abräumens (`L.frist`, je Takt mindestens ein Gedächtnis): die Chunks, die den Saum
+        // verließen, sammelt er bis zu seinem Ende
+        if (!M.weiter) [M.lage, M.geht, M.nun] = [lage, new Set(), 0];
+        for (const k of L.geht) M.geht.add(k);
+        const geht = M.geht;
         const { pcx, pcz, vcx, vcz, R, span } = L;
         const p = st.playerMesh && st.playerMesh.position;
         const ueber = (a0, a1, b0, b1) => a0 <= b1 && b0 <= a1;
@@ -182,7 +202,10 @@ class AnazhRealm_gelaende_fern {
             return halten.has(k);
         };
         let fiel = 0;
-        for (const E of T) {
+        let i = M.weiter;
+        for (; i < T.length; i++) {
+            if (i > M.weiter && L.frist !== undefined && performance.now() > L.frist) break;
+            const E = T[i];
             if (E.bestand || E.schranke) continue;
             const karte = E.karte(this);
             if (!karte || !karte.size) continue;
@@ -209,9 +232,9 @@ class AnazhRealm_gelaende_fern {
                 } else if (
                     behalten(x0, z0, x0 + m, z0 + m, rw) &&
                     !(
-                        L.geht.size &&
+                        geht.size &&
                         m <= span &&
-                        L.geht.has(Math.floor((x0 + m / 2) / span) + "," + Math.floor((z0 + m / 2) / span))
+                        geht.has(Math.floor((x0 + m / 2) / span) + "," + Math.floor((z0 + m / 2) / span))
                     )
                 )
                     continue;
@@ -225,11 +248,14 @@ class AnazhRealm_gelaende_fern {
             if (E.geht) E.geht(this, weg, werte);
             fiel += weg.length;
         }
-        M.lage = lage;
-        M.gaenge++;
         M.fiel += fiel;
+        M.nun += fiel;
+        M.weiter = i < T.length ? i : 0;
+        if (M.weiter) return fiel;
+        M.gaenge++;
         M.summe = summe - fiel;
         M.t = jetzt;
+        M.geht = null;
         return fiel;
     }
 

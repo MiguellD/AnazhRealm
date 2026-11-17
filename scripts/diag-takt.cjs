@@ -774,7 +774,9 @@ hauptLauf(async () => {
                     } finally {
                         zurueckFrist();
                     }
-                    for (let i = 0; i < 400 && gehend(); i++) r._pruneDistantVoxelChunks(pm);
+                    // der Gang des Registers geht in Raten (`_zellRaeumen.weiter`): gewartet, bis Saat und Register stehen
+                    const raeumt = () => !!(r._zellRaeumen && r._zellRaeumen.weiter);
+                    for (let i = 0; i < 400 && (gehend() || raeumt()); i++) r._pruneDistantVoxelChunks(pm);
                     o.restGeht = gehend();
                     o.tritt = +T.has(tk);
                     o.marke = +st.scatterPromoted.has(mk);
