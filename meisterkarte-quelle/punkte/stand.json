@@ -5962,7 +5962,7 @@
   },
   "karte2.same.entfaltung.schirm": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an b5681770: Last: Referenz f 1,224 (Faden 1,224 · alle Kerne 1,082; vor 100,6/224 ms, nach 112,2/255,4 ms, Ruhe 91,7/236,1 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --u",
+   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.schirm#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +11) · karte2.same.entfaltung.schirm#1 gtx: ungemessen (R10) — zuletzt an 7de938ab: Last: Referenz f 1,28 (Faden 1,233 · alle Kerne 1,28; vor 111,8/298,9 ms, nach 108/275,9 ms, Ruhe 90,7/233,6 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --use",
    "stationen": [
     {
      "id": "karte2.same.entfaltung.schirm#1",
@@ -5981,7 +5981,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an b5681770: Last: Referenz f 1,224 (Faden 1,224 · alle Kerne 1,082; vor 100,6/224 ms, nach 112,2/255,4 ms, Ruhe 91,7/236,1 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --u",
+     "grund": "ungemessen (R10) — zuletzt an 7de938ab: Last: Referenz f 1,28 (Faden 1,233 · alle Kerne 1,28; vor 111,8/298,9 ms, nach 108/275,9 ms, Ruhe 90,7/233,6 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --use",
      "ungemessen": true,
      "beide": true
     }
@@ -6089,15 +6089,16 @@
      "gruen": true,
      "zahl": "Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
      "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/feld-leben.js)",
      "gehalten": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
   },
   "karte2.same.massstab.physik": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 17.01 m gegen v²/(2μg) 17.51 m (-2.9 %, Soll ±10 %), μ 0.5612 (Reibkreis 1 × Boden 0.7), 50 → 1.1 km/h, Δh 0 m, 141 Schritte, rollDecel 1 m/s² · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 15.94 m gegen v²/(2μg) 16.38 m (-2.7 %, Soll ±10 %), μ 0.6 (Reibkreis 1 × Boden 0.6), 50 → 1.1 km/h, Δh 0 m, 136 Schritte, rollDecel 1 m/s² · [linse-gpu] nvidia/pascal an 4167e10c gtx",
+   "beleg": "Maschine: gehalten: Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 17.01 m gegen v²/(2μg) 17.51 m (-2.9 %, Soll ±10 %), μ 0.5612 (Reibkreis 1 × Boden 0.7), 50 → 1.1 km/h, Δh 0 m, 141 Schritte, rollDecel 1 m/s² · [linse-gpu] amd/rdna-3 an 389a6496 radeon · Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 15.94 m gegen v²/(2μg) 16.38 m (-2.7 %, Soll ±10 %), μ 0.6 (Reibkreis 1 × Boden 0.6), 50 → 1.1 km/h, Δh 0 m, 136 Schritte, rollDecel 1 m/s² · [linse-gpu] nvidia/pascal an 7de938ab gtx",
    "stationen": [
     {
      "id": "karte2.same.massstab.physik#1",
@@ -6115,9 +6116,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 15.94 m gegen v²/(2μg) 16.38 m (-2.7 %, Soll ±10 %), μ 0.6 (Reibkreis 1 × Boden 0.6), 50 → 1.1 km/h, Δh 0 m, 136 Schritte, rollDecel 1 m/s² · [linse-gpu] nvidia/pascal",
-     "sha": "4167e10c05fd3401ba5fcad6cbd7b25b19a0323e",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs, stamm/koerper-bewegung.js +1)",
-     "gehalten": true,
+     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -6125,7 +6125,7 @@
   },
   "karte2.same.physik.verformung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: klinge_flegel Schwung 0.41 m, Länge (längs) 0.328–0.328 m, v² 2.922 → 0.144 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/172 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 649 px über dem Rauschen 0, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] amd/rdna-3 an ee9c1965 radeon · gehalten: klinge_flegel Schwung 0.412 m, Länge (längs) 0.328–0.328 m, v² 3.286 → 0.232 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/253 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 647 px über dem Rauschen 0, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal an ee9c1965 gtx",
+   "beleg": "Maschine: gehalten: klinge_flegel Schwung 0.41 m, Länge (längs) 0.328–0.328 m, v² 2.922 → 0.144 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/172 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 649 px über dem Rauschen 0, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] amd/rdna-3 an ee9c1965 radeon — offen: karte2.same.physik.verformung#1 gtx: ROT: klinge_flegel Schwung 0.397 m, Länge (längs) 0.328–0.328 m, v² 2.745 → 0.139 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/248 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 180 px über dem Rauschen 1464, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal an 7de938ab",
    "stationen": [
     {
      "id": "karte2.same.physik.verformung#1",
@@ -6140,11 +6140,11 @@
     {
      "id": "karte2.same.physik.verformung#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "klinge_flegel Schwung 0.412 m, Länge (längs) 0.328–0.328 m, v² 3.286 → 0.232 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/253 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 647 px über dem Rauschen 0, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal",
-     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "gruen": false,
+     "zahl": "klinge_flegel Schwung 0.397 m, Länge (längs) 0.328–0.328 m, v² 2.745 → 0.139 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/248 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 180 px über dem Rauschen 1464, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal",
+     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
+     "grund": "ROT: klinge_flegel Schwung 0.397 m, Länge (längs) 0.328–0.328 m, v² 2.745 → 0.139 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/248 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 180 px über dem Rauschen 1464, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6342,10 +6342,12 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "karte2.same.physik.verformung#1 gtx: klinge_flegel Schwung 0.397 m, Länge (längs) 0.328–0.328 m, v² 2.745 → 0.139 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/248 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 284 px, Gestalt 180 px über dem Rauschen 1464, Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal an 7de938ab (grün gebucht an ee9c1965)"
+ ],
  "r6": {
   "haelften": 507,
-  "konsum": 214,
+  "konsum": 216,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6514,10 +6516,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 127
+  "ohne": 125
  },
  "kopfVoll": "b7b0f8fef2dd1a932fe86f29b6e66f6a299fb79f",
- "zeit": "2026-11-17T14:04:18.778Z",
+ "zeit": "2026-11-17T14:15:22.371Z",
  "vorher": "b7b0f8fe",
  "bilanz": {
   "gewinn": [],
