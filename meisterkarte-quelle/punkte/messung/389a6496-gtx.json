@@ -1,7 +1,7 @@
 {
  "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
  "geraet": "gtx",
- "zeit": "2026-11-17T08:44:05.835Z",
+ "zeit": "2026-11-17T10:49:06.445Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K5#2": {
@@ -395,7 +395,7 @@
    "gruen": true,
    "zahl": "mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.4/12.6/11.8/12/12/12.4/14.6/12.4 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal",
    "exit": 0,
-   "minuten": 0.21,
+   "minuten": 0.16,
    "gpu": "nvidia/pascal",
    "konsum": "kd20cbba9eaae",
    "konsumN": 28,
@@ -404,57 +404,57 @@
     "gelesen": 2
    },
    "konsumBoot": "k01f1e576c614",
-   "s": 11.8,
+   "s": 9.2,
    "fremd": {
-    "s": 15.2,
-    "takte": 7,
-    "fremdS": 10.08,
-    "kerne": 0.663,
-    "fensterKerne": 0.761,
+    "s": 13,
+    "takte": 6,
+    "fremdS": 15.78,
+    "kerne": 1.211,
+    "fensterKerne": 1.244,
     "namen": [
      [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      4.42
-     ],
-     [
-      "bash.exe sg/kette-liste.sh sr/k-w11.txt",
-      1.11
+      "SDXHelper.exe -Embedding",
+      8.73
      ],
      [
       "Explorer.EXE",
-      0.94
+      1.81
+     ],
+     [
+      "git diff-tree --stdin -r --raw --no-abbrev --no-renames",
+      1.81
      ]
     ],
-    "dienerS": 5.88,
+    "dienerS": 2.94,
     "diener": [
      [
       "System",
-      2.39
+      1.48
      ],
      [
       "dwm.exe",
-      2.14
+      0.67
      ]
     ],
-    "geraetS": 13.98,
+    "geraetS": 10.23,
     "geraet": [
      [
       "MsMpEng.exe",
-      10.63
+      4.25
      ],
      [
       "svchost.exe",
-      3.16
+      2.73
      ],
      [
-      "SearchProtocolHost.exe",
-      0.08
+      "SearchIndexer.exe",
+      1.69
      ]
     ],
-    "eigenS": 23.55,
+    "eigenS": 16.92,
     "rechnerKerne": 12
    },
-   "zeit": "2026-11-17T08:42:24.708Z",
+   "zeit": "2026-11-17T10:47:28.659Z",
    "abdruck": "7fa14f45710b",
    "port": 7804,
    "bahn": "sitzung",
@@ -462,10 +462,10 @@
   },
   "karte2.erleben.spieler.rolle#1": {
    "gruen": false,
-   "zahl": "2/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.21 s, kaempfen 0.03 s · gehen Änderung Δ 0.73 % (Rauschen 0.05 %) · bauen Änderung Δ 0.34 % (Rauschen 0.17 %) · fahren Änderung Δ 3.45 % (Rauschen 0.04 %) · kaempfen OHNE ÄNDERUNG Δ 0.43 % (Rauschen 0.17 %) · [linse-gpu] nvidia/pascal",
+   "zahl": "3/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0.01 s, fahren 0.23 s, kaempfen 0.01 s · kämpfen gegen ein gestelltes Ziel ({\"seele\":\"wolf\",\"temperament\":\"wild\",\"beute\":false,\"modus\":\"pfad\"}, Soll wild · pfad · Beute) · gehen Änderung Δ 0.74 % (Rauschen 0.05 %) · bauen Änderung Δ 2.11 % (Rauschen 0.00 %) · fahren Änderung Δ 3.54 % (Rauschen 0.04 %) · kaempfen OHNE ÄNDERUNG Δ 0.63 % (Rauschen 0.21 %) · [linse-gpu] nvidia/pascal",
    "exit": 1,
-   "minuten": 0.63,
-   "grund": "ROT: 2/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.21 s, kaempfen 0.03 s · gehen Änderung Δ 0.73 % (Rauschen 0.05 %) · bauen Änderung Δ 0.34 % (Rauschen 0.17 %) · fahren Änderung Δ 3.45 % (Rauschen 0.04 %) · kaempfen OHNE ÄNDERUNG Δ 0.43 % (Rauschen 0.17 %) · [linse-gpu] nvidia/pascal",
+   "minuten": 0.74,
+   "grund": "ROT: 3/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0.01 s, fahren 0.23 s, kaempfen 0.01 s · kämpfen gegen ein gestelltes Ziel ({\"seele\":\"wolf\",\"temperament\":\"wild\",\"beute\":false,\"modus\":\"pfad\"}, Soll wild · pfad · Beute) · gehen Änderung Δ 0.74 % (Rauschen 0.05 %) · bauen Änderung Δ 2.11 % (Rauschen 0.00 %) · fahren Änderung Δ 3.54 % (Rauschen 0.04 %) · kaempfen OHNE ÄNDERUNG Δ 0.63 % (Rauschen 0.21 %) · [linse-gpu] nvidia/pascal",
    "gpu": "nvidia/pascal",
    "konsum": "kf053255a1357",
    "konsumN": 30,
@@ -474,58 +474,58 @@
     "gelesen": 4
    },
    "konsumBoot": "k01f1e576c614",
-   "s": 37.6,
+   "s": 43.9,
    "fremd": {
-    "s": 39.2,
-    "takte": 18,
-    "fremdS": 45.39,
-    "kerne": 1.159,
-    "fensterKerne": 1.235,
+    "s": 47.5,
+    "takte": 22,
+    "fremdS": 13.75,
+    "kerne": 0.29,
+    "fensterKerne": 0.542,
     "namen": [
      [
-      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
-      34.5
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      2.47
      ],
      [
-      "Explorer.EXE",
-      1.95
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.06
      ],
      [
       "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      1.69
+      1.73
      ]
     ],
-    "dienerS": 24.8,
+    "dienerS": 18.13,
     "diener": [
      [
-      "System",
-      13.72
+      "dwm.exe",
+      8.8
      ],
      [
-      "dwm.exe",
-      6.97
+      "System",
+      6.59
      ]
     ],
-    "geraetS": 13.78,
+    "geraetS": 12.13,
     "geraet": [
      [
       "MsMpEng.exe",
-      8.61
+      6.38
      ],
      [
       "svchost.exe",
-      4.14
+      4.7
      ],
      [
-      "SearchIndexer.exe",
-      0.44
+      "SearchProtocolHost.exe",
+      0.52
      ]
     ],
-    "eigenS": 72.56,
+    "eigenS": 86.91,
     "rechnerKerne": 12
    },
-   "zeit": "2026-11-17T08:44:05.835Z",
-   "abdruck": "87f81f4147ab",
+   "zeit": "2026-11-17T10:49:06.445Z",
+   "abdruck": "07221b43ec91",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -544,11 +544,11 @@
   "kf053255a1357": "dVTRjpswEPyXPF7rcwLhAEv34FxOSquempMq9Xltr4GEQGSb0Kbqv1cQSAJc9y1h1jOeHe+f2RHkHhJ83NmymLHZw+zzzMIJiUVzQvO4szM2m8slBBHj77ypLef8pYFJkx2dpSqDhNRo9taBc6TG5FG2bQ93oDwTFEQB6QFJZRxmeQdayAgBGa3feL2ldEtDuqr5tV748/P4mFygKokDjf0hQnmhD2wMrGwCAglUuiXuwDEGKhaMthWt+XZH+2qYaf36EauAQg2Vax8CvWCNytcpXmWAjuRZYXteqQLhe+xKVk97DNTkDJjmaLqm6ClQ/qIXO27QeWXtgCTyVeBFjNKYjrAJ2kymjhxNKbDojYu9cAFsNdWSHCui75WAEBCJsccpYJGgGWoIl4FcMvproncPBzRACkj7Wcz90BM3Tyilm6mWvBXeUvTCIyXiUA8aKaV800ZnHTU/kuvf0eYSpnVyCxZ/H5FYmWbmMLRH60DBnH2bSrIpKDRkX1p3RftR5IHPOi7aPpftcj3uvF2m6/PE0zyI7u4SUb6ZeGdL7WowSJJj1TXiEoMwYJx/mYAdHA79JaSHUTAenHVNoO9lzEMvCNpZJP+ZwyX+5IxZ3jeFUi58ZC9vfHzPk4EDAZGYTOt+2iKQOv4onDXmjoiydD3SV+BLRkNa3NnC+Ttf3Sa4rkv583dy2xavH51aGteLDcTTXC+ZPjWvT45vd0aTY4IDT9RS+KAYrfVFwi7ifBt271d/GoTvPBnZOcPGrcJWto9tHKq4i+3Q32aBCij2va8LvZCKfb0s3HW7CfmPpxXd0XF9r1f126r53pRsMtfae0RJj6bUWbO6aAqVTSF3g0V/gVSoLbgzFVBhQfb+DfL3Hw=="
  },
  "sitzung": {
-  "start": "2026-11-17T08:41:49.425Z",
-  "ordner": "sitzung-20261117-094149",
+  "start": "2026-11-17T10:46:57.606Z",
+  "ordner": "sitzung-20261117-114657",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 7.5,
+  "bootS": 5.8,
   "grundstellungS": [
    0.1
   ],
@@ -558,7 +558,7 @@
    {
     "ort": "wiese",
     "vor": "karte2.erleben.kopplung.wahrnehmung#1",
-    "s": 25.6,
+    "s": 23.2,
     "takte": 589,
     "chunks": 81,
     "nach": null
@@ -566,8 +566,8 @@
    {
     "ort": null,
     "vor": "karte2.erleben.spieler.rolle#1",
-    "s": 11.5,
-    "takte": 618,
+    "s": 11.6,
+    "takte": 620,
     "chunks": 81,
     "nach": "der Grundstellung"
    }
@@ -602,21 +602,21 @@
   "ciBlicke": 3,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 6608,
-   "frameP95": 41.29,
-   "taktP95": 16.46,
-   "vramMax": 147.7,
+   "bilder": 6605,
+   "frameP95": 33.38,
+   "taktP95": 16,
+   "vramMax": 147.4,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 239,
+   "zapfen": 240,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 248.7,
-  "minuten": 4.21
+  "fahrtS": 247,
+  "minuten": 4.19
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#1": {

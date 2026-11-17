@@ -217,7 +217,7 @@ $ C:\Program Files\nodejs\node.exe -e const H = (function sitzungWerkzeug() {
     return H;
 })();
 H.seite = {
-SOLL: {"faktor":2,"rand":0.001,"schwelle":24,"w":640,"h":360,"fov":50,"fahrM":10,"gehenS":8,"fahrS":5,"kampfS":2},
+SOLL: {"faktor":2,"rand":0.001,"schwelle":24,"w":640,"h":360,"fov":50,"fahrM":10,"gehenS":8,"fahrS":5,"kampfS":12},
 GRUPPEN: ["gehen","bauen","fahren","kaempfen"],
 rolleSeite: async function rolleSeite(o) {
     const r = window.anazhRealm, st = r.state;
@@ -274,7 +274,10 @@ rolleSeite: async function rolleSeite(o) {
     if (s === "bauenAn") {
         R.q = vorn(10);
         R.n0 = st.architectures.filter(Boolean).length;
-        return kam(R.q);
+        // DAS WERK IM RAHMEN (17.11., Radeon 389a6496: die Bank stand im Bild, 37 × 20 px aus 16 m hinter ihr und 4 m hoch — Δ 0,38 %
+        // unter der Schwelle 2 × Rauschen + 0,1 %): die Kamera steht 6 m vor dem Ort des Werks, 3 m hoch, wie das Bildpaar eines
+        // Bauenden, der auf sein Werk sieht; die Schwelle bleibt
+        return { kamera: [R.q.x - v.x * 6, boden(R.q) + 3, R.q.z - v.z * 6], ziel: [R.q.x, boden(R.q) + 0.5, R.q.z] };
     }
     if (s === "bauen") {
         const E = werk(o.name, R.q);
@@ -301,17 +304,56 @@ rolleSeite: async function rolleSeite(o) {
         const p = R.wagen.position;
         return { m: +Math.hypot(p.x - R.p0[0], p.z - R.p0[1]).toFixed(2) };
     }
+    // DER KAMPF WIE EIN SPIELER KÄMPFT (17.11., Radeon e489088a: das Wesen 0,83 m vor der Klinge floh vor dem Schwung nach dem
+    // Furcht-Gesetz — Abstand 3,39 m beim Auslösen, Klinge 0,66 m, Zustand „flucht“): kein gestelltes Ziel. Im pfad (dem Modus, in dem
+    // der Mensch jagt und gejagt wird, `_kreaturJagdBereit`) steht 8 m voraus ein Wolf — wild, hungrig, der Spieler ist seine Beute
+    // (`_kreaturIstBeute`: die Masse des Leibs ≤ jagd.beuteMasse × die des Wolfs); er jagt ihn nach dem Gesetz der Jagd. Der Spieler
+    // dreht sich zu ihm (der Blick, `st.yaw`), geht auf ihn zu, solange er fern ist (die echte Taste W), und schlägt, sobald er in der
+    // Klinge steht — der Ruf des Klicks mit dem Tier als Ziel (`_playerAttackCreature`, die Probe klickt nie: kein Zeiger-Fang).
     if (s === "kampfAn") {
-        const q = vorn(0.5 * r._kampfBladeReach() + 0.5);
-        const c = r.spawnCreatureAt(q.x, boden(q), q.z, "happy", "wesen", { absage: (g) => (R.absage = g) });
-        if (!c) return { fehler: "kein Wesen in Reichweite (spawnCreatureAt: " + R.absage + ")" };
+        R.modus = typeof r.getGameMode === "function" ? r.getGameMode() : null;
+        R.php = st.player.hp;
+        r.setGameMode("pfad");
+        const q = vorn(8);
+        const c = r.spawnCreatureAt(q.x, boden(q), q.z, "calm", "wolf", { absage: (g) => (R.absage = g) });
+        if (!c) return { fehler: "kein Wolf am Ort (spawnCreatureAt wolf: " + R.absage + ")" };
         R.ziel = c;
         R.hp0 = c.userData.hp;
+        R.schlag = { schwuenge: 0, dHieb: null, dMin: null, reach: +r._kampfBladeReach().toFixed(2), jagt: false, zustaende: [] };
         st.player.stamina = st.player.staminaMax;
-        return { ...kam(q), hp: R.hp0 };
+        return { ...kam(q), hp: R.hp0, seele: "wolf", temperament: r._creatureTemperament(c), beute: r._kreaturIstBeute(c, st.playerMesh), modus: r.getGameMode() };
     }
-    if (s === "hieb") return { schwung: r._beginPlayerSwing() !== false };
-    if (s === "kampfNach") return { hp: R.ziel.userData.hp, hp0: R.hp0 };
+    // EIN TAKT DES KÄMPFERS (je 100 ms aus der Probe): Blick auf den Wolf, sein Abstand und Zustand; steht er in der Klinge und läuft
+    // kein Schwung, der Hieb. `nah` sagt der Probe, ob die Taste W ruhen soll (der Spieler geht nur auf den fernen Wolf zu).
+    if (s === "kampfTakt") {
+        const c = R.ziel, p = st.player, S = R.schlag;
+        const [dx, dz] = [c.position.x - pm.x, c.position.z - pm.z];
+        const d = Math.hypot(dx, dz);
+        const soll = Math.atan2(dx, dz), ist = ((w) => Math.atan2(w.x, w.z))(r._blickVorn(st.yaw, 0));
+        const y1 = st.yaw + (soll - ist), y2 = st.yaw - (soll - ist);
+        const fehl = (y) => Math.abs(Math.atan2(Math.sin(Math.atan2(r._blickVorn(y, 0).x, r._blickVorn(y, 0).z) - soll), Math.cos(Math.atan2(r._blickVorn(y, 0).x, r._blickVorn(y, 0).z) - soll)));
+        st.yaw = fehl(y1) <= fehl(y2) ? y1 : y2;
+        const z = (c.userData && c.userData._motionZustand) || null;
+        if (z && S.zustaende[S.zustaende.length - 1] !== z) S.zustaende.push(z);
+        if ((r._spielerJaeger || []).includes(c) || (c.userData && c.userData._jagdZiel != null)) S.jagt = true;
+        S.dMin = S.dMin == null ? +d.toFixed(2) : Math.min(S.dMin, +d.toFixed(2));
+        const frei = !(p._swing && p._swing.t < p._swing.dauer);
+        if (frei && d <= S.reach + 0.6 && c.userData.hp > 0) {
+            p.stamina = p.staminaMax;
+            if (r._playerAttackCreature(c) !== false) (S.schwuenge += 1), (S.dHieb = +d.toFixed(2));
+        }
+        return { d: +d.toFixed(2), nah: d <= S.reach + 1.5, hp: c.userData.hp, getroffen: c.userData.hp < R.hp0 };
+    }
+    if (s === "kampfNach") {
+        const c = R.ziel;
+        return { hp: c.userData.hp, hp0: R.hp0, schwung: R.schlag.schwuenge > 0, ...R.schlag, dNach: +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(2), zustand: (c.userData && c.userData._motionZustand) || null };
+    }
+    if (s === "kampfZurueck") {
+        if (R.ziel && (st.creatures || []).includes(R.ziel)) r.removeCreature(R.ziel);
+        if (R.modus) r.setGameMode(R.modus);
+        if (Number.isFinite(R.php)) st.player.hp = R.php;
+        return 1;
+    }
     return { fehler: "kein Schritt " + s };
 }
 };
@@ -385,9 +427,24 @@ H.fahre(async function probeRolle(H) {
                 z.welt = await seite({ schritt: "fahrenNach" });
                 z.aenderung = z.sitzt === true && z.welt.m >= S.fahrM;
             } else {
-                z.welt = await seite({ schritt: "hieb" });
-                await H.schlaf(S.kampfS * 1000);
-                Object.assign(z.welt, await seite({ schritt: "kampfNach" }));
+                H.beimAbbau(() => seite({ schritt: "kampfZurueck" }));
+                z.ziel = { seele: an.seele, temperament: an.temperament, beute: an.beute, modus: an.modus };
+                let w = false, k = null, getroffenS = null;
+                try {
+                    while (Date.now() - t0 < S.kampfS * 1000) {
+                        k = await seite({ schritt: "kampfTakt" });
+                        if (k.getroffen) {
+                            getroffenS = +((Date.now() - t0) / 1000).toFixed(1);
+                            await H.schlaf(300);
+                            break;
+                        }
+                        if (!k.nah !== w) await (w ? page.keyboard.up("KeyW") : page.keyboard.down("KeyW")), (w = !w);
+                        await H.schlaf(100);
+                    }
+                } finally {
+                    if (w) await page.keyboard.up("KeyW");
+                }
+                z.welt = { ...(await seite({ schritt: "kampfNach" })), getroffenS };
                 z.aenderung = z.welt.schwung === true && Number.isFinite(z.welt.hp) && z.welt.hp < z.welt.hp0;
             }
             z.sek = +((Date.now() - t0) / 1000).toFixed(1);
@@ -402,15 +459,15 @@ H.fahre(async function probeRolle(H) {
     function rolleSichtbar(z, S) {
         return [z.rausch, z.diff].every(Number.isFinite) && z.diff > S.faktor * z.rausch + S.rand;
     }
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\389a6496-gtx\karte2.erleben.spieler.rolle_1.json 1665
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\389a6496-gtx\karte2.erleben.spieler.rolle_1.json 1672
 [linse-gpu] nvidia/pascal
-  ✅ gehen: Änderung ja {"flucht":true,"d":14.15,"zustand":"flucht"} · Δ Bild 0.007348 · Rauschen 0.000512 · 6.2 s
-  ❌ bauen: Änderung ja {"id":"w-bank_sitzbank-5ax31z","n":1} · Δ Bild 0.003394 · Rauschen 0.001723 · 12 s
-  ✅ fahren: Änderung ja {"m":63.78} · Δ Bild 0.034479 · Rauschen 0.000434 · 30.8 s
-  ❌ kaempfen: Änderung NEIN {"schwung":true,"hp":122.90528781025473,"hp0":122.90528781025473} · Δ Bild 0.004253 · Rauschen 0.001667 · 37.4 s
+  ✅ gehen: Änderung ja {"flucht":true,"d":14.16,"zustand":"flucht"} · Δ Bild 0.007391 · Rauschen 0.000547 · 6.2 s
+  ✅ bauen: Änderung ja {"id":"w-bank_sitzbank-5ax31z","n":1} · Δ Bild 0.021063 · Rauschen 0 · 11.6 s
+  ✅ fahren: Änderung ja {"m":63.13} · Δ Bild 0.035356 · Rauschen 0.00043 · 27.2 s
+  ❌ kaempfen: Änderung NEIN {"hp":94.969213713132,"hp0":94.969213713132,"schwung":false,"schwuenge":0,"dHieb":null,"dMin":7.54,"reach":0.66,"jagt":false,"zustaende":["flucht"],"dNach":59.76,"zustand":"flucht","getroffenS":null} · Δ Bild 0.006259 · Rauschen 0.002088 · 43.7 s
 
 --- stderr ---
-❌ URTEILS-WACHE: 2 ROTE Zeile(n) bei Exit 0 — die erste: ❌ bauen: Änderung ja {"id":"w-bank_sitzbank-5ax31z","n":1} · Δ Bild 0.003394 · Rauschen 0.001723 · 12 s (Exit wird 1; ein Vermerk heißt nie ROT/❌)
+❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: ❌ kaempfen: Änderung NEIN {"hp":94.969213713132,"hp0":94.969213713132,"schwung":false,"schwuenge":0,"dHieb":null,"dMin":7.54,"reach":0.66,"jagt":false,"zustaende":["flucht"],"dNach":59.76,"zustand":"flucht","getroffenS":null} · Δ Bild 0.006259 · Rauschen 0.002088 · 43.7 s (Exit wird 1; ein Vermerk heißt nie ROT/❌)
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
