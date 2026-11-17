@@ -1537,3 +1537,4 @@ omen-gtx-lava7a-1-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Ein
 omen-gtx-gtx-31d156e8-8-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag karte2.planet.kosmos.himmelsmechanik#1 (punkte-maschine 160aa71f messung/31d156e8-gtx.json)
 omen-gtx-kk7a-1-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag karte2.mensch.menge.kollektiv#1 karte2.erleben.kopplung.bild#1 (punkte-maschine 160aa71f messung/31d156e8-gtx.json)
 omen-gtx-gtx-31d156e8-9-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag vegetation.K5#2 (punkte-maschine 160aa71f messung/31d156e8-gtx.json)
+omen-gtx-gtx-31d156e8-10-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag mensch.K5#1 (punkte-maschine 160aa71f messung/31d156e8-gtx.json)
