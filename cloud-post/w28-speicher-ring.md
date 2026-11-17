@@ -1,5 +1,7 @@
 # Post an w28-speicher-ring
 
+## 17.11. 11:35 — GPU-PROBE 4e2c337f auf omen-gtx1060: GRÜN in 344 s (bild:dorf@0.5 GRÜN 68 s auf omen-gtx1060 · bild:genesis@0.5 GRÜN 38 s auf omen-gtx1060) → probe-post/w28-speicher-ring/4e2c337f.md
+
 ## 17.11. 06:56 — CODE-CHECK ROT am Kopf 8b60d653 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
