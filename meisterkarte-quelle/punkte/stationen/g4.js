@@ -1268,10 +1268,15 @@ async function rolleSeite(o) {
         requestAnimationFrame(blick);
         return { ...kam(q), d: +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(2) };
     }
+    // DAS WESEN BEIM NAMEN (Vorarbeiter 10, 17.11.; GTX 7de938ab: das Wesen bekam nie einen Bewegungs-Zustand, zustand null, der
+    // Spieler ging bis 2,08 m heran — an der Radeon floh es nach 1,9 s in 13,99 m): die Zeile nennt, wie das Spiel es führte — Gattung,
+    // Größe, Temperament, Aufgabe, ruht (`_ruht`: kein Takt des Verhaltens), nah (`_kzNah`, der Nah-Kreis des Spiels), Satz, sichtbar —
+    // damit EINE Fahrt an jedem Gerät Station (das Wesen anders gestellt) und Spiel (dasselbe Wesen, ein anderer Takt) trennt
     if (s === "gehenNach") {
-        const c = R.tier;
+        const c = R.tier, u = c.userData || {};
         R.an = false;
-        return { flucht: R.flucht, d: +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(2), zustand: (c.userData && c.userData._motionZustand) || null };
+        return { flucht: R.flucht, d: +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(2), zustand: u._motionZustand || null,
+            wesen: { gattung: u.gattung || null, groesse: +(u.bodySize || 0).toFixed(2), temperament: r._creatureTemperament(c), task: (u.task && u.task.name) || null, ruht: u._ruht === true, nah: u._kzNah === true, satz: !!u._satz, sichtbar: c.visible !== false } }; // prettier-ignore
     }
     if (s === "bauenAn") {
         R.q = vorn(10);
@@ -3200,13 +3205,15 @@ const alle = [
                     ja.length + "/" + ROLLE_GRUPPEN.length + " Verb-Gruppen ändern die Welt sichtbar · Aufstellung " + (auf.join(", ") || "ohne Zahl") +
                     (lang.length ? " (Aufstellung > 10 s: " + lang.join(", ") + ")" : "") +
                     (ohneWach.length ? " · die Tat ohne wache Welt (Halt oder Aufstellung ohne Zahl): " + ohneWach.join(", ") : "") + gestellt + " · " +
-                    ROLLE_GRUPPEN.map((g) => { const z = G[g]; return g + " " + (!z ? "nicht gelaufen" : z.fehler ? String(z.fehler).slice(0, 80) : (z.aenderung ? "Änderung" : "OHNE ÄNDERUNG") + " Δ " + (Number.isFinite(z.diff) ? (100 * z.diff).toFixed(2) + " %" : "–") + " (Rauschen " + (Number.isFinite(z.rausch) ? (100 * z.rausch).toFixed(2) + " %" : "–") + ")"); }).join(" · ") + // prettier-ignore
+                    ROLLE_GRUPPEN.map((g) => { const z = G[g]; return g + " " + (!z ? "nicht gelaufen" : z.fehler ? String(z.fehler).slice(0, 80) : (z.aenderung ? "Änderung" : "OHNE ÄNDERUNG") + " Δ " + (Number.isFinite(z.diff) ? (100 * z.diff).toFixed(2) + " %" : "–") + " (Rauschen " + (Number.isFinite(z.rausch) ? (100 * z.rausch).toFixed(2) + " %" : "–") + ")" + (g === "gehen" && z.welt && z.welt.wesen ? " [Wesen " + Object.entries(z.welt.wesen).map(([k, v]) => k + " " + v).join(", ") + ", zustand " + z.welt.zustand + ", " + z.welt.d + " m]" : "")); }).join(" · ") + // prettier-ignore
                     " · " + ad,
             };
         },
         proben: [
             { name: "gesund: vier Gruppen ändern die Welt, jedes Paar sichtbar", j: rolleRoh(), stdout: PAAR_KARTE, gruen: true },
             { name: "das Tier flieht nicht", j: rolleRoh({ gehen: { aenderung: false } }), stdout: PAAR_KARTE, gruen: false },
+            // GTX 7de938ab: zustand null bei 2,08 m — die Zeile nennt das Wesen, wie das Spiel es führte
+            { name: "das Wesen ohne Bewegungs-Zustand (GTX 7de938ab, 2,08 m) — die Zeile nennt es beim Namen", j: rolleRoh({ gehen: { aenderung: false, welt: { flucht: false, d: 2.08, zustand: null, wesen: { gattung: "deer", groesse: 1.12, temperament: "sanft", task: "wander", ruht: true, nah: false, satz: false, sichtbar: true } } } }), stdout: PAAR_KARTE, gruen: false, zahl: /gehen OHNE ÄNDERUNG .*\[Wesen gattung deer, groesse 1\.12, temperament sanft, task wander, ruht true, nah false, satz false, sichtbar true, zustand null, 2\.08 m\]/ },
             { name: "der Wagen fährt, das Bild bleibt im Rauschen", j: rolleRoh({ fahren: { diff: 0.0009 } }), stdout: PAAR_KARTE, gruen: false },
             { name: "der Hieb trifft nicht (die Gruppe warf)", j: rolleRoh({ kaempfen: { fehler: "kein Wesen in Reichweite (spawnCreatureAt: obergrenze)", diff: undefined } }), stdout: PAAR_KARTE, gruen: false },
             { name: "eine Gruppe fehlt (die Frist)", j: { ...rolleRoh(), gruppen: { ...rolleRoh().gruppen, bauen: undefined } }, stdout: PAAR_KARTE, gruen: false },
