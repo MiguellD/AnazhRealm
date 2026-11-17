@@ -21,7 +21,7 @@
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.62 dB · töten -0.03 -1.15 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.12 dB · pflegen 0.25 8.99 dB · nach 30 min 0.2463 8.75 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.6 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 1 s (≤ 2) [2.6 -0.68 -0.47 -0.32 -0.2 -0.14 -0.1 -0.06 -0.04 0] GRÜN",
      "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/shader-kosten.cjs +6)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1515,7 +1515,7 @@
      "gruen": true,
      "zahl": "✅ Schritte gras 6208 Hz (n 6) · laub 8919 Hz (n 6) · stein 4798 Hz (n 6), kleinster Abstand 1410 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9710/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505)",
      "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Konsum seit der Messung geändert (R6: koerper-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2103,8 +2103,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "luftwasser.K3#1",
@@ -4638,7 +4639,7 @@
      "gruen": true,
      "zahl": "Krone sommer 104465 px · winter 1911 px · fruehling 76645 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
      "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, index.html, phyto-core.js +33) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -5143,7 +5144,7 @@
   },
   "karte2.erleben.spieler.rolle": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.rolle#1 radeon: ungemessen (R10) · karte2.erleben.spieler.rolle#1 gtx: Konsum seit der Messung geändert (R6: scripts/diag-werkstatt-weg.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +7)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.rolle#1 radeon: ungemessen (R10) · karte2.erleben.spieler.rolle#1 gtx: Konsum seit der Messung geändert (R6: scripts/diag-werkstatt-weg.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.rolle#1",
@@ -5161,7 +5162,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/diag-werkstatt-weg.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs +7)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/diag-werkstatt-weg.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -6365,7 +6366,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 210,
+  "konsum": 211,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6535,11 +6536,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 130
+  "ohne": 129
  },
  "kopfVoll": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
- "zeit": "2026-11-17T04:30:52.637Z",
- "vorher": "ee9c1965",
+ "zeit": "2026-11-17T04:36:34.005Z",
+ "vorher": "389a6496",
  "bilanz": {
   "gewinn": [],
   "fall": [],
