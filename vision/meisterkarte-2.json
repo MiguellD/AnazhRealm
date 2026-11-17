@@ -204,10 +204,10 @@
    "summe": {
     "kriterien": 26,
     "sprossen": 180,
-    "heute": 3,
+    "heute": 4,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 1.3,
+    "anteilHeute": 1.7,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -1537,7 +1537,7 @@
        "richter": "1 000 Saaten × 50 Orte: kein sichtbarer Widerspruch in ≥ 95 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Mechanik von Sprosse 1 steht: EIN Klima 18/−4 °C, 0,11 K/m (gelaende-core.js:1285-1305), wetter.K4 1/2. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
@@ -14778,11 +14778,11 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 3,
-    "kern": 1,
-    "kernDazu": 1,
-    "anteilHeute": 1.2,
-    "anteilKern": 0.4
+    "heute": 5,
+    "kern": 2,
+    "kernDazu": 2,
+    "anteilHeute": 1.9,
+    "anteilKern": 1.3
    },
    "perspektiven": [
     {
@@ -15003,7 +15003,7 @@
        "richter": "Klima-Zonen im Bild gegen Energie-Bilanz-Modell ±5 K in ≥ 90 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Mechanik von Sprosse 1 steht: Jahres-Welle jahrTage: 365 (gelaende-core.js:1304,1317), Laub, Schnee, Wasser lesen sie. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
@@ -15509,7 +15509,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "Alte Vegetation K4 Staffel 1 an einem Gerät: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild, Halm 0 px, Boden 0 px; Staffel 2 (jedes Haus, jedes Wasser, beide Geräte) offen. Fischer, Hafen, Kulturfolger, Stoffströme der Stadt: nichts. — KARTE: 0 — die Natur-Wand ist an der Radeon ROT, nur an der GTX gehalten (vegetation.K4).",
      "alt": [
@@ -16694,7 +16694,7 @@
        "richter": "Flug Krater → Antipode ohne Ladebild; Bildvergleich gegen Chicxulub-Modellierung"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Lava-Zelle glüht und erstarrt als Spieler-Tat (gelaende-core.js:1787-1801); Frame-p95 im brennenden Hektar und Flucht der Bewohner nie gemessen.",
@@ -16885,12 +16885,12 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 33,
+  "heute": 36,
   "davonKopplungen": 33,
-  "kern": 7,
-  "kernDazu": 7,
-  "anteilHeute": 1.9,
-  "anteilKern": 0.3,
+  "kern": 8,
+  "kernDazu": 8,
+  "anteilHeute": 2,
+  "anteilKern": 0.4,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {
