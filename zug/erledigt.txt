@@ -1462,3 +1462,4 @@ omen-gtx-wahra-1-389a6496 ROT 1 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte2.erleb
 omen-gtx-gtx-e489088a-w0939-1-e489088a UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN karte2.same.preis.bytes#1 ‖ karte2.same.preis.bytes#1 UNGEMESSEN roh: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2703 s Warten) — ungemessen (punkte-maschine 72c914d0 messung/e489088a-gtx.json)
 omen-gtx-mengea-1-ee9c1965 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag karte2.mensch.menge.bild#1 (punkte-maschine 72c914d0 messung/ee9c1965-gtx.json)
 2026-11-17 11:07 landung ABGEBROCHEN main e489088a: sg-check wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 52 stellen sich hinten an
+2026-11-17 11:08 landung Zwischenstand main 7de938ab: misst 54 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (0 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
