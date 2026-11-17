@@ -78,8 +78,13 @@ class AnazhRealm_dirigent_takt {
                 const bild = this._gpuLeineFrei();
                 this._fristStellen(kopf, bild); // die EINE Frist dieses Takts, ab seinem Kopf
                 // DAS BILD ZÄHLT SICH SELBST (w28-bild-ganz): wer in DIESEM Bild zeichnen will und nicht zeichnet, trägt sich ab
-                // hier neu ein (`_erstWartet` (3)) — das erste Weltbild liest die Liste nach dem Render (`_bildWartet`)
-                if (bild) this._erstZeichnungStand().bildWartet.clear();
+                // hier neu ein (`_erstWartet` (3)) — das erste Weltbild liest die Liste nach dem Render (`_bildWartet`); ob es
+                // nur bestellte (`ladeRoh`, `_ladeBestellt`), zählt es ebenso je Bild
+                if (bild) {
+                    const E = this._erstZeichnungStand();
+                    E.bildWartet.clear();
+                    E.ladeRoh = false;
+                }
                 const ruht = !bild && this._ladeTakt();
                 // DER BILD-TAKT UNTER DEM LADESCHIRM teilt die EINE Frist der Aufgabe mit der Zeichnung (`_ladeFrist`)
                 this._ladeBildTakt = bild && this._ladeTakt();
@@ -851,7 +856,10 @@ class AnazhRealm_dirigent_takt {
     // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
     // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
     // DIE SCHULD DER ERST-ZEICHNUNG (w19-ankunft-takt): wartete im letzten Bild ein Knoten-Bau auf die Frist (`ladeSchuld`), ist das
-    // Bild jedes zweiten Takts fällig, bis sie getilgt ist — die Bauten verteilen sich über die Takte, statt eine Aufgabe zu halten.
+    // Bild JEDES Takts fällig, bis sie getilgt ist (w28-ankunft-kette: das Lade-Bild rastert nicht mehr, es bestellt — `DAS LADE-BILD
+    // BESTELLT`, `_renderObjectDirect`). Bis hier jedes zweiten: Radeon kalt main 16f45362 standen die schweren Programme (Boden,
+    // Gelände, Himmel) ab 2,4 s in der Kette und bekamen bis 6,8 s je Lade-Bild 0–100 ms, alle 0,3–0,5 s eines — bestellt 8,2–9,1 s,
+    // ihre Übersetzung (2,3–2,7 s) war der Schwanz bis zum Bild.
     // DIE GEHALTENE ZEIT IST DAS GUTHABEN (`ladeGuthaben`, `_knotenRate`): hielt die GPU-Leine das Bild, während die Schuld offen
     // war (`gehaltenMs`, `_gpuLeineFrei`), baut das fällige Bild so lange — der Bau wartete auf die GPU, nie auf den Faden
     // (swiftshader, CPU ×4: 11 Lade-Bilder in 15 s, die Leine 797-mal gespannt, der Haupt-Faden 2,3 s von 15 s belegt).
@@ -859,7 +867,7 @@ class AnazhRealm_dirigent_takt {
         if (!this._ladeTakt()) return true;
         const jetzt = performance.now();
         const E = this._erstZeichnung;
-        const schuld = !!E && E.ladeSchuld === true && L.ladeVorher !== true;
+        const schuld = !!E && E.ladeSchuld === true;
         if (
             schuld ||
             jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS ||
@@ -868,10 +876,8 @@ class AnazhRealm_dirigent_takt {
             if (E) [E.ladeGuthaben, E.ladeSchuld] = [L.gehaltenMs || 0, false];
             L.gehaltenMs = 0;
             L.ladeBild = jetzt;
-            L.ladeVorher = true;
             return true;
         }
-        L.ladeVorher = false;
         L.ladeAus = (L.ladeAus || 0) + 1;
         return false;
     }
@@ -1837,7 +1843,13 @@ class AnazhRealm_dirigent_takt {
             const E = this._erstZeichnung;
             const g = E ? Math.min(E.ladeGuthaben || 0, AnazhRealm.LADE_TAKT_MS) : 0;
             if (E) E.ladeGuthaben = 0;
-            this._ladeZeichnungBis = Math.max(this._ladeFristBis, performance.now() + g);
+            // DIE ZEICHNUNG TRÄGT IMMER DIE HALBE FRIST (w28-ankunft-kette): ab ihrem ersten Schritt baut sie mindestens LADE_TAKT_MS / 2 —
+            // die Leser des Takts arbeiten bis zur Mitte ihrer Frist, doch was davor ohne Frist lief (Einhängen, Boot), schob den Bau
+            // ans Ende des Lade-Frames, und er ging nur sein Pflicht-Stück (Radeon kalt main 16f45362: 2–98 ms je Lade-Bild bis 6,8 s)
+            this._ladeZeichnungBis = Math.max(
+                this._ladeFristBis,
+                performance.now() + Math.max(g, AnazhRealm.LADE_TAKT_MS / 2)
+            );
         }
         return this._ladeZeichnungBis;
     }

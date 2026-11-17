@@ -793,6 +793,14 @@ class AnazhRealm_dirigent_ankunft {
         }
         const luecken = this._weltbildLuecken();
         const fehlt = luecken.map((l) => l.satz);
+        // DAS WELTBILD STEHT AUF EINEM GANZEN BILD (w28-ankunft-kette): das Lade-Bild bestellt nur (`_ladeBestellt`) — fehlt
+        // nach einem bestellten nichts mehr, zeichnet das nächste ganz (`ladeGanz`), und erst auf ihm steht das Weltbild; wer
+        // dort noch wartet, macht die Lade-Bilder wieder zu bestellten.
+        const E = this._erstZeichnung;
+        if (E && this._ladeTakt()) {
+            if (fehlt.length) E.ladeGanz = false;
+            else if (E.ladeRoh) return ((E.ladeGanz = true), false);
+        }
         if (fehlt.length) {
             const jetzt = performance.now();
             const sig = fehlt.join(" · ");

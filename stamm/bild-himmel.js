@@ -707,23 +707,31 @@ class AnazhRealm_bild_himmel {
                 st._skyEnvLastRegenMs = nowMs;
                 return true;
             }
-            if (!A.tafelnFrisch) return false; // die Himmels-Sicht steht noch nicht (der erste Takt der Atmosphäre)
-            if (!this._atmoZeichne(A.qEq, A.rtEq)) return false; // die Pipeline im Vorbau: der nächste Takt malt
             // PMREM per `fromEquirectangular` (WebGPU-tauglich, anders als `fromScene`) in das BESTEHENDE Target (zweites
             // Argument): stabile Texture-Identität, scene.environment nur beim Erst-Aufruf gesetzt (kein Recompile-Kaskade) —
             // das EINE Gesetz der Umgebung (welt-licht.js `umgebungZeichnen`, die Bühne der Studios zeichnet dieselbe).
             if (!st._skyPmrem) st._skyPmrem = new THREE.PMREMGenerator(st.renderer);
-            let rt = st._skyEnvRT || null;
             const pmrem = st._skyPmrem;
-            // PMREM im Vorbau (`_einmalRender`): der Takt, in dem seine Pipelines stehen, filtert neu
-            if (!this._einmalRender(pmrem, () => (rt = __weltLicht.umgebungZeichnen(pmrem, A, rt)))) {
-                st._skyEnvRT = rt;
-                return false;
+            // DIE UMGEBUNG STEHT AB DEM ERSTEN TAKT (w28-ankunft-kette): ihr Ziel ist eine Funktion der GRÖSSE der Himmels-Sicht
+            // (r184 `_fromTexture`: `_setSizeFromTexture` → `_allocateTarget`, gate:vendor-anker), nie ihres Inhalts — es steht,
+            // bevor die Atmosphäre malt, und jeder Stoff baut sein Programm EINMAL mit der Umgebung (r184 schlüsselt den Bau mit
+            // dem Umgebungs-Knoten der Szene, `getCacheKey`). Bis hier kam sie mit der ersten Malung (Radeon kalt main 16f45362:
+            // 5,5 s): wer davor baute, baute zweimal (der Vogel 51 → 69 KB Fragment, die erste Fassung zeichnete nie), und kein
+            // Stoff der Welt durfte vor ihr in die Kette. Bis zur ersten Malung ist sie schwarz — unter dem Ladeschirm.
+            if (!st._skyEnvRT) {
+                pmrem._setSizeFromTexture(A.rtEq.texture);
+                st._skyEnvRT = pmrem._allocateTarget();
             }
-            st._skyEnvRT = rt;
+            let rt = st._skyEnvRT;
             if (st.scene.environment !== rt.texture) st.scene.environment = rt.texture;
-            // was jeder Stoff spiegelt, ist die EINE Umgebung (material.K4): der Spiegel-Pass vor diesem Himmel
             if (!st.scene.environmentNode) st.scene.environmentNode = this._spiegelUmgebung(rt.texture);
+            if (!A.tafelnFrisch) return false; // die Himmels-Sicht steht noch nicht (der erste Takt der Atmosphäre)
+            if (!this._atmoZeichne(A.qEq, A.rtEq)) return false; // die Pipeline im Vorbau: der nächste Takt malt
+            // PMREM im Vorbau (`_einmalRender`): der Takt, in dem seine Pipelines stehen, filtert neu
+            // (was jeder Stoff spiegelt, ist die EINE Umgebung, material.K4: der Spiegel-Pass vor diesem Himmel — oben gesetzt)
+            if (!this._einmalRender(pmrem, () => (rt = __weltLicht.umgebungZeichnen(pmrem, A, rt)))) return false;
+            if (rt !== st._skyEnvRT)
+                this._bruchMelden("UMGEBUNG: die PMREM-Malung wechselte ihr Ziel — jeder Stoff liest das erste");
             if (!this._weltLichtHimmel()) return false; // das Licht der Welt liest dieselbe PMREM-Stufe wie jeder Stoff
             st._skyEnvLast = neu;
             st._skyEnvLastRegenMs = nowMs;

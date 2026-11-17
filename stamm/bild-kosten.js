@@ -573,6 +573,24 @@ class AnazhRealm_bild_kosten {
                 // wer in diesem Bild zeichnen will und nicht zeichnet, nennt sich der Warteschlange (`buerger`, `_bildWartet`) —
                 // der Vorbau ohne Draw (`nurBauen`) will nichts zeichnen
                 const buerger = nurBauen ? null : ro;
+                // WER STEHT, GEHT DURCH DAS BESTELLTE BILD OHNE GANG (w28-ankunft-kette, `DAS LADE-BILD BESTELLT` unten): ein
+                // Bürger mit Bau und bereiter Pipeline hat dort nichts zu bestellen — er frischt keinen Knoten, keine Gruppe,
+                // keine Geometrie; nur sein Vor-Gang läuft (`updateBefore`: die Kaskaden und jeder Vor-Pass bestellen weiter).
+                // Bis hier ging jedes Lade-Bild den ganzen Gang jedes bereiten Bürgers in jedem Pass (Radeon kalt, Kopf 9c8549ad:
+                // „Bild“ 430–620 ms je Sekunde neben 250–520 ms Knoten-Bau). Das ganze Bild des Weltbilds (`ladeGanz`) geht ihn.
+                if (
+                    !nurBauen &&
+                    imBau !== undefined &&
+                    ro._nodeBuilderState !== null &&
+                    ro.scene === welt.state.scene &&
+                    welt._ladeBestellt() &&
+                    P.isReady(ro)
+                ) {
+                    N.updateBefore(ro);
+                    E.ladeRoh = true;
+                    if (aufnahme !== null) welt._erstWartet(rend.backend, null, aufnahme.bundleGroup);
+                    return true;
+                }
                 if (imBau !== undefined && !P.isReady(ro) && !E.abgesagt.has(imBau)) {
                     welt._erstWartet(rend.backend, imBau, aufnahme !== null ? aufnahme.bundleGroup : null, buerger);
                     return false;
@@ -602,6 +620,20 @@ class AnazhRealm_bild_kosten {
                         buerger
                     );
                     return false;
+                }
+                // DAS LADE-BILD BESTELLT, ES RASTERT NICHT (w28-ankunft-kette): unter dem Ladeschirm sieht kein Auge die Welt-Szene —
+                // ihr Bild ist der Gang, der Knoten baut und Pipelines bestellt (der Vendor-Weg `compileAsync` ohne seine Kette, die
+                // jede Pipeline abwartet, bevor sie die nächste bestellt). Wer bereit ist, STEHT für das erste Weltbild (`gezeichnet`:
+                // sein Pass zählt), zeichnet aber nicht; sein Bündel nimmt im nächsten Bild neu auf. Bis hier rasterte jedes Lade-Bild
+                // die ganze Welt samt Kaskaden hinter dem Schirm (Radeon kalt main 7de938ab: 36 Bilder), und die GPU-Leine hielt
+                // das nächste, solange die GPU daran zeichnete. Das erste Bild nach dem Schirm zeichnet ganz: jede Kaskade
+                // (`_loopShadowUpdate`), die Geschichte der zeitlichen Auflösung beginnt mit ihm (`_anlauf`).
+                // Das Weltbild steht nie auf einem bestellten Bild: steht nach ihm keiner mehr aus, zeichnet das nächste Lade-Bild
+                // ganz (`ladeGanz`, `_ankunftsBild`) — erst sein Bild ist das erste Weltbild.
+                if (ro.scene === welt.state.scene && welt._ladeBestellt()) {
+                    E.ladeRoh = true;
+                    if (aufnahme !== null) welt._erstWartet(rend.backend, null, aufnahme.bundleGroup);
+                    return true;
                 }
                 if (aufnahme !== null) rend.backend.get(aufnahme).renderObjects.push(ro);
                 rend.backend.draw(ro, rend.info);
@@ -720,9 +752,10 @@ class AnazhRealm_bild_kosten {
                 if (vorbau && ((pass !== undefined && pass.has(k)) || (vor !== undefined && vor.has(k))))
                     return void merk.delete(k);
                 if (pass !== undefined && pass.has(k)) {
-                    // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
+                    // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame — unter dem Ladeschirm
+                    // bestellt er nur (`DAS LADE-BILD BESTELLT`)
                     if (ungebaut) E.neubauN++;
-                    zeichne(this, ro, aufnahme, false);
+                    zeichne(this, ro, aufnahme, welt._ladeTakt());
                     return;
                 }
                 let bau = -1;
@@ -805,6 +838,8 @@ class AnazhRealm_bild_kosten {
                 aufrufMs: 0,
                 deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf am Stück (eine Bühne unter dem Ladeschirm: LADE_TAKT_MS)
                 ladeSchuld: false, // unter dem Ladeschirm wartete ein Bau auf die nächste Aufgabe — das nächste Bild ist fällig
+                ladeRoh: false, // dieses Bild unter dem Ladeschirm bestellte nur (`_ladeBestellt`) — auf ihm steht kein Weltbild
+                ladeGanz: false, // nach einem bestellten Bild ohne Wartende zeichnet das nächste Lade-Bild ganz (`_ankunftsBild`)
                 ladeGuthaben: 0, // so lange hielt die GPU-Leine das Bild der offenen Schuld: so lange baut das fällige (`_knotenRate`)
                 bauN: 0, // die Knoten-Bauten der Erst-Zeichnung und ihre Zeit — am Stück wie in Raten (`_knotenRate`), EIN Zähler
                 bauMs: 0,
@@ -1175,6 +1210,13 @@ class AnazhRealm_bild_kosten {
     // zeichnen). Zwischen zwei Bildern fällt, wessen Pipeline steht (`offen` der Warteschlange): das nächste Bild ist dann
     // sofort fällig (`_ladeBildFaellig`). `fest` bleibt bis zum nächsten Bild: der Knoten-Bau in Raten (er macht es selbst
     // fällig, `ladeSchuld`) und jeder Wartende des WebGL2-Rückfalls (dort führt die Warteschlange keine Pipeline).
+    // DAS BESTELLTE LADE-BILD (w28-ankunft-kette, `DAS LADE-BILD BESTELLT`): unter dem Ladeschirm baut und bestellt die Welt-Szene,
+    // sie rastert nicht — außer im Bild, auf dem das erste Weltbild stehen soll (`ladeGanz`). Die Leser: die Erst-Zeichnung
+    // (`zeichne`), die Kaskaden (`_loopShadowUpdate`) und die Geschichte der zeitlichen Auflösung (`_anlauf`).
+    _ladeBestellt() {
+        const E = this._erstZeichnung;
+        return this._ladeTakt() && !(E && E.ladeGanz);
+    }
     _bildWartet() {
         const E = this._erstZeichnung;
         let n = 0;
@@ -1807,9 +1849,14 @@ class AnazhRealm_bild_kosten {
                 // UNTER DEM LADESCHIRM BEGINNT DIE GESCHICHTE MIT JEDEM BILD NEU (w28-bild-ganz): ein Lade-Bild zeigt, was schon
                 // zeichnet — die Geschichte trüge es ins erste Weltbild (GTX 1050, Zweit-Boot: der Boden zeichnete zum ersten Mal im
                 // Bild, das den Ladeschirm nahm, und die Wurzeln der Bäume und der Deckel des Fern-Rings schienen durch ihn). Das
-                // erste Bild des Spielers ist das Jetzt allein, danach läuft das Mittel an wie nach jedem Sprung.
+                // erste Bild des Spielers ist das Jetzt allein, danach läuft das Mittel an wie nach jedem Sprung. Das Lade-Bild
+                // rastert die Welt nicht (`DAS LADE-BILD BESTELLT`, w28-ankunft-kette): seine Geschichte ist leer, darum beginnt sie
+                // auch im Bild NACH einem bestellten neu (`_ladeZuvor`, `_ladeBestellt`) — sonst mischte es das leere ein; nach
+                // dem ganzen Lade-Bild des ersten Weltbilds läuft das Mittel an.
                 const lade = realm._ladeTakt();
-                this._anlauf.value = neu || sprung || lade ? 0 : Math.min(this._anlauf.value + 1, 1e6);
+                this._anlauf.value =
+                    neu || sprung || lade || this._ladeZuvor ? 0 : Math.min(this._anlauf.value + 1, 1e6);
+                this._ladeZuvor = realm._ladeBestellt();
                 // der Resolve liest das Ziel des letzten Frames (Bild mit Vortiefe, Gedächtnis) und schreibt in das andere,
                 // die Kette liest dieses; danach tauschen die zwei die Rolle — keine Kopie (G7)
                 const k = 1 - this._lage;

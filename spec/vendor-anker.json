@@ -1339,5 +1339,18 @@
                 "organ": "__weltLicht.zeilenSchritt"
             }
         ]
+    },
+    {
+        "warum": "DIE UMGEBUNG STEHT AB DEM ERSTEN TAKT (w28-ankunft-kette): das Ziel der PMREM-Umgebung entsteht aus der Größe der Himmels-Sicht vor ihrer ersten Malung — r184 legt es in `_fromTexture` genau so an, die Malung trifft dasselbe Ziel",
+        "anker": [
+            {
+                "sub": "_fromTexture(e,t){this._setSizeFromTexture(e)",
+                "organ": "_ensureSkyEnvironment (die Größe aus der Himmels-Sicht)"
+            },
+            {
+                "sub": "const r=t||this._allocateTarget();return this._init(r)",
+                "organ": "_ensureSkyEnvironment (das Ziel vor der Malung)"
+            }
+        ]
     }
 ]

@@ -1324,6 +1324,12 @@ class AnazhRealm_bild_schatten {
                 }
             alt.set(me);
         }
+        // DAS ERSTE GANZE BILD ZEICHNET JEDE KASKADE (w28-ankunft-kette): das Lade-Bild rastert die Welt nicht (`DAS LADE-BILD
+        // BESTELLT`, `_ladeBestellt`) — seine Kaskaden bestellten nur ihre Programme, ihre Karten sind leer; im Takt der Kaskaden
+        // stünde die ferne erst Bilder später. Das erste ganze ist das Bild des ersten Weltbilds (`ladeGanz`).
+        const lade = this._ladeBestellt();
+        const ersteBild = L.lade === true && !lade;
+        L.lade = lade;
         let gerendert = false;
         for (let i = 0; i < lichter.length; i++) {
             const sh = lichter[i].shadow;
@@ -1337,7 +1343,7 @@ class AnazhRealm_bild_schatten {
                   ? T.nahMax
                   : Math.max(T.nahMax, minInterval) * T.fernFaktor;
             const faellig = !(frame - (L.k[i] != null ? L.k[i] : -1e9) < takt);
-            if (sunMoved || (faellig && (bewegt || !gerendert))) {
+            if (sunMoved || ersteBild || (faellig && (bewegt || !gerendert))) {
                 sh.needsUpdate = true;
                 L.k[i] = frame;
                 gerendert = true;
