@@ -1542,3 +1542,4 @@ omen-gtx-gtx-31d156e8-11-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · o
 omen-gtx-gtx-31d156e8-12-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag luftwasser.K4#1 (punkte-maschine 2fa319f3 messung/31d156e8-gtx.json)
 omen-gtx-gtx-31d156e8-13-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag luftwasser.K3#2 (punkte-maschine 2fa319f3 messung/31d156e8-gtx.json)
 omen-gtx-gtx-31d156e8-14-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag speicher.K4#2 (punkte-maschine 2fa319f3 messung/31d156e8-gtx.json)
+omen-gtx-kk7b-1-31d156e8 UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag karte2.mensch.menge.kollektiv#1 karte2.erleben.kopplung.bild#1 (punkte-maschine 2fa319f3 messung/31d156e8-gtx.json)
