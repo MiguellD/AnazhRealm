@@ -2251,12 +2251,21 @@ const PB_MARKE = require("crypto")
     .digest("hex")
     .slice(0, 10);
 // DER BEFEHL einer Probe: das Programm samt Konstanten und Seiten-Code im Befehl (der Abdruck liest es ganz), die Art als Wort
+// DIE BLINDE DAUER (17.11., GTX am d39e0d6e: same.preis.ausdauer#1 „ROT echt“ 104,7 MB/min und im selben Text „0,93 min am Stück < 1“,
+// „Heap-Kurve blind (19 Punkte über 0,7 min)“): eine Dauer, die ihre Minute nicht trug, ist keine Messung — nach dem Lauf sagt die Probe
+// der Dauer die Marke MESSORT (punkte.cjs keinUrteil: UNGEMESSEN mit Grund), nie ein ROT über eine Steigung aus 0,7 min. Die Schranke ist
+// die der Sprosse 1 (AUSDAUER_S1: ≥ 1 min am Stück, Kurve ≥ 10 Punkte über ≥ 1 min); eine volle Minute mit echter Steigung bleibt ROT
+const PB_DAUER_BLIND =
+    " process.once(\"beforeExit\", () => { let d = null; try { d = JSON.parse(require(\"fs\").readFileSync(process.argv[2], \"utf8\")).dauer; } catch (x) {} " +
+    "if (!d || d.minuten == null) return; const k = d.heapKurve || {}, w = []; if (!(d.minuten >= 1)) w.push(d.minuten + \" min am Stück < 1\"); " +
+    "if (!(k.n >= 10 && k.min >= 1 && Number.isFinite(k.steigung))) w.push(\"Heap-Kurve blind (\" + (k.n || 0) + \" Punkte über \" + (k.min || 0) + \" min)\"); " +
+    "if (w.length) console.log(\"@@PUNKTE@@ MESSORT die Dauer trug ihre Minute nicht: \" + w.join(\" · \")); });";
 const pbBefehl = (art) => [
     "node",
     "-e",
     "/* richter " + PB_MARKE + " */ const K = " + JSON.stringify(PB_KONST) + "; const SEITE = " + JSON.stringify(PB_SEITE) + "; const PB_ZELLEN = " +
         JSON.stringify([...PB_ZELLEN, ...PB_C_STEHT]) + "; const PB_TRAEGT = " + pbSchrittTraegt.toString().replace(/\r/g, "") + "; (" + pbProbe.toString().replace(/\r/g, "") + ")(process.argv[1], process.argv[2]).catch((e) => { console.log(\"PROBE ROT: \" + " +
-        "String((e && e.stack) || e).split(\"\\n\").slice(0, 3).join(\" | \")); process.exitCode = 1; });",
+        "String((e && e.stack) || e).split(\"\\n\").slice(0, 3).join(\" | \")); process.exitCode = 1; });" + (art === "dauer" ? PB_DAUER_BLIND : ""),
     art,
     "{AUS}",
 ];
@@ -2427,9 +2436,12 @@ function ausdauerRichter(lauf) {
     }
     if (z.strom.fehler || z.strom.verloren) rot.push("der Aufnehmer warf " + z.strom.fehler + " · verlor " + z.strom.verloren + " Bilder");
     if (!hw) rot.push("Adapter: " + ad);
+    // DIE BLINDE DAUER (PB_DAUER_BLIND): trug die Dauer ihre Minute nicht, steht das vorn — die Probe sagte die Marke MESSORT, der Läufer
+    // urteilt UNGEMESSEN; die Steigung daneben ist kein Urteil
+    const blind = rot.some((t) => / min am Stück < |^Heap-Kurve blind/.test(t));
     return {
         gruen: rot.length === 0,
-        zahl: "Spielgang " + d.minuten + " min in " + d.seiten + " Seite(n) · Heap-Kurve " + (k.n || 0) + " Punkte, " + (k.von == null ? "?" : k.von) + " → " + (k.bis == null ? "?" : k.bis) +
+        zahl: (blind ? "BLIND, kein Urteil über die Steigung · " : "") + "Spielgang " + d.minuten + " min in " + d.seiten + " Seite(n) · Heap-Kurve " + (k.n || 0) + " Punkte, " + (k.von == null ? "?" : k.von) + " → " + (k.bis == null ? "?" : k.bis) +
             " MB (max " + (k.max == null ? "?" : k.max) + "), Steigung " + (k.steigung == null ? "?" : k.steigung) + " MB/min · nach dem Collector " + gc + " MB/min (Soll je ≤ " + AUSDAUER_S1.steigung + ") · " + ad +
             (rot.length ? " — ROT " + rot.length + ": " + rot.slice(0, 6).join(" | ") : ""),
     };
@@ -2451,7 +2463,13 @@ const ausdauerProben = () => {
         ["Mutante kein Anfang (die Glätte fuhr nicht)", (d) => Object.assign(d, { anfang: false, minuten: undefined }), false],
         ["Mutante Weg 4,6 km, nie Nacht (Sprosse 3 — hier nicht geurteilt)", mit(kurve(), (d) => Object.assign(d, { weg: 4600, nachtImStrom: false, nacht: { nacht: 0.5, mittag: 0.5 } })), true],
         ["Mutante Software-Adapter", kurve(), false, "[linse-gpu] google/swiftshader"],
-    ].map(([name, m, gruen, adapter]) => ({ name, stdout: k5Roh(m, adapter), gruen }));
+    ].map(([name, m, gruen, adapter]) => ({ name, stdout: k5Roh(m, adapter), gruen })).concat([
+        // DIE BLINDE DAUER (GTX d39e0d6e): 0,93 min, 19 Punkte über 0,7 min, nach GC 104,7 MB/min — kein GRÜN, „BLIND“ vorn, die Probe
+        // sagt die Marke MESSORT (der Läufer: UNGEMESSEN)
+        { name: "die GTX am d39e0d6e: 0,93 min, Kurve blind — BLIND vorn, Marke MESSORT", stdout: k5Roh(mit(kurve({ n: 19, min: 0.7, steigung: 163.93, von: 248.4, bis: 355.2 }), (d) => Object.assign(d, { minuten: 0.93, heap: [227, 324.4] }))) + "\n@@PUNKTE@@ MESSORT die Dauer trug ihre Minute nicht: 0.93 min am Stück < 1 · Heap-Kurve blind (19 Punkte über 0.7 min)", gruen: false, zahl: /^BLIND, kein Urteil über die Steigung · Spielgang 0\.93 min/ },
+        // MUTANTE: die volle Minute mit echter Steigung (1,06 min, 64 Punkte, +185 MB/min) — ROT ohne BLIND
+        { name: "MUTANTE volle Minute, echte Steigung +183 MB/min — ROT, nicht blind", stdout: k5Roh(mit(kurve({ n: 64, min: 1.05, steigung: 183.4, von: 290, bis: 486 }), (d) => Object.assign(d, { minuten: 1.06, heap: [290.1, 486.2] }))), gruen: false, zahl: /^Spielgang 1\.06 min .*Heap-Kurve steigt 183\.4 MB\/min > 50/ },
+    ]);
 };
 // die drei Proben (die Zwillinge teilen je EINE: gleiche Probe, ein Lauf); Ziel der Gruppe ≤ 90 s: glaette ~16 + gang ~60 + dauer ~14.
 // DIE DECKEL NACH IHRER MESSUNG (w4-fehlt-acht, Radeon eich3–6 4f098fa6 … 1f17e7d1 am selben Abdruck): glaette 27,6 · 27,0 · 27,0 · 28,8 s

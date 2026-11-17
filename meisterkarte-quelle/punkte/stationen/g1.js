@@ -1417,18 +1417,25 @@ async function brandSitzungProbe(r, T, o) {
         const KRONE_OFFEN = 0.05;
         if (typeof r._kronenStreuAt !== "function") return { fehler: "der Leser des Kronendachs `_kronenStreuAt` fehlt am Stand" };
         const krone = (cx, cz) => Math.max(...[[0, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) => r._kronenStreuAt((cx + 0.5 + a / 4) * cs, (cz + 0.5 + b / 4) * cs)));
+        // DAS VOLLE BETT (17.11., GTX 1050 an 31d156e8 und 8d0fe947, Blatt bericht/1711-glut-nacht): seit w28-lava-zuendet liest `_brandStoff`
+        // das Bett an Mitte und vier Viertel-Punkten und gibt den ANTEIL als Last (`leb` = lebendig × Anteil). Die erste „gras“-Zelle wurde
+        // −248/−1080 mit Kies in der Mitte, Anteil 0,2 — 25 schwache Flammen, +0 Pixel; mit vollem Bett −248/−1064, 32 Flammen. Der Herd
+        // ist die erste Gras-Zelle mit Anteil ≥ BETT_VOLL (`f.leb` ÷ `auraAt(...).lebendig`, dieselbe Rechnung wie das Gesetz)
+        const BETT_VOLL = 0.99;
+        const anteil = (f, cx, cz) => { const l = r.auraAt(...xz(cx, cz)).lebendig; return l > 0 ? f.leb / l : 0; };
         let herd = null;
         for (let d = 2; d <= 8 && !herd; d++)
             for (let i = -d; i <= d && !herd; i++)
                 for (const [cx, cz] of [[mx + i, mz - d], [mx + i, mz + d], [mx - d, mz + i], [mx + d, mz + i]]) {
                     const f = r._brandStoff(cx, cz);
-                    if (f && f.zeile.name === "gras" && r._brandFeuchte(f.boden) < f.zeile.brenn.mx && !r._nassAt(...xz(cx, cz)) && krone(cx, cz) <= KRONE_OFFEN) {
+                    if (f && f.zeile.name === "gras" && anteil(f, cx, cz) >= BETT_VOLL && r._brandFeuchte(f.boden) < f.zeile.brenn.mx && !r._nassAt(...xz(cx, cz)) && krone(cx, cz) <= KRONE_OFFEN) {
                         herd = [cx, cz];
                         break;
                     }
                 }
-        if (!herd) return { fehler: "keine trockene Gras-Zelle ohne Kronendach 2–8 Zellen um die Mess-Wiese (Zelle " + cs + " m)" };
+        if (!herd) return { fehler: "keine trockene Gras-Zelle mit vollem Bett (Anteil ≥ " + BETT_VOLL + ") ohne Kronendach 2–8 Zellen um die Mess-Wiese (Zelle " + cs + " m)" };
         aus.krone = r3(krone(...herd));
+        aus.bett = r3(anteil(r._brandStoff(...herd), ...herd));
         const [hx, hz] = xz(...herd);
         const hy = r._voxelSurfaceY(hx, hz);
         const [dx, dz] = ((a, b, l = Math.hypot(a, b) || 1) => [a / l, b / l])(hx - M.x, hz - M.z);
@@ -1537,26 +1544,42 @@ async function brandSitzungProbe(r, T, o) {
                     }
                 const w = warm(u8);
                 let [neu, rauschen] = [0, 0];
+                // DER MEDIAN DER SÄTZE (17.11., GTX 1050: dieselbe Flammen-Liste (32) unter stehender Bild-Uhr zählte +111 ↔ +248 um das Soll
+                // 200 — EIN Satz MIT/OHNE/OHNE ist eine Stichprobe des Jitters): SAETZE Sätze im Abstand SATZ_MS Wanduhr in derselben ruhenden
+                // Welt, je Satz Flammen = neu − Rauschen; das Urteil liest den Median, `serie` nennt jeden Satz (Spanne)
+                const SAETZE = 5, SATZ_MS = 500;
+                const serie = [];
                 if (m && m.visible) {
-                    m.visible = false;
-                    try {
-                        stellen();
-                        uhr.push(r3(r._bildZeit));
-                        const o1 = warm((await window.__ausgabeAufnahme(W, H)).u8);
-                        stellen();
-                        uhr.push(r3(r._bildZeit));
-                        const o2 = warm((await window.__ausgabeAufnahme(W, H)).u8);
-                        [neu, rauschen] = [neuWarm(w, o1), neuWarm(o2, o1)];
-                    } finally {
-                        m.visible = true;
+                    for (let k = 0; k < SAETZE; k++) {
+                        let wk = w;
+                        if (k) {
+                            await new Promise((ok) => setTimeout(ok, SATZ_MS));
+                            stellen();
+                            uhr.push(r3(r._bildZeit));
+                            wk = warm((await window.__ausgabeAufnahme(W, H)).u8);
+                        }
+                        m.visible = false;
+                        try {
+                            stellen();
+                            uhr.push(r3(r._bildZeit));
+                            const o1 = warm((await window.__ausgabeAufnahme(W, H)).u8);
+                            stellen();
+                            uhr.push(r3(r._bildZeit));
+                            const o2 = warm((await window.__ausgabeAufnahme(W, H)).u8);
+                            serie.push([neuWarm(wk, o1), neuWarm(o2, o1)]);
+                        } finally {
+                            m.visible = true;
+                        }
                     }
+                    const mitte = serie.map(([a, b]) => a - b).sort((a, b) => a - b)[Math.floor(serie.length / 2)];
+                    [neu, rauschen] = serie.find(([a, b]) => a - b === mitte);
                 }
                 Y[name] = L;
                 aus.schuesse.push({ name, url: window.__png(u8, W, H) });
-                return { luma: r3(L.reduce((s, v) => s + v, 0) / Math.max(1, L.length)), warm: w.n, neu, rauschen, flammen: neu - rauschen, uhr, schleife: lief, pool, ...(laufend == null ? {} : { rauschenLaufend: laufend }) };
+                return { luma: r3(L.reduce((s, v) => s + v, 0) / Math.max(1, L.length)), warm: w.n, neu, rauschen, flammen: neu - rauschen, uhr, schleife: lief, pool, ...(serie.length ? { serie: serie.map(([a, b]) => a - b) } : {}), ...(laufend == null ? {} : { rauschenLaufend: laufend }) };
             });
         };
-        aus.flammenArt = "emission-pixel-ruhe";
+        aus.flammenArt = "emission-pixel-median";
         await window.__weltStehtNach(takt, 900);
         aus.vor = await schuss("vor");
         const n0 = (st.worldMeta.taten ||= []).length;
@@ -1624,15 +1647,18 @@ function kaskadeUrteil(j, lauf) {
     const { e, ad, hw } = l;
     // JE PIXEL (brandSitzungProbe, 17.11.): eine Zeile mit der Summe (flammenArt „emission“) vergleicht im Gras-Rauschen — kein Urteil
     if (e.flammenArt === "emission-pixel") return { gruen: false, zahl: "die Flammen je Pixel bei laufender Schleife gezählt (das Licht der Flammen flackert zwischen MIT und OHNE, das Gras um den Herd zählt mit) — nie unter demselben Licht · " + ad };
-    if (e.flammenArt !== "emission-pixel-ruhe") return { gruen: false, zahl: "die Flammen im Bild als Summe gezählt (warme Pixel mit − ohne, im Rauschen des Grases ±150) — nie je Pixel · " + ad };
-    // DASSELBE LICHT (brandSitzungProbe `ruhend`): die Bild-Uhr der drei Schüsse BRENNT steht — sonst flackerte das Licht dazwischen
+    if (e.flammenArt === "emission-pixel-ruhe") return { gruen: false, zahl: "die Flammen aus EINEM Satz MIT/OHNE/OHNE gezählt (dieselbe Flammen-Liste streut +111 ↔ +248) — nie der Median der Sätze · " + ad };
+    if (e.flammenArt !== "emission-pixel-median") return { gruen: false, zahl: "die Flammen im Bild als Summe gezählt (warme Pixel mit − ohne, im Rauschen des Grases ±150) — nie je Pixel · " + ad };
+    // DASSELBE LICHT (brandSitzungProbe `ruhend`): die Bild-Uhr aller Schüsse BRENNT steht — sonst flackerte das Licht dazwischen
     const uhr = e.brennt.uhr || [];
-    if (uhr.length !== 3 || uhr.some((u) => u !== uhr[0]))
+    if (uhr.length < 3 || uhr.some((u) => u !== uhr[0]))
         return { gruen: false, zahl: "die Bild-Uhr lief zwischen MIT und OHNE (" + (uhr.join(" → ") || "ungemessen") + ") — das Licht der Flammen stand nicht still · " + ad };
+    const serie = Array.isArray(e.brennt.serie) ? e.brennt.serie : [];
+    if (serie.length < 5) return { gruen: false, zahl: "die Flammen aus " + serie.length + " Sätzen gezählt (Soll 5, Median) · " + ad };
     const [fB, fC] = [e.brennt.flammen - e.vor.flammen, e.erloschen.flammen - e.vor.flammen];
     return {
         gruen: hw && e.trockenS >= 60 && e.brennt.zellen >= 1 && e.brennt.flammenListe >= 1 && fB >= 200 && e.regenS <= 60 && e.nachRegen === 0 && e.erloschen.zellen === 0 && fC <= 20,
-        zahl: "trocken nach " + e.trockenS + " s " + e.brennt.zellen + " brennende Zellen, Flammen im Bild +" + fB + " Pixel je Pixel (neu " + e.brennt.neu + " − Rauschen " + e.brennt.rauschen + (e.brennt.rauschenLaufend != null ? ", bei laufender Schleife " + e.brennt.rauschenLaufend : "") + "; Soll ≥ 200; " + e.brennt.flammenListe +
+        zahl: "Herd " + (e.herd || []).join(",") + " Bett " + (e.bett == null ? "?" : e.bett) + " · trocken nach " + e.trockenS + " s " + e.brennt.zellen + " brennende Zellen, Flammen im Bild +" + fB + " Pixel je Pixel, Median aus " + serie.length + " Sätzen (Spanne " + Math.min(...serie) + "–" + Math.max(...serie) + "; neu " + e.brennt.neu + " − Rauschen " + e.brennt.rauschen + (e.brennt.rauschenLaufend != null ? ", bei laufender Schleife " + e.brennt.rauschenLaufend : "") + "; Soll ≥ 200; " + e.brennt.flammenListe +
             " Flammen gezeichnet) · Regen löscht nach " + e.regenS + " s (Soll ≤ 60), danach " + e.erloschen.zellen + " Zellen, Flammen im Bild (Emission) " + (fC >= 0 ? "+" : "") + fC + " (Soll ≤ 20; warm " + e.erloschen.warm + ") · " + ad,
     };
 }
@@ -1652,12 +1678,12 @@ const BRAND_ROH = {
     vor: { luma: 0.12, warm: 4, neu: 3, rauschen: 3, flammen: 0 },
     entfacht: true,
     trockenS: 60,
-    brennt: { zellen: 6, flammenListe: 22, luma: 0.2, warm: 1840, neu: 1990, rauschen: 190, flammen: 1800, uhr: [812.4, 812.4, 812.4], schleife: true, rauschenLaufend: 1105 },
+    brennt: { zellen: 6, flammenListe: 22, luma: 0.2, warm: 1840, neu: 1990, rauschen: 190, flammen: 1800, uhr: [812.4, 812.4, 812.4], schleife: true, serie: [1790, 1800, 1810, 1795, 1805], rauschenLaufend: 1105 },
     regenS: 7,
     nachRegen: 0,
     erloschen: { zellen: 0, lebt: false, luma: 0.03, warm: 10, neu: 180, rauschen: 182, flammen: -2 },
     krone: 0,
-    flammenArt: "emission-pixel-ruhe",
+    flammenArt: "emission-pixel-median",
     asche: 0.995,
     aschen: 9,
     veraendert: 0.82,
@@ -1738,6 +1764,25 @@ async function lavaSitzungProbe(r, T, o) {
             return { fehler: "der Guss steht nicht (Taten " + n0 + " → " + wm.taten.length + "): " + JSON.stringify((guss && guss.log) || []).slice(0, 200) };
         await window.__weltStehtNach(takt, 900);
         aus.glutBild = await schuss("glut");
+        // DER BRAND ALTERT MIT (17.11., GTX 1050 an 31d156e8 und 8d0fe947, Blatt bericht/1711-glut-nacht): seit w28-lava-zuendet zündet der
+        // Rand der Decke das Bett daneben (30 s nach dem Guss 8 Zellen, nach 10 min 20). Die Uhr unten stellt nur die Weltzeit vor — die
+        // Brand-Uhr stand, der ~70 s alte Brand färbte den Schuss „erstarrt“ (OMEN R/G 1,271). Der Weg des Spiels: der Brand läuft auf
+        // SEINER Uhr (`_tickBrand` je `BRAND.schrittS`, wie brandSitzungProbe `brennen`), bis er erlischt, höchstens BRAND_MAX_S — dann
+        // erst geht die Weltzeit vor (Gegenprobe der GTX 1050 mit derselben Zutat: erstarrt R/G 0,988)
+        {
+            const BR = AnazhRealm.BRAND, BRAND_MAX_S = 20000;
+            const zellen = () => [...(st.brandFeld || new Map()).values()].filter((z) => z.t0 !== null).length;
+            aus.brand = { lebt: r._brandLebt(), zellen: zellen(), s: 0 };
+            if (aus.brand.lebt) {
+                const u0 = r._brandUhr;
+                for (let n = 0; r._brandLebt() && r._brandUhr - u0 < BRAND_MAX_S - 1e-9 && n < 200000; n++) {
+                    st.spielZeit = Math.max(st.spielZeit, r._brandUhr + BR.schrittS);
+                    r._tickBrand();
+                }
+                Object.assign(aus.brand, { s: Math.round(r._brandUhr - u0), nachher: r._brandLebt(), aschen: wm.taten.slice(n0).filter((a) => a.tat === "brand").length });
+                if (aus.brand.nachher) return Object.assign(aus, { fehler: "der Brand um den Guss lebt nach " + aus.brand.s + " s auf seiner Uhr", messort: "lava: der Brand um den Guss lebt nach " + aus.brand.s + " s auf seiner Uhr — der Schuss erstarrt sähe sein Feuer, nie die Decke" });
+            }
+        }
         // DIE WELTZEIT LÄUFT NUR VOR (16.11., Radeon am 77a9095f: erstarrt R/G 3,673 — `setTimeOfDay(0.5)` spulte die Uhr auf die Stunde des
         // Gusses zurück, `_lavaAt` las das Alter 0 und das Gesetz glühte wieder). Je Schritt eine Sekunde eines Tags von 1 min (24 min Welt),
         // bis das Gesetz des Kerns die Decke DUNKEL nennt (`lava`: glut 0 unter dem Draper-Punkt 798 K, mit Stein-Zeile und Luft ~3,9 h),
@@ -1764,6 +1809,13 @@ async function lavaSitzungProbe(r, T, o) {
         aus.schussH = r3(r._weltStunde() - h0);
         Object.assign(aus, { ort: [p.x, p.z].map(Math.round), kamera: kamera.map((v) => Math.round(v * 10) / 10), roi });
         return aus;
+    } catch (x) {
+        // KEIN SCHUSS IST KEIN URTEIL (17.11., GTX 1050 an 31d156e8/8d0fe947: „DIE WELT STEHT NICHT nach 1802 Takten“, „Sicht verdeckt
+        // 69,4 % brand-rauch“): die Welt, die nicht steht, und das Bild, das der Rauch verdeckt, urteilen nie über die Decke — die Probe
+        // trägt `messort`, der Lauf sagt die Marke MESSORT (LAVA_SITZUNG), die Station ist UNGEMESSEN mit Grund
+        const m = String((x && x.message) || x).split("\n")[0].slice(0, 280);
+        if (/DIE WELT STEHT NICHT|Sicht verdeckt/.test(m)) return { fehler: m, messort: "lava: " + m };
+        throw x;
     } finally {
         // die Uhr bleibt, wo die Probe sie vorwärts stellte: der Anker auf der Spielzeit von jetzt (der alte Anker ließe sie im nächsten
         // Takt um die geschrittenen Sekunden im Tag der Welt noch einmal springen)
@@ -1773,7 +1825,10 @@ async function lavaSitzungProbe(r, T, o) {
         st.weatherEffectTime = halt;
     }
 }
-const LAVA_SITZUNG = { befehl: weltSitzungBefehl([["lava", lavaSitzungProbe]], [freiePose]), sek: 60, mutiert: true };
+// die Marke MESSORT nach dem Lauf (punkte.cjs keinUrteil): trägt eine Probe `messort`, sagt der Lauf es als Marke — nur diese Station,
+// der gemeinsame Lauf `weltSitzungLauf` bleibt byte-gleich (die Abdrücke der übrigen Sitzungs-Stationen stehen)
+const mitMessortMarke = (b) => [b[0], b[1], b[2].replace(/\)\(\)$/, ")().then(() => { let P = {}; try { P = JSON.parse(require(\"fs\").readFileSync(process.argv[1], \"utf8\")).proben || {}; } catch (x) {} for (const [n, p] of Object.entries(P)) if (p && p.messort) console.log(\"@@PUNKTE@@ MESSORT \" + String(p.messort).replace(/\\s+/g, \" \").slice(0, 280)); })"), ...b.slice(3)];
+const LAVA_SITZUNG = { befehl: mitMessortMarke(weltSitzungBefehl([["lava", lavaSitzungProbe]], [freiePose])), sek: 90, mutiert: true };
 // das Urteil: GLUT rot im Bild (R/G ≥ 2 im Ausschnitt), ERSTARRT grau (R/G ≤ 1,25) und dunkler als die Glut, erstarrt binnen 15 Schritten,
 // DUNKEL nach dem Gesetz binnen eines Tags (glut 0) und im Schuss noch dunkel (kein Rückspulen), der Stoff darunter Stein, beide Bilder
 // ohne Fehler, eine echte Karte
@@ -1791,7 +1846,8 @@ function lavaUrteil(j, lauf) {
             /stein|basalt|fels/i.test(String(s.stoff)),
         zahl: "Guss " + (e.ort || []).join(",") + (e.gegossen ? "" : " (KEIN Guss)") + ": Glut R/G " + g.rg + " (Soll ≥ 2), Luma " + g.luma + ", glut-Achse " + g.glut +
             " · erstarrt nach " + e.ab + " Schritten (Soll 1–15) · dunkel nach dem Gesetz nach " + e.dunkelNach + " Schritten = " + e.dunkelH + " h Welt (Soll 1–60), Schuss bei " +
-            e.schussH + " h, Gesetz-glut " + e.dunkelGlut + " (Soll 0): R/G " + s.rg + " (Soll ≤ 1,25), Luma " + s.luma + ", Stoff " + s.stoff + " · " + ad,
+            e.schussH + " h, Gesetz-glut " + e.dunkelGlut + " (Soll 0): R/G " + s.rg + " (Soll ≤ 1,25), Luma " + s.luma + ", Stoff " + s.stoff +
+            (e.brand ? " · Brand am Guss " + e.brand.zellen + " Zellen, auf seiner Uhr " + e.brand.s + " s bis erloschen" : "") + " · " + ad,
     };
 }
 const LAVA_ROH = {
@@ -5758,6 +5814,11 @@ module.exports = [
             { name: "keine Flammen gezeichnet, nur das Licht des Brands auf dem Gras", stdout: brandRoh((x) => (Object.assign(x.brennt, { flammenListe: 0, neu: 196, rauschen: 190, flammen: 6 }), x)), gruen: false },
             { name: "die Zeile vor dem 17.11. (je Pixel bei laufender Schleife: neu 542 − Rauschen 1 105)", stdout: brandRoh((x) => ((x.flammenArt = "emission-pixel"), x)), gruen: false },
             { name: "die Bild-Uhr lief zwischen MIT und OHNE", stdout: brandRoh((x) => ((x.brennt.uhr = [812.4, 813.1, 813.9]), x)), gruen: false },
+            // DER MEDIAN DER SÄTZE (17.11., GTX 1050: dieselbe Flammen-Liste streute +111 ↔ +248): fünf Sätze, das Urteil liest den Median
+            { name: "die Zeile vor dem Median (EIN Satz, flammenArt emission-pixel-ruhe)", stdout: brandRoh((x) => ((x.flammenArt = "emission-pixel-ruhe"), delete x.brennt.serie, x)), gruen: false, zahl: /aus EINEM Satz/ },
+            { name: "fünf Sätze 111 · 185 · 211 · 248 · 193 — Median 193 unter dem Soll 200: ROT, die Spanne beim Namen", stdout: brandRoh((x) => (Object.assign(x.brennt, { neu: 293, rauschen: 100, flammen: 193, serie: [111, 185, 211, 248, 193] }), x)), gruen: false, zahl: /\+193 Pixel je Pixel, Median aus 5 Sätzen \(Spanne 111–248/ },
+            { name: "fünf Sätze 150 · 205 · 230 · 260 · 212 — Median 212: GRÜN trotz eines Satzes unter dem Soll", stdout: brandRoh((x) => (Object.assign(x.brennt, { neu: 312, rauschen: 100, flammen: 212, serie: [150, 205, 230, 260, 212] }), x)), gruen: true, zahl: /Median aus 5 Sätzen \(Spanne 150–260/ },
+            { name: "nur drei Sätze gezählt", stdout: brandRoh((x) => ((x.brennt.serie = [1790, 1800, 1810]), x)), gruen: false, zahl: /aus 3 Sätzen gezählt \(Soll 5/ },
         ],
         pfad: BRAND_PFAD,
         quelle: "KARTE2 same.kopplung.kaskade S1 = Bildpaar: Brand erlischt im Regen, hält im Trockenen, beide Geräte",
@@ -5806,6 +5867,12 @@ module.exports = [
             { name: "swiftshader", stdout: lavaRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
             { name: "nie dunkel nach dem Gesetz (glut > 0 nach 24 h)", stdout: lavaRoh((x) => ((x.dunkelNach = -1), x)), gruen: false },
             { name: "zurückgespult: das Gesetz glüht noch im Schuss", stdout: lavaRoh((x) => ((x.dunkelGlut = 0.8), x)), gruen: false },
+            // DER BRAND ALTERT MIT (17.11.): der Brand am Rand lief auf seiner Uhr bis erloschen — der Schuss sieht die Decke (GTX 1050 0,988)
+            { name: "der Brand am Guss lief auf seiner Uhr aus (8 Zellen, 412 s), erstarrt R/G 0,988 — GRÜN", stdout: lavaRoh((x) => ((x.brand = { lebt: true, zellen: 8, s: 412, nachher: false, aschen: 20 }), (x.erstarrtBild.rg = 0.988), x)), gruen: true, zahl: /Brand am Guss 8 Zellen, auf seiner Uhr 412 s bis erloschen/ },
+            { name: "MUTANTE der Stein bleibt rot (R/G 1,271 wie die OMEN am 31d156e8) — ROT", stdout: lavaRoh((x) => ((x.brand = { lebt: true, zellen: 8, s: 412, nachher: false, aschen: 20 }), (x.erstarrtBild.rg = 1.271), x)), gruen: false, zahl: /R\/G 1\.271 \(Soll ≤ 1,25\)/ },
+            // KEIN SCHUSS IST KEIN URTEIL: die Probe trägt `messort`, der Lauf sagt die Marke — kein GRÜN, der Grund wörtlich (der Läufer: UNGEMESSEN)
+            { name: "die Welt steht nicht nach 1802 Takten — kein GRÜN, Grund wörtlich, Marke MESSORT", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWELTPROBE lava " + JSON.stringify({ fehler: "DIE WELT STEHT NICHT nach 1802 Takten: Fege-Takt", messort: "lava: DIE WELT STEHT NICHT nach 1802 Takten: Fege-Takt" }) + "\n@@PUNKTE@@ MESSORT lava: DIE WELT STEHT NICHT nach 1802 Takten: Fege-Takt", gruen: false, zahl: /^Probe: DIE WELT STEHT NICHT nach 1802 Takten/ },
+            { name: "Sicht verdeckt 69,4 % brand-rauch — kein GRÜN, Grund wörtlich, Marke MESSORT", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWELTPROBE lava " + JSON.stringify({ fehler: "ABNAHME ROT [Sicht verdeckt 69.4 % brand-rauch]", messort: "lava: ABNAHME ROT [Sicht verdeckt 69.4 % brand-rauch]" }) + "\n@@PUNKTE@@ MESSORT lava: ABNAHME ROT [Sicht verdeckt 69.4 % brand-rauch]", gruen: false, zahl: /^Probe: ABNAHME ROT \[Sicht verdeckt 69\.4 % brand-rauch\]/ },
         ],
         pfad: ["gelaende-core.js", "stamm/gelaende-*.js", "stamm/bild-*.js", "stamm/dirigent-*.js", "stamm/feld-*.js", "stamm/stoff-*.js", "scripts/werkbank.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],

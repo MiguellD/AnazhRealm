@@ -2624,7 +2624,11 @@ async function halter(o) {
     // erste Skript JEDER Ladung der Seite (werkbank START_ORT) — wie jede Messung, die mit `start --ort` bootete. Bis dahin bootete die
     // Sitzung ohne Ort: ein Dorf wuchs vom Boot an (`dorfWaechst` in 74 % der Zapfen des Eichlaufs 00763f54, die Foundry mit seinen
     // Häusern belegt — lod.K5#1 92 s Foundry), die Grundstellung spielte es zurück; ein Ort mit Dorf-Zug stellt ihn selbst an
-    const wa = (welt ? welt.werkbank : ["node", "scripts/werkbank.cjs", "start", "--echt", "--port", String(W), "--seite", "http://localhost:" + S, "--ort", "wiese"]).map(ers);
+    // DIE DROSSEL DER SITZUNG (`run --drossel n`, 17.11.: tiere.wanderung#1 — fällt die Reichweite des Bären mit der Bildrate, weil das
+    // Netz-Budget je Bild zählt?): die Werkbank startet mit `--drossel n` (Haupt-Faden n-mal langsamer, werkbank `DROSSEL`); der Läufer
+    // reicht die Zahl als PUNKTE_DROSSEL durch und schreibt die Fahrt nie in die Mess-Datei des Geräts (messung/drossel-n/, `run`)
+    const drossel = Number(process.env.PUNKTE_DROSSEL) > 0 ? ["--drossel", String(Number(process.env.PUNKTE_DROSSEL))] : [];
+    const wa = (welt ? welt.werkbank : ["node", "scripts/werkbank.cjs", "start", "--echt", "--port", String(W), "--seite", "http://localhost:" + S, "--ort", "wiese", ...drossel]).map(ers);
     const env = kenv({ ...process.env, WERKBANK_PORT: String(W), PUNKTE_GPU_ZEUGE: path.resolve(o.zeuge),
         NODE_OPTIONS: ((process.env.NODE_OPTIONS || "") + ' --require "' + ZEUGE_DATEI.split(path.sep).join("/") + '"').trim() });
     wb = spawn(exe(wa), wa.slice(1), { cwd: baum, env, stdio: ["ignore", wl, wl], windowsHide: true });
@@ -4362,8 +4366,14 @@ async function run(opt) {
     // EIN Lauf je Spiel-Baum: ein zweiter Lauf auf demselben Gerät checkte sonst seinen SHA in den Baum des ersten
     await baumSperre(repo, opt.geraet);
     const baum = baumAmSha(repo, opt.geraet, sha);
-    const datei = messDatei(sha, opt.geraet);
-    const rohDir = path.join(DIR, "messung", "roh", sha.slice(0, 8) + "-" + opt.geraet);
+    // DIE DROSSEL (`--drossel n`, nur Sitzungen einer Karte): die Fahrt misst ein langsames Gerät nach — ihre Urteile gehören nie in die
+    // Mess-Datei des Geräts (die Buchung läse sie als Messung der Karte), sondern nach messung/drossel-n/
+    const drossel = Number(opt.drossel) > 0 ? Number(opt.drossel) : 0;
+    if (opt.drossel != null && !drossel) throw new Error("--drossel " + opt.drossel + ": eine Zahl > 0 (der Haupt-Faden n-mal langsamer)");
+    if (drossel) process.env.PUNKTE_DROSSEL = String(drossel);
+    const mdir = drossel ? path.join(DIR, "messung", "drossel-" + drossel) : path.join(DIR, "messung");
+    const datei = messDatei(sha, opt.geraet, mdir);
+    const rohDir = path.join(mdir, "roh", sha.slice(0, 8) + "-" + opt.geraet);
     fs.mkdirSync(path.dirname(datei), { recursive: true }); // die Farm checkt messung/ nie aus (ihr Teil trägt nur die Scheibe)
     let m = fs.existsSync(datei) ? JSON.parse(fs.readFileSync(datei, "utf8")) : null;
     const host = opt.farm || os.hostname();

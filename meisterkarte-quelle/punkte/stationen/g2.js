@@ -1911,7 +1911,11 @@ async function dorfZaehlung(r, T) {
     if (!S) return { fehler: "keine Bewohner im Start-Dorf" };
     const L = S.liste;
     const schl = (p) => Math.round(p.x * 10) + "|" + Math.round(p.z * 10);
-    const zielVon = (b, h) => { const z = r._bewohnerSoll(b, h); return z.drinnen || !z.ziel ? null : z.ziel; };
+    // DER FAHRER AM STEUER (17.11., Entscheid des Koordinators nach `w28-fahrer-am-steuer`): sein Soll ist die laufende Lage seines
+    // Wagens (`_bewohnerSoll`: ziel === b.wagen.entry.position) — kein Plan-Ort; er zählt als eigene Stichprobe `fahrer` (unten), nie an
+    // den fünf Orten
+    const amWagen = (b, z) => !!(z && z.ziel && b.wagen && b.wagen.entry && z.ziel === b.wagen.entry.position);
+    const zielVon = (b, h) => { const z = r._bewohnerSoll(b, h); return z.drinnen || !z.ziel || amWagen(b, z) ? null : z.ziel; };
     const summe = new Map();
     for (const h of UHREN) for (const b of L) { const z = zielVon(b, h); if (!z) continue; const e = summe.get(schl(z)) || { x: z.x, z: z.z, n: 0 }; e.n++; summe.set(schl(z), e); }
     const orte = [];
@@ -1939,13 +1943,52 @@ async function dorfZaehlung(r, T) {
     const leiber = () => s.scene.children.filter((o) => o && o.userData && o.userData._feldLageVon && o.userData.heim != null);
     const gez = (g) => !!g && !g.userData._drinnen && (g.visible || g.userData._satz === true || !!(r._kzBesitztFeld && r._kzBesitztFeld(g)));
     const samenDoppelt = L.length - new Set(L.map((b) => b.seed)).size;
-    const proben = [];
+    const proben = [], fahrer = [], ankunft = [];
     let doppelt = 0;
+    // DER SITZ DES GESETZES (`_verkehrSitz`): der Leib am Steuer steht in x/z genau auf seinem Wagen — gezeichnet auf `W.gleitJetzt`
+    // (dem Bild des Wagens), ungezeichnet auf `entry.position`; das Maß ist 0, SITZ_M nur die Rundung
+    const SITZ_M = 0.01;
+    const leibVon = (b) => b.leib || leiber().find((x) => x.userData._feldLageVon.b === b) || null;
+    const drinnenIst = (b) => { const g = leibVon(b); return !!b.drinnen || !!(g && g.userData._drinnen); };
+    // DIE ANKUNFT NACH DEM ZEITSPRUNG (17.11., Radeon 602607bb „3 Uhr Ort 2 Ist 1/Soll 0“ bei takte 0: ein Bauer 14,2 m vor seiner
+    // Tür, Plan drinnen): die Zählung liest erst, wenn jeder angekommen ist — wen sein Plan drinnen will, ist drinnen; wer am Steuer
+    // sein soll, sitzt; wessen Ziel einer der fünf Orte ist, steht ≤ R_M an ihm. Obere Schranke ANKUNFT_S Spiel-Sekunden im Takt des
+    // Spiels; danach UNGEMESSEN mit den Ausstehenden beim Namen (MESSORT), nie ein ROT über einen Weg, der noch läuft
+    const ANKUNFT_S = 40;
+    const ortSchl = new Set(orte.map((o) => schl(o)));
+    const aus = (h) => L.filter((b) => {
+        const z = r._bewohnerSoll(b, h);
+        if (z.drinnen) return !drinnenIst(b);
+        if (amWagen(b, z)) return !b.amSteuer;
+        if (!z.ziel || !ortSchl.has(schl(z.ziel))) return false;
+        const g = leibVon(b);
+        return !g || Math.hypot(g.position.x - z.ziel.x, g.position.z - z.ziel.z) > R_M;
+    });
     for (const h of UHREN) {
         r.setTimeOfDay(h / 24, "regler");
         const takte = await window.__gebautNach("die Zählung um " + h + " Uhr", { fertig: offen });
+        let warteS = 0, offenL = aus(h);
+        {
+            let uhr = performance.now();
+            for (let k = 0; offenL.length && warteS < ANKUNFT_S; k++) {
+                uhr += A.TAKT_DECKEL_S * 1000; r._gameLoopTick(uhr); warteS += A.TAKT_DECKEL_S;
+                await window.sleep();
+                if (k % 15 === 14) offenL = aus(h);
+            }
+            offenL = aus(h);
+        }
+        ankunft.push({ uhr: h, s: +warteS.toFixed(1), offen: offenL.length, wer: offenL.slice(0, 3).map((b) => { const z = r._bewohnerSoll(b, h), g = leibVon(b); return { rolle: b.rolle || b.beruf || null, akt: z && z.akt != null ? String(z.akt) : null, planDrinnen: !!z.drinnen, dZiel: g && z.ziel ? +Math.hypot(g.position.x - z.ziel.x, g.position.z - z.ziel.z).toFixed(1) : null }; }) });
         const ziele = new Map();
         for (const b of L) { const z = zielVon(b, h); if (z) ziele.set(schl(z), z); }
+        // je Fahrer am Steuer der Stunde EINE Stichprobe: Soll 1 am laufenden Wagen, erfüllt, wenn der Leib auf dem Sitz des Gesetzes steht
+        for (const b of L) {
+            const z = r._bewohnerSoll(b, h);
+            if (!amWagen(b, z)) continue;
+            const W = b.wagen, e = W.entry, g = leibVon(b);
+            const q = W.gleitJetzt || e.position;
+            const d = g ? Math.min(Math.hypot(g.position.x - q.x, g.position.z - q.z), Math.hypot(g.position.x - e.position.x, g.position.z - e.position.z)) : null;
+            fahrer.push({ uhr: h, rolle: b.rolle || b.beruf || null, amSteuer: !!b.amSteuer, leib: !!g, d: d == null ? null : +d.toFixed(2), sitzt: !!b.amSteuer && d != null && d <= SITZ_M });
+        }
         for (let oi = 0; oi < orte.length; oi++) {
             const O = orte[oi], ok = schl(O);
             let stand = null;
@@ -1996,7 +2039,9 @@ async function dorfZaehlung(r, T) {
             proben.push({ uhr: h, ort: oi, tod: +s.timeOfDay.toFixed(4), soll: sollL.length, ist, fehlt, imBild: !!stand, stand: stand ? [+stand.x.toFixed(1), +stand.z.toFixed(1)] : null, takte, ...(wer.length ? { wer } : {}), ...(mehr.length ? { mehr } : {}) });
         }
     }
-    return { bewohner: L.length, orte: orte.map((o) => [+o.x.toFixed(1), +o.z.toFixed(1), o.n]), rM: R_M, samenDoppelt, doppelt, sicht: s.cameraMode, proben, version: A.VERSION };
+    const spaet = ankunft.filter((a) => a.offen > 0);
+    const messort = spaet.length ? "die Ankunft nach dem Zeitsprung stand nach " + ANKUNFT_S + " s nicht: " + spaet.map((a) => a.uhr + " Uhr " + a.offen + " unterwegs (" + a.wer.map((w) => (w.rolle || "?") + " " + (w.akt || "?") + (w.planDrinnen ? " Plan drinnen" : "") + (w.dZiel != null ? " " + w.dZiel + " m vom Ziel" : "")).join(", ") + ")").join(" · ") : null;
+    return { bewohner: L.length, orte: orte.map((o) => [+o.x.toFixed(1), +o.z.toFixed(1), o.n]), rM: R_M, samenDoppelt, doppelt, sicht: s.cameraMode, proben, fahrer, ankunft, ...(messort ? { messort } : {}), version: A.VERSION };
 }
 // DIE ZEUGEN DER TAT (Karte 2 mensch.menge.kollektiv S1, vorrat3-stationen-g2): der Spieler geht um 10 Uhr (Uhr am Regler) in Third
 // längs der langen Achse des Dorfplatzes des Start-Dorfs durch die Menge (1,4 m/s, im Takt des Spiels, nach dem EINEN Warten wie
@@ -2092,7 +2137,7 @@ const ZEUGEN_GANG = { sek: 90, mutiert: true, befehl: [
             "console.log(\"ZEUGEN \" + JSON.stringify(e && e.ergebnis ? e.ergebnis : { fehler: String((e && e.fehler) || t.trim().split(\"\\n\").pop() || \"ohne Antwort\").replace(/\\s+/g, \" \").slice(0, 300) }))' \"$B-zeugen.txt\"",
     ].join("\n"),
 ] };
-const DORF_ZAEHLUNG = { sek: 150, mutiert: true, befehl: [
+const DORF_ZAEHLUNG = { sek: 240, mutiert: true, befehl: [
     "bash",
     "-c",
     [
@@ -2102,7 +2147,8 @@ const DORF_ZAEHLUNG = { sek: 150, mutiert: true, befehl: [
         "node scripts/werkbank.cjs umstellen --ort genesis > \"$B-umstellen.txt\" 2>&1",
         "node scripts/werkbank.cjs eval 'return await (" + knapp(dorfZaehlung) + ")(r, T);' > \"$B-zaehlung.txt\" 2>&1",
         "node -e 'const t = require(\"fs\").readFileSync(process.argv[1], \"utf8\"); let e = null; try { e = JSON.parse(t.slice(t.indexOf(\"{\"))); } catch (x) {} " +
-            "console.log(\"ZAEHLUNG \" + JSON.stringify(e && e.ergebnis ? e.ergebnis : { fehler: String((e && e.fehler) || t.trim().split(\"\\n\").pop() || \"ohne Antwort\").replace(/\\s+/g, \" \").slice(0, 300) }))' \"$B-zaehlung.txt\"",
+            "console.log(\"ZAEHLUNG \" + JSON.stringify(e && e.ergebnis ? e.ergebnis : { fehler: String((e && e.fehler) || t.trim().split(\"\\n\").pop() || \"ohne Antwort\").replace(/\\s+/g, \" \").slice(0, 300) })); " +
+            "if (e && e.ergebnis && e.ergebnis.messort) console.log(\"@@PUNKTE@@ MESSORT \" + String(e.ergebnis.messort).replace(/\\s+/g, \" \").slice(0, 280))' \"$B-zaehlung.txt\"",
     ].join("\n"),
 ] };
 
@@ -5058,7 +5104,11 @@ const stationen = [
             if (z.fehler) return { gruen: false, zahl: "Zählung: " + z.fehler + " · " + ad };
             const P = Array.isArray(z.proben) ? z.proben : [];
             const je = P.map((p) => ({ p, ok: p.imBild === true && Math.abs(p.ist - p.soll) <= 0.1 * p.soll && p.fehlt === 0 }));
-            const sollSumme = P.reduce((a, p) => a + p.soll, 0);
+            // DER FAHRER AM STEUER zählt MIT (17.11., Entscheid des Koordinators): je Uhr und Fahrer Soll 1 an der laufenden Lage seines
+            // Wagens, erfüllt, wenn sein Leib auf dem Sitz des Gesetzes steht (`_verkehrSitz`, Abstand x/z 0); die Schranke Σ Soll ≥ 20 bleibt
+            const F = Array.isArray(z.fahrer) ? z.fahrer : [];
+            const fahrerRot = F.filter((f) => !f.sitzt).map((f) => f.uhr + " Uhr Fahrer " + (f.rolle || "?") + (f.leib ? (f.amSteuer ? "" : " nicht am Steuer,") + " " + f.d + " m neben dem Sitz seines Wagens" : " ohne Leib"));
+            const sollSumme = P.reduce((a, p) => a + p.soll, 0) + F.length;
             const paare = new Set(P.map((p) => p.uhr + "@" + p.ort)).size;
             const uhren = new Set(P.map((p) => p.uhr)).size;
             const orte = new Set(P.map((p) => p.ort)).size;
@@ -5079,13 +5129,17 @@ const stationen = [
             // des Solls Rolle, Akt, Plan drinnen, drinnen im Spiel, Abstand zum eigenen Ziel der Stunde
             const mehrVon = (p) => (Array.isArray(p.mehr) && p.mehr.length ? ", zu viel: " + p.mehr.map((m) => (m.rolle || "?") + " " + (m.akt || "?") + (m.planDrinnen ? " (Plan drinnen" : " (Plan draußen") + (m.drinnen ? ", drinnen" : "") + (m.dZiel != null ? ", " + m.dZiel + " m vom Ziel" : "") + ")").join(", ") : "");
             const rot = je.filter((x) => !x.ok).map((x) => x.p.uhr + " Uhr Ort " + x.p.ort + " Ist " + x.p.ist + "/Soll " + x.p.soll + (x.p.fehlt ? ", fehlt " + x.p.fehlt : "") + (x.p.imBild ? "" : ", Ort nicht im Bild") + mehrVon(x.p));
-            const gruen = !reisst.length && !rot.length;
+            // die Ankunft stand nicht (die Probe sagt dazu die Marke MESSORT — der Läufer urteilt UNGEMESSEN): nie GRÜN, nie ein Urteil
+            if (z.messort) return { gruen: false, zahl: "Messort: " + z.messort + " · " + ad };
+            const gruen = !reisst.length && !rot.length && !fahrerRot.length;
+            const ank = Array.isArray(z.ankunft) && z.ankunft.length ? " · Ankunft " + z.ankunft.map((a) => a.uhr + " Uhr " + a.s + " s").join("/") : "";
             return {
                 gruen,
                 zahl:
-                    z.bewohner + " Bewohner, " + paare + " Stichproben (" + orte + " Orte × " + uhren + " Uhren), Σ Soll " + sollSumme + " · " +
+                    z.bewohner + " Bewohner, " + paare + " Stichproben (" + orte + " Orte × " + uhren + " Uhren) + " + F.length + " Fahrer am Steuer (" + (F.length - fahrerRot.length) + " sitzen), Σ Soll " + sollSumme + " · " +
                     (reisst.length ? "✗ " + reisst.join(" · ") + " · " : "") +
-                    (rot.length ? "✗ " + rot.join(" · ") : "jede Stichprobe ±10 %, niemand fehlt") + " · doppelt " + z.doppelt + " Hüllen / " +
+                    (fahrerRot.length ? "✗ " + fahrerRot.join(" · ") + " · " : "") +
+                    (rot.length ? "✗ " + rot.join(" · ") : "jede Stichprobe ±10 %, niemand fehlt") + ank + " · doppelt " + z.doppelt + " Hüllen / " +
                     z.samenDoppelt + " Samen · " + z.sicht + " · " + ad,
             };
         },
@@ -5118,6 +5172,18 @@ const stationen = [
                 { name: "die GTX am 602607bb: Σ Soll 12, jede Stichprobe gleich — ROT, die Zahl nennt die Schranke", stdout: roh((z) => z.proben.forEach((p) => (p.soll = p.ist = p.uhr === 3 ? 0 : [1, 1, 1, 0, 1][p.ort]))), gruen: false, zahl: /Σ Soll 12 · ✗ Σ Soll 12 < 20 .* · jede Stichprobe ±10 %, niemand fehlt/ },
                 { name: "die Radeon am 602607bb: um 3 Uhr einer zu viel an Ort 2 — die Zahl nennt ihn", stdout: roh((z) => Object.assign(z.proben[2], { ist: 1, mehr: [{ rolle: "bauer", akt: "heim", planDrinnen: true, drinnen: false, dZiel: 14.2 }] })), gruen: false, zahl: /3 Uhr Ort 2 Ist 1\/Soll 0, zu viel: bauer heim \(Plan drinnen, 14\.2 m vom Ziel\)/ },
                 { name: "Ego statt Third", stdout: roh((z) => (z.sicht = "first")), gruen: false, zahl: /✗ Sicht first statt third/ },
+                // DER FAHRER AM STEUER zählt mit: die GTX am 602607bb (Σ Soll 12 an den Orten) plus 8 Fahrer, die auf dem Sitz ihres Wagens
+                // sitzen — Σ Soll 20, GRÜN; derselbe Fall mit einem Fahrer 2,4 m neben seinem Wagen ist ROT beim Namen
+                ...(() => {
+                    const gtx = (z) => z.proben.forEach((p) => (p.soll = p.ist = p.uhr === 3 ? 0 : [1, 1, 1, 0, 1][p.ort]));
+                    const acht = (z) => (z.fahrer = [10, 15].flatMap((uhr) => ["fischer", "bauer", "haendler", "schmied"].map((rolle) => ({ uhr, rolle, amSteuer: true, leib: true, d: 0, sitzt: true }))));
+                    return [
+                        { name: "Fahrer am Steuer zählen mit: Σ Soll 12 an den Orten + 8 Fahrer auf dem Sitz = 20 — GRÜN", stdout: roh((z) => (gtx(z), acht(z))), gruen: true, zahl: /\+ 8 Fahrer am Steuer \(8 sitzen\), Σ Soll 20 · jede Stichprobe/ },
+                        { name: "MUTANTE ein Fahrer 2,4 m neben seinem Wagen — ROT beim Namen", stdout: roh((z) => (gtx(z), acht(z), Object.assign(z.fahrer[5], { d: 2.4, sitzt: false }))), gruen: false, zahl: /✗ 15 Uhr Fahrer bauer 2\.4 m neben dem Sitz seines Wagens/ },
+                        { name: "MUTANTE ein Fahrer aus dem Wagen gestiegen (nicht am Steuer) — ROT beim Namen", stdout: roh((z) => (gtx(z), acht(z), Object.assign(z.fahrer[0], { amSteuer: false, d: 6.1, sitzt: false }))), gruen: false, zahl: /✗ 10 Uhr Fahrer fischer nicht am Steuer, 6\.1 m neben dem Sitz/ },
+                        { name: "die Ankunft stand nach 40 s nicht — kein GRÜN, die Zahl nennt den Grund (der Läufer urteilt per MESSORT UNGEMESSEN)", stdout: roh((z) => (z.messort = "die Ankunft nach dem Zeitsprung stand nach 40 s nicht: 3 Uhr 1 unterwegs (bauer heim Plan drinnen 14.2 m vom Ziel)")) + "\n@@PUNKTE@@ MESSORT die Ankunft nach dem Zeitsprung stand nach 40 s nicht", gruen: false, zahl: /^Messort: die Ankunft nach dem Zeitsprung stand nach 40 s nicht: 3 Uhr 1 unterwegs \(bauer heim/ },
+                    ];
+                })(),
                 { name: "die Probe fand die Orte nicht", stdout: ad + "\nZAEHLUNG " + JSON.stringify({ fehler: "nur 3 Orte mit Soll im Start-Dorf", bewohner: 77 }), gruen: false },
                 { name: "swiftshader", stdout: roh().replace(ad, "[linse-gpu] google/swiftshader"), gruen: false },
                 { name: "der Adapter ungenannt", stdout: roh().replace(ad, "[linse-gpu] ungenannt"), gruen: false },
