@@ -2006,51 +2006,70 @@ async function schneeJahrSitzungProbe(r, T, o, G) {
         }
     if (!g) return Object.assign(aus, { fehler: "kein Land binnen 6 km um die Mess-Wiese" });
     await window.__weltDa(() => !r._ensureHydroTilesAround(g.x, g.z, 800));
-    let pose = null;
-    for (let k = 0; k < 16; k++) {
-        const [ux, uz] = [Math.cos((k * Math.PI) / 8), Math.sin((k * Math.PI) / 8)];
-        const [cx, cz] = [g.x + ux * 420, g.z + uz * 420];
-        if (!r._landAt(cx, cz, 1) || r._nassAt(cx, cz)) continue;
-        const cy = r._terrainMacroSurfaceY(cx, cz);
-        if (!pose || cy < pose.cy) pose = { ux, uz, cx, cz, cy };
-    }
-    if (!pose) return Object.assign(aus, { fehler: "kein trockenes Land 420 m um den Gipfel " + [g.x, g.z].map(Math.round).join("/") });
-    await stehen(pose.cx, pose.cz);
-    const E = new T.Vector3(pose.cx, r._voxelSurfaceY(pose.cx, pose.cz) + 35, pose.cz);
-    const [zx, zz] = [g.x + pose.ux * 170, g.z + pose.uz * 170];
-    const Z = new T.Vector3(zx, r._voxelSurfaceY(zx, zz), zz);
-    const cam = s.camera;
-    const stellen = () => (cam.position.copy(E), cam.lookAt(Z), cam.updateMatrixWorld(true));
-    stellen();
-    const [mx, mz] = [(pose.cx + g.x) / 2, (pose.cz + g.z) / 2];
-    const punkte = [];
     // DIE KRONEN VERDECKEN (16.11., Radeon 77e079ae: winter „Bild 79,9 m · Gesetz 102 m, Treffer 0,127 aus 166“, sommer Treffer 0,031 —
     // im Bild liegt der Hang weiß bis zum Fuß, nur vor ihm stehen Bäume, und die Hälfte der Punkte las das Pixel einer Krone): ein Punkt
     // unter einem Kronendach oder hinter einer Krone (je 4 m des Strahls: `_kronenStreuAt` ≥ 0,3 und der Strahl ≤ BAUM_HOCH über dem
     // Grund) ist kein Pixel des Bodens; das Gitter je 10 m (bis hier 20 m) hält die Zahl der freien Punkte
     if (typeof r._kronenStreuAt !== "function") return Object.assign(aus, { fehler: "der Leser des Kronendachs `_kronenStreuAt` fehlt am Stand" });
     const [KRONE, BAUM_HOCH] = [0.3, 30];
-    let verdeckt = 0;
-    for (let a = -300; a <= 300; a += 10)
-        for (let b = -300; b <= 300; b += 10) {
-            const [x, z] = [mx + a, mz + b];
-            if (r._nassAt(x, z) || !r._landAt(x, z, 0)) continue;
-            const p = new T.Vector3(x, r._voxelSurfaceY(x, z), z);
-            const q = p.clone().project(cam);
-            if (!(Math.abs(q.x) < 0.98 && Math.abs(q.y) < 0.98 && q.z > -1 && q.z < 1)) continue;
-            const d = p.distanceTo(E);
-            const n = Math.ceil(d / 4);
-            let frei = true, krone = r._kronenStreuAt(x, z) >= KRONE;
-            for (let i = 1; i < n - 1 && frei && !krone; i++) {
-                const t = i / n;
-                const [sx, sy, sz] = [E.x + (p.x - E.x) * t, E.y + (p.y - E.y) * t, E.z + (p.z - E.z) * t];
-                const grund = r._terrainMacroSurfaceY(sx, sz);
-                if (grund > sy + 1.5) frei = false;
-                else if (sy <= grund + BAUM_HOCH && r._kronenStreuAt(sx, sz) >= KRONE) krone = true;
+    // DER HANG IM KEGEL EINER POSE: die Kamera 35 m über dem Standort, der Blick 170 m unter den Gipfel; das Gitter je `schritt` m ±300 m
+    // um die Mitte Standort → Gipfel, trocken, auf dem Grund `yAt`, im Kegel und frei (Strahl über dem Makro-Grund, keine Krone)
+    const hang = (pose, kam, schritt, yAt) => {
+        const E = new T.Vector3(pose.cx, yAt(pose.cx, pose.cz) + 35, pose.cz);
+        const [zx, zz] = [g.x + pose.ux * 170, g.z + pose.uz * 170];
+        const Z = new T.Vector3(zx, yAt(zx, zz), zz);
+        kam.position.copy(E);
+        kam.lookAt(Z);
+        kam.updateMatrixWorld(true);
+        const [mx, mz] = [(pose.cx + g.x) / 2, (pose.cz + g.z) / 2];
+        const punkte = [];
+        let verdeckt = 0;
+        for (let a = -300; a <= 300; a += schritt)
+            for (let b = -300; b <= 300; b += schritt) {
+                const [x, z] = [mx + a, mz + b];
+                if (r._nassAt(x, z) || !r._landAt(x, z, 0)) continue;
+                const p = new T.Vector3(x, yAt(x, z), z);
+                const q = p.clone().project(kam);
+                if (!(Math.abs(q.x) < 0.98 && Math.abs(q.y) < 0.98 && q.z > -1 && q.z < 1)) continue;
+                const d = p.distanceTo(E);
+                const n = Math.ceil(d / 4);
+                let frei = true, krone = r._kronenStreuAt(x, z) >= KRONE;
+                for (let i = 1; i < n - 1 && frei && !krone; i++) {
+                    const t = i / n;
+                    const [sx, sy, sz] = [E.x + (p.x - E.x) * t, E.y + (p.y - E.y) * t, E.z + (p.z - E.z) * t];
+                    const grund = r._terrainMacroSurfaceY(sx, sz);
+                    if (grund > sy + 1.5) frei = false;
+                    else if (sy <= grund + BAUM_HOCH && r._kronenStreuAt(sx, sz) >= KRONE) krone = true;
+                }
+                if (frei && krone) verdeckt++;
+                else if (frei) punkte.push({ x, y: p.y, z, px: Math.round(((q.x + 1) / 2) * W), py: Math.round(((1 - q.y) / 2) * H) });
             }
-            if (frei && krone) verdeckt++;
-            else if (frei) punkte.push({ x, y: p.y, z, px: Math.round(((q.x + 1) / 2) * W), py: Math.round(((1 - q.y) / 2) * H) });
-        }
+        return { E, Z, punkte, verdeckt };
+    };
+    // DIE POSE IM FREIEN (17.11., Radeon und GTX am f5ce1579: „nur 24 freie Punkte des Hangs“, 2 379 von 2 403 hinter Kronen — die Pose
+    // war der TIEFSTE der 16 Standorte, nie der freie): je Standort 420 m um den Gipfel (Land, trocken) derselbe Hang im Kegel, gezählt
+    // je 20 m auf dem Makro-Grund; gewählt wird der Standort mit den meisten freien Punkten (bei Gleichstand der tiefere). Die Kronen-Karte
+    // liegt um den Spieler (die ferne Stufe ±1 024 m): erst steht er am Gipfel, dann zählt jeder Standort in derselben Karte.
+    await stehen(g.x, g.z);
+    const makro = (x, z) => r._terrainMacroSurfaceY(x, z);
+    const probeKam = s.camera.clone();
+    const kand = [];
+    for (let k = 0; k < 16; k++) {
+        const [ux, uz] = [Math.cos((k * Math.PI) / 8), Math.sin((k * Math.PI) / 8)];
+        const [cx, cz] = [g.x + ux * 420, g.z + uz * 420];
+        if (!r._landAt(cx, cz, 1) || r._nassAt(cx, cz)) continue;
+        const pose = { k, ux, uz, cx, cz, cy: makro(cx, cz) };
+        pose.frei = hang(pose, probeKam, 20, makro).punkte.length;
+        kand.push(pose);
+    }
+    if (!kand.length) return Object.assign(aus, { fehler: "kein trockenes Land 420 m um den Gipfel " + [g.x, g.z].map(Math.round).join("/") });
+    const pose = kand.reduce((a, b) => (b.frei > a.frei || (b.frei === a.frei && b.cy < a.cy) ? b : a));
+    aus.wahl = { je: kand.map((p) => ({ k: p.k, frei: p.frei, hoehe: r3(p.cy - wl) })), k: pose.k, frei: pose.frei };
+    await stehen(pose.cx, pose.cz);
+    const cam = s.camera;
+    const { E, Z, punkte, verdeckt } = hang(pose, cam, 10, (x, z) => r._voxelSurfaceY(x, z));
+    const stellen = () => (cam.position.copy(E), cam.lookAt(Z), cam.updateMatrixWorld(true));
+    stellen();
     aus.verdeckt = verdeckt;
     Object.assign(aus, {
         gipfel: [g.x, g.y - wl, g.z].map(r3),
@@ -2114,7 +2133,15 @@ function schneeJahrLesen(j, lauf) {
     const { ad, hw } = adapterEcht(lauf && lauf.stdout);
     const e = weltZeile(j, lauf, "schneejahr");
     if (!e) return { fehler: "keine Zeile WELTPROBE schneejahr (Exit " + (lauf && lauf.exit) + ") · " + ad };
-    if (e.fehler) return { fehler: "Probe: " + e.fehler + " · " + ad, e, ad, hw };
+    // DIE POSE IM FREIEN (schneeJahrSitzungProbe): die Pose ist der Standort mit den meisten freien Hang-Punkten; eine Zeile ohne Wahl
+    // stammt von der Probe vor dem Schnitt (der tiefste Standort, f5ce1579: 24 freie Punkte, 2 379 hinter Kronen)
+    const w = e.wahl;
+    if (!w && !e.fehler) return { fehler: "die Pose nennt keine Wahl der Standorte (die Probe vor dem Schnitt wählte den tiefsten, nie den freien) · " + ad };
+    if (w) {
+        const best = (w.je || []).reduce((a, x) => (x.frei > a.frei ? x : a), { frei: -1 });
+        if (!(w.frei >= best.frei)) return { fehler: "die Pose im Wald: Standort " + w.k + " mit " + w.frei + " freien Punkten, Standort " + best.k + " trägt " + best.frei + " · " + ad };
+    }
+    if (e.fehler) return { fehler: "Probe: " + e.fehler + (w ? " (Standort " + w.k + " von " + (w.je || []).length + ", " + w.frei + " frei im groben Gitter)" : "") + " · " + ad, e, ad, hw };
     const S = e.schuesse || [];
     const bilder = SAISONEN.filter((n) => S.some((s) => s.name === n && s.datei && !s.fehler)).length;
     if (bilder < 4 || SAISONEN.some((n) => !(e.jahr || {})[n])) return { fehler: "Bilder " + bilder + "/4 (" + SAISONEN.join(", ") + ") · " + ad };
@@ -2169,6 +2196,7 @@ const SCHNEE_JAHR_ROH = {
     kamera: [1500, 60, -500, 1300, 120, -700],
     punkte: 640,
     hoehen: [4, 192],
+    wahl: { je: [{ k: 0, frei: 6, hoehe: 40 }, { k: 4, frei: 171, hoehe: 62 }, { k: 9, frei: 88, hoehe: 31 }], k: 4, frei: 171 },
     jahr: {
         winter: { versatz: -160, weiss: 420, linieBild: 12, linieGesetz: 9, gesetzN: 600, treffer: 0.71, freiN: 0, falsch: null },
         fruehling: { versatz: -120, weiss: 300, linieBild: 41, linieGesetz: 38, gesetzN: 420, treffer: 0.7, freiN: 150, falsch: 0.02 },
@@ -2178,6 +2206,162 @@ const SCHNEE_JAHR_ROH = {
 };
 const schneeJahrRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") =>
     ad + "\nWELTPROBE schneejahr " + JSON.stringify(aendern(JSON.parse(JSON.stringify(SCHNEE_JAHR_ROH))));
+
+// DIE ANNÄHERUNG IM ECHTEN FENSTER (Karte 2 leben.tiere.mensch S1 „Wildtier reagiert auf den Spieler, 4 Gattungen · Fluchtdistanz je Art
+// im Feldband ±50 % · Annäherungs-Probe im Fenster“): bis hierher maß die Fluchtdistanz nur die Kreatur-Linse am Null-Renderer
+// (scripts/diag-kreatur-leben.cjs, Probe furcht: der Takt der Tiere von Hand), oekologie.K4#2 im Bild das Rudel, nie die Flucht je Art.
+// In der EINEN warmen Welt der Sitzung, die Schleife des Spiels je Takt (`_gameLoopTick`), der Modus pfad, Spieler und Tier ruhig (alle
+// Gefühle 0), kein Wurf des Felds daneben: je Gattung (Seele wesen · wolf · baer · fuchs, die Gattung liest `_kreaturGattung`) EIN Tier,
+// satt (`_kreaturMagenVoll`: ein hungriges Raubtier jagt den Menschen, das misst Sprosse 1 nie), auf Land um die Mess-Wiese. Der Spieler
+// tritt in Stufen heran — aus 3 × dem Feldmaß der Art (die obere Kante des Bands × 2), je Stufe 12 % näher, dort 20 Takte im
+// Gehen (`s.speed`) auf das Tier zu, der Blick auf es (`yaw`, die Kamera des Spiels sieht es) —, bis es flieht (`_motionZustand`
+// „flucht“, je Takt gelesen): die Fluchtdistanz ist der Abstand dann; flieht es nicht bis 8 m, ist sie 0. `imBlick`: der Anteil der Takte,
+// in denen das Tier im Kegel der Kamera stand. Das Feldmaß ist die Zahl der Feldforschung, nie die des Gesetzes (dessen Zahl steht
+// daneben als Lesewert): Rothirsch 120 m (bejagte Bestände 100–200 m, Stankowich 2008, Biol. Conserv. 141:2159), Wolf 106 m (Karlsson
+// et al. 2007, Can. J. Zool. 85:1193), Braunbär 55 m (Moen et al. 2012, PLoS ONE 7:e31699), Rotfuchs 40 m (Band der Kleinräuber).
+const FLUCHT_FELD = Object.freeze({ deer: 120, wolf: 106, bear: 55, fox: 40 });
+async function fluchtSitzungProbe(r, T, o, G) {
+    const { s, takt, r3 } = G;
+    const A = r.constructor;
+    const M = o.orte.wiese;
+    const pm = s.playerMesh.position;
+    const dt = 1 / 60;
+    const FELD = { deer: 120, wolf: 106, bear: 55, fox: 40 }; // FLUCHT_FELD (die Seite kennt den Rumpf der Station nicht)
+    const SEELEN = ["wesen", "wolf", "baer", "fuchs"];
+    const TAKTE = 20; // je Stufe im Gehen
+    const RUHE = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+    if (!(s.speed > 0)) return { fehler: "der Spieler hat kein Gehen (state.speed " + s.speed + ")" };
+    const FG = A._furchtGesetz && A._furchtGesetz();
+    const fl = s.faunaLifecycle;
+    const alt = { modus: typeof r.getGameMode === "function" ? r.getGameMode() : null, wurf: fl ? fl.lastTick : null, max: s.maxCreatures, yaw: s.yaw, pitch: s.pitch, p: pm.clone() };
+    const aus = { je: [], speed: r3(s.speed), takte: TAKTE };
+    const plan = (x, z) => typeof r._imGrundriss === "function" && r._imGrundriss(x, z);
+    const trocken = (x, z) => r._landAt(x, z) && !r._nassAt(x, z) && !plan(x, z);
+    const frust = new T.Frustum();
+    const m4 = new T.Matrix4();
+    try {
+        r.setGameMode("pfad");
+        if (fl) fl.lastTick = 1e12; // kein Wurf des Felds während der Probe (ein Rudel neben dem Hirsch misst seine Jagd, nie die Flucht)
+        for (const c of [...s.creatures]) r.removeCreature(c);
+        s.maxCreatures = Math.max(s.maxCreatures || 0, 8);
+        // der Ort des Tiers: Land ohne Wasser und ohne Plan 40–200 m um die Mess-Wiese; die Richtung der Annäherung die mit dem meisten
+        // Land auf 360 m (der Spieler geht über Land, wie im Spiel)
+        let ort = null;
+        for (let d = 40; d <= 200 && !ort; d += 20)
+            for (let q = 0; q < 12 && !ort; q++) {
+                const [x, z] = [M.x + Math.cos((q * Math.PI) / 6) * d, M.z + Math.sin((q * Math.PI) / 6) * d];
+                if (trocken(x, z)) ort = { x, z };
+            }
+        if (!ort) return { fehler: "kein trockenes Land ohne Plan 40–200 m um die Mess-Wiese" };
+        let rich = null;
+        for (let q = 0; q < 8; q++) {
+            const [ux, uz] = [Math.cos((q * Math.PI) / 4), Math.sin((q * Math.PI) / 4)];
+            let n = 0;
+            for (let d = 20; d <= 360; d += 20) if (r._landAt(ort.x + ux * d, ort.z + uz * d) && !r._nassAt(ort.x + ux * d, ort.z + uz * d)) n++;
+            if (!rich || n > rich.n) rich = { ux, uz, n };
+        }
+        Object.assign(aus, { ort: [ort.x, ort.z].map(Math.round), land: rich.n + "/18" });
+        const fuss = (x, z) => r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET;
+        for (const seele of SEELEN) {
+            const R = { seele };
+            let absage = null;
+            const c = r.spawnCreatureAt(ort.x, r.getTerrainHeightAt(ort.x, ort.z) + 0.5, ort.z, "happy", seele, { precise: true, bodySize: 1, absage: (g) => (absage = g) });
+            if (!c) {
+                aus.je.push(Object.assign(R, { fehler: "kein Tier (spawnCreatureAt " + seele + ": " + absage + ")" }));
+                continue;
+            }
+            const g = r._kreaturGattung(c);
+            const F = FELD[g];
+            Object.assign(R, { gattung: g, feldM: F || null, gesetzM: FG && FG.F && FG.F.fluchtDistanzM ? FG.F.fluchtDistanzM[g] : null });
+            if (!F) {
+                r.removeCreature(c);
+                aus.je.push(Object.assign(R, { fehler: "die Seele " + seele + " ist keine der vier Gattungen (" + g + ")" }));
+                continue;
+            }
+            c.userData.emotions = Object.assign({}, RUHE);
+            if (typeof r._kreaturMagenVoll === "function") c.userData.magen = r._kreaturMagenVoll(c);
+            let [fluchtM, takte, sicht, stufen] = [0, 0, 0, 0];
+            // ein Takt des Spiels: der Spieler (gehend oder stehend) blickt auf das Tier, beide ruhig; danach: flieht es, sieht er es
+            const schritt = (gehen) => {
+                const [dx, dz] = [c.position.x - pm.x, c.position.z - pm.z];
+                const d = Math.hypot(dx, dz) || 1;
+                if (gehen) (pm.x += (dx / d) * s.speed * dt), (pm.z += (dz / d) * s.speed * dt);
+                pm.y = fuss(pm.x, pm.z);
+                if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                s.yaw = Math.atan2(dx, dz);
+                s.pitch = 0;
+                if (s.player.emotions) Object.assign(s.player.emotions, RUHE);
+                c.userData.emotions = Object.assign(c.userData.emotions || {}, RUHE);
+                takt();
+                takte++;
+                const cam = s.camera;
+                cam.updateMatrixWorld(true);
+                frust.setFromProjectionMatrix(m4.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+                if (frust.containsPoint(c.position)) sicht++;
+                if (c.userData._motionZustand === "flucht") fluchtM = Math.hypot(c.position.x - pm.x, c.position.z - pm.z);
+            };
+            // das Tier steht ein (der Spieler fern und still)
+            pm.set(c.position.x + rich.ux * 3 * F, 0, c.position.z + rich.uz * 3 * F);
+            for (let k = 0; k < 30; k++) schritt(false);
+            const vorher = fluchtM > 0 ? r3(fluchtM) : 0;
+            fluchtM = 0;
+            for (let d = 3 * F; ; d = Math.max(8, d * 0.88)) {
+                stufen++;
+                pm.set(c.position.x + rich.ux * d, 0, c.position.z + rich.uz * d);
+                for (let k = 0; k < TAKTE && !fluchtM; k++) schritt(true);
+                if (fluchtM || d === 8) break;
+            }
+            Object.assign(R, { fluchtM: r3(fluchtM), stufen, takte, imBlick: r3(sicht / Math.max(1, takte)), ...(vorher ? { stehendFlucht: vorher } : {}) });
+            r.removeCreature(c);
+            aus.je.push(R);
+        }
+        return aus;
+    } finally {
+        if (alt.modus) r.setGameMode(alt.modus);
+        if (fl) fl.lastTick = alt.wurf;
+        s.maxCreatures = alt.max;
+        [s.yaw, s.pitch] = [alt.yaw, alt.pitch];
+        pm.copy(alt.p);
+    }
+}
+const FLUCHT_SITZUNG = { befehl: weltSitzungBefehl([["flucht", fluchtSitzungProbe]]), sek: 120, mutiert: true };
+// leben.tiere.mensch S1: vier Gattungen (Hirsch, Wolf, Bär, Fuchs), jede flieht den nahenden Spieler, ihre Fluchtdistanz im Feldband
+// [0,5 · 1,5] × Feldmaß, das Tier im Blick des Spielers in ≥ der Hälfte der Takte (im Fenster, nie hinter ihm)
+function fluchtUrteil(j, lauf) {
+    const { ad, hw } = adapterEcht(lauf && lauf.stdout);
+    const e = weltZeile(j, lauf, "flucht");
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE flucht (Exit " + (lauf && lauf.exit) + ") · " + ad };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler + " · " + ad };
+    const je = Array.isArray(e.je) ? e.je : [];
+    const rot = [];
+    const zeilen = Object.entries(FLUCHT_FELD).map(([g, F]) => {
+        const x = je.find((t) => t.gattung === g);
+        if (!x) return rot.push(g + " fehlt"), g + " —";
+        if (x.fehler) return rot.push(g + ": " + x.fehler), g + " FEHLER " + x.fehler;
+        const imBand = x.fluchtM >= 0.5 * F && x.fluchtM <= 1.5 * F;
+        if (!(x.fluchtM > 0)) rot.push(g + " flieht nicht");
+        else if (!imBand) rot.push(g + " außerhalb des Bands");
+        if (!(x.imBlick >= 0.5)) rot.push(g + " nicht im Blick (" + x.imBlick + ")");
+        return g + " flieht ab " + x.fluchtM + " m (Feld " + F + " m, Band " + 0.5 * F + "–" + 1.5 * F + "; Gesetz " + x.gesetzM + " m; im Blick " + x.imBlick + ", " + x.stufen + " Stufen)";
+    });
+    return {
+        gruen: hw && rot.length === 0,
+        zahl: "Annäherung im Fenster: " + zeilen.join(" · ") + (rot.length ? " · ROT " + rot.join(", ") : "") + " · " + ad,
+    };
+}
+const FLUCHT_ROH = {
+    je: [
+        { seele: "wesen", gattung: "deer", feldM: 120, gesetzM: 120, fluchtM: 113.4, stufen: 10, takte: 214, imBlick: 0.98 },
+        { seele: "wolf", gattung: "wolf", feldM: 106, gesetzM: 106, fluchtM: 101.2, stufen: 10, takte: 214, imBlick: 0.97 },
+        { seele: "baer", gattung: "bear", feldM: 55, gesetzM: 55, fluchtM: 52.6, stufen: 10, takte: 214, imBlick: 0.99 },
+        { seele: "fuchs", gattung: "fox", feldM: 40, gesetzM: 40, fluchtM: 37.1, stufen: 10, takte: 214, imBlick: 0.96 },
+    ],
+    speed: 4.2,
+    takte: 20,
+    ort: [-260, -1050],
+    land: "18/18",
+};
+const fluchtRoh = (aendern, ad = "[linse-gpu] amd/rdna-3 (Probe)") => ad + "\nWELTPROBE flucht " + JSON.stringify(aendern(JSON.parse(JSON.stringify(FLUCHT_ROH))));
 
 // DER KREISLAUF IM ECHTEN FENSTER (Karte 2 planet.wasser.kreislauf S1 „Pegel nach Sturm im Bild; Scheitel-Verzug gegen Einzugsgebiet im
 // Erd-Band; Regen × Fläche ↔ ΔVolumen ±10 %“): die Ganglinie von wetter.K3#2 (`k3Ganglinie` oben: zwei Bäche um den Bach der Mess-Wiese
@@ -5420,6 +5604,9 @@ module.exports = [
             { name: "ein Bild fehlt", stdout: schneeJahrRoh((x) => ((x.schuesse = x.schuesse.slice(0, 3)), x)), gruen: false },
             { name: "zu wenige freie Punkte", stdout: schneeJahrRoh((x) => ((x.fehler = "nur 40 freie Punkte des Hangs im Bild (Soll ≥ 150)"), x)), gruen: false },
             { name: "swiftshader", stdout: schneeJahrRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+            // die Fassung vor dem Schnitt urteilte diese zwei GRÜN: sie nahm den tiefsten Standort, frei oder im Wald
+            { name: "die Pose im Wald (Standort 0 mit 6 freien Punkten, Standort 4 trägt 171)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 0, frei: 6 }) && x), gruen: false },
+            { name: "die Zeile der Probe vor dem Schnitt (keine Wahl der Standorte)", stdout: schneeJahrRoh((x) => (delete x.wahl, x)), gruen: false },
         ],
         pfad: ["gelaende-core.js", "stamm/bild-himmel.js", "stamm/gelaende-*.js", "stamm/siedlung-ort.js", "stamm/wasser-*.js", "voxel-worker.js", "scripts/werkbank.cjs", ...WELT_PFAD],
         quelle: "KARTE2 planet.kopplung.bahn-klima S1 = Schneelinie wandert über das Jahr im Bild",
@@ -5443,9 +5630,39 @@ module.exports = [
             { name: "die Grenze folgt der Saison nicht (Sommer wie Winter)", stdout: schneeJahrRoh((x) => Object.assign(x.jahr.sommer, { linieBild: 20, linieGesetz: 20 }) && x), gruen: false },
             { name: "Weiß ohne Schnee im Sommer", stdout: schneeJahrRoh((x) => ((x.jahr.sommer.falsch = 0.4), x)), gruen: false },
             { name: "swiftshader", stdout: schneeJahrRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+            { name: "die Pose im Wald (Standort 0 mit 6 freien Punkten, Standort 4 trägt 171)", stdout: schneeJahrRoh((x) => Object.assign(x.wahl, { k: 0, frei: 6 }) && x), gruen: false },
+            { name: "die Zeile der Probe vor dem Schnitt (keine Wahl der Standorte)", stdout: schneeJahrRoh((x) => (delete x.wahl, x)), gruen: false },
         ],
         pfad: ["gelaende-core.js", "stamm/bild-himmel.js", "stamm/gelaende-*.js", "stamm/siedlung-ort.js", "stamm/wasser-*.js", "voxel-worker.js", "scripts/werkbank.cjs", ...WELT_PFAD],
         quelle: "KARTE2 planet.wetter.klimazonen S1 = Temperatur am Meer 18/−4 °C, Schneegrenze folgt der Saison",
+    },
+    // KARTE 2 leben.tiere.mensch S1: die Annäherung im echten Fenster (FLUCHT_SITZUNG, fluchtSitzungProbe oben) — bis hierher maß die
+    // Fluchtdistanz je Art nur die Kreatur-Linse am Null-Renderer (diag-kreatur-leben.cjs furcht), oekologie.K4#2 das Rudel
+    {
+        kriterium: "karte2.leben.tiere.mensch",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: FLUCHT_SITZUNG,
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: fluchtUrteil,
+        proben: [
+            { name: "vier Gattungen fliehen den Spieler im Feldband", stdout: fluchtRoh((x) => x), gruen: true },
+            { name: "die Flucht abgeschaltet (`_kreaturMenschFlucht` → 0): kein Tier flieht bis 8 m", stdout: fluchtRoh((x) => (x.je.forEach((t) => Object.assign(t, { fluchtM: 0, stufen: 26 })), x)), gruen: false },
+            { name: "der Hirsch flieht erst bei 14 m (der alte fleeRadius)", stdout: fluchtRoh((x) => ((x.je[0].fluchtM = 13.2), x)), gruen: false },
+            { name: "der Bär flieht schon bei 120 m (über dem Band 82,5)", stdout: fluchtRoh((x) => ((x.je[2].fluchtM = 118), x)), gruen: false },
+            { name: "nur drei Gattungen (der Fuchs fehlt)", stdout: fluchtRoh((x) => ((x.je = x.je.slice(0, 3)), x)), gruen: false },
+            { name: "vier Hirsche statt vier Gattungen", stdout: fluchtRoh((x) => (x.je.forEach((t) => Object.assign(t, { gattung: "deer", feldM: 120, fluchtM: 113 })), x)), gruen: false },
+            { name: "das Tier hinter dem Spieler (im Blick 0,1)", stdout: fluchtRoh((x) => ((x.je[1].imBlick = 0.1), x)), gruen: false },
+            { name: "kein Tier am Ort", stdout: fluchtRoh((x) => ((x.je[3] = { seele: "fuchs", fehler: "kein Tier (spawnCreatureAt fuchs: obergrenze)" }), x)), gruen: false },
+            { name: "keine Zeile", stdout: "[linse-gpu] amd/rdna-3 (Probe)", gruen: false },
+            { name: "swiftshader", stdout: fluchtRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
+        ],
+        pfad: ["tetrapoda-core.js", "stamm/kreatur-*.js", "stamm/studio-glieder.js", "stamm/koerper-*.js", "scripts/werkbank.cjs", ...WELT_PFAD],
+        quelle: "KARTE2 leben.tiere.mensch S1 = Annäherungs-Probe im Fenster",
     },
     {
         kriterium: "karte2.planet.wasser.kreislauf",
