@@ -60,6 +60,14 @@ windab IN der Fahne, die neue Pose „quer" 5 m quer zum Wind):
   (d) BEIDE LESER zur Laufzeit: `_brandRauch` (2,5 m/s) und der Kamin (1,2 m/s) bauen im selben `_rauchStoff`, der ohne
   Steigen laut bricht. Die Familie läuft auf swiftshader 66 s (vorher ~45 s).
 
+- Wanduhr eines Bild-Laufs (gefragt: warum Bildpaare über 10 min dauern; Werkbank, letzte Fassung): MESS-WIESE 7 Bilder in
+  2 min 40 s — Schloss abwarten 15 s · Start und Boot bis „bereit" + Umstellen auf den Ort ~1 min 55 s · Brand 60 s
+  vorspulen 12,5 s · 7 Schüsse 17 s (je 1,7–3,6 s). DORF 2 Bilder in 2 min 47 s — Start, Boot und Umstellen (das Dorf
+  schwingt ein) ~2 min 15 s · 600 Takte Rauch 19 s · 2 Schüsse 6 s. Die Schüsse sind Sekunden; die Zeit liegt im Start je
+  Lauf (jede Fassung und jedes „vorher" ist ein neuer Lauf: hier 5 Fassungen × 2 Orte + 2 Vorher-Läufe ≈ 30 min), im
+  Ansehen der Bilder (8 je Fassung, ~3–5 min) und im Warten: zwei Preis-ABAB je ~17 min (einmal 11 min hinter der CI am
+  Schloss), die Wand `npm run check` zweimal je ~15 min.
+
 ## Ehrlich offen
 
 - **Aus 2 m windab stehen die jungen Schwaden noch einzeln** (je Zunge alle ~2 s ein Ballen, `rauch.jeS` 12 je Zelle und das
