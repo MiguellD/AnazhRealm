@@ -3183,6 +3183,93 @@ class AnazhRealm_kreatur_leben {
             this._leibSicht(creature, this.isInFrustum(creature), auge, zeilen);
         }
     }
+
+    // DAS REVIER (_creatureCharacterWander): liegt der Anker `a` im Lebensraum der Gattung (tetrapoda lebensraum über
+    // `_bodenKlasseAt`, trockener Grund), legt sich die Leine in ihn — der Ort im Sechseck-Gitter um `a` (Ringe zu ½ Leine, bis
+    // 1½ Leinen), dessen Leine (die Mitte und das Sechseck bei 0,7 Leinen) der Lebensraum am vollsten trägt, der nächste bei
+    // Gleichstand; trägt er sie ganz, bleibt der Anker (darum legt ein zweiter Lauf, nach dem Speicherstand, nicht um). Ein Anker
+    // außerhalb (ein Akt, der anderswo setzt — wie der Wurf, `_kreaturWurf`) bleibt und ist FREI: sein Tier zieht in der Leine,
+    // wohin es will. Liefert den gelegten Anker { x, z, revier, frei? }.
+    _kreaturRevier(creature, a, leash) {
+        const LG = AnazhRealm._lebensraumGesetz();
+        const g = this._kreaturGattung(creature);
+        const traegt = (x, z) => LG.lebensraum(g, this._bodenKlasseAt(x, z), LG.L) > 0 && !this._nassAt(x, z);
+        if (!LG.L.gattung[g] || !traegt(a.x, a.z)) return { x: a.x, z: a.z, revier: true, frei: true };
+        const anteil = (cx, cz) => {
+            let n = traegt(cx, cz) ? 1 : 0;
+            for (let k = 0; k < 6; k++) {
+                const w = (k * Math.PI) / 3;
+                n += traegt(cx + Math.cos(w) * leash * 0.7, cz + Math.sin(w) * leash * 0.7) ? 1 : 0;
+            }
+            return n / 7;
+        };
+        let best = { x: a.x, z: a.z, s: anteil(a.x, a.z) };
+        for (let ring = 1; ring <= 3 && best.s < 1; ring++)
+            for (let k = 0; k < 6 * ring; k++) {
+                const w = (k / (6 * ring)) * Math.PI * 2;
+                const x = a.x + Math.cos(w) * ring * leash * 0.5;
+                const z = a.z + Math.sin(w) * ring * leash * 0.5;
+                const s = traegt(x, z) ? anteil(x, z) : 0;
+                if (s > best.s) best = { x, z, s };
+                if (best.s >= 1) break;
+            }
+        return { x: best.x, z: best.z, revier: true };
+    }
+
+    // DAS ZIEL DES ZUGS (_creatureCharacterWander): ein Ort in der Leine um den Anker, gleichverteilt in ihrer Fläche (Radius
+    // Leine·√u), deterministisch aus netId × der Zahl der Ziele (sin-Hash wie der Kurs), der erste von sechs Würfen, den das Revier
+    // trägt (`_kreaturRevierTraegt`), sonst der Anker. Es gilt, bis das Tier es auf `blick` erreicht (dann null: es streift dort)
+    // oder 4 Leinen in Schritten zu `blick` vergangen sind. Liefert das Ziel { x, z, n, bis } oder null.
+    _kreaturWanderZiel(creature, idNum, slot, blick, leash) {
+        if (!(blick > 0)) return null;
+        const ud = creature.userData;
+        const p = creature.position;
+        const Z = ud._wanderZiel;
+        if (Z && slot < Z.bis) return Math.hypot(Z.x - p.x, Z.z - p.z) > blick ? Z : null;
+        const a = ud.wanderAnchor;
+        const n = Z ? Z.n + 1 : 0;
+        const wurf = (j) => {
+            const h = Math.sin((idNum * 131 + n * 977 + j) * 78.233) * 43758.5453;
+            return h - Math.floor(h);
+        };
+        let ziel = null;
+        for (let j = 0; j < 6 && !ziel; j++) {
+            const r = leash * Math.sqrt(wurf(2 * j));
+            const w = wurf(2 * j + 1) * Math.PI * 2;
+            const x = a.x + Math.cos(w) * r;
+            const z = a.z + Math.sin(w) * r;
+            if (this._kreaturRevierTraegt(creature, x, z)) ziel = { x, z };
+        }
+        ud._wanderZiel = Object.assign(ziel || { x: a.x, z: a.z }, { n, bis: slot + Math.ceil((4 * leash) / blick) });
+        return ud._wanderZiel;
+    }
+
+    // DER KURS IM REVIER (_creatureCharacterWander): vom Kurs `kurs` aus abwechselnd links und rechts die Kurse des Sechsecks; der
+    // erste, dessen Ende (`weg` m voraus) das Revier trägt und der die Leine nicht nach außen verlässt; trägt keiner, bleibt
+    // `kurs`. Ein freier Anker hält jeden Kurs.
+    _kreaturWanderKurs(creature, kurs, weg, leash) {
+        const a = creature.userData.wanderAnchor;
+        if (a.frei) return kurs;
+        const p = creature.position;
+        for (let k = 0; k < 6; k++) {
+            const w = kurs + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (Math.PI / 3);
+            const x = p.x + Math.cos(w) * weg;
+            const z = p.z + Math.sin(w) * weg;
+            if (Math.hypot(x - a.x, z - a.z) > leash && Math.cos(w) * (p.x - a.x) + Math.sin(w) * (p.z - a.z) > 0)
+                continue;
+            if (this._kreaturRevierTraegt(creature, x, z)) return w;
+        }
+        return kurs;
+    }
+
+    // trägt das Revier des Tiers den Ort (x, z): sein Lebensraum auf trockenem Grund, am freien Anker jeder Ort
+    _kreaturRevierTraegt(creature, x, z) {
+        if (creature.userData.wanderAnchor.frei) return true;
+        const LG = AnazhRealm._lebensraumGesetz();
+        return (
+            LG.lebensraum(this._kreaturGattung(creature), this._bodenKlasseAt(x, z), LG.L) > 0 && !this._nassAt(x, z)
+        );
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_kreatur_leben]);
 
