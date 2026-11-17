@@ -292,7 +292,7 @@ function probe(o) {
             [st.spielZeit, st.weatherEffectTime] = [Z * (i + 1), 0];
             r._loopWeatherAndGrowth(0);
             folge.push(st.weather);
-            st.weatherTransition = null;
+            window.__uebergangFaellt(r);
         }
         performance.now = pn;
         const buch = window.__wetterBuch(s0).buch.filter((e) => e.quelle === "auto-zug" && e.art === "schreiber");
@@ -315,7 +315,7 @@ function probe(o) {
     const nass = (w) => r._weatherIsWet(w);
     aus.front = { nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length, lag: Z * lag, worte: [...worte] };
     Object.assign(aus.front, { soll: 3000 / P.WIND_FELD.front.zugMS, welt: st.weather });
-    st.weatherTransition = null;
+    window.__uebergangFaellt(r);
     [wm.seed, pm.x, pm.z, st.spielZeit] = [saat0, x0, y0, uhr0];
     window.__buehne();
     aus.ende = { wetter: st.weather, uhr: st.weatherEffectTime };
