@@ -98,6 +98,13 @@ async function seiteLauf() {
     const log = process.env.PUNKTE_SITZUNG_LOG && fs.existsSync(process.env.PUNKTE_SITZUNG_LOG) ? fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8") : "";
     for (const z of log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
     let code = 0;
+    // DIE FELDER DER PROBE FALLEN AM ENDE (Wirt-Wache w28-probe-wirt, Radeon: praesenz#1 ließ 41, fahrzeug.medium#1 46 window-Felder stehen —
+    // die Wache gibt Funktionen zurück, nie Daten): der Stand der Seite vor der Probe, danach fällt jedes neue Daten-Feld (Funktionen
+    // nimmt die Wache, der Halter und die Uhr des Gangs gehören der Sitzung)
+    await H.seite("window.__seiteFelderVor = Object.getOwnPropertyNames(window); return 1;").catch(() => {});
+    H.ende.push(() => H.seite("const vor = new Set(window.__seiteFelderVor || []); delete window.__seiteFelderVor; let n = 0; " +
+        "for (const k of Object.getOwnPropertyNames(window)) { if (vor.has(k) || /^__(gehalten|offen|gangUhr|punkte|wirt|probeFrist)/.test(k)) continue; " +
+        "const d = Object.getOwnPropertyDescriptor(window, k); if (!d || !d.configurable || typeof d.value === \"function\" || d.get) continue; delete window[k]; n++; } return n;"));
     try {
         if (!(H.sek > 6)) throw new Error("der Deckel des Laufs fehlt (argv „" + sek + "“: der Läufer ersetzt den Platzhalter SEK)");
         code = (await eval("(" + artText + ")")(H)) || 0;

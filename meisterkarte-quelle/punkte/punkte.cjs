@@ -2455,6 +2455,22 @@ function haengerLeihe(r, gib) {
     return { zurueck, bleibt };
 }
 const HAENGER_LEIHE = (gib) => "/* __punkteHaengerLeihe */ return (" + haengerLeihe + ")(r, " + !!gib + ");";
+// DIE WIRT-WACHE (w28-probe-wirt; scripts/lib/wirt-wache.cjs des Spiel-Baums, `/wirt` der Werkbank; Radeon f9cdeca5: vegetation.K4#1
+// ließ den Lauscher von diag-haus-welt über `r._hausHuelleSetzen` stehen, er hielt den Kontext der Probe — der Preis-Lauf danach maß
+// 1 386 statt 522 MB Heap und p95 16,7 statt 8,7 ms): `nimm` vor JEDER Probe (das Gedächtnis der Seite: jedes Funktions-Feld von r,
+// seinen Prototypen, r.state und window; vor einer Probe mit Preis dazu der Heap nach dem Collector), `gib` nach ihr und VOR dem Preis —
+// jede Abweichung beim Namen zurück, die Marken der /eval, deren Kontext noch jemand hält, und das Urteil der Linse (`ungemessen`: eine
+// Marke lebt und der Heap hält nach der Rücknahme über ihrer Schwelle, oder die Rücknahme trug nicht; die Welt, die die Probe baute, misst der Preis). Eine Werkbank ohne den Weg (ein Stand vor der Wache):
+// `{ fehler }`, beim Namen im Kopf (`wirtBlind`), nie still
+async function wirtRuf(w, gib, heap) {
+    try {
+        const a = await rufFrist(w, "/wirt", { gib: !!gib, heap: !!heap }, 120000);
+        if (!a || typeof a !== "object" || typeof a.fehler === "string") return { fehler: String((a && a.fehler) || "kein Ergebnis: " + JSON.stringify(a)).slice(0, 300) };
+        return a;
+    } catch (e) {
+        return { fehler: String((e && e.message) || e).split("\n")[0] };
+    }
+}
 // der Werkzeug-Bruch einer Probe beim Namen jeder Größe, die sie an der Zeichenkette verändert ließ
 const zeichnerBruch =(z) => "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (" + z.anders.map((k) => k + " " + z.wie[k]).join(" · ") + ")";
 const GRUND_NIMM =
@@ -3899,12 +3915,25 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             console.log("  SITZUNG vor " + schluessel(g[0]) + " hielt der Halter noch " + [...haltVor.gehalten, ...haltVor.offen.map((q) => "offen:" + q)].join(" ") + " — frei");
             haltVor = await messHaltRuf(W, { frei: true });
         }
+        // DIE WIRT-WACHE VOR DER PROBE (wirtRuf): das Gedächtnis der Seite, vor einer Probe mit Preis der Heap nach dem Collector
+        const mitPreis = karte2PreisLauf(g);
+        const wirtVor = await wirtRuf(W, false, mitPreis);
+        if (wirtVor.fehler) (kopf.wirtBlind = kopf.wirtBlind || []).push({ probe: schluessel(g[0]), wann: "vor", fehler: wirtVor.fehler });
         const zeit = new Date().toISOString();
         aktuell = schluessel(g[0]);
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt, konsumWelt } });
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
+        // DIE WIRT-WACHE NACH DER PROBE, VOR DEM PREIS: was die Probe am Wirt stehen ließ, fällt beim Namen — der Preis misst das Spiel;
+        // hält die Probe danach noch ihren Kontext über der Schwelle der Linse, misst er es nie: die Stationen der Probe stehen UNGEMESSEN beim Grund
+        const wirt = wirtVor.fehler || gerissen || tot ? null : await wirtRuf(W, true, mitPreis);
+        if (wirt && wirt.fehler) (kopf.wirtBlind = kopf.wirtBlind || []).push({ probe: schluessel(g[0]), wann: "nach", fehler: wirt.fehler });
+        else if (wirt && (wirt.anders.length || wirt.haelt.length || wirt.ungemessen)) {
+            (kopf.wirt = kopf.wirt || []).push({ probe: schluessel(g[0]), anders: wirt.anders, wie: wirt.wie, haelt: wirt.haelt, heap: [wirt.heapVor, wirt.heapNach], ungemessen: wirt.ungemessen });
+            console.log("  SITZUNG " + schluessel(g[0]) + " — " + wirt.zeile + (wirt.ungemessen ? " — UNGEMESSEN: " + wirt.ungemessen : " — zurück vor dem Preis"));
+        }
+        const wirtHaelt = wirt && !wirt.fehler && wirt.ungemessen ? "Wirt-Wache: " + wirt.ungemessen : null;
         // DER PREIS-LAUF der Meisterkarte 2 (richter-akte.cjs PREIS_S): noch unter dem Namen der Probe, an ihrer Pose, der Loop des Spiels
-        const preisFahrt = !gerissen && !tot && es.some((e) => !e.ungemessen) ? await preisLauf(W, g.map(schluessel)) : null;
+        const preisFahrt = !gerissen && !tot && !wirtHaelt && es.some((e) => !e.ungemessen) ? await preisLauf(W, g.map(schluessel)) : null;
         await zapf(aktuell);
         const probeBis = Date.now(); // das Ende des Fensters der Probe (die Richter-Akte schneidet ihren Preis aus dem Strom darin)
         aktuell = "(sitzung)";
@@ -3992,7 +4021,10 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         // ein Wurf am Messort (keinUrteil (d)) ließ die Welt vielleicht halb umgestellt: die nächste Probe beginnt am Grund
         zuruecksetzen = mutiertVon(g) || abbruch || !!unerklaert || !!bruch || es.some((e) => /^Messort: /.test(e.grund || ""));
         // die Eich-Fahrt urteilt erst nach Abbruch und Grundstellung (sie lesen den Grund der Probe, wie er fiel): je Probe ihre Zahl
-        const urteile = es.map(unter).map(werkzeug).map((e, i) => (ctx.eich ? eichEintrag(g[i], e, ctx.geraet) : e));
+        const wirtBruch = (e) => (!wirtHaelt ? e : e.ungemessen ? { ...e, grund: e.grund + " · " + wirtHaelt, zahl: e.zahl + " · " + wirtHaelt }
+            : { ...e, gruen: false, ungemessen: true, grund: wirtHaelt + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")",
+                zahl: wirtHaelt + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")" });
+        const urteile = es.map(unter).map(werkzeug).map(wirtBruch).map((e, i) => (ctx.eich ? eichEintrag(g[i], e, ctx.geraet) : e));
         await melde(g, urteile, aus, zeit);
         richterAkten(g, urteile, { strom, von: Date.parse(zeit), bis: probeBis, sha: ctx.sha, geraet: ctx.geraet, ...(preisFahrt || {}) });
     }
@@ -7702,6 +7734,11 @@ async function selbsttest(o = {}) {
             // der Weg einer Probe (art „weg“): die Grundstellung an Ort und Stelle nennt ihn, bis die Seite neu lud; „weg-bleibt“ trägt ihn
             // auch durch die Tür (die Wege-Linse der Grundstellung, grundSpielen)
             'let geladen = false; const weg = () => (art === "weg-bleibt" || (art === "weg" && !geladen) ? ["wege +1 [-312.4,-1060.2,-87.6,-1015.1/1] (probe:tempo4)"] : []);',
+            // DER WEG /wirt (w28-probe-wirt, art „wirt…“; jede andere Art antwortet ohne ihn — die Werkbank vor der Wache): nimm merkt die
+            // Funktions-Felder der Welt, gib nennt und nimmt jedes neue zurück; „wirt-haelt“: eine Probe, die `__haelt` setzt, hält ihren Kontext
+            'let wirtVor = []; const wirtWeg = (b, s) => { const W = seite.welt; n(b.gib ? "wirt-gib" : "wirt-nimm"); if (!b.gib) { wirtVor = Object.keys(W).filter((k) => typeof W[k] === "function"); return s({ genommen: true }); }',
+            '  const anders = Object.keys(W).filter((k) => typeof W[k] === "function" && !wirtVor.includes(k)); anders.forEach((k) => delete W[k]); const haelt = art === "wirt-haelt" && seite.win.__haelt ? ["eval#2"] : [];',
+            '  return s({ anders, wie: Object.fromEntries(anders.map((k) => [k, "neu"])), haelt, heapVor: 100, heapNach: haelt.length ? 200 : 101, ungemessen: haelt.length ? "eine Marke lebt (eval#2), der Heap hält +100 MB über dem Stand vor der Probe (Schwelle 64)" : null, zeile: "r: " + (anders.join(", ") || "—") + (haelt.length ? " · hält " + haelt.join(", ") : "") }); };',
             'http.createServer((q, r) => { let d = ""; q.on("data", (c) => (d += c)); q.on("end", () => { const b = d ? JSON.parse(d) : {}; const s = (o) => r.end(JSON.stringify(o));',
             // eine Probe greift in die Seite („seite: <code>“, r = die Welt), die Zeichenkette der Sitzung läuft in ihr — beide wie /eval der Werkbank
             '  const inSeite = (c) => { try { return s({ ergebnis: new Function("r", "window", c)(seite.welt, seite.win) }); } catch (e) { return s({ fehler: String(e && e.message) }); } };',
@@ -7719,6 +7756,7 @@ async function selbsttest(o = {}) {
             '  if (q.url === "/reload") { n("reload"); neu(); geladen = true; return s({ neu: true, ms: 1 }); } if (q.url === "/fenster") return s({ fenster: [1920, 1080] });',
             // DIE WELT HÄNGT (art „haengt“): der Ort steht nicht, bis die Seite neu lud
             '  if (q.url === "/umstellen") { n("umstellen:" + b.ort); if (art === "haengt" && !geladen) return s({ fehler: "DIE WELT STEHT NICHT nach 3601 Takten: wald 11" }); return s({ takte: 3, steht: true, chunks: 9 }); }',
+            '  if (q.url === "/wirt" && /^wirt/.test(art)) return wirtWeg(b, s);',
             '  if (q.url === "/stop") { n("stop"); s({ stop: true }); return setTimeout(() => process.exit(0), 50); } s({ fehler: "unbekannt" }); }); })',
             '  .listen(Number(W), "127.0.0.1", () => { console.log("[linse-gpu] amd/stub-sitzung"); console.log("WERKBANK bereit: Steuer 127.0.0.1:" + W); });',
         ].join("\n"));
@@ -7879,6 +7917,25 @@ async function selbsttest(o = {}) {
                 !!rt.es["h2.K1#1"] && rt.es["h2.K1#1"].gruen === true && !!rt.es["k2.K1#1"] && rt.es["k2.K1#1"].gruen === true &&
                     JSON.stringify(rt.kopf.messHalt) === JSON.stringify([{ probe: "h2.K1#1", gehalten: ["tiere"], offen: [] }]),
                 JSON.stringify([rt.es["k2.K1#1"] && rt.es["k2.K1#1"].zahl, rt.kopf.messHalt]));
+        // DIE WIRT-WACHE (wirtRuf, w28-probe-wirt): vor JEDER Probe nimm, nach ihr gib — w1 lässt einen Haken an der Welt stehen, die Wache
+        // nimmt ihn beim Namen zurück, w2 findet die Welt ohne ihn; w3 hält ihren Kontext über der Schwelle: UNGEMESSEN beim Grund der Wache,
+        // nie GRÜN. DIE MUTANTE (vorher ROT am Täter, Radeon f9cdeca5 vegetation.K4#1: der Haken an `_hausHuelleSetzen` hielt 1 386 statt
+        // 522 MB am Preis): der Haken bleibt → UNGEMESSEN. Eine Werkbank ohne den Weg (die Art „gut“) steht beim Namen in wirtBlind
+        {
+            const typU = (j) => ({ gruen: !!j && j.welt === "frei", zahl: "w2 " + JSON.stringify(j) });
+            const rw = await lauf([[S("w1.K1", 1, { befehl: [...ruf, "seite: r._loopNexusUpdate = () => {}; return \"warm\";"], sek: 30 }, warm)],
+                [S("w2.K1", 1, { befehl: [...ruf, "seite: return r._loopNexusUpdate ? \"haken\" : \"frei\";"], sek: 30 }, typU)],
+                [S("w3.K1", 1, { befehl: [...ruf, "seite: window.__haelt = 1; r._lofiTick = function () {}; return \"warm\";"], sek: 30 }, warm)]], "wirt-haelt");
+            const w3 = rw.es["w3.K1#1"] || {};
+            const gib = rw.z.filter((l) => /^wirt-/.test(l));
+            pruef("SITZUNG DIE WIRT-WACHE: nimm vor jeder Probe, gib nach ihr; der Haken von w1 fällt beim Namen (w2 misst ohne ihn), w3 hält ihren Kontext — UNGEMESSEN beim Grund der Wache, nie GRÜN; die Werkbank ohne den Weg steht in wirtBlind",
+                !!rw.es["w1.K1#1"] && rw.es["w1.K1#1"].gruen === true && !!rw.es["w2.K1#1"] && rw.es["w2.K1#1"].gruen === true &&
+                    w3.gruen === false && w3.ungemessen === true && /^Wirt-Wache: eine Marke lebt \(eval#2\)/.test(w3.grund) &&
+                    JSON.stringify(gib) === JSON.stringify(["wirt-nimm", "wirt-gib", "wirt-nimm", "wirt-gib", "wirt-nimm", "wirt-gib"]) &&
+                    JSON.stringify((rw.kopf.wirt || []).map((x) => [x.probe, x.anders, !!x.ungemessen])) === JSON.stringify([["w1.K1#1", ["_loopNexusUpdate"], false], ["w3.K1#1", ["_lofiTick"], true]]) &&
+                    !rw.kopf.wirtBlind && Array.isArray(rt.kopf.wirtBlind) && rt.kopf.wirtBlind.length === 2 && rt.kopf.wirtBlind.every((x) => x.wann === "vor" && /unbekannt/.test(x.fehler)),
+                JSON.stringify([["w1", rw.es["w1.K1#1"] && rw.es["w1.K1#1"].gruen, "w2", rw.es["w2.K1#1"] && rw.es["w2.K1#1"].zahl, "w3", w3.gruen, w3.ungemessen], w3.grund, gib, rw.kopf.wirt, rw.kopf.wirtBlind, rt.kopf.wirtBlind]));
+        }
         }
         // DIE TEILE EINER PROBE (probe.teile, w19-fahrt-ziel-2-pm): je Teil ein Prozess unter dem Deckel mit PUNKTE_TEIL und der Frist
         // (Gesetz − Vorlauf, nie der Eich-Deckel), der nächste nur nach WEITER, EIN Urteil über alle Teile, `s` der längste, `teile` je Teil;

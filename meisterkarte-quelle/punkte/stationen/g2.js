@@ -989,6 +989,10 @@ async function wertLauf() {
         console.log("FEHLER " + erg.fehler);
     } finally {
         tor.stop();
+        // DER WIRT ZURÜCK (Wirt-Wache w28-probe-wirt, Radeon: wertGang und witterungJagd ließen `r._loopNexusUpdate = () => {}` stehen,
+        // der Preis lief ohne Nexus-Takt): der stumme Nexus der Szene ist ein eigenes Feld über der Methode des Prototyps — es fällt, die
+        // Marke des Gangs mit ihm (die Uhr des Gangs bleibt: sie läuft nie zurück)
+        await werkbankRuf(W, "/eval", { code: "if (Object.prototype.hasOwnProperty.call(r, \"_loopNexusUpdate\") && Object.getPrototypeOf(r)._loopNexusUpdate) delete r._loopNexusUpdate; delete window.__wertGang; return 1;" }).catch(() => {});
     }
     fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
 }

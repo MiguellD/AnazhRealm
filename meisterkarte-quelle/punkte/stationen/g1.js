@@ -1779,8 +1779,13 @@ async function lavaSitzungProbe(r, T, o) {
                     st.spielZeit = Math.max(st.spielZeit, r._brandUhr + BR.schrittS);
                     r._tickBrand();
                 }
-                Object.assign(aus.brand, { s: Math.round(r._brandUhr - u0), nachher: r._brandLebt(), aschen: wm.taten.slice(n0).filter((a) => a.tat === "brand").length });
-                if (aus.brand.nachher) return Object.assign(aus, { fehler: "der Brand um den Guss lebt nach " + aus.brand.s + " s auf seiner Uhr", messort: "lava: der Brand um den Guss lebt nach " + aus.brand.s + " s auf seiner Uhr — der Schuss erstarrt sähe sein Feuer, nie die Decke" });
+                // DIE FRONT ZIEHT WEITER (Radeon am d39e0d6e, 20:58: nach 20 000 s lebte der Brand noch — die Front läuft über die Wiese
+                // fort): urteilen darf der Schuss, sobald um den Guss nichts mehr brennt — keine brennende Zelle ≤ BRAND_NAH Zellen (Chebyshev)
+                // um die Zelle des Gusses; brennt dort noch eine, ist der Schuss MESSORT, nie ROT
+                const BRAND_NAH = 2, cs = AnazhRealm.LIFE_FIELD.cell, [gx, gz] = [Math.floor(p.x / cs), Math.floor(p.z / cs)];
+                const nah = [...(st.brandFeld || new Map()).entries()].filter(([k, z]) => { if (z.t0 === null) return false; const [cx, cz] = k.split(",").map(Number); return Math.max(Math.abs(cx - gx), Math.abs(cz - gz)) <= BRAND_NAH; }).length;
+                Object.assign(aus.brand, { s: Math.round(r._brandUhr - u0), nachher: r._brandLebt(), nah, zellenNachher: zellen(), aschen: wm.taten.slice(n0).filter((a) => a.tat === "brand").length });
+                if (nah) return Object.assign(aus, { fehler: "um den Guss brennen nach " + aus.brand.s + " s auf der Brand-Uhr noch " + nah + " Zellen", messort: "lava: um den Guss brennen nach " + aus.brand.s + " s auf der Brand-Uhr noch " + nah + " Zellen (≤ " + BRAND_NAH + " Zellen) — der Schuss erstarrt sähe ihr Feuer, nie die Decke" });
             }
         }
         // DIE WELTZEIT LÄUFT NUR VOR (16.11., Radeon am 77a9095f: erstarrt R/G 3,673 — `setTimeOfDay(0.5)` spulte die Uhr auf die Stunde des
@@ -1847,7 +1852,7 @@ function lavaUrteil(j, lauf) {
         zahl: "Guss " + (e.ort || []).join(",") + (e.gegossen ? "" : " (KEIN Guss)") + ": Glut R/G " + g.rg + " (Soll ≥ 2), Luma " + g.luma + ", glut-Achse " + g.glut +
             " · erstarrt nach " + e.ab + " Schritten (Soll 1–15) · dunkel nach dem Gesetz nach " + e.dunkelNach + " Schritten = " + e.dunkelH + " h Welt (Soll 1–60), Schuss bei " +
             e.schussH + " h, Gesetz-glut " + e.dunkelGlut + " (Soll 0): R/G " + s.rg + " (Soll ≤ 1,25), Luma " + s.luma + ", Stoff " + s.stoff +
-            (e.brand ? " · Brand am Guss " + e.brand.zellen + " Zellen, auf seiner Uhr " + e.brand.s + " s bis erloschen" : "") + " · " + ad,
+            (e.brand ? " · Brand am Guss " + e.brand.zellen + " Zellen, auf seiner Uhr " + e.brand.s + " s, danach um den Guss " + (e.brand.nah || 0) + " brennend" + (e.brand.nachher ? " (die Front lebt fern: " + e.brand.zellenNachher + " Zellen)" : "") : "") + " · " + ad,
     };
 }
 const LAVA_ROH = {
@@ -5867,9 +5872,9 @@ module.exports = [
             { name: "swiftshader", stdout: lavaRoh((x) => x, "[linse-gpu] google/swiftshader"), gruen: false },
             { name: "nie dunkel nach dem Gesetz (glut > 0 nach 24 h)", stdout: lavaRoh((x) => ((x.dunkelNach = -1), x)), gruen: false },
             { name: "zurückgespult: das Gesetz glüht noch im Schuss", stdout: lavaRoh((x) => ((x.dunkelGlut = 0.8), x)), gruen: false },
-            // DER BRAND ALTERT MIT (17.11.): der Brand am Rand lief auf seiner Uhr bis erloschen — der Schuss sieht die Decke (GTX 1050 0,988)
-            { name: "der Brand am Guss lief auf seiner Uhr aus (8 Zellen, 412 s), erstarrt R/G 0,988 — GRÜN", stdout: lavaRoh((x) => ((x.brand = { lebt: true, zellen: 8, s: 412, nachher: false, aschen: 20 }), (x.erstarrtBild.rg = 0.988), x)), gruen: true, zahl: /Brand am Guss 8 Zellen, auf seiner Uhr 412 s bis erloschen/ },
-            { name: "MUTANTE der Stein bleibt rot (R/G 1,271 wie die OMEN am 31d156e8) — ROT", stdout: lavaRoh((x) => ((x.brand = { lebt: true, zellen: 8, s: 412, nachher: false, aschen: 20 }), (x.erstarrtBild.rg = 1.271), x)), gruen: false, zahl: /R\/G 1\.271 \(Soll ≤ 1,25\)/ },
+            // DER BRAND ALTERT MIT (17.11.): der Brand am Rand lief auf seiner Uhr, um den Guss brennt nichts mehr — der Schuss sieht die Decke (GTX 1050 0,988)
+            { name: "der Brand am Guss lief auf seiner Uhr 20 000 s, die Front fern (31 Zellen), um den Guss nichts — erstarrt R/G 0,988: GRÜN", stdout: lavaRoh((x) => ((x.brand = { lebt: true, zellen: 8, s: 20000, nachher: true, nah: 0, zellenNachher: 31, aschen: 140 }), (x.erstarrtBild.rg = 0.988), x)), gruen: true, zahl: /Brand am Guss 8 Zellen, auf seiner Uhr 20000 s, danach um den Guss 0 brennend \(die Front lebt fern: 31 Zellen\)/ },
+            { name: "MUTANTE der Stein bleibt rot (R/G 1,271 wie die OMEN am 31d156e8) — ROT", stdout: lavaRoh((x) => ((x.brand = { lebt: true, zellen: 8, s: 20000, nachher: false, nah: 0, aschen: 20 }), (x.erstarrtBild.rg = 1.271), x)), gruen: false, zahl: /R\/G 1\.271 \(Soll ≤ 1,25\)/ },
             // KEIN SCHUSS IST KEIN URTEIL: die Probe trägt `messort`, der Lauf sagt die Marke — kein GRÜN, der Grund wörtlich (der Läufer: UNGEMESSEN)
             { name: "die Welt steht nicht nach 1802 Takten — kein GRÜN, Grund wörtlich, Marke MESSORT", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWELTPROBE lava " + JSON.stringify({ fehler: "DIE WELT STEHT NICHT nach 1802 Takten: Fege-Takt", messort: "lava: DIE WELT STEHT NICHT nach 1802 Takten: Fege-Takt" }) + "\n@@PUNKTE@@ MESSORT lava: DIE WELT STEHT NICHT nach 1802 Takten: Fege-Takt", gruen: false, zahl: /^Probe: DIE WELT STEHT NICHT nach 1802 Takten/ },
             { name: "Sicht verdeckt 69,4 % brand-rauch — kein GRÜN, Grund wörtlich, Marke MESSORT", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWELTPROBE lava " + JSON.stringify({ fehler: "ABNAHME ROT [Sicht verdeckt 69.4 % brand-rauch]", messort: "lava: ABNAHME ROT [Sicht verdeckt 69.4 % brand-rauch]" }) + "\n@@PUNKTE@@ MESSORT lava: ABNAHME ROT [Sicht verdeckt 69.4 % brand-rauch]", gruen: false, zahl: /^Probe: ABNAHME ROT \[Sicht verdeckt 69\.4 % brand-rauch\]/ },

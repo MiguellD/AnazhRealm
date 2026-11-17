@@ -462,7 +462,8 @@ async function schrittLauf(h) {
     }
     const D = "scripts/diag-klang-zensus.cjs";
     const [W, K, U] = ["werkzeug", "koerperSeite", "koerperUrteil"].map((n) => h.skript(D, n));
-    const F = await h.seite("async (m) => { window.__klangW = (" + W + ")(); return await (" + K + ")(m, null); }", [M], 120000);
+    // das Werkzeug der Linse lebt nur in der Probe (Wirt-Wache: `window.__klangW` hielt ihren Kontext als Datenfeld über den Preis)
+    const F = await h.seite("async (m) => { window.__klangW = (" + W + ")(); try { return await (" + K + ")(m, null); } finally { delete window.__klangW; } }", [M], 120000);
     const u = new Function("return (" + U + ")")()(F);
     console.log("── (F) DER KÖRPER KLINGT: " + u.zahl);
     for (const t of u.rot) console.log("   " + t);
@@ -499,7 +500,10 @@ async function landschaftLauf(h) {
     // DER QUELLEN-ABGRIFF der Linse (`quellenAbgriff`, sonst vor jedem Seiten-Skript): hier vor einer frischen Symphonie — die Linse
     // liest die laufenden Quellen ihres Kontexts (W.laufend); eine Symphonie, die vor dem Abgriff stand, fällt und startet neu
     const Q = h.skript(D, "quellenAbgriff");
-    await h.seite("async () => { (" + Q + ")(); (window.__halten || window.__tiereHalten)(); Object.getPrototypeOf(r)._lofiTick = function () {}; if (r.state.symphony && r.state.symphony.enabled) r.disposeSymphony(); r.initSymphony(); window.__klangW = (" + W + ")(); return 1; }", [], 60000);
+    // DER WIRT ZURÜCK (Wirt-Wache w28-probe-wirt, Radeon: der Haken am Prototyp blieb nach der Probe stehen, der Preis lief ohne
+    // Lofi-Takt): das Original des Takts und das Werkzeug der Linse fallen im finally, auch nach einem Wurf
+    try {
+    await h.seite("async () => { (" + Q + ")(); (window.__halten || window.__tiereHalten)(); const P = Object.getPrototypeOf(r); if (!window.__lofiVor) window.__lofiVor = P._lofiTick; P._lofiTick = function () {}; if (r.state.symphony && r.state.symphony.enabled) r.disposeSymphony(); r.initSymphony(); window.__klangW = (" + W + ")(); return 1; }", [], 60000);
     await h.seite("async (x, z) => { await __klangW.umstellen(x, z); return 1; }", [M.x, M.z], 120000);
     const orte = await h.seite("async (x, z) => await __klangW.orte(x, z)", [M.x, M.z], 120000);
     const ORTE = ["wiese", "fahrend", "dorf", "glutArm"];
@@ -531,6 +535,9 @@ async function landschaftLauf(h) {
     const zeile = { orte: Object.keys(daten), db, leiber, rot };
     console.log("LANDSCHAFT " + JSON.stringify(zeile));
     return { wind: { fenster: wind.fenster, r0: wind.r0, stand: wind.stand }, ...zeile };
+    } finally {
+        await h.seite("async () => { const P = Object.getPrototypeOf(r); if (window.__lofiVor) P._lofiTick = window.__lofiVor; delete window.__lofiVor; delete window.__klangW; return 1; }", [], 60000).catch(() => {});
+    }
 }
 const LANDSCHAFT_PROBE = { sek: 120, befehl: sitzungBefehl(landschaftLauf, [windLauf, windSeite]), mutiert: true };
 // ─────────────────── klang.K5#2: der Klang-Takt in Bewegung, Aussetzer am Ausgang ───────────────────
@@ -1848,6 +1855,9 @@ async function pbProbe(art, aus) {
             await f();
             gelernt[sorte] = gelernt[sorte] || uhr() - a;
             schritte.push([name, +(uhr() - a).toFixed(1)]);
+            // DAS LEBENSZEICHEN JE SCHRITT (OMEN 08a8397b: profiband.K1–K3 und pflicht.E fielen „Deckel 187 s gerissen: Stille seit 21,8 s“,
+            // die Band-Fenster geschrieben, wohin der Rest ging, sagte keine Zeile): die Uhr je Schritt, der Läufer nennt die letzte
+            console.log("@@PUNKTE@@ ZEIT " + name + " " + uhr().toFixed(1) + " s");
         } catch (e) {
             for (const z of zellen) fehler[z] = String((e && e.message) || e).split("\n")[0].slice(0, 200);
             schritte.push([name, "Fehler"]);
@@ -1959,8 +1969,10 @@ async function pbProbe(art, aus) {
         }
     }
     // ── DER STROM: alle Bilder der Sitzung bis hierher ──
+    console.log("@@PUNKTE@@ ZEIT strom " + uhr().toFixed(1) + " s");
     await zelle(null);
     const L = M.stromLesen(STROM);
+    console.log("@@PUNKTE@@ ZEIT strom-gelesen " + uhr().toFixed(1) + " s (" + L.bilder.length + " Bilder)");
     const B_ = L.bilder;
     const quant = (a, p = 0.95) => {
         const s = a.filter(Number.isFinite).sort((x, y) => x - y);
