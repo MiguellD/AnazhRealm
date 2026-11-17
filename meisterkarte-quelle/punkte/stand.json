@@ -3081,7 +3081,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Gehen 99 Bilder · max 50.13 ms · 24.24 % > 33 ms · Fahrt 82 Bilder · max 66.95 ms · 42.68 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 24.24 % > 33 ms | Fahrt: 42.68 % > 33 ms an ee9c1965 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 77e079ae: Last: Referenz f 1,267 (Faden 1,175 · alle Kerne 1,267; vor 121/319,9 ms, nach 99,9/337,1 ms, Ruhe 103/266,1 ms seit 2026-11-14) · fremd: node scripts/diag-altlasten.cjs --selftest 48,8 CPU-s · Claude · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an 77e079ae: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,249; vor 121,2/297,8 ms, nach 90,1/229,1 ms, Ruhe 92,1/238,5 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
+   "beleg": "Maschine: gehalten: Gehen 99 Bilder · max 50.13 ms · 24.24 % > 33 ms · Fahrt 82 Bilder · max 66.95 ms · 42.68 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 24.24 % > 33 ms | Fahrt: 42.68 % > 33 ms an ee9c1965 radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 77e079ae: Last: Referenz f 1,267 (Faden 1,175 · alle Kerne 1,267; vor 121/319,9 ms, nach 99,9/337,1 ms, Ruhe 103/266,1 ms seit 2026-11-14) · fremd: node scripts/diag-altlasten.cjs --selftest 48,8 CPU-s · Claude · profiband.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 77e079ae: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,249; vor 121,2/297,8 ms, nach 90,1/229,1 ms, Ruhe 92,1/238,5 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3099,7 +3099,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, schmiede-core.js, scripts/lib/ausgabe-aufnahme.cjs +19)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3119,8 +3119,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 77e079ae: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,249; vor 121,2/297,8 ms, nach 90,1/229,1 ms, Ruhe 92,1/238,5 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 77e079ae: Last: Referenz f 1,316 (Faden 1,316 · alle Kerne 1,249; vor 121,2/297,8 ms, nach 90,1/229,1 ms, Ruhe 92,1/238,5 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
@@ -6216,7 +6217,7 @@
   },
   "karte2.same.preis.ausdauer": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, schmiede-core.js, scripts/lib/ausgabe-aufnahme.cjs +19)",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.ausdauer#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs) · karte2.same.preis.ausdauer#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
    "stationen": [
     {
      "id": "karte2.same.preis.ausdauer#1",
@@ -6235,7 +6236,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: foundry-core.js, schmiede-core.js, scripts/lib/ausgabe-aufnahme.cjs +19)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -6364,7 +6365,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 210,
+  "konsum": 211,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6534,10 +6535,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 130
+  "ohne": 129
  },
  "kopfVoll": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
- "zeit": "2026-11-17T04:52:27.708Z",
+ "zeit": "2026-11-17T04:58:13.485Z",
  "vorher": "389a6496",
  "bilanz": {
   "gewinn": [],
