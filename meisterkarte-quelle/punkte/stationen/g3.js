@@ -772,7 +772,11 @@ const luftDer = (j) => {
 // Namen: DAS BILD STEHT, sobald zwei Folge-Bilder der Geschichte (TRAA, die als Mittel anläuft) dasselbe Mittel der unteren Hälfte
 // tragen (≤ 0,2 %), höchstens die 32 der Linse (`__aufnahmeRuhig`, ihre Aufnahme am Anker der Warm-Bilder). DER WEG GEGEN DIE GESCHICHTE
 // (die Linse des Wegs): an Uhr 0 · 0,25 · 0,5 · 0,75 je Ort daneben die volle Aufnahme der Linse — weichen hell, Y, X oder R/B über
-// 0,5 Luma · 0,01 EV · 1 % ab, ist die Probe ROT beim Namen (Exit 1: das Urteil verlangt Exit 0), nie still kurz
+// 0,5 Luma · 0,01 EV · 1 % ab, ist die Probe ROT beim Namen (Exit 1: das Urteil verlangt Exit 0), nie still kurz.
+// DER WEG DER STERNE (17.11.): dieselbe Zeile trägt die Punkt-Quellen der OBEREN Hälfte (`sternPunkte`, die Zählung von TAG_STERNE) im
+// kurzen und im vollen Bild — der Weg oben misst den Boden der unteren Hälfte, den die Sterne nie lesen (GTX e2a28364 und Radeon fe885d9d:
+// an der Wiese weicht der Boden an JEDER Uhr ab, auch mittags, Y 0,016–0,027 EV, R/B 3,3 %, Genesis gleich — die Kürzung endet nach 2–5
+// Bildern, das volle Bild mittelt 32; der Himmel war ungeprüft)
 const TAG_RUHE = [
     "for (let k = 0; k < nWarm; k++) frame();",
     "window.__ruheBilder = 0;\n" +
@@ -793,11 +797,17 @@ const TAG_RUHE = [
 const TAG_WEG = [
     'const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;',
     'const u8 = (await window.__aufnahmeRuhig(W, H, 1, { satz: "messung" })).u8;\n' +
+        "                const sternPunkte = (L) => { let n = 0;" +
+        " for (let y = 3; y < (H >> 1) - 3; y++) for (let x = 3; x < W - 3; x++) { const c = L(x, y); let top = true;" +
+        " for (let dy = -1; dy <= 1 && top; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const v = L(x + dx, y + dy); if (v > c || (v === c && (dy < 0 || (!dy && dx < 0)))) { top = false; break; } }" +
+        " if (!top) continue; let lo = 1e9, hi = -1, sr = 0; for (let k = 0; k < 16; k++) { const a = (k * Math.PI) / 8, v = L(x + Math.round(3 * Math.cos(a)), y + Math.round(3 * Math.sin(a))); sr += v; lo = Math.min(lo, v); hi = Math.max(hi, v); }" +
+        " if (c - sr / 16 >= 8 && hi - lo <= 6) n++; } return n; };\n" +
         "                const P = (window.__wegProbe = window.__wegProbe || { uhren: [0, 0.25, 0.5, 0.75], zeilen: [], bilder: [] });\n" +
         "                P.bilder.push(window.__ruheBilder);\n" +
         "                if (P.uhren.includes(u)) {\n" +
         "                    const masse = (b) => { const q = [0, 0, 0, 0, 0]; let n = 0; for (let i = (H / 2) * W * 4; i < W * H * 4; i += 4, n++) { q[0] += luma709(b, i); for (let c = 0; c < 3; c++) q[c + 1] += lin[b[i + c]]; q[4] += vor(luma709([lin[b[i]], lin[b[i + 1]], lin[b[i + 2]]])); } return [q[0] / n, luma709(q.slice(1)) / n, q[4] / n, q[1] / Math.max(q[3], 1e-9)]; };\n" +
-        '                    P.zeilen.push([u, window.__ruheBilder, masse(u8), masse((await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8)]);\n' +
+        '                    const v8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8, oben = (b) => sternPunkte((x, y) => luma709(b, (y * W + x) * 4));\n' +
+        "                    P.zeilen.push([u, window.__ruheBilder, masse(u8), masse(v8), oben(u8), oben(v8)]);\n" +
         "                }",
 ];
 // das Urteil des Wegs in der Seite (nach der Linse): je Zeile [Uhr, Bilder, kurz, voll] mit [hell, Y, X, R/B]
@@ -806,7 +816,8 @@ const TAG_PRUEFE =
     " const ev = (a, b) => Math.abs(Math.log2(Math.max(a, 1e-9) / Math.max(b, 1e-9)));" +
     " const d = P.zeilen.map(([u, n, k, v]) => ({ uhr: u, bilder: n, hell: +Math.abs(k[0] - v[0]).toFixed(2), Y: +ev(k[1], v[1]).toFixed(4), X: +ev(k[2], v[2]).toFixed(4), rb: +Math.abs(k[3] / v[3] - 1).toFixed(4) }));" +
     " const rot = d.filter((x) => x.hell > 0.5 || x.Y > 0.01 || x.X > 0.01 || x.rb > 0.01).map((x) => 'Uhr ' + x.uhr + ' weicht ab: ' + JSON.stringify(x));" +
-    " const B = P.bilder; return { aufnahmen: B.length, bilder: B.length ? [Math.min(...B), +(B.reduce((a, b) => a + b, 0) / B.length).toFixed(1), Math.max(...B)] : null, gegen: d, rot: !d.length ? 'keine Zeile gegen die Geschichte' : rot.length ? rot.join(' | ') : null };";
+    " const sterne = P.zeilen.map(([u, , , , a, b]) => ({ uhr: u, kurz: a, voll: b }));" +
+    " const B = P.bilder; return { aufnahmen: B.length, bilder: B.length ? [Math.min(...B), +(B.reduce((a, b) => a + b, 0) / B.length).toFixed(1), Math.max(...B)] : null, gegen: d, sterne, rot: !d.length ? 'keine Zeile gegen die Geschichte' : rot.length ? rot.join(' | ') : null };";
 // DIE STERNE IM AUSGABE-BILD (Karte 2 planet.kosmos.himmelsmechanik S 1, Tiefe „Sterne nach Grenzgröße“): je Uhr in der oberen
 // Bildhälfte derselben Aufnahme die Punkt-Quellen — ein Pixel, das seine acht Nachbarn überragt (bei Gleichstand zählt der erste),
 // ≥ 8 Luma über dem Mittel seines Rings im Abstand 3 (16 Pixel) und dieser Ring flach (Spanne ≤ 6 Luma: keine Kante, kein Laub);
@@ -819,12 +830,8 @@ const TAG_PRUEFE =
 const TAG_STERNE = [
     "warm: +(s[1] / Math.max(s[3], 1e-9)).toFixed(3),",
     "warm: +(s[1] / Math.max(s[3], 1e-9)).toFixed(3),\n" +
-        "                    ...(await (async (b) => { const zaehle = (L) => { let n = 0;" +
-        " for (let y = 3; y < (H >> 1) - 3; y++) for (let x = 3; x < W - 3; x++) { const c = L(x, y); let top = true;" +
-        " for (let dy = -1; dy <= 1 && top; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const v = L(x + dx, y + dy); if (v > c || (v === c && (dy < 0 || (!dy && dx < 0)))) { top = false; break; } }" +
-        " if (!top) continue; let lo = 1e9, hi = -1, sr = 0; for (let k = 0; k < 16; k++) { const a = (k * Math.PI) / 8, v = L(x + Math.round(3 * Math.cos(a)), y + Math.round(3 * Math.sin(a))); sr += v; lo = Math.min(lo, v); hi = Math.max(hi, v); }" +
-        " if (c - sr / 16 >= 8 && hi - lo <= 6) n++; } return n; };" +
-        " const mit = (x, y) => luma709(b, (y * W + x) * 4); const punkte = zaehle(mit); const sf = st.starField;" +
+        "                    ...(await (async (b) => { const zaehle = sternPunkte;" +
+        " const mit =(x, y) => luma709(b, (y * W + x) * 4); const punkte = zaehle(mit); const sf = st.starField;" +
         " if (!sf || !sf.visible || !sf.parent) return { sterne: sf || !r._sterneZeigen ? 0 : null, punkte };" +
         " const par = sf.parent; par.remove(sf); let o; try { o = (await (window.__aufnahmeRuhig || window.__ausgabeAufnahme)(W, H, 1, { satz: \"messung\" })).u8; } finally { par.add(sf); }" +
         " return { sterne: zaehle((x, y) => Math.max(0, mit(x, y) - luma709(o, (y * W + x) * 4))), punkte }; })(u8)),\n" +
@@ -4222,7 +4229,15 @@ const stationen = [
             }
             const ORTE = ["genesis", "wiese", "genesis:third", "wiese:third"];
             if (!j || ORTE.every((o) => !j[o])) return { gruen: false, zahl: "keine Kurve der Tag-Achse (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
-            const wegOk = !!weg && !weg.rot;
+            // DER WEG DER STERNE: die Kürzung zählt am Himmel dieselben Punkte wie das volle Bild (je Ort vier Uhren, |kurz − voll| ≤
+            // max(1, 10 % von voll)); der Boden der unteren Hälfte (`weg.rot`) gehört der Licht-Kurve (licht.K1#1, himmelsmechanik#1)
+            // und steht hier als Lesewert
+            const sw = (weg && Array.isArray(weg.sterne) ? weg.sterne : []).filter((z) => Number.isFinite(z.kurz) && Number.isFinite(z.voll));
+            const swRot = sw.filter((z) => Math.abs(z.kurz - z.voll) > Math.max(1, 0.1 * z.voll)).map((z) => "Uhr " + z.uhr + " kurz " + z.kurz + " ↔ voll " + z.voll);
+            const wegOk = sw.length >= 4 * ORTE.length && !swRot.length;
+            const wegText =
+                (wegOk ? "gleich (" + sw.length + " Zeilen, Nacht kurz ↔ voll " + sw.filter((z) => z.uhr === 0).map((z) => z.kurz + "↔" + z.voll).join(" ") + ")" : "ROT " + (sw.length < 4 * ORTE.length ? sw.length + " von " + 4 * ORTE.length + " Zeilen" : swRot.join(" | ").slice(0, 160))) +
+                " · Boden (Lesewert) " + (weg ? (weg.rot ? String(weg.rot).slice(0, 80) : "gleich") : "fehlt");
             let gruen = hw && wegOk;
             const gamma = (a, b) => {
                 let c = 0, d = 0;
@@ -4261,10 +4276,13 @@ const stationen = [
                         " (n " + dae.length + ") · Grenzgröße des Felds " + (gr.length ? f(Math.min(...gr), 2) + "…" + f(Math.max(...gr), 2) : "—")
                 );
             }
-            return { gruen, zahl: teile.join(" · ") + " · WEG " + (wegOk ? "gleich" : "ROT " + (weg ? String(weg.rot).slice(0, 120) : "fehlt")) + " · " + (ad || "Adapter ungenannt") };
+            return { gruen, zahl: teile.join(" · ") + " · WEG der Sterne " + wegText + " · " + (ad || "Adapter ungenannt") };
         },
         proben: (() => {
-            const ad = "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null }) + "\n";
+            // je Ort vier Uhren (0 · 0,25 · 0,5 · 0,75), die Nacht trägt Punkte, der Tag keine
+            const sterneWeg = (f = (z) => z) => Array.from({ length: 16 }, (_, i) => f({ uhr: [0, 0.25, 0.5, 0.75][i % 4], kurz: i % 4 ? 0 : 40, voll: i % 4 ? 0 : 40 }, i));
+            const wegZeile = (o) => "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null, sterne: sterneWeg(), ...o }) + "\n";
+            const ad = wegZeile();
             const sonne = (u) => +(60 * Math.sin(2 * Math.PI * (u - 0.25))).toFixed(2);
             const grenzStern = (s) => (s >= -3 ? 0 : s <= -18 ? 40 : Math.round(40 * ((-3 - s) / 15) ** 2));
             // `punkte` die rohe Zahl des Bilds mit Feld, `pt` Lichtpunkte am Tag, die keine Sterne sind (Wolkenkante, Laub)
@@ -4292,8 +4310,13 @@ const stationen = [
                 { name: "die Probe ohne Sternzahl", stdout: ad, j: ohne, gruen: false },
                 { name: "die Sternzahl ohne den Vergleich mit ↔ ohne Sternfeld", stdout: ad, j: roh, gruen: false },
                 { name: "ohne Third", stdout: ad, j: { genesis: ort(), wiese: ort() }, gruen: false },
-                { name: "der Weg weicht ab", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ rot: "Uhr 0.25 weicht ab" }) + "\n", j: welt(), gruen: false },
-                { name: "swiftshader", stdout: "[linse-gpu] google/swiftshader (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null }) + "\n", j: welt(), gruen: false },
+                { name: "der Weg ohne die Sterne (die Probe bis 16.11.)", stdout: "[linse-gpu] amd/rdna-3 (Probe)\nWEG " + JSON.stringify({ rot: "Uhr 0.25 weicht ab" }) + "\n", j: welt(), gruen: false },
+                // GTX e2a28364: der Boden der Wiese weicht an jeder Uhr ab (Y 0,0249 EV), die Sterne lesen ihn nie
+                { name: "der Boden der Wiese weicht ab, die Sterne kurz = voll", stdout: wegZeile({ rot: "Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0249}" }), j: welt(), gruen: true },
+                { name: "die Kürzung zählt nachts 52 statt 40 Punkte (wiese Third)", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i === 12 ? { ...z, kurz: 52 } : z)) }), j: welt(), gruen: false },
+                { name: "ein Punkt mehr am Taghimmel der Kürzung (die Schwelle: 1)", stdout: wegZeile({ sterne: sterneWeg((z, i) => (i === 6 ? { ...z, kurz: 1 } : z)) }), j: welt(), gruen: true },
+                { name: "der Weg der Sterne an zwei Orten (8 von 16 Zeilen)", stdout: wegZeile({ sterne: sterneWeg().slice(0, 8) }), j: welt(), gruen: false },
+                { name: "swiftshader", stdout: "[linse-gpu] google/swiftshader (Probe)\nWEG " + JSON.stringify({ aufnahmen: 400, rot: null, sterne: sterneWeg() }) + "\n", j: welt(), gruen: false },
                 { name: "keine Kurve", stdout: ad, j: null, gruen: false },
             ];
         })(),
