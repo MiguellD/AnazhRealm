@@ -2149,8 +2149,7 @@ class AnazhRealm_siedlung_bewohner {
     _bewohnerZeuge(o) {
         const R2 = AnazhRealm.BEWOHNER.zeugeM ** 2;
         const cells = (this.state.worldMeta || {}).settlementCells || {};
-        const tag = Number.isFinite(this.state.timeOfDay) ? this.state.timeOfDay : 0.5;
-        const stunde = (((tag % 1) + 1) % 1) * 24; // die Stunde des Takts (`_tickBewohner`)
+        const stunde = ((((Number.isFinite(this.state.timeOfDay) ? this.state.timeOfDay : 0.5) % 1) + 1) % 1) * 24; // wie der Takt
         for (const S of (this._bewohnerSiedlungen || new Map()).values()) {
             let sah = false;
             let belegt = null;
@@ -2167,12 +2166,11 @@ class AnazhRealm_siedlung_bewohner {
         }
     }
     // DER ZEUGE WEICHT (kollektiv#1, w28-zeugen-weichen): wer die Tat am Ort o sah und sie fürchtet (`_kreaturFurchtErinnert` > 0),
-    // verlässt den Kreis, in dem er sie sah — die Flucht aus zweiter Hand des EINEN Furcht-Gesetzes (tetrapoda `fluchtRadius`: B
-    // trägt die Flucht, die das Glied übernimmt, B = die Tat und `zeugeM`), wie das Tier, das den Alarm seines Verbands nimmt. Sein
-    // Soll (`_bewohnerSoll`) nennt bis zur nächsten Wende seines Tags (`_bewohnerWende`) den nächsten Stand der Siedlung jenseits
-    // des Kreises, den keiner zum Ziel hat (`belegt`) — ein Ort, den die Wege der Liste schon tragen; dann holt ihn sein Tag zurück
-    // (`_bewohnerZiel`). Wer ohnehin hinein oder jenseits des Kreises geht, geht weiter; am Steuer bleibt er im Wagen. Bis hier
-    // weitete die Furcht nur den Raum von 0,5 m, den er dem Gehenden lässt: 39 Zeugen, Median 10,9 → 10,9 m (main 31d156e8, Radeon).
+    // verlässt den Kreis, in dem er sie sah — die Flucht aus zweiter Hand des EINEN Furcht-Gesetzes (tetrapoda `fluchtRadius`, B = die
+    // Tat und `zeugeM`). Sein Soll (`_bewohnerSoll`) nennt bis zur nächsten Wende seines Tags den nächsten Stand jenseits des Kreises,
+    // den keiner zum Ziel hat (`belegt`) und dessen Weg (`_bewohnerStrecke`) ihn nie näher an die Tat führt, als er steht (headless
+    // führte der Weg zum nächsten Stand über das Netz 2 m vor ihr vorbei); dann holt ihn sein Tag zurück (`_bewohnerZiel`). Wer hinein
+    // oder jenseits geht, geht weiter; am Steuer bleibt er im Wagen. Bis hier weitete die Furcht nur den Raum des Vorbeigangs (0,5 m).
     _bewohnerWeichen(S, b, o, stunde, belegt) {
         if (b.amSteuer || b.ankunft || !b.ziel || !(this._kreaturFurchtErinnert(b.leib) > 0)) return false;
         const B = { x: o.x, z: o.z, r: AnazhRealm.BEWOHNER.zeugeM };
@@ -2180,15 +2178,19 @@ class AnazhRealm_siedlung_bewohner {
         b.weichen = null;
         const soll = this._bewohnerSoll(b, stunde);
         if (soll.drinnen || Math.hypot(soll.ziel.x - o.x, soll.ziel.z - o.z) >= R) return false;
-        const p = b.leib.position;
-        let [ort, best] = [null, Infinity];
+        const p = { x: b.leib.position.x, z: b.leib.position.z };
+        const [T, d2] = [{ minX: o.x, maxX: o.x, minZ: o.z, maxZ: o.z }, (p.x - o.x) ** 2 + (p.z - o.z) ** 2 - 1e-6];
+        const fern = (w) => !!w && [p, ...w].every((e, i, v) => !i || this._streckeBoxAbstand2(T, v[i - 1].x, v[i - 1].z, e.x, e.z) >= d2); // prettier-ignore
+        const fort = [];
         for (const x of S.liste)
             for (const k of AnazhRealm.BEWOHNER.staende) {
-                const q = x.orte[k];
+                const q = x.orte[k]; // der billige Filter zuerst: jenseits des Kreises, frei, auf seiner Seite der Tat
                 if (!q || belegt.has(q) || Math.hypot(q.x - o.x, q.z - o.z) < R) continue;
-                const d = Math.hypot(q.x - p.x, q.z - p.z);
-                if (d < best) [ort, best] = [q, d];
+                if ((q.x - p.x) * (p.x - o.x) + (q.z - p.z) * (p.z - o.z) >= 0)
+                    fort.push([Math.hypot(q.x - p.x, q.z - p.z), q]);
             }
+        fort.sort((a, c) => a[0] - c[0]);
+        const [, ort] = fort.find(([, q]) => fern(this._bewohnerStrecke(S, { ...p }, q, 0))) || [];
         if (!ort) return false;
         const bis = this._bewohnerWende(b, stunde, stunde + 24);
         b.weichen = { ort, plan: soll.ziel, ab: stunde, dauer: bis === null ? 24 : bis - stunde };
