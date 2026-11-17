@@ -1479,3 +1479,4 @@ omen-gtx-gtx-7de938ab-w1147-2-7de938ab UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN
 2026-11-17 12:03 w28-rauch-bild Abgabe b815623a — das EINE Rauch-Bild als Fahne (Muster in der Welt, Ballen längs des Zugs gestreckt, Unterseite zum Feuer, Auslaufen am Auge), Leser Brand und Kamine, Linse gate:post-kette (k); Bericht bericht/1711-rauch-bild/
 2026-11-17 12:04 landung ABGEBROCHEN main 7de938ab: sg-sw-ring3 wartete am GPU-Schloss — BEHALTEN 0 Station(en) (gepusht), 50 stellen sich hinten an
 2026-11-17 12:05 landung Zwischenstand main 7de938ab: misst 50 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (4 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
+2026-11-17 12:06 landung ABGEBROCHEN main 7de938ab: sg-sw-ring3 wartete am GPU-Schloss — BEHALTEN 0 Station(en) (gepusht), 50 stellen sich hinten an
