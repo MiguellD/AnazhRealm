@@ -12,6 +12,9 @@ class AnazhRealm_speicher_laden {
         // DIE SPERRE DES LADENS (speicher.K1): bis der letzte Restore lief, ist die Welt halb — jeder Schreiber, der in ihr
         // ruft (die Stoff-Setter der Seele riefen neunmal vor den Bauten), wartet; danach schreibt EIN Stand die ganze (im nächsten Leerlauf).
         const sperre = (this._ladeSperre = { verlangt: false });
+        // DAS REGISTER DER WÄNDE (erleben.schoepfen.schutz): jede Wand eines Glieds zählt hier, was sie von der geladenen Welt
+        // abweist (`_ladeWeist`); am Ende spricht EINE Zeile die Liste (`_wandSagt`)
+        const abweisung = (this._ladeAbweisung = new Map());
         try {
             this._loadStateRestorePlayerPosition(state);
             this._loadStateRestoreBasicState(state);
@@ -35,6 +38,7 @@ class AnazhRealm_speicher_laden {
                 for (const raw of state.portalHalls) {
                     const admitted = this._admitForeignPortalHall(raw);
                     if (admitted) this.state.portalHalls.set(admitted.name, admitted);
+                    else this._ladeWeist("speicher.weist.halle");
                 }
             }
             // Φ6 (V18.191) — Compute-Spende-Pool restaurieren. Compute-Contributions
@@ -48,7 +52,7 @@ class AnazhRealm_speicher_laden {
                         // Stichproben-Wahrheit ist deterministisch, sie bleibt wahr).
                         if (raw.status === "verified" || raw.status === "forged") admitted.status = raw.status;
                         this.state.computeContributions.set(admitted.inputHash, admitted);
-                    }
+                    } else this._ladeWeist("speicher.weist.spende");
                 }
             }
             // Playtest-Spenden: einfache Array-Wiederherstellung mit Sieb (recordPlaytestRun
@@ -57,11 +61,11 @@ class AnazhRealm_speicher_laden {
             if (Array.isArray(state.playtestContributions)) {
                 this.state.playtestContributions = state.playtestContributions
                     .filter((e) => {
-                        if (!e || !e.commit) return false;
-                        if (e.providedBy && this.state.revokedKeys && this.state.revokedKeys.has(e.providedBy)) {
-                            return false;
-                        }
-                        return true;
+                        const gilt =
+                            !!(e && e.commit) &&
+                            !(e.providedBy && this.state.revokedKeys && this.state.revokedKeys.has(e.providedBy));
+                        if (!gilt) this._ladeWeist("speicher.weist.spende");
+                        return gilt;
                     })
                     .slice(-64);
             }
@@ -69,11 +73,38 @@ class AnazhRealm_speicher_laden {
             if (!externalState) this._loadStateRestoreVersionHistory();
         } finally {
             this._ladeSperre = null;
+            this._ladeAbweisung = null;
         }
+        this._wandSagt(abweisung);
         // die Lade-Sicherung im nächsten Leerlauf-Fenster (Takt): der Boot trägt sie nicht, der Besen hat bis dahin vorgebacken —
         // stirbt die Seite davor, liegt der geladene Stand noch ganz auf der Platte
         if (sperre.verlangt) this._imLeerlauf(() => this.saveState(true), 2000);
         return true;
+    }
+
+    // DIE ABWEISUNG SPRICHT (erleben.schoepfen.schutz): was eine Wand von einer geladenen oder fremden Welt abweist — eine
+    // Welt-Regel, die den frozen Worldgen pflügt, ein Bau ohne Bauplan, eine widerrufene Herkunft, ein Stand, der sich nicht
+    // lesen ließ —, hört der Spieler über den EINEN Spieler-Kanal (`_spielerSagt`), in der Sprache der Tafel. Bis hierher stand
+    // es nur im Log: eine fremde Pflug-Regel fiel, und der Spieler sah eine Welt, der still ein Gesetz fehlte. Jede Wand zählt
+    // je Art (`_ladeWeist`, der Schlüssel ihrer Zeile) in ein Register: das des laufenden Ladens (`loadState`) oder das eines
+    // Imports (`importRecipesFromWorld`), und an dessen Ende spricht EINE Zeile die Liste — ohne Register spricht die Wand
+    // sofort. Ein Laden ohne Abweisung sagt nichts.
+    _ladeWeist(schluessel, n = 1, z = this._ladeAbweisung) {
+        if (!n) return;
+        if (z) z.set(schluessel, (z.get(schluessel) || 0) + n);
+        else this._wandSagt(new Map([[schluessel, n]]));
+    }
+
+    // Die Zeile der Wände (`speicher.laden-weist`, je Art `n ×` ihre Zeile) — sie wartet auf das erste Bild der Welt
+    // (`_weltbildKommt`): beim Boot und beim Welt-Wechsel steht davor der Ladeschirm, und der Fading-Feed (8,2 s) verblasste sie
+    // ungelesen. Steht das Bild schon (ein Import in der lebenden Welt), spricht sie im selben Takt.
+    _wandSagt(zaehler) {
+        if (!zaehler || !zaehler.size) return;
+        this._ladeSagt(["speicher.laden-weist", { teile: [...zaehler].map(([k, n]) => [k, { n }]) }]);
+    }
+
+    _ladeSagt(zeile) {
+        this._weltbildKommt().then(() => this._spielerSagt(zeile));
     }
 
     // DIE GRUNDSTELLUNG OHNE NEULADEN (w4-grundstellung; der Schöpfer 29.10.: „Die Welt ist in wenigen Sekunden geladen — das
@@ -225,6 +256,8 @@ class AnazhRealm_speicher_laden {
                 return JSON.parse(legacy);
             } catch (e) {
                 this.log(`Legacy-Speicherstand korrupt (${e.message}).`, "ERROR");
+                // die Vorlade sah keinen lesbaren Legacy-Save (`_bootLeer`: „kein Legacy-Save“) — er liegt da, nur kaputt
+                this._ladeSagt(["speicher.laden-unlesbar", { grund: String(e.message) }]);
                 return null;
             }
         }
@@ -241,9 +274,18 @@ class AnazhRealm_speicher_laden {
             );
             return null;
         }
-        // laut nur die Rettung: ein korruptes Glied oder der .bak (ein atomarer Schreiber hinterlässt keins von beiden)
-        if (fund.quelle.startsWith(".bak") || fund.befund.some((b) => ["korrupt", "unlesbar"].includes(b.art)))
+        // laut nur die Rettung: ein korruptes Glied oder der .bak (ein atomarer Schreiber hinterlässt keins von beiden) — auch
+        // für den Spieler: sein Stand kam aus einem anderen Glied als dem, das er schrieb (die Vorlade schweigt, sie fand ja einen)
+        const bak = fund.quelle.startsWith(".bak");
+        if (bak || fund.befund.some((b) => ["korrupt", "unlesbar"].includes(b.art))) {
             this.log(`Welt aus ${fund.quelle} geladen (${this._befundText(fund.befund)}).`, "WARN");
+            const quelle = bak
+                ? ["speicher.quelle-bak"]
+                : fund.quelle === "Platz"
+                  ? ["speicher.befund.platz"]
+                  : fund.quelle;
+            this._ladeSagt(["speicher.laden-gerettet", { befund: this._befundZeilen(fund.befund), quelle }]);
+        }
         return fund.state;
     }
 
@@ -429,9 +471,11 @@ class AnazhRealm_speicher_laden {
                     };
                     continue;
                 }
-                if (!entry || !Array.isArray(entry.bodyParts)) continue;
-                const valid = this.validateBlueprintParts(entry.bodyParts);
-                if (!valid.ok) continue;
+                const valid = entry && Array.isArray(entry.bodyParts) && this.validateBlueprintParts(entry.bodyParts);
+                if (!valid || !valid.ok) {
+                    this._ladeWeist("speicher.weist.seele");
+                    continue;
+                }
                 restored[key] = {
                     name: key,
                     label: typeof entry.label === "string" ? entry.label : key,
@@ -442,13 +486,15 @@ class AnazhRealm_speicher_laden {
             this.state.customSouls = restored;
         }
         // DER PRÄGUNGS-SPEICHER VOR playerSoul restaurieren (der Seelen-Guss liest _koerperStudioDials): jede Prägung läuft durch
-        // DENSELBEN fail-closed-Prüfer wie der Übergabe-Kanal (`_studioWerkPruefen`, die Art aus dem Rezept). Müll fällt still.
+        // DENSELBEN fail-closed-Prüfer wie der Übergabe-Kanal (`_studioWerkPruefen`, die Art aus dem Rezept). Was er abweist,
+        // hört der Spieler (`_ladeWeist`); eine leere Prägung (kein Regler weicht) ist keine Abweisung.
         if (state.studioOv && typeof state.studioOv === "object" && !Array.isArray(state.studioOv)) {
             const ziel = (this._ensureWorkshopState().studioOv = {});
             for (const preset of Object.keys(state.studioOv)) {
                 const e = state.studioOv[preset];
                 const p = e && typeof e === "object" ? this._studioWerkPruefen(null, preset, e, e.__gestalt) : null;
-                if (p && Object.keys(p).length) ziel[preset] = p;
+                if (!p) this._ladeWeist("speicher.weist.praegung");
+                else if (Object.keys(p).length) ziel[preset] = p;
             }
         }
         // an Ort und Stelle gießt nur eine andere Seele den Leib neu (`_standRueckspielen`)
@@ -641,7 +687,8 @@ class AnazhRealm_speicher_laden {
                 if (!m || typeof m.name !== "string") continue;
                 if (this.state.materials[m.name] && this.state.materials[m.name].builtIn) continue;
                 const r = this.defineMaterial(m.name, m.color, m.tags || {});
-                if (r.ok) {
+                if (!r.ok) this._ladeWeist("speicher.weist.stoff");
+                else {
                     restoredMats++;
                     // Substanz-Treue (taille-spec §2/§6): defineMaterial ist die [0,1]-Wand der lokalen Schöpfung, der
                     // RESTORE bewahrt die gespeicherte Substanz exakt — label, exakte Tag-Magnituden (die Klemme sitzt
@@ -665,6 +712,7 @@ class AnazhRealm_speicher_laden {
                 if (this.state.blueprints[bp.name] && this.state.blueprints[bp.name].builtIn) continue;
                 const restored = this._deserializeBlueprint(bp);
                 if (restored) this.state.blueprints[restored.name] = restored;
+                else this._ladeWeist("speicher.weist.bauplan");
             }
             this.log(`Baupläne geladen: ${state.blueprints.length} eigene`);
             // Role-Cache-Migration: Welten mit genVersion < 2 erben `bp.role: 'soul'` für Eichen, die die
@@ -694,8 +742,13 @@ class AnazhRealm_speicher_laden {
             for (const t of state.tools) {
                 if (!t || typeof t.name !== "string") continue;
                 if (this.state.tools[t.name] && this.state.tools[t.name].builtIn) continue;
-                if (!AnazhRealm.TOOL_OP_CLASSES.has(t.opClass)) continue;
-                if (!AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(t.opName || ""))) continue;
+                if (
+                    !AnazhRealm.TOOL_OP_CLASSES.has(t.opClass) ||
+                    !AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(t.opName || ""))
+                ) {
+                    this._ladeWeist("speicher.weist.werkzeug");
+                    continue;
+                }
                 const cap = Number(t.precisionCap);
                 this.state.tools[t.name] = {
                     name: t.name,
@@ -849,8 +902,10 @@ class AnazhRealm_speicher_laden {
             const e = this._bauAusStand(a, state, umzug && umzug.has(i) ? umzug.get(i) : null);
             if (!e && !bauer[AnazhRealm.BAUPLAN_UMZUG[a.type] || a.type]) ohneBauplan++;
         }
-        if (ohneBauplan)
+        if (ohneBauplan) {
             this.log(`Laden: ${ohneBauplan} Einträge ohne Bauplan fielen (ihr Bauplan ist gefallen).`, "WARN");
+            this._ladeWeist("speicher.weist.bau", ohneBauplan);
+        }
         // DIE ALTEN ORTE ZIEHEN UM (K10 × Entscheid §5.4): jedes Haus eines Orts steht auf seinem Erdbau
         const geerdet = this._erdbauAltOrte(this.state.architectures, (e) => e.position.y);
         if (geerdet) this.log(`Erdbau: ${geerdet} Häuser eines älteren Stands auf ihren Grund geerdet.`, "INFO");
@@ -979,14 +1034,17 @@ class AnazhRealm_speicher_laden {
                 }
             }
         }
+        // die Fähigkeiten durch ihr Gesetz (`_faehigkeitGrund`): was es nicht trägt, fällt und spricht (`_ladeWeist`) — bis hierher
+        // lag jede in der Liste, und eine unbekannte Tat stand bei jedem Ruf als unknown_op im Log
         if (Array.isArray(state.dslAbilities)) {
-            this.state.dsl.abilities = state.dslAbilities;
-            for (const a of state.dslAbilities) {
-                if (a && typeof a.name === "string" && Array.isArray(a.program)) {
-                    this.state.abilities[a.name] = () => this.dslRun(a.program, { source: `ability:${a.name}` });
-                }
-            }
-            this.log(`DSL-Abilities geladen: ${state.dslAbilities.length}`);
+            this.state.dsl.abilities = state.dslAbilities.filter((a) => {
+                const gilt = !!a && !this._faehigkeitGrund(a.name, a.program);
+                if (!gilt) this._ladeWeist("speicher.weist.programm");
+                return gilt;
+            });
+            for (const a of this.state.dsl.abilities)
+                this.state.abilities[a.name] = () => this.dslRun(a.program, { source: `ability:${a.name}` });
+            this.log(`DSL-Abilities geladen: ${this.state.dsl.abilities.length}`);
         }
         if (Array.isArray(state.dslHistory)) {
             this.state.dsl.history = state.dslHistory.slice(-this.state.dsl.historyCap);
@@ -1028,6 +1086,7 @@ class AnazhRealm_speicher_laden {
                     `Welt-Regel verworfen: ihre Wirkung ${JSON.stringify(s.effect).slice(0, 80)} schreibt den frozen Worldgen`,
                     "WARN"
                 );
+                this._ladeWeist("speicher.weist.regel");
                 continue;
             }
             if (restored.length >= cfg.cap) break;
@@ -1076,9 +1135,16 @@ class AnazhRealm_speicher_laden {
                 if (n >= AnazhRealm.CAPABILITY_PROPOSAL_MAX) break;
                 const c = state.grantedCapabilities[key];
                 const name = String(key).trim().toLowerCase();
-                if (!/^[a-z0-9_-]{1,32}$/.test(name)) continue;
-                if (!c || !this._isRuleEffectAllowed(c.dsl)) continue;
-                if (this._dslContainsAnyOp(c.dsl, AnazhRealm.NON_BROADCASTABLE_OPS)) continue;
+                // dieselbe Wand wie die Welt-Regeln (`_isRuleEffectAllowed`) und die Sende-Wand — was fällt, hört der Spieler
+                if (
+                    !/^[a-z0-9_-]{1,32}$/.test(name) ||
+                    !c ||
+                    !this._isRuleEffectAllowed(c.dsl) ||
+                    this._dslContainsAnyOp(c.dsl, AnazhRealm.NON_BROADCASTABLE_OPS)
+                ) {
+                    this._ladeWeist("speicher.weist.faehigkeit");
+                    continue;
+                }
                 out[name] = {
                     name,
                     desc: typeof c.desc === "string" ? c.desc.slice(0, 120) : "",
@@ -1133,6 +1199,111 @@ class AnazhRealm_speicher_laden {
         }
     }
 
+    // DIE WAND DER TÜR (erleben.schoepfen.schutz): die EINE Prüfung einer Welt, die von außen kommt — jede Tür ruft sie in
+    // `_weltBetreten` (das Welt-Tor ersetzen, daneben legen und verschmelzen über `importWorldBeside`, die Einladung und das
+    // Adress-Portal `_importGuestWorld`, der Snapshot eines Mitspielers `_p2pApplyWorldSnapshot`, die Geburten der Tore). Bis
+    // hierher prüften vier Türen je für sich nur das Gesetz (`_erbgutEinlass`): eine Welt mit einer Pflug-Regel trat ein, die
+    // Lade-Kette warf die Regel still weg, und der Spieler stand in einer halben Welt. Feindlich ist, was die Lade-Kette nicht
+    // ganz und so, wie es kam, tragen kann — die Welt fällt GANZ, nie halb, nie still repariert:
+    //   Form       die Wurzel ist kein Objekt, ein Feld der Stand-Tafel hat eine andere Gestalt (Liste ↔ Objekt ↔ Wert), ein
+    //              Kopf-Feld des worldMeta ist kein Text (worldId, slug, seed, schemaVersion) oder keine Liste (parentWorlds)
+    //   Gift       ein Schlüssel oder ein Name (er wird Schlüssel: `state.blueprints[name]`), der nach dem Prototyp greift
+    //              (`__proto__`, `constructor`, `prototype`)
+    //   Last       tiefer als `WELT_EINLASS.tiefe`, mehr als `.knoten` Glieder, ein Text länger als `.zeichen`
+    //   Zukunft    eine Boden-Generation, Herkunft oder Genese-Version, die dieser Build nicht kennt (die Versions-Lüge)
+    //   Gesetz     ein Gesetz, das kein Build trägt (`_weltGesetz`, am Abzug: die Datei bleibt, wie sie kam)
+    //   Taten      die Skript-Träger der Welt: eine Welt-Regel, gewährte Fähigkeit oder ein Fähigkeiten-Programm, das seine Wand
+    //              im Laden nicht trägt (`_isRuleEffectAllowed`, `NON_BROADCASTABLE_OPS`, `_faehigkeitGrund` — dieselben
+    //              Prädikate wie ihre Restores; dort fällt der Eintrag und die Lade-Wand spricht, hier fällt die Welt laut)
+    // Eine ehrliche Welt jeder Version (ein Feld, das dieser Build nicht kennt, ist kein Gift) geht unberührt durch. → Grund | null
+    _weltEinlass(snapshot) {
+        const E = AnazhRealm.WELT_EINLASS;
+        const art = (v) => (Array.isArray(v) ? "Liste" : v && typeof v === "object" ? "Objekt" : "Wert");
+        if (!snapshot || art(snapshot) !== "Objekt") return `kein Welt-Stand (die Wurzel ist ${art(snapshot)})`;
+        // Gift und Last in EINEM Gang ohne Rekursion (eine verschachtelte Datei bricht keinen Stapel)
+        const gang = [[snapshot, 0, ""]];
+        let knoten = 0;
+        while (gang.length) {
+            const [v, tiefe, pfad] = gang.pop();
+            if (++knoten > E.knoten) return `zu groß (mehr als ${E.knoten} Glieder)`;
+            if (typeof v === "string") {
+                if (v.length > E.zeichen)
+                    return `ein Text in ${pfad || "der Wurzel"} ist länger als ${E.zeichen} Zeichen`;
+                // ein Name wird Schlüssel (Bauplan, Stoff, Werkzeug, Fähigkeit: `state.blueprints[name]`)
+                if (E.gift.includes(v)) return `der Name „${v}“ in ${pfad} greift nach dem Prototyp`;
+                continue;
+            }
+            if (!v || typeof v !== "object") continue;
+            if (tiefe >= E.tiefe) return `zu tief verschachtelt (mehr als ${E.tiefe} Ebenen bei ${pfad.slice(0, 48)}…)`;
+            for (const k of Object.keys(v)) {
+                if (E.gift.includes(k))
+                    return `der Schlüssel „${k}“ in ${pfad || "der Wurzel"} greift nach dem Prototyp`;
+                gang.push([v[k], tiefe + 1, pfad ? pfad + "." + k : k]);
+            }
+        }
+        // die Gestalt jedes Felds der Stand-Tafel (gemerkt am ersten Stand dieses Builds: Liste, Objekt oder Wert)
+        const soll = (this._standGestalt ||= Object.fromEntries(
+            Object.entries(this.buildStateSnapshot())
+                .filter(([, v]) => v != null)
+                .map(([k, v]) => [k, art(v)])
+        ));
+        for (const [k, v] of Object.entries(snapshot))
+            if (v != null && soll[k] && art(v) !== soll[k])
+                return `das Feld ${k} ist ein(e) ${art(v)} statt ${soll[k]}`;
+        const wm = snapshot.worldMeta || {};
+        for (const k of ["worldId", "slug", "seed", "schemaVersion"])
+            if (wm[k] != null && typeof wm[k] !== "string") return `worldMeta.${k} ist kein Text`;
+        if (
+            wm.parentWorlds != null &&
+            !(Array.isArray(wm.parentWorlds) && wm.parentWorlds.every((p) => typeof p === "string"))
+        )
+            return "worldMeta.parentWorlds ist keine Liste von Welt-Ids";
+        // die Versions-Lüge: eine Welt aus einer Zukunft, die dieser Build nicht kennt, zeichnete er falsch
+        const heute = (k) => this._standTafel().find((z) => z[0] === k)[1](false, {}); // die Zeile der Stand-Tafel dieses Builds
+        const zukunft = [
+            ["bodenGeneration", snapshot.bodenGeneration, heute("bodenGeneration")],
+            ["herkunft", snapshot.herkunft, heute("herkunft")],
+            ["worldMeta.genVersion", wm.genVersion, AnazhRealm.GEN_VERSION],
+        ];
+        for (const [name, v, max] of zukunft)
+            if (v != null && !(Number.isInteger(v) && v >= 0 && v <= max))
+                return `${name} ${JSON.stringify(v)} — dieser Build kennt 0–${max}`;
+        try {
+            AnazhRealm._weltGesetz({ ...wm }); // am Abzug: die Normalform fällt in die Kopie, die Datei bleibt, wie sie kam
+        } catch (e) {
+            return String((e && e.message) || e);
+        }
+        const regeln = snapshot.worldRules == null ? [] : snapshot.worldRules;
+        const faehig = snapshot.grantedCapabilities == null ? {} : snapshot.grantedCapabilities;
+        if (!Array.isArray(regeln) || art(faehig) !== "Objekt")
+            return "die Welt-Regeln oder Fähigkeiten haben keine Gestalt";
+        for (let i = 0; i < regeln.length; i++) {
+            const s = regeln[i];
+            if (!s || !Array.isArray(s.cond) || !s.cond.length || !Array.isArray(s.effect) || !s.effect.length)
+                return `Welt-Regel ${i + 1} trägt keine Bedingung und Wirkung`;
+            if (!this._isRuleEffectAllowed(s.effect)) {
+                const op = [...AnazhRealm.RULE_FORBIDDEN_EFFECT_OPS].find((o) =>
+                    this._dslContainsAnyOp(s.effect, new Set([o]))
+                );
+                return `Welt-Regel ${i + 1}: ihre Wirkung ${op || JSON.stringify(s.effect).slice(0, 40)} ist eine verbotene Tat (sie pflügte den gefrorenen Weltgrund oder baute je Takt)`;
+            }
+        }
+        for (const [name, c] of Object.entries(faehig)) {
+            const dsl = c && c.dsl;
+            if (!this._isRuleEffectAllowed(dsl) || this._dslContainsAnyOp(dsl, AnazhRealm.NON_BROADCASTABLE_OPS))
+                return `die Fähigkeit „${name}“ trägt eine Tat, die keine Welt weitergibt`;
+        }
+        const programme = snapshot.dslAbilities == null ? [] : snapshot.dslAbilities;
+        if (!Array.isArray(programme)) return "die Fähigkeiten-Programme haben keine Gestalt";
+        for (let i = 0; i < programme.length; i++) {
+            const a = programme[i];
+            const g = a && typeof a === "object" ? this._faehigkeitGrund(a.name, a.program) : "kein Eintrag";
+            if (g)
+                return `Fähigkeit ${i + 1}${a && typeof a.name === "string" ? " „" + a.name.slice(0, 40) + "“" : ""}: ${g}`;
+        }
+        return null;
+    }
+
     // DIE TÜR (Ring 8; seit tore-k5-tuer tauscht die Seite am Ort): eine andere Welt betritt die Seite — das Welt-Tor „Ersetzen", der
     // Snapshot eines Mitspielers (WS-Snapshot eines Resyncs, world-pull) und der Beitritt (Einladung, Adress-Portal:
     // `_importGuestWorld`). EINE Stelle, in dieser Folge:
@@ -1148,9 +1319,21 @@ class AnazhRealm_speicher_laden {
     //   3. SPERRE, ZEIGER, WECHSEL AM ORT (`_weltWechsel`): die alte Welt geht ganz (`_weltAbschied`), die neue kommt an wie
     //      beim Boot — nie lädt die Seite sie über die alte (die lebte darin weiter: Tiere, Chunks, Worker, Wasser).
     // `meta` legt Felder ins worldMeta (der Gast: role, hostInfo, slug); `wechseln:false` legt nur ab (daneben legen, Tests),
-    // `aktiv:false` lässt dann auch den Aktiv-Zeiger (daneben legen). → {ok, worldId|reason}
-    _weltBetreten(snapshot, meta = null, { wechseln = true, aktiv = true, zeugnisA = null, p2pAuto = null } = {}) {
-        if (!snapshot || typeof snapshot !== "object") return { ok: false, reason: "kein Snapshot" };
+    // `aktiv:false` lässt dann auch den Aktiv-Zeiger (daneben legen); `zeugnis` ({schluessel, werte, ctx}, die Zeile der Tafel wie `zeugnisA`) schreibt den Empfang ins Journal
+    // der kommenden Welt (ersetzen, daneben). Vor allem anderen DIE WAND (`_weltEinlass`): eine feindliche oder kaputte Welt
+    // kommt nie herein — die Seite sichert nichts, legt nichts ab, wechselt nicht, und der Spieler hört den Grund.
+    // → {ok, worldId|reason, abgewiesen?}
+    _weltBetreten(
+        snapshot,
+        meta = null,
+        { wechseln = true, aktiv = true, zeugnisA = null, p2pAuto = null, zeugnis = null } = {}
+    ) {
+        const nein = this._weltEinlass(snapshot);
+        if (nein) {
+            this.log(`Die fremde Welt abgewiesen: ${nein}`, "WARN");
+            this._spielerSagt(["speicher.welt-abgewiesen", { grund: nein }]);
+            return { ok: false, reason: nein, abgewiesen: true };
+        }
         if (!this._weltWechselSperre && this.state.worldMeta && this.state.worldMeta.worldId) {
             if (zeugnisA)
                 this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", [zeugnisA.schluessel, zeugnisA.werte]);
@@ -1158,13 +1341,17 @@ class AnazhRealm_speicher_laden {
         }
         const wm = snapshot.worldMeta && typeof snapshot.worldMeta === "object" ? snapshot.worldMeta : {};
         const welt = { ...snapshot, worldMeta: { ...wm, ...(meta || {}) } };
-        // jede Erinnerung der fremden Welt ist Datum (`_erinnerungFuerKi`): ihr Stempel `d` fällt, wer ihn auch schrieb
+        // jede Erinnerung der fremden Welt ist Datum (`_erinnerungFuerKi`): ihr Stempel `d` fällt, wer ihn auch schrieb — das
+        // Journal ist eine Kopie, das Zeugnis des Empfangs berührt die Datei des Senders nie
         const wj = welt.worldJournal;
-        if (wj && Array.isArray(wj.entries))
+        if (wj && typeof wj === "object")
             welt.worldJournal = {
                 ...wj,
-                entries: wj.entries.map((e) => (e && typeof e === "object" ? { ...e, d: 0 } : e)),
+                entries: (Array.isArray(wj.entries) ? wj.entries : []).map((e) =>
+                    e && typeof e === "object" ? { ...e, d: 0 } : e
+                ),
             };
+        if (zeugnis) AnazhRealm._zeugnisEintragen(welt, [zeugnis.schluessel, zeugnis.werte], zeugnis.ctx);
         if (typeof welt.worldMeta.worldId !== "string" || !welt.worldMeta.worldId)
             welt.worldMeta.worldId = AnazhRealm._neueWeltId();
         const ab = this._weltAblegen(welt, { aktiv: aktiv || wechseln });
@@ -1417,14 +1604,13 @@ class AnazhRealm_speicher_laden {
                 this._openWeltTorDialog(parsed, file);
             } catch (e) {
                 this.log(`Import fehlgeschlagen (${file.name}): ${e.message}`, "ERROR");
-                const chatOutput = document.getElementById("chat-output");
-                if (chatOutput) {
-                    this._chatEcho(["speicher.import-fehl", { grund: String(e.message) }]);
-                }
+                this._spielerSagt(["speicher.import-fehl", { grund: String(e.message) }]);
             }
         };
         reader.onerror = () => {
             this.log(`FileReader-Fehler beim Lesen von ${file.name}`, "ERROR");
+            const e = reader.error;
+            this._spielerSagt(["speicher.import-fehl", { grund: String((e && e.message) || file.name) }]);
         };
         reader.readAsText(file);
     }
@@ -1462,10 +1648,7 @@ class AnazhRealm_speicher_laden {
             } catch (e) {
                 const grund = String((e && e.message) || e);
                 this.log(grund, "ERROR");
-                const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
-                if (chatOutput) {
-                    this._chatEcho(grund);
-                }
+                this._spielerSagt(["speicher.import-fehl", { grund }]);
                 return;
             }
         }
@@ -1473,10 +1656,11 @@ class AnazhRealm_speicher_laden {
         const dialog = document.getElementById("world-tor-dialog");
         const summary = document.getElementById("world-tor-summary");
         if (summary) {
-            const m = parsed.worldMeta || {};
-            const slug = m.slug || this._t("speicher.namenlos");
-            const ageDays = m.bornAt ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
-            const idShort = (m.worldId || "?").slice(0, 8);
+            // das Anklopfen liest nur Text und Zahl (was die Tür abweist, nennt erst ihre Wand `_weltEinlass`)
+            const m = parsed.worldMeta && typeof parsed.worldMeta === "object" ? parsed.worldMeta : {};
+            const slug = typeof m.slug === "string" && m.slug ? m.slug : this._t("speicher.namenlos");
+            const ageDays = Number.isFinite(m.bornAt) ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
+            const idShort = (typeof m.worldId === "string" && m.worldId ? m.worldId : "?").slice(0, 8);
             const bp = Array.isArray(parsed.blueprints) ? parsed.blueprints.length : 0;
             const arch = Array.isArray(parsed.architectures) ? parsed.architectures.length : 0;
             const journal =
@@ -1523,33 +1707,18 @@ class AnazhRealm_speicher_laden {
             this._closeWeltTorDialog();
             return;
         }
-        const parsed = pending.parsed;
         const fileName = pending.fileName;
-        const chatOutput = document.getElementById("chat-output");
-        const erbgutNein = AnazhRealm._erbgutEinlass(parsed);
-        if (erbgutNein) {
-            if (chatOutput) {
-                this._chatEcho(["speicher.ersetzen-abgelehnt", { grund: erbgutNein }]);
-            }
-            this._closeWeltTorDialog();
-            return;
-        }
-        // Die Datei wird die Welt der Seite — durch DIE TÜR `_weltBetreten` (Identität, Ablage mit Probe, Sperre, Reload);
-        // das Zeugnis des Ersetzens reist in ihrem Journal. Bis 10.10. lud die Seite sie in sich und blieb in der alten
-        // Welt: ihre Tiere, Chunks, Worker und Wasser trugen die neue, und jeder Autosave schrieb diese Mischung unter deren
-        // Namen (gate:weltgrenze Weg „ersetzen": 74 Felder der alten Welt im Speicher der neuen, darunter ihr Erbgut und ein
-        // Tier); eine Datei ohne worldId landete roh auf dem Platz der alten Welt, und beide waren fort.
-        const neu = JSON.parse(JSON.stringify(parsed));
-        AnazhRealm._zeugnisEintragen(neu, ["journal.ersetzt"]);
+        // Die Datei wird die Welt der Seite — durch DIE TÜR `_weltBetreten` (die Wand, Identität, Ablage mit Probe, Sperre,
+        // Wechsel); das Zeugnis des Ersetzens reist in ihrem Journal. Bis 10.10. lud die Seite sie in sich und blieb in der
+        // alten Welt: ihre Tiere, Chunks, Worker und Wasser trugen die neue, und jeder Autosave schrieb diese Mischung unter
+        // deren Namen (gate:weltgrenze Weg „ersetzen": 74 Felder der alten Welt im Speicher der neuen, darunter ihr Erbgut und
+        // ein Tier); eine Datei ohne worldId landete roh auf dem Platz der alten Welt, und beide waren fort. Weist die Wand sie
+        // ab, hat die Tür schon gesprochen.
         this._closeWeltTorDialog();
-        const r = this._weltBetreten(neu);
-        if (chatOutput) {
-            this._chatEcho(
-                r.ok
-                    ? ["speicher.ersetzen-ok", { datei: fileName }]
-                    : ["speicher.ersetzen-fehl", { datei: fileName, grund: String(r.reason) }]
-            );
-        }
+        const r = this._weltBetreten(pending.parsed, null, { zeugnis: { schluessel: "journal.ersetzt" } });
+        if (r.ok) this._chatEcho(["speicher.ersetzen-ok", { datei: fileName }]);
+        else if (!r.abgewiesen)
+            this._spielerSagt(["speicher.ersetzen-fehl", { datei: fileName, grund: String(r.reason) }]);
     }
 
     _weltTorImportBeside() {
@@ -1561,16 +1730,14 @@ class AnazhRealm_speicher_laden {
         const parsed = pending.parsed;
         const fileName = pending.fileName;
         const result = this.importWorldBeside(parsed);
-        const chatOutput = document.getElementById("chat-output");
-        if (chatOutput)
-            this._chatEcho(
-                result.ok
-                    ? [
-                          "speicher.daneben-ok",
-                          { datei: fileName, slug: String(result.slug), id: result.worldId.slice(0, 8) },
-                      ]
-                    : ["speicher.daneben-fehl", { grund: String(result.reason) }]
-            );
+        // eine Abweisung der Wand hat die Tür schon gesprochen (`_weltEinlass`)
+        if (!result.ok && !result.abgewiesen)
+            this._spielerSagt(["speicher.daneben-fehl", { grund: String(result.reason) }]);
+        else if (result.ok)
+            this._chatEcho([
+                "speicher.daneben-ok",
+                { datei: fileName, slug: String(result.slug), id: result.worldId.slice(0, 8) },
+            ]);
         if (result.ok) {
             this.journalAppend("witness", ["journal.welt-neben", { welt: result.slug }]);
             this.updateWorldInfo();
@@ -1591,12 +1758,8 @@ class AnazhRealm_speicher_laden {
         if (result.ok) {
             this.updateWorldInfo();
             this._openWorldFusionDialog({ preselectB: result.worldId });
-        } else {
-            const chatOutput = document.getElementById("chat-output");
-            if (chatOutput) {
-                this._chatEcho(["speicher.fusion-vorbereitung-fehl", { grund: String(result.reason) }]);
-            }
-        }
+        } else if (!result.abgewiesen)
+            this._spielerSagt(["speicher.fusion-vorbereitung-fehl", { grund: String(result.reason) }]);
     }
 
     // ### Fusion-UI ###
@@ -1682,23 +1845,18 @@ class AnazhRealm_speicher_laden {
         const parentBId = parentBSelect && parentBSelect.value;
         const strategy = (strategyRadio && strategyRadio.value) || "sequence";
         const slug = (slugInput && slugInput.value.trim()) || null;
-        const chatOutput = document.getElementById("chat-output");
-        const speak = (text) => {
-            if (chatOutput) {
-                this._chatEcho(text);
-            }
-        };
+        // jede Absage der Fusion spricht der Spieler-Kanal aus der Tafel (bis hierher drei harte deutsche Zeilen)
         if (!activeId) {
-            speak("Fusion verweigert: aktive Welt fehlt.");
+            this._spielerSagt(["speicher.fusion-ohne-welt"]);
             return;
         }
         if (!parentBId) {
-            speak("Fusion verweigert: keine zweite Welt gewählt.");
+            this._spielerSagt(["speicher.fusion-ohne-zweite"]);
             return;
         }
         const result = this.fuseWorlds(activeId, parentBId, strategy, { slug, reload: true });
         if (!result.ok) {
-            speak(`Fusion fehlgeschlagen: ${result.reason}`);
+            this._spielerSagt(["speicher.fusion-fehl", { grund: String(result.reason) }]);
             this._closeWorldFusionDialog();
         }
         // Bei reload:true erreicht uns der Folge-Code nicht — der Browser
@@ -1791,15 +1949,10 @@ class AnazhRealm_speicher_laden {
     }
 
     importWorldBeside(parsed, { reload = false } = {}) {
-        if (!parsed || typeof parsed !== "object") {
-            return { ok: false, reason: "kein gültiger Snapshot" };
-        }
-        const erbgutNein = AnazhRealm._erbgutEinlass(parsed);
-        if (erbgutNein) return { ok: false, reason: erbgutNein };
-        const originalMeta = parsed.worldMeta || {};
+        // die Identität liest die Tür nur als Text (die Wand `_weltEinlass` in `_weltBetreten` nennt jede andere Gestalt)
+        const originalMeta = parsed && parsed.worldMeta && typeof parsed.worldMeta === "object" ? parsed.worldMeta : {};
         const originalId = typeof originalMeta.worldId === "string" ? originalMeta.worldId : null;
-        const originalSlug = (originalMeta.slug || "import")
-            .toString()
+        const originalSlug = (typeof originalMeta.slug === "string" ? originalMeta.slug : "import")
             .toLowerCase()
             .replace(/[^a-z0-9_-]/g, "");
         // Slug-Eindeutigkeit gegen den lokalen Index.
@@ -1814,29 +1967,24 @@ class AnazhRealm_speicher_laden {
         // identischer ID stillschweigend überschrieben.
         const newWorldId = AnazhRealm._neueWeltId();
         const bornAt = Date.now();
-        // Importierter Snapshot wird tief geklont, dann mit neuer Identität
-        // überschrieben. parentWorlds erbt jegliche bestehenden Eltern +
-        // die Original-ID, damit der Stammbaum für Ring 10 ablesbar bleibt.
-        const cloned = JSON.parse(JSON.stringify(parsed));
+        // Die neue Identität legt die Tür über das worldMeta des Snapshots (der Snapshot selbst bleibt, wie er kam).
+        // parentWorlds erbt jegliche bestehenden Eltern + die Original-ID, damit der Stammbaum für Ring 10 ablesbar bleibt.
         const existingParents = Array.isArray(originalMeta.parentWorlds) ? [...originalMeta.parentWorlds] : [];
         const newParents = originalId ? [...existingParents, originalId] : existingParents;
-        cloned.worldMeta = {
-            ...originalMeta,
-            worldId: newWorldId,
-            slug,
-            bornAt,
-            parentWorlds: newParents,
-            schemaVersion: "9.0-tor-v1",
-        };
-        // Der Import hält seinen Empfang als Witness-Eintrag mit Provenienz fest.
-        AnazhRealm._zeugnisEintragen(cloned, ["journal.empfangen-neben", { welt: slug }], {
-            fromWorldId: originalId,
-            asWorldId: newWorldId,
-            asSlug: slug,
+        const identitaet = { worldId: newWorldId, slug, bornAt, parentWorlds: newParents, schemaVersion: "9.0-tor-v1" };
+        // durch DIE TÜR: die Wand, dann sichert sich die Welt der Seite, die fremde liegt mit Probe unter ihrer neuen Id und
+        // trägt ihren Empfang als Witness-Eintrag mit Provenienz; mit `reload` der Welt-Wechsel (Zeiger, Sperre), sonst bleibt
+        // die aktive Welt.
+        const ab = this._weltBetreten(parsed, identitaet, {
+            wechseln: reload,
+            aktiv: reload,
+            zeugnis: {
+                schluessel: "journal.empfangen-neben",
+                werte: { welt: slug },
+                ctx: { fromWorldId: originalId, asWorldId: newWorldId, asSlug: slug },
+            },
         });
-        // durch DIE TÜR: die Welt der Seite sichert sich, die fremde liegt mit Probe unter ihrer neuen Id; mit `reload` der
-        // Welt-Wechsel (Zeiger, Sperre, Reload), sonst bleibt die aktive Welt.
-        const ab = this._weltBetreten(cloned, null, { wechseln: reload, aktiv: reload });
+        if (ab.abgewiesen) return ab;
         if (!ab.ok) return { ok: false, reason: `Speicher voll: ${ab.reason}` };
         this.log(
             `Welt „${slug}" als ${newWorldId.slice(0, 8)}… neben uns gelegt (Parent: ${originalId || "keine"})`,
@@ -2004,6 +2152,7 @@ class AnazhRealm_speicher_laden {
         const addedBPs = [];
         const addedMats = [];
         const addedTools = [];
+        const weist = new Map(); // das Register der Wände dieses Imports (`_ladeWeist`, am Ende `_wandSagt`)
 
         const resolveName = (origName, taken) => {
             if (!taken.has(origName)) return origName;
@@ -2035,7 +2184,10 @@ class AnazhRealm_speicher_laden {
             // Ω3(c) — der EINE Eingang: Rückruf-Sieb + Restore-Wand +
             // Behauptung/Wahrheit + Herkunft (statt des rohen {...bp}-Spreads).
             const admitted = this._admitForeignArtifact(bp);
-            if (!admitted) continue;
+            if (!admitted) {
+                this._ladeWeist("speicher.weist.bauplan", 1, weist);
+                continue;
+            }
             const newName = resolveName(bp.name, existingBPNames);
             existingBPNames.add(newName);
             if (newName !== bp.name) renameMap[bp.name] = newName;
@@ -2046,8 +2198,13 @@ class AnazhRealm_speicher_laden {
             if (!t || typeof t.name !== "string" || t.builtIn) continue;
             // Ω3 — dieselbe Wand wie der Save-Restore: opClass/opName sind
             // whitelisted (der rohe Spread ließ vorher alles durch).
-            if (!AnazhRealm.TOOL_OP_CLASSES.has(t.opClass)) continue;
-            if (!AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(t.opName || ""))) continue;
+            if (
+                !AnazhRealm.TOOL_OP_CLASSES.has(t.opClass) ||
+                !AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(t.opName || ""))
+            ) {
+                this._ladeWeist("speicher.weist.werkzeug", 1, weist);
+                continue;
+            }
             const newName = resolveName(t.name, existingToolNames);
             existingToolNames.add(newName);
             addedTools.push({ ...t, name: newName, builtIn: false });
@@ -2100,6 +2257,7 @@ class AnazhRealm_speicher_laden {
             `Rezepte aus ${sourceSlug} importiert: ${total} (Baupläne ${addedBPs.length}, Materialien ${addedMats.length}, Werkzeuge ${addedTools.length})`,
             "INFO"
         );
+        this._wandSagt(weist); // was die Wände der fremden Welt abwiesen, hört der Spieler neben dem, was kam
         return {
             ok: true,
             counts: { blueprints: addedBPs.length, materials: addedMats.length, tools: addedTools.length },
@@ -2517,6 +2675,18 @@ AnazhRealm.GRUND_TAFEL = Object.freeze([
         },
     ],
 ]);
+// DIE GENESE-VERSION, mit der jede neue Welt geboren wird (die Stufen bei `ensureWorldMeta`); eine Welt, die eine höhere trägt,
+// kommt aus einer Zukunft dieses Builds (`_weltEinlass`)
+AnazhRealm.GEN_VERSION = 9;
+// DIE LAST-GRENZEN DER WAND (`_weltEinlass`): eine ehrliche Welt trägt ~6 Ebenen und ~4 300 Glieder frisch (der Stand einer
+// geborenen Welt, 51 KB), eine gespielte ein Vielfaches davon in der Breite, nie in der Tiefe — die Grenzen liegen um
+// Größenordnungen darüber und unter dem, was einen Stapel oder den Speicher sprengt. `gift`: die Schlüssel des Prototyps.
+AnazhRealm.WELT_EINLASS = Object.freeze({
+    tiefe: 64,
+    knoten: 2000000,
+    zeichen: 2097152,
+    gift: Object.freeze(["__proto__", "constructor", "prototype"]),
+});
 // Welle 5 C — Maschinen-Rekursivität. Vier Op-Klassen aus Konzept §3.1,
 // als Whitelist für eigene Tool-Baupläne. Spieler kann nur diese vier
 // vergeben — sonst kollidieren neue Op-Klassen mit MATERIAL_OP_COMPATIBILITY.

@@ -816,6 +816,7 @@ class AnazhRealm_stoff_material {
         let emissiveColor = null;
         let emissiveIntensity = 0;
         let _wieseGrund = null; // der Bestand der Wiese am Boden (`_terrainGeologyAlbedo` → `gruen`), sein Grund liest die Narbe
+        let _ascheDecke = null; // die Asche des Brands auf dem Boden (`aus.asche`): unter ihr ruht das Mikro-Relief
         let _steinBelag = null; // der Belag aus Stein auf dem Boden (`_wegeBodenFarbe` → `aus.stein`): unter ihm gilt das Stein-Gesetz
         const params = {};
         if (opts.color !== undefined) params.color = opts.color;
@@ -891,6 +892,11 @@ class AnazhRealm_stoff_material {
                         // Vertex-Farbe mischt zur Pfad-Erde (`_wegeBodenFarbe`), und DIESE Farbe liest die Geologie.
                         const _weg = {};
                         const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode, _weg) : null;
+                        // die Asche des Brands (w28-brand-bild): die Geologie hält auf ihr Rauheit und Farbe ihrer Zeile
+                        if (_weg.asche) {
+                            _terrRough.asche = _weg.asche;
+                            _ascheDecke = _weg.asche.deckung;
+                        }
                         let _geo = this._terrainGeologyAlbedo(
                             _Ta,
                             _bodenVc || albedoNode,
@@ -1881,7 +1887,12 @@ class AnazhRealm_stoff_material {
                         const _mk = this._mikroRelief(_Tn, _wp);
                         // DER BELAG AUS STEIN (w28-stein-kamm, `_steinBelag`): unter ihm trägt der Boden vom Mikro-Relief nur, was das
                         // Korn seiner Zeile lässt, und die Kante seiner Steine kippt die Normale (der EINE Kamm, `_steinStoff`)
-                        const _mkK = _steinBelag ? _lod.mul(_Tn.float(1.0).sub(_steinBelag.stein)) : _lod;
+                        // DIE ASCHE IST PULVER (w28-brand-bild): sie füllt Klumpen und Kiesel, ihr Korn trägt die Albedo (`BRAND.ascheKorn`),
+                        // die Normale bleibt die des Bodens (bei 0,3 des Reliefs standen die Trapeze noch) — unter dem Licht ihres Feuers
+                        // (1 m über dem Boden, ab 4 m flacher als die 13° des Reliefs) stand der Boden sonst als helle und schwarze
+                        // Trapeze, ein Wellen-Muster wie Wasser (Dorf-Wiese, Nacht, 300 s)
+                        const _mkS = _steinBelag ? _lod.mul(_Tn.float(1.0).sub(_steinBelag.stein)) : _lod;
+                        const _mkK = _ascheDecke ? _mkS.mul(_Tn.float(1.0).sub(_ascheDecke)) : _mkS;
                         _baseN = _baseN.add(_mk.neigung.mul(_mkK));
                         if (_steinBelag && _steinBelag.kipp)
                             _baseN = _baseN.add(_steinBelag.kipp.mul(_steinBelag.deckung));
@@ -3065,7 +3076,12 @@ class AnazhRealm_stoff_material {
             const _mossDrive = _green.mul(_damp).mul(_gMoss).mul(_T.float(G.mossMax));
             // Feuchte-Glanz: eine nasse, KAHLE Niederung (damp hoch, nicht grün) glänzt (niedrigere Rauheit);
             // Moos bleibt matt. Aus DEMSELBEN Feld, das das Moos treibt.
-            const _wetDrive = _damp.mul(_T.float(1.0).sub(_green)).clamp(0.0, 1.0);
+            // DIE ASCHE IST TROCKENES PULVER (w28-brand-bild, `roughOut.asche` aus `_wegeBodenFarbe`): dunkel und nicht grün las
+            // dieser Treiber sie als nasse Niederung (Y 0,052 an `mossDampLo`: Rauheit 0,94 → 0,54, der Brandfleck glänzte wie
+            // nasser Fels) — auf ihrer Decke steht er, die Nässe des Regens legt `_naesseImStoff` weiter darüber
+            const _asche = roughOut && roughOut.asche ? roughOut.asche : null;
+            const _wet0 = _damp.mul(_T.float(1.0).sub(_green)).clamp(0.0, 1.0);
+            const _wetDrive = _asche ? _wet0.mul(_T.float(1.0).sub(_asche.deckung)) : _wet0;
             // (Die „trockenen braun-gelben Flecken" — Albedo × (1,32 · 1,12 · 0,6) auf jedem nicht-grünen, nicht-
             // feuchten Boden — sind gefallen: sie färbten die Laubstreu orange, Farben außerhalb der Palette.)
             // DER WIESEN-GRUND liegt im Gesetz (K53, `_bodenFarbeAt` · `attachFieldColors`, `WIESEN_GRUND`): der Vertex trägt das
@@ -3186,10 +3202,17 @@ class AnazhRealm_stoff_material {
                 wetDrive: _wetDrive,
                 hardDrive: _hardDrive,
             });
-            if (roughOut && _r.roughNode) roughOut.node = _r.roughNode;
+            // auf der Asche: die Rauheit ihrer Zeile im Stoff-Gesetz (schmiede `STOFF_GESETZ` asche) und ihre Albedo — Korn und
+            // Kavität des Erdreichs bleiben zu `BRAND.ascheKorn` (das Pulver liegt auf dem Boden, es ist kein Geröll)
+            const _aR = _asche ? globalThis.__schmiedeCore.STOFF_GESETZ.zeile("asche").rauheit : 0;
+            if (_asche && !Number.isFinite(_aR)) AnazhRealm._kernPflichtBruch("schmiede:STOFF_GESETZ asche.rauheit");
+            if (roughOut && _r.roughNode)
+                roughOut.node = _asche ? _T.mix(_r.roughNode, _T.float(_aR), _asche.deckung) : _r.roughNode;
             // der Bestand der Wiese (`_green`, derselbe Treiber wie Moos und Halm-Schicht): der Grund der Wiese liest ihn (`_wieseGrund`)
             if (roughOut) roughOut.gruen = _green;
-            return _r.albedo;
+            return _asche
+                ? _T.mix(_r.albedo, _asche.farbe, _asche.deckung.mul(1 - AnazhRealm.BRAND.ascheKorn))
+                : _r.albedo;
         } catch (_e) {
             throw this._stoffBruch("die Boden-Geologie", _e);
         }

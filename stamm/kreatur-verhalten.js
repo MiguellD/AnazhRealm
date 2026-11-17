@@ -186,16 +186,12 @@ class AnazhRealm_kreatur_verhalten {
     // Gradienten des Felds über vier Proben: nah an der Quelle wog der Wind-Winkel bis zwölfmal mehr als der Abstand, der
     // Gradient zeigte vom Ziel fort (Leben-Schau 07.10.: ein Wolf 1200 Takte „jagd", 0,3 m bewegt, 0 Bisse in 3600 Takten).
     // Kein Ziel → null (der Aufrufer wandert neutral). Nur pfad; verängstigt (wariness ≥ fleeThreshold), satt oder
-    // erschöpft jagt nicht.
+    // erschöpft jagt nicht (`_kreaturJagdBereit`).
     _creatureScentHuntDir(creature, wariness) {
         const ud = creature.userData || {};
         ud._beute = null;
-        if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return null;
-        if (this._creatureTemperament(creature) !== "wild") return null;
+        if (!this._kreaturJagdBereit(creature, wariness)) return null;
         const VG = AnazhRealm._verhaltenGesetz();
-        if (wariness >= VG.furcht.fleeThreshold) return null;
-        if (this._kreaturSatt(creature)) return null; // satt jagt keine Beute (VERHALTEN.aas)
-        if (this._kreaturErschoepft(creature)) return null; // die Jagd endete, der Jäger ruht (Tiere K2)
         const scentRange = VG.jagd.scentRangeM;
         const cx = creature.position.x;
         const cz = creature.position.z;
@@ -238,6 +234,17 @@ class AnazhRealm_kreatur_verhalten {
         const out = this._creatureScentDirScratch || (this._creatureScentDirScratch = new THREE.Vector3());
         out.set(dx / d, 0, dz / d);
         return out;
+    }
+
+    // DER JÄGER IST BEREIT (die EINE Pforte der Jagd): im pfad, wild, nicht verängstigt (wariness unter fleeThreshold; ohne
+    // wariness fragt die Fluchtdistanz vor dem Menschen, `_kreaturMenschFlucht`, ob er jagen WILL), nicht satt (VERHALTEN.aas),
+    // nicht erschöpft (Tiere K2).
+    _kreaturJagdBereit(creature, wariness = -Infinity) {
+        if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return false;
+        if (this._creatureTemperament(creature) !== "wild") return false;
+        if (wariness >= AnazhRealm._verhaltenGesetz().furcht.fleeThreshold) return false;
+        if (this._kreaturSatt(creature)) return false; // satt jagt keine Beute (VERHALTEN.aas)
+        return !this._kreaturErschoepft(creature); // die Jagd endete, der Jäger ruht (Tiere K2)
     }
 
     // DER KADAVER RUFT (Meisterkarte Tiere H3, tetrapoda VERHALTEN.aas): ein Tier, das kein Pflanzenfresser ist (diet über
@@ -3775,7 +3782,9 @@ AnazhRealm._steuerGesetz = function () {
     return AnazhRealm._kernPflichtBruch("tetrapoda:STEUER_GESETZ");
 };
 // DAS FURCHT-GESETZ (tetrapoda FURCHT_GESETZ + bedrohung · furchtErinnert · furchtOrt, Ökologie K3): die EINE Bedrohung eines
-// Gefühls (Aura des Spielers, Abdruck am Ort), das Gedächtnis des Wesens an den Spieler und die Furcht des Orts. Fail-closed.
+// Gefühls (Aura des Spielers, Abdruck am Ort), das Gedächtnis des Wesens an den Spieler und die Furcht des Orts; die
+// Fluchtdistanz vor dem Menschen je Gattung (fluchtDistanzM + fluchtDistanz, leben.tiere.mensch S1) trägt JEDE Gattung des
+// Kerns. Fail-closed.
 AnazhRealm._furchtGesetz = function () {
     if (AnazhRealm._furchtGesetzMemo) return AnazhRealm._furchtGesetzMemo;
     const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -3794,7 +3803,12 @@ AnazhRealm._furchtGesetz = function () {
         typeof k.bedrohung === "function" &&
         typeof k.furchtErinnert === "function" &&
         typeof k.furchtOrt === "function" &&
-        typeof k.fluchtRadius === "function"
+        typeof k.fluchtRadius === "function" &&
+        typeof k.fluchtDistanz === "function" &&
+        F.fluchtDistanzM &&
+        Number.isFinite(F.naeherungMS) &&
+        k.GATTUNGEN &&
+        Object.keys(k.GATTUNGEN).every((g) => F.fluchtDistanzM[g] > 0)
     ) {
         AnazhRealm._furchtGesetzMemo = Object.freeze({
             F,
@@ -3802,6 +3816,7 @@ AnazhRealm._furchtGesetz = function () {
             furchtErinnert: k.furchtErinnert,
             furchtOrt: k.furchtOrt,
             fluchtRadius: k.fluchtRadius,
+            fluchtDistanz: k.fluchtDistanz,
         });
         return AnazhRealm._furchtGesetzMemo;
     }

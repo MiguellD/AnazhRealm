@@ -1150,6 +1150,16 @@ class AnazhRealm_siedlung_wege {
                 korn: stein.korn,
             };
             aus.glut = kruste.glut.mul(_lava);
+            // DIE ASCHE IST KEIN NASSER FELS (w28-brand-bild): der Boden-Stoff legt danach Korn, Kavität und den Glanz der „nassen
+            // kahlen Niederung" über jede dunkle, nicht grüne Farbe — `aus.asche` nennt ihm die Decke (Albedo, Deckung unter Weg,
+            // Acker, Pflaster und der Decke der Lava), er hält auf ihr die Rauheit ihrer Zeile im Stoff-Gesetz und ihre Farbe
+            // (`_terrainGeologyAlbedo`)
+            aus.asche = {
+                farbe: _T.vec3(s[0], s[1], s[2]),
+                deckung: _a
+                    .mul(_T.float(1).sub(_erde.add(_acker).add(_pflaster).clamp(0.0, 1.0)))
+                    .mul(_T.float(1).sub(_lava)),
+            };
         }
         return _T.mix(_T.mix(mitAcker, pflaster, _pflaster), kruste.farbe, _lava);
     }

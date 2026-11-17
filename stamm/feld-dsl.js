@@ -237,6 +237,21 @@ class AnazhRealm_feld_dsl {
         );
     }
 
+    // DAS GESETZ EINER FÄHIGKEIT (erleben.schoepfen.schutz): ein Name, der Schlüssel werden kann, und ein Programm, das der
+    // Interpreter als Tat kennt — sein Kopf ist ein Verb der Op-Tafel (`dslEffects`, die EINE Quelle der Taten; sonst
+    // `unknown_op` bei jedem Ruf) und nirgends steht eine souveräne Aktion (`SOVEREIGN_ACTIONS`, sonst `sovereign_blocked`).
+    // Leser: die Geburt (`define_ability`), das Laden des eigenen Stands (`_loadStateRestoreEmotionsAndDsl`, die Lade-Wand spricht)
+    // und die Wand der Tür (`_weltEinlass`: eine fremde Welt mit solch einer Fähigkeit fällt ganz). → Grund | null
+    _faehigkeitGrund(name, program) {
+        if (typeof name !== "string" || name.length === 0 || name.length > 40) return "kein Name (1–40 Zeichen)";
+        if (!Array.isArray(program) || program.length === 0) return "kein Programm";
+        const kopf = program[0];
+        if (typeof kopf !== "string" || !Object.prototype.hasOwnProperty.call(this.dslEffects, kopf))
+            return `unbekannte Tat „${String(kopf).slice(0, 40)}“`;
+        const souveraen = AnazhRealm.SOVEREIGN_ACTIONS.find((op) => this._dslContainsAnyOp(program, new Set([op])));
+        return souveraen ? `souveräne Tat „${souveraen}“` : null;
+    }
+
     // gegen CREATURE_PROPOSED_OPS. Liefert {ok, forbiddenOp?}.
     _isCreatureProposalAllowed(node) {
         if (!Array.isArray(node) || node.length === 0) return { ok: false, reason: "empty" };
@@ -1666,8 +1681,9 @@ class AnazhRealm_feld_dsl {
                     ctx.log.push({ event: "invalid_ability_name", name });
                     return;
                 }
-                if (!Array.isArray(program) || program.length === 0) {
-                    ctx.log.push({ event: "invalid_ability_program", name });
+                const grund = this._faehigkeitGrund(name, program); // das Gesetz der Fähigkeit, wie beim Laden und an der Tür
+                if (grund) {
+                    ctx.log.push({ event: "invalid_ability_program", name, grund });
                     return;
                 }
                 // Sandbox: Tiefen-Cap und kein verschachteltes define_*.
