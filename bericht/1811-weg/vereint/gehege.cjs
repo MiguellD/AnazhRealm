@@ -65,6 +65,9 @@ const ev = async (code) => { const a = await ruf("/eval", { code }); return a &&
         log("Ort " + JSON.stringify(erg.ortStand).slice(0, 600));
         erg.gras = await ev(require(path.join(__dirname, "gras-sonde.js"))(wx(R.cx), wz(R.cz), 14));
         log("Gras " + JSON.stringify(erg.gras).slice(0, 2500));
+        // DIE URSACHE (Koordinator 15:36): quer über den Graben Süd, Funktion gegen gezeichneten Boden — in der Mitte und 5 m östlich
+        erg.ursache = [await ev(require(path.join(__dirname, "ursache-sonde.js"))(wx(R.cx), wz(zS - 4), wz(zS + 4))), await ev(require(path.join(__dirname, "ursache-sonde.js"))(wx(R.cx + 5), wz(zS - 4), wz(zS + 4)))];
+        log("Ursache " + JSON.stringify(erg.ursache));
         // das Profil quer durch den Graben im Süden und im Norden (x = Mitte), alle 0,25 m
         erg.profil = await ev(`const o = [], p = r._genesisPlan.ort; for (let z = ${R.cz - R.ez - 9}; z <= ${R.cz + R.ez + 9}; z += 0.25) o.push([+z.toFixed(2), +r._voxelSurfaceY(p.x + ${R.cx}, p.z + z).toFixed(2)]); return o;`);
         log("Profil " + JSON.stringify(erg.profil));
