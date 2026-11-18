@@ -1,4 +1,6 @@
 // ci-kopf.cjs — EIN URTEIL JE KOPF: die volle Batterie und die Echt-Gruppe richten jeden Kopf (SHA) einmal.
+// DER KOPF IST SEIN INHALT: ein Commit ohne Inhalt (EIN Elter, derselbe Baum — der Stempel „Abgabe …" auf dem geprüften Kopf)
+// trägt das Urteil seines Elters, bis KETTE Glieder tief (`kopfKette`); ein Merge und jeder Commit mit Inhalt erben nichts.
 // Trug ein anderer Lauf, der den Kopf selbst prüfte (push · schedule · workflow_dispatch), die volle Batterie grün: `voll=nein`,
 // jedes Bein der Karten (`echt <karte> (…)`) grün: `echt=nein`. Läuft ein ÄLTERER noch, wartet der Richter (je 30 s, höchstens 30 min): grün steht, rot
 // ist ROT, abgebrochen fährt selbst; ein jüngerer wartet nie auf ihn zurück. Auf Abruf und auf einem PR läuft alles, ein Fehler
@@ -13,6 +15,20 @@ const IMMER = ["workflow_dispatch", "pull_request"];
 const BEWEIS = ["push", "schedule", "workflow_dispatch"];
 const [VOLL_JOB, ECHT_JOB] = [/^voll\b/, /^echt\b/];
 const [TAKT_S, WARTE_S] = [30, 30 * 60];
+const KETTE = 4;
+
+// der Kopf und seine leeren Vorfahren, der Kopf zuerst: `commits` trägt je SHA { sha, tree: { sha }, parents: [{ sha }] }
+// (die Form von /git/commits/<sha>); die Kette endet am Merge, am ersten Elter mit anderem Baum, an KETTE Vorfahren
+function kopfKette(sha, commits) {
+    const kette = [sha];
+    for (let c = commits[sha]; c && kette.length <= KETTE; ) {
+        const e = c.parents.length === 1 ? commits[c.parents[0].sha] : null;
+        if (!e || e.tree.sha !== c.tree.sha) break;
+        kette.push(e.sha);
+        c = e;
+    }
+    return kette;
+}
 
 // → { voll, echt, grund } · { warte: lauf } · { rot: grund }
 function kopfUrteil({ ereignis, eigenerLauf, laeufe, jobsJe, gewartet = [] }) {
@@ -35,7 +51,7 @@ function kopfUrteil({ ereignis, eigenerLauf, laeufe, jobsJe, gewartet = [] }) {
         if (u.voll === "ja" && gruen(jobs, VOLL_JOB))
             Object.assign(u, {
                 voll: "nein",
-                grund: `der Kopf trägt die volle Batterie grün: Lauf ${r.id} (${r.head_branch}, ${r.event})`,
+                grund: `der Kopf trägt die volle Batterie grün: Lauf ${r.id} (${r.head_branch}, ${r.event}${r.head_sha ? ", " + String(r.head_sha).slice(0, 8) : ""})`,
             });
     }
     return u;
@@ -74,7 +90,7 @@ function apiMit(basis, token) {
     return api;
 }
 
-module.exports = { kopfUrteil, alleLaeufe, apiMit };
+module.exports = { kopfUrteil, kopfKette, KETTE, alleLaeufe, apiMit };
 
 if (require.main === module) {
     const env = process.env;
@@ -85,11 +101,21 @@ if (require.main === module) {
             .replace(/@.*$/, "") || "check.yml";
     (async () => {
         const [ereignis, gewartet] = [env.GITHUB_EVENT_NAME, []];
+        // die Kette des Kopfs: je Glied EINE Anfrage, sie endet am ersten Commit, der nicht mehr erbt
+        const commits = {};
+        for (let s = IMMER.includes(ereignis) ? null : env.GITHUB_SHA; s; ) {
+            const c = (commits[s] = await api(`/git/commits/${s}`));
+            const e = c.parents.length === 1 ? c.parents[0].sha : null;
+            s = e && !commits[e] && kopfKette(env.GITHUB_SHA, commits).at(-1) === c.sha ? e : null;
+        }
+        const kette = kopfKette(env.GITHUB_SHA, commits);
+        if (kette.length > 1)
+            console.log(`Kopf ${String(env.GITHUB_SHA).slice(0, 8)}: ohne Inhalt über ${kette.slice(1).map((s) => s.slice(0, 8)).join(" → ")} — er trägt deren Urteil`);
         let u;
         for (let gang = 0; ; gang++) {
             // der eigene Lauf steht immer in der Liste — fehlt er, war die Seite leer
             const traegt = (rs) => rs.some((r) => String(r.id) === String(env.GITHUB_RUN_ID));
-            const [nimm, seit] = [(r) => r.head_sha === env.GITHUB_SHA, Date.now() - 3 * 864e5];
+            const [nimm, seit] = [(r) => kette.includes(r.head_sha), Date.now() - 3 * 864e5];
             const laeufe = IMMER.includes(ereignis) ? [] : await alleLaeufe(api, `/actions/workflows/${wf}/runs`, { nimm, seit, traegt });
             const jobsJe = {};
             for (const r of laeufe)
