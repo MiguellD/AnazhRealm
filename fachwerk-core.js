@@ -143,10 +143,10 @@
                     fernform: "huelle",
                 },
                 // DER GRABEN (w28-graben-koerper, der Trockengraben unten): nah die Platten der Sohle, die Quader der Mauern in fünf
-                // Lagen und die gefasten Kronensteine in EINEM Stoff (Stein), die L1 je Kasten und Flucht EIN Körper, die Stufe 3
-                // wirft für die L1 (32 Dreiecke: die Mauern und die Kronen); gemessen am Samen 1 (EINE Gestalt): L0 15 216, L1 240.
+                // Lagen und die gefasten Kronensteine aus Stein auf dem Lehm-Bett (zwei Stoffe, gefaltet auf EINEN Draw), die L1
+                // je Kasten und Flucht EIN Körper, die Stufe 3 wirft für die L1 (32 Dreiecke: die Mauern und die Kronen); gemessen am Samen 1 (EINE Gestalt): L0 15 216, L1 240.
                 graben: {
-                    0: { tris: 15400, draws: 1, schatten: 0 },
+                    0: { tris: 15216, draws: 1, schatten: 0 },
                     1: { tris: 240, draws: 1, schatten: 3 },
                     3: { tris: 32, draws: 1, schatten: 3, nurWurf: true },
                     fernform: "huelle",
@@ -7933,7 +7933,7 @@
         return B;
     }
     // ── DER TROCKENGRABEN (Ursprung die Mitte des Geheges auf dem Grund des Zoos, y = 0; +z nach Norden): die Sohle `tiefeM` unter
-    //    dem Grund aus Platten im Verband (die Fuge liegt auf dem dunklen Bett), je Flucht die Stützmauer aus Quadern in Lagen —
+    //    dem Grund aus Platten im Verband (die Fuge zeigt das Bett aus Lehm), je Flucht die Stützmauer aus Quadern in Lagen —
     //    jede Lage um einen halben Stein versetzt, die Stirn genau in der Flucht des Grunds (die Wand des Felds), die Fuge auf
     //    dem Mörtel-Bett `fugeM` dahinter —, auf jeder Mauer die Reihe der Kronensteine, gefast nah. Gefärbt im Rahmen der Sohle:
     //    der Erdsaum des Verwitterungs-Gesetzes liegt am Fuß der Mauer, das Moos auf der Sohle. Die L1: die Sohle je Kasten
@@ -7971,7 +7971,11 @@
                 stein(ausSetze(ausKiste(lx, 0.06, lz, 0), (B[0] + B[1]) / 2, -T - 0.03, (B[2] + B[3]) / 2), ausTon(zP, 0.06, 0.02));
                 continue;
             }
-            stein(ausSetze(ausKiste(lx, 0.02, lz, 0), (B[0] + B[1]) / 2, -T - 0.03, (B[2] + B[3]) / 2), [0.55, 0.55, 0.55]);
+            var bett = ausSetze(ausKiste(lx, 0.02, lz, 0), (B[0] + B[1]) / 2, -T - 0.03, (B[2] + B[3]) / 2);
+            ausFaerbe(bett, "lehm", W, function () {
+                return { ton: ausTon(zP, 0.08, 0.02) };
+            });
+            ausTeil(g, bett, "lehm");
             var langX = lx >= lz,
                 pl = m.platte[0],
                 pq = m.platte[1],
@@ -9136,8 +9140,9 @@
         if (rezeptId === "grabstein") return { stein: pick([0xa8a294, 0x9c9282, 0x8a8a86]) }; // Kalkstein, Sandstein, Granit
         // die Geräte: das vergraute Holz der Werke, das Eisen (verzinkt, gestrichen) und die Griffe der Kletterwand
         if (GERAETE[rezeptId]) return { holz: pick([0x8e7860, 0x977f66, 0x86705a]), metall: pick([0x7d8288, 0x737a80, 0x858a8e]), stein: pick([0x9a5a48, 0x56708c, 0x9a8a50]) };
-        // der Graben: Muschelkalk, Sandstein oder Granit der Gegend — ein Stein für Sohle, Mauer und Krone
-        if (rezeptId === "trockengraben") return { stein: pick([0x9c968a, 0x9e9280, 0x8c8c88]) };
+        // der Graben: Muschelkalk, Sandstein oder Granit der Gegend — ein Stein für Sohle, Mauer und Krone; die Platten liegen auf
+        // dem Lehm des Grunds (er zeigt sich in ihren Fugen)
+        if (rezeptId === "trockengraben") return { stein: pick([0x9c968a, 0x9e9280, 0x8c8c88]), lehm: pick([0x6e604e, 0x75664f]) };
         if (WERKE[rezeptId]) return { holz: pick([0x8e7860, 0x977f66, 0x86705a]) }; // die Werke: ungestrichenes Holz, vergraut
         return { stein: pick([0xa29b8e, 0x9a9488, 0xaaa397]), holz: pick([0x7c6650, 0x86705a]), lattung: 0x8f7a56, stamm: pick([0x847866, 0x7a6e5e]) };
     }
