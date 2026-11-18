@@ -2591,8 +2591,12 @@
                 const hatOv = w.ov && typeof w.ov === "object" && Object.keys(w.ov).length > 0;
                 const tor = wirt._torGesetzFor({ type: A.KIND_POLICY.gate.prefix + w.preset, studioOv: hatOv ? wirt._foundryGestaltOv(wirt._studioWerkPruefen("gate", w.preset, w.ov, 1)) : null });
                 if (!tor) throw new Error("DIE BÜHNE: das Tor-Gesetz der Welt kennt „" + w.preset + "“ nicht");
+                // ein Gesetz-Wert (dieselbe Mitte) schießt nie neu: das Fenster gilt, bis die Mitte wandert oder die Stunde wechselt
+                const gleich = zielBlick && zielBlick.mitte[1] === tor.mu.centerY;
                 zielBlick = { mitte: [0, tor.mu.centerY, 0], verbergen: verbergen || [] };
-                zielZeile = zielZeile
+                zielZeile = gleich
+                    ? zielZeile
+                    : zielZeile
                     ? fensterNeu()
                     : fensterSchuss().then((P) => {
                           const z = { world: "buehne", zeile: null };
