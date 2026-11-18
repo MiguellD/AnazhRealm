@@ -7566,7 +7566,7 @@ function __leibRaumTafel(kern, geo, P0, dials, achsen, leibVon, skinJoints, vox,
 // Nullniveau, `schritt` (m) ihr größter, `gradient` (m) die Weite des Differenzen-Gradienten.
 var LEIB_RAUM = Object.freeze({ tragen: 0.03, newton: 8, schritt: 0.05, gradient: 1e-3 });
 
-// ── DER LEIB-RAUM DES TIERS (w28-raum-ofen; Leben Welle 2, Zweig `koordination` `vision/leben/spike-leibraum.md`): eine Art, ein
+// ── DER LEIB-RAUM DES TIERS (w28-raum-ofen; Leben Welle 2, der Spike Leib-Raum im Zweig `koordination`): eine Art, ein
 // Individuum, ein Jungtier ist ein PUNKT auf EINER Vorlage je Bauplan, kein eigener Guss — dieselbe Maschine wie der Leib-Raum der
 // Menge (`__leibRaumRefit`, der Rahmen trägt den Radius), ohne Fett-Depot und ohne Spreiz-Pose (das Tier steht in seiner Ruhe).
 // DIE VORLAGE (`__tierRaumVorlage`): der bauTier-Baum an den Dials der Art, ihre Haut wie der Guss sie gießt (`__tierHaut`: dieselben

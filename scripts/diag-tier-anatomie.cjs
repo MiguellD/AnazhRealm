@@ -409,7 +409,7 @@ function zeige(ergebnis) {
     }
 }
 
-// DER LEIB-RAUM DES TIERS (w28-raum-ofen; Zweig `koordination` `vision/leben/spike-leibraum.md`): eine Gestalt ist ein PUNKT auf
+// DER LEIB-RAUM DES TIERS (w28-raum-ofen; der Spike Leib-Raum im Zweig `koordination`): eine Gestalt ist ein PUNKT auf
 // EINER Vorlage (foundry `__tierRaumVorlage` · `__tierRaumTafel` · `__tierRaumLeib`, der Re-Fit `__leibRaumRefit`). Die Linse mischt
 // die Tafel wie der Satz (je Achse stückweise linear zwischen zwei Knoten) und misst die gemischten Ecken an der WAHREN Fläche des
 // Leibs an diesem Punkt (sein Feld ohne Raster, `__leibRaumFeld`, im Primitiv-Satz der Vorlage), in mm beim Maßstab des Ziels:
