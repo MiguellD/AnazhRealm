@@ -1475,9 +1475,11 @@ class AnazhRealm_werkstatt_hud {
             kind.className = "ability-kind";
             kind.textContent = this._t("hud.geste");
             kind.title = this._t("hud.geste-titel");
+            // der Name der Geste: ihr Etikett (die Nexus-Geste, Zeile der Tafel), sonst ihr Name (ein Wort des Spielers, Daten)
+            const wort = Array.isArray(ability.etikett) ? ability.etikett : String(ability.name);
             const name = document.createElement("span");
             name.className = "name";
-            name.textContent = ability.name;
+            name.textContent = Array.isArray(wort) ? this._t(wort[0], wort[1]) : wort;
             head.appendChild(kind);
             head.appendChild(name);
             // WANN sie wirkte (Schöpfer-Befund „sehe nicht ob sie feuern") — die Geste ist einmalig, also „vor Xs".
@@ -1491,13 +1493,13 @@ class AnazhRealm_werkstatt_hud {
             run.type = "button";
             run.textContent = "▶";
             run.setAttribute("data-run-ability", ability.name);
-            run.setAttribute("aria-label", this._t("hud.geste-wirken", { name: ability.name }));
+            run.setAttribute("aria-label", this._t("hud.geste-wirken", { name: wort }));
             head.appendChild(run);
             const forget = document.createElement("button");
             forget.type = "button";
             forget.textContent = "✕";
             forget.setAttribute("data-forget-ability", ability.name);
-            forget.setAttribute("aria-label", this._t("hud.geste-vergessen", { name: ability.name }));
+            forget.setAttribute("aria-label", this._t("hud.geste-vergessen", { name: wort }));
             head.appendChild(forget);
             row.appendChild(head);
             // die Beschreibung aus dem Programm, in der Sprache von jetzt (`describeProgram`)
@@ -1572,8 +1574,13 @@ class AnazhRealm_werkstatt_hud {
         name.textContent = activity;
         const source = document.createElement("span");
         source.className = "source";
+        // die Gesetze der Gefühle (`emotion:<achse>`, feld-sprache) heißen wie ihr Gefühl in der Sprache von jetzt — bis hier
+        // stand die Kennung „emotion:joy“ im Hof
+        const quelle = /^emotion:/.test(rule.source || "")
+            ? AnazhRealm._tafelName(AnazhRealm.EMOTION_LABEL, rule.source.slice(8))
+            : rule.source;
         source.textContent =
-            (geber || (src === "nexus" ? this._t("hud.nexus") : src === "llm" ? this._t("hud.grok") : rule.source)) +
+            (geber || (src === "nexus" ? this._t("hud.nexus") : src === "llm" ? this._t("hud.grok") : quelle)) +
             (rule.pinned ? " ★" : "");
         const status = document.createElement("span");
         status.className = "rule-status" + (permanent ? " perma" : "");
@@ -2249,13 +2256,15 @@ class AnazhRealm_werkstatt_hud {
             });
         }
         if (playerInput) {
-            playerInput.value = this.state.player.name || "Schöpfer";
+            // leer = unbenannt: der Platzhalter des Felds trägt den Namen der Tafel (`ui.schoepfer-2`)
+            playerInput.value = this.state.player.name || "";
             playerInput.addEventListener("input", () => {
-                const v = (playerInput.value || "").trim().slice(0, 32) || "Schöpfer";
+                const v = (playerInput.value || "").trim().slice(0, 32) || null;
                 this.state.player.name = v;
                 if (typeof localStorage !== "undefined") {
                     try {
-                        localStorage.setItem("anazh.player.name", v);
+                        if (v) localStorage.setItem("anazh.player.name", v);
+                        else localStorage.removeItem("anazh.player.name");
                     } catch {
                         /* ignore */
                     }

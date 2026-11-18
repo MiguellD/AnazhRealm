@@ -2145,9 +2145,6 @@ class AnazhRealm_vegetation_streu {
         }
         // Als Built-In-Bauplan registrieren (HISM-fähig). `_isGrown:true` ist der Snapshot-Anker: echte
         // Built-ins fallen raus (im Code), gewachsene müssen reisen (zur Laufzeit entstanden, referenziert).
-        const speciesLabel = String(species || "Baum")
-            .replace(/^baum_/, "")
-            .replace(/^./, (c) => c.toUpperCase());
         // gen ≥ 6: merge-fähig — steuert NUR den Render-Pfad in _archFlattenBlueprint (zwei merged Leaves
         // statt N Per-Part); bp.parts bleibt → Tags + Re-Growth unverändert. gen < 6: Per-Part-Pfad.
         const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
@@ -2158,7 +2155,7 @@ class AnazhRealm_vegetation_streu {
         const isSkeletonMeshed = genV >= 7 && this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches);
         this.state.blueprints[cacheKey] = {
             name: cacheKey,
-            label: `${speciesLabel} (gewachsen)`,
+            etikett: this._gewachsenEtikett(species), // der Name aus der Art, in der Sprache von jetzt
             builtIn: true,
             _isGrown: true,
             _grownSpecies: species,
@@ -2174,6 +2171,7 @@ class AnazhRealm_vegetation_streu {
             instanced: true,
             parts,
         };
+        AnazhRealm._etikett(this.state.blueprints[cacheKey]);
         // Skeleton ist eingebaut → den Side-Channel räumen (defensive,
         // nächster Aufruf setzt ihn neu).
         if (isSkeletonMeshed) this._lastTreeSkeleton = null;

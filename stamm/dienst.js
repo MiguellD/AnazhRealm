@@ -1888,6 +1888,10 @@ class AnazhRealm_dienst {
                 if (Array.isArray(w) && Array.isArray(w[0]))
                     return w.map((z) => AnazhRealm._tIn(sp, z[0], z[1], wert)).join(", ");
                 if (Array.isArray(w)) return AnazhRealm._tIn(sp, w[0], w[1], wert);
+                // `{ kopf: [schlüssel, werte] }` ist der KOPF eines Namens der Tafel („Meister-Esse (Eisen)“ → „Meister-Esse“),
+                // geschnitten erst in der Sprache des Lesens (`AnazhRealm._namensZeile`)
+                if (w && Array.isArray(w.kopf))
+                    return AnazhRealm._namensKopf(AnazhRealm._tIn(sp, w.kopf[0], w.kopf[1], wert));
                 // in der Linsen-Sprache steht ein Wert (ein Name, eine Zahl: Daten) zwischen den Isolat-Zeichen U+2068 … U+2069
                 return sp === "pseudo" ? `⁨${wert(w)}⁩` : wert(w);
             })
@@ -2328,11 +2332,17 @@ AnazhRealm.WELT_SCHWUND_MS = 500;
 // (`data-hud-zeigen` liest das CSS: der Wink `body.hud-hidden::after`).
 AnazhRealm.SPRACH_ATTRIBUTE = Object.freeze(["title", "placeholder", "aria-label", "alt", "data-hud-zeigen"]);
 // DIE ZEICHNER DER OBERFLÄCHE (spielgang.K5, der Wechsel am Ort): jeder baut sein Stück aus Tafel und Etiketten neu und ist
-// wiederholbar; was ein Bauer EINMAL baut, trägt seine Schlüssel am Knoten (`_tSetze`) und füllt `_sprachDom`
+// wiederholbar; was ein Bauer EINMAL baut, trägt seine Schlüssel am Knoten (`_tSetze`) und füllt `_sprachDom`. Das Blatt des
+// Ich, die Karte des Wesens im Hof und die Stoff- und Werkzeug-Paletten der Werkstatt baute bis hier nur ihr Öffner (die
+// Paletten einmal je Sitzung): nach dem Wechsel standen sie in der alten Sprache, bis der Spieler sie neu öffnete.
 AnazhRealm.SPRACH_ZEICHNER = Object.freeze([
     "renderInventoryUI",
+    "_ichRenderSpecSheet",
+    "_hofRefreshFocus",
     "_renderHotbarDOM",
     "_renderWorkshopDOM",
+    "_workshopRenderMaterialPalette",
+    "_workshopRenderToolPalette",
     "renderLibraryUI",
     "_renderKeybindingsUI",
     "updateWorldInfo",

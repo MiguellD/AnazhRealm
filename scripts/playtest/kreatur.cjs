@@ -1455,7 +1455,6 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
             source: "test:manual",
             tagDelta: { magieleitung: 0.3, dichte: 0.2 },
             durationSeconds: 60,
-            label: "Test-Boost",
         });
         out.applyOk = okApply === true;
         out.boostsListed = c.userData.boosts.length === 1;
@@ -1470,7 +1469,6 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
             source: "test:manual",
             tagDelta: { magieleitung: 0.5 },
             durationSeconds: 30,
-            label: "Test-Boost-2",
         });
         out.dedupeBySource = c.userData.boosts.length === 1;
         out.deltaUpdated = c.userData.boosts[0].tagDelta.magieleitung === 0.5;
@@ -1482,7 +1480,6 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
             source: "test:hp",
             tagDelta: { dichte: 0.5, härte: 0.5 },
             durationSeconds: 60,
-            label: "HP-Boost",
         });
         const boostedStats = r.computeCreatureStats(c2).stats;
         out.hpBoosted = boostedStats.hpMax > baseStats.hpMax + 10;

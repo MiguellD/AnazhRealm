@@ -1918,8 +1918,12 @@ class AnazhRealm_netz_p2p {
         const changed = entry.soulName !== soulName;
         entry.soulName = soulName;
         entry.bodyParts = Array.isArray(msg.bodyParts) ? msg.bodyParts : null;
-        if (typeof msg.name === "string" && msg.name.trim()) {
-            const nm = msg.name.trim().slice(0, 48);
+        // ein Schlüssel der Tafel ohne Werte (`nameEtikett`) gilt vor dem Wort des Senders
+        const k = Array.isArray(msg.nameEtikett) ? msg.nameEtikett[0] : null;
+        const T = AnazhRealm.TEXTE.de;
+        const etk = typeof k === "string" && Object.hasOwn(T, k) && !T[k].includes("{") ? this._t(k) : null;
+        if (etk || (typeof msg.name === "string" && msg.name.trim())) {
+            const nm = etk || msg.name.trim().slice(0, 48);
             if (entry.avatarName !== nm) {
                 entry.avatarName = nm;
                 this._p2pRefreshPeerNameLabel(entry);
@@ -2504,6 +2508,9 @@ class AnazhRealm_netz_p2p {
         if (custom && Array.isArray(custom.bodyParts)) msg.bodyParts = custom.bodyParts;
         const avatarName = this.state.player && this.state.player.name;
         if (typeof avatarName === "string" && avatarName.trim()) msg.name = avatarName.trim().slice(0, 48);
+        // ohne Wort des Spielers reist der Name der Tafel als Schlüssel (`nameEtikett`: der Empfänger liest ihn in SEINER
+        // Sprache) und als Wort des Senders (`name`, für einen Empfänger ohne den Schlüssel — must-ignore)
+        else [msg.name, msg.nameEtikett] = [this._t("ui.schoepfer-2"), ["ui.schoepfer-2"]];
         // W7 Phase 2 — die Welt-Rolle mitteilen, damit ein Guest weiss,
         // welcher verbundene Peer der Host ist (Ziel des Welt-Resync).
         msg.worldRole = (this.state.worldMeta && this.state.worldMeta.role) || "solo";
