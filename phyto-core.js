@@ -3526,10 +3526,69 @@
     // reihenfolge-frei — das Urteil eines Darts ist eine Funktion seiner Zelle und ihrer Nachbarn, jeder Leser (Wald-Faden, Wirt,
     // Kamm) rechnet dasselbe. Das Fenster merkt `_fensterMemo` je Zelle, gültig, solange jede ihrer 25 Nachbar-Listen dieselbe ist.
     const _fensterMemo = typeof WeakMap === "function" ? new WeakMap() : null;
-    // die Fächer des Fensters (m): jeder Stehende in seinem Fach, ein Dart fragt nur die Fächer in der Reichweite
-    // pk · Schluss · (T + größte Krone)
+    // DER GANG DES URTEILS (die Wurzel der Kosten): das Urteil eines Darts der eigenen Zelle fragt nur, was es braucht — ein
+    // Dart steht, wenn kein besserer (`forestPrioWins`) STEHENDER Dart des Fensters ihm näher ist als (T + T') · pk · min(Schluss);
+    // ob der bessere steht, fragt derselbe Gang (gemerkt je Fenster), bis der Beste der Kette ohne Besseren in Reichweite steht.
+    // Dasselbe Urteil wie die Reihe des Vorrangs über alle Darts des Fensters, Wort für Wort — ohne sie zu sortieren und ohne die
+    // Darts zu urteilen, die keinen Dart der eigenen Zelle erreichen (bis hier je Zelle alle ~900 Darts des Fensters sortiert
+    // und geurteilt: 0,43 ms je Zelle). Die Nachbarn eines Darts: die Fächer (`FENSTER_FACH` m) der Zellen des Fensters, je Liste
+    // der Geburt EINMAL gelegt (`zellFaecher`) mit Kasten, größter Krone und größtem Schluss — ein Fach zählt, wenn es in der
+    // Reichweite pk · min(Schluss, seinem) · (T + seiner größten Krone) liegt.
     const FENSTER_FACH = 4;
-    const _vorrang = (a, b) => b.prio - a.prio || b.x - a.x || b.z - a.z; // die Reihe von `forestPrioWins`, der Beste zuerst
+    const _zellFaecher = typeof WeakMap === "function" ? new WeakMap() : null;
+    function zellFaecher(a) {
+        let f = _zellFaecher ? _zellFaecher.get(a) : undefined;
+        if (f) return f;
+        const B = FENSTER_FACH;
+        let x0 = Infinity;
+        let z0 = Infinity;
+        let x1 = -Infinity;
+        let z1 = -Infinity;
+        for (let i = 0; i < a.length; i++) {
+            const d = a[i];
+            if (d.x < x0) x0 = d.x;
+            if (d.z < z0) z0 = d.z;
+            if (d.x > x1) x1 = d.x;
+            if (d.z > z1) z1 = d.z;
+        }
+        const nx = a.length ? Math.floor((x1 - x0) / B) + 1 : 0;
+        const nz = a.length ? Math.floor((z1 - z0) / B) + 1 : 0;
+        const fach = [];
+        const idx = new Array(nx * nz);
+        for (let i = 0; i < a.length; i++) {
+            const d = a[i];
+            const q = Math.floor((d.x - x0) / B) * nz + Math.floor((d.z - z0) / B);
+            let e = idx[q];
+            if (!e) {
+                e = idx[q] = { x0: d.x, z0: d.z, x1: d.x, z1: d.z, tMax: 0, sMax: 0, d: [], i: [], w: null };
+                fach.push(e);
+            }
+            e.d.push(d);
+            e.i.push(i);
+            if (d.x < e.x0) e.x0 = d.x;
+            if (d.z < e.z0) e.z0 = d.z;
+            if (d.x > e.x1) e.x1 = d.x;
+            if (d.z > e.z1) e.z1 = d.z;
+            if (d.T > e.tMax) e.tMax = d.T;
+            if (d.schluss > e.sMax) e.sMax = d.schluss;
+        }
+        f = { x0, z0, x1, z1, tMax: 0, sMax: 0, fach };
+        for (const e of fach) {
+            // das Fach in der Reihe des Vorrangs (der Beste zuerst), gepackt: je Dart x, z, T, Schluss, Vorrang und sein Platz
+            const o = e.i.map((_, k) => k).sort((p, q) => (forestPrioWins(e.d[p], e.d[q]) ? -1 : forestPrioWins(e.d[q], e.d[p]) ? 1 : 0));
+            e.d = o.map((k) => e.d[k]);
+            e.i = Int32Array.from(o, (k) => e.i[k]);
+            e.w = new Float64Array(o.length * 5);
+            for (let k = 0; k < o.length; k++) {
+                const d = e.d[k];
+                e.w.set([d.x, d.z, d.T, d.schluss, d.prio], k * 5);
+            }
+            if (e.tMax > f.tMax) f.tMax = e.tMax;
+            if (e.sMax > f.sMax) f.sMax = e.sMax;
+        }
+        if (_zellFaecher) _zellFaecher.set(a, f);
+        return f;
+    }
     function forestDachFenster(gx, gz, geboren, pk) {
         const R = FOREST_URTEIL_REIHE;
         const nN = R.length >> 1;
@@ -3542,72 +3601,55 @@
             for (let i = 0; i < nN && gleich; i++) gleich = m.nb[i] === nb[i];
             if (gleich) return m.steht;
         }
-        const W = [];
-        let tMax = 0;
-        let sMax = 0;
-        let x0 = Infinity;
-        let z0 = Infinity;
-        let x1 = -Infinity;
-        let z1 = -Infinity;
-        for (let i = 0; i < nN; i++)
-            for (let k = 0; k < nb[i].length; k++) {
-                const d = nb[i][k];
-                W.push(d);
-                if (d.T > tMax) tMax = d.T;
-                if (d.schluss > sMax) sMax = d.schluss;
-                if (d.x < x0) x0 = d.x;
-                if (d.z < z0) z0 = d.z;
-                if (d.x > x1) x1 = d.x;
-                if (d.z > z1) z1 = d.z;
-            }
-        W.sort(_vorrang);
-        const n = W.length;
-        const B = FENSTER_FACH;
-        const nx = n ? Math.floor(Math.max(x1 - x0, z1 - z0) / B) + 1 : 1;
-        const kopf = new Int32Array(nx * nx).fill(-1);
-        const kette = new Int32Array(n);
-        const SX = new Float64Array(n);
-        const SZ = new Float64Array(n);
-        const ST = new Float64Array(n);
-        const SS = new Float64Array(n);
-        const steht = new Set();
-        for (let i = 0; i < n; i++) {
-            const d = W[i];
+        const FA = new Array(nN);
+        for (let i = 0; i < nN; i++) FA[i] = zellFaecher(nb[i]);
+        // das Urteil je Dart, gemerkt im Fenster (je Zelle ein Feld in der Reihe ihrer Geburt: 0 offen, 1 steht, 2 fällt)
+        const U = new Array(nN);
+        const urteile = (c, i) => {
+            let u = U[c];
+            if (!u) u = U[c] = new Uint8Array(nb[c].length);
+            if (u[i]) return u[i] === 1;
+            const d = nb[c][i];
             const dx = d.x;
             const dz = d.z;
             const dT = d.T;
             const ds = d.schluss;
-            const K = Math.ceil((pk * sMax * (dT + tMax)) / B);
-            const bx = Math.floor((dx - x0) / B);
-            const bz = Math.floor((dz - z0) / B);
-            const a1 = Math.min(nx - 1, bx + K);
-            const b0 = Math.max(0, bz - K);
-            const b1 = Math.min(nx - 1, bz + K);
-            let frei = true;
-            for (let a = Math.max(0, bx - K); a <= a1 && frei; a++)
-                for (let b = b0; b <= b1; b++) {
-                    let j = kopf[a * nx + b];
-                    for (; j >= 0; j = kette[j]) {
-                        const md = (dT + ST[j]) * pk * (ds < SS[j] ? ds : SS[j]);
-                        const ex = dx - SX[j];
-                        const ez = dz - SZ[j];
-                        if (ex * ex + ez * ez < md * md) break;
-                    }
-                    if (j >= 0) {
-                        frei = false;
-                        break;
+            const dp = d.prio;
+            let v = true;
+            // die eigene Zelle zuerst (dort steht meist der Nachbar, der den Dart überwächst), dann die übrigen des Fensters
+            for (let w = -1; w < nN && v; w++) {
+                const cc = w < 0 ? c : w;
+                if (w === c) continue;
+                const k = FA[cc];
+                const rc = pk * (ds < k.sMax ? ds : k.sMax) * (dT + k.tMax);
+                if (dx + rc < k.x0 || dx - rc > k.x1 || dz + rc < k.z0 || dz - rc > k.z1) continue;
+                for (let e = 0; e < k.fach.length && v; e++) {
+                    const f = k.fach[e];
+                    const r = pk * (ds < f.sMax ? ds : f.sMax) * (dT + f.tMax);
+                    if (dx + r < f.x0 || dx - r > f.x1 || dz + r < f.z0 || dz - r > f.z1) continue;
+                    const W = f.w;
+                    for (let j = 0, n = f.i.length; j < n; j++) {
+                        const ox = W[j * 5];
+                        const oz = W[j * 5 + 1];
+                        const op = W[j * 5 + 4];
+                        // das Fach steht in der Reihe des Vorrangs (`forestPrioWins`): ab dem ersten Schwächeren nur Schwächere
+                        if (!(op > dp || (op === dp && (ox > dx || (ox === dx && oz > dz))))) break;
+                        const os = W[j * 5 + 3];
+                        const md = (dT + W[j * 5 + 2]) * pk * (ds < os ? ds : os);
+                        const ex = dx - ox;
+                        const ez = dz - oz;
+                        if (ex * ex + ez * ez < md * md && urteile(cc, f.i[j])) {
+                            v = false;
+                            break;
+                        }
                     }
                 }
-            if (!frei) continue;
-            const f = bx * nx + bz;
-            SX[i] = dx;
-            SZ[i] = dz;
-            ST[i] = dT;
-            SS[i] = ds;
-            kette[i] = kopf[f];
-            kopf[f] = i;
-            steht.add(d);
-        }
+            }
+            u[i] = v ? 1 : 2;
+            return v;
+        };
+        const steht = new Set();
+        for (let k = 0; k < nb[0].length; k++) if (urteile(0, k)) steht.add(nb[0][k]); // nb[0]: die eigene Zelle (die Reihe beginnt bei ihr)
         if (_fensterMemo) _fensterMemo.set(own, { pk, nb, steht });
         return steht;
     }
@@ -3640,15 +3682,24 @@
         if (forestImDach(d, gx, gz, geboren, pk)) return 1;
         const S = FOREST_PACK.schicht;
         const R = FOREST_URTEIL_REIHE;
+        const dx = d.x;
+        const dz = d.z;
+        // die Fächer der Zellen (`zellFaecher`): gefragt wird nur ein Fach, dessen Kasten in der Reichweite liegt
+        const fern = (f, r) => dx + r < f.x0 || dx - r > f.x1 || dz + r < f.z0 || dz - r > f.z1;
         let schirm = false;
         for (let q = 0; q < 18 && !schirm; q += 2) {
-            const nb = geboren(gx + R[q], gz + R[q + 1]);
-            for (let k = 0; k < nb.length && !schirm; k++) {
-                const o = nb[k];
-                const dx = d.x - o.x;
-                const dz = d.z - o.z;
-                schirm =
-                    o !== d && dx * dx + dz * dz < o.T * o.T && forestImDach(o, gx + R[q], gz + R[q + 1], geboren, pk);
+            const K = zellFaecher(geboren(gx + R[q], gz + R[q + 1]));
+            if (fern(K, K.tMax)) continue;
+            for (let e = 0; e < K.fach.length && !schirm; e++) {
+                const f = K.fach[e];
+                if (fern(f, f.tMax)) continue;
+                for (let k = 0; k < f.d.length && !schirm; k++) {
+                    const o = f.d[k];
+                    const ex = dx - o.x;
+                    const ez = dz - o.z;
+                    schirm =
+                        o !== d && ex * ex + ez * ez < o.T * o.T && forestImDach(o, gx + R[q], gz + R[q + 1], geboren, pk);
+                }
             }
         }
         if (!schirm) return 0;
@@ -3657,20 +3708,23 @@
             const sz = Math.max(d.s * S.alter[i], G); // die Größe in der Schicht
             if (!(sz < d.s)) return 0; // schon der Boden des Spans ist seine ganze Größe: unter dem Dach kein Platz
             const a = sz / d.s;
+            const dT = d.T * a;
             let frei = true;
             for (let q = 0; q < R.length && frei; q += 2) {
-                const nb = geboren(gx + R[q], gz + R[q + 1]);
-                for (let k = 0; k < nb.length; k++) {
-                    const o = nb[k];
-                    const pa = S.pack * Math.min(d.schluss, o.schluss);
-                    const ao = Math.min(Math.max(o.s * S.alter[i], G) / o.s, 1);
-                    if (
-                        o !== d &&
-                        forestTooClose(d.x - o.x, d.z - o.z, d.T * a, o.T * ao, pa) &&
-                        forestPrioWins(o, d)
-                    ) {
-                        frei = false;
-                        break;
+                const K = zellFaecher(geboren(gx + R[q], gz + R[q + 1]));
+                // die Krone der Schicht ist nie größer als die ganze (ao ≤ 1): die Reichweite (T·a + T) · pack · min(Schluss)
+                if (fern(K, (dT + K.tMax) * S.pack * Math.min(d.schluss, K.sMax))) continue;
+                for (let e = 0; e < K.fach.length && frei; e++) {
+                    const f = K.fach[e];
+                    if (fern(f, (dT + f.tMax) * S.pack * Math.min(d.schluss, f.sMax))) continue;
+                    for (let k = 0; k < f.d.length; k++) {
+                        const o = f.d[k];
+                        const pa = S.pack * Math.min(d.schluss, o.schluss);
+                        const ao = Math.min(Math.max(o.s * S.alter[i], G) / o.s, 1);
+                        if (o !== d && forestTooClose(dx - o.x, dz - o.z, dT, o.T * ao, pa) && forestPrioWins(o, d)) {
+                            frei = false;
+                            break;
+                        }
                     }
                 }
             }
@@ -3683,6 +3737,19 @@
     // Schicht (nie unter FOREST_PACK.groesse[0] — der Wirt setzt sie, wie sie ist) und der Krone T·alter.
     // `nurDach`: nur die Kronen des Dachs (die Kamm-Krone der Ferne — kein Unterstand reicht über das Dach in den Himmel).
     function forestStehende(gx, gz, geboren, pk, nurDach) {
+        // die Zellen ±FOREST_URTEIL_REICH, die Fenster und Schirm dieser Zelle lesen, je EINMAL beim Rufer geholt (sein
+        // Gedächtnis trägt Schlüssel-Text: je Dart der Schicht 59 Rufe)
+        const RR = FOREST_URTEIL_REICH;
+        const WW = 2 * RR + 1;
+        const nah = new Array(WW * WW);
+        const geb = geboren;
+        geboren = (cx, cz) => {
+            const a = cx - gx + RR;
+            const b = cz - gz + RR;
+            if (a < 0 || b < 0 || a >= WW || b >= WW) return geb(cx, cz);
+            const q = a * WW + b;
+            return nah[q] || (nah[q] = geb(cx, cz));
+        };
         const own = geboren(gx, gz);
         const out = [];
         const S = nurDach ? forestDachFenster(gx, gz, geboren, pk) : null;
