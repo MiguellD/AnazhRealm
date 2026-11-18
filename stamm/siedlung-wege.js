@@ -741,6 +741,13 @@ class AnazhRealm_siedlung_wege {
         return q >= 1 ? 1 : q * q * (3 - 2 * q);
     }
 
+    // Die Lage EINES Punkts zum Bord der Fahrbahn `f` (0 … 1, LINEAR über ±rand um ihren Rand: 0 ab +rand außen, ½ am Bord,
+    // 1 ab −rand innen). Leser: der Maler (`_wegeKarteMale`) und die Linse des Weg-Körpers — DIESELBE Zahl.
+    static _wegeFahrLage(f, px, pz, rand) {
+        const q = (rand - AnazhRealm._wegeFormAbstand(f, px, pz)) / (2 * rand);
+        return q <= 0 ? 0 : q >= 1 ? 1 : q;
+    }
+
     // DER SCHUB EINER KARTE um (di, dj) Texel (der Umzug ihres Fensters): neu[j][i] = alt[j + dj][i + di] je `k` Kanälen, was keine
     // Quelle hat, wird `leer`; der Rahmen außerhalb [a, b] bleibt `leer` (der Rand-Texel der Wege-Karte). → die Streifen in [a, b]
     // ([i0, i1, j0, j1], geleert), deren Quelle außerhalb lag — die Spalten über die volle Höhe, die Zeilen ohne sie (keine Ecke
@@ -810,10 +817,18 @@ class AnazhRealm_siedlung_wege {
         } else rand = Math.max(f.rand !== undefined ? f.rand : AnazhRealm.WEGE_KARTE.randM, S.randMinM);
         // DER GEMALTE SAUM (der gepflasterte Gehweg einer Gasse, `_stlWegeBuild`): der Maler deckt die Form um ihn breiter, die Form
         // selbst bleibt die Fahrbahn — EINE gemerkte Mal-Form je Gasse
+        // DIE FAHRBAHN IST DIE ZWEITE HÖHE DES PFLASTERS (w28-weg-koerper, fachwerk WEG_GESETZ, `fahr` an der Form der Fahrstraße):
+        // das Pflaster trägt bis `gehAnteil` seine Deckung (wie bisher das Gewicht der Form: der Gehweg, der Platz), darüber die
+        // Lage zum Bord — LINEAR über ±`fahrRandM` um den Rand der Fahrbahn (`_wegeFahrLage`: am Bord ½, in der Fahrbahn 1). Die
+        // bilineare Probe einer linearen Rampe trägt die gerade Bordlinie genau, der Boden-Stoff liest aus ihr den Abstand zum
+        // Bord in Metern (`_wegBord`). Je Texel das Maximum (wie jede Art): die Mischung kennt weiter keine Reihenfolge.
+        const WK = AnazhRealm.WEGE_KARTE;
+        const fahr = f.fahr ? f : null;
+        const fahrRand = fahr ? Math.max(WK.fahrRandM, S.randMinM) : 0;
         if (f.saum) f = f._mal || (f._mal = { ...f, halb: f.halb + f.saum, saum: 0 });
         const x0w = stufe.mitteX - S.fensterM / 2;
         const z0w = stufe.mitteZ - S.fensterM / 2;
-        const ausdehnung = AnazhRealm._wegeFormRadius(f) + rand;
+        const ausdehnung = AnazhRealm._wegeFormRadius(f) + Math.max(rand, fahrRand - (fahr ? fahr.saum || 0 : 0));
         const minX = Math.min(f.ax, f.bx) - ausdehnung;
         const maxX = Math.max(f.ax, f.bx) + ausdehnung;
         const minZ = Math.min(f.az, f.bz) - ausdehnung;
@@ -827,8 +842,9 @@ class AnazhRealm_siedlung_wege {
         // nicht-leer, der nächste Umzug lädt sie leer hoch — kein Maler kann die Marke vergessen.
         stufe.wegeLeer = false;
         const daten = stufe.daten;
-        const { voll, null: nul } = AnazhRealm.WEGE_KARTE;
+        const { voll, null: nul } = WK;
         const wert = f.wert || 1;
+        const stein = f.kanal === WK.belag.pflaster.kanal && wert === WK.belag.pflaster.wert;
         for (let j = j0; j <= j1; j++) {
             const pz = z0w + (j + 0.5) * t;
             for (let i = i0; i <= i1; i++) {
@@ -836,7 +852,12 @@ class AnazhRealm_siedlung_wege {
                 const q = AnazhRealm._wegeFormGewicht(f, px, pz, rand);
                 if (!(q > 0)) continue;
                 const k = (j * N + i) * 2 + f.kanal;
-                const v = Math.round(q * voll) * wert;
+                let m = q;
+                if (stein) {
+                    m *= WK.gehAnteil;
+                    if (fahr) m += AnazhRealm._wegeFahrLage(fahr, px, pz, fahrRand) * (1 - WK.gehAnteil);
+                }
+                const v = Math.round(m * voll) * wert;
                 const alt = daten[k] - nul;
                 if (wert > 0 ? v > alt : alt <= 0 && v < alt) daten[k] = v + nul;
             }
@@ -1156,7 +1177,7 @@ class AnazhRealm_siedlung_wege {
 
     // DER BELAG an (x, z) — bilinear aus DENSELBEN Bytes, die der Boden-Shader liest: die NAH-Stufe innerhalb ihrer Grenze
     // (`_wegeStufeNah`), sonst die FERN-Stufe; je Kanal das Vorzeichen gefiltert, dann geteilt wie im Shader (`_wegeBodenFarbe`,
-    // `WEGE_KARTE.belag`). `aus` (optional) trägt erde · rasen · acker · pflaster (0 … 1). → der getretene Grund (Erde + Pflaster,
+    // `WEGE_KARTE.belag`). `aus` (optional) trägt erde · rasen · acker · pflaster · fahr (0 … 1). → der getretene Grund (Erde + Pflaster,
     // höchstens 1). Leser: das Pfad-Feld der Wiese und der Streu (`_wegeFeldAt`) und der gezeichnete Boden (`_bodenSichtAt`: der
     // Rasen grünt, das Pflaster deckt).
     _wegeBelagAt(x, z, aus) {
@@ -1187,14 +1208,21 @@ class AnazhRealm_siedlung_wege {
         const r = bi(0);
         const gk = bi(1);
         const erde = r > 0 ? r : 0;
-        const pflaster = gk < 0 ? -gk : 0;
+        // das Pflaster trägt zwei Höhen (`_wegeKarteMale`): bis `gehAnteil` seine Deckung, darüber die Lage zum Bord der Fahrbahn
+        const G = AnazhRealm.WEGE_KARTE.gehAnteil;
+        const stein = gk < 0 ? -gk : 0;
+        const pflaster = stein < G ? stein / G : 1;
         if (aus) {
             aus.erde = erde;
             aus.rasen = r < 0 ? -r : 0;
             aus.acker = gk > 0 ? gk : 0;
             aus.pflaster = pflaster;
+            aus.fahr = stein > G ? (stein - G) / (1 - G) : 0;
         }
-        return Math.min(1, erde + pflaster);
+        // DAS PFLASTER HAT EINE KANTE (w28-weg-koerper): der Boden zeichnet es ab der halben Deckung ganz (`_wegeBodenFarbe`, die
+        // Reihe seiner Randsteine) — ab dort steht kein Halm. Bis hier lichtete die Wiese über den weichen Rand (±randM) nur
+        // anteilig: auf den äußeren 0,6 m jedes Pflasters standen Halme im Stein.
+        return Math.min(1, erde + 2 * pflaster);
     }
 
     // Die Boden-Farbe unter Kronen und Wegen (TSL): die Vertex-Farbe mischt zum Rasen (R −), zur Laubstreu der Kronen-Karte,
@@ -1232,7 +1260,15 @@ class AnazhRealm_siedlung_wege {
         const _erde = _wm.r.max(0.0).mul(_begehbar);
         const _rasen = _wm.r.negate().max(0.0).mul(_begehbar);
         const _acker = _wm.g.max(0.0).mul(_begehbar);
-        const _pflaster = _wm.g.negate().max(0.0).mul(_begehbar);
+        // DAS PFLASTER TRÄGT ZWEI HÖHEN (w28-weg-koerper, `_wegeKarteMale`): bis `gehAnteil` seine Deckung `_pq`, darüber die Lage
+        // zum Bord der Fahrbahn (`_wegBord`). SEINE KANTE: es deckt ab der halben Deckung ganz (die Linie der Form selbst, über
+        // einen Pixel weich, nie schärfer als `kantWeich` der Deckung — zwei Formen, die sich nur berühren, tragen an ihrer Naht
+        // je ½) — bis hier lief jedes Pflaster über ±randM in Erde und Wiese aus, ein Anstrich ohne Rand.
+        const _stein = _wm.g.negate().max(0.0);
+        const _pq = _stein.div(WK.gehAnteil).min(1.0);
+        const _pa = _T.fwidth(_pq).max(WK.kantWeich);
+        const _pk = _pq.sub(0.5).div(_pa).add(0.5).clamp(0.0, 1.0);
+        const _pflaster = _pk.mul(_begehbar);
         // DER RASEN (das Gras-Gesetz): wo der Plan Rasen erklärt, ist der Grund das Mittel des Halms (`WIESEN_GRUND`) — die
         // Geologie legt das Relief der Halme darauf (Grün × Flachheit), die Nah-Wiese ihre Büschel (`_bodenSichtAt`: er grünt)
         const _wg = AnazhRealm.WIESEN_GRUND.farbe;
@@ -1270,7 +1306,35 @@ class AnazhRealm_siedlung_wege {
         // legt danach sein Korn, seine Kavität und sein Mikro-Relief über jede Farbe — `aus.stein` nennt ihm den Belag (Albedo,
         // Deckung, die Kante als Kipp der Normale, das Korn seiner Zeile), er hält unter ihm den Stein (`_buildPbrNodeMaterial`)
         const stein = {};
-        const pflaster = this._kopfsteinFarbe(_T, xz, stein);
+        // DER KÖRPER DES WEGS (fachwerk WEG_GESETZ, `_wegBord`): der Ton je Teil des Querschnitts, wo Bord, Flanke und Kante glatt
+        // gesägt sind statt Kleinpflaster (`glatt`: der blanke Stein des Farb-Gesetzes, ohne die Kante der Köpfe), und der Kipp der
+        // Flanke des Bords
+        const bord = this._wegBord(
+            _T,
+            _stein
+                .sub(WK.gehAnteil)
+                .div(1 - WK.gehAnteil)
+                .max(0.0),
+            _T.mix(
+                _T.float(Math.max(WK.fahrRandM, fern.S.randMinM)),
+                _T.float(Math.max(WK.fahrRandM, nah.S.randMinM)),
+                innen
+            ),
+            _pk.sub(
+                _pq
+                    .sub(0.5 + AnazhRealm._wegKantAnteil())
+                    .div(_pa)
+                    .add(0.5)
+                    .clamp(0.0, 1.0)
+            ),
+            xz
+        );
+        const kopf = this._kopfsteinFarbe(_T, xz, stein);
+        const blank = AnazhRealm._srgbHexLinear(
+            AnazhRealm.Gesetz("porta:STEIN_GESETZ.farbe")[AnazhRealm.Gesetz("porta:STEIN_GESETZ.kopfstein").stein]
+        ).map(AnazhRealm._f32);
+        const pflaster = _T.mix(kopf, _T.vec3(blank[0], blank[1], blank[2]), bord.glatt).mul(bord.ton);
+        stein.kipp = stein.kipp ? stein.kipp.mul(_T.float(1).sub(bord.glatt)).add(bord.kipp) : bord.kipp;
         // DIE LAVA (stoffe.K3-2, `_lavaFlaeche`): ihre Decke (B) liegt über jedem Grund, auch über Weg und Pflaster — ihre Kruste
         // aus Basalt mit den Rissen, die ihre Temperatur (A) öffnet (`_lavaKruste`); der Boden-Stoff trägt die Kruste als Belag aus
         // Stein (`aus.stein`: das Stein-Gesetz unter ihr, die Kanten der Schollen kippen die Normale) und die Glut als sein
@@ -1301,6 +1365,126 @@ class AnazhRealm_siedlung_wege {
             };
         }
         return _T.mix(_T.mix(mitAcker, pflaster, _pflaster), kruste.farbe, _lava);
+    }
+
+    // Die halbe Breite der Kante des Pflasters als Anteil seiner Deckung: die Reihe der Randsteine (`WEG_GESETZ.kant.breitM`) liegt
+    // innen an der Linie der Form; dort steigt das Gewicht der Form mit 1,5 ÷ (2 · randM) je Meter (`_wegeFormGewicht`).
+    static _wegKantAnteil() {
+        return (AnazhRealm.Gesetz("fachwerk:WEG_GESETZ").kant.breitM * 1.5) / (2 * AnazhRealm.WEGE_KARTE.randM);
+    }
+
+    // DER BORD DES WEGS (TSL, Leser `_wegeBodenFarbe`; fachwerk WEG_GESETZ — w28-weg-koerper): der Körper der Fahrstraße als
+    // FUNKTION im Boden-Stoff, keine Geometrie und kein Befehl. `f` die Lage zum Bord aus der Wege-Karte (0 … 1, ½ am Bord,
+    // linear über ±`R` Meter: d = (f − ½) · 2R ist der Abstand zum Bord, + in der Fahrbahn), `k` die Kante des Pflasters (0 … 1).
+    // Die Richtung quer zum Bord `n` ist ∇d in der Welt (aus den Ableitungen am Schirm durch die der Welt-Lage, wie die Schollen
+    // der Lava). Der Boden bleibt die Ebene der Fahrbahn; der Gehweg steht `hochM` darüber:
+    //   DER SCHATTEN des Bords fällt auf die Fahrbahn, 0 < d < hochM · cot(Sonnenhöhe) · cos(Azimut zum Bord)
+    //     (= hochM · (−n · s.xz) ÷ s.y, `s` die Richtung des aktiven Körpers, `uSunDir`) — mittags schmal, bei tiefer Sonne breit;
+    //   DIE FLANKE des Bords steht vor dem Gehweg, −hochM · (n · v.xz) ÷ v.y < d < 0 (`v` zum Auge: was der Strahl des Auges von
+    //     der Ebene der Fahrbahn hinter dem Bord nicht sieht, ist die Flanke) — im eigenen Ton, ihre Normale liegt waagrecht (`kipp`);
+    //   DER BORDSTEIN hinter der Flanke (`breitM`), glatt, je `steinM` längs eine Stoßfuge; DIE RINNE vor dem Bord (`rinneM`);
+    //   DIE FAHRBAHN im Ton `ton.fahr`; DIE KANTE des Pflasters (`k`) im Ton `ton.kant`.
+    // Jede Linie ist über einen Pixel weich (`wegAn`), Schatten, Flanke und Bordstein tragen ihr Relief bis `fernM` (halb ab
+    // ½ · fernM), dahinter bleibt der Ton der Fahrbahn — kein Flimmern. Beide Bänder halten ¾ der Rampe der Karte.
+    // ZWEI WGSL-FUNKTIONEN (`wegAn`, `wegBord`, wie die Kruste der Lava): ihre Zwischenwerte leben in ihnen statt im
+    // Boden-Programm (die Ratsche `S0_ZEICHEN`). Rückgabe { ton, glatt, kipp }.
+    // OFFEN: der Schatten des Bords liest die Schattenkarte nicht — im Schlagschatten eines Hauses steht er weiter (Lehre 21).
+    _wegBord(_T, f, R, k, xz) {
+        const W = AnazhRealm.Gesetz("fachwerk:WEG_GESETZ");
+        if (
+            !W ||
+            !W.bord ||
+            !(W.bord.hochM > 0) ||
+            !(W.bord.breitM > 0) ||
+            !(W.bord.steinM > 0) ||
+            !W.ton ||
+            !(W.fernM > 0)
+        )
+            throw new Error("Weg-Körper: das Gesetz fachwerk:WEG_GESETZ trägt Bord, Ton oder Ferne nicht");
+        const [B, T, k7] = [W.bord, W.ton, AnazhRealm._f32];
+        const an =
+            this._wegAnFn ||
+            (this._wegAnFn = _T
+                .Fn(([x, a]) => x.div(a).add(0.5).clamp(0.0, 1.0))
+                .setLayout({
+                    name: "wegAn",
+                    type: "float",
+                    inputs: [
+                        { name: "x", type: "float" },
+                        { name: "a", type: "float" },
+                    ],
+                }));
+        const fn =
+            this._wegBordFn ||
+            (this._wegBordFn = _T
+                .Fn(([f, R, k, xz, s, v]) => {
+                    const d = f.sub(0.5).mul(R).mul(2);
+                    const [px, py, sx, sy] = [_T.dFdx(xz), _T.dFdy(xz), _T.dFdx(d), _T.dFdy(d)];
+                    const det = px.x.mul(py.y).sub(px.y.mul(py.x));
+                    const g = _T
+                        .vec2(sx.mul(py.y).sub(sy.mul(px.y)), sy.mul(px.x).sub(sx.mul(py.x)))
+                        .mul(det.div(det.mul(det).max(1e-24)));
+                    const n = g.div(g.length().max(1e-4));
+                    const a = px.length().add(py.length()).max(1e-3); // die Spanne des Pixels am Boden (m)
+                    const nah = _T
+                        .float(1)
+                        .sub(_T.smoothstep(_T.float(W.fernM / 2), _T.float(W.fernM), v.length()))
+                        .mul(f.mul(40).min(1.0)); // jenseits der Rampe (f = 0: tief im Gehweg) steht kein Band
+                    const lim = R.mul(0.75);
+                    const ws = n.dot(s.xz).negate().max(0.0).mul(B.hochM).div(s.y.max(0.05)).min(lim);
+                    const wf = n.dot(v.xz).max(0.0).mul(B.hochM).div(v.y.max(0.1)).min(lim);
+                    const fb = an(d, a).mul(f.mul(40).min(1.0)); // ohne Rampe (f = 0: Gehweg, Platz, Gasse) keine Fahrbahn
+                    const schatten = fb
+                        .mul(an(ws.sub(d), a))
+                        .mul(ws.div(a).min(1.0))
+                        .mul(nah);
+                    const rinne = fb.mul(an(d.negate().add(B.rinneM), a));
+                    const o = d.add(wf); // der Abstand hinter der Flanke (− im Gehweg)
+                    const flanke = an(d.negate(), a).mul(an(o, a)).mul(wf.div(a).min(1.0)).mul(nah);
+                    const stein = an(o.negate(), a)
+                        .mul(an(o.add(B.breitM), a))
+                        .mul(nah);
+                    // die Stoßfuge des Bordsteins: der Abstand zur nächsten Fuge längs des Bords (m)
+                    const fuge = an(
+                        _T
+                            .fract(xz.dot(_T.vec2(n.y.negate(), n.x)).div(B.steinM))
+                            .sub(0.5)
+                            .abs()
+                            .sub(0.5)
+                            .mul(B.steinM)
+                            .add(0.008),
+                        a
+                    );
+                    const ton = _T.mix(
+                        _T.mix(
+                            fb
+                                .mul(k7(T.fahr - 1))
+                                .add(1)
+                                .mul(rinne.mul(k7(T.rinne / T.fahr - 1)).add(1))
+                                .mul(schatten.mul(k7(T.schatten - 1)).add(1))
+                                .mul(k.mul(k7(T.kant - 1)).add(1)),
+                            _T.float(T.flanke),
+                            flanke
+                        ),
+                        fuge.mul(k7(-0.35 * T.bord)).add(T.bord),
+                        stein
+                    );
+                    return _T.vec4(ton, flanke.add(stein).add(k).min(1.0), n.mul(flanke).mul(4));
+                })
+                .setLayout({
+                    name: "wegBord",
+                    type: "vec4",
+                    inputs: [
+                        { name: "f", type: "float" },
+                        { name: "R", type: "float" },
+                        { name: "k", type: "float" },
+                        { name: "xz", type: "vec2" },
+                        { name: "s", type: "vec3" },
+                        { name: "v", type: "vec3" },
+                    ],
+                }));
+        const q = fn(f, R, k, xz, this._windUniformsEnsure().uSunDir, _T.cameraPosition.sub(_T.positionWorld));
+        return { ton: q.x, glatt: q.y, kipp: _T.vec3(q.z, 0, q.w) };
     }
 
     // DIE KRUSTE DER LAVA (TSL, Leser `_wegeBodenFarbe`): EIN Gesetz aus der Temperatur `w` (das Byte A, `_lavaFlaeche`: der Gang
@@ -2110,6 +2294,11 @@ class AnazhRealm_siedlung_wege {
         const K = AnazhRealm.Gesetz("porta:STEIN_GESETZ.kopfstein");
         const c = AnazhRealm._srgbHexLinear(AnazhRealm.Gesetz("porta:STEIN_GESETZ.farbe")[K.stein]);
         const ton = 1 - ((1 - K.fugeTon) * 2 * K.fuge) / K.steinM;
+        // DER TON DES BANDS FOLGT DEM WEG (w28-weg-koerper, fachwerk WEG_GESETZ): die Erd-Gasse trägt die getretene Erde der Palette,
+        // das Pflaster den Stein, die Fahrstraße ihn im Mittel aus Fahrbahn (`ton.fahr`) und Gehweg nach ihren Breiten — derselbe
+        // Ton, den der Boden-Stoff in der Wege-Karte zeichnet. Bis hier trug jedes Band Kopfstein, auch die Erd-Gasse.
+        const W = AnazhRealm.Gesetz("fachwerk:WEG_GESETZ");
+        const erde = AnazhRealm.BODEN_FARBE.dirt;
         const P = this._stadtFernePool(F, "band");
         const a = this._stadtFernePlatz(P, n);
         const [ziel, farben] = [P.mesh.instanceMatrix.array, P.mesh.instanceColor.array];
@@ -2118,7 +2307,9 @@ class AnazhRealm_siedlung_wege {
             const [s, o] = [e.strassen[h], (a + h) * 16];
             ziel.fill(0, o, o + 16);
             ziel[o + 15] = 1; // die Null-Kiste: eine Gasse im Wasser trägt kein Band
-            farben.set([c[0] * ton, c[1] * ton, c[2] * ton], (a + h) * 3);
+            const [fahrM, breit] = [Math.max(1.2, s.w), Math.max(1.2, s.w) + 2 * Math.max(0, s.saum || 0)];
+            const t = ton * (W.art[s.art].bord ? (fahrM * W.ton.fahr + breit - fahrM) / breit : 1);
+            farben.set(s.belag === "pflaster" ? [c[0] * t, c[1] * t, c[2] * t] : erde, (a + h) * 3);
             const p = s.p;
             const [ax, az, bx, bz] = [ox + p[0], oz + p[1], ox + p[p.length - 2], oz + p[p.length - 1]];
             const lang = Math.hypot(bx - ax, bz - az);
@@ -2129,7 +2320,7 @@ class AnazhRealm_siedlung_wege {
             mat.compose(
                 pos.set((ax + bx) / 2, (ya + yb) / 2 + A.bandHubM - A.bandDickM / 2, (az + bz) / 2),
                 quat,
-                mass.set(Math.max(1.2, s.w) + 2 * Math.max(0, s.saum || 0), A.bandDickM, Math.hypot(lang, yb - ya))
+                mass.set(breit, A.bandDickM, Math.hypot(lang, yb - ya))
             );
             ziel.set(mat.elements, o);
         }
@@ -2141,6 +2332,17 @@ class AnazhRealm_siedlung_wege {
     // (fachwerk `kachelMassen` `strassen`) als Formen der Wege-Karte — der Boden malt Pflaster, die Natur-Wand hält die Linie
     // frei, was auf ihr wuchs, räumt der Takt (`_wegeRaeumen`). Eine Stadt liest sich aus der Ferne über ihr Straßennetz: bis
     // hier standen die Massen auf der Wiese. Gelöst fällt der Kasten aus dem Register, jede zentrierte Stufe malt ihn neu.
+    // DIE FORM EINES STÜCKS GASSE in der Wege-Karte — nah (`_stlWegeRaten`) und fern (`_stadtFerneStrassen`) DIESELBE: die Form
+    // ist die Fahrbahn (`halb`), das Pflaster deckt dazu den Gehweg als gemalten `saum`; trägt die Art des Wegs einen Bord
+    // (fachwerk WEG_GESETZ.art), ist die Fahrbahn die zweite Höhe des Pflasters (`fahr`, `_wegeKarteMale`).
+    static _wegStueck(B, ax, az, bx, bz, w, saum, art) {
+        const A = globalThis.__fachwerkCore.WEG_GESETZ.art[art];
+        if (!A) throw new Error(`Wege-Karte: eine Gasse trägt die Art „${art}", die das Weg-Gesetz nicht kennt`);
+        const f = { typ: "segment", kanal: B.kanal, wert: B.wert, ax, az, bx, bz, halb: Math.max(1.2, w || 2.5) / 2 };
+        if (saum > 0) f.saum = saum;
+        if (A.bord && saum > 0) f.fahr = true;
+        return f;
+    }
     _stadtFerneStrassen(e, an) {
         const wk = this._wegeKarteEnsure();
         if (!an) {
@@ -2163,17 +2365,7 @@ class AnazhRealm_siedlung_wege {
             for (let j = 0; j + 3 < s.p.length; j += 2) {
                 const [ax, az, bx, bz] = [e.ox + s.p[j], e.oz + s.p[j + 1], e.ox + s.p[j + 2], e.oz + s.p[j + 3]];
                 if (!this._landAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue; // die Wasser-Wand
-                const f = {
-                    typ: "segment",
-                    kanal: belag.kanal,
-                    wert: belag.wert,
-                    ax,
-                    az,
-                    bx,
-                    bz,
-                    halb: Math.max(1.2, s.w) / 2,
-                };
-                if (s.saum > 0) f.saum = s.saum;
+                const f = AnazhRealm._wegStueck(belag, ax, az, bx, bz, s.w, s.saum, s.art);
                 box.formen.push(f);
                 const r = AnazhRealm._wegeFormRadius(f);
                 box.x0 = Math.min(box.x0, ax - r, bx - r);
@@ -2281,7 +2473,7 @@ class AnazhRealm_siedlung_wege {
             if (!B) throw new Error(`Wege-Karte: ${wer} trägt den Belag „${art}", den der Boden nicht kennt`);
             return B;
         };
-        const strasse = (pts, w, belag, saum) => {
+        const strasse = (pts, w, belag, saum, art) => {
             if (!Array.isArray(pts)) return;
             const B = belagVon(belag, "eine Gasse");
             for (let i = 0; i + 1 < pts.length; i++) {
@@ -2291,25 +2483,19 @@ class AnazhRealm_siedlung_wege {
                 const bz = origin.z + pts[i + 1].z;
                 if (!(Math.hypot(bx - ax, bz - az) > 0.01)) continue;
                 if (!this._landAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue; // die Wasser-Wand
-                form({
-                    typ: "segment",
-                    kanal: B.kanal,
-                    wert: B.wert,
-                    ax,
-                    az,
-                    bx,
-                    bz,
-                    halb: Math.max(1.2, w || 2.5) / 2,
-                    ...(saum > 0 ? { saum } : {}),
-                });
+                form(AnazhRealm._wegStueck(B, ax, az, bx, bz, w, saum, art));
             }
         };
         let gassen = 0;
         for (const rd of plan.roads || []) {
-            strasse(rd.pts, rd.w, FC.gassenBelag(plan, rd), (FC.gassenBreite(plan, rd) - rd.w) / 2);
+            const Q = FC.wegQuerschnitt(plan, rd);
+            strasse(rd.pts, Q.fahrM, Q.belag, Q.gehM, Q.art);
             if (++gassen % AnazhRealm.WEGE_KARTE.bauRate === 0) yield;
         }
-        for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w, "weg", 0);
+        for (const fw of plan.feldwege || []) {
+            const Q = FC.wegQuerschnitt(plan, fw, true);
+            strasse(fw.pts, Q.fahrM, Q.belag, Q.gehM, Q.art);
+        }
         // DIE FLÄCHEN EINES PLANS (fachwerk `zonen`, der Genesis-Ort): jede Fläche mit Belag in ihrem Kanal und Vorzeichen
         // (`WEGE_KARTE.belag`), gemalt mit dem Rand ihres Gesetzbuchs (`zone`, `genesisZoneRand`) — eine Art, die die Karte nicht
         // kennt, wirft laut (kein stiller Rückfall auf Erde). Das Wasser des Plans, das nach einer Fläche kommt, nimmt sie aus
@@ -2323,7 +2509,9 @@ class AnazhRealm_siedlung_wege {
         // das halbe Bild braune Rausch-Erde bis an die Baumreihe).
         const zonen = plan.zonen || [];
         zonen.forEach((q, i) => {
-            const belag = q.art === "feld" ? "gras" : q.art === "flaeche" ? q.belag : null;
+            // jede Zone, die einen Belag erklärt — die Fläche wie das Gehege und sein Graben (w28-gehege: bis hier malte der Maler
+            // nur die Art `flaeche`; Gehege und Graben lagen unter dem Schau-Rasen des Zoos, der Graben war im Bild nicht zu lesen)
+            const belag = q.art === "feld" ? "gras" : q.belag || null;
             if (!belag) return;
             const B = AnazhRealm.WEGE_KARTE.belag[belag];
             if (!B)
@@ -2735,6 +2923,11 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
         Object.freeze({ name: "fern", fensterM: 2048, texelM: 2, umzugM: 256, randMinM: 2 }),
     ]),
     randM: 0.6,
+    // das Pflaster trägt zwei Höhen (w28-weg-koerper, `_wegeKarteMale`): bis `gehAnteil` des Bytes seine Deckung (Gehweg, Platz),
+    // darüber die Lage zum Bord der Fahrbahn, linear über ±`fahrRandM` (die ferne Stufe: ± ihr `randMinM`)
+    gehAnteil: 0.5,
+    fahrRandM: 1,
+    kantWeich: 0.08, // die Kante des Pflasters ist nie schärfer als dieser Anteil seiner Deckung (`_wegeBodenFarbe`)
     bauRate: 12, // der Wege-Bau eines Orts in Raten: je so viele Gassen eine Rate des Gangs (`_stlWegeRaten`, w28-stadt-netz)
     voll: 127,
     null: 127,

@@ -1549,6 +1549,8 @@ function selbsttest() {
     t("Weg: der Speicher folgt dem Blick — N1 · N2 · N3 rot beim Pfad ihres Halters", DZ.wegSelbsttest().length === 0);
     // DIE RUNDE (`werkbank runde`): ein Zell-Gedächtnis, das je Runde wächst, und eine nie entsorgte Geometrie sind rot beim Namen
     t("Runde: Behälter mit Anlage, Geometrie mit Geburts-Stelle, Zell-Gedächtnis außerhalb des Blicks und unangemeldetes rot beim Namen, die geräumte Runde grün", DZ.rundenSelbsttest().length === 0);
+    // DER JS-HEAP DER RUNDE (`heapBesteller`): ein Leib, der je Runde lebende Bytes bestellt, ist rot beim Besteller und bei der Stelle
+    t("Runde: der JS-Heap-Zuwachs steht beim Besteller (Datei:Zeile) und der Stelle, ein voll gelaufener Cache grün, Splitter benannt", DZ.jsHeapSelbsttest().length === 0); // prettier-ignore
 
     ende("die Band-Wand feuert");
 }
