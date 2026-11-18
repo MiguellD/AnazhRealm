@@ -502,6 +502,36 @@ function raumUrteil(sb, nurKalb) {
     roh.s = (Date.now() - t0) / 1000;
     return { roh, v };
 }
+// E7, der Satz der Vorlage (foundry `__tierRaumSatz` → `__tierPrims` liest `userData.__haut`): an jeder Land-Wurzel (Wolf, Fuchs, Bär,
+// Hirsch) als Vorlage, nah und grob, findet jedes ihrer Primitive am Knoten (±2σ: Größe und Lauf; das Kalb: Größe × q^⅓, Lauf × 1,4)
+// seinen Partner und kein fremdes kommt hinzu: an 22 Knoten 0. Urteilte die Schwelle minVox je Art (an der Rasterweite des Knotens),
+// fehlten 6 Partner und kämen 3 fremde (Fuchs nah ±2σ und Kalb, Hirsch grob Kalb, Bär grob −2σ). Rot: `__tierPrims: Partner fehlt 2 ·
+// fremd 0 — fox lod 0 Kalb`.
+function satzUrteil(sb) {
+    const TC = sb.__tetrapodaCore;
+    const q3 = Math.cbrt(RAUM.kalbQ);
+    const v = [],
+        roh = { knoten: 0, fehlt: 0, extra: 0 };
+    const t0 = Date.now();
+    for (const art of ["wolf", "fox", "bear", "deer"])
+        for (const lod of [0, 1]) {
+            const V = sb.__tierRaumVorlage(TC, art, null, lod);
+            const g = V.dials;
+            const zwei = (vz) => ({ size: g.size * (1 + 2 * vz * RAUM.sigma), leg: g.leg * (1 + 2 * vz * RAUM.sigma) });
+            const knoten = [["+2σ", zwei(1)], ["−2σ", zwei(-1)]];
+            // der Welpe des Wolfs wechselt heute den Baum (die Glieder-Zahl folgt der Größe; EIN Bauplan mit fester Zahl ist T1)
+            if (art !== "wolf") knoten.push(["Kalb", { size: g.size * q3, leg: g.leg * RAUM.kalbBein }]);
+            for (const [nm, ov] of knoten) {
+                const S = sb.__tierRaumSatz(V, Object.assign({}, g, ov));
+                roh.knoten++;
+                roh.fehlt += S.fehlt;
+                roh.extra += S.extra;
+                if (S.fehlt || S.extra) v.push(`__tierPrims: Partner fehlt ${S.fehlt} · fremd ${S.extra} — ${art} lod ${lod} ${nm}`);
+            }
+        }
+    roh.s = (Date.now() - t0) / 1000;
+    return { roh, v };
+}
 function zeigeRaum(roh) {
     const z = (r) => `p95 ${r.p95.toFixed(1)} · max ${r.max.toFixed(1)} mm · Gelenke max ${r.gelenk.toFixed(1)} mm`;
     console.log(`  Leib-Raum F1 Wolf (${roh.f1.ecken} Ecken, Tafel ${roh.f1.tafelKB} KB): +2σ ${z(roh.f1["+2σ"])} | −2σ ${z(roh.f1["−2σ"])}`);
@@ -617,6 +647,16 @@ if (SELBSTTEST) {
         sb.__leibRaumRahmen = (p) => new sb.THREE.Matrix4().fromArray(Array.from(p.Mi));
         pruefe("S11 der Rahmen ohne Radius wird erkannt", raumUrteil(sb, true).v, /^__leibRaumRefit: Kalb/);
     }
+    // S12: die Schwelle minVox je Art (der Satz der Vorlage `__haut` überhört) — Primitive der Vorlage verlieren ihren Partner
+    {
+        const sb = ladeWelt();
+        const alt = sb.__tierPrims;
+        sb.__tierPrims = (baum, ...rest) => {
+            baum.traverse((o) => delete o.userData.__haut);
+            return alt(baum, ...rest);
+        };
+        pruefe("S12 die Schwelle je Art wird erkannt", satzUrteil(sb).v, /^__tierPrims: Partner fehlt [1-9]/);
+    }
     urteilEnde(rot, `\n❌ SELBST-TEST ROT — ${rot} Linse(n) vakuös.`, "\n✅ SELBST-TEST GRÜN.");
 }
 
@@ -627,5 +667,8 @@ zeige(ergebnis);
 const raum = raumUrteil(sb);
 zeigeRaum(raum.roh);
 fehler.push(...raum.v);
+const satz = satzUrteil(sb);
+console.log(`  Satz der Vorlage (E7): ${satz.roh.knoten} Knoten an 4 Land-Wurzeln · Partner fehlt ${satz.roh.fehlt} · fremd ${satz.roh.extra} · ${satz.roh.s.toFixed(1)} s`);
+fehler.push(...satz.v);
 if (process.argv.includes("--json")) console.log(JSON.stringify(ergebnis, null, 1));
 urteilEnde(fehler.length, `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "), "\n✅ GRÜN — jede Art steht in ihren Natur-Bändern (Gestalt + Fell-Muster) und hält ihr Budget.");

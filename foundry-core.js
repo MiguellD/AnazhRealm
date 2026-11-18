@@ -7615,6 +7615,16 @@ function __tierRaumBaum(kern, d, namen) {
     const H = (B.masse && B.masse.H) || kern.deriveTierParams(d).size || 2.4;
     return { B, root, nodeName, gelenkVon, gestalt: gestalt.join(","), H };
 }
+// Was die Haut eines Baums nimmt, wie `__tierHaut` `nimmHaut`: die nahe Stufe gießt den Kopf nicht in die Leib-Haut (er trägt seine
+// starren Häute). Je Baum SEIN Kopf — der Kopf der Vorlage liegt in keinem Knoten-Baum.
+function __tierRaumNimm(b, fein) {
+    const kopf = b.B.teile.headGroup || null;
+    return (n) => {
+        if (fein) return true;
+        for (let c = n; c; c = c.parent) if (c === kopf) return false;
+        return true;
+    };
+}
 // Die Rasterweite der Haut eines Baums, wie `__tierHaut` sie wählt (das Ziel der Dreiecke weitet sie), und ihre Primitive.
 function __tierRaumRaster(b, nimm, fein) {
     const TH = TIER_HAUT;
@@ -7632,7 +7642,7 @@ function __tierRaumRaster(b, nimm, fein) {
     return { vox, blend, prims, feld };
 }
 // DIE VORLAGE eines Bauplans: die Art `art` (tetrapoda GATTUNGEN) mit den Dials `ov` auf der Stufe `lod` (0 nah: der Leib ohne den
-// Kopf, der seine starren Häute trägt; 1 die Grobstufe: der ganze Leib in EINER Haut). Rückgabe { kern, dials, fein, nimm, namen,
+// Kopf, der seine starren Häute trägt; 1 die Grobstufe: der ganze Leib in EINER Haut). Rückgabe { kern, dials, fein, namen,
 // b, vox, P (der Primitiv-Satz), geo (die Haut, Ecken wie der Guss), H }.
 function __tierRaumVorlage(kern, art, ov, lod) {
     const dials0 = (kern.GATTUNGEN && kern.GATTUNGEN[art]) || null;
@@ -7643,14 +7653,7 @@ function __tierRaumVorlage(kern, art, ov, lod) {
     const sk = bakeTierInstance(kern, art, 0, lod, ov || null).userData.__skelett;
     const namen = sk.joints.map((j) => j.name);
     const b = __tierRaumBaum(kern, dials, namen);
-    const kopf = b.B.teile.headGroup || null;
-    // wie `__tierHaut` `nimmHaut`: die nahe Stufe gießt den Kopf nicht in die Leib-Haut
-    const nimm = (n) => {
-        if (fein) return true;
-        for (let c = n; c; c = c.parent) if (c === kopf) return false;
-        return true;
-    };
-    const R = __tierRaumRaster(b, nimm, fein);
+    const R = __tierRaumRaster(b, __tierRaumNimm(b, fein), fein);
     const platz = new Map();
     let i = 0;
     b.root.traverse((o) => platz.set(o, i++));
@@ -7672,37 +7675,43 @@ function __tierRaumVorlage(kern, art, ov, lod) {
     const F = R.feld;
     const geo = __huelleAusFeld(hk, F.f, F.nx, F.ny, F.nz, F.lo, R.vox, 0, 0, zentren, skinJoints, eW * eW, kandidaten, fein);
     if (!geo) throw new Error("TIER-RAUM: die Haut der Vorlage " + art + " ohne Fläche (fail-closed)");
-    return { kern, art, dials, fein, nimm, namen, b, vox: R.vox, blend: R.blend, P: R.prims, geo, H: b.H };
+    return { kern, art, dials, fein, namen, b, vox: R.vox, blend: R.blend, P: R.prims, geo, H: b.H };
+}
+// DER PRIMITIV-SATZ DER VORLAGE AM KNOTEN d (E7: die Schwelle `TIER_HAUT.minVox` urteilt an der Vorlage, nie an der Art): der Baum
+// an d, seine Rasterweite (wie sein Guss sie wählte) und je Knoten des Baums `userData.__haut` = „die Vorlage nahm ihn“ — `__tierPrims`
+// liest es. Rückgabe { b, P (je Primitiv `ti`, `blend`), vox, fehlt (Primitive der Vorlage ohne Partner), extra (fremde) }.
+function __tierRaumSatz(V, d) {
+    const b = __tierRaumBaum(V.kern, d, V.namen);
+    if (b.gestalt !== V.b.gestalt)
+        throw new Error("TIER-RAUM: der Baum an den Dials " + JSON.stringify(d) + " ist nicht der der Vorlage " + V.art + " (Glieder-Zahl oder Wort; fail-closed)"); // prettier-ignore
+    const nimm = __tierRaumNimm(b, V.fein);
+    const R = __tierRaumRaster(b, nimm, V.fein);
+    const satz = new Set(V.P.map((p0) => p0.ti));
+    const platz = new Map();
+    let i = 0;
+    b.root.traverse((o) => {
+        platz.set(o, i);
+        if (o.isMesh) o.userData.__haut = satz.has(i);
+        i++;
+    });
+    const P = __tierPrims(b.root, b.root, nimm, R.vox, R.blend, b.gelenkVon);
+    const da = new Set();
+    for (const p of P) {
+        p.ti = platz.get(p.node);
+        p.blend = R.blend;
+        da.add(p.ti);
+    }
+    let fehlt = 0;
+    for (const t of satz) if (!da.has(t)) fehlt++;
+    return { b, P, vox: R.vox, fehlt, extra: P.length - (satz.size - fehlt) };
 }
 // DER LEIB AN DEN DIALS d im Primitiv-Satz der Vorlage: die Ecken der Vorlage auf sein Feld getragen (`__leibRaumRefit`), Ecken und
 // Gelenke im Maßstab der Vorlage (× H_Vorlage / H_d: die Größe trägt die Instanz-Matrix, der Raum nur die Form). Rückgabe
 // { X (Float64Array 3n), P, vox, H, gelenke (Float64Array 3 je Name der Vorlage) }.
 function __tierRaumLeib(V, d) {
-    const b = __tierRaumBaum(V.kern, d, V.namen);
-    if (b.gestalt !== V.b.gestalt)
-        throw new Error("TIER-RAUM: der Baum an den Dials " + JSON.stringify(d) + " ist nicht der der Vorlage " + V.art + " (Glieder-Zahl oder Wort; fail-closed)"); // prettier-ignore
-    // die Rasterweite des Knotens (wie sein Guss sie wählte) und ALLE Primitive seines Baums (vox 0: keines fällt unter die Schwelle)
-    const R = __tierRaumRaster(b, V.nimm, V.fein);
-    const vox = R.vox,
-        blend = R.blend;
-    const platz = new Map();
-    let i = 0;
-    b.root.traverse((o) => platz.set(o, i++));
-    const alle = new Map();
-    for (const p of __tierPrims(b.root, b.root, V.nimm, 0, blend, b.gelenkVon)) alle.set(platz.get(p.node), p);
-    const M = new THREE.Matrix4();
-    const P = V.P.map((p0) => {
-        const p = alle.get(p0.ti);
-        if (!p) throw new Error("TIER-RAUM: das Primitiv " + p0.ti + " (" + p0.j + ") der Vorlage fehlt am Knoten (fail-closed)");
-        // Reichweite und Auflage wie `__tierPrims` an der Rasterweite des Knotens (die Halbachsen aus dem Rahmen)
-        const e = M.fromArray(Array.from(p.Mi)).invert().elements;
-        const sx = Math.hypot(e[0], e[1], e[2]),
-            sy = Math.hypot(e[4], e[5], e[6]),
-            sz = Math.hypot(e[8], e[9], e[10]);
-        const auf = Math.max(0, TIER_HAUT.minDicke * vox - p.r * Math.min(sx, sy, sz));
-        return Object.assign(p, { ti: p0.ti, blend, auf, ext: p.r * Math.max(sx, sy, sz) + blend + 2 * vox + auf });
-    });
-    P.sort((a, c) => c.ext - a.ext);
+    const { b, P, vox, fehlt, extra } = __tierRaumSatz(V, d);
+    if (fehlt || extra)
+        throw new Error("TIER-RAUM: `__tierPrims` am Knoten " + JSON.stringify(d) + ": " + fehlt + " Primitive der Vorlage " + V.art + " ohne Partner, " + extra + " fremde (fail-closed)"); // prettier-ignore
     const s = V.H / b.H;
     const W = __leibRaumRefit(Float64Array.from(V.geo.attributes.position.array), V.P, P, vox);
     for (let k = 0; k < W.length; k++) W[k] *= s;
@@ -8750,7 +8759,10 @@ function __tierPrims(baum, ref, nimm, vox, blend, gelenkVon, klassen, zylinder) 
             sy = Math.sqrt(e[4] * e[4] + e[5] * e[5] + e[6] * e[6]),
             sz = Math.sqrt(e[8] * e[8] + e[9] * e[9] + e[10] * e[10]);
         const minHalb = r * Math.min(sx, sy, sz);
-        if (minHalb < TIER_HAUT.minVox * vox) return;
+        // E7, der Satz der Vorlage: `userData.__haut` (der Knoten eines Tier-Raums, `__tierRaumLeib`) sagt, ob die Vorlage das
+        // Primitiv in ihre Haut nahm — true trägt, false nie; die Schwelle urteilt nur ohne Satz (der Guss, die Vorlage selbst)
+        const satz = node.userData.__haut;
+        if (satz === false || (satz !== true && minHalb < TIER_HAUT.minVox * vox)) return;
         const Mi = Float64Array.from(new THREE.Matrix4().copy(M).invert().elements);
         const ext = r * Math.max(sx, sy, sz) + blend + 2 * vox;
         sp.setFromMatrixPosition(M);
