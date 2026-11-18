@@ -1,7 +1,7 @@
 {
  "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
  "geraet": "gtx",
- "zeit": "2026-11-18T18:43:39.336Z",
+ "zeit": "2026-11-18T18:51:06.076Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -975,6 +975,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.stadt.siedlungsnetz#1": {
+   "gruen": true,
+   "zahl": "✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km",
+   "exit": 0,
+   "minuten": 0.82,
+   "gpu": "nvidia/pascal",
+   "konsum": "k4640aa1dcbee",
+   "konsumN": 39,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k07740f03b59d",
+   "s": 47.9,
+   "fremd": {
+    "s": 53.4,
+    "takte": 23,
+    "fremdS": 18.03,
+    "kerne": 0.338,
+    "fensterKerne": 0.516,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.75
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.8
+     ],
+     [
+      "Explorer.EXE",
+      2.52
+     ]
+    ],
+    "dienerS": 24.83,
+    "diener": [
+     [
+      "System",
+      12.59
+     ],
+     [
+      "dwm.exe",
+      8.75
+     ]
+    ],
+    "geraetS": 18.75,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      10.81
+     ],
+     [
+      "svchost.exe",
+      6.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 327.72,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T18:51:06.076Z",
+   "abdruck": "89ab8f6ba2b3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -989,7 +1058,8 @@
   "k3f9c70aaaa97": "dVTRjpswEPyXPLb1OQR8gKV7cEKknNSquU9YmzWQEIhsONpU/fcKLk4CXPcJ0CwzOzv2n8UZ1BEyfDrYulrwxZfFt4WFdyQWzTuap4Nd8MVSBcAiLj6KCiE2PUyZ4txYWhaSgqwgPyFpTYNF+aSGNk9FCMhptxXdntI9Dem6e3mZtpYS05o0oNE1ynQV+sCnwNZmIJFAqweyK5gFXuAzToeKErE/UFfiTQjabaeMEqp0rFT7wLTHX38LsRUzhWkB2JCyqKzjVCmT/orfiOZTpQY6cgHMSzSOhOkgDp3QwcpuH9NJoy5ba0dkkZ+yVcQpnWEztIXKG3I2tcTKmRevQg/4J05n55boR0UgJURy6nMOWGVoxhrCgKmA01/R9KdHOKEBUkF+hcZLP1zJuzeU0t1cSzkIHyic8CiVcahHjf0Od13vVBL1L9ntc7T7CGOSiXu9TUisygtzGtujNUthyb/PJdkcUjTkWNvmrikAQJf8ZAiU2AfJtPM+zLVvJZ+XLHqYJaJiN/PO1rrpwCDJzu21EQNkIeNCvM7ADZxObgi1wohNF2ebPtiPMliA3vMQuew/e/g4BuSCRemaQqU8H/nmh5jO+W7gREBmptDabVsypePPwtlh2RBZ141D+in4ilOfVjdX4uEYrO8bTLpabTfZm5jUIRNz7QNDbZrbtPJ5qQOuhxOpZujCNKQDld92pCVCzD+BXtCUmOHIyjSQPqQ9+kFt4B6+jjJ7mW36UmBvcmVb65IVh2l8Tft4tA7NUUJ1dDKZ9Jk3RHD9U7jYLxOa0H336NFG6E6I18066n92RkXPptZFf9vRHFqbQ9ncr/m//wA=",
   "kb66637c73af5": "dVXBjpswEP2XHNuyTgJewNIenLBStupqk2OPYzMGEgKRDes2Vf+9go2TANs5JWjG7817z/BndgJ5gAwf9qauZmz2ZfZtZuAdPYP6HfXD3szYbC4DoBHjH0U45+uuTeri1BhSFoKAqCA/otfqBovyQfZjCxkhICP2mdstIVsSkpXl11rzp6fxMaXAtPYaUOgOEeky9IGNG1uTgUAPWtUDX5ppsAh8ykhfUcK3e+KK7zjvmGyz3RhVQJUOmSsfqFqwl9+cP09ZpgVg45VFZRyuTKnwl+wKZqczGqx3BsxL1A6EqiAOHdleEruNyWhQla0xA7DIT+kyYoRMejM0hcwb76RrgZUTMF6GC2CrKafs1HrqnhEIAZEYa50DVhnqIYcwoDJg5Fc0PvQAR9TgVZBfWuO5Hy7FTRtCyGbKpeyJ9xCOeJSKOFSDwc7HTR+hJOr+ZNfH0eYjVEl2CxjfjUCMzAt9HMqjFE1hzn5MKZkcUtTeoTbNjVMAgO4mJH2o+DZIxpO3ZS5zS/E4p9HdLhHhm4l2plaNBY1edmovgxggDSnj/GXS3MDx6JaQS4zo2DjTdMG+p0EDXDz2kcv+48PHNfDOWJRuKJRy4SNbv/Lxnu8ajh6ITBdKObcFlSr+LJwWjBmnKJ0HcTx2eFBbm9jBA/s6pmyxbDxR142j4Kfgy+7U6k7vzrDVLRqJreXzOtvxUe0zPhWlR6h1c5VRPM5VwFTPR066C914FmR+NV8JhJh90npGXWKGA1HSQPiQdt13bAP34+tAjPMkQucCO/cq0xonchym8eUaDVezqA8CqoOjSYVPF+x7J9Qbd/dpnpBk4oqynP98W0X3ymWXF+UJJTnpWhXda5Xk0Jocyub2ffn7Dw==",
   "k8e2ae108ad38": "dVXRjpswEPyXPLb1OQn4MJbuwQmR7qRWzX3C2l4DFwKRDUebqv9ewYUkwHWfIJrxzs6OyZ/FCfQBUnx481W5EIsvi28LD+9IPLp3dA9vfiEWSx0C40J+FJVSbjuYdvmp9tTkkJJDAWVKzlj6xj/onvXlDlPkioIqITsiaVyNeXEBrTRHQEHbnWz3lO5pRDft09OUWig0FanB4kBUZh0FIKbAxqegkEBj+2YXMAtXYcAE7Ysncv9Gh5KvUtJ2N+2ooDRjpTYAZlfi5beUOzlTaHLAmhR56Yee2jAVrMW10Xwq46AlZ8CsQDc0YTaMo0Fob3e7j+mEaIvG+1EzHhi25oLSGTZFn+usJidXKSwH8+J1tALxidPpqSH2XhEoBVxNfc4AyxTdWEMUMh0K+otPDz3AER2QErILNF4G0VrdvKGUPs+1FL3wvsUgnBsVR3ZE7Hb43HZOJbx7Sa8/8+ePwCapvNXrpInXWe6OY3usZQaW4vtcks/AoCOHytc3TSEADrcj6QMl92EyZd6GufDW6nHJ+N0snMrnmXe+snULDkl6ai5EDJFFTEj5MgPXcDwOQ+g1cjZdnK+7YN/LYCGuHvvIpf/Zw8c1IGfMi4EUab0KUGx/yOmc7w6OBFTqcmuHbSumbfxZOFssaqKqqh6QgYFACxrQ8upK3F+DzW2DSVvp3TZ9lZNKp7r70ytXXydVj0sbCtvfRj1D564mLejsuh+rEGLxCfSMrsAURzaaUAVgOvSd0nB4+DrK63m25XOOxfjryePIxJekj1fSojsoKA+DTKYCturjt/kph8gvE5rQfXvvz1aaVsqX7YZ3h51Q05OrbN596WgGjc+gqG9/A3//AQ==",
-  "kfd5be47b197e": "dVXRbqMwEPyXPPbOdRJwAUt9cEKkVrrq0k9Y22sgIRDZpL7L6f79BA1JgN4+gTXrmZ1d239mR1B7yPBx5+pqxmcPs+8zBx9IHNoPtI87N+OzuQqBxVx8BhVCrFuYssWxcVQXkJEcTo54LJtH1aU83AHKQlKQFeQHJCfbYFFeQAsVIyCnfiP8ltItjejKPz+PU0uJuiYNGOwTpV5GAfAx8OQykEjgZDqyC5iFizBgnHYRp2K7o32IdyGo34wZJVR6qNQEwMyCv/4WYiMmCnUB2JCyqFzPqTSTwZJfiaZVaQuenAHzEm1PwkyYRL3Qzmu/Tego0ZQn5wZkcaDZMuaUTrAZukLlDTnaWmLVm5csowXwL5zOjidi7hWBlBDLsc85YJWhHWqIQqZCTn/F4033cEALpIL8Ak3mQbSUN28opS9TLWUnvKPohcdaJpEZJLY9fPGtU2nc/mTX5fjlc1rTTNzifUTiVF7Yw9AeY5iGOf8xleRy0GjJvnbNTVMIgP3RSLuBEtswHWfeirnkLeXTnMV3tcRUvEy8c7VpPFgk2fF0ScQQWcS4EK8TcAOHQ1+EWmLMxo1zTTvY9zJYiIunbuSy//Th8xiQMxZlnxQptQiQr9/EuM4PCwcCMrOFMX23JVMm+Wo4PTg3niI9D5Nk3OFBbH3qBwv+bSy5vYaIrOv+LkoCDYHiNKDVnd9tw1a30Uh9rTbr7F2MYpeJqSkdQ22bq43yaW5Cbjo9aoIubEM8qPzafCMREv4F9Iy2xAwHpuhQBqBb9J3asP/4NjDjPBmhc4Ft9yp3cr3JSaSTyzEalubR7iVU+14mkwFbdLO9+in68zRPaUq3/t6jtTDt/3oVt5sdUdGjrU3RXqO0fRhyKJvbA/P3Hw=="
+  "kfd5be47b197e": "dVXRbqMwEPyXPPbOdRJwAUt9cEKkVrrq0k9Y22sgIRDZpL7L6f79BA1JgN4+gTXrmZ1d239mR1B7yPBx5+pqxmcPs+8zBx9IHNoPtI87N+OzuQqBxVx8BhVCrFuYssWxcVQXkJEcTo54LJtH1aU83AHKQlKQFeQHJCfbYFFeQAsVIyCnfiP8ltItjejKPz+PU0uJuiYNGOwTpV5GAfAx8OQykEjgZDqyC5iFizBgnHYRp2K7o32IdyGo34wZJVR6qNQEwMyCv/4WYiMmCnUB2JCyqFzPqTSTwZJfiaZVaQuenAHzEm1PwkyYRL3Qzmu/Tego0ZQn5wZkcaDZMuaUTrAZukLlDTnaWmLVm5csowXwL5zOjidi7hWBlBDLsc85YJWhHWqIQqZCTn/F4033cEALpIL8Ak3mQbSUN28opS9TLWUnvKPohcdaJpEZJLY9fPGtU2nc/mTX5fjlc1rTTNzifUTiVF7Yw9AeY5iGOf8xleRy0GjJvnbNTVMIgP3RSLuBEtswHWfeirnkLeXTnMV3tcRUvEy8c7VpPFgk2fF0ScQQWcS4EK8TcAOHQ1+EWmLMxo1zTTvY9zJYiIunbuSy//Th8xiQMxZlnxQptQiQr9/EuM4PCwcCMrOFMX23JVMm+Wo4PTg3niI9D5Nk3OFBbH3qBwv+bSy5vYaIrOv+LkoCDYHiNKDVnd9tw1a30Uh9rTbr7F2MYpeJqSkdQ22bq43yaW5Cbjo9aoIubEM8qPzafCMREv4F9Iy2xAwHpuhQBqBb9J3asP/4NjDjPBmhc4Ft9yp3cr3JSaSTyzEalubR7iVU+14mkwFbdLO9+in68zRPaUq3/t6jtTDt/3oVt5sdUdGjrU3RXqO0fRhyKJvbA/P3Hw==",
+  "k4640aa1dcbee": "dVZNj6NIDP0vOW6GVBKgKZDm4ITWdI+mNfScdo4ucAEdPqIqEiJW+99XEEjzMetDFJJn+/mV7eKfVVgq0psci1SSrjYfuixW3uqv1ZeVxDCpSZ2MFrL50CtvZdrILcdja8aY4/5eB/wnBB9XxlzWWS0hlnLdPgL4AL+ampkcBqsDxhwmb4xxWV9NFrDyGwvYjdVRnL2fggYOAG8A8NP/gPe7jxXcQzMur82NS/nmOMwJZfwKcAAf2I2tnzus/95GH1vTWACH+Agjq+FvDjXUcKgBgqbD3epvgWS/f4xg70f4+nX1ZZUWEd02SZVnvSpnDE8Y01gojVcyNKkrqbtM29BCm3t9KAYAxxYWqvRcaRalGBuaqiqjnIpqE3Y+3N5ZyD1WcJjYJ/l4FCNLBUNRYJKTcVEVpVkfZhdyQvJY/dypHTCHtYUO5t+rmoTJBEWlUaGkIYiI9o6J3hx40TEKMvAiu8Q92LZ2lml7/SH5EHw89G/PsGVyXGYVWERT5tJEW+681xrgeYmPUqTKyNJCD3nDyBbm3nskq5c+CmujQUoyUkMSW1quM5Dtm9JlM0eZXbSeJONmZO+51zb6DBuTTsOkMs6qFFQMArp7Z4feYckpPl8MOWaEQiAXc60TpCImNeXgWHZoeezG50FPmJNCo8Ckh7pb09kLbzwLL0suWUe8SzEQ55FwHTlxZIzFL10L+bx7ePzMX/qmiseDM09S6qk2rrWztzQvuFQzCS3zyXrCfob8mtXPc/o6TFKVT72ktCPcej+WxeoEI1LGqdTVZ7UWIg1z6nftCoHlzz0/Zer99uJpa/ORSpzBy+JUdCmrGhUZ8fnSO5JFtmN7AK8LcIXRTAG5k6a050LpCvN8QIR74n9CFNGEr23R7qnr+vh/WuE+iUZDaTY4OWG4M8k7vsFckCupEyVKF1Q1U8qOsPbbaE7oqjA3UMQqlXJoAmGH0v3TPNWUVYYoy2EvumaEZthyL0Z6S2i3/+daq8vw+Ri/P3546z4PKoZlrV2GUlUPdcTTVlqe7JZIuECnqjJqDJPH4UtB6Hp/gDakMoppIn1kCROjFj1iaw1f1tPratFCTUrtoRT6ooeWdZ3I7Qe03+uv023ZXtkCi9NA1xamvfO+gx9/X8MwsVuf+Wxusm7vvcP0AnqDLviZQnZWpUzbxc0SvOgEs8nrwpWKqFSsShTRpntlyNPifh8u/s7L6JKNAGiiG+291b//AQ=="
  },
  "ungemessen": {
   "karte2.same.preis.zugang#1": {
@@ -1279,20 +1349,20 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-18T18:43:10.152Z",
-  "ordner": "sitzung-20261118-194310",
+  "start": "2026-11-18T18:50:37.425Z",
+  "ordner": "sitzung-20261118-195037",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 5.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "vegetation.K4#1",
-    "s": 20.8,
-    "takte": 596,
+    "ort": null,
+    "vor": "karte2.mensch.stadt.siedlungsnetz#1",
+    "s": 20.6,
+    "takte": 729,
     "chunks": 81,
     "nach": null
    }
@@ -1300,100 +1370,39 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "vegetation.K4#1",
+    "probe": "karte2.mensch.stadt.siedlungsnetz#1",
     "anders": [
-     "r._newArchId",
-     "r._tickNahWiese",
-     "r._bauFrist",
-     "window.luma709",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__weltOrte",
-     "window.__weltOrt",
-     "window.__strecke",
-     "window.__ortSchritt",
-     "window.__wasserOrte",
-     "window.__wasserLeser",
-     "window.__wasserLeib",
-     "window.__wasserMutation",
-     "window.__wasserKarte",
-     "window.__wasserLaeufe",
-     "window.__wasserTreibt",
-     "window.__wasserHoehle",
-     "window.__wasserWagen",
-     "window.__wasserSichtNetz",
-     "window.__wasserFlora",
-     "window.__wasserSee",
-     "window.__wasserQuelle",
-     "window.__wasserQuellTeil",
-     "window.__wasserBach",
-     "window.__wasserBank",
-     "window.__wasserFluss",
-     "window.__wasserKroneVon",
-     "window.__wasserUfer",
-     "window.__wasserStrom",
-     "window.__wasserFlussNah",
-     "window.__wasserGraben",
-     "window.__wasserDamm",
-     "window.__wasserUferFarbe",
-     "window.__wasserKoerper",
-     "window.__wasserBild",
-     "window.__wasserSeeAm",
-     "window.__wasserLicht",
-     "window.__wasserRegen"
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__ortSchritt"
     ],
     "wie": {
-     "r._newArchId": "neu: _newArchId() { return \"a-\" + Math.random().toString(36).slice(2, 10) + Date.now(",
-     "r._tickNahWiese": "neu: _tickNahWiese(deadline) { const st = this.state; if (!st.scene || !st.camera || ",
-     "r._bauFrist": "neu: _bauFrist(wer, zeichnung = false) { const T = this._bauFristTakt || this._fristA",
-     "window.luma709": "getauscht: (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2]",
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__weltOrte": "getauscht: function weltOrte(art, opts) { const o = opts || {}; const [mx, mz] = o.mitte ||",
-     "window.__weltOrt": "getauscht: function weltOrt(art, opts) { return window.__weltOrte(art, Object.assign({}, op",
-     "window.__strecke": "getauscht: function strecke(mitte, ringe, stufeMax = Infinity, querMax = Infinity, naechste",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
-     "window.__wasserOrte": "neu: async function wasserOrte(o = {}) { const G = window.__gelaendeCore; const mitte",
-     "window.__wasserLeser": "neu: async function wasserLeser(o = {}) { if (!st.hydrosphere || !st.hydrosphere.read",
-     "window.__wasserLeib": "neu: function wasserLeib() { const [r, A] = [window.anazhRealm, window.anazhRealm.con",
-     "window.__wasserMutation": "neu: async function wasserMutation(o = {}) { const A = AnazhRealm; const [RHO, TIEF] ",
-     "window.__wasserKarte": "neu: async function wasserKarte(o) { const [orte, zufall] = [[], window.__phytoCore.m",
-     "window.__wasserLaeufe": "neu: async function wasserLaeufe() { const [G, L] = [window.__gelaendeCore, r._gelaen",
-     "window.__wasserTreibt": "neu: async function wasserTreibt(o) { const [r, A] = [window.anazhRealm, window.anazh",
-     "window.__wasserHoehle": "neu: async function wasserHoehle(o = {}) { const A = AnazhRealm; const cfg = r._voxel",
-     "window.__wasserWagen": "neu: async function wasserWagen(o = {}) { const ziel = o.see || (await window.__wasse",
-     "window.__wasserSichtNetz": "neu: function wasserSichtNetz() { const cfg = r._voxelChunkConfig(0); const span = cf",
-     "window.__wasserFlora": "neu: function wasserFlora(o = {}) { const sicht = o.sicht || window.__wasserSichtNetz",
-     "window.__wasserSee": "neu: async function wasserSee(o = {}) { const f = o.fenster || (await window.__wasser",
-     "window.__wasserQuelle": "neu: async function wasserQuelle(o = {}) { if (!st.hydrosphere || !st.hydrosphere.rea",
-     "window.__wasserQuellTeil": "neu: function wasserQuellTeil(p, n) { const h = (Math.imul(Math.round(p.x * 4), 73856",
-     "window.__wasserBach": "neu: async function wasserBach(o = {}) { const R = wasserRund(2); const bachOrt = Num",
-     "window.__wasserBank": "neu: async function wasserBank(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
-     "window.__wasserFluss": "neu: function wasserFluss() { const h = st.hydrosphere; if (!h || !h.ready || !Array.",
-     "window.__wasserKroneVon": "neu: function __wasserKroneVon(r, p) { const A = r.constructor; const HC = A.HYDROSPH",
-     "window.__wasserUfer": "neu: async function wasserUfer(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
-     "window.__wasserStrom": "neu: async function wasserStrom(ort, hoehe) { const zurueck = [leihe(st, { postProces",
-     "window.__wasserFlussNah": "neu: function __wasserFlussNah(r, x, z) { const st = r.state; const fluesse = []; for",
-     "window.__wasserGraben": "neu: async function wasserGraben(o = {}) { const K = AnazhRealm.NAH_WIESE.kachel; con",
-     "window.__wasserDamm": "neu: async function wasserDamm(o = {}) { const f2 = wasserRund(2); const S = (q) => r",
-     "window.__wasserUferFarbe": "neu: async function wasserUferFarbe(o = {}) { const h = st.hydrosphere; if (!h || !h.",
-     "window.__wasserKoerper": "neu: async function wasserKoerper(o = {}) { const A = AnazhRealm; const DT = A.FIXED_",
-     "window.__wasserBild": "neu: async function wasserBild(o = {}) { const T = window.THREE; const renderer = st.",
-     "window.__wasserSeeAm": "neu: function __wasserSeeAm(r, ziel) { const st = r.state; const h = r._hydroFor(ziel",
-     "window.__wasserLicht": "neu: async function wasserLicht(o = {}) { if (!st.renderer || st.renderer._isHeadless",
-     "window.__wasserRegen": "neu: async function wasserRegen(o = {}) { const T = window.THREE; const renderer = st"
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     223.1,
-     513.9
+     185.4,
+     338.7
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "vegetation.K4#1",
+    "probe": "karte2.mensch.stadt.siedlungsnetz#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.mensch.stadt.siedlungsnetz#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -1405,27 +1414,27 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 5896,
-   "frameP95": 16.62,
-   "taktP95": 11.91,
-   "vramMax": 117.6,
+   "bilder": 3582,
+   "frameP95": 24.98,
+   "taktP95": 14.79,
+   "vramMax": 139.8,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "vegetation.K4#1",
-     "m": 6443,
+     "probe": "karte2.mensch.stadt.siedlungsnetz#1",
+     "m": 1349,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 325,
+   "zapfen": 151,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 338.4,
-  "minuten": 5.72
+  "fahrtS": 155.4,
+  "minuten": 2.67
  }
 }
