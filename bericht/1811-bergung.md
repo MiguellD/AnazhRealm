@@ -17,10 +17,7 @@ Spalten unten: Größe = Dateien / neue Zeilen ≥ 30 Zeichen / Anteil davon in 
 
 ## VERLOREN nach Rang
 
-1. **w28-stadt-netz** f23138ba (13 Dat. / 889 / 7 %). Spieler: die Stadt wächst als Netz aus Kacheln, dicht zur Mitte (Traufe 19,4 m) und flach zum Rand (3,2 m), statt als Dorf-Fleck.
-   Zahlen: 42 750 Häuser, Stand p95 25,0 ms GTX; Häuser über Traufe/Tiefe 2: 149/192 → 0/174; Tonsprung 27 → 2/255.
-   Beleg: STADT_NETZ · kachelNetz · STADT_FORM nie in main (Pickaxe leer); UEBERGABE 15.11. „landet NICHT“, weil Gehen über dem Ziel lag.
-   Überlappung: vorrat11-stadt-netz birgt genau ihn; vorrat8-ankunft (dirigent-takt, vegetation-streu), w28-haus-stoff (fachwerk-core, studio-bruecke), w28-lava-nachlauf (siedlung-wege).
+1. ~~w28-stadt-netz~~ — GELANDET 18.11. 03:58, main c1e6f29a (z609); Beleg am Inhalt: STADT_NETZ 11 Treffer, kachelNetz 8 in origin/main:fachwerk-core.js. Die Zeile ist gestorben.
 2. **ferne-ton-Familie** (w26-ferne-ton, -2, -3, -3-vorher, -4, w27-ferne-ton-5 155abda9: 33 Dat. / 649 / 4 %). Spieler: die Ferne trägt den Farbton der gemessenen Wiese statt eines grauen Schleiers.
    Zahlen: Farbton bei 8 km 5,22° → 2,75°, B/G 0,13 → 0,24. FARB_SPEKTRUM · HALM_FARBE nie in main.
    Halt: ferne-ton-5 fragt „Welches dieser Maße der gemessenen Wiese folgt, setzt du“ — nie beantwortet; 13.11. „Liegt ohne Arbeiter“. -2 war Täter von z347 (Bodenfarbe steuerte die Rad-Haftung).
@@ -48,6 +45,7 @@ Spalten unten: Größe = Dateien / neue Zeilen ≥ 30 Zeichen / Anteil davon in 
 
 ## IN MAIN (je Zeile)
 
+- w28-stadt-netz b0438afc — z609, main c1e6f29a (18.11. 03:58).
 - w4-z140-rueckfall — e9e72c1d · 6ec77269 „Abgabe w4-z140-rueckfall“.
 - schatten-k1-zuwachs — als schatten-k1-zuwachs-neu 42c3c967, Merge e55b67b3.
 
