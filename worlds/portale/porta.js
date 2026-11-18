@@ -73,9 +73,11 @@ function updateLaw() {
 }
 // DIE PASSAGE (D8, das Tor als Fenster): die Membran der Welt in der Öffnung, neben dem Werk auf dem Teller der Bühne. Ein
 // Gesetz-Wert (`uniform: true`, porta-core GESETZ_WERT) tauscht nur sie — derselbe Graph, kein Neubau des Tors (studios.K2).
+// Das Fenster zeigt die Bühne hinter dem Tor: der ganze Teller (Werk und Passage) ist im Schuss verborgen — sonst sah die
+// Mitte nach jedem Uhr-Wechsel den eigenen Stein von innen (die Membran braun), beim Laden nur, weil der Bau noch nicht stand.
 function passageBauen() {
     var nr = ++passageNr;
-    return STUDIO.buehne.passage(werk(), membrane ? [membrane] : []).then(function (m) {
+    return STUDIO.buehne.passage(werk(), [STUDIO.teller]).then(function (m) {
         if (nr !== passageNr) return STUDIO.buehne.passageFort(m);
         STUDIO.buehne.passageFort(membrane);
         membrane = m;
