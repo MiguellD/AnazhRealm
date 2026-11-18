@@ -135,7 +135,7 @@ Kontinent diagonal alle 1 330 km wieder, das Hang-Detail alle 5,6 km und der Hö
 | Heimat-Wasser | 71,6–75,3 ms je Kachel, 483 888 B typed + 650 465 B JSON; ohne Kachel ist der Spiegel −3, mit Kachel −∞ | **Sack** | Blatt b (5) |
 | Heimat-Klima, Tag, Biom | 0 (dieselbe Zahl wie daheim) | kein Ort | Blatt c §0, Blatt d §0 |
 | Float32 der Boden-Vertices | ULP 0,0625 m | — | Blatt a, Messung 4 (`voxel-worker.js:3939`) |
-| Kern: Höhe, Klima, Biom | 6–8 µs, 45–62 µs (Land), 0,1–0,4 µs | **Funktion**, unabhängig von R | Blatt e §2, `spike/a-kosten.out.txt` |
+| Kern: Höhe, Klima, Biom | 6–8 µs, 45–62 µs (Land), 0,1–0,4 µs | **Funktion**: wächst nicht mit R, wohl wenn R schrumpft (Höhe bei R 1 737 ÷ 12 742 km ×1,38, `diag-planet.cjs --kosten` 18.11.) | Blatt e §2, `spike/a-kosten.out.txt` |
 | Kern: der Ort mit Δ (`planetOrt`) | 0,64–1,11 ms warm | Funktion | Blatt e §2 |
 
 ## §4 Was die Meisterkarte schon sagt
