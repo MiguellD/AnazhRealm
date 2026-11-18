@@ -3373,7 +3373,7 @@
      "gruen": true,
      "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 21/21, die alten 0.917 · Ring 10 neu, Median 23 m vom Haus / 72 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.7 σ 21.5 schwarz 0.0 % weiß 0.0 % · ",
      "sha": "08a8397ba498a8c89c72ce9cd287232ccf6591ae",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, scripts/diag-settlement.cjs +16) — zuletzt an e4e3f363: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, scripts/diag-settlement.cjs +16) — zuletzt an b7ed8419: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -4817,7 +4817,7 @@
   },
   "breite.siedlung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: dorf 7 9310: 145 Kacheln, 9639 Häuser (Kern 9, Rand 56 Kacheln) · Straßenwand Kern 0,299 ↔ Rand 0,055 = 5,5:1 (Soll ≥ 2) · Dichte-Fit R² 0,960 (Soll ≥ 0,8, λ 849 m) · Traufe Median Kern 19,4 m ↔ Rand 3,2 m = 6,1 (Soll ≥ 5) · höchstes Haus 22,9 m an e4e3f363 gtx",
+   "beleg": "Maschine: dorf 7 9310: 145 Kacheln, 9639 Häuser (Kern 9, Rand 56 Kacheln) · Straßenwand Kern 0,299 ↔ Rand 0,055 = 5,5:1 (Soll ≥ 2) · Dichte-Fit R² 0,960 (Soll ≥ 0,8, λ 849 m) · Traufe Median Kern 19,4 m ↔ Rand 3,2 m = 6,1 (Soll ≥ 5) · höchstes Haus 22,9 m an b7ed8419 gtx",
    "stationen": [
     {
      "id": "breite.siedlung#1",
@@ -4833,9 +4833,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "dorf 7 9310: 145 Kacheln, 9639 Häuser (Kern 9, Rand 56 Kacheln) · Straßenwand Kern 0,299 ↔ Rand 0,055 = 5,5:1 (Soll ≥ 2) · Dichte-Fit R² 0,960 (Soll ≥ 0,8, λ 849 m) · Traufe Median Kern 19,4 m ↔ Rand 3,2 m = 6,1 (Soll ≥ 5) · höchstes Haus 22,9 m",
-     "sha": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs, stamm/dirigent-takt.js +2) — zuletzt an 08a8397b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
-     "gehalten": true,
+     "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -6505,7 +6504,7 @@
   "ohne": 150
  },
  "kopfVoll": "b7ed8419454b22964d72b81d26f1f56128e41735",
- "zeit": "2026-11-18T21:09:57.653Z",
+ "zeit": "2026-11-18T21:15:51.862Z",
  "vorher": "b7ed8419",
  "bilanz": {
   "gewinn": [],
