@@ -857,7 +857,7 @@ Präzedenzfall Wald-Dichte in phyto-core). Es reist im Buch-Umschlag
 (`get-book`-Reply, Feld `siedlung`, M8-generisch: der erste Kern mit
 SIEDLUNG); der Wirt liest `AnazhRealm._siedlungGesetz()` (Ingest validiert
 ganz-oder-gar-nicht, Fallback = byte-gleiches `AUTO_SETTLEMENT`). Die
-Streaming-Regler (nearM/perTick/spawnClearM/siteProbeR/startRadiusM) bleiben
+Streaming-Regler (nearM/spawnClearM/siteProbeR/startRadiusM) bleiben
 ehrlich Wirts-Infrastruktur.
 
 ---
