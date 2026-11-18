@@ -884,43 +884,43 @@
     },
     "marokkanisch-s7-L0": {
       "objects": 18,
-      "vertices": 111912,
-      "sha256": "25d2f3c80a4a5d4a27855293af00f1d6cbccc9d8a1b5e56765d5ba7a297607d5"
+      "vertices": 109692,
+      "sha256": "c06f0e9e8e2a6b3c02eb79b5a278da1aa4db2ab2de1023a061f831731b754fd8"
     },
     "marokkanisch-s7-L1": {
       "objects": 11,
-      "vertices": 29340,
-      "sha256": "3d10fb408a3594d46258ba30f14f18f08cc36bb0f0ccd117fb40b5972193252a"
+      "vertices": 28560,
+      "sha256": "e117e6682cf774c6b0640bf408aadde162760578fbf692db6abffafc367333b7"
     },
     "marokkanisch-s7-L2": {
       "objects": 7,
-      "vertices": 2990,
-      "sha256": "70f1231d358c94eee0545238011ee69a87b3c2055c9c889711e1d62a45a0775c"
+      "vertices": 3178,
+      "sha256": "d192f04684643bf50236f65016581b019694057db235425157c511e5571d28af"
     },
     "marokkanisch-s7-L3": {
       "objects": 1,
       "vertices": 210,
-      "sha256": "23dfe998ffe48ca5d05382d105850804ef633f04cf840d3e1a01fd7b0e8dcef2"
+      "sha256": "a0563e3a79225b5fe094f88bde25d7864bbd676d6aa03d7004578b471f9a2a33"
     },
     "marokkanisch-s12345-L0": {
       "objects": 18,
-      "vertices": 101112,
-      "sha256": "a772f2d9514b7b93e15b579455c4c2401fbbcab8b9fa0a88a424b2d7d71bd684"
+      "vertices": 98892,
+      "sha256": "4bddc7a7066547e00a05faa2c78ea3fda595bf7f6c78f5cea2b7c51e33245741"
     },
     "marokkanisch-s12345-L1": {
       "objects": 11,
-      "vertices": 22572,
-      "sha256": "79e287a01736dcbdafe6c09d7d4b5cf9eddb7ed7f40b36a0ac9282dd89fe56e1"
+      "vertices": 21792,
+      "sha256": "42647ff10d53bb209ec3ccca027f291901d1bf8b7951e2b5f086ca5b4e1491b5"
     },
     "marokkanisch-s12345-L2": {
       "objects": 7,
-      "vertices": 2282,
-      "sha256": "a3fb95419ce54841cf386d496f4ecaeb071c5fc478d59a9faf9bc4ca967a533d"
+      "vertices": 2482,
+      "sha256": "a1045d06a47c1391083bf551c326c2b0f045cde1a18016c72e379af5bee024e7"
     },
     "marokkanisch-s12345-L3": {
       "objects": 1,
       "vertices": 210,
-      "sha256": "cbc17495037a97b4fb7acd864b1a9d728525a4b8dfc55503a733cefe9fe886fe"
+      "sha256": "59a3762ded48f41966439cb0edd2c88027acc38d9999b5d864c07099491b9ea2"
     },
     "skandinavisch-s7-L0": {
       "objects": 17,
