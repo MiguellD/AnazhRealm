@@ -19,7 +19,7 @@ bauRezept trägt `null` (FC:4436, 4450, 4462, 4468, 4473 gelesen); leuteVon lies
 liest `FC.leuteVon(sl.ov)` (SB:839); `hp.parzelle` hat keinen Erzeuger (FC:2255); das Kaufhaus ist gekappt W ≤ 8,5 (FC:2187). Offen
 gefunden: „Eiche 0,330 m" (pc:120) steht neben `trunkR` (pc:110, ein Radius) — Radius oder Durchmesser ist an der Quelle nicht entschieden.
 
-## (0) STAND NACH SPIKE UND GEGENPRÜFUNG (Kopf des Kapitels, 18.11. 22:15) — Welle 1 ist in dieser Form NICHT baureif
+## (0) STAND NACH SPIKE UND GEGENPRÜFUNG (Kopf des Kapitels, 18.11. 22:07) — Welle 1 ist in dieser Form NICHT baureif
 
 Dieser Abschnitt steht ÜBER dem Entscheid des Richters und gilt, wo er ihm widerspricht. Quellen: `spike-100-haeuser.md`,
 `pruefung-spike.md` (22 Urteile gegengerechnet), `pruefung-quelle.md` (54 Behauptungen an der Quelle, 41 stimmen, 13 falsch/ungenau).
