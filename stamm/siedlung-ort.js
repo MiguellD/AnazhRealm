@@ -566,6 +566,7 @@ class AnazhRealm_siedlung_ort {
             {
                 seed: this._ausstattungSame(plan, "laterne", k),
                 rotationY: Number.isFinite(l.th) ? -l.th : 0,
+                brenner: l.brenner, // der Brenner ihres Jahrs (fachwerk `BRENNER`, der Plan nennt ihn; Leser `_lichtDatumDerGestalt`)
                 silent: true,
                 autonomous: !!(so && so.autonomous),
                 ausGesetz: true,

@@ -5685,11 +5685,11 @@
       if(ok){ const dL=Math.min(1, Math.hypot(lx2,lz2)/(R9L*0.80));                          /*LATERNEN-ZEITREISE: jede Laterne liest das JAHR ihres Rings — Gas im Altkern, Elektro am Saum*/
         const R0=globalThis.__ring; const rj=(R0&&R0.ringe)? (R0.gr0+(plan.jahr-R0.gr0)*Math.pow(dL,0.82)) : plan.jahr;
         const gasB=(rj<1895) && (plan.jahr<1930 || dL<0.45);                                /*NACHRUEST-WELLE: ab 1930 elektrifiziert die Moderne von AUSSEN herein — der Altkern behaelt sein Gaslicht (Berlin-Wahrheit)*/
-        laternen.push({x:lx2,z:lz2,th:Math.atan2(-fl*q.nz,-fl*q.nx),gas:gasB}); } } } }
+        laternen.push({x:lx2,z:lz2,th:Math.atan2(-fl*q.nz,-fl*q.nx),brenner:gasB?brennerVon(zeit.jahr):'gluehlampe'}); } } } }
   else { /*DAS DORF-LICHT (K10, Auge 13.10.: das Start-Dorf trug 0 Laternen, die Nacht war ohne ein Licht): jede Laterne vor einer Wand wie in der Stadt (kein Grundriss, 9 m Abstand, nicht am Brunnen) — eine am Platz, eine an jedem Weg-Knoten (Grad ≥ 3), laengs jedes Wegs eine je DORF_LICHT_WEG m*/
     const DORF_LICHT_WEG=25;
     const setz=(x,z,th)=>{ if(!laterneFrei(x,z)) return false;
-      if(laternen.some(l=>Math.hypot(x-l.x,z-l.z)<9)||brunnen.some(b2=>Math.hypot(x-b2.x,z-b2.z)<2)) return false; laternen.push({x,z,th,gas:true}); return true; };
+      if(laternen.some(l=>Math.hypot(x-l.x,z-l.z)<9)||brunnen.some(b2=>Math.hypot(x-b2.x,z-b2.z)<2)) return false; laternen.push({x,z,th,brenner:brennerVon(zeit.jahr)}); return true; };
     const amWeg=(rd,u,fl)=>{ const q=at(rd,u), lq=laterneQuer(rd,q,fl); return !!lq&&setz(lq.x, lq.z, Math.atan2(-fl*q.nz,-fl*q.nx)); };
     if(platz) [[0.25,0],[-0.25,0],[0,0.7],[0,-0.7]].some(([fx,fz])=>setz(platz.cx+fx*platz.ex, platz.cz+fz*platz.ez, 0));
     const grad=new Array(G.nodes.length).fill(0); for(const rd of roads){ grad[rd.a]++; grad[rd.b]++; }
@@ -5708,7 +5708,7 @@
       return {rolle, x, z, r:L.reduce((a,o)=>Math.max(a,Math.hypot(o.cx-x,o.cz-z)+Math.hypot(o.ex,o.ez)),0), lose:L.length}; }); }
   return Object.assign({pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false, vor:rd.vor||undefined, treppe:rd.treppe||undefined})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
           feldwege, platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
-          laternen, marken, laterneNeben, wegRand,
+          laternen, marken, brenner:brennerVon(zeit.jahr), laterneNeben, wegRand,
           graph:{nV:G.nodes.length+sack, nE:roads.length, zyklen:Math.max(0,nzyk)},
           welt:{x0:X0-9,x1:X1+9,z0:Z0-9,z1:Z1+9}}, stadt?{zonen, gegenstaende:dinge, viertel, lage}:null);   /*die Stadt der Grammatik traegt ihre Flaechen, die Gegenstaende ihrer Viertel und die Viertel selbst*/
 }
@@ -6428,10 +6428,34 @@
     // läuft um hufeisenAlpha unter die Mitte; spitz: zwei Mittelpunkte im Abstand spitzE·R von der Achse auf der Kämpferlinie
     // (Radius (1 + spitzE)·R, Scheitel 1,61 R). Leser: bogenRahmen (Keilsteine im Verband) und die Linse gate:fachwerk-contract BOGEN-VERBAND.
     var BOGEN_GESETZ = Object.freeze({ hufeisenAlpha: 0.35, spitzE: 0.8 });
+    // DER BRENNER DER LEUCHTE (w28-strahler-2): was im Kopf einer Laterne brennt, gehört dem JAHR ihres Plans — je Zeile das Jahr,
+    // ab dem er in der Gasse steht (`ab`), seine Lichtstärke rundum (`candela`) und die Höhe seiner Flamme (`flammeM`: der
+    // leuchtende Körper, an dem Haube und Boden des Kopfs den Halbschatten schneiden, `leuchte`). Anker je Zeile:
+    //   · docht         die Talgkerze, der Öl-Docht hinter Horn oder Glas — die Kerze IST die Einheit (1 cd);
+    //   · argand        Argands Hohldocht mit Zugglas (Patent 1784): 6–10 Kerzen;
+    //   · gas           der offene Schnittbrenner am Stadtgas (Berlin 1826): das gesetzliche 16-Kerzen-Gas;
+    //   · gluehstrumpf  Auers Glühstrumpf (in Serie 1892): 60–100 cd am stehenden Strumpf;
+    //   · gluehlampe    die elektrische Glühlampe von 100 W (1 380 lm ÷ 4π) — kein Jahr: sie wählt die Nachrüst-Welle des Plans.
+    // `brennerVon(jahr)`: die jüngste Flamme, die in diesem Jahr brennt. Leser: `dorfLayout` (jede Laterne des Plans trägt
+    // `brenner`), `leuchte` (das Datum der Gestalt mit ihrem Brenner). Bis hier trug jede Laterne jedes Jahrs das Gaslicht mit
+    // Glühstrumpf: das Dorf von 1320 brannte 100 cd, eine orange Wäsche über 46 m in der Mondnacht (GTX 1050, 18.11.).
+    var BRENNER = Object.freeze({
+        docht: Object.freeze({ ab: -Infinity, candela: 1, flammeM: 0.04 }),
+        argand: Object.freeze({ ab: 1784, candela: 10, flammeM: 0.06 }),
+        gas: Object.freeze({ ab: 1826, candela: 16, flammeM: 0.05 }),
+        gluehstrumpf: Object.freeze({ ab: 1892, candela: 100, flammeM: 0.08 }),
+        gluehlampe: Object.freeze({ candela: 110, flammeM: 0.06 }),
+    });
+    function brennerVon(jahr) {
+        var name = null;
+        for (var k in BRENNER) if (BRENNER[k].ab <= jahr && (name === null || BRENNER[k].ab > BRENNER[name].ab)) name = k;
+        if (name === null) throw new Error("fachwerk brennerVon: kein Jahr (" + jahr + ")");
+        return name;
+    }
     var LICHT_GESETZ = {
         feuer: { kelvin: 2000, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
         fenster: { kelvin: 2800, cdM2: 20 },
-        laterne: { kelvin: 1900, candela: 100, cdM2: 960, abfall: 2, kernM: 0.1, hoeheM: 3.6 },
+        laterne: { kelvin: 1900, candela: BRENNER.gluehstrumpf.candela, cdM2: 960, abfall: 2, kernM: 0.1, hoeheM: 3.6 },
     };
     // DIE WANDLATERNE (K66-2): die Leuchte der dichten Gasse hängt an der Hauswand, wo kein Mast vor der Wand und neben dem Weg
     // steht — ihr Licht ist das der Laterne (Farbtemperatur, Abfall, die Leuchtdichte ihres Kopfs), abgeleitet aus zwei Maßen ihres Leibs:
@@ -7587,11 +7611,51 @@
         eisen(ausDreh(profil, fein ? 8 : 4, false, false));
         ausLaterneKopf(g, m, eisen, fein);
     }
+    // der Boden des Kopfs: so viel breiter als das Glas, so dick (Leser: das Gitter `ausLaterneKopf`, die Abstrahlung `leuchte`)
+    var KOPF_BODEN = Object.freeze({ ueber: 0.04, dick: 0.03 });
+    // DIE LEUCHTE EINER GESTALT MIT IHREM BRENNER (w28-strahler-2) — das Datum, das der Licht-Takt der Welt liest: das Licht des
+    // Rezepts (`fx.licht`) im Verhältnis des Brenners zum Glühstrumpf (Candela und die Leuchtdichte des Kopfs; ohne Brenner das
+    // Rezept selbst, es trägt den Glühstrumpf) und `kopf`, die ABSTRAHLUNG DES GEBAUTEN KOPFS: die Haube schließt über der
+    // Flamme (ihr Rand `hb` vor der Achse, `yK1 − yL` über der Mitte), der Boden unter ihr (sein Rand (kb + ueber) ÷ 2,
+    // `yK0 + dick − yL`) — je [Rand, Höhe] in halben Flammen-Höhen. Ein Strahl der Steigung t (Höhe je Meter waagrecht) sieht
+    // von der Flamme, was unter dem Rand der Haube und über dem des Bodens liegt (`kopfSicht`): am Mast mit Glühstrumpf frei
+    // zwischen 41° unter und 39° über der Waagrechten, dunkel über 50° und unter 54°, dazwischen der Halbschatten. Der Kopf
+    // ist quadratisch, gerechnet wird sein Inkreis (die Drehung der Gestalt reist nicht in den Pool); die vier Eck-Stäbe
+    // (22 mm) schneiden nichts Lesbares. null für eine Gestalt ohne Licht; `kopf` null ohne Kopf (die Feuerstelle).
+    var _leuchten = {};
+    function leuchte(id, brenner) {
+        var key = id + "|" + (brenner || "");
+        if (key in _leuchten) return _leuchten[key];
+        var pre = PRESETS[id],
+            D = pre && pre.fx && pre.fx.licht,
+            mass = AUS_MASS[id];
+        if (!D) return (_leuchten[key] = null);
+        var B = BRENNER[brenner || "gluehstrumpf"];
+        if (!B) throw new Error("fachwerk leuchte: der Brenner „" + brenner + "“ steht in keiner Zeile");
+        var m = typeof mass === "function" ? mass(pre.s.groesse) : null,
+            s = B.flammeM / 2,
+            v = brenner ? B.candela / BRENNER.gluehstrumpf.candela : 1,
+            L = JSON.parse(JSON.stringify(D));
+        if (brenner) {
+            L.candela = D.candela * v;
+            L.cdM2 = D.cdM2 * v;
+            L.brenner = brenner;
+        }
+        L.kopf = m && m.yK0 < m.yL ? [m.hb / s, (m.yK1 - m.yL) / s, (m.kb + KOPF_BODEN.ueber) / 2 / s, (m.yK0 + KOPF_BODEN.dick - m.yL) / s] : null;
+        return (_leuchten[key] = Object.freeze(L));
+    }
+    // Der Anteil der Flamme (0 … 1), den ein Punkt im waagrechten Abstand `a` und `h` über dem Licht-Mittelpunkt an Haube und
+    // Boden vorbei sieht (`kopf` aus `leuchte`; ohne Kopf 1). Dieselbe Rechnung je Fragment: der Stoff der Welt (`_lichtPlatz`).
+    function kopfSicht(kopf, a, h) {
+        if (!kopf) return 1;
+        var st = h / Math.max(1e-4, a);
+        return Math.max(0, Math.min(1, (Math.min(1, kopf[1] - kopf[0] * st) - Math.max(-1, kopf[3] - kopf[2] * st)) / 2));
+    }
     // DER KOPF DER LATERNE (Mast und Wand tragen denselben, K66-2): der Boden, das Glas um die Licht-Höhe `yL`, nah die vier
     // Eck-Stäbe des Rahmens, die Haube.
     function ausLaterneKopf(g, m, eisen, fein) {
-        eisen(ausSetze(ausKiste(m.kb + 0.04, 0.03, m.kb + 0.04, fein ? 0.008 : 0), 0, m.yK0 + 0.015, 0));
-        var glas = ausSetze(ausKiste(m.kb, m.kh - 0.03, m.kb, 0), 0, m.yL + 0.015, 0);
+        eisen(ausSetze(ausKiste(m.kb + KOPF_BODEN.ueber, KOPF_BODEN.dick, m.kb + KOPF_BODEN.ueber, fein ? 0.008 : 0), 0, m.yK0 + KOPF_BODEN.dick / 2, 0));
+        var glas = ausSetze(ausKiste(m.kb, m.kh - KOPF_BODEN.dick, m.kb, 0), 0, m.yL + KOPF_BODEN.dick / 2, 0);
         ausFaerbe(glas, "laternenglas", 0, null);
         ausTeil(g, glas, "laternenglas");
         var i, j;
@@ -9301,7 +9365,7 @@
         var stand = function (h, lx, lz, nx, nz) {
             var k = welt(h, lx + nx * a, lz + nz * a),
                 w = welt(h, lx, lz);
-            return fremd(k.x, k.z, h) ? null : { x: k.x, z: k.z, th: Math.atan2(w.z - k.z, w.x - k.x), gas: true, wand: true, haus: h.i };
+            return fremd(k.x, k.z, h) ? null : { x: k.x, z: k.z, th: Math.atan2(w.z - k.z, w.x - k.x), brenner: lay.brenner, wand: true, haus: h.i };
         };
         var setze = function (l) {
             if (!l) return false;
@@ -9960,7 +10024,7 @@
                     return !l.wand || slotVon[l.haus] !== undefined;
                 })
                 .map(function (l) {
-                    return l.wand ? { x: l.x, z: l.z, th: l.th, gas: l.gas, wand: true, slot: slotVon[l.haus] } : l;
+                    return l.wand ? { x: l.x, z: l.z, th: l.th, brenner: l.brenner, wand: true, slot: slotVon[l.haus] } : l;
                 }),
         };
         // DIE STADT DER GRAMMATIK (STADT_GRAMMATIK, `dorfLayout`): ihre Viertel {rolle, x, z, r, lose}, ihre Flächen (`zonen`: der
@@ -12410,6 +12474,11 @@
         leuchtdichte: leuchtdichte,
         // schatten.K5 — der Leib einer Leuchte (der Glas-Kopf): die nahe Ebene ihres Wurfs
         lichtLeib: lichtLeib,
+        // w28-strahler-2 — der Brenner nach Jahr, die Leuchte einer Gestalt mit Brenner und Kopf
+        BRENNER: BRENNER,
+        brennerVon: brennerVon,
+        leuchte: leuchte,
+        kopfSicht: kopfSicht,
         EXPL_GESETZ: EXPL_GESETZ,
         EXPL_VIS: EXPL_VIS,
         // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)

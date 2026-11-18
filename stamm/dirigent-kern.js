@@ -1606,7 +1606,7 @@ class AnazhRealm {
         const LG = globalThis.__fachwerkCore.LICHT_GESETZ;
         // DIE UMGEBUNG DER STUNDE (welt-licht.js `AUGE`): die waagrechte Beleuchtungsstärke unter freiem Himmel — die Lesung des
         // EINEN Lichtmessers OHNE das Becken (`_belichtungE`, `_belichtungAusLicht` las sie in diesem Takt) — in Lux auf der
-        // EINEN Skala; über ihr zeigt der Stoff jede Quelle (`_lichtPoolTerm`: `lichtAuge` trägt A + Knie und S davon), aus ihr folgt ihre
+        // EINEN Skala; über ihr zeigt der Stoff jede Quelle (`_lichtPoolTerm`: `lichtAuge` trägt A, S(A) und den Vorfaktor von S), aus ihr folgt ihre
         // Reichweite (`_leuchtReichweite`). Ohne Lesung hält sie die letzte (`_augeLux`).
         const aE = this._belichtungGelesen ? this._belichtungE : null;
         if (aE) {
@@ -1614,9 +1614,9 @@ class AnazhRealm {
             const aLux = (this._augeLux = __weltLicht.augeLux(aW, this._belichtungTag));
             // das Maß der Stunde (welt-licht.js `augeMass`): Becken und Glut stehen in der Zahl, die die Welt jetzt trägt
             const m = (this._augeMass = __weltLicht.augeMass(aW, this._belichtungTag));
-            const ak = aLux + AnazhRealm.AUGE.knieLux;
+            const A = __weltLicht.augeUmgebung(aLux);
             const U = AnazhRealm.AUGE;
-            atmo.lichtAuge.value.set(ak, __weltLicht.augeS(ak) * m, (U.welt / U.lux ** U.p) * m);
+            atmo.lichtAuge.value.set(A, __weltLicht.augeS(A) * m, (U.welt / U.lux ** U.p) * m);
         }
         const mass = this._augeMass ?? 1;
         // DIE HÖHE DER GLUT DER LAVA: die Leuchtdichte ihres Ausbruchs (Planck im Sichtbaren × Emissivität) durch dasselbe Auge
@@ -1690,6 +1690,7 @@ class AnazhRealm {
                 lage.set(0, 0, 0, 0);
                 farbe.set(0, 0, 0, 0);
                 atmo.lichtForm[k].value.set(0, 0, 0);
+                atmo.lichtKopf[k].value.set(0, 2, 0, -2);
                 continue;
             }
             if (q.quelle === "stahl") this._stahlGlut(); // das Licht des Stahls folgt der Hand und seiner Glut je Bild
@@ -1710,7 +1711,12 @@ class AnazhRealm {
             const In = L.ersatz ? I * Math.pow(1 + k2, L.abfall / 2) : I / (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b);
             farbe.set(c.r * In, c.g * In, c.b * In, L.abfall);
             atmo.lichtForm[k].value.set(L.ersatz ? 1 : 0, k2, L.flach || 0);
+            // DER KOPF DER LEUCHTE (w28-strahler-2, fachwerk `leuchte`): Haube und Boden je [Rand, Höhe] in halben Flammen-Höhen; ohne
+            // Kopf die offene Zeile (0, 2, 0, −2: jede Richtung sieht die ganze Flamme)
+            if (L.kopf) atmo.lichtKopf[k].value.set(L.kopf[0], L.kopf[1], L.kopf[2], L.kopf[3]);
+            else atmo.lichtKopf[k].value.set(0, 2, 0, -2);
             pool.plaetze.push({
+                kopf: L.kopf || null,
                 quelle: q.quelle,
                 x: q.x,
                 y: q.y,
@@ -1810,7 +1816,7 @@ class AnazhRealm {
             const I = this._leuchtCandela(q, null) * pool.blende[k];
             const k2 = q.L.kernM * q.L.kernM;
             const s0 = Math.max(0, Math.min(1, (1 - d / R) / U.saum));
-            let E = I / (d * d + k2);
+            let E = (I / (d * d + k2)) * globalThis.__fachwerkCore.kopfSicht(q.L.kopf, Math.hypot(dx, dz), -dy);
             if (q.L.flach) {
                 const h = -dy;
                 if (!(h > 0)) continue;
@@ -1965,12 +1971,14 @@ class AnazhRealm {
         return this._glutFlaeche(entry) > 0 ? globalThis.__fachwerkCore.LICHT_GESETZ.feuer : null;
     }
 
-    // Das Emitter-Datum der Studio-Gestalt eines Eintrags (`fx.licht` ihres Rezepts) oder null.
+    // Das Emitter-Datum der Studio-Gestalt eines Eintrags oder null: das Licht ihres Rezepts mit dem Brenner des Eintrags (die
+    // Laterne eines Plans trägt den ihres Jahrs, `entry.brenner`; ohne ihn das Rezept selbst) und der Abstrahlung ihres gebauten
+    // Kopfs (`kopf`) — fachwerk `leuchte`, EIN Datum je Gestalt und Brenner.
     _lichtDatumDerGestalt(entry) {
-        const FC = globalThis.__fachwerkCore;
         const bp = this.state.blueprints && typeof entry.type === "string" ? this.state.blueprints[entry.type] : null;
-        const pre = bp && typeof bp.studioGestalt === "string" ? FC.PRESETS[bp.studioGestalt] : null;
-        return pre && pre.fx && pre.fx.licht ? pre.fx.licht : null;
+        return bp && typeof bp.studioGestalt === "string"
+            ? globalThis.__fachwerkCore.leuchte(bp.studioGestalt, entry.brenner || null)
+            : null;
     }
 
     // Der Leib der Studio-Gestalt eines Eintrags um ihren Licht-Mittelpunkt (fachwerk `lichtLeib`: der Glas-Kopf einer Leuchte;

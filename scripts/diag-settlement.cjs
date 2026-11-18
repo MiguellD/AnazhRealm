@@ -3137,7 +3137,7 @@ hauptLauf(async () => {
                             qs,
                             dunkel,
                             mittag,
-                            lux: [tagLux, nachtLux, AnazhRealm.AUGE.knieLux],
+                            lux: [tagLux, nachtLux, (Math.sqrt(__weltLicht.MESOPISCH.staebchenCd * __weltLicht.MESOPISCH.zapfenCd) * Math.PI) / __weltLicht.MESOPISCH.karte],
                             wege: (P.roads || []).map((w) => (w.pts || []).map((p) => [anker.x + p.x, anker.z + p.z])),
                             haeuser: dachW,
                             hfov: 2 * Math.atan(Math.tan((st.camera.fov * Math.PI) / 360) * (16 / 9)),
@@ -3508,7 +3508,7 @@ hauptLauf(async () => {
                 typeof outO.gasse.lux[1] === "number" &&
                 outO.gasse.lux[1] < outO.gasse.lux[2],
             outO.gasse
-                ? `hell ${outO.gasse.n} · Feuer aus ${outO.gasse.schein} · Mittag ${outO.gasse.mittag} von ${outO.gasse.brennend} · Mitternacht ${outO.gasse.lux[1]} lx (Knie ${outO.gasse.lux[2]} lx)`
+                ? `hell ${outO.gasse.n} · Feuer aus ${outO.gasse.schein} · Mittag ${outO.gasse.mittag} von ${outO.gasse.brennend} · Mitternacht ${outO.gasse.lux[1]} lx (Mitte des mesopischen Bands ${outO.gasse.lux[2]} lx)`
                 : "keine Gasse"
         );
     };

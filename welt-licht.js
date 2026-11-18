@@ -58,32 +58,34 @@ var __weltLicht = (function () {
     //     p = ln 13,1 ÷ ln 385 000 = 0,200. Mond, Sternenlicht, Umgebung und Hemisphäre der Nacht STEHEN schon auf dieser Skala
     //     (der Vollmond 0,26 lx → 0,58).
     //   · DIE HELLIGKEIT IN DER SZENE   über der Umgebung A der Stunde zeigt eine Beleuchtungsstärke E
-    //         zeig(E) = S(A + knie) × ((1 + E ÷ (A + knie))^q − 1)
+    //         zeig(E) = S(A) × ((1 + E ÷ A)^q − 1),   höchstens   S(A + E) × E ÷ (A + E)
     //     `q`: die Antwort des Auges INNERHALB eines Zustands ist steiler als die Anpassung (die Helligkeit nach CIE L* folgt der
-    //     Kubikwurzel; das Feld 0,30–0,42); `knieLux`: das Knie Stäbchen → Zapfen — darunter (Mondnacht, Höhle) zählt jedes Lux
-    //     gegen das Knie, nicht gegen die Dunkelheit: ohne es hob ein Feuer mit p allein (r^−0,4) die Wiese noch in 20 m um ×1,9,
-    //     eine Farb-Wäsche ohne Kreis (GTX 1050, 18.11.). Im Dunkeln (A → 0) bleibt S(knie) × ((1 + E ÷ knie)^q − 1), nichts
-    //     teilt durch null; am Mittag trägt ein Feuer 0,04 % — ohne Zeitplan.
+    //     Kubikwurzel; das Feld 0,30–0,42). Die obere Grenze ist der Anteil des Lichts am ÖRTLICHEN Zustand A + E: am
+    //     beleuchteten Fleck selbst passt sich das Auge an (das Ufer der Lava, der Boden am Herd), mehr als seinen Anteil daran
+    //     zeigt kein Licht — sie greift ab E ≈ 6 × A. A steht nie unter dem Zustand der Stäbchen (`zustandMinLux`, die
+    //     untere Grenze des mesopischen Bands auf der Karte, 0,087 lx): nichts teilt durch null, die Höhle bleibt endlich.
+    //     Bis w28-strahler-2 stand hier ein KNIE (A + 2,76 lx, die Mitte des mesopischen Bands): es stellte der Mondnacht eine
+    //     Umgebung von 3 lx hin, damit eine Laterne von 100 cd einen Kreis warf — über 0,18 lx Vollmond trägt sie in 8 m noch
+    //     das 2,7-fache der Nacht, eine Kante gibt es dort nicht (GTX 1050, 18.11.: ohne Knie eine orange Wäsche über 46 m).
+    //     Die Kante gehört der QUELLE (fachwerk `LICHT_GESETZ`: der Brenner ihres Jahrs, die Abstrahlung ihres Kopfs).
     // Jede Quelle des Licht-Pools trägt darum CANDELA; der Stoff summiert ihre Beleuchtungsstärke in Lux und zeigt die SUMME
     // (`_lichtPoolTerm`, die EINE Stelle). `eps`: eine Quelle reicht, so weit ihr GEZEIGTES Licht die Umgebung um diesen Anteil
     // hebt (zeig(E) = eps · S(A); `augeReichweite`), über die äußeren `saum` ihrer Reichweite fällt sie weich auf null.
-    // DIE KAMERA schließt für das Becken ERST ÜBER DER MESOPISCHEN DECKE (`augeMesser`, Leser `_belichtungAusLicht`): unter
-    // `deckeLux` (die obere Grenze des Bands, `zapfenCd` auf der Karte: 87,3 lx am Auge) bleiben die Stäbchen wach, Laterne
-    // und Herdfeuer nehmen dem Auge die Nacht nicht; darüber adaptieren die Zapfen allein, und die Nacht um die Quelle wird
-    // schwarz (die Lava: 2 157 lx am Auge). Der Überschuss steht über der Umgebung AN der Decke (das Auge ist dort an sie
-    // adaptiert): `augeZeig(Σ E − decke, A + decke)` — über der Nacht selbst gezeigt fiele die Kamera am Herd auf 5 cm Schritt
-    // um 0,9 EV. Gemessen davor (GTX 1050, 18.11.): ohne Messer stand die Wiese an der Lava orange (Saum-Gras Luma 104,
-    // Baumlinie ×1,9 über main); ein Messer ohne Decke hielt die Lava (Saum ÷ Gras 1,57) und nahm dem Dorf die Nacht (Wand
-    // der Gasse 61,6 → 44,7, die Bühne Luma 5,3 gegen ihr Soll 22). Leser: `_leuchtTakt` (A, Reichweite), `_lichtPoolTerm` (die Stauchung der Summe).
+    // DIE KAMERA LIEST DAS BECKEN STETIG (`augeMesser`, Leser `_belichtungAusLicht`): die Karte am Auge trägt zur Umgebung den
+    // `anteil` des gezeigten Lichts der Quellen dort — das Auge passt sich an das Feld vor ihm nur zum Teil an, der Rest des
+    // Blicks bleibt Nacht. Bis w28-strahler-2 las der Messer erst über einer Decke von 87,3 lx: darunter stand die Kamera,
+    // darüber schloss sie ganz — an der Lava fiel die Welt ins Schwarz (k 0,216, Baumlinie Luma 4,2 vor Himmel 1,6); stetig
+    // mit Anteil 0,25 steht sie (k 0,587, Baumlinie 11,1 vor 6,8). Der Anteil ist ein Maß der Belichtung, gemessen an der Gasse
+    // (0,1 / 0,25 / 0,5: k 1,14 / 0,96 / 0,84 — das Verhältnis Laterne ÷ fern bewegt er nicht).
+    // Leser: `_leuchtTakt` (A, Reichweite), `_lichtPoolTerm` (die Stauchung der Summe).
     // DAS MESOPISCHE BAND (CIE 191:2010): unter `staebchenCd` sieht das Auge mit den Stäbchen, über `zapfenCd` mit den Zapfen.
-    // EINE Quelle für das Knie des Auges und für die Sättigung der Nacht (`AnazhRealm.NACHT_AUGE` liest sie): das Knie liegt in
-    // der Mitte des Bands (geometrisch) als Beleuchtungsstärke der Karte — E = π · L ÷ `karte`, 2,76 lx.
+    // EINE Quelle für den tiefsten Zustand des Auges und für die Sättigung der Nacht (`AnazhRealm.NACHT_AUGE` liest sie).
     const MESOPISCH = Object.freeze({ staebchenCd: 0.005, zapfenCd: 5, karte: 0.18 });
     const AUGE = Object.freeze({
         p: 0.2,
         q: 0.42,
-        knieLux: (Math.sqrt(MESOPISCH.staebchenCd * MESOPISCH.zapfenCd) * Math.PI) / MESOPISCH.karte,
-        deckeLux: (MESOPISCH.zapfenCd * Math.PI) / MESOPISCH.karte,
+        anteil: 0.25,
+        zustandMinLux: (MESOPISCH.staebchenCd * Math.PI) / MESOPISCH.karte,
         welt: 7.83,
         lux: 115000,
         eps: 0.1,
@@ -111,17 +113,18 @@ var __weltLicht = (function () {
         const s = augeS(augeLux(welt, tag));
         return s > 0 ? Math.max(0, welt) / s : 1;
     };
-    // das gezeigte Licht einer Beleuchtungsstärke `lux` über der Umgebung `aLux`: das q-Gesetz, oben gedeckelt von der S-FORM
-    // (`augeGlut`: mehr als seinen Anteil an der Anpassung zeigt kein Licht) — der obere Ast greift nachts ab E ≈ 6 × (A + knie),
-    // 17 lx: der Kreis am Herd, das Gras am Lava-Ufer; darunter, wo der Abfall den Kreis zeichnet, steht das q-Gesetz allein.
+    // die Umgebung, über der das Auge zeigt: die Lux der Stunde, nie unter dem Zustand der Stäbchen
+    const augeUmgebung = (aLux) => Math.max(AUGE.zustandMinLux, aLux);
+    // das gezeigte Licht einer Beleuchtungsstärke `lux` über der Umgebung `aLux`: das q-Gesetz, oben begrenzt vom Anteil am
+    // örtlichen Zustand A + E (dieselbe S-Form wie `augeGlut`)
     const augeZeig = (lux, aLux) => {
         const E = Math.max(0, lux),
-            ak = aLux + AUGE.knieLux;
-        return Math.min(augeS(ak) * (Math.pow(1 + E / ak, AUGE.q) - 1), (augeS(ak + E) * E) / (ak + E));
+            A = augeUmgebung(aLux);
+        return Math.min(augeS(A) * (Math.pow(1 + E / A, AUGE.q) - 1), (augeS(A + E) * E) / (A + E));
     };
     // DIE GLUT EINER LEUCHTENDEN FLÄCHE (Fenster, Laternen-Kopf, Glutbett und Flamme, Lava) — die S-FORM: das Auge passt sich an
-    // Umgebung + Knie + Fläche an und die Fläche zeigt ihren Anteil daran,
-    //     Höhe = S(A + knie + E) × E ÷ (A + knie + E) ÷ π,   E = π · L
+    // Umgebung + Fläche an und die Fläche zeigt ihren Anteil daran,
+    //     Höhe = S(A + E) × E ÷ (A + E) ÷ π,   E = π · L
     // (eine Fläche der Leuchtdichte L steht wie die weiße Karte unter π · L Lux). Oben begrenzt (nachts die Skala S selbst), am
     // Tag linear wahr; kein Zeitplan: ein Fenster von 20 cd/m² trägt mittags 0,001, in der Mondnacht 0,53. Das q-Gesetz des
     // Beckens trägt hier nicht (GTX 1050, 18.11.): E^q hat oben keine Grenze — das Glutbett stand nachts bei 4,06 (cremige
@@ -130,17 +133,18 @@ var __weltLicht = (function () {
     // die Farb-Wäsche). ZWEI Formeln also an diesem Ort, mit der gemessenen Lücke: die weiße Karte unter 63 lx des Beckens
     // zeigt 0,80, das Fenster gleicher Leuchtdichte 0,53. Die Höhe ist EINE Zahl je Datum und Bild (`_leuchtTakt` →
     // `lichtGlut`, `lavaGlut`), das Gemalte bleibt in sich linear.
-    // DAS LICHT DES BECKENS IM LICHTMESSER: nur der Überschuss über der mesopischen Decke, gezeigt über der Umgebung an ihr
-    const augeMesser = (lux, aLux) => augeZeig(Math.max(0, lux - AUGE.deckeLux), aLux + AUGE.deckeLux);
+    // DAS LICHT DES BECKENS IM LICHTMESSER: der Anteil des gezeigten Lichts der Quellen an der Karte am Auge, stetig
+    const augeMesser = (lux, aLux) => AUGE.anteil * augeZeig(lux, aLux);
     const augeGlut = (cdM2, aLux) => {
         const E = Math.PI * Math.max(0, cdM2),
-            ak = aLux + AUGE.knieLux;
-        return (augeS(ak + E) * E) / (ak + E) / Math.PI;
+            A = augeUmgebung(aLux);
+        return (augeS(A + E) * E) / (A + E) / Math.PI;
     };
     // die Reichweite (m) einer Quelle von `candela` über der Umgebung `aLux`: wo zeig(candela ÷ d²) unter eps · S(aLux) fällt
     const augeReichweite = (candela, aLux) => {
-        const x = Math.pow(1 + (AUGE.eps * augeS(aLux)) / augeS(aLux + AUGE.knieLux), 1 / AUGE.q) - 1;
-        return Math.sqrt(Math.max(0, candela) / Math.max(1e-9, x * (aLux + AUGE.knieLux)));
+        const A = augeUmgebung(aLux);
+        const x = Math.pow(1 + (AUGE.eps * augeS(aLux)) / augeS(A), 1 / AUGE.q) - 1;
+        return Math.sqrt(Math.max(0, candela) / Math.max(1e-9, x * A));
     };
     // DIE BELICHTUNG (licht.K1) — EINE Eichung mit der Tonkurve (F1): `kurve` ist die Tonkurve des Renderers (three r184: Khronos
     // PBR Neutral), `zielKarte` das k·L der 18-%-Karte, das DIESE Kurve auf Mittelgrau legt (sRGB 118; `kartenEichung(kurve, 0)`
@@ -1429,6 +1433,7 @@ var __weltLicht = (function () {
         augeLux,
         augeMass,
         augeZeig,
+        augeUmgebung,
         augeMesser,
         augeReichweite,
         augeGlut,

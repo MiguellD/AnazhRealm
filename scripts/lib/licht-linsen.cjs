@@ -1102,15 +1102,14 @@ function tagKurve(o) {
         let karte = null;
         // DAS GESETZ DER KAMERA AN DER LESUNG JETZT (w28-strahler: k ist eine Funktion der Uhr UND des Beckens am Auge): die
         // Belichtung, die `belichtung` aus der Lesung des Messers gibt — `mit` dem Becken (Σ E am Auge, `_beckenAmAuge`; die Linse
-        // rechnet seinen Überschuss über der mesopischen Decke selbst, aus `MESOPISCH`: ein Schreiber, der das Becken unter der
-        // Decke liest oder über ihr nicht, fällt als MESSER) oder ohne
+        // rechnet seinen Anteil selbst, `AUGE.anteil` × das gezeigte Licht des Beckens über der Umgebung: ein Schreiber, der das
+        // Becken nicht oder ganz liest, fällt als MESSER) oder ohne
         const WL = window.__weltLicht;
         const gesetz = (mit) => {
             const w = r._belichtungE,
                 EA = r._belichtungAnker();
             if (!w || !EA) return NaN;
-            const decke = (WL.MESOPISCH.zapfenCd * Math.PI) / WL.MESOPISCH.karte;
-            const bz = mit ? WL.augeZeig(Math.max(0, r._beckenAmAuge() - decke), WL.augeLux(luma709(w), r._belichtungTag) + decke) * WL.augeMass(luma709(w), r._belichtungTag) : 0;
+            const bz = mit ? WL.AUGE.anteil * WL.augeZeig(r._beckenAmAuge(), WL.augeLux(luma709(w), r._belichtungTag)) * WL.augeMass(luma709(w), r._belichtungTag) : 0;
             return WL.belichtung(w.map((x) => x + bz), EA, r._sonnenRichtung().y, (h, q) => C._belichtungStufen(h, q), C.BELICHTUNG);
         };
         const C = r.constructor;

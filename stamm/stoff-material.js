@@ -701,7 +701,12 @@ class AnazhRealm_stoff_material {
             // Boden-Programm riss seine Ratsche): x = 1 das Licht des Auges (`ersatz`), y = k² sein Kern, z = 1 eine waagrechte
             // Scheibe mit dem Radius seines Kerns, die nach oben strahlt (fachwerk `strahler` `flach`: die Decke der Lava)
             lichtForm: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(new THREE.Vector3())),
-            // DIE UMGEBUNG DER STUNDE für das Auge (welt-licht.js `AUGE`, Schreiber `_leuchtTakt`): x = ihre Lux + das Knie, y = S(x)
+            // DER KOPF DER LEUCHTE (w28-strahler-2, fachwerk `leuchte` `kopf`): x, y der Rand der Haube vor der Achse und über der
+            // Flamme, z, w der Rand des Bodens und seine Höhe (negativ), in halben Flammen-Höhen — ohne Kopf (0, 2, 0, −2)
+            lichtKopf: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () =>
+                TSL.uniform(new THREE.Vector4(0, 2, 0, -2))
+            ),
+            // DIE UMGEBUNG DER STUNDE für das Auge (welt-licht.js `AUGE`, Schreiber `_leuchtTakt`): x = ihre Lux (nie unter dem Zustand der Stäbchen), y = S(x), z = der Vorfaktor von S
             lichtAuge: TSL.uniform(
                 new THREE.Vector3(
                     1,
@@ -2328,14 +2333,14 @@ class AnazhRealm_stoff_material {
             const wurf = W.faktor.toVar();
             // DAS AUGE (w28-strahler, welt-licht.js `AUGE`) — die EINE Stelle der Stauchung: die Quellen der Welt tragen Candela, ihr
             // Beitrag steht in Lux (`summe`: rgb das Licht samt BRDF, a die Beleuchtungsstärke), und das Bild zeigt die SUMME über
-            // der Umgebung A der Stunde:   S(A + knie) · ((1 + E ÷ (A + knie))^q − 1)   — nie je Quelle (zwei Feuer sind kein
+            // der Umgebung A der Stunde:   S(A) · ((1 + E ÷ A)^q − 1)   — nie je Quelle (zwei Feuer sind kein
             // doppeltes Bild). Das Licht des Auges (`ersatz`) ist keine Quelle der Welt: es steht in der Zahl des Bilds daneben.
             const summe = Te.vec4(0).toVar();
             const auge = Te.vec3(0).toVar();
             Te.Loop(atmo.lichtLage.length, ({ i: k }) => {
-                const [lage, farbe, form] = AnazhRealm._jePlatz(
+                const [lage, farbe, form, kopf] = AnazhRealm._jePlatz(
                     Te,
-                    [atmo.lichtLage, atmo.lichtFarbe, atmo.lichtForm],
+                    [atmo.lichtLage, atmo.lichtFarbe, atmo.lichtForm, atmo.lichtKopf],
                     k
                 );
                 const ersatz = form.x;
@@ -2344,7 +2349,7 @@ class AnazhRealm_stoff_material {
                 // (Scheibe, Abfall, Saum) für alle vier Plätze an jedem Fragment, die Bedingung stand erst an der BRDF.
                 const Lv = Te.cameraViewMatrix.mul(Te.vec4(lage.xyz, 1)).xyz.sub(Te.positionView).toVar();
                 Te.If(Lv.dot(Lv).lessThan(lage.w.mul(lage.w)), () => {
-                    const b = this._lichtPlatz(Te, { lage, farbe, form, Lv }, himmel, volumen, true, N)
+                    const b = this._lichtPlatz(Te, { lage, farbe, form, kopf, Lv }, himmel, volumen, true, N)
                         .mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
                         .toVar();
                     summe.addAssign(b.mul(ersatz.oneMinus()));
@@ -2412,8 +2417,23 @@ class AnazhRealm_stoff_material {
         const a2 = Lh.dot(Lh);
         const S = h.mul(h).add(a2).add(kern);
         const w = S.mul(S).sub(a2.mul(kern).mul(4)).max(1e-9).sqrt();
+        // DER KOPF DER LEUCHTE (w28-strahler-2, fachwerk `kopfSicht`, dieselbe Rechnung): der Anteil der Flamme, den das Fragment an
+        // Haube und Boden vorbei sieht — seine Steigung zur Quelle h ÷ a gegen die Ränder des gebauten Kopfs (`platz.kopf`);
+        // die offene Zeile gibt 1. Bis hier strahlte jede Laterne als Kugel: die Krone über ihr und der Giebel standen im Licht.
+        const steig = h.div(a2.max(1e-8).sqrt());
+        const K = platz.kopf;
+        const sicht = K
+            ? K.y
+                  .sub(K.x.mul(steig))
+                  .min(1)
+                  .sub(K.w.sub(K.z.mul(steig)).max(-1))
+                  .mul(0.5)
+                  .clamp()
+            : 1;
         const F = Te.mix(
-            Lv.div(d).mul(d.mul(d).add(kern).pow(farbe.a.mul(-0.5))),
+            Lv.div(d)
+                .mul(d.mul(d).add(kern).pow(farbe.a.mul(-0.5)))
+                .mul(sicht),
             Lh.mul(h.div(a2.max(1e-6)).mul(S.div(w).sub(1)))
                 .sub(oben.mul(S.sub(kern.mul(2)).div(w).oneMinus()))
                 .div(kern.max(1e-6).mul(2)),

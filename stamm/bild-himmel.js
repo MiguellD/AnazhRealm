@@ -1950,9 +1950,9 @@ class AnazhRealm_bild_himmel {
         const EA = w && this._belichtungAnker();
         if (!EA) return null;
         // das Gesetz der Kamera (welt-licht.js `belichtung`) mit den Stufen am Glied der Welt (die Linsen prüfen ihren Schein dort)
-        // DER MESSER LIEST DAS BECKEN ÜBER DER MESOPISCHEN DECKE (w28-strahler): Σ E der Quellen am Auge (`_beckenAmAuge`, Lux),
-        // ihr Überschuss über `AUGE.deckeLux` durch das Auge an der Decke (welt-licht.js `augeMesser`) als Licht der Lesung —
-        // an der Lava schließt die Kamera, an Laterne und Herdfeuer steht sie (unter der Decke ist das Glied null)
+        // DER MESSER LIEST DAS BECKEN STETIG (w28-strahler-2): Σ E der Quellen am Auge (`_beckenAmAuge`, Lux), durch das Auge
+        // gezeigt wie auf jeder Fläche, zu seinem `AUGE.anteil` (welt-licht.js `augeMesser`) als Licht der Lesung — an Laterne
+        // und Herdfeuer schließt die Kamera ein wenig, an der Lava weit, nie mit einem Sprung
         const lu = 0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2];
         const bz = (this._belichtungBecken =
             __weltLicht.augeMesser(this._beckenAmAuge(), __weltLicht.augeLux(lu, this._belichtungTag)) *

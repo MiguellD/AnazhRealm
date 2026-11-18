@@ -1424,6 +1424,15 @@ class AnazhRealm_siedlung_satz {
         // DIE WELT IST EINE FUNKTION (speicher.K3, Gebot 7): was Saat und Gesetz setzen (`opts.ausGesetz`: Wurf des Felds, Streu,
         // Ort), rechnet jeder Boot neu — der Stand trägt es nie, nur die Tat an ihm (`harvestArchitecture`); die Marke reist nie.
         if (opts.ausGesetz === true) entry._ausGesetz = true;
+        // DER BRENNER DER LEUCHTE (w28-strahler-2): die Laterne eines Plans brennt, was ihr Jahr brennt (fachwerk `BRENNER`) — eine
+        // Zeile, die der Kern nicht kennt, ist ein Bruch, kein Glühstrumpf
+        if (opts.brenner != null) {
+            if (!globalThis.__fachwerkCore.BRENNER[opts.brenner])
+                throw new Error(
+                    `spawnArchitecture: der Brenner „${opts.brenner}“ steht in keiner Zeile (fachwerk BRENNER)`
+                );
+            entry.brenner = opts.brenner;
+        }
         // Affordances EINMAL beim Spawn berechnen (nicht pro Frame); Welt-Reaktionen lesen entry.affordances.
         // Bauplan-Edits wirken nur auf NEUE Spawns (Snapshot wie precisionCap).
         const bp = this.state.blueprints && this.state.blueprints[type];
