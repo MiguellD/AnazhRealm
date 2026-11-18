@@ -5843,7 +5843,7 @@
   },
   "karte2.planet.kosmos.welten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,346 (Faden 1,346 · alle Kerne 1,259; vor 95,9/330,7 ms, nach 112,9/302,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an 18058dba: Last: Referenz f 1,709 (Faden 1,709 · alle Kerne 1,367; vor 153,6/312,4 ms, nach 97,5/274,7 ms, Ruhe 89,9/228,5 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,346 (Faden 1,346 · alle Kerne 1,259; vor 95,9/330,7 ms, nach 112,9/302,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an b7ed8419: Messort: kugel-heim: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AWT9B5ht13XfCf5PuvneyunVq5cDMgFmgiBI",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.welten#1",
@@ -5861,7 +5861,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 18058dba: Last: Referenz f 1,709 (Faden 1,709 · alle Kerne 1,367; vor 153,6/312,4 ms, nach 97,5/274,7 ms, Ruhe 89,9/228,5 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+     "grund": "ungemessen (R10) — zuletzt an b7ed8419: Messort: kugel-heim: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AWT9B5ht13XfCf5PuvneyunVq5cDMgFmgiBI",
      "ungemessen": true,
      "beide": true
     }
@@ -6495,7 +6495,7 @@
   "ohne": 149
  },
  "kopfVoll": "b7ed8419454b22964d72b81d26f1f56128e41735",
- "zeit": "2026-11-18T22:25:46.765Z",
+ "zeit": "2026-11-18T22:31:53.348Z",
  "vorher": "b7ed8419",
  "bilanz": {
   "gewinn": [],
