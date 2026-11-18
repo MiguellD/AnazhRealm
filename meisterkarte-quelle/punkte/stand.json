@@ -4564,7 +4564,7 @@
   },
   "vegetation.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 104462 px · winter 1911 px · fruehling 76645 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 21f279f5 radeon · gehalten: Krone sommer 104178 px · winter 2252 px · fruehling 76365 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 1857c808 gtx",
+   "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 104462 px · winter 1911 px · fruehling 76645 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 21f279f5 radeon · Krone sommer 104173 px · winter 2252 px · fruehling 76362 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 18058dba gtx",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -4599,10 +4599,9 @@
      "id": "vegetation.K5#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Krone sommer 104178 px · winter 2252 px · fruehling 76365 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
-     "sha": "1857c808e448b72fdc7361a74979f6e8bf2a954d",
-     "grund": "Konsum seit der Messung geändert (R6: index.html, phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs +17)",
-     "gehalten": true,
+     "zahl": "Krone sommer 104173 px · winter 2252 px · fruehling 76362 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
+     "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
+     "grund": null,
      "r6": "konsum"
     }
    ]
@@ -5017,7 +5016,7 @@
   },
   "karte2.erleben.schoepfen.teilen": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 2/2 Werke: Original ↔ Import an derselben Kamera gleich · bank_sitzbank Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 11.7 % · eigen_bruecke Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 17.2 % · [linse-gpu] nvidia/pascal an d39e0d6e gtx — offen: karte2.erleben.schoepfen.teilen#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, index.html +27)",
+   "beleg": "Maschine: 2/2 Werke: Original ↔ Import an derselben Kamera gleich · bank_sitzbank Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 11.7 % · eigen_bruecke Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 17.2 % · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.erleben.schoepfen.teilen#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, index.html +27)",
    "stationen": [
     {
      "id": "karte2.erleben.schoepfen.teilen#1",
@@ -5035,9 +5034,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "2/2 Werke: Original ↔ Import an derselben Kamera gleich · bank_sitzbank Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 11.7 % · eigen_bruecke Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 17.2 % · [linse-gpu] nvidia/pascal",
-     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, scripts/lib/draw-zaehler.cjs +6)",
-     "gehalten": true,
+     "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -6488,7 +6486,7 @@
   "ohne": 148
  },
  "kopfVoll": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
- "zeit": "2026-11-18T20:07:33.906Z",
+ "zeit": "2026-11-18T20:16:33.028Z",
  "vorher": "18058dba",
  "bilanz": {
   "gewinn": [],
