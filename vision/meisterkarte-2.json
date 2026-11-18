@@ -10149,10 +10149,10 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 6,
+    "heute": 5,
     "kern": 2,
     "kernDazu": 2,
-    "anteilHeute": 2.4,
+    "anteilHeute": 2.1,
     "anteilKern": 0.8
    },
    "perspektiven": [
@@ -10322,7 +10322,7 @@
        "richter": "wie S6 über N Planeten und Epochen; dazu Verb-Tiefe einer Zufallsrolle gegen den Richter ihrer Domäne-Leiter (gleiche Sprosse wie dort)"
       }
      ],
-     "heute": 1,
+     "heute": 0,
      "kern": 0,
      "fuss": "kern",
      "beleg": "Bauen, Aufsitzen (stamm/koerper-fahrt.js:1271), Hieb (stamm/kampf.js), Inventar 27 Plätze (stamm/dirigent-kern.js:739) ändern die Welt; Bewohner tragen einen Beruf (stamm/siedlung-bewohner.js:783-798), keiner ist übernehmbar. — KARTE: Kern 1 — Werk wird benutzt (bauen.K5), Hieb trifft (halten.K1), Fahrt (fahrzeug.K3/K4) je an beiden Geräten im Bild; Bild-Preis in Bewegung an der Radeon ROT.",
@@ -16885,7 +16885,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 33,
+  "heute": 32,
   "davonKopplungen": 33,
   "kern": 10,
   "kernDazu": 10,
@@ -16899,7 +16899,7 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 31,
+  "beide": 30,
   "nachwache": 2
  },
  "zusammengelegt": [
