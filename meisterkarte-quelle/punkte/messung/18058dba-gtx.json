@@ -1,7 +1,7 @@
 {
  "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
  "geraet": "gtx",
- "zeit": "2026-11-18T19:50:58.572Z",
+ "zeit": "2026-11-18T19:54:42.272Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -1529,6 +1529,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.wasser.kreislauf#1": {
+   "gruen": true,
+   "zahl": "Bach +0.2 m nach 20 min Sturm (Soll ≥ 0,15) · Wasser im Bild 145491 → 381682 px (×2.62, Soll ≥ 1,05) · A 0.16 ↔ 0.8 km² (×5.0) · Scheitel 0.6 ↔ 1.073 Spielstunden (×1.79, Erd-Band 1.62–2.06; Schwerpunkt 1.152 ↔ 1.9) · Bilanz 1.004 / 0.977 (Soll 0,9–1,1; 3.8 ↔ 3.9 / 19.2 ↔ 18.8 m³) · Niesel auf dem Weg 10 s (Soll 10 ± 0,5) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.33,
+   "gpu": "nvidia/pascal",
+   "konsum": "k66784239c176",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k07740f03b59d",
+   "s": 18.8,
+   "fremd": {
+    "s": 21.7,
+    "takte": 10,
+    "fremdS": 6.92,
+    "kerne": 0.318,
+    "fensterKerne": 0.362,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.97
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.63
+     ],
+     [
+      "Explorer.EXE",
+      1.19
+     ]
+    ],
+    "dienerS": 7.2,
+    "diener": [
+     [
+      "dwm.exe",
+      3.83
+     ],
+     [
+      "System",
+      2.23
+     ]
+    ],
+    "geraetS": 7.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.63
+     ],
+     [
+      "svchost.exe",
+      2.08
+     ],
+     [
+      "SearchIndexer.exe",
+      1.42
+     ]
+    ],
+    "eigenS": 42.59,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T19:54:42.272Z",
+   "abdruck": "d778efc7cc7d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -2281,8 +2350,8 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-18T19:50:27.164Z",
-  "ordner": "sitzung-20261118-205027",
+  "start": "2026-11-18T19:54:12.150Z",
+  "ordner": "sitzung-20261118-205412",
   "port": 7804,
   "warten": 0.01,
   "bootS": 5.8,
@@ -2292,9 +2361,9 @@
   "orte": [
    {
     "ort": "wiese",
-    "vor": "karte2.erleben.kopplung.wahrnehmung#1",
-    "s": 23.3,
-    "takte": 620,
+    "vor": "karte2.planet.wasser.kreislauf#1",
+    "s": 22.3,
+    "takte": 589,
     "chunks": 81,
     "nach": null
    }
@@ -2302,37 +2371,41 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.erleben.kopplung.wahrnehmung#1",
+    "probe": "karte2.planet.wasser.kreislauf#1",
     "anders": [
      "window.__wieseMessen",
      "window.__wieseUrteil",
-     "window.__ortSchritt"
+     "window.__ortSchritt",
+     "window.__vorBild"
     ],
     "wie": {
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__vorBild": "neu: async (stufe) => { if (stufe === \"trocken\") { wort(\"sunny\", 1e6); window.__k3Gru"
     },
     "haelt": [],
     "heap": [
-     228.6,
-     252.1
+     228,
+     272.9
     ],
     "ungemessen": null
    }
   ],
   "wanderung": [
    {
-    "probe": "karte2.erleben.kopplung.wahrnehmung#1",
+    "probe": "karte2.planet.wasser.kreislauf#1",
     "ort": "wiese",
-    "m": 146.61,
+    "m": 86.92,
     "dreh": 0
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.erleben.kopplung.wahrnehmung#1",
+    "probe": "karte2.planet.wasser.kreislauf#1",
     "gehalten": [
+     "skala",
+     "spiegel",
      "tiere"
     ],
     "offen": []
@@ -2341,20 +2414,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1910,
-   "frameP95": 41.72,
-   "taktP95": 20.72,
-   "vramMax": 143.5,
+   "bilder": 2870,
+   "frameP95": 25.21,
+   "taktP95": 11.76,
+   "vramMax": 128.9,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 103,
+   "zapfen": 120,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 113.8,
-  "minuten": 1.99
+  "fahrtS": 123.9,
+  "minuten": 2.12
  }
 }
