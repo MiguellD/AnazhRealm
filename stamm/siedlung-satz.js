@@ -668,12 +668,22 @@ class AnazhRealm_siedlung_satz {
         if (!b || b.donorOnly || b.vomGesetz === true) return false;
         const n = typeof name === "string" && name ? name : b.name || "";
         if (/^grown_/.test(n) || /^(fels|kristall)_var([1-9]\d*)$/.test(n)) return false;
-        // ein Werk des Grunds (`fx.place.grund` des Rezepts, w28-graben-koerper: der Trockengraben — sein Hohlraum liegt im Erdbau
-        // seines Orts): der Ort setzt es, nie die Hand; gesetzt stünde sein Stein in festem Grund. Als neue Art im Start-Gurt füllte
-        // es den letzten freien Platz (gate:haus-welt W11: der Bau-Modus fand für das Fremd-Haus keinen Slot, `hotbar_voll`)
-        const f = this._foundry;
-        const pr = f && f.recipes && typeof b.studioGestalt === "string" ? f.recipes[b.studioGestalt] : null;
-        return !(pr && pr.fx && pr.fx.place && pr.fx.place.grund === true);
+        // ein Werk des Grunds: der Ort setzt es, nie die Hand. Als neue Art im Start-Gurt füllte es den letzten freien Platz
+        // (gate:haus-welt W11: der Bau-Modus fand für das Fremd-Haus keinen Slot, `hotbar_voll`)
+        return !this._werkDesGrunds(n, b);
+    }
+    // EIN WERK DES GRUNDS (`fx.place.grund` des Rezepts, w28-graben-koerper: der Trockengraben — sein Hohlraum liegt im Erdbau
+    // seines Orts): der Ort setzt es (`_genesisWerke`, Phase `grund`), nie eine Hand — weder der Katalog des Spielers
+    // (`_katalogSichtbar`) noch ein Wort des Satzes oder der KI (`_stammbaum`: sein Teil trägt kein Ziel, der Wort-Katalog kein Wort);
+    // gesetzt stünde sein Stein in festem Grund und räumte die Natur unter sich (gate:praegung-welt K: der Satz „trockengraben"
+    // setzte ihn 29 × 29 m auf ungeschnittenes Feld). `rec`: das Rezept selbst, sonst das des Bauplans (`studioGestalt`).
+    _werkDesGrunds(name, bp, rec) {
+        if (!rec) {
+            const b = bp || (this.state.blueprints && this.state.blueprints[name]);
+            const f = this._foundry;
+            rec = b && f && f.recipes && typeof b.studioGestalt === "string" ? f.recipes[b.studioGestalt] : null;
+        }
+        return !!(rec && rec.fx && rec.fx.place && rec.fx.place.grund === true);
     }
     // DIE REIHE DES KATALOGS (bauen.K1): griffbereit zuerst — die eigenen Werke des Spielers (weder eingebaut noch vom Studio
     // geboren, `_foundryAutoSpecies` ist die Herkunfts-Marke), dann die seiner Hotbar in ihrer
