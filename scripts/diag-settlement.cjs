@@ -797,24 +797,16 @@ hauptLauf(async () => {
         // beginnt, fällt mit 0,55 beim Namen seines Körpers; mit Sockel bis Grade hält es. Und am echten Kern: jedes Hof-Haus
         // des Messort-Plans steht mit dem Fuß jedes Körpers auf Grade (`slotHuelle`); ohne die Solids unter der Diele vor der
         // Front (die Mutante: der Hof-Ring ohne seinen Sockel, wie bis w28-bau-rezept) fällt es am hofarm
-        const ringHaus = (fuss) =>
-            Object.assign(haus(8, 8, 10), {
-                grund: {
-                    boxen: [
-                        [-2.5, 2.5, -2.5, 0, 1],
-                        [-2.5, 2.5, 0, 2.5, 1],
-                    ],
-                    arten: ["hofarm", "haupt"],
-                },
-                huelle: [
-                    [-2.5, fuss, -2.5, 2.5, 3, 0],
-                    [-2.5, 0, 0, 2.5, 3, 2.5],
-                ],
-            });
-        const [u8, u9] = [ortUrteil(ortT([ringHaus(0.55)]), eben), ortUrteil(ortT([ringHaus(0)]), eben)];
         const hofSlots = FC.exportSettlement({ seed: 4291161376, nH: 13 })
             .slots.filter((sl) => (sl.grund?.arten || []).includes("hofarm"))
             .slice(0, 2);
+        // das gesetzte Haus: der Grund eines Hof-Hauses des Kerns (`grundVon`), je Körper EIN Kasten vom Fuß bis 3 m — der des Rings ab `fuss`
+        const ringHaus = (fuss) =>
+            Object.assign({}, hofSlots[0], {
+                y: 10,
+                huelle: ((q) => q.boxen.map((b, k) => [b[0], q.arten[k] === "hofarm" ? fuss : 0, b[2], b[1], 3, b[3]]))(hofSlots[0].grund),
+            });
+        const [u8, u9] = [ortUrteil(ortT([ringHaus(0.55)]), eben), ortUrteil(ortT([ringHaus(0)]), eben)];
         const amKern = (mutante) =>
             ortUrteil(
                 ortT(

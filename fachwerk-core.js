@@ -1500,7 +1500,7 @@
     return g; }
   function hof(){ const g=grp(); if(P.grundriss!=='hof') return g;   // INNENHOF (siheyuan/riad/cour d'honneur) — ADDITIV: zwei Arme + Torriegel um den offenen Hof, der Hof ist die Luft im Ring
     const armW=clamp(W*0.30,2.6,3.6), courtD=clamp(W*1.0,5,9), gateW=2.8, zF=-Dp/2, zC=zF-courtD;
-    const wH=Math.min(eaveY-baseY-0.5, P.egH*0.92), wr=(P.stil==='stein'||P.stil==='klinker'||P.stil==='modern')?'putz':((P.stil==='huette'||P.stil==='stroh')?'holz':'gefach');
+    const wH=Math.min(eaveY-baseY-0.5, P.egH*0.92), wr=(P.stil==='huette'||P.stil==='stroh')?'holz':'gefach';   // die Wand des Rings ist die des Hauses: `gefach` trägt je Stil seinen Stoff (RM: Putz am Stein- und am modernen Haus, Backstein am Klinker — bis Vorrat 12b stand der Ring des Klinker-Hauses nah verputzt, fern in Backstein)
     // HOFMAUER-SOLIDS (Welle L, additiv — kein beam ändert sich, Kollision == Optik): Boden, Querwände mit Tor-Lücke und Sturz,
     // Lochwände der Arme, Pflaster und Brunnen tragen ihre Solids wie jede Wand des Hauses (vorher lief der Körper durch die
     // ganze Hofmauer, die Welt-Fernstufe sah sie nur als Bounding-Box 8,2 m vor den Haus-Solids)
@@ -1523,8 +1523,9 @@
     // Breite bleibt die des Eingangs-Korridors); trägt das Haus eine Bogen-Art, schließt sie der Bogen des EINEN Bogen-Gesetzes
     // (`bogenRahmen`: Keile, Kämpfer, die Mauer der Zwickel bis unter den Sturz der Lochwand) — passt sein Scheitel nicht über 0,8 m
     // Gewände, der Stichbogen, flacher als R/5 der Sturz (wie die Laube). Zur Gasse hängen zwei Flügel (`leafFrame`, das Blatt der
-    // Haustür) am Gewände innen und stehen offen in den Riegel: der Gang bleibt frei, kein Wirt bewegt sie. Stein am Putz-Haus, sonst Holz.
-    const tr=wr==='putz'?'stein':'holz';
+    // Haustür) am Gewände innen und stehen offen in den Riegel: der Gang bleibt frei, kein Wirt bewegt sie. Stein am gemauerten Haus
+    // (stein · klinker · modern; am Klinker trägt ihn der Backstein), sonst Holz.
+    const tr=(P.stil==='stein'||P.stil==='klinker'||P.stil==='modern')?'stein':'holz';
     const torRahmen=(zz,T,vorn)=>{ const gw2=T.w/2, yT=baseY+T.lh, dp=0.34, t=0.19; let bg=null, yS=yT, ja=gw2-0.02, jb=gw2+0.22;
       if(P.bogenTyp&&P.bogenTyp!=='none'){ let kurve=P.bogenTyp, R=kurve==='hufeisen'?gw2*Math.cos(BOGEN_GESETZ.hufeisenAlpha):gw2, steig=bogenSteig(kurve,R,0), stich=0;
         if(T.lh-steig<0.8){ kurve='stich'; R=gw2; stich=Math.min(R,T.lh-1.5); steig=stich; }
@@ -1544,8 +1545,9 @@
       if(T) lichtAuf(T.x,baseY+T.lh/2,fix,T.w,T.lh,'z',0);   // das Tor steht offen: es lässt den Himmel in den Riegel (`raumVon`), nah wie fern
       if(_fern){ for(const f of F){ const px=horiz?f.c:fix, pz=horiz?fix:f.c; FERNFENSTER.push({cx:SHIFT?px+SHIFT:px, cy:wcy, cz:pz, w:f.w, h:wfh, perp:ax, kind:'hof', s:fix<mitte?-1:1, schlaf:fensterSchlaeft(P.seed,ax,fix,f.c,wcy)}); } return; }
       const L=F.map(f=>({c:f.c,w:f.w+0.12,b:wcy-wfh/2-0.03,t:wcy+wfh/2+0.03})); if(T) L.push({c:T.x,w:T.w,b:baseY,t:baseY+T.lh});
-      lochWand(g,horiz,fix,a0,a1,baseY,baseY+wH,L,wr,0.22,true);
-      for(const f of F){ if(horiz) fensterAt(g,f.c,wcy,fix,f.w,wfh,true); else fensterAt(g,fix,wcy,f.c,f.w,wfh,false); }
+      const n0=g.children.length; lochWand(g,horiz,fix,a0,a1,baseY,baseY+wH,L,wr,0.22,true);
+      if(GLATT) for(let i=n0;i<g.children.length;i++) eben(g.children[i]);   // die glatte Wand trägt EINEN Ton (`eben`): die Patina je Stück stand als helle Felder unter den Fenstern
+      for(const f of F){ if(horiz) fensterAt(g,f.c,wcy,fix,f.w,wfh,true,baseY+wH); else fensterAt(g,fix,wcy,f.c,f.w,wfh,false,baseY+wH); }   // der Deckel des Fenster-Bogens ist die Traufe des Rings (`roofUnderY` kennt nur das Hauptdach: der Bogen stieß durch das Dach des Arms)
       if(T) torRahmen(fix,T,fix<mitte); };
     const bar=(x0,x1,z0,z1,alongZ,gate)=>{ const cx=(x0+x1)/2,cz=(z0+z1)/2,lx=x1-x0,lz=z1-z0, rY=baseY+wH+(alongZ?lx:lz)/2*0.7;
       addMasse({art:'hofarm',x0,x1,z0,z1,eY:baseY+wH,rY:ROOFMODE==='flat'?null:rY,first:alongZ?'z':'x',eOv:0});
