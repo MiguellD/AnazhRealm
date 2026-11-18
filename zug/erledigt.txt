@@ -1678,3 +1678,4 @@ omen-gtx-gtx-1f300260-w0840-1-1f300260 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT
 2026-11-18 08:57 landung ABGEBROCHEN main 1f300260: weg-bild wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 50 stellen sich hinten an
 2026-11-18 08:58 landung Zwischenstand main 1f300260: misst 50 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (4 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-gtx-1f300260-w0858-1-1f300260 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN karte2.mensch.bau.innen#1 ‖ karte2.mensch.bau.innen#1: 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet (punkte-maschine 21641418 messung/1f300260-gtx.json)
+2026-11-18 09:07 landung ABGEBROCHEN main 1f300260: weg-tor wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 49 stellen sich hinten an
