@@ -25,7 +25,7 @@ Die Probe reproduziert die Station: unter dem Wort klar brennt nach 60 s **1 Zel
 Unter klar ist das `WX_GESETZ.klar.wind` 0,06 (phyto-core.js:4288) × `sturmMS` 24 (phyto-core.js:4318) = 1,44 m/s in 10 m. Auf Flammenhöhe wird daraus 0,48 m/s (WAF 0,386 aus der Tiefe 0,42 m, :327–329), und es folgt R = 0,074 m/s.
 Der Herd liegt 5,6 m vor dem +z-Rand seiner Zelle (−1 045,6 in [−1 056, −1 040]). Die Ankunft `ankunft` (:388–412) setzt die Nachbarin (0, +1) auf t0 + 79,3 s (:445–448).
 `_brandSchritt` (:510–511) zündet sie also erst nach 79 s. Es gibt kein frühes return, keine Kappung und keinen Bruch im Pfad: alle 8 Nachbarn tragen Gras-Bett (R 0,070–0,077), sie sind nur noch nicht fällig.
-Die EINE Zelle nach 60 s ist damit Rothermel mit einem Wind von 1,44 m/s. Der Wind kommt aus der Tafel, deren Wind-Kanal eine Böen-Amplitude des Looks war (stamm/daten.js:100–103 „wind = Böen-Amplitude“).
+Die EINE Zelle nach 60 s ist damit Rothermel mit einem Wind von 1,44 m/s. Der Wind kommt aus der Tafel, deren Wind-Kanal eine Böen-Amplitude des Looks war (stamm/daten.js:105–108 „wind = Böen-Amplitude“).
 
 **TÄTER 2, die Grenze des Gebiets (der Brennstoff).** Das Bett einer Zelle ist der Stoff unter ihren Punkten, `_kontaktStoffAt` (gelaende-kollision.js:1121–1134). „gras“ steht dort nur, wo der GEZEICHNETE Boden grün ≥ 0,5 ist (:1132). `_bodenSichtAt` gibt null „ohne Karte (fern, ungebaut)“ (gelaende-boden.js:12–19).
 Sonst fällt der Leser auf `_terrainMaterialAt` (vegetation-wiese.js:2362–2383): erde/stein/quarz/glut. Keine dieser Zeilen trägt `brenn`, denn BRENN kennt nur gras und laub (bau-vorlagen.js:1646–1649).
@@ -73,8 +73,8 @@ Die Bett-Feuchte ist M = 0,06 + 2,5·Nässe (feld-brand.js:282–285). Bei Näss
 | Gefälle g_x, g_z | m/m | Herd −0,031 / 0,006 | feld-brand.js:225–226 | `_brandStoff` | feld-brand.js:332, 692 | FOLGT |
 | R (Kopf) | m/s | 0,074 · 1,047 · 1,80 (gemessen) | feld-brand.js:317–338 | `_brandZuenden` :430 | feld-brand.js:384, 417, 421, 669, 679; dirigent-kern.js:1806 | FOLGT (Rothermel/Albini) |
 | ecc (Ellipse) | ohne Einheit (physikalisch) | 0,58 · 0,959 · 0,984; Deckel L/B ≤ 8 | feld-brand.js:336–337, 977 | `_brandZuenden` :432 | feld-brand.js:384, 679; dirigent-kern.js:1806 | FOLGT (Anderson 1983), der Deckel GESETZT |
-| Rückfeuer R(1−e)/(1+e) | m/s | 0,020 · 0,022 · 0,015 | feld-brand.js:367–368 (Formel) | — | (in `ankunft` :386, :408) | FOLGT |
-| Verweilzeit t_r | s | 6,58 (gras) | feld-brand.js:338 (23 040/σ) | `_brandZuenden` :433 | feld-brand.js:116, 421, 694 | FOLGT (Anderson 1969) |
+| Rückfeuer R(1−e)/(1+e) | m/s | 0,020 · 0,022 · 0,015 | feld-brand.js:296–297 (Formel) | — | (in `ankunft` :386, :408) | FOLGT |
+| Verweilzeit t_r | s | 6,58 (gras) | feld-brand.js:338 (23 040/σ) | `_brandZuenden` :433 | feld-brand.js:113, 421, 694 | FOLGT (Anderson 1969) |
 | Brenndauer der Zelle `ende − t0` | s | 649 (klar) · 601 · 874 (Sturm) | feld-brand.js:416–421 | `_brandZuenden` | feld-brand.js:514 | FOLGT (bis das Rückfeuer die hinterste Ecke erreicht) |
 | Ankunft `an` der Nachbarin | s | erste 79,3 · 6,4 · 4,3 | feld-brand.js:388–412, 441–449 | `_brandZuenden` :448 | feld-brand.js:491, 511, 522, 579 | FOLGT |
 | `glut` | Stellwert ohne Einheit | Rampe 0→1 über `aufS` 4 s, dann 1 bis `ende` | feld-brand.js:515, 896 | `_brandSchritt` :515 | feld-leben.js:1874; dirigent-kern.js:1809; klang.js:383; feld-brand.js:731 | GESETZT |
@@ -86,7 +86,7 @@ Die Bett-Feuchte ist M = 0,06 + 2,5·Nässe (feld-brand.js:282–285). Bei Näss
 | Rauch `lebenS`/`max`/`a0`/`aKill` | s / Stück / Stellwert ohne Einheit | 25 / 600 / 0,5 / 0,08 | feld-brand.js:956–961 | — | feld-brand.js:729, 736, 761–762 | GESETZT |
 | Licht `schein` | Stellwert ohne Einheit (Welt-Einheiten) | 7,5 | feld-brand.js:946 | — | `_flammenLicht` dirigent-kern.js:1725 | GESETZT |
 | Hör-Weite `hoerM` | m | 256 | feld-brand.js:917 | — | klang.js:376 | GESETZT |
-| Narbe der Asche | Stellwert ohne Einheit / h | tiefe 0,3 · 72 h · Nährstoff +0,4 | feld-leben.js:3102 | `_tatSchreiben` feld-leben.js:2627 | `_narbeAt` feld-leben.js:2687–2697; `_naehrstoffAt` vegetation-wiese.js:2098–2109; `_sukzession` :2120 | GESETZT |
+| Narbe der Asche | Stellwert ohne Einheit / h | tiefe 0,3 · 72 h · Nährstoff +0,4 | feld-leben.js:3102 | `_tatSchreiben` feld-leben.js:2627 | `_narbeAt` feld-leben.js:2684–2694; `_naehrstoffAt` vegetation-wiese.js:2097–2109; `_sukzession` :2120 | GESETZT |
 | Budget | ms/Bild, Stück | 0,25 / 8 | feld-brand.js:914–915 | — | feld-brand.js:475, 559 | GESETZT |
 | `BRAND.licht` | Stellwert ohne Einheit | 4 | feld-brand.js:913 | — | nur die Proben-Mutanten diag-stand-takt.cjs:1499, 1771 | GESETZT (tot) |
 
@@ -102,7 +102,7 @@ Reine Stellwerte sind die Menge (`leb` aus dem Rauschen), die Bett-Klasse (aus d
 - Boden/Stoff: Asche als Kanal G der Boden-Decke (`_brandMalen` feld-brand.js:146–160, `_ascheFlaeche` :173–182), Albedo (stoff-material.js:3256), versengter Halm (vegetation-wiese.js:182–186).
 - Klang: die nächste glühende Zelle, Brenn-Fläche cs²·glut (klang.js:374–385).
 - Tiere/Menschen: Flucht vor der Glut im noticeRadius (kreatur-furcht.js:53, 87–101); der Bewohner liest nur den Regen (siedlung-bewohner.js:2211).
-- Pflanzen: die Tat `brand` (feld-brand.js:575) senkt `lebendig` um 0,3 (`_narbeAt` feld-leben.js:2687) und hebt den Nährstoff um 0,4 (vegetation-wiese.js:2098). Dazu kommen die Sukzession Asche→Gras→Busch→Wald (:2120–2137), Kräuter (`_streuNachBrand` :2188), Bäume (`_baumAlter` :2201–2210, `_tatWaldMalen` :2172–2181) und das Wiedergrün (`_wuchsAt` :2078).
+- Pflanzen: die Tat `brand` (feld-brand.js:575) senkt `lebendig` um 0,3 (`_narbeAt` feld-leben.js:2684) und hebt den Nährstoff um 0,4 (vegetation-wiese.js:2097). Dazu kommen die Sukzession Asche→Gras→Busch→Wald (:2120–2137), Kräuter (`_streuNachBrand` :2188), Bäume (`_baumAlter` :2201–2210, `_tatWaldMalen` :2172–2181) und das Wiedergrün (`_wuchsAt` :2078).
 - Speicher: nur die Taten reisen; `brandFeld` wird beim Laden geleert (speicher-laden.js:2692–2700).
 
 **Andere Felder → Feuer:** Wind (`_windAt` → feld-brand.js:321–333), Regen (`state.naesse` → :284), Luft-T (`_temperaturAt` → :315), Wasser (`_nassAt` :224, `_feuchteAt` :268), Gelände (Gefälle und Höhe :225–226), Stoff-Tafel (:244, :301–316), Lebens-Feld (`lebendig` :222).
@@ -119,9 +119,9 @@ Die Zelle selbst trägt keine Energie-Schwelle: sie fängt, wenn sie Bett trägt
 
 ## 4. DIE BRÜCHE
 
-1. **fail-soft am Bett (Täter 2):** `_kontaktStoffAt` fällt ohne Boden-Karte still auf `_terrainMaterialAt` (gelaende-kollision.js:1132–1133 → vegetation-wiese.js:2362). Das Feuer liest damit die Karte des BILDS statt einer Welt-Funktion (Gebot 7). Gemessen: 1 926 von 2 401 Zellen „ohne Karte“, Asche ≤ 146 m vom Spieler. Die Probe der Wand weiß es: „das Bett der Wiese liest die Boden-Karte gebauter Chunks“ (diag-stand-takt.cjs:1141–1143) und füllt fehlende Zellen mit Abzügen auf (:1146–1150).
+1. **fail-soft am Bett (Täter 2):** `_kontaktStoffAt` fällt ohne Boden-Karte still auf `_terrainMaterialAt` (gelaende-kollision.js:1132–1133 → vegetation-wiese.js:2362). Das Feuer liest damit die Karte des BILDS statt einer Welt-Funktion (Gebot 7). Gemessen: 1 926 von 2 401 Zellen „ohne Karte“, Asche ≤ 146 m vom Spieler. Die Probe der Wand weiß es: „das Bett der Wiese liest die Boden-Karte gebauter Chunks“ (diag-stand-takt.cjs:1142–1143) und füllt fehlende Zellen mit Abzügen auf (:1146–1151).
 2. **Zwilling der Vegetation:** Die Last kommt aus `lebendig` (Simplex, feld-brand.js:222, 302), die Gegenwart aus der Boden-Karte grün (gelaende-kollision.js:1132), die stehende Wiese aus einem dritten Gesetz. Drei Quellen beschreiben dasselbe Gras.
-3. **Wind als Look-Zahl:** U₁₀ = `WX_GESETZ[wort].wind` × 24 (phyto-core.js:4288–4293, 4318); der Kanal hieß „Böen-Amplitude“ (daten.js:100–103). Das Tempo des Brands hängt an diesem Stellwert (Täter 1).
+3. **Wind als Look-Zahl:** U₁₀ = `WX_GESETZ[wort].wind` × 24 (phyto-core.js:4288–4293, 4318); der Kanal hieß „Böen-Amplitude“ (daten.js:105–108). Das Tempo des Brands hängt an diesem Stellwert (Täter 1).
 4. **Nässe global gegen Wetter lokal:** bild-himmel.js:3060–3087 gegen 2843–2857.
 5. **Fremde Feuchte der wartenden Zelle:** Die Nachbarin erbt `boden` und `mx` ihrer Quelle (feld-brand.js:448). Ob sie erlischt, urteilt die Feuchte der Quelle (:509–510), ihr eigenes Bett erst beim Zünden (:377–378).
 6. **Zwei Flächen einer Zelle:** `glut` steht über die ganze Zelle 600–870 s auf 1 (feld-brand.js:421, 515), während die Front unter klar nach 60 s ≈ 20 m² deckt. Das Ohr hört cs²·glut = 256 m² (klang.js:383), das Licht nimmt die Ellipse (dirigent-kern.js:1806), Narbe und Flammen nehmen die Front (feld-brand.js:112–119, 669–682).
