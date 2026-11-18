@@ -496,7 +496,7 @@ class AnazhRealm_bild_schatten {
             const sm = Math.min(1, Math.max(0, (1 - LW.bezugM / lage.w) / AnazhRealm.AUGE.saum));
             const eBezug = __weltLicht.augeZeig(
                 (0.2126 * farbe.x + 0.7152 * farbe.y + 0.0722 * farbe.z) *
-                    Math.pow(LW.bezugM * LW.bezugM + atmo.lichtKern[k].value, -farbe.w / 2) *
+                    Math.pow(LW.bezugM * LW.bezugM + atmo.lichtForm[k].value.y, -farbe.w / 2) *
                     sm *
                     sm *
                     (3 - 2 * sm),

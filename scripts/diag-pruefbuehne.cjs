@@ -178,10 +178,12 @@ async function s4Probe(page, station, schein) {
 // (6) DIE S0-PROBE (K11, das Leuchtquellen-Gesetz): im Atrium (`s0-atrium`) setzt der Mensch über den Spiel-Pfad eine
 // Feuerstelle (der Satz `spawn_studio feuerstelle`), die Nacht steht still (Mitternacht, Sonne, das Wetter gehalten — Lehre 17),
 // das Auge 2 m vor dem Feuer. Gezählt wird jedes Licht ≤ 10 m um das Feuer, das ein Stoff liest — ein Punktlicht der Szene mit
-// Stärke oder ein Platz des Licht-Pools mit Stärke (`_leuchtPool`) —, einmal mit „Klang: AUS" (der Standard), einmal mit Klang;
-// dazu die Bestrahlung des Pools in 2 m (das EINE Gesetz fachwerk `lichtAbfall`, lineare Farbe nach Luminanz) gegen die der Nacht
-// selbst (`_waagrechtIrradianz`, dieselbe, die die Belichtung liest) und die Fenster-Glut des Zeitplans um Mitternacht und
-// Mittag (`atmoUniforms.fensterGlut`). DIE KLASSE (K11 Runde 2): JEDER beleuchtete Stoff trägt den Pool — der Zensus der Bauer
+// Stärke oder ein Platz des Licht-Pools mit Candela (`_leuchtPool`) —, einmal mit „Klang: AUS" (der Standard), einmal mit Klang;
+// dazu DAS GESETZ AM PLATZ (w28-strahler): die Candela des Platzes über dem Feuer gegen die, die die Linse selbst aus dem Gesetz
+// rechnet (`S0_GESETZ`: Leuchtdichte der Temperatur × Fläche des Betts, fachwerk `strahler`, ohne den Chokepoint des Wirts) —
+// kein Zeitplan, kein Verhältnis zur Nacht: was das Feuer zeigt, entscheidet das Auge (welt-licht.js `AUGE`) — und die
+// Fenster-Glut um Mitternacht und Mittag gegen `augeGlut` ihrer Leuchtdichte über der Umgebung der Stunde
+// (`atmoUniforms.lichtGlut.fenster`). DIE KLASSE (K11 Runde 2): JEDER beleuchtete Stoff trägt den Pool — der Zensus der Bauer
 // im Stamm (keine Methode baut einen beleuchteten Stoff ohne Knoten) UND jedes beleuchteten Stoffs der Szene
 // (`userData.lichtPool`); EIN Punktlicht-Gesetz (`_lichtPlatz`, der Rumpf des Pools, ruft `_punktLichtBrdf`, kein anderer, kein Szenen-Licht); die
 // Laterne eines Plans (`laternen[]`, gehoben als Studio-Gestalt `laterne_dorf` im Hebe-Chokepoint `_spawnSettlementErlebnis`,
@@ -193,10 +195,26 @@ async function s4Probe(page, station, schein) {
 const S0_LICHT_M = 10; // der Umkreis der gezählten Lichter um das Feuer
 // das Feuer trägt in 2 m mindestens dieses Vielfache der waagrechten Bestrahlung der Nacht — der Nordstern Fachwerk: nachts hebt
 // warmes Licht den Platz auf 2–5 lx, der Rest bleibt im Mondlicht bei 0,1–0,3 lx (2 lx gegen 0,2 lx)
-const S0_E2_NACHT = 10;
+// DAS GESETZ DES HERDFEUERS, von der Linse gerechnet (läuft in der Seite, EINE Quelle für die Probe und den Bild-Lauf): das Bett
+// — die Studio-Gestalt trägt das Bezugs-Bett ihres Rezepts (Ø `bettRefM` × Skala), ein Bau ohne Gestalt seine Glut-Teile —,
+// darauf fachwerk `strahler` mit der Leuchtdichte der Temperatur × `STRAHLER.emissiv.flamme`.
+const S0_GESETZ = String((feuer) => {
+    const FG = window.__fachwerkCore;
+    const bettRef = AnazhRealm._umweltGesetz().UMWELT.stimmen.glut.bettRefM;
+    const sk = Number.isFinite(feuer.scale) && feuer.scale > 0 ? feuer.scale : 1;
+    const bettM2 = r._lichtDatumDerGestalt(feuer) ? (Math.PI / 4) * bettRef * bettRef * sk * sk : r._glutFlaeche(feuer);
+    if (!(bettM2 > 0)) throw new Error("S0: die Feuerstelle der Linse trägt kein Bett (_glutFlaeche)");
+    return FG.strahler({
+        kelvin: FG.LICHT_GESETZ.feuer.kelvin,
+        flaecheM2: bettM2,
+        emissiv: FG.STRAHLER.emissiv.flamme,
+    });
+});
+// der Platz über dem Feuer trägt die Candela des Gesetzes ± das Flackern der Flamme (`flacker.amp` 0,18)
+const S0_PLATZ = 0.2;
 async function s0Probe(page, station, schein) {
     return page.evaluate(
-        async (st, umkreis, e2min, schein) => {
+        async (st, umkreis, platzTol, gesetzSrc, schein) => {
             const s = r.state;
             const T = window.THREE;
             const out = {
@@ -258,9 +276,7 @@ async function s0Probe(page, station, schein) {
                     {
                         lage: A.lichtLage[0],
                         farbe: A.lichtFarbe[0],
-                        ersatz: A.lichtErsatz[0],
-                        kern: A.lichtKern[0],
-                        flach: A.lichtFlach[0],
+                        form: A.lichtForm[0],
                     },
                     null
                 );
@@ -348,6 +364,7 @@ async function s0Probe(page, station, schein) {
                     if (v.distanceTo(um) <= umkreis) lichter.push({ art: "szene", I: +o.intensity.toFixed(3) });
                 });
                 let e2 = 0;
+                let cd = 0;
                 const pool = r._leuchtPool;
                 for (const p of pool?.plaetze || []) {
                     if (!(p.staerke > 0) || Math.hypot(p.x - um.x, p.y - um.y, p.z - um.z) > umkreis) continue;
@@ -355,17 +372,22 @@ async function s0Probe(page, station, schein) {
                     const eigen = Math.hypot(p.x - um.x, p.z - um.z) <= 1.5;
                     lichter.push({ art: "pool", quelle: p.quelle, I: +p.staerke.toFixed(3), eigen });
                     if (!eigen) continue;
-                    // der Pool in 2 m: das EINE Gesetz (fachwerk `lichtAbfall`: 1/d^abfall mit Kern und Saum), die Farbe nach Luminanz
-                    const ab = window.__fachwerkCore.lichtAbfall(
-                        { reichweiteM: p.reichweite, abfall: p.abfall, kernM: p.kern },
-                        2
-                    );
-                    const lum = luma709(p.farbe);
-                    e2 += p.staerke * ab * lum;
+                    // die Candela des Platzes und seine Lux in 2 m (Candela ÷ (d² + Kern²), `_lichtPlatz`)
+                    cd += p.staerke;
+                    e2 += p.staerke / (4 + p.kern * p.kern);
                 }
-                const en = r._waagrechtIrradianz([0, 0, 0]);
-                const nacht = luma709(en);
-                return { n: lichter.length, lichter, e2: +e2.toFixed(3), nacht: +nacht.toFixed(3) };
+                const aLux = r._augeLux;
+                const gesetz = (0, eval)("(" + gesetzSrc + ")")(feuer).candela;
+                return {
+                    n: lichter.length,
+                    lichter,
+                    cd: +cd.toFixed(2),
+                    gesetz: +gesetz.toFixed(2),
+                    e2: +e2.toFixed(2),
+                    nacht: +aLux.toFixed(4),
+                    zeig: +window.__weltLicht.augeZeig(e2, aLux).toFixed(3),
+                    s: +window.__weltLicht.augeS(aLux).toFixed(3),
+                };
             };
             for (const klang of [false, true]) {
                 if (s.symphony) s.symphony.enabled = klang;
@@ -386,11 +408,11 @@ async function s0Probe(page, station, schein) {
                         `S0 Nacht (${wie}): kein Licht über der Feuerstelle (${z.n} Lichter ≤ ${umkreis} m) — ${taeter}; Punktlichter baut ` +
                             (out.bauer.length ? out.bauer.map((b) => "`" + b + "`").join(", ") : "niemand")
                     );
-                } else if (!(z.e2 >= e2min * z.nacht))
+                } else if (!(Math.abs(z.cd / z.gesetz - 1) <= platzTol))
                     out.befunde.push(
-                        `S0 Nacht (${wie}): die Bestrahlung in 2 m ist ${z.e2}, die Nacht trägt ${z.nacht} — ${(z.e2 / z.nacht).toFixed(1)}× ` +
-                            `(Soll ≥ ${e2min}×: Nordstern Fachwerk, warmes Licht 2–5 lx gegen den Mond 0,1–0,3 lx); das Datum des Feuers ` +
-                            "(fachwerk LICHT_GESETZ.feuer, Zeitplan nacht) über `_leuchtStaerke`"
+                        `S0 Nacht (${wie}): der Platz über dem Feuer trägt ${z.cd} cd, das Gesetz verlangt ${z.gesetz} cd ` +
+                            `(Leuchtdichte × Bett, fachwerk \`strahler\`; Soll ± ${platzTol * 100} %: das Flackern) — das Datum des Feuers ` +
+                            "(`_leuchtQuellen` → `_strahler`) über `_leuchtCandela`"
                     );
             }
             if (s.symphony) s.symphony.enabled = false;
@@ -414,22 +436,27 @@ async function s0Probe(page, station, schein) {
                     `S0 Laterne: die Laterne des Plans trägt nachts ${nachtL} und mittags ${mittagL} Plätze (Soll 1 und 0) — ` +
                         "die Studio-Gestalt `laterne_dorf` (laternen[] im Hebe-Chokepoint `_spawnSettlementErlebnis`, ihr Datum `_lichtDatumDerGestalt`)"
                 );
-            // die Fenster-Glut des Zeitplans: um Mitternacht an, mittags aus
+            // die Fenster-Glut folgt dem Auge: ihre Leuchtdichte über der Umgebung der Stunde (`augeGlut`), mittags fast nichts
             const glut = () => {
                 const c = s.atmoUniforms?.lichtGlut?.fenster?.value;
-                return c ? +luma709([c.r, c.g, c.b]).toFixed(4) : null;
+                return c ? +luma709([c.r, c.g, c.b]).toFixed(5) : null;
             };
+            const glutSoll = () =>
+                +window.__weltLicht.augeGlut(window.__fachwerkCore.LICHT_GESETZ.fenster.cdM2, r._augeLux).toFixed(5);
             uhr(0);
             await takt(2);
             const nachts = glut();
+            const nachtsSoll = glutSoll();
             uhr(0.5);
             await takt(2);
             const mittags = glut();
-            out.fenster = { nachts, mittags };
-            if (!(nachts > 0) || mittags !== 0)
+            const mittagsSoll = glutSoll();
+            out.fenster = { nachts, nachtsSoll, mittags, mittagsSoll };
+            const nah = (a, b) => b > 0 && Math.abs(a / b - 1) <= 0.02;
+            if (!nah(nachts, nachtsSoll) || !nah(mittags, mittagsSoll) || !(mittags <= 0.01 * nachts))
                 out.befunde.push(
-                    `S0 Fenster: die Glut des Zeitplans ist nachts ${nachts} und mittags ${mittags} (Soll > 0 und 0; ` +
-                        "fachwerk ZEIT_VIS host)"
+                    `S0 Fenster: die Glut ist nachts ${nachts} (Gesetz ${nachtsSoll}) und mittags ${mittags} (Gesetz ${mittagsSoll}) — ` +
+                        "Soll je ± 2 % an `augeGlut(LICHT_GESETZ.fenster.cdM2, Umgebung)` und mittags ≤ 1 % der Nacht (`_leuchtTakt` → `lichtGlut`)"
                 );
             // der Zensus jedes beleuchteten Stoffs der Szene: er trägt den Pool (oder ist selbst Quelle)
             out.stoffe = window.__stoffZensus();
@@ -459,7 +486,8 @@ async function s0Probe(page, station, schein) {
         },
         station,
         S0_LICHT_M,
-        S0_E2_NACHT,
+        S0_PLATZ,
+        S0_GESETZ,
         !!schein
     );
 }
@@ -475,7 +503,7 @@ function zeigeS0(rep, schein) {
     for (const k of Object.keys(rep.nacht || {})) {
         const z = rep.nacht[k];
         console.log(
-            `    Nacht ${k === "klang" ? "Klang an " : "Klang aus"}: ${z.n} Lichter ≤ ${S0_LICHT_M} m, Bestrahlung in 2 m ${z.e2} (die Nacht ${z.nacht}) ${JSON.stringify(z.lichter)}`
+            `    Nacht ${k === "klang" ? "Klang an " : "Klang aus"}: ${z.n} Lichter ≤ ${S0_LICHT_M} m, der Platz ${z.cd} cd (Gesetz ${z.gesetz}) · in 2 m ${z.e2} lx über ${z.nacht} lx der Nacht · gezeigt ${z.zeig} über ${z.s} ${JSON.stringify(z.lichter)}`
         );
     }
     if (rep.laterne)
@@ -859,8 +887,11 @@ const S0_NAH_M = 4;
 //   (2) KONTRAST: der Kreis in der Ausgabe mit ÷ ohne Feuer ≥ `kontrast` — eine UNTERKANTE unter einer gehobenen Nacht (der
 //       Boden ohne Feuer trägt 0,083; das gesetzestreue Feuer hebt ihn auf das 1,57-Fache), kein Ziel: das Maß „Feuerkreis in
 //       2 m gegen die Nacht NACH der Tonkurve" gehört dem nächsten Glied der Licht-Kette (Tonkurve, Auge der Nacht).
-// Mutanten des Selbsttests, beide ROT beim Namen: das Feuer aus (der Schuss `nacht`) und die alte Stärke `alt` in 1 m.
-const S0_KREIS = { gesetz: 0.15, kontrast: 1.5, alt: 144 };
+// DAS AUGE STAUCHT (w28-strahler): im Kreis (80–250 lx) steht das gezeigte Licht auf dem oberen Ast von `augeZeig` (doppelte
+// Candela zeigt nur +16 %) — das Bild allein trennt eine falsche Candela schlecht. Darum trägt der Eich-Schuss das dritte
+// Urteil (3) PLATZ: der Faktor Gesetz ÷ Platz (`eichK`) liegt in 1 ± `platz` (das Flackern).
+// Mutanten des Selbsttests, beide ROT beim Namen: das Feuer aus (der Schuss `nacht`) und die zehnfache Candela (`stark`).
+const S0_KREIS = { gesetz: 0.15, platz: S0_PLATZ, kontrast: 1.5, stark: 10 };
 function s0KreisMass(e, ohne, eich) {
     const netto = e.kreisLin - ohne.kreisLin;
     const soll = eich.kreisLin - ohne.kreisLin;
@@ -876,7 +907,9 @@ function s0KreisUrteil(e, ohne, eich) {
     const G = eich.gesetz || {};
     return [
         !(m.abw != null && Math.abs(m.abw) <= S0_KREIS.gesetz) &&
-            `S0 Feuerkreis-Gesetz: das Licht des Feuers im Kreis aus 2 m trägt linear ${m.netto}, das Gesetz verlangt ${m.soll} (Leuchtdichte ${G.leucht} × Bett ${G.flaecheM2} m² = ${G.staerke} in 1 m; Abweichung ${m.abw == null ? "—" : Math.round(m.abw * 100) + " %"}, Soll ≤ ${S0_KREIS.gesetz * 100} %) — der Platz der Feuerstelle im Pool (\`_leuchtQuellen\` → \`_strahler\` → \`_leuchtTakt\`) trägt nicht die Stärke des Gesetzes (fachwerk \`strahler\`)`,
+            `S0 Feuerkreis-Gesetz: das Licht des Feuers im Kreis aus 2 m trägt linear ${m.netto}, das Gesetz verlangt ${m.soll} (Leuchtdichte ${G.cdM2} cd/m² × Bett ${G.flaecheM2} m² = ${G.candela} cd; Abweichung ${m.abw == null ? "—" : Math.round(m.abw * 100) + " %"}, Soll ≤ ${S0_KREIS.gesetz * 100} %) — der Platz der Feuerstelle im Pool (\`_leuchtQuellen\` → \`_strahler\` → \`_leuchtTakt\`) trägt nicht die Stärke des Gesetzes (fachwerk \`strahler\`)`,
+        !(eich.eichK != null && Math.abs(eich.eichK - 1) <= S0_KREIS.platz) &&
+            `S0 Feuerkreis-Platz: der Platz des Feuers trägt das 1 ÷ ${eich.eichK}-Fache der Candela des Gesetzes (${G.candela} cd; Soll 1 ± ${S0_KREIS.platz}: das Flackern) — \`_leuchtQuellen\` → \`_strahler\` → \`_leuchtCandela\``,
         !(m.kontrast >= S0_KREIS.kontrast) &&
             `S0 Feuerkreis-Kontrast: der Kreis aus 2 m trägt mit Feuer Luma ${e.kreis}, ohne ${ohne.kreis} — das ${m.kontrast}-Fache (Soll ≥ ${S0_KREIS.kontrast}): das Feuer hebt seinen Kreis nicht aus der Nacht (der Licht-Pool \`_lichtPlatz\` im Boden-Stoff, darüber Belichtung und Tonkurve der Nacht)`,
     ].filter(Boolean);
@@ -1399,7 +1432,7 @@ async function lichtLauf() {
         for (const schein of schuesse) {
             ergebnis[schein || "sauber"] = await phase(schein ? "Schuss " + schein : "Schuss", () =>
                 page.evaluate(
-                    async (schein, nahM, palette, altStaerke) => {
+                    async (schein, nahM, palette, starkMal, gesetzSrc) => {
                         const s = st;
                         const T = window.THREE;
                         const rend = s.renderer;
@@ -1422,24 +1455,8 @@ async function lichtLauf() {
                         const ohneFeuer = schein === "nacht" || schein === "kamera" || schein === "tagOhne";
                         const tagAuge = schein === "tag" || schein === "tagOhne";
                         const lumaL = (x, y, z) => 0.2126 * x + 0.7152 * y + 0.0722 * z;
-                        // DAS GESETZ DES FEUERKREISES (`S0_KREIS`): die Stärke des Platzes aus dem Gesetz, von der Linse gerechnet —
-                        // Leuchtdichte der Temperatur × Fläche des Betts (fachwerk `strahler`), ohne den Chokepoint des Wirts
-                        const FG = window.__fachwerkCore;
-                        // das Bett: die Studio-Gestalt trägt das Bezugs-Bett ihres Rezepts (Ø `bettRefM` × Skala), ein Bau ohne Gestalt seine Glut-Teile
-                        const bettRef = AnazhRealm._umweltGesetz().UMWELT.stimmen.glut.bettRefM;
-                        const feuerSk = Number.isFinite(feuer.scale) && feuer.scale > 0 ? feuer.scale : 1;
-                        const bettM2 = r._lichtDatumDerGestalt(feuer)
-                            ? (Math.PI / 4) * bettRef * bettRef * feuerSk * feuerSk
-                            : r._glutFlaeche(feuer);
-                        if (!(bettM2 > 0))
-                            throw new Error("S0 Schuss: die Feuerstelle der Linse trägt kein Bett (_glutFlaeche)");
-                        const gesetzL = FG.strahler({
-                            kelvin: FG.LICHT_GESETZ.feuer.kelvin,
-                            flaecheM2: bettM2,
-                            glut: window.__gelaendeCore.glutAus(FG.LICHT_GESETZ.feuer.kelvin, FG.STRAHLER.ankerK),
-                        });
-                        // die Stärke des Datums in der Zahl der Welt (das Labor rechnet ohne 1/π: `LEGACY_LICHT`, `_laborLichtStaerke`)
-                        const gesetzWelt = gesetzL.staerke * AnazhRealm.LEGACY_LICHT;
+                        // DAS GESETZ DES FEUERKREISES (`S0_KREIS`): die Candela des Platzes aus dem Gesetz, von der Linse gerechnet (`S0_GESETZ`)
+                        const gesetzL = (0, eval)("(" + gesetzSrc + ")")(feuer);
                         let eichK = null;
                         if (schein === "eich" || schein === "stark")
                             r._leuchtTakt = function () {
@@ -1449,7 +1466,7 @@ async function lichtLauf() {
                                     (p) => Math.hypot(p.x - f.x, p.z - f.z) <= 1.5
                                 );
                                 if (!P || !(P.staerke > 0)) return;
-                                eichK = (schein === "stark" ? altStaerke : gesetzWelt) / P.staerke;
+                                eichK = schein === "stark" ? starkMal : gesetzL.candela / P.staerke;
                                 for (let k = 0; k < A.lichtLage.length; k++) {
                                     const p = A.lichtLage[k].value;
                                     const c = A.lichtFarbe[k].value;
@@ -1634,9 +1651,9 @@ async function lichtLauf() {
                             kreis: nk ? +(lk / nk).toFixed(4) : null,
                             kreisLin: nk ? +(ll / nk).toFixed(5) : null,
                             gesetz: {
-                                leucht: +gesetzL.leucht.toFixed(2),
-                                flaecheM2: +bettM2.toFixed(3),
-                                staerke: +gesetzWelt.toFixed(2),
+                                cdM2: +gesetzL.cdM2.toFixed(1),
+                                flaecheM2: +gesetzL.flaecheM2.toFixed(3),
+                                candela: +gesetzL.candela.toFixed(1),
                             },
                             eichK: eichK == null ? null : +eichK.toFixed(3),
                             punkte: nk / 9,
@@ -1667,7 +1684,8 @@ async function lichtLauf() {
                     schein,
                     ECHT ? 0 : S0_NAH_M,
                     S0_TON.palette,
-                    S0_KREIS.alt
+                    S0_KREIS.stark,
+                    S0_GESETZ
                 )
             );
             zeit(schein ? `der Schuss (${schein}) aufgenommen` : "das Feuer aufgenommen");
@@ -1704,7 +1722,7 @@ async function lichtLauf() {
             tag: "SCHEIN (das Auge des Tages)",
             tagOhne: "SCHEIN (das Auge des Tages, ohne das Feuer)",
             eich: "EICH (der Platz mit Leuchtdichte × Bett des Gesetzes)",
-            stark: `SCHEIN (die alte Stärke ${S0_KREIS.alt} in 1 m)`,
+            stark: `SCHEIN (die ${S0_KREIS.stark}-fache Candela)`,
         }[k];
         console.log(
             `  S0 BILD ${wer}: Uhr ${e.uhr} · Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, linear ${e.kreisLin}) · Boden 1–3 m Luma ${e.grund && e.grund.luma} abgesoffen ${e.grund && e.grund.schwarz} Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Himmel ${e.himmel} Sternen-Licht ${e.stern} · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
@@ -1801,7 +1819,7 @@ async function lichtLauf() {
                       u.some((b) => b.startsWith("S0 Feuerkreis-Gesetz"))
                     : u.some((b) => b.startsWith("S0 Feuerkreis-Gesetz"));
             console.log(
-                `  SELBSTTEST S0 FEUERKREIS (${name === "aus" ? "das Feuer aus" : "die alte Stärke " + S0_KREIS.alt + " in 1 m"}): ${g ? "getroffen — " + u.map((b) => b.split(" — ")[0]).join(" · ") : "BLIND " + JSON.stringify(e && !e.fehler && kreisBereit ? s0KreisMass(e, nacht, eich) : e && e.fehler)}`
+                `  SELBSTTEST S0 FEUERKREIS (${name === "aus" ? "das Feuer aus" : "die " + S0_KREIS.stark + "-fache Candela"}): ${g ? "getroffen — " + u.map((b) => b.split(" — ")[0]).join(" · ") : "BLIND " + JSON.stringify(e && !e.fehler && kreisBereit ? s0KreisMass(e, nacht, eich) : e && e.fehler)}`
             );
             return g;
         };

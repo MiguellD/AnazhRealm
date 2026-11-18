@@ -150,7 +150,7 @@ function urteil(b) {
     if (!c.augenTerm)
         v.push(
             "CODE: der Boden-Stoff (`_buildPbrNodeMaterial`) reicht dem Licht-Pool seine Himmels-Sicht nicht (`_leuchtStoff` mit " +
-                "`aHimmel`, der Himmels-Ersatz `lichtErsatz` im Term) — die Höhle ist schwarz oder das Licht des Auges trägt überall"
+                "`aHimmel`, der Himmels-Ersatz `lichtForm.x` im Term) — die Höhle ist schwarz oder das Licht des Auges trägt überall"
         );
     if (c.augenTerm && !c.augenVorZweig)
         v.push(
@@ -300,7 +300,8 @@ function urteil(b) {
             "CODE: der Detail-Term (`_terrainGeologyAlbedo`) rechnet nicht das Gesetz (eigene Ziehung fract(sin)) — im " +
                 "Shader fährt ein Zwilling"
         );
-    if (c.graphFehler) v.push(`CODE: der Boden-Stoff baut keinen Graph (${c.graphFehler}) — die Proben (f) messen nichts`);
+    if (c.graphFehler)
+        v.push(`CODE: der Boden-Stoff baut keinen Graph (${c.graphFehler}) — die Proben (f) messen nichts`);
     if (c.feinEigenHash !== undefined && !(c.feinRechenwerk && c.feinRechenwerk.maxDiff <= 1e-6))
         v.push(
             "RECHENWERK: das TSL-Rechenwerk (`_felsRechenwerkTSL`) rechnet nicht das Gesetz — " +
@@ -438,11 +439,7 @@ function selbsttest() {
         ["Spiegel-Drift", ["spiegel.0.felder.tri=", false], /SPIEGEL: Chunk 0,0 .*tri weicht ab/],
         ["kein Spiegel", ["spiegel=", []], /SPIEGEL: kein Chunk/],
         // (n) der Stand c8e46330: der Fels-Stoff rechnet je Worker-Bau im Haupt-Thread, der Worker reicht keinen Himmel
-        [
-            "Himmel nur im Haupt-Thread",
-            ["spiegel.0.felder.himmel=", false],
-            /SPIEGEL: Chunk 0,0 .*himmel weicht ab/,
-        ],
+        ["Himmel nur im Haupt-Thread", ["spiegel.0.felder.himmel=", false], /SPIEGEL: Chunk 0,0 .*himmel weicht ab/],
         [
             "Fels-Stoff im Haupt-Thread",
             ["stoffWorker", { rufe: 4100, namen: ["felsFarbe", "felsKruemmung"], ms: 59.4 }],
@@ -472,17 +469,11 @@ function selbsttest() {
         ["toter Schnitt", ["blicke.0.hoehleImAbschnitt=", 100], /KEIN SCHNITT: die Wiese zeichnet 100 von 100/],
         [
             "die alte Probe (Loch beim Blick hinaus)",
-            ["blicke.4.fehlend=", [
-                    { bereich: "-24,-18", knoten: 64, hoehle: true, punkt: [-1021, 15.8, -734.5] },
-                ]],
+            ["blicke.4.fehlend=", [{ bereich: "-24,-18", knoten: 64, hoehle: true, punkt: [-1021, 15.8, -734.5] }]],
             /LOCH: Blick hinaus: 1 Zellen fehlen .*-24,-18#64 \(Höhle\)/,
         ],
         ["stumpfer Hinaus-Blick", ["blicke.4.altFehlend=", 0], /LINSE STUMPF: Blick hinaus/],
-        [
-            "Auge nicht in der Höhle",
-            ["blicke.4.augeInHoehle=", false],
-            /LEER: Blick hinaus: das Auge steht nicht/,
-        ],
+        ["Auge nicht in der Höhle", ["blicke.4.augeInHoehle=", false], /LEER: Blick hinaus: das Auge steht nicht/],
         ["Schatten prüft nichts", ["blicke.1.schatten.empfaenger=", 0], /LEER: Blick hang: kein Empfänger/],
         [
             "die Sperre überlebt den Boden",
@@ -502,11 +493,7 @@ function selbsttest() {
             (b) => b.himmel.ueber.push({ p: [762, 11, -140], v: 1, d: 22.4, max: 0.02 }),
             /HIMMELS-LICHT: 1 von 900 Höhlen-Vertices .*[762,11,-140]/,
         ],
-        [
-            "schwarze Mündung",
-            ["himmel.muendMittel=", 0],
-            /SCHWARZE MÜNDUNG: 40 Höhlen-Vertices in den Mündungs-Boxen/,
-        ],
+        ["schwarze Mündung", ["himmel.muendMittel=", 0], /SCHWARZE MÜNDUNG: 40 Höhlen-Vertices in den Mündungs-Boxen/],
         ["Stoff ohne Himmels-Sicht", ["code.himmelLiest=", false], /CODE: `_getVoxelChunkMaterial` liest/],
         ["Himmel ohne Höhle", ["himmel.hoehle=", 0], /LEER: \(i\) Himmels-Licht/],
         // (j) der Befund von Auge 11 nach (i): die Höhle schwarz, die Decke als Wiese gelichtet
@@ -516,11 +503,7 @@ function selbsttest() {
             ["augenLicht.hoehle.I=", null],
             /LICHT DES AUGES: das Licht des Auges ist kein Platz des Licht-Pools .* in der Höhle \[-1041,9,-738\]/,
         ],
-        [
-            "Licht aus in der Höhle",
-            ["augenLicht.hoehle.I=", 0],
-            /LICHT DES AUGES: das Auge in der Höhle .* Licht 0/,
-        ],
+        ["Licht aus in der Höhle", ["augenLicht.hoehle.I=", 0], /LICHT DES AUGES: das Auge in der Höhle .* Licht 0/],
         [
             "Licht ohne Gesetz",
             ["augenLicht.hoehle.I=", 3],
@@ -574,20 +557,19 @@ function selbsttest() {
         // (k) der Befund von Auge 11: der Höhlen-Boden 25 m unter der Wiese trug ihr Grün
         [
             "Wiese unter Fels",
-            ["wieseUnterFels", {
+            [
+                "wieseUnterFels",
+                {
                     fremd: 650,
                     gruen: 420,
                     erst: { p: [762, 9.4, -136], c: [0.05, 0.12, 0.03], fels: [0.14, 0.13, 0.12] },
-                }],
+                },
+            ],
             /WIESE UNTER FELS: 650 von 700 Höhlen-Vertices ohne Himmel .*420 davon grün/,
         ],
         ["Fels ohne Höhle", ["wieseUnterFels.ohneHimmel=", 0], /LEER: \(k\) Wiese unter Fels/],
         // (k) K17: der Höhlen-Fels von Auge 11 (762/−138) war EINE graue Masse — jeder Vertex der Stein der Palette
-        [
-            "Masse",
-            ["wieseUnterFels.streuung=", 0],
-            /MASSE: der Höhlen-Fels ist gleichförmig — Streuung .* 0 über 700/,
-        ],
+        ["Masse", ["wieseUnterFels.streuung=", 0], /MASSE: der Höhlen-Fels ist gleichförmig — Streuung .* 0 über 700/],
         ["Fels zu hell", ["wieseUnterFels.albedo=", 0.5], /ALBEDO: der Höhlen-Fels liegt bei Y 0\.5/],
         [
             "Kliff ohne Stoff",
@@ -602,17 +584,22 @@ function selbsttest() {
         ["Ohne Bankung", ["bankung"], /LEER: \(m\) Bankung/],
         ["Graph bricht", ["code.graphFehler=", "x"], /CODE: der Boden-Stoff baut keinen Graph \(x\)/],
         ["Eigene Ziehung", ["code.feinEigenHash=", true], /CODE: der Detail-Term .*\(eigene Ziehung/],
-        [
-            "Rechenwerk falsch",
-            ["code.feinRechenwerk=", { maxDiff: 0.31, n: 400 }],
-            /RECHENWERK: .* 0\.31 an 400/,
-        ],
+        ["Rechenwerk falsch", ["code.feinRechenwerk=", { maxDiff: 0.31, n: 400 }], /RECHENWERK: .* 0\.31 an 400/],
     ];
     taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 
-const { statikServer, warteAufWelt, nullSeite, wandEnde, path, SELBSTTEST, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    warteAufWelt,
+    nullSeite,
+    wandEnde,
+    path,
+    SELBSTTEST,
+    fehlerText,
+    seiteZu,
+} = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== HÖHLEN-SICHT — Selbsttest (ohne Browser) ===");
@@ -686,7 +673,14 @@ const server = statikServer();
             stoffWorker.msMax = +stoffWorker.msMax.toFixed(2);
             r._tickChunkSatz();
             const s = st.chunkSaetze.get("boden");
-            const aus = { spiegel: [], blicke: [], code: {}, ringChunks: st.voxelChunks.size, bereiche: s.bloecke.size, stoffWorker };
+            const aus = {
+                spiegel: [],
+                blicke: [],
+                code: {},
+                ringChunks: st.voxelChunks.size,
+                bereiche: s.bloecke.size,
+                stoffWorker,
+            };
 
             // ── (a) SPIEGEL: Main-Sync gegen Worker für Chunks verschiedener Stufe
             const lpc = st.lastPlayerVoxelChunk;
@@ -1305,8 +1299,7 @@ const server = statikServer();
                     const au = r._augenLeuchte;
                     // ein Platz des Licht-Pools: brennt das Auge, nennt `_leuchtQuellen` es am Auge beim Namen
                     const imPool =
-                        !(au?.L && au.L.staerke > 0) ||
-                        r._leuchtQuellen(p[0], p[1], p[2], 1).some((q) => q.id === au);
+                        !(au?.L && au.L.staerke > 0) || r._leuchtQuellen(p[0], p[1], p[2], 1).some((q) => q.id === au);
                     const h = st.himmelAmAuge;
                     const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
                     // das Gesetz des Auges: die EINE Stärke des Stamms (`_augenLichtStaerke`: das Auge adaptiert wie die Kamera)
@@ -1438,9 +1431,7 @@ const server = statikServer();
                 const platz = (k) => ({
                     lage: atmo.lichtLage[k],
                     farbe: atmo.lichtFarbe[k],
-                    ersatz: atmo.lichtErsatz[k],
-                    kern: atmo.lichtKern[k],
-                    flach: atmo.lichtFlach[k],
+                    form: atmo.lichtForm[k],
                 });
                 const terme = [];
                 try {
@@ -1451,15 +1442,19 @@ const server = statikServer();
                 aus.code.augenTerm =
                     stoffArg.slice(0, trenn).includes(kh) &&
                     !stoffArg.slice(trenn).includes(kh) &&
-                    atmo.lichtErsatz.length > 0 &&
-                    terme.length === atmo.lichtErsatz.length &&
-                    terme.every((t, k) => haelt(t, atmo.lichtErsatz[k]) && haelt(t, kh));
+                    atmo.lichtForm.length > 0 &&
+                    terme.length === atmo.lichtForm.length &&
+                    terme.every((t, k) => haelt(t, atmo.lichtForm[k]) && haelt(t, kh));
                 aus.code.augenVorZweig =
-                    bed.length > 0 && bed.every((c) => haelt(c, THREE.TSL.normalView) && haelt(c, THREE.TSL.positionView));
+                    bed.length > 0 &&
+                    bed.every((c) => haelt(c, THREE.TSL.normalView) && haelt(c, THREE.TSL.positionView));
                 // das EINE Punktlicht-Gesetz: der Pool ruft die BRDF (je Platz), kein zweiter Rufer, kein nacktes 1/d — über die
                 // Deskriptoren (nie `P[n]` zuerst: ein Getter liefe mit dem Prototyp als this und legte seinen Speicher dort ab)
                 const brdfRufer = Object.getOwnPropertyNames(P).filter(
-                    (n) => n !== "constructor" && typeof Object.getOwnPropertyDescriptor(P, n).value === "function" && !__fehlt(P[n], /this\._punktLichtBrdf\(/)
+                    (n) =>
+                        n !== "constructor" &&
+                        typeof Object.getOwnPropertyDescriptor(P, n).value === "function" &&
+                        !__fehlt(P[n], /this\._punktLichtBrdf\(/)
                 );
                 // je Platz EINE BRDF im Gesetz des Platzes, und der Pool läuft es in EINER Schleife über alle Plätze (`Loop` über
                 // `lichtLage.length`, der Rumpf `_lichtPlatz`) — ausgeschrieben stand es je Platz in jedem Programm
@@ -1472,7 +1467,11 @@ const server = statikServer();
                     brdfRufer.every((n) => n === "_lichtPlatz");
                 aus.code.augenTslFremd =
                     ["diffuseContribution", "specularColorBlended"].find(
-                        (n) => !__fehlt([r._lichtPoolTerm, r._lichtPlatz, r._punktLichtBrdf], new RegExp("\\b" + n + "\\b"))
+                        (n) =>
+                            !__fehlt(
+                                [r._lichtPoolTerm, r._lichtPlatz, r._punktLichtBrdf],
+                                new RegExp("\\b" + n + "\\b")
+                            )
                     ) || null;
                 m1.dispose();
                 m0.dispose();
@@ -1735,8 +1734,5 @@ const server = statikServer();
             `TSL-Rechenwerk gegen Zahlen-Rechenwerk ${fr ? `max. Abstand ${fr.maxDiff} an ${fr.n} Punkten` : "fehlt"}`
     );
     const v = urteil(befund);
-    wandEnde(
-        v,
-        "HÖHLEN-SICHT — jede sichtbare Höhlen-Fläche steht im Abschnitt, kein Licht-Leck, Main = Worker."
-    );
+    wandEnde(v, "HÖHLEN-SICHT — jede sichtbare Höhlen-Fläche steht im Abschnitt, kein Licht-Leck, Main = Worker.");
 })();

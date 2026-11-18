@@ -1682,9 +1682,7 @@ class AnazhRealm {
             if (!(I > 0)) {
                 lage.set(0, 0, 0, 0);
                 farbe.set(0, 0, 0, 0);
-                atmo.lichtErsatz[k].value = 0;
-                atmo.lichtKern[k].value = 0;
-                atmo.lichtFlach[k].value = 0;
+                atmo.lichtForm[k].value.set(0, 0, 0);
                 continue;
             }
             if (q.quelle === "stahl") this._stahlGlut(); // das Licht des Stahls folgt der Hand und seiner Glut je Bild
@@ -1704,9 +1702,7 @@ class AnazhRealm {
             const k2 = L.kernM * L.kernM;
             const In = L.ersatz ? I * Math.pow(1 + k2, L.abfall / 2) : I / (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b);
             farbe.set(c.r * In, c.g * In, c.b * In, L.abfall);
-            atmo.lichtErsatz[k].value = L.ersatz ? 1 : 0;
-            atmo.lichtKern[k].value = k2;
-            atmo.lichtFlach[k].value = L.flach || 0;
+            atmo.lichtForm[k].value.set(L.ersatz ? 1 : 0, k2, L.flach || 0);
             pool.plaetze.push({
                 quelle: q.quelle,
                 x: q.x,

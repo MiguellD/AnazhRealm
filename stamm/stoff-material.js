@@ -697,11 +697,10 @@ class AnazhRealm_stoff_material {
             lichtFarbe: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () =>
                 TSL.uniform(new THREE.Vector4(0, 0, 0, 2))
             ),
-            lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
-            lichtKern: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
-            // 1: der Platz ist eine waagrechte Scheibe mit dem Radius seines Kerns, die nach oben strahlt (fachwerk `strahler`
-            // `flach`: die Decke der Lava), 0: ein Punkt mit Kern
-            lichtFlach: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
+            // DIE FORM DES PLATZES, EINE Reihe (w28-strahler: drei Reihen kosteten die Kette der Wahl je Platz drei Zuweisungen, das
+            // Boden-Programm riss seine Ratsche): x = 1 das Licht des Auges (`ersatz`), y = k² sein Kern, z = 1 eine waagrechte
+            // Scheibe mit dem Radius seines Kerns, die nach oben strahlt (fachwerk `strahler` `flach`: die Decke der Lava)
+            lichtForm: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(new THREE.Vector3())),
             // DIE UMGEBUNG DER STUNDE für das Auge (welt-licht.js `AUGE`, Schreiber `_leuchtTakt`): x = ihre Lux + das Knie, y = S(x)
             lichtAuge: TSL.uniform(new THREE.Vector2(1, __weltLicht.augeS(1))),
             // DIE HÖHE DER GLUT DER LAVA (Schreiber `_leuchtTakt`): die Leuchtdichte ihres Ausbruchs durch das Auge der Stunde
@@ -2281,7 +2280,7 @@ class AnazhRealm_stoff_material {
     // DER LICHT-POOL ALS TERM (K11) — DAS EINE PUNKTLICHT-GESETZ des Stamms (jede Leuchtquelle und das Licht des Auges): je
     // Platz ein Zweig mit dem Abfall des Gesetzes (fachwerk `lichtAbfall`, K11b: (1 − (d/R)⁴)² · (d² + k²)^(−abfall/2); den
     // Bezug in 1 m, (1 + k²)^(abfall/2), trägt die Stärke des Platzes, `_leuchtTakt`), die Stärke schon durch LEGACY_LICHT
-    // (`_laborLichtStaerke`) — und r184s BRDF (`_punktLichtBrdf`). Der Kern k (`lichtKern` = k²) beschränkt den Abfall nah an
+    // (`_laborLichtStaerke`) — und r184s BRDF (`_punktLichtBrdf`). Der Kern k (`lichtForm.y` = k²) beschränkt den Abfall nah an
     // der Quelle (eine Flamme ist keine Punkt-Singularität: r184s nacktes 1/d² legte die Steine am Bett auf das Zehnfache ihrer
     // Glut, und das Licht des Auges lag mit 1/d an der Wand weiß), weit draußen fällt das Feuer mit 1/d² (bis K11b mit dem
     // Legacy-Abfall des r128-Labors (1 − d/R)^abfall: in 4 m noch 31 % — der Boden glühte über mehrere Meter), und an der
@@ -2317,8 +2316,9 @@ class AnazhRealm_stoff_material {
     _lichtPoolTerm(Te, atmo, himmel, volumen = null) {
         const W = this._lichtWurf();
         return Te.Fn(() => {
-            Te.normalView.toVar();
-            Te.positionView.toVar();
+            // DIE NORMALE STEHT VOR DER SCHLEIFE (w28-strahler): eine Variable ohne Leser baut r184 nicht — die Normale des Bodens
+            // (samt den Ringen des Regens) entstand an ihrem ersten Leser IM Rumpf der Schleife, je Platz neu. Der Rumpf liest `N`.
+            const N = Te.normalView.toVar();
             const wurf = W.faktor.toVar();
             // DAS AUGE (w28-strahler, welt-licht.js `AUGE`) — die EINE Stelle der Stauchung: die Quellen der Welt tragen Candela, ihr
             // Beitrag steht in Lux (`summe`: rgb das Licht samt BRDF, a die Beleuchtungsstärke), und das Bild zeigt die SUMME über
@@ -2327,13 +2327,13 @@ class AnazhRealm_stoff_material {
             const summe = Te.vec4(0).toVar();
             const auge = Te.vec3(0).toVar();
             Te.Loop(atmo.lichtLage.length, ({ i: k }) => {
-                const [lage, farbe, ersatz, kern, flach] = AnazhRealm._jePlatz(
+                const [lage, farbe, form] = AnazhRealm._jePlatz(
                     Te,
-                    [atmo.lichtLage, atmo.lichtFarbe, atmo.lichtErsatz, atmo.lichtKern, atmo.lichtFlach],
+                    [atmo.lichtLage, atmo.lichtFarbe, atmo.lichtForm],
                     k
                 );
-                const platz = { lage, farbe, ersatz, kern, flach };
-                const b = this._lichtPlatz(Te, platz, himmel, volumen, true)
+                const ersatz = form.x;
+                const b = this._lichtPlatz(Te, { lage, farbe, form }, himmel, volumen, true, N)
                     .mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
                     .toVar();
                 summe.addAssign(b.mul(ersatz.oneMinus()));
@@ -2366,15 +2366,16 @@ class AnazhRealm_stoff_material {
         return v;
     }
 
-    // DAS GESETZ EINES PLATZES (K11, der Rumpf der Schleife des Pools): `platz` = { lage, farbe, ersatz, kern } — Knoten des Platzes
+    // DAS GESETZ EINES PLATZES (K11, der Rumpf der Schleife des Pools): `platz` = { lage, farbe, form } — Knoten des Platzes
     // (in der Schleife die Glieder der Reihen, im Selbsttest einer Linse die Uniforms eines Platzes); `himmel` die Himmels-Sicht
     // der Fläche (der Boden: `aHimmel`) oder nichts. Der Abfall des Gesetzes, das Gewicht des Himmels-Ersatzes, die Bedingung
     // (Reichweite, Gewicht, Fläche in ihr und ihm zugewandt — sie liest `positionView` und `normalView`) und die EINE BRDF
     // (`_punktLichtBrdf`). → der Beitrag des Platzes ohne den Faktor des Wurfs.
-    _lichtPlatz(Te, platz, himmel, volumen = null, mitLux = false) {
-        const N = Te.normalView;
+    _lichtPlatz(Te, platz, himmel, volumen = null, mitLux = false, N = Te.normalView) {
         const P = Te.positionView;
-        const { lage, farbe, ersatz, kern } = platz;
+        const { lage, farbe } = platz;
+        const ersatz = platz.form.x;
+        const kern = platz.form.y;
         const gewicht = himmel ? ersatz.mul(himmel).oneMinus() : ersatz.oneMinus();
         const Lv = Te.cameraViewMatrix.mul(Te.vec4(lage.xyz, 1)).xyz.sub(P);
         const d = Lv.length();
@@ -2391,7 +2392,8 @@ class AnazhRealm_stoff_material {
         // EIN Vektor der Bestrahlung je Platz (`F`, Bestrahlung = F·N): der Punkt L̂ × Abfall, die Scheibe ihr Vektor ÷ Fläche —
         // Richtung (F ÷ |F|), Kosinus (F·N ÷ |F|: die BRDF liest IHN als N·L; mit N·L der mittleren Richtung stand am
         // streifenden Fragment Bestrahlung ohne Kosinus, der Glanz brannte weiß), EINE Bedingung, EINE BRDF folgen aus ihm.
-        const flach = platz.flach.greaterThan(0);
+        const flach = platz.form.z;
+        const dR = d.div(lage.w);
         const oben = Te.cameraViewMatrix.element(1).xyz; // das Hoch der Welt im Blick-Raum
         const h = Lv.dot(oben).negate();
         const Lh = Lv.add(oben.mul(h));
@@ -2403,14 +2405,14 @@ class AnazhRealm_stoff_material {
             Lh.mul(h.div(a2.max(1e-6)).mul(S.div(w).sub(1)))
                 .sub(oben.mul(S.sub(kern.mul(2)).div(w).oneMinus()))
                 .div(kern.max(1e-6).mul(2)),
-            Te.float(flach)
+            flach
         ).mul(
             // DER SAUM DER REICHWEITE: eine Quelle der Welt fällt über die äußeren `AUGE.saum` ihrer Reichweite weich auf null
             // (dort hebt ihr gezeigtes Licht die Umgebung noch um `AUGE.eps`, `_leuchtReichweite`); das Licht des Auges hält
             // den Saum des Punktlichts (1 − (d/R)⁴)²
             Te.mix(
-                Te.smoothstep(0, 1, d.div(lage.w).oneMinus().div(AnazhRealm.AUGE.saum)),
-                d.div(lage.w).pow2().pow2().oneMinus().clamp().pow2(),
+                Te.smoothstep(0, 1, dR.oneMinus().div(AnazhRealm.AUGE.saum)),
+                dR.pow2().pow2().oneMinus().clamp().pow2(),
                 ersatz
             )
         );
@@ -2430,12 +2432,12 @@ class AnazhRealm_stoff_material {
             E = Te.mix(E.max(0), mittel, volumen);
         }
         const betrag = F.length().max(1e-6);
-        const bedingung = lage.w
+        // (die Reichweite 0 eines leeren Platzes fällt an d < R: kein Abstand ist kleiner)
+        const bedingung = gewicht
             .greaterThan(0)
-            .and(gewicht.greaterThan(0))
             .and(d.lessThan(lage.w))
             .and(E.greaterThan(0))
-            .and(flach.not().or(lage.y.lessThan(Te.positionWorld.y)));
+            .and(flach.lessThanEqual(0).or(lage.y.lessThan(Te.positionWorld.y)));
         const beitrag = farbe.rgb
             .mul(E.mul(gewicht))
             .mul(this._punktLichtBrdf(Te, N, F.div(betrag), P.negate().normalize(), E.div(betrag).clamp()));

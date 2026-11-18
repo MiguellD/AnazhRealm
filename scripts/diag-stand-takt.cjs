@@ -1200,25 +1200,39 @@ async function brandSeite(MESS) {
 //   (q = `f.lang` ÷ 0,0775·I^0,46) mit σ ≥ `NARBE_PULS` (≥ 8 Flammen). Gemessen σ 0,246 bei der Bild-Uhr 0 (q 0,652 … 1,35; der
 //   Ort-Term des Takts trägt allein), 0,259 nach 1,3 s; erwartet puls/√2 = 0,247. Die Mutante (`BRAND.bild.puls` 0) σ 0: die
 //   Front steht als Band gleicher Höhe.
-//   N7 (w28-brand-nacht) — das Schein-Maß: NACHTS (Uhr 0) trägt jede Leuchtquelle des Brands (`_leuchtQuellen`) AN der Flamme
-//   die Bestrahlung `_leuchtStaerke` ÷ π × (1 + k²)/k² (k = ihr Kern `L.kernM`) in Welt-Einheiten (`BRAND.bild.flamme.schein`);
-//   das Maximum über die Quellen und acht Bild-Uhren liegt in [`NARBE_SCHEIN_MIN`, `NARBE_SCHEIN_MAX`], und keine
-//   trägt einen Zeitplan (`L.zeit`). Die Mutante (`_flammenLicht` → das Herdfeuer × `BRAND.licht`, der Stand bis
-//   w28-brand-nacht): der Zeitplan der Nacht hebt den Brand über das Band. N7-UHR: am Mittag trägt derselbe Brand denselben
-//   Schein (± 2 %); die Mutante „am Bild-Ton“ (Masse ÷ Belichtung, der widerlegte Stand 63c7e567: am Tag färbte der Brand Gras
-//   und Rauch orange) lässt Tag und Nacht auseinanderfallen.
+//   N7 (w28-brand-nacht · w28-strahler) — der Brand ist ein FLÄCHEN-STRAHLER seines Datums: NACHTS (Uhr 0) trägt jede
+//   Leuchtquelle des Brands (`_leuchtQuellen`) CANDELA = Leuchtdichte × Fläche — fachwerk `leuchtdichte`(`LICHT_GESETZ.feuer.kelvin`)
+//   × `STRAHLER.emissiv.flamme` × π·k², k ihr Kern aus der Ellipse ihrer Front je Viertelmeter, kein `flach` — und kein Feld des
+//   gefallenen Vertrags (`staerke`, `reichweiteM`, der Zeitplan `zeit`). Das GEZEIGTE Licht an der Flamme (E = Candela ÷ k² Lux,
+//   durch das Auge, wie der Stoff es aus `atmoUniforms.lichtAuge` rechnet: `_lichtPoolTerm`) liegt über acht Bild-Uhren im Band
+//   des Gesetzes (`__weltLicht.augeZeig`(π · Leuchtdichte × (1 ∓ Flackern)) über `_augeLux`), und der Pool trägt sie (`_leuchtPool`:
+//   Candela × Blende). N7-UHR: am Mittag trägt DIESELBE Quelle dieselben Candela (± 2 %), das Auge zeigt von ihr den Rest des
+//   Gesetzes (unter `AUGE.eps` × der Umgebung), und sie steht nicht zur Wahl (`_leuchtReichweite` 0) — der Mittag ist der des
+//   Gesetzes (`AUGE.welt` am Lichtmesser: der Null-Renderer malt keinen Himmel, Lehre 16). Die Mutanten: „Feuer aus“
+//   (`_strahler` trägt 0 Candela: die Quelle fehlt, N7-LEER) und „am Bild-Ton“ (Candela ÷ Belichtung, der widerlegte Stand
+//   63c7e567: am Tag färbte der Brand Gras und Rauch orange) — Tag und Nacht fallen auseinander. Gemessen am Kopf b00606d4:
+//   2 Quellen, Kern 5,75 m, 56 927 cd (548 cd/m² × π·k²), gezeigt 3,245 … 3,472 im Band 3,243 … 3,489, 2 Plätze; am Mittag
+//   dieselben Candela, gezeigt 0,049 (unter 0,1 × 7,83), Reichweite 0 bei 0,242 Kernen ↔ „Feuer aus“ 0 Quellen, „am Bild-Ton“
+//   1 661 ↔ 30 831 cd.
 // so weit dürfen Nachbarn stehen, je volle Breite der Zunge: das Rauschen weitet ihren Radius bis × `weit` (2), der Saum schließt
 // also schon im Mittel dieses Hubs; 1,4 liegt zwischen den beiden gemessenen Ständen
 const NARBE_SAUM = 1.4;
 // so weit streut die Länge der Zungen mindestens je Byram-Länge: gut die Hälfte der Streuung eines vollen Sinus mit `puls` 0,35
 const NARBE_PULS = 0.15;
-// das Band des Scheins: die Bestrahlung an der Flamme in Welt-Einheiten — `schein` 7,5 × Flackern (± 0,18) × Glut liegt
-// darin; unter 3 bleibt das Gras der Nacht dunkel, 27 brennt es weiß aus, der Herdfeuer-Punkt mit Zeitplan trägt Hunderte
-const [NARBE_SCHEIN_MIN, NARBE_SCHEIN_MAX] = [3, 10.5];
+// (N7) DAS URTEIL DES SCHEINS an EINER Lesung der Nacht — der Kopf und die Mutante „Feuer aus“ gehen durch dieselben Zeilen.
+// Jedes Soll reist im Befund, zur Laufzeit aus dem Gesetz gerechnet (`__weltLicht`, `LICHT_GESETZ`, `STRAHLER`)
+function n7Urteil(h) {
+    return [
+        h.quellen >= 1 && h.candela > 0 && h.aLux < h.knie ? "" : `N7-LEER: keine Messung des Scheins: ${h.quellen} Leuchtquellen des Brands tragen ${h.candela} cd (verlangt ≥ 1 Quelle über 0), die Umgebung der Nacht steht bei ${h.aLux} lx (verlangt unter dem Knie des Auges ${h.knie} lx)`,
+        h.candelaAbw <= 0.001 && h.kernAbw <= 0.001 && h.flach === 0 && h.alt === 0 ? "" : `N7-CANDELA: der Brand ist kein Flächen-Strahler seines Datums: Candela ${h.candela} weicht um ${h.candelaAbw} von Leuchtdichte ${h.cdM2} cd/m² × π·k² ab (verlangt ≤ 0,001), Kern ${h.kern} m um ${h.kernAbw} m von der Ellipse seiner Front (verlangt ≤ 0,001), flach ${h.flach} (verlangt 0: die Flamme ist keine Scheibe), ${h.alt} von ${h.quellen} Quellen tragen staerke, reichweiteM oder zeit (verlangt 0) — stamm/dirigent-kern.js _leuchtQuellen (der Brand: _strahler)`,
+        h.min >= 0.99 * h.soll?.[0] && h.max <= 1.01 * h.soll?.[1] ? "" : `N7-SCHEIN: das gezeigte Licht an der Flamme liegt nicht im Band des Gesetzes: ${h.min} … ${h.max} gegen ${h.soll} (augeZeig(π × ${h.cdM2} cd/m² × (1 ∓ Flackern)) über ${h.aLux} lx, ± 1 %; ${h.quellen} Quellen, Kern ${h.kern} m) — stamm/dirigent-kern.js _leuchtCandela · _leuchtTakt (lichtAuge)`,
+        h.pool?.plaetze >= 1 && h.pool.abw <= 0.001 ? "" : `N7-POOL: der Pool trägt den Brand nicht: ${h.pool?.plaetze} Plätze „brand“, ihre Stärke weicht um ${h.pool?.abw} von Candela × Blende ab (verlangt ≥ 1 Platz, ≤ 0,001) — stamm/dirigent-kern.js _leuchtTakt`,
+    ].filter(Boolean);
+}
 function narbeUrteil(b) {
     const [a, e, l, s, n, z, h] = [b?.n1, b?.n2, b?.n3, b?.n4, b?.n5, b?.n6, b?.n7];
     if (!a || !e || !l || !s || !n || !z || !h || !b.l1 || !b.l2 || !b.l3 || !b.l4 || !b.l5) return ["LEER: " + JSON.stringify(b && Object.keys(b))];
-    const [mw, mq] = [a.mutanteWartet, a.mutanteQuadrat];
+    const [mw, mq, t, ma] = [a.mutanteWartet, a.mutanteQuadrat, h.tag, h.mutanteAus];
     return [
         a.brennt && a.s >= a.tr && a.fernAn > a.s ? "" : `N1-LEER: die Herd-Zelle ${a.brennt ? "brennt" : "brennt nicht mehr"} nach ${a.s} s (Verweilzeit ${a.tr} s), der ferne Ort fängt nach ${a.fernAn} s`,
         a.zuend > 0.5 ? "" : `N1-WARTET: die Narbe wartet auf die ausgebrannte Zelle: brennende Zelle trägt ${a.zuend} am verzehrten Ort (Zünd-Punkt nach ${a.s} s Brand, Verweilzeit ${a.tr} s; verlangt > 0,5)`,
@@ -1239,12 +1253,11 @@ function narbeUrteil(b) {
         z.flammen >= 8 && (z.sigma > 0 || z.sigma === 0) ? "" : `N6-LEER: keine Messung des Pulses: ${z.flammen} Flammen in der Herd-Zelle (σ ${z.sigma}; verlangt ≥ 8)`,
         !(z.sigma < NARBE_PULS) ? "" : `N6-BAND: die Front steht als Band gleicher Höhe: σ ${z.sigma} < ${NARBE_PULS} (Länge je Byram-Länge ${z.min} … ${z.max} über ${z.flammen} Flammen, BRAND.bild.puls ${z.puls})`,
         z.mutante?.flammen >= 8 && z.mutante?.sigma < NARBE_PULS ? "" : `MUTANTE-N6: ohne Puls liest die Linse σ ${z.mutante?.sigma} über ${z.mutante?.flammen} Flammen — sie misst nicht den Puls`,
-        h.quellen >= 1 && h.max > 0 && h.herd > 1 ? "" : `N7-LEER: keine Messung des Scheins: ${h.quellen} Leuchtquellen des Brands (Schein ${h.max}), der Zeitplan des Herdfeuers steht bei ${h.herd} (verlangt > 1: die Nacht)`,
-        !(h.max > NARBE_SCHEIN_MAX) && h.zeit === 0 ? "" : `N7-SCHEIN: der Brand leuchtet als Herdfeuer-Punkt × BRAND.licht × Zeitplan: Schein ${h.max} > ${NARBE_SCHEIN_MAX} oder Zeitplan an ${h.zeit} von ${h.quellen} Quellen (nachts, Zeitplan des Herdfeuers × ${h.herd}, Kern ${h.kern} m, Belichtung ${h.belichtung}, BRAND.bild.flamme.schein ${h.soll})`,
-        !(h.max < NARBE_SCHEIN_MIN) ? "" : `N7-DUNKEL: der Brand leuchtet nicht als Flamme: Schein ${h.max} < ${NARBE_SCHEIN_MIN} (${h.quellen} Quellen, Kern ${h.kern} m, Belichtung ${h.belichtung}, BRAND.bild.flamme.schein ${h.soll})`,
-        Math.abs(h.tag - h.max) <= 0.02 * h.max ? "" : `N7-UHR: das Licht des Brands hängt an der Stunde oder der Belichtung: Schein am Mittag ${h.tag} ↔ nachts ${h.max} (verlangt gleich ± 2 %)`,
-        Math.abs(h.mutanteTon?.tag - h.mutanteTon?.nacht) > 0.2 * h.mutanteTon?.nacht ? "" : `MUTANTE-N7-TON: mit der Masse ÷ Belichtung liest die Linse am Mittag ${h.mutanteTon?.tag} ↔ nachts ${h.mutanteTon?.nacht} — sie sieht das Licht am Bild-Ton nicht`,
-        h.mutante?.quellen >= 1 && h.mutante?.max > NARBE_SCHEIN_MAX && h.mutante?.zeit >= 1 ? "" : `MUTANTE-N7: als Herdfeuer-Punkt × BRAND.licht × Zeitplan liest die Linse Schein ${h.mutante?.max} (Zeitplan an ${h.mutante?.zeit} von ${h.mutante?.quellen} Quellen) — sie sieht den Herdfeuer-Punkt nicht`,
+        ...n7Urteil(h),
+        t?.aLux > 1000 * h.knie ? "" : `N7-UHR-LEER: keine Messung am Mittag: die Umgebung steht bei ${t?.aLux} lx (verlangt über 1 000 × das Knie ${h.knie} lx)`,
+        Math.abs(t.candela - h.candela) <= 0.02 * h.candela && Math.abs(t.max - t.soll) <= 0.02 * t.soll && t.max < t.eps * t.s && t.trag < 1 === (t.reichweite === 0) ? "" : `N7-UHR: das Licht des Brands hängt an der Stunde, oder das Auge zeigt am Mittag nicht seinen Rest: Candela am Mittag ${t.candela} ↔ nachts ${h.candela} (verlangt gleich ± 2 %), gezeigt ${t.max} gegen ${t.soll} (augeZeig über ${t.aLux} lx, ± 2 %; verlangt unter eps ${t.eps} × Umgebung ${t.s}), Reichweite ${t.reichweite} m bei ${t.trag} Kernen nach augeReichweite (unter 1 verlangt 0: die Quelle steht nicht zur Wahl) — stamm/dirigent-kern.js _leuchtCandela · _leuchtReichweite`,
+        Math.abs(h.mutanteTon?.tag - h.mutanteTon?.nacht) > 0.2 * h.mutanteTon?.nacht ? "" : `MUTANTE-N7-TON: mit Candela ÷ Belichtung liest die Linse am Mittag ${h.mutanteTon?.tag} cd ↔ nachts ${h.mutanteTon?.nacht} cd — sie sieht das Licht am Bild-Ton nicht`,
+        ma && ma.quellen === 0 && n7Urteil(ma)[0]?.startsWith("N7-LEER") ? "" : `MUTANTE-N7-AUS: mit 0 Candela aus _strahler liest die Linse ${ma?.quellen} Leuchtquellen des Brands mit ${ma?.candela} cd — sie sieht das erloschene Feuer nicht`,
         ...lavaUrteil(b),
     ].filter(Boolean);
 }
@@ -1262,18 +1275,37 @@ function narbeUrteil(b) {
 //   Gesetz und die Linse verlangte es): die Probe-Zelle brennt voll und mit Stein auf ihrer rechten Hälfte bis zur Asche —
 //   H·w und leb gleich, keine Flamme und keine Asche auf dem Stein ↔ leb × Anteil · ohne Maske (`_brandBettFn` leer).
 //   L4 — 32 Punkte im dünnen Rand (Decke 0,043 … 0,962): Grund 0 ↔ die Decke dünnt nur: 0,038 … 0,957, 32 von 32 über 0.
-//   L5 — nachts (Zeitplan des Herdfeuers × 45) EINE Quelle, Schein 6,777 … 7,918, Kern 8 m, kein Zeitplan, auf `a.y` ↔ das alte
-//   Datum: 444 … 519, Kern 0,76 m, Zeitplan, 1 m darüber.
+//   L5 (w28-strahler) — nachts EINE flache Quelle „lava“ auf `a.y`: Candela = Leuchtdichte × Fläche (`_lavaLeucht`, das Mittel
+//   ihres Bilds zwischen Scholle und Riss, höchstens die des Ausbruchs `_lavaAusbruchCdM2`, × π·k²), der Kern aus der Fläche
+//   der Decke, kein Feld des gefallenen Vertrags; der Pool trägt sie flach (`_leuchtPool`). Die Mutanten: „Feuer aus“ (`_strahler`
+//   trägt 0 Candela: die Quelle fehlt, L5-LEER) und „Keule aus“ (`_strahler` ohne `flach`: die Scheibe strahlt rundum, L5-KEULE).
+//   Gemessen am Kopf b00606d4: EINE Quelle, 1 258 883 cd = 6 261 cd/m² × π · 8², zwischen Scholle 861 und Riss 31 599 (der
+//   Ausbruch), Kern 8 m bei 7,636 m der Decke, 0,035 m neben ihr, flach 1 an Quelle und Platz ↔ „Feuer aus“ 0 Quellen, „Keule
+//   aus“ flach 0 an Quelle und Platz.
 // so weit reicht die Front nach 60 s mindestens längs der Kante (m): die neun Eintritte decken die Kante der Zelle (15,96 m),
 // der EINE Punkt trägt in 60 s seine Ellipse — das Band liegt zwischen den beiden gemessenen Ständen
 const LAVA_RAND_M = 12;
 const L3_MASKE_TAKTE = 64; // BRAND.bettGitter² Punkte, je Takt mindestens einer (`_brandMasken`)
 // je Achtel der Kante ein Eintritt (`_lavaZuendet`)
 const LAVA_EIN = 9;
+// (L5) DAS URTEIL DES LICHTS DER LAVA an EINER Lesung — der Kopf und die Mutanten „Feuer aus“ und „Keule aus“ gehen durch
+// dieselben Zeilen; jedes Soll reist im Befund, zur Laufzeit aus dem Gesetz gerechnet
+function l5Urteil(q) {
+    return [
+        q.quellen >= 1 && q.candela > 0 && q.glut > 0 && q.aLux < q.knie ? "" : `L5-LEER: keine Messung des Lichts: ${q.quellen} Leuchtquellen „lava“ tragen ${q.candela} cd (Glut ${q.glut}), die Umgebung der Nacht steht bei ${q.aLux} lx (verlangt unter dem Knie des Auges ${q.knie} lx)`,
+        q.quellen === 1 && q.flaecheAbw <= 0.001 && q.alt === 0 ? "" : `L5-CANDELA: die Lava ist nicht EIN Strahler aus Leuchtdichte × Fläche: ${q.quellen} Quellen (verlangt 1), ihre Fläche weicht um ${q.flaecheAbw} von π·k² ab (Kern ${q.kern} m; verlangt ≤ 0,001), ${q.alt} tragen staerke, reichweiteM oder zeit (verlangt 0) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: _strahler)`,
+        Math.abs(q.cdM2 - q.soll) <= 0.1 * q.soll && q.cdM2 > q.scholle && q.cdM2 < q.riss && q.riss <= 1.001 * q.ausbruch ? "" : `L5-DUNKEL: die Lava leuchtet nicht mit der Leuchtdichte IHRES BILDS: ${q.cdM2} cd/m² (Candela ${q.candela} ÷ π·k²) gegen ${q.soll} (das Mittel der Decke, _lavaLeucht bei ${q.tK} K, ± 10 %), verlangt zwischen Scholle ${q.scholle} und Riss ${q.riss} (leuchtdichte × Emissivität der Lava bei dieser Temperatur), der Riss höchstens der Ausbruch ${q.ausbruch} (_lavaAusbruchCdM2; Glut ${q.glut}, Kern ${q.kern} m) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: _strahler mit cdM2 = _lavaLeucht)`,
+        Math.abs(q.kern - q.kernSoll) <= 0.4 && !(q.neben > 0.6) ? "" : `L5-KERN: das Licht der Lava trägt nicht die Decke, die der Boden malt: Kern ${q.kern} m (verlangt ${q.kernSoll} m ± 0,4 = √(Fläche des glühenden Teils/π), _lavaDeckeAt), ${q.neben} m neben ihrem Schwerpunkt (verlangt ≤ 0,6) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: _lavaScheibe)`,
+        Math.abs(q.kelvin - q.tK) <= 25 ? "" : `L5-FARBE: das Licht der Lava trägt nicht die Farbe ihrer Temperatur: Datum ${q.kelvin} K bei einer Decke von ${q.tK} K (verlangt ± 25 K) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: _strahler(T, A, flach))`,
+        q.pool?.plaetze === 1 && q.pool.abw <= 0.001 ? "" : `L5-POOL: der Pool trägt die Lava nicht: ${q.pool?.plaetze} Plätze „lava“ (verlangt 1, das Auge über der Decke), ihre Stärke weicht um ${q.pool?.abw} von Candela × Blende ab (verlangt ≤ 0,001) — stamm/dirigent-kern.js _leuchtTakt`,
+        q.flach === 1 && q.pool?.flach === 1 ? "" : `L5-KEULE: die Decke der Lava strahlt rundum statt als waagrechte Scheibe nach oben: flach ${q.flach} an der Quelle, ${q.pool?.flach} am Platz des Pools (verlangt je 1) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: _strahler(T, A, flach)) · _leuchtTakt (lichtFlach)`,
+        q.hoch === 0 ? "" : `L5-HÖHE: das Licht der Lava steht ${q.hoch} m neben der Höhe ihrer Decke (verlangt a.y) — stamm/dirigent-kern.js _leuchtQuellen (die Lava)`,
+    ].filter(Boolean);
+}
 function lavaUrteil(b) {
     const [z, k, s, h, q, u] = [b.l1, b.l2, b.l3, b.l4, b.l5, b.l6 || {}];
     const [ur, us] = [u.regler || {}, u.sprung || {}];
-    const [km, qm, sv, sh] = [k.mutante, q.mutante, s.voll || {}, s.halb || {}];
+    const [km, qa, qk, sv, sh] = [k.mutante, q.mutanteAus, q.mutanteKeule, s.voll || {}, s.halb || {}];
     return [
         z.betten >= 1 && z.kalt?.tK < z.tZuend?.[0] && z.lau?.tK > z.tZuend?.[1] ? "" : `L1-LEER: keine Messung der Zündung: ${z.betten} Nachbarinnen der Decke tragen ein Bett, das sie zündet (Decke ${z.tK} K, tZuend ${z.tZuend}); die kalte Decke steht bei ${z.kalt?.tK} K, die laue bei ${z.lau?.tK} K`,
         z.brennend === z.betten ? "" : `L1-ZÜNDUNG: das Gras steht grün am Rand der heißen Decke: nach Guss und EINEM Takt (_lavaTakt) brennen ${z.brennend} von ${z.betten} Nachbarinnen mit Bett (Decke ${z.tK} K, tZuend ${z.tZuend} K) — stamm/siedlung-wege.js _lavaZuendet (aus _lavaTakt), der Akt „brand“ über _feldAkt`,
@@ -1296,14 +1328,10 @@ function lavaUrteil(b) {
         h.punkte >= 8 && h.aussen > 0 ? "" : `L4-LEER: keine Messung des Halms: ${h.punkte} Punkte im dünnen Rand der Decke (verlangt ≥ 8), der Grund der Wiese jenseits der Decke ${h.aussen}`,
         h.max === 0 ? "" : `L4-HALM: Büschel stehen im glühenden Rand: _wieseGrund bis ${h.max} an ${h.punkte} Punkten mit Decke ${h.decke} (verlangt 0) — stamm/vegetation-wiese.js _wieseGrund (die Decke dünnt nur)`,
         h.mutante?.max > 0 ? "" : `MUTANTE-L4: mit Gewicht × (1 − Decke) liest die Linse Grund ${h.mutante?.max} im Rand — sie sieht den Halm auf der Decke nicht`,
-        q.quellen >= 1 && q.max > 0 && q.herd > 1 && q.glut > 0 ? "" : `L5-LEER: keine Messung des Lichts: ${q.quellen} Leuchtquellen „lava“ (Schein ${q.max}, Glut ${q.glut}), der Zeitplan des Herdfeuers steht bei ${q.herd} (verlangt > 1: die Nacht)`,
-        !(q.max > NARBE_SCHEIN_MAX) && q.zeit === 0 ? "" : `L5-SCHEIN: die Lava leuchtet als Herdfeuer-Punkt × BRAND.licht × Zeitplan: Schein ${q.max} > ${NARBE_SCHEIN_MAX} oder Zeitplan an ${q.zeit} von ${q.quellen} Quellen (nachts, Kern ${q.kern} m) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: _strahler)`,
-        Math.abs(q.max - q.soll) <= 0.1 * q.soll && q.max > q.scholle && q.max < q.riss ? "" : `L5-DUNKEL: die Lava leuchtet nicht mit der Leuchtdichte IHRES BILDS: Schein ${q.max} gegen ${q.soll} (das Mittel der Decke, _lavaLeucht bei ${q.tK} K, ± 10 %), verlangt zwischen Scholle ${q.scholle} und Riss ${q.riss} (was der Boden bei dieser Temperatur zeigt; Glut ${q.glut}, Kern ${q.kern} m) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: _strahler mit leucht = _lavaLeucht)`,
-        Math.abs(q.kern - q.kernSoll) <= 0.4 && !(q.neben > 0.6) ? "" : `L5-KERN: das Licht der Lava trägt nicht die Decke, die der Boden malt: Kern ${q.kern} m (verlangt ${q.kernSoll} m ± 0,4 = √(Fläche des glühenden Teils/π), _lavaDeckeAt), ${q.neben} m neben ihrem Schwerpunkt (verlangt ≤ 0,6) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: _lavaScheibe)`,
-        Math.abs(q.kelvin - q.tK) <= 25 && q.flach === 1 ? "" : `L5-FARBE: das Licht der Lava ist kein waagrechter Strahler ihrer Temperatur: Datum ${q.kelvin} K bei einer Decke von ${q.tK} K (verlangt ± 25 K), flach ${q.flach} (verlangt 1: die Scheibe) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: _strahler(T, A, flach))`,
+        ...l5Urteil(q),
         q.ort && q.ort.quellen === 1 && q.ort.neben <= 0.6 ? "" : `L5-ORT: nach einem zweiten Guss abseits der Mitte derselben Zelle strahlen ${q.ort?.quellen} Scheiben, die fernste ${q.ort?.neben} m neben dem Schwerpunkt der Decke (verlangt EINE, ≤ 0,6 m: dort liegt die Decke, _brandNarbeFn) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: je Zelle die jüngste, an ihrer Mitte)`,
-        q.hoch === 0 ? "" : `L5-HÖHE: das Licht der Lava steht ${q.hoch} m neben der Höhe ihrer Decke (verlangt a.y) — stamm/dirigent-kern.js _leuchtQuellen (die Lava)`,
-        qm?.max > NARBE_SCHEIN_MAX && qm.zeit >= 1 && qm.hoch > 0 && Math.abs(qm.kern - q.kernSoll) > 0.125 ? "" : `MUTANTE-L5: mit dem alten Datum (Herdfeuer × BRAND.licht, 1 m über der Mitte) liest die Linse Schein ${qm?.max}, Zeitplan an ${qm?.zeit}, Höhe ${qm?.hoch} m, Kern ${qm?.kern} m — sie sieht den Herdfeuer-Punkt nicht`,
+        qa && qa.quellen === 0 && l5Urteil(qa)[0]?.startsWith("L5-LEER") ? "" : `MUTANTE-L5-AUS: mit 0 Candela aus _strahler liest die Linse ${qa?.quellen} Leuchtquellen „lava“ mit ${qa?.candela} cd — sie sieht die erloschene Decke nicht`,
+        qk && qk.flach === 0 && l5Urteil(qk).some((z) => z.startsWith("L5-KEULE")) ? "" : `MUTANTE-L5-KEULE: mit _strahler ohne flach liest die Linse flach ${qk?.flach} an der Quelle und ${qk?.pool?.flach} am Platz des Pools — sie sieht die Scheibe nicht, die rundum strahlt`,
         us.tempVor > 100 && us.s >= 60 ? "" : `L6-LEER: keine Messung der Uhr: die Decke steht vor dem Sprung bei ${us.tempVor} °C, der Sprung der Welt-Uhr ${us.s} s`,
         ur.dStunde === 0 && Math.abs(ur.dTemp) <= 1 && ur.dUhr === 0 && ur.dAschen === 0 ? "" : `L6-SICHT: die Uhr des Spielers bewegt einen Prozess: der Regler 10 → 14 Uhr stellt die Welt-Stunde um ${ur.dStunde} h, die Decke der Lava um ${ur.dTemp} K, die Welt-Uhr um ${ur.dUhr} s, ${ur.dAschen} Aschen (verlangt je 0; die Decke ± 1 K: sie steht in der Luft der Stunde) — stamm/feld-leben.js _weltTag liest den Tag der Sicht (worldMeta.tag + timeOfDay) oder stamm/bild-himmel.js _uhrSetzen hebt spielZeit`,
         Math.abs(us.dStunde - us.s / 150) <= 0.01 && us.tempNach < us.tempVor - 1 && us.dBrandUhr >= us.s - 1 && us.aschen >= 1 ? "" : `L6-SPRUNG: der Sprung der Welt-Uhr altert die Welt nicht: nach _weltUhrNimm(+${us.s} s) Welt-Stunde +${us.dStunde} h (verlangt ${us.s / 150}), Decke ${us.tempVor} → ${us.tempNach} °C (verlangt kälter), Uhr des Brands +${us.dBrandUhr} s, ${us.aschen} Aschen (verlangt ≥ 1) — stamm/feld-leben.js _weltTag · _lavaZustand, stamm/feld-brand.js _tickBrand`,
@@ -1467,44 +1495,106 @@ async function narbeSeite(MESS) {
             C.BRAND = B;
         }
         bild();
-        // N7: derselbe Brand NACHTS (die Uhr als Spieler-Wort auf 0 — `setTimeOfDay` wendet den Tag samt Belichtung an). Je
-        // Leuchtquelle des Brands, frisch gelesen (`_leuchtQuellen`, nicht die Wahl des Pools) und über acht Bild-Uhren des
-        // Flackerns: ihre Bestrahlung AN der Flamme; das Maximum trägt das Urteil. `herd`: der Zeitplan des
-        // Herdfeuers zu dieser Uhr (die Nacht steht), `zeit`: die Quellen des Brands, die einen Zeitplan tragen
-        const LGf = { kelvin: 2000, staerke: 1, licht: 4, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } }; // das Datum der Mutanten: das Herdfeuer bis w28-strahler (Stärke × Zeitplan, nacht 45) × `BRAND.licht` 4
-        const schein = () => {
-            const [BF, bel] = [C.BRAND.bild.flamme, (st.renderer && st.renderer.toneMappingExposure) || 1];
-            const Q = r._leuchtQuellen(pm.x, pm.y, pm.z, 64).filter((q) => q.quelle === "brand");
-            const mass = (q, t, k = q.L.kernM) => ((r._leuchtStaerke(q, t) / Math.PI) * (1 + k * k)) / (k * k);
-            const W = Q.flatMap((q) => [0, 0.37, 0.9, 1.3, 2.1, 3.3, 4.7, 6.1].map((t) => mass(q, t)));
-            return { quellen: Q.length, max: r3(Math.max(0, ...W)), min: r3(Math.min(...W)), kern: r3(Math.max(0, ...Q.map((q) => q.L.kernM))), zeit: Q.filter((q) => q.L.zeit != null).length, herd: r3(r._lichtZeitplan(LGf.zeit)), belichtung: r3(bel), soll: BF.schein };
+        // N7: derselbe Brand NACHTS (die Uhr als Spieler-Wort auf 0 — `setTimeOfDay` wendet den Tag samt Belichtung an), danach
+        // der EINE Schreiber des Auges und des Pools (`_leuchtTakt`: `_augeLux`, `lichtAuge`, die Plätze). Je Leuchtquelle des
+        // Brands, frisch gelesen (`_leuchtQuellen`): ihre Candela ohne Flackern gegen Leuchtdichte × π·k² des Gesetzes, ihr Kern
+        // gegen die Ellipse ihrer Front, und über acht Bild-Uhren des Flackerns das gezeigte Licht AN der Flamme (E = Candela ÷ k²)
+        const [FC, WL, AU] = [globalThis.__fachwerkCore, window.__weltLicht, C.AUGE];
+        const FLG = FC.LICHT_GESETZ.feuer;
+        const flammeCdM2 = FC.leuchtdichte(FLG.kelvin) * FC.STRAHLER.emissiv.flamme;
+        const r5 = (v) => Math.round(v * 1e5) / 1e5;
+        const gross = (W) => Math.max(0, ...W);
+        // DIE STUNDE: die Uhr, dann der Takt des Lichts. Der Null-Renderer malt keinen Himmel (Lehre 16) — sein Lichtmesser liest
+        // am Mittag 0,03 Einheiten statt der 7,83 des Gesetzes. `welt`: die Linse stellt die Lesung des Messers (`_belichtungE`)
+        // darum auf die Zahl des Gesetzes; Leser bleibt der EINE Schreiber `_leuchtTakt` (→ `_augeLux`, `lichtAuge`, Reichweite,
+        // Wahl), die nächste Uhr liest den Messer neu. `pool`: ein zweiter Takt nach der Blende des Pools (`LICHT_POOL.blendeS`
+        // auf der Wanduhr, synchron gewartet: kein Takt des Spiels fällt dazwischen) — erst der freie Platz nimmt die neu Gewählte auf
+        const stunde = (t, welt = null, pool = false) => {
+            r.setTimeOfDay(t, "regler");
+            if (welt != null) (r._belichtungE ||= [0, 0, 0]).fill(welt), (r._belichtungGelesen = true);
+            r._leuchtTakt();
+            if (pool) {
+                for (const t0 = performance.now(); performance.now() - t0 < 1100 * C.LICHT_POOL.blendeS; );
+                r._leuchtTakt();
+            }
+            const A = st.atmoUniforms.lichtAuge.value;
+            return { aLux: r._augeLux, ak: A.x, s: A.y };
         };
-        const tagSchein = schein().max; // derselbe Brand am Mittag (die Uhr der Sitzung): das Licht der Flamme hängt nicht an der Stunde
-        r.setTimeOfDay(0, "regler");
-        const N7 = (aus.n7 = schein());
-        N7.tag = tagSchein;
-        // die Mutante „am Bild-Ton": die Masse ÷ Belichtung (der widerlegte Stand 63c7e567) — Tag und Nacht fallen auseinander
-        const F0 = P._strahler;
-        const amTon = () => {
-            r._strahler = function (...a) {
-                const F = F0.apply(this, a);
-                return Object.assign({}, F, { staerke: F.staerke / ((st.renderer && st.renderer.toneMappingExposure) || 1) });
+        // das gezeigte Licht einer Beleuchtungsstärke, wie der Stoff es aus `lichtAuge` rechnet (`_lichtPoolTerm`)
+        const zeigU = (E, A) => Math.min(A.s * (Math.pow(1 + E / A.ak, AU.q) - 1), (E * Math.pow(A.ak + E, AU.p - 1) * AU.welt) / Math.pow(AU.lux, AU.p));
+        // der Kern einer brennenden Zelle aus der Ellipse ihrer Front (π·a·b, höchstens der Kreis in der Zelle, × Glut), je Viertelmeter
+        const kernSoll = (z) => {
+            const ha = (Math.max(0, st.spielZeit - z.t0) * z.R) / (1 + z.ecc);
+            const rr = Math.min(cs / 2, ha * Math.pow(Math.max(0, 1 - z.ecc * z.ecc), 0.25));
+            return Math.max(1, Math.round(Math.sqrt((Math.PI * rr * rr * z.glut) / Math.PI) * 4)) / 4;
+        };
+        const brandLicht = () => r._leuchtQuellen(pm.x, pm.y, pm.z, 64).filter((q) => q.quelle === "brand");
+        // die Plätze des Pools, die den Brand tragen: ihre Stärke gegen Candela × Blende ihrer Quelle zur Bild-Uhr
+        const poolLesen = (Q) => {
+            const Pl = ((r._leuchtPool && r._leuchtPool.plaetze) || []).filter((p) => p.quelle === "brand");
+            const abw = Pl.map((p) => {
+                const q = Q.find((q) => q.x === p.x && q.z === p.z);
+                return q && p.blende > 0 ? Math.abs(p.staerke / (p.blende * r._leuchtCandela(q, r._bildZeit)) - 1) : 99;
+            });
+            return { plaetze: Pl.length, abw: r5(gross(abw)), flach: gross(Pl.map((p) => p.flach)) };
+        };
+        const schein = (A, Q) => {
+            const cd = Q.map((q) => r._leuchtCandela(q, null));
+            const W = Q.flatMap((q) => [0, 0.37, 0.9, 1.3, 2.1, 3.3, 4.7, 6.1].map((t) => zeigU(r._leuchtCandela(q, t) / (q.L.kernM * q.L.kernM), A)));
+            return {
+                quellen: Q.length,
+                candela: r3(gross(cd)),
+                candelaAbw: r5(gross(Q.map((q, i) => Math.abs(cd[i] / (flammeCdM2 * Math.PI * kernSoll(q.id) ** 2) - 1)))),
+                kern: r3(gross(Q.map((q) => q.L.kernM))),
+                kernAbw: r3(gross(Q.map((q) => Math.abs(q.L.kernM - kernSoll(q.id))))),
+                flach: gross(Q.map((q) => q.L.flach)),
+                alt: Q.filter((q) => ["staerke", "reichweiteM", "zeit"].some((k) => q.L[k] != null)).length,
+                max: r3(gross(W)),
+                min: r3(Math.min(...W)),
+                soll: [1 - FLG.flacker.amp, 1 + FLG.flacker.amp].map((f) => r3(WL.augeZeig(Math.PI * flammeCdM2 * f, A.aLux))),
+                cdM2: r3(flammeCdM2),
+                aLux: r5(A.aLux),
+                knie: r3(AU.knieLux),
+                pool: poolLesen(Q),
             };
-            return schein().max;
+        };
+        const nacht = stunde(0, null, true);
+        const Q7 = brandLicht();
+        const N7 = (aus.n7 = schein(nacht, Q7));
+        // N7-UHR: DIESELBEN Quellen am Mittag des Gesetzes (der Messer auf `AUGE.welt`: 115 000 lx) — ihre Candela, was das Auge
+        // über dieser Umgebung von ihnen zeigt, und ihre Reichweite gegen die des Gesetzes in Kernen (`trag`: unter 1 steht die
+        // Quelle nicht zur Wahl)
+        const mittag = stunde(0.5, AU.welt);
+        const cdT = Q7.map((q) => r._leuchtCandela(q, null));
+        N7.tag = {
+            candela: r3(gross(cdT)),
+            max: r5(gross(Q7.map((q, i) => zeigU(cdT[i] / (q.L.kernM * q.L.kernM), mittag)))),
+            soll: r5(WL.augeZeig(Math.PI * flammeCdM2, mittag.aLux)),
+            aLux: r3(mittag.aLux),
+            s: r3(WL.augeS(mittag.aLux)),
+            eps: AU.eps,
+            reichweite: gross(Q7.map((q) => r._leuchtReichweite(q))),
+            trag: r3(gross(Q7.map((q, i) => WL.augeReichweite(cdT[i], mittag.aLux) / q.L.kernM))),
+        };
+        // die Mutante „am Bild-Ton": Candela ÷ Belichtung (der widerlegte Stand 63c7e567) — Tag und Nacht fallen auseinander
+        const amTon = () => r3(gross(Q7.map((q) => r._leuchtCandela(q, null))));
+        r._leuchtCandela = function (...arg) {
+            return P._leuchtCandela.apply(this, arg) / ((st.renderer && st.renderer.toneMappingExposure) || 1);
         };
         try {
-            N7.mutanteTon = { nacht: amTon(), tag: (r.setTimeOfDay(0.5, "regler"), amTon()) };
+            N7.mutanteTon = { tag: amTon(), nacht: (stunde(0), amTon()) };
         } finally {
-            delete r._strahler;
-            r.setTimeOfDay(0, "regler");
+            delete r._leuchtCandela;
         }
-        // die Mutante: der Brand als Herdfeuer-Punkt × `BRAND.licht` mit dem Zeitplan des Feuers (der Stand bis w28-brand-nacht)
-        r._strahler = () => Object.assign({}, LGf, { staerke: LGf.staerke * LGf.licht });
+        // die Mutante „Feuer aus": der Strahler trägt 0 Candela — die Quelle trägt nicht über ihren Kern und fehlt (`_leuchtQuellen`)
+        r._strahler = function (...arg) {
+            return Object.assign({}, P._strahler.apply(this, arg), { candela: 0 });
+        };
         try {
-            N7.mutante = schein();
+            N7.mutanteAus = schein(stunde(0), brandLicht());
         } finally {
             delete r._strahler;
-            r.setTimeOfDay(0.5, "regler");
+            stunde(0.5);
         }
         // N2, die Mutante: derselbe Herd, `ende` auf den Durchlauf des Kopfs gestutzt
         r._brandZuenden = function (...a) {
@@ -1762,10 +1852,12 @@ async function lavaSeite(MESS) {
         L1.kalt = gegen(L1.tZuend[0] - 10);
         L1.lau = gegen(L1.tZuend[1] + 10);
 
-        // L5 — DAS LICHT DER LAVA: NACHTS gegossen (die Uhr zuerst: das Alter der Decke hängt an der Welt-Stunde), die Quelle
-        // `lava`, die das Licht liest (`_leuchtQuellen` um die Decke): ihr Schein AN der Decke im Maß von N7 (`_leuchtStaerke` ÷ π ×
-        // (1 + k²)/k², das Maximum über acht Bild-Uhren), ihr Kern, ihr Zeitplan, ihre Höhe über `a.y`
-        const LGf = { kelvin: 2000, staerke: 1, licht: 4, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } }; // das Datum der Mutanten: das Herdfeuer bis w28-strahler (Stärke × Zeitplan, nacht 45) × `BRAND.licht` 4
+        // L5 — DAS LICHT DER LAVA: NACHTS gegossen, das Auge für EINEN Takt des Lichts über der Decke (`_leuchtTakt`: `_augeLux`, die
+        // Wahl des Pools), die Quelle `lava`, die das Licht liest (`_leuchtQuellen` um die Decke): ihre Candela, ihre Leuchtdichte
+        // (Candela ÷ π·k²) gegen das Mittel ihres Bilds, ihr Kern, ihre Fläche, `flach` an Quelle und Platz, ihre Höhe über `a.y`
+        const [FC, WL, AU] = [globalThis.__fachwerkCore, window.__weltLicht, C.AUGE];
+        const r5 = (v) => Math.round(v * 1e5) / 1e5;
+        const gross = (W) => Math.max(0, ...W);
         r.setTimeOfDay(0, "regler");
         const an = giessen();
         // die Decke, wie der Boden sie trägt (`_lavaDeckeAt`, im halben Meter): Fläche und Schwerpunkt ihres glühenden Teils
@@ -1780,29 +1872,83 @@ async function lavaSeite(MESS) {
                 }
             return { A, x: sx / A, z: sz / A };
         };
-        // das Bild der Decke bei ihrer Temperatur (Kanal Rot): der Riss (das Innere) und die Haut der Scholle
+        // die Leuchtdichte der Decke bei ihrer Temperatur (cd/m², fachwerk `leuchtdichte` × die Emissivität der Lava): der Riss
+        // (das Innere) und die Haut der Scholle
         const bild = (tK) => {
-            const [td, t0] = r._lavaSpanne();
-            const G = AnazhRealm.GLUT_BILD;
-            const FW = globalThis.__fachwerkCore;
-            const L = (T) => FW.lichtFarbe(t0)[0] * FW.LEUCHT_FEUER * Math.exp((G.c2 / (G.lambdaNm[0] * 1e-9)) * (1 / t0 - 1 / T));
-            return { riss: r3(L(tK)), scholle: r3(L(td + (tK - td) * AnazhRealm.LAVA_KRUSTE.platte)) };
+            const [td] = r._lavaSpanne();
+            const Lc = (T) => FC.leuchtdichte(T) * FC.STRAHLER.emissiv.lava;
+            return { riss: r3(Lc(tK)), scholle: r3(Lc(td + (tK - td) * C.LAVA_KRUSTE.platte)) };
+        };
+        // DER TAKT DES LICHTS mit dem Auge 1,8 m über der Decke, zweimal: der zweite nach der Blende des Pools (`LICHT_POOL.blendeS`
+        // auf der Wanduhr, synchron gewartet: kein Takt des Spiels fällt dazwischen) — erst der freie Platz nimmt die neu Gewählte
+        // auf, und die Wahl fällt neu (`wahlS`) → die Lux der Nacht
+        const takt = () => {
+            const [cp, vor] = [st.camera.position, st.camera.position.clone()];
+            cp.set(an.x, an.y + 1.8, an.z);
+            try {
+                r.setTimeOfDay(0, "regler");
+                r._leuchtTakt();
+                for (const t0 = performance.now(); performance.now() - t0 < 1100 * C.LICHT_POOL.blendeS; );
+                r._leuchtTakt();
+            } finally {
+                cp.copy(vor);
+            }
+            return r._augeLux;
         };
         const schein = () => {
+            const aLux = takt();
             const Q = r._leuchtQuellen(an.x, an.y + 1.8, an.z, 64).filter((q) => q.quelle === "lava");
             const D = decke();
             const tKd = r._lavaZustand(an).temperatur + 273.15;
-            const mass = (q, t, kk = q.L.kernM) => ((r._leuchtStaerke(q, t) / Math.PI) * (1 + kk * kk)) / (kk * kk);
-            const W = Q.flatMap((q) => [0, 0.37, 0.9, 1.3, 2.1, 3.3, 4.7, 6.1].map((t) => mass(q, t)));
-            return { quellen: Q.length, max: r3(Math.max(0, ...W)), min: r3(Math.min(...W)), kern: r3(Math.max(0, ...Q.map((q) => q.L.kernM))), kernSoll: r3(Math.sqrt(D.A / Math.PI)), neben: r3(Math.max(0, ...Q.map((q) => Math.hypot(q.x - D.x, q.z - D.z)))), ...bild(tKd), kelvin: Q.length ? Q[0].L.kelvin : null, tK: r3(r._lavaZustand(an).temperatur + 273.15), flach: Q.length ? Q[0].L.flach : null, zeit: Q.filter((q) => q.L.zeit != null).length, hoch: r3(Math.max(-99, ...Q.map((q) => Math.abs(q.y - an.y)))), herd: r3(r._lichtZeitplan(LGf.zeit)), glut: r3(r._lavaZustand(an).glut), soll: r3(r._lavaLeucht(tKd)) };
+            const cd = Q.map((q) => r._leuchtCandela(q, null));
+            const cdM2 = gross(Q.map((q, i) => cd[i] / (Math.PI * q.L.kernM * q.L.kernM)));
+            const Pl = ((r._leuchtPool && r._leuchtPool.plaetze) || []).filter((p) => p.quelle === "lava");
+            const abw = Pl.map((p) => {
+                const q = Q.find((q) => q.x === p.x && q.z === p.z);
+                return q && p.blende > 0 ? Math.abs(p.staerke / (p.blende * r._leuchtCandela(q, r._bildZeit)) - 1) : 99;
+            });
+            return {
+                quellen: Q.length,
+                candela: r3(gross(cd)),
+                cdM2: r3(cdM2),
+                flaecheAbw: r5(gross(Q.map((q) => Math.abs(q.L.flaecheM2 / (Math.PI * q.L.kernM * q.L.kernM) - 1)))),
+                kern: r3(gross(Q.map((q) => q.L.kernM))),
+                kernSoll: r3(Math.sqrt(D.A / Math.PI)),
+                neben: r3(gross(Q.map((q) => Math.hypot(q.x - D.x, q.z - D.z)))),
+                ...bild(tKd),
+                ausbruch: r3(r._lavaAusbruchCdM2()),
+                kelvin: Q.length ? Q[0].L.kelvin : null,
+                tK: r3(tKd),
+                flach: Q.length ? Q[0].L.flach : null,
+                alt: Q.filter((q) => ["staerke", "reichweiteM", "zeit"].some((k) => q.L[k] != null)).length,
+                hoch: r3(Math.max(-99, ...Q.map((q) => Math.abs(q.y - an.y)))),
+                glut: r3(r._lavaZustand(an).glut),
+                soll: r3(r._lavaLeucht(tKd)),
+                zeig: r3(WL.augeZeig(Math.PI * cdM2, aLux)),
+                aLux: r5(aLux),
+                knie: r3(AU.knieLux),
+                pool: { plaetze: Pl.length, abw: r5(gross(abw)), flach: Pl.length ? Pl[0].flach : null },
+            };
         };
         const L5 = (aus.l5 = schein());
-        // die Mutante: das alte Datum der Lava (der Herdfeuer-Punkt × `BRAND.licht` × Glut mit Zeitplan, 1 m über ihrer Mitte)
-        r._leuchtQuellen = function (...arg) {
-            return P._leuchtQuellen.apply(this, arg).map((q) => (q.quelle === "lava" ? Object.assign(q, { L: LGf, masse: LGf.licht * this._lavaZustand(q.id).glut, y: q.y + 1 }) : q));
+        // die Mutante „Keule aus": der Strahler ohne `flach` — die Decke strahlt rundum wie ein Punkt mit Kern
+        r._strahler = function (TK, A, flach, ...rest) {
+            return P._strahler.call(this, TK, A, false, ...rest);
         };
-        L5.mutante = schein();
-        delete r._leuchtQuellen;
+        try {
+            L5.mutanteKeule = schein();
+        } finally {
+            delete r._strahler;
+        }
+        // die Mutante „Feuer aus": der Strahler trägt 0 Candela — die Quelle trägt nicht über ihren Kern und fehlt (`_leuchtQuellen`)
+        r._strahler = function (...arg) {
+            return Object.assign({}, P._strahler.apply(this, arg), { candela: 0 });
+        };
+        try {
+            L5.mutanteAus = schein();
+        } finally {
+            delete r._strahler;
+        }
         // DER ORT: ein zweiter Guss ABSEITS der Mitte in dieselbe Zelle — EINE Scheibe je Zelle, an der Mitte ihrer Decke
         const [ox, oz] = [(Math.floor(an.x / cs) + 0.5) * cs, (Math.floor(an.z / cs) + 0.5) * cs];
         const D5 = decke();
@@ -1857,7 +2003,7 @@ async function lavaSeite(MESS) {
         delete r._tickBrand;
         return aus;
     } finally {
-        for (const k of ["_weltTag", "_tickBrand", "_brandSchritt", "_brandZuenden", "_naesseTakt", "_feuchteAt", "_feldFolgeSteht", "_kontaktStoffAt", "_lavaZuendet", "_brandFangen", "_wieseGrund", "_lavaDeckeAt", "_leuchtQuellen"]) delete r[k];
+        for (const k of ["_weltTag", "_tickBrand", "_brandSchritt", "_brandZuenden", "_naesseTakt", "_feuchteAt", "_feldFolgeSteht", "_kontaktStoffAt", "_lavaZuendet", "_brandFangen", "_wieseGrund", "_lavaDeckeAt", "_strahler"]) delete r[k];
         r.setTimeOfDay(0.5, "regler");
         leer();
         st.weatherEffectTime = uhr;
@@ -1924,18 +2070,18 @@ if (SELBSTTEST) {
                     n4: { abrufe: 1, gebaut: true, rauheit: 0.96, mutante: 0 },
                     n5: { flammen: 27, paare: 26, abstand: 0.427, breite: 0.36, mass: 1.187, weit: 2, minM: 0.2, mutante: { flammen: 22, paare: 21, abstand: 1.123, breite: 0.702, mass: 1.6, weit: 2, minM: 0.5 } },
                     n6: { flammen: 27, sigma: 0.246, min: 0.652, max: 1.35, puls: 0.35, uhr: 0.259, mutante: { flammen: 27, sigma: 0, min: 1, max: 1, puls: 0 } },
-                    n7: { quellen: 4, max: 8.2, min: 5.7, tag: 8.2, mutanteTon: { nacht: 5.5, tag: 16 }, kern: 2, zeit: 0, herd: 45, belichtung: 1.5, soll: 7.5, mutante: { quellen: 4, max: 460, min: 300, kern: 0.76, zeit: 4, herd: 45, belichtung: 1.5, soll: 7 } },
+                    n7: { quellen: 2, candela: 56927.321, candelaAbw: 0, kern: 5.75, kernAbw: 0, flach: 0, alt: 0, max: 3.472, min: 3.245, soll: [3.243, 3.489], cdM2: 548.069, aLux: 0, knie: 2.76, pool: { plaetze: 2, abw: 0, flach: 0 }, tag: { candela: 56927.321, max: 0.04902, soll: 0.04902, aLux: 115000, s: 7.83, eps: 0.1, reichweite: 0, trag: 0.242 }, mutanteTon: { tag: 1661.231, nacht: 30831.093 }, mutanteAus: { quellen: 0, candela: 0, candelaAbw: 0, kern: 0, kernAbw: 0, flach: 0, alt: 0, max: 0, min: null, soll: [3.243, 3.489], cdM2: 548.069, aLux: 0, knie: 2.76, pool: { plaetze: 2, abw: 99, flach: 0 } } },
                     // die Lava-Linse (L1–L5): die Zahlen der Mess-Wiese; `l2` im Stand, in dem die Decke vor dem Zünden gemalt ist
                     l1: { brennend: 8, betten: 8, tK: 1650, tZuend: [523, 533], tau: 13956.667, mutante: 0, kalt: { brennend: 0, tK: 513, glut: 0 }, lau: { brennend: 8, tK: 543, glut: 0 } },
                     l2: { kanten: 4, ein: 9, einMax: 9, decke: 0, amRand: 7, tief: [-1.99, 3.51], uhr: 60, spanne: 16, spanneMax: 16, sicht: [5.75, 15.5, 16, 15.5], flammen: [24, 41, 18, 151], mutante: { kanten: 4, ein: 0, einMax: 0, decke: 0, amRand: 0, tief: null, uhr: 60, spanne: 1.75, spanneMax: 9.25, sicht: [4.75, 9.25, 9.25, 1.75], flammen: [19, 22, 19, 16] } },
                     l3: { ort: "probe", voll: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 1, faengt: true, gras: 400, stein: 380, iw: 4200, R: 0.076, s: 250, narbe: [1, 1] }, halb: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 400, stein: 0, maske: 64, iw: 4200, R: 0.076, s: 250, narbe: [1, 0] }, mutanteLast: { leb: 0.401, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 300, stein: 0, iw: 2100, R: 0.04, s: 400, narbe: [1, 0] }, mutanteFlaeche: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 400, stein: 380, iw: 4200, R: 0.076, s: 250, narbe: [1, 1] } },
                     l4: { punkte: 32, max: 0, decke: [0.043, 0.962], aussen: 1, asche: 0, mutante: { max: 0.957, ueber0: 32 } },
-                    l5: { quellen: 1, max: 0.55, min: 0.55, kern: 8, kernSoll: 7.9, neben: 0.2, riss: 1.97, scholle: 0.05, kelvin: 1625, tK: 1623.15, flach: 1, ort: { quellen: 1, neben: 0.2 }, zeit: 0, hoch: 0, herd: 45, glut: 1, soll: 0.55, mutante: { quellen: 1, max: 519.05, min: 444.211, kern: 0.76, kernSoll: 8, zeit: 1, hoch: 1, herd: 45, glut: 1, soll: 7.5 } },
+                    l5: { quellen: 1, candela: 1258883.249, cdM2: 6261.172, flaecheAbw: 0, kern: 8, kernSoll: 7.636, neben: 0.035, riss: 31599.306, scholle: 861.05, ausbruch: 31599.306, kelvin: 1650, tK: 1650, flach: 1, alt: 0, hoch: 0, glut: 1, soll: 6261.172, zeig: 5.5, aLux: 0, knie: 2.76, pool: { plaetze: 1, abw: 0, flach: 1 }, ort: { quellen: 1, neben: 0.035 }, mutanteKeule: { quellen: 1, candela: 1258883.249, cdM2: 6261.172, flaecheAbw: 0, kern: 8, kernSoll: 7.636, neben: 0.035, riss: 31599.306, scholle: 861.05, ausbruch: 31599.306, kelvin: 1650, tK: 1650, flach: 0, alt: 0, hoch: 0, glut: 1, soll: 6261.172, zeig: 5.5, aLux: 0, knie: 2.76, pool: { plaetze: 1, abw: 0, flach: 0 } }, mutanteAus: { quellen: 0, candela: 0, cdM2: 0, flaecheAbw: 0, kern: 0, kernSoll: 7.636, neben: 0, riss: 31599.306, scholle: 861.05, ausbruch: 31599.306, kelvin: null, tK: 1650, flach: null, alt: 0, hoch: -99, glut: 1, soll: 6261.172, zeig: 0, aLux: 0, knie: 2.76, pool: { plaetze: 0, abw: 0, flach: null } } },
                     l6: { regler: { dStunde: 0, dTemp: 0, dUhr: 0, dAschen: 0 }, sprung: { s: 600, dStunde: 4, tempVor: 1377, tempNach: 900, dBrandUhr: 600, schritte: 30, zuend: 110, takte: 40, aschen: 35 }, mutanteSicht: { regler: { dStunde: 4, dTemp: -400, dUhr: 0, dAschen: 0 } }, mutanteSchleife: { sprung: { schritte: 600 } } },
                 },
-                [["N1-LEER", "n1.brennt", false], ["N1-LEER", "n1.s", 3], ["N1-LEER", "n1.fernAn", 12], ["N1-WARTET", "n1.zuend", 0], ["N1-QUADRAT", "n1.fern", 0.9], ["MUTANTE-N1-WARTET", "n1.mutanteWartet.zuend", 1], ["MUTANTE-N1-QUADRAT", "n1.mutanteQuadrat.fern", 0], ["N2-ENDE", "n2.dauer", 31.5], ["MUTANTE-N2", "n2.mutante.dauer", 52.4], ["MUTANTE-N2", "n2.mutante", null], ["N3-LEER", "n3.gemessen", 0], ["N3-LICHT", "n3.max", 5.3, "n3.mitte", true], ["MUTANTE-N3", "n3.mutante.max", 0], ["N4-LEER", "n4.gebaut", false], ["N4-ZEILE", "n4.abrufe", 0], ["MUTANTE-N4", "n4.mutante", 1], ["N5-LEER", "n5.paare", 2], ["N5-LEER", "n5.mass", null], ["N5-SAUM", "n5.mass", 1.6, "n5.abstand", 1.123, "n5.breite", 0.702], ["MUTANTE-N5", "n5.mutante.mass", 1.187], ["MUTANTE-N5", "n5.mutante.paare", 2], ["MUTANTE-N5", "n5.mutante", null], ["N6-LEER", "n6.flammen", 3], ["N6-LEER", "n6.sigma", null], ["N6-BAND", "n6.sigma", 0, "n6.min", 1, "n6.max", 1], ["MUTANTE-N6", "n6.mutante.sigma", 0.246], ["MUTANTE-N6", "n6.mutante.flammen", 3], ["MUTANTE-N6", "n6.mutante", null], ["N7-UHR", "n7.tag", 16], ["MUTANTE-N7-TON", "n7.mutanteTon.tag", 5.6], ["N7-LEER", "n7.quellen", 0], ["N7-LEER", "n7.herd", 1], ["N7-SCHEIN", "n7.max", 460], ["N7-SCHEIN", "n7.zeit", 4], ["N7-DUNKEL", "n7.max", 1], ["MUTANTE-N7", "n7.mutante.max", 8.2], ["MUTANTE-N7", "n7.mutante.zeit", 0], ["MUTANTE-N7", "n7.mutante", null],
+                [["N1-LEER", "n1.brennt", false], ["N1-LEER", "n1.s", 3], ["N1-LEER", "n1.fernAn", 12], ["N1-WARTET", "n1.zuend", 0], ["N1-QUADRAT", "n1.fern", 0.9], ["MUTANTE-N1-WARTET", "n1.mutanteWartet.zuend", 1], ["MUTANTE-N1-QUADRAT", "n1.mutanteQuadrat.fern", 0], ["N2-ENDE", "n2.dauer", 31.5], ["MUTANTE-N2", "n2.mutante.dauer", 52.4], ["MUTANTE-N2", "n2.mutante", null], ["N3-LEER", "n3.gemessen", 0], ["N3-LICHT", "n3.max", 5.3, "n3.mitte", true], ["MUTANTE-N3", "n3.mutante.max", 0], ["N4-LEER", "n4.gebaut", false], ["N4-ZEILE", "n4.abrufe", 0], ["MUTANTE-N4", "n4.mutante", 1], ["N5-LEER", "n5.paare", 2], ["N5-LEER", "n5.mass", null], ["N5-SAUM", "n5.mass", 1.6, "n5.abstand", 1.123, "n5.breite", 0.702], ["MUTANTE-N5", "n5.mutante.mass", 1.187], ["MUTANTE-N5", "n5.mutante.paare", 2], ["MUTANTE-N5", "n5.mutante", null], ["N6-LEER", "n6.flammen", 3], ["N6-LEER", "n6.sigma", null], ["N6-BAND", "n6.sigma", 0, "n6.min", 1, "n6.max", 1], ["MUTANTE-N6", "n6.mutante.sigma", 0.246], ["MUTANTE-N6", "n6.mutante.flammen", 3], ["MUTANTE-N6", "n6.mutante", null], ["N7-LEER", "n7.quellen", 0], ["N7-LEER", "n7.candela", 0], ["N7-LEER", "n7.aLux", 115000], ["N7-CANDELA", "n7.candelaAbw", 0.5], ["N7-CANDELA", "n7.kernAbw", 0.25], ["N7-CANDELA", "n7.flach", 1], ["N7-CANDELA", "n7.alt", 4], ["N7-SCHEIN", "n7.max", 13.9], ["N7-SCHEIN", "n7.min", 0.05], ["N7-POOL", "n7.pool.plaetze", 0], ["N7-POOL", "n7.pool.abw", 0.18], ["N7-UHR-LEER", "n7.tag.aLux", 0.0167], ["N7-UHR", "n7.tag.candela", 30831.093], ["N7-UHR", "n7.tag.max", 3.375], ["N7-UHR", "n7.tag.reichweite", 48], ["MUTANTE-N7-TON", "n7.mutanteTon.tag", 30831.093], ["MUTANTE-N7-AUS", "n7.mutanteAus.quellen", 2, "n7.mutanteAus.candela", 56927.321], ["MUTANTE-N7-AUS", "n7.mutanteAus", null],
                     // die Täter der Lava-Linse: je Fall der Stand vor w28-lava-zuendet (L2-DECKE: der Kopf 163a65de — alle Eintritte 2 m in der Zelle der Lava)
-                    ["LEER", "l3", null], ["L1-LEER", "l1.betten", 0, "l1.brennend", 0], ["L1-LEER", "l1.kalt.tK", 600], ["L1-LEER", "l1.lau", null], ["L1-ZÜNDUNG", "l1.brennend", 0], ["L1-ZÜNDUNG", "l1.brennend", 5], ["L1-KALT", "l1.kalt.brennend", 8], ["L1-LAU", "l1.lau.brennend", 0], ["MUTANTE-L1", "l1.mutante", 8], ["L2-LEER", "l2.kanten", 0], ["L2-LEER", "l2.uhr", 12], ["L2-EIN", "l2.ein", 0], ["L2-DECKE", "l2.decke", 1, "l2.tief", [-1.99, -1.99]], ["L2-DECKE", "l2.decke", 0.3], ["L2-ABSEITS", "l2.amRand", 0], ["L2-SPANNE", "l2.spanne", 9.25], ["MUTANTE-L2", "l2.mutante.einMax", 9], ["MUTANTE-L2", "l2.mutante.spanneMax", 16], ["MUTANTE-L2", "l2.mutante", null], ["L3-LEER", "l3.voll", null], ["L3-LEER", "l3.voll.narbe", [1, 0]], ["L3-LEER", "l3.halb.faengt", false], ["L3-LEER", "l3.halb.gras", 2], ["L3-LEER", "l3.halb.anteil", 1], ["L3-LAST", "l3.halb.iw", 2100, "l3.halb.leb", 0.401], ["L3-LAST", "l3.halb.leb", 0.401], ["L3-MASKE", "l3.halb.maske", 0], ["L3-MASKE", "l3.halb.maske", 200], ["L3-FLAMME", "l3.halb.stein", 25], ["L3-NARBE", "l3.halb.narbe", [1, 0.946]], ["L3-NARBE", "l3.halb.narbe", [0, 0]], ["MUTANTE-L3-LAST", "l3.mutanteLast.iw", 4200], ["MUTANTE-L3-LAST", "l3.mutanteLast", null], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.stein", 0], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.narbe", [1, 0]], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche", null], ["L4-LEER", "l4.punkte", 0], ["L4-LEER", "l4.aussen", 0], ["L4-HALM", "l4.max", 0.957], ["MUTANTE-L4", "l4.mutante.max", 0], ["MUTANTE-L4", "l4.mutante", null], ["L5-LEER", "l5.quellen", 0], ["L5-LEER", "l5.herd", 1], ["L5-SCHEIN", "l5.max", 519.05], ["L5-SCHEIN", "l5.zeit", 1], ["L5-DUNKEL", "l5.max", 1], ["L5-DUNKEL", "l5.max", 3.12], ["L5-DUNKEL", "l5.riss", 0.5], ["L5-KERN", "l5.kern", 0.76], ["L5-KERN", "l5.kern", 9.03], ["L5-KERN", "l5.neben", 2.4], ["L5-FARBE", "l5.kelvin", 2000], ["L5-FARBE", "l5.flach", 0], ["L5-ORT", "l5.ort.quellen", 2], ["L5-ORT", "l5.ort.neben", 7.81], ["L5-HÖHE", "l5.hoch", 1], ["MUTANTE-L5", "l5.mutante.max", 7.918], ["MUTANTE-L5", "l5.mutante.zeit", 0], ["MUTANTE-L5", "l5.mutante.hoch", 0], ["MUTANTE-L5", "l5.mutante", null],
+                    ["LEER", "l3", null], ["L1-LEER", "l1.betten", 0, "l1.brennend", 0], ["L1-LEER", "l1.kalt.tK", 600], ["L1-LEER", "l1.lau", null], ["L1-ZÜNDUNG", "l1.brennend", 0], ["L1-ZÜNDUNG", "l1.brennend", 5], ["L1-KALT", "l1.kalt.brennend", 8], ["L1-LAU", "l1.lau.brennend", 0], ["MUTANTE-L1", "l1.mutante", 8], ["L2-LEER", "l2.kanten", 0], ["L2-LEER", "l2.uhr", 12], ["L2-EIN", "l2.ein", 0], ["L2-DECKE", "l2.decke", 1, "l2.tief", [-1.99, -1.99]], ["L2-DECKE", "l2.decke", 0.3], ["L2-ABSEITS", "l2.amRand", 0], ["L2-SPANNE", "l2.spanne", 9.25], ["MUTANTE-L2", "l2.mutante.einMax", 9], ["MUTANTE-L2", "l2.mutante.spanneMax", 16], ["MUTANTE-L2", "l2.mutante", null], ["L3-LEER", "l3.voll", null], ["L3-LEER", "l3.voll.narbe", [1, 0]], ["L3-LEER", "l3.halb.faengt", false], ["L3-LEER", "l3.halb.gras", 2], ["L3-LEER", "l3.halb.anteil", 1], ["L3-LAST", "l3.halb.iw", 2100, "l3.halb.leb", 0.401], ["L3-LAST", "l3.halb.leb", 0.401], ["L3-MASKE", "l3.halb.maske", 0], ["L3-MASKE", "l3.halb.maske", 200], ["L3-FLAMME", "l3.halb.stein", 25], ["L3-NARBE", "l3.halb.narbe", [1, 0.946]], ["L3-NARBE", "l3.halb.narbe", [0, 0]], ["MUTANTE-L3-LAST", "l3.mutanteLast.iw", 4200], ["MUTANTE-L3-LAST", "l3.mutanteLast", null], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.stein", 0], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.narbe", [1, 0]], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche", null], ["L4-LEER", "l4.punkte", 0], ["L4-LEER", "l4.aussen", 0], ["L4-HALM", "l4.max", 0.957], ["MUTANTE-L4", "l4.mutante.max", 0], ["MUTANTE-L4", "l4.mutante", null], ["L5-LEER", "l5.quellen", 0], ["L5-LEER", "l5.candela", 0], ["L5-LEER", "l5.aLux", 115000], ["L5-CANDELA", "l5.quellen", 2], ["L5-CANDELA", "l5.flaecheAbw", 0.27], ["L5-CANDELA", "l5.alt", 1], ["L5-DUNKEL", "l5.cdM2", 31599.306], ["L5-DUNKEL", "l5.cdM2", 861.05], ["L5-DUNKEL", "l5.soll", 3000], ["L5-DUNKEL", "l5.riss", 458000], ["L5-KERN", "l5.kern", 0.76], ["L5-KERN", "l5.kern", 9.03], ["L5-KERN", "l5.neben", 2.4], ["L5-FARBE", "l5.kelvin", 2000], ["L5-POOL", "l5.pool.plaetze", 0], ["L5-POOL", "l5.pool.abw", 0.5], ["L5-KEULE", "l5.flach", 0], ["L5-KEULE", "l5.pool.flach", 0], ["L5-HÖHE", "l5.hoch", 1], ["L5-ORT", "l5.ort.quellen", 2], ["L5-ORT", "l5.ort.neben", 7.81], ["MUTANTE-L5-AUS", "l5.mutanteAus.quellen", 1, "l5.mutanteAus.candela", 1258883.249], ["MUTANTE-L5-AUS", "l5.mutanteAus", null], ["MUTANTE-L5-KEULE", "l5.mutanteKeule.flach", 1, "l5.mutanteKeule.pool.flach", 1], ["MUTANTE-L5-KEULE", "l5.mutanteKeule", null],
                     ["L6-LEER", "l6.sprung.tempVor", 20], ["L6-SICHT", "l6.regler.dStunde", 4], ["L6-SICHT", "l6.regler.dTemp", -400], ["L6-SICHT", "l6.regler.dUhr", 600], ["L6-SPRUNG", "l6.sprung.dStunde", 0], ["L6-SPRUNG", "l6.sprung.tempNach", 1377], ["L6-SPRUNG", "l6.sprung.dBrandUhr", 0], ["L6-SCHLEIFE", "l6.sprung.schritte", 600], ["MUTANTE-L6-SICHT", "l6.mutanteSicht.regler.dStunde", 0], ["MUTANTE-L6-SICHT", "l6.mutanteSicht", null], ["MUTANTE-L6-SCHLEIFE", "l6.mutanteSchleife.sprung.schritte", 30],
                 ]
             ),
@@ -3048,7 +3194,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
         if (!befund || befund.fehler) absturz(befund ? befund.fehler : "kein Befund");
         console.log("NARBE " + JSON.stringify(befund));
         const v = narbeUrteil(befund);
-        urteilEnde(v.length, `❌ NARBE ROT — ${v.join(" | ")}`, "✅ NARBE GRÜN — die Narbe folgt der Front, die Zelle brennt, bis ihre Front sie deckt, das Licht steht bei den Flammen, der Boden liest die Asche-Zeile, die Front ist ein geschlossener Saum, die Zungen pulsen, der Brand leuchtet nachts als Flammen-Fläche; die Lava zündet die Betten um sie auf der Länge ihres Rands, kein Halm steht auf ihrer Decke, sie leuchtet als Flammen-Fläche; die Uhr des Spielers bewegt keinen Prozess, der Sprung der Welt-Uhr ist geschlossen");
+        urteilEnde(v.length, `❌ NARBE ROT — ${v.join(" | ")}`, "✅ NARBE GRÜN — die Narbe folgt der Front, die Zelle brennt, bis ihre Front sie deckt, das Licht steht bei den Flammen, der Boden liest die Asche-Zeile, die Front ist ein geschlossener Saum, die Zungen pulsen, der Brand leuchtet als Flächen-Strahler seines Datums durch das Auge der Stunde; die Lava zündet die Betten um sie auf der Länge ihres Rands, kein Halm steht auf ihrer Decke, sie leuchtet als EINE flache Scheibe mit der Leuchtdichte ihres Bilds; die Uhr des Spielers bewegt keinen Prozess, der Sprung der Welt-Uhr ist geschlossen");
     }
     await seiteZu(browser, server, befund, null, "fehler");
     if (TAT || NACHWUCHS) {
