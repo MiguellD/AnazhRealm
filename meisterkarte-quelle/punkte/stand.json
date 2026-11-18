@@ -2066,7 +2066,7 @@
   },
   "luftwasser.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer) an ee9c1965 gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.879 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 6552 / 0 px an e4e3f363 gtx",
+   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 47949 / 0 px (unter dem Spiegel Bett 0.2 % aus 0.8 m, vom Ufer) an 18058dba gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.879 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 6552 / 0 px an e4e3f363 gtx",
    "stationen": [
     {
      "id": "luftwasser.K3#1",
@@ -2091,10 +2091,9 @@
      "id": "luftwasser.K3#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer)",
-     "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/shader-kosten.cjs, scripts/lib/stand-linse.cjs +10)",
-     "gehalten": true,
+     "zahl": "Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 47949 / 0 px (unter dem Spiegel Bett 0.2 % aus 0.8 m, vom Ufer)",
+     "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -5248,7 +5247,7 @@
   },
   "karte2.leben.tiere.masse": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +28) · karte2.leben.tiere.masse#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +30)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.tiere.masse#1 radeon: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +28) · karte2.leben.tiere.masse#1 gtx: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 16.1 m: 46.9 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (121 px) · 51.7 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (200 px) · 56.4 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (189 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal an 18058dba",
    "stationen": [
     {
      "id": "karte2.leben.tiere.masse#1",
@@ -5265,10 +5264,9 @@
      "id": "karte2.leben.tiere.masse#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +30)",
-     "ungemessen": true,
+     "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 16.1 m: 46.9 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (121 px) · 51.7 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (200 px) · 56.4 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (189 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+     "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
+     "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 16.1 m: 46.9 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (121 px) · 51.7 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (200 px) · 56.4 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (189 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     }
@@ -6508,7 +6506,7 @@
   "ohne": 149
  },
  "kopfVoll": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
- "zeit": "2026-11-18T17:58:42.778Z",
+ "zeit": "2026-11-18T18:05:09.727Z",
  "vorher": "18058dba",
  "bilanz": {
   "gewinn": [],
