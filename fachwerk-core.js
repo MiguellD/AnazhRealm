@@ -4066,7 +4066,7 @@
     // von der Kreuzung der Hauptstraßen nach außen (sie steht nach Rang: Kirche, Rathaus und Burg in der Mitte). Die ORTE sind
     // die der Stufe 1 — Stufe 2 legt ihre Lose auf demselben Netz anders; Zahl, Maße und Ton sind die der Kachel.
     // → { n, lage: [x, z, gier, W, D, traufe, first] je Haus (lokal um die Kachel-Mitte, m; `gier` um y: das lokale x läuft
-    // längs der Straße), ton: [Wand r g b, Dach r g b] linear, strassen: [{ p: [x, z, …], w, belag, saum }], haeuser, plaetze, m }
+    // längs der Straße), ton: [Wand r g b, Dach r g b] linear, strassen: [{ p: [x, z, …], w, belag, saum, art }], haeuser, plaetze, m }
     // oder null (dort steht keine Kachel).
     // Kosten: das Netz und die Liste, 2–4 ms je Kachel (einmal, der Wirt merkt sie).
     var STADT_MASSEN = { einzugM: 4.2, platzM: 11, eckeM: 9, geschossM: 2.7, sockelM: 0.5, flachGrad: 8, strasseJe: 4 };
@@ -4081,7 +4081,7 @@
         // Belag-Gesetzes (`gassenBelag`, `gassenBreite`) für Größe und Jahr der Kachel — dieselben Gassen, die Stufe 2 pflastert
         const strassen = netz.edges.map(rd => { const p = []; for (let j = 0; j < rd.pts.length; j += S.strasseJe) p.push(e3(rd.pts[j].x), e3(rd.pts[j].z));
             const l = rd.pts[rd.pts.length - 1]; if ((rd.pts.length - 1) % S.strasseJe) p.push(e3(l.x), e3(l.z));
-            return { p, w: rd.w, belag: gassenBelag(dorf, rd), saum: (gassenBreite(dorf, rd) - rd.w) / 2 }; });
+            return { p, w: rd.w, belag: gassenBelag(dorf, rd), saum: (gassenBreite(dorf, rd) - rd.w) / 2, art: wegArt(dorf, rd) }; });
         const z0 = netz.nodes[0], kand = [];
         netz.bloecke.forEach((B, bi) => {
             let A2 = 0; for (let e = 0; e < 4; e++) { const p = B[e], q = B[(e + 1) % 4]; A2 += p[0] * q[1] - q[0] * p[1]; }
@@ -10077,6 +10077,54 @@
     function gassenBreite(plan, rd) {
         return gassenBelag(plan, rd) === "pflaster" ? rd.w + 2 * gehwegVon(plan, rd) : rd.w;
     }
+    // DER KÖRPER DES WEGS (w28-weg-koerper, 18.11.2026; Auge am Messort „dorf 7 4750“: jede Gasse der Stadt lag als flacher
+    // Anstrich im Boden — kein Bord, keine Rinne, die Fahrbahn vom Gehweg nicht zu scheiden). EIN Gesetz für jeden Rang, nah und
+    // fern: die ART eines Wegs folgt aus Belag × Rang (`wegArt`), ihr QUERSCHNITT aus der Art (`wegQuerschnitt`).
+    //   pfad          der Feldweg: getretene Erde, kein Rand
+    //   gasse         die Erd-Gasse im Ort: getretene Erde, kein Rand
+    //   pflastergasse die gepflasterte Gasse ohne Wagen: eine Ebene von Bauflucht zu Bauflucht, am Rand des Pflasters die Kante
+    //   strasse       die Fahrstraße der Stadt (städtisch, ab VERKEHR_GESETZ.breiteM): die Fahrbahn liegt `bord.hochM` unter dem
+    //                 Gehweg, zwischen beiden der Bordstein (`breitM` breit, je `steinM` eine Stoßfuge), vor ihm die Rinne
+    //   platz         der gepflasterte Platz: eine Ebene, am Rand die Kante; die Fahrbahn einer Straße quert ihn mit ihrem Bord
+    // `kant`: die Reihe der Randsteine am Saum jedes Pflasters (`breitM` breit, ebenerdig). `ton`: der Anteil der Albedo des
+    // Steins je Teil (die Fahrbahn ist befahren und dunkler, die Rinne feucht, der Bord glatt gesägt und heller, seine Flanke im
+    // eigenen Ton, der Schlagschatten des Bords nimmt das direkte Licht). `fernM`: bis dahin trägt der Bord sein Relief
+    // (Flanke, Schatten, Fuge), dahinter nur den Ton. Der Bord hat keinen Tritt: der Boden bleibt eine Ebene (12 cm ohne Stufe).
+    // Leser: der Maler der Wege-Karte (`_stlWegeRaten`, `_stadtFerneStrassen`: die Fahrbahn als zweite Höhe des Pflasters), der
+    // Boden-Stoff (`_wegeBodenFarbe` → `_wegBord`: Schatten = hochM × cot(Sonnenhöhe), Flanke aus der Augenhöhe), das Band der
+    // Ferne (`_stadtFerneBand`: Ton je Belag und Art) und `kachelMassen` (`strassen[].art`).
+    var WEG_GESETZ = {
+        bord: { hochM: 0.12, breitM: 0.16, steinM: 1, rinneM: 0.3 },
+        kant: { breitM: 0.2 },
+        ton: { fahr: 0.84, rinne: 0.72, bord: 1.12, flanke: 0.62, kant: 0.8, schatten: 0.42 },
+        fernM: 30,
+        art: {
+            pfad: { belag: "weg", bord: false, kant: false },
+            gasse: { belag: "weg", bord: false, kant: false },
+            pflastergasse: { belag: "pflaster", bord: false, kant: true },
+            strasse: { belag: "pflaster", bord: true, kant: true },
+            platz: { belag: "pflaster", bord: false, kant: true },
+        },
+    };
+    function wegArt(plan, rd, feldweg) {
+        if (feldweg) return "pfad";
+        if (gassenBelag(plan, rd) !== "pflaster") return "gasse";
+        return plan.staedtisch && rd.w >= VERKEHR_GESETZ.breiteM ? "strasse" : "pflastergasse";
+    }
+    // der Querschnitt eines Wegs → { art, belag, fahrM (die Fahrbahn), gehM (der Gehweg je Seite, 0 ohne Pflaster), bordM (die
+    // Höhe des Bords, 0 ohne ihn), kant }. Leser: der Maler der Wege-Karte und das Band der Ferne.
+    function wegQuerschnitt(plan, rd, feldweg) {
+        var art = wegArt(plan, rd, feldweg),
+            A = WEG_GESETZ.art[art];
+        return {
+            art: art,
+            belag: A.belag,
+            fahrM: rd.w,
+            gehM: A.belag === "pflaster" ? gehwegVon(plan, rd) : 0,
+            bordM: A.bord ? WEG_GESETZ.bord.hochM : 0,
+            kant: A.kant,
+        };
+    }
     function platzBelag(plan) {
         var pz = plan.platz;
         if (!pz) return null;
@@ -12308,6 +12356,9 @@
         BELAG_GESETZ: BELAG_GESETZ,
         gassenBelag: gassenBelag,
         gassenBreite: gassenBreite,
+        WEG_GESETZ: WEG_GESETZ,
+        wegArt: wegArt,
+        wegQuerschnitt: wegQuerschnitt,
         platzBelag: platzBelag,
         belagAm: belagAm,
         lichtFlackern: lichtFlackern,
