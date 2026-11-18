@@ -2545,7 +2545,9 @@ AnazhRealm.ZELL_GEDAECHTNISSE = Object.freeze([
         zelle: 1,
         lage: (cr) => (cr && cr.position ? [Math.floor(cr.position.x), Math.floor(cr.position.z)] : null),
         reichweite: (r) => AnazhRealm._leibReichweite(r),
-        lebt: (r, cr) => cr.visible !== false && cr.userData._kzFern !== -1,
+        // es lebt, wer zeichnet — und der Leichnam bis zu seiner Frist (`_tickLeichname`: das Fleisch des Aases, eine Tat;
+        // Radeon, Runde reise: einer 4,5 km fern, gefallen auf dem Weg)
+        lebt: (r, cr) => (cr.visible !== false && cr.userData._kzFern !== -1) || (r.state.leichname || []).includes(cr),
         schranke:
             "sein Körper (`removeCreature`; die Zeichnung `_bestandVerkoerpern` nimmt ihn außer Blick, jenseits seines Pixel-Horizonts auch im Kegel)",
         zaehlen: true,
