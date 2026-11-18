@@ -6028,7 +6028,7 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +261 Pixel je Pixel, Median aus 5 Sätzen (Spanne 261–261; neu 261 − Rauschen 0, bei laufender Schleife 70; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 625) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon — offen: karte2.same.kopplung.kaskade#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/draw-zaehler.cjs, scripts/lib/shader-kosten.cjs +7)",
+   "beleg": "Maschine: gehalten: Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +261 Pixel je Pixel, Median aus 5 Sätzen (Spanne 261–261; neu 261 − Rauschen 0, bei laufender Schleife 70; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 625) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon — offen: karte2.same.kopplung.kaskade#1 gtx: ROT: Herd -248,-1080 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +35 Pixel je Pixel, Median aus 5 Sätzen (Spanne 35–35; neu 35 − Rauschen 0, bei laufender Schleife 14; Soll ≥ 200; 4 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 316) · [linse-gpu] nvidia/pascal an 18058dba",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
@@ -6045,10 +6045,9 @@
      "id": "karte2.same.kopplung.kaskade#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/draw-zaehler.cjs, scripts/lib/shader-kosten.cjs +7)",
-     "ungemessen": true,
+     "zahl": "Herd -248,-1080 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +35 Pixel je Pixel, Median aus 5 Sätzen (Spanne 35–35; neu 35 − Rauschen 0, bei laufender Schleife 14; Soll ≥ 200; 4 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 316) · [linse-gpu] nvidia/pascal",
+     "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
+     "grund": "ROT: Herd -248,-1080 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +35 Pixel je Pixel, Median aus 5 Sätzen (Spanne 35–35; neu 35 − Rauschen 0, bei laufender Schleife 14; Soll ≥ 200; 4 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 316) · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     }
@@ -6494,7 +6493,7 @@
   "ohne": 148
  },
  "kopfVoll": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
- "zeit": "2026-11-18T19:36:00.896Z",
+ "zeit": "2026-11-18T19:42:15.733Z",
  "vorher": "18058dba",
  "bilanz": {
   "gewinn": [],
