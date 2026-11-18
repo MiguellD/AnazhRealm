@@ -1148,16 +1148,19 @@ function tagKurve(o) {
                 };
                 if (o.png) z.png = __png(u8, W, H);
                 // DIE NACHT DER UMGEBUNG (w28-strahler), um Mitternacht: dieselbe Szene mit GESTILLTEN Quellen (der Takt des Pools schreibt
-                // seine Plätze, die Linse nimmt ihnen die Reichweite — der Griff der Prüfbühne, kein Schalter im Spiel): das Band der Nacht
-                // urteilt die Umgebung, nie das Licht eines Herds an der Station
+                // seine Plätze, die Linse nimmt ihnen die Reichweite — der Griff der Prüfbühne, kein Schalter im Spiel) und GESTILLTEM
+                // Messer (w28-strahler-2: die Kamera liest das Becken stetig — ohne Quellen im Stoff liest sie auch keins): das Band der
+                // Nacht urteilt die Umgebung, nie das Licht eines Herds an der Station
                 if (u === 0) {
                     const alt = r._leuchtTakt;
                     r._leuchtTakt = function () {
                         alt.call(this);
                         for (const q of this.state.atmoUniforms.lichtLage) q.value.w = 0;
                     };
+                    r._beckenAmAuge = () => 0;
                     try {
                         r._leuchtTakt();
+                        r._applyDayNightToScene();
                         const v8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
                         const a = [0, 0, 0, 0];
                         let n2 = 0;
@@ -1169,7 +1172,9 @@ function tagKurve(o) {
                         z.Yohne = +(luma709(a.slice(1)) / n2).toPrecision(4);
                     } finally {
                         r._leuchtTakt = alt;
+                        delete r._beckenAmAuge;
                         r._leuchtTakt();
+                        r._applyDayNightToScene();
                     }
                 }
                 zeilen.push(z);

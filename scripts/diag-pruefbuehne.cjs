@@ -909,8 +909,10 @@ const S0_NAH_M = 4;
 // (3 Ringe 0,75–1,75 m, aus 2 m), dieselben Pixel:
 //   (1) GESETZ: das Licht des Feuers im Kreis (linear: mit minus ohne Feuer, `kreisLin`) gegen den EICH-Schuss — derselbe Platz,
 //       seine Stärke von der Linse aus dem Gesetz gerechnet (fachwerk `strahler`: Leuchtdichte der Temperatur × Fläche des Betts
-//       `_glutFlaeche`, ohne den Chokepoint des Wirts `_strahler`) — Abweichung ≤ `gesetz`. Boden, Belichtung und Tonkurve kürzen
-//       sich an derselben Stelle heraus; ein absolutes E(2 m) → Luma verlangte einen Zwilling der Foto-Kette in der Linse.
+//       `_glutFlaeche`, ohne den Chokepoint des Wirts `_strahler`) — Abweichung ≤ `gesetz`. Boden und Tonkurve kürzen sich an
+//       derselben Stelle heraus, die Belichtung trägt jeder Schuss selbst (`kSchuss`: seit w28-strahler-2 liest die Kamera das
+//       Becken stetig, mit Feuer steht sie bei 0,84, ohne bei 1,50 — das Licht im Kreis steht je Schuss durch SEIN k); ein
+//       absolutes E(2 m) → Luma verlangte einen Zwilling der Foto-Kette in der Linse.
 //   (2) KONTRAST: der Kreis in der Ausgabe mit ÷ ohne Feuer ≥ `kontrast` — eine UNTERKANTE unter einer gehobenen Nacht (der
 //       Boden ohne Feuer trägt 0,083; das gesetzestreue Feuer hebt ihn auf das 1,57-Fache), kein Ziel: das Maß „Feuerkreis in
 //       2 m gegen die Nacht NACH der Tonkurve" gehört dem nächsten Glied der Licht-Kette (Tonkurve, Auge der Nacht).
@@ -920,8 +922,8 @@ const S0_NAH_M = 4;
 // Mutanten des Selbsttests, beide ROT beim Namen: das Feuer aus (der Schuss `nacht`) und die zehnfache Candela (`stark`).
 const S0_KREIS = { gesetz: 0.15, platz: S0_PLATZ, kontrast: 1.5, stark: 10 };
 function s0KreisMass(e, ohne, eich) {
-    const netto = e.kreisLin - ohne.kreisLin;
-    const soll = eich.kreisLin - ohne.kreisLin;
+    const netto = e.kreisLin / e.kSchuss - ohne.kreisLin / ohne.kSchuss;
+    const soll = eich.kreisLin / eich.kSchuss - ohne.kreisLin / ohne.kSchuss;
     return {
         netto: +netto.toFixed(5),
         soll: +soll.toFixed(5),
@@ -1551,6 +1553,7 @@ async function lichtLauf() {
                                       }
                                     : () => 0;
                         let messerP = null;
+                        let kSchuss = NaN; // die Belichtung, bei der der Schuss stand
                         // der Farb-Schein: der Platz des Feuers leuchtet wie bis K11b — in der Glut-Palette (sRGB → linear) und mit
                         // der Stärke des Kopfs (gleiche Luma am Platz) — die Farbe des Stoffs statt der Farbtemperatur
                         // der Tag-Schein: das Auge des Tages — die Post-Kette ohne das Auge der Nacht (`nightFactor` 0, volle
@@ -1614,6 +1617,9 @@ async function lichtLauf() {
                             cam.updateMatrixWorld(true);
                             // die Plätze des Pools blenden in LICHT_POOL.blendeS ein: die Wand-Uhr läuft, ehe der Schuss misst
                             await sleep(1000 * AnazhRealm.LICHT_POOL.blendeS + 100);
+                            // die Kamera liest das Becken, das jetzt steht (die Uhr der Bühne ruht: im Spiel wendet jeder Takt der Uhr sie an)
+                            r._applyDayNightToScene();
+                            kSchuss = rend.toneMappingExposure;
                             // der Satz „messung" (K32, scripts/lib/abnahme-urteil.cjs): der Schuss ist ein Mess-Frame der Nacht — sein
                             // Urteil liest den Kreis um das Feuer (kreis, ton) aus den Pixeln; die Belichtungs-Zeile des Beweis-Satzes
                             // (Tag-Bühne, abgesoffen ≤ 60 %) warf hier an der Mitternacht (schwarz 71,9 %, Kreis hell)
@@ -1758,6 +1764,7 @@ async function lichtLauf() {
                             stern: sternL,
                             kreis: nk ? +(lk / nk).toFixed(4) : null,
                             kreisLin: nk ? +(ll / nk).toFixed(5) : null,
+                            kSchuss: +kSchuss.toFixed(4),
                             gesetz: {
                                 cdM2: +gesetzL.cdM2.toFixed(1),
                                 flaecheM2: +gesetzL.flaecheM2.toFixed(3),
@@ -1829,7 +1836,7 @@ async function lichtLauf() {
             nacht: "NACHT (ohne das Feuer)",
             farbe: "SCHEIN (das Feuer bis K11b)",
             kamera: "SCHEIN (die Kamera der Nacht 2 Stufen tiefer)",
-            messer: "SCHEIN (der Messer liest unter der Decke)",
+            messer: "SCHEIN (der Messer liest ein Becken ohne Feuer)",
             tag: "SCHEIN (das Auge des Tages)",
             tagOhne: "SCHEIN (das Auge des Tages, ohne das Feuer)",
             eich: "EICH (der Platz mit Leuchtdichte × Bett des Gesetzes)",
