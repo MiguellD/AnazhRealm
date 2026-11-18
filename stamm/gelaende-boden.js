@@ -1014,6 +1014,7 @@ class AnazhRealm_gelaende_boden {
         const gezeichnet = this.state.voxelChunks;
         if (gezeichnet && gezeichnet.size && !this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
         if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();
+        const boden = new Set(); // die Chunks, deren Boden der Erdbau in der feinsten Stufe trifft
         for (let a = ka; a <= kb; a++)
             for (let b = la; b <= lb; b++) {
                 if (!trifft(a, b, 3)) continue;
@@ -1023,8 +1024,11 @@ class AnazhRealm_gelaende_boden {
                     if (trifft(a, b, lod)) for (const c of caches) if (c && c.size) c.delete(`${key},${lod}`);
                 const ch = gezeichnet && gezeichnet.get(key);
                 if (ch && trifft(a, b, Number.isFinite(ch.lod) ? ch.lod : 0)) this.state.dirtyVoxelChunks.add(key);
-                if (trifft(a, b, 0)) this.state.grassDirtyChunks.add(key);
+                if (!trifft(a, b, 0)) continue;
+                this.state.grassDirtyChunks.add(key);
+                boden.add(key);
             }
+        this._saatFolgtGrund(x0 - R, x1 + R, z0 - R, z1 + R, boden); // die Saat dieser Chunks sät am neuen Grund
         let [wx0, wx1, wz0, wz1] = [x0, x1, z0, z1];
         const saum = globalThis.__phytoCore.FOREST_PACK.bestand.saum;
         const wechsel = raender.concat(raenderVorher).filter((r) => raender.includes(r) !== raenderVorher.includes(r));

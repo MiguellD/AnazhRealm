@@ -1306,11 +1306,20 @@ class AnazhRealm_vegetation_baum {
                 }
             }
         }
-        // Strauch-Teppich (Studio-Gesetz buildForest): Sträucher auf einem bushStep-RASTER (±2 m Jitter) mit
-        // gc.shrub = gauss(L, 0.4, 0.16) · (1−rk) · 0.42; bushStep = PORTAL_RENDER_CONFIG.understory.bushStep
-        // (Vertrags-Default 4.4). Eingänge: L = _canopyLightAt, rk aus der Platzierungs-Slope, Pfad =
-        // _pathFieldAt. Raster an Welt-Koords, Wurf per Positions-Hash (Γ5) → reihenfolge-unabhängig; ein über
-        // die Chunk-Naht gejitterter Punkt FÄLLT (kein Doppel). Bedingungslos das EINE Busch-Gesetz.
+        return planted + this._strauchTeppich(cx, cz);
+    }
+
+    // Strauch-Teppich (Studio-Gesetz buildForest): Sträucher auf einem bushStep-RASTER (±2 m Jitter) mit
+    // gc.shrub = gauss(L, 0.4, 0.16) · (1−rk) · 0.42; bushStep = PORTAL_RENDER_CONFIG.understory.bushStep
+    // (Vertrags-Default 4.4). Eingänge: L = _canopyLightAt, rk aus der Platzierungs-Slope, Pfad =
+    // _pathFieldAt. Raster an Welt-Koords, Wurf per Positions-Hash (Γ5) → reihenfolge-unabhängig; ein über
+    // die Chunk-Naht gejitterter Punkt FÄLLT (kein Doppel). Bedingungslos das EINE Busch-Gesetz. Leser: der Wald des Chunks
+    // (`_forestPlantChunk`) und die Nachsaat nach einem Erdbau (`_tickSaat`, `_saatFolgtGrund`). → die Zahl der Würfe.
+    _strauchTeppich(cx, cz) {
+        const { span } = this._voxelChunkConfig();
+        const [ox, oz] = [cx * span, cz * span];
+        const seedInt = this._forestSeedInt();
+        let planted = 0;
         {
             const uCfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.understory;
             const bushStep = uCfg && Number.isFinite(uCfg.bushStep) ? uCfg.bushStep : 4.4;
@@ -2340,6 +2349,62 @@ class AnazhRealm_vegetation_baum {
         return n;
     }
 
+    // DIE SAAT FOLGT DEM GRUND (w28-funktion-welt-2): ein Erdbau (`_erdbauWirkt`) ändert den Boden der Chunks, die er in der
+    // feinsten Stufe trifft (`chunks`, Schlüssel „a,b“) — und die Saat dieser Chunks las den Boden davor: die Höhe jedes Wurfs,
+    // Hang, Feuchte und Höhen-Band jeder Probe des Rasters (`_vegetationSampleSpawn`) und des Strauch-Teppichs. Jeder Wurf des
+    // Gesetzes dort (`_ausGesetz` + `feldWurf`: der Boot wirft ihn neu), wartend in der Schlange oder gesetzt, fällt still, und
+    // der Chunk sät NEU am neuen Boden (`_saatOffen`, `nachsaat`: die Proben, dann der Strauch-Teppich) — außer dem Baum des
+    // Walds (sein Dart folgt dem Plan, `_waldNachwuchs`/`_saumRaeumen`) und dem Totholz an ihm: sie stehen danach auf dem neuen
+    // Grund (0,5 m über dem Boden ihrer Spalte, wie jeder Wurf). Bis hier blieb die Saat, die vor dem Erdbau des erwachenden
+    // Dorfs fiel: ob ein Chunk vorher oder nachher säte, entschied der Takt — A gegen A an 2a1a6e1c drei Hasel am Dorf −4,−4
+    // bis 3,6 m unter ihrem Grund in A, auf ihm in B, ein Glutbrunnen nur in A. → die Zahl der Chunks, die neu säen.
+    _saatFolgtGrund(x0, x1, z0, z1, chunks) {
+        const P = this.state.voxelPopulatedChunks;
+        if (!chunks.size || !P || !P.size) return 0;
+        const { span } = this._voxelChunkConfig();
+        const imChunk = (p) => chunks.has(`${Math.floor(p.x / span)},${Math.floor(p.z / span)}`);
+        const bleibt = (o, typ) => o._waldDart === true || typ === "stamm_gefallen";
+        const grund = (p) => {
+            const g = this._voxelSurfaceY(p.x, p.z);
+            if (Number.isFinite(g) && g + 0.5 !== p.y) return (p.y = g + 0.5);
+            return null;
+        };
+        const Q = this.state.pendingVegSpawns;
+        if (Q)
+            for (let i = Q.length - 1; i >= 0; i--) {
+                const t = Q[i];
+                if (!t || !t.position || !imChunk(t.position)) continue;
+                if (bleibt(t.opts || {}, t.name)) grund(t.position);
+                else Q.splice(i, 1);
+            }
+        const weg = [];
+        for (const e of this._blockerUmPlatz((x0 + x1) / 2, (z0 + z1) / 2, Math.max(x1 - x0, z1 - z0) / 2, [])) {
+            if (!e || !e.position || e._ausGesetz !== true || e.feldWurf !== true || !imChunk(e.position)) continue;
+            if (!bleibt(e, e.type)) weg.push(e);
+            else if (grund(e.position) !== null) {
+                if (e.blockerAABBs) this._populateBlockerAABBs(e);
+                this._werkPoseZeigen(e);
+            }
+        }
+        for (const e of weg) this.removeArchitecture(e, { still: true });
+        if (weg.length) this._weltRegt();
+        this._pflanzRegung = (this._pflanzRegung | 0) + 1; // die Schlange wechselte (`_kroneKommt`)
+        const S = this._saatOffen || (this._saatOffen = new Map());
+        let n = 0;
+        for (const key of chunks) {
+            if (!P.has(key)) continue; // ein ungesäter Chunk sät selbst am neuen Boden
+            const c = S.get(key);
+            if (c)
+                c.i = 0; // die Saat läuft: von vorn (ihr Feld bestellt sie am neuen Stand, `_saatFeldBestellen`)
+            else {
+                const i = key.indexOf(",");
+                S.set(key, { cx: Number(key.slice(0, i)), cz: Number(key.slice(i + 1)), i: 0, nachsaat: true });
+            }
+            n++;
+        }
+        return n;
+    }
+
     // DIE FLÄCHEN EINES DORFS RÄUMEN (K52): jede neue Fläche der Wege-Karte (Weg, Platz, Anger, Acker einer Siedlung —
     // `_stlWegeBuild`; die Trittfläche einer Ausstattung — `_trittFlaecheSetzen`) wartet in `wegeKarte.raeumen`, bis der
     // Takt der Wege-Karte sie räumt (`_naturRaeumen` über ihre Hülle): die Trittfläche entsteht im Instanz-Pfad, mitten im
@@ -2508,8 +2573,15 @@ class AnazhRealm_vegetation_baum {
                         // Die Bäume pflanzt der Wald-Generator (`_forestPlantChunk`, zell-deterministisch: Poisson-Disc +
                         // Nische + reverse-J + Dichte-Gradient), nicht das Sample-Raster. Jeder Baum gehört genau dem Chunk
                         // seiner Position → genau einmal.
-                        S.delete(`${c.cx},${c.cz}`);
-                        spawned += this._forestPlantChunk(c.cx, c.cz);
+                        // Die Nachsaat nach einem Erdbau (`_saatFolgtGrund`) sät nur den Strauch-Teppich neu: der Wald
+                        // steht schon — außer er wartet noch auf seinen Plan (`_waldPflanzWarten`), dann pflanzt er ganz.
+                        const ck = `${c.cx},${c.cz}`;
+                        S.delete(ck);
+                        const W = this._waldPflanzWarten;
+                        spawned +=
+                            c.nachsaat && !(W && W.has(ck))
+                                ? this._strauchTeppich(c.cx, c.cz)
+                                : this._forestPlantChunk(c.cx, c.cz);
                         break;
                     }
                     const xi = c.i % SAMPLES,
