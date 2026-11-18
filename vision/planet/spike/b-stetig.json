@@ -1,0 +1,303 @@
+{
+ "kopf": "b-stetig · Kern planet-core.js sha256:c4de4d615c78d337 · planet-h2-4 · node v22.23.5",
+ "same": "erde-01",
+ "erg": {
+  "platte": {
+   "n": 400,
+   "dh1cm": {
+    "max": 5727.194721226223,
+    "p99": 3580.799263298827
+   },
+   "dh1m": {
+    "max": 5727.169818697536,
+    "p99": 3580.820671836643
+   },
+   "dT": 20.0418235110109,
+   "dP": 817.252807289805,
+   "dVeg": 1,
+   "dQrel": 0.000002507225585906879,
+   "dSee": 9.361995312318072e-7,
+   "biomWechsel": 13,
+   "sprung": {
+    "n": 102,
+    "land": 18,
+    "meer": 84,
+    "randArt": {
+     "1": 38,
+     "2": 38,
+     "3": 26
+    },
+    "krusteGleich": 63,
+    "krusteKante": 39,
+    "randSprungKmMedian": 9.263279885342683,
+    "ohneSprungRandKmMedian": 0.0000044274526549547975,
+    "dhMedian": 168.23033763821286,
+    "klimaOhneHoehe": 0,
+    "klimaOhneHoeheMaxDP": 0.000597646945152519,
+    "klimaOhneHoeheMaxDT": 0.000002559601403717693
+   }
+  },
+  "scholle": {
+   "n": 400,
+   "dh1cm": {
+    "max": 3212.127668399936,
+    "p99": 1587.3470247999792
+   },
+   "dh1m": {
+    "max": 3212.116840595135,
+    "p99": 1587.3478129090688
+   },
+   "dT": 20.0418235110109,
+   "dP": 803.1576698600769,
+   "dVeg": 1,
+   "dQrel": 0.0000020126778896642606,
+   "dSee": 0.000008200854153983528,
+   "biomWechsel": 7,
+   "sprung": {
+    "n": 223,
+    "land": 9,
+    "meer": 214,
+    "randArt": {
+     "1": 102,
+     "2": 96,
+     "3": 25
+    },
+    "krusteGleich": 9,
+    "krusteKante": 214,
+    "randSprungKmMedian": 0.000006802364623581525,
+    "ohneSprungRandKmMedian": 0.000005427301630334114,
+    "dhMedian": 6.208602013287873,
+    "klimaOhneHoehe": 0,
+    "klimaOhneHoeheMaxDP": 0.000597646945152519,
+    "klimaOhneHoeheMaxDT": 0.000009538531021036079
+   }
+  },
+  "kruste": {
+   "n": 400,
+   "dh1cm": {
+    "max": 903.0218079916935,
+    "p99": 489.59134837566705
+   },
+   "dh1m": {
+    "max": 903.1126178920601,
+    "p99": 489.5918737098042
+   },
+   "dT": 1.9109738698278047,
+   "dP": 795.2161642353133,
+   "dVeg": 1,
+   "dQrel": 0.000002754423458177042,
+   "dSee": 0.00001442141405050279,
+   "biomWechsel": 1,
+   "sprung": {
+    "n": 74,
+    "land": 1,
+    "meer": 73,
+    "randArt": {
+     "1": 38,
+     "2": 29,
+     "3": 7
+    },
+    "krusteGleich": 0,
+    "krusteKante": 74,
+    "randSprungKmMedian": 0.000005716087912333023,
+    "ohneSprungRandKmMedian": 0.000005939181562553131,
+    "dhMedian": 3.8281074620383606,
+    "klimaOhneHoehe": 0,
+    "klimaOhneHoeheMaxDP": 0.000597646945152519,
+    "klimaOhneHoeheMaxDT": 0.000020884063800963304
+   }
+  },
+  "zelle": {
+   "n": 400,
+   "dh1cm": {
+    "max": 0.0025602966729820764,
+    "p99": 0.0008461739398467185
+   },
+   "dh1m": {
+    "max": 0.25603003517812795,
+    "p99": 0.08461749537724442
+   },
+   "dT": 0.000007615765373003569,
+   "dP": 0.00008644375293442863,
+   "dVeg": 1.1101881169928163e-7,
+   "dQrel": 0.0000018545099197773588,
+   "dSee": 0.000003609846245922199,
+   "biomWechsel": 0,
+   "sprung": {
+    "n": 0,
+    "land": 0,
+    "meer": 0,
+    "randArt": {},
+    "krusteGleich": 0,
+    "krusteKante": 0,
+    "randSprungKmMedian": null,
+    "ohneSprungRandKmMedian": 0.000004941273573422222,
+    "dhMedian": null,
+    "klimaOhneHoehe": 0,
+    "klimaOhneHoeheMaxDP": 0.00008644375293442863,
+    "klimaOhneHoeheMaxDT": 0.000007615765373003569
+   }
+  },
+  "kueste": {
+   "n": 400,
+   "dh1cm": {
+    "max": 6366.614431840324,
+    "p99": 1896.874545062208
+   },
+   "dh1m": {
+    "max": 6366.625271671398,
+    "p99": 1896.8724850645274
+   },
+   "dT": 37.795424029246,
+   "dP": 1690.188934203429,
+   "dVeg": 1,
+   "dQrel": 0.000002601264784873339,
+   "dSee": 0.000004144151979801336,
+   "biomWechsel": 400,
+   "sprung": {
+    "n": 10,
+    "land": 10,
+    "meer": 0,
+    "randArt": {
+     "1": 6,
+     "2": 3,
+     "3": 1
+    },
+    "krusteGleich": 8,
+    "krusteKante": 2,
+    "randSprungKmMedian": 32.77599211454671,
+    "ohneSprungRandKmMedian": 0.000006077056923459168,
+    "dhMedian": 1557.5681904624726,
+    "klimaOhneHoehe": 390,
+    "klimaOhneHoeheMaxDP": 1690.188934203429,
+    "klimaOhneHoeheMaxDT": 6.982406280500509
+   }
+  }
+ },
+ "zeit": [
+  {
+   "bildMa": -427.1451393159331,
+   "maxDhM": 1.0546726291859159,
+   "kontrolleMa": -402.0040263205991,
+   "kontrolleDhM": 6.148173998573384
+  },
+  {
+   "bildMa": -376.86291332526514,
+   "maxDhM": 0.6637128590823522,
+   "kontrolleMa": -278.3671905675561,
+   "kontrolleDhM": 4.2498136887206215
+  },
+  {
+   "bildMa": -179.87146780984713,
+   "maxDhM": 0.7917232041886564,
+   "kontrolleMa": -89.93573390492357,
+   "kontrolleDhM": 6.051763081271929
+  }
+ ],
+ "urteil": {
+  "sprung": {
+   "platte": {
+    "n": 102,
+    "land": 18,
+    "meer": 84,
+    "randArt": {
+     "1": 38,
+     "2": 38,
+     "3": 26
+    },
+    "krusteGleich": 63,
+    "krusteKante": 39,
+    "randSprungKmMedian": 9.263279885342683,
+    "ohneSprungRandKmMedian": 0.0000044274526549547975,
+    "dhMedian": 168.23033763821286,
+    "klimaOhneHoehe": 0,
+    "klimaOhneHoeheMaxDP": 0.000597646945152519,
+    "klimaOhneHoeheMaxDT": 0.000002559601403717693
+   },
+   "scholle": {
+    "n": 223,
+    "land": 9,
+    "meer": 214,
+    "randArt": {
+     "1": 102,
+     "2": 96,
+     "3": 25
+    },
+    "krusteGleich": 9,
+    "krusteKante": 214,
+    "randSprungKmMedian": 0.000006802364623581525,
+    "ohneSprungRandKmMedian": 0.000005427301630334114,
+    "dhMedian": 6.208602013287873,
+    "klimaOhneHoehe": 0,
+    "klimaOhneHoeheMaxDP": 0.000597646945152519,
+    "klimaOhneHoeheMaxDT": 0.000009538531021036079
+   },
+   "kruste": {
+    "n": 74,
+    "land": 1,
+    "meer": 73,
+    "randArt": {
+     "1": 38,
+     "2": 29,
+     "3": 7
+    },
+    "krusteGleich": 0,
+    "krusteKante": 74,
+    "randSprungKmMedian": 0.000005716087912333023,
+    "ohneSprungRandKmMedian": 0.000005939181562553131,
+    "dhMedian": 3.8281074620383606,
+    "klimaOhneHoehe": 0,
+    "klimaOhneHoeheMaxDP": 0.000597646945152519,
+    "klimaOhneHoeheMaxDT": 0.000020884063800963304
+   },
+   "zelle": {
+    "n": 0,
+    "land": 0,
+    "meer": 0,
+    "randArt": {},
+    "krusteGleich": 0,
+    "krusteKante": 0,
+    "randSprungKmMedian": null,
+    "ohneSprungRandKmMedian": 0.000004941273573422222,
+    "dhMedian": null,
+    "klimaOhneHoehe": 0,
+    "klimaOhneHoeheMaxDP": 0.00008644375293442863,
+    "klimaOhneHoeheMaxDT": 0.000007615765373003569
+   },
+   "kueste": {
+    "n": 10,
+    "land": 10,
+    "meer": 0,
+    "randArt": {
+     "1": 6,
+     "2": 3,
+     "3": 1
+    },
+    "krusteGleich": 8,
+    "krusteKante": 2,
+    "randSprungKmMedian": 32.77599211454671,
+    "ohneSprungRandKmMedian": 0.000006077056923459168,
+    "dhMedian": 1557.5681904624726,
+    "klimaOhneHoehe": 390,
+    "klimaOhneHoeheMaxDP": 1690.188934203429,
+    "klimaOhneHoeheMaxDT": 6.982406280500509
+   }
+  },
+  "maxDh1cm": 6366.614431840324,
+  "maxDT": 37.795424029246,
+  "maxDP": 1690.188934203429,
+  "maxDVeg": 1,
+  "maxDQrel": 0.000002754423458177042,
+  "maxDSee": 0.00001442141405050279,
+  "zeitMaxDh": 1.0546726291859159,
+  "zeitKontrolleMax": 6.148173998573384,
+  "zeitBilder": 3,
+  "n": {
+   "platte": 400,
+   "scholle": 400,
+   "kruste": 400,
+   "zelle": 400,
+   "kueste": 400
+  }
+ }
+}

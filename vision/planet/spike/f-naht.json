@@ -1,0 +1,525 @@
+{
+ "kopf": "f-naht · Kern planet-core.js sha256:c4de4d615c78d337 · planet-h2-4 · node v22.23.5",
+ "og": {
+  "kuehlungKJeM": 0.11076923076923077,
+  "meerUnterBasisM": 3,
+  "regler": [
+   {
+    "id": "land",
+    "gruppe": "kontinent",
+    "einheit": "1",
+    "min": -0.6,
+    "max": 0.9,
+    "step": 0.05,
+    "def": 0.35,
+    "law": "C-Versatz: Land-Anteil"
+   },
+   {
+    "id": "kontinentLambda",
+    "gruppe": "kontinent",
+    "einheit": "m",
+    "min": 3000,
+    "max": 24000,
+    "step": 500,
+    "def": 9000,
+    "law": "Wellenlänge der Kontinentalität"
+   },
+   {
+    "id": "hoehe",
+    "gruppe": "kontinent",
+    "einheit": "1",
+    "min": 0.2,
+    "max": 1.6,
+    "step": 0.05,
+    "def": 1,
+    "law": "Relief-Skala der Hülle"
+   },
+   {
+    "id": "rauhLambda",
+    "gruppe": "kontinent",
+    "einheit": "m",
+    "min": 1200,
+    "max": 9000,
+    "step": 100,
+    "def": 3200,
+    "law": "Wellenlänge des Erosions-Felds (Gebirge ↔ Ebene)"
+   },
+   {
+    "id": "netzDichte",
+    "gruppe": "taeler",
+    "einheit": "1",
+    "min": 0.6,
+    "max": 1.8,
+    "step": 0.05,
+    "def": 1,
+    "law": "Knotendichte des Flussnetzes (Ebene 0: 1600 m / Dichte)"
+   },
+   {
+    "id": "talForm",
+    "gruppe": "taeler",
+    "einheit": "1",
+    "min": 1,
+    "max": 2.2,
+    "step": 0.05,
+    "def": 1.3,
+    "law": "Querprofil-Exponent b (V 1 … Trog 2)"
+   },
+   {
+    "id": "trog",
+    "gruppe": "taeler",
+    "einheit": "1",
+    "min": 0,
+    "max": 1,
+    "step": 0.05,
+    "def": 0.7,
+    "law": "Trog-Anteil im Hochgebirge (b → 2)"
+   },
+   {
+    "id": "aue",
+    "gruppe": "taeler",
+    "einheit": "1",
+    "min": 0,
+    "max": 3,
+    "step": 0.05,
+    "def": 1,
+    "law": "Auen-Breite (∝ A^0,4)"
+   },
+   {
+    "id": "ks",
+    "gruppe": "taeler",
+    "einheit": "m^0,9",
+    "min": 1,
+    "max": 20,
+    "step": 0.5,
+    "def": 6,
+    "law": "Steilheits-Index ks (S = ks·A^−θ)"
+   },
+   {
+    "id": "theta",
+    "gruppe": "taeler",
+    "einheit": "1",
+    "min": 0.3,
+    "max": 0.7,
+    "step": 0.01,
+    "def": 0.45,
+    "law": "Flint-Konkavität θ"
+   },
+   {
+    "id": "tafel",
+    "gruppe": "kliffs",
+    "einheit": "1",
+    "min": 0,
+    "max": 1,
+    "step": 0.05,
+    "def": 0.5,
+    "law": "Tafelland-Anteil (Stil-Feld)"
+   },
+   {
+    "id": "kliffWinkel",
+    "gruppe": "kliffs",
+    "einheit": "°",
+    "min": 60,
+    "max": 85,
+    "step": 1,
+    "def": 74,
+    "law": "Kliff der harten Schicht"
+   },
+   {
+    "id": "schuttWinkel",
+    "gruppe": "kliffs",
+    "einheit": "°",
+    "min": 30,
+    "max": 38,
+    "step": 0.5,
+    "def": 35,
+    "law": "Ruhewinkel des Schutthangs"
+   },
+   {
+    "id": "pedimentWinkel",
+    "gruppe": "kliffs",
+    "einheit": "°",
+    "min": 0.5,
+    "max": 7,
+    "step": 0.5,
+    "def": 2.5,
+    "law": "Neigung des Pediments"
+   },
+   {
+    "id": "schichtDicke",
+    "gruppe": "kliffs",
+    "einheit": "m",
+    "min": 8,
+    "max": 60,
+    "step": 1,
+    "def": 26,
+    "law": "Mächtigkeit einer Schicht"
+   },
+   {
+    "id": "hartAnteil",
+    "gruppe": "kliffs",
+    "einheit": "1",
+    "min": 0.3,
+    "max": 0.7,
+    "step": 0.05,
+    "def": 0.55,
+    "law": "Anteil der harten (kliffbildenden) Lage"
+   },
+   {
+    "id": "rinnen",
+    "gruppe": "rauheit",
+    "einheit": "1",
+    "min": 0,
+    "max": 1.5,
+    "step": 0.05,
+    "def": 1,
+    "law": "Rinnen-Netz (Ebene 2) — Einschnitt"
+   },
+   {
+    "id": "detail",
+    "gruppe": "rauheit",
+    "einheit": "1",
+    "min": 0,
+    "max": 1,
+    "step": 0.05,
+    "def": 0.6,
+    "law": "hang-begrenztes Detail"
+   }
+  ],
+  "klimaHeute": {
+   "sommer": 18,
+   "winter": -4,
+   "sommerPhase": 0.375,
+   "tagAmp": 5,
+   "tagGipfel": 0.625,
+   "jahrTage": 365,
+   "spendeMm": 328.5
+  },
+  "spendeVerh": 1,
+  "schneeBandM": 0,
+  "wetter": null,
+  "wuchs": {
+   "decke": 1,
+   "oase": 1,
+   "wald": 1,
+   "gras": 1,
+   "laub": 1,
+   "nadel": 1,
+   "sand": 0.20558449074074078,
+   "bilanz": 1
+  },
+  "siedlung": {
+   "bau": 1,
+   "platz": 1
+  },
+  "reglerDelta": null,
+  "teil": null,
+  "marke": ""
+ },
+ "alle": [
+  {
+   "same": "erde-01",
+   "ankerBreiteGrad": -45.38452204519352,
+   "ankerLaengeGrad": -129.54646750263976,
+   "nullOk": true,
+   "je": [
+    {
+     "rKm": 0.01,
+     "dTK": 0.00046684571869803904,
+     "dRegenQuote": 0.000004455972941741493,
+     "dLeitHoeheM": 0.0011784514055017087,
+     "dSpendeRel": 0.00003405754928809124,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 1,
+     "dTK": 0.0467206908957154,
+     "dRegenQuote": 0.00044703123116335286,
+     "dLeitHoeheM": 0.11976631675730157,
+     "dSpendeRel": 0.0034062863949282374,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 8,
+     "dTK": 0.33643639619562205,
+     "dRegenQuote": 0.003549966334386867,
+     "dLeitHoeheM": 1.0582927112059302,
+     "dSpendeRel": 0.02481578993208866,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 64,
+     "dTK": 1.5621632569972634,
+     "dRegenQuote": 0.01872602399461476,
+     "dLeitHoeheM": 14.622628043469138,
+     "dSpendeRel": 0.14739836475909573,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 512,
+     "dTK": 8.33690269164574,
+     "dRegenQuote": 0.13255630344535674,
+     "dLeitHoeheM": 28.193063019824375,
+     "dSpendeRel": 0.7888286956144576,
+     "dWaldRel": 0.7204171986337532,
+     "dMeerM": 0
+    }
+   ]
+  },
+  {
+   "same": "erde-02",
+   "ankerBreiteGrad": 46.20850284614143,
+   "ankerLaengeGrad": 164.39336295106378,
+   "nullOk": true,
+   "je": [
+    {
+     "rKm": 0.01,
+     "dTK": 0.0002640154672270967,
+     "dRegenQuote": 0.000001395684558952448,
+     "dLeitHoeheM": 0.0012029284998431834,
+     "dSpendeRel": 0.000041995207804568224,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 1,
+     "dTK": 0.02655001883018926,
+     "dRegenQuote": 0.00014213052800310377,
+     "dLeitHoeheM": 0.12196112828870956,
+     "dSpendeRel": 0.004230061808541796,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 8,
+     "dTK": 0.2195770273581914,
+     "dRegenQuote": 0.0012701257500379037,
+     "dLeitHoeheM": 1.2808861137628667,
+     "dSpendeRel": 0.040115451652526835,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 64,
+     "dTK": 1.8272427633799992,
+     "dRegenQuote": 0.019110302725434014,
+     "dLeitHoeheM": 23.669699312761352,
+     "dSpendeRel": 1.1757323961391513,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 512,
+     "dTK": 8.613797500640281,
+     "dRegenQuote": 0.3117319601086165,
+     "dLeitHoeheM": 313.98608100353096,
+     "dSpendeRel": 6.891424732998311,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    }
+   ]
+  },
+  {
+   "same": "erde-03",
+   "ankerBreiteGrad": -45.89688081231034,
+   "ankerLaengeGrad": 160.9239460666912,
+   "nullOk": true,
+   "je": [
+    {
+     "rKm": 0.01,
+     "dTK": 0.0002842273025116526,
+     "dRegenQuote": 0.000001104037669397151,
+     "dLeitHoeheM": 0.002797849577356004,
+     "dSpendeRel": 0.000045274467450173717,
+     "dWaldRel": 0.000046359821904595755,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 1,
+     "dTK": 0.02849456490350022,
+     "dRegenQuote": 0.00011113196201312237,
+     "dLeitHoeheM": 0.2824529422451379,
+     "dSpendeRel": 0.004533971758782784,
+     "dWaldRel": 0.004748718420987119,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 8,
+     "dTK": 0.23422942838890393,
+     "dRegenQuote": 0.0009004560767802428,
+     "dLeitHoeheM": 2.354892332720672,
+     "dSpendeRel": 0.03649281019623585,
+     "dWaldRel": 0.0435153206336536,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 64,
+     "dTK": 1.4147255989864291,
+     "dRegenQuote": 0.005867223689345502,
+     "dLeitHoeheM": 25.100178248608902,
+     "dSpendeRel": 0.24041146107725098,
+     "dWaldRel": 0.6057318307090576,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 512,
+     "dTK": 11.031082060433128,
+     "dRegenQuote": 0.2566182603680379,
+     "dLeitHoeheM": 311.42790938063507,
+     "dSpendeRel": 2.8840884778960647,
+     "dWaldRel": 1,
+     "dMeerM": 0
+    }
+   ]
+  },
+  {
+   "same": "erde-04",
+   "ankerBreiteGrad": -44.8232289908111,
+   "ankerLaengeGrad": -164.33264134129072,
+   "nullOk": true,
+   "je": [
+    {
+     "rKm": 0.01,
+     "dTK": 0.00013002492210656413,
+     "dRegenQuote": 5.824854896752107e-7,
+     "dLeitHoeheM": 0.005739908369588311,
+     "dSpendeRel": 0.0000912952025065028,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 1,
+     "dTK": 0.013442088024476107,
+     "dRegenQuote": 0.00005934396877693704,
+     "dLeitHoeheM": 0.5868759558934035,
+     "dSpendeRel": 0.009360102131054981,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 8,
+     "dTK": 0.11520909469237228,
+     "dRegenQuote": 0.0004974352664351978,
+     "dLeitHoeheM": 5.539828487301773,
+     "dSpendeRel": 0.09056282221123402,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 64,
+     "dTK": 0.5863511839193514,
+     "dRegenQuote": 0.0032877468567857338,
+     "dLeitHoeheM": 117.98466321084234,
+     "dSpendeRel": 3.7147975511016007,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 512,
+     "dTK": 16.544527860985706,
+     "dRegenQuote": 0.21805484046286594,
+     "dLeitHoeheM": 264.5646056706972,
+     "dSpendeRel": 10.309340406409593,
+     "dWaldRel": 0,
+     "dMeerM": 0
+    }
+   ]
+  },
+  {
+   "same": "erde-05",
+   "ankerBreiteGrad": 49.347522188761545,
+   "ankerLaengeGrad": -55.46703231475949,
+   "nullOk": true,
+   "je": [
+    {
+     "rKm": 0.01,
+     "dTK": 0.00034660691913579456,
+     "dRegenQuote": 0.0000010481692613029114,
+     "dLeitHoeheM": 0.003972267203644838,
+     "dSpendeRel": 0.000037712492520602936,
+     "dWaldRel": 0.00012833829396519114,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 1,
+     "dTK": 0.03506586138713974,
+     "dRegenQuote": 0.00010626159614671171,
+     "dLeitHoeheM": 0.4042962677427245,
+     "dSpendeRel": 0.00377185007780545,
+     "dWaldRel": 0.01312367097827194,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 8,
+     "dTK": 0.25109417659560407,
+     "dRegenQuote": 0.0008001876671686614,
+     "dLeitHoeheM": 3.206082773073587,
+     "dSpendeRel": 0.030093142082840196,
+     "dWaldRel": 0.1073380257433636,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 64,
+     "dTK": 1.685249768095975,
+     "dRegenQuote": 0.007662640970202195,
+     "dLeitHoeheM": 21.814739403535153,
+     "dSpendeRel": 0.14487441688107972,
+     "dWaldRel": 0.5228481009686279,
+     "dMeerM": 0
+    },
+    {
+     "rKm": 512,
+     "dTK": 12.900874024441432,
+     "dRegenQuote": 0.20423389829015198,
+     "dLeitHoeheM": 84.2914326415689,
+     "dSpendeRel": 4.528184548190713,
+     "dWaldRel": 1,
+     "dMeerM": 0
+    }
+   ]
+  }
+ ],
+ "urteil": {
+  "nullAlle": true,
+  "je": [
+   {
+    "rKm": 0.01,
+    "dTmax": 0.00046684571869803904,
+    "dHmax": 0.005739908369588311,
+    "dSpendeMax": 0.0000912952025065028,
+    "dWaldMax": 0.00012833829396519114
+   },
+   {
+    "rKm": 1,
+    "dTmax": 0.0467206908957154,
+    "dHmax": 0.5868759558934035,
+    "dSpendeMax": 0.009360102131054981,
+    "dWaldMax": 0.01312367097827194
+   },
+   {
+    "rKm": 8,
+    "dTmax": 0.33643639619562205,
+    "dHmax": 5.539828487301773,
+    "dSpendeMax": 0.09056282221123402,
+    "dWaldMax": 0.1073380257433636
+   },
+   {
+    "rKm": 64,
+    "dTmax": 1.8272427633799992,
+    "dHmax": 117.98466321084234,
+    "dSpendeMax": 3.7147975511016007,
+    "dWaldMax": 0.6057318307090576
+   },
+   {
+    "rKm": 512,
+    "dTmax": 16.544527860985706,
+    "dHmax": 313.98608100353096,
+    "dSpendeMax": 10.309340406409593,
+    "dWaldMax": 1
+   }
+  ]
+ }
+}

@@ -1,0 +1,14 @@
+d-vielfalt · Kern planet-core.js sha256:c4de4d615c78d337 · planet-h2-4 · node v22.23.5 · 100 Samen welt-001 … · 40000 Adressen je Abdruck
+100 Abdrücke in 125.6 s
+d1 Rausch-Boden p99 0.0260 (Median 0.0161) · nächster Nachbar min 0.0846 Median 0.2549 · unter 3 × Boden: 0 von 100 · min/Boden 3.25
+d2 neigungRad  Samen 10 · Brüche 0 · Feld-Wechsel (Platte/Scholle/Kruste/Rand/Orogen) 0 von 20000 · Höhe nach Abzug des Spiegels: Streuung max 1.10e-11 m · Klima ändert sich min 17.149
+d2 sternFluss  Samen 10 · Brüche 0 · Feld-Wechsel (Platte/Scholle/Kruste/Rand/Orogen) 0 von 20000 · Höhe nach Abzug des Spiegels: Streuung max 3.43e-11 m · Klima ändert sich min 46.606
+d2 tagStunden  Samen 10 · Brüche 0 · Feld-Wechsel (Platte/Scholle/Kruste/Rand/Orogen) 0 von 20000 · Höhe nach Abzug des Spiegels: Streuung max 0.00e+0 m · Klima ändert sich min 8.841
+d2 jahrTage    Samen 10 · Brüche 0 · Feld-Wechsel (Platte/Scholle/Kruste/Rand/Orogen) 0 von 20000 · Höhe nach Abzug des Spiegels: Streuung max 0.00e+0 m · Klima ändert sich min 0.431
+d2 drehsinn    Samen 10 · Brüche 0 · Feld-Wechsel (Platte/Scholle/Kruste/Rand/Orogen) 0 von 20000 · Höhe nach Abzug des Spiegels: Streuung max 0.00e+0 m · Klima ändert sich min 13.318
+d2 R² land_wasser_kruste_freibord_schelf = 0.458
+d2 R² temperatur_stern_neigung_tag = 0.868
+d2 R² eis_stern_neigung = 0.761
+d2 R² trocken_B_alle = 0.869
+URTEIL-DATEN {"rauschBodenP99":0.026037782326577295,"nnMin":0.08464488413216001,"unter3Boden":0,"minZuBoden":3.250848442870699,"gegenlauf":{"neigungRad":{"n":10,"bruch":0,"feldWechsel":0,"sdMax":1.1046154173178201e-11,"klimaMin":17.148736340148652},"sternFluss":{"n":10,"bruch":0,"feldWechsel":0,"sdMax":3.433173818791507e-11,"klimaMin":46.605784922225865},"tagStunden":{"n":10,"bruch":0,"feldWechsel":0,"sdMax":0,"klimaMin":8.840908286579115},"jahrTage":{"n":10,"bruch":0,"feldWechsel":0,"sdMax":0,"klimaMin":0.43104713825350416},"drehsinn":{"n":10,"bruch":0,"feldWechsel":0,"sdMax":0,"klimaMin":13.318338238823838}},"regr":{"land_wasser_kruste_freibord_schelf":0.45776076885086114,"temperatur_stern_neigung_tag":0.8676881158507063,"eis_stern_neigung":0.7608228975549741,"trocken_B_alle":0.8687942338117944}}
+EXIT d40000 0

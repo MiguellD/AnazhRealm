@@ -6,10 +6,10 @@
 //  d2 Zurückführbar (Gegenlauf): je Same ein Datum des Körpers getauscht, das NUR Klima trägt (neigungRad, sternFluss, tagStunden,
 //     jahrTage, drehsinn) → Platte, Scholle, Kruste, Rand und Orogen an 2 000 Adressen byte-gleich, die Höhe nur um eine Konstante
 //     (den Spiegel) verschoben; das Klima ändert sich. Dazu die Regression Merkmal ~ Körper-Daten über die 100 Samen.
-// Aufruf: node d-vielfalt.cjs [n-samen]
+// Aufruf: node d-vielfalt.cjs [n-samen] [adressen-je-abdruck]   (gewertet: 100 4000; die Auflösung 40000 schreibt d-vielfalt-40000.*)
 const L = require('./lib.cjs');
 const { P } = L;
-const NS = +(process.argv[2] || 100), NP = 4000;
+const NS = +(process.argv[2] || 100), NP = +(process.argv[3] || 4000), SUFFIX = NP === 4000 ? '' : '-' + NP;
 console.log(L.kopf('d-vielfalt') + ' · ' + NS + ' Samen welt-001 … · ' + NP + ' Adressen je Abdruck');
 const o = {};
 function abdruck(S, rnd) {
@@ -31,7 +31,7 @@ for (const s of samen) {
   const plan = P.planetPlan(s), S = P.planetScheibe(plan, 0);
   ab.push(abdruck(S, L.zufall('d|' + s))); koerper.push(Object.assign({ schollen: plan.nS, ozeanPlatten: plan.nO }, plan.koerper)); plaene.push(plan);
 }
-console.log('100 Abdrücke in ' + ((L.ns() - t0) / 1e9).toFixed(1) + ' s');
+console.log(NS + ' Abdrücke in ' + ((L.ns() - t0) / 1e9).toFixed(1) + ' s');
 // Rausch-Boden
 const rausch = [];
 for (let i = 0; i < Math.min(10, NS); i++) { const S = P.planetScheibe(plaene[i], 0); for (let k = 0; k < 5; k++) rausch.push(abst(abdruck(S, L.zufall('r1|' + i + '|' + k)), abdruck(S, L.zufall('r2|' + i + '|' + k)))); }
@@ -80,4 +80,4 @@ const regr = {
 for (const [k, v] of Object.entries(regr)) console.log('d2 R² ' + k + ' = ' + v.toFixed(3));
 const urteil = { rauschBodenP99: boden, nnMin, unter3Boden: unter, minZuBoden: nnMin / boden, gegenlauf: proDatum, regr };
 console.log('URTEIL-DATEN ' + JSON.stringify(urteil));
-require('fs').writeFileSync(require('path').join(__dirname, 'd-vielfalt.json'), JSON.stringify({ kopf: L.kopf('d-vielfalt'), samen, koerper, abdruck: ab.map(a => Array.from(a)), nn, rausch, gegen, urteil }, null, 1));
+require('fs').writeFileSync(require('path').join(__dirname, 'd-vielfalt' + SUFFIX + '.json'), JSON.stringify({ kopf: L.kopf('d-vielfalt'), samen, koerper, abdruck: ab.map(a => Array.from(a)), nn, rausch, gegen, urteil }, null, 1));

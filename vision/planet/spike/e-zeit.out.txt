@@ -1,0 +1,13 @@
+e-zeit · Kern planet-core.js sha256:c4de4d615c78d337 · planet-h2-4 · node v22.23.5 · Saaten erde-01 … erde-05 · 12000 Adressen
+erde-01 0 → -50 Ma · Kontinent wiedererkannt 100.0 % · Weg Median 4.88 cm/a (p10 3.25, p90 6.56) · Land bleibt Land mitgeführt 94.6 % / stehend 49.2 % (Vorteil 45.4 Punkte)
+erde-01 0 → -100 Ma · Kontinent wiedererkannt 100.0 % · Weg Median 4.84 cm/a (p10 3.20, p90 6.51) · Land bleibt Land mitgeführt 87.9 % / stehend 32.2 % (Vorteil 55.7 Punkte)
+erde-02 0 → -50 Ma · Kontinent wiedererkannt 100.0 % · Weg Median 4.33 cm/a (p10 0.92, p90 5.63) · Land bleibt Land mitgeführt 70.7 % / stehend 40.1 % (Vorteil 30.6 Punkte)
+erde-02 0 → -100 Ma · Kontinent wiedererkannt 100.0 % · Weg Median 4.33 cm/a (p10 0.92, p90 5.66) · Land bleibt Land mitgeführt 93.1 % / stehend 44.2 % (Vorteil 48.8 Punkte)
+erde-03 0 → -50 Ma · Kontinent wiedererkannt 100.0 % · Weg Median 3.31 cm/a (p10 1.83, p90 5.44) · Land bleibt Land mitgeführt 95.0 % / stehend 48.8 % (Vorteil 46.2 Punkte)
+erde-03 0 → -100 Ma · Kontinent wiedererkannt 100.0 % · Weg Median 2.69 cm/a (p10 1.49, p90 4.41) · Land bleibt Land mitgeführt 98.0 % / stehend 34.6 % (Vorteil 63.4 Punkte)
+erde-04 0 → -50 Ma · Kontinent wiedererkannt 100.0 % · Weg Median 2.94 cm/a (p10 1.97, p90 3.20) · Land bleibt Land mitgeführt 91.5 % / stehend 61.0 % (Vorteil 30.5 Punkte)
+erde-04 0 → -100 Ma · Kontinent wiedererkannt 100.0 % · Weg Median 3.09 cm/a (p10 2.06, p90 3.37) · Land bleibt Land mitgeführt 94.9 % / stehend 45.8 % (Vorteil 49.1 Punkte)
+erde-05 0 → -50 Ma · Kontinent wiedererkannt 100.0 % · Weg Median 3.26 cm/a (p10 2.80, p90 5.79) · Land bleibt Land mitgeführt 92.1 % / stehend 55.6 % (Vorteil 36.6 Punkte)
+erde-05 0 → -100 Ma · Kontinent wiedererkannt 100.0 % · Weg Median 3.01 cm/a (p10 2.58, p90 5.34) · Land bleibt Land mitgeführt 84.3 % / stehend 40.1 % (Vorteil 44.2 Punkte)
+URTEIL-DATEN {"treu50Min":1,"treu100Min":1,"wegMedianCmA":3.2889598242298796,"wegMin":2.6889482490063314,"wegMax":4.8807290957361955,"vorteil100Min":0.44223107569721115,"vorteil50Min":0.3045841209829867}
+EXIT e 0

@@ -44,13 +44,15 @@ for (const [durchgang, R] of [...RADIEN.map(r => [0, r]), ...RADIEN.slice().reve
   console.log('R ' + R + ' km · Plan ' + msPlan.toFixed(1) + ' ms (' + r.planKB.toFixed(1) + ' KB) · Scheibe+Meer ' + msScheibe.toFixed(1) + ' ms (' + r.scheibeKB.toFixed(1) + ' KB) · Wasser-Gitter ' + msWasser.toFixed(0) + ' ms (Zellen ' + W.ms.zellen.toFixed(0) + ' + Lauf ' + W.ms.fluss.toFixed(0) + '; Weite ' + r.gitterKm.toFixed(0) + ' km)');
   console.log('   je Adresse µs  Höhe ' + r.hoeheUs.median.toFixed(1) + ' (p95 ' + r.hoeheUs.p95.toFixed(1) + ') · Klima+Biom ' + r.klimaBiomUs.median.toFixed(1) + ' (p95 ' + r.klimaBiomUs.p95.toFixed(1) + ') · Wasser ' + r.wasserUs.median.toFixed(2) + ' (p95 ' + r.wasserUs.p95.toFixed(2) + ') · gesamt ' + r.gesamtUs.median.toFixed(1) + ' (p95 ' + r.gesamtUs.p95.toFixed(1) + ', Mittel ' + r.gesamtUs.mittel.toFixed(1) + ') · Land ' + (100 * r.landAnteil).toFixed(1) + ' % · Heap nach GC ' + (r.heapKB.wachstumGcKB >= 0 ? '+' : '') + r.heapKB.wachstumGcKB.toFixed(0) + ' KB');
 }
-const e = erg.find(r => r.radiusKm === 6371), g = erg[erg.length - 1];
+const e = erg.find(r => r.radiusKm === 6371), g = erg.find(r => r.radiusKm === 4 * 6371);   // 4R = 25 484 km (der zweite Durchgang läuft rückwärts)
 const v = (k) => g[k].median / e[k].median;
 const urteil = {
   gesamtMedianUs: e.gesamtUs.median, gesamtP95Us: e.gesamtUs.p95,
   faktor4R: { gesamt: v('gesamtUs'), hoehe: v('hoeheUs'), klimaBiom: v('klimaBiomUs'), klimaBiomLand: v('klimaBiomLandUs'), wasser: v('wasserUs') },
   faktorMaxUeberRadien: Math.max(...erg.map(r => r.gesamtUs.median)) / Math.min(...erg.map(r => r.gesamtUs.median)),
   vorlaufFaktor4R: { plan: g.msPlan / e.msPlan, scheibe: g.msScheibe / e.msScheibe, wasser: g.msWasser / e.msWasser },
+  vorlaufMaxZuMin: { plan: Math.max(...erg.map(r => r.msPlan)) / Math.min(...erg.map(r => r.msPlan)), scheibe: Math.max(...erg.map(r => r.msScheibe)) / Math.min(...erg.map(r => r.msScheibe)), wasser: Math.max(...erg.map(r => r.msWasser)) / Math.min(...erg.map(r => r.msWasser)) },
+  hoeheMedianUs: e.hoeheUs.median, klimaBiomLandMedianUs: e.klimaBiomLandUs.median, wasserMedianUs: e.wasserUs.median, planKBmax: Math.max(...erg.map(r => r.planKB)),
   heapWachstumKB: Math.max(...erg.map(r => r.heapKB.wachstumGcKB)),
 };
 console.log('URTEIL-DATEN ' + JSON.stringify(urteil));

@@ -1,0 +1,6 @@
+c3-wurzel · Kern planet-core.js sha256:c4de4d615c78d337 · planet-h2-4 · node v22.23.5 · 40000 Adressen · Hochland > 2 km
+erde-04 · Land 14125 · Hochland 1572 (11.1 % des Landes) · konvergent 27 (2 %) · andererRand 31 (2 %) · orogenAktiv 624 (40 %) · orogenAlt 785 (50 %) · ohneSpur 105 (7 %) · ohne Spur: Höhe Median 2248 m, max 2633 m
+erde-07 · Land 13161 · Hochland 570 (4.3 % des Landes) · konvergent 12 (2 %) · andererRand 57 (10 %) · orogenAktiv 270 (47 %) · orogenAlt 83 (15 %) · ohneSpur 148 (26 %) · ohne Spur: Höhe Median 2227 m, max 2642 m
+erde-01 · Land 13121 · Hochland 789 (6.0 % des Landes) · konvergent 151 (19 %) · andererRand 72 (9 %) · orogenAktiv 345 (44 %) · orogenAlt 221 (28 %) · ohneSpur 0 (0 %)
+erde-02 · Land 13276 · Hochland 1584 (11.9 % des Landes) · konvergent 579 (37 %) · andererRand 261 (16 %) · orogenAktiv 707 (45 %) · orogenAlt 37 (2 %) · ohneSpur 0 (0 %)
+EXIT 0

@@ -1,0 +1,15 @@
+a-kosten · Kern planet-core.js sha256:c4de4d615c78d337 · planet-h2-4 · node v22.23.5 · same erde-01 · n 10000 · N_W 40000
+   (Durchgang 1, wärmt: R 3186 km, gesamt Median 25.3 µs — nicht gezählt)
+   (Durchgang 1, wärmt: R 6371 km, gesamt Median 27.9 µs — nicht gezählt)
+   (Durchgang 1, wärmt: R 12742 km, gesamt Median 25.0 µs — nicht gezählt)
+   (Durchgang 1, wärmt: R 25484 km, gesamt Median 23.2 µs — nicht gezählt)
+R 25484 km · Plan 13.9 ms (27.5 KB) · Scheibe+Meer 57.8 ms (40.4 KB) · Wasser-Gitter 1022 ms (Zellen 811 + Lauf 210; Weite 485 km)
+   je Adresse µs  Höhe 6.7 (p95 14.5) · Klima+Biom 4.5 (p95 88.7) · Wasser 13.19 (p95 20.73) · gesamt 26.5 (p95 120.5, Mittel 44.9) · Land 27.4 % · Heap nach GC -3 KB
+R 12742 km · Plan 19.0 ms (35.5 KB) · Scheibe+Meer 76.7 ms (40.9 KB) · Wasser-Gitter 1101 ms (Zellen 884 + Lauf 217; Weite 243 km)
+   je Adresse µs  Höhe 7.1 (p95 12.0) · Klima+Biom 4.2 (p95 70.3) · Wasser 12.21 (p95 15.44) · gesamt 24.0 (p95 96.5, Mittel 40.9) · Land 28.6 % · Heap nach GC -1 KB
+R 6371 km · Plan 16.9 ms (52.6 KB) · Scheibe+Meer 79.7 ms (41.6 KB) · Wasser-Gitter 1230 ms (Zellen 1009 + Lauf 222; Weite 121 km)
+   je Adresse µs  Höhe 8.0 (p95 13.0) · Klima+Biom 4.5 (p95 76.6) · Wasser 10.49 (p95 17.02) · gesamt 23.9 (p95 106.3, Mittel 44.5) · Land 32.7 % · Heap nach GC +12 KB
+R 3186 km · Plan 17.5 ms (75.2 KB) · Scheibe+Meer 105.9 ms (42.6 KB) · Wasser-Gitter 1131 ms (Zellen 915 + Lauf 216; Weite 61 km)
+   je Adresse µs  Höhe 8.6 (p95 15.2) · Klima+Biom 4.4 (p95 73.8) · Wasser 12.98 (p95 16.84) · gesamt 26.8 (p95 102.4, Mittel 44.5) · Land 25.6 % · Heap nach GC -11 KB
+URTEIL-DATEN {"gesamtMedianUs":23.904000000000003,"gesamtP95Us":106.25929999999994,"faktor4R":{"gesamt":1.106885876840696,"hoehe":0.8355062067244714,"klimaBiom":1.0107865168539325,"klimaBiomLand":1.1709863308636614,"wasser":1.2576769025367156},"faktorMaxUeberRadien":1.1228873828647923,"vorlaufFaktor4R":{"plan":0.8198095237645493,"scheibe":0.7257865798794931,"wasser":0.8305253838359749},"vorlaufMaxZuMin":{"plan":1.3664134306531501,"scheibe":1.8312292669487888,"wasser":1.2040571178947803},"hoeheMedianUs":8.0155,"klimaBiomLandMedianUs":55.2705,"wasserMedianUs":10.486,"planKBmax":75.150390625,"heapWachstumKB":12.484375}
+EXIT a 0

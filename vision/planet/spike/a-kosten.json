@@ -1,0 +1,191 @@
+{
+ "kopf": "a-kosten · Kern planet-core.js sha256:c4de4d615c78d337 · planet-h2-4 · node v22.23.5",
+ "same": "erde-01",
+ "N": 10000,
+ "NW": 40000,
+ "erg": [
+  {
+   "radiusKm": 25484,
+   "msPlan": 13.88823,
+   "msScheibe": 57.829766,
+   "msWasser": 1021.684434,
+   "wasserZellenMs": 811.244392,
+   "wasserFlussMs": 210.400179,
+   "gitterKm": 485.3747914024218,
+   "hoeheUs": {
+    "median": 6.697,
+    "p95": 14.496249999999996
+   },
+   "klimaBiomUs": {
+    "median": 4.498,
+    "p95": 88.71034999999998
+   },
+   "klimaBiomLandUs": {
+    "median": 64.721,
+    "p95": 121.677
+   },
+   "wasserUs": {
+    "median": 13.188,
+    "p95": 20.73425
+   },
+   "gesamtUs": {
+    "median": 26.459,
+    "p95": 120.48444999999994,
+    "mittel": 44.87609359999992
+   },
+   "landAnteil": 0.2741,
+   "heapKB": {
+    "vorher": 23280.140625,
+    "nach": 25920.359375,
+    "nachGc": 23277.2890625,
+    "wachstumGcKB": -2.8515625
+   },
+   "planKB": 27.48046875,
+   "scheibeKB": 40.3828125
+  },
+  {
+   "radiusKm": 12742,
+   "msPlan": 18.977064,
+   "msScheibe": 76.689113,
+   "msWasser": 1100.928438,
+   "wasserZellenMs": 884.385799,
+   "wasserFlussMs": 216.538517,
+   "gitterKm": 242.6873957012109,
+   "hoeheUs": {
+    "median": 7.077,
+    "p95": 11.97005
+   },
+   "klimaBiomUs": {
+    "median": 4.186,
+    "p95": 70.27525
+   },
+   "klimaBiomLandUs": {
+    "median": 54.153999999999996,
+    "p95": 86.2118
+   },
+   "wasserUs": {
+    "median": 12.212,
+    "p95": 15.43605
+   },
+   "gesamtUs": {
+    "median": 23.964,
+    "p95": 96.49084999999997,
+    "mittel": 40.878342799999864
+   },
+   "landAnteil": 0.286,
+   "heapKB": {
+    "vorher": 23278.5390625,
+    "nach": 26028.328125,
+    "nachGc": 23278.0390625,
+    "wachstumGcKB": -0.5
+   },
+   "planKB": 35.466796875,
+   "scheibeKB": 40.93359375
+  },
+  {
+   "radiusKm": 6371,
+   "msPlan": 16.940801,
+   "msScheibe": 79.678748,
+   "msWasser": 1230.166415,
+   "wasserZellenMs": 1008.603913,
+   "wasserFlussMs": 221.517562,
+   "gitterKm": 121.34369785060545,
+   "hoeheUs": {
+    "median": 8.0155,
+    "p95": 12.963099999999997
+   },
+   "klimaBiomUs": {
+    "median": 4.45,
+    "p95": 76.56699999999995
+   },
+   "klimaBiomLandUs": {
+    "median": 55.2705,
+    "p95": 101.88954999999999
+   },
+   "wasserUs": {
+    "median": 10.486,
+    "p95": 17.016249999999996
+   },
+   "gesamtUs": {
+    "median": 23.904000000000003,
+    "p95": 106.25929999999994,
+    "mittel": 44.52802719999983
+   },
+   "landAnteil": 0.3274,
+   "heapKB": {
+    "vorher": 23416.34375,
+    "nach": 27955.9765625,
+    "nachGc": 23428.828125,
+    "wachstumGcKB": 12.484375
+   },
+   "planKB": 52.5625,
+   "scheibeKB": 41.6015625
+  },
+  {
+   "radiusKm": 3186,
+   "msPlan": 17.531813,
+   "msScheibe": 105.89956,
+   "msWasser": 1130.630315,
+   "wasserZellenMs": 914.619688,
+   "wasserFlussMs": 216.005515,
+   "gitterKm": 60.68137205337136,
+   "hoeheUs": {
+    "median": 8.6165,
+    "p95": 15.221299999999996
+   },
+   "klimaBiomUs": {
+    "median": 4.3545,
+    "p95": 73.75429999999999
+   },
+   "klimaBiomLandUs": {
+    "median": 60.822,
+    "p95": 96.2852
+   },
+   "wasserUs": {
+    "median": 12.978,
+    "p95": 16.8411
+   },
+   "gesamtUs": {
+    "median": 26.8415,
+    "p95": 102.43435,
+    "mittel": 44.465476199999955
+   },
+   "landAnteil": 0.2557,
+   "heapKB": {
+    "vorher": 23423.59375,
+    "nach": 32720.015625,
+    "nachGc": 23412.6015625,
+    "wachstumGcKB": -10.9921875
+   },
+   "planKB": 75.150390625,
+   "scheibeKB": 42.55078125
+  }
+ ],
+ "urteil": {
+  "gesamtMedianUs": 23.904000000000003,
+  "gesamtP95Us": 106.25929999999994,
+  "faktor4R": {
+   "gesamt": 1.106885876840696,
+   "hoehe": 0.8355062067244714,
+   "klimaBiom": 1.0107865168539325,
+   "klimaBiomLand": 1.1709863308636614,
+   "wasser": 1.2576769025367156
+  },
+  "faktorMaxUeberRadien": 1.1228873828647923,
+  "vorlaufFaktor4R": {
+   "plan": 0.8198095237645493,
+   "scheibe": 0.7257865798794931,
+   "wasser": 0.8305253838359749
+  },
+  "vorlaufMaxZuMin": {
+   "plan": 1.3664134306531501,
+   "scheibe": 1.8312292669487888,
+   "wasser": 1.2040571178947803
+  },
+  "hoeheMedianUs": 8.0155,
+  "klimaBiomLandMedianUs": 55.2705,
+  "wasserMedianUs": 10.486,
+  "planKBmax": 75.150390625,
+  "heapWachstumKB": 12.484375
+ }
+}

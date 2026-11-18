@@ -11,14 +11,16 @@ console.log(L.kopf('b-stetig') + ' · same ' + same + ' · Ziel ' + ZIEL + ' Que
 const plan = L.planVon(same, L.erdKoerper()), S = P.planetScheibe(plan, 0), R = S.R, W = L.wasserGitter(S, 40000);
 const pp = {};
 function klasse(u) {
-  P.planetPunktR(S, u[0], u[1], u[2], 16, pp);
+  const h = P.planetPunktR(S, u[0], u[1], u[2], 16, pp);
   let best = -1, bd = -2; W.G.um(u[0], u[1], u[2], 1.2 * W.d, (i) => { const c = u[0] * W.F[3 * i] + u[1] * W.F[3 * i + 1] + u[2] * W.F[3 * i + 2]; if (c > bd) { bd = c; best = i; } });
-  return { platte: pp.platte, scholle: pp.scholle, kruste: pp.kruste, zelle: best };
+  return { platte: pp.platte, scholle: pp.scholle, kruste: pp.kruste, zelle: best, kueste: h > 0 };
 }
 const A = {}, B = {}, wa = {}, wb = {};
 function werte(u, o, w) { L.adresse(S, u[0], u[1], u[2], 16, o); P.planetKlimaR(S, u[0], u[1], u[2], -1, o.k || (o.k = {})); L.wasserAt(W, u[0], u[1], u[2], w); o.q = w.qM3s; o.see = w.seeTiefeM;
   const pd = {}; const pet = 400 + 45 * Math.max(0, o.tJahrC); o.veg = Math.min(1, Math.max(0, (o.pMm / pet - 0.1) / 0.75)); return o; }
-const ARTEN = ['platte', 'scholle', 'kruste', 'zelle'];
+// 'kueste' (Land ↔ Meer) ist nach dem gewerteten Lauf vom 18.11. angehängt, um die Wurzel von ΔP zu trennen: die Ziehung der
+// Paare ist dieselbe, die ersten 400 Querungen der vier gewerteten Klassen bleiben byte-gleich.
+const ARTEN = ['platte', 'scholle', 'kruste', 'zelle', 'kueste'];
 const funde = Object.fromEntries(ARTEN.map(a => [a, []]));
 const rnd = L.zufall('b|' + same), u = new Float64Array(3), t = new Float64Array(3), v = new Float64Array(3), m = new Float64Array(3), lo = new Float64Array(3), hi = new Float64Array(3);
 const d0 = 20 / R, cm = 1e-5 / R, meter = 1e-3 / R;
@@ -45,7 +47,7 @@ for (const art of ARTEN) {
   const f = funde[art], g = (k) => f.map(r => r[k]);
   erg[art] = { n: f.length, dh1cm: { max: Math.max(...g('dh1cm')), p99: L.quantil(g('dh1cm'), 0.99) }, dh1m: { max: Math.max(...g('dh1m')), p99: L.quantil(g('dh1m'), 0.99) },
     dT: Math.max(...g('dT')), dP: Math.max(...g('dP')), dVeg: Math.max(...g('dVeg')), dQrel: Math.max(...f.map(r => r.dQ / (r.q + 1e-3))), dSee: Math.max(...g('dSee')), biomWechsel: f.filter(r => r.biomWechsel).length };
-  const sprung = f.filter(r => r.dh1cm > 0.01); erg[art].sprung = { n: sprung.length, land: sprung.filter(r => r.hA > 0 || r.hB > 0).length, meer: sprung.filter(r => r.hA <= 0 && r.hB <= 0).length, randArt: sprung.reduce((m, r) => (m[r.randArt] = (m[r.randArt] || 0) + 1, m), {}), krusteGleich: sprung.filter(r => r.krusteA === r.krusteB).length, krusteKante: sprung.filter(r => Math.min(r.krusteA, r.krusteB) === 0 && Math.max(r.krusteA, r.krusteB) >= 1).length, randSprungKmMedian: L.median(sprung.map(r => Math.abs(r.randAbstandKmB - r.randAbstandKm))), ohneSprungRandKmMedian: L.median(f.filter(r => r.dh1cm <= 0.01).map(r => Math.abs(r.randAbstandKmB - r.randAbstandKm))), dhMedian: L.median(sprung.map(r => r.dh1cm)) };
+  const sprung = f.filter(r => r.dh1cm > 0.01); erg[art].sprung = { n: sprung.length, land: sprung.filter(r => r.hA > 0 || r.hB > 0).length, meer: sprung.filter(r => r.hA <= 0 && r.hB <= 0).length, randArt: sprung.reduce((m, r) => (m[r.randArt] = (m[r.randArt] || 0) + 1, m), {}), krusteGleich: sprung.filter(r => r.krusteA === r.krusteB).length, krusteKante: sprung.filter(r => Math.min(r.krusteA, r.krusteB) === 0 && Math.max(r.krusteA, r.krusteB) >= 1).length, randSprungKmMedian: L.median(sprung.map(r => Math.abs(r.randAbstandKmB - r.randAbstandKm))), ohneSprungRandKmMedian: L.median(f.filter(r => r.dh1cm <= 0.01).map(r => Math.abs(r.randAbstandKmB - r.randAbstandKm))), dhMedian: L.median(sprung.map(r => r.dh1cm)), klimaOhneHoehe: f.filter(r => r.dh1cm <= 0.01 && (r.dT > 0.001 || r.dP > 0.1 || r.dVeg > 1e-4)).length, klimaOhneHoeheMaxDP: Math.max(0, ...f.filter(r => r.dh1cm <= 0.01).map(r => r.dP)), klimaOhneHoeheMaxDT: Math.max(0, ...f.filter(r => r.dh1cm <= 0.01).map(r => r.dT)) };
   console.log(art.padEnd(8) + ' n ' + String(f.length).padStart(4) + ' · |Δh| 1 cm max ' + erg[art].dh1cm.max.toExponential(2) + ' m (p99 ' + erg[art].dh1cm.p99.toExponential(2) + ') · 1 m max ' + erg[art].dh1m.max.toExponential(2) + ' m · |ΔT| ' + erg[art].dT.toExponential(2) + ' K · |ΔP| ' + erg[art].dP.toExponential(2) + ' mm/a · |ΔVeg| ' + erg[art].dVeg.toExponential(2) + ' · |ΔQ|/Q ' + erg[art].dQrel.toExponential(2) + ' · |ΔSee| ' + erg[art].dSee.toExponential(2) + ' m · Biom-Klasse wechselt ' + erg[art].biomWechsel);
 }
 console.log('Paare gezogen ' + paare);
