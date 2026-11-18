@@ -1934,8 +1934,86 @@ class AnazhRealm_bild_himmel {
         const k = this._belichtungAusLicht(achse.e);
         this._raumBlendeTakt();
         if (k == null) return;
-        this.state.renderer.toneMappingExposure = k;
+        this._kMain = k;
+        this.state.renderer.toneMappingExposure = this._lichtKappe > 0 ? Math.min(k, this._lichtKappe) : k;
         this.state._belichtungSteht = true;
+    }
+
+    // DIE KAPPE (Licht-Spike, entscheid §1.3 mit §8 #1): k = min(k_main, 0,76 ÷ L_diff,max), L_diff,max = der hellste Kanal des
+    // hellsten beleuchteten Flecks der Sicht in Szenen-Einheiten (vor Belichtung), am MAXIMUM. Gemessen am Bild: die Sicht im
+    // Szenen-Ziel-Format (dieselben Programme wie der Szenen-Pass, sein MRT) auf 240 × 135, Strahler aus (das Leuchten jedes
+    // Stoffs × `strahlerAn` 0, die Flammen des Brands, Himmel/Sonne/Mond/Sterne verborgen), Rücklese, Maximum. Roh: eine Messung
+    // im Flug, ihr Ergebnis greift ab dem nächsten Bild.
+    _lichtKappeMessen() {
+        const st = this.state;
+        const R = st.renderer,
+            sp = st.scenePass;
+        if (this._kappeFlug || !R || !sp || !st.scene || !st.camera || !st.atmoUniforms) return this._kappeFlug || null;
+        const [W, H] = [240, 135];
+        let K = this._kappeZiel;
+        if (!K) {
+            K = this._kappeZiel = sp.renderTarget.clone();
+            K.setSize(W, H);
+        }
+        const aus = [];
+        st.scene.traverse((o) => {
+            if (o.visible && (/^himmel/.test(o.name) || o.name === "brand-flammen" || o.name === "kreatur-aura"))
+                aus.push(o);
+        });
+        aus.forEach((o) => (o.visible = false));
+        const an = st.atmoUniforms.strahlerAn;
+        an.value = 0;
+        const [vor, mrt, autoClear] = [R.getRenderTarget(), R.getMRT(), R.autoClear];
+        try {
+            R.setMRT(sp.getMRT());
+            R.autoClear = true;
+            R.setRenderTarget(K);
+            R.render(st.scene, st.camera);
+        } finally {
+            R.setRenderTarget(vor);
+            R.setMRT(mrt);
+            R.autoClear = autoClear;
+            an.value = 1;
+            aus.forEach((o) => (o.visible = true));
+        }
+        const h16 = THREE.DataUtils.fromHalfFloat;
+        const f11 = (v, mb) => {
+            const e = v >> mb,
+                m = v & ((1 << mb) - 1);
+            return e === 0 ? (m / (1 << mb)) * 2 ** -14 : e === 31 ? 65504 : 2 ** (e - 15) * (1 + m / (1 << mb));
+        };
+        this._kappeFlug = R.readRenderTargetPixelsAsync(K, 0, 0, W, H, 0)
+            .then((px) => {
+                let max = 0,
+                    wo = -1,
+                    n = 0;
+                const pack = px instanceof Uint32Array || px.BYTES_PER_ELEMENT === 4;
+                const roh = pack
+                    ? new Uint32Array(px.buffer, px.byteOffset, px.byteLength >> 2)
+                    : new Uint16Array(px.buffer, px.byteOffset, px.byteLength >> 1);
+                const je = pack ? 1 : 4;
+                const zeile = Math.floor(roh.length / H);
+                for (let y = 0; y < H; y++)
+                    for (let x = 0; x < W; x++) {
+                        const i = y * zeile + x * je;
+                        let a, b, c;
+                        if (pack) {
+                            const v = roh[i];
+                            [a, b, c] = [f11(v & 0x7ff, 6), f11((v >>> 11) & 0x7ff, 6), f11((v >>> 22) & 0x3ff, 5)];
+                        } else [a, b, c] = [h16(roh[i]), h16(roh[i + 1]), h16(roh[i + 2])];
+                        const v = Math.max(a, b, c);
+                        if (v > max) ((max = v), (wo = x + y * W));
+                        n++;
+                    }
+                this._kappeMess = { max, wo: [wo % W, Math.floor(wo / W)], n, format: pack ? "rg11b10" : "rgba16f" };
+                this._lichtKappe = max > 0 ? 0.76 / max : 0;
+                if (this._kMain > 0)
+                    R.toneMappingExposure =
+                        this._lichtKappe > 0 ? Math.min(this._kMain, this._lichtKappe) : this._kMain;
+                return this._kappeMess;
+            })
+            .finally(() => (this._kappeFlug = null));
+        return this._kappeFlug;
     }
 
     // DIE BELICHTUNG DES ORTS bei der Sonnenhöhe e (sin): das Gesetz der Kamera aus dem Licht, das jetzt gilt — null, solange

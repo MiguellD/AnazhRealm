@@ -2576,6 +2576,7 @@ class AnazhRealm_dirigent_takt {
                 const L = this.state.spiegelLeser;
                 if (L && this.state._traaR && this.state._traaR.sprung) L.an.value = 0;
                 pp.render();
+                this._lichtKappeMessen(); // Licht-Spike: die Kappe misst die Sicht (eine Messung im Flug, nach dem Bau des Passes)
             } catch (err) {
                 // r184 baut Post-Kette und Szenen-Pass erst im ersten render() (PostProcessing.render → _update): ein
                 // Knoten-Fehler der Kette bricht HIER — laut beim Namen (K22), der Schirm zeichnet danach direkt

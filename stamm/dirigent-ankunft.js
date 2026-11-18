@@ -164,7 +164,8 @@ class AnazhRealm_dirigent_ankunft {
         // 40 %, die Wiese C*ab ganzes Bild 24,9 · 21,7 · 31,1 (Soll-Bild 01: 28,3). Die Eichung der Belichtung folgt ihr
         // (BELICHTUNG, 26c: die Kurve und ihre Eichung sind EIN Eintrag). Reine Ausgabe-Stufe; die Belichtung setzt das Licht
         // (`_dayNightApplyBelichtung`).
-        renderer.toneMapping = THREE[AnazhRealm.BELICHTUNG.kurve];
+        // Licht-Spike: die Kurve lebt im Ausgabe-Knoten der Post-Kette (`_schirmKurve`), der Vendor-Aufruf fällt
+        renderer.toneMapping = THREE.NoToneMapping;
         renderer.toneMappingExposure = 1.0;
         // V10.0-j.b — Stencil-Buffer global deaktivieren. Three.js' Renderer-
         // Default ist `this.stencil = true` → bei JEDEM RenderPass setzt

@@ -2169,6 +2169,83 @@ class AnazhRealm_bild_kosten {
             traa.laufPxSetzen(Z.unschaerfe === false ? AnazhRealm.ZUGANG.laufPxAus : traa.maxVelocityLength);
     }
 
+    // DIE EINE TONKURVE IM AUSGABE-KNOTEN (Licht-Spike, entscheid §1/§5): Belichtung → Khronos PBR Neutral für Helligkeit und
+    // Buntheit (Schulter-Beginn 0,76, Entsättigung 0,15, Fuß 0,08/6,25/0,04 — die Zahlen des Vendors `mT`) → der FARBTON der
+    // Eingangsfarbe in Oklab (Ottosson 2020) gehalten; ein C außerhalb des Gamuts sinkt in 4 Bisektions-Schritten. Danach die
+    // sRGB-OETF der Ausgabe (renderOutput mit NoToneMapping: r184 wendet dort weder Kurve noch Belichtung an — die Belichtung
+    // greift HIER, `toneMappingExposure` als Renderer-Referenz). Grau läuft wie Neutral (C 0 → derselbe Punkt).
+    _schirmKurve(farbe) {
+        const T = THREE.TSL;
+        const { float, vec3, vec2, min, max, mix } = T;
+        const okLab = (c) => {
+            const l = T.dot(c, vec3(0.4122214708, 0.5363325363, 0.0514459929))
+                .max(1e-12)
+                .pow(1 / 3);
+            const m = T.dot(c, vec3(0.2119034982, 0.6806995451, 0.1073969566))
+                .max(1e-12)
+                .pow(1 / 3);
+            const s = T.dot(c, vec3(0.0883024619, 0.2817188376, 0.6299787005))
+                .max(1e-12)
+                .pow(1 / 3);
+            const lms = vec3(l, m, s);
+            return vec3(
+                T.dot(lms, vec3(0.2104542553, 0.793617785, -0.0040720468)),
+                T.dot(lms, vec3(1.9779984951, -2.428592205, 0.4505937099)),
+                T.dot(lms, vec3(0.0259040371, 0.7827717662, -0.808675766))
+            );
+        };
+        const ausLab = (L, ab) => {
+            const l = L.add(T.dot(ab, vec2(0.3963377774, 0.2158037573))).pow3();
+            const m = L.add(T.dot(ab, vec2(-0.1055613458, -0.0638541728))).pow3();
+            const s = L.add(T.dot(ab, vec2(-0.0894841775, -1.291485548))).pow3();
+            const lms = vec3(l, m, s);
+            return vec3(
+                T.dot(lms, vec3(4.0767416621, -3.3077115913, 0.2309699292)),
+                T.dot(lms, vec3(-1.2684380046, 2.6097574011, -0.3413193965)),
+                T.dot(lms, vec3(-0.0041960863, -0.7034186147, 1.707614701))
+            );
+        };
+        return T.Fn(() => {
+            const x0 = vec3(farbe).max(vec3(0)).mul(T.toneMappingExposure).toVar();
+            // Khronos PBR Neutral, wörtlich wie vendor `mT`
+            const tief = min(x0.r, min(x0.g, x0.b));
+            const fuss = tief.lessThan(0.08).select(tief.sub(tief.mul(tief).mul(6.25)), float(0.04));
+            const x = x0.sub(fuss).toVar();
+            const spitze = max(x.r, max(x.g, x.b)).max(1e-6).toVar();
+            const np = float(1).sub(float(0.24 * 0.24).div(spitze.add(0.24 - 0.76)));
+            const g = float(1).sub(float(1).div(spitze.sub(np).mul(0.15).add(1)));
+            const k = spitze
+                .lessThan(0.76)
+                .select(x, mix(x.mul(np.div(spitze)), vec3(np), g))
+                .toVar();
+            // Oklab: L und C aus Khronos, der Farbton aus der Eingangsfarbe
+            const ok = okLab(k).toVar();
+            const ein = okLab(x0).toVar();
+            const C = T.length(ok.yz).toVar();
+            const C0 = T.length(ein.yz);
+            const richtung = C0.greaterThan(1e-5)
+                .select(ein.yz.div(C0.max(1e-12)), ok.yz.div(C.max(1e-12)))
+                .toVar();
+            const ab = richtung.mul(C).toVar();
+            const drin = (s) => {
+                const c = ausLab(ok.x, ab.mul(s));
+                return min(c.r, min(c.g, c.b))
+                    .greaterThanEqual(-1e-4)
+                    .and(max(c.r, max(c.g, c.b)).lessThanEqual(1.0001));
+            };
+            const lo = float(0).toVar(),
+                hi = float(1).toVar();
+            for (let i = 0; i < 4; i++) {
+                const mitte = lo.add(hi).mul(0.5).toVar();
+                const ja = drin(mitte).toVar();
+                lo.assign(ja.select(mitte, lo));
+                hi.assign(ja.select(hi, mitte));
+            }
+            const s = drin(float(1)).select(float(1), lo);
+            return ausLab(ok.x, ab.mul(s)).clamp(0, 1);
+        })();
+    }
+
     // DAS AUGE DER NACHT ALS EIN GLIED (K66, w28-brand-kern; `NACHT_AUGE`): ohne Farbe → die Uniform der Nacht (0 = Tag … 1 =
     // Nacht, EIN Schreiber `_dayNightApplyDirectionalLight` über die Post-Kette); mit `farbe` → der Versatz, den das Auge ihr
     // gibt (zum Grau ihrer Leuchtdichte, × Stäbchen-Anteil × Nacht — die Post-Kette addiert ihn). `vor`: der Ton, den das Auge
@@ -2476,11 +2553,14 @@ class AnazhRealm_bild_kosten {
             // < 0), die Tritanopie (e = 0,859 (B − G)) traf genau es (OMEN Ego RGB 71,6/93,1/104,5 → 59,1/85,2/105,2).
             const welt = istWelt(szenenTiefe, screenUV).select(float(1), float(0));
             const farbsichtDelta = u.farbSchub.mul(TSL.dot(u.farbFehler, gesehen).max(0).mul(welt));
-            u.ausgabe = { aus: graded, farbsicht: gesehen.add(farbsichtDelta).max(vec3(0, 0, 0)) };
+            u.ausgabe = {
+                aus: this._schirmKurve(graded),
+                farbsicht: this._schirmKurve(gesehen.add(farbsichtDelta).max(vec3(0, 0, 0))),
+            };
 
-            // Die Ausgabe-Wandlung (die Tonkurve Khronos PBR Neutral + sRGB, `_ensureRenderer`) macht die Pipeline selbst im
-            // Ausgabe-Quad — keine Zwischen-Textur.
-            pp.outputNode = graded;
+            // Die Ausgabe-Wandlung: die EINE Kurve (`_schirmKurve`, mit der Belichtung) steht im Ausgabe-Knoten, die Pipeline macht
+            // danach nur die sRGB-OETF (NoToneMapping, `_ensureRenderer`) — keine Zwischen-Textur.
+            pp.outputNode = u.ausgabe.aus;
             this.state.postProcessing = pp;
             // die Kette liest die Uhr der Welt ab ihrem ersten Bild (K66): `nightFactor` setzt die Tag-Nacht-Anwendung — bis K66 erst beim
             // nächsten Uhr-Wechsel, das erste Bild nach dem Bau trug den Tag (die S0-Probe maß ihren ersten Nacht-Schuss ohne das Auge der Nacht)
