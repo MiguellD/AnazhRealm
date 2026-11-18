@@ -319,7 +319,8 @@ function pruefeStationen(liste, karte) {
             f.push("ein Pflicht-Richter trägt pflicht: true UND kriterium pflicht.<Eintrag>");
         if (st && (st.karte2 !== undefined || /^karte2\./.test(st.kriterium || "")) && !istKarte2(st))
             f.push("ein Richter der Karte 2 trägt karte2: true UND kriterium karte2.<Leiter>");
-        if (![1, 2].includes(st.staffel)) f.push("staffel nicht 1|2");
+        // die Staffel eines Richters der Karte 2 ist seine Sprosse (1 … 9; ob sie in der Karte steht, prüft die quelle unten)
+        if (istKarte2(st) ? !(Number.isInteger(st.staffel) && st.staffel >= 1) : ![1, 2].includes(st.staffel)) f.push(istKarte2(st) ? "staffel ist keine Sprosse ≥ 1" : "staffel nicht 1|2");
         if (st && st.befehl === null) {
             fehler.push(wer + ": befehl null gehört in module.exports.fehlt (mit grund), nie in die fahrbare Liste");
             continue;
@@ -554,9 +555,13 @@ function sitzStartGrenze(st, geraet, fahrtMaxS) {
     const g = grundDeckel(st, geraet), bedarfS = g * teileVon(st);
     return bedarfS <= fahrtMaxS / 2 ? { bedarfS, restMin: bedarfS + ZWISCHEN_S, sekMin: g } : { bedarfS, restMin: 0, sekMin: 1 };
 }
+// DIE LEITER-RICHTER DER KARTE 2 (18.11., Zweig richter-planet-leben-zusammenspiel): je Kapitel eine Datei stationen/k2-<kapitel>.js,
+// geladen NACH g1 … g6 (ihr Kern liest deren Stationen der Karte 2, kein Zwilling) und nie in GRUPPEN (die liest auch src/gN.js)
+const K2_DATEI = /^k2-[a-z]+\.js$/;
 function ladeStationen(dir = path.join(DIR, "stationen"), teil = "liste") {
     const alle = [];
-    for (const g of GRUPPEN) {
+    const k2 = fs.existsSync(dir) ? fs.readdirSync(dir).filter((n) => K2_DATEI.test(n)).sort().map((n) => n.slice(0, -3)) : [];
+    for (const g of [...GRUPPEN, ...k2]) {
         const f = path.join(dir, g + ".js");
         if (!fs.existsSync(f)) continue;
         const m = require(f);
