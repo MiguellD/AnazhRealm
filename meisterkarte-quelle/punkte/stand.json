@@ -3540,7 +3540,7 @@
   },
   "speicher.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt an d3708675 headless · gehalten: Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.67 % (Soll ≤ 1; Rauschen ohne Neuladen 0.19 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3 an 21f279f5 radeon · gehalten: Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.72 % (Soll ≤ 1; Rauschen ohne Neuladen 0.19 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal an 08a8397b gtx",
+   "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt an d3708675 headless · gehalten: Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.67 % (Soll ≤ 1; Rauschen ohne Neuladen 0.19 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3 an 21f279f5 radeon · Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.72 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal an e4e3f363 gtx",
    "stationen": [
     {
      "id": "speicher.K4#1",
@@ -3566,10 +3566,9 @@
      "id": "speicher.K4#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.72 % (Soll ≤ 1; Rauschen ohne Neuladen 0.19 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal",
-     "sha": "08a8397ba498a8c89c72ce9cd287232ccf6591ae",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/shader-kosten.cjs +19) — zuletzt an 3e4f99cd: Last: Referenz f 1,314 (Faden 1,314 · alle Kerne 1,295; vor 110,1/256,2 ms, nach 124,4/312,2 ms, Ruhe 94,7/241 ms seit 2026-11-13) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --u",
-     "gehalten": true,
+     "zahl": "Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.72 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal",
+     "sha": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
+     "grund": "GRÜN trotz Last: Referenz f 1,204 (Faden 1,042 · alle Kerne 1,204; vor 91,5/218,7 ms, nach 93,9/277,2 ms, Ruhe 90,1/230,2 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 1,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,4 CPU-s · Explorer.EXE 1,4 CPU-s · Gerät (Grund-Last, nie fremd) svchost.exe 6,7 CPU-s · MsMpEng.exe 5,1 CPU-s · SearchIndexer.exe 0,4 CPU-s",
      "r6": "konsum"
     }
    ]
@@ -6503,7 +6502,7 @@
   "ohne": 150
  },
  "kopfVoll": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
- "zeit": "2026-11-18T15:40:04.820Z",
+ "zeit": "2026-11-18T15:46:06.054Z",
  "vorher": "e4e3f363",
  "bilanz": {
   "gewinn": [],
