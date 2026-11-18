@@ -1,7 +1,7 @@
 {
  "sha": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
  "geraet": "gtx",
- "zeit": "2026-11-18T16:07:37.406Z",
+ "zeit": "2026-11-18T16:11:54.797Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.erleben.klang.landschaft#1": {
@@ -757,6 +757,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.wetter.klimazonen#1": {
+   "gruen": true,
+   "zahl": "am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.68,
+   "gpu": "nvidia/pascal",
+   "konsum": "k06f9ad8c0f1b",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k43059977d5e2",
+   "s": 39.8,
+   "fremd": {
+    "s": 43.5,
+    "takte": 20,
+    "fremdS": 12.44,
+    "kerne": 0.286,
+    "fensterKerne": 0.377,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.72
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.45
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      2.34
+     ]
+    ],
+    "dienerS": 14.91,
+    "diener": [
+     [
+      "dwm.exe",
+      8.34
+     ],
+     [
+      "System",
+      4.2
+     ]
+    ],
+    "geraetS": 11.86,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.72
+     ],
+     [
+      "svchost.exe",
+      4.13
+     ],
+     [
+      "SearchIndexer.exe",
+      0.41
+     ]
+    ],
+    "eigenS": 138.98,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T16:11:54.797Z",
+   "abdruck": "add9e1621e16",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -775,8 +844,8 @@
   "k06f9ad8c0f1b": "dVTRjpswEPyXPLblnAAOYOkenBDpTmrV3Ces7TWQEIhsONpU/fcKLk4CXPcJ0CwzOzv2n8UZ5BEyfDrYulqwxZfFt4WFd/Qsmnc0Twe7YIulDIHGjH8U4Zxve5g0xbmxpCwEAVFBfkKvNQ0W5ZMc2lYyRkBGuh3v9oTsSUQ23fPztLUUqGqvAY2uUSg/CoBNga3NQKAHrR7IrmAarsKAMjJUnPL9gbjib5yTbjdlFFCpsVIdANUr9vqb8x2fKVQFYOOVRWUdp1RUBD67Ec2nUgY67wKYl2gcCdVhEjmhg5XdPiGTRl221o7I4kBRP2aEzLAZ2kLmjXc2tcDKmZf40QrYJ05n59bTj4pACIjF1OccsMrQjDVEIZUhI7/i6U+PcEIDXgX5FZosg8gXd28IIS9zLeUgfKBwwmMlkkiPGvsdvnS9U2ncv2S3z/HLRxjTjN/rbUJiZV6Y09geramCJfs+l2RzUGi8Y22bu6YQAF3y0yFQfB+m0877MNc+X6yXNH6YJSb8ZeadrXXTgUEvO7fXRgyRRpRx/joDN3A6uSGkjzGdLs42fbAfZdAQV+shctl/9vBxDLwLFqVriqRcBci2P/h0zncDJw9EZgqt3bYFlTr5LJwdlo0n6rpxyEBBIBkJSHVzJRmOwea+wbSr5W6bvfFJHTI+1z4w1Ka5TSvWSx0yPZxIOUMXpvE6kPltR1ogJOwT6AVNiRmOrFShCED16Ae1oXv4OsrsZbbpS4G9yZVtrUtWEqnkmvbxaB2ao4Dq6KaK12rtDxHc/OQu9suUpGTfPXq05brj/HW7ifufnVGSs6l10d92JIfW5lA292v+7z8="
  },
  "sitzung": {
-  "start": "2026-11-18T16:07:06.321Z",
-  "ordner": "sitzung-20261118-170706",
+  "start": "2026-11-18T16:11:23.214Z",
+  "ordner": "sitzung-20261118-171123",
   "port": 7804,
   "warten": 0.01,
   "bootS": 5.8,
@@ -786,9 +855,9 @@
   "orte": [
    {
     "ort": "wiese",
-    "vor": "karte2.planet.kopplung.bahn-klima#1",
-    "s": 23.2,
-    "takte": 613,
+    "vor": "karte2.planet.wetter.klimazonen#1",
+    "s": 23.8,
+    "takte": 626,
     "chunks": 81,
     "nach": null
    }
@@ -796,7 +865,7 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.planet.kopplung.bahn-klima#1",
+    "probe": "karte2.planet.wetter.klimazonen#1",
     "anders": [
      "window.__wieseMessen",
      "window.__wieseUrteil",
@@ -809,15 +878,15 @@
     },
     "haelt": [],
     "heap": [
-     227.1,
-     267.1
+     228.1,
+     266.7
     ],
     "ungemessen": null
    }
   ],
   "wanderung": [
    {
-    "probe": "karte2.planet.kopplung.bahn-klima#1",
+    "probe": "karte2.planet.wetter.klimazonen#1",
     "ort": "wiese",
     "m": 4762.03,
     "dreh": 0
@@ -825,7 +894,7 @@
   ],
   "messHalt": [
    {
-    "probe": "karte2.planet.kopplung.bahn-klima#1",
+    "probe": "karte2.planet.wetter.klimazonen#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -837,28 +906,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 4208,
-   "frameP95": 16.96,
-   "taktP95": 10.48,
-   "vramMax": 142,
+   "bilder": 4209,
+   "frameP95": 16.97,
+   "taktP95": 9.94,
+   "vramMax": 142.1,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.planet.kopplung.bahn-klima#1",
+     "probe": "karte2.planet.wetter.klimazonen#1",
      "m": 4762,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 134,
+   "zapfen": 135,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 148.5,
-  "minuten": 2.57
+  "fahrtS": 149.2,
+  "minuten": 2.55
  },
  "ungemessen": {
   "mensch.K5#1": {
