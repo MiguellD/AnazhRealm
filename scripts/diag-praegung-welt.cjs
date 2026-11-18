@@ -12,7 +12,7 @@ const { frageJa, statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE,
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
 // jede Zeile, die kein Programm erreicht, beim Namen ihres Befunds (keine Ausnahme: seit KI K2 trägt jede Zeile ein Welt-Werk)
-const kiUrteil = (m) => ["zwilling", "ohneWerk", "unbewegt", "ohneWort"].flatMap((b) => m[b].map((n) => `${n}: ${b}`));
+const kiUrteil = (m) => ["zwilling", "ohneWerk", "unbewegt", "ohneWort", "sagbar"].flatMap((b) => m[b].map((n) => `${n}: ${b}`));
 
 const { errs, check } = pruefer();
 
@@ -249,7 +249,7 @@ hauptLauf(async () => {
         }
 
         // ===== (K) KI-REGLER: je Zeile von PARAMS_BY_KIND ein spawn_studio mit dem Rand-Wert im fünften Argument =====
-        const k = (res.k = { zeilen: 0, erreicht: [], unbewegt: [], zwilling: [], ohneWerk: [], ohneWort: [], je: {}, zu: {}, prompt: [] });
+        const k = (res.k = { zeilen: 0, erreicht: [], unbewegt: [], zwilling: [], ohneWerk: [], ohneWort: [], sagbar: [], grund: [], je: {}, zu: {}, prompt: [] });
         try {
             const [P, PBK, archs, pm, gM] = [Object.getPrototypeOf(r), f.paramsByKind, st.architectures, st.playerMesh.position, r._genesisMitte()];
             let spot = null; // trockener Grund abseits der Genesis-Lichtung (ein Werk mit Grundriss sucht seinen Ort selbst)
@@ -260,12 +260,15 @@ hauptLauf(async () => {
             }
             const [ws, cs] = [r._ensureWorkshopState().studioOv, () => st.creatures];
             const setze = (wort, ov) => {
-                // das neue Wesen ist, wer vorher nicht lebte (nie ein Index: an der vollen Kappe weicht ein gezeichneter Leib des
-                // Bestands, die Liste wird nicht länger — bis w5-studios-k1 las die Probe dort ins Leere)
-                const [va, vc] = [archs.length, new Set(cs())];
+                // das neue Werk und das neue Wesen sind, wer vorher nicht stand (nie ein Index: an der vollen Kappe weicht ein
+                // gezeichneter Leib des Bestands, die Liste wird nicht länger — bis w5-studios-k1 las die Probe dort ins Leere; ein
+                // Bau mit Grundriss räumt die Natur unter sich, `_grundrissRaeumen`, die Liste wird kürzer — bis w28-graben-koerper
+                // stand der Trockengraben des Satzes ungesehen und nie abgebaut am Ort, und seine Natur-Wand „bau" nahm jeder
+                // folgenden Pflanzen-Zeile ihr Werk: flower 0/5 · grass 0/4 · tree 0/8)
+                const [va, vc] = [new Set(archs), new Set(cs())];
                 const lg = r.dslRun(["spawn_studio", wort, ["at", spot.x, pm.y, spot.z], 1, 7, ov], { source: "test" }).log;
-                const neu = [...archs.slice(va), ...cs().filter((c) => !vc.has(c))];
-                return { e: archs[va], c: neu.find((x) => x.isObject3D), lg, neu };
+                const neu = [...archs.filter((x) => !va.has(x)), ...cs().filter((c) => !vc.has(c))];
+                return { e: neu.find((x) => !x.isObject3D), c: neu.find((x) => x.isObject3D), lg, neu };
             };
             // ein Werk durch den Welt-Flatten bauen und abbauen: sein Abdruck über jedes Attribut und die Gesetze, die die Welt aus
             // seinem Stempel liest (die Membran und die Hülle des Tors, das Fahr-Gesetz des Wagens: ihr JSON, kein Hash)
@@ -317,7 +320,40 @@ hauptLauf(async () => {
             // und der Bestand nimmt sie an — die Gattung prägt ihr Werk auch dann (ein Akt lässt einen Leib weichen, `_bestandWeicht`).
             // Bis w5-studios-k1 hing das am Tempo der Maschine: lokal zeichnete der Bestand 10 von 20, an der OMEN war die Kappe voll,
             // und jede Gattung sagte „obergrenze" (kreatur 0/5, 147 von 152).
+            // DIE ZEILE EINES WERKS DES GRUNDS (`fx.place.grund`, w28-graben-koerper: der Trockengraben): der Ort setzt es, nie eine
+            // Hand — kein Wort des Satzes erreicht es (sonst „sagbar"). Ihr Leser ist die Welt: der Ort setzt das Werk wie der Wirt
+            // (`_genesisWerkSetzen`: id, Same, `ausGesetz`), sein Alter (`_werkAlterOv`, stoffe.K4) speist die Zeile — das Werk
+            // eines alten Orts ≠ das eines neuen UND = das Studio-Werk mit DEMSELBEN Stempel (frisch, der Körper fällt vorher aus
+            // dem Cache). Eine Zeile, die das Alter nicht liest, steht „unbewegt"; ohne Werk „ohneWerk".
+            const grundRez = (art) => Object.keys(f.recipes).filter((id) => f.recipes[id].kind === art && r._werkDesGrunds(null, null, f.recipes[id]));
+            const amGrund = async (id, d) => {
+                if (r._studioBlueprintForWord(id)) return "sagbar";
+                const typ = Object.keys(bps()).find((n) => bps()[n].studioGestalt === id);
+                const y = r.getTerrainHeightAt(spot.x, spot.z);
+                // geboren heute (ein neuer Ort) bzw. vor viertausend Welt-Tagen (ein alter)
+                const ort = (n, tage, opts) => {
+                    const e = r.spawnArchitecture(typ, { x: spot.x, y, z: spot.z }, { id: "praeg-grund-" + n, seed: 7, werk: true, silent: true, ...opts });
+                    if (e) e.geburt = Math.floor(r._weltTag()) - tage;
+                    return e;
+                };
+                const [e0, e1] = [ort(0, 0), ort(1, 4000)];
+                if (!e0 || !e1) return [e0, e1].forEach((e) => e && r.removeArchitecture(e)), "ohneWerk";
+                const alt = r._artifactStudioOv(e1);
+                const key = r._foundryKoerperKey(id, r._foundryGestaltFor(e1, id), r._foundryServierStufe(id, 0), alt);
+                const [w0, w1] = [await bau(e0), await bau(e1)];
+                if (!w0 || !w1 || !Number.isFinite(alt?.[d.id])) return "ohneWerk";
+                if (w0 === w1) return "unbewegt";
+                r._foundryCacheEvict(key);
+                const e2 = ort(2, 0, { studioOv: alt });
+                return !e2 ? "ohneWerk" : (await bau(e2)) === w1 ? "erreicht" : "zwilling";
+            };
             const zeile = async (art, d) => {
+                if (grundRez(art).length) {
+                    let st = "ohneWerk";
+                    for (const id of grundRez(art)) if ((st = await amGrund(id, d)) !== "erreicht") break;
+                    if (st === "erreicht") k.grund.push(art + ":" + d.id);
+                    return st;
+                }
                 if (art === "kreatur") r.spawnCreatures(r.state.maxCreatures), r._bestandAdoptieren();
                 const rez = Object.keys(f.recipes).filter((id) => {
                     const bp = f.recipes[id].kind === art && r._studioBlueprintForWord(id);
@@ -342,7 +378,8 @@ hauptLauf(async () => {
                 for (const d of PBK[art]) {
                     const st = await zeile(art, d);
                     k[st].push(art + ":" + d.id);
-                    if (!traegt(art, d)) k.prompt.push(art + ":" + d.id);
+                    // die Art eines Werks des Grunds steht in keiner Wort-Liste der KI (kein Wort, also kein Abruf ihrer Zeilen)
+                    if (grundRez(art).length ? r._studioWortListen().listen[art] : !traegt(art, d)) k.prompt.push(art + ":" + d.id);
                     (k.je[art] ||= [0, 0])[1]++;
                     k.je[art][0] += st === "erreicht";
                     k.zeilen++;
@@ -656,6 +693,7 @@ hauptLauf(async () => {
         `ERREICHT: ${K.erreicht.length} von ${K.zeilen} Zeilen von PARAMS_BY_KIND (${anteil.toFixed(1)} %) erreicht`,
         !K.err && !kiUrteil(K).length && anteil >= 95,
         `je Art ${Object.entries(K.je).map(([a, [e, n]]) => `${a} ${e}/${n}`).join(" · ")} (tot ${K.unbewegt.length}, ohne Wort ${K.ohneWort.length})` +
+            (K.grund?.length ? ` — Werk des Grunds, kein KI-Regler (kein Wort, der Leser ist das Alter am Werk des Orts): ${K.grund.join(" · ")}` : "") +
             (kiUrteil(K).length ? ` — ${kiUrteil(K).slice(0, 6).join(" · ")}` : "")
     );
     check("KLEMME: W -3 · pitchDeg 75 · annexN 1,6 → 6 · 60 · 2, benannt, gebaut wie das Studio-Werk", K.klemme && K.klemme.ok, K.klemme);
