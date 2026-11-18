@@ -4935,7 +4935,7 @@
   },
   "karte2.erleben.kopplung.bild": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.bild#1 radeon: Station seit der Messung geändert — zuletzt an 31d156e8: Deckel 117 s gerissen: Stille seit 115.3 s nach 117 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · karte2.erleben.kopplung.bild#1 gtx: Konsum seit der Messung geändert (R6: index.html, phyto-core.js, scripts/lib/draw-zaehler.cjs +13)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.bild#1 radeon: Station seit der Messung geändert — zuletzt an 31d156e8: Deckel 117 s gerissen: Stille seit 115.3 s nach 117 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · karte2.erleben.kopplung.bild#1 gtx: ROT: ❌ größter Sprung an markierten Stufenwechseln 7.6 % (2 Wechsel) · an den übrigen Schritten — (Soll an jedem ≤ 5 %) · der größte bei 50 m · 4/40 Schritte mit Fenster und freier Sicht · UNGEMESSEN 36 (Sicht auf den Fleck): 2000 m welt_portal in 22.03 m, 1950 m Laub baum_tanne in 48.57 m, 1900 m Laub baum_eiche in 30.82 m, 1850 m Laub baum_kiefer in 12.63 m, … · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · UNGÜLTIG · [linse-gpu] nvidia/pascal an b7ed8419",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.bild#1",
@@ -4951,10 +4951,9 @@
      "id": "karte2.erleben.kopplung.bild#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: index.html, phyto-core.js, scripts/lib/draw-zaehler.cjs +13)",
-     "ungemessen": true,
+     "zahl": "❌ größter Sprung an markierten Stufenwechseln 7.6 % (2 Wechsel) · an den übrigen Schritten — (Soll an jedem ≤ 5 %) · der größte bei 50 m · 4/40 Schritte mit Fenster und freier Sicht · UNGEMESSEN 36 (Sicht auf den Fleck): 2000 m welt_portal in 22.03 m, 1950 m Laub baum_tanne in 48.57 m, 1900 m Laub baum_eiche in 30.82 m, 1850 m Laub baum_kiefer in 12.63 m, … · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · UNGÜLTIG · [linse-gpu] nvidia/pascal",
+     "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
+     "grund": "ROT: ❌ größter Sprung an markierten Stufenwechseln 7.6 % (2 Wechsel) · an den übrigen Schritten — (Soll an jedem ≤ 5 %) · der größte bei 50 m · 4/40 Schritte mit Fenster und freier Sicht · UNGEMESSEN 36 (Sicht auf den Fleck): 2000 m welt_portal in 22.03 m, 1950 m Laub baum_tanne in 48.57 m, 1900 m Laub baum_eiche in 30.82 m, 1850 m Laub baum_kiefer in 12.63 m, … · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · UNGÜLTIG · [linse-gpu] nvidia/pascal",
      "r6": "konsum",
      "beide": true
     }
@@ -6485,7 +6484,7 @@
   "ohne": 149
  },
  "kopfVoll": "b7ed8419454b22964d72b81d26f1f56128e41735",
- "zeit": "2026-11-18T23:30:53.240Z",
+ "zeit": "2026-11-18T23:37:13.028Z",
  "vorher": "b7ed8419",
  "bilanz": {
   "gewinn": [],
