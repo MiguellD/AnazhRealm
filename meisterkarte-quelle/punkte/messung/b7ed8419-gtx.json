@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-18T23:20:20.234Z",
+ "zeit": "2026-11-18T23:24:37.804Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -1805,6 +1805,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.menge.kollektiv#1": {
+   "gruen": true,
+   "zahl": "39 Zeugen, 39 in beiden Gängen · Abstand-Median vorher 10.9 m → nachher 17.72 m · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.78,
+   "gpu": "nvidia/pascal",
+   "konsum": "k5767402a13c1",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2bbe263ca652",
+   "s": 46.4,
+   "fremd": {
+    "s": 48.1,
+    "takte": 21,
+    "fremdS": 57.8,
+    "kerne": 1.201,
+    "fensterKerne": 1.47,
+    "namen": [
+     [
+      "node.exe scripts/diag-haus-fern.cjs",
+      40.44
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.23
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.86
+     ]
+    ],
+    "dienerS": 23.34,
+    "diener": [
+     [
+      "dwm.exe",
+      10.45
+     ],
+     [
+      "System",
+      9.06
+     ]
+    ],
+    "geraetS": 24.48,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.56
+     ],
+     [
+      "svchost.exe",
+      9.63
+     ],
+     [
+      "SearchIndexer.exe",
+      1.44
+     ]
+    ],
+    "eigenS": 254.47,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T23:24:37.804Z",
+   "abdruck": "dbc25f2bff4c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1832,36 +1901,53 @@
   "kf9f430dead73": "bVXRjpswEPyXPF7rcwj4AEv34IRIOalVc5+wttfAhUBkw9Gm6r9XcCEJkH0CNOOdnd01fxcnUAdI8fnDVeWCL54W3xcOPpE4tJ9onz/cgi+WKgAWcfEVVAix6WDK5qfaUZ1DSg4FlCk5Y+ka96x61tMdpsglBVlCdkTS2Brz4gLyVISAnLZb0e4p3dOQrtvX1ym1kKgrUoPBgSj1KvSBT4GNS0Eigcb0yS5gFniBzzjtI0rE/oMOId6FoO12mlFCqcdKjQ/MePztjxBbMVOoc8CaFHnphpxKM+mv+DXRvCptoSVnwKxAeyGBF4InB6G93e0+phOiKRrnRskiX7NVxCmdYVN0ucpqcrKVxHIwL16FHvAHTqenhpiRIikhklOfM8AyRTvWEAZMBZz+jqaHHuCIFkgJ2QUaL/1wJW/eUEp3cy1FL7xPMQiPtIxDMyJ2Pdy1nVNJ1L2k18/R7mtgk1Tc4n2SxKkst8exPcYwDUv+Yy7JZaDRkkPl6pumAACH7Uj6gRL7IJkyb8VceCv5smTRXS0RFbuZd64ydQsWSXpqLkQMkIWMC/E2A9dwPA5FqBVGbNo4V3eDfS+DBei9hHxw7kEfvtaAnDEvBlKolOcj3/wU0zo/LRwJyNTmxgzdlkyZ+NFwtljURFZVPSB9Db7i1Kfl1ZW4X4P1rYNJW6ntJn0Xk0inuvvTK1tfK5UvSxNw02+jmqFzW5MWVHbtj5EIMX8APaMtMMWRjTqQPugOfac0GB6+jeb1POvyOcdifHtGcajjy6SPW9KiPUgoD4NMJn3m9eO3/iWGkV8mNKH79t6fjdCtEG+bddQddkJFT7YyeXfT0Qwal0FR334D//4D"
  },
  "sitzung": {
-  "start": "2026-11-18T23:19:45.012Z",
-  "ordner": "sitzung-20261119-001945",
+  "start": "2026-11-18T23:24:04.114Z",
+  "ordner": "sitzung-20261119-002404",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.8,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "klang.K4#2",
-    "s": 26.1,
-    "takte": 586,
+    "ort": "genesis",
+    "vor": "karte2.mensch.menge.kollektiv#1",
+    "s": 24.5,
+    "takte": 573,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "wirt": [
+   {
+    "probe": "karte2.mensch.menge.kollektiv#1",
+    "anders": [
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     222.1,
+     355.7
+    ],
+    "ungemessen": null
+   }
+  ],
   "wanderung": [
    {
-    "probe": "klang.K4#2",
-    "ort": "wiese",
-    "m": 4,
-    "dreh": 0.401
+    "probe": "karte2.mensch.menge.kollektiv#1",
+    "ort": "genesis",
+    "m": 184.13,
+    "dreh": 0
    }
   ],
   "messHalt": [
    {
-    "probe": "klang.K4#2",
+    "probe": "karte2.mensch.menge.kollektiv#1",
     "gehalten": [
      "tiere"
     ],
@@ -1871,21 +1957,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2606,
-   "frameP95": 33.43,
-   "taktP95": 22.32,
-   "vramMax": 137.6,
+   "bilder": 2068,
+   "frameP95": 41.68,
+   "taktP95": 39.06,
+   "vramMax": 164,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 133,
+   "zapfen": 144,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 143.5,
-  "minuten": 2.49
+  "fahrtS": 156.1,
+  "minuten": 2.68
  },
  "ungemessen": {
   "mensch.K5#1": {
