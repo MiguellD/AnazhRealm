@@ -1548,7 +1548,7 @@ function selbsttest() {
     // DER WEG (Preis des Orts, Schnitt 2): je Naht ein Mutant (Render-Objekt · Saat · Bauer) ist rot beim Pfad, der geräumte Weg nicht
     t("Weg: der Speicher folgt dem Blick — N1 · N2 · N3 rot beim Pfad ihres Halters", DZ.wegSelbsttest().length === 0);
     // DIE RUNDE (`werkbank runde`): ein Zell-Gedächtnis, das je Runde wächst, und eine nie entsorgte Geometrie sind rot beim Namen
-    t("Runde: Behälter mit Anlage und Geometrie mit Geburts-Stelle rot beim Namen, die geräumte Runde grün", DZ.rundenSelbsttest().length === 0);
+    t("Runde: Behälter mit Anlage, Geometrie mit Geburts-Stelle, Zell-Gedächtnis außerhalb des Blicks und unangemeldetes rot beim Namen, die geräumte Runde grün", DZ.rundenSelbsttest().length === 0);
 
     ende("die Band-Wand feuert");
 }

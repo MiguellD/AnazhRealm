@@ -326,6 +326,7 @@ class AnazhRealm_koerper_fahrt {
             if (g0.boundingBox) g1.boundingBox = g0.boundingBox.clone();
             m.userData.__tuchVorlage = g0;
             m.geometry = g1;
+            AnazhRealm._renderObjekteFolgen(m); // kein Pass hält die Vorlage (`_renderObjekteFolgen`)
         }
         u._tuch = globalThis.__koerperCore.tuchZustand(gitter, sim, folge, haut, 1);
         u._tuchMeshes = sim.concat(folge);
@@ -460,7 +461,10 @@ class AnazhRealm_koerper_fahrt {
         globalThis.__koerperCore.tuchRuhe(u._tuch);
         if (AnazhRealm._tuchWahl) AnazhRealm._tuchWahl.delete(group);
         for (const m of u._tuchMeshes || []) {
-            if (m.userData.__tuchVorlage) m.geometry = m.userData.__tuchVorlage;
+            if (m.userData.__tuchVorlage) {
+                m.geometry = m.userData.__tuchVorlage;
+                AnazhRealm._renderObjekteFolgen(m); // kein Pass hält das gelöste Tuch (seine Lage-Kopie)
+            }
             delete m.userData.__tuchVorlage;
         }
         u._tuch = null;
