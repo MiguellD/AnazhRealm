@@ -7397,14 +7397,19 @@ function __leibRaumFeld(prims, vox, x, y, z) {
     let a = 8 * vox;
     for (const p of prims) {
         if (a < TIEF) break;
-        const ex = x - p.c[0],
-            ey = y - p.c[1],
-            ez = z - p.c[2];
+        // die Kette als EINE Röhre an ihrem ersten Glied (wie `__tierFeld`)
+        const K = p.kette;
+        if (K && K.glieder[0] !== p) continue;
+        const pc = K ? K.c : p.c,
+            pext = K ? K.ext : p.ext;
+        const ex = x - pc[0],
+            ey = y - pc[1],
+            ez = z - pc[2];
         const d2 = ex * ex + ey * ey + ez * ez;
-        if (d2 > p.ext * p.ext) continue;
+        if (d2 > pext * pext) continue;
         const bl = p.blend || MM.blend;
-        if (Math.sqrt(d2) - (p.ext - bl - 2 * vox) >= a + bl) continue;
-        const b = p.dickeWeg ? __tierAbstand(p, x, y, z) + p.dickeWeg(x, y, z) : __tierAbstand(p, x, y, z);
+        if (Math.sqrt(d2) - (pext - bl - 2 * vox) >= a + bl) continue;
+        const b = K ? __kettenRoehre(K, x, y, z) : p.dickeWeg ? __tierAbstand(p, x, y, z) + p.dickeWeg(x, y, z) : __tierAbstand(p, x, y, z); // prettier-ignore
         const dab = a > b ? a - b : b - a;
         if (dab >= bl) {
             if (b < a) a = b;
@@ -8769,8 +8774,112 @@ function __tierPrims(baum, ref, nimm, vox, blend, gelenkVon, klassen, zylinder) 
         const auf = Math.max(0, TIER_HAUT.minDicke * vox - minHalb);
         prims.push({ node, r, Mi, c: [sp.x, sp.y, sp.z], ext: ext + auf, auf, j: gelenkVon(node) });
     });
+    __kettenAus(prims, baum, blend, vox);
     prims.sort((a, b) => b.ext - a.ext);
     return prims;
+}
+
+// ── DIE KETTENRÖHRE (R2 ketten-haut; der Same: die Richter-Probe `kette.cjs` der zweiten Spike-Runde im Zweig `koordination`): Hals
+// und Rute des Baus sind Ketten von Gliedern — gingen ihre Kugeln Glied für Glied ins smin, bliebe die Haut eine Funktion der
+// DICHTE, nicht der Gestalt (smin(a, a) = a − blend/4: eine Kette gleicher Radien trug bei 4 … 16 Gliedern 0,53 … 1,35 r, die
+// dichte bläht, die spärliche trägt Perlen). Eine Kette geht als EIN Primitiv ins Feld: die Röhre, die je Strecke zweier Glieder das
+// Ellipsoid zwischen ihnen führt (ihre Rahmen Mi/r und Auflagen linear über den Fußpunkt) — harte Vereinigung in der Kette, das
+// smin nur gegen den übrigen Leib. Eine Kette gleicher Radien IST dann die Röhre ihres Radius, gleich wie dicht.
+// EIN GLIED ist eine Gruppe, deren einziges Mesh die Fell-Kugel des Primitivs ist (die Kette ist ein Gesetz des Tier-Baus; der Leib
+// des Menschen folgt seiner eigenen Haut, MENSCH_GESTALT.leibHaut, und bleibt byte-gleich); das nächste Glied ist ihr Kind (die Rute: jedes
+// Glied hängt am vorigen) oder ihr nächstes Geschwister (der Hals: die Glieder stehen nebeneinander am Rumpf). Je Kette trägt jedes
+// Glied `kette` = { glieder (in Bau-Folge), c, ext (die Kugel um die Röhre), F (die Rahmen), R (die Halbachsen) }; das Feld liest
+// die Kette am ersten Glied, die übrigen tragen ihr Gelenk (die Gewichte der Haut, der Re-Fit), nie ihre Kugel.
+function __kettenAus(prims, baum, blend, vox) {
+    const gliedVon = new Map();
+    for (const p of prims) {
+        const g = p.node.parent;
+        if (!g || g === baum || g.isMesh || p.node.material.userData.__klasse !== "fell") continue;
+        let n = 0;
+        for (const c of g.children) if (c.isMesh) n++;
+        if (n === 1) gliedVon.set(g, p);
+    }
+    const vor = (g) => {
+        if (gliedVon.has(g.parent)) return g.parent;
+        const sib = g.parent ? g.parent.children : [];
+        const i = sib.indexOf(g);
+        return i > 0 && gliedVon.has(sib[i - 1]) ? sib[i - 1] : null;
+    };
+    const nach = new Map();
+    for (const g of gliedVon.keys()) {
+        const v = vor(g);
+        if (v) nach.set(v, nach.has(v) ? null : g); // eine Gabel endet die Kette
+    }
+    const ziel = new Set(nach.values());
+    for (const g0 of gliedVon.keys()) {
+        if (ziel.has(g0) || !nach.get(g0)) continue;
+        const glieder = [];
+        for (let g = g0; g; g = nach.get(g)) glieder.push(gliedVon.get(g));
+        const lo = [1e9, 1e9, 1e9],
+            hi = [-1e9, -1e9, -1e9];
+        for (const p of glieder)
+            for (let d = 0; d < 3; d++) {
+                lo[d] = Math.min(lo[d], p.c[d]);
+                hi[d] = Math.max(hi[d], p.c[d]);
+            }
+        const c = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2];
+        let ext = 0;
+        for (const p of glieder) ext = Math.max(ext, Math.hypot(p.c[0] - c[0], p.c[1] - c[1], p.c[2] - c[2]) + p.ext);
+        const K = {
+            glieder,
+            c,
+            ext,
+            F: glieder.map((p) => Float64Array.from(p.Mi, (m, i) => ((i & 3) < 3 ? m / p.r : m))),
+            R: glieder.map((p) => p.ext - blend - 2 * vox),
+        };
+        for (const p of glieder) p.kette = K;
+    }
+}
+// Der Abstand zur Kettenröhre K (erste Ordnung wie `__tierAbstand`): je Strecke der Fußpunkt t ∈ [0, 1], dort der Rahmen
+// (1 − t)·F_k + t·F_k+1 als Einheits-Kugel, die Auflage ebenso; das Minimum über die Strecken.
+function __kettenRoehre(K, x, y, z) {
+    const G = K.glieder;
+    let best = Infinity;
+    for (let k = 0; k < G.length - 1; k++) {
+        const a = G[k].c,
+            b = G[k + 1].c;
+        const ux = b[0] - a[0],
+            uy = b[1] - a[1],
+            uz = b[2] - a[2];
+        const L2 = ux * ux + uy * uy + uz * uz;
+        let t = L2 > 0 ? ((x - a[0]) * ux + (y - a[1]) * uy + (z - a[2]) * uz) / L2 : 0;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const fx = a[0] + t * ux - x,
+            fy = a[1] + t * uy - y,
+            fz = a[2] + t * uz - z;
+        // die untere Schranke: weiter vom Fußpunkt als die größere Halbachse der Strecke um `best`
+        if (Math.sqrt(fx * fx + fy * fy + fz * fz) - Math.max(K.R[k], K.R[k + 1]) >= best) continue;
+        const A = K.F[k],
+            B = K.F[k + 1],
+            s = 1 - t;
+        const m0 = s * A[0] + t * B[0],
+            m1 = s * A[1] + t * B[1],
+            m2 = s * A[2] + t * B[2],
+            m4 = s * A[4] + t * B[4],
+            m5 = s * A[5] + t * B[5],
+            m6 = s * A[6] + t * B[6],
+            m8 = s * A[8] + t * B[8],
+            m9 = s * A[9] + t * B[9],
+            m10 = s * A[10] + t * B[10];
+        const qx = m0 * x + m4 * y + m8 * z + s * A[12] + t * B[12],
+            qy = m1 * x + m5 * y + m9 * z + s * A[13] + t * B[13],
+            qz = m2 * x + m6 * y + m10 * z + s * A[14] + t * B[14];
+        const ql = Math.sqrt(qx * qx + qy * qy + qz * qz) || 1e-9;
+        const ex = qx / ql,
+            ey = qy / ql,
+            ez = qz / ql;
+        const gx = m0 * ex + m1 * ey + m2 * ez,
+            gy = m4 * ex + m5 * ey + m6 * ez,
+            gz = m8 * ex + m9 * ey + m10 * ez;
+        const d = (ql - 1) / (Math.sqrt(gx * gx + gy * gy + gz * gz) || 1e-9) - (s * G[k].auf + t * G[k + 1].auf);
+        if (d < best) best = d;
+    }
+    return best;
 }
 
 // DAS FELD AN EINEM PUNKT (trilinear; außerhalb des Rasters frei, der Deckel von `__tierFeld`): F = { f, nx, ny, nz, lo }
@@ -8865,20 +8974,28 @@ function __tierFeld(prims, vox, blend, anker, rahmen) {
     const TIEF = -3 * vox;
     const f = new Float32Array(nx * ny * nz).fill(WEIT);
     for (const p of prims) {
+        // die Kette (`__kettenAus`) geht als EINE Röhre ins Feld, an ihrem ersten Glied; die übrigen Glieder gießen nichts
+        const K = p.kette;
+        if (K && K.glieder[0] !== p) {
+            p.node.userData.__nichtGiessen = true;
+            continue;
+        }
         const bl = p.blend || blend; // die Verrundung des Primitivs (der fallende Stoff der Menge trägt seine eigene)
-        const R = p.ext - bl - 2 * vox;
-        const cx = p.c[0],
-            cy = p.c[1],
-            cz = p.c[2];
-        const i0 = Math.max(0, Math.floor((p.c[0] - p.ext - lo[0]) / vox)),
-            i1 = Math.min(nx - 1, Math.ceil((p.c[0] + p.ext - lo[0]) / vox)),
-            j0 = Math.max(0, Math.floor((p.c[1] - p.ext - lo[1]) / vox)),
-            j1 = Math.min(ny - 1, Math.ceil((p.c[1] + p.ext - lo[1]) / vox)),
-            k0 = Math.max(0, Math.floor((p.c[2] - p.ext - lo[2]) / vox)),
-            k1 = Math.min(nz - 1, Math.ceil((p.c[2] + p.ext - lo[2]) / vox));
+        const pc = K ? K.c : p.c,
+            pext = K ? K.ext : p.ext;
+        const R = pext - bl - 2 * vox;
+        const cx = pc[0],
+            cy = pc[1],
+            cz = pc[2];
+        const i0 = Math.max(0, Math.floor((cx - pext - lo[0]) / vox)),
+            i1 = Math.min(nx - 1, Math.ceil((cx + pext - lo[0]) / vox)),
+            j0 = Math.max(0, Math.floor((cy - pext - lo[1]) / vox)),
+            j1 = Math.min(ny - 1, Math.ceil((cy + pext - lo[1]) / vox)),
+            k0 = Math.max(0, Math.floor((cz - pext - lo[2]) / vox)),
+            k1 = Math.min(nz - 1, Math.ceil((cz + pext - lo[2]) / vox));
         // Nur die KUGEL mit Radius ext (nicht der Würfel): jenseits davon erreicht das Primitiv die
         // Schale um das Nullniveau nie (b ≥ R + blend + 2·vox − R).
-        const ext2 = p.ext * p.ext;
+        const ext2 = pext * pext;
         for (let k = k0; k <= k1; k++) {
             const z = lo[2] + k * vox,
                 ez = z - cz;
@@ -8900,7 +9017,7 @@ function __tierFeld(prims, vox, blend, anker, rahmen) {
                         ex = x - cx;
                     if (Math.sqrt(ex * ex + eyz) - R >= a + bl) continue;
                     // die Dicke, die hier nicht gilt (`p.dickeWeg`: die Haut des Leibs über der Naht, `__leibHaut`), kehrt zurück
-                    const b = p.dickeWeg ? __tierAbstand(p, x, y, z) + p.dickeWeg(x, y, z) : __tierAbstand(p, x, y, z);
+                    const b = K ? __kettenRoehre(K, x, y, z) : p.dickeWeg ? __tierAbstand(p, x, y, z) + p.dickeWeg(x, y, z) : __tierAbstand(p, x, y, z); // prettier-ignore
                     // polynomiales smin (IQ): die Naht verrundet mit Radius ~blend
                     const dab = a > b ? a - b : b - a;
                     if (dab >= bl) {

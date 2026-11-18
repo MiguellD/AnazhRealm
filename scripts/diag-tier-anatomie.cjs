@@ -532,6 +532,83 @@ function satzUrteil(sb) {
     roh.s = (Date.now() - t0) / 1000;
     return { roh, v };
 }
+// DIE KETTENRÖHRE (R2 ketten-haut, foundry `__kettenRoehre`; der Same: die Richter-Probe `kette.cjs` der zweiten Spike-Runde im Zweig
+// `koordination`): eine gerade Kette gleicher Kugeln (Radius r, Länge 0,30 H, n Glieder als Geschwister-Gruppen wie der Hals des
+// Baus) durch den echten `__tierPrims` → `__tierFeld`; gemessen der Radius der Null-Fläche quer zur Kette an 41 Stellen der mittleren
+// 60 %. Das Raster liegt verankert (`anker`: die Achse auf einer Raster-Linie) — sonst misst die Linse die Phase des Rasters (die
+// Röhre bei halber Zelle neben der Achse 0,957 r, bei jedem n gleich), nicht das Gesetz. Soll: jede Stelle Röhre/r ∈ [0,98; 1,02]
+// für n 4 … 16 bei r 0,035 und 0,05 H (gemessen 1,000); das Glied-für-Glied-smin trug 0,59 … 1,38 (smin(a, a) = a − blend/4: die
+// dichte Kette bläht, die spärliche trägt Perlen). Dazu der KONSUM: je Land-Wurzel sind Hals und Rute je EINE Kette aller ihrer
+// getragenen Glieder. Rot: `__kettenRoehre: Röhre/r 1,293 (1,289–1,294) bei n 16, r 0,05 H ∉ [0,98; 1,02]`.
+const KETTE = { L: 0.3, n: [4, 6, 8, 10, 12, 16], r: [0.035, 0.05], band: [0.98, 1.02] };
+function ketteUrteil(sb) {
+    const T = sb.THREE;
+    const TH = sb.TIER_HAUT || sb.eval("TIER_HAUT");
+    const vox = TH.voxNah,
+        bl = TH.blend;
+    const mat = Object.assign(new T.MeshBasicMaterial(), { userData: { __klasse: "fell" } });
+    const v = [],
+        roh = { roehre: [], konsum: [] };
+    const t0 = Date.now();
+    for (const r of KETTE.r)
+        for (const n of KETTE.n) {
+            const baum = new T.Group();
+            for (let i = 0; i < n; i++) {
+                const g = new T.Group();
+                g.position.x = -KETTE.L / 2 + (KETTE.L * i) / (n - 1);
+                g.add(new T.Mesh(new T.SphereGeometry(r, 4, 3), mat));
+                baum.add(g);
+            }
+            baum.updateMatrixWorld(true);
+            const F = sb.__tierFeld(sb.__tierPrims(baum, baum, () => true, vox, bl, () => "kette"), vox, bl, true);
+            const quer = (x) => {
+                let a = 0,
+                    b = 0.3;
+                if (sb.__feldWert(F, vox, x, 0, 0) >= 0) return 0;
+                for (let k = 0; k < 40; k++) {
+                    const m = (a + b) / 2;
+                    if (sb.__feldWert(F, vox, x, m, 0) < 0) a = m;
+                    else b = m;
+                }
+                return (a + b) / 2 / r;
+            };
+            const q = [];
+            for (let k = 0; k <= 40; k++) q.push(quer(-0.3 * KETTE.L + (0.6 * KETTE.L * k) / 40));
+            const mittel = q.reduce((s, x) => s + x, 0) / q.length;
+            roh.roehre.push({ r, n, mittel, min: Math.min(...q), max: Math.max(...q) });
+            const lo = Math.min(...q),
+                hi = Math.max(...q);
+            if (!(lo >= KETTE.band[0] && hi <= KETTE.band[1]))
+                v.push(`__kettenRoehre: Röhre/r ${mittel.toFixed(3)} (${lo.toFixed(3)}–${hi.toFixed(3)}) bei n ${n}, r ${r} H ∉ [${KETTE.band[0]}; ${KETTE.band[1]}]`);
+        }
+    // der Konsum: Hals und Rute jeder Land-Wurzel sind je EINE Kette (alle getragenen Glieder, in Bau-Folge)
+    const TC = sb.__tetrapodaCore;
+    for (const art of ["wolf", "fox", "bear", "deer"]) {
+        const b = sb.__tierRaumBaum(TC, TC.GATTUNGEN[art], []);
+        const P = sb.__tierPrims(b.root, b.root, sb.__tierRaumNimm(b, false), TH.voxNah * b.H, TH.blend * b.H, b.gelenkVon);
+        const zeile = { art };
+        for (const [teil, glieder] of [
+            ["Hals", b.B.neckSegs || []],
+            ["Rute", b.B.tailSegs || []],
+        ]) {
+            const getragen = P.filter((p) => glieder.includes(p.node.parent));
+            const ketten = new Set(getragen.map((p) => p.kette));
+            const K = getragen.length && getragen[0].kette;
+            const ganz = ketten.size === 1 && K && K.glieder.length === getragen.length && K.glieder.every((p, i) => p.node.parent === glieder[i]);
+            zeile[teil] = `${K ? K.glieder.length : 0}/${glieder.length}`;
+            if (!ganz && getragen.length > 1) v.push(`__kettenRoehre: ${art} ${teil} ist keine Kette (${ketten.size} Ketten, ${getragen.length} getragene Glieder)`);
+        }
+        roh.konsum.push(zeile);
+    }
+    roh.s = (Date.now() - t0) / 1000;
+    return { roh, v };
+}
+function zeigeKette(roh) {
+    const z = roh.roehre.map((e) => `n ${e.n} ${e.mittel.toFixed(3)} (${e.min.toFixed(3)}–${e.max.toFixed(3)})`);
+    console.log(`  Kettenröhre r 0,035 H: ${z.slice(0, KETTE.n.length).join(" · ")}`);
+    console.log(`  Kettenröhre r 0,05 H:  ${z.slice(KETTE.n.length).join(" · ")}`);
+    console.log(`  Ketten im Bau: ${roh.konsum.map((k) => `${k.art} Hals ${k.Hals} Rute ${k.Rute}`).join(" · ")} · ${roh.s.toFixed(1)} s`);
+}
 function zeigeRaum(roh) {
     const z = (r) => `p95 ${r.p95.toFixed(1)} · max ${r.max.toFixed(1)} mm · Gelenke max ${r.gelenk.toFixed(1)} mm`;
     console.log(`  Leib-Raum F1 Wolf (${roh.f1.ecken} Ecken, Tafel ${roh.f1.tafelKB} KB): +2σ ${z(roh.f1["+2σ"])} | −2σ ${z(roh.f1["−2σ"])}`);
@@ -657,6 +734,17 @@ if (SELBSTTEST) {
         };
         pruefe("S12 die Schwelle je Art wird erkannt", satzUrteil(sb).v, /^__tierPrims: Partner fehlt [1-9]/);
     }
+    // S13: das smin je Glied (die Kette aus `__tierPrims` überhört, der Stand vor R2) — die Röhre bläht und trägt Perlen
+    {
+        const sb = ladeWelt();
+        const alt = sb.__tierPrims;
+        sb.__tierPrims = (...a) => {
+            const P = alt(...a);
+            for (const p of P) delete p.kette;
+            return P;
+        };
+        pruefe("S13 das smin je Glied wird erkannt", ketteUrteil(sb).v, /^__kettenRoehre: Röhre\/r/);
+    }
     urteilEnde(rot, `\n❌ SELBST-TEST ROT — ${rot} Linse(n) vakuös.`, "\n✅ SELBST-TEST GRÜN.");
 }
 
@@ -670,5 +758,8 @@ fehler.push(...raum.v);
 const satz = satzUrteil(sb);
 console.log(`  Satz der Vorlage (E7): ${satz.roh.knoten} Knoten an 4 Land-Wurzeln · Partner fehlt ${satz.roh.fehlt} · fremd ${satz.roh.extra} · ${satz.roh.s.toFixed(1)} s`);
 fehler.push(...satz.v);
+const kette = ketteUrteil(sb);
+zeigeKette(kette.roh);
+fehler.push(...kette.v);
 if (process.argv.includes("--json")) console.log(JSON.stringify(ergebnis, null, 1));
 urteilEnde(fehler.length, `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "), "\n✅ GRÜN — jede Art steht in ihren Natur-Bändern (Gestalt + Fell-Muster) und hält ihr Budget.");
