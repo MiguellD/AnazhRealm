@@ -1,7 +1,7 @@
 {
  "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
  "geraet": "gtx",
- "zeit": "2026-11-18T20:13:17.430Z",
+ "zeit": "2026-11-18T20:17:25.377Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -1874,6 +1874,106 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.klang.landschaft#1": {
+   "gruen": true,
+   "zahl": "✅ Wind r 0.79 bei Lag 0 (n 104, CV Bild 0.25 / Ohr 0.56, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -43.2 dB aus 16 Leibern (16 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2",
+   "exit": 0,
+   "minuten": 1.12,
+   "gpu": "nvidia/pascal",
+   "konsum": "k8e2ae108ad38",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k07740f03b59d",
+   "s": 66.3,
+   "fremd": {
+    "s": 69.6,
+    "takte": 32,
+    "fremdS": 39.45,
+    "kerne": 0.567,
+    "fensterKerne": 0.698,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      14.44
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.97
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.44
+     ]
+    ],
+    "dienerS": 34.45,
+    "diener": [
+     [
+      "dwm.exe",
+      16.33
+     ],
+     [
+      "System",
+      11.38
+     ]
+    ],
+    "geraetS": 20.53,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.48
+     ],
+     [
+      "svchost.exe",
+      7.58
+     ],
+     [
+      "SearchIndexer.exe",
+      1.03
+     ]
+    ],
+    "eigenS": 160.42,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.391,
+     "nach": 0.836,
+     "station": 1.084
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 90.7,
+     "alle": 254,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 109.8,
+     "alle": 332.2,
+     "cpuEin": 94
+    },
+    "ruhe": {
+     "ein": 89.3,
+     "alle": 225.8,
+     "n": 590,
+     "von": "2026-11-16"
+    },
+    "f": 1.471,
+    "fEin": 1.23,
+    "fAlle": 1.471,
+    "verdraengt": 1.002,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "grund": "GRÜN trotz Last: Referenz f 1,471 (Faden 1,23 · alle Kerne 1,471; vor 90,7/254 ms, nach 109,8/332,2 ms, Ruhe 89,3/225,8 ms seit 2026-11-16) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 14,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,0 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 11,5 CPU-s · svchost.exe 7,6 CPU-s · SearchIndexer.exe 1,0 CPU-s",
+   "zeit": "2026-11-18T20:17:25.377Z",
+   "abdruck": "1e0f34764aee",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -2628,20 +2728,20 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-18T20:12:39.019Z",
-  "ordner": "sitzung-20261118-211239",
+  "start": "2026-11-18T20:16:52.769Z",
+  "ordner": "sitzung-20261118-211652",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.4,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "karte2.same.physik.verformung#1",
-    "s": 28,
-    "takte": 638,
+    "vor": "karte2.erleben.klang.landschaft#1",
+    "s": 24,
+    "takte": 591,
     "chunks": 81,
     "nach": null
    }
@@ -2649,7 +2749,7 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.same.physik.verformung#1",
+    "probe": "karte2.erleben.klang.landschaft#1",
     "anders": [
      "window.__wieseMessen",
      "window.__wieseUrteil",
@@ -2660,28 +2760,28 @@
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
      "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
-    "haelt": [],
+    "haelt": [
+     "return await (async () => { (function quellenAbgriff() { if (window.__klangQuellen) return; const Q = (window.__"
+    ],
     "heap": [
      229.4,
-     264
+     282.6
     ],
     "ungemessen": null
    }
   ],
   "wanderung": [
    {
-    "probe": "karte2.same.physik.verformung#1",
+    "probe": "karte2.erleben.klang.landschaft#1",
     "ort": "wiese",
-    "m": 50,
+    "m": 11.94,
     "dreh": 0
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.same.physik.verformung#1",
+    "probe": "karte2.erleben.klang.landschaft#1",
     "gehalten": [
-     "skala",
-     "spiegel",
      "tiere"
     ],
     "offen": []
@@ -2690,20 +2790,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2983,
-   "frameP95": 25.07,
-   "taktP95": 14.4,
-   "vramMax": 147.9,
+   "bilder": 2842,
+   "frameP95": 49.99,
+   "taktP95": 51.73,
+   "vramMax": 138.9,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 129,
+   "zapfen": 169,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 139,
-  "minuten": 2.41
+  "fahrtS": 174.3,
+  "minuten": 2.98
  }
 }
