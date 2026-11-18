@@ -2595,7 +2595,11 @@ class AnazhRealm_kreatur_leben {
     // nur, wenn der Leib selbst außer Blick steht — seine Kugel samt Saum und dem Rand des Blicks (`_kreaturAusserBlick`,
     // `_kreaturBlickRand`). Bis w13-pegel-heil fragte das Weichen (`_bestandWeicht`) den Fuß-Punkt (`_kreaturImBlick`): ein Leib
     // am Rand des Blicks, dessen Fuß eben draußen lag, verschwand an der vollen Kappe vor dem Auge.
+    // Ein Leib jenseits seines Pixel-Horizonts (geparkt, `_weltLeibTakt`: `_kzFern` −1, unsichtbar) trägt kein Bild — er steht
+    // außer Blick, auch im Kegel. Bis w28-halter-register hielt ihn der Frustum: nach der Runde reise standen 5 Leiber 2,6 bis
+    // 5,7 km fern im Bestand und in `leibFern` (Radeon, Wiese; samt `_tierBaum` im Heap), kein Grund hielt sie.
     _bestandAusserBlick(c) {
+        if (c.userData._kzFern === -1) return true;
         const fr = this._frustumCache;
         const rand = this._kreaturBlickRand();
         return !fr || (rand >= 0 && this._kreaturAusserBlick(c, fr, rand));

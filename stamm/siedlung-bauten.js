@@ -2124,6 +2124,9 @@ class AnazhRealm_siedlung_bauten {
             g.setIndex(new THREE.BufferAttribute(idx, 1));
             s.iKap = iKap;
         }
+        // die Render-Objekte lassen die getauschten Puffer los (`_renderObjekteFolgen`: ein Pass, der den Satz nicht mehr
+        // zeichnet, hielt sie sonst für immer)
+        if (!neu && s.mesh) AnazhRealm._renderObjekteFolgen(s.mesh);
         if (neu) {
             g.setDrawRange(0, 0);
             // frustumCulled=false: eine ehrliche „überall"-Kugel statt eines Laufs über die ganze Kapazität. Ihre Mitte liest
