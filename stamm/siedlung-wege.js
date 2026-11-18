@@ -553,15 +553,103 @@ class AnazhRealm_siedlung_wege {
         const FW = globalThis.__fachwerkCore;
         if (!FW || !(FW.LEUCHT_FEUER > 0) || typeof FW.lichtFarbe !== "function")
             throw new Error("_lavaGlutNode: fachwerk trägt das Leucht-Gesetz der Glut oder den Planck-Ort nicht");
-        const t0 = this._lavaSpanne()[1];
-        const G = AnazhRealm.GLUT_BILD;
-        const farbe = FW.lichtFarbe(t0);
+        const Z = this._lavaGlutZahlen();
         const k7 = AnazhRealm._f32; // die kürzeste Zahl desselben f32 (`_f32`)
-        const kanal = (k) =>
-            farbe[k] > 0
-                ? _T.exp(kalt.mul(k7(G.c2 / (G.lambdaNm[k] * 1e-9)))).mul(k7(farbe[k] * FW.LEUCHT_FEUER))
-                : _T.float(0);
+        const kanal = (k) => (Z[k].amp > 0 ? _T.exp(kalt.mul(k7(Z[k].c))).mul(k7(Z[k].amp)) : _T.float(0));
         return _T.vec3(kanal(0), kanal(1), kanal(2));
+    }
+
+    // Die Zahlen des Glut-Bilds je Kanal (EINE Quelle für das Bild der Decke, `_lavaGlutNode`, und ihr Licht, `_lavaLeucht`):
+    // `amp` die Leuchtdichte beim Ausbruch (Planck-Ort × `LEUCHT_FEUER`), `c` = c₂/λ (K) — die Leuchtdichte bei der Temperatur
+    // T der Oberfläche ist amp · e^(c · (1/t0 − 1/T)).
+    _lavaGlutZahlen() {
+        if (this._lavaGlutZ) return this._lavaGlutZ;
+        const FW = globalThis.__fachwerkCore;
+        const G = AnazhRealm.GLUT_BILD;
+        const farbe = FW.lichtFarbe(this._lavaSpanne()[1]);
+        return (this._lavaGlutZ = [0, 1, 2].map((k) => ({
+            c: G.c2 / (G.lambdaNm[k] * 1e-9),
+            amp: farbe[k] * FW.LEUCHT_FEUER,
+        })));
+    }
+
+    // DIE LEUCHTDICHTE DER DECKE ALS QUELLE (w28-strahler, Leser `_leuchtQuellen`): das Mittel ihres BILDS über ihre Fläche —
+    // die Quelle im Pool ist die Quelle im Bild. Die Decke hat keine EINE Temperatur: der Riss trägt die des Innern, die Haut der
+    // Scholle `platte` davon (`_lavaKruste`), und das Leuchten fällt nach Planck im Sichtbaren (`_lavaGlutZahlen`). Das Mittel
+    // über das Feld der Schollen (n normalverteilt, σ = `LAVA_KRUSTE.sigma`; der Riss 1 − smoothstep(0, offen · w, |n|)) im
+    // Kanal Rot (der Planck-Ort der Spanne trägt Rot 1), je 5 K ein Wert (je 25 K sprang sie beim Erkalten um ein Fünftel). Bis hier strahlte der Pool mit der Leuchtdichte der
+    // Temperatur des INNERN über die ganze Fläche (7,5 × glutAus = 3,16 bei 1 635 K) — das Bild der Decke trägt im Riss 2,2, auf
+    // der Scholle 0,07: das Gras am Rand stand heller als die Lava, die es beleuchtet, mittags färbte sie die Wiese gelb.
+    _lavaLeucht(TK) {
+        const T = Math.round(TK / 5) * 5;
+        const M = this._lavaLeuchtJe || (this._lavaLeuchtJe = new Map());
+        let L = M.get(T);
+        if (L === undefined) {
+            const [td, t0] = this._lavaSpanne();
+            const K = AnazhRealm.LAVA_KRUSTE;
+            const Z = this._lavaGlutZahlen()[0];
+            const w = Math.min(1, Math.max(0, (T - td) / (t0 - td)));
+            let [s, g] = [0, 0];
+            for (let i = 0; i < 128; i++) {
+                const n = ((i + 0.5) / 128) * 4 * K.sigma;
+                const p = Math.exp(-0.5 * (n / K.sigma) ** 2);
+                const e = Math.min(1, n / Math.max(1e-9, w * K.offen));
+                const riss = 1 - e * e * (3 - 2 * e);
+                const Ts = td + w * (K.platte + (1 - K.platte) * riss) * (t0 - td);
+                s += p * Z.amp * Math.exp(Z.c * (1 / t0 - 1 / Ts));
+                g += p;
+            }
+            M.set(T, (L = w > 0 ? s / g : 0));
+        }
+        return L;
+    }
+
+    // DIE SCHEIBE DER DECKE (w28-strahler, Leser `_leuchtQuellen`): Schwerpunkt und Fläche des glühenden Teils der Decke der Zelle
+    // von `a` → { x, z, flaecheM2 } — aus dem EINEN Rand-Gesetz der Tat (`_brandNarbeFn` über `_lavaJeZelle`: die Dicke m, wie
+    // der Boden sie malt), gewichtet mit dem Rand der Kruste (`randDicke`: am dünnen Rand reißt nichts, er ist dunkel) und dem
+    // Anteil DIESER Zelle an der Zerlegung der Eins (eine Decke über mehrere Zellen teilt sich ohne Lücke und ohne Doppel).
+    // Im Meter-Raster über ± eine Zelle, je Stand der Taten einmal.
+    _lavaScheibe(a) {
+        const I = this._tatIndex();
+        let J = this._lavaScheibeJe;
+        if (!J || J.I !== I || J.n !== I.lava.length) J = this._lavaScheibeJe = { I, n: I.lava.length, M: new Map() };
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const [cx, cz] = [Math.floor(a.x / cs), Math.floor(a.z / cs)];
+        const k = cx + "," + cz;
+        let D = J.M.get(k);
+        if (D) return D;
+        const zelle = this._lavaJeZelle();
+        const narbe = this._brandNarbeFn(zelle);
+        const R = AnazhRealm.LAVA_KRUSTE.randDicke;
+        const S = (t) => t * t * (3 - 2 * t);
+        const [x0, z0] = [cx * cs - cs / 2, cz * cs - cs / 2];
+        let [A, sx, sz] = [0, 0, 0];
+        for (let j = 0; j < 2 * cs; j++)
+            for (let i = 0; i < 2 * cs; i++) {
+                const [x, z] = [x0 + i + 0.5, z0 + j + 0.5];
+                const n = narbe(x, z);
+                if (!n || !(n.m > R[0])) continue;
+                // der Anteil dieser Zelle: ihr Gewicht unter den vier Zell-Mitten um den Ort durch das aller Lava-Zellen dort
+                const [u, v] = [x / cs - 0.5, z / cs - 0.5];
+                const [iu, iv] = [Math.floor(u), Math.floor(v)];
+                const [fa, fb] = [S(u - iu), S(v - iv)];
+                let [eigen, alle] = [0, 0];
+                for (let q = 0; q < 4; q++) {
+                    const [qi, qj] = [iu + (q & 1), iv + (q >> 1)];
+                    const gw = (q & 1 ? fa : 1 - fa) * (q & 2 ? fb : 1 - fb);
+                    if (!(gw > 0) || !zelle(qi, qj)) continue;
+                    alle += gw;
+                    if (qi === cx && qj === cz) eigen += gw;
+                }
+                if (!(eigen > 0)) continue;
+                const g = (eigen / alle) * S(Math.min(1, (n.m - R[0]) / (R[1] - R[0])));
+                A += g;
+                sx += g * x;
+                sz += g * z;
+            }
+        D = A > 0 ? { x: sx / A, z: sz / A, flaecheM2: A } : { x: (cx + 0.5) * cs, z: (cz + 0.5) * cs, flaecheM2: 0 };
+        J.M.set(k, D);
+        return D;
     }
 
     // Die Zelle (cx, cz) → { asche: ihre Rest-Wärme q = e^(−t/τ) (der Gang des Kerns, `_lavaZustand`), busch: die Luft T_u (K),
@@ -2269,10 +2357,12 @@ AnazhRealm.GLUT_BILD = Object.freeze({
 // DIE KRUSTE DER LAVA (`_lavaKruste`): das Feld der Schollen (die Raum-Probe des Laub-Rands, λ ≈ 1,4 m) und der feinen Risse (die
 // Kiesel-Oktave des Mikro-Reliefs, `TERRAIN_BUMP.freq2`, ihr Anteil `rissAnteil`) — beide lädt der Boden-Stoff ohnehin; der Riss
 // ist offen bis |n| < `offen` · w (beim Ausbruch etwa die Hälfte der Fläche im weichen Band, σ des Felds 0,25), die Haut der
-// Scholle hat `platte` der Temperatur des Innern; am Rand der Decke (Dicke unter `randDicke`) reißt nichts. Die kalte Fuge
+// Scholle hat `platte` der Temperatur des Innern; am Rand der Decke (Dicke unter `randDicke`) reißt nichts. `sigma`: die
+// Streuung des Felds der Schollen (der Leser des Mittels: `_lavaLeucht`, das Licht der Decke im Pool). Die kalte Fuge
 // (|n| < `fuge`) dunkelt die Kruste auf `fugeTon`, die Schollen streuen ±`ton` im Ton, ihre Kante hebt sich um `relief` (m).
 AnazhRealm.LAVA_KRUSTE = Object.freeze({
     rissAnteil: 0.2,
+    sigma: 0.25,
     offen: 0.17,
     platte: 0.62,
     randDicke: Object.freeze([0.5, 1]),

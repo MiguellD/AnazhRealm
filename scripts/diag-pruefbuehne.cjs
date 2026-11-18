@@ -240,7 +240,7 @@ async function s0Probe(page, station, schein) {
             };
             try {
                 const A = r._ensureAtmoUniforms();
-                r._lichtPlatz(THREE.TSL, { lage: A.lichtLage[0], farbe: A.lichtFarbe[0], ersatz: A.lichtErsatz[0], kern: A.lichtKern[0], seite: A.lichtSeite[0] }, null);
+                r._lichtPlatz(THREE.TSL, { lage: A.lichtLage[0], farbe: A.lichtFarbe[0], ersatz: A.lichtErsatz[0], kern: A.lichtKern[0], flach: A.lichtFlach[0] }, null);
             } catch {
                 /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
             }

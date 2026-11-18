@@ -5959,15 +5959,15 @@
     // Aus L und der Fläche `flaecheM2` folgt ALLES Weitere, für beide gleich: der Kern k = √(A/π) (die Ausdehnung der Quelle),
     // die Stärke des Punktlicht-Datums in 1 m, L·A/(π·(1 + k²)) (`lichtAbfall`: an der Fläche π·L, fern L·A/d²), die Reichweite
     // √(L·A/eMin) (wo ihre Bestrahlung unter `eMin` fällt; der Wirt deckelt sie am Umkreis seines Pools) und — mit `flach` —
-    // die Seite √A eines waagrechten Lambert-Strahlers (die Decke der Lava, das Bett: der Stoff rechnet ihn als Fläche, nicht
-    // als Punkt). `kelvin` trägt die Farbe (`lichtFarbe`), `flacker` · `hoeheM` · `zeit` (AN/AUS einer Lampe) reisen mit.
+    // eine waagrechte SCHEIBE dieser Fläche, die nach oben strahlt (Lambert; ihr Radius ist der Kern — die Decke der Lava, das
+    // Bett: der Stoff rechnet sie als Fläche, nicht als Punkt). `kelvin` trägt die Farbe (`lichtFarbe`), `flacker` · `hoeheM` · `zeit` (AN/AUS einer Lampe) reisen mit.
     // Bis hier setzten zwölf Wege eine Stärke (feuer.staerke × Zeitplan nacht 45 · schein × k²/(1 + k²) · LEUCHT_FEUER · …).
     var STRAHLER = Object.freeze({ ankerK: 2000, leucht: 7.5, eMin: 0.05 });
     function strahler(q) {
         var L = q.leucht != null ? +q.leucht : STRAHLER.leucht * q.glut, A = +q.flaecheM2;
         if (!(q.kelvin > 0) || !(A > 0) || !(L >= 0)) throw new Error("fachwerk strahler: kelvin, flaecheM2 und glut oder leucht fehlen");
         var k = Math.sqrt(A / Math.PI);
-        return { kelvin: +q.kelvin, leucht: L, flaecheM2: A, kernM: k, seiteM: q.flach ? Math.sqrt(A) : 0, staerke: (L * A) / (Math.PI * (1 + k * k)),
+        return { kelvin: +q.kelvin, leucht: L, flaecheM2: A, kernM: k, flach: q.flach ? 1 : 0, staerke: (L * A) / (Math.PI * (1 + k * k)),
             reichweiteM: Math.sqrt((L * A) / STRAHLER.eMin), abfall: 2, flacker: q.flacker || null, hoeheM: q.hoeheM || 0, zeit: q.zeit || null };
     }
     // Das Flackern einer Quelle zur Zeit t (s) mit der Phase `phase`: −1 … 1 aus zwei Sinus in `flacker.hz` (die Flamme atmet

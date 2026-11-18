@@ -1665,7 +1665,7 @@ class AnazhRealm {
                 farbe.set(0, 0, 0, 0);
                 atmo.lichtErsatz[k].value = 0;
                 atmo.lichtKern[k].value = 0;
-                atmo.lichtSeite[k].value = 0;
+                atmo.lichtFlach[k].value = 0;
                 continue;
             }
             if (q.quelle === "stahl") this._stahlGlut(); // das Licht des Stahls folgt der Hand und seiner Glut je Bild
@@ -1684,7 +1684,7 @@ class AnazhRealm {
             farbe.set(c.r * In, c.g * In, c.b * In, L.abfall);
             atmo.lichtErsatz[k].value = L.ersatz ? 1 : 0;
             atmo.lichtKern[k].value = k2;
-            atmo.lichtSeite[k].value = L.seiteM || 0;
+            atmo.lichtFlach[k].value = L.flach || 0;
             pool.plaetze.push({
                 quelle: q.quelle,
                 x: q.x,
@@ -1694,7 +1694,7 @@ class AnazhRealm {
                 reichweite: L.reichweiteM,
                 abfall: L.abfall,
                 kern: L.kernM,
-                seite: L.seiteM || 0,
+                flach: L.flach || 0,
                 farbe: [c.r, c.g, c.b],
                 ersatz: !!L.ersatz,
                 blende: pool.blende[k],
@@ -1717,8 +1717,8 @@ class AnazhRealm {
     // DER STRAHLER DER WELT (w28-strahler) — der EINE Chokepoint jedes Lichts aus Temperatur × Fläche: ein Körper der Temperatur
     // `TK` (K) mit der strahlenden Fläche `A` (m²) → das Punktlicht-Datum des Pools (fachwerk `strahler`: Leuchtdichte × Fläche,
     // Kern, Stärke, Reichweite — gedeckelt am Umkreis des Pools). Seine Glut ist die des Wärme-Gesetzes (gelaende-core `glutAus`
-    // gegen den Anker `STRAHLER.ankerK`), seine Farbe die SEINER Temperatur. `flach`: ein waagrechter Lambert-Strahler (die
-    // Decke der Lava) — der Stoff rechnet ihn als Fläche. `mit`: was mitreist (`flacker`). Je Viertelmeter Kern und 25 K ein
+    // gegen den Anker `STRAHLER.ankerK`), seine Farbe die SEINER Temperatur. `flach`: eine waagrechte Scheibe, die nach oben strahlt (die
+    // Decke der Lava) — der Stoff rechnet sie als Fläche. `mit`: was mitreist (`flacker`). Je Viertelmeter Kern und 25 K ein
     // Datum (der Pool liest es je Bild). Bis hier trug `_flammenLicht(r)` die Flamme als Herdfeuer-Datum mit `schein` 7,5 und
     // festen 2 000 K — auch für die Lava, deren Decke ihre eigene Temperatur hat; davor leuchtete der Brand als Herdfeuer-Punkt
     // × `BRAND.licht` 4 × Zeitplan (nachts 565 in 1 m: das Gras brannte weiß aus).
@@ -1726,9 +1726,20 @@ class AnazhRealm {
         const FC = globalThis.__fachwerkCore;
         // die Fläche der Flamme je Viertelmeter ihres Kerns (sie wächst je Bild), die einer Decke genau (ihre Seite ist die Zelle)
         const k4 = Math.max(1, Math.round(Math.sqrt(A / Math.PI) * 4));
-        const flaecheM2 = flach ? A : (Math.PI * k4 * k4) / 16;
+        const flaecheM2 = flach || (mit && mit.fest) ? A : (Math.PI * k4 * k4) / 16;
         const T = Math.round(TK / 25) * 25;
-        const key = T + "|" + flaecheM2 + "|" + (flach ? 1 : 0) + "|" + (mit && mit.flacker ? 1 : 0);
+        const key =
+            T +
+            "|" +
+            flaecheM2 +
+            "|" +
+            (flach ? 1 : 0) +
+            "|" +
+            (mit && mit.flacker ? 1 : 0) +
+            "|" +
+            ((mit && mit.leucht) || 0) +
+            "|" +
+            ((mit && mit.hoeheM) || 0);
         const M = this._strahlerDaten || (this._strahlerDaten = new Map());
         let L = M.get(key);
         if (!L) {
@@ -1786,11 +1797,20 @@ class AnazhRealm {
         for (const e of this._blockerMit("licht")) {
             const p = e.position;
             if (!p || (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) > R * R) continue;
-            const L = this._lichtDatum(e);
-            if (!L) continue; // das Datum ging mit dem Bauplan (das Verzeichnis stempelt beim Eintritt)
+            const D = this._lichtDatum(e);
+            if (!D) continue; // das Datum ging mit dem Bauplan (das Verzeichnis stempelt beim Eintritt)
             const sk = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
             const gestalt = !!this._lichtDatumDerGestalt(e);
             const a = gestalt ? 0 : this._glutFlaeche(e);
+            // DAS HERDFEUER IST EIN STRAHLER (w28-strahler): ein Datum, das atmet (`flacker`: die Flamme — Glutbrunnen, Esse,
+            // Feuerstelle), leuchtet aus seiner Temperatur × der Fläche seines Betts (`_glutFlaeche`; die Gestalt ohne Bett: das
+            // Bezugs-Bett Ø `bettRefM`) durch `_strahler` — bei Tag und Nacht dasselbe. Bis hier trug es Stärke × Zeitplan (nachts 45:
+            // der Glutbrunnen 144 in 1 m, das Gras um ihn brannte aus, sobald es das Licht als Volumen las).
+            const A = a > 0 ? a : bezug * sk * sk;
+            const flamme = !!D.flacker && A > 0;
+            const L = flamme
+                ? this._strahler(D.kelvin, A, false, { flacker: D.flacker, hoeheM: D.hoeheM, fest: true })
+                : D;
             // DER LEIB DER QUELLE (schatten.K5): die Gestalt trägt ihren Kopf (fachwerk `lichtLeib`, die nahe Ebene des Wurfs); eine
             // Glut ohne Gestalt brennt `hoeheM` über IHREM Bett (`_glutBett`) — das Licht der Esse stand 0,35 m über dem Boden IN
             // ihrem Herd (Feuerbox 1,1 m, das Bett darauf), und jede Wand des Herds warf ihr ganzes Licht
@@ -1801,7 +1821,7 @@ class AnazhRealm {
                 z: p.z,
                 L,
                 leibM: gestalt ? this._lichtLeibDerGestalt(e) * sk : 0,
-                masse: a > 0 ? a / bezug : sk * sk,
+                masse: flamme ? 1 : a > 0 ? a / bezug : sk * sk,
                 phase: (((p.x * 12.9898 + p.z * 78.233) % 6.2832) + 6.2832) % 6.2832,
             });
         }
@@ -1819,13 +1839,29 @@ class AnazhRealm {
             const L = this._strahler(FL.kelvin, Math.PI * r * r * b.glut, false, atmen);
             nimm(b, { quelle: "brand", x: o.x, y: o.y, z: o.z, L, masse: 1, phase: o.phase });
         });
-        // DIE LAVA (stoffe.K3-2 · w28-strahler): jede Decke leuchtet als waagrechter STRAHLER ihrer Zelle bei IHRER Temperatur
-        // (`_strahler`, `_lavaZustand`: Farbe und Leuchtdichte fallen mit dem Erkalten). Bis w28-strahler stand sie als Flammen-
-        // Fläche in festen 2 000 K, ein Punkt ohne Richtung auf Höhe der Decke; davor als Herdfeuer-Punkt × `BRAND.licht`.
-        for (const a of this._tatIndex().lava) {
-            if ((a.x - x) * (a.x - x) + (a.z - z) * (a.z - z) > R * R) continue;
-            const L = this._strahler(this._lavaZustand(a).temperatur + 273.15, cs * cs, true);
-            nimm(a, { quelle: "lava", x: a.x, y: a.y, z: a.z, L, masse: 1, phase: 0 });
+        // DIE LAVA (stoffe.K3-2 · w28-strahler): jede Decke leuchtet als waagrechte SCHEIBE (`_strahler` flach) in der Farbe
+        // IHRER Temperatur (`_lavaZustand`) — und sie ist die Decke, die der Boden MALT: ihre Fläche und ihr Schwerpunkt aus dem
+        // Rand-Gesetz der Tat (`_lavaScheibe`: ein runder Fleck um die Mitte der Zelle, vom Rauschen gezogen — nicht der Ort
+        // des Gusses, nicht das Quadrat der Zelle), ihre Leuchtdichte das Mittel ihres Bilds (`_lavaLeucht`: Risse und Schollen),
+        // je Zelle EINE, die jüngste (`_lavaJuengste`). Als Quadrat der Zelle am Ort der Tat stand Gras IN der Strahler-Fläche
+        // (die Ecken neben der runden Decke) und las sie von unten: am Halm gegen das Integral über die Decke −64 % bis +938 %
+        // je Richtung; die Scheibe ≤ 17 % in 0,5 m, ≤ 5 % ab 2 m. Bis w28-strahler stand sie als Flammen-Fläche in festen
+        // 2 000 K, ein Punkt ohne Richtung auf Höhe der Decke; davor als Herdfeuer-Punkt × `BRAND.licht`.
+        const decken = new Set();
+        for (const t of this._tatIndex().lava) {
+            const k = this._lifeCellKey(t.x, t.z);
+            if (decken.has(k)) continue;
+            decken.add(k);
+            const a = this._lavaJuengste(k);
+            const D = this._lavaScheibe(a);
+            if (!(D.flaecheM2 > 0) || (D.x - x) * (D.x - x) + (D.z - z) * (D.z - z) > R * R) continue;
+            const TK = this._lavaZustand(a).temperatur + 273.15;
+            const leucht = this._lavaLeucht(TK);
+            if (!(leucht > 0)) continue;
+            // die Fläche je halbem Meter ihres Radius (ein Datum je Stufe, `_strahler`)
+            const r2 = Math.max(1, Math.round(Math.sqrt(D.flaecheM2 / Math.PI) * 2)) / 2;
+            const L = this._strahler(TK, Math.PI * r2 * r2, true, { leucht });
+            nimm(a, { quelle: "lava", x: D.x, y: a.y, z: D.z, L, masse: 1, phase: 0 });
         }
         // DER STAHL DER ESSE (stoffe.K3-2): das glühende Gerät leuchtet an der Hand in der Farbe seiner Temperatur (`_stahlGlut`)
         const stahl = this._stahlGlut();

@@ -699,8 +699,9 @@ class AnazhRealm_stoff_material {
             ),
             lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             lichtKern: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
-            // die Seite (m) eines waagrechten Flächen-Strahlers am Platz (fachwerk `strahler` `seiteM`: die Decke der Lava), 0: ein Punkt mit Kern
-            lichtSeite: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
+            // 1: der Platz ist eine waagrechte Scheibe mit dem Radius seines Kerns, die nach oben strahlt (fachwerk `strahler`
+            // `flach`: die Decke der Lava), 0: ein Punkt mit Kern
+            lichtFlach: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             // DER SCHIRM-PIXEL JE SZENEN-PIXEL (w4-wiese-nah, `_szeneSkalaWirk`): unter dem zeitlichen Hochskalierer rendert die
             // Szene in 0,75 × Ausgabe, ihr `fwidth` und ihr `screenSize` messen den Pixel der SZENE — das Mikro-Detail der Stoffe
             // (`_mikroRelief`, `_halmStoff`, das Schutt-Korn) gilt dem Pixel des SCHIRMS: die Geschichte löst welt-feste Oktaven
@@ -2304,12 +2305,12 @@ class AnazhRealm_stoff_material {
             const wurf = W.faktor.toVar();
             const summe = Te.vec3(0).toVar();
             Te.Loop(atmo.lichtLage.length, ({ i: k }) => {
-                const [lage, farbe, ersatz, kern, seite] = AnazhRealm._jePlatz(
+                const [lage, farbe, ersatz, kern, flach] = AnazhRealm._jePlatz(
                     Te,
-                    [atmo.lichtLage, atmo.lichtFarbe, atmo.lichtErsatz, atmo.lichtKern, atmo.lichtSeite],
+                    [atmo.lichtLage, atmo.lichtFarbe, atmo.lichtErsatz, atmo.lichtKern, atmo.lichtFlach],
                     k
                 );
-                const platz = { lage, farbe, ersatz, kern, seite };
+                const platz = { lage, farbe, ersatz, kern, flach };
                 summe.addAssign(
                     this._lichtPlatz(Te, platz, himmel, volumen).mul(
                         Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k)))
@@ -2345,31 +2346,35 @@ class AnazhRealm_stoff_material {
     _lichtPlatz(Te, platz, himmel, volumen = null) {
         const N = Te.normalView;
         const P = Te.positionView;
-        const { lage, farbe, ersatz, kern, seite } = platz;
+        const { lage, farbe, ersatz, kern } = platz;
         const gewicht = himmel ? ersatz.mul(himmel).oneMinus() : ersatz.oneMinus();
         const Lv = Te.cameraViewMatrix.mul(Te.vec4(lage.xyz, 1)).xyz.sub(P);
         const d = Lv.length();
-        // DER FLÄCHEN-STRAHLER (w28-strahler): ein Platz mit Seite ist ein waagrechtes Quadrat, das nach oben strahlt (Lambert) —
-        // seine Bestrahlung ist das Integral über seine Fläche, geschlossen nach Lambert über seine vier Kanten:
-        // E = L/2 · Σ γᵢ · (Γᵢ · N), γᵢ der Winkel der Kante vom Fragment aus, Γᵢ die Normale ihrer Ebene. Gegen das numerische
-        // Integral außerhalb der Fläche genau (Saum 9/10 m, 40, 60 m, die Unterseite des Rauchs: 0 %); ÜBER ihr zählt die Formel
-        // den Teil unter dem Horizont des Fragments negativ — dort steht nichts (der Halm geht im Rand der Decke, Linse narbe L4).
-        // Die Leuchtdichte ist die Stärke des Platzes durch seine Fläche (`farbe` = Farbe × L·A, `_leuchtTakt`). Als Punkt mit Kern
-        // (L·A·cos/(d² + k²)) lag das Gras am Rand einer Decke von 16 m beim 0,22-Fachen des Integrals (10 m: 0,042 gegen 0,189 L).
-        // EIN Vektor der Bestrahlung je Platz (`F`, Bestrahlung = F·N): der Punkt L̂ × Abfall, die Fläche die Summe ihrer Kanten ÷
-        // Seite² — Richtung (F ÷ |F|), Kosinus (F·N ÷ |F|: die BRDF liest IHN als N·L; mit N·L der mittleren Richtung stand am
-        // streifenden Fragment Bestrahlung ohne Kosinus, der Glanz brannte weiß), EINE Bedingung, EINE BRDF folgen aus ihm. Getrennt
-        // (zwei Bedingungen, drei `mix`) trug der Zweig +2,6 KB in jedes beleuchtete Programm, die Ratsche S0 riss.
-        const flach = seite.greaterThan(0);
-        const h = seite.mul(0.5);
-        const Fl = AnazhRealm._flaechenVektor(Te)(
-            Lv,
-            Te.cameraViewMatrix.element(0).xyz.mul(h),
-            Te.cameraViewMatrix.element(2).xyz.mul(h)
-        );
+        // DER FLÄCHEN-STRAHLER (w28-strahler): ein flacher Platz ist eine waagrechte SCHEIBE (Radius r = sein Kern), die nach oben
+        // strahlt (Lambert) — rund wie die Decke, die sie trägt (das Rand-Gesetz der Tat, `_brandNarbeFn`). Ihr Vektor der
+        // Bestrahlung ist geschlossen (die Sichtfaktoren des Flächen-Elements zur Scheibe, parallel und senkrecht): mit h der Höhe
+        // des Fragments über ihr, a seinem Abstand von ihrer Achse, S = h² + a² + r², w = √(S² − 4a²r²)
+        //   senkrecht  π·L · ½·(1 − (S − 2r²)/w)        waagrecht zur Achse  π·L · h/(2a) · (S/w − 1)
+        // (fern L·A·cos/d², am Rand π·L/2). Gegen das Integral über die wahre Decke am Halm (0,4 m hoch): 0,5 m vor dem Rand ≤ 17 %,
+        // ab 2 m ≤ 5 %. Als QUADRAT der Zelle (Lamberts Kantensumme, bis hier) lag derselbe Halm in der Diagonale beim 2- bis
+        // 10-Fachen: die Ecken des Quadrats reichen über die runde Decke, dort stand Gras IN der Strahler-Fläche. Die Leuchtdichte
+        // ist die Stärke des Platzes durch seine Fläche (`farbe` = Farbe × L·A, `_leuchtTakt`; A = π·r²). Als Punkt mit Kern
+        // (L·A·cos/(d² + k²)) lag das Gras am Rand beim 0,22-Fachen des Integrals.
+        // EIN Vektor der Bestrahlung je Platz (`F`, Bestrahlung = F·N): der Punkt L̂ × Abfall, die Scheibe ihr Vektor ÷ Fläche —
+        // Richtung (F ÷ |F|), Kosinus (F·N ÷ |F|: die BRDF liest IHN als N·L; mit N·L der mittleren Richtung stand am
+        // streifenden Fragment Bestrahlung ohne Kosinus, der Glanz brannte weiß), EINE Bedingung, EINE BRDF folgen aus ihm.
+        const flach = platz.flach.greaterThan(0);
+        const oben = Te.cameraViewMatrix.element(1).xyz; // das Hoch der Welt im Blick-Raum
+        const h = Lv.dot(oben).negate();
+        const Lh = Lv.add(oben.mul(h));
+        const a2 = Lh.dot(Lh);
+        const S = h.mul(h).add(a2).add(kern);
+        const w = S.mul(S).sub(a2.mul(kern).mul(4)).max(1e-9).sqrt();
         const F = Te.mix(
             Lv.div(d).mul(d.mul(d).add(kern).pow(farbe.a.mul(-0.5))),
-            Fl.div(seite.mul(seite).max(1e-6)),
+            Lh.mul(h.div(a2.max(1e-6)).mul(S.div(w).sub(1)))
+                .sub(oben.mul(S.sub(kern.mul(2)).div(w).oneMinus()))
+                .div(kern.max(1e-6).mul(2)),
             Te.float(flach)
         ).mul(d.div(lage.w).pow2().pow2().oneMinus().clamp().pow2());
         // DER VOLUMEN-LESER (w28-strahler, `volumen` = das Dach der Wiese 0 → 1): Gras ist kein Boden, es ist ein Volumen stehender
@@ -2380,7 +2385,6 @@ class AnazhRealm_stoff_material {
         let E = F.dot(N);
         if (volumen) {
             const V = AnazhRealm.HALM_VOLUMEN;
-            const oben = Te.cameraViewMatrix.element(1).xyz;
             const hoch = F.dot(oben);
             const mittel = F.sub(oben.mul(hoch))
                 .length()
@@ -2399,43 +2403,6 @@ class AnazhRealm_stoff_material {
             .mul(E.mul(gewicht))
             .mul(this._punktLichtBrdf(Te, N, F.div(betrag), P.negate().normalize(), E.div(betrag).clamp()));
         return Te.select(bedingung, beitrag, Te.vec3(0));
-    }
-
-    // DER VEKTOR DER FLÄCHE (w28-strahler, `_lichtPlatz`): das Quadrat um `m` (Blick-Raum, vom Fragment aus) mit den halben Seiten
-    // `hx`, `hz` → Σ über seine vier Kanten ½·γᵢ·Γᵢ (Lambert): sein Produkt mit der Normale ist die Bestrahlung je Leuchtdichte.
-    // EINE WGSL-Funktion mit Layout (wie `rauschEbene`): ihr Rumpf steht einmal im Programm, mit lokalen Variablen — ausgeschrieben
-    // trug der Flächen-Zweig +4,2 KB in jedes beleuchtete Programm (Boden 97 6xx → 101 772 Zeichen, die Ratsche S0 riss).
-    static _flaechenVektor(Te) {
-        if (AnazhRealm._flaechenVektorFn) return AnazhRealm._flaechenVektorFn;
-        return (AnazhRealm._flaechenVektorFn = Te.Fn(([m, hx, hz]) => {
-            // je Kante a → b: Γ = (a × b) ÷ |a × b|, γ = atan2(|a × b|, a · b) — beide frei vom Maß der Ecken (keine Normierung,
-            // kein Klemmen des acos); die entartete Kante (Seite 0, der Punkt-Platz) trägt 0
-            const e = [m.sub(hx).sub(hz), m.add(hx).sub(hz), m.add(hx).add(hz), m.sub(hx).add(hz)].map((v) =>
-                v.toVar()
-            );
-            // die Kante ist ihre eigene Funktion: ihr Rumpf steht EINMAL, nicht je Kante (−0,4 KB je Programm)
-            const kante = Te.Fn(([p, q]) => {
-                const k = Te.cross(p, q).toVar();
-                const l = k.length().toVar();
-                return k.mul(Te.atan(l, p.dot(q)).div(l.max(1e-6)));
-            }).setLayout({
-                name: "flaechenKante",
-                type: "vec3",
-                inputs: [
-                    { name: "p", type: "vec3" },
-                    { name: "q", type: "vec3" },
-                ],
-            });
-            return kante(e[0], e[1]).add(kante(e[1], e[2])).add(kante(e[2], e[3])).add(kante(e[3], e[0])).mul(0.5);
-        }).setLayout({
-            name: "flaechenVektor",
-            type: "vec3",
-            inputs: [
-                { name: "m", type: "vec3" },
-                { name: "hx", type: "vec3" },
-                { name: "hz", type: "vec3" },
-            ],
-        }));
     }
 
     // DIE EINE BRDF EINES PUNKTLICHTS (K11, jeder Platz des Licht-Pools): r184s Lambert + GGX ausgeschrieben — BRDF_Lambert,
