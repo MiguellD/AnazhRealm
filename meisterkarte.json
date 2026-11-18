@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "e4e3f363",
-    "zeit": "2026-11-18T15:46:06.054Z",
+    "zeit": "2026-11-18T15:52:16.595Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3231,7 +3231,7 @@
           "punkte": 1,
           "staffel": "1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus · 2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte",
           "messung": "Spielgang-Station haus: Tür öffnen, Treppe, Keller (kellerY −2,40 m), Dachboden, Ego und Third, mittags und nachts.",
-          "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +32) — zuletzt an a996d0ae: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: … bild 13/17 haus_schwarzwald · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +38)",
+          "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +32) — zuletzt an a996d0ae: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)) · Täter: … bild 13/17 haus_schwarzwald · siedlung.K1#2 gtx: ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.007 · Median 0.017 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.005669636273816779/undefined · haus_schwarzwald 0.008145415041473569/0.8576727160968027 · haus_schwarzwald 0.012779595879250205/0.8749382846113758 · haus_schwarzwald 0.019475803206190762/undefined · haus_schwarzwald 0.008852778068101074/0.9477029825677046 · haus_schwarzwald 0.012232163127304338/0.734640724771158 · haus_schwarzwald 0.005923855769823326/0.8743832817480667 · haus_alpenchalet 0.028732539432160534/undefined · haus_alpenchalet 0.01636334376131761/0.8857103742437357 · haus_alpenchalet 0.009787923598351775/undefined · haus_schwarzwald 0.015069545548994525/0.8858993048162613 · haus_schwarzwald 0.016304603780254005/0.9321538800047633 · haus_schwarzwald 0.018601118900204817/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.018977963963833173/undefined · haus_skandinavisch 0.011180283997975304/undefined an e4e3f363",
           "schlupfloch": "Den Keller zählen statt zu begehen: die Station geht hinein; Labor und Welt durch ein abgedunkeltes Labor anzugleichen: die Albedo zählt Material K1 absolut.",
           "aenderung": "Die 1 der Synthese stand auf Gesetz-Merkmalen, während die Klasse haus am Kopf kein Ist trägt (B60) → 0; Labor = Welt zählt Studios K4, der Ton Material K3 (V16, V22); Schnitt haus-innen 0 → 1 (W10, b9537781).",
           "maschine": true
@@ -4594,8 +4594,8 @@
     "art": {
       "linse": 1,
       "ungemessen": 18,
-      "rot": 0,
-      "anderes": 29
+      "rot": 1,
+      "anderes": 28
     }
   },
   "ohneHebel": [
