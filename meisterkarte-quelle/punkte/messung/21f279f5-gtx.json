@@ -1,0 +1,252 @@
+{
+ "sha": "21f279f5f5b87f86c0bea764dab99fb36670725e",
+ "geraet": "gtx",
+ "zeit": "2026-11-18T00:30:02.348Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.8 m: 46.7 m 5/5 fliehen, 3 sichtbar, 2 Fleck(en) (102 px) · 52 m 4/4 fliehen, 3 sichtbar, 1 Fleck(en) (77 px) · 56.7 m 4/4 fliehen, 3 sichtbar, 1 Fleck(en) (112 px) · Glieder im Pulk je Schuss 4/4/4 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.03,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.8 m: 46.7 m 5/5 fliehen, 3 sichtbar, 2 Fleck(en) (102 px) · 52 m 4/4 fliehen, 3 sichtbar, 1 Fleck(en) (77 px) · 56.7 m 4/4 fliehen, 3 sichtbar, 1 Fleck(en) (112 px) · Glieder im Pulk je Schuss 4/4/4 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k8560214dbb3d",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "ka6dc719da81b",
+   "s": 60.6,
+   "fremd": {
+    "s": 63.7,
+    "takte": 29,
+    "fremdS": 86.03,
+    "kerne": 1.351,
+    "fensterKerne": 1.713,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      45.3
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      14.5
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      12.28
+     ]
+    ],
+    "dienerS": 32.67,
+    "diener": [
+     [
+      "System",
+      16.14
+     ],
+     [
+      "dwm.exe",
+      10.34
+     ]
+    ],
+    "geraetS": 23.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.23
+     ],
+     [
+      "svchost.exe",
+      7.69
+     ],
+     [
+      "SearchIndexer.exe",
+      0.47
+     ]
+    ],
+    "eigenS": 127.34,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T00:30:02.348Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k8560214dbb3d": "pVXRjqM4EPyXPN4e4wRDAEvz4AyjzZxupMwntO02MCEQ2WbYy2r//QQTkgAZ7UnnJ5Cqu7qKavNzcQS5hwwf3m1dLdjij8WfCwsf6Fk0H2ge3u2CLZYygDBm/PMQzvlTB5OmODpLVAGZtzcIrjFeiQKrB9mX+UrGYcjIb0+sv2rnYO+GbglFBLbJOH/lj483FWUhCIgK8gN6jXFYlOeSlYwRkJH2mbc7QnYkIpuWX87TnTalQFV7DjQOTYTyIwpsCmxsBgI9aHRPfAaHwSqgg+Q45bv3i0j+xnk3yR1WAZUaT64phHrFXv7h/HmOVwWg88qisgOvVKGg/tXqdl5joPVOgHmJ5lwU02jtX4blnKftbl6oy8baEVlMVejHjJCETLAZ2kLmzjua+hoDkfjRCthm3jo7Np6+nQiEgFhMvc4BqwzNeIYoCGXAyI942nQPBzTgVZCfocmSRr4YxXA7n2VI3AErK4dSGQQq0f8hwYSkX7ccuUEV9deS8f97Ntn3CV3ZW9+bNJDFSiTRbH6+7ZcgjbuX7LqF28/OaXZD8zYhsTIvzGEsSetQwZL9PXfA5qDQePvauqsBcewDPRuQ9mvBd0E6rbyKGfZfrJdhfKMlJnw7+/q21q4Fg152bM6FGGAYhYzzlxnYweEwiJA+xuHd73InudZ1K3s7Xhjgah2xwdE7CftccO+ERTkURVKuKLKnVz7V/2Hg4IHITKH1kGMRSp3cW7sWS+eJuh6uyoQqoLKbpbqxq5dyVZW2tXx+yt4mYrcmuxPlnqE27qJWrJc6YLq/a+QMXRjntSDzAR7QNfVX7A70hKbEDEdWqkBQUB36ZtpgePg2yvJploBTgZ3JlW3ssAVJdNnisbQWzV5AtT8DlyqkGthfHc+Op2fC9Ya8k+nZtZy/bvi3rtkRJTmaWhfdPU5yaGwOpRv9UT8hDWrRYF5hlx9X1BVWV9SvfwE=",
+  "ka6dc719da81b": "fVRNb5tAEP0vPjYla7Ng1ivlMC5RnUhRnVPV4+wyC8QYrF0cUlf975Ux+AOizslG7828eTM7fyY71BtM6f7NVeVETr5Mvk4cvpPnyL6TvX9zEzmZ6gBDIeEUDAC+H2Ha5rvasSJXDFWJ2Za8va0pL+51S5tpQUiSNY/QrBlbs4gtGzjHEh4ehmkKRUnl1WioT6ISP+Ioh8C9S1GRh3vTFu7AYTALeChZGyKG9RvrA14BWPM4rKiwTG5VG46hmcmnBuBxrDDJkWqvyEvX19RJqLgvz4WaMcdi4x2QsoJsRxI8mvtnoQAQN+sx0RR7526KCZ6EvpCMLdgAm5LLdVZ7O1spKnvzFn40Q7kcp053e89cK0KlUKihzxlSmZK91RAFoQ4k+xDDpBvckkWvxKyDLqY88tXFG8bYaqylaIW3JXrhIlGLyNwQGWPpql2fWLR/zp/F6rRQcXpZLngdFHE6y+321h5jwgSnw55dhglZb1O5+ozkQvjIuxcQt8sE6yAeMi+NdDxfzaehuOpDMFiNfHOVqRu05KW7fUekgMIolJC+jMA1brd9A9onEY4aqI9LfS0jDGg2j2Tv2iczOD0B70B50ZMirWec5LcXGPb5bnHroUptbkw/aRVqs/hsMRsqak9VVd0jeYJcS8ZZeXZlIQB+wfIyvfhQiZ+/Nx/XEwWA52qou81e2frcqZpPTSBN+xL1CJ3b2mtQZz084HPuz4YGHsgWlNKNhUmgOCaSNfpKZdD/uLvZ08NowoecjuaWbu/6DV9EyaLb8O4oPt2em4bsRmG56QjTJOQGZbvma4jhB0D6HN9dX9T/RQqn27cjzXa2Mvnx8rEM9y7Dor6c/7//AA=="
+ },
+ "sitzung": {
+  "start": "2026-11-18T00:29:22.265Z",
+  "ordner": "sitzung-20261118-012922",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 7.4,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "karte2.leben.tiere.masse#1",
+    "s": 29.1,
+    "takte": 717,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wirt": [
+   {
+    "probe": "karte2.leben.tiere.masse#1",
+    "anders": [
+     "window.r",
+     "window.st",
+     "window.pm",
+     "window.halt",
+     "window.__handTakt",
+     "window.aufsteigend",
+     "window.addiere",
+     "window.rang",
+     "window.__uebergangFaellt",
+     "window.rahmen",
+     "window.__png",
+     "window.__bundlesNeu",
+     "window.sleep",
+     "window.leihe",
+     "window.__fremd",
+     "window.__loopBild",
+     "window.__zielLesen",
+     "window.__pufferLesen",
+     "window.jsonKlon",
+     "window.fehlerText",
+     "window.fehlerStapel",
+     "window.__seitenTakt",
+     "window.__bedienung2",
+     "window.__takte",
+     "window.__streuTakte",
+     "window.__bildAus",
+     "window.__eichMs",
+     "window.__weltStehtNach",
+     "window.__gebautNach",
+     "window.__deckel",
+     "window.__weltDa",
+     "window.__abdruck",
+     "window.__farben",
+     "window.__lin",
+     "window.__stand",
+     "window.__standJson",
+     "window.__werkPutz",
+     "window.__bautenLeer",
+     "window.__bautenSeit",
+     "window.__peersWeg",
+     "window.__rufe",
+     "window.__ortSchritt",
+     "window.__codeOf",
+     "window.__dokuOf",
+     "window.__fehlt"
+    ],
+    "wie": {
+     "window.r": "getauscht: () => window.anazhRealm",
+     "window.st": "getauscht: () => window.anazhRealm && window.anazhRealm.state",
+     "window.pm": "getauscht: () => st && st.playerMesh",
+     "window.halt": "getauscht: () => st && st.verbTafel.gehalten",
+     "window.__handTakt": "getauscht: function handTakt() { try { r._gameLoopTick(performance.now()); } catch (e) { r.",
+     "window.aufsteigend": "getauscht: (a, b) => a - b",
+     "window.addiere": "getauscht: (a, b) => a + b",
+     "window.rang": "getauscht: (s, q = 0.5) => s[Math.min(s.length - 1, Math.floor(q * s.length))]",
+     "window.__uebergangFaellt": "getauscht: function uebergangFaellt(r) { r.state.weatherTransition = null; r.requestWeather",
+     "window.rahmen": "getauscht: (b) => b.obb || { cx: (b.minX + b.maxX) / 2, cz: (b.minZ + b.maxZ) / 2, c: 1, s:",
+     "window.__png": "getauscht: function png(u8, W, H) { const cv = Object.assign(document.createElement(\"canvas",
+     "window.__bundlesNeu": "getauscht: () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true))",
+     "window.sleep": "getauscht: (ms) => { const e = globalThis.__abbruchEpoche; return new Promise((r, f) => set",
+     "window.leihe": "getauscht: function leihe(o, tausch) { const alt = Object.keys(tausch).map((k) => [k, Objec",
+     "window.__fremd": "getauscht: async function fremd() { const { privateKey: k } = await crypto.subtle.generateK",
+     "window.__loopBild": "getauscht: function loopBild() { st.renderer._nodes?.nodeFrame?.update(); r._loopRender(); ",
+     "window.__zielLesen": "getauscht: async function zielLesen(ziel, W, H, renderer = st.renderer) { const px = await ",
+     "window.__pufferLesen": "getauscht: function pufferLesen(puffer, wer, renderer = st.renderer) { const q = puffer?.is",
+     "window.jsonKlon": "getauscht: (x) => JSON.parse(JSON.stringify(x))",
+     "window.fehlerText": "getauscht: (e) => e?.message || String(e)",
+     "window.fehlerStapel": "getauscht: (e) => e?.stack || String(e)",
+     "window.__seitenTakt": "getauscht: async function seitenTakt() { const vor = r._weltStand ? r._weltStand.takte : -1",
+     "window.__bedienung2": "getauscht: async function bedienung2(vor) { const taste = (code, art) => window.dispatchEve",
+     "window.__takte": "getauscht: async function takte(n, ms) { for (let i = 0; i < n; i++) { __handTakt(); await ",
+     "window.__streuTakte": "getauscht: async function streuTakte(n, ms) { for (let i = 0; i < n; i++) { st._frameOverBu",
+     "window.__bildAus": "getauscht: function bildAus() { if (st.renderer) { st.renderer.render = function () {}; if ",
+     "window.__eichMs": "getauscht: function eichMs(n) { const a = eichMs.puffer || (eichMs.puffer = new Float64Arra",
+     "window.__weltStehtNach": "getauscht: async function weltStehtNach(takt, max) { const W = () => r._weltStand || {}; co",
+     "window.__gebautNach": "getauscht: async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) { co",
+     "window.__deckel": "getauscht: function deckel(name, max, offen) { let n = 0, k = 0, still = 0, vor = \"\"; retur",
+     "window.__weltDa": "getauscht: async function weltDa(bed) { window.__weltDaWartet = bed ? String(bed).replace(/",
+     "window.__abdruck": "getauscht: function abdruck(x, alle) { let [h, n] = [0x811c9dc5, 0]; const ein = (a) => { c",
+     "window.__farben": "getauscht: function farben(g) { const set = new Set(); g?.traverse((o) => { const c = o.geo",
+     "window.__lin": "getauscht: (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255] .map((c) => Math.f16round(",
+     "window.__stand": "getauscht: async function stand() { await r._speicherStill(); return (await r._idbGetWorld(",
+     "window.__standJson": "getauscht: async function standJson() { const roh = await window.__stand(); try { return JS",
+     "window.__werkPutz": "getauscht: function werkPutz() { r.closeAllDrawers(); st.yaw = 0; if (st.playerMesh) st.pla",
+     "window.__bautenLeer": "getauscht: function bautenLeer() { r._bautenLeeren(); }",
+     "window.__bautenSeit": "getauscht: function bautenSeit() { const vor = new Set(st.architectures); return () => st.a",
+     "window.__peersWeg": "getauscht: function peersWeg() { for (const pid of Array.from(st.p2p.peers.keys())) r._p2pR",
+     "window.__rufe": "getauscht: function rufe(wer, methode, lieferer, name, args) { const echt = lieferer[name];",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__codeOf": "neu: (f) => oK(String(f))",
+     "window.__dokuOf": "neu: (f) => String(f)",
+     "window.__fehlt": "neu: (f, re) => [].concat(f).every((g, i) => { if (typeof g !== \"function\") throw new"
+    },
+    "haelt": [],
+    "heap": [
+     229,
+     277.6
+    ],
+    "ungemessen": null
+   }
+  ],
+  "wanderung": [
+   {
+    "probe": "karte2.leben.tiere.masse#1",
+    "ort": "wiese",
+    "m": 327.71,
+    "dreh": 0
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.leben.tiere.masse#1",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 3349,
+   "frameP95": 25.04,
+   "taktP95": 14.6,
+   "vramMax": 129.5,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.leben.tiere.masse#1",
+     "m": 328,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 149,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 177.4,
+  "minuten": 3.06
+ }
+}
