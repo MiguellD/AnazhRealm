@@ -2,7 +2,8 @@
 // scripts/lib/los-proben.cjs — DIE LOSE ÜBERDECKEN SICH NIE (siedlung; w28-stadt-grammatik): die Proben der Settlement-Linse
 // (`node scripts/diag-settlement.cjs`, Teil A am Tisch) am Los-Gesetz des Fachwerk-Kerns — `loseEntzerren` (nach reihenSnap und
 // brandwand, am Grundriss des Slots), `grundrissTief`, `LOS_GESETZ`. Der Konsum-Leser am Gerät ist gate:kreatur-takt zielplan
-// (die Lose des Plans stehen: jedes Haus, jede Rolle).
+// (die Lose des Plans stehen: jedes Haus, jede Rolle). Dazu, was um das Los gilt: das Maß des Landes (`BAU_LAND`) und der Raum der
+// Wende am Torplatz (`torRaum`, `VERKEHR_GESETZ.bahnN`; Konsum-Leser am Gerät: gate:fahr-leben VK).
 
 // FC = der Fachwerk-Kern, wie die Linse ihn am Tisch lädt (`studioKern`), check = ihr Prüfer (Name, bestanden, Detail)
 function losProben(FC, check) {
@@ -81,6 +82,77 @@ function losProben(FC, check) {
     );
     const fLand = landFaelle(BL.koerper);
     check("Los-Probe: jeder Körper steht auf dem, was seine Parzelle trägt (4 Pläne)", fLand.length === 0, `${fLand.length}: ${fLand.slice(0, 4).join(" · ")}`);
+    // DER RAUM DER WENDE TRÄGT KEINEN FREIEN STAND (fachwerk `torRaum`, `STADT_DICHTE.torplatz.zulaufM`; w28-bau-rezept): das Geviert
+    // des Torplatzes, längs der Trasse um den Zulauf der Bahnen gestreckt, hält die freie Laterne (`dorfLayout`: `laterneNeben`) und
+    // den Brunnen (`brunnenWeicht`) fern — dort zweigen die Bahnen der Wende ab. Die Zählung (`imRaum`, am Maß des Gesetzes) nennt
+    // jeden Stand im Raum beim Namen; ihr Täter ist das Gesetz ohne den Zulauf (nur das Geviert, wie bis hier). Die Fälle: die Stadt
+    // der Fahr-Linse VK, die Kleinstadt des Worts, zwei weitere Städte. Der Konsum-Leser am Gerät ist gate:fahr-leben VK (Wenden
+    // an 4 von 4 Enden, fahrend je Minute).
+    const [TP, VG, AUS] = [FC.STADT_DICHTE.torplatz, FC.VERKEHR_GESETZ, FC.AUSSTATTUNG];
+    const zu0 = TP.zulaufM;
+    check(
+        "Tor-Probe: der Zulauf der Wende ist ihr Bogen samt der Geraden auf die Spur (zulaufM = wendeM + abzweigZulaufM)",
+        zu0 === VG.wendeM + VG.abzweigZulaufM,
+        `${zu0} m · ${VG.wendeM} + ${VG.abzweigZulaufM}`
+    );
+    const imRaum = (ex) => {
+        const raeume = (ex.zonen || []).filter((q) => q.name === "torplatz").map((q) => ({ cx: q.cx, cz: q.cz, phi: q.phi, ex: q.ex + zu0, ez: q.ez }));
+        const nennt = (art, L, r) =>
+            (L || []).flatMap((p) => {
+                const f = raeume.find((o) => FC.distPunktOBB(p.x, p.z, o) < r);
+                return f ? [`${art} ${p.x.toFixed(1)}/${p.z.toFixed(1)} im Raum der Wende ${f.cx.toFixed(1)}/${f.cz.toFixed(1)}`] : [];
+            });
+        return nennt("laterne", (ex.laternen || []).filter((p) => !p.wand), AUS.laterne.tritt.r).concat(nennt("brunnen", ex.brunnen, AUS.brunnen.tritt.r));
+    };
+    const torFaelle = () =>
+        [[7, 300], [7, 18], [2, 120], [7, 60]].flatMap(([seed, nH]) => imRaum(FC.exportSettlement({ seed, nH })).map((x) => `dorf ${seed} ${nH}: ${x}`));
+    let tTor;
+    try {
+        TP.zulaufM = 0;
+        tTor = torFaelle();
+    } finally {
+        TP.zulaufM = zu0;
+    }
+    check(
+        "Tor-Probe (Täter): ohne den Zulauf nennt die Zählung die Stände im Raum der Wende beim Namen",
+        tTor.length >= 10 && tTor.every((x) => /^dorf \d+ \d+: (laterne|brunnen) -?[\d.]+\/-?[\d.]+ im Raum der Wende /.test(x)),
+        `${tTor.length}: ${tTor.slice(0, 3).join(" · ")}`
+    );
+    const fTor = torFaelle();
+    check("Tor-Probe: kein freier Stand (Laterne, Brunnen) steht im Raum einer Wende (4 Pläne)", fTor.length === 0, `${fTor.length}: ${fTor.slice(0, 4).join(" · ")}`);
+    // DIE HÖHE URTEILT ÜBER JEDE BAHN DES KREISES (fachwerk `verkehrsNetz`: `versuch`, `VERKEHR_GESETZ.bahnN`; w28-bau-rezept): ein
+    // Boden, der je Kreis die erste Bahn heraus verwirft (`faellt: "aus"`) und jede weitere trägt — der Kreis des Torplatzes sucht
+    // ohne sie weiter und trägt seine Wende. Der Täter ist die Suche mit EINER Bahn je Kreis (`bahnN` 1, wie bis hier): mit der
+    // ersten Bahn fällt der Kreis, das Ende steht ohne Wende.
+    const stadt = FC.exportSettlement({ seed: 7, nH: 300 });
+    const traegt = (w) => ({ plaetze: w.plaetze, y: 0, hEin: null, hAus: null });
+    const streng = () => {
+        const gesehen = new Set();
+        const wende = (w) => (gesehen.has(`${w.x}/${w.z}`) ? traegt(w) : (gesehen.add(`${w.x}/${w.z}`), { faellt: "aus" }));
+        return { kreis: () => true, wende };
+    };
+    const enden = (boden) => FC.verkehrsNetz(stadt, 0, 0, false, boden).kreuzungen.filter((K) => K.ende);
+    const amTor = (E) => E.filter((K) => K.wenden[0] && K.wenden[0].tor).length;
+    const [frei, mit] = [enden({ kreis: () => true, wende: traegt }), enden(streng())];
+    const bahn0 = VG.bahnN;
+    let ohne;
+    try {
+        VG.bahnN = 1;
+        ohne = enden(streng());
+    } finally {
+        VG.bahnN = bahn0;
+    }
+    const tBahn = ohne.filter((K) => !K.wenden.length).map((K) => `Ende ${K.x.toFixed(1)}/${K.z.toFixed(1)}: der Kreis fällt mit seiner ersten Bahn`);
+    check(
+        "Tor-Probe (Täter): mit EINER Bahn je Kreis fällt jedes Ende, dessen erste Bahn die Höhe verwirft, beim Namen",
+        frei.length >= 2 && tBahn.length === frei.length && amTor(ohne) === 0,
+        `${tBahn.length} von ${frei.length}: ${tBahn.slice(0, 2).join(" · ")}`
+    );
+    check(
+        "Tor-Probe: fällt die erste Bahn an der Höhe, trägt der Kreis des Torplatzes die nächste (jedes Ende wie ohne das Urteil)",
+        amTor(frei) >= 2 && amTor(mit) === amTor(frei) && mit.every((K) => K.wenden.length),
+        `am Torplatz ${amTor(mit)} von ${amTor(frei)} · Enden ${mit.length}`
+    );
 }
 
 module.exports = { losProben };

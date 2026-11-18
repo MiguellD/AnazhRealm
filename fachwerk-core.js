@@ -4433,7 +4433,7 @@
         marktJeBreite: 1.3, marktTief: [12, 24], standRandM: 2.6, marktGangM: 3.2,
         wasserM: 3, zugBurgM: 24, zugKircheM: 16, zugJeLosM2: 170, zugSeite: 0.6, zugFremd: 300,
         friedhof: { tiefM: 7.5, randM: 1.4, abM: 1.5 },
-        torplatz: { abM: 14, winkel: 2, halbM: 13 }, // die Mitte `abM` vom Ende der Trasse im Winkel `winkel` (rad, neben und hinter ihm: 6 m vor dem Ende, 13 m neben der Achse), das Geviert ± halbM
+        torplatz: { abM: 14, winkel: 2, halbM: 13, zulaufM: 17 }, // die Mitte `abM` vom Ende der Trasse im Winkel `winkel` (rad, neben und hinter ihm: 6 m vor dem Ende, 13 m neben der Achse), das Geviert ± halbM; `zulaufM`: so weit reichen die Bahnen der Wende längs der Trasse über das Geviert (der Bogen `wendeM` + die Gerade auf die Spur `abzweigZulaufM` des VERKEHR_GESETZ) — der Raum der Wende (`torRaum`)
         // DER GEHWEG DER FAHRSTRASSE TRÄGT ZWEI: wo der Verkehr fährt (ein Weg ab VERKEHR_GESETZ.breiteM in der Siedlung mit Wagen),
         // reicht die Bahn des Wagens samt der Kapsel des Fußes 0,3 m über den Bord (spurM + halbM + 0,35 − 2,5), und zwei Kapseln
         // nebeneinander brauchen von dort bis an die Wand 3 × 0,35 + 0,71 = 1,06 m: unter 1,36 m Gehweg geht nur einer. An der
@@ -4616,6 +4616,14 @@
     function distPunktOBB(px,pz,o){ const c=Math.cos(o.phi),s2=Math.sin(o.phi), dx=px-o.cx, dz=pz-o.cz;
   const lx=dx*c-dz*s2, lz=dx*s2+dz*c;             // Welt→lokal = R(−φ)
   const ex=Math.max(Math.abs(lx)-o.ex,0), ez=Math.max(Math.abs(lz)-o.ez,0); return Math.hypot(ex,ez); }
+    // DER RAUM DER WENDE (`STADT_DICHTE.torplatz.zulaufM`; w28-bau-rezept, PFLICHT-OFFEN C): das Geviert eines Torplatzes (`f`: seine
+    // Box, die lange Achse der Box ist die der Trasse) längs der Trasse um `zulaufM` gestreckt — dort zweigen die Bahnen der Wende
+    // von der Spur ab und laufen auf sie zurück (`verkehrsNetz`: der Bogen in den Kreis, die Gerade auf die Spur). Das Geviert
+    // hält die Lose und die Gassen fern, sein Raum jeden freien Stand am Weg: EIN Maß für die Laterne (`dorfLayout`) und den
+    // Brunnen (`brunnenWeicht`). Bis hier lasen beide nur das Geviert: an stadt-voll stand die Laterne 754,3/549,6 zwei Meter vor
+    // dem Geviert im Südwesten im Bogen jeder Bahn, der Kreis des Torplatzes (746,5/573) trug keine (66 Bahnen hinein, 58 heraus,
+    // kein Paar), die Suche nahm den Kreis daneben mit Enge und 3 Plätzen — gate:fahr-leben VK 26 m je Minute (Soll ≥ 30).
+    function torRaum(f){ return {cx:f.cx, cz:f.cz, phi:f.phi, ex:f.ex+STADT_DICHTE.torplatz.zulaufM, ez:f.ez}; }
     // DIE VORAUSWAHL DER NÄHE (siedlung.K5): sicher fern, ohne Winkel zu rechnen — die Box liegt im Kreis ex+ez um ihre Mitte, ein Weg in
     // seinem Kasten; was weiter als thr (+1 µm für die Rundung) liegt, kann die genaue Probe nicht treffen, ihr Urteil bleibt bit-gleich.
     // Leser: dorfLayout (Bauplatz, Laterne) · brunnenWeicht · wandLaternen — bis K5 rechnete jede Probe Winkel und Abstand zu allem (nH 300: 4 s).
@@ -4945,10 +4953,11 @@
     // (`parkL` × `parkB`) längs des Kreises, frei von Grundriss, Tritt, der Mitte jedes Wegs (die Gasse bleibt dem Fuß) und der
     // Spur zur Wende. Der Plan v2 (`ortPlan`) wählt je Ende die erste, deren Kreis und Plätze Land tragen und nicht steiler als
     // `hangMax` liegen und deren Bahn auf jeder Fläche, die sie kreuzt, binnen `flaecheM` deren Höhe trägt, und legt sie als
-    // Boden (`verkehrsBoden`). `wendeAbM` reicht bis 80 m (höchstens die halbe Strecke): bis w12-verkehr 40 — an der Stadt des
+    // Boden (`verkehrsBoden`); je Kreis urteilt die Höhe über bis zu `bahnN` Bahnen (die kürzeste ohne Enge zuerst — fällt ihr
+    // Band, die nächste). `wendeAbM` reicht bis 80 m (höchstens die halbe Strecke): bis w12-verkehr 40 — an der Stadt des
     // Worts (stadt-voll, 836,09/438,24) trug das Ende im Osten in 40 m keinen freien Kreis, mit ihm 3 statt 1 Wende, 21 Plätze für 20.
     var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, stossM: 3.1, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
-      wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigAussenM: 0.3, abzweigZulaufM: 10, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
+      wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigAussenM: 0.3, abzweigZulaufM: 10, abzweigFreiM: 8, wendeN: 8, bahnN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
     function verkehrVon(plan){
       const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
       /*DER WAGEN DER STADT GEHOERT EINEM HAUS IM RING (w28-stadt-grammatik): sein Platz liegt an der Wende am Tor, sein Fahrer geht
@@ -5184,7 +5193,7 @@
           return n; };
         const rU=V.halbM+(V.parkL/2)**2/(2*R), geht=(B)=>B.every((q,i)=>!i||gang(B[i-1],q,rU));
         const e=M[M.length-1], d0=M[Math.max(0,M.length-4)], l=Math.hypot(e.x-d0.x,e.z-d0.z)||1, ux=(e.x-d0.x)/l, uz=(e.z-d0.z)/l;
-        const versuch=(cx,cz,tor)=>{                                                          /*EIN KREIS DER SUCHE (Mitte cx/cz; `tor`: die Mitte des Torplatzes): traegt er, steht seine Wende in `K.wenden`*/
+        const versuch=(cx,cz,tor,aus)=>{                                                      /*EIN KREIS DER SUCHE (Mitte cx/cz; `tor`: die Mitte des Torplatzes; `aus`: die Bahnen dieses Kreises, die an der Hoehe fielen — unten, DIE HOEHE URTEILT UEBER JEDE BAHN): traegt er, steht seine Wende in `K.wenden`*/
           if(K.wenden.some(w=>Math.hypot(w.x-cx,w.z-cz)<3)) return;
           // der Kreis frei: keine Sperre näher als Rf an seiner Mitte (der Abstand zur gedrehten Box)
           const Rf=R+V.halbM+V.wendeRandM; if(zu(cx,cz,Rf)) return;
@@ -5221,7 +5230,8 @@
               if(!A.frei||A.k<=E.hiA||E.k>=A.loR) continue;
               let nah=false; for(const p of E.B){ for(const q of A.Bk) if((p.x-q.x)**2+(p.z-q.z)**2<g2*g2){ nah=true; break; } if(nah) break; }
               if(nah) continue;
-              const c9={L, dreh, span, E, A}; if(!best||L<best.L) best=c9;
+              const ei=(q/nA9)|0, aj=q%nA9; if(aus&&(aus.e.has(dreh*65536+ei)||aus.a.has(dreh*65536+aj))) continue;
+              const c9={L, dreh, span, E, A, ei, aj}; if(!best||L<best.L) best=c9;
               if(ohneEnge(E.B,A.B)){ frei0=c9; break; } } }
           if(!best) return;
           if(frei0) best=frei0;
@@ -5254,7 +5264,11 @@
           const engen=haufen.sort((a,b)=>a.i-b.i).map(({P})=>{ const c={x:0,z:0}; for(const q of P){ c.x+=q.x/P.length; c.z+=q.z/P.length; }
             let r=0; for(const q of P) r=Math.max(r,Math.hypot(q.x-c.x,q.z-c.z)); return {x:c.x, z:c.z, r:r+V.halbM}; });
           const wn={x:cx, z:cz, r:R, frei:Rf, dreh, ain, aout, bahn, ein:einB, aus:ausB, einAb:nR-1-E.k, ausAb:A.k, L:best.L, plaetze, engen};
-          if(boden){ const b=boden.wende(wn); if(!b) return; wn.boden=b; }
+          /*DIE HOEHE URTEILT UEBER JEDE BAHN DES KREISES (`bahnN`; w28-bau-rezept, PFLICHT-OFFEN C): faellt die gewaehlte Bahn an der Hoehe ihres Bands (`boden.wende` → `faellt`: 'ein' die Bahn hinein, 'aus' die Bahn heraus), sucht der Kreis ohne sie weiter (`aus`, dieselbe Folge: die kuerzeste ohne Enge zuerst), bis eine traegt oder `bahnN` fielen. Bis hier urteilte die Hoehe ueber die EINE Bahn der 2D-Wahl, und mit ihr fiel der Kreis: welche Bahn die kuerzeste freie war, entschied jeder Stand am Weg — an stadt-voll trug das Ende im Westen (673,5/452,5) seine Wende nur, solange eine Laterne die kuerzeste Bahn sperrte (13,6 m: ihr Band heraus liegt bei 693,4/455,1 0,55 m ueber dem Kern der Trasse); ohne sie fiel der Kreis des Torplatzes, die Suche nahm den Kreis daneben mit 4 Plaetzen, obwohl die naechste Bahn (16 m) traegt*/
+          if(boden){ const b=boden.wende(wn);
+            if(!b||b.faellt){ const n=(aus?aus.n:0)+1; if(!b||n>=V.bahnN) return;
+              const a2=aus||{n:0, e:new Set(), a:new Set()}; a2.n=n; (b.faellt==='ein'?a2.e:a2.a).add(dreh*65536+(b.faellt==='ein'?best.ei:best.aj)); return versuch(cx,cz,tor,a2); }
+            wn.boden=b; }
           if(tor) wn.tor=true;
           K.wenden.push(wn); };
         /*DIE WENDE DES TORPLATZES ZUERST (STADT_DICHTE.torplatz): das Geviert, das die Stadt am Ende der Trasse frei haelt, ist fuer den Kreis um seine Mitte gebaut — sein Ring und der Kranz der Plaetze liegen ganz in ihm. Er ist der erste Kreis der Suche und, wo er traegt, die Wende des Endes vor jeder kuerzeren Bahn: die kuerzeste lag an stadt-voll 6–7 m neben der Mitte, ihr Kranz reichte in die Lose (5 · 5 · 4 · 5 Plaetze fuer 21 Wagen, zwei ohne Platz)*/
@@ -5306,7 +5320,8 @@
           if(i&&Math.abs(A.ys[i]-A.ys[i-1])>V.hangMax*(A.s[i]-A.s[i-1])) return false; } return true; };
       // DAS URTEIL DER HÖHE (`boden`, der Baustein der Suche in `verkehrsNetz`): `kreis` — die Mitte und zwölf Punkte des Kreises
       // tragen Land und liegen nicht steiler als `hangMax` (vor der Bahn: billig zuerst); `wende` — Ring, Bänder und Plätze der
-      // fertigen Wende auf den Flächen der Stadt ({plaetze, y, hEin, hAus}, sonst null). Jede Wende der Suche trägt: die erste
+      // fertigen Wende auf den Flächen der Stadt ({plaetze, y, hEin, hAus}; {faellt: 'ein' | 'aus'}, wo das Band der Bahn hinein
+      // oder heraus nicht trägt — der Kreis sucht ohne sie weiter; null, wo sein Ring nicht trägt). Jede Wende der Suche trägt: die erste
       // (die kürzeste Bahn) ist die Wende des Endes.
       const bR=V.halbM+V.ringRandM/2;
       const boden={
@@ -5314,11 +5329,11 @@
           for(let a=0;a<12;a++){ const x=cx+Math.cos(a*Math.PI/6)*r, z=cz+Math.sin(a*Math.PI/6)*r; if(!land(x,z)||!(Math.abs(h(x,z)-h0)<=V.hangMax*r)) return false; }
           return true; },
         wende:(w)=>{ const pA=w.ein[0], pB=w.aus[w.aus.length-1], yA=kern(pA.x,pA.z), yB=kern(pB.x,pB.z);
-          if(yA===null||yB===null||!isFinite(yA)||!isFinite(yB)) return null;
+          if(yA===null||!isFinite(yA)) return {faellt:'ein'}; if(yB===null||!isFinite(yB)) return {faellt:'aus'};
           const yK=kern(w.x,w.z), y=yK!==null&&isFinite(yK)?yK:(yA+yB)/2;                      /*DIE WENDE LIEGT AUF DER HOEHE IHRES RINGS: liegt ihre Mitte auf einem Kern (der Torplatz, der Platz), traegt sie dessen Hoehe, die Baender steigen vom Abzweig zu ihr (`aufFlaechen`); sonst das Mittel der Kerne am Abzweig. Bis hier immer das Mittel: der Abzweig der Wende am Torplatz liegt vor der ebenen Front der Trasse (stadt-voll: 60,07 gegen 59,82 am Ende West, 52,86 gegen 52,50 im Osten), der Ring auf der Platte fiel um 0,25–0,42 m*/
           for(let a=0;a<2*Math.PI;a+=0.5/w.r) for(const o of [-bR,0,bR]) if(!traegt(w.x+Math.cos(a)*(w.r+o),w.z+Math.sin(a)*(w.r+o),y,V.flaecheM)) return null;
           const hEin=aufFlaechen(w.ein,null,y,kern), hAus=aufFlaechen(w.aus,y,null,kern);
-          if(!hEin||!hAus||!bandTraegt(hEin,V.halbM)||!bandTraegt(hAus,V.halbM)) return null;
+          if(!hEin||!bandTraegt(hEin,V.halbM)) return {faellt:'ein'}; if(!hAus||!bandTraegt(hAus,V.halbM)) return {faellt:'aus'};
           const plaetze=w.plaetze.filter(p=>{ const fx=Math.sin(p.fahrt), fz=Math.cos(p.fahrt), hs=[];
             for(const u of [-1,0,1]) for(const v of [-1,0,1]){ const x=p.x+fx*u*V.parkL*0.5-fz*v*V.parkB*0.5, z=p.z+fz*u*V.parkL*0.5+fx*v*V.parkB*0.5;
               if(!land(x,z)||!traegt(x,z,y,V.flaecheM)) return false; hs.push(h(x,z)); }
@@ -5532,7 +5547,7 @@
   else brunnen.push({x:sW/2+2.4,z:sW/2+2.4});
   const platzObb= platz? {cx:platz.cx,cz:platz.cz,phi:0,ex:platz.ex,ez:platz.ez} : null;
   const wegRand=(rd)=>rd.w/2+(staedt&&rd.w>=VERKEHR_GESETZ.breiteM?gehwegVon(plan,rd):0);   /*DER RAND DES WEGS FUER DIE AUSSTATTUNG (w28-stadt-grammatik, PFLICHT-OFFEN C): die Fahrbahn — an der Fahrstrasse der Stadt samt ihrem Gehweg. Der Gehweg der Trasse traegt zwei Leiber (STADT_DICHTE.gehwegFahrM) und ist der Raum, in den der Wagen ausschert, der einen Stehenden umfaehrt (der Wirt, `_verkehrUmfahren`): dort steht kein Mast und kein Brunnen. Bis hier trat der Mast bis an den Bordstein (`laterneQuer`), der Brunnen stand 0,6 m hinter ihm: an stadt-voll stiess jeder Wagen, der den Spieler in der Kreuzung am Markt umfuhr, an den Mast 828/443 (9,4 m von ihrer Mitte, 3,0 m von der Achse) — 531 Stoesse in 120 s. Leser: der Setzer der Laterne (`laterneWege`, `laterneQuer`), der Brunnen des Zugs, `mastWeicht` (ueber `laterneNeben`) und `brunnenWeicht` (das Layout traegt ihn)*/
-  const tore=[], imTor=(x,z,d)=>tore.some(f=>distPunktOBB(x,z,f)<d);                           /*DER TORPLATZ (STADT_DICHTE.torplatz): am Ende jeder Trasse der Wagen (das Blatt des Strassengraphen an einer Strasse ab VERKEHR_GESETZ.breiteM — das Tor) haelt die Stadt ein Geviert frei, neben der Strasse, auf der Seite des flacheren Grunds, nie im Wasser: kein Los, keine Gasse, keine Laterne — dort wendet und steht der Wagen (`verkehrsNetz`: der Kreis `abM` vom Ende im Winkel `winkel`, einer seiner Kandidaten). Bis hier fand die Wende ihren Kreis in der Wiese neben der Strasse; die dichte Stadt schloss beide Fronten: an stadt-voll trugen 2 von 4 Enden eine Wende, 15 von 21 Wagen einen Platz (gate:fahr-leben VK, main 4 von 4 und 20 von 20)*/
+  const tore=[], imTor=(x,z,d)=>tore.some(f=>distPunktOBB(x,z,f)<d), torRaeume=[], imTorRaum=(x,z,d)=>torRaeume.some(f=>distPunktOBB(x,z,f)<d);                           /*DER TORPLATZ (STADT_DICHTE.torplatz): am Ende jeder Trasse der Wagen (das Blatt des Strassengraphen an einer Strasse ab VERKEHR_GESETZ.breiteM — das Tor) haelt die Stadt ein Geviert frei, neben der Strasse, auf der Seite des flacheren Grunds, nie im Wasser: kein Los, keine Gasse, keine Laterne — dort wendet und steht der Wagen (`verkehrsNetz`: der Kreis `abM` vom Ende im Winkel `winkel`, einer seiner Kandidaten). Bis hier fand die Wende ihren Kreis in der Wiese neben der Strasse; die dichte Stadt schloss beide Fronten: an stadt-voll trugen 2 von 4 Enden eine Wende, 15 von 21 Wagen einen Platz (gate:fahr-leben VK, main 4 von 4 und 20 von 20)*/
   if(stadt){ const T=SD.torplatz, gradT=new Array(G.nodes.length).fill(0); for(const rd of roads) if(rd.a>=0&&rd.b>=0){ gradT[rd.a]++; gradT[rd.b]++; }
     for(const rd of roads){ if(!(rd.a>=0&&rd.b>=0)||(rd.w||0)<VERKEHR_GESETZ.breiteM) continue; const P=rd.pts;
       for(const hinten of [0,1]){ if(gradT[hinten?rd.b:rd.a]!==1||P.length<5) continue;
@@ -5541,7 +5556,7 @@
           .filter(q=>!nassAm(q.x,q.z,T.halbM)).sort((p,q)=>p.dh-q.dh)[0];
         if(!lage) continue;
         const f={cx:lage.x, cz:lage.z, phi:Math.atan2(-uz,ux), ex:T.halbM, ez:T.halbM};
-        tore.push(f); obbs.push({i:'torplatz',o:f}); zonen.push(zoneVon('torplatz','flaeche','kasten',f,'weg',{viertel:'tor'})); } } }
+        tore.push(f); torRaeume.push(torRaum(f)); obbs.push({i:'torplatz',o:f}); zonen.push(zoneVon('torplatz','flaeche','kasten',f,'weg',{viertel:'tor'})); } } }
   if(stadt){                                                                                 /*GASSEN-GESETZ (STADT_DICHTE): das Gewebe im Mauerring — von jeder Strasse und Seitenstrasse zweigt je `gasseTeilung` m beidseits (versetzt) eine Fussgasse quer ab, gerade, so weit der Grund sie traegt (ueber dem Fuss ORT_GESETZ.gefaelle ist sie Treppengasse `treppe`, bis ORT_GESETZ.treppe), bis sie eine andere Strasse trifft (der Anschluss: ein Block schliesst sich) oder `gasseLangM` erreicht; von jeder Gasse zweigt ab `gasseHinterM` die Hintergasse ab. An ihnen stehen die Lose der zweiten und dritten Reihe. Bis hier trug ein Los nur die Front an Baum und Quergasse (am Hang von stadt-voll keine einzige): 119 von 307 Haeusern standen im Ring, 188 an den Ausfallstrassen davor*/
     const fuss=ORT_GESETZ.gefaelle, steil=ORT_GESETZ.treppe, nR=roads.length, K=roads.map(rd=>wegKasten(rd.pts));
     const hang=(pts)=>{ let m=0; if(H) for(let k=1;k<pts.length;k++) m=Math.max(m,Math.abs(H(pts[k].x,pts[k].z)-H(pts[k-1].x,pts[k-1].z))/Math.max(1,Math.hypot(pts[k].x-pts[k-1].x,pts[k].z-pts[k-1].z))); return m; };
@@ -5752,7 +5767,7 @@
   const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; if(fernKasten(x,z,wl.K,h)) return false; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
   let kreuzT=null; const laterneInKreuzung=(x,z)=>{ const VG=VERKEHR_GESETZ; if(!kreuzT){ const zt=plan.schnitt||plan; kreuzT=zt.staedtisch?verkehrsNetz({roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w})), feldwege},0,0,true).kreuzungen.filter(K=>!K.ende&&K.r>0):[]; }
     return kreuzT.some(K=>Math.hypot(x-K.x,z-K.z)<K.r+VG.halbM+VG.abbiegRandM+LATERNE_FUSS); };   /*DIE KREUZUNG DER TRASSEN TRAEGT KEINE LATERNE (PFLICHT-OFFEN C): in der Stadt (sie traegt Verkehr) ist jede Kreuzung des Netzes der Wagen (`verkehrsNetz` ueber den Wegen, wie der Export sie traegt, ohne Sperren) Fahrbahn bis zu ihrem Radius samt halbem Wagen und Abbiege-Rand — dort ziehen die Bogen der Abbieger, der Fuss bleibt draussen. Bis hier standen am Markt jeder Metropole Laternen 4,5–8,3 m von der Mitte der Kreuzung: an stadt-voll verbot das Gesetz 7 von 12 Abbiegern, in die Strecke einer Wende fuehrte keiner, 10 von 20 Wagen erreichten in 10 min kein Ziel*/
-  const laterneNeben=(x,z)=>!laterneImWeg(x,z)&&!laterneInKreuzung(x,z)&&!(stadt&&nassAm(x,z,1))&&!imTor(x,z,LATERNE_FUSS);   /*DER STAND OHNE DIE WAND (w28-stadt-grammatik): neben jedem Weg (`wegRand`: an der Trasse hinter ihrem Gehweg), ausser der Kreuzung der Trassen, trocken, ausser dem Torplatz (der Raum der Wende) — das Layout traegt ihn als `laterneNeben`, der Mast, der nach dem Snap der Wand weicht (`mastWeicht`), fragt DENSELBEN Stand statt eines Zwillings. Bis hier fragte er nur die Fahrbahn jedes Wegs*/
+  const laterneNeben=(x,z)=>!laterneImWeg(x,z)&&!laterneInKreuzung(x,z)&&!(stadt&&nassAm(x,z,1))&&!imTorRaum(x,z,LATERNE_FUSS);   /*DER STAND OHNE DIE WAND (w28-stadt-grammatik): neben jedem Weg (`wegRand`: an der Trasse hinter ihrem Gehweg), ausser der Kreuzung der Trassen, trocken, ausser dem Raum der Wende (`torRaum`: der Torplatz samt dem Zulauf seiner Bahnen laengs der Trasse — bis w28-bau-rezept nur das Geviert) — das Layout traegt ihn als `laterneNeben`, der Mast, der nach dem Snap der Wand weicht (`mastWeicht`), fragt DENSELBEN Stand statt eines Zwillings. Bis hier fragte er nur die Fahrbahn jedes Wegs*/
   const laterneFrei=(x,z)=>obbs.every(q2=>fernOBB(x,z,q2.o,LATERNE_WAND)||distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&laterneNeben(x,z);   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg UND ausser der Kreuzung der Trassen — Stadt, Platz, Knoten und Gasse fragen hier*/
   const laterneQuer=(rd,q,fl)=>{ const lo=wegRand(rd)+LATERNE_FUSS; for(let o=Math.max(lo,rd.w/2+gehwegVon(plan,rd)+0.35); ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
   let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
@@ -9464,7 +9479,9 @@
     // dem Rand, je 0,5 m jedes Wegs, beide Seiten); findet er keinen, fällt er aus dem Plan (gezählt, nie still).
     // DER RAND IST DER DES LAYOUTS (`lay.wegRand`, w28-stadt-grammatik): an der Fahrstraße der Stadt liegt er hinter ihrem Gehweg (der
     // Raum des Wagens, der einen Stehenden umfährt) — und kein Brunnen steht auf einem Torplatz (`lay.zonen`: der Raum der Wende am
-    // Ende der Trasse; an stadt-voll stand einer 3 m neben dem Ende 733/570, keine Wende trug: Wenden 3 an 4 Enden).
+    // Ende der Trasse; an stadt-voll stand einer 3 m neben dem Ende 733/570, keine Wende trug: Wenden 3 an 4 Enden). Der Raum der
+    // Wende ist der der Laterne (`torRaum`: das Geviert samt dem Zulauf der Bahnen längs der Trasse, w28-bau-rezept) — bis dahin
+    // nur das Geviert: an stadt-voll rückte ein Brunnen auf 749,3/556,3, zwei Meter vor das Geviert in den Bogen der Bahnen.
     // dorfB: [{p, dims}] · pl: lay.pl · lay: das Layout (brunnen wird ERSETZT). Rückgabe { gerueckt, gestrichen }.
     function brunnenWeicht(dorfB, pl, lay) {
         var O = ORT_GESETZ,
@@ -9477,9 +9494,11 @@
                 return rd.pts && rd.pts.length > 1;
             }),
             rand = lay.wegRand,
-            tore = (lay.zonen || []).filter(function (zo) {
-                return zo.name === "torplatz" && zo.form === "kasten";
-            }),
+            tore = (lay.zonen || [])
+                .filter(function (zo) {
+                    return zo.name === "torplatz" && zo.form === "kasten";
+                })
+                .map(torRaum),
             a,
             i,
             k;
@@ -9545,7 +9564,7 @@
             if (aufWeg(x, z, 0.35)) return false; // wie gezogen: die Mitte 0,6 m hinter dem Rand (der Kranz ragt 0,32 m hinein)
             for (var j = 0; j < flaechen.length; j++) if (!fernOBB(x, z, flaechen[j], r) && distPunktOBB(x, z, flaechen[j]) < r) return false;
             for (j = 0; j < (lay.felder || []).length; j++) if (!fernOBB(x, z, lay.felder[j], r) && distPunktOBB(x, z, lay.felder[j]) < r) return false;
-            for (j = 0; j < tore.length; j++) if (distPunktOBB(x, z, tore[j]) < r) return false; // der Torplatz ist der Raum der Wende
+            for (j = 0; j < tore.length; j++) if (distPunktOBB(x, z, tore[j]) < r) return false; // der Raum der Wende (`torRaum`)
             var nah = function (L, m) {
                 for (var n = 0; n < (L || []).length; n++) if (Math.hypot(x - L[n].x, z - L[n].z) < m) return true;
                 return false;
@@ -12488,6 +12507,7 @@
         obbR: obbR,
         obbSep: obbSep,
         distPunktOBB: distPunktOBB,
+        torRaum: torRaum, // der Raum der Wende am Torplatz (das Geviert samt dem Zulauf der Bahnen) — Leser: gate:settlement (lib/los-proben.cjs)
         ORTSNAME: ORTSNAME,
         DORF_NORM: DORF_NORM,
         SIEDLUNG: SIEDLUNG,
