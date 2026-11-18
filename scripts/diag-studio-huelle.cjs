@@ -24,7 +24,7 @@
 //   H6 EINE ENGINE    (Netz, --engine) die Studio-SEITE worlds/<welt>/index.html im Browser, gezählt ihre Anfragen: eine
 //                     Engine-Kopie im Studio-Baum (worlds/*/lib/) oder das r160-UMD (vendor/three.min.js) ist ROT beim
 //                     Namen, wer three lädt, lädt die der Welt (vendor/three.webgpu, r184); lädt die Seite die Welt
-//                     (index.html, stamm/), ist die isolierte Bühne aufgelöst — ROT. Wer noch fremd lädt, steht in der Ratsche.
+//                     (ihre Ankunft stamm/dirigent-ankunft.js), ist die isolierte Bühne aufgelöst — ROT. Wer noch fremd lädt, steht in der Ratsche.
 //   H8 Kosten-Wahrheit (studios.K3, --engine) je Mesh-Studio und Stufe die gezählten Zahlen der Kosten-Leiste gegen die
 //                     GEZEICHNETEN (das Werk allein im Zähl-Abschnitt der Hülle): Dreiecke und Befehle gegen renderer.info,
 //                     VRAM gegen die Speicher-Karte des Renderers je Werk-Puffer — über ±5 % oder ohne Gegenzahl ist ROT
@@ -79,7 +79,10 @@ const PORT = Number(process.env.STUDIO_HUELLE_PORT || 8742); // der Gang und das
 // H6 — EINE ENGINE: die Pfade der Anfragen einer Seite; die Ratsche nennt, wer noch fremd lädt (sie zieht nur an).
 const ENGINE_FREMD = /^\/(?:worlds\/[^/]+\/lib\/[^/]+|vendor\/three\.min\.js)$/;
 const ENGINE_EINE = "/vendor/three.webgpu.min.js";
-const WELT_GELADEN = /^\/(?:index\.html)?$|^\/stamm\//;
+// Die Welt ist geladen, wo ihre Ankunft lädt (der Boot hängt an stamm/dirigent-ankunft.js). Den Stamm OHNE Ankunft und die Liste
+// der Seite der Welt (/index.html, gelesen als Text) lädt die EINE Bühne (AnazhHuelle.buehne) — bis w28-studio-seiten war jede
+// Anfrage an /stamm/ ROT, also jede Seite auf der Bühne (garage, schmiede, portale).
+const WELT_GELADEN = /^\/stamm\/dirigent-ankunft\.js$/;
 // Die portale fiel aus ihr mit w28-studio-seiten (AnazhHuelle.studio: das Werk der Welt auf der EINEN Bühne).
 const ENGINE_RATSCHE = { fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
 // H6 OHNE BROWSER (w28-studio-seiten): dieselbe Ratsche am Text der Studio-Seite — ein `<script src>` auf eine Engine-Kopie
@@ -401,7 +404,9 @@ function selbsttest() {
     // H3/H4/H6 — der Spruch des Gangs (dieselbe pure Funktion): die Ratsche fremd, die garage auf der EINEN Engine
     const eine = ["/vendor/three-bootstrap.js", "/vendor/three.module.min.js", ENGINE_EINE];
     const r128 = "/worlds/terrain/lib/three-r128.min.js";
-    const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : ["garage", "schmiede", "portale"].includes(id) ? eine : []]));
+    // die Bühne der Welt liest die Liste der Seite der Welt und lädt den Stamm ohne seine Ankunft (AnazhHuelle.buehne) — GRÜN
+    const buehne = [...eine, "/index.html", "/stamm/dirigent-kern.js", "/stamm/siedlung-tor.js"];
+    const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : ["garage", "schmiede", "portale"].includes(id) ? buehne : []]));
     // jedes Studio mit Sitzung (H3, H7), jede Leiste unter ihren Deckeln und mit ihren Gegenzahlen (H4, H8), der Klang je Ort
     const zeile = { werkBuehne: 2, werkWelt: 2, befehle: 40, befehleGezeichnet: 40, vram: 9e5, vramGpu: 9e5, vramDeckel: 9e6, ms: 0.4, msDeckel: 1.5, bank: 0.41, bankCpu: 0.2 };
     const wahr = (leiste, gezeichnet, stufe = 0, deckel = 62000, mehr) => ({ kosten: [{ ...zeile, stufe, leiste, gezeichnet, deckel, ...mehr }] });
@@ -413,7 +418,7 @@ function selbsttest() {
         ["H6 die garage lädt r128 aus der terrain-Familie", { garage: [r128, "/worlds/terrain/lib/OrbitControls.js"] }, /^H6 garage: die Seite lädt eine fremde Engine \(\/worlds\/terrain\/lib\/three-r128/],
         ["H6 die garage auf r184 ohne WebGPU", { garage: ["/vendor/three.module.min.js"] }, /^H6 garage: three aus vendor\/ ohne/],
         ["H6 die klang lädt das r160-UMD", { klang: ["/vendor/three.min.js"] }, /^H6 klang: die Seite lädt eine fremde Engine \(\/vendor\/three\.min\.js/],
-        ["H6 die garage aufgelöst in die Welt (index.html?studio=garage)", { garage: ["/index.html", "/stamm/dirigent-kern.js", ...eine] }, /^H6 garage: die Seite lädt die Welt/],
+        ["H6 die garage aufgelöst in die Welt (index.html?studio=garage)", { garage: [...buehne, "/stamm/dirigent-ankunft.js"] }, /^H6 garage: die Seite lädt die Welt \(\/stamm\/dirigent-ankunft\.js\)/],
         ["H6 die fachwerk lädt keine Kopie mehr (die Ratsche zieht an)", { fachwerk: eine }, /^H6 fachwerk: lädt keine fremde Engine mehr/],
         ["H6 die portale lädt wieder r128 (sie fiel aus der Ratsche, w28-studio-seiten)", { portale: [r128, ...eine] }, /^H6 portale: die Seite lädt eine fremde Engine/],
         ["H3 die garage schreibt den offenen Zug nicht (Strg+Z stumm, 83df2052)", {}, /^H3 garage: Strg\+Z wirkt nicht/, { garage: { folge: [..."122222"] } }],
