@@ -90,10 +90,10 @@ class AnazhRealm_siedlung_bewohner {
         je.clear();
         for (const t of dr.teilchen) je.set(t.q, (je.get(t.q) || 0) + 1);
         const p = 1 - Math.pow(1 - G.spawnChance, f);
-        // DER WURF DES RAUCHS IST EINE FUNKTION DER WELT (w28-funktion-welt): je Kamin und Takt EIN Strom (Saat, Uhr, Kamin)
-        const uhr = `${(st.worldMeta && st.worldMeta.seed) || "anazh-realm-seed"}-rauch:${Math.round((st.spielZeit || 0) * 1000)}`;
+        // DER WURF DES RAUCHS (w28-funktion-welt): EIN Strom je Kamin und Takt, das Wechselnde vorn (hinten: Gleichschritt ×1,45)
+        const uhr = `${Math.round((st.spielZeit || 0) * 1000)}:${(st.worldMeta && st.worldMeta.seed) || "anazh-realm-seed"}-rauch`;
         for (const [, qq] of nah) {
-            const w = this._streamRng(`${uhr}:${Math.round(qq.x * 10)},${Math.round(qq.z * 10)}`);
+            const w = this._streamRng(`${Math.round(qq.x * 10)},${Math.round(qq.z * 10)}:${uhr}`);
             if ((je.get(qq.id) || 0) < G.maxTeilchen && w() < p)
                 dr.teilchen.push({
                     x: qq.x,
