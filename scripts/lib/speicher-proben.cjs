@@ -135,7 +135,7 @@ async function rundeFahrt({ umstellen, rufe }) {
     const stand = async (bildMax) => {
         const puf = await rufe("/puffer", { top: 12 });
         const halter = await ev(`return __heapHalter(r, ${+opt("--tiefe") || 3}).filter(([, b]) => b >= 131072).map(([k, b]) => [k, +(b / 1048576).toFixed(2)]);`); // prettier-ignore
-        const z = await ev("return { geometries: r.state.renderer.info.memory.geometries, textures: r.state.renderer.info.memory.textures, zensus: __behaelterZensus(r), zell: __zellZensus(r), geburt: __geburtZensus(), ort: r.state.playerMesh.position.toArray().map((x) => +x.toFixed(1)) };"); // prettier-ignore
+        const z = await ev("return { geometries: r.state.renderer.info.memory.geometries, textures: r.state.renderer.info.memory.textures, zensus: __behaelterZensus(r), zell: __zellZensus(r), ro: __renderObjektZensus(r), geburt: __geburtZensus(), ort: r.state.playerMesh.position.toArray().map((x) => +x.toFixed(1)) };"); // prettier-ignore
         return Object.assign({ heapMB: puf.heapMB, vramMB: puf.vram && puf.vram.mb, bildMax: bildMax ? bildMax.max : 0, bilder: bildMax ? bildMax.n : 0, ueber100: bildMax ? bildMax.ueber : 0, langeAufgabe: bildMax ? Math.round(bildMax.lang) : 0, langeAufgabeUmstellen: bildMax ? Math.round(bildMax.langAlle) : 0, halter }, z); // prettier-ignore
     };
     const kamera = () =>

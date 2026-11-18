@@ -756,7 +756,8 @@ function zellZensus(r, A) {
     (A.ZELL_GEDAECHTNISSE || []).forEach((E, i) => {
         const karte = E.karte(r);
         if (karte) angemeldet.add(karte);
-        const o = { name: E.name || "#" + i, n: karte ? karte.size : 0, aussen: 0, bestand: E.bestand || E.schranke || null };
+        // ein Gedächtnis mit eigener Schranke, das `zaehlen` trägt (ein Halter der Zeichnung), zählt wie ein räumbares
+        const o = { name: E.name || "#" + i, n: karte ? karte.size : 0, aussen: 0, bestand: E.bestand || (!E.zaehlen && E.schranke) || null }; // prettier-ignore
         je.push(o);
         if (!karte || !karte.size || o.bestand) return;
         const rw = E.reichweite ? E.reichweite(r) : 0;
@@ -775,7 +776,7 @@ function zellZensus(r, A) {
                 drin =
                     (c0 <= pcx + R + 2 && c1 >= pcx - R - 2 && d0 <= pcz + R + 2 && d1 >= pcz - R - 2) ||
                     (rw > 0 && x0 <= p.x + rw && x0 + m >= p.x - rw && z0 <= p.z + rw && z0 + m >= p.z - rw);
-            if (!drin) o.aussen++;
+            if (!drin && !(E.lebt && E.lebt(r, karte instanceof Map ? karte.get(k) : k))) o.aussen++;
         }
     });
     const unangemeldet = {};
@@ -801,6 +802,31 @@ function zellZensus(r, A) {
     geh(r, "r", 2);
     geh(st, "r.state", 2);
     return { je, unangemeldet };
+}
+// DER RENDER-OBJEKT-ZENSUS (w28-halter-register): je Objekt der Szene seine Render-Objekte (`__renderObjekte`, das Register der
+// Klasse), die eine andere Geometrie tragen als das Objekt oder Attribute, die seine Geometrie nicht mehr trägt — ein Pass, der
+// das Objekt nach einem Tausch nicht mehr zeichnete, hielt die alten Puffer (`_renderObjekteFolgen`). Instanz- und verschränkte
+// Attribute gehören dem Knoten, nicht der Geometrie. → { fremd, alt, mb }
+function renderObjektZensus(r) {
+    let fremd = 0,
+        alt = 0,
+        b = 0;
+    const seen = new Set();
+    r.state.scene.traverse((o) => {
+        const l = o.__renderObjekte;
+        if (!l || !l.length) return;
+        const g = o.geometry;
+        const jetzt = new Set(g ? Object.values(g.attributes || {}) : []);
+        if (g && g.index) jetzt.add(g.index);
+        for (const ro of l) {
+            if (ro.geometry !== g) fremd++;
+            else if ((ro.attributes || []).some((a) => !jetzt.has(a) && !a.isInstancedBufferAttribute && !a.isInterleavedBufferAttribute)) alt++; // prettier-ignore
+            else continue;
+            for (const a of ro.attributes || Object.values(ro.geometry.attributes || {}))
+                if (a && a.array && !jetzt.has(a) && !seen.has(a)) (seen.add(a), (b += a.array.byteLength));
+        }
+    });
+    return { fremd, alt, mb: +(b / 1048576).toFixed(2) };
 }
 // DIE GEBURT DER GEOMETRIEN: r184 zählt `info.memory.geometries` beim ersten Zeichnen einer Geometrie (`Geometries.initGeometry`)
 // und zieht erst bei ihrem `dispose` ab — eine Geometrie, die keiner entsorgt, zählt (und hält ihre Attribute in
@@ -881,6 +907,9 @@ function rundenUrteil({ name, stand }, anlage) {
     for (const z of (b.zell && b.zell.je) || [])
         if (!z.bestand && z.aussen > 0)
             f.push(`${name}: Zell-Gedächtnis ${z.name} hält ${z.aussen} von ${z.n} Einträgen außerhalb des Blicks (Soll 0)`);
+    // die Render-Objekte (`renderObjektZensus`): keines hält nach der Runde getauschte Puffer
+    if (b.ro && b.ro.fremd + b.ro.alt > 0)
+        f.push(`${name}: ${b.ro.fremd + b.ro.alt} Render-Objekte halten getauschte Puffer (fremde Geometrie ${b.ro.fremd}, alte Attribute ${b.ro.alt}, ${b.ro.mb} MB; Soll 0, \`_renderObjekteFolgen\`)`); // prettier-ignore
     const mb = (x, k) => new Map(x.halter || []).get(k) || 0;
     for (const [k, x] of b.halter || [])
         if (x - mb(a, k) >= RUNDE.halterMB)
@@ -908,7 +937,12 @@ function rundenSelbsttest() {
         r._voxelChunkConfig = () => ({ span: 10, ringRadius: 1 });
         // das Register (`zellZensus`): ein angemeldetes Zell-Gedächtnis (10-m-Zellen, Saum ±3 Chunks) und, im Mutanten, ein
         // ferner Eintrag darin und ein unangemeldetes, das je Runde wächst
-        const A = { ZELL_GEDAECHTNISSE: [{ name: "zmemo", karte: (w) => w.state.zmemo, zelle: 10 }] };
+        // dazu ein Halter der Zeichnung (`schranke` + `zaehlen`): Körper an ihrer Lage, ein ferner, der zeichnet (`lebt`), steht im
+        // Blick; im Mutanten einer fern, der nicht zeichnet
+        const leib = { name: "leib", karte: (w) => w.state.leib, zelle: 1, lage: (o) => [o.x, o.z], lebt: (w, o) => o.lebt, schranke: "s", zaehlen: true }; // prettier-ignore
+        const A = { ZELL_GEDAECHTNISSE: [{ name: "zmemo", karte: (w) => w.state.zmemo, zelle: 10 }, leib] };
+        r.state.leib = new Set([{ x: 5, z: 5 }, { x: 900, z: 0, lebt: true }]);
+        if (mutant) r.state.leib.add({ x: -900, z: 0 });
         if (mutant) r._wild = new Map();
         let geom = 10;
         const geburt = {};
@@ -930,7 +964,8 @@ function rundenSelbsttest() {
             geom = 10 + (mutant ? 8 * runde : 0);
             const halter = heapHalter(r, 3).map(([k, x]) => [k, x / 1048576]);
             const zell = zellZensus(r, A);
-            stand.push({ heapMB: 300, geometries: geom, zensus: behaelterZensus(r), zell, geburt: { ...geburt }, bildMax: 40, halter }); // prettier-ignore
+            const ro = { fremd: mutant && runde === 2 ? 1 : 0, alt: 0, mb: 0.5 }; // im Mutanten hält ein Pass die alte Geometrie
+            stand.push({ heapMB: 300, geometries: geom, zensus: behaelterZensus(r), zell, geburt: { ...geburt }, bildMax: 40, halter, ro }); // prettier-ignore
         }
         return rundenUrteil({ name: "a", stand }, (k) => (k === "r._tritt" ? "stamm/siedlung-wege.js:1014" : "?")).f.join(" | ");
     };
@@ -942,6 +977,10 @@ function rundenSelbsttest() {
         f.push("der Mutant ist nicht rot beim Namen: " + (rot || "GRÜN"));
     if (!/Zell-Gedächtnis zmemo hält 1 von \d+ Einträgen außerhalb des Blicks/.test(rot) || !/r\._wild \(\?, unangemeldet\) 40 → 80 → 120/.test(rot))
         f.push("der Mutant des Registers ist nicht rot beim Namen: " + (rot || "GRÜN"));
+    if (!/Zell-Gedächtnis leib hält 1 von 3 Einträgen außerhalb des Blicks/.test(rot))
+        f.push("der Mutant des Halters der Zeichnung ist nicht rot beim Namen: " + (rot || "GRÜN"));
+    if (!/1 Render-Objekte halten getauschte Puffer \(fremde Geometrie 1/.test(rot))
+        f.push("der Mutant der Render-Objekte ist nicht rot: " + (rot || "GRÜN"));
     return f;
 }
 
@@ -1089,6 +1128,7 @@ module.exports = {
         `window.__heapHalter = ${heapHalter.toString()};` +
         `window.__behaelterZensus = ${behaelterZensus.toString()};` +
         `window.__zellZensus = ${zellZensus.toString()};` +
+        `window.__renderObjektZensus = ${renderObjektZensus.toString()};` +
         `window.__geburtLinse = ${geburtLinse.toString()};` +
         `window.__geburtZensus = ${geburtZensus.toString()};` +
         `window.__kehrausJetzt = ${kehrausJetzt.toString()};` +

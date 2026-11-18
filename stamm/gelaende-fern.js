@@ -2526,6 +2526,30 @@ AnazhRealm.ZELL_GEDAECHTNISSE = Object.freeze([
         schranke:
             "WALD_PLAN.zellen (`_forestDartRaum`, die fernsten zuerst) — die Kamm-Krone liest den Plan bis KAMM_KRONE.dBis",
     },
+    // DIE HALTER DER ZEICHNUNG (w28-halter-register): ihre Einträge sind Körper, keine Merker — sie fallen an ihrer EINEN Stelle
+    // (`schranke`), nie im Räumer, der einen Körper sonst ein zweites Mal nähme (der Chunk ohne sein Netz, der Leib ohne seine
+    // Wesen-Liste). `zaehlen`: die Linse (`__zellZensus`) zählt sie an ihrer Lage gegen den Saum und die Reichweite ihrer Leser —
+    // Soll 0 außerhalb des Blicks; ein Eintrag, der zeichnet (`lebt`), steht im Blick.
+    {
+        name: "voxelChunks",
+        karte: (r) => r.state.voxelChunks,
+        zelle: (r) => r._voxelChunkConfig(0).span,
+        schranke:
+            "der Abschied des Bodens (`_pruneDistantVoxelChunks`: Ring + 1 um den Spieler, der Ring um den Vorlauf)",
+        zaehlen: true,
+    },
+    // die Leiber, deren Glieder Felder halten, und die geparkten (`_weltLeibTakt` folgt ihrem Körper: ein Leib ohne Eltern fällt)
+    ...["leibHalter", "leibFern"].map((n) => ({
+        name: n,
+        karte: (r) => r.state.weltMarch && r.state.weltMarch[n],
+        zelle: 1,
+        lage: (cr) => (cr && cr.position ? [Math.floor(cr.position.x), Math.floor(cr.position.z)] : null),
+        reichweite: (r) => AnazhRealm._leibReichweite(r),
+        lebt: (r, cr) => cr.visible !== false && cr.userData._kzFern !== -1,
+        schranke:
+            "sein Körper (`removeCreature`; die Zeichnung `_bestandVerkoerpern` nimmt ihn außer Blick, jenseits seines Pixel-Horizonts auch im Kegel)",
+        zaehlen: true,
+    })),
     // DIE GEDÄCHTNISSE DES STANDS: Taten und ihr Zerfall, nie aus der Saat neu
     {
         name: "lifeField",
@@ -2567,6 +2591,10 @@ AnazhRealm._trittReichweite = (r) => {
         if ((S.liste || S.listeWerk) && S.plan && S.plan.slots) w = Math.max(w, nah + reich(SG, S.plan.slots.length));
     return w;
 };
+// DIE REICHWEITE DER LEIBER (m um den Spieler, Kasten): die Leute eines lebenden Orts (`_trittReichweite`) und die Tiere der
+// nahen Regionen (`_bestandNah`: jede Kachel, die der Kreis der halben Seite schneidet — ihr fernster Punkt liegt unter S/2 + S·√2,
+// gerundet 2 S); ein Leib jenseits steht nur, solange er zeichnet
+AnazhRealm._leibReichweite = (r) => Math.max(AnazhRealm._trittReichweite(r), 2 * r._bestandSeite());
 // die Zelle der Siedlung und die Reichweite ihrer Leser: das Reich (ORT_REICH_ZELLEN) und die Probe-Ringe des Wirts, zwei Zellen
 // Saum, nie unter dem Horizont der Streu (ohne Gesetz kein Dorf: 256 m, das Maß der Schublade)
 AnazhRealm._siedlungZelleM = () => (AnazhRealm._siedlungGesetz() || { cellM: 256 }).cellM;
