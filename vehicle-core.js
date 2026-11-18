@@ -3988,11 +3988,14 @@
             // traten im Bogen 14 m/s² gegen μ·g, das Heck brach aus. Taste (brk 1) byte-gleich.
             if (brk > 0) aDrive -= (vL > S.bremsV ? G.brakeDecel : motor ? G.aEngine * S.rueckAntrieb : 0) * brk;
             let Fr = aDrive * m - G.dragK * m * vL * Math.abs(vL);
-            // DIE HANDBREMSE greift die Hinterachse; der Wasserschlag sperrt die Antriebsraeder wie sie, nie ueber den Stand
-            // hinaus (sie haelt, sie schiebt nicht zurueck)
-            let FrH = 0;
-            if (hand) FrH = -G.handDecel * m * sgn;
-            else if (!motor && dt > 0) FrH = -Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;
+            // DIE SPERRE — EIN Gesetz, zwei Griffe: die gesperrte Achse gleitet auf ihrem Kreis (unten), nie ueber den Stand
+            // hinaus (sie haelt, sie schiebt nicht zurueck). Die HANDBREMSE sperrt das Heck. Der WASSERSCHLAG sperrt, was der
+            // stehende Motor antreibt: der Antrieb des Kerns greift nach der Achslast an BEIDEN Achsen (FxF = Fr · aF, unten),
+            // also sperrt er beide, jede an ihrem μ·N.
+            let sperre = 0;
+            if (hand) sperre = -G.handDecel * m * sgn;
+            else if (!motor && dt > 0) sperre = -Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;
+            const sperrF = !hand && sperre !== 0;
             // Das Schleppmoment (bzw. das haltende Gespann), STETIG im Zug: der Motor trägt zieht · Antrieb − (1 − zieht) ·
             // Schlepp (Volllast ist netto, geschlossen bremst er — unter Bremse und Handbremse weiter, die Kupplung bleibt; mit
             // dem Rollwiderstand zusammen FAHR.rollDecel: das Ausrollen von gestern bleibt); zieht = das Gas, im Rückwärtsgang
@@ -4010,16 +4013,17 @@
             //    Achse): Antrieb, Bremse, Handbremse, Schlepp und Fahrwiderstand laufen ueber den Reifen, EIN μ·N-Budget je
             //    Achse. Die Laengskraft verteilt sich nach der Achslast (die Handbremse ganz hinten). Das GEREGELTE Rad (ABS,
             //    ASR) fuehrt mit der Seitenkraft: Antrieb und Bremse nehmen den Rest des Kreises √((cap·W)² − Fy²) — der Wagen
-            //    lenkt, waehrend er bremst und zieht. Die GESPERRTE Hinterachse (Handbremse, Wasserschlag) gleitet: ihr
-            //    Wunsch-Vektor faellt auf den Kreis, die Richtung bleibt, und das Heck verliert die Seitenfuehrung im Mass
-            //    seiner Sperre. Vorher teilten sich beide Achsen EINEN Kreis des Wagens: die Handbremse zog am Deckel beider
+            //    lenkt, waehrend er bremst und zieht. Die GESPERRTE Achse (das Heck unter der Handbremse, beide im
+            //    Wasserschlag) gleitet: ihr Wunsch-Vektor faellt auf den Kreis, die Richtung bleibt, und die Achse verliert
+            //    die Seitenfuehrung im Mass ihrer Sperre. Vorher teilten sich beide Achsen EINEN Kreis des Wagens: die Handbremse zog am Deckel beider
             //    Achsen (so stark wie die Vollbremsung) und nahm dem Heck einen festen Anteil (handLatMul 0,32) statt seines
             //    Budgets. Geradeaus (keine Seitenkraft) ist die Summe der Kreise der alte Deckel cap · (Wf + Wr): der Bremsweg
             //    bleibt. Ausserhalb wirkt nur der Rollwiderstand (cr · g). ──
             const WS = Wf + Wr;
             const aF = WS > 0 ? Wf / WS : 0.5;
-            const FxF = Fr * aF,
-                FxR = Fr - FxF + FrH;
+            const FsF = sperrF ? sperre * aF : 0;
+            const FxF = Fr * aF + FsF,
+                FxR = Fr - Fr * aF + sperre - FsF;
             // die Kraft der Vorderachse im Koerperframe: ihr Laengsanteil, die Seitenkraft gedreht um den Einschlag — sie, nie ihr
             // Wunsch im Rad, traegt das Budget. Unter Schritttempo ist die Seitenkraft kinematisch (die Blende lowF, unten: der
             // gedaempfte Schlupf meldet am Stand den vollen Einschlag) und zehrt nicht am Budget — sonst nahm sie dem Antrieb
@@ -4029,11 +4033,19 @@
                 cL = Math.cos(z.steer);
             const gF = cap * Wf,
                 gR = cap * Wr;
-            const yF = FlatF * cL * (1 - lowF),
-                rF = Math.sqrt(Math.max(0, gF * gF - yF * yF));
-            const xF = Math.max(FlatF * sL - rF, Math.min(FlatF * sL + rF, FxF));
+            let xF;
+            if (sperrF) {
+                const fF = Math.hypot(FxF, FlatF * (1 - lowF));
+                const kF = fF > gF ? gF / fF : 1;
+                xF = FxF * kF;
+                FlatF *= kF;
+            } else {
+                const yF = FlatF * cL * (1 - lowF),
+                    rF = Math.sqrt(Math.max(0, gF * gF - yF * yF));
+                xF = Math.max(FlatF * sL - rF, Math.min(FlatF * sL + rF, FxF));
+            }
             let xR;
-            if (FrH) {
+            if (sperre) {
                 const fR = Math.hypot(FxR, FlatR * (1 - lowF));
                 const kR = fR > gR ? gR / fR : 1;
                 xR = FxR * kR;
@@ -4043,7 +4055,7 @@
                     rR = Math.sqrt(Math.max(0, gR * gR - yR * yR));
                 xR = Math.max(-rR, Math.min(rR, FxR));
             }
-            let Fx = xF === FxF && xR === FxR ? Fr + FrH : xF + xR;
+            let Fx = xF === FxF && xR === FxR ? Fr + sperre : xF + xR;
             if (rollt) Fx -= G.reibung * m * sgn;
             Fx -= FlatF * sL;
             const Fy = FlatF * cL + FlatR;

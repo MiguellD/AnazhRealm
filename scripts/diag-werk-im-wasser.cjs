@@ -2171,26 +2171,35 @@ function selbsttest() {
     const giftFall = (art) => ([name, z, muss]) => ({ name: `${art}: ${name}`, z, muss });
     taeterFaelle([{ name: "der echte Stamm" }, ...gifte.map(giftFall("Leser"))], leserUrteil, { fehler });
     // die Kern-Linse gegen eingeschmuggelte Täter im echten Kern (vm, ohne Browser)
+    // DER KERN-TÄTER urteilt VERHALTEN, nie die Dezimalen einer Fahrt (w28-reibellipse: der Fall nagelte „1,38 m/s" fest und
+    // fiel, als der Wagen mit 1,31 rollte) — und ein Täter, dessen Anker im Kern fehlt, wirft beim Namen statt still nichts zu
+    // pflanzen (derselbe Schnitt benannte die Zeile des Wasserschlags um, der Fall pflanzte nichts und hieß „vakuös")
     const kernSrc = ausDatei("vehicle-core.js");
+    const pflanze = (s, alt, neu) => {
+        if (!s.includes(alt)) throw new Error(`der Anker des Täters fehlt im Kern: ${alt.slice(0, 80)}`);
+        return s.replace(alt, neu);
+    };
     taeterFaelle([{ name: "der echte Kern", z: (s) => s }, ...[
         [
             "Wasser-Term ohne Widerstand",
-            (s) => s.replace("z.vlong = vL0 / (1 + Wg.kStirn * t * Math.abs(vL0) * dt);", "z.vlong = vL0;"),
+            (s) => pflanze(s, "z.vlong = vL0 / (1 + Wg.kStirn * t * Math.abs(vL0) * dt);", "z.vlong = vL0;"),
             /K2 in 0\.61 m Wasser/,
         ],
         [
             "der Wasserschlag sperrt die Räder nicht",
             (s) =>
-                s.replace(
-                    "else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;",
-                    "else if (!motor && dt > 0) Fr -= 0;"
+                pflanze(
+                    s,
+                    "else if (!motor && dt > 0) sperre = -Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;",
+                    "else if (!motor && dt > 0) sperre = 0;"
                 ),
-            /K6 über der Ansaugung am 11°-Hang rollt er unter Vollgas 3 s später mit 1\.38 m\/s weiter/,
+            /K6 über der Ansaugung am 11°-Hang rollt er unter Vollgas 3 s später mit -?\d+\.\d+ m\/s weiter/,
         ],
         [
             "das Gas wirkt am stehenden Motor (keine Ruhe unter Vollgas)",
             (s) =>
-                s.replace(
+                pflanze(
+                    s,
                     "const thr = motor && e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;",
                     "const thr = e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;"
                 ),
