@@ -5130,7 +5130,7 @@
   },
   "karte2.leben.kopplung.leben-formt-planet": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.182 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243205 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.182 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] nvidia/pascal an d3ddb51c gtx",
+   "beleg": "Maschine: gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.182 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243289 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.182 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] nvidia/pascal an e4e3f363 gtx",
    "stationen": [
     {
      "id": "karte2.leben.kopplung.leben-formt-planet#1",
@@ -5147,10 +5147,9 @@
      "id": "karte2.leben.kopplung.leben-formt-planet#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243205 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.182 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] nvidia/pascal",
-     "sha": "d3ddb51c3c2cf097ccfd248872ca02e8266d0094",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/shader-kosten.cjs, scripts/lib/stand-linse.cjs +13)",
-     "gehalten": true,
+     "zahl": "nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243289 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.182 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] nvidia/pascal",
+     "sha": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -6327,9 +6326,7 @@
    ]
   }
  },
- "rueckfall": [
-  "tiere.K5#1 gtx: ego (first) 1 Sichtungen in 601 Spiel-s (wolf 300 px 24 m 417 s), 620 Prüfungen, 39 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 8 Sichtungen in 600 Spiel-s (wesen 202 px 50 m 62 s · wesen 259 px 98 m 229 s · baer 276 px 31 m 269 s · wesen 260 px 38 m 483 s · wesen 471 px 54 m 496 s · wesen 268 px 30 m 509 s · fuchs 1394 px 11 m 511 s · wesen 364 px 31 m 536 s), 628 Prüfungen, 56 Masken, Bestand bis 20, im Blick erschienen 0 an e4e3f363 (grün gebucht an d3ddb51c)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 507,
   "konsum": 199,
@@ -6497,7 +6494,7 @@
   "ohne": 149
  },
  "kopfVoll": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
- "zeit": "2026-11-18T16:51:19.557Z",
+ "zeit": "2026-11-18T17:04:00.583Z",
  "vorher": "e4e3f363",
  "bilanz": {
   "gewinn": [],
