@@ -1613,7 +1613,9 @@ class AnazhRealm {
             const ak = aLux + AnazhRealm.AUGE.knieLux;
             atmo.lichtAuge.value.set(ak, __weltLicht.augeS(ak));
         }
-        // DIE GLUT JE DATUM (Fenster, Laternen-Kopf): seine Leuchtdichte `cdM2` durch das Auge (welt-licht.js `augeGlut`) in der
+        // DIE HÖHE DER GLUT DER LAVA: die Leuchtdichte ihres Ausbruchs (Planck im Sichtbaren × Emissivität) durch dasselbe Auge
+        atmo.lavaGlut.value = __weltLicht.augeGlut(this._lavaAusbruchCdM2(), this._augeLux ?? 1);
+        // DIE GLUT JE DATUM (Fenster, Laternen-Kopf, das gemalte Glutbett): seine Leuchtdichte `cdM2` durch das Auge (welt-licht.js `augeGlut`) in der
         // Farbe seiner Temperatur, auf Luma 1 genormt — kein Zeitplan: über dem Mittag trägt sie nichts, die Dämmerung zündet sie
         for (const k in atmo.lichtGlut) {
             const c = this._lichtLinear(LG[k], atmo.lichtGlut[k].value);
@@ -1768,6 +1770,13 @@ class AnazhRealm {
             M.set(key, Object.freeze(L));
         }
         return L;
+    }
+
+    // die Leuchtdichte der Lava bei ihrem Ausbruch (cd/m², einmal je Welt)
+    _lavaAusbruchCdM2() {
+        if (this._lavaAusbruchL != null) return this._lavaAusbruchL;
+        const FC = globalThis.__fachwerkCore;
+        return (this._lavaAusbruchL = FC.leuchtdichte(this._lavaSpanne()[1]) * FC.STRAHLER.emissiv.lava);
     }
 
     // DIE LICHTSTÄRKE einer Quelle zur Bild-Uhr t (K11, A9 · w28-strahler): ihre CANDELA × Masse × Flackern (`t` null: ohne

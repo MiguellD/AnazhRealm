@@ -1954,16 +1954,20 @@
       for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); _karteEins(M[_k]); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
       M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 1900 K, Zeitplan abends 1) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
       M.glas.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
-      M.feuer.userData.__leucht=LEUCHT_FEUER;                                                  // DAS LEUCHT-GESETZ (05.10.): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht, die Welt webt emissiveNode = Farbe × LEUCHT_FEUER)
+      M.feuer.userData.__leucht=1/GLUT_LUMA; M.feuer.userData.__licht='feuer';                 // DAS LEUCHT-GESETZ (05.10. · w28-strahler): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht und mat.licht: die Welt webt emissiveNode = Farbe × leucht × die Glut ihres Datums LICHT_GESETZ.feuer, die das Auge rechnet)
       return M; }
-    // Die Stärke des Leuchtens: Leuchtdichte = lineare Vertex-Farbe × 2,5 (die Flammen-Wurzel 0,55/0,30/0,08 leuchtet
-    // 1,4/0,75/0,2, die Glut-Mitte 0,75/0,25/0,08, ihr Rand 0,15/0,10/0,08). Bis 05.10. leuchtete jede Glut-Fläche gleich
-    // (0xff5212 × 1,5) — das Bett las sich als cremige Scheibe, die Flamme als gelber Kegel.
+    // Das Maß des Gemalten (w28-strahler): die gemalte Luma, die die Leuchtdichte des Datums trägt (LICHT_GESETZ.feuer `cdM2`) —
+    // die Glut-Mitte 0,75/0,25/0,08 (Luma 0,344) und die Flammen-Wurzel 0,55/0,30/0,08; der Rand 0,15/0,10/0,08 trägt ein
+    // Drittel. Das Gemalte bleibt linear (heiße Mitte, kühler Rand), seine Höhe rechnet das Auge der Welt aus der Leuchtdichte
+    // über der Umgebung der Stunde. Bis hier leuchtete die Vertex-Farbe × 2,5 zu jeder Stunde gleich; bis 05.10. jede Glut-Fläche
+    // gleich (0xff5212 × 1,5) — das Bett las sich als cremige Scheibe, die Flamme als gelber Kegel.
     // prettier-ignore
-    const LEUCHT_FEUER=2.5;
+    const GLUT_LUMA=0.344;
+    // DIE GLUT IM LABOR: die Höhe des Gemalten zur Tageszeit des Labors (sein `setZeit` schreibt sie über dasselbe Auge)
+    const LAB_GLUT={value:1};
     // Das Labor (r128) liest dasselbe Gesetz: sein Standard-Shader nimmt die Vertex-Farbe als Leuchten (Lab = Welt).
     // prettier-ignore
-    function _leuchtLab(m){ const k=m.userData.__leucht; m.onBeforeCompile=function(s){ s.fragmentShader=s.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;','vec3 totalEmissiveRadiance = emissive;\n#ifdef USE_COLOR\n\ttotalEmissiveRadiance = vColor * '+k.toFixed(3)+';\n#endif'); }; }
+    function _leuchtLab(m){ const k=m.userData.__leucht; m.onBeforeCompile=function(s){ s.fragmentShader=s.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;','vec3 totalEmissiveRadiance = emissive;\n#ifdef USE_COLOR\n\ttotalEmissiveRadiance = vColor * '+k.toFixed(3)+' * uLabGlut;\n#endif').replace('void main() {','uniform float uLabGlut;\nvoid main() {'); s.uniforms.uLabGlut=LAB_GLUT; }; }
     // mat — die Rollen-Auflösung (byte-treu Lab Z.2996 `const mat=r=>M[r]||M.holz;` + Lazy-Guard).
     // prettier-ignore
     function mat(r){ const MM=materials(); return MM[r]||MM.holz; }
@@ -5962,6 +5966,8 @@
     // ihre Candela als Datum (`LICHT_GESETZ.*.candela`). Bis hier trug der Strahler einen Anker in Welt-Einheiten (`leucht`
     // 7,5 bei 2 000 K, × T⁴ über dem Draper-Punkt) und eine Reichweite aus einer linearen Schwelle (`eMin`).
     var STRAHLER = Object.freeze({ abfall: 2, emissiv: Object.freeze({ flamme: 0.0012, lava: 0.95, stahl: 0.8 }) });
+    // die Leuchtdichte des Herdfeuers (cd/m², das Mittel über sein Bett): das Datum seiner gemalten Glut (`M.feuer`: `__licht` feuer)
+    LICHT_GESETZ.feuer.cdM2 = 10000;
     // DIE LEUCHTDICHTE DES SCHWARZEN STRAHLERS (cd/m²) bei T (K): 683 · ∫ B_λ(T) · V(λ) dλ über 380–780 nm in 5-nm-Schritten,
     // V(λ) die Hellempfindung des Tages (CIE 1924 in der Gauß-Näherung 1,019 · e^(−285,4 · (λ/µm − 0,559)²)).
     function leuchtdichte(T) {
@@ -11787,8 +11793,9 @@
         ZEIT_VIS: ZEIT_VIS,
         // K11 — das Leuchtquellen-Gesetz (Labor und Welt lesen dasselbe Datum)
         LICHT_GESETZ: LICHT_GESETZ,
-        // das Leucht-Gesetz der Glut (Leuchtdichte = lineare Farbe × LEUCHT_FEUER): die Welt webt es in jede Glut ihres Bodens (die Lava)
-        LEUCHT_FEUER: LEUCHT_FEUER,
+        // das Maß des Gemalten und die Glut des Labors (w28-strahler)
+        GLUT_LUMA: GLUT_LUMA,
+        LAB_GLUT: LAB_GLUT,
         BOGEN_GESETZ: BOGEN_GESETZ,
         vorplatzFlaeche: vorplatzFlaeche,
         vorplatzBoden: vorplatzBoden,

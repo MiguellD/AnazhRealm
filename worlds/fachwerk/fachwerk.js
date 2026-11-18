@@ -668,7 +668,7 @@ const ZEIT={ mittag:_zeitPart('mittag',{p:[24,34,16],c:0xfff1dc,i:2.1,h:0.62,a:0
   abend:_zeitPart('abend',{p:[-32,12,-14],c:0xff9a55,i:1.45,h:0.48,a:0.22,bg:0xb0876a}),
   nacht:_zeitPart('nacht',{p:[-16,22,-10],c:0x9fb6e0,i:0.32,h:0.16,a:0.12,bg:0x161d2c}) };
 function setZeit(t){ const z=ZEIT[t]||ZEIT.mittag; sun.position.set(z.p[0],z.p[1],z.p[2]); sun.color.set(z.c); sun.intensity=z.i; hemi.intensity=z.h; amb.intensity=z.a; scene.background.set(z.bg); scene.fog.color.set(z.bg); 
-  const zm=ZEIT.mittag, lux=_WL.augeLux(_WL.AUGE.welt*(z.i+z.h+z.a)/(zm.i+zm.h+zm.a)); _feuerZeig=_feuerLab(lux);
+  const zm=ZEIT.mittag, lux=_WL.augeLux(_WL.AUGE.welt*(z.i+z.h+z.a)/(zm.i+zm.h+zm.a)); _feuerZeig=_feuerLab(lux); FC.LAB_GLUT.value=_WL.augeGlut(_FEU.cdM2,lux);
   const glut=_WL.augeGlut(_FEN.cdM2,lux)/_luma(_FENF);                                                                 // NACHTLICHT-GESETZ: die Stadt zündet ihre Fenster — GETEILTE Glas-Materialien tragen das Glühen stadtweit, NULL Rebake (LICHT_GESETZ.fenster)
   for(const gm of Object.values(M).concat(typeof _MM!=='undefined'?Object.values(_MM):[])){ if(!gm||!gm.userData||gm.userData.__licht!=='fenster') continue;   // wer glüht, sagt der Stoff selbst (LICHT_GESETZ via __licht) — keine Liste
     gm.emissive=gm.emissive||new THREE.Color(0); if(glut) gm.emissive.setRGB(..._FENF); else gm.emissive.setRGB(0,0,0); gm.emissiveIntensity=glut; }

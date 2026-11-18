@@ -284,9 +284,13 @@ class AnazhRealm_studio_stoff {
         const vcol = ton === true ? TSL.varying(vcolRoh.mul(this._tonFaktor(TSL)), "vTonFarbe") : vcolRoh;
         // DAS LEUCHT-GESETZ (Architektur-Welle 05.10.): ein Stoff, dessen Gesetzbuch `leucht` stempelt (fachwerk
         // `feuer`: Glut, Flamme, Herdfeuer), leuchtet in seiner Vertex-Farbe × leucht — heiße Mitte, kühler Rand,
-        // gelbe Flammen-Wurzel, rote Spitze — statt einer Farbe für jede Fläche (das Labor webt dasselbe in r128).
-        if (mp && typeof mp.leucht === "number" && mp.leucht > 0)
+        // gelbe Flammen-Wurzel, rote Spitze — statt einer Farbe für jede Fläche (das Labor webt dasselbe in r128). Trägt er dazu
+        // ein Licht-Datum (`mp.licht`: fachwerk `feuer`), ist `leucht` das Maß des Gemalten und die HÖHE die Glut seines Datums
+        // (`_glutHoehe`: seine Leuchtdichte durch das Auge der Welt, je Bild) — das Gemalte bleibt linear.
+        if (mp && typeof mp.leucht === "number" && mp.leucht > 0) {
             mat.emissiveNode = vcol.mul(this._stoffWert(TSL, "userData.stoffWerte.leucht"));
+            if (mp.licht) mat.emissiveNode = mat.emissiveNode.mul(this._glutHoehe(TSL, String(mp.licht)));
+        }
         // DIE FARBE DES JAHRS (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
         // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
         // Blüte). Rinde, Fels, Kristall bleiben ungetönt. Die Gestalt des Jahrs trägt die Lage (`jahr`, `_jahrLage`).

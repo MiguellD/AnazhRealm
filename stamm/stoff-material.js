@@ -704,6 +704,8 @@ class AnazhRealm_stoff_material {
             lichtFlach: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             // DIE UMGEBUNG DER STUNDE für das Auge (welt-licht.js `AUGE`, Schreiber `_leuchtTakt`): x = ihre Lux + das Knie, y = S(x)
             lichtAuge: TSL.uniform(new THREE.Vector2(1, __weltLicht.augeS(1))),
+            // DIE HÖHE DER GLUT DER LAVA (Schreiber `_leuchtTakt`): die Leuchtdichte ihres Ausbruchs durch das Auge der Stunde
+            lavaGlut: TSL.uniform(0),
             // DER SCHIRM-PIXEL JE SZENEN-PIXEL (w4-wiese-nah, `_szeneSkalaWirk`): unter dem zeitlichen Hochskalierer rendert die
             // Szene in 0,75 × Ausgabe, ihr `fwidth` und ihr `screenSize` messen den Pixel der SZENE — das Mikro-Detail der Stoffe
             // (`_mikroRelief`, `_halmStoff`, das Schutt-Korn) gilt dem Pixel des SCHIRMS: die Geschichte löst welt-feste Oktaven
@@ -2092,6 +2094,16 @@ class AnazhRealm_stoff_material {
     // EIN KNOTEN JE GRAPH (1310-18): dasselbe Leuchten über derselben Basis (dem Leucht-Knoten des Stoffs oder r184s
     // `materialEmissive`), demselben Zeitplan und derselben Himmels-Sicht ist DERSELBE Knoten — Stoffe mit geteiltem Graphen
     // (`_foundryTreeMaterial`) teilen so auch ihr Leuchten und mit ihm ihr Programm (r184 schlüsselt nach der Knoten-Identität).
+    // DIE HÖHE DER GLUT EINES DATUMS (w28-strahler, Leser: der Studio-Stoff des gemalten Glühens, die Decke der Lava): die
+    // Strahldichte, die seine Leuchtdichte im Bild zeigt (`atmoUniforms.lichtGlut[datum]`, Schreiber `_leuchtTakt` über
+    // welt-licht.js `augeGlut`; ihre Farbe ist auf Luma 1 genormt — die Luma IST die Höhe). EIN Knoten je Datum.
+    _glutHoehe(Te, datum) {
+        const glut = this._ensureAtmoUniforms().lichtGlut[datum];
+        if (!glut) throw new Error(`_glutHoehe: das Licht-Datum „${datum}“ trägt keine Leuchtdichte (cdM2)`);
+        const je = this._glutHoeheJe || (this._glutHoeheJe = {});
+        return je[datum] || (je[datum] = Te.luminance(glut));
+    }
+
     _leuchtStoff(mat, mp, himmel) {
         if (!mat || mat.isNodeMaterial !== true) throw new Error("_leuchtStoff: kein Knoten-Stoff");
         const Te = THREE.TSL;

@@ -542,8 +542,8 @@ class AnazhRealm_siedlung_wege {
     }
 
     // DAS LEUCHTEN DER LAVA (TSL, Leser `_lavaKruste`) aus der Temperatur `w` ihrer Oberfläche in der Spanne: beim Ausbruch t0
-    // leuchtet sie im Leucht-Gesetz der Glut (fachwerk `LEUCHT_FEUER`: Leuchtdichte = lineare Farbe × Stärke, das Glutbett des
-    // Herdfeuers) in der Farbe ihrer Temperatur (fachwerk `lichtFarbe`, der Planck-Ort); kühler fällt jeder Kanal mit dem
+    // leuchtet sie mit der Leuchtdichte ihres Ausbruchs (fachwerk `leuchtdichte` × Emissivität der Lava, durch das Auge der Welt:
+    // `atmoUniforms.lavaGlut`) in der Farbe ihrer Temperatur (fachwerk `lichtFarbe`, der Planck-Ort); kühler fällt jeder Kanal mit dem
     // Planck-Gesetz an seiner Wellenlänge (`GLUT_BILD`, die Wien-Näherung: e^(c₂/λ · (1/t0 − 1/T)), c₂/(λ·T) ≥ 14 in der ganzen
     // Spanne) — Grün und Blau schneller als Rot: die Lava glüht orange aus, kirschrot, dunkel am Draper-Punkt (dort trägt der rote
     // Kanal 10⁻⁷ des Ausbruchs). Der Planck-Ort des Kerns reicht ab 1 667 K, der Ausbruch liegt darunter (1 650 K): seine Farbe ist
@@ -551,17 +551,18 @@ class AnazhRealm_siedlung_wege {
     // unter der Lava kein Leuchten. `kalt` = 1/t0 − 1/T (1/K) der Oberfläche, T in der Spanne (`_lavaKruste` rechnet ihn).
     _lavaGlutNode(_T, kalt) {
         const FW = globalThis.__fachwerkCore;
-        if (!FW || !(FW.LEUCHT_FEUER > 0) || typeof FW.lichtFarbe !== "function")
-            throw new Error("_lavaGlutNode: fachwerk trägt das Leucht-Gesetz der Glut oder den Planck-Ort nicht");
+        if (!FW || typeof FW.leuchtdichte !== "function" || typeof FW.lichtFarbe !== "function")
+            throw new Error("_lavaGlutNode: fachwerk trägt die Leuchtdichte oder den Planck-Ort nicht");
         const Z = this._lavaGlutZahlen();
         const k7 = AnazhRealm._f32; // die kürzeste Zahl desselben f32 (`_f32`)
         const kanal = (k) => (Z[k].amp > 0 ? _T.exp(kalt.mul(k7(Z[k].c))).mul(k7(Z[k].amp)) : _T.float(0));
-        return _T.vec3(kanal(0), kanal(1), kanal(2));
+        // die HÖHE: die Leuchtdichte des Ausbruchs durch das Auge der Stunde (`atmoUniforms.lavaGlut`, Schreiber `_leuchtTakt`)
+        return _T.vec3(kanal(0), kanal(1), kanal(2)).mul(this._ensureAtmoUniforms().lavaGlut);
     }
 
     // Die Zahlen des Glut-Bilds je Kanal (EINE Quelle für das Bild der Decke, `_lavaGlutNode`, und ihr Licht, `_lavaLeucht`):
-    // `amp` die Leuchtdichte beim Ausbruch (Planck-Ort × `LEUCHT_FEUER`), `c` = c₂/λ (K) — die Leuchtdichte bei der Temperatur
-    // T der Oberfläche ist amp · e^(c · (1/t0 − 1/T)).
+    // `amp` die Farbe des Ausbruchs (der Planck-Ort, auf Luma 1 genormt — die Höhe trägt `atmoUniforms.lavaGlut`), `c` = c₂/λ
+    // (K) — das Bild bei der Temperatur T der Oberfläche ist amp · e^(c · (1/t0 − 1/T)), linear in sich.
     _lavaGlutZahlen() {
         if (this._lavaGlutZ) return this._lavaGlutZ;
         const FW = globalThis.__fachwerkCore;
@@ -569,7 +570,7 @@ class AnazhRealm_siedlung_wege {
         const farbe = FW.lichtFarbe(this._lavaSpanne()[1]);
         return (this._lavaGlutZ = [0, 1, 2].map((k) => ({
             c: G.c2 / (G.lambdaNm[k] * 1e-9),
-            amp: farbe[k] * FW.LEUCHT_FEUER,
+            amp: farbe[k] / (0.2126 * farbe[0] + 0.7152 * farbe[1] + 0.0722 * farbe[2]),
         })));
     }
 
