@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-18T20:52:33.746Z",
+ "zeit": "2026-11-18T20:57:36.528Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -311,6 +311,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.007 · Median 0.017 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.005669636273816779/undefined · haus_schwarzwald 0.008145415041473569/0.8576727160968027 · haus_schwarzwald 0.012830717513155409/0.9728579394069264 · haus_schwarzwald 0.019475803206190762/undefined · haus_schwarzwald 0.008852778068101074/0.9477029825677046 · haus_schwarzwald 0.012232163127304338/0.734640724771158 · haus_schwarzwald 0.005923855769823326/0.8743832817480667 · haus_alpenchalet 0.028732539432160534/undefined · haus_alpenchalet 0.01636334376131761/0.8855488538493173 · haus_alpenchalet 0.009787923598351775/undefined · haus_schwarzwald 0.01505532781601667/0.8858993048162613 · haus_schwarzwald 0.016304603780254005/0.9321538800047633 · haus_schwarzwald 0.018601118900204817/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.018977963963833173/undefined · haus_skandinavisch 0.011180283997975304/undefined",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.007 · Median 0.017 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.005669636273816779/undefined · haus_schwarzwald 0.008145415041473569/0.8576727160968027 · haus_schwarzwald 0.012830717513155409/0.9728579394069264 · haus_schwarzwald 0.019475803206190762/undefined · haus_schwarzwald 0.008852778068101074/0.9477029825677046 · haus_schwarzwald 0.012232163127304338/0.734640724771158 · haus_schwarzwald 0.005923855769823326/0.8743832817480667 · haus_alpenchalet 0.028732539432160534/undefined · haus_alpenchalet 0.01636334376131761/0.8855488538493173 · haus_alpenchalet 0.009787923598351775/undefined · haus_schwarzwald 0.01505532781601667/0.8858993048162613 · haus_schwarzwald 0.016304603780254005/0.9321538800047633 · haus_schwarzwald 0.018601118900204817/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.018977963963833173/undefined · haus_skandinavisch 0.011180283997975304/undefined",
+   "gpu": "nvidia/pascal",
+   "konsum": "k25d33bbd657a",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2bbe263ca652",
+   "s": 175.2,
+   "fremd": {
+    "s": 177.4,
+    "takte": 80,
+    "fremdS": 116.36,
+    "kerne": 0.656,
+    "fensterKerne": 1.675,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      35.06
+     ],
+     [
+      "CompatTelRunner.exe",
+      22.52
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      17.5
+     ]
+    ],
+    "dienerS": 70.75,
+    "diener": [
+     [
+      "dwm.exe",
+      34.2
+     ],
+     [
+      "System",
+      26.3
+     ]
+    ],
+    "geraetS": 55.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.06
+     ],
+     [
+      "svchost.exe",
+      23.14
+     ],
+     [
+      "SearchIndexer.exe",
+      1.94
+     ]
+    ],
+    "eigenS": 538.28,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T20:57:36.528Z",
+   "abdruck": "383e85cc9140",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -319,23 +389,24 @@
   "k252f901be3bf": "pVXRjpswEPyXPLb1OQQIYKkPTjg1J/Wk3CeszRq4EIhsc7Sp+u9VSJwESKVK9ROgnd3Z8ezya3YAuYMcn95NU8/Y7NPsy8zABxKD+gP107uZsdlcBhDGjJ8P5ZyvT2FSlwdraFZCTnYawbaaVCiwfpI9LExAwpLRfzyq+/r1b2kt7OwlawxqHgRslXP+ygeIqhQURA3FHkmrLZbVBeLJGAEZ7Z55t6V0SyO66vj1rB6kqQRmDbGg0CUR2SLygY0DW5ODQAKt6gu71gMv8MNL63HKt+/XNvkb57R7HlcUUGdD1sqHUHns5Sfnz1OGWQloSVXWxtWUWSj8xU3uborR0JEjYFGhvoDAi8ATjmgvR7dN6AioqtaYQbHYz8JFzCidxOZoSllYctDNzQoiWUQesNWUU35oiRowEgJiMda5AKxz1EMOURDKgNEf8TjpDvaogdRQXEKTuR8txMCKmykX57Y91kY6qAyCLFH/5OLj9FpdyoEafuYvlpLx/z2r/NuoXNVL34vkisWZSKIJ/3zTD0Aa9y/Xz/HmnDnN78q8jYoYWZR6P2xJqTCDOfs+FdUUkKEmu8bYG6cAAN1CSfuR4NsgHSNvzVxwC7Gch/FdLzHlm8ntm0bZDjSS/NBegBhgGIWM85dJsIX93jUhFxiHD+/lgXONPY3sPb0wQG8ZMafoA4edB5wcsawcKJLS85GtX/m4/w8NewIi16VSzscilCp5NHYdVpaIpnFrMvEz8CWjPq2vaiXxed1dT9o18nmdv42a3eg8nXLvKzTaXrsVy7kKmOp3jZxEl9qSDmRxvTslEBL2IPSIusIcB1JmgfAhO0XfsQ3cw+fh2E0ccCzxJHJtWuMcl0TXKb6s/pfhUu1Q7wTUO0c3FH7osdMofEfuxmKe0pRuu3ux1lyd3tereKDhK++TH1DSg25UedrvtIDWFFDZwd/2HNKiEi0WNZ58ZcumxvoW9fsP",
   "k352c5a633b8d": "bVXBjpswEP2XHNt6HQJewNIenLDSbtVqk2OPYzMGEgKRDUubqv9ewcZJgJ0TRO953rx5Jn8XJ1AHyPBhb+tqwRdfFt8WFt6RWDTvaB72dsEXSxUAi7j4KCqE2PQwZYpTY2lZSAqygvyIpDUNFuWDGmieihCQ0+5ZdFtKtzSk605cayOenqbHlBLTmjSg0R0i01XoA58CW5uBRAKtHhpfwCzwAp9xOlSUiO2euhI7IXol22w37SqhSsfKtQ9Me/z1jxDPc5VpAdiQsqis66tSJv0Vvzbr5hwDHTkD5iWaCwm8EDzpxA6WdNuYToi6bK0dNYv8lK0iTukMm6EtVN6Qk6klVs7AeBV6wNdzTdmpJXqkSEqI5NTrHLDK0Iw1hAFTAae/o+mhBziiAVJBfoHGSz9cyZs3lNKXuZZyED60cMKjVMahHhH7Pb4MEUqi/iW7/hy9fIQqyW4BE7tJE6vywhzH9mjNUljyH3NJNocUDTnUtrlpCgDQ3YRkCJXYBsmUeRvmwlvJxyWL7maJqHiZeWdr3XRgkGSn9kLEAFnIuBCvM3ADx6MbQq0wYtPF2aYP9r0MFqD3GHLn3Cd7+LgG5IxF6UihUp6PfPNTTOd8N3AkIDNTaO22LZnS8Wfh7LBsiKzrxiH9FHzVa6nubOl9Xd82mHS1et5kOzGpfSbm2ocOtWmu08rHpQ64Hm6kmqEL05AOVH7dkZYIMf8EekZTYoYjK9NA+pD26Du1gXv4Osrsebbpc4G9yZVtrUtWHKbxJe3j0To0BwnVwclk0mce/94b9SZc7JcJTei0dCfEr7d1dO9cdvmenVDRk6l10X/9aA6tzaFsbn8D//4D",
   "ke11fb2fc7c6d": "bVTBjpswEP2XHNt6HQJewNIenLBSWrVq9tjj2IyBhEBkw9Km6r9XsHESIHMC9J7nzZtn/i5OoA6Q4dPe1tWCLz4tviwsvCOxaN7RPO3tgi+WKgAWcfFRVAix6WHKFKfG0rKQFGQF+RFJaxosyic10DwVISCn3avodpTuaEjXnbjWRry8TI8pJaY1aUCjO0Smq9AHPgW2NgOJBFo9NL6AWeAFPuN0qCgRuz11Jd6E6JU86CqhSsfKtQ9Me/zrHyFe5/i0AGxIWVTW9VUpk/6KX5t1c46BjpwB8xLNhQReCJ50YgdLul1MJ0RdttaOmkV+ylYRp3SGzdAWKm/IydQSK2dgvAo94Ou5puzUEj1SJCVEcup1DlhlaMYawoCpgNPf0fTQAxzRAKkgv0DjpR+u5M0bSul2rqUchA8tnPAolXGoR8R+j9shQknUv2TXz9H2I1RJdguYeJs0sSovzHFsj9YshSX/Ppdkc0jRkENtm5umAADdTUiGUIldkEyZt2EuvJV8XrLobpaIiu3MO1vrpgODJDu1FyIGyELGhfg6AzdwPLoh1AojNl2cbfpg38tgAXrPIXfOPdjDxzUgZyxKRwqV8nzkmx9iOue7gSMBmZlCa7dtyZSOH4Wzw7Ihsq4bh/RT8FWvpbqzpfd1fdtg0tXqdZO9iUntMzHXPnSoTXOdVj4vdcD1cCPVDF2YhnSg8uuOtESI+QPoGU2JGY6sTAPpQ9qj79QG7uHzKLPn2abPBfYmV7a1LllxmMaXtI9H69AcJFQHJ5NJn3n8W2/UT+Fiv0xoQqelOyF+bdZRf9gJFT2ZWhf9347m0Nocyub22//3Hw==",
-  "k01b94d24611d": "bVTRjpswEPyXPLblHAI+jKV7cMKpOalVk09YmzVwIRDZENpU/fcKAkmA+AmsGe/s7Nh/FydQB0jw5dOWxYIvviy+LSyc0bFozmhePu2CL5bKB8q4uC4ihNi0MGWyU2VJnkkCsoD0iE5tKszyF9XRXMUQkJPmXTQ7QnYkIOvm7W1KzSXGpVOBxoEo41XgAZ8Ca5uARAdq3RXrwdR3fY9y0i0Wid0nGZbYC0Ga92lFCUU8Vqo9oNrlH3+EeBczhXEGWDl5Vtihpoqp9Fb8VmjeVWygcS6AaY6mJ4EbgCsHoZ2VzS4kE6LOa2tHxZgX0xXjhMywCdpMpZVzMqXEYjAvXAUu8CdOJ6fa0SNFUgKTU59TwCJBM9YQ+FT5nPxm00MPcEQDTgFpDw2XXrCSd28IIdu5lrwT3pUYhLNYhoEeEdsZbpvWqYi1P8ltm22vYYwScV/7SRGr0swcx/ZoTWNY8h9zSTaFGI1zKG111+QD4JD8qAuU2PnRlHlvpuet5OuSsodeGBHbmXe21FUDBp3kVPdE9JEGlAvxMQNXcDwOTagVMjodnK3aYD/KoD66rwEfnHsyh+s1cC6Y5QMpUMr1kG9+immfZwNHB2RiMq2HaUuqdPgsnA3mlSPLshqQXgye4sQjxc2VsLsG6/sEo6ZU3zfJvn9pCtbvJ1Pd3emlqW6dytel9rk+t7dRzdCZqZwGVHqbj5YIIX8CvaDJMcGRjbEvPYhb9INSf/j4OsrrZTblS4atwYWt7ZCqMIjDPunjkTRoDhKKwyCTSo+6XfzWv8Q18pttGJGI7JqH4IuNiBshPjZr9rib9G/ZCRU5mVJn7ctHUqhtCnl1f/L//Qc="
+  "k01b94d24611d": "bVTRjpswEPyXPLblHAI+jKV7cMKpOalVk09YmzVwIRDZENpU/fcKAkmA+AmsGe/s7Nh/FydQB0jw5dOWxYIvviy+LSyc0bFozmhePu2CL5bKB8q4uC4ihNi0MGWyU2VJnkkCsoD0iE5tKszyF9XRXMUQkJPmXTQ7QnYkIOvm7W1KzSXGpVOBxoEo41XgAZ8Ca5uARAdq3RXrwdR3fY9y0i0Wid0nGZbYC0Ga92lFCUU8Vqo9oNrlH3+EeBczhXEGWDl5Vtihpoqp9Fb8VmjeVWygcS6AaY6mJ4EbgCsHoZ2VzS4kE6LOa2tHxZgX0xXjhMywCdpMpZVzMqXEYjAvXAUu8CdOJ6fa0SNFUgKTU59TwCJBM9YQ+FT5nPxm00MPcEQDTgFpDw2XXrCSd28IIdu5lrwT3pUYhLNYhoEeEdsZbpvWqYi1P8ltm22vYYwScV/7SRGr0swcx/ZoTWNY8h9zSTaFGI1zKG111+QD4JD8qAuU2PnRlHlvpuet5OuSsodeGBHbmXe21FUDBp3kVPdE9JEGlAvxMQNXcDwOTagVMjodnK3aYD/KoD66rwEfnHsyh+s1cC6Y5QMpUMr1kG9+immfZwNHB2RiMq2HaUuqdPgsnA3mlSPLshqQXgye4sQjxc2VsLsG6/sEo6ZU3zfJvn9pCtbvJ1Pd3emlqW6dytel9rk+t7dRzdCZqZwGVHqbj5YIIX8CvaDJMcGRjbEvPYhb9INSf/j4OsrrZTblS4atwYWt7ZCqMIjDPunjkTRoDhKKwyCTSo+6XfzWv8Q18pttGJGI7JqH4IuNiBshPjZr9rib9G/ZCRU5mVJn7ctHUqhtCnl1f/L//Qc=",
+  "k25d33bbd657a": "bVTRjpswEPyXPLb1OQR8gKV7cEKknFSpuU9YmzVwIRDZENpU/fcKLk4CZJ8AzXhnZ8f8XZxAHSDDl09bVwu++Lb4sbBwRmLRnNG8fNoFXyxVACzi4quoEGLTw5QpTo2lZSEpyAryI5LWNFiUL2qgeSpCQE67rej2lO5pSNfd29uUWkpMa9KARkeU6Sr0gU+Brc1AIoFWD82uYBZ4gc84HSpKxP6TuhIfQtBuO+0ooUrHSrUPTHv8/Y8QWzFTmBaADSmLyrqeKmXSX/Fbo/lUqYGOXADzEs2VBF4InnRCByu7fUwnRF221o6aRX7KVhGndIbN0BYqb8jJ1BIrZ168Cj3gT5zOTi3RI0VSQiSnPueAVYZmrCEMmAo4/R1NDz3AEQ2QCvIrNF764UrevaGU7uZaykH40MIJj1IZh3pE7He463qnkqh/yW6fo91XGJNM3Otj0sSqvDDHsT1asxSW/Odcks0hRUMOtW3umgIAdMlPhkCJfZBMmfdhrryVfF2y6GGWiIrdzDtb66YDgyQ7tVciBshCxoV4n4EbOB7dEGqFEZsuzjZ9sB9lsAC915A7557s4esakAsWpSOFSnk+Tg8/GzgSkJkptHablkzp+FkwOywbIuu6cUg/BV9x6tPq5kg8XIH1fXtJV6vtJvsQk8qmmofTa9PcppSvSx1wfe5vopqhC9OQDlR+242WCDF/Ar2gKTHDkYVpIH1Ie/SD0sA9fB9l9TLb8KXA3tzKttYlKg7T+Jry8To6NAcJ1cHJZNJn3hC99S/h4r5MaEL33aM/G5H275t11B92QkVPptZF/5ejObQ2h7K5/97//Qc="
  },
  "sitzung": {
-  "start": "2026-11-18T20:51:55.345Z",
-  "ordner": "sitzung-20261118-215155",
+  "start": "2026-11-18T20:57:05.654Z",
+  "ordner": "sitzung-20261118-215705",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 7.4,
+  "warten": 0.02,
+  "bootS": 5.7,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "speicher.K4#2",
-    "s": 28.2,
-    "takte": 612,
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 22.1,
+    "takte": 583,
     "chunks": 81,
     "nach": null
    }
@@ -343,30 +414,34 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "speicher.K4#2",
-    "anders": [],
-    "wie": {},
-    "haelt": [
-     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend."
+    "probe": "siedlung.K1#2",
+    "anders": [
+     "r._tickNahWiese",
+     "window.__ortSchritt"
     ],
+    "wie": {
+     "r._tickNahWiese": "neu: _tickNahWiese(deadline) { const st = this.state; if (!st.scene || !st.camera || ",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
     "heap": [
-     228.7,
-     213
+     219.8,
+     576.6
     ],
     "ungemessen": null
    }
   ],
   "wanderung": [
    {
-    "probe": "speicher.K4#2",
-    "ort": "wiese",
-    "m": 72.99,
-    "dreh": 0.709
+    "probe": "siedlung.K1#2",
+    "ort": "genesis",
+    "m": 183.9,
+    "dreh": 1.979
    }
   ],
   "messHalt": [
    {
-    "probe": "speicher.K4#2",
+    "probe": "siedlung.K1#2",
     "gehalten": [
      "skala",
      "spiegel",
@@ -378,21 +453,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3295,
-   "frameP95": 41.66,
-   "taktP95": 30.64,
-   "vramMax": 139.1,
-   "seiten": 2,
+   "bilder": 5276,
+   "frameP95": 16.71,
+   "taktP95": 14.1,
+   "vramMax": 146,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 168,
-   "luecken": 1,
-   "letzteLuecke": "THREE is not defined"
+   "zapfen": 262,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 177.1,
-  "minuten": 3.03
+  "fahrtS": 284.9,
+  "minuten": 4.83
  },
  "ungemessen": {
   "mensch.K5#1": {
