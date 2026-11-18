@@ -1274,6 +1274,23 @@ function seitePlan(S) {
     return out;
 }
 
+// UNGELANDET (ungelandet.cjs daneben: Zweige, deren gebauter Code nicht in main steht — Richter ist der Inhalt, ein Squash zählt
+// als gelandet): die Zeile kommt aus einer Datei mit Zeitstempel; ist sie älter als eine Stunde oder fehlt sie, rechnet ein
+// abgelöster Prozess sie neu (6–15 s) und der Blick zeigt bis dahin den alten Stand — er wartet nie auf sie
+const UNGELANDET_DATEI = path.join(os.tmpdir(), "messplatz-blick-ungelandet.txt");
+function ungelandetZeile() {
+    let t = 0, z = null;
+    try { [t, z] = fs.readFileSync(UNGELANDET_DATEI, "utf8").split("\n"); t = +t; } catch (_e) { /* noch nie gerechnet */ }
+    if (!(Date.now() - t < 3600e3)) {
+        try {
+            fs.writeFileSync(UNGELANDET_DATEI, Date.now() + "\n" + (z || "UNGELANDET rechnet (die erste Zahl im nächsten Blick)") + "\n"); // die Stunde gilt ab dem Anstoß: nie zwei Rechnungen
+            require("child_process").spawn(process.execPath, [path.join(__dirname, "ungelandet.cjs"), "--repo", path.resolve(__dirname, "..", ".."), "--cache", UNGELANDET_DATEI],
+                { detached: true, stdio: "ignore", windowsHide: true }).unref();
+        } catch (_e) { /* der Blick lebt ohne die Zeile */ }
+    }
+    return z ? (t ? `${z} (Stand ${new Date(t).toTimeString().slice(0, 5)})` : z) : "UNGELANDET rechnet (die erste Zahl im nächsten Blick)";
+}
+
 // --kurz: alles Wichtige in ≤ 25 Zeilen, ohne Farbe und Balken (ein Aufruf statt Logs, ls-remote und CI-API je Wecken)
 function kurzText(S) {
     const K = kurs(S);
@@ -1288,6 +1305,7 @@ function kurzText(S) {
     o.push(`OMEN ${!S.omen ? "keine Zeile" : S.omen.zu ? `frei · zuletzt ${S.omen.id}: ${S.omen.zu}` : `${S.omen.id}${S.omen.stand ? ` ${S.omen.stand.i}/${S.omen.stand.n}` : ""}${S.omen.start ? ` seit ${S.omen.start.zeit.slice(0, 5)}` : ""}${S.omen.eta ? ` · Ende ≈ ${hhmm(S.omen.eta)}` : ""}${st(S.omen)}`}${danach.length ? ` · danach: ${danach.map((a) => a.id).join(", ")}` : ""}`);
     o.push(`RADEON ${!S.radeon ? "keine Zeile" : S.radeon.zu ? `frei · zuletzt ${S.radeon.id}: ${S.radeon.zu}` : `${S.radeon.id} ${S.radeon.stand ? `${S.radeon.stand.i}/${S.radeon.stand.n}` : ""}${st(S.radeon)}`}${S.ruht ? ` · GPU ruht (${S.ruht})` : ""}`);
     for (const [g, v] of [["OMEN", S.vO], ["RADEON", S.vR]]) if (v.length) o.push(`  ${g} Aufträge: ${v.slice(0, 3).map((x) => `${hhmm(x.ende)} ${x.lauf}/${x.name} ${x.zweig} ${x.wort}`).join(" · ")}`);
+    o.push(ungelandetZeile());
     for (const p of S.lokal) o.push(`  RADEON misst ${s8(p.sha)} ${p.geraet} (punkte.cjs run${p.offen ? " --offen" : ""}, seit ${hhmm(p.start)})`);
     if (S.logs) o.push(`ZUG ${S.logs.map((g) => `${g.name} ${g.still ? "still" : g.exit == null ? "läuft" : "EXIT=" + g.exit} (${hhmm(g.t)})`).join(" · ")}`);
     if (S.logs && S.logs[0]) o.push(`  ${S.logs[0].name}: ${S.logs[0].letzte}`);

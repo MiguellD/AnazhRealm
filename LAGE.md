@@ -7,6 +7,18 @@
 - Radeon-Schneider (je Abgabe erst nach Blick + Stempel des Koordinators): Ankunft „Kette der Programme“ (vorrat8-ankunft), zugang-zeilen Klasse ganz (vorrat9-mensch), Register der Halter (vorrat10-register).
 - Funde ohne Schneider: Hülle vor Grund (stamm/siedlung-instanz.js:898) · schatten.K3#1 · ferner Fahrer in Stufe 2 · Herde am Hang · lila Schleier, verschmierter Hang, fette Sterne (FUND-REGISTER 17.11. 23:30) · 4 von 39 Zeugen fliehen nicht · die große Stadt lebt bisher nur an den Messorten stadt / stadt-voll.
 
+**Bergung 18.11.** (Blatt `bericht/1811-bergung.md`; die Zeile UNGELANDET im Blick: `zug/dienst/ungelandet.cjs`, höchstens einmal je Stunde frisch)
+- läuft: Netz-Stadt (WIP vorrat11-stadt-netz) → Stempel w28-stadt-netz → OMEN misst 5 × 5 und 15 × 15.
+- danach derselbe Schneider: w28-weg-koerper als Neubau am vereinten Kopf, Bild zuerst.
+- Ankunft, nächster Kopf nach der Kette der Programme: späte Module nach dem ersten Bild (Familie w4-b-code, V8-Übersetzen vor dem Bild 1 259 → 223 ms) als Neubau am heutigen Boot.
+- Licht-Kette GTX 1050: strahler → Tonkurve unter dem Knie → Familie ferne-ton (Maß: die Ferne folgt dem Mittel der Strahldichte der nahen Wiese im selben Licht).
+- Register-Schneider liest w28-reise-raeumt und die heap-zensus-Familie.
+- wartet auf einen freien Platz: w28-studio-seiten (nach w28-haus-stoff), w28-rasen-schnitt (Rest: Feuchte dunkelt den Boden), w28-reibellipse (Entscheid: die Invariante misst gegen die Ellipse), w28-seiten-stille.
+- Altlast Ende Oktober, nur als Neubau: w4-gehege (Pflicht F), w4-stadt-orte (C, F), w4-e-buendel (E).
+- fällt offen: w28-heap-haus (zurückgezogen 867445c0), w28-fruehbild (widerspricht „ein Bild unter dem Schirm, nie zwei“), w28-baum-schirm (Pop 0,0672 → 0,0537 %, kein sichtbarer Gewinn).
+- UNGEKLÄRT bleiben 21 Familien, im Blatt beim Namen.
+- Korrektur: w28-ankunft-faden, w28-feld-fuss, w28-licht-kern stehen seit 16.11. 05:40 als Squash 2ac706fac in main; ihre alten Zweig-Namen sind keine offene Arbeit.
+
 **VORARBEITER 12 — STAND 18.11. (Systemuhr, siehe Commit) · Karte 2: 36 von 1 718, Kern 8 (vor dem Zug 36, Kern 8) · Maschine koordination = punkte-maschine 51eb6edf**
 - **Maschine:** `vorarbeiter11-heilung` gemergt (bevoelkerung#1 zählt die Fahrer am Steuer am Sitz ihres Wagens, Ankunft nach dem Zeitsprung mit Obergrenze 40 s Spiel, danach UNGEMESSEN; kopplung.bild#1 Sicht auf den Fleck) · **die Wirt-Wache** im Läufer (`wirtRuf` vor jeder Probe „nimm“, nach ihr und vor dem Preis „gib“; Marke lebt + Heap > 64 MB über dem Stand → Preis UNGEMESSEN beim Grund; Werkbank ohne `/wirt` → `kopf.wirtBlind`, der Preis fährt wie bisher) mit Selbsttest-Fall (Mutante: Haken bleibt → UNGEMESSEN) · die Proben räumen selbst (wertLauf: der stumme Nexus fällt; klang.landschaft: der Lofi-Takt des Prototyps zurück im finally; klang.K4#2/landschaft: `window.__klangW` fällt; seiteLauf: neue Daten-Felder der Seite fallen) · kaskade#1: Herd mit Bett-Anteil ≥ 0,99, Median aus 5 Sätzen · ereignis#1: der Brand altert auf seiner Uhr (bis 20 000 s), die Welt-Uhr über `_weltUhrNimm`, geurteilt nur um den Guss (≤ 2 Zellen); „Welt steht nicht“/„Sicht verdeckt“ = UNGEMESSEN · preis.ausdauer#1: blind (< 1 min oder Kurve ohne Steigung) = UNGEMESSEN · `punkte.cjs run --drossel n` (messung/drossel-n/, nie die Geräte-Datei) · profiband-Gang: je Schritt eine ZEIT-Zeile. Selbsttest 249/249 ohne 3c, Proben 1 255/0.
 - **Wirt-Wache gefahren:** 0 der 54 Preis-Stationen mit Wache — alle Läufe dieses Zugs am d39e0d6e, die Werkbank dort kennt `/wirt` nicht (`wirtBlind` je Probe „unbekannter Weg /wirt“); wirksam ab dem main-Kopf, der w28-probe-wirt trägt.
