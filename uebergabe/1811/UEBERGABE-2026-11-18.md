@@ -124,6 +124,28 @@ Gelöscht sind 33 Zweige, deren hinzugefügte Zeilen zu ≥ 85 % wörtlich in ma
 4. Stempeln, was auf den Blick wartet, in der Lande-Reihenfolge Stadt → Haus-Stoffe → Bau.
 5. Erst dann Neues: der nächste Kern-Sprossen-Schwarm über die S1 der Leitern, die bei 0 stehen.
 
+## 11. Die Reihenfolge der 30 Tage (Antwort an den Schöpfer, 18.11. 02:55 — Reihenfolge der Arbeit an Karte 2, kein neuer Scope)
+
+Rechnung: 1 683 Sprossen offen = 56 am Tag; heute 0–1. Linear schneiden reicht nie. Drei Hebel zugleich:
+- **Unten zuerst (Breite):** die Sprosse 1 jeder Leiter, die bei 0 steht — Schwärme mit ≤ 14 Paketen, die selbst einziehen, zwei
+  bis drei Läufe am Tag. Der laufende Schwarm `vorrat13-kern-sprossen` (7 Pakete, 2 eingezogen um 02:53) ist die ERSTE Messung
+  der Rate: Sprossen netto je Lauf. Aus dieser Zahl folgt das Tempo; vorher verspricht niemand eine Endzahl.
+- **Funktion statt Sack (Tiefe):** acht Wurzel-Schnitte, bei denen der Umfang nichts kostet und darum mehrere Sprossen einer
+  Leiter-Familie zusammen fallen: Stadt K2–K5 · der Mensch als Funktion f(Same, t) · Bau-Rezept (Köpfe 2–7) · Arten aus EINEM
+  Wachstums-Gesetz · Planet als Funktion des Orts · Zeit als Funktion (Zeitreise ≤ 5 s) · Licht-Kette · Programme vor der Ankunft backen.
+- **Preis am Messort:** jede Sprosse trägt den Preis. 9 Sprossen sind wahr und zählen nicht (Kern 9). Der CPU-Takt der Bewohner
+  (Dorfplatz 37 ms, Stadt 21–29 ms) sperrt eine ganze Klasse — EIN Schnitt, früh.
+
+Folge: **Tag 1–3** landen, was gebaut ist (Stadt → Haus-Stoffe → Bau Stück 1 → Mensch, Register, Ankunft, Kern-Sprossen, Strahler
+Stück 1), die drei Spiel-Rot, der CPU-Takt der Bewohner; täglich Schwärme unten. **Tag 4–12** alle Leitern auf ≥ 1; daneben Stadt
+K2–K5, Mensch als Funktion, Bau-Köpfe (EIN Besitzer je Datei, nacheinander). **Tag 13–22** Arten, Planet, Zeit — je ein Schwarm
+mit Planer; die Licht-Kette zu Ende. **Tag 23–30** obere Sprossen, wo die Funktions-Schnitte tragen; in den letzten drei Tagen kein
+neuer Kopf, nur landen und buchen; der Rest steht offen mit Grund und Messnamen.
+
+Gegen das Steckenbleiben: jeden Morgen EINE Zahl je Linie (Sprossen netto gestern) · zwei Tage ohne Sprosse → der Kopf wird
+geteilt oder fällt · zwei Versuche ohne Gewinn → Stopp · ein Kopf = ein landbares Stück mit Station und Buchung · Laptop schneidet
+im Schwarm, OMEN und GTX 1050 schneiden tags je EINE Linie und buchen nachts die Paare · die Pflicht-Liste bleibt die des Schöpfers.
+
 ## 10. Mut — die Schnitte mit dem größten Hebel
 
 - **Der Mensch als Funktion:** Plan f(Same, t), ein Leib nur im nahen Ring — dasselbe Prinzip wie die Stadt-Einträge. Ohne das endet
