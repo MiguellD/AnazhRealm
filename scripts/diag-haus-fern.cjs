@@ -111,7 +111,7 @@ function achsAbstand(P, hx, hz) {
 function tuerL0(g) {
     const out = [];
     for (const w of g.children) {
-        if (!(w.userData && typeof w.userData.side === "number")) continue;
+        if (!(w.userData && typeof w.userData.side === "number") || w.userData.fenster) continue; // die Tür; der Fenster-Flügel (Bahn 1) ist keine
         const hx = w.position.x,
             hz = w.position.z,
             P = blattPunkte(w);
@@ -172,7 +172,10 @@ function dreiecke(g, nurWerfer, stoff) {
         if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
         // die Tür-Flügel (`userData.side`, buildStufe 0) drehen in der Welt um ihr Scharnier — in der Gruppe liegen sie
         // um ihren Ort doppelt versetzt (Bake-Lage + Scharnier); ihr Wurf ist der der Tür im Haus
-        for (let a = o.parent; a; a = a.parent) if (a.userData && typeof a.userData.side === "number") return;
+        // Der Fenster-Flügel (Bahn 1: `userData.fenster`) reist gebacken ZU, am Scharnier — er steht, wo er gezeichnet wird, und
+        // trägt das Glas des wachen Fensters: er zählt mit
+        for (let a = o.parent; a; a = a.parent)
+            if (a.userData && typeof a.userData.side === "number" && !a.userData.fenster) return;
         const m = o.material || {};
         const ud = m.userData || {};
         if (nurWerfer && (o.castShadow === false || ud.__seh === "glut" || (m.transparent && m.opacity < 1))) return;
@@ -714,9 +717,10 @@ function selbsttest() {
     };
     if (!hausUrteil(hausFall("alemannisch", 1, null, null, band)).some((x) => /^Glas L2: Glut/.test(x)))
         fehler.push("G: die schwarzen Bänder der L2 sind nicht rot");
-    // P: die Grenze am Haushalt (der Deckel bis w25-lod-pop) — die Pueblo-L2 trägt ihre Dach-Terrassen nicht
-    const b7 = pop(["pueblo", "geisttor"], (id, s, art) => WIRT._wechselGesetz(art, s, 1, 0)).bruch;
-    if (!(b7.some((b) => /^pueblo L2 /.test(b)) && b7.some((b) => /^geisttor L2 /.test(b)))) fehler.push("P: die Grenze am Haushalt ist nicht rot");
+    // P: die Grenze am Haushalt (der Deckel bis w25-lod-pop) — die Hof-L2 (marokkanisch) trägt ihre Arme und Dach-Terrassen nicht (2,18 px
+    // @ 26 m; bis Bahn 1 stand hier pueblo mit 1,09 px — das Fern-Fenster ohne den Flügel davor nahm ihm den Sprung unter 1 px)
+    const b7 = pop(["marokkanisch", "geisttor"], (id, s, art) => WIRT._wechselGesetz(art, s, 1, 0)).bruch;
+    if (!(b7.some((b) => /^marokkanisch L2 /.test(b)) && b7.some((b) => /^geisttor L2 /.test(b)))) fehler.push("P: die Grenze am Haushalt ist nicht rot");
     // H: die Regel bis w28-march-schirm — der größte Kasten, das größte Dach, jedes Teil ab einem Viertel des größten
     const vol = (q) => Math.abs(q.h[0] * q.h[1] * q.h[2]) * (q.art === "keil" ? 0.5 : 1);
     const b8 = huelleFern(["fraenkisch"], (teile) => {
