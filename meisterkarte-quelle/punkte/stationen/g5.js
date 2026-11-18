@@ -6914,6 +6914,16 @@ async function stadtFormSeite(M, mass) {
 async function probeStadtForm(H) {
     const M = { samen: 7, nH: 9310, anlauf: [400, 400], anker: [836.0867207453832, 438.24283067541955], fristS: Math.max(20, Math.floor(H.rest() - 12)) };
     const j = (H.teil = {});
+    // DIE STATION LÄUFT DEM SPIEL VORAUS (18.11., Vorarbeiter 13): das Netz der Kachel `FC.kachelNetz` steht nur im Zweig w28-stadt-netz,
+    // in keinem Kopf von main — dort warf die Probe (TypeError) und hieß ROT. Fehlt es, misst sie nicht: UNGEMESSEN beim Namen (Messort),
+    // nie ein ROT über ein Spiel, das die Funktion noch nicht trägt; mit der Landung von w28-stadt-netz fährt sie von selbst
+    const netz = await H.evalWelt("const FC = globalThis.__fachwerkCore; return typeof (FC && FC.kachelNetz);", 20000);
+    if (netz !== "function") {
+        j.wartet = "w28-stadt-netz";
+        console.log("@@PUNKTE@@ MESSORT wartet auf w28-stadt-netz: FC.kachelNetz steht nicht in diesem Kopf (typeof " + String(netz && typeof netz === "object" ? JSON.stringify(netz).slice(0, 80) : netz) + ")");
+        console.log("@@PUNKTE@@ EXIT 0");
+        return j;
+    }
     const e = await H.evalWelt("const mass = " + H.seite.MASS + ";\nreturn await (" + H.seite.FORM + ")(" + JSON.stringify(M) + ", mass);", Math.max(5, H.rest() - 2) * 1000);
     if (e && e.frist) H.fristRiss(e.frist);
     j.form = e;
@@ -6966,6 +6976,7 @@ module.exports.push({
         { name: "der Dichte-Fit unter 0,8", gruen: false, stdout: stadtFormAus(stadtFormFall({ dichte: { baender: [], r2: 0.744, lambdaM: 871 } })) },
         { name: "die Höhe nur 4,4-fach", gruen: false, stdout: stadtFormAus(stadtFormFall({ hoehe: { kern: 14, rand: 3.2, mal: 4.375, max: 27.687 } })) },
         { name: "eine Stadt ohne Rand (ein Ring)", gruen: false, stdout: stadtFormAus(stadtFormFall({ rand: 0, wand: { kern: 0.35, rand: null, mal: null }, hoehe: { kern: 19.4, rand: null, mal: null, max: 30.387 } })) },
+        { name: "der Kopf trägt FC.kachelNetz nicht (main vor w28-stadt-netz): kein Maß, die Marke MESSORT nennt den Grund", gruen: false, stdout: "@@PUNKTE@@ MESSORT wartet auf w28-stadt-netz: FC.kachelNetz steht nicht in diesem Kopf (typeof undefined)\n@@PUNKTE@@ EXIT 0\n", zahl: /kein Maß der Stadt/ },
         { name: "das Wort gründete keine Stadt", gruen: false, stdout: "@@PUNKTE@@ FORM\n" + JSON.stringify({ ergebnis: { wort: "dorf 7 9310", fehler: "das Wort gründete keine Stadt" } }, null, 1) + "\n@@PUNKTE@@ EXIT 0\n" },
     ],
     pfad: [...DORF, "scripts/lib/welt-boot.cjs"],

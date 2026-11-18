@@ -2473,8 +2473,13 @@ async function wirtRuf(w, gib, heap) {
 }
 // der Werkzeug-Bruch einer Probe beim Namen jeder Größe, die sie an der Zeichenkette verändert ließ
 const zeichnerBruch =(z) => "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (" + z.anders.map((k) => k + " " + z.wie[k]).join(" · ") + ")";
+// DER NULL-PUNKT DES PROZESS-TAGS VOR DEM GRUND (18.11., Radeon 21f279f5: nach der ersten Tür jeder Sitzung „abweichend vom Grund:
+// worldMeta.tagNull undefined → 0.4999“, jede Probe danach OFFEN): eine neue Welt trägt `worldMeta.tagNull` nicht, erst das Laden eines
+// Stands eicht ihn (`_weltTagEichen`, stamm/feld-leben.js:2608, gerufen aus stamm/speicher-laden.js:524) — der Stand nach der Tür ist
+// nie mehr der Grund. Der Grund nimmt die Welt darum geeicht, wie sie nach ihrem ersten Laden für jeden Spieler steht; der Sprung
+// selbst (der Prozess-Tag springt beim ersten Laden um Tag + Uhr) ist ein Befund am SPIEL (koord/rot-am-spiel.md), hier nicht geheilt
 const GRUND_NIMM =
-    'if (typeof r._grundstellung !== "function") return { fehlt: true }; const t0 = performance.now(); const g = r._grundstellung(); ' +
+    'if (typeof r._grundstellung !== "function") return { fehlt: true }; if (typeof r._weltTagEichen === "function") r._weltTagEichen(); const t0 = performance.now(); const g = r._grundstellung(); ' +
     "return { grund: g.grund, n: Object.keys(g.abdruck).length, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta.worldId, " +
     "seite: " + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window), wege: (" + wegeAbdruck + ")(r), " +
     "zustand: Object.fromEntries(" + JSON.stringify(GRUND_ZUSTAND) + ".map((k) => [k, r.state[k]])) };";

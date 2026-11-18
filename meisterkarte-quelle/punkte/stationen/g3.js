@@ -1061,19 +1061,23 @@ const KOPPLUNG_TEXT =
     " const RING = []; for (let k = 0; k < 8; k++) { const a = (k * Math.PI) / 4, qx = ziel.x + Math.cos(a) * FLECK * 0.7, qz = ziel.z + Math.sin(a) * FLECK * 0.7; RING.push([qx, h(qx, qz) + 0.3, qz]); }" +
     " const sichtAuf = async () => { try { const Sd = (window.__loopBild(), await window.__spiegelDaten()); const m = await window.__zielMessen({ nurZiel: true, ziel: { x: ziel.x, y: ty + 0.3, z: ziel.z, name: 'Fleck', r: FLECK, fuss: false, punkte: RING } }, Sd); const zo = m && m.ziel; return zo ? { frei: zo.frei, imBild: zo.imBild, vor: zo.vor || null, ab: zo.vorAbstand } : { frei: null, vor: 'keine Abnahme' }; } catch (e) { return { frei: null, vor: 'Abnahme warf: ' + String(e && e.message).slice(0, 120) }; } };" +
     " const schritte = []; rend.setAnimationLoop(null); st.playerMesh.visible = false;" +
-    " try { for (let d = FERN; d >= NAH; d -= SCHRITT) { const px = ziel.x - ziel.dx * d, pz = ziel.z - ziel.dz * d, py = h(px, pz); pm.set(px, py + 0.05, pz);" +
+    " const tGang = performance.now(); try { for (let d = FERN; d >= NAH; d -= SCHRITT) { const tS = performance.now(), px = ziel.x - ziel.dx * d, pz = ziel.z - ziel.dz * d, py = h(px, pz); pm.set(px, py + 0.05, pz);" +
     " for (let t = 0; t < 30; t++) (r._gameLoopTick(performance.now()), await new Promise((ok) => setTimeout(ok, 5)));" +
     " cam.fov = A.KAM_FOV_GRAD; cam.updateProjectionMatrix(); cam.position.set(px, py + 1.7, pz); cam.lookAt(ziel.x, ty + 1, ziel.z); cam.updateMatrixWorld(true);" +
     " const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: 'messung' })).u8, belicht = rend.toneMappingExposure, c = zielV.clone().project(cam);" +
     " const cx = ((c.x + 1) / 2) * W, cy = ((1 - c.y) / 2) * H, rp = (FLECK / Math.hypot(px - ziel.x, py + 1.7 - ty, pz - ziel.z)) * (H / 2) / Math.tan((cam.fov * Math.PI) / 360); let s = 0, n = 0;" +
     " for (let y = Math.max(0, Math.floor(cy - rp)); y < Math.min(H, Math.ceil(cy + rp)); y++) for (let x = Math.max(0, Math.floor(cx - rp)); x < Math.min(W, Math.ceil(cx + rp)); x++) { if ((x - cx) ** 2 + (y - cy) ** 2 > rp * rp) continue; const i = (y * W + x) * 4, l = invNeutral([srgb(u8[i]), srgb(u8[i + 1]), srgb(u8[i + 2])]); s += (0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]) / belicht; n++; }" +
-    " const mk = marke(); schritte.push({ d, Y: n ? +(s / n).toFixed(5) : null, px: n, marke: mk, sicht: await sichtAuf() }); } }" +
+    " const mk = marke(); schritte.push({ d, Y: n ? +(s / n).toFixed(5) : null, px: n, marke: mk, sicht: await sichtAuf(), ms: Math.round(performance.now() - tS) }); } }" +
     " finally { pm.copy(P0); cam.fov = merk[2]; cam.updateProjectionMatrix(); cam.position.copy(merk[0]); cam.quaternion.copy(merk[1]); cam.updateMatrixWorld(true); st.playerMesh.visible = merk[3]; }" +
-    " return { ende: 'ok', ziel: [+ziel.x.toFixed(1), +ty.toFixed(1), +ziel.z.toFixed(1)], gefaelle: +ziel.g.toFixed(3), kand, schritte, uhr: st.timeOfDay, wetter: st.weather };";
+    " return { ende: 'ok', gangS: +((performance.now() - tGang) / 1000).toFixed(1), ziel: [+ziel.x.toFixed(1), +ty.toFixed(1), +ziel.z.toFixed(1)], gefaelle: +ziel.g.toFixed(3), kand, schritte, uhr: st.timeOfDay, wetter: st.weather };";
 // DER DECKEL (geschätzt, ungemessen an der Karte): 40 Schritte zu 30 Takten (je ~0,7 s) und EINER Aufnahme 1920 × 1080, dazu die Wahl
 // des Ziels (≈ 1 500 Rufe `hoehe`) — 90 s
+// DER DECKEL GEMESSEN STATT GESCHÄTZT (18.11., Radeon 31d156e8: die Probe schwieg 115 s nach „umstellen“ bis an den Deckel 117 s —
+// seit der Sicht auf den Fleck rendert jeder der 40 Schritte ZWEI Bilder: die Aufnahme 1920 × 1080 und das Tiefenbild der Abnahme,
+// dazu 30 Takte des Spiels am Genesis-Ort; ~2,5–3 s je Schritt): 240 s, die Zeit je Schritt (ms) und des Gangs (gangS) stehen in der
+// Antwort, damit die Eichtafel den nächsten Deckel aus der Messung setzt
 const KOPPLUNG_PROBE = {
-    sek: 90,
+    sek: 240,
     mutiert: true,
     befehl: befehlDer({
         name: "karte2.erleben.kopplung.bild#1",

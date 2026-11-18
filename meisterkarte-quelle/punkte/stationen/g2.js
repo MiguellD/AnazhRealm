@@ -1886,7 +1886,15 @@ const BEWOHNER_SITZUNG = { sek: 90, befehl: [
 // ihm näher als jedem anderen Ziel der Stunde; FEHLT = ein Bewohner des Solls ohne gezeichneten Stand ≤ R_M am Ort; DOPPELT =
 // ein Bewohner mit zwei Hüllen in der Szene oder zwei Bewohner mit einem Samen
 async function dorfZaehlung(r, T) {
-    const UHREN = [3, 10, 15, 20], ORTE_N = 5, R_M = 10;
+    // DIE ORTE JE UHR (18.11., Auftrag des Koordinators nach der Zahl „draußen je Uhr“, Radeon 21f279f5: um 8, 10, 12, 15, 18 Uhr stehen
+    // 71–75 von 77 draußen, und jeder an seinem EIGENEN Ziel — 71–75 verschiedene Ziel-Punkte, die drei größten je 1 Mensch: der Wirt
+    // stellt jedem seinen Stand am Platz, am Werk, am Tisch): die Orte sind nicht mehr die Top-5 der Ziel-PUNKTE über alle Uhren (Σ Soll 18
+    // < 20 bei 77 Bewohnern, je Ort und Uhr höchstens einer), sondern je Uhr die fünf vollsten Orte DIESER Stunde — ein Ort ist die Schar
+    // der Stände binnen RC um den Stand mit den meisten Nachbarn (gierig, jeder Stand am nächsten Ort-Mittelpunkt). Die UHREN sind vier,
+    // an denen der Plan Menschen nach draußen stellt (koerper TAGES_GESETZ: 7 der Morgengang am Platz, 10 und 15 am Werk, 20 der Abend);
+    // 3 Uhr fällt als Stichprobe und bleibt als EINE eigene Prüfzeile (`nacht`: wen der Plan drinnen will, steht nicht draußen), die
+    // nicht zu den 20 zählt. Die Wache Σ Soll ≥ 20 bleibt
+    const UHREN = [7, 10, 15, 20], NACHT = 3, ORTE_N = 5, R_M = 10, RC = R_M / 2;
     const s = r.state, wm = s.worldMeta, pm = s.playerMesh.position, A = r.constructor;
     // DAS START-DORF BESTELLEN (17.11., Radeon 389a6496: „kein Start-Dorf“ an bevoelkerung und kollektiv — die Grundstellung der
     // Sitzung spielte das Dorf zurück, `umstellen --ort genesis` baut es nicht; die Probe bewohner bestellt es selbst, wie hier):
@@ -1920,11 +1928,34 @@ async function dorfZaehlung(r, T) {
     // den fünf Orten
     const amWagen = (b, z) => !!(z && z.ziel && b.wagen && b.wagen.entry && z.ziel === b.wagen.entry.position);
     const zielVon = (b, h) => { const z = r._bewohnerSoll(b, h); return z.drinnen || !z.ziel || amWagen(b, z) ? null : z.ziel; };
-    const summe = new Map();
-    for (const h of UHREN) for (const b of L) { const z = zielVon(b, h); if (!z) continue; const e = summe.get(schl(z)) || { x: z.x, z: z.z, n: 0 }; e.n++; summe.set(schl(z), e); }
-    const orte = [];
-    for (const e of [...summe.values()].sort((a, b) => b.n - a.n)) if (orte.length < ORTE_N && orte.every((o) => Math.hypot(o.x - e.x, o.z - e.z) >= R_M)) orte.push(e);
-    if (orte.length < ORTE_N) return { fehler: "nur " + orte.length + " Orte mit Soll im Start-Dorf", bewohner: L.length };
+    // DRAUSSEN JE UHR (Lesewert, 18.11., Auftrag des Koordinators: was erklärt Σ Soll 18 bei 77 Bewohnern?): je Uhr 6–20 nach
+    // `_bewohnerSoll` die Zahl draußen (ohne Fahrer am Wagen), am Wagen, drinnen, die Zahl verschiedener Ziele, die drei größten,
+    // und das Soll der fünf vollsten Ziele DIESER Stunde (je ≥ R_M auseinander) — dazu der Regen am Spieler, den das Gesetz liest
+    const regenNun = (() => { try { return +(r._weatherFieldFor().rain || 0).toFixed(3); } catch (e) { return null; } })();
+    const draussenJeUhr = [6, 8, 10, 12, 15, 18, 20].map((h) => {
+        const m = new Map();
+        let wagen = 0, drin = 0;
+        for (const b of L) { const z = r._bewohnerSoll(b, h); if (z.drinnen) { drin++; continue; } if (amWagen(b, z)) { wagen++; continue; } if (!z.ziel) continue; const k = schl(z.ziel), e = m.get(k) || { x: z.ziel.x, z: z.ziel.z, n: 0 }; e.n++; m.set(k, e); }
+        const sort = [...m.values()].sort((a, b) => b.n - a.n), fuenf = [];
+        for (const e of sort) if (fuenf.length < ORTE_N && fuenf.every((o) => Math.hypot(o.x - e.x, o.z - e.z) >= R_M)) fuenf.push(e);
+        return { uhr: h, draussen: sort.reduce((n, e) => n + e.n, 0), wagen, drinnen: drin, ziele: sort.length, top3: sort.slice(0, 3).map((e) => e.n), soll5: fuenf.reduce((n, e) => n + e.n, 0) };
+    });
+    const orteVon = (h) => {
+        const T0 = L.map((b) => ({ b, z: zielVon(b, h) })).filter((t) => t.z), frei = new Set(T0), mitten = [];
+        while (frei.size) {
+            let best = null, bestN = -1;
+            for (const t of frei) { let n = 0; for (const u of frei) if (Math.hypot(u.z.x - t.z.x, u.z.z - t.z.z) <= RC) n++; if (n > bestN) (best = t), (bestN = n); }
+            mitten.push({ x: best.z.x, z: best.z.z, n: 0, mit: new Set() });
+            for (const u of [...frei]) if (Math.hypot(u.z.x - best.z.x, u.z.z - best.z.z) <= RC) frei.delete(u);
+        }
+        for (const t of T0) { let m = null, d = Infinity; for (const o of mitten) { const e = Math.hypot(o.x - t.z.x, o.z - t.z.z); if (e < d) (d = e), (m = o); } m.mit.add(t.b), m.n++; }
+        mitten.sort((a, b) => b.n - a.n);
+        return { alle: mitten, top: mitten.slice(0, ORTE_N) };
+    };
+    const orteJe = new Map(UHREN.map((h) => [h, orteVon(h)]));
+    const knapp = UHREN.filter((h) => orteJe.get(h).top.length < ORTE_N);
+    if (knapp.length) return { fehler: "nur " + knapp.map((h) => orteJe.get(h).top.length + " Orte um " + h + " Uhr").join(", ") + " im Start-Dorf", bewohner: L.length, regen: regenNun, draussenJeUhr };
+    const mitJe = new Map(UHREN.map((h) => [h, new Set(orteJe.get(h).top.flatMap((o) => [...o.mit]))]));
     const mess = async () => { await window.__seitenTakt(); await window.__seitenTakt(); const p = cam.getWorldPosition(pm.clone()); const d = cam.getWorldDirection(pm.clone()); return { p, d, h: Math.atan2(d.x, d.z), v: Math.asin(Math.max(-1, Math.min(1, d.y))) }; };
     const imFrustum = (x, y, z) => { cam.updateMatrixWorld(true); const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)); return fr.containsPoint(new T.Vector3(x, y, z)); };
     const stelle = async (q, ziel) => {
@@ -1959,16 +1990,16 @@ async function dorfZaehlung(r, T) {
     // sein soll, sitzt; wessen Ziel einer der fünf Orte ist, steht ≤ R_M an ihm. Obere Schranke ANKUNFT_S Spiel-Sekunden im Takt des
     // Spiels; danach UNGEMESSEN mit den Ausstehenden beim Namen (MESSORT), nie ein ROT über einen Weg, der noch läuft
     const ANKUNFT_S = 40;
-    const ortSchl = new Set(orte.map((o) => schl(o)));
     const aus = (h) => L.filter((b) => {
         const z = r._bewohnerSoll(b, h);
         if (z.drinnen) return !drinnenIst(b);
         if (amWagen(b, z)) return !b.amSteuer;
-        if (!z.ziel || !ortSchl.has(schl(z.ziel))) return false;
+        if (!z.ziel || !(mitJe.get(h) || new Set()).has(b)) return false;
         const g = leibVon(b);
         return !g || Math.hypot(g.position.x - z.ziel.x, g.position.z - z.ziel.z) > R_M;
     });
-    for (const h of UHREN) {
+    let nacht = null;
+    for (const h of [...UHREN, NACHT]) {
         r.setTimeOfDay(h / 24, "regler");
         const takte = await window.__gebautNach("die Zählung um " + h + " Uhr", { fertig: offen });
         let warteS = 0, offenL = aus(h);
@@ -1982,8 +2013,13 @@ async function dorfZaehlung(r, T) {
             offenL = aus(h);
         }
         ankunft.push({ uhr: h, s: +warteS.toFixed(1), offen: offenL.length, wer: offenL.slice(0, 3).map((b) => { const z = r._bewohnerSoll(b, h), g = leibVon(b); return { rolle: b.rolle || b.beruf || null, akt: z && z.akt != null ? String(z.akt) : null, planDrinnen: !!z.drinnen, dZiel: g && z.ziel ? +Math.hypot(g.position.x - z.ziel.x, g.position.z - z.ziel.z).toFixed(1) : null }; }) });
-        const ziele = new Map();
-        for (const b of L) { const z = zielVon(b, h); if (z) ziele.set(schl(z), z); }
+        // DIE NACHT (EINE Prüfzeile, keine Stichprobe): nach der Ankunft steht niemand draußen, den der Plan drinnen will
+        if (h === NACHT) {
+            const gegen = L.filter((b) => r._bewohnerSoll(b, h).drinnen && !drinnenIst(b));
+            nacht = { uhr: h, gegenPlan: gegen.length, draussenPlan: L.filter((b) => !r._bewohnerSoll(b, h).drinnen).length, wer: gegen.slice(0, 3).map((b) => b.rolle || b.beruf || "?") };
+            continue;
+        }
+        const orte = orteJe.get(h).top, ziele = orteJe.get(h).alle;
         // je Fahrer am Steuer der Stunde EINE Stichprobe: Soll 1 am laufenden Wagen, erfüllt, wenn der Leib auf dem Sitz des Gesetzes steht
         for (const b of L) {
             const z = r._bewohnerSoll(b, h);
@@ -1994,7 +2030,7 @@ async function dorfZaehlung(r, T) {
             fahrer.push({ uhr: h, rolle: b.rolle || b.beruf || null, amSteuer: !!b.amSteuer, leib: !!g, d: d == null ? null : +d.toFixed(2), sitzt: !!b.amSteuer && d != null && d <= SITZ_M });
         }
         for (let oi = 0; oi < orte.length; oi++) {
-            const O = orte[oi], ok = schl(O);
+            const O = orte[oi];
             let stand = null;
             for (const d of [9, 13, 17]) { for (let w = 0; w < 8 && !stand; w++) { const a = (w * Math.PI) / 4, q = { x: O.x + Math.cos(a) * d, z: O.z + Math.sin(a) * d }; const g = r._imGrundriss(q.x, q.z, 0.5); if (g !== "haus" && g !== "bau" && r._landAt(q.x, q.z) && (await stelle(q, O))) stand = q; } if (stand) break; }
             let uhr = performance.now();
@@ -2013,7 +2049,7 @@ async function dorfZaehlung(r, T) {
                 const dO = Math.hypot(g.position.x - O.x, g.position.z - O.z);
                 if (dO > R_M) continue;
                 let naechst = true;
-                for (const [kz, z] of ziele) if (kz !== ok && Math.hypot(g.position.x - z.x, g.position.z - z.z) < dO) naechst = false;
+                for (const z of ziele) if (z !== O && Math.hypot(g.position.x - z.x, g.position.z - z.z) < dO) naechst = false;
                 if (!naechst) continue;
                 amOrt.add(b);
                 const brust = new T.Vector3(g.position.x, g.position.y + 0.4, g.position.z);
@@ -2024,7 +2060,7 @@ async function dorfZaehlung(r, T) {
                 if (frei) ist++, gezaehlt.push(b);
             }
             doppelt = Math.max(doppelt, [...je.values()].filter((n) => n > 1).length);
-            const sollL = L.filter((b) => { const z = zielVon(b, h); return z && schl(z) === ok; });
+            const sollL = [...O.mit];
             const fehlt = sollL.filter((b) => !amOrt.has(b)).length;
             // WER FEHLT (Lesewert, 17.11.: Ort 0 und 1 trugen zu JEDER Uhr Soll 1, Ist 0 — auch um 3 Uhr, wenn alle drinnen sind): je
             // Fehlender sein Leib in der Szene, sein Abstand zum Ort, gezeichnet, drinnen, und das Wort des Plans (Rolle, Ziel)
@@ -2045,7 +2081,7 @@ async function dorfZaehlung(r, T) {
     }
     const spaet = ankunft.filter((a) => a.offen > 0);
     const messort = spaet.length ? "die Ankunft nach dem Zeitsprung stand nach " + ANKUNFT_S + " s nicht: " + spaet.map((a) => a.uhr + " Uhr " + a.offen + " unterwegs (" + a.wer.map((w) => (w.rolle || "?") + " " + (w.akt || "?") + (w.planDrinnen ? " Plan drinnen" : "") + (w.dZiel != null ? " " + w.dZiel + " m vom Ziel" : "")).join(", ") + ")").join(" · ") : null;
-    return { bewohner: L.length, orte: orte.map((o) => [+o.x.toFixed(1), +o.z.toFixed(1), o.n]), rM: R_M, samenDoppelt, doppelt, sicht: s.cameraMode, proben, fahrer, ankunft, ...(messort ? { messort } : {}), version: A.VERSION };
+    return { bewohner: L.length, regen: regenNun, draussenJeUhr, orte: Object.fromEntries(UHREN.map((h) => [h, orteJe.get(h).top.map((o) => [+o.x.toFixed(1), +o.z.toFixed(1), o.n])])), rC: RC, nacht, rM: R_M, samenDoppelt, doppelt, sicht: s.cameraMode, proben, fahrer, ankunft, ...(messort ? { messort } : {}), version: A.VERSION };
 }
 // DIE ZEUGEN DER TAT (Karte 2 mensch.menge.kollektiv S1, vorrat3-stationen-g2): der Spieler geht um 10 Uhr (Uhr am Regler) in Third
 // längs der langen Achse des Dorfplatzes des Start-Dorfs durch die Menge (1,4 m/s, im Takt des Spiels, nach dem EINEN Warten wie
@@ -5105,7 +5141,9 @@ const stationen = [
             const { ad, hw } = hwSitzung(lauf.stdout);
             const z = jsonZeile(lauf.stdout, /^ZAEHLUNG /);
             if (!z) return { gruen: false, zahl: "keine Zeile ZAEHLUNG (Exit " + lauf.exit + ") · " + ad };
-            if (z.fehler) return { gruen: false, zahl: "Zählung: " + z.fehler + " · " + ad };
+            // DRAUSSEN JE UHR (Lesewert): je Uhr draußen/am Wagen/drinnen, Ziele, die drei größten, Soll der fünf vollsten dieser Stunde
+            const dju = Array.isArray(z.draussenJeUhr) ? " · draußen je Uhr (Regen " + z.regen + "): " + z.draussenJeUhr.map((d) => d.uhr + "h " + d.draussen + "+" + d.wagen + "W/" + d.drinnen + "d " + d.ziele + "Z [" + d.top3.join(",") + "] f" + d.soll5).join(" · ") : "";
+            if (z.fehler) return { gruen: false, zahl: "Zählung: " + z.fehler + dju + " · " + ad };
             const P = Array.isArray(z.proben) ? z.proben : [];
             const je = P.map((p) => ({ p, ok: p.imBild === true && Math.abs(p.ist - p.soll) <= 0.1 * p.soll && p.fehlt === 0 }));
             // DER FAHRER AM STEUER zählt MIT (17.11., Entscheid des Koordinators): je Uhr und Fahrer Soll 1 an der laufenden Lage seines
@@ -5128,6 +5166,8 @@ const stationen = [
                 !(sollSumme >= 20) && "Σ Soll " + sollSumme + " < 20 (die Zählung trägt zu wenig Soll)",
                 z.doppelt !== 0 && "doppelt " + z.doppelt + " Hüllen ≠ 0",
                 z.samenDoppelt !== 0 && "doppelt " + z.samenDoppelt + " Samen ≠ 0",
+                !z.nacht && "die Nacht ungeprüft (keine Zeile nacht)",
+                z.nacht && z.nacht.gegenPlan !== 0 && "nachts " + z.nacht.gegenPlan + " draußen gegen den Plan (" + (z.nacht.wer || []).join(", ") + ")",
             ].filter(Boolean);
             // WER ZU VIEL STEHT (Lesewert, 17.11., Radeon 602607bb: „3 Uhr Ort 2 Ist 1/Soll 0“ ohne den Menschen): je Gezähltem außerhalb
             // des Solls Rolle, Akt, Plan drinnen, drinnen im Spiel, Abstand zum eigenen Ziel der Stunde
@@ -5144,19 +5184,19 @@ const stationen = [
                     (reisst.length ? "✗ " + reisst.join(" · ") + " · " : "") +
                     (fahrerRot.length ? "✗ " + fahrerRot.join(" · ") + " · " : "") +
                     (rot.length ? "✗ " + rot.join(" · ") : "jede Stichprobe ±10 %, niemand fehlt") + ank + " · doppelt " + z.doppelt + " Hüllen / " +
-                    z.samenDoppelt + " Samen · " + z.sicht + " · " + ad,
+                    z.samenDoppelt + " Samen" + (z.nacht ? " · nachts " + z.nacht.gegenPlan + " gegen den Plan draußen (" + z.nacht.draussenPlan + " mit Posten)" : "") + " · " + z.sicht + dju + " · " + ad,
             };
         },
         proben: (() => {
             const ad = "[linse-gpu] amd/rdna-3 (Probe)";
             const roh = (f = () => {}) => {
                 const proben = [];
-                for (const uhr of [3, 10, 15, 20])
+                for (const uhr of [7, 10, 15, 20])
                     for (let ort = 0; ort < 5; ort++) {
-                        const soll = uhr === 3 ? 0 : [12, 7, 5, 4, 3][ort];
+                        const soll = [12, 7, 5, 4, 3][ort];
                         proben.push({ uhr, ort, tod: +(uhr / 24).toFixed(4), soll, ist: soll, fehlt: 0, imBild: true, stand: [10.5, -30.2], takte: 40 });
                     }
-                const z = { bewohner: 77, orte: [[20.2, -31.7, 34], [5, -12, 21], [40, -2, 15], [-8, 22, 12], [31, 30, 9]], rM: 10, samenDoppelt: 0, doppelt: 0, sicht: "third", proben, version: "V18.546.305" };
+                const z = { bewohner: 77, orte: [[20.2, -31.7, 34], [5, -12, 21], [40, -2, 15], [-8, 22, 12], [31, 30, 9]], rM: 10, samenDoppelt: 0, doppelt: 0, sicht: "third", proben, nacht: { uhr: 3, gegenPlan: 0, draussenPlan: 2, wer: [] }, version: "V18.546.305" };
                 f(z);
                 return ad + "\nZAEHLUNG " + JSON.stringify(z);
             };
@@ -5164,7 +5204,8 @@ const stationen = [
                 { name: "20 Stichproben, jede gleich dem Soll", stdout: roh(), gruen: true },
                 { name: "am Werk 10 Uhr 10 statt 12 (−17 %)", stdout: roh((z) => (z.proben[5].ist = 10)), gruen: false },
                 { name: "einer zu viel an einem Ort mit Soll 3", stdout: roh((z) => (z.proben[19].ist = 4)), gruen: false },
-                { name: "um 3 Uhr steht einer am Ort (Soll 0)", stdout: roh((z) => (z.proben[0].ist = 1)), gruen: false },
+                { name: "nachts steht einer draußen, den der Plan drinnen will", stdout: roh((z) => (z.nacht = { uhr: 3, gegenPlan: 1, draussenPlan: 2, wer: ["bauer"] })), gruen: false, zahl: /✗ nachts 1 draußen gegen den Plan \(bauer\)/ },
+                { name: "die Nacht ungeprüft (keine Zeile)", stdout: roh((z) => delete z.nacht), gruen: false, zahl: /die Nacht ungeprüft/ },
                 { name: "ein Bewohner fehlt am Ort (Ist stimmt durch einen Fremden)", stdout: roh((z) => (z.proben[6].fehlt = 1)), gruen: false },
                 { name: "ein Bewohner mit zwei Hüllen", stdout: roh((z) => (z.doppelt = 1)), gruen: false, zahl: /✗ doppelt 1 Hüllen ≠ 0/ },
                 { name: "zwei Bewohner mit einem Samen", stdout: roh((z) => (z.samenDoppelt = 1)), gruen: false, zahl: /✗ doppelt 1 Samen ≠ 0/ },
@@ -5173,13 +5214,13 @@ const stationen = [
                 { name: "die Zählung leer (Σ Soll 0)", stdout: roh((z) => z.proben.forEach((p) => (p.soll = p.ist = 0))), gruen: false, zahl: /✗ Σ Soll 0 < 20/ },
                 // die GTX am 602607bb: jede Stichprobe gleich dem Soll, aber je Ort und Uhr höchstens EIN Mensch — Σ Soll 12; bis hier ROT
                 // unter „jede Stichprobe ±10 %, niemand fehlt“ ohne die gerissene Schranke
-                { name: "die GTX am 602607bb: Σ Soll 12, jede Stichprobe gleich — ROT, die Zahl nennt die Schranke", stdout: roh((z) => z.proben.forEach((p) => (p.soll = p.ist = p.uhr === 3 ? 0 : [1, 1, 1, 0, 1][p.ort]))), gruen: false, zahl: /Σ Soll 12 · ✗ Σ Soll 12 < 20 .* · jede Stichprobe ±10 %, niemand fehlt/ },
-                { name: "die Radeon am 602607bb: um 3 Uhr einer zu viel an Ort 2 — die Zahl nennt ihn", stdout: roh((z) => Object.assign(z.proben[2], { ist: 1, mehr: [{ rolle: "bauer", akt: "heim", planDrinnen: true, drinnen: false, dZiel: 14.2 }] })), gruen: false, zahl: /3 Uhr Ort 2 Ist 1\/Soll 0, zu viel: bauer heim \(Plan drinnen, 14\.2 m vom Ziel\)/ },
+                { name: "die GTX am 602607bb: Σ Soll 12, jede Stichprobe gleich — ROT, die Zahl nennt die Schranke", stdout: roh((z) => z.proben.forEach((p) => (p.soll = p.ist = p.uhr === 7 ? 0 : [1, 1, 1, 0, 1][p.ort]))), gruen: false, zahl: /Σ Soll 12 · ✗ Σ Soll 12 < 20 .* · jede Stichprobe ±10 %, niemand fehlt/ },
+                { name: "die Radeon am 602607bb (übertragen auf 7 Uhr): einer zu viel an Ort 2 — die Zahl nennt ihn", stdout: roh((z) => Object.assign(z.proben[2], { ist: 6, mehr: [{ rolle: "bauer", akt: "heim", planDrinnen: true, drinnen: false, dZiel: 14.2 }] })), gruen: false, zahl: /7 Uhr Ort 2 Ist 6\/Soll 5, zu viel: bauer heim \(Plan drinnen, 14\.2 m vom Ziel\)/ },
                 { name: "Ego statt Third", stdout: roh((z) => (z.sicht = "first")), gruen: false, zahl: /✗ Sicht first statt third/ },
                 // DER FAHRER AM STEUER zählt mit: die GTX am 602607bb (Σ Soll 12 an den Orten) plus 8 Fahrer, die auf dem Sitz ihres Wagens
                 // sitzen — Σ Soll 20, GRÜN; derselbe Fall mit einem Fahrer 2,4 m neben seinem Wagen ist ROT beim Namen
                 ...(() => {
-                    const gtx = (z) => z.proben.forEach((p) => (p.soll = p.ist = p.uhr === 3 ? 0 : [1, 1, 1, 0, 1][p.ort]));
+                    const gtx = (z) => z.proben.forEach((p) => (p.soll = p.ist = p.uhr === 7 ? 0 : [1, 1, 1, 0, 1][p.ort]));
                     const acht = (z) => (z.fahrer = [10, 15].flatMap((uhr) => ["fischer", "bauer", "haendler", "schmied"].map((rolle) => ({ uhr, rolle, amSteuer: true, leib: true, d: 0, sitzt: true }))));
                     return [
                         { name: "Fahrer am Steuer zählen mit: Σ Soll 12 an den Orten + 8 Fahrer auf dem Sitz = 20 — GRÜN", stdout: roh((z) => (gtx(z), acht(z))), gruen: true, zahl: /\+ 8 Fahrer am Steuer \(8 sitzen\), Σ Soll 20 · jede Stichprobe/ },

@@ -2128,7 +2128,7 @@ function seilBildUrteil(j, lauf) {
     );
     const gr = Object.entries(e.griff || {}).map(([n, z]) => n + " " + (z.gestalt ? "Gestalt nach " : "KEINE Gestalt nach ") + z.takte + " Takten/" + z.ms + " ms (leer " + z.leer + ", Part-Bau " + z.teile + ")");
     const sc = S.filter((q) => /flegel/i.test(q.name || "")).map((q) =>
-        q.fehler ? q.name + " FEHLER " + q.fehler : q.name + " Figur " + q.figurPx + " px, Gestalt " + (q.pixel - q.rauschen) + " px über dem Rauschen " + q.rauschen + (Number.isFinite(q.rauschenOhne) ? " (ohne Gestalt " + q.rauschenOhne + (q.gehalten ? ", Welt gehalten" : ", Welt NICHT gehalten") + ")" : "") + ", Seil-Teile zu sehen " + q.sichtbar + "/" + q.teile);
+        q.fehler ? q.name + " FEHLER " + q.fehler : q.name + " Figur " + q.figurPx + " px, " + (Number.isFinite(q.rauschenOhne) ? "Gestalt " + seilGestalt(q) + " px über dem Rauschen ohne Gestalt " + q.rauschenOhne + " (MIT ↔ MIT " + q.rauschen + (q.gehalten ? ", Welt gehalten" : ", Welt NICHT gehalten") + ")" : "Gestalt ungemessen (kein Schuss OHNE ↔ OHNE; MIT ↔ OHNE " + q.pixel + ", MIT ↔ MIT " + q.rauschen + ")") + ", Seil-Teile zu sehen " + q.sichtbar + "/" + q.teile);
     return {
         gruen: hw && gut.length > 0,
         zahl: (fl.length ? "" : "KEIN Flegel am Leib · ") + u.zahl + " · im Bild " + (fl.map(([n, x]) => n + " " + x.imBild).join(", ") || "—") +
@@ -2142,13 +2142,21 @@ function seilBildUrteil(j, lauf) {
 // im Fenster der Werkbank): auf kurzem Grund 54 m von der Mess-Wiese Figur 284 px, Gestalt 643 px, Rauschen 0, Seil-Teile 8/8; dieselbe
 // nahe Kamera im Gras der Mess-Wiese 688 px, 8/8 (die Kette über den Halmen, der Kopf darin); die ferne Kamera des Spiels vorher: Figur
 // ~70 px, die Gestalt 0 px. N = 200: ein Drittel der gemessenen Gestalt — ein Flegel, den Halme oder Ferne zu zwei Dritteln schlucken, ist ROT
+// DAS RAUSCHEN IST DAS DES BILDS (Vorarbeiter 13, 18.11.; Radeon am 21f279f5: MIT ↔ OHNE 1 640 px, MIT ↔ MIT 1 509, OHNE ↔ OHNE 0 — der
+// Flegel pendelt zwischen den Schüssen, weil `_seilTakt` im Takt des Spiels tickt (stamm/dirigent-takt.js:338) und kein `__halten` ihn
+// hält; das Pendel ist das Gesetz des Seils, kein Rauschen): der Boden ist OHNE ↔ OHNE (`rauschenOhne`), und die Gestalt steht mindestens
+// so hoch wie dieses Rauschen (GTX 7de938ab: 1 644 − 1 410 = 234 < 1 410 bleibt ROT, die Welt rauschte). Ohne vierten Schuss kein Urteil
 const SEIL_SICHT_N = 200;
-const seilSicht = (q) => q.figurPx >= 180 && q.pixel - q.rauschen >= SEIL_SICHT_N && q.teile > 0 && q.sichtbar === q.teile;
+const seilGestalt = (q) => (Number.isFinite(q.rauschenOhne) ? q.pixel - q.rauschenOhne : null);
+const seilSicht = (q) => {
+    const g = seilGestalt(q);
+    return q.figurPx >= 180 && g != null && g >= SEIL_SICHT_N && g >= q.rauschenOhne && q.teile > 0 && q.sichtbar === q.teile;
+};
 const SEIL_ROH = {
     klingen: 23,
     seile: ["klinge_flegel"],
     je: { klinge_flegel: { teile: 16, anker: [0.545, 0, 0], laengeArt: "längs", schwungM: 0.476, laengeM: [0.328, 0.329], energie: [3.183, 0.257], imBild: 1 } },
-    schuesse: [{ name: "klinge_flegel", datei: "x-seil-s1.png", kamera: [-238.3, 27.6, -1075.9, -238.8, 27.2, -1073.7], figurPx: 284, roi: [440, 251, 540, 366], pixel: 643, rauschen: 0, teile: 8, sichtbar: 8 }],
+    schuesse: [{ name: "klinge_flegel", datei: "x-seil-s1.png", kamera: [-238.3, 27.6, -1075.9, -238.8, 27.2, -1073.7], figurPx: 284, roi: [440, 251, 540, 366], pixel: 643, rauschen: 0, rauschenOhne: 0, gehalten: true, teile: 8, sichtbar: 8 }],
     grund: { x: -238.8, z: -1073.4, abstand: 50 },
     griff: { klinge_flegel: { takte: 24, leer: 0, teile: 23, ms: 1356, gestalt: true } },
 };
@@ -5913,8 +5921,11 @@ module.exports = [
             { name: "ohne den ersten Griff (die Probe vor w28-flegel)", stdout: seilRoh((x) => (delete x.griff, x)), gruen: false },
             { name: "der Flegel im Gras verdeckt (die Gestalt kaum über dem Rauschen, kein Seil-Teil zu sehen)", stdout: seilRoh((x) => (Object.assign(x.schuesse[0], { pixel: 14, rauschen: 3, sichtbar: 0 }), x)), gruen: false },
             // GTX 7de938ab: Gestalt 180 über dem Rauschen 1 464 — der vierte Schuss nennt, ob die Welt ohne die Gestalt rauscht
-            { name: "das Rauschen der Welt (GTX 7de938ab: 1 644 − 1 464 = 180 px; ohne Gestalt 1 410)", stdout: seilRoh((x) => (Object.assign(x.schuesse[0], { pixel: 1644, rauschen: 1464, rauschenOhne: 1410, gehalten: true }), x)), gruen: false, zahl: /Gestalt 180 px über dem Rauschen 1464 \(ohne Gestalt 1410, Welt gehalten\)/ },
-            { name: "die gehaltene Welt rauscht nicht: 649 über 0 (ohne Gestalt 0)", stdout: seilRoh((x) => (Object.assign(x.schuesse[0], { pixel: 649, rauschen: 0, rauschenOhne: 0, gehalten: true }), x)), gruen: true, zahl: /Gestalt 649 px über dem Rauschen 0 \(ohne Gestalt 0, Welt gehalten\)/ },
+            { name: "das Rauschen der Welt (GTX 7de938ab: 1 644 − 1 464 = 180 px; ohne Gestalt 1 410)", stdout: seilRoh((x) => (Object.assign(x.schuesse[0], { pixel: 1644, rauschen: 1464, rauschenOhne: 1410, gehalten: true }), x)), gruen: false, zahl: /Gestalt 234 px über dem Rauschen ohne Gestalt 1410 \(MIT ↔ MIT 1464, Welt gehalten\)/ },
+            { name: "die gehaltene Welt rauscht nicht: 649 über 0 (ohne Gestalt 0)", stdout: seilRoh((x) => (Object.assign(x.schuesse[0], { pixel: 649, rauschen: 0, rauschenOhne: 0, gehalten: true }), x)), gruen: true, zahl: /Gestalt 649 px über dem Rauschen ohne Gestalt 0 \(MIT ↔ MIT 0, Welt gehalten\)/ },
+            // Radeon 21f279f5: der Flegel pendelt zwischen den Schüssen (MIT ↔ MIT 1 509), das Bild ohne ihn steht (OHNE ↔ OHNE 0)
+            { name: "das Pendel des Flegels ist kein Rauschen (Radeon 21f279f5: 1 640, MIT ↔ MIT 1 509, ohne Gestalt 0)", stdout: seilRoh((x) => (Object.assign(x.schuesse[0], { pixel: 1640, rauschen: 1509, rauschenOhne: 0, gehalten: true }), x)), gruen: true, zahl: /Gestalt 1640 px über dem Rauschen ohne Gestalt 0 \(MIT ↔ MIT 1509/ },
+            { name: "ohne vierten Schuss kein Urteil über die Gestalt", stdout: seilRoh((x) => (delete x.schuesse[0].rauschenOhne, x)), gruen: false, zahl: /Gestalt ungemessen \(kein Schuss OHNE ↔ OHNE/ },
             { name: "die Figur fern (70 px, die Kamera des Spiels an der Mess-Wiese, Radeon 59718110)", stdout: seilRoh((x) => ((x.schuesse[0].figurPx = 70), x)), gruen: false },
             { name: "ein Seil-Teil im Gras (7 von 8 zu sehen)", stdout: seilRoh((x) => ((x.schuesse[0].sichtbar = 7), x)), gruen: false },
             { name: "der Schuss ohne Sicht-Messung (die Probe vor Patch 3: nur der Kegel)", stdout: seilRoh((x) => ((x.schuesse[0] = { name: "klinge_flegel", datei: "x-seil-s1.png" }), x)), gruen: false },
