@@ -1507,19 +1507,52 @@
     // DIE FERNE STUFE (Marke `fern`): die Arme trägt der Körper der Liste ('hofarm': Wand und Dach), ihre Fenster das Fern-Fenster — der Hof legt nur Pflaster
     // und Brunnen (vorher zeichnete die L2 jeden Arm zweimal: marokkanisch Hofbau 3528 Dreiecke über dem Körper); Massen und Solids bleiben
     const _fern=(P.nur||{}).fern===true, hb=(...a)=>_fern?null:beam(...a);
+    // DER SOCKEL DES RINGS (Vorrat 12b, Auge am Dorf: der Torriegel stand 0,55 m über dem Grund — jeder Balken des Hofs beginnt auf der Diele, und
+    // der Erdbau schneidet den gezeichneten Boden unter jedem Hof-Arm, `grundVon` boden 1: man sah unter die Wand ins Loch): der Ring und sein Hof
+    // WACHSEN aus dem Sockel wie jeder Flügel (`fundament`: selbe foundH, selber Stein, 25 cm vor der Wand) — EINE Platte von der Front des
+    // Hauses bis vor den Torriegel, als Masse `sockel` trägt sie auch der Fernkörper. Linse: gate:settlement Teil O Sockel (der Fuß der Hülle).
+    if(!P.pilotis){ const sm=0.25, sz0=zC-sm, sz1=zF-sm, sy=baseY-P.foundH/2;
+      hb(g,0,sy,(sz0+sz1)/2,W+2*sm,P.foundH,sz1-sz0,'stein'); addSolid(0,sy,(sz0+sz1)/2,W+2*sm,P.foundH,sz1-sz0);
+      addMasse({art:'sockel',x0:-W/2-sm,x1:W/2+sm,z0:sz0,z1:sz1,y0:baseY-P.foundH,y1:baseY}); }
+    // DAS HOF-FENSTER-GESETZ — EINE Reihe für JEDE Wand des Rings, die an die Luft grenzt (Vorrat 12b: bis hier trugen es nur die Stirnen
+    // längs z; die langen Wände des Torriegels kamen aus einer Vollwand, die nur die Tor-Lücke kannte — zur Gasse stand er blind):
+    // je 2,2 m Lauf ein Fenster, 0,9 m hoch, höchstens 0,8 m breit; ein Lauf unter 1,4 m trägt keins. Das Tor teilt den Lauf.
+    const wcy=baseY+Math.min(wH-0.55,1.5), wfh=0.9;
+    const reihe=(a,b)=>{ const len=b-a, r=[]; if(len<1.4) return r; const n=Math.max(1,Math.round(len/2.2)), w=Math.min(0.8,len/n*0.4); for(let i=0;i<n;i++) r.push({c:a+len*(i+0.5)/n,w}); return r; };
+    // DAS TOR (Vorrat 12b: ein nacktes Loch) — Gewände und Sturz rahmen die Lücke wie der Türstock die Haustür (vor der Wand, die lichte
+    // Breite bleibt die des Eingangs-Korridors); trägt das Haus eine Bogen-Art, schließt sie der Bogen des EINEN Bogen-Gesetzes
+    // (`bogenRahmen`: Keile, Kämpfer, die Mauer der Zwickel bis unter den Sturz der Lochwand) — passt sein Scheitel nicht über 0,8 m
+    // Gewände, der Stichbogen, flacher als R/5 der Sturz (wie die Laube). Zur Gasse hängen zwei Flügel (`leafFrame`, das Blatt der
+    // Haustür) am Gewände innen und stehen offen in den Riegel: der Gang bleibt frei, kein Wirt bewegt sie. Stein am Putz-Haus, sonst Holz.
+    const tr=wr==='putz'?'stein':'holz';
+    const torRahmen=(zz,T,vorn)=>{ const gw2=T.w/2, yT=baseY+T.lh, dp=0.34, t=0.19; let bg=null, yS=yT, ja=gw2-0.02, jb=gw2+0.22;
+      if(P.bogenTyp&&P.bogenTyp!=='none'){ let kurve=P.bogenTyp, R=kurve==='hufeisen'?gw2*Math.cos(BOGEN_GESETZ.hufeisenAlpha):gw2, steig=bogenSteig(kurve,R,0), stich=0;
+        if(T.lh-steig<0.8){ kurve='stich'; R=gw2; stich=Math.min(R,T.lh-1.5); steig=stich; }
+        if(!(kurve==='stich'&&stich<0.2*R)){ const aus=bogenAussen(kurve,R)+t;
+          bg=bogenRahmen(g,T.x,yT-steig,zz,R,true,kurve,tr,{art:'tor',t,tiefe:dp,versatz:0,cap:baseY+wH,stich,zwickel:[-gw2,gw2,yT],pfeiler:[[-aus,-R],[R,aus]]});
+          if(bg){ yS=yT-steig; ja=R-0.02; jb=aus; } } }
+      for(const sg of [-1,1]){ beam(g,T.x+sg*(ja+jb)/2,(baseY+yS)/2,zz,jb-ja,yS-baseY,dp,tr); if(bg) beam(g,T.x+sg*(ja+jb)/2,yS-0.06,zz,jb-ja+0.06,0.12,dp+0.06,tr); }   // das Gewände; unter dem Bogen sein Kämpfer
+      if(!bg) beam(g,T.x,yT+0.10,zz,2*jb+0.12,0.24,dp+0.04,tr);   // der Sturz liegt auf beiden Gewänden, vor dem Sturzband der Lochwand
+      if(!vorn) return;
+      const lw=gw2-0.05, lhh=T.lh-0.14, hx=gw2-0.03;
+      for(const sg of [-1,1]){ const L=grp(), lf=leafFrame(lw,lhh,'holz',-1); lf.position.x=-sg*lw/2; L.add(lf);
+        L.position.set(...deform(T.x+sg*hx,baseY+0.10+lhh/2,zz+0.22)); L.rotation.y=sg*1.4+(DEF_bk>0?(T.x+sg*hx)*DEF_bk:0); g.add(L); } };
+    // DIE WAND DES RINGS — EINE Lochwand je Flucht (`lochWand`: Türen und Fenster sind dieselbe Öffnungs-Art): `frei` nennt ihre Läufe
+    // an der Luft, T das Tor, `mitte` die Achse des Riegels (die Außenseite). Die ferne Stufe trägt dieselben Fenster als Fern-Fenster.
+    const wand=(horiz,fix,a0,a1,frei,T,mitte)=>{ const F=[], ax=horiz?'z':'x';
+      for(const [a,b] of frei){ if(T) F.push(...reihe(a,Math.min(b,T.x-T.w/2)),...reihe(Math.max(a,T.x+T.w/2),b)); else F.push(...reihe(a,b)); }
+      if(T) lichtAuf(T.x,baseY+T.lh/2,fix,T.w,T.lh,'z',0);   // das Tor steht offen: es lässt den Himmel in den Riegel (`raumVon`), nah wie fern
+      if(_fern){ for(const f of F){ const px=horiz?f.c:fix, pz=horiz?fix:f.c; FERNFENSTER.push({cx:SHIFT?px+SHIFT:px, cy:wcy, cz:pz, w:f.w, h:wfh, perp:ax, kind:'hof', s:fix<mitte?-1:1, schlaf:fensterSchlaeft(P.seed,ax,fix,f.c,wcy)}); } return; }
+      const L=F.map(f=>({c:f.c,w:f.w+0.12,b:wcy-wfh/2-0.03,t:wcy+wfh/2+0.03})); if(T) L.push({c:T.x,w:T.w,b:baseY,t:baseY+T.lh});
+      lochWand(g,horiz,fix,a0,a1,baseY,baseY+wH,L,wr,0.22,true);
+      for(const f of F){ if(horiz) fensterAt(g,f.c,wcy,fix,f.w,wfh,true); else fensterAt(g,fix,wcy,f.c,f.w,wfh,false); }
+      if(T) torRahmen(fix,T,fix<mitte); };
     const bar=(x0,x1,z0,z1,alongZ,gate)=>{ const cx=(x0+x1)/2,cz=(z0+z1)/2,lx=x1-x0,lz=z1-z0, rY=baseY+wH+(alongZ?lx:lz)/2*0.7;
       addMasse({art:'hofarm',x0,x1,z0,z1,eY:baseY+wH,rY:ROOFMODE==='flat'?null:rY,first:alongZ?'z':'x',eOv:0});
       hb(g,cx,baseY+0.04,cz,lx,0.08,lz,'boden'); addSolid(cx,baseY+0.04,cz,lx,0.08,lz);
-      const xWall=(zz)=>{ if(!gate){ hb(g,cx,baseY+wH/2,zz,lx,wH,0.22,wr); addSolid(cx,baseY+wH/2,zz,lx,wH,0.22); return; }   // ohne Korridor: volle Querwand
-        const gw2=gate.w/2, lh=Math.min(wH-0.25, gate.h), L=(gate.x-gw2)-x0, R=x1-(gate.x+gw2);   // EINGANGS-KORRIDOR (Sperrflaeche der Haustuer) bleibt frei → das Tor emergiert auf der Tuer-Achse, nicht hart gesetzt
-        if(L>0.05){ hb(g,x0+L/2,baseY+wH/2,zz,L,wH,0.22,wr); addSolid(x0+L/2,baseY+wH/2,zz,L,wH,0.22); } if(R>0.05){ hb(g,x1-R/2,baseY+wH/2,zz,R,wH,0.22,wr); addSolid(x1-R/2,baseY+wH/2,zz,R,wH,0.22); }   // Wandstuecke links/rechts vom Tor
-        if(wH>lh+0.05){ hb(g,gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22,wr); addSolid(gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22); } };   // Sturz: die niedrige Wand bestimmt die Torform (flach, kein Bogen)
-      xWall(z0); xWall(z1);
-      { const nzW=Math.max(1,Math.round(lz/2.2)), wcy=baseY+Math.min(wH-0.55,1.5), wfw=Math.min(0.8,lz/nzW*0.4), wfh=0.9, zh=[];   // HOF-FENSTER-GESETZ: Arme schauen in den Hof UND zur Strasse — LOCHWAND
-        for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; zh.push({c:pz,w:wfw+0.12,b:wcy-wfh/2-0.03,t:wcy+wfh/2+0.03}); }
-        if(_fern){ for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; for(const xw of [x0,x1]) FERNFENSTER.push({cx:SHIFT?xw+SHIFT:xw, cy:wcy, cz:pz, w:wfw, h:wfh, perp:'x', kind:'hof', s:xw<cx?-1:1, schlaf:fensterSchlaeft(P.seed,'x',xw,pz,wcy)}); } }
-        else { lochWand(g,false,x0,z0,z1,baseY,baseY+wH,zh,wr,0.22,true); lochWand(g,false,x1,z0,z1,baseY,baseY+wH,zh,wr,0.22,true);
-        for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; fensterAt(g,x0,wcy,pz,wfw,wfh,false); fensterAt(g,x1,wcy,pz,wfw,wfh,false); } } }
+      const T=gate?{x:gate.x,w:gate.w,lh:Math.min(wH-0.25,gate.h)}:null;   // EINGANGS-KORRIDOR (Sperrflaeche der Haustuer) bleibt frei → das Tor emergiert auf der Tuer-Achse, nicht hart gesetzt
+      wand(true,z0,x0,x1,T?[[x0,x1]]:[],T,cz); wand(true,z1,x0,x1,T?[[x0+armW,x1-armW]]:[],T,cz);   // längs x: der Torriegel schaut zur Gasse und zwischen den Armen in den Hof; die Stirnen der Arme stoßen an Riegel und Haus (keine Luft)
+      wand(false,x0,z0,z1,[[z0,z1]],null,cx); wand(false,x1,z0,z1,[[z0,z1]],null,cx);   // längs z: Arme schauen in den Hof UND zur Strasse
       if(ROOFMODE==='flat'){ hb(g,cx,baseY+wH+0.06,cz,lx,0.12,lz,'putz'); }   // flaches Hof-Arm-Dach (Mediterran) statt Pultdach
       else { const half=(alongZ?lx:lz)/2, dy=rY-(baseY+wH), ang=Math.atan2(dy,half), len=Math.hypot(half,dy);
       [1,-1].forEach(s=>{ if(alongZ) hb(g,cx+s*half/2,(baseY+wH+rY)/2,cz,len,0.10,lz+0.3,'ziegel',[0,0,-s*ang]);
