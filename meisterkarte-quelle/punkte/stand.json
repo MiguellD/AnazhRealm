@@ -2066,7 +2066,7 @@
   },
   "luftwasser.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer) an ee9c1965 gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.815 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 8052 / 0 px an 08a8397b gtx",
+   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 4241 / 0 px (unter dem Spiegel Bett 0.0 % aus 0.8 m, vom Ufer) an ee9c1965 gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.879 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 6552 / 0 px an e4e3f363 gtx",
    "stationen": [
     {
      "id": "luftwasser.K3#1",
@@ -2120,17 +2120,16 @@
      "id": "luftwasser.K3#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.815 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 8052 / 0 px",
-     "sha": "08a8397ba498a8c89c72ce9cd287232ccf6591ae",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/shader-kosten.cjs +10)",
-     "gehalten": true,
+     "zahl": "Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.879 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 6552 / 0 px",
+     "sha": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
+     "grund": null,
      "r6": "konsum"
     }
    ]
   },
   "luftwasser.K4": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert · luftwasser.K4#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +18)",
+   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert · luftwasser.K4#1 gtx: ROT: 7 Orte im Bild, Bestäuber (im Kegel) 14/10/10/0/2/12/8 (Pixel 28/0/4/0/0/10/12), Blüten (Pixel) 1099/420/1560/869/3245/1263/606, r -0.37 (Soll ≥ 0,5) · ROT r -0.37 < 0,5 an e4e3f363",
    "stationen": [
     {
      "id": "luftwasser.K4#1",
@@ -2155,10 +2154,9 @@
      "id": "luftwasser.K4#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +18)",
-     "ungemessen": true,
+     "zahl": "7 Orte im Bild, Bestäuber (im Kegel) 14/10/10/0/2/12/8 (Pixel 28/0/4/0/0/10/12), Blüten (Pixel) 1099/420/1560/869/3245/1263/606, r -0.37 (Soll ≥ 0,5) · ROT r -0.37 < 0,5",
+     "sha": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
+     "grund": "ROT: 7 Orte im Bild, Bestäuber (im Kegel) 14/10/10/0/2/12/8 (Pixel 28/0/4/0/0/10/12), Blüten (Pixel) 1099/420/1560/869/3245/1263/606, r -0.37 (Soll ≥ 0,5) · ROT r -0.37 < 0,5",
      "r6": "konsum"
     },
     {
@@ -6505,7 +6503,7 @@
   "ohne": 150
  },
  "kopfVoll": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
- "zeit": "2026-11-18T15:33:51.292Z",
+ "zeit": "2026-11-18T15:40:04.820Z",
  "vorher": "e4e3f363",
  "bilanz": {
   "gewinn": [],
