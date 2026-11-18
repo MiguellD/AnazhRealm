@@ -4,6 +4,15 @@ class AnazhRealm_siedlung_bauten {
     // den bestehenden `grown_<species>_v<idx>` (keine Doppel-Registrierung), LOD1/2 on-demand. Alle
     // Stufen teilen den variantSeed (nur die Polylinien-Dichte sinkt) und die (shape, material)-Combos
     // → identische Tags. _loadStateRestoreWorldMeta räumt sie beim Welt-Wechsel.
+    // DER NAME EINES GEWACHSENEN BAUPLANS (spielgang.K5) ist eine Funktion seiner Art: eine Zeile der Tafel mit dem Namen der
+    // Art als Wert (das Etikett ihres Bauplans, sonst ihr Name als Daten) — die EINE Quelle für Wuchs, Streu und Laden; der Stand
+    // trägt nur die Art (`_grownSpecies`), nie den aufgelösten Satz
+    _gewachsenEtikett(species, lod = 0) {
+        const artBp = this.state.blueprints && this.state.blueprints[species];
+        const name = (artBp && Array.isArray(artBp.etikett) && artBp.etikett) || artBp?.label || String(species);
+        return lod ? ["bau.gewachsen-lod", { name, lod }] : ["bau.gewachsen", { name }];
+    }
+
     _buildVariantLODs(species, variantIndex) {
         if (!this.state.blueprints) return null;
         // DER CHOKEPOINT: _buildVariantLODs ist die EINE Quelle gewachsener Baum-Geometrie. Lebt die Foundry
@@ -26,9 +35,6 @@ class AnazhRealm_siedlung_bauten {
         if (!seeds) return null;
         if (!Number.isFinite(variantIndex) || variantIndex < 0 || variantIndex >= N) return null;
         const variantSeed = seeds[variantIndex];
-        // der Name der Art: das Etikett ihres Bauplans (ein Schlüssel der Tafel), sonst ihr Name (Daten)
-        const artBp = this.state.blueprints[species];
-        const speciesLabel = (artBp && artBp.etikett) || artBp?.label || String(species);
         const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
         const isMerged = genV >= 6;
         const keys = {};
@@ -45,10 +51,7 @@ class AnazhRealm_siedlung_bauten {
                 genV >= 7 && this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches);
             this.state.blueprints[cacheKey] = {
                 name: cacheKey,
-                etikett:
-                    lod === 0
-                        ? ["bau.gewachsen", { name: speciesLabel }]
-                        : ["bau.gewachsen-lod", { name: speciesLabel, lod }],
+                etikett: this._gewachsenEtikett(species, lod),
                 builtIn: true,
                 _isGrown: true,
                 _grownSpecies: species,
@@ -2464,7 +2467,12 @@ class AnazhRealm_siedlung_bauten {
         // EIN FLÜCHTIGER BLOCK (K69, `_satzBlock`): seine Arrays sind Views der Werkbank — der Bereich hält keine davon (die
         // nächste Rechnung überschreibt sie), nur die Views in den Satz; wer die Werte braucht, rechnet sie aus `quelle` nach.
         if (geom.fluechtig) {
-            for (const { name, form } of s.attr) if (form) geom.attributes[name].array = null;
+            // (auch der Begleiter der vierten Stelle, `w`: Verband und Lage in der Wand sind Views derselben Werkbank)
+            for (const { name, form, w } of s.attr)
+                if (form) {
+                    geom.attributes[name].array = null;
+                    if (w && geom.attributes[w]) geom.attributes[w].array = null;
+                }
             geom.index = null;
             geom.zellen = null;
         }

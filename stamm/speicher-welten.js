@@ -657,7 +657,8 @@ class AnazhRealm_speicher_welten {
     _serializeTool(t) {
         const out = {
             name: t.name,
-            label: t.label,
+            // ein Name aus der Tafel reist als sein Schlüssel (`etikett`), nie als aufgelöster Text (spielgang.K5)
+            ...(Array.isArray(t.etikett) ? { etikett: t.etikett } : { label: t.label }),
             opClass: t.opClass,
             opName: t.opName,
             precisionCap: t.precisionCap,
@@ -1273,7 +1274,8 @@ class AnazhRealm_speicher_welten {
             // Maximums (das Maximum rechnet der Leib beim Laden neu, wie `hpAnteil` des Tiers), dazu die Wunde des Tods —
             // vorher heilte jeder Reload (hp 69,6 → 134 von 134, die Wunde 1 → 0). `_loadStateRestoreLeben` liest sie. DIE NAHRUNG
             // reist mit (halten.K5 Staffel 2): was der Leib gegessen hat (`consume:`-Boosts, `activateConsumable`), mit ihrer
-            // Restzeit — sie hebt das Maximum, an dem die Anteile hängen; vorher fiel sie im Reload, hpMax mit ihr.
+            // Restzeit — sie hebt das Maximum, an dem die Anteile hängen; vorher fiel sie im Reload, hpMax mit ihr. Ihr Name reist
+            // nicht: er ist eine Funktion der Quelle (`_boostZeile`), ein Stand bis V18.546.325 trug ihn als Text — der Leser übergeht ihn.
             [
                 "playerLeben",
                 () => {
@@ -1291,7 +1293,6 @@ class AnazhRealm_speicher_welten {
                                 quelle: b.source,
                                 tags: { ...b.tagDelta },
                                 rest: +(b.expiresAt - jetzt).toFixed(2),
-                                label: b.label,
                             })),
                     };
                 },
@@ -1416,7 +1417,6 @@ class AnazhRealm_speicher_welten {
                         const bp = bps[a.type];
                         if (bp && bp._isGrown && !out[a.type])
                             out[a.type] = {
-                                label: bp.label,
                                 _grownSpecies: bp._grownSpecies,
                                 _grownSeed: bp._grownSeed,
                             };

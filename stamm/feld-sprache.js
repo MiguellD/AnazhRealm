@@ -1294,8 +1294,9 @@ class AnazhRealm_feld_sprache {
         if (jetzt - S.t < AnazhRealm.WERTUNG.stimmeSek) return;
         const e = S.wartet;
         e.weitere = S.weitere;
-        // die Zeile in der Sprache des Spielers zur Zeit der Tat (die Stimme spricht sie, das Buch hält sie als Text)
-        e.zeile = this._t(...this._feldStimmeZeile(e));
+        // die Zeile der Tat, wie sie zur Zeit der Tat stand, als Zeile der Tafel `[schlüssel, werte]` (spielgang.K5): die Box liest
+        // sie in der Sprache von jetzt (`grokRender` → `_tSetze`), ein Wechsel füllt sie neu — nie der aufgelöste Satz
+        e.zeile = this._feldStimmeZeile(e);
         e.gesprochen = jetzt;
         S.t = jetzt;
         S.wartet = null;

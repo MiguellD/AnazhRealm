@@ -2640,10 +2640,12 @@ class AnazhRealm_koerper_fahrt {
         }
         this.state.customSouls = this.state.customSouls || {};
         const soulName = `bp_${blueprintName}`;
-        this.state.customSouls[soulName] = {
-            label: bp.label || blueprintName,
+        // die Seele heißt wie ihr Bauplan: sein Etikett (der Schlüssel reist im Stand), sonst sein Wort (Daten) — nie der
+        // aufgelöste Satz der Sprache von jetzt (spielgang.K5); die Teile tragen ihr Etikett mit (`_etikett` liest bodyParts)
+        this.state.customSouls[soulName] = AnazhRealm._etikett({
+            ...(Array.isArray(bp.etikett) ? { etikett: bp.etikett } : { label: bp.label || blueprintName }),
             bodyParts: bp.parts.map((p) => JSON.parse(JSON.stringify(p))),
-        };
+        });
         const ok = this.applyPlayerSoul(soulName);
         return { ok: !!ok, soulName };
     }
@@ -2658,15 +2660,14 @@ class AnazhRealm_koerper_fahrt {
         const base =
             typeof newName === "string" && newName.trim()
                 ? newName.trim()
-                : `koerper_${(def.label || soulName || "seele")
+                : `koerper_${(AnazhRealm._etikettQuelle(def) || soulName || "seele")
                       .toString()
                       .toLowerCase()
                       .replace(/[^a-z0-9_]+/g, "_")}`;
         let name = base;
         let n = 2;
         while (this.state.blueprints[name]) name = `${base}_${n++}`;
-        if (!this.createBlueprint(name, def.label ? this._t("wesen.koerper", { name: def.label }) : name))
-            return { ok: false, reason: "create_failed" };
+        if (!this.createBlueprint(name, name)) return { ok: false, reason: "create_failed" };
         for (const part of def.bodyParts) {
             this.addPartToBlueprint(name, {
                 shape: part.shape,
@@ -2674,13 +2675,18 @@ class AnazhRealm_koerper_fahrt {
                 size: part.size ? { ...part.size } : { x: 0.5, y: 0.5, z: 0.5 },
                 position: part.position ? { ...part.position } : { x: 0, y: 1, z: 0 },
                 rotation: part.rotation ? { ...part.rotation } : { x: 0, y: 0, z: 0 },
-                label: part.label || part.shape,
+                ...(Array.isArray(part.etikett) ? { etikett: part.etikett } : { label: part.label || part.shape }),
             });
         }
         const bp = this.state.blueprints[name];
         if (bp) {
             bp.role = "soul";
             bp.roleManual = true;
+            // der Name des Körpers ist eine Zeile mit dem Namen der Seele als Wert (ihr Etikett, sonst ihr Wort als Daten),
+            // wie `bau-vorlagen` ihn für die Körper des Buchs schreibt — er und die Namen der Teile wechseln mit der Sprache
+            const seele = Array.isArray(def.etikett) ? def.etikett : def.label;
+            if (seele) bp.etikett = ["wesen.koerper", { name: seele }];
+            AnazhRealm._etikett(bp);
         }
         return { ok: true, name };
     }

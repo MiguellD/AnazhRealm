@@ -2042,6 +2042,13 @@ class AnazhRealm_bau_vorlagen {
         return (m && m.label) || String(id);
     }
 
+    // der Name eines Stoffs als WERT einer Zeile, die später neu gelesen wird: sein Etikett (eine Zeile der Tafel), sonst der
+    // Name des Spielers
+    _stoffZeile(id) {
+        const m = this.state.materials && this.state.materials[id];
+        return m && Array.isArray(m.etikett) ? m.etikett : this._stoffName(id);
+    }
+
     // die Menge je Stoff („3× Holz“) in EINER Zeile, getrennt durch `trenner` — Leser: jede Kosten-, Fehlt- und Beute-Zeile
     _kostenText(menge, trenner = " · ") {
         return Object.entries(menge || {})
@@ -2136,4 +2143,10 @@ AnazhRealm._rolleName = function (rolle) {
 AnazhRealm._namensKopf = function (name, schnitt = /\s[·—(]/) {
     const kopf = String(name).split(schnitt)[0];
     return kopf.includes("⟦") && !kopf.endsWith("⟧") ? kopf + "⟧" : kopf;
+};
+// Der Kopf des Namens eines Dings als WERT einer Zeile: trägt es ein Etikett, bleibt der Schlüssel (`{ kopf }`, der Leser
+// schneidet in seiner Sprache, die Zeile wechselt mit ihr), sonst ist der Name Daten (ein Spieler-Werk, ein fremdes Rezept).
+AnazhRealm._namensZeile = function (ding, name) {
+    if (ding && Array.isArray(ding.etikett)) return { kopf: ding.etikett };
+    return AnazhRealm._namensKopf((ding && ding.label) || name);
 };

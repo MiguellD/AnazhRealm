@@ -407,12 +407,13 @@ async function tatProbe(m) {
     const S = plan2.map(([wer, o, n, soll]) => ({ wer, n, soll, o, welt: wer !== "human", blick: fr.containsPoint(new THREE.Vector3(...o.slice(1))) }));
     const RI = ["nördlich", "nordöstlich", "östlich", "südöstlich", "südlich", "südwestlich", "westlich", "nordwestlich"];
     const zeilen = st.taten.filter((e) => e.zeile).sort((x, y) => x.gesprochen - y.gesprochen).map((e) => {
+        const satz = r._t(e.zeile[0], e.zeile[1]); // die Tat trägt ihre Zeile der Tafel, gelesen in der Sprache der Probe
         const p = S.find((q) => q.wer === e.wer && (e.wer !== "nexus" || q.soll.includes(e.programm)));
         const [dx, dz] = [p.o[1] - m.x, p.o[3] - m.z];
         const wo = ` — ${Math.round(Math.hypot(dx, dz))} m ${RI[Math.round((Math.atan2(dx, -dz) / Math.PI) * 4 + 8) % 8]} von dir, `;
         const name = { nexus: "Der Nexus ", "rule:nexus": "Ein Gesetz des Nexus ", "llm:grok": "Die KI " }[e.wer];
-        const falsch = [wo, p.soll, ...(p.welt && p.blick ? [] : ["(im Blick)"])].filter((x) => !e.zeile.includes(x));
-        return { t: e.gesprochen - t0, text: e.zeile, weitere: e.weitere, falsch: e.zeile.startsWith(name) ? falsch : [name, ...falsch] };
+        const falsch = [wo, p.soll, ...(p.welt && p.blick ? [] : ["(im Blick)"])].filter((x) => !satz.includes(x));
+        return { t: e.gesprochen - t0, text: satz, weitere: e.weitere, falsch: satz.startsWith(name) ? falsch : [name, ...falsch] };
     });
     return { ort: [m.x, m.z], deckel, taten, stempel, stimme: { plan: S.map(({ o, ...p }) => p), zeilen, box: document.getElementById("dialogue-box").textContent } };
 }

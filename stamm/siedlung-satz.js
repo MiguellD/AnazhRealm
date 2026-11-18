@@ -73,7 +73,8 @@ class AnazhRealm_siedlung_satz {
             throw new Error(`_satzStoff: der Stoff ${mat && mat.uuid} trägt keine Studio-Herkunft (foundryKind)`);
         const mp = u.foundryMp ? Object.assign({}, u.foundryMp) : {};
         const durch = typeof mp.opacity === "number" && mp.opacity < 1;
-        for (const k of ["roughness", "metalness", "emissive", "emissiveIntensity", "opacity"]) delete mp[k];
+        // (der Verband reist je Ecke in der vierten Stelle von `aRegler`, `_satzRegler` · `BAU_SATZ_ATTR`)
+        for (const k of ["roughness", "metalness", "emissive", "emissiveIntensity", "opacity", "verband"]) delete mp[k];
         if (durch) mp.opacity = 0.5; // die Marke der Durchsicht — die Deckkraft liest der Stoff aus `aRegler.z`
         mp.satzRegler = true; // die Marke des Satz-Stoffs (kein Regler, kein Teil der Stoff-Identität `budgetStoff`)
         return this._foundryTreeMaterial(u.foundryKind, mp, false, null);
@@ -85,7 +86,9 @@ class AnazhRealm_siedlung_satz {
         const u = (mat && mat.userData) || {};
         const R = globalThis.__phytoCore.budgetRegler(u.foundryKind, u.foundryMp || null);
         const e = R.em ? [R.em[0] * R.emI, R.em[1] * R.emI, R.em[2] * R.emI] : [0, 0, 0];
-        return { regler: [R.r, R.mt, R.op], glut: e };
+        // DER VERBAND des Stoffs (w28-haus-stoff, fachwerk `VERBAND_GESETZ`): die Nummer seiner Zeile — 0, wo er keinen trägt
+        const vb = u.foundryMp && u.foundryMp.verband > 0 ? u.foundryMp.verband | 0 : 0;
+        return { regler: [R.r, R.mt, R.op], glut: e, verband: vb };
     }
 
     // Die Marke einer geänderten Satz-Gruppe (der Takt legt ihren Bereich neu oder nimmt ihn heraus).
@@ -495,6 +498,31 @@ class AnazhRealm_siedlung_satz {
             }
             attributes[name] = { array: out, itemSize: is, count: N };
         }
+        // DER VERBAND JE ECKE (w28-haus-stoff): die Nummer der Zeile des Verband-Gesetzes (fachwerk `VERBAND_GESETZ`) reist in der
+        // vierten Stelle von `aRegler` (snorm8: Nummer / 127, `_satzPacke`) — kein Byte mehr je Ecke. Eine gefaltete Stufe trägt
+        // sie je Ecke (`aVerband`, phyto-core `_budgetVerbinden`: Dach, Sockel und Putz in EINEM Teil), sonst gilt die des Stoffs
+        // der Gruppe (`_satzRegler`). Der Satz-Stoff webt daraus Stein, Fuge und Ton (`_verbandStoff`).
+        if (attr.some((a) => a[3] === "aVerband")) {
+            if (!regler) throw new Error(`_satzBlock(${wer}): aVerband ohne die Regler des Stoffs`);
+            const out = this._satzWerkbank("aVerband", N, Float32Array);
+            const q = A.aVerband;
+            if (q && q.itemSize !== 1) throw new Error(`_satzBlock(${wer}): Attribut aVerband passt nicht`);
+            if (q) for (let j = 0; j < cnt; j++) AnazhRealm._satzKernMal(out, j * n, q.array, v0, n, 1 / 127);
+            else out.fill(regler.verband / 127);
+            attributes.aVerband = { array: out, itemSize: 1, count: N };
+        }
+        // DIE LAGE DER ECKE IN IHRER WAND (`aLage`, fachwerk `_wandLage`: Felder quer · Felder hoch) reist in den vierten Stellen
+        // von Farbe und Glut (half) — kein Byte mehr je Ecke; eine Gestalt ohne sie trägt 0 (ihre Zeile liest die Lage der Welt).
+        for (let k = 0; k < 2; k++) {
+            const nm = k ? "aLageV" : "aLageU";
+            if (!attr.some((a) => a[3] === nm)) continue;
+            const out = this._satzWerkbank(nm, N, Float32Array);
+            const q = A.aLage;
+            if (q && q.itemSize !== 2) throw new Error(`_satzBlock(${wer}): Attribut aLage passt nicht`);
+            if (q) for (let j = 0; j < cnt; j++) AnazhRealm._satzKernSpalte(out, j * n, q.array, v0, n, 2, k);
+            else out.fill(0, 0, N);
+            attributes[nm] = { array: out, itemSize: 1, count: N };
+        }
         if (bau && bau.alter) AnazhRealm._satzAlterEcken(attributes, geo, im, cnt, ab, n, bau);
         return attributes;
     }
@@ -621,6 +649,14 @@ class AnazhRealm_siedlung_satz {
     // Dieselben Zahlen `w` (Breite `is`) in jede der `N` Ecken.
     static _satzKernFuell(out, N, is, w) {
         for (let v = 0; v < N; v++) for (let c = 0; c < is; c++) out[v * is + c] = w[c];
+    }
+    // `n` Skalare aus `src` ab `v0`, mal `f`, nach `out` ab `o0` (der Verband je Ecke: Nummer → snorm8).
+    static _satzKernMal(out, o0, src, v0, n, f) {
+        for (let v = 0; v < n; v++) out[o0 + v] = src[v0 + v] * f;
+    }
+    // die Spalte `k` eines Attributs der Breite `is` (die Lage in der Wand: `aLage` → u, v)
+    static _satzKernSpalte(out, o0, src, v0, n, is, k) {
+        for (let v = 0; v < n; v++) out[o0 + v] = src[(v0 + v) * is + k];
     }
     // KATALOG-SICHT: der EINE Sicht-Chokepoint aller Picker (Werkstatt-Liste · Rezeptbuch · Omnibox ·
     // Kreatur-Auftrag): donorOnly-Spender und Render-Varianten (grown_*, fels/kristall_var1+)
@@ -1568,12 +1604,15 @@ AnazhRealm.SATZ_WERK_RUHE_MS = 2000;
 AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
     Object.freeze(["position", 3]),
     Object.freeze(["normal", 3, "snorm8"]),
-    Object.freeze(["color", 3, "half"]),
+    // die vierte Stelle von Farbe und Glut: die Lage der Ecke in ihrer Wand (w28-haus-stoff, `aLage` der Lieferung: Felder
+    // quer · Felder hoch, fachwerk `_wandLage`) — das Gefüge der fernen Fachwerk-Wand steht am Haus, nicht am Raster der Welt
+    Object.freeze(["color", 3, "half", "aLageU"]),
     Object.freeze(["aLodLevel", 1]),
     Object.freeze(["aH0", 1]),
     Object.freeze(["aH0L", 1]),
-    Object.freeze(["aRegler", 3, "snorm8"]),
-    Object.freeze(["aGlut", 3, "half"]),
+    // die vierte Stelle: der Verband der Ecke (w28-haus-stoff, `_satzBlockEcken`: die Nummer der Zeile / 127)
+    Object.freeze(["aRegler", 3, "snorm8", "aVerband"]),
+    Object.freeze(["aGlut", 3, "half", "aLageV"]),
 ]);
 // Die Attribute eines Stein-Satz-Bereichs (w4-genesis-tore): Lage · Normale · Farbe · Regler · Glut und das uv der Ecken — die Lage
 // im Verband des Stein-Gesetzes (porta STEIN_GESETZ, `_steinStoff`: u = Stein + Weg, v = seine Länge). Die drei Stempel der Blende

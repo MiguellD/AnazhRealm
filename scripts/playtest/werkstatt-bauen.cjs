@@ -96,8 +96,7 @@ async function checkBandV1774UseByRole({ page, check }) {
                     (o.textContent || "").startsWith(r._t(AnazhRealm.CREATURE_SOULS.wolf.label) + " ")
             );
         const emb = r.embodyBlueprint("_t_avatar74");
-        out.avatarEmbodied =
-            emb.ok === true && p.soul === "bp__t_avatar74" && !!st.customSouls?.["bp__t_avatar74"];
+        out.avatarEmbodied = emb.ok === true && p.soul === "bp__t_avatar74" && !!st.customSouls?.["bp__t_avatar74"];
         r._refreshSoulSelect();
         const soulSel2 = document.getElementById("player-soul-select");
         out.noDuplicate =
@@ -393,7 +392,8 @@ async function checkBandV1789WorkshopReadout({ page, check }) {
         // restore
         for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor"]) delete blu[n];
         if (blu["_ab_clone"]) r.deleteBlueprint("_ab_clone");
-        if (st.blueprintEditHistory) for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor", "_ab_clone"])
+        if (st.blueprintEditHistory)
+            for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor", "_ab_clone"])
                 delete st.blueprintEditHistory[n];
         r.selectBlueprintForEdit("stein_block");
         r.setGameMode(prevMode);
@@ -415,10 +415,7 @@ async function checkBandV1789WorkshopReadout({ page, check }) {
         "KONSUM (DOM): die Werkstatt-Prozesse sind ziehbare Karten in der WERKZEUGE-Palette (schöpfer → besessene Werkstätten)",
         res.domWorkshopChips
     );
-    check(
-        "(DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)",
-        res.domHistoryControls
-    );
+    check("(DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)", res.domHistoryControls);
 }
 
 // Re-Kalibrierung: (1) das Spektrum SPREIZT (nicht 1/1/1) + führt mit der richtigen Rolle,
@@ -510,8 +507,10 @@ async function checkBandV1790Recalibration({ page, check }) {
         // (6) Undo/Redo wohnen in der Top-Leiste als .workshop-action-btn; ihr
         // disabled-Zustand ist gestylt (ausgegraut), die Station-Karten der Palette sind abgehoben.
         let cssHistory = false;
-        for (const sheet of document.styleSheets) try {
-                for (const rule of sheet.cssRules) if (
+        for (const sheet of document.styleSheets)
+            try {
+                for (const rule of sheet.cssRules)
+                    if (
                         rule.selectorText &&
                         /workshop-action-btn:disabled|workshop-station-card/.test(rule.selectorText)
                     )
@@ -558,10 +557,7 @@ async function checkBandV1790Recalibration({ page, check }) {
         res.drehbankNearAppears && res.drehbankFarHidden,
         `radius=${res.proximityM}m near=${res.drehbankNearAppears} far=${res.drehbankFarHidden}`
     );
-    check(
-        "Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)",
-        res.cssHistory
-    );
+    check("Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)", res.cssHistory);
 }
 
 async function checkBandWelle6Keybindings({ page, check }) {
@@ -877,10 +873,12 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
         for (let i = 0; i < n; i++) {
             const M = entryWorld.clone().multiply(flatKiefer.leaves[i].localMatrix);
             const cw = meshChildren[i].matrixWorld;
-            for (let e = 0; e < 16; e++) maxMatrixDelta = Math.max(maxMatrixDelta, Math.abs(M.elements[e] - cw.elements[e]));
+            for (let e = 0; e < 16; e++)
+                maxMatrixDelta = Math.max(maxMatrixDelta, Math.abs(M.elements[e] - cw.elements[e]));
             const cm = meshChildren[i].material && meshChildren[i].material.color;
             const lm = flatKiefer.leaves[i].mat && flatKiefer.leaves[i].mat.color;
-            if (cm && lm) maxColorDelta = Math.max(
+            if (cm && lm)
+                maxColorDelta = Math.max(
                     maxColorDelta,
                     Math.abs(cm.r - lm.r) + Math.abs(cm.g - lm.g) + Math.abs(cm.b - lm.b)
                 );
@@ -1024,7 +1022,8 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
             "V12.0-perf.c.2: nicht-instancbarer Bauplan (waterfall) bleibt klassisch (entry.mesh)",
             res.waterfallClassic
         );
-        if (res.instancedPickHits !== undefined) check(
+        if (res.instancedPickHits !== undefined)
+            check(
                 "V12.0-perf.c.2: instancierter Baum per Crosshair-Raycast pickbar (LMB-Harvest-Faden)",
                 res.instancedPickHits
             );
@@ -1256,7 +1255,7 @@ async function checkBandWelle6XAudit({ page, check }) {
         st.playerMesh.position.set(0, 50, 0);
         st.yaw = 0;
         const dslOut = r.parseChatToDsl("baue dorf hier");
-        out.chatBuildDorfParses = !!(dslOut?.program);
+        out.chatBuildDorfParses = !!dslOut?.program;
         if (dslOut?.program) {
             // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed, gier, tanH]
             out.chatBuildDorfFormat =
@@ -1393,7 +1392,11 @@ async function checkBandWelle6XAudit({ page, check }) {
 
         // --- F1: state-Felder existieren mit Defaults
         out.companionNameDefault = st.grok.companionName === "Grok";
-        out.playerNameDefault = st.player.name === "Schöpfer";
+        // unbenannt ist null: der Name des Spiels steht als Platzhalter der Tafel im Feld, nie als Daten des Spielers
+        const piDefault = document.getElementById("player-name-input");
+        out.playerNameDefault =
+            st.player.name === null &&
+            (!piDefault || (piDefault.value === "" && piDefault.placeholder === r._t("ui.schoepfer-2")));
 
         // --- F1: Input-Change setzt state + localStorage
         const ci = document.getElementById("companion-name-input");
@@ -1414,8 +1417,9 @@ async function checkBandWelle6XAudit({ page, check }) {
             out.playerNameUpdated = st.player.name === "Aelyn";
             out.playerNamePersisted =
                 typeof localStorage !== "undefined" && localStorage.getItem("anazh.player.name") === "Aelyn";
-            pi.value = "Schöpfer";
+            pi.value = "";
             pi.dispatchEvent(new Event("input"));
+            out.playerNameUpdated = out.playerNameUpdated && st.player.name === null;
         }
 
         // --- F1: System-Prompt enthält die zwei Namen
@@ -1426,14 +1430,17 @@ async function checkBandWelle6XAudit({ page, check }) {
         out.promptContainsPlayerName = /TestPlayer/.test(prompt);
         // Reset auf Defaults
         st.grok.companionName = "Grok";
-        st.player.name = "Schöpfer";
+        st.player.name = null;
 
         return out;
     });
 
     if (erreichbar(check, "Welle 6.X.4: Identity-Tests laufen", wave6x45Results)) {
         check("Welle 6.X.4 F1: state.grok.companionName default 'Grok'", wave6x45Results.companionNameDefault);
-        check("Welle 6.X.4 F1: state.player.name default 'Schöpfer'", wave6x45Results.playerNameDefault);
+        check(
+            "Welle 6.X.4 F1: state.player.name default null (unbenannt, der Platzhalter liest die Tafel)",
+            wave6x45Results.playerNameDefault
+        );
         check("Welle 6.X.4 F1: Companion-Input ändert state.grok.companionName", wave6x45Results.companionNameUpdated);
         check("Welle 6.X.4 F1: Companion-Name persistiert in localStorage", wave6x45Results.companionNamePersisted);
         check("Welle 6.X.4 F1: Player-Input ändert state.player.name", wave6x45Results.playerNameUpdated);
@@ -1453,10 +1460,7 @@ async function checkBandM1VerbindungsWerkstatt({ page, check }) {
         const mk = (mat) => ({
             name: "__m1band",
             builtIn: false,
-            parts: [
-                __teil("box", mat, 0, 0.5, 0, 1, 1, 1),
-                __teil("box", mat, 1.0, 0.5, 0, 1, 1, 1),
-            ],
+            parts: [__teil("box", mat, 0, 0.5, 0, 1, 1, 1), __teil("box", mat, 1.0, 0.5, 0, 1, 1, 1)],
         });
         try {
             // (1) der SUBSTANZ-VORSCHLAG konsumiert die Stärke-Wahrheit: das
