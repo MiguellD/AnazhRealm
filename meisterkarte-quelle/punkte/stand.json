@@ -877,7 +877,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an ee9c1965: die Seite warf: (b)(d) 10.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
+     "grund": "Station seit der Messung geändert — zuletzt an 21f279f5: die Seite warf: (b)(d) 14.4 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
      "gehalten": true
     },
     {
@@ -3363,7 +3363,7 @@
      "gruen": true,
      "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 99.6 σ 21.5 schwarz 0.0 % weiß 0.0 % · ",
      "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +47)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +47) — zuletzt an 21f279f5: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -6493,7 +6493,7 @@
   "ohne": 157
  },
  "kopfVoll": "21f279f5f5b87f86c0bea764dab99fb36670725e",
- "zeit": "2026-11-18T02:12:04.241Z",
+ "zeit": "2026-11-18T02:19:02.436Z",
  "vorher": "21f279f5",
  "bilanz": {
   "gewinn": [],
