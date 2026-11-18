@@ -707,8 +707,8 @@ function gruendungFlach(FC, o = {}) {
 
 hauptLauf(async () => {
     const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
-    // die Bau-Typen der EINEN Grammatik: ihre Tafel und die Rollen des Gesetzes davor (das Haus, die Kirche, der Palas, die Scheune)
-    const breiteRollen = [...Object.keys(FC.STADT_GRAMMATIK.bau), "wohnhaus", "kirche", "burg", "scheune"];
+    // die Bau-Typen der EINEN Grammatik: die Zeilen des Bau-Gesetzes (BAU_NUTZUNG) und die Rollen davor (die Kirche, der Palas, die Scheune)
+    const breiteRollen = [...Object.keys(FC.BAU_NUTZUNG), "kirche", "burg", "scheune"];
 
     // ===== SELBST-TEST =====
     if (SELBSTTEST) {
