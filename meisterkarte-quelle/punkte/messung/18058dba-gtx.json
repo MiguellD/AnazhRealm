@@ -1,7 +1,7 @@
 {
  "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
  "geraet": "gtx",
- "zeit": "2026-11-18T17:51:38.210Z",
+ "zeit": "2026-11-18T17:55:14.435Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -208,6 +208,75 @@
    },
    "zeit": "2026-11-18T17:51:38.210Z",
    "abdruck": "c4f1899c688a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K3#1": {
+   "gruen": true,
+   "zahl": "Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 47949 / 0 px (unter dem Spiegel Bett 0.2 % aus 0.8 m, vom Ufer)",
+   "exit": 0,
+   "minuten": 0.53,
+   "gpu": "nvidia/pascal",
+   "konsum": "k66784239c176",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k07740f03b59d",
+   "s": 30.9,
+   "fremd": {
+    "s": 32.8,
+    "takte": 15,
+    "fremdS": 4.55,
+    "kerne": 0.139,
+    "fensterKerne": 0.192,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.88
+     ],
+     [
+      "Explorer.EXE",
+      0.86
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.78
+     ]
+    ],
+    "dienerS": 9.92,
+    "diener": [
+     [
+      "dwm.exe",
+      5.25
+     ],
+     [
+      "System",
+      3
+     ]
+    ],
+    "geraetS": 6.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.88
+     ],
+     [
+      "svchost.exe",
+      2.3
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 84.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T17:55:14.435Z",
+   "abdruck": "cfb59a1027d2",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -510,20 +579,20 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-18T17:51:06.556Z",
-  "ordner": "sitzung-20261118-185106",
+  "start": "2026-11-18T17:54:43.821Z",
+  "ordner": "sitzung-20261118-185443",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.4,
+  "bootS": 5.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "wetter.K1#2",
-    "s": 23.1,
-    "takte": 607,
+    "vor": "luftwasser.K3#1",
+    "s": 22.8,
+    "takte": 585,
     "chunks": 81,
     "nach": null
    }
@@ -531,7 +600,7 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "wetter.K1#2",
+    "probe": "luftwasser.K3#1",
     "anders": [
      "window.__wieseMessen",
      "window.__wieseUrteil",
@@ -544,15 +613,23 @@
     },
     "haelt": [],
     "heap": [
-     227.7,
-     234.4
+     228.9,
+     278.2
     ],
     "ungemessen": null
    }
   ],
+  "wanderung": [
+   {
+    "probe": "luftwasser.K3#1",
+    "ort": "wiese",
+    "m": 223.27,
+    "dreh": 0
+   }
+  ],
   "messHalt": [
    {
-    "probe": "wetter.K1#2",
+    "probe": "luftwasser.K3#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -564,20 +641,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2543,
-   "frameP95": 25.56,
-   "taktP95": 13.98,
-   "vramMax": 131.7,
+   "bilder": 3301,
+   "frameP95": 25.05,
+   "taktP95": 10.85,
+   "vramMax": 128.8,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 105,
+   "zapfen": 130,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 110.9,
-  "minuten": 1.93
+  "fahrtS": 136.4,
+  "minuten": 2.35
  }
 }
