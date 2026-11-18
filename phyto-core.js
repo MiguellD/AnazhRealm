@@ -3074,8 +3074,12 @@
     // DIE KRONEN-DECKUNG DES GEPFLANZTEN BESTANDS (K16, die Naht): der Anteil des Bodens unter Kronen, den planForestCell samt der
     // Kronen-Schüchternheit des Hosts im Mittel stehen lässt — die Fernform des Waldes (das Kronendach des Rings) liest diese
     // Zahl, nie die Geburt. Die Geburt ist die Rate der Darts (F.dartsPerCell je F.cell², Wurf gegen forestGeburt(sd)); die
-    // Schüchternheit (Zentren >= F.pack·(Ti+Tj), das prio-Maximum gewinnt) ist ein Matérn-II-Prozess: ein Dart der Krone T steht
-    // mit (1 − e^(−λA))/(λA), A = π·pack²·E[(T+Tj)²]; seine Krone überlappt keine andere, die Deckung ist die Summe ihrer Flächen.
+    // Selbst-Ausdünnung (`forestSteht`: es stirbt, wen ein STEHENDER besserer Nachbar näher als pack·Schluss·(Ti+Tj) überwächst)
+    // ist ein Matérn-III-Prozess: die Stehenden einer Krone T wachsen mit der Geburt t ∈ [0, 1] wie dρ/dt = λ·e^(−ρA) (die
+    // Stehenden um einen Dart als Poisson-Feld genähert), ρ = ln(1 + λA)/A, A = π·(pack·Schluss)²·E[(T+Tj)²]; die Kronen greifen
+    // im Schluss ineinander, die Deckung ist die Vereinigung ihrer Flächen Σ: 1 − e^(−Σ). Genähert (flach, Stand −0,2…0,8,
+    // gepflanzt gegen Modell): 0 / 0 · 0,32 / 0,38 · 0,48 / 0,53 · 0,77 / 0,70 · 0,83 / 0,73 — UNSICHER ±0,1. Bis w28-laub-kante
+    // (Matérn II, (1 − e^(−λA))/A, die Summe der Flächen) sättigte das Modell wie der Wald bei 1/A.
     // Die Kronen: T = Art-Krone × Größe (forestTreeSize über ihre Quantile samt der Überhälter). Befund 11.10.: das Dach las die
     // Geburt (0,90) als Deckung, der gepflanzte Bestand deckt 0,16 — die Ferne stand als geschlossenes Grün vor offenem Wald.
     // kronen = [[Gewicht, Kronen-Radius bei Größe 1], …] (die Arten-Mischung am Ort); F = { cell, dartsPerCell, pack }.
@@ -3149,13 +3153,13 @@
                 const t = kronen[k][1] * V[st];
                 if (!H[st]) {
                     const A = Math.PI * F.pack * F.pack * schluss * schluss * (t * t + 2 * t * mT + mT2);
-                    Q[st] = (1 - Math.exp(-lambda * A)) / A;
+                    Q[st] = Math.log1p(lambda * A) / A;
                     H[st] = 1;
                 }
                 deckung += w * _deckAnteil[g] * Math.PI * t * t * Q[st];
             }
         }
-        return deckung > 1 ? 1 : deckung;
+        return 1 - Math.exp(-deckung);
     }
 
     // DIE NISCHE EINES ORTS (EINE Formel für den gepflanzten und den fernen Wald): Klima, Bestands-Mosaik, Feuchte,
@@ -3316,6 +3320,10 @@
         // Standort wie in der Ertragstafel (BWI 4). Bis hierher sättigte Matérn II bei fester Packung: 36–48 Stämme/ha bei
         // jeder Dichte, das Dach deckte 0,16, die Mess-Wiese war ein Loch des Zufalls. Gemessen (flach, 3 600 Zellen, Stand-Bänder
         // < −0,1 · −0,1–0,15 · 0,15–0,4 · ≥ 0,4): 1 · 61 · 131 · 349 Stämme/ha; Mess-Wiese Kronen-Deckung 0,108 → 0,116 (≤ 0,12).
+        // Das Urteil blieb Matérn II (der Tote nahm dem Nachbarn den Stand): flach, Stand 0,5, Dach 107 + Schicht 58 Stämme/ha,
+        // Deckung 0,43. Mit der Selbst-Ausdünnung (`forestSteht`, w28-laub-kante; flach, Stand 0,5 / 0,8): Dach 261 / 296 + Schicht
+        // 123 / 168 = 384 / 464 Stämme/ha, Kronen-Deckung 0,77 / 0,83 — im Band der REF 370–900; Stand 0 – 0,3 (Lichtungs-Saum)
+        // 0,32–0,48, die Lichtung selbst (Stand < −0,1) 0.
         // DIE WALDGRENZE (`forestWaldgrenze`): `waldgrenze` ist der Schnee-Anteil des Sommers, ab dem kein Baum mehr geboren wird —
         // darunter die Kampfzone (die Geburt fällt glatt von 1 bei 0). Der Wald endet unter dem Schnee, nie in ihm: wo ein
         // Zehntel des Sommer-Bodens Schnee trägt, ist die Vegetationszeit zu kurz für Holz (Körner 2012, Alpine Treelines: die
@@ -3478,10 +3486,10 @@
     }
 
     // DAS URTEIL DER KRONEN-SCHÜCHTERNHEIT (Host-Topologie "cell", w4-b-pflanzen): ein geborener Dart `d` der Zelle (gx, gz)
-    // steht, wenn KEIN besserer geborener Dart (`forestPrioWins`) der Zellen ±2 ihm zu nah ist (`forestTooClose`, Packung `pk`).
-    // Rein: eine Funktion des Darts und der geborenen Darts seiner Nachbarn (`geboren(cx, cz)` → die Darts von `planForestCell`),
-    // reihenfolge-frei (die Antwort ist eine Existenz-Frage). DIE REIHE (`FOREST_URTEIL_REIHE`): die eigene Zelle, dann Ring 1,
-    // dann Ring 2 — ein Verlierer fällt fast immer am ersten Nachbarn. Die EINE Quelle des Urteils für den Wald-Faden (der
+    // steht, wenn KEIN STEHENDER besserer Dart (`forestPrioWins`) der Zellen ±2 ihm zu nah ist (`forestTooClose`, Packung `pk`;
+    // die Selbst-Ausdünnung unten). Rein: eine Funktion der geborenen Darts seiner Zelle und ihrer Nachbarn (`geboren(cx, cz)` →
+    // die Darts von `planForestCell`), reihenfolge-frei. DIE REIHE (`FOREST_URTEIL_REIHE`): die eigene Zelle, dann Ring 1,
+    // dann Ring 2 — das Fenster des Urteils. Die EINE Quelle des Urteils für den Wald-Faden (der
     // Bestand je Zelle, voxel-worker `waldDarts`) und den Wirt ohne Faden; bis w4-b-pflanzen urteilte der Haupt-Faden jeden
     // geborenen Dart selbst (`_forestDartSteht`): headless kalt bis zum Bild 58 398 Urteile über 58 562 entpackte Darts.
     const FOREST_URTEIL_REIHE = Object.freeze(
@@ -3494,21 +3502,103 @@
     // des Dachs ±2 (FOREST_URTEIL_REIHE), der Schirm des Unterstands ±1 darüber (`forestSchicht`). Der Wirt plant und lädt sie
     // (stamm WALD_PLAN.urteil).
     const FOREST_URTEIL_REICH = 3;
-    function forestSteht(d, gx, gz, geboren, pk) {
+    // DIE SELBST-AUSDÜNNUNG (w28-laub-kante): es stirbt, wen ein LEBENDER Nachbar überwächst — ein geborener Dart steht, wenn kein
+    // STEHENDER besserer Dart ihm zu nah ist (Matérn III; die Konkurrenz im Bestand geht von lebenden Kronen aus: Yoda et al. 1963,
+    // die −3/2-Regel der Selbst-Ausdünnung; Kenkel 1988, Ecology 69: die Überlebenden eines Bestands stehen regelmäßig, ihr Abstand
+    // folgt der Krone des Nachbarn). Bis hier urteilte der Wald Matérn II: auch ein Dart, der selbst fiel, nahm jedem schwächeren
+    // Nachbarn den Stand — der Bestand sättigte bei 1/A, wie viele Darts die Geburt auch stellte (flach, Stand 0,5: 2 256 geborene
+    // Darts/ha → 107 Stämme/ha im Dach, Kronen-Deckung 0,41; der Dorf-Hang 0,15). Gerechnet in der Reihe des Vorrangs
+    // (`forestPrioWins`) über die geborenen Darts des Fensters der EIGENEN Zelle (±2, `FOREST_URTEIL_REIHE`): rein und
+    // reihenfolge-frei — das Urteil eines Darts ist eine Funktion seiner Zelle und ihrer Nachbarn, jeder Leser (Wald-Faden, Wirt,
+    // Kamm) rechnet dasselbe. Das Fenster merkt `_fensterMemo` je Zelle, gültig, solange jede ihrer 25 Nachbar-Listen dieselbe ist.
+    const _fensterMemo = typeof WeakMap === "function" ? new WeakMap() : null;
+    // die Fächer des Fensters (m): jeder Stehende in seinem Fach, ein Dart fragt nur die Fächer in der Reichweite
+    // pk · Schluss · (T + größte Krone)
+    const FENSTER_FACH = 4;
+    const _vorrang = (a, b) => b.prio - a.prio || b.x - a.x || b.z - a.z; // die Reihe von `forestPrioWins`, der Beste zuerst
+    function forestDachFenster(gx, gz, geboren, pk) {
         const R = FOREST_URTEIL_REIHE;
-        for (let q = 0; q < R.length; q += 2) {
-            const nb = geboren(gx + R[q], gz + R[q + 1]);
-            for (let k = 0; k < nb.length; k++) {
-                const o = nb[k];
-                if (o === d) continue;
-                if (
-                    forestTooClose(d.x - o.x, d.z - o.z, d.T, o.T, pk * Math.min(d.schluss, o.schluss)) &&
-                    forestPrioWins(o, d)
-                )
-                    return false;
-            }
+        const nN = R.length >> 1;
+        const own = geboren(gx, gz);
+        const nb = new Array(nN);
+        for (let q = 0; q < R.length; q += 2) nb[q >> 1] = geboren(gx + R[q], gz + R[q + 1]);
+        const m = _fensterMemo ? _fensterMemo.get(own) : undefined;
+        if (m && m.pk === pk) {
+            let gleich = true;
+            for (let i = 0; i < nN && gleich; i++) gleich = m.nb[i] === nb[i];
+            if (gleich) return m.steht;
         }
-        return true;
+        const W = [];
+        let tMax = 0;
+        let sMax = 0;
+        let x0 = Infinity;
+        let z0 = Infinity;
+        let x1 = -Infinity;
+        let z1 = -Infinity;
+        for (let i = 0; i < nN; i++)
+            for (let k = 0; k < nb[i].length; k++) {
+                const d = nb[i][k];
+                W.push(d);
+                if (d.T > tMax) tMax = d.T;
+                if (d.schluss > sMax) sMax = d.schluss;
+                if (d.x < x0) x0 = d.x;
+                if (d.z < z0) z0 = d.z;
+                if (d.x > x1) x1 = d.x;
+                if (d.z > z1) z1 = d.z;
+            }
+        W.sort(_vorrang);
+        const n = W.length;
+        const B = FENSTER_FACH;
+        const nx = n ? Math.floor(Math.max(x1 - x0, z1 - z0) / B) + 1 : 1;
+        const kopf = new Int32Array(nx * nx).fill(-1);
+        const kette = new Int32Array(n);
+        const SX = new Float64Array(n);
+        const SZ = new Float64Array(n);
+        const ST = new Float64Array(n);
+        const SS = new Float64Array(n);
+        const steht = new Set();
+        for (let i = 0; i < n; i++) {
+            const d = W[i];
+            const dx = d.x;
+            const dz = d.z;
+            const dT = d.T;
+            const ds = d.schluss;
+            const K = Math.ceil((pk * sMax * (dT + tMax)) / B);
+            const bx = Math.floor((dx - x0) / B);
+            const bz = Math.floor((dz - z0) / B);
+            const a1 = Math.min(nx - 1, bx + K);
+            const b0 = Math.max(0, bz - K);
+            const b1 = Math.min(nx - 1, bz + K);
+            let frei = true;
+            for (let a = Math.max(0, bx - K); a <= a1 && frei; a++)
+                for (let b = b0; b <= b1; b++) {
+                    let j = kopf[a * nx + b];
+                    for (; j >= 0; j = kette[j]) {
+                        const md = (dT + ST[j]) * pk * (ds < SS[j] ? ds : SS[j]);
+                        const ex = dx - SX[j];
+                        const ez = dz - SZ[j];
+                        if (ex * ex + ez * ez < md * md) break;
+                    }
+                    if (j >= 0) {
+                        frei = false;
+                        break;
+                    }
+                }
+            if (!frei) continue;
+            const f = bx * nx + bz;
+            SX[i] = dx;
+            SZ[i] = dz;
+            ST[i] = dT;
+            SS[i] = ds;
+            kette[i] = kopf[f];
+            kopf[f] = i;
+            steht.add(d);
+        }
+        if (_fensterMemo) _fensterMemo.set(own, { pk, nb, steht });
+        return steht;
+    }
+    function forestSteht(d, gx, gz, geboren, pk) {
+        return forestDachFenster(gx, gz, geboren, pk).has(d);
     }
     // DIE SCHICHT EINES DARTS (FOREST_PACK.schicht): 1 im Dach (`forestSteht`), sonst — nur UNTER DEM SCHIRM: der Dart steht
     // unter der Krone (|d − o| < o.T) eines Baums des Dachs der Zellen ±1 (Unterstand wächst im Schatten des Altholzes, nie auf der
@@ -3521,8 +3611,14 @@
     function forestImDach(o, gx, gz, geboren, pk) {
         let v = _dachMemo ? _dachMemo.get(o) : undefined;
         if (v === undefined) {
-            v = forestSteht(o, gx, gz, geboren, pk);
-            if (_dachMemo) _dachMemo.set(o, v);
+            // das Fenster urteilt über alle Darts seiner Zelle: jeder trägt sein Urteil ins Gedächtnis
+            const S = forestDachFenster(gx, gz, geboren, pk);
+            v = S.has(o);
+            if (_dachMemo) {
+                const own = geboren(gx, gz);
+                for (let k = 0; k < own.length; k++) _dachMemo.set(own[k], S.has(own[k]));
+                _dachMemo.set(o, v);
+            }
         }
         return v;
     }
@@ -3575,9 +3671,10 @@
     function forestStehende(gx, gz, geboren, pk, nurDach) {
         const own = geboren(gx, gz);
         const out = [];
+        const S = nurDach ? forestDachFenster(gx, gz, geboren, pk) : null;
         for (let k = 0; k < own.length; k++) {
             const d = own[k];
-            const a = nurDach ? +forestSteht(d, gx, gz, geboren, pk) : forestSchicht(d, gx, gz, geboren, pk);
+            const a = S ? +S.has(d) : forestSchicht(d, gx, gz, geboren, pk);
             if (a === 1) out.push(d);
             else if (a > 0)
                 out.push(Object.assign({}, d, { s: Math.max(d.s * a, FOREST_PACK.groesse[0]), T: d.T * a, alter: a }));
