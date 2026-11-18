@@ -3,11 +3,11 @@
   "kopf": "1f300260",
   "version": "V18.546.333",
   "skala": "2.0",
-  "summe": 220,
+  "summe": 219,
   "max": 330,
   "maschine": {
     "kopf": "1f300260",
-    "zeit": "2026-11-18T07:23:00.314Z",
+    "zeit": "2026-11-18T07:43:48.977Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -398,7 +398,7 @@
     {
       "key": "leben",
       "titel": "II · LEBEN — Pflanze, Tier, Ökologie, Mensch, Affekt, Haar und Fell, Luft und Wasser",
-      "summe": 47,
+      "summe": 46,
       "max": 70,
       "bereiche": [
         "vegetation",
@@ -1488,7 +1488,7 @@
       "key": "affekt",
       "titel": "Die Welt fühlt und wertet mit — δ, Emotion, Nexus, Stimme, Musik",
       "gruppe": "leben",
-      "punkte": 6,
+      "punkte": 5,
       "pfad": "Feature-Stopp bis v1.0",
       "dateien": "`stamm/feld-sprache.js` (WERTUNG, Emotion) · `stamm/feld-dsl.js` · `stamm/feld-nexus.js` · `stamm/klang.js` (GENRES) · `stamm/bild-himmel.js` (Tint, Schreiber)",
       "aaaa": "Die Welt ist der dritte Mitspieler: sie wertet, was geschieht, mit EINER Gleichung (TD-δ) und antwortet am Ort. Die erste gute Tat bewegt Licht und Klang binnen 2 s an genau dieser Stelle, die zehnte gleiche nur noch ≤ 30 % (Gewöhnung). Die Emotion formt die Welt über Regeln mit Quelle: getragene Trauer macht den Regen am Ort wahrscheinlicher, Freude lockt die Tiere. Der Nexus schreibt Regeln, wo das Feld arm ist; die mit δ > 0 überleben und wirken im Blick. Die Welt sagt, was sie tat und warum („es regnet, weil …“), und die Musik liest dasselbe Feld: Tonart aus der Valenz, Tempo aus der Erregung, nie zweimal dieselbe Phrase. **Wo wir die Besten schlagen:** der AI-Director von Left 4 Dead lenkt Spannung nach Drehbuch-Regeln, Journey führt die Musik mit dem Spieler; bei uns schreiben Mensch, Nexus und KI dieselbe DSL in EIN Gesetz, das wertet und lernt — deterministisch, gespeichert, teilbar.",
@@ -1500,10 +1500,10 @@
       "kriterien": [
         {
           "name": "Die Wertung antwortet am Ort: der δ-Kreis",
-          "punkte": 2,
+          "punkte": 1,
           "staffel": "1 = Gewöhnung (δ von Tat 10 ≤ 0,3 × Tat 1) und Antwort am Ort (ΔE ≥ 2 am Ort der Tat gegen die Nachbarzelle, oder ein Klang-Parameter am Ort) an einer Pose · 2 = eine schädliche Tat kehrt das Vorzeichen um, nach 30 min Ruhe Baseline, Tag und Nacht, Ego und Third, beide Geräte",
           "messung": "Spielgang-Sequenz über werkbank eval mit echten Verben (pflegen, fällen, töten), 10× in 5 min; δ aus der Situation (lebendig + HP, `_playerSituationWohl`), nie aus der Emotion; Antwort im Ausgabe-Pfad binnen 2 s.",
-          "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.62 dB · töten -0.03 -1.15 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.12 dB · pflegen 0.25 8.99 dB · nach 30 min 0.2463 8.75 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.6 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 1 s (≤ 2) [2.6 -0.68 -0.47 -0.32 -0.2 -0.14 -0.1 -0.06 -0.04 0] GRÜN an c8c840c9 radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.73 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.73 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.81 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.4 s (≤ 2) [2.81 -0.81 -0.54 -0.35 -0.24 -0.16 -0.1 -0.07 -0.05 0] GRÜN an d39e0d6e gtx",
+          "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.62 dB · töten -0.03 -1.15 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.12 dB · pflegen 0.25 8.99 dB · nach 30 min 0.2463 8.75 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.6 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 1 s (≤ 2) [2.6 -0.68 -0.47 -0.32 -0.2 -0.14 -0.1 -0.06 -0.04 0] GRÜN an c8c840c9 radeon — offen: affekt.K1#2 gtx: ROT: Gänge 2/2 (Exit 0: der Baum fällt nicht (0 Hiebe)) an 1f300260",
           "schlupfloch": "„ΔE ≥ 2 am Spieler“ erfüllte der globale Tint, ohne Ort — die Täuschung, die Feld K5 verbietet (B32): er trägt 0; die Emotion direkt zu stempeln täuscht ebenso.",
           "aenderung": "Aus Leben-Feld K4; die Antwort muss örtlich sein (B32).",
           "maschine": true
@@ -4555,9 +4555,10 @@
     }
   ],
   "bestaetigung": {
-    "voll": 183,
-    "offen": 37,
+    "voll": 181,
+    "offen": 38,
     "kriterien": [
+      "affekt.K1+1",
       "ankunft.K2+1",
       "bauen.K1+1",
       "gelaende.K2+1",
@@ -4593,7 +4594,7 @@
     "art": {
       "linse": 1,
       "ungemessen": 18,
-      "rot": 0,
+      "rot": 1,
       "anderes": 28
     }
   },
@@ -4603,6 +4604,7 @@
     "vegetation.K4+1",
     "tiere.K2+1",
     "tiere.K3+1",
+    "affekt.K1+1",
     "affekt.K4+1",
     "haar.K2+1",
     "luftwasser.K4+1",
@@ -4811,7 +4813,7 @@
     {
       "stand": "2026-11-18",
       "kopf": "1f300260",
-      "summe": 220,
+      "summe": 219,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."

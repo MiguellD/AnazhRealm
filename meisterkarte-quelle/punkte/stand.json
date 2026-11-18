@@ -2,8 +2,8 @@
  "kopf": "1f300260",
  "je": {
   "affekt.K1": {
-   "punkte": 2,
-   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.62 dB · töten -0.03 -1.15 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.12 dB · pflegen 0.25 8.99 dB · nach 30 min 0.2463 8.75 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.6 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 1 s (≤ 2) [2.6 -0.68 -0.47 -0.32 -0.2 -0.14 -0.1 -0.06 -0.04 0] GRÜN an c8c840c9 radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.73 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.73 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.81 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.4 s (≤ 2) [2.81 -0.81 -0.54 -0.35 -0.24 -0.16 -0.1 -0.07 -0.05 0] GRÜN an d39e0d6e gtx",
+   "punkte": 1,
+   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.39 dB, Nachbar 0 dB, Stempel 0/0 an d3708675 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.62 dB · töten -0.03 -1.15 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.12 dB · pflegen 0.25 8.99 dB · nach 30 min 0.2463 8.75 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.6 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 1 s (≤ 2) [2.6 -0.68 -0.47 -0.32 -0.2 -0.14 -0.1 -0.06 -0.04 0] GRÜN an c8c840c9 radeon — offen: affekt.K1#2 gtx: ROT: Gänge 2/2 (Exit 0: der Baum fällt nicht (0 Hiebe)) an 1f300260",
    "stationen": [
     {
      "id": "affekt.K1#1",
@@ -28,11 +28,11 @@
     {
      "id": "affekt.K1#2",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Tag first GRÜN: fällen -0.12 -4.73 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.73 dB · töten -0.03 -1.19 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.81 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 0.4 s (≤ 2) [2.81 -0.81 -0.54 -0.35 -0.24 -0.16 -0.1 -0.07 -0.05 0] GRÜN",
-     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "gruen": false,
+     "zahl": "Gänge 2/2 (Exit 0: der Baum fällt nicht (0 Hiebe))",
+     "sha": "1f30026067b2aef1665a07b4ab6a7d700c5a08e6",
+     "grund": "ROT: Gänge 2/2 (Exit 0: der Baum fällt nicht (0 Hiebe))",
+     "r6": "konsum"
     }
    ]
   },
@@ -6338,10 +6338,12 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "affekt.K1#2 gtx: Gänge 2/2 (Exit 0: der Baum fällt nicht (0 Hiebe)) an 1f300260 (grün gebucht an d39e0d6e)"
+ ],
  "r6": {
   "haelften": 507,
-  "konsum": 194,
+  "konsum": 195,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6503,14 +6505,16 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 154
+  "ohne": 153
  },
  "kopfVoll": "1f30026067b2aef1665a07b4ab6a7d700c5a08e6",
- "zeit": "2026-11-18T07:23:00.314Z",
+ "zeit": "2026-11-18T07:43:48.977Z",
  "vorher": "1f300260",
  "bilanz": {
   "gewinn": [],
-  "fall": [],
+  "fall": [
+   "affekt.K1 2→1 (affekt.K1#2 gtx: ROT: Gänge 2/2 (Exit 0: der Baum fällt nicht (0 Hiebe)))"
+  ],
   "massenFall": false
  },
  "pflicht": {
