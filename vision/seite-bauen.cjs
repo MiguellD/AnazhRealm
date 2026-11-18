@@ -140,8 +140,8 @@ const leib = `<main>
 <h1>${esc(j.titel)}</h1>
 <p class="unter">Stand ${esc(j.stand)} · ${esc(j.fassung)} · ${S.kapitel} Kapitel · ${S.perspektiven} Perspektiven</p>
 <div class="zahlen">
-<div class="z haupt"><b>${S.heute} / ${zahl(S.sprossen)}</b><span>Sprossen gebucht (${proz(S.anteilHeute)}) — erreicht heißt: der eigene Richter misst im echten Spiel GRÜN und der Preis hält in derselben Fahrt</span></div>
-<div class="z"><b>${S.kern}</b><span>Sprossen im Kern (${proz(S.anteilKern)}) — die Welt zeigt es im Spiel an beiden Geräten, der Preis oder die Fahrt des Richters fehlt</span></div>
+<div class="z haupt"><b>${S.heute} / ${zahl(S.sprossen)}</b><span>Sprossen gebucht (${proz(S.anteilHeute)}) — erreicht heißt: der eigene Richter misst im echten Spiel an einem Standardgerät GRÜN, der Preis hält in derselben Fahrt, und kein Gerät misst ROT${S.beide == null ? "" : ` · an beiden Geräten ${S.beide} · Nachwache offen ${S.nachwache}`}</span></div>
+<div class="z"><b>${S.kern}</b><span>Sprossen im Kern (${proz(S.anteilKern)}) — die Welt zeigt es im Spiel an einem Standardgerät, der Preis oder die Fahrt des Richters fehlt</span></div>
 <div class="z"><b>${S.kriterien}</b><span>Leitern, davon ${S.davonKopplungen} Kopplungen · Fuß der Leitern: ${S.fuss.kern} im Kern, ${S.fuss.gemessen} von der alten Karte gemessen, ${S.fuss.ungemessen} nie gemessen</span></div>
 </div>
 <p class="satz">Jede Leiter steigt über Größenordnungen; ihre oberste Sprosse ist die Vision. Ein Punkt ist eine Sprosse. Seit dem 15.11.2026 ist diese Karte der EINE Zähler: die alte Karte (330) ist bei 219 eingefroren, ihre Stationen bleiben als Richter und als Wand gegen den Rückfall. Sie maß den Fuß dieser Leitern — darum stehen hier wenige Prozent, und das ist die ehrliche Zahl.</p>

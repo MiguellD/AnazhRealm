@@ -325,7 +325,7 @@ function selbsttest() {
     pruefe("der Preis-Lauf fährt nur nach Stationen mit einer „gleich“-Zeile der Tafel", () =>
         brauchtPreisLauf("vegetation.K2#1", scheinTafel) && !brauchtPreisLauf("schein.fehlt#1", scheinTafel) && !brauchtPreisLauf("schein.ohne-zeile#1", scheinTafel) &&
         brauchtPreisLauf("vegetation.K2#1") && brauchtPreisLauf("klang.K4#2") && !brauchtPreisLauf("profiband.K1#1") ? true : "falsch gewählt");
-    pruefe("buche-2 liest die geschriebene Akte: ein Gerät — kein Punkt, nur ein Gerät", () => {
+    pruefe("buche-2 liest die geschriebene Akte: ein Gerät bucht (Z7, 18.11.) — Punkt, die Nachwache der GTX offen", () => {
         const dir = path.join(X, "richter");
         schreibe({ ...basis, dir });
         const k = JSON.parse(JSON.stringify(karte));
@@ -333,7 +333,7 @@ function selbsttest() {
         const ak = {};
         for (const n of fs.readdirSync(dir)) ak[n.slice(0, -5)] = JSON.parse(fs.readFileSync(path.join(dir, n), "utf8"));
         const z = buche.rechne(k, ak, kern0, buche.kopfFolgeFest({ main: [basis.sha] })); // die Probe-Akte am Schein-Kopf (buche-2 KOPF-FOLGE)
-        return z.heute === 0 && z.kern === 19 && /kein Punkt, nur ein Gerät/.test(z.bericht[0].warum) ? true : JSON.stringify(z.bericht);
+        return z.heute === 1 && z.kern === 18 && z.beide === 0 && z.nachwache === 1 && /an Radeon 890M am 7f778d44 · Nachwache offen: GTX 1060$/.test(z.bericht[0].warum) ? true : JSON.stringify(z.bericht);
     });
     pruefe("buche-2 vereint Radeon- und GTX-Akte desselben SHA mit grünem Preis: Punkt", () => {
         const dir = path.join(X, "richter");
@@ -343,7 +343,7 @@ function selbsttest() {
         const ak = {};
         for (const n of fs.readdirSync(dir)) ak[n.slice(0, -5)] = JSON.parse(fs.readFileSync(path.join(dir, n), "utf8"));
         const z = buche.rechne(k, ak, kern0, buche.kopfFolgeFest({ main: [basis.sha] })); // die Probe-Akte am Schein-Kopf (buche-2 KOPF-FOLGE)
-        return z.heute === 1 && z.kern === 18 ? true : JSON.stringify(z.bericht);
+        return z.heute === 1 && z.kern === 18 && z.beide === 1 ? true : JSON.stringify(z.bericht);
     });
     pruefe("Mutant zweite Fahrt desselben SHA und Geräts: die erste bleibt als Beleg, die Folge trägt beide (buche-2 liest sie)", () => {
         const dir = path.join(X, "richter");

@@ -9,7 +9,7 @@
 //
 // ── DIE AKTE ── vision/richter/<leiter-id>.<sprosse>.json (von Hand) oder <leiter-id>.<sprosse>.<sha8>-<gerät>.json (die Mess-Sitzung,
 // vision/richter-akte.cjs: je Gerät und Kopf eine Datei — zwei Geräte schreiben nie in dieselbe). Alle Dateien einer Sprosse werden
-// zusammen gelesen; die Fahrten DESSELBEN SHA vereinen ihre Geräte zu EINER Fahrt (je Gerät die jüngste).
+// zusammen gelesen; je Gerät und SHA gilt seine jüngste Messung, und jedes Gerät hat seine eigene Folge (DER STAND AUS DEN GERÄTEN, unten).
 // Inhalt: EINE Fahrt (Objekt) oder eine Folge von Fahrten (Array). Eine Fahrt:
 // {
 //   "leiter":  "leben.pflanzen.kraft",          // = Dateiname, sonst Bruch
@@ -32,13 +32,19 @@
 // Die Schwellen des Preises liest die Maschine aus preisTreppe der Karte (EINE Quelle) und rechnet das Preis-Urteil selbst nach;
 // ein Preis-Urteil, das den eigenen Zahlen widerspricht, bricht laut.
 //
-// ── DAS URTEIL EINER FAHRT ──
+// ── DAS URTEIL EINER FAHRT ── (EIN Standardgerät bucht, das zweite ist Nachwache — 18.11., Z7)
 //   ROT     : ein Gerät misst den Richter ROT                         → die Sprosse fällt auf 0 (auch der Kern der Brücke, Z4)
-//   nichts  : nicht beide Standardgeräte (Z7) mit Richter GRÜN       → hebt nichts, nimmt nichts (Z2, Z7)
-//   KERN    : beide GRÜN, aber ein Preis fehlt, ist unvollständig, UNGEMESSEN unter Last oder ROT (R3: fehlende Preis-Zahl ist ROT), oder die Karte nennt
-//             für die Sprosse keine klasse („KLASSE FEHLT“, laut im Bericht) → Kern (Z5)
-//   PUNKT   : beide GRÜN und der Preis hält an beiden Geräten         → Punkt (Z2)
-// Die Fahrten einer Sprosse laufen nach Datum; jede ROT-, KERN- oder PUNKT-Fahrt setzt den Stand, „nichts“ lässt ihn (Ratsche Z4) —
+//   nichts  : kein Standardgerät (Z7) in der Fahrt                   → hebt nichts, nimmt nichts (Z2, Z7)
+//   KERN    : GRÜN an den gemessenen Standardgeräten, aber ein Preis fehlt, ist unvollständig, UNGEMESSEN unter Last oder ROT (R3: fehlende
+//             Preis-Zahl ist ROT), oder die Karte nennt für die Sprosse keine klasse („KLASSE FEHLT“, laut im Bericht) → Kern (Z5)
+//   PUNKT   : GRÜN und der Preis hält an JEDEM gemessenen Standardgerät → Punkt (Z2)
+// ── DER STAND AUS DEN GERÄTEN (18.11.) ── Jedes Gerät hat seine eigene Folge: Ratsche, LAST-FAHRT und KOPF-FOLGE laufen über seine
+// Messungen allein (überholt ist eine Messung nur durch eine Messung DESSELBEN Geräts an einem Nachfahren). Der Stand der Sprosse aus
+// den jüngsten Urteilen je Gerät: ROT, wenn das jüngste Urteil irgendeines Geräts ROT ist (die Nachwache nimmt, auch gegen GRÜN des
+// anderen am selben oder jüngeren Kopf); sonst urteilen die Geräte DESSELBEN Kopfes als EINE Fahrt (das schwächere), über verschiedene
+// Köpfe hinweg das beste (PUNKT vor KERN). Bis 18.11. hob ein Gerät nie (Beleg 16.11.: 934 Stations-Paare am selben Kopf, 91,6 % gleiches
+// Urteil; 2 781 Messungen ohne Partner am selben Kopf, 75 % der Mess-Arbeit). Der Bericht nennt je Punkt, wer gemessen hat.
+// Die Fahrten eines Geräts laufen nach Datum; jede ROT-, KERN- oder PUNKT-Fahrt setzt seinen Stand, „nichts“ lässt ihn (Ratsche Z4) —
 // AUSSER der LAST-FAHRT (17.11., der Koordinator: vier Sprossen fielen PUNKT → KERN bei Richter GRÜN an beiden und einem Preis, der nur
 // „UNGEMESSEN unter Last“ war): eine KERN-Fahrt, deren Preis an keinem Gerät GEMESSEN ROT ist und an keinem fehlt — jeder Preis, der
 // nicht GRÜN ist, heißt „UNGEMESSEN unter Last ×f“ —, nimmt einer PUNKT-Sprosse nichts. Der Punkt hält, der Bericht nennt sie laut
@@ -78,7 +84,7 @@ const { execFileSync, spawnSync } = require("child_process");
 const KARTE = path.join(__dirname, "meisterkarte-2.json");
 const AKTEN = path.join(__dirname, "richter");
 const BRUECKE = path.join(__dirname, "BRUECKE.md");
-// Z7, Stand 2026: das Standardgerät ist eine Klasse aus zwei Geräten; jede Buchung braucht beide.
+// Z7, Stand 2026: das Standardgerät ist eine Klasse aus zwei Geräten; EINES bucht, das andere ist Nachwache (sein ROT nimmt).
 const STANDARD = [
     { name: "Radeon 890M", muster: /890m/i },
     { name: "GTX 1060", muster: /1060/i },
@@ -244,17 +250,19 @@ function fahrtPruefen(f, sprosse, wo) {
     }
 }
 
-// EINE Fahrt (alle Geräte EINES SHA) → { u: "ROT" | "NICHTS" | "KERN" | "PUNKT", warum }
+// EINE Fahrt (die Geräte EINES SHA, in rechne je Gerät eine) → { u: "ROT" | "NICHTS" | "KERN" | "PUNKT", warum }. EIN Standardgerät
+// hebt (Z7, 18.11.): geurteilt wird an den Standardgeräten, die gemessen haben; „NICHTS“ heißt nur noch: kein Standardgerät in der Fahrt.
 function fahrtUrteil(f, sprosse, T, wo) {
     fahrtPruefen(f, sprosse, wo);
     const am = "am " + f.sha.slice(0, 8);
     const rot = f.geraete.filter((g) => g.richter.urteil === "ROT");
     if (rot.length) return { u: "ROT", warum: `Richter ROT an ${rot.map((g) => g.geraet).join(" + ")} ${am}` };
-    const je = STANDARD.map((S) => f.geraete.find((g) => S.muster.test(String(g.geraet || ""))));
-    if (je.some((g) => !g)) // ein Gerät hebt nie (Z7)
-        return { u: "NICHTS", warum: `kein Punkt, nur ein Gerät (${f.geraete.map((g) => g.geraet).join(" + ")}) ${am} — es fehlt ${STANDARD.filter((S, i) => !je[i]).map((S) => S.name).join(" + ")}` };
+    // je Standardgerät die letzte Messung der Fahrt (zwei Läufe derselben Klasse sind EIN Gerät)
+    const je = STANDARD.map((S) => f.geraete.filter((g) => S.muster.test(String(g.geraet || ""))).pop()).filter(Boolean);
+    if (!je.length) return { u: "NICHTS", warum: `kein Standardgerät (${f.geraete.map((g) => g.geraet).join(" + ")}) ${am} — Z7` };
+    const an = je.length === STANDARD.length ? "an beiden Geräten" : "an " + je.map((g) => g.geraet).join(" + ");
     const preise = je.map((g) => preisUrteil(g.preis, T, `${wo} ${g.geraet}`, sprosse.klasse));
-    if (preise.every((p) => p === "GRÜN")) return { u: "PUNKT", warum: `Richter GRÜN und Preis (${sprosse.klasse}) GRÜN an beiden Geräten ${am}` };
+    if (preise.every((p) => p === "GRÜN")) return { u: "PUNKT", warum: `Richter GRÜN und Preis (${sprosse.klasse}) GRÜN ${an} ${am}` };
     if (preise.includes("OHNE-KLASSE")) return { u: "KERN", warum: `KLASSE FEHLT in der Karte für diese Sprosse — der Preis ist nicht prüfbar, höchstens Kern ${am}` };
     const mitGrund = (g, i) => {
         const grund = preise[i] === "GRÜN" ? "" : preisGrund(g.preis, T, sprosse.klasse);
@@ -263,10 +271,10 @@ function fahrtUrteil(f, sprosse, T, wo) {
     // die LAST-FAHRT (Kopf-Kommentar): jeder Preis, der nicht GRÜN ist, ist „UNGEMESSEN unter Last ×f“ — kein gemessenes ROT, keine fehlende Zahl
     const offen = je.map((g, i) => [g, preise[i]]).filter(([, p]) => p !== "GRÜN");
     const last = offen.every(([, p]) => /^UNGEMESSEN unter Last ×/.test(p)) ? offen.map(([g, p]) => `${g.geraet} ${p.replace(/^UNGEMESSEN unter Last /, "")}`).join(" · ") : null;
-    return { u: "KERN", warum: `Richter GRÜN an beiden, Preis ${je.map(mitGrund).join(" · ")} ${am} — Kern (Z5)`, last };
+    return { u: "KERN", warum: `Richter GRÜN ${an}, Preis ${je.map(mitGrund).join(" · ")} ${am} — Kern (Z5)`, last };
 }
 
-// die Fahrten einer Sprosse: je SHA EINE Fahrt (die Geräte verschiedener Akten-Dateien vereint, je Gerät die jüngste), nach Datum
+// die Fahrten einer Sprosse JE GERÄT: je Gerät und SHA EINE Fahrt (die Messungen verschiedener Akten-Dateien vereint, die jüngste), nach Datum
 const geraetKlasse = (name) => {
     const S = STANDARD.find((S) => S.muster.test(String(name || "")));
     return S ? S.name : String(name);
@@ -274,6 +282,18 @@ const geraetKlasse = (name) => {
 // DIE LAST-FAHRT AM SELBEN KOPF (Kopf-Kommentar): preisVon(x) urteilt den Preis einer Geräte-Messung; die jüngere Messung eines Geräts
 // mit Richter GRÜN und Preis „UNGEMESSEN unter Last“ ersetzt eine ältere desselben Geräts mit Richter GRÜN und Preis GRÜN nicht — sie
 // steht laut in `lastGehalten`. Ohne preisVon (Probe) gilt die jüngste.
+// JE GERÄT (18.11.): hier fällt „je Gerät die jüngste“ — die Folge eines Geräts ist seine eigene; ob ein Kopf „überholt“ ist, sagt die
+// Kopf-Folge DESSELBEN Geräts (rechne). → [{ geraet, fahrten }], je Fahrt genau EIN Gerät.
+function fahrtenJeGeraet(liste, preisVon) {
+    const jeG = new Map();
+    for (const f of liste)
+        for (const x of f.geraete || []) {
+            const k = geraetKlasse(x.geraet);
+            if (!jeG.has(k)) jeG.set(k, []);
+            jeG.get(k).push({ ...f, geraete: [x] });
+        }
+    return [...jeG.entries()].map(([geraet, l]) => ({ geraet, fahrten: fahrtenJeSha(l, preisVon) }));
+}
 function fahrtenJeSha(liste, preisVon) {
     const je = new Map();
     for (const f of liste) {
@@ -450,31 +470,71 @@ function rechne(karte, akten, kern0, kopf) {
         jeSprosse.get(k).liste.push(...liste);
     }
     const bericht = [];
+    const std = STANDARD.map((S) => S.name);
     for (const [k, { id, nr, sp, liste }] of [...jeSprosse.entries()].sort()) {
-        let s = stand.get(k) || "NULL",
-            warum = "";
-        const notiz = [], // was nicht setzte, laut: Zweig-Köpfe und überholte Köpfe
-            setzer = []; // die vollen SHA der Fahrten, die den Stand dieser Sprosse schon setzten (ROT, KERN, PUNKT)
-        fahrtenJeSha(liste, (x) => preisUrteil(x.preis, T, `Sprosse ${id} S ${nr} ${x.geraet}`, sp.klasse)).forEach((f, i) => {
-            const r = fahrtUrteil(f, sp, T, `Sprosse ${id} S ${nr} Fahrt ${i + 1}`); // auch die nicht setzende Fahrt bricht laut
-            const h = kopf.voll(f.sha),
-                h8 = h.slice(0, 8);
-            if (f.lastGehalten.length) notiz.push(`Preis am Kopf offen (Last): ${h8} ${f.lastGehalten.join(" · ")} — die GRÜNE Preis-Messung desselben Kopfes hält (Z4)`);
-            if (!kopf.aufMain(h)) return void notiz.push(`nicht auf der main-Linie: ${h8} (${r.u}) setzt nichts`);
-            const neuer = setzer.find((g) => kopf.istAhn(h, g));
-            if (neuer) return void notiz.push(`überholt: ${h8} (${r.u}) ist Vorfahre von ${neuer.slice(0, 8)}`);
-            if (r.u === "KERN" && r.last && s === "PUNKT") {
-                // die LAST-FAHRT nimmt dem Punkt nichts (Z4: nur ein gemessenes ROT nimmt); ihr Kopf trägt ein Urteil des Richters
+        const start = stand.get(k) || "NULL";
+        const notizen = new Map(); // was nicht setzte, laut: Zweig-Köpfe und überholte Köpfe — Text → Geräte (leer: der Text nennt sie selbst)
+        const notiz = (t, g) => (notizen.has(t) || notizen.set(t, new Set()), g && notizen.get(t).add(g));
+        // JE GERÄT seine Folge (18.11.): Ratsche, LAST-FAHRT und Kopf-Folge laufen über die Messungen EINES Geräts; überholt ist eine
+        // Messung nur durch eine Messung DESSELBEN Geräts an einem Nachfahren — die Nachwache des anderen Geräts bleibt stehen, bis es
+        // selbst den jüngeren Code misst.
+        const jeGeraet = fahrtenJeGeraet(liste, (x) => preisUrteil(x.preis, T, `Sprosse ${id} S ${nr} ${x.geraet}`, sp.klasse)).map(({ geraet, fahrten }) => {
+            const d = { geraet, s: start, warum: "", kopf: null, rot: false };
+            const setzer = []; // die vollen SHA der Fahrten dieses Geräts, die seinen Stand schon setzten (ROT, KERN, PUNKT)
+            fahrten.forEach((f, i) => {
+                const r = fahrtUrteil(f, sp, T, `Sprosse ${id} S ${nr} ${geraet} Fahrt ${i + 1}`); // auch die nicht setzende Fahrt bricht laut
+                const h = kopf.voll(f.sha),
+                    h8 = h.slice(0, 8);
+                if (f.lastGehalten.length) notiz(`Preis am Kopf offen (Last): ${h8} ${f.lastGehalten.join(" · ")} — die GRÜNE Preis-Messung desselben Kopfes hält (Z4)`);
+                if (!kopf.aufMain(h)) return void notiz(`nicht auf der main-Linie: ${h8} (${r.u}) setzt nichts`, geraet);
+                const neuer = setzer.find((g) => kopf.istAhn(h, g));
+                if (neuer) return void notiz(`überholt: ${h8} (${r.u}) ist Vorfahre von ${neuer.slice(0, 8)}`, geraet);
+                if (r.u === "KERN" && r.last && d.s === "PUNKT") {
+                    // die LAST-FAHRT nimmt dem Punkt nichts (Z4: nur ein gemessenes ROT nimmt); ihr Kopf trägt ein Urteil des Richters
+                    setzer.push(h);
+                    d.kopf = h;
+                    return void notiz(`Preis am Kopf offen (Last): ${h8} ${r.last} — Richter GRÜN, der Punkt hält (Z4)`);
+                }
+                if (r.u === "NICHTS") return void (d.kopf || (d.warum = r.warum));
                 setzer.push(h);
-                return void notiz.push(`Preis am Kopf offen (Last): ${h8} ${r.last} — Richter GRÜN an beiden, der Punkt hält (Z4)`);
-            }
-            warum = r.warum;
-            if (r.u === "NICHTS") return;
-            setzer.push(h);
-            s = r.u === "ROT" ? "NULL" : r.u;
+                Object.assign(d, { kopf: h, warum: r.warum, rot: r.u === "ROT", s: r.u === "ROT" ? "NULL" : r.u });
+            });
+            return d;
         });
+        // DER STAND DER SPROSSE aus den jüngsten Urteilen je Gerät (REGELN Z2, Z4, Z7): ein Richter-ROT irgendeines Geräts nimmt; sonst
+        // urteilen die Geräte DESSELBEN Kopfes als EINE Fahrt (der Preis muss an jedem gemessenen Gerät halten: das schwächere), und über
+        // verschiedene Köpfe hinweg gilt das beste Urteil (PUNKT vor KERN). Ohne Urteil eines Geräts bleibt der Ausgangs-Stand.
+        const gesetzt = jeGeraet.filter((d) => d.kopf);
+        const rot = gesetzt.filter((d) => d.rot);
+        let s = start,
+            warum = jeGeraet.map((d) => d.warum).filter(Boolean).join(" · "),
+            beide = false;
+        if (rot.length) {
+            s = "NULL";
+            warum = rot.map((d) => d.warum).join(" · ");
+        } else if (gesetzt.length) {
+            const jeKopf = new Map();
+            for (const d of gesetzt) jeKopf.set(d.kopf, (jeKopf.get(d.kopf) || []).concat(d));
+            const fahrt = [...jeKopf.values()].map((ds) => ({ ds, r: Math.min(...ds.map((d) => RANG[d.s])) }));
+            const best = Math.max(...fahrt.map((x) => x.r));
+            s = best === 2 ? "PUNKT" : "KERN";
+            const sieger = fahrt.filter((x) => x.r === best).flatMap((x) => x.ds);
+            if (s === "PUNKT") {
+                const wer = sieger.map((d) => d.geraet);
+                beide = std.every((n) => wer.includes(n));
+                const am = (d) => d.warum.replace(/^.* (am [0-9a-f]{8})$/, "$1");
+                warum =
+                    `Richter GRÜN und Preis (${sp.klasse}) GRÜN an ` +
+                    (beide && new Set(sieger.map(am)).size === 1 ? `beiden Geräten ${am(sieger[0])}` : (beide ? "beiden Geräten: " : "") + sieger.map((d) => `${d.geraet} ${am(d)}`).join(" · ")) +
+                    std.filter((n) => !wer.includes(n)).map((n) => {
+                        const d = gesetzt.find((x) => x.geraet === n);
+                        return d ? ` · Nachwache ${n}: ${d.warum}` : ` · Nachwache offen: ${n}`;
+                    }).join("");
+            } else warum = sieger.map((d) => d.warum).join(" · ");
+        }
         stand.set(k, s);
-        bericht.push({ leiter: id, sprosse: nr, stand: s, warum, notiz });
+        const notiz2 = [...notizen].map(([t, g]) => (g.size ? `${t} (${[...g].join(" + ")})` : t));
+        bericht.push({ leiter: id, sprosse: nr, stand: s, warum, notiz: notiz2, beide });
     }
     // Leitern zählen
     for (const L of leitern.values()) {
@@ -519,8 +579,15 @@ function rechne(karte, akten, kern0, kopf) {
         K += sk;
     }
     const mittel = (a) => a.reduce((x, y) => x + y, 0) / a.length;
-    Object.assign(karte.summe, { heute: H, kern: K, kernDazu: K, anteilHeute: prozent1(mittel(kapH)), anteilKern: prozent1(mittel(kapK)) });
-    return { heute: H, kern: K, sprossen: karte.summe.sprossen, anteil: karte.summe.anteilHeute, stand, bericht };
+    // WER GEMESSEN HAT (Z7, 18.11.): von den gebuchten Punkten die an beiden Standardgeräten; der Rest wartet auf die Nachwache (beide + nachwache = heute)
+    const zaehlt = (b) => {
+        const L = leitern.get(b.leiter);
+        return L.zaehlung === "glieder" ? L.heuteSprossen.includes(b.sprosse) : b.sprosse <= L.heute;
+    };
+    const beide = bericht.filter((b) => b.stand === "PUNKT" && b.beide && zaehlt(b)).length;
+    const nachwache = H - beide;
+    Object.assign(karte.summe, { heute: H, kern: K, kernDazu: K, anteilHeute: prozent1(mittel(kapH)), anteilKern: prozent1(mittel(kapK)), beide, nachwache });
+    return { heute: H, kern: K, beide, nachwache, sprossen: karte.summe.sprossen, anteil: karte.summe.anteilHeute, stand, bericht };
 }
 
 function aktenLesen(dir) {
@@ -559,7 +626,8 @@ function tafelOhneKlasse(karte, tafel) {
 const tafelZeilen = (aus) => [...aus.map((a) => "  TAFEL OHNE KLASSE: " + a), `TAFEL: ${aus.length} Zeile(n) ohne Klasse der Sprosse`];
 
 const schreibe = (karte) => JSON.stringify(karte, null, 1) + "\n";
-const zeile = (z) => `KARTE 2: ${z.heute} von ${z.sprossen} gebucht (${z.anteil.toFixed(1).replace(".", ",")} %), ${z.kern} im Kern`;
+const zeile = (z) =>
+    `KARTE 2: ${z.heute} von ${z.sprossen} gebucht (${z.anteil.toFixed(1).replace(".", ",")} %), ${z.kern} im Kern · an beiden Geräten ${z.beide} · Nachwache offen ${z.nachwache}`;
 
 // ───────────────────────── Selbsttest ─────────────────────────
 function selbsttest() {
@@ -615,7 +683,7 @@ function selbsttest() {
         const k = neu();
         if (!o.ohneKlasse) for (const id of [A, G]) for (const s of finde(k, id).sprossen) s.klasse = s.klasse || "Ort";
         if (o.klasse) finde(k, A).sprossen[0].klasse = o.klasse;
-        const z = rechne(k, akten, kern0, o.kopf || KOPF);
+        const z = (o.rechne || rechne)(k, akten, kern0, o.kopf || KOPF);
         return { k, z, L: (id) => finde(k, id) };
     };
     const bricht = (akten, muster, o) => {
@@ -648,14 +716,87 @@ function selbsttest() {
         const g = L(G);
         return g.heute === 1 && g.kern === 2 && g.heuteSprossen.join() === "2" && g.kernSprossen.join() === "1,3" ? true : `heute ${g.heuteSprossen} kern ${g.kernSprossen}`;
     });
-    pruefe("Mutant ein Gerät: hebt nichts", () => {
-        const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1, { geraete: ["Radeon 890M"] }) });
-        const w = z.bericht[0] && z.bericht[0].warum;
-        return L(A).heute === 0 && L(A).kern === 0 && z.heute === 0 && z.kern === 19 && /kein Punkt, nur ein Gerät .*es fehlt GTX 1060/.test(w) ? true : `heute ${L(A).heute} kern ${L(A).kern} · ${w}`;
+    // ── EIN GERÄT BUCHT, DAS ZWEITE IST NACHWACHE (18.11., Z7) ── bis 18.11. hob ein Gerät nie; diese Fälle prüften „hebt nichts“
+    const einGeraet = (g) => {
+        const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1, { geraete: [g] }) });
+        const w = z.bericht[0] && z.bericht[0].warum,
+            ander = g === "GTX 1060" ? "Radeon 890M" : "GTX 1060";
+        return L(A).heute === 1 && z.heute === 1 && z.kern === 19 && z.beide === 0 && z.nachwache === 1 &&
+            w === `Richter GRÜN und Preis (Ort) GRÜN an ${g} am 7f778d44 · Nachwache offen: ${ander}`
+            ? true
+            : `heute ${L(A).heute} kern ${L(A).kern} beide ${z.beide} nachwache ${z.nachwache} · ${w}`;
+    };
+    pruefe("EIN GERÄT (a): Radeon allein, Richter GRÜN + Preis GRÜN → PUNKT, „Nachwache offen: GTX 1060“", () => einGeraet("Radeon 890M"));
+    pruefe("EIN GERÄT (a): GTX allein, Richter GRÜN + Preis GRÜN → PUNKT, „Nachwache offen: Radeon 890M“", () => einGeraet("GTX 1060"));
+    pruefe("EIN GERÄT: zwei Radeon-Läufe sind EIN Gerät — PUNKT mit offener Nachwache, nie „an beiden Geräten“", () => {
+        const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1, { geraete: ["Radeon 890M", "Radeon 890M (zweiter Lauf)"] }) });
+        return L(A).heute === 1 && z.beide === 0 && /Nachwache offen: GTX 1060/.test(z.bericht[0].warum) ? true : `heute ${L(A).heute} beide ${z.beide} · ${z.bericht[0].warum}`;
     });
-    pruefe("Mutant zwei Radeon statt Radeon + GTX: hebt nichts", () => {
-        const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { geraete: ["Radeon 890M", "Radeon 890M (zweiter Lauf)"] }) });
+    pruefe("EIN GERÄT: beide am selben Kopf → „an beiden Geräten“, beide 1, Nachwache 0", () => {
+        const { z } = lauf({ [A + ".1"]: fahrt(A, 1) });
+        return z.heute === 1 && z.beide === 1 && z.nachwache === 0 && z.bericht[0].warum === "Richter GRÜN und Preis (Ort) GRÜN an beiden Geräten am 7f778d44" ? true : `beide ${z.beide} · ${z.bericht[0].warum}`;
+    });
+    // (b) Gerät A GRÜN am älteren Kopf, Gerät B ROT am jüngeren → 0 (die Nachwache nimmt)
+    const fallB = () => ({ [A + ".1.e4eeee08-radeon"]: fahrt(A, 1, { sha: ALT, geraete: ["Radeon 890M"], datum: "2026-11-14T10:00:00Z" }),
+        [A + ".1.a635bfee-gtx"]: fahrt(A, 1, { sha: NEU, geraete: ["GTX 1060"], rot: "GTX 1060", datum: "2026-11-15T10:00:00Z" }) });
+    const pruefeB = (o) => {
+        const { L, z } = lauf(fallB(), o);
+        return L(A).heute === 0 && L(A).kern === 0 && /^Richter ROT an GTX 1060 am a635bfee$/.test(z.bericht[0].warum) ? true : `heute ${L(A).heute} kern ${L(A).kern} · ${z.bericht[0].warum}`;
+    };
+    pruefe("NACHWACHE (b): Radeon GRÜN am älteren Kopf, GTX ROT am jüngeren → 0", () => pruefeB());
+    pruefe("NACHWACHE: GTX ROT am selben Kopf wie Radeon GRÜN → 0", () => {
+        const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { rot: "GTX 1060" }) });
         return L(A).heute === 0 && L(A).kern === 0 ? true : `heute ${L(A).heute} kern ${L(A).kern}`;
+    });
+    // (c) ENTSCHEID: die Kopf-Folge gilt JE GERÄT, wie für ein Gerät allein — eine Messung ist nur durch eine Messung DESSELBEN Geräts
+    // an einem Nachfahren überholt. Das ROT der GTX am Vorfahren steht, bis die GTX selbst den jüngeren Kopf misst (Gesetz 2).
+    pruefe("NACHWACHE (c): Radeon GRÜN am jüngeren Kopf, GTX ROT am Vorfahren → 0 (die GTX hat den jüngeren Code nie gemessen)", () => {
+        const { L, z } = lauf({ [A + ".1.a635bfee-radeon"]: fahrt(A, 1, { sha: NEU, geraete: ["Radeon 890M"], datum: "2026-11-14T10:00:00Z" }),
+            [A + ".1.e4eeee08-gtx"]: fahrt(A, 1, { sha: ALT, geraete: ["GTX 1060"], rot: "GTX 1060", datum: "2026-11-15T10:00:00Z" }) });
+        return L(A).heute === 0 && /Richter ROT an GTX 1060 am e4eeee08/.test(z.bericht[0].warum) && !z.bericht[0].notiz.length ? true : `heute ${L(A).heute} · ${z.bericht[0].warum} · ${z.bericht[0].notiz}`;
+    });
+    pruefe("NACHWACHE (c) Gegenprobe: misst die GTX den jüngeren Kopf GRÜN, ist ihr ROT am Vorfahren überholt → PUNKT an beiden, laut", () => {
+        const { L, z } = lauf({ [A + ".1.a635bfee-radeon"]: fahrt(A, 1, { sha: NEU, geraete: ["Radeon 890M"], datum: "2026-11-14T10:00:00Z" }),
+            [A + ".1.a635bfee-gtx"]: fahrt(A, 1, { sha: NEU, geraete: ["GTX 1060"], datum: "2026-11-14T11:00:00Z" }),
+            [A + ".1.e4eeee08-gtx"]: fahrt(A, 1, { sha: ALT, geraete: ["GTX 1060"], rot: "GTX 1060", datum: "2026-11-15T10:00:00Z" }) });
+        return L(A).heute === 1 && z.beide === 1 && z.bericht[0].notiz.join() === "überholt: e4eeee08 (ROT) ist Vorfahre von a635bfee (GTX 1060)" ? true : `heute ${L(A).heute} · ${z.bericht[0].warum} · ${z.bericht[0].notiz}`;
+    });
+    // (d) ein Gerät GRÜN, Preis UNGEMESSEN unter Last: aus 0 wird KERN, ein Punkt hält (Z4)
+    pruefe("EIN GERÄT (d): GTX allein, Preis UNGEMESSEN unter Last → KERN, nie PUNKT", () => {
+        const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1, { geraete: ["GTX 1060"], preis: { bild_p95_ms: 58.8, bild_max_ms: 134, referenz: { f: 1.84 }, urteil: "UNGEMESSEN unter Last ×1,84" } }) });
+        return L(A).heute === 0 && L(A).kern === 1 && /^Richter GRÜN an GTX 1060, Preis GTX 1060 UNGEMESSEN unter Last ×1,84/.test(z.bericht[0].warum) ? true : `heute ${L(A).heute} kern ${L(A).kern} · ${z.bericht[0].warum}`;
+    });
+    pruefe("EIN GERÄT (d): GTX PUNKT am Vorfahren, GTX Last-Fahrt am Nachfahren → der Punkt hält, laut", () => {
+        const lp = { bild_p95_ms: 58.8, bild_max_ms: 134, referenz: { f: 1.84 }, urteil: "UNGEMESSEN unter Last ×1,84" };
+        const { L, z } = lauf({ [A + ".1"]: [fahrt(A, 1, { sha: ALT, geraete: ["GTX 1060"], datum: "2026-11-14T10:00:00Z" }), fahrt(A, 1, { sha: NEU, geraete: ["GTX 1060"], datum: "2026-11-15T10:00:00Z", preis: lp })] });
+        return L(A).heute === 1 && /Preis am Kopf offen \(Last\): a635bfee GTX 1060 ×1,84 — Richter GRÜN, der Punkt hält/.test(z.bericht[0].notiz.join()) ? true : `heute ${L(A).heute} · ${z.bericht[0].notiz}`;
+    });
+    pruefe("KÖPFE: GTX PUNKT am Vorfahren, Radeon KERN (Preis ROT) am Nachfahren → das beste Urteil über Köpfe: PUNKT, Nachwache nennt die Radeon", () => {
+        const { L, z } = lauf({ [A + ".1.e4eeee08-gtx"]: fahrt(A, 1, { sha: ALT, geraete: ["GTX 1060"], datum: "2026-11-14T10:00:00Z" }),
+            [A + ".1.a635bfee-radeon"]: fahrt(A, 1, { sha: NEU, geraete: ["Radeon 890M"], datum: "2026-11-15T10:00:00Z", preis: { heap_mb: 491, urteil: "ROT" } }) });
+        return L(A).heute === 1 && z.beide === 0 && /GTX 1060 am e4eeee08 · Nachwache Radeon 890M: Richter GRÜN an Radeon 890M, Preis Radeon 890M ROT \(Heap 491,0 > 400 MB\) am a635bfee/.test(z.bericht[0].warum)
+            ? true
+            : `heute ${L(A).heute} · ${z.bericht[0].warum}`;
+    });
+    // (e) und (f): Mutanten der QUELLE (im Speicher kompiliert, kein Schalter): die alte Regel und die stumme Nachwache müssen ROT fallen
+    const mutante = (alt, neu) => {
+        const Mod = require("module");
+        const quelle = fs.readFileSync(__filename, "utf8");
+        if (!quelle.includes(alt)) throw new Error("die Mutante trifft die Quelle nicht: " + alt);
+        const m = new Mod(path.join(__dirname, "buche-2-mutante.cjs"), module);
+        m.filename = path.join(__dirname, "buche-2-mutante.cjs");
+        m.paths = Mod._nodeModulePaths(__dirname);
+        m._compile(quelle.replace(alt, neu), m.filename);
+        return m.exports.rechne;
+    };
+    pruefe("MUTANTE (e) „ein Gerät hebt nie“ (die alte Regel): Fall (a) fällt ROT", () => {
+        const r = mutante("if (!je.length) return { u: \"NICHTS\"", "if (je.length < STANDARD.length) return { u: \"NICHTS\"");
+        const { L } = lauf({ [A + ".1"]: fahrt(A, 1, { geraete: ["GTX 1060"] }) }, { rechne: r });
+        return L(A).heute === 0 ? true : "die Mutante hob trotzdem — der Fall (a) fängt die alte Regel nicht";
+    });
+    pruefe("MUTANTE (f) „ROT des zweiten Geräts nimmt nicht“: Fall (b) fällt ROT", () => {
+        const r = mutante("        if (rot.length) {\n", "        if (rot.length && rot.length === gesetzt.length) {\n");
+        return pruefeB({ rechne: r }) === true ? "die Mutante nahm trotzdem — der Fall (b) fängt die stumme Nachwache nicht" : true;
     });
     pruefe("Mutant fehlender Preis: Kern statt Punkt", () => {
         const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1, { ohnePreis: "GTX 1060" }) });
@@ -686,7 +827,9 @@ function selbsttest() {
     pruefe("LAST-FAHRT: PUNKT + Last-Fahrt → PUNKT hält, laut „Preis am Kopf offen (Last)“ mit Kopf und Faktor", () => {
         const { L, z } = lauf(punktDann(fahrt(A, 1, { preis: lastPreis })));
         const b = z.bericht[0];
-        return L(A).heute === 1 && L(A).kern === 0 && b.stand === "PUNKT" && /^Preis am Kopf offen \(Last\): a635bfee Radeon 890M ×1,84 · GTX 1060 ×1,84/.test(b.notiz.join()) && /GRÜN an beiden Geräten/.test(b.warum)
+        return L(A).heute === 1 && L(A).kern === 0 && b.stand === "PUNKT" &&
+            b.notiz.join(" | ") === "Preis am Kopf offen (Last): a635bfee Radeon 890M ×1,84 — Richter GRÜN, der Punkt hält (Z4) | Preis am Kopf offen (Last): a635bfee GTX 1060 ×1,84 — Richter GRÜN, der Punkt hält (Z4)" &&
+            /GRÜN an beiden Geräten am e4eeee08/.test(b.warum)
             ? true
             : `heute ${L(A).heute} kern ${L(A).kern} · ${b.warum} · ${b.notiz}`;
     });
@@ -778,17 +921,19 @@ function selbsttest() {
             [B + ".1.7f778d44-gtx"]: fahrt(B, 1, { geraete: ["GTX 1060"], datum: "2026-11-14T21:00:00Z" }) });
         return L(B).heute === 1 && L(B).kern === 0 ? true : `heute ${L(B).heute} kern ${L(B).kern}`;
     });
-    pruefe("Mutant zwei Geräte an verschiedenen SHA: hebt nichts (Z2)", () => {
-        const { L } = lauf({ [B + ".1.7f778d44-radeon"]: fahrt(B, 1, { geraete: ["Radeon 890M"] }),
+    pruefe("zwei Geräte an verschiedenen SHA (ohne Vorfahr-Beziehung): je Gerät die jüngste, PUNKT an beiden Geräten, beide Köpfe genannt", () => {
+        const { L, z } = lauf({ [B + ".1.7f778d44-radeon"]: fahrt(B, 1, { geraete: ["Radeon 890M"] }),
             [B + ".1.0123abcd-gtx"]: fahrt(B, 1, { geraete: ["GTX 1060"], sha: "0123abcd99" }) });
-        return L(B).heute === 0 && L(B).kern === 1 ? true : `heute ${L(B).heute} kern ${L(B).kern}`;
+        return L(B).heute === 1 && z.beide === 1 && z.bericht[0].warum === "Richter GRÜN und Preis (Ort) GRÜN an beiden Geräten: Radeon 890M am 7f778d44 · GTX 1060 am 0123abcd"
+            ? true
+            : `heute ${L(B).heute} kern ${L(B).kern} · ${z.bericht[0].warum}`;
     });
     // ── DIE KOPF-FOLGE: der Fall der GTX 16.11. (13:14 am a635bfee Preis ROT, 14:11 am Vorfahren e4eeee08 Preis GRÜN) ──
     const heapRot = { heap_mb: 491, urteil: "ROT" };
     pruefe("KOPF-FOLGE Mutant: ältere Kopf-Fahrt später gemessen hebt nicht — Kern am a635bfee bleibt, laut „überholt“", () => {
         const { L, z } = lauf({ [B + ".1"]: [fahrt(B, 1, { sha: NEU, datum: "2026-11-16T13:14:00+01:00", preis: heapRot }), fahrt(B, 1, { sha: ALT, datum: "2026-11-16T14:11:00+01:00" })] });
         const b = z.bericht[0];
-        return L(B).heute === 0 && L(B).kern === 1 && /am a635bfee/.test(b.warum) && b.notiz.join() === "überholt: e4eeee08 (PUNKT) ist Vorfahre von a635bfee" ? true : `heute ${L(B).heute} kern ${L(B).kern} · ${b.warum} · ${b.notiz}`;
+        return L(B).heute === 0 && L(B).kern === 1 && /am a635bfee/.test(b.warum) && b.notiz.join() === "überholt: e4eeee08 (PUNKT) ist Vorfahre von a635bfee (Radeon 890M + GTX 1060)" ? true : `heute ${L(B).heute} kern ${L(B).kern} · ${b.warum} · ${b.notiz}`;
     });
     pruefe("KOPF-FOLGE Mutant: ältere Kopf-Fahrt ROT später gemessen nimmt den Punkt des neueren Kopfes nicht", () => {
         const { L, z } = lauf({ [A + ".1"]: [fahrt(A, 1, { sha: NEU, datum: "2026-11-16T13:14:00+01:00" }), fahrt(A, 1, { sha: ALT, datum: "2026-11-16T14:11:00+01:00", rot: "GTX 1060" })] });
@@ -949,7 +1094,7 @@ function haupt(argv) {
     if (!trocken && karteDatei === KARTE) execFileSync(process.execPath, [path.join(__dirname, "seite-bauen.cjs")], { stdio: "ignore" });
     // DER STAND ALS KLEINE DATEI (15.11.: die Karte 2 ist der Zähler; der Messplatz-Blick liest je Takt diese drei Zahlen statt der
     // 700-KB-Karte). Ohne Uhrzeit: die Datei ändert sich nur, wenn sich die Zahl ändert. Leser: zug/dienst/messplatz-blick.cjs (Stern).
-    if (!trocken && karteDatei === KARTE) fs.writeFileSync(path.join(__dirname, "karte-2-stand.json"), JSON.stringify({ sprossen: z.sprossen, heute: z.heute, kern: z.kern, anteil: z.anteil }) + "\n");
+    if (!trocken && karteDatei === KARTE) fs.writeFileSync(path.join(__dirname, "karte-2-stand.json"), JSON.stringify({ sprossen: z.sprossen, heute: z.heute, kern: z.kern, anteil: z.anteil, beide: z.beide, nachwache: z.nachwache }) + "\n");
     if (trocken || karteDatei !== KARTE) {
         const vor = JSON.parse(roh);
         const alt = new Map();

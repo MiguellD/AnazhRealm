@@ -1,8 +1,0 @@
-# PAAR OFFEN nach der Buchung am e4e3f363 (2026-11-18 17:06) — Sprossen der Karte 2 mit 0 oder KERN, denen am selben Kopf genau EIN Gerät fehlt (buche.sh)
-leben.kopplung.stadt-im-netz#1@c1e6f29a hat GTX 1060
-mensch.bau.innen#1@1f300260 hat GTX 1060
-mensch.menge.kollektiv#1@21f279f5 hat GTX 1060
-mensch.stadt.form#1@e4e3f363 hat GTX 1060
-mensch.stadt.siedlungsnetz#1@c1e6f29a hat GTX 1060
-same.kopplung.ereignis#1@21f279f5 hat GTX 1060
-same.physik.verformung#1@1857c808 hat GTX 1060
