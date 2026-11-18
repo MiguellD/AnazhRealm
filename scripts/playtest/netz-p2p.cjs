@@ -1582,16 +1582,18 @@ async function checkBandLateMultiUser({ page, check }) {
     // Was zwischen ZWEI echten Seiten am echten Broker reist, urteilt gate:mp-sync: A's Spieler-Programm (Graben, Bau, Gesetz)
     // erreicht B und wirkt dort byte-gleich, ein Echo (B sendet zurück, A wendet zweimal an) bricht den Abdruck (c)(e)(h) — die
     // Mock-Zwillinge davon (human sendet, remote wirkt, kein Echo, Diskrimination, remote voxel_carve) fielen mit ultiversum.K4.
-    // Hier bleibt, was keine echte Seite zeigt: das Modell und der getrennte Client senden nie, die eigene peerId und ein
-    // kaputtes Programm fallen still.
+    // Hier bleibt, was keine echte Seite zeigt: das Gesetz des Modells (Kopf "rule") und der getrennte Client senden nie, die
+    // eigene peerId und ein kaputtes Programm fallen still (die Tat des Modells reist seit w28-ki-tat-reist: gate:mp-sync (i)).
     const ring11V2Results = await safeEvaluate(page, () => {
         const out = {};
         const sent = [];
         const origSend = r.p2pSend;
         r.p2pSend = (obj) => sent.push(obj);
         Object.assign(st.p2p, { enabled: true, connected: true, peerId: "self-test" });
-        r.dslRun(["weather", "rainy"], { source: "llm:grok" });
-        out.llmDoesNotBroadcast = sent.length === 0;
+        const regeln = st.worldRules.length;
+        r.dslRun(r._regelAusSatz("wann immer es zufällig passt, dann erzähle Das Modell denkt").program, { source: "llm:grok" });
+        out.llmRuleStaysLocal = sent.length === 0 && st.worldRules.length === regeln + 1;
+        st.worldRules.splice(regeln); // das Gesetz der Probe fällt wieder
         st.p2p.connected = false;
         r.dslRun(["weather", "sunny"], { source: "human" });
         out.disconnectedSkipsBroadcast = sent.length === 0;
@@ -1609,10 +1611,7 @@ async function checkBandLateMultiUser({ page, check }) {
         return out;
     });
     if (erreichbar(check, "Ring 11 V2: Snapshot erreichbar", ring11V2Results)) {
-        check(
-            "Ring 11 V2: LLM-DSL wird NICHT gebroadcastet (nur explizite human-Geste)",
-            ring11V2Results.llmDoesNotBroadcast
-        );
+        check("Ring 11 V2: das Gesetz des Modells (llm, Kopf rule) bleibt lokal", ring11V2Results.llmRuleStaysLocal);
         check("Ring 11 V2: nicht-verbundener Client broadcastet nicht", ring11V2Results.disconnectedSkipsBroadcast);
         check("Ring 11 V2: dsl mit eigener peerId wird ignoriert", ring11V2Results.ownPeerDslIgnored);
         check("Ring 11 V2: dsl mit non-array program crasht nicht", ring11V2Results.nonArrayDslNoCrash);

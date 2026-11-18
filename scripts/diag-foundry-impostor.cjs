@@ -13,7 +13,9 @@
 //     Programms bindet die lebende (Selbsttest: das alte Wachsen). C6 (lod.K3): die Karte einer flachen Krone, gedreht und
 //     skaliert, aus jeder Blick-Hebung −20/0/40/80° gegen ihre Gestalt (Deckung, IoU; Selbsttest: jeder Ring waagrecht
 //     gebacken). C7 (w4-laub-karte, heil-laub-tiefe): die Tiefe je Texel an den Ecken ihres Gitters — vor einer Tafel steht
-//     die Karte in der Tiefe ihrer Gestalt (Selbsttest: ohne die Tiefe dahinter). Teil C beginnt erst, wenn die Welt steht (`weltRuht`, die EINE Ruhe); eine fremde Zelle im Probe-Atlas
+//     die Karte in der Tiefe ihrer Gestalt (Selbsttest: ohne die Tiefe dahinter). C10 (w28-karte-stamm): die GPU-Ablage wählt je
+//     Stufe und Ansicht die Texel, die der Kern wählt (Selbsttest: M zur geraden Zahl gerundet, der Stamm abgerundet).
+//     Teil C beginnt erst, wenn die Welt steht (`weltRuht`, die EINE Ruhe); eine fremde Zelle im Probe-Atlas
 //     ist ROT beim Namen.
 //   node scripts/diag-foundry-impostor.cjs
 const { statikServer, starteBrowser, hauptLauf, wandEnde, fehlerText } = require("./lib/welt-boot.cjs");
@@ -98,7 +100,9 @@ async function installiereBacke(page) {
             const sl = r._archGroupAlloc({ key: "gate:" + z.key, mesh: m, capacity: 1, liveCount: 0, slotRef: [], slotEntry: [] }, null).slot;
             return m.setMatrixAt(sl, M), r._lodSlotStamp({ mesh: m }, sl, s, false, lf), m;
         };
-        window.__fimpBacke = async (ren, at, key, variant, geo) => {
+        // `krone` (C10): ein zweiter Teil der Probe, dessen Sippe Laub ist — die Bühne liest seinen tiefsten Punkt als Kronen-Fuß
+        // (`_karteWeltBacken` laub), der Saum der Karte gilt über ihm, der Stamm darunter
+        window.__fimpBacke = async (ren, at, key, variant, geo, krone) => {
             const vor = st.renderer;
             st.renderer = ren;
             try {
@@ -110,6 +114,7 @@ async function installiereBacke(page) {
                     const anker = new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute([0, Y, 0, R, 0, 0, R, 0, 0], 3));
                     const g = new T.Group();
                     g.add(new T.Mesh(geo, mat), new T.Mesh(anker, mat));
+                    if (krone) g.add(Object.assign(new T.Mesh(krone, mat), { userData: { __sippe: "foliage" } }));
                     // die Probe-Gestalt liegt unter der Stufe, aus der die Karte backt (`_karteStufe`)
                     r._foundryCacheSet(r._foundryKoerperKey(z.preset, z.variant, r._karteStufe(z.preset), z.ov), g);
                 }
@@ -598,6 +603,144 @@ async function vergroessertProbe(page, fmtWunsch) {
     }, fmtWunsch);
 }
 
+// ===== TEIL C10 — DIE ABLAGE WÄHLT, WAS DER KERN WÄHLT (w28-karte-stamm) =====
+// EIN Gesetz, zwei Leser: welche Texel jede Stufe der Karte deckt, rechnet der Kern (phyto-core `impostorMips` mit dem Saum: das
+// Band, der Stamm, die Zahl M) und die GPU-Ablage der Welt (`_karteAblage`, KARTE_RECHNER_WGSL saumK · stammK · grenzeK). Der
+// Konsum-Leser ist die Ablage: ihre Bytes zeichnet jede Karte der Ferne. Die Probe ist ein Baum aus Rechtecken auf dem Raster
+// der Ansicht — ein Stamm, drei Texel breit (auf Stufe 1 trägt seine Zeile 1,5 Texel), unter einer Krone aus Laub —, gebacken
+// durch den ECHTEN Bake; die Alpha jeder BC1-Stufe 0–2 seiner Schicht steht gegen den Codec des Kerns über DENSELBEN Abzug der
+// Bühne, Ansicht für Ansicht, in jedem Hebungs-Ring. Das Urteil: (ZAHL) jede Ansicht jeder Stufe wählt genau so viele Texel wie
+// der Kern (M, die Rundung des Gesetzes); (TEXEL) höchstens GESETZ_TEXEL_MAX weichen ab — zwei Schlüssel des Bands, die sich
+// erst in der letzten Stelle der 32 Bit trennen, tauschen zwischen der Ablage (f32) und dem Kern (f64) den Platz (Radeon, fünf
+// Arten in jedem Ring: 4 von 3 010 560 Texeln, je zwei an der Tanne). SELBSTTEST, zwei Mutanten im Text des Rechners: (m1) M zur
+// geraden Zahl gerundet — die Ablage bis w28-karte-stamm (Radeon, main 1e00bfdb: Buche und Fichte 10 von 1 204 224 Texeln, je
+// betroffener Ansicht einer) — MUSS an der ZAHL fallen: die Probe deckt von vorn 5 330 Texel, Stufe 1 trägt 1 332,5;
+// (m2) der Stamm rundet seine Zeile ab MUSS an den TEXELN fallen.
+const GESETZ_TEXEL_MAX = 8;
+async function gesetzProbe(page) {
+    return await page.evaluate(async () => {
+        const out = { err: null };
+        try {
+            const A = r.constructor,
+                PC = globalThis.__phytoCore;
+            const pr = await __fimpProbe(64, 64, "bc");
+            if (!pr) return { ohneFeature: true };
+            const { ren, at } = pr;
+            if (!r._impostorAtlasTexturen(at, 1)) return { err: "der Atlas hat keine Texturen (das Buch fehlt)" };
+            const [cw, ch] = [at.cw, at.ch];
+            if (cw !== 128 || ch !== 256) return { err: `die Probe ist auf die Zelle 128 × 256 gerechnet, der Atlas trägt ${cw} × ${ch}` };
+            // Rechtecke in Texeln der Ansicht (x von links, y von unten): der Stamm 3 × 96, die Krone 48 × 104 und ein Zahn 5 × 10
+            const re = (x0, y0, x1, y1) => __fimpRechteck(x0 / cw, y0 / ch, x1 / cw, y1 / ch);
+            const z = await __fimpBacke(ren, at, "fimp:gateGesetz|1", 95, __fimpFlaeche(re(62, 0, 65, 96)), __fimpFlaeche([...re(40, 96, 88, 200), ...re(60, 200, 65, 210)]));
+            // EINE Messung: die Zelle backt neu, die Bühne liest ihren Abzug (`_karteAbzugLesen`), die Schicht ihre BC1-Stufen
+            const messe = async (nurVorn) => {
+                const zusage = new Promise((ja, nein) => (z._abzug = [{ ja, nein }]));
+                await __fimpBacke(ren, at, z);
+                const ab = await zusage;
+                const vor = st.renderer;
+                st.renderer = ren;
+                let sa, stufen;
+                try {
+                    sa = r._karteSaumVon(at, z, ab.frame, r._karteBuehneSatz.laub);
+                    const tex = r._karteGpuTexturen(at)[0],
+                        dev = ren.backend.device;
+                    stufen = [];
+                    for (const k of [0, 1, 2]) {
+                        const [w, h] = [at.masse.w >> k, at.masse.h >> k],
+                            [bx, by] = [Math.ceil(w / 4), Math.ceil(h / 4)],
+                            bpr = Math.ceil((bx * 8) / 256) * 256;
+                        const buf = dev.createBuffer({ size: bpr * by, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+                        const enc = dev.createCommandEncoder();
+                        enc.copyTextureToBuffer({ texture: tex, mipLevel: k, origin: { x: 0, y: 0, z: z.idx } }, { buffer: buf, bytesPerRow: bpr, rowsPerImage: by }, { width: bx * 4, height: by * 4, depthOrArrayLayers: 1 });
+                        dev.queue.submit([enc.finish()]);
+                        await buf.mapAsync(GPUMapMode.READ);
+                        const u = new Uint8Array(buf.getMappedRange().slice(0));
+                        buf.unmap();
+                        buf.destroy();
+                        // BC1, nur die Deckung: im 3-Farben-Modus (c0 ≤ c1) ist Index 3 leer
+                        const a = new Uint8Array(w * h);
+                        for (let j = 0; j < by; j++)
+                            for (let i = 0; i < bx; i++) {
+                                const o = j * bpr + i * 8,
+                                    leer = (u[o] | (u[o + 1] << 8)) <= (u[o + 2] | (u[o + 3] << 8)),
+                                    bits = u[o + 4] | (u[o + 5] << 8) | (u[o + 6] << 16) | (u[o + 7] << 24);
+                                for (let q = 0; q < 16; q++) {
+                                    const [x, y] = [i * 4 + (q & 3), j * 4 + (q >> 2)];
+                                    if (x < w && y < h) a[y * w + x] = leer && ((bits >>> (2 * q)) & 3) === 3 ? 0 : 1;
+                                }
+                            }
+                        stufen.push({ w, a });
+                    }
+                } finally {
+                    st.renderer = vor;
+                }
+                const m = { n: 0, ab: 0, zahl: 0, ansichten: 0, gewaehlt: 0, wo: [], front: 0, saum: [...sa].slice(0, 9).map((x) => +x.toFixed(3)) };
+                const thr = PC.KARTEN_GESETZ.schwelle * 255;
+                ab.ringe.forEach((ring, ri) => {
+                    if (nurVorn && ring.hebung !== 0) return;
+                    const t = ring.teiler,
+                        [w0, h0] = [cw / t, ch / t],
+                        V = (ring.h / h0) * t;
+                    const saum = { seite: sa[ri], fuss: sa[4 + ri], nadel: sa[8] > 0.5 };
+                    for (let v = 0; v < V; v++) {
+                        const [x0, y0] = [(v % t) * w0, ring.y + Math.floor(v / t) * h0];
+                        const rgba = new Uint8Array(w0 * h0 * 4);
+                        let n0 = 0;
+                        for (let y = 0; y < h0; y++)
+                            for (let x = 0; x < w0; x++) {
+                                const d = ab.albedo[((y0 + y) * ab.w + x0 + x) * 4 + 3] >= thr;
+                                if (d) (n0++, (rgba[(y * w0 + x) * 4 + 3] = 255));
+                            }
+                        if (ring.hebung === 0 && v === 0) m.front = n0;
+                        const st0 = PC.impostorMips(rgba, w0, h0, 1, null, 6, { saum }).stufen;
+                        for (const k of [0, 1, 2]) {
+                            if (!st0[k]) continue;
+                            const [w, h] = [w0 >> k, h0 >> k],
+                                G = stufen[k];
+                            let [g, c, d] = [0, 0, 0];
+                            for (let y = 0; y < h; y++)
+                                for (let x = 0; x < w; x++) {
+                                    const a = G.a[((y0 >> k) + y) * G.w + (x0 >> k) + x],
+                                        b = st0[k].data[(y * w + x) * 4 + 3] ? 1 : 0;
+                                    g += a;
+                                    c += b;
+                                    d += a !== b ? 1 : 0;
+                                }
+                            m.n += w * h;
+                            m.ab += d;
+                            m.gewaehlt += c;
+                            m.ansichten++;
+                            if (g !== c) (m.zahl++, m.wo.length < 4 && m.wo.push(`Ring ${ring.hebung}° Ansicht ${v} Stufe ${k}: Ablage ${g}, Kern ${c}`));
+                        }
+                    }
+                });
+                return m;
+            };
+            // die Mutante: der Text des Rechners mit EINER getauschten Stelle, seine Programme und die Bindung der Bühne neu
+            const W0 = A.KARTE_RECHNER_WGSL;
+            const neu = () => ((r._karteRechnerSatz = undefined), r._karteBuehneSatz?.rechen && (r._karteBuehneSatz.rechen.gruppe = null));
+            const mutante = async (von, nach) => {
+                if (!W0.includes(von)) return { fehlt: von };
+                A.KARTE_RECHNER_WGSL = W0.replace(von, nach);
+                neu();
+                try {
+                    return await messe(true);
+                } finally {
+                    A.KARTE_RECHNER_WGSL = W0;
+                    neu();
+                }
+            };
+            out.gesetz = await messe(false);
+            out.m1 = await mutante("u32(floor(deck0 * f32(nA) + 0.5))", "u32(round(deck0 * f32(nA)))");
+            out.m2 = await mutante("vor < floor(sum + 0.5)", "vor < floor(sum)");
+            ren.dispose();
+        } catch (e) {
+            out.err = fehlerText(e);
+        }
+        return out;
+    });
+}
+
 // ===== TEIL C4 — DER WIND WEHT IN DER WELT =====
 // Dieselbe r184-Reihenfolge trägt jeder Stoff einer InstancedMesh (`_instanzMesh`): der positionNode läuft VOR der
 // Instanz-Matrix. Addiert der Wind dort einen Versatz in Welt-Metern und Welt-Richtung, drehte und skalierte ihn die
@@ -724,6 +867,7 @@ hauptLauf(async () => {
     const ruhe = await weltRuht(pageA);
     const Cs =[await kleberProbe(pageA, "bc"), await kleberProbe(pageA, "rgba8")];
     const C2s = [await vergroessertProbe(pageA, "bc"), await vergroessertProbe(pageA, "rgba8")];
+    const C10 = await gesetzProbe(pageA);
     const C4 = await windProbe(pageA);
     await browserA.close();
 
@@ -888,6 +1032,24 @@ hauptLauf(async () => {
             );
         if (!(s.zeilen >= 40 && s.treppe > 0.6))
             E(`${F}-SELBSTTEST: die 8-Texel-Stufen stehen nicht treppig (${s.treppe}) — die Linse ist blind`);
+    }
+    {
+        log("\n=== TEIL C10 — DIE ABLAGE WÄHLT, WAS DER KERN WÄHLT (die BC1-Stufen der Schicht gegen phyto-core impostorMips) ===");
+        const z = (m) => (m.fehlt ? `der Text „${m.fehlt}“ fehlt im Rechner` : `${m.ab} von ${m.n} Texeln anders, ${m.zahl} von ${m.ansichten} Ansichten mit anderer Zahl`);
+        if (C10.ohneFeature) log(OHNE_BC);
+        else if (C10.err) E(`C10: die Gesetz-Probe brach ab — ${C10.err}`);
+        else {
+            const G = C10.gesetz;
+            log(`  Ablage gegen Kern: ${z(G)} · gewählt ${G.gewaehlt} · von vorn deckt die Probe ${G.front} Texel · Saum ${J(G.saum)}`);
+            log(`  Selbsttest (m1) M zur geraden Zahl gerundet (MUSS an der Zahl fallen): ${z(C10.m1)} · (m2) der Stamm rundet ab (MUSS > ${GESETZ_TEXEL_MAX} Texel): ${z(C10.m2)}`);
+            // die Probe trägt, was sie prüft: Krone und Stamm (ein Kronen-Fuß im Ring 0°), die halbe Zahl der Stufe 1
+            if (!(G.n > 500000 && G.gewaehlt > 10000 && G.saum[5] > 0 && G.front % 8 === 2))
+                E(`C10: die Probe ist blind — ${G.n} Texel, ${G.gewaehlt} gewählt, Kronen-Fuß ${G.saum[5]}, von vorn ${G.front} Texel (Soll 4 n + 2 mit geradem n)`);
+            if (G.zahl) E(`C10: ${G.zahl} Ansichten der Ablage wählen eine andere Zahl Texel als der Kern (M) — ${G.wo.join(" · ")}`);
+            if (G.ab > GESETZ_TEXEL_MAX) E(`C10: die Ablage wählt ${G.ab} Texel anders als der Kern (höchstens ${GESETZ_TEXEL_MAX}) — zwei Gesetze`);
+            if (!(C10.m1.zahl > 0)) E(`C10-SELBSTTEST (m1): M zur geraden Zahl gerundet bleibt ungesehen (${z(C10.m1)}) — die Linse ist blind`);
+            if (!(C10.m2.ab > GESETZ_TEXEL_MAX)) E(`C10-SELBSTTEST (m2): der abgerundete Stamm bleibt ungesehen (${z(C10.m2)}) — die Linse ist blind`);
+        }
     }
     server.close();
     wandEnde(errs, "die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum und in der Tiefe ihrer Gestalt, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich).");

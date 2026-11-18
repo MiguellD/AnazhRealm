@@ -16,8 +16,7 @@ class AnazhRealm_dirigent_regler {
             this.state.fps = fps;
             this.state._fpsFrames = 0;
             this.state._fpsElapsed = 0;
-            const fpsDiv = typeof document !== "undefined" ? document.getElementById("fps") : null;
-            if (fpsDiv) fpsDiv.innerText = this._t("kern.fps", { fps });
+            this._fpsSchreib();
             // Leise Konsole: die Zahl lebt im HUD (#fps) + perf-Overlay; geloggt wird nur ein ECHTER Einbruch
             // (> 30 % unter die laufende Referenz, gedrosselt via Referenz-Reset).
             const ref = this._fpsLogRef || fps;
@@ -27,6 +26,13 @@ class AnazhRealm_dirigent_regler {
             // EWMA-Referenz (träge, Instanz-Feld wie _editSaveTimer — nicht serialisiert).
             this._fpsLogRef = ref * 0.9 + fps * 0.1;
         }
+    }
+
+    // die FPS-Zeile (#fps) aus dem letzten Fenster: der 1-s-Takt und der Wechsel der Sprache (`_spracheSetzen`) schreiben sie
+    _fpsSchreib() {
+        const fpsDiv = typeof document !== "undefined" ? document.getElementById("fps") : null;
+        if (fpsDiv && this.state && this.state.fps != null)
+            fpsDiv.innerText = this._t("kern.fps", { fps: this.state.fps });
     }
 
     // ===== DER PERFORMANCE-REGELKREIS (der Nexus WERTET seine Last) ===
@@ -106,8 +112,10 @@ class AnazhRealm_dirigent_regler {
         // für DISJUNKTE Phasen das Wasser abziehen (sonst doppelt gezählt im Aktuator).
         const streamingExcl = Math.max(0, (f.streaming || 0) - (f.waterIso || 0));
         if (!sense.phaseMax) sense.phaseMax = {};
+        let cpuMs = 0; // die CPU-Zeit dieses Bilds über die disjunkten Phasen (das Urteil „an die GPU gebunden“ der Skala)
         for (const k of AnazhRealm.PERF_PHASES) {
             const v = k === "streaming" ? streamingExcl : f[k] || 0;
+            cpuMs += v;
             sense.phase[k] = ewma(sense.phase[k] || 0, v);
             // V18.268 — der Spike neben dem Mittel (abklingender Max): die EWMA glättet
             // einen Hitch weg, phaseMax behält ihn ~1 s sichtbar (0.92/Frame-Abkling).
@@ -120,6 +128,7 @@ class AnazhRealm_dirigent_regler {
         sense.renderTrisMax = Math.max(f.renderTris || 0, (sense.renderTrisMax || 0) * 0.92);
         sense.frameMs = ewma(sense.frameMs, frameMs);
         sense.frameMaxMs = Math.max(frameMs, sense.frameMaxMs * 0.92); // abklingende Spitze
+        this._szeneSkalaMessen(frameMs, cpuMs);
         const nCre = st.creatures ? st.creatures.length : 0;
         sense.perCreatureMs = ewma(sense.perCreatureMs, nCre > 0 ? (f.creatures || 0) / nCre : 0);
         // ein gebauter Chunk je Frame kostet ~syncBuildMs (sync) ODER ~bvhMs (worker+BVH)
@@ -285,12 +294,12 @@ class AnazhRealm_dirigent_regler {
         const st = this.state;
         const ls = sense.loadScale;
         const p = sense.phase;
-        // Die drei regelbaren Domänen + ihre gemessene Last. Die GPU-Render-Last (`sense.renderCalls` ×
-        // PERF_RENDER_CALL_MS) zählt zur Architektur (Cull-Radius + Schatten-Intervall skalieren sie):
-        // `p.render` ist nur CPU-Zeit — ohne den Draw-Call-Proxy drosselte der Regler das Streaming,
-        // während der Schatten-Pass ungebremst lief.
-        const renderLoadMs = (sense.renderCalls || 0) * AnazhRealm.PERF_RENDER_CALL_MS;
-        const cArch = (p.archCulling || 0) + (p.render || 0) + renderLoadMs;
+        // Die drei regelbaren Domänen + ihre gemessene Last. Die GPU-Last des Bilds zählt zur Architektur (Dichte, Strahlen
+        // und Schatten-Intervall skalieren sie): `p.render` ist nur CPU-Zeit — ohne sie drosselte der Regler das Streaming,
+        // während der Schatten-Pass ungebremst lief. ER LIEST DIE GEMESSENE GPU-ZEIT (w28-takt-frist, `p.gpuMs`: der
+        // timestamp-query des letzten Bilds, sonst der Proxy Bild − ΣCPU, `_perfGpuSample`) — bis hier einen zweiten Maßstab
+        // daneben, Befehle × 0,011 ms: bei 78–126 Befehlen ~1 ms, wo die Radeon 6,8–8,3 ms maß (Wiese und Dorf, 14.11.).
+        const cArch = (p.archCulling || 0) + (p.render || 0) + (p.gpuMs || 0);
         const cStream = p.streaming || 0;
         const cWater = p.waterIso || 0;
         const tot = cArch + cStream + cWater + 1e-6;
@@ -305,9 +314,9 @@ class AnazhRealm_dirigent_regler {
         const cl = (v) => Math.max(0, Math.min(1, v));
         const lerp = (a, b, t) => a + (b - a) * cl(t);
         const L = AnazhRealm.PERF_LEVERS;
+        // (das Wasser zählt als Last in die Anteile, trägt aber keinen Hebel mehr: sein Budget ist der Rest der EINEN Frist)
         const effArch = eff(cArch),
-            effStream = eff(cStream),
-            effWater = eff(cWater);
+            effStream = eff(cStream);
         // Frame über Budget = gemessene Frame-ZEIT über dem Drossel-Sollwert (nie ein Draw-Call-Proxy,
         // der Welt-Größe mit Render-Druck verwechselt). Steuert NUR sichtbare Deko-Arbeit (Laub-Wachstum/
         // Dichte/Dünnen); das Streaming (= Bewegung) bleibt unangetastet.
@@ -390,9 +399,11 @@ class AnazhRealm_dirigent_regler {
                 !streamBusy
             );
         }
-        // DIE AUFLÖSUNG IST KEIN STELLGLIED DES REGLERS (K50): die Szene rendert in der EINEN Szenen-Skala (`_szeneSkalaWirk`,
-        // der Spieler setzt sie), die zeitliche Auflösung löst auf die Ausgabe auf — ein Ziel-Wechsel je Last war die
-        // Destroyed-Klasse (realloc-tod 20.07.). Der Regler trägt die Pixel-Kappe der Geräte-Klasse (`_applyRenderScale`).
+        // DIE AUFLÖSUNG IST KEIN STELLGLIED DIESES REGLERS (K50): der PID regelt sie nie je Bild. Die Szene rendert in der EINEN
+        // Szenen-Skala (`_szeneSkalaWirk`): der Wert des Spielers, sonst die am Gerät eingemessene (`_szeneSkalaMessen`, höchstens
+        // ein Schritt je 10-s-Fenster; der Wechsel ist sicher — 70 Wechsel unter lebenden Bündeln ohne GPU-Fehler an der Radeon,
+        // w28-bild-preis, wo realloc-tod 20.07. die Destroyed-Klasse fand). Der Regler trägt die Pixel-Kappe der Geräte-Klasse
+        // (`_applyRenderScale`).
         if (!(st.renderer && st.renderer._isHeadlessNull)) this._applyRenderScale();
         // DIE SCHATTEN-REICHWEITE IST EIN RAND, kein Stellglied (w14-lod-uebergang): sie steht, wo der Spieler sie setzt
         // (`atmosphere.shadowRange`, `setShadowRange`). Bis hier zog der Regler sie zwischen 100 m und der Decke in 6-m-Stufen —
@@ -418,9 +429,7 @@ class AnazhRealm_dirigent_regler {
         const streamEff = streamBacklog > 0 ? 1 : effStream;
         st._voxelStreamBudgetMs = lerp(L.streamBudgetMs[0], L.streamBudgetMs[1], streamEff);
         st._voxelStreamMaxPerFrame = Math.round(lerp(L.streamMaxPerFrame[0], L.streamMaxPerFrame[1], streamEff));
-        // Wasser:
         if (!st.atmosphere) st.atmosphere = {};
-        st.atmosphere.waterIsoBudgetMs = lerp(L.waterIsoBudgetMs[0], L.waterIsoBudgetMs[1], effWater);
         // Schatten-Update-Intervall (V18.264): der Schatten-Pass ist ein zweiter
         // Voll-Render → unter Render-/Architektur-Last seltener neu rendern (auch bei
         // Bewegung). render zählt zur Architektur-Domäne → effArch trägt es.
@@ -673,7 +682,6 @@ class AnazhRealm_dirigent_regler {
             }),
             this._t("kern.perf-stellgr", {
                 stream: (this.state._voxelStreamBudgetMs || 0).toFixed(1),
-                water: ((this.state.atmosphere && this.state.atmosphere.waterIsoBudgetMs) || 0).toFixed(1),
             }),
             this._t("kern.perf-chunk", {
                 sync: s.syncBuildN.toFixed(2),
@@ -1046,7 +1054,7 @@ class AnazhRealm_dirigent_regler {
     // schwaches Gerät zahlt so nicht den Überlast-Einbruch des optimistischen Kaltstarts.
     // Memoisiert erst, wenn die Adapter-Info da ist (Renderer-Init async).
     _geraeteProfil() {
-        if (this._geraeteProfilMemo) return this._geraeteProfilMemo;
+        if (this._geraeteProfilMemo) return this._geraeteMessungIn(this._geraeteProfilMemo);
         const nav = typeof navigator !== "undefined" ? navigator : {};
         const win = typeof window !== "undefined" ? window : {};
         const r = this.state.renderer;
@@ -1061,22 +1069,152 @@ class AnazhRealm_dirigent_regler {
             /* Adapter-Info nicht freigelegt — kein Beinbruch */
         }
         const g = gpu.toLowerCase();
-        // Grobe, EHRLICHE Marker (Chrome legt vendor/architecture frei, z.B.
-        // "nvidia ampere" · "intel gen-12lp" · "apple metal-3" · "arm valhall"):
+        // DIE KARTE WIRD GEMESSEN, NIE AM NAMEN (w28-bild-preis): bis hier hob ein Muster des Adapter-Texts (`rdna`, `gtx` …)
+        // eine Karte zur Klasse „stark“. Gelesen an der Radeon 890M (main 2b826a89, werkbank --echt): r184 legt `backend.adapter`
+        // nicht frei, `gpu` ist leer — jedes Gerät mit ≥ 8 Kernen stand als „mittel“, das Muster war tot. Der Text trägt nur noch,
+        // was er WEISS: eine Software- oder Telefon-Rasterung und ein kleines Gerät (Kerne, Speicher) sind schwach, jedes andere
+        // beginnt „mittel“; wie stark es ist, sagt sein Bild (`_szeneSkalaMessen` → `_geraeteMessungIn`).
         const software = /swiftshader|software|llvmpipe|basic render/.test(g);
         const mobil = /\b(arm|mali|qualcomm|adreno|imgtec|powervr|valhall)\b/.test(g);
-        const diskret = /nvidia|geforce|rtx|gtx|ampere|ada|turing|rdna|navi/.test(g) && !software;
-        const apple = /\bapple\b/.test(g);
-        let klasse = "mittel";
-        if (software || mobil || (memGb > 0 && memGb <= 4) || (cores > 0 && cores <= 4)) klasse = "schwach";
-        else if ((diskret || apple) && (memGb === 0 || memGb >= 8) && cores >= 8) klasse = "stark";
+        const klasse =
+            software || mobil || (memGb > 0 && memGb <= 4) || (cores > 0 && cores <= 4) ? "schwach" : "mittel";
         // Der Seed ist die Klasse allein. Bis V18.531 zog ein Pixel-Zuschlag ab 4 MPix 0,1–0,2 ab — ein Schirm-Gesetz
         // VERKEHRT herum (ein größerer Schirm startete mit weniger Welt) und an `_schirm` vorbei (innerWidth·dpr). Die
         // Fill-Last des Schirms trägt die Klassen-Pixel-Kappe (`_applyRenderScale`), danach der PID.
         const seed = klasse === "stark" ? 1 : klasse === "schwach" ? 0.45 : 0.7;
-        const profil = { klasse, seed, cores, memGb, dpr, gpu };
+        const profil = { klasse, prior: klasse, seed, cores, memGb, dpr, gpu };
         if (gpu) this._geraeteProfilMemo = profil; // erst mit Adapter-Wahrheit einfrieren
+        return this._geraeteMessungIn(profil);
+    }
+
+    // DAS GEMESSENE IM PROFIL (w28-bild-preis): `skala` die eingemessene Szenen-Skala (null = ungemessen, es gilt SZENE_SKALA),
+    // `messung` das letzte Fenster, die Klasse aus dem Bild — eine Stufe hinab „mittel“, zwei „schwach“, ungestuft der Prior
+    // (der Seed des Reglers liest den Prior beim Boot, die Pixel-Kappe `_applyRenderScale` die gemessene Klasse).
+    _geraeteMessungIn(profil) {
+        const m = this._geraeteMessung;
+        profil.skala = m ? m.skala : null;
+        profil.messung = m ? m.fenster : null;
+        profil.schritte = m ? m.schritte : [];
+        profil.klasse =
+            !m || m.ab === 0 ? profil.prior : m.ab >= 2 || profil.prior === "schwach" ? "schwach" : "mittel";
         return profil;
+    }
+
+    // DIE ABLAGE DES GERÄTS (w28-wiese-takt): was eine Sitzung einmaß, trägt die nächste — der Wert liegt beim Spieler
+    // (`SZENE_SKALA_MESSUNG.ablage`, nie im Spielstand, wie die Tag-Länge) und steht, bevor der Szenen-Pass seine Ziele baut
+    // (der EINE Leser, gerufen aus `_szeneSkalaWirk`).
+    // Bis hier begann jede Seite bei SZENE_SKALA: die Radeon an der Mess-Wiese zeigte nach jedem Laden 22 s lang Bild p50
+    // 33,5 · p95 58,6 ms, dann 10 s 0,625, und der Schritt selbst war ein Bild von 109 ms (main a996d0ae).
+    _geraeteMessungAblage() {
+        const M = AnazhRealm.SZENE_SKALA_MESSUNG;
+        const roh = typeof localStorage !== "undefined" ? localStorage.getItem(M.ablage) : null;
+        const ab = roh == null ? -1 : M.stufen.indexOf(Number(roh));
+        this._geraeteMessung =
+            ab > 0 && M.stufen[ab] >= AnazhRealm.SZENE_SKALA_MIN
+                ? { skala: M.stufen[ab], ab, fenster: null, schritte: [], gezaehlt: 0 }
+                : null;
+    }
+
+    // DIE SZENEN-SKALA ALS FUNKTION DES GEMESSENEN GERÄTS (w28-bild-preis; Gebot 7: die Kosten am Schirm, nie an der Welt). Die
+    // Radeon 890M ist an der Füllung gebunden (Mess-Wiese Ego, 1920 × 1080: 21,6 ms je Megapixel Szene + ~14 ms Sockel; bei 0,75
+    // Bild p95 41,9–58,7 ms, der Haupt-Faden 2,5–3,6 ms), die GTX 1060 hält 16,8 ms. Je gezeichnetem Bild (`_perfSenseFoldFrame`)
+    // sammelt die Sitzung den Bild-Abstand und die CPU-Zeit, solange die Welt nicht strömt (kein Rückstau, kein Lade-Takt, kein
+    // Nachlauf) und der Spieler keine eigene Skala gesetzt hat (`state.szeneSkala` gewinnt immer); nach `SZENE_SKALA_MESSUNG.
+    // fensterMs` Bild-Zeit urteilt sie EIN Fenster: p95 über `zielMs` und an die GPU gebunden (die Leine hielt ≥ `leineAnteil` der Bilder und
+    // CPU p50 unter `gpuAnteil` des Bilds; das Ankunfts-Fenster mit 23 ms CPU bei 55 ms Bild urteilt so nicht)
+    // → hinab, in EINEM Schritt bis zu der Stufe, an der das Ziel hielte, wäre das Bild ganz Füllung; p95 so tief, dass die
+    // nächste Stufe hinauf selbst bei voller Füllungs-Last (Bild × Pixel-Verhältnis) unter `aufAnteil` · zielMs bliebe → eine
+    // hinauf, nie über SZENE_SKALA. Höchstens EIN Schritt je Fenster; der klare Fall wartet es nicht ab (der frühe Abstieg nach
+    // `abMs`). Bis w28-wiese-takt ging die Skala je 10-s-Fenster eine Stufe: die Radeon zeigte an der Mess-Wiese 22 s lang 0,75
+    // (p95 58,6 ms), 10 s 0,625 (p95 50,3 ms) und erst dann 0,5. Der Wechsel geht den Weg des Menü-Werts (`_loopRender`:
+    // `setResolutionScale` beim nächsten Bild, wie ein Fenster-Wechsel). Die Zahl lebt in `_geraeteMessung` und beim Spieler
+    // (`SZENE_SKALA_MESSUNG.ablage`: die nächste Sitzung beginnt mit ihr), das Geräte-Profil trägt sie (`_geraeteMessungIn`:
+    // Telemetrie, Pixel-Kappe), jedes Bild liest sie über `_szeneSkalaWirk`; laut im Log.
+    _szeneSkalaMessen(frameMs, cpuMs) {
+        const st = this.state;
+        const r = st.renderer;
+        const M = AnazhRealm.SZENE_SKALA_MESSUNG;
+        let F = this._skalaFenster;
+        // DIE LEINE HIELT DIESES BILD (`_gpuLeineFrei`: der Takt wartete auf die Karte, `ausgesetzt` stieg seit dem letzten Bild)
+        const L = this._gpuLeine;
+        const aus = L ? L.ausgesetzt : 0;
+        const gehalten = this._skalaLeineVor != null && aus > this._skalaLeineVor;
+        this._skalaLeineVor = aus;
+        const ruht =
+            !r ||
+            r._isHeadlessNull ||
+            !st._traa ||
+            st.szeneSkala != null ||
+            // eine andere Hand hält die Skala (eine Probe der Werkbank am Standard): ihre Bilder urteilen nicht das Gerät
+            this._szeneSkalaWirk() !==
+                (this._geraeteMessung && this._geraeteMessung.skala != null
+                    ? this._geraeteMessung.skala
+                    : AnazhRealm.SZENE_SKALA) ||
+            st._nachlauf != null ||
+            (st.voxelMeshPending && st.voxelMeshPending.size > 0) ||
+            this._ladeTakt();
+        if (ruht || !F) {
+            this._skalaFenster = ruht ? null : { bild: [], cpu: [], summe: 0, gehalten: 0 };
+            return;
+        }
+        F.bild.push(frameMs);
+        F.cpu.push(cpuMs);
+        F.summe += frameMs;
+        if (gehalten) F.gehalten++;
+        // DER FRÜHE ABSTIEG (w28-wiese-takt): einmal je Fenster, nach `abMs` Bild-Zeit und `abBilder` Bildern, fragt die Sitzung nur
+        // den klaren Fall — das `abQuantil` der Bilder über dem Ziel und an die GPU gebunden. Jeder andere wartet das Fenster ab.
+        const voll = F.summe >= M.fensterMs;
+        const frueh = !voll && !F.frueh && F.summe >= M.abMs && F.bild.length >= M.abBilder;
+        if (!voll && !frueh) return;
+        F.frueh = true;
+        const q = (a, x) => {
+            const s = a.slice().sort((u, v) => u - v);
+            return s[Math.min(s.length - 1, Math.floor(x * s.length))];
+        };
+        const p50 = q(F.bild, 0.5),
+            p95 = q(F.bild, 0.95),
+            cpu50 = q(F.cpu, 0.5);
+        const leine = F.gehalten / F.bild.length;
+        const gebunden = leine >= M.leineAnteil && cpu50 < M.gpuAnteil * p50;
+        if (frueh && !(gebunden && q(F.bild, M.abQuantil) > M.zielMs)) return;
+        this._skalaFenster = { bild: [], cpu: [], summe: 0, gehalten: 0 };
+        const stufen = M.stufen.filter((s) => s >= AnazhRealm.SZENE_SKALA_MIN && s <= AnazhRealm.SZENE_SKALA);
+        const m =
+            this._geraeteMessung ||
+            (this._geraeteMessung = { skala: null, ab: 0, fenster: null, schritte: [], gezaehlt: 0 });
+        m.gezaehlt++;
+        const jetzt = m.skala == null ? AnazhRealm.SZENE_SKALA : m.skala;
+        const i = stufen.indexOf(jetzt);
+        let neu = jetzt;
+        if (p95 > M.zielMs && gebunden && i >= 0 && i + 1 < stufen.length) {
+            // hinab bis zu der Stufe, an der das Bild das Ziel hielte, wäre es GANZ Füllung (p95 × Pixel-Verhältnis): hält es dort
+            // selbst so nicht, hält es dort nie — die Stufe fällt aus, statt 10 s lang gezeigt zu werden
+            let j = i + 1;
+            while (j + 1 < stufen.length && p95 * (stufen[j] / jetzt) ** 2 > M.zielMs) j++;
+            neu = stufen[j];
+        } else if (i > 0 && p95 * (stufen[i - 1] / jetzt) ** 2 <= M.aufAnteil * M.zielMs) neu = stufen[i - 1];
+        m.fenster = {
+            p50: +p50.toFixed(1),
+            p95: +p95.toFixed(1),
+            cpu50: +cpu50.toFixed(1),
+            leine: +leine.toFixed(2),
+            gebunden,
+            bilder: F.bild.length,
+            skala: jetzt,
+        };
+        if (neu === jetzt) return;
+        m.skala = neu;
+        // die Spur der Schritte: nach dem wievielten Urteil (ein Fenster von fensterMs Bild-Zeit oder sein früher Abstieg) die
+        // Sitzung ihre Skala fand
+        m.schritte.push({ von: jetzt, nach: neu, fenster: m.gezaehlt });
+        m.ab = stufen.indexOf(neu);
+        // die Ablage des Geräts (`_szeneSkalaWirk` liest sie beim nächsten Laden)
+        if (typeof localStorage !== "undefined") localStorage.setItem(M.ablage, String(neu));
+        this.log(
+            `SZENEN-SKALA eingemessen: ${jetzt} → ${neu}, Bild p50 ${p50.toFixed(1)} ms · p95 ${p95.toFixed(1)} ms · CPU p50 ` +
+                `${cpu50.toFixed(1)} ms, Leine ${Math.round(100 * leine)} % (${gebunden ? "an die GPU gebunden" : "an die CPU gebunden"}, ${F.bild.length} Bilder)`,
+            "INFO"
+        );
     }
     // Der EINE Regler-Seed-Leser (nur der Sense-Init ruft ihn): headless/Null-
     // Renderer bleibt BYTE-ALT (loadScale 1 — Gates sehen die volle Welt).
@@ -1836,8 +1974,6 @@ class AnazhRealm_dirigent_regler {
                 nahStreu: st.nahStreu ? st.nahStreu.kacheln.size : 0,
                 pendingGrass: sz(st.pendingGrass),
                 pendingFoliage: sz(st.pendingFoliageChunks),
-                floatingIslands: sz(st.floatingIslands),
-                ufos: sz(st.ufos),
                 archInstanceGroups: sz(st.archInstanceGroups),
                 scatterRegions: sz(st.scatterRegions),
                 logBuffer: sz(st.logBuffer),
@@ -2008,6 +2144,26 @@ AnazhRealm.PERF_PHASES = Object.freeze(["streaming", "waterIso", "archCulling", 
 // gibt sie unter Render-Last früh nach; 0.8 ist ein sichtbarer, aber nicht überstrahlender Pegel.
 AnazhRealm.PERF_GODRAY_MAX = 0.8;
 AnazhRealm.PERF_TARGET_MS = 17;
+// DIE EINMESSUNG DER SKALA (w28-bild-preis, `_szeneSkalaMessen`): je Fenster von `fensterMs` gezeichneter Bild-Zeit (≥ 10 s:
+// höchstens ein Schritt je Fenster) urteilt die Sitzung ihr Bild — p95 über `zielMs` (34: die Preis-Treppe am Raster des
+// Schirms, 4 Takte bei 120 Hz = 33,5 ms, 2 bei 60 Hz = 33,3 ms) die GPU-Leine hielt ≥ `leineAnteil` der Bilder und CPU p50 liegt
+// unter `gpuAnteil` des Bild-p50 (an die GPU gebunden; Radeon an der Wiese: Leine 65–87 %, CPU 0,18–0,27 des Bilds) → hinab bis zu der Stufe, an der p95 × Pixel-Verhältnis das Ziel hielte; hinauf nur, wenn das Bild × Pixel-Verhältnis unter `aufAnteil` · zielMs bliebe.
+// DER FRÜHE ABSTIEG (w28-wiese-takt): nach `abMs` Bild-Zeit und mindestens `abBilder` Bildern urteilt das Fenster einmal vorab —
+// liegt schon das `abQuantil` seiner Bilder über zielMs (jedes fünfte Bild; Radeon an der Wiese bei 0,75: 37 % über 4 Takten von
+// 120 Hz, bei 0,5: 2 %) und ist es an die GPU gebunden, geht die Skala sofort. Hinauf urteilt nur das ganze Fenster. `ablage`:
+// der Schlüssel, unter dem die eingemessene Skala beim Spieler liegt (`_szeneSkalaWirk` liest ihn beim Laden).
+AnazhRealm.SZENE_SKALA_MESSUNG = Object.freeze({
+    stufen: Object.freeze([0.75, 0.625, 0.5]),
+    fensterMs: 10000,
+    zielMs: 34,
+    gpuAnteil: 0.33,
+    leineAnteil: 0.5,
+    aufAnteil: 0.85,
+    abMs: 3000,
+    abBilder: 30,
+    abQuantil: 0.8,
+    ablage: "anazh.szeneSkala.geraet",
+});
 // V18.281 — DER ATEM-KOPFRAUM: die Schönheit wächst nur, wenn die Frame-Zeit ≥ diesen
 // Abstand UNTER der Decke liegt (17 − 4 = 13 ms ≈ 77 fps). Das Totband [13..17 ms] ist die
 // Lunge des Systems: dazwischen hält der Regler → fps ruht über 60 statt am 59er-Anschlag.
@@ -2018,10 +2174,6 @@ AnazhRealm.PERF_SENSE_ALPHA = 0.12; // EWMA-Gewicht: ruhige, peer-konsistente Wa
 // stockende mapAsync-Kette), fällt `_perfGpuSample` ehrlich auf den Proxy zurück.
 AnazhRealm.PERF_GPU_TS_STALE_MS = 2000;
 AnazhRealm.PERF_GPU_TS_TAKT_MS = 250; // der Takt des Lesers (`_perfGpuResolveKick`): ein Achtel der Frische
-// GPU-Last-Proxy: ms-Äquivalent je Draw-Call (~0.011 → 1092 Draw-Calls ≈ 12 ms). Hebt die
-// GPU-Render-Last in die Architektur-Domäne des Aktuators, damit der Regler unter Render-Last die
-// render-senkenden Hebel (Schatten-Intervall + Cull-Radius) ZUERST drosselt.
-AnazhRealm.PERF_RENDER_CALL_MS = 0.011;
 // V18.293 — DER FLUGSCHREIBER (Blackbox): wie viele schlimmste Frames pro Sitzung behalten
 // (WORST_CAP), wie oft der Leck-Detektor im Leerlauf eine Probe nimmt (PROBE_MS) und ab welcher Frame-Zeit ein Frame
 // als „Stocker" gilt (FREEZE_MS ≈ unter 20 fps = spürbar).
@@ -2035,7 +2187,6 @@ AnazhRealm.PERF_PID = Object.freeze({ p: 0.25, i: 0.5, d: 0 });
 AnazhRealm.PERF_LEVERS = Object.freeze({
     streamBudgetMs: [2.5, 5], // _loopVoxelStreaming Frame-Budget
     streamMaxPerFrame: [3, 6], // _loopVoxelStreaming max Chunks/Frame
-    waterIsoBudgetMs: [3.5, 8], // _tickPendingWaterIso Zeit-Deadline (V18.261-Lever)
     shadowMinInterval: [1, 5], // _loopShadowUpdate min Frames zwischen Schatten-Renders (V18.264)
 });
 // HOLZ-LEITER: EIN Daten-Profil je Hardware-Klasse setzt die FERNE-Deckel (Ring · Schatten-Frustum ·

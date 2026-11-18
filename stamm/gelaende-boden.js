@@ -238,52 +238,6 @@ class AnazhRealm_gelaende_boden {
     // Täler und Seen trägt das Flussnetz des Gelände-Gesetzbuchs (K16): ein See ist eine Senke des Netzes (Ebene 0),
     // die Hydrosphäre füllt sie — keine Erosions-Simulation, kein Tarn-Pass, das Gelände entwässert aus sich selbst.
 
-    // Worldgen-Inseln über `spawnIslandAt` (Surface-Nets, ein Pfad); Spawn-Y aus der echten Voxel-Surface
-    // (`maxHeight` ist in Voxel-Welten 0 — `maxHeight + 20` landete Inseln IM Terrain).
-    // DIE INSELN KOMMEN NACH DEM BILD (w19-ankunft-takt, ankunft.K5): keine schwebt im ersten Weltbild (50–140 m über dem Boden,
-    // irgendwo in 80 % der Welt) — jede wächst nach dem Bild (`_weltbildKommt`) im Leerlauf des Fadens, EINE je Aufgabe
-    // (`_imLeerlauf`). Bis hier rechnete die Ankunft alle drei Surface-Nets am Stück in `_weltAnkunft` (headless kalt 5fb21e29:
-    // 247 von 327 ms einer Aufgabe). Eine neue Welt (Wechsel, Neu-Rechnen) verwirft die Inseln der alten (`_inselGen`).
-    _worldgenSpawnFloatingIslands(WORLD_SIZE) {
-        this.state.floatingIslands = [];
-        this.state.ufos = [];
-        const gen = (this._inselGen = (this._inselGen | 0) + 1);
-        this._weltbildKommt().then(() => {
-            for (let i = 0; i < AnazhRealm.WELT_INSELN; i++)
-                this._imLeerlauf(() => {
-                    if (this._inselGen === gen) this._worldgenInsel(WORLD_SIZE, i);
-                }, 2000);
-        });
-    }
-    // DIE INSEL i der Welt (Γ5-Stream-Gesetz: Math.random im Worldgen würfelt Peers in verschiedene Welten — pro Insel ein eigener
-    // Stream (seed + "-island-i") für Größe/Höhe/Position).
-    _worldgenInsel(WORLD_SIZE, i) {
-        const baseSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        const rng = this._streamRng(baseSeed + `-island-${i}`);
-        const islandSize = 14 + rng() * 30; // 14..44 m Durchmesser
-        const islandHeight = 6 + rng() * 10; // 6..16 m Wölbung
-        const islandX = (rng() - 0.5) * WORLD_SIZE * 0.8;
-        const islandZ = (rng() - 0.5) * WORLD_SIZE * 0.8;
-        // Die Schwebe-Insel ist ein Wurf des Feldes: trägt die Wildnis den Ort nicht, steht keine (die Würfe davor
-        // bleiben, der Strom je Insel ist eigen).
-        if (!this._wildnisTraegt(islandX, islandZ)) return;
-        const surfY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(islandX, islandZ) : 0;
-        const baseSurf = Number.isFinite(surfY) ? surfY : this.state.terrainBaseHeight || 0;
-        const islandY = baseSurf + 50 + rng() * 90; // 50..140 m über dem Boden
-        const islandSeed = baseSeed + `-island-${i}`;
-        const island = this.spawnIslandAt(islandX, islandY, islandZ, islandHeight, {
-            size: islandSize,
-            seed: islandSeed,
-        });
-        if (!island) return;
-        this.log(
-            `Fliegende Insel ${i} erstellt: Position (${islandX.toFixed(1)}, ${islandY.toFixed(1)}, ${islandZ.toFixed(1)}), Grösse ${islandSize.toFixed(1)} m, Höhe ${islandHeight.toFixed(1)} m`
-        );
-        // V18.364 — die kosmetischen Insel-Begleiter-UFOs entfernt (Schöpfer „die
-        // können raus, wirken falsch + flach, keine Struktur"). `spawnUfoAt`/`spawn_ufo`
-        // bleiben fürs explizite Beschwören; der Himmel bleibt klar von Auto-UFOs.
-    }
-
     // DIE BEPFLANZTEN CHUNKS (speicher.K3): ein Stand trägt keinen Wurf des Gesetzes, nur die Chunks, deren Würfe ein älterer
     // Stand mitbrachte (`worldMeta.feldStand`) — jeder andere Chunk pflanzt neu, wie am ersten Tag. Ein Stand ohne die Liste
     // trug jeden Wurf: seine Chunks leiten sich aus dem Bestand ab (kein Doppel-Wurf) und reisen als Liste weiter. Die Chunks,
@@ -326,8 +280,7 @@ class AnazhRealm_gelaende_boden {
     // (Kalt-Boot 168 ms headless). → Promise<Hydrosphäre | null> (null: eine neuere Welt kam ihr zuvor).
     _worldgenComputeAndBuildHydrosphere() {
         this._hydroWelt = (this._hydroWelt | 0) + 1;
-        this._hydroBestellt = new Map();
-        this.state.hydroTiles = new Map();
+        this._hydroKacheln();
         this.state.hydrosphere = null;
         this.state.voxelWorkerWorldgenSynced = false;
         this._computeHydroBand();
@@ -357,9 +310,17 @@ class AnazhRealm_gelaende_boden {
     // (`_bruchMelden`); kommt der Faden über den Blob-Weg, wartet die Bestellung auf ihn.
     // → das Versprechen der Region (eine schon bestellte gibt ihres zurück; null, wenn eine neuere Welt ihr zuvorkam).
     _hydroBestellen(key, origin) {
-        const B = this._hydroBestellt || (this._hydroBestellt = new Map());
+        const B = this._hydroBestellt || this._hydroKacheln().bestellt;
         const da = B.get(key);
-        if (da) return da.zusage;
+        if (da) {
+            // DIE GEPARKTE BESTELLUNG GEHT MIT DEM NÄCHSTEN RUF (w28-speicher-ring; gate:werk-im-wasser am 8b60d653: die Kachel
+            // -1,-1 „vorBestellt true gepostet false worker true“, 15 000 Fragen in 900 s): eine Kachel, die ohne Faden bestellt
+            // wurde, wartet auf seine Geburt (`_hydroWarte`) — steht der Faden beim nächsten Ruf schon, ohne geboren zu werden
+            // (ein Bau im Haupt-Faden hängt ihn aus und wieder ein), reiste sie nie. Bis zum Ring fiel keine Kachel, also
+            // bestellte dort niemand neu.
+            if (!da.gepostet && this.state.voxelWorker) da.post();
+            return da.zusage;
+        }
         const welt = this._hydroWelt | 0;
         const e = { ab: null, origin, gepostet: false };
         const zusage = new Promise((ok, ab) => {
@@ -374,7 +335,8 @@ class AnazhRealm_gelaende_boden {
         e.zusage = zusage.then((msg) => this._hydroAn(key, msg.region, welt));
         B.set(key, e);
         if (this.state.voxelWorker) e.post();
-        else if (this._voxelWeltWartet) (this._hydroWarte || (this._hydroWarte = [])).push(e.post);
+        else if (this._voxelWeltWartet)
+            (this._hydroWarte || (this._hydroWarte = [])).push(() => e.gepostet || e.post());
         else {
             this._bruchMelden(
                 `HYDRO-FADEN: die Hydrosphäre (${key}) ohne Voxel-Faden — der Haupt-Faden rechnet sie nie (Lehre 14)`
@@ -468,8 +430,26 @@ class AnazhRealm_gelaende_boden {
     // und Kern-Werke (`_genesisWerkListeBauen`) — und nur ihr Grund: Erdbau und Flächen des Plans enden am Freiraum der Tore
     // (fachwerk `GENESIS_ORT.freiraum`, die Mitte jedes Splats und jeder Fläche darin). Bis hierher legte die Bühne den vollen
     // Erdbau: der Teich (z 105–175) lag über der 30°-Rampe der Station S2 (z 132–164), ihre Neigung 0° (gate:kreatur-takt querhang).
+    // DER FREMDE ORT TRÄGT KEINEN PRÜFPLATZ (Reise, w28-reise-ort; `ortGesetz(teil).siedlung.platz` 0): der Faden antwortet mit
+    // der Ankunft allein (`r.ankunft`, der erste tragende Punkt seiner Spirale) — der Ort ist dann `worldMeta.genesisOrt` ohne Plan,
+    // ohne Erdbau und ohne Fläche (die Ankunft und die Wache der Dörfer lesen ihn, `_genesisMitte`), der Spieler landet in der Natur.
     _genesisPlanAn(r, welt) {
-        if (welt !== (this._hydroWelt | 0) || !r || !r.plan) return null;
+        if (welt !== (this._hydroWelt | 0) || !r) return null;
+        if (!r.plan && r.ankunft && !this._gelaende().ort.siedlung.platz) {
+            const wm = this.state.worldMeta || (this.state.worldMeta = {});
+            const key = `ankunft:${Math.round(r.ankunft.x)},${Math.round(r.ankunft.z)}`;
+            if (wm.genesisOrt && wm.genesisOrt.key !== key && typeof wm.genesisOrt.key === "string")
+                this._erdbauOrtFaellt(wm.genesisOrt.key);
+            wm.genesisOrt = { key, x: r.ankunft.x, z: r.ankunft.z, steht: true };
+            this._genesisPlan = null;
+            this._genesisPlanMs = r.ms;
+            this.log(
+                `GENESIS-ORT: der fremde Ort trägt keinen Prüfplatz — die Ankunft an ${key} (${r.ms.toFixed(1)} ms)`,
+                "INFO"
+            );
+            return wm.genesisOrt;
+        }
+        if (!r.plan) return null;
         const FC = globalThis.__fachwerkCore;
         let v2 = r.plan;
         if (!this._wildnisTraegt(v2.ort.x, v2.ort.z)) {
@@ -633,7 +613,7 @@ class AnazhRealm_gelaende_boden {
         const r1x = Math.floor((x + r + half) / size);
         const r0z = Math.floor((z - r + half) / size);
         const r1z = Math.floor((z + r + half) / size);
-        if (!this.state.hydroTiles) this.state.hydroTiles = new Map();
+        if (!this.state.hydroTiles) this._hydroKacheln();
         let fehlt = 0;
         for (let rx = r0x; rx <= r1x; rx++) {
             for (let rz = r0z; rz <= r1z; rz++) {
@@ -645,6 +625,48 @@ class AnazhRealm_gelaende_boden {
             }
         }
         return fehlt;
+    }
+
+    // DIE KACHELN FOLGEN DEM BLICK (w28-speicher-ring; Koordinator 16.11.: `state.hydroTiles` 4,4 → 48,5 MB in der Dreier-Fahrt,
+    // die Fluss-Orte der K4-Probe ±6 km): die Kacheln und ihre Bestellungen stehen in der EINEN Tafel der
+    // Zell-Gedächtnisse (`ZELL_GEDAECHTNISSE`, Zelle = die Kachel, `HYDROSPHERE.regionSize`, um die Hälfte versetzt wie `_ensureHydroTilesAround`) —
+    // BEIDE fallen, das erfüllte Versprechen der Bestellung hielt die Kachel sonst ein zweites Mal. Eine Kachel geht erst, wenn
+    // kein Teil von ihr mehr in der Reichweite ihrer Leser liegt (`_hydroReichweite`); ihr Abschied (`_hydroGeht`) nimmt sie
+    // aus jedem Faden und rechnet das Band neu. Der nächste Bau bestellt sie neu. Geleert wird beides mit jeder Welt.
+    _hydroKacheln() {
+        this._hydroBestellt = new Map();
+        this.state.hydroTiles = new Map();
+        return { bestellt: this._hydroBestellt, kacheln: this.state.hydroTiles };
+    }
+    // DIE REICHWEITE DER KACHEL-LESER um den Spieler (m): der Takt der Wache (Ring + ½ Chunk + 300 m), das Fern-Wasser
+    // (`_ensureFarWaterSheet`: Ring + 2,5 Chunks, mindestens `FAR_WATER.maxRadius`), die Streu bis an ihren Horizont samt
+    // Region und Polster (`_scatterRegion`), der Wald-Plan an ihrem Rand (`_forestCellDarts`: Urteil + 1 Zelle), die Stelle des
+    // Orts (`_zellOrt`: die Probe-Ringe jeder Zelle im Reich, `_siedlungReichweite` — Radeon 17.11.: sie bestellte die Kachel
+    // 1 248 m fern 27-mal nach, als die Reichweite sie bei 720 m räumte). Der Fern-Ring bestellt keine Kachel (jenseits trägt er
+    // den Meeresspiegel) — er liest, was diese Reichweite hält.
+    _hydroReichweite() {
+        const span = this._voxelChunkConfig(0).span;
+        const R = this._voxelChunkConfig().ringRadius;
+        return Math.max(
+            (R + 0.5) * span + 300,
+            (R + 2.5) * span,
+            AnazhRealm.FAR_WATER.maxRadius,
+            this._streuReichweite(),
+            AnazhRealm._siedlungReichweite(this)
+        );
+    }
+    // DER HORIZONT DER STREU um den Spieler (m): ihre Regionen bis `SCATTER.outerM` samt halber Region und Polster
+    // (`_scatterRegion`), der Wald-Plan an ihrem Rand (`_forestCellDarts`: Urteil + 1 Zelle) — so weit lesen Streu-Marke,
+    // Lookup und Freistand ihre Zellen.
+    _streuReichweite() {
+        const S = AnazhRealm.SCATTER;
+        return S.outerM + S.regionM / 2 + 16 + (AnazhRealm.WALD_PLAN.urteil + 1) * AnazhRealm.FOREST.cell;
+    }
+    // Der Abschied der gefallenen Kacheln: jeder Faden lässt sie (`hydro-geht`, der EINE Sender in der Reihe des Zustands), das
+    // globale Band folgt den Kacheln, die bleiben.
+    _hydroGeht(schluessel) {
+        this._voxelZustandPost({ type: "hydro-geht", keys: schluessel });
+        this._computeHydroBand();
     }
 
     // DIE WAHRHEIT VOR DEM BAU (Karte hydro-faden): die Heimat steht und jede Kachel um den Chunk (cx, cz) samt 64 m Polster
@@ -712,6 +734,21 @@ class AnazhRealm_gelaende_boden {
         return globalThis.__gelaendeCore.hoehe(this._gelaende(), x, z, includeDetail, aus);
     }
 
+    // DIE HÖHE DER SAAT: dasselbe Gesetzbuch an derselben Lage OHNE den Erdbau der Orte (die Terme des Erbguts allein) — eine
+    // Funktion von Saat und Gesetz, auf jeder Seite und nach jedem Reload dieselbe, gleich, wann ein Ort seinen Erdbau legt.
+    // Leser: was aus der Saat allein würfelt (die Boden-Klasse des Bestands, `_bodenKlasseAt`). Die Lage ist eine Sicht auf
+    // `_gelaende()` (kein zweiter Speicher: dieselben lebenden Leser, kopiert — eine Sicht erbt nie), nur ihr Erdbau ist leer.
+    _terrainSaatY(x, z, includeDetail = true, aus) {
+        const basis = this._gelaende();
+        let S = this._gelaendeSaat;
+        if (!S || S.basis !== basis) {
+            const leser = Object.getOwnPropertyDescriptors(basis);
+            leser.erdbau = { get: () => null, enumerable: true, configurable: true };
+            S = this._gelaendeSaat = { basis, lage: Object.defineProperties({}, leser) };
+        }
+        return globalThis.__gelaendeCore.hoehe(S.lage, x, z, includeDetail, aus);
+    }
+
     // DIE GELÄNDE-LAGE: was das Gesetzbuch liest, unter den Namen des Worker-Zustands — eine LEBENDE Sicht auf
     // `state` (jeder Zugriff liest den Stand von jetzt; kein zweiter Speicher, nichts zu synchronisieren). Der Rausch-
     // Strom `_voxelNoise` entsteht beim ersten Lesen aus der Saat; `erbgut` ist die gemerkte Normalform (sie trägt die
@@ -733,6 +770,12 @@ class AnazhRealm_gelaende_boden {
             },
             get waterLevel() {
                 return realm.state.waterLevel;
+            },
+            // DAS ORT-GESETZ DER WELT (Reise): die Tafel des Gelände-Kerns (`ortGesetz`) am Teil `ort` ihres Gesetzes — die Heimat
+            // (null) trägt die Konstanten, eine Reise-Welt Heimat + Δ. Ohne worldMeta die Heimat wie die Saat oben.
+            get ort() {
+                const wm = realm.state.worldMeta;
+                return globalThis.__gelaendeCore.ortGesetz(wm ? AnazhRealm._weltGesetz(wm).ort : null);
             },
             get erbgut() {
                 return realm._erbgutCache || realm._erbgut();
@@ -1000,12 +1043,22 @@ class AnazhRealm_gelaende_boden {
         const rad = Math.hypot(x1 - x0, z1 - z0) / 2 + R;
         // der Grund eines Hauses ist Erde in der Wege-Karte (S4, `_wegeStufeMalen`): die Stufe, deren Fenster er trifft, malt
         // beim nächsten Takt neu — nur ein Grund mit einer Box, deren Boden der Grund ist, nie jede Platte und Trasse
-        if (this.state.wegeKarte && splats.some((p) => p.art === "grund" && p.boxen.some((b) => !b[4])))
+        // EIN GELEGTER GRUND MALT NUR SICH (w28-stadt-netz, Gebot 7): kam der Erdbau dazu (`delta.erdbauDazu`), malt die Stufe im
+        // nächsten Takt nur SEINE Gründe (`grundDazu`, `_wegeStufeMalen` mit `nurGruende`) — der Maler nimmt je Texel das
+        // Maximum, die Folge der Formen zählt nicht: dieselben Bytes wie ein Neu-Malen. Fällt ein Grund (oder plant ein Ort neu),
+        // malt sie ganz (`grundNeu`). Bis hier malte jeder gelegte Grund die ganze Stufe neu, jede Form in ihrem Fenster: in der
+        // Stadt der Kacheln (rund 8 000 Formen in 512 m) 281 ms nah und 136 ms fern in EINEM Bild je erwachter Kachel (GTX,
+        // 15.11., `_wegeKarteMale › _wegeFormGewicht` 11 Bilder über 100 ms, Σ 5,3 s in 120 s Gang).
+        if (this.state.wegeKarte && splats.some((p) => p.art === "grund" && p.boxen.some((b) => !b[4]))) {
+            const dazu = !!(delta && delta.erdbauDazu === splats);
+            const N = dazu ? G.erdbauNormal(splats) : null;
             for (const st of this.state.wegeKarte.stufen) {
                 const h = st.S.fensterM / 2 + R;
-                if (x1 > st.mitteX - h && x0 < st.mitteX + h && z1 > st.mitteZ - h && z0 < st.mitteZ + h)
-                    st.grundNeu = true;
+                if (!(x1 > st.mitteX - h && x0 < st.mitteX + h && z1 > st.mitteZ - h && z0 < st.mitteZ + h)) continue;
+                if (N && N.gruende && !st.grundNeu) (st.grundDazu || (st.grundDazu = [])).push(...N.gruende);
+                else st.grundNeu = true;
             }
+        }
         if (amWasser) this._invalidateWaterCapsAround(cx, cz, rad);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
     }
@@ -1093,7 +1146,15 @@ class AnazhRealm_gelaende_boden {
     // keinen Kandidaten ab, ist ihr Plan v2 eine Funktion von Saat und Gesetz — er steht in `_ortWahlUnberuehrt`.
     async _ortWahlImFaden(plan, origin, frei, fest, ohne) {
         const W = fest ? Object.assign({}, AnazhRealm.ORT_WAHL, { ringe: 0 }) : AnazhRealm.ORT_WAHL;
-        const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null });
+        const mass = (this._ortWahlMass = {
+            kandidaten: 0,
+            scheiben: 0,
+            ms: 0,
+            maxMs: 0,
+            abstandM: null,
+            faellt: {},
+            wirt: 0,
+        });
         let reich = 0; // so weit reicht der Plan um seinen Ursprung (das Wasser jedes Kandidaten muss gekachelt sein)
         for (const s of plan.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
         // das Wasser der ganzen Suche ist gekachelt, bevor der Faden urteilt: jede fehlende Kachel rechnet der Faden
@@ -1113,6 +1174,8 @@ class AnazhRealm_gelaende_boden {
             const raster = this._ortRaster(plan);
             const festSlots = this._ortFest(origin, suche);
             if (pm || festSlots.length) unberuehrt = false;
+            // die stehenden Bauten um die Suche: der Faden weist den Ort, an dem ein Haus sicher in einem steht, vor dem Plan ab
+            const bauten = this._ortBauten(origin, suche);
             const r = await this._nebenAuftrag(
                 "ort",
                 {
@@ -1126,11 +1189,15 @@ class AnazhRealm_gelaende_boden {
                     spieler: pm ? { x: pm.x, z: pm.z, frei: AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN } : null,
                     raster,
                     fest: festSlots,
+                    bauten,
                     ohne,
                 },
-                [raster.lx.buffer, raster.lz.buffer]
+                [raster.lx.buffer, raster.lz.buffer, raster.fp.buffer, bauten.quader.buffer]
             );
+            // ein Kandidat, den der Faden an einem stehenden Bau abwies, ist ein Urteil des Wirts: die Wahl ist berührt
+            if (r.imBau) unberuehrt = false;
             mass.kandidaten += r.kandidaten;
+            for (const [n, v] of Object.entries(r.faellt || {})) mass.faellt[n] = (mass.faellt[n] || 0) + v; // woran sie fielen
             mass.scheiben++;
             mass.ms += r.ms;
             if (fest) return r.v2;
@@ -1151,6 +1218,7 @@ class AnazhRealm_gelaende_boden {
             const t0 = performance.now();
             const traegt = this._ortTraegtWirt(r.v2, pm);
             if (!traegt) unberuehrt = false;
+            if (!traegt) mass.wirt++; // den wies der Wirt ab (ein stehender Bau, der Spieler)
             mass.maxMs = Math.max(mass.maxMs, performance.now() - t0);
             ab = traegt ? r.index : r.index + 1;
             wand = traegt ? r.index : -1;
@@ -1159,6 +1227,7 @@ class AnazhRealm_gelaende_boden {
     // DAS RASTER DER ORT-WAHL je Slot des Exports (plan-lokal, haus-lokal vor seiner Gier): das Fundament-Raster des Wirts
     // (`_fundamentRaster`: Grundriss samt Saum `ORT_GESETZ.saumM` und Vorplatz) im Schritt `ORT_WAHL.grobM` und in dem der
     // Wand (0,5 m, `_fundamentLand`), `radius` die Reichweite des Grundrisses (NaN ohne) — der Ort-Faden legt es je Kandidat an.
+    // `fp`: je Slot der Grundriss selbst (ox, oz, ex, ez; ohne: NaN) — die Bau-Wand vor dem Plan liest ihn (fachwerk `ortImBau`).
     _ortRaster(plan) {
         const grobM = AnazhRealm.ORT_WAHL.grobM;
         const lx = [];
@@ -1166,8 +1235,10 @@ class AnazhRealm_gelaende_boden {
         const grobN = [];
         const wandN = [];
         const radius = [];
-        for (const sl of plan.slots) {
+        const fps = new Float64Array(4 * plan.slots.length).fill(NaN);
+        for (const [si, sl] of plan.slots.entries()) {
             const fp = this._grundrissVon(sl);
+            if (fp) fps.set([fp.ox, fp.oz, fp.ex, fp.ez], 4 * si);
             let nG = 0;
             let nW = 0;
             if (fp) {
@@ -1186,7 +1257,7 @@ class AnazhRealm_gelaende_boden {
             wandN.push(nW);
             radius.push(fp ? Math.hypot(fp.ex, fp.ez) : NaN);
         }
-        return { lx: Float64Array.from(lx), lz: Float64Array.from(lz), grobN, wandN, radius };
+        return { lx: Float64Array.from(lx), lz: Float64Array.from(lz), grobN, wandN, radius, fp: fps };
     }
     // DAS URTEIL DES WIRTS am Sieger des Ort-Fadens: kein Haus berührt den Ort `p` (der Spieler JETZT beim Akt, Reichweite +
     // `STRUCTURE_PLAYER_CLEAR_MARGIN`, das Dorf vor dir, `_siedlungsAnker`; null: die Zelle der Welt) und keins steht in einem
@@ -1491,6 +1562,29 @@ class AnazhRealm_gelaende_boden {
         return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
     }
 
+    // DIE SAAT DER REISE-WELT (K5, w28-reise-ort): die Reihe der Ort-Saaten des Gelände-Kerns (`ortSaatWahl`) am Teil `ort` mit
+    // dem Erbgut, das die Geburt schreibt (`ortErbgut` aus dem Gelände der Heimat `heimGelaende`, der Teil `gelaende` ihres
+    // Gesetzes) — die erste Saat, deren Gesetz an der Ankunft Grund trägt. Leser: die Geburt (`_reiseBetreten`). → die Saat
+    _reiseSaat(ort, heimGelaende) {
+        const K = globalThis.__gelaendeCore;
+        const erbgut = K.erbgutNormal(
+            K.ortErbgut(K.erbgutNormal(heimGelaende == null ? undefined : heimGelaende), ort.delta.wildnis)
+        );
+        const w = K.ortSaatWahl(ort, erbgut, SimplexNoise);
+        if (w.k) this.log(`Reise: die Saat ${w.k} der Reihe trägt Grund an der Ankunft (${w.saat})`, "INFO");
+        return w.saat;
+    }
+
+    // DIE SICHTBARE NÄSSE an (x, z) ∈ [0, 1] (Reise, w28-reise-ort): die Feuchte des Bodens (`_feuchteAt`) über die Kurve, die
+    // die Boden-Farbe sieht (`FEUCHTE.sichtbarLo/Hi`) — der Eingang des Ort-Gesetzes am Wasser (gelaende-core `ortKraut`,
+    // `ortBaum`: die Oase). Leser: der Acker und der Grund eines Dorfs (`_stlWegeBuild`, `_autoSettlementSiteOk`), der Hof-Baum
+    // (`_dorfErlebnis`), der Baum des Plans (`_genesisWerkListeBauen`).
+    _ortNass(x, z, y) {
+        const F = AnazhRealm.FEUCHTE;
+        const t = Math.max(0, Math.min(1, (this._feuchteAt(x, z, y) - F.sichtbarLo) / (F.sichtbarHi - F.sichtbarLo)));
+        return t * t * (3 - 2 * t);
+    }
+
     // Pfad-Feld: Fluss-Bänke sind getrampelte Erde — knapp außerhalb der Wasserkante (dist ∈ [halfW,
     // halfW+bankW]) auf niedriger Bank (0..5 m über dem Spiegel) → Pfad ∈ [0,1]. Render-only (Boden-
     // Farbe, Gras unterdrückt); liest den worker-gespiegelten _hydroDistAt → P2P bit-identisch. Die Bank der Ferne (das
@@ -1542,7 +1636,7 @@ class AnazhRealm_gelaende_boden {
         const sample = densityFn || ((x, y, z) => this._terrainDensityAt(x, y, z));
         // `preDensity`: hat der Aufrufer das Grid schon (Cell-Klassifikation), läuft die teure Sample-
         // Schleife (~90k `_terrainDensityAt`-Calls) nur einmal pro Chunk-Build.
-        // ein eigener Sampler (`densityFn`, die Schwebe-Insel) ist nicht der Boden: er trägt dessen Band nicht
+        // ein eigener Sampler (`densityFn`, die Naht-Probe mit vollem Sampler) ist nicht der Boden: er trägt dessen Band nicht
         const density =
             preDensity || this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, !densityFn);
         const { positions, vertCells, cellVert, sharp } = this._voxelExtractSurfaceVertices(
@@ -1570,7 +1664,7 @@ class AnazhRealm_gelaende_boden {
         this._voxelLaplacianSmoothPositions(positions, indices, smoothIters, sharp);
         this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin, triZelle);
         // DER BODEN FÄLLT IM GRUND DES HAUSES (S4, gelaende-core `erdbauSchnitt`, derselbe Code wie im Voxel-Faden); ein eigener
-        // Sampler (die Schwebe-Insel) ist nicht der Boden
+        // Sampler (`densityFn`) ist nicht der Boden
         if (!densityFn) globalThis.__gelaendeCore.erdbauSchnitt(this._erdbauLage(), positions, indices, triZelle);
         if (positions.length === 0) return null;
         // Gradient-Normals nutzen das geteilte preDensity-Grid (statt ~18k Dichte-Calls);
@@ -1639,10 +1733,9 @@ class AnazhRealm_gelaende_boden {
 
     // Pass 0 — Density-Grid: Nx*Ny*Nz Eck-Werte vom Sample. Float32Array,
     // Indizierung gi = i + j*Nx + k*Nx*Ny.
-    // DAS BAND IST DAS DES BODENS (`boden`): ein Feld in eigenen Koordinaten (die Schwebe-Insel, `_voxelChunkGeometry` mit
-    // eigenem Sampler) sampelt jede Ecke. Bis 10.10. schnitt das Boden-Band jedes Feld — die Insel (lokal um 0|0|0) bekam
-    // das Band des Bodens am Welt-Ursprung: lag er tiefer als ~−3 m, verlor sie ihre Kuppe, unter ~−20 m (Tiefsee) jede
-    // Ecke, und `new THREE.Mesh(null)` riss den Boot ab (1 von 40 frisch geborenen Welten erwachte nie).
+    // DAS BAND IST DAS DES BODENS (`boden`): ein Feld mit eigenem Sampler (`_voxelChunkGeometry` mit `densityFn`) sampelt
+    // jede Ecke — das Band des Bodens gilt nur dem Boden (bis 10.10. schnitt es jedes Feld, ein Feld in eigenen Koordinaten
+    // verlor dort Ecken, und `new THREE.Mesh(null)` riss den Boot ab).
     // Der Chunk des Bodens sampelt das Gitter des Kerns (`_voxelEditedDensityGrid`); hier sampelt `sample` jede Ecke im Band
     // (Sync-Bau ohne Vorab-Gitter: der Punkt `_terrainDensityAt` mit den Edits, deren Reichweite das Band deckt).
     _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, boden = true) {
@@ -2475,7 +2568,8 @@ class AnazhRealm_gelaende_boden {
         // Feuchte schiebt den Boden Richtung dampEarth. Reihenfolge im mix-Stack ist Pflicht: nach earth, VOR
         // lava/snow/sed/strand. genVersion-Schleuse via _feuchteAt (< 2 → 0); Vertex-y ist die Surface.
         const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
-        mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
+        const nass = ss(F_VIS_LO, F_VIS_HI, feuchte);
+        mix(dampEarth, nass);
         // Kein Kronendach im Vertex: bis 06.10. dunkelte das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo
         // Bäume wachsen DÜRFEN) den Boden × (0,58 + 0,46 · Licht) — zu 98 % ohne Baum darüber, unter einem Baum
         // zusätzlich zu seinem echten Schatten. Die Laubstreu unter den echten Kronen legt `_wegeBodenFarbe` auf.
@@ -2484,6 +2578,15 @@ class AnazhRealm_gelaende_boden {
         // AnazhRealm.LICHEN (der Worker spiegelt sie hardkodiert), die Farbe ist die Flechte der Palette.
         const LCH = AnazhRealm.LICHEN;
         const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
+        // DER WUCHS DES ORTS (Reise, Welle 3: die Tafel `ortGesetz(teil).wuchs`, die Heimat 1): vor der Zeit der Gräser liegt Streu
+        // statt Wiesen-Grund (`gras`); wo der Regen die Krautschicht nicht trägt (`decke`), liegt der Grund kahl (gelaende-core
+        // `kahlGrund`: Fels ↔ Sand nach der Wärme des Orts, der Fleck der Flechte als Pflaster ↔ Sandfeld) — die Feuchte des Bodens
+        // hält ihn am Wasser (die Oase). Die Wiesen-Wache liest das Ergebnis: kein Grün, kein Halm. In der Heimat beide Gewichte 0;
+        // der Faden rechnet dieselben Zeilen (voxel-worker `bodenFarbe`).
+        const W = this._gelaende().ort.wuchs;
+        mix(P.lit, 1 - W.gras);
+        const kahl = 1 - (W.decke + (W.oase - W.decke) * nass);
+        if (kahl > 0) mix(globalThis.__gelaendeCore.kahlGrund(P, W, lichenCluster, [0, 0, 0]), kahl);
         const lichenMix =
             ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
             ss(LCH.dichteLo, LCH.dichteHi, f.dichte || 0) *
@@ -2539,7 +2642,14 @@ class AnazhRealm_gelaende_boden {
         const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
         if (gruen > 0) {
             const fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
-            mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
+            // der Tint des Orts im Mittel (w28-wiese-schale, WIESEN_GRUND.tint an der Feuchte des Vertex) — derselbe wie die
+            // Büschel über ihm; der Faden rechnet dieselbe Zeile (voxel-worker bodenFarbe)
+            const tw = Math.min(8, Math.max(0, feuchte * 8)),
+                tj = Math.min(7, Math.floor(tw)),
+                tf = tw - tj;
+            const tc = (k) =>
+                WG.farbe[k] * (WG.tint[tj * 3 + k] + (WG.tint[tj * 3 + 3 + k] - WG.tint[tj * 3 + k]) * tf);
+            mix([tc(0), tc(1), tc(2)], gruen * (0.5 + 0.5 * fleck));
         }
         out[0] = c[0];
         out[1] = c[1];
@@ -2801,7 +2911,7 @@ class AnazhRealm_gelaende_boden {
         const distTerm = Math.min(1, dist / cfg.distScale) * cfg.distWeight; // das epische Reisen
         let boldTerm = 0;
         if (pm) {
-            const aura = this.auraAt(pm.x, pm.z, performance.now() / 1000);
+            const aura = this.auraAt(pm.x, pm.z, this.state.spielZeit);
             const bold = Math.max(0, Math.min(1, (1 - (aura.lebendig || 0)) * 0.5 + (aura.glut || 0) * 0.5));
             boldTerm = bold * cfg.boldWeight; // Kühnheit: in das Karge/Glühende wagen
         }
@@ -2867,7 +2977,7 @@ class AnazhRealm_gelaende_boden {
         // und graduiert über `_exploreMagnitude` (Neuheit + Distanz + Kühnheit).
         const prev = this.state.lastPlayerVoxelChunk;
         if (prev && (prev.cx !== pcx || prev.cz !== pcz)) {
-            const now = performance.now() / 1000;
+            const now = this.state.spielZeit;
             if (now - (this.state.lastExploreFelt ?? -Infinity) >= 6) {
                 this.state.lastExploreFelt = now;
                 this._feelAction("explore", { magnitude: this._exploreMagnitude(pcx, pcz) });
@@ -3053,8 +3163,6 @@ _stammZonen(AnazhRealm, [AnazhRealm_gelaende_boden]);
 // ===== ATLAS · Gelaende/boden — Außen-Konstanten =====
 // Die leere Edit-Liste eines Chunks ohne Edits (`_voxelEditsNah`, `_voxelEditsImKasten`): eingefroren, nie beschrieben.
 AnazhRealm.KEINE_EDITS = Object.freeze([]);
-// Die schwebenden Inseln einer Welt (`_worldgenInsel`, nach dem ersten Bild je eine im Leerlauf; V18.331: drei).
-AnazhRealm.WELT_INSELN = 3;
 // DER RING (`_ringWaechst`): er beginnt beim Boot mit EINEM Chunk (V18.397, Schöpfer „1 Chunk statt 9!" — ein großer
 // Start-Ring von 25 Chunks fror den Boot ein; der Fern-Ring und `_softFloorWhileChunkLoading` tragen den Rand) und springt
 // unter dem Ladeschirm auf den Boden des ersten Weltbilds (2 = 5×5 Chunks, `_weltbildLuecken`; auf kienspan zugleich das Ziel).

@@ -120,6 +120,13 @@ class AnazhRealm_klang {
             rufeGespielt: 0,
         };
         um.werkstatt = this._klangWerkstattBooten(um);
+        // DER KERN DER WERKSTATT kommt aus der EINEN Quelle (w28-faden-quelle): die Studio-Fäden lesen dieselbe Datei — der Faden
+        // der Quelle holt sie EINMAL und schickt sie über den Port der Werkstatt (`_quelleReiche`)
+        if (um.werkstatt)
+            this._quelleReiche([um.werkstatt], {
+                type: "dateien",
+                urls: [new URL("klang-core.js?v=" + AnazhRealm.VERSION, location.href).href],
+            });
         // Der Hör-Ring: Mitte + ohr.radien × ohr.richtungen, Einheits-Richtungen fest (Welt-Achsen).
         const punkte = [{ r: 0, ux: 0, uz: 0 }];
         for (const r of O.radien) {
@@ -154,16 +161,15 @@ class AnazhRealm_klang {
     // DIE KLANG-WERKSTATT: ein eigener Worker mit dem klang-Gesetzbuch (importScripts, ?v=) rechnet die Stimmen-Pakete
     // (Texturen + Eichung, `umweltPaket`) und die Tier-Rufe (`tierRufPuffer`); die Puffer reisen zero-copy zurück
     // (Lehre 24). Der Haupt-Thread nimmt auf und spielt. Fällt die Werkstatt aus, schweigt die Klang-Welt LAUT
-    // (WARNING) — nie eine Ersatz-Rechnung im Spiel-Takt.
+    // (WARNING) — nie eine Ersatz-Rechnung im Spiel-Takt. Ihr Kern kommt aus der EINEN Quelle (w28-faden-quelle, der Rufer
+    // reicht ihr den Port, `_quelleReiche`); bis dahin hält die Werkstatt jede Bestellung (`_klangWerkstattStart`).
     _klangWerkstattBooten(um) {
-        const base = typeof window !== "undefined" && window.location ? window.location.href : "";
-        const kernUrl = new URL("klang-core.js?v=" + AnazhRealm.VERSION, base).href;
         const boot =
-            "importScripts(" +
-            JSON.stringify(kernUrl) +
-            ");(function " +
+            "(function " +
+            AnazhRealm._klangWerkstattStart.toString() +
+            ")(function " +
             AnazhRealm._klangWerkstattSchale.toString() +
-            ")();";
+            ");";
         let w = null;
         try {
             w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })), { name: "klang" });
@@ -190,8 +196,27 @@ class AnazhRealm_klang {
         return w;
     }
 
-    // Der Rumpf der Werkstatt — läuft als Quelltext im Worker (nach importScripts des klang-Kerns), greift auf nichts
-    // außerhalb ihres eigenen Rumpfs zu.
+    // Der Start der Werkstatt (Quelltext im Worker): er hält jede Bestellung, bis der Kern als Blob über den Port der Quelle
+    // kommt (`quelle-port`, Nachricht `quelle`), führt ihn über seine Blob-Adresse aus, stellt den Rumpf auf und reicht die
+    // gehaltenen in ihrer Folge weiter.
+    static _klangWerkstattStart(schale) {
+        const W = globalThis;
+        const gehalten = [];
+        const halte = (ev) => {
+            const d = ev.data;
+            if (!d || d.type !== "quelle-port") return void gehalten.push(d);
+            d.port.onmessage = (e) => {
+                if (!e.data || e.data.type !== "quelle") return;
+                W.removeEventListener("message", halte);
+                W.importScripts(URL.createObjectURL(e.data.tafel[0][1]));
+                schale();
+                for (const g of gehalten.splice(0)) W.onmessage({ data: g });
+            };
+        };
+        W.addEventListener("message", halte);
+    }
+    // Der Rumpf der Werkstatt — läuft als Quelltext im Worker (nach dem klang-Kern), greift auf nichts außerhalb ihres eigenen
+    // Rumpfs zu.
     static _klangWerkstattSchale() {
         const W = globalThis;
         const K = W.__klangCore;
@@ -986,7 +1011,8 @@ class AnazhRealm_klang {
         const sattel = pl && pl.mountedArch != null && this._mountedEntry ? this._mountedEntry : null;
         const los = this._fahrLos;
         const stimmen = s.fahrt || (s.fahrt = new Map());
-        if (!sattel && !(los && los.size) && !stimmen.size) return;
+        const verkehr = this._fahrtVerkehr(st.playerMesh);
+        if (!sattel && !(los && los.size) && !verkehr.length && !stimmen.size) return;
         const { kern } = AnazhRealm._umweltGesetz();
         const jetzt = s.ctx.currentTime;
         const pm = st.playerMesh;
@@ -1001,10 +1027,12 @@ class AnazhRealm_klang {
         hoert.clear();
         if (sattel) wagen.push(sattel);
         if (los) for (const e of los) wagen.push(e);
+        for (const e of verkehr) wagen.push(e);
         let ohr = null;
         for (const e of wagen) {
             const fz = e._fahrSatz && e._fahr && Number.isFinite(e._fahr.vlong) ? e._fahr : null;
             const imSattel = e === sattel && e.id === pl.mountedArch;
+            const W = !imSattel && e._verkehrWagen; // der Bewohner am Steuer gibt Gas (`_fahrerSchritt`), sein Motor klingt
             const vw = fz && pm && this._fahrWagenGeschw(e);
             if (!vw || hoert.has(e)) continue;
             if (!imSattel && !ohr) {
@@ -1029,9 +1057,13 @@ class AnazhRealm_klang {
                 v: fz.vlong,
                 vmax,
                 rueckVmax: vmax * S.rueckVmax,
-                gas: imSattel ? Math.max(T.gas, fz.vlong <= S.bremsV ? T.bremse : 0) : 0,
+                gas: imSattel
+                    ? Math.max(T.gas, fz.vlong <= S.bremsV ? T.bremse : 0)
+                    : W && W.T
+                      ? Math.max(0, W.T.gas)
+                      : 0,
                 luft: !!fz.luft,
-                motor: imSattel,
+                motor: imSattel || !!(W && W.b && W.b.amSteuer),
                 doppler: am.doppler,
                 dDb: am.dDb,
             };
@@ -1042,12 +1074,50 @@ class AnazhRealm_klang {
                 stimme.stop(jetzt);
                 stimmen.delete(e);
             }
+        // DER VERKEHR IM WECHSEL (Gebot 7): die Ziele einer Stimme der Stadt (sechs Rampen je Wagen) stellt jedes zweite Bild,
+        // die Wagen im Wechsel — die Rampe der Stimme (klang:FAHRT.rampeSek) trägt den Ton dazwischen; der Sattel und der Nachlauf
+        // jedes Bild. Bis hier stellte jedes Bild alle vier: am Band-Gerät p95 0,40 ms je Bild (Soll 0,35, GTX 1060, Probe 28fe4dcf)
+        const takt = (this._fahrtTakt = (this._fahrtTakt + 1) | 0);
+        let n = 0;
         for (const [e, lage] of hoert) {
             let stimme = stimmen.get(e);
-            if (!stimme) stimmen.set(e, (stimme = kern.fahrtStimme(s.ctx, s.masterGain)));
+            const neu = !stimme;
+            if (neu) stimmen.set(e, (stimme = kern.fahrtStimme(s.ctx, s.masterGain)));
+            if (!neu && e._verkehrWagen && e.id !== (pl && pl.mountedArch) && (takt + n++) & 1) continue;
             stimme.anwenden(lage, jetzt);
             this._untertitel("fahrt", lage.motor ? "motor" : "rollen", null, 0);
         }
+    }
+
+    // DER VERKEHR IM OHR (w28-verkehr-bild, PFLICHT-OFFEN C): die `FAHRT_VERKEHR_K` nächsten Wagen der Städte in Fahrt (`VK.wagen`
+    // im Zustand `faehrt`, binnen der Hörweite klang:FAHRT_OHR) — jeder klingt mit der EINEN Stimme der Fahrt, sein Motor aus dem
+    // Gas seines Fahrers. Bis hier hörte das Ohr nur den Sattel und den Nachlauf: die Stadt fuhr stumm. Die Kosten tragen die
+    // K Stimmen am Ohr, nie die 20 Wagen der Stadt (Gebot 7); je Bild in einer Liste, nie neu gebaut. Leser: `_fahrtKlangTick`.
+    _fahrtVerkehr(pm) {
+        const nah = this._fahrtVerkehrNah || (this._fahrtVerkehrNah = []);
+        const d2 = this._fahrtVerkehrD2 || (this._fahrtVerkehrD2 = []);
+        nah.length = 0;
+        const alle = this._bewohnerSiedlungen;
+        if (!alle || !alle.size || !pm) return nah;
+        const K = AnazhRealm.FAHRT_VERKEHR_K;
+        const H = AnazhRealm._umweltGesetz().kern.FAHRT_OHR.hoerweiteM;
+        const p = pm.position;
+        for (const S of alle.values()) {
+            if (!S.verkehr) continue;
+            for (const W of S.verkehr.wagen) {
+                const e = W.entry;
+                // nur wer rollt: der Wartende an der Haltelinie schweigt (die Stimme hört das Abrollen, `fahrtImOhr`) und nähme
+                // dem Fahrenden dahinter den Platz (Linse VK: 5 von 1800 Bildern stumm, ein Wagen rollte binnen 40 m)
+                if (W.zustand !== "faehrt" || !e || !e._fahr || !(Math.abs(e._fahr.vlong) > AnazhRealm.VERKEHR.ruheMs))
+                    continue;
+                const d = (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2;
+                if (!(d < H * H) || (nah.length === K && d >= d2[K - 1])) continue;
+                let i = Math.min(nah.length, K - 1); // die Liste voll: der fernste fällt
+                for (; i > 0 && d2[i - 1] > d; i--) [nah[i], d2[i]] = [nah[i - 1], d2[i - 1]];
+                [nah[i], d2[i]] = [e, d];
+            }
+        }
+        return nah;
     }
 
     // ### Lofi-Pad-Schicht ###
@@ -2267,6 +2337,8 @@ AnazhRealm._musikGesetz = function () {
     }
     return AnazhRealm._kernPflichtBruch("klang:MUSIK");
 };
+// DER VERKEHR IM OHR (`_fahrtVerkehr`): so viele Wagen der Städte klingen zugleich, die nächsten in Fahrt
+AnazhRealm.FAHRT_VERKEHR_K = 4;
 // Lofi-Pad-Schicht: Wurzel 110 Hz = A2; die Akkordfolge wächst aus
 // Tonleiter + funktionaler Markov-Kette, ein Akkord je 4 Schläge. Web-Audio nativ, kein Asset.
 AnazhRealm.LOFI_BASE_FREQ = 110; // A2

@@ -2,6 +2,9 @@ class AnazhRealm_dirigent_ankunft {
     // ===== ATLAS · Dirigent/ankunft — init · das erste Weltbild · Ladeschirm · der Boot =====
     async init() {
         this.log(`Initialisiere Anazh Realm V${AnazhRealm.VERSION}... Ewigkeit erwacht!`, "INFO");
+        // DIE QUELLE DER FÄDEN DES GESETZES kommt mit der Seite (w28-faden-quelle) und als erste Frage an den Faden der Quelle: ihre
+        // Adresse steht, wenn die Weltgen den Voxel-Faden ruft (`_getVoxelWorker`); ein Abruf, der fällt, bricht beim Namen
+        if (typeof Worker !== "undefined") this._fadenQuelle();
         // DIE STUDIO-FÄDEN KOMMEN MIT DER SEITE (B3a): ihre Kerne sind statisch (`?v=`), nichts in ihnen wartet auf die Welt —
         // sie starten, während der Wirt Spielstand, Gerät und Renderer holt, und das Buch liegt bereit, wenn er steht
         // (`_foundryWirtSteht`). Bis B3a gebar sie erst `generateNewWorld` (Radeon kalt 2,55 s nach der Navigation).
@@ -187,7 +190,7 @@ class AnazhRealm_dirigent_ankunft {
                         "Versuche ?holz=kienspan (kleiner Ring, kein AA) oder einen anderen Browser.",
                     "ERROR"
                 );
-                this._ladeschirmStand(this._t("kern.lade-gpu-stumm"));
+                this._ladeschirmStand([["kern.lade-gpu-stumm"]]);
             }
         }, 25000);
         renderer
@@ -257,6 +260,7 @@ class AnazhRealm_dirigent_ankunft {
                 // die Absage einer asynchronen Pipeline meldet sich laut (r184 verschluckt sie)
                 this._erstAbsageWache(renderer);
                 this._gestaltSchluessel(renderer); // der Bau-Schlüssel aus dem Stoff-Gesetz (r184s Nodes stehen erst jetzt)
+                this._knotenBauEntkernen(renderer); // der Bauer fällt mit seinem Stand (N3)
                 // JEDES-HOLZ — DER DEVICE-LOSS-WÄCHTER: stirbt das GPU-Device
                 // (Software-Dawn, Treiber-Reset, TDR), wird es LAUT gemeldet +
                 // das Gate gezeigt, statt einer weißen Welt mit 60-fps-Lüge.
@@ -281,7 +285,7 @@ class AnazhRealm_dirigent_ankunft {
                 }
             })
             .catch((err) => {
-                this._ladeschirmStand(this._t("kern.lade-gpu-verweigert", { grund: String(err && err.message) }));
+                this._ladeschirmStand([["kern.lade-gpu-verweigert", { grund: String(err && err.message) }]]);
                 this.log(
                     `WebGPU-Renderer init() scheiterte (${err.message}). ` +
                         "navigator.gpu existiert aber requestAdapter/requestDevice scheitert — " +
@@ -414,15 +418,10 @@ class AnazhRealm_dirigent_ankunft {
                 csm._init = (builder) => this._kaskadenGeburt(csm, builder);
                 // DIE SONNEN-SICHT über den Kaskaden (`_sonnenSicht`: der Horizont des Gelände-Gesetzes × der Wurf der Wolke):
                 // die Kaskaden enden bei maxFar und sehen keinen fernen Grat, keine Wolke — der EINE Knoten der CSM (einmal je
-                // Instanz gebaut, der Eingriff in 07.js) trägt die Sicht für jeden Empfänger (Boden, Ring, Gras, Baum, Haus),
-                // nah wie fern; `receivedShadowNode` eines Stoffs wirkt nur je Kaskade.
-                const aufbauEin = csm.setup;
-                const welt = this;
-                let mitSonne = null;
-                csm.setup = function (builder) {
-                    if (mitSonne === null) mitSonne = aufbauEin.call(this, builder).mul(welt._sonnenSicht());
-                    return mitSonne;
-                };
+                // Instanz gebaut, ohne laufenden Stapel: der EINE Aufbau in `_configureRenderer`, bild-kosten) trägt die Sicht
+                // für jeden Empfänger (Boden, Ring, Gras, Baum, Haus), nah wie fern; `receivedShadowNode` eines Stoffs wirkt
+                // nur je Kaskade. Bis w28-ankunft-stapel hielt diese Stelle ein zweites Gedächtnis um den Aufbau.
+                csm.anazhSicht = () => this._sonnenSicht();
                 // Die Lichter stellt der Haupt-Pass VOR jeder Karte (`_passSicht` → `_kaskadenPassen`). Das Addon
                 // stellte sie im Knoten-updateBefore — r184 ruft es NACH den Kaskaden-Pässen (gemessen 04.10.: k0 · k1
                 // · Fit), jede Karte lief mit der Box des Vor-Frames. Sein zweiter Schreiber fällt mit:
@@ -759,6 +758,7 @@ class AnazhRealm_dirigent_ankunft {
         // Der Zustand der aktiven Welt: dieselbe Rettungs-Kette wie die Vorlade (IndexedDB ⇄ Abbild → .bak; der IDB-Stand
         // des Boot-Vorlaufs wird hier verbraucht).
         this.loadState();
+        this._buildWaterPlane(); // das Meer DIESER Welt (ihr Ort-Gesetz, Reise) — nie der Spiegel der Welt davor
         this._foundryWirtSteht(); // das Buch, das mit der Seite kam, geht jetzt in die Welt (B3a)
         // die Welt steht, wenn ihre Heimat aus dem Voxel-Faden kommt (Karte hydro-faden): erst dann Eingabe, Tor und Schleife
         await this.generateNewWorld();
@@ -809,7 +809,7 @@ class AnazhRealm_dirigent_ankunft {
             // und hielt den Ladeschirm ohne Grenze — nach WELTBILD_DECKEL_MS ab der ersten Frage weicht er laut wie bei Ruhe.
             const gedeckelt = jetzt - st._weltbildErsteFrage >= AnazhRealm.WELTBILD_DECKEL_MS;
             if (!st.playerMesh || (!gedeckelt && jetzt - st._weltbildLueckeSeit < AnazhRealm.WELTBILD_STILL_MS)) {
-                this._ladeschirmStand(sig);
+                this._ladeschirmStand(luecken.map((l) => l.zeile));
                 return false;
             }
             const taeter = luecken.map((l) => this._lueckeTaeter(l)).filter(Boolean);
@@ -820,6 +820,22 @@ class AnazhRealm_dirigent_ankunft {
                     this._bruchMelden(
                         `WELTBILD NICHT GANZ: das erste Weltbild steht, ${this._lueckeTaeter(l)} — ${l.n} ` +
                             `${l.n === 1 ? "Programm kam" : "Programme kamen"} nicht (${gedeckelt ? "Deckel" : "Ruhe"})`
+                    );
+            // EIN FADEN, DER NIE ANTWORTETE, UND EINE OFFENE PFLANZUNG BRECHEN BEIM NAMEN (w28-krone-vor-kachel): geben Ruhe oder
+            // Deckel ein Bild frei, dem der Wald fehlt, ist es nicht ganz — bis hier stand dafür nur ein Wort im Log (WARN), und
+            // ein Faden ohne `ack` blieb ganz ungenannt (`_faedenStumm`: GTX 1050 kalt, das erste Bild kahler Boden ohne Baum)
+            const stumm = this._faedenStumm();
+            const frei = `${gedeckelt ? "Deckel" : "Ruhe"} nach ${Math.round((jetzt - st._weltbildErsteFrage) / 100) / 10} s`;
+            for (const s of stumm)
+                this._bruchMelden(
+                    `WELTBILD NICHT GANZ: das erste Weltbild steht ohne: ${sig} — der ${s.name[0].toUpperCase() + s.name.slice(1)}-Faden ` +
+                        `antwortete nie (kein ack seit seiner Geburt vor ${Math.round(s.seitMs / 100) / 10} s, ${s.offen} Aufträge offen; ${frei})`
+                );
+            for (const l of luecken)
+                if (l.term === "pflanzung")
+                    this._bruchMelden(
+                        `WELTBILD NICHT GANZ: das erste Weltbild steht mit offener Pflanzung (${l.satz}; ${frei})` +
+                            (stumm.length ? "" : " — kein Faden ist stumm")
                     );
             this.log(
                 (gedeckelt
@@ -1125,11 +1141,18 @@ class AnazhRealm_dirigent_ankunft {
         // `arbeitet`: für diese Lücke ist etwas unterwegs (ein Faden baut an ihr) — die Ruhe-Uhr von `_ankunftsBild` steht;
         // `n`: so viele Löcher trägt sie (der Rundblick zählt sie); `zeuge`: das erste Ding, das sie offen hält — weicht der
         // Ladeschirm laut, nennt sein Satz den Täter (`_lueckeTaeter`)
-        const luecke = (term, satz, arbeitet, n, zeuge) =>
-            out.push({ term, satz, arbeitet: !!arbeitet, n: n > 0 ? n : 1, zeuge });
+        const luecke = (term, zeile, arbeitet, n, zeuge) =>
+            out.push({
+                term,
+                zeile,
+                satz: AnazhRealm._tIn("de", zeile[0], zeile[1]),
+                arbeitet: !!arbeitet,
+                n: n > 0 ? n : 1,
+                zeuge,
+            });
         const pm = st.playerMesh;
         if (!pm) {
-            luecke("welt", "die Welt entsteht");
+            luecke("welt", ["ankunft.welt"]);
             return out;
         }
         // im Blick (B3d): ein Ding mit seinem Radius (ERSTER_BLICK.dingM), ein Boden-Stück mit seiner halben Diagonale
@@ -1152,7 +1175,7 @@ class AnazhRealm_dirigent_ankunft {
         if (boden)
             luecke(
                 "boden",
-                `der Boden wächst (${boden} Stücke im Bild)`,
+                ["ankunft.boden", { n: boden }],
                 st.voxelWorkerPending && st.voxelWorkerPending.size > 0,
                 boden
             );
@@ -1163,25 +1186,25 @@ class AnazhRealm_dirigent_ankunft {
             const fr = st.fernRing;
             const fp = st.feldPass;
             if (!fr || !fr.ready)
-                luecke(
-                    "horizont",
-                    `der Horizont wächst (${fr && fr.totalVerts ? Math.floor((100 * fr.cursor) / fr.totalVerts) : 0} %)`
-                );
+                luecke("horizont", [
+                    "ankunft.horizont-waechst",
+                    { pct: fr && fr.totalVerts ? Math.floor((100 * fr.cursor) / fr.totalVerts) : 0 },
+                ]);
             // die Teilung der Schale 0 im Fern-Faden (`_fernRingTeilung`, w14-ankunft-weg): bis sie zum Stand der Maske steht,
             // zeichnete der Ring frei über dem Gebauten
-            else if (!this._fernRingGeteilt(fr)) luecke("horizont", "der Horizont wird geteilt", true);
+            else if (!this._fernRingGeteilt(fr)) luecke("horizont", ["ankunft.horizont-geteilt"], true);
             // das Panorama malt nur, wer die Ferne auf der GPU zeichnet (`_weltMarchGezeichnet`; der Linsen-Hook trägt den Pass
             // auch headless, dort malt nie ein Panorama)
             else if (fp && this._weltMarchGezeichnet() && !(fp.panoLaeufe > 0))
-                luecke("horizont", "der Horizont wird gemalt");
+                luecke("horizont", ["ankunft.horizont-gemalt"]);
         }
         // DAS LICHT DES ORTS (S7): die Belichtung steht aus dem Licht erst, wenn die Bestrahlungs-Tafel der EINEN Atmosphäre liegt
         // (`_belichtungAnker`, `_himmelsBestrahlung`) — bis dahin trüge das erste Bild die Belichtung des Ladens (1,0) und
         // spränge mit der ersten Tafel (Prüfung S7 Runde 2: die Ankunft in Dämmerung oder Nacht).
-        if (!st._belichtungSteht) luecke("licht", "das Licht des Orts wird gemessen", true);
+        if (!st._belichtungSteht) luecke("licht", ["ankunft.licht"], true);
         // DER LEIB DES SPIELERS (K60-2): sein Guss kommt aus dem Faden (`_leibBereit`, die zwei Vorlagen nach dem Buch) — bis
         // er steht, ist der Spieler der leere Anker, und kein Bild zeigt die Welt ohne ihn.
-        if (st._deferredAvatarSoul) luecke("leib", "der Spieler erhält seinen Leib", !!this._foundry);
+        if (st._deferredAvatarSoul) luecke("leib", ["ankunft.leib"], !!this._foundry);
         // DAS BILD IST GEZEICHNET (w28-bild-ganz): jeder Term hier zählt, was GESETZT ist — dieser, was das letzte Bild der
         // Welt-Szene zeichnen wollte und nicht zeichnete (`_bildWartet`: sein Knoten-Bau wartet oder seine Pipeline entsteht).
         // Ohne ihn stand das erste Weltbild ohne Karten-Wald, am Zweit-Boot ohne Boden (GTX 1050). Er arbeitet, solange er
@@ -1193,7 +1216,7 @@ class AnazhRealm_dirigent_ankunft {
         if (wartet.n)
             luecke(
                 "zeichnung",
-                wartet.n === 1 ? "1 Programm des Bilds entsteht" : `${wartet.n} Programme des Bilds entstehen`,
+                wartet.n === 1 ? ["ankunft.zeichnung-eins"] : ["ankunft.zeichnung", { n: wartet.n }],
                 true,
                 wartet.n,
                 wartet.zeuge
@@ -1201,7 +1224,7 @@ class AnazhRealm_dirigent_ankunft {
         if (!this._foundryEnabled()) return out;
         const f = this._foundry;
         if (this._foundryBuchOffen()) {
-            luecke("buch", "das Buch der Studios öffnet sich", !!(f && f.worker));
+            luecke("buch", ["ankunft.buch"], !!(f && f.worker));
             return out;
         }
         const p = pm.position;
@@ -1220,7 +1243,7 @@ class AnazhRealm_dirigent_ankunft {
             )
                 zeuge = ungebaut++ ? zeuge : e;
         }
-        if (ungebaut) luecke("bauten", `${ungebaut} Bäume und Bauten wachsen`, false, ungebaut, zeuge);
+        if (ungebaut) luecke("bauten", ["ankunft.bauten", { n: ungebaut }], false, ungebaut, zeuge);
         // DAS DORF DER ANKUNFT (K60-4): ein Haus, das noch kein Eintrag ist, zählt „bauten" nicht — das Start-Dorf ist fällig
         // (`_startDorfFaellig`, noch nicht bestellt), sein Export ist unterwegs (`_autoSettlementPendingKey`: der Plan und die
         // Ort-Wahl) oder seine Häuser der Mesh-Zone stehen in der Schlange (`_autoSettlementQueue`). Ohne den Term stand das
@@ -1235,13 +1258,13 @@ class AnazhRealm_dirigent_ankunft {
                     const hz = s && q.origin.z + s.z;
                     if (s && (hx - p.x) ** 2 + (hz - p.z) ** 2 <= R * R && imBlick(hx, hz)) haeuser++;
                 }
-            if (haeuser) luecke("dorf", `${haeuser} Häuser des Dorfs wachsen`, false, haeuser);
-            else if (this._autoSettlementPendingKey) luecke("dorf", "das Dorf wird geplant", true);
+            if (haeuser) luecke("dorf", ["ankunft.dorf-haeuser", { n: haeuser }], false, haeuser);
+            else if (this._autoSettlementPendingKey) luecke("dorf", ["ankunft.dorf-geplant"], true);
             // der Ort aus dem Gedächtnis (speicher.K3): sein Export ist unterwegs, oder er ist fällig
             else if (this._stlWegePending || (this._autoSettlementChannelLive() && this._dorfWiederkehrZelle(p)))
-                luecke("dorf", "das Dorf kehrt wieder", !!this._stlWegePending);
+                luecke("dorf", ["ankunft.dorf-kehrt"], !!this._stlWegePending);
             else if (!q && this._autoSettlementChannelLive() && this._startDorfFaellig(p))
-                luecke("dorf", "das Dorf wird gegründet");
+                luecke("dorf", ["ankunft.dorf-gegruendet"]);
         }
         // Die Pflanz-Schlange (`pendingVegSpawns`, K60): ein gepflanzter Baum der Mesh-Zone, der noch nicht gesetzt ist, ist
         // noch kein Eintrag — ohne diesen Term stand das Bild vor ihm, und er wuchs im Bild nach.
@@ -1277,9 +1300,15 @@ class AnazhRealm_dirigent_ankunft {
         if (gesetzt || saat)
             luecke(
                 "pflanzung",
-                [gesetzt ? `${gesetzt} Bäume werden gepflanzt` : "", saat ? `${saat} Wald-Böden werden bepflanzt` : ""]
-                    .filter(Boolean)
-                    .join(", "),
+                [
+                    "ankunft.pflanzung",
+                    {
+                        teile: [
+                            gesetzt && ["ankunft.baeume-gepflanzt", { n: gesetzt }],
+                            saat && ["ankunft.boeden-bepflanzt", { n: saat }],
+                        ].filter(Boolean),
+                    },
+                ],
                 false,
                 gesetzt + saat
             );
@@ -1290,7 +1319,7 @@ class AnazhRealm_dirigent_ankunft {
             (rx, rz) => imBlick((rx + 0.5) * SC.regionM, (rz + 0.5) * SC.regionM, SC.regionM * Math.SQRT1_2),
             !rundum
         );
-        if (warten) luecke("streu", `${warten} Wald-Stücke warten auf ihre Gestalt`, false, warten);
+        if (warten) luecke("streu", ["ankunft.streu", { n: warten }], false, warten);
         // die Karte zählt, deren Leser im Blick stand, als er sie verlangte (`z._imBlick`, `_foundryBuildImpostorFlat` —
         // vor und nach dem Bild dieselbe Frage, `_rangImBlick`); ein Schlüssel ohne Zelle zählt immer
         const zellen = this._impostorAtlas().zellen;
@@ -1300,7 +1329,7 @@ class AnazhRealm_dirigent_ankunft {
         };
         let karten = 0;
         for (const k of this._impostorBakeQueue || []) if (imBild(k)) karten++;
-        if (karten) luecke("karten", `${karten} ferne Bäume werden gemalt`, false, karten);
+        if (karten) luecke("karten", ["ankunft.karten", { n: karten }], false, karten);
         return out;
     }
 
@@ -1330,11 +1359,21 @@ class AnazhRealm_dirigent_ankunft {
         return typeof window !== "undefined" && !!window.__anazhHeadlessNullRenderer;
     }
 
-    // Die Stand-Zeile des Ladeschirms (nur solange er steht).
-    _ladeschirmStand(text) {
+    // Die Stand-Zeile des Ladeschirms (nur solange er steht): `zeilen` = [[schlüssel, werte], …] der Sprach-Tafel, je Zeile ein
+    // Knoten mit seinem Schlüssel (`_tSetze`, der Wechsel der Sprache füllt ihn neu, `_sprachDom`), verbunden mit „ · ". Nur eine
+    // neue Lage berührt das DOM (der Ladeschirm fragt je Takt).
+    _ladeschirmStand(zeilen) {
         if (typeof document === "undefined") return;
         const el = document.getElementById("ladeschirm-stand");
-        this._hudSchreib(el, text);
+        if (!el) return;
+        const sig = JSON.stringify(zeilen);
+        if (el._standSig === sig) return;
+        el._standSig = sig;
+        el.textContent = "";
+        zeilen.forEach(([schluessel, werte], i) => {
+            if (i) el.appendChild(document.createTextNode(" · "));
+            el.appendChild(this._tSetze(document.createElement("span"), schluessel, werte));
+        });
     }
 
     // Der Ladeschirm weicht: nach dem ersten fertigen Weltbild, oder dem WebGPU-Tor (das Tor IST die Antwort — unter dem
@@ -1957,7 +1996,7 @@ function _bootAnazhRealm() {
     );
     // Ein Boot, der scheitert, sagt es auf dem Ladeschirm (nie ein stummes Warten).
     erwachen.catch((e) => {
-        anazhRealm._ladeschirmStand(anazhRealm._t("kern.lade-erwachen-fehl", { grund: String((e && e.message) || e) }));
+        anazhRealm._ladeschirmStand([["kern.lade-erwachen-fehl", { grund: String((e && e.message) || e) }]]);
         throw e;
     });
 }

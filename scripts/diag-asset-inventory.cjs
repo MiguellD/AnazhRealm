@@ -15,7 +15,7 @@
 //                Avatar · nicht-vegetative platzierte Architektur · die per userData.inventar
 //                GESTEMPELTEN Bau-Quellen: boden-satz · wetter-regen — die einst 222 „unbekannten"
 //                Emitter, an der QUELLE geklärt; die Klein-Streu ist Studio, das Fernfeld fiel).
-//   ENTSCHEID  — dokumentierte Schöpfer-Entscheide (die fliegenden Inseln [E-F]; die Stein-Scheibe des Genesis-Orts hob das
+//   ENTSCHEID  — dokumentierte Schöpfer-Entscheide (die fliegenden Inseln fielen am 16.11.; die Stein-Scheibe des Genesis-Orts hob das
 //                Schöpfer-Wort vom 31.10. auf: „der platz aus alten klopfsteinen, statt diese komische plattform"); im Parity-Shot seit
 //                W2 versteckt, in der Welt daheim. Die Feuerstelle trägt die Gestalt des Gesetzbuchs — ein Bauplan
 //                mit studioGestalt-Zeile, dessen Wirts-Teile zeichnen, ist eine VERLETZUNG.
@@ -78,7 +78,6 @@ hauptLauf(async () => {
         const waterSet = new Set();
         if (st.voxelChunkWaterIso) for (const m of st.voxelChunkWaterIso.values()) if (m) waterSet.add(m);
         const skySet = new Set([st.skybox, st.sunMesh, st.moonMesh, st.starField, st.waterPlane].filter(Boolean));
-        const islandSet = new Set((st.floatingIslands || []).filter(Boolean));
         // N7.4 — die Vor-Studio-Kulissen (Horizont-Mantel/Canopy-Shell) sind GESCHNITTEN:
         // die Verletzungs-Klasse ist per Konstruktion unmöglich, der Detektor entfällt.
         // Platzierte/gemergte Architektur: mesh → Bauplan-Name (Wurzel-Objekt des Eintrags).
@@ -250,7 +249,6 @@ hauptLauf(async () => {
                 if (chain.some((p) => p.userData && p.userData.kind === "creature"))
                     return tally("substanz", "kreatur");
                 if (pm && chain.includes(pm)) return tally("substanz", "avatar");
-                if (chain.some((p) => islandSet.has(p))) return tally("entscheid", "fliegende Insel (E-F)");
                 for (const p of chain) {
                     const nm = archMeshName.get(p);
                     if (nm) {

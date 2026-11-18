@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// diag-reconnect.cjs — DIE RECONNECT-LINSE (npm run gate:reconnect)
+// diag-reconnect.cjs — DIE RECONNECT-LINSE (in npm run check)
 //
 // RECONNECT (Orakel Tier-1 #10): heute beendete jeder Netz-Blip die
 // Ko-Präsenz still. Drei Fäden, eine Linse — pure Fixtures ohne echten

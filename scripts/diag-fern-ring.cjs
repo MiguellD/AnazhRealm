@@ -172,7 +172,9 @@ hauptLauf(async () => {
         st.scene.traverse((n) => {
             if (n.isMesh && n.userData && n.userData.inventar === "fern-ring") res.sceneMeshes++;
         });
-        res.visible = fr.meshes.every((m) => m.visible === true);
+        // der stehende Ring nimmt Raum und trägt keine Gast-Prägung mehr (w28-programm-vor-bild: bis zum ersten Refresh ist er sein eigener Gast)
+        st.scene.updateMatrixWorld(true);
+        res.visible = fr.meshes.every((m) => m.visible === true && !m.__vorbauGast && m.matrixWorld.determinant() !== 0);
         res.flags = fr.meshes.every((m) => m.frustumCulled === false && !m.castShadow && m.receiveShadow === true);
         // DER LOCH-DECKEL: Schale 1 beginnt DIREKT am Spieler (0.5·span)
         // — der Ring deckt jedes Chunk-Loch (die Wasser-Plane samt Spekular bleibt
@@ -446,7 +448,15 @@ hauptLauf(async () => {
         // ===== (7) DER NEUBAU AUS DEM FADEN: nach dem Dispose entsteht der Ring wieder ganz (B2) =====
         r._tickFernRing(st.playerMesh.position);
         const fr7 = st.fernRing;
+        // DER RING IST BIS ZU SEINEM ERSTEN REFRESH SEIN EIGENER GAST DES BILDS (w28-programm-vor-bild): frisch geboren trägt jedes
+        // seiner Netze die Prägung „bild“ und nimmt keinen Raum (Maßstab 0) — die Erst-Zeichnung baut Knoten und Pipelines unter dem
+        // Ladeschirm ohne Draw; steht er, nimmt er Raum ohne Prägung. GTX 1050 kalt, main 9b3750ba: sein Programm begann erst mit
+        // den Daten, seine zwei Pipelines waren in 9 von 9 Boots die letzten vor dem Bild (fertig 21,8–23,9 s; als Gast 13,3 · 15,3 s).
+        st.scene.updateMatrixWorld(true);
+        res.gastVor = !!fr7 && fr7.ready !== true && fr7.meshes.length > 0 && fr7.meshes.every((m) => m.visible === true && m.__vorbauGast === "bild" && m.matrixWorld.determinant() === 0);
         await pumpe(st.playerMesh.position);
+        st.scene.updateMatrixWorld(true);
+        res.gastNach = !!fr7 && fr7.ready === true && fr7.meshes.every((m) => !m.__vorbauGast && m.matrixWorld.determinant() !== 0);
         res.fzCpuFertig = !!(fr7 && fr7.cursor >= fr7.totalVerts && fr7.ready === true);
 
         // ===== (8) DER FELD-PASS: die Ferne ganz ohne Schalen-Geometrie =====
@@ -470,28 +480,40 @@ hauptLauf(async () => {
         res.fpPanoLaeufe = fp8 ? fp8.panoLaeufe : 0;
         res.fpTexOk = !!(fp8?.tex && fp8.tex.image.width === P8.az && fp8.tex.image.height === P8.rad);
         res.fpSichtbar = !!(fp8 && fp8.mesh.visible === true);
+        // DAS GESETZ AN DER MASCHE DES TEXELS (w28-feld-fuss): das Feld nennt dem Gesetz die Weite seiner Masche (die Wurzel ihrer
+        // Fläche: Azimut-Breite am Radius × radiale Zeile) und liest die Ebenen des Netzes, die sie trägt (gelaende-core
+        // `netzStufe`); die Reihe an der Naht fragt wie der Ring, ohne Fuß. Die Erwartung stellt DIESELBE Frage — die Linse
+        // rechnet die Masche selbst (eine eigene Erwartung, wie die Worker-Linse `diag-worker-dichte`), nie aus dem Faden.
+        // Daneben dieselben Texel gegen das GANZE Netz (`fpWorstGanz`): die Zahl ist der Preis der Stufe im Bild (Rinnen der
+        // 100-m-Ebene, die keine Masche von 418–934 m zeigt) und der Konsum-Beweis — läse das Feld seine Masche nicht, wäre sie 0.
         let fpWorst = -1;
+        let fpWorstGanz = -1;
         if (fp8 && fp8.laeufe >= 1) {
             fpWorst = 0;
+            fpWorstGanz = 0;
             const F8 = AnazhRealm.FERN_RING;
             const rMin8 = F8.schalen[F8.schalen.length - 1].aussen;
+            const hr8 = (P8.rMaxM - rMin8) / (2 * P8.rad);
             const wl8 = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
             for (let k = 0; k < 40; k++) {
                 const ix = (k * 37) % P8.az;
                 const iy = (k * 11) % P8.rad;
                 const rr = rMin8 + ((iy + 0.5) / P8.rad) * (P8.rMaxM - rMin8);
                 const aa = ((ix + 0.5) / P8.az - 0.5) * 2 * Math.PI;
-                const law8 = r._terrainMacroSurfaceY(
-                    fp8.anchorX + Math.cos(aa) * rr,
-                    fp8.anchorZ + Math.sin(aa) * rr,
-                    false
-                );
-                const want8 = law8 < wl8 ? wl8 : law8;
-                const d8 = Math.abs(fp8.daten[(iy * P8.az + ix) * 4] - want8);
+                const x8 = fp8.anchorX + Math.cos(aa) * rr;
+                const z8 = fp8.anchorZ + Math.sin(aa) * rr;
+                const masche8 = rr - rMin8 < 2 * hr8 ? 0 : Math.sqrt(4 * ((Math.PI * rr) / P8.az) * hr8);
+                const ist8 = fp8.daten[(iy * P8.az + ix) * 4];
+                const law8 = globalThis.__gelaendeCore.hoehe(r._gelaende(), x8, z8, false, undefined, masche8);
+                const d8 = Math.abs(ist8 - (law8 < wl8 ? wl8 : law8));
                 if (d8 > fpWorst) fpWorst = d8;
+                const ganz8 = r._terrainMacroSurfaceY(x8, z8, false);
+                const g8 = Math.abs(ist8 - (ganz8 < wl8 ? wl8 : ganz8));
+                if (g8 > fpWorstGanz) fpWorstGanz = g8;
             }
         }
         res.fpWorst = fpWorst;
+        res.fpWorstGanz = fpWorstGanz;
         // Die ECHTE Render-Probe (der Null-Renderer der Seite zeichnet nie):
         try {
             const szene8 = new THREE.Scene();
@@ -1473,6 +1495,11 @@ hauptLauf(async () => {
         out.zweiStoffe === true
     );
     check("1: sichtbar erst nach vollem Refresh + frustumCulled aus, wirft nicht, empfängt (die Horizont-Karte, D3)", out.ready && out.visible && out.flags);
+    check(
+        "7: der Ring ist bis zu seinem ersten Refresh sein eigener GAST DES BILDS (Prägung „bild“, Maßstab 0: sein Programm entsteht unter dem Ladeschirm vor seinen Höhen) und nimmt danach Raum ohne Prägung",
+        out.gastVor === true && out.gastNach === true,
+        `frisch geboren Gast ${out.gastVor} · nach dem Refresh Bürger ${out.gastNach}`
+    );
     check("1: LOCH-DECKEL — Schale 1 beginnt am Spieler (0.5·span), deckZoneRad = Ziel-Zone", out.innerRandOk === true);
     check(
         "Bau IN SCHEIBEN aus dem Fern-Faden über Takte (je Takt <= scheibe × scheibenImFlug, Index-Folge ohne Loch, mehrere Takte, Cursor voll)",
@@ -1545,9 +1572,14 @@ hauptLauf(async () => {
         `laeufe=${out.fpLaeufe} pano=${out.fpPanoLaeufe}`
     );
     check(
-        "8: Texel-Höhen == f64-Gesetz im Seh-Band (≤ 0.5 m bis 40 km, Wasser flach auf wl)",
+        "8: Texel-Höhen == f64-Gesetz AN DER MASCHE DES TEXELS im Seh-Band (≤ 0.5 m bis 40 km, Wasser flach auf wl)",
         out.fpWorst >= 0 && out.fpWorst <= 0.5,
-        `worst=${Number.isFinite(out.fpWorst) ? out.fpWorst.toFixed(4) : out.fpWorst}`
+        `worst=${Number.isFinite(out.fpWorst) ? out.fpWorst.toFixed(4) : out.fpWorst} m · gegen das ganze Netz ${Number.isFinite(out.fpWorstGanz) ? out.fpWorstGanz.toFixed(2) : out.fpWorstGanz} m (der Preis der Stufe)`
+    );
+    check(
+        "8 SELBSTTEST: dieselben Texel gegen das GANZE Netz (die Frage ohne Masche) fallen rot — das Feld liest die Stufe seiner Masche",
+        out.fpWorstGanz > 0.5,
+        `ohne Masche worst=${Number.isFinite(out.fpWorstGanz) ? out.fpWorstGanz.toFixed(2) : out.fpWorstGanz} m (> 0.5)`
     );
     check(
         "8: die ECHTE Render-Probe trifft — der Fullscreen-Raymarch zeichnet Horizont-Pixel",

@@ -304,6 +304,11 @@ function taeterRinde(sb) {
     // 2) Samen-Invarianz: der Ofen liest den Samen nie (Synthese §2.3 „Gestalten ehrlich") — eingefroren.
     const s7 = vergleiche(ist, allesBacken(sb, 7));
     check("Samen-Invarianz: Samen 7 == Samen 1 je Klasse (der Ofen liest den Samen nie)", s7.length === 0, s7[0]);
+    // 2b) DIE SPREIZ-POSE IST EINE FESTE DREHUNG (foundry-core SPREIZ_GESETZ, w28-leib-kanon Nummer 4c): ihr cos und sin stehen als
+    // Zahlen im Gesetz, damit der Guss für sie keine Transzendente ruft — sie müssen zu ihrem Winkel passen (auf 1e-15)
+    const SG = sb.SPREIZ_GESETZ || {};
+    const sgFehl = Object.keys(SG).filter((jn) => !(Math.abs(Math.cos(SG[jn].w) - SG[jn].c) < 1e-15 && Math.abs(Math.sin(SG[jn].w) - SG[jn].s) < 1e-15));
+    check(`Spreiz-Gesetz: cos und sin je Gelenk passen zum Winkel (${Object.keys(SG).length} Gelenke)`, Object.keys(SG).length === 4 && sgFehl.length === 0, sgFehl.join(", "));
     // 3) Die Klassen-Zahl je Gesetzbuch.
     check(
         `Stoff-Klassen × Gelenk: Tier ${stoffTier} + Mensch ${stoffMensch} = ${stoffTier + stoffMensch} (der Handbeweis: 136 + 53 = 189)`,

@@ -49,11 +49,6 @@ function checkInitialState({ check, finalState }) {
             `unbenannt=[${finalState.szenenZensus.unbenannt.join(" · ")}]`
     );
     check(
-        "Fliegende Inseln gespawnt",
-        finalState.floatingIslands >= 1,
-        `floatingIslands=${finalState.floatingIslands}`
-    );
-    check(
         "Feld-native Spieler-Velocity (playerVel) vorhanden",
         finalState.hasPlayerBody === true,
         `hasPlayerVel=${finalState.hasPlayerBody}`
@@ -208,22 +203,21 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
 
         // die Stellgrößen und Schalter, die das Band fährt (am Ende zurück)
         const K = ["perfSense", "architectureCullingRadius", "_voxelStreamBudgetMs", "gravity", "perfRegulator"];
-        const [snap, waterMs] = [K.map((k) => st[k]), st.atmosphere ? st.atmosphere.waterIsoBudgetMs : undefined];
+        const snap = K.map((k) => st[k]);
         st.perfRegulator = true;
         st.perfSense = r._perfSenseInit(); // sauberer Start (loadScale=1)
         const gBefore = st.gravity;
         const L = A.PERF_LEVERS;
         // die Lage einer Stellgröße (0 = voll gedrosselt, 1 = unangetastet): das Stream-Budget, die Architektur-Domäne am
-        // Schatten-Intervall (`effArch`); EIN Aktuieren je Last-Bild (`streaming`, `archCulling`, die Draw-Calls)
+        // Schatten-Intervall (`effArch`); EIN Aktuieren je Last-Bild (`streaming`, `archCulling`, die gemessene GPU-Zeit)
         const streamPos = () =>
             (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
         const archPos = () =>
             (L.shadowMinInterval[1] - st._shadowMinInterval) / (L.shadowMinInterval[1] - L.shadowMinInterval[0]);
-        const akt = (loadScale, streaming, archCulling, renderCalls) =>
+        const akt = (loadScale, streaming, archCulling, gpuMs = 0) =>
             r._nexusPerfActuate({
                 loadScale,
-                renderCalls,
-                phase: { streaming, render: 0, archCulling, waterIso: 1, creatures: 0, physics: 0 },
+                phase: { streaming, render: 0, archCulling, waterIso: 1, creatures: 0, physics: 0, gpuMs },
             });
 
         // (1) ANHALTENDER FPS-DRUCK → der EINE Regler strafft ALLE Stellgrößen der Qualität (der Rand der Mesh-Zone ist ein
@@ -275,20 +269,19 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         out.foldRenderMax = st.perfSense.renderCallsMax >= 1000 && st.perfSense.renderTrisMax >= 500000;
         out.foldPhaseSpike = (st.perfSense.phaseMax.streaming || 0) >= 50;
 
-        // (a) MODERATE Render-Last (Draw-Calls unter dem Responsiv-Schwellwert): die Architektur-Domäne
+        // (a) MODERATE Render-Last (6,6 ms gemessene GPU-Zeit): die Architektur-Domäne
         // (Schatten · Strahlen · Laub-Dichte = die render-verursachenden Hebel) gibt MEHR nach als das Streaming — die Welt
         // lädt weiter, während die Render-Qualität schrumpft.
-        akt(0.5, 1, 0.5, 600);
+        akt(0.5, 1, 0.5, 6.6);
         const [archPosR, streamPosR] = [archPos(), streamPos()];
         const shadowLoaded = st._shadowMinInterval;
         // unter moderater Render-Last gibt die Architektur-Domäne (Cull/Schatten) MEHR nach.
         out.renderLoadThrottlesArch = archPosR < streamPosR - 0.1;
         // (b) STREAMING IST HEILIG: bei Bau-Rückstau bleibt das Streaming auf MAX, egal wie hoch die
-        // Render-Last. Die Draw-Call-Zahl misst die Welt-GRÖSSE, keinen transienten Druck — als Trigger
-        // wäre sie dauerhaft an (Lauf-Freeze). Render-Druck drosselt nur die Optik (Schatten/Cull/Laub).
+        // Render-Last (12,1 ms GPU). Render-Druck drosselt nur die Optik (Schatten/Cull/Laub), nie das Laden.
         const pendBSnap = st.voxelMeshPending;
         st.voxelMeshPending = new Set(["0,0,0", "1,0,0"]); // Bau-Rückstau: die Welt lädt
-        akt(0.5, 1, 0.5, 1100);
+        akt(0.5, 1, 0.5, 12.1);
         st.voxelMeshPending = pendBSnap;
         out.renderLoadProtectsStreaming = streamPos() > 0.996;
         out.renderStreamPosBound = +streamPos().toFixed(2);
@@ -338,7 +331,6 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         out.deadConstantsGone = A.ARCH_QUALITY_FPS_LOW === undefined && A.ARCH_QUALITY_FPS_HIGH === undefined;
 
         K.forEach((k, i) => (st[k] = snap[i]));
-        if (st.atmosphere && waterMs !== undefined) st.atmosphere.waterIsoBudgetMs = waterMs;
         return out;
     });
     if (res.error) {
@@ -989,7 +981,8 @@ async function checkBandV18210Verdrahtung({ page, check }) {
 // K17-3 Runde 2: die acht Halm-Schichten der Wiese stehen wieder ausgeschrieben, ihre Mischung in
 // der reinen Funktion `rauschEbene` — als Schleife in `wieseRelief` las eine Layout-Funktion die Bindung des Atlas); die siebte Raum-Probe ist die Welle der Fels-Bänke, `rausch` des Rechenwerks, auf der CPU
 // gelaende-core `rauschRaum` —, kein verborgener Fn-Rumpf (der Fels-Term rechnet im Zweig des Stamms, `_zweigTSL`: sein Inhalt
-// reist als Argument, der Graph sieht ihn); die Basis f2361bb1 trägt dort 26 mx-Knoten und 0 Ladungen) · das Rechenwerk des
+// reist als Argument, der Graph sieht ihn; jeden anderen Rumpf ohne Layout LIEST die Linse wie der Bau — die Pool-Schleifen des
+// Lichts und des Dachs, w28-baum-programm —, verborgen bleibt nur, wer sich nicht lesen lässt; die Mutanten darunter); die Basis f2361bb1 trägt dort 26 mx-Knoten und 0 Ladungen) · das Rechenwerk des
 // Fels-Gesetzes rechnet kein Rauschen aus Hash-Zügen (K17 wellte die Bänke mit einem Wert-Rauschen aus acht Ziehungen im
 // Fragment: die Ladungen fielen 78 → 72, die Absenz sah es nicht) · die
 // Atlas-Bytes sind die MaterialX-Gradienten (lookup3, eigene Portierung hier) und richtig gepackt. Die GPU-Gleichheit (WGSL
@@ -1019,6 +1012,34 @@ async function checkBandRauschGesetz({ page, check }) {
             // KONSUM: der Knoten-Graph des Stoffs, den der Boden zeichnet (vor dem Bau — was der Compiler liest)
             out.graph = window.__stoffGraph(st.voxelChunkMaterial);
             out.halm = window.__stoffGraph(r._foundryTreeMaterial("grass", null));
+            // DIE MUTANTEN DES LESENS (w28-baum-programm): die Linse liest den Rumpf jeder Fn ohne Layout (die Pool-Schleifen des
+            // Lichts stehen im Boden-Stoff) — ein Rauschen im Rumpf, im Zweig eines `If` und in einer Schleife fällt beim Namen,
+            // ein Rumpf, der den Bauer liest, bleibt verborgen: [Rausch-Funktionen, verborgene Rümpfe] je Mutante
+            const T = THREE.TSL;
+            const mutante = (rumpf) => {
+                const m = new THREE.MeshBasicNodeMaterial();
+                m.colorNode = T.Fn(rumpf)();
+                const g = window.__stoffGraph(m);
+                return [g.rauschen, g.verborgen];
+            };
+            out.mutanten = {
+                rumpf: mutante(() => T.vec3(T.mx_noise_float(T.positionWorld))),
+                zweig: mutante(() => {
+                    const v = T.vec3(0).toVar();
+                    T.If(T.positionWorld.y.greaterThan(0), () => {
+                        v.assign(T.vec3(T.mx_noise_float(T.positionWorld)));
+                    });
+                    return v;
+                }),
+                schleife: mutante(() => {
+                    const v = T.float(0).toVar();
+                    T.Loop(3, () => {
+                        v.addAssign(T.mx_noise_float(T.positionWorld));
+                    });
+                    return T.vec3(v);
+                }),
+                bauer: mutante((bauer) => T.vec3(bauer.material ? 1 : 0)),
+            };
             // DIE ATLAS-BYTES: die MaterialX-Gradienten aus lookup3 (eigene Portierung), gepackt je Komponente × 4 Ecken
             const P = A.RAUSCH_GESETZ.P;
             const d = A._rauschAtlasDaten();
@@ -1074,8 +1095,16 @@ async function checkBandRauschGesetz({ page, check }) {
         .map(([f, c]) => f + " ×" + c)
         .join(", ");
     check(
-        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 70), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0; ${g.zweig} Zweige des Stamms) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
+        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 70), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0; ${g.gelesen} Rümpfe gelesen, ${g.zweig} Zweige des Stamms) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
         !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 70
+    );
+    // die Linse LIEST die Rümpfe (w28-baum-programm): ihre Mutanten in der echten TSL — ein Rauschen im Rumpf, im Zweig, in der
+    // Schleife zählt, kein Rumpf bleibt dabei verborgen; ein Rumpf, der den Bauer liest, bleibt es
+    const M = res.mutanten || {};
+    const faellt = (m) => Array.isArray(m) && m[0] >= 1 && m[1] === 0;
+    check(
+        `RAUSCH-GESETZ (B) Mutanten: ein Rauschen im Fn-Rumpf ${JSON.stringify(M.rumpf)}, im Zweig eines If ${JSON.stringify(M.zweig)} und in einer Schleife ${JSON.stringify(M.schleife)} fällt beim Zählen ([Rausch-Funktionen ≥ 1, verborgen 0]); ein Rumpf, der den Bauer liest, bleibt verborgen ${JSON.stringify(M.bauer)} (Soll [0,1])`,
+        faellt(M.rumpf) && faellt(M.zweig) && faellt(M.schleife) && Array.isArray(M.bauer) && M.bauer[0] === 0 && M.bauer[1] === 1
     );
     check(
         `RAUSCH-GESETZ (C) die Atlas-Bytes sind die MaterialX-Gradienten (${res.falsch} falsch) und richtig gepackt (${res.packung} Brüche)`,
@@ -1220,51 +1249,58 @@ async function checkBandPerfPanel({ page, check }) {
     check("Perf-Panel SELBST-TEST: ohne Flugschreiber kein Export (die Linse feuert)", o.selbstTestKeinTrace === true);
 }
 
-// Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden: ein Budget ≤ 0 lässt die Substanz-Queues
-// nie monoton wachsen. Lehre 13: Existenz vor Framerate — Substanz (prio 1: waterIso) läuft bei leerem Budget
-// JEDEN Frame, Deko (prio ≥ 2) jeden 4.; K40 der Dauer-Strom: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4.
+// Existenz unter der EINEN Frist (w28-takt-frist; bis dahin der Zeit-Boden des Budget-Pools, gate:existenz-boden): ist die Frist des
+// Takts abgelaufen, geht kein Job am Tor vorbei, und je Takt geht EIN Bauer sein Pflicht-Stück — reihum, wer nichts zu bauen hat,
+// gibt es weiter; keine Schlange wächst monoton (Lehre 13: Existenz vor Framerate). K40 der Dauer-Strom: baut jeder Takt Terrain,
+// läuft das Deko-Innere trotzdem jeden 4.
 async function checkBandExistenzBoden({ page, check }) {
     const out = await safeEvaluate(page, () => {
         const s = st;
         const pos = s.playerMesh.position;
         const res = {};
-        const leer = { remainingMs: () => 0 }; // die render-gebundene Maschine des Schöpfers
         const frameNo = r._schedFrameNo;
-        // (a) Substanz läuft JEDEN Frame, Deko nur jeden 4.
-        const gesehen = { waterIso: 0, deko: 0, laeufe: 0 };
-        for (let i = 0; i < 8; i++) {
-            const ran = r._dispatchFrameJobs(r._buildDeferrableJobs(pos), leer);
-            gesehen.laeufe++;
-            if (ran.includes("waterIso")) gesehen.waterIso++;
-            if (ran.includes("scatterDeco") || ran.includes("grass")) gesehen.deko++;
+        // EIN Takt des Spielers mit abgelaufener Frist (der Null-Renderer baut sonst ohne Ende): [am Tor vorbei, das Pflicht-Stück]
+        const frist = leihe(r, { _bauFristOhneEnde: () => false });
+        const takt = (jobs) => {
+            r._fristStellen(performance.now() - 1e3, false);
+            const [ran, pflicht] = [r._dispatchFrameJobs(jobs), r._bauPflichtGang()];
+            r._bauFristTakt = null;
+            return [ran, pflicht];
+        };
+        try {
+            // (a) die Jobs des Spiels: keiner geht am Tor vorbei
+            res.vorbei = 0;
+            for (let i = 0; i < 8; i++) res.vorbei += takt(r._buildDeferrableJobs(pos))[0].length;
+            // (b) eine GEFÜLLTE Wasser-Queue schrumpft unter abgelaufener Frist
+            if (!s.pendingWaterIso) s.pendingWaterIso = new Set();
+            for (const key of s.voxelChunks.keys()) {
+                s.pendingWaterIso.add(key);
+                if (s.pendingWaterIso.size >= 6) break;
+            }
+            res.queueVor = s.pendingWaterIso.size;
+            for (let i = 0; i < 60 && s.pendingWaterIso.size > 0; i++) takt(r._buildDeferrableJobs(pos));
+            res.queueNach = s.pendingWaterIso.size;
+            // (c) REIHUM: zwei Bauer mit Arbeit (sie fragen die Frist) wechseln sich ab, einer ohne Arbeit nimmt keinem das Stück
+            const n = { a: 0, b: 0, leer: 0 };
+            const sonde = (name, arbeit) => ({ name, prio: 1, run: () => (n[name]++, arbeit && r._bauFrist(name)) });
+            const jobs = [sonde("leer", false), sonde("a", true), sonde("b", true)];
+            res.stuecke = [];
+            for (let i = 0; i < 8; i++) res.stuecke.push(takt(jobs)[1]);
+            res.reihum = n;
+        } finally {
+            frist();
         }
-        res.gesehen = gesehen;
-        // (b) eine GEFÜLLTE Wasser-Queue schrumpft unter leerem Budget
-        if (!s.pendingWaterIso) s.pendingWaterIso = new Set();
-        for (const key of s.voxelChunks.keys()) {
-            s.pendingWaterIso.add(key);
-            if (s.pendingWaterIso.size >= 6) break;
-        }
-        res.queueVor = s.pendingWaterIso.size;
-        for (let i = 0; i < 30 && s.pendingWaterIso.size > 0; i++) r._dispatchFrameJobs(r._buildDeferrableJobs(pos), leer);
-        res.queueNach = s.pendingWaterIso.size;
-        // (c) SELBST-TEST: ein Sonde-Job prio 2 läuft auf einem Nicht-4er-Frame NICHT
-        r._schedFrameNo = 1;
-        let sondeLief = false;
-        r._dispatchFrameJobs([{ name: "sonde", prio: 2, run: () => (sondeLief = true) }], leer);
-        res.bodenIstBoden = sondeLief === false;
-        // (d) DER DAUER-STROM: gezählt wird das Innere der Deko (der Scatter-Takt), nicht der Job
+        // (d) DER DAUER-STROM (ohne Frist, wie der Null-Renderer baut): gezählt wird das Innere der Deko (der Scatter-Takt)
         let innen = 0;
         const zurueck = leihe(r, { _tickVoxelChunkStreaming: () => 1, _tickScatterStreaming: () => innen++ });
-        const voll = { remainingMs: () => 16 };
         try {
             r._schedFrameNo = 0;
-            for (let i = 0; i < 8; i++) r._dispatchFrameJobs(r._buildDeferrableJobs(pos), voll);
+            for (let i = 0; i < 8; i++) r._dispatchFrameJobs(r._buildDeferrableJobs(pos));
             res.dauerStromDeko = innen;
             // (e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet das Innere (Terrain zuerst)
             innen = 0;
             r._schedFrameNo = 1;
-            r._dispatchFrameJobs(r._buildDeferrableJobs(pos), voll);
+            r._dispatchFrameJobs(r._buildDeferrableJobs(pos));
             res.terrainZuerst = innen === 0;
         } finally {
             zurueck();
@@ -1272,13 +1308,14 @@ async function checkBandExistenzBoden({ page, check }) {
         }
         return res;
     });
-    const o = out || { gesehen: {} };
-    const g = o.gesehen;
-    check("Existenz-Boden (a) SUBSTANZ (waterIso) läuft JEDEN Frame trotz Budget 0, DEKO gedrosselt (jeden 4.)", g.laeufe > 0 && g.waterIso === g.laeufe && g.deko > 0 && g.deko <= Math.ceil(g.laeufe / 4) * 2, JSON.stringify(g));
-    check(`Existenz-Boden (b) die Wasser-Queue SCHRUMPFT unter leerem Budget (${o.queueVor} → ${o.queueNach})`, o.queueNach < o.queueVor);
-    check("Existenz-Boden SELBST-TEST: prio-2 läuft NICHT auf Nicht-4er-Frames (der Boden ist ein Boden)", o.bodenIstBoden === true);
-    check("Existenz-Boden (d) DAUER-STROM: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4. Takt", o.dauerStromDeko >= 2, `${o.dauerStromDeko} von 8 Takten`);
-    check("Existenz-Boden (e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet die Deko (Terrain zuerst)", o.terrainZuerst === true);
+    const o = out || { reihum: {}, stuecke: [] };
+    const g = o.reihum;
+    check("Existenz (a) NACH DER FRIST geht kein Job des Spiels am Tor vorbei (8 Takte)", o.vorbei === 0, `${o.vorbei} vorbei`);
+    check(`Existenz (b) die Wasser-Queue SCHRUMPFT unter abgelaufener Frist (${o.queueVor} → ${o.queueNach})`, o.queueNach < o.queueVor);
+    check("Existenz (c) je Takt EIN Pflicht-Stück, REIHUM: zwei Bauer mit Arbeit je 4 von 8 Takten", g.a === 4 && g.b === 4 && o.stuecke.every((p) => p === "a" || p === "b"), JSON.stringify(o));
+    check("Existenz SELBST-TEST: ein Bauer ohne Arbeit nimmt keinem das Stück (er wird gefragt, es geht weiter)", g.leer >= 1 && o.stuecke.length === 8 && !o.stuecke.includes("leer"));
+    check("Existenz (d) DAUER-STROM: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4. Takt", o.dauerStromDeko >= 2, `${o.dauerStromDeko} von 8 Takten`);
+    check("Existenz (e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet die Deko (Terrain zuerst)", o.terrainZuerst === true);
 }
 
 // Godrays (V8 Kür) — eingefaltet aus gate:godray: der volumetrische Screen-Space-Light-Shaft im EINEN Post-FX-Pass.
@@ -1294,13 +1331,13 @@ async function checkBandGodray({ page, check }) {
         out.gateStorm = r._godrayFrameGate(0.9, AnazhRealm.WEATHER_FIELD.stormy.sun);
         // (B) PERF-HEBEL als ZAHL — headless-Kurzschluss kontrolliert umgehen (wie der Schatten-Regler)
         const wasNull = st.renderer?._isHeadlessNull;
-        const sense = (ls, calls, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0 }, renderCalls: calls, frameMs });
+        const sense = (ls, gpuMs, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0, gpuMs }, frameMs });
         try {
             if (st.renderer) st.renderer._isHeadlessNull = true;
-            r._nexusPerfActuate(sense(0.0, 2000, 60));
+            r._nexusPerfActuate(sense(0.0, 22, 60));
             out.headlessScale = st._godrayScale;
             if (st.renderer) st.renderer._isHeadlessNull = false;
-            r._nexusPerfActuate(sense(0.0, 2000, 60)); // heavy → effArch ~0 → Faktor ~0
+            r._nexusPerfActuate(sense(0.0, 22, 60)); // heavy → effArch ~0 → Faktor ~0
             out.heavyScale = st._godrayScale;
             r._nexusPerfActuate(sense(1.0, 0, 8)); // light → effArch ~1 → Faktor ~MAX
             out.lightScale = st._godrayScale;
@@ -1358,12 +1395,12 @@ async function checkBandSzeneSkala({ page, check }) {
         // (3) DER REGLER TRÄGT DIE AUFLÖSUNG NICHT — den headless-Kurzschluss kontrolliert umgehen, schwere und leichte Last
         const wasNull = st.renderer?._isHeadlessNull;
         const applyWar = r._applyRenderScale;
-        const sense = (ls, calls, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0 }, renderCalls: calls, frameMs });
+        const sense = (ls, gpuMs, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0, gpuMs }, frameMs });
         try {
             if (st.renderer) st.renderer._isHeadlessNull = false;
             r._applyRenderScale = () => {};
             st.szeneSkala = 0.8;
-            for (let i = 0; i < 60; i++) r._nexusPerfActuate(sense(0.0, 2000, 60));
+            for (let i = 0; i < 60; i++) r._nexusPerfActuate(sense(0.0, 22, 60));
             out.nachLast = st.szeneSkala;
             for (let i = 0; i < 80; i++) r._nexusPerfActuate(sense(1.0, 0, 8));
             out.nachRuhe = st.szeneSkala;
@@ -1375,9 +1412,113 @@ async function checkBandSzeneSkala({ page, check }) {
         // (4) der Flugschreiber-Snapshot trägt die Szenen-Skala
         const snap = r._flightRecorderSnapshot(16.0, {});
         out.snapshotSkala = snap?.ctx ? snap.ctx.szeneSkala : undefined;
+        // (5) DIE EINMESSUNG AM GERÄT (w28-bild-preis, `_szeneSkalaMessen`): die echte Faltung (`_perfSenseFoldFrame`) mit einem
+        // Profil mit Adapter-Wahrheit, der headless-Zweig gelüftet, Regler und Flugschreiber gestubbt, alles gesichert — die
+        // Radeon an der Mess-Wiese (Bild 41,9 ms, CPU 3 ms) geht nach einem Fenster eine Stufe, nach dem zweiten die nächste;
+        // die GTX (16,8 ms), ein CPU-gebundenes Bild (41,9 ms bei 30 ms CPU) und der Wert des Spielers (0,9) bleiben. Der
+        // Konsum-Leser ist `_szeneSkalaWirk`; die Mutante liest die eingemessene Skala nicht (die Formel bis w28) und fällt.
+        const sicher = { nul: st.renderer?._isHeadlessNull, mess: r._geraeteMessung, leine: r._gpuLeine, traa: st._traa, pend: st.voxelMeshPending, sk: st.szeneSkala, fen: r._skalaFenster, nach: st._nachlauf, sense: st.perfSense };
+        const stubs = ["_ladeTakt", "_nexusPerfRegulate", "_flightRecorderTick", "_perfPanelRender"];
+        const alt = Object.fromEntries(stubs.map((n) => [n, Object.prototype.hasOwnProperty.call(r, n) ? r[n] : undefined]));
+        const mess = () => {
+            // je Bild hielt die GPU-Leine den Takt (`ausgesetzt` steigt), außer im CPU-gebundenen Fall
+            const lauf = (bildMs, cpuMs, sek, spieler, weiter, frei) => {
+                if (!weiter) {
+                    r._geraeteMessung = null;
+                    r._gpuLeine = { ausgesetzt: 0, imFlug: 0, gerendert: 0, sammelMs: 0 };
+                    r._skalaFenster = null;
+                }
+                st.szeneSkala = spieler == null ? null : spieler;
+                for (let i = 0; i < Math.ceil((sek * 1000) / bildMs); i++) {
+                    if (!frei) r._gpuLeine.ausgesetzt++;
+                    st._perfFrame = { render: cpuMs };
+                    st._perfMarks = {};
+                    r._perfSenseFoldFrame(bildMs, bildMs / 1000);
+                }
+                const p = r._geraeteProfil();
+                return { wirk: r._szeneSkalaWirk(), klasse: p.klasse, messung: p.messung };
+            };
+            // (w28-wiese-takt) der frühe Abstieg: nach 3 s Bild-Zeit geht der klare Fall, 41,9 ms eine Stufe (× 0,694 = 29,1 hielte),
+            // 58,6 ms beide in EINEM Schritt (0,625 hielte selbst als reine Füllung nicht: 40,7); ein Fall unter dem Fünftel
+            // (jedes zehnte Bild 50 ms) wartet das Fenster ab; die Ablage trägt die Skala in die nächste Sitzung
+            const radeon = lauf(41.9, 3, 4);
+            const radeon2 = lauf(41.9, 3, 4, null, true);
+            r._geraeteMessung = undefined;
+            st.szeneSkala = null;
+            const ablage = { wirk: r._szeneSkalaWirk(), roh: localStorage.getItem(AnazhRealm.SZENE_SKALA_MESSUNG.ablage) };
+            const sprung = lauf(58.6, 3, 4);
+            let k = 0;
+            const selten = () => (k++ % 10 === 9 ? 50 : 25);
+            r._geraeteMessung = null;
+            r._gpuLeine = { ausgesetzt: 0, imFlug: 0, gerendert: 0, sammelMs: 0 };
+            r._skalaFenster = null;
+            for (let ms = 0, b; ms < 6000; ms += b) {
+                b = selten();
+                r._gpuLeine.ausgesetzt++;
+                st._perfFrame = { render: 3 };
+                st._perfMarks = {};
+                r._perfSenseFoldFrame(b, b / 1000);
+            }
+            const seltenFrueh = { wirk: r._szeneSkalaWirk() };
+            return { radeon, radeon2, ablage, sprung, seltenFrueh, gtx: lauf(16.8, 4, 11), cpu: lauf(41.9, 30, 11, null, false, true), spieler: lauf(41.9, 3, 11, 0.9) };
+        };
+        const ablageWar = localStorage.getItem(AnazhRealm.SZENE_SKALA_MESSUNG.ablage);
+        try {
+            if (st.renderer) st.renderer._isHeadlessNull = false;
+            st._traa = true;
+            st.voxelMeshPending = new Set();
+            st._nachlauf = null;
+            for (const n of stubs) r[n] = n === "_ladeTakt" ? () => false : () => {};
+            out.mess = mess();
+            const wirkWar = r._szeneSkalaWirk,
+                wirkEigen = Object.prototype.hasOwnProperty.call(r, "_szeneSkalaWirk");
+            r._szeneSkalaWirk = function () {
+                if (!this.state._traa) return 1;
+                const s = this.state.szeneSkala;
+                return Math.max(AnazhRealm.SZENE_SKALA_MIN, Math.min(1, s == null || !Number.isFinite(+s) ? AnazhRealm.SZENE_SKALA : +s));
+            };
+            try {
+                out.messMutante = mess();
+            } finally {
+                if (wirkEigen) r._szeneSkalaWirk = wirkWar;
+                else delete r._szeneSkalaWirk;
+            }
+        } catch (e) {
+            out.mess = { fehler: String(e && e.message) };
+        } finally {
+            for (const n of stubs) if (alt[n] === undefined) delete r[n];
+            else r[n] = alt[n];
+            if (st.renderer) st.renderer._isHeadlessNull = sicher.nul;
+            Object.assign(st, { _traa: sicher.traa, voxelMeshPending: sicher.pend, szeneSkala: sicher.sk, _nachlauf: sicher.nach, perfSense: sicher.sense });
+            r._geraeteMessung = sicher.mess;
+            r._gpuLeine = sicher.leine;
+            r._skalaFenster = sicher.fen;
+            if (ablageWar == null) localStorage.removeItem(AnazhRealm.SZENE_SKALA_MESSUNG.ablage);
+            else localStorage.setItem(AnazhRealm.SZENE_SKALA_MESSUNG.ablage, ablageWar);
+        }
         return out;
     });
     const g = o || {};
+    const einmessung = (m) =>
+        !!m &&
+        !m.fehler &&
+        m.radeon.wirk === 0.625 &&
+        m.radeon2.wirk === 0.5 &&
+        m.radeon2.klasse === "schwach" &&
+        m.radeon2.messung.gebunden === true &&
+        m.ablage.wirk === 0.5 &&
+        m.ablage.roh === "0.5" &&
+        m.sprung.wirk === 0.5 &&
+        m.seltenFrueh.wirk === 0.75 &&
+        m.gtx.wirk === 0.75 &&
+        m.cpu.wirk === 0.75 &&
+        m.spieler.wirk === 0.9;
+    const zeig = (m) => (m && !m.fehler ? ["radeon", "radeon2", "ablage", "sprung", "seltenFrueh", "gtx", "cpu", "spieler"].map((k) => `${k} ${m[k].wirk}`).join(" · ") : JSON.stringify(m));
+    check(
+        "Szenen-Skala (5) die Einmessung am Gerät: Radeon 41,9 ms nach 4 s 0,625, nach 8 s 0,5 (schwach, an die GPU gebunden), die Ablage trägt 0,5 in die nächste Sitzung, 58,6 ms in EINEM Schritt 0,5, jedes zehnte Bild 50 ms nach 6 s noch 0,75, GTX 16,8 ms 0,75, CPU-gebunden 0,75, der Spieler 0,9 gewinnt; die Mutante (liest die eingemessene Skala nicht) fällt",
+        einmessung(g.mess) && !einmessung(g.messMutante),
+        `${zeig(g.mess)} | Mutante ${zeig(g.messMutante)}`
+    );
     check(
         "Szenen-Skala (1) EINE Größe: ohne Wert SZENE_SKALA, 0,3 → MIN, 1,4 → 1, 0,85 bleibt, ohne TRAA 1",
         !!g.skala && g.skala.join("/") === [g.SKALA, g.MIN, 1, 0.85, 1].join("/"),
@@ -1515,23 +1656,26 @@ async function checkBandReglerSim({ page, check }) {
                 const pMittelGross = prof({ vendor: "intel", architecture: "gen-12lp" }, 12, 16, 2, 3840, 2160);
                 o.s5 = { pStark, pSchwach, pMittel, pMittelGross };
                 o.s5Klassen =
-                    pStark.klasse === "stark" &&
-                    pStark.seed === 1 &&
+                    pStark.klasse === "mittel" &&
+                    Math.abs(pStark.seed - 0.7) < 1e-9 &&
                     pSchwach.klasse === "schwach" &&
                     Math.abs(pSchwach.seed - 0.45) < 1e-9 &&
+                    // DER NAME HEBT NICHT MEHR (w28-bild-preis): jede Karte ohne Software-/Telefon-Marke beginnt „mittel“ —
+                    // ihre Klasse misst ihr Bild (`_szeneSkalaMessen`), nie der Adapter-Text (nvidia ampere wie intel gen-12lp)
                     pMittel.klasse === "mittel" &&
                     Math.abs(pMittel.seed - 0.7) < 1e-9 &&
                     pMittelGross.seed === pMittel.seed;
-                // KONSUM: ein frischer Sense-Init (non-headless, Mittel-Profil aktiv)
+                // KONSUM: ein frischer Sense-Init (non-headless, schwaches Profil aktiv)
                 // startet loadScale AM SEED — nicht bei optimistischer 1.
+                prof({ vendor: "arm", architecture: "valhall" }, 8, 8, 1, 800, 600);
                 r._geraeteProfilMemo = null;
                 st.perfSense = null;
                 feed(17, Object.assign({}, HONEST));
                 o.s5SeedStart = st.perfSense ? st.perfSense.seedStart : null;
                 o.s5SeedKonsumiert =
                     st.perfSense &&
-                    Math.abs(st.perfSense.seedStart - 0.7) < 1e-9 &&
-                    Math.abs(st.perfSense.loadScale - 0.7) < 0.06;
+                    Math.abs(st.perfSense.seedStart - 0.45) < 1e-9 &&
+                    Math.abs(st.perfSense.loadScale - 0.45) < 0.06;
                 // HEADLESS BYTE-ALT: derselbe Init unter Null-Renderer ⇒ Seed 1.
                 st.renderer._isHeadlessNull = true;
                 r._geraeteProfilMemo = null;
@@ -1666,7 +1810,7 @@ async function checkBandReglerSim({ page, check }) {
     check(`Regler-Sim S2/S3: Rückstau → Stream-Budget MAX (V18.282), starke GPU → alles wächst zurück (${o.s3 ? f2(o.s3.loadScale) + "/" + f2(o.s3.density) : "?"})`, o.s2StreamSacred === true && o.s3Recovered === true);
     check(`Regler-Sim S4 Session-Zeit-Invarianz: identischer Input früh vs +2400 Frames ⇒ identische Stellgrößen (maxΔ ${o.s4MaxDrift})`, o.s4Invariant === true);
     check(
-        "Regler-Sim S5 Geräte-Seed: stark 1 · schwach 0,45 · mittel 0,7, auf 4K derselbe Seed; der frische Sense-Init startet am Seed, headless byte-alt",
+        "Regler-Sim S5 Geräte-Seed: schwach 0,45 · jede Karte ohne Marke mittel 0,7 (der Name hebt nicht, die Messung urteilt), auf 4K derselbe Seed; der frische Sense-Init startet am Seed, headless byte-alt",
         o.s5Klassen === true && o.s5SeedKonsumiert === true && o.s5HeadlessAlt === true,
         `Seed-Start ${o.s5SeedStart} · headless ${o.s5HeadlessAlt}`
     );

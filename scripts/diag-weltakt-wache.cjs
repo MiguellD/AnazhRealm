@@ -336,7 +336,8 @@ async function probe(GESCHICKT) {
 async function tatProbe(m) {
     const [r, K] = [window.anazhRealm, window.__klangCore];
     const [st, P, pm] = [r.state, Object.getPrototypeOf(r), r.state.playerMesh.position];
-    [r._loopNexusUpdate, st.worldRules] = [() => {}, []];
+    // der Nexus ruht, auch seine Selbstanalyse (Kristall und Evolution altern auf der Spiel-Zeit, die die Probe vorspult; w28-welt-uhr)
+    [r._loopNexusUpdate, r._loopSelfAnalysis, st.worldRules] = [() => {}, () => {}, []];
     pm.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z); // der Leib fällt einmal, je Takt hält die Probe x und z
     const stelle = (n) => {
         for (let i = 0; i < n; i++) pm.setX(m.x).setZ(m.z), r._gameLoopTick(performance.now()), pm.setX(m.x).setZ(m.z);
@@ -400,17 +401,19 @@ async function tatProbe(m) {
         r._tickWorldRules((T += 5));
         stelle(2);
     }
+    delete r._loopSelfAnalysis;
     const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     const plan2 = [["nexus", O[0], 1, "(Programm probe-a"], ["rule:nexus", O[1], g.fires, `weil lebendig am Ort niedrig ist (<1.01). (Gesetz Nr. ${g.id} des Nexus`], ["nexus", O[2], 1, "probe-h"], ["llm:grok", O[3], 1, `auf dein Wort „${W}“`], ["human", O[0], 1, "human"]];
     const S = plan2.map(([wer, o, n, soll]) => ({ wer, n, soll, o, welt: wer !== "human", blick: fr.containsPoint(new THREE.Vector3(...o.slice(1))) }));
     const RI = ["nördlich", "nordöstlich", "östlich", "südöstlich", "südlich", "südwestlich", "westlich", "nordwestlich"];
     const zeilen = st.taten.filter((e) => e.zeile).sort((x, y) => x.gesprochen - y.gesprochen).map((e) => {
+        const satz = r._t(e.zeile[0], e.zeile[1]); // die Tat trägt ihre Zeile der Tafel, gelesen in der Sprache der Probe
         const p = S.find((q) => q.wer === e.wer && (e.wer !== "nexus" || q.soll.includes(e.programm)));
         const [dx, dz] = [p.o[1] - m.x, p.o[3] - m.z];
         const wo = ` — ${Math.round(Math.hypot(dx, dz))} m ${RI[Math.round((Math.atan2(dx, -dz) / Math.PI) * 4 + 8) % 8]} von dir, `;
         const name = { nexus: "Der Nexus ", "rule:nexus": "Ein Gesetz des Nexus ", "llm:grok": "Die KI " }[e.wer];
-        const falsch = [wo, p.soll, ...(p.welt && p.blick ? [] : ["(im Blick)"])].filter((x) => !e.zeile.includes(x));
-        return { t: e.gesprochen - t0, text: e.zeile, weitere: e.weitere, falsch: e.zeile.startsWith(name) ? falsch : [name, ...falsch] };
+        const falsch = [wo, p.soll, ...(p.welt && p.blick ? [] : ["(im Blick)"])].filter((x) => !satz.includes(x));
+        return { t: e.gesprochen - t0, text: satz, weitere: e.weitere, falsch: satz.startsWith(name) ? falsch : [name, ...falsch] };
     });
     return { ort: [m.x, m.z], deckel, taten, stempel, stimme: { plan: S.map(({ o, ...p }) => p), zeilen, box: document.getElementById("dialogue-box").textContent } };
 }
@@ -505,7 +508,9 @@ hauptLauf(async () => {
         );
     }
     const sm = weltaktUrteil(S.schmuggel.buch);
-    console.log(`  Scharf · vorbei   ${sm.urteil}  ${sm.taeter.join(" · ")}`);
+    // der Schmuggel ist der erwartete Fang: ROT am Täter heißt die Engstelle hält — die Zeile sagt GEFANGEN, das Urteil steht in `urteil`
+    const smFang = sm.urteil === "ROT" ? "GEFANGEN" : `ENTKAM (${sm.urteil})`;
+    console.log(`  Scharf · vorbei   ${smFang}  ${sm.taeter.join(" · ")}`);
     console.log(`  Frei · Nexus      ${fz(S.frei.nexus)}`);
     console.log(
         `  KI: Prompt ${S.ki.prompt.length} Zeichen · Quelle: ${S.ops.length} Ops, ${S.ki.gruppen.Orte.length} Orte, ${S.ki.gruppen.Bedingungen.length} Bedingungen, ${S.liste ? S.liste.length : "keine"} Welt-Akte, ${FREI.length} frei; der Nexus komponiert ${Object.keys(S.nexusOps).length} Ops (${Object.keys(S.nexusOps).sort().join(" · ")})`

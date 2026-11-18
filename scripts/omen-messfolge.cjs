@@ -1120,7 +1120,7 @@ async function selbsttest() {
         const M = (rot, z) =>
             Object.assign({ ort: "wiese", geraet: { schluessel: "gtx", text: "nvidia pascal" }, sicht: "ego", ortGestellt: [], toleranz: TOL, rot }, z);
         const zeile = (art, schluessel, ist, groesse, text) => ({ art, schluessel, ist, groesse, text });
-        const EINZEL = zeile("ratsche", "ratsche:einzelstuecke:k0:dreiecke", 37964, "dreiecke", "einzelstuecke k0: 37964 dreiecke über der Ratsche 0 (Täter: spieler, dsl-insel, feld-pass)");
+        const EINZEL = zeile("ratsche", "ratsche:einzelstuecke:k0:dreiecke", 37964, "dreiecke", "einzelstuecke k0: 37964 dreiecke über der Ratsche 0 (Täter: spieler, feld-pass)");
         pruefe("ein gestellter Ring ohne Rot-Zeile", bandBefunde(M([])), null);
         pruefe("eine eingeschmuggelte Rot-Zeile der Band-Linse", bandBefunde(M([EINZEL])), /^BAND-LINSE ratsche: einzelstuecke k0: 37964 dreiecke über der Ratsche 0/);
         for (const [art, s, ist, gr] of [

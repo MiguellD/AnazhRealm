@@ -15,9 +15,13 @@
 //       Takt; (R) REGLER zeigt die Welt-Zeit; (T) TAG trägt eine Szene, ein alter Stand setzt ihn nicht zurück; (Q) QUELLE: kein
 //       Wurf des Nexus trägt einen Uhr-Op; (U) UHR (A9): die Bühne hält NUR die Bild-Uhr, jeder Leser steht mit ihr; (P) kein
 //       Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
+//   (W) WANDUHR (w28-welt-uhr, rein statisch, `--quelle` in `npm run check`): die Welt entscheidet nach ihrer eigenen Uhr — jeder
+//       Leser der Gerätezeit in stamm/ und den Wurzel-Dateien (performance.now · Date.now · new Date() · der rAF-Stempel) steht je
+//       Datei und Glied mit Zahl und Grund in spec/uhr/geraetezeit.json; ein neuer Leser, eine Zahl über der Tafel und jede
+//       Weitergabe des rAF-Stempels im Takt an ein Glied ohne Grund (`this._bildZeit = wandZeit`) ist ROT beim Namen (Datei:Zeile).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): jedes Urteil fällt bei jedem eingeschmuggelten Täter rot und bleibt
 // bei Bühne, Verweigerung und Wunsch grün.
-//   node scripts/diag-wetter-wache.cjs [--selftest]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
+//   node scripts/diag-wetter-wache.cjs [--selftest | --quelle]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, hauptLauf, selbsttestEnde, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
@@ -37,11 +41,144 @@ const SCHRITT_SEK = 0.25;
 // Der Takt des Wesens im Schöpfer-Modus (Spiel-Sekunden): sechs Vorschläge je Fenster, zwei je Takt des Wetter-Zugs.
 const WESEN_SEK = 60;
 
+// ── (W) WANDUHR (w28-welt-uhr): die Leser der Gerätezeit am AST (Kommentare und Literale lesen nie). Die Tafel nennt je Datei
+// (stamm/ ohne Pfad) ihre Gründe mit deren Gliedern (`name:n` = n Leser), `weiter` je Glied mit rAF-Stempel, wem es ihn reicht (ein
+// Glied, `=feld`; er fließt über Variablen und lokale Funktionen), `spielTakt` die Namen, die die Spiel-Zeit SIND. Gelesen: stamm/
+// und jede Wurzel-Datei; worlds/ sind die Labore der Studios mit eigener Uhr. Ein Leser ohne Grund, eine Zahl neben der Tafel, eine
+// Weitergabe ohne Grund und ein Eintrag ohne Leser sind ROT beim Namen (Datei:Zeile).
+const UHR_TAFEL = "spec/uhr/geraetezeit.json";
+const istFn = (n) => /^(Arrow)?Function(Expression|Declaration)$/.test(n?.type);
+const geraet = (n, c = n.callee, o = c?.object) =>
+    n.type === "NewExpression" ? c.name === "Date" && !n.arguments.length && "new Date"
+    : n.type === "CallExpression" && c.property?.name === "now" && ((o.name || o.property?.name) === "performance" ? "performance.now" : o.name === "Date" && "Date.now"); // prettier-ignore
+const klasse = (A) => A.find((a) => /^(Method|Property)Definition$/.test(a.type));
+function uhrBefund(t, sauber) {
+    const { ast, wandere, zeileVon } = require("./lib/stamm.cjs");
+    const [leser, weiter, je, Z] = [[], [], new Map(), (n) => zeileVon(t, n.start)];
+    wandere(ast(t), (n, A, k = klasse(A)) => {
+        const g =
+            k?.key.name ||
+            A.map((a) => (a.type === "FunctionDeclaration" ? a.id : istFn(a.init || a.value) && (a.id || a.key))).find(
+                Boolean
+            )?.name;
+        if (geraet(n)) leser.push([g, `${Z(n)} ${geraet(n)}`]);
+        if (k && /^(requestAnimationFrame|setAnimationLoop)$/.test(n.callee?.name || n.callee?.property?.name))
+            je.set(k, [...(je.get(k) || []), n]);
+    });
+    for (const [k, rufe] of je) {
+        const [g, fns, saat, p] = [k.key.name, new Map(), new Set(), (fn, i) => fn?.params?.[i]?.name];
+        wandere(k, (n) => void (istFn(n.init) && fns.set(n.id.name, n.init)));
+        for (const r of rufe) {
+            const fn = fns.get(r.arguments[0].name) || r.arguments[0];
+            if (p(fn, 0)) (saat.add(p(fn, 0)), leser.push([g, `${Z(r)} rAF-Stempel`]));
+        }
+        // trägt der Ausdruck den Stempel? (ein Name als Referenz, nie als Feld- oder Schlüssel-Name)
+        const traegt = (e, ja = false) => (wandere(e, (n, A, a = A.at(-1)) => !(ja ||= (n.type === "Identifier" && saat.has(n.name) && a?.property !== n && a?.key !== n) || !!geraet(n))), ja); // prettier-ignore
+        let vor;
+        do {
+            vor = saat.size;
+            wandere(k, (n) => {
+                const [id, e] = n.type === "VariableDeclarator" ? [n.id, n.init] : [n.left, n.right];
+                if (id?.type === "Identifier" && e && !istFn(e) && !sauber.includes(id.name) && traegt(e))
+                    saat.add(id.name);
+                const f = fns.get(n.callee?.name);
+                n.arguments?.forEach((x, i) => p(f, i) && traegt(x) && saat.add(p(f, i)));
+            });
+        } while (vor !== saat.size);
+        const vonThis = (m) => (m?.type === "MemberExpression" ? vonThis(m.object) : m?.type === "ThisExpression");
+        wandere(k, (n) => {
+            if (vonThis(n.callee) && n.arguments.some((x) => traegt(x)))
+                weiter.push([`${g} ${n.callee.property.name}`, Z(n)]);
+            if (vonThis(n.left) && traegt(n.right)) weiter.push([`${g} =${n.left.property.name}`, Z(n)]);
+        });
+    }
+    return { leser, weiter };
+}
+function uhrRotVon(befunde, T) {
+    const rot = [];
+    const liste = (s = "") =>
+        s.split(" · ").flatMap((x) =>
+            x
+                .split(" ")
+                .slice(1)
+                .map((n) => [...n.split(":"), x.split(" ")[0]])
+        );
+    for (const d of new Set([...Object.keys(befunde), ...Object.keys(T.leser)])) {
+        const [B, ist, weit] = [befunde[d] || { leser: [], weiter: [] }, new Map(), new Map()];
+        for (const [g, wo] of B.leser) ist.set(g, [...(ist.get(g) || []), `${d}:${wo}`]);
+        for (const [n, z, g] of liste(T.leser[d]).map(([n, z, g]) => (g ? [n, +z, g] : [n, 1, z]))) {
+            const L = ist.get(n) || [];
+            if (!T.gruende[g] || L.length !== z)
+                rot.push(`(W) WANDUHR ${d} ${n}: ${L.length} Leser, die Tafel trägt ${z} (${g}) ${L}`);
+            ist.delete(n);
+        }
+        for (const [n, L] of ist) rot.push(`(W) WANDUHR ${n} liest die Gerätezeit ohne Grund — ${L.join(", ")}`);
+        for (const [w, z] of B.weiter) weit.set(w, z);
+        for (const [k, s] of Object.entries(T.weiter).filter(([k]) => k.startsWith(d + " ")))
+            for (const [n, g] of liste(s))
+                if (!weit.delete(`${k.slice(d.length + 1)} ${n}`) || !T.gruende[g])
+                    rot.push(`(W) WANDUHR ${k} ${n}: der Takt reicht es nicht`);
+        for (const [w, z] of weit)
+            rot.push(`(W) WANDUHR ${w.replace(" ", " reicht den rAF-Stempel an ")} ohne Grund — ${d}:${z}`);
+    }
+    return rot;
+}
+function uhrQuelle() {
+    const [fs, path] = [require("fs"), require("path")];
+    const [R, befunde] = [path.resolve(__dirname, ".."), {}];
+    const T = JSON.parse(fs.readFileSync(path.join(R, UHR_TAFEL), "utf8"));
+    for (const f of [...require("./lib/stamm.cjs").dateien(R), ...fs.readdirSync(R).filter((f) => f.endsWith(".js"))]) {
+        const d = f.replace(/^stamm\/|\.js$/g, "");
+        const B = uhrBefund(fs.readFileSync(path.join(R, f), "utf8"), (T.spielTakt[d] || "").split(" "));
+        if (B.leser.length + B.weiter.length) befunde[d] = B;
+    }
+    return { rot: uhrRotVon(befunde, T), B: Object.values(befunde) };
+}
+// der Selbsttest: der erlaubte Leser grün; der neue Leser (auch `new Date()`), die Zahl darüber, der Eintrag ohne Leser, die Bild-Uhr
+// aus dem rAF-Stempel und die Spiel-Zeit ohne ihren Takt — je beim Namen
+function uhrSelbsttest() {
+    const K = (r) => `class A {\n${r}\n}`;
+    const U = (text, leser, sp) =>
+        uhrRotVon(
+            { a: uhrBefund(K(text), sp || []) },
+            { gruende: { f: 1 }, leser: { a: leser }, weiter: sp ? { "a l": "f h" } : {} }
+        );
+    const a = "_a() { return performance.now(); // Date.now()\n}";
+    const l = (b) => `l() {\n const s = (zeit) => {\n  const t = zeit / 1000, d = t;\n  this.state.spielZeit += d;\n  this.h(t);\n  this.q = this.w.zeit;\n  this._bildZeit = ${b};\n };\n const takt = (time) => s(time);\n this.r.setAnimationLoop(takt);\n}`; // prettier-ignore
+    return [
+        [U(a, "f _a"), null],
+        [
+            U(a + "\n_b() { this.x = Date.now() + new Date(5) + new Date(); }", "f _a"),
+            /_b liest .* — a:4 Date\.now, a:4 new Date$/,
+        ],
+        [U("_a() { return performance.now() - self.performance.now(); }", "f _a"), /_a: 2 Leser, die Tafel trägt 1/],
+        [U(a, "f _a _c"), /_c: 0 Leser/],
+        [U(l("this.state.spielZeit"), "f l", ["d"]), null],
+        [U(l("t"), "f l", ["d"]), /l reicht den rAF-Stempel an =_bildZeit ohne Grund — a:8$/],
+        [U(l("this.state.spielZeit"), "f l", ["x"]), /=spielZeit/],
+    ].flatMap(([rot, soll], i) =>
+        (soll ? rot.length === 1 && soll.test(rot) : !rot.length) ? [] : [`uhr-quelle Fall ${i}: ${rot}`]
+    );
+}
+if (process.argv.includes("--quelle")) {
+    const { rot, B } = uhrQuelle();
+    const n = (k) => B.reduce((s, b) => s + b[k].length, 0);
+    console.log(
+        `=== (W) WANDUHR — ${n("leser")} Leser der Gerätezeit in ${B.length} Dateien, ${n("weiter")} Weitergaben des rAF-Stempels (${UHR_TAFEL}) ===`
+    );
+    wandEnde(
+        [...rot, ...uhrSelbsttest()],
+        "jeder Leser der Gerätezeit steht mit Grund in der Tafel; die Welt liest ihre eigene Uhr."
+    );
+    process.exit(0);
+}
+
 if (SELBSTTEST) {
     console.log("=== WETTER-WACHE — Selbsttest der Urteile (ohne Browser) ===");
     const v = wetterSelbsttest()
         .map((x) => "wetter: " + x)
-        .concat(himmelSelbsttest().map((x) => "himmel: " + x));
+        .concat(himmelSelbsttest().map((x) => "himmel: " + x))
+        .concat(uhrSelbsttest());
     const U = (b, n, ohne) => {
         const vor = { himmel: 2, wind: 2, böe: 1.1, wasser: ohne === "T" ? 3 : 2 };
         delete vor[ohne];
@@ -155,7 +292,7 @@ function probe(o) {
             [st.spielZeit, st.weatherEffectTime] = [Z * (i + 1), 0];
             r._loopWeatherAndGrowth(0);
             folge.push(st.weather);
-            st.weatherTransition = null;
+            window.__uebergangFaellt(r);
         }
         performance.now = pn;
         const buch = window.__wetterBuch(s0).buch.filter((e) => e.quelle === "auto-zug" && e.art === "schreiber");
@@ -178,7 +315,7 @@ function probe(o) {
     const nass = (w) => r._weatherIsWet(w);
     aus.front = { nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length, lag: Z * lag, worte: [...worte] };
     Object.assign(aus.front, { soll: 3000 / P.WIND_FELD.front.zugMS, welt: st.weather });
-    st.weatherTransition = null;
+    window.__uebergangFaellt(r);
     [wm.seed, pm.x, pm.z, st.spielZeit] = [saat0, x0, y0, uhr0];
     window.__buehne();
     aus.ende = { wetter: st.weather, uhr: st.weatherEffectTime };
@@ -196,7 +333,10 @@ function probe(o) {
         if (r._dslContainsAnyOp(m, uhrOps)) wuerfe.mutationen++;
     }
     aus.wuerfe = wuerfe;
-    // (U) die Leser der Bild-Uhr unter der Bühne, der Loop läuft drei Frames weiter (je Frame die Knoten-Uhr, dann der Takt)
+    // (U) die Leser der Bild-Uhr unter der Bühne, der Loop läuft drei Frames weiter (je Frame die Knoten-Uhr, dann der Takt).
+    // Die Wind-Uhr lebt im Wind-Satz, den der erste Leser anlegt (Boden, Gras: `_windUniformsEnsure`) — die Wache nimmt dieselbe
+    // Tür, bevor der Takt schreibt (bis 16.11. legte ihn zufällig das Material einer fliegenden Insel an).
+    r._windUniformsEnsure();
     r._gameLoopTick(performance.now());
     window.__buehne();
     window.__buehne({ wetter: "rainy", saison: "winter" });
@@ -336,12 +476,14 @@ function himmelProbe(o) {
         const sU = U.seq,
             sW = W.seq,
             g0 = Object.assign({}, U.gang),
-            start = st.timeOfDay;
+            start = st.timeOfDay,
+            z0 = st.spielZeit;
         const n = lauf(sek);
         const g = U.gang;
         return {
             phase,
-            takt: { schritte: n, schrittSek: o.schrittSek, tagMin: st.dayLengthMinutes },
+            // die Welt-Uhr des Fensters (`weltSek`, Δ spielZeit): an ihr geht der Tag (w28-nacht-licht)
+            takt: { schritte: n, schrittSek: o.schrittSek, weltSek: st.spielZeit - z0, tagMin: st.dayLengthMinutes },
             uhr: {
                 buch: U.buch.filter((e) => e.seq > sU),
                 gang: { n: g.n - g0.n, weg: g.weg - g0.weg, max: g.max },
@@ -547,7 +689,9 @@ hauptLauf(async () => {
         );
     }
     const roh = wetterUrteil(S.roh);
-    console.log(`  Scharf · roh      ${roh.urteil}  ${roh.taeter.join(" · ")}`);
+    // der rohe Schreiber ist der erwartete Fang: ROT am Täter heißt der Spion sieht — die Zeile sagt GEFANGEN, das Urteil steht in `urteil`
+    const rohFang = roh.urteil === "ROT" ? "GEFANGEN" : `ENTKAM (${roh.urteil})`;
+    console.log(`  Scharf · roh      ${rohFang}  ${roh.taeter.join(" · ")}`);
     console.log(
         `  Würfel: Uhr-Ops in ${S.wuerfe.atome}/${S.wuerfe.n} Atomen, ${S.wuerfe.gesetze}/${S.wuerfe.n} Gesetzen, ${S.wuerfe.mutationen}/${S.wuerfe.n} Mutationen`
     );

@@ -888,6 +888,11 @@ async function checkBandV18196ManaSymmetry({ page, check }) {
             r.applyPlayerSoul("human");
             r.recomputePlayerStats();
             st.player.mana = 0;
+            // der Vitals-Takt läuft 1×/s SPIELZEIT (`tickPlayerVitals`: seit `deathLastTick` < 1 s → kehrt um). 60 Ticks am Stück
+            // decken auf einem schnellen Läufer weniger als diese Sekunde — lag der letzte Takt eben erst zurück, regnete nichts,
+            // und M7a fiel an der Wanduhr statt am Regen (CI 16.11.: zweimal ROT in voll 1/18, mana blieb 0). Der Takt ist fällig
+            // gestellt: der erste Tick der Schleife MUSS regnen, wenn der Loop den Regen-Pfad treibt.
+            st.player.deathLastTick = -Infinity;
             const before = st.player.mana;
             // Simuliere Frames — _gameLoopTick treibt den Regen-Pfad mit
             for (let i = 0; i < 60; i++) {

@@ -301,7 +301,7 @@ Wasser-Naturen · Licht+Terrain-Einheit.
    File NUR an einer echten Laufzeit-/Sicherheits-/stabilen-Naht-Grenze (`CLAUDE.md`,
    Lehre 2). Ein „LivingWorldManager"-Modul wäre die Sünde.
 8. **Miss, rate nicht — und sieh selbst:** settled swiftshader-Schüsse sind farbtreu
-   (`diag-blick`, `diag-beweis-e`); eine headless-Zahl beweist Mechanik, das Bild den Look.
+   (`diag-blick`); eine headless-Zahl beweist Mechanik, das Bild den Look.
 9. **Keine halben Schritte** (V17.30): ist der Plan klar + das Gap benannt → baue das
    GANZE Subsystem an die Wurzel, mit voller Verifikation, nicht ein Pflaster nach dem
    nächsten. Der Mut kommt aus der Verifikation, nicht aus der Kleinheit.

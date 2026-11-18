@@ -264,6 +264,11 @@ class AnazhRealm_wasser_hydro {
     }
     _pegelMarkeVon(T, cx, cz) {
         if (!T) return "";
+        // DIE MERKER TRAGEN DEN STAND DES ERDBAUS (w28-mp-boden): die Höhe der Chunk-Mitte liest das Gelände SAMT Erdbau der Orte
+        // (`_terrainMacroSurfaceY`) — legt ein Ort seinen Erdbau, fallen Marke und Ort (bis dahin hielt die Seite, die vorher
+        // fragte, die alte Höhe, bis ihre Hydro-Region wechselte)
+        const erd = this._erdbauStand | 0;
+        if (this._pegelMarkenErd !== erd) [this._pegelMarken, this._pegelMarkenErd] = [null, erd];
         if (!this._pegelMarken) this._pegelMarken = new WeakMap();
         let je = this._pegelMarken.get(T);
         if (!je) this._pegelMarken.set(T, (je = new Map()));
@@ -281,9 +286,9 @@ class AnazhRealm_wasser_hydro {
         ].map(([x, z]) => K.hydroRegion(L, x, z));
         if (!this._pegelOrte) this._pegelOrte = new Map();
         let o = this._pegelOrte.get(key);
-        if (!o || o.reg.some((h, i) => h !== reg[i])) {
+        if (!o || o.erd !== erd || o.reg.some((h, i) => h !== reg[i])) {
             const y = this._terrainMacroSurfaceY((cx + 0.5) * span, (cz + 0.5) * span, false);
-            this._pegelOrte.set(key, (o = { reg, y, klassen: K.pegelKlassen(L, x0, z0, x1, z1) }));
+            this._pegelOrte.set(key, (o = { reg, erd, y, klassen: K.pegelKlassen(L, x0, z0, x1, z1) }));
         }
         const R = AnazhRealm.PEGEL_RAND_M;
         const n = T.a.length;
@@ -762,8 +767,16 @@ class AnazhRealm_wasser_hydro {
     // DAS EIS (stoffe.K3): die Deckung `o.eis` (`_eisDeckung`) legt über das Wasser die gefrorene Fläche — deckend, ihr Körper
     // der Schnee der Boden-Palette im Licht des Orts, der Himmel nach dem Fresnel der Zeile eis (n 1,309; Wasser 1,333); wo sie
     // deckt, trägt dieselbe Fläche den Körper (`_eisAt`).
+    // DIE SONNE, DIE DAS WASSER SIEHT (w28-wasser-sicht): `o.sonne` ist die Sonnen-Sicht am Ort (`_sonnenSicht`: Horizont des
+    // Gelände-Gesetzes × Wurf der Wolke) — derselbe Knoten, mit dem der Leser sein Licht `o.irr` holt (`_weltLicht().at(n, null,
+    // sonne)`); der Glanz der Sonne steht nur, wo sie das Wasser trifft. Ohne sie bricht der Baustein laut (Wasser-Stoff und
+    // Fern-Ring geben sie). Bis hier glänzte die Sonne hinter dem Grat und unter der Wolke.
     _wasserBlick(TSL, WG, o) {
-        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, mix } = TSL;
+        if (!o.sonne)
+            throw new Error(
+                "Wasser-Blick: ohne Sonnen-Sicht (`o.sonne`, `_sonnenSicht`) glänzt die Sonne auch im Schatten"
+            );
+        const { float, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, mix } = TSL;
         const HG =
             AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
         // DER FRESNEL AUS DER STOFF-ZEILE (w28-stoff-gesetz): F0 = ((n − 1)/(n + 1))² je Kanal des Bilds aus n(λ) der Zeile
@@ -787,9 +800,7 @@ class AnazhRealm_wasser_hydro {
         const S = this._spiegelLeser();
         const clip = S.vp.mul(vec4(o.ort, 1.0));
         const sw = max(clip.w, float(1e-4));
-        const suv = vec2(clip.x.div(sw).mul(0.5).add(0.5), float(0.5).sub(clip.y.div(sw).mul(0.5))).add(
-            o.n.xz.mul(0.03)
-        );
+        const suv = AnazhRealm._schirmUV(clip.x.div(sw), clip.y.div(sw)).add(o.n.xz.mul(0.03));
         const sp = texture(S.rt.texture, suv).level(float(0));
         const drin = step(0.0, suv.x)
             .mul(step(suv.x, 1.0))
@@ -813,7 +824,7 @@ class AnazhRealm_wasser_hydro {
         // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
         // (Rayleigh-Farbe sunCol × ihre Stärke light).
         const spec = pow(max(dot(reflect(normalize(o.sunDir).negate(), o.n), o.viewDir), 0.0), float(WG.spec[0]));
-        const glanz = o.sunCol.mul(spec).mul(WG.spec[1]).mul(o.light);
+        const glanz = o.sunCol.mul(spec).mul(WG.spec[1]).mul(o.light).mul(o.sonne);
         const eigen = o.koerper
             .mul(o.irr)
             .mul(float(1.0).sub(o.T))

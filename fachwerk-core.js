@@ -4,7 +4,7 @@
 // Gerüst · Riegel · Streben · Gefache · Giebel · Dachwerk · Eindeckung · Böden · Innenwände ·
 // Herd · Treppe · Türen · Fenster · Möbel · Anbau/Flügel/Balkon · Kuppel/Portikus/Hof/Arkade/
 // Turm/Zinnen/Veranda/Vorkragung/Pilotis/Terrasse/Rundbau) · die KULTUR-Archetypen (32
-// klickbare Haus-Typen, `kulturParams` = die reine Ableitung) · das Bake-Vokabular der
+// klickbare Haus-Typen, die bauweise-Zeilen des Bau-Gesetzes `bauRezept`) · das Bake-Vokabular der
 // Dorf-Pipeline (bakeHaus/bakeLOD · stapelBau · fragFuer · lod2Koerper · fensterFern ·
 // mischeGeoms · hofFuer · wandTonAus). Byte-treu aus dem Schöpfer-Werk extrahiert
 // (Zeilen-Slices, Paritäts-Hash-bewiesen) — die Shell UND AnazhRealm lesen DIESE eine
@@ -21,7 +21,7 @@
 // fragFuer Stufe 1 würfelt den FENSTER-SCHLAF aus demselben Samen. buildInstance(id, 7, …)
 // != buildInstance(id, 12345, …) — jede Instanz eine ANDERE gewachsene Variante; die
 // WAHRHEIT ist eingefroren in spec/asset-contract/v6 (cv:6, seed-getrieben). Die REZEPT-
-// Dials selbst (PRESETS.s) sind am LAB-STARTZUSTAND eingefroren (kulturParams(name, 3) —
+// Dials selbst (PRESETS.s) sind am LAB-STARTZUSTAND eingefroren (bauRezept({bauweise: name}, null, 3) —
 // `let SEED=3` ist der Boot-Samen des Labs); das seed-Argument variiert die INSTANZ.
 //
 // DIE STUFEN-WAHRHEIT (B2, die erste Mehr-Stufen-Domäne außerhalb der Bäume): das Lab trägt
@@ -154,6 +154,16 @@
     //  { P, subsystems, order, solids, build, spawn, floors, windows,
     //    annexDoors, cellar, wings, grundriss, dims, furniture, chimney, roofY }
     // ═══════════════════════════════════════════════════════════════════════
+    // DIE GRENZNEIGUNG JE STIL (w28-bau-rezept, EINE Quelle): so flach trägt die Deckung des Stils — HAUS klemmt jede Neigung darauf,
+    // und das Bau-Gesetz schreibt die gebaute Neigung ins Rezept (`grenzNeigung`); vorher stand sie nur in STILMODE, und das Rezept
+    // trug eine tote Zahl: die griechischen Wohnhäuser 10–14° im Plan, 18° gebaut. Ohne Stil-Eintrag (alt) 28°.
+    var STIL_GRENZNEIGUNG = { modern: 14, huette: 30, stein: 18, glas: 4, klinker: 22, stroh: 38 };
+    // der Stil, den HAUS baut (das Monument trägt keinen Holzbau: FEATURE→MATERIAL), und seine Grenzneigung
+    function grenzNeigung(P) {
+        var stil = ["alt", "modern", "huette", "stein", "glas", "klinker", "stroh"].indexOf(P.stil) >= 0 ? P.stil : "alt";
+        if ((P.portikus || P.zinnen || P.kuppel || P.arkade) && (stil === "alt" || stil === "huette" || stil === "stroh")) stil = "stein";
+        return STIL_GRENZNEIGUNG[stil] != null ? STIL_GRENZNEIGUNG[stil] : 28;
+    }
     // prettier-ignore
     function HAUS(THREE, mat, PARAMS){
   const D2R=Math.PI/180, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -178,12 +188,12 @@
   P.stil = ['alt','modern','huette','stein','glas','klinker','stroh'].includes(P.stil) ? P.stil : 'alt';
   if((P.portikus||P.zinnen||P.kuppel||P.arkade) && (P.stil==='alt'||P.stil==='huette'||P.stil==='stroh')) P.stil='stein';   // FEATURE→MATERIAL (Parametererweiterung wie STILMODE): Tempel/Burg/Kuppel/Riad implizieren monumentale Fassade — kein Fachwerk am Monument
   const STILMODE={
-    modern:{ RM:{holz:'putz',backstein:'putz',gefach:'putz',lehm:'putz',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:14 },   // glatt verputzt, flaches Dach
-    huette:{ RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stamm',ziegel2:'stamm'},      brace:null,   flat:0, pMin:30 },   // Blockhütte: Holzwände + Holzschindeln, Sichtbalken bleiben
-    stein: { RM:{holz:'putz',gefach:'putz',lehm:'putz',backstein:'putz'},                                      brace:'none', flat:0, pMin:18 },   // glatt verputzt (FR/IT), Ziegeldach bleibt
-    glas:  { RM:{gefach:'metall',lehm:'metall',backstein:'metall',holz:'metall',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:4  },   // Glas-Vorhangfassade + Stahl, (fast) flaches Dach (Hochhaus/Moderne)
-    klinker:{ RM:{holz:'backstein',gefach:'backstein',lehm:'backstein',stein:'backstein'},                         brace:'none', flat:0, pMin:22 },   // Sichtmauerwerk: Vollziegelwand + Tonziegeldach (NL/Hanse/England) — KEINE Sichtbalken, massiver Klinker
-    stroh:  { RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stroh',ziegel2:'stroh'},          brace:null,   flat:0, pMin:38 },   // Reet/Stroh: Holzwände + dickes Strohdach (angelsächsisch/afrikanisch/neolith)
+    modern:{ RM:{holz:'putz',backstein:'putz',gefach:'putz',lehm:'putz',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:STIL_GRENZNEIGUNG.modern },   // glatt verputzt, flaches Dach
+    huette:{ RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stamm',ziegel2:'stamm'},      brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.huette },   // Blockhütte: Holzwände + Holzschindeln, Sichtbalken bleiben
+    stein: { RM:{holz:'putz',gefach:'putz',lehm:'putz',backstein:'putz'},                                      brace:'none', flat:0, pMin:STIL_GRENZNEIGUNG.stein },   // glatt verputzt (FR/IT), Ziegeldach bleibt
+    glas:  { RM:{gefach:'metall',lehm:'metall',backstein:'metall',holz:'metall',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:STIL_GRENZNEIGUNG.glas },   // Glas-Vorhangfassade + Stahl, (fast) flaches Dach (Hochhaus/Moderne)
+    klinker:{ RM:{holz:'backstein',gefach:'backstein',lehm:'backstein',stein:'backstein'},                         brace:'none', flat:0, pMin:STIL_GRENZNEIGUNG.klinker },   // Sichtmauerwerk: Vollziegelwand + Tonziegeldach (NL/Hanse/England) — KEINE Sichtbalken, massiver Klinker
+    stroh:  { RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stroh',ziegel2:'stroh'},          brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.stroh },   // Reet/Stroh: Holzwände + dickes Strohdach (angelsächsisch/afrikanisch/neolith)
   };
   const sm=STILMODE[P.stil], modern = (P.stil==='modern'||P.stil==='glas');
   const TRIMR=(P.stil==='modern'||P.stil==='glas')?'metall':'lattung';   // TRIM-STIL-GESETZ: Dachabschlussprofile folgen der Stilistik (modern = Metall, sonst Holzton)
@@ -195,7 +205,7 @@
   }
   // ════ DIE WAND DES STILS (w28-putz-wand) — malt der Stil das Gerüst in den Stoff der Wand (RM.holz ≡ RM.gefach: stein · modern → putz, glas → metall, klinker → backstein), dann IST die Fassade eine WAND: kein Ständer, kein Rähm, keine Schwelle, kein Riegel, keine Strebe, kein Nagel unter der Farbe — die Felder schließen als Platten über die Achsen (`wandFelder`), EIN Ton statt der Patina je Brett. Der Verband Stein für Stein steht nur, wo der Stil ihn als Backstein zeigt (klinker); umgemalt wäre er Relief ohne Stoff. Vorher (griechisch, Saat 902392) waren 37 548 von 61 324 Dreiecken der L0, 8 280 von 10 768 der L1 und 2 464 von 2 838 der L2 umgemaltes Fachwerk — das Gitter, das im Bild als Schleier vor der Wand stand. ════
   const GLATT=!!(sm&&sm.RM.holz&&sm.RM.holz===sm.RM.gefach), VERBAND=!GLATT||!sm.RM.backstein;
-  const pitch=clamp(P.pitchDeg, sm?sm.pMin:28, 62)*D2R;
+  const pitch=clamp(P.pitchDeg, grenzNeigung(P), 62)*D2R;   // EINE Grenzneigung (STIL_GRENZNEIGUNG), dieselbe, die das Bau-Gesetz ins Rezept schreibt
   let _s=(P.seed*2654435761>>>0)||1; const rnd=()=>((_s=(_s*1664525+1013904223)>>>0)/4294967296);
 
   const baseY=P.foundH+(P.pilotis?2.6:0);   // PILOTIS: das ganze Haus steigt → alles relativ zu baseY folgt automatisch (Synergie)
@@ -309,6 +319,8 @@
   const solids=[]; const furniture=[]; let chimney=null;
   const masse=[];                                                                                       // DIE MASSEN DES BAUS (S3, additiv): je Teil des Grundrisses sein Körper — Rechteck, Höhen, Dach. Der Fernkörper des Gesetzbuchs (koerperListe) liest sie; kein Bau liest sie zurück
   function addMasse(m){ if(Number.isFinite(m.x0)){ m.x0+=SHIFT; m.x1+=SHIFT; } masse.push(m); return m; }   // die 2. Einheit des Doppelhauses um +W wie ihre Solids
+  const LICHT=[];   // DIE ÖFFNUNGEN DES LICHTS (w28-innenlicht, additiv — nur eine Liste, kein Bau): jede Öffnung, die der Bau in eine Außenwand schneidet, an ihrem EINEN Bauer (`fensterAt`, die Flügel-Tür, der Rundbau) — `raumVon` rechnet daraus das Raum-Licht je Körper; bis hier trug die Liste des Fern-Fensters nur Haupt, Giebel und Anbau (der Flügel und der Hof-Arm der Stufe 0 standen ohne Öffnung)
+  function lichtAuf(cx,cy,cz,w,h,perp,glas){ LICHT.push({cx:cx+SHIFT,cy,cz,w,h,perp,glas}); }
   // ════ WELTMODELL · geteilte Quelle: Öffnungen · Erschließung · Kraftfluss ════
   const circR=[];
   function addSolid(cx,cy,cz,lx,ly,lz,tag){solids.push({min:[cx+SHIFT-lx/2,cy-ly/2,cz-lz/2],max:[cx+SHIFT+lx/2,cy+ly/2,cz+lz/2],tag});}
@@ -319,6 +331,12 @@
   const strahl=[];
   function addStrahl(x0,y0,z0,x1,y1,z1){ strahl.push({min:[x0+SHIFT,y0,z0],max:[x1+SHIFT,y1,z1]}); }
   function strahlBeam(cx,cy,cz,lx,ly,lz){ addStrahl(cx-lx/2,cy-ly/2,cz-lz/2,cx+lx/2,cy+ly/2,cz+lz/2); }
+  // DER OFFENE FENSTER-FLÜGEL (leib.K4, w28-baum-ganz, additiv): der Flügel jedes Fensters steht 0,62 rad offen (`fensterAt`), sein
+  // freies Ende 0,58 × die Fenster-Breite vor der Wand-Mitte — gezeichnet, aber ohne Leib: die Kamera-Kugel (0,3 m vor der Wand)
+  // strich durch ihn (haus_alemannisch, der Gang der Linse: in 9 von 1 089 Bildern näher als 0,25 m am gezeichneten Flügel, kleinster
+  // Abstand 0,010 m — an main wie am Kopf; die Linse traf ihn nur, wo ihre Stichprobe je 6. Bild auf eines der neun fiel). Sein
+  // Leib ist die Hülle des Flügels vom Scharnier `L.position` zum freien Ende (dx, dz) über seine Höhe h, die Flügel-Stärke dazu.
+  function strahlFluegel(L,dx,dz,h){ const p=L.position, s=0.04; addStrahl(Math.min(p.x,p.x+dx)-s,p.y-h/2,Math.min(p.z,p.z+dz)-s,Math.max(p.x,p.x+dx)+s,p.y+h/2,Math.max(p.z,p.z+dz)+s); }
   // der Strebe-Leib (`strut`: der Quader th × Länge × th, seine Y-Achse auf der Strecke) in n Stücken je ihre Hülle — die schräge
   // Wange und der Handlauf je Tritt eine Box, nie eine Box über den ganzen Lauf (die Spur darunter bliebe nie frei)
   function strahlStrut(x0,y0,z0,x1,y1,z1,th,n){ const d=Vc(x1-x0,y1-y0,z1-z0), len=d.length(); if(len<1e-4)return; d.multiplyScalar(1/len);
@@ -1059,15 +1077,17 @@
         zw.push(st); vor=st; } }
     if(zw.length) prisma(g,zw,eb(dp-0.06),role,{zwickel:{bogen:B}});
     return B; }
-  function fensterAt(g,cx,cy,cz,w,h,horiz,capY){ const fr='holz', gl=fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy)?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
+  function fensterAt(g,cx,cy,cz,w,h,horiz,capY){ lichtAuf(cx,cy,cz,w,h,horiz?'z':'x',1); const fr='holz', gl=fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy)?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
     if(horiz){ beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,0.18,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,true,P.bogenTyp,fr,{art:'fenster',cap:_cap}); beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,0.24,fr);     // Sturz + Fensterbank
       beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.18,fr);              // Pfosten
       const L=grp(); const inner=windowSash(w,h,true,fr,gl); inner.position.x=w/2; L.add(inner);
       L.position.set(...deform(cx-w/2,cy,cz)); L.rotation.y=(cz<0?0.62:-0.62)+(DEF_bk>0?(cx-w/2)*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L);
+      strahlFluegel(L,w*Math.cos(L.rotation.y),-w*Math.sin(L.rotation.y),h);
     } else { beam(g,cx,cy+h/2+0.05,cz,0.18,0.1,w+0.2,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,false,P.bogenTyp,fr,{art:'fenster',cap:_cap}); beam(g,cx,cy-h/2-0.05,cz,0.24,0.1,w+0.22,fr);
       beam(g,cx,cy,cz-w/2-0.05,0.18,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.18,h+0.1,0.1,fr);
       const L=grp(); const inner=windowSash(w,h,false,fr,gl); inner.position.z=w/2; L.add(inner);
-      L.position.set(...deform(cx,cy,cz-w/2)); L.rotation.y=(cx<0?-0.62:0.62)+(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L); } }
+      L.position.set(...deform(cx,cy,cz-w/2)); L.rotation.y=(cx<0?-0.62:0.62)+(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L);
+      strahlFluegel(L,w*Math.sin(L.rotation.y),w*Math.cos(L.rotation.y),h); } }
   function fenster(){const g=grp(); if(ROUND)return g; WALLS.forEach(w=>{ if(!w.win||INNEN(w))return; const wd=winW(w),c=(w.lo+w.hi)/2; fensterAt(g,w.horiz?c:w.fixed,w.win.cy,w.horiz?w.fixed:c,wd,w.win.ch,w.horiz); });
     if(P.stil==='stein' && P.pitchDeg>=45){ WALLS.forEach(w=>{ if(!w.win||!w.horiz||w.fixed>0)return; if(w.win.cy < levels[0].top+0.3)return;   // ════ FRANZÖSISCHER BALKON (Juliette): schmiedeeiserne Brüstung vor OG-Vorderfenstern (Putz/Stein FR/IT) ════
       const c=(w.lo+w.hi)/2, wd=winW(w), zf=w.fixed, y0=w.win.cy-w.win.ch/2-0.05, rH=1.0, zr=zf-0.20, rW=wd+0.5;
@@ -1324,7 +1344,7 @@
         if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH, ys=rs([dh]); gz(G0,dL,yB,yT,ys); gz(dR,G1,yB,yT,ys); if(yT>dh+0.05)gz(dL,dR,dh,yT,ys); }
         else if(opt.win){ const {c,wd,cy,ch}=opt.win, L=c-wd/2,R=c+wd/2,wb=cy-ch/2,wt=cy+ch/2, ys=rs([wb,wt]); gz(G0,L,yB,yT,ys); gz(R,G1,yB,yT,ys); gz(L,R,yB,wb,ys); gz(L,R,wt,yT,ys); }
         else gz(G0,G1,yB,yT,rs([])); }
-      if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH;
+      if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH; lichtAuf(horiz?(dL+dR)/2:fixed,(yB+dh)/2,horiz?fixed:(dL+dR)/2,dR-dL,dh-yB,horiz?'z':'x',0);
         if(!GLATT){ fill(a0,dL,yI0,yI1); fill(dR,a1,yI0,yI1); if(yI1>dh+0.05)fill(dL,dR,dh,yI1); }
         if(horiz){ beam(g,(dL+dR)/2,dh+0.06,fixed,dR-dL+0.26,0.13,0.15,'holz'); [dL,dR].forEach(d=>beam(g,d,(yB+dh)/2,fixed,0.13,dh-yB,0.14,'holz')); }
         else      { beam(g,fixed,dh+0.06,(dL+dR)/2,0.15,0.13,dR-dL+0.26,'holz'); [dL,dR].forEach(d=>beam(g,fixed,(yB+dh)/2,d,0.14,dh-yB,0.13,'holz')); }
@@ -1612,9 +1632,9 @@
     for(let lv=0;lv<=nLev;lv++){ const y=baseY+lv*P.egH; for(let s=0;s<seg;s++){ const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI; tri(g,[0,y,0],[rad*Math.cos(a0),y,rad*Math.sin(a0)],[rad*Math.cos(a1),y,rad*Math.sin(a1)],'boden'); } }
     const doorA=-Math.PI/2; for(let s=0;s<seg;s++){ const a=(s+0.5)/seg*2*Math.PI, x=rad*Math.cos(a), z=rad*Math.sin(a), chord=2*Math.PI*rad/seg+0.06, isDoor=Math.abs(((a-doorA+Math.PI)%(2*Math.PI))-Math.PI)<(1.2/rad);
       for(let lv=0;lv<nLev;lv++){ const y0=baseY+lv*P.egH, wH=P.egH;
-        if(isDoor&&lv===0){ beam(g,x,y0+wH-0.4,z,chord,0.8,0.3,wr,[0,Math.PI/2-a,0]); continue; }
+        if(isDoor&&lv===0){ lichtAuf(x,y0+(wH-0.8)/2,z,chord,wH-0.8,'x',0); beam(g,x,y0+wH-0.4,z,chord,0.8,0.3,wr,[0,Math.PI/2-a,0]); continue; }
         if(s%2===0){ beam(g,x,y0+0.5,z,chord,1.0,0.3,wr,[0,Math.PI/2-a,0]); beam(g,x,y0+wH-0.5,z,chord,1.0,0.3,wr,[0,Math.PI/2-a,0]);
-          const ww=chord*0.5,wh=Math.max(0.5,wH-1.9),wy=y0+wH/2,rr=[0,Math.PI/2-a,0]; beam(g,x,wy,z,ww*0.9,wh,0.1,'glas',rr);
+          const ww=chord*0.5,wh=Math.max(0.5,wH-1.9),wy=y0+wH/2,rr=[0,Math.PI/2-a,0]; lichtAuf(x,wy,z,ww*0.9,wh,'x',1); beam(g,x,wy,z,ww*0.9,wh,0.1,'glas',rr);
           beam(g,x,wy+wh/2+0.07,z,ww+0.18,0.1,0.16,'holz',rr); beam(g,x,wy-wh/2-0.07,z,ww+0.2,0.1,0.18,'holz',rr); beam(g,x,wy,z,0.06,wh,0.13,'holz',rr); beam(g,x,wy,z,ww,0.06,0.13,'holz',rr); }
         else beam(g,x,y0+wH/2,z,chord,wH,0.3,wr,[0,Math.PI/2-a,0]); } }
     { const dHalf=Math.min(1.1,Math.max(0.7,2*Math.PI*rad/seg)), bt=(P.bogenTyp&&P.bogenTyp!=='none')?P.bogenTyp:'rund'; bogenRahmen(g,0,baseY+P.egH-0.6,-rad-0.04,dHalf,true,bt,wr); beam(g,0,baseY-0.02,-rad-0.02,2*dHalf+0.3,0.06,0.35,'stein'); for(let st=0;st<4;st++)beam(g,0,baseY-0.12-st*0.16,-rad-0.35-st*0.32,2*dHalf+0.1,0.16,0.4,'stein'); }   // RUNDBAU-TÜR: der Bogen fliesst auch hier durch + Eingangsstufen
@@ -1738,11 +1758,14 @@
         tri(g,P00,P10,P11,'kupfer'); tri(g,P00,P11,P01,'kupfer'); } }
     const tp=prof(1)[1]; beam(g,0,tp+0.3,0,0.16,0.7,0.16,'metall'); beam(g,0,tp+0.78,0,0.34,0.1,0.06,'metall'); beam(g,0,tp+0.78,0,0.06,0.1,0.34,'metall');   // Spitze + Kreuz/Mond
     P.__sehne=_alt; return g; }
+  // DER FLÜGEL FÄNGT NICHT MEHR STILL (w28-bau-rezept): bis hier schluckte ein catch seinen Fehler (console.warn, das Haus ohne Flügel —
+  // fail-soft); gezählt an main 0 Fänge über 32 Kulturen × 16 Samen und 324 Häuser der Pläne Messort + s7. Treibt das Raumprogramm die
+  // Flügel, bricht ein Flügel jetzt beim Namen.
   const MK=(k,f)=>(P.nur&&P.nur[k]===false)?grp():f();   // LAZY-KERN: Mass-Modus baut Verdichter gar nicht erst
   const _mkSubs=()=>({ fundament:MK('fundament',fundament), gelaende:MK('gelaende',gelaende), geruest:MK('geruest',geruest), riegel:MK('riegel',riegel), streben:MK('streben',streben), zimmermann:MK('zimmermann',zimmermann),
     gefache:MK('gefache',gefache), giebel:MK('giebel',giebel), dachwerk:MK('dachwerk',dachwerk), dachdeckung:MK('dachdeckung',dachdeckung),
     boeden:MK('boeden',boeden), innenwaende:MK('innenwaende',innenwaende), herd:MK('herd',herd), treppe:MK('treppe',treppe), tueren:MK('tueren',tueren), fenster:MK('fenster',fenster), moebel:MK('moebel',moebel),
-    anbau:MK('anbau',anbau), fluegel:MK('fluegel',()=>{ try{ return fluegel(); }catch(e){ console.warn('Flügel übersprungen:',e.message); return grp(); } }), balkon:MK('balkon',balkon), kuppel:MK('kuppel',kuppel), portikus:MK('portikus',portikus), hof:MK('hof',hof), dachAlt:MK('dachAlt',dachAlt), arkade:MK('arkade',arkade), turm:MK('turm',turm), zinnen:MK('zinnen',zinnen), veranda:MK('veranda',veranda), vorkragung:MK('vorkragung',vorkragung), pilotis:MK('pilotis',pilotis), terrasse:MK('terrasse',terrasse), rundbau:MK('rundbau',rundbau) });   // NUR-VOLLGATTER-GESETZ: JEDE Fabrik durch MK — 16 von 30 liefen am nur-Gate vorbei, DESTNUR/Aufsatz-Schlüssel waren drei Runden lang TOT (Eigendach- und Giebel-Fix griffen nie)
+    anbau:MK('anbau',anbau), fluegel:MK('fluegel',()=>{ try{ return fluegel(); }catch(e){ throw new Error('fachwerk: der Flügel bricht ('+P.grundriss+', W '+W+', D '+Dp+'): '+e.message); } }), balkon:MK('balkon',balkon), kuppel:MK('kuppel',kuppel), portikus:MK('portikus',portikus), hof:MK('hof',hof), dachAlt:MK('dachAlt',dachAlt), arkade:MK('arkade',arkade), turm:MK('turm',turm), zinnen:MK('zinnen',zinnen), veranda:MK('veranda',veranda), vorkragung:MK('vorkragung',vorkragung), pilotis:MK('pilotis',pilotis), terrasse:MK('terrasse',terrasse), rundbau:MK('rundbau',rundbau) });   // NUR-VOLLGATTER-GESETZ: JEDE Fabrik durch MK — 16 von 30 liefen am nur-Gate vorbei, DESTNUR/Aufsatz-Schlüssel waren drei Runden lang TOT (Eigendach- und Giebel-Fix griffen nie)
   const _s0=_s;                                                                                          // RNG-Schnappschuss vor Einheit A
   const subsystems=_mkSubs();                                                                            // Einheit A
   if(P.doppel){ _s=_s0; SHIFT=W; const B=_mkSubs(); SHIFT=0;                                             // Einheit B: identisch, Collision um +W (SHIFT), Geometrie um +W über Gruppen-Transform
@@ -1777,7 +1800,7 @@
   { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:(sm&&sm.RM&&sm.RM.ziegel)||'ziegel',ring:ROUND?0:P.post/2-0.02};   // ring: so weit steht der Ständer-Ring (postsRing, plateRing: Mitte 2 cm innen) vor dem Grundriss — der Umriss der L0
     addMasse(Object.assign({},hm)); if(P.doppel){ SHIFT=W; addMasse(Object.assign({},hm)); SHIFT=0; }
     if(DORMER) addMasse({art:'gaube',x0:DORMER.gx-DORMER.gW/2,x1:DORMER.gx+DORMER.gW/2,z0:DORMER.zFront,z1:DORMER.zBack,y0:DORMER.baseY2,y1:DORMER.frontTop}); }   // der Hauptkörper (das Doppelhaus: beide Einheiten)
-  return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors,
+  return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors, licht:LICHT,
     cellar: P.keller?{x0:-(W/2-0.08),x1:(W/2-0.08),z0:-(Dp/2-0.08),z1:(Dp/2-0.08),floorY:kellerY+0.12}:null,
     wings: wings.map(w=>({side:w.side,outIsX:w.outIsX,ox:w.ox,oz:w.oz,x0:w.x0,x1:w.x1,z0:w.z0,z1:w.z1,eY:w.eY,rY:w.rY,roofAt:w.roofAt,door:w.door})),
     grundriss: P.grundriss,
@@ -1795,48 +1818,176 @@
     //  Quaderverband). document-gegated (try/catch → null): Worker/Node backen
     //  kartenlos, die Vertex-Farben tragen den Ton (die Karte nur ihr Relief, Kopf (d)).
     // ═══════════════════════════════════════════════════════════════════════
+    // DAS VERBAND-GESETZ (w28-haus-stoff): der Verband einer Fläche als ZAHLEN — Stein, Fuge, Versatz der Reihen, Ton je Stein.
+    // EIN Gesetz, zwei Leser: die vier Maler des Labors (unten) malen daraus ihre Karte, die Welt webt denselben Verband als
+    // FUNKTION im Stoff des Hauses (`verbandZeilen` → der Wirt, `_verbandStoff`) — keine Karte, kein uv, kein Speicher je Haus.
+    // Bis hier standen die Zahlen als Literale in den Malern, und die laufen nur mit `document`: der Faden backte kartenlos,
+    // die Welt zeichnete Dach, Putz, Sockel und Mauerwerk in EINEM Ton je Fläche (Messort dorf, 17.11.).
+    //   pxJeM            das Raster der Maler (Pixel je Meter; ihre Karte misst 2 m)
+    //   steinM · hoeheM  der Stein ohne Fuge (m) · fugeM die Fuge (m) · versatz der Reihen (Anteil des Steins)
+    //   ton [t0, dt]     der Ton je Stein: t0 + Zufall · dt (sRGB, mal die Farbe `grund` bzw. `stein`)
+    //   mauerwerk        Läuferverband NF · fuge die Farbe des Mörtels, grund die des Steins (die Farbe der Rolle backstein)
+    //   deckung          Biberschwanz: breiteM × deckM · spaltPx der Spalt zwischen zwei Ziegeln, reihePx die offene Fuge der
+    //                    Reihe (beide schwarz) · schattenPx die Schattenfuge der Überdeckung über ihr (Schwärze `schatten`) ·
+    //                    grund die Farbe der Rolle ziegel
+    //   putz             Kellenwurf auf `grund`: `sprenkel` Körner von kornPx[0] … kornPx[0] + kornPx[1] − 1 Pixeln im Ton
+    //                    (× `korn` je Kanal, Deckung `deck`), die Kellenzüge alle zug[0] + ⌊Zufall · zug[1]⌋ Pixel, einen Pixel
+    //                    stark, in `zugFarbe` mit der Deckung `zugDeck` · zugWelt die Stärke dieses Zugs in der WELT (0 … 1): 0 —
+    //                    der Maler zieht jeden Zug über die ganze Karte, an der Wand eines Hauses läuft er als durchgehende Linie
+    //                    und liest sich als Stülpschalung, nicht als Putz (Blick des Koordinators 18.11.); offen bis zum kurzen
+    //                    Zug (0,3–0,8 m, je Reihe versetzt, Richtung gestreut) in beiden Lesern
+    //   naturstein      Quaderverband · fuge die Farbe der Fuge, stein der Ton des Quaders je Kanal (× 255 · t)
+    //   fachwerk         das Gefüge der Wand als Verband — für die Stufe, die keine Balken mehr baut (ab der Stufe 2 steht die Wand
+    //                    als Körper im gemessenen Ton der Fassade): der „Stein" ist das Gefach, die „Fuge" der Balken. feldM das
+    //                    Feld zwischen zwei Ständern (höchstens; `bayMax` des Gerüsts), riegelM das Feld zwischen zwei Riegeln
+    //                    (drei je Geschoss: Schwelle · Brüstung · Sturz · Rähm), staenderM · riegelStarkM die Balken. Die Lage der
+    //                    Ecke in IHRER Wand (in Feldern, `_wandLage`) reist mit ihr: der Ständer steht an der Ecke des Hauses,
+    //                    die Schwelle an seinem Fuß — nie am Raster der Welt.
+    //   reihe            die NUMMER eines Verbands (0 = keiner): sie reist je Ecke zur Welt · rolle: welche Rolle welchen trägt
+    var VERBAND_GESETZ = {
+        fachwerk: { feldM: 1.7, riegelM: 0.85, staenderM: 0.16, riegelStarkM: 0.13 },
+        pxJeM: 128,
+        mauerwerk: { steinM: 0.24, hoeheM: 0.071, fugeM: 0.011, versatz: 0.5, ton: [0.84, 0.3], fuge: 0xb7b0a2, grund: 0x964e3e },
+        deckung: { breiteM: 0.18, deckM: 0.32, spaltPx: 2, reihePx: 1, schattenPx: 3, schatten: 0.27, versatz: 0.5, ton: [0.82, 0.32], grund: 0x9c4a35 },
+        putz: { sprenkel: 5200, ton: [0.86, 0.2], korn: [255, 255, 252], deck: 0.5, kornPx: [1, 2], zug: [9, 7], zugFarbe: [120, 116, 108], zugDeck: 0.1, grund: 0xffffff, zugWelt: 0 },
+        naturstein: { steinM: 0.46, hoeheM: 0.28, fugeM: 0.016, versatz: 0.5, ton: [0.88, 0.24], fuge: 0x6f6a60, stein: [0.92, 0.9, 0.86] },
+        reihe: ["", "mauerwerk", "deckung", "putz", "naturstein", "fachwerk"],
+        rolle: { backstein: "mauerwerk", ziegel: "deckung", ziegel2: "deckung", putz: "putz", stein: "naturstein" },
+    };
+    function _verbandHex(hx) { return "#" + (hx + 0x1000000).toString(16).slice(1); }
+    // Der Ton eines Steins im Licht: die Farbe `g` (0 … 255 je Kanal) mal t0 + Zufall · dt, wie der Maler sie setzt (ganze Zahl,
+    // gedeckelt bei 255), durch die EINE Kurve `_lin` — das Mittel je Kanal über den Zufall und die halbe Spanne gegen das Mittel
+    // (über die Kanäle gemittelt). `mal` (optional): ein Faktor auf den sRGB-Wert (die Schattenfuge der Deckung).
+    function _verbandTon(g, ton, mal) {
+        var N = 64, mittel = [0, 0, 0], sp = 0;
+        for (var k = 0; k < 3; k++) {
+            var wert = function (t) { return _lin((Math.min(255, (g[k] * t) | 0) * (mal == null ? 1 : mal)) / 255); };
+            for (var i = 0; i < N; i++) mittel[k] += wert(ton[0] + ((i + 0.5) / N) * ton[1]) / N;
+            sp += (wert(ton[0] + ton[1]) - wert(ton[0])) / 2 / Math.max(mittel[k], 1e-9) / 3;
+        }
+        return { mittel: mittel, spanne: sp };
+    }
+    // DIE ZEILEN DES VERBANDS FÜR DIE WELT (Leser: der Wirt, `_verbandStoff`): je Nummer der Reihe EINE Zeile in Metern und
+    // linearen Faktoren, gerechnet aus den Zahlen der Tafel wie die Karte des Malers sie trägt (das Karten-Gesetz: die Karte ist
+    // Relief um das Mittel 1, die Farbe steht im Stoff):
+    //   lM · hM          das Raster: der Stein samt seiner Fuge (quer · längs der Falllinie der Fläche)
+    //   fugeU · fugeV    die HALBE Fuge je Achse (m) · versatz der Reihen
+    //   ton              die halbe Spanne des Tons je Stein um sein Mittel
+    //   tonU · tonV      der Faktor der Fuge gegen das Mittel des Steins je Kanal (U: die Stoßfuge, V: die Lagerfuge)
+    //   kreuz            wo beide Fugen sich kreuzen, steht EINE Fuge (die dunklere je Kanal), nie ihr Produkt: der Zuschlag
+    //                    kreuz − tonU · tonV auf das Produkt der Achsen (am Mörtel eine Spur, am Balken der schwarze Fleck)
+    //   eins             der Kehrwert des Mittels der Fläche je Kanal: Stein und Fugen mal `eins` mitteln auf 1
+    //   unruhe           die Reihen stehen ungleich weit: ihr Abstand schwankt um diesen Anteil (der Kellenzug des Putzes)
+    //   lage             1: die Lage in der Fläche trägt die Ecke selbst (`_wandLage`, in Feldern) — sonst ist sie die der Welt
+    // Die Zeile 0 trägt keinen Verband (null).
+    function verbandZeilen() {
+        var V = VERBAND_GESETZ, px = 1 / V.pxJeM, kan = function (hx) { return [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]; };
+        var zeile = function (lM, hM, fU, fV, versatz, ton, tonU, tonV, mehr) {
+            var cU = (2 * fU) / lM, cV = (2 * fV) / hM, eins = [0, 0, 0], kreuz = [0, 0, 0];
+            for (var k = 0; k < 3; k++) {
+                kreuz[k] = Math.min(tonU[k], tonV[k]) - tonU[k] * tonV[k];
+                eins[k] = 1 / ((1 - cU + cU * tonU[k]) * (1 - cV + cV * tonV[k]) + cU * cV * kreuz[k]);
+            }
+            return { lM: lM, hM: hM, fugeU: fU, fugeV: fV, versatz: versatz, ton: ton, tonU: tonU, tonV: tonV, kreuz: kreuz, eins: eins, unruhe: (mehr && mehr.unruhe) || 0, lage: mehr && mehr.lage ? 1 : 0 };
+        };
+        var gegen = function (a, b) { return [a[0] / b[0], a[1] / b[1], a[2] / b[2]]; };
+        var m = V.mauerwerk, d = V.deckung, p = V.putz, n = V.naturstein, f = V.fachwerk, fB = gegen(_colFor("holz", null), _colFor("gefach", null));
+        // Mauerwerk und Naturstein: der Mörtel gegen das Mittel des Steins, auf beiden Achsen derselbe
+        var mT = _verbandTon(kan(m.grund), m.ton), mF = gegen(_linHex(m.fuge), mT.mittel);
+        var nT = _verbandTon([255 * n.stein[0], 255 * n.stein[1], 255 * n.stein[2]], n.ton), nF = gegen(_linHex(n.fuge), nT.mittel);
+        // Deckung: der Spalt ist offen (schwarz); die Fuge der Reihe misst die Schattenfuge, davon die offene Fuge schwarz
+        var dT = _verbandTon(kan(d.grund), d.ton), dS = gegen(_verbandTon(kan(d.grund), d.ton, 1 - d.schatten).mittel, dT.mittel);
+        var dV = dS.map(function (s) { return (s * (d.schattenPx - d.reihePx)) / d.schattenPx; });
+        // Putz: das Mittel der Fläche unter den Körnern (ihre Deckung 1 − e^(−Körner · Fläche / Karte)), der Kellenzug dagegen;
+        // das Korn selbst (1,2 cm) mittelt in jeder Zelle des Zugs auf seinen Ton — der Verband des Putzes ist der Zug
+        var seite = 2 * V.pxJeM, kornFl = Math.pow(p.kornPx[0] + (p.kornPx[1] - 1) / 2, 2), deckt = 1 - Math.exp((-p.sprenkel * kornFl) / (seite * seite));
+        var pG = _linHex(p.grund), pK = [0, 0, 0], pZ = [0, 0, 0], zugM = (p.zug[0] + (p.zug[1] - 1) / 2) * px;
+        for (var k = 0; k < 3; k++) {
+            for (var i = 0; i < 64; i++) pK[k] += _lin((1 - p.deck) * (((p.grund >> (16 - 8 * k)) & 255) / 255) + p.deck * Math.min(1, ((p.korn[k] * (p.ton[0] + ((i + 0.5) / 64) * p.ton[1])) | 0) / 255)) / 64;
+            var mittel = (1 - deckt) * pG[k] + deckt * pK[k];
+            // (die Welt trägt den Zug in der Stärke `zugWelt`: 0 lässt die Fuge im Ton des Putzes, das Mittel bleibt 1)
+            pZ[k] = 1 + p.zugWelt * (_lin((1 - p.zugDeck) * (((p.grund >> (16 - 8 * k)) & 255) / 255) + (p.zugDeck * p.zugFarbe[k]) / 255) / mittel - 1);
+        }
+        return [
+            null,
+            zeile(m.steinM + m.fugeM, m.hoeheM + m.fugeM, m.fugeM / 2, m.fugeM / 2, m.versatz, mT.spanne, mF, mF),
+            zeile(d.breiteM, d.deckM, (d.spaltPx * px) / 2, (d.schattenPx * px) / 2, d.versatz, dT.spanne, [0, 0, 0], dV),
+            // (der Maler setzt seine Züge alle zug[0] … zug[0] + zug[1] − 1 Pixel: die halbe Spanne gegen ihr Mittel ist die Unruhe)
+            zeile(zugM, zugM, 0, px / 2, 0, 0, [1, 1, 1], pZ, { unruhe: ((p.zug[1] - 1) / 2) * px / zugM }),
+            zeile(n.steinM + n.fugeM, n.hoeheM + n.fugeM, n.fugeM / 2, n.fugeM / 2, n.versatz, nT.spanne, nF, nF),
+            // Fachwerk: der Balken (die Rolle holz) gegen das Gefach, auf beiden Achsen derselbe; die Lage trägt die Ecke
+            zeile(f.feldM, f.riegelM, f.staenderM / 2, f.riegelStarkM / 2, 0, 0, fB, fB, { lage: 1 }),
+        ];
+    }
+    // DIE LAGE DER ECKEN EINER WAND IN IHREM GEFÜGE (die Zeile „fachwerk"): je Ecke [u, v, Nummer der Zeile] — u in Feldern
+    // zwischen den Ständern längs der Wand, v in Feldern zwischen den Riegeln. Die Teilung wie das Gerüst sie setzt: von der
+    // Mitte des ersten bis zur Mitte des letzten Balkens so viele gleiche Felder, dass keines über `feldM` misst (`axis`), in
+    // der Höhe die nächste ganze Zahl von Riegel-Feldern. An jeder ganzen Zahl steht ein Balken, der erste und der letzte ganz
+    // in der Wand (der Eckständer, die Schwelle, das Rähm). `G` = { pos, nrm } haus-lokal, `rahmen` = [x0, x1, y0, y1, z0, z1]
+    // der Wand, deren Gefüge die Ecken tragen (der Giebel trägt das seiner Wand weiter).
+    function _wandLage(G, rahmen) {
+        var F = VERBAND_GESETZ.fachwerk, nr = VERBAND_GESETZ.reihe.indexOf("fachwerk"), n = G.pos.length / 3, aus = new Array(n * 3);
+        var teilung = function (a0, a1, soll, balken, rund) {
+            var l = a1 - a0 - balken;
+            if (!(l > 0.05)) return [a0, Math.max(a1 - a0, 0.05)];
+            return [a0 + balken / 2, l / Math.max(1, rund ? Math.round(l / soll) : Math.ceil(l / soll - 1e-6))];
+        };
+        var tx = teilung(rahmen[0], rahmen[1], F.feldM, F.staenderM, false),
+            ty = teilung(rahmen[2], rahmen[3], F.riegelM, F.riegelStarkM, true),
+            tz = teilung(rahmen[4], rahmen[5], F.feldM, F.staenderM, false);
+        for (var i = 0; i < n; i++) {
+            var laengsZ = Math.abs(G.nrm[i * 3]) >= Math.abs(G.nrm[i * 3 + 2]), q = laengsZ ? tz : tx;
+            aus[i * 3] = (G.pos[i * 3 + (laengsZ ? 2 : 0)] - q[0]) / q[1];
+            aus[i * 3 + 1] = (G.pos[i * 3 + 1] - ty[0]) / ty[1];
+            aus[i * 3 + 2] = nr;
+        }
+        return aus;
+    }
+    // DIE NUMMER DES VERBANDS EINER ROLLE (0: sie trägt keinen)
+    function verbandReihe(rolle) { var i = VERBAND_GESETZ.reihe.indexOf(VERBAND_GESETZ.rolle[rolle] || "?"); return i > 0 ? i : 0; }
     // prettier-ignore
     function texZiegelwand(grund,seed2){ try{                                                     // TEXTUR-SAME MAUERWERK: Läuferverband aus NF-Regeln (24×7.1cm, Fuge 1.1cm, Halbstein-Versatz, Brandton je Stein) — wächst aus demselben Wissen wie die Stein-für-Stein-Geometrie
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
-  const M1=128, sw=0.24*M1, sh=0.071*M1, fu=0.011*M1;
+  const V=VERBAND_GESETZ.mauerwerk, M1=VERBAND_GESETZ.pxJeM, sw=V.steinM*M1, sh=V.hoeheM*M1, fu=V.fugeM*M1;
   let hh=(seed2*2654435761)>>>0; const r2=()=>{hh^=hh<<13;hh^=hh>>>17;hh^=hh<<5;hh>>>=0;return (hh&0xffff)/0x10000;};
   const gr=grund>>16&255, gg=grund>>8&255, gb=grund&255;
-  cx.fillStyle='#b7b0a2'; cx.fillRect(0,0,256,256);
-  for(let y=0,reihe=0;y<256;y+=sh+fu,reihe++){ const off=(reihe%2)*(sw+fu)/2;
-    for(let x=-sw;x<256+sw;x+=sw+fu){ const t=0.84+r2()*0.3;
+  cx.fillStyle=_verbandHex(V.fuge); cx.fillRect(0,0,256,256);
+  for(let y=0,reihe=0;y<256;y+=sh+fu,reihe++){ const off=(reihe%2)*(sw+fu)*V.versatz;
+    for(let x=-sw;x<256+sw;x+=sw+fu){ const t=V.ton[0]+r2()*V.ton[1];
       cx.fillStyle='rgb('+Math.min(255,gr*t|0)+','+Math.min(255,gg*t|0)+','+Math.min(255,gb*t|0)+')';
       cx.fillRect(x+off,y,sw,sh); } }
   return _karte(cv); }catch(e){ return null; } }
     // prettier-ignore
     function texDach(grund,seed2){ try{                                                           // TEXTUR-SAME DECKUNG: Biberschwanz (Deckmaß 0.32m, Breite 0.18, Halbversatz, Schattenfuge = Reihenüberdeckung)
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
-  const M1=128, rw=0.32*M1, zb=0.18*M1;
+  const V=VERBAND_GESETZ.deckung, M1=VERBAND_GESETZ.pxJeM, rw=V.deckM*M1, zb=V.breiteM*M1;
   let hh=(seed2*40503)>>>0; const r2=()=>{hh^=hh<<13;hh^=hh>>>17;hh^=hh<<5;hh>>>=0;return (hh&0xffff)/0x10000;};
   const gr=grund>>16&255, gg=grund>>8&255, gb=grund&255;
-  for(let y=256,reihe=0;y>-rw;y-=rw,reihe++){ const off=(reihe%2)*zb/2;
-    for(let x=-zb;x<256+zb;x+=zb){ const t=0.82+r2()*0.32;
+  for(let y=256,reihe=0;y>-rw;y-=rw,reihe++){ const off=(reihe%2)*zb*V.versatz;
+    for(let x=-zb;x<256+zb;x+=zb){ const t=V.ton[0]+r2()*V.ton[1];
       cx.fillStyle='rgb('+Math.min(255,gr*t|0)+','+Math.min(255,gg*t|0)+','+Math.min(255,gb*t|0)+')';
-      cx.fillRect(x+off,y-rw,zb-2,rw-1);
-      cx.fillStyle='rgba(0,0,0,0.27)'; cx.fillRect(x+off,y-3,zb-2,3); } }
+      cx.fillRect(x+off,y-rw,zb-V.spaltPx,rw-V.reihePx);
+      cx.fillStyle='rgba(0,0,0,'+V.schatten+')'; cx.fillRect(x+off,y-V.schattenPx,zb-V.spaltPx,V.schattenPx); } }
   return _karte(cv); }catch(e){ return null; } }
     // prettier-ignore
     function texPutz(seed2){ try{                                                                /*TEXTUR-SAME PUTZ: Kellenwurf — koernige Sprenkel + horizontale Kellenzuege, deterministisch*/
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
+  const V=VERBAND_GESETZ.putz, Z=V.zugFarbe;
   let hh=(seed2*747796405)>>>0; const r2=()=>{hh^=hh<<13;hh^=hh>>>17;hh^=hh<<5;hh>>>=0;return (hh&0xffff)/0x10000;};
-  cx.fillStyle='#ffffff'; cx.fillRect(0,0,256,256);
-  for(let k=0;k<5200;k++){ const t=0.86+r2()*0.20; cx.fillStyle='rgba('+(255*t|0)+','+(255*t|0)+','+(252*t|0)+',0.5)';
-    cx.fillRect((r2()*256)|0,(r2()*256)|0, 1+((r2()*2)|0), 1+((r2()*2)|0)); }
-  for(let y=0;y<256;y+=9+((r2()*7)|0)){ cx.fillStyle='rgba(120,116,108,0.10)'; cx.fillRect(0,y,256,1); }
+  cx.fillStyle=_verbandHex(V.grund); cx.fillRect(0,0,256,256);
+  for(let k=0;k<V.sprenkel;k++){ const t=V.ton[0]+r2()*V.ton[1]; cx.fillStyle='rgba('+(V.korn[0]*t|0)+','+(V.korn[1]*t|0)+','+(V.korn[2]*t|0)+','+V.deck+')';
+    cx.fillRect((r2()*256)|0,(r2()*256)|0, V.kornPx[0]+((r2()*V.kornPx[1])|0), V.kornPx[0]+((r2()*V.kornPx[1])|0)); }
+  for(let y=0;y<256;y+=V.zug[0]+((r2()*V.zug[1])|0)){ cx.fillStyle='rgba('+Z[0]+','+Z[1]+','+Z[2]+','+V.zugDeck.toFixed(2)+')'; cx.fillRect(0,y,256,1); }
   return _karte(cv); }catch(e){ return null; } }
     // prettier-ignore
     function texStein(seed2){ try{                                                                /*TEXTUR-SAME NATURSTEIN: Quaderverband 46×28cm, Fuge 1.6, Halbversatz, Bruchton je Stein*/
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
-  const M1=128, sw=0.46*M1, sh=0.28*M1, fu=0.016*M1;
+  const V=VERBAND_GESETZ.naturstein, M1=VERBAND_GESETZ.pxJeM, sw=V.steinM*M1, sh=V.hoeheM*M1, fu=V.fugeM*M1;
   let hh=(seed2*2654435761)>>>0; const r2=()=>{hh^=hh<<13;hh^=hh>>>17;hh^=hh<<5;hh>>>=0;return (hh&0xffff)/0x10000;};
-  cx.fillStyle='#6f6a60'; cx.fillRect(0,0,256,256);
-  for(let y=0,reihe=0;y<256;y+=sh+fu,reihe++){ const off=(reihe%2)*(sw+fu)/2;
-    for(let x=-sw;x<256+sw;x+=sw+fu){ const t=0.88+r2()*0.24;
-      cx.fillStyle='rgb('+(255*t*0.92|0)+','+(255*t*0.90|0)+','+(255*t*0.86|0)+')';
+  cx.fillStyle=_verbandHex(V.fuge); cx.fillRect(0,0,256,256);
+  for(let y=0,reihe=0;y<256;y+=sh+fu,reihe++){ const off=(reihe%2)*(sw+fu)*V.versatz;
+    for(let x=-sw;x<256+sw;x+=sw+fu){ const t=V.ton[0]+r2()*V.ton[1];
+      cx.fillStyle='rgb('+(255*t*V.stein[0]|0)+','+(255*t*V.stein[1]|0)+','+(255*t*V.stein[2]|0)+')';
       cx.fillRect(x+off,y,sw,sh); } }
   return _karte(cv); }catch(e){ return null; } }
     // DAS KARTEN-GESETZ (A6, Kopf (d)): eine Karte trägt nur ihr Relief, nie die Farbe. Der Maler malt sRGB; die Karte liegt
@@ -1909,7 +2060,7 @@
     };
     // prettier-ignore
     function materials(){ if(M) return M;
-      _texBk=texZiegelwand(0x964e3e,7); _texZi=texDach(0x9c4a35,11); _texZi2=texDach(0x803a28,13); _texPu=texPutz(17); _texSt=texStein(23);
+      _texBk=texZiegelwand(VERBAND_GESETZ.mauerwerk.grund,7); _texZi=texDach(VERBAND_GESETZ.deckung.grund,11); _texZi2=texDach(0x803a28,13); _texPu=texPutz(17); _texSt=texStein(23);
       M={
   holz:   new THREE.MeshStandardMaterial({color:0x5a4632,roughness:.88,metalness:0,vertexColors:true,side:THREE.DoubleSide}),
   blockholz: new THREE.MeshStandardMaterial({color:0x8a6a3e,roughness:.9,metalness:0,vertexColors:true,side:THREE.DoubleSide}),   // Blockholz-Wand: warmes Braun, vertexColors + material-basiertes tintWood = Patina wie holz, Kontrast zum Rahmen
@@ -1941,6 +2092,7 @@
       };
       for(const _k in M) _roleByMat.set(M[_k],_k);
       for(const _k in M) if(SEH_DER_ROLLE[_k]) M[_k].userData.__seh=SEH_DER_ROLLE[_k];
+      for(const _k in M) if(verbandReihe(_k)) M[_k].userData.__verband=verbandReihe(_k);   // DAS VERBAND-GESETZ: die Nummer des Verbands reist mit dem Stoff (mat.verband) — die Welt webt ihn als Funktion, wo das Labor seine Karte trägt
       for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); _karteEins(M[_k]); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
       M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 1900 K, Zeitplan abends 1) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
       M.glas.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
@@ -1960,8 +2112,8 @@
 
     // ═══════════════════════════════════════════════════════════════════════
     //  KULTUREN — regionale Archetypen, aus dem Samen erwachsend (byte-treu;
-    //  die B1-Rezept-Quelle: KULTUR × kulturParams). applyKultur (DOM/Slider)
-    //  bleibt Shell-Glue — sie liest kulturParams aus DIESER Quelle.
+    //  die B1-Rezept-Quelle: KULTUR × bauRezept). applyKultur (DOM/Slider)
+    //  bleibt Shell-Glue — sie liest bauRezept aus DIESER Quelle.
     // ═══════════════════════════════════════════════════════════════════════
     // prettier-ignore
     const DEFCOL={holz:0x5a4632, gefach:0xd9d0c1, ziegel:0x9c4a35, ziegel2:0x803a28, putz:0xe7e3da, dachmod:0x3b3e44, stamm:0x5b4327, glas:0x33576a, glasfern:0x46687e, metall:0x6b6b73, backstein:0x964e3e, lehm:0xbfb09a, stein:0x8d857a, stroh:0xcaa44e, kupfer:0x5a917c}; // alle kultur-tragenden Materialien
@@ -2010,10 +2162,46 @@
     function tintM(col){ materials(); for(const k in DEFCOL){ if(M[k]) _setzeHex(k,(col&&col[k]!=null)?col[k]:DEFCOL[k]); } if(M.blockholz){ const _lh=(c,f)=>{const r=Math.min(255,((c>>16&255)*f)|0),g=Math.min(255,((c>>8&255)*f)|0),b=Math.min(255,((c&255)*f)|0);return (r<<16)|(g<<8)|b;}; const _hz=(col&&col.holz!=null)?col.holz:DEFCOL.holz; _setzeHex('blockholz',(col&&col.blockholz!=null)?col.blockholz:_lh(_hz,1.4)); } }
     // prettier-ignore
     function kulturFromSeed(seed){ const idx=((Math.round(seed*131+7)*2654435761)>>>0)%KULTNAMES.length; return KULTNAMES[idx]; }
-    // ── kulturParams — REINE Kultur-Ableitung (identische Streu-Sequenz wie früher applyKultur: pitch→W→D→st) ──
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DAS BAU-GESETZ (w28-bau-rezept) — der Bau folgt aus {nutzung, bauweise, rahmen} × Haushalt × Same, EIN Rezept für
+    //  Labor und Welt. Die Zeilen leben HIER, im Gesetzbuch neben KULTUR (die Sitte der Kerne: die Tafel steht beim Gesetz,
+    //  das sie liest; Labor und Welt erreichen sie über `__fachwerkCore`, der Wirt über den EINEN Export `hausZeile.ov`).
+    //    bauweise  die 32 Kulturen (KULTUR oben): Neigung · Breite · Tiefe · Geschosse mit ihrer Streuung, Stil, Figur, Farbe —
+    //              der Würfel zieht in der Folge pitch → W → D → st (so stand er im früheren Kultur-Rezept; die Bytes der Rezepte hängen daran)
+    //    nutzung   BAU_NUTZUNG unten: je Bau-Typ seine Räume (Raumprogramm, `bauProgramm`) und, wo noch kein Programm steht,
+    //              sein Maß über dem Haus der Kultur (`mass`, die Ops der früheren Tafel STADT_GRAMMATIK.bau als Daten)
+    //    rahmen    der Ort des Loses {region, band, dicht}: was die Bedingungen der Zeilen lesen
+    //    haushalt  {personen, wohl}: ohne ihn baut das Gesetz das Haus der Kultur (Wohnhaus ohne Haushalt ≡ das Rezept der Kultur)
+    //  `los`: der Bau des Loses, den die Nutzung über sich legt (DORF, die Viertel); ohne ihn würfelt `bauweise` ein neues Haus.
+    // ═══════════════════════════════════════════════════════════════════════
+    // Die Ops eines Maßes: [feld, op, wert, wenn] — op setze · plus · mindestens · hoechstens; wenn {aus, ist | nicht | in}
+    // liest erst den rahmen, dann den Bau (stil). Die Räume: [id, je (p Person · b Bau · s Stück), m², m² je wohl und Person,
+    // geschoss (eg · og · alle · keller · dach), lage (kern · strasse · hinten · oben · turm · anbau · fluegel · hof_umlauf ·
+    // offen · laube · keller · dach · getrennt), zahl]; `zeile` nennt die Zeile des Bau-Schwarms, aus der sie stammt.
     // prettier-ignore
-    function kulturParams(name, seed){
-  const k=KULTUR[name]; if(!k) return null;
+    const BAU_NUTZUNG={
+      wohnhaus:{ zeile:'beweis:wohnhaus', geschosse:[1,4], grundriss:['I','L'], raeume:[['wohnen','p',20,20,'alle','kern']] },
+      gasthaus:{ mass:[['W','plus',2.5],['W','hoechstens',15],['D','plus',1],['D','hoechstens',11],['storeys','mindestens',2],['arkade','setze',1,{aus:'region',in:['mitteleuropa','mediterran']}]] },
+      schmiede:{ mass:[['W','setze',5.5],['D','setze',5],['storeys','setze',1],['balcony','setze',0],['annexN','setze',0],['grundriss','setze','I'],['turm','setze',0],['kuppel','setze',0]] },
+      rathaus:{ mass:[['W','mindestens',13],['D','mindestens',10],['storeys','setze',3],['turm','setze',1],['grundriss','setze','I'],['annexN','setze',0],['arm','setze',0],['keller','setze',1],['balcony','setze',0],['zinnen','setze',1,{aus:'band',ist:'mittelalter'}],['arkade','setze',1,{aus:'band',nicht:'mittelalter'}]] },   // der wehrhafte Rat des Mittelalters, die Laube der Neuzeit
+      kaufhaus:{ mass:[['W','hoechstens',8.5],['D','mindestens',10],['storeys','mindestens',3],['grundriss','setze','I'],['annexN','setze',0],['arm','setze',0],['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },   // schmal und tief am Platz, der Laden unten
+      kontor:{ mass:[['W','mindestens',10],['D','mindestens',10],['storeys','setze',3],['arkade','setze',1],['arm','setze',0],['annexN','setze',0],['balcony','setze',0]] },   // der Hof der fremden Kaufleute (Fondaco): Bogengang, drei Geschosse
+      zunfthaus:{ mass:[['W','mindestens',11],['D','mindestens',9],['storeys','setze',3],['portikus','setze',1],['grundriss','setze','I'],['arm','setze',0],['annexN','setze',0]] },
+      pfarrhaus:{ mass:[['W','hoechstens',10],['W','mindestens',8],['storeys','setze',2],['grundriss','setze','I'],['arm','setze',0],['balcony','setze',0]] },
+      kapelle:{ mass:[['W','setze',7],['D','setze',8],['storeys','setze',1],['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['grundriss','setze','I'],['arm','setze',0],['turm','setze',0]] },
+      bergfried:{ mass:[['W','setze',8],['D','setze',8],['storeys','setze',5],['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },   // der Turm des Herrn: fünf Geschosse unter dem Zinnenkranz
+      torhaus:{ mass:[['W','setze',7.5],['D','setze',6.5],['storeys','setze',2],['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },
+      zeughaus:{ mass:[['W','setze',12],['D','setze',8],['storeys','setze',2],['turm','setze',0],['kuppel','setze',0]] },
+      werkstatt:{ mass:[['W','hoechstens',8],['storeys','hoechstens',2],['annexN','setze',1],['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },
+      backhaus:{ mass:[['W','setze',6],['D','setze',6],['storeys','setze',1],['grundriss','setze','I'],['annexN','setze',0],['balcony','setze',0]] },
+      speicher:{ mass:[['W','mindestens',9],['D','setze',11],['storeys','setze',4],['grundriss','setze','I'],['annexN','setze',0],['balcony','setze',0],['arm','setze',0]] },
+      gerberei:{ mass:[['W','mindestens',9],['storeys','setze',2],['veranda','setze',1],['grundriss','setze','I'],['balcony','setze',0]] },   // der Trockenboden vor der Wand
+      wohnturm:{ mass:[['W','setze',6],['D','setze',6],['storeys','setze',6],['zinnen','setze',1],['grundriss','setze','I'],['annexN','setze',0],['balcony','setze',0],['keller','setze',0],['arm','setze',0],['turm','setze',0],['kuppel','setze',0]] },   // der Geschlechterturm: sechs Geschosse über sechs Metern im Geviert
+      patrizierhaus:{ mass:[['W','mindestens',10],['storeys','mindestens',3],['balcony','setze',1],['arm','setze',0]] },
+    };
+    // der Würfel der bauweise (die Streu-Folge pitch → W → D → st, byte-treu dem früheren Kultur-Rezept)
+    // prettier-ignore
+    function _bauweiseWurf(k, seed){
   let s=((Math.round(seed*977+13)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   return {
     pitchDeg: Math.max(8,  Math.min(62, Math.round(k.pitch + (rnd()-0.5)*5))),
@@ -2025,6 +2213,66 @@
     zinnen:k.zinnen?1:0, veranda:k.veranda?1:0, vorkragung:k.vorkragung?1:0, pilotis:k.pilotis?1:0, terrasse:k.terrasse?1:0,
     dachTyp:k.dachTyp||'sattel', bogenTyp:k.bogenTyp||'none', grundriss:k.grundriss||'I',
     col:k.col||null };
+}
+    // prettier-ignore
+    function _bauWenn(w, hp, rahmen){ if(!w) return true; const v=(rahmen&&w.aus in rahmen)?rahmen[w.aus]:hp[w.aus];
+  return ('ist' in w)?v===w.ist : ('nicht' in w)?v!==w.nicht : ('in' in w)?w.in.indexOf(v)>=0 : true; }
+    // prettier-ignore
+    function bauRezept(z, haushalt, seed){
+  z=z||{}; const nz=z.nutzung||'wohnhaus', N=BAU_NUTZUNG[nz];
+  if(!N) throw new Error('fachwerk: die Nutzung „'+nz+'“ trägt keine Zeile in BAU_NUTZUNG');
+  let hp=z.los||null;
+  if(z.bauweise){ const k=KULTUR[z.bauweise]; if(!k) return null; const r=_bauweiseWurf(k, seed); hp=hp?Object.assign(hp,r):r; }
+  if(!hp) return null;
+  if(N.mass) for(const o of N.mass){ if(!_bauWenn(o[3],hp,z.rahmen)) continue; const f=o[0], v=o[2];
+    hp[f]= o[1]==='setze'?v : o[1]==='plus'?hp[f]+v : o[1]==='mindestens'?Math.max(hp[f],v) : Math.min(hp[f],v); }
+  if(haushalt&&N.raeume) bauProgramm(N, hp, haushalt, z.rahmen||{});
+  hp.pitchDeg=Math.max(hp.pitchDeg, grenzNeigung(hp));   // die gebaute Neigung steht im Rezept (STIL_GRENZNEIGUNG), keine tote Zahl
+  return hp;
+}
+    // DAS RAUMPROGRAMM (der Packer): die Räume der Nutzung für den Haushalt → Geschosse · Grundriss · Flügel · Anbau · Keller
+    // auf den VORHANDENEN Teilen des Hauses (GRUND, die Flügel im 3,3-m-Modul, der Hof, die Anbau-Zellen) — keine neue Form.
+    //   Fläche je Raum: je Person (personen × (m² + m²·wohl)), je Bau, je Stück (× zahl); netto ÷ LEUTE_GESETZ.nutz = brutto.
+    //   Die Parzelle (`hp.parzelle`, sonst der Bau selbst) ist das Land: ihr Fuß × (dicht 1,3 · frei 1,6) trägt den Körper,
+    //   × (dicht 1,6 · frei 2,6) Körper samt Hof und Flügeln. Geschosse: das kleinste in [min, max] der Zeile (und nie unter dem,
+    //   was der Ort über die Kultur hob — dann auch über ihrem Maximum), dessen Körper die Parzelle trägt. Turm-Räume ≥ halber Körper: der Körper bleibt schlank
+    //   (0,55 × Parzelle) und steigt. Grundriss: die erste Form der Rangfolge, die trägt — hof (ein offener Raum ≥ 20 m², Raum
+    //   `hof`), U/T (Flügel ≥ 24 m²), kreuz (≥ 36), L (Flügel ≥ 8 oder Überlauf des Körpers ≥ 8), I (kein Flügel, kein Überlauf).
+    //   Was die Form nicht aufnimmt, geht in den Körper. Anbau-Räume werden Anbau-Zellen (je 18 m², höchstens 2, der Würfel des
+    //   Loses bleibt als Umbau), Keller-Räume den Keller, eine Laube im OG den Balkon. `getrennt` und `dach` liegen außerhalb
+    //   dieser Welle (der Dachraum ist das Dach; der getrennte Bau ist die Scheune des Plans).
+    // prettier-ignore
+    function bauProgramm(N, hp, haushalt, rahmen){
+  const nutz=LEUTE_GESETZ.nutz, P=isFinite(N.personen)?N.personen:Math.max(1,Math.round(haushalt.personen||1)), w=isFinite(haushalt.wohl)?Math.max(0,haushalt.wohl):1;
+  const A={eg:0,og:0,alle:0,anbau:0,fluegel:0,offen:0,turm:0,laubeOG:0,keller:0};
+  for(const r of N.raeume){ const [id,je,m2,mw,g,lage,zahl]=r, a=(je==='p'?P*(m2+mw*w):m2)*(zahl||1);
+    if(g==='keller'||lage==='keller'){ A.keller+=a; continue; } if(g==='dach'||lage==='getrennt') continue;
+    if(id==='hof'||lage==='offen'){ A.offen+=a; continue; }
+    if(lage==='laube'){ if(g==='og') A.laubeOG+=a; else A.offen+=a; continue; }
+    if(lage==='anbau'){ A.anbau+=a; continue; } if(lage==='fluegel'||lage==='hof_umlauf'){ A.fluegel+=a; continue; }
+    if(lage==='turm') A.turm+=a;
+    A[g==='og'?'og':g==='alle'?'alle':'eg']+=a; }
+  const pz=hp.parzelle||hp, F0=Math.max(20,pz.W*pz.D), dicht=!!rahmen.dicht, kultSt=(KULTUR[hp.kultur]||{}).st||1;
+  const turmig=A.turm>0&&A.turm>=0.5*(A.eg+A.og+A.alle), capK=Math.min(165, F0*(turmig?0.55:dicht?1.3:1.6)), capL=F0*(dicht?1.6:2.6);
+  const gmin=N.geschosse[0], sOrt=(pz.storeys||1)>kultSt?pz.storeys:gmin, gmax=Math.max(N.geschosse[1],sOrt);   // was der Ort über die Kultur hob (Stadtkörper, Viertel), steht über dem Maximum der Zeile
+  const fuss=(eg,s)=>(s>1?Math.max(eg+A.alle/s, A.og/(s-1)+A.alle/s):eg+A.og+A.alle)/nutz;
+  let gr='I', armF=0;
+  for(const g of N.grundriss){
+    if(g==='hof'&&A.offen>=20){ armF=Math.min(A.fluegel,42); if(fuss(A.eg+A.fluegel-armF,gmax)+A.offen/nutz<=capL){ gr='hof'; break; } armF=0; continue; }
+    if((g==='U'||g==='T')&&A.fluegel>=24){ armF=Math.min(A.fluegel,30); if(fuss(A.eg+A.fluegel-armF,gmax)+armF/nutz<=capL){ gr=g; break; } armF=0; continue; }
+    if(g==='kreuz'&&A.fluegel>=36){ armF=Math.min(A.fluegel,45); if(fuss(A.eg+A.fluegel-armF,gmax)+armF/nutz<=capL){ gr=g; break; } armF=0; continue; }
+    if(g==='L'){ armF=Math.min(A.fluegel,15); const ueber=fuss(A.eg+A.fluegel-armF,gmax)-capK; if((A.fluegel>=8||ueber*nutz>=8)&&fuss(A.eg+A.fluegel-armF,gmax)+15/nutz<=capL){ gr='L'; if(!armF) armF=Math.min(15,ueber*nutz); break; } armF=0; continue; }
+    if(g==='I'&&A.fluegel<8&&fuss(A.eg+A.fluegel,gmax)<=capK){ gr='I'; break; } }
+  const eg=A.eg+Math.max(0,A.fluegel-armF)-(gr==='L'&&!A.fluegel?armF:0);
+  let s=gmax; for(let k=Math.max(gmin,Math.min(sOrt,gmax)); k<=gmax; k++) if(fuss(eg,k)<=capK){ s=k; break; }
+  const F=Math.max(20, 0.45*F0*(turmig?0.55:1), Math.min(165, fuss(eg,s))), r=pz.W/Math.max(1,pz.D);
+  const halb=x=>Math.round(x*2)/2, Wn=Math.max(4.5,Math.min(15,halb(Math.sqrt(F*r))));
+  hp.W=Wn; hp.D=Math.max(4,Math.min(11,halb(F/Wn))); hp.storeys=s; hp.grundriss=gr;
+  if(A.anbau>0) hp.annexN=Math.min(2,Math.max(hp.annexN|0,Math.ceil(A.anbau/18)));
+  if(A.keller>0) hp.keller=1; if(A.laubeOG>0&&s>=2) hp.balcony=1;
+  if(A.turm>0&&!turmig) hp.turm=1;
+  hp.leute=Math.max(0,Math.min(LEUTE_GESETZ.max,P)); hp.programm=N.zeile||null;
+  return hp;
 }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -2088,6 +2336,77 @@
     // prettier-ignore
     function _baseFor(o,role,kol){ const b=_colFor(role,kol), f=o.userData&&o.userData.__fuge; if(!f||(M[role]&&M[role].map)) return b;   // FUGEN-TON (Flächen-Stufe, kartenlos): Stein-Anteil × Stein-Ton + Rest × Fugen-Ton — der Mittelton, den der Verband aus der Ferne zeigt
   const m2=_colFor(_roleByMat.get(f.mat)||'lehm',kol), a=f.anteil; return [b[0]*a+m2[0]*(1-a), b[1]*a+m2[1]*(1-a), b[2]*a+m2[2]*(1-a)]; }
+    // DER INNEN-STOFF (w28-innenlicht): die Außenseite einer Holzwand ist von Sonne und Wetter gebräunt (die Rollen-Farbe der
+    // Kultur), die Innenseite derselben Balken bleibt hell, die gescheuerte Diele heller. EINE Zahl je Kultur, aus ihrem eigenen
+    // `holz` (dieselbe Tönung wie `tintM`): der Farbton des Holzes, seine lineare Helle × `frisch` in das Band des unverwitterten
+    // Holzes geklemmt (Wand 0,25–0,35, Diele 0,25–0,40). Gezeichnet = gelesen: der Bake der Stufe 0 färbt jede Fläche einer
+    // Holz-Rolle, die in einen Körper mit Decke schaut (`innenAn`: der Punkt `tiefe` vor der Fläche liegt im Grundriss unter
+    // der Decke, `geoms.__decken`), das Raum-Licht liest dieselbe Zahl (`raumVon`), der Innenkörper der fernen Stufen auch
+    // (`_innenFaktor`). Putz, Gefach, Stein und Lehm sind innen, was sie außen sind.
+    var INNEN_HOLZ = { frisch: 2.2, anstrich: 0.35, wandM: 0.2, hautM: 0.04, einwaerts: 0.1, wand: [0.25, 0.35], diele: [0.25, 0.4], dieleMal: 1.15, tiefe: 0.45, rollen: { blockholz: "wand", holz: "wand", stamm: "wand", boden: "diele" } };
+    function innenTon(role, kol) {
+        var art = INNEN_HOLZ.rollen[role];
+        if (!art) return null;
+        var h = _colFor("holz", kol); // das ROHE Holz der Kultur: ihr Balken; ist er Anstrich (Falunrot: Grün/Rot unter `anstrich`), ihr Stamm — der graue Stamm ist Wetter, kein Innen-Ton
+        if (h[1] < INNEN_HOLZ.anstrich * h[0] && kol && kol.stamm != null) h = _colFor("stamm", kol);
+        var l = Math.max(1e-4, 0.2126 * h[0] + 0.7152 * h[1] + 0.0722 * h[2]),
+            b = INNEN_HOLZ[art],
+            k = Math.min(b[1], Math.max(b[0], l * INNEN_HOLZ.frisch * (art === "diele" ? INNEN_HOLZ.dieleMal : 1))) / l;
+        return [0, 1, 2].map(function (i) {
+            return Math.round(Math.min(1, h[i] * k) * 65536) / 65536;
+        });
+    }
+    // die Fläche am Ende von P/N (Bake-Koordinaten, `inv` führt sie in den Rahmen des Hauses) schaut in einen Körper mit Decke
+    function innenAn(P, N, rows, inv, liegt, frei) {
+        var i = P.length - 3,
+            t = INNEN_HOLZ.tiefe,
+            a = [P[i], P[i + 1], P[i + 2]],
+            q = [a[0] + N[i] * t, a[1] + N[i + 1] * t, a[2] + N[i + 2] * t];
+        if (inv) {
+            var e = inv.elements,
+            m = function (v) {
+                return [e[0] * v[0] + e[4] * v[1] + e[8] * v[2] + e[12], e[1] * v[0] + e[5] * v[1] + e[9] * v[2] + e[13], e[2] * v[0] + e[6] * v[1] + e[10] * v[2] + e[14]];
+            };
+            a = m(a);
+            q = m(q);
+        }
+        if (!(a[1] > -0.25)) return false;
+        for (var k = 0; k < rows.length; k++) {
+            var r = rows[k];
+            if (!(q[0] > r[0] && q[0] < r[1] && q[2] > r[2] && q[2] < r[3] && q[1] < r[4] && a[0] > r[0] - 0.02 && a[0] < r[1] + 0.02 && a[2] > r[2] - 0.02 && a[2] < r[3] + 0.02)) continue;
+            // IN DER WAND (eine Kante des Grundrisses näher als `wandM`) ist innen nur, was von einer dieser Kanten EINWÄRTS schaut
+            // (auch das runde Blockholz: seine Normale trägt den Einwärts-Anteil) und hinter der Haut liegt (`hautM`: Blatt, Laden).
+            // Flanke, Laibung und Balken-Oberseite gehen durch die Wand — sie bleiben, was sie außen sind (Außen byte-gleich).
+            // Die Diele (`liegt`) reicht an die Wand; ein Teil, das aus der Wand in den Raum reicht (`frei`, `innenFrei`: Zwischenwand,
+            // Deckenbalken), ist ganz innen.
+            var n = [(q[0] - a[0]) / t, 0, (q[2] - a[2]) / t],
+                w = INNEN_HOLZ.wandM,
+                e = INNEN_HOLZ.einwaerts,
+                d = [a[0] - r[0], r[1] - a[0], a[2] - r[2], r[3] - a[2]];
+            if (liegt || frei || Math.min(d[0], d[1], d[2], d[3]) >= w) return true;
+            if (Math.min(d[0], d[1], d[2], d[3]) > INNEN_HOLZ.hautM && ((d[0] < w && n[0] > e) || (d[1] < w && n[0] < -e) || (d[2] < w && n[2] > e) || (d[3] < w && n[2] < -e))) return true;
+        }
+        return false;
+    }
+    // ein Teil (seine Ecken `pa`, `M` führt sie in den Rahmen des Hauses) steht in einem Körper, ohne ganz in der Wanddicke EINER seiner Kanten zu liegen
+    function innenFrei(pa, M, rows) {
+        var e = M.elements, x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, w = INNEN_HOLZ.wandM;
+        for (var v = 0; v < pa.count; v++) {
+            var x = pa.getX(v), y = pa.getY(v), z = pa.getZ(v),
+                hx = e[0] * x + e[4] * y + e[8] * z + e[12],
+                hz = e[2] * x + e[6] * y + e[10] * z + e[14];
+            if (hx < x0) x0 = hx;
+            if (hx > x1) x1 = hx;
+            if (hz < z0) z0 = hz;
+            if (hz > z1) z1 = hz;
+        }
+        for (var k = 0; k < rows.length; k++) {
+            var r = rows[k];
+            if (x1 < r[0] || x0 > r[1] || z1 < r[2] || z0 > r[3]) continue; // neben diesem Körper (der Anbau am Haus): er urteilt nicht
+            if (!(x1 - r[0] < w || r[1] - x0 < w || z1 - r[2] < w || r[3] - z0 < w)) return true;
+        }
+        return false;
+    }
     // prettier-ignore
     function bakeHaus(g,kol,geoms){
   const live=new Set(); g.traverse(o=>{ if(o.userData&&(o.userData.door||o.userData.window)) o.traverse(d=>live.add(d)); });
@@ -2135,6 +2454,10 @@
     const role=_roleByMat.get(o.material)||'holz', G=geoms[role]||(geoms[role]={pos:[],nrm:[],col:[],idx:[],uv:[],vo:0});
     const pa=o.geometry.attributes.position, na=o.geometry.attributes.normal, ca=o.geometry.attributes.color;
     const e=o.matrixWorld.elements, base=_baseFor(o,role,kol), nv=pa.count;
+    const inT=(geoms.__decken&&geoms.__decken.length&&INNEN_HOLZ.rollen[role])?innenTon(role,kol):null, inV=inT?new THREE.Matrix4().copy(g.matrixWorld).invert():null;   // DER INNEN-STOFF (w28-innenlicht): nur wo der Bau seine Decken nennt (Stufe 0)
+    const inF=inT?innenFrei(pa,new THREE.Matrix4().multiplyMatrices(inV,o.matrixWorld),geoms.__decken):false;   // das Teil reicht aus der Wand in den Raum (`innenFrei`)
+    const wa=o.geometry.attributes.aWand, wr0=verbandReihe(role);   // DIE LAGE IM GEFÜGE (`_wandLage`): trägt ein Teil der Rolle sie, trägt jede Ecke der Rolle [u, v, Zeile] — ohne eigene die Zeile ihres Stoffs
+    if(wa||G.wand){ G.wand=G.wand||[]; while(G.wand.length<G.vo*3) G.wand.push(0,0,wr0); }
     let wy0=1e9,wy1=-1e9; for(let v=0;v<nv;v++){ const q=e[1]*pa.getX(v)+e[5]*pa.getY(v)+e[9]*pa.getZ(v)+e[13]; if(q<wy0)wy0=q; if(q>wy1)wy1=q; }
     const aoAn=(wy1-wy0)<=4.2;                                                                // AO-PANEEL-GATE: Kontakt-AO nur auf kleinen, geerdeten Meshes — auf vollhohen Wandpaneelen malt die Vertex-Interpolation SÄGEZÄHNE über die Quad-Diagonalen (GESEHEN in nah_voll)
     for(let v=0;v<nv;v++){ const x=pa.getX(v),y=pa.getY(v),z=pa.getZ(v);
@@ -2143,7 +2466,9 @@
       if(na){ const a=na.getX(v),b=na.getY(v),c=na.getZ(v); G.nrm.push(e[0]*a+e[4]*b+e[8]*c, e[1]*a+e[5]*b+e[9]*c, e[2]*a+e[6]*b+e[10]*c); } else G.nrm.push(0,1,0);
       const tr=ca?ca.getX(v):1, tg=ca?ca.getY(v):1, tb=ca?ca.getZ(v):1;
       const namp=NOISEAMP[role]||0, nz=namp? (1+namp*(_noise01(G.pos[G.pos.length-3]*1.7, wy*1.7, G.pos[G.pos.length-1]*1.7)*2-1)) : 1;   // MATERIAL-ILLUSION: Welt-Hash → jede Fläche atmet, deterministisch über Rebakes
-      G.col.push(base[0]*tr*ao*nz, base[1]*tg*ao*nz, base[2]*tb*ao*nz);                       // AO-REAKTIVIERUNG: ao war GEMESSEN tot (berechnet, nie multipliziert) — das Kontakt-AO-Gesetz war stadtweit stumm
+      const bF=(inT&&innenAn(G.pos,G.nrm,geoms.__decken,inV,role==="boden",inF))?inT:base;                        // innen der unverwitterte Ton der Kultur (`innenTon`)
+      G.col.push(bF[0]*tr*ao*nz, bF[1]*tg*ao*nz, bF[2]*tb*ao*nz);                       // AO-REAKTIVIERUNG: ao war GEMESSEN tot (berechnet, nie multipliziert) — das Kontakt-AO-Gesetz war stadtweit stumm
+      if(G.wand){ if(wa) G.wand.push(wa.getX(v),wa.getY(v),wa.getZ(v)); else G.wand.push(0,0,wr0); }
       const wx3=G.pos[G.pos.length-3], wz3=G.pos[G.pos.length-1], nay=na?Math.abs(na.getY(v)):1;   // WELT-UV-GESETZ: Kachelung aus der Weltlage (0.5/m) — Texturen laufen stetig über Bauteilgrenzen
       if(nay>0.6) G.uv.push(wx3*0.5, wz3*0.5); else { const nax=na?Math.abs(na.getX(v)):0; G.uv.push((nax>0.5?wz3:wx3)*0.5, wy*0.5); } }
     const ix=o.geometry.index; if(ix){ for(let v=0;v<ix.count;v++) G.idx.push(G.vo+ix.getX(v)); } else { for(let v=0;v<nv;v++) G.idx.push(G.vo+v); }
@@ -2442,7 +2767,7 @@
     var INNEN_DAEMMER = 0.92;
     function _innenFaktor(B, raum) {
         var pu = _colFor("putz", B.p.col),
-            ra = B.wandTon || _colFor(raum || "putz", B.p.col);
+            ra = innenTon(raum, B.p.col) || B.wandTon || _colFor(raum || "putz", B.p.col);
         return [0, 1, 2].map(function (i) {
             return (ra[i] * INNEN_DAEMMER) / Math.max(1e-4, pu[i]);
         });
@@ -3051,10 +3376,19 @@
     // prettier-ignore
     function lod2Koerper(B, geoms){
   const liste=koerperListe(B), alle=liste.map(x=>x.teil), grp2=new THREE.Group(), wr=_wandRolle(B.p||{}), wf=_wandFaktor(B, wr);
-  const netz=(G, rolle, faktor)=>{ if(!G.pos.length) return;
+  // DAS GEFÜGE DER FERNEN WAND (w28-haus-stoff, VERBAND_GESETZ.fachwerk): die Wand und der Giebel des Fachwerk-Stils (`alt`) tragen je
+  // Ecke ihre Lage im Gefüge (`aWand`, `_wandLage`) — die Welt webt daraus Ständer und Riegel als Funktion; bis hier stand das Haus ab
+  // dieser Stufe als Kasten im Mittel aus Balken und Gefach. `rahmen`: die Wand, deren Gefüge das Teil trägt.
+  const gefuege=(B.p||{}).stil==='alt', kasten=t=>[t.c[0]-t.h[0],t.c[0]+t.h[0],t.c[1]-t.h[1],t.c[1]+t.h[1],t.c[2]-t.h[2],t.c[2]+t.h[2]], waende=[];
+  const wandUnter=t=>{ const k=kasten(t); let best=null, bf=0;   // die Wand unter einem Giebel: die mit der größten gemeinsamen Grundfläche
+    for(const w of waende){ const f=Math.max(0,Math.min(k[1],w[1])-Math.max(k[0],w[0]))*Math.max(0,Math.min(k[5],w[5])-Math.max(k[4],w[4])); if(f>bf){ bf=f; best=w; } }
+    return best||k; };
+  const netz=(G, rolle, faktor, rahmen)=>{ if(!G.pos.length) return;
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(G.pos,3)); bg.setAttribute('normal',new THREE.Float32BufferAttribute(G.nrm,3)); bg.setIndex(G.idx);
+    if(rahmen) bg.setAttribute('aWand',new THREE.Float32BufferAttribute(_wandLage(G, rahmen),3));
     if(faktor){ const n=G.pos.length/3, att=new Float32Array(n*3); for(let i=0;i<n;i++){ att[i*3]=faktor[0]; att[i*3+1]=faktor[1]; att[i*3+2]=faktor[2]; } bg.setAttribute('color',new THREE.Float32BufferAttribute(att,3)); }
     grp2.add(new THREE.Mesh(bg, M[rolle]||M.putz)); };
+  if(gefuege) for(const x of liste) if(x.rolle===wr&&x.teil.art==='box') waende.push(kasten(x.teil));
   for(const x of liste){
     // DIE DACHHAUT IST EINE HAUT (w15-lod-umriss): der Keil mit Haut legt nur seine Schrägen gehoben und um den Ortgang verlängert
     // (mit ihrer Untersicht, der Überstand von unten); seine Giebel stehen im Körper-Keil in der Wand-Ebene, im Stoff und Ton der Wand
@@ -3064,11 +3398,11 @@
       _teilGitter(_mitHaut(x), alle, H, false, n=>n[1]>0.02?2:0);
       _teilGitter(x.teil, alle, H, false, n=>n[1]>0.02?1:0);   // der Körper unter der Haut schließt den Raum zwischen Haut und Giebel (die Walm-Seiten)
       _teilGitter(x.teil, alle, Gi, false, n=>Math.abs(n[1])<=0.02&&Math.abs(amX?n[0]:n[2])>0.98?1:0);
-      netz(H, x.rolle, x.faktor); netz(Gi, wr, wf); continue; }
+      netz(H, x.rolle, x.faktor); netz(Gi, wr, wf, gefuege?wandUnter(x.teil):null); continue; }
     // DIE WAND TRÄGT IHREN RING (w25-lod-pop-3, lod.K5): die Wand des Hauptkörpers steht im Ständer-Ring der L0 (`ring`, 6 cm vor dem
     // Grundriss), nie 1,5 cm dahinter — die Hochhaus-L1 stand an jeder Ecke 7,5 cm innen (4,0 px am Haushalt 12 m).
     const t=x.haut&&x.haut.ring&&x.teil.art==='box'?Object.assign({},x.teil,{h:_hr3([x.teil.h[0]+x.haut.ring,x.teil.h[1],x.teil.h[2]+x.haut.ring])}):x.teil;
-    const G={pos:[],nrm:[],idx:[]}; _teilGitter(t, alle, G, true); netz(G, x.rolle, x.faktor); }
+    const G={pos:[],nrm:[],idx:[]}; _teilGitter(t, alle, G, true); netz(G, x.rolle, x.faktor, gefuege&&x.rolle===wr&&t.art==='box'?kasten(t):null); }
   const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, B.p.col, geoms, 0);
 }
@@ -3171,6 +3505,8 @@
   for(let i=0;i<P.length;i++){ G.pos.push(P[i]); G.nrm.push(N[i]); G.col.push(C2[i]); }
   if(U.length===S.vo*2 && (G.vo===0 || G.uv.length===G.vo*2)){ for(let i=0;i<U.length;i++) G.uv.push(U[i]); }   // WELT-UV mischen (2er-Takt!) — KONSISTENZ-WÄCHTER: passt eine Quelle nicht, verliert die Rolle ihr uv ganz (finalize-Guard schützt), nie halbe Arrays
   else G.uv.length=0;
+  if(S.wand||G.wand){ const r0=verbandReihe(role); G.wand=G.wand||[]; while(G.wand.length<off*3) G.wand.push(0,0,r0);   // die Lage im Gefüge reist mit (`_wandLage`): eine Quelle ohne sie trägt die Zeile ihres Stoffs
+    if(S.wand) for(let i=0;i<S.wand.length;i++) G.wand.push(S.wand[i]); else for(let i=0;i<S.vo;i++) G.wand.push(0,0,r0); }
   for(let i=0;i<I.length;i++) G.idx.push(I[i]+off);
   G.vo+=S.vo; } }
     // prettier-ignore
@@ -3463,6 +3799,342 @@
         var nH = groesse(o);
         return { seed: o.h || 1, nH: nH, stufe: stufeVon(o), x: o.x, z: o.z, reichM: siedlungsReich(S, nH) };
     }
+    // ── DIE STADT IST EIN NETZ VON KACHELN (w28-stadt-funktion · w28-stadt-netz): ein Wort bis zur Wand `voll` gründet EINEN Plan
+    // wie bisher — ein Dorf ist ein Dorf. Eine Stadt über der Wand ist ein Gewebe aus KACHELN im Raster der Welt-Zellen
+    // (`SIEDLUNG.cellM`): die Kachel füllt ihre Zelle ganz (kein Radius, kein Kreis), ihre Straßen verlassen sie durch TORE an den
+    // Kanten, und die Tore einer Kante kommen aus dem Samen der KANTE (`kachelTore`: Same der Stadt, Achse, Kanten-Id) — beide
+    // Nachbarn lesen dieselbe Funktion, keiner kennt den anderen (wie die Naht der Gelände-Chunks): die Straßen treffen sich an
+    // jeder Kante von selbst. ZWEI STUFEN EINES PLANS: Stufe 1 (`kachelNetz`: Tore, Straßen, Kreuzungen, Blöcke — unter 1 ms,
+    // byte-stabil; die Stadt in der Ferne liest dieselbe Stufe) und Stufe 2 (Lose und Häuser auf diesem Netz: `exportSettlement`
+    // mit `dp.kachel`, `dorfLayout` liest das Netz statt des gewachsenen `strassengraph`). Welche Kachel zur Stadt gehört und wie
+    // viele Häuser sie verlangt, sagt `viertelWort`: Ringe um die Mitte, Ring ρ trägt 8ρ Kacheln, von innen voll (`jeKachel`: so
+    // viele trägt das Netz einer Kachel), der letzte Ring füllt seine Plätze der Reihe nach (die Kanten vor den Ecken) und gibt
+    // dem letzten den Rest — die Summe aller Kacheln ist die Zahl des Worts (ein Rest unter `rest` Häusern trägt keine).
+    // Zustandslos: die Frage nach einer Kachel kostet gleich viel in einer Stadt von 10³ wie von 10⁶ Häusern. Jede Kachel erbt
+    // Region, Jahr und Spanne der Mitte (`erbe`, DORF liest sie). Bis w28-stadt-funktion klemmte der Kern jedes Wort still an
+    // die Wand („dorf 7 1000" stand mit 490 Losen); bis w28-stadt-netz war die Stadt über der Wand ein runder Kern von 500 und
+    // runde Viertel in 1024 m — im Bild ein ummauertes Dorf und Dörfer auf der Wiese (am echten Grund 357 Lose von 490 auf
+    // r 435 m: 6 Häuser je Hektar; die Kachel trägt dort 193–194 auf 6,5 ha: 30 je Hektar, Spike 15.11.).
+    var STADT_FUNKTION = { voll: GROESSE_WAND, schritt: 1, rest: 8 };
+    var STADT_NETZ = { tore: 5, spiel: 0.4, jeKachel: 190, torLueckeM: 3.5, mauerInnenM: 2.4, turmJeM: 42 };
+    // der Hash des Netzes: jede Zahl mischt den Stand (fmix32) — (a, b) und (b, a) tragen verschiedene Werte
+    function netzHash() {
+        var h = 0x9e3779b9;
+        for (var q = 0; q < arguments.length; q++) h = rangSchluessel((h ^ (arguments[q] | 0)) >>> 0);
+        return h;
+    }
+    // DIE TORE EINER KANTE: der Schlüssel ist die KANTE — achse 1 die senkrechte bei x = kx · M (zwischen den Kacheln kx − 1 und
+    // kx der Reihe kz), achse 2 die waagrechte bei z = kz · M —, je Tor sein Ort längs der Kante (m ab ihrem Anfang), geschichtet
+    // mit Spiel. Beide Nachbarn der Kante fragen mit demselben Schlüssel.
+    function kachelTore(samen, achse, kx, kz, mass) {
+        var S = mass || STADT_NETZ, N = S.tore, M = SIEDLUNG.cellM, t = [];
+        for (var j = 0; j < N; j++) t.push(((j + (1 - S.spiel) / 2 + S.spiel * (netzHash(samen, achse, kx, kz, j) / 4294967296)) * M) / N);
+        return t;
+    }
+    // die Straße j einer Reihe (achse 1: Ost–West, die Reihe iz · achse 2: Nord–Süd, die Spalte ix) ist Hauptstraße über ALLE
+    // Kacheln ihrer Reihe: eine je Reihe und Spalte
+    function kachelHaupt(samen, achse, reihe, j, mass) {
+        return netzHash(samen, 7 + achse, reihe) % (mass || STADT_NETZ).tore === j;
+    }
+    // STUFE 1 — DAS NETZ DER KACHEL (ix, iz), lokal um ihre Mitte: die Straße Ost–West j läuft vom Tor j der West-Kante zum Tor j
+    // der Ost-Kante, Nord–Süd ebenso, je als glatte Kurve (an beiden Kanten senkrecht: die Straße läuft im Nachbarn in derselben
+    // Richtung weiter); ihre Kreuzungen sind die Knoten, die Maschen die Blöcke. Der Graph hat die Form des `strassengraph`
+    // ({nodes, edges[{a, b, pts[{x, z, th}], w, gen, len}], gates}); Knoten 0 ist die Kreuzung der beiden Hauptstraßen.
+    // prettier-ignore
+    function kachelNetz(samen, ix, iz, mass) {
+        const S=mass||STADT_NETZ, N=S.tore, M=SIEDLUNG.cellM, h=M/2, DS=3, glatt=t=>t*t*(3-2*t);
+        const zW=kachelTore(samen,1,ix,iz,S), zE=kachelTore(samen,1,ix+1,iz,S), xN=kachelTore(samen,2,ix,iz,S), xS=kachelTore(samen,2,ix,iz+1,S);
+        const Z=(j,x)=>zW[j]-h+(zE[j]-zW[j])*glatt((x+h)/M), X=(i,z)=>xN[i]-h+(xS[i]-xN[i])*glatt((z+h)/M);
+        const kr=[];
+        for(let j=0;j<N;j++){ kr.push([]); for(let i=0;i<N;i++){ let x=xN[i]-h, z=Z(j,x); for(let q=0;q<4;q++){ x=X(i,z); z=Z(j,x); } kr[j].push({x,z}); } }
+        let j0=N>>1, i0=N>>1; for(let q=0;q<N;q++){ if(kachelHaupt(samen,1,iz,q,S)) j0=q; if(kachelHaupt(samen,2,ix,q,S)) i0=q; }
+        const nodes=[kr[j0][i0]], id=new Map([[j0*N+i0,0]]), edges=[], gates=[];
+        const knoten=(j,i)=>{ const k=j*N+i; if(!id.has(k)){ id.set(k,nodes.length); nodes.push(kr[j][i]); } return id.get(k); };
+        const rand=p=>{ nodes.push(p); return nodes.length-1; };
+        const stueck=(a,b,A,B,f,gen)=>{ const n=Math.max(2,Math.round(Math.hypot(B.x-A.x,B.z-A.z)/DS)), pts=[];
+            for(let k=0;k<=n;k++) pts.push(f(k/n));
+            for(let k=0;k<=n;k++){ const p=pts[Math.min(n-1,k)], q=pts[Math.min(n-1,k)+1]; pts[k].th=Math.atan2(q.z-p.z,q.x-p.x); }
+            edges.push({a,b,pts,w:gen===0?DORF_NORM.strasseW:DORF_NORM.strasseW*0.78,gen,len:n*DS}); };
+        for(let j=0;j<N;j++){ const gen=kachelHaupt(samen,1,iz,j,S)?0:1, P=[{x:-h,z:zW[j]-h}].concat(kr[j],[{x:h,z:zE[j]-h}]), K=[rand(P[0])].concat(kr[j].map((_,i)=>knoten(j,i)),[rand(P[P.length-1])]);
+            for(let s=0;s+1<P.length;s++) stueck(K[s],K[s+1],P[s],P[s+1],t=>{ const x=P[s].x+(P[s+1].x-P[s].x)*t; return {x, z:Z(j,x)}; },gen);
+            gates.push({th:Math.PI},{th:0}); }
+        for(let i=0;i<N;i++){ const gen=kachelHaupt(samen,2,ix,i,S)?0:1, P=[{x:xN[i]-h,z:-h}].concat(kr.map(r=>r[i]),[{x:xS[i]-h,z:h}]), K=[rand(P[0])].concat(kr.map((_,j)=>knoten(j,i)),[rand(P[P.length-1])]);
+            for(let s=0;s+1<P.length;s++) stueck(K[s],K[s+1],P[s],P[s+1],t=>{ const z=P[s].z+(P[s+1].z-P[s].z)*t; return {x:X(i,z), z}; },gen);
+            gates.push({th:-Math.PI/2},{th:Math.PI/2}); }
+        const bloecke=[], ecke=(jj,ii)=>(jj>=0&&jj<N&&ii>=0&&ii<N)?kr[jj][ii]:{x:ii<0?-h:ii>=N?h:kr[Math.max(0,Math.min(N-1,jj))][ii].x, z:jj<0?-h:jj>=N?h:kr[jj][Math.max(0,Math.min(N-1,ii))].z};
+        for(let j=-1;j<N;j++) for(let i=-1;i<N;i++) bloecke.push([ecke(j,i),ecke(j,i+1),ecke(j+1,i+1),ecke(j+1,i)].map(p=>[Math.round(p.x*100)/100,Math.round(p.z*100)/100]));
+        return {nodes, edges, gates, bloecke, tore:{w:zW, o:zE, n:xN, s:xS}, m:M}; }
+    // die Ringe einer Stadt mit nH Häusern (0: sie ist EIN Plan — ein Dorf, oder eine Stadt aus einer Kachel): so weit reicht
+    // ihr Raster um die Mitte (der Radius ihres Profils, abgerundet — welche Kachel darin steht, sagt `stadtKachelZahl`)
+    function stadtRinge(nH) {
+        nH = Math.floor(Number(nH)) || 0;
+        if (!(nH > STADT_FUNKTION.voll)) return 0;
+        return Math.max(1, Math.floor(stadtRadius(stadtLambda(nH))));
+    }
+    // DIE FORM DER STADT (w28-stadt-netz, mensch.stadt.form): die Dichte fällt mit dem ABSTAND von der Mitte (Euklid, in
+    // Kacheln) — voll (`jeKachel`) bis `kern` · λ, dahinter e-fach je λ (Clark), bis sie `randTeil` der Kern-Dichte trägt: dort
+    // endet die Stadt (`stadtRadius`), ihr Umriss ist rund. λ folgt aus der Zahl des Worts (die Summe des Profils über die
+    // Kacheln im Radius ist die Zahl, `stadtLambda`). Je Kachel teilt ihr Gewicht — das Profil an ihrem Abstand mal dem Spiel
+    // ihres Samens (`spiel`) — die Zahl der Stadt: unter dem Deckel `jeKachel` (was darüber läge, fließt an die anderen), ganze
+    // Häuser nach den größten Resten, die Summe ist die Zahl des Worts; eine Kachel unter `kleinTeil` der vollen Zahl steht
+    // nicht (der Rand franst aus; `stadtPlan`). Die Höhe folgt demselben Profil: der Faktor der Geschosse (`erbe.hoch`, DORF
+    // liest ihn) trägt im Kern `hochKern` (in kleinen Städten weniger: λ / `hochAbLam`) und fällt steiler als die Dichte
+    // (Profil hoch `hochPot`: ein hoher Kern, ein weiter niedriger Rand) auf `hochRand`. Der GRUNDRISS wächst mit den
+    // Geschossen (DORF, die EINE Quelle beider Stufen und des Hauses im Nah-Ring): Breite und Tiefe tragen die Traufe /
+    // `schlank`, die Breite bis `breitMax` (das Raster der Plätze), die Tiefe bis `tiefMax` (der Block hinter der Straße);
+    // in Stufe 1 steht ein hohes Haus auf einem Platz, dessen Tiefe es trägt (Traufe / Tiefe ≤ `stab`, `kachelMassen`).
+    // Jedes Haus trägt den Ton seiner LAGE in der Stadt (`stadtTonAn`: Wand und Dach heller oder dunkler, wärmer oder kälter
+    // um höchstens `tonHub`, `stadtTon`; in `tonStufen` Stufen je Richtung — Nachbarn teilen ihre Palette). Die Mauer steht
+    // um den Kern: an der Kante einer Kachel ab `mauerTeil` der vollen Zahl zu einem
+    // Nachbarn darunter — die Vorstadt liegt vor der Mauer (`kachelRand`). Bis hier trug jede Kachel jeder Stadt `jeKachel`
+    // Häuser, der Umriss war das Quadrat der Ringe, jede Kachel stand in der Höhe und im Ton der Mitte (15 × 15, 42 750
+    // Häuser: im Bild aus 1 km ein Quadrat mit EINEM Dach-Ton).
+    var STADT_FORM = { randTeil: 0.1, kern: 0.6, spiel: 0.5, kleinTeil: 0.065, hochKern: 3.3, hochRand: 0.3, hochAbLam: 2, hochPot: 1.6, mauerTeil: 0.55, tonHub: 0.2, tonWeite: 3, tonStufen: 16, schlank: 1.5, stab: 2, breitMax: 7.5, tiefMax: 11 };
+    var stadtFormMemo = { lam: new Map(), plan: new Map() };
+    function stadtProfil(lam, r) {
+        return Math.min(1, Math.exp(STADT_FORM.kern - r / lam));
+    }
+    // der Radius der Stadt in Kacheln: dort trägt das Profil `randTeil`
+    function stadtRadius(lam) {
+        return lam * (STADT_FORM.kern + Math.log(1 / STADT_FORM.randTeil));
+    }
+    // λ der Stadt in Kacheln: die Summe des Profils über die Kacheln im Radius ist die Zahl (Bisektion, gemerkt je Zahl und
+    // `jeKachel`)
+    function stadtLambda(nH) {
+        var V = STADT_NETZ.jeKachel, key = nH + ":" + V, M = stadtFormMemo.lam;
+        if (M.has(key)) return M.get(key);
+        var lo = 0.05, hi = 4000;
+        for (var q = 0; q < 60; q++) {
+            var m = (lo + hi) / 2, R = stadtRadius(m), Rg = Math.floor(R), s = 0;
+            for (var i = -Rg; i <= Rg && s * V < nH; i++)
+                for (var k = -Rg; k <= Rg; k++) {
+                    var d = Math.hypot(i, k);
+                    if (d <= R) s += stadtProfil(m, d);
+                }
+            if (s * V < nH) lo = m;
+            else hi = m;
+        }
+        if (M.size > 256) M.clear();
+        M.set(key, hi);
+        return hi;
+    }
+    // DER PLAN DER STADT: { R, g } — je Kachel (i, k) des Rasters −R … R ihre Häuser (g[(k + R) · (2R + 1) + i + R]; 0: dort
+    // steht keine). Die Mitte trägt `jeKachel`, den Rest der Zahl teilen die Kacheln im Radius nach Gewicht. Gemerkt je Stadt
+    // (die Frage nach einer Kachel kostet den Plan einmal: 42 750 Häuser 2 ms).
+    // prettier-ignore
+    function stadtPlan(samen, nH) {
+        const V = STADT_NETZ.jeKachel, U = STADT_FUNKTION.rest, F = STADT_FORM, key = samen + ":" + nH + ":" + V + ":" + U, M = stadtFormMemo.plan;
+        if (M.has(key)) return M.get(key);
+        const lam = stadtLambda(nH), Rc = stadtRadius(lam), R = stadtRinge(nH), B = 2 * R + 1, g = new Int32Array(B * B), T = [], w = [], klein = Math.max(U, Math.round(F.kleinTeil * V));
+        g[R * B + R] = Math.min(nH, V);
+        for (let k = -R; k <= R; k++) for (let i = -R; i <= R; i++) { const d = Math.hypot(i, k); if ((!i && !k) || d > Rc) continue;
+            T.push((k + R) * B + i + R); w.push(stadtProfil(lam, d) * (1 - F.spiel / 2 + F.spiel * (netzHash(samen, 53, i, k) / 4294967296))); }
+        const C = nH - g[R * B + R], P = T.length, ord = Array.from(w.keys()).sort((a, b) => w[b] - w[a] || a - b);
+        // so viele Kacheln (die schwersten zuerst), dass die leichteste noch `klein` Häuser trägt — und alle zusammen die Zahl fassen
+        let m = 0, W = 0;
+        for (let q = 0; q < P; q++) { const W2 = W + w[ord[q]]; if (q && (C * w[ord[q]]) / W2 < klein) break; W = W2; m = q + 1; }
+        while (m < P && m * V < C) W += w[ord[m++]];
+        if (C > 0 && m) {
+            let frei = C, Wf = W, summe = 0; const fest = new Uint8Array(P), aus = new Int32Array(P), br = [];
+            for (let lauf = 0; lauf < m; lauf++) { let neu = false;
+                for (let q = 0; q < m; q++) { const s = ord[q]; if (!fest[s] && (frei * w[s]) / Wf > V) { aus[s] = V; fest[s] = 1; frei -= V; Wf -= w[s]; neu = true; } }
+                if (!neu) break; }
+            for (let q = 0; q < m; q++) { const s = ord[q]; if (fest[s]) { summe += V; continue; } const x = Wf > 0 ? (frei * w[s]) / Wf : 0; aus[s] = Math.floor(x); summe += aus[s]; br.push([x - aus[s], s]); }
+            br.sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+            for (let q = 0, leer = 0; summe < C && br.length && leer < br.length; q = (q + 1) % br.length) { if (aus[br[q][1]] < V) { aus[br[q][1]]++; summe++; leer = 0; } else leer++; }
+            for (let s = 0; s < P; s++) g[T[s]] = aus[s];
+        }
+        const plan = { R, g };
+        if (M.size > 16) M.clear();
+        M.set(key, plan);
+        return plan;
+    }
+    // die Form an einer Kachel: { hoch } — der Faktor der Geschosse (der Ton hängt an der Lage des Hauses, `stadtTonAn`)
+    function stadtFormAm(samen, nH, i, k) {
+        var F = STADT_FORM, lam = stadtLambda(nH), mitte = 1 + (F.hochKern - 1) * Math.min(1, lam / F.hochAbLam), e3 = function (v) { return Math.round(v * 1000) / 1000; };
+        return { hoch: e3(F.hochRand + (mitte - F.hochRand) * Math.pow(stadtProfil(lam, Math.hypot(i, k)), F.hochPot)) };
+    }
+    // DER TON DER VIERTEL ALS FELD ÜBER DER STADT: an der Lage (u, v) in Kacheln (stetig; die Mitte der Kachel (i, k) ist (i, k))
+    // der Ton in −1 … 1 — ein Viertel reicht über `tonWeite` Kacheln, Nachbarn gehen ineinander über (Wert-Rauschen auf einem
+    // Gitter, das gegen die Kacheln versetzt liegt, linear gemischt); in der Kachel der Mitte ist das Feld 0 — sie trägt den Ton
+    // ihrer Kultur —, dahinter steigt es über anderthalb Kacheln auf sein Maß. Bis hier trug jede Kachel EINEN Ton: aus 260 m
+    // und aus 1 km las sich die Stadt als die Quadrate ihrer Kacheln.
+    function stadtTonFeld(samen, kanal, u, v) {
+        var q = STADT_FORM.tonWeite, x = (u + 0.37) / q, z = (v + 0.61) / q, x0 = Math.floor(x), z0 = Math.floor(z), fx = x - x0, fz = z - z0;
+        var h = function (a, b) { return (netzHash(samen, kanal, a, b) / 4294967296) * 2 - 1; };
+        var w = (h(x0, z0) * (1 - fx) + h(x0 + 1, z0) * fx) * (1 - fz) + (h(x0, z0 + 1) * (1 - fx) + h(x0 + 1, z0 + 1) * fx) * fz;
+        return Math.max(-1, Math.min(1, w * 1.5)) * Math.max(0, Math.min(1, (Math.hypot(u, v) - 0.75) / 1.5));
+    }
+    // DER TON AM ORT: für die Kachel (i, k) der Stadt `samen` (Kante `m`) die Frage (col, x, z) → die Palette `col` im Ton der
+    // Lage (x, z) (lokal um die Mitte der Kachel, m): das Feld beider Kanäle (Wand 61, Dach 67), gerundet auf `tonStufen` Stufen
+    // — gleiche Stufen derselben Palette sind EIN Objekt (gemerkt je Frage); ohne Ton die Palette selbst.
+    function stadtTonAn(samen, i, k, m) {
+        var Q = STADT_FORM.tonStufen, memo = new Map();
+        return function (col, x, z) {
+            if (!col) return col;
+            var u = i + x / m, v = k + z / m, a = Math.round(stadtTonFeld(samen, 61, u, v) * Q), b = Math.round(stadtTonFeld(samen, 67, u, v) * Q);
+            if (!a && !b) return col;
+            var M = memo.get(col), key = (a + Q) * (2 * Q + 1) + b + Q;
+            if (!M) memo.set(col, (M = new Map()));
+            if (!M.has(key)) M.set(key, stadtTon(col, [a / Q, b / Q]));
+            return M.get(key);
+        };
+    }
+    // DER TON EINES VIERTELS auf einer Palette (`col` einer Kultur, Hex sRGB) → eine neue Palette: die Rollen der Wand um
+    // ton[0], die des Dachs um ton[1] dunkler (bis 1,4 · `tonHub`) oder heller (bis 0,35 ·), dazu um die halbe Weite wärmer oder kälter (die Wand nach
+    // dem Dach-Wert, das Dach nach dem Wand-Wert: zwei Zahlen, vier Richtungen); Holz, Fenster und Ware bleiben
+    var STADT_TON_ROLLEN = { putz: 0, gefach: 0, backstein: 0, stamm: 0, glas: 0, ziegel: 1, ziegel2: 1, dachmod: 1 };
+    function stadtTon(col, ton) {
+        var H = STADT_FORM.tonHub, aus = {}, eng = function (v) { return Math.max(0, Math.min(255, Math.round(v))); };
+        for (var k in col) {
+            var hx = col[k], q = STADT_TON_ROLLEN[k];
+            if (q == null || typeof hx !== "number") { aus[k] = hx; continue; }
+            var t = ton[q], hell = 1 + H * t * (t < 0 ? 1.4 : 0.35), warm = (H / 2) * ton[1 - q]; // heller nur ein Viertel der Weite: eine helle Palette brennt sonst weiß aus
+            aus[k] = (eng(((hx >> 16) & 255) * hell * (1 + warm)) << 16) | (eng(((hx >> 8) & 255) * hell) << 8) | eng((hx & 255) * hell * (1 - warm));
+        }
+        return aus;
+    }
+    // die Häuser der Kachel (i, k) einer Stadt über der Wand (0: dort steht keine)
+    function stadtKachelZahl(samen, nH, i, k) {
+        var p = stadtPlan(samen, nH), R = p.R;
+        return Math.abs(i) > R || Math.abs(k) > R ? 0 : p.g[(k + R) * (2 * R + 1) + i + R];
+    }
+    // DAS WORT EINER KACHEL: Kachel (i, k) der Stadt „<samen> <nH> [<epoche>]" → {seed, nH, epoche, erbe, ring} oder null (dort
+    // steht keine). Bis zur Wand ist (0, 0) das Wort selbst und sonst nichts; darüber ist (0, 0) die Mitte (der Same des Worts,
+    // `jeKachel` Häuser; ihr Erbe trägt nur die Form — ihre Zeit ist die der Stadt), jede andere trägt die Zahl ihres Platzes
+    // im Plan der Stadt (`stadtPlan`) und im Erbe Region, Jahr und Spanne der Mitte samt ihrer Form (`stadtFormAm`: die Höhe).
+    function viertelWort(samen, nH, i, k, epoche) {
+        samen = isFinite(samen) ? Number(samen) : 1;
+        nH = Math.floor(Number(nH)) || 0;
+        if (!(nH > STADT_FUNKTION.voll)) return !i && !k ? { seed: samen, nH: nH, epoche: epoche, ring: 0 } : null;
+        var n = stadtKachelZahl(samen, nH, i, k);
+        if (n < STADT_FUNKTION.rest) return null;
+        if (!i && !k) return { seed: samen, nH: n, epoche: epoche, erbe: stadtFormAm(samen, nH, 0, 0), ring: 0 };
+        var kern = DORF({ seed: samen, nH: 4, epoche: epoche });
+        return {
+            seed: 1 + (netzHash(samen, 31, i, k) % 1000000),
+            nH: n,
+            epoche: epoche,
+            erbe: Object.assign({ region: kern.region, jahr: kern.jahr, spanne: kern.spanne }, stadtFormAm(samen, nH, i, k)),
+            ring: Math.max(Math.abs(i), Math.abs(k)),
+        };
+    }
+    // DER RAND DER STADT an einer Kachel: je Kante (w, o, n, s), ob dort die Mauer steht — die Kachel gehört zum Kern (ab
+    // `mauerTeil` der vollen Zahl) und ihr Nachbar nicht (er trägt weniger oder ist keine Kachel der Stadt)
+    function kachelRand(samen, nH, i, k) {
+        samen = isFinite(samen) ? Number(samen) : 1;
+        nH = Math.floor(Number(nH)) || 0;
+        var ab = STADT_FORM.mauerTeil * STADT_NETZ.jeKachel,
+            kern = function (a, b) {
+                return nH > STADT_FUNKTION.voll && stadtKachelZahl(samen, nH, a, b) >= ab;
+            },
+            ich = kern(i, k);
+        return { w: ich && !kern(i - 1, k), o: ich && !kern(i + 1, k), n: ich && !kern(i, k - 1), s: ich && !kern(i, k + 1) };
+    }
+    // DIE MAUER AM RAND DER STADT: längs jeder Rand-Kante der Kachel (`kachelRand`) Mauer-Stücke zwischen ihren Toren (die Lücke
+    // `torLueckeM` je Seite des Tors), `mauerInnenM` in der Kachel, Türme an den Ecken und je `turmJeM` — in der Form der Ring-Mauer
+    // ({segs, towers, R, gates}); zwischen zwei Kacheln der Stadt steht nie eine. null ohne Rand-Kante.
+    function kachelMauer(netz, rand) {
+        var S = STADT_NETZ, h = netz.m / 2, e = h - S.mauerInnenM, segs = [], towers = [];
+        var kante = function (tore, punkt) {
+            var grenzen = [-e];
+            tore.forEach(function (t) { grenzen.push(Math.max(-e, t - h - S.torLueckeM), Math.min(e, t - h + S.torLueckeM)); });
+            grenzen.push(e);
+            for (var q = 0; q + 1 < grenzen.length; q += 2) {
+                var a = grenzen[q], b = grenzen[q + 1];
+                if (b - a < 1) continue;
+                var n = Math.max(1, Math.round((b - a) / S.turmJeM));
+                for (var u = 0; u < n; u++) {
+                    var A = punkt(a + ((b - a) * u) / n), B = punkt(a + ((b - a) * (u + 1)) / n);
+                    segs.push({ x0: A.x, z0: A.z, x1: B.x, z1: B.z });
+                    towers.push(A);
+                }
+                towers.push(punkt(b));
+            }
+        };
+        if (rand.w) kante(netz.tore.w, function (t) { return { x: -e, z: t }; });
+        if (rand.o) kante(netz.tore.o, function (t) { return { x: e, z: t }; });
+        if (rand.n) kante(netz.tore.n, function (t) { return { x: t, z: -e }; });
+        if (rand.s) kante(netz.tore.s, function (t) { return { x: t, z: e }; });
+        return segs.length ? { segs: segs, towers: towers, R: h * Math.SQRT2, gates: netz.gates, rand: rand } : null;
+    }
+    // STUFE 1 IM BILD — DIE MASSEN EINER KACHEL (w28-stadt-netz, die Ferne der Stadt): die Kachel (i, k) der Stadt
+    // „<samen> <nH> [<epoche>]", ehe sie erwacht, als ihre HÄUSER — die Liste von `DORF` über `viertelWort`, dieselbe, aus der
+    // Stufe 2 ihre Lose baut: Zahl, Kultur, Breite, Tiefe, Geschosse, Dachneigung, Ton. Je Haus EINE Masse (Kasten bis zur
+    // Traufe, Satteldach bis zum First, das flache Dach ohne First), traufständig an den Straßen der Blöcke von `kachelNetz`;
+    // die Plätze je Kante stehen im Raster `platzM`, das Los wählt der Same gleichmäßig über die Kachel, und die Liste füllt sie
+    // von der Kreuzung der Hauptstraßen nach außen (sie steht nach Rang: Kirche, Rathaus und Burg in der Mitte). Die ORTE sind
+    // die der Stufe 1 — Stufe 2 legt ihre Lose auf demselben Netz anders; Zahl, Maße und Ton sind die der Kachel.
+    // → { n, lage: [x, z, gier, W, D, traufe, first] je Haus (lokal um die Kachel-Mitte, m; `gier` um y: das lokale x läuft
+    // längs der Straße), ton: [Wand r g b, Dach r g b] linear, strassen: [{ p: [x, z, …], w, belag, saum, art }], haeuser, plaetze, m }
+    // oder null (dort steht keine Kachel).
+    // Kosten: das Netz und die Liste, 2–4 ms je Kachel (einmal, der Wirt merkt sie).
+    var STADT_MASSEN = { einzugM: 4.2, platzM: 11, eckeM: 9, geschossM: 2.7, sockelM: 0.5, flachGrad: 8, strasseJe: 4 };
+    // prettier-ignore
+    function kachelMassen(samen, nH, i, k, epoche) {
+        const wort = viertelWort(samen, nH, i, k, epoche);
+        if (!wort) return null;
+        const S = STADT_MASSEN, netz = kachelNetz(samen, i, k), ring = globalThis.__ring, e3 = v => Math.round(v * 1000) / 1000;
+        const dorf = DORF({ seed: wort.seed, nH: wort.nH, epoche: wort.epoche, erbe: wort.erbe }), H = dorf.houses;
+        globalThis.__ring = ring;   // DORF würfelt die Zeitachse in ein Global (dorfLayout liest sie): die Frage nach der Ferne lässt es, wie es stand
+        // die Straßen der Kachel: jede Kante des Netzes als Linienzug (jeder `strasseJe`-te Punkt), Breite, Belag und Saum des
+        // Belag-Gesetzes (`gassenBelag`, `gassenBreite`) für Größe und Jahr der Kachel — dieselben Gassen, die Stufe 2 pflastert
+        const strassen = netz.edges.map(rd => { const p = []; for (let j = 0; j < rd.pts.length; j += S.strasseJe) p.push(e3(rd.pts[j].x), e3(rd.pts[j].z));
+            const l = rd.pts[rd.pts.length - 1]; if ((rd.pts.length - 1) % S.strasseJe) p.push(e3(l.x), e3(l.z));
+            return { p, w: rd.w, belag: gassenBelag(dorf, rd), saum: (gassenBreite(dorf, rd) - rd.w) / 2, art: wegArt(dorf, rd) }; });
+        const z0 = netz.nodes[0], kand = [];
+        netz.bloecke.forEach((B, bi) => {
+            let A2 = 0; for (let e = 0; e < 4; e++) { const p = B[e], q = B[(e + 1) % 4]; A2 += p[0] * q[1] - q[0] * p[1]; }
+            const s = A2 > 0 ? 1 : -1, mi = e => [(B[e][0] + B[(e + 1) % 4][0]) / 2, (B[e][1] + B[(e + 1) % 4][1]) / 2];
+            const tief = [0, 1].map(e => Math.hypot(mi(e)[0] - mi(e + 2)[0], mi(e)[1] - mi(e + 2)[1]) / 2);   // die halbe Tiefe des Blocks hinter der Kante
+            for (let e = 0; e < 4; e++) { const p = B[e], q = B[(e + 1) % 4], dx = q[0] - p[0], dz = q[1] - p[1], L = Math.hypot(dx, dz) || 1, ux = dx / L, uz = dz / L;
+                // die Ecke am Anfang der Kante gehört dem letzten Haus der Kante davor (`eckeM`), das Ende reicht bis an den Einzug
+                const frei = L - 2 * S.einzugM - S.eckeM - 1, n = Math.floor(frei / S.platzM);
+                for (let j = 0; j < n; j++) { const t = S.einzugM + S.eckeM + ((j + 0.5) * frei) / n;
+                    kand.push({ w: bi * 4 + e, j, x: p[0] + ux * t, z: p[1] + uz * t, ux, uz, nx: -s * uz, nz: s * ux, breit: frei / n, tief: tief[e & 1], h: netzHash(samen, 43, i, k, bi * 4 + e, j) }); } }
+        });
+        const n = Math.min(H.length, kand.length), reihe = (a, b) => a.w - b.w || a.j - b.j, d2 = q => (q.x - z0.x) * (q.x - z0.x) + (q.z - z0.z) * (q.z - z0.z);
+        // EIN HOHES HAUS STEHT AUF EINEM TIEFEN PLATZ: das Los des Samens wählt n Plätze, die Liste nimmt je Haus den nächsten zur
+        // Kreuzung, dessen Tiefe seine Traufe trägt (Traufe / Tiefe ≤ `stab`) — fehlt er unter den gewählten, den nächsten der
+        // übrigen; erst wenn kein Platz der Kachel es trägt, steht es auf dem nächsten freien (dann schmaler, als es ist)
+        const nah = (a, b) => d2(a) - d2(b) || reihe(a, b), los = kand.slice().sort((a, b) => a.h - b.h || reihe(a, b));
+        const frei = los.slice(0, n).sort(nah), uebrig = los.slice(n).sort(nah), wahl = [];
+        for (let r = 0; r < n; r++) { const soll = Math.min(H[r].D, (Math.max(1, H[r].storeys || 1) * S.geschossM + S.sockelM) / STADT_FORM.stab), passt = q => q.tief - S.einzugM - 1 >= soll;
+            let L = frei, j = L.findIndex(passt);
+            if (j < 0) { L = uebrig; j = L.findIndex(passt); }
+            if (j < 0) { L = frei.length ? frei : uebrig; j = 0; }
+            wahl.push(L.splice(j, 1)[0]); }
+        const lage = new Float32Array(n * 7), ton = new Float32Array(n * 6), tonAm = stadtTonAn(samen, i, k, netz.m);
+        for (let r = 0; r < n; r++) { const q = wahl[r], p = H[r];
+            // die Reihe schließt sich, wo das Haus seinen Platz füllt (Brandwand an Brandwand); das schmalere steht frei in seinem Platz
+            const W = Math.max(3, p.W >= q.breit ? q.breit : Math.min(p.W, q.breit - 0.8)), D = Math.max(3, Math.min(p.D, q.tief - S.einzugM - 1)), ab = S.einzugM + 0.6 + D / 2;
+            const x = e3(q.x + q.nx * ab), z = e3(q.z + q.nz * ab);
+            lage.set([x, z, e3(Math.atan2(-q.uz, q.ux))].concat(hausMasse(p, W, D)), r * 7);
+            ton.set(hausMasseTon(p, tonAm(p.col, x, z)), r * 6); }
+        return { n, lage, ton, strassen, haeuser: H.length, plaetze: kand.length, m: netz.m }; }
+    // DIE MASSE EINES HAUSES (die EINE Regel beider Stufen): [W, D, Traufe, First] aus seinem Parameter-Vektor — der Kasten bis zur
+    // Traufe (Geschosse × `geschossM` über dem Sockel), das Satteldach über der Tiefe (First längs der Breite), flach ohne First;
+    // ihr Ton: Wand und Dach linear, die Rollen des Hauses.
+    // prettier-ignore
+    function hausMasse(p, W, D) { const S = STADT_MASSEN, flach = p.dachTyp === "flach" || !(p.pitchDeg >= S.flachGrad), e3 = v => Math.round(v * 1000) / 1000;
+        return [e3(W), e3(D), Math.max(1, p.storeys || 1) * S.geschossM + S.sockelM, flach ? 0 : e3(Math.tan((p.pitchDeg * Math.PI) / 180) * D * 0.5)]; }
+    function hausMasseTon(p, col) {
+        col = col || p.col; // die Palette am Ort (`stadtTonAn`, Stufe 1) oder die des Vektors (Stufe 2: der Export trägt sie schon)
+        return _colFor(_wandRolle(p), col).concat(_colFor("ziegel", col));
+    }
+    // STUFE 2 IM BILD — DIE MASSEN EINES PLANS (w28-stadt-netz, der Schnitt der Kapsel-Liste): die Häuser eines Plans (der Export,
+    // `exportSettlement`) als dieselben Massen wie die der Stufe 1 (`hausMasse`), an ihren ECHTEN Losen — je Slot der Rahmen
+    // seines Hauses (x, z, phi), Breite und Tiefe seines Vektors. Jenseits des Nah-Rings trägt ein Haus der Stadt im Wirt
+    // seine Masse statt eines Satzes im Welt-March (`_stadtMasseStand`): die Liste des March wächst nicht mit der Stadt.
+    // → { n, lage: [x, z, gier, W, D, traufe, first] je Slot (plan-lokal; ein Slot ohne Vektor trägt W 0), ton } wie `kachelMassen`.
+    // prettier-ignore
+    function planMassen(plan) {
+        const L = (plan && plan.slots) || [], n = L.length, lage = new Float32Array(n * 7), ton = new Float32Array(n * 6), e3 = v => Math.round(v * 1000) / 1000;
+        for (let r = 0; r < n; r++) { const sl = L[r], p = sl && sl.ov;
+            if (!p || !(p.W > 0) || !(p.D > 0) || !p.col) continue;
+            lage.set([e3(sl.x), e3(sl.z), e3(sl.phi || 0)].concat(hausMasse(p, p.W, p.D)), r * 7);
+            ton.set(hausMasseTon(p), r * 6); }
+        return { n, lage, ton }; }
     // ── DIE CHRONIK (siedlung.K4): das Jahr ist EIN Parameter des Plans. Der Ort wächst längs der ZEITACHSE seiner Region (ihre
     // Epochen der Tafel nach dem Jahr) aus EINER Saat: je Epoche E ein Anker am Ende ihrer Spanne (T = jahr + d + spanne, d die
     // Saat-Verschiebung des Plans), die Häuserzahl log-linear von der Klasse der ersten Epoche bis zur Gegenwart (nEnde am Ende
@@ -3628,6 +4300,105 @@
         }
         return { jahr: jahr, kraft: m < n ? kraft : 0, uhr: Math.max(Z.uhr, t), lose: m };
     }
+    // ════════════ DIE STADT-GRAMMATIK (siedlung, die Breite) ════════════
+    // Stadt → Viertel (Rolle aus Lage) → Parzelle am Straßen-Gewebe → Bau-Typ aus (Viertel-Rolle × Kultur × Epoche) → Gegenstände
+    // des Viertels. EINE Tafel, drei Leser: DORF (`stadtViertel`: je Los sein Viertel, je Bau des Loses der Bau-Typ seiner Epoche —
+    // seine Zeile im Bau-Gesetz BAU_NUTZUNG über dem Haus seiner Kultur, nie ein eigenes Teil), dorfLayout (`lage`: wohin das
+    // Viertel zieht, `dinge`: was auf seinem Grund steht, `STADT_DICHTE`: das Gewebe im Mauerring) und der Export (`viertel` je
+    // Slot, die Viertel des Plans, ihre Flächen und Gegenstände) — Labor und Welt lesen ihn. DIE ZEIT ist eine Achse: `zeit`
+    // nennt die Bänder nach dem Baujahr, je Viertel trägt `bauten` je Band seine Folge — dieselbe Regel wählt 1238 den Wohnturm,
+    // eine spätere Epoche ist eine Zeile in `zeit` und je Viertel ein Satz. Ein Baujahr außerhalb der Bänder trägt keine Zeile:
+    // der Bau bleibt, was das Gesetz vor der Grammatik baut (DOWNTOWN, GEWERBE), und trägt kein Viertel. Bis hier vergab DORF
+    // Kirche, Gasthaus, Schmiede und Burg je an einer Schwelle: die Metropole des Messorts stadt-voll trug 297 Wohnhäuser unter
+    // 307 Losen, 6 Bau-Typen, 2 Kulturen über einem Haus, kein Viertel.
+    //   lose(n)      die Lose des Viertels [von, bis) in der Gründungs-Folge (Kern = alt); `wohnen` trägt den Rest
+    //   bauten[Band] die Folge {typ, n: die ersten n | je: jedes je-te | sonst der Rest, wenn(p, f): nur dieses Los (f = sein
+    //                Rang 0 … 1), kultur: 'herr' · 'sakral' · 'fern'} — die erste Zeile, die trifft
+    //   lage         'platz' · 'kirche' · 'hoehe' (der höchste Grund an einer Gasse) · 'seite' (die Seite `zugHandwerk` des Plans)
+    //   dinge        die Gegenstände auf seinem Grund (dorfLayout): {art (AUSSTATTUNG · WERKE), …}
+    // prettier-ignore
+    const STADT_GRAMMATIK={
+      zeit:[['mittelalter',500,1500],['fruehneuzeit',1500,1800]],
+      herrAb:49,                                                                              // ab so vielen Losen (die Großstadt) hat jede Stadt vor 1700 einen Herrn
+      grund:[{typ:'gasthaus',ab:8,los:()=>1,viertel:'markt'},{typ:'schmiede',ab:10,los:n=>Math.max(2,(n*0.62)|0),viertel:'handwerk'}],   // DER GRUND-SATZ jedes Orts ab `ab` Losen (Dorf wie Stadt): das Los `los(n)` trägt den Bau-Typ
+      fern:{mitteleuropa:['hollaendisch','italienisch'], alpin:['italienisch','fraenkisch'], mediterran:['andalusisch','marokkanisch'], nordisch:['hanseatisch','hollaendisch'], fernost:['chinesisch','japanisch']},   // die fremden Kaufleute je Region (ihr Kontor am Markt)
+      herr:{nordisch:'norwegisch'},                                                           // die Kultur des Herrn, sonst gotisch (BURG-GESETZ)
+      viertel:{
+        kirchhof:{ lage:'kirche', lose:n=>[2,n>=27?4:3],
+          bauten:{mittelalter:[{typ:'pfarrhaus',n:1},{typ:'kapelle',kultur:'sakral'}], fruehneuzeit:[{typ:'pfarrhaus',n:1},{typ:'kapelle',kultur:'sakral'}]},
+          dinge:[{art:'grabstein',rasterM:[2.3,3.1],max:36}] },                                // die Gräber des Friedhofs hinter der Kirche (dorfLayout `friedhof`)
+        markt:{ lage:'platz', lose:n=>[4,4+Math.max(2,Math.min(18,Math.round(n*0.07)))],
+          bauten:{mittelalter:[{typ:'rathaus',n:1},{typ:'kontor',je:4,kultur:'fern'},{typ:'kaufhaus'}], fruehneuzeit:[{typ:'rathaus',n:1},{typ:'zunfthaus',n:1},{typ:'kontor',je:4,kultur:'fern'},{typ:'kaufhaus'}]},
+          dinge:[{art:'marktstand',rasterM:[5.2,4.6],max:12}] },                               // die Reihen der Stände über dem Platz
+        handwerk:{ lage:'seite', lose:n=>{ const a=Math.max(6+Math.max(2,Math.min(18,Math.round(n*0.07))),Math.round(n*0.55)); return [a,a+Math.max(2,Math.round(n*0.14))]; },
+          bauten:{mittelalter:[{typ:'backhaus',je:9},{typ:'speicher',je:7},{typ:'gerberei',je:5},{typ:'werkstatt'}], fruehneuzeit:[{typ:'backhaus',je:9},{typ:'speicher',je:6},{typ:'gerberei',je:5},{typ:'werkstatt'}]},
+          dinge:[] },
+        burg:{ lage:'hoehe', lose:()=>[0,0],                                                  // seine Lose stellt es selbst, hinter dem Palas des BURG-GESETZES (Rolle burg)
+          bauten:{mittelalter:[{typ:'bergfried',kultur:'herr'},{typ:'torhaus',kultur:'herr'},{typ:'kapelle',kultur:'herr'}], fruehneuzeit:[{typ:'bergfried',kultur:'herr'},{typ:'torhaus',kultur:'herr'},{typ:'zeughaus',kultur:'herr'}]},
+          dinge:[] },
+        wohnen:{ lage:null, lose:n=>[0,n],
+          bauten:{mittelalter:[{typ:'wohnturm',je:5,wenn:(p,f)=>p.wohl>=1.1&&f<0.45},{typ:'patrizierhaus',wenn:(p,f)=>p.wohl>=1.1&&f<0.45}], fruehneuzeit:[{typ:'patrizierhaus',wenn:(p,f)=>p.wohl>=1.05&&f<0.5}]},
+          dinge:[] },
+        vorstadt:{ lage:'vor der Mauer', lose:()=>[0,0], bauten:{}, dinge:[] },              // was vor der Mauer steht (dorfLayout: der Überlauf des Wohnens)
+        hafen:{ lage:'wasser', lose:()=>[0,0], bauten:{}, dinge:[] },                         // was im Ring am Wasser steht (dorfLayout: Handwerk und Wohnen binnen STADT_DICHTE.hafenM am Wasser des Rasters) — die Rolle folgt der LAGE: ohne Wasser am Ring trägt die Stadt keinen Hafen (`lage.wasser` 0)
+      },
+    };
+    // DAS GEWEBE UND DER GRUND DER STADT (dorfLayout, die Stadt der Grammatik: ummauert, um ihren Markt). gasse*: die Fußgasse
+    // der Dichte — Breite (unter VERKEHR_GESETZ.breiteM: kein Wagen), Abstand zweier Gassen längs ihrer Straße, der erste
+    // Abzweig, der erste Abzweig der Hintergasse von einer Gasse, die kürzeste und die längste; fluchtM: so nah an einer anderen Straße schließt sie an; mauerM: so weit vor dem Ring
+    // endet sie; wasserM: so weit hält ein Los und eine Gasse vom Wasser des Rasters. markt*: die Tiefe des Platzes je Breite und ihr Band; standRandM: der Rand des Platzes ohne Stand, marktGangM: die halbe Breite seiner Gasse längs der Mitte. zug*: der
+    // Radius, den ein Viertel um seinen Anker hält (Burg, Kirche, je Los des Handwerks), und der Bruchteil des Rings, auf dem
+    // das Handwerk liegt. friedhof: seine halbe Tiefe (so breit wie die Kirche), sein Rand ohne Grab und der Abstand zur Kirche.
+    var STADT_DICHTE = {
+        gasseM: 2.8, gasseTeilung: 28, gasseAb: 14, gasseHinterM: 22, gasseMinM: 18, gasseLangM: 54, fluchtM: 7, mauerM: 16,
+        marktJeBreite: 1.3, marktTief: [12, 24], standRandM: 2.6, marktGangM: 3.2,
+        wasserM: 3, zugBurgM: 24, zugKircheM: 16, zugJeLosM2: 170, zugSeite: 0.6, zugFremd: 300,
+        friedhof: { tiefM: 7.5, randM: 1.4, abM: 1.5 },
+        torplatz: { abM: 14, winkel: 2, halbM: 13 }, // die Mitte `abM` vom Ende der Trasse im Winkel `winkel` (rad, neben und hinter ihm: 6 m vor dem Ende, 13 m neben der Achse), das Geviert ± halbM
+        // DER GEHWEG DER FAHRSTRASSE TRÄGT ZWEI: wo der Verkehr fährt (ein Weg ab VERKEHR_GESETZ.breiteM in der Siedlung mit Wagen),
+        // reicht die Bahn des Wagens samt der Kapsel des Fußes 0,3 m über den Bord (spurM + halbM + 0,35 − 2,5), und zwei Kapseln
+        // nebeneinander brauchen von dort bis an die Wand 3 × 0,35 + 0,71 = 1,06 m: unter 1,36 m Gehweg geht nur einer. An der
+        // geschlossenen Front der Stadt (DORF_NORM.gehweg 1,2 m: 0,55 m für die Mitten der Kapseln) standen sich zwei im
+        // Gegenverkehr für immer gegenüber (Kreatur-Linse bewohner, „dorf 7 30“: 6 Steckenbleiber, drei bei 683/416 zwischen
+        // haus_provenzalisch #918856 und der Fahrbahn, z397). 1,8 m: zwei Kapseln und 0,44 m für den Schritt, der ausweicht.
+        gehwegFahrM: 1.8,
+        platzFassM: 30, // so weit fasst ein Haus den Platz: bis dahin reicht sein Belag an die Bauflucht (`platzSaum`), mit freier Sicht
+        platzFugeM: 1.5, // so weit greift der Saum eines zurückgesetzten Hauses quer über seine Flanke (der Hof zwischen zwei Nachbarn bleibt kein Halm-Streifen)
+        standTrasseM: 3, // so weit hält die Reihe der Stände vom Rand jeder Trasse (VERKEHR_GESETZ.ausweichM: der Wagen umfährt den Stehenden)
+        hafenM: 14, // so nah am Wasser des Rasters (vom Rand seines Grundrisses) steht ein Los des Hafens; `hafenRasterM`: der Schritt, in dem der Plan das Wasser in seinem Ring zählt (`lage.wasser`)
+        hafenRasterM: 8,
+    };
+    // DIE VIERTEL EINES PLANS (DORF): je Los der Gründungs-Folge sein Viertel, je Bau des Loses (der Bau der Gegenwart `geb[i]`
+    // und seine früheren `fr[i]`) der Bau-Typ der Zeile seines Bands — die Rolle des LOSES durch die Zeit, wie Gasthaus und
+    // Schmiede. `o`: region, burg (das Los des Palas oder −1), poolAt, rv (die Saat der Grammatik). Rückgabe: die Lose, die das
+    // Burg-Viertel über den Palas hinaus stellt.
+    // prettier-ignore
+    function stadtViertel(geb, fr, n, o){
+      const SG=STADT_GRAMMATIK, V=SG.viertel, bandVon=y=>{ for(const z of SG.zeit) if(y>=z[1]&&y<z[2]) return z[0]; return null; };
+      const sakral=geb[0].kultur, herrK=SG.herr[o.region]||'gotisch', fern=SG.fern[o.region]||[];
+      const kulturVon=(regel,p)=> regel==='herr'?herrK : regel==='sakral'?sakral : (regel==='fern'&&fern.length)?fern[p.seed%fern.length] : null;
+      const setze=(p,z,band,name)=>{ const k=z.kultur?kulturVon(z.kultur,p):null;
+        if(k&&k!==p.kultur) Object.assign(p,bauRezept({bauweise:k},null,p.seed),{kultur:k});                // das Haus der Kultur der Zeile über demselben Samen
+        p.rolle=z.typ; p.viertel=name; bauRezept({nutzung:z.typ,rahmen:{region:o.region,band},los:p},null,p.seed); };
+      const vonLos=new Array(n).fill('wohnen');
+      for(const name of ['kirchhof','markt','handwerk']){ const [a,b]=V[name].lose(n); for(let i=a;i<Math.min(b,n);i++) vonLos[i]=name; }
+      vonLos[0]='kirchhof';
+      for(const z of SG.grund) if(n>=z.ab) vonLos[z.los(n)]=z.viertel;
+      const zahl={};                                                                          // je Viertel × Band × Zeile: wie viele Lose sie traf (n, je)
+      for(let i=0;i<n;i++){ const name=vonLos[i], p0=geb[i], f=i/Math.max(1,n-1), frei=p0.rolle==='wohnhaus';
+        for(const [band] of SG.zeit){ let zeile=null;
+          if(frei) for(const [zi,z] of (V[name].bauten[band]||[]).entries()){ if(z.wenn&&!z.wenn(p0,f)) continue;
+            const key=name+band+zi, k=(zahl[key]=(zahl[key]||0)+1);
+            if(z.n?k<=z.n:z.je?k%z.je===0:true){ zeile=z; break; } }
+          for(const p of [p0].concat(fr[i].map(q=>q.v))){ if(bandVon(p.baujahr)!==band) continue;
+            if(zeile&&p.rolle==='wohnhaus') setze(p,zeile,band,name); else p.viertel=name; } }
+        for(const q of fr[i]){ q.v.W=Math.min(q.v.W,p0.W); q.v.D=Math.min(q.v.D,p0.D); } }       // der frühere Bau steht im Los des jüngeren
+      const neu=[], palas=o.burg>=0?geb[o.burg]:null, band=palas?bandVon(palas.baujahr):null;
+      if(band){ palas.viertel='burg';
+        for(const z of V.burg.bauten[band]){ const bs=1+((o.rv()*1e6)|0), bp=bauRezept({bauweise:herrK},null,bs);
+          Object.assign(bp,{seed:bs,kultur:herrK,terrain:0,baujahr:palas.baujahr,rolle:'wohnhaus',wohl:1.2,keller:0,annexN:0,balcony:0,grundriss:'I',arm:0});
+          setze(bp,z,band,'burg'); neu.push(bp); } }
+      return neu; }
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
@@ -3640,7 +4411,8 @@
     if(region==='antik'){ jahr=-150+((rnd()*400)|0); spanne=40+((rnd()*90)|0); }
     else{ jahr=880+((rnd()*680)|0); const sp=rnd(); spanne= sp<.35?(20+((rnd()*60)|0)):(sp<.75?(180+((rnd()*300)|0)):(500+((rnd()*420)|0)));
       if(region==='fernost'&&jahr>1500) jahr=1050+((rnd()*450)|0); } }
-  const nZiel=Math.max(4,Math.min(GROESSE_WAND,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
+  if(DP.erbe&&isFinite(DP.erbe.jahr)&&isFinite(DP.erbe.spanne)){ if(!leg&&REGION_HIST[DP.erbe.region]) region=DP.erbe.region; jahr=DP.erbe.jahr; spanne=DP.erbe.spanne; if(leg) d=jahr-leg.jahr; }   /*DAS ERBE DES KERNS (w28-stadt-funktion, `viertelWort`): das Viertel einer Stadt steht in Region, Jahr und Spanne ihres Kerns — sein eigener Same wuerfelt weiter (der Strom bleibt), die Zeit ist die der Stadt*/
+  const nZiel=Math.max(4,Math.min(STADT_FUNKTION.voll,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
   const staedtischVon=g=>(g==='markt'||g==='stadt'||g==='grossstadt'||g==='metropole'), kr=rnd(), vor=achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr);
   const ringe=(staedtischVon(groesseVon(nZiel))&&jahr>1700)||chronik;                                  /*JAHRESRING-GESETZ: die Stadt ist geronnene ZEIT — der Radius wird zur Zeitachse. Kern=Gruendung (Altstadt), Rand=Gegenwart; Kultur+Baujahr je PARZELLE aus ihrem Ring; die Regions-HISTORIE (poolAt) liefert die Architektur jener Zeit*/
   const gr0=ringe? Math.min(jahr-150, 1150+((rnd()*260)|0)) : jahr; globalThis.__ring={gr0:gr0, ringe:ringe};   /*Zeitachse global — DORF wuerfelt, dorfLayout liest (getrennte Funktionen)*/
@@ -3661,7 +4433,7 @@
     else by=jahr+Math.round(spanne*t9r*(0.55+0.45*rnd()));
     gr.push(ringe?chronikJahr(anker,i):by); fr.push([]);
     const pool=poolAt(by, ringe), kn=pool[(rnd()*pool.length)|0], hs=1+((rnd()*1e6)|0);
-    const p=kulturParams(kn,hs); p.seed=hs; p.kultur=kn; p.terrain=0; p.baujahr=by; p.rolle='wohnhaus';
+    const p=bauRezept({bauweise:kn},null,hs); p.seed=hs; p.kultur=kn; p.terrain=0; p.baujahr=by; p.rolle='wohnhaus';
     if(ringe) p.W=Math.max(4.5, Math.min(15, Math.round(p.W*(0.80+0.38*t9r)*2)/2));         /*PARZELLEN-GEDAECHTNIS: schmale Buergerhaeuser im Kern, breite Lose am Saum*/
     const w=(1.22-0.5*(i/Math.max(1,n-1)))*(0.78+0.44*rnd()); p.wohl=Math.round(w*100)/100;
     p.W=Math.max(5,Math.min(15,Math.round(p.W*(0.84+0.30*w)*2)/2));
@@ -3670,11 +4442,12 @@
         if(t9<0.16&&jahr>1920&&rnd()<0.6) p.storeys=Math.max(p.storeys, 7+((rnd()*5)|0)); }
       else if(t9>0.74&&p.baujahr>1915&&rnd()<0.55) p.storeys=Math.max(p.storeys, 6+((rnd()*5)|0)); }
     if(staedtisch&&w>0.9&&p.storeys<4)p.storeys++; p.turmbau=0;
+    if(DP.erbe&&DP.erbe.hoch>0) p.storeys=Math.max(1, Math.min(12, Math.round(p.storeys*DP.erbe.hoch)));   /*DIE HOEHE DES VIERTELS (STADT_FORM, `viertelWort`): die Geschosse steigen zur Mitte der Stadt und fallen zum Rand — Tuerme und Hallen setzen ihre Hoehe danach selbst*/
     p.keller=(rnd()<0.35)?1:0; p.annexN=(rnd()<0.25)?1:0;
     p.arm=(n>=16&&w<0.72)?1:0;
     p.balcony=(w>0.95&&p.storeys>=2&&rnd()<0.5)?1:0;
     if(i>0){ const g2=rnd(); p.grundriss=(g2<(staedtisch?0.85:0.68))?'I':((g2<0.9)?'L':p.grundriss); }
-    if(by!==gr[i]){ const P0=poolAt(gr[i], ringe), k0=P0[hs%P0.length]; fr[i].push({ab:gr[i], v:Object.assign({}, p, kulturParams(k0,hs), {kultur:k0, baujahr:gr[i]})}); }
+    if(by!==gr[i]){ const P0=poolAt(gr[i], ringe), k0=P0[hs%P0.length]; fr[i].push({ab:gr[i], v:Object.assign({}, p, bauRezept({bauweise:k0},null,hs), {kultur:k0, baujahr:gr[i]})}); }
     geb.push(p); }
   const modern=(jahr>=1905&&staedtisch), gewerbe=(jahr>=1850&&staedtisch&&n>=20), gwA=rnd()*Math.PI*2;
   if(modern){ for(let i=0;i<n;i++){ if(i>0&&i<n*0.22&&rnd()<0.72){ const p=geb[i];      // DOWNTOWN-GESETZ: der Kern wächst in den Himmel — als NEUBAU des alten Loses im Jahrhundert der Moderne (der alte Bau bleibt in fr)
@@ -3686,17 +4459,18 @@
     p.rolle='halle'; p.stil='klinker'; p.W=12+((rnd()*4)|0); p.D=9+((rnd()*4)|0); p.storeys=1;
     p.pitchDeg=14; p.grundriss='I'; p.balcony=0; p.annexN=0; p.arm=1; p.sektor=gwA; p.turmbau=0; } } }
   const markBei=(L,y)=>(L&&L.mark)?L.mark:(region==='mediterran'?{k:'barock',set:{kuppel:1,W:14,D:11}}:region==='fernost'?{k:'chinesisch',set:{W:15,D:11}}:region==='antik'?{k:'roemisch',set:{arkade:1,W:15,D:11}}:region==='nordisch'?{k:'norwegisch',set:{turm:1,D:10}}:region==='alpin'?{k:'gotisch',set:{turm:1,D:9,W:7}}:(y>1880?{k:'hochhaus',set:{}}:y>1620?{k:'barock',set:{kuppel:1,W:13,D:11}}:{k:'gotisch',set:{turm:1,D:11}}));
-  const kirche=(p,mk,ab)=>Object.assign(p,kulturParams(mk.k,p.seed),{kultur:mk.k},mk.set||{},{rolle:'kirche',mark:1,keller:0,baujahr:ab});
+  const kirche=(p,mk,ab)=>Object.assign(p,bauRezept({bauweise:mk.k},null,p.seed),{kultur:mk.k},mk.set||{},{rolle:'kirche',mark:1,keller:0,baujahr:ab});
   if(n>=8){ const p=geb[0];                                                                   /*DIE KIRCHE DER EPOCHE: je Epoche der Achse vor der Gegenwart ein Bau ihrer Marke (ab der Mitte ihrer Spanne, die erste ab der Gruendung)*/
     if(ringe) fr[0]=achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr).map((k,j)=>{ const E=EPOCHEN[k], ab=j?E.jahr+d+((E.spanne/2)|0):gr[0]; return {ab, v:kirche(Object.assign({},p),markBei(E,E.jahr+d),ab)}; }).filter(f=>f.ab<jahr);
     kirche(p,markBei(leg,jahr),jahr); }
-  const losBauten=i=>[geb[i]].concat(fr[i].map(f=>f.v));                                      /*Gasthaus und Schmiede sind Rollen des LOSES: jeder seiner Bauten traegt sie*/
-  if(n>=8) for(const p of losBauten(1)){ p.rolle='gasthaus'; p.W=Math.min(15,p.W+2.5); p.D=Math.min(11,p.D+1);
-    if(p.storeys<2)p.storeys=2; if(region==='mitteleuropa'||region==='mediterran')p.arkade=1; }
-  if(n>=10) for(const p of losBauten(Math.max(2,(n*0.62)|0))){ p.rolle='schmiede'; p.W=5.5; p.D=5; p.storeys=1; p.balcony=0; p.annexN=0; p.grundriss='I'; p.turm=0; p.kuppel=0; }
-  if(staedtisch&&jahr<1700&&n>=16&&rnd()<0.5){                                            // BURG-GESETZ: die Stadt hat einen Herrn
+  const losBauten=i=>[geb[i]].concat(fr[i].map(f=>f.v));                                      /*der Bau-Typ ist die Rolle des LOSES: jeder seiner Bauten traegt sie*/
+  const SG=STADT_GRAMMATIK, GO={region, jahr};
+  for(const z of SG.grund) if(n>=z.ab) for(const p of losBauten(z.los(n))){ p.rolle=z.typ; bauRezept({nutzung:z.typ,rahmen:GO,los:p},null,p.seed); }   /*DER GRUND-SATZ (das SONDERBAU-GESETZ als Zeilen der Tafel): Gasthaus und Schmiede jedes Orts*/
+  const grammatik=staedtisch&&SG.zeit.some(z=>jahr>=z[1]&&jahr<z[2]);                        /*DIE STADT DER GRAMMATIK: staedtisch, ihre Gestalt in einem Band der Tafel (`zeit`) — die Chronik-Stadt steht in der Gegenwart, Antike und Moderne tragen keine Zeile: sie bleiben, was sie waren*/
+  const herrBar=staedtisch&&jahr<1700&&n>=16, muenze=herrBar&&rnd()<0.5, herr=muenze||(herrBar&&grammatik&&n>=SG.herrAb), burgAb=geb.length;   /*BURG-GESETZ: die Stadt hat einen Herrn — in der Grammatik ab `herrAb` Losen jede (die Muenze faellt wie bisher; ein Herr ohne Muenze zaehlt nicht in das Mass der Gestalt, `nGestalt`)*/
+  if(herr){
     const bk=(region==='nordisch')?'norwegisch':'gotisch', bs=1+((rnd()*1e6)|0);
-    const bp=kulturParams(bk,bs); Object.assign(bp,{seed:bs,kultur:bk,terrain:0,baujahr:jahr-((rnd()*80)|0),rolle:'burg',wohl:1.2,
+    const bp=bauRezept({bauweise:bk},null,bs); Object.assign(bp,{seed:bs,kultur:bk,terrain:0,baujahr:jahr-((rnd()*80)|0),rolle:'burg',wohl:1.2,
       W:13+((rnd()*2)|0), D:11, storeys:3, turm:1, zinnen:1, keller:0, annexN:0, balcony:0, grundriss:'I', arm:0});
     geb.push(bp); }
   const alle=[], za=[], schQ={weiler:.75,dorf:.55,markt:.28,stadt:.06,grossstadt:.04,metropole:.03}[groesse];
@@ -3708,6 +4482,17 @@
         hip:0, roofCurve:0, grundriss:'I', dachTyp:'sattel', bogenTyp:'none', seed:sn, kultur:p.kultur, col:p.col,
         keller:0, terrain:0, annexN:0, balcony:0, rolle:'scheune', parent:pi, baujahr:za[pi].gr, wohl:p.wohl,
         treppgiebel:0,kuppel:0,portikus:0,arkade:0,turm:0,zinnen:0,veranda:0,vorkragung:0,pilotis:0,terrasse:0}); za.push({gr:za[pi].gr, fr:[]}); } });
+  /*DIE VIERTEL DER STADT (STADT_GRAMMATIK, nach den Scheunen: der Strom des Plans `rnd` zieht, was er vor der Grammatik zog — sie wuerfelt aus eigener Saat): je Los sein Viertel, je Bau des Loses der Bau-Typ seiner Epoche; das Burg-Viertel stellt seine Lose hinter den Palas. `nBurg` Lose mehr als das alte Mass: Mauer und Netz wachsen mit den Haeusern (`nGestalt`), nicht mit den Tuermen des Herrn*/
+  let sv=((Math.round((DP.seed||1)*827+53)*2654435761)>>>0); const rv=()=>{ sv=(sv*1664525+1013904223)>>>0; return sv/4294967296; };
+  const nBurg=grammatik?stadtViertel(geb, fr, n, {region, jahr, burg:herr?burgAb:-1, poolAt:y=>poolAt(y, ringe), rv}).map(p=>{ alle.push(p); za.push({gr:p.baujahr, fr:[]}); }).length:0;
+  for(const a of alle) if(a.rolle==='scheune'&&alle[a.parent].viertel) a.viertel=alle[a.parent].viertel;   /*die Scheune steht im Viertel ihres Hofs*/
+  const zugHandwerk=rv()*Math.PI*2;                                                         /*die Seite der Stadt, an der ihr Handwerk liegt (dorfLayout `zug`)*/
+  /*DER GRUNDRISS WAECHST MIT DEN GESCHOSSEN (STADT_FORM, nach allen Rollen: Kirche, Burg und die Bau-Typen der Viertel setzen ihre Masse selbst — ihr Fuss folgt ihrer Hoehe wie der jedes Hauses): Breite und Tiefe tragen die Traufe / `schlank`, die Breite bis `breitMax` (das Raster der Plaetze), die Tiefe bis `tiefMax` (der Block hinter der Strasse); der Turm der Moderne bleibt ein Turm. Bis hier wuchs im Viertel nur die Hoehe: der Kern stand als Staebe (Traufe / Tiefe 2,6 im Median, 156 von 205 Haeusern ueber 2)*/
+  if(DP.erbe&&DP.erbe.hoch>0) for(const v of alle){ if(v.turmbau||!(v.W>0)||!(v.D>0)) continue;
+    const fuss=Math.ceil((Math.max(1,v.storeys||1)*STADT_MASSEN.geschossM+STADT_MASSEN.sockelM)/STADT_FORM.schlank*2)/2;
+    v.W=Math.max(v.W, Math.min(STADT_FORM.breitMax, fuss)); v.D=Math.max(v.D, Math.min(STADT_FORM.tiefMax, fuss));
+    const trag=Math.floor((STADT_FORM.stab*v.D-STADT_MASSEN.sockelM)/STADT_MASSEN.geschossM);   /*DIE HOEHE FOLGT DEM LOS: mehr Geschosse, als seine Tiefe traegt (Traufe ≤ `stab` × Tiefe), steigen nicht — der Grundriss waechst nur bis `tiefMax`, jenseits davon kostet er Lose (am Kern von 42 750: 192 → 107 von 205 Haeusern bei 12 × 17 m)*/
+    if((v.storeys||1)>trag) v.storeys=Math.max(1, trag); }
   // DER SCHNITT DER CHRONIK: das Jahr der Epoche (T = jahr + d + spanne) nimmt die Lose, die bis T gegruendet sind — der Anfang
   // der Liste (Kern = alt) —, je Los den Bau, der bei T steht; `lose` traegt das Los der Gegenwart, wo ein frueherer Bau steht
   // (das Layout packt die Lose: ein frueherer Plan liegt in der Gestalt des juengeren). Ohne Chronik ist der Plan sein Schnitt.
@@ -3725,7 +4510,7 @@
   if(C) for(let a=0;a<alle.length;a++){ let v=alle[a];
     if(v.baujahr>za[a].gr) for(const f of za[a].fr) if(f.ab<=za[a].gr) v=f.v;
     C.jahre.push(za[a].gr); C.leute.push(leuteVon(v)); C.wohl.push(isFinite(v.wohl)?v.wohl:1); }
-  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length, chronik:C,
+  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length-nBurg-(herr&&!muenze?1:0), grammatik, zugHandwerk, chronik:C,
           schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
           kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
           norm:Object.assign({},DORF_NORM,{budget:Math.max(80000,Math.min(400000,DP.budget||DORF_NORM.budget)), gap:(groesse==='stadt'||groesse==='grossstadt'||groesse==='metropole')?0.06:(staedtisch?0.6:DORF_NORM.gap)})};
@@ -3809,7 +4594,12 @@
     // über den Hang (Gefälle p95 22–36 % an zwei von vier Saaten), der Erdbau glättete danach.
     function trasseLenk(H, x, z, th, DS){
       if(!H) return th;
-      const lim=ORT_GESETZ.trasse, h0=H(x,z), g=t=>Math.abs(H(x+Math.cos(t)*DS, z+Math.sin(t)*DS)-h0)/DS;
+      // DIE TRASSE LIEST DAS WASSER WIE DEN HANG (w28-stadt-grammatik, `H.nass`: nur der Plan, der Wasser liest — die Stadt): ein Schritt
+      // auf eine nasse Zelle (samt `STADT_DICHTE.wasserM`) trägt nicht, die Straße folgt dem Ufer wie der Höhenlinie; trägt keine Richtung,
+      // quert sie (die Brücke des Plans v2). Bis hier wichen Los, Scheune, Laterne und Gasse dem Wasser im Plan selbst aus, das Gerippe
+      // fragte nie: die Ort-Wahl hatte kein nasses Haus mehr abzuweisen, der Markt blieb am Ufer, seine Ost-Straße lief 42 m längs im
+      // Fluss — elf Jochfelder mit dem Fundament 0,8 m im Wasser (gate:werk-im-wasser Z, z397; an main wies die Ort-Wahl den Ort ab).
+      const lim=ORT_GESETZ.trasse, h0=H(x,z), g=t=>{ const nx=x+Math.cos(t)*DS, nz=z+Math.sin(t)*DS; return H.nass&&H.nass(nx,nz,STADT_DICHTE.wasserM)?Infinity:Math.abs(H(nx,nz)-h0)/DS; };
       let bg=g(th); if(bg<=lim) return th;
       let best=th;
       for(let k=1;k<=15;k++){ const d=k*0.1, a=g(th+d), b=g(th-d);
@@ -3828,6 +4618,12 @@
     // bilinear. Ein Lese-Punkt außerhalb zählt (`mass.aussen`, im Export `trasse.aussen`; die Linse verlangt 0).
     function trasseRahmen(nH){ const R=1.5*siedlungsReich(SIEDLUNG, Math.max(1, isFinite(nH)?nH:SIEDLUNG.nHMin))+60, d=Math.max(4, Math.ceil(R/80)), m=Math.ceil(R/d);
       return {x0:-m*d, z0:-m*d, d, n:2*m+1}; }
+    // DER UMKREIS, IN DEM EIN PLAN DAS WASSER LIEST (`hoeheAusRaster` nass, die Stadt der Grammatik in `dorfLayout`): der Ring der
+    // Stadt samt ihrer Ausfallstraße — 0 für das Dorf (sein Plan liest kein Wasser, der Ort-Faden rechnet keins). Ohne Zahl
+    // die größte Klasse, die eine Epoche ohne Zahl nennt. Leser: der Wirt (`_foundryRequestSettlement` → voxel-worker `ort-raster`).
+    function wasserReich(nH){ const n=isFinite(nH)?nH:GROESSE_N.stadt, g=groesseVon(n);
+      if(g==='weiler'||g==='dorf') return 0;
+      return Math.min(195, 26+Math.sqrt(n)*8.4)+(g==='metropole'?230:g==='grossstadt'?110:70)+15; }
     function hoeheAusRaster(r){
       if(!r||!isFinite(r.x0)||!isFinite(r.z0)||!(r.d>0)||!(r.n>=2)||!r.h||r.h.length!==r.n*r.n)
         throw new Error("fachwerk: das Höhen-Raster der Trasse ist keins (x0, z0, d, n, h[n·n])");
@@ -3836,6 +4632,11 @@
         if(!(fx>=0&&fz>=0&&fx<=n-1&&fz<=n-1)){ mass.aussen++; fx=Math.max(0,Math.min(n-1,fx||0)); fz=Math.max(0,Math.min(n-1,fz||0)); }
         const i=Math.min(n-2,fx|0), j=Math.min(n-2,fz|0), u=fx-i, v=fz-j, k=i+j*n;
         return (h[k]*(1-u)+h[k+1]*u)*(1-v)+(h[k+n]*(1-u)+h[k+n+1]*u)*v; };
+      /*DAS WASSER DES RASTERS (`nass`, optional: der Ort-Faden nennt es je Zelle, voxel-worker `ort-raster`): steht am Punkt Wasser des Gesetzes? Jede nasse Zelle, deren QUADRAT (Mitte ± die halbe Zelle) näher liegt als `saum` — die eigene Zelle des Punkts immer. Leser: die Stadt der Grammatik (`dorfLayout`: kein Los, keine Gasse, keine Laterne im Wasser)*/
+      const N=r.nass&&r.nass.length===n*n?r.nass:null;
+      H.nass=N?(x,z,saum)=>{ const sa=saum||0, e=d/2, s=sa+e, i0=Math.max(0,Math.floor((x-s-r.x0)/d)), i1=Math.min(n-1,Math.ceil((x+s-r.x0)/d)), j0=Math.max(0,Math.floor((z-s-r.z0)/d)), j1=Math.min(n-1,Math.ceil((z+s-r.z0)/d));
+        for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++) if(N[i+j*n]===1){ const dx=Math.max(0,Math.abs(r.x0+i*d-x)-e), dz=Math.max(0,Math.abs(r.z0+j*d-z)-e); if(dx*dx+dz*dz<=sa*sa) return true; }   /*der Abstand zum Quadrat der Zelle, nie zu ihrer Mitte: in der Ecke seiner eigenen Zelle liegt ein Punkt 0,71 Zellen von ihr — der Kreis um die Mitte (saum + die halbe Zelle) liess sie aus, die Laterne am Ufer stand im Bach, und die Ort-Wahl wies den Wunsch-Ort der Stadt ab (gate:settlement C-K5, Zelle −6,−6: Laterne 75,5/−31,5, die Mitte ihrer Zelle 5,7 m entfernt)*/
+        return false; }:null;
       H.mass=mass; return H; }
     // DER FELDWEG ZWISCHEN ORTEN (fahrzeug.K2): das Wegenetz der Welt verbindet je zwei benachbarte Orte über einen Feldweg, der
     // dem Grund folgt — der günstigste Lauf von einem Punkt der Wege des einen Orts (`A`) zu einem des anderen (`B`) über das
@@ -3985,7 +4786,8 @@
       const kreis=(p,r)=>box(p.x,p.z,0,r,r);
       return [].concat((plan.slots||[]).filter(sl=>sl.obb).map(sl=>box(sl.obb.cx,sl.obb.cz,sl.obb.phi,sl.obb.ex,sl.obb.ez)),
         (plan.staende||[]).map(p=>box(p.x,p.z,0,A.marktstand.tritt.ex,A.marktstand.tritt.ez)), (plan.brunnen||[]).map(p=>kreis(p,A.brunnen.tritt.r)),
-        (plan.laternen||[]).filter(p=>!p.wand).map(p=>kreis(p,A.laterne.tritt.r)), (plan.trees||[]).map(p=>kreis(p,0.8)))
+        (plan.laternen||[]).filter(p=>!p.wand).map(p=>kreis(p,A.laterne.tritt.r)), (plan.trees||[]).map(p=>kreis(p,0.8)),
+        (plan.gegenstaende||[]).map(p=>box(p.x,p.z,p.th,A[p.art].tritt.ex,A[p.art].tritt.ez)))
         .filter(o=>isFinite(o.cx)&&isFinite(o.cz)); }
     function gesperrt(sperren, x, z){
       for(const o of sperren){ const c=Math.cos(o.phi), s=Math.sin(o.phi), dx=x-o.cx, dz=z-o.cz;
@@ -4034,7 +4836,8 @@
       return {knoten:kn, kanten:kan, naehte}; }
     // ═══ DER VERKEHR (PFLICHT-OFFEN C, gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt ═══
     // DIE MENGE (`verkehrVon`): je `hausJeWagen` Häuser einer städtischen Siedlung (Markt bis Metropole, `plan.staedtisch`) EIN
-    // Wagen, sein Fahrer ein Bewohner des Hauses floor((w + ½) · Häuser / Wagen) — gleichmäßig über den Plan; ein Dorf fährt nicht.
+    // Wagen, sein Fahrer ein Bewohner des Hauses floor((w + ½) · Häuser / Wagen) — gleichmäßig über die Lose im Ring (ohne die
+    // Vorstadt; ein Plan ohne sie: über jedes Los); ein Dorf fährt nicht.
     // DAS NETZ (`verkehrsNetz`, am Ursprung ox/oz): die Trassen, die zwei Wagen nebeneinander tragen (jede Straße ab `breiteM`:
     // die Hauptstraßen der Stadt; Punkte zweier Trassen näher als `naheM` treffen sich, und DER STOSS: das Ende einer Trasse trifft
     // das Ende einer anderen bis `stossM` — am Knoten des Straßengraphen liegen sie bis zu einem Schritt der Trasse (3 m, `strassengraph`
@@ -4060,24 +4863,40 @@
     // Boden (`verkehrsBoden`). `wendeAbM` reicht bis 80 m (höchstens die halbe Strecke): bis w12-verkehr 40 — an der Stadt des
     // Worts (stadt-voll, 836,09/438,24) trug das Ende im Osten in 40 m keinen freien Kreis, mit ihm 3 statt 1 Wende, 21 Plätze für 20.
     var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, stossM: 3.1, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
-      wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
+      wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigAussenM: 0.3, abzweigZulaufM: 10, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
     function verkehrVon(plan){
       const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
-      for(let w=0;w<N;w++) slots.push(Math.min(sl.length-1,Math.floor((w+0.5)*sl.length/N)));
+      /*DER WAGEN DER STADT GEHOERT EINEM HAUS IM RING (w28-stadt-grammatik): sein Platz liegt an der Wende am Tor, sein Fahrer geht
+        von seiner Tuer dorthin — die Vorstadt (`viertel` des Loses, STADT_GRAMMATIK) haengt je Tor an EINER Ausfallstrasse (230 m in
+        der Metropole, sie lenkt mit dem Hang), ihr Ende liegt in der Luft nah an einem anderen Tor und zu Fuss weit von ihm. Bis hier
+        fiel die Wahl gleichmaessig ueber JEDES Los: an stadt-voll trug #548012 am Ende der Ausfallstrasse des Ost-Tors (999/154)
+        Wagen 18 an der Wende des Nordost-Tors — 155 m Luft, 512 m Weg; er ging 318 s seines Morgens 414 m und kam zur Stunde 10 nie
+        ans Steuer (gate:fahr-leben VK: Wagen 18 0 m je Minute, die Stunde trennte sich von ihrem Zwilling). Ein Plan ohne Vorstadt
+        (das Dorf, jede Stadt ohne Ring, jeder Plan vor der Grammatik) waehlt wie bisher.*/
+      const ring=[]; for(let i=0;i<sl.length;i++) if(sl[i].viertel!=='vorstadt') ring.push(i);
+      const L=ring.length?ring:sl.map((_,i)=>i);
+      for(let w=0;w<N;w++) slots.push(L[Math.min(L.length-1,Math.floor((w+0.5)*L.length/N))]);
       return {n:N, slots}; }
     // die Sperren im Raster von `zM` (je Zelle die Boxen, die sie berühren): die Frage `gesperrt` an (x, z) liest nur ihre Zelle;
     // mit `r` die Frage, ob eine Box näher als r liegt (der Abstand zur gedrehten Box, je Zelle im Umkreis)
     function sperrenRaster(sperren, zM){
-      const R=new Map();
-      for(const o of sperren){ const r=Math.hypot(o.ex,o.ez);
+      /*DIE FRAGE MIT RADIUS LIEST ZAHLEN (w28-stadt-funktion): je Zelle neben den Boxen ihre Zahlen flach (`F`: cx, cz, ex, ez und
+        der Kosinus und Sinus der Drehung, EINMAL je Box gerechnet), und eine Box, die laengs einer Achse schon r fern liegt, faellt
+        vor der Wurzel (der Abstand ist nie kleiner als sein groesserer Teil) — dieselbe Antwort an jedem Punkt. Bis hier rechnete
+        jede Frage je Box Kosinus und Sinus neu: die Wende-Suche fragt je Kreis einige tausend Punkte ihrer Bahnen*/
+      const R=new Map(), F=new Map();
+      for(const o of sperren){ const r=Math.hypot(o.ex,o.ez), c=Math.cos(o.phi), s=Math.sin(o.phi);
         for(let i=Math.floor((o.cx-r)/zM);i<=Math.floor((o.cx+r)/zM);i++) for(let j=Math.floor((o.cz-r)/zM);j<=Math.floor((o.cz+r)/zM);j++){
-          const k=i*2097152+j; (R.get(k)||(R.set(k,[]),R.get(k))).push(o); } }
+          const k=i*2097152+j; (R.get(k)||(R.set(k,[]),R.get(k))).push(o); (F.get(k)||(F.set(k,[]),F.get(k))).push(o.cx,o.cz,o.ex,o.ez,c,s); } }
       return (x,z,r)=>{ if(!(r>0)) return gesperrt(R.get(Math.floor(x/zM)*2097152+Math.floor(z/zM))||[],x,z);
-        for(let i=Math.floor((x-r)/zM);i<=Math.floor((x+r)/zM);i++) for(let j=Math.floor((z-r)/zM);j<=Math.floor((z+r)/zM);j++)
-          for(const o of R.get(i*2097152+j)||[]){ const c=Math.cos(o.phi), s=Math.sin(o.phi), dx=x-o.cx, dz=z-o.cz;
-            if(Math.hypot(Math.max(0,Math.abs(dx*c-dz*s)-o.ex),Math.max(0,Math.abs(dx*s+dz*c)-o.ez))<r) return true; }
+        for(let i=Math.floor((x-r)/zM);i<=Math.floor((x+r)/zM);i++) for(let j=Math.floor((z-r)/zM);j<=Math.floor((z+r)/zM);j++){
+          const f=F.get(i*2097152+j); if(!f) continue;
+          for(let t=0;t<f.length;t+=6){ const c=f[t+4], s=f[t+5], dx=x-f[t], dz=z-f[t+1];
+            const a=Math.max(0,Math.abs(dx*c-dz*s)-f[t+2]); if(a>=r) continue;
+            const b=Math.max(0,Math.abs(dx*s+dz*c)-f[t+3]); if(b>=r) continue;
+            if(Math.hypot(a,b)<r) return true; } }
         return false; }; }
-    function verkehrsNetz(plan, ox, oz, ohneWende){
+    function verkehrsNetz(plan, ox, oz, ohneWende, boden){
       const V=VERKEHR_GESETZ, zu=sperrenRaster(planSperren(plan,ox,oz,0),V.zelleM);
       const zuP=sperrenRaster(planSperren(plan,ox,oz,0.2),V.zelleM);
       const frei=(x,z,r)=>!zu(x,z,r);
@@ -4258,14 +5077,15 @@
       // und heraus kreuzten sich — einer zur Zeit (stadt-voll: 35 Ziele in 10 min, 8 Wagen ohne Ziel, die längste Fahrt 734 s).
       // Die Plätze: tangential am Ring um den Kreis (er fährt vorwärts aus ihnen heraus), frei von Grundriss, Tritt, der Mitte jedes
       // Wegs, der Bahn und zwei halben Wagen um jede Spur.
-      kreuzungen.forEach((K,ki)=>{ if(ohneWende||!K.ende||!K.strecken.length) return; const s=strecken[K.strecken[0]];
+      kreuzungen.forEach((K,ki)=>{ if(ohneWende||!K.ende||!K.strecken.length) return;
+        if(plan.kachel&&Math.max(Math.abs(K.x-ox),Math.abs(K.z-oz))>plan.kachel.m/2-2){ K.tor=true; return; }   /*EIN TOR IST KEIN ENDE (w28-stadt-netz): die Strasse der Kachel einer Stadt endet an ihrer Kante im Tor — sie laeuft im Nachbarn weiter, dort wendet kein Wagen (bis hier suchte jedes der vier Tore der Hauptstrassen acht Wenden: 32 je Kachel, Plan v2 1041 KB)*/ const s=strecken[K.strecken[0]];
         const rein=s.b===ki?s.spur[0]:s.spur[1], raus=s.b===ki?s.spur[1]:s.spur[0], M=s.b===ki?s.mitte:s.mitte.slice().reverse();
         if(rein.length<2||raus.length<2) return;
         const nR=rein.length, nA=raus.length, cR=new Float64Array(nR), cA=new Float64Array(nA), g2=2*V.halbM, R=V.wendeM;
         for(let k=nR-2;k>=0;k--) cR[k]=cR[k+1]+Math.hypot(rein[k+1].x-rein[k].x,rein[k+1].z-rein[k].z);
         for(let k=1;k<nA;k++) cA[k]=cA[k-1]+Math.hypot(raus[k].x-raus[k-1].x,raus[k].z-raus[k-1].z);
         const tang=(Q,k)=>{ const a=Q[Math.max(0,k-2)], b=Q[Math.min(Q.length-1,k+2)], l=Math.hypot(b.x-a.x,b.z-a.z)||1; return {x:(b.x-a.x)/l, z:(b.z-a.z)/l}; };
-        const abMax=Math.min(V.wendeAbM[1],cR[0]/2,cA[nA-1]/2), kR=[], kA=[];
+        const abMax=Math.min(V.wendeAbM[1],cR[0]/2,cA[nA-1]/2), kR=[], kA=[], aussenJe=[];
         for(let k=nR-1, nx=0;k>=0&&cR[k]<=abMax;k--) if(cR[k]>=nx){ kR.push(k); nx=cR[k]+V.abzweigM; }
         for(let k=0, nx=0;k<nA&&cA[k]<=abMax;k++) if(cA[k]>=nx){ kA.push(k); nx=cA[k]+V.abzweigM; }
         // die Punkte beider Spuren im Raster (je Zelle die Indizes, die Spur heraus ab 2^20): `nahe` nennt je Spur den kleinsten und
@@ -4279,41 +5099,60 @@
           return n; };
         const rU=V.halbM+(V.parkL/2)**2/(2*R), geht=(B)=>B.every((q,i)=>!i||gang(B[i-1],q,rU));
         const e=M[M.length-1], d0=M[Math.max(0,M.length-4)], l=Math.hypot(e.x-d0.x,e.z-d0.z)||1, ux=(e.x-d0.x)/l, uz=(e.z-d0.z)/l;
-        for(let k=V.wendeAbM[0];k<=V.wendeAbM[1]&&K.wenden.length<V.wendeN;k++) for(const a of [0,0.5,-0.5,1,-1,1.5,-1.5,2,-2,2.5,-2.5]){ if(K.wenden.length>=V.wendeN) break;
-          const cx=e.x+(ux*Math.cos(a)-uz*Math.sin(a))*k, cz=e.z+(uz*Math.cos(a)+ux*Math.sin(a))*k;
-          if(K.wenden.some(w=>Math.hypot(w.x-cx,w.z-cz)<3)) continue;
+        const versuch=(cx,cz,tor)=>{                                                          /*EIN KREIS DER SUCHE (Mitte cx/cz; `tor`: die Mitte des Torplatzes): traegt er, steht seine Wende in `K.wenden`*/
+          if(K.wenden.some(w=>Math.hypot(w.x-cx,w.z-cz)<3)) return;
           // der Kreis frei: keine Sperre näher als Rf an seiner Mitte (der Abstand zur gedrehten Box)
-          const Rf=R+V.halbM+V.wendeRandM; if(zu(cx,cz,Rf)) continue;
+          const Rf=R+V.halbM+V.wendeRandM; if(zu(cx,cz,Rf)) return;
+          if(boden&&!boden.kreis(cx,cz,R)) return;                                           /*DIE HOEHE URTEILT IN DER SUCHE (`boden`, der Plan v2 `verkehrsBoden`): ein Kreis, dessen Grund die Wende nicht traegt (Wasser, Hang — das billige Urteil vor der Bahn), und unten eine Wende, deren Ring und Baender keine Flaeche der Stadt tragen, zaehlen nicht zu den `wendeN`. Bis hier nahm die Suche die ersten acht freien Kreise in 2D, die Hoehe urteilte danach nur unter ihnen: am Ende West von stadt-voll (668,5/439,4) lagen alle acht 7–21 m vom Ende am Torplatz und fielen (fuenf mit dem Ring auf dem Kern der fallenden Trasse 0,33–0,41 m tiefer, drei am Band heraus) — Wenden 3 an 4 Enden*/
           const C={x:cx,z:cz}, nR0=nahe([C],R+g2), loRing=nR0[0], hiRing=nR0[3];
-          let best=null;
+          const bogenVon=(P)=>P.map((p,i)=>{ const a=P[i-1], c=P[i+1]; if(!a||!c) return null; const t1=Math.atan2(p.z-a.z,p.x-a.x); let d=Math.atan2(c.z-p.z,c.x-p.x)-t1; d-=Math.round(d/(2*Math.PI))*2*Math.PI;
+            const k=2*d/(Math.hypot(p.x-a.x,p.z-a.z)+Math.hypot(c.x-p.x,c.z-p.z)); if(Math.abs(k)<1e-3) return null; const t=t1+d/2; return {x:p.x-Math.sin(t)/k, z:p.z+Math.cos(t)/k, R:Math.max(1/Math.abs(k),R)}; });
+          const schert=(b,q)=>b&&Math.hypot(q.x-b.x,q.z-b.z)>b.R?(V.parkL/2)**2/(2*b.R):0;
+          /*DIE BAHN OHNE BEGEGNUNG ZUERST (w28-stadt-grammatik): unter den Abzweigen eines Kreises gilt die kuerzeste Bahn, deren Weg hinein und Weg heraus einander samt dem Ausscheren nie naeher kommen als zwei halbe Wagen (dasselbe Mass wie `engen` unten) — erst wo keine so traegt, die kuerzeste mit ihrer Enge. Bis hier galt immer die kuerzeste: an stadt-voll trugen drei der vier Wenden am Torplatz eine Enge im Zulauf, die Schleife im Suedwesten (746,5/573) fasste 6 Wagen bei 7 Plaetzen, die Flotte stand vor ihr (gate:fahr-leben VK: 20 m und 28 m je Minute, Wagen an Wagen 0,09 m); main, dessen Wenden 45–61 m stadteinwaerts lagen, trug an drei von vier keine*/
+          /*der Raum der Begegnung ist der der Trasse: zwei Spuren `spurM` neben der Mitte (2,5 m fuer den Wagen von `parkB` 2,3 m: 0,2 m zwischen beiden), samt dem Ausscheren — mit zwei halben Wagen (`g2`, 2,4 m, das Mass der Enge) begegneten sich an stadt-voll um 10 und 23 Uhr Wagen 18 und 20 im Zulauf der Nordost-Wende auf 0,19 m (Soll ≥ 0,2 m)*/
+          const ohneEnge=(EB,AB)=>{ const bE=bogenVon(EB), bA=bogenVon(AB), g3=2*V.spurM; for(let i=0;i<EB.length;i++) for(let j=0;j<AB.length;j++){ const p=EB[i], q=AB[j]; if(Math.hypot(p.x-q.x,p.z-q.z)<g3+schert(bE[i],q)+schert(bA[j],p)) return false; } return true; };
+          let best=null, frei0=null;
           for(const dreh of [1,-1]){
             // die Bahnen hinein je Abzweig (k1: der Punkt der Spur hinein) und heraus (k2), ihr Maß samt dem Stück der Spur
             const eins=[], auss=[];
+            /*DER ABZWEIG ERREICHT SEINE SPUR VON AUSSEN (w28-stadt-grammatik, `abzweigAussenM` · `abzweigZulaufM`): am Ende des Bogens heraus giert der Wagen noch um Radstand ÷ (2 · R) gegen seine Spur, sein Bug steht aussen — zur Gegenspur, die 2 · `spurM` daneben liegt. Der Bogen endet darum `abzweigAussenM` neben der Spur, von der Gegenspur fort, und laeuft ueber `abzweigZulaufM` gerade auf sie zu (`zulauf`); der Abzweig der Bahn (`k`, `ausAb`) ist der Punkt, an dem sie die Spur erreicht. Bis hier endete der Bogen auf der Spur: an stadt-voll bog Wagen 3 um 10 Uhr aus der Nordost-Wende auf seine Spur, 10,6 Grad gegen sie, und Wagen 7 auf der Gegenspur fuhr 0,15 m an ihm vorbei (gate:fahr-leben VK in voller Laenge, Bild 22964 bei 900/316, Soll >= 0,2 m; in 330 s blieb es bei 0,26 m). Der doppelte Radius am Abzweig heilte die Stadt (0,30 m) und verlegte die Wende des Start-Dorfs: 13 Bewohner ohne Weg (gate:kreatur-takt) — der Kreis, die Plaetze und der Bogen bleiben, wo sie waren. Die Enge und die Naehe der Bahnen hinein und heraus urteilen am Bogen (`Bk`), der Zulauf liegt auf der Trasse*/
+            const aussen=(k)=>aussenJe[k]||(aussenJe[k]=aussen0(k)), aussen0=(k)=>{ const p=raus[k], u=tang(raus,k); let b=rein[0], bd=Infinity;   /*je Punkt der Spur heraus EINMAL je Ende (`aussenJe`): die Seite haengt nur an den zwei Spuren, nie am Kreis — bis hier suchte jede Bahn heraus jedes Kreises fuer jeden Punkt ihres Zulaufs die ganze Spur hinein ab*/ for(const q of rein){ const d=(q.x-p.x)**2+(q.z-p.z)**2; if(d<bd){ bd=d; b=q; } } const s=((p.x-b.x)*-u.z+(p.z-b.z)*u.x)>=0?1:-1; return {x:-u.z*s, z:u.x*s}; };
+            const zulauf=(k2,kz)=>{ const pts=[], l=cA[kz]-cA[k2]; for(let j=k2+1;j<=kz;j++){ const a=aussen(j), f=V.abzweigAussenM*(1-(cA[j]-cA[k2])/l); pts.push({x:raus[j].x+a.x*f, z:raus[j].z+a.z*f}); } return pts; };
             for(const k1 of kR){ if(k1>=loRing) continue; for(const o of uebergang(rein[k1],tang(rein,k1),C,R,dreh,R)) eins.push({k:k1, o, L:o.L-cR[k1], get B(){ return this._B||(this._B=[rein[this.k],...this.o.pts]); }}); }
-            for(const k2 of kA){ if(k2<=hiRing) continue; const u=tang(raus,k2); for(const o of uebergang(raus[k2],{x:-u.x,z:-u.z},C,R,-dreh,R)) auss.push({k:k2, o, L:o.L-cA[k2], get B(){ return this._B||(this._B=this.o.pts.reverse().concat([raus[this.k]])); }}); }
-            const nP=eins.length*auss.length, LP=new Float64Array(nP), IP=[];
-            for(let i=0;i<eins.length;i++) for(let j=0;j<auss.length;j++){ let span=(auss[j].o.a-eins[i].o.a)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI; if(span<0.5) continue;
-              const L=eins[i].L+span*R+auss[j].L; if(best&&L>=best.L) continue; const q=i*auss.length+j; LP[q]=L; IP.push(q); }
-            IP.sort((p,q)=>LP[p]-LP[q]);
-            for(const q of IP){ const E=eins[(q/auss.length)|0], A=auss[q%auss.length], L=LP[q]; if(best&&best.L<=L) break;
+            for(const k2 of kA){ if(k2<=hiRing) continue; let kz=k2; while(kz<nA-1&&cA[kz]-cA[k2]<V.abzweigZulaufM) kz++; if(cA[kz]-cA[k2]<V.abzweigZulaufM) continue;
+              const u=tang(raus,k2), a0=aussen(k2), P0={x:raus[k2].x+a0.x*V.abzweigAussenM, z:raus[k2].z+a0.z*V.abzweigAussenM};
+              for(const o of uebergang(P0,{x:-u.x,z:-u.z},C,R,-dreh,R)) auss.push({k:kz, o, L:o.L-cA[k2], get Bk(){ return this._Bk||(this._Bk=this.o.pts.reverse().concat([P0])); }, get B(){ return this._B||(this._B=this.Bk.concat(zulauf(k2,kz))); }}); }
+            /*DIE PAARE NUR DER FREIEN BAHNEN HINEIN (w28-stadt-funktion): eine Bahn hinein urteilt EINMAL, an ihrem ersten Paar, das zaehlt — traegt sie nicht, entsteht keines ihrer Paare. Dieselben Paare in derselben Folge wie zuvor (die Sortierung haelt die Reihe gleicher Laengen), dieselbe Wahl. Bis hier entstanden alle Paare hinein × heraus, wurden sortiert und durchlaufen, auch die der Bahnen, die nicht tragen: `dorf 21 1000` baute 9,64 Mio Paare fuer 23, die galten (1 010 von 1 033 freien Kreisen ohne Bahn)*/
+            const nA9=auss.length, PQ=[], PL=[], IP=[];
+            for(let i=0;i<eins.length;i++){ const E=eins[i]; for(let j=0;j<nA9;j++){ let span=(auss[j].o.a-E.o.a)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI; if(span<0.5) continue;
+              const L=E.L+span*R+auss[j].L; if(frei0&&L>=frei0.L) continue;
+              if(E.frei===undefined&&(E.frei=geht(E.B))){ const n=nahe(E.B,g2); E.hiA=n[3]; E.frei=!(cR[n[0]]>cR[E.k]+V.abzweigFreiM); }   /*der Gang zuerst: er endet am ersten Hindernis, die Naehe liest die ganze Bahn — und nur eine Bahn, die geht, fragt sie (`dorf 21 144`: 41 522 von 46 835 Bahnen hinein fielen allein am Gang)*/
+              if(!E.frei) break;
+              IP.push(PQ.length); PQ.push(i*nA9+j); PL.push(L); } }
+            IP.sort((p,q)=>PL[p]-PL[q]);
+            for(const t of IP){ const q=PQ[t], E=eins[(q/nA9)|0], A=auss[q%nA9], L=PL[t]; if(frei0&&frei0.L<=L) break;
               let span=(A.o.a-E.o.a)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI;
-              if(E.frei===undefined){ const n=nahe(E.B,g2); E.hiA=n[3]; E.frei=!(cR[n[0]]>cR[E.k]+V.abzweigFreiM)&&geht(E.B); }
-              if(!E.frei) continue;
-              if(A.frei===undefined){ const n=nahe(A.B,g2); A.loR=n[0]; A.frei=!(cA[n[3]]>cA[A.k]+V.abzweigFreiM)&&geht(A.B); }
+              if(A.frei===undefined&&(A.frei=geht(A.B))){ const n=nahe(A.B,g2); A.loR=n[0]; A.frei=!(cA[n[3]]>cA[A.k]+V.abzweigFreiM); }
               if(!A.frei||A.k<=E.hiA||E.k>=A.loR) continue;
-              let nah=false; for(const p of E.B){ for(const q of A.B) if((p.x-q.x)**2+(p.z-q.z)**2<g2*g2){ nah=true; break; } if(nah) break; }
+              let nah=false; for(const p of E.B){ for(const q of A.Bk) if((p.x-q.x)**2+(p.z-q.z)**2<g2*g2){ nah=true; break; } if(nah) break; }
               if(nah) continue;
-              best={L, dreh, span, E, A}; break; } }
-          if(!best) continue;
+              const c9={L, dreh, span, E, A}; if(!best||L<best.L) best=c9;
+              if(ohneEnge(E.B,A.B)){ frei0=c9; break; } } }
+          if(!best) return;
+          if(frei0) best=frei0;
           const {dreh, span, E, A}=best, ain=E.o.a, aout=A.o.a, einB=E.B, ausB=A.B, bahn=einB.slice(), m=Math.ceil(span*R);
           for(let t=1;t<m;t++){ const w=ain+dreh*span*t/m; bahn.push({x:cx+Math.cos(w)*R, z:cz+Math.sin(w)*R}); }
           bahn.push(...ausB);
           const reinB=rein.slice(0,E.k+1), rausB=raus.slice(A.k);
-          const rP=R+V.halbM+V.parkRandM+V.parkB/2, plaetze=[], dA=(V.parkL+V.parkRandM)/rP;
+          /*DER KRANZ DER PLAETZE HAELT DAS AUSSCHEREN (w28-stadt-grammatik): der Wagen auf dem Ring belegt `rU` (der halbe Wagen samt dem Ausscheren des groessten im Bogen der Wende, wie die Bahn und die Enge es zaehlen), erst dahinter beginnt der Rand zum geparkten. Bis hier stand der Kranz um `halbM` + `parkRandM`: der groesste Wagen fuhr 0,6 − 0,52 = 0,08 m am geparkten vorbei — an stadt-voll um 23 Uhr Wagen 15 auf dem Ring der Suedwest-Wende 0,09 m neben Wagen 12 auf seinem Platz (gate:fahr-leben VK „Wagen an Wagen", Soll ≥ 0,2 m)*/
+          const rP=R+rU+V.parkRandM+V.parkB/2, plaetze=[], dA=(V.parkL+V.parkRandM)/rP;
           for(let w=0;w<2*Math.PI-dA/2;w+=dA){ const b=ain+dreh*w, x=cx+Math.cos(b)*rP, z=cz+Math.sin(b)*rP, tx=-Math.sin(b)*dreh, tz=Math.cos(b)*dreh;
             let frei2=true;
             for(const u of [-0.5,-0.25,0,0.25,0.5]) for(const v of [-0.5,0,0.5]){ const lx=u*V.parkL, lz=v*V.parkB, px=x+tx*lx-tz*lz, pz=z+tz*lx+tx*lz;
               if(zuP(px,pz)||amWeg(px,pz,V.halbM)||nahStrecke(px,pz,einB,V.halbM)||nahStrecke(px,pz,ausB,V.halbM)||nahStrecke(px,pz,reinB,g2)||nahStrecke(px,pz,rausB,g2)) frei2=false; }
+            /*DER STAND DES FAHRERS NEBEN DEM PLATZ IST FREI (w28-stadt-grammatik): aussen am Platz (eine Wagenbreite `parkB` vom Platz fort vom Ring — dort steht sein Fahrer, der Wirt `_verkehrAnlegen`) liegt kein Grundriss und keine Spur der Trasse, auch nicht ihr Stueck zwischen Abzweig und Ende (`rein`, `raus` ganz). Bis hier pruefte der Platz nur sich selbst und die Spuren bis zum Abzweig: an stadt-voll lag der Stand am ersten Platz der Suedwest-Wende (734,3/571,6) 2 m neben dem Ende der Trasse in ihrer Spur — der Wirt rueckte ihn, und bis dahin fand der Fahrer #133030 von seinem Morgen her keinen Weg zu ihm (er stand um 10 Uhr 149 m fern am Markt, gate:fahr-leben VK-V trennte sich in Bild 0)*/
+            if(frei2) for(const u of [-0.25,0,0.25]){ const px=x+Math.cos(b)*V.parkB+tx*u*V.parkL, pz=z+Math.sin(b)*V.parkB+tz*u*V.parkL;
+              if(zuP(px,pz)||nahStrecke(px,pz,rein,g2)||nahStrecke(px,pz,raus,g2)||nahStrecke(px,pz,einB,V.halbM)||nahStrecke(px,pz,ausB,V.halbM)) frei2=false; }
             if(frei2) plaetze.push({x, z, beta:b, fahrt:Math.atan2(tx,tz)}); }
           // DIE BEGEGNUNG (`engen`): wo die Bahn hinein und die Bahn heraus einander näher kommen als zwei halbe Wagen samt dem
           // Ausscheren im Bogen — der starre Wagen schert um (parkL/2)²/(2·R) nach AUSSEN, also nur zur Bahn hin, die außerhalb
@@ -4322,17 +5161,23 @@
           // gereiht. Bis hier hielt die Wahl nur zwei halbe Wagen (die Kreuzung zählt das Ausscheren, `konflikt`): an der Wende
           // 908/289 von stadt-voll liefen beide Bahnen 2,42 m nebeneinander, zwei Wagen begegneten sich auf 0,08 m, und der Zug
           // sah „Wagen in Wagen" (08.11.); keine Lage der Wende 968/347 hält die Begegnung frei.
-          const bogenVon=(P)=>P.map((p,i)=>{ const a=P[i-1], c=P[i+1]; if(!a||!c) return null; const t1=Math.atan2(p.z-a.z,p.x-a.x); let d=Math.atan2(c.z-p.z,c.x-p.x)-t1; d-=Math.round(d/(2*Math.PI))*2*Math.PI;
-            const k=2*d/(Math.hypot(p.x-a.x,p.z-a.z)+Math.hypot(c.x-p.x,c.z-p.z)); if(Math.abs(k)<1e-3) return null; const t=t1+d/2; return {x:p.x-Math.sin(t)/k, z:p.z+Math.cos(t)/k, R:Math.max(1/Math.abs(k),R)}; });
-          const schert=(b,q)=>b&&Math.hypot(q.x-b.x,q.z-b.z)>b.R?(V.parkL/2)**2/(2*b.R):0, bE=bogenVon(einB), bA=bogenVon(ausB), haufen=[];
+          const bE=bogenVon(einB), bA=bogenVon(ausB), haufen=[];   /*DIE ENGE ZAEHLT DEN ZULAUF MIT (w28-stadt-grammatik): wo der Bogen hinein neben dem Zulauf heraus ausschert, begegnen sich zwei Wagen nicht — dieselbe Klasse wie die Begegnung am Ende des Bogens heraus. Die Wahl nimmt zuerst die Bahn ohne sie (`ohneEnge` ueber die ganze Bahn heraus), sonst traegt die Wende die Enge, und der Wirt laesst dort einen nach dem anderen. Ohne sie im Mass (nur der Bogen) fuhr an stadt-voll um 10 Uhr ein Wagen 27 m in der Minute, mit ihr 120 m (gate:fahr-leben VK, Soll >= 30)*/
           einB.forEach((p,i)=>ausB.forEach((q,j)=>{ if(Math.hypot(p.x-q.x,p.z-q.z)>=g2+schert(bE[i],q)+schert(bA[j],p)) return;
             const H=haufen.filter(h=>h.P.some(o=>Math.hypot(o.x-p.x,o.z-p.z)<2*rU||Math.hypot(o.x-q.x,o.z-q.z)<2*rU)), h0=H[0]||{P:[], i};
             if(!H.length) haufen.push(h0); for(const h of H.slice(1)){ h0.P.push(...h.P); h0.i=Math.min(h0.i,h.i); haufen.splice(haufen.indexOf(h),1); }
             for(const o of [p,q]) if(!h0.P.includes(o)) h0.P.push(o); }));
           const engen=haufen.sort((a,b)=>a.i-b.i).map(({P})=>{ const c={x:0,z:0}; for(const q of P){ c.x+=q.x/P.length; c.z+=q.z/P.length; }
             let r=0; for(const q of P) r=Math.max(r,Math.hypot(q.x-c.x,q.z-c.z)); return {x:c.x, z:c.z, r:r+V.halbM}; });
-          K.wenden.push({x:cx, z:cz, r:R, frei:Rf, dreh, ain, aout, bahn, ein:einB, aus:ausB, einAb:nR-1-E.k, ausAb:A.k, L:best.L, plaetze, engen}); }
-        K.wenden.sort((p,q)=>p.L-q.L); });
+          const wn={x:cx, z:cz, r:R, frei:Rf, dreh, ain, aout, bahn, ein:einB, aus:ausB, einAb:nR-1-E.k, ausAb:A.k, L:best.L, plaetze, engen};
+          if(boden){ const b=boden.wende(wn); if(!b) return; wn.boden=b; }
+          if(tor) wn.tor=true;
+          K.wenden.push(wn); };
+        /*DIE WENDE DES TORPLATZES ZUERST (STADT_DICHTE.torplatz): das Geviert, das die Stadt am Ende der Trasse frei haelt, ist fuer den Kreis um seine Mitte gebaut — sein Ring und der Kranz der Plaetze liegen ganz in ihm. Er ist der erste Kreis der Suche und, wo er traegt, die Wende des Endes vor jeder kuerzeren Bahn: die kuerzeste lag an stadt-voll 6–7 m neben der Mitte, ihr Kranz reichte in die Lose (5 · 5 · 4 · 5 Plaetze fuer 21 Wagen, zwei ohne Platz)*/
+        for(const q of plan.zonen||[]) if(q&&q.name==='torplatz'&&Math.abs(Math.hypot(ox+q.cx-e.x,oz+q.cz-e.z)-STADT_DICHTE.torplatz.abM)<0.5) versuch(ox+q.cx,oz+q.cz,true);
+        if(!(boden&&K.wenden.length))                                                         /*traegt der Kreis des Torplatzes (das Urteil der Hoehe), steht die Wende des Endes fest: die Suche endet — der Plan zahlt je Ende EINEN Kreis statt acht samt ihrer Bahnen*/
+        for(let k=V.wendeAbM[0];k<=V.wendeAbM[1]&&K.wenden.length<V.wendeN;k++) for(const a of [0,0.5,-0.5,1,-1,1.5,-1.5,2,-2,2.5,-2.5]){ if(K.wenden.length>=V.wendeN) break;
+          versuch(e.x+(ux*Math.cos(a)-uz*Math.sin(a))*k, e.z+(uz*Math.cos(a)+ux*Math.sin(a))*k); }
+        K.wenden.sort((p,q)=>(q.tor?1:0)-(p.tor?1:0)||p.L-q.L); });
       let laenge=0; for(const s of strecken) if(s.frei) laenge+=s.laenge;
       return {kreuzungen, strecken, laenge}; }
     // DIE WENDE IST BODEN DER STADT (PFLICHT-OFFEN C, der Plan v2 `ortPlan`): je Ende des Netzes (`verkehrsNetz`) die erste Wende
@@ -4343,7 +5188,7 @@
     // eine Wende, kein Wagen fuhr. `flaeche`: die Höhe jeder Fläche der Wege und des Platzes (Kern und Saum), `kern`: nur der Kerne.
     // Rückgabe {netz, erdbau}. Leser: der Wirt (`_verkehrAnlegen`: das Netz, die Wenden, ihr Bild über den Hebel der Dörfer).
     function verkehrsBoden(plan, ox, oz, ctx, flaeche, kern){
-      const V=VERKEHR_GESETZ, N=verkehrsNetz(plan,ox,oz), erdbau=[], r6=(v)=>Math.round(v*1e6)/1e6;
+      const V=VERKEHR_GESETZ, erdbau=[], r6=(v)=>Math.round(v*1e6)/1e6;
       const land=(x,z)=>!(ctx.wasserAt&&ctx.wasserAt(x,z)), h=(x,z)=>ctx.hoeheAt(x,z);
       // DIE WEGE DES VERKEHRS je mit ihrer Zahl (ab 3000; gelaende-core erdbauY: auf EINEM Weg trägt die nächste Mitte) — ohne sie
       // trug an jedem Gelenk die spätere Strecke die Höhe ihres Anfangs, jede Rampe der Bahn war eine Treppe (stadt-voll des Worts,
@@ -4374,21 +5219,31 @@
       const bandTraegt=(A,b)=>{ const Q=A.P; for(let i=0;i<Q.length;i++){ const a=Q[Math.max(0,i-1)], c=Q[Math.min(Q.length-1,i+1)], l=Math.hypot(c.x-a.x,c.z-a.z)||1, nx=-(c.z-a.z)/l, nz=(c.x-a.x)/l;
           if(!land(Q[i].x,Q[i].z)) return false; for(const o of [-b,b]) if(!traegt(Q[i].x+nx*o,Q[i].z+nz*o,A.ys[i],V.flaecheM+V.hangMax*b)) return false;
           if(i&&Math.abs(A.ys[i]-A.ys[i-1])>V.hangMax*(A.s[i]-A.s[i-1])) return false; } return true; };
-      for(const K of N.kreuzungen){ K.wende=null; if(!K.ende) continue;
-        for(const w of K.wenden){ const pA=w.ein[0], pB=w.aus[w.aus.length-1], yA=kern(pA.x,pA.z), yB=kern(pB.x,pB.z);
-          if(yA===null||yB===null||!isFinite(yA)||!isFinite(yB)) continue;
-          const y=(yA+yB)/2, h0=h(w.x,w.z); let ok=land(w.x,w.z)&&isFinite(h0);
-          for(let a=0;a<12&&ok;a++){ const x=w.x+Math.cos(a*Math.PI/6)*w.r, z=w.z+Math.sin(a*Math.PI/6)*w.r; ok=land(x,z)&&Math.abs(h(x,z)-h0)<=V.hangMax*w.r; }
-          const bR=V.halbM+V.ringRandM/2;
-          for(let a=0;a<2*Math.PI&&ok;a+=0.5/w.r) for(const o of [-bR,0,bR]) if(!traegt(w.x+Math.cos(a)*(w.r+o),w.z+Math.sin(a)*(w.r+o),y,V.flaecheM)) ok=false;
-          const hEin=ok?aufFlaechen(w.ein,null,y,kern):null, hAus=ok?aufFlaechen(w.aus,y,null,kern):null;
-          if(!hEin||!hAus||!bandTraegt(hEin,V.halbM)||!bandTraegt(hAus,V.halbM)) continue;
+      // DAS URTEIL DER HÖHE (`boden`, der Baustein der Suche in `verkehrsNetz`): `kreis` — die Mitte und zwölf Punkte des Kreises
+      // tragen Land und liegen nicht steiler als `hangMax` (vor der Bahn: billig zuerst); `wende` — Ring, Bänder und Plätze der
+      // fertigen Wende auf den Flächen der Stadt ({plaetze, y, hEin, hAus}, sonst null). Jede Wende der Suche trägt: die erste
+      // (die kürzeste Bahn) ist die Wende des Endes.
+      const bR=V.halbM+V.ringRandM/2;
+      const boden={
+        kreis:(cx,cz,r)=>{ const h0=h(cx,cz); if(!land(cx,cz)||!isFinite(h0)) return false;
+          for(let a=0;a<12;a++){ const x=cx+Math.cos(a*Math.PI/6)*r, z=cz+Math.sin(a*Math.PI/6)*r; if(!land(x,z)||!(Math.abs(h(x,z)-h0)<=V.hangMax*r)) return false; }
+          return true; },
+        wende:(w)=>{ const pA=w.ein[0], pB=w.aus[w.aus.length-1], yA=kern(pA.x,pA.z), yB=kern(pB.x,pB.z);
+          if(yA===null||yB===null||!isFinite(yA)||!isFinite(yB)) return null;
+          const yK=kern(w.x,w.z), y=yK!==null&&isFinite(yK)?yK:(yA+yB)/2;                      /*DIE WENDE LIEGT AUF DER HOEHE IHRES RINGS: liegt ihre Mitte auf einem Kern (der Torplatz, der Platz), traegt sie dessen Hoehe, die Baender steigen vom Abzweig zu ihr (`aufFlaechen`); sonst das Mittel der Kerne am Abzweig. Bis hier immer das Mittel: der Abzweig der Wende am Torplatz liegt vor der ebenen Front der Trasse (stadt-voll: 60,07 gegen 59,82 am Ende West, 52,86 gegen 52,50 im Osten), der Ring auf der Platte fiel um 0,25–0,42 m*/
+          for(let a=0;a<2*Math.PI;a+=0.5/w.r) for(const o of [-bR,0,bR]) if(!traegt(w.x+Math.cos(a)*(w.r+o),w.z+Math.sin(a)*(w.r+o),y,V.flaecheM)) return null;
+          const hEin=aufFlaechen(w.ein,null,y,kern), hAus=aufFlaechen(w.aus,y,null,kern);
+          if(!hEin||!hAus||!bandTraegt(hEin,V.halbM)||!bandTraegt(hAus,V.halbM)) return null;
           const plaetze=w.plaetze.filter(p=>{ const fx=Math.sin(p.fahrt), fz=Math.cos(p.fahrt), hs=[];
             for(const u of [-1,0,1]) for(const v of [-1,0,1]){ const x=p.x+fx*u*V.parkL*0.5-fz*v*V.parkB*0.5, z=p.z+fz*u*V.parkL*0.5+fx*v*V.parkB*0.5;
               if(!land(x,z)||!traegt(x,z,y,V.flaecheM)) return false; hs.push(h(x,z)); }
             return Math.max(...hs)-Math.min(...hs)<=V.hangMax*V.parkL; });
-          K.wende=Object.assign({},w,{plaetze,y:r6(y),hEin,hAus}); break; }
-        const w=K.wende; if(!w) continue;
+          return {plaetze, y:r6(y), hEin, hAus}; } };
+      const N=verkehrsNetz(plan,ox,oz,false,boden);
+      for(const K of N.kreuzungen){ K.wende=null; if(!K.ende) continue;
+        if(K.wenden.length) K.wende=Object.assign({},K.wenden[0],K.wenden[0].boden);
+        for(const q of K.wenden) delete q.boden;
+        const w=K.wende; if(!w) continue; delete w.boden;
         const ring=[]; for(let a=0;a<=2*Math.PI+1e-9;a+=1/w.r) ring.push({x:w.x+Math.cos(a)*w.r, z:w.z+Math.sin(a)*w.r});
         const wr=wegN++; for(let i=1;i<ring.length;i++) trasse(ring[i-1],ring[i],w.y,2*V.halbM+V.ringRandM,wr);
         lege(w.hEin,2*V.halbM); lege(w.hAus,2*V.halbM); delete w.hEin; delete w.hAus;
@@ -4500,14 +5355,14 @@
     // ════════════ dorfLayout v5 — GRAPH-WACHSTUM + MAUER ════════════
     // prettier-ignore
     function dorfLayout(plan, ext, seed, H){
-  const N=plan.norm, gap=N.gap, sW=N.strasseW, lw=N.laneW, gw=N.gehweg, n=ext.length, nG=plan.nGestalt||n;   /*nG: die Lose der GESTALT (der Chronik) — Mauer, Platz und Staende stehen fuer jeden Schnitt gleich*/
+  const N=plan.norm, gap=N.gap, sW=N.strasseW, lw=N.laneW, n=ext.length, nG=plan.nGestalt||n;   /*nG: die Lose der GESTALT (der Chronik) — Mauer, Platz und Staende stehen fuer jeden Schnitt gleich*/
   let s=((Math.round((seed||1)*389+71)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   const staedt=plan.staedtisch;
   const jitAmp= staedt?0.05 : (plan.jahr<1500?0.9 : plan.jahr<1780?0.45 : 0.2);
   const DS=3;
-  const walled= staedt&&plan.jahr<MAUER_BIS;                                                // STADTMAUER-GESETZ: die Mauer erzwingt die Dichte
+  const walled= staedt&&plan.jahr<MAUER_BIS&&!plan.netz;                                    // STADTMAUER-GESETZ: die Mauer erzwingt die Dichte; die Kachel einer Stadt traegt keinen Ring (ihre Mauer steht am Rand der STADT, `kachelMauer`)
   const Rw= walled? Math.min(195, 26+Math.sqrt(nG)*8.4) : 0;
-  const G=strassengraph(rnd, plan, sW, lw, Rw, H||null);
+  const G=plan.netz||strassengraph(rnd, plan, sW, lw, Rw, H||null);                         /*DIE KACHEL EINER STADT (w28-stadt-netz, `exportSettlement` dp.kachel) setzt ihre Lose auf das Netz ihrer Stufe 1 (`kachelNetz`: Tore, Strassen, Kreuzungen), nie auf ein gewachsenes — ihre Strassen treffen die des Nachbarn an der Kante*/
   const roads=G.edges;
   const at=(rd,u)=>{ const k=Math.max(0,Math.min(rd.pts.length-2,(u/DS)|0)), f=(u-k*DS)/DS, A=rd.pts[k], B=rd.pts[Math.min(rd.pts.length-1,k+1)];
     const x=A.x+(B.x-A.x)*f, z=A.z+(B.z-A.z)*f, th=A.th; return {x,z,th,nx:-Math.sin(th),nz:Math.cos(th)}; };
@@ -4516,11 +5371,11 @@
     while(ch){ ch=false; roads.forEach((e,ei)=>{ const d=Math.min(nd[e.a],nd[e.b])+1;
       if(d<nd[e.a]){nd[e.a]=d;ch=true;} if(d<nd[e.b]){nd[e.b]=d;ch=true;}
       const dd=Math.min(nd[e.a],nd[e.b]); if(dd<edepth[ei]){edepth[ei]=dd;ch=true;} }); } }
-  { const qMax=(plan.groesse==='metropole')?8:(plan.groesse==='grossstadt')?6:(plan.groesse==='stadt')?4:2;   /*QUERGASSEN-GESETZ: aus dem Strassen-BAUM wird GEWEBE — kernnahe Aeste (edepth≤3) werden quer verbunden, es entstehen GESCHLOSSENE BLOECKE (Zyklen = Block-Beweis)*/
-    let qN=0; const paar=new Set(); const qMax2=qMax+2;
-    const punktAuf=(rd,x,z)=>{ let bd=1e9,bx=0,bz=0,bth=0; for(let k2=0;k2+1<rd.pts.length;k2++){ const A2=rd.pts[k2],B2=rd.pts[k2+1];
+  const punktAuf=(rd,x,z)=>{ let bd=1e9,bx=0,bz=0,bth=0; for(let k2=0;k2+1<rd.pts.length;k2++){ const A2=rd.pts[k2],B2=rd.pts[k2+1];   /*der naechste Punkt eines Wegs (Leser: Quergasse und Gasse der Dichte)*/
       const dx=B2.x-A2.x,dz=B2.z-A2.z,L2=dx*dx+dz*dz||1; let t2=((x-A2.x)*dx+(z-A2.z)*dz)/L2; t2=Math.max(0,Math.min(1,t2));
       const px=A2.x+dx*t2, pz=A2.z+dz*t2, dd=Math.hypot(x-px,z-pz); if(dd<bd){bd=dd;bx=px;bz=pz;bth=A2.th;} } return {d:bd,x:bx,z:bz,th:bth}; };
+  { const qMax=(plan.groesse==='metropole')?8:(plan.groesse==='grossstadt')?6:(plan.groesse==='stadt')?4:2;   /*QUERGASSEN-GESETZ: aus dem Strassen-BAUM wird GEWEBE — kernnahe Aeste (edepth≤3) werden quer verbunden, es entstehen GESCHLOSSENE BLOECKE (Zyklen = Block-Beweis)*/
+    let qN=0; const paar=new Set(); const qMax2=qMax+2;
     for(let i=0;i<roads.length&&qN<qMax;i++){ if(roads[i].gen>1||edepth[i]>3) continue;
       const li=(roads[i].pts.length-1)*DS;
       for(let j=i+1;j<roads.length&&qN<qMax2;j++){ if(roads[j].gen>1||edepth[j]>3||paar.has(i+'_'+j)) continue;
@@ -4567,53 +5422,103 @@
       const fp=[]; if(H){ let x=gx+Math.cos(g2.th), z=gz+Math.sin(g2.th), th=g2.th;          /*DIE TRASSE (K3): die Ausfallstrasse lenkt wie jede Gasse*/
         for(let u=0;u<=flen;u+=DS){ th=trasseLenk(H,x,z,th,DS); fp.push({x,z,th}); x+=Math.cos(th)*DS; z+=Math.sin(th)*DS; } }
       else for(let u=0;u<=flen;u+=DS){ fp.push({x:gx+Math.cos(g2.th)*(u+1), z:gz+Math.sin(g2.th)*(u+1), th:g2.th}); }
-      roads.push({a:-1,b:-1,pts:fp,w:sW*0.6,gen:2}); edepth.push(7);
+      roads.push({a:-1,b:-1,pts:fp,w:sW*0.6,gen:2,vor:true}); edepth.push(7);
       if(plan.groesse==='metropole'||plan.groesse==='grossstadt'){                            // FAUBOURG-GESETZ: die Vorstadt ist selbst ein Netz
         const nq=(plan.groesse==='metropole')?5:2;
         for(let qk=0;qk<nq;qk++){ const uq=26+qk*(flen-40)/Math.max(1,nq-1)+rnd()*10, sg=(rnd()<0.5?1:-1);
-          const qx=gx+Math.cos(g2.th)*uq, qz=gz+Math.sin(g2.th)*uq, qth=g2.th+sg*Math.PI/2+(rnd()-0.5)*0.25;
+          const an=(H&&plan.kernel==='markt'&&plan.grammatik)?fp[Math.min(fp.length-1,Math.round(uq/DS))]:null;   /*DER ABZWEIG BEGINNT AN SEINER STRASSE (die Stadt der Grammatik): die Ausfallstrasse lenkt (K3), ihr Abzweig begann weiter auf der Geraden vom Tor — an stadt-voll im Westen bis 44 m neben ihr; solange jeder Zeiger die Strasse bis an ihr Ende trug, schloss die Naht des Wege-Netzes die Luecke an ihrem Ende*/
+          const qx=an?an.x:gx+Math.cos(g2.th)*uq, qz=an?an.z:gz+Math.sin(g2.th)*uq, qth=(an?an.th:g2.th)+sg*Math.PI/2+(rnd()-0.5)*0.25;
           const qp=[]; if(H){ let x=qx, z=qz, th=qth; for(let u=0;u<=40+rnd()*22;u+=DS){ th=trasseLenk(H,x,z,th,DS); qp.push({x,z,th}); x+=Math.cos(th)*DS; z+=Math.sin(th)*DS; } }
           else for(let u=0;u<=40+rnd()*22;u+=DS){ qp.push({x:qx+Math.cos(qth)*u, z:qz+Math.sin(qth)*u, th:qth}); }
-          roads.push({a:-1,b:-1,pts:qp,w:lw,gen:2}); edepth.push(8); } } } }
+          roads.push({a:-1,b:-1,pts:qp,w:lw,gen:2,vor:true}); edepth.push(8); } } } }
   const pl=new Array(n), obbs=(plan.belegt||[]).map(o=>({i:'belegt',o})), brunnen=[], fences=[], felder=[], staende=[];   /*belegt: Grundrisse, die vor jedem Haus stehen (der Kern eines Rings, `ringUm`)*/
   let platz=null;
-  if(!staedt||plan.kernel==='markt'){ const PW=Math.max(7,5+Math.min(nG,40)*0.30), PD=Math.max(6,PW*0.55);
+  const nassAm=(x,z,saum)=>!!(H&&H.nass&&H.nass(x,z,saum));
+  const SG=STADT_GRAMMATIK, SD=STADT_DICHTE, stadt=walled&&plan.kernel==='markt'&&!!plan.grammatik;   /*DIE STADT DER GRAMMATIK (DORF `grammatik`) in ihrem Ring um ihren Markt: Viertel, Gewebe, Flaechen und Gegenstaende*/
+  const zonen=[], dinge=[];                                                                   /*die Flaechen (`zoneVon`) und die Gegenstaende der Viertel*/
+  if(!staedt||plan.kernel==='markt'){ const PW=Math.max(7,5+Math.min(nG,40)*0.30), PD=stadt?Math.max(SD.marktTief[0],Math.min(SD.marktTief[1],PW*SD.marktJeBreite)):Math.max(6,PW*0.55);   /*der Markt der Stadt ist ein Platz, kein Streifen (stadt-voll: 34 × 9,4 m → 34 × 22 m)*/
     platz={cx:0,cz:sW/2+PD/2, phi:0, ex:PW, ez:PD/2, typ:(plan.kernel==='anger'||(staedt&&plan.jahr>1840))?'gras':'weg'};   // PARK-GESETZ der Moderne brunnen.push({x:0,z:sW/2+PD/2});
     if(platz.typ==='weg'){ const MS=AUSSTATTUNG.marktstand.tritt, rS=Math.hypot(MS.ex,MS.ez), zt=plan.schnitt||plan;
-      const standFrei=(s)=>!zt.staedtisch||roads.every(rd=>{ if((rd.w||0)<VERKEHR_GESETZ.breiteM) return true; const P=rd.pts; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((s.x-A.x)*dx+(s.z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(s.x-A.x-dx*t, s.z-A.z-dz*t)<rd.w/2+rS) return false; } return true; });   /*DER STAND STEHT NIE IN DER TRASSE (PFLICHT-OFFEN C): in der Stadt haelt sein Tritt (der Umkreis seines Kastens) jede Strasse ab `breiteM` frei — bis hier stand der mittlere Stand jeder Metropole auf der Achse der Strasse, die vom Markt nach Norden geht (0/10,2), und der linke 1,9 m neben ihr: ihre Spuren wichen ihm aus, bis eine Laterne die andere Seite sperrte (die Strecke fiel), oder die Strecke trug eine Enge am Markt*/
-      for(const s of [{x:-PW*0.45,z:sW/2+PD*0.45},{x:PW*0.45,z:sW/2+PD*0.55}].concat(nG>18?[{x:0,z:sW/2+PD*0.82}]:[])) if(standFrei(s)) staende.push(s); } }
+      const standFrei=(s)=>!zt.staedtisch||roads.every(rd=>{ if((rd.w||0)<VERKEHR_GESETZ.breiteM) return true; const P=rd.pts; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((s.x-A.x)*dx+(s.z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(s.x-A.x-dx*t, s.z-A.z-dz*t)<rd.w/2+rS+(stadt?SD.standTrasseM:0)) return false; } return true; });   /*DER STAND STEHT NIE IN DER TRASSE (PFLICHT-OFFEN C): in der Stadt haelt sein Tritt (der Umkreis seines Kastens) jede Strasse ab `breiteM` frei — bis hier stand der mittlere Stand jeder Metropole auf der Achse der Strasse, die vom Markt nach Norden geht (0/10,2), und der linke 1,9 m neben ihr: ihre Spuren wichen ihm aus, bis eine Laterne die andere Seite sperrte (die Strecke fiel), oder die Strecke trug eine Enge am Markt*/
+      const reihen=stadt&&SG.viertel.markt.dinge.find(q=>q.art==='marktstand');                 /*DER MARKT DER STADT traegt die Staende seiner Zeile: Reihen im Raster ueber dem Platz, ausser der Trasse (bis hier zwei bis drei Staende an festen Bruchteilen des Platzes)*/
+      if(reihen){ const [gx,gz]=reihen.rasterM; let zi=0;                                       /*je Reihe die Front (`th`) nach Norden oder Sueden: zwei Reihen stehen einander ueber ihrer Gasse gegenueber*/
+        for(let z=platz.cz-platz.ez+SD.standRandM; z<=platz.cz+platz.ez-SD.standRandM+1e-6; z+=gz, zi++) for(let x=-PW+SD.standRandM; x<=PW-SD.standRandM+1e-6; x+=gx){ const s={x,z,th:zi%2?0:Math.PI}; if(staende.length<reihen.max&&Math.abs(z-platz.cz)>=SD.marktGangM&&standFrei(s)) staende.push(s); } }   /*die Gasse des Markts laengs seiner langen Achse bleibt frei (`marktGangM` beidseits der Mitte): wer auf dem Platz steht, sieht die Fassaden an seinen Enden — am Messort stadt fand die Pose des Orts sonst keinen Bau mit freier Sichtlinie (127 Bauten, 68 Hindernisse)*/
+      else for(const s of [{x:-PW*0.45,z:sW/2+PD*0.45},{x:PW*0.45,z:sW/2+PD*0.55}].concat(nG>18?[{x:0,z:sW/2+PD*0.82}]:[])) if(standFrei(s)) staende.push(s); } }
   else brunnen.push({x:sW/2+2.4,z:sW/2+2.4});
   const platzObb= platz? {cx:platz.cx,cz:platz.cz,phi:0,ex:platz.ex,ez:platz.ez} : null;
+  const wegRand=(rd)=>rd.w/2+(staedt&&rd.w>=VERKEHR_GESETZ.breiteM?gehwegVon(plan,rd):0);   /*DER RAND DES WEGS FUER DIE AUSSTATTUNG (w28-stadt-grammatik, PFLICHT-OFFEN C): die Fahrbahn — an der Fahrstrasse der Stadt samt ihrem Gehweg. Der Gehweg der Trasse traegt zwei Leiber (STADT_DICHTE.gehwegFahrM) und ist der Raum, in den der Wagen ausschert, der einen Stehenden umfaehrt (der Wirt, `_verkehrUmfahren`): dort steht kein Mast und kein Brunnen. Bis hier trat der Mast bis an den Bordstein (`laterneQuer`), der Brunnen stand 0,6 m hinter ihm: an stadt-voll stiess jeder Wagen, der den Spieler in der Kreuzung am Markt umfuhr, an den Mast 828/443 (9,4 m von ihrer Mitte, 3,0 m von der Achse) — 531 Stoesse in 120 s. Leser: der Setzer der Laterne (`laterneWege`, `laterneQuer`), der Brunnen des Zugs, `mastWeicht` (ueber `laterneNeben`) und `brunnenWeicht` (das Layout traegt ihn)*/
+  const tore=[], imTor=(x,z,d)=>tore.some(f=>distPunktOBB(x,z,f)<d);                           /*DER TORPLATZ (STADT_DICHTE.torplatz): am Ende jeder Trasse der Wagen (das Blatt des Strassengraphen an einer Strasse ab VERKEHR_GESETZ.breiteM — das Tor) haelt die Stadt ein Geviert frei, neben der Strasse, auf der Seite des flacheren Grunds, nie im Wasser: kein Los, keine Gasse, keine Laterne — dort wendet und steht der Wagen (`verkehrsNetz`: der Kreis `abM` vom Ende im Winkel `winkel`, einer seiner Kandidaten). Bis hier fand die Wende ihren Kreis in der Wiese neben der Strasse; die dichte Stadt schloss beide Fronten: an stadt-voll trugen 2 von 4 Enden eine Wende, 15 von 21 Wagen einen Platz (gate:fahr-leben VK, main 4 von 4 und 20 von 20)*/
+  if(stadt){ const T=SD.torplatz, gradT=new Array(G.nodes.length).fill(0); for(const rd of roads) if(rd.a>=0&&rd.b>=0){ gradT[rd.a]++; gradT[rd.b]++; }
+    for(const rd of roads){ if(!(rd.a>=0&&rd.b>=0)||(rd.w||0)<VERKEHR_GESETZ.breiteM) continue; const P=rd.pts;
+      for(const hinten of [0,1]){ if(gradT[hinten?rd.b:rd.a]!==1||P.length<5) continue;
+        const e=hinten?P[P.length-1]:P[0], d0=hinten?P[P.length-4]:P[3], l=Math.hypot(e.x-d0.x,e.z-d0.z)||1, ux=(e.x-d0.x)/l, uz=(e.z-d0.z)/l;
+        const lage=[1,-1].map(sg=>{ const a=sg*T.winkel, x=e.x+(ux*Math.cos(a)-uz*Math.sin(a))*T.abM, z=e.z+(uz*Math.cos(a)+ux*Math.sin(a))*T.abM; return {x, z, dh:H?Math.abs(H(x,z)-H(e.x,e.z)):0}; })
+          .filter(q=>!nassAm(q.x,q.z,T.halbM)).sort((p,q)=>p.dh-q.dh)[0];
+        if(!lage) continue;
+        const f={cx:lage.x, cz:lage.z, phi:Math.atan2(-uz,ux), ex:T.halbM, ez:T.halbM};
+        tore.push(f); obbs.push({i:'torplatz',o:f}); zonen.push(zoneVon('torplatz','flaeche','kasten',f,'weg',{viertel:'tor'})); } } }
+  if(stadt){                                                                                 /*GASSEN-GESETZ (STADT_DICHTE): das Gewebe im Mauerring — von jeder Strasse und Seitenstrasse zweigt je `gasseTeilung` m beidseits (versetzt) eine Fussgasse quer ab, gerade, so weit der Grund sie traegt (ueber dem Fuss ORT_GESETZ.gefaelle ist sie Treppengasse `treppe`, bis ORT_GESETZ.treppe), bis sie eine andere Strasse trifft (der Anschluss: ein Block schliesst sich) oder `gasseLangM` erreicht; von jeder Gasse zweigt ab `gasseHinterM` die Hintergasse ab. An ihnen stehen die Lose der zweiten und dritten Reihe. Bis hier trug ein Los nur die Front an Baum und Quergasse (am Hang von stadt-voll keine einzige): 119 von 307 Haeusern standen im Ring, 188 an den Ausfallstrassen davor*/
+    const fuss=ORT_GESETZ.gefaelle, steil=ORT_GESETZ.treppe, nR=roads.length, K=roads.map(rd=>wegKasten(rd.pts));
+    const hang=(pts)=>{ let m=0; if(H) for(let k=1;k<pts.length;k++) m=Math.max(m,Math.abs(H(pts[k].x,pts[k].z)-H(pts[k-1].x,pts[k-1].z))/Math.max(1,Math.hypot(pts[k].x-pts[k-1].x,pts[k].z-pts[k-1].z))); return m; };
+    { const pr=platz.ex+SD.gasseM/2+0.2, zN=platz.cz-platz.ez-1, zS=platz.cz+platz.ez+SD.gasseM/2+0.2;   /*DER RAHMEN DES MARKTS: an den drei Kanten ohne Strasse eine Gasse — an ihrer Aussenseite stehen die Fassaden, die den Platz fassen (bis hier oeffnete er sich auf drei Seiten in die Wiese)*/
+      for(const [ax,az,bx,bz] of [[-pr,zN,-pr,zS],[-pr,zS,pr,zS],[pr,zS,pr,zN]]){ const d=Math.hypot(bx-ax,bz-az), th=Math.atan2(bz-az,bx-ax), pts=[];
+        for(let u=0;u<d-0.5;u+=DS) pts.push({x:ax+Math.cos(th)*u, z:az+Math.sin(th)*u, th}); pts.push({x:bx,z:bz,th});
+        const st=hang(pts); if(st>steil) continue;
+        roads.push({a:-1,b:-1,pts,w:SD.gasseM,gen:2,len:d,quer:true,durch:true,gasse:true,treppe:st>fuss}); edepth.push(1); } }
+    const nah=(x,z,ohne,d)=>{ for(let m=0;m<roads.length;m++){ if(m===ohne) continue; if(m<nR?fernKasten(x,z,K[m],d):false) continue; if(punktAuf(roads[m],x,z).d<d) return m; } return -1; };
+    const gasse=(i,P,th)=>{ const rd=roads[i], cs=Math.cos(th), sn=Math.sin(th), pts=[{x:P.x,z:P.z,th}]; let x=P.x, z=P.z, durch=false;
+      for(let s=DS; s<=SD.gasseLangM; s+=DS){ const nx=x+cs*DS, nz=z+sn*DS;
+        if(Math.hypot(nx,nz)>Rw-SD.mauerM||(H&&Math.abs(H(nx,nz)-H(x,z))/DS>steil)||distPunktOBB(nx,nz,platzObb)<1||nassAm(nx,nz,SD.wasserM)||imTor(nx,nz,1)) break;
+        if(s>2*DS&&punktAuf(rd,nx,nz).d<s*0.6) return;                                        /*die Gasse laeuft nicht an ihrer eigenen Strasse entlang (die Kurve)*/
+        const m=nah(nx,nz,i,SD.fluchtM);
+        if(m>=0){ if(s<SD.gasseMinM) return; const q=punktAuf(roads[m],nx,nz); pts.push({x:q.x,z:q.z,th}); durch=true; break; }
+        x=nx; z=nz; pts.push({x,z,th}); }
+      const len=(pts.length-1)*DS; if(len<SD.gasseMinM) return;
+      roads.push({a:-1,b:-1,pts,w:SD.gasseM,gen:2,len,quer:true,durch,gasse:true,treppe:hang(pts)>fuss}); edepth.push(edepth[i]+1); };
+    const zweige=(i0,i1,ab)=>{ for(let i=i0;i<i1;i++){ const rd=roads[i]; if(rd.vor) continue; const L=(rd.pts.length-1)*DS;
+      for(const sg of [1,-1]) for(let u=ab+(sg<0?SD.gasseTeilung/2:0); u<L-ab/2; u+=SD.gasseTeilung){ const P=at(rd,u);
+        if(Math.hypot(P.x,P.z)<=Rw-SD.mauerM&&distPunktOBB(P.x,P.z,platzObb)>=SD.gasseAb&&!imTor(P.x,P.z,SD.gasseM)) gasse(i,P,P.th+sg*Math.PI/2); } } };
+    zweige(0,nR,SD.gasseAb); const n1=roads.length; zweige(nR,n1,SD.gasseHinterM); }             /*die Gasse von der Strasse, dann die Hintergasse von der Gasse (sie traegt die Reihe im Blockinnern)*/
   const curs=[];
   const ordn=[...roads.keys()].sort((a,b)=>{ const qa=(roads[a].gen===2&&(roads[a].len||99)<=44)?0:1, qb=(roads[b].gen===2&&(roads[b].len||99)<=44)?0:1; return qa-qb; });   /*QUERGASSEN-VORRANG (#1): Kurzgassen setzen ZUERST — sonst frisst das Hauptstrassen-Hinterland ihr Bauland (GEMESSEN 0 Saeumer trotz len)*/
   for(const r of ordn){ const st0= (edepth[r]===0&&platz)? platz.ex*0.7 : (roads[r].gen===2&&(roads[r].len||99)<=44? 1.6 : 2.5);
     curs.push({rd:r, side: 1, cur:st0}); curs.push({rd:r, side:-1, cur:st0}); }
-  const parentCu={};
+  const parentCu={}, wegK=stadt?roads.map(rd=>wegKasten(rd.pts)):null;                       /*DIE VORAUSWAHL DER NAEHE in der Stadt (wie `fernOBB`): der Kasten jedes Wegs und der Umkreis jedes Grundrisses — was sicher fern liegt, rechnet keine Probe; das Urteil bleibt bit-gleich (stadt-voll: der Export 21 s → 3 s an der schwersten Saat)*/
   const tryPlace=(i, cu, skipPair)=>{                                                       // SAT + STRASSEN-FREIHALTUNG + MAUER
-    const rd=roads[cu.rd], e=ext[i], exH=(e.x1-e.x0)/2, ezH=(e.z1-e.z0)/2, lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2;
+    const rd=roads[cu.rd], gw=gehwegVon(plan,rd), e=ext[i], exH=(e.x1-e.x0)/2, ezH=(e.z1-e.z0)/2, lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2;
     const QD=(globalThis.__qd=globalThis.__qd||{t:0,mauer:0,obb:0,laen:0,ok:0}); if(rd.quer)QD.t++;
-    for(let tr=0;tr<26;tr++){
-      const sc=cu.cur+exH; if(sc>rd.pts.length*DS-(rd.quer?2.8:6)){ if(rd.quer)QD.laen++; return null; }   /*quer nutzt die volle Laenge*/
+    /*DIE FRONT DER STADT BLEIBT (STADT_DICHTE): der Zeiger sucht bis ans Ende seines Wegs und steht, wo er stand, wenn das Los nicht passt — `eng` merkt die schmalste Breite, die scheiterte (was davor steht, wird nie weniger: so breit passt hier nichts mehr). Ausser der Stadt 26 Versuche zu 1,1 m, und jeder gescheiterte verbrauchte sie: an stadt-voll trug eine Strasse im Ring ein Haus je 46 m Front (die Vorstadt eines je 20 m)*/
+    const cur0=cu.cur; if(stadt&&cu.eng<=2*exH) return null;
+    for(let tr=0;tr<(stadt?1e4:26);tr++){
+      const sc=cu.cur+exH; if(sc>rd.pts.length*DS-(rd.quer?2.8:6)){ if(rd.quer)QD.laen++; if(stadt){ cu.cur=cur0; cu.eng=2*exH; } return null; }   /*quer nutzt die volle Laenge*/
       const q=at(rd,sc), jit=(rnd()-0.5)*2*jitAmp;
       const phi=Math.atan2(cu.side*q.nx, cu.side*q.nz);
       const c=Math.cos(phi), s2=Math.sin(phi);
       const ccx=q.x+cu.side*q.nx*(rd.w/2+gw+jit+ezH), ccz=q.z+cu.side*q.nz*(rd.w/2+gw+jit+ezH);
       const o={cx:ccx,cz:ccz,phi,ex:exH,ez:ezH};
+      const hofT=(stadt&&i===0)?SD.friedhof.tiefM:0, hof=hofT?{cx:ccx+cu.side*q.nx*(ezH+SD.friedhof.abM+hofT), cz:ccz+cu.side*q.nz*(ezH+SD.friedhof.abM+hofT), phi, ex:exH, ez:hofT}:null;   /*DAS LOS DER KIRCHE traegt ihren Hof: der Friedhof hinter ihr ist frei wie ihr Grundriss (oL: Kirche und Hof)*/
+      const oL=hof?{cx:ccx+cu.side*q.nx*(SD.friedhof.abM/2+hofT), cz:ccz+cu.side*q.nz*(SD.friedhof.abM/2+hofT), phi, ex:exH, ez:ezH+SD.friedhof.abM/2+hofT}:o;
       let ok=true;
+      if(hof&&Math.hypot(oL.cx,oL.cz)+Math.hypot(oL.ex,oL.ez)>Rw-3) ok=false;
+      if(ok&&stadt&&(nassAm(ccx,ccz,Math.hypot(exH,ezH)+SD.wasserM)||(hof&&nassAm(hof.cx,hof.cz,Math.hypot(hof.ex,hof.ez)+SD.wasserM)))) ok=false;                   /*DAS LOS DER STADT STEHT NIE IM WASSER (`H.nass`): bis hier kannte der Plan nur die Hoehe — an stadt-voll nahm der Bach ein Haus, und die Ort-Wahl rueckte die ganze Stadt 112 m vom Anker ihres Messorts*/
       if(Rw){ const rc=Math.hypot(ccx,ccz), rq=Math.hypot(exH,ezH);                          // MAUER: Stadt innen, Vorstadt außen, Mauerband tabu
-        if(rd.gen!==2&&rc>Rw-2.2-rq) ok=false;
-        if(rd.gen===2&&!rd.quer&&rc<Rw+1.2+rq) ok=false; if(!ok&&rd.quer)QD.mauer++;
+        if(!rd.vor&&rc>Rw-2.2-rq) ok=false;                                                  /*die Strasse der Vorstadt traegt ihr Wort `vor` — bis zur Stadt-Grammatik hiess jede Gasse der Stufe 2 Vorstadt: die 16 Gassen des Baums im Ring von stadt-voll (768 m) trugen nie ein Haus*/
+        if(rd.vor&&rc<Rw+1.2+rq) ok=false; if(!ok&&rd.quer)QD.mauer++;
         if(Math.abs(rc-Rw)<2.0+rq) ok=false; }
+      const rL=Math.hypot(oL.ex,oL.ez);
       if(ok) for(let j2=0;j2<obbs.length;j2++){ if(skipPair===obbs[j2].i)continue;
-        if(obbSep(o,obbs[j2].o)<gap-1e-6){ ok=false; if(rd.quer)QD.obb++; break; } }
-      if(ok&&platzObb&&obbSep(o,platzObb)<0.5) ok=false;
+        if(stadt){ const b=obbs[j2].o, dx=b.cx-oL.cx, dz=b.cz-oL.cz, R=rL+Math.hypot(b.ex,b.ez)+1.5*gap+0.01; if(dx*dx+dz*dz>R*R) continue; }
+        if(obbSep(oL,obbs[j2].o)<gap-1e-6){ ok=false; if(rd.quer)QD.obb++; break; } }
+      if(ok&&platzObb&&obbSep(oL,platzObb)<0.5) ok=false;
       if(ok){ const k0=(sc/DS)|0, kw=(((exH+rd.w/2+gw+4)/DS)|0)+1;
         for(let r2=0;r2<roads.length&&ok;r2++){ const rr=roads[r2], own=(r2===cu.rd);
-          for(let k5=0;k5<rr.pts.length;k5++){ const q2=rr.pts[k5], thr=(own&&Math.abs(k5-k0)<=kw)?(rr.w/2+0.02):(rr.w/2+0.25);
-            if(!fernOBB(q2.x,q2.z,o,thr)&&distPunktOBB(q2.x,q2.z,o)<thr){ ok=false; break; } } } }
+          const frei5=staedt&&rr.w>=VERKEHR_GESETZ.breiteM?gehwegVon(plan,rr)-jitAmp-0.01:0.25;
+          if(wegK&&fernKasten(oL.cx,oL.cz,wegK[r2],rr.w/2+frei5+rL)) continue;   /*DER GEHWEG DER FAHRSTRASSE GILT JEDER WAND (STADT_DICHTE.gehwegFahrM): auch die Flanke des Hauses einer Gasse haelt ihn — bis hier 0,25 m vom Bord (die Giebelseite von wohnhaus #918856 stand 1,1 m neben der Hauptstrasse: zwei Kapseln im Gegenverkehr, keine kam vorbei)*/
+          for(let k5=0;k5<rr.pts.length;k5++){ const q2=rr.pts[k5], thr=(own&&Math.abs(k5-k0)<=kw)?(rr.w/2+0.02):(rr.w/2+frei5);
+            if(!fernOBB(q2.x,q2.z,oL,thr)&&distPunktOBB(q2.x,q2.z,oL)<thr){ ok=false; break; } } } }
       if(ok){ const tx=ccx-(lcx*c+lcz*s2), tz=ccz-(-lcx*s2+lcz*c);
         const fmx=q.x+cu.side*q.nx*(rd.w/2+gw+jit), fmz=q.z+cu.side*q.nz*(rd.w/2+gw+jit);
-        pl[i]={x:tx,z:tz,phi,obb:o,fm:[fmx,fmz],rd:cu.rd,fr:rd.w/2+gw,jit};
+        pl[i]={x:tx,z:tz,phi,obb:o,fm:[fmx,fmz],rd:cu.rd,fr:rd.w/2+gw,jit}; if(hof) pl[i].hof=hof;
         obbs.push({i,o}); parentCu[i]=cu;
         const prevEnd=cu.lastEnd;
         if(!staedt&&prevEnd!=null&&(sc-exH)-prevEnd<=7.5&&(sc-exH)-prevEnd>=1.2){
@@ -4626,7 +5531,35 @@
         return pl[i]; }
       cu.cur+=1.1; }
     return null; };
-  for(let i=0;i<n;i++){
+  // DIE LAGE DER VIERTEL (STADT_GRAMMATIK `lage`): je Viertel sein Anker {x, z, r} — der Markt am Platz, die Kirche an ihm und
+  // ihr Hof um sie (sobald sie steht), die Burg am höchsten Grund an einer Gasse im Ring (ohne Gelände: am weitesten vom Markt),
+  // das Handwerk an der Gasse, die der Seite `zugHandwerk` des Plans am nächsten liegt. Ein Los seines Viertels zieht zum Anker
+  // (die Front, die ihm am nächsten liegt), jedes andere meidet seinen Radius; Burg und Handwerk tragen am Anker eigene Zeiger.
+  // Bis hier stand die Burg an einem gewürfelten Winkel innen an der Mauer (an stadt-voll allein am Südwest-Ring, ohne Gasse)
+  // und jedes Los an der nächsten freien Front der Reihe.
+  const zug={}, offen={}, vLose=v=>plan.houses.filter(h=>h.viertel===v&&h.rolle!=='scheune').length;   /*offen: die Lose eines Viertels, die noch nicht stehen — so lange haelt es seinen Radius*/
+  for(const h of plan.houses) if(h.viertel&&h.rolle!=='scheune') offen[h.viertel]=(offen[h.viertel]||0)+1;
+  if(stadt){ zug.markt={x:platz.cx, z:platz.cz, r:Math.hypot(platz.ex,platz.ez)+SD.zugKircheM};
+    const anGasse=(wert)=>{ let b=null, bw=-Infinity; roads.forEach((rd,r)=>{ if(rd.vor) return; const L=(rd.pts.length-1)*DS;
+      for(let u=8;u<L-6;u+=6){ const q=at(rd,u); if(Math.hypot(q.x,q.z)>Rw-SD.mauerM||Math.hypot(q.x-zug.markt.x,q.z-zug.markt.z)<zug.markt.r+10) continue; const w=wert(q); if(w>bw){ bw=w; b={x:q.x,z:q.z,rd:r,u}; } } }); return b; };
+    const anker=(A,r)=>{ if(!A) return null; for(const side of [1,-1]) curs.push({rd:A.rd, side, cur:Math.max(2.5,A.u-r*0.6)}); return {x:A.x,z:A.z,r}; };
+    if(vLose('burg')) zug.burg=anker(anGasse(q=>H?H(q.x,q.z):Math.hypot(q.x,q.z)), SD.zugBurgM);
+    const nHw=vLose('handwerk'), hx=Math.cos(plan.zugHandwerk)*Rw*SD.zugSeite, hz=Math.sin(plan.zugHandwerk)*Rw*SD.zugSeite;
+    if(nHw) zug.handwerk=anker(anGasse(q=>(zug.burg&&Math.hypot(q.x-zug.burg.x,q.z-zug.burg.z)<zug.burg.r+30)?-1e9:-Math.hypot(q.x-hx,q.z-hz)), Math.sqrt(nHw*SD.zugJeLosM2/Math.PI)); }
+  // DER FRIEDHOF (das Viertel kirchhof): der Hof im Los der Kirche hinter ihr (`tryPlace` hält ihn frei wie ihren Grundriss) — ein
+  // umzäunter Rasen in ihrer Flucht, in ihm die Gräber seiner Zeile in Reihen um den Mittelgang (`dinge`), der Zaun offen zur Kirche.
+  const friedhof=(o,f)=>{ const F=SD.friedhof, zeile=SG.viertel.kirchhof.dinge.find(q=>q.art==='grabstein'), c=Math.cos(f.phi), s=Math.sin(f.phi);
+    let sf=((Math.round((seed||1)*457+31)*2654435761)>>>0); const rf=()=>{ sf=(sf*1664525+1013904223)>>>0; return sf/4294967296; };
+    obbs.push({i:'friedhof',o:f}); zonen.push(zoneVon('friedhof','flaeche','kasten',f,'gras',{viertel:'kirchhof'}));
+    const ecke=(lx,lz)=>({x:f.cx+lx*c+lz*s, z:f.cz-lx*s+lz*c}), E=[ecke(-f.ex,-f.ez),ecke(f.ex,-f.ez),ecke(f.ex,f.ez),ecke(-f.ex,f.ez)], ab=(a,b)=>Math.hypot((a.x+b.x)/2-o.cx,(a.z+b.z)/2-o.cz);
+    const nah=Math.min(...E.map((a,j)=>ab(a,E[(j+1)%4])));
+    E.forEach((a,j)=>{ const b=E[(j+1)%4]; if(ab(a,b)>nah+1e-9) fences.push({x0:a.x,z0:a.z,x1:b.x,z1:b.z}); });
+    const [gx,gz]=zeile.rasterM; let k=0;
+    for(let lz=-f.ez+F.randM; lz<=f.ez-F.randM+1e-6; lz+=gz) for(let lx=-f.ex+F.randM; lx<=f.ex-F.randM+1e-6; lx+=gx){ if(k>=zeile.max||Math.abs(lx)<0.9) continue;   /*der Mittelgang*/
+      const p=ecke(lx+(rf()-0.5)*0.3, lz+(rf()-0.5)*0.3); dinge.push({art:'grabstein', viertel:'kirchhof', x:p.x, z:p.z, th:f.phi+(rf()-0.5)*0.24}); k++; } };
+  const folge=[...Array(n).keys()];
+  if(stadt) folge.sort((a,b)=>((plan.houses[a].viertel==='burg'&&plan.houses[a].rolle!=='scheune')?0:1)-((plan.houses[b].viertel==='burg'&&plan.houses[b].rolle!=='scheune')?0:1)||a-b);   /*der Herr baut zuerst: seine Lose nehmen den Berg, bevor die Stadt an ihn waechst*/
+  for(const i of folge){
     const g=plan.houses[i];
     if(g.rolle==='scheune'){
       const j=g.parent, P0=pl[j]; if(!P0||Math.abs(P0.obb.cz)>5000){ pl[i]={x:0,z:-9999-i*20,phi:0,obb:{cx:0,cz:-9999-i*20,phi:0,ex:1,ez:1}}; continue; }
@@ -4645,51 +5578,54 @@
         if(ok) for(const q2 of obbs){ if(q2.i===j){ if(obbSep(o,q2.o)<0.9)ok=false; }
           else if(obbSep(o,q2.o)<gap-1e-6)ok=false; if(!ok)break; }
         if(ok&&platzObb&&obbSep(o,platzObb)<0.5)ok=false;
+        if(ok&&stadt&&nassAm(ccx,ccz,Math.hypot(exS,ezS)+SD.wasserM))ok=false;
         if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(!fernOBB(q3.x,q3.z,o,rr.w/2+0.25)&&distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
         if(ok){ const lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2, cc=Math.cos(phi), ss=Math.sin(phi);
           pl[i]={x:ccx-(lcx*cc+lcz*ss), z:ccz-(-lcx*ss+lcz*cc), phi, obb:o, parent:j};
+          if(stadt&&plan.houses[j].viertel) g.viertel=plan.houses[j].viertel;                    /*die Scheune steht im Viertel ihres Hofs (auch vor der Mauer)*/
           obbs.push({i,o}); done=true; } }
       if(!done) pl[i]={x:0,z:-9999-i*20,phi:0,obb:{cx:0,cz:-9999-i*20,phi:0,ex:1,ez:1}};
       continue; }
-    if(g.rolle==='burg'){                                                                    // BURG-GESETZ: Bergfried innen an der Mauer, Front zur Stadt
-      const e=ext[i], exB=(e.x1-e.x0)/2, ezB=(e.z1-e.z0)/2, rq=Math.hypot(exB,ezB);
-      let done=false;
-      const a0=rnd()*Math.PI*2, rB=(Rw?Rw-4.5-rq:34+rq);
-      for(let k2=0;k2<10&&!done;k2++){ const a2=a0+k2*0.63;
-        const ccx=Math.cos(a2)*rB, ccz=Math.sin(a2)*rB, phi=Math.atan2(Math.cos(a2),Math.sin(a2));   /*die Front (lokal −z) zur Stadt: der Rücken (lokal +z → sin φ, cos φ) zeigt nach außen (cos a2, sin a2) — bis w13-verkehr-heil atan2(−sin, −cos), die Tür 90° quer zur Mauer (Stadt am Messort stadt: die Burg #304883 öffnete nach Westen, ihr Herr fand keinen Weg)*/
-        const o={cx:ccx,cz:ccz,phi,ex:exB,ez:ezB};
-        let ok=true;
-        for(const q2 of obbs) if(obbSep(o,q2.o)<gap-1e-6){ok=false;break;}
-        if(ok&&platzObb&&obbSep(o,platzObb)<0.5)ok=false;
-        if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(!fernOBB(q3.x,q3.z,o,rr.w/2+0.25)&&distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
-        if(ok&&Rw&&Math.abs(Math.hypot(ccx,ccz)-Rw)<2.0+rq)ok=false;
-        if(ok){ const lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2, cc=Math.cos(phi), ss=Math.sin(phi);
-          pl[i]={x:ccx-(lcx*cc+lcz*ss), z:ccz-(-lcx*ss+lcz*cc), phi, obb:o};
-          obbs.push({i,o}); done=true; } }
-      if(!done) pl[i]={x:0,z:-9999-i*20,phi:0,obb:{cx:0,cz:-9999-i*20,phi:0,ex:1,ez:1}};
-      continue; }
+    const Z=stadt?zug[(g.viertel==='kirchhof'&&!zug.kirchhof)?'markt':g.viertel]:null;       /*der Anker seines Viertels (die Kirche zieht an den Markt, ihr Hof danach an sie)*/
     const curMetric=(cu)=>{ let m=edepth[cu.rd]*34+cu.cur;                                  // radiales Wachstum: BFS-Tiefe zuerst
       if(g.sektor!=null){ const rp=roads[cu.rd].pts, qm=rp[(rp.length/2)|0];
         const da=Math.atan2(Math.sin(Math.atan2(qm.z,qm.x)-g.sektor),Math.cos(Math.atan2(qm.z,qm.x)-g.sektor));
         const rM=Math.hypot(qm.x,qm.z);
         m=(Math.abs(da)<1.0&&rM>20)? (cu.cur+edepth[cu.rd]*4) : (900+rM*2+cu.cur); }           // GEWERBE-ZWANG: randige Sektor-Kanten — auch im Fallback
+      if(stadt){ const q=at(roads[cu.rd],cu.cur+4);                                            /*DER ZUG DES VIERTELS: zum eigenen Anker (im Ring), sonst um jeden fremden herum*/
+        if(Z) return Math.hypot(q.x-Z.x,q.z-Z.z)+(Math.hypot(q.x,q.z)>Rw?SD.zugFremd:0);
+        for(const k in zug){ const F=zug[k]; if(F&&offen[k]>0&&Math.hypot(q.x-F.x,q.z-F.z)<F.r) m+=SD.zugFremd; } }
       return m; };
     let best=null,bs=1e9;
-    for(const cu of curs){ const m=curMetric(cu)+rnd()*2-(roads[cu.rd].quer?12:0); if(m<bs){bs=m;best=cu;} }   /*QUER-BONUS (#1): die Metrik (edepth·4) liess Binnengassen NIE gewinnen — jetzt bauen sie zuerst ihre Haeuser*/
+    for(const cu of curs){ const m=curMetric(cu)+rnd()*2-(roads[cu.rd].quer&&!roads[cu.rd].gasse?12:0); if(m<bs){bs=m;best=cu;} }   /*die Gasse der Dichte traegt keinen Bonus: erst schliesst die Strasse ihre Reihe, dann fuellt sich der Block (die Kleinstadt von 20 Haeusern stand sonst verstreut an ihren Gassen, keine Wand an der anderen)*/   /*QUER-BONUS (#1): die Metrik (edepth·4) liess Binnengassen NIE gewinnen — jetzt bauen sie zuerst ihre Haeuser*/
+    if(g.viertel) offen[g.viertel]--;
     let placedP=tryPlace(i,best,-1);
     if(!placedP){ const so=curs.slice().sort((a,b2)=>curMetric(a)-curMetric(b2));
       for(const cu of so){ if(cu!==best&&(placedP=tryPlace(i,cu,-1)))break; } }
     if(!placedP){ pl[i]={x:0,z:9999+i*20,phi:0,obb:{cx:0,cz:9999+i*20,phi:0,ex:1,ez:1}}; continue; }
+    if(stadt&&i===0){ zug.kirchhof={x:placedP.obb.cx, z:placedP.obb.cz, r:SD.zugKircheM}; friedhof(placedP.obb, placedP.hof); }
+    if(stadt&&g.viertel==='wohnen'&&Math.hypot(placedP.obb.cx,placedP.obb.cz)>Rw) g.viertel='vorstadt';   /*was vor der Mauer wohnt, ist Vorstadt*/
+    if(stadt&&(g.viertel==='wohnen'||g.viertel==='handwerk')&&Math.hypot(placedP.obb.cx,placedP.obb.cz)<=Rw&&nassAm(placedP.obb.cx,placedP.obb.cz,Math.hypot(placedP.obb.ex,placedP.obb.ez)+SD.hafenM)) g.viertel='hafen';   /*DIE ROLLE HAFEN FOLGT DER LAGE: was im Ring am Wasser des Rasters wohnt und wirkt, ist Hafen (Speicher, Gerberei und Werkstatt des Handwerks, die Haeuser am Ufer) — ohne Wasser (`H.nass`) entsteht keiner*/
     const cu=parentCu[i];
     if(g.rolle!=='kirche'&&i>0&&i%8===0){ const q=at(roads[cu.rd],Math.max(2,cu.cur-2));
-      brunnen.push({x:q.x+cu.side*q.nx*(roads[cu.rd].w/2+0.6), z:q.z+cu.side*q.nz*(roads[cu.rd].w/2+0.6)}); }
+      brunnen.push({x:q.x+cu.side*q.nx*(wegRand(roads[cu.rd])+0.6), z:q.z+cu.side*q.nz*(wegRand(roads[cu.rd])+0.6)}); }
   }
-  for(let r=0;r<roads.length;r++){ let mx=8;
+  const gradK=new Array(G.nodes.length).fill(0); if(stadt) for(const rd of roads) if(rd.a>=0&&rd.b>=0){ gradK[rd.a]++; gradK[rd.b]++; }
+  for(let r=0;r<roads.length;r++){ let mx=8; const rd=roads[r];
     for(const cu of curs) if(cu.rd===r) mx=Math.max(mx,cu.cur+4);
-    roads[r].len=Math.min(mx, roads[r].pts.length*DS-3); }
+    rd.leer=!!rd.gasse&&!rd.durch&&!curs.some(cu=>cu.rd===r&&cu.lastEnd!=null);   /*die Sackgasse der Dichte ohne ein Haus ist kein Weg*/
+    const ganz=rd.durch||(stadt&&rd.a>=0&&rd.b>=0&&((gradK[rd.a]>=2&&gradK[rd.b]>=2)||(rd.w||0)>=VERKEHR_GESETZ.breiteM));   /*DIE STRASSE ZWISCHEN ZWEI KNOTEN TRAEGT IHRE GANZE LAENGE (die Stadt der Grammatik), die Trasse der Wagen bis an ihr Ende (dort liegt ihr Torplatz): bis hier reichte jede Strasse so weit wie ihr Zeiger — im Dorf laeuft er mit jedem Versuch, in der Stadt nur mit einem Haus (der Lauf ohne Brand); an stadt-voll endeten drei Arme der Hauptstrasse 12–15 m vor ihrem Knoten, das Netz der Wagen zerfiel (672 → 255 m, 13 → 5 Plaetze an den Wenden, kein Wagen fuhr)*/
+    rd.len=ganz?(rd.pts.length-1)*DS:Math.min(mx, rd.pts.length*DS-3); }   /*der Anschluss (`durch`) traegt seine ganze Laenge: er verbindet zwei Strassen*/
+  for(let r=roads.length-1;r>=0;r--) if(roads[r].leer) roads.splice(r,1);
+  if(stadt){ const need=new Array(roads.length).fill(0);                                       /*DER ABZWEIG HAELT SEINEN STAMM (die Stadt der Grammatik): jeder Weg reicht mindestens bis zum Anfang jedes Wegs, der an ihm beginnt (ein Anschluss `durch` auch an seinem Ende) — sein Zeiger steht am letzten Haus der EIGENEN Front. An stadt-voll endete die Ausfallstrasse im Westen nach 143 von 228 m, ihre Abzweige bei 174 und 224 m hingen frei: der Fahrer des Hauses dort fand keinen Weg zu seinem Wagen (gate:fahr-leben VK „DER BAU STEHT NICHT“)*/
+    roads.forEach((m,mi)=>{ for(const S9 of (m.durch?[m.pts[0],m.pts[m.pts.length-1]]:[m.pts[0]])){ let bp=-1, bk=0, bd=DS*1.2;
+        roads.forEach((p,pi)=>{ if(pi===mi) return; for(let k=0;k<p.pts.length;k++){ const d9=Math.hypot(p.pts[k].x-S9.x,p.pts[k].z-S9.z); if(d9<bd){ bd=d9; bp=pi; bk=k; } } });
+        if(bp>=0) need[bp]=Math.max(need[bp],bk*DS); } });
+    roads.forEach((p,pi)=>{ if(need[pi]>p.len) p.len=Math.min(need[pi],(p.pts.length-1)*DS); }); }
+  const sack=roads.filter(rd=>rd.gasse&&!rd.durch).length;                                   /*jede Sackgasse traegt ihr Ende als Knoten (der Graph zaehlt Bloecke, `zyklen`)*/
   const deg=new Array(G.nodes.length).fill(0); roads.forEach(e=>{ if(e.a>=0){deg[e.a]++;deg[e.b]++;} });
   const feldwege=[];
-  if(walled){ roads.forEach(rd=>{ if(rd.gen!==2)return; const q=at(rd,(rd.len||8)-2);
+  if(walled){ roads.forEach(rd=>{ if(!rd.vor)return; const q=at(rd,(rd.len||8)-2);              /*der Feldweg setzt die Strasse der Vorstadt fort — eine Gasse im Ring endet in der Stadt, nie im Feld*/
       const fp=[]; for(let u=0;u<=20;u+=DS){ fp.push({x:q.x+Math.cos(q.th)*u, z:q.z+Math.sin(q.th)*u, th:q.th}); }
       feldwege.push({pts:fp, w:rd.w}); }); }
   else { roads.forEach(e=>{ if(e.gen!==0||deg[e.b]!==1)return; const q=e.pts[e.pts.length-1];
@@ -4726,19 +5662,21 @@
     if(ok&&trees.some(q2=>Math.hypot(tx-q2.x,tz-q2.z)<3.0))ok=false;
     if(ok) trees.push({x:tx,z:tz,h:2.6+rnd()*1.8}); }
   const laternen=[], marken=[];                                                               // LATERNEN-GESETZ: die moderne Stadt leuchtet; die Marken des Dorf-Lichts (jeder Meter Weg) liest die Wandlaterne (wandLaternen)
-  const LG9=LICHT_GESETZ.laterne, LATERNE_WAND=Math.sqrt(Math.max(0,(LG9.hoeheM*LG9.hoeheM+LG9.kernM*LG9.kernM)/2-LG9.kernM*LG9.kernM));   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
-  const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:rd.w/2})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2}))); for(const wl of laterneWege) wl.K=wegKasten(wl.pts);   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
+  const LATERNE_WAND=laterneWandM();   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
+  const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:wegRand(rd)})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2}))); for(const wl of laterneWege) wl.K=wegKasten(wl.pts);   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
   const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; if(fernKasten(x,z,wl.K,h)) return false; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
   let kreuzT=null; const laterneInKreuzung=(x,z)=>{ const VG=VERKEHR_GESETZ; if(!kreuzT){ const zt=plan.schnitt||plan; kreuzT=zt.staedtisch?verkehrsNetz({roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w})), feldwege},0,0,true).kreuzungen.filter(K=>!K.ende&&K.r>0):[]; }
     return kreuzT.some(K=>Math.hypot(x-K.x,z-K.z)<K.r+VG.halbM+VG.abbiegRandM+LATERNE_FUSS); };   /*DIE KREUZUNG DER TRASSEN TRAEGT KEINE LATERNE (PFLICHT-OFFEN C): in der Stadt (sie traegt Verkehr) ist jede Kreuzung des Netzes der Wagen (`verkehrsNetz` ueber den Wegen, wie der Export sie traegt, ohne Sperren) Fahrbahn bis zu ihrem Radius samt halbem Wagen und Abbiege-Rand — dort ziehen die Bogen der Abbieger, der Fuss bleibt draussen. Bis hier standen am Markt jeder Metropole Laternen 4,5–8,3 m von der Mitte der Kreuzung: an stadt-voll verbot das Gesetz 7 von 12 Abbiegern, in die Strecke einer Wende fuehrte keiner, 10 von 20 Wagen erreichten in 10 min kein Ziel*/
-  const laterneFrei=(x,z)=>obbs.every(q2=>fernOBB(x,z,q2.o,LATERNE_WAND)||distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&!laterneImWeg(x,z)&&!laterneInKreuzung(x,z);   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg UND ausser der Kreuzung der Trassen — Stadt, Platz, Knoten und Gasse fragen hier*/
-  const laterneQuer=(rd,q,fl)=>{ const lo=rd.w/2+LATERNE_FUSS; for(let o=rd.w/2+gw+0.35; ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
+  const laterneNeben=(x,z)=>!laterneImWeg(x,z)&&!laterneInKreuzung(x,z)&&!(stadt&&nassAm(x,z,1))&&!imTor(x,z,LATERNE_FUSS);   /*DER STAND OHNE DIE WAND (w28-stadt-grammatik): neben jedem Weg (`wegRand`: an der Trasse hinter ihrem Gehweg), ausser der Kreuzung der Trassen, trocken, ausser dem Torplatz (der Raum der Wende) — das Layout traegt ihn als `laterneNeben`, der Mast, der nach dem Snap der Wand weicht (`mastWeicht`), fragt DENSELBEN Stand statt eines Zwillings. Bis hier fragte er nur die Fahrbahn jedes Wegs*/
+  const laterneFrei=(x,z)=>obbs.every(q2=>fernOBB(x,z,q2.o,LATERNE_WAND)||distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&laterneNeben(x,z);   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg UND ausser der Kreuzung der Trassen — Stadt, Platz, Knoten und Gasse fragen hier*/
+  const laterneQuer=(rd,q,fl)=>{ const lo=wegRand(rd)+LATERNE_FUSS; for(let o=Math.max(lo,rd.w/2+gehwegVon(plan,rd)+0.35); ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
   let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
   const zeit=plan.schnitt||plan;                                                               /*das Licht gehoert dem Jahr des Schnitts: 1320 brennt keine Gaslaterne*/
   if(zeit.staedtisch&&zeit.jahr>1850){ for(const rd of roads){ if(rd.gen>=2)continue;
     for(let u=6, fl=1; u<(rd.len||0)-4; u+=DORF_NORM.laneiv-4+((u*7)%5), fl=-fl){ const q=at(rd,u);   /*laneiv KONSUMIERT: 13..17 byte-gleich (laneiv-4 == 13)*/
       const lq=laterneQuer(rd,q,fl), lx2=lq?lq.x:0, lz2=lq?lq.z:0;
       let ok=!!lq;
+      if(!ok) marken.push({x:q.x,z:q.z});   /*WO DIE WAND KEINEN MAST TRAEGT, TRAEGT SIE DAS LICHT (w28-stadt-grammatik): hinter dem Gehweg der Fahrstrasse (`wegRand`) fehlt dem Mast vor der Bauflucht der Abstand zur Wand (LATERNE_WAND) — sein Stand faellt, und bis hier fiel sein Licht mit: die Stadt legte keine Marke (nur das Dorf), `wandLaternen` hing nichts auf. O-Akt gate:settlement „dorf 7 18 gruenderzeit“: 10 brennende Quellen -> 5, in der Gasse 5 sichtbar -> 2 (Soll 4). Jetzt ist der gefallene Stand eine Marke des Lichts: die naechste Hauswand traegt dort die Wandlaterne (LICHT_MARKE_M wie im Dorf), der Takt der Strasse bleibt*/
       if(ok&&laternen.some(l=>Math.hypot(lx2-l.x,lz2-l.z)<9))ok=false;
       if(ok){ const dL=Math.min(1, Math.hypot(lx2,lz2)/(R9L*0.80));                          /*LATERNEN-ZEITREISE: jede Laterne liest das JAHR ihres Rings — Gas im Altkern, Elektro am Saum*/
         const R0=globalThis.__ring; const rj=(R0&&R0.ringe)? (R0.gr0+(plan.jahr-R0.gr0)*Math.pow(dL,0.82)) : plan.jahr;
@@ -4756,12 +5694,19 @@
       for(let u=DORF_LICHT_WEG/2, fl=1; u<L; u+=DORF_LICHT_WEG, fl=-fl){
       for(let du=0; du<=DORF_LICHT_WEG/2-1; du+=1){ if((u+du<L&&(amWeg(rd,u+du,fl)||amWeg(rd,u+du,-fl)))||(du&&u-du>0&&(amWeg(rd,u-du,fl)||amWeg(rd,u-du,-fl)))) break; } } } }
   const sp=at(roads[0],Math.min(roads[0].len||8,8));
-  const nzyk=roads.length-(G.nodes.length-1);                                                // Zyklen = E − V + 1 (zusammenhängend)
-  return {pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
+  const nzyk=roads.length-(G.nodes.length+sack-1);                                           // Zyklen = E − V + 1 (zusammenhängend)
+  let viertel=null, lage=null;
+  if(stadt){ let wz=0; if(H&&H.nass) for(let x=-Rw;x<=Rw;x+=SD.hafenRasterM) for(let z=-Rw;z<=Rw;z+=SD.hafenRasterM) if(Math.hypot(x,z)<=Rw&&H.nass(x,z,0)) wz++;   /*DIE LAGE DES PLANS: so viele Punkte seines Rings (je `hafenRasterM`) tragen Wasser des Rasters — 0: der Ort traegt keinen Hafen, der Leser der Breite nennt es beim Namen statt zu richten (lib/stadt-proben.cjs)*/
+    lage={wasser:wz}; }
+  if(stadt){ const V={};                                                                               /*DIE VIERTEL DES PLANS: je Rolle die Mitte ihrer stehenden Lose und der Radius, der sie fasst*/
+    plan.houses.forEach((h,i)=>{ const q=pl[i]; if(h.viertel&&q&&q.obb&&Math.abs(q.obb.cz)<5000) (V[h.viertel]=V[h.viertel]||[]).push(q.obb); });
+    viertel=Object.keys(V).map(rolle=>{ const L=V[rolle], x=L.reduce((a,o)=>a+o.cx,0)/L.length, z=L.reduce((a,o)=>a+o.cz,0)/L.length;
+      return {rolle, x, z, r:L.reduce((a,o)=>Math.max(a,Math.hypot(o.cx-x,o.cz-z)+Math.hypot(o.ex,o.ez)),0), lose:L.length}; }); }
+  return Object.assign({pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false, vor:rd.vor||undefined, treppe:rd.treppe||undefined})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
           feldwege, platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
-          laternen, marken,
-          graph:{nV:G.nodes.length, nE:roads.length, zyklen:Math.max(0,nzyk)},
-          welt:{x0:X0-9,x1:X1+9,z0:Z0-9,z1:Z1+9}};
+          laternen, marken, laterneNeben, wegRand,
+          graph:{nV:G.nodes.length+sack, nE:roads.length, zyklen:Math.max(0,nzyk)},
+          welt:{x0:X0-9,x1:X1+9,z0:Z0-9,z1:Z1+9}}, stadt?{zonen, gegenstaende:dinge, viertel, lage}:null);   /*die Stadt der Grammatik traegt ihre Flaechen, die Gegenstaende ihrer Viertel und die Viertel selbst*/
 }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -4776,7 +5721,7 @@
     //  dokumentierte Quelle. Die String-Wahlen (Kultur · Fachwerk-Figur ·
     //  Grundriss · Stil · Dachtyp · Bogen) sind KEINE B4-Zeilen (B4 ist
     //  numerisch) — sie reisen je Rezept als fx-Daten. Die Meta-Regler
-    //  (Jahr/Klima/Personen/Wohlstand → metaParams) und die Dorf-Regler
+    //  (Personen/Wohlstand → der Haushalt des Bau-Gesetzes `bauRezept`) und die Dorf-Regler
     //  bleiben Lab-UI (Ableitungs-Schicht bzw. W-A5b). Die Werkstatt rendert
     //  ihre Slider AUS diesen Daten (W-A1-Generik), der ov-Kanal von
     //  buildInstance liest dieselben ids.
@@ -4809,7 +5754,7 @@
     // ═══════════════════════════════════════════════════════════════════════
     //  B1 REZEPTE — die 32 klickbaren Haus-Kulturen des Labs (die Kultur-Wahl
     //  minus die Meta-Einträge `manuell`/`samen`). `s` = die FLACHEN
-    //  numerischen Dials aus kulturParams(name, LAB_SEED) — LAB_SEED 3 ist der
+    //  numerischen Dials aus bauRezept({bauweise: name}, null, LAB_SEED) — LAB_SEED 3 ist der
     //  Boot-Samen des Labs (`let SEED=3`), derselbe Zustand, den ein Klick auf
     //  die Kultur beim Lab-Start zeigt (applyKultur → Slider → readParams).
     //  Die String-/Farb-Anteile (brace · stil · dachTyp · bogenTyp · grundriss ·
@@ -4827,7 +5772,7 @@
         var out = {};
         for (var i = 0; i < KULTNAMES.length; i++) {
             var name = KULTNAMES[i];
-            var kp = kulturParams(name, LAB_SEED);
+            var kp = bauRezept({ bauweise: name }, null, LAB_SEED);
             if (!kp) continue;
             var s = {
                 W: kp.W,
@@ -4901,6 +5846,7 @@
             grund: grundVon(mass), // DAS GRUND-DATUM (S4): der Slot trägt es
             wandX: wandXVon(mass.H.solids), // DIE AUSSENKANTE DER WÄNDE längs x (Solids des Mass-Baus): die Brandwand-obb liest sie
             fenster: fensterVon(mass), // DIE ÖFFNUNGEN (K38): das Fern-Fenster des fernen Turms liest sie
+            raum: raumVon(mass, p && p.col), // DAS RAUM-LICHT (w28-innenlicht): Öffnungen, Durchlass und Rückwurf — `deckenZeile` liest es
             spawnL: { x: mass.H.spawn.x, z: mass.H.spawn.z },
             hofGap: 2.5,
             meshes: [],
@@ -4954,7 +5900,16 @@
     // aus `dims`, Kamin, Grund-Datum), der Parameter-Vektor `hp` und der Rahmen `q` {x, z, phi} samt seiner Grundfläche `obb`.
     // Leser: der Export des Dorfs (`exportSettlement`, je Slot des Layouts) und das gesetzte Haus (`slotPlan`) — beide gehen
     // danach durch DENSELBEN Plan v2 (`ortPlan`: Platte, Grund, Vorplatz). `kultur`: das Rezept (ohne: hp.kultur).
+    // DIE GRUNDFLÄCHE ENDET AN DER BRANDWAND — HIER, in der EINEN Zeile (`obbAnDerBrandwand`): bis w28-stadt-grammatik schnitt nur der
+    // Export sie (und nur in der dichten Reihe), das gesetzte Haus desselben Vektors trug das rohe Rechteck seiner Hülle — die Platte
+    // seines Erdbaus lag an der gedockten Seite 0,11 m breiter als die des Dorf-Slots (gate:haus-welt W11 „byte“: seit der Markt des
+    // Drehbuch-Dorfs städtisch reiht, ist sein Keller-Haus ein Brandwand-Haus; offline 32 von 36 Brandwand-Häuser ungleich, an main
+    // 34 von 34, p3/n1211/sg/w11-klasse.cjs). Wer die Marke trägt (`hp.brandwand`, sie reist im ov), endet an seiner Wand.
     function hausSlot(B, hp, q, obb, kultur) {
+        var o = hp.brandwand ? obbAnDerBrandwand(obb, hp.brandwand, B.ext, B.wandX) : obb;
+        return Object.assign(hausZeile(B, hp, q, o, kultur), typeof hp.viertel === "string" ? { viertel: hp.viertel } : null); // das Viertel seines Loses (STADT_GRAMMATIK)
+    }
+    function hausZeile(B, hp, q, obb, kultur) {
         return {
             x: q.x,
             z: q.z,
@@ -5027,15 +5982,132 @@
     // (schatten.K4). Bis hier riet der Wirt die Decke aus den Solids (die höchste Box mit der halben Fläche der größten): das
     // Gesetzbuch teilt jedes Obergeschoss am Treppenloch, und der Anbau trägt keine Solid-Box — 11 von 18 Häusern des
     // Start-Dorfs standen innen unter offenem Himmel, ihre Anbauten alle.
+    // DAS RAUM-LICHT (w28-innenlicht, additiv, must-ignore — die EINE Formel): die sechste Zahl der Decke ist der mittlere
+    // Tageslicht-Quotient ihres Körpers, D = Σ (Öffnungsfläche × Himmels-Anteil × Durchlass) / (Raum-Oberfläche × (1 − R²)) —
+    // unter der Decke steht der Raum im Himmel von außen × D. Die Öffnungen sind die des Gesetzbuchs (`raumVon`: die Fenster
+    // der Liste des Fern-Fensters, Haustür und Hintertür der Tür-Zeile, Tor und Tür des Anbaus); eine Öffnung gehört dem Körper,
+    // an dessen Grundriss-Kante sie zwischen Boden und Decke sitzt, und zählt nur, wenn sie an KEINEM zweiten Körper mit Decke
+    // sitzt (die Wand zwischen Haus und Anbau sieht keinen Himmel). Himmels-Anteil: die freie senkrechte Öffnung sieht die
+    // halbe Kuppel. Durchlass: das Glas lässt, was sein Stoff nicht deckt (1 − Deckkraft), die Tür steht offen (`preOpen`).
+    // Raum-Oberfläche: Wände (Umfang × Höhe) + Boden und Decke je Geschoss; R ihr flächen-gewichteter Rückwurf aus den Farben
+    // des Baus (`_colFor`: der Wand-Stoff hinter dem Glas, die Diele) — das dunkle Blockhaus wirft weniger zurück als der Putz.
+    // Ein Körper ohne Öffnung trägt 0. Leser: `deckenZeile` → `__huelle.decken` → der Dach-Pool des Wirts (`_dachTakt`).
+    var RAUM_LICHT = { himmel: 0.5, kante: 0.35, raster: 65536 };
+    function _helle(c) {
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    }
+    function raumVon(st, kol) {
+        var H = (st && st.H) || {},
+            f = fensterVon(st || {}),
+            o = [],
+            off = (st && st.off) || 0,
+            T = (st && st.topH && st.topH.licht) || [];
+        // jede Öffnung EINMAL: die Liste des Baus (`licht`, der Aufsatz des Stapels um `off` gehoben) und die des Fern-Fensters
+        // (die ferne Stufe schneidet keine Löcher, sie trägt ihre Öffnungen dort) nennen dieselbe Öffnung an derselben Stelle
+        var auf = function (a, dy, glas) {
+            for (var k = 0; k < o.length; k++)
+                if (o[k].perp === a.perp && Math.abs(o[k].cx - a.cx) < 0.3 && Math.abs(o[k].cz - a.cz) < 0.3 && Math.abs(o[k].cy - a.cy - dy) < 0.6) return;
+            o.push({ cx: a.cx, cy: a.cy + dy, cz: a.cz, w: a.w, h: a.h, perp: a.perp, glas: glas });
+        };
+        for (var i = 0; i < (H.licht || []).length; i++) auf(H.licht[i], 0, H.licht[i].glas);
+        for (i = 0; i < T.length; i++) auf(T[i], off, T[i].glas);
+        for (i = 0; i < f.liste.length; i++) auf(f.liste[i], 0, 1);
+        var t = H.dims && H.dims.tuer;
+        if (t) {
+            o.push({ cx: t.x, cy: t.y + t.h / 2, cz: t.z, w: t.w, h: t.h, perp: "z", glas: 0 });
+            if (t.hinten) o.push({ cx: t.hinten.x, cy: t.y + t.h / 2, cz: t.hinten.z, w: t.hinten.w, h: t.h, perp: "z", glas: 0 });
+        }
+        var A = H.annexDoors || [];
+        for (var j = 0; j < A.length; j++)
+            o.push({ cx: (A[j].x0 + A[j].x1) / 2, cy: (A[j].y0 + A[j].y1) / 2, cz: A[j].z, w: A[j].x1 - A[j].x0, h: A[j].y1 - A[j].y0, perp: "z", glas: 0 });
+        return { oeffnungen: o, glas: 1 - materials().glas.opacity, wand: _helle(innenTon(f.raum, kol) || _colFor(f.raum, kol)), boden: _helle(innenTon("boden", kol) || _colFor("boden", kol)) };
+    }
+    function _anKoerper(m, y, o) {
+        var k = RAUM_LICHT.kante,
+            y0 = isFinite(m.y0) ? m.y0 : 0;
+        if (!(o.cy > y0 && o.cy < y)) return false;
+        if (m.art === "rund" && m.rad > 0) {
+            var dx = o.cx - (m.x0 + m.x1) / 2,
+                dz = o.cz - (m.z0 + m.z1) / 2;
+            return Math.abs(Math.sqrt(dx * dx + dz * dz) - m.rad) <= k;
+        }
+        return o.perp === "x"
+            ? (Math.abs(o.cx - m.x0) <= k || Math.abs(o.cx - m.x1) <= k) && o.cz >= m.z0 - k && o.cz <= m.z1 + k
+            : (Math.abs(o.cz - m.z0) <= k || Math.abs(o.cz - m.z1) <= k) && o.cx >= m.x0 - k && o.cx <= m.x1 + k;
+    }
+    function raumLicht(m, y, masse, raum) {
+        var y0 = isFinite(m.y0) ? m.y0 : 0,
+            h = y - y0,
+            rund = m.art === "rund" && m.rad > 0;
+        if (!(h > 0) || !raum) return 0;
+        var A = rund ? Math.PI * m.rad * m.rad : (m.x1 - m.x0) * (m.z1 - m.z0),
+            U = rund ? 2 * Math.PI * m.rad : 2 * (m.x1 - m.x0 + (m.z1 - m.z0)),
+            n = m.art === "haupt" && m.egTop > y0 ? Math.max(1, Math.round(h / (m.egTop - y0))) : 1,
+            wand = U * h,
+            boden = 2 * A * n,
+            R = (wand * raum.wand + boden * raum.boden) / (wand + boden),
+            S = 0;
+        for (var i = 0; i < raum.oeffnungen.length; i++) {
+            var o = raum.oeffnungen[i],
+                frei = _anKoerper(m, y, o);
+            for (var j = 0; frei && j < masse.length; j++) {
+                var q = masse[j],
+                    qy = q !== m && DECKE_HOEHE[q.art] ? q[DECKE_HOEHE[q.art]] : NaN;
+                if (isFinite(qy) && isFinite(q.x0) && _anKoerper(q, qy, o)) frei = false;
+            }
+            if (frei) S += o.w * o.h * RAUM_LICHT.himmel * (o.glas ? raum.glas : 1);
+        }
+        return Math.round(Math.min(1, S / ((wand + boden) * (1 - R * R))) * RAUM_LICHT.raster) / RAUM_LICHT.raster;
+    }
+    // DER RÜCKSTRAHL DER SONNE (w28-innenlicht, zweiter Summand desselben Raum-Gesetzes): der Tageslicht-Quotient ist das Gesetz
+    // des bedeckten Himmels — am klaren Tag trägt die Sonne das Vielfache, ihr Fleck auf Boden und Wand strahlt in den Raum zurück:
+    //   Raum-Bestrahlung der Sonne = E_Sonne × Σ(Öffnungsfläche × max(0, n_Öffnung · Sonnenrichtung) × Durchlass) × R / (Raum-Oberfläche × (1 − R))
+    // Die Richtung kennt nur die Welt; der Kern trägt je Körper die VIER Seiten seines Rahmens [+x, −x, +z, −z], je Seite
+    // Σ(Fläche × Durchlass) × R / (Oberfläche × (1 − R)) — dieselben Öffnungen, dieselbe Zugehörigkeit, derselbe Rückwurf wie
+    // `raumLicht` (die Rund-Öffnung zählt der Seite ihrer Haupt-Achse). Leser: `deckenZeile` (Zahlen 7–10) → `_dachTakt` des Wirts.
+    function raumSonne(m, y, masse, raum) {
+        var y0 = isFinite(m.y0) ? m.y0 : 0,
+            h = y - y0,
+            rund = m.art === "rund" && m.rad > 0,
+            S = [0, 0, 0, 0, 0];
+        if (!(h > 0) || !raum) return S;
+        var A = rund ? Math.PI * m.rad * m.rad : (m.x1 - m.x0) * (m.z1 - m.z0),
+            U = rund ? 2 * Math.PI * m.rad : 2 * (m.x1 - m.x0 + (m.z1 - m.z0)),
+            n = m.art === "haupt" && m.egTop > y0 ? Math.max(1, Math.round(h / (m.egTop - y0))) : 1,
+            wand = U * h,
+            boden = 2 * A * n,
+            R = (wand * raum.wand + boden * raum.boden) / (wand + boden),
+            mx = (m.x0 + m.x1) / 2,
+            mz = (m.z0 + m.z1) / 2;
+        for (var i = 0; i < raum.oeffnungen.length; i++) {
+            var o = raum.oeffnungen[i],
+                frei = _anKoerper(m, y, o);
+            for (var j = 0; frei && j < masse.length; j++) {
+                var q = masse[j],
+                    qy = q !== m && DECKE_HOEHE[q.art] ? q[DECKE_HOEHE[q.art]] : NaN;
+                if (isFinite(qy) && isFinite(q.x0) && _anKoerper(q, qy, o)) frei = false;
+            }
+            if (!frei) continue;
+            var x = rund ? Math.abs(o.cx - mx) >= Math.abs(o.cz - mz) : o.perp === "x",
+                s = x ? (o.cx >= mx ? 0 : 1) : o.cz >= mz ? 2 : 3;
+            S[s] += o.w * o.h * (o.glas ? raum.glas : 1);
+        }
+        var k = R / ((wand + boden) * (1 - R));
+        // DAS FELD DES MESSERS (Zahl 11): der Anteil der Öffnungen an der Oberfläche des Raums × Durchlass — was ein mittelnder
+        // Lichtmesser im Raum neben dem Raum-Licht sieht (derselbe Term ohne Rückwurf). Leser: `_raumBlendeTakt` des Wirts.
+        S[4] = Math.round(Math.min(1, (S[0] + S[1] + S[2] + S[3]) / (wand + boden)) * RAUM_LICHT.raster) / RAUM_LICHT.raster;
+        for (i = 0; i < 4; i++) S[i] = Math.round(Math.min(1, S[i] * k) * RAUM_LICHT.raster) / RAUM_LICHT.raster;
+        return S;
+    }
     var DECKE_HOEHE = { haupt: "eY", anbau: "yLow", fluegel: "eY", hofarm: "eY", turm: "y1", rund: "y1" };
-    function deckenZeile(masse) {
+    function deckenZeile(masse, raum) {
         var d = [];
         for (var i = 0; i < (masse || []).length; i++) {
             var m = masse[i],
                 k = DECKE_HOEHE[m.art],
                 y = k ? m[k] : NaN;
             if (!isFinite(y) || !isFinite(m.x0) || !(m.x1 > m.x0) || !(m.z1 > m.z0)) continue;
-            d.push([_hr(m.x0), _hr(m.x1), _hr(m.z0), _hr(m.z1), _hr(y)]);
+            d.push([_hr(m.x0), _hr(m.x1), _hr(m.z0), _hr(m.z1), _hr(y), raumLicht(m, y, masse, raum)].concat(raumSonne(m, y, masse, raum)));
         }
         return d;
     }
@@ -5154,7 +6226,7 @@
             geoms.__strahl = solidZeile(st, "strahl"); // der Leib des Strahls (das Geländer), dieselbe Form
             geoms.__kamin = { spitze: kaminSpitze(st.H && st.H.chimney) }; // die Spitze des Stapels (≡ massBau, die Hülle trägt sie)
             geoms.__tuer = tuerZeile(st.H && st.H.dims); // die Tür-Zeile des Baus (≡ exportSettlement, die Hülle trägt sie)
-            geoms.__decken = deckenZeile(masseVon(st)); // die Decken der Körper (≡ der Mass-Bau der Stufen 1/2, die Hülle trägt sie)
+            geoms.__decken = deckenZeile(masseVon(st), raumVon(st, p.col)); // die Decken der Körper samt ihrem Raum-Licht (≡ der Mass-Bau der Stufen 1/2, die Hülle trägt sie)
             bakeLOD(st.g, p.col, geoms, 0, true); // LÜCKENLOS: alles=true (Kopf, Stufen-Wahrheit 0)
             st.g.traverse(function (o) {
                 if (o.geometry) o.geometry.dispose();
@@ -5175,7 +6247,7 @@
             geoms.__strahl = hs.strahl;
             geoms.__kamin = { spitze: kaminSpitze(B.chimney) };
             geoms.__tuer = tuerZeile(B.dims);
-            geoms.__decken = deckenZeile(B.masse);
+            geoms.__decken = deckenZeile(B.masse, B.raum);
         }
         return geoms;
     }
@@ -5199,13 +6271,25 @@
         var g = new THREE.Group();
         for (var role in geoms) {
             var G = geoms[role];
-            if (!G.vo) continue;
+            if (!G || !G.vo) continue; // ein Beipack ohne Wert (die Tür-Zeile des Rundbaus ist null) ist keine Rolle — bis w28-innenlicht warf der Rundbau hier
             var bg = new THREE.BufferGeometry();
             bg.setAttribute("position", new THREE.Float32BufferAttribute(G.pos, 3));
             bg.setAttribute("normal", new THREE.Float32BufferAttribute(G.nrm, 3));
             bg.setAttribute("color", new THREE.Float32BufferAttribute(G.col, 3));
             if (G.uv && G.uv.length === (G.pos.length / 3) * 2)
                 bg.setAttribute("uv", new THREE.Float32BufferAttribute(G.uv, 2));
+            // DAS GEFÜGE DER FERNEN WAND (`_wandLage`, VERBAND_GESETZ.fachwerk): je Ecke die Zeile ihres Verbands (`aVerband`, ein
+            // Byte) und ihre Lage in der Wand (`aLage`: Felder quer · Felder hoch) — nur wo ein Teil der Rolle sie trägt
+            if (G.wand && G.wand.length === G.pos.length) {
+                var nW = G.pos.length / 3, vb = new Uint8Array(nW), la = new Float32Array(nW * 2);
+                for (var iW = 0; iW < nW; iW++) {
+                    la[iW * 2] = G.wand[iW * 3];
+                    la[iW * 2 + 1] = G.wand[iW * 3 + 1];
+                    vb[iW] = G.wand[iW * 3 + 2];
+                }
+                bg.setAttribute("aVerband", new THREE.BufferAttribute(vb, 1));
+                bg.setAttribute("aLage", new THREE.BufferAttribute(la, 2));
+            }
             bg.setIndex(G.idx);
             var mm = new THREE.Mesh(bg, _mmFor(role));
             mm.castShadow = true;
@@ -5417,6 +6501,9 @@
         // DIE WANDLATERNE (K66-2): derselbe Kopf am Arm vor der Hauswand — die Leuchte der dichten Gasse und der Tür von Gasthaus
         // und Schmiede; ihr Licht LICHT_GESETZ.wandlaterne. Der Tritt ist der Kopf (sie hängt, kein Fuß steht im Weg).
         wandlaterne: { lab: "Wandlaterne · Arm, Glas-Kopf, Haube", gestalten: 1, siteTag: "wand", salz: 0x5ea7, tritt: { typ: "kreis", r: 0.15 }, licht: "wandlaterne" },
+        // DER GRABSTEIN (STADT_GRAMMATIK, das Viertel kirchhof — rein additiv): das Grab des Friedhofs hinter der Kirche, je Same
+        // eine von drei Gestalten (die Tafel mit Giebel, das Steinkreuz, die Tafel mit Kopf); die Schrift-Seite ist −z
+        grabstein: { lab: "Grabstein · Sockel, Tafel, Kreuz", gestalten: 3, siteTag: "friedhof", salz: 0x6c1d, tritt: { typ: "kasten", ex: 0.36, ez: 0.16 } },
     };
     // B4 — die Regler der Ausstattung (die Werkstatt baut ihre Slider daraus, der ov-Kanal liest dieselben ids).
     var AUS_PARAMS = [
@@ -6746,7 +7833,51 @@
         });
         ausTeil(g, geo, "nagel");
     }
-    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld };
+    // ── DER GRABSTEIN (Front −z): der Sockel, 0,2 m im Boden, darauf je Gestalt (aus dem Samen) die Tafel mit Giebel — ein
+    //    Quadrat auf der Spitze über ihrer Schulter —, das Steinkreuz oder die Tafel mit schmalem Kopf; nah mit gebrochenen
+    //    Kanten, fern die Blöcke scharf. EIN Stoff (stein): er altert wie jeder Stein der Ausstattung (Erdsaum, Moos, Belag). ──
+    function ausGrabstein(g, p, seed, stufe) {
+        var m = AUS_MASS.grabstein(p.groesse),
+            W = p.verwitterung,
+            fa = stufe === 0 ? 0.012 : 0,
+            ton = ausTon(ausZufall(seed, 0xb1), 0.07, 0.02),
+            art = (seed >>> 0) % 3;
+        var stein = function (geo) {
+            ausFaerbe(geo, "stein", W, function () {
+                return { ton: ton };
+            });
+            ausTeil(g, geo, "stein");
+        };
+        grabsteinBloecke(m, art, fa).forEach(stein);
+    }
+    // DIE BLÖCKE DES GRABSTEINS (EINE Form für Bau und Wurf, `ausWurf`): der Sockel, dann die Tafel mit Giebel (0) oder Kopf (2)
+    // oder das Kreuz aus zwei Balken (1); `fa` die Fase der Kanten
+    function grabsteinBloecke(m, art, fa) {
+        var B = [ausSetze(ausKiste(m.sb, m.sh + 0.2, m.sd, fa), 0, (m.sh - 0.2) / 2, 0)];
+        if (art === 1) B.push(ausSetze(ausKiste(m.kb, m.h, m.d, fa), 0, m.sh + m.h / 2, 0), ausSetze(ausKiste(m.b, m.kb, m.d, fa), 0, m.sh + m.h * 0.68, 0));
+        else
+            B.push(
+                ausSetze(ausKiste(m.b, m.h * 0.82, m.d, fa), 0, m.sh + m.h * 0.41, 0),
+                art === 0
+                    ? ausSetze(ausKiste(m.b * Math.SQRT1_2, m.b * Math.SQRT1_2, m.d, fa), 0, m.sh + m.h * 0.82, 0, 0, 0, Math.PI / 4)
+                    : ausSetze(ausKiste(m.b * 0.62, m.h * 0.18, m.d, fa), 0, m.sh + m.h * 0.91, 0)
+            );
+        return B;
+    }
+    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, grabstein: ausGrabstein, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld };
+    // DER LEIB EINER LEUCHTE (schatten.K5, rein additiv): der Halbmesser ihres Glas-Kopfs um den Licht-Mittelpunkt `yL` (die Mitte
+    // des Kopfs) — der Boden des Kopfs liegt `yL − yK0` unter dem Licht (die Platte der Stufe 3 genau dort, Halbweite kb/2 + 0,02),
+    // die Eck-Stäbe in kb/2, die Haube über `yK1`. Was im Leib liegt, wirft das eigene Licht nicht: die Welt stellt die nahe Ebene
+    // des Wurfs jenseits (bild-schatten `_lichtWurfTakt`) — mit dem Kern des Abfalls (Laterne 0,1 m) warf der Boden des Kopfs
+    // einen Kreis von 2,7 m unter jede werfende Laterne, mit dem Kern der Wandlaterne (2,74 m, das Wand-Gesetz) warf nichts in
+    // 2,7 m um sie. Aus DERSELBEN Maß-Funktion wie die Gestalt (AUS_MASS in der Größe des Rezepts); 0 für jede Gestalt ohne Kopf.
+    function lichtLeib(id) {
+        var pre = PRESETS[id],
+            mass = AUS_MASS[id];
+        if (!pre || !pre.fx || !pre.fx.licht || typeof mass !== "function") return 0;
+        var m = mass(pre.s.groesse);
+        return m.yK0 < m.yL ? Math.max(m.yL - m.yK0, m.yK1 - m.yL, m.kb / 2) : 0;
+    }
     // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
     // die L1 (die L0 wirft selbst: nah, höchstens drei im Bild); ihre Hülle (`ausHuelle`) reist als Beipack `__fern`.
     // Dieselben Maße wie die Stufen 0/1 (Ring R + Steinbreite, Tisch und Plane, Kranz, Pfosten, First): Feuerstelle der
@@ -6780,6 +7911,10 @@
             var kh = 0.4 * G,
                 yL = LICHT_GESETZ.laterne.hoeheM * G;
             return { fr: 0.15 * G, fh: 0.55 * G, mr: 0.045 * G, kb: 0.26 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yK1: yL + kh / 2, hb: 0.2 * G, yT: yL + kh / 2 + 0.2 * G };
+        },
+        grabstein: function (G) {
+            // die Tafel b × h × d auf dem Sockel sb × sh × sd, das Kreuz aus Balken der Breite kb
+            return { b: 0.56 * G, h: 0.92 * G, d: 0.14, sb: 0.72 * G, sh: 0.1, sd: 0.32, kb: 0.2 * G };
         },
         wandlaterne: function (G) {
             // der Kopf der Laterne in 0,85 ihrer Maße um die Licht-Höhe LICHT_GESETZ.wandlaterne `hoeheM`; die Wand in `armM`
@@ -7521,6 +8656,7 @@
     // (`userData.fass` = [x, z] oder fehlt) — die Stufe 3 liest sie aus der L1 derselben Gestalt (dieselbe Funktion,
     // derselbe Strom), nie aus einem zweiten Würfel.
     function ausWahl(rezeptId, p, sd, kol) {
+        if (rezeptId === "grabstein") return { art: (sd >>> 0) % 3 }; // die Gestalt des Steins (`ausGrabstein`: Giebel · Kreuz · Kopf)
         if (rezeptId !== "marktstand") return {};
         var tmp = new THREE.Group();
         AUS_BAU[rezeptId](tmp, p, sd, 1, kol);
@@ -7632,6 +8768,8 @@
             for (var gs = -1; gs <= 1; gs += 2)
                 flaeche([[[-m.L / 2, 0, gs * m.zG], [m.L / 2, 0, gs * m.zG], [m.L / 2, m.gH, gs * m.zG], [-m.L / 2, m.gH, gs * m.zG]]]);
             for (var pk = 0; pk < m.zP.length; pk++) pfosten(m.xJ, m.zP[pk], m.yP, m.yJ, m.pr);
+        } else if (rezeptId === "grabstein") {
+            grabsteinBloecke(m, wahl ? wahl.art : 0, 0).forEach(teil); // seine Blöcke ohne Fase: ein Stein wirft als Körper, nie als Fläche
         } else if (rezeptId === "sitzbank") {
             // DIE BANK (20 Dreiecke): das Sitzbrett, die Lehne als EIN Viereck im Winkel der Pfosten, die vier Beine als Kreuze
             var c = Math.cos(m.phi),
@@ -7707,6 +8845,8 @@
             dazu(huelleTeil("box", -m.kb / 2, m.kb / 2, m.yK0, m.yK1, -m.kb / 2, m.kb / 2, F("glas")));
             dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, -m.hb, 0, F("metall"), { first: "+z", walm: 1 }));
             dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, 0, m.hb, F("metall"), { first: "-z", walm: 1 }));
+        } else if (rezeptId === "grabstein") {
+            dazu(huelleTeil("box", -m.b / 2, m.b / 2, 0, m.sh + m.h, -m.d / 2, m.d / 2, F("stein")));
         } else if (rezeptId === "sitzbank") {
             dazu(huelleTeil("box", -m.L / 2, m.L / 2, 0, m.H, -m.T / 2, m.T / 2, F("holz")));
             dazu(huelleTeil("box", -m.L / 2 + 0.02, m.L / 2 - 0.02, m.H, m.pB[0], m.pB[1] - 0.04, m.zH + 0.04, F("holz")));
@@ -7753,6 +8893,7 @@
         if (rezeptId === "feuerstelle") return { stein: pick([0x9a958a, 0x928d83, 0xa19a8f]), holz: pick([0x8a745c, 0x84705a]), lehm: 0xb4afa6 };
         if (rezeptId === "marktstand") return { holz: pick([0x8e7860, 0x977f66, 0x84705c]), tuch: pick(AUS_PLANE), lattung: 0x9a8358, stroh: 0xb39b68 };
         if (rezeptId === "laterne" || rezeptId === "wandlaterne") return { metall: pick([0x6b706a, 0x6e6b66]) }; // gestrichenes Guss-Eisen, das Glas des Fensters
+        if (rezeptId === "grabstein") return { stein: pick([0xa8a294, 0x9c9282, 0x8a8a86]) }; // Kalkstein, Sandstein, Granit
         // die Geräte: das vergraute Holz der Werke, das Eisen (verzinkt, gestrichen) und die Griffe der Kletterwand
         if (GERAETE[rezeptId]) return { holz: pick([0x8e7860, 0x977f66, 0x86705a]), metall: pick([0x7d8288, 0x737a80, 0x858a8e]), stein: pick([0x9a5a48, 0x56708c, 0x9a8a50]) };
         if (WERKE[rezeptId]) return { holz: pick([0x8e7860, 0x977f66, 0x86705a]) }; // die Werke: ungestrichenes Holz, vergraut
@@ -7841,14 +8982,18 @@
     // läuft VOR der Platzierung, damit Solids/OBB konsistent fließen.
     // dorfB: [{dims,kern}] · pl: die Layout-Plätze (lay.pl — wird MUTIERT:
     // x/z + obb.cx/cz rücken zusammen) · gap: plan.norm.gap. Rückgabe: Snap-Zahl.
+    // DAS LOS IM ORT (w28-gruendung-flach): ein Platz, den das Layout gesetzt hat — ein Haus ohne Platz parkt `dorfLayout` bei
+    // |z| ≥ 9999 (der Export verwirft es). Geparkte laufen in keiner Paar-Schleife mit (Snap, Brandwand): sie stehen 20 m in
+    // EINER Flucht (keine Fuge < 1,8 m, keine Wand an Wand), 5 km fern jedem Haus im Ort — bis hier lief jedes verlangte Haus mit.
+    function imOrt(q){ return !!(q&&q.obb&&Math.abs(q.obb.cx)<=5000&&Math.abs(q.obb.cz)<=5000); }
     function reihenSnap(dorfB, pl, gap){
       const dicht=(gap<=0.6);
       let snaps=0;
       if(dicht){
       for(let i=0;i<dorfB.length;i++){ const A=dorfB[i]; if(!A.dims||A.kern) continue;
-        const qi=pl[i]; if(!qi) continue; const ci=Math.cos(qi.phi), si=Math.sin(qi.phi);
+        const qi=pl[i]; if(!imOrt(qi)) continue; const ci=Math.cos(qi.phi), si=Math.sin(qi.phi);
         for(let j=i+1;j<dorfB.length;j++){ const Bj=dorfB[j]; if(!Bj.dims||Bj.kern) continue;
-          const qj=pl[j]; if(!qj) continue;
+          const qj=pl[j]; if(!imOrt(qj)) continue;
           let dphi=Math.abs(qi.phi-qj.phi)%Math.PI; if(dphi>Math.PI/2)dphi=Math.PI-dphi;
           if(dphi>0.18) continue;
           const dx=qj.obb.cx-qi.obb.cx, dz=qj.obb.cz-qi.obb.cz;
@@ -7864,6 +9009,194 @@
       }
       return snaps;
     }
+    // DIE LOSE ÜBERDECKEN SICH NIE (w28-stadt-grammatik) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und
+    // exportSettlement rufen es NACH dem Snap und der Brandwand (die Reihe teilt ihre Wand: die Traufe über dem Nachbarn ist
+    // kein Überlapp, `obbAnDerBrandwand`), vor allem, was an einer Wand hängt (Mast, Brunnen, Wandlaterne, der Saum des
+    // Platzes). Das Layout packt die Lose nach ihrer Hülle im Raster der Trasse; der Grundriss, den der Slot trägt
+    // (`obbImLos`: der Bau seines Jahrs in seinem Los, sonst das Los), ragt an gedrehten Nachbarn über sie — an der Stadt
+    // „dorf 7 30" überdeckten sich am Ort vier Paare (bergfried × torhaus 0,21 m · wohnhaus × kapelle 0,39 m · wohnhaus ×
+    // wohnhaus 0,51 und 1,03 m), auf ebenem Grund eins (patrizierhaus × wohnhaus 0,42 m). Der Wirt ließ das später gehobene
+    // Los an seiner Bau-Wand fallen (`_bauFrei`): die Stadt stand ohne ihren Bergfried, die Burg ohne ihre Kapelle. Jetzt
+    // rücken zwei Lose, deren Grundrisse tiefer als LOS_GESETZ.fugeM ineinander liegen, längs der Achse der kleinsten
+    // Überdeckung um genau sie auseinander (Berührung ist kein Überlapp): das Haus mit der EINZIGEN Tür seiner Rolle steht
+    // (Rang 2), ein Haus mit Rolle weicht nur ihm (Rang 1), ein Wohnhaus jedem (Rang 0) — bei gleichem Rang rücken beide je
+    // halb, wie der Snap; ein Paar, das nach der Hälfte der Gänge noch ineinander liegt (die Klemme zwischen zwei Festen), teilt
+    // den Weg auch über den Rang hinweg. Rein und in fester Folge (i < j, höchstens LOS_GESETZ.gaenge Gänge): jeder Leser rechnet dasselbe.
+    // dorfB: [{ext, p}] · pl: lay.pl (wird MUTIERT: x/z + obb.cx/cz, wie reihenSnap) · lose: plan.lose (wo eins steht, trägt
+    // der Slot den Bau im Los). Rückgabe { paare (im ersten Gang gerückt), rest: [[i, j, tief]] (was nach dem letzten Gang
+    // noch ineinander liegt — der Leser nennt es beim Namen) }.
+    var LOS_GESETZ = { fugeM: 0.02, gaenge: 8 };
+    // der Grundriss, den der Slot trägt (`hausSlot`): der Bau im Los, an der Brandwand an der Außenkante der Wand geschnitten
+    function losGrundriss(dorfB, pl, lose, i) {
+        var o = lose && lose[i] ? obbImLos(pl[i], dorfB[i].ext) : pl[i].obb,
+            bw = dorfB[i].p && dorfB[i].p.brandwand;
+        return bw ? obbAnDerBrandwand(o, bw, dorfB[i].ext, dorfB[i].wandX) : o;
+    }
+    // die kleinste Überdeckung zweier gedrehter Rechtecke {cx, cz, phi, ex, ez} und ihre Achse von a nach b (≤ 0: getrennt)
+    function grundrissTief(a, b) {
+        var best = { d: Infinity, nx: 0, nz: 0 };
+        var achsen = [a.phi, a.phi + Math.PI / 2, b.phi, b.phi + Math.PI / 2];
+        for (var k = 0; k < 4; k++) {
+            var ux = Math.cos(achsen[k]), uz = -Math.sin(achsen[k]);
+            var halb = function (r) {
+                var c = Math.cos(r.phi), s = Math.sin(r.phi);
+                return r.ex * Math.abs(ux * c - uz * s) + r.ez * Math.abs(ux * s + uz * c);
+            };
+            var ab = (b.cx - a.cx) * ux + (b.cz - a.cz) * uz;
+            var d = halb(a) + halb(b) - Math.abs(ab);
+            if (d < best.d) best = { d: d, nx: ab < 0 ? -ux : ux, nz: ab < 0 ? -uz : uz };
+        }
+        return best;
+    }
+    function loseEntzerren(dorfB, pl, lose) {
+        var n = dorfB.length, i, j;
+        var da = function (k) { return pl[k] && pl[k].obb && Math.abs(pl[k].obb.cx) <= 5000 && Math.abs(pl[k].obb.cz) <= 5000; };
+        var rolle = function (k) { var hp = dorfB[k].p; return hp && typeof hp.rolle === "string" ? hp.rolle : "wohnhaus"; };
+        var zahl = {};
+        for (i = 0; i < n; i++) if (da(i)) zahl[rolle(i)] = (zahl[rolle(i)] || 0) + 1;
+        var rang = function (k) { var ro = rolle(k); return ro === "wohnhaus" ? 0 : zahl[ro] === 1 ? 2 : 1; };
+        var ruecke = function (k, dx, dz) { var q = pl[k]; q.x += dx; q.z += dz; q.obb.cx += dx; q.obb.cz += dz; };
+        var paare = 0, rest = [];
+        for (var gang = 0; gang <= LOS_GESETZ.gaenge; gang++) {
+            var bewegt = 0;
+            rest = [];
+            for (i = 0; i < n; i++) {
+                if (!da(i)) continue;
+                for (j = i + 1; j < n; j++) {
+                    if (!da(j)) continue;
+                    var A = losGrundriss(dorfB, pl, lose, i), B = losGrundriss(dorfB, pl, lose, j);
+                    var weit = Math.hypot(A.ex, A.ez) + Math.hypot(B.ex, B.ez);
+                    if (Math.abs(B.cx - A.cx) > weit || Math.abs(B.cz - A.cz) > weit) continue;
+                    var T = grundrissTief(A, B);
+                    if (!(T.d > LOS_GESETZ.fugeM)) continue;
+                    rest.push([i, j, T.d]);
+                    if (gang === LOS_GESETZ.gaenge) continue; // der letzte Gang zählt nur
+                    // (die Klemme: liegt ein Paar nach der Hälfte der Gänge noch ineinander, steht das Tiefere zwischen zwei
+                    // Festen — dann weicht auch das Haus mit Rolle je halb; nur die einzige Tür einer Rolle steht immer)
+                    var ri = rang(i), rj = rang(j), klemme = gang >= LOS_GESETZ.gaenge / 2 && Math.max(ri, rj) < 2;
+                    var ai = klemme ? 0.5 : ri > rj ? 0 : ri < rj ? 1 : 0.5;
+                    if (ai > 0) ruecke(i, -T.nx * T.d * ai, -T.nz * T.d * ai);
+                    if (ai < 1) ruecke(j, T.nx * T.d * (1 - ai), T.nz * T.d * (1 - ai));
+                    bewegt++;
+                    if (gang === 0) paare++;
+                }
+            }
+            if (!bewegt) break;
+        }
+        return { paare: paare, rest: rest };
+    }
+    // DER PLATZ REICHT BIS ZUR BAUFLUCHT (w28-stadt-grammatik) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und
+    // exportSettlement rufen ihn NACH dem Snap (die Grundrisse stehen). Die Stadt der Grammatik hält um ihren Platz die Trassen
+    // und ihre Gehwege frei, die Lose beginnen dahinter: zwischen dem Rand des Platzes und den Häusern, die ihn fassen, lag
+    // Wiese („dorf 7 300“ am Tisch: 79 m von 313 m der Strecken Haus → Platz, das Rathaus 26 m vom Rand, 15 m davon Halme —
+    // im Bild stadt-voll standen Halme zwischen den Leuten des Markts). Ein Haus FASST den Platz, wenn die Strecke von
+    // seinem Grundriss zum nächsten Punkt des Platzes kein anderer Grundriss schneidet und nicht länger als
+    // STADT_DICHTE.platzFassM ist. Der Saum ist Belag des Platzes (`platzBelag`; der Anger und der Park tragen keinen): je
+    // Seite des Platzes eine Fläche bis an die nächste Bauflucht dieser Seite, je Haus dahinter oder über Eck eine bis an
+    // seine Front (quer um STADT_DICHTE.platzFugeM über seine Flanken). Er steht als Zone `platzsaum` in `lay.zonen` — der
+    // Leser ist der Boden des Wirts (`_stlWegeBuild` malt jede Fläche mit Belag) und das Labor. pl: lay.pl · lay: das Layout
+    // (zonen wird ERGÄNZT) · plan: der Plan (Größe und Jahr des Belags). Rückgabe { fasser, flaechen }.
+    function platzSaum(pl, lay, plan) {
+        var pz = lay.platz,
+            SD = STADT_DICHTE,
+            aus = { fasser: 0, flaechen: 0 };
+        if (!pz || !Array.isArray(lay.zonen)) return aus; // nur die Stadt der Grammatik trägt Flächen
+        var belag = platzBelag(Object.assign({}, plan, { platz: pz }));
+        if (!belag || belag === "gras") return aus;
+        var phi = pz.phi || 0,
+            c = Math.cos(phi),
+            s = Math.sin(phi),
+            obbs = [],
+            i,
+            j;
+        for (i = 0; i < pl.length; i++) if (pl[i] && pl[i].obb && Math.abs(pl[i].obb.cx) < 5000 && Math.abs(pl[i].obb.cz) < 5000) obbs.push(pl[i].obb);
+        // in den Rahmen des Platzes (lx, lz) und zurück
+        var lok = function (x, z) {
+            return [(x - pz.cx) * c - (z - pz.cz) * s, (x - pz.cx) * s + (z - pz.cz) * c];
+        };
+        var welt = function (lx, lz) {
+            return [pz.cx + lx * c + lz * s, pz.cz - lx * s + lz * c];
+        };
+        var klemme = function (v, a, b) {
+            return v < a ? a : v > b ? b : v;
+        };
+        // je Grundriss seine Hülle im Rahmen des Platzes, sein Abstand und die freie Sicht
+        var fasser = [];
+        for (i = 0; i < obbs.length; i++) {
+            var o = obbs[i],
+                oc = Math.cos(o.phi || 0),
+                os = Math.sin(o.phi || 0),
+                h = [Infinity, Infinity, -Infinity, -Infinity];
+            for (j = 0; j < 4; j++) {
+                var ux = (j & 1 ? 1 : -1) * o.ex,
+                    uz = (j & 2 ? 1 : -1) * o.ez,
+                    q = lok(o.cx + ux * oc + uz * os, o.cz - ux * os + uz * oc);
+                h = [Math.min(h[0], q[0]), Math.min(h[1], q[1]), Math.max(h[2], q[0]), Math.max(h[3], q[1])];
+            }
+            var gx = Math.max(0, h[0] - pz.ex, -pz.ex - h[2]),
+                gz = Math.max(0, h[1] - pz.ez, -pz.ez - h[3]),
+                d = Math.hypot(gx, gz);
+            if (!(d > 0.01) || d > SD.platzFassM) continue;
+            // die Strecke vom nächsten Punkt des Grundrisses (b, am gedrehten Kasten selbst: ein Haus, das halb hinter einem
+            // anderen steht, sieht den Platz an seiner freien Ecke) zum nächsten Punkt des Platzes (a), je 0,5 m: kein anderer Grundriss
+            var mo = lok(o.cx, o.cz),
+                mp = welt(klemme(mo[0], -pz.ex, pz.ex), klemme(mo[1], -pz.ez, pz.ez)),
+                ddx = mp[0] - o.cx,
+                ddz = mp[1] - o.cz,
+                bx = klemme(ddx * oc - ddz * os, -o.ex, o.ex),
+                bz = klemme(ddx * os + ddz * oc, -o.ez, o.ez),
+                b = lok(o.cx + bx * oc + bz * os, o.cz - bx * os + bz * oc),
+                a = [klemme(b[0], -pz.ex, pz.ex), klemme(b[1], -pz.ez, pz.ez)];
+            var L = Math.hypot(b[0] - a[0], b[1] - a[1]),
+                sicht = true;
+            for (var u = 0.25; sicht && u < L; u += 0.5) {
+                var w = welt(a[0] + ((b[0] - a[0]) * u) / L, a[1] + ((b[1] - a[1]) * u) / L);
+                for (j = 0; sicht && j < obbs.length; j++) if (j !== i && distPunktOBB(w[0], w[1], obbs[j]) < 1e-6) sicht = false;
+            }
+            if (sicht) fasser.push({ h: h, gx: gx, gz: gz, a: a, b: b });
+        }
+        aus.fasser = fasser.length;
+        // die Fläche im Rahmen des Platzes [x0, z0, x1, z1] als Zone
+        var flaeche = function (x0, z0, x1, z1) {
+            if (!(x1 - x0 > 0.5) || !(z1 - z0 > 0.5)) return;
+            var m = welt((x0 + x1) / 2, (z0 + z1) / 2);
+            lay.zonen.push(zoneVon("platzsaum", "flaeche", "kasten", { cx: m[0], cz: m[1], phi: phi, ex: (x1 - x0) / 2, ez: (z1 - z0) / 2 }, belag));
+            aus.flaechen++;
+        };
+        // je Seite der Saum bis an die nächste Bauflucht dieser Seite: Ost · West · Süd · Nord im Rahmen des Platzes
+        var nah = [Infinity, Infinity, Infinity, Infinity];
+        fasser.forEach(function (f) {
+            if (f.gz === 0 && f.gx > 0) {
+                var io = f.h[0] >= pz.ex ? 0 : 1;
+                nah[io] = Math.min(nah[io], f.gx);
+            } else if (f.gx === 0 && f.gz > 0) {
+                var is = f.h[1] >= pz.ez ? 2 : 3;
+                nah[is] = Math.min(nah[is], f.gz);
+            }
+        });
+        for (i = 0; i < 4; i++) if (!isFinite(nah[i])) nah[i] = 0;
+        var F = SD.platzFugeM; // der Saum greift um die Fuge über die Ecke des Platzes: die Front, die an der Ecke beginnt, steht nicht an seiner Kante
+        flaeche(pz.ex, -pz.ez - F, pz.ex + nah[0], pz.ez + F);
+        flaeche(-pz.ex - nah[1], -pz.ez - F, -pz.ex, pz.ez + F);
+        flaeche(-pz.ex - F, pz.ez, pz.ex + F, pz.ez + nah[2]);
+        flaeche(-pz.ex - F, -pz.ez - nah[3], pz.ex + F, -pz.ez);
+        // je Haus dahinter (seine Seite trägt schon den Saum bis zur nächsten Front) oder über Eck: die Fläche um die Strecke
+        // seiner Sicht (a am Platz → b am gedrehten Kasten), um die Fuge geweitet (auch unter ihn: die Hülle eines gedrehten
+        // Hauses steht vor seiner Wand, ohne sie bliebe ein Keil Wiese an der Schwelle) — und, wo es dem Platz gegenübersteht,
+        // quer über seine ganze Front, soweit sie am Platz liegt
+        fasser.forEach(function (f) {
+            var x0 = Math.min(f.a[0], f.b[0]) - F,
+                x1 = Math.max(f.a[0], f.b[0]) + F,
+                z0 = Math.min(f.a[1], f.b[1]) - F,
+                z1 = Math.max(f.a[1], f.b[1]) + F;
+            // gegenüber steht es, wenn seine Sicht den Platz an dessen Seite trifft (b im Bereich der Seite, um die Fuge): wer ihn
+            // nur schräg an einem Nachbarn vorbei sieht, trägt nur den Streifen seiner Sicht
+            if (f.gz === 0 && Math.abs(f.b[1]) <= pz.ez + F) (z0 = Math.min(z0, Math.max(-pz.ez - F, f.h[1] - F))), (z1 = Math.max(z1, Math.min(pz.ez + F, f.h[3] + F)));
+            if (f.gx === 0 && Math.abs(f.b[0]) <= pz.ex + F) (x0 = Math.min(x0, Math.max(-pz.ex - F, f.h[0] - F))), (x1 = Math.max(x1, Math.min(pz.ex + F, f.h[2] + F)));
+            flaeche(x0, z0, x1, z1);
+        });
+        return aus;
+    }
     // DIE WANDLATERNE IM DORF (K66-2) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und exportSettlement rufen sie NACH
     // dem Snap (die Wand steht, wo das Haus steht). Zwei Stände der Gestalt wandlaterne (Kopf `armM` vor der Wand des Kerns
     // W × D, nie vor der Traufe der Hülle): (1) die Tür von Gasthaus und Schmiede trägt sie 1,1 m neben der Tür (bis K66-2 ein
@@ -7875,6 +9208,15 @@
     // die Wand der Gasse schwarz (nacht-wand 69 %). Leser von LICHT_MARKE_M: gate:settlement DORF-LICHT (das Soll je Meter).
     // dorfB: [{p, dims}] · pl: lay.pl · lay: das Layout (laternen wird ERGÄNZT). Rückgabe: die Zahl der Wandlaternen.
     var LICHT_MARKE_M = 10;
+    // DIE GRÜNDUNG IST FLACH (w28-gruendung-flach): der Kopf einer Wandlaterne fragt nur die Grundrisse seiner Zelle des Rasters
+    // (`GRUENDUNG_RASTER.wandM`, je Zelle jeder Grundriss, dessen Umkreis ex + ez sie berührt — derselbe Kreis, an dem `fernOBB`
+    // vorher jeden fernen verwarf), und ein Stand, der die Marke nicht näher erreichen kann als der beste bisher (seine Wand liegt
+    // binnen hypot(hw + armM, hd + armM) um den Ursprung des Hauses), wird nicht gefragt. Dieselbe Laterne, dieselbe Folge: bis
+    // hier fragte jeder Stand jeder dunklen Marke alle Grundrisse samt der geparkten — Marken × N² (N = 3000 verlangt: 52 s von
+    // 84 s der Gründung, an 287 Laternen). Leser der Zähler `GRUENDUNG_OPS` (die Stände und ihre Grundriss-Proben je Gründung):
+    // gate:settlement G (die Proben je Stand wachsen nicht mit N).
+    var GRUENDUNG_RASTER = { wandM: 32 },
+        GRUENDUNG_OPS = { staende: 0, grundriss: 0 };
     function wandLaternen(dorfB, pl, lay) {
         var a = LICHT_GESETZ.wandlaterne.armM,
             ecke = 0.6,
@@ -7889,10 +9231,30 @@
         var welt = function (h, lx, lz) {
             return { x: h.q.x + lx * h.c + lz * h.s, z: h.q.z - lx * h.s + lz * h.c };
         };
+        var zM = GRUENDUNG_RASTER.wandM,
+            zelle = function (x, z) {
+                return Math.floor(x / zM) + "," + Math.floor(z / zM);
+            },
+            R = new Map();
+        for (var j0 = 0; j0 < pl.length; j0++) {
+            var o0 = pl[j0] && pl[j0].obb;
+            if (!o0) continue;
+            var r0 = o0.ex + o0.ez + 1e-6;
+            for (var gx = Math.floor((o0.cx - r0) / zM); gx <= Math.floor((o0.cx + r0) / zM); gx++)
+                for (var gz = Math.floor((o0.cz - r0) / zM); gz <= Math.floor((o0.cz + r0) / zM); gz++) {
+                    var kz = gx + "," + gz;
+                    if (!R.has(kz)) R.set(kz, []);
+                    R.get(kz).push(j0);
+                }
+        }
         var fremd = function (x, z, h) {
-            for (var j = 0; j < pl.length; j++) {
-                var o = pl[j] && pl[j].obb;
-                if (!o || pl[j] === h.q || fernOBB(x, z, o, 0)) continue;
+            var Z = R.get(zelle(x, z)) || [];
+            GRUENDUNG_OPS.staende++;
+            for (var jj = 0; jj < Z.length; jj++) {
+                var j = Z[jj],
+                    o = pl[j].obb;
+                GRUENDUNG_OPS.grundriss++;
+                if (pl[j] === h.q || fernOBB(x, z, o, 0)) continue;
                 var c = Math.cos(o.phi || 0),
                     s = Math.sin(o.phi || 0);
                 if (Math.abs((x - o.cx) * c - (z - o.cz) * s) < o.ex && Math.abs((x - o.cx) * s + (z - o.cz) * c) < o.ez) return true;
@@ -7940,6 +9302,8 @@
             var best = null,
                 bestD = d0;
             for (k = 0; k < kand.length; k++) {
+                var hk = kand[k][0];
+                if (Math.hypot(m.x - hk.q.x, m.z - hk.q.z) - Math.hypot(hk.hw + a, hk.hd + a) >= bestD) continue; // näher als der beste kommt er nicht
                 var l = stand(kand[k][0], kand[k][1], kand[k][2], kand[k][3], kand[k][4]);
                 var d = l ? Math.hypot(l.x - m.x, l.z - m.z) : Infinity;
                 if (d < bestD) {
@@ -7951,6 +9315,60 @@
         }
         return n;
     }
+    // DIE LATERNE VOR DER WAND (K66), die EINE Zahl: ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr —
+    // (h² + k²) / (d² + k²) ≤ 2, d ≥ 2,55 m. Leser: der Setzer (`dorfLayout` `laterneFrei`) und `mastWeicht`.
+    function laterneWandM() {
+        var L = LICHT_GESETZ.laterne;
+        return Math.sqrt(Math.max(0, (L.hoeheM * L.hoeheM + L.kernM * L.kernM) / 2 - L.kernM * L.kernM));
+    }
+    // DER MAST WEICHT DER GERÜCKTEN WAND (w28-stadt-grammatik) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und
+    // exportSettlement rufen ihn NACH dem Snap, VOR Brunnen und Wandlaternen. Der Setzer stellt den Mast `laterneWandM` vor
+    // jeden Grundriss, DANACH rückt der Snap die Häuser einer Reihe zusammen (je ~0,5 m): der Mast stand näher an der Wand, als
+    // sein Gesetz erlaubt (gate:settlement DORF-LICHT je Meter, „dorf 7 18“: 2,38 m vor der Kapelle der Burg, Soll ≥ 2,54 m —
+    // sichtbar, seit der Gehweg der Fahrstraße die Lose rückt). Der Mast, den ein Grundriss näher als das Gesetz hat, tritt von
+    // dessen nächstem Punkt fort bis auf das Gesetz — wo ihn dort kein anderer Grundriss näher hat und der Stand des Setzers
+    // gilt (`lay.laterneNeben`: neben jedem Weg, außer der Kreuzung der Trassen, trocken — DIESELBE Regel, kein Zwilling);
+    // sonst fällt er (gezählt, nie still: die Wandlaterne danach deckt die dunkle Marke). pl: lay.pl · lay: das Layout
+    // (laternen wird ERSETZT). Rückgabe { gerueckt, gestrichen }.
+    function mastWeicht(pl, lay) {
+        var W = laterneWandM(),
+            aus = { gerueckt: 0, gestrichen: 0 },
+            obbs = [],
+            neben = lay.laterneNeben;
+        for (var i = 0; i < pl.length; i++) if (pl[i] && pl[i].obb && Math.abs(pl[i].obb.cx) < 5000 && Math.abs(pl[i].obb.cz) < 5000) obbs.push(pl[i].obb);
+        // der nächste Grundriss näher als das Gesetz: sein Abstand und sein nächster Punkt
+        var naechster = function (x, z) {
+            var b = null;
+            for (var j = 0; j < obbs.length; j++) {
+                var o = obbs[j];
+                if (fernOBB(x, z, o, W)) continue;
+                var c = Math.cos(o.phi), s = Math.sin(o.phi), dx = x - o.cx, dz = z - o.cz;
+                var lx = Math.max(-o.ex, Math.min(o.ex, dx * c - dz * s)), lz = Math.max(-o.ez, Math.min(o.ez, dx * s + dz * c));
+                var px = o.cx + lx * c + lz * s, pz = o.cz - lx * s + lz * c, d = Math.hypot(x - px, z - pz);
+                if (d < W - 1e-9 && (!b || d < b.d)) b = { d: d, x: px, z: pz };
+            }
+            return b;
+        };
+        lay.laternen = (lay.laternen || []).filter(function (l) {
+            if (!l || l.wand) return true;
+            var n = naechster(l.x, l.z);
+            if (!n) return true;
+            if (n.d > 1e-6) {
+                var x = n.x + ((l.x - n.x) / n.d) * (W + 0.01), z = n.z + ((l.z - n.z) / n.d) * (W + 0.01);
+                if (!naechster(x, z) && neben(x, z)) {
+                    l.x = x;
+                    l.z = z;
+                    aus.gerueckt++;
+                    return true;
+                }
+            }
+            // der gefallene Mast ist eine Marke des Lichts: die Wandlaterne danach deckt sie (in der Stadt legte der Setzer keine)
+            if (Array.isArray(lay.marken)) lay.marken.push({ x: l.x, z: l.z });
+            aus.gestrichen++;
+            return false;
+        });
+        return aus;
+    }
     // DER BRUNNEN WEICHT DEM HAUS (S4-N4) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und exportSettlement rufen ihn NACH
     // dem Snap, VOR den Wandlaternen. Der Brunnen „je 8 Häuser" (`dorfLayout`) steht 0,6 m hinter dem Wegrand vor dem Haus, nach
     // dem er gezogen wurde — geprüft gegen kein Haus, das später kam, und gegen keinen Gang: am Start-Dorf stand er vor der Tür
@@ -7959,6 +9377,9 @@
     // jedem Weg, fern jeder Laterne (2 m), jedes Hof-Baums (3,5 m), jedes Stands und jedes Ackers — die Regeln, nach denen das
     // Layout sie um ihn stellte. Trifft er eins, rückt er zum nächsten freien Stand am Rand eines Wegs (wie gezogen: 0,6 m hinter
     // dem Rand, je 0,5 m jedes Wegs, beide Seiten); findet er keinen, fällt er aus dem Plan (gezählt, nie still).
+    // DER RAND IST DER DES LAYOUTS (`lay.wegRand`, w28-stadt-grammatik): an der Fahrstraße der Stadt liegt er hinter ihrem Gehweg (der
+    // Raum des Wagens, der einen Stehenden umfährt) — und kein Brunnen steht auf einem Torplatz (`lay.zonen`: der Raum der Wende am
+    // Ende der Trasse; an stadt-voll stand einer 3 m neben dem Ende 733/570, keine Wende trug: Wenden 3 an 4 Enden).
     // dorfB: [{p, dims}] · pl: lay.pl · lay: das Layout (brunnen wird ERSETZT). Rückgabe { gerueckt, gestrichen }.
     function brunnenWeicht(dorfB, pl, lay) {
         var O = ORT_GESETZ,
@@ -7969,6 +9390,10 @@
             aus = { gerueckt: 0, gestrichen: 0 },
             wege = (lay.roads || []).filter(function (rd) {
                 return rd.pts && rd.pts.length > 1;
+            }),
+            rand = lay.wegRand,
+            tore = (lay.zonen || []).filter(function (zo) {
+                return zo.name === "torplatz" && zo.form === "kasten";
             }),
             a,
             i,
@@ -8007,7 +9432,7 @@
             return wegKasten(rd.pts);
         });
         var aufWeg = function (x, z, saum) {
-            for (var j = 0; j < wege.length; j++) if (!fernKasten(x, z, kw[j], wege[j].w / 2 + saum) && fuss(wege[j], x, z).d < wege[j].w / 2 + saum) return true;
+            for (var j = 0; j < wege.length; j++) if (!fernKasten(x, z, kw[j], rand(wege[j]) + saum) && fuss(wege[j], x, z).d < rand(wege[j]) + saum) return true;
             return false;
         };
         // die Flächen der Häuser: der Grundriss und der Gang vom Eingang bis an den Weg (mindestens ORT_GESETZ.vorplatzM)
@@ -8035,6 +9460,7 @@
             if (aufWeg(x, z, 0.35)) return false; // wie gezogen: die Mitte 0,6 m hinter dem Rand (der Kranz ragt 0,32 m hinein)
             for (var j = 0; j < flaechen.length; j++) if (!fernOBB(x, z, flaechen[j], r) && distPunktOBB(x, z, flaechen[j]) < r) return false;
             for (j = 0; j < (lay.felder || []).length; j++) if (!fernOBB(x, z, lay.felder[j], r) && distPunktOBB(x, z, lay.felder[j]) < r) return false;
+            for (j = 0; j < tore.length; j++) if (distPunktOBB(x, z, tore[j]) < r) return false; // der Torplatz ist der Raum der Wende
             var nah = function (L, m) {
                 for (var n = 0; n < (L || []).length; n++) if (Math.hypot(x - L[n].x, z - L[n].z) < m) return true;
                 return false;
@@ -8045,7 +9471,7 @@
         var raender = [];
         for (a = 0; a < wege.length; a++)
             for (var u = 0, p = true; p; u += 0.5)
-                for (var sk = -1; sk <= 1; sk += 2) if ((p = quer(wege[a], u, sk * (wege[a].w / 2 + 0.6)))) raender.push(p);
+                for (var sk = -1; sk <= 1; sk += 2) if ((p = quer(wege[a], u, sk * (rand(wege[a]) + 0.6)))) raender.push(p);
         for (k = 0; k < (lay.brunnen || []).length; k++) {
             var b = lay.brunnen[k],
                 stand = frei(b.x, b.z) ? b : null;
@@ -8076,9 +9502,9 @@
     // Rückgabe: Zahl der markierten anliegenden Seiten.
     function brandwand(dorfB, gap){
       let bwN=0;
-      for(let i=0;i<dorfB.length;i++){ const A=dorfB[i]; if(!A.dims) continue;
+      for(let i=0;i<dorfB.length;i++){ const A=dorfB[i]; if(!A.dims||!imOrt(A.q)) continue;
         const Wi=A.dims.W||8, Di=A.dims.D||8, ci=Math.cos(A.q.phi), si=Math.sin(A.q.phi);
-        for(let j=0;j<dorfB.length;j++){ if(j===i) continue; const Bj=dorfB[j]; if(!Bj.dims) continue;
+        for(let j=0;j<dorfB.length;j++){ if(j===i) continue; const Bj=dorfB[j]; if(!Bj.dims||!imOrt(Bj.q)) continue;
           let dphi=Math.abs(A.q.phi-Bj.q.phi)%Math.PI; if(dphi>Math.PI/2) dphi=Math.PI-dphi;
           if(dphi>0.26) continue;                                                             // nur parallele Reihen bilden Brandwände
           const dx=Bj.q.obb.cx-A.q.obb.cx, dz=Bj.q.obb.cz-A.q.obb.cz;
@@ -8090,79 +9516,101 @@
             A.p.brandwand=A.p.brandwand||{}; A.p.brandwand[lz>0?'z1':'z0']=1; bwN++; } } }
       return bwN;
     }
-    // ════════════ META-GESETZ ════════════ eine Quelle für Browser + Sweep
-    // Aus Zeit · Klima · Personen · Wohlstand emergiert die ganze Form — nach der Ordnung der Stil-Epochen.
-    function metaParams(jahr, klima, leute, wohl){
-      const kalt=klima<0.3, heiss=klima>0.72, nord=klima<0.5;
-      const epoche = jahr<1150?'romanik' : jahr<1500?'gotik' : jahr<1650?'renaissance' : jahr<1770?'barock' : jahr<1900?'klassik' : jahr<1950?'gruender' : 'moderne';
-      // PITCH — steil(kalt,früh) → flach(heiss,spät); heisse Zonen mediterran gekappt
-      const eraP = jahr<1500?56 : jahr<1770?44 : jahr<1900?34 : jahr<1950?24 : 13;
-      let pitch = Math.round(eraP + (0.5-klima)*34);
-      if(heiss) pitch = Math.min(pitch, Math.round(22-(klima-0.72)*30));
-      pitch = Math.max(7, Math.min(62, pitch));
-      // MATERIAL — Klima × Wohlstand × Epoche (Vernakular ↔ Mauerwerk)
-      let stil;
-      if(epoche==='moderne') stil = wohl>0.55?'glas':'modern';
-      else if(heiss) stil = 'stein';
-      else if(jahr>=1850) stil = 'klinker';
-      else if(wohl>0.62) stil = (jahr>=1450?'klinker':'stein');     // reich → Mauerwerk (Burg: früh Stein)
-      else if(wohl>0.4 && jahr>=1500) stil = 'klinker';             // bürgerlich (Renaissance+) → Backstein-Stadthaus
-      else stil = kalt?'huette':'alt';                              // Vernakular: Norden Holz, Mitte Fachwerk
-      const massiv = (stil==='stein'||stil==='klinker');
-      // BOGEN — Epoche × Mauerwerk
-      let bogen='none';
-      if(heiss && massiv && jahr<1800) bogen='hufeisen';
-      else if(epoche==='gotik' && massiv) bogen='spitz';
-      else if((epoche==='romanik'||epoche==='renaissance') && massiv) bogen='rund';
-      // GRUNDRISS — Süden Hof (Kühlung), grosse Wohlhabende L
-      const grund = heiss ? 'hof' : ((wohl>0.5&&leute>8)?'L':'I');
-      // GRÖSSE — Personen × Wohlstand
-      const storeys = Math.max(1, Math.min(8, Math.round(1 + leute/5 + (wohl>0.55?1:0) + (epoche==='moderne'&&wohl>0.7?Math.floor(leute/3):0))));
-      const W = Math.max(6, Math.min(15, Math.round(6 + leute*0.4 + wohl*3)));
-      const D = Math.max(5, Math.min(11, Math.round(5 + leute*0.3 + wohl*2)));
-      // MONUMENT-VOKABULAR — Wohlstand schaltet die Hochform der Epoche
-      const F={treppgiebel:0,vorkragung:0,portikus:0,kuppel:0,turm:0,zinnen:0,veranda:0,pilotis:0,terrasse:0,arkade:0};
-      const reich = wohl>0.66, mittel = wohl>0.4&&wohl<=0.66;
-      if(reich){
-        if(epoche==='romanik'||epoche==='gotik'){ F.turm=1; if(jahr<1350) F.zinnen=1; }   // Burg / Dom
-        else if(epoche==='renaissance') F.portikus=1;                                      // Palazzo
-        else if(epoche==='barock') F.kuppel=1;                                             // Barock-Kuppel
-        else if(epoche==='klassik') F.portikus=1;                                          // Tempel-Portikus
-        else if(epoche==='gruender'){ F.turm=1; if(!kalt) F.veranda=1; }                   // Viktorianisch
-        else if(epoche==='moderne') F.pilotis=1;                                           // Villa moderne
-      }
-      // Vernakular/bürgerliche Marker — regional, additiv
-      if(nord && stil==='klinker' && jahr>=1400 && jahr<1700 && !reich) F.treppgiebel=1;   // Hanse / Holland (bürgerlich, nicht auf Monument)
-      if(epoche==='gotik' && stil==='alt' && !reich) F.vorkragung=1;                       // Fachwerk-Jetty
-      if(heiss && massiv && (mittel||reich) && jahr<1800) F.arkade=1;                      // Riad / Kreuzgang
-      if(!heiss && !kalt && jahr>=1750 && jahr<1930 && mittel && grund!=='hof') F.veranda=1; // Kolonial
-      // FARBEN — Stil × Klima
-      let col;
-      if(stil==='huette') col = kalt?{holz:0x6b5236,stamm:0x6b655e,ziegel:0x55402a}:{holz:0x82602f,stamm:0x664a2e,ziegel:0x664a2e};
-      else if(stil==='stein') col = heiss?{putz:0xf2efe8,ziegel:0xc06a3a,ziegel2:0x9a5230}:{putz:0xe4d8bc,ziegel:0xab6840,ziegel2:0x824c2c};
-      else if(stil==='klinker') col = nord?{backstein:0x8c4636,ziegel:0x6e3828,ziegel2:0x552a1d}:{backstein:0x9a5a44,ziegel:0x7a3f2c,ziegel2:0x60301f};
-      else if(stil==='modern'||stil==='glas') col = {putz:0xe9e6df,glas:0x9fb8c4,metall:0x8a8a92,dachmod:0x33363c};
-      else col = {holz:0x6a4c2e,gefach:0xe9e3d6,ziegel:0x9c4a35,ziegel2:0x7e3826};
-      return {pitch,W,D,storeys,stil,bogen,grund,col,F,epoche};
-    }
-    // ── DIE LEUTE EINES HAUSES (Meisterkarte mensch.K1, additiv) — das META-GESETZ von der anderen Seite: dort emergiert die
-    //    Größe eines Hauses aus Personen und Wohlstand, hier wohnen in einem gebauten Haus (die Zeile hp des Plans, `slot.ov`)
-    //    so viele, wie seine Wohnfläche bei seinem Wohlstand trägt — je Geschoss die Grundfläche W·D, davon `nutz` bewohnbar
+    // ── DIE LEUTE EINES HAUSES (Meisterkarte mensch.K1, additiv) — das BAU-GESETZ von der anderen Seite: dort (`bauProgramm`) folgt die
+    //    Größe eines Hauses aus Personen und Wohlstand, und das Haus TRÄGT seinen Haushalt (`hp.leute`) — den liest diese Funktion.
+    //    Ein Haus ohne Haushalt (ein Rezept der Kultur, kein Los) bewohnen so viele, wie seine Wohnfläche bei seinem Wohlstand trägt — je Geschoss die Grundfläche W·D, davon `nutz` bewohnbar
     //    (Wände, Stiege), je Person `flaeche` + `wohlFlaeche`·wohl m² (die Kammer der Armen, die Stube der Reichen), ganzzahlig,
     //    mindestens 1, höchstens `max`. Die Rollen ohne Haushalt tragen ihre Zahl (`rolle`): die Scheune und die Halle des
     //    Gewerbes niemanden, die Kirche ihren Pfarrer, die Schmiede Meister und Gesellen. REIN: dieselbe Zeile ⇒ dieselbe Zahl.
     //    Leser: der Wirt (die Bewohner je Haus) und gate:kreatur-takt bewohner.
-    var LEUTE_GESETZ = { nutz: 0.7, flaeche: 20, wohlFlaeche: 20, max: 12, rolle: { scheune: 0, halle: 0, kirche: 1, schmiede: 2 } };
+    var LEUTE_GESETZ = { nutz: 0.7, flaeche: 20, wohlFlaeche: 20, max: 12, rolle: { scheune: 0, halle: 0, kirche: 1, schmiede: 2, kapelle: 0, speicher: 0, zeughaus: 0, backhaus: 2, torhaus: 2 } };
     function leuteVon(hp) {
         if (!hp || typeof hp !== "object") return 0;
         var rolle = typeof hp.rolle === "string" ? hp.rolle : "wohnhaus";
         if (Object.prototype.hasOwnProperty.call(LEUTE_GESETZ.rolle, rolle)) return LEUTE_GESETZ.rolle[rolle];
+        if (isFinite(hp.leute) && hp.leute !== null) return Math.max(0, Math.min(LEUTE_GESETZ.max, Math.round(Number(hp.leute)))); // der Haushalt des Loses (bauProgramm schreibt ihn)
         var W = Number(hp.W), D = Number(hp.D), st = Number(hp.storeys);
         var wohl = isFinite(hp.wohl) ? Math.max(0, Number(hp.wohl)) : 1;
         if (!(W > 0 && D > 0)) return 1;
         var fl = W * D * (st >= 1 ? st : 1) * LEUTE_GESETZ.nutz;
         var jeP = LEUTE_GESETZ.flaeche + LEUTE_GESETZ.wohlFlaeche * wohl;
         return Math.max(1, Math.min(LEUTE_GESETZ.max, Math.round(fl / jeP)));
+    }
+
+    // ── DER MARKT ZIEHT AN (w28-stadt-grammatik; Leser: der Wirt `_bewohnerListe` marktStand UND `_ortPose`, die Bindung
+    //    koerper-core `tagesOrte`, gate:kreatur-takt bewohner): die Menge eines Platzes steht, wo sein PLAN sie anzieht — an
+    //    den Ständen (`plan.staende`, je Stand seine Front aus `th`, sonst zur Mitte des Platzes: dieselbe Regel wie
+    //    ORT_AUSSTATTUNG.stand.gier, die Front ist −z des Gesetzbuch-Stands). Je Stand zwei Flächen, plan-lokal: HINTER der
+    //    Theke der Händler (`art` "haendler") und VOR ihr die Gäste ("gast": ab `vorM` vor dem Tritt, `tiefM` tief, je Seite
+    //    `seitM` über den Tritt hinaus) — jede ein gedrehtes Rechteck {x, z, qx, qz (quer), fx, fz (zur Front), halb:[quer,
+    //    tief], zu: die Mitte des Stands, stand}. Die Gasse des Markts längs seiner langen Achse bleibt im Kern frei
+    //    (`gangFreiM` beidseits: dort steht, wer den Platz ansieht — die Pose des Orts), und keiner steht in einem Stand oder
+    //    Brunnen (`imPlatzStueck`). `dichte` = die Mitte der Gast-Fläche, um die binnen `dichteM` die meiste Stand-Fläche
+    //    liegt (bei Gleichstand die der Platz-Mitte nächste): dort stellt dasselbe Gesetz die meisten Leute hin. Ein Platz
+    //    ohne Stand trägt keine Punkte (der Wirt würfelt über sein Rechteck wie bisher). Bis hier würfelte der Wirt jeden
+    //    Stand gleichverteilt über das Rechteck, und die Bindung gab dem Markt der Stadt keinen Händler: stadt-voll trug 12
+    //    Mittagsgäste und EINEN mit Beruf markt auf 34 × 22 m (main: 83), die Bild-Probe las „kein bewohner im Bild". REIN.
+    var MARKT_GESETZ = { vorM: 0.6, tiefM: 3.2, seitM: 1.15, hinterM: 0.55, hinterTiefM: 0.5, gangFreiM: 0.9, dichteM: 9, saumM: 0.35 };
+    // DIE GASSE DES MARKTS: die lange Achse des Platzes, wenn jeder Stand seines Plans sie frei lässt (der Tritt jedes Stands
+    // liegt jenseits `gangFreiM` — der Markt der Stadt hält sie mit `marktGangM`; die zwei, drei Stände eines Dorfplatzes
+    // stehen an ihr, er trägt keine) → { x, z (die Mitte), ux, uz (längs), freiM, halbM } oder null. Nur ein Markt mit Gasse
+    // trägt die `dichte` (die Pose des Orts steht in ihr), und nur ihr Kern bleibt frei von Ständen der Menge.
+    function marktGang(plan) {
+        var pz = plan && plan.platz, st = (plan && plan.staende) || [];
+        if (!pz || !isFinite(pz.cx) || !isFinite(pz.cz) || !st.length) return null;
+        var c = Math.cos(pz.phi || 0), s = Math.sin(pz.phi || 0), u = pz.ex >= pz.ez ? [c, -s] : [s, c];
+        var T = AUSSTATTUNG.marktstand.tritt, r = Math.hypot(T.ex, T.ez);
+        for (var i = 0; i < st.length; i++)
+            if (Math.abs((st[i].x - pz.cx) * -u[1] + (st[i].z - pz.cz) * u[0]) < MARKT_GESETZ.gangFreiM + r) return null;
+        return { x: pz.cx, z: pz.cz, ux: u[0], uz: u[1], freiM: MARKT_GESETZ.gangFreiM, halbM: Math.max(pz.ex, pz.ez) };
+    }
+    function platzAnziehung(plan) {
+        var pz = plan && plan.platz, aus = { punkte: [], dichte: null, gang: null };
+        if (!pz || !isFinite(pz.cx) || !isFinite(pz.cz)) return aus;
+        aus.gang = marktGang(plan);
+        var T = AUSSTATTUNG.marktstand.tritt, M = MARKT_GESETZ, st = plan.staende || [];
+        for (var i = 0; i < st.length; i++) {
+            var q = st[i];
+            if (!q || !isFinite(q.x) || !isFinite(q.z)) continue;
+            var th = isFinite(q.th) ? q.th : Math.atan2(-(pz.cx - q.x), -(pz.cz - q.z));
+            var fx = -Math.sin(th), fz = -Math.cos(th), zu = { x: q.x, z: q.z };
+            var vor = T.ez + M.vorM + M.tiefM / 2, hint = T.ez + M.hinterM + M.hinterTiefM / 2;
+            aus.punkte.push({ art: "haendler", stand: i, x: q.x - fx * hint, z: q.z - fz * hint, qx: -fz, qz: fx, fx: fx, fz: fz, halb: [T.ex * 0.7, M.hinterTiefM / 2], zu: zu });
+            aus.punkte.push({ art: "gast", stand: i, x: q.x + fx * vor, z: q.z + fz * vor, qx: -fz, qz: fx, fx: fx, fz: fz, halb: [T.ex + M.seitM, M.tiefM / 2], zu: zu });
+        }
+        var best = -1, bestF = -1, bestD = Infinity;
+        for (var a = 0; a < aus.punkte.length; a++) {
+            var A = aus.punkte[a];
+            if (A.art !== "gast") continue;
+            var F = 0;
+            for (var b = 0; b < aus.punkte.length; b++) {
+                var B = aus.punkte[b];
+                if (Math.hypot(B.x - A.x, B.z - A.z) <= M.dichteM) F += 4 * B.halb[0] * B.halb[1];
+            }
+            var d = Math.hypot(A.x - pz.cx, A.z - pz.cz);
+            if (F > bestF + 1e-9 || (Math.abs(F - bestF) <= 1e-9 && d < bestD - 1e-9)) { best = a; bestF = F; bestD = d; }
+        }
+        if (best >= 0 && aus.gang) aus.dichte = { x: aus.punkte[best].x, z: aus.punkte[best].z };
+        return aus;
+    }
+    // Steht der Punkt (plan-lokal) IN einem Stück des Platzes — im Tritt eines Stands (sein gedrehter Kasten), im Kreis eines
+    // Brunnens, je um `saum` gewachsen — oder im freien Kern der Markt-Gasse (nur mit Ständen: `gang`)? → der Name des Stücks
+    // ("stand" · "brunnen" · "gang") oder null. EINE Frage für den Wurf des Wirts und die Zählung der Linse.
+    function imPlatzStueck(plan, x, z, saum, gang) {
+        var pz = plan && plan.platz, T = AUSSTATTUNG.marktstand.tritt, R = AUSSTATTUNG.brunnen.tritt.r, sm = saum > 0 ? saum : 0;
+        var st = (plan && plan.staende) || [], br = (plan && plan.brunnen) || [];
+        for (var i = 0; i < st.length; i++) {
+            var q = st[i], th = isFinite(q.th) ? q.th : pz && isFinite(pz.cx) ? Math.atan2(-(pz.cx - q.x), -(pz.cz - q.z)) : 0;
+            var co = Math.cos(th), si = Math.sin(th), dx = x - q.x, dz = z - q.z;
+            if (Math.abs(dx * co - dz * si) < T.ex + sm && Math.abs(dx * si + dz * co) < T.ez + sm) return "stand";
+        }
+        for (var j = 0; j < br.length; j++) if (Math.hypot(x - br[j].x, z - br[j].z) < R + sm) return "brunnen";
+        var G = gang ? marktGang(plan) : null;
+        if (G) {
+            var quer = Math.abs((x - G.x) * -G.uz + (z - G.z) * G.ux), laengs = Math.abs((x - G.x) * G.ux + (z - G.z) * G.uz);
+            if (quer < G.freiM && laengs < G.halbM) return "gang";
+        }
+        return null;
     }
 
     // ── N5.7 SETTLEMENT-EXPORT — exportSettlement(dp) (das exportDrive-Muster,
@@ -8201,17 +9649,22 @@
     }
     // DER MASS-BAU IM GEDÄCHTNIS (siedlung.K3): der Wirt rechnet den Export am Ort der Ort-Wahl neu (ein anderes `dp.hoehe`),
     // der Mass-Bau eines Hauses hängt nur an seinem P-Vektor — derselbe Vektor nimmt denselben Bau, frisch sind je Export nur
-    // `p` (brandwand schreibt in sie) und der Rahmen `q`. Höchstens MASS_GEDAECHTNIS Häuser, dann fällt das Gedächtnis ganz.
-    var MASS_GEDAECHTNIS = 1024;
+    // `p` (brandwand schreibt in sie) und der Rahmen `q`. DIE GRÖSSE FOLGT DEM WORT (w28-gruendung-flach): es hält die Häuser und
+    // die Lose des größten Worts (2 × GROESSE_WAND) samt dem Rest eines Nachbarn; voll, weicht der Bau, den am längsten keiner
+    // fragte (ein Treffer rückt ans Ende). Bis hier fiel das Gedächtnis ganz, sobald 1024 Bauten darin lagen: ein Wort über
+    // 1024 baute in jeder Runde der Ort-Wahl (`ORT_WAHL.trasseRunden`) jedes Haus neu, und ein Wort, das die Grenze kreuzte,
+    // verlor die Bauten seiner ersten Runde mitten in der zweiten.
+    var MASS_GEDAECHTNIS = 2 * GROESSE_WAND + 64;
     var massGedaechtnis = new Map();
     function massBauExport(hp) {
         var k = JSON.stringify(hp);
         var B = massGedaechtnis.get(k);
-        if (!B) {
-            if (massGedaechtnis.size >= MASS_GEDAECHTNIS) massGedaechtnis.clear();
+        if (B) massGedaechtnis.delete(k);
+        else {
+            if (massGedaechtnis.size >= MASS_GEDAECHTNIS) massGedaechtnis.delete(massGedaechtnis.keys().next().value);
             B = massBau(Object.assign({}, hp));
-            massGedaechtnis.set(k, B);
         }
+        massGedaechtnis.set(k, B);
         return Object.assign({}, B, { p: hp, q: { phi: 0, x: 0, y: 0, z: 0, obb: { cx: 0, cz: 0 } }, meshes: [] });
     }
     var PASSUNG_LUFT = 0.02,
@@ -8268,13 +9721,50 @@
     }
     function exportSettlement(dp) {
         dp = dp && typeof dp === "object" ? dp : {};
+        // DIE KACHEL EINER STADT (w28-stadt-netz): `dp.kachel` {samen, nH, i, k} nennt die Kachel (i, k) der Stadt „<samen> <nH>" —
+        // ihr Wort (`viertelWort`: Same, Zahl, Erbe) gründet der Plan, seine Lose stehen auf dem Netz ihrer Stufe 1 (`kachelNetz`,
+        // `dorfLayout` liest es) und nur in der Kachel (außen `belegt`; an einer Rand-Kante der Stadt samt dem Streifen der Mauer).
+        // Ein Wort über der Wand ohne Kachel ist die Mitte seiner Stadt (0, 0). Bis zur Wand ist kein Wort eine Kachel.
+        var ks = dp.kachel && isFinite(dp.kachel.samen) && isFinite(dp.kachel.nH) ? dp.kachel : { samen: isFinite(dp.seed) ? Number(dp.seed) : 1, nH: dp.nH, i: 0, k: 0 };
+        var kachel = isFinite(ks.nH) && Number(ks.nH) > STADT_FUNKTION.voll ? { samen: Number(ks.samen), nH: Math.floor(Number(ks.nH)), i: ks.i | 0, k: ks.k | 0 } : null;
+        var epo = typeof dp.epoche === "string" ? dp.epoche : undefined;
+        var kw = kachel ? viertelWort(kachel.samen, kachel.nH, kachel.i, kachel.k, epo) : null;
+        if (kachel && !kw) throw new Error("fachwerk: die Stadt " + kachel.samen + " " + kachel.nH + " trägt keine Kachel " + kachel.i + "," + kachel.k);
         var plan = DORF({
-            seed: isFinite(dp.seed) ? Number(dp.seed) : 1,
-            nH: isFinite(dp.nH) ? Number(dp.nH) : undefined, // ohne Zahl entscheidet DORF (die Epoche, sonst 18)
-            epoche: typeof dp.epoche === "string" ? dp.epoche : undefined,
+            seed: kw ? kw.seed : isFinite(dp.seed) ? Number(dp.seed) : 1,
+            nH: kw ? kw.nH : isFinite(dp.nH) ? Number(dp.nH) : undefined, // ohne Zahl entscheidet DORF (die Epoche, sonst 18)
+            epoche: epo,
             budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
             jahr: isFinite(dp.jahr) ? Number(dp.jahr) : undefined, // das Jahr des Orts (Staffel 2, `wachstum`); ohne es das Ende der Epoche
+            erbe: kw ? kw.erbe : dp.erbe && typeof dp.erbe === "object" ? dp.erbe : undefined, // die Kachel einer Stadt: Region, Jahr und Spanne ihrer Mitte (`viertelWort`)
         });
+        var kNetz = null,
+            kRand = null;
+        if (kachel) {
+            kNetz = kachelNetz(kachel.samen, kachel.i, kachel.k);
+            kRand = kachelRand(kachel.samen, kachel.nH, kachel.i, kachel.k, epo);
+            var kMauer = plan.staedtisch && plan.jahr < MAUER_BIS;
+            var kh = kNetz.m / 2,
+                kd = 400;
+            var aussen = function (rand, cx, cz, ex, ez, nx, nz) {
+                // der Kasten jenseits einer Kante; an einer Rand-Kante mit Mauer beginnt er `mauerInnenM` + 2 m in der Kachel
+                var t = rand && kMauer ? STADT_NETZ.mauerInnenM + 2 : 0;
+                return { cx: cx - nx * t / 2, cz: cz - nz * t / 2, phi: 0, ex: ex + Math.abs(nx) * t / 2, ez: ez + Math.abs(nz) * t / 2 };
+            };
+            Object.assign(
+                plan,
+                {
+                    netz: kNetz,
+                    belegt: [
+                        aussen(kRand.w, -kh - kd, 0, kd, kh + 2 * kd, -1, 0),
+                        aussen(kRand.o, kh + kd, 0, kd, kh + 2 * kd, 1, 0),
+                        aussen(kRand.n, 0, -kh - kd, kh, kd, 0, -1),
+                        aussen(kRand.s, 0, kh + kd, kh, kd, 0, 1),
+                    ],
+                },
+                kachel.i || kachel.k ? { kernel: "kreuzung" } : null
+            );
+        }
         var ext = [];
         var Bs = [];
         var i;
@@ -8341,38 +9831,48 @@
                 }),
                 plan.norm.gap
             );
+            L.loseRest = loseEntzerren(Bt, L.pl, p.lose).rest; // die Lose überdecken sich nie (nach Snap und Brandwand, vor den Wand-Stücken)
+            mastWeicht(L.pl, L);
             brunnenWeicht(Bt, L.pl, L);
             wandLaternen(Bt, L.pl, L);
+            platzSaum(L.pl, L, p);
             return L;
         };
         var lay = teil(0, nA);
         if (nA < plan.houses.length) ringUm(lay, teil(nA, plan.houses.length, K, lay), K, nA, plan.norm.gap);
         var slots = [],
             slotVon = {};
+        // DER TON DER LAGE (STADT_FORM): das Haus einer Kachel trägt die Palette seiner Kultur im Ton seines Orts in der Stadt
+        // (`stadtTonAn` am Rahmen des Slots — dieselbe Frage, die Stufe 1 an ihren Massen stellt)
+        var tonAm = kachel ? stadtTonAn(kachel.samen, kachel.i, kachel.k, kNetz.m) : null;
         for (i = 0; i < plan.houses.length; i++) {
             var q = lay.pl[i];
             if (!q || !q.obb || Math.abs(q.obb.cx) > 5000 || Math.abs(q.obb.cz) > 5000) continue;
             var hp = plan.houses[i],
                 ev = Bs[i].ext,
-                o = plan.lose[i] ? obbImLos(q, ev) : q.obb;
+                o = plan.lose[i] ? obbImLos(q, ev) : q.obb,
+                tc = tonAm ? tonAm(hp.col, q.x, q.z) : hp.col;
+            if (tc !== hp.col) hp = Object.assign({}, hp, { col: tc });
             slotVon[i] = slots.length;
             slots.push(
                 hausSlot(
                     Bs[i],
                     hp,
                     q,
-                    plan.norm.gap <= 0.6 && hp.brandwand
-                        ? obbAnDerBrandwand(o, hp.brandwand, ev, Bs[i].wandX)
-                        : { cx: o.cx, cz: o.cz, phi: o.phi, ex: o.ex, ez: o.ez }
+                    { cx: o.cx, cz: o.cz, phi: o.phi, ex: o.ex, ez: o.ez } // an der Brandwand schneidet `hausSlot` (die EINE Zeile)
                 )
             );
         }
         // die Mauer der Gestalt (das Layout) oder die des Schnitts (`schnittMauer`: der Schnitt einer Chronik vor MAUER_BIS, staedtisch)
-        var mz =
-            lay.mauer ||
-            (plan.chronik && plan.schnitt.staedtisch && plan.schnitt.jahr < MAUER_BIS
-                ? schnittMauer(slots, lay.roads, plan.seed)
-                : null);
+        // die Kachel einer Stadt trägt die Mauer nur an ihren Rand-Kanten (`kachelMauer`), in der Zeit der Mauern
+        var mz = kachel
+            ? plan.staedtisch && plan.jahr < MAUER_BIS
+                ? kachelMauer(kNetz, kRand)
+                : null
+            : lay.mauer ||
+              (plan.chronik && plan.schnitt.staedtisch && plan.schnitt.jahr < MAUER_BIS
+                  ? schnittMauer(slots, lay.roads, plan.seed)
+                  : null);
         var aus = {
             seed: plan.seed,
             name: plan.name,
@@ -8427,8 +9927,33 @@
                     return l.wand ? { x: l.x, z: l.z, th: l.th, gas: l.gas, wand: true, slot: slotVon[l.haus] } : l;
                 }),
         };
+        // DIE STADT DER GRAMMATIK (STADT_GRAMMATIK, `dorfLayout`): ihre Viertel {rolle, x, z, r, lose}, ihre Flächen (`zonen`: der
+        // Friedhof mit seinem Belag — der Leser ist der Boden des Wirts, `_stlWegeBuild`) und die Gegenstände ihrer Viertel
+        // {art, viertel, x, z, th} (der Leser: `_dorfErlebnis` über ORT_AUSSTATTUNG, das Labor über `ausstattungAm`)
+        if (lay.viertel) {
+            aus.viertel = lay.viertel;
+            aus.lage = lay.lage; // die Lage des Plans: was sein Ort tragen kann (der Hafen nur mit Wasser am Ring)
+            aus.zonen = lay.zonen;
+            aus.gegenstaende = lay.gegenstaende;
+            // DIE KAPPE DES PLANS (der Leser: der Maler des Bodens, `_stlWegeBuild` `plan.kappe`): so viele Formen trägt sein Boden —
+            // jedes Wegstück, der Platz, je Slot Vorplatz und Stufe, jeder Acker, jede Zone. Ohne sie malt der Wirt 900: an
+            // stadt-voll (1 406 Wegstücke vor der Grammatik) blieben die Gassen jenseits des 900. Stücks, die Feldwege, der Platz
+            // und die Vorplätze der Türen ungemalt.
+            var stuecke = function (L) {
+                return L.reduce(function (a, w) {
+                    return a + Math.max(0, w.pts.length - 1);
+                }, 0);
+            };
+            aus.kappe = stuecke(lay.roads) + stuecke(lay.feldwege) + 1 + 2 * slots.length + lay.felder.length + lay.zonen.length + 64; // + die Vorplätze eines Nachbarn im Umkreis
+        }
         if (Htr) aus.trasse = { aussen: Htr.mass.aussen }; // der Rahmen trug jeden Lese-Punkt der Trasse (die Linse verlangt 0)
         // die Mauer des Schnitts liegt in der Welt des Plans wie die der Gestalt (dorfLayout: ihr Radius + 8 m, der Rand 9 m)
+        // was nach dem letzten Gang des Los-Gesetzes noch ineinander liegt (`loseEntzerren` rest), reist beim Namen: [Slot, Slot, m]
+        // — nur wo es etwas gibt (ein Plan ohne Rest trägt das Feld nicht). Leser: gate:settlement (die Los-Probe).
+        var rest = (lay.loseRest || [])
+            .filter(function (r) { return slotVon[r[0]] !== undefined && slotVon[r[1]] !== undefined; })
+            .map(function (r) { return [slotVon[r[0]], slotVon[r[1]], Math.round(r[2] * 1000) / 1000]; });
+        if (rest.length) aus.loseRest = rest;
         if (mz && !lay.mauer)
             aus.welt = {
                 x0: Math.min(lay.welt.x0, -mz.R - 17),
@@ -8437,6 +9962,20 @@
                 z1: Math.max(lay.welt.z1, mz.R + 17),
             };
         if (plan.chronik) aus.chronik = plan.chronik; // die Chronik der Gestalt (Staffel 2: ihr Leser ist `wachstum`)
+        // DER PLAN, DER DAS WASSER LAS (w28-stadt-grammatik): Los, Gasse, Laterne und Trasse wichen dem Wasser SEINES Rasters aus —
+        // er passt an seinem Wunsch und sonst nirgends. Die Marke reist nur mit ihm (ohne Raster kein Feld: die Goldens des
+        // Exports ohne Ort bleiben byte-gleich). Leser: die Ort-Wahl (voxel-worker `ortWahl`).
+        if (Htr && Htr.nass) aus.liestWasser = true;
+        // DIE KACHEL NENNT IHRE STADT (w28-stadt-funktion · w28-stadt-netz): der Plan ist EINE Kachel — die Zahl der Stadt, ihre
+        // Ringe und so viele Häuser je Kachel (`stadt`), dazu die Kachel selbst (`kachel`: Same und Zahl der Stadt, ihr Platz i/k,
+        // die Kante m, der Rand der Stadt je Kante) und ihre Stufe 1 (`netz`: die Tore je Kante, die Blöcke) — jeder Leser sieht,
+        // dass er einen Teil hält, und wo die Straßen ihn verlassen. Bis w28-stadt-funktion stand „dorf 7 1000" als Plan von 500
+        // ohne ein Wort davon (die Klemme des DORF). Nur über der Wand: jeder Plan bis zu ihr bleibt byte-gleich.
+        if (kachel) {
+            aus.stadt = { nH: kachel.nH, jeKachel: STADT_NETZ.jeKachel, ringe: stadtRinge(kachel.nH) };
+            aus.kachel = { samen: kachel.samen, nH: kachel.nH, i: kachel.i, k: kachel.k, m: kNetz.m, rand: kRand };
+            aus.netz = { tore: kNetz.tore, bloecke: kNetz.bloecke };
+        }
         return aus;
     }
 
@@ -8458,6 +9997,7 @@
     var ORT_GESETZ = {
         glaettM: 6, // halbe Fensterbreite der Weg-Glättung (m)
         gefaelle: 0.12, // die Fuß-Gasse (Nordstern §6: Fuß ≤ 12 %)
+        treppe: 0.3, // die Treppengasse der Stadt am Hang (`treppe` des Wegs, STADT_DICHTE): so steil folgt sie dem Grund
         trasse: 0.09, // so steil darf der Lauf einer Gasse steigen (`trasseLenk`; die Marge zum Fuß trägt die Feinform zwischen den Raster-Punkten)
         saumM: 0.6, // so weit steht eine Platte über den Grundriss, eine Trasse über den Weg hinaus
         vorplatzM: 1.6, // Tiefe des Vorplatzes vor der Haustür (mindestens: er reicht bis zur Gasse des Hauses)
@@ -8529,8 +10069,61 @@
     function gassenBelag(plan, rd) {
         return belagReife(plan) >= BELAG_GESETZ.ab[gassenRang(rd)] ? "pflaster" : "weg";
     }
+    // DER GEHWEG EINES WEGS (die EINE Quelle der Bauflucht): die Norm, an der Fahrstraße der Siedlung mit Wagen der Gehweg, der
+    // zwei trägt (STADT_DICHTE.gehwegFahrM). Leser: der Setzer (`dorfLayout`: Fassade, Zaun, Laterne) und das Pflaster.
+    function gehwegVon(plan, rd) {
+        return plan.staedtisch && rd.w >= VERKEHR_GESETZ.breiteM ? STADT_DICHTE.gehwegFahrM : (plan.norm || DORF_NORM).gehweg;
+    }
     function gassenBreite(plan, rd) {
-        return gassenBelag(plan, rd) === "pflaster" ? rd.w + 2 * DORF_NORM.gehweg : rd.w;
+        return gassenBelag(plan, rd) === "pflaster" ? rd.w + 2 * gehwegVon(plan, rd) : rd.w;
+    }
+    // DER KÖRPER DES WEGS (w28-weg-koerper, 18.11.2026; Auge am Messort „dorf 7 4750“: jede Gasse der Stadt lag als flacher
+    // Anstrich im Boden — kein Bord, keine Rinne, die Fahrbahn vom Gehweg nicht zu scheiden). EIN Gesetz für jeden Rang, nah und
+    // fern: die ART eines Wegs folgt aus Belag × Rang (`wegArt`), ihr QUERSCHNITT aus der Art (`wegQuerschnitt`).
+    //   pfad          der Feldweg: getretene Erde, kein Rand
+    //   gasse         die Erd-Gasse im Ort: getretene Erde, kein Rand
+    //   pflastergasse die gepflasterte Gasse ohne Wagen: eine Ebene von Bauflucht zu Bauflucht, am Rand des Pflasters die Kante
+    //   strasse       die Fahrstraße der Stadt (städtisch, ab VERKEHR_GESETZ.breiteM): die Fahrbahn liegt `bord.hochM` unter dem
+    //                 Gehweg, zwischen beiden der Bordstein (`breitM` breit, je `steinM` eine Stoßfuge), vor ihm die Rinne
+    //   platz         der gepflasterte Platz: eine Ebene, am Rand die Kante; die Fahrbahn einer Straße quert ihn mit ihrem Bord
+    // `kant`: die Reihe der Randsteine am Saum jedes Pflasters (`breitM` breit, ebenerdig). `ton`: der Anteil der Albedo des
+    // Steins je Teil (die Fahrbahn ist befahren und dunkler, die Rinne feucht, der Bord glatt gesägt und heller, seine Flanke im
+    // eigenen Ton, der Schlagschatten des Bords nimmt das direkte Licht). `fernM`: bis dahin trägt der Bord sein Relief
+    // (Flanke, Schatten, Fuge), dahinter nur den Ton. Der Bord hat keinen Tritt: der Boden bleibt eine Ebene (12 cm ohne Stufe).
+    // Leser: der Maler der Wege-Karte (`_stlWegeRaten`, `_stadtFerneStrassen`: die Fahrbahn als zweite Höhe des Pflasters), der
+    // Boden-Stoff (`_wegeBodenFarbe` → `_wegBord`: Schatten = hochM × cot(Sonnenhöhe), Flanke aus der Augenhöhe), das Band der
+    // Ferne (`_stadtFerneBand`: Ton je Belag und Art) und `kachelMassen` (`strassen[].art`).
+    var WEG_GESETZ = {
+        bord: { hochM: 0.12, breitM: 0.16, steinM: 1, rinneM: 0.3 },
+        kant: { breitM: 0.2 },
+        ton: { fahr: 0.84, rinne: 0.72, bord: 1.12, flanke: 0.62, kant: 0.8, schatten: 0.42 },
+        fernM: 30,
+        art: {
+            pfad: { belag: "weg", bord: false, kant: false },
+            gasse: { belag: "weg", bord: false, kant: false },
+            pflastergasse: { belag: "pflaster", bord: false, kant: true },
+            strasse: { belag: "pflaster", bord: true, kant: true },
+            platz: { belag: "pflaster", bord: false, kant: true },
+        },
+    };
+    function wegArt(plan, rd, feldweg) {
+        if (feldweg) return "pfad";
+        if (gassenBelag(plan, rd) !== "pflaster") return "gasse";
+        return plan.staedtisch && rd.w >= VERKEHR_GESETZ.breiteM ? "strasse" : "pflastergasse";
+    }
+    // der Querschnitt eines Wegs → { art, belag, fahrM (die Fahrbahn), gehM (der Gehweg je Seite, 0 ohne Pflaster), bordM (die
+    // Höhe des Bords, 0 ohne ihn), kant }. Leser: der Maler der Wege-Karte und das Band der Ferne.
+    function wegQuerschnitt(plan, rd, feldweg) {
+        var art = wegArt(plan, rd, feldweg),
+            A = WEG_GESETZ.art[art];
+        return {
+            art: art,
+            belag: A.belag,
+            fahrM: rd.w,
+            gehM: A.belag === "pflaster" ? gehwegVon(plan, rd) : 0,
+            bordM: A.bord ? WEG_GESETZ.bord.hochM : 0,
+            kant: A.kant,
+        };
     }
     function platzBelag(plan) {
         var pz = plan.platz;
@@ -8609,7 +10202,7 @@
         }
         return false;
     }
-    // NIMMT DAS WASSER AM ORT `origin` EIN HAUS des Exports `plan` (siedlung.K5)? Ein Slot, den `ortPlan` über `ctx` fallen ließe
+    // NIMMT DAS WASSER AM ORT `origin` EIN HAUS ODER DEN PLATZ des Exports `plan` (siedlung.K5)? Ein Slot, den `ortPlan` über `ctx` fallen ließe
     // (`slotImWasser`: erst die Mitte jedes Hauses, dann sein ganzes Raster), −1 ohne — ohne den Plan zu rechnen. Leser: die
     // Ort-Wahl der Welt (voxel-worker `ortWahl`: ein Ort, an dem das Wasser ein Haus nimmt, trägt den Plan nie ganz).
     function ortImWasser(plan, origin, ctx) {
@@ -8620,6 +10213,97 @@
         };
         for (var m = 1; m >= 0; m--)
             for (var i = 0; i < plan.slots.length; i++) if (slotImWasser(plan.slots[i], am, eingangVon, m)) return i;
+        // DER PLATZ LIEGT NIE IM WASSER (w28-stadt-grammatik, `platzImWasser`): was der Plan nicht rücken kann — sein Platz ist die
+        // Mitte seines Gerippes —, weist die Ort-Wahl ab wie das nasse Haus (Rückgabe: die Zahl der Slots, kein Haus)
+        return platzImWasser(plan, origin, ctx) ? plan.slots.length : -1;
+    }
+    // LIEGT DER PLATZ des Exports `plan` AM ORT `origin` IM WASSER (5 × 5 Punkte seines Rechtecks, `ctx.wasserAt`)? Leser:
+    // `ortImWasser` und die Ort-Wahl des Plans, der das Wasser las (voxel-worker `ortWahl`: der nasse Platz rückt den Wunsch).
+    function platzImWasser(plan, origin, ctx) {
+        var pz = plan.platz;
+        if (!pz || !(pz.ex > 0) || !(pz.ez > 0) || !ctx.wasserAt) return false;
+        var ox = Number(origin.x),
+            oz = Number(origin.z),
+            pc = Math.cos(pz.phi || 0),
+            ps = Math.sin(pz.phi || 0);
+        for (var pu = -1; pu <= 1; pu += 0.5)
+            for (var pv = -1; pv <= 1; pv += 0.5) {
+                var plx = pu * pz.ex,
+                    plz = pv * pz.ez;
+                if (ctx.wasserAt(ox + pz.cx + plx * pc + plz * ps, oz + pz.cz - plx * ps + plz * pc)) return true;
+            }
+        return false;
+    }
+    // STEHT EIN HAUS DES EXPORTS `plan` AM ORT `origin` SICHER IN EINEM STEHENDEN BAU (siedlung.K5, Lehre 25: das billige Urteil
+    // vor dem Plan)? Die Bau-Wand des Wirts (`_bauFrei` am Sieger, `_ortTraegtWirt`) liest den Boden des Hauses aus dem Plan v2 —
+    // darum rechnete der Faden je Kandidat einen ganzen Plan, nur damit der Wirt ihn abwies (C-K5 OHNE VORLAUF, die Stadt nH 300
+    // in der Zelle eines stehenden Dorfs: 35 von 47 Plänen). `ortBauWand` legt die Boxen des Wirts (`_ortBauten`: je Box neun
+    // Zahlen — Mitte cx, cz, Drehung phi, halbe Maße ex, ez, Oberkante `oben` (∞: der Bau ohne Boxen sperrt seinen Grundriss in
+    // jeder Höhe), der Ort seines Eintrags px, pz und dessen Reichweite) in ein Raster und trägt je Slot den Grundriss des
+    // Wirts (`fp`: ox, oz, ex, ez, wie `_ortRaster`). `ortImBau` nennt den ersten Slot, dessen Grundriss oder Türvorplatz (dieselben
+    // Rechtecke wie `_bauFrei`, je 1 cm kleiner: was hier schneidet, schneidet dort) eine Box schneidet, deren Oberkante über
+    // `hoch(si)` liegt — dem Boden des Hauses an diesem Ort samt der Stufe des Leibs (der Faden rechnet ihn erst, wenn ein
+    // Grundriss eine Box schneidet: `ortPlan` ctx.nurBoden, dieselbe Höhe wie im Plan v2) —, −1 ohne. KONSERVATIV-EXAKT: er
+    // weist nur ab, was `_bauFrei` am Plan abwiese; alles andere urteilt der Wirt am Plan wie bisher. Eine Schranke aus dem
+    // Grund unter dem Los trägt das Urteil nicht (gemessen an der Zelle −6,−6: die Hülle der stehenden Häuser ragt 1,2–2,4 m
+    // über den höchsten Grund unter dem Los, der Boden der Häuser liegt 2,2 m darunter bis 4,7 m darüber).
+    function ortBauWand(fp, quader) {
+        var Z = 16;
+        var netz = new Map();
+        for (var b = 0; 9 * b < quader.length; b++) {
+            var r = Math.hypot(quader[9 * b + 3], quader[9 * b + 4]);
+            for (var ix = Math.floor((quader[9 * b] - r) / Z); ix <= Math.floor((quader[9 * b] + r) / Z); ix++)
+                for (var iz = Math.floor((quader[9 * b + 1] - r) / Z); iz <= Math.floor((quader[9 * b + 1] + r) / Z); iz++) {
+                    var key = ix * 2097152 + iz;
+                    var lst = netz.get(key);
+                    if (!lst) netz.set(key, (lst = []));
+                    lst.push(b);
+                }
+        }
+        return { fp: fp, quader: quader, netz: netz, Z: Z };
+    }
+    function ortImBau(plan, origin, wand, hoch) {
+        var ox = Number(origin.x);
+        var oz = Number(origin.z);
+        var B = wand.quader;
+        var fp = wand.fp;
+        var Z = wand.Z;
+        var T = 0.06; // der Wirt nimmt 5 cm (Berührung ist kein Überlapp), der Vor-Filter einen mehr
+        for (var si = 0; si < plan.slots.length; si++) {
+            var ex = fp[4 * si + 2];
+            var ez = fp[4 * si + 3];
+            if (!(ex > 0) || !(ez > 0)) continue;
+            var sl = plan.slots[si];
+            var phi = sl.phi || 0;
+            var c = Math.cos(phi);
+            var s = Math.sin(phi);
+            var wx = ox + sl.x;
+            var wz = oz + sl.z;
+            var fl = [{ cx: wx + fp[4 * si] * c + fp[4 * si + 1] * s, cz: wz - fp[4 * si] * s + fp[4 * si + 1] * c, phi: phi, ex: Math.max(0, ex - T), ez: Math.max(0, ez - T) }];
+            var tu = sl.tuer;
+            if (tu && isFinite(tu.x) && isFinite(tu.z) && isFinite(tu.w))
+                fl.push({ cx: wx + tu.x * c + (tu.z - 0.6) * s, cz: wz - tu.x * s + (tu.z - 0.6) * c, phi: phi, ex: Math.max(0, tu.w / 2 - 0.01), ez: 0.6 - T });
+            var R = Math.hypot(ex, ez) + Math.hypot(fp[4 * si], fp[4 * si + 1]) + 2;
+            var grenze = null;
+            for (var ix = Math.floor((wx - R) / Z); ix <= Math.floor((wx + R) / Z); ix++)
+                for (var iz = Math.floor((wz - R) / Z); iz <= Math.floor((wz + R) / Z); iz++) {
+                    var lst = wand.netz.get(ix * 2097152 + iz);
+                    if (!lst) continue;
+                    for (var q = 0; q < lst.length; q++) {
+                        var o9 = 9 * lst[q];
+                        // die Nähe des Wirts: der Eintrag der Box liegt binnen Reichweite + 8 m am Slot (`_bauFrei`)
+                        var r = R + B[o9 + 8] + 8;
+                        if (Math.abs(B[o9 + 6] - wx) > r || Math.abs(B[o9 + 7] - wz) > r) continue;
+                        var bx = { cx: B[o9], cz: B[o9 + 1], phi: B[o9 + 2], ex: B[o9 + 3], ez: B[o9 + 4] };
+                        for (var f = 0; f < fl.length; f++)
+                            if (obbSep(fl[f], bx) < 0) {
+                                if (grenze === null) grenze = hoch(si);
+                                if (B[o9 + 5] > grenze) return si;
+                                break;
+                            }
+                    }
+                }
+        }
         return -1;
     }
     // Liang–Barsky: das Stück [t0, t1] der Strecke a → b (im Rahmen eines Rechtecks) in |u| ≤ A, |v| ≤ B, null ohne
@@ -8725,6 +10409,31 @@
             var dz = z - pz.cz;
             var rand = Math.max(1, hw + O.saumM);
             return Math.abs(dx * c - dz * s) <= pz.ex + rand && Math.abs(dx * s + dz * c) <= pz.ez + rand;
+        };
+        // 1a) DER TORPLATZ IST BODEN DER STADT (STADT_DICHTE.torplatz, die Zone `torplatz` des Plans; PFLICHT-OFFEN C): eine Platte
+        // auf der Höhe, mit der seine Trasse ihn erreicht — die Trasse (ab VERKEHR_GESETZ.breiteM, sie endet an ihm) liegt längs
+        // seiner Front eben auf dieser Höhe, jeder spätere Weg, der ihn berührt, trägt sie wie am Platz (`torAn`), und die Wende
+        // liegt auf EINER Fläche mit Ring, Bahn und Trasse (`verkehrsBoden`: der Torplatz ist Kern). Bis hier war er nur Belag:
+        // die Trasse fiel an ihrem Ende weiter mit dem Grund, der Ring jeder Wende am Torplatz lag auf ihrem Kern 0,33–0,41 m
+        // neben seiner Höhe (stadt-voll, Ende West) — kein Kreis trug.
+        var tore = (Array.isArray(plan.zonen) ? plan.zonen : [])
+            .filter(function (q) {
+                return q && q.name === "torplatz" && q.form === "kasten" && isFinite(q.cx) && isFinite(q.cz);
+            })
+            .map(function (q) {
+                return { q: q, y: null };
+            });
+        var torAn = function (x, z, hw) {
+            var rand = Math.max(1, hw + O.saumM);
+            for (var ti = 0; ti < tore.length; ti++) {
+                var q = tore[ti].q;
+                var c = Math.cos(q.phi || 0);
+                var s = Math.sin(q.phi || 0);
+                var dx = x - q.cx;
+                var dz = z - q.cz;
+                if (Math.abs(dx * c - dz * s) <= q.ex + rand && Math.abs(dx * s + dz * c) <= q.ez + rand) return tore[ti];
+            }
+            return null;
         };
         // 1b) DIE FREMD-SLOTS (bauen.K2 Staffel 2): ctx.fest nennt die Häuser, die ohne diesen Plan stehen — gesetzt vom Spieler,
         //    der KI, der Vorschau —, je die Platte ihres Grundrisses samt Saum aus ihrem EIGENEN Erdbau ({cx, cz, phi, ex, ez},
@@ -9021,6 +10730,7 @@
         for (var ri = 0; ri < roads.length; ri++) {
             var rd = roads[ri];
             var hw = lagen[ri].hw;
+            var gf = rd.treppe ? O.treppe : O.gefaelle; // die Treppengasse der Stadt folgt dem Hang (STADT_DICHTE), jeder andere Weg dem Fuß
             var lage = lagen[ri].lage;
             var pts = lage.pts;
             var n = pts.length;
@@ -9028,6 +10738,7 @@
             var roh = [];
             var pin = [];
             var offen = []; // [Punkt, Kreuzung] der Kreuzungen ohne Höhe: dieser Weg gibt sie ihnen
+            var torK = []; // {t, a, b}: die Punkte a..b dieser Trasse an einem Torplatz ohne Höhe — sie gibt sie ihm
             for (k = 0; k < n; k++) {
                 sw.push(k ? sw[k - 1] + Math.hypot(pts[k].x - pts[k - 1].x, pts[k].z - pts[k - 1].z) : 0);
                 roh.push(H(pts[k].x, pts[k].z));
@@ -9038,9 +10749,27 @@
                     pin[k] = r6(pts[k].y);
                     continue;
                 }
+                // DAS TOR TRÄGT DIE HÖHE DER KANTE (w28-stadt-netz): der Punkt einer Straße auf der Kante der Kachel einer Stadt
+                // (ihr Tor) liegt auf dem Grund SEINES Punkts — eine Funktion des Tor-Punkts wie das Tor selbst: die Nachbar-
+                // Kachel liest am selben Punkt denselben Wert, die Fahrbahn läuft über die Kante ohne Stufe. Das Profil jeder
+                // Kachel läuft zur Kante hin auf diese Höhe aus, nie auf sein eigenes Mittel.
+                if (plan.kachel && Math.max(Math.abs(pts[k].x), Math.abs(pts[k].z)) > plan.kachel.m / 2 - 0.01) {
+                    pin[k] = r6(H(pts[k].x, pts[k].z));
+                    continue;
+                }
                 if (imPlatz(pts[k].x, pts[k].z, hw)) {
                     pin[k] = platzY;
                     continue;
+                }
+                // am Torplatz: seine Höhe, sobald seine Trasse sie gab (unten) — bis dahin sammelt die Trasse ihre Punkte an ihm
+                var tz = tore.length ? torAn(pts[k].x, pts[k].z, hw) : null;
+                if (tz && tz.y !== null) {
+                    pin[k] = tz.y;
+                    continue;
+                }
+                if (tz && (rd.w || 0) >= VERKEHR_GESETZ.breiteM) {
+                    if (!torK.length || torK[0].t !== tz) torK.unshift({ t: tz, a: k, b: k });
+                    torK[0].b = k;
                 }
                 var kz = inKreuzung(pts[k].x, pts[k].z);
                 if (kz < 0 && k > 0) kz = inKreuzung(pts[k - 1].x, pts[k - 1].z);
@@ -9109,7 +10838,7 @@
                 for (k = 0; k < n; k++) {
                     if (ys[k] === null) continue;
                     if (pin[k] === null && pv >= 0) {
-                        var g = O.gefaelle * (sw[k] - sw[pv]);
+                        var g = gf * (sw[k] - sw[pv]);
                         ys[k] = Math.min(ys[pv] + g, Math.max(ys[pv] - g, ys[k]));
                     }
                     pv = k;
@@ -9118,7 +10847,7 @@
                 for (k = n - 1; k >= 0; k--) {
                     if (ys[k] === null) continue;
                     if (pin[k] === null && pv >= 0) {
-                        var g2 = O.gefaelle * (sw[pv] - sw[k]);
+                        var g2 = gf * (sw[pv] - sw[k]);
                         ys[k] = Math.min(ys[pv] + g2, Math.max(ys[pv] - g2, ys[k]));
                     }
                     pv = k;
@@ -9149,14 +10878,14 @@
                     var hi = Infinity;
                     for (var ip = a - 1; ip >= 0; ip--)
                         if (pin[ip] !== null) {
-                            lo = pin[ip] - O.gefaelle * (sw[a] - sw[ip]);
-                            hi = pin[ip] + O.gefaelle * (sw[a] - sw[ip]);
+                            lo = pin[ip] - gf * (sw[a] - sw[ip]);
+                            hi = pin[ip] + gf * (sw[a] - sw[ip]);
                             break;
                         }
                     for (var iq = b + 1; iq < n; iq++)
                         if (pin[iq] !== null) {
-                            lo = Math.max(lo, pin[iq] - O.gefaelle * (sw[iq] - sw[b]));
-                            hi = Math.min(hi, pin[iq] + O.gefaelle * (sw[iq] - sw[b]));
+                            lo = Math.max(lo, pin[iq] - gf * (sw[iq] - sw[b]));
+                            hi = Math.min(hi, pin[iq] + gf * (sw[iq] - sw[b]));
                             break;
                         }
                     kreuzungY[sch.g] = r6(lo <= hi ? Math.min(hi, Math.max(lo, sch.y)) : (lo + hi) / 2);
@@ -9166,11 +10895,19 @@
                 });
                 kappen();
             }
+            // DIE TRASSE ENDET EBEN (der Torplatz, oben): endet sie an ihm (ihr erster oder letzter Punkt liegt an seiner Front),
+            // trägt er die Höhe, mit der sie ihn erreicht, und sie liegt bis an ihr Ende auf ihr — fest wie am Platz
+            torK.forEach(function (o) {
+                var ein = o.b === n - 1 ? o.a : o.a === 0 ? o.b : -1;
+                if (ein < 0 || ys[ein] === null || o.t.y !== null) return;
+                o.t.y = r6(ys[ein]);
+                for (var kt = o.a; kt <= o.b; kt++) pin[kt] = ys[kt] = o.t.y;
+            });
             // zwischen zwei festen Punkten, die das Gefälle nicht verbindet (zwei Flächen, deren Höhe andere Wege setzten),
             // steigt der Weg gleichmäßig — nie eine Stufe am Rand der einen
             for (var p0 = -1, p1 = 0; p1 < n; p1++) {
                 if (pin[p1] === null) continue;
-                if (p0 >= 0 && p1 > p0 + 1 && Math.abs(pin[p1] - pin[p0]) > O.gefaelle * (sw[p1] - sw[p0]))
+                if (p0 >= 0 && p1 > p0 + 1 && Math.abs(pin[p1] - pin[p0]) > gf * (sw[p1] - sw[p0]))
                     for (var pm = p0 + 1; pm < p1; pm++)
                         if (ys[pm] !== null) ys[pm] = pin[p0] + ((pin[p1] - pin[p0]) * (sw[pm] - sw[p0])) / (sw[p1] - sw[p0]);
                 p0 = p1;
@@ -9235,13 +10972,21 @@
                 ez: r6(pz.ez + O.saumM),
                 y: platzY,
             });
+        // die Platte jedes Torplatzes, dem seine Trasse die Höhe gab (samt Saum wie der Platz; ihr Kern unten in `aufWeg`)
+        var torKerne = [];
+        tore.forEach(function (t) {
+            if (t.y === null) return;
+            var tq = { art: "platte", cx: r6(ox + t.q.cx), cz: r6(oz + t.q.cz), phi: r6(t.q.phi || 0), ex: r6(t.q.ex), ez: r6(t.q.ez), y: t.y };
+            torKerne.push(tq);
+            erdbau.push(Object.assign({}, tq, { ex: r6(t.q.ex + O.saumM), ez: r6(t.q.ez + O.saumM) }));
+        });
         // DIE FLÄCHE der Wege und des Platzes, wie die Gelände-Funktion sie trägt (ctx.flaeche: der Erdbau-Term des Gesetzbuchs
         // über diesen Splats — auf einer Fläche ihre Höhe, sonst null): das Haus und die Laterne lesen die Höhe, auf die ein Fuß
         // tritt, nie eine eigene Rechnung des Erdbaus.
         var auf = ctx.flaeche(wegSaeume.concat(wegKerne, erdbau));
         // der Weg selbst (die Kerne und der Platz ohne Saum): bis an ihn reicht der Boden des Vorplatzes (`vorplatzBoden`)
         var platzKern = platzY === null ? [] : [{ art: "platte", cx: r6(ox + pz.cx), cz: r6(oz + pz.cz), phi: r6(pz.phi || 0), ex: r6(pz.ex), ez: r6(pz.ez), y: platzY }];
-        var aufWeg = ctx.flaeche(wegKerne.concat(platzKern));
+        var aufWeg = ctx.flaeche(wegKerne.concat(platzKern, torKerne));
         var hausPlatten = [];
         var vorplaetze = [];
         var aufY = function (x, z) {
@@ -9339,6 +11084,20 @@
                 }
             }
         }
+        // NUR DER BODEN (ctx.nurBoden, siedlung.K5): je Haus die Höhe, auf der es stünde — dieselbe Rechnung bis hierher (Platz,
+        // Wege-Profile, die Gasse vor der Tür), ohne Platten, Laternen, Feldwege und den Boden des Verkehrs. Leser: die Ort-Wahl
+        // im Faden (voxel-worker `ortWahl` → `ortImBau`: die Bau-Wand des Wirts vor dem ganzen Plan); `boden` null, wo das
+        // Wasser einen Slot nahm (der Plan trüge den Ort nie ganz).
+        if (ctx.nurBoden)
+            return {
+                ort: { x: ox, z: oz },
+                boden:
+                    NS !== plan.slots.length
+                        ? null
+                        : ps.map(function (q, qi) {
+                              return isFinite(q.y) ? r6(q.y) : hy[qi] !== null ? hy[qi] : r6(median(grunde[qi]));
+                          }),
+            };
         var slots = [];
         for (si = 0; si < NS; si++) {
             sl = ps[si];
@@ -9442,6 +11201,12 @@
         });
         // die Slots, die das Wasser nahm (der Leser zählt das Dorf ehrlich: geplant = stehend + im Wasser gefallen)
         if (wasserSlots) v2.wasserSlots = wasserSlots;
+        // der Torplatz trägt seine Höhe wie der Platz (`y`, absolut)
+        if (torKerne.length)
+            v2.zonen = plan.zonen.map(function (q) {
+                for (var ti = 0; ti < tore.length; ti++) if (tore[ti].q === q && tore[ti].y !== null) return Object.assign({}, q, { y: tore[ti].y });
+                return q;
+            });
         // die Feldwege weichen den Fremd-Slots wie die Gassen (sie tragen kein Profil); `fest`: die Fremd-Slots, denen ein Weg wich
         var fw0 = Array.isArray(plan.feldwege) ? plan.feldwege : [];
         if (fest.length || fw0.some(function (fw) { return fw.lauf; }))
@@ -9637,8 +11402,11 @@
             k: 7, // hinter dem Tier-Tor; der nächste Punkt 220 m von M (keine Zone mit Akteur ≤ 210 m)
             flaecheR: 45,
             belag: "gras",
-            gehege: { gattung: "wolf", n: 3, z0: 5, z1: 17, ex: 8, lagerDz: 7, ruhe: [[-3, 1], [0, 3.5], [3, 6]] }, // nördlich der Mitte
-            graben: { b: 3, tiefeM: 2 }, // Hagenbeck: der Graben um das Gehege statt eines Zauns, `tiefeM` unter dem Zoo
+            // der Grund des Geheges und seines Grabens (`belag`, dasselbe Feld wie jede Fläche): drei Wölfe halten 192 m² kahl
+            // (getretene Erde), die Sohle des Grabens ist mit Stein gefasst (Hagenbecks Trockengraben) — kein Rasen wächst über
+            // sie, der Gast liest die Grenze am Grund: Rasen · Stein in der Tiefe · Erde
+            gehege: { gattung: "wolf", n: 3, z0: 5, z1: 17, ex: 8, lagerDz: 7, ruhe: [[-3, 1], [0, 3.5], [3, 6]], belag: "weg" }, // nördlich der Mitte
+            graben: { b: 3, tiefeM: 2, belag: "pflaster" }, // Hagenbeck: der Graben um das Gehege statt eines Zauns, `tiefeM` unter dem Zoo
             laternen: [[-9, -7], [9, -7], [-9, 1], [9, 1]], // an der Schau-Terrasse südlich der Mitte
             // der Grund des Zoos: Schau-Rasen (bis zur fernen Station), Gehege und Graben auf EINER Platte (dem Median ihres Grunds) —
             // Besucher und Tiere auf einer Höhe, der Graben senkrecht in ihr (am Hang der Standard-Welt trug die Schau-Terrasse sonst
@@ -9772,6 +11540,22 @@
             d = Math.min(d, Math.hypot(x - ax - dx * t, z - az - dz * t));
         }
         return d;
+    }
+    // EINE ZONE: die erklärte Fläche eines Plans {name, art, form, …Geometrie, belag?, huelle} — ihre Hülle [x0, z0, x1, z1] aus
+    // der Form. Leser: der Genesis-Ort (`genesisLayout`) und die Stadt der Grammatik (`dorfLayout`: der Friedhof).
+    function zoneVon(name, art, form, geo, belag, mehr) {
+        var q = Object.assign({ name: name, art: art, form: form, cx: 0, cz: 0 }, geo, belag ? { belag: belag } : null, mehr || null);
+        var e;
+        if (form === "kreis") e = [q.r, q.r];
+        else if (form === "ring") e = [q.r1, q.r1];
+        else if (form === "ellipse") e = [q.a, q.b];
+        else if (form === "kasten") e = [Math.abs(q.ex * Math.cos(q.phi)) + Math.abs(q.ez * Math.sin(q.phi)), Math.abs(q.ex * Math.sin(q.phi)) + Math.abs(q.ez * Math.cos(q.phi))];
+        if (form === "band") {
+            var xs = q.pts.map(function (r) { return r.x; });
+            var zs = q.pts.map(function (r) { return r.z; });
+            q.huelle = [Math.min.apply(null, xs) - q.w / 2, Math.min.apply(null, zs) - q.w / 2, Math.max.apply(null, xs) + q.w / 2, Math.max.apply(null, zs) + q.w / 2].map(gr6);
+        } else q.huelle = [q.cx - e[0], q.cz - e[1], q.cx + e[0], q.cz + e[1]].map(gr6);
+        return q;
     }
     // DER RAND DER ZONE q am Punkt (plan-lokal, m): der vorzeichenbehaftete Abstand zu ihrer Kante — innen negativ, außen
     // positiv, auf der Kante 0. Die EINE Geometrie der Formen: das Urteil „trägt" (`zoneTraegt`, ≤ 0) und der Maler des Bodens
@@ -10029,17 +11813,7 @@
         // DIE ZONEN: die erklärten Flächen in der Folge ihres Gesetzes (die letzte, die einen Punkt trägt, gilt), je Zone ihre Hülle
         var zonen = [];
         var zone = function (name, art, form, geo, belag, mehr) {
-            var q = Object.assign({ name: name, art: art, form: form, cx: 0, cz: 0 }, geo, belag ? { belag: belag } : null, mehr || null);
-            var e;
-            if (form === "kreis") e = [q.r, q.r];
-            else if (form === "ring") e = [q.r1, q.r1];
-            else if (form === "ellipse") e = [q.a, q.b];
-            else if (form === "kasten") e = [Math.abs(q.ex * Math.cos(q.phi)) + Math.abs(q.ez * Math.sin(q.phi)), Math.abs(q.ex * Math.sin(q.phi)) + Math.abs(q.ez * Math.cos(q.phi))];
-            if (form === "band") {
-                var xs = q.pts.map(function (r) { return r.x; });
-                var zs = q.pts.map(function (r) { return r.z; });
-                q.huelle = [Math.min.apply(null, xs) - q.w / 2, Math.min.apply(null, zs) - q.w / 2, Math.max.apply(null, xs) + q.w / 2, Math.max.apply(null, zs) + q.w / 2].map(gr6);
-            } else q.huelle = [q.cx - e[0], q.cz - e[1], q.cx + e[0], q.cz + e[1]].map(gr6);
+            var q = zoneVon(name, art, form, geo, belag, mehr);
             zonen.push(q);
             return q;
         };
@@ -10065,9 +11839,9 @@
             zone(s < 0 ? "rampe_w" : "rampe_o", "flaeche", "band", { pts: [xz(s * G.rampe.x0, G.rampe.z), xz(s * G.rampe.x1, G.rampe.z)], w: G.rampe.b }, G.rampe.belag);
         });
         zone("teich", "wasser", "ellipse", { cz: T.cz, a: T.a, b: T.b });
-        zone("gehege", "gehege", "kasten", rand, null, { akteur: true });
+        zone("gehege", "gehege", "kasten", rand, GH.belag, { akteur: true });
         kanten.forEach(function (e, i) {
-            zone("graben_" + i, "graben", "band", { pts: [xz(e[0], e[1]), xz(e[2], e[3])], w: M.graben.b });
+            zone("graben_" + i, "graben", "band", { pts: [xz(e[0], e[1]), xz(e[2], e[3])], w: M.graben.b }, M.graben.belag);
         });
         zone("viertel", "ort", "kreis", { cx: viertel.x, cz: viertel.z, r: viertel.r });
         tore.forEach(function (q) {
@@ -10547,6 +12321,9 @@
         exportSettlement: exportSettlement,
         ortPlan: ortPlan, // K10 — der Plan v2 auf der Gelände-Funktion (der Wirt reicht ctx.hoeheAt)
         ortImWasser: ortImWasser, // siedlung.K5 — nimmt das Wasser am Ort ein Haus? (die Ort-Wahl ohne den Plan)
+        platzImWasser: platzImWasser,
+        ortBauWand: ortBauWand, // siedlung.K5 — die stehenden Bauten des Wirts im Raster (der Ort-Faden, je Wahl einmal)
+        ortImBau: ortImBau, // siedlung.K5 — steht ein Haus am Ort sicher in einem stehenden Bau? (die Ort-Wahl ohne den Plan)
         festWeg: festWeg, // bauen.K2 — betritt ein Weg des Plans v2 die Platte eines gesetzten Hauses? (der Wirt rechnet dann neu)
         ORT_GESETZ: ORT_GESETZ,
         // DER GENESIS-ORT (Pflicht F, der Prüfplatz): die Maße, die Saat, der Plan v1 (→ `ortPlan` → Plan v2), die Zone am Punkt
@@ -10569,6 +12346,11 @@
         ZEIT_VIS: ZEIT_VIS,
         // K11 — das Leuchtquellen-Gesetz (Labor und Welt lesen dasselbe Datum)
         LICHT_GESETZ: LICHT_GESETZ,
+        // DAS VERBAND-GESETZ (w28-haus-stoff): die Tafel der Maler und ihre Zeilen für die Welt (Leser: der Wirt, `_verbandStoff`)
+        VERBAND_GESETZ: VERBAND_GESETZ,
+        verbandZeilen: verbandZeilen,
+        // das Leucht-Gesetz der Glut (Leuchtdichte = lineare Farbe × LEUCHT_FEUER): die Welt webt es in jede Glut ihres Bodens (die Lava)
+        LEUCHT_FEUER: LEUCHT_FEUER,
         BOGEN_GESETZ: BOGEN_GESETZ,
         vorplatzFlaeche: vorplatzFlaeche,
         vorplatzBoden: vorplatzBoden,
@@ -10577,24 +12359,40 @@
         BELAG_GESETZ: BELAG_GESETZ,
         gassenBelag: gassenBelag,
         gassenBreite: gassenBreite,
+        WEG_GESETZ: WEG_GESETZ,
+        wegArt: wegArt,
+        wegQuerschnitt: wegQuerschnitt,
         platzBelag: platzBelag,
         belagAm: belagAm,
         lichtFlackern: lichtFlackern,
         // K11b — die Farbe aus der Farbtemperatur, der Abfall 1/d² mit Kern und Saum (die Welt rechnet ihn im Stoff)
         lichtFarbe: lichtFarbe,
         lichtAbfall: lichtAbfall,
+        // schatten.K5 — der Leib einer Leuchte (der Glas-Kopf): die nahe Ebene ihres Wurfs
+        lichtLeib: lichtLeib,
         EXPL_GESETZ: EXPL_GESETZ,
         EXPL_VIS: EXPL_VIS,
         // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)
         reihenSnap: reihenSnap,
+        loseEntzerren: loseEntzerren,
+        wandXVon: wandXVon,
+        grundrissTief: grundrissTief,
+        LOS_GESETZ: LOS_GESETZ,
         wandLaternen: wandLaternen,
+        platzSaum: platzSaum,
         brunnenWeicht: brunnenWeicht,
+        mastWeicht: mastWeicht,
+        laterneWandM: laterneWandM,
         LICHT_MARKE_M: LICHT_MARKE_M, // das Soll des Dorf-Lichts je Meter Weg (K66-2 N1; Leser gate:settlement DORF-LICHT)
         brandwand: brandwand,
-        metaParams: metaParams,
         LEUTE_GESETZ: LEUTE_GESETZ, // die Leute eines Hauses (Meisterkarte mensch.K1; Leser: der Wirt, gate:kreatur-takt bewohner)
         leuteVon: leuteVon,
+        MARKT_GESETZ: MARKT_GESETZ, // der Markt zieht an (Leser: der Wirt marktStand · _ortPose, koerper tagesOrte, gate:kreatur-takt bewohner)
+        platzAnziehung: platzAnziehung,
+        imPlatzStueck: imPlatzStueck,
         DORF: DORF,
+        GRUENDUNG_RASTER: GRUENDUNG_RASTER, // w28-gruendung-flach — das Raster der Grundriss-Probe (Leser: gate:settlement G, seine Mutante)
+        GRUENDUNG_OPS: GRUENDUNG_OPS, // w28-gruendung-flach — die Stände und Grundriss-Proben je Gründung (Leser: gate:settlement G)
         dorfLayout: dorfLayout,
         strassengraph: strassengraph,
         lodPlan: lodPlan,
@@ -10608,7 +12406,25 @@
         SIEDLUNG: SIEDLUNG,
         // siedlung.K2 — das Rang-Gesetz (die Zelle, die Größe, die Reichweite), die Größe je Klasse und die Mauer der Stadt
         siedlungsZelle: siedlungsZelle,
-        trasseRahmen: trasseRahmen, // siedlung.K3 — der Rahmen des Höhen-Rasters um einen Ort (der Wirt füllt ihn aus gelaende-core hoehenRaster)
+        // w28-stadt-funktion — die Stadt als Funktion über Vierteln (Wand je Viertel, Raster, das Wort eines Viertels)
+        STADT_FUNKTION: STADT_FUNKTION,
+        stadtRinge: stadtRinge,
+        STADT_FORM: STADT_FORM,
+        stadtLambda: stadtLambda,
+        stadtTonAn: stadtTonAn, // der Ton der Lage in der Stadt (Leser: die Linse gate:settlement Z4, die Ton-Kante)
+        stadtKachelZahl: stadtKachelZahl,
+        viertelWort: viertelWort,
+        // w28-stadt-netz — die Kachel: ihre Tore je Kante, ihre Stufe 1 (Netz), der Rand der Stadt an ihr
+        STADT_NETZ: STADT_NETZ,
+        kachelTore: kachelTore,
+        kachelNetz: kachelNetz,
+        kachelRand: kachelRand,
+        // die Ferne der Stadt: die Häuser einer Kachel als Massen an ihrem Netz (Stufe 1 im Bild)
+        STADT_MASSEN: STADT_MASSEN,
+        kachelMassen: kachelMassen,
+        planMassen: planMassen,
+        trasseRahmen: trasseRahmen,
+        wasserReich: wasserReich, // so weit liest die Stadt der Grammatik das Wasser ihres Rasters (0: das Dorf) // siedlung.K3 — der Rahmen des Höhen-Rasters um einen Ort (der Wirt füllt ihn aus gelaende-core hoehenRaster)
         hoeheAusRaster: hoeheAusRaster, // siedlung.K3 — der EINE Leser des Rasters (Export, Labor, Linse)
         wegZwischen: wegZwischen, // fahrzeug.K2 — der Feldweg zwischen zwei Orten des Wegenetzes, dem Grund folgend (`trasseLenk`)
         wegeNetz: wegeNetz, // fahrzeug.K2 — das Wege-Netz eines Plans samt den Nähten, die es zu EINEM Netz schließen
@@ -10626,6 +12442,8 @@
         siedlungsEpoche: siedlungsEpoche,
         GROESSE_N: GROESSE_N,
         STADTMAUER: STADTMAUER,
+        STADT_GRAMMATIK: STADT_GRAMMATIK, // die Stadt-Grammatik (Viertel · Bau-Typen · Gegenstände; Leser: DORF, dorfLayout, die Linse)
+        STADT_DICHTE: STADT_DICHTE,
         EPOCHEN: EPOCHEN,
         zeitachse: zeitachse, // die Epochen einer Region nach dem Jahr (siedlung.K4; Leser: DORF, gate:settlement J)
         epocheBei: epocheBei, // die Epoche eines Jahrs (Tracht, Kirche; Leser: DORF, gate:settlement J)
@@ -10639,6 +12457,14 @@
         hausParams: hausParams,
         massBau: massBau,
         grundVon: grundVon, // das Grund-Datum (S4) — die Linse liest es wie die Welt
+        raumVon: raumVon,
+
+        innenTon: innenTon,
+        innenAn: innenAn,
+        innenFrei: innenFrei,
+        INNEN_HOLZ: INNEN_HOLZ,
+        deckenZeile: deckenZeile, // die Decken samt Raum-Licht (w28-innenlicht) — die Linse rechnet daran ihre Mutanten
+        RAUM_LICHT: RAUM_LICHT,
         slotPlan: slotPlan, // das gesetzte Haus als Ein-Slot-Plan (bauen.K2) — der Wirt rechnet daraus den Plan v2 und legt dessen Erdbau
         chimneyTipFromParams: chimneyTipFromParams,
         buildStufe: buildStufe,
@@ -10650,7 +12476,8 @@
         KULTNAMES: KULTNAMES,
         tintM: tintM,
         kulturFromSeed: kulturFromSeed,
-        kulturParams: kulturParams,
+        bauRezept: bauRezept,
+        BAU_NUTZUNG: BAU_NUTZUNG, // das Bau-Gesetz (w28-bau-rezept): die Zeilen der Nutzung; Leser: DORF, das Labor (worlds/fachwerk)
         // Material-Fläche
         materials: materials,
         mat: mat,

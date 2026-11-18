@@ -430,8 +430,18 @@ class AnazhRealm_bild_schatten {
         // r184 zeichnet einen Schatten im `updateBefore` des ersten Stoffs, der ihn liest — im Bündel-Abspiel, unter der
         // Diät und vor fertigen Programmen zeichnete so keiner, und der Platz trug den Faktor einer nie gezeichneten Würfel-Tiefe
         // (0 je Texel: alles im Wurf — GTX 59d8aec1, der Glutbrunnen nachts −91 % auch ohne Pfosten)
+        // DIE WÜRFEL-TIEFE IN 16 BIT (w28-preis-ort, derselbe Haken wie die Kaskaden `_kaskadenZiele`): r184 legt sie als
+        // depth24plus an (`PointShadowNode.setupRenderTarget`, gate:vendor-anker); bei 3 m Abstand trägt depth16 2,7 mm je Stufe,
+        // unter jeder Kante des Wurfs — 0,75 statt 1,5 MB.
         class WurfSchatten extends Basis {
             updateBefore() {}
+            setupRenderTarget(shadow, builder) {
+                const z = super.setupRenderTarget(shadow, builder);
+                if (!z || !z.depthTexture)
+                    throw new Error("LICHT-WURF: PointShadowNode.setupRenderTarget ohne Würfel-Tiefe (Vendor-Drift)");
+                z.depthTexture.type = THREE.UnsignedShortType;
+                return z;
+            }
         }
         const roh = new WurfSchatten(licht);
         const knoten = THREE.TSL.nodeObject(roh);
@@ -515,8 +525,12 @@ class AnazhRealm_bild_schatten {
             L.position.set(lage.x, lage.y, lage.z);
             L.distance = lage.w;
             L.updateMatrixWorld(true);
+            // DIE NAHE EBENE IST DER LEIB DER QUELLE: trägt sie einen Kopf (`leibM`, fachwerk `lichtLeib`), steht sie `leibSaum`
+            // jenseits seines Bodens — der Kern des Abfalls ist dort kein Leib (Laterne 0,1 m: ihr Kopf-Boden in 0,2 m warf einen
+            // Kreis von 2,7 m um ihren Fuß, Radeon 4ee205bd Kontrast 0,2482 bei Kontrolle 0,9061; Wandlaterne 2,74 m: nichts in
+            // 2,7 m um sie warf); ohne Kopf trägt der Kern des Glutbetts den Leib (die Steine des Herds)
             const kern = q.L && q.L.kernM > 0 ? q.L.kernM : 0;
-            const nah = Math.max(LW.nahM, kern * LW.kernAnteil);
+            const nah = q.leibM > 0 ? q.leibM + LW.leibSaum : Math.max(LW.nahM, kern * LW.kernAnteil);
             const C = L.shadow.camera;
             if (C.near !== nah || C.far !== lage.w) {
                 C.near = nah;
@@ -824,7 +838,7 @@ class AnazhRealm_bild_schatten {
     }
 
     // Die Box der Kaskade i aus den Empfänger-Punkten: Licht-Raum-AABB → gerastete Größe → Zentrum auf dem Texel-Raster
-    // → nahe Ebene über dem höchsten Werfer der Box (Hüllen · Tiere · Spieler · Inseln) → Licht, Ziel, Kamera, Bias.
+    // → nahe Ebene über dem höchsten Werfer der Box (Hüllen · Tiere · Spieler · Bauten) → Licht, Ziel, Kamera, Bias.
     _kaskadeFit(csm, i, huellen, S, n, alt) {
         const K = AnazhRealm.SCHATTEN_KASKADE;
         const lw = csm.lights[i];
@@ -922,7 +936,7 @@ class AnazhRealm_bild_schatten {
 
     // Der höchste Werfer über der Licht-Raum-Box [bx0,bx1]×[by0,by1] (Licht-z, zum Licht hin wachsend): die
     // Werfer-Hüllen (Bundles und Boden-Satz, ihre acht Ecken) und die freien Werfer außerhalb davon — Tiere, Spieler,
-    // Inseln, Bauplan-Bauten als eigene Gruppe.
+    // Bauplan-Bauten als eigene Gruppe.
     _kaskadenWerferOben(huellen, S, bx0, bx1, by0, by1) {
         let zt = -Infinity;
         let yTop = -Infinity; // die Welt-Höhe des höchsten Werfers über der Box (`S.werferY`, der Licht-Weg der Stufe)
@@ -958,13 +972,6 @@ class AnazhRealm_bild_schatten {
             for (const cr of liste)
                 if (cr && cr.visible !== false) frei(cr.position.x, cr.position.y, cr.position.z, 6);
         if (st.playerMesh) frei(st.playerMesh.position.x, st.playerMesh.position.y, st.playerMesh.position.z, 4);
-        for (const is of st.floatingIslands || []) {
-            const g = is && is.geometry;
-            if (!g) continue;
-            if (!g.boundingSphere) g.computeBoundingSphere();
-            const bs = g.boundingSphere;
-            frei(is.position.x + bs.center.x, is.position.y + bs.center.y, is.position.z + bs.center.z, bs.radius);
-        }
         // Bauplan-Bauten, die als eigene Gruppe in der Szene stehen (kein Bundle, kein Instanz-Satz): ihre Welt-Kugel,
         // einmal je Lage gerechnet (gate:schatten-werfer W6 nennt jede Werfer-Klasse, die hier fehlt).
         for (const e of st.architectures || []) {
@@ -1092,11 +1099,11 @@ class AnazhRealm_bild_schatten {
     // Bezugs-Seitenverhältnis `bezugAspekt`): die Scheibe des Referenz-Blicks (Kamera waagrecht, Licht im Zenit —
     // Breite = Frustum-Breite am fernen Rand, Tiefe = Scheiben-Tiefe, beide mit Fade-Saum) liegt in der FESTEN
     // Licht-Basis je nach Blickrichtung gedreht; ihre Box ist höchstens so lang wie ihre Diagonale (Drehung um 45°
-    // gegen die Basis). Die Karte trägt diese längste Kante bei `texelM` — quadratisch, eine Zweierpotenz (gedeckelt
-    // auf karteMax). Eine Flächen-Regel (√(Breite·Tiefe)) gab k1 1024 und damit auf der langen Achse 0,84 m je Texel
+    // gegen die Basis). Die Karte trägt diese längste Kante bei `texelM` — quadratisch, auf `karteRaster` Texel gerastet
+    // (gedeckelt auf karteMax). Bis w28-preis-ort rundete sie auf die nächste Zweierpotenz: k1 und k2 lagen 7 % bzw. 12 % feiner
+    // als ihr Gesetz und trugen dafür 2,6 MB Tiefe (2048² statt 1904² und 1840², Mess-Wiese Radeon). Eine Flächen-Regel (√(Breite·Tiefe)) gab k1 1024 und damit auf der langen Achse 0,84 m je Texel
     // statt 0,47 (gemessen 04.10., Prüfer W7): ferne Schatten in Blickbreite wurden 1,8-fach gröber als beim Addon.
-    // 306 m Reichweite, 75° · 16:9: k0 308 × 113 m (Diagonale 328 m) → 2048, k1 835 × 203 m (859 m) → 2048. Eine
-    // Eigenschaft des Inhalts, nie des Fensters.
+    // Eine Eigenschaft des Inhalts, nie des Fensters (gate:schatten-werfer K5 nennt Kante und Texel je Kaskade).
     _kaskadenKarten(csm) {
         const K = AnazhRealm.SCHATTEN_KASKADE;
         const cam = csm.camera;
@@ -1112,7 +1119,7 @@ class AnazhRealm_bild_schatten {
             const dB = cam.near + saum[1] * (far - cam.near);
             const texel = K.texelM[Math.min(i, K.texelM.length - 1)];
             const bedarf = Math.hypot(2 * halb * dB, dB - dA) / texel;
-            const n = Math.min(K.karteMax, 2 ** Math.ceil(Math.log2(Math.max(1, bedarf))));
+            const n = Math.min(K.karteMax, K.karteRaster * Math.ceil(Math.max(1, bedarf) / K.karteRaster));
             csm.lights[i].shadow.mapSize.set(n, n);
             groessen.push(n);
         }
@@ -1401,7 +1408,7 @@ class AnazhRealm_bild_schatten {
         const tex = T.texture(L.rt.texture);
         const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
         const w = T.max(clip.w, 1e-4);
-        const uv = T.vec2(clip.x.div(w).mul(0.5).add(0.5), T.float(0.5).sub(clip.y.div(w).mul(0.5)));
+        const uv = AnazhRealm._schirmUV(clip.x.div(w), clip.y.div(w));
         const gr = T.vec2(tex.size());
         const t = tex.load(T.ivec2(T.clamp(T.floor(uv.mul(gr)), T.vec2(0), gr.sub(1))));
         const gilt = T.max(T.float(1).sub(T.abs(t.y.sub(w)).div(w.mul(K.tiefeRand))), 0);
@@ -1678,13 +1685,15 @@ AnazhRealm.RUECKSTRAHL = Object.freeze({
 });
 // DER WURF DES FEUERS (schatten.K5, `_lichtWurf` · `_lichtWurfTakt`): EIN Platz des Licht-Pools wirft — die Würfel-Karte je
 // Seite `kartePx` (256: 2,3 cm je Texel in 3 m), die nahe Ebene mindestens `nahM`, sonst `kernAnteil` × der Kern der Quelle (der
-// Leib der Flamme wirft nicht); den Bias schreibt das Gesetz der Kaskade (`_schattenBias`, die Texel-Kante an der Reichweite);
+// Leib der Flamme wirft nicht) — eine Leuchte mit Kopf `leibSaum` jenseits seines Leibs (fachwerk `lichtLeib`: die Platte ihres
+// Bodens liegt genau auf ihm); den Bias schreibt das Gesetz der Kaskade (`_schattenBias`, die Texel-Kante an der Reichweite);
 // PCF über `weichPx`. Wichtig ist eine Quelle ab `wichtigAb` des Lichts der Welt in `bezugM`, gehalten
 // bis eine andere `halten`-fach wichtiger ist; die Karte zeichnet höchstens je `takt` Bilder neu (nie neben einer Kaskade).
 AnazhRealm.LICHT_WURF = Object.freeze({
     kartePx: 256,
     nahM: 0.05,
     kernAnteil: 1,
+    leibSaum: 0.02,
     weichPx: 2,
     bezugM: 2,
     wichtigAb: 0.25,
@@ -1694,8 +1703,8 @@ AnazhRealm.LICHT_WURF = Object.freeze({
 // DIE KASKADEN-BOX (_kaskadenPassen): jede Kaskade misst die Frustum-Scheibe im Licht-Raum statt ihrer Diagonale.
 // `texelM` = die Texel-Kante je Kaskade, die die längste Box-Kante bei jeder Blickrichtung hält — die des
 // Addon-Quadrats (k0 339 m / 2048, k1 961 m / 2048): kein Schatten wird gröber als bis V18.529. Die Karten-Größe folgt
-// daraus am Standard-Bereich und Bezugs-Seitenverhältnis `bezugAspekt` (kleinste Zweierpotenz, einmal bei der
-// Kaskaden-Geburt; k0 = k1 = 2048, gate:schatten-werfer K5/K6). `rasterTeiler`: die Box wächst in Schritten von
+// daraus am Standard-Bereich und Bezugs-Seitenverhältnis `bezugAspekt` (die kleinste Seite im Raster `karteRaster`, einmal bei
+// der Kaskaden-Geburt; gate:schatten-werfer K5/K6). `rasterTeiler`: die Box wächst in Schritten von
 // Scheiben-Tiefe / rasterTeiler (eine Größe hält, solange die Scheibe hineinpasst — sonst schimmert jede Drehung);
 // `randM` = Saum der Werfer-Hülle (Wind, Morph), `luftM` = Saum über dem höchsten Werfer und unter der tiefsten
 // Scheibe. DER BIAS (0710-12, `_schattenBias`) in Texeln der Karte, nie in Metern: `normalTexel` = der normalBias je Texel
@@ -1720,6 +1729,7 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     sucheM: Object.freeze([0.25, 0, 0]),
     bezugAspekt: 16 / 9,
     karteMax: 2048,
+    karteRaster: 16,
     rasterTeiler: 8,
     randM: 2,
     luftM: 4,

@@ -5,6 +5,7 @@
 // der API ist ROT. gate:ci-deckung (V) KOPF hält die Form, sein Selbsttest die Fälle.
 //   node scripts/ci-kopf.cjs        (im Job `kopf`: GITHUB_* aus der Umgebung, GH_TOKEN) → `voll=` und `echt=` nach $GITHUB_OUTPUT
 "use strict";
+require("./lib/urteil-zeile.cjs").wache(); // Lehre 6: eine gedruckte ROTE Zeile bei Exit 0 wird Exit 1
 const fs = require("fs");
 const { setTimeout: schlaf } = require("timers/promises");
 

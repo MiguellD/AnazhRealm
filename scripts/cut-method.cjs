@@ -15,6 +15,7 @@
 //   node scripts/cut-method.cjs <methodName> --nth 2      → bei mehreren Treffern den N-ten
 //   node scripts/cut-method.cjs <methodName> --file phyto-core.js
 // ─────────────────────────────────────────────────────────────────────────
+require("./lib/urteil-zeile.cjs").wache(); // Lehre 6: eine gedruckte ROTE Zeile bei Exit 0 wird Exit 1
 const fs = require("fs");
 const path = require("path");
 const acorn = require("acorn");

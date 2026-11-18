@@ -9,7 +9,9 @@
 //   B (Q7-Bild)     das Wasser-Material zerfällt mit der Wasser-Uhr nicht (kein weißes Zebra), der ruhige Fluss schäumt
 //                   nicht, der Sturm-Regen zeichnet Schlieren; das Rauschen rechnet ohne sin (B6); unter Wasser kennt das
 //                   Licht Tag und Nacht, der Tauchgang färbt den Himmel nicht; das Wasser-Programm liest keine Variable,
-//                   die nur ein Zweig rechnet (B7, das TSL-Leck).
+//                   die nur ein Zweig rechnet (B7, das TSL-Leck); die offene See trägt Weißkappen nach dem Wind (B8: in der Flaute
+//                   keine, bei Wind 0,8 der Anteil des Gesetzes, Monahan) — die Kurve des Gesetzes trifft den Anteil an der Dünung
+//                   des Kerns (B8 KURVE, ohne Browser); der Glanz der Sonne fällt hinter dem Grat (B9, `_sonnenSicht`).
 //   U (Q7-Gestalt)  die Ufer-Farbe quer zum Fluss springt nie, Worker und Main färben gleich; der Schilf-Bezug springt nie (U3).
 //   K10 · K11 · W2  die Decke über trockenen Höhlen (Spieler, Kamera, Tier, Wagen lesen dort kein Wasser); der Wagen watet,
 //                   das Boot treibt ohne Nicken mit dem Grund, auch im Rand-Streifen des Sees.
@@ -52,6 +54,15 @@ const SCHWELLE = {
     hellRuhig: 0.05, // Schaum-Deckung des ruhigen Flusses (kein Ufer, kein Steil-Lauf: das Gesetz schäumt dort nicht)
     schaumSchnelle: 0.5, // Schaum-Deckung der Stromschnelle im selben Mass (das Wildwasser schäumt: sonst ist B1 blind)
     sturm: 1.3, // Kanten-Dichte des ruhigen Flusses im Sturm gegen die bei Sonne (das Gesetz: Amplitude × (w0 + w1·Wind))
+    // B8 DIE WEISSKAPPE (WASSER_GESETZ.schaum.weisskappe): Schaum-Anteil der offenen See in der Flaute (Wind 0,06: U 1 m/s,
+    // Monahan 4·10⁻⁶) und bei Wind 0,8 (U 13,4 m/s: 2,7 %) — die Spanne trägt die Stichprobe von 100 × 56 m Dünung
+    kammRuhig: 0.002,
+    kammSturm: [0.005, 0.08],
+    kammKurve: 0.2, // |Anteil über q(W) − W| / W an der Dünung des Kerns (B8 KURVE)
+    // B9 DIE SONNEN-SICHT: der Glanz der Zenit-Sonne (Luma-Mittel der Bild-Mitte) frei mindestens so hell, hinter dem Grat höchstens
+    // dieser Anteil davon
+    sonneFrei: 2,
+    sonneGrat: 0.2,
     schlieren: 50, // senkrechte Läufe ≥ 4 lit Pixel des Sturm-Regens allein auf Schwarz (640 × 360)
     neigung: 0.2, // (rechts − links) / (rechts + links) der diagonalen Lauf-Nachbarn quer zum Wind
     bankFels: 0.1, // Anteil der Bank-Profile (6 m ab der Wasserlinie), die steiler als der Fels des Boden-Gesetzes sind
@@ -345,6 +356,17 @@ function urteil(b) {
                 if (!(a.ruhig.hellAnteil <= S.hellRuhig)) rot("B1 SCHAUM", a.ruhig);
                 if (!(a.schnelle.hellAnteil >= S.schaumSchnelle)) rot("B1 LEER", a.schnelle);
             }
+            // B8 DIE WEISSKAPPE: die See von oben in der Flaute ohne Kamm, bei Wind 0,8 mit dem Anteil des Gesetzes
+            const k = g.kamm;
+            if (!(k && k.ruhig && k.sturm && k.ruhig.pixel > 1000)) rot("B8 LEER", k || null);
+            else {
+                if (!(k.ruhig.hellAnteil <= S.kammRuhig)) rot("B8 FLAUTE", k.ruhig);
+                if (!(k.sturm.hellAnteil >= S.kammSturm[0] && k.sturm.hellAnteil <= S.kammSturm[1])) rot("B8 STURM", k.sturm);
+            }
+            // B9 DIE SONNEN-SICHT: der Glanz der Sonne im Zenit fällt hinter dem Grat des Gesetzes (`_sonnenSicht` am Ort des Wassers)
+            const so = g.sonne;
+            if (!(so && so.frei >= S.sonneFrei)) rot("B9 LEER", so || null);
+            else if (!(so.grat <= S.sonneGrat * so.frei)) rot("B9 SCHATTEN", so);
             // B7 DAS TSL-LECK (scripts/lib/shader-kosten.cjs `tslLecks`): das Wasser-Programm liest keine Variable, die nur
             // ein Zweig rechnet; BLIND: kein Programm des Bogens gelesen
             if (!(g.fragmente > 0)) rot("B7 BLIND", g.fragmente);
@@ -381,6 +403,46 @@ function urteil(b) {
     else if (b.ferne && !(f.punkte >= 3 && f.anders === f.punkte && f.hubM >= 1 && f.faden === f.punkte))
         rot("G8 FERNE", f);
     return v;
+}
+
+// DAS WASSER-GESETZ AUS DEM KERN: foundry-core im Scope eines Fadens (`fadenScope`, derselbe Weg wie jede Kern-Linse)
+const wasserGesetzQuelle = () => require("./lib/welt-boot.cjs").fadenScope(["foundry-core.js"]).__terrainCore.WASSER_GESETZ;
+// DIE KURVE DER WEISSKAPPE gegen die Dünung (B8 KURVE): die normierte Höhe h = Σ (Wert − ½)·d_i / (½·Σ d) aus drei Oktaven
+// Wertrauschen (gleichverteilte Gitterwerte, Smoothstep-Interpolation, je Oktave ihr Gitter — dasselbe Rauschen wie `oceanSwell`
+// bei ihren Frequenzen `welle.frequenz` — die Oktaven teilen nie ein Gitter: teilten sie es, trügen sie dieselben Interpolations-
+// Gewichte, und die Verteilung der Summe wäre eine andere), 200 000 Proben aus fester Saat; je W der Anteil über q(W) gegen W.
+// → die Abweichungen beim Namen
+function kammKurve(duenung, f, quantil) {
+    let z = 0x9e3779b9;
+    const zufall = () => ((z = (Math.imul(z ^ (z >>> 15), 0x2c1b3c6d) + 0x6d2b79f5) >>> 0), z / 4294967296);
+    const gitter = new Map();
+    const wert = (i, j, o) => {
+        const k = (i * 7919 + j) * 4 + o;
+        if (!gitter.has(k)) gitter.set(k, zufall());
+        return gitter.get(k);
+    };
+    const rausch = (x, y, o) => {
+        const [i, j] = [Math.floor(x), Math.floor(y)];
+        const [u, v] = [x - i, y - j].map((f) => f * f * (3 - 2 * f));
+        const a = wert(i, j, o) * (1 - u) + wert(i + 1, j, o) * u;
+        return a * (1 - v) + (wert(i, j + 1, o) * (1 - u) + wert(i + 1, j + 1, o) * u) * v;
+    };
+    const S = 0.5 * duenung.reduce((a, b) => a + b, 0);
+    const h = new Float64Array(200000);
+    for (let n = 0; n < h.length; n++) {
+        const [x, y] = [zufall() * 3000, zufall() * 3000];
+        h[n] = duenung.reduce((s, d, o) => s + (rausch(x * f[o], y * f[o], o) - 0.5) * d, 0) / S;
+    }
+    const aus = [];
+    for (const W of [0.001, 0.01, 0.03, 0.1, 0.3]) {
+        const s = Math.sqrt(-Math.log(W));
+        const q = quantil[0] + quantil[1] * s + quantil[2] * s * s;
+        let ueber = 0;
+        for (const x of h) if (x > q) ueber++;
+        const anteil = ueber / h.length;
+        if (!(Math.abs(anteil - W) / W <= SCHWELLE.kammKurve)) aus.push(`W ${W}: über q ${q.toFixed(3)} liegen ${(anteil * 100).toFixed(2)} %`);
+    }
+    return aus;
 }
 
 // ── SELBSTTEST: ein grüner Befund bleibt grün, jeder Täter fällt beim Namen rot ──
@@ -559,6 +621,8 @@ function selbsttest() {
             sturmVerhaeltnis: 1.8,
             fragmente: 1,
             lecks: [],
+            kamm: { ruhig: { hellAnteil: 0, pixel: 147456 }, sturm: { hellAnteil: 0.024, pixel: 147456 } },
+            sonne: { frei: 40, grat: 1 },
         },
     };
     gut.ueberall = [1, 2, 3, 4, 5].map((i) => ({ ort: [i * 900, i * 700], ...gut.mutation }));
@@ -698,6 +762,13 @@ function selbsttest() {
         // nodeVar349, gesetzt in `if ( ( nodeVar171 > 0.0 ) )`
         ["B7 TSL-LECK", ["bild.lecks=", [{ name: "nodeVar349" }]]],
         ["B7 BLIND", ["bild.fragmente=", 0]],
+        // B8 an main 1b081d73: jede Welle über 0,62 der Wellen-Höhe schäumte mit 0,6, ohne Wind — Kämme in der Flaute
+        ["B8 FLAUTE", ["bild.kamm.ruhig.hellAnteil=", 0.031]],
+        ["B8 STURM", ["bild.kamm.sturm.hellAnteil=", 0]],
+        ["B8 LEER", ["bild.kamm=", null]],
+        // B9 an main 1b081d73: das Wasser las sein Licht ohne Ort — der Glanz stand hinter dem Grat wie in der Sonne
+        ["B9 SCHATTEN", ["bild.sonne.grat=", 40]],
+        ["B9 LEER", ["bild.sonne=", null]],
         // F3 an der Basis 25f53923: 720 Punkte über dem Spiegel bis 0,76 m, in Ruhe 397 daneben, Ruhe nach 620 Takten
         ["G2 ÜBER DEM SPIEGEL", ["graben.graeben.0", { ueber: 720, ueberM: 0.76 }]],
         ["G3 ZWEITE FLÄCHE", ["graben.graeben.1", { abseits: 397, abseitsM: 0.79 }]],
@@ -756,6 +827,16 @@ function selbsttest() {
         `  ${quelleSin ? "❌" : "✅"} B6 HASH an der Quelle: ${quelleSin || "das Wasser-Rauschen rechnet ohne sin"}`
     );
     if (quelleSin) fehler.push("B6 HASH an der Quelle: " + quelleSin);
+    // B8 KURVE an der Quelle (ohne Browser): die Quantil-Kurve des Kerns trifft den Weißkappen-Anteil an der Dünung DESSELBEN
+    // Gesetzes; die Mutante (eine feste Schwelle, die den Wind nicht kennt — der Kamm davor) fällt beim Namen
+    {
+        const G = wasserGesetzQuelle();
+        const k = kammKurve(G.welle.duenung, G.welle.frequenz, G.schaum.weisskappe.quantil);
+        const m = kammKurve(G.welle.duenung, G.welle.frequenz, [0.3, 0, 0]);
+        const ok = !k.length && m.length > 0;
+        console.log(`  ${ok ? "✅" : "❌"} B8 KURVE an der Quelle: ${k.join(" · ") || "q(W) trägt W"} · Mutante fest 0,3 → ${m[0] || "blieb grün"}`);
+        if (!ok) fehler.push("B8 KURVE: " + (k[0] || "die Mutante fiel nicht"));
+    }
     // die Teile zusammen urteilen wie das Ganze: der grüne Befund in zwei Teilen bleibt grün, jede Zahl wie vorher (die Zeile
     // trägt [Quellen aus 2 Teilen, Breite p50, max, die abweichenden Felder, die erste Röte])
     {
@@ -874,10 +955,10 @@ async function lauf() {
             befund.ferne = await page.evaluate(
                 async () => window.__wasserDamm({ fluss: (await window.__wasserOrte({})).fluss, ferne: true })
             );
-            for (const k of ["png60", "png3600"]) {
+            for (const k of ["png60", "png3600", "pngKammRuhig", "pngKammSturm"]) {
                 if (ordner && befund.bild[k]) {
                     fs.mkdirSync(ordner, { recursive: true });
-                    pngDatei(path.join(ordner, `wasser-bild-${k.slice(3)}.png`), befund.bild[k]);
+                    pngDatei(path.join(ordner, `wasser-bild-${k.slice(3).toLowerCase()}.png`), befund.bild[k]);
                 }
                 delete befund.bild[k];
             }
@@ -955,6 +1036,13 @@ async function lauf() {
         }
         const v = urteil(befund);
         console.log(JSON.stringify(befund, null, 1));
+        // die Zahlen von B8 und B9 vor dem Urteil (der Probe-Post trägt die letzten Zeilen, nie das JSON)
+        const [k, so] = [befund.bild && befund.bild.kamm, befund.bild && befund.bild.sonne];
+        if (k || so)
+            console.log(
+                `\n  ${v.some((x) => /^B[89]/.test(x)) ? "❌" : "✅"} B8 Weißkappe: Flaute ${k ? (k.ruhig.hellAnteil * 100).toFixed(2) : "–"} % · Wind 0,8 ${k ? (k.sturm.hellAnteil * 100).toFixed(2) : "–"} % der See` +
+                    ` · B9 Glanz der Zenit-Sonne: frei ${so ? so.frei : "–"} · hinter dem Grat ${so ? so.grat : "–"} (Luma-Mittel der Mitte)`
+            );
         // in der CI auch als Annotation (die Check-Run-API trägt sie ohne Log-Rechte): K16 — das Bild war dort rot
         // und lokal grün, der Täter stand nur im Log
         if (v.length) {

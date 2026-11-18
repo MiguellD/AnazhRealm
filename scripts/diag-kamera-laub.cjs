@@ -233,7 +233,8 @@ function urteilGang(G, stufe = 1) {
             const kugel = g.taeter.map((t) => ({ ...t, taeter: t.taeter.filter((n) => !n.startsWith("im Stamm")) })).filter((t) => t.taeter.length);
             zeige(`die Kugel der Linse in ${kugel.length} von ${g.bilder} Bildern`, kugel, (t) => `Bild ${t.bild} ${t.phase}: ${t.taeter} (Linse ${t.c}, Ziel ${t.ziel})`);
             const nah = g.nah.map((t) => [t, Object.keys(GANG.nahRadien).filter((k) => t.jeKlasse[k] > 0)]).filter(([, k]) => k.length);
-            zeige(`Nah-Pixel in ${nah.length} Proben`, nah, ([t, k]) => `Bild ${t.bild} ${t.phase}: ${k.map((x) => x + " " + pct(t.jeKlasse[x]))}`);
+            zeige(`Nah-Pixel in ${nah.length} Proben`, nah, ([t, k]) => `Bild ${t.bild} ${t.phase}: ${k.map((x) => x + " " + pct(t.jeKlasse[x]))}` + (t.wer ? ` (${t.wer}, Linse ${t.c})` : ""));
+            zeige(`die Linse näher als ${GANG.R} m am gezeichneten Bau in ${g.bauN} von ${g.bilder} Bildern`, g.bau || [], (t) => `Bild ${t.bild} ${t.phase}: ${t.d} m (Linse ${t.c})`);
         }
     }
     if (!((stufe === 1 ? G.schmuggel : G.senk) > 0)) out.push(stufe === 1 ? "Schmuggel: ein Arm ohne Flügel-Leib bleibt ungenannt" : "Schmuggel: die Kamera im Hang bleibt ungenannt");
@@ -263,7 +264,12 @@ function strafeMass(bew, still, ohne, W, H, k) {
 }
 // ein Bild mit durchsichtigem (Kopf oder Leib über dem Deckel) oder unsichtbarem Leib
 const strafeDurch = (b) => !(b.leibPx >= STRAFE.leibMinPx) || b.kopf > STRAFE.kopfMax || b.leib > STRAFE.leibMax;
-const strafeZeile = (b) => `${b.seite}${b.probe} Kopf ${pct(b.kopf)} Leib ${pct(b.leib)} (${b.leibPx} px)`;
+// DER ZEUGE EINER DURCHSICHTIGEN PROBE (w28-schirm-steht): was im Bild des Spiels galt, als sie fiel — die Teile des getragenen Leibs
+// (`_traaR.traeger.liste`, je Teil sein Knochen; fehlt der Kopf, steht er OHNE Kopf), die Stufe des Leibs, der Grund des Stands und die
+// Zeilen des Schirms. Bis hier nannte K6 nur die Zahl: main 01a6714a fiel in 1 von 16 Läufen mit EINER Pose (A0 Kopf 25,0 % — der Wert
+// des Schmuggels ohne getragenen Leib, 25,8 %), zehn bestückte Läufe fingen keinen zweiten; der Täter blieb ungenannt.
+const strafeZeuge = (z) => (z ? ` [getragen ${z.getragen ? `${z.getragen.length} Teile${z.getragen.includes("head") ? "" : " OHNE Kopf"}` : "nichts gelesen"} · Leib ${z.istFern ? "fern" : `nah Stufe ${z.nahStufe}`} · Stand „${z.grund}“ Ruhe ${z.ruhe} · ${z.zeilen} Zeilen]` : "");
+const strafeZeile = (b) => `${b.seite}${b.probe} Kopf ${pct(b.kopf)} Leib ${pct(b.leib)} (${b.leibPx} px)${strafeDurch(b) || process.env.K6_ZEUGE ? strafeZeuge(b.zeuge) : ""}`; // K6_ZEUGE=1: der Zeuge an jeder Probe
 function urteilStrafe(S) {
     if (!S || S.err || !S.traa) return [`Strafe: ${S ? S.err || "ohne zeitliche Auflösung" : "nicht gemessen"}`];
     const an = S.an.filter(strafeDurch);
@@ -323,13 +329,15 @@ async function leibStrafe(k) {
                 for (let i = 0, g0 = r._gpuLeine.gerendert; i < 20 && r._gpuLeine.gerendert === g0; i++) await bild(k.dt);
                 rend.setOutputRenderTarget(null);
                 rend.setRenderTarget(null);
+                // der Zeuge des Bilds des Spiels (vor der Aufnahme: sie zeichnet den Leib stehend und ohne ihn)
+                const zeuge = ((tr, g, Ws) => ({ getragen: tr && tr.liste ? tr.liste.map((t) => (t.anker && t.anker.name) || "?") : null, istFern: !!(g && g.istFern), nahStufe: g ? g.nahStufe : null, grund: Ws.grund || null, ruhe: Ws.ruhe, zeilen: r._schirm().hoehe }))(st._traaR && st._traaR.traeger, st.playerMesh.userData._gelenk, r._weltStand || {});
                 const [bew, still, weg] = [await __zielLesen(rt, W, H), await schuss(), []];
                 rt.dispose();
                 st.playerMesh.traverse((n) => n.isMesh && n.layers.mask & 1 && weg.push(n) && (n.layers.mask ^= 1));
                 const ohne = await schuss();
                 for (const n of weg) n.layers.mask ^= 1;
                 st._traaR.neu = true; // die Geschichte ohne Leib aus dem Schuss fällt
-                out[stand].push({ seite: seite[3], probe: j, ...mass(bew, still, ohne, W, H, k) });
+                out[stand].push({ seite: seite[3], probe: j, zeuge, ...mass(bew, still, ohne, W, H, k) });
             }
             taste("keyup");
             delete r._traegerTeile;
@@ -719,12 +727,32 @@ async function leibGang(G) {
             return t && anlauf(e.type, P(0), [P(1).cx - P(0).cx, P(1).cz - P(0).cz], P(t.z));
         };
         const anker = { stamm: baum && { typ: baum.typ, b: stamm(baum) }, fels: L.je.fels[0], haus: L.je.haus[0], innen: tuer(L.je.haus.find(tuer)) };
+        // DER GEZEICHNETE BAU JE BILD (w28-baum-ganz): der Abstand der Linse zur nächsten Fläche der Bau-Sätze (`st.chunkSaetze`: der
+        // Bestand, nie der letzte Pass — die Zellen, deren Hülle die Kugel R trifft). Die Nah-Pixel lesen nur jedes `nahJe`-te Bild:
+        // der offene Fenster-Flügel des haus_alemannisch stand in 9 von 1 089 Bildern in der Kugel (0,010 m), die Stichprobe traf
+        // eines davon je nach Phase des Gangs (main GRÜN, der Zug z416 ROT, dasselbe Spiel)
+        const [bA, bB, bC, bP, bQ, bT] = [0, 0, 0, 0, 0].map(() => new THREE.Vector3()).concat(new THREE.Triangle());
+        const bauAbstand = (c) => {
+            let d = Infinity;
+            bP.set(c.x, c.y, c.z);
+            for (const sz of st.chunkSaetze ? st.chunkSaetze.values() : []) {
+                if (!sz.mesh.userData.bauSatz || !sz.mesh.layers.test(st.camera.layers)) continue; // der Bau im Bild, nie der Nur-Wurf-Satz
+                const pos = sz.mesh.geometry.attributes.position;
+                for (const bl of sz.bloecke.values())
+                    for (const z of bl.zellen) {
+                        if (z.huelle.distanceToPoint(bP) > R) continue;
+                        for (let t = 0; t + 2 < z.idx.length; t += 3)
+                            d = Math.min(d, bT.set(bA.fromBufferAttribute(pos, z.idx[t]), bB.fromBufferAttribute(pos, z.idx[t + 1]), bC.fromBufferAttribute(pos, z.idx[t + 2])).closestPointToPoint(bP, bQ).distanceTo(bP)); // prettier-ignore
+                    }
+            }
+            return d;
+        };
         const MUSTER = __MUSTER;
         let tMs = performance.now();
         let nr = 0;
         // `kurz`: der Gang endet mit der ersten Nah-Probe (der Schmuggel beweist nur, dass die Linse ihn nennt: 1091 → 438 Bilder)
         const gang = async (art, a, sprint, senk, kurz) => {
-            const g = { art, typ: a.typ, bilder: 0, taeter: [], nah: [], ruck: [] };
+            const g = { art, typ: a.typ, bilder: 0, taeter: [], nah: [], ruck: [], bau: [], bauN: 0 };
             const v = a.v || L.vor(a.b, art === "stamm" ? 0 : 1, G.startM);
             const m = a.m || { cx: (a.b.minX + a.b.maxX) / 2, cz: (a.b.minZ + a.b.maxZ) / 2 };
             L.fuss(v.x, v.z, v.gier, 0.15);
@@ -757,9 +785,11 @@ async function leibGang(G) {
                 }
                 const z3 = (o) => [o.x, o.y, o.z].map((v) => +v.toFixed(2));
                 if (t.length) g.taeter.push({ bild: n, phase, taeter: [...new Set(t)], c: z3(c), ziel: st._kamZiel && z3(st._kamZiel) });
+                const dB = bauAbstand(c);
+                if (dB < R && ++g.bauN <= 3) g.bau.push({ bild: n, phase, d: +dB.toFixed(3), c: z3(c) });
                 if (n % G.nahJe === 0) {
                     const d = window.__nahDeckung({ radien: G.nahRadien, gw: G.gw, gh: G.gh, ort: { id: `gang-${art}`, r: 4 }, neu: n === G.nahJe });
-                    if (d.deckung > 0 && g.nah.push({ bild: n, phase, jeKlasse: d.jeKlasse }) && kurz) throw g;
+                    if (d.deckung > 0 && g.nah.push({ bild: n, phase, jeKlasse: d.jeKlasse, wer: Object.keys(d.taeter), c: z3(c) }) && kurz) throw g;
                 }
                 if (n % 20 === 0) await sleep(0);
             };
@@ -1138,12 +1168,13 @@ hauptLauf(async () => {
         ]);
         // DER GANG (K4): gesund (die Kugel im Stamm urteilt nicht) und je Staffel ein Bruch beim Namen — der Arm ohne Flügel-Leib
         // und die Kamera, die am Hang in den Boden taucht, sind ROT; `je` ändert einen Gang (null: er fehlt)
-        const gg = (art, k) => ({ art, typ: art, bilder: 900, heran: { d0: 8.5, d1: 0.9 }, drinnen: art.startsWith("innen") || undefined, taeter: [], nah: [], ruck: Array(300).fill(0.002), ...k });
+        const gg = (art, k) => ({ art, typ: art, bilder: 900, heran: { d0: 8.5, d1: 0.9 }, drinnen: art.startsWith("innen") || undefined, taeter: [], nah: [], bau: [], bauN: 0, ruck: Array(300).fill(0.002), ...k });
         const gangVon = (je) => ({ gaenge: [...GANG_ARTEN[1], ...GANG_ARTEN[2]].filter((a) => je[a] !== null).map((a) => gg(a, je[a])), schmuggel: 170, senk: 10, haut: 1, ...je.G });
         faelle("K4 Staffel 1", (je) => urteilGang(gangVon(je), 1), [
             ["gesund", { stamm: { taeter: [{ phase: "orbit", taeter: ["im Stamm baum_kiefer"] }] } }, null],
             ["ein Arm ohne Kollision", { haus: { taeter: [{ bild: 660, phase: "orbit", taeter: ["in haus_alemannisch"] }] } }, "Gang haus (haus): die Kugel der Linse in 1 von 900 Bildern — Bild 660 orbit: in haus_alemannisch"],
             ["Fels- und Bau-Pixel", { fels: { nah: [{ bild: 12, phase: "orbit", jeKlasse: { Fels: 0.07, Bau: 0.03 } }] } }, "Gang fels (fels): Nah-Pixel in 1 Proben — Bild 12 orbit: Fels 7.0 %,Bau 3.0 %"],
+            ["die Linse am Fenster-Flügel", { haus: { bauN: 9, bau: [{ bild: 624, phase: "orbit", d: 0.01, c: [-262.9, 28.69, -1034.9] }] } }, "Gang haus (haus): die Linse näher als 0.25 m am gezeichneten Bau in 9 von 900 Bildern — Bild 624 orbit: 0.01 m"],
             ["Ruck", { fels: { ruck: Array(300).fill(0.05) } }, "Gang fels: Ruck p95 0.050 m"],
             ["nicht heran", { stamm: { heran: { d0: 8.5, d1: 7.9 } } }, "Gang stamm: der Spieler kommt nicht heran"],
             ["kein Haus", { haus: null }, "Gang haus: kein Anker"],

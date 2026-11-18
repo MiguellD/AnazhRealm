@@ -606,6 +606,43 @@ const TORE = Object.keys(PC.PRESETS).filter((k) => !NUR || NUR.test(k));
 const pop = (ids, grenze) =>
     wechselProbe({ ids, kern: (id) => (FC.PRESETS[id] ? FC : PC), wirt: WIRT, fern: PC.TUER_GESETZ.fern * PC.TUER_GESETZ.offen, grenze });
 
+// ── H  HÜLLE FERN (w28-march-schirm): die Lese-Regel des Wirts über der Liste der Stufe 3 (`_huelleFern` — was ein Bau jenseits der
+//    Mesh-Zone im Welt-March trägt) lässt kein Dach fallen: die behaltenen Keile decken die behaltenen Kästen von oben so weit
+//    wie die Keile der ganzen Liste (Raster 0,25 m, Soll ≥ die Liste − 0,05). Der Befund: das Satteldach sind ZWEI gleiche
+//    Keile, die Regel behielt nur den größten — 420 von 516 Häusern trugen fern das halbe Dach (Netz-Stadt, GTX, das Bild aus
+//    90 m: helle Flachdächer über jeder fernen Kachel). `regel`: die Regel des Wirts, im Selbsttest der Täter. ──
+function huelleFern(ids, regel = WIRT._huelleFern) {
+    const [txt, bruch] = [[], []];
+    const deckung = (kaesten, keile) => {
+        let [n, d] = [0, 0];
+        for (const b of kaesten)
+            for (let x = b.c[0] - b.h[0] + 0.125; x < b.c[0] + b.h[0]; x += 0.25)
+                for (let z = b.c[2] - b.h[2] + 0.125; z < b.c[2] + b.h[2]; z += 0.25) {
+                    n++;
+                    if (keile.some((k) => Math.abs(x - k.c[0]) <= k.h[0] && Math.abs(z - k.c[2]) <= k.h[2])) d++;
+                }
+        return n ? d / n : 1;
+    };
+    let [alle, bleiben, faelle] = [0, 0, 0];
+    for (const id of ids)
+        for (const s of SAMEN) {
+            const H = FC.huelle(id, s);
+            const teile = ((H && H.teile) || []).filter((t) => t.rolle === "sicht" || t.rolle === "beide");
+            if (!teile.length) continue;
+            const fern = regel(teile);
+            const kaesten = fern.filter((t) => t.art === "box");
+            const keil = (L) => L.filter((t) => t.art === "keil");
+            const [ist, soll] = [deckung(kaesten, keil(fern)), deckung(kaesten, keil(teile))];
+            faelle++;
+            alle += teile.length;
+            bleiben += fern.length;
+            txt.push(`${id}/s${s} Hülle fern ${teile.length} → ${fern.length} Teile · Dach deckt ${f3(ist)} (Liste ${f3(soll)})`);
+            if (!kaesten.length) bruch.push(`${id}/s${s}: die Hülle fern trägt keinen Kasten`);
+            else if (ist < soll - 0.05) bruch.push(`${id}/s${s}: das Dach deckt fern ${f3(ist)} der Kästen, die Liste ${f3(soll)}`);
+        }
+    return { txt, bruch, faelle, alle: faelle ? alle / faelle : 0, bleiben: faelle ? bleiben / faelle : 0 };
+}
+
 // ── SELBSTTEST: der Befund vor dem Akt als gebauter Körper (die Massen-Hülle als Quader, der First auf der langen Achse:
 //    alemannisch W 7 / D 8,5 → First längs z) muss in A, F und I rot werden; eine Stufe ohne Werfer in W. ──
 function selbsttest() {
@@ -680,6 +717,14 @@ function selbsttest() {
     // P: die Grenze am Haushalt (der Deckel bis w25-lod-pop) — die Pueblo-L2 trägt ihre Dach-Terrassen nicht
     const b7 = pop(["pueblo", "geisttor"], (id, s, art) => WIRT._wechselGesetz(art, s, 1, 0)).bruch;
     if (!(b7.some((b) => /^pueblo L2 /.test(b)) && b7.some((b) => /^geisttor L2 /.test(b)))) fehler.push("P: die Grenze am Haushalt ist nicht rot");
+    // H: die Regel bis w28-march-schirm — der größte Kasten, das größte Dach, jedes Teil ab einem Viertel des größten
+    const vol = (q) => Math.abs(q.h[0] * q.h[1] * q.h[2]) * (q.art === "keil" ? 0.5 : 1);
+    const b8 = huelleFern(["fraenkisch"], (teile) => {
+        const groesstes = (art) => teile.filter((q) => q.art === art).sort((a, b) => vol(b) - vol(a))[0];
+        const [kasten, dach, gross] = [groesstes("box"), groesstes("keil"), Math.max(...teile.map(vol))];
+        return teile.filter((q) => q === kasten || q === dach || vol(q) >= gross / 4);
+    }).bruch;
+    if (!b8.some((b) => /^fraenkisch\/s\d+: das Dach deckt fern/.test(b))) fehler.push("H: das halbe Dach der Hülle fern ist nicht rot");
     return fehler;
 }
 
@@ -764,10 +809,16 @@ function selbsttest() {
     if (ZEILEN) for (const z of P.txt) console.log("  " + z);
     for (const b of P.bruch) rot.push("P POP AM WECHSEL " + b);
     console.log(`  Pop am Wechsel (P, Soll ≤ 1 px an der Grenze der Vorlage): ${P.txt.length} Vorlagen, ${P.bruch.length} Täter`);
+    const HF = huelleFern(KULTUREN);
+    if (ZEILEN) for (const z of HF.txt) console.log("  " + z);
+    for (const b of HF.bruch) rot.push("H HÜLLE FERN " + b);
+    console.log(
+        `  Hülle fern (H, Soll: das Dach deckt die Kästen wie in der Liste − 0,05): ${HF.faelle} Fälle, ${HF.alle.toFixed(1)} → ${HF.bleiben.toFixed(1)} Teile je Haus, ${HF.bruch.length} Täter`
+    );
     const st = selbsttest();
     for (const f of st) rot.push("SELBSTTEST " + f);
     console.log(
-        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
+        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8, das halbe Dach der Hülle fern (H)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
     );
     wandEnde(
         rot,

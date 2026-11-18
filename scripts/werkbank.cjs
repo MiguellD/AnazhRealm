@@ -9,7 +9,7 @@
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                      [--uhr 0..1] [--wetter rainy] [--saison winter] Bühne + echter Frame (Ausgabe-Pfad)
 //                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
-//                                      [--zeit Δt] | bild --selbsttest  DIE SICHTBARE BÖE (vegetation.K2): Luma-Varianz 0–15 m am Kamm
+//                                      [--zeit Δt] [--bewegung KeyW[:m]] | bild --selbsttest  DIE SICHTBARE BÖE (vegetation.K2): Luma-Varianz 0–15 m am Kamm
 //                                                           und im Tal der Böe über dem Rausch-Boden bei Wind 0
 //                                                           DIE KLASSEN IM BILD (spec/abnahme/soll-tafel.json): Teilung, Rauschen und Maße je Klasse;
 //                                                           `--ist` schreibt in die Tafel, `--arm <m>` die Kamera <m> vor die Fläche des Ego-Blicks
@@ -28,6 +28,8 @@
 //   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] [--wetter stormy [--zug]] | --selbsttest  DIE LUFT IM BILD
 //                                                           (Koschmieder je Kanal, Farbton, Sonnenseite, fernes Weiß; Rand und Kante an
 //                                                           Hügel und Gipfel; im Wetter die Sicht, mit --zug klar → Wort → klar je Sekunde)
+//   node scripts/werkbank.cjs licht --tafeln [--eigen] [--verzoegert n] | --selbsttest  DIE TAFELN DER ATMOSPHÄRE SIND GEZEICHNET
+//                                                           (Ist je Tafel, die verzögerte Pipeline von Ψ_ms, die Mutante: gate:tafel-ganz:echt)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] [--karte --uhr u,u] | --selbsttest  DAS LAUB IM GEGENLICHT
 //   node scripts/werkbank.cjs licht --kontakt [--zuwachs] [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
 //   node scripts/werkbank.cjs licht --naesse [wiese,wiese:third,dorf] [--bilder d] [--datei f] | --selbsttest  DIE NÄSSE (wetter.K2)
@@ -57,7 +59,9 @@
 //                                                           [--schwelle ms] [--probe] [--json datei] | haenger --auswerten <x.roh.json>
 //                                                           DIE HÄNGER-LINSE: jeder Frame über der Schwelle mit Ursache (scripts/lib/haenger-linse.cjs)
 //   node scripts/werkbank.cjs schirm [--datei f.png]         DER SCHIRM: das präsentierte Canvas nach 1 s echtem Loop
-//   node scripts/werkbank.cjs fenster <w> <h>               Viewport wechseln wie ein Spieler (resize-Ereignis)
+//   node scripts/werkbank.cjs fenster <w> <h>               Viewport wechseln wie ein Spieler (resize-Ereignis); `takte` > 0 nur nach einem Wechsel des Schirms
+//   node scripts/werkbank.cjs stufen [--ort dorf] [--eigen]  DIE STUFEN AM SCHIRM: das Bild in 1080 Zeilen trägt die Stufen der Welt,
+//                                                           die ab dem Boot in 1080 Zeilen lebte (`start --fenster 1920x1080`); der Täter daneben
 //   node scripts/werkbank.cjs gpu-bank [n] [--runden r]      DIE GPU-BANK: GPU-Zeit je Frame, n Frames ohne rAF
 //   node scripts/werkbank.cjs zerlegen [--runden r] [--n frames] [--nur a,b] [--json datei] [--bilder [ordner]]
 //                                                           [--selbsttest [--last iter]] DIE GPU-ZERLEGUNG je Verbraucher, ABBA (scripts/lib/zerlege-linse.cjs)
@@ -68,6 +72,8 @@
 //                                                           DIE SHADER-KOSTEN je gezeichnetem Programm (scripts/lib/shader-kosten.cjs)
 //   node scripts/werkbank.cjs band [--ort <id>] [--datei f.json] [--proben n] [--cap sek]
 //                                                           DIE BAND-LINSE gegen Haushalt und Ratsche des Orts (spec/profiband/, scripts/lib/band-urteil.cjs)
+//   node scripts/werkbank.cjs weg [--datei f.json] [--ratsche r.json]   DER WEG DES SPEICHERS: Heap nach GC je Pose der Ratsche, Urteil H8 (scripts/lib/speicher-proben.cjs)
+//   node scripts/werkbank.cjs runde [--datei f.json] [--nur a|b|reise]   DIE RUNDE DES SPEICHERS: dieselbe Runde zweimal (reise: je Runde zwei ferne Orte), Zensus an der Start-Pose
 //   node scripts/werkbank.cjs ratsche [--ort <id>] <band-*.json | messfolge-*.json …> [--nur vram] [--neu]
 //                                                           DIE RATSCHE aus ≥ 4 Läufen eines Orts × Geräts × Sicht; `--neu` der Re-Mint (nur Node)
 //   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE nach `start --gpu-fehler` (scripts/lib/gpu-fehler.cjs)
@@ -78,9 +84,10 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, seitenAbbruch, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, seitenAbbruch, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug, halteBis } = require("./lib/welt-boot.cjs");
 const http = require("http");
-const { AUSGABE_INSTALL, wetterUrteil, buehneSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
+const AA = require("./lib/ausgabe-aufnahme.cjs");
+const { AUSGABE_INSTALL, wetterUrteil, buehneSelbsttest } = AA;
 const LL = require("./lib/licht-linsen.cjs");
 // die Fälle eines Selbsttests [ist, soll] (soll: Wert oder Muster), die nicht treffen — Nässe und Laub-Licht
 const istSoll = (f) => f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
@@ -89,6 +96,7 @@ const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 const DIAET = require("./lib/diaet-linse.cjs");
 const STAND = require("./lib/stand-linse.cjs");
+const SP = require("./lib/schirm-proben.cjs"); // die Stufen am Schirm (`stufen`)
 const { GPU_FEHLER_INSTALL, GPU_FEHLER_OBJEKT } = require("./lib/gpu-fehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
@@ -100,6 +108,7 @@ const { WIESE_INSTALL } = require("./lib/welt-orte.cjs");
 const { vramAbgriff } = require("./lib/vram-abgriff.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 const HL = require("./lib/haenger-linse.cjs");
+const WW = require("./lib/wirt-wache.cjs");
 
 // DIE MESSUNG IN DIE SOLL-TAFEL (`bild --klasse … --ist <id>[:L<n>|:wirkung]`, `licht --ist <id>`): das Werkzeug
 // schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
@@ -189,6 +198,12 @@ const GPU_FEHLER = hat("gpu-fehler");
 // dem ersten Skript der Seite — sonst käme ein im Boot losgegangener Auftrag danach an, und jeder Boot mäße eine andere Szene.
 // `umstellen --ort` stellt den Ort, wie er im Haushalt steht — der Dorf-Ort schaltet den Zug dort wieder an.
 const START_ORT = argv[0] === "start" ? opt("--ort", null) : null;
+// DAS FENSTER DER SITZUNG (`start --fenster <B>x<H>`, w28-probe-schirm): die Welt lebt ab dem Boot in dieser Größe; ohne Wort 640 × 360
+const START_FENSTER = (() => {
+    const m = /^(\d+)x(\d+)$/.exec(String(opt("--fenster", process.env.WERKBANK_FENSTER || "640x360")));
+    if (!m) throw new Error("--fenster erwartet <Breite>x<Höhe>, z. B. 1920x1080");
+    return { width: +m[1], height: +m[2], deviceScaleFactor: 1 };
+})();
 // DIE SEITE der echten Welt: `--seite` (oder WERKBANK_SEITE) hat EINE Bedeutung — die URL des save-servers
 // (Ursprung, z. B. http://localhost:4312), nie eine Portnummer. Alles andere bricht laut ab, statt still eine
 // falsche Adresse („5312/") zu bauen.
@@ -199,6 +214,18 @@ const ECHT_SEITE = (() => {
     return s.replace(/\/$/, "");
 })();
 const SERIE = opt("--serie", process.env.WERKBANK_SERIE || "");
+// DAS LANGSAME GERÄT AM SCHNELLEN (`start --drossel <n>`, w28-welt-steht): der Haupt-Faden der Seite läuft n-mal langsamer (CDP
+// `Emulation.setCPUThrottlingRate`, die Sitzung bleibt angehängt, über jede Ladung) — die GTX 1050 mit dem i7-950 von 2009 an der
+// Radeon nachgestellt: was die Welt beim „steht" noch nicht zeichnete, zeigt sich hier, nie erst auf dem fremden Läufer
+const DROSSEL = +opt("--drossel", 0) || 0;
+// … und sein GPU-Prozess (`start --pipeline-verzug <ms>`): die asynchronen Pipelines stehen in EINER Schlange, jede <ms> nach der
+// vorigen — die GTX 1050 übersetzt kalt (leerer Treiber-Cache) in einer Schlange auf dem alten Kern, was nach dem Bild bestellt
+// wird, steht hinten; die Drossel des Haupt-Fadens allein bremst den GPU-Prozess nie
+const PIPELINE_VERZUG = +opt("--pipeline-verzug", 0) || 0;
+// … und seine Platte (`start --abruf-verzug <ms> [--abruf-muster <regex>]`): jede Antwort eines Abrufs der Seite (mit Muster: nur,
+// deren Adresse es trifft) kommt <ms> später — die kalte HDD der GTX 1050 (der zweite Start liest aus dem Cache des Systems)
+const ABRUF_VERZUG = +opt("--abruf-verzug", 0) || 0;
+const ABRUF_MUSTER = opt("--abruf-muster", "");
 
 // ── Client ──────────────────────────────────────────────────────────────────────────────────────
 const rufe = (weg, nutzlast) => werkbankRuf(PORT, weg, nutzlast);
@@ -454,6 +481,7 @@ async function starte() {
     // die Boot-Zeile jeder Messung: Erst- oder Zweit-Boot, die Serie und die Ladungen der Seite
     const bootZeile = () => ({ art: bootArt(), serie: boot.serie, ladungen: boot.ladungen });
     const browser = await startePuppeteer({
+        __rezept: ECHT ? "echt" : "linse", // der Start nennt sein Rezept (welt-boot startePuppeteer, z396)
         headless: !ECHT,
         userDataDir: profil,
         protocolTimeout: 10800000,
@@ -468,17 +496,56 @@ async function starte() {
     const boot = { serie: SERIE || null, profil: profil || browser.profil, serieNeu, ladungen: 0 };
     await adapterZeile(browser);
     const page = await browser.newPage();
+    if (DROSSEL > 1) {
+        await (await page.target().createCDPSession()).send("Emulation.setCPUThrottlingRate", { rate: DROSSEL });
+        console.log(`[drossel] Haupt-Faden ×${DROSSEL}`);
+    }
+    if (PIPELINE_VERZUG > 0) {
+        await page.evaluateOnNewDocument((ms) => {
+            const P = globalThis.GPUDevice && GPUDevice.prototype;
+            if (!P) return;
+            let schlange = Promise.resolve();
+            for (const n of ["createRenderPipelineAsync", "createComputePipelineAsync"]) {
+                const ur = P[n];
+                P[n] = function (d) {
+                    const p = ur.call(this, d);
+                    const steht = schlange.then(() => p).then((x) => new Promise((ja) => setTimeout(() => ja(x), ms)));
+                    schlange = steht.catch(() => {});
+                    return steht;
+                };
+            }
+        }, PIPELINE_VERZUG);
+        console.log(`[drossel] jede asynchrone Pipeline +${PIPELINE_VERZUG} ms`);
+    }
+    if (ABRUF_VERZUG > 0) {
+        await page.evaluateOnNewDocument(
+            (ms, muster) => {
+                const ur = globalThis.fetch;
+                const trifft = new RegExp(muster || ".");
+                globalThis.fetch = function (...a) {
+                    const p = ur.apply(this, a);
+                    if (!trifft.test(String(a[0] && a[0].url ? a[0].url : a[0]))) return p;
+                    return p.then((r) => new Promise((ja) => setTimeout(() => ja(r), ms)));
+                };
+            },
+            ABRUF_VERZUG,
+            ABRUF_MUSTER
+        );
+        console.log(`[drossel] jeder Abruf der Seite${ABRUF_MUSTER ? ` /${ABRUF_MUSTER}/` : ""} +${ABRUF_VERZUG} ms`);
+    }
     // DER ABBRUCH DER SEITE (welt-boot `seitenAbbruch`, w18-mensch-deckel): angelegt, solange die Seite ruht; der Leser ist der Rufer,
     // der vor seiner Antwort stirbt (`x-rufer`, unten) — die Zeile `[abbruch]` im Log nennt ihn
     const abbrechen = await seitenAbbruch(page);
     const loopAus = () => page.evaluate("__loop()"); // die Welt steht zwischen den Befehlen
     // ein Seiten-Werkzeug beim Namen (`window[name](k)`)
     const seite = (name, k) => page.evaluate((n, k) => window[n](k), name, k);
-    if (!ECHT) await page.setViewport({ width: 640, height: 360 });
+    if (!ECHT) await page.setViewport(START_FENSTER);
     const spur = { an: null }; // DIE BELEGUNG: der Lauf ruft die Spur vor seinem ersten gemessenen Takt an (`/lauf`)
+    let wirt = null; // DIE WIRT-WACHE zwischen `/wirt` nimm und gib: { heapVor } — solange trägt jeder `/eval` die Marke
     await page.exposeFunction("__spurAn", () => spur.an && spur.an());
     await page.evaluateOnNewDocument(WARTEN_SEITE); // die Seiten-Werkzeuge jeder Seite (`r`, sleep, das Warten), wie welt-boot
     await page.evaluateOnNewDocument(FALTE_INSTALL);
+    await page.evaluateOnNewDocument(require("./lib/gesicht-proben.cjs").GESICHT_INSTALL); // die Proben der Iris (`bild --klasse …:kopf/`)
     await page.evaluateOnNewDocument(vramAbgriff);
     // DIE GPU-FEHLER-LINSE (V-D7): jede WebGPU-Validierung mit Pass und Objekt beim Namen (scripts/lib/gpu-fehler.cjs).
     if (GPU_FEHLER) await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
@@ -744,8 +811,33 @@ async function starte() {
                     // fragt den Blick am Platz neu (nur noch den Blick: die Spur steht seit dem Warten oben schon im ersten, der
                     // Stand beider Gänge ist derselbe). Ohne Siedlung, Platz, Verkehr oder freien Bau bricht der Stamm beim Namen
                     for (let gang = o?.ortPose ? 2 : 1; gang--; ) {
-                        var P = o?.ortPose && r._ortPose(g ? g.anker : [x, z]);
-                        if (P) [x, z, r.state.yaw, r.state.pitch] = [P.x, P.z, P.gier, 0];
+                        // DIE POSE WARTET AUF IHREN STAND (w28-stadt-grammatik): das Gesetz der Pose sagt selbst, welcher Bruch mit dem
+                        // Takt der Welt vergeht (`_ortPose` wirft ihn mit der Marke `warten`: der Verkehr steht noch nicht · an der
+                        // Trasse trägt die Route keines fahrenden Wagens gerade einen Stand — in der geschlossenen Bauflucht der Stadt
+                        // nicht an jedem Meter). Jeder Gang wartet bei JEDER Regel Takt um Takt genau auf diese Marke und fragt dann
+                        // ohne einen Takt dazwischen; ein Bruch ohne Marke wirft sofort beim Namen, der Deckel nennt den letzten
+                        // Grund. Bis hier fragte der Ort an der Trasse, sobald EIN Wagen fuhr (ein Stellvertreter): am Messort stadt
+                        // brach er mit „kein Stand an der Trasse (1 Wagen in Fahrt von 9)“, 41 Takte später trug die Pose
+                        if (o?.ortPose) {
+                            let grund = "";
+                            takte += await __gebautNach(`Messort ${o.ort}: der Stand der Pose`, {
+                                fertig: () => {
+                                    try {
+                                        r._ortPose(g ? g.anker : [x, z], o.ortPose);
+                                        return true;
+                                    } catch (e) {
+                                        if (!e.warten) throw e;
+                                        grund = e.message;
+                                        return false;
+                                    }
+                                },
+                                takt,
+                                max: 1800,
+                                warum: () => grund,
+                            });
+                        }
+                        var P = o?.ortPose && r._ortPose(g ? g.anker : [x, z], o.ortPose);
+                        if (P) [x, z, r.state.yaw, r.state.pitch] = [P.x, P.z, P.gier, P.nick || 0]; // der Nick der Pose (trasse: über die Dächer der Wagen, die dem Auge entgegenfahren)
                         if (o?.anlauf || P) {
                             r.state.playerMesh.position.set(x, o.dach ? o.dach + AnazhRealm.PLAYER_FOOT_OFFSET : r._voxelSurfaceY(x, z) + 1.8, z);
                             takte += await __weltStehtNach(takt);
@@ -868,18 +960,29 @@ async function starte() {
             // einer Kuppe: sein Fuß (ausgabe-aufnahme `punkte`, ein Ziel 0,6–40 m über dem Boden) liegt unter dem Bild — 0,7 m vor
             // dem Gesicht 1,4 m tiefer, haar.K2#1 „Ziel Blickziel nicht im Bild (ndc [0,0])“ auf beiden Geräten —, `fuss: false`
             // `k.fuss === false` (die Zellen am Spawn): das Ziel ist der Anker des Blicks im Ring, kein Werk — sein Fuß ist kein Beweis
-            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte, fuss: gpos ? false : k.fuss !== "false" && k.fuss };
+            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", benannt: !!k.ziel, punkte: k.punkte, fuss: gpos ? false : k.fuss !== "false" && k.fuss };
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
+            // DAS TIER STEHT (w28-linse-wahr, C): zwischen Wahl und Schuss hält der Halter die Tiere an ihrem Ort (`__halten` tiere, x/z) —
+            // bis hier ging das Tier am Ziel fort, ehe der Schuss fiel (nah/tier-wiese, -genesis, -stadt, -dorf: GRÜN ohne Tier)
+            const hielt = !!window.__gehalten?.has("tiere");
+            __halten(["tiere"]);
             // DIE WAHL VOR DEM EINEN SCHUSS (w18-abnahme-sicht-3): die Blick-Wahl stellt die Kamera (sie urteilt ihre Pose in deren Welt), der
             // Schuss steht dort und trägt ihr Ergebnis. Bis dahin lief die Wahl in einem ersten ganzen Schuss, dessen Bild der zweite
             // verwarf (zweimal Erst-Zeichnung, Rückstrahl, 33 Bilder und Abnahme). Ohne Wahl (`--wahl 0`) wartet der Schuss, bis die Welt
             // an der Pose steht (`__weltStehtWarten`), und jeder Schuss beginnt seine Geschichte neu
             if (wahl > 0 && window.__buehneUhr) await __weltStehtWarten();
-            const gewaehlt = wahl > 0 ? await __blickWahl({ ziel, wahl }) : null;
+            let auf;
             try {
-                if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
-            } catch {}
-            const auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: gewaehlt });
+                const gewaehlt = wahl > 0 ? await __blickWahl({ ziel, wahl }) : null;
+                try {
+                    if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+                } catch {}
+                // das ROTE Bild kommt zurück (`rotBild`: die Werkbank legt es als `*-rot.png` ab und meldet ROT), das Bild aus Bewegung
+                // wartet auf keine stehende Welt (`bewegt`)
+                auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: gewaehlt, rotBild: true, bewegt: !!k.bewegt });
+            } finally {
+                if (!hielt) window.__gehalten.delete("tiere");
+            }
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter
             // swiftshader ~3 Kerne und verfälschte jede andere Messung.
             // die Tiefe und Kamera des Schusses (A13, die Achse der Spiegel-Treue), ehe ein weiterer Schuss sie überschreibt
@@ -968,10 +1071,18 @@ async function starte() {
                     o.mesh.instanceMatrix.needsUpdate = true;
                     r._archMeshBundleTouch(o.mesh);
                 };
-                const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : o.refs ? zieht(o, true) : (o.visible = false));
-                const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : o.refs ? zieht(o, false) : (o.visible = true));
+                // DIE VERBORGENE BLEIBT VERBORGEN (abnahme-urteil `verborgenHalten`): der Takt jedes Bilds stempelt die Zahl der
+                // Senken (die Nah-Streu `_nahStreuBestand` → `_instanzZahl`, visible = n > 0) — ohne die Wache zeigte er die
+                // verborgene Klasse wieder, ihr Fehlen änderte keine Tiefe (luftwasser.K4#1, Radeon 105c9bd3: 96 Blumen gezeichnet,
+                // Blüten-Pixel 0 an jedem Ort)
+                const verborgen = new Set();
+                const verbirg = (o) =>
+                    o.bereich ? r._chunkSatzAus(o.art, o.key) : o.refs ? zieht(o, true) : (verborgen.add(o), (o.visible = false));
+                const zeig = (o) =>
+                    o.bereich ? r._bauSatzMarke(o.key, o.art) : o.refs ? zieht(o, false) : (verborgen.delete(o), (o.visible = true));
                 const ruhen = ["_tickNahWiese", "_ruheImBild"].map((m) => [m, Object.hasOwn(r, m), r[m]]);
                 for (const [m] of ruhen) r[m] = () => 0;
+                const verborgenLassen = __verborgenHalten(r.constructor, verborgen);
                 // verbirgt der Schuss die Strähnen des Spielers, ist sein Kopf kahl: die Kappe gehört zum Haar (`_kopfKahl`, haar.K2)
                 const schuss = async (aus) => {
                     for (const o of aus) verbirg(o);
@@ -986,12 +1097,104 @@ async function starte() {
                         bundlesNeu();
                     }
                 };
+                // DIE KENNUNG DER KLASSE (w28-kante-mass, abnahme-urteil `kennTeilung`): je Schuss ohne Teil `KENN_N` Bilder der Tiefe des
+                // Szenen-Passes ab dem Neubeginn der Folge (`__ausgabeAufnahme` tiefe: dieselbe TRAA-Folge und Dither-Phase wie das
+                // Bild, ohne Farbe und Geschichte; `__spiegelDaten` je Bild). Ein gemessener Stoff, der keine Tiefe schreibt (der Film
+                // der Membran), schreibt sie für diese Bilder — sonst trüge er keine Kennung —, danach steht jeder Stoff wie vorher.
+                // `auge`: die Spur des Auges (`gesichtMasse` spur) liest die WIRKUNG seines Fehlens im Bild, nur für sie ein Farb-Schuss.
+                const KENN_N = 8;
+                const auge = (n) => /:kopf\/auge$/.test(n);
+                const ohneTiefe = new Set(
+                    [...wurf.keys()].flatMap((o) => [].concat(o.material || [])).filter((s) => s && s.depthWrite === false)
+                );
+                const tiefen = async (aus) => {
+                    for (const s of ohneTiefe) ((s.depthWrite = true), (s.needsUpdate = true));
+                    for (const o of aus) verbirg(o);
+                    r._kopfKahl(aus);
+                    bundlesNeu();
+                    try {
+                        await __ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true });
+                        for (const D = []; ; window.__loopBild()) {
+                            const S = await __spiegelDaten();
+                            D.push(S.tiefe);
+                            if (D.length >= KENN_N) return { D, tw: S.tw, th: S.th };
+                        }
+                    } finally {
+                        for (const o of aus) zeig(o);
+                        r._kopfKahl([]);
+                        r._tickBauSatz(Infinity);
+                        for (const s of ohneTiefe) ((s.depthWrite = false), (s.needsUpdate = true));
+                        bundlesNeu();
+                    }
+                };
+                // DIE KARTE OHNE IHRE RINDE (w28-karte-stamm, für abnahme-urteil `rindeAus`): die Zellen des Atlas, die im Bild
+                // Instanzen tragen, backen einmal OHNE ihre Texel unter dem Kronen-Fuß — die Wahl der Ablage (`KARTE_RECHNER_WGSL`
+                // bc1) hält für diesen Gang zusätzlich die Zeile des Texels gegen `saum.fuss` seines Rings, derselbe Fuß, an dem
+                // das Gesetz Band und Stamm trennt —, ein Schuss; dann backen sie wieder ganz, ein Schuss. Der Satz der Programme
+                // ohne Rinde bleibt je Sitzung stehen (ein Bau), der Satz der Welt kehrt unberührt zurück. Trägt die Ablage die
+                // Zeile der Wahl nicht mehr, bricht die Messung laut — nie zählt die Rinde still wieder als Laub.
+                const karteRinde = async (fn) => {
+                    const A = r.constructor,
+                        text = A.KARTE_RECHNER_WGSL,
+                        WAHL = "let o = kk > 0.0 && (kk > gr || (kk == gr && (y - gf.y) * gf.z + (x - gf.x) < gj));";
+                    if (typeof text !== "string" || text.split(WAHL).length !== 2)
+                        throw new Error("die Rinde der Karte: die Ablage (KARTE_RECHNER_WGSL bc1) trägt die Zeile ihrer Wahl nicht");
+                    const at = r._kartenAtlas,
+                        schicht = kg.mesh.geometry.attributes.aKarte.array,
+                        imBild = new Set(Array.from({ length: kg.liveCount }, (_, i) => Math.round(schicht[i * 4])));
+                    const backe = async (wgsl, satz) => {
+                        A.KARTE_RECHNER_WGSL = wgsl;
+                        r._karteRechnerSatz = satz;
+                        const q = r._impostorBakeQueue || (r._impostorBakeQueue = []);
+                        for (const z of at.zellen.values()) {
+                            if (!z || !z.gebacken || z.gescheitert || !imBild.has(z.idx)) continue;
+                            z._weltNeu = true;
+                            if (!q.includes(z.key)) q.push(z.key);
+                        }
+                        // der EINE Deckel (welt-boot `deckel`): solange die Schlange der Karten trägt, hat die Welt offen
+                        // (`_weltOffen().karten`) — er wirft beim Namen, wenn sie hängt, nie an der Wanduhr
+                        for (const weiter = __deckel("die Karte der Laub-Linse backt (ohne Rinde und wieder ganz)", 120); q.length && weiter(); ) {
+                            r._tickImpostorBake();
+                            await sleep(25);
+                        }
+                    };
+                    // DIE PLATTE BLEIBT UNBERÜHRT: ein Bake reicht seine Bytes auf die Platte der Schale, solange die Zelle ihren
+                    // Liefer-Schein trägt (`z._liefer`, `_karteAblage`) — die Karte ohne Rinde läge dort unter dem Gesetz-SHA der
+                    // ganzen. Für beide Gänge ruht der Schein jeder Zelle und kehrt danach zurück.
+                    const welt = r._karteRechnerSatz,
+                        scheine = new Map([...at.zellen.values()].filter(Boolean).map((z) => [z, z._liefer]));
+                    let ohne;
+                    try {
+                        for (const z of scheine.keys()) z._liefer = null;
+                        await backe(
+                            text.replace(WAHL, WAHL.slice(0, -1) + " && (f32(y - gf.y) + 0.5) * f32(1u << p.k) <= saum.fuss[gv0 / jeRing()];"),
+                            window.__karteSatzOhneRinde
+                        );
+                        window.__karteSatzOhneRinde = r._karteRechnerSatz;
+                        ohne = await fn();
+                    } finally {
+                        try {
+                            await backe(text, welt);
+                        } finally {
+                            for (const [z, schein] of scheine) z._liefer = schein;
+                        }
+                    }
+                    return { ohne, voll: await fn() };
+                };
                 try {
                     for (const o of wurf.keys()) o.castShadow = false;
                     const G = await schuss([]);
                     const G2 = await schuss([]);
                     const Os = [];
-                    for (const n of namen) Os.push(await schuss(teile.get(n)));
+                    for (const n of namen) Os.push(auge(n) ? await schuss(teile.get(n)) : null);
+                    const tK = performance.now();
+                    const KG = await tiefen([]);
+                    const Z = [];
+                    for (const n of namen) Z.push(__kennZaehl(KG.D, (await tiefen(teile.get(n))).D));
+                    // die Kennung beim Namen: Bilder, Skala der Tiefe, Zeit, und wie viele Tiefe-Pixel von G zwischen dem ersten und
+                    // dem letzten Bild wechseln (die Blende dithert: 0 hieße, die Bilder stünden still und die Deckung wäre EIN Bild)
+                    const kenn = { n: KENN_N, tw: KG.tw, th: KG.th, ms: Math.round(performance.now() - tK), wechsel: 0 };
+                    for (let s = 0, a = KG.D[0], b = KG.D[KENN_N - 1]; s < a.length; s++) kenn.wechsel += a[s] !== b[s];
                     // DAS BILD OHNE FILM (D8, K5 milchweiss): misst die Tafel die Membran, zeichnet derselbe Schuss sie noch einmal
                     // mit ihrem Ziel allein (`__membranOhneFilm`) — Milch ist, was der Film dem Ziel hinzufügt, nie ein blasses Ziel
                     let ohneFilm = null;
@@ -1005,7 +1208,24 @@ async function starte() {
                     }
                     const schwelle = 18;
                     const rauschen = __bildRauschen(G, G2, W, H, schwelle);
-                    const { teil, misch, gemischt } = __klassenTeilung(G, Os, W, H, schwelle);
+                    const { teil, misch, gemischt } = __kennTeilung(Z, KENN_N, KG.tw, KG.th, W, H);
+                    // DIE RINDE DER KARTE IST KEIN LAUB (w28-karte-stamm, abnahme-urteil `rindeAus`): trägt die Teilung Arten des
+                    // Karten-Atlas, verlässt jedes Pixel, das die Karte ohne Rinde von der ganzen trennt, seine Klasse — es ist Außen
+                    // wie das Holz der Netz-Stufen (bis hier las der gerade Stamm der Karte als Laub-Kante). `rinde` nennt je Art die
+                    // Zahl und `treu`, wie weit der Schuss nach dem Gang von G abweicht (die Karte steht wieder wie vorher). Wer nur
+                    // Pixel zählt (`nurPixel`), zählt die Karte samt Stamm: kein Bake-Gang je Schuss.
+                    const kartenTeil = namen.map((n) => teile.get(n).some((o) => o.refs));
+                    let rinde = null;
+                    if (!k.nurPixel && kartenTeil.some(Boolean)) {
+                        const paar = await karteRinde(() => tiefen([]));
+                        const zahl = __rindeAus(teil, __kennZaehl(paar.voll.D, paar.ohne.D), KENN_N, KG.tw, KG.th, W, H, kartenTeil);
+                        let anders = 0;
+                        for (let s = 0, a = paar.voll.D[0], b = KG.D[0]; s < a.length; s++) anders += a[s] !== b[s];
+                        rinde = {
+                            pixel: Object.fromEntries(namen.map((n, j) => [n, zahl[j]]).filter((_e, j) => kartenTeil[j])),
+                            treu: +(anders / KG.D[0].length).toFixed(6), // der Anteil der Tiefe, die nach dem Bake-Gang anders steht als in G
+                        };
+                    }
                     // die Teilung des Schusses für ein folgendes `eval` (der Pulk der Herde, tiere.K1): je Pixel 1 + Index in `namen`
                     window.__letzteTeilung = { teil, namen, W, H };
                     const klassen = {};
@@ -1123,6 +1343,13 @@ async function starte() {
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
+                    // DIE FARBE JE KLASSE (der Inhalt des Orts, `inhaltUrteil`): das Mittel ihrer Pixel in linearem Licht
+                    if (k.inhalt) {
+                        const s = namen.map(() => [0, 0, 0]);
+                        for (let p = 0, i = 0; p < W * H; p++, i += 4)
+                            if (teil[p]) for (let c = 0; c < 3; c++) s[teil[p] - 1][c] += srgbLin(u8[i + c]);
+                        namen.forEach((n, j) => klassen[n] && (klassen[n].farbe = s[j].map((x) => +(x / klassen[n].pixel).toFixed(5))));
+                    }
                     // DIE PROBEN DES GESICHTS: je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
                     // Kopf-Haut der Ton seiner Ecke, `aTon` — koerper `menschTon`: Haut, Lippe, Höhle, Haar-Kappe), projiziert auf den
                     // Schirm; `K.gesichtMasse` (koerper-core) liest das BILD dort, wo die Teilung den Teil des Vertex zeigt. Die Töne
@@ -1205,6 +1432,7 @@ async function starte() {
                                 // zwei Zonen, gesicht 0,333 mit Lippe und Höhle ungemessen). Mitte und Haarlinie liest nur der Kopf im Bild.
                                 const bild = o.layers.test(cam.layers);
                                 const pa = o.geometry.attributes.position;
+                                const gf = /\/auge$/.test(n) ? __gesichtFlaeche(o, cam, T) : null; // die Fläche je Ecke (lib/gesicht-proben)
                                 for (let i = 0; i < pa.count; i++) {
                                     const kn = knochen(o, i);
                                     let z = null,
@@ -1233,6 +1461,7 @@ async function starte() {
                                         bild,
                                         k: kix,
                                         a: z === "iris" ? null : albedo(o, i),
+                                        g: z === "iris" ? gf[i] : undefined,
                                         w: v.clone(),
                                         d: v.distanceTo(cam.position),
                                         x: Math.floor(((ndc.x + 1) / 2) * W),
@@ -1262,24 +1491,24 @@ async function starte() {
                         for (const o of decke) (o.isSkinnedMesh ? o : o.geometry).computeBoundingSphere();
                         const strahl = new T.Raycaster();
                         const richt = new T.Vector3();
-                        // der Täter beim Namen: je verdeckte Probe die Klasse des ersten Treffers (Lid und Haut, Haar und Braue)
+                        // der Täter beim Namen: je verdeckte Probe die Klasse des ersten Treffers (Haut, Haar und Braue), das Lid als
+                        // `<leib>:kopf/lid` — das Lid in seiner Lage ist die Lidspalte (lib/gesicht-proben `gesichtStrahl`, `gesichtMasse` lid)
                         const decktZu = {};
                         const frei = (p) => {
-                            const lang = richt.copy(p.w).sub(cam.position).length();
-                            strahl.set(cam.position, richt.divideScalar(lang));
-                            strahl.near = 0;
-                            strahl.far = lang - 1e-4;
-                            const [h] = strahl.intersectObjects(decke, false);
-                            if (h) decktZu[r._kopfKlasse(h.object)[1]] = (decktZu[r._kopfKlasse(h.object)[1]] || 0) + 1;
-                            return !h;
+                            const s = __gesichtStrahl(strahl, richt, cam, p, decke, knochen);
+                            const nm = s.treffer ? r._kopfKlasse(s.treffer)[1] : s.lid ? `${r._menschLeib(wahlLeib)}:kopf/lid` : null;
+                            if (nm) decktZu[nm] = (decktZu[nm] || 0) + 1;
+                            return s;
                         };
                         const proben = roh
                             .filter((p) => p.x >= 0 && p.y >= 0 && p.x < W && p.y < H)
                             .map((p) => {
                                 const vorn = p.z === "iris" ? p.d < median[p.seite] : p.w.clone().sub(mitte).dot(zurCam) > 0;
+                                const fr = p.z === "iris" && vorn ? frei(p) : null;
                                 return {
                                     ...p,
-                                    frei: p.z === "iris" && vorn ? frei(p) : undefined,
+                                    frei: fr ? fr.frei : undefined,
+                                    lid: fr ? fr.lid : undefined,
                                     vorn,
                                     kalotte: p.z !== "iris" && p.w.y > yHaar,
                                 };
@@ -1318,11 +1547,15 @@ async function starte() {
                         const Gf = [],
                             Osf = [];
                         let genErst = null,
-                            kIn = [];
+                            kIn = [],
+                            KGf = null;
+                        const Zf = [];
                         try {
                             Gf.push(await schuss([]));
                             [genErst, kIn] = [lageGen(), kaskaden()];
-                            for (const n of namen) Osf.push(await schuss(teile.get(n)));
+                            for (const n of namen) Osf.push(auge(n) ? await schuss(teile.get(n)) : null);
+                            KGf = await tiefen([]);
+                            for (const n of namen) Zf.push(__kennZaehl(KGf.D, (await tiefen(teile.get(n))).D));
                         } finally {
                             delete r.state.messFenster;
                         }
@@ -1336,7 +1569,7 @@ async function starte() {
                                 : `die Wahl folgte dem Fenster (Lage des Hauptbilds ${wahl.gen.join(" → ")}) — die Linse mäße eine andere Welt als die gezeichnete`;
                             gesicht ={ augeFrei: null, augeFreiGrund: grund, lippeL: null, lippeA: null, hoehleL: null, hoehleA: null, haarDeckung: null, weiss: null, irisDecke: decktZu, fenster, ungefenstert }; // prettier-ignore
                         } else {
-                            const tf = __klassenTeilung(Gf[0], Osf, W, H, schwelle);
+                            const tf = __kennTeilung(Zf, KENN_N, KGf.tw, KGf.th, W, H);
                             const camF = cam.clone();
                             camF.setViewOffset(W * fk, H * fk, F.cx * W * fk - W / 2, F.cy * H * fk - H / 2, W, H);
                             const vf = new T.Vector3();
@@ -1508,6 +1741,8 @@ async function starte() {
                         schwelle,
                         rauschen,
                         misch,
+                        kenn,
+                        rinde,
                         toene: namen.map((n, j) => `${n}=${ton[j % ton.length].join("/")}`),
                         klassen,
                         abstand,
@@ -1520,6 +1755,7 @@ async function starte() {
                     for (const [o, c] of wurf) o.castShadow = c;
                     bundlesNeu();
                     r._schattenAlleNeu();
+                    verborgenLassen();
                     for (const [m, eigen, alt] of ruhen)
                         if (eigen) r[m] = alt;
                         else delete r[m];
@@ -1641,11 +1877,11 @@ async function starte() {
                     await loopAus();
                     return send({ datei });
                 }
-                // DAS FENSTER: Viewport wechseln wie ein Spieler (Fenster ziehen, Vollbild) — feuert das resize-Ereignis.
-                if (req.url === "/fenster") {
-                    await page.setViewport({ width: +b.w || 1920, height: +b.h || 1080, deviceScaleFactor: 1 });
-                    return send({ fenster: [+b.w || 1920, +b.h || 1080] });
-                }
+                // DAS FENSTER (scripts/lib/schirm-proben.cjs `fensterRoute`): Viewport wechseln wie ein Spieler (Fenster ziehen, Vollbild) —
+                // wechselte der Schirm seit dem letzten Takt der Welt, lebt sie an ihm, ehe der Befehl antwortet; sonst `takte: 0`, sofort
+                if (req.url === "/fenster") return send(await SP.fensterRoute(page, b));
+                // DIE STUFEN AM SCHIRM (`werkbank stufen`, scripts/lib/schirm-proben.cjs): der Weg jedes Bilds mit dem Stufen-Zensus davor und danach
+                if (req.url === "/stufen") return send(await SP.stufenRoute(page, b));
                 if (req.url === "/latenz") {
                     const cdp = await page.target().createCDPSession(), proben = {}, vp = page.viewport();
                     const taste = { gehen: ["KeyW", "w", 87], wechsel: ["KeyV", "v", 86], springen: ["Space", " ", 32], einsteigen: ["KeyE", "e", 69] }; // hieb klickt
@@ -1872,29 +2108,59 @@ async function starte() {
                         Math.hypot(p.x - x, p.z - z) > r._voxelChunkConfig(0).span;
                     if (b.gesicht == null && b.arm == null && !b.spieler && (await page.evaluate(fern, +b.px, +b.pz)))
                         await umstellen(+b.px, +b.pz, null);
-                    // DIE LEINWAND DER KLASSE: die Soll-Tafel misst im Pixel des Schirms, 1920 × 1080 wie ihre Messungen — das
-                    // Fenster wie ein Spieler (`/fenster`), bis die Welt es trägt; danach das Fenster der Sitzung
+                    // DIE BEWEGUNG (`--bewegung <Taste>[:m]`, w28-linse-wahr F): das Bild AUS Bewegung — der Loop läuft mit der gehaltenen
+                    // Taste, bis sie den Leib m Meter trug (5; `halteBis`, am Ereignis), dann ruht er MIT der Taste: die Welt friert mitten im
+                    // Gang ein (sie steht nie: `bewegt`), der Schuss steht an der Kamera des Spiels. Bis hier ruhte der Loop zwischen den
+                    // Befehlen, und die Fahrt der Augen-Karte (W gehalten) zeigte acht pixelgleiche Bilder
+                    const taste = b.bewegung ? String(b.bewegung).split(":") : null;
+                    if (taste) {
+                        const weg = Number(taste[1]) || 5;
+                        const p0 = await page.evaluate(() => (__loop(true), [pm.position.x, pm.position.z]));
+                        const h = await halteBis(page, { taste: taste[0], ziel: (p, d) => Math.hypot(pm.position.x - p[0], pm.position.z - p[1]) >= d, args: [p0, weg], los: async () => (await page.evaluate(() => __loop(false)), await page.keyboard.up(taste[0])) }); // prettier-ignore
+                        if (!h.erreicht) throw new Error(`ABNAHME ROT [--bewegung ${b.bewegung}: die Taste trug den Leib in ${h.ms} ms keine ${weg} m]`);
+                        const kam = await page.evaluate(() => {
+                            r._loopCamera(performance.now());
+                            const c = r.state.camera;
+                            return [...c.position.toArray(), ...c.getWorldDirection(new THREE.Vector3()).multiplyScalar(20).add(c.position).toArray()];
+                        });
+                        Object.assign(b, { px: kam[0], py: kam[1], pz: kam[2], lx: kam[3], ly: kam[4], lz: kam[5], wahl: 0, bewegt: true });
+                    }
+                    // DER INHALT DES ORTS (`imBild`, w27-ort-pose; D der Augen-Karte, w28-linse-wahr): was der Ort IST, zeigt das Bild — je
+                    // Klasse der Teilung ein Mindest-Anteil seiner Pixel und das Band ihrer Farbe (`inhaltUrteil`); ein Messort ohne imBild ist
+                    // ROT. Der Anteil gilt der Leinwand der Klasse (1920 × 1080: dort zählt die Teilung, nie in `--w`/`--h`). DIE FAMILIE EINES
+                    // SCHLÜSSELS (`inhaltFamilie`), EIN Leser für den Ausdruck und das Urteil
+                    const spec = b.ort ? BAND.ladeSpec(b.ort) : null;
+                    const inhalt = spec?.ort.imBild;
+                    if (b.ort && !(inhalt && Object.keys(inhalt).length)) throw new Error(`ABNAHME ROT [der Messort ${b.ort} trägt kein imBild — sein Inhalt bliebe ungefragt]`); // prettier-ignore
+                    // der Inhalt liest je Klasse Pixel und Farbe — die Maße der Tafel (`nurPixel` aus) nur, wo sie geschrieben wird
+                    if (inhalt) [b.klasse, b.inhalt, b.nurPixel] = [Object.keys(inhalt).map((k) => AA.inhaltFamilie(k).source).join("|"), true, !b.ist && !b.messung];
+                    // DIE LEINWAND: die Klasse misst im Pixel des Schirms (1920 × 1080 wie ihre Messungen), jedes andere Bild in seinem Maß —
+                    // das Fenster wie ein Spieler (`/fenster`), nie kleiner als das Bild (die Abnahme: `leinwandRot`); danach das Fenster der Sitzung
                     const vp = page.viewport();
-                    // DER INHALT DES ORTS (`imBild`, w27-ort-pose): was der Ort IST, zeigt das Bild — je Klasse der Teilung ein
-                    // Mindest-Anteil seiner Pixel, sonst ROT beim Namen, ungespeichert (am Dorf ohne Haus stand GRÜN, 78d37554).
-                    // Der Anteil gilt der Leinwand der Klasse unten (1920 × 1080: dort zählt die Teilung, nie in `--w`/`--h`)
-                    // DIE FAMILIE EINES SCHLÜSSELS (w27-ort-pose-voll), EIN Leser für den Ausdruck und das Urteil: der Schlüssel
-                    // und jede Klasse, die mit ihm und `-` oder `_` weitergeht — `bewohner` zählt das Gedränge (`bewohner-satz`;
-                    // der Schlüssel allein sah höchstens 4 Leiber binnen 8 m), `fahrzeug` jeden Wagen (`fahrzeug_<typ>`)
-                    const familie = (k) => new RegExp(`^${k}([-_].*)?$`);
-                    const inhalt = b.ort && BAND.ladeSpec(b.ort).ort.imBild;
-                    if (inhalt) b.klasse = Object.keys(inhalt).map((k) => familie(k).source).join("|");
-                    if (b.klasse) {
-                        await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
-                        await page.waitForFunction(() => st.renderer.domElement.clientWidth === 1920);
+                    const [vw, vh] = b.klasse ? [1920, 1080] : vp ? [Math.max(vp.width, +b.w || 640), Math.max(vp.height, +b.h || 360)] : [];
+                    const fenster = !!vw && !(vp && vp.width === vw && vp.height === vh);
+                    if (fenster) {
+                        await page.setViewport({ width: vw, height: vh, deviceScaleFactor: 1 });
+                        await page.waitForFunction((w) => st.renderer.domElement.clientWidth === w, {}, vw);
                     }
                     if (b.zeit != null) await page.evaluate(`window.__boeVarianz = ${boeVarianz}`);
-                    const o = await bild(Object.assign({ w: 640, h: 360, nahM: BOE.nahM, viertel: BOE.viertel }, b));
-                    if (b.klasse) await page.setViewport(vp);
-                    const anteil = (k) => Object.entries(o.klasse.klassen).reduce((n, [kl, m]) => n + (familie(k).test(kl) && m.pixel), 0);
-                    const fehlt = Object.keys(inhalt || {}).filter((k) => !(anteil(k) >= inhalt[k] * 1920 * 1080));
-                    if (fehlt.length) throw new Error(`ABNAHME ROT [kein ${fehlt.join(", kein ")} im Bild] · ${b.ort}: ${o.abnahme.zeile}`);
-                    const datei = zeitAblage(b.datei, "bild", "png");
+                    let o;
+                    try {
+                        o = await bild(Object.assign({ w: 640, h: 360, nahM: BOE.nahM, viertel: BOE.viertel }, b));
+                    } finally {
+                        if (fenster) await page.setViewport(vp);
+                    }
+                    // DAS URTEIL DES BILDS: die Abnahme der Seite (`rot`, das Bild kommt auch ROT zurück), der Inhalt des Orts und seine Ratsche
+                    // (`bekannt`: ROT wie an main reißt nicht, `ortUrteil`); ein ROT-Bild liegt als `*-rot.png` neben seinem Grund
+                    const m = o.abnahme;
+                    const kopfAlt = m.ok ? "ABNAHME GRÜN" : `ABNAHME ROT [${m.rot.map((q) => q.grund).join(" · ")}]`;
+                    const rot = m.rot.map((q) => ({ schluessel: AA.rotSchluessel(q, m), grund: q.grund }));
+                    const iu = inhalt && AA.inhaltUrteil(inhalt, spec.haushalt.inhaltBand, o.klasse?.klassen, m.bild.w * m.bild.h, b.uhr);
+                    if (iu) rot.push(...iu.rot), (m.inhalt = iu);
+                    const U = AA.ortUrteil(rot, spec?.ort.bekannt, b.ort);
+                    [m.zeile, m.urteil] = [U.kopf + m.zeile.slice(kopfAlt.length) + (iu ? ` · ${iu.zeile}` : ""), U.u];
+                    if (b.ist && U.u !== "GRÜN") throw new Error(`--ist ${b.ist}: das Bild ist nicht GRÜN, die Tafel bleibt — ${m.zeile}`);
+                    const datei = zeitAblage(b.datei, "bild", "png").replace(/\.png$/i, U.u === "GRÜN" ? ".png" : "-rot.png");
                     ordnerFuer(datei);
                     pngDatei(datei, o.png);
                     delete o.png;
@@ -1957,8 +2223,10 @@ async function starte() {
                         fs.copyFileSync(begleit, sollAblage(String(b.ist).split(",")[0], ".abnahme.json"));
                     const zeile = o.abnahme.zeile;
                     delete o.abnahme;
+                    if (U.u === "ROT") throw new Error(`${zeile} · ROT-Bild ${datei}`);
                     return send(Object.assign(o, { abnahme: zeile, datei, gesamtMs: Date.now() - t0 }));
                 }
+                // zwischen `/wirt` nimm und gib trägt jeder Rumpf die Marke der Wirt-Wache (scripts/lib/wirt-wache.cjs `evalRumpf`)
                 if (req.url === "/eval") {
                     // DER NAME DES TEXTS (w28-seiten-stille, die Stille mit Arbeit an siedlung.K1#2 12.11.: jeder Rahmen der Probe hieß
                     // „(ohne Datei)"): der eval-Text trägt `//# sourceURL=werkbank/eval/<Name>.js` — der Name des Rufers (`name`),
@@ -1967,12 +2235,40 @@ async function starte() {
                     // Zeilen-Kommentar schließt, nimmt das Ende des Rahmens nicht mehr mit.
                     const url = evalName(b);
                     const o = await page.evaluate(
-                        (code, url) =>
-                            new Function("r", "T", `return (async () => { ${code}\n})();\n//# sourceURL=${url}`)(r, THREE),
+                        (rumpf, code, marke) =>
+                            new Function("r", "T", "__wirtMarke", rumpf)(r, THREE, marke ? (0, eval)(`(${marke})`)(window, code) : null),
+                        WW.evalRumpf(b.code, url),
                         b.code,
-                        url
+                        wirt ? String(WW.wirtMarke) : null
                     );
                     return send({ ergebnis: o });
+                }
+                // DIE WIRT-WACHE (scripts/lib/wirt-wache.cjs; Leser: der Läufer der Punkte-Maschine vor dem Preis-Lauf): `nimm` vor der
+                // Probe (das Gedächtnis der Seite, der Heap nach dem Collector, die Marken an), `gib` nach ihr — jede Abweichung am Wirt
+                // beim Namen und zurück, die Marken, deren Kontext noch jemand hält, der Heap danach und das Urteil (UNGEMESSEN beim Grund)
+                if (req.url === "/wirt") {
+                    const heap = async () => {
+                        const cdp = await page.target().createCDPSession();
+                        for (let i = 0; i < 3; i++) await cdp.send("HeapProfiler.collectGarbage");
+                        const u = await cdp.send("Runtime.getHeapUsage");
+                        await cdp.detach();
+                        return +((u.usedSize + u.backingStorageSize) / 1048576).toFixed(1);
+                    };
+                    const lies = (gib) => page.evaluate((c) => new Function("r", c)(r), WW.wirtCode(gib));
+                    if (!b.gib) {
+                        const g = await lies(false);
+                        wirt = { heapVor: b.heap ? await heap() : null };
+                        await page.evaluate(() => delete window.__wirtMarken);
+                        return send({ genommen: true, glieder: g.glieder, heapVor: wirt.heapVor });
+                    }
+                    const vor = wirt;
+                    wirt = null;
+                    let ab = await lies(true);
+                    // die Seite ist neu seit `nimm` (eine Probe lud sie): an ihr steht nichts der Probe; das Gedächtnis nimmt der nächste `nimm`
+                    if (vor && ab.fehler) ab = { anders: [], wie: {}, erklaert: [], bleibt: [], neu: true };
+                    const heapNach = b.heap ? await heap() : null;
+                    const haelt = await page.evaluate((m) => (0, eval)(`(${m})`)(window), String(WW.markenLies));
+                    return send(Object.assign(WW.wirtUrteil({ ab: vor ? ab : { fehler: "nimm fehlt" }, haelt, heapVor: vor && vor.heapVor, heapNach }), { neu: !!ab.neu }));
                 }
                 if (req.url === "/methode") {
                     // `--quelle <datei>`: die Methode aus einem anderen Stand (die Basis eines A/B in EINER Welt)
@@ -2404,7 +2700,9 @@ async function starte() {
                         async (halter, top) => {
                             await __drawZensus({ top: 1 });
                             __kehrausJetzt();
-                            const texturen = __texturZensus(),
+                            // DER ZENSUS VOR DER LISTE: erst `__pufferZensus` bucht jeden Puffer auf seinen Halter (sonst `buf:?`)
+                            const puffer = __pufferZensus(),
+                                texturen = __texturZensus(),
                                 v = window.__vram || {},
                                 mb = (x) => +((x || 0) / 1048576).toFixed(1);
                             return {
@@ -2417,7 +2715,7 @@ async function starte() {
                                     gc: mb(v.gc),
                                     liste: __vramBericht(top),
                                 },
-                                puffer: __pufferZensus(),
+                                puffer,
                                 halter: halter ? __heapHalter(r, 8) : null,
                             };
                         },
@@ -2909,6 +3207,9 @@ hauptLauf(async () => {
         o = await umstellen({ x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose"), sicht: opt("--sicht") });
     else if (cmd === "bild" && SELBST) {
         selbsttestEnde(boeSelbsttest(), "die Zeit-Linse (`--zeit`) misst ΔY² im Nah-Feld, nennt die Böe der Mess-Wiese GRÜN, Wind 0 am Rausch-Boden, einen Sinus je Schicht an der Laufzeit und ein Bild ohne Nah-Feld beim Namen ROT");
+        // DIE BILD-LINSEN (w28-linse-wahr): Leib vor der Linse, leeres Ziel, Inhalt des Orts, Leinwand, der Punkt, der durchfällt, die Ratsche
+        selbsttestEnde(await AA.bildLinsenSelbsttest(), "die Bild-Linsen nennen den Leib vor der Linse, das leere Ziel, Gras in Magenta, die hochgerechnete Leinwand und den Fuß unter dem Bild ROT beim Namen, jede Mutante von main besteht nicht");
+        selbsttestEnde(await SP.fensterSelbsttest(), "`/fenster` antwortet am gleichen Fenster ohne Takt, auch wenn die Welt nicht steht, und lässt sie nach einem Wechsel des Schirms an ihm leben; die Mutanten (main 01a6714a, der Stand vor w28-probe-schirm) bestehen nicht");
         process.exit(0);
     } else if (cmd === "bild")
         o = await rufe("/bild", {
@@ -2936,11 +3237,12 @@ hauptLauf(async () => {
             fov: opt("--fov"),
             fuss: opt("--fuss"),
             zeit: opt("--zeit") && Number(opt("--zeit")),
+            bewegung: opt("--bewegung"),
         });
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: hat("terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval" && SELBST) {
-        // DER NAME DES eval-TEXTS (w28-seiten-stille, `eval --selbsttest`, ohne Welt): drei Rufer, drei Namen; derselbe Rahmen wie /eval
+        // DER NAME DES eval-TEXTS (w28-seiten-stille, `eval --selbsttest`, ohne Welt): drei Rufer, drei Namen; derselbe Rahmen wie /eval (WW.evalRumpf)
         // nennt im Stapel `werkbank/eval/<Name>.js:<Zeile>` und baut auch über einem Text, der mit einem Zeilen-Kommentar endet — der
         // alte Rahmen (`{ ${code} })();` auf EINER Zeile) brach dort mit „Unexpected end of input"
         const f = [];
@@ -2950,11 +3252,11 @@ hauptLauf(async () => {
         soll({ code: "return 1 + 1" }, "werkbank/eval/ruf-1.js");
         const code = "return (function probe() { throw new Error('stelle'); })() // ein Kommentar am Ende";
         const stapel = await Promise.resolve()
-            .then(() => new Function("r", "T", `return (async () => { ${code}\n})();\n//# sourceURL=${evalName({ code })}`)(null, null))
+            .then(() => new Function("r", "T", "__wirtMarke", WW.evalRumpf(code, evalName({ code })))(null, null, null))
             .then(() => "kein Wurf", (e) => String(e && e.stack));
         if (!/at probe \(werkbank\/eval\/probe\.js:\d+:\d+\)/.test(stapel)) f.push("der Stapel nennt die Stelle nicht: " + stapel.split("\n").slice(0, 2).join(" | "));
         let alt = "baut";
-        try { new Function("r", "T", `return (async () => { ${code} })();`); } catch (e) { alt = e.message; } // prettier-ignore
+        try { new Function("r", "T", "__wirtMarke", "return (async () => { void __wirtMarke; " + code + " })();"); } catch (e) { alt = e.message; } // prettier-ignore
         if (alt === "baut") f.push("die Mutante (der alte Rahmen) baut über dem End-Kommentar — der Fall misst nichts");
         selbsttestEnde(f, "der eval-Text der Werkbank trägt seinen Namen in jedem Stapel (werkbank/eval/probe.js), der alte Rahmen bricht am End-Kommentar (" + alt + ")");
         return;
@@ -2978,7 +3280,10 @@ hauptLauf(async () => {
         if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
         const B = o.block || {}, rot = (B.rot || []).concat(B.fehler ? [B.fehler] : [], B.glieder > 0 ? [] : ["LEER: kein Glied einer Arena der Wahl im Hauptbild"], /^BLIND|^$/.test(B.selbsttest || "") ? [`SELBSTTEST ${B.selbsttest || "fehlt"}`] : []);
         console.log(rot.length ? `BLOCK-TREUE ROT:\n  ${rot.join("\n  ")}` : `BLOCK-TREUE GRÜN ${B.glieder} Blöcke treu · Selbsttest nennt ${B.selbsttest}`);
-        if (rot.length) o.fehler = "BLOCK-TREUE ROT"; // ein fremder Block, ein blinder Selbsttest oder kein geprüftes Glied
+        // DAS URTEIL TRÄGT DEN EXIT (w28-probe-urteil): „lod.K2#1 ROT“ stand im Log, `fehler` setzte nur die Block-Treue — GRÜN über ROT
+        const pop = je.length && !(o.anteilJeSekunde <= 0.05) ? [`lod.K2#1 ROT ${o.anteilJeSekunde} % Pop-Pixel/s > 0,05`] : [];
+        if (rot.length) pop.push("BLOCK-TREUE ROT"); // ein fremder Block, ein blinder Selbsttest oder kein geprüftes Glied
+        if (pop.length && typeof o.fehler !== "string") o.fehler = pop.join(" · ");
     }
     else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
@@ -3246,6 +3551,25 @@ hauptLauf(async () => {
         const u = LL.naesseUrteil(welt);
         console.log(JSON.stringify(welt, null, 1));
         urteilEnde("NÄSSE", u);
+    } else if (cmd === "licht" && hat("tafeln")) {
+        // DIE TAFELN DER ATMOSPHÄRE SIND GEZEICHNET (w28-tafel-ganz): in der Welt am Messort Genesis das Ist jeder Tafel, die Probe der
+        // verzögerten Pipeline von Ψ_ms und die Mutante (das alte `_einmalRender`), Urteil `tafelGanzUrteil`; `--selbsttest` ohne Welt.
+        selbsttestEnde(LL.tafelGanzSelbsttest());
+        if (SELBST) process.exit(0);
+        const halt = await eigeneWelt();
+        let m;
+        try {
+            // am Messort steht die Welt (ihre Tafeln, ihr Weltbild) — der Ruf direkt nach dem Start fände die Ziele der Tafeln leer
+            await umstellen({ ort: "genesis", sicht: "ego" });
+            m = ergebnis(await evalRuf(`return await __tafelGanz(${JSON.stringify({ verzoegert: Number(opt("--verzoegert", 3)) })});`));
+        } finally {
+            if (halt) await halt();
+        }
+        dateiAb(m);
+        if (m.fehler) throw new Error("TAFELN: " + m.fehler);
+        const u = LL.tafelGanzUrteil(m);
+        for (const b of u.befunde) console.log("  ROT " + b);
+        endeMit(`TAFELN ${u.urteil} · Wolke von unten ${JSON.stringify(m.wolke)} · Ist ${JSON.stringify(m.ist.tafeln)} · verzögert ${m.probe.takte} Takte, frisch ${m.probe.frisch} · Mutante leer-frisch im Takt ${m.mutante && m.mutante.frischLeer}`, u.urteil === "GRUEN");
     } else if (cmd === "licht" && hat("luft")) {
         // DIE LUFT IM BILD (ferne-luft): `luftTiefe` vom Hügel am Ort (`--ort`, Standard Genesis: offen) je Uhr der Referenz,
         // zu Mittag dazu vom Gipfel (das Höchste des Gesetzes binnen 3 km, Auge 40 m); das Urteil `luftTiefeUrteil` gegen die
@@ -3454,6 +3778,10 @@ hauptLauf(async () => {
         console.log(JSON.stringify(o, null, 1));
         endeMit(o.urteil && !o.urteil.length ? "GANG GRÜN" : "GANG ROT", o.urteil && !o.urteil.length);
     } else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
+    else if (cmd === "wirt" && SELBST) {
+        selbsttestEnde(await WW.wirtSelbsttest(), "die Wirt-Wache nennt jeden Haken am Wirt (r, Prototyp, r.state, window) und setzt ihn zurück, die Marke sieht den Kontext, den eine Probe hält, hält sie ihn über der Schwelle, ist der Preis UNGEMESSEN — die Welt, die sie baute, nicht; die Mutante von main (der Haken der Hülle) besteht nicht");
+        process.exit(0);
+    } else if (cmd === "wirt") o = await rufe("/wirt", { gib: hat("gib"), heap: hat("heap") });
     else if (cmd === "diaet") {
         if (SELBST) {
             const f = DIAET.selbsttest();
@@ -3497,7 +3825,11 @@ hauptLauf(async () => {
                 a.length >= 6 ? { px: a[0], py: a[1], pz: a[2], lx: a[3], ly: a[4], lz: a[5] } : {}
             )
         );
-    else if (cmd === "band") {
+    else if (cmd === "weg" || cmd === "runde") {
+        // der Weg des Speichers (H8) · die Runde des Speichers (dieselbe Runde zweimal, Zensus an der Start-Pose)
+        const o = await require("./lib/speicher-proben.cjs")[cmd === "weg" ? "wegFahrt" : "rundeFahrt"]({ umstellen, rufe });
+        endeMit(o.text, o.gruen);
+    } else if (cmd === "band") {
         o = await rufe("/band", {
             ort: opt("--ort"),
             datei: opt("--datei"),
@@ -3692,6 +4024,7 @@ hauptLauf(async () => {
         process.exit(gut ? 0 : 1);
     }
     else if (cmd === "kante") o = await AU.laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis }); // lod.K1#1, gate:laub-kante
+    else if (cmd === "stufen") endeMit(...(await SP.stufenGang({ rufe, umstellen, eigeneWelt, opt, hat }))); // gate:schirm-stufen
     else if (cmd === "ziele") {
         o = await rufe("/ziele", { n: opt("--n"), json: opt("--json") });
         if (o?.tabelle) endeMit(o.tabelle + "\n" + o.datei, o.ok);

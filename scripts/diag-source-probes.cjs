@@ -21,6 +21,7 @@
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
+require("./lib/urteil-zeile.cjs").wache(); // Lehre 6: eine gedruckte ROTE Zeile bei Exit 0 wird Exit 1
 const stammLib = require("./lib/stamm.cjs");
 
 const ROOT = path.resolve(__dirname, "..");

@@ -13,7 +13,8 @@
 //       seinem Stempel; ein anderes Werk hält dort das Wasser über dem Boden im Umkreis von 18 m fest (1-m-Gitter, Bild UND
 //       Gesetz — ein Stempel verdrängt danach das gezeichnete), und gemessen wird, wenn es STEHT: jede Box seiner Hülle, die
 //       den Boden trägt (die Solids des Gesetzbuchs samt Fundament-Podest — das Haus, mit dem der Körper kollidiert; nie die
-//       Grundriss-Rechnung des Wirts), auf einem Raster ≤ 1 m; ein Werk an der Wand (Rezept-Ort „wand", die Wandlaterne)
+//       Grundriss-Rechnung des Wirts), auf einem Raster ≤ 1 m; das Jochfeld einer Brücke steht über dem Wasser (sein Gesetz) —
+//       Befund ist die Brücke, die längs im Wasser liegt (das Ufer quer näher als halb so weit wie längs); ein Werk an der Wand (Rezept-Ort „wand", die Wandlaterne)
 //       trägt keinen Boden: es hängt an der Hülle eines stehenden Hauses (≤ 0,6 m), sonst hängt es an keiner Wand. Dazu jeder
 //       Leib, den der Bestand zeichnet (`_bestandLeib`): über seinem Grund nie mehr Wasser als die Schwimm-Tiefe der Tiere
 //       (tetrapoda VERHALTEN.wasser).  Soll 0
@@ -21,7 +22,7 @@
 //       der Wald liest den Bezug nie als Wasser, kein Bau weckt den Automaten am Setz-Punkt, der Stempel läuft nie den ganzen
 //       Bestand, keine Wurzel sagt still ab, `natur_weicht` ist fort (die gefallenen Namen trägt gate:altlasten).
 //   K — DER KONSUM AM RUF: am Ort des Spielers ruft jeder Leser sein Gesetz — `_feuchteAt` den Bezug, der Wald
-//       `_atlasWaterLevelAt`, der Zell-Stempel `_blockerNahe`, Tempel und Bauplan `_werkOrtSuchen`, Baum · Insel · UFO
+//       `_atlasWaterLevelAt`, der Zell-Stempel `_blockerNahe`, Tempel und Bauplan `_werkOrtSuchen`, der Baum
 //       `_setzErgebnis`, der losgelassene Wagen `_fahrTiefe`.
 //   F — DER WAGEN IM WASSER: der GT fährt im echten Sim-Schritt mit Vollgas aus 26 m Anlauf in 0,5–0,75 m Wasser (eine
 //       Furt um den Schau-Ort, gesucht). Soll: 1 s nach dem Eintauchen
@@ -53,6 +54,27 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, ausDatei, SELBSTTEST, path, stammLib, weltTor, jsonLesen } = require("./lib/welt-boot.cjs");
+// DIE LAGE EINES BRÜCKENFELDS IM WASSER (Z, rein — dieselbe Funktion in der Seite und im Selbsttest): `tiefe(x, z)` das Wasser
+// über dem Boden (−∞ trocken), (x0, z0) die Mitte des Felds, `ry` seine Gier (fachwerk `brueckenFelder`: phi = atan2(−dz, dx),
+// die Achse des Felds (cos ry, −sin ry)), `S` die Schwellen. null: das Feld steht trocken oder QUERT (das Ufer liegt längs
+// seiner Achse höchstens 1 / `brueckeQuer` so weit wie quer zu ihr — steiler als 1 : 2 zum Ufer). Befund: „liegt längs“ (das
+// Ufer quer näher als `brueckeQuer` × längs, oder längs binnen `brueckeSuchM` keins — z397: die Ost-Straße 42 m im Fluss,
+// 12° zu seinem Lauf) und „tiefer als sein Pfahl“ (das Wasser über `pfahlM`, BRUECKE_GESETZ: kein Joch trägt dort).
+const brueckeLage = (tiefe, x0, z0, ry, S) => {
+    const tM = tiefe(x0, z0);
+    if (!(tM > S.tiefeFundament)) return null;
+    if (tM > S.pfahlM) return { wo: "steht tiefer als sein Pfahl,", tiefe: tM, punkte: `der Pfahl trägt ${S.pfahlM} m` };
+    const ufer = (dx, dz) => {
+        for (let s = 1; s <= S.brueckeSuchM; s++)
+            for (const v of [1, -1]) if (!(tiefe(x0 + v * dx * s, z0 + v * dz * s) > S.tiefeFundament)) return s;
+        return Infinity;
+    };
+    const [ux, uz] = [Math.cos(ry), -Math.sin(ry)];
+    const [laengs, quer] = [ufer(ux, uz), ufer(-uz, ux)];
+    return !Number.isFinite(laengs) || quer < S.brueckeQuer * laengs
+        ? { wo: "liegt längs", tiefe: tM, punkte: `das Ufer quer ${quer} m, längs ${laengs} m` }
+        : null;
+};
 const { messort } = require("./lib/welt-orte.cjs");
 
 const SCHWELLE = {
@@ -583,6 +605,7 @@ async function probe(A) {
     // Haus misst sein Fundament selbst. Ohne Haus hängt es an keiner Wand (ein Haus, das ins Wasser fiel, eine fremde Nummer).
     // Bis N1 suchte der Zensus an ihm die Box am Boden: „wandlaterne_dorf stand ohne Hülle".
     const FCw = globalThis.__fachwerkCore;
+    const brueckeLage = (0, eval)("(" + A.brueckeLageSrc + ")");
     const anDerWand = (e) => {
         const bp = st.blueprints && st.blueprints[e.type];
         const p =
@@ -624,6 +647,21 @@ async function probe(A) {
                 zensus.anDerWand++;
                 if (!traegerHaus(e))
                     zensus.ohneWand.push({ typ: e.type, id: e.id, x: e.position.x, z: e.position.z, quelle: w.quelle });
+                continue;
+            }
+            // DIE BRÜCKE QUERT (w28-stadt-grammatik, `brueckeLage`): ein Jochfeld steht über dem Wasser — das ist sein Gesetz (fachwerk
+            // BRUECKE_GESETZ: das Joch im Bett, die Widerlager am Ufer), sein „Fundament im Wasser“ ist kein Befund. Befund ist das
+            // Feld, das LÄNGS im Wasser liegt, und das Joch im Wasser tiefer, als sein Pfahl trägt (`pfahlM`). Nur `bruecke_jochfeld`:
+            // jede andere Brücke misst ihr Fundament wie jedes Werk.
+            if (e.type === "bruecke_jochfeld") {
+                const lage = brueckeLage((x, z) => imGitter(w.G, x, z), e.position.x, e.position.z, e.rotationY || 0, {
+                    tiefeFundament: A.tiefeFundament,
+                    brueckeSuchM: A.brueckeSuchM,
+                    brueckeQuer: A.brueckeQuer,
+                    pfahlM: FCw.BRUECKE_GESETZ.pfahlM,
+                });
+                if (lage && zensus.imWasser.length < 40)
+                    zensus.imWasser.push({ typ: e.type, id: e.id, x: e.position.x, z: e.position.z, ...lage, quelle: w.quelle });
                 continue;
             }
             const boxen = (e.blockerAABBs || []).filter(
@@ -1631,11 +1669,6 @@ async function probe(A) {
                         [at, 1, "eiche", 7],
                         ctx(),
                     ]),
-                    "spawn_island → _setzErgebnis": ruft(r.dslEffects, "spawn_island", "_setzErgebnis", [
-                        [at, 6, 7, 1],
-                        ctx(),
-                    ]),
-                    "spawn_ufo → _setzErgebnis": ruft(r.dslEffects, "spawn_ufo", "_setzErgebnis", [[at], ctx()]),
                 };
                 for (const e of neueWerke(vorA)) r.removeArchitecture(e);
                 // der losgelassene Wagen (der GT der Ansaugung) rechnet im Nachlauf mit der Tiefe am Wagen
@@ -1816,7 +1849,7 @@ function selbsttest() {
         zensus: { werke: 80, haeuser: 12, baeume: 68, imWasser: [], ohneHuelle: [], ohneWand: [], anDerWand: 4 },
         satz: { orte: 9, haeuser: 9, fern: [] },
         leser: [],
-        konsum: { "_feuchteAt → _waterLevelAt": true, "spawn_ufo → _setzErgebnis": true },
+        konsum: { "_feuchteAt → _waterLevelAt": true, "spawn_tree → _setzErgebnis": true },
         wagen: { vEin: 11, v1: 3, tiefe: 0.61, kameraUnter: 0, kameraTiefe: 0 },
         ansaug: {
             ansaug: 0.72,
@@ -1916,7 +1949,7 @@ function selbsttest() {
         ["H Stamm im Wasser", ["hain.staemme.3.tiefe=", 2.4], /H: baum_eiche #3 .* steht 2\.40 m im Wasser/],
         ["H Automat geweckt", ["hain.caChunks=", 15], /H: die Bauten am Ufer weckten den Wasser-Automaten \(15/],
         ["H leer", ["hain.satz=", 2], /H LEER/],
-        ["K ein Leser ruft sein Gesetz nicht", (b) => (b.konsum["spawn_ufo → _setzErgebnis"] = false), /KONSUM: spawn_ufo/],
+        ["K ein Leser ruft sein Gesetz nicht", (b) => (b.konsum["spawn_tree → _setzErgebnis"] = false), /KONSUM: spawn_tree/],
         ["K nicht gemessen", ["konsum"], /K LEER/],
         [
             "Z Fundament im Wasser",
@@ -1931,6 +1964,21 @@ function selbsttest() {
                     quelle: "Dorf",
                 }),
             /Z: haus_x #9 .* Fundament 0\.80 m im Wasser \(Dorf\)/,
+        ],
+        [
+            "Z Brücke längs im Wasser",
+            (b) =>
+                b.zensus.imWasser.push({
+                    typ: "bruecke_jochfeld",
+                    id: 7,
+                    x: 3,
+                    z: 4,
+                    wo: "liegt längs",
+                    tiefe: 0.8,
+                    punkte: "das Ufer quer 6 m, längs 21 m",
+                    quelle: "Dorf",
+                }),
+            /Z: bruecke_jochfeld #7 .* liegt längs 0\.80 m im Wasser \(das Ufer quer 6 m, längs 21 m\) \(Dorf\)/,
         ],
         ["Z leer", ["zensus.werke=", 3], /Z LEER/],
         [
@@ -2150,6 +2198,27 @@ function selbsttest() {
         ],
     ].map(giftFall("Kern"))], (gift) => kernUrteil(require("./lib/asset-worker-harness.cjs").kernAusText(gift(kernSrc), "__vehicleCore")), { fehler });
     // der Selbsttest: Befund, Leser und Kern nennen jeden eingeschmuggelten Täter beim Namen.
+    // DIE GEOMETRIE DER BRÜCKE (`brueckeLage`, rein): ein Fluss längs z, `breite` m, `tief` m Wasser — das Feld quer und das
+    // schräge (45°) queren, das Feld im Lauf und das im Maß von z397 (12° zum Lauf) liegen längs, das Joch in 4 m Wasser steht
+    // tiefer als sein Pfahl. Vertauscht einer längs und quer, fällt das quere ROT und das im Lauf GRÜN — beide Fälle stehen hier.
+    const BS = { tiefeFundament: SCHWELLE.tiefeFundament, brueckeSuchM: 40, brueckeQuer: 0.5, pfahlM: 3.5 };
+    const flussLage = ({ breite, tief, grad }) => {
+        // die Achse des Felds `grad` zum Lauf (z): (sin, cos) = (cos ry, −sin ry)
+        const ry = Math.atan2(-Math.cos((grad * Math.PI) / 180), Math.sin((grad * Math.PI) / 180));
+        const u = brueckeLage((x) => (Math.abs(x) < breite / 2 ? tief : -Infinity), 0, 0, ry, BS);
+        return u ? [`Z: bruecke_jochfeld ${u.wo} ${u.tiefe.toFixed(2)} m im Wasser (${u.punkte})`] : [];
+    };
+    taeterFaelle(
+        [
+            { name: "Z Brücke quert (90° über 12 m Wasser)", z: { breite: 12, tief: 0.8, grad: 90 } },
+            { name: "Z Brücke quert schräg (45°)", z: { breite: 12, tief: 0.8, grad: 45 } },
+            { name: "Z Brücke im Lauf (0°)", z: { breite: 12, tief: 0.8, grad: 0 }, muss: /liegt längs .* längs Infinity m/ },
+            { name: "Z Brücke im Maß von z397 (12° zum Lauf)", z: { breite: 12, tief: 0.8, grad: 12 }, muss: /liegt längs .* quer 7 m, längs 29 m/ },
+            { name: "Z Joch tiefer als sein Pfahl (4 m Wasser)", z: { breite: 12, tief: 4, grad: 90 }, muss: /steht tiefer als sein Pfahl, 4/ },
+        ],
+        flussLage,
+        { fehler }
+    );
     selbsttestEnde(fehler);
     process.exit(0);
 }
@@ -2334,6 +2403,9 @@ async function lauf() {
             rampeStufe: 0.25, // A: m, um die das Wasser der Rampe je m höchstens tiefer wird (≤ 14°)
             aussteigTief: SCHWELLE.aussteigTiefMin, // A: so tief steht der Wagen mindestens beim Aussteigen (tiefste Stelle der Rampe)
             gitterR: 18,
+            brueckeLageSrc: brueckeLage.toString(),
+            brueckeSuchM: 40, // Z: so weit sucht ein nasses Brückenfeld sein Ufer (längs und quer zu seiner Achse)
+            brueckeQuer: 0.5, // Z: liegt das Ufer quer näher als dieser Bruchteil des Wegs längs, liegt die Brücke im Wasser, statt es zu queren
             wandM: 0.6, // Z: so weit liegt die Hülle des tragenden Hauses höchstens von der Achse eines Werks an der Wand (armM 0,4 m)
             satzJe: 3,
             satzAbstandMax: SCHWELLE.satzAbstandMax,

@@ -101,7 +101,8 @@ class AnazhRealm_werkstatt_hof {
                     this.renderRecipeBook();
                     if (!res.ok) {
                         this._showMachTorHint(document.getElementById("inventory-equip"), res);
-                        this.log(`Rüstung: ${this._machTorHint(res)}`, "ERROR");
+                        const z = this._machTorZeile(res);
+                        this.log(`Rüstung: ${z ? AnazhRealm._tIn("de", z[0], z[1]) : ""}`, "ERROR");
                     }
                 });
                 el.appendChild(sel);
@@ -120,7 +121,7 @@ class AnazhRealm_werkstatt_hof {
         this._renderEquipBoosts(document.getElementById("ich-boosts-host") || host);
     }
 
-    // Aktive Boosts als Chips aus player.boosts ({source, tagDelta, expiresAt, label}; expiresAt in
+    // Aktive Boosts als Chips aus player.boosts ({source, tagDelta, expiresAt}; der Name aus der Quelle, `_boostName`; expiresAt in
     // performance.now()/1000). Der Chip nennt den EFFEKT (stärkste tagDelta-Achse, „+magieleitung 0.4“)
     // und trägt data-expires — tickStatsHud zählt die Restzeit live (textContent, kein Re-Render).
     _renderEquipBoosts(host) {
@@ -130,7 +131,7 @@ class AnazhRealm_werkstatt_hof {
         const prev = host.querySelector(":scope > .ich-boosts");
         if (prev) prev.remove();
         const boosts = this.state.player && Array.isArray(this.state.player.boosts) ? this.state.player.boosts : [];
-        const nowSec = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+        const nowSec = this.state.spielZeit;
         const active = boosts.filter((b) => b && b.expiresAt > nowSec);
         const row = this._el("div", { class: "ich-boosts" });
         if (!active.length) {
@@ -139,7 +140,7 @@ class AnazhRealm_werkstatt_hof {
             for (const b of active) {
                 const rest = Math.max(0, Math.round(b.expiresAt - nowSec));
                 const effect = this._boostEffectLabel(b);
-                const base = `✺ ${b.label || b.source}${effect ? ` · ${effect}` : ""}`;
+                const base = `✺ ${this._boostName(b)}${effect ? ` · ${effect}` : ""}`;
                 const chip = this._el("span", { class: "ich-boost-chip", text: `${base} (${rest}s)` });
                 chip.setAttribute("data-expires", String(b.expiresAt));
                 chip.setAttribute("data-base", base);
@@ -177,7 +178,7 @@ class AnazhRealm_werkstatt_hof {
         if (typeof document === "undefined") return;
         const chips = document.querySelectorAll(".ich-boost-chip[data-expires]");
         if (!chips.length) return;
-        const nowSec = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+        const nowSec = this.state.spielZeit;
         for (const chip of chips) {
             const exp = Number(chip.getAttribute("data-expires"));
             if (!Number.isFinite(exp)) continue;
@@ -208,77 +209,113 @@ class AnazhRealm_werkstatt_hof {
             .sort()
             .map((m) => m + have[m])
             .join(",");
-        return (
+        return AnazhRealm._zeichenSig(
             Object.keys(bps).join("|") +
-            "#" +
-            matSig +
-            "#" +
-            (this.state._bpEditTick || 0) +
-            "#" +
-            this.getGameMode() +
-            "#" +
-            (this.state.hotbar || []).join("|")
+                "#" +
+                matSig +
+                "#" +
+                (this.state._bpEditTick || 0) +
+                "#" +
+                this.getGameMode() +
+                "#" +
+                (this.state.hotbar || []).join("|")
         );
     }
 
     renderRecipeBook() {
+        this._rezeptBau(Infinity);
+    }
+
+    // DAS REZEPTBUCH IN STÜCKEN (w28-preis-ort, Schnitt 3): EIN Bau für den Ruf der Bedienung (`renderRecipeBook`, am Stück:
+    // `bis` Infinity) und für den Vorbau (`_uiVorbau`: bis zur EINEN Frist, `_bauFrist("vorbau")`) — je Bauplan ein Stück, erst
+    // die Ordnung (Sicht, Art, Rolle), dann die Zeilen, gebaut in ein Fragment; erst das ganze Buch tritt in die Seite. Ein Ruf
+    // der Bedienung mitten im Bau setzt denselben Bau fort. Bis hier baute der Vorbau es in EINEM Takt (Radeon, Mess-Wiese
+    // 41ec3a96: 175,6 ms; am Spawn 200,8). → true: das Buch steht.
+    _rezeptBau(bis) {
+        if (typeof document === "undefined") return true;
         const host = document.getElementById("inventory-recipes");
-        if (!host) return;
+        if (!host) return true;
         // V18.358 — Skip, wenn der Inhalt unverändert ist (Slot-Auswahl ändert ihn NICHT): vermeidet
         // den O(Baupläne × Parts × checkBuildCost + DOM)-Rebuild bei jeder Inventar-Interaktion.
         const sig = this._recipeBookSignature();
-        if (host.childElementCount > 0 && sig === this._recipeBookSig) return;
-        this._recipeBookSig = sig;
-        this._rollenMemo = new Map(); // je Bauplan EINE Rolle in diesem Bau (`_displayRole`)
-        this._vektorMemo = new Map(); // je Bauplan EIN Produkt-Vektor in diesem Bau (`_blueprintProductVector`)
-        try {
-            host.innerHTML = "";
+        if (host.childElementCount > 0 && sig === this._recipeBookSig) return true;
+        let B = this._rezeptBauStand;
+        if (!B || B.sig !== sig) {
             const bps = this.state.blueprints || {};
-            // V18.162 (Nutzer-Blick) — FAHRZEUGE sind eine eigene Gruppe (der Wagen
-            // lag unter „Bauwerk" — die Rolle war da, die Gruppe las nur useKind).
-            // Griffbereit zuerst (`_katalogReihe`, bauen.K1): die eigenen Werke und die der Hotbar stehen oben, je mit ihrer Art.
-            const griff = [];
-            const groups = { hold: [], wear: [], drink: [], vehicle: [], place: [] };
-            const groupLabel = {
-                griff: this._t("hof.griffbereit"),
-                hold: this._t("hof.in-die-hand"),
-                wear: this._t("hof.ruestung"),
-                drink: this._t("hof.trank"),
-                vehicle: this._t("hof.fahrzeug"),
-                place: this._t("hof.bauwerk"),
+            B = this._rezeptBauStand = {
+                sig,
+                namen: this._katalogReihe(Object.keys(bps)),
+                n: 0, // die Ordnung: so viele Namen sind eingeordnet
+                // V18.162 (Nutzer-Blick) — FAHRZEUGE sind eine eigene Gruppe (der Wagen
+                // lag unter „Bauwerk" — die Rolle war da, die Gruppe las nur useKind).
+                // Griffbereit zuerst (`_katalogReihe`, bauen.K1): die eigenen Werke und die der Hotbar stehen oben, je mit ihrer Art.
+                griff: [],
+                groups: { hold: [], wear: [], drink: [], vehicle: [], place: [] },
+                zeilen: null, // die Zeilen in ihrer Reihe: [Gruppe] oder [Name, Art]
+                i: 0,
+                frag: document.createDocumentFragment(),
+                rollen: new Map(), // je Bauplan EINE Rolle in diesem Bau (`_displayRole`)
+                vektor: new Map(), // je Bauplan EIN Produkt-Vektor in diesem Bau (`_blueprintProductVector`)
             };
-            for (const name of this._katalogReihe(Object.keys(bps))) {
+        }
+        this._rollenMemo = B.rollen;
+        this._vektorMemo = B.vektor;
+        try {
+            const bps = this.state.blueprints || {};
+            while (B.n < B.namen.length) {
+                const name = B.namen[B.n++];
                 const bp = bps[name];
-                if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) continue;
-                // KATALOG-SICHT (18.07., M1): die EINE Sicht-Regel (donorOnly +
-                // Render-Varianten) — je Gattung EIN Studio-Eintrag im Rezeptbuch.
-                if (!this._katalogSichtbar(name, bp)) continue;
-                const kind = this._blueprintUseKind(bp);
-                const slot = kind === "place" && this._displayRole(bp) === "vehicle" ? "vehicle" : kind;
-                if (!groups[slot]) continue;
-                if (this._katalogRang(name) < (this.state.hotbar || []).length) griff.push([name, slot]);
-                else groups[slot].push(name);
+                if (bp && Array.isArray(bp.parts) && bp.parts.length && this._katalogSichtbar(name, bp)) {
+                    // KATALOG-SICHT (18.07., M1): die EINE Sicht-Regel (donorOnly +
+                    // Render-Varianten) — je Gattung EIN Studio-Eintrag im Rezeptbuch.
+                    const kind = this._blueprintUseKind(bp);
+                    const slot = kind === "place" && this._displayRole(bp) === "vehicle" ? "vehicle" : kind;
+                    if (B.groups[slot]) {
+                        if (this._katalogRang(name) < (this.state.hotbar || []).length) B.griff.push([name, slot]);
+                        else B.groups[slot].push(name);
+                    }
+                }
+                if (performance.now() >= bis) return false;
             }
-            let any = false;
-            for (const kind of ["griff", "hold", "wear", "drink", "vehicle", "place"]) {
-                const rows = kind === "griff" ? griff : groups[kind].sort().map((n) => [n, kind]);
-                if (!rows.length) continue;
-                any = true;
-                const g = document.createElement("div");
-                g.className = "recipe-group";
-                g.textContent = groupLabel[kind];
-                host.appendChild(g);
-                for (const [name, art] of rows) host.appendChild(this._recipeRow(name, art));
+            if (!B.zeilen) {
+                B.zeilen = [];
+                for (const kind of ["griff", "hold", "wear", "drink", "vehicle", "place"]) {
+                    const rows = kind === "griff" ? B.griff : B.groups[kind].sort().map((n) => [n, kind]);
+                    if (rows.length) B.zeilen.push([kind], ...rows);
+                }
             }
-            if (!any) {
+            const groupLabel = {
+                griff: "hof.griffbereit",
+                hold: "hof.in-die-hand",
+                wear: "hof.ruestung",
+                drink: "hof.trank",
+                vehicle: "hof.fahrzeug",
+                place: "hof.bauwerk",
+            };
+            while (B.i < B.zeilen.length) {
+                const [name, art] = B.zeilen[B.i++];
+                if (art === undefined) {
+                    const g = document.createElement("div");
+                    g.className = "recipe-group";
+                    g.textContent = this._t(groupLabel[name]);
+                    B.frag.appendChild(g);
+                } else B.frag.appendChild(this._recipeRow(name, art));
+                if (performance.now() >= bis && B.i < B.zeilen.length) return false;
+            }
+            if (!B.zeilen.length) {
                 const empty = document.createElement("p");
                 empty.className = "inventory-hint";
                 empty.textContent = this._t("hof.rezepte-leer");
-                host.appendChild(empty);
+                B.frag.appendChild(empty);
             }
+            this._rezeptBauStand = null;
+            this._recipeBookSig = sig;
+            host.innerHTML = "";
+            host.appendChild(B.frag);
             // V18.65 — den aktuellen Selbst-Such-Filter nach dem Neu-Aufbau wieder anwenden (die Zeilen werden
             // bei jedem Render neu erzeugt; das Such-Feld #ich-search lebt im Header + bleibt).
             this._applyIchFilter();
+            return true;
         } finally {
             this._rollenMemo = this._vektorMemo = null;
         }
@@ -411,7 +448,11 @@ class AnazhRealm_werkstatt_hof {
                 // W-C(a)/R-005 — das Mach-Tor spricht AN DER ZEILE (die Konsole
                 // ist zugeklappt — der Log allein erreichte nie jemanden).
                 this._showMachTorHint(row, res);
-                this._spielerSagt(`${label}: ${this._machTorHint(res)}`);
+                // die Zeile, nie ihr Text: Name und Grund wechseln im Chat mit der Sprache
+                this._spielerSagt([
+                    "bauen.label-grund",
+                    { label: bp && Array.isArray(bp.etikett) ? bp.etikett : label, grund: this._machTorZeile(res) },
+                ]);
             }
         });
         row.appendChild(btn);
@@ -595,16 +636,18 @@ class AnazhRealm_werkstatt_hof {
         } catch {
             /* wariness optional */
         }
-        // Mood-Label aus beiden Quellen (froh/trübe × neugierig/wachsam/scheu) — ehrlich geerdet.
+        // Mood-Label aus beiden Quellen (froh/trübe × neugierig/wachsam/scheu) — ehrlich geerdet. Jedes Wort ist eine Kennung,
+        // gezeigt wird ihr Name der Tafel (`WESEN_STIMMUNG`, `EMOTION_LABEL`) in der Sprache von jetzt.
         const w = prof.wariness;
         const temper = w > 0.5 ? "scheu" : w > 0.15 ? "wachsam" : prof.bond > 0.4 ? "vertraut" : "neugierig";
-        prof.moodLabel = (prof.emotion === "sad" ? "trübe" : "froh") + " · " + temper;
+        const wort = (id) => AnazhRealm._tafelName(AnazhRealm.WESEN_STIMMUNG, id);
+        prof.moodLabel = wort(prof.emotion === "sad" ? "truebe" : "froh") + " · " + wort(temper);
         // V18.107 — D4-VOLL: das SEELEN-Temperament (stabil, aus der Substanz) wird
         // sichtbar — die Hof-Karte zeigt, WER das Wesen IST (nicht nur wie es sich
         // gerade fühlt). Vision-Mechanik sichtbar (V9.95-c-Disziplin).
         try {
             prof.temperament = this._creatureTemperament(creature);
-            if (prof.temperament && prof.temperament !== temper) prof.moodLabel += ` · ${prof.temperament}`;
+            if (prof.temperament && prof.temperament !== temper) prof.moodLabel += ` · ${wort(prof.temperament)}`;
         } catch {
             /* temperament optional */
         }
@@ -616,7 +659,8 @@ class AnazhRealm_werkstatt_hof {
             const es = this._emotionState(vec);
             if (es && es.dominant && es.intensity > 0.12) {
                 prof.emotionState = es;
-                prof.moodLabel += ` · ${es.dominant} ${(es.intensity * 100) | 0}%`;
+                const gefuehl = AnazhRealm._tafelName(AnazhRealm.EMOTION_LABEL, es.dominant);
+                prof.moodLabel += ` · ${gefuehl} ${(es.intensity * 100) | 0}%`;
             }
             // W-B — der VOLLE 6-Achsen-Vektor reist mit (Kopie): die Hof-Karte
             // zeigt das Innenleben als Fenster, nicht mehr nur das Destillat.
@@ -787,6 +831,13 @@ class AnazhRealm_werkstatt_hof {
         host.appendChild(this._hofBuildSpecSheet(this._creatureProfile(creature)));
     }
 
+    // der Name eines getragenen Dings (Werkzeug oder Bauplan der Rüstung): sein `label` liest das Etikett in der Sprache von
+    // jetzt (`_etikett`), ein eigenes trägt den Namen des Spielers — bis hier stand die Kennung im Chip
+    _habeName(n) {
+        const d = (this.state.tools && this.state.tools[n]) || (this.state.blueprints && this.state.blueprints[n]);
+        return (d && d.label) || String(n);
+    }
+
     _natureLevelClass(val) {
         return val >= 2.25 ? "lvl-3" : val >= 1.5 ? "lvl-2" : val >= 0.75 ? "lvl-1" : "lvl-0";
     }
@@ -903,11 +954,14 @@ class AnazhRealm_werkstatt_hof {
             .slice(0, 5);
         const natBars = tagEntries.map(([k, v]) =>
             this._specBar(
-                k,
+                AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, k), // der Name der Achse aus der Tafel, nie die Kennung
                 v / 3,
                 v.toFixed(2),
                 this._natureLevelClass(v),
-                this._t("hof.natur-titel", { tag: k, wert: v.toFixed(2) })
+                this._t("hof.natur-titel", {
+                    tag: AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, k),
+                    wert: v.toFixed(2),
+                })
             )
         );
         if (natBars.length) {
@@ -973,8 +1027,8 @@ class AnazhRealm_werkstatt_hof {
         // FOOTER — die HABE (Werkzeug/Rüstung/Boosts) als Chips + der würdevolle Abschied.
         const footChildren = [];
         const habe = [];
-        if (prof.equipped && prof.equipped.tool) habe.push("⚒ " + prof.equipped.tool);
-        if (prof.equipped && prof.equipped.armor) habe.push("⛨ " + prof.equipped.armor);
+        if (prof.equipped && prof.equipped.tool) habe.push("⚒ " + this._habeName(prof.equipped.tool));
+        if (prof.equipped && prof.equipped.armor) habe.push("⛨ " + this._habeName(prof.equipped.armor));
         for (const b of prof.boosts || []) if (b && (b.label || b.source)) habe.push("✺ " + (b.label || b.source));
         if (habe.length)
             footChildren.push(
@@ -1077,7 +1131,8 @@ class AnazhRealm_werkstatt_hof {
         return {
             soul,
             soulLabel: (custom && custom.label) || (builtin && builtin.label) || soul,
-            name: typeof p.name === "string" && p.name.trim() ? p.name.trim().slice(0, 48) : this._t("hof.du"),
+            // unbenannt (null) heißt er, wie die Tafel ihn nennt — in der Sprache von jetzt
+            name: typeof p.name === "string" && p.name.trim() ? p.name.trim().slice(0, 48) : this._t("ui.schoepfer-2"),
             mode: typeof this.getGameMode === "function" ? this.getGameMode() : "frieden",
             stats,
             tags: p.statTags || {},
@@ -1104,7 +1159,10 @@ class AnazhRealm_werkstatt_hof {
             { class: "spec-id" },
             this._el("span", { class: "spec-name soul-" + prof.soul, text: prof.name }),
             this._el("span", { class: "spec-soul-label", text: prof.soulLabel }),
-            this._el("span", { class: "ich-mode-chip mode-" + prof.mode, text: prof.mode })
+            this._el("span", {
+                class: "ich-mode-chip mode-" + prof.mode,
+                text: AnazhRealm._tafelName(AnazhRealm.SPIELMODUS_NAMEN, prof.mode),
+            })
         );
         const vigor = prof.hpMax > 0 ? Math.max(0, Math.min(1, prof.hp / prof.hpMax)) : 0;
         const v5 = Math.round(vigor * 5);
@@ -1180,11 +1238,14 @@ class AnazhRealm_werkstatt_hof {
             .slice(0, 6);
         const natBars = tagEntries.map(([k, v]) =>
             this._specBar(
-                k,
+                AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, k), // der Name der Achse aus der Tafel, nie die Kennung
                 v / 3,
                 v.toFixed(2),
                 this._natureLevelClass(v),
-                this._t("hof.natur-titel", { tag: k, wert: v.toFixed(2) })
+                this._t("hof.natur-titel", {
+                    tag: AnazhRealm._tafelName(AnazhRealm.AXIS_LABELS, k),
+                    wert: v.toFixed(2),
+                })
             )
         );
         const rightCol = this._el(
@@ -1200,8 +1261,8 @@ class AnazhRealm_werkstatt_hof {
         // FOOTER — die getragene Habe (Werkzeug/Rüstung) als Chips; Boosts leben im EINEN Band
         // (#ich-boosts-host). Das Chip-Glyph steht bewusst nicht hier — die Source-Probe sucht es.
         const habe = [];
-        if (prof.equipped.tool) habe.push("⚒ " + prof.equipped.tool);
-        if (prof.equipped.armor) habe.push("⛨ " + prof.equipped.armor);
+        if (prof.equipped.tool) habe.push("⚒ " + this._habeName(prof.equipped.tool));
+        if (prof.equipped.armor) habe.push("⛨ " + this._habeName(prof.equipped.armor));
         const footer = this._el(
             "div",
             { class: "spec-footer hof-spec-footer" },
@@ -1486,7 +1547,8 @@ class AnazhRealm_werkstatt_hof {
         cmdHost.appendChild(
             this._el("span", {
                 class: "hof-section-cmd-label",
-                text: this._t("hof.alle-sektion", { sektion: labels[active] || active }),
+                // der Name der Sektion als Zeile der Tafel (bis hier stand ihr Schlüssel „hof.sektion-wolf“ im Satz)
+                text: this._t("hof.alle-sektion", { sektion: labels[active] ? [labels[active]] : active }),
             })
         );
         for (const [lbl, task] of [
@@ -1616,7 +1678,7 @@ class AnazhRealm_werkstatt_hof {
             const boostList = prof.boosts;
             let boostsWrap = null;
             if (Array.isArray(boostList) && boostList.length > 0) {
-                const nowSec = performance.now() / 1000;
+                const nowSec = this.state.spielZeit;
                 const pills = [];
                 for (const b of boostList) {
                     if (!b || !b.tagDelta) continue;
@@ -2013,6 +2075,19 @@ _stammZonen(AnazhRealm, [AnazhRealm_werkstatt_hof]);
 // gibt sie an die KI/das Journal/die UI als REICHEN Zustand statt sechs Zahlen.
 // Je Achse ihr Schlüssel der Sprach-Tafel (`gefuehl.*`); jeder Leser ruft `_t` — die KI hört das Gefühl in der Sprache
 // des Spielers wie die Leiste.
+// Die Wörter der Stimmung eines Wesens im Hof (`_creatureProfile`): je Kennung (froh/trübe, das Temper aus der Wariness, das
+// Temperament der Gattung, tetrapoda `temperament.profile`) ihr Schlüssel der Sprach-Tafel.
+AnazhRealm.WESEN_STIMMUNG = Object.freeze({
+    froh: "hof.stimmung.froh",
+    truebe: "hof.stimmung.truebe",
+    scheu: "hof.wesen.scheu",
+    wachsam: "hof.wesen.wachsam",
+    vertraut: "hof.wesen.vertraut",
+    neugierig: "hof.wesen.neugierig",
+    wild: "hof.wesen.wild",
+    wehrhaft: "hof.wesen.wehrhaft",
+    sanft: "hof.wesen.sanft",
+});
 AnazhRealm.EMOTION_LABEL = Object.freeze({
     joy: "gefuehl.freude",
     awe: "gefuehl.ehrfurcht",
