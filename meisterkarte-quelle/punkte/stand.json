@@ -4941,7 +4941,7 @@
   },
   "karte2.erleben.kopplung.bild": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.bild#1 radeon: Station seit der Messung geändert — zuletzt an 31d156e8: Deckel 117 s gerissen: Stille seit 115.3 s nach 117 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · karte2.erleben.kopplung.bild#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.bild#1 radeon: Station seit der Messung geändert — zuletzt an 31d156e8: Deckel 117 s gerissen: Stille seit 115.3 s nach 117 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · karte2.erleben.kopplung.bild#1 gtx: Konsum seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/gelaende-boden.js, stamm/vegetation-baum.js +1)",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.bild#1",
@@ -4959,8 +4959,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/gelaende-boden.js, stamm/vegetation-baum.js +1)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6338,7 +6339,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 191,
+  "konsum": 192,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6500,11 +6501,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 157
+  "ohne": 156
  },
  "kopfVoll": "c1e6f29a227befd15c4cd90bcf0f3e40bd228da4",
- "zeit": "2026-11-18T03:03:06.861Z",
- "vorher": "21f279f5",
+ "zeit": "2026-11-18T03:09:26.226Z",
+ "vorher": "c1e6f29a",
  "bilanz": {
   "gewinn": [],
   "fall": [],
