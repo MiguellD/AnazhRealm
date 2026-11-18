@@ -121,6 +121,9 @@ class AnazhRealm_kreatur_furcht {
         von.z = pm.z;
         von.r = NAT.fleeRadius * weit;
         const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
+        // DEN GAST TRENNT DER GRABEN (`_gehegeVon`, Hagenbeck): ein Tier liest den Menschen jenseits des Rands eines Geheges
+        // nicht — keine Flucht ans ferne Ende, keine Neugier an den Rand, es lebt seinen Tag; der Hieb (fearActive) schreckt.
+        if (!fearActive && this._gehegeVon(creature) !== this._gehegeVon(this.state.playerMesh)) return 0;
         const e = (this.state.player && this.state.player.emotions) || {};
         // DIE BEDROHUNG der Aura (tetrapoda bedrohung — dieselbe, die den Abdruck am Ort wiegt). DIE FURCHT DER BEUTE SCHRECKT
         // IHREN JÄGER NIE (oekologie.K4#2): wer den Spieler jetzt pirscht oder hetzt, liest seine Aura nicht — er ist Beute wie

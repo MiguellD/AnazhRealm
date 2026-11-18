@@ -2182,7 +2182,7 @@ class AnazhRealm_feld_leben {
             kacheln.push([ix * S - cs, iz * S - cs, (ix + 1) * S + cs, (iz + 1) * S + cs]);
             const R = F[key];
             if (!R) continue;
-            const tiere = R.tiere.map(({ id, soul, g, bs, alterS, x, z, v, name }) => ({
+            const tiere = R.tiere.map(({ id, soul, g, bs, alterS, x, z, v, name, gehege }) => ({
                 id,
                 soul,
                 g,
@@ -2192,6 +2192,7 @@ class AnazhRealm_feld_leben {
                 z,
                 v,
                 name,
+                gehege, // der Term des Geheges (tetrapoda GEHEGE_GESETZ): das Tier kehrt als Tier seines Geheges wieder
             }));
             bestand[key] = { t: R.t, seq: R.seq, tiere };
         }

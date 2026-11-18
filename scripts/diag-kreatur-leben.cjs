@@ -1111,6 +1111,108 @@ async function lebenBuehnen() {
             fern: fern.slice(0, 3).map((f) => f.text),
         };
     });
+    // ── gehege (Pflicht F, w28-gehege; tetrapoda GEHEGE_GESETZ): das Wolfs-Gehege des Ort-Plans, wie die Welt es liest
+    // (`_gehegeListe`: die Zeile aus `plan.gehege` — kein Haken der Bühne). Der Gast naht aus 100 m südlich der Zoo-Mitte (das
+    // Gehege ist fällig, seine Leiber entstehen fern an ihren Ruhe-Plätzen), steht 300 s an der Station S8 des Plans (Blick ins
+    // Gehege, der Schritt des Spiels 1/30 s), sieht den Tieren einen Spieltag zu (der Schritt des Tages-Budgets, 0,1 s), geht
+    // jenseits der Fälligkeit (residentM × (1 + GEHEGE_HALT), den Blick fort) und kehrt wieder. Je Bild jeder Leib im Rand (die
+    // Tiefe seines Punkts hinter der nächsten Kante), je Takt des Lebens dieselben Nummern im Verzeichnis, kein Tier des Geheges
+    // im wilden Gesetz (`_kreaturBestand` zählt die Freien) und keines gealtert; über den Tag der Anteil der Ruhe gegen das
+    // Ethogramm seiner Gattung; fern kein Leib, zurück dieselben an ihren Plätzen ──
+    await buehne("gehege", async (restore) => {
+        if (taeter === "gehege-rand") decke("_gehegeRandKontakt", () => () => {});
+        if (taeter === "gehege-term") decke("_bestandFreie", () => (R) => R.tiere);
+        const [GG, LG, P] = [A._gehegeGesetz(), A._lebensraumGesetz(), r._genesisPlan];
+        const Z = r._gehegeListe()[0];
+        if (!Z) throw new Error("die Welt trägt kein Gehege (`_gehegeListe` leer: ohne Plan oder ohne Wildnis)");
+        const S8 = P.stationen.find((q) => q.name === "S8");
+        const [gast, mitte] = [S8.third, S8.blick].map((q) => ({ x: P.ort.x + q.x, z: P.ort.z + q.z }));
+        const fernM = globalThis.__fachwerkCore.GENESIS_ORT.regel.residentM * (1 + A.GEHEGE_HALT);
+        // die Tiefe im Rand: der kleinste Abstand des Punkts zu einer Kante, nach innen positiv
+        const tiefe = (x, z) =>
+            Z.rand.reduce((m, p, i) => {
+                const q = Z.rand[(i + 1) % Z.rand.length];
+                return Math.min(m, ((q.x - p.x) * (z - p.z) - (q.z - p.z) * (x - p.x)) / Math.hypot(q.x - p.x, q.z - p.z));
+            }, Infinity);
+        const ort = (dz, blick) => (pm.set(gast.x, boden(gast.x, gast.z - dz) + 0.7, gast.z - dz), kamera(0, blick));
+        const nummern = GG.tiere(Z, GG.G).map((t) => t.id).join(); // prettier-ignore
+        const z = { tiere: Z.n, bilder: 0, aus: 0, randMin: Infinity, leer: 0, anders: 0, wild: 0, alterS: 0, takte: 0 };
+        const leiber = () => r._gehegeTiereVon(Z).map((t) => t.leib).filter(Boolean); // prettier-ignore
+        const bild = (voll, B) => {
+            const L = leiber();
+            z.leer += voll && L.length !== Z.n;
+            for (const c of L) {
+                const d = tiefe(c.position.x, c.position.z);
+                [z.bilder, z.aus, z.randMin] = [z.bilder + 1, z.aus + (d < 0), Math.min(z.randMin, d)];
+                const ud = c.userData;
+                if (B) B[(ud.task && ud.task.name === "drink") || !ud._gezeigt ? "ziehen" : ud._gezeigt]++;
+            }
+        };
+        // ein Takt des Lebens (taktS der Spiel-Zeit): das Verzeichnis trägt die Zeile, das wilde Gesetz zählt sie nicht
+        const leben = () => {
+            s.spielZeit += A._bestandGesetz().B.taktS;
+            ruhigSpieler();
+            r.tickFaunaLifecycle();
+            const T = r._gehegeTiereVon(Z);
+            z.takte++;
+            z.anders += T.map((t) => t.id).join() !== nummern;
+            for (const t of T) z.alterS = Math.max(z.alterS, t.alterS);
+            for (const key of new Set(T.map((t) => r._bestandKey(t.x, t.z)))) {
+                const frei = s.faunaBestand.regionen[key].tiere.filter((t) => t.g === Z.gattung && !t.gehege).length;
+                z.wild = Math.max(z.wild, r._kreaturBestand(null, key)[Z.gattung].n - frei);
+            }
+        };
+        s.faunaLifecycle = { lastTick: 0 }; // die Marke der Bühne reist als Verweis — der Takt des Lebens beginnt hier
+        const tag0 = s.timeOfDay;
+        restore.push(() => r._uhrSetzen(tag0, "regler"));
+        r._uhrSetzen(0.5, "regler");
+        // (1) der Gast naht: die Leiber entstehen fern
+        ort(100, 1);
+        for (let k = 0; k < 3; k++) (leben(), bild(false));
+        z.nahen = leiber().length;
+        // (2) der Gast steht 300 s an S8 (ein Täter fährt 60 s und 1,2 Stunden des Tags: sein Befund steht am Hieb und am ersten Takt)
+        const blick = () => (pm.set(gast.x, boden(gast.x, gast.z) + 0.7, gast.z), kamera(mitte.x - gast.x, mitte.z - gast.z));
+        for (let k = 0; k < (taeter ? 1800 : 9000); k++) {
+            if (k % 300 === 0) (leben(), blick());
+            takt(1 / 30);
+            bild(true);
+        }
+        // (3) ein Spieltag am Gehege (der Schritt des Tages-Budgets)
+        const takte = Math.round((0.1 / 24) * (s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES) * 600);
+        const B = { ruhen: 0, nahrung: 0, ziehen: 0 };
+        for (let i = 0, n = 0; i < (taeter ? 12 : 240); i++) {
+            r._uhrSetzen(((s.timeOfDay * 24 + 0.1) % 24) / 24, "regler");
+            for (let k = 0; k < takte; k++, n++) {
+                if (n % 100 === 0) (leben(), blick());
+                ruhigSpieler();
+                takt(0.1);
+                bild(true, B);
+            }
+        }
+        const summe = B.ruhen + B.nahrung + B.ziehen;
+        z.budget = Object.fromEntries(Object.entries(B).map(([k, v]) => [k, rund(v / Math.max(1, summe), 3)]));
+        z.sollRuhen = LG.E.gattung[Z.gattung].ruhen;
+        z.plaetze = leiber().map((c) => rund(Math.min(...Z.ruhe.map((q) => ab(c.position, q))), 1));
+        // (3b) DER HIEB: der Gast trifft jedes Tier von S8 aus (`damageCreature` — der eine Fall, in dem es ihn liest): sie fliehen
+        // 30 s lang von ihm fort an den fernen Rand, und der Rand hält den Leib (`hieb`: die kleinste Tiefe dieser Bilder)
+        const vor = [z.bilder, z.randMin];
+        z.randMin = Infinity;
+        for (const c of leiber()) r.damageCreature(c, 1, { source: "player", fromPos: pm.clone() });
+        for (let k = 0; k < 900; k++) (ruhigSpieler(), takt(1 / 30), bild(true));
+        z.hieb = { bilder: z.bilder - vor[0], randMin: rund(z.randMin, 2) };
+        z.randMin = Math.min(z.randMin, vor[1]);
+        // (4) der Gast geht jenseits der Fälligkeit, den Blick fort: kein Leib trägt das Gehege
+        ort(fernM + 30, -1);
+        for (let k = 0; k < 3; k++) leben();
+        z.fern = leiber().length;
+        // (5) und kehrt wieder: dieselben Tiere an ihren Plätzen
+        ort(100, 1);
+        for (let k = 0; k < 3; k++) (leben(), bild(false));
+        z.wieder = leiber().length;
+        z.wiederPlatz = rund(Math.max(-1, ...leiber().map((c) => Math.min(...Z.ruhe.map((q) => ab(c.position, q))))), 2);
+        z.randMin = rund(z.randMin, 2);
+        return z;
+    });
 }
 // das Soll der Lebens-Proben (`soll(bedingung, grund)` aus dem Urteil der Kreatur-Proben)
 function lebenUrteil(name, z, soll) {
@@ -1135,6 +1237,31 @@ function lebenUrteil(name, z, soll) {
         soll(
             !leer.length,
             `Rollen ohne Ziel-Ort: ${leer.join(" · ")} — kein Fremder erreicht einen ihrer Orte (belebt ${z.zielOrte} von ${z.orte} Orten)`
+        );
+    }
+    // DAS GEHEGE (Pflicht F): der Rand hält, die Zeile ist der Bestand, die Wildnis zählt sie nicht, die Tiere leben ihren Tag
+    if (name === "gehege") {
+        soll(
+            z.nahen === z.tiere && z.leer === 0 && z.bilder > 0,
+            `das Gehege steht leer: ${z.nahen} von ${z.tiere} Leibern nach dem Nahen, ${z.leer} Bilder am Rand ohne alle ${z.tiere}`
+        );
+        soll(z.aus === 0, `Ausbruch: ${z.aus} von ${z.bilder} Leib-Bildern jenseits des Rands (tiefster ${z.randMin} m; Soll 0)`);
+        soll(
+            z.hieb.bilder > 0 && z.hieb.randMin < 1,
+            `LEER: der Hieb trieb kein Tier an den Rand (${z.hieb.bilder} Bilder, nächstes ${z.hieb.randMin} m vor ihm; Soll < 1 m)`
+        );
+        soll(z.anders === 0, `die Zeile ist nicht der Bestand: ${z.anders} von ${z.takte} Takten mit anderen Nummern`);
+        soll(
+            z.wild === 0 && z.alterS === 0,
+            `das wilde Gesetz zählt das Gehege: ${z.wild} seiner Tiere im Bestand der Region, gealtert ${z.alterS} s (Soll 0 · 0)`
+        );
+        soll(
+            Math.abs(z.budget.ruhen - z.sollRuhen) <= 0.2 * z.sollRuhen,
+            `das Gehege verfehlt das Ethogramm: ruhen ${z.budget.ruhen} (Soll ${z.sollRuhen} ± 20 %; ${JSON.stringify(z.budget)})`
+        );
+        soll(
+            z.fern === 0 && z.wieder === z.tiere && z.wiederPlatz <= 0.5,
+            `das Gehege folgt dem Gast nicht: fern ${z.fern} Leiber (Soll 0), zurück ${z.wieder} (Soll ${z.tiere}), ${z.wiederPlatz} m neben ihrem Ruhe-Platz (Soll ≤ 0,5)`
         );
     }
     if (name === "kaskade") {
@@ -1308,8 +1435,12 @@ function lebenUrteil(name, z, soll) {
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
     BUEHNEN: `await (${lebenQuelle})();`,
-    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen"],
+    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen", "gehege"],
     TAETER: {
+        gehege: [
+            ["gehege-rand", /Ausbruch: [1-9]/],
+            ["gehege-term", /das wilde Gesetz zählt das Gehege: [1-9]/],
+        ],
         zielplan: [
             ["zielplan-planlos", /Bewohner ohne Ziel/],
             ["zielplan-einort", /Rollen ohne Ziel-Ort/],
