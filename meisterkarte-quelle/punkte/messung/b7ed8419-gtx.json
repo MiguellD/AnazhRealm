@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-18T22:22:13.668Z",
+ "zeit": "2026-11-18T22:24:51.238Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -1203,20 +1203,20 @@
   "kb02d0cd5bc1b": "bVRdj5swEPwveWzrc/jwAZb64IRTU6lScz9hba+BC4HIhlCl6n+vICE5IPuUoBnv7Mzaf1cnUAfI8OXD1dWKr76svq0cnJE4tGe0Lx9uxVdrFQKLubgWFUJse5iyxalxtCwkBVlBfkTS2gaL8kUNNE/FCMhp9ya6PaV7GtFN9/37nFpK1DVpwOBIlNqPAuBzYOsykEigNUOzG5iFXhgwToeKU7H/oGOJdyFo9zbvKKHSU6UmAGa8YcA3sVCoC8CGlEXlxp5KMxn4/N5oOZW20JELYF6ivZHAi8CTo9DBym6f0BnRlK1zk2ZxoJkfc0oX2AxdofKGnGwtsRrNS/zIA/7E6ezUEjNRJCXEcu5zDlhlaKcaopCpkNM/8fzQAxzRAqkgv0GTdRD58uENpXS31FIOwocWo/BYyyQyE2Kf4a7rnUrj/k92/xzvrsuYZuJR77MmTuWFPU7tMYZpWPNfS0kuB42WHGrXPDSFADhufjoslNiH6Zz5GObG8+XrmsWfZomp2C28c7VpOrBIslN7I2KILGJciJ8LcAPH4ziE8jFm8+Bc0y/2ZxksRO814qNzT3K4XgNywaIcSZFSXoB8K8R8zrOFIwGZ2cKYMW3JlEmeLWeHZUNkXTcjMtAQKE4vtLq7kgzXYPNIMO1q9WObvS90DqfVtrlPJl/XJuTm3N8+tUAXtiEdqPyeh5EICX8CvaAtMcOJbTqUAege/UlZOP74OtnPyyLVS4G9oZVr3bhFSaST22ZPI+jQHiRUh1EmkwG7vkOb32I3PEfbXZJ2YlZbobs0E9tN3B92QkVPtjZF/7LRHFqXQ9k8nvR//wE="
  },
  "sitzung": {
-  "start": "2026-11-18T22:21:43.858Z",
-  "ordner": "sitzung-20261118-232143",
+  "start": "2026-11-18T22:24:15.865Z",
+  "ordner": "sitzung-20261118-232415",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.8,
+  "bootS": 6.4,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "karte2.same.preis.zugang#1",
-    "s": 21.8,
-    "takte": 784,
+    "ort": "wiese",
+    "vor": "karte2.planet.kosmos.welten#1",
+    "s": 26.5,
+    "takte": 589,
     "chunks": 81,
     "nach": null
    }
@@ -1224,37 +1224,53 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.same.preis.zugang#1",
-    "anders": [],
-    "wie": {},
-    "haelt": [
-     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend."
+    "probe": "karte2.planet.kosmos.welten#1",
+    "anders": [
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
     ],
+    "wie": {
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
     "heap": [
-     188.5,
-     371.7
+     228.3,
+     223.3
     ],
-    "ungemessen": "den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. — Heap nach der Rücknahme 188.5 → 371.7 MB (+183.2 > 64)"
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.planet.kosmos.welten#1",
+    "gehalten": [
+     "skala",
+     "spiegel"
+    ],
+    "offen": []
    }
   ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 28,
-   "frameP95": 508.35,
-   "taktP95": 171.25,
-   "vramMax": 113,
-   "seiten": 3,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 36,
-   "luecken": 1,
-   "letzteLuecke": "kein Renderer"
+   "zapfen": 40,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 41,
-  "minuten": 0.78
+  "fahrtS": 47.3,
+  "minuten": 0.89
  },
  "ungemessen": {
   "mensch.K5#1": {
@@ -1690,6 +1706,100 @@
    "grund": "Wirt-Wache: den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. — Heap nach der Rücknahme 188.5 → 371.7 MB (+183.2 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: 0 harte UI-Zeilen im DOM von 646 Zeilen (634 aus der Tafel, 12 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2461, en 2461) · [linse-gpu] nvidia/pascal)",
    "zeit": "2026-11-18T22:22:13.668Z",
    "abdruck": "60ba3483a3d1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.welten#1": {
+   "gruen": false,
+   "zahl": "Messort: kugel-heim: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AWT9B5ht13XfCf5PuvneyunVq5cDMgFmgiBIAswZzAEkAIIECIAAASaQIJgpUtmyLCtYtrvb4+9zu6fb0z2tafe0k2zZGssSJUpiAEhk4OVXuerGc/aa3zr3PZCaubir9j57r73yXjucqof4n — kein Urteil, UNGEMESSEN (die Probe sah: Folge: kugel-heim: Exit 1 ANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AWT9B5ht13XfCf5PuvneyunVq5cDMgFmgiBIAswZzAEkAIIECIAAASaQIJgpUtmyLCtYtrvb4+9zu6fb0z2tafe0k2zZGssSJUpiAEhk4OVXuerGc/aa3zr3PZCaubir9j57r73yXjucqof4nZ9dslvvX7JbPgNQfvC+RXvj3XP2) · Täter: @@PUNKTE@@ MESSORT kugel-heim: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AWT9B5ht13XfCf5PuvneyunVq5cDMgFmgiBIAswZzAEkAIIECIAAASaQIJgpUtmyLCtYtrvb4+9zu6fb0z2tafe0k2zZGssSJUpiAEhk4OVXuerGc/aa3zr3PZCaub",
+   "exit": 1,
+   "minuten": 0.19,
+   "grund": "Messort: kugel-heim: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AWT9B5ht13XfCf5PuvneyunVq5cDMgFmgiBIAswZzAEkAIIECIAAASaQIJgpUtmyLCtYtrvb4+9zu6fb0z2tafe0k2zZGssSJUpiAEhk4OVXuerGc/aa3zr3PZCaubir9j57r73yXjucqof4n — kein Urteil, UNGEMESSEN (die Probe sah: Folge: kugel-heim: Exit 1 ANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AWT9B5ht13XfCf5PuvneyunVq5cDMgFmgiBIAswZzAEkAIIECIAAASaQIJgpUtmyLCtYtrvb4+9zu6fb0z2tafe0k2zZGssSJUpiAEhk4OVXuerGc/aa3zr3PZCaubir9j57r73yXjucqof4nZ9dslvvX7JbPgNQfvC+RXvj3XP2) · Täter: @@PUNKTE@@ MESSORT kugel-heim: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AWT9B5ht13XfCf5PuvneyunVq5cDMgFmgiBIAswZzAEkAIIECIAAASaQIJgpUtmyLCtYtrvb4+9zu6fb0z2tafe0k2zZGssSJUpiAEhk4OVXuerGc/aa3zr3PZCaub",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 10.7,
+   "fremd": {
+    "s": 15.3,
+    "takte": 7,
+    "fremdS": 5.28,
+    "kerne": 0.345,
+    "fensterKerne": 0.346,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      2.33
+     ],
+     [
+      "Explorer.EXE",
+      1.11
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.73
+     ]
+    ],
+    "dienerS": 4.63,
+    "diener": [
+     [
+      "dwm.exe",
+      2.3
+     ],
+     [
+      "System",
+      1.64
+     ]
+    ],
+    "geraetS": 2.92,
+    "geraet": [
+     [
+      "svchost.exe",
+      1.36
+     ],
+     [
+      "MsMpEng.exe",
+      1.19
+     ],
+     [
+      "SearchIndexer.exe",
+      0.27
+     ]
+    ],
+    "eigenS": 30.56,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.342,
+     "nach": 0.625,
+     "station": 0.625
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 103,
+     "alle": 256.9,
+     "cpuEin": 110
+    },
+    "nach": {
+     "ein": 90.6,
+     "alle": 267.9,
+     "cpuEin": 93
+    },
+    "ruhe": {
+     "ein": 89.6,
+     "alle": 226.1,
+     "n": 590,
+     "von": "2026-11-17"
+    },
+    "f": 1.185,
+    "fEin": 1.15,
+    "fAlle": 1.185,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-18T22:24:51.238Z",
+   "abdruck": "6805cdf2a85c",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
