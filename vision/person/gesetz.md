@@ -71,7 +71,7 @@ Art-Daten aus den WHO-Tafeln (`spike/who-referenz.json`, Herkunft und sha256 dor
 
 ## 4. Fähigkeit — EIN Regler vom Leib
 
-Ein Primitiv, **der Stoß**: ein Bein-Paar (oder ein Bein) aus zwei gleichen Gliedern l = L/2 streckt das Knie von φ_s; die Kraft entlang
+Zwei Primitive auf demselben Leib. **Der Stoß**: ein Bein-Paar (oder ein Bein) aus zwei gleichen Gliedern l = L/2 streckt das Knie von φ_s; die Kraft entlang
 des Beins ist F = T(ω)/(l·cos(φ/2)) mit ω = v/(l·cos(φ/2)) (Zwei-Glied-Bein nach Alexander 1995). m·dv/dt = F − m·g·sin θ; der Fuß
 verlässt den Boden, wenn F = 0 wird (ω ≥ ω₀) oder das Bein gestreckt ist. g ist die Welt-Schwerkraft (zensus b17). Das ZIEL wählt
 φ_s und θ (Optimierung über das Ziel), die REGELN wählen Beinzahl und Anlauf. Keine Sport-Konstante.
@@ -81,7 +81,7 @@ verlässt den Boden, wenn F = 0 wird (ω ≥ ω₀) oder das Bein gestreckt ist.
 | Gang | wirtschaftlich gehen: Froude 0,25 → v = √(0,25·g·L); Schritt = ½·L·2,3·(v²/gL)^0,3 | Kram 1997, Schepens 2004; Alexander 1976 | ja (ohne Alterung, §8) |
 | Stand-Sprung | weit oder hoch, zwei Beine, kein Anlauf: max über φ_s, θ | der Stoß | ja |
 | Sprint | max Tempo: v = L_c(2F/W − 1)/t_sw; F = mittlere Kraft des einbeinigen Stoßes; L_c = 1,017·L; t_sw = 1,133·√(L/g); Anlauf v(t) = V(1 − e^(−t/τ)), Start-Beschleunigung g·√((F/W)² − 1)/(F/W) | Weyand et al. 2000 (Tempo 6,2–11,1 m/s, t_aer 0,12 s, t_sw ≈ 0,35 s, sekundär); L_c und t_sw daraus beim WHO-Mann; Furusawa et al. 1927 | ja |
-| Weitsprung | Anlauf = Sprint-Höchsttempo, einbeiniger senkrechter Stoß, Flug | der Stoß + Sprint | ja |
+| Weitsprung | Anlauf = Sprint-Höchsttempo; das Bein **stemmt** als starre Strebe unter dem Winkel α vor der Hüfte (unelastisch: das Tempo längs des Beins geht verloren, das quer bleibt); das Ziel wählt α; Flug bis zur Absprunghöhe | zweites Primitiv „Stemmen“ (Physik des Stoßes) + Sprint | ja |
 | Wurf | — | die Arm-Kette hat keine gesehene Quelle (Anteil der Wurf-Muskeln, Schulter-ω₀) | **nein** |
 | Schlag, Schwimmen, Klettern, Balancieren, Rutschen, Ritt | — | kein Primitiv | **nein** |
 
