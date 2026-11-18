@@ -396,6 +396,7 @@
             : frei
               ? schaftHub(segs, leaves, runMeta, 0, FREISTAND.ansatz, 0, P.alter > 0)
               : schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala, 0, bestand ? BESTAND.krone : 0, P.alter > 0);
+        if (P.conifer) koniferenKegel(segs, leaves, runMeta, KONIFERE_KEGEL.kegel * (frei ? KONIFERE_KEGEL.frei : 1));
         // DER STAMM AUS DER KRONE: der Radius des Stamms aus dem Schirm, den die Krone nach Wuchs und Hub spannt (vor dem
         // Blatt-Budget: jede Stufe misst dieselben Anker), jeder Strang reist mit seinem Anteil.
         // (die Anker über der Kappe wuchsen ohne den Hub: lotrecht ändert er den Schirm nicht, die Jugend wächst um den Fuß —
@@ -446,6 +447,83 @@
     // Gestalt 1 im Bestand und frei, acht Bäume aus fünf Arten): im Mittel +1,8 %, −3 bis +8 % (ohne das Blatt −16 %, mit
     // der ganzen Blatt-Größe +9 %). gate:pflanzen-nah (H) „Krone/BHD" hält das Ergebnis an der sichtbaren Krone im Band.
     const STAMM_KRONE = Object.freeze({ kd: 21.5, azimute: 8 });
+    // DER KEGEL DER KONIFERE (laub-kante, 18.11.): die Krone der Konifere trägt ihr Maß — jeder Ast (der Lauf am Stamm samt allem, was
+    // aus ihm wächst) steht im Kegel r(y) = kegel · H · (1 − y / H) um die Stamm-Achse (H der Wipfel nach dem Hub des Schafts). Ein Ast,
+    // der den Mantel durchstößt, wird um seinen Ansatz am Stamm gestaucht (der kleinste Faktor, mit dem jeder seiner Punkte und
+    // Nadel-Anker im Kegel steht) — Gestalt, Verzweigung, Nadeln und Zufalls-Strom bleiben, nur das Maß folgt dem Kegel.
+    // Befund (Kern, Same 1–3, r/H der Nadel-Anker je Zehntel der Höhe): bis hier wuchs der Quirl-Ast als Rekursion des Laub-Asts
+    // (das Leit-Kind 0,72–0,8 seiner Länge je Stufe bis maxDepth) — der Schirm der Fichte maß r/H 0,42–0,51, der Tanne 0,30–0,46,
+    // breiter als hoch; aus dem Dorf stand jede Fichte und Tanne als runder Laub-Ballen vor dem Himmel (fimp:fichte:L2 kante
+    // 0,32, tanne 0,30). Die Natur: Picea abies und Abies alba im Bestand Kronen-⌀ 5–8 m bei 25–35 m Höhe, die Krone über 60–70 %
+    // der Höhe (r/H am Kronen-Fuß 0,1–0,15: kegel 0,2), der Solitär breiter (`frei`, FREISTAND). Ein Ast endet nie am Mantel (der
+    // Schnitt nahm der Fichte 83 % ihrer Nadeln: die Spitzen der Rekursion lagen jenseits). UNGEPRÜFT die Zeile je Art.
+    const KONIFERE_KEGEL = Object.freeze({ kegel: 0.2, frei: 1.4 });
+    function koniferenKegel(segs, leaves, runMeta, kegel) {
+        let H = 0;
+        for (const s of segs) H = Math.max(H, s.p0[1], s.p1[1]);
+        for (const l of leaves) H = Math.max(H, l.pos[1]);
+        if (!(H > 0)) return;
+        const R = (y) => kegel * H * Math.max(0, 1 - y / H);
+        const stamm = new Map();
+        const istStamm = (r) => {
+            if (r < 0) return true;
+            let v = stamm.get(r);
+            if (v === undefined) {
+                const m = runMeta[r];
+                v = !m || m.parentRun < 0 || (m.isLead && istStamm(m.parentRun));
+                stamm.set(r, v);
+            }
+            return v;
+        };
+        const astVon = (r) => {
+            while (r >= 0 && runMeta[r] && !istStamm(runMeta[r].parentRun)) r = runMeta[r].parentRun;
+            return r;
+        };
+        const aeste = new Map(); // Ast → { a: Ansatz, pkt: Set der Punkte (Arrays, je eines nur einmal) }
+        const ast = (r) => {
+            const w = astVon(r);
+            if (w < 0 || istStamm(w)) return null;
+            let A = aeste.get(w);
+            if (!A) aeste.set(w, (A = { a: null, pkt: new Set() }));
+            return A;
+        };
+        for (const s of segs) {
+            const A = ast(s.runId);
+            if (!A) continue;
+            if (!A.a && s.runId === astVon(s.runId)) A.a = s.p0.slice();
+            A.pkt.add(s.p0);
+            A.pkt.add(s.p1);
+        }
+        for (const l of leaves) {
+            const A = l.run == null ? null : ast(l.run);
+            if (A) A.pkt.add(l.pos);
+        }
+        for (const A of aeste.values()) {
+            if (!A.a) continue;
+            const a = A.a;
+            const P = [...A.pkt];
+            const haelt = (f) =>
+                P.every((q) => {
+                    const x = a[0] + (q[0] - a[0]) * f,
+                        y = a[1] + (q[1] - a[1]) * f,
+                        z = a[2] + (q[2] - a[2]) * f;
+                    return Math.hypot(x, z) <= R(y) + 1e-9;
+                });
+            if (haelt(1)) continue;
+            let lo = 0,
+                hi = 1;
+            for (let i = 0; i < 12; i++) {
+                const m = (lo + hi) / 2;
+                if (haelt(m)) lo = m;
+                else hi = m;
+            }
+            for (const q of P) {
+                q[0] = a[0] + (q[0] - a[0]) * lo;
+                q[1] = a[1] + (q[1] - a[1]) * lo;
+                q[2] = a[2] + (q[2] - a[2]) * lo;
+            }
+        }
+    }
     function stammAusKrone(leaves, blattMass) {
         const N = STAMM_KRONE.azimute,
             ls = blattMass > 0 ? blattMass : 1;
