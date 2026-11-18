@@ -2243,10 +2243,30 @@ class AnazhRealm_bild_kosten {
                     .max(0);
             let s = sVon(T.luminance(farbe));
             for (let i = 0; i < NA.umkehrSchritte; i++) s = sVon(T.luminance(ur(s)));
-            return ur(s);
+            // … und vor der Angleichung (`_augeAngleich`, sie steht in der Kette VOR dem Auge der Nacht)
+            return this._augeAngleich(ur(s), true);
         }
         const s = sVon(T.luminance(farbe));
         return T.vec3(skot, skot, skot).sub(farbe).mul(s);
+    }
+
+    // DIE ANGLEICHUNG DES AUGES ALS EIN GLIED (w28-strahler-4, welt-licht.js `augeGewinn`): ohne Farbe → die Uniform der drei
+    // Gewinne der Zapfen (CAT02-LMS; EIN Schreiber `_leuchtTakt` aus dem Zustand der Sicht); mit `farbe` → die Farbe im Weiß
+    // des Zustands, von Kries im Grad D: farbe + rück · ((g − 1) ∘ hin · farbe). Ohne Quelle sind die Gewinne genau 1 und der
+    // Versatz genau 0 — der Tag geht byte-gleich in das Auge der Nacht. `umkehr`: die Farbe, die die Angleichung als `farbe`
+    // zeigt (die Gewinne 1/g) — die Umkehr des Nacht-Auges (`_nachtAuge(…, true)`) ist die Umkehr des GANZEN Auges: ein Ziel,
+    // das ein BILD ist (die Flamme des Brands, das Ziel des Tors), steht vor beiden. Ohne sie stand die Flamme am Herd blauweiß
+    // (die Gewinne 0,83 · 1,11 · 3,27 auf ihrem Ton; GTX 1050, 18.11.).
+    _augeAngleich(farbe, umkehr = false) {
+        const T = THREE.TSL;
+        const g = this._augeAngleichU || (this._augeAngleichU = T.uniform(new THREE.Vector3(1, 1, 1)));
+        if (!farbe) return g;
+        const { hin, rueck } = __weltLicht.AUGE_LMS;
+        const zeile = (m, i, v) => T.dot(T.vec3(m[3 * i], m[3 * i + 1], m[3 * i + 2]), v);
+        const d = T.vec3(zeile(hin, 0, farbe), zeile(hin, 1, farbe), zeile(hin, 2, farbe)).mul(
+            umkehr ? T.float(1).div(g).sub(1) : g.sub(1)
+        );
+        return farbe.add(T.vec3(zeile(rueck, 0, d), zeile(rueck, 1, d), zeile(rueck, 2, d)));
     }
 
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
@@ -2486,7 +2506,10 @@ class AnazhRealm_bild_kosten {
             // (log-linear 0 … 1); die Leuchtdichte des Pixels in cd/m² aus der Eichung der Nacht (der Stoff rechnet Albedo/π ·
             // Bestrahlung in Welt-Einheiten). Es ist die EINE Sättigung der Kette und nur ein Knoten der Nacht: am Tag
             // (`nightFactor` 0) fällt der Zweig (`nurBeiStaerke`), das Bild geht unberührt in die Tonkurve.
-            const gesehen = combined.add(nurBeiStaerke(this._nachtAuge(combined), u.nightFactor));
+            // DIE ANGLEICHUNG (w28-strahler-4, `_augeAngleich`) steht VOR ihm: die Zapfen gleichen sich dem Weiß des Zustands an,
+            // die Stäbchen sehen das angeglichene Bild — EINE Stelle für die ganze Sicht (Umgebung, Becken, Glut, Flamme).
+            const angeglichen = this._augeAngleich(combined);
+            const gesehen = angeglichen.add(nurBeiStaerke(this._nachtAuge(angeglichen), u.nightFactor));
             const graded = gesehen.max(vec3(0, 0, 0));
             // DIE FARBSICHT (spielgang.K4, `AnazhRealm.FARBSICHT`): die Daltonisierung als die LETZTE Abbildung des Lichts vor der
             // Tonkurve, Δ = v · max(e · Bild, 0) — Weiß-treu (Grau trägt e = 0) und je Seite linear: sie vertauscht mit dem Versatz

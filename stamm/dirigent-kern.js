@@ -1617,13 +1617,18 @@ class AnazhRealm {
             const A = __weltLicht.augeUmgebung(aLux);
             const U = AnazhRealm.AUGE;
             atmo.lichtAuge.value.set(A, __weltLicht.augeS(A) * m, (U.welt / U.lux ** U.p) * m);
+            if (aW > 0) this._augeFarbe = aE.map((v) => v / aW); // die Farbe der Umgebung, auf Luma 1
         }
-        // DIE GLUT STEHT IM ZUSTAND DER SICHT (w28-strahler-2, welt-licht.js `augeSicht` · `augeBlende`): ihre S-Form rechnet über
-        // der Umgebung MIT dem Becken am Auge, und die Blende, um die die Kamera vor ihm schließt, hebt sie in der Welt — die
-        // Flamme, das Fenster, die Lava stehen im Bild, wo die Kamera am Feuer weit schließt
-        const becken = this._beckenAmAuge();
-        const aSicht = __weltLicht.augeSicht(becken, this._augeLux ?? 1);
-        const mass = (this._augeMass ?? 1) * __weltLicht.augeBlende(becken, this._augeLux ?? 1);
+        // DIE GLUT STEHT IM ZUSTAND DER SICHT (w28-strahler-2/-4, welt-licht.js `augeSicht` · `augeBlende`): ihre S-Form rechnet
+        // über dem Zustand des Felds, und die Blende, um die die Kamera vor ihm schließt, hebt sie in der Welt — die Flamme, das
+        // Fenster, die Lava stehen im Bild, wo die Kamera am Feuer weit schließt. Die drei Gewinne der Angleichung (`augeGewinn`)
+        // schreibt derselbe Takt in die Post-Kette (`_augeAngleich`): die GANZE Sicht — Umgebung, Becken, Glut — steht im Weiß
+        // des Zustands.
+        const sicht = this._sichtZustand(this._augeLux ?? 1, this._augeFarbe || [1, 1, 1]);
+        const aSicht = sicht.lux;
+        const mass = (this._augeMass ?? 1) * sicht.blende;
+        this._augeAngleich(null).value.set(...sicht.gewinn);
+        this._sicht = sicht;
         // DIE HÖHE DER GLUT DER LAVA: die Leuchtdichte ihres Ausbruchs (Planck im Sichtbaren × Emissivität) durch dasselbe Auge
         atmo.lavaGlut.value = __weltLicht.augeGlut(this._lavaAusbruchCdM2(), aSicht) * mass;
         // DIE GLUT JE DATUM (Fenster, Laternen-Kopf, das gemalte Glutbett): seine Leuchtdichte `cdM2` durch das Auge (welt-licht.js `augeGlut`) in der
@@ -1796,25 +1801,27 @@ class AnazhRealm {
     // Flackern, ihr Mittel) — kein Zeitplan: was sie zeigt, entscheidet das Auge über der Umgebung der Stunde (`AUGE`). Das
     // Licht des Auges (`ersatz`) ist keine Quelle der Welt: es trägt seine Stärke in der Zahl des Bilds über die EINE
     // Übersetzung Labor → Welt. Ein Datum ohne Candela ist ein Bruch des Vertrags (laut).
-    // DAS BECKEN AM AUGE (Lux): Σ E der gehaltenen Plätze des Pools an der Kamera — die mittlere Candela OHNE Flackern (der
-    // Messer pumpt nicht mit der Flamme: k über 5 s am Herd Hub 1,01 %) × die Blende des Platzes, derselbe Abfall wie im Stoff
-    // (`_lichtPoolTerm`: der Punkt I ÷ (d² + kern²), die flache Scheibe der Betrag ihres Bestrahlungs-Vektors, der Saum der
-    // Reichweite), ohne das Licht des Auges selbst (`ersatz`). EIN Leser: der Lichtmesser (`_belichtungAusLicht`).
-    _beckenAmAuge() {
+    // DAS BECKEN AM PUNKT (Lux, w28-strahler-4): Σ E der gehaltenen Plätze des Pools am Welt-Punkt (x, y, z) — die mittlere
+    // Candela OHNE Flackern (der Messer pumpt nicht mit der Flamme: k über 5 s am Herd Hub 1,01 %) × die Blende des Platzes,
+    // derselbe Abfall wie im Stoff (`_lichtPoolTerm`: der Punkt I ÷ (d² + kern²) durch den Kopf der Leuchte, die flache Scheibe
+    // der Betrag ihres Bestrahlungs-Vektors, der Saum der Reichweite), ohne das Licht des Auges selbst (`ersatz`). `rgb` (drei
+    // Zahlen, optional) nimmt dazu E je Kanal in der Lichtfarbe der Quelle (auf Luma 1). EIN Leser: das Feld des Messers
+    // (`_sichtFeld`); bis w28-strahler-4 las es nur den Ort der Kamera (`_beckenAmAuge`).
+    _beckenAm(x, y, z, rgb) {
         const pool = this._leuchtPool;
-        const cp = this.state.camera?.position;
-        if (!pool || !cp) return 0;
+        if (!pool) return 0;
         const H = pool.halter;
         const U = AnazhRealm.AUGE;
+        const c = this._beckenC || (this._beckenC = new THREE.Color());
         let sum = 0;
         for (let k = 0; k < H.length; k++) {
             const q = H[k];
             if (!q || q.L.ersatz || !(pool.blende[k] > 0)) continue;
             const R = this._leuchtReichweite(q);
             if (!(R > 0)) continue;
-            const dx = q.x - cp.x,
-                dy = q.y - cp.y,
-                dz = q.z - cp.z;
+            const dx = q.x - x,
+                dy = q.y - y,
+                dz = q.z - z;
             const d = Math.hypot(dx, dy, dz);
             if (!(d < R)) continue;
             const I = this._leuchtCandela(q, null) * pool.blende[k];
@@ -1830,9 +1837,96 @@ class AnazhRealm {
                 const waag = ((Math.sqrt(a2) * h) / Math.max(1e-6, a2)) * (S / w - 1);
                 E = (I / (2 * Math.max(1e-6, k2))) * Math.hypot(waag, 1 - (S - 2 * k2) / w);
             }
-            sum += E * s0 * s0 * (3 - 2 * s0);
+            const Es = E * s0 * s0 * (3 - 2 * s0);
+            sum += Es;
+            if (rgb) {
+                this._lichtLinear(q.L, c);
+                const l = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+                rgb[0] += (Es * c.r) / l;
+                rgb[1] += (Es * c.g) / l;
+                rgb[2] += (Es * c.b) / l;
+            }
         }
         return sum;
+    }
+
+    // DAS FELD DES MESSERS (w28-strahler-4, welt-licht.js `AUGE_FELD`): je Punkt der Tafel das Becken am gezeichneten Boden
+    // (`_bodenSichtAt`, der EINE Leser des Bodens) vor der Kamera — der Abstand längs ihrer waagrechten Blickrichtung, gedreht um
+    // den Winkel des Punkts. → `{ lux, rgb, w }` (E_i in Lux, je Punkt drei Kanäle, die Gewichte um die Achse der Kamera,
+    // `augeFeldGewicht`, Summe 1) für `augeSicht` und `augeSichtFarbe`, oder null, solange der Pool keine Quelle der Welt hält
+    // (alle E_i sind 0: der Zustand ist die Umgebung — am Tag immer). Ein Punkt ohne gezeichneten Boden (ungebaut, unter der
+    // Karte) liegt nicht im Feld. Die Höhen der Punkte stehen, bis die Kamera
+    // `FELD_NEU.m` geht oder `FELD_NEU.grad` dreht (höchstens `FELD_NEU.s` alt): der Boden wird nicht je Bild zweimal gelesen.
+    _sichtFeld() {
+        const pool = this._leuchtPool;
+        const cam = this.state.camera;
+        if (!pool || !cam) return null;
+        if (!pool.halter.some((q, k) => q && !q.L.ersatz && pool.blende[k] > 0)) return null;
+        const P = __weltLicht.AUGE_FELD.punkte;
+        const N = AnazhRealm.FELD_NEU;
+        const cp = cam.position;
+        const v = this._feldV || (this._feldV = new THREE.Vector3());
+        cam.getWorldDirection(v);
+        const l = Math.hypot(v.x, v.z);
+        const [fx, fz] = l > 1e-4 ? [v.x / l, v.z / l] : [0, -1];
+        const F =
+            this._feld ||
+            (this._feld = {
+                lux: new Float64Array(P.length),
+                rgb: new Float64Array(3 * P.length),
+                w: new Float64Array(P.length),
+            });
+        const jetzt = performance.now() / 1000;
+        const g = F.grund;
+        if (
+            !g ||
+            jetzt - g.t > N.s ||
+            Math.hypot(cp.x - g.x, cp.z - g.z) > N.m ||
+            fx * g.fx + fz * g.fz < Math.cos((N.grad * Math.PI) / 180)
+        ) {
+            F.grund = { t: jetzt, x: cp.x, z: cp.z, fx, fz, y: new Float64Array(P.length) };
+            P.forEach((p, i) => {
+                const [dx, dz] = [fx * p.cos - fz * p.sin, fz * p.cos + fx * p.sin];
+                const y = this._bodenSichtAt(cp.x + dx * p.d, cp.z + dz * p.d);
+                F.grund.y[i] = y == null ? NaN : y;
+            });
+        }
+        const G = F.grund;
+        let summe = 0;
+        P.forEach((p, i) => {
+            const rgb = [0, 0, 0];
+            const [dx, dz] = [G.fx * p.cos - G.fz * p.sin, G.fz * p.cos + G.fx * p.sin];
+            const [x, y, z] = [G.x + dx * p.d, G.y[i], G.z + dz * p.d];
+            const da = Number.isNaN(y) ? 0 : Math.hypot(x - cp.x, y - cp.y, z - cp.z);
+            const c = da > 0 ? ((x - cp.x) * v.x + (y - cp.y) * v.y + (z - cp.z) * v.z) / da : 1;
+            F.w[i] =
+                da > 0 ? __weltLicht.augeFeldGewicht((Math.acos(Math.max(-1, Math.min(1, c))) * 180) / Math.PI) : 0;
+            summe += F.w[i];
+            F.lux[i] = da > 0 ? this._beckenAm(x, y, z, rgb) : 0;
+            F.rgb.set(rgb, 3 * i);
+        });
+        if (!(summe > 0)) return null;
+        for (let i = 0; i < P.length; i++) F.w[i] /= summe;
+        return F;
+    }
+
+    // DER ZUSTAND DER SICHT an der Umgebung der Stunde (`aLux`; `umgebung` ihre Farbe als lineares RGB, auf Luma 1 genormt —
+    // die Lesung des Messers): `lux` (welt-licht.js `augeSicht`), `blende` (`augeBlende`), der Grad der Anpassung `D`
+    // (`augeGrad`) und die drei Gewinne der Zapfen (`augeGewinn` über `augeSichtFarbe`). EIN Glied für den Messer
+    // (`_belichtungAusLicht`), die Glut und die Angleichung (`_leuchtTakt`).
+    _sichtZustand(aLux, umgebung) {
+        const WL = __weltLicht;
+        const F = this._sichtFeld();
+        const A = WL.augeUmgebung(aLux);
+        const lux = WL.augeSicht(F, aLux);
+        const U = [0, 1, 2].map((c) => A * umgebung[c]);
+        const D = WL.augeGrad(lux);
+        return {
+            lux,
+            blende: WL.augeBlende(lux, aLux),
+            D,
+            gewinn: WL.augeGewinn(WL.augeSichtFarbe(F, U), U, D),
+        };
     }
 
     _leuchtCandela(q, t) {
@@ -2107,5 +2201,8 @@ AnazhRealm.SYNC_KETTE = [
 // Das Ego-Auge über dem Leib-Zentrum (m): das Rig setzt die Ego-Kamera hier, das Auge der Stufen steht hier, bevor eine
 // Kamera gesetzt ist (`_lodAuge`).
 AnazhRealm.EGO_AUGE_M = 1.6;
+// DER BODEN DES FELDS (w28-strahler-4, `_sichtFeld`): die Höhen seiner Punkte stehen, bis die Kamera `m` Meter geht, `grad` Grad
+// dreht oder `s` Sekunden vergehen — ein halber Meter ist die Stufe der Boden-Karte, 2° verschieben den fernsten Punkt (48 m) um 1,7 m.
+AnazhRealm.FELD_NEU = Object.freeze({ m: 0.5, grad: 2, s: 1 });
 // Die Ruhe der Lebens-Leiste (s, spielgang.K3): so lange ruht jede ihrer Größen, bevor sie weicht (`tickStatsHud`).
 AnazhRealm.STATS_RUHE_S = 2;

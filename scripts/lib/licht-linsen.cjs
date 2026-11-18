@@ -1101,15 +1101,17 @@ function tagKurve(o) {
         const zeilen = [];
         let karte = null;
         // DAS GESETZ DER KAMERA AN DER LESUNG JETZT (w28-strahler: k ist eine Funktion der Uhr UND des Beckens am Auge): die
-        // Belichtung, die `belichtung` aus der Lesung des Messers gibt — `mit` dem Becken (Σ E am Auge, `_beckenAmAuge`; die Linse
-        // rechnet seinen Anteil selbst, `AUGE.anteil` × das gezeigte Licht des Beckens über der Umgebung: ein Schreiber, der das
-        // Becken nicht oder ganz liest, fällt als MESSER) oder ohne
+        // Belichtung, die `belichtung` aus der Lesung des Messers gibt — `mit` dem Feld (E_i an den Bodenpunkten im Blick,
+        // `_sichtFeld`; die Linse rechnet den Zustand selbst, das log-Mittel `augeSicht` und seine Blende: ein Schreiber, der das
+        // Feld nicht oder anders liest, fällt als MESSER) oder ohne
         const WL = window.__weltLicht;
         const gesetz = (mit) => {
             const w = r._belichtungE,
                 EA = r._belichtungAnker();
             if (!w || !EA) return NaN;
-            const bl = mit ? WL.augeBlende(r._beckenAmAuge(), WL.augeLux(luma709(w), r._belichtungTag)) : 1;
+            const aLux = WL.augeLux(luma709(w), r._belichtungTag);
+            const F = mit ? r._sichtFeld() : null;
+            const bl = mit ? WL.augeBlende(WL.augeSicht(F, aLux), aLux) : 1;
             return WL.belichtung(w, EA, r._sonnenRichtung().y, (h, q) => C._belichtungStufen(h, q), C.BELICHTUNG) / bl;
         };
         const C = r.constructor;
@@ -1139,7 +1141,7 @@ function tagKurve(o) {
                     sonne: +((Math.asin(r._sonnenRichtung().y) * 180) / Math.PI).toFixed(2),
                     sofort: +sofort.toFixed(4),
                     frisch: +((k * gesetz(false)) / gesetz(true)).toFixed(4),
-                    becken: +r._beckenAmAuge().toPrecision(4),
+                    becken: +(r._sicht ? r._sicht.lux : NaN).toPrecision(4),
                     messer: +Math.log2(k / gesetz(true)).toFixed(3),
                     hell: +(s[0] / n).toFixed(1),
                     Y: +(luma709(s.slice(1)) / n).toPrecision(4),
@@ -1157,7 +1159,7 @@ function tagKurve(o) {
                         alt.call(this);
                         for (const q of this.state.atmoUniforms.lichtLage) q.value.w = 0;
                     };
-                    r._beckenAmAuge = () => 0;
+                    r._sichtFeld = () => null;
                     try {
                         r._leuchtTakt();
                         r._applyDayNightToScene();
@@ -1172,7 +1174,7 @@ function tagKurve(o) {
                         z.Yohne = +(luma709(a.slice(1)) / n2).toPrecision(4);
                     } finally {
                         r._leuchtTakt = alt;
-                        delete r._beckenAmAuge;
+                        delete r._sichtFeld;
                         r._leuchtTakt();
                         r._applyDayNightToScene();
                     }

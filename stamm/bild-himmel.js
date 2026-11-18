@@ -1950,13 +1950,18 @@ class AnazhRealm_bild_himmel {
         const EA = w && this._belichtungAnker();
         if (!EA) return null;
         // das Gesetz der Kamera (welt-licht.js `belichtung`) mit den Stufen am Glied der Welt (die Linsen prüfen ihren Schein dort)
-        // EIN ZUSTAND JE SICHT (w28-strahler-2, welt-licht.js `augeSicht` · `augeBlende`): Σ E der Quellen am Auge
-        // (`_beckenAmAuge`, Lux) hebt den Zustand der Sicht über die Umgebung, die Kamera schließt um seine Blende — NACH dem
-        // Boden der Belichtung (`BELICHTUNG.min` gilt dem Licht der Stunde: unter ihm stand die Lava weiß, k 0,05 statt 0,003)
+        // EIN ZUSTAND JE SICHT (w28-strahler-2/-4, welt-licht.js `augeSicht` · `augeBlende`): das Feld des Messers (`_sichtZustand`:
+        // das log-Mittel von A + E_i über die Bodenpunkte im Blick) hebt den Zustand der Sicht über die Umgebung, die Kamera
+        // schließt um seine Blende — NACH dem Boden der Belichtung (`BELICHTUNG.min` gilt dem Licht der Stunde: unter ihm stand
+        // die Lava weiß, k 0,05 statt 0,003)
         const lu = 0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2];
+        const sicht = this._sichtZustand(
+            __weltLicht.augeLux(lu, this._belichtungTag),
+            lu > 0 ? w.map((v) => v / lu) : [1, 1, 1]
+        );
         const k =
             __weltLicht.belichtung(w, EA, e, (h, q) => AnazhRealm._belichtungStufen(h, q), AnazhRealm.BELICHTUNG) /
-            __weltLicht.augeBlende(this._beckenAmAuge(), __weltLicht.augeLux(lu, this._belichtungTag));
+            sicht.blende;
         // DER RAUM AM AUGE (w28-innenlicht): unter einer Decke misst die Kamera das Licht des Raums — das Licht von draußen ×
         // F (`_raumBlendeTakt`: das Raum-Licht der Decke × der Anteil des Himmels am Licht, die Sonne erreicht den Messer im
         // Raum nicht), `_raumStufen` = log2 F. Dasselbe Gesetz der Kamera wie für jedes Licht des Tags, dasselbe Glied wie das

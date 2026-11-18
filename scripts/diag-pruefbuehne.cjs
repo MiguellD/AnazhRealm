@@ -466,15 +466,17 @@ async function s0Probe(page, station, schein) {
                 return c ? +luma709([c.r, c.g, c.b]).toFixed(5) : null;
             };
             // … in der Zahl, die die Welt jetzt trägt (`augeMass` über der Lesung des Messers: nachts 1, am Mittag der Bühne 0,82)
-            const glutSoll = () =>
-                +(
-                    window.__weltLicht.augeGlut(
-                        window.__fachwerkCore.LICHT_GESETZ.fenster.cdM2,
-                        window.__weltLicht.augeSicht(r._beckenAmAuge(), r._augeLux)
-                    ) *
-                    window.__weltLicht.augeMass(luma709(r._belichtungE), r._belichtungTag) *
-                    window.__weltLicht.augeBlende(r._beckenAmAuge(), r._augeLux)
+            // … im Zustand der Sicht: das log-Mittel über das Feld des Messers (`_sichtFeld`, das Gesetz `augeSicht`)
+            const glutSoll = () => {
+                const WL = window.__weltLicht;
+                const F = r._sichtFeld();
+                const sicht = WL.augeSicht(F, r._augeLux);
+                return +(
+                    WL.augeGlut(window.__fachwerkCore.LICHT_GESETZ.fenster.cdM2, sicht) *
+                    WL.augeMass(luma709(r._belichtungE), r._belichtungTag) *
+                    WL.augeBlende(sicht, r._augeLux)
                 ).toFixed(5);
+            };
             uhr(0);
             await takt(2);
             const nachts = glut();
@@ -1231,10 +1233,10 @@ async function himmelProbe(page, taub) {
 // Selbsttest: die Zahlen von z352 MÜSSEN `_mikroStoff` nennen. Die letzte Zeile des Laufs trägt Luma und Anteil der Nacht (der
 // Probe-Post liest sie).
 const S0_NACHT = { nacht: { luma: 22, schwarz: 0.05 } };
-// DER LICHTMESSER AM BECKEN (w28-strahler-2, `S0_MESSER`): die Kamera liest das Becken am Auge STETIG — `AUGE.anteil` × sein
-// gezeigtes Licht über der Umgebung (welt-licht.js `augeBlende`: die Kamera schließt um die Blende des Zustands der Sicht). Am
-// Feuerkreis der Bühne aus 2 m steht die Belichtung des Schreibers an diesem Gesetz (`ev` EV), an der Lava (`ueberLux` am Auge
-// gestellt: die Mess-Wiese, 2 157 lx) am selben Gesetz und tiefer. Die Nacht OHNE Feuer ist ohne Feuer auch im Messer.
+// DER LICHTMESSER AM BECKEN (w28-strahler-2/-4, `S0_MESSER`): die Kamera liest das FELD STETIG — das log-Mittel von A + E_i über
+// die Bodenpunkte im Blick (`_sichtFeld`, welt-licht.js `augeSicht`; die Kamera schließt um `augeBlende` des Zustands). Am
+// Feuerkreis der Bühne aus 2 m steht die Belichtung des Schreibers an diesem Gesetz (`ev` EV), an der Lava (`ueberLux` auf
+// jedem Punkt des Felds gestellt: die Mess-Wiese, 2 157 lx) am selben Gesetz und tiefer. Die Nacht OHNE Feuer ist ohne Feuer auch im Messer.
 // Selbsttest: der Messer liest das Becken einer Lava, wo der Stoff kein Feuer trägt (Schuss); der Schreiber taub (gestellt).
 const S0_MESSER = { ev: 0.02, ueberLux: 2157 };
 function s0MesserUrteil(m) {
@@ -1245,7 +1247,7 @@ function s0MesserUrteil(m) {
     if (!(Math.abs(ev) <= S0_MESSER.ev))
         b.push(
             `S0 Messer: am Feuerkreis (${m.becken} lx am Auge) steht die Kamera ` +
-                `${ev.toFixed(2)} EV neben dem Gesetz (k ${m.k} gegen ${m.gesetz}) — der Schreiber der Belichtung (\`_belichtungAusLicht\`) liest das Becken nicht über \`augeMesser\``
+                `${ev.toFixed(2)} EV neben dem Gesetz (k ${m.k} gegen ${m.gesetz}) — der Schreiber der Belichtung (\`_belichtungAusLicht\`) liest das Feld nicht über \`_sichtZustand\``
         );
     if (!(Math.abs(evU) <= S0_MESSER.ev) || !(m.gesetzUeber < m.gesetz))
         b.push(
@@ -1548,14 +1550,20 @@ async function lichtLauf() {
                         // Becken — der Schein des Messers: sie liest dort das Becken einer Lava (`ueberLux` auf dem des Feuers), die
                         // Kamera schließt, die Nacht der Bühne sinkt
                         const WL = window.__weltLicht;
-                        const beckenAlt = r._beckenAmAuge;
+                        const feldAlt = r._sichtFeld;
+                        // ein Feld mit `plus` Lux auf jedem Punkt (ohne Farbe: die Angleichung steht still)
+                        const feldPlus = (F, plus) => ({
+                            lux: WL.AUGE_FELD.punkte.map((_, i) => (F ? F.lux[i] : 0) + plus),
+                            w: WL.AUGE_FELD.punkte.map((_, i, P) => (F ? F.w[i] : 1 / P.length)),
+                            rgb: null,
+                        });
                         if (ohneFeuer)
-                            r._beckenAmAuge =
+                            r._sichtFeld =
                                 schein === "messer"
                                     ? function () {
-                                          return beckenAlt.call(this) + ueberLux;
+                                          return feldPlus(feldAlt.call(this), ueberLux);
                                       }
-                                    : () => 0;
+                                    : () => null;
                         let messerP = null;
                         let kSchuss = NaN; // die Belichtung, bei der der Schuss stand
                         // der Farb-Schein: der Platz des Feuers leuchtet wie bis K11b — in der Glut-Palette (sRGB → linear) und mit
@@ -1640,12 +1648,12 @@ async function lichtLauf() {
                             himmelL = env ? +(Math.PI * luma709(env.oben)).toFixed(4) : null;
                             sternL = +luma709(r._atmoSternenLicht(sonneY)).toFixed(4);
                             // DER MESSER (`S0_MESSER`, unten): das Becken am Auge des Schusses, die Belichtung des Schreibers und die des
-                            // Gesetzes — von der Linse selbst gerechnet (`AUGE.anteil` × `augeZeig` über der Umgebung) — am Becken des
+                            // Gesetzes — von der Linse selbst gerechnet (`augeSicht` über das Feld, `augeBlende`) — am Becken des
                             // Feuerkreises, dann dasselbe mit dem Becken einer Lava (`ueberLux` am Auge gestellt)
                             if (schein === "nacht" || schein === "messer") {
-                                const kGesetz = (E) => {
+                                const kGesetz = (F) => {
                                     const w = r._belichtungE;
-                                    const lu = luma709(w);
+                                    const aLux = WL.augeLux(luma709(w), r._belichtungTag);
                                     return (
                                         WL.belichtung(
                                             w,
@@ -1653,33 +1661,43 @@ async function lichtLauf() {
                                             r._sonnenRichtung().y,
                                             (h, q) => AR._belichtungStufen(h, q),
                                             AR.BELICHTUNG
-                                        ) / WL.augeBlende(E, WL.augeLux(lu, r._belichtungTag))
+                                        ) / WL.augeBlende(WL.augeSicht(F, aLux), aLux)
                                     );
                                 };
-                                const becken = beckenAlt.call(r);
-                                const eigen = Object.getOwnPropertyDescriptor(r, "_beckenAmAuge");
-                                if (schein !== "messer") r._beckenAmAuge = () => becken;
+                                const feldJetzt = feldAlt.call(r);
+                                const feld = feldJetzt && {
+                                    lux: Array.from(feldJetzt.lux),
+                                    w: Array.from(feldJetzt.w),
+                                    rgb: null,
+                                };
+                                const eigen = Object.getOwnPropertyDescriptor(r, "_sichtFeld");
+                                if (schein !== "messer") r._sichtFeld = () => feld;
                                 r._applyDayNightToScene();
                                 const k = rend.toneMappingExposure;
-                                r._beckenAmAuge = () => ueberLux;
+                                const feldUeber = feldPlus(null, ueberLux);
+                                r._sichtFeld = () => feldUeber;
                                 r._applyDayNightToScene();
                                 const kUeber = rend.toneMappingExposure;
-                                if (eigen) Object.defineProperty(r, "_beckenAmAuge", eigen);
-                                else delete r._beckenAmAuge;
+                                if (eigen) Object.defineProperty(r, "_sichtFeld", eigen);
+                                else delete r._sichtFeld;
                                 r._applyDayNightToScene();
+                                const becken = WL.augeSicht(
+                                    feld,
+                                    WL.augeLux(luma709(r._belichtungE), r._belichtungTag)
+                                );
                                 messerP = {
                                     becken: +becken.toFixed(1),
                                     k: +k.toFixed(4),
-                                    gesetz: +kGesetz(becken).toFixed(4),
+                                    gesetz: +kGesetz(feld).toFixed(4),
                                     ueberLux,
                                     kUeber: +kUeber.toFixed(4),
-                                    gesetzUeber: +kGesetz(ueberLux).toFixed(4),
+                                    gesetzUeber: +kGesetz(feldUeber).toFixed(4),
                                 };
                             }
                         } finally {
                             r._leuchtTakt = alt;
                             if (ohneFeuer) {
-                                delete r._beckenAmAuge;
+                                delete r._sichtFeld;
                                 r._applyDayNightToScene();
                             }
                             if (tagAuge) {
@@ -1786,7 +1804,7 @@ async function lichtLauf() {
                                 : null,
                             kelvin: FC.LICHT_GESETZ.feuer.kelvin == null ? null : FC.LICHT_GESETZ.feuer.kelvin,
                             belichtung: +rend.toneMappingExposure.toFixed(3),
-                            becken: +r._beckenAmAuge().toFixed(1),
+                            becken: +(r._sicht ? r._sicht.lux : NaN).toFixed(1),
                             messer: messerP,
                             nacht: s.postProcessingUniforms
                                 ? +s.postProcessingUniforms.nightFactor.value.toFixed(3)
@@ -1966,9 +1984,12 @@ async function lichtLauf() {
         const tg = ergebnis.tag;
         const tgOhne = ergebnis.tagOhne;
         const tgTon = tg && !tg.fehler && tgOhne && !tgOhne.fehler ? s0Ton(tg, tgOhne) : null;
-        const tagGetroffen = s0TonImBand(tgTon) && !(tgTon.sat <= S0_TON.satMax);
+        // getroffen, wo das Urteil des Kopfs (`s0TonPasst`) die Mutante fallen lässt — an der Sättigung ODER am Band des Farbtons:
+        // seit der Angleichung des Auges (w28-strahler-4, `_augeAngleich`) hält die Sättigung ohne das Auge der Nacht (0,334, GTX
+        // 1050, 18.11.), der Farbton fällt aus dem Band (netto 5,2° gegen 28–45°)
+        const tagGetroffen = !!tgTon && !s0TonPasst(tgTon);
         console.log(
-            `  SELBSTTEST S0 BILD (das Auge des Tages, wie bis K66): ${tagGetroffen ? `getroffen — der Boden 1–3 m reißt an der Sättigung ${tgTon.sat} (Soll ≤ ${S0_TON.satMax}) bei Farbton ${tgTon.hue}° netto im Band: das Auge der Nacht trägt ihn` : "BLIND " + JSON.stringify(tgTon)}`
+            `  SELBSTTEST S0 BILD (das Auge des Tages, wie bis K66): ${tagGetroffen ? `getroffen — der Boden 1–3 m reißt bei Sättigung ${tgTon.sat} (Soll ≤ ${S0_TON.satMax}) und Farbton ${tgTon.hue}° netto (Band ${S0_TON.hue.join("–")}°): das Auge der Nacht trägt ihn` : "BLIND " + JSON.stringify(tgTon)}`
         );
         // (c) eine Hilfs-Funktion liest eine Bindung des gezeichneten Programms
         const prog = (sauber && !sauber.fehler && sauber.boden?.[0]) || "";

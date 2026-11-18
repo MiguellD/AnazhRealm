@@ -61,9 +61,13 @@ var __weltLicht = (function () {
     //         zeig(E) = S(A) × E ÷ A
     //     EIN ZUSTAND JE SICHT (w28-strahler-2): der Exponent `p` beschreibt, wie hell eine ganze Szene dem angepassten Auge
     //     erscheint — er gehört dem Zustand der Sicht, nicht dem Fleck. Innerhalb einer Sicht trägt das VERHÄLTNIS E ÷ A den
-    //     Kontrast, wie am Tag Sonne gegen Schatten. Der Zustand der Sicht ist die Umgebung mit dem `anteil` des Beckens am Auge
-    //     (`augeSicht` = A + anteil × Σ E am Auge), sein Niveau S(Zustand); die Kamera schließt davor um `augeBlende` =
-    //     (Zustand ÷ A)^(1 − p) (Leser `_belichtungAusLicht`): am Feuer steht die ferne Wiese DUNKLER als ohne Feuer.
+    //     Kontrast, wie am Tag Sonne gegen Schatten. DER MESSER LIEST DAS FELD (w28-strahler-4): der Zustand der Sicht ist das
+    //     log-Mittel von A + E_i über die Bodenpunkte im Blick (`AUGE_FELD`, `augeSicht`; E_i aus demselben Becken je Punkt,
+    //     `_beckenAm`), sein Niveau S(Zustand); die Kamera schließt davor um `augeBlende` = (Zustand ÷ A)^(1 − p) (Leser
+    //     `_belichtungAusLicht`): am Feuer steht die ferne Wiese DUNKLER als ohne Feuer. Bis hier las er A + 0,25 × E AM AUGE —
+    //     ein Punkt, der dem Bild nicht gehört: herd-nah schloss die Kamera auf k 0,199, an der Lava auf 0,003 (GTX 1050, 18.11.).
+    //     DER ZUSTAND HAT EINE FARBE (`augeSichtFarbe` · `augeGrad` · `augeGewinn`): von Kries im Grad D der Anpassung, Leser
+    //     die Post-Kette (`_augeAngleich`).
     //     A steht nie unter dem Zustand der Stäbchen (`zustandMinLux`, die untere Grenze des mesopischen Bands auf der Karte,
     //     0,087 lx): nichts teilt durch null, die Höhle bleibt endlich.
     //     Gefallen (GTX 1050, 18.11.): das KNIE (A + 2,76 lx — es stellte der Mondnacht 3 lx hin, damit 100 cd einen Kreis
@@ -78,9 +82,11 @@ var __weltLicht = (function () {
     // DAS MESOPISCHE BAND (CIE 191:2010): unter `staebchenCd` sieht das Auge mit den Stäbchen, über `zapfenCd` mit den Zapfen.
     // EINE Quelle für den tiefsten Zustand des Auges und für die Sättigung der Nacht (`AnazhRealm.NACHT_AUGE` liest sie).
     const MESOPISCH = Object.freeze({ staebchenCd: 0.005, zapfenCd: 5, karte: 0.18 });
+    // `umfeldF` (GEWÄHLT): der Faktor F des Umfelds in CIECAM02 (Moroney et al. 2002) — 1,0 durchschnittlich, 0,9 gedämpft, 0,8
+    // dunkel. Die Angleichung wirkt nur, wo Quellen den Zustand färben, und das ist die Nacht: das Umfeld ist dunkel.
     const AUGE = Object.freeze({
         p: 0.2,
-        anteil: 0.25,
+        umfeldF: 0.8,
         zustandMinLux: (MESOPISCH.staebchenCd * Math.PI) / MESOPISCH.karte,
         welt: 7.83,
         lux: 115000,
@@ -125,9 +131,104 @@ var __weltLicht = (function () {
     // Becken trüge sie nicht: das Fenster stünde 7 Stufen über Mittelgrau. Sie rechnet über dem ZUSTAND DER SICHT und steht
     // in der Welt × die Blende der Kamera (`_leuchtTakt`): Flamme, Fenster und Lava halten ihr Bild, wo die Kamera schließt.
     // Die Höhe ist EINE Zahl je Datum und Bild (`lichtGlut`, `lavaGlut`), das Gemalte bleibt in sich linear.
-    // DER ZUSTAND DER SICHT (Lux) und die Blende, um die die Kamera vor ihm schließt
-    const augeSicht = (beckenLux, aLux) => augeUmgebung(aLux) + AUGE.anteil * Math.max(0, beckenLux);
-    const augeBlende = (beckenLux, aLux) => Math.pow(augeSicht(beckenLux, aLux) / augeUmgebung(aLux), 1 - AUGE.p);
+    // DAS FELD DES MESSERS (w28-strahler-4): 15 Bodenpunkte vor der Kamera — Ringe in `abstandM` (2 m bis zum Umkreis des Pools,
+    // 48 m, `LICHT_POOL.umkreisM`) je Oktave EIN Ring (der Senkwinkel eines Bodenpunkts halbiert sich je Oktave, jede Oktave
+    // trägt ein Band des Bilds), je Ring drei Strahlen in `winkelGrad` um die waagrechte Blickrichtung (± 20° im waagrechten
+    // Halbwinkel der Ego-Kamera). Die Gewichte messen MITTENBETONT wie der Belichtungsmesser einer Kamera: das Gauß-Gewicht des
+    // Winkels zwischen dem Strahl Kamera → Punkt und der Achse der Kamera (`augeFeldGewicht`, `sigmaGrad` 17,5° = die Hälfte
+    // des senkrechten Halbwinkels, GEWÄHLT) — es folgt der NEIGUNG des Blicks: mit fest gerechneten Gewichten des waagrechten
+    // Auges (der nahe Ring 0,24, der ferne 0,99) wog der Herd, auf den die Kamera 11° hinab sah, ein Viertel seines Bilds
+    // (Herd-nah k 0,181, Kreis Luma 204 im Clip; GTX 1050, 18.11.). Deterministisch aus Ort und Blick, kein Readback.
+    // GEMESSEN (GTX 1050, 18.11., Runde 4 gegen Runde 3 mit A + 0,25 × E am Auge): Herd-nah k 0,199 → 0,111 (Zustand 5,99 lx
+    // über A 0,23), Kreis Luma 191 → 190 weiter im Clip; Lava k 0,003 → 0,079 (Zustand 9,25 lx), Saum 179 → 237 rosaweiß; Gasse
+    // k 1,245 → 0,187 — EIN Punkt des 48-m-Rings lag an einem Glutbrunnen (114 lx) und hob den Zustand von 0,18 auf 2,63 lx.
+    const AUGE_FELD = (() => {
+        const T = { abstandM: [3, 6, 12, 24, 48], winkelGrad: [-20, 0, 20], sigmaGrad: 17.5 };
+        const punkte = [];
+        for (const d of T.abstandM)
+            for (const a of T.winkelGrad) {
+                const r = (a * Math.PI) / 180;
+                punkte.push(Object.freeze({ d, cos: Math.cos(r), sin: Math.sin(r) }));
+            }
+        return Object.freeze(Object.assign(T, { punkte: Object.freeze(punkte) }));
+    })();
+    // das Gewicht eines Punkts, der `grad` neben der Achse der Kamera liegt (der Rufer normt die Summe auf 1)
+    const augeFeldGewicht = (grad) => Math.exp(-0.5 * (grad / AUGE_FELD.sigmaGrad) ** 2);
+    // DER ZUSTAND DER SICHT (Lux): das log-Mittel von A + E_i über die Punkte des Felds (`feld.lux` die E_i, `feld.w` ihre
+    // Gewichte mit Summe 1, in der Reihe von `AUGE_FELD.punkte`; ohne gehaltene Quelle null: alle E_i sind 0, der Zustand ist
+    // A). Das log-Mittel, weil das Auge in Verhältnissen misst: ein Feuer, das ein Drittel des Bodens hundertfach hebt, hebt
+    // den Zustand um 100^(⅓), nie um ⅓ × 100.
+    const augeSicht = (feld, aLux) => {
+        const A = augeUmgebung(aLux);
+        if (!feld) return A;
+        let s = 0;
+        for (let i = 0; i < feld.w.length; i++) s += feld.w[i] * Math.log(A + Math.max(0, feld.lux[i]));
+        return Math.exp(s);
+    };
+    // die Blende, um die die Kamera vor dem Zustand der Sicht schließt
+    const augeBlende = (sichtLux, aLux) => Math.pow(sichtLux / augeUmgebung(aLux), 1 - AUGE.p);
+    // DER ZUSTAND IN SEINER FARBE: dasselbe log-Mittel je Kanal (linear sRGB, Lux je Kanal) über `umgebung` (die Umgebung der
+    // Stunde in ihrer Farbe, Luma = A) + E_i in der Lichtfarbe der Quellen (`feld.rgb` je Punkt drei Kanäle; ohne: die Umgebung)
+    const augeSichtFarbe = (feld, umgebung) =>
+        [0, 1, 2].map((c) => {
+            const u = Math.max(1e-9, umgebung[c]);
+            if (!feld || !feld.rgb) return u;
+            let s = 0;
+            for (let i = 0; i < feld.w.length; i++) s += feld.w[i] * Math.log(u + Math.max(0, feld.rgb[3 * i + c]));
+            return Math.exp(s);
+        });
+    // DER GRAD DER ANPASSUNG (CIECAM02, Moroney et al. 2002): D = F · [1 − (1/3,6) · e^((−L_A − 42)/92)]. L_A ist die
+    // Leuchtdichte des Adaptationsfelds in cd/m² — das Feld des Messers IST es, als Leuchtdichte der 18-%-Karte unter seinem
+    // Zustand (L = ρ · E ÷ π, ρ = `MESOPISCH.karte`): das Grau, auf das die Kamera es legt, nicht das Weiß (CIECAM02 nimmt
+    // L_A = 20 % des Weißen, die Karte ist dasselbe Mittelgrau). Nachts (L_A ≪ 42) steht D bei 0,82 · F, am Tag nahe F.
+    const augeGrad = (sichtLux) => {
+        const LA = (Math.max(0, sichtLux) * MESOPISCH.karte) / Math.PI;
+        return AUGE.umfeldF * (1 - Math.exp((-LA - 42) / 92) / 3.6);
+    };
+    // DIE ZAPFEN DER ANPASSUNG: linear sRGB (D65) → XYZ → CAT02-LMS (`hin`) und zurück (`rueck`), je Zeile drei Gewichte
+    const AUGE_LMS = (() => {
+        const mal = (a, b) =>
+            [0, 1, 2].flatMap((i) =>
+                [0, 1, 2].map((j) => a[3 * i] * b[j] + a[3 * i + 1] * b[3 + j] + a[3 * i + 2] * b[6 + j])
+            );
+        const inv = (m) => {
+            const [a, b, c, d, e, f, g, h, k] = m;
+            const A = e * k - f * h,
+                B = f * g - d * k,
+                C = d * h - e * g;
+            const det = a * A + b * B + c * C;
+            return [
+                A,
+                c * h - b * k,
+                b * f - c * e,
+                B,
+                a * k - c * g,
+                c * d - a * f,
+                C,
+                b * g - a * h,
+                a * e - b * d,
+            ].map((v) => v / det);
+        };
+        const XYZ = [0.4124564, 0.3575761, 0.1804375, 0.2126729, 0.7151522, 0.072175, 0.0193339, 0.119192, 0.9503041];
+        const CAT02 = [0.7328, 0.4296, -0.1624, -0.7036, 1.6975, 0.0061, 0.003, 0.0136, 0.9834];
+        const hin = mal(CAT02, XYZ);
+        return Object.freeze({ hin: Object.freeze(hin), rueck: Object.freeze(inv(hin)) });
+    })();
+    // DIE DREI GEWINNE (von Kries, unvollständig — CIECAM02 im Grad D): je Zapfen D × (Weiß der Umgebung ÷ Weiß des Zustands)
+    // + 1 − D, beide Weiß auf Leuchtdichte 1. Das Bezugsweiß ist die UMGEBUNG DER STUNDE, nicht D65: die Eichung der Kamera
+    // (Lehre 21) IST die Anpassung an das Licht der Stunde, die Nacht trägt ihren Mond. Die Angleichung nimmt nur, was die
+    // Quellen dem Zustand an Farbe geben: ohne Quelle (am Tag jede Flamme) sind alle drei Gewinne genau 1. GEMESSEN (GTX 1050,
+    // 18.11., D 0,66): Herd 0,816 · 1,126 · 3,896, Lava 0,809 · 1,132 · 5,225, Gasse 0,801 · 1,164 · 3,675, Mittag 1 · 1 · 1 —
+    // ein Weiß der Fläche (1, 1, 1) steht am Herd bei (0,21, 1,19, 4,36): was weißer glüht als der Zustand, kippt blau.
+    const augeGewinn = (zustand, umgebung, D) => {
+        const H = AUGE_LMS.hin;
+        const lms = (c) => {
+            const Y = Math.max(1e-12, 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
+            return [0, 1, 2].map((i) => (H[3 * i] * c[0] + H[3 * i + 1] * c[1] + H[3 * i + 2] * c[2]) / Y);
+        };
+        const [z, u] = [lms(zustand), lms(umgebung)];
+        return [0, 1, 2].map((i) => 1 + D * (u[i] / Math.max(1e-9, z[i]) - 1));
+    };
     const augeGlut = (cdM2, aLux) => {
         const E = Math.PI * Math.max(0, cdM2),
             A = augeUmgebung(aLux);
@@ -1426,8 +1527,14 @@ var __weltLicht = (function () {
         augeMass,
         augeZeig,
         augeUmgebung,
+        AUGE_FELD,
+        augeFeldGewicht,
+        AUGE_LMS,
         augeSicht,
         augeBlende,
+        augeSichtFarbe,
+        augeGrad,
+        augeGewinn,
         augeReichweite,
         augeGlut,
         BELICHTUNG,
