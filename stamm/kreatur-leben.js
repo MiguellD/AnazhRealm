@@ -2447,14 +2447,16 @@ class AnazhRealm_kreatur_leben {
         return e.wild;
     }
     // DAS ALTER EINES GEZEICHNETEN LEIBS (die Annahme, `_bestandAdoptieren`): die Umkehr des Wachstums an der Masse seiner Größe
-    // (`__lebenCore.alterZurMasse(M∞, bs³·M_guss)`) — trägt er weniger als sein M∞, ist er so alt, wie sein Leib es sagt; ist er
-    // ausgewachsen, ist er erwachsen (reifeS) oder älter, wenn er sein Alter schon trug (`alterS` des Leibs). Bis hierher trat
-    // jeder angenommene Leib erwachsen ein: ein Kitz (bs 0,6) sprang im nächsten Takt auf die Größe des Erwachsenen.
+    // (`__lebenCore.alterZurMasse(M∞, bs³·M_guss)`) — trägt er weniger als sein M∞, ist er so alt, wie sein Leib es sagt; ein Leib,
+    // der innerhalb der Toleranz des Wachstums (`LEIB_WUCHS_TOLERANZ`) ausgewachsen ist, ist so alt, wie diese Grenze sagt, oder
+    // älter, wenn er sein Alter schon trug (`alterS` des Leibs). Bis hierher trat jeder angenommene Leib erwachsen ein: ein Kitz
+    // (bs 0,6) sprang im nächsten Takt auf die Größe des Erwachsenen.
     _bestandAlterAusLeib(t, bs, alterS) {
         const e = this._bestandErbe(t);
         const b = Number.isFinite(bs) && bs > 0 ? bs : 1;
-        const s = AnazhRealm._lebenKern().alterZurMasse(e.M, b * b * b * this._gattungKg(t.g));
-        return Number.isFinite(s) ? s : Math.max(e.reif, alterS > 0 ? alterS : 0);
+        const [m, voll] = [b * b * b * this._gattungKg(t.g), e.M * (1 - AnazhRealm.LEIB_WUCHS_TOLERANZ) ** 3];
+        const s = AnazhRealm._lebenKern().alterZurMasse(e.M, Math.min(m, voll));
+        return m >= voll ? Math.max(s, alterS > 0 ? alterS : 0) : s;
     }
     // REIF ist ein Tier, dessen Leib reifeMasse × M∞ trägt (alterS ≥ reifeS(M∞)) — nur ein reifes wird Mutter oder Vater.
     _bestandReif(t) {
@@ -2619,14 +2621,15 @@ class AnazhRealm_kreatur_leben {
             const key = this._bestandKey(a.x, a.z);
             const v = ud.verband != null ? "n" + ud.verband : null;
             const id = this._annahmeKennung(key);
-            // DAS ERBE DES ANGENOMMENEN (leben-erbe): ein Leib ohne Bestand ist das Art-Mittel — a = 0, keine Mutter, kein Wurf;
-            // SEIN ALTER IST SEINE GRÖSSE (`_bestandAlterAusLeib`): ein kleiner Leib ist ein junges Tier und wächst weiter, ein
-            // ausgewachsener ist erwachsen. Seine Größe liest danach sein Tier (`_bestandBs`) — ohne Sprung (bis auf die
-            // Umwelt-Streuung seiner Kennung).
+            // DAS ERBE DES ANGENOMMENEN (leben-erbe): ein Leib ohne Bestand ist das Art-Mittel — sein Leib a + e = 0: die
+            // Umwelt-Streuung e ist die seiner Kennung (`_lebenUmweltAus`, nie gespeichert), also trägt er a = −e (verteilt wie
+            // ein Gründer-Zug, √VE statt √VA), keine Mutter, kein Wurf. SEIN ALTER IST SEINE GRÖSSE (`_bestandAlterAusLeib`): ein
+            // kleiner Leib ist ein junges Tier und wächst weiter, ein ausgewachsener ist erwachsen. Seine Größe liest danach sein
+            // Tier (`_bestandBs`) — ohne Sprung. Mit a = 0 sprang ein Leib der Größe 1 im nächsten Takt auf e^(e/3) (gemessen 0,91).
             const tier = {
                 soul: ud.soul,
                 g,
-                a: new Array(AnazhRealm._lebenKern().gesetz().achsen.length).fill(0),
+                a: this._lebenUmweltAus(id).map((e) => -e),
                 m: null,
                 alterS: 0,
                 x: a.x,
@@ -2744,7 +2747,8 @@ class AnazhRealm_kreatur_leben {
             if (!t) continue;
             c.userData.alterS = t.alterS;
             const bs = this._bestandBs(t);
-            if (!(Math.abs(bs / c.userData.bodySize - 1) <= 0.02)) this._kreaturGroesseSetzen(c, bs);
+            if (!(Math.abs(bs / c.userData.bodySize - 1) <= AnazhRealm.LEIB_WUCHS_TOLERANZ))
+                this._kreaturGroesseSetzen(c, bs);
         }
     }
     // WER BLEIBT GEZEICHNET (die EINE Frage der Zeichnung und des Weichens): ein Leib außerhalb des Bestands, einer im Riss (Opfer
@@ -3856,6 +3860,10 @@ AnazhRealm.ERINNERUNG_GEWICHT = Object.freeze({
 // W-D/M-F1 (V18.170, R-017) — der Min-Abstand frischer Kreatur-Spawns zum
 // Spieler (die M6-Struktur-Klemme aufs Wesen; Restore/Peer-Sicht = precise).
 AnazhRealm.CREATURE_SPAWN_CLEAR_M = 3;
+// leben-erbe — DIE TOLERANZ DES GEZEICHNETEN WACHSTUMS: der Leib eines Bestand-Tiers bekommt die Größe seines Erbes zur Zeit
+// (`_kreaturGroesseSetzen`), sobald sie um mehr als diesen Anteil von der gezeichneten abweicht (je Takt, `_bestandVerkoerpern`);
+// eine Annahme (`_bestandAlterAusLeib`) liest einen Leib, der innerhalb dieser Toleranz ausgewachsen ist, als ausgewachsen.
+AnazhRealm.LEIB_WUCHS_TOLERANZ = 0.02;
 // V18.301 — DER LADE-RHYTHMUS-RING: der beim Boot aktive Terrain-Chunk-Ring startet KLEIN
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
 AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen ≥130 m fern: sie tauchen aus der Distanz auf, ihr Satz blendet ein (_weltFeldEintrag, einblenden)
