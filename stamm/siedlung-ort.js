@@ -372,7 +372,9 @@ class AnazhRealm_siedlung_ort {
             // Studios nur der Kern der Tür-Zeile (vier Wände des Hauptbaus, `_hausHuelleSetzen`), und der Hof bleibt auch danach
             // unter der Stufe (Pflaster, Sockel). Bis hier prüfte die Wand ein Haus mit Boxen nur an ihnen: kam die Hülle spät
             // (CI), landete das zweite Dorf am selben Anker mit 3 von 28 Häusern in Hof und Flügel des ersten (gate:haus-welt W7).
-            if (e.fundament && imGrund(e, e.fundament)) return ((this._bauFreiAn = e), false);
+            // (der EINE Grundriss-Leser `_grundrissVon`: ein Los ohne Versatz trägt kein ox/oz, er liest es als 0)
+            const los = e.fundament ? this._grundrissVon(e) : null;
+            if (los && imGrund(e, los)) return ((this._bauFreiAn = e), false);
             const boxen = e.blockerAABBs;
             if (boxen && boxen.length) {
                 for (const b of boxen) {

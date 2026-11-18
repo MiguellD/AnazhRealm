@@ -955,11 +955,38 @@ async function lebenBuehnen() {
         const { S, da, nH } = G;
         const [plan, tagS, q3] = [S.plan, s.dayLengthMinutes * 60, (v) => Math.round(v * 1000) / 1000];
         const rolleVon = (sl) => (typeof sl.rolle === "string" ? sl.rolle : "wohnhaus");
+        // DIE TÜR EINES SLOTS IST SEIN EINGANG (w28-bau-rezept; fachwerk `eingangVon`, die EINE Regel, die auch der Gang des Plans
+        // betritt): die Haustür, beim Hof-Haus das Tor im Torriegel — seine Haustür öffnet auf den Hof. `aus`: die Front des
+        // Hauses (haus-lokal −z). Bis hier las der Richter die Haustür der Tür-Zeile: das beschreibt das Haus ohne Hof.
         const tueren = plan.slots.map((sl, si) => {
             const [c, sn, t] = [Math.cos(sl.phi || 0), Math.sin(sl.phi || 0), sl.tuer || { x: 0, z: 0 }];
-            return { x: S.ox + sl.x + t.x * c + t.z * sn, z: S.oz + sl.z - t.x * sn + t.z * c, rolle: rolleVon(sl), k: "haus#" + (sl.seed >>> 0), si, mitte: { x: S.ox + sl.x, z: S.oz + sl.z } }; // prettier-ignore
+            const ez = sl.tuer ? globalThis.__fachwerkCore.eingangVon(sl).z : t.z;
+            return { x: S.ox + sl.x + t.x * c + ez * sn, z: S.oz + sl.z - t.x * sn + ez * c, aus: { x: -sn, z: -c }, rolle: rolleVon(sl), k: "haus#" + (sl.seed >>> 0), si, mitte: { x: S.ox + sl.x, z: S.oz + sl.z } }; // prettier-ignore
         });
         const heimVon = new Map(tueren.map((t) => [t.k, t]));
+        // DIE TÜR DES WIRTS IST DER EINGANG DES PLANS (w28-bau-rezept, der Täter beim Namen): je bewohntem Haus liegt der Punkt
+        // vor der Tür, über den jeder Bewohner hinein- und hinausgeht (`orte.vor`), `vorM` vor dem Eingang des Plans auf der
+        // Achse seiner Front, und er erreicht einen Knoten des Netzes (`_bewohnerAnschluss`). Am Kopf c77d7aef las der Wirt die
+        // Haustür der Tür-Zeile und die Richtung als Tür minus Mitte des Loses: an den 7 bewohnten Hof-Häusern der Stadt lag der
+        // Punkt 12 m neben dem Eingang im Haus und erreichte keinen Knoten — „kein Weg im Dorf-Plan", 10,8 % ohne Ziel.
+        // Täter (Selbsttest): der Wirt legt den Punkt vor der Tür eines Hauses 3 m hinter seinen Eingang ins Haus
+        if (taeter === "zielplan-eingang") {
+            const v = S.liste.map((b) => b.orte.vor).find(Boolean);
+            const t = tueren.reduce((m, q) => (ab(q, v) < ab(m, v) ? q : m));
+            const alt = [v.x, v.z];
+            [v.x, v.z] = [t.x - 3 * t.aus.x, t.z - 3 * t.aus.z];
+            restore.push(() => ([v.x, v.z] = alt));
+        }
+        const netz = r._bewohnerNetz(S);
+        const eingang = [];
+        for (const t of tueren) {
+            const b = S.liste.find((q) => q.orte.tuer && q.orte.tuer.haus && ab(q.orte.tuer.haus.position, t.mitte) < 2 && "haus#" + q.heim === t.k); // prettier-ignore
+            if (!b) continue;
+            const soll = { x: t.x + t.aus.x * A.BEWOHNER.vorM, z: t.z + t.aus.z * A.BEWOHNER.vorM };
+            const [nebenM, knoten] = [ab(b.orte.vor, soll), r._bewohnerAnschluss(netz, b.orte.vor)];
+            if (nebenM > 0.05 || !(knoten >= 0))
+                eingang.push(`${t.rolle} #${t.k.slice(5)}: ${q3(nebenM)} m neben dem Eingang${knoten >= 0 ? "" : ", ohne Knoten des Netzes"}`); // prettier-ignore
+        }
         // im gedrehten Rechteck q (Mitte, Halbachsen, phi) samt Rand — der Platz dreht wie der Wirt ihn liest, der Acker längs phi
         const im = (q, x, z, rand, acker) => {
             const [c, sn, dx, dz] = [Math.cos(q.phi || 0), Math.sin(q.phi || 0), x - S.ox - q.cx, z - S.oz - q.cz];
@@ -1109,6 +1136,8 @@ async function lebenBuehnen() {
             fehlt,
             fernN: fern.length,
             fern: fern.slice(0, 3).map((f) => f.text),
+            eingangN: eingang.length,
+            eingang: eingang.slice(0, 3),
         };
     });
     // ── gehege (Pflicht F, w28-gehege; tetrapoda GEHEGE_GESETZ): das Wolfs-Gehege des Ort-Plans, wie die Welt es liest
@@ -1262,6 +1291,7 @@ function lebenUrteil(name, z, soll) {
         );
         soll(!z.fehlt.length, `Lose des Plans stehen nicht: ${z.fehlt.length} von ${z.haeuser} (${z.fehlt.join(" · ")})`);
         soll(!z.fernN, `Stand fern von seiner Tür (Ring ${z.ringM} m): ${z.fernN} (${z.fern.join(" · ")})`);
+        soll(!z.eingangN, `die Tür des Wirts ist nicht der Eingang des Plans: ${z.eingangN} Häuser (${z.eingang.join(" · ")})`);
         soll(z.je[10].am >= 0.5, `um 10 Uhr am Werk-Ort angekommen: ${Math.round(z.je[10].am * 100)} % (Soll ≥ 50 %)`);
         const leer = Object.entries(z.rollen)
             .filter(([, [n]]) => !n)
@@ -1490,6 +1520,7 @@ module.exports = {
             ["zielplan-planlos", /Bewohner ohne Ziel/],
             ["zielplan-einort", /Rollen ohne Ziel-Ort/],
             ["zielplan-fremd", /Stand fern von seiner Tür/],
+            ["zielplan-eingang", /die Tür des Wirts ist nicht der Eingang des Plans/],
             ["zielplan-los", /steht nicht: fiel still/],
         ],
         tagesbudget: [
