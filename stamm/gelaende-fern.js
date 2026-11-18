@@ -2388,8 +2388,14 @@ AnazhRealm.ZELL_GEDAECHTNISSE = Object.freeze([
     // der Pegel und die Platten-Treffer je Chunk
     { name: "_pegelOrte", karte: (r) => r._pegelOrte, zelle: (r) => r._voxelChunkConfig(0).span },
     { name: "_chunkIdbHitByKey", karte: (r) => r.state._chunkIdbHitByKey, zelle: (r) => r._voxelChunkConfig(0).span },
-    // das flüchtige Gedächtnis der Tritte (den Pfad trägt der Stand)
-    { name: "_trittSchwach", karte: (r) => r._trittSchwach, zelle: () => AnazhRealm.TRITT.zelleM },
+    // das flüchtige Gedächtnis der Tritte (den Pfad trägt der Stand), behalten so weit, wie die Leute eines lebenden Orts treten
+    // (`_trittReichweite`)
+    {
+        name: "_trittSchwach",
+        karte: (r) => r._trittSchwach,
+        zelle: () => AnazhRealm.TRITT.zelleM,
+        reichweite: (r) => AnazhRealm._trittReichweite(r),
+    },
     // die Hydro-Kacheln und ihre Bestellungen (das erfüllte Versprechen hielt die Kachel ein zweites Mal); um die Hälfte versetzt
     // wie `_ensureHydroTilesAround`, behalten bis an die Reichweite ihrer Leser, ihr Abschied in jeden Faden
     {
@@ -2517,6 +2523,20 @@ AnazhRealm._hydroKachelZelle = () => ({
     m: AnazhRealm.HYDROSPHERE.regionSize,
     ab: -AnazhRealm.HYDROSPHERE.regionSize / 2,
 });
+// DIE REICHWEITE DER TRITTE (m um den Spieler; Leser und Schreiber ist `_tritt`): ein Ort lebt, bis seine Mitte nearM ×
+// `BEWOHNER.fernFaktor` fern ist (`_tickBewohner` → `_bewohnerFort`), seine Leute gehen in seinem Reich (fachwerk
+// `siedlungsReich`) — so weit tritt die Welt. Bis hier hielt das Gedächtnis nur den Saum (Ring + 2 Chunks), die Leute eines Orts
+// jenseits des Saums traten weiter: Radeon 18.11., Runde b, 142 von 1 274 Einträgen 281–295 m fern, je Gang neu geschrieben.
+AnazhRealm._trittReichweite = (r) => {
+    const SG = AnazhRealm._siedlungGesetz();
+    const B = r._bewohnerSiedlungen;
+    if (!SG || !B || !B.size) return 0;
+    const reich = AnazhRealm.Gesetz("fachwerk:siedlungsReich");
+    let w = 0;
+    for (const S of B.values())
+        if ((S.liste || S.listeWerk) && S.plan && S.plan.slots) w = Math.max(w, reich(SG, S.plan.slots.length));
+    return w > 0 ? AnazhRealm.AUTO_SETTLEMENT.nearM * AnazhRealm.BEWOHNER.fernFaktor + w : 0;
+};
 // die Zelle der Siedlung und die Reichweite ihrer Leser: das Reich (ORT_REICH_ZELLEN) und die Probe-Ringe des Wirts, zwei Zellen
 // Saum, nie unter dem Horizont der Streu (ohne Gesetz kein Dorf: 256 m, das Maß der Schublade)
 AnazhRealm._siedlungZelleM = () => (AnazhRealm._siedlungGesetz() || { cellM: 256 }).cellM;
