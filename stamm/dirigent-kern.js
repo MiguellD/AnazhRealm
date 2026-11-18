@@ -1605,7 +1605,7 @@ class AnazhRealm {
         const LP = AnazhRealm.LICHT_POOL;
         const LG = globalThis.__fachwerkCore.LICHT_GESETZ;
         // DIE UMGEBUNG DER STUNDE (welt-licht.js `AUGE`): die waagrechte Beleuchtungsstärke unter freiem Himmel — die Lesung des
-        // EINEN Lichtmessers (`_belichtungE`, `_belichtungAusLicht` las sie in diesem Takt) — in Lux auf der
+        // EINEN Lichtmessers OHNE das Becken (`_belichtungE`, `_belichtungAusLicht` las sie in diesem Takt) — in Lux auf der
         // EINEN Skala; über ihr zeigt der Stoff jede Quelle (`_lichtPoolTerm`: `lichtAuge` trägt A + Knie und S davon), aus ihr folgt ihre
         // Reichweite (`_leuchtReichweite`). Ohne Lesung hält sie die letzte (`_augeLux`).
         const aE = this._belichtungGelesen ? this._belichtungE : null;
@@ -1786,6 +1786,45 @@ class AnazhRealm {
     // Flackern, ihr Mittel) — kein Zeitplan: was sie zeigt, entscheidet das Auge über der Umgebung der Stunde (`AUGE`). Das
     // Licht des Auges (`ersatz`) ist keine Quelle der Welt: es trägt seine Stärke in der Zahl des Bilds über die EINE
     // Übersetzung Labor → Welt. Ein Datum ohne Candela ist ein Bruch des Vertrags (laut).
+    // DAS BECKEN AM AUGE (Lux): Σ E der gehaltenen Plätze des Pools an der Kamera — die mittlere Candela OHNE Flackern (der
+    // Messer pumpt nicht mit der Flamme: k über 5 s am Herd Hub 1,01 %) × die Blende des Platzes, derselbe Abfall wie im Stoff
+    // (`_lichtPoolTerm`: der Punkt I ÷ (d² + kern²), die flache Scheibe der Betrag ihres Bestrahlungs-Vektors, der Saum der
+    // Reichweite), ohne das Licht des Auges selbst (`ersatz`). EIN Leser: der Lichtmesser (`_belichtungAusLicht`).
+    _beckenAmAuge() {
+        const pool = this._leuchtPool;
+        const cp = this.state.camera?.position;
+        if (!pool || !cp) return 0;
+        const H = pool.halter;
+        const U = AnazhRealm.AUGE;
+        let sum = 0;
+        for (let k = 0; k < H.length; k++) {
+            const q = H[k];
+            if (!q || q.L.ersatz || !(pool.blende[k] > 0)) continue;
+            const R = this._leuchtReichweite(q);
+            if (!(R > 0)) continue;
+            const dx = q.x - cp.x,
+                dy = q.y - cp.y,
+                dz = q.z - cp.z;
+            const d = Math.hypot(dx, dy, dz);
+            if (!(d < R)) continue;
+            const I = this._leuchtCandela(q, null) * pool.blende[k];
+            const k2 = q.L.kernM * q.L.kernM;
+            const s0 = Math.max(0, Math.min(1, (1 - d / R) / U.saum));
+            let E = I / (d * d + k2);
+            if (q.L.flach) {
+                const h = -dy;
+                if (!(h > 0)) continue;
+                const a2 = dx * dx + dz * dz;
+                const S = h * h + a2 + k2;
+                const w = Math.sqrt(Math.max(1e-9, S * S - 4 * a2 * k2));
+                const waag = ((Math.sqrt(a2) * h) / Math.max(1e-6, a2)) * (S / w - 1);
+                E = (I / (2 * Math.max(1e-6, k2))) * Math.hypot(waag, 1 - (S - 2 * k2) / w);
+            }
+            sum += E * s0 * s0 * (3 - 2 * s0);
+        }
+        return sum;
+    }
+
     _leuchtCandela(q, t) {
         const L = q.L;
         if (L.ersatz) return this._laborLichtStaerke(L.staerke) * q.masse;

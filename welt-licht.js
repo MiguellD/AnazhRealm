@@ -67,10 +67,14 @@ var __weltLicht = (function () {
     // Jede Quelle des Licht-Pools trägt darum CANDELA; der Stoff summiert ihre Beleuchtungsstärke in Lux und zeigt die SUMME
     // (`_lichtPoolTerm`, die EINE Stelle). `eps`: eine Quelle reicht, so weit ihr GEZEIGTES Licht die Umgebung um diesen Anteil
     // hebt (zeig(E) = eps · S(A); `augeReichweite`), über die äußeren `saum` ihrer Reichweite fällt sie weich auf null.
-    // DIE KAMERA schließt für das Becken NICHT: ein Messer, der Σ E am Auge dazu las, ist in drei Stärken gemessen und gefallen
-    // (GTX 1050, 18.11.) — voll hielt er die Lava (Saum ÷ Gras 1,57) und nahm dem Dorf die Nacht (Wand der Gasse 61,6 → 44,7,
-    // die Bühne Luma 5,3 gegen ihr Soll 22); auf einer Basis mit der Steigung des Tags stand das Dorf fast (58,7) und die Lava
-    // riss (1,46). EINE Antwort der Kamera auf Σ E trägt beide nicht. Leser: `_leuchtTakt` (A, Reichweite), `_lichtPoolTerm` (die Stauchung der Summe).
+    // DIE KAMERA schließt für das Becken ERST ÜBER DER MESOPISCHEN DECKE (`augeMesser`, Leser `_belichtungAusLicht`): unter
+    // `deckeLux` (die obere Grenze des Bands, `zapfenCd` auf der Karte: 87,3 lx am Auge) bleiben die Stäbchen wach, Laterne
+    // und Herdfeuer nehmen dem Auge die Nacht nicht; darüber adaptieren die Zapfen allein, und die Nacht um die Quelle wird
+    // schwarz (die Lava: 2 157 lx am Auge). Der Überschuss steht über der Umgebung AN der Decke (das Auge ist dort an sie
+    // adaptiert): `augeZeig(Σ E − decke, A + decke)` — über der Nacht selbst gezeigt fiele die Kamera am Herd auf 5 cm Schritt
+    // um 0,9 EV. Gemessen davor (GTX 1050, 18.11.): ohne Messer stand die Wiese an der Lava orange (Saum-Gras Luma 104,
+    // Baumlinie ×1,9 über main); ein Messer ohne Decke hielt die Lava (Saum ÷ Gras 1,57) und nahm dem Dorf die Nacht (Wand
+    // der Gasse 61,6 → 44,7, die Bühne Luma 5,3 gegen ihr Soll 22). Leser: `_leuchtTakt` (A, Reichweite), `_lichtPoolTerm` (die Stauchung der Summe).
     // DAS MESOPISCHE BAND (CIE 191:2010): unter `staebchenCd` sieht das Auge mit den Stäbchen, über `zapfenCd` mit den Zapfen.
     // EINE Quelle für das Knie des Auges und für die Sättigung der Nacht (`AnazhRealm.NACHT_AUGE` liest sie): das Knie liegt in
     // der Mitte des Bands (geometrisch) als Beleuchtungsstärke der Karte — E = π · L ÷ `karte`, 2,76 lx.
@@ -79,6 +83,7 @@ var __weltLicht = (function () {
         p: 0.2,
         q: 0.42,
         knieLux: (Math.sqrt(MESOPISCH.staebchenCd * MESOPISCH.zapfenCd) * Math.PI) / MESOPISCH.karte,
+        deckeLux: (MESOPISCH.zapfenCd * Math.PI) / MESOPISCH.karte,
         welt: 7.83,
         lux: 115000,
         eps: 0.1,
@@ -99,8 +104,8 @@ var __weltLicht = (function () {
     };
     // DAS MASS DER STUNDE: die Zahl, die die Welt für ihre Umgebung JETZT trägt (`welt`, die Lesung des Messers), gegen die
     // Zahl der Skala für dieselben Lux — in der Nacht 1 (die Nacht STEHT auf S), am Mittag der Mess-Wiese 1, dazwischen klein
-    // (Sonne 0°: 0,056 Einheiten für 779 lx, S gäbe 2,88 → 0,019; Sonne 10,8°: 0,112). Alles, was das Auge zeigt (Becken, Glut),
-    // rechnet auf S und steht in der Welt × dieses Maß: ohne es stand die Lava bei Sonne 0° weiß mit
+    // (Sonne 0°: 0,056 Einheiten für 779 lx, S gäbe 2,88 → 0,019; Sonne 10,8°: 0,112). Alles, was das Auge zeigt (Becken, Glut,
+    // das Becken im Messer), rechnet auf S und steht in der Welt × dieses Maß: ohne es stand die Lava bei Sonne 0° weiß mit
     // orangen Bäumen (Riss 254/209/201, Baumlinie Luma 146; GTX 1050, 18.11.). EINE Zahl je Bild (`_leuchtTakt` → `_augeMass`).
     const augeMass = (welt, tag = 0) => {
         const s = augeS(augeLux(welt, tag));
@@ -125,6 +130,8 @@ var __weltLicht = (function () {
     // die Farb-Wäsche). ZWEI Formeln also an diesem Ort, mit der gemessenen Lücke: die weiße Karte unter 63 lx des Beckens
     // zeigt 0,80, das Fenster gleicher Leuchtdichte 0,53. Die Höhe ist EINE Zahl je Datum und Bild (`_leuchtTakt` →
     // `lichtGlut`, `lavaGlut`), das Gemalte bleibt in sich linear.
+    // DAS LICHT DES BECKENS IM LICHTMESSER: nur der Überschuss über der mesopischen Decke, gezeigt über der Umgebung an ihr
+    const augeMesser = (lux, aLux) => augeZeig(Math.max(0, lux - AUGE.deckeLux), aLux + AUGE.deckeLux);
     const augeGlut = (cdM2, aLux) => {
         const E = Math.PI * Math.max(0, cdM2),
             ak = aLux + AUGE.knieLux;
@@ -1422,6 +1429,7 @@ var __weltLicht = (function () {
         augeLux,
         augeMass,
         augeZeig,
+        augeMesser,
         augeReichweite,
         augeGlut,
         BELICHTUNG,

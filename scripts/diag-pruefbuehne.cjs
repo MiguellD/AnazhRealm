@@ -1696,6 +1696,7 @@ async function lichtLauf() {
                                 : null,
                             kelvin: FC.LICHT_GESETZ.feuer.kelvin == null ? null : FC.LICHT_GESETZ.feuer.kelvin,
                             belichtung: +rend.toneMappingExposure.toFixed(3),
+                            becken: +r._beckenAmAuge().toFixed(1),
                             nacht: s.postProcessingUniforms
                                 ? +s.postProcessingUniforms.nightFactor.value.toFixed(3)
                                 : null,
@@ -1755,7 +1756,7 @@ async function lichtLauf() {
             stark: `SCHEIN (die ${S0_KREIS.stark}-fache Candela)`,
         }[k];
         console.log(
-            `  S0 BILD ${wer}: Uhr ${e.uhr} · Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, linear ${e.kreisLin}) · Boden 1–3 m Luma ${e.grund && e.grund.luma} abgesoffen ${e.grund && e.grund.schwarz} Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Himmel ${e.himmel} Sternen-Licht ${e.stern} · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
+            `  S0 BILD ${wer}: Uhr ${e.uhr} · Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, linear ${e.kreisLin}) · Boden 1–3 m Luma ${e.grund && e.grund.luma} abgesoffen ${e.grund && e.grund.schwarz} Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Himmel ${e.himmel} Sternen-Licht ${e.stern} · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Becken am Auge ${e.becken} lx · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
         );
     }
     // DIE NACHT ohne das Feuer (oben `S0_NACHT`)
