@@ -319,7 +319,8 @@ function pruefeStationen(liste, karte) {
             f.push("ein Pflicht-Richter trägt pflicht: true UND kriterium pflicht.<Eintrag>");
         if (st && (st.karte2 !== undefined || /^karte2\./.test(st.kriterium || "")) && !istKarte2(st))
             f.push("ein Richter der Karte 2 trägt karte2: true UND kriterium karte2.<Leiter>");
-        if (![1, 2].includes(st.staffel)) f.push("staffel nicht 1|2");
+        // die Staffel eines Richters der Karte 2 ist die Sprosse (1…n; ob sie in der Karte steht, prüft die quelle unten)
+        if (istKarte2(st) ? !(Number.isInteger(st.staffel) && st.staffel >= 1) : ![1, 2].includes(st.staffel)) f.push(istKarte2(st) ? "staffel ist keine Sprosse (1…n)" : "staffel nicht 1|2");
         if (st && st.befehl === null) {
             fehler.push(wer + ": befehl null gehört in module.exports.fehlt (mit grund), nie in die fahrbare Liste");
             continue;
@@ -404,7 +405,9 @@ function pruefeStationen(liste, karte) {
         if (f.length) fehler.push(wer + ": " + f.join(" · "));
         else ok.push(st);
     }
-    const kr = new Set(ok.map((s) => s.kriterium));
+    // die Regel der alten Karte (eine 2 ohne 1 zählt nie); die Karte 2 bucht je Sprosse aus den Akten (vision/buche-2.cjs) — ihre
+    // unterste Sprosse kann eine Station der alten Karte urteilen (Tafel „gleich“), die Fabrik misst dann ab der zweiten
+    const kr = new Set(ok.filter((s) => !istKarte2(s)).map((s) => s.kriterium));
     for (const k of kr)
         if (!ok.some((s) => s.kriterium === k && s.staffel === 1)) fehler.push(k + ": keine Staffel-1-Station (eine 2 ohne 1 zählt nie)");
     fehler.push(...fahrtUrteil(ok));
@@ -554,9 +557,14 @@ function sitzStartGrenze(st, geraet, fahrtMaxS) {
     const g = grundDeckel(st, geraet), bedarfS = g * teileVon(st);
     return bedarfS <= fahrtMaxS / 2 ? { bedarfS, restMin: bedarfS + ZWISCHEN_S, sekMin: g } : { bedarfS, restMin: 0, sekMin: 1 };
 }
+// DIE RICHTER-FABRIK DER KARTE 2 (vision/PLAN-1712.md §1, 18.11.): je Kapitel ein Register `stationen/k2-<kapitel>.js` neben g1…g6 —
+// dieselbe Liste, dasselbe Format, je Leiter EINE Probe (Zwillinge je Sprosse); die Teile eines Kapitels (`k2-<kapitel>-<teil>.js`)
+// lädt sein Register, nie diese Schleife
+const K2_REGISTER = /^k2-[a-z]+\.js$/;
+const k2Register = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((n) => K2_REGISTER.test(n)).sort().map((n) => n.slice(0, -3)) : []);
 function ladeStationen(dir = path.join(DIR, "stationen"), teil = "liste") {
     const alle = [];
-    for (const g of GRUPPEN) {
+    for (const g of [...GRUPPEN, ...k2Register(dir)]) {
         const f = path.join(dir, g + ".js");
         if (!fs.existsSync(f)) continue;
         const m = require(f);
@@ -4683,7 +4691,9 @@ function stufen(sts, urteil) {
         return { ok, r };
     };
     const s1 = stufe(1, false), s2 = stufe(2, true);
-    return { s1, s2, punkte: s1.ok && s2.ok ? 2 : s1.ok ? 1 : 0 };
+    // die Sprossen über 2 (nur Richter der Karte 2, ohne Punkte der alten Karte): je Sprosse ihre Stationen im Beleg, nie in den Punkten
+    const mehr = [...new Set(sts.map((s) => s.staffel).filter((n) => n > 2))].sort((a, b) => a - b).map((n) => [n, stufe(n, true)]);
+    return { s1, s2, mehr, punkte: s1.ok && s2.ok ? 2 : s1.ok ? 1 : 0 };
 }
 
 function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehlt = [], opt = {}) {
@@ -4707,11 +4717,11 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
     const kriterien = [...new Set(stationen.map((s) => s.kriterium))].sort();
     for (const k of kriterien) {
         const pflicht = stationen.some((s) => s.kriterium === k && ohnePunkte(s));
-        const { s1, s2, punkte } = stufen(stationen.filter((s) => s.kriterium === k), stand);
+        const { s1, s2, mehr, punkte } = stufen(stationen.filter((s) => s.kriterium === k), stand);
         const teile = [];
         const offen = [];
         // eine erfüllte Stufe nennt ihre Grünen, eine offene jedes fehlende Gerät beim Grund
-        for (const [n, s] of [[1, s1], [2, s2]])
+        for (const [n, s] of [[1, s1], [2, s2], ...mehr])
             for (const x of s.r)
                 for (const y of x.je) {
                     if (y.e.gruen) teile.push((y.e.gehalten ? "gehalten: " : "") + y.e.zahl + " an " + y.e.sha.slice(0, 8) + " " + y.g);
@@ -4723,7 +4733,7 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
             punkte: pflicht ? 0 : punkte,
             beleg: "Maschine: " + (teile.length ? teile.join(" · ") : "0") + (offen.length ? " — offen: " + offen.join(" · ") : ""),
             // ungemessen/tot: das Frische-Urteil selbst — keine frische Messung am Kopf (tot: die Wand PFAD, eine Messung heilt sie nie)
-            stationen: [s1, s2].flatMap((s) => s.r.flatMap((x) => x.je.map((y) => ({ id: schluessel(x.s), geraet: y.g, gruen: !!y.e.gruen, zahl: y.e.zahl || null, sha: y.e.sha || null, grund: y.e.grund || null,
+            stationen: [s1, s2, ...mehr.map(([, s]) => s)].flatMap((s) => s.r.flatMap((x) => x.je.map((y) => ({ id: schluessel(x.s), geraet: y.g, gruen: !!y.e.gruen, zahl: y.e.zahl || null, sha: y.e.sha || null, grund: y.e.grund || null,
                 ...(y.e.ungemessen ? { ungemessen: true } : {}), ...(y.e.tot ? { tot: true } : {}), ...(y.e.gehalten ? { gehalten: true } : {}), ...(y.e.r6 ? { r6: y.e.r6 } : {}),
                 ...(x.s.beide ? { beide: true } : {}) })))),
         };
@@ -6178,6 +6188,14 @@ async function selbsttest(o = {}) {
         pruef("FORMAT-ROT Staffel 2 ohne Staffel 1", r.fehler.some((f) => /keine Staffel-1-Station/.test(f)), r.fehler.join(" | "));
         const d = pruefeStationen([st0, st0], karte);
         pruef("FORMAT-ROT doppelte Station", d.fehler.some((f) => /doppelt/.test(f)), d.fehler.join(" | "));
+        // die Staffel einer Karte-2-Station IST die Sprosse (k2-<Kapitel>.js, 18.11.): S5 ohne S1 fährt, eine Sprosse jenseits der Leiter
+        // und eine Staffel 0 sind ROT beim Namen. Vorher ROT: „staffel nicht 1|2“ an jeder Sprosse ≥ 3, „keine Staffel-1-Station“ an S2 allein
+        const k2 = (n, mehr) => ({ ...st0, kriterium: "karte2.mensch.leib.verschieden", karte2: true, staffel: n, geraet: ["radeon", "gtx"], gpu: true,
+            befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 }, quelle: "KARTE2 mensch.leib.verschieden S" + n + " = " + karte2Richter("mensch.leib.verschieden", n), ...mehr });
+        const k5 = pruefeStationen([k2(2), k2(5)], karte), k9 = pruefeStationen([k2(99)], karte), k0 = pruefeStationen([k2(0)], karte);
+        pruef("FORMAT Karte-2-Staffel = Sprosse: S2 und S5 ohne S1 fahren, S99 steht nicht in der Karte, S0 ist keine Sprosse",
+            !k5.fehler.length && k5.stationen.length === 2 && k9.fehler.some((f) => /steht nicht in vision\/meisterkarte-2\.json/.test(f)) && k0.fehler.some((f) => /staffel ist keine Sprosse/.test(f)),
+            k5.fehler.concat(k9.fehler, k0.fehler).join(" | "));
         // eine Staffel mit headless-Hälfte und Karten-Hälfte ist EINE Staffel auf drei Geräten, nie doppelt — ihre zweite headless-Hälfte schon
         const halb = { ...st0, staffel: 2, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" };
         const karteHalb = { ...halb, geraet: ["radeon", "gtx"], gpu: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 } };
