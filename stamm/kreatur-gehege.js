@@ -32,13 +32,20 @@ class AnazhRealm_kreatur_gehege {
     // DIE TIERE DER GEHEGE im Verzeichnis der Region `key` (dort, wo ihr Platz liegt): wie jedes Tier — die Seele ihrer
     // Gattung, die Größe aus ihrer Nummer (`_creatureBodySize`, das EINE Größen-Gesetz: dieselbe in jedem Boot), Alter 0, der
     // Anker an ihrem Ruhe-Platz, der Verband des Geheges — mit dem Term `gehege` (die Nummer der Zeile; er reist im Stand,
-    // `_lebenImStand`). Je Region und Plan einmal (`R._gehege`: der Plan kommt aus dem Faden, eine Region liest ihn, sobald er
-    // steht): ein Tier, das dort steht, tritt nie zweimal ein; eines, dessen Zeile der Plan nicht mehr trägt, verlässt das
-    // Verzeichnis (sein Leib geht, sobald er außer Blick steht, `_ohneTier`). Ohne Plan bleibt, was der Stand trug.
+    // `_lebenImStand`). DIE ZEILE IST DER BESTAND: je Region und Plan liest das Verzeichnis sie einmal (`R._gehege`: der Plan
+    // kommt aus dem Faden, eine Region liest ihn, sobald er steht) und wieder, sobald es ihre Zahl nicht trägt (`R._gehegeN`) —
+    // ein Tier, das dort steht, tritt nie zweimal ein; eines, das fiel (der Feld-Akt „aus“), steht beim nächsten Lesen wieder
+    // darin (Alter 0, ohne Stand: sein Leib entsteht an seinem Ruhe-Platz, `_gehegeLeiber`); eines, dessen Zeile der Plan nicht
+    // mehr trägt, verlässt das Verzeichnis (sein Leib geht, sobald er außer Blick steht, `_ohneTier`). Ohne Plan bleibt, was der
+    // Stand trug. Bis hierher trat die Zeile je Sitzung einmal ein: ein gefallenes Tier fehlte bis zum nächsten Laden.
     _gehegeEinsetzen(key, R) {
         const zeilen = this._gehegeListe();
-        if (R._gehege === zeilen || !this._genesisPlan) return;
-        R._gehege = zeilen;
+        if (R._gehege === zeilen) {
+            let n = 0;
+            if (R._gehegeN) for (const t of R.tiere) if (t.gehege) n++;
+            if (n === R._gehegeN) return;
+        } else if (!this._genesisPlan) return;
+        [R._gehege, R._gehegeN] = [zeilen, 0];
         const GG = AnazhRealm._gehegeGesetz();
         let anders = 0;
         for (const t of R.tiere.filter((o) => o.gehege && !zeilen.some((Z) => Z.id === o.gehege))) {
@@ -50,6 +57,7 @@ class AnazhRealm_kreatur_gehege {
             if (!soul) return AnazhRealm._kernPflichtBruch("tetrapoda:GATTUNGEN." + Z.gattung + " ohne Seele");
             for (const p of GG.tiere(Z, GG.G)) {
                 if (this._bestandKey(p.x, p.z) !== key) continue;
+                R._gehegeN++;
                 const da = R.tiere.find((t) => t.id === p.id);
                 if (da) [da.x, da.z] = [p.x, p.z];
                 else {
@@ -140,9 +148,9 @@ class AnazhRealm_kreatur_gehege {
     }
     // DAS GEHEGE EINES LEIBS — DIE GEMEINSCHAFT: das Tier eines Geheges trägt es im Term; jeder andere Leib (der Spieler, ein
     // freies Tier, ein Gefallener) steht in dem Gehege, dessen Rand ihn umschließt — sonst in der Wildnis (null). Jäger und Beute
-    // (`_kreaturIstBeute`), das Aas (`_kreaturAasZug`) und die Flucht vor dem Menschen (`_kreaturMenschFlucht`) fragen sie: nie
-    // jagt, frisst oder flieht einer durch den Rand (Hagenbeck: den Gast trennt der Graben — der Wolf jagt ihn nicht und weicht
-    // ihm nicht ans ferne Ende).
+    // (`_kreaturIstBeute`), das Aas (`_kreaturAasZug`) und das Lesen des Menschen (`_creatureWarinessSpieler`) fragen sie: nie
+    // jagt, frisst, flieht oder naht einer durch den Rand (Hagenbeck: den Gast trennt der Graben — der Wolf jagt ihn nicht und
+    // weicht ihm nicht ans ferne Ende; nur der Hieb schreckt ihn).
     _gehegeVon(leib) {
         const t = leib.userData && leib.userData._bestand;
         if (t && t.gehege) return t.gehege;
@@ -204,7 +212,7 @@ AnazhRealm._gehegeGesetz = function () {
     if (
         G &&
         G.raten &&
-        [G.raten.hunger, G.raten.durst, G.raten.alter, G.lagerM].every(Number.isFinite) &&
+        [G.raten.hunger, G.raten.durst, G.raten.alter, G.platzM].every(Number.isFinite) &&
         ["gehegeZeile", "gehegeTiere", "gehegeRand", "gehegeDrin", "gehegeAbstand"].every(
             (f) => typeof k[f] === "function"
         )

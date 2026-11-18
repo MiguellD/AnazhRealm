@@ -1118,10 +1118,14 @@ async function lebenBuehnen() {
     // jenseits der Fälligkeit (residentM × (1 + GEHEGE_HALT), den Blick fort) und kehrt wieder. Je Bild jeder Leib im Rand (die
     // Tiefe seines Punkts hinter der nächsten Kante), je Takt des Lebens dieselben Nummern im Verzeichnis, kein Tier des Geheges
     // im wilden Gesetz (`_kreaturBestand` zählt die Freien) und keines gealtert; über den Tag der Anteil der Ruhe gegen das
-    // Ethogramm seiner Gattung; fern kein Leib, zurück dieselben an ihren Plätzen ──
+    // Ethogramm seiner Gattung; unter dem Hieb hält der Rand, ein gefallenes Tier steht im nächsten Takt wieder in der Zeile;
+    // fern kein Leib, zurück dieselben an ihren Plätzen ──
     await buehne("gehege", async (restore) => {
         if (taeter === "gehege-rand") decke("_gehegeRandKontakt", () => () => {});
         if (taeter === "gehege-term") decke("_bestandFreie", () => (R) => R.tiere);
+        // die Zeile tritt je Region einmal ein (bis w28-gehege): ein gefallenes Tier fehlte bis zum nächsten Laden
+        if (taeter === "gehege-zeile")
+            decke("_gehegeEinsetzen", (alt) => (key, R) => (R._gehege ? undefined : alt.call(r, key, R)));
         const [GG, LG, P] = [A._gehegeGesetz(), A._lebensraumGesetz(), r._genesisPlan];
         const Z = r._gehegeListe()[0];
         if (!Z) throw new Error("die Welt trägt kein Gehege (`_gehegeListe` leer: ohne Plan oder ohne Wildnis)");
@@ -1135,7 +1139,7 @@ async function lebenBuehnen() {
                 return Math.min(m, ((q.x - p.x) * (z - p.z) - (q.z - p.z) * (x - p.x)) / Math.hypot(q.x - p.x, q.z - p.z));
             }, Infinity);
         const ort = (dz, blick) => (pm.set(gast.x, boden(gast.x, gast.z - dz) + 0.7, gast.z - dz), kamera(0, blick));
-        const nummern = GG.tiere(Z, GG.G).map((t) => t.id).join(); // prettier-ignore
+        const nummern = GG.tiere(Z, GG.G).map((t) => t.id).sort().join(); // prettier-ignore
         const z = { tiere: Z.n, bilder: 0, aus: 0, randMin: Infinity, leer: 0, anders: 0, wild: 0, alterS: 0, takte: 0 };
         const leiber = () => r._gehegeTiereVon(Z).map((t) => t.leib).filter(Boolean); // prettier-ignore
         const bild = (voll, B) => {
@@ -1155,7 +1159,7 @@ async function lebenBuehnen() {
             r.tickFaunaLifecycle();
             const T = r._gehegeTiereVon(Z);
             z.takte++;
-            z.anders += T.map((t) => t.id).join() !== nummern;
+            z.anders += T.map((t) => t.id).sort().join() !== nummern; // prettier-ignore
             for (const t of T) z.alterS = Math.max(z.alterS, t.alterS);
             for (const key of new Set(T.map((t) => r._bestandKey(t.x, t.z)))) {
                 const frei = s.faunaBestand.regionen[key].tiere.filter((t) => t.g === Z.gattung && !t.gehege).length;
@@ -1201,6 +1205,18 @@ async function lebenBuehnen() {
         for (let k = 0; k < 900; k++) (ruhigSpieler(), takt(1 / 30), bild(true));
         z.hieb = { bilder: z.bilder - vor[0], randMin: rund(z.randMin, 2) };
         z.randMin = Math.min(z.randMin, vor[1]);
+        // (3c) DER TOD: ein Tier fällt unter der Hand des Gasts — der Feld-Akt „aus“ nimmt es aus dem Verzeichnis, sobald die
+        // Folge des Felds an seinem Stempel steht (die Regionen holen ihre Stunde mit aufholJeTakt je Takt nach: die Bühne taktet,
+        // bis sie steht). Die Zeile IST der Bestand: das alte Tier ist fort (`fort`), der nächste Takt liest dieselben Nummern,
+        // und sein Leib steht nach (5) wieder an seinem Ruhe-Platz
+        for (let k = 0; k < 400 && !r._feldFolgeSteht(s.spielZeit); k++) leben();
+        const opfer = leiber()[0]; // ohne Leib (das Gehege steht leer) fällt keiner: `fiel` 0
+        const alt = opfer && opfer.userData._bestand;
+        if (opfer) r.damageCreature(opfer, 1e9, { source: "player", fromPos: pm.clone() });
+        restore.push(() => s.leichname.includes(opfer) && r.removeCreature(opfer));
+        leben();
+        const zeile = r._gehegeTiereVon(Z);
+        z.tod = { fiel: +s.leichname.includes(opfer), fort: +(!!alt && !zeile.includes(alt)), zeile: zeile.length };
         // (4) der Gast geht jenseits der Fälligkeit, den Blick fort: kein Leib trägt das Gehege
         ort(fernM + 30, -1);
         for (let k = 0; k < 3; k++) leben();
@@ -1250,7 +1266,14 @@ function lebenUrteil(name, z, soll) {
             z.hieb.bilder > 0 && z.hieb.randMin < 1,
             `LEER: der Hieb trieb kein Tier an den Rand (${z.hieb.bilder} Bilder, nächstes ${z.hieb.randMin} m vor ihm; Soll < 1 m)`
         );
-        soll(z.anders === 0, `die Zeile ist nicht der Bestand: ${z.anders} von ${z.takte} Takten mit anderen Nummern`);
+        soll(
+            z.tod.fiel === 1 && z.tod.fort === 1,
+            `LEER: der Tod nahm kein Tier aus dem Verzeichnis (gefallen ${z.tod.fiel}, das alte Tier fort ${z.tod.fort}; Soll 1 · 1)`
+        );
+        soll(
+            z.anders === 0 && z.tod.zeile === z.tiere,
+            `die Zeile ist nicht der Bestand: ${z.anders} von ${z.takte} Takten mit anderen Nummern, nach dem Tod eines Tiers trägt sie ${z.tod.zeile} von ${z.tiere}`
+        );
         soll(
             z.wild === 0 && z.alterS === 0,
             `das wilde Gesetz zählt das Gehege: ${z.wild} seiner Tiere im Bestand der Region, gealtert ${z.alterS} s (Soll 0 · 0)`
@@ -1440,6 +1463,7 @@ module.exports = {
         gehege: [
             ["gehege-rand", /Ausbruch: [1-9]/],
             ["gehege-term", /das wilde Gesetz zählt das Gehege: [1-9]/],
+            ["gehege-zeile", /die Zeile ist nicht der Bestand: [1-9]/],
         ],
         zielplan: [
             ["zielplan-planlos", /Bewohner ohne Ziel/],

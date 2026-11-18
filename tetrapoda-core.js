@@ -2233,10 +2233,10 @@
     // Verzeichnis ihrer Region wie jedes Tier, mit dem Term. DIE ZEILE (gehegeZeile) bringt der Plan: Gattung und Kopfzahl,
     // das Lager, der Rand (ein konvexes Vieleck, x/z in m) und die Ruhe-Plätze seiner Tiere; der Graben ist Erdbau des Plans, der
     // Term liest ihn nie. Die Art wählt der Plan, nie ein Tag (Lehre 8); eine Zeile ohne Gattung des Buchs, ohne ganze Kopfzahl,
-    // ohne Lager im Rand, ohne konvexen Rand oder mit Ruhe-Plätzen, die nicht je Tier einer im Rand sind, wirft laut
-    // (fail-closed, kein Ersatz). DER BESTAND (gehegeTiere) ist fest: n Tiere, das k-te an seinem Ruhe-Platz — dem k-ten des
-    // Plans; nennt die Zeile keine (das Labor), die Sonnenblumen-Spirale um das Lager (lagerM × √(k − 1) im Goldwinkel) —, in
-    // den Rand gerückt; ihre Nummern trägt die Zeile, dieselben Tiere in jedem Boot (die deterministische Setzung, Horizon).
+    // ohne Lager im Rand, ohne konvexen Rand oder ohne je Tier einen Ruhe-Platz im Rand wirft laut (fail-closed, kein Ersatz:
+    // kein gewürfelter Platz). DER BESTAND (gehegeTiere) ist fest: n Tiere, das k-te an seinem Ruhe-Platz — dem k-ten des
+    // Plans, um platzM in den Rand gerückt; ihre Nummern trägt die Zeile, dieselben Tiere in jedem Boot (die deterministische
+    // Setzung, Horizon), und ein Tier, das fiel, steht wieder in ihr (der Pfleger hält die Zahl).
     // DIE RATEN des Gehege-Tiers sind 0: geboren wird nie (kein Wurf führt in den festen Bestand, die Zeile IST er), und je
     // Takt der Tod am Hunger, der Durst und das Altern mit raten (hunger, durst, alter — der Pfleger füttert und tränkt);
     // gerissen wird nur unter Tieren DESSELBEN Geheges (die eine Antwort bestandRiss über seine Jäger und seine Beute — die
@@ -2244,7 +2244,7 @@
     // steht nie jenseits einer Kante. Hagenbeck: kein Gitter im Blick, den Gast trennt der Graben, das Tier hält der Rand.
     var GEHEGE_GESETZ = Object.freeze({
         raten: Object.freeze({ hunger: 0, durst: 0, alter: 0 }),
-        lagerM: 1.6,
+        platzM: 0.8,
     });
     // Liegt (x, z) im Rand (konvex, gegen den Uhrzeigersinn: das Innere links jeder Kante)?
     function gehegeDrin(rand, x, z) {
@@ -2298,9 +2298,9 @@
         aus.z = dz;
         return dx !== 0 || dz !== 0;
     }
-    // Die Zeile des Plans {gattung, n, lager, rand, ruhe?, id?} (Punkte als {x, z} oder [x, z]), geprüft und eingefroren:
-    // { id, gattung, n, lager: {x, z}, rand: [{x, z} …] gegen den Uhrzeigersinn, ruhe: [{x, z} × n] | null }; die Nummer ohne id
-    // ist das gerundete Lager.
+    // Die Zeile des Plans {gattung, n, lager, rand, ruhe, id?} (Punkte als {x, z} oder [x, z]), geprüft und eingefroren:
+    // { id, gattung, n, lager: {x, z}, rand: [{x, z} …] gegen den Uhrzeigersinn, ruhe: [{x, z} × n] }; die Nummer ohne id ist
+    // das gerundete Lager.
     function gehegeZeile(z) {
         var nein = function (w) {
             throw new Error("tetrapoda gehegeZeile: " + w);
@@ -2331,25 +2331,22 @@
             if ((b.x - a.x) * (c.z - b.z) - (b.z - a.z) * (c.x - b.x) <= 0) nein("der Rand ist nicht konvex");
         }
         if (!gehegeDrin(rand, lager.x, lager.z)) nein("das Lager liegt nicht im Rand");
-        var ruhe = z.ruhe == null ? null : (Array.isArray(z.ruhe) ? z.ruhe : []).map(punkt);
-        if (ruhe)
-            for (i = 0; i < Math.max(ruhe.length, z.n); i++)
-                if (ruhe.length !== z.n || !ruhe[i] || !gehegeDrin(rand, ruhe[i].x, ruhe[i].z))
-                    nein("die Ruhe-Plätze sind nicht " + z.n + " Punkte im Rand");
+        var ruhe = (Array.isArray(z.ruhe) ? z.ruhe : []).map(punkt);
+        for (i = 0; i < Math.max(ruhe.length, z.n); i++)
+            if (ruhe.length !== z.n || !ruhe[i] || !gehegeDrin(rand, ruhe[i].x, ruhe[i].z))
+                nein("die Ruhe-Plätze sind nicht " + z.n + " Punkte im Rand");
         var id = typeof z.id === "string" && z.id ? z.id : Math.round(lager.x) + "/" + Math.round(lager.z);
-        return Object.freeze({ id: id, gattung: z.gattung, n: z.n, lager: lager, rand: Object.freeze(rand), ruhe: ruhe && Object.freeze(ruhe) });
+        return Object.freeze({ id: id, gattung: z.gattung, n: z.n, lager: lager, rand: Object.freeze(rand), ruhe: Object.freeze(ruhe) });
     }
-    // DER FESTE BESTAND der Zeile Z (aus gehegeZeile): je Platz k = 1 … n das Tier { id, k, g, x, z } — an seinem Ruhe-Platz
-    // (ohne Plätze der Zeile auf der Sonnenblumen-Spirale am Lager), ein Platz am Rand um lagerM / 2 in ihn gerückt.
+    // DER FESTE BESTAND der Zeile Z (aus gehegeZeile): je Platz k = 1 … n das Tier { id, k, g, x, z } an seinem Ruhe-Platz, ein
+    // Platz am Rand um platzM in ihn gerückt.
     function gehegeTiere(Z, G) {
         var aus = { x: 0, z: 0 },
             tiere = [];
         for (var k = 1; k <= Z.n; k++) {
-            var r = G.lagerM * Math.sqrt(k - 1),
-                w = (k - 1) * 2.39996;
-            var x = Z.ruhe ? Z.ruhe[k - 1].x : Z.lager.x + Math.cos(w) * r,
-                z = Z.ruhe ? Z.ruhe[k - 1].z : Z.lager.z + Math.sin(w) * r;
-            if (gehegeRand(Z.rand, x, z, G.lagerM / 2, aus)) {
+            var x = Z.ruhe[k - 1].x,
+                z = Z.ruhe[k - 1].z;
+            if (gehegeRand(Z.rand, x, z, G.platzM, aus)) {
                 x += aus.x;
                 z += aus.z;
             }
