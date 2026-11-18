@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-18T22:59:09.755Z",
+ "zeit": "2026-11-18T23:02:55.171Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -1623,20 +1623,20 @@
   "k80037f8904ec": "pVVdj6s2EP0veWzrdQgQwNJ9cMKquVWvmn3s49iMgQ2ByDZLm6r/vYKNk/BxpSvVTwk6M3PO4Yz5Z3UBeYIcX95NU6/Y6qfVLysDH0gM6g/UL+9mxVZrGUAYM/55KOd838OkLi/W0KyEnJw0gm01qVBg/SKHsjABCVtGf/Co7suX77W1cLK3rjGodRCwXc75Nz6qqEpBQdRQnJG02mJZ3Uo8GSMgo90r746UHmlEdx2/n/1Cm0pg1hALCl0TkW0iH9gU2JocBBJo1TDYSQ+8wA9v0uOUH9/vMvkb5z2ThakC6mzMXPkQKo99/Zvz1zk+KwEtqcrauLkyC4W/eVjezWs0dOQKWFSob0XgReAJR3awpDsmdFKoqtaY0bDYz8JNzCidYXM0pSwsuejmEQeRbCIP2G7OKb+0RI0YCQGxmHpdANY56jGHKAhlwOhf8bTpCc6ogdRQ3KDJ2o82YhTHw5yLS9wZayNdqQyCLFE/lOT0+y1HbviZv9lKxv/v2eW/TsZVg/WDSW5YnIkkmvHnh2EJ0rj/k98fx4fPzmn+NOZtMsTIotTnsSSlwgzW7Pe5A6aADDU5NcY+OAUA6C6VdFgLfgzSaeVDzK1uI7brMH7SElN+mL190yjbgUaSX9pbIQYYRiHj/OsMbOF8diLkBuNw8b0sJNfYfmWf6YUBetuIOUcXEva54OSKZeWKIik9H9n+G5/q/9BwJiByXSrlcixCqZKlteuwskQ0jbsqEz8DX/Zc6ie7BikPVWnXyNd9/jYRe9D5QpSHCY22d7Viu1YBU8NdI2foUlvSgSzu704JhIQtQK+oK8xxZGUWCB+yHv3ENnA/fh5l+TpLwLXE3uTatMYlLonuWzyW1qE+CahPjmYo/NBjv/VG/cHdOqxTmi58tDj/c7+L+2YXlPSiG1X29zgtoDUFVHb0Zf2EtKhEi0WNfX5s2dRYP1D//gc="
  },
  "sitzung": {
-  "start": "2026-11-18T22:58:38.304Z",
-  "ordner": "sitzung-20261118-235838",
+  "start": "2026-11-18T23:02:22.923Z",
+  "ordner": "sitzung-20261119-000222",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 5.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "karte2.leben.tiere.mensch#1",
-    "s": 23,
-    "takte": 609,
+    "vor": "karte2.planet.relief.grossform#1",
+    "s": 24.2,
+    "takte": 586,
     "chunks": 81,
     "nach": null
    }
@@ -1644,30 +1644,107 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.leben.tiere.mensch#1",
+    "probe": "karte2.planet.relief.grossform#1",
     "anders": [
+     "window.luma709",
      "window.__wieseMessen",
      "window.__wieseUrteil",
-     "window.__ortSchritt"
+     "window.__weltOrte",
+     "window.__weltOrt",
+     "window.__strecke",
+     "window.__ortSchritt",
+     "window.__wasserOrte",
+     "window.__wasserLeser",
+     "window.__wasserLeib",
+     "window.__wasserMutation",
+     "window.__wasserKarte",
+     "window.__wasserLaeufe",
+     "window.__wasserTreibt",
+     "window.__wasserHoehle",
+     "window.__wasserWagen",
+     "window.__wasserSichtNetz",
+     "window.__wasserFlora",
+     "window.__wasserSee",
+     "window.__wasserQuelle",
+     "window.__wasserQuellTeil",
+     "window.__wasserBach",
+     "window.__wasserBank",
+     "window.__wasserFluss",
+     "window.__wasserKroneVon",
+     "window.__wasserUfer",
+     "window.__wasserStrom",
+     "window.__wasserFlussNah",
+     "window.__wasserGraben",
+     "window.__wasserDamm",
+     "window.__wasserUferFarbe",
+     "window.__wasserKoerper",
+     "window.__wasserBild",
+     "window.__wasserSeeAm",
+     "window.__wasserLicht",
+     "window.__wasserRegen",
+     "window.__vorBild"
     ],
     "wie": {
+     "window.luma709": "getauscht: (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2]",
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__weltOrte": "getauscht: function weltOrte(art, opts) { const o = opts || {}; const [mx, mz] = o.mitte ||",
+     "window.__weltOrt": "getauscht: function weltOrt(art, opts) { return window.__weltOrte(art, Object.assign({}, op",
+     "window.__strecke": "getauscht: function strecke(mitte, ringe, stufeMax = Infinity, querMax = Infinity, naechste",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__wasserOrte": "neu: async function wasserOrte(o = {}) { const G = window.__gelaendeCore; const mitte",
+     "window.__wasserLeser": "neu: async function wasserLeser(o = {}) { if (!st.hydrosphere || !st.hydrosphere.read",
+     "window.__wasserLeib": "neu: function wasserLeib() { const [r, A] = [window.anazhRealm, window.anazhRealm.con",
+     "window.__wasserMutation": "neu: async function wasserMutation(o = {}) { const A = AnazhRealm; const [RHO, TIEF] ",
+     "window.__wasserKarte": "neu: async function wasserKarte(o) { const [orte, zufall] = [[], window.__phytoCore.m",
+     "window.__wasserLaeufe": "neu: async function wasserLaeufe() { const [G, L] = [window.__gelaendeCore, r._gelaen",
+     "window.__wasserTreibt": "neu: async function wasserTreibt(o) { const [r, A] = [window.anazhRealm, window.anazh",
+     "window.__wasserHoehle": "neu: async function wasserHoehle(o = {}) { const A = AnazhRealm; const cfg = r._voxel",
+     "window.__wasserWagen": "neu: async function wasserWagen(o = {}) { const ziel = o.see || (await window.__wasse",
+     "window.__wasserSichtNetz": "neu: function wasserSichtNetz() { const cfg = r._voxelChunkConfig(0); const span = cf",
+     "window.__wasserFlora": "neu: function wasserFlora(o = {}) { const sicht = o.sicht || window.__wasserSichtNetz",
+     "window.__wasserSee": "neu: async function wasserSee(o = {}) { const f = o.fenster || (await window.__wasser",
+     "window.__wasserQuelle": "neu: async function wasserQuelle(o = {}) { if (!st.hydrosphere || !st.hydrosphere.rea",
+     "window.__wasserQuellTeil": "neu: function wasserQuellTeil(p, n) { const h = (Math.imul(Math.round(p.x * 4), 73856",
+     "window.__wasserBach": "neu: async function wasserBach(o = {}) { const R = wasserRund(2); const bachOrt = Num",
+     "window.__wasserBank": "neu: async function wasserBank(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
+     "window.__wasserFluss": "neu: function wasserFluss() { const h = st.hydrosphere; if (!h || !h.ready || !Array.",
+     "window.__wasserKroneVon": "neu: function __wasserKroneVon(r, p) { const A = r.constructor; const HC = A.HYDROSPH",
+     "window.__wasserUfer": "neu: async function wasserUfer(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
+     "window.__wasserStrom": "neu: async function wasserStrom(ort, hoehe) { const zurueck = [leihe(st, { postProces",
+     "window.__wasserFlussNah": "neu: function __wasserFlussNah(r, x, z) { const st = r.state; const fluesse = []; for",
+     "window.__wasserGraben": "neu: async function wasserGraben(o = {}) { const K = AnazhRealm.NAH_WIESE.kachel; con",
+     "window.__wasserDamm": "neu: async function wasserDamm(o = {}) { const f2 = wasserRund(2); const S = (q) => r",
+     "window.__wasserUferFarbe": "neu: async function wasserUferFarbe(o = {}) { const h = st.hydrosphere; if (!h || !h.",
+     "window.__wasserKoerper": "neu: async function wasserKoerper(o = {}) { const A = AnazhRealm; const DT = A.FIXED_",
+     "window.__wasserBild": "neu: async function wasserBild(o = {}) { const T = window.THREE; const renderer = st.",
+     "window.__wasserSeeAm": "neu: function __wasserSeeAm(r, ziel) { const st = r.state; const h = r._hydroFor(ziel",
+     "window.__wasserLicht": "neu: async function wasserLicht(o = {}) { if (!st.renderer || st.renderer._isHeadless",
+     "window.__wasserRegen": "neu: async function wasserRegen(o = {}) { const T = window.THREE; const renderer = st",
+     "window.__vorBild": "neu: async (x, z) => { await G.stehen(x + 8, z); return { nass: r._nassAt(x, z) }; }"
     },
     "haelt": [],
     "heap": [
-     226.5,
-     202.7
+     232,
+     291
     ],
     "ungemessen": null
    }
   ],
+  "wanderung": [
+   {
+    "probe": "karte2.planet.relief.grossform#1",
+    "ort": "wiese",
+    "m": 3600.11,
+    "dreh": 0
+   }
+  ],
   "messHalt": [
    {
-    "probe": "karte2.leben.tiere.mensch#1",
+    "probe": "karte2.planet.relief.grossform#1",
     "gehalten": [
-     "tiere"
+     "skala",
+     "spiegel"
     ],
     "offen": []
    }
@@ -1675,21 +1752,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2135,
-   "frameP95": 33.38,
-   "taktP95": 18.61,
-   "vramMax": 134.3,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 101,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.planet.relief.grossform#1",
+     "m": 5046,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 380,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 113,
-  "minuten": 1.97
+  "fahrtS": 387.5,
+  "minuten": 6.57
  },
  "ungemessen": {
   "mensch.K5#1": {
@@ -2332,6 +2416,69 @@
    "ungemessen": true,
    "zeit": "2026-11-18T22:27:29.378Z",
    "abdruck": "0ee80dd36a77",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.relief.grossform#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 5.92,
+   "grund": "Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 355.2,
+   "fremd": {
+    "s": 356.6,
+    "takte": 162,
+    "fremdS": 464.42,
+    "kerne": 1.302,
+    "fensterKerne": 1.913,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      296.55
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      32.34
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      26.39
+     ]
+    ],
+    "dienerS": 182.03,
+    "diener": [
+     [
+      "System",
+      87.77
+     ],
+     [
+      "dwm.exe",
+      64.33
+     ]
+    ],
+    "geraetS": 168.31,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      93.72
+     ],
+     [
+      "svchost.exe",
+      48.98
+     ],
+     [
+      "SearchIndexer.exe",
+      19.47
+     ]
+    ],
+    "eigenS": 1083.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T23:02:55.171Z",
+   "abdruck": "9d14fbd22724",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
