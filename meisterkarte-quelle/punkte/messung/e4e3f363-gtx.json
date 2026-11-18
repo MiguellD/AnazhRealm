@@ -1,7 +1,7 @@
 {
  "sha": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
  "geraet": "gtx",
- "zeit": "2026-11-18T17:07:57.855Z",
+ "zeit": "2026-11-18T17:12:44.240Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.erleben.klang.landschaft#1": {
@@ -1283,6 +1283,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.preis.bytes#1": {
+   "gruen": true,
+   "zahl": "4 Kalt-Boots, roh je Boot 32.64 MB · 32.64 MB · 32.64 MB · 32.64 MB (max 32.64 MB, Soll ≤ 50.00 MB), am größten 17.12 MB Draht, 183 Anfragen, bis zur Kontrolle 32.64 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.337 1.04 MB | /fachwerk-core.js?v=18.546.337 1.04 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker+worker · Boot 4 worker · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.17,
+   "gpu": "nvidia/pascal",
+   "konsum": "k7b8f0f8907cf",
+   "konsumN": 31,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "k43059977d5e2",
+   "s": 69,
+   "fremd": {
+    "s": 71.9,
+    "takte": 32,
+    "fremdS": 18.23,
+    "kerne": 0.254,
+    "fensterKerne": 0.39,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.2
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.08
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.61
+     ]
+    ],
+    "dienerS": 38.61,
+    "diener": [
+     [
+      "dwm.exe",
+      19.11
+     ],
+     [
+      "System",
+      14.98
+     ]
+    ],
+    "geraetS": 24.95,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      16.36
+     ],
+     [
+      "svchost.exe",
+      7.02
+     ],
+     [
+      "SearchIndexer.exe",
+      0.88
+     ]
+    ],
+    "eigenS": 449.06,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T17:12:44.240Z",
+   "abdruck": "6cb47dc0dc76",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1308,20 +1377,20 @@
   "k7b8f0f8907cf": "dVXbjpswEP2XPG7rdcIlgKV9cMKqqdRVk08Y22NgQyCyIVSp+u8VbEi47M5TYp3jOXNmPPxdyNKgfT5BkWm01fO7LYsFWzwtvi/OII+Q4PDIwgWJRXNB8/xuF2yxlB74IeMfQTnn2xYmTXauLFUZJESUZUVs1d4kO87TAJFngoIoID0hqU2FWX4DrWSIgIw2b7zZU7qnAd00Ly9Tai5QlaQCjT1RKCdwgU2BtU1AIIFad8luYN9bea7PaBdhzPfvtA9+4Jw2r9OMAgo1Vqpd8PWqs+CVzxSqDLAieVbYPqdUvnAddk80r0oZaMgVMM3R9El87UVBL7Qzu9lHdELUeW3tKFnoKt8JGaUzbII2k2lFzqYUWPTmRU6wAvaJ08m5JnqoCISAUEx9TgGLBM1YQ+D50mP0Tzi99AgnNEAKSG/QaOkGjnh4QyndzbXknfAuRS88VCIK9IjY9nDXtE7FYfsnuR+Hu49xjRP+iMMkiZVpZk5je7T2FSzZr7kkm4JCQ46lrR6aPADs30bcDRTfe/GU+SjmxnPEeumHg1pCyncz72ypqwYMkuRc34jooR/4jPOfM3AFp1NfhHQw9KeNs1U72EMZvoerdTdyyRd9+HgG5IpZ3pMCKVcusu0bn9Z5MXAiIBKTad13W/hSR58NZ4N51S2OHukqcCWjV1oMbOH8wDePDsZNKX9skwMfx4ZPdXe3l6a6VyrWS+0xfWlfo5yhM1ORBmR6748WCBH7BHpFk2OCIxuVJ1xQLXqg1Ot/fBvN63XW5WuGrcGFrW0/VVGgotukj1vSoDkKKI59VeFarZ1u/Da/+a5bT9tdFDcTf/iWqyZO+HYTDk+T2y47o6RnU+qs3Xw0hdqmkA++E//+Aw=="
  },
  "sitzung": {
-  "start": "2026-11-18T17:07:29.166Z",
-  "ordner": "sitzung-20261118-180729",
+  "start": "2026-11-18T17:12:14.900Z",
+  "ordner": "sitzung-20261118-181214",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.7,
+  "bootS": 5.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "karte2.same.preis.ankunft#1",
+    "vor": "karte2.same.preis.bytes#1",
     "s": 21,
-    "takte": 780,
+    "takte": 784,
     "chunks": 81,
     "nach": null
    }
@@ -1329,27 +1398,27 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.same.preis.ankunft#1",
+    "probe": "karte2.same.preis.bytes#1",
     "anders": [],
     "wie": {},
     "haelt": [
      "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend."
     ],
     "heap": [
-     186.9,
-     94.1
+     185.4,
+     95
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.same.preis.ankunft#1",
+    "probe": "karte2.same.preis.bytes#1",
     "halt": -1000000000,
     "zurueck": 0
    },
    {
-    "probe": "karte2.same.preis.ankunft#1",
+    "probe": "karte2.same.preis.bytes#1",
     "gehalten": [
      "tiere"
     ],
@@ -1359,21 +1428,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3868,
-   "frameP95": 50.11,
-   "taktP95": 33.66,
-   "vramMax": 143,
+   "bilder": 3871,
+   "frameP95": 50.06,
+   "taktP95": 33.4,
+   "vramMax": 149.3,
    "seiten": 6,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
    "zapfen": 163,
-   "luecken": 6,
-   "letzteLuecke": "THREE is not defined"
+   "luecken": 4,
+   "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 176.1,
-  "minuten": 3.01
+  "fahrtS": 172.8,
+  "minuten": 2.99
  },
  "ungemessen": {
   "mensch.K5#1": {
