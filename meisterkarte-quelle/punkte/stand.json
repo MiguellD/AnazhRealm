@@ -4816,7 +4816,7 @@
   },
   "breite.siedlung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: breite.siedlung#1 radeon: ungemessen (R10) — zuletzt an fe885d9d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „5“: der Läufer ersetzt den Platzhalter SEK) · breite.siedlung#1 gtx: ungemessen (R10) — zuletzt an 08a8397b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
+   "beleg": "Maschine: dorf 7 9310: 145 Kacheln, 9639 Häuser (Kern 9, Rand 56 Kacheln) · Straßenwand Kern 0,299 ↔ Rand 0,055 = 5,5:1 (Soll ≥ 2) · Dichte-Fit R² 0,960 (Soll ≥ 0,8, λ 849 m) · Traufe Median Kern 19,4 m ↔ Rand 3,2 m = 6,1 (Soll ≥ 5) · höchstes Haus 22,9 m an e4e3f363 gtx",
    "stationen": [
     {
      "id": "breite.siedlung#1",
@@ -4830,11 +4830,11 @@
     {
      "id": "breite.siedlung#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 08a8397b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER Error: werkbank eval: FC.kachelNetz is not a function [\"stadtFormSeite (eval at <anonymou",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "dorf 7 9310: 145 Kacheln, 9639 Häuser (Kern 9, Rand 56 Kacheln) · Straßenwand Kern 0,299 ↔ Rand 0,055 = 5,5:1 (Soll ≥ 2) · Dichte-Fit R² 0,960 (Soll ≥ 0,8, λ 849 m) · Traufe Median Kern 19,4 m ↔ Rand 3,2 m = 6,1 (Soll ≥ 5) · höchstes Haus 22,9 m",
+     "sha": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
+     "grund": null,
+     "r6": "konsum"
     }
    ]
   },
@@ -6336,7 +6336,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 198,
+  "konsum": 199,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6498,10 +6498,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 150
+  "ohne": 149
  },
  "kopfVoll": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
- "zeit": "2026-11-18T15:52:16.595Z",
+ "zeit": "2026-11-18T15:58:54.838Z",
  "vorher": "e4e3f363",
  "bilanz": {
   "gewinn": [],
