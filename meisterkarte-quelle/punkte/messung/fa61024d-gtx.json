@@ -1,7 +1,7 @@
 {
  "sha": "fa61024def9c9aa3364d023b4c09f40e5e795d51",
  "geraet": "gtx",
- "zeit": "2026-11-18T10:31:23.012Z",
+ "zeit": "2026-11-18T10:40:46.275Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.wasser.kreislauf#1": {
@@ -72,27 +72,97 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.schoepfen.schutz#1": {
+   "gruen": true,
+   "zahl": "2/2 feindliche Welten am Welt-Tor abgewiesen, die eigene Welt im Bild gleich (Werk bank_sitzbank 13.0 % des Bilds) · gesetz abgewiesen Δ 0.00 % · pflug abgewiesen Δ 0.00 % · Werk-Codes abgewiesen 3/3 (Lesewert) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.65,
+   "gpu": "nvidia/pascal",
+   "konsum": "kfcac2c00be1a",
+   "konsumN": 31,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "k9adc3cca6b44",
+   "s": 38.2,
+   "fremd": {
+    "s": 40.9,
+    "takte": 19,
+    "fremdS": 12.13,
+    "kerne": 0.296,
+    "fensterKerne": 0.357,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.42
+     ],
+     [
+      "Explorer.EXE",
+      2.38
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.06
+     ]
+    ],
+    "dienerS": 15.25,
+    "diener": [
+     [
+      "dwm.exe",
+      8.53
+     ],
+     [
+      "System",
+      4.56
+     ]
+    ],
+    "geraetS": 9.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.7
+     ],
+     [
+      "svchost.exe",
+      2.72
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 79.38,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T10:40:46.275Z",
+   "abdruck": "171f6502abd0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "k5d352830a59b": "bVTRjpswEPyXPPbqcwI4EEv34IST7qpWyn3C2l4DCYHIhqNN1X+v4CAJkH0CNOuZnR3zd3EGdYQEnw+uLBZ88W3xfeHgE4lD+4n2+eAWfLFUAbCIi6+iQohdC1M2O1eO5pmkIAtIT0hqW2GWP6uubaUiBOS0eRXNntI9Dem2EdfaiZeX6TG5RF2SCgwOh0jthT7wKbB2CUgkUJuOuAezYBX4jNOuoljsD3Qo8SFEq+QBq4RCj5UbH5hZ8fc/QrzO8ToDrEieFW7gVZpJ3+NXsmbeY6EhF8A0R9s3edosWTCIFULEDf0dTRtNXjs3Iot8zbyIU7qhE2yCLlNpRc62lFgMBm68cAV8O9eUnGti7hWBlBDJqdcpYJGgHWsIA6YC/kDvEU5ogRSQ9tDN0g89efOGUvo215J3wjuKQXik5SY0o8Z2j29dhOKofUmun6O3r1DFyS1g4mNC4lSa2dPYHmOYhiX/OZfkUtBoybF01RXtR5EHfn8T4i5UYh/E087bMMOu5XrJortZIireZt650lQNWCTJue4bMUAWMi7E+wxcwek0DKE8jNh0ca5qg30vgwW4Wod8cO7BHr6uAblglg9NoVIrH/nul5jO+WnhREAmNjNm2LZkymwehbPBvCKyLKsB6WvwVauluLOl9XV722DclOp1l3yISR0SMdfeMZS2uk4r10sTcNPdSDVDZ7YiDah0gAf+2vdW/AH0gjbHBEdW6kD6oFv0ndpgeHgaZfYy2/Qlw9bkwtVuSPsm1Js+7ePRGrRHCcWxBy418w3wHy3PXsQ94XpLD3Ra+0aIX1vx1B52RkXPtjRZ+7ejKdQuhby6/fb//Qc=",
-  "k9adc3cca6b44": "fVTRbpswFP2XPK6jTjAOjqU+OKNaWqla+jTt8dpcAw2ByIbSZdq/TyGQBKjmpwSd43vuucf3z+wAegcJ3r+5spiJ2ZfZ15mDd/Qc2ne0929uJmZzHQDjQp4PkVJ+P8G0zQ6VI3mmCKgC0j16ta0wy+91S1tojoCCNI+y2RKyJSFZN/Jy1vLhYXxNrjAuvQoM9peo2A8piDGwdgko9KA2beEOzIJFQJkg7eGR3L6R/shXKUnzOK6ooIiHqg0FZhbiqZHycaowzgArL88K19fUMVPUF5dCzZRjofGOgGmOtiP5sZmzoBcqpYwa8sHHRJPXzg2KcRoznwtCVmSETdBlOq28gy0VFr15Kz9cgFhPNSWH2jO3ikAp4GrscwpYJGiHGsKA6UB8oncHe7TgFZB20NWchr66ekMI2Uy15K3wtkQvnMdqFZoBkRCSbNr4RLz9c/nMN+dARck1XPJ1VMTpNLP7oT3GsBjm455dCjFab1e66oKknPtAuxcQtWGS2yAaM6+N9HNWyznjN31wIjcT31xpqgYsesmh7ogYIAuZkMnLBFzBft83oH3kbNJAdQr1rQwW4GIZit61T2ZwfgLeEbO8J4VaLyiKby9y3Oe7hb0HKrGZMf2kFdNm9VkwG8wrT5Vl1SNpDFQLQklxcWXFpfwl19fpRceS//y9+7idqJTyuRzrbm8vbXXpVC3nJhCmfYl6gs5s5TWg0x4e0CX1F2MDj2hzTHBgYRwoCrEgjb5RGfQ/7gY5PU4mfMzwZG7hatcnfBXGqy7h3VJ8Gq6bBu1OQbHrCPOYUQOijflWRvKHlMlzdHe7Uf93EnnefQfU5GBLk502H0mhdink1XX9//0H"
+  "k9adc3cca6b44": "fVTRbpswFP2XPK6jTjAOjqU+OKNaWqla+jTt8dpcAw2ByIbSZdq/TyGQBKjmpwSd43vuucf3z+wAegcJ3r+5spiJ2ZfZ15mDd/Qc2ne0929uJmZzHQDjQp4PkVJ+P8G0zQ6VI3mmCKgC0j16ta0wy+91S1tojoCCNI+y2RKyJSFZN/Jy1vLhYXxNrjAuvQoM9peo2A8piDGwdgko9KA2beEOzIJFQJkg7eGR3L6R/shXKUnzOK6ooIiHqg0FZhbiqZHycaowzgArL88K19fUMVPUF5dCzZRjofGOgGmOtiP5sZmzoBcqpYwa8sHHRJPXzg2KcRoznwtCVmSETdBlOq28gy0VFr15Kz9cgFhPNSWH2jO3ikAp4GrscwpYJGiHGsKA6UB8oncHe7TgFZB20NWchr66ekMI2Uy15K3wtkQvnMdqFZoBkRCSbNr4RLz9c/nMN+dARck1XPJ1VMTpNLP7oT3GsBjm455dCjFab1e66oKknPtAuxcQtWGS2yAaM6+N9HNWyznjN31wIjcT31xpqgYsesmh7ogYIAuZkMnLBFzBft83oH3kbNJAdQr1rQwW4GIZit61T2ZwfgLeEbO8J4VaLyiKby9y3Oe7hb0HKrGZMf2kFdNm9VkwG8wrT5Vl1SNpDFQLQklxcWXFpfwl19fpRceS//y9+7idqJTyuRzrbm8vbXXpVC3nJhCmfYl6gs5s5TWg0x4e0CX1F2MDj2hzTHBgYRwoCrEgjb5RGfQ/7gY5PU4mfMzwZG7hatcnfBXGqy7h3VJ8Gq6bBu1OQbHrCPOYUQOijflWRvKHlMlzdHe7Uf93EnnefQfU5GBLk502H0mhdink1XX9//0H",
+  "kfcac2c00be1a": "bVXbkqIwEP0XH2c2E+UimKp5iGKVs7VTq5/QCR1gRLCSIFtu7b9vwYAK2E9Ane4+ffok/J2dQR4hwbcvUxYzNnuZ/ZgZuCAxqC+o377MjM3m0gM/ZPw7KOd808Ckzs7W0DiDhNSoj8aCtaTG5E22aS8PoDwTFEQB6QlJpS1meQdayBABGa0/eb2ndE8Duq75LTb8/X1cJhcYl8SCwr6IiJ3ABTYGViYBgQQq1TbuwL638Fyf0TbCiO+/aB/8wDmtt8+6CijiIXPlgq8WrSrbKT7OAC3Js8L0fWXsC9dht2b1NEdDTa6AaY66S3JiNfe9niznPKrpn3CcqPLKmEGz0I19J2SUrugIm6DJZGrJWZcCi17AlRMsgK2nnJJzRdQjIxACQjHWOgUsEtRDDoHnS4894XuEE2ogBaQddDV3A0fctaGU7qZc8pZ426InHsZiFahBYrPHXWuhKGxektvncPdtqii5G4wfRk2MTDN9GsqjlB/DnP2aUjIpxKjJsTT2hnbD0AG3Oy5Rayq+96Jx5n2YftdiOffDh1lCyncT7UypbA0aSXKuukT00A98xvnHBGzhdOqHkA6G/nhxxjbGfqThe7hYBqxX7skevo8BuWKW90mBlAsX2eaTj+e8aDgREInOlOq3LXypVs/MWWNuiShL2yPdGFzJaECLB1k4P/D1fYNRXcrtJjncPmyfVS21vU0olnPlMXVpTqEcT1dn2pIaZNrDPXfpOgv2BHpFnWOCA/liT7gQN+gHhl7/8Drw6XWy3WuGjbCFqUzv8FUQrzqHD1fR3LkCimMHnMe+q4D9bPrsedRenjxaNreptx+ej9/1uv5Y89em2BklPetSZc0NR1OoTAq5HfwPviEVKgP2SgVUWJCje4f8+w8="
  },
  "sitzung": {
-  "start": "2026-11-18T10:30:14.443Z",
-  "ordner": "sitzung-20261118-113014",
+  "start": "2026-11-18T10:38:57.380Z",
+  "ordner": "sitzung-20261118-113857",
   "port": 7804,
-  "warten": 0.55,
-  "bootS": 6.3,
+  "warten": 1.35,
+  "bootS": 5.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "karte2.planet.wasser.kreislauf#1",
-    "s": 27.4,
-    "takte": 619,
+    "ort": null,
+    "vor": "karte2.erleben.schoepfen.schutz#1",
+    "s": 20.8,
+    "takte": 733,
     "chunks": 81,
     "nach": null
    }
@@ -100,38 +170,37 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.planet.wasser.kreislauf#1",
+    "probe": "karte2.erleben.schoepfen.schutz#1",
     "anders": [
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__ortSchritt",
-     "window.__vorBild"
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather"
     ],
     "wie": {
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
-     "window.__vorBild": "neu: async (stufe) => { if (stufe === \"trocken\") { wort(\"sunny\", 1e6); window.__k3Gru"
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert"
     },
     "haelt": [],
     "heap": [
-     229.3,
-     274.8
+     188.2,
+     220.1
     ],
     "ungemessen": null
    }
   ],
-  "wanderung": [
-   {
-    "probe": "karte2.planet.wasser.kreislauf#1",
-    "ort": "wiese",
-    "m": 86.92,
-    "dreh": 0
-   }
-  ],
   "messHalt": [
    {
-    "probe": "karte2.planet.wasser.kreislauf#1",
+    "probe": "karte2.erleben.schoepfen.schutz#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.erleben.schoepfen.schutz#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -143,20 +212,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2498,
-   "frameP95": 33.27,
-   "taktP95": 16.63,
-   "vramMax": 133.3,
+   "bilder": 2950,
+   "frameP95": 25.22,
+   "taktP95": 10.59,
+   "vramMax": 128.8,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 125,
+   "zapfen": 136,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 134.7,
-  "minuten": 2.86
+  "fahrtS": 141.2,
+  "minuten": 3.76
  }
 }
