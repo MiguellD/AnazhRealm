@@ -55,6 +55,7 @@ const DAUER_S = {
     kaskade: 350,
     folgen: 42,
     zielplan: 80,
+    gehege: 110,
 };
 const TEIL = teilAus(argv);
 const gewaehlt = (() => {
