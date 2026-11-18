@@ -40,7 +40,7 @@ Von allen Feldern liest das Feuer nur die Tier-Furcht direkt; Rauch liest kein W
 | Brand-Narbe (lebendig sinkt) | ohne Einheit | Tiefe 0,3, 72 h, Nährstoff 0,4 | feld-leben.js:3102 | Tat `brand` feld-brand.js:575 | `_narbeAt` feld-leben.js:2684-2693 → `auraAt` lebendig → `_kreaturNahrung` kreatur-leben.js:2101-2104, Vogel-Revier kreatur-fauna.js:370 | GESETZT |
 | Fraß der Herde F = n · frass | lebendig je Takt, ohne Einheit | je Region und Takt | kreatur-leben.js:2193 | `_depositLife` kreatur-leben.js:2195 | `auraAt` lebendig → Last des Brand-Betts feld-brand.js:222, :302; unter `minStoff` 0,15 kein Bett, feld-brand.js:224, :900 | FOLGT (Bestand; Herleitung von `frass` nicht gelesen) |
 | Tritt je Zelle (`TRITT`) | Tritte je 0,5-m-Zelle | `tritte` 20, `erholTage` 20 | siedlung-wege.js:2907-2919 | Tiere siedlung-wege.js:1650, Spieler :1653, Bewohner siedlung-bewohner.js:2728, Mitspieler netz-p2p.js:2935 | `_pfadFeldAt` siedlung-wege.js:1616 → Wiese vegetation-wiese.js:782, :1323; Baum vegetation-baum.js:1344; Wagen koerper-fahrt.js:1834 | GESETZT |
-| Tritt in die Schnee-Decke | m | Kern `schneeTrittAm` | bild-himmel.js:2876-2884 (Kommentar) | Kern | koerper-bewegung.js:1112, koerper-leib.js:597, kreatur-leben.js:1584, :1624 | FOLGT (Kern; Herleitung nicht gelesen) |
+| Tritt in die Schnee-Decke | m | Kern `schneeTrittAm` | bild-himmel.js:2884-2890 (Kommentar) | Kern | koerper-bewegung.js:1112, koerper-leib.js:597, kreatur-leben.js:1584, :1624 | FOLGT (Kern; Herleitung nicht gelesen) |
 | Nässe am Wagen (`state.naesse`) | ohne Einheit 0–1 | μ je Stoff von trocken bis nass | koerper-fahrt.js:1801-1811 | `_naesseTakt` bild-himmel.js:3077-3086 | koerper-fahrt.js:1811 | FOLGT (Reibungs-Tafeln, bau-vorlagen.js) |
 | Reichweite der Fackel beim Zünden | m | `FORAGE.reach` 6 | vegetation-wiese.js:3166 | Stamm-Literal | kampf.js:2429-2446 | GESETZT |
 | Radius des Brennglases | m | 4 | koerper-fahrt.js:3253 | Stamm-Literal | koerper-fahrt.js:2315, :2371 | GESETZT |
@@ -155,22 +155,40 @@ koerper-leib.js:597, kreatur-leben.js:1584, :1624). Eis wird zum Stoff „eis“
 
 ## 5. Sprossen (meisterkarte-2)
 
-`origin/koordination` fehlte bis zum Schreiben dieses Blatts (`git branch -r`: nur `main` und der Arbeitszweig). Selbst habe ich
-nicht gefetcht. Die Sprossen der Karte sind daher **nicht gelesen**. Genannt sind die Kennungen, die der Code selbst zitiert:
+Gelesen mit `git show origin/koordination:vision/meisterkarte-2.json`, nachdem der Fetch des Koordinators stand. Die Suche lief über
+alle 318 Leitern mit einem Hilfs-Skript im Scratchpad: Sprossen, die ein Feld-Wort UND ein Wesen-Wort tragen. Hier steht der Wortlaut
+kurz und was der Code heute dafür tut.
+
+| Sprosse (heute · Fuß) | Wortlaut kurz | was der Code heute tut |
+|---|---|---|
+| `same.kopplung.ereignis#2` (heute 1 · ungemessen) | 1 ha, 10 Menschen: Feuerfront mit Wind und Hang; **Bewohner weichen** — Richter: „Bewohner meiden die Front = 100 %“ | **0**: kein Bewohner liest das Brand-Feld (0 Treffer in stamm/siedlung-*.js) |
+| `same.kopplung.ereignis#3` | 1 km², 10³ Menschen: mit Rauch, Glut, Fluss; **ein Dorf flieht**, „Fluchtwege folgen dem Gelände“ | **0**: Rauch ist nur Bild, Bewohner fliehen nicht; die Flucht der Tiere ist radial, nicht dem Gelände nach |
+| `same.kopplung.stoerung#3` (heute 0 · gemessen) | 5 Domänen: **Tiere fliehen und kehren zurück** — „Tierdichte −50 % sofort, Rückkehr in 3–10 a“ | teilweise: die nahen Körper fliehen (Probe flieht 1); der Bestand fern als Zahl verliert nichts sofort, nur K sinkt über die Narbe 72 h (feld-leben.js:3102). Die Rückkehr misst keiner. Beleg der Karte: „Tier-, Wasser-, Siedlungs-Antwort fehlt“ |
+| `planet.kopplung.wetter-welt#4` (Leiter heute 1, kern 1 · Glieder) | **Tiere suchen Schutz, Bewohner fliehen den Regen** — „Anteil im Freien bei Sturm ≤ 30 % des klaren Werts; Bildpaar Marktplatz“ | Bewohner: ja, über `tagesPlan` (mit dem Bruch „Wort am Spieler“). Tiere: **0**, nur der Gemüts-Impuls |
+| `planet.kopplung.stadtklima#4` | 10⁶ Bewohner reagieren auf Regen — „im Freien ≤ 30 % an 50 Zufalls-Kreuzungen“ | dasselbe `tagesPlan`; jede Kreuzung liest den Regen am Spieler |
+| `erleben.kopplung.ein-ereignis#2` | Gewitter in 10 km: „Regen am Ort ≤ Zugzeit der Front; **Bewohner unter Dach ≥ 0,8**“ | Bewohner gehen heim, wenn das Wort AM SPIELER umschlägt, nicht wenn die Front ihren Ort erreicht |
+| `mensch.zeit.erleben#2` | 1 Ereignisart begehbar (Brand): **Feuer nach Bauart und Wind, Flucht** — „Fluchtwege sinnvoll ≥ 90 % blind“ | Bauten brennen nicht (Bett nur gras/laub), keine Flucht der Menschen |
+| `leben.tiere.verhalten#4` | 5 Sinne, „**wittern gegen den Wind** — Entdeckungsdistanz mit/gegen Wind ≥ 3“ | der Wind wirkt nur auf die Jagd (`_scentAt`); die Furcht vor dem Spieler und vor der Glut ist radial, ohne Wind |
+| `erleben.sinne.geruch#4` | Duftklassen aus den Gesetzen (… **Rauch**, Mensch …) | Rauch ist keine Quelle des Geruch-Felds |
+| `same.physik.feuer#1` | „Fackel an trockenes / nasses Gras: zündet / zündet nicht“ | `_fackelZuenden` (kampf.js:2435) über das Gesetz des Brands |
+| `same.kopplung.kaskade#1`, `#2` | Regen löscht Brand; Regen → Nässe → Stoff → Brand → Licht | ohne Wesen; die Wesen tragen nur den Fraß als Last des Betts bei |
+
+Dazu die Kennungen, die der Code selbst zitiert:
 - `feld.K3#2` / `w28-brand-flucht` (kreatur-furcht.js:53): „die Glut ist Bedrohung“. Bedient wird sie von `_kreaturGlutNah`, gemessen oben (flieht 1, gegenlauf 0).
 - `mensch.kopplung.leben` S1 (koerper-core.js:5208, siedlung-bewohner.js:2211): „der Regen treibt ins Haus“. Bedient wird sie von
   `tagesPlan` mit dem Bruch „Ort = Spieler“.
 - `same.physik.feuer` S1 (kampf.js:2421, :2429): „die Glut in der Hand, die Fackel am Boden“. Bedient von `_fackelZuenden`.
 - `oekologie.K4` (tetrapoda-core.js:149-150): „der Spieler ist Beute, der Wind trägt die Witterung“. Bedient von `_scentAt` (nur die Richtung).
 - `leben.tiere.mensch` S1 (kreatur-furcht.js:146-163): die Fluchtdistanz je Gattung. Bedient, gemessen oben.
-- `stoffe.K4` (siedlung-wege.js:1621): der Trampelpfad. `wetter.K4` (koerper-leib.js:589-590): die Schnee-Decke. `mensch.K5`
-  (kreatur-leben.js:794): der Zeuge. `luftwasser.K4`/`K5` (kreatur-fauna.js:607, :78): Bestäuber und Schwarm.
+- `stoffe.K4` (siedlung-wege.js:1622): der Trampelpfad. `wetter.K4` (koerper-leib.js:589-590): die Schnee-Decke. `mensch.K5`
+  (kreatur-leben.js:794): der Zeuge. `luftwasser.K4`/`K5` (kreatur-fauna.js:608, :71): Bestäuber und Schwarm.
 - Station `karte2.same.kopplung.kaskade#1` (aus dem Brief): die Wesen tragen zu ihr nur den Fraß als Last des Betts bei. Kein Wesen
   zündet, trägt oder bricht die Ausbreitung.
 
 ## 6. Nicht verifiziert
 
-- Die Leitern `same.kopplung.*` und die Sprossen der meisterkarte-2 im Wortlaut: **nicht gelesen** (Zweig fehlte).
+- meisterkarte-2: die Sprossen sind über eine Wort-Suche gelesen (Feld-Wort × Wesen-Wort). Eine Sprosse ohne diese Worte kann
+  fehlen; `BRUECKE.md` der Karte ist **nicht gelesen**.
 - Ob `gruenMap` der Chunks den Tritt mitträgt (und der Pfad so über „gras < ½“ doch das Bett nimmt): **nicht gelesen**.
 - Ob das Vogel-Revier nach einem Brand neu gerechnet wird (Zwischenspeicher `_vogelZelle`): **nicht gelesen**.
 - Herleitung von `sprintTempo`, `BESTAND_GESETZ.frass` und `schneeTrittAm`: **nicht gelesen**, darum ohne Prüfung als FOLGT geführt.
