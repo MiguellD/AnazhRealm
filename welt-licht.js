@@ -115,6 +115,14 @@ var __weltLicht = (function () {
             ak = aLux + AUGE.knieLux;
         return Math.min(augeS(ak) * (Math.pow(1 + E / ak, AUGE.q) - 1), (augeS(ak + E) * E) / (ak + E));
     };
+    // DAS BECKEN IN DER LESUNG DES MESSERS: Σ E der Quellen am Auge (`lux`) als Licht der Lesung `welt` (ihr Tag-Anteil
+    // `tag`) — auf der BASIS DER LESUNG: Lesung × gezeigt ÷ S(A + Knie). Bis hier stand der Zuschlag auf S(A + Knie) (0,945 um
+    // Mitternacht) neben einer Lesung auf S(A) (0,542): zwei Zahlen für dieselbe Umgebung, das Becken wog ×1,74 (Gasse, 6,0 lx
+    // am Auge: Lesung 0,542 → 1,110 statt → 0,865).
+    const augeBecken = (lux, welt, tag = 0) => {
+        const A = augeLux(welt, tag);
+        return (augeZeig(lux, A) * Math.max(0, welt)) / augeS(A + AUGE.knieLux);
+    };
     // DIE GLUT EINER LEUCHTENDEN FLÄCHE (Fenster, Laternen-Kopf, Glutbett und Flamme, Lava) — die S-FORM: das Auge passt sich an
     // Umgebung + Knie + Fläche an und die Fläche zeigt ihren Anteil daran,
     //     Höhe = S(A + knie + E) × E ÷ (A + knie + E) ÷ π,   E = π · L
@@ -756,11 +764,17 @@ var __weltLicht = (function () {
     // Sonne 0°: E 0,056, Knoten 0,462 — 3 EV): die Kamera knickte am Horizont, das Bild sprang je 0,002 der Uhr um 0,50 EV
     // (Wiese, Radeon 71839b1e: k 19,9 → 27,7 bei Sonne −0,72° → 0°) und fiel dazwischen in ein Tal (−2°: 0,9 EV unter dem
     // Horizont). Der Boden lässt das Licht der Dämmerung durch, wo es über ihm liegt; Mittag und Nacht ab −6° rechnen gleich.
-    function belichtung(w, EA, e, stufen, B = BELICHTUNG) {
+    // DAS BECKEN (`becken`, w28-strahler): das Licht der Quellen am Auge in der Zahl der Lesung (`augeBecken`). Die Kamera
+    // folgt ihm zu JEDER Stunde mit der Kompensations-Steigung des Tags — k × ((E + Becken) ÷ E)^−`steigung` —, nie mit voller
+    // Adaption: am Tag ist das dieselbe Zahl wie ein Zuschlag auf E (k ∝ E^−steigung), in der Nacht stehen die Stufen fest, dort
+    // schlösse ein Zuschlag auf E reziprok (Gasse mit Laternen, 6,0 lx am Auge: k 1,574 → 0,769, der Boden unter der Laterne
+    // Luma 49 → 16, die Bühne S0 Nacht Luma 5,3 und 41 % abgesoffen; GTX 1050, 18.11.).
+    function belichtung(w, EA, e, stufen, B = BELICHTUNG, becken = 0) {
         const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
         const s = Math.max(0, Math.min(1, h / B.nachtKnotenGrad));
         const E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], B.nachtKnotenE * s * s * (3 - 2 * s), 1e-6);
-        return Math.max(B.min, (B.zielKarte * 2 ** (stufen || belichtungStufen)(h, E / EA)) / ((0.18 / Math.PI) * E));
+        const k = (B.zielKarte * 2 ** (stufen || belichtungStufen)(h, E / EA)) / ((0.18 / Math.PI) * E);
+        return Math.max(B.min, k * Math.pow(E / (E + Math.max(0, becken)), B.steigung));
     }
 
     // DER ANKER DER KAMERA (S7, H1): E der waagrechten Karte unter der Zenit-Sonne der klaren Luft — E0 (`KEY_BASE` ·
@@ -1422,6 +1436,7 @@ var __weltLicht = (function () {
         augeS,
         augeLux,
         augeMass,
+        augeBecken,
         augeZeig,
         augeReichweite,
         augeGlut,

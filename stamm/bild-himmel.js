@@ -1951,18 +1951,17 @@ class AnazhRealm_bild_himmel {
         if (!EA) return null;
         // das Gesetz der Kamera (welt-licht.js `belichtung`) mit den Stufen am Glied der Welt (die Linsen prüfen ihren Schein dort)
         // DER MESSER LIEST DAS BECKEN (w28-strahler): Σ E der Quellen am Auge (`_beckenAmAuge`, Lux) durch dasselbe Auge wie auf
-        // jeder Fläche (`augeZeig` über der Umgebung DIESER Lesung) als Licht der Lesung — an der Lava schließt die Kamera, die
-        // Wiese steht nicht mehr orange (Nacht, Mess-Wiese, GTX 1050: k 1,547 → Herd nah 0,631 · fern 0,842 · Lava 0,214)
+        // jeder Fläche (`augeZeig` über der Umgebung DIESER Lesung) als Licht der Lesung (`augeBecken`: auf ihrer Basis); die
+        // Kamera folgt ihm mit der Steigung des Tags (`belichtung`, `becken`), nie mit voller Adaption
         const lu = 0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2];
-        const bz = (this._belichtungBecken =
-            __weltLicht.augeZeig(this._beckenAmAuge(), __weltLicht.augeLux(lu, this._belichtungTag)) *
-            __weltLicht.augeMass(lu, this._belichtungTag));
+        const bz = (this._belichtungBecken = __weltLicht.augeBecken(this._beckenAmAuge(), lu, this._belichtungTag));
         const k = __weltLicht.belichtung(
-            [w[0] + bz, w[1] + bz, w[2] + bz],
+            w,
             EA,
             e,
             (h, q) => AnazhRealm._belichtungStufen(h, q),
-            AnazhRealm.BELICHTUNG
+            AnazhRealm.BELICHTUNG,
+            bz
         );
         // DER RAUM AM AUGE (w28-innenlicht): unter einer Decke misst die Kamera das Licht des Raums — das Licht von draußen ×
         // F (`_raumBlendeTakt`: das Raum-Licht der Decke × der Anteil des Himmels am Licht, die Sonne erreicht den Messer im

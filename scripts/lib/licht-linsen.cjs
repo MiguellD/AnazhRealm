@@ -1108,8 +1108,8 @@ function tagKurve(o) {
             const w = r._belichtungE,
                 EA = r._belichtungAnker();
             if (!w || !EA) return NaN;
-            const bz = mit ? WL.augeZeig(r._beckenAmAuge(), WL.augeLux(luma709(w), r._belichtungTag)) * WL.augeMass(luma709(w), r._belichtungTag) : 0;
-            return WL.belichtung(w.map((x) => x + bz), EA, r._sonnenRichtung().y, (h, q) => C._belichtungStufen(h, q), C.BELICHTUNG);
+            const bz = mit ? WL.augeBecken(r._beckenAmAuge(), luma709(w), r._belichtungTag) : 0;
+            return WL.belichtung(w, EA, r._sonnenRichtung().y, (h, q) => C._belichtungStufen(h, q), C.BELICHTUNG, bz);
         };
         const C = r.constructor;
         try {
