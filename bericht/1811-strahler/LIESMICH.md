@@ -90,12 +90,34 @@ EINE Funktion `strahler` trägt den Nahfeld-Term der Fläche, kein zweiter Weg. 
   Quelle geprüft; das ist der erste Schritt vor dem Schnitt.
 - Kein Bild an der Esse, am Stahl, an Funken und am Fahrzeug-Licht.
 
+## Stand (18.11. 01:15) — zwei WIP-Schritte gebaut, lokal, nicht gepusht
+
+Zweig `w28-strahler`, lokal gestapelt auf der angenommenen Abgabe w28-lava-nachlauf 1d835734 (main trägt sie um 01:13 noch
+nicht; gepusht wird erst auf einem main, das sie trägt).
+
+- **3001752a — `worldMeta.tag` fällt** (Zusatz 1 des Koordinators): `_uhrSetzen` zählt keinen Tag mehr, `_weltTagEichen`
+  liest den Tag eines alten Stands einmal und löscht ihn, der Playtest `sprungNimmtTag` liest `_weltTag`,
+  `gate:altlasten` trägt den Schreiber. Gefahren am Kopf: playtest EXIT 0, check EXIT 0 (0 „✗“), gate:stand-takt --narbe GRÜN.
+- **df177c97 — die Maske des Betts geht im Budget des Brands** (Zusatz 2): die gemischte Zelle brennt sofort auf ihrer groben
+  Maske (die fünf Punkte, je Gitter-Punkt der nächste) und stellt die feine in die Reihe; `_brandMasken` misst je Takt einen
+  Punkt je `BRAND.maskeJe` (4) Zellen des Feuers, die Asche misst ihre Maske zu Ende.
+  Gemessen wie die Masken-Zahl oben (Mess-Wiese, 3 600 Takte, dieselben 57 gemischten Zellen): teuerster Takt **5,19 → 2,81 ms**
+  (ein Takt ohne Maske), Takte mit Maske in der Reihe Median 2,3 → 0,575 ms, höchstens 2,28 ms; die Reihe trägt höchstens 3.
+  Linse: BRAND-ZELLEN wieder 64 je Zelle (der Masken-Zuschlag der Abgabe lava-nachlauf fällt), neu L3-MASKE (die feine Maske
+  steht 2 bis 64 Takte in der Reihe; Probe-Zelle 28), Flammen und Asche auf dem Stein 0. Stand-Linse und Narben-Linse GRÜN
+  auf der Karte, Selbsttest GRÜN, format:check EXIT 0.
+  Offen: das Bild-Paar der Teil-Zelle ist nicht neu geschossen (es fällt mit den Bild-Paaren des Kopfs); in den ersten Takten
+  einer gemischten Zelle steht die Flamme auf der groben Maske (in der Linse 28 Takte, im Spiel unter einer halben Sekunde).
+- **Heimholen (Auftrag 18.11. 00:25) war ein Fehlalarm**, vom Koordinator bestätigt: der Inhalt von w28-ankunft-faden,
+  w28-feld-fuss und w28-licht-kern steht seit dem 16.11. 05:40 in main (Squash `2ac706fac` „Abgabe w28-ankunft-stapel“).
+  Kein Zweig w28-heim-* gebaut. Die drei alten Zweig-Namen stehen noch auf origin; ihr Aufräumen liegt beim Schöpfer.
+
 ## Nächster Schritt
 
 1. Blick des Koordinators auf dieses Blatt (das Zielbild ist der einzige Zwischenbericht).
-2. Sobald main lava-nachlauf trägt: erster Commit `worldMeta.tag` fällt; dann die Masken über das Budget des Brands (Soll zurück
-   auf 64 je Zelle, die Linse L3 und das Bildpaar der Teil-Zelle halten); dann die Zahlen des Befund-Blatts
-   an der Quelle prüfen und `strahler(T, A, n)` am Chokepoint bauen.
+2. Gebaut (siehe Stand 01:15): `worldMeta.tag` fällt, die Masken gehen im Budget des Brands.
+3. Jetzt: die Zahlen des Befund-Blatts an der Quelle prüfen und `strahler(T, A, n)` am Chokepoint bauen (Nahfeld-Term in der
+   EINEN Funktion, Richter das Flächen-Integral an 10 / 40 / 60 m ≤ 15 %); alle Leser ziehen in diesem Kopf um.
 
 Werkzeug (lokal, GTX 1050): Befehls-Dateien `gtx1050-werkzeug/tmp/sz-main-{wiese,tor,dorf,dorf2,lava3}.bef` über
 `werkbank-ort.sh` (ORT=wiese · genesis · dorf); für den Kopf dieselben Posen mit anderem Vorsatz der Datei-Namen.
