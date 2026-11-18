@@ -6,7 +6,7 @@
 //   node scripts/diag-blick.cjs [--out DIR] [--zeit 10|22] [--blick wald|boden]            die Welt (npm run blick)
 //   node scripts/diag-blick.cjs --studio <name> [--ansicht a] [--sha <commit>] [--paar] [--uhr frueh|mittag|spaet|0..1] [--nackt]
 //     ein Studio (npm run blick:studio --); --uhr und --nackt stellen die EINE Bühne (garage, schmiede: AnazhHuelle.buehne)
-//     Studios und Ansichten: garage iso|seite|explosion|persp|strecke [--epoche 0…5] · koerperstudio front|seite|nah|iso (die erste ist die Vorgabe).
+//     Studios und Ansichten: garage iso|seite|explosion|persp|strecke [--epoche 0…5] · koerperstudio front|seite|nah|iso · portale front (die erste ist die Vorgabe).
 //     --sha fährt den Stand eines Commits aus einem temporären Worktree; --paar legt VORHER (--sha, sonst origin/main) und
 //     NACHHER (der Arbeitsbaum) nebeneinander in EIN PNG und nennt die Pixel, die sich unterscheiden.
 //     Je Bild: Anteil des Objekts (das Bild mit gegen ohne Objekt), Luma-Mittel/σ, Bounding-Box [x0,y0,x1,y1] in Pixeln.
@@ -108,12 +108,42 @@ const STUDIOS = {
             return { R: renderer, scene, objekt: gestalt.root, takt: animate };
         },
     },
+    // DAS TOR-STUDIO (w28-studio-seiten): auf der EINEN Bühne (AnazhHuelle.studio — `--uhr` stellt sie) oder, an einem Stand vor dem
+    // Schnitt, das r128-Labor (`gate`, `composer`). `front`: die Schauseite des Tors, die Hüllkugel füllt die Bildhöhe; der Takt
+    // ist der EINE Takt der Seite (die Rückrufe, die HALT sammelt) — die Flügel stehen, wie die Seite sie stellt.
+    portale: {
+        ansichten: ["front"],
+        bereit: () => (window.STUDIO ? !!STUDIO.wurzel : typeof gate !== "undefined" && !!gate && typeof composer !== "undefined"),
+        ruhe: () => {
+            const neu = !!window.STUDIO,
+                [kam, objekt, kugel] = neu ? [STUDIO.kamera, STUDIO.wurzel, STUDIO.kugel] : [camera, gate, controls],
+                ry = neu ? STUDIO.teller.rotation.y : 0;
+            objekt.updateMatrixWorld(true);
+            const b = new THREE.Box3().setFromObject(objekt),
+                c = b.getCenter(new THREE.Vector3()),
+                h = b.max.y - b.min.y,
+                d = (1.25 * h) / 2 / Math.tan((kam.fov * Math.PI) / 360);
+            kugel.target.copy(c);
+            kam.position.copy(c).add(new THREE.Vector3(Math.sin(ry), 0.22, Math.cos(ry)).setLength(d));
+            if (kugel.enableDamping) kugel.enableDamping = false;
+            kugel.update();
+            const lauf = (i) => window.__rafQ.splice(0).forEach((f) => f(1000 + (i * 1000) / 60));
+            return {
+                R: neu ? STUDIO.buehne.renderer : renderer,
+                scene: neu ? STUDIO.szene : scene,
+                objekt,
+                takt: neu ? (i) => (STUDIO.wecke(), lauf(i)) : () => ((window.__rafQ.length = 0), animate()),
+            };
+        },
+    },
 };
 // DER HALT vor dem ersten Skript der Seite: kein requestAnimationFrame läuft, jedes Bild zieht der Schuss; der Zufall zieht aus
 // einem festen Samen — die Seite steht bei jedem Laden im selben Zustand
 const HALT = () => {
     let s = 7;
-    window.requestAnimationFrame = () => 0;
+    // die Rückrufe ruhen gesammelt (`__rafQ`): ein Studio, dessen Takt der Seite gehört (portale), lässt sie im Schuss je Bild laufen
+    window.__rafQ = [];
+    window.requestAnimationFrame = (f) => (window.__rafQ.length < 64 && window.__rafQ.push(f), 0);
     Math.random = () => (s = (s * 16807) % 2147483647) / 2147483647;
 };
 // DER SCHUSS (Seiten-Kontext): die Ruhe, Takte bis drei Bilder gleich sind (mindestens 12, höchstens 120), dann dasselbe Bild
