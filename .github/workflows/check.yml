@@ -914,6 +914,14 @@ jobs:
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 7
               run: node scripts/diag-haus-welt.cjs --selftest --teil=2/2
 
+            - name: Die Welt ist eine Funktion (derselbe Kopf zweimal gebaut - 0 anders, je Ding beim Namen)
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 12
+              # w28-funktion-welt (scripts/lib/abdruck.cjs): zwei Abdrücke dieses Kopfs (Null-Renderer, Genesis · Wiese · Dorf, die
+              # feste Welt-Uhr über `_weltUhrNimm`, 240 Takte zu 1/64 s), je Ort und benanntem Ding ein Inhalt-Hash — ein Ding, das
+              # anders ist, steht mit Domäne und Pfad ROT. Kanonisch, nie gelernt: die feste Liste KEIN_WELT_ZUSTAND nennt jede
+              # Ausnahme mit Grund. Der Selbsttest (Erzeugungs-ID im Schlüssel, Wanduhr im Pool) fährt in check:statik.
+              run: node scripts/werkbank.cjs abdruck --a-gegen-a
+
             - name: Haus-Fernkörper (S3 haus - der Werfer jeder Stufe, kein Umriss-Sprung, das Türblatt am Scharnier; Teil von npm run check)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 14
               # Der letzte Teil der EINEN Statik (`npm run check`), am Gesetzbuch in Node (three-r128 + fachwerk-core): Wurf-Deckung,

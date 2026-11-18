@@ -203,7 +203,8 @@ function abdruckKern(G) {
         if (st.chunkSaetze) gesehen.add(st.chunkSaetze);
         // ein Leib in Bewegung zählt in `netze` (Gestalt) und `bestand` (wer), nie mit seiner Pose
         for (const c of [...(st.creatures || []), ...(st.leichname || [])]) gesehen.add(c);
-        for (const [, S] of r._bewohnerSiedlungen || []) for (const b of S.aktivListe || []) if (b && b.leib) gesehen.add(b.leib);
+        for (const [, S] of r._bewohnerSiedlungen || [])
+            for (const b of S.aktivListe || []) if (b && b.leib) gesehen.add(b.leib);
         const inst = (o) => {
             for (const a of [o.instanceMatrix, o.instanceColor]) if (a && a.array) gesehen.add(a.array.buffer);
             for (const a of Object.values((o.geometry && o.geometry.attributes) || {}))
@@ -267,7 +268,8 @@ function abdruckKern(G) {
                     if (Array.isArray(x)) return x.forEach((y) => weg(y, t - 1));
                     for (const y of Object.values(x)) weg(y, t - 1);
                 };
-                for (const k of Object.keys(v)) if (k !== "lage" && k !== "chunkKarten" && k !== "bueschel") weg(v[k], 3);
+                for (const k of Object.keys(v))
+                    if (k !== "lage" && k !== "chunkKarten" && k !== "bueschel") weg(v[k], 3);
                 return [pp + ".bueschel", hex(h)];
             }
             return null;
@@ -301,7 +303,8 @@ function abdruckKern(G) {
                 gesehen.add(v);
                 if (v.isInstancedMesh) inst(v);
                 // ein Instanz-Attribut liegt in der Folge der Slots (die Ankunft der Instanzen) — `instanzen` trägt es als Menge
-                if ((v.isInstancedBufferAttribute || v.isInstancedInterleavedBuffer) && v.array) gesehen.add(v.array.buffer);
+                if ((v.isInstancedBufferAttribute || v.isInstancedInterleavedBuffer) && v.array)
+                    gesehen.add(v.array.buffer);
                 const buf = ArrayBuffer.isView(v) ? v : v instanceof ArrayBuffer ? new Uint8Array(v) : null;
                 const gruppe = (s) =>
                     s
@@ -521,7 +524,10 @@ function abdruckKern(G) {
         const paare = [];
         for (const [m, tn] of traeger) {
             if (!sichtbar.has(m)) {
-                paare.push([((m.name || m.type) + "@" + tn).replace(UUID, "uuid"), JSON.stringify({ "@": "unsichtbar" })]);
+                paare.push([
+                    ((m.name || m.type) + "@" + tn).replace(UUID, "uuid"),
+                    JSON.stringify({ "@": "unsichtbar" }),
+                ]);
                 continue;
             }
             {
@@ -705,7 +711,8 @@ const KEIN_WELT_ZUSTAND = [
 const ohneAusnahmen = (ort) => {
     for (const z of KEIN_WELT_ZUSTAND)
         if (z.klasse !== "halter" && ort[z.klasse])
-            for (const k of Object.keys(ort[z.klasse])) if (z.muster.test(k.replace(/#\d+$/, ""))) delete ort[z.klasse][k];
+            for (const k of Object.keys(ort[z.klasse]))
+                if (z.muster.test(k.replace(/#\d+$/, ""))) delete ort[z.klasse][k];
     return ort;
 };
 
@@ -814,7 +821,13 @@ function vergleichText(v, zeige = 40) {
 const UHR_S = 3600;
 const STEMPEL_MS = 1e9;
 const DT_MS = 1000 / 64;
-async function abdruckLauf({ baum, orte = ["genesis", "wiese", "dorf"], takte = 240, log = console.log, probe = null } = {}) {
+async function abdruckLauf({
+    baum,
+    orte = ["genesis", "wiese", "dorf"],
+    takte = 240,
+    log = console.log,
+    probe = null,
+} = {}) {
     const BAUM = path.resolve(baum);
     const WB = require(path.join(BAUM, "scripts/lib/welt-boot.cjs"));
     const { messort } = require(path.join(BAUM, "scripts/lib/welt-orte.cjs"));
@@ -863,7 +876,8 @@ async function abdruckLauf({ baum, orte = ["genesis", "wiese", "dorf"], takte = 
                     n += await __weltStehtNach(takt, 1800);
                     // DIE FESTE UHR: die Welt-Uhr über die Tür des Spiels (wie die Uhr eines Mitspielers, `_weltUhrNimm`) auf die
                     // Stunde des Orts — das Einschwingen trug sie um n Takte (n je Lauf verschieden) —, der Stempel auf seine Folge
-                    if (!(st.spielZeit < uhr)) throw new Error(`abdruck: die Uhr steht schon bei ${st.spielZeit} s ≥ ${uhr} s`);
+                    if (!(st.spielZeit < uhr))
+                        throw new Error(`abdruck: die Uhr steht schon bei ${st.spielZeit} s ≥ ${uhr} s`);
                     r._weltUhrNimm(uhr);
                     t = stempel;
                     for (let k = 0; k < TAKTE; k++) {
@@ -948,4 +962,139 @@ async function abdruckAmKopf(root, sha, opts) {
     }
 }
 
-module.exports = { abdruckKern, abdruckLauf, abdruckAmKopf, vergleiche, vergleichText, KEIN_WELT_ZUSTAND, domaene };
+// ── DER SELBSTTEST (ohne Welt, `abdruck --selbsttest`): derselbe Kern über einer kleinen Welt aus Objekten ──────────────────
+// Zwei Bauten derselben Welt — andere Erzeugungs-ids der Knoten, Instanzen, Glieder und Szene in anderer Folge — sind 0 anders;
+// die Mutanten fallen ROT beim Namen ihres Dings: die Erzeugungs-ID im Schlüssel einer Karte (`r._stoffKarte`, der Schlüssel
+// trägt die id des Knotens) und die Wanduhr im Pool (`r._vogelPool`, eine Lage aus `performance.now()`).
+function selbstWelt({ folge = true, idAb = 0, mutante = null, uhr = 0 } = {}) {
+    let id = idAb;
+    const knoten = (type, felder) => Object.assign({ isNode: true, type, id: id++, _cacheKey: "k" + id }, felder);
+    const farbe = knoten("UniformNode", { value: 0.5, name: "" });
+    const mat = {
+        isMaterial: true,
+        type: "MeshStandardNodeMaterial",
+        name: "stoff",
+        uuid: "0000000" + idAb + "-0000-0000-0000-000000000000",
+        colorNode: knoten("OperatorNode", { op: "*", aNode: farbe, bNode: knoten("ConstNode", { value: 2 }) }),
+    };
+    const geo = (n) => ({
+        isBufferGeometry: true,
+        attributes: { position: { array: Float32Array.from({ length: n }, (_, i) => i), itemSize: 3 } },
+        index: null,
+    });
+    const o3 = (x) => ({
+        isObject3D: true,
+        position: { x, y: 0, z: 0 },
+        quaternion: { x: 0, y: 0, z: 0, w: 1 },
+        scale: { x: 1, y: 1, z: 1 },
+        visible: true,
+    });
+    const mesh = (name, x) => Object.assign(o3(x), { isMesh: true, name, geometry: geo(9), material: mat });
+    const M = [
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 3, 0, 4, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -5, 0, 2, 1],
+    ];
+    const im = Object.assign(o3(0), {
+        isMesh: true,
+        isInstancedMesh: true,
+        name: "streu",
+        geometry: geo(9),
+        material: mat,
+        count: 2,
+        instanceMatrix: { count: 2, array: Float32Array.from((folge ? M : M.slice().reverse()).flat()) },
+    });
+    const kinder = folge ? [mesh("fels", 1), mesh("haus", 2), im] : [im, mesh("haus", 2), mesh("fels", 1)];
+    const scene = {
+        isObject3D: true,
+        traverse(f) {
+            f(scene);
+            kinder.forEach(f);
+        },
+        traverseVisible(f) {
+            this.traverse(f);
+        },
+    };
+    const st = {
+        scene,
+        creatures: [],
+        leichname: [],
+        chunkSaetze: new Map(),
+        architectures: [],
+        worldMeta: {},
+        weltTakt: 9,
+    };
+    const bestand = [
+        ["a", Float32Array.of(1, 2)],
+        ["b", Float32Array.of(3)],
+    ];
+    const r = {
+        state: st,
+        _bewohnerSiedlungen: new Map(),
+        _bestand: new Map(folge ? bestand : bestand.slice().reverse()),
+        _vogelPool: { lagen: Float32Array.of(1, 2, 3) },
+    };
+    if (mutante === "id") r._stoffKarte = new Map([["stoff#" + mat.colorNode.id, Float32Array.of(1)]]);
+    if (mutante === "uhr") r._vogelPool.lagen[0] = uhr;
+    return { st, r };
+}
+function selbstAbdruck(w) {
+    const K = abdruckKern(w);
+    return {
+        orte: {
+            selbst: {
+                halter: K.halter(
+                    3,
+                    KEIN_WELT_ZUSTAND.filter((z) => z.klasse === "halter").map((z) => z.muster)
+                ).aus,
+                stoffe: K.stoffe(),
+                saetze: K.saetze(),
+                instanzen: K.instanzen(),
+                netze: K.netze(),
+                plan: K.plan(),
+                bestand: K.bestand(),
+            },
+        },
+    };
+}
+function abdruckSelbsttest(log = console.log) {
+    const fehler = [];
+    // die kleine Welt trägt jede geprüfte Klasse (sonst wäre „0 anders" leer)
+    const leer = Object.entries(selbstAbdruck(selbstWelt()).orte.selbst)
+        .filter(([k, v]) => /halter|stoffe|instanzen|netze/.test(k) && !Object.keys(v).length)
+        .map(([k]) => k);
+    if (leer.length) fehler.push("die kleine Welt trägt nichts in: " + leer.join(", "));
+    const fall = (name, A, B, muss) => {
+        const v = vergleiche(selbstAbdruck(A), selbstAbdruck(B));
+        const namen = v.anders.map((x) => x.ding);
+        const ok = muss ? namen.some((n) => muss.test(n)) : namen.length === 0;
+        log(
+            `  ${ok ? "✅" : "❌"} Selbsttest „${name}" → ${muss ? "rot" : "grün"}: ${namen.join(" · ") || "(0 anders)"}`
+        );
+        if (!ok) fehler.push(`${name}: ${muss ? "der Täter steht nicht beim Namen (" + muss + ")" : namen.join(", ")}`);
+    };
+    fall("dieselbe Welt, andere ids und Folge", selbstWelt(), selbstWelt({ folge: false, idAb: 1000 }));
+    fall(
+        "Erzeugungs-ID im Schlüssel",
+        selbstWelt({ mutante: "id" }),
+        selbstWelt({ folge: false, idAb: 1000, mutante: "id" }),
+        /\|halter\|r\._stoffKarte/
+    );
+    fall(
+        "Wanduhr im Pool",
+        selbstWelt({ mutante: "uhr", uhr: performance.now() }),
+        selbstWelt({ folge: false, idAb: 1000, mutante: "uhr", uhr: performance.now() + 16.7 }),
+        /\|halter\|r\._vogelPool/
+    );
+    return fehler;
+}
+
+module.exports = {
+    abdruckKern,
+    abdruckLauf,
+    abdruckAmKopf,
+    abdruckSelbsttest,
+    vergleiche,
+    vergleichText,
+    KEIN_WELT_ZUSTAND,
+    domaene,
+};

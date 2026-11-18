@@ -1621,7 +1621,8 @@ class AnazhRealm_siedlung_bewohner {
             // der Sprung der Welt-Uhr (`_weltUhrNimm`: ein Mitspieler, ein Stand) ist derselbe Sprung — bis w28-funktion-welt
             // ging der Takt danach mit dem Gang der Takte davor weiter, und zwei Seiten derselben Uhr sahen zwei Dörfer
             const welt = this._weltUhrSprung | 0;
-            const sprung = Math.min(dU, 24 - dU) >= BW.sprungH || (S.weltUhrSprung !== undefined && S.weltUhrSprung !== welt);
+            const sprung =
+                Math.min(dU, 24 - dU) >= BW.sprungH || (S.weltUhrSprung !== undefined && S.weltUhrSprung !== welt);
             S.weltUhrSprung = welt;
             if (sprung || S.aktivListe !== S.liste) {
                 [S.aktivListe, S.aktiv, S.ruhend, S.raster, S.taktUhr] = [S.liste, S.liste.slice(), [], new Map(), 0];

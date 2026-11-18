@@ -1757,7 +1757,8 @@ class AnazhRealm_dirigent_takt {
     // f(Same, t), nie die Folge der Takte davor)
     _weltUhrNimm(t) {
         if (!(Number.isFinite(t) && t > this.state.spielZeit)) return;
-        if (t - this.state.spielZeit >= AnazhRealm.WELT_UHR_SPRUNG_S) this._weltUhrSprung = (this._weltUhrSprung | 0) + 1;
+        if (t - this.state.spielZeit >= AnazhRealm.WELT_UHR_SPRUNG_S)
+            this._weltUhrSprung = (this._weltUhrSprung | 0) + 1;
         this.state.spielZeit = t;
     }
 

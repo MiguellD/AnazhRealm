@@ -77,6 +77,10 @@
 //   node scripts/werkbank.cjs ratsche [--ort <id>] <band-*.json | messfolge-*.json …> [--nur vram] [--neu]
 //                                                           DIE RATSCHE aus ≥ 4 Läufen eines Orts × Geräts × Sicht; `--neu` der Re-Mint (nur Node)
 //   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE nach `start --gpu-fehler` (scripts/lib/gpu-fehler.cjs)
+//   node scripts/werkbank.cjs abdruck [--datei f.json] [--orte genesis,wiese,dorf] [--takte 240]  DER ABDRUCK DER WELT (headless, ohne
+//                                                           laufende Werkbank; scripts/lib/abdruck.cjs): je Ort und benanntem Ding ein Inhalt-Hash
+//   node scripts/werkbank.cjs abdruck --gegen <datei|sha> [--mit f.json]  nennt je Domäne die Dinge, die anders sind (Exit 0)
+//   node scripts/werkbank.cjs abdruck --a-gegen-a | --selbsttest  DIE LINSE „derselbe Kopf zweimal = 0 anders" (Exit 1 beim Namen)
 //   node scripts/werkbank.cjs reload | status | stop
 //
 // DIE MESS-SERIE: jeder `start` fährt ein eigenes Browser-Profil (ERST-Boot), jedes `reload` einen ZWEIT-Boot; `--serie <name>`
@@ -3183,11 +3187,53 @@ async function starte() {
     console.log(`WERKBANK bereit: Steuer 127.0.0.1:${PORT} · Seite :${SEITEN_PORT}`);
 }
 
+// DER ABDRUCK DER WELT (`abdruck`, scripts/lib/abdruck.cjs): schreiben (`--datei`), vergleichen (`--gegen <datei|sha>`, je Domäne
+// beim Namen), die Linse „A gegen A = 0 anders" (`--a-gegen-a`, Exit 1 beim Namen) und ihr Selbsttest (`--selbsttest`, ohne Welt)
+async function abdruckBefehl() {
+    const AB = require("./lib/abdruck.cjs");
+    if (SELBST)
+        return selbsttestEnde(
+            AB.abdruckSelbsttest(),
+            "dieselbe Welt mit anderen Erzeugungs-ids und anderer Folge ist 0 anders; die Erzeugungs-ID im Schlüssel und die Wanduhr im Pool fallen ROT beim Namen ihres Dings"
+        );
+    const kopf = () => require("child_process").execSync("git rev-parse HEAD", { cwd: root }).toString().trim();
+    const lauf = { orte: String(opt("--orte", "genesis,wiese,dorf")).split(","), takte: Number(opt("--takte", 240)) };
+    const eigen = async (n) => {
+        console.log(`ABDRUCK ${n} · kopf ${kopf()}`);
+        return AB.abdruckLauf(Object.assign({ baum: root }, lauf));
+    };
+    const zeile = (fp) => `  ${fp.kopf.slice(0, 10)}: ${fp.zeiten.gesamt_s.toFixed(1)} s (Boot ${fp.zeiten.boot_s.toFixed(1)} s)`;
+    if (hat("a-gegen-a")) {
+        // die zwei Abdrücke ZUGLEICH (zwei Browser, freie Ports): unter der Last des anderen läuft jeder seine eigene Folge von
+        // Takten bis „die Welt steht" — die Welt hängt nie an ihr; die Linse hält ≤ 3 min
+        const [A, B] = await Promise.all([eigen("A"), eigen("B")]);
+        const v = AB.vergleiche(A, B);
+        console.log(AB.vergleichText(v, 200));
+        console.log(`ZEIT je Abdruck\n${zeile(A)}\n${zeile(B)}`);
+        console.log(`KEIN WELT-ZUSTAND (feste Liste, ${AB.KEIN_WELT_ZUSTAND.length} Zeilen): ` + AB.KEIN_WELT_ZUSTAND.map((z) => `${z.klasse} ${z.muster.source}`).join(" · ")); // prettier-ignore
+        return endeMit(`A GEGEN A ${v.anders.length ? "ROT" : "GRÜN"}: ${v.anders.length} anders · kopf ${A.kopf}`, !v.anders.length); // prettier-ignore
+    }
+    const gegen = opt("--gegen", null);
+    if (gegen) {
+        const mit = opt("--mit", null);
+        const A = mit ? jsonLesen(mit) : await eigen("dieser Kopf");
+        const B = fs.existsSync(gegen) ? jsonLesen(gegen) : await AB.abdruckAmKopf(root, gegen, lauf);
+        console.log(AB.vergleichText(AB.vergleiche(B, A), 200));
+        return endeMit(`ABDRUCK ${B.kopf.slice(0, 10)} → ${A.kopf.slice(0, 10)}`, true);
+    }
+    const fp = await eigen("");
+    const datei = opt("--datei", path.join(require("os").tmpdir(), `abdruck-${fp.kopf.slice(0, 8)}.json`));
+    fs.writeFileSync(datei, JSON.stringify(fp));
+    endeMit(`ABDRUCK geschrieben: ${datei}\n${zeile(fp)}`, true);
+}
+
 hauptLauf(async () => {
     const cmd = argv[0];
     if (cmd === "start") return starte();
     const a = argv.slice(1).filter((x, i, arr) => !x.startsWith("--") && !(i > 0 && arr[i - 1].startsWith("--")));
     let o;
+    // DER ABDRUCK (w28-funktion-welt): ohne laufende Werkbank — er bootet seine eigene Null-Welt
+    if (cmd === "abdruck") return abdruckBefehl();
     if (cmd === "status") o = await rufe("/status");
     else if (cmd === "umstellen")
         o = await umstellen({ x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose"), sicht: opt("--sicht") });
