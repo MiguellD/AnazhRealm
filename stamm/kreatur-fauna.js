@@ -23,24 +23,21 @@ class AnazhRealm_kreatur_fauna {
                 welt,
                 saat: parseInt(this._fastHash(welt + "-vogel"), 16) >>> 0,
                 zellen: new Map(),
-                lauf: null,
             };
         const { x: px, y: py, z: pz } = pm.position;
         const Z = V.zelleM;
         const r = Math.ceil(hw / Z);
-        if (vk.zellen.size > 4 * (2 * r + 1) * (2 * r + 1)) {
+        if (vk.zellen.size > 4 * (2 * r + 1) * (2 * r + 1))
             for (const [k, c] of vk.zellen)
                 if (Math.abs(c.ix * Z - px) > 2 * hw || Math.abs(c.iz * Z - pz) > 2 * hw) vk.zellen.delete(k);
-            vk.lauf = null;
-        }
-        if (vk.zellen.size) {
-            let e = vk.lauf ? vk.lauf.next() : null;
-            if (!e || e.done) e = (vk.lauf = vk.zellen.values()).next();
-            this._vogelZelle(vk, e.value);
-        }
         const wf = this._weatherFieldFor(st.weather);
         const anteil = VG.lied(this._sonnenRichtung().y, wf.rain, this._windAt(px, pz, this._bildZeit).staerke, V);
         const uhr = st.spielZeit;
+        // DIE FRISCHE DER ZELLE AN DER WELT-UHR (w28-funktion-welt-2): Leben und Deckung jeder Zelle frischen je frischeS der Uhr
+        // nach (dieselbe Frist wie der Schwarm), versetzt um ihren eigenen Wurf `u` — die Kosten verteilen sich über die Frist,
+        // und ein Sprung der Uhr frischt jede. Bis hier frischte EINE Zelle je Takt reihum: wie alt die Deckung einer Zelle war,
+        // hing an der Zahl der Takte seit dem Boot, nie an der Uhr (A gegen A an d8162244: `dorf|instanzen|vogel` anders).
+        const F = V.schwarm.frischeS;
         const b = this._vogelBahnAus || (this._vogelBahnAus = {});
         const voegel = st.voegel || (st.voegel = []);
         const ix0 = Math.floor(px / Z);
@@ -50,7 +47,8 @@ class AnazhRealm_kreatur_fauna {
             for (let iz = iz0 - r; iz <= iz0 + r; iz++) {
                 const k = ix * 1048576 + iz;
                 let c = vk.zellen.get(k);
-                if (!c) vk.zellen.set(k, (c = this._vogelZelle(vk, { ix, iz })));
+                if (!c) vk.zellen.set(k, (c = this._vogelZelle(vk, { ix, iz }, uhr, F)));
+                else if (c.frisch !== Math.floor(uhr / F + c.u)) this._vogelZelle(vk, c, uhr, F);
                 if (!c.revier || !VG.bahn(c.wurf, anteil, uhr, c.deckung, V, b)) continue;
                 const x = c.x + b.dx;
                 const y = c.y + b.h;
@@ -360,8 +358,8 @@ class AnazhRealm_kreatur_fauna {
     }
     // DIE ZELLE der Vogel-Karte: ihre Würfe (einmal: das Revier, die Mitte, die Bahn) und ihr Revier aus Leben und Deckung an
     // der Mitte (je Aufruf neu; die Deckung hebt auch den Singflug über das Dach); die Mitte steht auf der EINEN 2D-Höhe, im
-    // Wasser wohnt keiner.
-    _vogelZelle(vk, c) {
+    // Wasser wohnt keiner. `frisch`: die Stufe der Uhr (je F Sekunden, versetzt um den Wurf u), in der sie frischte.
+    _vogelZelle(vk, c, uhr, F) {
         const VG = AnazhRealm._vogelGesetz();
         if (!c.wurf) {
             const w = (k) => VG.wurf(vk.saat, c.ix, c.iz, k);
@@ -371,6 +369,7 @@ class AnazhRealm_kreatur_fauna {
             c.u = w(0);
             c.wurf = [w(3), w(4), w(5), w(6)];
         }
+        c.frisch = Math.floor(uhr / F + c.u);
         c.deckung = this._kronenStreuAt(c.x, c.z);
         c.revier = !this._nassAt(c.x, c.z) && VG.revier(c.u, this.auraAt(c.x, c.z).lebendig, c.deckung, VG.V);
         return c;
