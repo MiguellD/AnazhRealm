@@ -5523,7 +5523,7 @@
   },
   "karte2.mensch.menge.bild": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 34.3 fps · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: 25 Menschen im Bild, 14 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 27 fps · [linse-gpu] nvidia/pascal an d39e0d6e gtx",
+   "beleg": "Maschine: gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 34.3 fps · [linse-gpu] amd/rdna-3 an e489088a radeon · 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 28.1 fps · [linse-gpu] nvidia/pascal an 1f300260 gtx",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bild#1",
@@ -5540,10 +5540,9 @@
      "id": "karte2.mensch.menge.bild#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "25 Menschen im Bild, 14 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 27 fps · [linse-gpu] nvidia/pascal",
-     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/diag-kreatur-leben.cjs +20)",
-     "gehalten": true,
+     "zahl": "25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 28.1 fps · [linse-gpu] nvidia/pascal",
+     "sha": "1f30026067b2aef1665a07b4ab6a7d700c5a08e6",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -6505,7 +6504,7 @@
   "ohne": 152
  },
  "kopfVoll": "1f30026067b2aef1665a07b4ab6a7d700c5a08e6",
- "zeit": "2026-11-18T08:10:47.794Z",
+ "zeit": "2026-11-18T08:56:45.955Z",
  "vorher": "1f300260",
  "bilanz": {
   "gewinn": [],
