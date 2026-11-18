@@ -1593,7 +1593,7 @@ class AnazhRealm {
     // oder nach `wahlM` Weg und nach jedem Sprung der Uhr, `_uhrSetzen`). Ein Platz hält seine Quelle, solange sie gewählt
     // ist; eine abgewählte blendet in `blendeS` aus, erst der freie Platz nimmt die nächste auf, und sie blendet ein — kein Licht springt. Die Stärke je Bild: das Emitter-
     // Datum über die EINE Übersetzung Labor → Welt (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der
-    // Bild-Uhr (fachwerk `lichtFlackern`) × Zeitplan (`_lichtZeitplan`) × Blende. Der Ort steht in der Welt (der Stoff rechnet
+    // Bild-Uhr (fachwerk `lichtFlackern`) × Blende — was sie zeigt, rechnet das Auge (`AUGE`). Der Ort steht in der Welt (der Stoff rechnet
     // ihn mit der Kamera seines Renderers). Unabhängig vom Klang. Lesbar für Linsen: `_leuchtPool.plaetze` (Quelle, Welt-Ort,
     // Stärke, Reichweite, Abfall, Kern, lineare Farbe, Himmels-Ersatz, Blende). Die Farbe aus der Farbtemperatur (`_lichtLinear`).
     _leuchtTakt() {
@@ -1613,8 +1613,14 @@ class AnazhRealm {
             const ak = aLux + AnazhRealm.AUGE.knieLux;
             atmo.lichtAuge.value.set(ak, __weltLicht.augeS(ak));
         }
-        for (const k in atmo.lichtGlut)
-            this._lichtLinear(LG[k], atmo.lichtGlut[k].value).multiplyScalar(this._lichtZeitplan(LG[k].zeit));
+        // DIE GLUT JE DATUM (Fenster, Laternen-Kopf): seine Leuchtdichte `cdM2` durch das Auge (welt-licht.js `augeGlut`) in der
+        // Farbe seiner Temperatur, auf Luma 1 genormt — kein Zeitplan: über dem Mittag trägt sie nichts, die Dämmerung zündet sie
+        for (const k in atmo.lichtGlut) {
+            const c = this._lichtLinear(LG[k], atmo.lichtGlut[k].value);
+            c.multiplyScalar(
+                __weltLicht.augeGlut(LG[k].cdM2, this._augeLux ?? 1) / (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b)
+            );
+        }
         const pool =
             this._leuchtPool ||
             (this._leuchtPool = {
@@ -1804,7 +1810,7 @@ class AnazhRealm {
     // mit seinem Emitter-Datum (`_lichtDatum`) — die Masse folgt der Fläche: trägt die Studio-Gestalt das Datum, ist es ihres
     // (Masse = Skala²); eine Glut ohne Datum der Gestalt trägt das Herdfeuer im Verhältnis ihrer Fläche zum Glutbett der
     // Studio-Feuerstelle (klang `bettRefM`, der Bezug des Knisterns); die Laterne eines Plans ist so ein Eintrag (die Gestalt
-    // `laterne_dorf`, ihr Datum LICHT_GESETZ.laterne) — und das wache Tor (`_portalLeuchte`). Eine Quelle, die jetzt nicht brennt (Zeitplan 0), steht nicht zur Wahl.
+    // `laterne_dorf`, ihr Datum LICHT_GESETZ.laterne) — und das wache Tor (`_portalLeuchte`). Eine Quelle, die jetzt nicht über ihren Kern hinaus trägt (`_leuchtReichweite` 0: am Mittag jede), steht nicht zur Wahl.
     // Mit dem Sichtkegel `F` (`_leuchtKegel`) rangiert jede Quelle, deren Reichweiten-Kugel ihn nicht berührt, hinter allen,
     // die ihn berühren: sie erhellt kein Pixel des Bildes — die Laterne hinter dem Rücken nahm sonst den Platz der Laterne
     // vor dem Auge (die Gasse nachts: 1 von 6 Laternen im Bild hell). Freie Plätze nehmen sie weiter (das Drehen blendet).
@@ -1945,19 +1951,6 @@ class AnazhRealm {
     // `lichtAbfall` in `_lichtPoolTerm`: 1/d^abfall mit Kern und Saum, K11b) — in 1 m trifft er die Stärke des Datums.
     _laborLichtStaerke(I) {
         return I > 0 ? AnazhRealm.LEGACY_LICHT * I : 0;
-    }
-
-    // DER ZEITPLAN EINER LEUCHTQUELLE (K11, fachwerk LICHT_GESETZ `zeit`: mittag · morgen · abend · nacht; ohne Zeitplan 1)
-    // auf der EINEN Tag-Achse der Welt: ihr Kanal `nacht` (`_tagAchse`: 0 über dem Horizont, 1 ab −6° Sonnenhöhe)
-    // führt stückweise linear vom Mittag über die Dämmerung (Morgen vor, Abend nach der Mitte des Tages) in die Nacht.
-    _lichtZeitplan(z) {
-        if (!z) return 1;
-        const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-        const n = this._tagAchse(this._sonnenRichtung().y).nacht;
-        const daemmer = ((t % 1) + 1) % 1 < 0.5 ? z.morgen : z.abend;
-        return n <= 0.5
-            ? z.mittag + (daemmer - z.mittag) * (n / 0.5)
-            : daemmer + (z.nacht - daemmer) * ((n - 0.5) / 0.5);
     }
 }
 

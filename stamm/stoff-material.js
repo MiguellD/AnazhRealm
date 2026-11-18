@@ -723,9 +723,12 @@ class AnazhRealm_stoff_material {
             dachHuelle: TSL.uniform(new THREE.Vector4(1, 1, -1, -1)),
             dachOben: TSL.uniform(-1e6),
             // je Datum des Leuchtquellen-Gesetzes EINE Glut (fachwerk LICHT_GESETZ: die wachen Fenster, der Kopf der Laterne)
-            // — der Stoff, dessen Gesetzbuch das Datum stempelt (`mp.licht`), glüht in SEINER Farbe und Zeit
+            // — der Stoff, dessen Gesetzbuch das Datum stempelt (`mp.licht`), glüht in SEINER Farbe; je Datum mit Leuchtdichte
+            // (`cdM2`), der Schreiber `_leuchtTakt` rechnet sie durch das Auge
             lichtGlut: Object.fromEntries(
-                Object.keys(globalThis.__fachwerkCore.LICHT_GESETZ).map((k) => [k, TSL.uniform(new THREE.Color())])
+                Object.entries(globalThis.__fachwerkCore.LICHT_GESETZ)
+                    .filter(([, L]) => L.cdM2 > 0)
+                    .map(([k]) => [k, TSL.uniform(new THREE.Color())])
             ),
             // Struktur-Boost als LIVE-Uniform: Multiplier auf das micro-Gewicht des werk-Profils, vom Settings-
             // Slider „Struktur-Tiefe" getrieben. Init aus `atmosphere.r5StructureBoost` (persistiert) oder
@@ -2081,7 +2084,7 @@ class AnazhRealm_stoff_material {
     // jeder Stoff, den eine Schicht selbst baut (Gras, Fern-Ring, Sockel, Wege und Zaun, Rauch, Schatten-Zwilling, Vorschau);
     // die Wand: die S0-Probe der Mess-Bühne (Zensus der Bauer im Stamm UND jedes beleuchteten Stoffs der Szene). Ein Stoff, dessen
     // Gesetzbuch ein Datum mit Zeitplan stempelt (`mp.licht`: "fenster" am fachwerk `glas`, "laterne" am `laternenglas`),
-    // glüht in der Glut SEINES Datums (`atmoUniforms.lichtGlut[licht]`, Farbe aus `kelvin` × Zeitplan); die Glut selbst (Seh-Klasse glut, das Leucht-Gesetz) ist Quelle und liest den Pool nicht.
+    // glüht in der Glut SEINES Datums (`atmoUniforms.lichtGlut[licht]`, Farbe aus `kelvin` × seine Leuchtdichte durch das Auge); die Glut selbst (Seh-Klasse glut, das Leucht-Gesetz) ist Quelle und liest den Pool nicht.
     // `himmel` (ein Knoten 0…1, der Boden: `aHimmel`) ist die Himmels-Sicht der Fläche — ein Platz mit Himmels-Ersatz (das
     // Licht des Auges) trägt nur, wo sie fehlt; ohne sie gilt der Stoff als offen. KEIN Szenen-Licht: r184 sammelt jedes
     // Szenen-Licht in den Licht-Hash jedes beleuchteten Stoffs und rechnet seine BRDF auch auf Stärke 0 — der Pool ist eine

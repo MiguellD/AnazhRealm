@@ -5869,60 +5869,52 @@
     // Boden getreten — der Wirt malt sie in seine Wege-Karte (Erde statt Wiese, kein Halm durch Glut und Kranz).
     // DAS LEUCHTQUELLEN-GESETZ (K11, rein additiv): EIN Emitter-Datum je Quelle — `kelvin` die Farbtemperatur (die EINE Größe
     // der Lichtfarbe, K11b: `lichtFarbe` rechnet sie über den Planck-Ort in lineares sRGB; bis K11b trug das Datum die
-    // Glut-Palette 0xff7a35 als Lichtfarbe, die Welt las sie linear (1, 0,195, 0,036) und der Boden glühte lava-rot), der
-    // Lichtstrom `staerke` × `zeit` (der Zeitplan je Tageszeit; fehlt er, brennt die Quelle immer) als Bestrahlung in 1 m
-    // in der Zahl des Labors, `reichweiteM`, `abfall` und `kernM` des Punktlichts (K11b, `lichtAbfall`: 1/d^abfall mit dem
-    // Kern der Quelle — eine Flamme ist keine Punkt-Singularität — und weichem Saum an der Reichweite), `flacker` das Atmen
-    // der Flamme (relativ, zwei Sinus in 6–10 Hz, `lichtFlackern`), `hoeheM` die Höhe des Licht-Mittelpunkts über dem
-    // Boden. `feuer` ist das Herdfeuer (ein Holzfeuer, 1 800–2 000 K: die gelben Flammen tragen das Licht, 2 000 K; der
-    // Kern die Ausdehnung des Glutbetts, Ø 0,76 m wie klang bettRefM — nah an der Glut sieht ein Stein das ganze Bett, keinen
-    // Punkt; 0,35 m über dem Bett; sein Tageszeit-Satz .228 mittag/morgen 1,6 · abend 2,2); die NACHT trägt das Feuer nach
-    // dem Nordstern-Soll Fachwerk (nachts hebt warmes Licht den Platz auf 2–5 lx, der Rest im Mondlicht 0,1–0,3 lx; Vollmond
-    // 0,26 lx ≙ der Nacht-Bestrahlung der Welt 0,224; ein echtes Lagerfeuer trägt in 2 m das Hundertfache): mit nacht 45
-    // trägt es in 2 m das ≈ 80-Fache, der Boden 1–3 m um das Bett steht orange (K11b, echte GPU, Ausgabe-Pfad: Farbton
-    // 29°; gate:pruefbuehne-licht) — bis K11b trug nacht 12 unter dem Legacy-Abfall das 33-Fache, schwach über mehrere Meter,
-    // und der Fuß der ACES-Kurve kippt ein schwach beleuchtetes Orange ins Rot (Farbton 14,5°, lava-rot);
-    // `fenster` das Nachtlicht der Glas-Stoffe (die Glut je Tageszeit; 2 800 K, der
-    // Farbort, den das Auge V18.542 an den Fenstern richtig fand), `laterne` das Gaslicht der Gasse (1 900 K, Nordstern
-    // Fachwerk-Soll: der Kopf auf der Lichthöhe des Labors bei 3,7 m Straße; `candela` 100 — das Gaslicht mit Glühstrumpf, die
-    // Zahl der Welt (w28-strahler: ihr Bild und ihre Reichweite rechnet das Auge, welt-licht.js `AUGE`; `staerke` und `zeit` liest das Labor); unter ihr dieselbe Bestrahlung wie bis K11b,
-    // zwischen zwei Laternen im Abstand 9 m 0,44 davon — das Band 2–5 lx). Leser: das Labor (Herdfeuer, Fenster) und die
-    // Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit Datum — die Laternen eines Plans, K10; `_leuchtStoff`:
-    // Fenster). Das Labor (r128, Legacy-Licht) zeichnet den Abfall als (1 − d/R)^abfall — r128 kennt 1/d² nur für die ganze
-    // Szene (physicallyCorrectLights).
+    // Glut-Palette 0xff7a35 als Lichtfarbe, die Welt las sie linear (1, 0,195, 0,036) und der Boden glühte lava-rot),
+    // `abfall` und `kernM` des Punktlichts (K11b: 1/d^abfall mit dem Kern der Quelle — eine Flamme ist keine Punkt-
+    // Singularität), `flacker` das Atmen der Flamme (relativ, zwei Sinus in 6–10 Hz, `lichtFlackern`), `hoeheM` die Höhe des
+    // Licht-Mittelpunkts über dem Boden. WAS EINE QUELLE ZEIGT, steht nicht hier (w28-strahler): sie trägt, was sie IST —
+    // `candela` (die Lampe) oder Temperatur × Fläche (`strahler`), eine leuchtende Fläche ihre Leuchtdichte `cdM2` —, und das
+    // Auge der Welt (welt-licht.js `AUGE`) rechnet daraus über der Umgebung der Stunde ihr Bild, ihre Reichweite und ihre
+    // Glut: am Mittag trägt kein Fenster und keine Laterne, in der Dämmerung zünden sie von selbst. Bis hier trug das Datum
+    // eine Stärke in der Zahl des Labors, eine Reichweite und einen Zeitplan je Tageszeit (das Herdfeuer nachts × 45).
+    // `feuer` ist das Herdfeuer (ein Holzfeuer, 1 800–2 000 K: die gelben Flammen tragen das Licht, 2 000 K; der Kern die
+    // Ausdehnung des Glutbetts, Ø 0,76 m wie klang bettRefM; 0,35 m über dem Bett); `fenster` das Nachtlicht der Glas-Stoffe
+    // (2 800 K, der Farbort, den das Auge V18.542 an den Fenstern richtig fand; `cdM2` 20 — die Scheibe vor einer Stube, die
+    // Lampen auf 80 lx heben: 80 · 0,8 ÷ π); `laterne` das Gaslicht der Gasse (1 900 K, Nordstern Fachwerk-Soll: der Kopf auf
+    // der Lichthöhe des Labors bei 3,7 m Straße; `candela` 100 — das Gaslicht mit Glühstrumpf; `cdM2` 960 — dieselben Candela
+    // über die Glas-Seite ihres Kopfs, 0,26 × 0,40 m). Leser: die Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit
+    // Datum — die Laternen eines Plans, K10; `_leuchtStoff`: Fenster und Laternen-Kopf) und das Labor (Herdfeuer, Fenster,
+    // Laternen-Kopf über dasselbe Auge; r128 zeichnet den Abfall als (1 − d/R)^abfall).
     // DAS BOGEN-GESETZ (K66): die Kurven der Bögen — hufeisen: der Mittelpunkt um R·tan(hufeisenAlpha) über dem Kämpfer, der Bogen
     // läuft um hufeisenAlpha unter die Mitte; spitz: zwei Mittelpunkte im Abstand spitzE·R von der Achse auf der Kämpferlinie
     // (Radius (1 + spitzE)·R, Scheitel 1,61 R). Leser: bogenRahmen (Keilsteine im Verband) und die Linse gate:fachwerk-contract BOGEN-VERBAND.
     var BOGEN_GESETZ = Object.freeze({ hufeisenAlpha: 0.35, spitzE: 0.8 });
     var LICHT_GESETZ = {
-        feuer: { kelvin: 2000, staerke: 1, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
-        fenster: { kelvin: 2800, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
-        laterne: { kelvin: 1900, candela: 100, staerke: 19, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
+        feuer: { kelvin: 2000, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
+        fenster: { kelvin: 2800, cdM2: 20 },
+        laterne: { kelvin: 1900, candela: 100, cdM2: 960, abfall: 2, kernM: 0.1, hoeheM: 3.6 },
     };
     // DIE WANDLATERNE (K66-2): die Leuchte der dichten Gasse hängt an der Hauswand, wo kein Mast vor der Wand und neben dem Weg
-    // steht — ihr Licht ist das der Laterne (Farbtemperatur, Zeitplan, Reichweite, Abfall), abgeleitet aus zwei Maßen ihres Leibs:
+    // steht — ihr Licht ist das der Laterne (Farbtemperatur, Abfall, die Leuchtdichte ihres Kopfs), abgeleitet aus zwei Maßen ihres Leibs:
     // der Kopf `hoeheM` über der Gasse, `armM` vor der Wand. Der Kern folgt aus dem Wand-Gesetz der Laterne (K66: die Wand trägt
     // höchstens das Doppelte der Gasse unter ihr, ((h² + k²)/(a² + k²))^(abfall/2) ≤ 2 — mit dem Kern des Masts trug die Wand in
-    // 0,4 m das Fünfzigfache, die Sättigung von K66), die Stärke aus der Gasse: unter ihr trägt der Boden, was er unter dem Mast
+    // 0,4 m das Fünfzigfache, die Sättigung von K66), die Candela aus der Gasse: unter ihr trägt der Boden, was er unter dem Mast
     // trägt. Leser: das Rezept der Wandlaterne (fx.licht), der Licht-Takt der Welt, gate:settlement DORF-LICHT.
     LICHT_GESETZ.wandlaterne = (function (L, h, a) {
         var q = Math.pow(2, 2 / L.abfall),
             k2 = Math.max(L.kernM * L.kernM, (h * h - q * a * a) / (q - 1)),
-            boden = L.staerke * Math.pow((1 + L.kernM * L.kernM) / (L.hoeheM * L.hoeheM + L.kernM * L.kernM), L.abfall / 2),
             r3 = function (v) {
                 return Math.round(v * 1000) / 1000;
             };
         return {
             kelvin: L.kelvin,
-            staerke: r3(boden * Math.pow((h * h + k2) / (1 + k2), L.abfall / 2)),
             // die Candela aus demselben Maß: unter ihr trägt die Gasse die Lux des Masts (E = candela ÷ (h² + k²))
             candela: r3((L.candela * (h * h + k2)) / (L.hoeheM * L.hoeheM + L.kernM * L.kernM)),
-            reichweiteM: L.reichweiteM,
+            cdM2: L.cdM2,
             abfall: L.abfall,
             kernM: r3(Math.sqrt(k2)),
             hoeheM: h,
             armM: a,
-            zeit: JSON.parse(JSON.stringify(L.zeit)),
         };
     })(LICHT_GESETZ.laterne, 2.8, 0.4);
     // DIE LICHTFARBE einer Farbtemperatur (K11b): der Planck-Ort (Kim, Kang et al. 2002, kubische Näherung 1 667–25 000 K)

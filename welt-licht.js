@@ -89,6 +89,11 @@ var __weltLicht = (function () {
     // das gezeigte Licht einer Beleuchtungsstärke `lux` über der Umgebung `aLux`
     const augeZeig = (lux, aLux) =>
         augeS(aLux + AUGE.knieLux) * (Math.pow(1 + Math.max(0, lux) / (aLux + AUGE.knieLux), AUGE.q) - 1);
+    // DIE GLUT EINER LEUCHTENDEN FLÄCHE (Fenster, Laternen-Kopf, Glutbett, Lava): eine Fläche der Leuchtdichte `cdM2` zeigt, was
+    // die weiße Karte unter E = π · L Lux zeigte — ihre Strahldichte im Bild ist zeig(π · L) ÷ π. Kein Zeitplan: am Mittag trägt
+    // ein Fenster von 20 cd/m² 0,0006, in der Dämmerung (10 lx) 0,45, in der Mondnacht 0,62. Der Stoff rechnet dasselbe je
+    // Pixel (`_augeGlutNode`).
+    const augeGlut = (cdM2, aLux) => augeZeig(Math.PI * cdM2, aLux) / Math.PI;
     // die Reichweite (m) einer Quelle von `candela` über der Umgebung `aLux`: wo zeig(candela ÷ d²) unter eps · S(aLux) fällt
     const augeReichweite = (candela, aLux) => {
         const x = Math.pow(1 + (AUGE.eps * augeS(aLux)) / augeS(aLux + AUGE.knieLux), 1 / AUGE.q) - 1;
@@ -1378,6 +1383,7 @@ var __weltLicht = (function () {
         augeLux,
         augeZeig,
         augeReichweite,
+        augeGlut,
         BELICHTUNG,
         GRENZGROESSE,
         GPU_FRAMES_IM_FLUG,
