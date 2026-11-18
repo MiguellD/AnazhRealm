@@ -736,6 +736,98 @@ function behaelterZensus(r) {
     geh(r.state, "r.state", 2);
     return aus;
 }
+// DER ZELL-ZENSUS (w28-halter-register; `werkbank runde`): je Gedächtnis der EINEN Tafel (`AnazhRealm.ZELL_GEDAECHTNISSE`) die
+// Einträge und die außerhalb des Blicks — eine Zelle, von der kein Teil im Saum (Ring + 2 Chunks um den Spieler) und keiner in der
+// Reichweite ihrer Leser liegt; ein Gedächtnis des Rings „boden“ außerhalb Ring + 1, dessen Chunk nicht steht. Gezählt unabhängig vom
+// Räumer (die Linse rechnet die Lage selbst). Daneben jeder Behälter mit Zell-Schlüssel („[schicht:]i,j“, auch „o12,3“), der in
+// keiner Tafel steht: unangemeldet. `A` die Klasse (die Seite: `AnazhRealm`). → { je: [{ name, n, aussen, bestand }], unangemeldet }
+function zellZensus(r, A) {
+    A = A || (typeof AnazhRealm !== "undefined" ? AnazhRealm : {});
+    const st = r.state;
+    const { span, ringRadius: R } = r._voxelChunkConfig(0);
+    const p = st.playerMesh.position;
+    const [pcx, pcz] = [Math.floor(p.x / span), Math.floor(p.z / span)];
+    const lage = (k) => {
+        const m = typeof k === "string" && /^(?:([^:,]*):)?(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(k);
+        return m ? [+m[2], +m[3], m[1] || ""] : null;
+    };
+    const je = [];
+    const angemeldet = new Set();
+    (A.ZELL_GEDAECHTNISSE || []).forEach((E, i) => {
+        const karte = E.karte(r);
+        if (karte) angemeldet.add(karte);
+        // ein Gedächtnis mit eigener Schranke, das `zaehlen` trägt (ein Halter der Zeichnung), zählt wie ein räumbares
+        const o = { name: E.name || "#" + i, n: karte ? karte.size : 0, aussen: 0, bestand: E.bestand || (!E.zaehlen && E.schranke) || null }; // prettier-ignore
+        je.push(o);
+        if (!karte || !karte.size || o.bestand) return;
+        const rw = E.reichweite ? E.reichweite(r) : 0;
+        for (const k of karte instanceof Map ? karte.keys() : karte) {
+            const ij = E.lage ? E.lage(k) : lage(k);
+            if (!ij) continue;
+            const Z = typeof E.zelle === "function" ? E.zelle(r, ij[2]) : E.zelle;
+            const [m, ab] = typeof Z === "number" ? [Z, 0] : [Z.m, Z.ab];
+            const [x0, z0] = [ij[0] * m + ab, ij[1] * m + ab];
+            const [c0, c1, d0, d1] = [Math.floor(x0 / span), Math.ceil((x0 + m) / span) - 1, Math.floor(z0 / span), Math.ceil((z0 + m) / span) - 1]; // prettier-ignore
+            let drin;
+            if (E.ring === "boden") {
+                const [mx, mz] = [Math.floor((x0 + m / 2) / span), Math.floor((z0 + m / 2) / span)];
+                drin = (Math.abs(mx - pcx) <= R + 1 && Math.abs(mz - pcz) <= R + 1) || !!(st.voxelChunks && st.voxelChunks.has(mx + "," + mz)); // prettier-ignore
+            } else
+                drin =
+                    (c0 <= pcx + R + 2 && c1 >= pcx - R - 2 && d0 <= pcz + R + 2 && d1 >= pcz - R - 2) ||
+                    (rw > 0 && x0 <= p.x + rw && x0 + m >= p.x - rw && z0 <= p.z + rw && z0 + m >= p.z - rw);
+            if (!drin && !(E.lebt && E.lebt(r, karte instanceof Map ? karte.get(k) : k))) o.aussen++;
+        }
+    });
+    const unangemeldet = {};
+    const gesehen = new WeakSet([st]);
+    const geh = (o, pfad, tiefe) => {
+        for (const k of Object.keys(o)) {
+            let v;
+            try {
+                v = o[k];
+            } catch {
+                continue;
+            }
+            if (!v || typeof v !== "object" || gesehen.has(v)) continue;
+            gesehen.add(v);
+            if (v instanceof Map || v instanceof Set) {
+                if (angemeldet.has(v) || !v.size) continue;
+                const k0 = v.keys().next().value;
+                if (lage(k0)) unangemeldet[pfad + "." + k] = v.size;
+            } else if (tiefe > 1 && !Array.isArray(v) && [Object.prototype, null].includes(Object.getPrototypeOf(v)))
+                geh(v, pfad + "." + k, tiefe - 1);
+        }
+    };
+    geh(r, "r", 2);
+    geh(st, "r.state", 2);
+    return { je, unangemeldet };
+}
+// DER RENDER-OBJEKT-ZENSUS (w28-halter-register): je Objekt der Szene seine Render-Objekte (`__renderObjekte`, das Register der
+// Klasse), die eine andere Geometrie tragen als das Objekt oder Attribute, die seine Geometrie nicht mehr trägt — ein Pass, der
+// das Objekt nach einem Tausch nicht mehr zeichnete, hielt die alten Puffer (`_renderObjekteFolgen`). Instanz- und verschränkte
+// Attribute gehören dem Knoten, nicht der Geometrie. → { fremd, alt, mb }
+function renderObjektZensus(r) {
+    let fremd = 0,
+        alt = 0,
+        b = 0;
+    const seen = new Set();
+    r.state.scene.traverse((o) => {
+        const l = o.__renderObjekte;
+        if (!l || !l.length) return;
+        const g = o.geometry;
+        const jetzt = new Set(g ? Object.values(g.attributes || {}) : []);
+        if (g && g.index) jetzt.add(g.index);
+        for (const ro of l) {
+            if (ro.geometry !== g) fremd++;
+            else if ((ro.attributes || []).some((a) => !jetzt.has(a) && !a.isInstancedBufferAttribute && !a.isInterleavedBufferAttribute)) alt++; // prettier-ignore
+            else continue;
+            for (const a of ro.attributes || Object.values(ro.geometry.attributes || {}))
+                if (a && a.array && !jetzt.has(a) && !seen.has(a)) (seen.add(a), (b += a.array.byteLength));
+        }
+    });
+    return { fremd, alt, mb: +(b / 1048576).toFixed(2) };
+}
 // DIE GEBURT DER GEOMETRIEN: r184 zählt `info.memory.geometries` beim ersten Zeichnen einer Geometrie (`Geometries.initGeometry`)
 // und zieht erst bei ihrem `dispose` ab — eine Geometrie, die keiner entsorgt, zählt (und hält ihre Attribute in
 // `info.memoryMap`, Lehre 27), auch wenn der GC sie nahm. Die Linse merkt je Geometrie die oberste Stamm-Zeile ihres Stapels
@@ -806,10 +898,18 @@ function rundenUrteil({ name, stand }, anlage) {
         .map(([k, n2]) => ({ name: k, start: s.zensus[k] || 0, r1: a.zensus[k] || 0, r2: n2 }))
         .filter((t) => t.r2 - t.r1 >= Math.max(RUNDE.wachsMin, t.r1 * RUNDE.wachsAnteil))
         .sort((p, q) => q.r2 - q.r1 - (p.r2 - p.r1));
+    const un = (b.zell && b.zell.unangemeldet) || {};
     for (const t of tafel) {
         t.anlage = anlage(t.name);
-        f.push(`${name}: ${t.name} (${t.anlage}) ${t.start} → ${t.r1} → ${t.r2}`);
+        f.push(`${name}: ${t.name} (${t.anlage}${t.name in un ? ", unangemeldet" : ""}) ${t.start} → ${t.r1} → ${t.r2}`);
     }
+    // das Register (`zellZensus`): nach der Runde liegt kein Eintrag eines räumbaren Zell-Gedächtnisses außerhalb des Blicks
+    for (const z of (b.zell && b.zell.je) || [])
+        if (!z.bestand && z.aussen > 0)
+            f.push(`${name}: Zell-Gedächtnis ${z.name} hält ${z.aussen} von ${z.n} Einträgen außerhalb des Blicks (Soll 0)`);
+    // die Render-Objekte (`renderObjektZensus`): keines hält nach der Runde getauschte Puffer
+    if (b.ro && b.ro.fremd + b.ro.alt > 0)
+        f.push(`${name}: ${b.ro.fremd + b.ro.alt} Render-Objekte halten getauschte Puffer (fremde Geometrie ${b.ro.fremd}, alte Attribute ${b.ro.alt}, ${b.ro.mb} MB; Soll 0, \`_renderObjekteFolgen\`)`); // prettier-ignore
     const mb = (x, k) => new Map(x.halter || []).get(k) || 0;
     for (const [k, x] of b.halter || [])
         if (x - mb(a, k) >= RUNDE.halterMB)
@@ -833,7 +933,17 @@ function rundenUrteil({ name, stand }, anlage) {
 // Gedächtnisses samt Anlage und bei der Geburts-Stelle; dieselbe Welt mit Räumung nach Abstand ist GRÜN.
 function rundenSelbsttest() {
     const fahrt = (mutant) => {
-        const r = { state: { ring: new Map(), memo: new Map(), kacheln: new Map() }, _tritt: new Map() };
+        const r = { state: { ring: new Map(), memo: new Map(), kacheln: new Map(), zmemo: new Map(), playerMesh: { position: { x: 5, z: 5 } } }, _tritt: new Map() }; // prettier-ignore
+        r._voxelChunkConfig = () => ({ span: 10, ringRadius: 1 });
+        // das Register (`zellZensus`): ein angemeldetes Zell-Gedächtnis (10-m-Zellen, Saum ±3 Chunks) und, im Mutanten, ein
+        // ferner Eintrag darin und ein unangemeldetes, das je Runde wächst
+        // dazu ein Halter der Zeichnung (`schranke` + `zaehlen`): Körper an ihrer Lage, ein ferner, der zeichnet (`lebt`), steht im
+        // Blick; im Mutanten einer fern, der nicht zeichnet
+        const leib = { name: "leib", karte: (w) => w.state.leib, zelle: 1, lage: (o) => [o.x, o.z], lebt: (w, o) => o.lebt, schranke: "s", zaehlen: true }; // prettier-ignore
+        const A = { ZELL_GEDAECHTNISSE: [{ name: "zmemo", karte: (w) => w.state.zmemo, zelle: 10 }, leib] };
+        r.state.leib = new Set([{ x: 5, z: 5 }, { x: 900, z: 0, lebt: true }]);
+        if (mutant) r.state.leib.add({ x: -900, z: 0 });
+        if (mutant) r._wild = new Map();
         let geom = 10;
         const geburt = {};
         const stand = [];
@@ -843,6 +953,8 @@ function rundenSelbsttest() {
                 if (r.state.ring.size > 9) r.state.ring.delete(r.state.ring.keys().next().value);
                 r._tritt.set(zelle + ":" + (mutant ? runde : 0), 1);
                 r.state.memo.set(zelle, 1);
+                r.state.zmemo.set((zelle % 7) - 3 + "," + (mutant && zelle === 39 ? 50 : 0), 1);
+                if (mutant) r._wild.set(runde * 40 + zelle + ",0", 1);
                 if (!mutant && Math.abs(zelle - 39) > 4) (r._tritt.delete(zelle + ":0"), r.state.memo.delete(zelle));
             }
             // die Kachel der Fernreise (1 MB je Eintrag, zwei je Runde): geräumt bleibt die am Start
@@ -851,7 +963,9 @@ function rundenSelbsttest() {
             if (mutant && runde) geburt["stamm/gelaende-fern.js:741"] = { gezaehlt: 8 * runde, lebend: 8 * runde, verwaist: 0 };
             geom = 10 + (mutant ? 8 * runde : 0);
             const halter = heapHalter(r, 3).map(([k, x]) => [k, x / 1048576]);
-            stand.push({ heapMB: 300, geometries: geom, zensus: behaelterZensus(r), geburt: { ...geburt }, bildMax: 40, halter });
+            const zell = zellZensus(r, A);
+            const ro = { fremd: mutant && runde === 2 ? 1 : 0, alt: 0, mb: 0.5 }; // im Mutanten hält ein Pass die alte Geometrie
+            stand.push({ heapMB: 300, geometries: geom, zensus: behaelterZensus(r), zell, geburt: { ...geburt }, bildMax: 40, halter, ro }); // prettier-ignore
         }
         return rundenUrteil({ name: "a", stand }, (k) => (k === "r._tritt" ? "stamm/siedlung-wege.js:1014" : "?")).f.join(" | ");
     };
@@ -861,6 +975,12 @@ function rundenSelbsttest() {
     const rot = fahrt(true);
     if (!/r\._tritt \(stamm\/siedlung-wege\.js:1014\) 40 → 80 → 120/.test(rot) || !/geometries 10 → 18 → 26 — Geburt: stamm\/gelaende-fern\.js:741 \+8/.test(rot) || !/Halter r\.state\.kacheln \(\?\) 2\.0 → 4\.0 → 6\.0 MB/.test(rot))
         f.push("der Mutant ist nicht rot beim Namen: " + (rot || "GRÜN"));
+    if (!/Zell-Gedächtnis zmemo hält 1 von \d+ Einträgen außerhalb des Blicks/.test(rot) || !/r\._wild \(\?, unangemeldet\) 40 → 80 → 120/.test(rot))
+        f.push("der Mutant des Registers ist nicht rot beim Namen: " + (rot || "GRÜN"));
+    if (!/Zell-Gedächtnis leib hält 1 von 3 Einträgen außerhalb des Blicks/.test(rot))
+        f.push("der Mutant des Halters der Zeichnung ist nicht rot beim Namen: " + (rot || "GRÜN"));
+    if (!/1 Render-Objekte halten getauschte Puffer \(fremde Geometrie 1/.test(rot))
+        f.push("der Mutant der Render-Objekte ist nicht rot: " + (rot || "GRÜN"));
     return f;
 }
 
@@ -1007,6 +1127,8 @@ module.exports = {
         `window.__pufferZensus = ${pufferZensus.toString()};` +
         `window.__heapHalter = ${heapHalter.toString()};` +
         `window.__behaelterZensus = ${behaelterZensus.toString()};` +
+        `window.__zellZensus = ${zellZensus.toString()};` +
+        `window.__renderObjektZensus = ${renderObjektZensus.toString()};` +
         `window.__geburtLinse = ${geburtLinse.toString()};` +
         `window.__geburtZensus = ${geburtZensus.toString()};` +
         `window.__kehrausJetzt = ${kehrausJetzt.toString()};` +

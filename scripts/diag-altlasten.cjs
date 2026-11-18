@@ -954,10 +954,10 @@ const ZWILLINGE = [
         fiel: "U6c — das BRANDWAND-Gesetz wohnt im Gesetzbuch (brandwand)",
     },
     {
-        fingerprint: "jahr<1150?'romanik'",
+        fingerprint: "function bauProgramm(",
         gesetzbuch: "fachwerk-core.js",
         verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
-        fiel: "U6c — das META-Gesetz (Jahr×Klima×Personen×Wohlstand → Form) wohnt im Gesetzbuch (metaParams)",
+        fiel: "U6c, w28-bau-rezept — das Gesetz Haushalt × Nutzung → Form wohnt im Gesetzbuch (bauProgramm; das Labor-Meta-Gesetz fiel)",
     },
     {
         fingerprint: "_SNED=[[0,1],[2,3],[4,5],[6,7]",

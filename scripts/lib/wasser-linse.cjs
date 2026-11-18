@@ -288,6 +288,9 @@ async function wasserKoerper(o = {}) {
             const WK = A.Gesetz("terrain:WASSER_GESETZ").koerper;
             const GK = window.__gelaendeCore;
             const fl = o.fluss || (await window.__wasserOrte({})).fluss;
+            // der Bach liegt Kilometer hinter dem See: seine Kachel räumt das Register, sobald sie die Reichweite ihrer Leser um
+            // den Spieler verlässt (`ZELL_GEDAECHTNISSE` hydroTiles) — der Leser an fernem Ort bestellt die Wahrheit, ehe er fragt
+            await __weltDa(() => !r._ensureHydroTilesAround(fl.x, fl.z, 0));
             const bb = r._voxelSurfaceY(fl.x, fl.z);
             const modus = (x, z, camY, augen) => {
                 cam.position.set(x, camY, z);
@@ -394,6 +397,7 @@ async function wasserKoerper(o = {}) {
         aus.eis.mutation = gang();
         delete r._temperaturFeld;
         const fl = o.fluss || (await window.__wasserOrte({})).fluss;
+        await __weltDa(() => !r._ensureHydroTilesAround(fl.x, fl.z, 0)); // die Kachel des Bachs, wie am Medium (5c)
         [aus.schmelze, aus.pegel] = wasserSchmelze(r, x0 + 20, mz, { see: [mx, mz], ruhe: spiegel, ufer: x0, fluss: [fl.x, fl.z] });
         aus.erstarrung = wasserErstarrung(r, [[x0, mz], [mx, mz]]);
         aus.gluehen = await wasserGluehen(r, [x0 + 6, mz]);

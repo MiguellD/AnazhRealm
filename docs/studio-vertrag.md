@@ -837,7 +837,7 @@ B5 LEHREN (pass = hieb-Band) + BANDS/`messen`/`evalLehren` · `fx.place
 Andocken = reine Daten-Zeilen — der ε-Beweis, `gate:nervensystem-schmiede`).
 `fachwerk-core.js` (W-A5a, ε — GEBAUT: B1 32 Kultur-Archetypen
 `kind:"haus"` [die klickbaren Haus-Typen des Fachwerk-Labs; `s` eingefroren am
-Lab-Startzustand kulturParams(name, 3), Strings/Farben reisen in fx] · B2
+Lab-Startzustand bauRezept({bauweise: name}, null, 3), Strings/Farben reisen in fx] · B2
 `buildInstance` + **`kindStages:{haus:[0,1,2]}` — die erste Mehr-Stufen-Domäne
 außerhalb der Bäume** (0 ≙ Ring-A-Vollbau-Bake · 1 ≙ Chunk-Stufe-1-Hülle ·
 2 ≙ Chunk-Stufe-2-Destillat; Editor-live + Vogel bleiben Lab/Dorf → W-A5b) +
@@ -857,7 +857,7 @@ Präzedenzfall Wald-Dichte in phyto-core). Es reist im Buch-Umschlag
 (`get-book`-Reply, Feld `siedlung`, M8-generisch: der erste Kern mit
 SIEDLUNG); der Wirt liest `AnazhRealm._siedlungGesetz()` (Ingest validiert
 ganz-oder-gar-nicht, Fallback = byte-gleiches `AUTO_SETTLEMENT`). Die
-Streaming-Regler (nearM/perTick/spawnClearM/siteProbeR/startRadiusM) bleiben
+Streaming-Regler (nearM/spawnClearM/siteProbeR/startRadiusM) bleiben
 ehrlich Wirts-Infrastruktur.
 
 ---

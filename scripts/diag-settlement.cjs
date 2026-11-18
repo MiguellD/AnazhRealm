@@ -709,7 +709,7 @@ function gruendungFlach(FC, o = {}) {
 hauptLauf(async () => {
     const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
     // die Bau-Typen der EINEN Grammatik: ihre Tafel und die Rollen des Gesetzes davor (das Haus, die Kirche, der Palas, die Scheune)
-    const breiteRollen = [...Object.keys(FC.STADT_GRAMMATIK.bau), "wohnhaus", "kirche", "burg", "scheune"];
+    const breiteRollen = [...Object.keys(FC.BAU_NUTZUNG), "kirche", "burg", "scheune"];
 
     // ===== SELBST-TEST =====
     if (SELBSTTEST) {
@@ -894,8 +894,18 @@ hauptLauf(async () => {
             // die Quelle an der Wand: drei Häuser 3–9 m neben dem Weg, je eine Wandlaterne 0,3 m tief unter der Traufe — an der
             // Wand zum Weg sieht die Gasse alle drei, an der Rückwand keine (die Linie läge tiefer im Grundriss als die Quelle)
             const reihe = [15, 30, 45].map((x) => ({ cx: x, cz: 6, ex: 4, ez: 3, phi: 0 }));
-            const vorn = gassenLicht(reihe.map((h) => [h.cx, h.cz - h.ez + 0.3]), [weg], reihe, hfov);
-            const hinten = gassenLicht(reihe.map((h) => [h.cx, h.cz + h.ez - 0.3]), [weg], reihe, hfov);
+            const vorn = gassenLicht(
+                reihe.map((h) => [h.cx, h.cz - h.ez + 0.3]),
+                [weg],
+                reihe,
+                hfov
+            );
+            const hinten = gassenLicht(
+                reihe.map((h) => [h.cx, h.cz + h.ez - 0.3]),
+                [weg],
+                reihe,
+                hfov
+            );
             const vg = ortVerdikt(Object.assign({}, gut, { quellenGasse: 3, poolGasse: 0 })).join(" · ");
             const vp = ortVerdikt(Object.assign({}, gut, { quellenGasse: 4, poolGasse: 1 })).join(" · ");
             check(
@@ -910,7 +920,14 @@ hauptLauf(async () => {
                     /Dorf-Licht der Gasse nachts 3 sichtbare Quellen/.test(vg) &&
                     /Licht-Pool der Gasse nachts 0/.test(vg) &&
                     /Licht-Pool der Gasse nachts 1 Quellen des Orts \(Soll ≥ 4\)/.test(vp),
-                JSON.stringify({ frei: frei.n, zu: zu.n, verdeckt: zu.verdeckt, leer: leer.n, wandVorn: vorn.n, wandHinten: hinten.n })
+                JSON.stringify({
+                    frei: frei.n,
+                    zu: zu.n,
+                    verdeckt: zu.verdeckt,
+                    leer: leer.n,
+                    wandVorn: vorn.n,
+                    wandHinten: hinten.n,
+                })
             );
             // Selbst-Test 16b (`poolZaehlen`, der Rang des Pools): vier sichtbare Laternen A 8 m · B 21 m · C 35 m · D 43 m, die
             // Wandlaterne W 20 m ohne sichtbaren Kopf; der Pool hält A, W, B, C — D wartet. W zählt, solange ihre Kugel den Kegel
@@ -1016,23 +1033,47 @@ hauptLauf(async () => {
             zs[0].gruen && !zs.slice(1).some((z) => z.gruen),
             zs.map((z) => `ZIPF ζ ${z.zeta} [${z.ki}] ${z.export}`).join(" · ")
         );
-        // V-S (w28-stadt-funktion): das Gesetz der Viertel GRÜN; ROT beim Namen: ein Ring, der ein Viertel verliert (die Summe),
-        // ein Viertel ohne Erbe (es stünde in der Zeit seines eigenen Samens), ein Gesetz, das beim zweiten Fragen anders
-        // antwortet, und eines, das zwei Vierteln denselben Samen gibt
+        // V-S (w28-stadt-funktion · w28-stadt-netz): das Gesetz der Kacheln GRÜN; ROT beim Namen: ein Ring, der Kacheln verliert (die
+        // Summe), eine Kachel ohne Erbe (sie stünde in der Zeit ihres eigenen Samens), ein Gesetz, das beim zweiten Fragen anders
+        // antwortet, eines, das zwei Kacheln denselben Samen gibt, und ein Netz, dessen Tore aus dem Samen der KACHEL kommen statt
+        // aus dem der Kante (die Naht reißt)
         const sm = [
-            null,
-            (s, n, i, k) => (i === 1 && k === 0 ? null : FC.viertelWort(s, n, i, k)),
-            (s, n, i, k) => ((v) => (v && (i || k) ? { ...v, erbe: undefined } : v))(FC.viertelWort(s, n, i, k)),
-            ((z) => (s, n, i, k) => ((v) => (v && (i || k) ? { ...v, nH: v.nH - (z++ % 2) } : v))(FC.viertelWort(s, n, i, k)))(0),
-            (s, n, i, k) => ((v) => (v && (i || k) ? { ...v, seed: 4711 } : v))(FC.viertelWort(s, n, i, k)),
-        ].map((wort) => stadtFunktion(FC, wort ? { wort } : {}));
+            {},
+            { wort: (s, n, i, k) => (i > 0 ? null : FC.viertelWort(s, n, i, k)) },
+            {
+                wort: (s, n, i, k) =>
+                    ((v) => (v && (i || k) ? { ...v, erbe: undefined } : v))(FC.viertelWort(s, n, i, k)),
+            },
+            {
+                wort: (
+                    (z) => (s, n, i, k) =>
+                        ((v) => (v && (i || k) ? { ...v, nH: v.nH - (z++ % 2) } : v))(FC.viertelWort(s, n, i, k))
+                )(0),
+            },
+            { wort: (s, n, i, k) => ((v) => (v && (i || k) ? { ...v, seed: 4711 } : v))(FC.viertelWort(s, n, i, k)) },
+            {
+                netz: (s, ix, iz) =>
+                    ((N) => ({ ...N, tore: { ...N.tore, w: N.tore.w.map((t) => t + ((ix * 7 + iz * 3) % 5) * 0.5) } }))(
+                        FC.kachelNetz(s, ix, iz)
+                    ),
+            },
+            // die Form im Bild (w28-stadt-form): Massen auf halber Tiefe (der Stab) · der Ton je Kachel statt je Lage (die Kante)
+            {
+                massen: (...a) =>
+                    ((m) => m && { ...m, lage: m.lage.map((v, j) => (j % 7 === 4 ? v / 2 : v)) })(FC.kachelMassen(...a)),
+            },
+            { tonAn: (s, i, k, m) => ((f) => (col) => f(col, 0, 0))(FC.stadtTonAn(s, i, k, m)) },
+        ].map((o) => stadtFunktion(FC, o));
         check(
-            "Selbst-Test S STADT ALS FUNKTION: das Gesetz GRÜN · ein verlorenes Viertel, ohne Erbe, nicht zustandslos, gleiche Samen ROT beim Namen",
+            "Selbst-Test S STADT ALS NETZ: das Gesetz GRÜN · verlorene Kacheln, ohne Erbe, nicht zustandslos, gleiche Samen, Tore aus dem Samen der Kachel, Massen als Stäbe, der Ton je Kachel ROT beim Namen",
             sm[0].gruen &&
-                /die Viertel tragen/.test(sm[1].fehl) &&
-                /ohne Erbe|sein Kern in/.test(sm[2].fehl) &&
+                /die Kacheln tragen/.test(sm[1].fehl) &&
+                /ohne Erbe|die Mitte in/.test(sm[2].fehl) &&
                 /beim zweiten Fragen/.test(sm[3].fehl) &&
-                /denselben Samen/.test(sm[4].fehl),
+                /denselben Samen/.test(sm[4].fehl) &&
+                /NAHT/.test(sm[5].fehl) &&
+                /FORM STAB/.test(sm[6].fehl) &&
+                /FORM TON-KANTE/.test(sm[7].fehl),
             sm.map((m) => m.fehl.slice(0, 2).join(" | ") || "grün").join(" · ")
         );
         // V-G (w28-gruendung-flach): ohne Raster (eine Zelle für alle) fragt `fremd` wieder jeden Grundriss — G1 fällt beim Namen
@@ -1154,7 +1195,7 @@ hauptLauf(async () => {
         // Z4 (w28-stadt-funktion): die Stadt über der Wand eines Viertels ist eine Funktion über Vierteln (lib/ort-proben.cjs)
         const SV = stadtFunktion(FC);
         check(
-            `Z4 STADT ALS FUNKTION (Wand ${FC.STADT_FUNKTION.voll}): die Summe der Viertel ist die Zahl des Worts, der Kern das Wort an der Wand, das Viertel in der Zeit des Kerns — ${SV.je.join(" · ")}`,
+            `Z4 STADT ALS NETZ (Wand ${FC.STADT_FUNKTION.voll}, ${FC.STADT_NETZ.jeKachel} Häuser je Kachel): die Summe der Kacheln ist die Zahl des Worts, die Tore jeder Kante aus beiden Kacheln gleich, die Mauer nur am Rand der Stadt, die Kachel in der Zeit der Mitte, kein Haus ein Stab, keine Ton-Kante — ${SV.je.join(" · ")}`,
             SV.gruen,
             SV.fehl.slice(0, 4).join(" · ")
         );
@@ -1852,7 +1893,8 @@ hauptLauf(async () => {
         // Der zweite Akt steht auf dem geräumten Ort: die Bau-Wand (_bauFrei) setzt kein Haus in ein Haus — neben dem ersten
         // Dorf entstünde am selben Anker keines (Integration Welle L, gate:haus-welt W7). Die folgenden Proben lesen die
         // lebenden Einträge des zweiten Akts.
-        // der Akt hebt über den Zug (K5): Häuser vor dem ersten Bild nach dem ersten
+        // der Akt hebt über den Zug (K5): Häuser vor dem ersten Bild nach dem ersten — der Zug fragt die EINE Frist vor jedem
+        // Haus (`_bauFrist("dorf")`), unter abgelaufener Frist trägt der Schritt genau EINS (die Takt-Garantie)
         const lift0 = r._spawnSettlementSlot;
         let [zugAkt, aus] = [0, false];
         r._spawnSettlementSlot = function (...a) {
@@ -1860,9 +1902,11 @@ hauptLauf(async () => {
             zugAkt += !aus;
             return lift0.apply(this, a);
         };
+        const fristAus = leihe(r, { _bauFrist: () => -Infinity });
         const r1 = await r._spawnSettlementFromExport(await r._ortWahl(plan, o1), o1);
+        fristAus();
         delete r._spawnSettlementSlot;
-        res.zugAkt = zugAkt <= AnazhRealm.AUTO_SETTLEMENT.perTick && r1.placed > zugAkt;
+        res.zugAkt = zugAkt === 1 && r1.placed > zugAkt;
         const akt1 = st.architectures.slice(before);
         for (const e of akt1) r.removeArchitecture(e);
         const mid2 = st.architectures.length;
@@ -2051,20 +2095,21 @@ hauptLauf(async () => {
                 typeof wm.settlementCells[key] === "object" &&
                 isFinite(wm.settlementCells[key].seed)
             );
-            // EXISTENZ VOR FRAMERATE (Lehre 13): über dem Frame-Budget DROSSELT der Takt das
-            // Tempo, er sperrt die Siedlung nie — Takte dauerhaft über dem Budget tragen Häuser, höchstens einen je
-            // drosselTakte-ten Takt.
-            // Gemessen über den ECHTEN Job-Pfad (Q0): der Frame-Dispatcher (`_dispatchFrameJobs`) mit den Jobs des Spiels
-            // (`_buildDeferrableJobs`, der Spieler steht, wo er steht) unter der abgelaufenen EINEN Frist (w28-takt-frist: `takt`) —
-            // die Deko (prio 2, `scatterDeco` → `_tickScatterStreaming` → `_tickAutoSettlement`) geht dort nur als Pflicht-Stück
-            // des Takts (`_bauPflichtGang`), reihum mit jedem Bauer, der Arbeit hat. Gezählt wird in Frames, bis zwei Slots bearbeitet
-            // sind (höchstens 3000 Frames ≈ 50 s bei 60 Bildern/s): die Siedlung wächst — je Deko-Lauf höchstens 1/drosselTakte Slot.
+            // EXISTENZ VOR FRAMERATE (Lehre 13): nach der Frist des Takts WARTET der Zug am Tor wie jeder Bauer, er verhungert
+            // nie — Takte dauerhaft über der Frist tragen Häuser, und jeder Gang des Zugs ist dort das Pflicht-Stück des Takts.
+            // Gemessen über den ECHTEN Pfad des Takts (Q0): der Frame-Dispatcher (`_dispatchFrameJobs`) mit den Jobs des Spiels
+            // (`_buildDeferrableJobs`, der Spieler steht, wo er steht), dahinter der Bauer „dorf“ am Tor (`TAKT_BAUER.dorf`, wie
+            // `_runFrameScheduler` ihn ruft) unter der abgelaufenen EINEN Frist (w28-takt-frist: `takt`) — er geht nur als
+            // Pflicht-Stück (`_bauPflichtGang`), reihum mit jedem Bauer, der Arbeit hat. Gezählt wird in Frames, bis zwei Slots
+            // bearbeitet sind (höchstens 3000 Frames ≈ 50 s bei 60 Bildern/s): die Siedlung wächst, kein Gang des Zugs neben dem Tor.
             const fob = st._frameOverBudget;
-            const drossel = A.drosselTakte || 8;
-            const takt = (jobs) => (
-                r._fristStellen(performance.now() - 1e3, false),
-                [r._dispatchFrameJobs(jobs), r._bauPflichtGang()]
-            );
+            let dorfPflicht = 0;
+            const takt = (jobs, pos) => {
+                r._fristStellen(performance.now() - 1e3, false);
+                r._dispatchFrameJobs(jobs);
+                r._bauer("dorf", AnazhRealm.TAKT_BAUER.dorf, pos);
+                dorfPflicht += r._bauPflichtGang() === "dorf";
+            };
             const pmP = st.playerMesh.position;
             const qIdx0 = r._autoSettlementQueue ? r._autoSettlementQueue.idx : null;
             const qJetzt = () => (r._autoSettlementQueue ? r._autoSettlementQueue.idx : null);
@@ -2084,16 +2129,16 @@ hauptLauf(async () => {
             res.c.vorlaufFrames = vorlauf;
             window.__anazhAutoSettlement = true;
             const qStart = qJetzt();
-            let dekoLaeufe = 0;
+            let dorfGaenge = 0;
             let FRAMES = 0;
-            // der Null-Renderer baut sonst ohne Ende; gezählt wird das Innere der Deko (jeder Ruf des Dorf-Takts) — im Pflicht-Gang
-            // geht sie auch dann, wenn sie nichts zu bauen hat und das Stück weitergibt
+            // der Null-Renderer baut sonst ohne Ende; gezählt wird jeder Gang des Dorf-Takts — solange der Zug Häuser trägt, fragt
+            // er die Frist (er hat Arbeit) und gibt das Pflicht-Stück nie weiter
             const dorfTakt = AnazhRealm.prototype._tickAutoSettlement;
-            const ohne = leihe(r, { _bauFristOhneEnde: () => false, _tickAutoSettlement: (...a) => (dekoLaeufe++, dorfTakt.apply(r, a)) }); // prettier-ignore
+            const ohne = leihe(r, { _bauFristOhneEnde: () => false, _tickAutoSettlement: (...a) => (dorfGaenge++, dorfTakt.apply(r, a)) }); // prettier-ignore
             while (FRAMES < 3000 && r._autoSettlementQueue && qJetzt() - qStart < 2) {
                 st._frameChunksBuilt = false;
                 st._frameOverBudget = true;
-                takt(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }));
+                takt(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }), { x: pmP.x, y: pmP.y, z: pmP.z });
                 FRAMES++;
                 await sleep(0);
             }
@@ -2103,8 +2148,9 @@ hauptLauf(async () => {
             const qIdx1 = r._autoSettlementQueue ? r._autoSettlementQueue.idx : qIdx0;
             res.c.ueberBudget = Number.isFinite(qStart) && Number.isFinite(qIdx1) ? qIdx1 - qStart : null;
             res.c.ueberBudgetFrames = FRAMES;
-            res.c.dekoLaeufe = dekoLaeufe;
-            res.c.budgetWall = res.c.ueberBudget >= 1 && res.c.ueberBudget <= Math.floor(dekoLaeufe / drossel) + 1;
+            res.c.dorfGaenge = dorfGaenge;
+            res.c.dorfPflicht = dorfPflicht;
+            res.c.budgetWall = res.c.ueberBudget >= 1 && dorfGaenge >= 1 && dorfGaenge === dorfPflicht;
             st._frameOverBudget = false;
             // die Materialisierung über Ticks (das Budget je Schritt des Zugs misst Teil B am Akt, `zugAkt`)
             let ticks = 0;
@@ -2162,20 +2208,21 @@ hauptLauf(async () => {
                 });
             }
             // C6 — DER WEGE-SCHLÜSSEL TRÄGT DEN ORT: zwei Siedlungen mit DEMSELBEN Samen an
-            // zwei Orten bauen je ihre Wege (die Wege-Formen werden am echten Bau gezählt, `_stlWegeBuild` läuft durch; die Nähte
-            // seines Netzes legt der Ort als Feldweg ohne Gassen, fahrzeug.K2 — gezählt wird der Bau mit Gassen).
+            // zwei Orten bauen je ihre Wege (die Wege-Formen werden am echten Bau gezählt: der Gang der Raten `_stlWegeRaten` läuft
+            // durch — ihn gehen der Akt, `_dorfErlebnis`, und `_stlWegeBuild`; die Nähte seines Netzes legt der Ort als Feldweg
+            // ohne Gassen, fahrzeug.K2 — gezählt wird der Bau mit Gassen).
             window.__marke("C6");
             {
-                const orig = r._stlWegeBuild;
+                const orig = r._stlWegeRaten;
                 const formen = [];
-                r._stlWegeBuild = function (...a) {
-                    const n6 = orig.apply(this, a);
+                r._stlWegeRaten = function* (...a) {
+                    const n6 = yield* orig.apply(this, a);
                     if (a[0] && a[0].roads) formen.push(n6);
                     return n6;
                 };
                 await r.spawnSettlement({ seed: 4711, nH: 6, position: { x: 1500, y: 0, z: 1500 } });
                 await r.spawnSettlement({ seed: 4711, nH: 6, position: { x: -1500, y: 0, z: 1500 } });
-                r._stlWegeBuild = orig;
+                delete r._stlWegeRaten;
                 res.c.wegeJeOrt = formen;
             }
             // C7 — DER BLICK GEHÖRT DEM, DER DAS DORF VERLANGT: ein Dorf aus einem Nexus-Programm (DSL-Quelle „nexus") lässt den Blick des Spielers
@@ -2337,17 +2384,23 @@ hauptLauf(async () => {
                 };
                 let [bild, erstes] = [-1, null];
                 wach = true;
+                // je Takt die abgelaufene EINE Frist (der Null-Renderer baut sonst am Stück): der Schritt des Zugs trägt sein
+                // Pflicht-Stück — EINE Rate des Gangs oder EIN Haus; so zählen die Takte bis zum ersten Haus
+                const ohneEnde = leihe(r, { _bauFristOhneEnde: () => false });
                 for (
                     const weiter = __deckel("C-K5: das erste Haus", 400, () => !!r._autoSettlementPendingKey);
                     (!erst || (!erstes && bild < 400)) && weiter();
                 ) {
                     haus += !erst;
+                    r._fristStellen(performance.now() - 1e3, false);
                     r._tickAutoSettlement(pw);
                     bild++;
                     const e = st.architectures.find((e) => !vor0.has(e) && /^haus_/.test(e.type) && stufe(e));
                     if (e) erstes = { typ: e.type, stufe: stufe(e), d: +d(e.position).toFixed(1) };
                     await sleep(5);
                 }
+                ohneEnde();
+                r._bauFristTakt = null;
                 [r._dorfZug, r._nebenAuftrag] = [zug, neben];
                 const nahImSchirm = (erst ? erst.plan.slots : []).some((s) => {
                     const q = { x: erst.origin.x + s.x, z: erst.origin.z + s.z };
@@ -2379,7 +2432,6 @@ hauptLauf(async () => {
                     ["strecke13", 13, 1],
                 ])
                     res.c.k5[k] = await lauf(nH, v, alt, fern);
-                res.c.k5.drossel = A.drosselTakte;
                 const y = st.yaw;
                 const slot = (d, w, e = 3) => ({
                     x: d * Math.sin(y + w),
@@ -2464,6 +2516,9 @@ hauptLauf(async () => {
                     };
                     const takte = [];
                     r._wegeRaeumen(); // die Flächen der Läufe davor
+                    // je Takt die abgelaufene EINE Frist (der Null-Renderer baut sonst am Stück): der Schritt des Zugs trägt dann
+                    // genau sein Pflicht-Stück — EINE Rate des Gangs oder EIN Haus (`_dorfZugSchritt`)
+                    const ohne = leihe(r, { _bauFristOhneEnde: () => false });
                     try {
                         for (
                             let t = 0, weiter = __deckel("C-K5d", 400, false);
@@ -2472,6 +2527,7 @@ hauptLauf(async () => {
                         ) {
                             weiter();
                             s = {};
+                            r._fristStellen(performance.now() - 1e3, false);
                             const t0 = performance.now();
                             if (t) r._tickAutoSettlement(pw);
                             else r._autoSettlementSpawnCell(kx, kz, i3);
@@ -2486,6 +2542,8 @@ hauptLauf(async () => {
                         }
                     } finally {
                         for (const n of [...Object.keys(HAKEN), "_spawnSettlementSlot"]) delete r[n];
+                        ohne();
+                        r._bauFristTakt = null;
                     }
                     const zeile = (t, i) =>
                         `Takt ${i} ${t.ms} ms: ${Object.entries(t.s)
@@ -2573,13 +2631,13 @@ hauptLauf(async () => {
                             res.zweit = r._autoSettlementPendingKey === zi.key ? zi.key : "abgewiesen";
                         }
                         // das Fenster endet am Ereignis DER Zelle (reserviert, ihre Schlange gewachsen), nie an der Ruhe aller Dörfer; baut
-                        // der Zug sie nie, ruht er ohne sie (nichts unterwegs über drosselTakte Takte) — die Uhr wacht nur gegen ein Hängen
+                        // der Zug sie nie, ruht er ohne sie (nichts unterwegs über acht Takte) — die Uhr wacht nur gegen ein Hängen
                         const leer = () =>
                             !r._autoSettlementQueue && !r._autoSettlementPendingKey && !r._stlWegePending;
                         const hook0 = window.__anazhAutoSettlement;
                         window.__anazhAutoSettlement = true;
                         try {
-                            for (let still = 0; still <= AnazhRealm.AUTO_SETTLEMENT.drosselTakte;) {
+                            for (let still = 0; still <= 8;) {
                                 const vor = leer();
                                 r._tickAutoSettlement(pm.position);
                                 const q = r._autoSettlementQueue;
@@ -3311,7 +3369,7 @@ hauptLauf(async () => {
     );
     check("B: DORF-IN-TERRAIN — der Slot-Footprint reist als entry.fundament {ex,ez}", out.fundamentTravels === true);
     check(
-        "B: DER AKT hebt über den Zug — vor dem ersten Bild nach dem ersten Haus höchstens perTick (K5)",
+        "B: DER AKT hebt über den Zug — nach abgelaufener Frist vor dem nächsten Bild genau EIN Haus (K5, die Takt-Garantie)",
         out.zugAkt === true
     );
     check(
@@ -3537,10 +3595,10 @@ hauptLauf(async () => {
         `placed=${c.placed} ticks=${c.ticks}`
     );
     check(
-        // echter Job-Pfad scatterDeco: Slots in Frames, nie 0, je Deko-Lauf ≤ 1/drosselTakte
-        "C3b: Existenz vor Framerate — über dem Budget wächst die Siedlung gedrosselt",
+        // echter Pfad des Takts (Jobs, dann der Bauer „dorf“ am Tor): Slots in Frames, nie 0, jeder Gang des Zugs ein Pflicht-Stück
+        "C3b: Existenz vor Framerate — über der Frist wächst die Siedlung im Pflicht-Gang, nie neben dem Tor",
         c.budgetWall === true,
-        `über dem Budget: ${c.ueberBudget} Slots in ${c.ueberBudgetFrames} Frames (${c.dekoLaeufe} Deko-Läufe; der Ring stand nach ${c.vorlaufFrames} Frames)`
+        `über der Frist: ${c.ueberBudget} Slots in ${c.ueberBudgetFrames} Frames (${c.dorfGaenge} Gänge des Zugs, ${c.dorfPflicht} als Pflicht-Stück; der Ring stand nach ${c.vorlaufFrames} Frames)`
     );
     check(
         // zwei Siedlungen mit demselben Samen bauen je ihre Wege
@@ -3600,8 +3658,8 @@ hauptLauf(async () => {
         c.idempotent === true
     );
     const k5 = c.k5 || {};
-    // über dem Budget liegt ein Takt des Zugs je drosselTakte Bilder (Stadt GTX 41 fps): 0,5 s tragen `soll` Takte
-    const soll = Math.floor((0.5 * 41) / k5.drossel);
+    // das erste Haus steht im zweiten Takt nach dem Erwachen: der erste legt den Grund (der Gang zuerst), der nächste hebt
+    const soll = 2;
     const je = (n, f) => n.every((k) => k5[k] && f(k5[k]));
     // DAS ERSTE HAUS IM BILD (sk5-haus): nH 12 und 300 heben das nächste Haus nach dem Vorlauf, seine Stufen bestellt vor ihm, und
     // es steht in der Stufe seines Abstands ≤ `soll` Takte nach dem Erwachen, auch hinter vollem Fit-Takt — nie als Hülle, solange

@@ -45,7 +45,7 @@
 //       159,1 · Tuch-Gitter 159,0 ms in EINEM Bild).
 //   T16 DIE SAAT FOLGT IHREM SAUM (w28-preis-ort, Heilung der Gegner): am echten Abräumen bleibt die Saat beim Pendeln um einen
 //       Chunk, ihr Abschied fällt nach der Frist in SAAT_GEHT_MIN Würfen je Takt, Tritt und Marke gehen mit dem Chunk, die Probe der
-//       Saat liest keine Marke (`_saatGeht`, `_saatGehtZuEnde`, `_saatGedaechtnisGeht`, `_vegetationSampleSpawn`).
+//       Saat liest keine Marke (`_saatGeht`, `_saatGehtZuEnde`, `_zellGedaechtnisGeht`, `_vegetationSampleSpawn`).
 //   T17 DAS TUCH-GITTER IM FADEN (w28-preis-ort, Heilung der Gegner): das Gitter des Voxel-Fadens (`_tuchGitterFaden`) gleicht dem
 //       des Haupt-Fadens (koerper-core `tuchGitter`) Byte für Byte in jedem Feld.
 //   T18 DIE RÜCKKEHR ZEIGT DENSELBEN BESTAND (w28-preis-ort, Heilung 2): eine Fahrt der echten Welt — Boot an der Mess-Wiese,
@@ -454,7 +454,10 @@ hauptLauf(async () => {
                         ort("ortAufgabe"); // eine Aufgabe ohne Frame des Loops (ein Zeitgeber)
                         await null;
                         r._autoSettlementQueue = r._dorfZug({ slots: Array(12).fill({}) }, { x: 0, z: 0 }, "-");
-                        r._tickAutoSettlement({ x: 0, y: 0, z: 0 });
+                        // der Zug fragt die EINE Frist der Bau-Arbeit vor jedem Haus (`_bauFrist("dorf")`): unter dem Ladeschirm die des Lade-Frames
+                        ((zurueck9 = leihe(r, { _bauFrist: () => r._ladeFrist() })),
+                            r._tickAutoSettlement({ x: 0, y: 0, z: 0 }),
+                            zurueck9());
                         aus9.dorf = r._autoSettlementQueue ? r._autoSettlementQueue.idx : 12;
                         await null;
                         st.architectures = zwoelf.map(() => ({ position: { x: 0, z: 0 }, _ziegelGebacken: true }));
@@ -721,7 +724,7 @@ hauptLauf(async () => {
                     // die alte Klasse: der Abschied am Stück
                     ...(selbst ? { _saatGehtZuEnde: (k, g) => P._saatGehtZuEnde.call(r, k, g, Infinity, 0) } : {}),
                     // die alte Klasse: das Gedächtnis bleibt
-                    ...(selbst ? { _saatGedaechtnisGeht: () => {} } : {}),
+                    ...(selbst ? { _zellGedaechtnisGeht: () => {} } : {}),
                 });
                 const abbau = { n: 0 };
                 const saat = (e) => !!e && e._ausGesetz === true && e.feldWurf === true;
@@ -774,7 +777,9 @@ hauptLauf(async () => {
                     } finally {
                         zurueckFrist();
                     }
-                    for (let i = 0; i < 400 && gehend(); i++) r._pruneDistantVoxelChunks(pm);
+                    // der Gang des Registers geht in Raten (`_zellRaeumen.weiter`): gewartet, bis Saat und Register stehen
+                    const raeumt = () => !!(r._zellRaeumen && r._zellRaeumen.weiter);
+                    for (let i = 0; i < 400 && (gehend() || raeumt()); i++) r._pruneDistantVoxelChunks(pm);
                     o.restGeht = gehend();
                     o.tritt = +T.has(tk);
                     o.marke = +st.scatterPromoted.has(mk);
@@ -941,7 +946,7 @@ hauptLauf(async () => {
         _saatGeht: t16.pendelGeht === 0,
         _saatGehtZuEnde:
             t16.wuerfe >= 8 && t16.raten.some((n) => n > 0) && t16.raten.every((n) => n <= 4) && t16.restGeht === 0,
-        _saatGedaechtnisGeht: t16.tritt === 0 && t16.marke === 0,
+        _zellGedaechtnisGeht: t16.tritt === 0 && t16.marke === 0,
         _vegetationSampleSpawn: t16.markeGelesen === 0,
     };
     const n16 = Object.keys(T16je).filter((k) => T16je[k] === SELBST);

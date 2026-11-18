@@ -411,16 +411,19 @@ function gassenLicht(quellen, wege, haeuser, hfov) {
 }
 const GASSE_SOLL = 4;
 
-// DIE STADT ALS FUNKTION ÜBER VIERTELN (w28-stadt-funktion, fachwerk `viertelWort`, rein): das Gesetz der Ringe an sieben Städten
-// von der Wand bis zum Tausendfachen — die Summe aller Viertel ist die Zahl des Worts (der Rest unter `rest` trägt keines),
-// keines fasst mehr als die Wand, jedes außer dem Kern trägt das Erbe, zweimal gefragt dasselbe Wort (zustandslos), keine zwei
-// Viertel einer Stadt denselben Samen; dann am kleinen Stand der Wand (`klein`, 40 — das Gesetz ist dasselbe, der Export
-// kostet Bruchteile): der Kern ist das Wort an der Wand (derselbe Export bis auf das Feld `stadt`), der Export über der Wand
-// nennt seine Stadt, und ein Viertel steht in Region, Jahr und Spanne des Kerns. `o.wort` tauscht das Gesetz (die Mutanten des
-// Selbsttests). Rückgabe { gruen, fehl, je }.
+// DIE STADT ALS NETZ VON KACHELN (w28-stadt-funktion · w28-stadt-netz; fachwerk `viertelWort`, `kachelNetz`, `exportSettlement`
+// mit dp.kachel — rein): (a) das Ring-Gesetz an acht Städten von der Wand bis zum Tausendfachen — die Summe aller Kacheln ist die
+// Zahl des Worts (die Dichte fällt zum Rand, `STADT_FORM`), keine fasst mehr als `jeKachel`, jede außer der Mitte trägt das Erbe,
+// zweimal gefragt dasselbe Wort (zustandslos), bis 1000 Kacheln keine zwei mit demselben Samen; bis zur Wand ist das Wort EIN
+// Plan; (b) DIE NAHT an 400 zufälligen Nachbar-Paaren: die Tore der gemeinsamen Kante aus beiden Kacheln gleich, die Straße
+// kommt senkrecht an, ihre Klasse ist beidseits dieselbe; (c) am kleinen Stand (Wand `klein` 40, je Kachel 30 — dasselbe
+// Gesetz, der Export kostet Bruchteile): das Wort über der Wand ist die Mitte seiner Stadt und nennt sie (`stadt`, `kachel`,
+// `netz`), das Wort an der Wand trägt kein Feld davon, kein Los steht außerhalb der Kachel, die Mauer steht nur an Kanten des Kerns
+// zur Vorstadt (`mauerTeil`), und eine Kachel steht in Region, Jahr und Spanne der Mitte. `o.wort` und `o.netz` tauschen das Gesetz (die
+// Mutanten des Selbsttests). Rückgabe { gruen, fehl, je }.
 function stadtFunktion(FC, o = {}) {
-    const SF = FC.STADT_FUNKTION, wort = o.wort || FC.viertelWort, fehl = [], je = [];
-    const pruef = (voll, staedte) => {
+    const SF = FC.STADT_FUNKTION, SN = FC.STADT_NETZ, wort = o.wort || FC.viertelWort, netz = o.netz || FC.kachelNetz, fehl = [], je = [];
+    const pruef = (staedte) => {
         for (const nH of staedte) {
             const R = FC.stadtRinge(nH), samen = new Map();
             let n = 0, sum = 0, hi = 0;
@@ -429,35 +432,106 @@ function stadtFunktion(FC, o = {}) {
                     const v = wort(7, nH, i, k);
                     if (!v) continue;
                     n++, (sum += v.nH), (hi = Math.max(hi, v.nH));
-                    if ((i || k) && !(v.erbe && isFinite(v.erbe.jahr) && isFinite(v.erbe.spanne))) fehl.push(`Stadt ${nH}: Viertel ${i},${k} ohne Erbe`);
-                    if (JSON.stringify(v) !== JSON.stringify(wort(7, nH, i, k))) fehl.push(`Stadt ${nH}: Viertel ${i},${k} trägt beim zweiten Fragen ein anderes Wort`);
-                    if (samen.has(v.seed)) fehl.push(`Stadt ${nH}: Viertel ${i},${k} und ${samen.get(v.seed)} tragen denselben Samen ${v.seed}`);
-                    samen.set(v.seed, i + "," + k);
+                    if ((i || k) && !(v.erbe && isFinite(v.erbe.jahr) && isFinite(v.erbe.spanne))) fehl.push(`Stadt ${nH}: Kachel ${i},${k} ohne Erbe`);
+                    if (JSON.stringify(v) !== JSON.stringify(wort(7, nH, i, k))) fehl.push(`Stadt ${nH}: Kachel ${i},${k} trägt beim zweiten Fragen ein anderes Wort`);
+                    if (samen.has(v.seed)) fehl.push(`Stadt ${nH}: Kachel ${i},${k} und ${samen.get(v.seed)} tragen denselben Samen ${v.seed}`);
+                    if (R <= 10) samen.set(v.seed, i + "," + k);
                 }
-            if (sum > nH || nH - sum >= SF.rest) fehl.push(`Stadt ${nH} (Wand ${voll}): die Viertel tragen ${sum} Häuser`);
-            if (hi > voll) fehl.push(`Stadt ${nH}: ein Viertel mit ${hi} Häusern über der Wand ${voll}`);
-            je.push(`${nH} → ${n} Viertel Σ ${sum}`);
+            if (sum > nH || nH - sum >= SF.rest) fehl.push(`Stadt ${nH} (Wand ${SF.voll}): die Kacheln tragen ${sum} Häuser`);
+            if (nH > SF.voll && hi > SN.jeKachel) fehl.push(`Stadt ${nH}: eine Kachel mit ${hi} Häusern über ${SN.jeKachel}`);
+            if (nH <= SF.voll && n !== 1) fehl.push(`das Wort ${nH} bis zur Wand ${SF.voll} ist ${n} Pläne`);
+            je.push(`${nH} → ${n} Σ ${sum}`);
         }
     };
-    const V = SF.voll;
-    pruef(V, [V, V + 1, V + SF.rest, 2 * V, 3 * V + 77, 10 * V, 1000 * V]);
+    const V = SF.voll, K = SN.jeKachel, M = FC.SIEDLUNG.cellM;
+    pruef([V, V + 1, V + SF.rest, 2 * V, 3 * V + 77, 9 * K, 10 * V, 1000 * V]);
+    // (b) die Naht
+    const zufall = (a, b) => ((Math.imul(a + 11, 0x9e3779b1) ^ Math.imul(b + 5, 0x85ebca6b)) >>> 0) % 2001;
+    for (let q = 0; q < 400; q++) {
+        const [s, ix, iz, ost] = [zufall(q, 1), zufall(q, 2) - 1000, zufall(q, 3) - 1000, q % 2 === 0];
+        const A = netz(s, ix, iz), B = ost ? netz(s, ix + 1, iz) : netz(s, ix, iz + 1);
+        const [a, b] = ost ? [A.tore.o, B.tore.w] : [A.tore.s, B.tore.n];
+        if (JSON.stringify(a) !== JSON.stringify(b)) { fehl.push(`NAHT ${s} ${ix},${iz} ${ost ? "Ost" : "Süd"}: die Tore der Kante sind aus beiden Kacheln verschieden`); break; }
+        const an = (N, ende, soll) => N.edges.filter((e) => { const p = e.pts[ende ? e.pts.length - 1 : 0]; return Math.abs((ost ? p.x : p.z) - soll) < 1e-6; });
+        const [eA, eB] = [an(A, true, M / 2), an(B, false, -M / 2)];
+        const schief = (e, ende) => { const P = e.pts, [p, r] = ende ? [P[P.length - 2], P[P.length - 1]] : [P[0], P[1]]; return Math.abs(Math.atan2(r.z - p.z, r.x - p.x) - (ost ? 0 : Math.PI / 2)); };
+        if (eA.length !== a.length || eB.length !== a.length || eA.some((e, j) => e.gen !== eB[j].gen || schief(e, true) > 0.02 || schief(eB[j], false) > 0.02)) { fehl.push(`NAHT ${s} ${ix},${iz}: die Straßen treffen sich an der Kante nicht (Zahl, Klasse oder Richtung)`); break; }
+    }
+    // (d) DIE FORM IM BILD (`STADT_FORM`, w28-stadt-form) an der Stadt von 33 vollen Kacheln: KEIN STAB — in den Massen der
+    // Stufe 1 (`kachelMassen`, Mitte · Kern · Rand) trägt jedes Haus seine Traufe auf seiner Tiefe (Traufe / Tiefe ≤ `stab`: der
+    // Grundriss wächst mit den Geschossen, ein hohes Haus steht auf einem tiefen Platz); KEINE TON-KANTE — der Ton hängt an der
+    // LAGE (`stadtTonAn`): über fünf Kanten zweier Kacheln springt er auf 2 m um höchstens 6 von 255 (eine Stufe trägt 3), das
+    // Feld lebt, und die Massen lesen es an ihrem Ort (ohne `tonHub`: in der Kachel neben der Mitte bleiben die Häuser an der
+    // Mitte, wie sie sind — dort ist das Feld 0 —, die am Rand wechseln die Farbe). `o.massen` und `o.tonAn` tauschen das Gesetz.
+    const massen = o.massen || FC.kachelMassen, tonAn = o.tonAn || FC.stadtTonAn, FO = FC.STADT_FORM, gross = 33 * K;
+    for (const [i, k] of [[0, 0], [1, 0], [2, 1]]) {
+        const m = massen(7, gross, i, k);
+        if (!m) { fehl.push(`FORM: die Stadt ${gross} trägt keine Kachel ${i},${k}`); continue; }
+        let stab = 0, wer = "";
+        for (let h = 0; h < m.n; h++) { const [d, t] = [m.lage[h * 7 + 4], m.lage[h * 7 + 5]]; if (t / d > FO.stab + 1e-3 && !stab++) wer = `${t.toFixed(1)} m auf ${d.toFixed(1)} m`; }
+        if (stab) fehl.push(`FORM STAB: ${stab} von ${m.n} Häusern der Kachel ${i},${k} tragen Traufe / Tiefe über ${FO.stab} (${wer})`);
+    }
+    const grau = { putz: 0x808080, ziegel: 0x808080 }, rot = (c) => [(c.putz >> 16) & 255, (c.ziegel >> 16) & 255];
+    let [sprung, wo, lebt] = [0, "", false];
+    for (const [i, k, di, dk] of [[1, 0, 1, 0], [2, 1, 0, 1], [-2, -1, 1, 0], [0, 3, 0, 1], [3, 3, 1, 0]]) {
+        const [A, B] = [tonAn(7, i, k, M), tonAn(7, i + di, k + dk, M)];
+        for (let q = 0; q < 32; q++) {
+            const t = ((q + 0.5) / 32 - 0.5) * M, [a, b] = [rot(A(grau, di ? M / 2 - 1 : t, dk ? M / 2 - 1 : t)), rot(B(grau, di ? 1 - M / 2 : t, dk ? 1 - M / 2 : t))];
+            const d = Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
+            if (d > sprung) [sprung, wo] = [d, `${i},${k} → ${i + di},${k + dk}`];
+            lebt = lebt || a[0] !== 128 || a[1] !== 128;
+        }
+    }
+    if (sprung > 6) fehl.push(`FORM TON-KANTE: über die Kante ${wo} springt der Ton auf 2 m um ${sprung} von 255 — er hängt an der Kachel, nicht an der Lage`);
+    if (!lebt) fehl.push("FORM TON: das Feld der Viertel-Töne ist an fünf Kanten überall 0");
+    {
+        const hub = FO.tonHub, mit = massen(7, gross, 1, 0);
+        let ohne = null;
+        FO.tonHub = 0;
+        try { ohne = massen(7, gross, 1, 0); } finally { FO.tonHub = hub; }
+        let [gleich, anders] = [0, 0];
+        if (mit && ohne) for (let h = 0; h < mit.n; h++) Array.from(mit.ton.subarray(h * 6, h * 6 + 6)).some((v, j) => Math.abs(v - ohne.ton[h * 6 + j]) > 1e-5) ? anders++ : gleich++;
+        if (!gleich || !anders) fehl.push(`FORM TON: die Massen der Kachel 1,0 lesen das Feld nicht an ihrem Ort (ohne tonHub ${anders} Häuser anders, ${gleich} gleich — Soll: beides)`);
+    }
+    // (c) der Export am kleinen Stand
     const klein = o.klein || 40, gleich = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-    SF.voll = klein;
+    [SF.voll, SN.jeKachel] = [klein, 30];
     try {
-        pruef(klein, [klein + SF.rest, 3 * klein, 30 * klein]);
-        const [ueber, wand] = [FC.exportSettlement({ seed: 7, nH: 3 * klein }), FC.exportSettlement({ seed: 7, nH: klein })];
-        const st = ueber.stadt;
-        if (!st || st.nH !== 3 * klein || st.kern !== klein || st.ringe !== 1) fehl.push(`der Export über der Wand nennt seine Stadt nicht (${JSON.stringify(st)})`);
-        if (wand.stadt) fehl.push("der Export an der Wand trägt das Feld `stadt`");
-        if (!gleich({ ...ueber, stadt: undefined }, wand)) fehl.push("der Kern über der Wand ist nicht das Wort an der Wand");
-        let v = null;
-        for (let i = -1; i <= 1 && !v; i++) for (let k = -1; k <= 1 && !v; k++) v = (i || k) && wort(7, 3 * klein, i, k);
-        const p = v && FC.exportSettlement({ seed: v.seed, nH: v.nH, epoche: v.epoche, erbe: v.erbe });
-        if (!p) fehl.push("der erste Ring trägt kein Viertel");
-        else if (p.region !== wand.region || p.jahr !== wand.jahr || p.spanne !== wand.spanne)
-            fehl.push(`das Viertel steht in ${p.region} ${p.jahr}+${p.spanne}, sein Kern in ${wand.region} ${wand.jahr}+${wand.spanne}`);
+        pruef([klein + SF.rest, 3 * klein, 30 * klein]);
+        const stadt = 3 * klein, [ueber, wand] = [FC.exportSettlement({ seed: 7, nH: stadt }), FC.exportSettlement({ seed: 7, nH: klein })];
+        const st = ueber.stadt, ka = ueber.kachel;
+        if (!st || st.nH !== stadt || !ka || ka.i || ka.k || !ueber.netz) fehl.push(`der Export über der Wand nennt seine Stadt nicht (${JSON.stringify(st)} · ${JSON.stringify(ka)})`);
+        if (wand.stadt || wand.kachel || wand.netz) fehl.push("der Export an der Wand trägt ein Feld der Stadt");
+        if (!gleich(ueber, FC.exportSettlement({ kachel: { samen: 7, nH: stadt, i: 0, k: 0 } }))) fehl.push("das Wort über der Wand ist nicht die Mitte seiner Stadt");
+        let v = null, ik = null;
+        for (let i = -1; i <= 1 && !v; i++) for (let k = -1; k <= 1 && !v; k++) if ((i || k) && (v = wort(7, stadt, i, k))) ik = [i, k];
+        const p = v && FC.exportSettlement({ kachel: { samen: 7, nH: stadt, i: ik[0], k: ik[1] } });
+        if (!p) fehl.push("der erste Ring trägt keine Kachel");
+        else {
+            if (p.region !== ueber.region || p.jahr !== ueber.jahr || p.spanne !== ueber.spanne) fehl.push(`die Kachel steht in ${p.region} ${p.jahr}+${p.spanne}, die Mitte in ${ueber.region} ${ueber.jahr}+${ueber.spanne}`);
+            const aus = p.slots.filter((q) => { const c = q.obb, r = Math.hypot(c.ex, c.ez); return Math.abs(c.cx) - r > M / 2 || Math.abs(c.cz) - r > M / 2; }).length;
+            if (aus) fehl.push(`${aus} Lose der Kachel ${ik} stehen außerhalb von ihr`);
+            // DIE MAUER STEHT UM DEN KERN: eine Kachel ab `mauerTeil` der vollen Zahl ist Kern, ihr Rand ist die Kante zu einem
+            // Nachbarn darunter (die Vorstadt liegt vor der Mauer) — an der Mitte und an der Kachel des Rings: je Kante das Gesetz,
+            // je Mauer-Stück die Kante, an der es liegt
+            const imKern = (a, b) => ((w) => !!w && w.nH >= FC.STADT_FORM.mauerTeil * SN.jeKachel)(wort(7, stadt, a, b));
+            const e = M / 2 - SN.mauerInnenM;
+            let kanten = 0;
+            for (const [plan, a, b] of [[ueber, 0, 0], [p, ik[0], ik[1]]]) {
+                const rand = plan.kachel.rand;
+                for (const s of (plan.mauer || { segs: [] }).segs) {
+                    const k = Math.abs(s.x0 + e) < 0.01 && Math.abs(s.x1 + e) < 0.01 ? "w" : Math.abs(s.x0 - e) < 0.01 && Math.abs(s.x1 - e) < 0.01 ? "o" : Math.abs(s.z0 + e) < 0.01 && Math.abs(s.z1 + e) < 0.01 ? "n" : "s";
+                    if (!rand[k]) { fehl.push(`die Mauer der Kachel ${a},${b} steht an der Kante ${k}, die kein Rand des Kerns ist`); break; }
+                }
+                for (const [k, di, dk] of [["w", -1, 0], ["o", 1, 0], ["n", 0, -1], ["s", 0, 1]]) {
+                    if (rand[k] !== (imKern(a, b) && !imKern(a + di, b + dk))) fehl.push(`der Rand ${k} der Kachel ${a},${b} widerspricht dem Gesetz der Kacheln`);
+                    kanten += rand[k] ? 1 : 0;
+                }
+            }
+            if (!imKern(0, 0) || !kanten) fehl.push(`die Stadt ${stadt} trägt keinen Rand des Kerns (Mitte im Kern: ${imKern(0, 0)}, Rand-Kanten an Mitte und Ring-Kachel: ${kanten})`);
+        }
     } finally {
-        SF.voll = V;
+        [SF.voll, SN.jeKachel] = [V, K];
     }
     return { gruen: !fehl.length, fehl, je };
 }

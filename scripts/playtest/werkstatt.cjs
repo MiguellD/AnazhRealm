@@ -1878,7 +1878,7 @@ async function checkBandM5HudPolitur({ page, check }) {
         const p = st.player;
         const savedBoosts = p.boosts;
         const nowSec = st.spielZeit; // der Ablauf auf der Welt-Uhr (w28-welt-uhr)
-        p.boosts = [{ source: "test", label: "Probe", tagDelta: { magieleitung: 0.4 }, expiresAt: nowSec + 40 }];
+        p.boosts = [{ source: "test", tagDelta: { magieleitung: 0.4 }, expiresAt: nowSec + 40 }];
         const host = document.createElement("div");
         r._renderEquipBoosts(host);
         const chip = host.querySelector(".ich-boost-chip");
@@ -2121,7 +2121,7 @@ async function checkBandWCIchWahrheit({ page, check }) {
         const p = st.player;
         const savedBoosts = p.boosts;
         const nowSec = st.spielZeit;
-        p.boosts = [{ source: "wc", label: "WC-Probe", tagDelta: { magieleitung: 0.3 }, expiresAt: nowSec + 30 }];
+        p.boosts = [{ source: "wc", tagDelta: { magieleitung: 0.3 }, expiresAt: nowSec + 30 }];
         r._renderInventoryEquip();
         const orte = document.querySelectorAll(".ich-boosts");
         const hostBand = document.querySelector("#ich-boosts-host .ich-boosts");
