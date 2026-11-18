@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-18T22:50:18.155Z",
+ "zeit": "2026-11-18T22:54:38.576Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -1458,6 +1458,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.9 m: 46.6 m 5/5 fliehen, 3 sichtbar, 2 Fleck(en) (135 px) · 50.9 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (138 px) · 55.1 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (135 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.89,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.9 m: 46.6 m 5/5 fliehen, 3 sichtbar, 2 Fleck(en) (135 px) · 50.9 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (138 px) · 55.1 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (135 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k80037f8904ec",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k2bbe263ca652",
+   "s": 52.6,
+   "fremd": {
+    "s": 56.4,
+    "takte": 26,
+    "fremdS": 16.52,
+    "kerne": 0.293,
+    "fensterKerne": 0.475,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.36
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.47
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.75
+     ]
+    ],
+    "dienerS": 19.67,
+    "diener": [
+     [
+      "System",
+      8.69
+     ],
+     [
+      "dwm.exe",
+      8.02
+     ]
+    ],
+    "geraetS": 16.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.89
+     ],
+     [
+      "svchost.exe",
+      5.53
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 109.27,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T22:54:38.576Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1480,23 +1550,24 @@
   "kb02d0cd5bc1b": "bVRdj5swEPwveWzrc/jwAZb64IRTU6lScz9hba+BC4HIhlCl6n+vICE5IPuUoBnv7Mzaf1cnUAfI8OXD1dWKr76svq0cnJE4tGe0Lx9uxVdrFQKLubgWFUJse5iyxalxtCwkBVlBfkTS2gaL8kUNNE/FCMhp9ya6PaV7GtFN9/37nFpK1DVpwOBIlNqPAuBzYOsykEigNUOzG5iFXhgwToeKU7H/oGOJdyFo9zbvKKHSU6UmAGa8YcA3sVCoC8CGlEXlxp5KMxn4/N5oOZW20JELYF6ivZHAi8CTo9DBym6f0BnRlK1zk2ZxoJkfc0oX2AxdofKGnGwtsRrNS/zIA/7E6ezUEjNRJCXEcu5zDlhlaKcaopCpkNM/8fzQAxzRAqkgv0GTdRD58uENpXS31FIOwocWo/BYyyQyE2Kf4a7rnUrj/k92/xzvrsuYZuJR77MmTuWFPU7tMYZpWPNfS0kuB42WHGrXPDSFADhufjoslNiH6Zz5GObG8+XrmsWfZomp2C28c7VpOrBIslN7I2KILGJciJ8LcAPH4ziE8jFm8+Bc0y/2ZxksRO814qNzT3K4XgNywaIcSZFSXoB8K8R8zrOFIwGZ2cKYMW3JlEmeLWeHZUNkXTcjMtAQKE4vtLq7kgzXYPNIMO1q9WObvS90DqfVtrlPJl/XJuTm3N8+tUAXtiEdqPyeh5EICX8CvaAtMcOJbTqUAege/UlZOP74OtnPyyLVS4G9oZVr3bhFSaST22ZPI+jQHiRUh1EmkwG7vkOb32I3PEfbXZJ2YlZbobs0E9tN3B92QkVPtjZF/7LRHFqXQ9k8nvR//wE=",
   "k1a63c6f2ed88": "hVXBkppAEP0Xj5vMjgizwFTtYRSr3KpsxT3m2DP0AIpAzYAkpvLvKVlRAVPpk1jv8V6/7tbfswrUHhJ83tmymPHZ0+zrzMIRiUVzRPO8szM+mysPWMDFZ1EhxOoMUyarakvjDBKyhwMaIDk08ll1pKcJpERToSG2hiJ+AMozSUEWkB6QNKbGLL+AHBUgIKftWrRbSrfUp8v29XVMzSXGJalBY0+U8cJ3gY+BjU1AIoFGd2IXMPMcz2WcdhVEYrujfYkPIWi7HitKKOKhU+0C0w5/+yXEWkwcxhlgTfKssL2mipl0F/wqNO0qNtCSE2Cao7mQwPHBkb3RbiTtNqQjos4bawdigRuzRcApnWATtJlKa1KZUmLRhxcufAf4g6STqiF64EhKCOQ45xSwSNAMPfgeUx6nPwPxr6JHSrfTsC8LVkB6eVU4d/2FvGVHKd1MveZdY52FvrEglqGvB8TzjDftWT0Kzg/J9etg8+kqSu4sfoxErEozcxjGpzWLYc6/TS3ZFGI0ZF/a+ubJA8D+wqJu4cTWi8bMWzMX3kK+zFlw10tAxSaYKJa6bsEgSarmQkQPmc+4EG8TcA2HQ9+EWmDAxoPtDnhgg3novPi8T+7BHD7PhJwwy3uSr5TjIl+9i3GfRwMHAjIxmdb9tCVTOny0vC1YO9oyLwSfLcYTHlb7LgbPp0lqLeY1kWVZ9xbcGFzFqUuLKyvs9nh5W42oLdV6lXyMt3qXiGkonUJp6muM8mWuPa47f2qCzkxNWlDpdfhaIoT8AfSEJscEB6HEnnQhPqPv3Hr9hy//CeOU4Xl6hW1sv7KhH4eXMxq21qLZSyj2vU0mXeZ0u738Lvp7mkc0otv2PqOV0Kcf4m21DM4vq1DRypQ6O//M0hQam0Je3/6n/vwF",
   "kdacfe26e0d44": "bVTBjpswEP2XHNt6HQJewNIenLBSWrVq9tjj2IyBhEBkw9Km6r9XsHESIHMC9J7nzZtn/i5OoA6Q4dPe1tWCLz4tviwsvCOxaN7RPO3tgi+WKgAWcfFRVAix6WHKFKfG0rKQFGQF+RFJaxosyic10DwVISCn3avodpTuaEjXnbjWRry8TI8pJaY1aUCjO0Smq9AHPgW2NgOJBFo9NL6AWeAFPuN0qCgRuz11Jd6E6JU86CqhSsfKtQ9Me/zrHyFe5/i0AGxIWVTW9VUpk/6KX5t1c46BjpwB8xLNhQReCJ50YgdLul1MJ0RdttaOmkV+ylYRp3SGzdAWKm/IydQSK2dgvAo94Ou5puzUEj1SJCVEcup1DlhlaMYawoCpgNPf0fTQAxzRAKkgv0DjpR+u5M0bSul2rqUchA8tnPAolXGoR8R+j9shQknUv2TXz9H2I1RJdguYeJs0sSovzHFsj9YshSX/Ppdkc0jRkENtm5umAADdTUiGUIldkEyZt2EuvJV8XrLobpaIiu3MO1vrpgODJDu1FyIGyELGhfg6AzdwPLoh1AojNl2cbfpg38tgAXrPIXfOPdjDxzUgZyxKRwqV8nzkmx9iOue7gSMBmZlCa7dtyZSOH4Wzw7Ihsq4bh/RT8FWvpbqzpfd1fdtg0tXqdZO9iUntMzHXPnSoTXOdVj4vdcD1cCPVDF2YhnSg8uuOtESI+QPoGU2JGY6sTAPpQ9qj79QG7uHzKLPn2abPBfYmV7a1LllxmMaXtI9H69AcJFQHJ5NJn3n8W2/Uz8DFfpnQhE5Ld0L82qzj/rATKnoytS76vx3NobU5lM3tt//vPw==",
-  "k5767402a13c1": "bVXbbqMwEP2XPO4udbi4GEt9cEKkVGql9BPGZgw0BCIbym5W+++rkDgJ0HkCdMZz5szx8HdxBLWHHJ8+bVMv+OLH4tfCwhd6Fs0XmqdPu+CLpYqAMi4uQYQQ6zNMmfLYWlKVkoCsoTig15kWy+pJDWm+YgjISb8R/Y6QHYnJqhe3WImXl+kxlcSs8VrQ6A6RWRCHwKfAzuYg0YNOD4WvYBr5UUg5GYKlYvdJXIgPIUi/mVaUUGdj1joEqn3++keIzZxhVgK2XlXW1tVUGZVhwG+F+nmOgd47ARYVmmsS+DH40hEd5Oh3CZkk6qqzdlSMhRkNGCdkhs3RlqpovaNpJNZOvCSIfeCrOaf82Hl6xEhKYHKqcwFY52jGHOKIqoiT32x66B4OaMCrobhCk2UYB/KuDSFkO+dSDcSHEo44y2QS61EiISTfDvZJ2fBy+8y2F0Ol+d1c4mNSxKqiNIexPFrTDJb8bU7JFpCh8faNbe+cIgB0tyAdDCV2UTrNvDdzzQvk85Kyh14YEduZdrbRbQ8GvfzYXRMxQhpTLsTrDNzC4eCaUAEyOh2cbc/GfqRBI/SfY+6U+2YOl2vgnbCsXFKslB8iX7+LaZ9fBg4eyNyUWrtpS6p08p05e6xaTzZN65BhBqHiJCT1TZWEXZbCLdK+UZt1/iHGsTK5mHMfKjSmvXUrn5c64nq4kWqGLk3r9aCK24y0REj4N9ATmgpzHEmZRTKE7Ix+YBu5h58jz55mkz6VeBa5tp11zkriLLm6/bogX8erp0ezl1DvHV0qQ+rzs+Xffgpn/2VKUrLrH8VaC31+X6/YSMN3MRx+REWOptHleQuSAjpbQNXefwX//gM="
+  "k5767402a13c1": "bVXbbqMwEP2XPO4udbi4GEt9cEKkVGql9BPGZgw0BCIbym5W+++rkDgJ0HkCdMZz5szx8HdxBLWHHJ8+bVMv+OLH4tfCwhd6Fs0XmqdPu+CLpYqAMi4uQYQQ6zNMmfLYWlKVkoCsoTig15kWy+pJDWm+YgjISb8R/Y6QHYnJqhe3WImXl+kxlcSs8VrQ6A6RWRCHwKfAzuYg0YNOD4WvYBr5UUg5GYKlYvdJXIgPIUi/mVaUUGdj1joEqn3++keIzZxhVgK2XlXW1tVUGZVhwG+F+nmOgd47ARYVmmsS+DH40hEd5Oh3CZkk6qqzdlSMhRkNGCdkhs3RlqpovaNpJNZOvCSIfeCrOaf82Hl6xEhKYHKqcwFY52jGHOKIqoiT32x66B4OaMCrobhCk2UYB/KuDSFkO+dSDcSHEo44y2QS61EiISTfDvZJ2fBy+8y2F0Ol+d1c4mNSxKqiNIexPFrTDJb8bU7JFpCh8faNbe+cIgB0tyAdDCV2UTrNvDdzzQvk85Kyh14YEduZdrbRbQ8GvfzYXRMxQhpTLsTrDNzC4eCaUAEyOh2cbc/GfqRBI/SfY+6U+2YOl2vgnbCsXFKslB8iX7+LaZ9fBg4eyNyUWrtpS6p08p05e6xaTzZN65BhBqHiJCT1TZWEXZbCLdK+UZt1/iHGsTK5mHMfKjSmvXUrn5c64nq4kWqGLk3r9aCK24y0REj4N9ATmgpzHEmZRTKE7Ix+YBu5h58jz55mkz6VeBa5tp11zkriLLm6/bogX8erp0ezl1DvHV0qQ+rzs+Xffgpn/2VKUrLrH8VaC31+X6/YSMN3MRx+REWOptHleQuSAjpbQNXefwX//gM=",
+  "k80037f8904ec": "pVVdj6s2EP0veWzrdQgQwNJ9cMKquVWvmn3s49iMgQ2ByDZLm6r/vYKNk/BxpSvVTwk6M3PO4Yz5Z3UBeYIcX95NU6/Y6qfVLysDH0gM6g/UL+9mxVZrGUAYM/55KOd838OkLi/W0KyEnJw0gm01qVBg/SKHsjABCVtGf/Co7suX77W1cLK3rjGodRCwXc75Nz6qqEpBQdRQnJG02mJZ3Uo8GSMgo90r746UHmlEdx2/n/1Cm0pg1hALCl0TkW0iH9gU2JocBBJo1TDYSQ+8wA9v0uOUH9/vMvkb5z2ThakC6mzMXPkQKo99/Zvz1zk+KwEtqcrauLkyC4W/eVjezWs0dOQKWFSob0XgReAJR3awpDsmdFKoqtaY0bDYz8JNzCidYXM0pSwsuejmEQeRbCIP2G7OKb+0RI0YCQGxmHpdANY56jGHKAhlwOhf8bTpCc6ogdRQ3KDJ2o82YhTHw5yLS9wZayNdqQyCLFE/lOT0+y1HbviZv9lKxv/v2eW/TsZVg/WDSW5YnIkkmvHnh2EJ0rj/k98fx4fPzmn+NOZtMsTIotTnsSSlwgzW7Pe5A6aADDU5NcY+OAUA6C6VdFgLfgzSaeVDzK1uI7brMH7SElN+mL190yjbgUaSX9pbIQYYRiHj/OsMbOF8diLkBuNw8b0sJNfYfmWf6YUBetuIOUcXEva54OSKZeWKIik9H9n+G5/q/9BwJiByXSrlcixCqZKlteuwskQ0jbsqEz8DX/Zc6ie7BikPVWnXyNd9/jYRe9D5QpSHCY22d7Viu1YBU8NdI2foUlvSgSzu704JhIQtQK+oK8xxZGUWCB+yHv3ENnA/fh5l+TpLwLXE3uTatMYlLonuWzyW1qE+CahPjmYo/NBjv/VG/cHdOqxTmi58tDj/c7+L+2YXlPSiG1X29zgtoDUFVHb0Zf2EtKhEi0WNfX5s2dRYP1D//gc="
  },
  "sitzung": {
-  "start": "2026-11-18T22:49:38.201Z",
-  "ordner": "sitzung-20261118-234938",
+  "start": "2026-11-18T22:54:06.106Z",
+  "ordner": "sitzung-20261118-235406",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 9,
+  "bootS": 6.4,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "luftwasser.K3#1",
-    "s": 27.4,
-    "takte": 622,
+    "vor": "karte2.leben.tiere.masse#1",
+    "s": 23.7,
+    "takte": 586,
     "chunks": 81,
     "nach": null
    }
@@ -1504,36 +1575,120 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "luftwasser.K3#1",
+    "probe": "karte2.leben.tiere.masse#1",
     "anders": [
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__ortSchritt"
+     "window.r",
+     "window.st",
+     "window.pm",
+     "window.halt",
+     "window.__handTakt",
+     "window.aufsteigend",
+     "window.addiere",
+     "window.rang",
+     "window.__uebergangFaellt",
+     "window.rahmen",
+     "window.__png",
+     "window.__bundlesNeu",
+     "window.sleep",
+     "window.leihe",
+     "window.__fremd",
+     "window.__loopBild",
+     "window.__zielLesen",
+     "window.__pufferLesen",
+     "window.jsonKlon",
+     "window.fehlerText",
+     "window.fehlerStapel",
+     "window.__seitenTakt",
+     "window.__bedienung2",
+     "window.__takte",
+     "window.__streuTakte",
+     "window.__bildAus",
+     "window.__eichMs",
+     "window.__weltStehtNach",
+     "window.__gebautNach",
+     "window.__deckel",
+     "window.__weltDa",
+     "window.__abdruck",
+     "window.__farben",
+     "window.__lin",
+     "window.__stand",
+     "window.__standJson",
+     "window.__werkPutz",
+     "window.__bautenLeer",
+     "window.__bautenSeit",
+     "window.__peersWeg",
+     "window.__rufe",
+     "window.__ortSchritt",
+     "window.__codeOf",
+     "window.__dokuOf",
+     "window.__fehlt"
     ],
     "wie": {
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.r": "getauscht: () => window.anazhRealm",
+     "window.st": "getauscht: () => window.anazhRealm && window.anazhRealm.state",
+     "window.pm": "getauscht: () => st && st.playerMesh",
+     "window.halt": "getauscht: () => st && st.verbTafel.gehalten",
+     "window.__handTakt": "getauscht: function handTakt() { try { r._gameLoopTick(performance.now()); } catch (e) { r.",
+     "window.aufsteigend": "getauscht: (a, b) => a - b",
+     "window.addiere": "getauscht: (a, b) => a + b",
+     "window.rang": "getauscht: (s, q = 0.5) => s[Math.min(s.length - 1, Math.floor(q * s.length))]",
+     "window.__uebergangFaellt": "getauscht: function uebergangFaellt(r) { r.state.weatherTransition = null; r.requestWeather",
+     "window.rahmen": "getauscht: (b) => b.obb || { cx: (b.minX + b.maxX) / 2, cz: (b.minZ + b.maxZ) / 2, c: 1, s:",
+     "window.__png": "getauscht: function png(u8, W, H) { const cv = Object.assign(document.createElement(\"canvas",
+     "window.__bundlesNeu": "getauscht: () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true))",
+     "window.sleep": "getauscht: (ms) => { const e = globalThis.__abbruchEpoche; return new Promise((r, f) => set",
+     "window.leihe": "getauscht: function leihe(o, tausch) { const alt = Object.keys(tausch).map((k) => [k, Objec",
+     "window.__fremd": "getauscht: async function fremd() { const { privateKey: k } = await crypto.subtle.generateK",
+     "window.__loopBild": "getauscht: function loopBild() { st.renderer._nodes?.nodeFrame?.update(); r._loopRender(); ",
+     "window.__zielLesen": "getauscht: async function zielLesen(ziel, W, H, renderer = st.renderer) { const px = await ",
+     "window.__pufferLesen": "getauscht: function pufferLesen(puffer, wer, renderer = st.renderer) { const q = puffer?.is",
+     "window.jsonKlon": "getauscht: (x) => JSON.parse(JSON.stringify(x))",
+     "window.fehlerText": "getauscht: (e) => e?.message || String(e)",
+     "window.fehlerStapel": "getauscht: (e) => e?.stack || String(e)",
+     "window.__seitenTakt": "getauscht: async function seitenTakt() { const vor = r._weltStand ? r._weltStand.takte : -1",
+     "window.__bedienung2": "getauscht: async function bedienung2(vor) { const taste = (code, art) => window.dispatchEve",
+     "window.__takte": "getauscht: async function takte(n, ms) { for (let i = 0; i < n; i++) { __handTakt(); await ",
+     "window.__streuTakte": "getauscht: async function streuTakte(n, ms) { for (let i = 0; i < n; i++) { st._frameOverBu",
+     "window.__bildAus": "getauscht: function bildAus() { if (st.renderer) { st.renderer.render = function () {}; if ",
+     "window.__eichMs": "getauscht: function eichMs(n) { const a = eichMs.puffer || (eichMs.puffer = new Float64Arra",
+     "window.__weltStehtNach": "getauscht: async function weltStehtNach(takt, max) { const W = () => r._weltStand || {}; co",
+     "window.__gebautNach": "getauscht: async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) { co",
+     "window.__deckel": "getauscht: function deckel(name, max, offen) { let n = 0, k = 0, still = 0, vor = \"\"; retur",
+     "window.__weltDa": "getauscht: async function weltDa(bed) { window.__weltDaWartet = bed ? String(bed).replace(/",
+     "window.__abdruck": "getauscht: function abdruck(x, alle) { let [h, n] = [0x811c9dc5, 0]; const ein = (a) => { c",
+     "window.__farben": "getauscht: function farben(g) { const set = new Set(); g?.traverse((o) => { const c = o.geo",
+     "window.__lin": "getauscht: (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255] .map((c) => Math.f16round(",
+     "window.__stand": "getauscht: async function stand() { await r._speicherStill(); return (await r._idbGetWorld(",
+     "window.__standJson": "getauscht: async function standJson() { const roh = await window.__stand(); try { return JS",
+     "window.__werkPutz": "getauscht: function werkPutz() { r.closeAllDrawers(); st.yaw = 0; if (st.playerMesh) st.pla",
+     "window.__bautenLeer": "getauscht: function bautenLeer() { r._bautenLeeren(); }",
+     "window.__bautenSeit": "getauscht: function bautenSeit() { const vor = new Set(st.architectures); return () => st.a",
+     "window.__peersWeg": "getauscht: function peersWeg() { for (const pid of Array.from(st.p2p.peers.keys())) r._p2pR",
+     "window.__rufe": "getauscht: function rufe(wer, methode, lieferer, name, args) { const echt = lieferer[name];",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__codeOf": "neu: (f) => oK(String(f))",
+     "window.__dokuOf": "neu: (f) => String(f)",
+     "window.__fehlt": "neu: (f, re) => [].concat(f).every((g, i) => { if (typeof g !== \"function\") throw new"
     },
     "haelt": [],
     "heap": [
-     231.6,
-     277.6
+     228.2,
+     278.3
     ],
     "ungemessen": null
    }
   ],
   "wanderung": [
    {
-    "probe": "luftwasser.K3#1",
+    "probe": "karte2.leben.tiere.masse#1",
     "ort": "wiese",
-    "m": 223.27,
+    "m": 327.75,
     "dreh": 0
    }
   ],
   "messHalt": [
    {
-    "probe": "luftwasser.K3#1",
+    "probe": "karte2.leben.tiere.masse#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -1545,21 +1700,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3339,
-   "frameP95": 25.01,
-   "taktP95": 14.45,
-   "vramMax": 128.4,
+   "bilder": 2646,
+   "frameP95": 25.33,
+   "taktP95": 13.86,
+   "vramMax": 138.3,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 140,
-   "luecken": 0,
-   "letzteLuecke": null
+   "ortImDeckel": [
+    {
+     "probe": "karte2.leben.tiere.masse#1",
+     "m": 328,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 137,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 153.1,
-  "minuten": 2.66
+  "fahrtS": 160.9,
+  "minuten": 2.76
  },
  "ungemessen": {
   "mensch.K5#1": {
