@@ -1037,7 +1037,7 @@ function probe(selbsttest) {
     {
         const altMax = st.maxCreatures;
         st.maxCreatures = Math.max(altMax || 0, st.creatures.length + 1);
-        const tot = r.spawnCreatureAt(pm.x + 3, pm.y, pm.z + 3, "happy", "wolf", { precise: true, bodySize: 1 });
+        const tot = r.spawnCreatureAt(pm.x + 3, pm.y, pm.z + 3, "happy", "wolf", { precise: true, erbe: 1 });
         st.maxCreatures = altMax;
         if (tot) r.damageCreature(tot, 1e9, { source: "world" });
         aus.w6Tot = !!tot && (st.leichname || []).includes(tot) && !!tot.parent;

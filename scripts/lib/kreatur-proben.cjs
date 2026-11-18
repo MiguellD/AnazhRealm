@@ -200,8 +200,9 @@ async function kreaturProben(r, T, opts) {
         return { x, y: (Number.isFinite(h) ? h : pm.y) + 0.5, z };
     };
     const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z); // der Abstand in der Ebene
-    const tier = (p, seele, bodySize) => {
-        const c = r.spawnCreatureAt(p.x, p.y, p.z, "happy", seele, { precise: true, bodySize: bodySize || 1 });
+    // die Größe eines Probe-Tiers ist ein Lebenslauf des Wuchs-Gesetzes (Erbe und Alter, `_wuchsGesetz().lebenslauf`)
+    const tier = (p, seele, L) => {
+        const c = r.spawnCreatureAt(p.x, p.y, p.z, "happy", seele, { precise: true, ...A._wuchsGesetz().lebenslauf(L || 1) });
         if (!c) throw new Error("Spawn " + seele);
         return c;
     };
@@ -1383,7 +1384,7 @@ async function kreaturProben(r, T, opts) {
     });
 
     // ── nexus: kein Würfel schreibt ein Körper-Gesetz — der Würfel (fester Strom), die Ops (im Gesetz-Band des Körpers),
-    // die Größe (nur die bodySize-Achse), der Tempo-Hauch der Tiere (im Band wandern) und die Nexus-Geburt (nie im Blick) ──
+    // die Größe (nur über das Erbe, im Band des Wuchs-Gesetzes), der Tempo-Hauch der Tiere (im Band wandern) und die Nexus-Geburt (nie im Blick) ──
     await buehne("nexus", async (restore) => {
         const KOERPER = ["player_speed", "player_jump_power", "creatures_speed_mul", "creatures_size_mul"];
         const eff = r.dslEffects;
@@ -1457,12 +1458,15 @@ async function kreaturProben(r, T, opts) {
         const speedNach = s.speed,
             sprintNach = s.sprintSpeed,
             sprungNach = s.jumpPower;
-        // (c) DIE GRÖSSE nur über die bodySize-Achse, in den Bändern des Gesetzes.
-        const GB = A._verhaltenGesetz().groessen;
-        const bsMin = Math.min(...GB.map((z) => z.min)),
-            bsMax = Math.max(...GB.map((z) => z.max));
+        // (c) DIE GRÖSSE nur über das Erbe, im Band des Wuchs-Gesetzes (das Jungtier mit dem kleinsten Erbe … das größte Erbe
+        // ausgewachsen); die Skala ist die Größe.
+        const WG = A._wuchsGesetz();
+        const bsMin = WG.W.geburt * WG.grenzen.min,
+            bsMax = WG.grenzen.max;
         const o = land(40, -30);
-        const tiere = [1, 0.7, 2.5, 1.2].map((bs, i) => tier({ x: o.x + i * 4, y: o.y, z: o.z }, "wesen", bs));
+        const tiere = [1, 0.7, WG.grenzen.max, WG.W.geburt].map((bs, i) =>
+            tier({ x: o.x + i * 4, y: o.y, z: o.z }, "wesen", bs)
+        );
         r.dslRun(["creatures_size_mul", 1.11], { source: "nexus" });
         r.dslRun(["creatures_size_mul", 3], { source: "nexus" });
         let ohneAchse = 0,
@@ -1556,7 +1560,7 @@ async function kreaturProben(r, T, opts) {
             ["wolf", 1],
             ["baer", 1],
             ["fuchs", 1],
-            ["wesen", 2.5],
+            ["wesen", 1.1],
             ["wolf", 0.6],
             ["baer", 0.7],
         ])
@@ -2972,8 +2976,8 @@ function urteil(name, z) {
             `Sprungkraft ${z.sprungNach} jenseits des Gesetz-Bands ${z.sprungBand.join("–")}`
         );
         soll(z.groessen > 0, "keine Tiere für die Größen-Probe (vakuös)");
-        soll(z.ohneAchse === 0, `${z.ohneAchse} von ${z.groessen} Tieren: Skala ohne bodySize-Achse`);
-        soll(z.ausserBand === 0, `${z.ausserBand} von ${z.groessen} Tieren: bodySize außerhalb der Größen-Bänder`);
+        soll(z.ohneAchse === 0, `${z.ohneAchse} von ${z.groessen} Tieren: Skala ohne bodySize-Achse (die Größe des Wuchs-Gesetzes)`);
+        soll(z.ausserBand === 0, `${z.ausserBand} von ${z.groessen} Tieren: bodySize außerhalb des Wuchs-Gesetzes`);
         soll(
             z.tempoNach < z.tempoVor - 1e-6,
             `creatures_speed_mul ohne Leser: der Charakter ${z.tempoVor} → ${z.tempoNach} (der Tempo-Hauch wirkt nicht)`
@@ -2995,7 +2999,7 @@ function urteil(name, z) {
             "wolf@1": "wild",
             "baer@1": "wehrhaft",
             "fuchs@1": "scheu",
-            "wesen@2.5": "wehrhaft",
+            "wesen@1.1": "scheu", // der Hirsch mit dem größten Erbe bleibt ein Fluchttier (kein Koloss ohne Gesetz)
             "wolf@0.6": "scheu", // das Jungtier (13,8 kg) unter der Jagd-Grenze 21,5 kg
             "baer@0.7": "sanft",
         };

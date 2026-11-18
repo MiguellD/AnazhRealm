@@ -27,7 +27,7 @@ function wasserTier(r, x, y, z, seele) {
     const st = r.state,
         cap = st.maxCreatures;
     st.maxCreatures = Infinity;
-    const c = r.spawnCreatureAt(x, y, z, "happy", seele, { precise: true, bodySize: 1 });
+    const c = r.spawnCreatureAt(x, y, z, "happy", seele, { precise: true, erbe: 1 });
     st.maxCreatures = cap;
     return c;
 }

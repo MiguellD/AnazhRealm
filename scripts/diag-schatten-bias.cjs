@@ -548,7 +548,7 @@ async function probe(cfg) {
     ];
     const setze = async (w, o = { x: bx, z: bz, gy: gyB }) => {
         if (w.art === "tier") {
-            const c = r.spawnCreatureAt(o.x, o.gy + 0.5, o.z, "happy", w.seele, { bodySize: 1 });
+            const c = r.spawnCreatureAt(o.x, o.gy + 0.5, o.z, "happy", w.seele, { erbe: 1 });
             if (!c) return null;
             c.userData.task = { name: "wait", args: {}, since: performance.now() / 1000 };
             c.userData.emotions = null;

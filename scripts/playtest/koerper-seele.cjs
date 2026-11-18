@@ -2103,16 +2103,17 @@ async function checkBandPhasenBF({ page, check }) {
         out.c1Joint = !!(joint?.anchor && typeof joint.anchor.x === "number" && joint.axis);
         // D4 — DAS TEMPERAMENT DER GATTUNG: die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus Ernährung der
         // Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch scheu,
-        // Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
-        // ist sanft). Die Substanz-Signaturen fielen. Gefragt wird ein gegossener Leib (die Masse ist das Volumen
+        // Wolf wild, Bär wehrhaft, Fuchs scheu; der Wuchs verschiebt es (der junge Wolf jagt nicht, er ist scheu, der junge
+        // Bär ist sanft — die Größe ist ein Lebenslauf des Wuchs-Gesetzes, `_wuchsGesetz().lebenslauf`). Die Substanz-Signaturen fielen. Gefragt wird ein gegossener Leib (die Masse ist das Volumen
         // seiner Gestalt), fern des Spielers, danach entfernt. Die Bühne hält Platz für je ein Probe-Wesen: die
         // Obergrenze, die die Bänder davor füllten, urteilt nie mit.
         const cap4 = st.maxCreatures;
         st.maxCreatures = st.creatures.length + 1;
         out.d4Temperament = (() => {
             const pp = st.playerMesh.position;
-            const t = (soul, bodySize) => {
-                const c = r.spawnCreatureAt(pp.x + 200, pp.y, pp.z + 200, "happy", soul, { precise: true, bodySize });
+            const WG = AnazhRealm._wuchsGesetz();
+            const t = (soul, L) => {
+                const c = r.spawnCreatureAt(pp.x + 200, pp.y, pp.z + 200, "happy", soul, { precise: true, ...WG.lebenslauf(L) });
                 if (!c) return null;
                 try {
                     return r._creatureTemperament(c);
@@ -2125,14 +2126,14 @@ async function checkBandPhasenBF({ page, check }) {
                 t("wolf", 1) === "wild" &&
                 t("baer", 1) === "wehrhaft" &&
                 t("fuchs", 1) === "scheu" &&
-                t("wesen", 2.5) === "wehrhaft" &&
+                t("wolf", WG.W.geburt) === "scheu" &&
                 t("baer", 0.7) === "sanft"
             );
         })();
         // KONSUM: der Treffer liest das Temperament (die Flucht-Dauer je fleeMul beweist gate:kreatur-leben am Verhalten);
         // sanft/scheu haben strike 0.
         const pp4 = st.playerMesh.position;
-        const c4 = r.spawnCreatureAt(pp4.x + 200, pp4.y, pp4.z + 200, "happy", "baer", { precise: true, bodySize: 1 });
+        const c4 = r.spawnCreatureAt(pp4.x + 200, pp4.y, pp4.z + 200, "happy", "baer", { precise: true, erbe: 1 });
         st.maxCreatures = cap4;
         const liestTemperament = !!c4 && window.__consumes(r, "damageCreature", r, "_creatureTemperament", [c4, 0.01, {}]);
         if (c4) r.removeCreature(c4);

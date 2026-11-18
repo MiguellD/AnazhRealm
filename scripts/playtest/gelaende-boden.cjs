@@ -1756,7 +1756,7 @@ async function checkBandTodZensus({ page, check }) {
                     z = ort.pz + ort.dz * m + ort.dx * quer;
                 const c = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z), z, "happy", seele, {
                     precise: true,
-                    bodySize: 1,
+                    erbe: 1,
                 });
                 if (!c) throw new Error("Spawn " + seele);
                 c.rotation.y = Math.atan2(ort.dz, -ort.dx); // quer zur Linie: die Flanke zum Spieler
@@ -1779,18 +1779,16 @@ async function checkBandTodZensus({ page, check }) {
             o.zeichenVorher = [...zeichen.values()].reduce((n, z) => n + z.length, 0);
 
             // DIE KOPIE BEIM MITSPIELER: der Strom trägt die Lage eines Gefallenen (q) — je ein Leichnam des Mitspielers 1,5 m
-            // neben A und neben B (Ids mit Größe ≈ 1: die Stufen-Grenze 35 m wie bei A und B); seine Sicht wählt derselbe Weg
+            // neben A und neben B (Erbe 1, ausgewachsen — der Strom trägt Erbe und Alter: die Stufen-Grenze 35 m wie bei A und B);
+            // seine Sicht wählt derselbe Weg
             const remote = s.p2p && s.p2p.remoteCreatures;
             if (!remote) return { fehler: "kein p2p-Zustand" };
             restore.push(() => {
                 for (const [key, rc] of remote) if (rc.peerId === "zensus-peer") r._disposeRemoteCreature(key, rc);
             });
             const qLiegt = new T.Quaternion().setFromAxisAngle(new T.Vector3(ort.dx, 0, ort.dz), A.TOD_KIPP_RAD);
-            const ids = [];
-            for (let i = 0; i < 400 && ids.length < 2; i++) {
-                const g = r._creatureBodySize("c99" + i);
-                if (g > 0.95 && g < 1.05) ids.push("c99" + i);
-            }
+            const ids = ["c990", "c991"];
+            const reife = A._wuchsGesetz().reifeS;
             const kopieListe = [2, 40].map((m, i) => {
                 const x = ort.px + ort.dx * m + ort.dz * 1.5,
                     z = ort.pz + ort.dz * m - ort.dx * 1.5;
@@ -1801,6 +1799,8 @@ async function checkBandTodZensus({ page, check }) {
                     z,
                     yaw: 0,
                     soul: i ? "wolf" : "wesen",
+                    e: 1,
+                    a: reife,
                     q: [qLiegt.x, qLiegt.y, qLiegt.z, qLiegt.w],
                 };
             });
@@ -2416,7 +2416,7 @@ async function checkBandBewegungUnterLast({ page, check }) {
             const deckel = K.TAKT_DECKEL_S == null || !Number.isFinite(K.TAKT_DECKEL_S) ? 0.1 : K.TAKT_DECKEL_S;
             const W = [];
             const absage = [];
-            const opt = { precise: true, bodySize: 1, absage: (g) => absage.push(`Wolf-Spawn abgesagt: ${g}`) };
+            const opt = { precise: true, erbe: 1, absage: (g) => absage.push(`Wolf-Spawn abgesagt: ${g}`) };
             const maxAlt = s.maxCreatures; // RAUM für die vier Wölfe: die Population ist nicht die Frage der Linse (zurück unten)
             s.maxCreatures = Math.max(maxAlt, s.creatures.length + 4);
             for (let i = 0; i < 24 && W.length < 4; i++) {

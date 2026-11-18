@@ -3859,7 +3859,7 @@ AnazhRealm._wuchsGesetz = function () {
     if (
         W &&
         [W.geburt, W.reifeAnteil, W.erbeSigma, W.grenzeSigma].every(Number.isFinite) &&
-        ["wuchsGrenzen", "wuchsErbe", "wuchsReifeS", "koerperGroesse"].every((f) => typeof k[f] === "function")
+        ["wuchsGrenzen", "wuchsErbe", "wuchsReifeS", "wuchsAlter", "koerperGroesse"].every((f) => typeof k[f] === "function")
     ) {
         const lebenS = AnazhRealm.FAUNA_MAX_AGE_MS / 1000;
         AnazhRealm._wuchsGesetzMemo = Object.freeze({
@@ -3869,6 +3869,11 @@ AnazhRealm._wuchsGesetz = function () {
             reifeS: k.wuchsReifeS(lebenS, W),
             erbe: (u1, u2, u3, u4) => k.wuchsErbe(u1, u2, u3, u4, W),
             groesse: (erbe, alterS) => k.koerperGroesse(erbe, alterS, lebenS, W),
+            // der Lebenslauf einer Länge L: das Erbe (ab 1 im Band) und das Alter, in dem der Wuchs L/Erbe erreicht
+            lebenslauf: (L) => {
+                const erbe = L > 1 ? Math.min(L, k.wuchsGrenzen(W).max) : 1;
+                return { erbe, alterS: k.wuchsAlter(L / erbe, lebenS, W) };
+            },
         });
         return AnazhRealm._wuchsGesetzMemo;
     }

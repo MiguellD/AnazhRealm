@@ -221,9 +221,9 @@ async function probeLeben(expected) {
         return () => (A._steuerGesetz = roh);
     };
     // EIN TIER der Probe (ruhig, am genauen Ort; die Kappe der Welt lässt es zu)
-    const tier = (x, y, zz, art, bodySize) => {
+    const tier = (x, y, zz, art, erbe) => {
         st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1);
-        return r.spawnCreatureAt(x, y, zz, "calm", art, { precise: true, bodySize });
+        return r.spawnCreatureAt(x, y, zz, "calm", art, { precise: true, erbe });
     };
     // DIE STRASSE der Proben: 6 m breit von (x, z) längs `fahrt` über `L` m, über den Hebel der Dörfer (`_stlWegeBuild`: Boden,
     // Natur-Wand, Wiese) — der Weg der W-Kette (K8) und der Anlauf zur Klippe (S2, S4).
@@ -3200,7 +3200,7 @@ async function probeKoerper(opt) {
             st.maxCreatures = st.creatures.length + 1;
             const wolf = r.spawnCreatureAt(ort.x + 3, ort.spiegel, ort.z, "calm", "wolf", {
                 precise: true,
-                bodySize: 1,
+                erbe: 1,
             });
             wolf.userData._steuer = { gier: 0, v: 0 };
             for (let i = 0; i < 300; i++) r._gameLoopTick((tMs += 16.7));

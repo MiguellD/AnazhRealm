@@ -90,7 +90,7 @@ const LAUF = (k) => {
         z0 = pm.z + 40;
     const saveMax = s.maxCreatures;
     s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 4);
-    const cr = r.spawnCreatureAt(x0, 30, z0, "happy", k.seele, { precise: true, bodySize: 1 });
+    const cr = r.spawnCreatureAt(x0, 30, z0, "happy", k.seele, { precise: true, erbe: 1 });
     s.maxCreatures = saveMax;
     try {
         if (!cr) return { fehler: "Spawn " + k.seele };

@@ -1345,7 +1345,7 @@ async function checkBandTierFern({ page, check }) {
             const h = r.getTerrainHeightAt(x, z);
             return r.spawnCreatureAt(x, (Number.isFinite(h) ? h : 0) + 1, z, "happy", "wolf", {
                 precise: true,
-                bodySize: 1,
+                erbe: 1,
             });
         };
         const c = spawnWolf();
@@ -1841,7 +1841,7 @@ async function checkBandKoerperBewegung({ page, check }) {
             const dist = window.__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur[1].ab * 0.3; // sicher in der Voll-Zone
             const cx = pm.x + dist,
                 cz = pm.z;
-            const c = r.spawnCreatureAt(cx, 30, cz, "happy", "wesen", { precise: true, bodySize: 1 });
+            const c = r.spawnCreatureAt(cx, 30, cz, "happy", "wesen", { precise: true, erbe: 1 });
             if (!c) return { error: "Tier-Spawn fehlgeschlagen" };
             const savedSurf = r._koerperBodenUnter;
             r._koerperBodenUnter = (x, _y, z) => ebene(x, z);

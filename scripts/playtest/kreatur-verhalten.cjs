@@ -1334,8 +1334,12 @@ async function checkBandTierSeparation({ page, check }) {
         // (w4-b-boden3: Flucht von der Zelle −88|8, 12 m neben der Bühne, „Anker nicht initialisiert"); gemessen wird die Größe
         // und der Mut, nie der Ort.
         s.emotionField?.clear();
-        const spawn = (spot, soul, bodySize) =>
-            r.spawnCreatureAt(spot.x, spot.y, spot.z, "happy", soul, { precise: true, bodySize });
+        // die Größe eines Probe-Tiers ist ein LEBENSLAUF des Wuchs-Gesetzes (Erbe und Alter, `_wuchsGesetz().lebenslauf`): das
+        // Jungtier beim Eintritt (`geburt`) und der Ausgewachsene mit dem größten Erbe sind die Enden der Achse
+        const WG = A._wuchsGesetz();
+        const [JUNG, GROSS] = [WG.W.geburt, WG.grenzen.max];
+        const spawn = (spot, soul, L) =>
+            r.spawnCreatureAt(spot.x, spot.y, spot.z, "happy", soul, { precise: true, ...WG.lebenslauf(L) });
         const cleanup = (list) => list.forEach((c) => c && r.removeCreature(c));
         // der Takt der Probe wie der Loop: der feste Sim-Schritt (der Stoß des Leibs und Leib an Leib, 0710-5), dann
         // der Kreatur-Takt — vor 0710-5 lebte beides in updateCreatures (dort läuft die Probe unverändert)
@@ -1385,12 +1389,12 @@ async function checkBandTierSeparation({ page, check }) {
         o.checks.cLensFires = o.cGap < 0.2; // gestapelt → die (A)-Bedingung WÜRDE rot lesen
         cleanup([a1, a2]);
     
-        // ── (B1) STAT-ACHSE: klein flink vs. Gigant träge (gleiche Soul) ──
+        // ── (B1) STAT-ACHSE: das Jungtier flink vs. der große Ausgewachsene träge (gleiche Soul) ──
         const spotB1a = findSpot(95, 1.8);
         const spotB1b = findSpot(95, -1.8);
         if (!spotB1a || !spotB1b) return { error: "kein Land-Spot (B1)" };
-        const bSmall = spawn(spotB1a, "wesen", 0.6);
-        const bBig = spawn(spotB1b, "wesen", 2.4);
+        const bSmall = spawn(spotB1a, "wesen", JUNG);
+        const bBig = spawn(spotB1b, "wesen", GROSS);
         if (!bSmall || !bBig) return { error: "Spawn (B1) fehlgeschlagen" };
         o.b1MulSmall = r._creatureMoveCharacter(bSmall).speedMul;
         o.b1MulBig = r._creatureMoveCharacter(bBig).speedMul;
@@ -1429,14 +1433,15 @@ async function checkBandTierSeparation({ page, check }) {
         const spotShy = findSpot(90, 2.9);
         const spotBold = findSpot(90, -2.9);
         if (!spotShy || !spotBold) return { error: "kein Land-Spot (B2)" };
-        const shy = spawn(spotShy, "wesen", 0.6); // Kitz (scheu) → Leine ~4,8 m
-        const bold = spawn(spotBold, "wesen", 2.4); // Gigant → Leine ~67.2 m
+        const shy = spawn(spotShy, "wesen", JUNG); // das Jungtier → die kurze Leine
+        const bold = spawn(spotBold, "wesen", GROSS); // der große Ausgewachsene → die lange
         if (!shy || !bold) return { error: "Spawn (B2) fehlgeschlagen" };
         o.b2TempShy = r._creatureTemperament(shy);
         o.b2TempBold = r._creatureTemperament(bold);
         o.b2LeashShy = r._creatureMoveCharacter(shy).leashM;
         o.b2LeashBold = r._creatureMoveCharacter(bold).leashM;
-        o.checks.b2LeashDiff = o.b2LeashBold - o.b2LeashShy >= 25;
+        // die Leine wächst mit der Größe (leashM ∝ bodySize, das Temperament rückt die Basis): mindestens das Doppelte
+        o.checks.b2LeashDiff = o.b2LeashBold >= 2 * o.b2LeashShy;
         // Mut-Achsen-KONSUM: das Temperament der Gattung — der scheue Hirsch (fleeMul 1,7, Mut 0)
         // hält eine kürzere Basis-Leine als der wilde Wolf (0,7) — fleeMul wird gelesen.
         const wolfProbe = spawn(spotShy, "wolf", 1);
@@ -1452,9 +1457,10 @@ async function checkBandTierSeparation({ page, check }) {
         const anchShy = shy.userData.wanderAnchor;
         const anchBold = bold.userData.wanderAnchor;
         if (!anchShy || !anchBold) return { error: "Anker nicht initialisiert" };
-        // beide 45 m vom Anker aussetzen (jenseits der Kitz-Leine 4,8, klar
-        // innerhalb der Gigant-Leine 67.2) — RADIAL vom Spieler weg, damit die
-        // Distanz nie unter das 70-m-Raycast-Fenster fällt (Kopf-Disziplin).
+        // beide gleich weit vom Anker aussetzen: jenseits der harten Schranke der kurzen Leine (leash × 1,375), innerhalb der
+        // langen — RADIAL vom Spieler weg, damit die Distanz nie unter das 70-m-Raycast-Fenster fällt (Kopf-Disziplin).
+        const schranke = o.b2LeashShy * 1.375;
+        o.b2Aus = (schranke + o.b2LeashBold) / 2;
         const outDir = (anch) => {
             const dx = anch.x - pm.x,
                 dz = anch.z - pm.z,
@@ -1463,14 +1469,14 @@ async function checkBandTierSeparation({ page, check }) {
         };
         const oS = outDir(anchShy),
             oB = outDir(anchBold);
-        shy.position.set(anchShy.x + oS.x * 45, shy.position.y, anchShy.z + oS.z * 45);
-        bold.position.set(anchBold.x + oB.x * 45, bold.position.y, anchBold.z + oB.z * 45);
+        shy.position.set(anchShy.x + oS.x * o.b2Aus, shy.position.y, anchShy.z + oS.z * o.b2Aus);
+        bold.position.set(anchBold.x + oB.x * o.b2Aus, bold.position.y, anchBold.z + oB.z * o.b2Aus);
         tick(400, 0.05); // 20 s Sim
         o.b2DistShy = distXZ(shy, anchShy);
         o.b2DistBold = distXZ(bold, anchBold);
-        // harte Schranke der Leine: leash × (1 + wanderSpeedMul/anchorPull) ≈ 1.375× ≈ 23.1
-        o.checks.b2ShyReturns = o.b2DistShy < 26;
-        o.checks.b2BoldRoams = o.b2DistBold > 30 && o.b2DistBold > o.b2DistShy + 4; // frei — keine Leine unter 67 m
+        // harte Schranke der Leine: leash × (1 + wanderSpeedMul/anchorPull) ≈ 1.375×
+        o.checks.b2ShyReturns = o.b2DistShy < schranke + 2;
+        o.checks.b2BoldRoams = o.b2DistBold > 0.8 * o.b2Aus && o.b2DistBold > o.b2DistShy + 4; // frei in seiner Leine
         cleanup([shy, bold]);
     
         // ── (D) LEIB AN LEIB, (E) TIER AM SPIELER, (F) LOCKSTEP, (C2) SELBST-TEST ──
@@ -1522,11 +1528,11 @@ async function checkBandTierSeparation({ page, check }) {
                 // ruhige Tiere (ein frohes hüpft und verlässt die Höhe des Leibs)
                 const a = r.spawnCreatureAt(spot.x, spot.y, spot.z, "calm", stoesserSeele, {
                     precise: true,
-                    bodySize: 1,
+                    erbe: 1,
                 });
                 const b = r.spawnCreatureAt(spot.x, spot.y, spot.z, "calm", zielSeele, {
                     precise: true,
-                    bodySize: 1,
+                    erbe: 1,
                 });
                 if (!a || !b) return null;
                 stellen(a, spot.x, spot.z);
@@ -1587,7 +1593,7 @@ async function checkBandTierSeparation({ page, check }) {
                         spotE.z
                     );
                 const w0 = { x: pmM.position.x - 2.2, y: pmM.position.y, z: pmM.position.z };
-                const w = r.spawnCreatureAt(w0.x, w0.y, w0.z, "calm", "wolf", { precise: true, bodySize: 1 });
+                const w = r.spawnCreatureAt(w0.x, w0.y, w0.z, "calm", "wolf", { precise: true, erbe: 1 });
                 if (w) {
                     stellen(w, w0.x, w0.z);
                     w.userData._stossV = { x: 4, z: 0 };
@@ -1686,7 +1692,7 @@ async function checkBandKreaturKosten({ page, check }) {
             const h = r.getTerrainHeightAt(x, z);
             return r.spawnCreatureAt(x, (Number.isFinite(h) ? h : 0) + 1, z, "happy", "wesen", {
                 precise: true,
-                bodySize: 1,
+                erbe: 1,
             });
         };
         const cleanup = (list) => list.forEach((c) => c && r.removeCreature(c));
@@ -2308,7 +2314,7 @@ async function checkBandKreaturKosten({ page, check }) {
             const cw = seele
                 ? r.spawnCreatureAt(x0, (Number.isFinite(hW) ? hW : 0) + 1, pm.z, "happy", seele, {
                       precise: true,
-                      bodySize: 1,
+                      erbe: 1,
                   })
                 : null;
             if (!cw) {

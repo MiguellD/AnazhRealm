@@ -1564,11 +1564,22 @@ if (V) {
     }
     check("Aktions-Profile nutzen nur bekannte MOTION-Felder", fremd.length === 0, fremd.join(","));
     // (die Blöcke des Buchs prüft der EINE Leser _verhaltenGesetz beim Boot, die Rezepte der Umschlag: gate:studio-vertrag)
-    // Die Größen-Bänder sind lückenlos aufsteigend (die letzte Zeile fängt den Rest).
-    const gr = Array.isArray(V.groessen) ? V.groessen : [];
-    let grOk = gr.length >= 2;
-    for (let i = 1; i < gr.length; i++) if (!(gr[i].bis > gr[i - 1].bis)) grOk = false;
-    check("groessen-Bänder strikt aufsteigend (bis-Schwellen)", grOk);
+    // DER WUCHS (w28-kreatur-groesse): die Würfel-Bänder sind fort, das Gesetz trägt Erbe-Band und Wuchs — das Jungtier unter
+    // dem Ausgewachsenen, das Band eng um das Art-Maß, ab der Reife genau das Erbe.
+    const KW = globalThis.__tetrapodaCore;
+    const WW = KW.WUCHS_GESETZ;
+    const LS = 2100;
+    const B = KW.wuchsGrenzen(WW);
+    check("VERHALTEN trägt keine Größen-Bänder (der Würfel fiel)", V.groessen === undefined);
+    check(
+        "Wuchs: Jungtier < Ausgewachsener, Erbe-Band eng, ab der Reife das Erbe",
+        KW.koerperGroesse(1, 0, LS, WW) === WW.geburt &&
+            KW.koerperGroesse(1.05, KW.wuchsReifeS(LS, WW), LS, WW) === 1.05 &&
+            B.min >= 0.85 &&
+            B.max <= 1.15 &&
+            KW.koerperGroesse(9, 1e9, LS, WW) === B.max &&
+            Math.abs(KW.wuchs(KW.wuchsAlter(0.7, LS, WW), LS, WW) - 0.7) < 1e-12
+    );
 }
 
 urteilEnde(

@@ -1104,7 +1104,7 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
 
         // 2. computeCreatureStats liefert {tags, stats} mit allen Schlüsseln
         const player = st.playerMesh.position;
-        const cw = r.spawnCreatureAt(player.x + 200, player.y, player.z + 200, "happy", "wesen", { bodySize: 1 });
+        const cw = r.spawnCreatureAt(player.x + 200, player.y, player.z + 200, "happy", "wesen", { erbe: 1 });
         const csW = r.computeCreatureStats(cw);
         out.statsHasTags = csW && csW.tags && Object.keys(csW.tags).length > 0;
         out.statsHasAll8 =
@@ -1121,8 +1121,8 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
         // Test-Wesen mit bodySize:1: die per-Kreatur-Körpergröße ist eine orthogonale Achse und überlagerte
         // sonst die Soul-Speed-Relation.
         // 3. Soul-Diskrimination: Sprite ist schneller als Wesen (weniger dichte)
-        const cs = r.spawnCreatureAt(player.x + 210, player.y, player.z + 210, "happy", "fuchs", { bodySize: 1 });
-        const cg = r.spawnCreatureAt(player.x + 220, player.y, player.z + 220, "happy", "baer", { bodySize: 1 });
+        const cs = r.spawnCreatureAt(player.x + 210, player.y, player.z + 210, "happy", "fuchs", { erbe: 1 });
+        const cg = r.spawnCreatureAt(player.x + 220, player.y, player.z + 220, "happy", "baer", { erbe: 1 });
         const sW = csW.stats;
         const sS = r.computeCreatureStats(cs).stats;
         const sG = r.computeCreatureStats(cg).stats;
@@ -1179,7 +1179,7 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
 
         // 8. Spec-Bonus auf magieleitung emergiert in stats
         // Frische Kreatur ohne Specs vs. mit 3 erfolgreichen Gather-Memories
-        const cFresh = r.spawnCreatureAt(player.x + 230, player.y, player.z + 230, "happy", "wesen", { bodySize: 1 });
+        const cFresh = r.spawnCreatureAt(player.x + 230, player.y, player.z + 230, "happy", "wesen", { erbe: 1 });
         cFresh.userData.memory = [];
         const baseTags = r.computeCreatureStats(cFresh).tags;
         cFresh.userData.memory = [

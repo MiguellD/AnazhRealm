@@ -356,7 +356,7 @@ async function proben(mitWiese) {
         s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 3);
         const w = r.spawnCreatureAt(hoehle.x + 1.5, hoehle.boden + 0.3, hoehle.z, "happy", "wolf", {
             precise: true,
-            bodySize: 1,
+            erbe: 1,
         });
         if (w) {
             const hs = [];
@@ -439,7 +439,7 @@ async function proben(mitWiese) {
         pm.position.set(hang.x + 6, r._voxelSurfaceY(hang.x + 6, hang.z + 6) + 1.7, hang.z + 6); // nah genug für die Voll-Gestalt und die Hang-Proben
         const c = r.spawnCreatureAt(hang.x, hang.gesetz + 0.3, hang.z, "happy", "wesen", {
             precise: true,
-            bodySize: 1,
+            erbe: 1,
         });
         if (c) {
             const tiere = (n, fn) => {
@@ -941,10 +941,16 @@ async function rollen(n) {
             return { ...mass(a), stecken: stecken + (a.length < n) };
         };
         R.fuss = bahn([auf - Math.PI / 2, auf + Math.PI / 2].map((y) => [y, 25]));
-        // der Huf: je Größen-Band ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im Gang (die Beine im Stand:
+        // der Huf: je Ende des Wuchs-Gesetzes ein Reh (das Jungtier, das kleinste und das größte Erbe ausgewachsen) 4 m neben dem Spieler, frei im Gang (die Beine im Stand:
         // Hub 0 ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm
         const [max, seq] = [s.maxCreatures, s._creatureNetSeq];
-        for (const [k, band] of AnazhRealm._verhaltenGesetz().groessen.entries()) {
+        const WG = AnazhRealm._wuchsGesetz();
+        const enden = [
+            { name: "jung", L: WG.W.geburt },
+            { name: "klein", L: WG.grenzen.min },
+            { name: "gross", L: WG.grenzen.max },
+        ];
+        for (const [k, band] of enden.entries()) {
             [s.maxCreatures, s._creatureNetSeq, s.creatureAnimationTime] = [s.creatures.length + 3, 9e5 + k, 1000];
             const reh = r.spawnCreatureAt(
                 P.x + 4,
@@ -952,9 +958,7 @@ async function rollen(n) {
                 P.z + 3,
                 "happy",
                 "wesen",
-                {
-                    bodySize: band.max,
-                }
+                WG.lebenslauf(band.L)
             );
             [s.maxCreatures, s._creatureNetSeq] = [max, seq];
             const tb = reh && reh.userData._tierBaum;

@@ -163,7 +163,7 @@ async function WELLE_L(ort) {
         const setze = (seele) => {
             s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 8);
             const c = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 300, "happy", seele, {
-                bodySize: 1,
+                erbe: 1,
             });
             if (c) tiere.push(c);
             return c;
@@ -382,8 +382,8 @@ async function WELLE_L(ort) {
                     s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 3);
                     const bx = ort0.x + 400,
                         bz = ort0.z + 400;
-                    const j = r.spawnCreatureAt(bx, ort0.y, bz, "calm", seele, { bodySize: 1 });
-                    const h = r.spawnCreatureAt(bx + 1.2, ort0.y, bz, "calm", "wesen", { bodySize: 0.6 });
+                    const j = r.spawnCreatureAt(bx, ort0.y, bz, "calm", seele, { erbe: 1 });
+                    const h = r.spawnCreatureAt(bx + 1.2, ort0.y, bz, "calm", "wesen", A._wuchsGesetz().lebenslauf(0.6));
                     if (j && h) {
                         // gemessen wird der Stoß des Bisses, nicht seine Trefferquote: bis zu drei Ansprünge aus der Ruhe (ein
                         // Ansprung des Freude-Hüpfers geht über ein Kitz hinweg — benannt offen)
@@ -595,10 +595,10 @@ async function WELLE_L(ort) {
             return zaehl.gegenwehr - g0;
         };
         const baerG = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 300, "happy", "baer", {
-            bodySize: 1,
+            erbe: 1,
         });
         const hirschG = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 304, "happy", "wesen", {
-            bodySize: 1,
+            erbe: 1,
         });
         if (baerG) tiere.push(baerG);
         if (hirschG) tiere.push(hirschG);
@@ -845,19 +845,20 @@ async function WELLE_L(ort) {
             w.z.grobFremd = __fehlt(grobPfade, /\.scale\.x\b/) ? 0 : 1;
             w.c.grobLiestLeib = konsum.sweepTor && konsum.pfeilTor && konsum.torLeib && w.z.grobFremd === 0;
         }
-        // (T12) das Grob-Tor deckt die Gestalt: jede Gattung in jeder Größen-Grenze, 90 Takte, je Kapsel-Ende (+ Radius) —
+        // (T12) das Grob-Tor deckt die Gestalt: jede Gattung an jedem Ende des Wuchs-Gesetzes (das Jungtier, das kleinste und das
+        // größte Erbe ausgewachsen, das Art-Maß), 90 Takte, je Kapsel-Ende (+ Radius) —
         // ein abgewiesener Punkt wäre ein verbotener Treffer; die Spanne räumlich vom Fuß-Ursprung.
         const grobTor = (c, x, z, sp) => r._trefferErreichbar(c, x, z, sp);
         const gestaltSchar = [];
         {
-            const G = A._verhaltenGesetz().groessen;
-            const groessen = [...new Set(G.flatMap((k) => [k.min, k.max]))].sort(aufsteigend);
+            const WG = A._wuchsGesetz();
+            const groessen = [WG.W.geburt, WG.grenzen.min, 1, WG.grenzen.max].sort(aufsteigend);
             let n = 0;
             for (const seele of ["wesen", "wolf", "fuchs", "baer"]) {
                 for (const bs of groessen) {
                     s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 8);
                     const ort = pm.position;
-                    const c = r.spawnCreatureAt(ort.x + 300, ort.y, ort.z + 300, "happy", seele, { bodySize: bs });
+                    const c = r.spawnCreatureAt(ort.x + 300, ort.y, ort.z + 300, "happy", seele, WG.lebenslauf(bs));
                     if (!c) continue;
                     tiere.push(c);
                     stelle(c, 12 + 4 * Math.floor(n / 8), -14 + 4 * (n % 8));
@@ -1236,7 +1237,7 @@ async function WELLE_L(ort) {
         await teil("T26", async () => {
             s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
             const wolf = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 300, "calm", "wolf", {
-                bodySize: 1,
+                erbe: 1,
             });
             if (!wolf) throw new Error("Wolf-Spawn");
             tiere.push(wolf);
@@ -1937,13 +1938,14 @@ async function WELLE_L(ort) {
                 if (r.getGameMode() !== modeL) r.setGameMode(modeL);
             }
         });
-        // (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Posten 6): je Gattung (Fuchs · Wolf · Hirsch · Bär) und Größe (0,62 · 1 ·
-        // 2) ein frisches Tier — Biss (damage), Haut (defense), Leben (hpMax) aus computeCreatureStats und die EINE Masse
+        // (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Posten 6): je Gattung (Fuchs · Wolf · Hirsch · Bär) und Größe (das Jungtier,
+        // das Art-Maß, das größte Erbe ausgewachsen — ein Lebenslauf des Wuchs-Gesetzes) ein frisches Tier — Biss (damage), Haut (defense), Leben (hpMax) aus computeCreatureStats und die EINE Masse
         // seines Leibs (_leibMasse).
         await teil("T20", async () => {
             const reihe = [];
+            const WG = A._wuchsGesetz();
             for (const seele of ["fuchs", "wolf", "wesen", "baer"])
-                for (const L of [0.62, 1, 2]) {
+                for (const L of [WG.W.geburt, 1, WG.grenzen.max]) {
                     s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
                     const c = r.spawnCreatureAt(
                         pm.position.x + 500,
@@ -1951,9 +1953,7 @@ async function WELLE_L(ort) {
                         pm.position.z + 500,
                         "calm",
                         seele,
-                        {
-                            bodySize: L,
-                        }
+                        WG.lebenslauf(L)
                     );
                     if (!c) continue;
                     const st0 = r.computeCreatureStats(c).stats;
@@ -2157,18 +2157,24 @@ async function WELLE_L(ort) {
             w.z.tod = tod;
             if (hT.parent) r.removeCreature(hT);
         });
-        // (T25) die Wunde reist als Anteil des Lebens: Hirsch (1,0) und Bär (1,75), ein alter Stand (hp absolut, leibV = 0)
+        // (T25) die Wunde reist als Anteil des Lebens: Hirsch (1,0) und Bär (das größte Erbe), ein alter Stand (hp absolut, leibV = 0)
         // und ein neuer mit 30 %.
         await teil("T25", async () => {
             const wunde = [];
+            const WG = A._wuchsGesetz();
             for (const [seele, L] of [
                 ["wesen", 1],
-                ["baer", 1.75],
+                ["baer", WG.grenzen.max],
             ]) {
                 s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4);
-                const c = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 320, "happy", seele, {
-                    bodySize: L,
-                });
+                const c = r.spawnCreatureAt(
+                    pm.position.x + 300,
+                    pm.position.y,
+                    pm.position.z + 320,
+                    "happy",
+                    seele,
+                    WG.lebenslauf(L)
+                );
                 if (!c) continue;
                 const tb = c.userData._tierBaum;
                 const lv = tb.leibV;
@@ -2248,7 +2254,7 @@ async function WELLE_L(ort) {
             const xz = (a, b) => +Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z).toFixed(2);
             const neu = (seele, x, z, L) => {
                 s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4);
-                const c = r.spawnCreatureAt(x, pm.position.y, z, "calm", seele, { bodySize: L });
+                const c = r.spawnCreatureAt(x, pm.position.y, z, "calm", seele, A._wuchsGesetz().lebenslauf(L));
                 if (!c) return null;
                 tiere.push(c);
                 c.position.set(x, fussY(), z);
@@ -3235,7 +3241,7 @@ async function K5_VOR(abdruck) {
     const dp = r.damagePlayer;
     r.damagePlayer = (a, q) => dp.call(r, a, (quelle = q));
     const neu = (seele, dx, dz, gier) => {
-        const c = r.spawnCreatureAt(P.x + dx, P.y, P.z + dz, "calm", seele, { bodySize: 1, precise: true });
+        const c = r.spawnCreatureAt(P.x + dx, P.y, P.z + dz, "calm", seele, { erbe: 1, precise: true });
         c.position.y = r.getTerrainHeightAt(c.position.x, c.position.z);
         c.rotation.y = gier;
         return c;

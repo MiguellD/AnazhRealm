@@ -1077,7 +1077,7 @@ async function brandSeite(MESS) {
         // DER LEICHNAM: ein Riss von Spieler-Hand an einer Zelle neben dem Herd
         const [Dx, Dz] = xz(hx - 1, hz - 1);
         st.maxCreatures = st.creatures.length + 1;
-        const tier = r.spawnCreatureAt(Dx, y(Dx, Dz), Dz, "calm", "wolf", { precise: true, bodySize: 1 });
+        const tier = r.spawnCreatureAt(Dx, y(Dx, Dz), Dz, "calm", "wolf", { precise: true, erbe: 1 });
         if (tier) r._creatureCombatDeath(tier, "player");
         N.leichnam = r3(r._naehrstoffAt(Dx, Dz));
         // DER SÄMLING (stoffe.K5#2): der nächste Baum des Walds fällt (`harvestArchitecture`) — an seinem Ort steht bis zum

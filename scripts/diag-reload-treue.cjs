@@ -39,7 +39,7 @@ hauptLauf(async () => {
         };
         const spawnWolf = (opts) =>
             // BÜHNE: der Wolf fällt präzise aus 40 m (die Probe misst Gestalt und Reload, nie den Boden)
-            r.spawnCreatureAt(0, 40, 0, "happy", "wolf", Object.assign({ precise: true, bodySize: 1 }, opts || {}));
+            r.spawnCreatureAt(0, 40, 0, "happy", "wolf", Object.assign({ precise: true, erbe: 1 }, opts || {}));
 
         // ── Übergabe size 3.5 → Wolf A gegossen ──
         setUe(3.5);

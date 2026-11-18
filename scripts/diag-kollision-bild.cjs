@@ -640,7 +640,7 @@ async function tempo(K) {
     };
     const tier = (art, gr, x, z, gier) => {
         st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1);
-        const c = r.spawnCreatureAt(x, hh(x, z) + 0.5, z, "calm", art, { precise: true, bodySize: gr });
+        const c = r.spawnCreatureAt(x, hh(x, z) + 0.5, z, "calm", art, { precise: true, ...A._wuchsGesetz().lebenslauf(gr) });
         if (!c) throw new Error(`kein ${art}`);
         c.position.set(x, hh(x, z), z);
         c.rotation.y = gier;
@@ -705,8 +705,8 @@ async function tempo(K) {
                 r.removeCreature(c);
             });
         A._steuerGesetz = () => steuer;
-        // DIE TIERE im Galopp; der Riese ist der Bär in der größten Gestalt des Gesetzes
-        const riese = A._verhaltenGesetz().groessen.slice(-1)[0].max;
+        // DIE TIERE im Galopp; der Riese ist der Bär in der größten Gestalt des Gesetzes (das größte Erbe, ausgewachsen)
+        const riese = A._wuchsGesetz().grenzen.max;
         for (const name of ["fuchs", "wolf", "baer", "riese"])
             for (const n of HINDERNISSE) for (const kad of TAKTE) await galopp(name, name === "riese" ? "baer" : name, name === "riese" ? riese : 1, n, kad);
         // (T) der Fuchs im Takt-Deckel mit EINEM Schritt je Takt

@@ -794,7 +794,7 @@ async function probe(K) {
         steht.steuerSchritt = schritt;
         [A._steuerGesetz, st.maxCreatures] = [() => steht, st.creatures.length + 2];
         try {
-            const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, bodySize: 1 });
+            const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, erbe: 1 });
             if (!w) return { fehler: "der Wolf ließ sich nicht rufen" };
             const [s, p] = [spur(), w.position];
             const { zu = "", ...mehr } = await leben(w, s);

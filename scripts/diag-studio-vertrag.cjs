@@ -854,8 +854,7 @@ function validateManifest(m, kern) {
             Number.isFinite(V.freude.hopBasisM) &&
             V.sprung === undefined &&
             Object.values(V.aktionen || {}).every((a) => a.hop === undefined || a.hop === true) &&
-            Array.isArray(V.groessen) &&
-            V.groessen.length >= 2 &&
+            V.groessen === undefined && // die Würfel-Bänder fielen mit dem WUCHS_GESETZ (w28-kreatur-groesse)
             V.separation &&
             // DER PERSOENLICHE RAUM: der Raum je Leib (raumKugel × Koerper-Kugel), das
             // Herden-Fenster im Paar-Raum; der feste Paar-Radius, das feste Fenster und der Neugier-Stopp kehren nicht zurueck.
@@ -873,7 +872,7 @@ function validateManifest(m, kern) {
             Number.isFinite(V.wasser.uferBias);
         if (!seeleOk)
             v.push(
-                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeCooldownSec/hetzM/pirschSichtM/beuteMasse ohne Gradienten-Schritt und Spieler-Radius, Reichweite um die Mitten und festen Pirsch-Stopp · furcht.fleeThreshold ohne Trab-Flucht · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · groessen/separation{raumKugel}/aufgaben/herde{fensterRaum} ohne festen Paar-Radius, Fenster und Neugier-Stopp/wasser)"
+                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeCooldownSec/hetzM/pirschSichtM/beuteMasse ohne Gradienten-Schritt und Spieler-Radius, Reichweite um die Mitten und festen Pirsch-Stopp · furcht.fleeThreshold ohne Trab-Flucht · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · separation{raumKugel} ohne groessen-Bänder/aufgaben/herde{fensterRaum} ohne festen Paar-Radius, Fenster und Neugier-Stopp/wasser)"
             );
     }
     return v;
@@ -1045,7 +1044,6 @@ function validateManifest(m, kern) {
                 m.verhalten.stimmung.schwellen &&
                 m.verhalten.freude &&
                 // (sprung fiel mit dem Sprung-Gesetz)
-                m.verhalten.groessen &&
                 m.verhalten.separation &&
                 m.verhalten.aufgaben &&
                 m.verhalten.herde &&

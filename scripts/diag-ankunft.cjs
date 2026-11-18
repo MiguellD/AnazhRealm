@@ -1326,7 +1326,7 @@ async function probe(arg) {
                 if (seelen.length < 2 || !r._foundryEnabled()) throw new Error(`Vorbedingung — ${seelen.length} Gattungen des Lebensraums, Foundry ${r._foundryEnabled()}`);
                 const bild = merk.da || performance.now();
                 const stelle = (da) => {
-                    st._pendingCreatureSnapshots = seelen.map((soul, i) => ({ soul, name: "probe-wiederkehr-" + i, position: { x: P0.x + 6 + 5 * i, y: r.getTerrainHeightAt(P0.x + 6 + 5 * i, P0.z + 6), z: P0.z + 6 }, bornAt: 1000 + i, bodySize: 1, memory: [] }));
+                    st._pendingCreatureSnapshots = seelen.map((soul, i) => ({ soul, name: "probe-wiederkehr-" + i, position: { x: P0.x + 6 + 5 * i, y: r.getTerrainHeightAt(P0.x + 6 + 5 * i, P0.z + 6), z: P0.z + 6 }, bornAt: 1000 + i, erbe: 1, memory: [] }));
                     [st.creatureEmotions, st._weltbildDa] = [etik.slice(), da];
                 };
                 // ein Guss auf dem Haupt-Faden zählt hier (und bricht nicht ins Buch der Brüche: die Probe spielt den echten Renderer);
@@ -1932,7 +1932,7 @@ async function probe(arg) {
                 const zaehl = (k) => (fk.hinten[k] = (fk.hinten[k] || 0) + 1);
                 const [welt, mx, seelen] = [st.creatures, st.maxCreatures, AnazhRealm.CREATURE_SOUL_NAMES];
                 st.maxCreatures = Infinity;
-                const kreaturen = seelen.map((s) => r.spawnCreatureAt(P.x + 60, hh(P.x + 60, P.z) + 1, P.z, "happy", s, { precise: true, bodySize: 1 }));
+                const kreaturen = seelen.map((s) => r.spawnCreatureAt(P.x + 60, hh(P.x + 60, P.z) + 1, P.z, "happy", s, { precise: true, erbe: 1 }));
                 st.maxCreatures = mx;
                 fk.kreatur = seelen.length > 0 && kreaturen.every((k) => k && r._leibMitte(k));
                 const kreaturAuf = (kreatur, s) => {

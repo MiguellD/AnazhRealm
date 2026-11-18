@@ -213,7 +213,7 @@ async function welt() {
         vor.normalize();
         const wx = cam.position.x + vor.x * 4,
             wz = cam.position.z + vor.z * 4;
-        const w = r.spawnCreatureAt(wx, r._voxelSurfaceY(wx, wz) + 0.5, wz, "happy", "wolf", { bodySize: 1 });
+        const w = r.spawnCreatureAt(wx, r._voxelSurfaceY(wx, wz) + 0.5, wz, "happy", "wolf", { erbe: 1 });
         if (!w) return { fatal: "Wolf-Spawn scheiterte" };
         w.userData.task = { name: "wait", args: {}, since: performance.now() / 1000 };
         w.userData.emotions = null;

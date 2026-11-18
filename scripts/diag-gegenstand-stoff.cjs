@@ -322,7 +322,7 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
             (X) =>
                 boden(X, (x, z, y, ux) => {
                     st.maxCreatures = st.creatures.length + 1;
-                    const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, bodySize: 1 });
+                    const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, erbe: 1 });
                     w.position.y = y;
                     w.userData._stossV = { x: 3 * ux, z: 3 * ux - 3 };
                     for (let i = 0; i < 3000 && w.userData._stossV; i++) r._kreaturStossSchritt(r.constructor.FIXED_DT);

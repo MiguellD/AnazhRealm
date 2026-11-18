@@ -804,7 +804,7 @@ async function checkBandV18210Verdrahtung({ page, check }) {
             const pmS = pm.position;
             const capS = st.maxCreatures;
             st.maxCreatures = Math.max(capS || 0, savedCreatures.length + 2);
-            const opt = { precise: true, bodySize: 1 };
+            const opt = { precise: true, erbe: 1 };
             const jaeger = r.spawnCreatureAt(pmS.x + 340, pmS.y, pmS.z - 340, "calm", "wolf", opt);
             const beute = jaeger && r.spawnCreatureAt(pmS.x + 342, pmS.y, pmS.z - 340, "calm", "fuchs", opt);
             st.maxCreatures = capS;

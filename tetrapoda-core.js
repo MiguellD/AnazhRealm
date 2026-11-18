@@ -2264,6 +2264,14 @@
         var x = 1 - a / r;
         return W.geburt + (1 - W.geburt) * (1 - x * x);
     }
+    // Das Alter (s), in dem der Wuchs w ∈ [geburt, 1] erreicht ist (die Umkehrung von wuchs; unter geburt 0, ab 1 die Reife).
+    function wuchsAlter(w, lebenS, W) {
+        var r = wuchsReifeS(lebenS, W);
+        var q = (w - W.geburt) / (1 - W.geburt);
+        if (!(q > 0)) return 0;
+        if (q >= 1) return r;
+        return r * (1 - Math.sqrt(1 - q));
+    }
     // DIE KOERPERGROESSE (Laengen des Art-Masses): das Erbe (im Band gekappt) × der Wuchs seines Alters.
     function koerperGroesse(erbe, alterS, lebenS, W) {
         var B = wuchsGrenzen(W);
@@ -5341,6 +5349,7 @@
         wuchsErbe: wuchsErbe,
         wuchsReifeS: wuchsReifeS,
         wuchs: wuchs,
+        wuchsAlter: wuchsAlter,
         koerperGroesse: koerperGroesse,
         bestandNahrung: bestandNahrung,
         bestandBilanz: bestandBilanz,
