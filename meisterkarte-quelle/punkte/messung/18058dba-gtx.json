@@ -1,7 +1,7 @@
 {
  "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
  "geraet": "gtx",
- "zeit": "2026-11-18T18:34:06.101Z",
+ "zeit": "2026-11-18T18:39:29.622Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -836,6 +836,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.zeit.erleben#1": {
+   "gruen": false,
+   "zahl": "Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 32 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 0 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.66,
+   "grund": "ROT: Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 32 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 0 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k3f9c70aaaa97",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k07740f03b59d",
+   "s": 38.6,
+   "fremd": {
+    "s": 41.1,
+    "takte": 19,
+    "fremdS": 6.53,
+    "kerne": 0.159,
+    "fensterKerne": 0.239,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.91
+     ],
+     [
+      "Explorer.EXE",
+      0.72
+     ]
+    ],
+    "dienerS": 12.72,
+    "diener": [
+     [
+      "System",
+      5.5
+     ],
+     [
+      "dwm.exe",
+      5.25
+     ]
+    ],
+    "geraetS": 9.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.64
+     ],
+     [
+      "svchost.exe",
+      3.77
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 71.91,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T18:39:29.622Z",
+   "abdruck": "a58a0cfca1a8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1139,20 +1209,20 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-18T18:33:36.761Z",
-  "ordner": "sitzung-20261118-193336",
+  "start": "2026-11-18T18:38:58.408Z",
+  "ordner": "sitzung-20261118-193858",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.9,
+  "bootS": 5.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "karte2.erleben.kopplung.bild#1",
-    "s": 20.9,
-    "takte": 591,
+    "ort": "wiese",
+    "vor": "karte2.mensch.zeit.erleben#1",
+    "s": 23.5,
+    "takte": 662,
     "chunks": 81,
     "nach": null
    }
@@ -1160,24 +1230,28 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.erleben.kopplung.bild#1",
+    "probe": "karte2.mensch.zeit.erleben#1",
     "anders": [
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
      "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     226.2,
-     311.7
+     229.7,
+     262.5
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.erleben.kopplung.bild#1",
+    "probe": "karte2.mensch.zeit.erleben#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -1189,27 +1263,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3221,
-   "frameP95": 25.02,
-   "taktP95": 13.32,
-   "vramMax": 140.7,
+   "bilder": 1943,
+   "frameP95": 33.58,
+   "taktP95": 18.95,
+   "vramMax": 138.1,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "karte2.erleben.kopplung.bild#1",
-     "m": 1950,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 206,
+   "ortImDeckel": [],
+   "zapfen": 138,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 212.3,
-  "minuten": 3.64
+  "fahrtS": 142.8,
+  "minuten": 2.44
  }
 }
