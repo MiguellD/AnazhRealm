@@ -72,6 +72,16 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
     };
 }
 
+// DER STOFF EINES WIRTS-MATERIALS (Welt und Labor lesen DIESE Funktion): sein Schlüssel im Material-Cache (`_foundryMats`,
+// `budgetStoff`): Art|Rauheit|Metall|flach|Umgebung … |cc:<k>@<r> … |v:<Seh-Klasse> → { kind, r, mt, cc, seh, schluessel }
+function wirtStoff(k) {
+    const t = k.split("|");
+    const zahl = (i) => (t.length > i && /^-?\d/.test(t[i]) ? Number(t[i]) : null);
+    const cc = /\|cc:([\d.]+)@/.exec(k);
+    const v = /\|v:([a-z]+)/.exec(k);
+    return { kind: t[0], r: zahl(1), mt: zahl(2), cc: cc ? Number(cc[1]) : 0, seh: v ? v[1] : null, schluessel: k };
+}
+
 // DER STOFF-WÄHLER einer Tafel-Zeile (Welt und Labor lesen DIESE Funktion): `s` = { kind, r, mt, cc, seh } des
 // gezeichneten Materials, `sel` = { kind (Regex), seh, r/mt/cc: [min, max] } — jedes genannte Feld muss passen.
 function stoffPasst(sel, s) {
@@ -303,26 +313,11 @@ function albedoSicht(opts) {
             });
             const visAlt = new Map(meshes.map((m) => [m, m.visible]));
             const kl = new Map(meshes.map((m) => [m, klasse(m)]));
-            // Der STOFF eines Wirts-Materials: sein Schlüssel im Material-Cache (`_foundryMats`, `budgetStoff`):
-            // Art|Rauheit|Metall|flach|Umgebung … |cc:<k>@<r> … |v:<Seh-Klasse>. Ein Material außerhalb des Caches hat keinen.
+            // Der STOFF eines Wirts-Materials: sein Schlüssel im Material-Cache, gelesen von `wirtStoff` (`__wirtStoff`). Ein
+            // Material außerhalb des Caches hat keinen.
             const stoffInv = new Map();
             for (const [k, m] of Object.entries(r._foundryMats || {})) stoffInv.set(m, k);
-            const stoffOf = (mat) => {
-                const k = stoffInv.get(mat);
-                if (!k) return null;
-                const t = k.split("|");
-                const zahl = (i) => (t.length > i && /^-?\d/.test(t[i]) ? Number(t[i]) : null);
-                const cc = /\|cc:([\d.]+)@/.exec(k);
-                const v = /\|v:([a-z]+)/.exec(k);
-                return {
-                    kind: t[0],
-                    r: zahl(1),
-                    mt: zahl(2),
-                    cc: cc ? Number(cc[1]) : 0,
-                    seh: v ? v[1] : null,
-                    schluessel: k,
-                };
-            };
+            const stoffOf = (mat) => (stoffInv.has(mat) ? window.__wirtStoff(stoffInv.get(mat)) : null);
             const matsOf = (m) => (Array.isArray(m.material) ? m.material : [m.material]).filter(Boolean);
             const lichtAlt = [];
             sc.traverse((o) => {
@@ -3208,6 +3203,7 @@ module.exports = {
         `window.__laubGegenlicht = ${laubGegenlicht.toString()};` +
         `window.__albedoAuswerten = ${albedoAuswerten.toString()};` +
         `window.__stoffPasst = ${stoffPasst.toString()};` +
+        `window.__wirtStoff = ${wirtStoff.toString()};` +
         `window.__tafelBlicke = ${JSON.stringify(TAFEL_BLICKE)};` +
         `window.__albedoSicht = ${albedoSicht.toString()};` +
         `window.__nahFernSicht = ${nahFernSicht.toString()};` +
@@ -3220,6 +3216,7 @@ module.exports = {
     tafelGanzSelbsttest,
     albedoAuswerten,
     stoffPasst,
+    wirtStoff,
     nahFernUrteil,
     TAFEL_BLICKE,
 };

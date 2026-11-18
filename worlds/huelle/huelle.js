@@ -2567,16 +2567,22 @@
         // gelesen) als Zeile im Atlas der Ziele der Welt (`_torZielEinsetzen`). Die Passage steht NEBEN dem Werk (das gesetzte
         // Werk der Welt trägt keine, die Station studios.K4 misst das Werk allein).
         //   passage(w) → Mesh (userData.passage: { tor, u })   passageTakt(mesh, zeit, act)   passageFort(mesh)
+        // DAS FENSTER IST DAS LEBENDE TOR: jedes `passage()` setzt den Blick aus dem Tor, das es baut (seine Mitte), und schießt das
+        // Panorama in DIESELBE Zeile des Atlas (die Ordnung des Wirts: Zeile n liegt bei n · w · h, `_torZielEinsetzen`) — ebenso
+        // jede neue Stunde (`B.uhr`). Jede stehende Passage ist im Schuss verborgen (`lebend`): das Fenster zeigt die Welt hinter
+        // dem Tor, nie sich selbst. Bis hier schoss die Bühne EINMAL je Seite: nach „Mittag“ trug die Membran den Morgen, nach
+        // einem anderen Tor die Mitte des ersten.
         let [zielZeile, zielBlick] = [null, null];
-        // DAS FENSTER FOLGT DER UHR: die Bühne schießt ihr Panorama an der neuen Stunde neu in DIESELBE Zeile des Atlas (die
-        // Ordnung des Wirts: Zeile n liegt bei n · w · h, `_torZielEinsetzen`) — sonst zeigte die Passage nach „Mittag“ den Morgen
+        const lebend = new Set();
+        const fensterSchuss = () => Promise.resolve(panorama(T, R, szene, zielBlick.mitte, { lesen: true, verbergen: [...lebend, ...zielBlick.verbergen] }));
         const fensterNeu = () =>
             zielZeile &&
             zielZeile.then((zeile) =>
-                Promise.resolve(panorama(T, R, szene, zielBlick.mitte, { lesen: true, verbergen: zielBlick.verbergen })).then((P) => {
+                fensterSchuss().then((P) => {
                     const [G, Z] = [B.wirt.constructor.TOR_ZIEL, B.wirt._torZiele()];
                     Z.tex.image.data.set(B.wirt.constructor._rgb9e5AusHalb(P.daten), zeile * G.w * G.h);
                     Z.tex.needsUpdate = true;
+                    return zeile;
                 })
             );
         B.passage = (w, verbergen) =>
@@ -2585,18 +2591,20 @@
                 const hatOv = w.ov && typeof w.ov === "object" && Object.keys(w.ov).length > 0;
                 const tor = wirt._torGesetzFor({ type: A.KIND_POLICY.gate.prefix + w.preset, studioOv: hatOv ? wirt._foundryGestaltOv(wirt._studioWerkPruefen("gate", w.preset, w.ov, 1)) : null });
                 if (!tor) throw new Error("DIE BÜHNE: das Tor-Gesetz der Welt kennt „" + w.preset + "“ nicht");
-                if (!zielZeile) zielBlick = { mitte: [0, tor.mu.centerY, 0], verbergen: verbergen || [] };
-                if (!zielZeile)
-                    zielZeile = Promise.resolve(panorama(T, R, szene, zielBlick.mitte, { lesen: true, verbergen: zielBlick.verbergen })).then((P) => {
-                        const z = { world: "buehne", zeile: null };
-                        wirt._torZiele();
-                        wirt._torZielEinsetzen([[z, P.daten]]);
-                        return z.zeile;
-                    });
+                zielBlick = { mitte: [0, tor.mu.centerY, 0], verbergen: verbergen || [] };
+                zielZeile = zielZeile
+                    ? fensterNeu()
+                    : fensterSchuss().then((P) => {
+                          const z = { world: "buehne", zeile: null };
+                          wirt._torZiele();
+                          wirt._torZielEinsetzen([[z, P.daten]]);
+                          return z.zeile;
+                      });
                 const built = wirt._membranMaterialFor(tor, await zielZeile, 0);
                 const mesh = new T.Mesh(wirt._membranGeometryFor(tor), built.mat);
                 [mesh.castShadow, mesh.receiveShadow] = [false, false];
                 mesh.userData.passage = { tor, u: built.u };
+                lebend.add(mesh);
                 return mesh;
             });
         // der Atem der Passage wie der Membran-Takt der Welt (`_tickPortalMembranes`): Zeit, Öffnung, Puls, Tiefe der Welle
@@ -2612,6 +2620,7 @@
         // die Passage geht: ihr Stoff gehört ihr, ihre Geometrie dem Memo des Wirts je Gestalt und Stempel — sie fällt mit
         B.passageFort = (mesh) => {
             if (!mesh) return;
+            lebend.delete(mesh);
             if (mesh.parent) mesh.parent.remove(mesh);
             const memo = B.wirt._membranGeoMemo;
             if (memo && memo.get(mesh.userData.passage.tor.key) === mesh.geometry) memo.delete(mesh.userData.passage.tor.key);
@@ -2868,11 +2877,13 @@
             orbit.update();
             S.wecke();
         };
-        let bauNr = 0;
+        // EIN ÜBERHOLTER BAU REICHT DIE ZUSAGE DES FÜHRENDEN WEITER: hält ein neuerer Griff die Bühne, löst seine Zusage erst, wenn
+        // das Bild das Werk des neuesten Baus zeigt (die Kette läuft auf die neueste Nummer) — nie mit dem alten Werk
+        let [bauNr, fuehrend] = [0, null];
         S.bau = () => {
             const [nr, tBau, w] = [++bauNr, jetzt(), o.werk()];
-            return B.werk({ preset: w.preset, seed: w.seed, lod: o.lod ? o.lod() : 0, ov: w.ov }).then(async (g) => {
-                if (nr !== bauNr) return B.werkFort(g), S.wurzel; // ein neuerer Griff führt
+            return (fuehrend = B.werk({ preset: w.preset, seed: w.seed, lod: o.lod ? o.lod() : 0, ov: w.ov }).then(async (g) => {
+                if (nr !== bauNr) return B.werkFort(g), fuehrend;
                 const alt = S.wurzel;
                 if (alt) teller.remove(alt);
                 teller.add(g);
@@ -2889,11 +2900,12 @@
                     const sieh = () => (B.bildN > n0 || nr !== bauNr ? ok() : imBild(sieh));
                     sieh();
                 });
+                if (nr !== bauNr) return fuehrend;
                 S.ms = jetzt() - tBau;
                 const zeile = ((B.wirt.constructor._studioRenderConfig.lod.budget || {})[g.userData.werk.art] || {})[g.userData.werk.lod];
                 if (S.kopf) S.kopf.zahlen({ tris: g.userData.werk.tris, budget: zeile ? zeile.tris : 0, ms: S.ms });
                 return g;
-            });
+            }));
         };
         // DER TAKT IST DER LOOP DES RENDERERS (Lehre 17): ein Instrument hält ihn an (`R.setAnimationLoop(null)`, das Labor der
         // Albedo-Tafel) — die Bühne zeichnet dann kein Bild unter dem Licht der Messung

@@ -25,7 +25,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { albedoAuswerten, stoffPasst, TAFEL_BLICKE, kartenEichung } = require("./licht-linsen.cjs");
+const { albedoAuswerten, stoffPasst, wirtStoff, TAFEL_BLICKE, kartenEichung } = require("./licht-linsen.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 const TAFEL_PFAD = path.join(ROOT, "spec", "farbe", "albedo-tafel.json");
@@ -465,18 +465,11 @@ function laborAlbedo(o) {
         const artOf = (m) => ARTEN.get(m) || (m?.userData && typeof m.userData.__klasse === "string" ? m.userData.__klasse : "unknown");
         // DAS WERK DER WELT AUF DER BÜHNE (AnazhHuelle.studio): sein Stoff ist ein Material des Wirts — Art, Rauheit, Metall,
         // Klarlack und Seh-Klasse stehen in seinem Schlüssel (`_foundryMats`: Art|Rauheit|Metall … |cc:<k>@<r> … |v:<Seh>),
-        // gelesen wie die Welt-Tafel (licht-linsen `albedoSicht`)
+        // gelesen vom EINEN Leser der Welt-Tafel (licht-linsen `wirtStoff`)
         const stoffInv = new Map(Object.entries(window.STUDIO?.buehne?.wirt?._foundryMats || {}).map(([k, m]) => [m, k]));
-        const wirtStoff = (k) => {
-            const t = k.split("|"),
-                zahl = (i) => (t.length > i && /^-?\d/.test(t[i]) ? Number(t[i]) : null),
-                cc = /\|cc:([\d.]+)@/.exec(k),
-                v = /\|v:([a-z]+)/.exec(k);
-            return { kind: t[0], r: zahl(1), mt: zahl(2), cc: cc ? Number(cc[1]) : 0, seh: v ? v[1] : null };
-        };
         const stoffOf = (m) =>
             stoffInv.has(m)
-                ? wirtStoff(stoffInv.get(m))
+                ? window.__wirtStoff(stoffInv.get(m))
                 : {
                       kind: artOf(m),
                       r: m.roughness,
@@ -907,6 +900,7 @@ const LABOR_INSTALL =
     `window.__laborLaub = ${laborLaubGegenlicht.toString()};` +
     `window.__albedoAuswerten = ${albedoAuswerten.toString()};` +
     `window.__stoffPasst = ${stoffPasst.toString()};` +
+    `window.__wirtStoff = ${wirtStoff.toString()};` +
     `window.__tafelBlicke = ${JSON.stringify(TAFEL_BLICKE)};` +
     `window.__laborZiel = ${laborZiel.toString()};` +
     `window.__laborAlbedo = ${laborAlbedo.toString()};` +
