@@ -1511,31 +1511,17 @@ async function narbeSeite(MESS) {
         // an der Uhr des Pools, `_leuchtPool.uhr`: die Linse stellt sie um 1,1 Blenden zurück — kein Warten an der Wanduhr) — erst der freie Platz nimmt die neu Gewählte auf
         const stunde = (t, welt = null, pool = false) => {
             r.setTimeOfDay(t, "regler");
-            if (welt != null) {
-                (r._belichtungE ||= [0, 0, 0]).fill(welt), (r._belichtungGelesen = true);
-                // die Kamera zur gestellten Lesung: dasselbe Gesetz (`belichtung`) über ihr — sonst trägt der Null-Renderer die
-                // Blende seines eigenen Lichts (0,03 Einheiten: k weit über dem Nacht-Knoten), und `_leuchtTakt` nähme die Quelle
-                // am Mittag um diese Blende zurück (`_augeBlende`)
-                const EA = r._belichtungAnker();
-                if (EA)
-                    st.renderer.toneMappingExposure = window.__weltLicht.belichtung(
-                        [welt, welt, welt],
-                        EA,
-                        1,
-                        (h, q) => C._belichtungStufen(h, q),
-                        C.BELICHTUNG
-                    );
-            }
+            if (welt != null) (r._belichtungE ||= [0, 0, 0]).fill(welt), (r._belichtungTag = welt), (r._belichtungGelesen = true);
             r._leuchtTakt();
             if (pool) {
                 r._leuchtPool.uhr -= 1.1 * C.LICHT_POOL.blendeS;
                 r._leuchtTakt();
             }
             const A = st.atmoUniforms.lichtAuge.value;
-            return { aLux: r._augeLux, ak: A.x, s: A.y, deckel: A.z };
+            return { aLux: r._augeLux, ak: A.x, s: A.y };
         };
         // das gezeigte Licht einer Beleuchtungsstärke, wie der Stoff es aus `lichtAuge` rechnet (`_lichtPoolTerm`)
-        const zeigU = (E, A) => Math.min(A.s * (Math.pow(1 + E / A.ak, AU.q) - 1), E * Math.pow(A.ak + E, AU.p - 1) * A.deckel);
+        const zeigU = (E, A) => Math.min(A.s * (Math.pow(1 + E / A.ak, AU.q) - 1), (E * Math.pow(A.ak + E, AU.p - 1) * AU.welt) / Math.pow(AU.lux, AU.p));
         // der Kern einer brennenden Zelle aus der Ellipse ihrer Front (π·a·b, höchstens der Kreis in der Zelle, × Glut), je Viertelmeter
         const kernSoll = (z) => {
             const ha = (Math.max(0, st.spielZeit - z.t0) * z.R) / (1 + z.ecc);

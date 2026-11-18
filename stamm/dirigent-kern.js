@@ -1608,43 +1608,19 @@ class AnazhRealm {
         // EINEN Skala; über ihr zeigt der Stoff jede Quelle (`_lichtPoolTerm`: `lichtAuge` trägt A + Knie und S davon), aus ihr folgt ihre
         // Reichweite (`_leuchtReichweite`). Ohne Lesung hält sie die letzte (`_augeLux`).
         const aE = this._belichtungGelesen ? this._belichtungE : null;
-        // DIE WEITESTE BLENDE FÜR EINE QUELLE (`blende`): das Auge zeigt Becken und Glut in der Zahl der Welt, die Kamera legt
-        // ihre Belichtung darüber — und die öffnet am Horizont weit über die Nacht (der Nacht-Knoten wächst erst von 0° bis
-        // `nachtKnotenGrad` ein; Sonne 0°: k 27,7 gegen 1,55 um Mitternacht). Ohne Zeitplan brennt jede Quelle auch dort: vier
-        // Glutbrunnen in 13–22 m hoben die Karte der Tag-Achse in der Dämmerung 1,2 EV ÜBER den Mittag (gate:tag-achse:echt,
-        // GTX 1050, 18.11.). Für eine Quelle öffnet die Kamera darum nie weiter als am vollen Nacht-Knoten (dasselbe Gesetz
-        // `belichtung`, E = `nachtKnotenE` bei `nachtKnotenGrad`): was darüber liegt, nimmt `blende` zurück — Mittag und Nacht
-        // rechnen gleich (k darunter, `blende` 1).
-        let blende = 1;
         if (aE) {
-            const aLux = (this._augeLux = __weltLicht.augeLux(0.2126 * aE[0] + 0.7152 * aE[1] + 0.0722 * aE[2]));
+            const aLux = (this._augeLux = __weltLicht.augeLux(0.2126 * aE[0] + 0.7152 * aE[1] + 0.0722 * aE[2], this._belichtungTag));
             const ak = aLux + AnazhRealm.AUGE.knieLux;
-            const B = AnazhRealm.BELICHTUNG;
-            const EA = this._belichtungAnker();
-            const k = st.renderer?.toneMappingExposure;
-            if (EA && k > 0) {
-                const nE = B.nachtKnotenE;
-                const kN = __weltLicht.belichtung(
-                    [nE, nE, nE],
-                    EA,
-                    Math.sin((B.nachtKnotenGrad * Math.PI) / 180),
-                    (h, q) => AnazhRealm._belichtungStufen(h, q),
-                    B
-                );
-                blende = Math.min(1, kN / k);
-            }
-            this._augeBlende = blende;
-            const U = AnazhRealm.AUGE;
-            atmo.lichtAuge.value.set(ak, __weltLicht.augeS(ak) * blende, (U.welt / U.lux ** U.p) * blende);
-        } else blende = this._augeBlende ?? 1;
+            atmo.lichtAuge.value.set(ak, __weltLicht.augeS(ak));
+        }
         // DIE HÖHE DER GLUT DER LAVA: die Leuchtdichte ihres Ausbruchs (Planck im Sichtbaren × Emissivität) durch dasselbe Auge
-        atmo.lavaGlut.value = __weltLicht.augeGlut(this._lavaAusbruchCdM2(), this._augeLux ?? 1) * blende;
+        atmo.lavaGlut.value = __weltLicht.augeGlut(this._lavaAusbruchCdM2(), this._augeLux ?? 1);
         // DIE GLUT JE DATUM (Fenster, Laternen-Kopf, das gemalte Glutbett): seine Leuchtdichte `cdM2` durch das Auge (welt-licht.js `augeGlut`) in der
         // Farbe seiner Temperatur, auf Luma 1 genormt — kein Zeitplan: über dem Mittag trägt sie nichts, die Dämmerung zündet sie
         for (const k in atmo.lichtGlut) {
             const c = this._lichtLinear(LG[k], atmo.lichtGlut[k].value);
             c.multiplyScalar(
-                (__weltLicht.augeGlut(LG[k].cdM2, this._augeLux ?? 1) * blende) / (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b)
+                __weltLicht.augeGlut(LG[k].cdM2, this._augeLux ?? 1) / (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b)
             );
         }
         const pool =

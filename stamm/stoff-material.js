@@ -702,7 +702,7 @@ class AnazhRealm_stoff_material {
             // Scheibe mit dem Radius seines Kerns, die nach oben strahlt (fachwerk `strahler` `flach`: die Decke der Lava)
             lichtForm: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(new THREE.Vector3())),
             // DIE UMGEBUNG DER STUNDE für das Auge (welt-licht.js `AUGE`, Schreiber `_leuchtTakt`): x = ihre Lux + das Knie, y = S(x)
-            lichtAuge: TSL.uniform(new THREE.Vector3(1, __weltLicht.augeS(1), __weltLicht.AUGE.welt / __weltLicht.AUGE.lux ** __weltLicht.AUGE.p)),
+            lichtAuge: TSL.uniform(new THREE.Vector2(1, __weltLicht.augeS(1))),
             // DIE HÖHE DER GLUT DER LAVA (Schreiber `_leuchtTakt`): die Leuchtdichte ihres Ausbruchs durch das Auge der Stunde
             lavaGlut: TSL.uniform(0),
             // DER SCHIRM-PIXEL JE SZENEN-PIXEL (w4-wiese-nah, `_szeneSkalaWirk`): unter dem zeitlichen Hochskalierer rendert die
@@ -2350,7 +2350,7 @@ class AnazhRealm_stoff_material {
             const U = AnazhRealm.AUGE;
             const zeig = A.y
                 .mul(summe.a.div(A.x).add(1).pow(U.q).sub(1))
-                .min(summe.a.mul(A.x.add(summe.a).pow(U.p - 1)).mul(A.z));
+                .min(summe.a.mul(A.x.add(summe.a).pow(U.p - 1)).mul(U.welt / U.lux ** U.p));
             return auge.add(summe.rgb.mul(zeig.div(summe.a.max(1e-9))));
         })();
     }

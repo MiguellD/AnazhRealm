@@ -84,8 +84,18 @@ var __weltLicht = (function () {
         saum: 0.3,
     });
     const augeS = (lux) => AUGE.welt * Math.pow(Math.max(0, lux) / AUGE.lux, AUGE.p);
-    // die Umkehr: die Lux, die eine Zahl der Welt auf der Skala trägt (die Umgebung der Stunde aus dem Lichtmesser)
-    const augeLux = (welt) => AUGE.lux * Math.pow(Math.max(0, welt) / AUGE.welt, 1 / AUGE.p);
+    // die Umkehr: die Lux, die eine Zahl der Welt trägt (die Umgebung der Stunde aus dem Lichtmesser). ZWEI Glieder, weil die
+    // Welt zwei Maße trägt: das Licht des TAGS (`tag`: die Sonne und ihr Himmel aus den Tafeln) steht LINEAR in Lux (`welt` ↔
+    // `lux`), nur die Ersatz-Lichter der NACHT (Mond, Sterne, Dämmerlicht, Hemisphäre, Umgebung — der Rest) stehen auf der Skala
+    // S. Bis hier lief die GANZE Lesung durch die Umkehr von S: in der Dämmerung, wo der Tag schon klein und die Nacht noch nicht
+    // eingeblendet ist, fiel die Umgebung weit unter die Nacht (Mess-Wiese, GTX 1050, 18.11.: Sonne 10,8° 0,508 Einheiten →
+    // 0,13 lx statt 7 460; Sonne 0° 0,056 → 0,000002 lx statt 824) — vier Glutbrunnen in 13–21 m (3,7 lx) zeigten dort 0,39
+    // und 0,40 über 0,51 und 0,056 Umgebung: die orange Karte der Tag-Achse (R/B ×2,4), der Buckel +1,2 EV am Horizont.
+    const augeLux = (welt, tag = 0) => {
+        const w = Math.max(0, welt),
+            t = Math.max(0, Math.min(w, tag));
+        return (AUGE.lux * t) / AUGE.welt + AUGE.lux * Math.pow((w - t) / AUGE.welt, 1 / AUGE.p);
+    };
     // das gezeigte Licht einer Beleuchtungsstärke `lux` über der Umgebung `aLux`: das q-Gesetz, oben gedeckelt von der S-FORM
     // (`augeGlut`: mehr als seinen Anteil an der Anpassung zeigt kein Licht) — der obere Ast greift nachts ab E ≈ 6 × (A + knie),
     // 17 lx: der Kreis am Herd, das Gras am Lava-Ufer; darunter, wo der Abfall den Kreis zeichnet, steht das q-Gesetz allein.
@@ -862,8 +872,9 @@ var __weltLicht = (function () {
 
     // DER HIMMEL ÜBER DEM ORT, SYNCHRON (S7; rgb, E einer waagrechten Fläche): die Bestrahlungs-Tafel `T` ({W, werte}) an der Sonne
     // und am Mond der Uniforms `U` der Tafeln, das Sternen-Licht — in derselben Zusammensetzung wie die Farbe des Himmels
-    // (`himmelFarbe`: E0 × Tönung, der Mond in `mondE`, die Sterne in `nachtE`) → `out`.
-    function bestrahlung(T, U, out) {
+    // (`himmelFarbe`: E0 × Tönung, der Mond in `mondE`, die Sterne in `nachtE`) → `out`. `tag` ([0]) nimmt daraus die
+    // Leuchtdichte des Glieds der SONNE allein: der Himmel des Tags, linear in Lux (`augeLux`).
+    function bestrahlung(T, U, out, tag) {
         const W = T.W,
             w = T.werte;
         const lies = (mu, c) => {
@@ -879,7 +890,9 @@ var __weltLicht = (function () {
             t = U.toenung.value;
         for (let c = 0; c < 3; c++) {
             const k = c === 0 ? "x" : c === 1 ? "y" : "z";
-            out[c] = U.licht.value * t[k] * (lies(ms, c) + m[k] * lies(mm, c) + n[k] * w[(W - 1) * 3 + c]);
+            const so = U.licht.value * t[k] * lies(ms, c);
+            out[c] = so + U.licht.value * t[k] * (m[k] * lies(mm, c) + n[k] * w[(W - 1) * 3 + c]);
+            if (tag) tag[0] = (c ? tag[0] : 0) + (c === 0 ? 0.2126 : c === 1 ? 0.7152 : 0.0722) * so;
         }
         return himmelGrau(out, U.grau.value);
     }

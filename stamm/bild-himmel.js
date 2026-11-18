@@ -1715,11 +1715,12 @@ class AnazhRealm_bild_himmel {
     _himmelsBestrahlung(out, flug) {
         const st = this.state;
         out[0] = out[1] = out[2] = 0;
+        (this._himmelTag || (this._himmelTag = [0]))[0] = 0;
         if (st.renderer && st.renderer._isHeadlessNull) return out;
         const A = st.atmoLut;
         const T = A && (flug ? A.tafelFlug : A.tafel);
         if (!T) return null;
-        return __weltLicht.bestrahlung(T, A.U, out);
+        return __weltLicht.bestrahlung(T, A.U, out, this._himmelTag || (this._himmelTag = [0]));
     }
 
     // Skybox-Uniforms: himmelTint aus skyR/G/B + Wolken-Deckung aus dem Wetter (Cross-Fade über die
@@ -1880,6 +1881,7 @@ class AnazhRealm_bild_himmel {
         // Intensität = KEY_BASE·atm.lum·tint.lightIntensity: die Physik trägt die Tageskurve allein, der Tint
         // (Wetter-lightMul + Emotion) moduliert; Ziel dir/(amb+hemi) ≥ 3:1 am Tag (nachts 0,67: `_dayNightApplyAmbient`).
         const a = atm || this._atmoSonne(sunDir.y);
+        this.state._richtlichtSonne = sunUp;
         if (sunUp) {
             dl.color.setRGB(a.col.r * tint.lightColor.r, a.col.g * tint.lightColor.g, a.col.b * tint.lightColor.b);
             // das gesamte Licht der Wetter-Zeile (`lightIntensity`) × der Anteil, den die Decke direkt lässt (`direkt`); bis
@@ -2189,6 +2191,9 @@ class AnazhRealm_bild_himmel {
         // der Anteil des Richtlichts an der Lesung (die Blende des Raums liest ihn: im Raum misst der Messer die Sonne nicht)
         const so = this._belichtungSonne || (this._belichtungSonne = [0, 0, 0]);
         if (out === this._belichtungE) [so[0], so[1], so[2]] = out;
+        // DER TAG IN DER LESUNG (`_belichtungTag`, Leuchtdichte): die Sonne (das Richtlicht über dem Horizont; darunter ist es
+        // der Mond) und unten ihr Himmel aus den Tafeln — das Glied, das linear in Lux steht (welt-licht.js `augeLux`)
+        const sonneTag = st._richtlichtSonne === false ? 0 : 0.2126 * out[0] + 0.7152 * out[1] + 0.0722 * out[2];
         const he = this._himmelE || (this._himmelE = [0, 0, 0]);
         let himmel = this._himmelsBestrahlung(he);
         const A = st.atmoLut;
@@ -2205,6 +2210,7 @@ class AnazhRealm_bild_himmel {
         out[0] += himmel[0];
         out[1] += himmel[1];
         out[2] += himmel[2];
+        if (out === this._belichtungE) this._belichtungTag = sonneTag + this._himmelTag[0];
         if (st.hemiLight) add(st.hemiLight.color, st.hemiLight.intensity);
         if (st.ambientLight) add(st.ambientLight.color, st.ambientLight.intensity);
         return out;
