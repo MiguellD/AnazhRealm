@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-18T21:46:59.159Z",
+ "zeit": "2026-11-18T21:52:49.664Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -867,6 +867,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.kopplung.leben-formt-planet#1": {
+   "gruen": true,
+   "zahl": "nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243179 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 · nach dem Gang Weg ÷ daneben 0.182 (Soll ≤ 0,4; vorher Weg ≥ 0,7 × daneben) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 6.32,
+   "gpu": "nvidia/pascal",
+   "konsum": "k89ccc75d32b3",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2bbe263ca652",
+   "s": 378.6,
+   "fremd": {
+    "s": 382.7,
+    "takte": 177,
+    "fremdS": 420.56,
+    "kerne": 1.099,
+    "fensterKerne": 1.622,
+    "namen": [
+     [
+      "node.exe grundriss-proto.cjs",
+      246.05
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      70.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      35.33
+     ]
+    ],
+    "dienerS": 112.36,
+    "diener": [
+     [
+      "dwm.exe",
+      60.78
+     ],
+     [
+      "System",
+      30.02
+     ]
+    ],
+    "geraetS": 101.44,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      57.78
+     ],
+     [
+      "svchost.exe",
+      39.25
+     ],
+     [
+      "SearchIndexer.exe",
+      2
+     ]
+    ],
+    "eigenS": 474.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T21:52:49.664Z",
+   "abdruck": "082354aa1d27",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -886,20 +955,20 @@
   "k28dac2c8cc76": "bVRdj5swEPwvPJ7qc/g6wNI9OCFSTqrU3E9YmzVwIYBsCG2q/vcKDpIA8RtoZnd2duy/Vg3yBCm+fpmqtJj1Yv2wDFyQGNQX1K9fxmLWRnrgh4x/H8o53/UwqfO6MbTIBQVRQnZG0uoG8+JVDjRbhgjIaLfn3ZHSIw3otnt/X1ILgUlFGlA4EUXiBC6wJbA1KQgk0Kqh2Qh+WcAElMlch3LBVzb7+MP5nq/6JzlgQ4q8NFNFmfjCdRidzlpzoqEjV8CsQD2SwA7AFiMpHIzqjhFdEFXRGjNrFrqJ74SM0hU2RZPLrCG1rgSWkzWRE9jAnviY1i1RM0VCQCiWLmaAZYp6riHwfOkx+jtcFj3BGTWQErIRGm3cwBF3byilh7WWYhA+tJiEh4mIAjUjUkr5oeudisP+I739Dg/fUYtTfj+fiyZGZrk+z+1Ryk9gw36uJZkMEtTkVJnmrskDwCnXMeWfnPOjFy+Z92FGniPeNn74MEtI+WHlnalU04FGktbtSEQP/cBnnH+swA2cz9MQ0sHQXy7ONH2wH2X4HtpvAZuce7KH72tArpgXEymQ0nZxWfyi4UxApDpXatq08KWKngWzw6IhoqqaCekm4EpGXVreHImGK7C9by/uKrnfpZ98cdKl5qF6pZvblOJtozymLv1NlCt0rhvSgcxuu1ECIWJPoFfUBaY4s3D5eFxz7O0qTWumjERBEo25nRvcoT4JKE9TY1+4vj2EafuL9wHecx5vYhrTY/c48Y4nXZx+7LZhX6xGSWtdqbx/t2gGrcmgaO7P8b//"
  },
  "sitzung": {
-  "start": "2026-11-18T21:46:21.577Z",
-  "ordner": "sitzung-20261118-224621",
+  "start": "2026-11-18T21:52:12.790Z",
+  "ordner": "sitzung-20261118-225212",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.6,
+  "bootS": 7.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "tiere.K5#1",
-    "s": 27.5,
-    "takte": 594,
+    "vor": "karte2.leben.kopplung.leben-formt-planet#1",
+    "s": 26.7,
+    "takte": 606,
     "chunks": 81,
     "nach": null
    }
@@ -907,36 +976,38 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "tiere.K5#1",
+    "probe": "karte2.leben.kopplung.leben-formt-planet#1",
     "anders": [
      "window.__wieseMessen",
      "window.__wieseUrteil",
-     "window.__ortSchritt"
+     "window.__ortSchritt",
+     "window.__vorBild"
     ],
     "wie": {
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__vorBild": "neu: async () => { await stehen(abseits[0], abseits[1]); return { steht: true }; }"
     },
     "haelt": [],
     "heap": [
-     227.9,
-     287.4
+     229.9,
+     277.6
     ],
     "ungemessen": null
    }
   ],
   "wanderung": [
    {
-    "probe": "tiere.K5#1",
+    "probe": "karte2.leben.kopplung.leben-formt-planet#1",
     "ort": "wiese",
-    "m": 0.7,
-    "dreh": 0
+    "m": 12.65,
+    "dreh": 1.972
    }
   ],
   "messHalt": [
    {
-    "probe": "tiere.K5#1",
+    "probe": "karte2.leben.kopplung.leben-formt-planet#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -948,21 +1019,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3105,
-   "frameP95": 25.08,
-   "taktP95": 16.67,
-   "vramMax": 129.7,
+   "bilder": 3305,
+   "frameP95": 25.09,
+   "taktP95": 13.1,
+   "vramMax": 128.3,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 230,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 134,
+   "luecken": 34,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 239.9,
-  "minuten": 4.09
+  "fahrtS": 492,
+  "minuten": 8.3
  },
  "ungemessen": {
   "mensch.K5#1": {
