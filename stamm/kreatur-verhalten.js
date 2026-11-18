@@ -3771,7 +3771,16 @@ AnazhRealm._lebenKern = function () {
     if (AnazhRealm._lebenKernMemo) return AnazhRealm._lebenKernMemo;
     const k = typeof globalThis !== "undefined" ? globalThis.__lebenCore : null;
     const erbe = ["gesetz", "normal", "gruender", "kind", "umwelt", "artId", "indId"];
-    const leib = ["masseAdult", "lebensdauerS", "masseZurZeit", "reifeS", "fastenRang", "rissGewicht", "spanne"];
+    const leib = [
+        "masseAdult",
+        "lebensdauerS",
+        "masseZurZeit",
+        "alterZurMasse",
+        "reifeS",
+        "fastenRang",
+        "rissGewicht",
+        "spanne",
+    ];
     if (k && [...erbe, ...leib].every((n) => typeof k[n] === "function")) return (AnazhRealm._lebenKernMemo = k);
     return AnazhRealm._kernPflichtBruch("leben:__lebenCore");
 };

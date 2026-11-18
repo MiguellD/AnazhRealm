@@ -1136,7 +1136,7 @@ Skript-Stempel für ihn.
 Mutation, die Exponenten von Lebensdauer, Wachstum und Fasten, Geburts-Anteil, Reife, der Zeit-Anker Wolf), die Normale aus zwei
 Gleichverteilten `normal`, das Erbe nach dem Infinitesimal-Modell — der Gründer `gruender`, das Kind aus Mutter und Vater `kind`,
 die Umwelt-Streuung `umwelt` —, der Leib als Physik des Erbes über das Alter — die Masse `masseAdult`, die Lebensdauer
-`lebensdauerS`, die Zeit-Konstante `tau`, das Wachstum `masseZurZeit`, die Reife `reifeS` —, die Auslese nach dem Leib
+`lebensdauerS`, die Zeit-Konstante `tau`, das Wachstum `masseZurZeit` und seine Umkehr `alterZurMasse`, die Reife `reifeS` —, die Auslese nach dem Leib
 `fastenRang`/`rissGewicht`, die Größen-Grenzen des Gesetzes `spanne` und die Adresse `artId`/`indId`; sein Selbsttest
 `selbsttest`. Rein: der Zufall kommt aus den Strömen des Wirts. Geladen vom Stamm (Script-Zeile neben `tetrapoda-core.js`) und
 vom Foundry-Worker. DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.

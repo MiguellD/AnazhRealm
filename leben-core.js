@@ -24,6 +24,7 @@
 //   tau(M∞)                                → s   τ_ref·(M∞/refKg)^0,25
 //   masseZurZeit(M∞, alterS)               → kg  M∞·[1 − (1 − q^¼)·e^(−alterS/tau(M∞))]⁴
 //   reifeS(M∞)                             → s   tau(M∞)·ln((1−q^¼)/(1−reifeMasse^¼))
+//   alterZurMasse(M∞, m)                   → s   die Umkehr von masseZurZeit: 0 für m ≤ q·M∞, Infinity für m ≥ M∞ (additiv)
 //   fastenRang(m)                          → m^0,25            (relativ; der Kleinste zuerst)
 //   rissGewicht(m)                         → m                 (Energie-Ertrag des Jägers ∝ Masse)
 //   spanne()                               → [q^⅓·e^(−4·sdP/3), e^(4·sdP/3)]   die Größen-Grenzen DES GESETZES (bs)
@@ -33,7 +34,8 @@
 //       steigung     Regression Kind auf Eltern-Mittel (Phänotyp lnM) über 10⁵ Paare, Soll h2 0,46 ± 0,02
 //       steigungAus  dieselbe Regression mit `gruender` statt `kind` (die Mutante), Soll 0 ± 0,02
 //       masseMonoton masseZurZeit steigt streng über das Leben (0 … lebensdauerS), danach nie fallend, nie über M∞ (vier Massen)
-//       reifeTreffer masseZurZeit(M, 0) = q·M und masseZurZeit(M, reifeS(M)) = 0,9·M auf 1e−9 (relativ)
+//       reifeTreffer masseZurZeit(M, 0) = q·M und masseZurZeit(M, reifeS(M)) = 0,9·M auf 1e−9 (relativ), die Umkehr
+//                    alterZurMasse(M, 0,9·M) = reifeS(M) ebenso
 //       lebenWolf    lebensdauerS(64) (Soll 2100)
 //     Verfehlt eine Zahl ihr Soll, wirft selbsttest() mit dem Namen des Felds (fail-closed); sonst liefert es die Zahlen.
 //
@@ -155,6 +157,15 @@
         return tau(M) * REIFE_MASS;
     }
 
+    // Die Umkehr des Wachstums: das Alter, in dem der Leib eines Tiers mit M∞ die Masse m trägt — 0 für m ≤ q·M∞ (nicht
+    // kleiner als geboren), Infinity für m ≥ M∞ (ausgewachsen: das Alter sagt die Masse nicht mehr).
+    function alterZurMasse(M, m) {
+        const x = Math.pow(masse(m, "m") / masse(M, "M∞"), G.wachsExp);
+        if (x <= Q_W) return 0;
+        if (x >= 1) return Infinity;
+        return tau(M) * Math.log((1 - Q_W) / (1 - x));
+    }
+
     function fastenRang(m) {
         return Math.pow(masse(m, "m"), G.fastenExp);
     }
@@ -228,6 +239,8 @@
             }
             if (Math.abs(masseZurZeit(M, 0) / (G.geburtAnteil * M) - 1) > 1e-9) reifeTreffer = false;
             if (Math.abs(masseZurZeit(M, reifeS(M)) / (G.reifeMasse * M) - 1) > 1e-9) reifeTreffer = false;
+            // die Umkehr trifft das Alter zurück (alterZurMasse ∘ masseZurZeit = Identität im Wachstum)
+            if (Math.abs(alterZurMasse(M, masseZurZeit(M, reifeS(M))) / reifeS(M) - 1) > 1e-9) reifeTreffer = false;
         }
         const lebenWolf = lebensdauerS(64);
         const h2 = G.achsen[LN_M].h2;
@@ -255,6 +268,7 @@
         tau: tau,
         masseZurZeit: masseZurZeit,
         reifeS: reifeS,
+        alterZurMasse: alterZurMasse,
         fastenRang: fastenRang,
         rissGewicht: rissGewicht,
         spanne: spanne,

@@ -2446,6 +2446,16 @@ class AnazhRealm_kreatur_leben {
         }
         return e.wild;
     }
+    // DAS ALTER EINES GEZEICHNETEN LEIBS (die Annahme, `_bestandAdoptieren`): die Umkehr des Wachstums an der Masse seiner Größe
+    // (`__lebenCore.alterZurMasse(M∞, bs³·M_guss)`) — trägt er weniger als sein M∞, ist er so alt, wie sein Leib es sagt; ist er
+    // ausgewachsen, ist er erwachsen (reifeS) oder älter, wenn er sein Alter schon trug (`alterS` des Leibs). Bis hierher trat
+    // jeder angenommene Leib erwachsen ein: ein Kitz (bs 0,6) sprang im nächsten Takt auf die Größe des Erwachsenen.
+    _bestandAlterAusLeib(t, bs, alterS) {
+        const e = this._bestandErbe(t);
+        const b = Number.isFinite(bs) && bs > 0 ? bs : 1;
+        const s = AnazhRealm._lebenKern().alterZurMasse(e.M, b * b * b * this._gattungKg(t.g));
+        return Number.isFinite(s) ? s : Math.max(e.reif, alterS > 0 ? alterS : 0);
+    }
     // REIF ist ein Tier, dessen Leib reifeMasse × M∞ trägt (alterS ≥ reifeS(M∞)) — nur ein reifes wird Mutter oder Vater.
     _bestandReif(t) {
         return t.alterS >= this._bestandErbe(t).reif;
@@ -2609,8 +2619,10 @@ class AnazhRealm_kreatur_leben {
             const key = this._bestandKey(a.x, a.z);
             const v = ud.verband != null ? "n" + ud.verband : null;
             const id = this._annahmeKennung(key);
-            // DAS ERBE DES ANGENOMMENEN (leben-erbe): ein Leib ohne Bestand ist das Art-Mittel — a = 0, keine Mutter, erwachsen
-            // (ohne eigenes Alter: reifeS seines Leibs); kein Wurf. Seine Größe liest danach sein Tier (`_bestandBs`).
+            // DAS ERBE DES ANGENOMMENEN (leben-erbe): ein Leib ohne Bestand ist das Art-Mittel — a = 0, keine Mutter, kein Wurf;
+            // SEIN ALTER IST SEINE GRÖSSE (`_bestandAlterAusLeib`): ein kleiner Leib ist ein junges Tier und wächst weiter, ein
+            // ausgewachsener ist erwachsen. Seine Größe liest danach sein Tier (`_bestandBs`) — ohne Sprung (bis auf die
+            // Umwelt-Streuung seiner Kennung).
             const tier = {
                 soul: ud.soul,
                 g,
@@ -2622,7 +2634,7 @@ class AnazhRealm_kreatur_leben {
                 v,
                 name: ud.name,
             };
-            tier.alterS = ud.alterS > 0 ? ud.alterS : this._bestandErbe(Object.assign({ id }, tier)).reif;
+            tier.alterS = this._bestandAlterAusLeib(Object.assign({ id }, tier), ud.bodySize, ud.alterS);
             const t = Object.assign({ id }, tier, { leib: c, zu: true });
             ud._bestand = t;
             (this._annahmeOffen || (this._annahmeOffen = new Map())).set(id, t);
