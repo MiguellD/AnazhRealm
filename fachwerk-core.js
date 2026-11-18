@@ -143,11 +143,12 @@
                     fernform: "huelle",
                 },
                 // DER GRABEN (w28-graben-koerper, der Trockengraben unten): nah die Platten der Sohle, die Quader der Mauern in fünf
-                // Lagen und die gefasten Kronensteine aus Stein auf dem Lehm-Bett (zwei Stoffe, gefaltet auf EINEN Draw), die L1
-                // je Kasten und Flucht EIN Körper, die Stufe 3 wirft für die L1 (32 Dreiecke: die Mauern und die Kronen); gemessen am Samen 1 (EINE Gestalt): L0 15 216, L1 240.
+                // Lagen, die gefasten Kronensteine und die Blockstufen der Diensttreppe aus Stein auf dem Lehm-Bett (zwei Stoffe, gefaltet
+                // auf EINEN Draw), die L1 je Kasten, Flucht und Stufe EIN Körper, die Stufe 3 wirft für die L1 (32 Dreiecke: die Mauern und
+                // die Kronen); gemessen am Samen 1 (EINE Gestalt): L0 15 612, L1 348.
                 graben: {
-                    0: { tris: 15216, draws: 1, schatten: 0 },
-                    1: { tris: 240, draws: 1, schatten: 3 },
+                    0: { tris: 15612, draws: 1, schatten: 0 },
+                    1: { tris: 348, draws: 1, schatten: 3 },
                     3: { tris: 32, draws: 1, schatten: 3, nurWurf: true },
                     fernform: "huelle",
                 },
@@ -4688,6 +4689,13 @@
         steinM: [0.7, 1.3],
         fugeM: 0.02,
         platteM: [1.5, 1],
+        // DIE DIENSTTREPPE (der Ausstieg): wer in den Graben fällt, steigt an der Außenmauer (der Seite des Gasts) hinaus — eine
+        // Blockstufen-Treppe aus den Quadern der Mauer, längs der Flucht an sie gelehnt. stufeM die Steigung, auftrittM der
+        // Auftritt (die Schrittmaßregel 2s + a = 0,65 m, DIN 18065: 0,59–0,65 m) · breitM die Laufbreite (gewählt) ·
+        // fluchtwegM: kein Punkt der Sohle liegt weiter von einer Treppe (ASR A2.3: der Fluchtweg bis zum Ausgang ≤ 35 m) — die
+        // Zahl der Treppen folgt dem Umfang der Sohle. Das Tier steigt nie: es hält der Rand seines Geheges (tetrapoda
+        // `gehegeRand`), der Graben trennt den Gast; die Treppe führt nur auf die Seite des Gasts, nie auf die Insel.
+        treppe: { stufeM: 0.2, auftrittM: 0.25, breitM: 0.8, fluchtwegM: 35 },
     };
     // Die vier Kästen des Grabens um die Mitte des Geheges (lokal, +z nach Norden, [x0, x1, z0, z1]): Süd und Nord über die
     // ganze Breite, West und Ost zwischen ihnen — EINE Quelle für den Körper (`ausTrockengraben`) und seinen Grund (`ortPlan`).
@@ -4719,6 +4727,36 @@
             { a: [ox, oz], b: [-ox, oz], n: [0, -1] },
             { a: [-ox, oz], b: [-ox, -oz], n: [1, 0] },
         ];
+    }
+    // DIE TREPPEN DES GRABENS: je Treppe die Flucht (Index in `grabenFluchten`, eine Außenflucht 4–7), die Mitte des Laufs `s`
+    // (m längs a → b) und ihre Blockstufen {s0, s1, y} (die Oberkante y unter dem Grund, steigend längs a → b; die letzte Stufe
+    // liegt eine Steigung unter dem Grund, ihr Austritt ist die Krone). Die Zahl n = ⌈U / (2 · fluchtwegM)⌉ über den Umfang U der
+    // Sohlen-Mitte, verteilt im gleichen Abstand längs der Außenmauer, die erste in der Mitte der Südflucht (der Zugang des Zoos).
+    function grabenTreppen(G) {
+        var T = G.treppe,
+            ix = G.innenM[0] / 2,
+            iz = G.innenM[1] / 2,
+            ox = ix + G.breiteM,
+            oz = iz + G.breiteM,
+            hm = G.breiteM / 2,
+            U = 4 * (ix + hm) + 4 * (iz + hm),
+            n = Math.max(1, Math.ceil(U / (2 * T.fluchtwegM))),
+            nS = Math.round(G.tiefeM / T.stufeM),
+            lauf = (nS - 1) * T.auftrittM,
+            Ls = [2 * ox, 2 * oz, 2 * ox, 2 * oz],
+            Uo = 4 * ox + 4 * oz,
+            aus = [];
+        for (var j = 0; j < n; j++) {
+            var t = (ox + (j * Uo) / n) % Uo,
+                f = 0;
+            while (t > Ls[f]) t -= Ls[f++];
+            var s = Math.min(Math.max(t, lauf / 2 + G.breiteM), Ls[f] - lauf / 2 - G.breiteM),
+                stufen = [];
+            for (var k = 1; k < nS; k++)
+                stufen.push({ s0: s - lauf / 2 + (k - 1) * T.auftrittM, s1: s - lauf / 2 + k * T.auftrittM, y: -G.tiefeM + k * T.stufeM });
+            aus.push({ flucht: 4 + f, s: s, stufen: stufen });
+        }
+        return aus;
     }
     // DIE NASSEN LÄUFE eines Wegs: je zusammenhängendem Lauf nasser Punkte {k, e} (erster und letzter nasser Punkt) und seine
     // Widerlager {wa, wb} (der trockene Punkt davor und danach; am Ende des Wegs der Lauf selbst). Leser: das Brücken-Etikett
@@ -8030,6 +8068,16 @@
                 }
             }
         }
+        // DIE DIENSTTREPPE: je Treppe ihre Blockstufen, jede EIN Quader von der Sohle bis zu ihrem Auftritt, an die Mauer
+        // gelehnt (nah gefast; die L1 dieselben Blöcke ohne Fase)
+        for (i = 0; i < m.treppen.length; i++) {
+            var TR = m.treppen[i],
+                FT = m.fluchten[TR.flucht];
+            for (k = 0; k < TR.stufen.length; k++) {
+                var st = TR.stufen[k];
+                quader(FT, st.s0 + 0.003, st.s1 - 0.003, -T, st.y, 0, m.treppeB, fein ? 0.01 : 0, ausTon(zQ, 0.1, 0.03));
+            }
+        }
         // DIE KRONE: je Flucht ihre Steine (`grabenKrone`: die Ecken schließen ohne Doppel), nah gefast
         var KR = grabenKrone(m);
         for (i = 0; i < KR.length; i++) {
@@ -8196,6 +8244,8 @@
                 platteFuge: 0.015,
                 K: G.krone,
                 kaesten: grabenKaesten(G),
+                treppen: grabenTreppen(G),
+                treppeB: G.treppe.breitM,
                 fluchten: grabenFluchten(G).map(function (F) {
                     var dx = F.b[0] - F.a[0],
                         dz = F.b[1] - F.a[1],
@@ -8850,6 +8900,20 @@
                 t.tritt = true;
                 parts.push(t);
             }
+            // DIE DIENSTTREPPE: jede Blockstufe ist Trittfläche (Steigung 0,2 m unter der Stufe des Leibs), der Quader steht von
+            // der Sohle bis zu ihrem Auftritt — derselbe Körper, den der Bau zeichnet
+            m.treppen.forEach(function (TR) {
+                var FT = m.fluchten[TR.flucht];
+                TR.stufen.forEach(function (st) {
+                    var s = (st.s0 + st.s1) / 2,
+                        l = st.s1 - st.s0,
+                        b = m.treppeB,
+                        ts = teil(FT.a[0] + FT.u[0] * s + (FT.n[0] * b) / 2, (st.y - m.T) / 2, FT.a[1] + FT.u[1] * s + (FT.n[1] * b) / 2, Math.abs(FT.u[0]) * l + Math.abs(FT.n[0]) * b, st.y + m.T, Math.abs(FT.u[1]) * l + Math.abs(FT.n[1]) * b);
+                    ts.material = "stein";
+                    ts.tritt = true;
+                    parts.push(ts);
+                });
+            });
         } else if (id === "jochfeld") {
             // DIE BRÜCKE: die Bahn samt Trägern ist TRITTFLÄCHE (`tritt`: Rad und Fuß stehen auf ihrer Oberkante, kein Gehender
             // stößt an sie), das Geländer je Seite vom Radabweiser bis zum Handlauf ist Wand, das Joch steht als Holm und Pfähle
