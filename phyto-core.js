@@ -3107,9 +3107,11 @@
         // Sommer-Mitte, `wald` der Wald-Anteil seines Ort-Gesetzes); der Saum am Siedlungsrand (`forestOrt`, `ort` der Abstand
         // jenseits des nächsten Rands, `forestOrtAbstand`; `hang` die Steilheit, über der Pflug-Grenze rodet der Ort nicht)
         const schluss = forestSchluss(st);
-        const g = geburt * forestLichtung(st) * forestWaldgrenze(schnee, wald) * forestOrt(ort, hang);
+        // die Lichtung nimmt NACH der Selbst-Ausdünnung (`gelichtet`, planForestCell): die Stämme des gedünnten Bestands × Lichtung
+        const g = geburt * forestWaldgrenze(schnee, wald) * forestOrt(ort, hang);
+        const licht = forestLichtung(st);
         const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (g > 0 ? g : 0);
-        if (!(lambda > 0) || !kronen || !kronen.length) return 0;
+        if (!(lambda > 0) || !(licht > 0) || !kronen || !kronen.length) return 0;
         let wSumme = 0;
         for (let k = 0; k < kronen.length; k++) wSumme += kronen[k][0] > 0 ? kronen[k][0] : 0;
         if (!(wSumme > 0)) return 0;
@@ -3159,7 +3161,7 @@
                 deckung += w * _deckAnteil[g] * Math.PI * t * t * Q[st];
             }
         }
-        return 1 - Math.exp(-deckung);
+        return 1 - Math.exp(-licht * deckung);
     }
 
     // DIE NISCHE EINES ORTS (EINE Formel für den gepflanzten und den fernen Wald): Klima, Bestands-Mosaik, Feuchte,
@@ -3698,7 +3700,7 @@
                     const ex = dx - o.x;
                     const ez = dz - o.z;
                     schirm =
-                        o !== d && ex * ex + ez * ez < o.T * o.T && forestImDach(o, gx + R[q], gz + R[q + 1], geboren, pk);
+                        o !== d && ex * ex + ez * ez < o.T * o.T && !o.gelichtet && forestImDach(o, gx + R[q], gz + R[q + 1], geboren, pk);
                 }
             }
         }
@@ -3755,6 +3757,7 @@
         const S = nurDach ? forestDachFenster(gx, gz, geboren, pk) : null;
         for (let k = 0; k < own.length; k++) {
             const d = own[k];
+            if (d.gelichtet) continue; // die Lichtung nahm ihn nach dem Wuchs (`planForestCell`)
             const a = S ? +S.has(d) : forestSchicht(d, gx, gz, geboren, pk);
             if (a === 1) out.push(d);
             else if (a > 0)
@@ -3956,7 +3959,8 @@
             const sd = forestStandDensity(ctx.fbm, x, z);
             const st = ctx.stand(x, z); // der Stand des Standorts (FOREST_PACK.bestand): Lichtung und Schluss
             const wurf = rng();
-            const geburt = forestGeburt(sd) * forestLichtung(st);
+            // die Geburt ohne die Lichtung: die Lichtung nimmt erst nach der Selbst-Ausdünnung (`gelichtet`, unten)
+            const geburt = forestGeburt(sd);
             if (wurf > geburt) continue;
             if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
             // die Waldgrenze (`forestWaldgrenze`): derselbe Wurf gegen die Geburt im Schnee des Sommers am Boden des Darts —
@@ -4036,8 +4040,16 @@
             // DER SAUM AM SIEDLUNGSRAND (`forestOrt`, w20-wald-kosten): derselbe Wurf gegen die Geburt jenseits des Rands eines
             // Orts (ctx.ort: der Abstand, `forestOrtAbstand` über die Ränder des Wirts) — wie K10 NACH allen Würfen des Darts:
             // ein Ort dünnt den Bestand um sich, er würfelt ihn nie neu; ohne Ort bleibt jeder Wurf, wie er war.
-            if (wurf > grenze * forestOrt(ctx.ort(x, z), slope)) continue;
-            out.push({ x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY, schluss: forestSchluss(st) });
+            const gOrt = grenze * forestOrt(ctx.ort(x, z), slope);
+            if (wurf > gOrt) continue;
+            const dart = { x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY, schluss: forestSchluss(st) };
+            // DIE LICHTUNG NIMMT NACH DEM WUCHS (w28-laub-kante): derselbe Wurf gegen die Geburt × Lichtung — der Dart wird
+            // geboren und nimmt im Bestand seinen Platz (das Urteil des Dachs zählt ihn), die Lichtung (Mahd, Weide, Wurf)
+            // nimmt ihn danach: er steht nicht (`forestStehende`) und schirmt keinen Unterstand. Bis hier fiel er vor der
+            // Geburt — unter der Selbst-Ausdünnung (Matérn III) wuchs der gedünnte Rest in die Lücke, die Lichtung schloss
+            // sich (Mess-Wiese, Ring 25 m: Kronen-Deckung 0,114 → 0,164, 12 Bäume); jetzt trägt sie Lichtung × Bestand.
+            if (wurf > gOrt * forestLichtung(st)) dart.gelichtet = true; // nur am genommenen Dart: kein Stehender trägt das Feld
+            out.push(dart);
         }
         return out;
     }
