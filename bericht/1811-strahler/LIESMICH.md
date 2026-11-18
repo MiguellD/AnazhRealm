@@ -1,6 +1,6 @@
 # w28-strahler — ZIELBILD vor dem ersten Schnitt (GTX 1050, 18.11., gemessen an main c50e6b61, V18.546.329)
 
-**BEREIT ZUM BLICK, Stück 1, Kopf 3147ee40** (18.11. 04:55; WIP gepusht, nicht abgegeben) — die herd-freien Paare `{main,kopf}-h-lava-{nah,fern}-{nacht,tag}.png` und die vier Zahlen stehen im Abschnitt „Stand 18.11. 04:50“ unten; ältere Abschnitte sind Verlauf.
+**NICHT ABGEGEBEN — Entscheid des Koordinators 18.11. ≈ 05:00 nach eigenem Blick:** Stück 1 landet so nicht (das Herdfeuer am Kopf 3147ee40 beleuchtet nichts mehr); Stück 1 und DAS AUGE landen als EINE Abgabe. Stand, Zerlegung der Nacht und Zielbild im letzten Abschnitt unten; 3147ee40 bleibt WIP.
 
 Dieses Blatt steht für sich: ein neuer Koordinator liest hier Auftrag, Stand und nächsten Schritt ohne die Sitzung, die es schrieb.
 
@@ -247,3 +247,41 @@ nicht kanonisch, `_brandMasken` ohne Zeile in der Wanduhr-Liste — beide geschn
 GRÜN (63 s) · am Schnitt 1c40614e (derselbe Stamm): stand-takt --narbe auf der Karte GRÜN (L5 Leuchtdichte 0,51, Kern 8 gegen
 7,64, neben 0,035 m), gate:hoehlen-sicht GRÜN, gate:post-kette GRÜN. Der ganze Satz (check, welt-boot, playtest, stand-takt,
 post-kette) läuft am Kopf; sein Ergebnis steht in der nächsten Zeile dieses Blatts, sobald er durch ist.
+
+## Entscheid 18.11. ≈ 05:00 und die Zerlegung der gehobenen Nacht (gelesen und gemessen, KEIN Schnitt)
+
+**Entscheid (Koordinator, eigener Blick auf h-lava und a-herd nah-nacht):** Halm 0,5 m mit 17 % reicht (Zusatz-Punkt, steht als
+Zahl in der offen-Zeile; das stehende Soll ist das Flächen-Integral 10/40/60 m ≤ 15 %). Aber: main zeigt ein Feuer in der Nacht
+(Gras-Ring, Bäume, Stein warm) mit EINEM Fehler, dem weißen Teller; der Kopf eine Kerzenflamme in dunkler Wiese. Gesetzestreu
+und für den Spieler schlechter landet nicht. Die Wurzel ist das AUGE: der Zeitplan nacht 45 war ein Pflaster je Lampe, trug aber
+das dunkel-adaptierte Auge. EIN Gewinn des Auges an EINER Stelle auf JEDEM Licht (Umgebung, Strahler im Becken, gemalte Glut).
+
+**Zielbild (sein Auge):** Nacht, Herd nah — Feuerkreis 2 m Kontrast ≥ 3 gegen die Nacht (heute 1,55), Bäume und Stein in 6–8 m
+sichtbar warm wie an main, das Bett nicht weiß (ausgebrannte Pixel im Herd-Ausschnitt ≤ 2 %); Lava nah-nacht — Saum-Gras und
+Stein sichtbar warm (Kontrast ≥ 1,3 gegen ohne Lava, an main 1,38), ohne Sprenkel; Mittag wie der Kopf (R/G 0,91). Die
+Feuerkreis-Linse behält zwei Urteile, das zweite steigt von 1,5 auf das neue Maß.
+
+**Die Zerlegung** (`werkbank licht --uhr 0.5 | 0.0`, Mess-Wiese, Kopf 3147ee40; Quelle welt-licht.js):
+
+| Größe | Mittag | Mitternacht |
+|---|---|---|
+| E waagrecht gesamt | 7,83 | 0,598 |
+| Richtlicht (Sonne / Mond) | 6,39 | 0,465 (78 %) |
+| Umgebung (Himmel) | 1,44 | 0,083 |
+| Ambient · Hemi | 0 · 0 | 0,040 · 0,010 |
+| Belichtung k | 0,524 | 1,495 |
+
+Licht Tag : Nacht = 13,1 : 1; ehrlich Sonne : Vollmond ≈ 385 000 : 1 (100 000 : 0,26 lx — dieselben 0,26 lx trägt
+`NACHT_AUGE.luxJeEinheit`). Die Nacht-WERTE sind ×29 000 gehoben (14,8 Blenden), die Belichtung trägt ×2,85 (1,5 Blenden;
+Knoten −2,17 Stufen, Messer-Boden `nachtKnotenE` = `MOND_E` 0,462). Tonkurve und Auge der Nacht heben nicht.
+Das Feuer: sein Kreis trägt E ≈ 0,49 = 0,82 × Nacht; ehrlich 100–200 × Nacht. Gegen den Tag steht es ~200× zu stark. Der
+Anker 7,5 liegt zwischen beiden Welten; der Zeitplan nacht 45 ÷ mittag 1,6 (×28) war die Brücke.
+
+**Folgen, vor jedem Schnitt:** (a) Ehrliche Mond-Werte im Szenen-Ziel gehen nicht: 0,465 ÷ 29 000 = 1,6e-5 liegt unter der
+Normal-Grenze von Half-Float (6e-5) — der EINE Gewinn liegt VOR dem Rendern auf den Licht-Werten, nicht in der Post-Kette.
+(b) Mit demselben Gewinn steht das Feuer 100–200× über dem Mond-Boden: das Auge muss das Becken am Auge mitmessen (Punkt 4
+des Auftrags), sonst brennt es aus; dann wird die Wiese am Feuer dunkler als heute — eine Bild-Entscheidung.
+**Größe:** geschätzt 3 Tage für den ganzen Umzug (Mond, Nacht-Tafeln, Ambient/Hemi, alle Lampen, BELICHTUNG, AUGEN_LICHT,
+Linsen tag-achse · S0 · licht.K1/K5 · hoehlen-sicht · post-kette). Vorschlag an den Koordinator (Antwort steht aus): erstes
+Stück ≈ 1 Tag — der Gewinn bekommt EINEN Namen und EINE Stelle, die Mond-Zahlen bleiben numerisch als „ehrlich × Gewinn",
+Strahler und gemalte Glut gehen am Chokepoint `_leuchtTakt` durch ihn, der Lichtmesser liest das Becken am Auge mit.
