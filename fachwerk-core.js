@@ -498,6 +498,12 @@
   const WALLS=wallSpec();
   // DOPPELHAUS-INNEN: die geteilte Seite (Einheit A an +x, Einheit B unter SHIFT an −x) liegt in der EINEN Brandwand — ihre Fassade (Gefach, Riegel, Streben, Nägel, Fenster, Giebel) sieht kein Auge, der Bau legt sie nicht an
   const BRANDSEITE=x=>!!P.doppel&&(SHIFT?x<0:x>0), INNEN=w=>!w.horiz&&BRANDSEITE(w.fixed);
+  // DIE EINGÄNGE (Vorrat 14): Tür und Tor der Teilbauten (das Tor des Hofs an beiden Fluchten des Riegels, das Portal des Turms, die Tür an der Stirn des Flügels) —
+  // `s` ist ihre Außenseite, `rahmen` der Stoff ihres Gewändes (ohne: der Rahmen-Stoff des Hauses). Mit Haustür, Hintertür und den Türen des Anbaus reisen sie als
+  // `eingaenge`; der Leser ist das Fern-Fenster (`fensterFern`: die Fern-Tür). Vorher trug die ferne Stufe keinen Eingang (DESTNUR `tueren: false`): ab 26 m stand
+  // an jeder Tür und jedem Tor geschlossene Wand.
+  const EINGANG=[], rolleVon=(r)=>{ const m=mat(r); return (m&&m.__role)||_roleByMat.get(m)||r; };
+  function eingangAuf(cx,cy,cz,w,h,perp,s,rahmen){ EINGANG.push({cx:cx+SHIFT,cy,cz,w,h,perp,s,rahmen:rahmen?rolleVon(rahmen):null}); }
   const FERNFENSTER=[];   // DIE FERNE STUFE (Marke nur.fern: L2 und die Turm-L1 zeichnen den Körper der Liste und das Fern-Fenster): die Öffnungen der Teilbauten (Turm, Hof), die dort ihr Fern-Fenster tragen — `s` ist ihre Außenseite
   if(P.brandwand){ WALLS.forEach(w=>{                                                        // BRANDWAND-GESETZ: anliegende Seiten sind fensterlose Brandmauern — dasselbe Feld→Wand-Prinzip wie die Fenster-Okklusion
     const seite = w.horiz ? (w.fixed>0?'z1':'z0') : (w.fixed>0?'x1':'x0');
@@ -1349,7 +1355,7 @@
         if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH, ys=rs([dh].concat(...NB.map(n=>[n.cy-n.ch/2,n.cy+n.ch/2]))), lauf=(b0,b1)=>{ let a=b0; for(const n of NB){ if(!(n.c>b0&&n.c<b1))continue; const L=n.c-n.wd/2,R=n.c+n.wd/2; gz(a,L,yB,yT,ys); gz(L,R,yB,n.cy-n.ch/2,ys); gz(L,R,n.cy+n.ch/2,yT,ys); a=R; } gz(a,b1,yB,yT,ys); }; lauf(G0,dL); lauf(dR,G1); if(yT>dh+0.05)gz(dL,dR,dh,yT,ys); }
         else if(opt.win){ const {c,wd,cy,ch}=opt.win, L=c-wd/2,R=c+wd/2,wb=cy-ch/2,wt=cy+ch/2, ys=rs([wb,wt]); gz(G0,L,yB,yT,ys); gz(R,G1,yB,yT,ys); gz(L,R,yB,wb,ys); gz(L,R,wt,yT,ys); }
         else gz(G0,G1,yB,yT,rs([])); }
-      if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH; lichtAuf(horiz?(dL+dR)/2:fixed,(yB+dh)/2,horiz?fixed:(dL+dR)/2,dR-dL,dh-yB,horiz?'z':'x',0);
+      if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH; lichtAuf(horiz?(dL+dR)/2:fixed,(yB+dh)/2,horiz?fixed:(dL+dR)/2,dR-dL,dh-yB,horiz?'z':'x',0); eingangAuf(horiz?(dL+dR)/2:fixed,(yB+dh)/2,horiz?fixed:(dL+dR)/2,dR-dL,dh-yB,horiz?'z':'x',opt.aus||(fixed<0?-1:1));
         if(!GLATT){ const lauf=(b0,b1)=>{ let a=b0; for(const n of NB){ if(!(n.c>b0&&n.c<b1))continue; const L=n.c-n.wd/2,R=n.c+n.wd/2,wb=n.cy-n.ch/2,wt=n.cy+n.ch/2; fill(a,L,yI0,yI1); fill(L,R,yI0,wb); fill(L,R,wt,yI1); if(horiz){ beam(g,(L+R)/2,wb,fixed,R-L,0.1,0.13,'holz'); beam(g,(L+R)/2,wt,fixed,R-L,0.1,0.13,'holz'); } else { beam(g,fixed,wb,(L+R)/2,0.13,0.1,R-L,'holz'); beam(g,fixed,wt,(L+R)/2,0.13,0.1,R-L,'holz'); } a=R; } fill(a,b1,yI0,yI1); }; lauf(a0,dL); lauf(dR,a1); if(yI1>dh+0.05)fill(dL,dR,dh,yI1); }
         if(horiz){ beam(g,(dL+dR)/2,dh+0.06,fixed,dR-dL+0.26,0.13,0.15,'holz'); [dL,dR].forEach(d=>beam(g,d,(yB+dh)/2,fixed,0.13,dh-yB,0.14,'holz')); }
         else      { beam(g,fixed,dh+0.06,(dL+dR)/2,0.15,0.13,dR-dL+0.26,'holz'); [dL,dR].forEach(d=>beam(g,fixed,(yB+dh)/2,d,0.14,dh-yB,0.13,'holz')); }
@@ -1551,7 +1557,7 @@
     // an der Luft, T das Tor, `mitte` die Achse des Riegels (die Außenseite). Die ferne Stufe trägt dieselben Fenster als Fern-Fenster.
     const wand=(horiz,fix,a0,a1,frei,T,mitte)=>{ const F=[], ax=horiz?'z':'x';
       for(const [a,b] of frei){ if(T) F.push(...reihe(a,Math.min(b,T.x-T.w/2)),...reihe(Math.max(a,T.x+T.w/2),b)); else F.push(...reihe(a,b)); }
-      if(T) lichtAuf(T.x,baseY+T.lh/2,fix,T.w,T.lh,'z',0);   // das Tor steht offen: es lässt den Himmel in den Riegel (`raumVon`), nah wie fern
+      if(T){ lichtAuf(T.x,baseY+T.lh/2,fix,T.w,T.lh,'z',0); eingangAuf(T.x,baseY+T.lh/2,fix,T.w,T.lh,'z',fix<mitte?-1:1,tr); }   // das Tor steht offen: es lässt den Himmel in den Riegel (`raumVon`), nah wie fern
       if(_fern){ for(const f of F){ const px=horiz?f.c:fix, pz=horiz?fix:f.c; FERNFENSTER.push({cx:SHIFT?px+SHIFT:px, cy:wcy, cz:pz, w:f.w, h:wfh, perp:ax, kind:'hof', s:fix<mitte?-1:1, schlaf:fensterSchlaeft(P.seed,ax,fix,f.c,wcy), offen:fluegelOffen(P.seed,ax,fix,f.c,wcy)}); } return; }
       const L=F.map(f=>({c:f.c,w:f.w+0.12,b:wcy-wfh/2-0.03,t:wcy+wfh/2+0.03})); if(T) L.push({c:T.x,w:T.w,b:baseY,t:baseY+T.lh});
       const n0=g.children.length; lochWand(g,horiz,fix,a0,a1,baseY,baseY+wH,L,wr,0.22,true);
@@ -1743,6 +1749,7 @@
       lochWand(g,false, xL, tz-tw/2+twT, tz+tw/2-twT, y0, y1, sHole, wr, twT);
       lochWand(g,false, xR, tz-tw/2+twT, tz+tw/2-twT, y0, y1, sHole, wr, twT); }
     for(let s=1;s<=nLv&&_tN.boeden!==false;s++){ const fy=baseY+Math.min(h-0.35, s*2.4); beam(g,tx,fy+0.06,tz,tw-2*twT+0.06,0.12,tw-2*twT+0.06,'boden'); }   // GESCHOSSBÖDEN — der Schaft ist bewohnbar
+    eingangAuf(tx,baseY+pH/2,tz+szT*tw/2,pw2*2-0.02,pH,'z',szT,wr);
     if(!(_fern&&_tN.tueren===false)){ bogenRahmen(g,tx,baseY+pH,tz+szT*(tw/2+0.03),pw2,true,(P.bogenTyp&&P.bogenTyp!=='none')?P.bogenTyp:'rund',wr); beam(g,tx,baseY+0.75,tz+szT*(tw/2-0.06),pw2*2-0.14,1.5,0.09,'holz'); aussentreppe(g,tx,tz+szT*(tw/2+0.08),0,szT,pw2*2); }   // Blendbogen + Torblatt in der Laibung + Stufen (die ferne Stufe ohne Türen: der Körper steht geschlossen)
     { for(let s=1;s<nLv;s++){ const cy=baseY+1.8+s*2.4;
       if(_fern){ const ff=(cx,cz,perp,sg,wand,u)=>FERNFENSTER.push({cx:SHIFT?cx+SHIFT:cx, cy, cz, w:fw2, h:fh, perp, kind:'turm', s:sg, schlaf:fensterSchlaeft(P.seed,perp,wand,u,cy), offen:fluegelOffen(P.seed,perp,wand,u,cy)});   // der Würfel aus derselben Lage wie fensterAt der nahen Stufen
@@ -1848,7 +1855,12 @@
   { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:(sm&&sm.RM&&sm.RM.ziegel)||'ziegel',ring:ROUND?0:P.post/2-0.02};   // ring: so weit steht der Ständer-Ring (postsRing, plateRing: Mitte 2 cm innen) vor dem Grundriss — der Umriss der L0
     addMasse(Object.assign({},hm)); if(P.doppel){ SHIFT=W; addMasse(Object.assign({},hm)); SHIFT=0; }
     if(DORMER) addMasse({art:'gaube',x0:DORMER.gx-DORMER.gW/2,x1:DORMER.gx+DORMER.gW/2,z0:DORMER.zFront,z1:DORMER.zBack,y0:DORMER.baseY2,y1:DORMER.frontTop}); }   // der Hauptkörper (das Doppelhaus: beide Einheiten)
-  return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors, licht:LICHT,
+  const eingaenge=[];
+  if(!ROUND) for(const dx of (P.doppel?[0,W]:[0])){ eingaenge.push({cx:dx,cy:baseY+doorH/2,cz:-Dp/2,w:doorW,h:doorH,perp:'z',s:-1,rahmen:null});
+    if(backDoor) eingaenge.push({cx:backDoor.cx+dx,cy:baseY+doorH/2,cz:Dp/2,w:Math.min(1.0,backDoor.hi-backDoor.lo-0.2),h:doorH,perp:'z',s:1,rahmen:null}); }
+  for(const A of annexDoors) eingaenge.push({cx:(A.x0+A.x1)/2,cy:(A.y0+A.y1)/2,cz:A.z,w:A.x1-A.x0,h:A.y1-A.y0,perp:'z',s:A.kind==='tor'?-1:1,rahmen:null});
+  for(const e of EINGANG) eingaenge.push(e);
+  return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, eingaenge, annexDoors, licht:LICHT,
     cellar: P.keller?{x0:-(W/2-0.08),x1:(W/2-0.08),z0:-(Dp/2-0.08),z1:(Dp/2-0.08),floorY:kellerY+0.12}:null,
     wings: wings.map(w=>({side:w.side,outIsX:w.outIsX,ox:w.ox,oz:w.oz,x0:w.x0,x1:w.x1,z0:w.z0,z1:w.z1,eY:w.eY,rY:w.rY,roofAt:w.roofAt,door:w.door})),
     grundriss: P.grundriss,
@@ -2885,7 +2897,7 @@
         KREUZ = 0.02;
     // prettier-ignore
     function fensterFern(fen, B, geoms){
-  const liste=fen&&fen.liste; if(!liste||!liste.length) return;
+  const liste=(fen&&fen.liste)||[], tueren=(fen&&fen.tueren)||[]; if(!liste.length&&!tueren.length) return;
   const kol=B.p.col, pu=_colFor('putz',kol), rr=fen.rahmen||'holz', rStoff=SEH_DER_ROLLE[rr]==='stoff';
   const rahmenM=rStoff?M[rr]:M.putz, rahmenF=rStoff?[1,1,1]:_colFor(rr,kol).map((c,i)=>c/Math.max(1e-4,pu[i]));
   const innen=_innenFaktor(B,fen.raum), gd=_colFor('glasdunkel',kol), da=M.glasdunkel.opacity;
@@ -2915,6 +2927,15 @@
     const sch=(dl)=>[fl(ar,1-ar,fy0+SCHEIBE_RAND,fy1-SCHEIBE_RAND,dl,N), fl(ar,1-ar,fy0+SCHEIBE_RAND,fy1-SCHEIBE_RAND,-dl,Nm)];
     if(schlaf) teile(sch(0.01), M.putz, schlafF);
     else { teile(sch(0.01), M.putz, innen); teile(sch(0.02), M.glas, eins); } }
+  // DIE FERN-TÜR (Vorrat 14): je Eingang des Gesetzbuchs (`H.eingaenge`) der Türstock als Kasten vor der Wand (0,13 m um die lichte Öffnung, wie Stock und Sturz der L0,
+  // im Stoff seines Gewändes) und darin die offene Tür als Fläche im Ton des Raums dahinter (der Innenkörper der L1, `_innenFaktor`) — die Tür der L0 steht offen,
+  // man sieht in den Flur; das Tor des Hofs in den Riegel. Derselbe Bauer wie das Fern-Fenster, 8 Dreiecke je Eingang, kein eigener Befehl.
+  for(const o of tueren){ const z=o.perp==='z', s=o.s, u=z?o.cx:o.cz, e0=_fernVorn(kappen,o,s), P=(uu,y,d)=>z?[uu,y,e0+s*d]:[e0+s*d,y,uu], aus=z?[0,0,s]:[s,0,0], uR=z?[1,0,0]:[0,0,1];
+    const rt=o.rahmen||rr, tStoff=SEH_DER_ROLLE[rt]==='stoff', tM=tStoff?M[rt]:M.putz, tF=tStoff?[1,1,1]:_colFor(rt,kol).map((c,i)=>c/Math.max(1e-4,pu[i]));
+    const rw=o.w/2+0.13, y0=o.cy-o.h/2, y1=o.cy+o.h/2+0.13, d0=-0.02, d1=RAHMEN_TIEFE;
+    teile([[[P(u-rw,y0,d1),P(u+rw,y0,d1),P(u+rw,y1,d1),P(u-rw,y1,d1)],aus],
+      [[P(u-rw,y0,d0),P(u-rw,y1,d0),P(u-rw,y1,d1),P(u-rw,y0,d1)],uR.map(c=>-c)], [[P(u+rw,y0,d0),P(u+rw,y1,d0),P(u+rw,y1,d1),P(u+rw,y0,d1)],uR]], tM, tF);
+    teile([[[P(u-o.w/2,y0,d1+0.01),P(u+o.w/2,y0,d1+0.01),P(u+o.w/2,o.cy+o.h/2,d1+0.01),P(u-o.w/2,o.cy+o.h/2,d1+0.01)],aus]], M.putz, innen); }
   const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, kol, geoms, 0);
 }
@@ -2940,7 +2961,7 @@
   for(const k of kappen) if(k.perp===o.perp&&k.s===s&&s*k.d>s*e&&(drin(k.Q,u-1e-3,o.cy)||drin(k.Q,u+1e-3,o.cy))) e=k.d;   // die Mitte auf der First-Kante zweier Keile: eine Seite trägt sie
   return e; }
     // Die Öffnungen eines Stapel-Baus (`stapelBau`: der Aufsatz eines Turms steht um `off` höher) — die Liste des Fern-Fensters.
-    function fensterVon(st){ const a=(st.H&&st.H.windows)||[], rahmen=(st.H&&st.H.rahmen)||'holz', raum=(st.H&&st.H.raum)||'gefach'; if(!st.topH||!st.topH.windows) return {liste:a, rahmen, raum}; return {liste:a.concat(st.topH.windows.map(function(o){ return Object.assign({},o,{cy:o.cy+st.off}); })), rahmen, raum}; }
+    function fensterVon(st){ const a=(st.H&&st.H.windows)||[], tueren=(st.H&&st.H.eingaenge)||[], rahmen=(st.H&&st.H.rahmen)||'holz', raum=(st.H&&st.H.raum)||'gefach'; if(!st.topH||!st.topH.windows) return {liste:a, tueren, rahmen, raum}; return {liste:a.concat(st.topH.windows.map(function(o){ return Object.assign({},o,{cy:o.cy+st.off}); })), tueren, rahmen, raum}; }
     // prettier-ignore
     function fpVon(H){ const d=H.dims;                                                          // GRUNDRISS-QUELLE: Hauptkörper + Flügel-Rechtecke (lokal) — speist den silhouetten-treuen Fernkörper
   return [{x0:-d.W/2,x1:d.W/2,z0:-d.D/2,z1:d.D/2,eY:d.eaveY,rY:d.ridgeY}]
