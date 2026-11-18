@@ -87,6 +87,7 @@
                 "stamm/netz-identitaet.js": "c:0000000000000000",
                 "stamm/netz-portal.js": "c:0000000000000000",
                 "stamm/feld-leben.js": "c:0000000000000000",
+                "stamm/feld-brand.js": "c:0000000000000000",
                 "stamm/feld-dsl.js": "c:0000000000000000",
                 "stamm/feld-nexus.js": "c:0000000000000000",
                 "stamm/feld-sprache.js": "c:0000000000000000",
@@ -176,6 +177,7 @@
                 "stamm/netz-identitaet.js": "c:0000000000000000",
                 "stamm/netz-portal.js": "c:0000000000000000",
                 "stamm/feld-leben.js": "c:0000000000000000",
+                "stamm/feld-brand.js": "c:0000000000000000",
                 "stamm/feld-dsl.js": "c:0000000000000000",
                 "stamm/feld-nexus.js": "c:0000000000000000",
                 "stamm/feld-sprache.js": "c:0000000000000000",
@@ -520,6 +522,7 @@
                 "stamm/kampf.js",
                 "stamm/netz-p2p.js",
                 "stamm/feld-leben.js",
+                "stamm/feld-brand.js",
                 "stamm/feld-dsl.js",
                 "stamm/feld-nexus.js",
                 "stamm/feld-sprache.js",
@@ -606,7 +609,8 @@
                 "stamm/siedlung-instanz.js",
                 "stamm/siedlung-wege.js",
                 "stamm/vegetation-wiese.js",
-                "stamm/feld-leben.js"
+                "stamm/feld-leben.js",
+                "stamm/feld-brand.js"
             ],
             "ist": {
                 "labor": {
@@ -685,6 +689,7 @@
                 "stamm/siedlung-wege.js",
                 "stamm/vegetation-wiese.js",
                 "stamm/feld-leben.js",
+                "stamm/feld-brand.js",
                 "stamm/werkstatt-bauen.js"
             ],
             "ist": {
