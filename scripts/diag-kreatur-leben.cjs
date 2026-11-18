@@ -1256,6 +1256,224 @@ async function lebenBuehnen() {
         z.randMin = rund(z.randMin, 2);
         return z;
     });
+    // ── DAS ERBE (leben.evolution.erbe#1 · muster#1, leben-erbe): der ECHTE Takt des Bestands (`_bestandSchritt` →
+    // `_bestandTakt`, die Geburt aus Mutter und Vater, Hunger, Riss und Alter des Gesetzes `__lebenCore`) rechnet Regionen fern
+    // als Zahl, ohne Leib, je Saat aus eigenen Strömen (wie der Zeitraffer der Kaskade) — kein Zweit-Modell im Skript. Die Probe
+    // liest nur: den EINEN Leser `_lebenKern` umhüllt sie, um je Kind seine Eltern zu kennen (die Erb-Vektoren `a` der Mutter und
+    // des Vaters, wie `_creatureNaturalBirth` sie an `kind` gibt — dieselben Objekte wie in den Datensätzen der Eltern); der
+    // Phänotyp ist ln(M∞ / M_guss) des Datensatzes (`_bestandMasseAdult`, mit der Umwelt-Streuung seiner Kennung). Die MUTANTE
+    // `kind → gruender` ist ein Probe-Eingriff an dieser Hülle, kein Schalter im Spiel. Mit `opts.saaten` fährt die Akte
+    // (`node scripts/diag-kreatur-leben.cjs --akte`) dieselben Läufe an 30 Saaten; das Tor fährt eine ──
+    const SAATEN = Math.max(1, Math.floor((opts && opts.saaten) || 1));
+    const L0 = A._lebenKern();
+    const huelle = { mutante: false, eltern: new Map() };
+    const lebenHuelle = () =>
+        aufraeumen.push(
+            leihe(A, {
+                _lebenKernMemo: Object.freeze(
+                    Object.assign({}, L0, {
+                        kind: (aM, aV, nSeg, nMut, nVater) => {
+                            const a = huelle.mutante ? L0.gruender(nSeg) : L0.kind(aM, aV, nSeg, nMut, nVater);
+                            huelle.eltern.set(a, [aM, aV]);
+                            return a;
+                        },
+                    })
+                ),
+            })
+        );
+    // die Regionen der Probe: die 3 × 3 Kacheln um den Spieler, deren Boden steht (`_bestandBereit`), ohne Gehege
+    const lebenRegionen = async () => {
+        const [ix, iz] = r._bestandHier().split(",").map(Number);
+        const keys = [];
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) keys.push(ix + dx + "," + (iz + dz));
+        for (let k = 0; k < 200 && !keys.every((key) => r._bestandBereit(key)); k++) await sleep(50);
+        return keys.filter((key) => r._bestandBereit(key));
+    };
+    // EIN LAUF: die Regionen `keys` leer an der Welt-Uhr 0, `takte` Takte des Gesetzes je Region; `vor(k, R)` greift vor jedem
+    // Takt ein (der Gegenlauf), `nach(k, R)` liest danach
+    const lebenLauf = (saat, keys, takte, vor, nach) => {
+        const rng = new Proxy(Object.create(null), {
+            get: (o, k) => o[k] || (o[k] = r._streamRng("leben-" + saat + "-" + String(k))),
+        });
+        r._faunaStroeme = { seed: s.worldMeta.seed, rng };
+        [s.spielZeit, s.lifeField, s.faunaBestand] = [0, undefined, undefined];
+        const R = keys.map((key) => Object.assign(r._bestandRegion(key, false), { t: 0 }));
+        const frei = R.map((Rj) => !Rj.tiere.some((t) => t.gehege));
+        const t0 = performance.now();
+        for (let k = 0; k < takte; k++)
+            for (let j = 0; j < keys.length; j++) {
+                if (!frei[j]) continue;
+                if (vor) vor(k, R[j]);
+                const tode = [];
+                r._bestandSchritt(keys[j], R[j], true, tode);
+                r._bestandTode(tode);
+                if (nach) nach(k, R[j]);
+            }
+        s.spielZeit = 0;
+        return { R: R.filter((x, j) => frei[j]), s: (performance.now() - t0) / 1000 };
+    };
+    const lnM = (t) => Math.log(r._bestandMasseAdult(t) / r._gattungKg(t.g));
+    // die Regression y auf x (Steigung, ihr Standardfehler, n)
+    const regression = (P) => {
+        const n = P.length;
+        if (n < 3) return { steigung: null, se: null, n };
+        const mx = P.reduce((q, p) => q + p[0], 0) / n,
+            my = P.reduce((q, p) => q + p[1], 0) / n;
+        let [sxx, sxy, syy] = [0, 0, 0];
+        for (const [x, y] of P) [sxx, sxy, syy] = [sxx + (x - mx) ** 2, sxy + (x - mx) * (y - my), syy + (y - my) ** 2];
+        const b = sxy / sxx;
+        const se = Math.sqrt(Math.max(0, (syy - b * sxy) / (n - 2)) / sxx);
+        return { steigung: rund(b, 3), se: rund(se, 3), n };
+    };
+    await buehne("erbe", async () => {
+        lebenHuelle();
+        const keys = await lebenRegionen();
+        // ≥ 10 Generationen: die Generation eines Kinds ist die seiner Mutter + 1 (ein Gründer 0)
+        const TAKTE = 2160; // 6 Spielstunden je Region (der Hirsch ist reif nach 7,7 min, lebt 37,8 min)
+        const erbe = (saat, mutante) => {
+            Object.assign(huelle, { mutante: mutante || taeter === "erbe-kind", eltern: new Map() });
+            const wer = new WeakMap();
+            const [mitte, mutter] = [[], []];
+            let gen = 0;
+            const nach = (k, R) => {
+                for (const t of R.tiere) {
+                    if (wer.has(t.a)) continue;
+                    const e = huelle.eltern.get(t.a);
+                    const [M, V] = e ? [wer.get(e[0]), e[1] ? wer.get(e[1]) : null] : [null, null];
+                    const ich = { p: lnM(t), gen: M ? M.gen + 1 : 0 };
+                    wer.set(t.a, ich);
+                    gen = Math.max(gen, ich.gen);
+                    if (M) mutter.push([M.p, ich.p]);
+                    if (M && V) mitte.push([(M.p + V.p) / 2, ich.p]);
+                }
+            };
+            const l = lebenLauf(saat, keys, TAKTE, null, nach);
+            huelle.mutante = false;
+            return { mitte, mutter, gen, s: l.s, regionen: l.R.length };
+        };
+        const z = { regionen: 0, saaten: [], s: 0 };
+        const [alle, aus] = [[], []];
+        for (let i = 1; i <= SAATEN; i++) {
+            const [E, M] = [erbe(i, false), erbe(i, true)];
+            alle.push(...E.mitte);
+            aus.push(...M.mitte);
+            z.regionen = E.regionen;
+            z.s += E.s + M.s;
+            z.saaten.push({
+                steigung: regression(E.mitte).steigung,
+                mutante: regression(M.mitte).steigung,
+                mutter: regression(E.mutter).steigung,
+                gen: E.gen,
+                paare: E.mitte.length,
+            });
+            await sleep(1);
+        }
+        Object.assign(z, {
+            erbe: regression(alle),
+            mutante: regression(aus),
+            gen: Math.min(...z.saaten.map((q) => q.gen)),
+            s: rund(z.s, 1),
+            takte: TAKTE,
+        });
+        return z;
+    });
+    // ── muster#1 (Räuberdruck auf große Hirsche → Größe sinkt; Gegenlauf ohne Räuber): EINE Region mit Hirsch und Wolf, 46 000 Takte
+    // (≈ 10³ Hirsch-Generationen), Gegenlauf mit allen Wölfen vor jedem Takt aus dem Verzeichnis genommen (wie der Eingriff der
+    // Kaskade); gemessen das Mittel von ln(M∞ / M_guss) der reifen Hirsche über die zweite Hälfte. Das Vorzeichen ist ERGEBNIS —
+    // das Tor urteilt nur, dass die Kräfte wirken: der Riss wählt sein Opfer nach dem Ertrag (`rissGewicht` ∝ Masse), gegen die
+    // Erwartung des Gesetzes an jeder Wahl (wie oft das Älteste, welche Masse) ──
+    await buehne("muster", async () => {
+        // der Täter: die Opferwahl des Risses auf das Älteste zurückgesetzt (das Opfer bis leben-erbe)
+        if (taeter === "riss-aeltester")
+            decke("_bestandRissOpfer", () => (tiere, g, beute, rng) => {
+                rng();
+                let o = null;
+                for (const t of tiere) if ((!g || t.g === g) && (!beute || beute.has(t)) && (!o || t.alterS > o.alterS)) o = t; // prettier-ignore
+                return o;
+            });
+        const riss = { n: 0, aeltest: 0, pAeltest: 0, vAeltest: 0, kg: 0, kgSoll: 0, kgVar: 0 };
+        decke("_bestandRissOpfer", (alt) => (tiere, g, beute, rng) => {
+            const kand = tiere.filter((t) => (!g || t.g === g) && (!beute || beute.has(t)));
+            const o = alt.call(r, tiere, g, beute, rng);
+            if (!o || kand.length < 2) return o;
+            const m = kand.map((t) => r._bestandKg(t));
+            const w = m.map((x) => L0.rissGewicht(x));
+            const W = w.reduce(addiere, 0);
+            const ia = kand.reduce((b, t, i) => (t.alterS > kand[b].alterS ? i : b), 0);
+            const eM = m.reduce((q, x, i) => q + (x * w[i]) / W, 0);
+            const vM = m.reduce((q, x, i) => q + ((x - eM) ** 2 * w[i]) / W, 0);
+            const p = w[ia] / W;
+            Object.assign(riss, {
+                n: riss.n + 1,
+                aeltest: riss.aeltest + (o === kand[ia]),
+                pAeltest: riss.pAeltest + p,
+                vAeltest: riss.vAeltest + p * (1 - p),
+                kg: riss.kg + r._bestandKg(o),
+                kgSoll: riss.kgSoll + eM,
+                kgVar: riss.kgVar + vM,
+            });
+            return o;
+        });
+        const keys = await lebenRegionen();
+        // die Region: ihr Boden trägt Lebensraum für Hirsch und Wolf (die Kapazität des Wolfs folgt seiner Beute, leer ist sie 0),
+        // die Kapazität des Hirschs die größte
+        const LG = A._lebensraumGesetz();
+        const raum = (key, g) => r._bestandFeld(key).zellen.reduce((q, c) => q + LG.lebensraum(g, c.klasse, LG.L), 0);
+        const K = (key) => r._kreaturBestand(null, key).deer.K;
+        const tal = keys.filter((k) => raum(k, "deer") > 0 && raum(k, "wolf") > 0).sort((a, b) => K(b) - K(a))[0];
+        if (!tal) throw new Error("keine Region trägt Hirsch und Wolf");
+        const TAKTE = 46000;
+        const lauf = (saat, ohneWolf) => {
+            const q = { hirsch: 0, woelfe: 0, proben: 0, mittel: 0, reif: 0, ueber: 0 };
+            // der Gegenlauf: jeder Wolf verlässt das Verzeichnis vor dem Takt und jeder, der im Takt eintrat, nach ihm
+            const ohne = (R) => {
+                for (const t of R.tiere.filter((t) => t.g === "wolf")) R.tiere.splice(R.tiere.indexOf(t), 1);
+            };
+            const vor = ohneWolf ? (k, R) => ohne(R) : null;
+            const nach = (k, R) => {
+                if (ohneWolf) ohne(R);
+                if (k < TAKTE / 2 || k % 100) return;
+                const H = R.tiere.filter((t) => t.g === "deer" && r._bestandReif(t));
+                q.woelfe += R.tiere.filter((t) => t.g === "wolf").length;
+                q.hirsch += R.tiere.filter((t) => t.g === "deer").length;
+                q.proben++;
+                if (H.length) q.mittel += H.reduce((p, t) => p + lnM(t), 0) / H.length;
+                // jenseits der Spanne des Gesetzes: M∞ über dem größten Erwachsenen (+4σ), das der Leib noch zeigt
+                [q.reif, q.ueber] = [q.reif + H.length, q.ueber + H.filter((t) => lnM(t) > 3 * Math.log(L0.spanne()[1])).length]; // prettier-ignore
+            };
+            const l = lebenLauf(saat, [tal], TAKTE, vor, nach);
+            return {
+                lnM: rund(q.mittel / Math.max(1, q.proben), 4),
+                hirsch: rund(q.hirsch / Math.max(1, q.proben), 2),
+                woelfe: rund(q.woelfe / Math.max(1, q.proben), 2),
+                ueberSpanne: rund(q.ueber / Math.max(1, q.reif), 3),
+                s: rund(l.s, 1),
+            };
+        };
+        const z = { tal, takte: TAKTE, saaten: [] };
+        for (let i = 1; i <= SAATEN; i++) {
+            const [an, aus] = [lauf(i, false), lauf(i, true)];
+            z.saaten.push({ delta: rund(an.lnM - aus.lnM, 4), an, aus });
+            await sleep(1);
+        }
+        const D = z.saaten.map((q) => q.delta);
+        Object.assign(z, {
+            delta: rund(D.reduce(addiere, 0) / D.length, 4),
+            negativ: D.filter((d) => d < 0).length,
+            wanduhrMaxS: Math.max(...z.saaten.flatMap((q) => [q.an.s, q.aus.s])),
+            riss: {
+                n: riss.n,
+                aeltest: riss.aeltest,
+                aeltestSoll: rund(riss.pAeltest, 1),
+                aeltestZ: rund((riss.aeltest - riss.pAeltest) / Math.sqrt(Math.max(1e-9, riss.vAeltest)), 2),
+                kgZ: rund((riss.kg - riss.kgSoll) / Math.sqrt(Math.max(1e-9, riss.kgVar)), 2),
+                // die Abweichung als Anteil der Erwartung (das Maß des Urteils; z wächst mit n und misst dann den Strom des Takts)
+                aeltestRel: rund(riss.aeltest / Math.max(1e-9, riss.pAeltest) - 1, 4),
+                kgRel: rund(riss.kg / Math.max(1e-9, riss.kgSoll) - 1, 4),
+            },
+        });
+        return z;
+    });
 }
 // das Soll der Lebens-Proben (`soll(bedingung, grund)` aus dem Urteil der Kreatur-Proben)
 function lebenUrteil(name, z, soll) {
@@ -1317,6 +1535,40 @@ function lebenUrteil(name, z, soll) {
             z.ankunft.vor === 0 && z.ankunft.erstes === z.tiere && z.ankunft.platz <= 0.5,
             `die Ankunft steht leer: ${z.ankunft.erstes} von ${z.tiere} Leibern im ersten Bild des Gasts, der mit dem Blick ins Gehege ankommt (davor ${z.ankunft.vor}, Soll 0; ${z.ankunft.platz} m neben ihrem Ruhe-Platz, Soll ≤ 0,5)`
         );
+    }
+    // DAS ERBE (leben.evolution.erbe#1): das Kind trägt das Erbe seiner Eltern — die Steigung von ln M∞ des Kinds auf das
+    // Eltern-Mittel liegt im Band [0,2; 0,8] (das Gesetz: h² = 0,46) über ≥ 10 Generationen; die Mutante `kind → gruender` erbt nicht
+    if (name === "erbe") {
+        const [E, M] = [z.erbe, z.mutante];
+        soll(
+            z.gen >= 10 && E.n >= 200 && M.n >= 200,
+            `zu wenig Leben für die Regression: ${z.gen} Generationen (Soll ≥ 10), ${E.n} Eltern-Kind-Paare, Mutante ${M.n} (Soll ≥ 200)`
+        );
+        soll(
+            E.steigung >= 0.2 && E.steigung <= 0.8,
+            `das Erbe reist nicht von den Eltern zum Kind (kind): Steigung ${E.steigung} ± ${E.se} an ${E.n} Paaren (Soll 0,2–0,8, das Gesetz 0,46)`
+        );
+        soll(
+            Math.abs(M.steigung) <= Math.max(0.1, 3 * M.se),
+            `die Mutante kind → gruender erbt: Steigung ${M.steigung} ± ${M.se} (Soll |·| ≤ ${Math.max(0.1, 3 * M.se)})`
+        );
+    }
+    // muster#1: die Kräfte wirken — der Riss wählt nach dem Ertrag des Jägers (rissGewicht ∝ Masse), gegen die Erwartung des Gesetzes
+    // an jeder Wahl (wie oft das Älteste, welche Masse: je ≤ 5 % der Erwartung — der Täter „das Älteste“ liegt bei +233 %, eine
+    // gleichverteilte Wahl verfehlt die Masse um den CV² der Beute); Wölfe im Lauf, keiner im Gegenlauf; das Vorzeichen von
+    // Δ ln M̄ ist Befund, kein Soll
+    if (name === "muster") {
+        const Rz = z.riss;
+        soll(Rz.n >= 30, `der Riss wählte ${Rz.n}-mal unter ≥ 2 Beuten (Soll ≥ 30, vakuös)`);
+        soll(
+            z.saaten.every((q) => q.an.woelfe > 0 && q.aus.woelfe === 0 && q.an.hirsch > 0 && q.aus.hirsch > 0),
+            `der Gegenlauf trägt keinen Unterschied: ${JSON.stringify(z.saaten.map((q) => [q.an.woelfe, q.aus.woelfe, q.an.hirsch, q.aus.hirsch]))} (Wölfe an > 0, aus 0; Hirsche > 0)`
+        );
+        soll(
+            Math.abs(Rz.aeltestRel) <= 0.05 && Math.abs(Rz.kgRel) <= 0.05,
+            `der Riss wählt sein Opfer nicht nach dem Ertrag (rissGewicht): ${Rz.aeltest} von ${Rz.n} das Älteste (Soll ${Rz.aeltestSoll}, ${Rz.aeltestRel}, z ${Rz.aeltestZ}), Masse ${Rz.kgRel} gegen die Erwartung (z ${Rz.kgZ}; Soll je |·| ≤ 0,05 — gleichverteilt wiche die Masse um den CV² der Beute)`
+        );
+        soll(z.wanduhrMaxS <= 60, `ein Lauf von ${z.takte} Takten dauert ${z.wanduhrMaxS} s (Soll ≤ 60 s)`);
     }
     if (name === "kaskade") {
         soll(
@@ -1489,8 +1741,10 @@ function lebenUrteil(name, z, soll) {
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
     BUEHNEN: `await (${lebenQuelle})();`,
-    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen", "gehege"],
+    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen", "gehege", "erbe", "muster"],
     TAETER: {
+        erbe: [["erbe-kind", /das Erbe reist nicht von den Eltern zum Kind \(kind\)/]],
+        muster: [["riss-aeltester", /nicht nach dem Ertrag \(rissGewicht\)/]],
         gehege: [
             ["gehege-rand", /Ausbruch: [1-9]/],
             ["gehege-term", /das wilde Gesetz zählt das Gehege: [1-9]/],
@@ -1549,6 +1803,38 @@ module.exports = {
     urteil: lebenUrteil,
 };
 if (require.main !== module) return;
+// DIE AKTE DES ERBES (leben.evolution.erbe#1 · muster#1): `--akte [--saaten 30]` fährt die Proben erbe und muster headless an
+// n Saaten (dieselben Bühnen wie gate:kreatur-takt, dort eine Saat) und schreibt ihre Zahlen — das Urteil bleibt beim Tor
+if (process.argv.includes("--akte")) {
+    const { statikServer, nullWelt, hauptLauf, argOpt } = require("./lib/welt-boot.cjs");
+    const { KREATUR_PROBEN_SRC, urteil } = require("./lib/kreatur-proben.cjs");
+    const saaten = Number(argOpt("--saaten", "30"));
+    hauptLauf(async () => {
+        const server = statikServer();
+        const port = Number(process.env.KREATUR_TAKT_PORT || 4478);
+        const { browser, page } = await nullWelt(server, { port, frist: 3600000 }, 120000, "index.html", "networkidle0");
+        page.setDefaultTimeout(3500000);
+        try {
+            await page.evaluate(() => window.__weltDa((r) => r.state.voxelWorkerReady));
+            await page.evaluate(() => window.__weltStehtNach(() => r._gameLoopTick(performance.now())));
+            const t0 = Date.now();
+            const aus = await page.evaluate(
+                (src, o) => (0, eval)("(" + src + ")")(r, window.THREE, o),
+                KREATUR_PROBEN_SRC,
+                { proben: ["erbe", "muster"], saaten }
+            );
+            for (const p of ["erbe", "muster"]) {
+                const u = urteil(p, aus[p]);
+                console.log(`${u.ok ? "✅" : "❌"} ${p} ${JSON.stringify(aus[p])}${u.ok ? "" : "\n   ↳ " + u.grund}`);
+            }
+            console.log(`AKTE ${saaten} Saaten, Wanduhr ${Math.round((Date.now() - t0) / 1000)} s`);
+        } finally {
+            await browser.close();
+            server.close();
+        }
+    });
+    return;
+}
 const { pruefer, urteilEnde, jsonKlon, path, ROOT: root } = require("./lib/welt-boot.cjs");
 const { errs, check } = pruefer();
 

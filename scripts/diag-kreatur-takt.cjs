@@ -56,6 +56,9 @@ const DAUER_S = {
     folgen: 42,
     zielplan: 80,
     gehege: 110,
+    // (leben-erbe: headless an der Laptop-Maschine, eine Saat, ohne Täter)
+    erbe: 6,
+    muster: 16,
 };
 const TEIL = teilAus(argv);
 const gewaehlt = (() => {
