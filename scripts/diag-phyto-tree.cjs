@@ -50,6 +50,7 @@ const tanne = () => ({
     maxDepth: 4,
     crownBase: 0.12,
     coniferDroop: 0.22,
+    kroneAnteil: mainCore.FOREST_PACK.crown.tanne / 26.9, // die Zeile der Tanne in der Kronen-Tafel (foundry PRESETS hoeheM 26,9)
 });
 
 const { errs, check: ok, wandEnde } = pruefer();

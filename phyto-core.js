@@ -113,6 +113,20 @@
                 : frei
                   ? (P.height / (P.hd * FREISTAND.hd) / 2) * (P.trunkMul || 1)
                   : (P.hoeheM / P.hd / 2 / P.weltSkala) * (P.trunkMul || 1);
+        // die Höhe, an der die Krone der Konifere ihr Maß nimmt (Vorlagen-Einheiten): im Welt-Maß die Höhe der Art, sonst die Form
+        const kegelHoehe = P.conifer
+            ? (weltMass ? P.hoeheM / P.weltSkala : P.height) * (frei ? KONIFERE_KEGEL.frei : 1)
+            : 0;
+        // DER AST AUS DEM KEGEL (laub-kante): ein Ast am Stamm der Konifere (der Quirl und die Seitenäste des ersten
+        // Stamm-Laufs) wächst so lang, dass er mit seinen Fortsetzungen (das Leit-Kind trägt `fAst` seiner Länge je Stufe: die
+        // Reihe 1 / (1 − fAst)) den Kegel seiner Art an seiner Höhe `uy` (Anteil der Form-Höhe) erreicht, quer zum Stamm unter
+        // dem Winkel `wb` — unten lang, zum Wipfel kurz; `koniferenKegel` stellt ihn danach genau an den Mantel.
+        const kegelAst = (uy, wb) => {
+            const fAst = lerp(0.72, 0.8, P.apical),
+                cb = P.crownBase || 0;
+            const reich = P.kroneAnteil * kegelHoehe * clamp((1 - uy) / Math.max(1e-3, 1 - cb), 0, 1);
+            return (reich * (1 - fAst)) / Math.max(0.2, Math.sin(wb));
+        };
 
         // DER SCHIRM KENNT KEINE KAPPE (w28-stamm-krone): `countCap` schneidet Detail (der gefühlte Baum der Werkstatt wächst mit
         // 3 600 · 600 · 90 Strängen), der Stamm aber trägt die Krone des GANZEN Wuchses. Ein Lauf über der Kappe wächst darum als
@@ -189,16 +203,7 @@
                             const wb = lerp(1.18, 0.62, uy);
                             let cd = vnorm(vadd(vscl(d, Math.cos(wb)), vscl(sd, Math.sin(wb))));
                             cd = vnorm(vadd(cd, [0, -(P.coniferDroop == null ? 0.22 : P.coniferDroop), 0]));
-                            grow(
-                                p2,
-                                cd,
-                                brad,
-                                P.height * lerp(0.15, 0.06, uy) * (P.barkType === "sequoia" ? 0.95 : 1.0),
-                                depth + 1,
-                                sw1,
-                                myRun,
-                                false
-                            );
+                            grow(p2, cd, brad, kegelAst(uy, wb), depth + 1, sw1, myRun, false);
                         }
                     }
                 }
@@ -318,13 +323,19 @@
                     len: length * lerp(0.72, 0.8, P.apical),
                     lead: true,
                 });
-                for (let i = 0; i < nW; i++)
+                for (let i = 0; i < nW; i++) {
+                    const bend = P.conifer ? lerp(1.0, 0.5, depth / P.maxDepth) : lerp(0.6, 1.15, distal);
                     children.push({
                         area: ((1 - f) * parentArea) / nW,
-                        bend: P.conifer ? lerp(1.0, 0.5, depth / P.maxDepth) : lerp(0.6, 1.15, distal),
-                        len: length * (P.conifer ? lerp(0.4, 0.52, P.apical) : lerp(0.55, 0.72, P.apical) * seitenast),
+                        bend,
+                        // der Seitenast am Stamm der Konifere (Tiefe 0) ist ein Ast der Krone: sein Maß aus dem Kegel
+                        len:
+                            P.conifer && depth === 0
+                                ? kegelAst(clamp(tip[1] / P.height, 0, 1), bend)
+                                : length * (P.conifer ? lerp(0.4, 0.52, P.apical) : lerp(0.55, 0.72, P.apical) * seitenast),
                         lead: false,
                     });
+                }
             } else if (lift) {
                 children.push({ area: parentArea, bend: 0.08, len: length * 0.82, lead: true });
             } else {
@@ -395,8 +406,11 @@
             ? 0
             : frei
               ? schaftHub(segs, leaves, runMeta, 0, FREISTAND.ansatz, 0, P.alter > 0)
-              : schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala, 0, bestand ? BESTAND.krone : 0, P.alter > 0);
-        if (P.conifer) koniferenKegel(segs, leaves, runMeta, KONIFERE_KEGEL.kegel * (frei ? KONIFERE_KEGEL.frei : 1));
+              : schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala, 0, bestand || P.conifer ? BESTAND.krone : 0, P.alter > 0);
+        // (die Konifere im Bestand trägt ihre Krone über BESTAND.krone der Höhe wie der Laubbaum — der Kronen-Ansatz folgt dem
+        // Stand: frei bei FREISTAND.ansatz, im Bestand höher; laub-kante)
+        if (P.conifer)
+            koniferenKegel(segs, leaves, runMeta, P.kroneAnteil * (frei ? KONIFERE_KEGEL.frei : 1), P.whorlSpacing * P.height);
         // DER STAMM AUS DER KRONE: der Radius des Stamms aus dem Schirm, den die Krone nach Wuchs und Hub spannt (vor dem
         // Blatt-Budget: jede Stufe misst dieselben Anker), jeder Strang reist mit seinem Anteil.
         // (die Anker über der Kappe wuchsen ohne den Hub: lotrecht ändert er den Schirm nicht, die Jugend wächst um den Fuß —
@@ -448,22 +462,30 @@
     // der ganzen Blatt-Größe +9 %). gate:pflanzen-nah (H) „Krone/BHD" hält das Ergebnis an der sichtbaren Krone im Band.
     const STAMM_KRONE = Object.freeze({ kd: 21.5, azimute: 8 });
     // DER KEGEL DER KONIFERE (laub-kante, 18.11.): die Krone der Konifere trägt ihr Maß — jeder Ast (der Lauf am Stamm samt allem, was
-    // aus ihm wächst) steht im Kegel r(y) = kegel · H · (1 − y / H) um die Stamm-Achse (H der Wipfel nach dem Hub des Schafts). Ein Ast,
-    // der den Mantel durchstößt, wird um seinen Ansatz am Stamm gestaucht (der kleinste Faktor, mit dem jeder seiner Punkte und
-    // Nadel-Anker im Kegel steht) — Gestalt, Verzweigung, Nadeln und Zufalls-Strom bleiben, nur das Maß folgt dem Kegel.
+    // aus ihm wächst) steht im Kegel um die Stamm-Achse, der am Kronen-Fuß (dem tiefsten Ansatz eines Asts, nach dem Hub des Schafts)
+    // den Radius `anteil` · H trägt und am Wipfel der Nadeln (H, die Nadel-Masse — nie der kahle Leit-Trieb) spitz endet. `anteil`
+    // ist die Zeile der Art in der EINEN Kronen-Tafel des Pflanz-Gesetzes (FOREST_PACK.crown ÷ die Höhe der Größe 1, treeParams
+    // `kroneAnteil`) — derselbe Radius, mit dem der Wald seine Stämme stellt (`forestTooClose`): die Krone schließt im Bestand, weil
+    // Plan und Wuchs dieselbe Zahl lesen. Jeder Ast reicht um seinen Ansatz am Stamm bis an den Mantel: der Faktor, mit dem sein
+    // weitester Punkt oder Nadel-Anker den Mantel berührt — wer ihn durchstößt, wird gestaucht, seine Nadeln mit ihm (`scale`: der
+    // gestauchte Ast ist ein kleinerer Ast, seine Wedel-Karte folgt seinem Maß), wer vor ihm endet, gestreckt (die Reihe seiner
+    // Fortsetzungen bricht am kleinsten Ast der Form ab, `growSkeleton` `kegelAst`) — Gestalt, Verzweigung, Nadel-Zahl und
+    // Zufalls-Strom bleiben. Die Äste wachsen in Quirlen den Stamm hinab bis zum Kronen-Fuß, nach unten länger (der Kegel).
     // Befund (Kern, Same 1–3, r/H der Nadel-Anker je Zehntel der Höhe): bis hier wuchs der Quirl-Ast als Rekursion des Laub-Asts
-    // (das Leit-Kind 0,72–0,8 seiner Länge je Stufe bis maxDepth) — der Schirm der Fichte maß r/H 0,42–0,51, der Tanne 0,30–0,46,
-    // breiter als hoch; aus dem Dorf stand jede Fichte und Tanne als runder Laub-Ballen vor dem Himmel (fimp:fichte:L2 kante
-    // 0,32, tanne 0,30). Die Natur: Picea abies und Abies alba im Bestand Kronen-⌀ 5–8 m bei 25–35 m Höhe, die Krone über 60–70 %
-    // der Höhe (r/H am Kronen-Fuß 0,1–0,15: kegel 0,2), der Solitär breiter (`frei`, FREISTAND). Ein Ast endet nie am Mantel (der
-    // Schnitt nahm der Fichte 83 % ihrer Nadeln: die Spitzen der Rekursion lagen jenseits). UNGEPRÜFT die Zeile je Art.
-    const KONIFERE_KEGEL = Object.freeze({ kegel: 0.2, frei: 1.4 });
-    function koniferenKegel(segs, leaves, runMeta, kegel) {
+    // (das Leit-Kind 0,72–0,8 seiner Länge je Stufe bis maxDepth) — der Schirm der Fichte maß r/H 0,42–0,51, der Tanne 0,30–0,46
+    // gegen ihre Tafel 0,105 / 0,110 (gate:pflanzen-nah (H) nahm die Konifere aus); aus dem Dorf stand jede Fichte und Tanne als
+    // runder Laub-Ballen vor dem Himmel (fimp:fichte:L2 kante 0,32, tanne 0,30). Ein Ast endet nie am Mantel (der Schnitt nahm der
+    // Fichte 83 % ihrer Nadeln: die Spitzen der Rekursion lagen jenseits). `frei`: der Solitär trägt die breitere Krone
+    // (UNGEPRÜFT, die Tafel kennt nur den Bestand).
+    const KONIFERE_KEGEL = Object.freeze({ frei: 1.4, streck: 2.5 });
+    function koniferenKegel(segs, leaves, runMeta, anteil, trieb) {
+        if (!(anteil > 0)) throw new Error("[phyto] der Kegel der Konifere: die Krone ihrer Art fehlt (kroneAnteil, KERN-PFLICHT)");
         let H = 0;
-        for (const s of segs) H = Math.max(H, s.p0[1], s.p1[1]);
         for (const l of leaves) H = Math.max(H, l.pos[1]);
         if (!(H > 0)) return;
-        const R = (y) => kegel * H * Math.max(0, 1 - y / H);
+        // die Spitze des Kegels steht einen Jahrestrieb (`trieb`, der Quirl-Abstand) über der Nadel-Masse: der oberste Quirl trägt
+        // seine kurzen Äste (ein Kegel, der an der Nadel-Spitze endet, nahm ihnen jedes Maß — kahle Stange)
+        const Hk = H + (trieb > 0 ? trieb : 0);
         const stamm = new Map();
         const istStamm = (r) => {
             if (r < 0) return true;
@@ -484,7 +506,7 @@
             const w = astVon(r);
             if (w < 0 || istStamm(w)) return null;
             let A = aeste.get(w);
-            if (!A) aeste.set(w, (A = { a: null, pkt: new Set() }));
+            if (!A) aeste.set(w, (A = { a: null, pkt: new Set(), nadeln: [] }));
             return A;
         };
         for (const s of segs) {
@@ -496,8 +518,15 @@
         }
         for (const l of leaves) {
             const A = l.run == null ? null : ast(l.run);
-            if (A) A.pkt.add(l.pos);
+            if (A) {
+                A.pkt.add(l.pos);
+                A.nadeln.push(l);
+            }
         }
+        let yFuss = H;
+        for (const A of aeste.values()) if (A.a && A.nadeln.length) yFuss = Math.min(yFuss, A.a[1]);
+        if (!(yFuss < H)) return;
+        const R = (y) => anteil * H * Math.min(1, Math.max(0, (Hk - y) / (Hk - yFuss)));
         for (const A of aeste.values()) {
             if (!A.a) continue;
             const a = A.a;
@@ -507,11 +536,16 @@
                     const x = a[0] + (q[0] - a[0]) * f,
                         y = a[1] + (q[1] - a[1]) * f,
                         z = a[2] + (q[2] - a[2]) * f;
-                    return Math.hypot(x, z) <= R(y) + 1e-9;
+                    return Math.hypot(x - a[0], z - a[2]) <= R(y) + 1e-9; // um den Stamm an seinem Ansatz (der Leit-Trieb wankt)
                 });
-            if (haelt(1)) continue;
+            // der Ast reicht bis an den Mantel: zu lang gestaucht, zu kurz gestreckt (höchstens `KONIFERE_KEGEL.streck`, die
+            // Reihe seiner Fortsetzungen endet am kleinsten Ast der Form vor ihrer Summe)
             let lo = 0,
                 hi = 1;
+            if (haelt(1)) {
+                if (haelt(KONIFERE_KEGEL.streck)) lo = hi = KONIFERE_KEGEL.streck;
+                else (lo = 1), (hi = KONIFERE_KEGEL.streck);
+            }
             for (let i = 0; i < 12; i++) {
                 const m = (lo + hi) / 2;
                 if (haelt(m)) lo = m;
@@ -522,6 +556,7 @@
                 q[1] = a[1] + (q[1] - a[1]) * lo;
                 q[2] = a[2] + (q[2] - a[2]) * lo;
             }
+            if (lo < 1) for (const l of A.nadeln) l.scale *= lo; // (gestreckt behält die Nadel ihr Maß, wie der Ast seine Stärke)
         }
     }
     function stammAusKrone(leaves, blattMass) {
@@ -2430,7 +2465,10 @@
             barkB: bc[1],
             leafCol: LC[barkType],
             coniferDroop: isCon ? clamp(0.13 + trop * 0.25, 0.05, 0.5) : undefined,
-            whorlSpacing: isCon ? lerp(0.1, 0.15, 1 - leaf) : undefined,
+            // der Quirl-Abstand (Anteil der Form-Höhe): Fichte 0,0395 · Tanne 0,0385 → ~1 m im Welt-Maß, ein Quirl je zwei bis drei
+            // Jahrestrieben (Picea abies / Abies alba im Altbestand 0,3–0,5 m je Jahr; UNGEPRÜFT je Art) — bis laub-kante
+            // 0,10–0,15 (2,9 m, sieben Quirle je Baum: im Kegel standen sie als Büschel am kahlen Stamm)
+            whorlSpacing: isCon ? lerp(0.035, 0.05, 1 - leaf) : undefined,
             crownBase: isCon
                 ? lerp(0.1, 0.48, clamp((0.55 - slim) / 0.45, 0, 1))
                 : isShrub
@@ -2521,6 +2559,12 @@
     // ihr Solitär (`solitaerGestalt`) und wächst frei, für jeden Leser derselbe Baum: Bühne, Werk und Wald des Studios, die
     // Welt, ihr Bäcker der Karte und der gefühlte Baum (bis w12-eiche-same prägte ihn der Wirt, die Bühne nie: die Eiche
     // Same 3 stand im Studio als Bestand, in der Welt als Solitär). Ohne `gestalten` kein Solitär, byte-gleich.
+    function konifereKroneAnteil(ph) {
+        const r = ph.krone && FOREST_PACK.crown[ph.krone];
+        if (!(r > 0) || !(ph.hoeheM > 0))
+            throw new Error(`[phyto] die Konifere trägt keine Zeile der Kronen-Tafel (ph.krone ${ph.krone}, hoeheM ${ph.hoeheM})`);
+        return r / ph.hoeheM;
+    }
     function treeParams(dials, seedInt, stufe, art, weltSkala, alter, gestalten) {
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const lerp = (a, b, t) => a + (b - a) * t;
@@ -2571,6 +2615,10 @@
             coniferDroop: ph.coniferDroop,
             crownBase: ph.crownBase,
             whorlSpacing: ph.whorlSpacing,
+            // DIE KRONE DER KONIFERE (laub-kante): ihr Radius am Kronen-Fuß als Anteil der Höhe — die Zeile ihrer Art (`ph.krone`)
+            // in der EINEN Kronen-Tafel FOREST_PACK.crown (m, Größe 1) durch die Höhe der Größe 1 (`ph.hoeheM`); growSkeleton
+            // `koniferenKegel` stellt jeden Ast in diesen Kegel. Eine Konifere ohne ihre Zeile bricht laut (KERN-PFLICHT).
+            kroneAnteil: ph.conifer ? konifereKroneAnteil(ph) : undefined,
             flare: ph.flare,
             // Das Totholz trägt seine L1 mit den Wurzeln seiner L0 (w28-nadel-stufe, lod.K5): ohne Krone ist der Fuß die halbe
             // Silhouette — vier dickere Wurzeln statt fünf standen am Haushalt 12 m über einen Bildpunkt neben der L0.
