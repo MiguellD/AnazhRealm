@@ -1,52 +1,68 @@
-# w28-strahler — Entwurf der Abgabe (GTX 1050, 18.11., Kopf e5edfc239)
+# w28-strahler — Entwurf der Abgabe (GTX 1050, 18.11., Kopf c4edde167, main V18.546.334 eingemergt)
 
-Zwischenstand, kein Stempel von mir. Bildpaare main ↔ Kopf 8cf2de228: `bericht/1811-strahler/ende/` (`ende-*.png` = Kopf, `main-*.png` = main). Die älteren `kopf-*.png` eine Ebene höher sind Stände VOR dem Auge — kein Beleg mehr.
+Zwischenstand, kein Stempel von mir. Bilder am Kopf: `bericht/1811-strahler/messer/m-*.png` (Herd nah/fern, Lava, Gasse, Tor; `nacht`, `tag`, `d0` = Sonne 0°, `d10` = Sonne 10,8°). Die Gegen-Bilder von main stehen in `ende/main-*.png` (Nacht und Mittag, main V18.546.330); main in der Dämmerung ist nie geschossen. Alles in `ende/ende-*.png` und `kopf-*.png` ist ein Stand VOR dem Messer — kein Beleg mehr.
 
-## Deine drei Zahlen (Koordinator 10:25)
+## Die Zerlegung der Dämmerung (Koordinator 11:25) — die Wurzel
 
-**(a) Herd — der Kreis am Gras.** Ein Glutbrunnen trägt 248,6 cd (Planck 2000 K × `emissiv.flamme` × Bett). Gezeigte Zahl aus dem Gesetz (`augeZeig`, Mitternacht A 0,2 lx, Umgebung S 0,551; frontale Fläche, linear vor der Tonkurve):
+Karte der Mess-Wiese, vier Glutbrunnen in 13–21 m, Σ E an der Karte 3,72 lx. VOR dem Schnitt (e5edfc239 ohne Blende):
 
-| Abstand | E | gezeigt | gegen fern (linear) | am Bild (Ausgabe-Luma über „ohne“) |
-|---|---|---|---|---|
-| 1 m | 249 lx | 2,27 | ×5,1 | nicht gemessen |
-| 2 m | 62 lx | 1,68 | ×4,0 | ×2,61 |
-| 3 m | 28 lx | 1,36 | ×3,5 | nicht gemessen |
-| 7 m | 5,1 lx | 0,49 | ×1,9 | ×1,32 |
-| 20 m | 0,6 lx | 0,08 | ×1,14 | ×1,20 (vier Brunnen) |
+| Sonne | w des Messers (Welt) | A, das `augeZeig` nahm | A von Hand (linear) | gezeigtes Becken | von Hand mit wahrem A | k |
+|---|---|---|---|---|---|---|
+| 0° | 0,0561 | 0,000002 lx | 824 lx | 0,402 (×7,2 der Umgebung) | 0,0055 | 7,27 (mit Blende 0,387) |
+| 10,8° | 0,5077 | 0,13 lx | 7 457 lx | 0,391 (+77 %) | 0,0010 (0,2 %) | 2,49 |
+| Mitternacht | 0,5515 | 0,199 lx | — (Nacht steht auf S) | 0,386 | 0,386 | 1,547 |
 
-„Knapp“ ist also: am Bild steht der Kreis in 2 m beim 2,6-Fachen, in 7 m beim 1,3-Fachen des Grases fern jeder Quelle. Die Bild-Zahlen in 1 m und 3 m fehlen (kein Feld gesetzt) — 2 von 5 Zeilen offen.
+**Wurzel, Datei und Zeile:** `welt-licht.js` `augeLux` (vor dem Schnitt Zeile 88) kehrte die Skala S über die GANZE Lesung um. Die Welt trägt aber zwei Maße: der Tag (Sonne + ihr Himmel aus den Tafeln) steht LINEAR in Lux, nur die Ersatz-Lichter der Nacht (Mond, Sterne, Dämmerlicht, Hemisphäre, Umgebung) stehen auf S. In der Dämmerung ist der Tag schon klein und die Nacht noch nicht eingeblendet: A fiel WEIT unter die Nacht. Deine Vermutung traf. Der Zeitplan hatte das verdeckt, die Blende gepflastert.
 
-**(h) Lava — Stein und Saum.** Am Bildpaar `ende/…-h-lava-nah-nacht.png` gemessen (Ausgabe-Luma, main → Kopf): Stein vor dem Saum 43,9 → 73,1 · Saum-Gras vorn 47,5 → 104,2 · Saum links 35,1 → 54,6 · nahes Gras 37,4 → 104,7 · Baumlinie 13,3 → 25,4 · Riss 75,7 → 109,2 (RGB 120/65/47 → 165/96/76). Der Stein steht am Kopf also NICHT kalt, das Saum-Gras ist warm — deine Beschreibung passt auf das ältere `kopf-h-lava-nah-nacht.png` (vor dem Auge) oder auf meinen Schuss a9 mitten im Platz-Wechsel des Pools. Der wahre Befund am Kopf ist das Gegenteil und reißt das Zielbild (b): die ganze Wiese steht orange, die Baumreihe trägt Schein (×1,9 über main), die Risse gehen ins Rosa-Weiße. Ursache: die Decke trägt 817 325 cd (Mittel 6 261 cd/m² × Fläche), Reichweite am Deckel des Pools 48 m; das q-Gesetz staucht, begrenzt aber nicht. Die Keule ist nicht der Täter (Lamberts Scheibe steht, eine nach oben schauende Fläche über der Decke bekommt F·N ≤ 0, das Gras liest den waagrechten Anteil als Volumen). Deine Entscheidung: bleibt das Datum der Lava, bleibt die orange Wiese.
+**Zweite Hälfte derselben Wurzel** (am Lava-Bild bei Sonne 0° gefunden, nach dem ersten Schnitt): das Auge ZEIGT auf S, die Welt trägt für 779 lx aber 0,056 Einheiten, S gäbe 2,88. Die Lava stand weiß mit orangen Bäumen (Riss RGB 254/209/201 am Anschlag, Baumlinie Luma 146).
 
-**(e) Gasse — Boden unter dem Fenster.** main 6,8 ↔ fern 17,9 · Kopf 8,4 ↔ fern 18,8. Das Fenster wirft kein Becken: die Kette reißt am Anfang — `_leuchtQuellen` sammelt Blocker mit „licht“ (Feuer, Laternen), Brand, Lava und das Licht des Auges; das Fenster trägt nur sein Datum der Glut (`lichtGlut.fenster`, gemalt), kein Eintrag als Quelle. Punkt 2 steht OFFEN bei 0 %. Dazu: die Wand 61,6 → 76,3, der Boden unter der Laterne 49,4 → 29,2 (ihr Kreis ist am Kopf dunkler als auf main), Laterne ÷ ferner Boden 1,55.
+## Geschnitten (seit e5edfc239)
 
-**Probe-Boot:** die S-Form trägt das Becken nicht (a8: Wiese 20 m ×1,38, Vordergrund ×1,94, kein Kreis) — q bleibt fürs Becken, die S-Form ist sein Deckel und das Gesetz der leuchtenden Flächen.
-
-## Geschnitten
-
-- **EIN Strahler-Gesetz:** jede Quelle trägt Candela (Leuchtdichte × Fläche), kein `staerke`-Datum, kein `reichweiteM`, kein Zeitplan. Vertrags-Akt: `recipes.json` + `manifest.json` neu geprägt.
-- **DAS AUGE** (welt-licht.js `AUGE`, p 0,2 · q 0,42 · Knie 2,76 lx aus `MESOPISCH`): `augeZeig` = min(q-Gesetz, S-Form); leuchtende Flächen lesen `augeGlut`. Der Lichtmesser liest das Becken nicht.
-- **Die Blende der Quelle (neu, nach 8cf2de228):** ohne Zeitplan brennt jede Quelle auch in der Dämmerung, und dort öffnet die Kamera weit über die Nacht (Sonne 0°: k 27,7 gegen 1,55). Für eine Quelle öffnet sie darum nie weiter als am vollen Nacht-Knoten (dasselbe Gesetz `belichtung`); EIN Faktor am EINEN Schreiber `_leuchtTakt` für Becken und Glut. Mittag und Nacht rechnen gleich.
-- **Der Pool im Stoff:** drei Reihen → EINE `lichtForm`; die Normale vor der Schleife; die Reichweite der frühe Zweig.
-- **Linsen aufs Gesetz:** pruefbuehne S0, stand-takt N7/L5, settlement, haus-fern, fahr-proben, portal-membran, hoehlen-sicht, post-kette (Rauch-Tafel am Auge neu gemessen). Mutanten: Feuer aus, Keule aus, zehnfache Candela.
+- **42f03b8d6** `augeLux(welt, tag)`: der Tag linear, der Rest über S. Der Messer trägt den Tag-Anteil seiner Lesung (`_belichtungTag`: das Richtlicht, solange es die Sonne ist, + das Sonnen-Glied der Himmels-Tafel aus `bestrahlung`). **Die Blende der Quelle ist gefallen** (samt `lichtAuge.z` als Blende und der gestellten Kamera in stand-takt).
+- **f42a86136** der Messer im EINEN Schreiber: `_beckenAmAuge` (Σ E der gehaltenen Plätze an der Kamera, mittlere Candela ohne Flackern, derselbe Abfall wie im Stoff) → `augeZeig` → Zuschlag auf die Lesung in `_belichtungAusLicht`. Kein zweiter Schreiber. Linse tag-achse: ASYNC urteilt ohne das Becken, neu **MESSER** (k neben dem Gesetz MIT dem Becken, von der Linse selbst gerechnet, 0,02 EV; kein Becken an irgendeiner Uhr ist ROT), Selbsttest zwei Fälle.
+- **e439969e0** main fa61024d eingemergt (Merge-Treiber `setup:merge` in diesem Klon eingerichtet; Konflikt nur im Export-Block von `fachwerk-core.js`; `recipes.json` + `manifest.json` neu geprägt, kein anderes Golden bewegt sich gegen main).
+- **c4edde167** `augeMass` = Lesung ÷ S(Lux der Lesung): Nacht 1, Sonne 0° 0,019, Sonne 10,8° 0,112, Mittag der Wiese 0,93. EINE Zahl je Bild aus `_leuchtTakt` an Becken (`lichtAuge.y/.z`), Glut (`lichtGlut`, `lavaGlut`) und am Messer.
 
 ## Gemessen
 
-- **Tag-Achse** (gate:tag-achse:echt): main GRÜN · Kopf 8cf2de228 ROT — die Karte stand an der Wiese bei Sonne 0° 1,20 EV ÜBER dem Mittag, R/B ×3,08, Sprung 0,16 EV je 0,002 Uhr (vier Glutbrunnen in 13–22 m durch k 27,7). Mit der Blende: Buckel 0,00 · Sprung 0,04 EV · GRÜN. Rest: bei Sonne 10° färbt das Feuer die Karte noch (R/B ×2,40, main ×1,07; −0,39 EV gegen main −1,04).
-- **Rauch unter dem Feuer** (post-kette k1): unten ÷ oben 5,95 → 3,32, die flache Scheibe 3,28 → 2,60 — das Auge staucht; Band neu 2,95–3,7, der Abstand zur Mutante ist dünner (1,28× statt 1,81×).
-- **Preis** (gpu-bank 120 × 3, GPU ms, zwei Läufe je Stand, vor der Blende): Herd Nacht main 8,71/8,48 → 9,23/9,05; Herd Mittag 7,85/7,81 → 7,72/7,92; Lava Nacht 8,97/8,04 → 7,85/8,30. Becken an ↔ aus am Herd nachts ≈ +1,25 ms.
-- **Boden-Programm:** 99 979 Zeichen WGSL vor der Blende (Ratsche 100 062).
-- **Ohne Strahler gegen 3147ee406:** Mitternacht mittlerer Abstand 0,00, Mittag 0,03. Byte-Gleichheit gibt die Werkbank nicht her (zwei Boots desselben Kopfs sind nicht byte-gleich).
+**Tag-Achse** (`gate:tag-achse:echt`, Kopf): GRÜN. Wiese: Buckel 0,00 · Sprung 0,09 · Sonne 10° −1,04 EV **R/B ×1,07** (main ×1,07; e5edfc239 ×2,40; Spike ×5,05) · Nacht −3,46 EV Luma 31,4 (ohne Messer −2,53 EV: außerhalb des Bands −5…−3). Genesis: R/B ×0,91, Nacht −2,79 EV. **Mutant** (Messer aus im Schreiber): ROT beim Namen — `MESSER wiese: Uhr 0 0.718 EV neben dem Gesetz mit 3.357 lx am Auge`.
 
-**Gatter:** am Stand e5edfc239 grün gefahren — pruefbuehne (Selbsttest), pruefbuehne-licht (Boden-Programm 99 992 Zeichen WGSL, Ratsche 100 062), stand-takt, tag-achse:echt; am Stand davor mit der Blende im Baum — post-kette, asset-contract, altlasten, haus-fern, hoehlen-sicht, portal-membran, settlement, check:statik; vor der Blende (8cf2de228) — fachwerk-contract, fahr-leben, betriebsgesetz. Kein EINER Lauf des ganzen Satzes am letzten Kopf. Am Kopf 8cf2de228 standen vier Gatter rot, die ich bis dahin nie gefahren hatte: pruefbuehne (mein `eval` riss an der CSP), post-kette (Rauch-Tafel), altlasten (zwei Warte-Schleifen der neuen Linse), tag-achse (der Buckel oben).
+**Nach dem Schnitt an der Karte:** Sonne 0° A 779 lx, gezeigt 0,0023, Reichweite 1,5 m · Sonne 10,8° A 7 456 lx, Pool leer · Mitternacht A 0,1994 lx unverändert.
+
+**Lava nah** (Luma, 960 × 540):
+
+| | Saum-Gras | Gras 15 m | Baumlinie | Riss RGB | Stein |
+|---|---|---|---|---|---|
+| main Nacht | 47,5 | — | 13,3 | 120/65/47 | 43,9 |
+| Kopf Nacht | 41,7 | 26,5 (÷ = 1,57) | 4,1 (×0,31) | 100/39/9 (R/G 2,56) | 17,5 |
+| Kopf Sonne 0° | 67,2 | 59,3 | 57,6 | 156/76/63 | 68,8 |
+| Kopf Sonne 10,8° | 71,7 | 112,3 | 92,2 | 142/72/53 | 83,7 |
+| Kopf Mittag | 101,4 | 124,2 | 50,4 | 145/86/63 | 111,3 |
+
+Nacht: k 0,206, Σ E am Auge 2 157 lx, gezeigt 3,57.
+
+**Herd nah Nacht:** Kreis 2 m 58,8/59,0 ÷ ferne Wiese 28,1 = **×2,09** im Bild (main ×1,19–1,47, ohne Messer ×1,82); Bett 55,1; k 0,631 (9,6 lx am Auge). Herd fern: Scheibe 50,2 · Rand 7 m 31,3 · Straße 16,6 (main 32,0); k 0,842. **Pumpen:** Luma der fernen Wiese über 5 s 5,03–5,09, Hub 1,07 % (Soll ≤ 3 %); k Hub 1,01 %. Bild-Zahlen in 1 m und 3 m: nicht gemessen.
+
+**Gasse nah2 Nacht — das Dorf mit Messer:** k 0,769 (6,0 lx am Auge, gezeigt 0,567).
+
+| | Wand | unter der Laterne | ferner Boden | unter dem Fenster |
+|---|---|---|---|---|
+| main (.330) | 61,6 | 49,4 | 17,9 | 6,8 |
+| e5edfc239 | 76,3 | 29,2 | 18,8 | 8,4 |
+| Kopf mit Messer | **44,7** | **16,4** | 6,9 | 2,9 |
+
+Die Wand steht knapp über deiner Schwelle 40, der Boden der Gasse geht fast schwarz; das Haus und die Laterne bleiben lesbar (eigenes Auge), der Stand und die Bewohner am Boden kaum. Die Laterne (100 cd in 3,6 m) gibt unter sich 7,7 lx; `augeZeig` über A 0,18 lx zeigt daraus 0,68 gegen 0,55 Umgebung — durch k 0,769 statt 1,55 steht der Boden bei der Hälfte.
+
+**Preis** (gpu-bank 60 × 3, GPU ms je Frame, zwei Läufe): Herd Nacht 8,95/8,95 (main .330: 8,71/8,48; e5edfc239-Vorgänger 9,23/9,05) · Herd Mittag 7,93/7,82 (main 7,85/7,81).
+
+**Gatter am Kopf c4edde167:** EIN Lauf des Satzes — siehe unten „Gatter“ (wird nach dem Lauf ergänzt). Vorab am Kopf grün: tag-achse:echt, diag-atlas --check, format:check.
 
 ## Ehrlich offen
 
-- **Fenster als Strahler: 0 %** (Punkt 2). Ebenso Stahl, Tor, Fahrzeug, Funken auf alten Wegen.
-- **Lava reißt Zielbild (b):** orange Wiese, Schein an der Baumreihe, rosa-weiße Risse.
-- **Rand 7 m ×1,32** unter dem Soll 1,5.
-- **Der Laternen-Kreis** ist am Kopf dunkler als auf main (49,4 → 29,2).
-- **Dämmerung bei Sonne 10°:** das Feuer färbt die Karte noch warm; die Bildpaare `ende-*` sind VOR der Blende geschossen (Nacht und Mittag unberührt, Dämmerung nie geschossen).
+- **Fenster als Strahler: 0 %.** Ebenso Stahl, Tor, Fahrzeug, Funken auf alten Wegen.
+- **Die Gasse nachts:** Boden unter der Laterne Luma 16,4, Wand 44,7 — die gehobene Nacht fällt um jede Quelle; deine Sicht mit eigenem Auge steht aus.
+- **Mittag:** `augeMass` 0,93 an der Wiese (w 7,19 statt 7,83) — Glut und Lava am Mittag 7 % tiefer als vor dem Maß; Riss mittags 146/87/63 → 145/86/63.
 - **Zwei Leuchtdichten für das Herdfeuer** (Becken 548 cd/m², gemalte Glut 10 000) und **zwei Formeln** (Karte 0,80 ↔ Fenster 0,53).
-- **stand-takt und settlement im Null-Renderer** (Mittag gestellt); **Preis** ohne Richter, nach der Blende nicht neu gemessen.
-- Das Fachwerk-Labor ist im Browser angesehen (bootet ohne Fehler, Fenster glühen nachts) — ein Blick, keine Linse.
+- **Das Fachwerk-Labor** ruft `augeLux` mit einem Wort (seine eigene Tageszeit, kein Tag-Anteil) — unverändert, ungeprüft gegen die neue Dämmerung.
+- **stand-takt und settlement im Null-Renderer** (Mittag gestellt).
+- main in der Dämmerung nie geschossen: für `d0`/`d10` gibt es kein Paar, nur das Bild des Kopfs.
