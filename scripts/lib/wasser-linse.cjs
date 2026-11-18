@@ -516,7 +516,7 @@ function wasserSchmelze(r, x, z, P) {
 }
 
 // (13) DIE ERSTARRUNG ÜBER SPIELZEIT (stoffe.K3-2): die DSL gießt Lava (`lava`) an Land und ins Wasser des Sees, die Uhr läuft
-// im Takt des Tags (`tickDayNight` an der Welt-Uhr, Tag 1 min: ein Takt = 1 s Spielzeit = 0,4 Welt-Stunden); je Takt die glut-Achse der Welt (`auraAt`, `frei`
+// an der Welt-Uhr (der Tag der Prozesse `_weltTag`: ein Takt = 60 s Welt-Uhr = 0,4 Welt-Stunden); je Takt die glut-Achse der Welt (`auraAt`, `frei`
 // ohne Lava), der Stoff unter dem Fuß (`_kontaktStoffAt`), die Decke (`_lavaAt`) und ihr Licht (`_leuchtQuellen`); `ab` der
 // erste erstarrte Takt. Die Taten fallen danach.
 function wasserErstarrung(r, orte) {
@@ -527,9 +527,8 @@ function wasserErstarrung(r, orte) {
     const aus = orte.map(([x, z]) => ({ x, z, y: r._voxelSurfaceY(x, z), frei: r.auraAt(x, z).glut, reihe: [] }));
     try {
         for (const o of aus) r.dslRun(["lava", o.x, o.y, o.z], { source: "human" });
-        Object.assign(st, { dayLengthMinutes: 1, _uhrSpielZeit: st.spielZeit });
         for (let k = 0; k <= 15; k++) {
-            if (k) (st.spielZeit += 1), r.tickDayNight(k);
+            if (k) st.spielZeit += AnazhRealm.PEGEL_TAG_S / 60; // je Schritt 0,4 h am Tag der Prozesse (`_weltTag`)
             aus.forEach((o, i) => {
                 const d = r._lavaAt(o.x, o.z);
                 const licht = r._leuchtQuellen(o.x, o.y, o.z, 30).some((q) => q.id === wm.taten[n + i]);
