@@ -6060,7 +6060,7 @@
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.058 (÷ 0.320, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an d39e0d6e radeon · gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 884c6a25 gtx",
+   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.058 (÷ 0.320, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an d39e0d6e radeon — offen: karte2.same.kopplung.stoerung#1 gtx: ROT: Herd -248,-1080: Luma der Zelle vor 0.142 → nach 0.104 (÷ 0.732, Soll ≤ 0,5) · Asche 0 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 21f279f5",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
@@ -6076,11 +6076,11 @@
     {
      "id": "karte2.same.kopplung.stoerung#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
-     "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "gruen": false,
+     "zahl": "Herd -248,-1080: Luma der Zelle vor 0.142 → nach 0.104 (÷ 0.732, Soll ≤ 0,5) · Asche 0 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
+     "sha": "21f279f5f5b87f86c0bea764dab99fb36670725e",
+     "grund": "ROT: Herd -248,-1080: Luma der Zelle vor 0.142 → nach 0.104 (÷ 0.732, Soll ≤ 0,5) · Asche 0 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6330,10 +6330,12 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "karte2.same.kopplung.stoerung#1 gtx: Herd -248,-1080: Luma der Zelle vor 0.142 → nach 0.104 (÷ 0.732, Soll ≤ 0,5) · Asche 0 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 21f279f5 (grün gebucht an 884c6a25)"
+ ],
  "r6": {
   "haelften": 507,
-  "konsum": 188,
+  "konsum": 189,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6495,10 +6497,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 160
+  "ohne": 159
  },
  "kopfVoll": "21f279f5f5b87f86c0bea764dab99fb36670725e",
- "zeit": "2026-11-18T01:02:49.372Z",
+ "zeit": "2026-11-18T01:09:28.567Z",
  "vorher": "21f279f5",
  "bilanz": {
   "gewinn": [],
