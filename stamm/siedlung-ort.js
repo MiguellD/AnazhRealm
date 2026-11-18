@@ -2565,7 +2565,13 @@ class AnazhRealm_siedlung_ort {
         // die Mitte des Rands auf dem Grund des Zoos — sein Grund (S4: das Feld hohl, der gezeichnete Boden geschnitten) liegt im
         // Erdbau des Orts. Bis hier zeichnete der Boden die Trassen des Plans als Mulde.
         plan.gehege.forEach((g, i) =>
-            w("graben", "zoo", FC.WERKE[g.graben.werk].kind + "_" + g.graben.werk, { x: g.rand.cx, z: g.rand.cz, seed: g.graben.seed }, i)
+            w(
+                "graben",
+                "zoo",
+                FC.WERKE[g.graben.werk].kind + "_" + g.graben.werk,
+                { x: g.rand.cx, z: g.rand.cz, seed: g.graben.seed },
+                i
+            )
         );
         // DIE BÜHNEN DER BREITE: der Spielplatz mit den Werken, die sein Gesetzbuch für ihn trägt (fachwerk WERKE `siteTag`
         // spielplatz, der Plan nennt sie: `spielplatzGeraete`; Bauplan `<kind>_<art>`), und den Bänken der Eltern. Die Arena bleibt
