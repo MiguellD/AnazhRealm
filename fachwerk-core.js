@@ -5949,6 +5949,27 @@
         var q = (d / R) * (d / R), saum = (1 - q * q) * (1 - q * q);
         return saum * Math.pow((1 + k2) / (d * d + k2), (L.abfall || 0) / 2);
     }
+    // DAS STRAHLER-GESETZ (w28-strahler) — EINE Funktion für alles, was leuchtet: LEUCHTDICHTE × FLÄCHE. Die Leuchtdichte L
+    // (Welt-Einheit: an der Fläche trägt sie die Bestrahlung π·L; der Mond trägt 0,224) kommt aus EINER von zwei Quellen:
+    //   · `glut` (0…1): der Körper, dessen Temperatur ZUSTAND ist (Flamme, Bett, Lava, Stahl, Funke) — seine Strahlung über dem
+    //     Draper-Punkt relativ zum Anker (gelaende-core `glutAus(T, STRAHLER.ankerK)`, der Wirt reicht sie: `_strahler`), mal dem
+    //     EINEN Anker `STRAHLER.leucht` (die Flamme bei 2 000 K: an ihr die Bestrahlung π·7,5 — bei Tag und Nacht dieselbe);
+    //   · `leucht`: das Datum einer Lampe (Laterne, Fenster, Tor, Fahrzeug) — Glühstrumpf und Lampe hinter Glas sind keine
+    //     Schwarzkörper ihrer Farbtemperatur: ihre Farbe ist Planck (`kelvin`), ihre Leuchtdichte nicht.
+    // Aus L und der Fläche `flaecheM2` folgt ALLES Weitere, für beide gleich: der Kern k = √(A/π) (die Ausdehnung der Quelle),
+    // die Stärke des Punktlicht-Datums in 1 m, L·A/(π·(1 + k²)) (`lichtAbfall`: an der Fläche π·L, fern L·A/d²), die Reichweite
+    // √(L·A/eMin) (wo ihre Bestrahlung unter `eMin` fällt; der Wirt deckelt sie am Umkreis seines Pools) und — mit `flach` —
+    // die Seite √A eines waagrechten Lambert-Strahlers (die Decke der Lava, das Bett: der Stoff rechnet ihn als Fläche, nicht
+    // als Punkt). `kelvin` trägt die Farbe (`lichtFarbe`), `flacker` · `hoeheM` · `zeit` (AN/AUS einer Lampe) reisen mit.
+    // Bis hier setzten zwölf Wege eine Stärke (feuer.staerke × Zeitplan nacht 45 · schein × k²/(1 + k²) · LEUCHT_FEUER · …).
+    var STRAHLER = Object.freeze({ ankerK: 2000, leucht: 7.5, eMin: 0.05 });
+    function strahler(q) {
+        var L = q.leucht != null ? +q.leucht : STRAHLER.leucht * q.glut, A = +q.flaecheM2;
+        if (!(q.kelvin > 0) || !(A > 0) || !(L >= 0)) throw new Error("fachwerk strahler: kelvin, flaecheM2 und glut oder leucht fehlen");
+        var k = Math.sqrt(A / Math.PI);
+        return { kelvin: +q.kelvin, leucht: L, flaecheM2: A, kernM: k, seiteM: q.flach ? Math.sqrt(A) : 0, staerke: (L * A) / (Math.PI * (1 + k * k)),
+            reichweiteM: Math.sqrt((L * A) / STRAHLER.eMin), abfall: 2, flacker: q.flacker || null, hoeheM: q.hoeheM || 0, zeit: q.zeit || null };
+    }
     // Das Flackern einer Quelle zur Zeit t (s) mit der Phase `phase`: −1 … 1 aus zwei Sinus in `flacker.hz` (die Flamme atmet
     // in 6–10 Hz; die Schwebung beider bricht die Periode). Ohne `flacker` 0.
     function lichtFlackern(L, t, phase) {
@@ -11773,6 +11794,8 @@
         // K11b — die Farbe aus der Farbtemperatur, der Abfall 1/d² mit Kern und Saum (die Welt rechnet ihn im Stoff)
         lichtFarbe: lichtFarbe,
         lichtAbfall: lichtAbfall,
+        STRAHLER: STRAHLER,
+        strahler: strahler,
         // schatten.K5 — der Leib einer Leuchte (der Glas-Kopf): die nahe Ebene ihres Wurfs
         lichtLeib: lichtLeib,
         EXPL_GESETZ: EXPL_GESETZ,

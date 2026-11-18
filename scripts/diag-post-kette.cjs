@@ -58,7 +58,7 @@
 //       der Ausgabe, nachts (Sonne und Himmel reden nicht mit), der Ballen 6 m vor dem Auge vor einer eigenen Wand; gezeichnet wird
 //       der Satz der Brand-Fahne (`brandRauchSatz`), den der echte Leser `_brandRauch` gebaut hat. Jede MUTANTE baut den Stoff
 //       neu (die Tafel `AnazhRealm.RAUCH_BILD` als Kopie ersetzt bzw. die Naht der Seite überschrieben) und misst ihn im selben Lauf.
-//       (k1) UNTERSEITE: ein Platz des Licht-Pools (das Licht einer Flammen-Fläche, `_flammenLicht`, über den EINEN Schreiber
+//       (k1) UNTERSEITE: ein Platz des Licht-Pools (das Licht einer Flammen-Fläche, `_strahler`, über den EINEN Schreiber
 //       `_leuchtTakt`) 2 m unter und 3 m vor dem Ballen, schwarze Wand — die untere Hälfte gegen die obere (Luma). MUTANTE-K1: `woelbung` 0
 //       (die Normale zeigt zum Auge) → das Verhältnis fällt unter das Band. Ohne die Quelle ist der Ballen dunkel (sonst blind).
 //       (k2) EIN KÖRPER: zwei gleiche Ballen, die Mitten einen halben Radius auseinander, einzeln vor heller Wand gezeichnet; die
@@ -1645,9 +1645,10 @@ function rauchProbe(ort, P) {
                 r._rauchZeichnen(R, liste, "brandRauchSatz", R.maxTeilchen, R.steigMs);
                 st.brandRauchSatz.mesh.layers.set(SCHICHT);
             };
-            // DIE QUELLE DES LICHT-POOLS: eine Flammen-Fläche (`_flammenLicht`) unter dem Ballen — durch den EINEN Schreiber, bis
+            // DIE QUELLE DES LICHT-POOLS: eine Flammen-Fläche (`_strahler`) unter dem Ballen — durch den EINEN Schreiber, bis
             // zum Fixpunkt ihrer Blende (wie die Bühne mit Uhr)
-            const F = r._flammenLicht(P.flammeM);
+            const FLf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+            const F = { L: r._strahler(FLf.kelvin, Math.PI * P.flammeM * P.flammeM), masse: 1 };
             const quelle = { quelle: "brand", x: M.x + P.licht[0], y: M.y + P.licht[1], z: M.z + P.licht[2], L: F.L, masse: F.masse, phase: 0, rang: 0 };
             quelle.id = quelle;
             let brennt = false;

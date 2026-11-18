@@ -1297,11 +1297,12 @@ function lavaUrteil(b) {
         h.max === 0 ? "" : `L4-HALM: Büschel stehen im glühenden Rand: _wieseGrund bis ${h.max} an ${h.punkte} Punkten mit Decke ${h.decke} (verlangt 0) — stamm/vegetation-wiese.js _wieseGrund (die Decke dünnt nur)`,
         h.mutante?.max > 0 ? "" : `MUTANTE-L4: mit Gewicht × (1 − Decke) liest die Linse Grund ${h.mutante?.max} im Rand — sie sieht den Halm auf der Decke nicht`,
         q.quellen >= 1 && q.max > 0 && q.herd > 1 && q.glut > 0 ? "" : `L5-LEER: keine Messung des Lichts: ${q.quellen} Leuchtquellen „lava“ (Schein ${q.max}, Glut ${q.glut}), der Zeitplan des Herdfeuers steht bei ${q.herd} (verlangt > 1: die Nacht)`,
-        !(q.max > NARBE_SCHEIN_MAX) && q.zeit === 0 ? "" : `L5-SCHEIN: die Lava leuchtet als Herdfeuer-Punkt × BRAND.licht × Zeitplan: Schein ${q.max} > ${NARBE_SCHEIN_MAX} oder Zeitplan an ${q.zeit} von ${q.quellen} Quellen (nachts, Kern ${q.kern} m) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: _flammenLicht)`,
-        !(q.max < NARBE_SCHEIN_MIN) ? "" : `L5-DUNKEL: die Lava leuchtet nicht als Flammen-Fläche: Schein ${q.max} < ${NARBE_SCHEIN_MIN} (Glut ${q.glut}, Kern ${q.kern} m, BRAND.bild.flamme.schein ${q.soll}) — stamm/dirigent-kern.js _leuchtQuellen (die Lava)`,
-        q.kern === q.kernSoll ? "" : `L5-KERN: das Licht der Lava trägt nicht die Fläche ihrer Zelle: Kern ${q.kern} m (verlangt ${q.kernSoll} m, die halbe Zelle) — stamm/dirigent-kern.js _leuchtQuellen (_flammenLicht(Zelle/2))`,
+        !(q.max > NARBE_SCHEIN_MAX) && q.zeit === 0 ? "" : `L5-SCHEIN: die Lava leuchtet als Herdfeuer-Punkt × BRAND.licht × Zeitplan: Schein ${q.max} > ${NARBE_SCHEIN_MAX} oder Zeitplan an ${q.zeit} von ${q.quellen} Quellen (nachts, Kern ${q.kern} m) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: _strahler)`,
+        Math.abs(q.max - q.soll) <= 0.1 * q.soll ? "" : `L5-DUNKEL: die Lava leuchtet nicht mit der Leuchtdichte IHRER Temperatur: Schein ${q.max} gegen ${q.soll} aus dem Strahler-Gesetz (STRAHLER.leucht × glutAus(${q.tK} K), ± 10 %; Glut ${q.glut}, Kern ${q.kern} m) — stamm/dirigent-kern.js _leuchtQuellen (die Lava)`,
+        Math.abs(q.kern - q.kernSoll) <= 0.125 ? "" : `L5-KERN: das Licht der Lava trägt nicht die Fläche ihrer Zelle: Kern ${q.kern} m (verlangt ${q.kernSoll} m = √(Zelle²/π)) — stamm/dirigent-kern.js _leuchtQuellen (_strahler(T, Zelle²))`,
+        Math.abs(q.kelvin - q.tK) <= 25 && q.seite === q.seiteSoll ? "" : `L5-FARBE: das Licht der Lava ist kein waagrechter Strahler ihrer Temperatur: Datum ${q.kelvin} K bei einer Decke von ${q.tK} K (verlangt ± 25 K), Seite ${q.seite} m (verlangt die Zelle) — stamm/dirigent-kern.js _leuchtQuellen (die Lava: _strahler(T, A, flach))`,
         q.hoch === 0 ? "" : `L5-HÖHE: das Licht der Lava steht ${q.hoch} m neben der Höhe ihrer Decke (verlangt a.y) — stamm/dirigent-kern.js _leuchtQuellen (die Lava)`,
-        qm?.max > NARBE_SCHEIN_MAX && qm.zeit >= 1 && qm.hoch > 0 && qm.kern !== q.kernSoll ? "" : `MUTANTE-L5: mit dem alten Datum (Herdfeuer × BRAND.licht, 1 m über der Mitte) liest die Linse Schein ${qm?.max}, Zeitplan an ${qm?.zeit}, Höhe ${qm?.hoch} m, Kern ${qm?.kern} m — sie sieht den Herdfeuer-Punkt nicht`,
+        qm?.max > NARBE_SCHEIN_MAX && qm.zeit >= 1 && qm.hoch > 0 && Math.abs(qm.kern - q.kernSoll) > 0.125 ? "" : `MUTANTE-L5: mit dem alten Datum (Herdfeuer × BRAND.licht, 1 m über der Mitte) liest die Linse Schein ${qm?.max}, Zeitplan an ${qm?.zeit}, Höhe ${qm?.hoch} m, Kern ${qm?.kern} m — sie sieht den Herdfeuer-Punkt nicht`,
         us.tempVor > 100 && us.s >= 60 ? "" : `L6-LEER: keine Messung der Uhr: die Decke steht vor dem Sprung bei ${us.tempVor} °C, der Sprung der Welt-Uhr ${us.s} s`,
         ur.dStunde === 0 && Math.abs(ur.dTemp) <= 1 && ur.dUhr === 0 && ur.dAschen === 0 ? "" : `L6-SICHT: die Uhr des Spielers bewegt einen Prozess: der Regler 10 → 14 Uhr stellt die Welt-Stunde um ${ur.dStunde} h, die Decke der Lava um ${ur.dTemp} K, die Welt-Uhr um ${ur.dUhr} s, ${ur.dAschen} Aschen (verlangt je 0; die Decke ± 1 K: sie steht in der Luft der Stunde) — stamm/feld-leben.js _weltTag liest den Tag der Sicht (worldMeta.tag + timeOfDay) oder stamm/bild-himmel.js _uhrSetzen hebt spielZeit`,
         Math.abs(us.dStunde - us.s / 150) <= 0.01 && us.tempNach < us.tempVor - 1 && us.dBrandUhr >= us.s - 1 && us.aschen >= 1 ? "" : `L6-SPRUNG: der Sprung der Welt-Uhr altert die Welt nicht: nach _weltUhrNimm(+${us.s} s) Welt-Stunde +${us.dStunde} h (verlangt ${us.s / 150}), Decke ${us.tempVor} → ${us.tempNach} °C (verlangt kälter), Uhr des Brands +${us.dBrandUhr} s, ${us.aschen} Aschen (verlangt ≥ 1) — stamm/feld-leben.js _weltTag · _lavaZustand, stamm/feld-brand.js _tickBrand`,
@@ -1469,7 +1470,7 @@ async function narbeSeite(MESS) {
         // Leuchtquelle des Brands, frisch gelesen (`_leuchtQuellen`, nicht die Wahl des Pools) und über acht Bild-Uhren des
         // Flackerns: ihre Bestrahlung AN der Flamme; das Maximum trägt das Urteil. `herd`: der Zeitplan des
         // Herdfeuers zu dieser Uhr (die Nacht steht), `zeit`: die Quellen des Brands, die einen Zeitplan tragen
-        const LGf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        const LGf = { kelvin: 2000, staerke: 1, licht: 4, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } }; // das Datum der Mutanten: das Herdfeuer bis w28-strahler (Stärke × Zeitplan, nacht 45) × `BRAND.licht` 4
         const schein = () => {
             const [BF, bel] = [C.BRAND.bild.flamme, (st.renderer && st.renderer.toneMappingExposure) || 1];
             const Q = r._leuchtQuellen(pm.x, pm.y, pm.z, 64).filter((q) => q.quelle === "brand");
@@ -1482,26 +1483,26 @@ async function narbeSeite(MESS) {
         const N7 = (aus.n7 = schein());
         N7.tag = tagSchein;
         // die Mutante „am Bild-Ton": die Masse ÷ Belichtung (der widerlegte Stand 63c7e567) — Tag und Nacht fallen auseinander
-        const F0 = P._flammenLicht;
+        const F0 = P._strahler;
         const amTon = () => {
-            r._flammenLicht = function (...a) {
+            r._strahler = function (...a) {
                 const F = F0.apply(this, a);
-                return { L: F.L, masse: F.masse / ((st.renderer && st.renderer.toneMappingExposure) || 1) };
+                return Object.assign({}, F, { staerke: F.staerke / ((st.renderer && st.renderer.toneMappingExposure) || 1) });
             };
             return schein().max;
         };
         try {
             N7.mutanteTon = { nacht: amTon(), tag: (r.setTimeOfDay(0.5, "regler"), amTon()) };
         } finally {
-            delete r._flammenLicht;
+            delete r._strahler;
             r.setTimeOfDay(0, "regler");
         }
         // die Mutante: der Brand als Herdfeuer-Punkt × `BRAND.licht` mit dem Zeitplan des Feuers (der Stand bis w28-brand-nacht)
-        r._flammenLicht = () => ({ L: LGf, masse: C.BRAND.licht });
+        r._strahler = () => Object.assign({}, LGf, { staerke: LGf.staerke * LGf.licht });
         try {
             N7.mutante = schein();
         } finally {
-            delete r._flammenLicht;
+            delete r._strahler;
             r.setTimeOfDay(0.5, "regler");
         }
         // N2, die Mutante: derselbe Herd, `ende` auf den Durchlauf des Kopfs gestutzt
@@ -1547,7 +1548,7 @@ async function narbeSeite(MESS) {
         delete r._wegeBodenFarbe;
         return aus;
     } finally {
-        for (const k of ["_naesseTakt", "_feuchteAt", "_feldFolgeSteht", "_brandFront", "_brandBild", "_brandZuenden", "_wegeBodenFarbe", "_flammenLicht"]) delete r[k];
+        for (const k of ["_naesseTakt", "_feuchteAt", "_feldFolgeSteht", "_brandFront", "_brandBild", "_brandZuenden", "_wegeBodenFarbe", "_strahler"]) delete r[k];
         leer();
         st.weatherEffectTime = uhr;
         st.autoSeason = jahr;
@@ -1763,19 +1764,19 @@ async function lavaSeite(MESS) {
         // L5 — DAS LICHT DER LAVA: NACHTS gegossen (die Uhr zuerst: das Alter der Decke hängt an der Welt-Stunde), die Quelle
         // `lava`, die das Licht liest (`_leuchtQuellen` um die Decke): ihr Schein AN der Decke im Maß von N7 (`_leuchtStaerke` ÷ π ×
         // (1 + k²)/k², das Maximum über acht Bild-Uhren), ihr Kern, ihr Zeitplan, ihre Höhe über `a.y`
-        const LGf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        const LGf = { kelvin: 2000, staerke: 1, licht: 4, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } }; // das Datum der Mutanten: das Herdfeuer bis w28-strahler (Stärke × Zeitplan, nacht 45) × `BRAND.licht` 4
         r.setTimeOfDay(0, "regler");
         const an = giessen();
         const schein = () => {
             const Q = r._leuchtQuellen(an.x, an.y + 1.8, an.z, 64).filter((q) => q.quelle === "lava");
             const mass = (q, t, kk = q.L.kernM) => ((r._leuchtStaerke(q, t) / Math.PI) * (1 + kk * kk)) / (kk * kk);
             const W = Q.flatMap((q) => [0, 0.37, 0.9, 1.3, 2.1, 3.3, 4.7, 6.1].map((t) => mass(q, t)));
-            return { quellen: Q.length, max: r3(Math.max(0, ...W)), min: r3(Math.min(...W)), kern: r3(Math.max(0, ...Q.map((q) => q.L.kernM))), kernSoll: cs / 2, zeit: Q.filter((q) => q.L.zeit != null).length, hoch: r3(Math.max(-99, ...Q.map((q) => Math.abs(q.y - an.y)))), herd: r3(r._lichtZeitplan(LGf.zeit)), glut: r3(r._lavaZustand(an).glut), soll: C.BRAND.bild.flamme.schein };
+            return { quellen: Q.length, max: r3(Math.max(0, ...W)), min: r3(Math.min(...W)), kern: r3(Math.max(0, ...Q.map((q) => q.L.kernM))), kernSoll: r3(Math.sqrt((cs * cs) / Math.PI)), kelvin: Q.length ? Q[0].L.kelvin : null, tK: r3(r._lavaZustand(an).temperatur + 273.15), seite: Q.length ? Q[0].L.seiteM : null, seiteSoll: cs, zeit: Q.filter((q) => q.L.zeit != null).length, hoch: r3(Math.max(-99, ...Q.map((q) => Math.abs(q.y - an.y)))), herd: r3(r._lichtZeitplan(LGf.zeit)), glut: r3(r._lavaZustand(an).glut), soll: r3(globalThis.__fachwerkCore.STRAHLER.leucht * globalThis.__gelaendeCore.glutAus(r._lavaZustand(an).temperatur + 273.15, globalThis.__fachwerkCore.STRAHLER.ankerK)) };
         };
         const L5 = (aus.l5 = schein());
         // die Mutante: das alte Datum der Lava (der Herdfeuer-Punkt × `BRAND.licht` × Glut mit Zeitplan, 1 m über ihrer Mitte)
         r._leuchtQuellen = function (...arg) {
-            return P._leuchtQuellen.apply(this, arg).map((q) => (q.quelle === "lava" ? Object.assign(q, { L: LGf, masse: C.BRAND.licht * this._lavaZustand(q.id).glut, y: q.y + 1 }) : q));
+            return P._leuchtQuellen.apply(this, arg).map((q) => (q.quelle === "lava" ? Object.assign(q, { L: LGf, masse: LGf.licht * this._lavaZustand(q.id).glut, y: q.y + 1 }) : q));
         };
         L5.mutante = schein();
         delete r._leuchtQuellen;
@@ -1900,12 +1901,12 @@ if (SELBSTTEST) {
                     l2: { kanten: 4, ein: 9, einMax: 9, decke: 0, amRand: 7, tief: [-1.99, 3.51], uhr: 60, spanne: 16, spanneMax: 16, sicht: [5.75, 15.5, 16, 15.5], flammen: [24, 41, 18, 151], mutante: { kanten: 4, ein: 0, einMax: 0, decke: 0, amRand: 0, tief: null, uhr: 60, spanne: 1.75, spanneMax: 9.25, sicht: [4.75, 9.25, 9.25, 1.75], flammen: [19, 22, 19, 16] } },
                     l3: { ort: "probe", voll: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 1, faengt: true, gras: 400, stein: 380, iw: 4200, R: 0.076, s: 250, narbe: [1, 1] }, halb: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 400, stein: 0, maske: 64, iw: 4200, R: 0.076, s: 250, narbe: [1, 0] }, mutanteLast: { leb: 0.401, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 300, stein: 0, iw: 2100, R: 0.04, s: 400, narbe: [1, 0] }, mutanteFlaeche: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 400, stein: 380, iw: 4200, R: 0.076, s: 250, narbe: [1, 1] } },
                     l4: { punkte: 32, max: 0, decke: [0.043, 0.962], aussen: 1, asche: 0, mutante: { max: 0.957, ueber0: 32 } },
-                    l5: { quellen: 1, max: 7.918, min: 6.777, kern: 8, kernSoll: 8, zeit: 0, hoch: 0, herd: 45, glut: 1, soll: 7.5, mutante: { quellen: 1, max: 519.05, min: 444.211, kern: 0.76, kernSoll: 8, zeit: 1, hoch: 1, herd: 45, glut: 1, soll: 7.5 } },
+                    l5: { quellen: 1, max: 3.1, min: 3.1, kern: 9, kernSoll: 9.027, kelvin: 1625, tK: 1623.15, seite: 16, seiteSoll: 16, zeit: 0, hoch: 0, herd: 45, glut: 1, soll: 3.12, mutante: { quellen: 1, max: 519.05, min: 444.211, kern: 0.76, kernSoll: 8, zeit: 1, hoch: 1, herd: 45, glut: 1, soll: 7.5 } },
                     l6: { regler: { dStunde: 0, dTemp: 0, dUhr: 0, dAschen: 0 }, sprung: { s: 600, dStunde: 4, tempVor: 1377, tempNach: 900, dBrandUhr: 600, schritte: 30, zuend: 110, takte: 40, aschen: 35 }, mutanteSicht: { regler: { dStunde: 4, dTemp: -400, dUhr: 0, dAschen: 0 } }, mutanteSchleife: { sprung: { schritte: 600 } } },
                 },
                 [["N1-LEER", "n1.brennt", false], ["N1-LEER", "n1.s", 3], ["N1-LEER", "n1.fernAn", 12], ["N1-WARTET", "n1.zuend", 0], ["N1-QUADRAT", "n1.fern", 0.9], ["MUTANTE-N1-WARTET", "n1.mutanteWartet.zuend", 1], ["MUTANTE-N1-QUADRAT", "n1.mutanteQuadrat.fern", 0], ["N2-ENDE", "n2.dauer", 31.5], ["MUTANTE-N2", "n2.mutante.dauer", 52.4], ["MUTANTE-N2", "n2.mutante", null], ["N3-LEER", "n3.gemessen", 0], ["N3-LICHT", "n3.max", 5.3, "n3.mitte", true], ["MUTANTE-N3", "n3.mutante.max", 0], ["N4-LEER", "n4.gebaut", false], ["N4-ZEILE", "n4.abrufe", 0], ["MUTANTE-N4", "n4.mutante", 1], ["N5-LEER", "n5.paare", 2], ["N5-LEER", "n5.mass", null], ["N5-SAUM", "n5.mass", 1.6, "n5.abstand", 1.123, "n5.breite", 0.702], ["MUTANTE-N5", "n5.mutante.mass", 1.187], ["MUTANTE-N5", "n5.mutante.paare", 2], ["MUTANTE-N5", "n5.mutante", null], ["N6-LEER", "n6.flammen", 3], ["N6-LEER", "n6.sigma", null], ["N6-BAND", "n6.sigma", 0, "n6.min", 1, "n6.max", 1], ["MUTANTE-N6", "n6.mutante.sigma", 0.246], ["MUTANTE-N6", "n6.mutante.flammen", 3], ["MUTANTE-N6", "n6.mutante", null], ["N7-UHR", "n7.tag", 16], ["MUTANTE-N7-TON", "n7.mutanteTon.tag", 5.6], ["N7-LEER", "n7.quellen", 0], ["N7-LEER", "n7.herd", 1], ["N7-SCHEIN", "n7.max", 460], ["N7-SCHEIN", "n7.zeit", 4], ["N7-DUNKEL", "n7.max", 1], ["MUTANTE-N7", "n7.mutante.max", 8.2], ["MUTANTE-N7", "n7.mutante.zeit", 0], ["MUTANTE-N7", "n7.mutante", null],
                     // die Täter der Lava-Linse: je Fall der Stand vor w28-lava-zuendet (L2-DECKE: der Kopf 163a65de — alle Eintritte 2 m in der Zelle der Lava)
-                    ["LEER", "l3", null], ["L1-LEER", "l1.betten", 0, "l1.brennend", 0], ["L1-LEER", "l1.kalt.tK", 600], ["L1-LEER", "l1.lau", null], ["L1-ZÜNDUNG", "l1.brennend", 0], ["L1-ZÜNDUNG", "l1.brennend", 5], ["L1-KALT", "l1.kalt.brennend", 8], ["L1-LAU", "l1.lau.brennend", 0], ["MUTANTE-L1", "l1.mutante", 8], ["L2-LEER", "l2.kanten", 0], ["L2-LEER", "l2.uhr", 12], ["L2-EIN", "l2.ein", 0], ["L2-DECKE", "l2.decke", 1, "l2.tief", [-1.99, -1.99]], ["L2-DECKE", "l2.decke", 0.3], ["L2-ABSEITS", "l2.amRand", 0], ["L2-SPANNE", "l2.spanne", 9.25], ["MUTANTE-L2", "l2.mutante.einMax", 9], ["MUTANTE-L2", "l2.mutante.spanneMax", 16], ["MUTANTE-L2", "l2.mutante", null], ["L3-LEER", "l3.voll", null], ["L3-LEER", "l3.voll.narbe", [1, 0]], ["L3-LEER", "l3.halb.faengt", false], ["L3-LEER", "l3.halb.gras", 2], ["L3-LEER", "l3.halb.anteil", 1], ["L3-LAST", "l3.halb.iw", 2100, "l3.halb.leb", 0.401], ["L3-LAST", "l3.halb.leb", 0.401], ["L3-MASKE", "l3.halb.maske", 0], ["L3-MASKE", "l3.halb.maske", 200], ["L3-FLAMME", "l3.halb.stein", 25], ["L3-NARBE", "l3.halb.narbe", [1, 0.946]], ["L3-NARBE", "l3.halb.narbe", [0, 0]], ["MUTANTE-L3-LAST", "l3.mutanteLast.iw", 4200], ["MUTANTE-L3-LAST", "l3.mutanteLast", null], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.stein", 0], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.narbe", [1, 0]], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche", null], ["L4-LEER", "l4.punkte", 0], ["L4-LEER", "l4.aussen", 0], ["L4-HALM", "l4.max", 0.957], ["MUTANTE-L4", "l4.mutante.max", 0], ["MUTANTE-L4", "l4.mutante", null], ["L5-LEER", "l5.quellen", 0], ["L5-LEER", "l5.herd", 1], ["L5-SCHEIN", "l5.max", 519.05], ["L5-SCHEIN", "l5.zeit", 1], ["L5-DUNKEL", "l5.max", 1], ["L5-KERN", "l5.kern", 0.76], ["L5-HÖHE", "l5.hoch", 1], ["MUTANTE-L5", "l5.mutante.max", 7.918], ["MUTANTE-L5", "l5.mutante.zeit", 0], ["MUTANTE-L5", "l5.mutante.hoch", 0], ["MUTANTE-L5", "l5.mutante", null],
+                    ["LEER", "l3", null], ["L1-LEER", "l1.betten", 0, "l1.brennend", 0], ["L1-LEER", "l1.kalt.tK", 600], ["L1-LEER", "l1.lau", null], ["L1-ZÜNDUNG", "l1.brennend", 0], ["L1-ZÜNDUNG", "l1.brennend", 5], ["L1-KALT", "l1.kalt.brennend", 8], ["L1-LAU", "l1.lau.brennend", 0], ["MUTANTE-L1", "l1.mutante", 8], ["L2-LEER", "l2.kanten", 0], ["L2-LEER", "l2.uhr", 12], ["L2-EIN", "l2.ein", 0], ["L2-DECKE", "l2.decke", 1, "l2.tief", [-1.99, -1.99]], ["L2-DECKE", "l2.decke", 0.3], ["L2-ABSEITS", "l2.amRand", 0], ["L2-SPANNE", "l2.spanne", 9.25], ["MUTANTE-L2", "l2.mutante.einMax", 9], ["MUTANTE-L2", "l2.mutante.spanneMax", 16], ["MUTANTE-L2", "l2.mutante", null], ["L3-LEER", "l3.voll", null], ["L3-LEER", "l3.voll.narbe", [1, 0]], ["L3-LEER", "l3.halb.faengt", false], ["L3-LEER", "l3.halb.gras", 2], ["L3-LEER", "l3.halb.anteil", 1], ["L3-LAST", "l3.halb.iw", 2100, "l3.halb.leb", 0.401], ["L3-LAST", "l3.halb.leb", 0.401], ["L3-MASKE", "l3.halb.maske", 0], ["L3-MASKE", "l3.halb.maske", 200], ["L3-FLAMME", "l3.halb.stein", 25], ["L3-NARBE", "l3.halb.narbe", [1, 0.946]], ["L3-NARBE", "l3.halb.narbe", [0, 0]], ["MUTANTE-L3-LAST", "l3.mutanteLast.iw", 4200], ["MUTANTE-L3-LAST", "l3.mutanteLast", null], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.stein", 0], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.narbe", [1, 0]], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche", null], ["L4-LEER", "l4.punkte", 0], ["L4-LEER", "l4.aussen", 0], ["L4-HALM", "l4.max", 0.957], ["MUTANTE-L4", "l4.mutante.max", 0], ["MUTANTE-L4", "l4.mutante", null], ["L5-LEER", "l5.quellen", 0], ["L5-LEER", "l5.herd", 1], ["L5-SCHEIN", "l5.max", 519.05], ["L5-SCHEIN", "l5.zeit", 1], ["L5-DUNKEL", "l5.max", 1], ["L5-DUNKEL", "l5.max", 7.9], ["L5-KERN", "l5.kern", 0.76], ["L5-FARBE", "l5.kelvin", 2000], ["L5-FARBE", "l5.seite", 0], ["L5-HÖHE", "l5.hoch", 1], ["MUTANTE-L5", "l5.mutante.max", 7.918], ["MUTANTE-L5", "l5.mutante.zeit", 0], ["MUTANTE-L5", "l5.mutante.hoch", 0], ["MUTANTE-L5", "l5.mutante", null],
                     ["L6-LEER", "l6.sprung.tempVor", 20], ["L6-SICHT", "l6.regler.dStunde", 4], ["L6-SICHT", "l6.regler.dTemp", -400], ["L6-SICHT", "l6.regler.dUhr", 600], ["L6-SPRUNG", "l6.sprung.dStunde", 0], ["L6-SPRUNG", "l6.sprung.tempNach", 1377], ["L6-SPRUNG", "l6.sprung.dBrandUhr", 0], ["L6-SCHLEIFE", "l6.sprung.schritte", 600], ["MUTANTE-L6-SICHT", "l6.mutanteSicht.regler.dStunde", 0], ["MUTANTE-L6-SICHT", "l6.mutanteSicht", null], ["MUTANTE-L6-SCHLEIFE", "l6.mutanteSchleife.sprung.schritte", 30],
                 ]
             ),
