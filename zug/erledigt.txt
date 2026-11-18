@@ -1672,3 +1672,4 @@ omen-gtx-gtx-1f300260-w0801-1-1f300260 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN
 2026-11-18 08:20 landung ABGEBROCHEN main 1f300260: weg-tor wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 52 stellen sich hinten an
 2026-11-18 08:20 landung Zwischenstand main 1f300260: misst 52 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (2 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-gtx-1f300260-w0820-1-1f300260 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT affekt.K1#2 ‖ affekt.K1#2: Gänge 2/2 (Exit 0: der Baum fällt nicht (0 Hiebe)) (punkte-maschine 8eefda7f messung/1f300260-gtx.json)
+2026-11-18 08:39 landung ABGEBROCHEN main 1f300260: weg-tor wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 51 stellen sich hinten an
