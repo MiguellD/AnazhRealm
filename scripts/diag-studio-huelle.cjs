@@ -80,7 +80,13 @@ const PORT = Number(process.env.STUDIO_HUELLE_PORT || 8742); // der Gang und das
 const ENGINE_FREMD = /^\/(?:worlds\/[^/]+\/lib\/[^/]+|vendor\/three\.min\.js)$/;
 const ENGINE_EINE = "/vendor/three.webgpu.min.js";
 const WELT_GELADEN = /^\/(?:index\.html)?$|^\/stamm\//;
-const ENGINE_RATSCHE = { portale: "r128", fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
+// Die portale fiel aus ihr mit w28-studio-seiten (AnazhHuelle.studio: das Werk der Welt auf der EINEN Bühne).
+const ENGINE_RATSCHE = { fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
+// H6 OHNE BROWSER (w28-studio-seiten): dieselbe Ratsche am Text der Studio-Seite — ein `<script src>` auf eine Engine-Kopie
+// (`…/lib/three*.js`, das r160-UMD `vendor/three.min.js`) ist fremd; der Gang (--engine) zählt dazu die dynamischen Anfragen.
+// Gezählt: die Studios auf der EINEN Engine und die, deren Werk die Bühne der Welt zeichnet (`AnazhHuelle.studio`).
+const ENGINE_FREMD_SRC = /<script\b[^>]*\bsrc\s*=\s*["'](?:[^"']*\/)?(?:lib\/three[\w.-]*\.js|vendor\/three\.min\.js)/i;
+const STUDIO_DER_WELT = /\bAnazhHuelle\s*\.\s*studio\s*\(/;
 // H10 — DIE BÜHNE ZEIGT DAS WERK DER WELT (studios.K4, Labor = Welt): die erste Zeile der Kosten-Leiste trägt je Bau das Maß der Hülle
 // (`werkMass`: die Box der Wurzel der Bühne gegen die Box des Werks, das der Kern der Welt für ihre Übergabe baut), ihr Urteil liest
 // H8 (`zeileUrteil`, eine Achse über 2 % des Halbmessers) — ein Mesh-Studio ohne Maß ist ROT. Bis w16-studio-welt trug die Wurzel der
@@ -237,6 +243,18 @@ function pruefe(karte) {
         if (!fehltIn(rel, ELEMENT_ADAPTER))
             rot.push(`H2 ${stammLib.fehlt.wo}: Element-Adapter op[0] (aus "gt" wird "g") — der DSL-Adapter der Hülle liest das Programm ganz`);
     }
+    // H6 am Text — je Studio seine Seite gegen die Ratsche (sie zieht nur an); die Zahl: wer auf der EINEN Engine steht, wessen
+    // Werk die Bühne der Welt zeichnet
+    Object.assign(zahl, { eineEngine: [], werkDerWelt: [] });
+    for (const id of STUDIOS) {
+        const html = karte[seite(id)];
+        if (html == null) continue;
+        const fremd = ENGINE_FREMD_SRC.test(html);
+        if (fremd && !ENGINE_RATSCHE[id]) rot.push(`H6 ${seite(id)}: lädt eine fremde Engine (${ENGINE_FREMD_SRC.exec(html)[0].replace(/^.*src\s*=\s*["']/i, "")}) statt der EINEN der Welt (${ENGINE_EINE}, r184)`);
+        else if (!fremd && ENGINE_RATSCHE[id]) rot.push(`H6 ${seite(id)}: lädt keine fremde Engine mehr (${ENGINE_RATSCHE[id]} fiel) — die Ratsche zieht an, ${id} fällt aus ENGINE_RATSCHE`);
+        if (!fremd && html.includes("three-bootstrap.js")) zahl.eineEngine.push(id);
+        if (Object.keys(karte).some((rel) => rel.startsWith(`worlds/${id}/`) && /\.js$/.test(rel) && STUDIO_DER_WELT.test(karte[rel]))) zahl.werkDerWelt.push(id);
+    }
     // H5 — das Ziel-Bild je Welt, gebacken an den Quellen von heute
     let K = null;
     try {
@@ -293,6 +311,8 @@ function selbsttest() {
         ["H2 eine eigene ready im terrain-Labor", "worlds/terrain/phytogenesis.js", "AnazhHuelle.bruecke(", 'foundryPost({ type: "ready", world: "terrain" });\nAnazhHuelle.bruecke(', /^H2 worlds\/terrain\/phytogenesis\.js:\d+ .*: eine eigene ready/],
         ["H11 die schmiede zeichnet an der Bühne der Hülle vorbei (ihr Anschluss bis w28-studio-welt)", "worlds/schmiede/schmiede.js", "BUEHNE.bild(cam);", "if(__weltLicht.buehneZeichnet(BUEHNE.welt,scene,R))R.render(scene,cam);", /^H11 worlds\/schmiede\/schmiede\.js:\d+ .*: ein eigener Bühnen-Anschluss/],
         ["H11 die garage baut ihren Renderer selbst", "worlds/garage/garage.js", "const R=BUEHNE.renderer;", "const R=new THREE.WebGPURenderer({antialias:true});", /^H11 worlds\/garage\/garage\.js:\d+ .*: ein eigener Bühnen-Anschluss/],
+        ["H6 die portale lädt wieder das r128 des Labors (am Text der Seite)", "worlds/portale/index.html", '<script type="importmap">', '<script src="../terrain/lib/three-r128.min.js"></script>\n<script type="importmap">', /^H6 worlds\/portale\/index\.html: lädt eine fremde Engine \(\.\.\/terrain\/lib\/three-r128/],
+        ["H6 die fachwerk lädt keine Kopie mehr (die Ratsche zieht an, am Text der Seite)", "worlds/fachwerk/index.html", '<script src="../terrain/lib/three-r128.min.js"></script>', "", /^H6 worlds\/fachwerk\/index\.html: lädt keine fremde Engine mehr \(r128 fiel\)/],
         ["H5 eine Quelle der garage ändert sich, ihr Panorama bleibt (veraltet)", "worlds/garage/garage.js", /$/, "\n/* ein neuer Look */", /^H5 garage: das Panorama ist veraltet/], // ankerfrei: ein Kommentar am Ende der Quelle
         ["H5 eine geteilte Quelle (die Hülle) ändert sich — jede Welt veraltet", "worlds/huelle/huelle.js", "function panorama(", "function panoramaNeu() {}\n    function panorama(", /^H5 skeleton: das Panorama ist veraltet/],
         ["H5 die Version allein macht kein neues Bild (?v= fällt) — die fachwerk bleibt grün", "worlds/fachwerk/index.html", /\?v=[0-9.]+/g, "?v=99.999.9", null, /^H5 fachwerk/],
@@ -328,7 +348,7 @@ function selbsttest() {
     // H3/H4/H6 — der Spruch des Gangs (dieselbe pure Funktion): die Ratsche fremd, die garage auf der EINEN Engine
     const eine = ["/vendor/three-bootstrap.js", "/vendor/three.module.min.js", ENGINE_EINE];
     const r128 = "/worlds/terrain/lib/three-r128.min.js";
-    const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : id === "garage" ? eine : []]));
+    const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : ["garage", "schmiede", "portale"].includes(id) ? eine : []]));
     // jedes Studio mit Sitzung (H3, H7), jede Leiste unter ihren Deckeln und mit ihren Gegenzahlen (H4, H8), der Klang je Ort
     const zeile = { werkBuehne: 2, werkWelt: 2, befehle: 40, befehleGezeichnet: 40, vram: 9e5, vramGpu: 9e5, vramDeckel: 9e6, ms: 0.4, msDeckel: 1.5, bank: 0.41, bankCpu: 0.2 };
     const wahr = (leiste, gezeichnet, stufe = 0, deckel = 62000, mehr) => ({ kosten: [{ ...zeile, stufe, leiste, gezeichnet, deckel, ...mehr }] });
@@ -341,7 +361,8 @@ function selbsttest() {
         ["H6 die garage auf r184 ohne WebGPU", { garage: ["/vendor/three.module.min.js"] }, /^H6 garage: three aus vendor\/ ohne/],
         ["H6 die klang lädt das r160-UMD", { klang: ["/vendor/three.min.js"] }, /^H6 klang: die Seite lädt eine fremde Engine \(\/vendor\/three\.min\.js/],
         ["H6 die garage aufgelöst in die Welt (index.html?studio=garage)", { garage: ["/index.html", "/stamm/dirigent-kern.js", ...eine] }, /^H6 garage: die Seite lädt die Welt/],
-        ["H6 die portale lädt keine Kopie mehr (die Ratsche zieht an)", { portale: eine }, /^H6 portale: lädt keine fremde Engine mehr/],
+        ["H6 die fachwerk lädt keine Kopie mehr (die Ratsche zieht an)", { fachwerk: eine }, /^H6 fachwerk: lädt keine fremde Engine mehr/],
+        ["H6 die portale lädt wieder r128 (sie fiel aus der Ratsche, w28-studio-seiten)", { portale: [r128, ...eine] }, /^H6 portale: die Seite lädt eine fremde Engine/],
         ["H3 die garage schreibt den offenen Zug nicht (Strg+Z stumm, 83df2052)", {}, /^H3 garage: Strg\+Z wirkt nicht/, { garage: { folge: [..."122222"] } }],
         ["H3 das Strg+Umschalt+Z der portale wiederholt nicht", {}, /^H3 portale: Strg\+Umschalt\+Z wirkt/, { portale: { folge: [..."121111"] } }],
         ["H3 das Strg+Y der klang wiederholt nicht", {}, /^H3 klang: Strg\+Y wirkt nicht/, { klang: { folge: [..."121211"] } }],
@@ -611,6 +632,7 @@ hauptLauf(async () => {
     const { rot, zahl, veraltet } = pruefe(baum());
     console.log("Studio-Hülle: H1 Hand-Regler · H2 Brücken-Kopie · H3 Umstieg (Studios: " + STUDIOS.join(", ") + "; Nebenwelten: " + NEBENWELTEN.join(", ") + ")");
     console.log(`  eigene ready-Meldungen: ${zahl.bruecken.length} (${zahl.bruecken.join(", ") || "—"}) + die EINE der Hülle`);
+    console.log(`  EINE Engine (H6): ${zahl.eineEngine.length} von ${STUDIOS.length} Studios (${zahl.eineEngine.join(", ")}) · das Werk der Welt auf der Bühne (AnazhHuelle.studio): ${zahl.werkDerWelt.length} von ${STUDIOS.length} (${zahl.werkDerWelt.join(", ") || "—"})`);
     console.log(`  Ziel-Bild (H5): ${zahl.panorama} von ${zahl.soll} Panoramen an den Quellen von heute (${TOR_ZIELE}), ohne: ${Object.keys(OHNE_PANORAMA).join(", ")}`);
     for (const x of veraltet) console.log("⚠ " + x + " (benannt, sperrt nicht)");
     wandEnde(rot, `gate:studio-huelle: ${STUDIOS.length} Studios + ${NEBENWELTEN.length} Nebenwelten auf der EINEN Hülle, kein Hand-Regler, keine Brücken-Kopie`);
