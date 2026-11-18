@@ -234,8 +234,7 @@
         // ── DIE SCHLUSS-WELLE (Spiegel-Zensus 17.07., rein additive DATEN-
         // Zeilen): die letzten neun Stamm-Literale mit tetrapoda-Heimat kehren
         // ins Evolutions-Gesetzbuch heim — freude (Joy-Tempo + Huepf-Hoehen) ·
-        // groessen (die Koerpergroessen-Baender,
-        // Lehre 8: DIE Differenzierungs-Achse) · separation (Herden-Abstand) ·
+        // separation (Herden-Abstand) ·
         // aufgaben (Gefaehrten-Tempi + Halt-Distanzen) · herde (Schwarm-
         // Kohaesion) · wasser (Ufer-Scheu) — plus
         // stimmung.schwellen oben (furcht.neugierStoppM fiel mit dem persoenlichen Raum, Welle LF). Der Wirt liest
@@ -250,14 +249,8 @@
             hopHochM: 1.2, // m — der frohe Huepfer
             hopBasisM: 0.8, // m — der Grund-Huepfer (ein Wesen, das nicht froh ist)
         },
-        groessen: [
-            // Wurf-Baender der Koerpergroesse (roll ∈ [0,1) aus der Identitaet):
-            // roll < bis → range(name, min, max); die letzte Zeile faengt den Rest.
-            { name: "klein", bis: 0.18, min: 0.6, max: 0.82 }, // Jungtier/Zwerg (flink, zart)
-            { name: "normal", bis: 0.82, min: 0.85, max: 1.18 }, // typisch
-            { name: "gross", bis: 0.965, min: 1.25, max: 1.75 }, // ein grosses Tier
-            { name: "gigant", bis: 1, min: 1.9, max: 2.7 }, // GIGANT — ein Koloss (robust, traege), selten
-        ],
+        // Die Groesse eines Tiers wuerfelt kein Band mehr (die vier Wurf-Baender fielen, leben-erbe): sie ist Physik seines Erbes
+        // ueber das Alter (leben-core.js, __lebenCore.masseZurZeit), ihre Grenzen die des Gesetzes (__lebenCore.spanne).
         separation: {
             // DER PERSOENLICHE RAUM (Welle LF 08.10., VERTRAGS-AKT): je Leib die Koerper-Kugel (die waagrechte Spanne der
             // Gestalt um ihre Mitte, beim Wirt halb + Radius des Leibs, in Hueft-Hoehen der Art und Groesse) × raumKugel; der

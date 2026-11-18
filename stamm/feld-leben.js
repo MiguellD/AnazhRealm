@@ -2155,8 +2155,12 @@ class AnazhRealm_feld_leben {
         const t = f.tier;
         const L = AnazhRealm._lebensraumGesetz().L.gattung;
         if (f.art !== "annahme" || !t || typeof t.soul !== "string" || !(t.g in L)) return false;
-        if (![t.bs, t.alterS, t.x, t.z].every(zahl)) return false;
-        const tier = { soul: t.soul.slice(0, 48), g: t.g, bs: t.bs, alterS: t.alterS, x: t.x, z: t.z };
+        // das Tier reist mit seinem Erbe (`a`, ein Vektor über die Achsen des Gesetzes des Lebens) und seiner Mutter (`m`,
+        // null = Gründer) — nie mit einer Größe: die ist Physik des Erbes über das Alter auf jeder Seite (leben-erbe)
+        if (!this._lebenErbeGilt(t.a) || ![t.alterS, t.x, t.z].every(zahl)) return false;
+        if (t.m != null && !(typeof t.m === "string" && t.m.length <= 96)) return false;
+        const tier = { soul: t.soul.slice(0, 48), g: t.g, a: t.a.slice(), m: t.m == null ? null : t.m };
+        Object.assign(tier, { alterS: t.alterS, x: t.x, z: t.z });
         tier.v = typeof t.v === "string" ? t.v.slice(0, 48) : null;
         tier.name = typeof t.name === "string" ? t.name.slice(0, 48) : undefined;
         return this._feldAkt({ art: "annahme", w, key, id, tier }, false, sofort, true);
@@ -2170,6 +2174,23 @@ class AnazhRealm_feld_leben {
     // die nahen Regionen): jede Schrift zählt sie. Bis feld.K2#2 reiste keins davon: nach dem Reload rechnete die Seite ihre
     // Regionen ab leer nach, ihr Feld trug 0 von 1 172 Zellen des Mitspielers. Mit dem Nahen reist die Region jedes gezeichneten
     // Tiers (`_bestandReist`): kein Leib des Stands kehrt ohne sein Tier wieder.
+    // DAS ERBE AUS FREMDER HAND (Stand, Draht): ein Vektor endlicher Zahlen, je Achse des Gesetzes des Lebens eine
+    // (`__lebenCore.gesetz().achsen`) — alles andere ist kein Erbe.
+    _lebenErbeGilt(a) {
+        const n = AnazhRealm._lebenKern().gesetz().achsen.length;
+        return Array.isArray(a) && a.length === n && a.every((x) => typeof x === "number" && Number.isFinite(x));
+    }
+    // DIE WANDLUNG DES ALTEN STANDS (leben-erbe — benannt, deterministisch, nie still): ein Tier eines Stands von vor dem Erbe
+    // trägt kein `a`, nur seine gewürfelte Größe `bs` — es wird als GRÜNDER SEINER KENNUNG gelesen (`_erbeGruender(id)`, `m`
+    // null): derselbe alte Stand ergibt auf jeder Seite und in jedem Boot dasselbe Tier, Alter und Anker bleiben seine. Die
+    // alte Größe fällt ungelesen (sie war ein Wurf der Bänder, kein Erbe). Ein Tier mit Erbe kehrt wieder, wie es reiste.
+    _lebenWandeln(t) {
+        const tier = Object.assign({}, t, { v: t.v == null ? null : String(t.v) });
+        delete tier.bs;
+        if (t.a === undefined) [tier.a, tier.m] = [this._erbeGruender(t.id), null];
+        else [tier.a, tier.m] = [t.a.slice(), t.m == null ? null : t.m];
+        return tier;
+    }
     _lebenImStand(nahe = this._bestandReist()) {
         const st = this.state;
         const seed = (st.worldMeta && st.worldMeta.seed) || "";
@@ -2182,11 +2203,12 @@ class AnazhRealm_feld_leben {
             kacheln.push([ix * S - cs, iz * S - cs, (ix + 1) * S + cs, (iz + 1) * S + cs]);
             const R = F[key];
             if (!R) continue;
-            const tiere = R.tiere.map(({ id, soul, g, bs, alterS, x, z, v, name, gehege }) => ({
+            const tiere = R.tiere.map(({ id, soul, g, a, m, alterS, x, z, v, name, gehege }) => ({
                 id,
                 soul,
                 g,
-                bs,
+                a, // das Erbe (leben-erbe) — die Größe reist nie, sie ist Physik des Erbes über das Alter
+                m, // die Mutter (null = Gründer)
                 alterS,
                 x,
                 z,
@@ -2194,7 +2216,7 @@ class AnazhRealm_feld_leben {
                 name,
                 gehege, // der Term des Geheges (tetrapoda GEHEGE_GESETZ): das Tier kehrt als Tier seines Geheges wieder
             }));
-            bestand[key] = { t: R.t, seq: R.seq, tiere };
+            bestand[key] = { t: R.t, tiere }; // der Zähler der Geburt (`seq`) fiel: die Kennung ist `__lebenCore.indId`
         }
         const nah = (k) => {
             const [x, z] = k.split(",").map((n) => (Number(n) + 0.5) * cs);
@@ -2237,12 +2259,12 @@ class AnazhRealm_feld_leben {
         const LG = AnazhRealm._lebensraumGesetz().L.gattung;
         // DAS RASTER DES STANDS (`seite`, die Seite seiner Kacheln): ein Stand eines anderen Rasters (bis w27-tiere-sicht 354 m,
         // ohne Marke) nennt mit seinen Schlüsseln andere Orte — sein Bestand zieht um: jedes Tier in die Kachel seines Ankers (der
-        // Takt und der Zähler der Kachel sind die spätesten ihrer Quellen: keine Kennung kehrt wieder). Ohne den Umzug läse die
-        // Kachel am alten Schlüssel Tiere, die 500 m entfernt ankern.
+        // Takt der Kachel ist der späteste ihrer Quellen: keine Kennung `indId(key, t, j)` kehrt wieder). Ohne den Umzug läse die
+        // Kachel am alten Schlüssel Tiere, die 500 m entfernt ankern. Der Zähler der Geburt (`seq`) eines alten Stands fällt
+        // ungelesen (leben-erbe).
         const fremd = v.seite !== this._bestandSeite();
         for (const [key, r] of Object.entries(v.bestand && typeof v.bestand === "object" ? v.bestand : {})) {
-            if (!/^-?\d+,-?\d+$/.test(key) || !r || !zahl(r.t) || !Number.isInteger(r.seq) || !Array.isArray(r.tiere))
-                continue;
+            if (!/^-?\d+,-?\d+$/.test(key) || !r || !zahl(r.t) || !Array.isArray(r.tiere)) continue;
             const tiere = r.tiere
                 .filter(
                     (t) =>
@@ -2250,21 +2272,31 @@ class AnazhRealm_feld_leben {
                         typeof t.id === "string" &&
                         typeof t.soul === "string" &&
                         t.g in LG &&
-                        [t.bs, t.alterS, t.x, t.z].every(zahl)
+                        [t.alterS, t.x, t.z].every(zahl) &&
+                        (t.a === undefined || this._lebenErbeGilt(t.a)) &&
+                        (t.m == null || (typeof t.m === "string" && t.m.length <= 96))
                 )
-                .map((t) => ({ ...t, v: t.v == null ? null : String(t.v) }));
-            if (!fremd) R[key] = { t: r.t, seq: r.seq, tiere };
+                .map((t) => this._lebenWandeln(t));
+            if (!fremd) R[key] = { t: r.t, tiere };
             else
                 for (const t of tiere) {
                     const k = this._bestandKey(t.x, t.z);
-                    const Z = R[k] || (R[k] = { t: r.t, seq: r.seq, tiere: [] });
-                    [Z.t, Z.seq] = [Math.max(Z.t, r.t), Math.max(Z.seq, r.seq)];
+                    const Z = R[k] || (R[k] = { t: r.t, tiere: [] });
+                    Z.t = Math.max(Z.t, r.t);
                     Z.tiere.push(t);
                 }
         }
         // die offenen Akte treten in die Reihe (sie wirken in der Folge mit den Takten, nie beim Laden)
+        // (eine offene Annahme eines Stands von vor dem Erbe trägt ihr Tier ohne `a`: dieselbe Wandlung, `_lebenWandeln`)
         for (const a of Array.isArray(v.akte) ? v.akte : [])
-            if (a && typeof a === "object") this._feldAktFremd(a, a.w, false);
+            if (a && typeof a === "object")
+                this._feldAktFremd(
+                    a.art === "annahme" && a.tier && typeof a.tier === "object" && a.tier.a === undefined
+                        ? { ...a, tier: this._lebenWandeln({ ...a.tier, id: String(a.id) }) }
+                        : a,
+                    a.w,
+                    false
+                );
     }
 
     // DIE AKTE DER SEITE REISEN NACH (feld.K2#2): wer beitritt — ein neuer Mitspieler, eine Seite nach ihrem Reload —, trägt die

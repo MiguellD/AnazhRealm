@@ -170,12 +170,6 @@ class AnazhRealm_daten {
     static get WETTER_ZUG_SEK() {
         return 120;
     }
-    // D3 (gigant-plan §5 — G4-3): die natürliche Lebens-Spanne eines Wesens.
-    // Jenseits davon kehrt es zur Erde zurück (der Tod nährt das lebendig-Feld)
-    // — natürlicher Umschlag statt ewiger Wesen. ~35 min Echtzeit.
-    static get FAUNA_MAX_AGE_MS() {
-        return 35 * 60 * 1000;
-    }
     // δ WIRD WÄHRUNG — das WIRK-BUDGET des Nexus: eine Tat kostet ∝ Substanz (computeBuildCost), das
     // Budget regeneriert aus bewährter Schöpfung (Outcome-Fitness > 0.5) + Idle-Tropf → Spam verarmt
     // sich selbst (kein Rate-Limit). Materie kostet in pfad+frieden, frei nur in schöpfer.

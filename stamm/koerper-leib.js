@@ -2540,24 +2540,20 @@ class AnazhRealm_koerper_leib {
         return null;
     }
 
-    // KÖRPERGRÖSSE-ACHSE: aus der netId eine deterministische Größe in BÄNDERN (klein/normal/gross/
-    // GIGANT, Koloss selten) über den geteilten Roller (UNSIGNED) → Peer- und Re-Wachstum-konsistent.
-    _creatureBodySize(idStr) {
-        const g = this._rollGenome(String(idStr == null ? "c0" : idStr), "creature-size");
-        const roll = g.axis("class");
-        // SCHLUSS-WELLE — die Größen-Bänder (klein/normal/groß/GIGANT) sind
-        // tetrapoda-Gesetz (VERHALTEN.groessen, Lehre 8: DIE Differenzierungs-
-        // Achse); derselbe Wurf (axis/range) → gleiche Welt bei gleichem Kern.
-        const K = AnazhRealm._verhaltenGesetz().groessen;
-        for (let i = 0; i < K.length - 1; i++) {
-            if (roll < K[i].bis) return g.range(K[i].name, K[i].min, K[i].max);
-        }
-        const letzte = K[K.length - 1];
-        return g.range(letzte.name, letzte.min, letzte.max);
+    // DAS ERBE EINES GRÜNDERS AUS SEINER KENNUNG (leben-erbe): ein Tier ohne Mutter, dessen Erbe keine Geburt im Bestand zog —
+    // das Tier eines Geheges (`_gehegeEinsetzen`) und das Tier eines Stands von vor dem Erbe (`_lebenWandeln`) —, trägt den
+    // Gründer-Zug des Gesetzes (`__lebenCore.gruender`) aus dem Genom-Strom seiner Kennung (`_rollGenome(seed, "erbe")`, je Achse
+    // des Gesetzes ein Paar Gleichverteilter → Box-Muller): dieselbe Kennung, dasselbe Erbe in jedem Boot und auf jeder Seite.
+    // Die Größe würfelt hier nichts mehr: sie ist Physik dieses Erbes über das Alter (`__lebenCore.masseZurZeit`).
+    _erbeGruender(seed) {
+        const L = AnazhRealm._lebenKern();
+        const g = this._rollGenome(String(seed), "erbe");
+        const n = L.gesetz().achsen.map((x) => L.normal(g.axis("a:" + x.name + ":1"), g.axis("a:" + x.name + ":2")));
+        return L.gruender(n);
     }
 
     // Der size-Dial braucht KEINE eigene Achse (ein Doppel-Faktor wäre falsch): er reist durch die EINE
-    // Pipe (_tetrapodaStudioDials → _ofenKreaturDials); die Spawn-Höhe = Template-Höhe × bodySize-Wurf
+    // Pipe (_tetrapodaStudioDials → _ofenKreaturDials); die Spawn-Höhe = Template-Höhe × bodySize
     // (gate:studio-uebergabe).
 
     // === DIE MOTION-RESONANZ ===
@@ -3490,7 +3486,7 @@ AnazhRealm.TETRAPODA_SOUL_MAP = Object.freeze({
 // TETRAPODA_DIAL_MAP — Dial→Archetyp-Zuordnung (axis = base + mul·dial, auf das deer-Paar geeicht:
 // bei Lab-Startwerten fallen die Archetyp-Werte fast byte-gleich): neck→neckFrac · leg→legFrac
 // (Einheiten-Brücke) · build→torsoW · diet→eyeFront (Carnivor frontal, Herbivor lateral).
-// Bewusst unmapped: size (die Welt-Größe trägt `_creatureBodySize`, g.size ist stats-tragend).
+// Bewusst unmapped: size (die Welt-Größe ist Physik des Erbes über das Alter, leben-core; g.size ist stats-tragend).
 // Die EINE Quelle ist tetrapoda-core.DIAL_MAP (Gesetz-Strom, fail-closed wie KOERPER_DIAL_MAP).
 Object.defineProperty(AnazhRealm, "TETRAPODA_DIAL_MAP", {
     get() {

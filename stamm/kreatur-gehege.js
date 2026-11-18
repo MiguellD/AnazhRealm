@@ -30,12 +30,13 @@ class AnazhRealm_kreatur_gehege {
         return this._gehegeListe().find((Z) => Z.id === id) || null;
     }
     // DIE TIERE DER GEHEGE im Verzeichnis der Region `key` (dort, wo ihr Platz liegt): wie jedes Tier — die Seele ihrer
-    // Gattung, die Größe aus ihrer Nummer (`_creatureBodySize`, das EINE Größen-Gesetz: dieselbe in jedem Boot), Alter 0, der
+    // Gattung, ein GRÜNDER (ohne Mutter, `m` null): sein Erbe aus seiner Nummer (`_erbeGruender("g" + id)`, der Genom-Strom
+    // „erbe“: dasselbe Tier in jedem Boot), erwachsen (Alter = seine Reife, `_bestandErbe(t).reif` an seiner Masse M∞), der
     // Anker an ihrem Ruhe-Platz, der Verband des Geheges — mit dem Term `gehege` (die Nummer der Zeile; er reist im Stand,
     // `_lebenImStand`). DIE ZEILE IST DER BESTAND: je Region und Plan liest das Verzeichnis sie einmal (`R._gehege`: der Plan
     // kommt aus dem Faden, eine Region liest ihn, sobald er steht) und wieder, sobald es ihre Zahl nicht trägt (`R._gehegeN`) —
     // ein Tier, das dort steht, tritt nie zweimal ein; eines, das fiel (der Feld-Akt „aus“), steht beim nächsten Lesen wieder
-    // darin (Alter 0, ohne Stand: sein Leib entsteht an seinem Ruhe-Platz, `_gehegeLeiber`); eines, dessen Zeile der Plan nicht
+    // darin (erwachsen, ohne Stand: sein Leib entsteht an seinem Ruhe-Platz, `_gehegeLeiber`); eines, dessen Zeile der Plan nicht
     // mehr trägt, verlässt das Verzeichnis (sein Leib geht, sobald er außer Blick steht, `_ohneTier`). Ohne Plan bleibt, was der
     // Stand trug. Bis hierher trat die Zeile je Sitzung einmal ein: ein gefallenes Tier fehlte bis zum nächsten Laden.
     _gehegeEinsetzen(key, R) {
@@ -61,18 +62,19 @@ class AnazhRealm_kreatur_gehege {
                 const da = R.tiere.find((t) => t.id === p.id);
                 if (da) [da.x, da.z] = [p.x, p.z];
                 else {
-                    const bs = this._creatureBodySize("g" + p.id);
-                    R.tiere.push({
+                    const t = {
                         id: p.id,
                         soul,
                         g: p.g,
-                        bs,
-                        alterS: 0,
+                        a: this._erbeGruender("g" + p.id),
+                        m: null,
                         x: p.x,
                         z: p.z,
                         v: "g" + Z.id,
                         gehege: Z.id,
-                    });
+                    };
+                    t.alterS = this._bestandErbe(t).reif; // erwachsen, wie der Gründer der Geburt
+                    R.tiere.push(t);
                     anders++;
                 }
             }
@@ -165,7 +167,7 @@ class AnazhRealm_kreatur_gehege {
         for (const t of fehlt) {
             if (platz <= 0) break;
             const nah = !ankunft && Math.hypot(t.x - p.x, t.z - p.z) <= AnazhRealm.ANALOG_NAH_M;
-            if (nah && this._kreaturLeibImBlick(t.x, t.z, t.g, t.bs)) continue;
+            if (nah && this._kreaturLeibImBlick(t.x, t.z, t.g, this._bestandBs(t))) continue;
             const gY = this.getTerrainHeightAt(t.x, t.z);
             const c = this._bestandLeib(t, t.x, (Number.isFinite(gY) ? gY : p.y) + 1, t.z);
             if (!c) break;

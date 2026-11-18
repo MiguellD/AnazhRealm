@@ -581,19 +581,14 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // DIE GRÖSSE EINES TIERS nur über seine bodySize-Achse (Leben-Schau 07.10., Neu 1 — die Klasse von D2): der EINE
-    // Schreiber nach der Geburt, in den Bändern des Gesetzes (VERHALTEN.groessen); die Skala IST die Achse, die
-    // Größen-Gedächtnisse (Körperlänge, Hang-Spanne, Stats) fallen mit. Vorher skalierte creatures_size_mul die Skala ohne
-    // Achse (16 von 16 Tieren ×1,11, bodySize blieb 1).
+    // Schreiber nach der Geburt (und des Wachstums), in den Grenzen des Gesetzes des Lebens (`__lebenCore.spanne`: das
+    // Neugeborene des −4σ-Tiers bis das +4σ-Erwachsene); die Skala IST die Achse, die Größen-Gedächtnisse (Körperlänge,
+    // Hang-Spanne, Stats) fallen mit. Vorher skalierte creatures_size_mul die Skala ohne Achse (16 von 16 Tieren ×1,11,
+    // bodySize blieb 1); bis leben-erbe klemmten die vier Wurf-Bänder (0,6–2,7).
     _kreaturGroesseSetzen(cr, bs) {
         const ud = cr && cr.userData;
         if (!ud || !Number.isFinite(bs)) return false;
-        const GB = AnazhRealm._verhaltenGesetz().groessen;
-        let lo = Infinity,
-            hi = -Infinity;
-        for (const z of GB) {
-            if (z.min < lo) lo = z.min;
-            if (z.max > hi) hi = z.max;
-        }
+        const [lo, hi] = AnazhRealm._lebenKern().spanne();
         const neu = Math.min(hi, Math.max(lo, bs));
         const hpAnteil = Number.isFinite(ud.hp) && ud.hpMax > 0 ? ud.hp / ud.hpMax : null;
         ud.bodySize = neu;
@@ -3742,8 +3737,6 @@ AnazhRealm._verhaltenGesetz = function () {
             Number.isFinite(v.aas.hungerAnteil) &&
             Number.isFinite(v.freude.hopHochM) &&
             Number.isFinite(v.freude.hopBasisM) &&
-            Array.isArray(v.groessen) &&
-            v.groessen.length >= 2 &&
             v.separation &&
             Number.isFinite(v.separation.raumKugel) &&
             v.aufgaben &&
@@ -3761,6 +3754,16 @@ AnazhRealm._verhaltenGesetz = function () {
         }
     } catch (_e) {}
     return AnazhRealm._kernPflichtBruch("tetrapoda:VERHALTEN");
+};
+// DAS GESETZ DES LEBENS (leben-erbe): der EINE Leser von leben-core (`__lebenCore` — Erbe, Leib über das Alter, Auslese
+// nach dem Leib, Adresse) für jeden Stamm-Leser. Fail-closed: ein Kern ohne seine Funktionen ist ein Bruch, nie ein Ersatz.
+AnazhRealm._lebenKern = function () {
+    if (AnazhRealm._lebenKernMemo) return AnazhRealm._lebenKernMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__lebenCore : null;
+    const erbe = ["gesetz", "normal", "gruender", "kind", "umwelt", "artId", "indId"];
+    const leib = ["masseAdult", "lebensdauerS", "masseZurZeit", "reifeS", "fastenRang", "rissGewicht", "spanne"];
+    if (k && [...erbe, ...leib].every((n) => typeof k[n] === "function")) return (AnazhRealm._lebenKernMemo = k);
+    return AnazhRealm._kernPflichtBruch("leben:__lebenCore");
 };
 // DAS STEUER-GESETZ (tetrapoda STEUER_GESETZ + steuerSchritt · tempoEinheit · ankunftTempo, Welle L; verbandZug ·
 // rudelPlatz, S6): der EINE Steuer-Schritt je Tier und Takt, das Ankunfts-Gesetz, die Tempo-Einheit √(g·L), der Verband
