@@ -1,7 +1,7 @@
 {
  "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
  "geraet": "gtx",
- "zeit": "2026-11-18T17:55:14.435Z",
+ "zeit": "2026-11-18T17:59:17.437Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -280,6 +280,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.leben.tiere.masse#1": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 16.1 m: 46.9 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (121 px) · 51.7 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (200 px) · 56.4 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (189 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.84,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.994 über 1172 Takte, letzter Flüchter 0.35 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 4 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 16.1 m: 46.9 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (121 px) · 51.7 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (200 px) · 56.4 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (189 px) · Glieder im Pulk je Schuss 5/5/5 (Umfang ≥ 10) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k1de6ea101902",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k07740f03b59d",
+   "s": 49.5,
+   "fremd": {
+    "s": 51.7,
+    "takte": 24,
+    "fremdS": 11.2,
+    "kerne": 0.217,
+    "fensterKerne": 0.311,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.19
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.97
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.7
+     ]
+    ],
+    "dienerS": 16.63,
+    "diener": [
+     [
+      "dwm.exe",
+      8.7
+     ],
+     [
+      "System",
+      5.59
+     ]
+    ],
+    "geraetS": 11.95,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.45
+     ],
+     [
+      "svchost.exe",
+      4.05
+     ],
+     [
+      "SearchIndexer.exe",
+      0.94
+     ]
+    ],
+    "eigenS": 102.36,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T17:59:17.437Z",
+   "abdruck": "5f316e994d1d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -289,7 +359,8 @@
   "k715a56c0b9b3": "dVXBbqMwEP2XHLvrOgm4gKUenBCplbba9LjHsT0GGgKRDfVuVvvvq9CQBGjnlKA3vDdv3iR/ZwdQO8jw/s3V1YzP7mbfZw7ekTi072jv39yMz+YqBBZz8VFUCLE+wZQtDo2juoCM7GCPFkgJrbxXXdPdBFKjPaAlroFKfwIqC0lBVpDvkbS2waI8gxYqRkBO/Ub4LaVbGtGVf3wct5YSdU0aMNg3Sr2MAuBjYOsykEigNR3ZGczCRRgwTruKU7F9o32JVyGo34wZJVR6qNQEwMyCP/8RYiMmCnUB2JCyqFzPqTSTwZJfiKZTaQueHAHzEm1PwkyYRL3QbiV+m9BRoylb5wZkcaDZMuaUTrAZukLlDTnYWmLVm5csowXwT5zODi0xt4pASojl2OccsMrQDjVEIVMhp79j8VXRd0q3U7PPAasgP78qmQfRUl69o5Q+TbWW3WCdhH6wWMskMoPG046f/Ik9jU9fssvj+OlDVZrdSHwdkTiVF3Y/tM8YpmHOf0wluRw0WrKrXXPVFAJgf2FpFzixDdNx53WYc99SPsxZfDNLTMVTPGGsTePBIskO7bkRQ2QR40I8T8AN7Pf9EGqJMRsvtjvggQwW4uKhi2T2xR4+zoQcsSj7pkipRYB8/SLGc75b2BOQmS2M6bctmTLJZ+H14Nw4ZXoeJsl4w4Pa+tQPHviXsWSPZUNkXTe9hEBDoDgNaHXpSrocr67RSH2tNuvsdZzqt0xMTekYattcbJQPcxNy0+lRE3RhG+JB5ZflG4mQ8E+gR7QlZjgwRYcyAH1C36gN+w/fBmYcJxE6FnjaXuVa15ucRDo5n9FwNI92J6Ha9TKZDNiiy/bqp+jvaZ7SlG79rUdrYY6/xPN6FZ9edkBFD7Y2xelnlubQuhzK5vo/9e8/",
   "ka0ca773b4134": "dVTBjpswEP2XHNt6HQJewNIenLBStmrV7LHHsRkDCYHIhqVN1X+vYOMkwHZOgN74vXnzzJ/FCdQBMnzY27pa8MWnxZeFhTckFs0bmoe9XfDFUgXAIi7eiwohNj1MmeLUWFoWkoKsID8iaU2DRfmghjZPRQjIafcsuh2lOxrSdSeutRFPT9NjSolpTRrQ6A6R6Sr0gU+Brc1AIoFWD8QXMAu8wGecDhUlYrenrsSrEL2SD1glVOlYufaBaY+//BbieY5PC8CGlEVlHa9KmfRX/ErWzXsMdOQMmJdoHAnTQRw6sYMl3S6mk0ZdttaOyCI/ZauIUzrDZmgLlTfkZGqJlTMwXoUe8PVcU3Zqib5XBFJCJKde54BVhmasIQyYCjj9FU0PPcARDZAK8gs0XvrhSt68oZRu51rKQfhA4YRHqYxDPWrs97gdIpRE/Ut2/Rxt30OVZLeAidcJiVV5YY5je7RmKSz5t7kkm0OKhhxq29w0BQDobkIyhErsgmTaeRvm0reSj0sW3c0SUbGdeWdr3XRgkGSn9tKIAbKQcSFeZuAGjkc3hFphxKaLs00f7HsZLEDvcYhc9p89vF8DcsaidE2hUp6PfPNdTOd8M3AkIDNTaO22LZnS8Ufh7LBsiKzrxiH9FHzVa6nubOl9Xd82mHS1et5kr2JS+0zMtQ8MtWmu08rHpQ64Hm6kmqEL05AOVH7dkZYIMf8AekZTYoYjK9NA+pD26Du1gXv4PMrsebbpc4G9yZVtrUtWHKbxJe3j0To0BwnVwclk0mce/9ob9SNwsV8mNKHT0p0QPzfruD/shIqeTK2L/m9Hc2htDmVz++3//Qc=",
   "kf0129812061d": "dVXRbqMwEPyXPF7PdRJwMZb64IRIqdRK6SeszRpoCEQ2lLuc7t9PoXESoLdPgGa9s7Pj5c/sCHoPGT5+uLqaidmP2c+Zg08kDu0n2scPNxOzuQ6BcSG/gkop12eYtsWxcbQsFAVVQX5A0toGi/JR92kLzRFQ0G4jux2lOxrRVSevsZLPz+NjSoVpTRow6A9R6TIKQIyBrctAIYHW9IUvYBYuwoAJ2gdP5O6D+pDvUtJuM66ooEqHrE0AzCzEy28pN1OGaQHYkLKonK+pU6aCpbgW6qY5FjpyAsxLtL4IM2EceaK9HN0upqNEU7bODYrxIGVLLiidYDN0hc4bcrS1wsqLFy+jBYjVlFN2bIm5ZwRKAVdjnXPAKkM75BCFTIeC/uLjQ/dwQAukgvwCjedBtFQ3bSil2ymXsifel/DEeariyAwSKaXZtrdPwvuX62e+/TJUkt3MJd9HRZzOC3sYymMMS2EuXqeUXA4pWrKvXXPjFAKgvwVJbyi5C5Nx5q2ZS95SPc0Zv+uFU7mdaOdq03RgkWTH9pKIIbKICSlfJuAGDgffhF4iZ+PBueZs7HsaLMTFU2+57D9z+LoG5IRF6ZMirRcBivWbHPf5aeFAQGW2MMZPWzFt4u/M2WHZEFXXjUcGKQRa0IBWV1Vi/rUUrpF0td6ss3c5jJXN5JR7X6G2zbVb9TQ3oTD9jdQTdGEb0oHOrzMyCiEW30BPaEvMcCBlGqoA0jP6jm3oHx4Gnj1NJn0q8Cxy5VrnnRVHaXxx+2VBvgxXT4d2r6Dae7pMBWwhzpZ/fZDe/vOEJnTX3Yu1lub8vl7xgYZvsj/8iJoebW2K8xakObQuh7K5/Qr+/gM=",
-  "k66784239c176": "dVTBjpswEP2XHNt6HQJewNIenLBStmrV7LHHsRkDCYHIhqVN1X+vYOMkwHZOgN74vXnzzJ/FCdQBMnzY27pa8MWnxZeFhTckFs0bmoe9XfDFUgXAIi7eiwohNj1MmeLUWFoWkoKsID8iaU2DRfmghjZPRQjIafcsuh2lOxrSdSeutRFPT9NjSolpTRrQ6A6R6Sr0gU+Brc1AIoFWD8QXMAu8wGecDhUlYrenrsSrEL2SD1glVOlYufaBaY+//BbieY5PC8CGlEVlHa9KmfRX/ErWzXsMdOQMmJdoHAnTQRw6sYMl3S6mk0ZdttaOyCI/ZauIUzrDZmgLlTfkZGqJlTMwXoUe8PVcU3Zqib5XBFJCJKde54BVhmasIQyYCjj9FU0PPcARDZAK8gs0XvrhSt68oZRu51rKQfhA4YRHqYxDPWrs97gdIpRE/Ut2/Rxt30OVZLeAidcJiVV5YY5je7RmKSz5t7kkm0OKhhxq29w0BQDobkIyhErsgmTaeRvm0reSj0sW3c0SUbGdeWdr3XRgkGSn9tKIAbKQcSFeZuAGjkc3hFphxKaLs00f7HsZLEDvcYhc9p89vF8DcsaidE2hUp6PfPNdTOd8M3AkIDNTaO22LZnS8Ufh7LBsiKzrxiH9FHzVa6nubOl9Xd82mHS1et5kr2JS+0zMtQ8MtWmu08rHpQ64Hm6kmqEL05AOVH7dkZYIMf8AekZTYoYjK9NA+pD26Du1gXv4PMrsebbpc4G9yZVtrUtWHKbxJe3j0To0BwnVwclk0mce/9ob9UO42C8TmtBp6U6In5t11B92QkVPptZF/7ejObQ2h7K5/fb//gM="
+  "k66784239c176": "dVTBjpswEP2XHNt6HQJewNIenLBStmrV7LHHsRkDCYHIhqVN1X+vYOMkwHZOgN74vXnzzJ/FCdQBMnzY27pa8MWnxZeFhTckFs0bmoe9XfDFUgXAIi7eiwohNj1MmeLUWFoWkoKsID8iaU2DRfmghjZPRQjIafcsuh2lOxrSdSeutRFPT9NjSolpTRrQ6A6R6Sr0gU+Brc1AIoFWD8QXMAu8wGecDhUlYrenrsSrEL2SD1glVOlYufaBaY+//BbieY5PC8CGlEVlHa9KmfRX/ErWzXsMdOQMmJdoHAnTQRw6sYMl3S6mk0ZdttaOyCI/ZauIUzrDZmgLlTfkZGqJlTMwXoUe8PVcU3Zqib5XBFJCJKde54BVhmasIQyYCjj9FU0PPcARDZAK8gs0XvrhSt68oZRu51rKQfhA4YRHqYxDPWrs97gdIpRE/Ut2/Rxt30OVZLeAidcJiVV5YY5je7RmKSz5t7kkm0OKhhxq29w0BQDobkIyhErsgmTaeRvm0reSj0sW3c0SUbGdeWdr3XRgkGSn9tKIAbKQcSFeZuAGjkc3hFphxKaLs00f7HsZLEDvcYhc9p89vF8DcsaidE2hUp6PfPNdTOd8M3AkIDNTaO22LZnS8Ufh7LBsiKzrxiH9FHzVa6nubOl9Xd82mHS1et5kr2JS+0zMtQ8MtWmu08rHpQ64Hm6kmqEL05AOVH7dkZYIMf8AekZTYoYjK9NA+pD26Du1gXv4PMrsebbpc4G9yZVtrUtWHKbxJe3j0To0BwnVwclk0mce/9ob9UO42C8TmtBp6U6In5t11B92QkVPptZF/7ejObQ2h7K5/fb//gM=",
+  "k1de6ea101902": "pVXBjpswEP2XHNt6nQQTwFIPTlg1rVo1e+xxbMbAhkBkm6VN1X+vYEMSICtVqk8JejPz3uON+T07gtpDig/PtipnfPZu9mFm4QWJRfOC5uHZzvhsrhj4IRevhwohNi1MmfzoLE1ySMneILjakAIllg+qK/MjULDi9B+Pbj5+fKutg707dw1Bzxnj61SIb2JQUeSSgiwhOyCpjcO8OJcsVIiAnDaPotlRuqMBXTficjZ32hQSk4o40Ng3kcky8ICPgbVNQSKBWneDe+lswTz/LD2Mxe75IlM8CdEyuTNVQpkMmWsPfL3gn38J8TjFJzmgI0Ve2n6uSnzpLa+WN9MaAw05AWYFmn6Ir1kU9GQ7S5pdREeFuqitHQwLvcRfhpzSCTZFm6vMkaOprnGQ0TJYAF9POaXHmuhbRiAlhHLsdQZYpmiGHALmK8bpz3DcdA8HNEBKyM7QaO4FSzmI43bKpU/cAUur+lLFWBLpf0py/HbLgRte4i1Xiov/Pev002hc0VnfmdQPCxMZBRP+YtstQRy2f9LL43D72jlOb8Y8jYZYleXmMJSktZ/AnH+dOmAzSNCQfWXdlRMDwP5Sibu1EDsWjyuvYs51S7ma++GNlpCK7eTt20q7BgyS9FifC5GhH/hciM8TsIPDoRehlhj6d9/LneRa167sLT2f4WLVLVP6RsJeF5ycMC/6okCphYd8802M9b8YOBCQqcm17nMsfaWje2vXYOGIrKr+qoy8BDzVcilv7OqkXFXFTaUeN+nTSOzWpHei3E2ojLuolau5Zlx3d42aoHPjSAMqu7w7LREifgd6QlNgigMrEyY9SFr0DVvW/3g/yPJpkoBTjq3Jpa1tn7gouGzxUFqDZi+h3Pc0fen5C/6lNeq76NdhHtP4zkdLiB+bddg2O6KiR1PpvL3HaQa1zaBwgy/rK6RGLWvMSmzz4/KqxPKK+vMX"
  },
  "ungemessen": {
   "karte2.same.preis.zugang#1": {
@@ -579,8 +650,8 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-18T17:54:43.821Z",
-  "ordner": "sitzung-20261118-185443",
+  "start": "2026-11-18T17:58:47.101Z",
+  "ordner": "sitzung-20261118-185847",
   "port": 7804,
   "warten": 0.01,
   "bootS": 5.8,
@@ -590,9 +661,9 @@
   "orte": [
    {
     "ort": "wiese",
-    "vor": "luftwasser.K3#1",
-    "s": 22.8,
-    "takte": 585,
+    "vor": "karte2.leben.tiere.masse#1",
+    "s": 22.4,
+    "takte": 600,
     "chunks": 81,
     "nach": null
    }
@@ -600,36 +671,120 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "luftwasser.K3#1",
+    "probe": "karte2.leben.tiere.masse#1",
     "anders": [
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__ortSchritt"
+     "window.r",
+     "window.st",
+     "window.pm",
+     "window.halt",
+     "window.__handTakt",
+     "window.aufsteigend",
+     "window.addiere",
+     "window.rang",
+     "window.__uebergangFaellt",
+     "window.rahmen",
+     "window.__png",
+     "window.__bundlesNeu",
+     "window.sleep",
+     "window.leihe",
+     "window.__fremd",
+     "window.__loopBild",
+     "window.__zielLesen",
+     "window.__pufferLesen",
+     "window.jsonKlon",
+     "window.fehlerText",
+     "window.fehlerStapel",
+     "window.__seitenTakt",
+     "window.__bedienung2",
+     "window.__takte",
+     "window.__streuTakte",
+     "window.__bildAus",
+     "window.__eichMs",
+     "window.__weltStehtNach",
+     "window.__gebautNach",
+     "window.__deckel",
+     "window.__weltDa",
+     "window.__abdruck",
+     "window.__farben",
+     "window.__lin",
+     "window.__stand",
+     "window.__standJson",
+     "window.__werkPutz",
+     "window.__bautenLeer",
+     "window.__bautenSeit",
+     "window.__peersWeg",
+     "window.__rufe",
+     "window.__ortSchritt",
+     "window.__codeOf",
+     "window.__dokuOf",
+     "window.__fehlt"
     ],
     "wie": {
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.r": "getauscht: () => window.anazhRealm",
+     "window.st": "getauscht: () => window.anazhRealm && window.anazhRealm.state",
+     "window.pm": "getauscht: () => st && st.playerMesh",
+     "window.halt": "getauscht: () => st && st.verbTafel.gehalten",
+     "window.__handTakt": "getauscht: function handTakt() { try { r._gameLoopTick(performance.now()); } catch (e) { r.",
+     "window.aufsteigend": "getauscht: (a, b) => a - b",
+     "window.addiere": "getauscht: (a, b) => a + b",
+     "window.rang": "getauscht: (s, q = 0.5) => s[Math.min(s.length - 1, Math.floor(q * s.length))]",
+     "window.__uebergangFaellt": "getauscht: function uebergangFaellt(r) { r.state.weatherTransition = null; r.requestWeather",
+     "window.rahmen": "getauscht: (b) => b.obb || { cx: (b.minX + b.maxX) / 2, cz: (b.minZ + b.maxZ) / 2, c: 1, s:",
+     "window.__png": "getauscht: function png(u8, W, H) { const cv = Object.assign(document.createElement(\"canvas",
+     "window.__bundlesNeu": "getauscht: () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true))",
+     "window.sleep": "getauscht: (ms) => { const e = globalThis.__abbruchEpoche; return new Promise((r, f) => set",
+     "window.leihe": "getauscht: function leihe(o, tausch) { const alt = Object.keys(tausch).map((k) => [k, Objec",
+     "window.__fremd": "getauscht: async function fremd() { const { privateKey: k } = await crypto.subtle.generateK",
+     "window.__loopBild": "getauscht: function loopBild() { st.renderer._nodes?.nodeFrame?.update(); r._loopRender(); ",
+     "window.__zielLesen": "getauscht: async function zielLesen(ziel, W, H, renderer = st.renderer) { const px = await ",
+     "window.__pufferLesen": "getauscht: function pufferLesen(puffer, wer, renderer = st.renderer) { const q = puffer?.is",
+     "window.jsonKlon": "getauscht: (x) => JSON.parse(JSON.stringify(x))",
+     "window.fehlerText": "getauscht: (e) => e?.message || String(e)",
+     "window.fehlerStapel": "getauscht: (e) => e?.stack || String(e)",
+     "window.__seitenTakt": "getauscht: async function seitenTakt() { const vor = r._weltStand ? r._weltStand.takte : -1",
+     "window.__bedienung2": "getauscht: async function bedienung2(vor) { const taste = (code, art) => window.dispatchEve",
+     "window.__takte": "getauscht: async function takte(n, ms) { for (let i = 0; i < n; i++) { __handTakt(); await ",
+     "window.__streuTakte": "getauscht: async function streuTakte(n, ms) { for (let i = 0; i < n; i++) { st._frameOverBu",
+     "window.__bildAus": "getauscht: function bildAus() { if (st.renderer) { st.renderer.render = function () {}; if ",
+     "window.__eichMs": "getauscht: function eichMs(n) { const a = eichMs.puffer || (eichMs.puffer = new Float64Arra",
+     "window.__weltStehtNach": "getauscht: async function weltStehtNach(takt, max) { const W = () => r._weltStand || {}; co",
+     "window.__gebautNach": "getauscht: async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) { co",
+     "window.__deckel": "getauscht: function deckel(name, max, offen) { let n = 0, k = 0, still = 0, vor = \"\"; retur",
+     "window.__weltDa": "getauscht: async function weltDa(bed) { window.__weltDaWartet = bed ? String(bed).replace(/",
+     "window.__abdruck": "getauscht: function abdruck(x, alle) { let [h, n] = [0x811c9dc5, 0]; const ein = (a) => { c",
+     "window.__farben": "getauscht: function farben(g) { const set = new Set(); g?.traverse((o) => { const c = o.geo",
+     "window.__lin": "getauscht: (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255] .map((c) => Math.f16round(",
+     "window.__stand": "getauscht: async function stand() { await r._speicherStill(); return (await r._idbGetWorld(",
+     "window.__standJson": "getauscht: async function standJson() { const roh = await window.__stand(); try { return JS",
+     "window.__werkPutz": "getauscht: function werkPutz() { r.closeAllDrawers(); st.yaw = 0; if (st.playerMesh) st.pla",
+     "window.__bautenLeer": "getauscht: function bautenLeer() { r._bautenLeeren(); }",
+     "window.__bautenSeit": "getauscht: function bautenSeit() { const vor = new Set(st.architectures); return () => st.a",
+     "window.__peersWeg": "getauscht: function peersWeg() { for (const pid of Array.from(st.p2p.peers.keys())) r._p2pR",
+     "window.__rufe": "getauscht: function rufe(wer, methode, lieferer, name, args) { const echt = lieferer[name];",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__codeOf": "neu: (f) => oK(String(f))",
+     "window.__dokuOf": "neu: (f) => String(f)",
+     "window.__fehlt": "neu: (f, re) => [].concat(f).every((g, i) => { if (typeof g !== \"function\") throw new"
     },
     "haelt": [],
     "heap": [
-     228.9,
-     278.2
+     229.1,
+     275.6
     ],
     "ungemessen": null
    }
   ],
   "wanderung": [
    {
-    "probe": "luftwasser.K3#1",
+    "probe": "karte2.leben.tiere.masse#1",
     "ort": "wiese",
-    "m": 223.27,
+    "m": 328.01,
     "dreh": 0
    }
   ],
   "messHalt": [
    {
-    "probe": "luftwasser.K3#1",
+    "probe": "karte2.leben.tiere.masse#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -641,20 +796,27 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3301,
-   "frameP95": 25.05,
-   "taktP95": 10.85,
-   "vramMax": 128.8,
+   "bilder": 2660,
+   "frameP95": 25.32,
+   "taktP95": 13.03,
+   "vramMax": 138.7,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 130,
-   "luecken": 0,
-   "letzteLuecke": null
+   "ortImDeckel": [
+    {
+     "probe": "karte2.leben.tiere.masse#1",
+     "m": 328,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 133,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 136.4,
-  "minuten": 2.35
+  "fahrtS": 153.9,
+  "minuten": 2.63
  }
 }
