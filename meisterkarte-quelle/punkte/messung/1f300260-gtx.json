@@ -1,0 +1,449 @@
+{
+ "sha": "1f30026067b2aef1665a07b4ab6a7d700c5a08e6",
+ "geraet": "gtx",
+ "zeit": "2026-11-18T06:58:25.638Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {},
+ "konsumTafel": {
+  "ka2c2d4293093": "bVVdj5swEPwveWzLOeEjOJbuYVNOzUlXXU6q1Oe1WQMJgcgmoZeq/72Cg+SA7Btohpkd75q/syOqPSb0sLNlMROzL7NvM4tnciyZM5mHnZ2J2Vz5GHABb9AUA4DvDUyZ7FhZlmeSoSwwPZBzMhVl+YNqaQvFCUmw+gnqLWNbFrJ1/fg4puaS4tKpUFNPlLEbeijGwJNNUJKDJ92KdeDAX/heIFhbPILtjvW1rgFY/TRWlFjEQ6faw0AvxPM7wBNMHMYZUuXkWWF7TRUH0nPFVWjaVWywdi5IaU6mI3EvXLpXowAQ1dspUecnawdi3IsDlwvGVmyETchmKq2coyklFX14KzdcoLiTdHI8OfqzI5QSuRznnCIVCZmhh9APlN941619+3Wr/3CANYxF9nggg06BaUddzb3QlbesGGObqbe8baSV7BvhsVyFekBkjMGmboYw4s1Dcn3NN+1sQpTArd5GIlalmTkM49I6iHEuXqaWbIoxGWdf2uqK9jh30ROdFms3YutHY+atmY7nyuU84J964Qw2fKJY6qpGQ05yPHVE8ikIAwHwPAFXeDj0TSiXeCBgUpPZt1Uz/J+tBT4tlqHo07xzNh+r4lwoy3tSqNTCo/HknA0eHJSJybTuT18GSq/uDW9NeeXIsqx6pBejpxofxTWlVbMmsL71E9Wl+v2e1OM+k7Hn9uulqa5dyuVc+0Kfm21VE3RmKqdGlfZw31t67kLcgV7I5JTQIMLYlx7GgtUfy8EuHGAbdleD/jqY38vk1C8ZNeEW9mT7yV+F8aqb/OFx1GT2Eot9B5zHgadRvDQRbCECgB8Av5ZrtmObQUYRvNZtksv28RUAfkbX2/hIih1NqbPmZmQpnmyKeXX7Jfz7Dw==",
+  "ka6dc719da81b": "fVRNb5tAEP0vPjYla7Ng1ivlMC5RnUhRnVPV4+wyC8QYrF0cUlf975Ux+AOizslG7828eTM7fyY71BtM6f7NVeVETr5Mvk4cvpPnyL6TvX9zEzmZ6gBDIeEUDAC+H2Ha5rvasSJXDFWJ2Za8va0pL+51S5tpQUiSNY/QrBlbs4gtGzjHEh4ehmkKRUnl1WioT6ISP+Ioh8C9S1GRh3vTFu7AYTALeChZGyKG9RvrA14BWPM4rKiwTG5VG46hmcmnBuBxrDDJkWqvyEvX19RJqLgvz4WaMcdi4x2QsoJsRxI8mvtnoQAQN+sx0RR7526KCZ6EvpCMLdgAm5LLdVZ7O1spKnvzFn40Q7kcp053e89cK0KlUKihzxlSmZK91RAFoQ4k+xDDpBvckkWvxKyDLqY88tXFG8bYaqylaIW3JXrhIlGLyNwQGWPpql2fWLR/zp/F6rRQcXpZLngdFHE6y+321h5jwgSnw55dhglZb1O5+ozkQvjIuxcQt8sE6yAeMi+NdDxfzaehuOpDMFiNfHOVqRu05KW7fUekgMIolJC+jMA1brd9A9onEY4aqI9LfS0jDGg2j2Tv2iczOD0B70B50ZMirWec5LcXGPb5bnHroUptbkw/aRVqs/hsMRsqak9VVd0jeYJcS8ZZeXZlIQB+wfIyvfhQiZ+/Nx/XEwWA52qou81e2frcqZpPTSBN+xL1CJ3b2mtQZz084HPuz4YGHsgWlNKNhUmgOCaSNfpKZdD/uLvZ08NowoecjuaWbu/6DV9EyaLb8O4oPt2em4bsRmG56QjTJOQGZbvma4jhB0D6HN9dX9T/RQqn27cjzXa2Mvnx8rEM9y7Dor6c/7//AA=="
+ },
+ "ungemessen": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,773 (Faden 1,655 · alle Kerne 1,773; vor 125,5/369,5 ms, nach 149,3/409,1 ms, Ruhe 90,2/230,7 ms seit 2026-11-17) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 45,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 15,5 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 24,8 CPU-s · svchost.exe 11,2 CPU-s · SearchIndexer.exe 0,8 CPU-s — unscharf unter Last: Gehen Frame max ms roh 100, entlastet ≥ 50,02 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 86 Bilder · max 100.04 ms · 20.93 % > 33 ms · Fahrt 78 Bilder · max 183.38 ms · 20.51 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 100.04), 20.93 % > 33 ms | Fahr) · Wirt-Wache: den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  — Heap ungemessen",
+   "exit": 0,
+   "minuten": 0.9,
+   "grund": "Last: Referenz f 1,773 (Faden 1,655 · alle Kerne 1,773; vor 125,5/369,5 ms, nach 149,3/409,1 ms, Ruhe 90,2/230,7 ms seit 2026-11-17) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 45,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 15,5 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 24,8 CPU-s · svchost.exe 11,2 CPU-s · SearchIndexer.exe 0,8 CPU-s — unscharf unter Last: Gehen Frame max ms roh 100, entlastet ≥ 50,02 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 86 Bilder · max 100.04 ms · 20.93 % > 33 ms · Fahrt 78 Bilder · max 183.38 ms · 20.51 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 100.04), 20.93 % > 33 ms | Fahr) · Wirt-Wache: den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  — Heap ungemessen",
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 100.04,
+     "soll": 100
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "ka2c2d4293093",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ka6dc719da81b",
+   "s": 52.7,
+   "fremd": {
+    "s": 60.3,
+    "takte": 25,
+    "fremdS": 91.83,
+    "kerne": 1.523,
+    "fensterKerne": 1.758,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      45.23
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      15.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.28
+     ]
+    ],
+    "dienerS": 38.59,
+    "diener": [
+     [
+      "dwm.exe",
+      17.05
+     ],
+     [
+      "System",
+      15.91
+     ]
+    ],
+    "geraetS": 37.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      24.84
+     ],
+     [
+      "svchost.exe",
+      11.16
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 264.11,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.41,
+     "nach": 1.931,
+     "station": 2.405
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 125.5,
+     "alle": 369.5,
+     "cpuEin": 125
+    },
+    "nach": {
+     "ein": 149.3,
+     "alle": 409.1,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 90.2,
+     "alle": 230.7,
+     "n": 590,
+     "von": "2026-11-17"
+    },
+    "f": 1.773,
+    "fEin": 1.655,
+    "fAlle": 1.773,
+    "verdraengt": 1.062,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-18T06:57:17.194Z",
+   "abdruck": "2604a36850b0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,773 (Faden 1,655 · alle Kerne 1,773; vor 125,5/369,5 ms, nach 149,3/409,1 ms, Ruhe 90,2/230,7 ms seit 2026-11-17) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 45,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 15,5 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 24,8 CPU-s · svchost.exe 11,2 CPU-s · SearchIndexer.exe 0,8 CPU-s — unscharf unter Last: Gehen Frame max ms roh 100, entlastet ≥ 50,02 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 183,4, entlastet ≥ 91,69 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 86 Bilder · max 100.04 ms · 20.93 % > 33 ms · Fahrt 78 Bilder · max 183.38 ms · 20.51 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 100.04), 20.93 % > 33 ms | Fahr) · Wirt-Wache: den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  — Heap ungemessen",
+   "exit": 0,
+   "minuten": 0.9,
+   "grund": "Last: Referenz f 1,773 (Faden 1,655 · alle Kerne 1,773; vor 125,5/369,5 ms, nach 149,3/409,1 ms, Ruhe 90,2/230,7 ms seit 2026-11-17) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 45,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 15,5 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 7,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 24,8 CPU-s · svchost.exe 11,2 CPU-s · SearchIndexer.exe 0,8 CPU-s — unscharf unter Last: Gehen Frame max ms roh 100, entlastet ≥ 50,02 (÷ 2, Karte), Schwelle ≤ 100 · Fahrt Frame max ms roh 183,4, entlastet ≥ 91,69 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 86 Bilder · max 100.04 ms · 20.93 % > 33 ms · Fahrt 78 Bilder · max 183.38 ms · 20.51 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 100.04), 20.93 % > 33 ms | Fahr) · Wirt-Wache: den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  — Heap ungemessen",
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 100.04,
+     "soll": 100
+    },
+    {
+     "wort": "Fahrt Frame max ms",
+     "wert": 183.38,
+     "soll": 100
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "ka2c2d4293093",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "ka6dc719da81b",
+   "s": 52.7,
+   "fremd": {
+    "s": 60.3,
+    "takte": 25,
+    "fremdS": 91.83,
+    "kerne": 1.523,
+    "fensterKerne": 1.758,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      45.23
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      15.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.28
+     ]
+    ],
+    "dienerS": 38.59,
+    "diener": [
+     [
+      "dwm.exe",
+      17.05
+     ],
+     [
+      "System",
+      15.91
+     ]
+    ],
+    "geraetS": 37.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      24.84
+     ],
+     [
+      "svchost.exe",
+      11.16
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 264.11,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.41,
+     "nach": 1.931,
+     "station": 2.405
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 125.5,
+     "alle": 369.5,
+     "cpuEin": 125
+    },
+    "nach": {
+     "ein": 149.3,
+     "alle": 409.1,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 90.2,
+     "alle": 230.7,
+     "n": 590,
+     "von": "2026-11-17"
+    },
+    "f": 1.773,
+    "fEin": 1.655,
+    "fAlle": 1.773,
+    "verdraengt": 1.062,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-18T06:57:17.194Z",
+   "abdruck": "38d002b86710",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "karte2.same.preis.ausdauer#1": {
+   "gruen": false,
+   "zahl": "Messort: die Dauer trug ihre Minute nicht: Heap-Kurve blind (18 Punkte über 0.83 min) — kein Urteil, UNGEMESSEN (die Probe sah: BLIND, kein Urteil über die Steigung · Spielgang 1.06 min in 1 Seite(n) · Heap-Kurve 18 Punkte, 254 → 345.8 MB (max 372.8), Steigung 121.24 MB/min · nach dem Collector 74.5 MB/min (Soll je ≤ 50) · [linse-gpu] nvidia/pascal — ROT 2: Heap-Kur) · Täter: @@PUNKTE@@ MESSORT die Dauer trug ihre Minute nicht: Heap-Kurve blind (18 Punkte über 0.83 min)",
+   "exit": 0,
+   "minuten": 0.38,
+   "grund": "Messort: die Dauer trug ihre Minute nicht: Heap-Kurve blind (18 Punkte über 0.83 min) — kein Urteil, UNGEMESSEN (die Probe sah: BLIND, kein Urteil über die Steigung · Spielgang 1.06 min in 1 Seite(n) · Heap-Kurve 18 Punkte, 254 → 345.8 MB (max 372.8), Steigung 121.24 MB/min · nach dem Collector 74.5 MB/min (Soll je ≤ 50) · [linse-gpu] nvidia/pascal — ROT 2: Heap-Kur) · Täter: @@PUNKTE@@ MESSORT die Dauer trug ihre Minute nicht: Heap-Kurve blind (18 Punkte über 0.83 min)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 22.7,
+   "fremd": {
+    "s": 26.1,
+    "takte": 12,
+    "fremdS": 32.33,
+    "kerne": 1.236,
+    "fensterKerne": 1.283,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      24.11
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.05
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.98
+     ]
+    ],
+    "dienerS": 11.8,
+    "diener": [
+     [
+      "dwm.exe",
+      6.05
+     ],
+     [
+      "System",
+      4.19
+     ]
+    ],
+    "geraetS": 6.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.92
+     ],
+     [
+      "svchost.exe",
+      2.3
+     ],
+     [
+      "SearchIndexer.exe",
+      0.2
+     ]
+    ],
+    "eigenS": 48.31,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 1.243,
+     "nach": 1.385,
+     "station": 1.817
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 98.9,
+     "alle": 283.2,
+     "cpuEin": 93
+    },
+    "nach": {
+     "ein": 101.7,
+     "alle": 300.7,
+     "cpuEin": 93
+    },
+    "ruhe": {
+     "ein": 90.3,
+     "alle": 231.2,
+     "n": 592,
+     "von": "2026-11-17"
+    },
+    "f": 1.301,
+    "fEin": 1.126,
+    "fAlle": 1.301,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-18T06:58:25.638Z",
+   "abdruck": "d73938ad5063",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-18T06:43:25.418Z",
+  "ordner": "sitzung-20261118-074325",
+  "port": 7804,
+  "warten": 13.69,
+  "bootS": 8.4,
+  "grundstellungS": [],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "karte2.same.preis.ausdauer#1",
+    "s": 10,
+    "takte": 182,
+    "chunks": 99,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wirt": [
+   {
+    "probe": "profiband.K4#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r._knotenRate",
+     "r.state.weather",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._knotenRate": "neu: function (N, ro) { const t0 = performance.now(); const s = kr.apply(this, argume",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t ",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "return window.__k4 || null",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend."
+    ],
+    "heap": [
+     null,
+     null
+    ],
+    "ungemessen": "den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: \"-\", aus: \"-\", ein: \"-\" }); const t  — Heap ungemessen"
+   },
+   {
+    "probe": "karte2.same.preis.ausdauer#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     295.9,
+     306.1
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "profiband.K4#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.same.preis.ausdauer#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   }
+  ],
+  "haenger": [
+   {
+    "probe": "profiband.K4#1",
+    "zurueck": 9
+   }
+  ],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 498,
+   "frameP95": 49.89,
+   "taktP95": 38.59,
+   "vramMax": 152.3,
+   "seiten": 1,
+   "marken": 2,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 95,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 103,
+  "minuten": 15.5
+ }
+}
