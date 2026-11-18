@@ -465,8 +465,12 @@ async function s0Probe(page, station, schein) {
                 const c = s.atmoUniforms?.lichtGlut?.fenster?.value;
                 return c ? +luma709([c.r, c.g, c.b]).toFixed(5) : null;
             };
+            // … in der Zahl, die die Welt jetzt trägt (`augeMass` über der Lesung des Messers: nachts 1, am Mittag der Bühne 0,82)
             const glutSoll = () =>
-                +window.__weltLicht.augeGlut(window.__fachwerkCore.LICHT_GESETZ.fenster.cdM2, r._augeLux).toFixed(5);
+                +(
+                    window.__weltLicht.augeGlut(window.__fachwerkCore.LICHT_GESETZ.fenster.cdM2, r._augeLux) *
+                    window.__weltLicht.augeMass(luma709(r._belichtungE), r._belichtungTag)
+                ).toFixed(5);
             uhr(0);
             await takt(2);
             const nachts = glut();
