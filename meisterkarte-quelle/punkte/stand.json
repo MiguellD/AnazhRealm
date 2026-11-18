@@ -6007,7 +6007,7 @@
   },
   "karte2.same.kopplung.ereignis": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3 an e489088a radeon — offen: karte2.same.kopplung.ereignis#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3 an e489088a radeon · Guss -268,-1046: Glut R/G 2.732 (Soll ≥ 2), Luma 0.119, glut-Achse 1 · erstarrt nach 1 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 1 Schritten = 0.007 h Welt (Soll 1–60), Schuss bei 0.498 h, Gesetz-glut 0 (Soll 0): R/G 0.989 (Soll ≤ 1,25), Luma 0.053, Stoff stein · Brand am Guss 8 Zellen, auf seiner Uhr 20000 s, danach um den Guss 0 brennend (die Front lebt fern: 35 Zellen) · [linse-gpu] nvidia/pascal an 21f279f5 gtx",
    "stationen": [
     {
      "id": "karte2.same.kopplung.ereignis#1",
@@ -6022,11 +6022,11 @@
     {
      "id": "karte2.same.kopplung.ereignis#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "Guss -268,-1046: Glut R/G 2.732 (Soll ≥ 2), Luma 0.119, glut-Achse 1 · erstarrt nach 1 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 1 Schritten = 0.007 h Welt (Soll 1–60), Schuss bei 0.498 h, Gesetz-glut 0 (Soll 0): R/G 0.989 (Soll ≤ 1,25), Luma 0.053, Stoff stein · Brand am Guss 8 Zellen, auf seiner Uhr 20000 s, danach um den Guss 0 brennend (die Front lebt fern: 35 Zellen) · [linse-gpu] nvidia/pascal",
+     "sha": "21f279f5f5b87f86c0bea764dab99fb36670725e",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6330,12 +6330,10 @@
    ]
   }
  },
- "rueckfall": [
-  "karte2.same.kopplung.stoerung#1 gtx: Herd -248,-1080: Luma der Zelle vor 0.142 → nach 0.104 (÷ 0.732, Soll ≤ 0,5) · Asche 0 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 21f279f5 (grün gebucht an 884c6a25)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 189,
+  "konsum": 190,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6497,10 +6495,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 159
+  "ohne": 158
  },
  "kopfVoll": "21f279f5f5b87f86c0bea764dab99fb36670725e",
- "zeit": "2026-11-18T01:09:28.567Z",
+ "zeit": "2026-11-18T01:15:55.712Z",
  "vorher": "21f279f5",
  "bilanz": {
   "gewinn": [],
