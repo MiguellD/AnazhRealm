@@ -2333,11 +2333,17 @@ class AnazhRealm_stoff_material {
                     k
                 );
                 const ersatz = form.x;
-                const b = this._lichtPlatz(Te, { lage, farbe, form }, himmel, volumen, true, N)
-                    .mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
-                    .toVar();
-                summe.addAssign(b.mul(ersatz.oneMinus()));
-                auge.addAssign(b.rgb.mul(ersatz));
+                // DIE REICHWEITE IST DER FRÜHE ZWEIG (w28-strahler, Kosten an Schirm + Änderung): ein leerer Platz (Reichweite 0) und
+                // jedes Fragment außerhalb der Reichweite rechnen den Rumpf nicht — bis hier lief die ganze Mathematik des Platzes
+                // (Scheibe, Abfall, Saum) für alle vier Plätze an jedem Fragment, die Bedingung stand erst an der BRDF.
+                const Lv = Te.cameraViewMatrix.mul(Te.vec4(lage.xyz, 1)).xyz.sub(Te.positionView).toVar();
+                Te.If(Lv.dot(Lv).lessThan(lage.w.mul(lage.w)), () => {
+                    const b = this._lichtPlatz(Te, { lage, farbe, form, Lv }, himmel, volumen, true, N)
+                        .mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
+                        .toVar();
+                    summe.addAssign(b.mul(ersatz.oneMinus()));
+                    auge.addAssign(b.rgb.mul(ersatz));
+                });
             });
             const A = atmo.lichtAuge;
             // der obere Ast (welt-licht.js `augeZeig`): die Summe zeigt höchstens ihren Anteil an der Anpassung, S(A + E) × E ÷ (A + E)
@@ -2366,7 +2372,7 @@ class AnazhRealm_stoff_material {
         return v;
     }
 
-    // DAS GESETZ EINES PLATZES (K11, der Rumpf der Schleife des Pools): `platz` = { lage, farbe, form } — Knoten des Platzes
+    // DAS GESETZ EINES PLATZES (K11, der Rumpf der Schleife des Pools): `platz` = { lage, farbe, form[, Lv] } — Knoten des Platzes (`Lv`: sein Vektor Fragment → Platz im Blick-Raum, wenn der Rufer ihn schon trägt)
     // (in der Schleife die Glieder der Reihen, im Selbsttest einer Linse die Uniforms eines Platzes); `himmel` die Himmels-Sicht
     // der Fläche (der Boden: `aHimmel`) oder nichts. Der Abfall des Gesetzes, das Gewicht des Himmels-Ersatzes, die Bedingung
     // (Reichweite, Gewicht, Fläche in ihr und ihm zugewandt — sie liest `positionView` und `normalView`) und die EINE BRDF
@@ -2377,7 +2383,7 @@ class AnazhRealm_stoff_material {
         const ersatz = platz.form.x;
         const kern = platz.form.y;
         const gewicht = himmel ? ersatz.mul(himmel).oneMinus() : ersatz.oneMinus();
-        const Lv = Te.cameraViewMatrix.mul(Te.vec4(lage.xyz, 1)).xyz.sub(P);
+        const Lv = platz.Lv || Te.cameraViewMatrix.mul(Te.vec4(lage.xyz, 1)).xyz.sub(P);
         const d = Lv.length();
         // DER FLÄCHEN-STRAHLER (w28-strahler): ein flacher Platz ist eine waagrechte SCHEIBE (Radius r = sein Kern), die nach oben
         // strahlt (Lambert) — rund wie die Decke, die sie trägt (das Rand-Gesetz der Tat, `_brandNarbeFn`). Ihr Vektor der
