@@ -1,4 +1,4 @@
-// AnazhRealm — leben-core.js: DAS GESETZ DES LEBENS (Welle 1 „leben-erbe“, Entscheid origin/koordination:vision/leben/entscheid.md).
+// AnazhRealm — leben-core.js: DAS GESETZ DES LEBENS (Welle 1 „leben-erbe“, Entscheid im Zweig koordination, vision/leben/entscheid §1–§4).
 //
 // Ein Lebewesen ist eine ADRESSE (Art · Individuum · Ahn), trägt ein ERBE (Zuchtwert-Vektor `a` nach dem Infinitesimal-Modell
 // aus Mutter und Vater), und sein Leib ist PHYSIK seines Erbes über das Alter (Masse M∞ = M̄_Art·e^(a+e), Wachstum nach
