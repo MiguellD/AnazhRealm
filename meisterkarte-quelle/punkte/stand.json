@@ -6247,7 +6247,7 @@
      "gruen": true,
      "zahl": "4 Kalt-Boots, roh je Boot 32.25 MB · 32.25 MB · 32.25 MB · 32.25 MB (max 32.25 MB, Soll ≤ 50.00 MB), am größten 16.92 MB Draht, 179 Anfragen, bis zur Kontrolle 32.25 MB, 23 Ziele (22 Worker), am schwersten /fachwerk-core.js?v=18.546.329 0.98 MB | /fachwerk-core.js?v=18.546.329 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker · Boot 4 worker · [linse-gpu] nvidia/pascal",
      "sha": "c50e6b61b445196a2316565e29a8e4989a939eef",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, index.html, scripts/lib/draw-zaehler.cjs +11) — zuletzt an e489088a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2703 s Warten) — ungemessen",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/werkbank.cjs, stamm/dirigent-takt.js) — zuletzt an e489088a: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von '' nach 2703 s Warten) — ungemessen",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -6511,8 +6511,8 @@
   "ohne": 149
  },
  "kopfVoll": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
- "zeit": "2026-11-18T17:16:16.406Z",
- "vorher": "e4e3f363",
+ "zeit": "2026-11-18T17:22:03.081Z",
+ "vorher": "18058dba",
  "bilanz": {
   "gewinn": [],
   "fall": [],
