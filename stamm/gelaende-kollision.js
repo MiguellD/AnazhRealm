@@ -379,6 +379,16 @@ class AnazhRealm_gelaende_kollision {
         for (const e of this._blockerUmPlatz(o.x, o.z, R, [])) {
             if (!e || !e.position || this._weichtDemBau(e)) continue;
             const ende = [e.position.x, e.position.z, e._blockerReach || 0];
+            // (der Grundriss `g` des Eintrags, gedreht um seine Gier: er sperrt in jeder Höhe)
+            const grund = (g) => {
+                const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+                const [c, s] = [Math.cos(ry), Math.sin(ry)];
+                quader.push(e.position.x + g.ox * c + g.oz * s, e.position.z - g.ox * s + g.oz * c, ry, g.ex, g.ez, Infinity, ...ende); // prettier-ignore
+            };
+            // das Los eines Hauses sperrt wie seine Wände (`_bauFrei`, w28-bau-rezept: Hof, Torriegel und Flügel vom ersten Bild an,
+            // nicht erst mit der Hülle des Studios) — der Vor-Filter liest dieselbe Wand wie das Urteil am Sieger
+            const los = e.fundament ? this._grundrissVon(e) : null;
+            if (los) grund(los);
             if (e.blockerAABBs && e.blockerAABBs.length) {
                 for (const b of e.blockerAABBs) {
                     const ob = b.obb;
@@ -387,19 +397,10 @@ class AnazhRealm_gelaende_kollision {
                 }
                 continue;
             }
-            const g = this._grundrissVon(e) || (e.werk === true ? { ex: 0.8, ez: 0.8, ox: 0, oz: 0 } : null);
-            if (!g) continue;
-            const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
-            const [c, s] = [Math.cos(ry), Math.sin(ry)];
-            quader.push(
-                e.position.x + g.ox * c + g.oz * s,
-                e.position.z - g.ox * s + g.oz * c,
-                ry,
-                g.ex,
-                g.ez,
-                Infinity,
-                ...ende
-            );
+            const g = los
+                ? null
+                : this._grundrissVon(e) || (e.werk === true ? { ex: 0.8, ez: 0.8, ox: 0, oz: 0 } : null);
+            if (g) grund(g);
         }
         return { quader: Float64Array.from(quader), stufe: AnazhRealm.PLAYER_STEP_UP };
     }

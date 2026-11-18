@@ -1,5 +1,5 @@
 {
- "quelle": "Die Defekte von gate:haus-welt (scripts/diag-haus-welt.cjs --selftest, dort je Defekt sein Grund): je Defekt [[die Phase seiner Welt, die Proben, die er rot macht („a|b“: eine von beiden)], die Basis-Zeilen [geheilte Form im Stamm, Basis-Form] bzw. [Datei, geheilt, Basis]] — der Server liefert statt der geheilten die Basis, GENAU die Probe des Defekts wird rot.",
+ "quelle": "Die Defekte von gate:haus-welt (scripts/diag-haus-welt.cjs --selftest, dort je Defekt sein Grund): je Defekt [[die Phase seiner Welt („a+b“: die Phasen EINER Welt), die Proben, die er rot macht („a|b“: eine von beiden)], die Basis-Zeilen [geheilte Form im Stamm, Basis-Form] bzw. [Datei, geheilt, Basis]] — der Server liefert statt der geheilten die Basis, GENAU die Probe des Defekts wird rot.",
  "defekte": {
   "huelle": [
    [
@@ -460,6 +460,22 @@
     [
      "        if (entry) this.removeArchitecture(entry, { still: true });",
      "        if (entry) this.state.architectures.splice(this.state.architectures.indexOf(entry), 1);"
+    ]
+   ]
+  ],
+  "loswand": [
+   [
+    "haus+start+fremd",
+    "W7 Bau im Bau"
+   ],
+   [
+    [
+     "if (los && imGrund(e, los)) return ((this._bauFreiAn = e), false);",
+     "if (false && los && imGrund(e, los)) return ((this._bauFreiAn = e), false);"
+    ],
+    [
+     "if (los) grund(los);",
+     "if (false) grund(los);"
     ]
    ]
   ]

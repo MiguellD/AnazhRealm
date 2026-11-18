@@ -53,8 +53,8 @@ const PHASEN = (process.argv.find((a) => a.startsWith("--phasen=")) || "--phasen
 // --bild: W9 aus dem Ausgabe-Bild, echter Renderer (lokal unter dem GPU-Schloss); der Lauf fährt nur die Phase grund
 const BILD = process.argv.includes("--bild");
 
-// DIE DEFEKTE (spec/haus-welt/defekte.json, die Folge der Selbsttests): je Defekt [[die Phase seiner Welt, die Proben, die er
-// rot macht], die Basis-Zeilen [geheilte Form im Stamm, Basis-Form] bzw. [Datei, geheilt, Basis]]. Was jeder bricht:
+// DIE DEFEKTE (spec/haus-welt/defekte.json, die Folge der Selbsttests): je Defekt [[die Phase seiner Welt („a+b“: die Phasen
+// EINER Welt), die Proben, die er rot macht], die Basis-Zeilen [geheilte Form im Stamm, Basis-Form] bzw. [Datei, geheilt, Basis]]. Was jeder bricht:
 //   huelle: ohne die Hülle des Gesetzbuchs: nur die vier EG-Wände der Tür-Zeile, keine Böden, Tritte, Innenwände
 //   obb: die gedrehte Box als achsparallele Welt-AABB gelesen
 //   grundriss: die Natur wirft in den Grundriss, und das Dorf räumt nicht · die Wand des Orts (`_ortWand`) trägt den
@@ -83,6 +83,10 @@ const BILD = process.argv.includes("--bild");
 //   bauwand: die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen): die Slot-Quelle, die
 //       Ort-Wahl (`_ortTraegtWirt`) und ihr Urteil vor dem Plan im Faden (fachwerk `ortImBau`, w28-stadt-grammatik) lesen
 //       dieselbe Wand — der Defekt nimmt sie allen dreien (mit zweien wich der Ort im Faden aus: der Selbsttest war blind, z397)
+//   loswand: die Bau-Wand kennt das Los eines Hauses nicht (nur seine Boxen): kommt das zweite Dorf, solange das erste erst
+//       den Kern seiner Tür-Zeile trägt (der Akt der späten Hülle, W7), stehen Häuser in Hof und Flügel — dem Urteil am Slot
+//       (`_bauFrei`) und dem Vor-Filter des Fadens (`_ortBauten`) nimmt der Defekt das Los; seine Welt ist die des Hauptlaufs
+//       (haus + start + fremd: dort wählt das zweite Dorf den Ort, an dem drei Lose in Hof und Flügel fallen)
 //   stab:
 //   kletter: W10: der Stab (die Brüstung) trägt · der Spieler klettert an jeder gestreiften Wand · an keiner
 //   startslot: W10: jeder Slot des Start-Dorfs östlich seiner Mitte fällt geschlossen — das Dorf steht nicht ganz
@@ -1105,7 +1109,26 @@ async function proben(phasen) {
         );
         if (zelle) {
             const vorBau2 = new Set(s.architectures);
-            await r.spawnSettlement({ seed: 7, nH: 18, position: { x: zelle[1].x, y: start.y, z: zelle[1].z } });
+            // DAS ZWEITE DORF KOMMT, BEVOR DAS STUDIO DIE HÜLLE DES ERSTEN LIEFERT (w28-bau-rezept): die Hülle eines Hauses reist
+            // mit seiner ersten Stufe aus dem Foundry-Faden — bis sie da ist, trägt es den Kern seiner Tür-Zeile (vier Wände des
+            // Hauptbaus). Die Wand urteilte nach der Uhr: im Zug stand das zweite Dorf mit 3 von 28 Häusern in Hof und Flügel des
+            // ersten (die Hülle kam nach dem Akt), lokal fielen dieselben drei Slots (0 von 25). Die Probe stellt die späte Hülle
+            // selbst: jedes frühere Haus trägt während des Akts seinen Kern, danach wieder seine Hülle — gemessen wird an ihr
+            // (`spaet`: so viele Häuser; ohne eines ist der Akt blind).
+            await warteBis(() => H.every((e) => !s.architectures.includes(e) || !!e._hausHuelle), 4, 120);
+            const spaet = [...vorBau2].filter((e) => e._hausHuelle && e.tuer && e.fundament);
+            const huellen = spaet.map((e) => e._hausHuelle);
+            const stelle = (e, hu) => ((e._hausHuelle = hu), r._populateBlockerAABBs(e));
+            for (const e of spaet) stelle(e, null);
+            try {
+                const res = await r.spawnSettlement({ seed: 7, nH: 18, position: { x: zelle[1].x, y: start.y, z: zelle[1].z } });
+                // (woran die Lose des zweiten Dorfs fielen: die Wand beim Namen, je Wand die Zahl)
+                w7.gefallen = {};
+                for (const g of (res && res.gefallen) || []) w7.gefallen[g.wand] = (w7.gefallen[g.wand] || 0) + 1;
+            } finally {
+                spaet.forEach((e, i) => stelle(e, huellen[i]));
+            }
+            w7.spaet = spaet.length;
             await pumpe(8);
             const neu = s.architectures.filter(
                 (e) => !vorBau2.has(e) && /^(haus_|brunnen_|marktstand_)/.test(e.type || "")
@@ -1981,6 +2004,10 @@ function urteil(o) {
             );
         if (!o.w7 || !(o.w7.haeuser >= 6))
             f.push(`W7 Aufbau: ${o.w7 ? o.w7.haeuser : "?"} Dorf-Häuser abgetastet (Soll ≥ 6)`);
+        else if (Number.isFinite(o.w7.zweitesDorf) && !(o.w7.spaet >= 6))
+            f.push(
+                `W7 Aufbau: ${o.w7.spaet} Häuser des ersten Dorfs trugen beim zweiten die Hülle des Studios (Soll ≥ 6) — der Akt der späten Hülle ist blind`
+            );
         else if (o.w7.imBau || o.w7.zweitesImBau || !Number.isFinite(o.w7.zweitesDorf))
             f.push(
                 `W7 Bau im Bau: ${o.w7.imBau} Häuser in einem früheren Bau oder mit der Tür an seiner Wand, zweites Dorf am selben Anker ${o.w7.zweitesImBau}/${o.w7.zweitesDorf} im ersten (${o.w7.taeter.join(" · ") || "Akt fehlt"})`
@@ -2336,7 +2363,7 @@ hauptLauf(async () => {
             // dann die Proben, die er rot macht
             selbst = Object.keys(DEFEKTE)
                 .filter((k) => !NUR.length || NUR.includes(k))
-                .map((inj) => ({ inj, soll: DEFEKTE[inj][0].slice(1), phasen: DEFEKTE[inj][0].slice(0, 1) }));
+                .map((inj) => ({ inj, soll: DEFEKTE[inj][0].slice(1), phasen: DEFEKTE[inj][0][0].split("+") }));
         }
         // der Hauptlauf zuerst (die längsten Welten), dann die Selbsttests — alle im Pool; der Hauptlauf in zwei Welten: das
         // Start-Dorf wächst in der Phase start, in der anderen lässt W9 Waise es wachsen
@@ -2371,6 +2398,8 @@ hauptLauf(async () => {
                 console.log(
                     `  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll.join(" + ")} rot — ${pf.length ? pf.join("; ") : beleg}`
                 );
+                // (der blinde Selbsttest zeigt die Zeile seiner Welt: woran die Probe grün blieb)
+                if (!ok && !pf.length) console.log("     ↳ " + zeile(o));
                 if (!ok) rot++;
             }
         }
