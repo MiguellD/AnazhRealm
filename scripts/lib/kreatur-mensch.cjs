@@ -30,9 +30,14 @@ async function menschBuehnen() {
             const [dx, dz] = [x - e.position.x, z - e.position.z];
             return { x: (dx * c - dz * sn) / k, z: (dx * sn + dz * c) / k };
         };
+        // DIE EBENE, DURCH DIE EIN BEWOHNER INS HAUS TRITT, IST SEIN EINGANG (w28-bau-rezept; fachwerk `eingangVon` am Eintrag:
+        // Kultur, Tür-Zeile und Raumprogramm des Slots reisen mit ihm) — beim Hof-Haus das Tor im Torriegel vor dem Hof, sonst
+        // die Haustür der Tür-Zeile. Bis hier las die Linse die Front des Kerns allein: ihr Soll beschrieb das Haus ohne Hof
+        // (8 von 143 Durchgängen im Start-Dorf, 26 von 222 in der Stadt „nicht über die Tür" — jeder am Tor eines Hof-Hauses).
+        const eingangZ = (e) => FC.eingangVon({ tuer: e.tuer, kultur: e.type.replace(/^haus_/, ""), ov: e.studioOv || null }).z; // prettier-ignore
         const durchTuer = (e, ax, az, ex, ez) => {
             const [t, p, q] = [kernVon(e), hausLage(e, ax, az), hausLage(e, ex, ez)];
-            return [[t.z, t.x, t.w], t.hinten ? [-t.z, t.hinten.x, t.hinten.w] : []].some(([zF, xT, wT]) => {
+            return [[eingangZ(e), t.x, t.w], t.hinten ? [-t.z, t.hinten.x, t.hinten.w] : []].some(([zF, xT, wT]) => {
                 const [u, v] = [p.z - zF, q.z - zF];
                 if (!(wT > 0) || (u * v > 0 && Math.abs(u) > 1e-3 && Math.abs(v) > 1e-3)) return false;
                 const k = Math.abs(u - v) > 1e-9 ? Math.max(0, Math.min(1, u / (u - v))) : 1;
