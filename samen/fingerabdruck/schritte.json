@@ -1,0 +1,854 @@
+[
+ {
+  "job": "puls",
+  "name": "Cache-Schlüssel",
+  "run": "node scripts/ci-schluessel.cjs",
+  "if": ""
+ },
+ {
+  "job": "puls",
+  "name": "System-Libs für headless Chromium",
+  "run": "LIBS=\"libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2\"\n# gefragt wird nach den Bibliotheken selbst (24.04 benennt die Pakete mit t64 um, dpkg -s fand sie nie: 38628488866)\nSO=\"libnss3.so libatk-1.0.so.0 libatk-bridge-2.0.so.0 libcups.so.2 libdrm.so.2 libxkbcommon.so.0 libXcomposite.so.1 libXdamage.so.1 libXfixes.so.3 libXrandr.so.2 libgbm.so.1 libpango-1.0.so.0 libcairo.so.2 libasound.so.2\"\nDA=1; for so in $SO; do ldconfig -p | grep -qF \"$so (\" || DA=0; done\nif [ \"$DA\" = 1 ]; then\n  echo \"System-Libs da\"\nelse\n  sudo apt-get update -qq\n  sudo apt-get install -y --no-install-recommends $LIBS libasound2t64 || \\\n  sudo apt-get install -y --no-install-recommends $LIBS libasound2\nfi\n",
+  "if": ""
+ },
+ {
+  "job": "puls",
+  "name": "Dependencies installieren",
+  "run": "npm ci --no-audit --no-fund",
+  "if": ""
+ },
+ {
+  "job": "puls",
+  "name": "Prettier-Format-Check",
+  "run": "npm run format:check",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2"
+ },
+ {
+  "job": "puls",
+  "name": "ESLint",
+  "run": "npm run lint",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2"
+ },
+ {
+  "job": "puls",
+  "name": "Syntax-Check JS-Dateien",
+  "run": "set -e\nfor f in $(git ls-files '*.js'); do\n  echo \"→ $f\"\n  node --check \"$f\"\ndone\n",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2"
+ },
+ {
+  "job": "puls",
+  "name": "Statik (npm run check:statik — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)",
+  "run": "npm run check:statik",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 1"
+ },
+ {
+  "job": "puls",
+  "name": "Single-Quote-Template-Strings (B2-Pattern)",
+  "run": "# Erkennt Funktionsaufrufe wie foo('… ${x} …') – ${...} in einfach-quotierten\n# String-Argumenten interpoliert nicht. Backticks innerhalb von Bezeichnern\n# werden bewusst nicht gematcht (auch wenn sie Apostrophe enthalten).\nif grep -nE \"\\(\\s*'[^']*\\\\\\$\\{[^}]+\\}[^']*'\\s*[,)]\" stamm/*.js; then\n  echo \"❌ Single-Quote-Template-String erkannt – Backticks verwenden\"\n  exit 1\nfi\necho \"✅ Keine fehlgeschlagenen Template-Strings\"\n",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2"
+ },
+ {
+  "job": "puls",
+  "name": "Verbotenes dynamisches Auswerten (eval / new Function)",
+  "run": "if grep -nE \"(eval\\(|new Function\\()\" stamm/*.js save-server.js; then\n  echo \"❌ Dynamisches Code-Eval gefunden — DSL nutzen, nicht eval/new Function\"\n  exit 1\nfi\necho \"✅ Kein dynamisches Code-Eval\"\n",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2"
+ },
+ {
+  "job": "puls",
+  "name": "innerHTML-Schreibzugriffe (Hinweis, kein Fail)",
+  "run": "grep -nE \"innerHTML\\s*\\+?=\" stamm/*.js || echo \"keine Treffer\"\n",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2"
+ },
+ {
+  "job": "puls",
+  "name": "TODO/FIXME-Übersicht (Hinweis, kein Fail)",
+  "run": "grep -nE \"(TODO|FIXME|XXX|HACK|TBD)\" stamm/*.js save-server.js || echo \"keine TODOs\"\n",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2"
+ },
+ {
+  "job": "puls",
+  "name": "Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core buildInstance byte-eingefroren)",
+  "run": "npm run gate:schmiede-contract",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2"
+ },
+ {
+  "job": "puls",
+  "name": "Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)",
+  "run": "npm run gate:daten-contract",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2"
+ },
+ {
+  "job": "puls",
+  "name": "Schnell-Playtest (Kern-Gesundheit, ~13 Checks)",
+  "run": "npm run playtest:fast",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2"
+ },
+ {
+  "job": "puls",
+  "name": "Urteil der Gruppe (jeder rote Schritt beim Namen)",
+  "run": "Q=\"repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100\"\nM='.jobs[] | select(.runner_name == env.RUNNER_NAME)'\nfor i in $(seq 12); do\n  [ \"$(gh api \"$Q\" --jq \"[$M\"' | .steps[] | select(.status == \"in_progress\")] | length')\" -le 1 ] && break\n  sleep 5\ndone\nU=$(gh api \"$Q\" --jq \"$M\"' | \"URTEIL \\(.name): ROT — \" + ([.steps[] | select(.conclusion == \"failure\") | \"„\\(.name)“\"] | join(\" · \"))')\necho \"$U\"\necho \"::error title=Urteil der Gruppe::$U\"\necho \"$U\" >> \"$GITHUB_STEP_SUMMARY\"\nexit 1\n",
+  "if": "failure()"
+ },
+ {
+  "job": "voll",
+  "name": "Cache-Schlüssel",
+  "run": "node scripts/ci-schluessel.cjs",
+  "if": ""
+ },
+ {
+  "job": "voll",
+  "name": "System-Libs für headless Chromium",
+  "run": "LIBS=\"libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2\"\n# gefragt wird nach den Bibliotheken selbst (24.04 benennt die Pakete mit t64 um, dpkg -s fand sie nie: 38628488866)\nSO=\"libnss3.so libatk-1.0.so.0 libatk-bridge-2.0.so.0 libcups.so.2 libdrm.so.2 libxkbcommon.so.0 libXcomposite.so.1 libXdamage.so.1 libXfixes.so.3 libXrandr.so.2 libgbm.so.1 libpango-1.0.so.0 libcairo.so.2 libasound.so.2\"\nDA=1; for so in $SO; do ldconfig -p | grep -qF \"$so (\" || DA=0; done\nif [ \"$DA\" = 1 ]; then\n  echo \"System-Libs da\"\nelse\n  sudo apt-get update -qq\n  sudo apt-get install -y --no-install-recommends $LIBS libasound2t64 || \\\n  sudo apt-get install -y --no-install-recommends $LIBS libasound2\nfi\n",
+  "if": ""
+ },
+ {
+  "job": "voll",
+  "name": "Dependencies installieren (inkl. puppeteer)",
+  "run": "npm ci --no-audit --no-fund",
+  "if": ""
+ },
+ {
+  "job": "voll",
+  "name": "Voller Playtest (~5340 Invarianten — das Verdikt „Alle Invarianten OK\")",
+  "run": "npm run playtest | tee playtest-voll.log\ngrep -qx \"✅ Alle Invarianten OK\" playtest-voll.log\n",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 1"
+ },
+ {
+  "job": "voll",
+  "name": "Tier-Anatomie (Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder)",
+  "run": "npm run gate:tier-anatomie",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 1"
+ },
+ {
+  "job": "voll",
+  "name": "Schirm-Wand (ein kleinerer Schirm traegt hoechstens gleich viel Welt, jede Schirm-Groesse aus der EINEN Quelle)",
+  "run": "npm run gate:schirm-monotonie",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 15"
+ },
+ {
+  "job": "voll",
+  "name": "Werfer-Wand (jede Kaskade misst ihre Scheibe, jeder Schatten-Pass waehlt seine Werfer)",
+  "run": "npm run gate:schatten-werfer",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 8"
+ },
+ {
+  "job": "voll",
+  "name": "Persistenz-Härtung Teil 1 (Tab-Tod 0-7 ohne save-server, Lade-Pfad, save-server stirbt ganz)",
+  "run": "npm run gate:persistence",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2"
+ },
+ {
+  "job": "voll",
+  "name": "Persistenz-Härtung Teil 2 (Tab-Tod 8-19 ohne save-server)",
+  "run": "node scripts/diag-persistence.cjs",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 3"
+ },
+ {
+  "job": "voll",
+  "name": "Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)",
+  "run": "npm run gate:worker-dichte",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 18"
+ },
+ {
+  "job": "voll",
+  "name": "Gelaende-Linse (die Natur-Zahlen am Gesetzbuch - Senken, Flint, Hammond, Dorfplaetze, Schicht-Gesetz)",
+  "run": "npm run gate:gelaende-realismus",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 9"
+ },
+ {
+  "job": "voll",
+  "name": "Gelaende-Studio (A ist die gebaute Welt, jeder Regler wirkt, jedes Preset im Korridor, EIN Plan reist byte-gleich in die Welt)",
+  "run": "npm run gate:gelaende-studio",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 13"
+ },
+ {
+  "job": "voll",
+  "name": "Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec; S0 leuchtet nachts aus dem Licht-Pool)",
+  "run": "npm run gate:pruefbuehne",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17"
+ },
+ {
+  "job": "voll",
+  "name": "Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)",
+  "run": "npm run gate:weltgrenze",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 15"
+ },
+ {
+  "job": "voll",
+  "name": "Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)",
+  "run": "npm run gate:boot-rettung",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 12"
+ },
+ {
+  "job": "voll",
+  "name": "Render-Tap-Wahrheits-Wand (W1 — die vergiftete Zahl kann nicht zurück)",
+  "run": "npm run gate:render-tap",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 18"
+ },
+ {
+  "job": "voll",
+  "name": "Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)",
+  "run": "npm run gate:vehicle-contract",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 10"
+ },
+ {
+  "job": "voll",
+  "name": "Tor-Asset-Vertrag v4 (porta-core buildInstance byte-eingefroren, Byte-Raster am Ausgang)",
+  "run": "npm run gate:porta-contract",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 16"
+ },
+ {
+  "job": "voll",
+  "name": "Streu-Fernform aus dem Studio-Budget (jenseits der EINEN Nah-Grenze 64 m kein stilles L0)",
+  "run": "npm run gate:streu-fern",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 12"
+ },
+ {
+  "job": "voll",
+  "name": "Asset-Vertrag v1 (Studio-Generator trifft die eingefrorenen Goldens byte-genau)",
+  "run": "npm run gate:asset-contract",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 16"
+ },
+ {
+  "job": "voll",
+  "name": "Pflanzen-Nahbild (Rinde · Gitter · Strauch · Blüte · Blatt-Maß · Unterseite · Weide · Fracht)",
+  "run": "npm run gate:pflanzen-nah",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 13"
+ },
+ {
+  "job": "voll",
+  "name": "Sippen-Wirt (das Budget-Gesetz zaehlt, was der Wirt zeichnet)",
+  "run": "npm run gate:sippen-wirt",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 18"
+ },
+ {
+  "job": "voll",
+  "name": "Pack-Kanon (N3 — die Gestalt-Reise als dokumentierter, mintbarer Vertrag)",
+  "run": "npm run gate:pack-contract",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 14"
+ },
+ {
+  "job": "voll",
+  "name": "Fluss-Wand (V18.511 — der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau)",
+  "run": "npm run gate:fluss",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 12"
+ },
+ {
+  "job": "voll",
+  "name": "Takt-Wand (V18.512 — ein Takt-Subsystem rechnet nur, was es betrifft, nie die ganze Welt)",
+  "run": "npm run gate:takt",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 16"
+ },
+ {
+  "job": "voll",
+  "name": "Satz-Wand (Welle B — die Draw-Einheit ist Material mal Geometrie über den Ring, nie Chunk mal Material)",
+  "run": "npm run gate:chunk-satz",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 10"
+ },
+ {
+  "job": "voll",
+  "name": "Höhlen-Sicht (Welle 7 — die Höhlen-Schicht zeichnet nur, was ein Strahl durch Luft erreicht)",
+  "run": "npm run gate:hoehlen-sicht",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 15"
+ },
+ {
+  "job": "voll",
+  "name": "Sicht-Arbeit (Welle C — die Sicht-Kette kostet, was sich ändert, nie die Weltgröße)",
+  "run": "npm run gate:sicht-arbeit",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 1"
+ },
+ {
+  "job": "voll",
+  "name": "Wetter-Wache (Welle K und Leben-Schau 2 — Halt heisst Halt, Uhr und Wetter gehoeren dem Spieler)",
+  "run": "npm run gate:wetter-wache",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 14"
+ },
+ {
+  "job": "voll",
+  "name": "Welt-Wache (0710-7 — die Buehne haelt die Welt, jeder Welt-Akt beim Namen)",
+  "run": "npm run gate:weltakt-wache",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 8"
+ },
+ {
+  "job": "voll",
+  "name": "Blocker-Netz (0710-7 — der Strahl fragt seine Nachbarschaft, byte-gleiche Treffer)",
+  "run": "npm run gate:blocker-netz",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 9"
+ },
+ {
+  "job": "voll",
+  "name": "Kollision = Bild (Leben-Schau 2 — jede Box hat ihr Bild, der Fels misst seine Gestalt)",
+  "run": "npm run gate:kollision-bild",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 13"
+ },
+ {
+  "job": "voll",
+  "name": "Fall-Waechter (Leben-Schau 2 — jeder Koerper steht auf dem Boden unter ihm)",
+  "run": "npm run gate:fall-waechter",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 16"
+ },
+ {
+  "job": "voll",
+  "name": "Brennglas-Takt (0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile)",
+  "run": "npm run gate:brennglas-takt",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 11"
+ },
+ {
+  "job": "voll",
+  "name": "Raum-Tags (0710-11 — das Gedaechtnis der Raum-Tags sieht jeden Schreiber)",
+  "run": "npm run gate:raum-tags",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17"
+ },
+ {
+  "job": "voll",
+  "name": "Stand-Takt (Welle K — im Stand kostet die Welt nichts, Gehen kostet die Änderung)",
+  "run": "npm run gate:stand-takt",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 1"
+ },
+ {
+  "job": "voll",
+  "name": "Foundry-Deadlock geheilt (P4 — die Nähe konvergiert unter Last)",
+  "run": "npm run gate:foundry-deadlock",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 12"
+ },
+ {
+  "job": "voll",
+  "name": "Fernwald (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop)",
+  "run": "npm run gate:fernwald",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 16"
+ },
+ {
+  "job": "voll",
+  "name": "Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)",
+  "run": "npm run gate:weg-boden",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 18"
+ },
+ {
+  "job": "voll",
+  "name": "Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)",
+  "run": "npm run gate:asset-inventory",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 14"
+ },
+ {
+  "job": "voll",
+  "name": "Die Slot-Linse — ein freier Slot und eine leere Hülle zeichnen nie, in keinem Pass",
+  "run": "npm run gate:freie-slots",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 11"
+ },
+ {
+  "job": "voll",
+  "name": "Die Saison ist eine Farbe (V18.527) — uSeasonMul nach dem Studio-Gesetz, kein Neubau",
+  "run": "npm run gate:season-meadow",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 12"
+ },
+ {
+  "job": "voll",
+  "name": "S4 Impostor eager + Werkstatt-L2-Billboard (Studio-Modell, Wand 4/5)",
+  "run": "npm run gate:s4-impostor-workshop",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 8"
+ },
+ {
+  "job": "voll",
+  "name": "Das Nervensystem (die Pipeline-Abnahme — ein neues Vorlage-Asset fließt automatisch)",
+  "run": "npm run gate:nervensystem",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 16"
+ },
+ {
+  "job": "voll",
+  "name": "Der Zweit-Kern (Studio-Vertrag Phase 1 — vehicle-core dockt an, W7b)",
+  "run": "npm run gate:nervensystem-vehicle",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 11"
+ },
+ {
+  "job": "voll",
+  "name": "Die Place-Policy-Weiche (N5/H8 — wie eine Buch-Art in die Welt kommt)",
+  "run": "npm run gate:place-policy",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 9"
+ },
+ {
+  "job": "voll",
+  "name": "Das Lab-Fahrprofil (N6/H7 — drive aus der EINEN Lab-Formel)",
+  "run": "npm run gate:vehicle-drive",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 1"
+ },
+ {
+  "job": "voll",
+  "name": "Die Fahr-Linse des Lebens (Welle L — der Ritt im echten Spiel-Takt)",
+  "run": "npm run gate:fahr-leben",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 8"
+ },
+ {
+  "job": "voll",
+  "name": "Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)",
+  "run": "npm run gate:nervensystem-porta",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 8"
+ },
+ {
+  "job": "voll",
+  "name": "Der ε-Beweis Schmiede (W-A4a — schmiede-core dockt nur über Daten an)",
+  "run": "npm run gate:nervensystem-schmiede",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 16"
+ },
+ {
+  "job": "voll",
+  "name": "Kampf und Maus (Welle L — das EINE Treffer-Urteil, die Maus-Absicht, die Blick-Wahrheit)",
+  "run": "npm run gate:kampf-gefuehl",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17"
+ },
+ {
+  "job": "voll",
+  "name": "Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)",
+  "run": "npm run gate:gegenstand-stoff",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 9"
+ },
+ {
+  "job": "voll",
+  "name": "Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)",
+  "run": "npm run gate:nervensystem-fachwerk",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 16"
+ },
+ {
+  "job": "voll",
+  "name": "Haus-Asset-Vertrag v6 (W-A5a — fachwerk-core buildInstance byte-eingefroren)",
+  "run": "npm run gate:fachwerk-contract",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 1"
+ },
+ {
+  "job": "voll",
+  "name": "Der Settlement-Kanal N5.7 (W-A5b — exportSettlement + spawnSettlement)",
+  "run": "npm run gate:settlement",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17"
+ },
+ {
+  "job": "voll",
+  "name": "Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)",
+  "run": "npm run gate:koerper-stand",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 11"
+ },
+ {
+  "job": "voll",
+  "name": "Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)",
+  "run": "node scripts/diag-haus-welt.cjs --selftest --teil=1/2",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 6"
+ },
+ {
+  "job": "voll",
+  "name": "Das Haus der Welt Teil 2 (die übrigen Selbsttest-Welten — jede Basis-Zeile macht genau ihre Probe rot)",
+  "run": "node scripts/diag-haus-welt.cjs --selftest --teil=2/2",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 7"
+ },
+ {
+  "job": "voll",
+  "name": "Haus-Fernkörper (S3 haus - der Werfer jeder Stufe, kein Umriss-Sprung, das Türblatt am Scharnier; Teil von npm run check)",
+  "run": "npm run gate:haus-fern",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 14"
+ },
+ {
+  "job": "voll",
+  "name": "Die Trias-Linse (V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe)",
+  "run": "npm run gate:trias",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 1"
+ },
+ {
+  "job": "voll",
+  "name": "Die drei MESHFREI-Domaenen (W-A6/W-A7 — klang · koerper · kreatur)",
+  "run": "npm run gate:nervensystem-labs",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 10"
+ },
+ {
+  "job": "voll",
+  "name": "Die Kreatur-Linse Teil 1",
+  "run": "node scripts/diag-kreatur-takt.cjs --selftest --teil=1/3 && node scripts/diag-kreatur-takt.cjs --teil=1/3",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 9"
+ },
+ {
+  "job": "voll",
+  "name": "Die Kreatur-Linse Teil 2",
+  "run": "node scripts/diag-kreatur-takt.cjs --selftest --teil=2/3 && node scripts/diag-kreatur-takt.cjs --teil=2/3",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 4"
+ },
+ {
+  "job": "voll",
+  "name": "Die Kreatur-Linse Teil 3",
+  "run": "node scripts/diag-kreatur-takt.cjs --selftest --teil=3/3 && node scripts/diag-kreatur-takt.cjs --teil=3/3",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 10"
+ },
+ {
+  "job": "voll",
+  "name": "Ofen-Vertrag (S1 Waende — Tier- und Mensch-Bake je Stoff-Klasse x Gelenk byte-eingefroren)",
+  "run": "npm run gate:ofen-contract",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 13"
+ },
+ {
+  "job": "voll",
+  "name": "Die Klang-Linse (Welle 5 Klang — jede klingende Quelle traegt ein Gesetz)",
+  "run": "npm run gate:klang-zensus",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17"
+ },
+ {
+  "job": "voll",
+  "name": "Der Portal-Gestalt-Wechsel (W-A3 — Katalysator-Bogen)",
+  "run": "npm run gate:portal-gestalt",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 15"
+ },
+ {
+  "job": "voll",
+  "name": "Regler wirkt Teil 1 (W1 d — jede PARAMS-Zeile bewegt den Bau am Kanal der Werkstatt, tote Regler beim Namen)",
+  "run": "node scripts/diag-regler-wirkt.cjs --teil=1",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 1"
+ },
+ {
+  "job": "voll",
+  "name": "Regler wirkt Teil 2 (das Haus, Grund-Bau und jeder zweite Regler — jede Stufe x Rezept x Regler-Rand gegen ihre Budget-Zeile)",
+  "run": "node scripts/diag-regler-wirkt.cjs --teil=2",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 13"
+ },
+ {
+  "job": "voll",
+  "name": "Regler wirkt Teil 3 (das Haus, die uebrigen Regler — jede Stufe x Rezept x Regler-Rand gegen ihre Budget-Zeile)",
+  "run": "node scripts/diag-regler-wirkt.cjs --teil=3",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 11"
+ },
+ {
+  "job": "voll",
+  "name": "Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)",
+  "run": "npm run gate:foundry-crossfade",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 18"
+ },
+ {
+  "job": "voll",
+  "name": "Reload-Treue (die Kreatur kehrt nach dem Reload wie gegossen wieder)",
+  "run": "npm run gate:reload-treue",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 11"
+ },
+ {
+  "job": "voll",
+  "name": "Studio-Übergabe (die Live-Bearbeitung eines Studios reist in die Welt)",
+  "run": "npm run gate:studio-uebergabe",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 10"
+ },
+ {
+  "job": "voll",
+  "name": "P2P-Gestalt (die Studio-Übergabe reist zu den Mitspielern)",
+  "run": "npm run gate:p2p-gestalt",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17"
+ },
+ {
+  "job": "voll",
+  "name": "Prägung-Welt (die Prägung reist mit dem Artefakt in die Welt-Pfade)",
+  "run": "npm run gate:praegung-welt",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 10"
+ },
+ {
+  "job": "voll",
+  "name": "Scatter-LOD (die Streu-Stufen folgen der Live-Distanz, ohne Flacker-Churn, über Region-Grenzen)",
+  "run": "npm run gate:scatter-lod",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 12"
+ },
+ {
+  "job": "voll",
+  "name": "Erstarren-Linse (kalter Boot, Wander-Lauf ohne Todes-Spirale, ein Tor-Material genau einmal gebaut)",
+  "run": "npm run gate:erstarren",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17"
+ },
+ {
+  "job": "voll",
+  "name": "GPU-Zeit-Linse (headless der Proxy, die echte Leitung über ein API-treues Fake-Backend)",
+  "run": "npm run gate:gpu-zeit",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 18"
+ },
+ {
+  "job": "voll",
+  "name": "Render-Diät (ein geteiltes Material je Tag-Signatur, die Part-Farbe reist als Instanz-Farbe)",
+  "run": "npm run gate:render-diaet",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 1"
+ },
+ {
+  "job": "voll",
+  "name": "Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)",
+  "run": "npm run gate:welt-boot",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 14"
+ },
+ {
+  "job": "voll",
+  "name": "Fern-Wasser (die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag)",
+  "run": "npm run gate:fern-wasser",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 13"
+ },
+ {
+  "job": "voll",
+  "name": "Warm-Start (der zweite Boot liest den Ring byte-gleich aus der Platte, ein Edit geht am Cache vorbei)",
+  "run": "npm run gate:warm-start",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 15"
+ },
+ {
+  "job": "voll",
+  "name": "Kopplung (die Welt fasst den Körper an — Strömung, Gleiten, Wind-Richtung, Gras-Biegung)",
+  "run": "npm run gate:kopplung",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 13"
+ },
+ {
+  "job": "voll",
+  "name": "Tor-Wurf und Tor-Fernform (1110-9 — die NUR-WURF-Stufe 3 der Tore, die Fernform ≤ 24 sicht-Teile)",
+  "run": "npm run gate:tor-fern",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 11"
+ },
+ {
+  "job": "voll",
+  "name": "Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)",
+  "run": "npm run gate:seam",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 9"
+ },
+ {
+  "job": "voll",
+  "name": "Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)",
+  "run": "npm run gate:mp-sync",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 15"
+ },
+ {
+  "job": "voll",
+  "name": "Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, KI-Fehler)",
+  "run": "npm run gate:v1-pfad",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 18"
+ },
+ {
+  "job": "voll",
+  "name": "Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)",
+  "run": "npm run gate:werkstatt-weg",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 18"
+ },
+ {
+  "job": "voll",
+  "name": "Die Kamera-Laub-Linse (K06 - Laub, Strauch und Fels vor der Linse, die Nah-Kugel der Durchsicht)",
+  "run": "npm run gate:kamera-laub",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 14"
+ },
+ {
+  "job": "voll",
+  "name": "Die Ankunfts-Linse (Welle L Folge - Ladeschirm, Fadenkreuz, Hilfe, Chat-Taste, Start-Gurt, Kamera im Baum, Dorf vor dir)",
+  "run": "npm run gate:ankunft",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 14"
+ },
+ {
+  "job": "voll",
+  "name": "Wasser-Wand (Welle L — Q6 + Q7, die Proben rufen die Chokepoints selbst)",
+  "run": "npm run gate:wasser-leben",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 12"
+ },
+ {
+  "job": "voll",
+  "name": "Werk im Wasser (Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt, der Damm im Reload)",
+  "run": "npm run gate:werk-im-wasser",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 15"
+ },
+ {
+  "job": "voll",
+  "name": "Studio-Blick (Selbsttest — ein uniformes Bild ist ein blinder Blick)",
+  "run": "npm run gate:studio-blick",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 15"
+ },
+ {
+  "job": "voll",
+  "name": "Mensch-Anatomie (Welle 5 — Hand, Arm, Kopf, Gesicht, Fuß gegen die Anthropometrie)",
+  "run": "npm run gate:mensch-anatomie",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 5"
+ },
+ {
+  "job": "voll",
+  "name": "Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)",
+  "run": "npm run gate:streu-wahrheit",
+  "if": "steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 10"
+ },
+ {
+  "job": "voll",
+  "name": "Urteil der Gruppe (jeder rote Schritt beim Namen)",
+  "run": "Q=\"repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100\"\nM='.jobs[] | select(.runner_name == env.RUNNER_NAME)'\nfor i in $(seq 12); do\n  [ \"$(gh api \"$Q\" --jq \"[$M\"' | .steps[] | select(.status == \"in_progress\")] | length')\" -le 1 ] && break\n  sleep 5\ndone\nU=$(gh api \"$Q\" --jq \"$M\"' | \"URTEIL \\(.name): ROT — \" + ([.steps[] | select(.conclusion == \"failure\") | \"„\\(.name)“\"] | join(\" · \"))')\necho \"$U\"\necho \"::error title=Urteil der Gruppe::$U\"\necho \"$U\" >> \"$GITHUB_STEP_SUMMARY\"\nexit 1\n",
+  "if": "failure()"
+ },
+ {
+  "job": "echt",
+  "name": "Dependencies installieren (Echt-Läufer, der puppeteer-Chrome bleibt auf der Platte des Läufers)",
+  "run": "npm ci --no-audit --no-fund",
+  "if": ""
+ },
+ {
+  "job": "echt",
+  "name": "Fern-Ring auf der Karte (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz)",
+  "run": "npm run gate:fern-ring",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Schatten-Bias auf der Karte (das Gesetz der Kaskade)",
+  "run": "npm run gate:schatten-bias",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Ziel-Zensus auf der Karte (jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)",
+  "run": "npm run gate:ziel-zensus",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Nah-Linse auf der Karte (kein Analog-Satz diesseits der Nah-Grenze 64 m)",
+  "run": "npm run gate:analog-nah",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Foundry-Impostor auf der Karte (auf dem EINEN Haupt-Renderer)",
+  "run": "npm run gate:foundry-impostor",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Pruefbuehne S0 auf der Karte (der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)",
+  "run": "npm run gate:pruefbuehne-licht",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Wasser-Bild auf der Karte (das Wasser-Material und der Regen)",
+  "run": "npm run gate:wasser-leben:bild",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Post-Kette auf der Karte (jede Nachbild-Stufe kostet nur, wenn sie zeigt)",
+  "run": "npm run gate:post-kette",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Portal-Membran auf der Karte (die Passage zeichnet nur im Blick)",
+  "run": "npm run gate:portal-membran",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Ego-Schatten auf der Karte (in der Ego-Sicht wirft der Leib seinen Schatten, das Auge sieht ihn nicht)",
+  "run": "npm run gate:ego-schatten",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Verdeckungs-Abfrage auf der Karte (der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)",
+  "run": "npm run gate:verdeckungs-abfrage",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Frost-Wand auf der Karte (das Weltbild folgt der Kamera vom Ankommen bis zur Hof-Bühne, nie der Ladeschirm)",
+  "run": "npm run gate:weltbild-frost:echt",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Tag-Achse auf der Karte (die Belichtung folgt dem Licht stetig und gegen es, kein Einbruch, Spawn und Mess-Wiese)",
+  "run": "npm run gate:tag-achse:echt",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Tafeln der Atmosphaere auf der Karte (jede Tafel gezeichnet, die verzoegerte Pipeline von Psi_ms haelt die Kette offen)",
+  "run": "npm run gate:tafel-ganz:echt",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "GPU-Fehler-Linse auf der Karte (jede WebGPU-Validierung beim Namen)",
+  "run": "npm run gate:gpu-fehler",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Kamera-Treue und Stand-Wand auf der Karte (der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)",
+  "run": "npm run gate:kamera-treue",
+  "if": "${{ !cancelled() && matrix.karte == 'omen' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Die Kamera-Leib-Linse auf der Karte (K06 - WE-05, FZ-07, NP-03 - nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box)",
+  "run": "npm run gate:kamera-leib",
+  "if": "${{ !cancelled() && matrix.karte == 'radeon' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Erst-Zeichnungs-Wand Teil 1 auf der Karte (Boot-Konsum, drei neue Stoffe ohne synchrone Pipeline, Neubau, Bundle-Neubau)",
+  "run": "node scripts/diag-hitch-telemetrie.cjs --teil=1",
+  "if": "${{ !cancelled() && matrix.karte == 'radeon' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Erst-Zeichnungs-Wand Teil 2 auf der Karte (Bundle ohne Anmeldung, hängender Fehler-Scope, Beweis-Aufnahme, Absage)",
+  "run": "node scripts/diag-hitch-telemetrie.cjs --teil=2",
+  "if": "${{ !cancelled() && matrix.karte == 'radeon' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Takt-Atem auf der Karte (der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage)",
+  "run": "npm run gate:takt-atem",
+  "if": "${{ !cancelled() && matrix.karte == 'radeon' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Die Labor-Linse der Garage auf der Karte (Welle L — Maus, HUD, Tacho, Preset, Kultur)",
+  "run": "npm run gate:garage-labor",
+  "if": "${{ !cancelled() && matrix.karte == 'radeon' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Das Studio-Dorf begehen auf der Karte (Welle L — Hülle je Haus, Treppe, Keller-Decke, Fluss, Antike)",
+  "run": "npm run gate:studio-begehen",
+  "if": "${{ !cancelled() && matrix.karte == 'radeon' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Portal-Konformanz auf der Karte (W1 c/e — die Heimat richtet jede Welt — Handshake endlich, Quelle geprüft, DSL wirkt, Esc heim)",
+  "run": "npm run gate:portal-konformanz",
+  "if": "${{ !cancelled() && matrix.karte == 'radeon' }}"
+ },
+ {
+  "job": "echt",
+  "name": "GPU-Churn-Linse auf der Karte (die Klasse hinter dem V18.322-Idle-Freeze)",
+  "run": "npm run gpu-lens",
+  "if": "${{ !cancelled() && matrix.karte == 'radeon' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Schatten am Terminator auf der Karte (1110-5 - die Hang-Akne, die Zuwendung der wahren Normale)",
+  "run": "npm run gate:schatten-terminator",
+  "if": "${{ !cancelled() && matrix.karte == 'gtx1050' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Fenster-Wand auf der Karte (ein Fenster-Wechsel macht die Welt nie wieder schwarz)",
+  "run": "npm run gate:fenster-wechsel",
+  "if": "${{ !cancelled() && matrix.karte == 'gtx1050' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Volle-Bühne-Prädikat auf der Karte (W2 — Kriterium 2 wird messbar)",
+  "run": "npm run gate:boot-stage",
+  "if": "${{ !cancelled() && matrix.karte == 'gtx1050' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Die Albedo-Tafel auf der Karte (S1 W1e - je Klasse Labor-Albedo, Welt-Albedo und ihr Verhaeltnis als Ratsche)",
+  "run": "npm run gate:albedo-tafel",
+  "if": "${{ !cancelled() && matrix.karte == 'gtx1050' }}"
+ },
+ {
+  "job": "echt",
+  "name": "Tier-Gang ohne Gleiten auf der Karte (Welle 5 — das Gang-Gesetz am echten Chokepoint)",
+  "run": "npm run gate:tier-gang",
+  "if": "${{ !cancelled() && matrix.karte == 'gtx1050' }}"
+ },
+ {
+  "job": "echt",
+  "name": "WebGL2-Rückfall auf der Karte (ohne WebGPU-Adapter bootet die Welt laut benannt auf GL und lebt)",
+  "run": "npm run gate:webgl-probe",
+  "if": "${{ !cancelled() && matrix.karte == 'gtx1050' }}"
+ }
+]
