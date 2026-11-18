@@ -6040,7 +6040,7 @@
   },
   "karte2.same.kopplung.kaskade": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +261 Pixel je Pixel, Median aus 5 Sätzen (Spanne 261–261; neu 261 − Rauschen 0, bei laufender Schleife 70; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 625) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon — offen: karte2.same.kopplung.kaskade#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Herd -248,-1064 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +261 Pixel je Pixel, Median aus 5 Sätzen (Spanne 261–261; neu 261 − Rauschen 0, bei laufender Schleife 70; Soll ≥ 200; 32 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 625) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon — offen: karte2.same.kopplung.kaskade#1 gtx: ROT: Herd -248,-1080 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +24 Pixel je Pixel, Median aus 5 Sätzen (Spanne 24–24; neu 24 − Rauschen 0, bei laufender Schleife 8; Soll ≥ 200; 4 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 322) · [linse-gpu] nvidia/pascal an 1f300260",
    "stationen": [
     {
      "id": "karte2.same.kopplung.kaskade#1",
@@ -6057,10 +6057,10 @@
      "id": "karte2.same.kopplung.kaskade#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "Herd -248,-1080 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +24 Pixel je Pixel, Median aus 5 Sätzen (Spanne 24–24; neu 24 − Rauschen 0, bei laufender Schleife 8; Soll ≥ 200; 4 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 322) · [linse-gpu] nvidia/pascal",
+     "sha": "1f30026067b2aef1665a07b4ab6a7d700c5a08e6",
+     "grund": "ROT: Herd -248,-1080 Bett 1 · trocken nach 60 s 1 brennende Zellen, Flammen im Bild +24 Pixel je Pixel, Median aus 5 Sätzen (Spanne 24–24; neu 24 − Rauschen 0, bei laufender Schleife 8; Soll ≥ 200; 4 Flammen gezeichnet) · Regen löscht nach 7 s (Soll ≤ 60), danach 0 Zellen, Flammen im Bild (Emission) +0 (Soll ≤ 20; warm 322) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6338,12 +6338,10 @@
    ]
   }
  },
- "rueckfall": [
-  "affekt.K1#2 gtx: Gänge 2/2 (Exit 0: der Baum fällt nicht (0 Hiebe)) an 1f300260 (grün gebucht an d39e0d6e)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 195,
+  "konsum": 196,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6505,16 +6503,14 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 153
+  "ohne": 152
  },
  "kopfVoll": "1f30026067b2aef1665a07b4ab6a7d700c5a08e6",
- "zeit": "2026-11-18T07:43:48.977Z",
+ "zeit": "2026-11-18T07:59:47.387Z",
  "vorher": "1f300260",
  "bilanz": {
   "gewinn": [],
-  "fall": [
-   "affekt.K1 2→1 (affekt.K1#2 gtx: ROT: Gänge 2/2 (Exit 0: der Baum fällt nicht (0 Hiebe)))"
-  ],
+  "fall": [],
   "massenFall": false
  },
  "pflicht": {
