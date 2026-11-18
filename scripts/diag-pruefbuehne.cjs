@@ -1617,7 +1617,9 @@ async function lichtLauf() {
                             cam.updateMatrixWorld(true);
                             // die Plätze des Pools blenden in LICHT_POOL.blendeS ein: die Wand-Uhr läuft, ehe der Schuss misst
                             await sleep(1000 * AnazhRealm.LICHT_POOL.blendeS + 100);
-                            // die Kamera liest das Becken, das jetzt steht (die Uhr der Bühne ruht: im Spiel wendet jeder Takt der Uhr sie an)
+                            // die Kamera liest das Becken, das jetzt steht (die Bühne ruht: im Spiel füllt jeder Takt den Pool, `_leuchtTakt`,
+                            // und jeder Takt der Uhr wendet sie an — ohne den Takt las der erste Schuss den leeren Pool, k 1,5 statt 0,45)
+                            r._leuchtTakt();
                             r._applyDayNightToScene();
                             kSchuss = rend.toneMappingExposure;
                             // der Satz „messung" (K32, scripts/lib/abnahme-urteil.cjs): der Schuss ist ein Mess-Frame der Nacht — sein
