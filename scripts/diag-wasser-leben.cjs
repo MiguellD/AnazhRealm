@@ -313,6 +313,10 @@ function urteil(b) {
             if (!(p.post > 0 && p.neuBau > 0) || p.halt > 0.001) rot("P3 TAKT", p);
             const rg = p.regen || {}; // wetter.K3: 20 min Sturm heben Bach und gezeichneten See ≥ 0,2 m, das gehaltene Regen-Feld nichts
             if (!(rg.hub >= 0.2 && rg.koerper >= rg.hub - 0.03 && rg.post > 0 && rg.fest <= 0.001)) rot("P4 REGEN", rg);
+            // P5 die Knoten des Regens: der Weg von main, die Rampe an ihrem Knoten; der Zug ohne Wechsel legt keinen, der Lauf
+            // des Pegels bleibt byte-gleich
+            const kn = p.knoten || {};
+            if (!(kn.weg && kn.weg === kn.main && kn.lauf && kn.zug === 6 && kn.zugLauf)) rot("P5 KNOTEN", kn);
             const [f, kt] = [g.feuer || {}, g.kalt || {}];
             if (!(f.wechsel > 0 && f.glut >= 0.5 && f.kelvin > 798 && f.esse)) rot("H1 KALT", g);
             else if (kt.glut || kt.kelvin || !(kt.wechsel > 0 && kt.T - kt.luft < 50) || !(g.feld >= 5)) rot("H2 GLUT", g);
@@ -600,7 +604,7 @@ function selbsttest() {
                 { ab: 2, frei: 0.4, reihe: [{ glut: 1, stoff: "glut", licht: true }, { glut: 0.4, stoff: "stein" }] },
                 { ab: 1, reihe: [{ dampf: true }] },
             ],
-            pegel: { hub: 0.2, wochen: 3, gegen: 0, post: 31, neuBau: 9, fluss: 0.2, flut: [0.2, 185, 0.2], ruhe: [0, 182, 0], halt: 0, regen: { hub: 0.2, post: 20, koerper: 0.2, fest: 0 } },
+            pegel: { hub: 0.2, wochen: 3, gegen: 0, post: 31, neuBau: 9, fluss: 0.2, flut: [0.2, 185, 0.2], ruhe: [0, 182, 0], halt: 0, regen: { hub: 0.2, post: 20, koerper: 0.2, fest: 0 }, knoten: { weg: "0,0,200,0,245,0.6", main: "0,0,200,0,245,0.6", lauf: true, zug: 6, zugLauf: true } },
             gluehen: { feuer: { wechsel: 17, glut: 0.55, kelvin: 1373, esse: "esse" }, kalt: { wechsel: 119, T: 25, luft: -1, glut: 0 }, feld: 9.8 },
         },
         licht: {
@@ -713,6 +717,10 @@ function selbsttest() {
         ["P4 REGEN", ["koerper.pegel.regen", { hub: 0, post: 0 }]],
         ["P4 REGEN", ["koerper.pegel.regen.fest=", 0.2]],
         ["P4 REGEN", ["koerper.pegel.regen.koerper=", 0]],
+        // w28-halter-register am 545894d3: der Weg verwarf den Knoten am Beginn der Rampe aus gehaltenem Wetter — der Regen stieg ab
+        // dem letzten alten Knoten
+        ["P5 KNOTEN", ["koerper.pegel.knoten", { weg: "0,0,245,0.6", lauf: false }]],
+        ["P5 KNOTEN", ["koerper.pegel.knoten.zugLauf=", false]],
         ["H1 KALT", ["koerper.gluehen.feuer", { wechsel: 0, glut: 0, kelvin: null }]],
         ["H2 GLUT", ["koerper.gluehen.feld=", 0]],
         ["K9 NACHT", ["licht", { nachtUnten: 0.17 }]],

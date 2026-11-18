@@ -258,6 +258,7 @@ class AnazhRealm_gelaende_fern {
                     behalten(x0, z0, x0 + m, z0 + m, rw) &&
                     !(
                         geht.size &&
+                        E.saum !== false &&
                         m <= span &&
                         geht.has(Math.floor((x0 + m / 2) / span) + "," + Math.floor((z0 + m / 2) / span))
                     )
@@ -2390,7 +2391,7 @@ AnazhRealm.SAAT_GEHT_MIN = 4;
 // Raster mit Ursprung; oder eine Funktion der Schicht vor „:“), die Lage seines Schlüssels (`lage(k)` → [i, j, schicht] oder null;
 // ohne sie „[schicht:]i,j[,…]“, `_zellLage`), die Reichweite seiner Leser (`reichweite(r)`, m um den Spieler), sein Ring
 // (`ring: "boden"`: er geht mit dem Chunk, sobald der weder im Ring steht noch gebaut ist) und sein Abschied (`geht(r, schluessel,
-// werte)`, die Folgen). Was nicht aus Same, Zelle und Gesetz neu wächst (Taten, ihr Zerfall), steht mit `bestand` (dem Grund), ein
+// werte)`, die Folgen); `saum: false` hält eine Zelle bis an die Reichweite, auch wenn der Chunk ihrer Mitte den Saum verlässt. Was nicht aus Same, Zelle und Gesetz neu wächst (Taten, ihr Zerfall), steht mit `bestand` (dem Grund), ein
 // Gedächtnis mit eigener benannter Schranke mit `schranke`: `_zellGedaechtnisGeht` räumt beide nie, die Linse (`werkbank runde`,
 // `__zellZensus`) zählt sie und nennt den Grund. Die Zelle (i, j) ist das Rechteck [i·m + ab, (i + 1)·m + ab). Ein Gedächtnis mit
 // Zell-Schlüssel, das hier fehlt und wächst, nennt die Linse beim Namen (unangemeldet). Bis w28-halter-register standen acht
@@ -2467,7 +2468,7 @@ AnazhRealm.ZELL_GEDAECHTNISSE = Object.freeze([
         karte: (r) => r._windFormMerk && r._windFormMerk.karte,
         zelle: 16,
         lage: (k) => AnazhRealm._zellZahl(Math.floor(k / 64), 1048576),
-        reichweite: (r) => r._streuReichweite(),
+        reichweite: (r) => AnazhRealm._windFormReichweite(r),
     },
     // die Felder des Wald-Kastens je Zelle des Walds (`_forestKastenLeser`, Schlüssel `_grundrissSchluessel`)
     {
@@ -2517,14 +2518,23 @@ AnazhRealm.ZELL_GEDAECHTNISSE = Object.freeze([
         lage: (k) => AnazhRealm._zellZahl(k, 1048576),
         reichweite: (r) => AnazhRealm._siedlungReichweite(r),
     },
-    // die Darts der Wald-Zellen: ihr EINER Räumer ist die Schranke (`_forestDartRaum`, WALD_PLAN.zellen, die fernsten zuerst) — die
-    // Kamm-Krone liest den Plan bis 6 km, weit jenseits des Saums (gate:kreatur-takt schwarm: die Krone s:tree:74,0 ohne Scheitel)
+    // die Darts der Wald-Zellen, behalten bis an die Reichweite ihrer Leser: die Gestalt jedes Baums der Streu und jedes Orts liest
+    // den Bestand ±`WALD_PLAN.reich` um ihre Zelle samt dessen Urteils-Nachbarn (`_waldPlanSteht`, `_forestStehtFrei`,
+    // `_foundryGestaltFor`); die Kamm-Krone plant im Feld-Faden an ihrem Stand, nie aus diesem Gedächtnis. Ihr Abschied nimmt die
+    // stehenden Kästen (`_waldPlanVoll`), wie die Schranke `_forestDartRaum` (WALD_PLAN.zellen, die fernsten zuerst), die als Deckel
+    // bleibt. Bis hier war die Schranke ihr einziger Räumer: unter 8 192 Zellen fiel nichts (Radeon 18.11., Runde reise 2 220 →
+    // 6 618 → 7 133 — die Füllung bis an den Deckel, nicht der Blick).
     {
         name: "_forestDartMemo",
         karte: (r) => r._forestDartMemo,
         zelle: () => AnazhRealm.FOREST.cell,
-        schranke:
-            "WALD_PLAN.zellen (`_forestDartRaum`, die fernsten zuerst) — die Kamm-Krone liest den Plan bis KAMM_KRONE.dBis",
+        reichweite: (r) =>
+            Math.max(r._streuReichweite(), AnazhRealm._siedlungReichweite(r)) +
+            (AnazhRealm.WALD_PLAN.reich + AnazhRealm.WALD_PLAN.urteil + 1) * AnazhRealm.FOREST.cell,
+        // nie mit dem Chunk ihrer Mitte (`saum: false`): die Streu liest den Plan jenseits des Saums (w28-preis-ort, gate:kreatur-takt
+        // schwarm: ohne ihn wartete sie ohne Höhe, Scheitel 103,76 → 125,93 m)
+        saum: false,
+        geht: (r) => (r._waldPlanVoll = null),
     },
     // DIE HALTER DER ZEICHNUNG (w28-halter-register): ihre Einträge sind Körper, keine Merker — sie fallen an ihrer EINEN Stelle
     // (`schranke`), nie im Räumer, der einen Körper sonst ein zweites Mal nähme (der Chunk ohne sein Netz, der Leib ohne seine
@@ -2572,6 +2582,9 @@ AnazhRealm.ZELL_GEDAECHTNISSE = Object.freeze([
         bestand: "die gemalte Stufe des Lebens je Zelle — sie folgt dem Zerfall des Lebens bis Stufe 0",
     },
 ]);
+// die Reichweite der Form des Winds (`_windFormMerk`): der Horizont der Streu — ihr Schreiber (`_windForm`) merkt nur darin, ihr
+// Räumer räumt bis dahin; ein Leser jenseits fragt dieselbe Funktion ohne Merker
+AnazhRealm._windFormReichweite = (r) => r._streuReichweite();
 AnazhRealm._hydroKachelZelle = () => ({
     m: AnazhRealm.HYDROSPHERE.regionSize,
     ab: -AnazhRealm.HYDROSPHERE.regionSize / 2,
