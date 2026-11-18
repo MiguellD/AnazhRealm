@@ -2311,6 +2311,15 @@
     //   Was die Form nicht aufnimmt, geht in den Körper. Anbau-Räume werden Anbau-Zellen (je 18 m², höchstens 2, der Würfel des
     //   Loses bleibt als Umbau), Keller-Räume den Keller, eine Laube im OG den Balkon. `getrennt` und `dach` liegen außerhalb
     //   dieser Welle (der Dachraum ist das Dach; der getrennte Bau ist die Scheune des Plans).
+    //   DER KÖRPER ENDET AN SEINEM LAND (`BAU_LAND`: der Fuß der Parzelle × `koerper` trägt den Körper, × `form` Körper samt Hof
+    //   und Flügeln, kein Körper unter `minM2`, keiner über `maxM2`): fasst auch das höchste Geschoss der Zeile das Programm nicht,
+    //   bleibt der Rest ungebaut — der Fuß wächst nie über das, was die Parzelle trägt. Bis hier endete er dann erst an `maxM2`:
+    //   in „dorf 7 300" standen 77 von 310 Häusern über ihrem Land (das Rathaus 15 × 11 auf 12 × 7, das 1,96-Fache; 71 Häuser
+    //   im selben Fuß 15 × 11), die Lose der Stadt wuchsen von 41 831 auf 51 671 m²; im Start-Dorf rückten die Häuser mit Rolle
+    //   vom Platz, um 10 Uhr standen 7 statt 31 Bewohner im Blick (gate:kreatur-takt bewohner). Leser der Tafel: gate:settlement
+    //   (lib/los-proben.cjs: jeder Körper steht auf dem, was seine Parzelle trägt).
+    // prettier-ignore
+    const BAU_LAND={ koerper:{dicht:1.3, frei:1.6, turm:0.55}, form:{dicht:1.6, frei:4}, minM2:20, maxM2:165 };
     // prettier-ignore
     function bauProgramm(N, hp, haushalt, rahmen){
   const nutz=LEUTE_GESETZ.nutz, P=isFinite(N.personen)?N.personen:Math.max(1,Math.round(haushalt.personen||1)), w=isFinite(haushalt.wohl)?Math.max(0,haushalt.wohl):1;
@@ -2322,8 +2331,8 @@
     if(lage==='anbau'){ A.anbau+=a; continue; } if(lage==='fluegel'||lage==='hof_umlauf'){ A.fluegel+=a; continue; }
     if(lage==='turm') A.turm+=a;
     A[g==='og'?'og':g==='alle'?'alle':'eg']+=a; }
-  const pz=hp.parzelle||hp, F0=Math.max(20,pz.W*pz.D), dicht=!!rahmen.dicht, kultSt=(KULTUR[hp.kultur]||{}).st||1;
-  const turmig=A.turm>0&&A.turm>=0.5*(A.eg+A.og+A.alle), capK=Math.min(165, F0*(turmig?0.55:dicht?1.3:1.6)), capL=F0*(dicht?1.6:4);
+  const BL=BAU_LAND, pz=hp.parzelle||hp, F0=Math.max(BL.minM2,pz.W*pz.D), dicht=!!rahmen.dicht, kultSt=(KULTUR[hp.kultur]||{}).st||1;
+  const turmig=A.turm>0&&A.turm>=0.5*(A.eg+A.og+A.alle), capK=Math.min(BL.maxM2, F0*(turmig?BL.koerper.turm:dicht?BL.koerper.dicht:BL.koerper.frei)), capL=F0*(dicht?BL.form.dicht:BL.form.frei);
   const gmin=N.geschosse[0], sOrt=(pz.storeys||1)>kultSt?pz.storeys:gmin, gmax=Math.max(N.geschosse[1],sOrt);   // was der Ort über die Kultur hob (Stadtkörper, Viertel), steht über dem Maximum der Zeile
   const fuss=(eg,s)=>(s>1?Math.max(eg+A.alle/s, A.og/(s-1)+A.alle/s):eg+A.og+A.alle)/nutz;
   let gr='I', armF=0;
@@ -2335,7 +2344,7 @@
     if(g==='I'&&A.fluegel<8&&fuss(A.eg+A.fluegel,gmax)<=capK){ gr='I'; break; } }
   const eg=A.eg+Math.max(0,A.fluegel-armF)-(gr==='L'&&!A.fluegel?armF:0);
   let s=gmax; for(let k=Math.max(gmin,Math.min(sOrt,gmax)); k<=gmax; k++) if(fuss(eg,k)<=capK){ s=k; break; }
-  const F=Math.max(20, 0.45*F0*(turmig?0.55:1), Math.min(165, fuss(eg,s))), r=pz.W/Math.max(1,pz.D);
+  const F=Math.max(BL.minM2, 0.45*F0*(turmig?BL.koerper.turm:1), Math.min(capK, fuss(eg,s))), r=pz.W/Math.max(1,pz.D);
   const halb=x=>Math.round(x*2)/2, Wn=Math.max(4.5,Math.min(15,halb(Math.sqrt(F*r))));
   hp.W=Wn; hp.D=Math.max(4,Math.min(11,halb(F/Wn))); hp.storeys=s; hp.grundriss=gr;
   if(A.anbau>0) hp.annexN=Math.min(2,Math.max(hp.annexN|0,Math.ceil(A.anbau/18)));
@@ -12556,6 +12565,7 @@
         kulturFromSeed: kulturFromSeed,
         bauRezept: bauRezept,
         BAU_NUTZUNG: BAU_NUTZUNG, // das Bau-Gesetz (w28-bau-rezept): die Zeilen der Nutzung; Leser: DORF, das Labor (worlds/fachwerk)
+        BAU_LAND: BAU_LAND, // was die Parzelle trägt (der Packer `bauProgramm`); Leser: gate:settlement (lib/los-proben.cjs)
         // Material-Fläche
         materials: materials,
         mat: mat,
