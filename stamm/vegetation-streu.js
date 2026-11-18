@@ -789,7 +789,13 @@ class AnazhRealm_vegetation_streu {
             const z1 = this._bodenSichtAt(f.x, f.z, null, 1);
             f.ziel = Number.isFinite(z1) ? z1 : f.lage;
         }
-        return f.lage + (f.ziel - f.lage) * w;
+        // DIE STUFEN DES FUSSES (w28-funktion-welt): das Gewicht in Stufen von höchstens STREU_FUSS_STUFE_M Höhe — der Fuß ist
+        // eine Funktion des Auges JETZT, und er rückt nur, wenn seine Stufe wechselt. Bis hier blieb er stehen, solange er
+        // weniger als 3 mm rückte (ein Totband), und hing an der Folge der Augen davor: zwei Läufe zum selben Auge trugen
+        // dieselben Sträucher 2,5 mm verschieden hoch
+        const d = f.ziel - f.lage;
+        const n = Math.ceil(Math.abs(d) / AnazhRealm.STREU_FUSS_STUFE_M);
+        return n ? f.lage + (d * Math.round(w * n)) / n : f.lage;
     }
     // DER FUSS RÜCKT NACH: jede Instanz der Zellen, die `gilt`, setzt ihren Fuß neu — `karte` (die Karte ihres Chunks steht neu:
     // Lage, Stufe, Ziel frisch) oder am Auge (dieselben Enden, das Gewicht neu) — um den Versatz in jeder Scheibe, je berührter
@@ -804,10 +810,7 @@ class AnazhRealm_vegetation_streu {
                 if (karte) c.fuss = this._streuFuss(c.x, c.z);
                 else c.fuss.y = this._streuFussJetzt(c.fuss);
                 const d = c.fuss.y - alt;
-                if (!(Math.abs(d) > 0.003)) {
-                    c.fuss.y = alt;
-                    continue;
-                }
+                if (!(d !== 0)) continue; // dieselbe Stufe (`_streuFussJetzt`): kein Upload
                 for (const ref of c.slots) {
                     const g = this.state.archInstanceGroups.get(ref.key);
                     if (!g || !(ref.slot >= 0)) continue;
@@ -3017,6 +3020,9 @@ AnazhRealm.STREU_NADEL = Object.freeze(["baum_kiefer", "baum_tanne", "baum_zypre
 // buildBarkTubeArrays). Die Amplitude ist das Gesetz der Art (P.flare); die Rippen sind ein Maß der Röhre, kein Gesetz (der
 // Stamm des Studios ist glatt). Die Hand-Tafeln SPECIES_PALETTE_DEFAULT (Rinde/Laub) und DEFAULT_TREE_FLARE fielen K24-N1.
 AnazhRealm.STAMM_RIPPEN = 5;
+// Die höchste Stufe des Streu-Fußes im Übergangs-Band seiner Boden-Stufe (m, `_streuFussJetzt`): so weit liegt er höchstens neben
+// dem morphenden Boden — wie das Totband von 3 mm davor, jetzt als Funktion des Auges.
+AnazhRealm.STREU_FUSS_STUFE_M = 0.003;
 
 // Kanonische Spezies-Tag-Signatur, einmal aus den alten Kugel-Baum-Bauplänen gemessen
 // (computeCompoundTags, diag-tree-tags) und eingefroren. Die Grammatik-Drift-Wand

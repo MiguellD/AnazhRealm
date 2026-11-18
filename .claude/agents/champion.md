@@ -73,6 +73,7 @@ Zwischen A und C: **kein** Docs-only-Commit.
 - Commits: klein, thematisch, **deutsch**, emoji-frei
 - Kerne: additiv oder Byte-Beweis
 - Gates: Beweis von G1/G4/G5 — keine Diag-Flut
+- Abdruck: jede Abgabe belegt „außerhalb von X byte-gleich" mit `node scripts/werkbank.cjs abdruck --gegen <Basis-sha>` — die Dinge, die er nennt, sind genau die, die sie ändern wollte.
 - Ende: was der Spieler **sieht/hört/fühlt** (ein Halbsatz), nicht nur Gate
 
 ---

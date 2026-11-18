@@ -1509,6 +1509,7 @@ const METHODEN_OHNE = [
     ["_bodenFarbeAt", ["SNOW_PROM", "_cont0"]], // der Schnee liest die Prominenz des Gelände-Kerns
     ["_vegetationSampleSpawn", ["Math.random"]], // Γ5: Substanz aus Seed-Streams
     ["_nahStreuKachel", ["Math.random"]],
+    ["_updateDorfRauch", ["Math.random"]], // der Rauch würfelt aus Saat, Kamin und Welt-Uhr (w28-funktion-welt)
     ["_hydroRiverAt", ["_terrainMacroSurfaceY"]], // der Fluss liest das Gesetz, nie die Makro-Fläche
     ["_applySubstanceResponse", ["_T.max(_rgb"]], // das Füll-Licht ohne Helligkeits-Klemme
     ["handleJump", ["playerBody"]], // der Sprung schreibt die Geschwindigkeit, kein Physik-Körper

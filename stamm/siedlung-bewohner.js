@@ -90,18 +90,22 @@ class AnazhRealm_siedlung_bewohner {
         je.clear();
         for (const t of dr.teilchen) je.set(t.q, (je.get(t.q) || 0) + 1);
         const p = 1 - Math.pow(1 - G.spawnChance, f);
-        for (const [, qq] of nah)
-            if ((je.get(qq.id) || 0) < G.maxTeilchen && Math.random() < p)
+        // DER WURF DES RAUCHS (w28-funktion-welt): EIN Strom je Kamin und Takt, das Wechselnde vorn (hinten: Gleichschritt ×1,45)
+        const uhr = `${Math.round((st.spielZeit || 0) * 1000)}:${(st.worldMeta && st.worldMeta.seed) || "anazh-realm-seed"}-rauch`;
+        for (const [, qq] of nah) {
+            const w = this._streamRng(`${Math.round(qq.x * 10)},${Math.round(qq.z * 10)}:${uhr}`);
+            if ((je.get(qq.id) || 0) < G.maxTeilchen && w() < p)
                 dr.teilchen.push({
                     x: qq.x,
                     y: qq.y,
                     z: qq.z,
                     s: 1,
-                    vy: G.vyBase + Math.random() * G.vyRange,
-                    dx: (Math.random() - 0.5) * G.dxSpread,
+                    vy: G.vyBase + w() * G.vyRange,
+                    dx: (w() - 0.5) * G.dxSpread,
                     a: G.a0,
                     q: qq.id,
                 });
+        }
         // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen, die Bild-Uhr): der Wind trägt jedes Teilchen mit
         // seiner Geschwindigkeit in m/s × dt windab — in EIN Objekt je Bild gefragt (`_windAt` mit `aus`, w27-takt-gc). Es liest
         // die ANTWORT, nie das Objekt: im Spiel ist sie dasselbe, ein Leser, der den Wind umhüllt (gate:kopplung F3 „×0"), gibt
@@ -1610,7 +1614,8 @@ class AnazhRealm_siedlung_bewohner {
             // Gang), und der Tag danach hing an der Geschichte der Seite: #724672 steckte um 12,62 Uhr in einem von 8 Läufen.
             const dU = Math.abs(stunde - S.uhrStunde);
             S.uhrStunde = stunde;
-            const sprung = Math.min(dU, 24 - dU) >= BW.sprungH;
+            const wu = this._weltUhrSprung | 0; // der Sprung der Welt-Uhr (`_weltUhrNimm`) ist derselbe Sprung (w28-funktion-welt)
+            const sprung = (S.weltUhrSprung ?? wu) !== (S.weltUhrSprung = wu) || Math.min(dU, 24 - dU) >= BW.sprungH;
             if (sprung || S.aktivListe !== S.liste) {
                 [S.aktivListe, S.aktiv, S.ruhend, S.raster, S.taktUhr] = [S.liste, S.liste.slice(), [], new Map(), 0];
                 [S.planI, S.ruhSoll] = [0, 0];
