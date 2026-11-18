@@ -4915,7 +4915,7 @@
   },
   "karte2.erleben.klang.landschaft": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Wind r 0.65 bei Lag 0 (n 104, CV Bild 0.29 / Ohr 0.63, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42 dB aus 13 Leibern (13 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an 105c9bd3 radeon · gehalten: ✅ Wind r 0.81 bei Lag 0 (n 104, CV Bild 0.15 / Ohr 0.55, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -39.5 dB aus 20 Leibern (20 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an d39e0d6e gtx",
+   "beleg": "Maschine: gehalten: ✅ Wind r 0.65 bei Lag 0 (n 104, CV Bild 0.29 / Ohr 0.63, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42 dB aus 13 Leibern (13 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an 105c9bd3 radeon · ✅ Wind r 0.85 bei Lag 0 (n 104, CV Bild 0.30 / Ohr 0.49, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42.1 dB aus 13 Leibern (13 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2 an e4e3f363 gtx",
    "stationen": [
     {
      "id": "karte2.erleben.klang.landschaft#1",
@@ -4932,10 +4932,10 @@
      "id": "karte2.erleben.klang.landschaft#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "✅ Wind r 0.81 bei Lag 0 (n 104, CV Bild 0.15 / Ohr 0.55, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -39.5 dB aus 20 Leibern (20 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2",
-     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "zahl": "✅ Wind r 0.85 bei Lag 0 (n 104, CV Bild 0.30 / Ohr 0.49, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42.1 dB aus 13 Leibern (13 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2",
+     "sha": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
+     "grund": "GRÜN trotz Last: Referenz f 1,565 (Faden 1,216 · alle Kerne 1,565; vor 109,7/272,4 ms, nach 103,8/360,5 ms, Ruhe 90,2/230,3 ms seit 2026-11-17) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 57,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 11,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 6,6 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 18,2 CPU-s · svchost.exe 9,3 CPU-s · SearchIndexer.exe 1,8 CPU-s",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6342,7 +6342,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 197,
+  "konsum": 198,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6504,11 +6504,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 151
+  "ohne": 150
  },
  "kopfVoll": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
- "zeit": "2026-11-18T15:03:43.798Z",
- "vorher": "1857c808",
+ "zeit": "2026-11-18T15:15:19.928Z",
+ "vorher": "e4e3f363",
  "bilanz": {
   "gewinn": [],
   "fall": [],
