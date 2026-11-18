@@ -272,7 +272,7 @@ class AnazhRealm_kreatur_verhalten {
             bestS = 0;
         for (const k of L) {
             const K = k.userData.kadaver;
-            if (!K || !(K.fleisch > 0)) continue;
+            if (!K || !(K.fleisch > 0) || this._gehegeVon(k) !== this._gehegeVon(creature)) continue; // nie durch den Rand
             const dx = k.position.x - cx,
                 dz = k.position.z - cz;
             if (dx * dx + dz * dz > R * R) continue;
@@ -330,6 +330,7 @@ class AnazhRealm_kreatur_verhalten {
     _kreaturIstBeute(jaeger, o) {
         if (!o || o === jaeger || !o.position || !o.userData) return false;
         if (o !== this.state.playerMesh && this._creatureTemperament(o) === "wild") return false;
+        if (this._gehegeVon(jaeger) !== this._gehegeVon(o)) return false; // die Gemeinschaft: nie durch den Rand eines Geheges
         return this._leibMasse(o) <= AnazhRealm._verhaltenGesetz().jagd.beuteMasse * this._leibMasse(jaeger);
     }
 
@@ -1263,6 +1264,7 @@ class AnazhRealm_kreatur_verhalten {
                 p.z -= wh.nz * ein;
             }
         }
+        if (ud && ud._bestand && ud._bestand.gehege) this._gehegeRandKontakt(creature, L, ud._bestand.gehege); // sein Rand hält
         const arches = this.state.architectures;
         if (!arches || !arches.length) return;
         const t = this.state.creatureAnimationTime;
@@ -1400,7 +1402,7 @@ class AnazhRealm_kreatur_verhalten {
         const mag = speed * K.wanderSpeedMul * amp;
         // die LEINE: furchtsam bleibt nah am Anker, mutig streift weiter.
         if (!ud.wanderAnchor) ud.wanderAnchor = { x: creature.position.x, z: creature.position.z };
-        const leash = this._creatureMoveCharacter(creature).leashM;
+        const leash = this._gehegeLeine(creature, this._creatureMoveCharacter(creature).leashM);
         if (!ud.wanderAnchor.revier) ud.wanderAnchor = this._kreaturRevier(creature, ud.wanderAnchor, leash);
         const dx = ud.wanderAnchor.x - creature.position.x;
         const dz = ud.wanderAnchor.z - creature.position.z;

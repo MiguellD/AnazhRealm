@@ -11354,8 +11354,11 @@
             k: 7, // hinter dem Tier-Tor; der nächste Punkt 220 m von M (keine Zone mit Akteur ≤ 210 m)
             flaecheR: 45,
             belag: "gras",
-            gehege: { gattung: "wolf", n: 3, z0: 5, z1: 17, ex: 8, lagerDz: 7, ruhe: [[-3, 1], [0, 3.5], [3, 6]] }, // nördlich der Mitte
-            graben: { b: 3, tiefeM: 2 }, // Hagenbeck: der Graben um das Gehege statt eines Zauns, `tiefeM` unter dem Zoo
+            // der Grund des Geheges und seines Grabens (`belag`, dasselbe Feld wie jede Fläche): drei Wölfe halten 192 m² kahl
+            // (getretene Erde), die Sohle des Grabens ist mit Stein gefasst (Hagenbecks Trockengraben) — kein Rasen wächst über
+            // sie, der Gast liest die Grenze am Grund: Rasen · Stein in der Tiefe · Erde
+            gehege: { gattung: "wolf", n: 3, z0: 5, z1: 17, ex: 8, lagerDz: 7, ruhe: [[-3, 1], [0, 3.5], [3, 6]], belag: "weg" }, // nördlich der Mitte
+            graben: { b: 3, tiefeM: 2, belag: "pflaster" }, // Hagenbeck: der Graben um das Gehege statt eines Zauns, `tiefeM` unter dem Zoo
             laternen: [[-9, -7], [9, -7], [-9, 1], [9, 1]], // an der Schau-Terrasse südlich der Mitte
             // der Grund des Zoos: Schau-Rasen (bis zur fernen Station), Gehege und Graben auf EINER Platte (dem Median ihres Grunds) —
             // Besucher und Tiere auf einer Höhe, der Graben senkrecht in ihr (am Hang der Standard-Welt trug die Schau-Terrasse sonst
@@ -11788,9 +11791,9 @@
             zone(s < 0 ? "rampe_w" : "rampe_o", "flaeche", "band", { pts: [xz(s * G.rampe.x0, G.rampe.z), xz(s * G.rampe.x1, G.rampe.z)], w: G.rampe.b }, G.rampe.belag);
         });
         zone("teich", "wasser", "ellipse", { cz: T.cz, a: T.a, b: T.b });
-        zone("gehege", "gehege", "kasten", rand, null, { akteur: true });
+        zone("gehege", "gehege", "kasten", rand, GH.belag, { akteur: true });
         kanten.forEach(function (e, i) {
-            zone("graben_" + i, "graben", "band", { pts: [xz(e[0], e[1]), xz(e[2], e[3])], w: M.graben.b });
+            zone("graben_" + i, "graben", "band", { pts: [xz(e[0], e[1]), xz(e[2], e[3])], w: M.graben.b }, M.graben.belag);
         });
         zone("viertel", "ort", "kreis", { cx: viertel.x, cz: viertel.z, r: viertel.r });
         tore.forEach(function (q) {

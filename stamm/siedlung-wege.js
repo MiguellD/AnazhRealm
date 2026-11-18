@@ -2323,7 +2323,9 @@ class AnazhRealm_siedlung_wege {
         // das halbe Bild braune Rausch-Erde bis an die Baumreihe).
         const zonen = plan.zonen || [];
         zonen.forEach((q, i) => {
-            const belag = q.art === "feld" ? "gras" : q.art === "flaeche" ? q.belag : null;
+            // jede Zone, die einen Belag erklärt — die Fläche wie das Gehege und sein Graben (w28-gehege: bis hier malte der Maler
+            // nur die Art `flaeche`; Gehege und Graben lagen unter dem Schau-Rasen des Zoos, der Graben war im Bild nicht zu lesen)
+            const belag = q.art === "feld" ? "gras" : q.belag || null;
             if (!belag) return;
             const B = AnazhRealm.WEGE_KARTE.belag[belag];
             if (!B)
