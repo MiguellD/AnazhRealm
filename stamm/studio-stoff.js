@@ -380,7 +380,10 @@ class AnazhRealm_studio_stoff {
         // Vorlagen-Farben leben als VERTEX-COLORS: auf WebGPU/NodeMaterial MUSS colorNode = attribute("color")
         // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
         // `_foundryBuildGroup` garantiert das color-Attribut.
-        const vcolRoh = TSL.attribute("color", "vec3");
+        // Im Satz trägt die Farbe vier Stellen (die vierte: die Lage der Ecke in ihrer Wand, `BAU_SATZ_ATTR`) — EIN Knoten dieses
+        // Namens, r184 teilt ihn nach dem Namen: ein dreistelliger Leser vor dem vierstelligen füllte die vierte Stelle mit 1
+        // (`vec4( color.xyz, 1.0 ).w`, die ferne Fachwerk-Wand stand ganz im Ton des Balkens).
+        const vcolRoh = satz === true ? TSL.attribute("color", "vec4").xyz : TSL.attribute("color", "vec3");
         // DIE FARBE FOLGT DEM SAMEN (mensch.K4): trägt die Gestalt den Ton je Ecke, ist ihre Farbe die Vorlage × das Verhältnis
         // der Palette des zeichnenden Leibs zu der seiner Gestalt (`_tonFaktor`), je Ecke im Vertex-Takt — der Leib eines
         // Bewohners zeigt seine Farben im Stoff seiner Gestalt; ohne eigene Palette (der Spieler) ist das Verhältnis 1. Die
@@ -714,7 +717,7 @@ class AnazhRealm_studio_stoff {
                 mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(rg.z));
             }
             if (!(mp && typeof mp.leucht === "number" && mp.leucht > 0))
-                mat.emissiveNode = TSL.attribute("aGlut", "vec3");
+                mat.emissiveNode = TSL.attribute("aGlut", "vec4").xyz; // vier Stellen wie die Farbe (die vierte: die Lage hoch)
             mat.userData = mat.userData || {};
             mat.userData.satzSchluessel = key;
         }
