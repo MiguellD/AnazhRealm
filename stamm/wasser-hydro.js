@@ -174,11 +174,19 @@ class AnazhRealm_wasser_hydro {
                 : i < S.length
                   ? S[i - 1] + ((S[i + 1] - S[i - 1]) * (a - S[i - 2])) / (S[i] - S[i - 2])
                   : S[i - 1];
-        S.length = i;
-        if (alt !== null && alt !== ra) S.push(a, alt);
-        S.push(a, ra);
+        // EIN KNOTEN NUR, WO DER WEG SICH ÄNDERT (w28-halter-register): hinter dem letzten Knoten hält der Weg seinen Wert — trägt
+        // der neue Weg ab `a` denselben (der Zug zieht das Wort, das schon gilt), bleibt die Funktion dieselbe und kein Knoten
+        // kommt dazu. Bis hier legte jeder Zug zwei Knoten auch ohne Wechsel (`requestWeatherTransition` ruft den Weg mit
+        // `von === nach`): Radeon 18.11., Runde reise, `_pegelStand.S` 1 062 → 5 516 → 9 200 Zahlen, die Faltung des Laufs
+        // (`pegelLauf`) las jeden.
+        const n0 = S.length;
+        if (i < n0 || alt !== ra) {
+            S.length = i;
+            if (alt !== null && alt !== ra) S.push(a, alt);
+            S.push(a, ra);
+        }
         if (t1 > a && r1 !== ra) S.push(t1, r1);
-        this._regenGen = (this._regenGen | 0) + 1;
+        if (S.length !== n0 || i < n0) this._regenGen = (this._regenGen | 0) + 1;
     }
 
     // DIE VERGANGENHEIT DES PEGELS (wetter.K3): eine Welt ohne Gedächtnis des Pegels (kein `pegelZustand` — die Geburt, ein Stand
