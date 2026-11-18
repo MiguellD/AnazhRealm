@@ -2071,7 +2071,13 @@ async function checkBandGamepadVerben({ page, check }) {
                 o.f
             );
             o.bremse = [auslauf(false), auslauf(true)];
-            c.handbremse = o.hb === true && o.bremse[1] > 1.3 * o.bremse[0];
+            // die Handbremse sperrt nur die Hinterachse (w28-reibellipse): ihr Zug ist μ·N des Hecks, nie mehr der Deckel beider Achsen
+            // (das Gesetz der Achse richtet gate:vehicle-drive A6 je Rezept). Hier urteilt der VERB-Draht: das Pad erreicht den Kern.
+            // Die gesperrte Hinterachse des Pad-Wagens trägt in geschlossener Form μ 0,6 → 1,161 · 0,797 (die Bühne) → 1,272 ·
+            // 1,0 → 1,378, die Handbremse, die den Kern nie erreicht, 0,999; die Schwelle 1,15 liegt dazwischen. Die alten 1,3
+            // waren die Handbremse am Deckel beider Achsen (1,79). Der Auslauf hängt am μ der Bühne (`haft`), er steht im Text.
+            o.haft = r._fahrHaft(wagen._fahr);
+            c.handbremse = o.hb === true && o.bremse[1] > 1.15 * o.bremse[0];
             fx.length = 0;
             o.rumbleFahrt = (fahrt(() => ((pad.axes[0] = 1), knopf(7, 1)), 40), rumble());
             druck(kn("einsteigen"));
@@ -2158,7 +2164,7 @@ async function checkBandGamepadVerben({ page, check }) {
         ],
         [
             ["einsteigen", "lenk", "gas", "handbremse", "absteigen"],
-            `Fahren: Lenkwinkel ${f(out.lenk)}, Gas ${f(out.gas)} m/s, Auslauf ${f(out.bremse)} m/s ohne/mit Handbremse, Rumble ${f(out.rumbleFahrt)}`,
+            `Fahren: Lenkwinkel ${f(out.lenk)}, Gas ${f(out.gas)} m/s, Auslauf ${f(out.bremse)} m/s ohne/mit Handbremse, Rumble ${f(out.rumbleFahrt)}, Haftung ${f(out.haft)}`,
         ],
         [
             ["sprung", "knoepfe", "tastaturPortal", "belegung", "rumbleTreffer"],
