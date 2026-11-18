@@ -246,8 +246,8 @@ async function studioLauf() {
             await page.setViewport({ width: W, height: H });
             await page.evaluateOnNewDocument(HALT);
             // `vorschau` steht in den Achsen der Welt: die Uhr reist in der Adresse (die Seite stellt das Werk dann ohne Teller,
-            // wie der Werk-Blick); jede andere Ansicht stellt die Uhr am stehenden Werk um (der Knopf der Bühne)
-            const adresse = an === "vorschau" && argOpt("--uhr", "") ? `?uhr=${argOpt("--uhr", "")}` : "";
+            // wie der Werk-Blick), ebenso mit `--adresse`; jede andere Ansicht stellt die Uhr am stehenden Werk um (der Knopf der Bühne)
+            const adresse = (an === "vorschau" || process.argv.includes("--adresse")) && argOpt("--uhr", "") ? `?uhr=${argOpt("--uhr", "")}` : "";
             await s.zeige(page, 120000, `worlds/${STUDIO}/index.html${adresse}`, "networkidle0");
             // Takt-Abfrage, nie raf: HALT hält requestAnimationFrame, die raf-Abfrage fragte nur einmal
             await page.waitForFunction(A.bereit, { timeout: 120000, polling: 100 });
