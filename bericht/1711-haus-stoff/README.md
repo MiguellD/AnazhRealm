@@ -168,3 +168,70 @@ Heilen hieße die Tonkurve der Welt anfassen (Licht-Kette, jede Ratsche am Bild)
 **c. Das römische Haus fern ist ein Deckel nach dem Gesetz, kein Hof:** Haus 208 ist die „kirche" des Plans mit `arkade: 1`
 (studioOv, seed 252174); `arkade` stellt das Dach auf flach (fachwerk-core.js:207, ROOFMODE). Nachgebaut ohne Welt (Stufe 2):
 Flachdach in Naturstein x ±7,5 · z ±5,5 · y 3,2 … 5,8 m, darum das Pultdach der Arkade in Ziegel (x ±9,7, y 3,1 … 3,2 m).
+
+## Zweites Bildpaar: d3ddb51c ↔ Kopf 41dd9e32b (WIP, Dorf, dieselben Kameras, selbes Boot) — 18.11. 01:48
+
+Links vorher, rechts der Kopf: `paar2-tag-nah.jpg` · `paar2-putz.jpg` (Ausschnitt ×2,6) · `paar2-tag-fern.jpg` ·
+`paar2-tag-fern-dach.jpg` (Ausschnitt ×1,9) · `paar2-nacht-nah.jpg` · `paar2-nacht-fern.jpg` · `paar2-fachwerk-26m.jpg` ·
+`paar2-fachwerk-40m.jpg` (das alemannische Haus der Siedlung 200 m nördlich, −657/−668: am Messort steht kein Fachwerk) ·
+`schwenk2-vor.jpg` / `schwenk2-nach.jpg` (die ferne Kamera in fünf Schritten zu 0,3°, Ausschnitt der vorderen Dächer).
+ZWISCHENSTAND, keine Abgabe.
+
+Neu gegen Runde 1:
+
+- **Putz:** die Züge stehen unruhig (Feld `unruhe` der Zeile: zwei Wellen über die Reihe, Hub aus den Zügen des Malers, 9–15 px
+  auf 64) — in Runde 1 las sich die Wand als Schalung.
+- **Kreuz der Fugen** (Feld `kreuz`): an der Kreuzung zweier Fugen trug das Produkt der Achsen-Töne die Mörtel-Kreuzung 34× zu hell,
+  das Holz-Kreuz wäre schwarz geworden; jetzt min − Produkt, das Mittel hält `eins`.
+- **Fachwerk ab Stufe 2 als Zeile 5 der Tafel** (`VERBAND_GESETZ.fachwerk`: Feld 1,7 m · Riegel 0,85 m · Ständer 16 cm · Riegel
+  13 cm; Holz und Gefach aus `_colFor`): der Bake gibt jeder Ecke von Wand und Giebel des Stils `alt` ihre Lage im Gefüge
+  (`_wandLage` → `aLage`), sie reist in den vierten Stellen von Farbe und Glut (half): 0 Byte je Ecke im Satz, die Lieferung
+  +24,2 kB an 5 Teilen (alemannisch · fraenkisch · niedersaechsisch · mittelalterlich · tudor, je Stufe 2, 3 096 Ecken). Byte-Beweis:
+  Maler 5 × gleich, Lieferung gleich für 128 Fälle / 799 Teile / 5 065 538 Ecken bis auf Verband und Lage.
+- **Wurzel des dunklen Kastens** (WIP 3bbde98f3 zeichnete das Gefüge noch nicht, obwohl die Lage richtig im Puffer lag — Sonde
+  `spike-2c`): r184 teilt den Attribut-Knoten je Name, der Satz-Stoff las die Farbe zuerst dreistellig, und das WGSL füllte die
+  vierte Stelle mit 1 (`vec4( color.xyz, 1.0 ).w`, `p3/n1711/hs/spike-2g/satz.vert.wgsl`): u stand an jeder Ecke auf dem Ständer, die
+  Wand ganz im Ton des Balkens. Farbe und Glut liest der Satz-Stoff jetzt an EINER Stelle vierstellig (41dd9e32b).
+
+**Preis am Dorf** (selbes Boot, derselbe Treiber, der Kopf direkt nach der Basis, kein Warten am Schloss): Frame p95 25,07 ↔ 25,08 ms
+(p50 16,67 ↔ 16,66 · p99 25,19 ↔ 33,39, ein Lauf je Seite: die Spitze liegt im CPU-Takt p99 19,99 ↔ 35,05, nicht in der GPU) ·
+GPU echt p95 5,27 ↔ 5,40 ms · gpu-bank 14,60 ↔ 12,06 ms je Frame · CPU-Takt p95 12,91 ↔ 13,10 ms · Band VRAM 128,6 ↔ 124,3 MB,
+Befehle 132 ↔ 131, Dreiecke 397 302 ↔ 392 770. **Zensus:** Programme 188 ↔ 193 (dieselbe Basis gab in zwei Läufen 176 und 188 —
+in der Streuung) · Programm-Speicher 5,09 ↔ 5,24 MB · Renderer gesamt 135,3 ↔ 133,1 MB · Texturen 52 ↔ 52 (91,6 MB gleich: keine
+Karte, kein Sack je Haus). Roh `p3/n1711/hs/end-vor`, `end-nach` (OMEN).
+
+**Schwenk:** die Sprünge im selben Fenster sind vorher ↔ nachher gleich (Luma 4,78 ↔ 4,82 auf dem blauen Dach, 4,20 ↔ 4,16 auf
+dem roten — sie kommen von Kanten, die durchs Fenster wandern); im Innern des blauen Dachs bleibt σ ≤ 0,41 in beiden Fassungen
+(Bilder 0–2): das Schiefer-Raster steht dort im Mittel-Ton, kein Moiré. Das rote Dach davor trägt seine Reihen (σ 0,44 ↔ 2,42).
+Werkzeug `p3/n1711/hs/flimmer.cjs`.
+
+**Nacht nah:** der Sockel liest sich im Verband, die Putz-Züge schwach; Fenster-Innen und Lichtschein unberührt (GTX 1050).
+
+**Offen, benannt:** die Streben des fernen Fachwerks · das Raster folgt der Tafel (Feld 1,7 m, Riegel 0,85 m), nicht der
+Balken-Lage der Stufe 0/1 — am Wechsel Stufe 1 → 2 springt es (nicht gemessen) · EIN Verhältnis Holz/Gefach für alle Kulturen
+(niedersächsisch steht fast schwarz) · das Korn des Putzes (0,8–1,6 cm) nicht gewebt · die fernen Fensterrahmen und
+Scheiben-Gründe tragen die Putz-Zeile (sie leihen `M.putz` mit Faktor; fern unter dem Raster, Mittel 1 — kein Fehler am Bild) ·
+Teile außerhalb des Satzes lesen die Lage der Welt · Flachdächer nehmen die Achsen der Welt · die Hülle der Stufe 3 flach.
+
+**Absenz der Literale (die zweite Quelle):** `p3/n1711/hs/absenz.cjs` zählt jede Zahl im Rumpf der vier Maler ohne Kommentare und
+lässt nur Leinwand (256), Farb-Byte (255) und die Ziehung (Hash-Konstanten) zu — an d3ddb51c ROT in allen vier (`texZiegelwand`
+0.24 0.071 0.011 0.84 0.3 · `texDach` 0.32 0.18 0.82 · `texPutz` 5200 0.86 0.20 252 9 7 · `texStein` 0.46 0.28 0.016 …), am Kopf
+LEER in allen vier: Maß, Fuge, Versatz und Ton liest der Maler aus `VERBAND_GESETZ`.
+
+### stadt-voll — ABBA im selben Boot (Basis · Kopf · Kopf · Basis), dieselben zwei Kameras wie 00:02, Mittag — 18.11. 02:10
+
+`paar2-stadt-gasse.jpg` (der Markt) · `paar2-stadt-fern.jpg` (über die Dächer, 600 m: vorher ↔ nachher gleich, alles im Mittel-Ton).
+
+| Lauf | Frame p50 | p95 | p99 | CPU-Takt p95 | GPU echt p95 | gpu-bank | VRAM | Programme |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Basis 1 | 16,66 | 25,06 | 33,43 | 23,51 | 3,10 | 11,98 | 174,8 | 194 |
+| Kopf 1 | 16,66 | 32,90 | 41,68 | 26,34 | 3,06 | 12,11 | 174,8 | 210 |
+| Kopf 2 | 16,68 | 33,38 | 41,71 | 30,01 | 3,07 | 12,72 | 173,7 | 194 |
+| Basis 2 | 16,63 | 25,08 | 26,95 | 17,32 | 3,24 | 11,66 | 176,4 | 199 |
+
+(ms, MB; Basis um 00:02 in eigenem Lauf: p95 33,31 · CPU-Takt p95 28,73 · GPU 3,12 · gpu-bank 11,81 · VRAM 176 · Programme 189.)
+
+Lesart: die GPU trägt den Kopf nicht, der Speicher auch nicht. Die Stadt ist am Prozessor gebunden und sitzt an der Vsync-Stufe
+25 ↔ 33 ms; im ABBA steht der Kopf zweimal oben, die Basis zweimal unten — aber dieselbe Basis stand um 00:02 selbst oben (33,31).
+Ein Boot nennt keinen Täter (Regel: nur über ≥ 2 Boots). Was der Kopf am Prozessor neu tut, sehe ich mir direkt an: die zwei
+Spalten der Lage je Satz-Block (`_satzBlockEcken`) und neue Programme während des Laufs. Roh `p3/n1711/hs/stadt-end-*` (OMEN).
