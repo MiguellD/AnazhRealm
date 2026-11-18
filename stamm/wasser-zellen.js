@@ -713,8 +713,11 @@ class AnazhRealm_wasser_zellen {
         const iso = st.voxelChunkWaterIso;
         const gezeichnet = !!iso && iso.has(key);
         const quelle = gezeichnet ? iso.get(key) : entry.waterCells;
+        // das Gedächtnis kennt seine Quelle an ihrer Nummer, nie an ihr selbst (w28-funktion-welt-2): es hielt das gegangene Sheet
+        // samt Puffer, bis ein Leser wieder fragte (A gegen A an 60231b1c `voxelChunks[=-4,-28]._wasserNetz.quelle`)
+        const nr = quelle ? quelle._wasserNr || (quelle._wasserNr = this._wasserNrZ = (this._wasserNrZ | 0) + 1) : 0;
         const alt = entry._wasserNetz;
-        if (alt && alt.quelle === quelle) return alt.netz;
+        if (alt && alt.quelle === nr) return alt.netz;
         let pos = null;
         let idx = null;
         if (gezeichnet) {
@@ -735,7 +738,7 @@ class AnazhRealm_wasser_zellen {
         }
         let netz = pos ? this._wasserNetzBau(cx, cz, pos, idx) : null;
         if (alt && AnazhRealm._wasserNetzGleich(alt.netz, netz)) netz = alt.netz;
-        entry._wasserNetz = { quelle, netz };
+        entry._wasserNetz = { quelle: nr, netz };
         return netz;
     }
 
