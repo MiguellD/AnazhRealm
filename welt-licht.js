@@ -67,9 +67,11 @@ var __weltLicht = (function () {
     // Jede Quelle des Licht-Pools trägt darum CANDELA; der Stoff summiert ihre Beleuchtungsstärke in Lux und zeigt die SUMME
     // (`_lichtPoolTerm`, die EINE Stelle). `eps`: eine Quelle reicht, so weit ihr GEZEIGTES Licht die Umgebung um diesen Anteil
     // hebt (zeig(E) = eps · S(A); `augeReichweite`), über die äußeren `saum` ihrer Reichweite fällt sie weich auf null.
-    // DIE KAMERA schließt für das Becken NICHT: die Anpassung des Auges an die Quelle IST dieses Gesetz (S(A + knie) in der
-    // Summe) — ein Messer, der das Becken dazu las, zählte sie doppelt (eine Stufe am Herdfeuer: der Kreis ×3,3 fiel auf ×2,2,
-    // die Straße in 40 m auf ×0,46; GTX 1050, 18.11.). Leser: `_leuchtTakt` (A, Reichweite), `_lichtPoolTerm` (die Stauchung der Summe).
+    // DIE KAMERA schließt für das Becken (`_belichtungAusLicht`: Σ E am Auge durch `augeZeig` als Licht der Lesung): am Feuer
+    // wird die Nacht schwarz. Ohne den Messer stand die Wiese an der Lava ganz orange (Saum-Gras Luma 104, Baumlinie ×1,9 über
+    // main, rosa-weiße Risse); mit ihm Saum ÷ Gras in 15 m 1,58, Riss R/G 2,68, die Baumlinie ×0,26. Der Preis, gemessen und
+    // gewollt: der Kreis am Herd steht im Bild bei ×2,1 über der fernen Wiese (ohne Messer ×1,8), die Straße in 40 m fällt
+    // auf die Hälfte (GTX 1050, 18.11.). Leser: `_leuchtTakt` (A, Reichweite), `_lichtPoolTerm` (die Stauchung der Summe).
     // DAS MESOPISCHE BAND (CIE 191:2010): unter `staebchenCd` sieht das Auge mit den Stäbchen, über `zapfenCd` mit den Zapfen.
     // EINE Quelle für das Knie des Auges und für die Sättigung der Nacht (`AnazhRealm.NACHT_AUGE` liest sie): das Knie liegt in
     // der Mitte des Bands (geometrisch) als Beleuchtungsstärke der Karte — E = π · L ÷ `karte`, 2,76 lx.
