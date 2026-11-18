@@ -15,7 +15,23 @@ Object.keys(PC.PRESETS).forEach(function (id) {
 var DOOR_OPEN = PC.TUER_GESETZ.offen;
 // die Namen der Bühne (die Station studios.K4 und die Albedo-Tafel lesen sie: scripts/lib/albedo-tafel.cjs STUDIOS)
 var scene, camera, renderer, controls, gate = null, membrane = null, STUDIO = null;
-var D = null, doorAngle = 0, doorAngleB = 0, doorTarget = 0, doorTargetB = 0, zeit = 0, passageNr = 0;
+// DIE TÜREN: ohne Griff des Nutzers steht jeder Flügel in der Ruhe der Welt (`ruhe` des Flügel-Rückrufs der Bühne: das Tor in
+// der Fern-Pose `_tuerFernAnteil`) — `null` ist diese Ruhe, kein zweiter Startwert; der erste Griff beginnt an ihr (ruheAnteil)
+var D = null, doorAngle = null, doorAngleB = null, doorTarget = null, doorTargetB = null, ruheAnteil = 0, zeit = 0, passageNr = 0;
+// ein Flügel-Paar gleitet zu seinem Ziel (rad), begonnen an der Ruhe der Welt; ohne Ziel bleibt es in ihr
+function schwenk(winkel, ziel) {
+    if (ziel == null) return null;
+    var a = winkel == null ? ruheAnteil * DOOR_OPEN : winkel;
+    return a + (ziel - a) * 0.07;
+}
+// der Anteil 0..1 eines Paars (die Ruhe, solange es kein Ziel trägt)
+function anteil(winkel) {
+    return winkel == null ? ruheAnteil : winkel / DOOR_OPEN;
+}
+// E/R: das nächste Ziel eines Paars — es schließt, wenn sein Ziel (ohne Ziel: seine Ruhe) mehr als halb offen ist, sonst öffnet es
+function naechstesZiel(ziel, winkel) {
+    return (ziel == null ? anteil(winkel) : ziel / DOOR_OPEN) > 0.5 ? 0.0 : DOOR_OPEN;
+}
 // DIE HÜLLE (K41): die Regler-Werte leben in W (Slider-id → Wert, geschrieben vom EINEN Generator), nie im DOM.
 var W = {}, regler = null, sitz = null, kostenLeiste = null, aktivPreset = "Kathedrale";
 
@@ -74,7 +90,10 @@ function buildGate() {
 }
 function updatePrompt() {
     var dp = document.getElementById("doorPrompt");
-    if (dp) dp.textContent = "[E] Vordertür " + (doorTarget > 0.5 ? "schließen" : "öffnen") + "  ·  [R] Hintertür " + (doorTargetB > 0.5 ? "schließen" : "öffnen");
+    var wort = function (ziel, winkel) {
+        return naechstesZiel(ziel, winkel) > 0.5 ? "öffnen" : "schließen";
+    };
+    if (dp) dp.textContent = "[E] Vordertür " + wort(doorTarget, doorAngle) + "  ·  [R] Hintertür " + wort(doorTargetB, doorAngleB);
 }
 
 function init() {
@@ -92,13 +111,15 @@ function init() {
         // die Türen schwingen, die Passage atmet: der Takt hält das Bild wach
         takt: function (dt) {
             zeit += dt;
-            doorAngle += (doorTarget - doorAngle) * 0.07;
-            doorAngleB += (doorTargetB - doorAngleB) * 0.07;
+            doorAngle = schwenk(doorAngle, doorTarget);
+            doorAngleB = schwenk(doorAngleB, doorTargetB);
             if (gate)
-                STUDIO.buehne.fluegel(gate, function (t) {
-                    return (t.zf >= 0 ? doorAngle : doorAngleB) / DOOR_OPEN;
+                STUDIO.buehne.fluegel(gate, function (t, ruhe) {
+                    ruheAnteil = ruhe;
+                    return anteil(t.zf >= 0 ? doorAngle : doorAngleB);
                 });
-            if (membrane) STUDIO.buehne.passageTakt(membrane, zeit, Math.max(doorAngle, doorAngleB) / DOOR_OPEN);
+            // die Passage atmet mit dem Griff, nie mit der Ruhe der Flügel (die Welt trennt beide: `tuerAct` neben `act`)
+            if (membrane) STUDIO.buehne.passageTakt(membrane, zeit, Math.max(doorAngle || 0, doorAngleB || 0) / DOOR_OPEN);
             return true;
         },
     });
@@ -170,8 +191,8 @@ function init() {
 }
 addEventListener("keydown", function (e) {
     if (e.repeat) return;
-    if (e.key === "e" || e.key === "E") doorTarget = doorTarget > 0.5 ? 0.0 : DOOR_OPEN;
-    else if (e.key === "r" || e.key === "R") doorTargetB = doorTargetB > 0.5 ? 0.0 : DOOR_OPEN;
+    if (e.key === "e" || e.key === "E") doorTarget = naechstesZiel(doorTarget, doorAngle);
+    else if (e.key === "r" || e.key === "R") doorTargetB = naechstesZiel(doorTargetB, doorAngleB);
     else return;
     updatePrompt();
 });

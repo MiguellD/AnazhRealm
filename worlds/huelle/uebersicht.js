@@ -5,8 +5,8 @@
  * was ist (AnazhHuelle.studios: der Export der Tor-Ziele nennt die Seiten, das Kern-Manifest die Kerne, das Buch der Welt
  * Studio, Arten und Rezepte); das Werk einer Kachel ist das reisende Werk ihrer Arten (das zuletzt gereichte der Sitzung, im
  * Tor die Prägung der Welt), sonst das erste Rezept ihrer ersten Art im Buch. Je Kachel die Zahlen: Dreiecke gegen das Budget
- * der Stufe (das Buch), der Neubau (ms, hier gemessen) und die Bild-Differenz Studio ↔ Welt der Station studios.K4
- * (spec/studios/k4.json: Gerät, Stand und Tag der Messung stehen dabei).
+ * der Stufe (das Buch), der Neubau (ms, hier gemessen). Die Bild-Differenz Studio ↔ Welt (studios.K4) misst die Station der
+ * Punkte-Maschine am Stand eines SHA; die Seite trägt keine Kopie ihrer Zahl — sie nennt K4 ungemessen am Stand ihrer Version.
  *
  * EIN Renderer, EINE Leinwand hinter den Kacheln: je Kachel ein Ausschnitt (Viewport + Schere) mit eigener Kamera; gezeichnet
  * wird nur, wenn sich etwas ändert (ein Werk steht, die Uhr der Bühne, Nackt, Größe, Rollen) — die Übersicht kostet im Stand nichts.
@@ -43,7 +43,9 @@
     try {
         await B.steht;
         B.dicht();
-        const [studios, buch, mass] = await Promise.all([H.studios(B), B.buch(), fetch(new URL("../../spec/studios/k4.json", document.baseURI)).then((a) => (a.ok ? a.json() : null))]);
+        const [studios, buch] = await Promise.all([H.studios(B), B.buch()]);
+        // der Stand der Seite (ihr ?v=): K4 steht hier ungemessen — die Zahl lebt an der Station, nie als Kopie in der Seite
+        const stand = ((document.querySelector('script[src*="uebersicht.js"]') || {}).src || "").split("?v=")[1] || "ohne Version";
         // der Teller der Übersicht dreht jedes Werk ins Streiflicht wie das Studio (die Schauseite 40° aus der Sonne)
         const s = B.welt.richtung;
         teller.rotation.y = Math.atan2(s.x, s.z) + (40 * Math.PI) / 180;
@@ -60,9 +62,8 @@
                 continue;
             }
             const k = { st, a, bild, g: null, stand: null, kam: new T.PerspectiveCamera(35, 1.6, 0.05, 600), nr: 0, ms: null };
-            const k4 = mass && mass.k4 ? mass.k4[st.id] : undefined;
-            const k4Text = k4 == null ? (mass && mass.ungemessen && mass.ungemessen[st.id] ? "K4 ungemessen (" + mass.ungemessen[st.id] + ")" : "") : "K4 " + (k4 * 100).toFixed(1).replace(".", ",") + " % (Soll ≤ " + (mass.soll * 100).toFixed(1).replace(".", ",") + " %)";
-            if (k4Text) a.title = "studios.K4 Bild-Differenz Studio ↔ Welt: " + (mass.geraet || "") + " · Stand " + (mass.stand || "") + " · " + (mass.datum || "");
+            const k4Text = "K4 ungemessen am Stand " + stand;
+            a.title = "studios.K4 Bild-Differenz Studio ↔ Welt: die Station misst sie am SHA, diese Seite trägt keine Zahl";
             k.bauen = async () => {
                 const nr = ++k.nr;
                 const w = H.reiseFuer(st.arten, st.rezepte) || { kind: art, preset: (st.rezepte[art] || [])[0], seed: buch.art[art] && buch.art[art].werk ? 0 : 1, ov: null };

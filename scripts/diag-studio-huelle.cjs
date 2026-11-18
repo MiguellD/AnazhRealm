@@ -215,8 +215,55 @@ function baum() {
     return karte;
 }
 
+// H12 DIE RUHE DER WELT (w28-studio-seiten): die Tor-Seite auf der EINEN Bühne zeigt jeden Flügel in der Pose der Welt, solange der
+// Nutzer nichts drückt — der Flügel-Rückruf der Bühne (`buehne.fluegel(g, act)`, huelle.js) reicht je Flügel die Ruhe der Welt
+// (`_tuerFernAnteil`), die Seite gibt sie zurück. VERHALTEN, nicht Text: porta.js läuft im vm gegen die Hülle als Attrappe (sie
+// fängt `studio(o)` und den Rückruf), drei Takte ohne Taste müssen die Ruhe zurückgeben, E öffnet die Vorderflügel von der Ruhe
+// aus, die Hinterflügel bleiben in ihr. Bis zu diesem Schnitt schrieb jeder Takt `doorAngle 0 / DOOR_OPEN` — das Tor stand zu.
+const RUHE_PROBE = 0.37;
+function torRuhe(text) {
+    const vm = require("vm");
+    let o = null,
+        act = null;
+    const el = () => ({ children: [], appendChild() {}, classList: { toggle() {} }, textContent: "", onclick: null });
+    const tasten = [];
+    const buehne = { renderer: {}, fluegel: (g, a) => (act = a), passageTakt() {}, passage: () => new Promise(() => {}), passageFort() {} };
+    const H = {
+        studio: (x) => ((o = x), { szene: {}, kamera: {}, kugel: {}, buehne, teller: { add() {} }, wecke() {}, steht: new Promise(() => {}), kopf: null, bau: () => new Promise(() => {}) }),
+        sitzung: () => ({ leiste() {}, schritt: (f) => f(), wuerfeln() {} }),
+        regler: () => ({ setzen() {} }),
+        kosten: () => ({ neu() {} }),
+        bruecke() {},
+        knopfMitText() {},
+    };
+    const PC = { PRESETS: { kathedrale: { lab: "Kathedrale", s: {} } }, PARAMS_BY_KIND: { gate: [] }, TUER_GESETZ: { offen: 1.95 }, PORTAL_RENDER_CONFIG: { lod: { budget: {}, kindStages: {} } }, deriveGate: () => ({}), gateParams: () => ({}) };
+    const doc = { getElementById: (id) => (id === "law" || id === "doorPrompt" ? null : el()), createElement: el };
+    const welt = { AnazhHuelle: H, document: doc, addEventListener: (n, f) => n === "keydown" && tasten.push(f) };
+    welt.window = Object.assign(welt, { __portaCore: PC });
+    try {
+        vm.runInNewContext(text, welt, { filename: "worlds/portale/porta.js", timeout: 2000 });
+    } catch (e) {
+        return [`H12 worlds/portale/porta.js: die Seite läuft nicht gegen die Hülle (${e.message})`];
+    }
+    if (!o || typeof o.takt !== "function" || typeof o.nachBau !== "function") return ["H12 worlds/portale/porta.js: kein Studio auf der EINEN Bühne (AnazhHuelle.studio mit takt und nachBau)"];
+    o.nachBau({});
+    const lies = (zf) => (act ? (typeof act === "function" ? act({ zf }, RUHE_PROBE) : act) : undefined);
+    const rot = [];
+    for (let i = 0; i < 3; i++) o.takt(1 / 60);
+    const [vorn, hinten] = [lies(0.2), lies(-0.2)];
+    if (vorn !== RUHE_PROBE || hinten !== RUHE_PROBE)
+        rot.push(`H12 worlds/portale/porta.js: ohne Taste stehen die Flügel bei ${vorn} / ${hinten} statt in der Ruhe der Welt ${RUHE_PROBE} — die Seite überschreibt die Fern-Pose (\`buehne.fluegel\`, das Argument ruhe)`);
+    tasten.forEach((f) => f({ key: "e" }));
+    o.takt(1 / 60);
+    const [v1, h1] = [lies(0.2), lies(-0.2)];
+    if (!(v1 > RUHE_PROBE && v1 < RUHE_PROBE + 0.1) || h1 !== RUHE_PROBE)
+        rot.push(`H12 worlds/portale/porta.js: E öffnet nicht von der Ruhe aus (vorn ${v1}, hinten ${h1}; Soll vorn knapp über ${RUHE_PROBE}, hinten ${RUHE_PROBE})`);
+    return rot;
+}
+
 function pruefe(karte) {
     const rot = [];
+    if (karte["worlds/portale/porta.js"] != null) rot.push(...torRuhe(karte["worlds/portale/porta.js"]));
     // VERALTET sperrt nicht (D8-Merge, wie K5): ein Panorama, dessen Quellen sich seither änderten, steht benannt
     // „veraltet“, bis jemand backt (`--panorama`) — sonst sperrte jede Welle an einer Studio-Quelle, der Hülle oder einem Kern check:statik
     const veraltet = [];
@@ -313,6 +360,8 @@ function selbsttest() {
         ["H11 die garage baut ihren Renderer selbst", "worlds/garage/garage.js", "const R=BUEHNE.renderer;", "const R=new THREE.WebGPURenderer({antialias:true});", /^H11 worlds\/garage\/garage\.js:\d+ .*: ein eigener Bühnen-Anschluss/],
         ["H6 die portale lädt wieder das r128 des Labors (am Text der Seite)", "worlds/portale/index.html", '<script type="importmap">', '<script src="../terrain/lib/three-r128.min.js"></script>\n<script type="importmap">', /^H6 worlds\/portale\/index\.html: lädt eine fremde Engine \(\.\.\/terrain\/lib\/three-r128/],
         ["H6 die fachwerk lädt keine Kopie mehr (die Ratsche zieht an, am Text der Seite)", "worlds/fachwerk/index.html", '<script src="../terrain/lib/three-r128.min.js"></script>', "", /^H6 worlds\/fachwerk\/index\.html: lädt keine fremde Engine mehr \(r128 fiel\)/],
+        ["H12 die Tor-Seite schreibt doorAngle 0 in jeden Takt (das Tor steht zu statt in der Fern-Pose)", "worlds/portale/porta.js", "return anteil(t.zf >= 0 ? doorAngle : doorAngleB);", "return (t.zf >= 0 ? doorAngle : doorAngleB) / DOOR_OPEN;",/^H12 worlds\/portale\/porta\.js: ohne Taste stehen die Flügel bei 0 \/ 0 statt in der Ruhe/],
+        ["H12 der Flügel-Rückruf verwirft die Ruhe (ruheAnteil bleibt 0)", "worlds/portale/porta.js", "ruheAnteil = ruhe;", "", /^H12 worlds\/portale\/porta\.js: ohne Taste stehen die Flügel bei 0 \/ 0/],
         ["H5 eine Quelle der garage ändert sich, ihr Panorama bleibt (veraltet)", "worlds/garage/garage.js", /$/, "\n/* ein neuer Look */", /^H5 garage: das Panorama ist veraltet/], // ankerfrei: ein Kommentar am Ende der Quelle
         ["H5 eine geteilte Quelle (die Hülle) ändert sich — jede Welt veraltet", "worlds/huelle/huelle.js", "function panorama(", "function panoramaNeu() {}\n    function panorama(", /^H5 skeleton: das Panorama ist veraltet/],
         ["H5 die Version allein macht kein neues Bild (?v= fällt) — die fachwerk bleibt grün", "worlds/fachwerk/index.html", /\?v=[0-9.]+/g, "?v=99.999.9", null, /^H5 fachwerk/],
