@@ -1148,84 +1148,15 @@ function tagKurve(o) {
                     warm: +(s[1] / Math.max(s[3], 1e-9)).toFixed(3),
                 };
                 if (o.png) z.png = __png(u8, W, H);
-                // DIE NACHT DER UMGEBUNG UND DER ZUSCHLAG DER QUELLEN (w28-strahler), um Mitternacht: dieselbe Szene mit GESTILLTEN
-                // Quellen (der Takt des Pools schreibt seine Plätze, die Linse nimmt ihnen die Reichweite — der Griff der Prüfbühne,
-                // kein Schalter im Spiel): das Band der Nacht urteilt die Umgebung, nie das Licht eines Herds an der Station. Der
-                // Zuschlag steht an EINER Fläche: die 18-%-Karte des Ankers im Stoff der Welt (`_leuchtStoff`), gelesen mit ÷ ohne
-                // Quellen vor der Tonkurve, gegen das Gesetz — Σ E der gehaltenen Plätze AUF der Karte (ihre Candela aus dem Datum,
-                // ohne Flackern, Kosinus, Abfall und Saum wie im Stoff, von der Linse selbst gerechnet) durch `augeZeig` über der
-                // Umgebung der Stunde × ihr Maß, über der Lesung des Messers
+                // DIE NACHT DER UMGEBUNG (w28-strahler), um Mitternacht: dieselbe Szene mit GESTILLTEN Quellen (der Takt des Pools schreibt
+                // seine Plätze, die Linse nimmt ihnen die Reichweite — der Griff der Prüfbühne, kein Schalter im Spiel): das Band der Nacht
+                // urteilt die Umgebung, nie das Licht eines Herds an der Station
                 if (u === 0) {
-                    const cam = st.camera;
-                    const pool = r._leuchtPool;
-                    const P = cam.position.clone().addScaledVector(cam.getWorldDirection(new T.Vector3()).setY(0).normalize(), 2.5);
-                    P.y -= 0.6;
-                    // der Vektor der Bestrahlung jedes gehaltenen Platzes an der Karte (Lux, zur Quelle hin): die Candela aus dem Datum ohne
-                    // Flackern × Masse × Blende, der Punkt L̂ ÷ (d² + k²), die flache Scheibe ihr geschlossener Vektor, der Saum der Reichweite
-                    const F = [];
-                    for (let j = 0; j < pool.halter.length; j++) {
-                        const q = pool.halter[j];
-                        if (!q || q.L.ersatz || !(pool.blende[j] > 0)) continue;
-                        const R = r._leuchtReichweite(q);
-                        const L = new T.Vector3(q.x - P.x, q.y - P.y, q.z - P.z);
-                        const d = L.length();
-                        if (!(d < R)) continue;
-                        const I = q.L.candela * q.masse * pool.blende[j];
-                        const k2 = q.L.kernM * q.L.kernM;
-                        const s0 = Math.max(0, Math.min(1, (1 - d / R) / C.AUGE.saum));
-                        let f = L.clone().multiplyScalar(I / d / (d * d + k2));
-                        if (q.L.flach) {
-                            const h = -L.y;
-                            if (!(h > 0)) continue;
-                            const a2 = L.x * L.x + L.z * L.z;
-                            const S = h * h + a2 + k2;
-                            const w2 = Math.sqrt(Math.max(1e-9, S * S - 4 * a2 * k2));
-                            const waag = (h / Math.max(1e-6, a2)) * (S / w2 - 1);
-                            f = new T.Vector3(L.x * waag, -(1 - (S - 2 * k2) / w2), L.z * waag).multiplyScalar(I / (2 * Math.max(1e-6, k2)));
-                        }
-                        F.push(f.multiplyScalar(s0 * s0 * (3 - 2 * s0)));
-                    }
-                    // die Karte neigt sich der stärksten Quelle zu und bleibt der Kamera zugewandt (der Halb-Vektor beider Richtungen); ohne
-                    // Quelle an ihr liegt sie waagrecht
-                    const zurKamera = cam.position.clone().sub(P).normalize();
-                    const stark = F.reduce((m, f) => (f.length() > m.length() ? f : m), new T.Vector3());
-                    const N = stark.length() > 0 ? stark.clone().normalize().add(zurKamera).normalize() : new T.Vector3(0, 1, 0);
-                    const karteStoff = () => r._leuchtStoff(new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1 }));
-                    const karteAn = (n) => {
-                        const km = new T.Mesh(new T.PlaneGeometry(1, 1), karteStoff());
-                        km.position.copy(P);
-                        km.quaternion.setFromUnitVectors(new T.Vector3(0, 0, 1), n);
-                        st.scene.add(km);
-                        return km;
-                    };
-                    const m = P.clone().project(cam);
-                    const i0 = (Math.round(((1 - m.y) / 2) * H) * W + Math.round(((m.x + 1) / 2) * W)) * 4;
-                    const karteX = async (n) => {
-                        const km = karteAn(n);
-                        try {
-                            const q = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
-                            let x = 0;
-                            // die Tonkurve zurück JE FARBE: ihr Fuß zieht den Versatz des KLEINSTEN Kanals von allen ab — unter dem Licht einer
-                            // Flamme (kaum Blau) steht die Karte fast linear im Bild, die Umkehr über die Luma läse ihren Zuschlag zu klein
-                            for (const i of [i0 - 4, i0, i0 + 4]) {
-                                const c = [lin[q[i]], lin[q[i + 1]], lin[q[i + 2]]];
-                                const kl = Math.min(...c);
-                                const ab = vor(kl) - kl;
-                                x += luma709(c.map((v) => v + ab)) / 3;
-                            }
-                            return x;
-                        } finally {
-                            st.scene.remove(km);
-                            km.geometry.dispose();
-                            km.material.dispose();
-                        }
-                    };
                     const alt = r._leuchtTakt;
                     r._leuchtTakt = function () {
                         alt.call(this);
                         for (const q of this.state.atmoUniforms.lichtLage) q.value.w = 0;
                     };
-                    let xWaag, xOhne, xMit;
                     try {
                         r._leuchtTakt();
                         const v8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
@@ -1237,24 +1168,10 @@ function tagKurve(o) {
                         }
                         z.hellOhne = +(a[0] / n2).toFixed(1);
                         z.Yohne = +(luma709(a.slice(1)) / n2).toPrecision(4);
-                        xWaag = await karteX(new T.Vector3(0, 1, 0));
-                        xOhne = await karteX(N);
-                        r._leuchtTakt = alt;
-                        r._leuchtTakt();
-                        xMit = await karteX(N);
                     } finally {
                         r._leuchtTakt = alt;
                         r._leuchtTakt();
                     }
-                    // das Gesetz: Σ E auf der Karte (F·N je Platz) durch das Auge über der Umgebung der Stunde × ihr Maß, über dem Licht der
-                    // Umgebung AUF der geneigten Karte — die Lesung des Messers (die waagrechte Karte) × geneigt ÷ waagrecht, beide gemessen
-                    const E = F.reduce((s, f) => s + Math.max(0, f.dot(N)), 0);
-                    const w = luma709(r._belichtungE);
-                    const wKarte = (w * xOhne) / Math.max(xWaag, 1e-9);
-                    z.eKarte = +E.toPrecision(4);
-                    z.karteBlick = +N.dot(zurKamera).toFixed(2);
-                    z.zuschlag = +Math.log2(Math.max(xMit, 1e-9) / Math.max(xOhne, 1e-9)).toFixed(3);
-                    z.zuschlagGesetz = +Math.log2(1 + (WL.augeZeig(E, WL.augeLux(w, r._belichtungTag)) * WL.augeMass(w, r._belichtungTag)) / wKarte).toFixed(3);
                 }
                 zeilen.push(z);
                 if (u === 0.5) {
@@ -1286,13 +1203,13 @@ function tagKurve(o) {
 //   ANKER die 18-%-Karte mittags außerhalb Luma 110–130 · SPRUNG ein Schritt der Messung (0,01, um den Horizont 0,002) über
 //   0,1 EV · BUCKEL eine Stunde über Mittag + 0,15 EV · GOLD die Sonne 10° (je Seite zwischen ihren Zeilen gelesen) außerhalb
 //   −1 … −0,5 EV · WARM dort R/B unter 1,3 × Mittag · NACHT Mitternacht OHNE die Quellen (die Umgebung) außerhalb −5 … −3 EV oder unter Luma 22 ·
-//   QUELLE der Zuschlag der Quellen an der Karte über 0,1 EV neben dem Gesetz aus Σ E und der Umgebung, oder die Karte liest keine · REF die Stufen der Szene
+//   REF die Stufen der Szene
 //   (X) über 0,3 neben der REF-Kurve (spec/farbe/tag-ref.json, je Knoten, dazwischen linear) · ASYNC der erste Frame neben dem
 //   stehenden Himmel (beide ohne das Becken) · MESSER die Belichtung neben dem Gesetz MIT dem Becken am Auge (über 0,02 EV:
 //   der Schreiber liest es nicht) oder kein Becken an irgendeiner Uhr (die Linse sah den Messer nie) · SCHREIBER nicht EINER · BLIND ohne Mittag und Mitternacht. Das EV ist das des Ausgabe-Bilds (Y). Trägt die
 //   Messung nicht die ganze Bahn (`bahn`: die 100 Uhren; `--kurz` ist die Wand gate:tag-achse:echt), urteilt sie die Mechanik der
 //   Kamera (`TAG_WAND`: Anker, Stetigkeit, EIN Schreiber); was die Szene antwortet, urteilt die Station über die ganze Bahn.
-const TAG_SOLL = { karte: [110, 130], sprung: 0.1, buckel: 0.15, gold: [-1, -0.5], warm: 1.3, nacht: [-5, -3], nachtLuma: 22, ref: 0.3, async: 0.05, messer: 0.02, quelle: 0.1 };
+const TAG_SOLL = { karte: [110, 130], sprung: 0.1, buckel: 0.15, gold: [-1, -0.5], warm: 1.3, nacht: [-5, -3], nachtLuma: 22, ref: 0.3, async: 0.05, messer: 0.02 };
 const TAG_WAND = /^(ANKER|SPRUNG|ASYNC|MESSER|SCHREIBER|BLIND) /;
 // die Nachtastung im Feinschritt 0,002: jede Lücke einer Seite, deren Sonne im Fenster um den Horizont steht (−18 … 15°)
 function tagFeinUhren(zeilen) {
@@ -1347,23 +1264,16 @@ function tagKurveUrteil(welt) {
             if (!(g >= S.gold[0] && g <= S.gold[1])) rot("GOLD", `Sonne 10° ${r2(g)} EV`);
             if (!(w >= S.warm * mittag.warm)) rot("WARM", `Sonne 10° R/B ${r2(w)} gegen ${mittag.warm} mittags`);
         }
-        // die Nacht der UMGEBUNG (die Szene mit gestillten Quellen) im Band, der Zuschlag der Quellen an der Karte am Gesetz
+        // die Nacht der UMGEBUNG (die Szene mit gestillten Quellen) im Band
         const nEv = ev(nacht.Yohne, mittag.Y);
         if (!(nEv >= S.nacht[0] && nEv <= S.nacht[1] && nacht.hellOhne >= S.nachtLuma)) rot("NACHT", `${r2(nEv)} EV, Luma ${nacht.hellOhne} (ohne die Quellen)`);
-        if (nacht.becken > 0 && !(nacht.eKarte > 0 && nacht.karteBlick >= 0.2))
-            rot("QUELLE", `Mitternacht: ${nacht.becken} lx am Auge, die Karte liest keine Quelle (Σ E ${nacht.eKarte} lx, der Kamera zu ${nacht.karteBlick}) — die Probe ist blind`);
-        if (!(Math.abs(nacht.zuschlag - nacht.zuschlagGesetz) <= S.quelle))
-            rot(
-                "QUELLE",
-                `Mitternacht: die Quellen heben die Karte um ${r2(nacht.zuschlag)} EV, das Gesetz gibt ${r2(nacht.zuschlagGesetz)} EV (Σ E ${nacht.eKarte} lx auf ihr)`
-            );
         const n = Object.keys(m.schreiber || {});
         if (n.length !== 1) rot("SCHREIBER", n.join(", ") || "keiner");
         // DIE SECHS ZAHLEN DES ORTS (das Soll der Karte licht.K1 in EINER Zeile, wie die Station sie nennt — der Probe-Post trägt sie)
         const mit = ([v, uhr]) => `${r2(v)} (Uhr ${uhr})`;
         zahlen[ort] =
             `Karte ${m.karte} · Sprung ${mit(spitze(schritt))} · Buckel ${mit(spitze((x) => Math.max(e(x), 0)))} · Sonne 10° ${gold.join(" | ")} · ` +
-            `Nacht ${r2(nEv)} EV Luma ${nacht.hellOhne} (mit Quellen ${r2(e(nacht))} EV Luma ${nacht.hell}; Karte +${r2(nacht.zuschlag)} EV, Gesetz +${r2(nacht.zuschlagGesetz)} aus ${nacht.eKarte} lx) · REF ${mit(spitze(ref))}${m.bahn ? "" : " · nur die Wand (--kurz)"}`;
+            `Nacht ${r2(nEv)} EV Luma ${nacht.hellOhne} (mit Quellen ${r2(e(nacht))} EV Luma ${nacht.hell}) · REF ${mit(spitze(ref))}${m.bahn ? "" : " · nur die Wand (--kurz)"}`;
     }
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, kurven, zahlen };
 }
@@ -1380,8 +1290,8 @@ function tagKurveSelbsttest() {
         // die gemessene Kurve trägt den Messer nicht (vor w28-strahler): ein Becken um Mitternacht, die Belichtung am Gesetz
         const alle = q.zeilen.map((r) => Object.assign({ becken: r[0] === 0 ? 3.4 : 0, messer: 0 }, Object.fromEntries(T.spalten.map((s, i) => [s, r[i]]))));
         const z = (u) => alle.find((x) => x.uhr === u);
-        // … und die Nacht ohne Quellen samt dem Zuschlag an der Karte: die Station der Kurve stand ohne Quelle (Zuschlag am Gesetz)
-        const ohne = () => Object.assign(z(0), { Yohne: z(0).Y, hellOhne: z(0).hell, eKarte: 4.1, karteBlick: 0.8, zuschlag: 0.31, zuschlagGesetz: 0.31 });
+        // … und die Nacht ohne Quellen: die Station der Kurve stand ohne Quelle
+        const ohne = () => Object.assign(z(0), { Yohne: z(0).Y, hellOhne: z(0).hell });
         // die Quelle wirft das Doppelte (das Bild zeigt mehr, als das Gesetz aus ihrem Datum gibt)
         if (fall === "MESSER") z(0).messer = 0.72;
         if (fall === "MESSER-BLIND") z(0).becken = 0;
@@ -1393,7 +1303,6 @@ function tagKurveSelbsttest() {
         if (fall === "NACHT") z(0).hell = 10;
         if (fall === "HELL") z(0).Y *= 4;
         ohne();
-        if (fall === "QUELLE") z(0).zuschlag = 0.5;
         // die Kamera der Nacht zwei Stufen tiefer (eine trüge die Kurve des Kopfs noch im Band: −3,36 → −4,36 EV), die Quellen halten das Bild MIT ihnen im Band: die Umgebung fällt
         if (fall === "KAMERA") Object.assign(z(0), { Yohne: z(0).Y / 4, hellOhne: +(z(0).hell * 0.53).toFixed(1) });
         if (fall === "ASYNC") z(0.722).sofort *= 2;
@@ -1416,7 +1325,6 @@ function tagKurveSelbsttest() {
         [kurve(T.kopf, "WARM"), /WARM wiese: Sonne 10° R\/B 7\.55 gegen 7\.55 mittags/],
         [kurve(T.kopf, "HELL"), /NACHT wiese: -1\.36 EV/],
         [kurve(T.kopf, "MESSER-BLIND"), /(^|,)MESSER wiese: kein Becken/],
-        [kurve(T.kopf, "QUELLE"), /(^|,)QUELLE wiese: Mitternacht: die Quellen heben die Karte um 0\.50 EV, das Gesetz gibt 0\.31 EV/],
         [kurve(T.kopf, "KAMERA"), /(^|,)NACHT wiese: .* \(ohne die Quellen\)/],
         ...["ANKER", "SPRUNG", "BUCKEL", "NACHT", "ASYNC", "MESSER", "SCHREIBER", "BLIND"].map((f) => [kurve(T.kopf, f), new RegExp(`(^|,)${f} wiese`)]),
         [gesetz(), ""],
