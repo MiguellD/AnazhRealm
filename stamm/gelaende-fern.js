@@ -2523,19 +2523,22 @@ AnazhRealm._hydroKachelZelle = () => ({
     m: AnazhRealm.HYDROSPHERE.regionSize,
     ab: -AnazhRealm.HYDROSPHERE.regionSize / 2,
 });
-// DIE REICHWEITE DER TRITTE (m um den Spieler; Leser und Schreiber ist `_tritt`): ein Ort lebt, bis seine Mitte nearM ×
-// `BEWOHNER.fernFaktor` fern ist (`_tickBewohner` → `_bewohnerFort`), seine Leute gehen in seinem Reich (fachwerk
-// `siedlungsReich`) — so weit tritt die Welt. Bis hier hielt das Gedächtnis nur den Saum (Ring + 2 Chunks), die Leute eines Orts
-// jenseits des Saums traten weiter: Radeon 18.11., Runde b, 142 von 1 274 Einträgen 281–295 m fern, je Gang neu geschrieben.
+// DIE REICHWEITE DER TRITTE (m um den Spieler, Kasten; Leser und Schreiber ist `_tritt`, der Schreiber hält sie auch:
+// `_trittDerLeiber`): der Saum (Ring + 2 Chunks) und, solange ein Ort lebt, nearM × `BEWOHNER.fernFaktor` (so fern lebt er,
+// `_tickBewohner` → `_bewohnerFort`) samt seinem Reich (fachwerk `siedlungsReich`: dort gehen seine Leute). Bis hier hielt das
+// Gedächtnis nur den Saum, die Leute eines Orts jenseits traten weiter: Radeon 18.11., Runde b, 142 von 1 274 Einträgen 281–295 m
+// fern, je Gang neu geschrieben.
 AnazhRealm._trittReichweite = (r) => {
+    const { span, ringRadius } = r._voxelChunkConfig();
+    let w = (ringRadius + 2) * span;
     const SG = AnazhRealm._siedlungGesetz();
     const B = r._bewohnerSiedlungen;
-    if (!SG || !B || !B.size) return 0;
+    if (!SG || !B || !B.size) return w;
     const reich = AnazhRealm.Gesetz("fachwerk:siedlungsReich");
-    let w = 0;
+    const nah = AnazhRealm.AUTO_SETTLEMENT.nearM * AnazhRealm.BEWOHNER.fernFaktor;
     for (const S of B.values())
-        if ((S.liste || S.listeWerk) && S.plan && S.plan.slots) w = Math.max(w, reich(SG, S.plan.slots.length));
-    return w > 0 ? AnazhRealm.AUTO_SETTLEMENT.nearM * AnazhRealm.BEWOHNER.fernFaktor + w : 0;
+        if ((S.liste || S.listeWerk) && S.plan && S.plan.slots) w = Math.max(w, nah + reich(SG, S.plan.slots.length));
+    return w;
 };
 // die Zelle der Siedlung und die Reichweite ihrer Leser: das Reich (ORT_REICH_ZELLEN) und die Probe-Ringe des Wirts, zwei Zellen
 // Saum, nie unter dem Horizont der Streu (ohne Gesetz kein Dorf: 256 m, das Maß der Schublade)
