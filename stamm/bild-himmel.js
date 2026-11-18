@@ -2751,14 +2751,8 @@ class AnazhRealm_bild_himmel {
             // ein Schreiber außer dem Gang stellt die Stunde zur Welt-Uhr von JETZT: der Anker des Gangs (`tickDayNight`) folgt ihm
             this.state._uhrSpielZeit = this.state.spielZeit;
         }
-        // DIE NÄSSE-DOSIS DER WELT (stoffe.K4, `_werkAlter`): je Spielzeit, die die Uhr vorwärts geht, der Regen des Wetter-Felds
-        // des Worts (`WEATHER_FIELD[weather].rain` — der Übergang ist Bild, das Wort ist das Wetter) × die Tage, aufsummiert im
-        // worldMeta (`nassTage`, reist im Stand) — ein Schreib-Akt der Uhr, nie Wanduhr; der Sprung zurück und das Laden zählen nicht
-        if (quelle !== "laden" && wm) {
-            const vor = (wm.tag || 0) + v - tag0 - this.state.timeOfDay;
-            const f = AnazhRealm.WEATHER_FIELD[this.state.weather];
-            if (vor > 0 && f && f.rain > 0) wm.nassTage = (+wm.nassTage || 0) + vor * f.rain;
-        }
+        // die Uhr des Spielers ist SICHT (w28-lava-nachlauf): kein Prozess liest sie — die Nässe-Dosis der Welt schreibt der Takt
+        // der Nässe an der Welt-Uhr (`_naesseTakt`), Lava, Taten, Pfad und Werke altern am Tag der Prozesse (`_weltTag`)
         this.state.timeOfDay = v;
         return true;
     }
@@ -3074,11 +3068,20 @@ class AnazhRealm_bild_himmel {
     _naesseTakt(dt) {
         const st = this.state;
         const N = AnazhRealm.NAESSE;
-        if (dt == null) {
+        const lauf = dt == null;
+        if (lauf) {
             dt = Number.isFinite(this._naesseUhr) ? st.spielZeit - this._naesseUhr : 0;
             this._naesseUhr = st.spielZeit;
         }
         const wf = this._weatherFieldFor(st.weather);
+        // DIE NÄSSE-DOSIS DER WELT (stoffe.K4, `_werkAlter`): je Welt-Uhr, die verging, der Regen des Wetter-Felds des Worts
+        // (`WEATHER_FIELD[weather].rain` — der Übergang ist Bild, das Wort ist das Wetter) × die Tage des Gesetzes, aufsummiert
+        // im worldMeta (`nassTage`, reist im Stand). Bis w28-lava-nachlauf schrieb sie der Schreiber der Uhr (`_uhrSetzen`) je
+        // Stunde der SICHT: ein Zug am Regler im Regen ließ jedes Werk um Tage rosten.
+        const wm = st.worldMeta;
+        const regen = AnazhRealm.WEATHER_FIELD[st.weather];
+        if (lauf && dt > 0 && wm && regen && regen.rain > 0)
+            wm.nassTage = (+wm.nassTage || 0) + (dt / AnazhRealm.PEGEL_TAG_S) * regen.rain;
         const n0 = Number.isFinite(st.naesse) ? st.naesse : 0;
         const ziel = wf.rain > N.regenAb ? 1 : 0;
         const n = AnazhRealm._naesseKurve(n0, wf, dt);

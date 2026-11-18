@@ -851,7 +851,7 @@ class AnazhRealm_siedlung_wege {
         if (!wk || !playerPos) return;
         const jetzt = performance.now();
         // der Pfad erholt sich am Tag-Wechsel (EIN Vergleich je Takt)
-        const tag = (this.state.worldMeta && this.state.worldMeta.tag) || 0;
+        const tag = Math.floor(this._weltTag());
         if (this._trittTag !== tag) {
             this._trittTag = tag;
             this._trittErholen();
@@ -1413,10 +1413,9 @@ class AnazhRealm_siedlung_wege {
         const [cx, cz, r] = [(i + 0.5) * T.zelleM, (j + 0.5) * T.zelleM, T.halbM + T.randM];
         this._nahWieseNeuIn(cx - r, cz - r, cx + r, cz + r, true);
     }
-    // Die Spielzeit der Welt in Tagen (Welt-Tag + Uhr) — die Uhr des Pfads
+    // Die Uhr des Pfads: der Tag der Prozesse (`_weltTag`, die Welt-Uhr im Tag des Gesetzes)
     _trittJetzt() {
-        const wm = this.state.worldMeta;
-        return ((wm && wm.tag) || 0) + (Number.isFinite(this.state.timeOfDay) ? this.state.timeOfDay : 0);
+        return this._weltTag();
     }
     // Die Stufe einer Zelle mit n Tritten (rein): der getretene Anteil, gerastert — sichtbar erst als PFAD (`TRITT.pfadGras`, das
     // Gesetz von stoffe.K4): die erste Stufe, auf der die Wiese (Dichte × (1 − Stufe · `NAH_WIESE.pfadDuennt`)) höchstens
