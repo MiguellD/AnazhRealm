@@ -178,14 +178,16 @@ class AnazhRealm_wasser_hydro {
         // der neue Weg ab `a` denselben (der Zug zieht das Wort, das schon gilt), bleibt die Funktion dieselbe und kein Knoten
         // kommt dazu. Bis hier legte jeder Zug zwei Knoten auch ohne Wechsel (`requestWeatherTransition` ruft den Weg mit
         // `von === nach`): Radeon 18.11., Runde reise, `_pegelStand.S` 1 062 → 5 516 → 9 200 Zahlen, die Faltung des Laufs
-        // (`pegelLauf`) las jeden.
+        // (`pegelLauf`) las jeden. Eine Rampe beginnt immer an ihrem Knoten `a` (ohne ihn stiege der Regen ab dem letzten alten
+        // Knoten — gate:wasser-leben P5 KNOTEN).
         const n0 = S.length;
-        if (i < n0 || alt !== ra) {
+        const rampe = t1 > a && r1 !== ra;
+        if (i < n0 || alt !== ra || rampe) {
             S.length = i;
             if (alt !== null && alt !== ra) S.push(a, alt);
             S.push(a, ra);
         }
-        if (t1 > a && r1 !== ra) S.push(t1, r1);
+        if (rampe) S.push(t1, r1);
         if (S.length !== n0 || i < n0) this._regenGen = (this._regenGen | 0) + 1;
     }
 
