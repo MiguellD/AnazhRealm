@@ -3101,13 +3101,13 @@
     const _deckWert = new Float64Array(_deckNQ + _deckNU); // die geklemmte Größe je Stufe (je Ruf aus sd)
     const _deckFaktor = new Float64Array(_deckNQ + _deckNU); // der Matérn-Faktor je Stufe (je Art)
     const _deckHat = new Uint8Array(_deckNQ + _deckNU);
-    function forestKronenDeckung(sd, geburt, kronen, F, st, schnee, ort, wald) {
+    function forestKronenDeckung(sd, geburt, kronen, F, st, schnee, ort, wald, hang) {
         // der Bestand am Standort (FOREST_PACK.bestand, `st` der Stand): Lichtung und Schluss wie in planForestCell / forestSteht;
         // die Waldgrenze im Schnee des Sommers und im Klima des Orts (`forestWaldgrenze`, `schnee` der Anteil des Gelände-Kerns zur
         // Sommer-Mitte, `wald` der Wald-Anteil seines Ort-Gesetzes); der Saum am Siedlungsrand (`forestOrt`, `ort` der Abstand
-        // jenseits des nächsten Rands, `forestOrtAbstand`)
+        // jenseits des nächsten Rands, `forestOrtAbstand`; `hang` die Steilheit, über der Pflug-Grenze rodet der Ort nicht)
         const schluss = forestSchluss(st);
-        const g = geburt * forestLichtung(st) * forestWaldgrenze(schnee, wald) * forestOrt(ort);
+        const g = geburt * forestLichtung(st) * forestWaldgrenze(schnee, wald) * forestOrt(ort, hang);
         const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (g > 0 ? g : 0);
         if (!(lambda > 0) || !kronen || !kronen.length) return 0;
         let wSumme = 0;
@@ -3333,7 +3333,11 @@
         // eines Orts (m) — innen kein Baum, über die Tiefe steigt die Geburt glatt auf ihren Bestand (Krautsaum 5–10 m,
         // Strauchgürtel ≥ 5 m, Waldmantel 15–20 m; das ganze Profil 25–40 m: WWF Schweiz 2012, Naturschutzbund AT 2017, Bio
         // Austria 2023).
-        bestand: { lichtung: [-0.1, 0.15], schluss: [0.15, 0.6], min: 0.6, waldgrenze: 0.1, saum: 40 },
+        // DIE RODUNG DES ORTS (`forestOrt`, der Hangwald): `rodung` ist die Neigung (|∇h|), über die der Ort sein Land vom Acker
+        // bis zur Weide rodet — darunter voll gerodet, darüber Wald. 0,36 die Pflug-Grenze (die Hang-Stufe 35 % der Schweizer
+        // Direktzahlungsverordnung DZV Art. 43, ab der Ackerbau mit dem Gespann endet; GEWÄHLT innerhalb 0,27–0,36), 0,58 die
+        // Weide-Grenze (~30°, GEWÄHLT; die Steillagen-Stufe 50 % der DZV mäht noch, über 30° beweidet nur noch Kleinvieh).
+        bestand: { lichtung: [-0.1, 0.15], schluss: [0.15, 0.6], min: 0.6, waldgrenze: 0.1, saum: 40, rodung: [0.36, 0.58] },
     };
     function forestLichtung(st) {
         const B = FOREST_PACK.bestand;
@@ -3374,12 +3378,22 @@
     // Infinity, `forestOrtAbstand`), die Geburt steigt glatt von 0 am Rand auf 1 in der Tiefe des Saums. Ohne Ort (∞) und
     // jenseits des Saums ist der Wald byte-gleich. Bis hierher wuchs der geschlossene Bestand bis an die Höfe: die Dorf-Pose
     // stand 21 m hinter dem Rand im Bestand mit Unterstand (Bildzeit im CPU-Raster 7 964 ms gegen main 3 965).
-    function forestOrt(d) {
+    // DER HANGWALD (w28-laub-kante): ein Dorf rodet, was es bebauen oder beackern kann — `hang` ist die Steilheit des Bodens
+    // (|∇h|, derselbe Leser wie die Hang-Regel der Geburt); jenseits der beackerbaren Neigung (`bestand.rodung`) rodet der Ort
+    // nicht, der Bestand steht als Hang- und Bannwald bis an seine Häuser (die Erdbauten hält `ortFrei`). Der Übergang ist stetig:
+    // die Rodung (1 − Saum) fällt glatt mit der Neigung. Unter der Pflug-Grenze ist jeder Wurf, wie er war.
+    function forestOrt(d, hang) {
         if (typeof d !== "number" || Number.isNaN(d))
             throw new Error("phyto-core forestOrt: der Abstand zum Siedlungsrand fehlt (KERN-PFLICHT)");
-        let t = d / FOREST_PACK.bestand.saum;
+        if (!Number.isFinite(hang))
+            throw new Error("phyto-core forestOrt: die Steilheit des Bodens fehlt (KERN-PFLICHT)");
+        const B = FOREST_PACK.bestand;
+        let t = d / B.saum;
         t = t < 0 ? 0 : t > 1 ? 1 : t;
-        return t * t * (3 - 2 * t);
+        const saum = t * t * (3 - 2 * t);
+        let h = (hang - B.rodung[0]) / (B.rodung[1] - B.rodung[0]);
+        h = h < 0 ? 0 : h > 1 ? 1 : h;
+        return saum + (1 - saum) * h * h * (3 - 2 * h);
     }
     // Der Abstand von (x, z) jenseits des nächsten Siedlungsrands: `raender` je Ort [x, z, rand] (die Mitte seines Plans und
     // seine Reichweite, m) — der Wirt legt sie mit dem Erdbau des Orts (`_ortRaender`), der Faden trägt dieselbe Liste.
@@ -3955,7 +3969,7 @@
             // DER SAUM AM SIEDLUNGSRAND (`forestOrt`, w20-wald-kosten): derselbe Wurf gegen die Geburt jenseits des Rands eines
             // Orts (ctx.ort: der Abstand, `forestOrtAbstand` über die Ränder des Wirts) — wie K10 NACH allen Würfen des Darts:
             // ein Ort dünnt den Bestand um sich, er würfelt ihn nie neu; ohne Ort bleibt jeder Wurf, wie er war.
-            if (wurf > grenze * forestOrt(ctx.ort(x, z))) continue;
+            if (wurf > grenze * forestOrt(ctx.ort(x, z), slope)) continue;
             out.push({ x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY, schluss: forestSchluss(st) });
         }
         return out;
