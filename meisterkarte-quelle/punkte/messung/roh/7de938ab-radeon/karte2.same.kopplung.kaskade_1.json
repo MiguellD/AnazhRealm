@@ -4,23 +4,24 @@
    "schuesse": [
     {
      "name": "vor",
-     "datei": "%TEMP%\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\buch-tree\\meisterkarte-quelle\\punkte\\messung\\roh\\7de938ab-radeon\\karte2.same.kopplung.kaskade_1-brand-s1.png"
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\buch2-tree\\meisterkarte-quelle\\punkte\\messung\\roh\\7de938ab-radeon\\karte2.same.kopplung.kaskade_1-brand-s1.png"
     },
     {
      "name": "brennt",
-     "datei": "%TEMP%\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\buch-tree\\meisterkarte-quelle\\punkte\\messung\\roh\\7de938ab-radeon\\karte2.same.kopplung.kaskade_1-brand-s2.png"
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\buch2-tree\\meisterkarte-quelle\\punkte\\messung\\roh\\7de938ab-radeon\\karte2.same.kopplung.kaskade_1-brand-s2.png"
     },
     {
      "name": "erloschen",
-     "datei": "%TEMP%\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\buch-tree\\meisterkarte-quelle\\punkte\\messung\\roh\\7de938ab-radeon\\karte2.same.kopplung.kaskade_1-brand-s3.png"
+     "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\bdc204a033231caa\\3f59870c-5b2c-4386-8f3b-a749a5db56d4\\scratchpad\\buch2-tree\\meisterkarte-quelle\\punkte\\messung\\roh\\7de938ab-radeon\\karte2.same.kopplung.kaskade_1-brand-s3.png"
     }
    ],
    "krone": 0,
+   "bett": 1,
    "posen": 1,
-   "flammenArt": "emission-pixel-ruhe",
+   "flammenArt": "emission-pixel-median",
    "vor": {
     "luma": 0.181,
-    "warm": 371,
+    "warm": 369,
     "neu": 0,
     "rauschen": 0,
     "flammen": 0,
@@ -30,7 +31,7 @@
     "schleife": false,
     "pool": {
      "fix": true,
-     "ms": 289,
+     "ms": 252,
      "blende": [
       1,
       1,
@@ -45,12 +46,24 @@
    "brennt": {
     "zellen": 1,
     "flammenListe": 32,
-    "luma": 0.19,
-    "warm": 1571,
-    "neu": 244,
+    "luma": 0.195,
+    "warm": 1523,
+    "neu": 284,
     "rauschen": 0,
-    "flammen": 244,
+    "flammen": 284,
     "uhr": [
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
+     12.5,
      12.5,
      12.5,
      12.5
@@ -58,7 +71,7 @@
     "schleife": false,
     "pool": {
      "fix": true,
-     "ms": 271,
+     "ms": 272,
      "blende": [
       1,
       1,
@@ -67,7 +80,14 @@
      ],
      "halter": 4
     },
-    "rauschenLaufend": 989
+    "serie": [
+     284,
+     284,
+     284,
+     284,
+     284
+    ],
+    "rauschenLaufend": 79
    },
    "regenS": 7,
    "nachRegen": 0,
@@ -75,7 +95,7 @@
     "zellen": 0,
     "lebt": false,
     "luma": 0.06,
-    "warm": 510,
+    "warm": 611,
     "neu": 0,
     "rauschen": 0,
     "flammen": 0,
@@ -85,7 +105,7 @@
     "schleife": false,
     "pool": {
      "fix": true,
-     "ms": 286,
+     "ms": 285,
      "blende": [
       1,
       1,
@@ -117,7 +137,7 @@
     558,
     324
    ],
-   "sek": 27.3
+   "sek": 41.3
   }
  },
  "fehler": []
