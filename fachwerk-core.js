@@ -412,7 +412,7 @@
     const lvF=levels.findIndex(L=>Math.abs(L.y-f.base)<0.01); if(lvF>=0) levelOpen[lvF][f.footEdge]=true; });
   // ════ KELLERTREPPE — GETEILTES Treppengesetz statt Parallelcode: als AUFSTEIGENDER Lauf kellerY→baseY (deckungsgleich mit absteigend), rechte Schachtspur. Wangen/Handlauf/Pfosten kommen aus flight(). ════
   if(P.keller){ const kDrop=baseY-kellerY, kN=Math.max(8,Math.ceil(kDrop/0.21)), kRun=wz1-stZ0, kGo=kRun/kN, kRise=kDrop/kN;
-    flights.push({base:kellerY, tr:'R', x0:lxL, x1:lxR, zFoot:stZ0, dir:1, N:kN, rise:kRise, go:kGo, isLoft:false, atLevel:'keller', topEdge:'back', footEdge:'front'}); }
+    flights.push({base:kellerY, tr:'R', x0:lxL, x1:lxR, zFoot:wz1, dir:-1, N:kN, rise:kRise, go:kGo, isLoft:false, atLevel:'keller', topEdge:'front', footEdge:'back'}); }   // DER ABGANG AN DER OFFENEN KANTE (w28-bau-rezept): das Kellermaul ist vorn offen (Brüstung hinten und seitlich, der Zustieg GBLK davor) — der Lauf tritt VORN aus; bis hier stieg er vorn aus kellerY auf und trat hinten hinter der Brüstung aus: wer an der offenen Kante eintrat, stand über 3 m Tiefe (gate:haus-welt W2 haus_italienisch 204 cm, W10 haus_schwarzwald keller-kopf 0,36 m)
 
 
   function axis(half,special){ let pts=[-half,...special,half].filter(v=>Math.abs(v)<=half+1e-6);
