@@ -580,26 +580,22 @@ class AnazhRealm_kreatur_verhalten {
         this.log(`Tempo-Hauch (${(ctx && ctx.source) || "dsl"}): ${n} Tiere ×${f} im Wander-Band`, "INFO");
     }
 
-    // DIE GRÖSSE EINES TIERS nur über seine bodySize-Achse (Leben-Schau 07.10., Neu 1 — die Klasse von D2): der EINE
-    // Schreiber nach der Geburt, in den Bändern des Gesetzes (VERHALTEN.groessen); die Skala IST die Achse, die
-    // Größen-Gedächtnisse (Körperlänge, Hang-Spanne, Stats) fallen mit. Vorher skalierte creatures_size_mul die Skala ohne
-    // Achse (16 von 16 Tieren ×1,11, bodySize blieb 1).
-    _kreaturGroesseSetzen(cr, bs) {
+    // DER EINE SCHREIBER DER GRÖSSE EINES LEIBS (w28-kreatur-groesse): die Größe des Gesetzes (`_creatureBodySize`: Erbe ×
+    // Wuchs des Alters) wird seine Skala; die Größen-Gedächtnisse (Körperlänge, Hang-Spanne, Stats) fallen mit, das Leben
+    // wächst als Anteil mit. Gerufen beim Guss, wenn das Alter des Tiers fortschreitet (`_bestandVerkoerpern`, `_bestandLeib`)
+    // und wenn ein Hauch das Erbe wiegt. Liefert, ob sich die Größe änderte. Vorher schrieb er eine freie Zahl in die Bänder
+    // VERHALTEN.groessen (0,60–2,70).
+    _kreaturGroesseSetzen(cr) {
         const ud = cr && cr.userData;
-        if (!ud || !Number.isFinite(bs)) return false;
-        const GB = AnazhRealm._verhaltenGesetz().groessen;
-        let lo = Infinity,
-            hi = -Infinity;
-        for (const z of GB) {
-            if (z.min < lo) lo = z.min;
-            if (z.max > hi) hi = z.max;
-        }
-        const neu = Math.min(hi, Math.max(lo, bs));
+        if (!ud) return false;
+        const neu = this._creatureBodySize(ud.erbe, ud.alterS);
+        if (neu === ud.bodySize) return false;
         const hpAnteil = Number.isFinite(ud.hp) && ud.hpMax > 0 ? ud.hp / ud.hpMax : null;
         ud.bodySize = neu;
         cr.scale.setScalar(neu);
         ud._koerperLaengeM = undefined;
         ud._slopeHalbLen = undefined;
+        if (!Number.isFinite(ud.hpMax)) return true; // der Guss: das Leben rechnet die Geburt (spawnCreatureAt)
         this._refreshCreatureStatsCache(cr);
         const hpMax = ud.stats && ud.stats.hpMax;
         if (Number.isFinite(hpMax)) {
@@ -609,20 +605,25 @@ class AnazhRealm_kreatur_verhalten {
         return true;
     }
 
+    // DER GRÖSSEN-HAUCH (creatures_size_mul): ein Op wiegt das ERBE jedes Tiers, im Band des Wuchs-Gesetzes (die Größe folgt
+    // weiter dem Alter; das Tier des Bestands trägt das gewogene Erbe mit).
     _kreaturGroesseHauch(faktor, ctx) {
         const f = Number(faktor);
         if (!(f > 0)) {
             if (ctx && ctx.log) ctx.log.push({ event: "invalid_groesse_hauch", faktor });
             return;
         }
+        const B = AnazhRealm._wuchsGesetz().grenzen;
         let n = 0;
         for (const cr of this.state.creatures) {
             const ud = cr && cr.userData;
-            if (!ud) continue;
-            if (this._kreaturGroesseSetzen(cr, (Number.isFinite(ud.bodySize) ? ud.bodySize : 1) * f)) n++;
+            if (!ud || !Number.isFinite(ud.erbe)) continue;
+            ud.erbe = Math.min(B.max, Math.max(B.min, ud.erbe * f));
+            if (ud._bestand) ud._bestand.erbe = ud.erbe;
+            if (this._kreaturGroesseSetzen(cr)) n++;
         }
         if (ctx && ctx.log) ctx.log.push({ event: "groesse_hauch", faktor: f, tiere: n });
-        this.log(`Größen-Hauch (${(ctx && ctx.source) || "dsl"}): ${n} Tiere ×${f} auf der bodySize-Achse`, "INFO");
+        this.log(`Größen-Hauch (${(ctx && ctx.source) || "dsl"}): ${n} Tiere ×${f} auf dem Erbe`, "INFO");
     }
 
     // DER PERSÖNLICHE RAUM eines Leibs (m, Welle LF 08.10.): die Körper-Kugel des Leibs (halb + Radius — die waagrechte
@@ -3742,8 +3743,6 @@ AnazhRealm._verhaltenGesetz = function () {
             Number.isFinite(v.aas.hungerAnteil) &&
             Number.isFinite(v.freude.hopHochM) &&
             Number.isFinite(v.freude.hopBasisM) &&
-            Array.isArray(v.groessen) &&
-            v.groessen.length >= 2 &&
             v.separation &&
             Number.isFinite(v.separation.raumKugel) &&
             v.aufgaben &&

@@ -210,7 +210,7 @@
                 pflanzDiet: 0.25, // diet bis hier: Pflanzenfresser (Fluchttier)
                 jagdKg: 21.5, // kg — ab hier schlaegt ein Fleischfresser grosse Beute (Carbone et al. 2007; Wolf ab Groesse 0,7)
                 wehrKg: 200, // kg — ab hier wehrt sich ein Allesfresser (der Baer ab Groesse 0,84, das Jungtier nicht)
-                kolossKg: 600, // kg — ab hier wehrt sich auch ein Fluchttier (der Hirsch erst als Gigant, ab Groesse 1,86)
+                kolossKg: 600, // kg — ab hier wehrt sich auch ein Fluchttier (der Hirsch nie: sein Erbe traegt hoechstens ~125 kg)
             },
             profile: {
                 wehrhaft: { strike: 0.45, strikeChaos: 0.3, strikeCap: 0.8, counterMul: 0.7, fleeMul: 0.5 },
@@ -234,8 +234,7 @@
         // ── DIE SCHLUSS-WELLE (Spiegel-Zensus 17.07., rein additive DATEN-
         // Zeilen): die letzten neun Stamm-Literale mit tetrapoda-Heimat kehren
         // ins Evolutions-Gesetzbuch heim — freude (Joy-Tempo + Huepf-Hoehen) ·
-        // groessen (die Koerpergroessen-Baender,
-        // Lehre 8: DIE Differenzierungs-Achse) · separation (Herden-Abstand) ·
+        // separation (Herden-Abstand; die Koerpergroessen-Baender fielen mit dem WUCHS_GESETZ, w28-kreatur-groesse) ·
         // aufgaben (Gefaehrten-Tempi + Halt-Distanzen) · herde (Schwarm-
         // Kohaesion) · wasser (Ufer-Scheu) — plus
         // stimmung.schwellen oben (furcht.neugierStoppM fiel mit dem persoenlichen Raum, Welle LF). Der Wirt liest
@@ -250,14 +249,6 @@
             hopHochM: 1.2, // m — der frohe Huepfer
             hopBasisM: 0.8, // m — der Grund-Huepfer (ein Wesen, das nicht froh ist)
         },
-        groessen: [
-            // Wurf-Baender der Koerpergroesse (roll ∈ [0,1) aus der Identitaet):
-            // roll < bis → range(name, min, max); die letzte Zeile faengt den Rest.
-            { name: "klein", bis: 0.18, min: 0.6, max: 0.82 }, // Jungtier/Zwerg (flink, zart)
-            { name: "normal", bis: 0.82, min: 0.85, max: 1.18 }, // typisch
-            { name: "gross", bis: 0.965, min: 1.25, max: 1.75 }, // ein grosses Tier
-            { name: "gigant", bis: 1, min: 1.9, max: 2.7 }, // GIGANT — ein Koloss (robust, traege), selten
-        ],
         separation: {
             // DER PERSOENLICHE RAUM (Welle LF 08.10., VERTRAGS-AKT): je Leib die Koerper-Kugel (die waagrechte Spanne der
             // Gestalt um ihre Mitte, beim Wirt halb + Radius des Leibs, in Hueft-Hoehen der Art und Groesse) × raumKugel; der
@@ -2226,6 +2217,58 @@
         if (n < K) return { geburt: B.geburt * (1 - n / K), tod: 0 };
         var u = n / K - 1;
         return { geburt: 0, tod: B.tod * (u < 1 ? u : 1) };
+    }
+
+    // DER WUCHS (w28-kreatur-groesse 18.11., VERTRAGS-AKT — VERHALTEN.groessen fiel): die Koerpergroesse eines Tiers ist kein
+    // Wurf seiner Identitaet, sie folgt aus seinem LEBENSLAUF. Groesse = Erbe × Wuchs(Alter), in Laengen des Art-Masses
+    // (Groesse 1 = der ausgewachsene Leib der Gattung, die Gestalt dieses Buchs). DAS ERBE ist ein enges Normal-Band um das
+    // Art-Mass: sigma der Kopf-Rumpf-Laenge erbeSigma (Saeuger 3–5 %, beim Wolf ~4 %, Mech & Boitani 2003), gekappt bei
+    // grenzeSigma — gespeist aus gleichverteilten Achsen der Kennung (wuchsErbe): die Kennung speist das Band, nie eine
+    // Klasse. Das Erbe ist die EINE erbliche Stelle des Leibs: heute aus der Identitaet, sobald die Geburt Eltern traegt aus
+    // ihrem Mittel (h² der Koerpergroesse ~0,4–0,6 bei Saeugern, Visscher et al. 2008) — dieselbe Stelle, kein zweiter Pfad. DER WUCHS fuehrt vom Eintritt in den Bestand (Alter 0: geburt × die Laenge) zum ausgewachsenen Leib bei
+    // reifeAnteil der Lebensspanne; die Laenge steigt jung am steilsten und klingt aus (die Wachstumskurve der Saeuger, von
+    // Bertalanffy 1938; hier quadratisch, ab der Reife genau 1 — der Ausgewachsene IST sein Erbe). Das Alter ist das des
+    // Bestands (alterS, Spiel-Zeit); ein Leib, den kein Lebenslauf geboren hat (ein Ruf ausserhalb des Bestands), tritt mit
+    // der Reife ins Leben (der Wirt, wuchsReifeS). Masse, Leben, Biss, Beute und Temperament lesen die Groesse (Masse ∝ L³):
+    // das Jungtier ist leicht, jagt nicht und flieht. Ein Riese existiert nur, wenn ein Gesetz ihn fuehrt — eine Art in
+    // GATTUNGEN, nie ein Los. Vorher wuerfelte die Kennung vier Baender (klein 18 % 0,60–0,82 · normal 64 % 0,85–1,18 · gross
+    // 14,5 % 1,25–1,75 · gigant 3,5 % 1,9–2,7): je 200 Kennungen trug derselbe Wolf 14 bis 883 kg, ein Fuchs bis 295 kg.
+    var WUCHS_GESETZ = Object.freeze({
+        geburt: 0.4, // × die Laenge — das Jungtier beim Eintritt in den Bestand (~6 % der Masse)
+        reifeAnteil: 0.25, // × die Lebensspanne — ab hier ausgewachsen
+        erbeSigma: 0.04, // die Streuung der ausgewachsenen Laenge um das Art-Mass
+        grenzeSigma: 2.5, // das Band des Erbes in sigma (0,90–1,10 der Laenge, 0,73–1,33 der Masse)
+    });
+    // Das Band des Erbes {min, max} (Laengen des Art-Masses).
+    function wuchsGrenzen(W) {
+        var d = W.erbeSigma * W.grenzeSigma;
+        return { min: 1 - d, max: 1 + d };
+    }
+    // Das Erbe aus vier Achsen u ∈ [0, 1) der Kennung: 1 + sigma·z, z nahezu normal (Irwin-Hall: die Summe von vier
+    // gleichverteilten, zentriert und auf Varianz 1 gestreckt — ohne Transzendente, plattformgleich wie jede Zahl des Bestands,
+    // den zwei Seiten im Gleichlauf rechnen), im Band.
+    function wuchsErbe(u1, u2, u3, u4, W) {
+        var z = (u1 + u2 + u3 + u4 - 2) * 1.7320508075688772; // × √3: die Summe von vier trägt die Varianz 1/3
+        var g = W.grenzeSigma;
+        return 1 + W.erbeSigma * (z < -g ? -g : z > g ? g : z);
+    }
+    // Das Alter der Reife (s) bei der Lebensspanne lebenS (s).
+    function wuchsReifeS(lebenS, W) {
+        return W.reifeAnteil * lebenS;
+    }
+    // Der Wuchs ∈ [geburt, 1] beim Alter alterS (s; ohne Zahl: 0, das Jungtier).
+    function wuchs(alterS, lebenS, W) {
+        var r = wuchsReifeS(lebenS, W);
+        var a = alterS > 0 ? alterS : 0;
+        if (!(r > 0) || a >= r) return 1;
+        var x = 1 - a / r;
+        return W.geburt + (1 - W.geburt) * (1 - x * x);
+    }
+    // DIE KOERPERGROESSE (Laengen des Art-Masses): das Erbe (im Band gekappt) × der Wuchs seines Alters.
+    function koerperGroesse(erbe, alterS, lebenS, W) {
+        var B = wuchsGrenzen(W);
+        var e = erbe > B.min ? (erbe < B.max ? erbe : B.max) : B.min;
+        return e * wuchs(alterS, lebenS, W);
     }
 
     // DAS GEHEGE (Prüfplatz, der Zoo mit fester Zahl; w28-gehege, additiv — GEHEGE_GESETZ wohnt nicht in VERHALTEN, der
@@ -5293,6 +5336,12 @@
         aesung: aesung,
         taetigkeit: taetigkeit,
         BESTAND_GESETZ: BESTAND_GESETZ,
+        WUCHS_GESETZ: WUCHS_GESETZ,
+        wuchsGrenzen: wuchsGrenzen,
+        wuchsErbe: wuchsErbe,
+        wuchsReifeS: wuchsReifeS,
+        wuchs: wuchs,
+        koerperGroesse: koerperGroesse,
         bestandNahrung: bestandNahrung,
         bestandBilanz: bestandBilanz,
         bestandFrass: bestandFrass,

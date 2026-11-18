@@ -2540,24 +2540,26 @@ class AnazhRealm_koerper_leib {
         return null;
     }
 
-    // KÖRPERGRÖSSE-ACHSE: aus der netId eine deterministische Größe in BÄNDERN (klein/normal/gross/
-    // GIGANT, Koloss selten) über den geteilten Roller (UNSIGNED) → Peer- und Re-Wachstum-konsistent.
-    _creatureBodySize(idStr) {
-        const g = this._rollGenome(String(idStr == null ? "c0" : idStr), "creature-size");
-        const roll = g.axis("class");
-        // SCHLUSS-WELLE — die Größen-Bänder (klein/normal/groß/GIGANT) sind
-        // tetrapoda-Gesetz (VERHALTEN.groessen, Lehre 8: DIE Differenzierungs-
-        // Achse); derselbe Wurf (axis/range) → gleiche Welt bei gleichem Kern.
-        const K = AnazhRealm._verhaltenGesetz().groessen;
-        for (let i = 0; i < K.length - 1; i++) {
-            if (roll < K[i].bis) return g.range(K[i].name, K[i].min, K[i].max);
-        }
-        const letzte = K[K.length - 1];
-        return g.range(letzte.name, letzte.min, letzte.max);
+    // DIE KÖRPERGRÖSSE (tetrapoda WUCHS_GESETZ, w28-kreatur-groesse): Erbe × Wuchs des Alters — die EINE Funktion, die jeder
+    // Leser der Größe fragt (der Leib und seine Masse, Leben, Beute und Temperament über `_kreaturGroesseSetzen`, das Tier des
+    // Bestands ohne Leib, die Kopie beim Mitspieler). Bis w28-kreatur-groesse würfelte die netId vier Bänder (klein · normal ·
+    // gross · GIGANT, 0,60–2,70) ohne Alter: derselbe Wolf trug 14 oder 883 kg.
+    _creatureBodySize(erbe, alterS) {
+        if (!Number.isFinite(erbe) || !Number.isFinite(alterS))
+            throw new Error("WUCHS: eine Größe ohne Erbe oder Alter (" + erbe + ", " + alterS + ") — kein Ersatz");
+        return AnazhRealm._wuchsGesetz().groesse(erbe, alterS);
+    }
+    // DAS ERBE aus einer Kennung (der geteilte Roller, UNSIGNED): vier Züge seines Stroms (`seq`) speisen das Normal-Band des
+    // Gesetzes — dieselbe Kennung, dasselbe Erbe in jedem Boot und auf jeder Seite. Vier Achsen (`axis`) trügen es nicht: Namen,
+    // die sich im letzten Zeichen unterscheiden, korrelieren im FNV-Hash (erbe-a/erbe-b r = 0,96, die Streuung ×2). Die EINE
+    // erbliche Stelle des Leibs: trägt die Geburt einmal Eltern (heute trägt sie keine), speist ihr Mittel diese Stelle.
+    _kreaturErbe(idStr) {
+        const zug = this._rollGenome(String(idStr == null ? "c0" : idStr), "creature-size").seq("erbe");
+        return AnazhRealm._wuchsGesetz().erbe(zug(), zug(), zug(), zug());
     }
 
     // Der size-Dial braucht KEINE eigene Achse (ein Doppel-Faktor wäre falsch): er reist durch die EINE
-    // Pipe (_tetrapodaStudioDials → _ofenKreaturDials); die Spawn-Höhe = Template-Höhe × bodySize-Wurf
+    // Pipe (_tetrapodaStudioDials → _ofenKreaturDials); die Spawn-Höhe = Template-Höhe × Körpergröße
     // (gate:studio-uebergabe).
 
     // === DIE MOTION-RESONANZ ===

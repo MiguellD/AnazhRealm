@@ -1828,7 +1828,7 @@ class AnazhRealm_feld_dsl {
             },
             // DIE KÖRPER-GESETZE SIND GESETZ (Leben-Schau 07.10., Neu 1): ein Op moduliert Gang, Sprung und Größe nur
             // INNERHALB der Bänder des Gesetzes, benannt im Protokoll — der Spieler-Leib im Band seines Körper-Gesetzes
-            // (koerper fx.bewegung), das Tier-Tempo im Wander-Band, die Tier-Größe nur über die bodySize-Achse. Vorher
+            // (koerper fx.bewegung), das Tier-Tempo im Wander-Band, die Tier-Größe nur über das Erbe im Band des Wuchs-Gesetzes. Vorher
             // schrieben die Ops absolute Werte (Gehen 11,1 m/s, Sprint 45 m/s, Sprungkraft 18,6 statt 2,6), skalierten
             // jedes Tier ohne Achse (16 von 16 ×1,11) und schrieben ein Tempo, das niemand las.
             creatures_speed_mul: ([factor], ctx) => this._kreaturTempoHauch(factor, ctx),

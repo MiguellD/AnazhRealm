@@ -140,17 +140,14 @@ class AnazhRealm_kreatur_leben {
         this.state._creatureNetSeq = (this.state._creatureNetSeq || 0) + 1;
         group.userData.netId = "c" + this.state._creatureNetSeq;
         group.userData.name = this._pickCreatureName(group.userData.netId);
-        // GRÖSSENKLASSE: jede Kreatur trägt eine Körpergröße (klein/normal/gross/GIGANT), deterministisch
-        // aus ihrer netId (Peer-/Re-Wachstum-konsistent) oder aus dem Snapshot (opts.bodySize).
-        // Das Template wird NUR UNIFORM skaliert — Symmetrie und Physik-Verhältnisse bleiben invariant.
-        // Muss VOR der hp-Init unten stehen (die Stats lesen bodySize).
-        group.userData.bodySize = Number.isFinite(opts.bodySize)
-            ? opts.bodySize
-            : this._creatureBodySize(group.userData.netId);
-        // Die Körpergröße skaliert das Studio-Tier UNIFORM; die Glied-Dicke ist Gesetz der Art (ART_GESTALT.bein,
-        // deriveTierParams: Beinmuskel ∝ Größe^0,67). Die Galileo-Allometrie des Wirts (√L auf die Glied-Kinder) fiel
-        // (Integration W5-Körper): das Studio-Tier trägt keine Teil-Kinder, sie lief seit Welle 5 für kein Wesen mehr.
-        group.scale.setScalar(group.userData.bodySize);
+        // DIE KÖRPERGRÖSSE FOLGT DEM LEBENSLAUF (tetrapoda WUCHS_GESETZ, w28-kreatur-groesse): das Erbe (aus dem Stand oder
+        // dem Bestand, `opts.erbe`; sonst aus der netId, `_kreaturErbe`) × der Wuchs seines Alters (`opts.alterS`; ein Leib,
+        // den kein Lebenslauf geboren hat, tritt mit der Reife ins Leben). Der EINE Schreiber der Größe ist
+        // `_kreaturGroesseSetzen` (Skala, Masse, Leben). Das Template wird NUR UNIFORM skaliert; die Glied-Dicke ist Gesetz der
+        // Art (ART_GESTALT.bein, deriveTierParams: Beinmuskel ∝ Größe^0,67). Muss VOR der hp-Init unten stehen.
+        group.userData.erbe = Number.isFinite(opts.erbe) ? opts.erbe : this._kreaturErbe(group.userData.netId);
+        group.userData.alterS = Number.isFinite(opts.alterS) ? opts.alterS : AnazhRealm._wuchsGesetz().reifeS;
+        this._kreaturGroesseSetzen(group);
         group.userData.task = { name: "wander", args: {}, since: this.state.spielZeit };
         // bornAt = Identitäts-Marker: persistierte Kreaturen behalten ihn über Reload, neue bekommen jetzt.
         group.userData.bornAt = Date.now();
@@ -240,9 +237,9 @@ class AnazhRealm_kreatur_leben {
             // DAS ALTER reist mit (Spiel-Zeit, `alterS` des Lebenszyklus — die EINE Uhr des Alters; bornAt ist nur Identität):
             // ohne es kehrte jedes Tier 0 s alt wieder, der Alterstod kam erst nach FAUNA_MAX_AGE_MS ohne Reload
             alterS: ud.alterS > 0 ? ud.alterS : undefined,
-            // S7 — die Körpergröße reist mit (Restore re-spawnt mit NEUER netId → bodySize
-            // MUSS persistiert werden, sonst änderte das Wesen beim Reload seine Größe).
-            bodySize: Number.isFinite(ud.bodySize) ? ud.bodySize : 1,
+            // S7 — das ERBE reist mit (Restore re-spawnt mit NEUER netId: ohne es erbte das Wesen beim Reload ein anderes); die
+            // Größe ist Erbe × Wuchs des Alters (`_creatureBodySize`), sie selbst reist nicht
+            erbe: Number.isFinite(ud.erbe) ? ud.erbe : undefined,
             // S6 — der Verband und sein Revier reisen mit (ohne sie zerfiele die Herde beim Reload)
             verband: ud.verband != null ? String(ud.verband) : undefined,
             // das Tier des Bestands, das der Leib zeichnet (feld.K2#2): die Wiederkehr findet es im Bestand des Stands wieder
@@ -331,9 +328,11 @@ class AnazhRealm_kreatur_leben {
         const restoreDials = this._standGussDials(snap);
         const c = this.spawnCreatureAt(snap.position.x, snap.position.y, snap.position.z, emotion, snap.soul, {
             precise: true,
-            // S7 — die persistierte Körpergröße zurück (sonst würfelte der Restore aus der
-            // neuen netId eine andere Größe).
-            bodySize: Number.isFinite(snap.bodySize) ? snap.bodySize : undefined,
+            // S7 — das persistierte Erbe und Alter zurück: die Größe folgt aus ihnen (`_creatureBodySize`). Ein Stand vor
+            // w28-kreatur-groesse trug eine Band-Größe (bodySize) und kein Erbe: das Erbe liest dann die neue netId (das
+            // Gesetz, kein Ersatz-Wert); einer ohne alterS (vor heim-z29b) tritt mit der Reife wieder ins Leben.
+            erbe: Number.isFinite(snap.erbe) ? snap.erbe : undefined,
+            alterS: snap.alterS > 0 ? snap.alterS : undefined,
             dialsOv: restoreDials,
         });
         if (!c) return null;
@@ -347,9 +346,6 @@ class AnazhRealm_kreatur_leben {
         if (Number.isFinite(snap.bornAt)) {
             c.userData.bornAt = snap.bornAt;
         }
-        // ein Stand vor heim-z29b trug kein alterS (das Alter war die Wanduhr seit bornAt, sie zählte Pause und Portal): er
-        // beginnt in der Spiel-Zeit bei 0
-        if (snap.alterS > 0) c.userData.alterS = snap.alterS;
         // S6 — der Verband kehrt gebunden wieder: seine alte Kennung zeigt auf die netId seines ersten Wiedergekehrten (die
         // Wiederkehr vergibt neue netIds; eine alte Kennung träfe sonst ein fremdes, neu geborenes Leittier), das Revier zurück
         if (snap.verband != null) {
@@ -1881,7 +1877,7 @@ class AnazhRealm_kreatur_leben {
         const symphonie = this.state.symphony && this.state.symphony.enabled;
         if (symphonie) this.state.symphony.enabled = false; // still: kein Ping-Schwall
         // der Abstand der Spirale: abstandRaum × der Paar-Raum der Gattung (der Raum des ersten bei Größe 1 — die Größe
-        // jedes Tiers ist seine Identität, `_creatureBodySize`); ein Platz, der nicht trägt, gibt sein Tier dem nächsten
+        // jedes Tiers ist Erbe × Wuchs, `_creatureBodySize`); ein Platz, der nicht trägt, gibt sein Tier dem nächsten
         let abstand = 0;
         // DER LEBENSRAUM DES WURFS (Tiere K4): liegt der Wurf-Ort im Lebensraum der Gattung, steht jeder Geworfene in ihm (ein
         // Platz am Saum, der schon Wald ist, gibt sein Tier dem nächsten); ein Akt, der anderswo wirft, wirft frei
@@ -1898,8 +1894,10 @@ class AnazhRealm_kreatur_leben {
             const x = ort.x + Math.cos(a) * abstand * Math.sqrt(geboren.length);
             const z = ort.z + Math.sin(a) * abstand * Math.sqrt(geboren.length);
             // außer Blick ist der LEIB, der dort stünde (seine Kugel, `_kreaturLeibImBlick`; ein Tier ohne
-            // Bestand würfelt seine Größe erst im Guss — gefragt wird die größte des Gesetzes) — auch der erste
-            const bs = tiere ? tiere[geboren.length].bs : AnazhRealm._verhaltenGesetz().groessen.at(-1).max;
+            // Bestand erbt seine Größe erst im Guss — gefragt wird die größte des Gesetzes: das größte Erbe, ausgewachsen)
+            const bs = tiere
+                ? this._bestandGroesse(tiere[geboren.length])
+                : this._creatureBodySize(AnazhRealm._wuchsGesetz().grenzen.max, AnazhRealm._wuchsGesetz().reifeS);
             if (gattung && this._kreaturLeibImBlick(x, z, gattung, bs)) continue;
             if (k > 0) {
                 const fern = Math.hypot(x - p.x, z - p.z) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN;
@@ -1978,8 +1976,9 @@ class AnazhRealm_kreatur_leben {
             : Object.keys(bilanz)
                   .filter((g) => bilanz[g].geburt > 0 && bester[g] && rng() < bilanz[g].geburt)
                   .map((g) => bester[g]);
-        // die Nummer zählt je Region, die Größe würfelt ihr Strom (`_creatureBodySize`): keine Region rückt die Tiere einer
-        // anderen
+        // die Nummer zählt je Region, das ERBE speist ihr Strom (`_kreaturErbe` — die EINE Stelle, die ein Genom später aus
+        // dem Eltern-Mittel speist; heute trägt die Geburt keine Eltern): keine Region rückt die Tiere einer anderen. Geboren
+        // wird mit Alter 0 — die Größe wächst mit dem Alter (`_bestandGroesse`).
         const R = this._bestandRegion(key, false);
         const geboren = [];
         for (const best of wuerfe) {
@@ -1988,12 +1987,9 @@ class AnazhRealm_kreatur_leben {
             const kopf = zeile ? zeile[0] + Math.floor(rng() * (zeile[1] - zeile[0] + 1)) : 1;
             const wurf = [];
             for (let k = 0; k < kopf; k++) {
-                const [id, bs] = [
-                    key + "." + ++R.seq,
-                    this._creatureBodySize("b" + key + "." + Math.floor(rng() * 1e9)),
-                ];
+                const [id, erbe] = [key + "." + ++R.seq, this._kreaturErbe("b" + key + "." + Math.floor(rng() * 1e9))];
                 const v = wurf.length ? wurf[0].id : id;
-                wurf.push({ id, soul: best.soul, g, bs, alterS: 0, x: best.x, z: best.z, v });
+                wurf.push({ id, soul: best.soul, g, erbe, alterS: 0, x: best.x, z: best.z, v });
             }
             R.tiere.push(...wurf);
             geboren.push(...wurf);
@@ -2339,12 +2335,21 @@ class AnazhRealm_kreatur_leben {
         return { ha: (S / BR.zellen) ** 2 / 1e4, zellen };
     }
 
+    // DIE GRÖSSE EINES TIERS DES BESTANDS (ohne Leib): dieselbe Funktion wie am Leib (`_creatureBodySize`) — sein Erbe × der
+    // Wuchs seines Alters.
+    _bestandGroesse(t) {
+        return this._creatureBodySize(t.erbe, t.alterS);
+    }
     // DIE MASSE EINES TIERS DES BESTANDS (kg — die EINE Masse des Leibs, `_leibMasse`, ohne Leib): das Volumen der Gestalt seiner
-    // Gattung bei Größe 1 (`_gattungLeib`) × Größe³ × ρ; sein Temperament daraus wie am Leib (`_creatureTemperament`).
+    // Gattung bei Größe 1 (`_gattungLeib`) × Größe³ × ρ; sein Temperament daraus wie am Leib (`_creatureTemperament`). Beide
+    // gemerkt je Größe: das Tier wächst mit seinem Alter (das Jungtier ist leicht und jagt nicht).
     _bestandKg(t) {
-        return t.kg || (t.kg = this._gattungLeib(t.g).v * t.bs ** 3 * this._leibRho(false));
+        const L = this._bestandGroesse(t);
+        if (t._kgL !== L) [t.kg, t.wild, t._kgL] = [this._gattungLeib(t.g).v * L ** 3 * this._leibRho(false), undefined, L];
+        return t.kg;
     }
     _bestandWild(t) {
+        this._bestandKg(t);
         if (t.wild === undefined) {
             const T = AnazhRealm._verhaltenGesetz().temperament.gattung;
             const d = this._ofenKreaturDials(t.g).dials;
@@ -2492,8 +2497,8 @@ class AnazhRealm_kreatur_leben {
             const tier = {
                 soul: ud.soul,
                 g,
-                bs: ud.bodySize,
-                alterS: ud.alterS || 0,
+                erbe: ud.erbe,
+                alterS: ud.alterS,
                 x: a.x,
                 z: a.z,
                 v,
@@ -2600,7 +2605,12 @@ class AnazhRealm_kreatur_leben {
             if (this._bestandLeiber(fehlt, G.tiere).length || !--suchen) break;
             fehlt[0]._ohneOrt = st.spielZeit + 6 * AnazhRealm._bestandGesetz().B.taktS;
         }
-        for (const c of st.creatures) if (c.userData._bestand) c.userData.alterS = c.userData._bestand.alterS;
+        // das Alter des Tiers wird das des Leibs, und der Leib wächst mit ihm (`_kreaturGroesseSetzen`: nur wo die Größe sich ändert)
+        for (const c of st.creatures)
+            if (c.userData._bestand && c.userData.alterS !== c.userData._bestand.alterS) {
+                c.userData.alterS = c.userData._bestand.alterS;
+                this._kreaturGroesseSetzen(c);
+            }
     }
     // WER BLEIBT GEZEICHNET (die EINE Frage der Zeichnung und des Weichens): ein Leib außerhalb des Bestands, einer im Riss (Opfer
     // oder Jäger), gebunden, mit Auftrag oder im Nah-Kreis. `jagen` = die Jäger der offenen Risse (`_bestandJagen`).
@@ -2680,7 +2690,7 @@ class AnazhRealm_kreatur_leben {
             const z = t.z + Math.sin(k * 2.39996) * 25 * Math.sqrt(k);
             if (
                 Math.hypot(x - p.x, z - p.z) < AnazhRealm.CREATURE_SPAWN_FAR_MIN ||
-                this._kreaturLeibImBlick(x, z, t.g, t.bs)
+                this._kreaturLeibImBlick(x, z, t.g, this._bestandGroesse(t))
             )
                 continue;
             if (this._kreaturGrundFrei(x, z) && (!imRaum || lebt(x, z))) return { x, z };
@@ -2694,9 +2704,15 @@ class AnazhRealm_kreatur_leben {
             ? this._restoreCreatureFromSnapshot(
                   Object.assign({}, t.snap, { position: { x, y, z }, verband: undefined })
               )
-            : this.spawnCreatureAt(x, y, z, "happy", t.soul, { bodySize: t.bs });
+            : this.spawnCreatureAt(x, y, z, "happy", t.soul, { erbe: t.erbe, alterS: t.alterS });
         if (!c) return null;
-        Object.assign(c.userData, { alterS: t.alterS, wanderAnchor: { x: t.x, z: t.z }, name: this._bestandName(t) });
+        Object.assign(c.userData, {
+            erbe: t.erbe,
+            alterS: t.alterS,
+            wanderAnchor: { x: t.x, z: t.z },
+            name: this._bestandName(t),
+        });
+        this._kreaturGroesseSetzen(c); // die Größe des Tiers (Erbe und Alter des Bestands; ein Stand kehrt so wieder)
         [c.userData._bestand, t.leib, t.snap] = [t, c, null];
         return c;
     }
@@ -3833,4 +3849,28 @@ AnazhRealm._bestandGesetz = function () {
         return AnazhRealm._bestandGesetzMemo;
     }
     return AnazhRealm._kernPflichtBruch("tetrapoda:BESTAND_GESETZ");
+};
+// DER WUCHS (tetrapoda WUCHS_GESETZ + wuchsGrenzen · wuchsErbe · wuchsReifeS · koerperGroesse, w28-kreatur-groesse): die
+// Körpergröße = Erbe × Wuchs des Alters; die Lebensspanne ist FAUNA_MAX_AGE_MS. Fail-closed.
+AnazhRealm._wuchsGesetz = function () {
+    if (AnazhRealm._wuchsGesetzMemo) return AnazhRealm._wuchsGesetzMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const W = k && k.WUCHS_GESETZ;
+    if (
+        W &&
+        [W.geburt, W.reifeAnteil, W.erbeSigma, W.grenzeSigma].every(Number.isFinite) &&
+        ["wuchsGrenzen", "wuchsErbe", "wuchsReifeS", "koerperGroesse"].every((f) => typeof k[f] === "function")
+    ) {
+        const lebenS = AnazhRealm.FAUNA_MAX_AGE_MS / 1000;
+        AnazhRealm._wuchsGesetzMemo = Object.freeze({
+            W,
+            lebenS,
+            grenzen: k.wuchsGrenzen(W),
+            reifeS: k.wuchsReifeS(lebenS, W),
+            erbe: (u1, u2, u3, u4) => k.wuchsErbe(u1, u2, u3, u4, W),
+            groesse: (erbe, alterS) => k.koerperGroesse(erbe, alterS, lebenS, W),
+        });
+        return AnazhRealm._wuchsGesetzMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("tetrapoda:WUCHS_GESETZ");
 };

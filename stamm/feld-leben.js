@@ -2155,8 +2155,8 @@ class AnazhRealm_feld_leben {
         const t = f.tier;
         const L = AnazhRealm._lebensraumGesetz().L.gattung;
         if (f.art !== "annahme" || !t || typeof t.soul !== "string" || !(t.g in L)) return false;
-        if (![t.bs, t.alterS, t.x, t.z].every(zahl)) return false;
-        const tier = { soul: t.soul.slice(0, 48), g: t.g, bs: t.bs, alterS: t.alterS, x: t.x, z: t.z };
+        if (![t.erbe, t.alterS, t.x, t.z].every(zahl)) return false;
+        const tier = { soul: t.soul.slice(0, 48), g: t.g, erbe: t.erbe, alterS: t.alterS, x: t.x, z: t.z };
         tier.v = typeof t.v === "string" ? t.v.slice(0, 48) : null;
         tier.name = typeof t.name === "string" ? t.name.slice(0, 48) : undefined;
         return this._feldAkt({ art: "annahme", w, key, id, tier }, false, sofort, true);
@@ -2182,11 +2182,11 @@ class AnazhRealm_feld_leben {
             kacheln.push([ix * S - cs, iz * S - cs, (ix + 1) * S + cs, (iz + 1) * S + cs]);
             const R = F[key];
             if (!R) continue;
-            const tiere = R.tiere.map(({ id, soul, g, bs, alterS, x, z, v, name, gehege }) => ({
+            const tiere = R.tiere.map(({ id, soul, g, erbe, alterS, x, z, v, name, gehege }) => ({
                 id,
                 soul,
                 g,
-                bs,
+                erbe,
                 alterS,
                 x,
                 z,
@@ -2250,7 +2250,7 @@ class AnazhRealm_feld_leben {
                         typeof t.id === "string" &&
                         typeof t.soul === "string" &&
                         t.g in LG &&
-                        [t.bs, t.alterS, t.x, t.z].every(zahl)
+                        [t.erbe, t.alterS, t.x, t.z].every(zahl)
                 )
                 .map((t) => ({ ...t, v: t.v == null ? null : String(t.v) }));
             if (!fremd) R[key] = { t: r.t, seq: r.seq, tiere };

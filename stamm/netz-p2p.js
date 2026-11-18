@@ -1490,6 +1490,9 @@ class AnazhRealm_netz_p2p {
                 z: +c.position.z.toFixed(2),
                 yaw: +((c.rotation && c.rotation.y) || 0).toFixed(2),
                 soul: (c.userData && c.userData.soul) || "wesen",
+                // DIE GRÖSSE REIST ALS IHR GESETZ (w28-kreatur-groesse): Erbe und Alter — die Kopie fragt dieselbe Funktion
+                e: c.userData && Number.isFinite(c.userData.erbe) ? +c.userData.erbe.toFixed(4) : null,
+                a: c.userData && Number.isFinite(c.userData.alterS) ? +c.userData.alterS.toFixed(1) : null,
             };
             // DER LEICHNAM REIST MIT SEINER LAGE (Welle LF kampf Nachbesserung 3): die Quaternion des Kipp-Takts
             // (_tickLeichname) — die Kopie liegt, wie der Leib beim Sender liegt, und sinkt liegend. Vorher reiste nur die
@@ -1517,21 +1520,28 @@ class AnazhRealm_netz_p2p {
             const ey = this._fremdeZahl(e.y);
             const ez = this._fremdeZahl(e.z);
             if (!Number.isFinite(ex) || !Number.isFinite(ey) || !Number.isFinite(ez)) continue;
+            // S7 — DIE KOPIE TRÄGT DIE GRÖSSE DES ORIGINALS aus seinem Erbe und Alter (`_creatureBodySize`, das Gesetz kappt
+            // das Erbe in sein Band — ein fremdes Datum macht keinen Riesen); ohne beide keine Kopie (fail-closed). Bis
+            // w28-kreatur-groesse würfelte die Kopie aus der netId, das Tier des Bestands trug eine andere Größe.
+            const ee = this._fremdeZahl(e.e);
+            const ea = this._fremdeZahl(e.a);
+            if (!Number.isFinite(ee) || !Number.isFinite(ea)) continue;
+            const groesse = this._creatureBodySize(ee, ea);
             let rc = remote.get(key);
             if (!rc) {
                 const mesh = this._buildCreatureGroup(typeof e.soul === "string" ? e.soul : "wesen");
                 if (!mesh) continue;
-                // S7 — die Sicht-Kopie trägt die Körpergröße des Originals (aus seiner netId
-                // = e.id deterministisch abgeleitet → derselbe Wuchs wie beim Sender, ohne ein
-                // eigenes Sync-Feld; der gewachsene Wald-Disziplin Γ5 treu).
-                const _peerBs = this._creatureBodySize(e.id);
-                mesh.scale.setScalar(_peerBs);
                 mesh.position.set(ex, ey, ez);
                 // die Kopie trägt kein Feld (kein Ziegel): ihr Nah-Kreis ist das Feld des Stufen-Gesetzes (`_kreaturNah`)
                 mesh.userData._kopie = true;
                 if (this.state.scene) this.state.scene.add(mesh);
                 rc = { mesh, peerId };
                 remote.set(key, rc);
+            }
+            // die Kopie wächst mit dem Original
+            if (rc.mesh.userData.bodySize !== groesse) {
+                rc.mesh.userData.bodySize = groesse;
+                rc.mesh.scale.setScalar(groesse);
             }
             rc.tx = ex;
             rc.ty = ey;

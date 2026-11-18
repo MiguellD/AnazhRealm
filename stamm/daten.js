@@ -3147,7 +3147,7 @@ class AnazhRealm_daten {
             "tat.kreaturen-farbe": ["färbt alle Kreaturen", "tints all creatures"],
             "tat.kreaturen-gemuet": ["ruft {n} {gemuet} Kreaturen herbei {ort}", "calls {n} {gemuet} creatures {ort}"],
             "tat.kreaturen-gemuet-setzt": ["setzt die Kreaturen-Stimmung auf „{gemuet}“", "sets the creatures' mood to “{gemuet}”"],
-            "tat.kreaturen-groesse": ["wiegt die Kreaturen-Größe um {n} (die bodySize-Achse, im Größen-Band)", "scales the creatures' size by {n} (the bodySize axis, within the size band)"],
+            "tat.kreaturen-groesse": ["wiegt das Erbe der Kreaturen um {n} (im Band des Wuchs-Gesetzes)", "scales the creatures' inherited size by {n} (within the growth law's band)"],
             "tat.kreaturen-tempo": ["wiegt das Kreaturen-Tempo um {n} (im Wander-Band)", "scales the creatures' pace by {n} (within the wander band)"],
             "tat.lava": ["gießt Lava bei ({x}, {z})", "pours lava at ({x}, {z})"],
             "tat.leben": ["trägt Leben ins Feld {ort}", "carries life into the field {ort}"],

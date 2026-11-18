@@ -1696,8 +1696,8 @@ class AnazhRealm_dirigent_takt {
 
     _loopWeatherAndGrowth(delta) {
         // ### Kreaturen und Wetter ### — das Wachsen der Tiere (updateGrowth, ×1,01 je 5-%-Würfel, V7.66) ist gefallen:
-        // die Größe ist die Achse bodySize aus der Identität (Leben-Prüfung R-D2: ×1,05 in Minuten, der Reload setzte
-        // zurück).
+        // die Größe folgt dem Lebenslauf (tetrapoda WUCHS_GESETZ: Erbe × Wuchs des Alters, `_creatureBodySize`; Leben-Prüfung
+        // R-D2: der Würfel wuchs ×1,05 in Minuten, der Reload setzte zurück).
         const _ct = performance.now();
         this.updateCreatures(delta);
         this._tickBewohner(delta); // die Bewohner der Siedlungen (Meisterkarte mensch.K1)
