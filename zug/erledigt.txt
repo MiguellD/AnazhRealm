@@ -1655,3 +1655,4 @@ omen-gtx-gtx-c1e6f29a-w0441-1-c1e6f29a GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · G
 2026-11-18 04:58 landung ABGEBROCHEN main c1e6f29a: nachwache wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 52 stellen sich hinten an
 2026-11-18 04:59 landung Zwischenstand main c1e6f29a: misst 52 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (2 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-gtx-c1e6f29a-w0459-1-c1e6f29a GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN karte2.mensch.stadt.siedlungsnetz#1 ‖ karte2.mensch.stadt.siedlungsnetz#1: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km (punkte-maschine 6adabc33 messung/c1e6f29a-gtx.json)
+2026-11-18 05:14 landung ABGEBROCHEN main c1e6f29a: nachwache wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 51 stellen sich hinten an
