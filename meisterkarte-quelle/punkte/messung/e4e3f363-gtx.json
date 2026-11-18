@@ -1,7 +1,7 @@
 {
  "sha": "e4e3f3633cb0a14a49432cc449f79244a5fba9f4",
  "geraet": "gtx",
- "zeit": "2026-11-18T15:55:38.234Z",
+ "zeit": "2026-11-18T15:59:04.423Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.erleben.klang.landschaft#1": {
@@ -619,6 +619,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#1": {
+   "gruen": true,
+   "zahl": "✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 63 Median 78 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.99 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 21 Median 33 · halbe Nacht bei Sonne -16.0° | -15.8° · γ 0.92 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 34 Median 45 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 13 Median 20 · halbe Nacht bei Sonne -14.0° | -15.1° · γ 0.90 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 72↔75 36↔44 47↔53 21↔23; roh 49↔47 35↔21 28↔29 14↔17) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":3,\"hell\":0.17,\"Y\":0.013,\"X\":0.0071,\"rb\":0.001 · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 4.45,
+   "gpu": "nvidia/pascal",
+   "konsum": "k5f120ca56834",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k43059977d5e2",
+   "s": 266.5,
+   "fremd": {
+    "s": 269.8,
+    "takte": 125,
+    "fremdS": 61.31,
+    "kerne": 0.227,
+    "fensterKerne": 0.553,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      12.75
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.38
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      9.22
+     ]
+    ],
+    "dienerS": 81.67,
+    "diener": [
+     [
+      "System",
+      38.39
+     ],
+     [
+      "dwm.exe",
+      30.53
+     ]
+    ],
+    "geraetS": 58.06,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.67
+     ],
+     [
+      "svchost.exe",
+      24.45
+     ],
+     [
+      "SearchIndexer.exe",
+      1.88
+     ]
+    ],
+    "eigenS": 450.97,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T15:59:04.423Z",
+   "abdruck": "d546900e8e0c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -632,23 +701,24 @@
   "k604cf14b4504": "dVTRjpswEPyXPLblnAAOxtI9OOHUnNSquU9YmzVwIRDZENpU/fcKAkmAOz+BNeOdnR377+IE6gAJPr3bsljwxZfFt4WFMzoWzRnN07td8MVS+UAZF9dFhBDbFqZMdqosyTNJQBaQHtGpTYVZ/qQ62koxBOSkeRHNnpA9CcimeX6eUnOJcelUoHEgytgNPOBTYG0TkOhArbtiPZj6K9+jnHSLRWL/ToYl3oQgzcu0ooQiHivVHlC94q9/hHgRM4VxBlg5eVbYoaaKqfRcfis07yo20DgXwDRHMxSh2g+DQWhnZbMPyYSo89raUTHmxdRlnJAZNkGbqbRyTqaUWAzmhW6wAv6B08mpdvSjIpASmJz6nAIWCZqxhsCnyufkN5seeoAjGnAKSHtouPQCV969IYTs5lryTnhXYhDOYhkGekRsZ7hrWqci1v4kt222u4YxSsR9vU2KWJVm5ji2R2saw5L/mEuyKcRonENpq7smHwCH5EddoMTej6bMezM9z5XrJWUPvTAidjPvbKmrBgw6yanuiegjDSgX4nUGruB4HJpQLjI6HZyt2mA/yqA+rtZd5JJP5nC9Bs4Fs3wgBUqtPOTbn2La59nA0QGZmEzrYdqSKh1+FM4G88qRZVkNSC8GT3HikeLmSthdg819glFTqu/b5K1/aQrW7ydT3d3ppaluncr1Uvtcn9vbqGbozFROAyq9zUdLhJB/AL2gyTHBkY2xLz2IW/SDUn/4+DrK62U25UuGrcGFre2QqjCIwz7p45E0aA4SisPQFVvHa7eL3+aXuEZ+uwsjEpF98xB8sRVhI8TrdsMed5P+LTuhIidT6qx9+UgKtU0hr+5P/r//",
   "k31b05edffd27": "dVRdj5swEPwveWzLOeEjGEv34IRIqVSpuZ+wttfAhUBkQ2hT9b9XcHES4LpPgGa8s7Nj/izOII+Q4cu7rasFW3xZfFtYuKBn0VzQvLzbBVssZQgRZfyjCOd828OkKc6NJWUhCIgK8hN6rWmwKF/kQFtJioCMdDveHQg5kJhsutfXKbUUqGqvAY2OKJQfB8CmwNZmINCDVg/NbuAoXIVBxMhQNOWHd+KKv3FOut20o4BKjZXqACK9Yt9/c77jM4WqAGy8sqis6ylVJAKf3RvNp1IGOu8KmJdoXJNIh0nshA5WdoeETIi6bK0dNaOBinzKCJlhM7SFzBvvbGqBlTMv8eMVsE+czs6tp58VgRBAxdTnHLDK0Iw1xGEkQ0Z+0emhRzihAa+C/AZNlkHsi4c3hJD9XEs5CB9aOOFUiSTWI2K/w33XO5XS/iW7f6b7jzCmGX/U26SJlXlhTmN7tI4ULNmPuSSbg0LjHWvbPDSFAOiSnw6B4ocwnTIfw9x4vlgvI/o0CyV8P/PO1rrpwKCXndsbEUOM4ohx/n0GbuB0ckNIH2k0XZxt+mA/y4hCXK2HyGX/2cPHNfCuWJSOFEu5CnB6+MXAyQORmUJrt2kRSZ18FswOy8YTdd04ZKAgkIwEpLo7kgxXYPPYXtrVcrfN3viksqnm4fTaNPcpxXqpQ6Yv/U2UM3RhGq8Dmd93owVCwj6BXtGUmOHIQhWKAFSPflIauoevo6xeZxu+FtibW9nWukQlsUpuKR+vo0NzFFAd3VR0rdb+EL3NT+7ivkxJSg7dsz9brvr37Yb2h51RkrOpddH/5UgOrc2hbB6/97//AA==",
   "kfdbeddcb9bee": "dVRdj5swEPwveWzrcwI4gKU+OB/SVarU3E9Y22vgQiCyIVSp+t8ruDgJcN0nQDPe2dkxfxZnUEfI8OXd1dWCL74svi0cXJA4tBe0L+9uwRdLFQFLuPgoKoTY9jBli3PjaFlICrKC/ISktQ0W5YsaaCuVICCn3V50B0oPNKab7vv3KbWUqGvSgEFPlDqIQ+BTYOsykEigNUOzG5hFqyhknA6V7MThnfoSb0LQbj/tKKHSY6UmBGZWw4B7MVOoC8CGlEXlfE+lmQwDfm80n0pb6MgVMC/R+ibMRGnshQ5WdoeUToimbJ0bNUtCzYKEUzrDZugKlTfkbGuJlTcvDeIV8E+czs4tMc+KQEpI5NTnHLDK0I41xBFTEae/k+mhRzihBVJBfoOmyzAO5MMbSunrXEs5CB9aeOGJlmlsRsR+h69d79Qu6V+y++fk9SOMu0w86m3SxKm8sKexPcYwDUv+cy7J5aDRkmPtmoemCAB98ndDoMQh2k2Zj2FuvECulyx5miWh4nXmnatN04FFkp3bGxEjZDHjQvyYgRs4nfwQKsCETRfnmj7YzzJYhKv1ELnsP3v4uAbkikXpSbFSqxCnh18snAjIzBbG+E1Lpkz6WTA7LBsi67rxyFBDqDi90uruSDpcgc1je7uuVvtt9jbTOJxW2+Y+lVwvTcTNpb95aoYubEM6UPl9F0YipPwT6BVtiRmOLNORDEH36CdlkX/4OsrmdbbRa4G9mZVrnU9QGuv0luqx/R3ao4Tq6KdK1nodDFHb/BI+3stdJya1Fbr/tt0k/WFnVPRsa1P0fzWaQ+tyKJvH7/zvPw==",
-  "k124cef83e846": "dVZdk6JYDP0vPo6DUQH5qOqHKF1jb3Vv6zxtPwZuLtAiWPeiWG7tf58CoRXszQOlcJKcnJsE/h1FhWI92VOeStbl5FMX+cgf/Rj9HEmKkorVzqghk0898kemTa7l+DCG9Ux5H+ON+46bzxOAB41VEmMpx7YHa8QA8felAtPFzqoNgAPyDODK6mCO/4biF2zgDJWIs+1uc8El4hsivgefnc8H3qxCgKAKLFhEMn5BXGKAcIbx87Z+GmzBHCP+3uLb+6Vms7xcLMRlvMJejH9crLDCZYW4qeR4DXCufr2urY+n0c9Rmgs+T5Jyn7UqHCjaUcz3wmg6saFZnVhdZZlGFtmu32YARFzVsEilh1KDSCk2NJdlxnvOy0nU+Lj2zCLXxxeUNY0vfjey8V2MLA2BwpySPRtHVXKatWFmkcvEPlTPjbobcKAurLMAn56GYbKQRWGUJLkLEoq5Y5I/BB51TCEbdJRN4hZsWzPLtP3rgbsBbj6hM9wi1kxWj1lDykWfuTTJljP/pUJ8fsSLlLg0sjTXXd5I2KE597+SVY8+iirjQpxkrLoktrQ8pyPbNqEHA0eZHbXuJXNNYc9dv27sATZmnUZJaRxUEXLeCejNnRn5y0dO8eFoyHtGFIbkhkOtE+I8ZtXn4Fh2ZPlwdodBd7RnRUZOSQv1pqYzD2/aAMD6kUvWEG9SdMRdEXqO7DkCQLxuWihwmz9ft91121Tx3Txth0kK3dfGs2b2lIcFF2ogoWUurAX5iC9D2jpKUrXvo6W0BU3918cidUKClbErdHmr0iLibj6Dpk1xYwVDz5s8rd88XExt904dF3D9cBq6kGVFio34cGwd2WLbsb8tpiQxqFzOpCntoUC6pP2+Q0Rzdr9D5KLH17Z4tmi6Pf6fFrhOoHHhNOucnCiameyv3nAoyInVjhOlcy4vfcpOaM2nYkjopGhvUBirVMru8EM7kt53c1RxVhphUXT70DMFmVHNPb/Tu96Ly7t1VhXR8yreft2ImutaxfhYa5OhUOWXOuFiKi1fNssjekCnqjQqipKvw5chk+d/A72wyjjmnvTCCk0SNfqOrdX9GPfG6/LQQpeU60PJ9VF3Les5wmsHs93nL/0tWb+aQ8p3XXXuQizm/l8YxK9j7CZ1GkAAQ5MV4na1vL2Xry/aJviBIzioQqb1woaEjjqhrPdZUHKp6FAIuvsukCy9he1jy/T5eqkDnjgXhYIyUcyTxmGf5lenH8PH+0IcszsAmeSJuT/67w8="
+  "k124cef83e846": "dVZdk6JYDP0vPo6DUQH5qOqHKF1jb3Vv6zxtPwZuLtAiWPeiWG7tf58CoRXszQOlcJKcnJsE/h1FhWI92VOeStbl5FMX+cgf/Rj9HEmKkorVzqghk0898kemTa7l+DCG9Ux5H+ON+46bzxOAB41VEmMpx7YHa8QA8felAtPFzqoNgAPyDODK6mCO/4biF2zgDJWIs+1uc8El4hsivgefnc8H3qxCgKAKLFhEMn5BXGKAcIbx87Z+GmzBHCP+3uLb+6Vms7xcLMRlvMJejH9crLDCZYW4qeR4DXCufr2urY+n0c9Rmgs+T5Jyn7UqHCjaUcz3wmg6saFZnVhdZZlGFtmu32YARFzVsEilh1KDSCk2NJdlxnvOy0nU+Lj2zCLXxxeUNY0vfjey8V2MLA2BwpySPRtHVXKatWFmkcvEPlTPjbobcKAurLMAn56GYbKQRWGUJLkLEoq5Y5I/BB51TCEbdJRN4hZsWzPLtP3rgbsBbj6hM9wi1kxWj1lDykWfuTTJljP/pUJ8fsSLlLg0sjTXXd5I2KE597+SVY8+iirjQpxkrLoktrQ8pyPbNqEHA0eZHbXuJXNNYc9dv27sATZmnUZJaRxUEXLeCejNnRn5y0dO8eFoyHtGFIbkhkOtE+I8ZtXn4Fh2ZPlwdodBd7RnRUZOSQv1pqYzD2/aAMD6kUvWEG9SdMRdEXqO7DkCQLxuWihwmz9ft91121Tx3Txth0kK3dfGs2b2lIcFF2ogoWUurAX5iC9D2jpKUrXvo6W0BU3918cidUKClbErdHmr0iLibj6Dpk1xYwVDz5s8rd88XExt904dF3D9cBq6kGVFio34cGwd2WLbsb8tpiQxqFzOpCntoUC6pP2+Q0Rzdr9D5KLH17Z4tmi6Pf6fFrhOoHHhNOucnCiameyv3nAoyInVjhOlcy4vfcpOaM2nYkjopGhvUBirVMru8EM7kt53c1RxVhphUXT70DMFmVHNPb/Tu96Ly7t1VhXR8yreft2ImutaxfhYa5OhUOWXOuFiKi1fNssjekCnqjQqipKvw5chk+d/A72wyjjmnvTCCk0SNfqOrdX9GPfG6/LQQpeU60PJ9VF3Les5wmsHs93nL/0tWb+aQ8p3XXXuQizm/l8YxK9j7CZ1GkAAQ5MV4na1vL2Xry/aJviBIzioQqb1woaEjjqhrPdZUHKp6FAIuvsukCy9he1jy/T5eqkDnjgXhYIyUcyTxmGf5lenH8PH+0IcszsAmeSJuT/67w8=",
+  "k5f120ca56834": "dVRNb6MwEP0vObZ1nfARwFIPTojUSLtSetzj2IyBhgCyTdnNav/7KgTSAO2ckHgz896b8fxd1CCPkOLzu6nKBVs8LJ4WBj6QGNQfqJ/fzYItltIDP2T8GpRzvr3ApM5ra2iRCwqihOyEpNEW8+JZdmkrGSIgo+2OtwdKDzSgm5bfYsNfXqZlCoFJRSwoHIqIxAlcYFNgY1IQSKBRXeMe/DCBCSiTMSflgq9WbP+H8928f5IDWlLkpRkqysQXrsPoEO08R0NLzoBZgXpo4isvCvqksBPbHiI6SVRFY8yoWegmvhMySmfYFE0uM0tqXQksB2siJ1gB28w5pXVD1D0jEAJCMXUxAyxT1GMOgedLj9Hf4bToEU6ogZSQ9dBo6QaO+PSGUvo651J0xLsW5TdjMjLL9WksTik/gSX7MS9oMkhQk2Nl7A0degA4bGhM+Rvn/ODF08xPKn2eI9ZLP7yTEFL+OlNuKmVb0EjSuukT0UM/8Bnn+xnYwuk0iJAOhv7UdmMva3lPw/dwte4WJv3GxesSkzPmxZAUSLlykW1/8qnODw0nAiLVuVLDrIQvVfTVarVYWCKqyg5INwFXXriUN1ei8PpgbxG3ldxt0zc+jo1O+Zx716HS9qZWrJfKY6p7T3KGzrUlLcjsNiMlECL2BfSMusAUR1YmnnAhuaDv2HrDx+P9stLzbNLnHC8ml6Yxw2ZFQRKp64b0x2s/Phwt6qOA8jioC9fJ2mExj1P6uHvtGy9jGtNDe2/WlquW8/12E45N/MXjvkGNkirQAqmFlGhUoyt9+VvrSuWXK0czaEwGhf2E/PsP"
  },
  "sitzung": {
-  "start": "2026-11-18T15:55:04.713Z",
-  "ordner": "sitzung-20261118-165504",
+  "start": "2026-11-18T15:58:35.752Z",
+  "ordner": "sitzung-20261118-165835",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 8.1,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "siedlung.K4#2",
-    "s": 22.5,
-    "takte": 830,
+    "ort": "genesis",
+    "vor": "karte2.planet.kosmos.sternhimmel#1",
+    "s": 20.3,
+    "takte": 592,
     "chunks": 81,
     "nach": null
    }
@@ -656,46 +726,40 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "siedlung.K4#2",
+    "probe": "karte2.planet.kosmos.sternhimmel#1",
     "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "neu: () => wert",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
-    "haelt": [
-     "const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S =",
-     "const K = window.__k4, Z = r.state.worldMeta.settlementCells; const k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\") ",
-     "const K = window.__k4, Z = r.state.worldMeta.settlementCells, BS = r._bewohnerSiedlungen; const haeuserVon = (k) => { co"
-    ],
+    "haelt": [],
     "heap": [
-     186.6,
-     302.7
+     220.4,
+     264.2
     ],
-    "ungemessen": "den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.state.worldMeta.settlementCells; const k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\")  | const K = window.__k4, Z = r.state.worldMeta.settlementCells, BS = r._bewohnerSiedlungen; const haeuserVon = (k) => { co — Heap nach der Rücknahme 186.6 → 302.7 MB (+116.1 > 64)"
+    "ungemessen": null
+   }
+  ],
+  "wanderung": [
+   {
+    "probe": "karte2.planet.kosmos.sternhimmel#1",
+    "ort": "genesis",
+    "m": 1082.54,
+    "dreh": 0.401
    }
   ],
   "messHalt": [
    {
-    "probe": "siedlung.K4#2",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "siedlung.K4#2",
+    "probe": "karte2.planet.kosmos.sternhimmel#1",
     "gehalten": [
      "skala",
-     "spiegel"
+     "spiegel",
+     "tiere"
     ],
     "offen": []
    }
@@ -703,28 +767,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
+   "bilder": 2226,
+   "frameP95": 33.32,
+   "taktP95": 13.83,
+   "vramMax": 142.8,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "siedlung.K4#2",
-     "m": 639,
+     "probe": "karte2.planet.kosmos.sternhimmel#1",
+     "m": 1083,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 93,
+   "zapfen": 362,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 102.6,
-  "minuten": 1.8
+  "fahrtS": 370.5,
+  "minuten": 6.25
  },
  "ungemessen": {
   "mensch.K5#1": {
