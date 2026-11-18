@@ -779,7 +779,12 @@ hauptLauf(async () => {
         );
         // das L-Haus: der Grund unter der leeren Ecke der obb (x > 0, z < 0) liegt 1 m tiefer — unter den Wänden (`grund.boxen`)
         // steht es eben (Sockel 0), die obb allein läse die Ecke als Sockel 1
-        const lHaus = Object.assign(haus(8, 8, 10), { grund: { boxen: [[-2.5, 0, -2.5, 2.5, 0, 3], [0, 2.5, 0, 2.5, 0, 3]] } });
+        // das Grund-Datum des Kerns (`grundVon`, keine Hüllen-Zeile): seine Boxen im Rahmen des Hauses
+        const lHaus = Object.assign(haus(8, 8, 10), { grund: {} });
+        lHaus.grund.boxen = [
+            [-2.5, 0, -2.5, 2.5, 0, 3],
+            [0, 2.5, 0, 2.5, 0, 3],
+        ];
         const ecke = (x, z) => (x - 100 > 8.2 && z - 100 < 7.8 ? 9 : 10);
         const [u6, u7] = [ortUrteil(ortT([lHaus]), ecke), ortUrteil(ortT([haus(8, 8, 10)]), ecke)];
         check(
