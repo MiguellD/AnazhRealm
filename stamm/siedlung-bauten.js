@@ -2464,7 +2464,12 @@ class AnazhRealm_siedlung_bauten {
         // EIN FLÜCHTIGER BLOCK (K69, `_satzBlock`): seine Arrays sind Views der Werkbank — der Bereich hält keine davon (die
         // nächste Rechnung überschreibt sie), nur die Views in den Satz; wer die Werte braucht, rechnet sie aus `quelle` nach.
         if (geom.fluechtig) {
-            for (const { name, form } of s.attr) if (form) geom.attributes[name].array = null;
+            // (auch der Begleiter der vierten Stelle, `w`: Verband und Lage in der Wand sind Views derselben Werkbank)
+            for (const { name, form, w } of s.attr)
+                if (form) {
+                    geom.attributes[name].array = null;
+                    if (w && geom.attributes[w]) geom.attributes[w].array = null;
+                }
             geom.index = null;
             geom.zellen = null;
         }
