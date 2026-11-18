@@ -1610,21 +1610,24 @@ class AnazhRealm {
         // Reichweite (`_leuchtReichweite`). Ohne Lesung hält sie die letzte (`_augeLux`).
         const aE = this._belichtungGelesen ? this._belichtungE : null;
         if (aE) {
-            const aLux = (this._augeLux = __weltLicht.augeLux(
-                0.2126 * aE[0] + 0.7152 * aE[1] + 0.0722 * aE[2],
-                this._belichtungTag
-            ));
+            const aW = 0.2126 * aE[0] + 0.7152 * aE[1] + 0.0722 * aE[2];
+            const aLux = (this._augeLux = __weltLicht.augeLux(aW, this._belichtungTag));
+            // das Maß der Stunde (welt-licht.js `augeMass`): Becken und Glut stehen in der Zahl, die die Welt jetzt trägt
+            const m = (this._augeMass = __weltLicht.augeMass(aW, this._belichtungTag));
             const ak = aLux + AnazhRealm.AUGE.knieLux;
-            atmo.lichtAuge.value.set(ak, __weltLicht.augeS(ak));
+            const U = AnazhRealm.AUGE;
+            atmo.lichtAuge.value.set(ak, __weltLicht.augeS(ak) * m, (U.welt / U.lux ** U.p) * m);
         }
+        const mass = this._augeMass ?? 1;
         // DIE HÖHE DER GLUT DER LAVA: die Leuchtdichte ihres Ausbruchs (Planck im Sichtbaren × Emissivität) durch dasselbe Auge
-        atmo.lavaGlut.value = __weltLicht.augeGlut(this._lavaAusbruchCdM2(), this._augeLux ?? 1);
+        atmo.lavaGlut.value = __weltLicht.augeGlut(this._lavaAusbruchCdM2(), this._augeLux ?? 1) * mass;
         // DIE GLUT JE DATUM (Fenster, Laternen-Kopf, das gemalte Glutbett): seine Leuchtdichte `cdM2` durch das Auge (welt-licht.js `augeGlut`) in der
         // Farbe seiner Temperatur, auf Luma 1 genormt — kein Zeitplan: über dem Mittag trägt sie nichts, die Dämmerung zündet sie
         for (const k in atmo.lichtGlut) {
             const c = this._lichtLinear(LG[k], atmo.lichtGlut[k].value);
             c.multiplyScalar(
-                __weltLicht.augeGlut(LG[k].cdM2, this._augeLux ?? 1) / (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b)
+                (__weltLicht.augeGlut(LG[k].cdM2, this._augeLux ?? 1) * mass) /
+                    (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b)
             );
         }
         const pool =

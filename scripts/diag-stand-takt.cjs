@@ -1518,10 +1518,10 @@ async function narbeSeite(MESS) {
                 r._leuchtTakt();
             }
             const A = st.atmoUniforms.lichtAuge.value;
-            return { aLux: r._augeLux, ak: A.x, s: A.y };
+            return { aLux: r._augeLux, ak: A.x, s: A.y, deckel: A.z };
         };
         // das gezeigte Licht einer Beleuchtungsstärke, wie der Stoff es aus `lichtAuge` rechnet (`_lichtPoolTerm`)
-        const zeigU = (E, A) => Math.min(A.s * (Math.pow(1 + E / A.ak, AU.q) - 1), (E * Math.pow(A.ak + E, AU.p - 1) * AU.welt) / Math.pow(AU.lux, AU.p));
+        const zeigU = (E, A) => Math.min(A.s * (Math.pow(1 + E / A.ak, AU.q) - 1), E * Math.pow(A.ak + E, AU.p - 1) * A.deckel);
         // der Kern einer brennenden Zelle aus der Ellipse ihrer Front (π·a·b, höchstens der Kreis in der Zelle, × Glut), je Viertelmeter
         const kernSoll = (z) => {
             const ha = (Math.max(0, st.spielZeit - z.t0) * z.R) / (1 + z.ecc);

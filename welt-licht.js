@@ -98,6 +98,15 @@ var __weltLicht = (function () {
             t = Math.max(0, Math.min(w, tag));
         return (AUGE.lux * t) / AUGE.welt + AUGE.lux * Math.pow((w - t) / AUGE.welt, 1 / AUGE.p);
     };
+    // DAS MASS DER STUNDE: die Zahl, die die Welt für ihre Umgebung JETZT trägt (`welt`, die Lesung des Messers), gegen die
+    // Zahl der Skala für dieselben Lux — in der Nacht 1 (die Nacht STEHT auf S), am Mittag der Mess-Wiese 1, dazwischen klein
+    // (Sonne 0°: 0,056 Einheiten für 779 lx, S gäbe 2,88 → 0,019; Sonne 10,8°: 0,112). Alles, was das Auge zeigt (Becken, Glut,
+    // das Becken im Messer), rechnet auf S und steht in der Welt × dieses Maß: ohne es stand die Lava bei Sonne 0° weiß mit
+    // orangen Bäumen (Riss 254/209/201, Baumlinie Luma 146; GTX 1050, 18.11.). EINE Zahl je Bild (`_leuchtTakt` → `_augeMass`).
+    const augeMass = (welt, tag = 0) => {
+        const s = augeS(augeLux(welt, tag));
+        return s > 0 ? Math.max(0, welt) / s : 1;
+    };
     // das gezeigte Licht einer Beleuchtungsstärke `lux` über der Umgebung `aLux`: das q-Gesetz, oben gedeckelt von der S-FORM
     // (`augeGlut`: mehr als seinen Anteil an der Anpassung zeigt kein Licht) — der obere Ast greift nachts ab E ≈ 6 × (A + knie),
     // 17 lx: der Kreis am Herd, das Gras am Lava-Ufer; darunter, wo der Abfall den Kreis zeichnet, steht das q-Gesetz allein.
@@ -1412,6 +1421,7 @@ var __weltLicht = (function () {
         MESOPISCH,
         augeS,
         augeLux,
+        augeMass,
         augeZeig,
         augeReichweite,
         augeGlut,

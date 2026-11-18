@@ -1954,10 +1954,9 @@ class AnazhRealm_bild_himmel {
         // jeder Fläche (`augeZeig` über der Umgebung DIESER Lesung) als Licht der Lesung — an der Lava schließt die Kamera, die
         // Wiese steht nicht mehr orange (Nacht, Mess-Wiese, GTX 1050: k 1,547 → Herd nah 0,631 · fern 0,842 · Lava 0,214)
         const lu = 0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2];
-        const bz = (this._belichtungBecken = __weltLicht.augeZeig(
-            this._beckenAmAuge(),
-            __weltLicht.augeLux(lu, this._belichtungTag)
-        ));
+        const bz = (this._belichtungBecken =
+            __weltLicht.augeZeig(this._beckenAmAuge(), __weltLicht.augeLux(lu, this._belichtungTag)) *
+            __weltLicht.augeMass(lu, this._belichtungTag));
         const k = __weltLicht.belichtung(
             [w[0] + bz, w[1] + bz, w[2] + bz],
             EA,
