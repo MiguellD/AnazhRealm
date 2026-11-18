@@ -2881,8 +2881,9 @@
                 return g;
             });
         };
+        // DER TAKT IST DER LOOP DES RENDERERS (Lehre 17): ein Instrument hält ihn an (`R.setAnimationLoop(null)`, das Labor der
+        // Albedo-Tafel) — die Bühne zeichnet dann kein Bild unter dem Licht der Messung
         const takt = (t) => {
-            imBild(takt);
             const dt = Math.min(0.1, (t - t0) / 1000 || 0);
             t0 = t;
             orbit.update();
@@ -2897,7 +2898,7 @@
             // DER TELLER: die Schauseite des Werks 40° aus der Sonne der Vorgabe-Uhr (nur ohne Uhr in der Adresse)
             const s = B.welt.richtung;
             if (!frage.has("uhr")) teller.rotation.y = Math.atan2(s.x, s.z) + (40 * Math.PI) / 180 - (o.schau || 0);
-            imBild(takt);
+            R.setAnimationLoop(takt);
             return S.bau();
         });
         return S;

@@ -463,13 +463,27 @@ function laborAlbedo(o) {
                 .filter(([m]) => m)
         );
         const artOf = (m) => ARTEN.get(m) || (m?.userData && typeof m.userData.__klasse === "string" ? m.userData.__klasse : "unknown");
-        const stoffOf = (m) => ({
-            kind: artOf(m),
-            r: m.roughness,
-            mt: m.metalness,
-            cc: m.clearcoat || 0,
-            seh: m.userData?.__seh || null,
-        });
+        // DAS WERK DER WELT AUF DER BÜHNE (AnazhHuelle.studio): sein Stoff ist ein Material des Wirts — Art, Rauheit, Metall,
+        // Klarlack und Seh-Klasse stehen in seinem Schlüssel (`_foundryMats`: Art|Rauheit|Metall … |cc:<k>@<r> … |v:<Seh>),
+        // gelesen wie die Welt-Tafel (licht-linsen `albedoSicht`)
+        const stoffInv = new Map(Object.entries(window.STUDIO?.buehne?.wirt?._foundryMats || {}).map(([k, m]) => [m, k]));
+        const wirtStoff = (k) => {
+            const t = k.split("|"),
+                zahl = (i) => (t.length > i && /^-?\d/.test(t[i]) ? Number(t[i]) : null),
+                cc = /\|cc:([\d.]+)@/.exec(k),
+                v = /\|v:([a-z]+)/.exec(k);
+            return { kind: t[0], r: zahl(1), mt: zahl(2), cc: cc ? Number(cc[1]) : 0, seh: v ? v[1] : null };
+        };
+        const stoffOf = (m) =>
+            stoffInv.has(m)
+                ? wirtStoff(stoffInv.get(m))
+                : {
+                      kind: artOf(m),
+                      r: m.roughness,
+                      mt: m.metalness,
+                      cc: m.clearcoat || 0,
+                      seh: m.userData?.__seh || null,
+                  };
         const matsOf = (x) => (Array.isArray(x.material) ? x.material : [x.material]).filter(Boolean);
         const alleMeshes = [];
         sc.traverse((x) => {
