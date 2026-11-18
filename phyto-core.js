@@ -5928,7 +5928,7 @@
         // der Flatten verschmilzt Teile EINES Stoffs nur bis zu dieser Summe (sonst je Teil) — die EINE Zahl, der Wirt
         // liest sie (`_foundryFlatVerschmelzen`)
         verschmelzVerts: 65536,
-        formAttr: ["uv", "aWurzel", "aSchale", "skinIndex", "aVerband"], // die Attribute, die der Wirt nur trägt, wo sie reisen
+        formAttr: ["uv", "aWurzel", "aSchale", "skinIndex", "aVerband", "aLage"], // die Attribute, die der Wirt nur trägt, wo sie reisen
         // DIE SEH-KLASSEN (Integration W8, 05.10.): was ein Stoff dem AUGE ist. Jedes Gesetzbuch stempelt sie an seinen
         // Stoff (`material.userData.__seh`), der Extraktor reicht sie als `mat.seh`; gefaltet wird nur innerhalb EINER.
         //   stoff  Holz · Putz · Stein · Textil · Gummi · Kunststoff — das Matte, Dielektrische
@@ -6329,6 +6329,8 @@
                     } else if (a.name === "aVerband" && !(m.aVerband && m.aVerband.array)) {
                         // der Verband des Teils (w28-haus-stoff): die Nummer der Zeile seines Stoffs in jede seiner Ecken
                         dst.fill(budgetVerband(m.mat), ov, ov + v);
+                    } else if (a.name === "aLage" && !(m.aLage && m.aLage.array)) {
+                        // ein Teil ohne Lage im Gefüge trägt 0 (der Puffer ist frisch): seine Zeile liest die Lage der Welt
                     } else {
                         const src = m[a.name].array;
                         const si = m[a.name].itemSize || s;
@@ -6504,11 +6506,17 @@
             // Dach, den Sockel und das Holz in den Putz), trägt jede Ecke die Nummer der Zeile IHRES Stoffs (`aVerband`) — der Wirt
             // legt sie in ein freies Byte seines Satzes und webt den Verband je Fläche. Tragen alle Teile denselben (oder keinen),
             // reist kein Attribut: der Stoff der Gruppe nennt ihn (`mat.verband`) — byte-alt.
+            // Ein Teil, das seine Zeile je Ecke schon trägt (die ferne Fachwerk-Wand, fachwerk `_wandLage`), zieht das Attribut mit;
+            // seine Lage im Gefüge (`aLage`: Felder quer · Felder hoch) reist ebenso — die Teile ohne sie tragen 0.
             if (
                 !attrs.some((x) => x.name === "aVerband") &&
-                g.teile.some((p) => budgetVerband(p.m.mat) !== budgetVerband(g.mat))
+                g.teile.some(
+                    (p) => (p.m.aVerband && p.m.aVerband.array) || budgetVerband(p.m.mat) !== budgetVerband(g.mat)
+                )
             )
                 attrs.push({ name: "aVerband", size: 1 });
+            if (!attrs.some((x) => x.name === "aLage") && g.teile.some((p) => p.m.aLage && p.m.aLage.array))
+                attrs.push({ name: "aLage", size: 2 });
             for (const p of g.teile) p.rueck = p.seite === 2 && g.seite !== 2;
             // Je Gelenk ein Eimer (geometrisch faltet nur, was am selben Gelenk hängt; der Ofen bindet die Eimer
             // eines Stoffs starr zu EINEM Draw). Unverändert reist ein Teil, an dem nichts zu tun ist: allein im

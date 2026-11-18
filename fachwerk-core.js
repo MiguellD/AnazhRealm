@@ -1821,14 +1821,21 @@
     //                    (× `korn` je Kanal, Deckung `deck`), die Kellenzüge alle zug[0] + ⌊Zufall · zug[1]⌋ Pixel, einen Pixel
     //                    stark, in `zugFarbe` mit der Deckung `zugDeck`
     //   naturstein       Quaderverband · fuge die Farbe der Fuge, stein der Ton des Quaders je Kanal (× 255 · t)
+    //   fachwerk         das Gefüge der Wand als Verband — für die Stufe, die keine Balken mehr baut (ab der Stufe 2 steht die Wand
+    //                    als Körper im gemessenen Ton der Fassade): der „Stein" ist das Gefach, die „Fuge" der Balken. feldM das
+    //                    Feld zwischen zwei Ständern (höchstens; `bayMax` des Gerüsts), riegelM das Feld zwischen zwei Riegeln
+    //                    (drei je Geschoss: Schwelle · Brüstung · Sturz · Rähm), staenderM · riegelStarkM die Balken. Die Lage der
+    //                    Ecke in IHRER Wand (in Feldern, `_wandLage`) reist mit ihr: der Ständer steht an der Ecke des Hauses,
+    //                    die Schwelle an seinem Fuß — nie am Raster der Welt.
     //   reihe            die NUMMER eines Verbands (0 = keiner): sie reist je Ecke zur Welt · rolle: welche Rolle welchen trägt
     var VERBAND_GESETZ = {
+        fachwerk: { feldM: 1.7, riegelM: 0.85, staenderM: 0.16, riegelStarkM: 0.13 },
         pxJeM: 128,
         mauerwerk: { steinM: 0.24, hoeheM: 0.071, fugeM: 0.011, versatz: 0.5, ton: [0.84, 0.3], fuge: 0xb7b0a2, grund: 0x964e3e },
         deckung: { breiteM: 0.18, deckM: 0.32, spaltPx: 2, reihePx: 1, schattenPx: 3, schatten: 0.27, versatz: 0.5, ton: [0.82, 0.32], grund: 0x9c4a35 },
         putz: { sprenkel: 5200, ton: [0.86, 0.2], korn: [255, 255, 252], deck: 0.5, kornPx: [1, 2], zug: [9, 7], zugFarbe: [120, 116, 108], zugDeck: 0.1, grund: 0xffffff },
         naturstein: { steinM: 0.46, hoeheM: 0.28, fugeM: 0.016, versatz: 0.5, ton: [0.88, 0.24], fuge: 0x6f6a60, stein: [0.92, 0.9, 0.86] },
-        reihe: ["", "mauerwerk", "deckung", "putz", "naturstein"],
+        reihe: ["", "mauerwerk", "deckung", "putz", "naturstein", "fachwerk"],
         rolle: { backstein: "mauerwerk", ziegel: "deckung", ziegel2: "deckung", putz: "putz", stein: "naturstein" },
     };
     function _verbandHex(hx) { return "#" + (hx + 0x1000000).toString(16).slice(1); }
@@ -1851,17 +1858,24 @@
     //   fugeU · fugeV    die HALBE Fuge je Achse (m) · versatz der Reihen
     //   ton              die halbe Spanne des Tons je Stein um sein Mittel
     //   tonU · tonV      der Faktor der Fuge gegen das Mittel des Steins je Kanal (U: die Stoßfuge, V: die Lagerfuge)
+    //   kreuz            wo beide Fugen sich kreuzen, steht EINE Fuge (die dunklere je Kanal), nie ihr Produkt: der Zuschlag
+    //                    kreuz − tonU · tonV auf das Produkt der Achsen (am Mörtel eine Spur, am Balken der schwarze Fleck)
     //   eins             der Kehrwert des Mittels der Fläche je Kanal: Stein und Fugen mal `eins` mitteln auf 1
+    //   unruhe           die Reihen stehen ungleich weit: ihr Abstand schwankt um diesen Anteil (der Kellenzug des Putzes)
+    //   lage             1: die Lage in der Fläche trägt die Ecke selbst (`_wandLage`, in Feldern) — sonst ist sie die der Welt
     // Die Zeile 0 trägt keinen Verband (null).
     function verbandZeilen() {
         var V = VERBAND_GESETZ, px = 1 / V.pxJeM, kan = function (hx) { return [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]; };
-        var zeile = function (lM, hM, fU, fV, versatz, ton, tonU, tonV) {
-            var cU = (2 * fU) / lM, cV = (2 * fV) / hM, eins = [0, 0, 0];
-            for (var k = 0; k < 3; k++) eins[k] = 1 / ((1 - cU + cU * tonU[k]) * (1 - cV + cV * tonV[k]));
-            return { lM: lM, hM: hM, fugeU: fU, fugeV: fV, versatz: versatz, ton: ton, tonU: tonU, tonV: tonV, eins: eins };
+        var zeile = function (lM, hM, fU, fV, versatz, ton, tonU, tonV, mehr) {
+            var cU = (2 * fU) / lM, cV = (2 * fV) / hM, eins = [0, 0, 0], kreuz = [0, 0, 0];
+            for (var k = 0; k < 3; k++) {
+                kreuz[k] = Math.min(tonU[k], tonV[k]) - tonU[k] * tonV[k];
+                eins[k] = 1 / ((1 - cU + cU * tonU[k]) * (1 - cV + cV * tonV[k]) + cU * cV * kreuz[k]);
+            }
+            return { lM: lM, hM: hM, fugeU: fU, fugeV: fV, versatz: versatz, ton: ton, tonU: tonU, tonV: tonV, kreuz: kreuz, eins: eins, unruhe: (mehr && mehr.unruhe) || 0, lage: mehr && mehr.lage ? 1 : 0 };
         };
         var gegen = function (a, b) { return [a[0] / b[0], a[1] / b[1], a[2] / b[2]]; };
-        var m = V.mauerwerk, d = V.deckung, p = V.putz, n = V.naturstein;
+        var m = V.mauerwerk, d = V.deckung, p = V.putz, n = V.naturstein, f = V.fachwerk, fB = gegen(_colFor("holz", null), _colFor("gefach", null));
         // Mauerwerk und Naturstein: der Mörtel gegen das Mittel des Steins, auf beiden Achsen derselbe
         var mT = _verbandTon(kan(m.grund), m.ton), mF = gegen(_linHex(m.fuge), mT.mittel);
         var nT = _verbandTon([255 * n.stein[0], 255 * n.stein[1], 255 * n.stein[2]], n.ton), nF = gegen(_linHex(n.fuge), nT.mittel);
@@ -1881,9 +1895,36 @@
             null,
             zeile(m.steinM + m.fugeM, m.hoeheM + m.fugeM, m.fugeM / 2, m.fugeM / 2, m.versatz, mT.spanne, mF, mF),
             zeile(d.breiteM, d.deckM, (d.spaltPx * px) / 2, (d.schattenPx * px) / 2, d.versatz, dT.spanne, [0, 0, 0], dV),
-            zeile(zugM, zugM, 0, px / 2, 0, 0, [1, 1, 1], pZ),
+            // (der Maler setzt seine Züge alle zug[0] … zug[0] + zug[1] − 1 Pixel: die halbe Spanne gegen ihr Mittel ist die Unruhe)
+            zeile(zugM, zugM, 0, px / 2, 0, 0, [1, 1, 1], pZ, { unruhe: ((p.zug[1] - 1) / 2) * px / zugM }),
             zeile(n.steinM + n.fugeM, n.hoeheM + n.fugeM, n.fugeM / 2, n.fugeM / 2, n.versatz, nT.spanne, nF, nF),
+            // Fachwerk: der Balken (die Rolle holz) gegen das Gefach, auf beiden Achsen derselbe; die Lage trägt die Ecke
+            zeile(f.feldM, f.riegelM, f.staenderM / 2, f.riegelStarkM / 2, 0, 0, fB, fB, { lage: 1 }),
         ];
+    }
+    // DIE LAGE DER ECKEN EINER WAND IN IHREM GEFÜGE (die Zeile „fachwerk"): je Ecke [u, v, Nummer der Zeile] — u in Feldern
+    // zwischen den Ständern längs der Wand, v in Feldern zwischen den Riegeln. Die Teilung wie das Gerüst sie setzt: von der
+    // Mitte des ersten bis zur Mitte des letzten Balkens so viele gleiche Felder, dass keines über `feldM` misst (`axis`), in
+    // der Höhe die nächste ganze Zahl von Riegel-Feldern. An jeder ganzen Zahl steht ein Balken, der erste und der letzte ganz
+    // in der Wand (der Eckständer, die Schwelle, das Rähm). `G` = { pos, nrm } haus-lokal, `rahmen` = [x0, x1, y0, y1, z0, z1]
+    // der Wand, deren Gefüge die Ecken tragen (der Giebel trägt das seiner Wand weiter).
+    function _wandLage(G, rahmen) {
+        var F = VERBAND_GESETZ.fachwerk, nr = VERBAND_GESETZ.reihe.indexOf("fachwerk"), n = G.pos.length / 3, aus = new Array(n * 3);
+        var teilung = function (a0, a1, soll, balken, rund) {
+            var l = a1 - a0 - balken;
+            if (!(l > 0.05)) return [a0, Math.max(a1 - a0, 0.05)];
+            return [a0 + balken / 2, l / Math.max(1, rund ? Math.round(l / soll) : Math.ceil(l / soll - 1e-6))];
+        };
+        var tx = teilung(rahmen[0], rahmen[1], F.feldM, F.staenderM, false),
+            ty = teilung(rahmen[2], rahmen[3], F.riegelM, F.riegelStarkM, true),
+            tz = teilung(rahmen[4], rahmen[5], F.feldM, F.staenderM, false);
+        for (var i = 0; i < n; i++) {
+            var laengsZ = Math.abs(G.nrm[i * 3]) >= Math.abs(G.nrm[i * 3 + 2]), q = laengsZ ? tz : tx;
+            aus[i * 3] = (G.pos[i * 3 + (laengsZ ? 2 : 0)] - q[0]) / q[1];
+            aus[i * 3 + 1] = (G.pos[i * 3 + 1] - ty[0]) / ty[1];
+            aus[i * 3 + 2] = nr;
+        }
+        return aus;
     }
     // DIE NUMMER DES VERBANDS EINER ROLLE (0: sie trägt keinen)
     function verbandReihe(rolle) { var i = VERBAND_GESETZ.reihe.indexOf(VERBAND_GESETZ.rolle[rolle] || "?"); return i > 0 ? i : 0; }
@@ -2302,6 +2343,8 @@
     const e=o.matrixWorld.elements, base=_baseFor(o,role,kol), nv=pa.count;
     const inT=(geoms.__decken&&geoms.__decken.length&&INNEN_HOLZ.rollen[role])?innenTon(role,kol):null, inV=inT?new THREE.Matrix4().copy(g.matrixWorld).invert():null;   // DER INNEN-STOFF (w28-innenlicht): nur wo der Bau seine Decken nennt (Stufe 0)
     const inF=inT?innenFrei(pa,new THREE.Matrix4().multiplyMatrices(inV,o.matrixWorld),geoms.__decken):false;   // das Teil reicht aus der Wand in den Raum (`innenFrei`)
+    const wa=o.geometry.attributes.aWand, wr0=verbandReihe(role);   // DIE LAGE IM GEFÜGE (`_wandLage`): trägt ein Teil der Rolle sie, trägt jede Ecke der Rolle [u, v, Zeile] — ohne eigene die Zeile ihres Stoffs
+    if(wa||G.wand){ G.wand=G.wand||[]; while(G.wand.length<G.vo*3) G.wand.push(0,0,wr0); }
     let wy0=1e9,wy1=-1e9; for(let v=0;v<nv;v++){ const q=e[1]*pa.getX(v)+e[5]*pa.getY(v)+e[9]*pa.getZ(v)+e[13]; if(q<wy0)wy0=q; if(q>wy1)wy1=q; }
     const aoAn=(wy1-wy0)<=4.2;                                                                // AO-PANEEL-GATE: Kontakt-AO nur auf kleinen, geerdeten Meshes — auf vollhohen Wandpaneelen malt die Vertex-Interpolation SÄGEZÄHNE über die Quad-Diagonalen (GESEHEN in nah_voll)
     for(let v=0;v<nv;v++){ const x=pa.getX(v),y=pa.getY(v),z=pa.getZ(v);
@@ -2312,6 +2355,7 @@
       const namp=NOISEAMP[role]||0, nz=namp? (1+namp*(_noise01(G.pos[G.pos.length-3]*1.7, wy*1.7, G.pos[G.pos.length-1]*1.7)*2-1)) : 1;   // MATERIAL-ILLUSION: Welt-Hash → jede Fläche atmet, deterministisch über Rebakes
       const bF=(inT&&innenAn(G.pos,G.nrm,geoms.__decken,inV,role==="boden",inF))?inT:base;                        // innen der unverwitterte Ton der Kultur (`innenTon`)
       G.col.push(bF[0]*tr*ao*nz, bF[1]*tg*ao*nz, bF[2]*tb*ao*nz);                       // AO-REAKTIVIERUNG: ao war GEMESSEN tot (berechnet, nie multipliziert) — das Kontakt-AO-Gesetz war stadtweit stumm
+      if(G.wand){ if(wa) G.wand.push(wa.getX(v),wa.getY(v),wa.getZ(v)); else G.wand.push(0,0,wr0); }
       const wx3=G.pos[G.pos.length-3], wz3=G.pos[G.pos.length-1], nay=na?Math.abs(na.getY(v)):1;   // WELT-UV-GESETZ: Kachelung aus der Weltlage (0.5/m) — Texturen laufen stetig über Bauteilgrenzen
       if(nay>0.6) G.uv.push(wx3*0.5, wz3*0.5); else { const nax=na?Math.abs(na.getX(v)):0; G.uv.push((nax>0.5?wz3:wx3)*0.5, wy*0.5); } }
     const ix=o.geometry.index; if(ix){ for(let v=0;v<ix.count;v++) G.idx.push(G.vo+ix.getX(v)); } else { for(let v=0;v<nv;v++) G.idx.push(G.vo+v); }
@@ -3219,10 +3263,19 @@
     // prettier-ignore
     function lod2Koerper(B, geoms){
   const liste=koerperListe(B), alle=liste.map(x=>x.teil), grp2=new THREE.Group(), wr=_wandRolle(B.p||{}), wf=_wandFaktor(B, wr);
-  const netz=(G, rolle, faktor)=>{ if(!G.pos.length) return;
+  // DAS GEFÜGE DER FERNEN WAND (w28-haus-stoff, VERBAND_GESETZ.fachwerk): die Wand und der Giebel des Fachwerk-Stils (`alt`) tragen je
+  // Ecke ihre Lage im Gefüge (`aWand`, `_wandLage`) — die Welt webt daraus Ständer und Riegel als Funktion; bis hier stand das Haus ab
+  // dieser Stufe als Kasten im Mittel aus Balken und Gefach. `rahmen`: die Wand, deren Gefüge das Teil trägt.
+  const gefuege=(B.p||{}).stil==='alt', kasten=t=>[t.c[0]-t.h[0],t.c[0]+t.h[0],t.c[1]-t.h[1],t.c[1]+t.h[1],t.c[2]-t.h[2],t.c[2]+t.h[2]], waende=[];
+  const wandUnter=t=>{ const k=kasten(t); let best=null, bf=0;   // die Wand unter einem Giebel: die mit der größten gemeinsamen Grundfläche
+    for(const w of waende){ const f=Math.max(0,Math.min(k[1],w[1])-Math.max(k[0],w[0]))*Math.max(0,Math.min(k[5],w[5])-Math.max(k[4],w[4])); if(f>bf){ bf=f; best=w; } }
+    return best||k; };
+  const netz=(G, rolle, faktor, rahmen)=>{ if(!G.pos.length) return;
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(G.pos,3)); bg.setAttribute('normal',new THREE.Float32BufferAttribute(G.nrm,3)); bg.setIndex(G.idx);
+    if(rahmen) bg.setAttribute('aWand',new THREE.Float32BufferAttribute(_wandLage(G, rahmen),3));
     if(faktor){ const n=G.pos.length/3, att=new Float32Array(n*3); for(let i=0;i<n;i++){ att[i*3]=faktor[0]; att[i*3+1]=faktor[1]; att[i*3+2]=faktor[2]; } bg.setAttribute('color',new THREE.Float32BufferAttribute(att,3)); }
     grp2.add(new THREE.Mesh(bg, M[rolle]||M.putz)); };
+  if(gefuege) for(const x of liste) if(x.rolle===wr&&x.teil.art==='box') waende.push(kasten(x.teil));
   for(const x of liste){
     // DIE DACHHAUT IST EINE HAUT (w15-lod-umriss): der Keil mit Haut legt nur seine Schrägen gehoben und um den Ortgang verlängert
     // (mit ihrer Untersicht, der Überstand von unten); seine Giebel stehen im Körper-Keil in der Wand-Ebene, im Stoff und Ton der Wand
@@ -3232,11 +3285,11 @@
       _teilGitter(_mitHaut(x), alle, H, false, n=>n[1]>0.02?2:0);
       _teilGitter(x.teil, alle, H, false, n=>n[1]>0.02?1:0);   // der Körper unter der Haut schließt den Raum zwischen Haut und Giebel (die Walm-Seiten)
       _teilGitter(x.teil, alle, Gi, false, n=>Math.abs(n[1])<=0.02&&Math.abs(amX?n[0]:n[2])>0.98?1:0);
-      netz(H, x.rolle, x.faktor); netz(Gi, wr, wf); continue; }
+      netz(H, x.rolle, x.faktor); netz(Gi, wr, wf, gefuege?wandUnter(x.teil):null); continue; }
     // DIE WAND TRÄGT IHREN RING (w25-lod-pop-3, lod.K5): die Wand des Hauptkörpers steht im Ständer-Ring der L0 (`ring`, 6 cm vor dem
     // Grundriss), nie 1,5 cm dahinter — die Hochhaus-L1 stand an jeder Ecke 7,5 cm innen (4,0 px am Haushalt 12 m).
     const t=x.haut&&x.haut.ring&&x.teil.art==='box'?Object.assign({},x.teil,{h:_hr3([x.teil.h[0]+x.haut.ring,x.teil.h[1],x.teil.h[2]+x.haut.ring])}):x.teil;
-    const G={pos:[],nrm:[],idx:[]}; _teilGitter(t, alle, G, true); netz(G, x.rolle, x.faktor); }
+    const G={pos:[],nrm:[],idx:[]}; _teilGitter(t, alle, G, true); netz(G, x.rolle, x.faktor, gefuege&&x.rolle===wr&&t.art==='box'?kasten(t):null); }
   const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, B.p.col, geoms, 0);
 }
@@ -3339,6 +3392,8 @@
   for(let i=0;i<P.length;i++){ G.pos.push(P[i]); G.nrm.push(N[i]); G.col.push(C2[i]); }
   if(U.length===S.vo*2 && (G.vo===0 || G.uv.length===G.vo*2)){ for(let i=0;i<U.length;i++) G.uv.push(U[i]); }   // WELT-UV mischen (2er-Takt!) — KONSISTENZ-WÄCHTER: passt eine Quelle nicht, verliert die Rolle ihr uv ganz (finalize-Guard schützt), nie halbe Arrays
   else G.uv.length=0;
+  if(S.wand||G.wand){ const r0=verbandReihe(role); G.wand=G.wand||[]; while(G.wand.length<off*3) G.wand.push(0,0,r0);   // die Lage im Gefüge reist mit (`_wandLage`): eine Quelle ohne sie trägt die Zeile ihres Stoffs
+    if(S.wand) for(let i=0;i<S.wand.length;i++) G.wand.push(S.wand[i]); else for(let i=0;i<S.vo;i++) G.wand.push(0,0,r0); }
   for(let i=0;i<I.length;i++) G.idx.push(I[i]+off);
   G.vo+=S.vo; } }
     // prettier-ignore
@@ -5839,6 +5894,18 @@
             bg.setAttribute("color", new THREE.Float32BufferAttribute(G.col, 3));
             if (G.uv && G.uv.length === (G.pos.length / 3) * 2)
                 bg.setAttribute("uv", new THREE.Float32BufferAttribute(G.uv, 2));
+            // DAS GEFÜGE DER FERNEN WAND (`_wandLage`, VERBAND_GESETZ.fachwerk): je Ecke die Zeile ihres Verbands (`aVerband`, ein
+            // Byte) und ihre Lage in der Wand (`aLage`: Felder quer · Felder hoch) — nur wo ein Teil der Rolle sie trägt
+            if (G.wand && G.wand.length === G.pos.length) {
+                var nW = G.pos.length / 3, vb = new Uint8Array(nW), la = new Float32Array(nW * 2);
+                for (var iW = 0; iW < nW; iW++) {
+                    la[iW * 2] = G.wand[iW * 3];
+                    la[iW * 2 + 1] = G.wand[iW * 3 + 1];
+                    vb[iW] = G.wand[iW * 3 + 2];
+                }
+                bg.setAttribute("aVerband", new THREE.BufferAttribute(vb, 1));
+                bg.setAttribute("aLage", new THREE.BufferAttribute(la, 2));
+            }
             bg.setIndex(G.idx);
             var mm = new THREE.Mesh(bg, _mmFor(role));
             mm.castShadow = true;

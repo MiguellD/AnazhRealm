@@ -294,6 +294,8 @@ class AnazhRealm_studio_gestalt {
         // DER VERBAND JE ECKE (w28-haus-stoff, phyto-core `_budgetVerbinden`): eine gefaltete Stufe trägt die Nummer der Zeile des
         // Verband-Gesetzes je Ecke — der Bau-Satz legt sie in die vierte Stelle seines `aRegler` (`_satzBlockEcken`)
         if (m.aVerband && m.aVerband.array) geo.setAttribute("aVerband", new T.BufferAttribute(m.aVerband.array, 1));
+        // und ihre Lage in der Wand (`aLage`, fachwerk `_wandLage`) — der Bau-Satz legt sie in die vierten Stellen von Farbe und Glut
+        if (m.aLage && m.aLage.array) geo.setAttribute("aLage", new T.BufferAttribute(m.aLage.array, 2));
         // DER TON JE ECKE (mensch.K4, koerper `menschTon`): der Mensch trägt ihn — sein Stoff färbt jede Ecke nach der Palette
         // des Leibs, der ihn zeichnet (`_tonFaktor`)
         const ton = !!(m.aTon && m.aTon.array);

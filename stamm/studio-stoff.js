@@ -131,7 +131,14 @@ class AnazhRealm_studio_stoff {
     // einer Tafel im Stoff: EIN Programm für jeden Verband, die Ecke wählt. Die Fern-Regel ist die des Kamms (am Schirm: das
     // Raster steht ab 2 … 3,5 Pixeln je Stein, darunter trägt die Fläche den Anteil der Fuge — ihr Mittel ist je Kanal 1, wie
     // die Karte des Labors: `eins`). → der Faktor der Albedo (vec3).
-    _verbandStoff(T, nr) {
+    // DIE UNRUHE (`unruhe`, der Kellenzug des Putzes): die Reihen stehen ungleich weit — v wird vor dem Kamm verzogen (zwei Wellen,
+    // monoton: der Abstand zweier Züge schwankt um den Anteil der Zeile, wie der Maler ihn würfelt); eine Zeile ohne sie liest v.
+    // DIE LAGE DER ECKE (`lage`, das Gefüge der fernen Fachwerk-Wand): die Zeile liest u und v nicht an der Welt, sondern aus der
+    // Ecke (`ecke`, im Satz: die vierten Stellen von Farbe und Glut, fachwerk `_wandLage` — Felder quer · Felder hoch): der
+    // Ständer steht an der Ecke des Hauses, die Schwelle an seinem Fuß. Außerhalb des Satzes (`ecke` fehlt) liest sie die Welt.
+    // DAS KREUZ: wo beide Fugen sich kreuzen, steht EINE (`kreuz` = der Zuschlag auf das Produkt der Achsen) — am Balken wäre das
+    // Produkt ein schwarzer Fleck; nah und fern dasselbe Mittel (`eins` rechnet ihn ein).
+    _verbandStoff(T, nr, ecke = null) {
         const Z = AnazhRealm.Gesetz("fachwerk:verbandZeilen")();
         if (
             !Array.isArray(Z) ||
@@ -140,15 +147,18 @@ class AnazhRealm_studio_stoff {
             Z.slice(1).some((z) => !z || !(z.lM > 0) || !(z.hM > 0))
         )
             throw this._stoffBruch("das Verband-Gesetz fehlt in fachwerk:verbandZeilen");
-        // die Tafel: [lM, hM, lM / halbe Fuge U, hM / halbe Fuge V] · [Versatz, Ton] · Fugen-Ton U · Fugen-Ton V · eins —
-        // die Zeile 0 ist die Identität (keine Fuge, kein Ton, alle Faktoren 1)
-        const W = 5;
+        // die Tafel: [lM, hM, lM / halbe Fuge U, hM / halbe Fuge V] · [Versatz, Ton, Unruhe, Lage der Ecke] · Fugen-Ton U ·
+        // Fugen-Ton V · eins · Kreuz — die Zeile 0 ist die Identität (keine Fuge, kein Ton, alle Faktoren 1).
+        // Die Unruhe als Hub der zwei Wellen (unten: ihre Steigung zusammen höchstens `VERBAND_WELLE.steil` je Reihe)
+        const W = 6;
+        const VW = AnazhRealm.VERBAND_WELLE;
         const zeile = (z) => [
             new THREE.Vector4(z.lM, z.hM, z.lM / Math.max(z.fugeU, 1e-6), z.hM / Math.max(z.fugeV, 1e-6)),
-            new THREE.Vector4(z.versatz, z.ton, 0, 0),
+            new THREE.Vector4(z.versatz, z.ton, Math.min(0.9, z.unruhe || 0) / VW.steil, z.lage ? 1 : 0),
             new THREE.Vector4(z.tonU[0], z.tonU[1], z.tonU[2], 0),
             new THREE.Vector4(z.tonV[0], z.tonV[1], z.tonV[2], 0),
             new THREE.Vector4(z.eins[0], z.eins[1], z.eins[2], 0),
+            new THREE.Vector4(z.kreuz ? z.kreuz[0] : 0, z.kreuz ? z.kreuz[1] : 0, z.kreuz ? z.kreuz[2] : 0, 0),
         ];
         const null0 = {
             lM: 1,
@@ -173,25 +183,33 @@ class AnazhRealm_studio_stoff {
                 .floor()
                 .clamp(0.0, Z.length - 1)
         ).mul(W);
-        const [mass, lage, tonU, tonV, eins] = [0, 1, 2, 3, 4].map((k) => tafel.element(i0.add(k)));
+        const [mass, lage, tonU, tonV, eins, kreuz] = [0, 1, 2, 3, 4, 5].map((k) => tafel.element(i0.add(k)));
         // der Rahmen der Fläche: t waagrecht in ihr, s ihre Falllinie (eine liegende Fläche nimmt die Achsen der Welt)
         const wp = T.positionWorld;
         const n = T.normalize(T.normalWorldGeometry);
         const h = T.vec3(n.z, 0.0, n.x.negate());
         const t = T.normalize(T.select(h.length().greaterThan(0.02), h, T.vec3(1.0, 0.0, 0.0)));
         const s = T.cross(n, t);
-        const uM = T.dot(wp, t);
-        const v = T.dot(wp, s).div(mass.y);
-        const u = uM.div(mass.x).add(T.fract(T.floor(v).mul(0.5)).mul(2.0).mul(lage.x));
+        // die Lage in Steinen: an der Welt — oder die der Ecke (`lage.w`); die Reihen verzogen um die Unruhe (`lage.z`)
+        const vonEcke = ecke ? lage.w.greaterThan(0.5) : null;
+        const u0 = vonEcke ? T.select(vonEcke, ecke.x, T.dot(wp, t).div(mass.x)) : T.dot(wp, t).div(mass.x);
+        const v0 = vonEcke ? T.select(vonEcke, ecke.y, T.dot(wp, s).div(mass.y)) : T.dot(wp, s).div(mass.y);
+        const v = v0.add(
+            lage.z.mul(T.sin(v0.mul(VW.welle[0])).add(T.sin(v0.mul(VW.welle[1]).add(VW.phase)).mul(VW.welle[2])))
+        );
+        const u = u0.add(T.fract(T.floor(v).mul(0.5)).mul(2.0).mul(lage.x));
         const S = this._steinStoff(
             T,
             { fuge: 1, fase: 0, ton: 1, fugeTon: 1, kuppe: 0 },
-            { u, v, mU: mass.z, mV: mass.w, sU: T.fwidth(uM).div(mass.x) }
+            { u, v, mU: mass.z, mV: mass.w, sU: T.fwidth(u0) }
         );
         const eine = T.vec3(1.0, 1.0, 1.0);
         return T.vec3(S.ton.sub(1.0).mul(lage.y).add(1.0))
-            .mul(T.mix(eine, tonU.xyz, S.achse[0]))
-            .mul(T.mix(eine, tonV.xyz, S.achse[1]))
+            .mul(
+                T.mix(eine, tonU.xyz, S.achse[0])
+                    .mul(T.mix(eine, tonV.xyz, S.achse[1]))
+                    .add(kreuz.xyz.mul(S.achse[0].mul(S.achse[1])))
+            )
             .mul(eins.xyz);
     }
 
@@ -708,7 +726,15 @@ class AnazhRealm_studio_stoff {
                 satz === true
                     ? TSL.attribute("aRegler", "vec4").w.mul(127.0)
                     : this._stoffWert(TSL, "userData.stoffWerte.verband");
-            mat.colorNode = TSL.vec4(mat.colorNode.rgb.mul(this._verbandStoff(TSL, nr)), mat.colorNode.a);
+            // die Lage der Ecke in ihrer Wand (im Satz: die vierten Stellen von Farbe und Glut, `BAU_SATZ_ATTR`) — EIN Varying
+            const ecke =
+                satz === true
+                    ? TSL.varying(
+                          TSL.vec2(TSL.attribute("color", "vec4").w, TSL.attribute("aGlut", "vec4").w),
+                          "vWandLage"
+                      )
+                    : null;
+            mat.colorNode = TSL.vec4(mat.colorNode.rgb.mul(this._verbandStoff(TSL, nr, ecke)), mat.colorNode.a);
         }
         // DER HALM (w4-wiese-nah, phyto-core HALM_GESETZ): Querschnitt, Adern und Narbe je Pixel des Schirms, fern die Wiese als
         // DACH (licht.K1: die Normale des Dachs, Rauheit 1) — EIN Gesetz (`_halmStoff`), hinter dem Satz-Regler (er gilt jeder
@@ -857,3 +883,11 @@ class AnazhRealm_studio_stoff {
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_studio_stoff]);
+
+// ===== ATLAS · Studio/stoff — Außen-Konstanten =====
+// DIE WELLEN DER UNRUHE (`_verbandStoff`, w28-haus-stoff): eine Zeile des Verband-Gesetzes mit `unruhe` (der Kellenzug des
+// Putzes) verzieht ihre Reihen um zwei Wellen — `welle` = die Frequenz der ersten und der zweiten (je Reihe, zueinander
+// unharmonisch: das Muster kehrt in keinem Haus wieder) und der Anteil der zweiten, `phase` ihr Versatz; `steil` = ihre größte
+// gemeinsame Steigung (1,7 + 0,73 · 0,5): der Hub der Zeile ist Unruhe / steil, der Abstand zweier Reihen schwankt um die Unruhe
+// und bleibt monoton (Unruhe < 1).
+AnazhRealm.VERBAND_WELLE = Object.freeze({ welle: Object.freeze([1.7, 0.73, 0.5]), phase: 1.3, steil: 2.065 });

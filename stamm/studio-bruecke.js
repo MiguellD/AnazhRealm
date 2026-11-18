@@ -3912,6 +3912,7 @@ AnazhRealm.FOUNDRY_LESEN = [
     "aDeckt",
     "aTon",
     "aVerband", // der Verband je Ecke einer gefalteten Stufe (w28-haus-stoff, fachwerk VERBAND_GESETZ)
+    "aLage", // die Lage der Ecke in ihrer Wand (das Gefüge der fernen Fachwerk-Wand, fachwerk `_wandLage`)
     "skinIndex",
     "skinWeight",
     "aCenter",

@@ -511,6 +511,18 @@ class AnazhRealm_siedlung_satz {
             else out.fill(regler.verband / 127);
             attributes.aVerband = { array: out, itemSize: 1, count: N };
         }
+        // DIE LAGE DER ECKE IN IHRER WAND (`aLage`, fachwerk `_wandLage`: Felder quer · Felder hoch) reist in den vierten Stellen
+        // von Farbe und Glut (half) — kein Byte mehr je Ecke; eine Gestalt ohne sie trägt 0 (ihre Zeile liest die Lage der Welt).
+        for (let k = 0; k < 2; k++) {
+            const nm = k ? "aLageV" : "aLageU";
+            if (!attr.some((a) => a[3] === nm)) continue;
+            const out = this._satzWerkbank(nm, N, Float32Array);
+            const q = A.aLage;
+            if (q && q.itemSize !== 2) throw new Error(`_satzBlock(${wer}): Attribut aLage passt nicht`);
+            if (q) for (let j = 0; j < cnt; j++) AnazhRealm._satzKernSpalte(out, j * n, q.array, v0, n, 2, k);
+            else out.fill(0, 0, N);
+            attributes[nm] = { array: out, itemSize: 1, count: N };
+        }
         if (bau && bau.alter) AnazhRealm._satzAlterEcken(attributes, geo, im, cnt, ab, n, bau);
         return attributes;
     }
@@ -641,6 +653,10 @@ class AnazhRealm_siedlung_satz {
     // `n` Skalare aus `src` ab `v0`, mal `f`, nach `out` ab `o0` (der Verband je Ecke: Nummer → snorm8).
     static _satzKernMal(out, o0, src, v0, n, f) {
         for (let v = 0; v < n; v++) out[o0 + v] = src[v0 + v] * f;
+    }
+    // die Spalte `k` eines Attributs der Breite `is` (die Lage in der Wand: `aLage` → u, v)
+    static _satzKernSpalte(out, o0, src, v0, n, is, k) {
+        for (let v = 0; v < n; v++) out[o0 + v] = src[(v0 + v) * is + k];
     }
     // KATALOG-SICHT: der EINE Sicht-Chokepoint aller Picker (Werkstatt-Liste · Rezeptbuch · Omnibox ·
     // Kreatur-Auftrag): donorOnly-Spender und Render-Varianten (grown_*, fels/kristall_var1+)
@@ -1588,13 +1604,15 @@ AnazhRealm.SATZ_WERK_RUHE_MS = 2000;
 AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
     Object.freeze(["position", 3]),
     Object.freeze(["normal", 3, "snorm8"]),
-    Object.freeze(["color", 3, "half"]),
+    // die vierte Stelle von Farbe und Glut: die Lage der Ecke in ihrer Wand (w28-haus-stoff, `aLage` der Lieferung: Felder
+    // quer · Felder hoch, fachwerk `_wandLage`) — das Gefüge der fernen Fachwerk-Wand steht am Haus, nicht am Raster der Welt
+    Object.freeze(["color", 3, "half", "aLageU"]),
     Object.freeze(["aLodLevel", 1]),
     Object.freeze(["aH0", 1]),
     Object.freeze(["aH0L", 1]),
     // die vierte Stelle: der Verband der Ecke (w28-haus-stoff, `_satzBlockEcken`: die Nummer der Zeile / 127)
     Object.freeze(["aRegler", 3, "snorm8", "aVerband"]),
-    Object.freeze(["aGlut", 3, "half"]),
+    Object.freeze(["aGlut", 3, "half", "aLageV"]),
 ]);
 // Die Attribute eines Stein-Satz-Bereichs (w4-genesis-tore): Lage · Normale · Farbe · Regler · Glut und das uv der Ecken — die Lage
 // im Verband des Stein-Gesetzes (porta STEIN_GESETZ, `_steinStoff`: u = Stein + Weg, v = seine Länge). Die drei Stempel der Blende
