@@ -1,7 +1,7 @@
 {
  "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
  "geraet": "gtx",
- "zeit": "2026-11-18T19:09:58.410Z",
+ "zeit": "2026-11-18T19:16:51.210Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -1182,6 +1182,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "affekt.K1#2": {
+   "gruen": false,
+   "zahl": "Gänge 2/2 (Exit 0: der Baum fällt nicht (0 Hiebe))",
+   "exit": 0,
+   "minuten": 0.18,
+   "grund": "ROT: Gänge 2/2 (Exit 0: der Baum fällt nicht (0 Hiebe))",
+   "gpu": "nvidia/pascal",
+   "konsum": "k3f9c70aaaa97",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k07740f03b59d",
+   "s": 9.8,
+   "fremd": {
+    "s": 13.1,
+    "takte": 6,
+    "fremdS": 4.81,
+    "kerne": 0.367,
+    "fensterKerne": 0.418,
+    "namen": [
+     [
+      "Runner.Worker.exe spawnclient 2376 2680",
+      2.13
+     ],
+     [
+      "WUDFHost.exe",
+      0.66
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.39
+     ]
+    ],
+    "dienerS": 4.77,
+    "diener": [
+     [
+      "dwm.exe",
+      2.28
+     ],
+     [
+      "System",
+      1.09
+     ]
+    ],
+    "geraetS": 4.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.81
+     ],
+     [
+      "svchost.exe",
+      0.81
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 33.38,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T19:16:51.210Z",
+   "abdruck": "abc9a74f2bbc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1931,20 +2001,20 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-18T19:09:29.236Z",
-  "ordner": "sitzung-20261118-200929",
+  "start": "2026-11-18T19:16:19.996Z",
+  "ordner": "sitzung-20261118-201619",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.8,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "karte2.planet.kosmos.himmelsmechanik#1",
-    "s": 21.4,
-    "takte": 573,
+    "ort": "wiese",
+    "vor": "affekt.K1#2",
+    "s": 22.7,
+    "takte": 595,
     "chunks": 81,
     "nach": null
    }
@@ -1952,7 +2022,7 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "probe": "affekt.K1#2",
     "anders": [
      "window.__wieseMessen",
      "window.__wieseUrteil",
@@ -1965,26 +2035,25 @@
     },
     "haelt": [],
     "heap": [
-     221.3,
-     269.2
+     228.1,
+     266.5
     ],
     "ungemessen": null
    }
   ],
   "wanderung": [
    {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
-    "ort": "genesis",
-    "m": 1082.54,
-    "dreh": 0.401
+    "probe": "affekt.K1#2",
+    "ort": "wiese",
+    "m": 15.36,
+    "dreh": 0
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "probe": "affekt.K1#2",
     "gehalten": [
-     "skala",
-     "spiegel"
+     "tiere"
     ],
     "offen": []
    }
@@ -1992,27 +2061,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
+   "bilder": 2124,
+   "frameP95": 33.5,
+   "taktP95": 21.84,
+   "vramMax": 148.8,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "karte2.planet.kosmos.himmelsmechanik#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 292,
+   "ortImDeckel": [],
+   "zapfen": 105,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 299.7,
-  "minuten": 5.08
+  "fahrtS": 116,
+  "minuten": 2.01
  }
 }
