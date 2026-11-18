@@ -8730,7 +8730,7 @@
             var L = Math.hypot(b[0] - a[0], b[1] - a[1]),
                 sicht = true;
             for (var u = 0.25; sicht && u < L; u += 0.5) {
-                var w = welt(a[0] + ((b[0] - a[0]) * u) / L, a[1] + ((b[1] - a[1]) * u) / L);
+                var w = welt(b[0] + ((a[0] - b[0]) * u) / L, b[1] + ((a[1] - b[1]) * u) / L); // vom Haus zum Platz, je 0,5 m — dieselben Proben wie der Richter (gate:settlement, platzWiese): an einer streifenden Ecke sah der Kern sonst einen anderen Nachbarn als der Richter
                 for (j = 0; sicht && j < obbs.length; j++) if (j !== i && distPunktOBB(w[0], w[1], obbs[j]) < 1e-6) sicht = false;
             }
             if (sicht) fasser.push({ h: h, gx: gx, gz: gz, a: a, b: b });
