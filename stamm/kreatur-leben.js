@@ -2761,6 +2761,9 @@ class AnazhRealm_kreatur_leben {
     // der Takte davor: A gegen A an 2a1a6e1c unter Last 12 gegen 16 Tiere am Dorf, `tier:bestaeuber` und die Leiber anders.
     _bestandSprung() {
         const st = this.state;
+        // ein Leib ohne Tier (der Boot-Wurf, ein Ruf) tritt zuerst in den Bestand — sonst trüge er die Takte davor über den
+        // Sprung (A gegen A an 60231b1c fünf Leiber des Boot-Wurfs am Dorf ohne Tier in A, angenommen in B)
+        this._bestandAdoptieren();
         const jagen = this._bestandJagen();
         for (const c of st.creatures.slice()) {
             const ud = c.userData;

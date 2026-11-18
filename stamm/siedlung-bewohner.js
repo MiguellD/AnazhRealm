@@ -1635,11 +1635,11 @@ class AnazhRealm_siedlung_bewohner {
             const bewegt = this._bewohnerBewegt || (this._bewohnerBewegt = []);
             bewegt.length = 0;
             // DER SPRUNG DER UHR (oben eingerichtet): jeder Leib stellt sich dorthin, wo sein Tag ihn jetzt sieht
-            // (`_bewohnerAnkunft`), ohne den Gang davor — Tempo, Lauf, Rückstand, Schritt-Takt, Phase und Gewicht, Platz und Tür
+            // (`_bewohnerAnkunft`), ohne den Gang davor — Tempo, Lauf, Rückstand, Schritt, Phase, Nähe, Platz und Tür
             if (sprung) {
                 for (const b of S.liste) {
                     Object.assign(b, { gegangen: 0, gehTakt: 0, tempoJetzt: 0, tempoTag: undefined, rueck: 0 });
-                    Object.assign(b, { vx: 0, vz: 0, platz: false, hinaus: false, ankunft: !!b.leib, walkPhase: 0, _gaitW: 0, _gait: undefined }); // prettier-ignore
+                    Object.assign(b, { vx: 0, vz: 0, platz: false, hinaus: false, ankunft: !!b.leib, walkPhase: 0, _gaitW: 0, _gait: undefined, nah: false, begegnet: false }); // prettier-ignore
                     this._bewohnerRasterLage(S, b);
                 }
                 if (S.verkehr) this._verkehrSprung(S); // auch der Wagen: f(Same, t)
