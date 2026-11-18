@@ -1631,8 +1631,7 @@ class AnazhRealm {
         for (const k in atmo.lichtGlut) {
             const c = this._lichtLinear(LG[k], atmo.lichtGlut[k].value);
             c.multiplyScalar(
-                (__weltLicht.augeGlut(LG[k].cdM2, aSicht) * mass) /
-                    (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b)
+                (__weltLicht.augeGlut(LG[k].cdM2, aSicht) * mass) / (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b)
             );
         }
         const pool =
