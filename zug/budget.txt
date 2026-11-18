@@ -778,3 +778,4 @@
 2026-11-18T08:59 karte=219 (gebucht am 1f300260, buche.sh)
 2026-11-18T09:10 karte=219 (gebucht am 1f300260, buche.sh)
 2026-11-18T09:56 karte=219 (gebucht am 1f300260, buche.sh)
+2026-11-18T11:18 karte=219 (gebucht am fa61024d, buche.sh)
