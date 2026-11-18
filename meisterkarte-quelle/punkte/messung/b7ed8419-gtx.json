@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-18T23:29:14.313Z",
+ "zeit": "2026-11-18T23:35:11.266Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -1944,6 +1944,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.zeit.erleben#1": {
+   "gruen": false,
+   "zahl": "Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 32 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 0 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 32 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 0 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kfa94134390a7",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2bbe263ca652",
+   "s": 49,
+   "fremd": {
+    "s": 52,
+    "takte": 23,
+    "fremdS": 184.19,
+    "kerne": 3.544,
+    "fensterKerne": 4.766,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      63.64
+     ],
+     [
+      "node.exe v3/zaehl-balken.cjs",
+      58.17
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      37.55
+     ]
+    ],
+    "dienerS": 49.69,
+    "diener": [
+     [
+      "System",
+      32.17
+     ],
+     [
+      "dwm.exe",
+      9.75
+     ]
+    ],
+    "geraetS": 24.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.05
+     ],
+     [
+      "svchost.exe",
+      9.78
+     ],
+     [
+      "SearchIndexer.exe",
+      1.19
+     ]
+    ],
+    "eigenS": 101.98,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T23:35:11.266Z",
+   "abdruck": "a58a0cfca1a8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1971,20 +2041,20 @@
   "kf9f430dead73": "bVXRjpswEPyXPF7rcwj4AEv34IRIOalVc5+wttfAhUBkw9Gm6r9XcCEJkH0CNOOdnd01fxcnUAdI8fnDVeWCL54W3xcOPpE4tJ9onz/cgi+WKgAWcfEVVAix6WDK5qfaUZ1DSg4FlCk5Y+ka96x61tMdpsglBVlCdkTS2Brz4gLyVISAnLZb0e4p3dOQrtvX1ym1kKgrUoPBgSj1KvSBT4GNS0Eigcb0yS5gFniBzzjtI0rE/oMOId6FoO12mlFCqcdKjQ/MePztjxBbMVOoc8CaFHnphpxKM+mv+DXRvCptoSVnwKxAeyGBF4InB6G93e0+phOiKRrnRskiX7NVxCmdYVN0ucpqcrKVxHIwL16FHvAHTqenhpiRIikhklOfM8AyRTvWEAZMBZz+jqaHHuCIFkgJ2QUaL/1wJW/eUEp3cy1FL7xPMQiPtIxDMyJ2Pdy1nVNJ1L2k18/R7mtgk1Tc4n2SxKkst8exPcYwDUv+Yy7JZaDRkkPl6pumAACH7Uj6gRL7IJkyb8VceCv5smTRXS0RFbuZd64ydQsWSXpqLkQMkIWMC/E2A9dwPA5FqBVGbNo4V3eDfS+DBei9hHxw7kEfvtaAnDEvBlKolOcj3/wU0zo/LRwJyNTmxgzdlkyZ+NFwtljURFZVPSB9Db7i1Kfl1ZW4X4P1rYNJW6ntJn0Xk0inuvvTK1tfK5UvSxNw02+jmqFzW5MWVHbtj5EIMX8APaMtMMWRjTqQPugOfac0GB6+jeb1POvyOcdifHtGcajjy6SPW9KiPUgoD4NMJn3m9eO3/iWGkV8mNKH79t6fjdCtEG+bddQddkJFT7YyeXfT0Qwal0FR334D//4D"
  },
  "sitzung": {
-  "start": "2026-11-18T23:28:38.949Z",
-  "ordner": "sitzung-20261119-002838",
+  "start": "2026-11-18T23:34:31.184Z",
+  "ordner": "sitzung-20261119-003431",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 7.1,
+  "warten": 0.01,
+  "bootS": 7.4,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "karte2.erleben.kopplung.bild#1",
-    "s": 25.3,
-    "takte": 573,
+    "ort": "wiese",
+    "vor": "karte2.mensch.zeit.erleben#1",
+    "s": 29.7,
+    "takte": 597,
     "chunks": 81,
     "nach": null
    }
@@ -1992,24 +2062,28 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.erleben.kopplung.bild#1",
+    "probe": "karte2.mensch.zeit.erleben#1",
     "anders": [
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
      "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     221.8,
-     302.9
+     229.1,
+     260.5
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.erleben.kopplung.bild#1",
+    "probe": "karte2.mensch.zeit.erleben#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -2021,28 +2095,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3096,
-   "frameP95": 25.05,
-   "taktP95": 15.78,
-   "vramMax": 140.1,
+   "bilder": 2842,
+   "frameP95": 33.26,
+   "taktP95": 18.98,
+   "vramMax": 130,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "karte2.erleben.kopplung.bild#1",
-     "m": 1950,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 223,
+   "ortImDeckel": [],
+   "zapfen": 157,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 232.6,
-  "minuten": 3.98
+  "fahrtS": 168.2,
+  "minuten": 2.91
  },
  "ungemessen": {
   "mensch.K5#1": {
