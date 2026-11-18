@@ -19,7 +19,7 @@
 //
 // SPLIT-PARITÄT (aktiv, je Lauf, Stichproben-Rezepte × alle 4 Stufen): der
 // Vertrags-Pfad buildInstance(id, seed, L) == die SHELL-KOMPOSITION derselben
-// Kern-Primitive (kulturParams(name, LAB_SEED) frisch → stapelBau/HAUS.build/
+// Kern-Primitive (bauRezept({bauweise: name}, null, LAB_SEED) frisch → stapelBau/HAUS.build/
 // bakeLOD/fragFuer/mischeGeoms — wörtlich der promoteBauen-/LOD-Sonden-Pfad
 // des Labs) — Kern-Vertrags-Pfad und Lab-Pfad bleiben EIN Bau, und die
 // eingefrorene PRESETS-Ableitung drift-wacht gegen die lebende Kultur-Quelle.
@@ -92,10 +92,10 @@ const shaVon = (g) => {
 
 // ── DIE SHELL-KOMPOSITION (Split-Paritäts-Referenz): derselbe Bau aus den
 //    Kern-PRIMITIVEN, wörtlich wie das Lab (promoteBauen · LOD-Sonde) — mit
-//    FRISCHER kulturParams-Ableitung statt der eingefrorenen PRESETS (die
+//    FRISCHER bauRezept-Ableitung statt der eingefrorenen PRESETS (die
 //    Probe drift-wacht beide Nähte: Stufen-Komposition UND Rezept-Ableitung). ──
 function shellPfad(name, seed, stufe) {
-    const kp = FC.kulturParams(name, FC.LAB_SEED);
+    const kp = FC.bauRezept({ bauweise: name }, null, FC.LAB_SEED);
     // ≡ hausParams-Basis: B4-Defaults + terrain:0, dann die Kultur-Felder (applyKultur → readParams).
     const p = { terrain: 0, seed: seed };
     for (const row of FC.PARAMS_BY_KIND.haus) p[row.id] = row.def;
