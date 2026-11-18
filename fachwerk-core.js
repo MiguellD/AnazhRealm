@@ -7667,7 +7667,7 @@
         // DER TROCKENGRABEN (w28-graben-koerper, rein additiv; GRABEN_GESETZ oben): der Graben um das Gehege des Zoos als gebauter
         // Körper — die Sohle aus Platten, die Stützmauern aus Quadern in Lagen, die Kronensteine. Sein Grund (S4) ist der Hohlraum
         // im Feld und der Schnitt im gezeichneten Boden (`ortPlan`), sein Maß ist Norm (Kollision == Optik == Grund).
-        trockengraben: { kind: "graben", art: "Graben", lab: "Trockengraben · Sohle, Stützmauern, Kronensteine", gestalten: 1, siteTag: "gehege", salz: 0x85eb },
+        trockengraben: { kind: "graben", art: "Graben", lab: "Trockengraben · Sohle, Stützmauern, Kronensteine", gestalten: 1, siteTag: "gehege", salz: 0x85eb, grund: 1 },
     };
     // B4 — die Regler der Werke: nur, was die Norm nicht verschiebt (Sitzhöhe, Steigmaß und Podest bleiben stehen).
     var BANK_PARAMS = [
@@ -7739,8 +7739,10 @@
     }
     var AUS_ARTEN = { ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS, graben: GRABEN_PARAMS };
     for (var _ga in GERAETE) AUS_ARTEN[GERAETE[_ga].kind] = GERAET_PARAMS;
+    // `grund`: das Werk steht auf dem Grund seines Orts (der Trockengraben: sein Hohlraum liegt im Erdbau des Orts, `ortPlan`) — der Ort
+    // setzt es, nie die Hand: der Katalog des Spielers zeigt es nicht (stamm `_katalogSichtbar`, `fx.place.grund`)
     for (var _wk in WERKE)
-        PRESETS[_wk] = { kind: WERKE[_wk].kind, lab: WERKE[_wk].lab, s: ausParams({ kind: WERKE[_wk].kind }, null), fx: { place: { mode: "site", siteTag: WERKE[_wk].siteTag } } };
+        PRESETS[_wk] = { kind: WERKE[_wk].kind, lab: WERKE[_wk].lab, s: ausParams({ kind: WERKE[_wk].kind }, null), fx: { place: Object.assign({ mode: "site", siteTag: WERKE[_wk].siteTag }, WERKE[_wk].grund ? { grund: true } : {}) } };
     // ── DIE SITZBANK (Front +z: der Sitzende blickt längs +z): zwei Wangen — Vorderbein, Hinterbein, der Lehnen-Pfosten um
     //    `neigung` nach hinten, die Sitz-Zarge, nah der Fuß-Riegel —, zwei Längs-Zargen, das Sitzbrett aus `latten` Latten mit
     //    Fuge (Oberkante = die Sitzhöhe), die Lehne aus zwei Latten auf den Pfosten; nah sichert je Bein ein Holznagel (`nagel`,

@@ -667,7 +667,13 @@ class AnazhRealm_siedlung_satz {
         const b = bp || (this.state.blueprints && this.state.blueprints[name]);
         if (!b || b.donorOnly || b.vomGesetz === true) return false;
         const n = typeof name === "string" && name ? name : b.name || "";
-        return !(/^grown_/.test(n) || /^(fels|kristall)_var([1-9]\d*)$/.test(n));
+        if (/^grown_/.test(n) || /^(fels|kristall)_var([1-9]\d*)$/.test(n)) return false;
+        // ein Werk des Grunds (`fx.place.grund` des Rezepts, w28-graben-koerper: der Trockengraben — sein Hohlraum liegt im Erdbau
+        // seines Orts): der Ort setzt es, nie die Hand; gesetzt stünde sein Stein in festem Grund. Als neue Art im Start-Gurt füllte
+        // es den letzten freien Platz (gate:haus-welt W11: der Bau-Modus fand für das Fremd-Haus keinen Slot, `hotbar_voll`)
+        const f = this._foundry;
+        const pr = f && f.recipes && typeof b.studioGestalt === "string" ? f.recipes[b.studioGestalt] : null;
+        return !(pr && pr.fx && pr.fx.place && pr.fx.place.grund === true);
     }
     // DIE REIHE DES KATALOGS (bauen.K1): griffbereit zuerst — die eigenen Werke des Spielers (weder eingebaut noch vom Studio
     // geboren, `_foundryAutoSpecies` ist die Herkunfts-Marke), dann die seiner Hotbar in ihrer
