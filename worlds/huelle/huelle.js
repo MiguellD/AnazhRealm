@@ -2337,7 +2337,7 @@
                 }
                 bauObjekt = new WeakMap();
                 if (alt && alt.abschied) alt.abschied();
-                return z;
+                return z.then(async (b) => (await fensterNeu(), b));
             });
             B.steht = wechsel.catch(() => B);
             return wechsel;
@@ -2390,7 +2390,7 @@
             });
             return neu;
         };
-        let [vorbauZiel, grundSteht] = [null, false];
+        let [vorbauZiel, grundSteht] = [null, undefined];
         async function vorbau(K) {
             const P = R._pipelines;
             const eigen = P.getForRender;
@@ -2415,9 +2415,11 @@
             // Himmel (Radeon 900c28e6, garage-buehne.png der Station studios.K4). Der ERSTE Vorbau zeichnet die Szene ohne Grund, das
             // erste Bild baut sein EINES Programm selbst; danach steht der Grund und geht mit (ein Wechsel des Grunds je Vorbau
             // baute sein Programm je Griff neu: garage Neubau 254 → 1546 ms auf swiftshader).
+            // JE GRUND: die Uhr baut ein neues Licht und mit ihm einen neuen Grund (`rtH.texture`) — auch er zeichnet sein erstes
+            // Bild selbst (Studio-Blick portale, Radeon 18.11.: Mittag per Knopf nach dem Werk → schwarzer Himmel, das Tor dunkel)
             const grund = szene.background;
-            const ohneGrund = !grundSteht;
-            grundSteht = true;
+            const ohneGrund = grund !== grundSteht;
+            grundSteht = grund;
             try {
                 try {
                     if (ohneGrund) szene.background = null;
@@ -2565,15 +2567,27 @@
         // gelesen) als Zeile im Atlas der Ziele der Welt (`_torZielEinsetzen`). Die Passage steht NEBEN dem Werk (das gesetzte
         // Werk der Welt trägt keine, die Station studios.K4 misst das Werk allein).
         //   passage(w) → Mesh (userData.passage: { tor, u })   passageTakt(mesh, zeit, act)   passageFort(mesh)
-        let zielZeile = null;
+        let [zielZeile, zielBlick] = [null, null];
+        // DAS FENSTER FOLGT DER UHR: die Bühne schießt ihr Panorama an der neuen Stunde neu in DIESELBE Zeile des Atlas (die
+        // Ordnung des Wirts: Zeile n liegt bei n · w · h, `_torZielEinsetzen`) — sonst zeigte die Passage nach „Mittag“ den Morgen
+        const fensterNeu = () =>
+            zielZeile &&
+            zielZeile.then((zeile) =>
+                Promise.resolve(panorama(T, R, szene, zielBlick.mitte, { lesen: true, verbergen: zielBlick.verbergen })).then((P) => {
+                    const [G, Z] = [B.wirt.constructor.TOR_ZIEL, B.wirt._torZiele()];
+                    Z.tex.image.data.set(B.wirt.constructor._rgb9e5AusHalb(P.daten), zeile * G.w * G.h);
+                    Z.tex.needsUpdate = true;
+                })
+            );
         B.passage = (w, verbergen) =>
             B.engine().then(async (wirt) => {
                 const A = wirt.constructor;
                 const hatOv = w.ov && typeof w.ov === "object" && Object.keys(w.ov).length > 0;
                 const tor = wirt._torGesetzFor({ type: A.KIND_POLICY.gate.prefix + w.preset, studioOv: hatOv ? wirt._foundryGestaltOv(wirt._studioWerkPruefen("gate", w.preset, w.ov, 1)) : null });
                 if (!tor) throw new Error("DIE BÜHNE: das Tor-Gesetz der Welt kennt „" + w.preset + "“ nicht");
+                if (!zielZeile) zielBlick = { mitte: [0, tor.mu.centerY, 0], verbergen: verbergen || [] };
                 if (!zielZeile)
-                    zielZeile = Promise.resolve(panorama(T, R, szene, [0, tor.mu.centerY, 0], { lesen: true, verbergen: verbergen || [] })).then((P) => {
+                    zielZeile = Promise.resolve(panorama(T, R, szene, zielBlick.mitte, { lesen: true, verbergen: zielBlick.verbergen })).then((P) => {
                         const z = { world: "buehne", zeile: null };
                         wirt._torZiele();
                         wirt._torZielEinsetzen([[z, P.daten]]);

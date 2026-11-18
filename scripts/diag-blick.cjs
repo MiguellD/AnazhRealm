@@ -39,7 +39,9 @@ const {
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { bildMasse, bildRauschen, pngLesen } = require("./lib/abnahme-urteil.cjs");
 
-const [OUT, STUDIO, W, H] = [argOpt("--out", root), argOpt("--studio", ""), 640, 360];
+// `--zeilen n`: die Höhe des Schusses (das Urteil am Bild in echter Auflösung: 1080), die Breite 16:9
+const [OUT, STUDIO, H] = [argOpt("--out", root), argOpt("--studio", ""), +argOpt("--zeilen", "360")];
+const W = Math.round((H * 16) / 9);
 const git = (...a) => require("child_process").execFileSync("git", a, { cwd: root, encoding: "utf8" }).trim();
 const pixel = (url) => pngLesen(Buffer.from(url.split(",")[1], "base64")).u8;
 
@@ -63,11 +65,31 @@ function bildZahlen(u8, ohne) {
     return z;
 }
 
+// DIE VORSCHAU-POSE (Seiten-Kontext, `window.__vorschau`): die Kamera des Werk-Blicks (`WERK_BLICKE` vorn: Gier 0,6, Neigung
+// 0,32, Blickwinkel 45°, die Hüllkugel füllt die Bildhöhe) an das Werk einer Seite — Seite und Blick-Bühne in EINER Kamera
+const vorschau = (kam, objekt, kugel, W, H) => {
+    objekt.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(objekt),
+        c = bb.getCenter(new THREE.Vector3()),
+        rad = bb.getSize(new THREE.Vector3()).length() / 2,
+        [cp, sp] = [Math.cos(0.32), Math.sin(0.32)];
+    Object.assign(kam, { fov: 45, aspect: W / H, near: Math.min(0.1, rad / 10), far: Math.max(200, 32 * rad) });
+    kam.updateProjectionMatrix();
+    kam.position.set(cp * Math.cos(0.6), sp, cp * Math.sin(0.6)).multiplyScalar((rad * 1.08) / Math.sin((45 * Math.PI) / 360)).add(c);
+    if (kugel) {
+        kugel.enableDamping = false;
+        kugel.target.copy(c);
+        kugel.update();
+    }
+    kam.lookAt(c);
+    kam.updateMatrixWorld(true);
+};
+
 // DIE STUDIOS: ihr Bereit-Zeichen und ihre RUHE (Seiten-Kontext): die Ansicht über die Schalter des Studios, Zeit und Blinzeln
 // fest, Lehren aus; zurück kommen Renderer, Szene, das Objekt und der EINE Takt der Seite (ihr Bild).
 const STUDIOS = {
     garage: {
-        ansichten: ["iso", "seite", "explosion", "persp", "strecke"],
+        ansichten: ["iso", "seite", "explosion", "persp", "strecke", "vorschau"],
         bereit: () => typeof vehicle === "object" && R._initialized && (typeof bahn === "undefined" || bahn),
         // `--epoche e` stellt die Zeit-Achse (w11-fahrzeug); `strecke`: die Prüffahrt, der Fahrer der Linie bis in den Flug über dem
         // Kicker (Punkt 668 der Bahn), gezeichnet aus der Kamera der Fahrt
@@ -79,9 +101,20 @@ const STUDIOS = {
                 return { R, scene, objekt: vehicle, takt: () => (raederSetzen(), R.render(scene, cam)) };
             }
             [simT, tAlt, ANS.explode] = [0, 0, +(an === "explosion")];
-            projSetzen(an === "explosion" ? "iso" : an);
+            projSetzen(an === "explosion" ? "iso" : an === "vorschau" ? "persp" : an);
             explosionAnwenden((eZeig = ANS.explode));
             gCal.visible = false;
+            // `vorschau`: die Kamera des Werk-Blicks — der Orbit der Garage trägt sie (Gier = az, Neigung = el, dieselben Achsen)
+            if (an === "vorschau") {
+                vehicle.updateMatrixWorld(true);
+                const bb = new THREE.Box3().setFromObject(vehicle),
+                    rad = bb.getSize(new THREE.Vector3()).length() / 2;
+                Object.assign(oc, { az: 0.6, el: 0.32, vAz: 0, vEl: 0, zug: -1, dist: (rad * 1.08) / Math.sin((45 * Math.PI) / 360) });
+                oc.ziel.copy(bb.getCenter(new THREE.Vector3()));
+                ANS.dreh = false;
+                Object.assign(cam, { fov: 45, near: Math.min(0.1, rad / 10), far: Math.max(200, 32 * rad) });
+                cam.updateProjectionMatrix();
+            }
             return { R, scene, objekt: vehicle, takt: (i) => (_wecke(), animate(1000 + (i * 1000) / 60)) };
         },
     },
@@ -112,22 +145,25 @@ const STUDIOS = {
     // Schnitt, das r128-Labor (`gate`, `composer`). `front`: die Schauseite des Tors, die Hüllkugel füllt die Bildhöhe; der Takt
     // ist der EINE Takt der Seite (die Rückrufe, die HALT sammelt) — die Flügel stehen, wie die Seite sie stellt.
     portale: {
-        ansichten: ["front"],
+        ansichten: ["front", "vorschau"],
         // die Bühne steht erst nach Bildern (Vorbau, Licht): das Warten lässt die gesammelten Rückrufe der Seite laufen
         bereit: () => (window.__rafQ.splice(0).forEach((f) => f(performance.now())), window.STUDIO ? !!STUDIO.wurzel : typeof gate !== "undefined" && !!gate && typeof composer !== "undefined"),
-        ruhe: () => {
+        ruhe: (an) => {
             const neu = !!window.STUDIO,
                 [kam, objekt, kugel] = neu ? [STUDIO.kamera, STUDIO.wurzel, STUDIO.kugel] : [camera, gate, controls],
                 ry = neu ? STUDIO.teller.rotation.y : 0;
             objekt.updateMatrixWorld(true);
-            const b = new THREE.Box3().setFromObject(objekt),
-                c = b.getCenter(new THREE.Vector3()),
-                h = b.max.y - b.min.y,
-                d = (1.25 * h) / 2 / Math.tan((kam.fov * Math.PI) / 360);
-            kugel.target.copy(c);
-            kam.position.copy(c).add(new THREE.Vector3(Math.sin(ry), 0.22, Math.cos(ry)).setLength(d));
-            if (kugel.enableDamping) kugel.enableDamping = false;
-            kugel.update();
+            if (an === "vorschau") window.__vorschau(kam, objekt, kugel, innerWidth, innerHeight);
+            else {
+                const b = new THREE.Box3().setFromObject(objekt),
+                    c = b.getCenter(new THREE.Vector3()),
+                    h = b.max.y - b.min.y,
+                    d = (1.25 * h) / 2 / Math.tan((kam.fov * Math.PI) / 360);
+                kugel.target.copy(c);
+                kam.position.copy(c).add(new THREE.Vector3(Math.sin(ry), 0.22, Math.cos(ry)).setLength(d));
+                if (kugel.enableDamping) kugel.enableDamping = false;
+                kugel.update();
+            }
             const lauf = (i) => window.__rafQ.splice(0).forEach((f) => f(1000 + (i * 1000) / 60));
             return {
                 R: neu ? STUDIO.buehne.renderer : renderer,
@@ -209,11 +245,15 @@ async function studioLauf() {
             await s.lausche(0);
             await page.setViewport({ width: W, height: H });
             await page.evaluateOnNewDocument(HALT);
-            await s.zeige(page, 120000, `worlds/${STUDIO}/index.html`, "networkidle0");
+            // `vorschau` steht in den Achsen der Welt: die Uhr reist in der Adresse (die Seite stellt das Werk dann ohne Teller,
+            // wie der Werk-Blick); jede andere Ansicht stellt die Uhr am stehenden Werk um (der Knopf der Bühne)
+            const adresse = an === "vorschau" && argOpt("--uhr", "") ? `?uhr=${argOpt("--uhr", "")}` : "";
+            await s.zeige(page, 120000, `worlds/${STUDIO}/index.html${adresse}`, "networkidle0");
             // Takt-Abfrage, nie raf: HALT hält requestAnimationFrame, die raf-Abfrage fragte nur einmal
             await page.waitForFunction(A.bereit, { timeout: 120000, polling: 100 });
             await page.evaluate((e) => (window.__epoche = e), argOpt("--epoche", ""));
-            const r = await page.evaluate(`(${schuss})(${A.ruhe}, "${an}", ${W}, ${H}, ${JSON.stringify({ uhr: argOpt("--uhr", ""), nackt: process.argv.includes("--nackt") })})`),
+            await page.evaluate(`window.__vorschau = ${vorschau}`);
+            const r = await page.evaluate(`(${schuss})(${A.ruhe}, "${an}", ${W}, ${H}, ${JSON.stringify({ uhr: adresse ? "" : argOpt("--uhr", ""), nackt: process.argv.includes("--nackt") })})`),
                 mit = pixel(r.mit);
             bilder.push({
                 st,
@@ -279,21 +319,11 @@ async function werkSchuss(w, o, blicke, W, H) {
     ms.werk = Math.round(performance.now() - t1);
     szene.add(g);
     g.updateMatrixWorld(true);
-    const bb = new T.Box3().setFromObject(g),
-        c = bb.getCenter(new T.Vector3()),
-        rad = bb.getSize(new T.Vector3()).length() / 2;
-    // der Boden der Atmosphäre unter dem Fuß des Werks, die Sonne über ihm (der Schatten trägt das Streiflicht)
-    const boden = new T.Mesh(
-        new T.PlaneGeometry(60 * rad, 60 * rad),
-        new T.MeshStandardMaterial({ color: new T.Color().setRGB(...__weltLicht.ATMO_BODEN, T.LinearSRGBColorSpace), roughness: 1, metalness: 0 })
-    );
-    boden.rotation.x = -Math.PI / 2;
-    boden.position.set(c.x, o.boden == null ? bb.min.y : o.boden, c.z);
-    boden.receiveShadow = true;
-    szene.add(boden);
-    Object.assign(B.sonne.shadow.camera, { left: -2.2 * rad, right: 2.2 * rad, top: 2.2 * rad, bottom: -2.2 * rad, near: 1, far: 160 + 4 * rad });
-    B.sonne.shadow.camera.updateProjectionMatrix();
-    B.sonneUeber(c.x, c.y, c.z);
+    // DER STAND DES WERKS ist der EINE der Bühne (`B.stelle`: der Boden der Atmosphäre an der Null des Werks, wie jede Studio-Seite
+    // es stellt, die Sonne über ihm) — bis hier legte der Blick seinen eigenen Boden unter den Fuß und zeigte ein anderes Werk
+    // als die Seite (das Tor auf seinen Stufen, die Seite mit den Stufen im Grund); `--boden y` legt ihn an eine Höhe
+    const { mitte: c, rad } = B.stelle(g);
+    if (o.boden != null) B.grund().position.y = o.boden;
     if (o.nackt) B.nackt(true);
     const ziel = new T.RenderTarget(W, H);
     B.renderer.setOutputRenderTarget(ziel);
@@ -325,7 +355,7 @@ async function werkSchuss(w, o, blicke, W, H) {
 }
 async function werkLauf() {
     const w = { preset: argOpt("--werk", ""), seed: +argOpt("--same", "1"), lod: +argOpt("--lod", "0"), ov: JSON.parse(argOpt("--ov", "null")) };
-    // `--boden y`: die Höhe des Bodens im Rahmen des Werks (ein Haus: 0, sein Keller liegt im Gelände); ohne Wort der Fuß des Werks
+    // `--boden y`: die Höhe des Bodens im Rahmen des Werks ; ohne Wort die Null der Bühne (`B.stelle`)
     const boden = argOpt("--boden", "");
     const o = { uhr: argOpt("--uhr", "frueh"), nackt: process.argv.includes("--nackt"), boden: boden === "" ? null : +boden };
     const [t0, server, browser] = [Date.now(), statikServer({ seiten: { "/__werk-blick.html": werkSeite } }), await starteBrowser({ art: SELBSTTEST ? "null" : "linse", frist: 600000 })];
