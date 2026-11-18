@@ -129,7 +129,24 @@ grep -q "Summe ${S%%/*}/330\|>${S%%/*}<\|${S%%/*}/330" "$KO/meisterkarte.html" |
 # der Kurs der Woche (Messplatz-Blick, Tab KURS) liest zug/budget.txt: jede Buchung schreibt ihre Summe selbst (26.10.: die Kurve
 # stand von 01:45 bis 19:30 still, weil die Zeile von Hand kam)
 printf '%s karte=%s (gebucht am %s, buche.sh)\n' "$(date +%Y-%m-%dT%H:%M)" "${S%%/*}" "${KOPF:0:8}" >> "$KO/zug/budget.txt"
-git -C "$KO" add -A meisterkarte-quelle MEISTERKARTE.md meisterkarte.json meisterkarte.html zug/budget.txt 2>/dev/null
-git -C "$KO" commit -q -m "Meisterkarte $S am Kopf ${KOPF:0:8} (V$V): Buchung aus allen Mess-Dateien (buche.sh)" -m "$CO" || say "nichts zu committen"
+# DIE KARTE 2 BUCHT SICH SELBST (18.11.): die Karte 2 ist seit dem 15.11. der EINE Zähler, ihre Buchung (vision/buche-2.cjs, 5 s, kein
+# Fenster) lief aber nur von Hand — am 18.11. zuletzt um 01:36, danach schrieben beide Mess-Dienste vierzehn Stunden Akten in
+# vision/richter/, und der Zähler stand, während diese Schleife nach jeder Scheibe die eingefrorene 330er-Karte neu buchte. Jede
+# Buchung bucht jetzt beide Karten aus demselben Baum; die Zeile nennt die Summe der Karte 2, ihren Kern und die Sprossen, denen zum
+# Paar genau EIN Gerät am selben Kopf fehlt (0 oder KERN — was die Ratsche schon hält, zählt nicht dazu): das ist die Arbeitsliste
+# der Mess-Dienste. Bricht die Buchung der Karte 2 (eine kranke Akte, Exit ≠ 0, kein Summen-Wort), wird NICHTS veröffentlicht — der
+# stille Fallback auf die alte Karte allein wäre der Bruch.
+k2=$(cd "$KO" && node vision/buche-2.cjs 2>&1); rc2=$?
+K2=$(printf '%s\n' "$k2" | grep -m1 '^KARTE 2: ')
+{ [ "$rc2" = 0 ] && [ -n "$K2" ]; } || { say "ROT: Karte 2 bucht nicht (buche-2.cjs Exit $rc2) — nichts veröffentlicht: $(printf '%s\n' "$k2" | grep -v '^\s*$' | tail -2 | tr '\n' ' ' | cut -c1-300)"; exit 1; }
+K2P=$(printf '%s\n' "$k2" | grep -E 'S [0-9]+: (0|KERN) — kein Punkt, nur ein Gerät' | sed -E 's/^ *([^ ]+) S ([0-9]+): [^—]*— kein Punkt, nur ein Gerät \(([^)]*)\) am ([0-9a-f]+).*/\1#\2@\4 hat \3/' | tr '\n' ';' | sed 's/;$//; s/;/ · /g')
+K2Z=$(printf '%s' "$K2" | sed -E 's/^KARTE 2: ([0-9]+) von.*/\1/')
+say "$K2 · PAAR OFFEN $(printf '%s\n' "$k2" | grep -cE 'S [0-9]+: (0|KERN) — kein Punkt, nur ein Gerät'): ${K2P:-keines}"
+printf '%s\n' "$k2" | grep -E 'heute [0-9]+ → [0-9]+' | cut -c1-200 | while IFS= read -r z; do say "Karte 2 bewegt:$z"; done
+sed -i "\$ s/\$/ karte2=$K2Z/" "$KO/zug/budget.txt"
+# die Arbeitsliste steht als Datei in koordination (Leser: die Mess-Sitzungen beider Geräte) — je Zeile Sprosse@Kopf und das Gerät, das misst
+{ echo "# PAAR OFFEN nach der Buchung am ${KOPF:0:8} ($(date '+%F %H:%M')) — Sprossen der Karte 2 mit 0 oder KERN, denen am selben Kopf genau EIN Gerät fehlt (buche.sh)"; printf '%s\n' "${K2P:-keines}" | sed 's/ · /\n/g'; } > "$KO/zug/paar-offen.txt"
+git -C "$KO" add -A meisterkarte-quelle MEISTERKARTE.md meisterkarte.json meisterkarte.html zug/budget.txt zug/paar-offen.txt vision/meisterkarte-2.json vision/meisterkarte-2.html vision/karte-2-stand.json 2>/dev/null
+git -C "$KO" commit -q -m "Meisterkarte $S am Kopf ${KOPF:0:8} (V$V) · Karte 2 $K2Z von 1718: Buchung aus allen Mess-Dateien und Akten (buche.sh)" -m "$CO" || say "nichts zu committen"
 veroeffentliche "$S" || exit 1
-say "GEBUCHT $S am Kopf ${KOPF:0:8} — Artifact: meisterkarte.html veröffentlichen"
+say "GEBUCHT $S am Kopf ${KOPF:0:8} · $K2 — Artifact: meisterkarte.html veröffentlichen"
