@@ -67,11 +67,10 @@ var __weltLicht = (function () {
     // Jede Quelle des Licht-Pools trägt darum CANDELA; der Stoff summiert ihre Beleuchtungsstärke in Lux und zeigt die SUMME
     // (`_lichtPoolTerm`, die EINE Stelle). `eps`: eine Quelle reicht, so weit ihr GEZEIGTES Licht die Umgebung um diesen Anteil
     // hebt (zeig(E) = eps · S(A); `augeReichweite`), über die äußeren `saum` ihrer Reichweite fällt sie weich auf null.
-    // DIE KAMERA schließt für das Becken (`_belichtungAusLicht`: Σ E am Auge durch `augeZeig` als Licht der Lesung): am Feuer
-    // wird die Nacht schwarz. Ohne den Messer stand die Wiese an der Lava ganz orange (Saum-Gras Luma 104, Baumlinie ×1,9 über
-    // main, rosa-weiße Risse); mit ihm Saum ÷ Gras in 15 m 1,58, Riss R/G 2,68, die Baumlinie ×0,26. Der Preis, gemessen und
-    // gewollt: der Kreis am Herd steht im Bild bei ×2,1 über der fernen Wiese (ohne Messer ×1,8), die Straße in 40 m fällt
-    // auf die Hälfte (GTX 1050, 18.11.). Leser: `_leuchtTakt` (A, Reichweite), `_lichtPoolTerm` (die Stauchung der Summe).
+    // DIE KAMERA schließt für das Becken NICHT: ein Messer, der Σ E am Auge dazu las, ist in drei Stärken gemessen und gefallen
+    // (GTX 1050, 18.11.) — voll hielt er die Lava (Saum ÷ Gras 1,57) und nahm dem Dorf die Nacht (Wand der Gasse 61,6 → 44,7,
+    // die Bühne Luma 5,3 gegen ihr Soll 22); auf einer Basis mit der Steigung des Tags stand das Dorf fast (58,7) und die Lava
+    // riss (1,46). EINE Antwort der Kamera auf Σ E trägt beide nicht. Leser: `_leuchtTakt` (A, Reichweite), `_lichtPoolTerm` (die Stauchung der Summe).
     // DAS MESOPISCHE BAND (CIE 191:2010): unter `staebchenCd` sieht das Auge mit den Stäbchen, über `zapfenCd` mit den Zapfen.
     // EINE Quelle für das Knie des Auges und für die Sättigung der Nacht (`AnazhRealm.NACHT_AUGE` liest sie): das Knie liegt in
     // der Mitte des Bands (geometrisch) als Beleuchtungsstärke der Karte — E = π · L ÷ `karte`, 2,76 lx.
@@ -100,8 +99,8 @@ var __weltLicht = (function () {
     };
     // DAS MASS DER STUNDE: die Zahl, die die Welt für ihre Umgebung JETZT trägt (`welt`, die Lesung des Messers), gegen die
     // Zahl der Skala für dieselben Lux — in der Nacht 1 (die Nacht STEHT auf S), am Mittag der Mess-Wiese 1, dazwischen klein
-    // (Sonne 0°: 0,056 Einheiten für 779 lx, S gäbe 2,88 → 0,019; Sonne 10,8°: 0,112). Alles, was das Auge zeigt (Becken, Glut,
-    // das Becken im Messer), rechnet auf S und steht in der Welt × dieses Maß: ohne es stand die Lava bei Sonne 0° weiß mit
+    // (Sonne 0°: 0,056 Einheiten für 779 lx, S gäbe 2,88 → 0,019; Sonne 10,8°: 0,112). Alles, was das Auge zeigt (Becken, Glut),
+    // rechnet auf S und steht in der Welt × dieses Maß: ohne es stand die Lava bei Sonne 0° weiß mit
     // orangen Bäumen (Riss 254/209/201, Baumlinie Luma 146; GTX 1050, 18.11.). EINE Zahl je Bild (`_leuchtTakt` → `_augeMass`).
     const augeMass = (welt, tag = 0) => {
         const s = augeS(augeLux(welt, tag));

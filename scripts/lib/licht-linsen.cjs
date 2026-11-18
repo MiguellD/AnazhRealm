@@ -1100,25 +1100,11 @@ function tagKurve(o) {
             H = 270;
         const zeilen = [];
         let karte = null;
-        // DAS GESETZ DER KAMERA AN DER LESUNG JETZT (w28-strahler: k ist eine Funktion der Uhr UND des Beckens am Auge): die
-        // Belichtung, die `belichtung` aus der Lesung des Messers gibt — `mit` dem Becken (Σ E am Auge, `_beckenAmAuge`, von der
-        // Linse selbst durch `augeZeig` gerechnet: ein Schreiber, der es nicht liest, fällt als MESSER) oder ohne
-        const WL = window.__weltLicht;
-        const gesetz = (mit) => {
-            const w = r._belichtungE,
-                EA = r._belichtungAnker();
-            if (!w || !EA) return NaN;
-            const bz = mit ? WL.augeZeig(r._beckenAmAuge(), WL.augeLux(luma709(w), r._belichtungTag)) * WL.augeMass(luma709(w), r._belichtungTag) : 0;
-            return WL.belichtung(w.map((x) => x + bz), EA, r._sonnenRichtung().y, (h, q) => C._belichtungStufen(h, q), C.BELICHTUNG);
-        };
-        const C = r.constructor;
         try {
             for (const u of o.uhren) {
                 if (st.world) st.world.timeOfDay = u;
                 if (r.setTimeOfDay(u, "human") !== true) throw new Error(`die Uhr nimmt den Spieler nicht (${u})`);
-                // der erste Frame OHNE das Becken (das Gesetz ohne ÷ mit an derselben Lesung): der Pool der Stunde blendet erst ein —
-                // ASYNC urteilt den Himmel, nie das Einblenden einer Quelle
-                const sofort = (k * gesetz(false)) / gesetz(true);
+                const sofort = k;
                 // die Leuchtquellen der Stunde blenden ein (`_leuchtTakt`), bis jeder Platz des Pools steht
                 for (let i = 0, p; i < 20 && r._leuchtTakt; i++, await sleep(50)) {
                     r._leuchtTakt();
@@ -1137,9 +1123,7 @@ function tagKurve(o) {
                     uhr: u,
                     sonne: +((Math.asin(r._sonnenRichtung().y) * 180) / Math.PI).toFixed(2),
                     sofort: +sofort.toFixed(4),
-                    frisch: +((k * gesetz(false)) / gesetz(true)).toFixed(4),
-                    becken: +r._beckenAmAuge().toPrecision(4),
-                    messer: +Math.log2(k / gesetz(true)).toFixed(3),
+                    frisch: +k.toFixed(4),
                     hell: +(s[0] / n).toFixed(1),
                     Y: +(luma709(s.slice(1)) / n).toPrecision(4),
                     X: +(s[4] / n).toPrecision(4),
@@ -1177,12 +1161,11 @@ function tagKurve(o) {
 //   0,1 EV · BUCKEL eine Stunde über Mittag + 0,15 EV · GOLD die Sonne 10° (je Seite zwischen ihren Zeilen gelesen) außerhalb
 //   −1 … −0,5 EV · WARM dort R/B unter 1,3 × Mittag · NACHT Mitternacht außerhalb −5 … −3 EV oder unter Luma 22 · REF die Stufen der Szene
 //   (X) über 0,3 neben der REF-Kurve (spec/farbe/tag-ref.json, je Knoten, dazwischen linear) · ASYNC der erste Frame neben dem
-//   stehenden Himmel (beide ohne das Becken) · MESSER die Belichtung neben dem Gesetz MIT dem Becken am Auge (über 0,02 EV:
-//   der Schreiber liest es nicht) oder kein Becken an irgendeiner Uhr (die Linse sah den Messer nie) · SCHREIBER nicht EINER · BLIND ohne Mittag und Mitternacht. Das EV ist das des Ausgabe-Bilds (Y). Trägt die
+//   stehenden Himmel · SCHREIBER nicht EINER · BLIND ohne Mittag und Mitternacht. Das EV ist das des Ausgabe-Bilds (Y). Trägt die
 //   Messung nicht die ganze Bahn (`bahn`: die 100 Uhren; `--kurz` ist die Wand gate:tag-achse:echt), urteilt sie die Mechanik der
 //   Kamera (`TAG_WAND`: Anker, Stetigkeit, EIN Schreiber); was die Szene antwortet, urteilt die Station über die ganze Bahn.
-const TAG_SOLL = { karte: [110, 130], sprung: 0.1, buckel: 0.15, gold: [-1, -0.5], warm: 1.3, nacht: [-5, -3], nachtLuma: 22, ref: 0.3, async: 0.05, messer: 0.02 };
-const TAG_WAND = /^(ANKER|SPRUNG|ASYNC|MESSER|SCHREIBER|BLIND) /;
+const TAG_SOLL = { karte: [110, 130], sprung: 0.1, buckel: 0.15, gold: [-1, -0.5], warm: 1.3, nacht: [-5, -3], nachtLuma: 22, ref: 0.3, async: 0.05 };
+const TAG_WAND = /^(ANKER|SPRUNG|ASYNC|SCHREIBER|BLIND) /;
 // die Nachtastung im Feinschritt 0,002: jede Lücke einer Seite, deren Sonne im Fenster um den Horizont steht (−18 … 15°)
 function tagFeinUhren(zeilen) {
     return zeilen.flatMap((a, i) => {
@@ -1224,9 +1207,7 @@ function tagKurveUrteil(welt) {
             if (e(x) > S.buckel) rot("BUCKEL", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(e(x))} EV über dem Mittag`);
             if (Math.abs(ref(x)) > S.ref) rot("REF", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(ref(x))} Stufen neben der REF`);
             if (Math.abs(ev(x.sofort, x.frisch)) > S.async) rot("ASYNC", `Uhr ${x.uhr} ${r2(ev(x.sofort, x.frisch))} EV`);
-            if (!(Math.abs(x.messer) <= S.messer)) rot("MESSER", `Uhr ${x.uhr} ${x.messer} EV neben dem Gesetz mit ${x.becken} lx am Auge`);
         });
-        if (!alle.some((x) => x.becken > 0)) rot("MESSER", "kein Becken am Auge an irgendeiner Uhr");
         const gold = [];
         for (const s of [alle.filter((x) => x.uhr < 0.5), alle.filter((x) => x.uhr > 0.5)]) {
             const i = s.findIndex((x, j) => j && (s[j - 1].sonne - 10) * (x.sonne - 10) <= 0);
@@ -1257,11 +1238,8 @@ function tagKurveUrteil(welt) {
 function tagKurveSelbsttest() {
     const T = require("../../spec/farbe/tag-kurve.json");
     const kurve = (q, fall) => {
-        // die gemessene Kurve trägt den Messer nicht (vor w28-strahler): ein Becken um Mitternacht, die Belichtung am Gesetz
-        const alle = q.zeilen.map((r) => Object.assign({ becken: r[0] === 0 ? 3.4 : 0, messer: 0 }, Object.fromEntries(T.spalten.map((s, i) => [s, r[i]]))));
+        const alle = q.zeilen.map((r) => Object.fromEntries(T.spalten.map((s, i) => [s, r[i]])));
         const z = (u) => alle.find((x) => x.uhr === u);
-        if (fall === "MESSER") z(0).messer = 0.72;
-        if (fall === "MESSER-BLIND") z(0).becken = 0;
         if (fall === "BUCKEL") z(0.33).Y = z(0.5).Y * 1.2;
         if (fall === "SPRUNG") z(0.276).Y *= 1.2;
         if (fall === "GOLD") z(0.276).Y = z(0.278).Y = z(0.5).Y;
@@ -1288,8 +1266,7 @@ function tagKurveSelbsttest() {
         [kurve(T.kopf, "GOLD"), /GOLD wiese: Sonne 10° -?0\.00 EV/],
         [kurve(T.kopf, "WARM"), /WARM wiese: Sonne 10° R\/B 7\.55 gegen 7\.55 mittags/],
         [kurve(T.kopf, "HELL"), /NACHT wiese: -1\.36 EV/],
-        [kurve(T.kopf, "MESSER-BLIND"), /(^|,)MESSER wiese: kein Becken/],
-        ...["ANKER", "SPRUNG", "BUCKEL", "NACHT", "ASYNC", "MESSER", "SCHREIBER", "BLIND"].map((f) => [kurve(T.kopf, f), new RegExp(`(^|,)${f} wiese`)]),
+        ...["ANKER", "SPRUNG", "BUCKEL", "NACHT", "ASYNC", "SCHREIBER", "BLIND"].map((f) => [kurve(T.kopf, f), new RegExp(`(^|,)${f} wiese`)]),
         [gesetz(), ""],
         [gesetz({ steigung: 1, stufen: [[10, 0], [-20, 0]] }), /GESETZ Sonne 10°/],
     ];
