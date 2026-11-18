@@ -242,3 +242,10 @@ Ein Boot nennt keinen Täter (Regel: nur über ≥ 2 Boots). Roh `p3/n1711/hs/st
 Ein dritter Kopf-Lauf steht auf der unteren Stufe: Frame p95 **25,13** ms, CPU-Takt p95 16,72 ms. Kopf 32,90 · 33,38 · 25,13 ↔ Basis
 33,31 · 25,06 · 25,08 — beide Fassungen fallen auf beide Stufen; das ABBA-Muster war Zufall, kein Preis des Kopfs.
 Roh `p3/n1711/hs/stadt-uhr-nach/uhr.json`.
+
+## Putz-Bedingung des Koordinators (18.11. 02:16) — der Zug steht in der Welt auf 0
+
+- **Schnitt:** Tafel-Feld `zugWelt` in `VERBAND_GESETZ.putz` (0 … 1, jetzt 0): die Welt liest den Zug in dieser Stärke, der Maler bleibt unberührt (5 × byte-gleich). Zeile 3 der Tafel ist damit Einheit (tonV 1 · 1 · 1). Der Abschnitt oben („Züge unruhig“) beschreibt den Stand davor.
+- **Beleg:** `putz0-nacht-nah.png` (Giebelwand nachts nah, Kopf d52b61135) — kein Strich läuft über die Wand; der Verband des Sockels bleibt lesbar. `putz0-tag-nah.png` dieselbe Kamera am Tag.
+- **Offen:** der kurze Zug (0,3–0,8 m, je Reihe versetzt, Richtung gestreut) in BEIDEN Lesern; das Korn des Putzes ist nicht gewebt.
+- **Tor-Lauf am d52b61135 (02:19–03:00):** rot `gate:chunk-satz` (f) — der flüchtige Block ließ `aLageU` · `aLageV` · `aVerband` als Werkbank-Views am Bereich (die Linse las NaN, Basis d3ddb51c grün); geheilt in abba429bf (der Block gibt auch den Begleiter der vierten Stelle frei). Rot `gate:fachwerk-contract`: Goldens — Re-Mint `haeuser.json`, bewegt 10 von 258 Fällen (alemannisch · fraenkisch · mittelalterlich · niedersaechsisch · tudor, Samen 7 und 12345, nur L2), 248 byte-gleich; das deckt sich mit dem Lieferungs-Diff (5 Teile L2, +24,2 kB). `gate:haus-welt` brach mit `net::ERR_NO_BUFFER_SPACE` ab, `gate:welt-boot` rot an „Profil je Start“ — beide ohne Befund am Schnitt, Wiederholung in der Tor-Liste am Kopf.
