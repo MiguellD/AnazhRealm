@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "b7ed8419",
-    "zeit": "2026-11-18T22:37:48.990Z",
+    "zeit": "2026-11-18T22:44:25.516Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1077,7 +1077,7 @@
           "punkte": 1,
           "staffel": "1 = nah (0–15 m) an einem Gerät: zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit · 2 = jeder Ring bis 300 m, Gras ↔ Krone r ≥ 0,6 längs uWindDir, Ruhe → Sturm hebt die Varianz ≥ 3×, Ego und Third, beide Geräte",
           "messung": "NEU: werkbank bild --zeit Δt nimmt zwei Ausgabe-Frames unter laufender _bildZeit bei fester Kamera; Rausch-Boden aus einer TAAU-Referenz bei Wind 0; Kreuzkorrelation Gras ↔ Krone mit der Laufzeit Abstand/Böen-Tempo ±20 %. Die Kopplung an den Klang zählt Klang K2, die Formung des Winds Wetter K5.",
-          "beleg": "Maschine: gehalten: Kamm 406.0 über Rausch-Boden 0.000 (×406.0), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an 21f279f5 radeon · gehalten: Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an 18058dba gtx",
+          "beleg": "Maschine: gehalten: Kamm 406.0 über Rausch-Boden 0.000 (×406.0), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an 21f279f5 radeon · Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an b7ed8419 gtx",
           "schlupfloch": "TAAU-Flimmern und ein eigener Sinus je Schicht erzeugen Varianz ohne gemeinsames Feld: Rausch-Boden aus der Wind-0-Referenz und die Kreuzkorrelation bei physikalischer Laufzeit — nur EINE wandernde Böe besteht.",
           "aenderung": "Der Klang-Teil wanderte nach Klang K2 (B16, V25); die Karte 1.0 gab 1 für die Existenz des Codes → 0.",
           "maschine": true
