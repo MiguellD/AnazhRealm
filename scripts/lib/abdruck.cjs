@@ -58,13 +58,33 @@ function abdruckKern(G) {
         /^(uuid|_uuid|id|version|_listeners|parent|parents|__|_cache|_cacheKey|matrixWorld|modelViewMatrix|normalMatrix|stackTrace|_t0|zeit|seit|ms$|t$|stamp)/;
     // DER KNOTEN ALS GRAPH (vendor three r184: `customCacheKey(){return this.id}` — der Programm-Schlüssel jedes Knotens endet in
     // seiner Erzeugungs-id, zwei gleiche Graphen heißen in zwei Läufen verschieden): Typ + jedes Glied ohne Identität + die
-    // Kanten (Kind-Knoten über ihren Graph-Hash), je Abdruck einmal je Knoten gemerkt; ein Kreis heißt „@kreis".
-    const KNOTEN_AUS =
-        /^(id|_uuid|uuid|version|_cacheKey|_cacheKeyVersion|stackTrace|parents|_beforeNodes|_listeners|isNode)$/;
+    // Kanten (Kind-Knoten über ihren Graph-Hash), je Abdruck einmal je Knoten gemerkt; ein Kreis heißt „@kreis". Ein Glied mit
+    // „_" ist das Gedächtnis des Knotens, nie sein Graph (vendor `_getChildren` überspringt es; `_cache` merkt sich die Swizzles,
+    // die irgendein Leser schon einmal fragte — `.xz` steht da, wenn ein Takt ihn las)
+    const KNOTEN_AUS = /^(_|id$|uuid$|version$|stackTrace$|parents$|isNode$)/;
     let memo = new WeakMap();
+    // DIE TAKT-UHR IM STOFF (`state.lodUniforms.uLodTakt` = `state.weltTakt`, die Takte DIESES Geräts seit dem Laden): sie
+    // zählt den Loop, nie die Welt-Uhr; was sie zeigt, ist die Blende des Eintritts — die trägt `instanzen` (aEin) als Stand
+    const taktUhr = (n) => {
+        const lu = G.st && G.st.lodUniforms;
+        return !!lu && n === lu.uLodTakt;
+    };
+    // DIE REIHEN DES KARTEN-ATLAS (`_karteNadel`: `karteNadel` · `karteJahr`, je Glied `z.idx` — die Schicht, vergeben in der
+    // Folge der Bestellung): eine Reihe hasht als Menge Karte → Wert, nie in der Folge ihrer Schichten
+    const atlasReihe = (n) => {
+        const at = G.r && G.r._kartenAtlas;
+        if (!at || !at.zellen || !(n === at.nadelU || n === at.jahrU) || !Array.isArray(n.array)) return null;
+        const h = H();
+        txt(h, "K:atlas-reihe:" + (n.name || ""));
+        for (const [k, z] of [...at.zellen].sort(vor)) (txt(h, String(k)), wert(h, n.array[z.idx], 3, new Set()));
+        return hex(h);
+    };
     const knoten = (n) => {
         const m = memo.get(n);
         if (m) return m;
+        if (taktUhr(n)) return "@takt-uhr";
+        const reihe = atlasReihe(n);
+        if (reihe) return (memo.set(n, reihe), reihe);
         memo.set(n, "@kreis");
         const h = H();
         txt(h, "K:" + (n.type || n.constructor?.name || "?"));
@@ -155,11 +175,15 @@ function abdruckKern(G) {
     };
     // DIE MENGE JE NAME: Dinge gleichen Namens (zwei Instanz-Meshes „vogel") tragen ihre Nummer nach ihrem INHALT, nie nach der
     // Reihenfolge, in der sie ankamen
-    const menge = (paare) => {
+    // (`einzeln`: je Ding sein Inhalt, nummeriert nach Inhalt — die Stoffe; sonst EIN Ding je Name: die Menge seiner Inhalte und
+    // ihre Zahl — ein Ding mehr ist ein anderes Ding, nie eine Kaskade verschobener Nummern)
+    const menge = (paare, einzeln = false) => {
         const je = new Map();
         for (const [k, v] of paare) (je.get(k) || je.set(k, []).get(k)).push(v);
         const aus = {};
-        for (const [k, l] of je) l.sort().forEach((v, i) => (aus[i ? k + "#" + i : k] = v));
+        for (const [k, l] of je)
+            if (einzeln) l.sort().forEach((v, i) => (aus[i ? k + "#" + i : k] = v));
+            else aus[k] = l.length === 1 ? l[0] : textH(l.sort().join("+")) + "/" + l.length;
         return aus;
     };
     const name3 = (o) => String(o.name || (o.userData && o.userData.archInstanceKey) || o.type).replace(UUID, "uuid");
@@ -177,6 +201,9 @@ function abdruckKern(G) {
         let bytes = 0;
         if (st.scene) gesehen.add(st.scene);
         if (st.chunkSaetze) gesehen.add(st.chunkSaetze);
+        // ein Leib in Bewegung zählt in `netze` (Gestalt) und `bestand` (wer), nie mit seiner Pose
+        for (const c of [...(st.creatures || []), ...(st.leichname || [])]) gesehen.add(c);
+        for (const [, S] of r._bewohnerSiedlungen || []) for (const b of S.aktivListe || []) if (b && b.leib) gesehen.add(b.leib);
         const inst = (o) => {
             for (const a of [o.instanceMatrix, o.instanceColor]) if (a && a.array) gesehen.add(a.array.buffer);
             for (const a of Object.values((o.geometry && o.geometry.attributes) || {}))
@@ -184,6 +211,66 @@ function abdruckKern(G) {
                     const arr = a.array || (a.data && a.data.array);
                     if (arr) gesehen.add(arr.buffer);
                 }
+        };
+        // DIE KANONISCHEN HALTER (ein Ding, dessen Bytes eine Ablage tragen, hasht in der Form seiner Bedeutung; seine Puffer
+        // zählen nicht mehr einzeln):
+        //   das Netz des Wassers (`_wasserNetz`: das Sheet als CSR der Dreiecke je Zelle) — seine Bedeutung ist die MENGE seiner
+        //     Dreiecke (`_wasserNetzHoehe` nimmt das höchste über dem Punkt, die Folge zählt nicht); das gezeichnete Sheet und die
+        //     Rechnung vorab (`_computeWaterSheetData`) tragen dieselben Dreiecke in zwei Folgen
+        //   die Kachel der Ferne der Wiese (`_nahWieseFernKachel`): sie trägt jedes Büschel mit Ordnung unter dem höchsten Anteil,
+        //     den ein Auge seit ihrem Bau verlangte (sie baut nur neu, wenn das Auge ihn überholt) — gezeichnet wird je Bild, was
+        //     das Auge JETZT verlangt (die Wahl der GPU, `WIESE_WGSL`): die Kachel hasht die Büschel unter der Schranke des Auges
+        //     jetzt (`_wieseFernSchranke(lage, auge, 0)`); ihre Blöcke je Vorlage sind ihre Kopie
+        // die Menge der Dreiecke: je Dreieck seine drei Ecken (jedes Attribut), gedreht auf die kleinste Ecke (die Wendung bleibt)
+        const dreiecke = (A, I) => {
+            const ecke = (k) => A.map(([a, s]) => Array.from(a.subarray(k * s, k * s + s), (x) => Math.round(x * 1e4)).join(",")).join("/"); // prettier-ignore
+            const tri = [];
+            for (let t = 0; t + 2 < I.length; t += 3) {
+                const e = [ecke(I[t]), ecke(I[t + 1]), ecke(I[t + 2])];
+                const m = e.indexOf([...e].sort()[0]);
+                tri.push([e[m], e[(m + 1) % 3], e[(m + 2) % 3]].join(";"));
+            }
+            const h = H();
+            for (const s of tri.sort()) txt(h, s);
+            return hex(h);
+        };
+        //   das gezeichnete Sheet des Wassers (`_finalizeWaterSheetMesh`, `voxelChunkWaterIso`): dieselbe Menge, als Mesh
+        const kanon = (v, pp) => {
+            if (v.pos && v.idx && v.start && v.liste && v.nb) {
+                for (const a of [v.pos, v.idx, v.start, v.liste]) gesehen.add(a.buffer);
+                return [pp + ".dreiecke", dreiecke([[v.pos, 3]], v.idx)];
+            }
+            if (v.isMesh && v.userData && v.userData.isHydrosphere && v.geometry && v.geometry.index) {
+                const g = v.geometry,
+                    A = [];
+                for (const k of Object.keys(g.attributes).sort()) {
+                    const a = g.attributes[k];
+                    if (a && a.array) (A.push([a.array, a.itemSize]), gesehen.add(a.array.buffer));
+                }
+                gesehen.add(g.index.array.buffer);
+                return [pp + ".dreiecke", dreiecke(A, g.index.array)];
+            }
+            if ("anteil" in v && v.lage && v.basis && Array.isArray(v.bueschel) && r.constructor._wieseFernSchranke) {
+                const S = r.constructor._wieseFernSchranke(v.lage, r._wieseAuge(st.camera.position), 0),
+                    h = H();
+                v.bueschel.forEach((b, i) => {
+                    if (!(b.o < S)) return;
+                    txt(h, Math.round(b.o * 1e6));
+                    txt(h, b.vorlage);
+                    for (let j = 0; j < 16; j++) txt(h, Math.round(v.basis[i * 16 + j] * 1e4));
+                    for (let j = 0; j < 3; j++) txt(h, Math.round(v.farben[i * 3 + j] * 1e4));
+                });
+                // ihre Puffer (Basis, Tint, die Blöcke je Vorlage) sind die Kopie dieser Büschel
+                const weg = (x, t) => {
+                    if (!x || typeof x !== "object" || t < 0) return;
+                    if (ArrayBuffer.isView(x)) return gesehen.add(x.buffer);
+                    if (Array.isArray(x)) return x.forEach((y) => weg(y, t - 1));
+                    for (const y of Object.values(x)) weg(y, t - 1);
+                };
+                for (const k of Object.keys(v)) if (k !== "lage" && k !== "chunkKarten" && k !== "bueschel") weg(v[k], 3);
+                return [pp + ".bueschel", hex(h)];
+            }
+            return null;
         };
         for (let i = 0; i < q.length; i++) {
             const [o, p] = q[i];
@@ -213,16 +300,22 @@ function abdruckKern(G) {
                 if (!v || typeof v !== "object" || gesehen.has(v)) continue;
                 gesehen.add(v);
                 if (v.isInstancedMesh) inst(v);
+                // ein Instanz-Attribut liegt in der Folge der Slots (die Ankunft der Instanzen) — `instanzen` trägt es als Menge
+                if ((v.isInstancedBufferAttribute || v.isInstancedInterleavedBuffer) && v.array) gesehen.add(v.array.buffer);
                 const buf = ArrayBuffer.isView(v) ? v : v instanceof ArrayBuffer ? new Uint8Array(v) : null;
-                if (buf) {
+                const gruppe = (s) =>
+                    s
+                        .split(/(?=[.[])/)
+                        .slice(0, tiefe)
+                        .map((x) => (x[0] === "[" ? "[]" : x))
+                        .join("");
+                const kn = !buf && !aus_.some((re) => re.test(pp)) && kanon(v, pp);
+                if (kn) ((roh[gruppe(kn[0])] ||= {})[kn[0].replace(UUID, "uuid")] ||= []).push(kn[1]);
+                else if (buf) {
                     if (buf.buffer !== v && gesehen.has(buf.buffer)) continue;
                     gesehen.add(buf.buffer);
                     if (aus_.some((re) => re.test(pp))) continue;
-                    const g = pp
-                        .split(/(?=[.[])/)
-                        .slice(0, tiefe)
-                        .map((s) => (s[0] === "[" ? "[]" : s))
-                        .join("");
+                    const g = gruppe(pp);
                     const h = H();
                     typed(h, buf);
                     bytes += buf.byteLength;
@@ -240,12 +333,51 @@ function abdruckKern(G) {
     };
 
     // A2 · DIE SÄTZE ohne Pack-Reihenfolge: je Block (Schlüssel) die Quell-Geometrie, die er in den Satz legte
+    // Der Block einer Bau-Gruppe (`_bauSatzLege`: `b.bau`, n Ecken je Instanz, cnt Instanzen) trägt die Kopien seiner Instanzen
+    // in der Folge ihrer SLOTS — die Folge, in der sie in die Gruppe traten: der Block hasht als Menge seiner Kopien.
+    const bauBlockH = (b) => {
+        const g = b.geom,
+            n = b.bau.n,
+            cnt = b.bau.cnt;
+        const A = Object.keys(g.attributes)
+            .sort()
+            .map((k) => [k, g.attributes[k]]);
+        const je = [];
+        for (let i = 0; i < cnt; i++) {
+            const h = H();
+            for (const [k, a] of A) {
+                const arr = a.array || (a.data && a.data.array),
+                    s = a.itemSize;
+                txt(h, k);
+                if (arr) typed(h, arr.subarray(i * n * s, (i + 1) * n * s));
+            }
+            je.push(hex(h));
+        }
+        const h = H();
+        for (const x of je.sort()) txt(h, x);
+        if (g.index) {
+            // der Index einer Kopie relativ zu ihrer ersten Ecke: die Vorlage, cnt-mal
+            const I = g.index.array,
+                m = I.length / Math.max(1, cnt);
+            const rel = new Int32Array(m);
+            for (let j = 0; j < m; j++) rel[j] = I[j];
+            typed(h, rel);
+        }
+        return hex(h) + "/" + cnt;
+    };
     const saetze = () => {
-        const aus = {};
+        const paare = [];
         for (const [sk, s] of G.st.chunkSaetze || [])
             for (const [bk, b] of s.bloecke || [])
-                aus[(String(sk) + "|" + String(bk)).replace(UUID, "uuid")] = b.geom ? geoH(b.geom) : "~" + b.vAnzahl;
-        return aus;
+                paare.push([
+                    (String(sk) + "|" + String(bk)).replace(UUID, "uuid"),
+                    !b.geom
+                        ? "~" + b.vAnzahl
+                        : b.bau && b.bau.cnt > 0 && b.bau.n * b.bau.cnt === b.geom.attributes.position.count
+                          ? bauBlockH(b)
+                          : geoH(b.geom),
+                ]);
+        return menge(paare);
     };
     const satzNetze = () => {
         const s = new WeakSet();
@@ -253,8 +385,25 @@ function abdruckKern(G) {
         return s;
     };
     // A3 · DIE INSTANZEN ohne Reihenfolge: je Instanz-Mesh die sortierte Menge seiner Instanzen (Matrix auf 1e-4 + jedes
-    // Instanz-Attribut)
+    // Instanz-Attribut). Zwei Glieder sind Lage der Ablage, nie der Welt, und reisen in ihrer Bedeutung:
+    //   aKarte.x — die SCHICHT des Karten-Atlas (`_impostorZelleNeu`: `idx = at.n++`, vergeben in der Folge der Bestellung) →
+    //              der Schlüssel der Karte, die dort liegt (`fimp:<art>|<gestalt>`)
+    //   aEin     — der Takt des Eintritts (`state.weltTakt` beim Setzen) → wie weit die Blende ist (0 … KARTEN_EINTRITT_TAKTE)
+    let schichtKey = null;
+    const schicht = (x) => {
+        if (!schichtKey) {
+            schichtKey = new Map();
+            const at = G.r._kartenAtlas;
+            if (at && at.zellen) for (const [k, z] of at.zellen) schichtKey.set(z.idx, k);
+        }
+        return "schicht:" + (schichtKey.get(Math.round(x)) ?? "?" + Math.round(x));
+    };
+    const eintritt = (x) => {
+        const E = (G.r.constructor && G.r.constructor.KARTEN_EINTRITT_TAKTE) || 32;
+        return "ein:" + (x > 0 ? Math.max(0, Math.min(E, (G.st.weltTakt | 0) - x)) : "-");
+    };
     const instanzen = () => {
+        schichtKey = null;
         const paare = [];
         G.st.scene.traverse((o) => {
             if (!o.isInstancedMesh) return;
@@ -269,10 +418,17 @@ function abdruckKern(G) {
                 const h = H();
                 for (let j = 0; j < 16; j++) txt(h, Math.round(M[i * 16 + j] * 1e4));
                 if (C) for (let j = 0; j < 3; j++) txt(h, Math.round(C[i * 3 + j] * 1e4));
-                for (const [, a] of inst) {
+                for (const [k, a] of inst) {
                     const s = a.itemSize,
                         arr = a.array || (a.data && a.data.array);
-                    if (arr) for (let j = 0; j < s; j++) txt(h, Math.round(arr[i * s + j] * 1e4));
+                    if (!arr) continue;
+                    txt(h, k);
+                    for (let j = 0; j < s; j++) {
+                        const x = arr[i * s + j];
+                        if (k === "aKarte" && j === 0) txt(h, schicht(x));
+                        else if (k === "aEin") txt(h, eintritt(x));
+                        else txt(h, Math.round(x * 1e4));
+                    }
                 }
                 je.push(hex(h));
             }
@@ -285,11 +441,25 @@ function abdruckKern(G) {
     };
     // A4 · DIE NETZE der Szene (jedes Mesh, das kein Satz und keine Instanz-Senke ist): Geometrie, Lage auf 1 mm, Sicht — als
     // Menge je Name
+    // DIE LEIBER IN BEWEGUNG (Tiere, Leichname, Bewohner): ihre Pose ist das Integral der Takt-Folge seit ihrer Geburt (die Deltas
+    // DIESES Geräts, die Ankunft ihres Körpers aus dem Faden) — keine Funktion von Saat und Welt-Uhr; ihr Leib zählt mit seiner
+    // Gestalt (Ruhe-Geometrie), nie mit seiner Lage. Wer sie sind, trägt `bestand`.
+    const leiber = () => {
+        const L = new WeakSet(),
+            st = G.st;
+        const ein = (o) => o && o.traverse && o.traverse((x) => L.add(x));
+        for (const c of st.creatures || []) ein(c);
+        for (const c of st.leichname || []) ein(c);
+        for (const [, S] of G.r._bewohnerSiedlungen || []) for (const b of S.aktivListe || []) ein(b && b.leib);
+        return L;
+    };
     const netze = () => {
         const satz = satzNetze(),
+            leib = leiber(),
             paare = [];
         G.st.scene.traverse((o) => {
             if (!(o.isMesh || o.isPoints || o.isLine) || o.isInstancedMesh || satz.has(o)) return;
+            if (leib.has(o)) return paare.push(["leib:" + name3(o), geoH(o.geometry)]);
             const p = o.position,
                 q = o.quaternion,
                 s = o.scale;
@@ -331,13 +501,31 @@ function abdruckKern(G) {
     const STOFF_AUS = /^(uuid|id|version|_listeners)$/;
     const stoffe = () => {
         memo = new WeakMap();
-        const je = new Set(),
-            paare = [];
+        // der Name eines Stoffs: sein Name|Typ @ der kleinste Name seiner Träger (der erste Träger hinge an der Folge der Szene)
+        const traeger = new Map();
         G.st.scene.traverse((o) => {
             for (const m of [o.material].flat()) {
-                if (!m || je.has(m)) continue;
-                je.add(m);
-                const n = ((m.name || m.type) + "@" + name3(o)).replace(UUID, "uuid");
+                if (!m) continue;
+                const n = name3(o),
+                    a = traeger.get(m);
+                if (a === undefined || n < a) traeger.set(m, n);
+            }
+        });
+        // EIN STOFF OHNE SICHTBAREN TRÄGER zeichnet nichts: er zählt mit seinem Namen, nie mit seinem Stand — wer ihn wieder
+        // zeigt, schreibt ihn im selben Takt (der Regen: `_tickRain` setzt Deckung und Uhr, ehe er sichtbar wird; still hält er
+        // den Stand des letzten Regens, den die Folge der Takte davor brachte)
+        const sichtbar = new Set();
+        G.st.scene.traverseVisible((o) => {
+            for (const m of [o.material].flat()) if (m) sichtbar.add(m);
+        });
+        const paare = [];
+        for (const [m, tn] of traeger) {
+            if (!sichtbar.has(m)) {
+                paare.push([((m.name || m.type) + "@" + tn).replace(UUID, "uuid"), JSON.stringify({ "@": "unsichtbar" })]);
+                continue;
+            }
+            {
+                const n = ((m.name || m.type) + "@" + tn).replace(UUID, "uuid");
                 const pj = {};
                 for (const p of Object.keys(m).sort()) {
                     if (STOFF_AUS.test(p)) continue;
@@ -351,9 +539,9 @@ function abdruckKern(G) {
                 }
                 paare.push([n, JSON.stringify(pj)]);
             }
-        });
+        }
         const aus = {};
-        for (const [k, v] of Object.entries(menge(paare))) aus[k] = JSON.parse(v);
+        for (const [k, v] of Object.entries(menge(paare, true))) aus[k] = JSON.parse(v);
         return aus;
     };
 
@@ -386,21 +574,14 @@ function abdruckKern(G) {
             r = G.r,
             aus = {},
             art = {};
-        (st.creatures || []).forEach((c) => {
-            const p = (c.mesh && c.mesh.position) || c.position || (c.group && c.group.position);
-            const a =
-                c.species || (c.userData && (c.userData.species || c.userData.art)) || c.art || c.kind || c.name || "?";
-            (art[a] ||= []).push(
-                W(
-                    {
-                        p: p && [p.x, p.z].map((x) => Math.round(x * 10) / 10),
-                        z: c.state || c.zustand || c.mode || (c.userData && c.userData.state),
-                        g: c.gehege,
-                    },
-                    3
-                )
-            );
-        });
+        // ein Tier ist, wer es ist (Seele, Gattung, Nummer, Größe, Gehege, Leben) — seine Lage ist die eines Leibs in Bewegung
+        // (`leiber`), sein Ort im Bestand trägt der Halter (`_bestandRegion`)
+        const tier = (c, tot) => {
+            const u = c.userData || {};
+            return W({ s: u.soul, g: u.gattung, k: u.kind, n: u.netId, b: u.bodySize, h: u.gehege, tot }, 2);
+        };
+        (st.creatures || []).forEach((c) => (art[(c.userData && c.userData.soul) || "?"] ||= []).push(tier(c, 0)));
+        (st.leichname || []).forEach((c) => (art[(c.userData && c.userData.soul) || "?"] ||= []).push(tier(c, 1)));
         for (const [a, l] of Object.entries(art)) aus["tier:" + a] = W(l.sort(), 2) + "/" + l.length;
         for (const [k, S] of r._bewohnerSiedlungen || []) {
             const L = S.bewohner || S.leute || S.npcs || [];
@@ -487,7 +668,46 @@ function abdruckKern(G) {
 
 // ── KEIN ZUSTAND DER WELT: die feste Liste (Pfad-Muster im Halter, mit Grund) ────────────────────────────────────────────────
 // Jede Zeile nennt ein Ding, das der Abdruck NIE hasht, weil es keine Lage der Welt ist. Sie wächst nur mit Grund und Beleg.
-const KEIN_WELT_ZUSTAND = [];
+const KEIN_WELT_ZUSTAND = [
+    {
+        klasse: "halter",
+        muster: /^r\.state\.flightRecorder(\.|$)/,
+        grund:
+            "der Flug-Schreiber (`_flightRecorderInit`, stamm/dirigent-regler.js): Wanduhr-Dauern der Takte, GC und Stillstand " +
+            "dieses Geräts — ein Mess-Schreiber, kein Glied der Welt liest ihn",
+    },
+    {
+        klasse: "halter",
+        muster: /^r\._bewohner(Koepfe|Nachbarn|NbZahl|Bewegt)(\.|\[|$)/,
+        grund:
+            "die Arbeits-Puffer des Bewohner-Takts (stamm/siedlung-bewohner.js: `_bewohnerKoepfe` die Köpfe des Takts, " +
+            "`_bewohnerNachbarn` und `_bewohnerNbZahl` die Nachbarn einer Wahl, `_bewohnerBewegt`): vor jedem Lesen neu " +
+            "geschrieben, ihr Rest ist der Stand der letzten Wahl, die einer traf — kein Glied liest ihn danach",
+    },
+    {
+        klasse: "halter",
+        muster: /^r\._blueten(Gruppen|Folge|Aus)(\.|\[|$)/,
+        grund:
+            "die Arbeits-Puffer des Bestäuber-Takts (`_bestaeuberBlueten`, stamm/kreatur-fauna.js): je Bild neu gefüllte Listen " +
+            "der Blöcke der Nah-Streu; was ein Bild nicht trug, hält seine alte Liste, bis die Karte 512 Gruppen zählt — der " +
+            "Rest ist die Folge der Bilder davor, die Blüten selbst trägt `r.state.nahStreu`",
+    },
+    {
+        klasse: "instanzen",
+        muster: /^dorf-rauch$/,
+        grund:
+            "die Teilchen des Kamin-Rauchs (`_updateDorfRauch`): jedes steigt mit dem Wind × dt seines Takts und lebt, solange " +
+            "der Deckel je Kamin (RAUCH_GESETZ.maxTeilchen) es trägt — der Stand ist das Integral der Takt-Folge seit dem " +
+            "Einschwingen wie die Pose eines Leibs; der Wurf selbst ist Funktion von Saat, Kamin und Welt-Uhr",
+    },
+];
+// die Ausnahmen einer Klasse außer dem Halter (der fällt schon in der Seite): fort, bevor ein Vergleich sie sieht
+const ohneAusnahmen = (ort) => {
+    for (const z of KEIN_WELT_ZUSTAND)
+        if (z.klasse !== "halter" && ort[z.klasse])
+            for (const k of Object.keys(ort[z.klasse])) if (z.muster.test(k.replace(/#\d+$/, ""))) delete ort[z.klasse][k];
+    return ort;
+};
 
 // DIE DOMÄNE eines Dings (nur die Anzeige des Vergleichs: je Domäne gezählt, beim Namen genannt)
 const DOM = [
@@ -594,7 +814,7 @@ function vergleichText(v, zeige = 40) {
 const UHR_S = 3600;
 const STEMPEL_MS = 1e9;
 const DT_MS = 1000 / 64;
-async function abdruckLauf({ baum, orte = ["genesis", "wiese", "dorf"], takte = 240, log = console.log } = {}) {
+async function abdruckLauf({ baum, orte = ["genesis", "wiese", "dorf"], takte = 240, log = console.log, probe = null } = {}) {
     const BAUM = path.resolve(baum);
     const WB = require(path.join(BAUM, "scripts/lib/welt-boot.cjs"));
     const { messort } = require(path.join(BAUM, "scripts/lib/welt-orte.cjs"));
@@ -641,7 +861,9 @@ async function abdruckLauf({ baum, orte = ["genesis", "wiese", "dorf"], takte = 
                         max: 1800,
                     });
                     n += await __weltStehtNach(takt, 1800);
-                    // DIE FESTE UHR: die Welt-Uhr über die Tür des Spiels, der Stempel auf seine feste Folge
+                    // DIE FESTE UHR: die Welt-Uhr über die Tür des Spiels (wie die Uhr eines Mitspielers, `_weltUhrNimm`) auf die
+                    // Stunde des Orts — das Einschwingen trug sie um n Takte (n je Lauf verschieden) —, der Stempel auf seine Folge
+                    if (!(st.spielZeit < uhr)) throw new Error(`abdruck: die Uhr steht schon bei ${st.spielZeit} s ≥ ${uhr} s`);
                     r._weltUhrNimm(uhr);
                     t = stempel;
                     for (let k = 0; k < TAKTE; k++) {
@@ -689,12 +911,13 @@ async function abdruckLauf({ baum, orte = ["genesis", "wiese", "dorf"], takte = 
                 },
                 m.x,
                 m.z,
-                KEIN_WELT_ZUSTAND.map((z) => z.muster.source)
+                KEIN_WELT_ZUSTAND.filter((z) => z.klasse === "halter").map((z) => z.muster.source)
             );
-            erg.orte[ort] = Object.assign(
-                { stand: steh, s_stehen: (t2 - t1) / 1000, s_abdruck: (Date.now() - t2) / 1000 },
-                fp
+            erg.orte[ort] = ohneAusnahmen(
+                Object.assign({ stand: steh, s_stehen: (t2 - t1) / 1000, s_abdruck: (Date.now() - t2) / 1000 }, fp)
             );
+            // DIE SONDE (`--probe <ausdruck>`): ein Ausdruck der Seite nach dem Abdruck, sein Wert roh im Ort — der Täter beim Namen
+            if (probe) erg.orte[ort].probe = await page.evaluate(`(async () => (${probe}))()`);
             log(
                 `  ${ort}: ${JSON.stringify(steh)} · stehen ${((t2 - t1) / 1000).toFixed(1)} s · abdruck ` +
                     `${((Date.now() - t2) / 1000).toFixed(1)} s · halter ${(fp.halterBytes / 1048576).toFixed(1)} MB`

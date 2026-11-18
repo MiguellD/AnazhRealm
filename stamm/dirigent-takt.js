@@ -1752,8 +1752,13 @@ class AnazhRealm_dirigent_takt {
     // DIE EINE REGEL DER WELT-UHR (feld.K2#2): eine Uhr von außen — der Stand beim Laden, der Mitspieler in jedem Ort (`pos.w`) —
     // gilt, wenn sie später ist; die Uhr geht nie zurück. So tragen alle Seiten eines Raums die Uhr der ältesten, ohne dass
     // ein Zustand reist: Wetter, Leben, Brand und Nässe folgen ihr als Funktion.
+    // Ein Sprung der Welt-Uhr (die Uhr eines Mitspielers, ein geladener Stand) ist ein Sprung der Uhr wie der der Stunde: wer
+    // seinen Tag aus der Uhr liest, stellt sich neu (`_weltUhrSprung`, die Bewohner in `_bewohnerTakt` — der Tag danach ist
+    // f(Same, t), nie die Folge der Takte davor)
     _weltUhrNimm(t) {
-        if (Number.isFinite(t) && t > this.state.spielZeit) this.state.spielZeit = t;
+        if (!(Number.isFinite(t) && t > this.state.spielZeit)) return;
+        if (t - this.state.spielZeit >= AnazhRealm.WELT_UHR_SPRUNG_S) this._weltUhrSprung = (this._weltUhrSprung | 0) + 1;
+        this.state.spielZeit = t;
     }
 
     // Reiner Prioritäts-Dispatcher (Job-System, single-thread). jobs: [{name, prio, run(ms)}] — in der Reihe ihres Rangs, jeder am
@@ -2691,6 +2696,8 @@ AnazhRealm.LADE_TAKT_MS = 100;
 // Der Abstand der Bilder unter dem Ladeschirm (ms, `_ladeBildFaellig`): dazwischen schickt der Lade-Takt nichts an die GPU.
 AnazhRealm.LADE_BILD_MS = 500;
 AnazhRealm.TAKT_DECKEL_S = 0.1;
+// Ab wie vielen Sekunden eine Uhr von außen ein SPRUNG ist (`_weltUhrNimm`): darunter gleicht sie nur das Laufen zweier Seiten an.
+AnazhRealm.WELT_UHR_SPRUNG_S = 60;
 AnazhRealm.FIXED_MAX_STEPS = 8;
 AnazhRealm.ZEIT_SCHAERFE = 1;
 // DIE GPU-LEINE (_gpuLeineFrei): die EINE Zahl der Frames im Flug steht im Baustein des Lichts, Welt und Bühne lesen sie
