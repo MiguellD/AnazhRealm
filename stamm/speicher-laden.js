@@ -520,6 +520,8 @@ class AnazhRealm_speicher_laden {
         if (typeof state.timeOfDay === "number" && state.timeOfDay >= 0 && state.timeOfDay <= 1) {
             this._uhrSetzen(state.timeOfDay, "laden");
         }
+        // ein Stand von vor w28-lava-nachlauf: der Tag der Prozesse legt sich EINMAL auf den Tag seiner Stempel (`_weltTagEichen`)
+        this._weltTagEichen();
         // das Jahr des Stands (speicher.K4): Tönung, Schneegrenze und Pegel folgen ihm im nächsten Takt der Saison (`_tickSeason`)
         if (typeof state.seasonPhase === "number" && state.seasonPhase >= 0 && state.seasonPhase < 1) {
             // der Anker des Jahrs ist der des Stands (`saisonAnker`: Phase und Welt-Uhr als EIN Paar, feld.K2#2, `_saisonAnkerGilt`);
