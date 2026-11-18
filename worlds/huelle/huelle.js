@@ -2585,7 +2585,12 @@
                     return zeile;
                 })
             );
-        B.passage = (w, verbergen) =>
+        // EIN STOFF JE MEMBRAN (`alt` = die stehende Passage): trägt das neue Tor dasselbe Gesetz (derselbe Graph,
+        // `_membranGraph`), schreibt der Gesetz-Wert nur die Stoff-Werte (`_membranWerte`) und die Gestalt in sie und gibt
+        // DIESELBE Passage zurück — kein neuer Stoff, keine neue Pipeline. Bis hier baute jeder Gesetz-Wert einen neuen
+        // `_membranMaterialFor` (H7 portale p95 Gesetz-Wert 304/316 ms > 200 ms). Ein anderes Gesetz ist ein anderer Graph:
+        // dann baut es neu.
+        B.passage = (w, verbergen, alt) =>
             B.engine().then(async (wirt) => {
                 const A = wirt.constructor;
                 const hatOv = w.ov && typeof w.ov === "object" && Object.keys(w.ov).length > 0;
@@ -2604,7 +2609,20 @@
                           wirt._torZielEinsetzen([[z, P.daten]]);
                           return z.zeile;
                       });
-                const built = wirt._membranMaterialFor(tor, await zielZeile, 0);
+                const zeile = await zielZeile;
+                if (alt && lebend.has(alt) && alt.material.colorNode === wirt._membranGraph(tor.gesetz).colorNode) {
+                    wirt._membranWerte(tor, zeile, 0, alt.material.userData.tor);
+                    const [geo, vor] = [wirt._membranGeometryFor(tor), alt.userData.passage.tor];
+                    if (geo !== alt.geometry) {
+                        const memo = wirt._membranGeoMemo;
+                        if (memo && memo.get(vor.key) === alt.geometry) memo.delete(vor.key);
+                        alt.geometry.dispose();
+                        alt.geometry = geo;
+                    }
+                    alt.userData.passage.tor = tor;
+                    return alt;
+                }
+                const built = wirt._membranMaterialFor(tor, zeile, 0);
                 const mesh = new T.Mesh(wirt._membranGeometryFor(tor), built.mat);
                 [mesh.castShadow, mesh.receiveShadow] = [false, false];
                 mesh.userData.passage = { tor, u: built.u };

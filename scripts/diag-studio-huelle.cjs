@@ -142,6 +142,10 @@ function pruefeGang(netz, seiten = {}, { zeit = false } = {}) {
         const soll = zeit ? GRIFFE : 4;
         if (z.mit < soll) rot.push(`H7 ${id}: ${z.mit} von ${soll} Griffen mit Bild — ein Griff ohne neuen Bau-Hash im Bild`);
         for (const u of [true, false]) if (zeit && z[u] > SCHRANKE[u]) rot.push(`H7 ${id}: p95 ${u ? "Gesetz-Wert" : "Neubau"} ${z[u]} ms > ${SCHRANKE[u]} ms`);
+        // EIN STOFF JE MEMBRAN: ein Gesetz-Wert schreibt nur Stoff-Werte (`_membranWerte`) — baut er einen neuen Stoff, heißt das
+        // eine neue Pipeline je Griff (portale 304/316 ms am 18.11.); der Täter beim Namen, unabhängig vom Tempo der Karte
+        const neuStoff = (seiten[id].griffe || []).filter((g) => g.u && g.stoff > 0).length;
+        if (neuStoff) rot.push(`H7 ${id}: ${neuStoff} Gesetz-Werte bauen einen neuen Stoff (_membranMaterialFor) — ein Gesetz-Wert schreibt nur die Stoff-Werte`);
         if (!(z.bleibt[1] > 0 && z.bleibt[0] === z.bleibt[1])) rot.push(`H7 ${id}: das Neuladen verliert die Sitzung (${z.bleibt.join("/")})`);
     }
     return rot;
@@ -436,6 +440,7 @@ function selbsttest() {
         ].map(([id, m, soll, zeit]) => [soll.source, {}, soll, mit(id, id === "klang" ? ort(m) : wahr(9000, 9000, 0, 62000, m)), { zeit }]),
         ["H7 ein Griff der garage zeigt nie einen neuen Bau-Hash", {}, /^H7 garage: 19 von 20 Griffen/, mit("garage", { griffe: [...sitz.griffe.slice(1), {}] }), { zeit: true }],
         ["H7 der Gesetz-Wert der portale wartet die Ruhe ab (290 ms, auf der Karte)", {}, /^H7 portale: p95 Gesetz-Wert 290 ms > 200/, mit("portale", { griffe: sitz.griffe.map((g) => ({ ...g, ms: g.u ? 290 : 9 })) }), { zeit: true }],
+        ["H7 ein Gesetz-Wert der portale baut einen neuen Stoff", {}, /^H7 portale: 4 Gesetz-Werte bauen einen neuen Stoff \(_membranMaterialFor\)/, mit("portale", { griffe: sitz.griffe.map((g) => ({ ...g, stoff: g.u ? 1 : 0 })) })],
         ["H7 der Neubau der fachwerk braucht 1,5 s (auf der Karte)", {}, /^H7 fachwerk: p95 Neubau 1500 ms > 1000/, mit("fachwerk", { griffe: sitz.griffe.map((g) => ({ ...g, ms: g.u ? 9 : 1500 })) }), { zeit: true }],
         ["H7 das Neuladen der klang verliert einen Regler (die Hülle ohne Speicher)", {}, /^H7 klang: das Neuladen verliert die Sitzung \(11\/12\)/, mit("klang", { bleibt: [11, 12] })],
         ["H3 A der schmiede zeigt den Zug statt der Öffnung", {}, /^H3 schmiede: A wirkt nicht/, mit("schmiede", { folge: [..."12121222"] })],
@@ -484,8 +489,10 @@ async function gang() {
     const zeit = istHardwareAdapter(browser.adapter);
     console.log(`=== H7 DIE SITZUNG — Saat ${saat}, die Zeit ${zeit ? "geurteilt (Karte)" : "ungeurteilt (Software-Adapter, Lehre 17)"}`);
     let sauber = 0;
+    // STUDIO_HUELLE_NUR=a,b: die Referenzfahrt main ↔ Kopf über dieselben Seiten (Neubau-Zeit relativ, unter derselben Last)
+    const nur = (process.env.STUDIO_HUELLE_NUR || "").split(",").filter(Boolean);
     try {
-        for (const id of [...STUDIOS, ...NEBENWELTEN]) {
+        for (const id of [...STUDIOS, ...NEBENWELTEN].filter((x) => !nur.length || nur.includes(x))) {
             let page = await browser.newPage();
             const pfade = (netz[id] = []); // jeden Seitenfehler nennt der EINE Sammler der Weiche (welt-boot), der Lauf wird rot
             let netzZaehlt = true; // H6 zählt den ersten Besuch, nie das Neuladen der Sitzung
@@ -551,8 +558,20 @@ async function gang() {
 // Bau-Hash); dann das Neuladen (die Werte jedes Reglers der Sitzung vorher = nachher) und A/B am ersten Schieber.
 async function sitzungsGang(page, saat, neuladen, n) {
     const griffe = [];
+    // der Zähler der Membran-Stoffe (H7 „EIN STOFF JE MEMBRAN“): jeder Bau `_membranMaterialFor` der Stamm-Klasse zählt
+    await page.evaluate(() => {
+        const K = typeof AnazhRealm === "function" ? AnazhRealm.prototype : null; // eslint-disable-line no-undef
+        if (!K || K.__stoffZaehlt) return;
+        const bau = K._membranMaterialFor;
+        K._membranMaterialFor = function () {
+            window.__stoffNeu = (window.__stoffNeu || 0) + 1;
+            return bau.apply(this, arguments);
+        };
+        K.__stoffZaehlt = true;
+    });
     for (let k = 0; k < n; k++) {
         const g = await page.evaluate((saat) => {
+                window.__stoffVor = window.__stoffNeu || 0;
                 const r = AnazhHuelle.zufall(saat),
                     alt = (window.__alt = window.__alt || new Set());
                 const alle = [...document.querySelectorAll("[data-sitzung] .h-regler input[type=range]:not(:disabled)")];
@@ -569,7 +588,7 @@ async function sitzungsGang(page, saat, neuladen, n) {
             }, saat * 977 + k);
         // das EINE Warten (ohne Frist): ein Griff, dessen Bild nie kommt, endet an der Frist des Browsers beim Namen
         if (g) await waitFor(page, () => window.__griff.t1 != null, "Griff → Bild mit neuem Bau-Hash");
-        griffe.push(g ? await page.evaluate(() => ({ ms: window.__griff.t1 - window.__griff.t0, u: window.__griff.uniform })) : {});
+        griffe.push(g ? await page.evaluate(() => ({ ms: window.__griff.t1 - window.__griff.t0, u: window.__griff.uniform, stoff: (window.__stoffNeu || 0) - window.__stoffVor })) : {});
     }
     // DAS NEULADEN: der letzte Schritt steht im Speicher, die Seite öffnet neu, jeder Regler der Sitzung steht wieder
     const stand = () => page.evaluate(() => [...document.querySelectorAll("[data-sitzung] [data-regler] input")].map((e) => e.value + e.checked));

@@ -49,29 +49,9 @@ class AnazhRealm_siedlung_tor {
     _membranMaterialFor(tor, ziel, dreh) {
         const T = THREE;
         const MG = tor.gesetz;
-        const MU = tor.mu;
-        const u = {
-            time: { value: 0 },
-            act: { value: 0 },
-            pulse: { value: 1 },
-            waveDepth: { value: MU.waveDepth },
-        };
-        const P = MU.pal;
         const mat = new T.MeshBasicNodeMaterial({ side: T.DoubleSide });
-        mat.userData.tor = {
-            u,
-            a: new T.Vector4(MU.centerY, MU.rimAx, MU.rimAy, MU.swirl),
-            b: new T.Vector4(MU.wave, MU.left, MU.spanW, MU.baseY),
-            c: new T.Vector4(MU.height, MU.tiefe, MU.fraktal, MU.drall),
-            spiegel: MU.spiegel,
-            zeile: this._torProfilZeile(MG.profilW, MU.profil),
-            ziel,
-            dreh: Number.isFinite(dreh) ? dreh : 0,
-            pa: new T.Vector3(P.PA[0], P.PA[1], P.PA[2]),
-            pb: new T.Vector3(P.PB[0], P.PB[1], P.PB[2]),
-            pc: new T.Vector3(P.PC[0], P.PC[1], P.PC[2]),
-            pd: new T.Vector3(P.PD[0], P.PD[1], P.PD[2]),
-        };
+        mat.userData.tor = this._membranWerte(tor, ziel, dreh, null);
+        const u = mat.userData.tor.u;
         const G = this._membranGraph(MG);
         mat.positionNode = G.positionNode;
         mat.colorNode = G.colorNode;
@@ -80,6 +60,38 @@ class AnazhRealm_siedlung_tor {
         mat.transparent = false;
         mat.userData.portalMembran = true; // Linsen-Marker
         return { mat, u };
+    }
+
+    // DIE STOFF-WERTE EINER MEMBRAN (EINE Quelle für Bau und Gesetz-Wert): jeder Wert ist ein Verweis je Objekt (`_stoffWert`),
+    // gelesen in jedem Refresh — ein Gesetz-Wert schreibt sie IN den stehenden Stoff (`alt` = sein `userData.tor`), derselbe
+    // Graph, kein neuer Stoff, keine neue Pipeline. Der Atem `u` bleibt dasselbe Objekt (der Membran-Tick hält es).
+    _membranWerte(tor, ziel, dreh, alt) {
+        const T = THREE;
+        const MU = tor.mu;
+        const P = MU.pal;
+        const w = alt || {
+            u: { time: { value: 0 }, act: { value: 0 }, pulse: { value: 1 }, waveDepth: { value: 0 } },
+            a: new T.Vector4(),
+            b: new T.Vector4(),
+            c: new T.Vector4(),
+            pa: new T.Vector3(),
+            pb: new T.Vector3(),
+            pc: new T.Vector3(),
+            pd: new T.Vector3(),
+        };
+        w.u.waveDepth.value = MU.waveDepth;
+        w.a.set(MU.centerY, MU.rimAx, MU.rimAy, MU.swirl);
+        w.b.set(MU.wave, MU.left, MU.spanW, MU.baseY);
+        w.c.set(MU.height, MU.tiefe, MU.fraktal, MU.drall);
+        w.spiegel = MU.spiegel;
+        w.zeile = this._torProfilZeile(tor.gesetz.profilW, MU.profil);
+        w.ziel = ziel;
+        w.dreh = Number.isFinite(dreh) ? dreh : 0;
+        w.pa.set(P.PA[0], P.PA[1], P.PA[2]);
+        w.pb.set(P.PB[0], P.PB[1], P.PB[2]);
+        w.pc.set(P.PC[0], P.PC[1], P.PC[2]);
+        w.pd.set(P.PD[0], P.PD[1], P.PD[2]);
+        return w;
     }
 
     // DER BOGEN-ATLAS DER TORE (1310-18): jede Bogen-Oberkante (die 64er-Gesetz-Tabelle `mu.profil` der Gestalt, dieselbe wie die

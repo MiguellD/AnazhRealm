@@ -77,7 +77,9 @@ function updateLaw() {
 // Mitte nach jedem Uhr-Wechsel den eigenen Stein von innen (die Membran braun), beim Laden nur, weil der Bau noch nicht stand.
 function passageBauen() {
     var nr = ++passageNr;
-    return STUDIO.buehne.passage(werk(), [STUDIO.teller]).then(function (m) {
+    // die stehende Passage geht mit: ein Gesetz-Wert schreibt in ihren Stoff (EIN Stoff je Membran), nur ein anderes Gesetz baut neu
+    return STUDIO.buehne.passage(werk(), [STUDIO.teller], membrane).then(function (m) {
+        if (m === membrane) return STUDIO.wecke();
         if (nr !== passageNr) return STUDIO.buehne.passageFort(m);
         STUDIO.buehne.passageFort(membrane);
         membrane = m;
