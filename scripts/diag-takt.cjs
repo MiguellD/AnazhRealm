@@ -454,7 +454,10 @@ hauptLauf(async () => {
                         ort("ortAufgabe"); // eine Aufgabe ohne Frame des Loops (ein Zeitgeber)
                         await null;
                         r._autoSettlementQueue = r._dorfZug({ slots: Array(12).fill({}) }, { x: 0, z: 0 }, "-");
-                        r._tickAutoSettlement({ x: 0, y: 0, z: 0 });
+                        // der Zug fragt die EINE Frist der Bau-Arbeit vor jedem Haus (`_bauFrist("dorf")`): unter dem Ladeschirm die des Lade-Frames
+                        ((zurueck9 = leihe(r, { _bauFrist: () => r._ladeFrist() })),
+                            r._tickAutoSettlement({ x: 0, y: 0, z: 0 }),
+                            zurueck9());
                         aus9.dorf = r._autoSettlementQueue ? r._autoSettlementQueue.idx : 12;
                         await null;
                         st.architectures = zwoelf.map(() => ({ position: { x: 0, z: 0 }, _ziegelGebacken: true }));
