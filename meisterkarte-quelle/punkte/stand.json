@@ -4520,7 +4520,7 @@
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20586 px an d39e0d6e radeon · gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20451 px an 18058dba gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert · vegetation.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20586 px an d39e0d6e radeon · 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20415 px an b7ed8419 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert · vegetation.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -4535,10 +4535,9 @@
      "id": "vegetation.K4#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20451 px",
-     "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, phyto-core.js +16)",
-     "gehalten": true,
+     "zahl": "44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20415 px",
+     "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -6483,7 +6482,7 @@
   "ohne": 149
  },
  "kopfVoll": "b7ed8419454b22964d72b81d26f1f56128e41735",
- "zeit": "2026-11-18T23:43:39.316Z",
+ "zeit": "2026-11-18T23:50:53.578Z",
  "vorher": "b7ed8419",
  "bilanz": {
   "gewinn": [],
