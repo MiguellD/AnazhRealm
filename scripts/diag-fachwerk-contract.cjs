@@ -144,6 +144,8 @@ function shellPfad(name, seed, stufe) {
             if (Lf.parent) Lf.parent.remove(Lf);
             tuerWraps.push(wg);
         }
+        // die Flügel der wachen Fenster reisen wie das Türblatt (Bahn 1, K2) — dieselbe Kern-Funktion wie buildStufe
+        tuerWraps.push(...FC.fensterFluegelTrennen(st, p.col));
         if (tuerWraps.length) geoms.__tuerFluegel = tuerWraps;
         geoms.__decken = FC.deckenZeile(FC.masseVon(st), FC.raumVon(st, p.col)); // der Innen-Stoff liest die Decken (w28-innenlicht)
         FC.bakeLOD(st.g, p.col, geoms, 0, true);

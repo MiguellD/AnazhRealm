@@ -266,6 +266,8 @@ class AnazhRealm_dirigent_takt {
                 // JEDEM Takt — nur im Lade-Bild stand der Rauch im ersten Bild mit 3 statt 24 Teilchen (B3-n1, Radeon kalt).
                 // ### Haus-Türen ### (DORF-ERLEBNIS — die Tür öffnet sich dem Reisenden)
                 this._tickHausTueren(spielZeit);
+                // ### Haus-Fenster ### (Bahn 1 ÖFFNUNGEN — der Flügel folgt Samen, Uhr und Nässe, im Ring des Tür-Takts)
+                this._tickHausFensterRing();
 
                 // ### Der Genesis-Ort ### (Ring der Kern-Portale + Portal-Vorschauen, vor jedem Budget)
                 this._tickGenesisOrt(spielZeit);

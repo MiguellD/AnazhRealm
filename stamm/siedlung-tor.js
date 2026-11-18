@@ -834,6 +834,7 @@ class AnazhRealm_siedlung_tor {
         const mB = this._torTmpB || (this._torTmpB = new T.Matrix4());
         for (const f of rec._fluegel) {
             const t = f.tuer;
+            if (t.fenster) continue; // der Fenster-Flügel folgt nicht der Nähe, sondern seinem Zustand (`_tickHausFenster`, Bahn 1)
             // Trägt der Flügel eine gebackene Offen-Pose (t.offen, fachwerk-Haustüren), dreht er RELATIV dazu:
             // fern um −offen zu, nah auf die Offen-Pose. porta-Tore (gebacken zu, kein offen) drehen absolut.
             const sign = (t.seite || 1) * (t.zf >= 0 ? 1 : -1);
@@ -858,6 +859,85 @@ class AnazhRealm_siedlung_tor {
             f.g.mesh.boundingSphere = null;
         }
         this._fluegelLeib(entry, true); // der Leib folgt dem Schwenk (der Kamera-Wurf `_fieldRaycast` liest ihn)
+    }
+
+    // DIE FENSTER IM RING (Bahn 1 ÖFFNUNGEN): die Häuser, deren Türen der Tür-Takt im 40-m-Ring führt (`_hausTuerNah`, derselbe Scan,
+    // gerufen gleich nach `_tickHausTueren`), tragen die Flügel ihrer wachen Fenster als Blätter (`tuer.fenster`). Ihr Zustand ist
+    // eine Funktion von Samen, Uhr und Nässe (fachwerk `fensterZustand`): die Uhr der Welt (`timeOfDay`, auf die Minute — die Spanne
+    // des Gesetzes trägt ~3 min Raster), die Nässe des Worts, das die Welt am Spieler zeigt (`state.weather`, der Wetter-Zug schreibt
+    // es aus `_wetterAmOrt`; `_weatherIsWet` wie jeder Leser der Nässe). Ändert sich keins von beiden und schwingt kein Flügel,
+    // kostet der Takt den Vergleich zweier Zahlen.
+    _tickHausFensterRing() {
+        const nah = this._hausTuerNah;
+        if (!nah || !nah.length) return;
+        const st = this.state;
+        if (!Number.isFinite(st.timeOfDay)) throw new Error("_tickHausFensterRing: die Uhr der Welt fehlt (timeOfDay)");
+        const minute = Math.floor((((st.timeOfDay % 1) + 1) % 1) * 1440);
+        const nass = this._weatherIsWet(st.weather);
+        for (const e of nah) {
+            if (!e.instSlots) continue; // zwischenzeitlich geculled (wie der Tür-Takt)
+            const rec = e._tuerRec;
+            if (!rec) throw new Error("_tickHausFensterRing: der Tür-Takt lief nicht vor dem Fenster-Takt (kein _tuerRec)");
+            this._tickHausFenster(rec, e, minute / 60, nass);
+        }
+    }
+
+    // DER FENSTER-FLÜGEL EINES HAUSES: Ziel je Blatt = Seite (die Drehrichtung nach außen) × `fensterZustand(samen, stunde, nass)`,
+    // um sein Scharnier auf den gebackenen Geschlossen-Vertices (dieselbe Matrix wie `_tickTorFluegel`: Eintrag · Welt-Skala ·
+    // T(h)·R_y·T(−h) · Basis der Flügel-Instanz). Neue Slots (das Haus tritt in den Ring, ein Neubau) stellen jeden Flügel SOFORT in
+    // sein Ziel — er war nie sichtbar anders; ein Wechsel von Stunde oder Nässe schwingt ihn weich (der Schritt des Tür-Takts, 0,12).
+    _tickHausFenster(rec, entry, stunde, nass) {
+        const slots = entry.instSlots;
+        if (!Array.isArray(slots) || !slots.length) return;
+        if (entry._fluegelSlots !== slots) this._fluegelLeib(entry);
+        const neu = rec._fensterSlots !== slots;
+        if (!neu && rec._fensterStunde === stunde && rec._fensterNass === nass && rec._fensterRuht) return;
+        const FC = globalThis.__fachwerkCore;
+        if (neu || rec._fensterStunde !== stunde || rec._fensterNass !== nass) {
+            rec._fensterSlots = slots;
+            rec._fensterStunde = stunde;
+            rec._fensterNass = nass;
+            const ziele = [];
+            for (const f of entry._fluegel) {
+                const t = f.tuer;
+                if (!t.fenster) continue;
+                const ziel = t.seite * FC.fensterZustand(t.fenster.samen, stunde, nass);
+                const alt = neu ? ziel : Number.isFinite(f._fensterWinkel) ? f._fensterWinkel : 0;
+                ziele.push({ f, ziel, winkel: alt, gesetzt: !neu });
+            }
+            rec._fensterZiele = ziele;
+        }
+        const T = THREE;
+        const ew = this._archEntryWorldMatrix(entry, this._torTmpEw || (this._torTmpEw = new T.Matrix4()));
+        const mA = this._torTmpA || (this._torTmpA = new T.Matrix4());
+        const mB = this._torTmpB || (this._torTmpB = new T.Matrix4());
+        let ruht = true;
+        let bewegt = false;
+        for (const z of rec._fensterZiele) {
+            const { f } = z;
+            const t = f.tuer;
+            if (z.gesetzt && Math.abs(z.winkel - z.ziel) < 0.001) continue; // eingeschwungen
+            const w = z.gesetzt ? z.winkel + (z.ziel - z.winkel) * 0.12 : z.ziel;
+            z.winkel = Math.abs(w - z.ziel) < 0.001 ? z.ziel : w;
+            z.gesetzt = true;
+            f._fensterWinkel = z.winkel;
+            if (z.winkel !== z.ziel) ruht = false;
+            if (!(f.ref.slot >= 0)) continue; // die Marke ist frei (Rebuild): der nächste Slot-Wechsel sammelt neu
+            mA.makeRotationY(z.winkel);
+            mB.makeTranslation(t.hx, 0, t.zf);
+            mB.multiply(mA);
+            mA.makeTranslation(-t.hx, 0, -t.zf);
+            mB.multiply(mA);
+            mA.multiplyMatrices(ew, this._foundryWorldScaleMatrix(rec.tor.gestalt));
+            mA.multiply(mB);
+            if (t.basis) mA.multiply(t.basis);
+            f.g.mesh.setMatrixAt(f.ref.slot, mA);
+            f.g.mesh.instanceMatrix.needsUpdate = true;
+            f.g.mesh.boundingSphere = null;
+            bewegt = true;
+        }
+        rec._fensterRuht = ruht;
+        if (bewegt) this._fluegelLeib(entry, true); // der Leib folgt dem Flügel (der Kamera-Wurf `_fieldRaycast` liest ihn)
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_siedlung_tor]);

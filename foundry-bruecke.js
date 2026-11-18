@@ -658,6 +658,13 @@ const foundryKanal = (() => {
                 // porta-Tore tragen das Feld nie → deren Replies bleiben byte-alt.
                 if (typeof anc.userData.offen === "number" && anc.userData.offen !== 0)
                     out.tuer.offen = anc.userData.offen;
+                // DER FENSTER-FLÜGEL (Bahn 1 ÖFFNUNGEN, K2): das Blatt eines wachen Fensters reist mit seinem Samen — der Wirt
+                // fragt mit ihm, Uhr und Nässe den Zustand (fachwerk `fensterZustand`); Türen und Tore tragen das Feld nie.
+                if (anc.userData.fenster) {
+                    if (!Number.isInteger(anc.userData.fenster.samen))
+                        throw new Error("__extractAssetMesh: ein Fenster-Flügel ohne Samen");
+                    out.tuer.fenster = { samen: anc.userData.fenster.samen };
+                }
                 break;
             }
         }
