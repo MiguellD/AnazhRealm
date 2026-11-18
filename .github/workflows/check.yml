@@ -232,6 +232,9 @@ jobs:
         # Bein der Karten grün, sie auch nicht (echt=nein); läuft ein älterer noch, wartet er bis 30 min auf sein Urteil (grün steht,
         # rot ist ROT, abgebrochen fährt selbst). Nachts urteilt derselbe Richter (main trägt den Kopf von integ-probe), auf Abruf
         # und auf einem PR läuft alles; ein Fehler der API ist rot. gate:ci-deckung (V) KOPF hält die Form.
+        # DER KOPF IST SEIN INHALT (18.11.): ein Commit ohne Inhalt (EIN Elter, derselbe Baum) trägt das Urteil seines Elters — der
+        # Stempel „Abgabe …" auf einem Kopf, der `[ci voll]` grün trug, fährt die Batterie nicht ein zweites Mal (Stempel → bereit
+        # in der Zeit des Pulses statt der Batterie); ein Merge und jeder Commit mit Inhalt erben nichts (`kopfKette`).
         name: kopf
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[ci voll]')
         runs-on: ubuntu-latest
