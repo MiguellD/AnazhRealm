@@ -88,7 +88,6 @@ function passageBauen() {
     });
 }
 function buildGate() {
-    if (kostenLeiste) kostenLeiste.neu();
     updateLaw();
     return STUDIO.bau();
 }
@@ -108,8 +107,11 @@ function init() {
         welt: "portale",
         werk: werk,
         fov: 35,
+        // die Leiste misst das Werk, das steht (wie die Garage nach ihrem Bau): vorher maß sie die Wurzel des alten Baus oder,
+        // in der Öffnung, keine (H8 „die Wurzel der Bühne NaN m … (ohne Kern)“)
         nachBau: function (g) {
             gate = g;
+            kostenLeiste.neu();
             passageBauen();
         },
         // die Türen schwingen, die Passage atmet: der Takt hält das Bild wach
@@ -192,8 +194,6 @@ function init() {
     setParams(ORDNUNGEN.Kathedrale);
     updateLaw();
     updatePrompt();
-    // den ersten Bau stellt das Studio selbst; die Leiste misst die Öffnung (H4/H7 lesen sie vor dem ersten Zug)
-    kostenLeiste.neu();
 }
 addEventListener("keydown", function (e) {
     if (e.repeat) return;
