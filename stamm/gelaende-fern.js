@@ -1026,16 +1026,16 @@ class AnazhRealm_gelaende_fern {
     // `kroneImJahr`, Zahlen-Algebra): die Laub werfende Art deckt mit ihrer Präsenz und tönt, die kahle trägt ihr Holz, die
     // Nadel steht in ihrer Farbe. Farbe je Ecke, die Deckung in `aDeckt` (der Stoff deckt gegen das Rauschen der Blende).
     _kammKroneSaison(kk) {
-        const s = this._fernSaison(this._kammSaisonV || (this._kammSaisonV = { r: 1, g: 1, b: 1 }));
-        const pr = this._fernPraesenz();
+        const s0 = this._fernSaison(this._kammSaisonV || (this._kammSaisonV = { r: 1, g: 1, b: 1 }));
         const alt = kk.saison;
         const K = AnazhRealm.KAMM_KRONE;
-        if (
-            alt &&
-            Math.max(Math.abs(alt.r - s.r), Math.abs(alt.g - s.g), Math.abs(alt.b - s.b), Math.abs(alt.p - pr)) <
-                K.saisonSchritt
-        )
-            return;
+        // DIE STUFEN DER SAISON (w28-funktion-welt-2): Tönung und Präsenz auf `saisonSchritt` gerundet — die Farbe der Krone ist
+        // eine Funktion der Uhr JETZT, sie färbt neu, wenn eine Stufe wechselt. Bis hier färbte sie, sobald die Saison um einen
+        // Schritt vom LETZTEN Färben wanderte (ein Totband): welche Farbe stand, hing an der Uhr, zu der die Krone zuletzt färbte
+        const q = (v) => Math.round(v / K.saisonSchritt) * K.saisonSchritt;
+        const s = { r: q(s0.r), g: q(s0.g), b: q(s0.b) };
+        const pr = q(this._fernPraesenz());
+        if (alt && alt.r === s.r && alt.g === s.g && alt.b === s.b && alt.p === pr) return;
         kk.saison = { r: s.r, g: s.g, b: s.b, p: pr };
         const geo = kk.mesh.geometry;
         const art = geo.userData.kammArt;
@@ -2650,7 +2650,7 @@ AnazhRealm.FERN_NEIGUNG = Object.freeze({ texelM: 31.25, nachM: 1000, zeilenJeAu
 // Gesetzes (Faktor `marsch` ab 40 m), die Zone des Kamms ± `tiefeM` längs des Strahls, darin `hMax` die höchste Krone, die den
 // Kamm erreichen kann (das Band), `saumM` der Saum unter
 // dem Kamm, in dem eine Krone noch zählt (sie schließt die Linie unter der Lücke); `ellipse` Ecken je Umriss; die Saison
-// färbt nach ab `saisonSchritt` Wanderung je Kanal.
+// färbt in Stufen von `saisonSchritt` je Kanal (die Saison gerundet, `_kammKroneSaison`).
 AnazhRealm.KAMM_KRONE = Object.freeze({
     augen: Object.freeze([2, 25, 60, 120]),
     dBis: 6000,

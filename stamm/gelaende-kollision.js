@@ -651,7 +651,9 @@ class AnazhRealm_gelaende_kollision {
     _blockerFugen(boxes) {
         const R = AnazhRealm.PLAYER_WALL_RADIUS;
         const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
-        const E = this._fugenEcken || (this._fugenEcken = new Float64Array(10));
+        // die Ecken als Puffer DIESES Rufs (einmal je Eintrag, 80 Byte): bis w28-funktion-welt-2 lag er am Reich (`_fugenEcken`)
+        // und trug die Ecken der zuletzt geprüften Box — ein Rest der Folge der Einträge, den zwei Läufe verschieden hielten
+        const E = new Float64Array(10);
         // die vier Ecken und die Mitte der Grundfläche (gedreht: aus der obb)
         const ecken = (a) => {
             const ob = a.obb;

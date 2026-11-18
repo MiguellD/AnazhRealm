@@ -884,7 +884,38 @@ async function abdruckLauf({
                         st.timeOfDay = 0.5;
                         await takt();
                     }
+                    // DIE WELT STEHT BEI DIESER UHR (w28-funktion-welt-2): was der Sprung und die Takte regten (der Schnee-Versatz
+                    // wandert mit der Uhr, jede Stufe baut die Chunks im Band neu — unter der Frist der Wanduhr, also je Last
+                    // verschieden weit), baut zu Ende, während die Uhren stehen wie auf der Bühne (`uhrHalten`, ausgabe-aufnahme):
+                    // die Welt-Uhr kehrt nach jedem Takt auf ihren Stand nach den Takten zurück, Bild- und Wolken-Uhr halten ihn —
+                    // jeder Takt des Einschwingens sieht dieselbe Uhr, gleich wie viele es braucht. Bis hier hashte der Abdruck nach
+                    // den Takten, gleich ob die Welt stand: an a1bf7f16 hielt sie beim Hash „Chunks offen 53“ (genesis) und „Chunks
+                    // offen 27“ (dorf), der Fege-Takt streuLod mitten in seiner Runde — er las, wie weit die Arbeit unter der Last kam.
+                    const uhrTakte = st.spielZeit;
+                    const halt = (window.__abdruckUhr = { _bildZeit: r._bildZeit, _wolkenZeit: r._wolkenZeit });
+                    for (const k of Object.keys(halt))
+                        Object.defineProperty(r, k, {
+                            configurable: true,
+                            enumerable: true,
+                            get: () => halt[k],
+                            set: () => {},
+                        });
+                    const still = () => {
+                        st._frameOverBudget = false;
+                        if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
+                        st.timeOfDay = 0.5;
+                        try {
+                            r._gameLoopTick(t);
+                        } catch (e) {
+                            r._loopErrorBoundary(e);
+                        }
+                        st.spielZeit = uhrTakte;
+                        return sleep(0);
+                    };
+                    // jeder Lauf geht mindestens einen stillen Takt (das EINE Einschwingen): sein letzter Takt sieht dieselbe Uhr
+                    const nStill = await __weltStehtNach(still, 1800);
                     return {
+                        still: nStill,
                         takte: n,
                         ring: r._builtRingRadius(),
                         uhr: st.spielZeit,
@@ -927,6 +958,13 @@ async function abdruckLauf({
                 m.z,
                 KEIN_WELT_ZUSTAND.filter((z) => z.klasse === "halter").map((z) => z.muster.source)
             );
+            // die Uhren des Spiels gehen wieder (`_bildZeit`, `_wolkenZeit` schreibt der nächste Takt)
+            await page.evaluate(() => {
+                for (const [k, v] of Object.entries(window.__abdruckUhr || {})) {
+                    delete r[k];
+                    r[k] = v;
+                }
+            });
             erg.orte[ort] = ohneAusnahmen(
                 Object.assign({ stand: steh, s_stehen: (t2 - t1) / 1000, s_abdruck: (Date.now() - t2) / 1000 }, fp)
             );
