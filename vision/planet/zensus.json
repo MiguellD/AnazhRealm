@@ -1,20 +1,20 @@
 {
  "quelle": "vision/planet/zaehle.cjs über a-relief-gestein.json, b-wasser.json, c-klima-wetter.json, d-biom-tag-jahr.json, e-planet-kern.json",
  "zaehlung": {
-  "zeilen": 585,
+  "zeilen": 584,
   "roh": 638,
-  "doppelt": 53,
+  "doppelt": 54,
   "folgt": 115,
   "gesetztAnker": 52,
-  "gesetzt": 418,
+  "gesetzt": 417,
   "technik": 88,
   "ohneLeser": 53,
   "mitZwilling": 116,
   "zwillingsGruppen": 78,
-  "zwillingsZeilen": 435,
+  "zwillingsZeilen": 434,
   "zwillingeKernHeimat": {
    "klassen": 30,
-   "zeilen": 240,
+   "zeilen": 239,
    "namen": [
     "niederschlag_jahr",
     "gebirge",
@@ -36,10 +36,10 @@
     "relief_amplitude",
     "sediment",
     "regen_quote",
-    "tageslaenge",
     "kraut_deckung",
     "breite_ort",
     "jahr_laenge",
+    "tageslaenge",
     "wald_deckung",
     "sonnenstand",
     "koordinate",
@@ -50,7 +50,7 @@
   },
   "zwillingeHeimatHeimat": {
    "klassen": 35,
-   "zeilen": 145,
+   "zeilen": 144,
    "namen": [
     "niederschlag_jahr",
     "meeresspiegel",
@@ -66,12 +66,12 @@
     "samen",
     "sediment",
     "regen_quote",
-    "tageslaenge",
     "wolken",
     "kraut_deckung",
     "verdunstung",
     "welle",
     "jahr_laenge",
+    "tageslaenge",
     "wald_deckung",
     "baum_dichte",
     "wiese",
@@ -90,10 +90,10 @@
    ]
   },
   "ohneTechnik": {
-   "zeilen": 497,
+   "zeilen": 496,
    "folgt": 100,
    "gesetztAnker": 51,
-   "gesetzt": 346,
+   "gesetzt": 345,
    "ohneLeser": 38
   },
   "jeDomaene": {
@@ -147,10 +147,10 @@
     "ohneLeser": 15
    },
    "tag": {
-    "zeilen": 30,
+    "zeilen": 29,
     "folgt": 3,
     "gesetztAnker": 3,
-    "gesetzt": 24,
+    "gesetzt": 23,
     "ohneLeser": 5
    },
    "wasser": {
@@ -629,16 +629,6 @@
    ]
   },
   {
-   "groesse": "tageslaenge",
-   "zeilen": [
-    "c14",
-    "c15",
-    "d50",
-    "d62",
-    "e7"
-   ]
-  },
-  {
    "groesse": "wolken",
    "zeilen": [
     "c48",
@@ -713,6 +703,15 @@
     "c13",
     "e8",
     "e183"
+   ]
+  },
+  {
+   "groesse": "tageslaenge",
+   "zeilen": [
+    "c14",
+    "c15",
+    "d62",
+    "e7"
    ]
   },
   {
@@ -8393,7 +8392,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": "Anker eigenes Bild."
+   "anmerkung": "Anker eigenes Bild.",
+   "doppelVon": "c14"
   },
   {
    "blatt": "d-biom-tag-jahr.json",

@@ -1,0 +1,12 @@
+Urteil über 584 Größen des Zensus (zensus.json, ohne Doppelte)
+alle                           584 · FOLGT 158 · FÄLLT 16 · SAME 38 · GESETZ 39 · BLEIBT 110 · BAND 119 · TECHNIK 104
+Kern                           228 · FOLGT 31 · FÄLLT 4 · SAME 36 · GESETZ 15 · BLEIBT 105 · BAND 0 · TECHNIK 37
+Heimat                         356 · FOLGT 127 · FÄLLT 12 · SAME 2 · GESETZ 24 · BLEIBT 5 · BAND 119 · TECHNIK 67
+heute gesetzt (ohne Technik)   396 · FOLGT 59 · FÄLLT 16 · SAME 38 · GESETZ 39 · BLEIBT 110 · BAND 119 · TECHNIK 15
+FOLGT je Stufe: S0 9 · S1 2 · S2 28 · S3 9 · S4 49 · S5 22 · S6 11 · S7 7 · TJ 11 · NAHT 9 · BAND 1
+heute gesetzt → FOLGT je Stufe: S0 4 · S2 13 · S3 1 · S4 16 · S5 1 · S6 10 · S7 2 · TJ 7 · NAHT 5
+FOLGT auf einer Stufe ohne Spike (S6, TJ): a59 a60 a90 a91 a92 a93 a97 a98 a108 a109 a110 d53 d54 d55 d56 d59 d60 d61 d62 d64 d68 e153
+FÄLLT: a36 a88 b4 b5 b11 b12 d4 d72 d73 d74 d75 d76 e135 e217 e222 e223
+SAME: a4 a5 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11 e12 e13 e14 e15 e16 e28 e30 e34 e39 e42 e45 e47 e48 e54 e62 e97 e109 e111 e115 e116 e117 e121 e122 e124 e126
+GESETZ: a3 a41 a53 a57 b13 b46 b48 b69 b99 b73 b74 b98 c11 c24 c30 c41 c55 c70 c71 c74 c80 d18 d34 d45 d69 e70 e71 e85 e145 e146 e148 e149 e150 e152 e160 e166 e189 e196 e197
+BLEIBT: b82 c6 d70 d71 d94 e24 e25 e26 e27 e29 e33 e35 e36 e37 e38 e41 e44 e46 e50 e51 e52 e53 e58 e63 e66 e67 e68 e69 e74 e75 e76 e77 e78 e79 e80 e81 e82 e83 e84 e86 e87 e88 e89 e90 e91 e92 e93 e94 e95 e96 e99 e100 e102 e103 e104 e105 e108 e112 e114 e118 e120 e123 e127 e128 e136 e137 e144 e151 e161 e163 e164 e165 e167 e168 e170 e171 e173 e174 e175 e176 e177 e178 e179 e180 e181 e182 e184 e185 e186 e187 e188 e190 e193 e198 e199 e200 e201 e206 e207 e208 e213 e215 e216 e218 e219 e220 e221 e228 e229 e230

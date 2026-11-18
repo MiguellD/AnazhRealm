@@ -23,22 +23,22 @@ Welt.
 
 ## §1 Die Zählung
 
-Insgesamt sind es 638 Zeilen. 53 davon zählt `zaehle.cjs` als doppelt:
+Insgesamt sind es 638 Zeilen. 54 davon zählt `zaehle.cjs` als doppelt:
 
 - 31 Zeilen, weil zwei Leser dieselbe Stelle für dieselbe Größe genannt haben;
-- 22 Zeilen, weil zwei Leser dieselbe Stelle unter zwei Klassen-Namen genannt haben. Diese Paare stehen als Liste `GLEICH` in
+- 23 Zeilen, weil zwei Leser dieselbe Stelle unter zwei Klassen-Namen genannt haben. Diese Paare stehen als Liste `GLEICH` in
   `zaehle.cjs`, jedes geprüft auf dieselbe Datei:Zeile. Beispiel: `ks` unter `erosion` (a40) und unter `fluss_gefaelle` (b39), beide
   `gelaende-core.js:390`.
 
-Es bleiben **585 Größen**, davon **88 Technik** und **497 Welt-Maße**.
+Es bleiben **584 Größen**, davon **88 Technik** und **496 Welt-Maße**.
 
 | | Welt-Maße | folgt | gesetzt, Anker | **gesetzt ohne Anker** | ohne Leser | mit benanntem Zwilling |
 |---|---|---|---|---|---|---|
-| **alle** | **497** | 100 (20 %) | 51 (10 %) | **346 (70 %)** | **38** | **104** |
+| **alle** | **496** | 100 (20 %) | 51 (10 %) | **345 (70 %)** | **38** | **104** |
 | im Kern `planet-core.js` | 192 | 30 | 22 | 140 (73 %) | 24 | 29 |
-| in der Heimat (Gelände, Stamm, Phyto, Licht …) | 305 | 70 | 29 | 206 (68 %) | 14 | 75 |
+| in der Heimat (Gelände, Stamm, Phyto, Licht …) | 304 | 70 | 29 | 205 (67 %) | 14 | 75 |
 
-Mit Technik (585) lauten die Zahlen: folgt 115, gesetzt mit Anker 52, gesetzt ohne Anker 418, ohne Leser 53.
+Mit Technik (584) lauten die Zahlen: folgt 115, gesetzt mit Anker 52, gesetzt ohne Anker 417, ohne Leser 53.
 
 Je Domäne, mit Technik (`zaehle.out.txt`):
 
@@ -49,7 +49,7 @@ Je Domäne, mit Technik (`zaehle.out.txt`):
 | wasser | 100 | 31 | 11 | 58 | 7 |
 | biom | 49 | 6 | 5 | 38 | 8 |
 | planet | 46 | 5 | 4 | 37 | 7 |
-| tag | 30 | 3 | 3 | 24 | 5 |
+| tag | 29 | 3 | 3 | 23 | 5 |
 | welt | 24 | 8 | 1 | 15 | 0 |
 | jahr | 20 | 6 | 2 | 12 | 3 |
 | gestein | 16 | 2 | 0 | 14 | 1 |
@@ -59,12 +59,12 @@ Je Domäne, mit Technik (`zaehle.out.txt`):
 **Zwillinge**, also zwei Quellen für dieselbe Welt-Größe, in drei Lesarten:
 
 1. **Benannt:** 104 Welt-Maße tragen einen Zwilling, den der Leser mit datei:zeile nennt.
-2. **Kern ↔ Heimat:** 30 Klassen stehen im Kern UND in der Heimat. Das sind 240 Zeilen in den Klassen niederschlag_jahr, gebirge,
+2. **Kern ↔ Heimat:** 30 Klassen stehen im Kern UND in der Heimat. Das sind 239 Zeilen in den Klassen niederschlag_jahr, gebirge,
    relief_hoehe, kueste, meeresspiegel, biom, gestein_art, wind_richtung, landform, relief_wellenlaenge, eis, erosion, schelf,
    temperatur_jahresmittel, saison_phase, wind_staerke, temperatur_jahresamplitude, relief_amplitude, sediment, regen_quote,
    tageslaenge, kraut_deckung, breite_ort, jahr_laenge, wald_deckung, sonnenstand, temperatur_hoehengradient, koordinate,
    temperatur_tagesamplitude und achsneigung.
-3. **Heimat ↔ Heimat:** 35 Klassen stehen in zwei oder mehr Heimat-Dateien, zusammen 145 Zeilen. Am breitesten sind tag_achse und
+3. **Heimat ↔ Heimat:** 35 Klassen stehen in zwei oder mehr Heimat-Dateien, zusammen 144 Zeilen. Am breitesten sind tag_achse und
    gestein_art in je 6 Dateien, wind_staerke in 5 und samen in 4.
 
 Die Zwillinge mit dem schwersten Gewicht (Blatt e §3.1, Blatt c §0, Blatt d §0, Blatt b §0):

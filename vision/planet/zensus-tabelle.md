@@ -461,7 +461,6 @@ Je Zeile: Größe · Wert · Einheit · Ort · Leser · Urteil (woraus). Doppelt
 | id | Größe | Wert | Einheit | Ort | Leser | Urteil | woraus / Anmerkung |
 |---|---|---|---|---|---|---|---|
 | d49 | Uhr beim Start (timeOfDay) | 0.5 | Tag (Mittag) | `stamm/dirigent-kern.js:300` | 2: stamm/bild-himmel.js:2648 (tickDayNight) | **GESETZT ohne Anker** | „eine frische Welt beginnt am Mittag“ (stamm/daten.js:152) — Anker eigenes Bild (Leben-Schau 2). |
-| d50 | Tag-Länge Standard | 60 | min Echtzeit | `stamm/daten.js:159-161` | 2: stamm/bild-himmel.js:2639-2640 | **GESETZT ohne Anker** | 4 × Szene 15 min; Szenen der Leben-Schau 2 dauerten 9–12,3 min (stamm/daten.js:152-158) — Anker eigenes Bild. |
 | d51 | Tag-Länge Regler · Boden | 1–60 · 60 s | min · s | `stamm/daten.js:146-151 · stamm/bild-himmel.js:2640` | 2: stamm/bild-himmel.js:2774-2786 setDayLength | **GESETZT ohne Anker** | Wahl des Spielers (localStorage), nie im Stand (stamm/speicher-laden.js:555-556) — Zwei Seiten einer Welt können verschieden lange Tage sehen. |
 | d53 | Tag der Welt (Mitternachts-Zähler) | worldMeta.tag + ganze Tage | Tage | `stamm/bild-himmel.js:2738-2742` | 1: stamm/feld-leben.js:2614 (_weltTagEichen, alte Stände) | FOLGT | zählt jede Mitternacht der Uhr |
 | d54 | Etikett der Uhr Nacht · Morgen · Tag · Abend | 0,22 · 0,35 · 0,65 · 0,85 | Tag | `stamm/bild-himmel.js:2762-2768` | **ohne Leser** | **GESETZT ohne Anker** |  — Einzige Leser stamm/bild-himmel.js:2666 · :2671 schreiben nur die Anzeige (HUD); „Nacht“ bis 05:17 ( |

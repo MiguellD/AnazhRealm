@@ -28,14 +28,16 @@ for (const r of zeilen) { const k = ortKey(r); if (gesehen.has(k)) { r.doppelVon
 const GLEICH = {
   b39: 'a40', b40: 'a41', b42: 'a42', b44: 'a48', b49: 'a53', d12: 'a77', e214: 'a78', d5: 'a114', c76: 'b13', c77: 'b14',
   c19: 'b71', d52: 'b77', d11: 'c1', d57: 'c5', d58: 'c11', d13: 'c64', d14: 'c65', d33: 'c83', b21: 'a47', b22: 'a43',
-  b9: 'a27', a89: 'd2',
+  b9: 'a27', a89: 'd2', d50: 'c14',
 };
-const anfang = (r) => { const m = String(r.ort).match(/^([^\s:]+):(\d+)/); return m ? m[1] + ':' + m[2] : null; };
+// dieselbe Stelle = dieselbe Datei und die Zeilen-Bereiche überdecken sich (ein Leser nennt :160, der andere :159-161)
+const bereich = (r) => { const m = String(r.ort).match(/^([^\s:]+):(\d+)(?:[-–](\d+))?/); return m ? { d: m[1], a: +m[2], b: +(m[3] || m[2]) } : null; };
+const dieselbe = (r, v) => { const x = bereich(r), y = bereich(v); return !!x && !!y && x.d === y.d && x.a <= y.b && y.a <= x.b; };
 const nachId = new Map(zeilen.map(r => [r.id, r]));
 for (const [id, von] of Object.entries(GLEICH)) {
   const r = nachId.get(id), v = nachId.get(von);
   if (!r || !v) throw new Error('GLEICH ' + id + '=' + von + ': Zeile fehlt');
-  if (anfang(r) !== anfang(v)) throw new Error('GLEICH ' + id + '=' + von + ': nicht dieselbe Stelle (' + anfang(r) + ' ≠ ' + anfang(v) + ')');
+  if (!dieselbe(r, v)) throw new Error('GLEICH ' + id + '=' + von + ': nicht dieselbe Stelle (' + r.ort + ' ≠ ' + v.ort + ')');
   if (!r.doppelVon) { r.doppelVon = von; doppelt.push(id + '=' + von + ' (Klasse ' + r.groesse + ' = ' + v.groesse + ')'); }
 }
 const Z = zeilen.filter(r => !r.doppelVon);
