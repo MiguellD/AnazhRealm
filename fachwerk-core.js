@@ -1845,7 +1845,9 @@
   const _oeffnungenDerEinheit=()=>{ const dx=SHIFT;   // die Öffnungen EINER Einheit — das Doppelhaus trägt die der Einheit B um +W (vorher stand B in der L2 blind), keine an der Brandwand
     const auf=(o,wand,u)=>{ if(dx){ o.cx+=dx; o.schlaf=fensterSchlaeft(P.seed,o.perp,wand,u,o.cy); o.offen=fluegelOffen(P.seed,o.perp,wand,u,o.cy); } windowOpenings.push(o); };   // der Würfel der Einheit B aus ihrer eigenen Lage (EIN Würfel je Fenster, wie ihr Bau)
     WALLS.forEach(w=>{ if(!w.win||INNEN(w))return; const wd=winW(w),c=(w.lo+w.hi)/2; auf({cx:w.horiz?c:w.fixed, cy:w.win.cy, cz:w.horiz?w.fixed:c, w:wd, h:w.win.ch, perp:w.horiz?'z':'x', kind:'stockwerk'}, w.fixed, c); });
-    if(gableWin){ [1,-1].forEach(sx=>{ if(!BRANDSEITE(sx)) auf({cx:sx*(W/2-0.02), cy:gableWin.cy, cz:0, w:gableWin.wz, h:gableWin.hy, perp:'x', kind:'giebel'}, sx*(W/2-0.02), 0); }); } };
+    // das Giebelfenster nur, wo `giebel()` es baut: am Sattel-Giebel, an dem kein Flügel steht (vorher trug die Fern-Liste es an jedem Dach — am Flachdach, an der Kuppel
+    // und am Giebel hinter dem Flügel stand ab 26 m ein Fenster, das die L0 nicht hat: 26 Klassen des Export-Sweeps)
+    if(gableWin&&ROOFMODE==='sattel'&&P.hip<=0.985){ [1,-1].forEach(sx=>{ if(!BRANDSEITE(sx)&&!wings.some(w=>(sx>0?w.side==='E':w.side==='W'))) auf({cx:sx*(W/2-0.02), cy:gableWin.cy, cz:0, w:gableWin.wz, h:gableWin.hy, perp:'x', kind:'giebel'}, sx*(W/2-0.02), 0); }); } };
   _oeffnungenDerEinheit(); if(P.doppel){ SHIFT=W; _oeffnungenDerEinheit(); SHIFT=0; }
   GAs.forEach(A=>windowOpenings.push({cx:A.xout, cy:0.06+1.2, cz:A.zc, w:0.8, h:0.55, perp:'x', kind:'anbau'}));   // Anbau-Fenster außen — seitenrichtig (war x1)
   for(const f of FERNFENSTER) windowOpenings.push(f);   // die Teilbauten der fernen Stufe (Turm, Hof): ihr Fern-Fenster
@@ -1859,6 +1861,9 @@
   if(!ROUND) for(const dx of (P.doppel?[0,W]:[0])){ eingaenge.push({cx:dx,cy:baseY+doorH/2,cz:-Dp/2,w:doorW,h:doorH,perp:'z',s:-1,rahmen:null});
     if(backDoor) eingaenge.push({cx:backDoor.cx+dx,cy:baseY+doorH/2,cz:Dp/2,w:Math.min(1.0,backDoor.hi-backDoor.lo-0.2),h:doorH,perp:'z',s:1,rahmen:null}); }
   for(const A of annexDoors) eingaenge.push({cx:(A.x0+A.x1)/2,cy:(A.y0+A.y1)/2,cz:A.z,w:A.x1-A.x0,h:A.y1-A.y0,perp:'z',s:A.kind==='tor'?-1:1,rahmen:null});
+  // die Balkontür je Balkon-Geschoss (dieselbe Öffnung wie `balkOp`: 1,0 × 2,06 m an der freien Wand) — der Balkon selbst fällt in der Ferne, seine Tür bleibt als Öffnung
+  if(balcDoor) for(const dx of (P.doppel?[0,W]:[0])) for(const L of levels.slice(1)){ const sd=balcDoor.side, c=balcDoor.cx;
+    eingaenge.push(sd==='N'?{cx:c+dx,cy:L.y+1.03,cz:Dp/2,w:1.0,h:2.06,perp:'z',s:1,rahmen:null}:{cx:(sd==='E'?W/2:-W/2)+dx,cy:L.y+1.03,cz:c,w:1.0,h:2.06,perp:'x',s:sd==='E'?1:-1,rahmen:null}); }
   for(const e of EINGANG) eingaenge.push(e);
   return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, eingaenge, annexDoors, licht:LICHT,
     cellar: P.keller?{x0:-(W/2-0.08),x1:(W/2-0.08),z0:-(Dp/2-0.08),z1:(Dp/2-0.08),floorY:kellerY+0.12}:null,
