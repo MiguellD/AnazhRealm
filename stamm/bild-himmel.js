@@ -1976,6 +1976,32 @@ class AnazhRealm_bild_himmel {
             an.value = 1;
             aus.forEach((o) => (o.visible = true));
         }
+        // DIE QUELLE SCHLIESST IHRE EIGENE FLÄCHE AUS (entscheid §8 #2, aus dem Datum der Quelle): je Platz des Pools die Kugel
+        // ihres Kerns (`kernM`, die nahe Ebene des Licht-Gesetzes) um ihren Ort, im Mess-Bild als Scheibe (ohne Tiefe: was im
+        // Bild vor oder hinter ihr liegt, fällt mit) — Herd-Steine und Scheite im Kern sind Leib der Quelle, nicht Fleck der Sicht.
+        // Das Licht des Auges (Ersatz) zählt nicht.
+        const scheiben = [];
+        {
+            const A = st.atmoUniforms,
+                cam = st.camera,
+                v = this._kappeV || (this._kappeV = new THREE.Vector3());
+            cam.updateMatrixWorld();
+            const fy = 1 / Math.tan(((cam.fov / 2) * Math.PI) / 180);
+            for (let i = 0; i < A.lichtLage.length; i++) {
+                const p = A.lichtLage[i].value;
+                if (!(p.w > 0) || A.lichtErsatz[i].value === 1) continue;
+                const rk = Math.sqrt(A.lichtKern[i].value);
+                v.set(p.x, p.y, p.z).applyMatrix4(cam.matrixWorldInverse);
+                const d = -v.z;
+                if (!(rk > 0) || d <= rk) continue;
+                v.applyMatrix4(cam.projectionMatrix);
+                scheiben.push([
+                    ((v.x + 1) / 2) * W,
+                    ((1 - v.y) / 2) * H,
+                    (rk / Math.sqrt(d * d - rk * rk)) * fy * (H / 2),
+                ]);
+            }
+        }
         const h16 = THREE.DataUtils.fromHalfFloat;
         const f11 = (v, mb) => {
             const e = v >> mb,
@@ -1992,9 +2018,15 @@ class AnazhRealm_bild_himmel {
                     ? new Uint32Array(px.buffer, px.byteOffset, px.byteLength >> 2)
                     : new Uint16Array(px.buffer, px.byteOffset, px.byteLength >> 1);
                 const je = pack ? 1 : 4;
-                const zeile = Math.floor(roh.length / H);
+                // die Zeile auf 256 Byte (WebGPU bytesPerRow), in Elementen des Felds
+                const zeile = (Math.ceil((W * je * roh.BYTES_PER_ELEMENT) / 256) * 256) / roh.BYTES_PER_ELEMENT;
+                let raus = 0;
                 for (let y = 0; y < H; y++)
                     for (let x = 0; x < W; x++) {
+                        if (scheiben.some(([cx, cy, rr]) => (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 <= rr * rr)) {
+                            raus++;
+                            continue;
+                        }
                         const i = y * zeile + x * je;
                         let a, b, c;
                         if (pack) {
@@ -2005,7 +2037,14 @@ class AnazhRealm_bild_himmel {
                         if (v > max) ((max = v), (wo = x + y * W));
                         n++;
                     }
-                this._kappeMess = { max, wo: [wo % W, Math.floor(wo / W)], n, format: pack ? "rg11b10" : "rgba16f" };
+                this._kappeMess = {
+                    max,
+                    wo: [wo % W, Math.floor(wo / W)],
+                    n,
+                    raus,
+                    scheiben: scheiben.map((s) => s.map((q) => +q.toFixed(1))),
+                    format: pack ? "rg11b10" : "rgba16f",
+                };
                 this._lichtKappe = max > 0 ? 0.76 / max : 0;
                 if (this._kMain > 0)
                     R.toneMappingExposure =
