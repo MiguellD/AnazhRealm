@@ -1433,7 +1433,7 @@ class AnazhRealm_siedlung_wege {
                     const lim = R.mul(0.75);
                     const ws = n.dot(s.xz).negate().max(0.0).mul(B.hochM).div(s.y.max(0.05)).min(lim);
                     const wf = n.dot(v.xz).max(0.0).mul(B.hochM).div(v.y.max(0.1)).min(lim);
-                    const fb = an(d, a);
+                    const fb = an(d, a).mul(f.mul(40).min(1.0)); // ohne Rampe (f = 0: Gehweg, Platz, Gasse) keine Fahrbahn
                     const schatten = fb
                         .mul(an(ws.sub(d), a))
                         .mul(ws.div(a).min(1.0))
