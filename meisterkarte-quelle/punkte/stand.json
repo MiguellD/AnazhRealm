@@ -5876,7 +5876,7 @@
   },
   "karte2.planet.relief.grossform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) · karte2.planet.relief.grossform#1 gtx: Station seit der Messung geändert — zuletzt an 21f279f5: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) · karte2.planet.relief.grossform#1 gtx: ROT: Läufe 293 von 293 in See oder Meer (see 291, meer 2), Senken nass 10/10 · Orte 20 (Soll 20): Wasser im Bild und nass 17/20 FEHLER ABNAHME ROT [Vordergrund 33.5 % näher als 3.61 m (der halbe Ziel-Abstand): Laub baum_erle 33.5 %] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 7.21 m · Luma 65.9 σ 26.8 schwarz 0.1 % weiß 0.0 % · Stand 18.546.338 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\18058dba-gtx\\karte2.planet.relief.grossform_1-laeufe-2-rot.png · [linse-gpu] nvidia/pascal an 18058dba",
    "stationen": [
     {
      "id": "karte2.planet.relief.grossform#1",
@@ -5892,10 +5892,10 @@
      "id": "karte2.planet.relief.grossform#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 21f279f5: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
-     "ungemessen": true,
+     "zahl": "Läufe 293 von 293 in See oder Meer (see 291, meer 2), Senken nass 10/10 · Orte 20 (Soll 20): Wasser im Bild und nass 17/20 FEHLER ABNAHME ROT [Vordergrund 33.5 % näher als 3.61 m (der halbe Ziel-Abstand): Laub baum_erle 33.5 %] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 7.21 m · Luma 65.9 σ 26.8 schwarz 0.1 % weiß 0.0 % · Stand 18.546.338 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\18058dba-gtx\\karte2.planet.relief.grossform_1-laeufe-2-rot.png · [linse-gpu] nvidia/pascal",
+     "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
+     "grund": "ROT: Läufe 293 von 293 in See oder Meer (see 291, meer 2), Senken nass 10/10 · Orte 20 (Soll 20): Wasser im Bild und nass 17/20 FEHLER ABNAHME ROT [Vordergrund 33.5 % näher als 3.61 m (der halbe Ziel-Abstand): Laub baum_erle 33.5 %] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 7.21 m · Luma 65.9 σ 26.8 schwarz 0.1 % weiß 0.0 % · Stand 18.546.338 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal · ROT-Bild C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\18058dba-gtx\\karte2.planet.relief.grossform_1-laeufe-2-rot.png · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6340,7 +6340,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 199,
+  "konsum": 200,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6502,10 +6502,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 149
+  "ohne": 148
  },
  "kopfVoll": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
- "zeit": "2026-11-18T18:11:32.494Z",
+ "zeit": "2026-11-18T18:18:30.125Z",
  "vorher": "18058dba",
  "bilanz": {
   "gewinn": [],
