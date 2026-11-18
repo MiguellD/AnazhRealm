@@ -4989,8 +4989,9 @@
      "gruen": true,
      "zahl": "mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 13.4/12.1/11.8/13.2/12.3/12.3/12.8/12.2 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal",
      "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, stamm/kreatur-leben.js)",
      "gehalten": true,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6343,7 +6344,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 196,
+  "konsum": 197,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6505,11 +6506,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 152
+  "ohne": 151
  },
  "kopfVoll": "fa61024def9c9aa3364d023b4c09f40e5e795d51",
- "zeit": "2026-11-18T10:18:04.732Z",
- "vorher": "1f300260",
+ "zeit": "2026-11-18T10:28:51.843Z",
+ "vorher": "fa61024d",
  "bilanz": {
   "gewinn": [],
   "fall": [],
