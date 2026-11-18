@@ -11354,10 +11354,11 @@
             k: 7, // hinter dem Tier-Tor; der nächste Punkt 220 m von M (keine Zone mit Akteur ≤ 210 m)
             flaecheR: 45,
             belag: "gras",
-            // der Grund des Geheges und seines Grabens ist getreten (`belag`, dasselbe Feld wie jede Fläche): drei Wölfe halten
-            // 192 m² kahl, die Sohle des Grabens trägt keinen Rasen — der Gast liest die Grenze am Grund
+            // der Grund des Geheges und seines Grabens (`belag`, dasselbe Feld wie jede Fläche): drei Wölfe halten 192 m² kahl
+            // (getretene Erde), die Sohle des Grabens ist mit Stein gefasst (Hagenbecks Trockengraben) — kein Rasen wächst über
+            // sie, der Gast liest die Grenze am Grund: Rasen · Stein in der Tiefe · Erde
             gehege: { gattung: "wolf", n: 3, z0: 5, z1: 17, ex: 8, lagerDz: 7, ruhe: [[-3, 1], [0, 3.5], [3, 6]], belag: "weg" }, // nördlich der Mitte
-            graben: { b: 3, tiefeM: 2, belag: "weg" }, // Hagenbeck: der Graben um das Gehege statt eines Zauns, `tiefeM` unter dem Zoo
+            graben: { b: 3, tiefeM: 2, belag: "pflaster" }, // Hagenbeck: der Graben um das Gehege statt eines Zauns, `tiefeM` unter dem Zoo
             laternen: [[-9, -7], [9, -7], [-9, 1], [9, 1]], // an der Schau-Terrasse südlich der Mitte
             // der Grund des Zoos: Schau-Rasen (bis zur fernen Station), Gehege und Graben auf EINER Platte (dem Median ihres Grunds) —
             // Besucher und Tiere auf einer Höhe, der Graben senkrecht in ihr (am Hang der Standard-Welt trug die Schau-Terrasse sonst
