@@ -463,7 +463,7 @@ function raumUrteil(sb, nurKalb) {
         const a = Float64Array.from(d).sort();
         let neben = 0;
         for (const x of d) if (x > RAUM.nebenMm) neben++;
-        return { p95: a[Math.floor(a.length * 0.95)], max: a[a.length - 1], neben: neben / d.length, gelenk: gmax };
+        return { p95: rang(a, 0.95), max: a[a.length - 1], neben: neben / d.length, gelenk: gmax };
     };
     const f1 = (x) => x.toFixed(1);
     // F1 — das Individuum Wolf an ±2σ
