@@ -1957,6 +1957,9 @@ class AnazhRealm_bild_himmel {
         const st = this.state;
         const R = st.renderer,
             sp = st.scenePass;
+        // das Protokoll der Belichtung je gezeichnetem Bild (die Kappe misst nach dem Bild: hier steht das k, mit dem es zeichnete)
+        if (R) (this._kappeLog || (this._kappeLog = [])).push(+R.toneMappingExposure.toPrecision(4));
+        if (this._kappeLog && this._kappeLog.length > 64) this._kappeLog.shift();
         if (this._kappeFlug || !R || !sp || !st.scene || !st.camera || !st.atmoUniforms) return this._kappeFlug || null;
         const [W, H] = [240, 135];
         let K = this._kappeZiel;
@@ -1989,17 +1992,24 @@ class AnazhRealm_bild_himmel {
         // ihres Kerns (`kernM`, die nahe Ebene des Licht-Gesetzes) um ihren Ort, im Mess-Bild als Scheibe (ohne Tiefe: was im
         // Bild vor oder hinter ihr liegt, fällt mit) — Herd-Steine und Scheite im Kern sind Leib der Quelle, nicht Fleck der Sicht.
         // Das Licht des Auges (Ersatz) zählt nicht.
-        const scheiben = [];
+        // Der Leib einer Gestalt-Quelle (`leibM`, der Kopf der Laterne) zählt mit; die Lava ist eine Fläche im Boden — ihr
+        // Leuchten fällt mit `strahlerAn`, ihre Kugel schlösse das Ufer mit aus (benannt, nicht gelöst).
+        const scheiben = [],
+            quellen = [];
         {
             const A = st.atmoUniforms,
                 cam = st.camera,
+                halter = (this._leuchtPool && this._leuchtPool.halter) || [],
                 v = this._kappeV || (this._kappeV = new THREE.Vector3());
             cam.updateMatrixWorld();
             const fy = 1 / Math.tan(((cam.fov / 2) * Math.PI) / 180);
             for (let i = 0; i < A.lichtLage.length; i++) {
                 const p = A.lichtLage[i].value;
                 if (!(p.w > 0) || A.lichtErsatz[i].value === 1) continue;
-                const rk = Math.sqrt(A.lichtKern[i].value);
+                const q = halter[i];
+                const rk = Math.max(Math.sqrt(A.lichtKern[i].value), (q && q.leibM) || 0);
+                quellen.push([q ? q.quelle : "?", +rk.toFixed(3), q ? +(q.leibM || 0).toFixed(3) : null]);
+                if (q && q.quelle === "lava") continue;
                 v.set(p.x, p.y, p.z).applyMatrix4(cam.matrixWorldInverse);
                 const d = -v.z;
                 if (!(rk > 0) || d <= rk) continue;
@@ -2052,6 +2062,7 @@ class AnazhRealm_bild_himmel {
                     n,
                     raus,
                     scheiben: scheiben.map((s) => s.map((q) => +q.toFixed(1))),
+                    quellen,
                     format: pack ? "rg11b10" : "rgba16f",
                 };
                 this._lichtKappe = max > 0 ? 0.76 / max : 0;
