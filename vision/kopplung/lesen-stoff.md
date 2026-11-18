@@ -24,7 +24,7 @@ Lava (`_lavaZuendet`, siedlung-wege.js:625) oder Masse/Klang/Licht fragen.
 | `BRAND.minStoff` | Stellwert | 0,15 | feld-brand.js:900 | — | feld-brand.js:224 | GESETZT |
 | M Brennstoff-Feuchte | kg Wasser/kg trocken | 0,06 + 0,29·boden + 2,5·naesse | `BRAND.feuchte` feld-brand.js:975 | Funktion `_brandFeuchte` feld-brand.js:282–285 | feld-brand.js:307, 509 | FOLGT aus Boden-Feuchte und Nässe; Koeffizienten GESETZT (Rothermel, Anderson, Matthews 2006) |
 | Boden-Feuchte `_feuchteAt` | Stellwert 0..1 | Fluss-Abstand, Höhe über Spiegel | gelaende-boden.js:1538–1567, `FEUCHTE` 3220 | keiner (Funktion der Hydrosphäre) | feld-brand.js:268 (einmal je Brand gemessen, gemerkt 218–219); Wuchs vegetation-wiese.js:2081 | FOLGT (Gelände/Hydrosphäre) |
-| `state.naesse` (der Film) | Stellwert 0..1 | 0 … 1, global eine Zahl | bild-himmel.js:3061–3089, `NAESSE` stoff-material.js:3788 | `_naesseTakt` bild-himmel.js:3080 | feld-brand.js:284; Lava siedlung-wege.js:626 | FOLGT (Wetter-Feld, Verdunstung) |
+| `state.naesse` (der Film) | Stellwert 0..1 | 0 … 1, global eine Zahl | bild-himmel.js:3060–3089, `NAESSE` stoff-material.js:3788 | `_naesseTakt` bild-himmel.js:3080 | feld-brand.js:284; Lava siedlung-wege.js:626 | FOLGT (Wetter-Feld, Verdunstung) |
 | L_v Verdampfung | J/kg | 2 257 000 | bau-vorlagen.js:1644 (`PHASE.wasser`) | Host | Q_ig feld-brand.js:316 | GESETZT, Host-Zahl |
 | L, k des Eises | J/kg, W/(m·K) | 334 000, 2,2 | bau-vorlagen.js:1644 | Host | Eis-Dicke über `_wasserStoff` bild-himmel.js:3050 | GESETZT |
 | Wärmeleitung jedes anderen Stoffs | Stellwert ohne Einheit (Tag) | holz 0,15, stein 0,25, eisen 0,7, gras 0,1 … | Tag `wärmeleitung` bau-vorlagen.js:1760–1945 | Host-Tags | Glimmen stoff-material.js:761–763; `heatResist` bau-buch.js:2542, `staminaMax` 2535 | GESETZT; keine W/(m·K)-Spalte, kein Feuer-Leser |
@@ -47,9 +47,9 @@ Lava (`_lavaZuendet`, siedlung-wege.js:625) oder Masse/Klang/Licht fragen.
 | `ARENA_RHO` | kg/m³ | stroh 120, polster 300, schnur 500, tuch 400, ton 1800 | schmiede-core.js:4184 | Kern | `arenaRho` 4188–4194 | GESETZT, neben `STOFF_GESETZ` |
 | `ZIELMAT` μ/Härte | μ, Stellwert | holz μ 0,35 hart 0,2; kraut 0,3/0,05 | schmiede-core.js:2812–2822 | Kern | Werkzeugform-Gesetz | GESETZT, neben `SI` μ (holz 0,6, bau-vorlagen.js:1622) |
 
-**Zählung:** 34 Größen, davon 7 FOLGT (M, Boden-Feuchte, naesse, Q_ig, H·w, Asche-Kanal, die Metalle in ρ/c als Teil-FOLGT nicht extra
-gezählt), 27 GESETZT; 12 ohne Einheit (leb, minStoff, Boden-Feuchte, naesse, Wärmeleitung-Tag, brennbar-Tag, dichte-Tag, Asche-Kanal,
-TAT_NARBE tiefe/naehr, SUKZESSION, versengt/ascheKorn, ZIELMAT-Härte).
+**Zählung:** 34 Größen, davon 6 FOLGT (M, Boden-Feuchte, naesse, Q_ig, H·w, Asche-Kanal; die Metalle in ρ und c folgen aus `mische`,
+die Zeile zählt als GESETZT, weil jeder Stoff des Feuers eingetragen ist), 28 GESETZT; 12 ohne Einheit (leb, minStoff, Boden-Feuchte,
+naesse, Wärmeleitung-Tag, brennbar-Tag, dichte-Tag, Asche-Kanal, TAT_NARBE tiefe/naehr, SUKZESSION, versengt/ascheKorn, ZIELMAT-Härte).
 
 **Literatur, wo der Code eine Entsprechung hat (nur Nennung):** Heizwert trockenes Holz ~18–19 MJ/kg, Gras ~17–18 MJ/kg — der Code trägt
 18,6 MJ/kg nur für gras/laub (bau-vorlagen.js:1647–1648), holz hat keinen. Gras-Last Anderson FM1 0,166 kg/m² — trifft
@@ -59,10 +59,10 @@ TAT_NARBE tiefe/naehr, SUKZESSION, versengt/ascheKorn, ZIELMAT-Härte).
 Holz ~0,5–2 % — im Code nur `mineral.gesamt` 0,0555 (feld-brand.js:976), ohne Masse. Lebende Gras-Feuchte 30–300 % — im Code nicht da
 (das Gras brennt als toter Fein-Brennstoff mit 6 %).
 
-**Probe (nachgerechnet, NICHT das Spiel):** `node scratchpad/stoff/rothermel.cjs` (die Formel aus feld-brand.js:299–338 mit den Zeilen
-oben, flach): gras leb 1, M 0,06, 20 °C, windstill R = 0,041 m/s — eine 16-m-Zelle in 391 s; Wind 2/5/10 m/s in 10 m → 142/31/8 s.
-Laub windstill 0,0069 m/s (2 324 s je Zelle), 10 m/s → 219 s. Mit ρ_p 513 und Rothermels Q_ig = 250 + 1116·M fiele gras auf 0,030 m/s.
-Pfad der Datei: /tmp/claude-0/-home-user-AnazhRealm/d169edf0-889e-5d2b-b305-7451b621a8b7/scratchpad/stoff/rothermel.cjs.
+**Probe (nachgerechnet, NICHT das Spiel):** `node /tmp/claude-0/-home-user-AnazhRealm/d169edf0-889e-5d2b-b305-7451b621a8b7/scratchpad/stoff/rothermel.cjs`
+(die Formel aus feld-brand.js:299–338 mit den Zeilen oben, flach, < 1 s): gras leb 1, M 0,06, 20 °C, windstill R = 0,041 m/s — eine
+16-m-Zelle in 391 s; Wind 2/5/10 m/s in 10 m → 142/31/8 s. Laub windstill 0,0069 m/s (2 324 s je Zelle), 10 m/s → 219 s. Mit ρ_p 513
+und Rothermels Q_ig = 250 + 1116·M fiele gras auf 0,030 m/s.
 
 ## 2. DIE FLÜSSE
 
@@ -115,7 +115,7 @@ Zwillinge:
 5. Dichten außerhalb der Tafel: `ARENA_RHO` (schmiede-core.js:4184).
 6. Reibung: `ZIELMAT.mu` (schmiede-core.js:2812–2822) neben `SI` μ (bau-vorlagen.js:1621–1641).
 7. Asche-Farbe dreifach: Palette `asche` 0x45403a (foundry-core.js:107), Feuerstelle `tonAsche` [0,5; 0,5; 0,52] × lehm
-   (fachwerk-core.js:7024–7031), versengter Halm `BRAND.versengt` (feld-brand.js:898).
+   (fachwerk-core.js:7023–7031), versengter Halm `BRAND.versengt` (feld-brand.js:898).
 8. Holz-Vergrauung zweifach: `ALTER.holz` lin(0x6b665e) (bau-vorlagen.js:1685) und fachwerk `AUS_SILBER` [0,2; 0,2; 0,19]
    (fachwerk-core.js:6857).
 
