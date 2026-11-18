@@ -5606,7 +5606,7 @@
   },
   "karte2.mensch.stadt.siedlungsnetz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an d39e0d6e radeon · gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an d39e0d6e gtx",
+   "beleg": "Maschine: gehalten: ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an d39e0d6e radeon · ✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km an c1e6f29a gtx",
    "stationen": [
     {
      "id": "karte2.mensch.stadt.siedlungsnetz#1",
@@ -5624,9 +5624,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km",
-     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, scripts/diag-settlement.cjs +6)",
-     "gehalten": true,
+     "sha": "c1e6f29a227befd15c4cd90bcf0f3e40bd228da4",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -6504,7 +6503,7 @@
   "ohne": 154
  },
  "kopfVoll": "c1e6f29a227befd15c4cd90bcf0f3e40bd228da4",
- "zeit": "2026-11-18T04:01:08.708Z",
+ "zeit": "2026-11-18T04:16:57.643Z",
  "vorher": "c1e6f29a",
  "bilanz": {
   "gewinn": [],
