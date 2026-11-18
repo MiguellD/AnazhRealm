@@ -5539,7 +5539,7 @@
   },
   "karte2.mensch.menge.kollektiv": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 39 Zeugen, 39 in beiden Gängen · Abstand-Median vorher 10.9 m → nachher 17.72 m · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.mensch.menge.kollektiv#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +18)",
+   "beleg": "Maschine: 39 Zeugen, 39 in beiden Gängen · Abstand-Median vorher 10.9 m → nachher 17.72 m · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.mensch.menge.kollektiv#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +18)",
    "stationen": [
     {
      "id": "karte2.mensch.menge.kollektiv#1",
@@ -5557,9 +5557,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "39 Zeugen, 39 in beiden Gängen · Abstand-Median vorher 10.9 m → nachher 17.72 m · Furcht 0 → 1 · third · [linse-gpu] nvidia/pascal",
-     "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +18)",
-     "gehalten": true,
+     "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -6486,7 +6485,7 @@
   "ohne": 149
  },
  "kopfVoll": "b7ed8419454b22964d72b81d26f1f56128e41735",
- "zeit": "2026-11-18T23:25:04.606Z",
+ "zeit": "2026-11-18T23:30:53.240Z",
  "vorher": "b7ed8419",
  "bilanz": {
   "gewinn": [],
