@@ -2059,20 +2059,27 @@
       gasthaus:{ zeile:'werk:gasthaus', geschosse:[2,3], grundriss:['L','U','hof','I'], raeume:[['gaststube','s',1.3,0,'eg','strasse',32],['kueche','b',15,0,'eg','hinten'],['keller','b',20,0,'keller','keller'],['kammer_gast','s',9,0,'og','oben',4],['wohnen_wirt','p',20,20,'og','oben'],['stall_remise','s',8,0,'eg','hof_umlauf',4]], mass:[['arkade','setze',1,{aus:'region',in:['mitteleuropa','mediterran']}]] },
       schmiede:{ zeile:'werk:schmiede', geschosse:[1,1], grundriss:['I'], personen:2, raeume:[['esse_werkraum','b',27,0,'eg','kern'],['beschlagstand','b',9,0,'eg','strasse']], mass:[['balcony','setze',0],['annexN','setze',0],['turm','setze',0],['kuppel','setze',0]] },
       rathaus:{ zeile:'stein:rathaus', geschosse:[2,4], grundriss:['I','L'], personen:24, raeume:[['halle','b',150,0,'eg','strasse'],['ratssaal','p',2.5,0,'og','strasse'],['archiv','b',30,0,'eg','kern'],['ratskeller','b',120,0,'keller','keller'],['uhrturm','b',25,0,'alle','turm']], mass:[['annexN','setze',0],['arm','setze',0],['balcony','setze',0],['zinnen','setze',1,{aus:'band',ist:'mittelalter'}],['arkade','setze',1,{aus:'band',nicht:'mittelalter'}]] },   // der wehrhafte Rat des Mittelalters, die Laube der Neuzeit
-      kaufhaus:{ mass:[['W','hoechstens',8.5],['D','mindestens',10],['storeys','mindestens',3],['grundriss','setze','I'],['annexN','setze',0],['arm','setze',0],['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },   // schmal und tief am Platz, der Laden unten
+      kaufhaus:{ zeile:'stein:kaufhaus', geschosse:[3,5], grundriss:['L','I'], raeume:[['laden','b',45,0,'eg','strasse'],['lager','b',20,0,'eg','fluegel'],['speicher','b',35,0,'og','kern'],['wohnen','p',20,20,'og','oben'],['keller','b',25,0,'keller','keller']], mass:[['annexN','setze',0],['arm','setze',0],['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },   // schmal und tief am Platz, der Laden unten
       kontor:{ zeile:'mittelmeer:fondaco', geschosse:[2,3], grundriss:['hof','U'], raeume:[['magazin','p',15,0,'eg','hof_umlauf'],['kontor','b',20,0,'eg','strasse'],['kammer','p',12,0,'og','hof_umlauf'],['hof','b',80,0,'eg','offen']], mass:[['arkade','setze',1],['arm','setze',0],['annexN','setze',0],['balcony','setze',0]] },   // der Hof der fremden Kaufleute (Fondaco): Bogengang, drei Geschosse
       zunfthaus:{ zeile:'fachwerk:zunfthaus', geschosse:[2,3], grundriss:['I','L'], raeume:[['wohnen','p',20,20,'eg','hinten'],['trinkstube','b',80,0,'og','strasse'],['kueche','b',20,0,'eg','hinten'],['keller','b',40,0,'keller','keller'],['herberge','s',4,0,'dach','dach',6]], mass:[['portikus','setze',1],['arm','setze',0],['annexN','setze',0]] },
-      pfarrhaus:{ mass:[['W','hoechstens',10],['W','mindestens',8],['storeys','setze',2],['grundriss','setze','I'],['arm','setze',0],['balcony','setze',0]] },
-      kapelle:{ mass:[['W','setze',7],['D','setze',8],['storeys','setze',1],['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['grundriss','setze','I'],['arm','setze',0],['turm','setze',0]] },
+      pfarrhaus:{ zeile:'sakral:pfarrhaus', geschosse:[2,2], grundriss:['I','L'], raeume:[['wohnen','p',20,20,'alle','kern'],['amtsstube','b',20,0,'eg','strasse'],['kueche','b',15,0,'eg','hinten']], mass:[['arm','setze',0],['balcony','setze',0]] },
+      kapelle:{ zeile:'sakral:kapelle', geschosse:[1,1], grundriss:['I'], personen:0, raeume:[['schiff','b',45,0,'eg','kern'],['chor','b',10,0,'eg','kern']], mass:[['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['arm','setze',0],['turm','setze',0]] },
       bergfried:{ zeile:'herrschaft:bergfried', geschosse:[6,9], grundriss:['I'], personen:2, raeume:[['verlies','b',25,0,'eg','turm'],['eingang','b',25,0,'og','turm'],['wachstube','b',25,0,'og','turm'],['wehrplatte','b',81,0,'dach','dach']], mass:[['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },   // der Turm des Herrn: fünf Geschosse unter dem Zinnenkranz
       torhaus:{ zeile:'herrschaft:stadttor', geschosse:[2,5], grundriss:['I'], personen:4, raeume:[['durchfahrt','b',28,0,'eg','kern'],['wachstube','b',15,0,'eg','anbau'],['zollstube','b',10,0,'eg','anbau'],['torkammer','b',28,0,'og','kern'],['wehrplatte','b',60,0,'dach','dach']], mass:[['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },
-      zeughaus:{ mass:[['W','setze',12],['D','setze',8],['storeys','setze',2],['turm','setze',0],['kuppel','setze',0]] },
-      werkstatt:{ mass:[['W','hoechstens',8],['storeys','hoechstens',2],['annexN','setze',1],['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },
+      zeughaus:{ zeile:'herrschaft:zeughaus', geschosse:[2,3], grundriss:['I','L'], personen:4, raeume:[['ruestkammer','b',80,0,'eg','kern'],['magazin','b',60,0,'og','kern'],['wache','b',15,0,'eg','strasse']], mass:[['turm','setze',0],['kuppel','setze',0]] },
+      werkstatt:{ zeile:'werk:werkstatt', geschosse:[1,3], grundriss:['hof','L','I'], raeume:[['werkraum','b',35,0,'eg','strasse'],['lager','b',12,0,'eg','fluegel'],['wohnen','p',20,20,'og','oben'],['schuppen','b',18,0,'eg','anbau'],['werkhof','b',24,0,'eg','offen']], mass:[['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },
       backhaus:{ zeile:'werk:backhaus', geschosse:[1,1], grundriss:['I'], personen:2, raeume:[['ofen','b',10,0,'eg','anbau'],['vorraum','b',15,0,'eg','kern'],['teigraum','b',8,0,'eg','kern']], mass:[['annexN','setze',0],['balcony','setze',0]] },
       speicher:{ zeile:'werk:speicher', geschosse:[3,6], grundriss:['I'], personen:0, raeume:[['schuettboden','b',95,0,'alle','kern']], mass:[['annexN','setze',0],['balcony','setze',0],['arm','setze',0]] },
       gerberei:{ zeile:'werk:gerberei', geschosse:[2,4], grundriss:['I','L'], raeume:[['wasserwerkstatt','b',30,0,'eg','kern'],['lohgrube','s',4,0,'eg','hinten',8],['trockenboden','b',60,0,'dach','laube'],['wohnen','p',20,20,'og','oben']], mass:[['veranda','setze',1],['balcony','setze',0]] },   // der Trockenboden vor der Wand
       wohnturm:{ zeile:'mittelmeer:turmhaus', geschosse:[3,6], grundriss:['I'], raeume:[['laden_lager','b',25,0,'eg','strasse'],['wohnen','p',20,20,'og','turm'],['kueche','b',12,0,'dach','oben']], mass:[['zinnen','setze',1],['annexN','setze',0],['balcony','setze',0],['keller','setze',0],['arm','setze',0],['turm','setze',0],['kuppel','setze',0]] },   // der Geschlechterturm: sechs Geschosse über sechs Metern im Geviert
-      patrizierhaus:{ zeile:'stein:stadtpalais', geschosse:[2,4], grundriss:['hof','U','L','I'], raeume:[['wohnen','p',20,20,'og','kern'],['sala','b',90,0,'og','strasse'],['kontor','b',80,0,'eg','strasse'],['hof','b',121,0,'eg','hof_umlauf'],['remise','s',5,0,'eg','hinten',4],['kueche','b',35,0,'eg','hinten'],['dienerkammer','s',8,0,'dach','dach',6],['treppe','b',40,0,'alle','kern']], mass:[['balcony','setze',1],['arm','setze',0]] },
+      patrizierhaus:{ zeile:'stein:stadtpalais', geschosse:[2,4], grundriss:['hof','U','L','I'], raeume:[['wohnen','p',20,20,'og','kern'],['sala','b',90,0,'og','strasse'],['kontor','b',80,0,'eg','strasse'],['hof','b',121,0,'eg','hof_umlauf'],['remise','s',5,0,'eg','fluegel',4],['kueche','b',35,0,'eg','fluegel'],['dienerkammer','s',8,0,'dach','dach',6],['treppe','b',40,0,'alle','kern']], mass:[['balcony','setze',1],['arm','setze',0]] },
+      // DIE BAUTEN VOR DER GRAMMATIK (w28-bau-rezept, das Schreiber-Ende): bis hier schrieb DORF sie als Literale nach dem Rezept —
+      // der Turm der Moderne (DOWNTOWN), die Halle des Gewerbes, die Kirche der Epoche, der Palas des Herrn, die Scheune des Hofs
+      turm:{ zeile:'moderne:buerohaus', geschosse:[8,23], grundriss:['I'], personen:60, raeume:[['buero','p',12,4,'og','kern'],['foyer','b',80,0,'eg','strasse'],['kern','s',30,0,'alle','kern']], mass:[['dachTyp','setze','flach'],['grundriss','setze','I'],['balcony','setze',0],['keller','setze',0],['annexN','setze',0],['arm','setze',0],['turmbau','setze',1]] },
+      halle:{ zeile:'werk:fabrikhalle', geschosse:[1,1], grundriss:['I'], personen:20, raeume:[['halle','b',110,0,'eg','kern'],['lager','b',30,0,'eg','kern'],['kontor','b',15,0,'eg','strasse']], mass:[['stil','setze','klinker'],['pitchDeg','setze',14],['grundriss','setze','I'],['balcony','setze',0],['annexN','setze',0],['arm','setze',1],['turmbau','setze',0]] },
+      kirche:{ zeile:'sakral:kirche', geschosse:[1,2], grundriss:['I'], personen:1, raeume:[['schiff','b',110,0,'eg','kern'],['chor','b',30,0,'eg','kern'],['sakristei','b',12,0,'eg','hinten']], mass:[['mark','setze',1],['keller','setze',0]] },   // der Turm der Kirche ist ihre Marke (markBei), kein Raum: ein Turm-Raum hebt ihn in die L2 als eigenen Draw
+      burg:{ zeile:'herrschaft:palas', geschosse:[3,3], grundriss:['I'], personen:12, raeume:[['saal','b',90,0,'og','kern'],['kammer','s',14,0,'og','kern',4],['kueche','b',30,0,'eg','hinten'],['wache','b',20,0,'eg','strasse']], mass:[['turm','setze',1],['zinnen','setze',1],['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['grundriss','setze','I'],['arm','setze',0]] },
+      scheune:{ zeile:'hof:scheune', geschosse:[1,1], grundriss:['I'], personen:0, raeume:[['tenne','b',14,0,'eg','kern'],['stall','b',8,0,'eg','kern']], mass:[['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['grundriss','setze','I']] },
     };
     // DIE NUTZUNG DES WOHN-LOSES (rahmen): die erste Zeile, deren Bedingungen alle treffen — das Hofhaus der Antike und des Südens,
     // wo der Haushalt es trägt (wohl ≥ 1), in der dichten Stadt das Reihenhaus, ab dem Baujahr 1850 das Mietshaus, sonst das Wohnhaus
@@ -2089,9 +2096,6 @@
     // DER HAUSHALT DES LOSES (das Datum, das der Bau liest — nicht mehr aus seiner Fläche zurückgerechnet): 1 bis 1 + 2,5·(1 + wohl)
     // Personen aus dem Samen des Hauses (ein eigener Strom: der Würfel des Plans zieht, was er zog)
     // prettier-ignore
-    // DER HOF IM LOS: der Hof liegt vor dem Haus (hof(): courtD = clamp(W, 5, 9) vor der Front) — ein früherer Bau steht im Los des
-    // jüngeren; trägt dessen Tiefe Haus und Hof nicht (und ist das Los kein Hof), stand dort ein Haus ohne Hof: die Passung kürzt nur W/D, nie den Hof
-    function hofImLos(v, los){ if(v.grundriss==='hof'&&los.grundriss!=='hof'&&v.D+Math.max(5,Math.min(9,v.W))>los.D) v.grundriss='I'; }
     function haushaltVon(seed, wohl){ const u=((Math.imul((seed>>>0)^0x5bd1e995,0x9E3779B1)>>>0)%10007)/10007, w=isFinite(wohl)?Math.max(0,wohl):1;
   return { personen:Math.max(1,Math.min(12,1+Math.floor(u*(2.5+2.5*w)))), wohl:w }; }
     // der Würfel der bauweise (die Streu-Folge pitch → W → D → st, byte-treu dem früheren Kultur-Rezept)
@@ -2122,6 +2126,9 @@
   if(N.mass) for(const o of N.mass){ if(!_bauWenn(o[3],hp,z.rahmen)) continue; const f=o[0], v=o[2];
     hp[f]= o[1]==='setze'?v : o[1]==='plus'?hp[f]+v : o[1]==='mindestens'?Math.max(hp[f],v) : Math.min(hp[f],v); }
   if(haushalt&&N.raeume) bauProgramm(N, hp, haushalt, z.rahmen||{}); else if(hp.programm) hp.programm=null;   // eine Nutzung ohne Programm baut ihr Maß über dem Los, nicht das Programm des Wohn-Loses
+  // DER DECKEL DES LOSES (`z.deckel`, das Schreiber-Ende in DORF): ein früherer Bau steht im Los des jüngeren — seine Maße enden an dessen
+  // Breite und Tiefe, sein Hof (vor der Front, courtD = clamp(W, 5, 9) wie hof()) steht nur, wo die Tiefe des Loses ihn trägt oder das Los selbst ein Hof ist
+  const dk=z.deckel; if(dk){ hp.W=Math.min(hp.W,dk.W); hp.D=Math.min(hp.D,dk.D); if(hp.grundriss==='hof'&&dk.grundriss!=='hof'&&hp.D+Math.max(5,Math.min(9,hp.W))>dk.D) hp.grundriss='I'; }
   hp.pitchDeg=Math.max(hp.pitchDeg, grenzNeigung(hp));   // die gebaute Neigung steht im Rezept (STIL_GRENZNEIGUNG), keine tote Zahl
   return hp;
 }
@@ -4260,7 +4267,7 @@
       const kulturVon=(regel,p)=> regel==='herr'?herrK : regel==='sakral'?sakral : (regel==='fern'&&fern.length)?fern[p.seed%fern.length] : null;
       const setze=(p,z,band,name)=>{ const k=z.kultur?kulturVon(z.kultur,p):null;
         if(k&&k!==p.kultur) Object.assign(p,bauRezept({bauweise:k},null,p.seed),{kultur:k});                // das Haus der Kultur der Zeile über demselben Samen
-        p.rolle=z.typ; p.viertel=name; bauRezept({nutzung:z.typ,rahmen:{region:o.region,band,dicht:true},los:p},haushaltVon(p.seed,p.wohl),p.seed); };   // die Zeile der Nutzung über dem Los, ihr Raumprogramm für den Haushalt des Loses
+        p.rolle=z.typ; p.viertel=name; };   // die Zeile der Nutzung schreibt das Schreiber-Ende in DORF (`bauRezept` zuletzt, auf dem endgültigen Los)
       const vonLos=new Array(n).fill('wohnen');
       for(const name of ['kirchhof','markt','handwerk']){ const [a,b]=V[name].lose(n); for(let i=a;i<Math.min(b,n);i++) vonLos[i]=name; }
       vonLos[0]='kirchhof';
@@ -4272,8 +4279,7 @@
             const key=name+band+zi, k=(zahl[key]=(zahl[key]||0)+1);
             if(z.n?k<=z.n:z.je?k%z.je===0:true){ zeile=z; break; } }
           for(const p of [p0].concat(fr[i].map(q=>q.v))){ if(bandVon(p.baujahr)!==band) continue;
-            if(zeile&&p.rolle==='wohnhaus') setze(p,zeile,band,name); else p.viertel=name; } }
-        for(const q of fr[i]){ q.v.W=Math.min(q.v.W,p0.W); q.v.D=Math.min(q.v.D,p0.D); hofImLos(q.v,p0); } }       // der frühere Bau steht im Los des jüngeren
+            if(zeile&&p.rolle==='wohnhaus') setze(p,zeile,band,name); else p.viertel=name; } } }
       const neu=[], palas=o.burg>=0?geb[o.burg]:null, band=palas?bandVon(palas.baujahr):null;
       if(band){ palas.viertel='burg';
         for(const z of V.burg.bauten[band]){ const bs=1+((o.rv()*1e6)|0), bp=bauRezept({bauweise:herrK},null,bs);
@@ -4328,47 +4334,52 @@
     p.arm=(n>=16&&w<0.72)?1:0;
     p.balcony=(w>0.95&&p.storeys>=2&&rnd()<0.5)?1:0;
     if(i>0){ const g2=rnd(); p.grundriss=(g2<(staedtisch?0.85:0.68))?'I':((g2<0.9)?'L':p.grundriss); }
-    const rw={region, dicht:staedtisch};                                                       /*DAS BAU-GESETZ (w28-bau-rezept): der Haushalt des Loses legt das Raumprogramm seiner Nutzung (BAU_WOHNEN) auf die Parzelle — Geschosse, Fuss, Grundriss, Anbau folgen aus Personen und Wohlstand, die Wuerfel oben bleiben der Strom (Keller, Umbau, Laube)*/
-    p.parzelle={W:p.W, D:p.D, storeys:p.storeys}; bauRezept({nutzung:wohnNutzung(p,rw),rahmen:rw,los:p},haushaltVon(hs,p.wohl),hs);
-    if(by!==gr[i]){ const P0=poolAt(gr[i], ringe), k0=P0[hs%P0.length], v=Object.assign({}, p, bauRezept({bauweise:k0},null,hs), {kultur:k0, baujahr:gr[i]}); bauRezept({nutzung:wohnNutzung(v,rw),rahmen:rw,los:v},haushaltVon(hs,v.wohl),hs); fr[i].push({ab:gr[i], v}); }
+    if(by!==gr[i]){ const P0=poolAt(gr[i], ringe), k0=P0[hs%P0.length]; fr[i].push({ab:gr[i], v:Object.assign({}, p, bauRezept({bauweise:k0},null,hs), {kultur:k0, baujahr:gr[i]})}); }
     geb.push(p); }
   const modern=(jahr>=1905&&staedtisch), gewerbe=(jahr>=1850&&staedtisch&&n>=20), gwA=rnd()*Math.PI*2;
   if(modern){ for(let i=0;i<n;i++){ if(i>0&&i<n*0.22&&rnd()<0.72){ const p=geb[i];      // DOWNTOWN-GESETZ: der Kern wächst in den Himmel — als NEUBAU des alten Loses im Jahrhundert der Moderne (der alte Bau bleibt in fr)
     const ty=Math.min(jahr+spanne, Math.max(1905+p.seed%Math.max(1,jahr+spanne-1904), p.baujahr+1)), PT=poolAt(ty, ringe);
     fr[i].push({ab:p.baujahr, v:Object.assign({}, p)}); p.baujahr=ty; p.kultur=PT[p.seed%PT.length];
-    p.stil=(rnd()<0.62)?'glas':'klinker'; p.storeys=8+((rnd()*16)|0); p.W=12+((rnd()*6)|0); p.D=10+((rnd()*5)|0);
-    p.dachTyp='flach'; p.grundriss='I'; p.balcony=0; p.keller=0; p.annexN=0; p.arm=0; p.turmbau=1; p.rolle='turm'; p.programm=null; } } }
+    p.stil=(rnd()<0.62)?'glas':'klinker'; p.storeys=8+((rnd()*16)|0); p.W=12+((rnd()*6)|0); p.D=10+((rnd()*5)|0); p.rolle='turm'; } } }   // das Los des Turms; seine Form ist die Zeile `turm` am Schreiber-Ende
   if(gewerbe){ for(let i=(n*0.78)|0;i<n;i++){ if(rnd()<0.6&&gr[i]>=1850){ const p=geb[i];   // GEWERBE-GESETZ: Hallen-Viertel am Rand (ein Los, das vor 1850 gegruendet ist, traegt keine Halle)
-    p.rolle='halle'; p.stil='klinker'; p.W=12+((rnd()*4)|0); p.D=9+((rnd()*4)|0); p.storeys=1;
-    p.pitchDeg=14; p.grundriss='I'; p.balcony=0; p.annexN=0; p.arm=1; p.sektor=gwA; p.turmbau=0; p.programm=null; } } }
+    p.rolle='halle'; p.W=12+((rnd()*4)|0); p.D=9+((rnd()*4)|0); p.storeys=1; p.sektor=gwA; } } }   // das Los der Halle; ihre Form ist die Zeile `halle` am Schreiber-Ende
   const markBei=(L,y)=>(L&&L.mark)?L.mark:(region==='mediterran'?{k:'barock',set:{kuppel:1,W:14,D:11}}:region==='fernost'?{k:'chinesisch',set:{W:15,D:11}}:region==='antik'?{k:'roemisch',set:{arkade:1,W:15,D:11}}:region==='nordisch'?{k:'norwegisch',set:{turm:1,D:10}}:region==='alpin'?{k:'gotisch',set:{turm:1,D:9,W:7}}:(y>1880?{k:'hochhaus',set:{}}:y>1620?{k:'barock',set:{kuppel:1,W:13,D:11}}:{k:'gotisch',set:{turm:1,D:11}}));
-  const kirche=(p,mk,ab)=>Object.assign(p,bauRezept({bauweise:mk.k},null,p.seed),{kultur:mk.k},mk.set||{},{rolle:'kirche',mark:1,keller:0,baujahr:ab,programm:null});
+  const kirche=(p,mk,ab)=>Object.assign(p,bauRezept({bauweise:mk.k},null,p.seed),{kultur:mk.k},mk.set||{},{rolle:'kirche',baujahr:ab});   // das Los der Kirche (die Marke ihrer Epoche); ihre Form ist die Zeile `kirche` am Schreiber-Ende
   if(n>=8){ const p=geb[0];                                                                   /*DIE KIRCHE DER EPOCHE: je Epoche der Achse vor der Gegenwart ein Bau ihrer Marke (ab der Mitte ihrer Spanne, die erste ab der Gruendung)*/
     if(ringe) fr[0]=achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr).map((k,j)=>{ const E=EPOCHEN[k], ab=j?E.jahr+d+((E.spanne/2)|0):gr[0]; return {ab, v:kirche(Object.assign({},p),markBei(E,E.jahr+d),ab)}; }).filter(f=>f.ab<jahr);
     kirche(p,markBei(leg,jahr),jahr); }
   const losBauten=i=>[geb[i]].concat(fr[i].map(f=>f.v));                                      /*der Bau-Typ ist die Rolle des LOSES: jeder seiner Bauten traegt sie*/
-  const SG=STADT_GRAMMATIK, GO={region, jahr, dicht:staedtisch};
-  for(const z of SG.grund) if(n>=z.ab) for(const p of losBauten(z.los(n))){ p.rolle=z.typ; bauRezept({nutzung:z.typ,rahmen:GO,los:p},haushaltVon(p.seed,p.wohl),p.seed); }   /*DER GRUND-SATZ (das SONDERBAU-GESETZ als Zeilen der Tafel): Gasthaus und Schmiede jedes Orts*/
+  const SG=STADT_GRAMMATIK;
+  for(const z of SG.grund) if(n>=z.ab) for(const p of losBauten(z.los(n))) p.rolle=z.typ;   /*DER GRUND-SATZ (das SONDERBAU-GESETZ als Zeilen der Tafel): Gasthaus und Schmiede jedes Orts*/
   const grammatik=staedtisch&&SG.zeit.some(z=>jahr>=z[1]&&jahr<z[2]);                        /*DIE STADT DER GRAMMATIK: staedtisch, ihre Gestalt in einem Band der Tafel (`zeit`) — die Chronik-Stadt steht in der Gegenwart, Antike und Moderne tragen keine Zeile: sie bleiben, was sie waren*/
   const herrBar=staedtisch&&jahr<1700&&n>=16, muenze=herrBar&&rnd()<0.5, herr=muenze||(herrBar&&grammatik&&n>=SG.herrAb), burgAb=geb.length;   /*BURG-GESETZ: die Stadt hat einen Herrn — in der Grammatik ab `herrAb` Losen jede (die Muenze faellt wie bisher; ein Herr ohne Muenze zaehlt nicht in das Mass der Gestalt, `nGestalt`)*/
   if(herr){
     const bk=(region==='nordisch')?'norwegisch':'gotisch', bs=1+((rnd()*1e6)|0);
     const bp=bauRezept({bauweise:bk},null,bs); Object.assign(bp,{seed:bs,kultur:bk,terrain:0,baujahr:jahr-((rnd()*80)|0),rolle:'burg',wohl:1.2,
-      W:13+((rnd()*2)|0), D:11, storeys:3, turm:1, zinnen:1, keller:0, annexN:0, balcony:0, grundriss:'I', arm:0});
+      W:13+((rnd()*2)|0), D:11, storeys:3});   // das Los des Palas; seine Form ist die Zeile `burg` am Schreiber-Ende
     geb.push(bp); }
   const alle=[], za=[], schQ={weiler:.75,dorf:.55,markt:.28,stadt:.06,grossstadt:.04,metropole:.03}[groesse];
-  geb.forEach((p,gi)=>{ const pi=alle.length; alle.push(p); za.push({gr:gi<n?gr[gi]:p.baujahr, fr:(fr[gi]||[]).map(f=>(f.v.W=Math.min(f.v.W,p.W), f.v.D=Math.min(f.v.D,p.D), hofImLos(f.v,p), f))});   /*der fruehere Bau steht im Los des juengeren — sein Hof nur, wo das Los die Tiefe des Hofs traegt*/
+  geb.forEach((p,gi)=>{ const pi=alle.length; alle.push(p); za.push({gr:gi<n?gr[gi]:p.baujahr, fr:fr[gi]||[]});   /*der fruehere Bau steht im Los des juengeren: sein Deckel ist das Los am Schreiber-Ende*/
     if(p.rolle==='wohnhaus'&&Math.min(p.W,p.D)>=6.5&&rnd()<schQ){
       const cap2=Math.min(7,Math.min(p.W,p.D)-2), sn=1+((rnd()*1e6)|0);
       alle.push({W:Math.max(4,Math.round((cap2-rnd()*1.5)*2)/2), D:Math.max(4,Math.round((cap2-0.5-rnd()*1.5)*2)/2), storeys:1,
         pitchDeg:Math.max(28,p.pitchDeg-6), brace:'k', stil:(region==='mediterran'||region==='antik')?'stein':'huette',
-        hip:0, roofCurve:0, grundriss:'I', dachTyp:'sattel', bogenTyp:'none', seed:sn, kultur:p.kultur, col:p.col,
-        keller:0, terrain:0, annexN:0, balcony:0, rolle:'scheune', parent:pi, baujahr:za[pi].gr, wohl:p.wohl,
+        hip:0, roofCurve:0, dachTyp:'sattel', bogenTyp:'none', seed:sn, kultur:p.kultur, col:p.col,
+        terrain:0, rolle:'scheune', parent:pi, baujahr:za[pi].gr, wohl:p.wohl,   // das Los der Scheune; ihre Form ist die Zeile `scheune` am Schreiber-Ende
         treppgiebel:0,kuppel:0,portikus:0,arkade:0,turm:0,zinnen:0,veranda:0,vorkragung:0,pilotis:0,terrasse:0}); za.push({gr:za[pi].gr, fr:[]}); } });
   /*DIE VIERTEL DER STADT (STADT_GRAMMATIK, nach den Scheunen: der Strom des Plans `rnd` zieht, was er vor der Grammatik zog — sie wuerfelt aus eigener Saat): je Los sein Viertel, je Bau des Loses der Bau-Typ seiner Epoche; das Burg-Viertel stellt seine Lose hinter den Palas. `nBurg` Lose mehr als das alte Mass: Mauer und Netz wachsen mit den Haeusern (`nGestalt`), nicht mit den Tuermen des Herrn*/
   let sv=((Math.round((DP.seed||1)*827+53)*2654435761)>>>0); const rv=()=>{ sv=(sv*1664525+1013904223)>>>0; return sv/4294967296; };
   const nBurg=grammatik?stadtViertel(geb, fr, n, {region, jahr, burg:herr?burgAb:-1, poolAt:y=>poolAt(y, ringe), rv}).map(p=>{ alle.push(p); za.push({gr:p.baujahr, fr:[]}); }).length:0;
   for(const a of alle) if(a.rolle==='scheune'&&alle[a.parent].viertel) a.viertel=alle[a.parent].viertel;   /*die Scheune steht im Viertel ihres Hofs*/
+  /*DAS SCHREIBER-ENDE (w28-bau-rezept): jeder Schreiber oben setzt nur das Los (Mass, Kultur, Jahr, Rolle) — hier schreibt das Bau-Gesetz
+    jeden Bau EINMAL, zuletzt, auf seinem endgueltigen Los: die Zeile seiner Rolle (das Wohn-Los die Zeile seines Rahmens, BAU_WOHNEN), ihr
+    Raumprogramm fuer den Haushalt des Loses (`haushaltVon`); ein frueherer Bau unter dem Deckel des Loses, das ihn ersetzt, die Scheune unter
+    ihrem eigenen. Eine Rolle ohne Zeile wirft beim Namen (`bauRezept`)*/
+  const bandVon=y=>{ for(const z of SG.zeit) if(y>=z[1]&&y<z[2]) return z[0]; return null; };
+  const schreibe=(b,deckel)=>{ const rr={region, jahr, band:bandVon(b.baujahr), dicht:staedtisch};
+    b.parzelle={W:b.W, D:b.D, storeys:b.storeys};
+    bauRezept({nutzung:b.rolle==='wohnhaus'?wohnNutzung(b,rr):b.rolle, rahmen:rr, los:b, deckel:deckel||(b.rolle==='scheune'?b.parzelle:null)}, haushaltVon(b.seed,b.wohl), b.seed); };
+  alle.forEach((b,ai)=>{ schreibe(b,null); for(const f of za[ai].fr) schreibe(f.v,b); });
   const zugHandwerk=rv()*Math.PI*2;                                                         /*die Seite der Stadt, an der ihr Handwerk liegt (dorfLayout `zug`)*/
   /*DER GRUNDRISS WAECHST MIT DEN GESCHOSSEN (STADT_FORM, nach allen Rollen: Kirche, Burg und die Bau-Typen der Viertel setzen ihre Masse selbst — ihr Fuss folgt ihrer Hoehe wie der jedes Hauses): Breite und Tiefe tragen die Traufe / `schlank`, die Breite bis `breitMax` (das Raster der Plaetze), die Tiefe bis `tiefMax` (der Block hinter der Strasse); der Turm der Moderne bleibt ein Turm. Bis hier wuchs im Viertel nur die Hoehe: der Kern stand als Staebe (Traufe / Tiefe 2,6 im Median, 156 von 205 Haeusern ueber 2)*/
   if(DP.erbe&&DP.erbe.hoch>0) for(const v of alle){ if(v.turmbau||!(v.W>0)||!(v.D>0)) continue;
