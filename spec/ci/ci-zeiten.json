@@ -18,6 +18,8 @@
     "TODO/FIXME-Übersicht (Hinweis, kein Fail)": {"s": 0, "n": 7},
     "Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core buildInstance byte-eingefroren)": {"s": 2, "n": 7},
     "Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)": {"s": 1, "n": 7},
+    "Charakterzüge ändern den Tag (mensch.geist.absicht — 100 Bewohner, blind ihrem Zug zugeordnet ≥ 0,6)": {"s": 29, "n": 1},
+    "Knicken nach Euler (same.physik.tragen — Versagens-Last am Gesetz ±20 %, E/2 knickt früher)": {"s": 13, "n": 1},
     "Schnell-Playtest (Kern-Gesundheit, ~13 Checks)": {"s": 13, "n": 7},
     "Ein Urteil je Kopf (trägt ein anderer Lauf diesen Kopf schon grün durch die volle Batterie?)": {"s": 8, "n": 7},
     "Voller Playtest (~5340 Invarianten — das Verdikt „Alle Invarianten OK\")": {"s": 94, "n": 7},
