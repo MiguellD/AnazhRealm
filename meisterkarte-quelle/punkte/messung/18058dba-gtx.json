@@ -1,7 +1,7 @@
 {
  "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
  "geraet": "gtx",
- "zeit": "2026-11-18T19:39:30.472Z",
+ "zeit": "2026-11-18T19:45:46.960Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -1391,6 +1391,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.menge.bild#1": {
+   "gruen": true,
+   "zahl": "25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 24.9 fps · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.5,
+   "gpu": "nvidia/pascal",
+   "konsum": "k8ebd04e4196a",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kab33b81529ee",
+   "s": 89.4,
+   "fremd": {
+    "s": 94.4,
+    "takte": 43,
+    "fremdS": 22.02,
+    "kerne": 0.233,
+    "fensterKerne": 0.416,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.36
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.06
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.92
+     ]
+    ],
+    "dienerS": 29.8,
+    "diener": [
+     [
+      "dwm.exe",
+      14.91
+     ],
+     [
+      "System",
+      9.91
+     ]
+    ],
+    "geraetS": 23.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.2
+     ],
+     [
+      "svchost.exe",
+      8.77
+     ],
+     [
+      "SearchIndexer.exe",
+      0.77
+     ]
+    ],
+    "eigenS": 304.14,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T19:45:46.960Z",
+   "abdruck": "b5efe0b032a4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1413,7 +1482,8 @@
   "k8413a18d2d24": "dVTBjpswEP2XHNuykwS8GEt7cMJKWalVs6eex2YMJAQimyzdVP33ChKSBbZzM3rP8+bNM39mR9R7TOlh56pyJmZfZt9mDt/Ic2TfyD7s3EzM5jpAxoW8FEgp1y1M2/xYOyhyBahKzA7knWxNefGgO9pCc0IS0DzLZguwhRBWzdPTmFooSiqvRkM9USXL0EcxBp5cioo8PJmu2RXMgkXgMwFd8Vhud9DXqpESmudxR4VlMlRqfGRmIV7epXyWE4VJjlR7RV66vqdOmPKX4tZoOlVisfHOSFlBtm/CTBCFvVAJGy6bbQQjoilOzg2acT9hSy4AJtiUXK6z2jvaSlHZmxctwwWKT5xOjyfPfFSESiFXY58zpDIlO9QQBkwHAn7z8aV7PJBFr8TsCo3mfrhUd28AYDPVUnTCuxa9cJ6oKDQDIgDITdOGLubtIb195ptLGONU3ut11MTpLLeHoT3GsATn4vtUksswIevtK1ffNQWI1Cc/BvkqpdwG8Zh5H+bKW6rHOeMfZuEgNxPvXGXqBi156fF0JVJALGRCypcJuMbDoR9CL4mz8eJc3Qb7owwW0OKxi1z6nz1cnoF3przoSaHWC5/EWsrxnG8WDx6q1ObG9NtWTJvos3A2VNSeqqq6R/oJ+lqAD+XNlYi3vq7uG4ybSv96Txs5qnSsu7u9svVtUvU4N4Ewb+1r1BN0bmuvQZ3d9mMUYSt7spMz2YJSGtiYBMrHREBjLrLPXMpteH365usgr+fpjTm1Bpfu5PpURWESXZM+XElDdq+w3PcymfLZoovf6qe8RH5dRjHEsB14tJZRe17HnaHyh1zJlxh218uPpOFoK5O3fz7I8OQyLOr7L//vPw==",
   "k42b888e6f428": "dVTRbqMwEPyXPLbnOgFcwFIfnBCpka5S7hPWZg00BJBtyl1O9++nkJAGaPcJidnd2dnx/l00oA6Q4dO7rasFXzwsfiwsfCCxaD7QPL3bBV8sVQAs4uISVAixOcOUKRpnaVlICrKC/IikNQ6L8kn1aSsVISCn3VZ0e0r3NKTrTtxiLV5epmVKiWlNHGgcisjUC33gU2BrM5BIoNV94yv4YQKTUKVjTtoHpld890eI7bx/WgA6UhaVHSqqlEnf43SIbp5joCMnwLxEMzRhOojDa1LUD9vtYzpJ1GVr7ahZ5KfMizilM2yGtlC5I42pJVaDNLEXroCv55yypiX6nhFICZGcqpgDVhmaMYcwYCrg9Hc0LXqAIxogFeRXaLz0Q09+akMpfZ1zKXvifYvqmzVZlRfmOB5Oa5bCkv+cF7Q5pGjIobbuho4CABwcmlDxSwixD5Jp5ieVa54nn5csuhshouJ1NrmttevAIMma9pqIAbKQcSF2M7CD43EYQnkYsans1p1teU+DBbh67g2TfaPixcTkhEU5JIVKrXzkmzcxnfPDwJGAzEyh9bAryZSOv7JWh6Ujsq7dgPRT8NWZS3VTJY4uD/YWSVer7Sb7JcaxNpmYc+871MbdppXPSx1w3b8nNUMXxpEOVH7bkZYIMf8CekJTYoYjKdNA+pCe0Xdsg+Hj8d6s9DTb9KnAs8iVbe3grDhMY31xyPV47caHo0NzkFAdBrpM+mzFE5Fk9HH7em28TGhC9929WBuhOyF2m3U00vBNiExs+wYNKqrBSKQOMmJQj670+W9jal2crxzNobU5lO4T8u8/",
   "kd6b11b3624bf": "jVTBjpswEP2XHNt6nQS8GEt7cJao2UqrZk9Vj2MzBjYEIhuWNlX/vVoSJwFaqXNK0My8N2+e59fsAHoHGd69urqaidmH2aeZgzckDu0b2rtXNxOzuQ6BcSFPQaWUn9/TtC0OjaNloSioCvI9ktY2WJR3ui9baI6AgnZr2W0p3dKIrjp5iZV8eBi3KRWmNWnAoG+i0mUUgBgnti4DhQRa0wOfk1m4CAMmaB88kdtX6kO+SEm79RhRQZUOWZsAmFmIp07K9ZRhWgA2pCwq5zF1ylSwFBegblpjoSNHwLxE60GYCePIE+3l6LYxHRWasnVuAMaDlC25oHSSm6ErdN6Qg60VVl68eBktQKymnLJDS8wtI1AKuBrrnANWGdohhyhkOhT0Bx833cEeLZAK8nNqPA+ipbpqQyndTLmUPfEewhPnqYojMyiklGab3j4J7/9cPvPNyVBJdjWXfBmBOJ0Xdj+UxxiWwnw8s8shRUt2tWuufEIA9C8g6c0kt2EyrrwOcq5bqvs54zdzcCo3E91cbZoOLJLs0J4LMUQWMSGz50lyA/u9H0AvkbPJAM27qW9psBAX973dsn/s4PQEyBGL0hdFWi8CFI/Pcjznm4U9AZXZwhi/acW0if9mzA7Lhqi6bnxmkEKgBQ1odVEl5lJ+l6vL8h6TY82//dz9uN2olPJLPebdd69tc5lU3c9NKEz/EvUku7AN6UDnl/0YhRCPBTyiLTHDgYRpqAJIBe30lU4S+h8fBz49TjZ8LPBd3Mq1zjsqjtL47PDzUXwanpsO7U5BtfNUmQrYQvQ2/yo38lmu5OMmTjr5f7E+3b4DanqwtSneLx/NoXU5lM31/P/+Aw==",
-  "k71e42b853288": "dVTRjpswEPyXPLb1OQn4AEv34IRIV6lSc5+wttfAhUBkQ2hT9d8ruDgJcN0nQDPe2dkxfxYnUAfI8Ond1dWCL74svi0cnJE4tGe0T+9uwRdLFQKLufgoKoTY9jBli1PjaFlICrKC/IiktQ0W5ZMaaCsVIyCn3U50e0r3NKKb7uVlSi0l6po0YNATpV5HAfApsHUZSCTQmqHZFczCVRgwToeKU7F/p77EmxC02007Sqj0WKkJgJkV//5biJ2YKdQFYEPKonK+p9JMBmt+azSfSlvoyAUwL9H6JsyESeSFDlZ2+4ROiKZsnRs1iwPN1jGndIbN0BUqb8jJ1hIrb16yjlbAP3E6O7XEPCoCKSGWU59zwCpDO9YQhUyFnP6Kp4ce4IgWSAX5FZosg2gt795QSl/nWspB+NDCC4+1TCIzIvY7fO16p9K4f8lun+PXjzCmmbjX26SJU3lhj2N7jGEalvzHXJLLQaMlh9o1d00hAPrkp0OgxD5Mp8z7MFfeWj4vWfwwS0zF68w7V5umA4skO7VXIobIIsaF+D4DN3A8+iHUGmM2XZxr+mA/ymAhrp6HyGX/2cPHNSAXLEpPipRaBTg9/GzhSEBmtjDGb1oyZZLPgtlh2RBZ141HBhoCxWlAq5sjyXAFNvftpV2tdtvsTUwqm2oeTq9tc5tSPi9NyM25v4lqhi5sQzpQ+W03RiIk/BPoBW2JGY4s1KEMQPfoB6Whf/g6yupltuFLgb25lWudT1QS6eSa8vE6OrQHCdXBy2QyYKshepufwsd9mdKU7rtHf7ZC9+/bTdwfdkJFT7Y2Rf+Xozm0Loeyuf/e//4D"
+  "k71e42b853288": "dVTRjpswEPyXPLb1OQn4AEv34IRIV6lSc5+wttfAhUBkQ2hT9d8ruDgJcN0nQDPe2dkxfxYnUAfI8Ond1dWCL74svi0cnJE4tGe0T+9uwRdLFQKLufgoKoTY9jBli1PjaFlICrKC/IiktQ0W5ZMaaCsVIyCn3U50e0r3NKKb7uVlSi0l6po0YNATpV5HAfApsHUZSCTQmqHZFczCVRgwToeKU7F/p77EmxC02007Sqj0WKkJgJkV//5biJ2YKdQFYEPKonK+p9JMBmt+azSfSlvoyAUwL9H6JsyESeSFDlZ2+4ROiKZsnRs1iwPN1jGndIbN0BUqb8jJ1hIrb16yjlbAP3E6O7XEPCoCKSGWU59zwCpDO9YQhUyFnP6Kp4ce4IgWSAX5FZosg2gt795QSl/nWspB+NDCC4+1TCIzIvY7fO16p9K4f8lun+PXjzCmmbjX26SJU3lhj2N7jGEalvzHXJLLQaMlh9o1d00hAPrkp0OgxD5Mp8z7MFfeWj4vWfwwS0zF68w7V5umA4skO7VXIobIIsaF+D4DN3A8+iHUGmM2XZxr+mA/ymAhrp6HyGX/2cPHNSAXLEpPipRaBTg9/GzhSEBmtjDGb1oyZZLPgtlh2RBZ141HBhoCxWlAq5sjyXAFNvftpV2tdtvsTUwqm2oeTq9tc5tSPi9NyM25v4lqhi5sQzpQ+W03RiIk/BPoBW2JGY4s1KEMQPfoB6Whf/g6yupltuFLgb25lWudT1QS6eSa8vE6OrQHCdXBy2QyYKshepufwsd9mdKU7rtHf7ZC9+/bTdwfdkJFT7Y2Rf+Xozm0Loeyuf/e//4D",
+  "kab33b81529ee": "jVTBjpswEP2XHNt6nQS8gKU9OEvUbKXVZk9Vj2MzBjYEIhuWbar+exUSkwCt1DklaGbemzfP82t2ALWDFO/ebFXO+OzT7MvMwjsSi+Ydzd2bnfHZXPnAQi7OQYUQX09pyuSH2tIilxRkCdkeSWNqzIs71ZUtVIiAnLZr0W4p3dKArlrRx0o8PIzbFBKTitSg0TWRyTLwgI8TG5uCRAKN7oAvycxf+B7jtIswFts36kK8CkHb9RhRQpkMWWsPmF7wp1aI9ZRhkgPWpMhL6zBVwqS35D1QO60x0JIjYFagcSBM+1HgiHZytNuIjgp10Vg7AAu9hC1DTukkN0Wbq6wmB1NJLJ140TJYAF9NOaWHhuhbRiAlhHKscwZYpmiGHAKfKZ/Tj3DcdAd7NEBKyC6p0dwLlvKqDaV0M+VSdMQ7CEc8TGQU6EEhpTTddPaJw+5P/zncnA0Vp1dzidcRiFVZbvZDebRmCczHM9sMEjRkV9n6yscHQPcC4s5MYuvH48rrIJe6pbyfs/BmjpCKzUQ3W+m6BYMkPTSXQvSRBYyL9HmSXMN+7wZQSwzZZID6ZOpbGszHxX1nt/QfOzg/AXLEvHBFgVILD/njsxjP+W5gT0CmJtfabVoypaO/GbPFoiayqmqX6SXgKU49WvaqRKEQP8SqX95LfKzC7z93H7cbFUJ8q8a8u+6VqftJ5f1c+1x3L1FNsnNTkxZU1u9HS4RoLOARTYEpDiRMfOlBwmmrrnRi3/34PPDpcbLhY44ncUvbWOeoKEiii8MvR/FpeG5aNDsJ5c5RZdJjC97Z/EVsxLNYicdNFLfi/2J9vn0HVPRgKp2fLh/NoLEZFPX1/P/+Aw=="
  },
  "ungemessen": {
   "karte2.same.preis.zugang#1": {
@@ -2142,20 +2212,20 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-18T19:39:01.362Z",
-  "ordner": "sitzung-20261118-203901",
+  "start": "2026-11-18T19:45:18.726Z",
+  "ordner": "sitzung-20261118-204518",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.8,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "genesis",
-    "vor": "karte2.mensch.bau.innen#1",
-    "s": 21.2,
-    "takte": 617,
+    "vor": "karte2.mensch.menge.bild#1",
+    "s": 19.9,
+    "takte": 600,
     "chunks": 81,
     "nach": null
    }
@@ -2163,34 +2233,120 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.mensch.bau.innen#1",
+    "probe": "karte2.mensch.menge.bild#1",
     "anders": [
-     "r._tickNahWiese",
-     "window.__ortSchritt"
+     "window.r",
+     "window.st",
+     "window.pm",
+     "window.halt",
+     "window.__handTakt",
+     "window.aufsteigend",
+     "window.addiere",
+     "window.rang",
+     "window.__uebergangFaellt",
+     "window.rahmen",
+     "window.__png",
+     "window.__bundlesNeu",
+     "window.sleep",
+     "window.leihe",
+     "window.__fremd",
+     "window.__loopBild",
+     "window.__zielLesen",
+     "window.__pufferLesen",
+     "window.jsonKlon",
+     "window.fehlerText",
+     "window.fehlerStapel",
+     "window.__seitenTakt",
+     "window.__bedienung2",
+     "window.__takte",
+     "window.__streuTakte",
+     "window.__bildAus",
+     "window.__eichMs",
+     "window.__weltStehtNach",
+     "window.__gebautNach",
+     "window.__deckel",
+     "window.__weltDa",
+     "window.__abdruck",
+     "window.__farben",
+     "window.__lin",
+     "window.__stand",
+     "window.__standJson",
+     "window.__werkPutz",
+     "window.__bautenLeer",
+     "window.__bautenSeit",
+     "window.__peersWeg",
+     "window.__rufe",
+     "window.__ortSchritt",
+     "window.__codeOf",
+     "window.__dokuOf",
+     "window.__fehlt"
     ],
     "wie": {
-     "r._tickNahWiese": "neu: _tickNahWiese(deadline) { const st = this.state; if (!st.scene || !st.camera || ",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.r": "getauscht: () => window.anazhRealm",
+     "window.st": "getauscht: () => window.anazhRealm && window.anazhRealm.state",
+     "window.pm": "getauscht: () => st && st.playerMesh",
+     "window.halt": "getauscht: () => st && st.verbTafel.gehalten",
+     "window.__handTakt": "getauscht: function handTakt() { try { r._gameLoopTick(performance.now()); } catch (e) { r.",
+     "window.aufsteigend": "getauscht: (a, b) => a - b",
+     "window.addiere": "getauscht: (a, b) => a + b",
+     "window.rang": "getauscht: (s, q = 0.5) => s[Math.min(s.length - 1, Math.floor(q * s.length))]",
+     "window.__uebergangFaellt": "getauscht: function uebergangFaellt(r) { r.state.weatherTransition = null; r.requestWeather",
+     "window.rahmen": "getauscht: (b) => b.obb || { cx: (b.minX + b.maxX) / 2, cz: (b.minZ + b.maxZ) / 2, c: 1, s:",
+     "window.__png": "getauscht: function png(u8, W, H) { const cv = Object.assign(document.createElement(\"canvas",
+     "window.__bundlesNeu": "getauscht: () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true))",
+     "window.sleep": "getauscht: (ms) => { const e = globalThis.__abbruchEpoche; return new Promise((r, f) => set",
+     "window.leihe": "getauscht: function leihe(o, tausch) { const alt = Object.keys(tausch).map((k) => [k, Objec",
+     "window.__fremd": "getauscht: async function fremd() { const { privateKey: k } = await crypto.subtle.generateK",
+     "window.__loopBild": "getauscht: function loopBild() { st.renderer._nodes?.nodeFrame?.update(); r._loopRender(); ",
+     "window.__zielLesen": "getauscht: async function zielLesen(ziel, W, H, renderer = st.renderer) { const px = await ",
+     "window.__pufferLesen": "getauscht: function pufferLesen(puffer, wer, renderer = st.renderer) { const q = puffer?.is",
+     "window.jsonKlon": "getauscht: (x) => JSON.parse(JSON.stringify(x))",
+     "window.fehlerText": "getauscht: (e) => e?.message || String(e)",
+     "window.fehlerStapel": "getauscht: (e) => e?.stack || String(e)",
+     "window.__seitenTakt": "getauscht: async function seitenTakt() { const vor = r._weltStand ? r._weltStand.takte : -1",
+     "window.__bedienung2": "getauscht: async function bedienung2(vor) { const taste = (code, art) => window.dispatchEve",
+     "window.__takte": "getauscht: async function takte(n, ms) { for (let i = 0; i < n; i++) { __handTakt(); await ",
+     "window.__streuTakte": "getauscht: async function streuTakte(n, ms) { for (let i = 0; i < n; i++) { st._frameOverBu",
+     "window.__bildAus": "getauscht: function bildAus() { if (st.renderer) { st.renderer.render = function () {}; if ",
+     "window.__eichMs": "getauscht: function eichMs(n) { const a = eichMs.puffer || (eichMs.puffer = new Float64Arra",
+     "window.__weltStehtNach": "getauscht: async function weltStehtNach(takt, max) { const W = () => r._weltStand || {}; co",
+     "window.__gebautNach": "getauscht: async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) { co",
+     "window.__deckel": "getauscht: function deckel(name, max, offen) { let n = 0, k = 0, still = 0, vor = \"\"; retur",
+     "window.__weltDa": "getauscht: async function weltDa(bed) { window.__weltDaWartet = bed ? String(bed).replace(/",
+     "window.__abdruck": "getauscht: function abdruck(x, alle) { let [h, n] = [0x811c9dc5, 0]; const ein = (a) => { c",
+     "window.__farben": "getauscht: function farben(g) { const set = new Set(); g?.traverse((o) => { const c = o.geo",
+     "window.__lin": "getauscht: (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255] .map((c) => Math.f16round(",
+     "window.__stand": "getauscht: async function stand() { await r._speicherStill(); return (await r._idbGetWorld(",
+     "window.__standJson": "getauscht: async function standJson() { const roh = await window.__stand(); try { return JS",
+     "window.__werkPutz": "getauscht: function werkPutz() { r.closeAllDrawers(); st.yaw = 0; if (st.playerMesh) st.pla",
+     "window.__bautenLeer": "getauscht: function bautenLeer() { r._bautenLeeren(); }",
+     "window.__bautenSeit": "getauscht: function bautenSeit() { const vor = new Set(st.architectures); return () => st.a",
+     "window.__peersWeg": "getauscht: function peersWeg() { for (const pid of Array.from(st.p2p.peers.keys())) r._p2pR",
+     "window.__rufe": "getauscht: function rufe(wer, methode, lieferer, name, args) { const echt = lieferer[name];",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.__codeOf": "neu: (f) => oK(String(f))",
+     "window.__dokuOf": "neu: (f) => String(f)",
+     "window.__fehlt": "neu: (f, re) => [].concat(f).every((g, i) => { if (typeof g !== \"function\") throw new"
     },
     "haelt": [],
     "heap": [
-     222.7,
-     617.2
+     221.9,
+     365.3
     ],
     "ungemessen": null
    }
   ],
   "wanderung": [
    {
-    "probe": "karte2.mensch.bau.innen#1",
+    "probe": "karte2.mensch.menge.bild#1",
     "ort": "genesis",
-    "m": 183.9,
-    "dreh": 1.979
+    "m": 185.18,
+    "dreh": 3.189
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.mensch.bau.innen#1",
+    "probe": "karte2.mensch.menge.bild#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -2202,20 +2358,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 5674,
-   "frameP95": 16.68,
-   "taktP95": 12.66,
-   "vramMax": 154.5,
+   "bilder": 3210,
+   "frameP95": 25.33,
+   "taktP95": 18.96,
+   "vramMax": 181.8,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 246,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 163,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 267,
-  "minuten": 4.52
+  "fahrtS": 196.6,
+  "minuten": 3.37
  }
 }
