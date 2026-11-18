@@ -90,6 +90,12 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         const EK = AnazhRealm.BELICHTUNG.nachtKnotenE;
         const kb = (E) => __weltLicht.belichtung([E, E, E], 6, -0.7, null, AnazhRealm.BELICHTUNG);
         out.nachtKnoten = [EK, kb(EK), kb(EK / 4)];
+        // DIE BILANZ DER NACHT (w28-nacht-bilanz): der Himmel ohne Mond (`_atmoSternenLicht`, E = π · Leuchtdichte) gegen den Vollmond
+        // im Zenit — tiefe Nacht (Sonne −40°), das Ende der bürgerlichen Dämmerung (−6°), der Tag (+5°)
+        const Mo = AnazhRealm.MOONLIGHT;
+        const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const hE = (grad) => Math.PI * lum(r._atmoSternenLicht(Math.sin((grad * Math.PI) / 180)));
+        out.nachtBilanz = [-40, -6, 5].map((g) => +(hE(g) / (Mo.intensity * lum([Mo.r, Mo.g, Mo.b]))).toFixed(4));
         // setDayLength clamped
         r.setDayLength(5);
         out.setDayLength5 = st.dayLengthMinutes === 5;
@@ -129,7 +135,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
 
         // Setze sunny als Ausgangspunkt
         st.weather = "sunny";
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         // der Satz des Spielers blendet vom Wetter davor über
         r.dslRun(["weather", "rainy"], { source: "human" });
         out.weatherTransitionFromSunny = st.weatherTransition && st.weatherTransition.from === "sunny";
@@ -175,6 +181,13 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         );
         const NK = wave6g3Results.nachtKnoten || [];
         check("der Nacht-Knoten steht (Täter: `__weltLicht.belichtung`)", NK[0] > 0 && NK[1] === NK[2], NK.join(" "));
+        const NB = wave6g3Results.nachtBilanz || [];
+        check(
+            "w28-nacht-bilanz: der Mond trägt die Nacht — der Himmel ohne Mond trägt in tiefer Nacht unter 1 % des Vollmonds, die blaue " +
+                "Stunde (−6°) so viel wie er, der Tag nichts (Täter: `__weltLicht.nachtHimmel` — das Sternen-Licht als Füllung trug 65 %)",
+            NB[0] >= 0 && NB[0] < 0.01 && Math.abs(NB[1] - 1) < 0.05 && NB[2] === 0,
+            `Himmel-E / Vollmond-E: Nacht ${NB[0]} · −6° ${NB[1]} · Tag ${NB[2]}`
+        );
         check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
         check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
         check("Welle 6.G3.a: setDayLength clamped <1 auf 1", wave6g3Results.setDayLengthClampedMin);
@@ -272,7 +285,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         st.player.emotions.joy = 0;
         st.player.emotions.sorrow = 0;
         st.weather = "sunny";
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         // der Tint liest jetzt die RÄUMLICHE emotion-Achse (`aura.emotion`,
         // global + lokaler Abdruck). Diese Probe misst die GLOBALE Emotion→Tint-
         // Kopplung isoliert → das emotionField clearen (sonst blenden Orts-Abdrücke
@@ -315,22 +328,22 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         st.player.emotions.peace = 0;
         st.player.emotions.chaos = 0;
         st.weather = "sunny";
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         r.requestWeatherTransition("rainy"); // Default-Dauer (sollte ~45000)
         const defaultDur = st.weatherTransition && st.weatherTransition.duration;
-        st.weatherTransition = null;
         st.weather = "sunny";
+        window.__uebergangFaellt(r);
         st.player.emotions.peace = 1.0;
         r.requestWeatherTransition("rainy");
         const peaceDur = st.weatherTransition && st.weatherTransition.duration;
-        st.weatherTransition = null;
         st.weather = "sunny";
+        window.__uebergangFaellt(r);
         st.player.emotions.peace = 0;
         st.player.emotions.chaos = 1.0;
         r.requestWeatherTransition("rainy");
         const chaosDur = st.weatherTransition && st.weatherTransition.duration;
-        st.weatherTransition = null;
         st.weather = "sunny";
+        window.__uebergangFaellt(r);
         st.player.emotions.chaos = 0;
         out.peaceSlowsWeather = peaceDur > defaultDur * 1.2;
         out.chaosSpeedsWeather = chaosDur < defaultDur * 0.7;
@@ -545,12 +558,12 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         // --- Phase D: Wolken + Wasser ---
         // Wolken-Cover (der Uniform-Knoten in state.skyboxUniforms) folgt weather (liest state.skyboxUniforms). weatherTransition leeren: eine aktive
         // Warmup-Transition überstimmt state.weather in `_weatherBlendedValue` (beide Lesungen gleich).
-        st.weatherTransition = null;
         st.weather = "rainy";
+        window.__uebergangFaellt(r);
         r._applyDayNightToScene();
         const cloudRainy = st.skyboxUniforms.cloudCover.value;
-        st.weatherTransition = null;
         st.weather = "sunny";
+        window.__uebergangFaellt(r);
         r._applyDayNightToScene();
         const cloudSunny = st.skyboxUniforms.cloudCover.value;
         out.cloudsFollowWeather = cloudRainy > cloudSunny;
@@ -962,7 +975,6 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
                 _fieldSurfaceBelow: () => null,
                 _fieldResolveSphere: () => false,
                 _stepCharacterStructures: ohne,
-                _stepCharacterIslands: ohne,
                 _koerperWasser: () => pm.position.y + 3,
             };
             Object.assign(r, buehne);
@@ -1531,7 +1543,7 @@ async function checkBandWetterVektor({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         await __weltDa();
         // Keine laufende Transition — die Wort-Vorgabe führt.
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         const sunny = r._weatherFieldFor("sunny");
         const rainy = r._weatherFieldFor("rainy");
         const stormy = r._weatherFieldFor("stormy");
@@ -1541,7 +1553,7 @@ async function checkBandWetterVektor({ page, check }) {
             st.weatherTransition = { from: "sunny", to: "stormy", progress: p };
             fogRamp.push(r._weatherFieldFor("sunny").fog);
         }
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         return { sunny, rainy, stormy, fogRamp };
     });
     const fails = [];
@@ -1572,6 +1584,76 @@ async function checkBandWetterVektor({ page, check }) {
         fails.length === 0,
         fails.join(" · ")
     );
+}
+
+// DIE WELT-UHR (w28-welt-uhr; w28-wolke-zeit): zwei Starts zur selben Spiel-Uhr zeichnen dasselbe. Je Start steht die Spiel-Zeit auf
+// S0 und die Sim-Uhr ist frisch, dann 30 Takte zu 20 ms — einmal ab der Uhr der Seite + 1 000 s, einmal ab 5 ms (die Gerätezeit seit
+// dem Laden trennt zwei frische Starts derselben Welt). Der Abdruck: die Bild-Uhr, die Wolken (Spiel-Zeit + Saat, die Kuppel liest
+// sie), die Wind-Phase (`uWindTime`, die Richtung, der Wind an einem festen Ort), die Böe (`_windAt` · `_weatherWob`), die Wellen-
+// Phase des Wassers und die Sim-Uhr des Schritts; das Wetter steht auf dem Wort des Spielers. Was sich fortschreibt (die Lage des
+// Leibs, die Runde der Fege-Takte nach der Frist, Gruppe 2 der Tafel spec/uhr/geraetezeit.json), steht nicht im Abdruck.
+// MUTANTE: die Bild-Uhr als rAF-Stempel (die alte Zeile des Takts) — sie MUSS rot fallen.
+async function checkBandWeltUhr({ page, check }) {
+    const out = await safeEvaluate(page, async () => {
+        await __weltDa();
+        r._ensureHydroSurfaceMaterial(); // der Stoff des Wassers (sonst erst am ersten Wasser): seine Uniform trägt die Wellen-Phase
+        const [W, U, H, pm, takt, wort] = [
+            st.windUniforms,
+            st.skyboxUniforms?.time,
+            st.hydroSurfaceUniforms?.time,
+            st.playerMesh.position,
+            r._gameLoopTick,
+            st.wetterWort,
+        ];
+        const [S0, ox, oz] = [st.spielZeit + 100, pm.x + 40, pm.z - 25]; // ein fester Ort der Böe
+        const start = (t0) => {
+            r._gameLoopTick(t0); // der Anker der Wanduhr
+            [st.spielZeit, st._fixedSimTime, st._fixedAccumulator] = [S0, undefined, 0];
+            for (let i = 1; i <= 30; i++) r._gameLoopTick(t0 + 20 * i);
+            const w = r._windAt(ox, oz, r._bildZeit);
+            const d = W?.uWindDir.value;
+            return { spiel: st.spielZeit, bild: r._bildZeit, wolke: r._wolkenZeit - st.spielZeit - r._wolkenSaat(), kuppel: U?.value - r._wolkenZeit, windZeit: W?.uWindTime.value, windDir: [d?.x, d?.y], windOrt: [w.x, w.z, w.staerke], boe: w.boe, boeDrift: r._weatherWob, welle: H?.value, sim: st._fixedSimTime }; // prettier-ignore
+        };
+        const zwei = () => [start(performance.now() + 1e6), start(5)];
+        st.wetterWort = wort || st.weather || "sunny";
+        try {
+            const echt = zwei();
+            let stempel = 0;
+            r._gameLoopTick = (t) => ((stempel = t), takt(t));
+            Object.defineProperty(r, "_bildZeit", { configurable: true, get: () => stempel / 1000, set() {} });
+            return { echt, mutante: zwei() };
+        } finally {
+            delete r._bildZeit;
+            [r._gameLoopTick, st.wetterWort] = [takt, wort];
+        }
+    });
+    const gleich = (a, b) =>
+        Array.isArray(a)
+            ? a.every((x, i) => gleich(x, b[i]))
+            : typeof a === "number"
+              ? Math.abs(a - b) < 1e-6
+              : a === b;
+    const ab = (Z) =>
+        Object.keys(Z[0])
+            .filter((k) => !gleich(Z[0][k], Z[1][k]))
+            .map((k) => `${k} ${JSON.stringify(Z[0][k])} ≠ ${JSON.stringify(Z[1][k])}`);
+    const fails = !out || out.err ? [`keine Antwort der Seite: ${out?.err}`] : [];
+    if (!fails.length) {
+        const [A, e, m] = [out.echt[0], ab(out.echt), ab(out.mutante)];
+        const fehlt = Object.keys(A).filter((k) => ![A[k]].flat().every(Number.isFinite));
+        if (fehlt.length) fails.push(`der Abdruck trägt keine Zahl für ${fehlt.join(", ")}`);
+        if (Math.abs(A.wolke) > 1e-6 || Math.abs(A.kuppel) > 1e-6)
+            fails.push(`die Wolken folgen nicht Spiel-Zeit + Saat (${A.wolke}, Kuppel ${A.kuppel})`);
+        if (e.length) fails.push(`zwei Starts zur selben Spiel-Uhr zeichnen verschieden: ${e.join(" · ")}`);
+        if (!m.some((x) => /^(bild|windZeit|boe) /.test(x)))
+            fails.push(`MUTANTE: die Bild-Uhr als rAF-Stempel bleibt grün (${m.join(" · ") || "gleich"})`);
+    }
+    check(
+        "Welt-Uhr: Wolken, Wind-Phase, Böe, Wellen und Sim-Uhr zweier Starts zur selben Spiel-Uhr sind gleich, der rAF-Stempel fällt rot",
+        fails.length === 0,
+        fails.join(" · ")
+    );
+    return { fails, out };
 }
 
 // Look-Physik — eingefaltet aus look-lens: Schöpfer 25.06. „die Realität kann man messen — wieso also hängt der Look
@@ -1659,7 +1741,7 @@ async function checkBandHimmelTag({ page, check }) {
             st.timeOfDay = t;
             if (st.world) st.world.timeOfDay = t;
             r._setWeather("sunny", "human");
-            st.weatherTransition = null;
+            window.__uebergangFaellt(r);
             r._applyDayNightToScene();
         };
         const sf = st.starField;
@@ -1912,6 +1994,7 @@ module.exports = {
     checkBandV18164WarumLicht,
     checkBandWahrerAnblickAtmoBusch,
     checkBandWetterVektor,
+    checkBandWeltUhr,
     checkBandLookPhysik,
     checkBandHimmelTag,
     checkBandSchattenTakt,

@@ -306,11 +306,13 @@ class AnazhRealm_bild_sicht {
     // SPIEGEL.drift, wandert das Fenster; stehen neue Kronen darin, backt die Nachlese es neu. Ein Auftrag fliegt zur Zeit und
     // nur, wenn der Worker keinen Chunk baut (das Streamen hat Vorrang, Lehre 13) und das erste Weltbild steht (die Ankunft
     // trägt keinen Spiegel); seine Antwort trägt der nächste Takt ein (`_spiegelFeldEintrag`) — ein Bild der ruhenden Welt
-    // (die Bühne, eine Linse, die Werkbank zwischen Befehlen) bäckt nichts und sieht keine Antwort landen.
+    // (die Bühne, eine Linse, die Werkbank zwischen Befehlen) bäckt nichts und sieht keine Antwort landen. Bestellt wird nur,
+    // wenn der Faden den Stand trägt (`_voxelFadenTraegt`, das EINE Prädikat): bis w28-strom-haengt fragte der Takt den Ack
+    // und bestellte auch bei ausgehängtem Faden — die Bestellung gebar einen Zwilling, der fortan den Boden trug.
     _spiegelFeldTakt() {
         const st = this.state;
         const rend = st.renderer;
-        if (!st._weltbildDa || !st.camera || !rend || rend._isHeadlessNull || !st.voxelWorkerReady) return;
+        if (!st._weltbildDa || !st.camera || !rend || rend._isHeadlessNull || !this._voxelFadenTraegt()) return;
         const K = AnazhRealm.SPIEGEL;
         const S = this._spiegelFeld();
         const ant = S.antwort;
@@ -618,6 +620,17 @@ class AnazhRealm_bild_sicht {
         return sg;
     }
 
+    // DIE LAGE IM SCHIRM (w28-lichtschacht): Welt → Schirm-UV, das EINE Gesetz jedes Lesers, der einen Punkt der Welt im Bild
+    // sucht — `x`, `y` die NDC des Punkts (Clip ÷ w), die Schirm-UV die von r184s `screenUV`: oben links, y nach UNTEN (WebGPU
+    // fragCoord; unter WebGL2 dreht ScreenNode die Zeile, `h − y`). Aus TSL-Knoten ein Knoten, aus Zahlen zwei Zahlen (die CPU,
+    // `Vector3.project`). Bis hier rechnete jeder Leser selbst, die Godrays (`_loopRender`) y nach OBEN: ihr Marsch lief zur an
+    // der Bildmitte gespiegelten Sonne — im Raum stiegen die Strahlen vom Fenster an die Decke (Dachfuge 16.11., GTX 6f3c713d,
+    // 17 Uhr: Mittel der hellen Pixel 0,6741, ohne Godrays 0,0752).
+    static _schirmUV(x, y) {
+        if (typeof x === "number") return [x * 0.5 + 0.5, 0.5 - y * 0.5];
+        return THREE.TSL.vec2(x.mul(0.5).add(0.5), THREE.TSL.float(0.5).sub(y.mul(0.5)));
+    }
+
     // DER LESER DES SPIEGELS (D10): das Ziel des Passes, die Ansicht, aus der er rechnete (der Wasser-Stoff reprojiziert seinen
     // Welt-Punkt in sie — der Pass läuft nach dem Bild, das Wasser liest ihn im nächsten), und ob er lief. Angelegt mit dem
     // Wasser-Stoff in 1/teil des Schirms (`_spiegelZielMass`).
@@ -700,18 +713,22 @@ class AnazhRealm_bild_sicht {
                     // der Renderer Schatten zeichnet (`_wirftImStoff`: unter kienspan ruht die Karte)
                     const ort = builder.material.receivedShadowPositionNode || T.positionWorld;
                     const frei = wirt._wirftImStoff(T.max(himmel.sub(wirt._horizontHimmel(ort, n)), T.vec3(0)), himmel);
-                    return wirt._rueckstrahlHalbraum(frei, n);
+                    // DER BAU NIMMT DEN HIMMEL (w28-innenlicht): unter einer Decke trägt die Bestrahlung das Raum-Licht ihres
+                    // Körpers (`_raumHimmel`, die EINE Zahl des Gesetzbuchs) — Himmel UND gezeichneter Boden, beide kommen von außen
+                    return wirt._rueckstrahlHalbraum(frei, n).mul(wirt._raumHimmel(T));
                 }
+                // die Strahlung (der Spiegel der glatten Fläche): im Raum spiegelt sie den Himmel des Raums, nicht den von draußen
+                const raum = wirt._raumHimmel(T);
                 const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
                 const w = T.max(clip.w, 1e-4);
-                const uv = T.vec2(clip.x.div(w).mul(0.5).add(0.5), T.float(0.5).sub(clip.y.div(w).mul(0.5)));
+                const uv = AnazhRealm._schirmUV(clip.x.div(w), clip.y.div(w));
                 const drin = T.step(0, uv.x).mul(T.step(uv.x, 1)).mul(T.step(0, uv.y)).mul(T.step(uv.y, 1));
                 const k = drin
                     .mul(T.step(0, clip.w))
                     .mul(L.an)
                     .mul(T.float(1).sub(T.smoothstep(a, b, stufe)));
                 const sp = T.texture(L.rt.texture, uv).level(T.float(0));
-                return sp.rgb.mul(k).add(himmel.mul(T.float(1).sub(sp.a.mul(k))));
+                return sp.rgb.mul(k).add(himmel.mul(raum).mul(T.float(1).sub(sp.a.mul(k))));
             }
         }
         this._spiegelUmgebungK = T.nodeObject(new SpiegelUmgebung());
@@ -886,8 +903,8 @@ class AnazhRealm_bild_sicht {
                     const cE = U.vp.mul(vec4(P.add(R.mul(tMax)), 1.0));
                     const iwP = float(1).div(cP.w),
                         iwE = float(1).div(max(cE.w, 1e-4));
-                    const uvP = vec2(cP.x.mul(iwP).mul(0.5).add(0.5), float(0.5).sub(cP.y.mul(iwP).mul(0.5)));
-                    const uvE = vec2(cE.x.mul(iwE).mul(0.5).add(0.5), float(0.5).sub(cE.y.mul(iwE).mul(0.5)));
+                    const uvP = AnazhRealm._schirmUV(cP.x.mul(iwP), cP.y.mul(iwP));
+                    const uvE = AnazhRealm._schirmUV(cE.x.mul(iwE), cE.y.mul(iwE));
                     const du = uvE.sub(uvP);
                     const austritt = (u, dd) =>
                         select(
@@ -1130,7 +1147,7 @@ class AnazhRealm_bild_sicht {
                     If(raus.not().and(bildW.lessThan(1.0)).and(aus.a.lessThan(1.0)), () => {
                         const cI = U.vp.mul(vec4(R, 0.0));
                         const iwI = float(1).div(max(cI.w, 1e-6));
-                        const uvI = vec2(cI.x.mul(iwI).mul(0.5).add(0.5), float(0.5).sub(cI.y.mul(iwI).mul(0.5)));
+                        const uvI = AnazhRealm._schirmUV(cI.x.mul(iwI), cI.y.mul(iwI));
                         const imBild = cI.w
                             .greaterThan(0.0)
                             .and(min(uvI.x, uvI.y).greaterThan(0.0))
@@ -1297,7 +1314,11 @@ class AnazhRealm_bild_sicht {
             const x3 = x2.add(y2.mul(PCG_A));
             const x4 = x3.bitXor(x3.shiftRight(uint(16)));
             return float(x4).mul(1.0 / 4294967296.0);
-        });
+        }).setLayout({ name: "wasserHash", type: "float", inputs: [{ name: "p", type: "vec2" }] });
+        // DAS RAUSCHEN als EINE WGSL-Funktion (w28-licht-kern, wie `rauschEbene` in K17-3): rein über seiner Lage, dieselbe
+        // Rechnung wie ausgeschrieben — ausgeschrieben stand es je Probe im Programm (Dünung, Kräuselung in drei Normal-Proben,
+        // Fluss, Glitzer: GTX 1050 kalt, 547 Zeilen und ≈ 58 von 106 KB des Wasser-Programms, das als eines der letzten vor
+        // dem ersten Weltbild übersetzt).
         const vnoise = Fn(([p]) => {
             const i = floor(p);
             const f = fract(p);
@@ -1307,7 +1328,7 @@ class AnazhRealm_bild_sicht {
                 mix(hash2(i.add(vec2(0.0, 1.0))), hash2(i.add(vec2(1.0, 1.0))), u.x),
                 u.y
             );
-        });
+        }).setLayout({ name: "wasserRauschen", type: "float", inputs: [{ name: "p", type: "vec2" }] });
 
         // Organische Dünung: drei DEKORRELIERTE value-noise-Oktaven mit eigener Drift-Richtung → runde,
         // ungerichtete Hügel. Nie Gerstner/Sinus: `dot(xz, dir)` gibt per Konstruktion parallele Kämme
@@ -1662,8 +1683,13 @@ class AnazhRealm_bild_sicht {
         // DAS PANORAMA (Schattierungs-Persistenz): rgb = Rampen-Farbe, a =
         // Treffer-Distanz (0 = Himmel). Gebacken vom Compute (_feldPanoramaMal),
         // gelesen vom billigen Fragment — der 96-Schritt-March je Pixel ist tot.
-        const panoDaten = new Float32Array(PN.az * PN.elev * 4);
-        const panoTex = new THREE.DataTexture(panoDaten, PN.az, PN.elev, THREE.RGBAFormat, THREE.FloatType);
+        // In HALBER Genauigkeit (rgba16float, w28-preis-ort): fp16 trägt die Distanz auf 2⁻¹¹ relativ (≤ 20 m bei 40 km, unter
+        // der Auflösung des Dunsts) und die Farbe wie jedes HDR-Ziel — 0,94 MB statt 1,88 im Grafikspeicher. Die Werte des
+        // Compute bleiben Float32, das Setzen wandelt (`_feldPanoramaMal`); Float16Array trägt jeder Chrome ab 135.
+        if (typeof globalThis.Float16Array !== "function")
+            throw new Error("FELD-PANORAMA: Float16Array fehlt (Browser vor Chrome 135)");
+        const panoDaten = new globalThis.Float16Array(PN.az * PN.elev * 4);
+        const panoTex = new THREE.DataTexture(panoDaten, PN.az, PN.elev, THREE.RGBAFormat, THREE.HalfFloatType);
         panoTex.name = "feld-pass-panorama";
         panoTex.minFilter = THREE.NearestFilter;
         panoTex.magFilter = THREE.NearestFilter;
@@ -2295,9 +2321,11 @@ class AnazhRealm_bild_sicht {
         // die Präsenz des Laubs (w21-laub-jahr-fern): das Dach des Felds fällt wie Ring und Boden (`kroneImJahr` im Faden)
         const praesenz = this._fernPraesenz();
         const schnee = this._schneeGilt(); // der Faden färbt mit dem Versatz der Schneegrenze, den er trägt
-        // die Masche des Texels: Azimut-Breite am Radius (im Faden je Texel), die radiale Zeile des Felds
+        // die Masche des Texels: Azimut-Breite am Radius (im Faden je Texel), die radiale Zeile des Felds, die Naht zum Ring
         const hr = (P.rMaxM - rMin) / (2 * P.rad);
-        this._fernAuftrag("feld", { punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, saison, praesenz }, [punkte.buffer])
+        this._fernAuftrag("feld", { punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, naht: rMin, saison, praesenz }, [
+            punkte.buffer,
+        ])
             .then((antwort) => {
                 if (this.state.feldPass !== fp || fp.gen !== gen) return;
                 fp.flug = false;
@@ -2649,7 +2677,7 @@ class AnazhRealm_bild_sicht {
         himmel.texture.name = "welt-licht-himmel";
         const sonde = TSL.texture(himmel.texture);
         // die Sonde liest die Umgebung je Einheit des Lichts — das Licht jetzt wie jeder Stoff (`_umgebungLicht`)
-        const licht = this._umgebungLicht();
+        const licht = (farbe) => this._umgebungLicht(farbe);
         // `sicht` (optional): die Sonnen-Sicht am Punkt des Lesers (`_sonnenSicht`: Horizont des Gesetzes × Wurf der Wolke) auf
         // dem direkten Licht — wie jeder Empfänger der Kaskaden; Feld und Panorama reichen ihren Treffer (`at(n, p)`).
         const baue = (sicht) => {
@@ -2657,7 +2685,7 @@ class AnazhRealm_bild_sicht {
             const hemi = TSL.mix(U.hemiUnten, U.hemiOben, sicht.n.y.mul(0.5).add(0.5));
             // der Boden um das Auge in der unteren Hemisphäre — dasselbe Gesetz wie die Umgebung der Stoffe (schatten.K4)
             const umgebung = this._rueckstrahlHalbraum(
-                sonde.sample(TSL.equirectUV(sicht.n)).level(0).rgb.mul(licht),
+                licht(sonde.sample(TSL.equirectUV(sicht.n)).level(0).rgb),
                 sicht.n
             ).mul(U.ei);
             return (sicht.s ? direkt.mul(sicht.s) : direkt)
@@ -2749,13 +2777,15 @@ class AnazhRealm_bild_sicht {
         if (!d || !A || !env) return null;
         const t = A.U.toenung.value;
         const L = A.U.licht.value;
-        const stempel = (st._skyEnvVersion || 0) + ":" + ei + ":" + L + ":" + t.x + ":" + t.y + ":" + t.z;
+        const grau = A.U.grau.value;
+        const stempel = (st._skyEnvVersion || 0) + ":" + ei + ":" + L + ":" + t.x + ":" + t.y + ":" + t.z + ":" + grau;
         if (this._himmelsIrrStempel === stempel && this._himmelsIrr) return this._himmelsIrr;
         this._himmelsIrrStempel = stempel;
         const J = this._himmelsIrrJe;
         const k = [t.x, t.y, t.z].map((x) => (ei * L * x) / Math.PI);
+        const jetzt = (je) => __weltLicht.himmelGrau([je[0] * k[0], je[1] * k[1], je[2] * k[2]], grau); // + das Ergrauen der Decke
         if (J && J.version === st._skyEnvVersion) {
-            this._himmelsIrr = { mitte: J.mitte.map((x, c) => x * k[c]), oben: J.oben.map((x, c) => x * k[c]) };
+            this._himmelsIrr = { mitte: jetzt(J.mitte), oben: jetzt(J.oben) };
             return this._himmelsIrr;
         }
         const W = A.rtEq.width;
@@ -2782,7 +2812,7 @@ class AnazhRealm_bild_sicht {
             }
         }
         this._himmelsIrrJe = { version: st._skyEnvVersion, mitte, oben };
-        this._himmelsIrr = { mitte: mitte.map((x, c) => x * k[c]), oben: oben.map((x, c) => x * k[c]) };
+        this._himmelsIrr = { mitte: jetzt(mitte), oben: jetzt(oben) };
         return this._himmelsIrr;
     }
 

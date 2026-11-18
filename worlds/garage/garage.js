@@ -20,9 +20,11 @@ const CAM_FOV=34,cam=new THREE.PerspectiveCamera(CAM_FOV,innerWidth/innerHeight,
 // Auflösung, der Schatten-Pass ruht (er rechnet nur, wenn Bau, Licht oder eine Bewegung ihn ändern), ohne Vielfach-Abtastung ab
 // dem ersten Bild. Gemessen (Isometrie 1280×720, swiftshader): 185 → 54 ms je Bild.
 const LEICHT=new URLSearchParams(location.search).has('leicht');
-const R=new THREE.WebGPURenderer({antialias:!LEICHT});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));
-R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFShadowMap;   // PCF statt PCF-weich: swiftshader Iso 105 → 90 ms (02.11.)
-document.body.appendChild(R.domElement);
+// DIE EINE BÜHNE (w28-studio-welt): Renderer, Sonne, das Licht der Welt an ihrer Uhr, Vorbau und Treue trägt die Bühne der Hülle
+// (`AnazhHuelle.buehne`) — dieselbe unter jedem Studio. Bis hier trug die Werkstatt ihren eigenen Anschluss (R.init → buehne,
+// Vorbau, Software-Raster), die Schmiede einen zweiten. PCF statt PCF-weich: swiftshader Iso 105 → 90 ms (02.11.).
+const BUEHNE=AnazhHuelle.buehne({szene:scene,leicht:LEICHT,sonnenWeite:20,nachVorbau:()=>{_kamAlt=null;_wecke();}});
+const R=BUEHNE.renderer;
 
 // DIE UMGEBUNG IST DER HIMMEL DER WELT (w12-studio-buehne): die PMREM-Lage der Equirekt-Tafel der EINEN Atmosphäre × das Licht
 // jetzt, wie die Welt sie jedem Stoff reicht — der Lack spiegelt den Himmel, den er in der Welt spiegelt. Die gemalte
@@ -61,13 +63,10 @@ buehne.add(zifferblatt);
 // der EINEN Luft am Mittag), seine Richtung ist die der Sonne (`welt.richtung`); es wirft den Schatten. Die drei Lichter der
 // Matrix-Antike (Key Bernstein · Blick-Füllung Stahl · Gegenkante Cyan, dem Blick folgend) und ihr Regler „Licht" fielen —
 // sie zeichneten einen Wagen, den die Welt nie zeigt.
-const sonne=new THREE.DirectionalLight();sonne.castShadow=true;
+const sonne=BUEHNE.sonne;
 sonne.shadow.mapSize.set(1024,1024);sonne.shadow.bias=-0.0002;Object.assign(sonne.shadow.camera,{left:-6,right:6,top:6,bottom:-6,far:40});
-scene.add(sonne);scene.add(sonne.target);
-let welt=null,himmelWirt=null;   // die Bühne der Welt (welt-licht.js `buehne`), sobald der Renderer steht; der Himmel, den die Heimat beim Betreten reicht
 // die Sonne über dem Punkt (x, y, z): ihr Ziel dort, sie selbst 20 m die Richtung zur Sonne hinauf (der Schatten folgt dem Wagen)
-function sonneUeber(x,y,z){sonne.target.position.set(x,y,z);sonne.target.updateMatrixWorld();
-  if(welt)sonne.position.copy(sonne.target.position).addScaledVector(welt.richtung,20);}
+function sonneUeber(x,y,z){BUEHNE.sonneUeber(x,y,z);}
 
 /* ── DER KERN-ANSCHLUSS (W7a, Studio-Vertrag Phase 1 — docs/studio-vertrag.md §7):
    die generative Substanz (Lehren · Rahmen · Räder · Haut · Baukörper · Presets/
@@ -705,49 +704,10 @@ addEventListener('pointerup',_los);addEventListener('pointercancel',_los);
 R.domElement.addEventListener('wheel',e=>{if(mode!=='werkstatt')return;e.preventDefault();
   oc.dist=Math.max(3.5,Math.min(16,oc.dist*(e.deltaY>0?1/0.95:0.95)));},{passive:false});
 
-// ── DER VORBAU (w13-buehne-async): kein Bild und kein Aufruf der Seite wartet auf einen synchronen Pipeline-Bau ──
-// Bis hierher baute das erste Bild jedes Werks seine Programme im Render (r184 `Pipelines.updateForRender` → synchrones
-// `createRenderPipeline`): 42 bis zum ersten Bild, je Gattungs-Wechsel 11–12, der GPU-Prozess reihte sie hintereinander (swiftshader:
-// erstes Bild fertig nach 2,8 s, 4× gedrosselt 4,5 s); auf dem CPU-Raster der CI kehrte
-// ein Versprechen der Seite nie zurück (z255: „URTEIL AWAIT … gpu.createRenderPipeline #50"). Jetzt hält ein sichtbares Objekt,
-// das mit seinem Stoff (samt Version) und seiner Gestalt noch durch keinen Vorbau ging, das Bild an — das letzte Bild
-// bleibt stehen — und EIN Bild des Werks in ein verborgenes Ziel (1×1) baut, was das sichtbare braucht: jede Pipeline dieses
-// Bilds (Haupt- und Schatten-Pass) entsteht asynchron in EINER Liste, alle zugleich (`createRenderPipelineAsync`), r184 zeichnet
-// nur, was steht (`isReady`). Derselbe Render-Kontext wie die Leinwand (der Bild-Puffer trägt Format, Farbraum und Abtastung des
-// Ausgabe-Ziels), darum trifft das nächste Bild jede Pipeline im Cache — r184 `compileAsync` traf ihn nicht: es teilt den
-// Kontext je Format mit fremden Zielen und schlüsselte den Farbraum leer (19 asynchron, danach dieselben 42 synchron). Steht die
-// Liste, zeichnet das nächste Bild das ganze Werk und der Schatten rechnet neu. Ein Bruch des Vorbaus bricht laut. GEMESSEN (06.11.,
-// swiftshader): bis zum ersten Bild 42 → 12 synchron (die Tafeln der Bühne und die Kosten-Leiste der Hülle), 31 asynchron, fertig
-// 2,8 → 2,1 s; je Gattungs-Wechsel 12 → 0 synchron. Der Knoten-Bau bleibt im Bild (4× gedrosselt längste Aufgabe ~1,3–1,5 s).
-// der Stand je Objekt (Stoff · Version · Gestalt), den der letzte Vorbau sah — ob eine Pipeline fehlt, weiß nur r184 selbst (sein
-// Schlüssel liest Spiegelung, Schatten, Attribute, Kontext): ein Vorbau, dessen Programme schon stehen, legt keine an und steht sofort
-let _bau=null;const _bauObjekt=new WeakMap(),_zeichnet=o=>o.isMesh||o.isLine||o.isPoints||o.isSprite;
-const _stand=o=>[o,o.material,o.material.version,o.geometry];
-function _werkNeu(){let neu=false;scene.traverseVisible(o=>{if(neu||!_zeichnet(o))return;const a=_bauObjekt.get(o);
-  neu=!a||a[1]!==o.material||a[2]!==o.material.version||a[3]!==o.geometry;});return neu;}
-const _vorbauZiel=new THREE.RenderTarget(1,1);
-// DER FEHLER BLEIBT LAUT (w13-buehne-lack-heim): r184 hält je asynchroner Pipeline `pushErrorScope` über ihr await offen
-// (vendor/three.webgpu.min.js 6:590389) — jede Validierung dazwischen, auch ein fremder Draw, fiel in diesen Bereich: als
-// THREE-Konsolenzeile gemeldet, DIESE Pipeline für immer kaputt, das `uncapturederror` des Geräts still (z259: K6 der Portal-
-// Konformanz sah den Submit mit dem zerstörten Sprite-Quad nicht mehr). Und ihr Versprechen löst erst nach `popErrorScope`, auf
-// swiftshader nie (Lehre der Erst-Zeichnung, stamm/bild-kosten.js `_erstWartet`): der Vorbau hing, das Bild stand, die Labor-
-// Linse riss in G8 nach 120 s. Darum zeichnet der Vorbau NICHTS (`isReady` nein: kein Draw, kein Submit im offenen Bereich) und
-// wartet auf die Pipelines des Geräts selbst (`createRenderPipelineAsync` je Bau), nie auf das Vendor-Versprechen — eine Absage
-// bricht als Ablehnung des Vorbaus laut (r184 verschluckt sie, `catch(e){}`), das nächste Bild submittet außerhalb jedes Bereichs.
-async function _vorbau(K){const P=R._pipelines,eigen=P.getForRender,liste=[],roh=[],werk=[],aus=R.getOutputRenderTarget(),ziel=R.getRenderTarget(),
-    dev=R.backend.device,baut=dev.createRenderPipelineAsync,eigenB=Object.getOwnPropertyDescriptor(dev,'createRenderPipelineAsync');
-  scene.traverseVisible(o=>{if(_zeichnet(o))werk.push(_stand(o));});
-  P.getForRender=function(ro){return eigen.call(this,ro,liste);};   // jede Pipeline dieses Bilds asynchron
-  P.isReady=()=>false;                                             // der Vorbau baut, er zeichnet nie
-  dev.createRenderPipelineAsync=function(d){const p=baut.call(this,d);roh.push(p);return p;};
-  try{try{R.setOutputRenderTarget(_vorbauZiel);R.render(scene,K);}finally{P.getForRender=eigen;delete P.isReady;
-      if(eigenB)Object.defineProperty(dev,'createRenderPipelineAsync',eigenB);else delete dev.createRenderPipelineAsync;
-      R.setOutputRenderTarget(aus);R.setRenderTarget(ziel);}
-    await Promise.all(roh);}finally{_bau=null;}
-  for(const a of werk)_bauObjekt.set(a[0],a);sonne.shadow.needsUpdate=true;_kamAlt=null;_wecke();}
-// ein Bild (der Loop) und jeder Leser, der ohne den Loop zeichnet (`werkSteht`), fragt hier: steht ein Vorbau an, läuft er
-function _bauWenn(K){if(!_bau&&welt&&_werkNeu())_bau=_vorbau(K);return _bau;}
-async function werkSteht(){const K=kamera();K.updateMatrixWorld();while(_bauWenn(K))await _bau;}
+// ── DER VORBAU (w13-buehne-async): kein Bild und kein Aufruf der Seite wartet auf einen synchronen Pipeline-Bau — seit
+// w28-studio-welt Glied der EINEN Bühne (worlds/huelle/huelle.js `buehne`: dort die Lehre und die Messung). Ein Leser, der ohne
+// den Loop zeichnet, wartet hier, bis kein Vorbau mehr ansteht.
+async function werkSteht(){await BUEHNE.werkSteht(kamera());}
 
 // ── Loop (r184: setAnimationLoop wartet auf renderer.init(), die Zeit reicht der Takt herein) ──
 // DIE WERKSTATT ZEICHNET NUR BEI BEDARF (19.10.): wie ein Asset-Editor — nach einer Eingabe, einem Umbau, solange die Kugel
@@ -770,19 +730,16 @@ function animate(zeit){const dt=tAlt?Math.min(1/30,(zeit-tAlt)/1000):0;tAlt=zeit
   if(mode!=='fahren'&&!tuerZieht&&!ansichtLebt()&&performance.now()>wachBis&&_camGleich(K))return;
   // die Bühne zeichnet erst und allein im Licht der Welt (sonst bricht sie laut); bis ihre Belichtung liegt, zeichnet sie nicht —
   // `welt.steht` weckt sie dann (`_kamAlt` fällt); trägt das sichtbare Werk ein ungebautes Programm, wartet das Bild auf den Vorbau
-  if(_bauWenn(K)||!__weltLicht.buehneZeichnet(welt,scene,R)){_kamAlt=null;return;}   // gespannte Leine: das Bild fragt im nächsten Takt
   // im Leicht-Modus rechnet der Schatten nur, wenn er sich ändert: Fahrt, Ansicht in Bewegung, Tür, gewanderte Sonne (rebuild markiert selbst)
   if(leicht&&(mode==='fahren'||ansichtLebt()||tuerZieht||!sonne.position.equals(_sonneAlt))){sonne.shadow.needsUpdate=true;_sonneAlt.copy(sonne.position);}
-  _kamAlt=K;_camAlt.copy(K.matrixWorld);_projAlt.copy(K.projectionMatrix);raederSetzen();R.render(scene,K);_bildN++;}
+  raederSetzen();
+  if(!BUEHNE.bild(K)){_kamAlt=null;return;}   // der Vorbau, die Treue, die Leine (die EINE Bühne): das Bild fragt im nächsten Takt
+  _kamAlt=K;_camAlt.copy(K.matrixWorld);_projAlt.copy(K.projectionMatrix);_bildN++;}
 const _sonneAlt=new THREE.Vector3();
-// DAS CPU-RASTER ZEICHNET OHNE VIELFACH-ABTASTUNG: liefert der Adapter Software (swiftshader, llvmpipe, lavapipe), fällt das
-// MSAA vor dem ersten Bild — wie three es im Kompatibilitäts-Modus selbst tut (backend.init: _samples = 0); die Karte behält es.
-// Gemessen (Isometrie 1280×720, swiftshader): 196 → 86 ms je Bild.
-const _softwareRaster=i=>!!i&&/swiftshader|llvmpipe|lavapipe|software|subzero/i.test([i.vendor,i.architecture,i.device,i.description].join(' '));
-// DIE BÜHNE DER WELT steht, sobald der Renderer steht: Tafeln, Umgebung, Sonne, Tonkurve — die Belichtung, sobald die
-// Bestrahlungs-Tafel zurückkam (`welt.steht`); ein Bruch der Bühne bricht laut (kein Bild unter einem anderen Licht)
-R.init().then(()=>{const d=R.backend&&R.backend.device;if(d&&_softwareRaster(d.adapterInfo))R._samples=0;
-  welt=__weltLicht.buehne({renderer:R,szene:scene,sonne,himmel:himmelWirt});sonneUeber(0,0,0);welt.steht.then(()=>{_wecke();_kamAlt=null;});});
+// DIE BÜHNE DER WELT steht, sobald ihr Licht liegt (`BUEHNE.steht`: Renderer, Tafeln, Umgebung, Sonne, Belichtung); ein Bruch
+// bricht laut (kein Bild unter einem anderen Licht). Ihre Zeile (Früh · Mittag · Spät · Nackt) steht im Werkzeug.
+sonneUeber(0,0,0);BUEHNE.steht.then(()=>{_wecke();_kamAlt=null;});
+BUEHNE.leiste(document.getElementById('buehneOrt'),()=>{_wecke();_kamAlt=null;});
 presetSetzen('gt');if(LEICHT)leichtSetzen(true);werkOrbit();R.setAnimationLoop(animate);   // Welle L: das erste Laden geht denselben Weg (der Federraten-Regler zeigte 95 bei Zustand 100)
 addEventListener('resize',()=>{_wecke();cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);if(leicht)R.setPixelRatio(0.5);if(mode!=='fahren')werkOrbit();});
 
@@ -796,8 +753,7 @@ AnazhHuelle.bruecke({
     // Deckung) — die Bühne steht unter ihm (welt-licht `himmelSetzen`); kommt er vor dem Renderer, nimmt ihn die Bühne bei ihrem Bau
     enter: function (_a, m) {
         if (!m.himmel) return;
-        himmelWirt = m.himmel;
-        if (welt) welt.himmelSetzen(himmelWirt), _wecke(), (_kamAlt = null);
+        BUEHNE.himmel(m.himmel), _wecke(), (_kamAlt = null);
     },
     // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
     panorama: function () {

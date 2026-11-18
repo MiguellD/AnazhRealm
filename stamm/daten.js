@@ -13,9 +13,20 @@ class AnazhRealm_daten {
     static get WEATHER_TINTS() {
         const F = AnazhRealm.WEATHER_FIELD;
         const L = globalThis.__phytoCore.WX_LICHT;
-        if (!L || ![L.sockel, L.sonne].every(Number.isFinite))
+        if (!L || ![L.sockel, L.sonne, L.direktHoch, L.himmelHub, L.himmelGrau].every(Number.isFinite))
             throw new Error("phyto-core fehlt: WX_LICHT (das Wetter-Licht der Welt)");
-        const zeile = (f) => Object.freeze({ skyMul: f.sun, lightMul: L.sockel + L.sonne * f.sun });
+        // DIE DECKE TEILT DAS LICHT (w28-licht-regen): lightMul ist das GESAMTE Licht der Zeile; `direkt` der Anteil, den die
+        // Decke (grey) von der direkten Sonne lässt (das Richtlicht, die Scheibe), `himmel` der Hub des diffusen Himmels, `grau`
+        // sein Ergrauen. Bis hier trug das Richtlicht lightMul² und der Himmel lightMul · skyMul: direkt ÷ diffus STIEG im Regen
+        // um 1,3×, im Sturm um 3× — der Schatten wurde härter, und `grey` las kein Leser des Himmels.
+        const zeile = (f) =>
+            Object.freeze({
+                skyMul: f.sun,
+                lightMul: L.sockel + L.sonne * f.sun,
+                direkt: Math.pow(Math.max(0, 1 - f.grey), L.direktHoch),
+                himmel: 1 + L.himmelHub * f.grey,
+                grau: Math.max(0, Math.min(1, L.himmelGrau * f.grey)),
+            });
         return this._einmal(
             "WEATHER_TINTS",
             Object.freeze(Object.fromEntries(Object.keys(F).map((w) => [w, zeile(F[w])])))
@@ -373,8 +384,6 @@ class AnazhRealm_daten {
                     "spawn_temple",
                     "spawn_waterfall",
                     "spawn_tree",
-                    "spawn_island",
-                    "spawn_ufo",
                     "spawn_fractal",
                     "set_visible",
                     "voxel_carve",
@@ -465,81 +474,34 @@ class AnazhRealm_daten {
     // aus dem Studio (understory.grassStep · groundCover.grass · placement.scale.gras). Die Weite eines Büschels (sein Kreis
     // vor dem Grund der Häuser, `erdbauGrund`, S4) ist keine Zahl hier: sie ist die der GEZEICHNETEN Vorlagen
     // (`nahWiese.reich`, `_tickNahWiese`; gate:haus-welt W9 misst sie an derselben Vorlage).
-    // DIE FERNE (`fern`, w4-gras-saum, w4-gras-l2): bis 31.10. endete die Wiese bei `radius` (ein Ausdünnungs-Band 12–16 m,
-    // dahinter der flache Boden — im Third eine Naht, beim Gehen wanderte die Kante mit). Jetzt zeichnen dieselben Büschel
-    // (dieselbe Zelle, derselbe Wurf, die Studio-Stufe L2) weiter bis `bis`, nach dem EINEN Gesetz `_wieseFern`: die ganze
-    // Gestalt des Büschels streckt sich waagrecht um s = (Q/radius)³, höchstens `streckMax` (Mitten UND Halme, die Ähren
-    // nur verschoben; Höhe bleibt, die Füße folgen der Ebene des Hangs) — ein Büschel trägt die Fläche von s² Zellen —, und die
-    // Anzahl folgt dem Ziel der Deckung: Anzahl × s = 1 bis `voll` (die Wiese der Nähe, an der Übergabe stetig), dahinter
-    // (voll/Q)^`fall`; ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand` (relativ) sinkt es in den
-    // Boden statt zu springen, vor `bis` über `saum`. Die Kosten hängen am Schirm, nie an der Weite der Welt (Lehre 25).
+    // DIE FERNE (`fern`, w4-gras-saum, w4-gras-l2, w28-wiese-schale): bis 31.10. endete die Wiese bei `radius` (ein
+    // Ausdünnungs-Band 12–16 m, dahinter der flache Boden — im Third eine Naht, beim Gehen wanderte die Kante mit). Jetzt
+    // zeichnen dieselben Büschel (dieselbe Zelle, derselbe Wurf, die Studio-Stufe L2) weiter bis `bis`, nach dem EINEN Gesetz
+    // `_wieseFern`: DAS BÜSCHEL WIRD NIE VERFORMT — es steht, wie das Studio es baut (der Halm hält nur mindestens einen Pixel),
+    // die Deckung trägt allein die Zahl. Der Anteil der stehenden Büschel folgt der LÜCKE DES STRAHLS (radius/Q: der Strahl
+    // lässt gleich viel Grund durch wie an der Übergabe) bis zur KAPPE (die Büschel je Pixel nie über denen am Fußabdruck
+    // `fuss` der flachen Wiese, (fuss/Q)³ — dort zählt die Ferne je Pixel nie mehr Büschel als bis w28-wiese-schale, Lehre 25:
+    // die Kosten hängen am Schirm, nie an der Weite der Welt); was die Kappe an Zahl nimmt, trägt das Büschel in seiner Größe
+    // (`skalaMax`: gleichförmig bis 2,5-fach um den Fuß — die Deckung im Blick, n · w · h, hält die der Lücke); ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand`
+    // (relativ) sinkt es in den Boden statt zu springen, vor `bis` über `saum`.
     // DIE BODENFLÄCHE JE PIXEL (w14-wiese-saum): Q ist der FUSSABDRUCK-ABSTAND des Büschels (`_wieseFuss`) — Q = dist · (h/S)^⅓,
     // dist der Abstand seines Fußes vom Auge, S die Höhe des Auges über der Ebene seines Hangs, h die Höhe des Auges über
     // dem eigenen Boden (mindestens `auge`). Die Bodenfläche eines Pixels ist d²/sin φ = dist³/S, bei `fuss` der flachen
-    // Wiese fuss³/h; s ist das größere zweier Gesetze — die BREITE AUS DEM PIXEL (Q/radius: ab der Übergabe wächst der Halm
-    // mit dem Pixel, sein Schirm-Maß bleibt, Ghost of Tsushima) und die FLÄCHE JE PIXEL ((Q/fuss)³: die Büschel je Pixel
-    // bleiben, Lehre 25) —, auf flachem Boden ist Q der Abstand; am zugewandten Hang ist der Pixel kleiner: das Büschel
-    // streckt sich weniger und die Anzahl steigt (bis dahin lagen gestreckte Büschel als Platten am Hang), am abgewandten
-    // mehr. Bis w14-wiese-saum lag die Übergabe bei 14 m und streckte erst die Fläche: das L2 der Nähe stand bei 10–14 m
-    // ungestreckt und geklumpt (swiftshader, Mess-Wiese Third: 1 164 der 1 190 Boden-Pixel des Rings 10–20 m), jenseits der
-    // Bogen der gespreizten Ferne; jenseits ~16,6 m ist das Gesetz das alte (die Kosten dort gleich, diesseits weniger Büschel).
-    // Die Station (vegetation.K1#1, swiftshader, 1920 × 1080): Boden-Pixel 10–20 m 1 190 → 881, LAI 1,95 → 2,06 bei 5–10 m
-    // 2,41 (Saum 19 % → 14,6 %), 20–40 m 1,71 → 1,76; nahWiese 63 548 → 52 158 Dreiecke, die Ferne 58 735 → 79 939 (sie trägt
-    // 10–14 m und füllt die zugewandten Hänge: 925 → 1 259 Büschel).
-    // DER SAUM DER FESTEN RINGE (w10-wiese, vegetation.K1): bis dahin hielt `voll` 21 m und `fall` 1,5 — jenseits 21 m fiel
-    // die Deckung, die Ringe der Meisterkarte maßen 10–20 m LAI 1,87 · 20–40 m 1,07 (Radeon 2674ff9a, der Saum sprang 43 %), und
-    // jenseits der Streckung (~34 m) stiegen die Büschel je Pixel mit d^1,5 (bei 180 m 6× die der Übergabe). Jetzt hält die
-    // Deckung bis zum Rand der festen Ringe (40 m), dahinter fällt sie mit d^−3,25 — eine Spur steiler als das Gesetz des
-    // Schirms der Streckung (d^−3, die Büschel je Pixel gleich), damit die Ferne nicht mehr Büschel zählt als zuvor (Σ 1330 →
-    // 1319 je Zelle; der Sicht-Satz trägt den CPU-Takt, E): die Büschel je Pixel bleiben jenseits der Übergabe ≤ 1,67× (der
-    // Sprung der Streckung zwischen ~34 und 40 m) — weniger, größere Büschel statt eines Saums. Modell der Station
-    // (flache Wiese, Third 2,43 m, Nilson je Ring): 20–40 m 1,29 → 1,73; die Wand gate:profiband P-Ferne.
-    // Bis w4-gras-l2 fiel die Anzahl mit (radius/d)^4 und nur die Mitten rückten (höchstens 2,5×, die Füße √): an der
-    // Mess-Wiese Third LAI 14–30 m 0,36 · 30–80 m 0,02 · 80–200 m 0 (Radeon), der Boden jenseits 30 m frei. Im Modell der
-    // Station (Messung w4-gras-l2: flache Wiese, Wurf 0,85, Third 2,43 m, Blick −9,4°, 1920 × 1080, die Vorlagen der Brücke,
-    // dieses Gesetz) vorher 14–30 m LAI 0,51 · 30–80 m 77 % Grund · 80–200 m 100 % Grund bei 27k Dreiecken der Ferne, jetzt
-    // 1,86 · 0,22 % · 4,5 % bei 65k (Blick-Keil + 11°; die Zeile nahWieseFern 60k), Ego 1,87 · 0,02 % · 1,3 %. `streckMax` 14
-    // hält die Gestalt (7,4 m Radius) auf dem Boden: an der Ebene des Hangs p90 0,07 m bei 30 m, 0,11–0,29 m bei 50–200 m
-    // (Gesetz, Mess-Wiese, im Blick der Station; waagrecht 0,5–1,0 m).
+    // Wiese fuss³/h; auf flachem Boden ist Q der Abstand, am zugewandten Hang ist der Pixel kleiner und der Strahl kürzer in
+    // der Narbe: die Anzahl steigt, am abgewandten fällt sie.
+    // BIS w28-wiese-schale streckte das Gesetz die Gestalt des Büschels waagrecht um s = max(Q/radius, (Q/fuss)³) bis `streckMax`
+    // 14 (der Anteil 1/s bis `voll` 40 m, dahinter (voll/Q)^3,25; je Büschel begrenzt von `_wieseFernGrenzen` über einem Gitter
+    // des Bodens), und ab ~17 m trug eine SCHALE aus Karten die Deckung (`schale`, w22-wiese-nachzug: je Boden-Punkt eine
+    // senkrechte Karte 2,3 × 0,7 m, ein Band und elf Zacken, bis 3-fach verbreitert, 13 Dreiecke, EIN Befehl
+    // `nahWiese:Lf:schale`). Sie gehörte zu keiner Stufe des Büschels: im ersten Bild des Spielers große gelbgrüne Zacken-Flächen
+    // in den Beeten der Ankunft, eine Zacken-Wand am Hang des Dorfs, eine Sägezahn-Wand im Band 10–40 m der Wiese (Radeon,
+    // Spike w28-wiese-spike). Davor (w22-strauch-karte) wurde der Halm um die Streckung breiter (Keile von 2,5 m), davor
+    // (b0c18788) trug die Anzahl die Fläche (4 567 statt 1 168 Büschel im Blick, an der GTX stand die Welt nicht).
     // `bis` liegt am Ring der Chunks (Radius 4 × 43,2 m: jenseits trägt keine Boden-Karte, `_bodenKommtNie`) — dahinter ist
     // das Gras nach dem Studio der Boden (foundry-core `fernform` „boden"). `kachel` = die Kachel der Ferne (vier Kacheln der
     // Nähe), `vorlauf` = so weit näher, als sie gebaut ist, trägt eine Kachel der Ferne ihre Büschel schon.
     // `pfadDuennt` = so stark dünnt das Pfad-Feld (`_pfadFeldAt` ∈ [0, 1]) den Wurf: die Dichte × (1 − pfad · pfadDuennt) — der
     // Trampelpfad liest dieselbe Zahl für die Stufe, ab der er Pfad ist (`_trittStufe`, `TRITT.pfadGras`).
-    // DIE GRENZE DER STRECKUNG (w21-wiese-fern): ein Büschel der Ferne spreizt seine Füße nie weiter, als die Wiese der Nähe und
-    // sein Boden es tragen (`_wieseFernGrenzen`, je Büschel die Zahl in der vierten Zeile seiner Instanz-Matrix, die der Stoff
-    // `_halmFerne` und der Sicht-Satz lesen; die Breite der Halme und der Anteil folgen weiter dem Pixel, `_wieseFern`): seine
-    // Füße stehen nur, wo die Nähe mindestens `wiese` ihrer Wiese trägt (`_wieseGrund`: nie auf Weg, Gasse, Pflaster, Fels,
-    // Asche oder Wasser — mit dem vollen Pfad als Schwelle, 0,08, standen am Hang des Genesis-Orts 97 Büschel mit Füßen auf den
-    // Rändern der Wege) und nie über einer Kante, über die der Boden steiler fällt, als die Wiese steht (`GRASS_SLOPE.hi` je
-    // Kante des Gitters), sein Kreis berührt keinen Grund eines Hauses (derselbe Kreis wie in der Nähe, `erdbauGrund`), und jeder Fuß
-    // liegt höchstens `boden` m neben dem gezeichneten Boden. Gelesen über ein Gitter der Kante `gitter` je Kachel der Ferne
-    // (`_wieseFernGitter`; mit 1,5 m lief der getretene Weg — 1,1 m Erde, `TRITT` — zwischen seinen Punkten hindurch, an der
-    // Mess-Wiese 10 Büschel mit Füßen auf ihm; die Maske dehnt sich um eine Kante). `boden` 0,5 m: über dem Rauschen
-    // der Facetten (Surface-Nets auf 1,8 m trägt ±0,2 m, Lehre 22; mit 0,25 m setzten am Genesis-Ort 558 von 1 277 Büscheln ihre
-    // Grenze an Abweichungen von 0,26–0,38 m), unter der Höhe des Halms (L2 0,69–0,72 m). Gemessen (Null-Renderer, je Pose
-    // alle stehenden Büschel der Ferne, die Füße, die erst die Streckung auf eine Maske trug; mit dem Teil-Gitter von
-    // w19-saum-lai): Stadt (dorf 7 120) auf den Gassen 56 → 4, Nicht-Wiese 91 → 0, Wasser 15 → 0; Hang am Genesis-Ort (26°) auf
-    // Wegen 155 → 0, Nicht-Wiese 197 → 0; Genesis-Ort auf Wegen 29 → 0, Nicht-Wiese 44 → 0; Mess-Wiese auf dem Weg 236 → 0,
-    // Nicht-Wiese 107 → 0; die Höhe eines Büschels 83,6 · 72,0 · 95,4 m → 8,7 · 11,5 · 2,0 m (Genesis · Hang · Mess-Wiese), die
-    // Füße p999 14,0 · 4,2 · 6,7 m neben dem Boden → 0,46 · 0,42 · 0,08 m. Die Stadt trägt wieder Ferne zwischen den Häusern
-    // (504 → 1 069 stehende Büschel, bis dahin fiel jedes im Kreis 11–22 m um einen Grund).
-    // DIE SCHALE DER FERNE (`schale`, w22-wiese-nachzug): seit das Blatt der Ferne nur den Pixel hält (w22-strauch-karte, keine
-    // Keile) trägt die Blattfläche jenseits der Übergabe EINE billige Schicht über dem Boden-Gitter der Ferne (`_wieseFernGitter`):
-    // je Punkt, der Wiese trägt, eine Karte `breite` × `hoehe` (ein dunkles Band, elf gezackte Spitzen von Halm-Breite,
-    // 13 Dreiecke), gedreht nach ihrer Ziehung (`_ortZiehung` Zug 1), steigend über `rampe` m hinter der Übergabe; ihr Anteil
-    // (`_wieseSchale`) hält 1 bis `voll`, dahinter (voll/d)³ — die Karten je Pixel bleiben, jede wird um 1/Anteil breiter
-    // (höchstens `breitMax`) —, vor `bis` über `saum` fällt er auf 0. EIN Befehl (`nahWiese:Lf:schale`), keine Büschel mehr.
-    // Jede Karte steht auf der Ebene ihres Hangs und ist höchstens so breit, wie ihre Wiese und ihr Boden sie tragen (w24-wiese-
-    // ferne, `_wieseSchaleDaten`: dieselbe Maske wie die Füße der Büschel, `boden`, der Grund der Häuser); `schmal` × `breite`
-    // ist die schmalste Karte — wo selbst sie nicht steht, steht keine. `klumpung` ist Nilsons Klumpungs-Index Ω der Wiese im
-    // ersten Treffer der Karte (`_wieseSchaleSenke`: die Lücke e^−Ω·K·Λ): die Halme stehen in Büscheln, kein gleichmäßiges
-    // Medium — der Blick fällt zwischen ihnen tiefer in die Narbe. Geeicht am Bild der echten Halme (vorher 921818a2, Radeon,
-    // Mess-Wiese ≥ 40 m): mit Ω 1 das Fern-Band +5,3 % Luma (GTX +5,7 %), Werkbank Ω 0,7 −1,7 %, Ω 0,6 −2,5 % (20–40 m −3,1 %).
-    // Gemessen (Radeon, vegetation.K1#1, Mess-Wiese Third): LAI 2–5 · 5–10 · 10–20 · 20–40 m ohne Keile und ohne Schale 2,40 ·
-    // 2,23 · 1,72 · 0,32, mit ihr 2,40 · 2,23 · 2,08 · satt (0 Boden-Pixel); die Büschel der Ferne wie main (im Blick 1 168), die
-    // Schale 1 854 Karten, 24 102 Dreiecke (Null-Renderer, der Sicht-Satz; Genesis 155 · 2 015), ihr Bau 0,14 ms je Kachel.
-    // Bis dahin (b0c18788) trug die Anzahl der Büschel die Blattfläche: 4 567 statt 1 168 im Blick, an der GTX stand die Welt nicht.
     static get NAH_WIESE() {
         return this._einmal(
             "NAH_WIESE",
@@ -558,27 +520,11 @@ class AnazhRealm_daten {
                     kachel: 12,
                     bis: 200,
                     saum: 20,
-                    voll: 40,
-                    fall: 3.25,
-                    streckMax: 14,
-                    fuss: 14,
+                    fuss: 13.8,
                     auge: 1.5,
                     rand: 0.2,
                     vorlauf: 8,
-                    gitter: 1,
-                    boden: 0.5,
-                    wiese: 0.5,
-                    schale: Object.freeze({
-                        voll: 30,
-                        bis: 80,
-                        saum: 10,
-                        rampe: 4,
-                        breite: 2.3,
-                        hoehe: 0.7,
-                        breitMax: 3,
-                        schmal: 0.25,
-                        klumpung: 0.6,
-                    }),
+                    skalaMax: 2.5,
                 }),
             })
         );
@@ -619,13 +565,22 @@ class AnazhRealm_daten {
     // dem Mittel des einzelnen Halms auf 0,56–0,73 der In-Streuung (Genesis, Mittag, ohne Luft) und trug ihr Gelbgrün durch
     // die Luft: der Farbton bei 8 km 12,7–25,5° von der In-Streuung (Soll ≤ 10°, swiftshader); als Bestand 2,7–10,2° (Uhr 0,5)
     // und 1,0–2,8° (Uhr 0,27), vom Gipfel 4,7–10°; Durchlass, Rand-Kontrast (1,3–1,6 %) und Kante gehalten.
+    // DER TINT DES ORTS (w28-wiese-schale): der Grund trägt denselben Tint wie die Büschel über ihm — das Gesetz des Kerns im
+    // Mittel (`terrain:wiesenTintMittel`, die Arten und ihr Alter nach Licht und Feuchte, wie `wiesenTint` je Büschel), offen
+    // (Licht 1: die Kronen legt der Boden-Stoff auf), an `tint.n` Stützen der Feuchte 0 … 1 (der Faden liest dieselbe Tafel).
     static get WIESEN_GRUND() {
         const mg = AnazhRealm.MEADOW_GREEN;
         const sp = AnazhRealm.GRAS_SPITZE;
         const halm = [0, 1, 2].map((i) => 0.383 * mg[i] + 0.442 * sp[i]);
+        const WTM =
+            AnazhRealm.Gesetz("terrain:wiesenTintMittel", null) ||
+            AnazhRealm._kernPflichtBruch("terrain:wiesenTintMittel");
+        const tint = new Array(9 * 3);
+        for (let j = 0; j < 9; j++) WTM(1, j / 8, tint, j * 3);
         return this._einmal(
             "WIESEN_GRUND",
             Object.freeze({
+                tint: Object.freeze(tint),
                 halmMittel: Object.freeze(halm),
                 farbe: Object.freeze(halm.map((x) => x * AnazhRealm.FERN_FARBE.halmSchatten)),
                 schwelle: AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle,
@@ -712,31 +667,14 @@ class AnazhRealm_daten {
                 // DIE HÖHE AM SCHIRM streut `streu` (σ, in der Höhe −1 … 1), STETIG über den Oktaven-Wechsel: jede Oktave trägt
                 // mikroHoehe^(Oktaven über der feinsten), die ein- und die ausblendende leistungs-gleich (√fract, √(1 − fract)) — σ
                 // steht auf 0,142–0,146. Bis w27-boden-nah-2 fiel die Höhe einer Oktave an jedem Wechsel im Sprung (1 → 0,75 → 0,56):
-                // σ 0,133 ↔ 0,178, das Mittel des Bodens im reinen Himmels-Licht 1,12 ↔ 1,20 — Bänder im Schatten und in der Nacht.
+                // σ 0,133 ↔ 0,178 — Bänder im Korn.
                 streu: 0.142,
-                // DAS HIMMELS-BILD (`_mikroStoff`, aoNode): was das Relief im reinen Himmels-Licht zeigt — Schatten, bedeckter Tag,
-                // Nacht. Im LOGARITHMUS beschränkt: ln Bild = −ln(mulde) · s(kavitaet · (h − krume)), s(x) = x / √(1 + x²). Die
-                // tiefste Mulde hält `mulde` des Lichts der Fläche, die höchste Krume trägt 1/mulde: kein Pixel säuft ab, keiner
-                // glitzert. `kavitaet` ist die Steile zwischen beiden (je Höhe), `krume` die Schwelle über der mittleren Fläche — die
-                // Mehrheit liegt in der Mulde, das Mittel des Bilds steht bei 1,13 (main 1,09, w26 1,15; gerechnet am Rausch-Gesetz).
-                // GEMESSEN (Radeon 890M, Mess-Wiese Ego, der Weg von material.K2#1, ABAB in EINER Welt, je 2× bit-gleich): glatt
-                // 0,5/1/2 m 0,157/0,093/0,108 → 0,032/0,013/0,012, nyquist 0,167/0,171/0,175 → 0,175/0,179/0,180, Klassen-Luma
-                // 32,18 → 32,30; die Nacht der Prüfbühne (S0, Radeon wie swiftshader): abgesoffen 4,0 % → 0,7 %, Luma 24,2 → 24,1.
-                // DAS GESETZ DAVOR — Korn × Kavität linear, (1 + korn · h)(1 + kavitaet · h) — nahm der Mulde Albedo UND Himmel, bis
-                // auf 0 bei h = −1/kavitaet: mit 2,1 soffen in der Nacht 4,0 % ab (pascal 6,4 %: main saß ohne Abstand an der Wand
-                // 5 %), mit 3,6 (w26-boden-nah, glatt 0,031) 9,8 % — der Zug z352 fiel an S0 Nacht. Das Urteil glatt liest die BREITE
-                // der Verteilung (p10–p90 2,0 der Fläche), nicht ihre Spitzen: ein Boden mit hellen Spitzen (0,6 + 0,4 · exp in der
-                // Helligkeit) hielt die Nacht und verlor K2#1 (glatt 0,161, dieselbe Welt). Die Schwelle 0,03 gäbe der Nacht Luma
-                // 23,7, 0,02 gäbe 24,6 — 0,025 hält die Luma von main.
-                mulde: 0.38,
-                kavitaet: 12,
-                krume: 0.025,
-                // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller (σ 8,5 %), mittelfrei —
-                // die Sonne liest es, das Himmels-Licht liest das Himmels-Bild. Bis w28-stadt-grund 2,0 (σ 29 %): das Korn überdeckte den
-                // Bruchton des Steins (Kopfstein ±12 %, σ 7 %) — am Genesis-Kern stand im Bild kein Stein, nur Rauschen (Radeon,
-                // Laplace-σ 37,5 bei mikroPx 1, 21,4 bei mikroPx 3 und korn 2,0); unter σ 8,5 % trägt der Stein das Bild, das Korn
-                // seine Fläche.
-                korn: 0.6,
+                // DAS KORN je Höhe (`_mikroStoff`, colorNode) ist DAS EINE BILD DER HÖHE: die Albedo der Mulde dunkler, der Erhebung
+                // heller, mittelfrei. Jedes Licht liest es (Sonne, Licht-Pool, Himmel): im Schlagschatten und in der Nacht steht
+                // dasselbe Korn wie in der Sonne. Seine Amplitude ist keine Zahl dieser Tafel mehr: sie ist die Spalte `korn` der
+                // Stoff-Tafel (`_defaultMaterials`: `erde` der offene Boden, `stein` der Fels), dort die Zahlen und die Messung. Bis
+                // w28-himmel-korn las das Himmels-Licht ein zweites Bild derselben Höhe (aoNode, zwischen 0,38 und 1/0,38 im
+                // Logarithmus beschränkt, Steile 12 je Höhe): der Schlagschatten sprang je Kiesel 1 : 5,8, gate:schatten-terminator (K).
                 // Kipp-Stärke subtil halten: der Bump kippt die wahre Normale des Bodens (ferne.K4: keine 2.5D-Lichtung mehr)
                 // — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze. 0.24 = 13° moduliert echtes
                 // Mikro-Relief; das Albedo-Korn trägt die feine Textur.
@@ -805,7 +743,7 @@ class AnazhRealm_daten {
             "SUBSTANCE_RESPONSE",
             Object.freeze({
                 defaults: Object.freeze({
-                    // Terrain/Inseln/Mantel (vertexColors): Albedo-Quelle bleibt das
+                    // Terrain/Mantel (vertexColors): Albedo-Quelle bleibt das
                     // per-Vertex-color-Attribut; micro/AO trägt ihr eigener
                     // triplanar-colorNode (darum hier 0).
                     feld: Object.freeze({ micro: 0, emissiv: 0 }),
@@ -842,6 +780,7 @@ class AnazhRealm_daten {
             "bau.felsturm": ["Felsturm", "Rock spire"],
             "bau.feuerstelle": ["Feuerstelle", "Campfire"],
             "bau.gefallener-stamm": ["Gefallener Stamm", "Fallen log"],
+            "bau.grabstein": ["Grabstein", "Gravestone"],
             "bau.kiefer": ["Kiefer", "Pine"],
             "bau.kiesel": ["Kiesel", "Pebbles"],
             "bau.kiste": ["Kiste", "Crate"],
@@ -1036,6 +975,20 @@ class AnazhRealm_daten {
             "chat.befehl.praege.kein-rezept": ["Kein Studio-Rezept „{gattung}\" im Buch.", "No studio recipe “{gattung}” in the book."],
             "chat.befehl.praege.keine-achse": ["„{rezept}\" ({art}) trägt keine Charakter-Achse.", "“{rezept}” ({art}) has no character axis."],
             "chat.befehl.praege.zeilen": ["Die {achse} des Studios: {zeilen}.", "The studio's {achse} options: {zeilen}."],
+            "chat.befehl.reise.ort": ["Diese Welt liegt bei {breite}° {ns} · {laenge}° {ow} auf ihrem Planeten, die Küste {kueste} km entfernt (Samen „{samen}\", Kern {version}).", "This world lies at {breite}° {ns} · {laenge}° {ow} on its planet, the coast {kueste} km away (seed “{samen}”, core {version})."],
+            "chat.befehl.reise.ohne-ort": ["Der Ort dieser Welt auf ihrem Planeten ist nicht bekannt: {grund}", "This world’s place on its planet is unknown: {grund}"],
+            "chat.befehl.reise.ost": ["O", "E"],
+            "chat.befehl.reise.vor": [" vor {ma} Mio. Jahren", " {ma} million years ago"],
+            "chat.befehl.reise.nach": [" in {ma} Mio. Jahren", " {ma} million years from now"],
+            "chat.befehl.reise.hier-ort": ["Diese Welt ist ein Ort ihres Planeten bei {breite}° {ns} · {laenge}° {ow}{zeit} (Samen „{samen}\", Kern {version}); „reise heim\" führt zurück.", "This world is a place of its planet at {breite}° {ns} · {laenge}° {ow}{zeit} (seed “{samen}”, core {version}); “reise heim” leads back."],
+            "chat.befehl.reise.ziel": ["Du reist nach {breite}° {ns} · {laenge}° {ow}{zeit}: Sommer {sommer} °C, Winter {winter} °C am Meer, Schnee ab {schnee} m, das Meer bei {meer} m.", "You travel to {breite}° {ns} · {laenge}° {ow}{zeit}: summer {sommer} °C, winter {winter} °C at the sea, snow from {schnee} m, the sea at {meer} m."],
+            "chat.befehl.reise.meer": ["Bei {breite}° {ns} · {laenge}° {ow}{zeit} liegt Meer, {kueste} km vor der Küste — dort ist kein Ort.", "At {breite}° {ns} · {laenge}° {ow}{zeit} lies open sea, {kueste} km off the coast — there is no place there."],
+            "chat.befehl.reise.heim": ["Du reist heim nach „{welt}\".", "You travel home to “{welt}”."],
+            "chat.befehl.reise.daheim": ["Du bist daheim — „reise <Breite> <Länge> [<Zeit in Mio. Jahren>]\" führt an einen anderen Ort dieses Planeten.", "You are home — “reise <latitude> <longitude> [<time in Ma>]” leads to another place of this planet."],
+            "chat.befehl.reise.form": ["So reist du: „reise <Breite> <Länge> [<Zeit in Mio. Jahren>]\" (Grad, Süden und Westen negativ oder mit N/S/O/W, die Zeit −4000 bis 1000), „reise\" sagt den Ort, „reise heim\" führt zurück.", "To travel: “reise <latitude> <longitude> [<time in Ma>]” (degrees, south and west negative or with N/S/E/W, time −4000 to 1000), “reise” tells the place, “reise heim” leads back."],
+            "chat.befehl.reise.heim-fehlt": ["Die Heimat {welt}… liegt nicht im Speicher.", "The home world {welt}… is not in storage."],
+            "chat.befehl.reise.nicht": ["Die Reise kam nicht an: {grund}", "The journey did not arrive: {grund}"],
+            "chat.befehl.reise.zeugnis": ["Du reistest an einen anderen Ort des Planeten: {ort}.", "You travelled to another place of the planet: {ort}."],
             "chat.befehl.symphonie.aktiviert": ["Anazh-Symphonie aktiviert — die Welt klingt (und die Kreaturen beleben sich).", "Anazh Symphony activated — the world sings (and the creatures come alive)."],
             "chat.befehl.symphonie.ohne-klang": ["Anazh-Symphonie: Belebung aktiv; Klang konnte nicht starten (kein Audio-Kontext).", "Anazh Symphony: creatures enlivened; sound couldn't start (no audio context)."],
             "chat.befehl.version.aktiviert": ["Version {version} aktiviert", "Version {version} activated"],
@@ -1133,7 +1086,6 @@ class AnazhRealm_daten {
             "hof.brauen-trinken": ["Brauen + Trinken", "Brew + Drink"],
             "hof.buehne-leer": ["Wähle ein Wesen aus dem Orchester — es tritt hier auf die Bühne.", "Choose a creature from the orchestra — it steps onto the stage here."],
             "hof.chronik-leer": ["Die Welt hat noch nichts erlebt.", "The world has lived through nothing yet."],
-            "hof.du": ["Du", "You"],
             "hof.emotion-titel": ["Dominante Emotion: {emotion} — Intensität {prozent} % (färbt Verhalten + Contagion).", "Dominant emotion: {emotion} — intensity {prozent} % (colors behavior + contagion)."],
             "hof.erfolge": ["{n} Erfolge", "{n} successes"],
             "hof.erfolge-meister": ["{n} Erfolge — Meisterschaft", "{n} successes — mastery"],
@@ -1192,6 +1144,8 @@ class AnazhRealm_daten {
             "hof.status-bauwerk": ["Fertigen setzt das Werk, wohin du blickst — das Setzen zieht das Material (Frieden und Pfad), frei ist nur Schöpfer.", "Crafting places the work where you look — placing draws the material (Peace and Path); only Creator is free."],
             "hof.status-werk": ["Gefertigt — die Präzision ist eingefroren, der Gebrauch ist frei.", "Crafted — its precision is locked in, using it is free."],
             "hof.stimmung-titel": ["Stimmung: {stimmung} — die Resonanz des Wesens auf das Feld + die Bindung", "Mood: {stimmung} — the creature's resonance with the field + the bond"],
+            "hof.stimmung.froh": ["froh", "glad"],
+            "hof.stimmung.truebe": ["trübe", "gloomy"],
             "hof.streift": ["Streift", "Roam"],
             "hof.substanz": ["Substanz — speist die Werte", "Substance — feeds the stats"],
             "hof.substanz-titel": ["Die Compound-Tags (Natur, 0–3), aus denen die Werte emergieren — Werkstatt-Wissen.", "The compound tags (nature, 0–3) the stats emerge from — Workshop knowledge."],
@@ -1224,6 +1178,13 @@ class AnazhRealm_daten {
             "hof.werte-seele": ["Werte werden berechnet, wenn die Seele steht.", "Stats are calculated once the soul is set."],
             "hof.wesen": ["Wesen", "Creature"],
             "hof.wesen-zeile-titel": ["HP {hp}/{hpMax} · DMG {dmg} · SPD {spd} · JMP {jmp} · STA {sta} · PRC {prc} · MR {mr} · HR {hr} · Stimmung {stimmung}", "HP {hp}/{hpMax} · DMG {dmg} · SPD {spd} · JMP {jmp} · STA {sta} · PRC {prc} · MR {mr} · HR {hr} · Mood {stimmung}"],
+            "hof.wesen.neugierig": ["neugierig", "curious"],
+            "hof.wesen.sanft": ["sanft", "gentle"],
+            "hof.wesen.scheu": ["scheu", "shy"],
+            "hof.wesen.vertraut": ["vertraut", "trusting"],
+            "hof.wesen.wachsam": ["wachsam", "wary"],
+            "hof.wesen.wehrhaft": ["wehrhaft", "defensive"],
+            "hof.wesen.wild": ["wild", "wild"],
             "hud.aeltere-gesten": ["+ {n} ältere Gesten", "+ {n} older gestures"],
             "hud.aktiv": ["⚡ aktiv · {n}×", "⚡ active · {n}×"],
             "hud.alle-n": ["▸ alle {n}", "▸ all {n}"],
@@ -1254,6 +1215,7 @@ class AnazhRealm_daten {
             "hud.gesetze-eigene-leer": ["Noch keine eigenen — sprich eine Regel, oder 📌 adoptiere ein Nexus-Experiment.", "None of your own yet — speak a rule, or 📌 adopt a Nexus experiment."],
             "hud.gesetze-leer": ["Noch keine Gesetze. Sag z. B. „{vorlage}\".", "No laws yet. Try saying “{vorlage}”."],
             "hud.geste": ["✦ Geste", "✦ Gesture"],
+            "hud.geste-nexus": ["Nexus-Geste {n}", "Nexus gesture {n}"],
             "hud.geste-titel": ["Eine einmalige Tat (kein stehendes Gesetz) — ▶ wirkt sie erneut.", "A one-time deed (not a standing law) — ▶ casts it again."],
             "hud.geste-vergessen": ["Geste {name} vergessen", "Forget gesture {name}"],
             "hud.geste-wirken": ["Geste {name} erneut wirken", "Cast gesture {name} again"],
@@ -1315,6 +1277,51 @@ class AnazhRealm_daten {
             "kern.lade-erwachen-fehl": ["die Welt konnte nicht erwachen: {grund}", "the world could not awaken: {grund}"],
             "kern.lade-gpu-stumm": ["die Grafikkarte antwortet seit 25 s nicht — versuche ?holz=kienspan", "the graphics card has not answered for 25 s — try ?holz=kienspan"],
             "kern.lade-gpu-verweigert": ["die Grafikkarte verweigert die Welt: {grund}", "the graphics card refuses the world: {grund}"],
+            // die Lücken des ersten Weltbilds (`_weltbildLuecken`): je Term seine Zeile am Ladeschirm (`_ladeschirmStand`)
+            "ankunft.welt": ["die Welt entsteht", "the world is forming"],
+            "ankunft.boden": ["der Boden wächst ({n} Stücke im Bild)", "the ground is growing ({n} pieces in view)"],
+            "ankunft.horizont-waechst": ["der Horizont wächst ({pct} %)", "the horizon is growing ({pct} %)"],
+            "ankunft.horizont-geteilt": ["der Horizont wird geteilt", "the horizon is being divided"],
+            "ankunft.horizont-gemalt": ["der Horizont wird gemalt", "the horizon is being painted"],
+            "ankunft.licht": ["das Licht des Orts wird gemessen", "the light of the place is being measured"],
+            "ankunft.leib": ["der Spieler erhält seinen Leib", "the player receives a body"],
+            "ankunft.zeichnung-eins": ["1 Programm des Bilds entsteht", "1 program of the picture is being built"],
+            "ankunft.zeichnung": ["{n} Programme des Bilds entstehen", "{n} programs of the picture are being built"],
+            "ankunft.buch": ["das Buch der Studios öffnet sich", "the book of the studios opens"],
+            "ankunft.bauten": ["{n} Bäume und Bauten wachsen", "{n} trees and buildings are growing"],
+            "ankunft.dorf-haeuser": ["{n} Häuser des Dorfs wachsen", "{n} houses of the village are growing"],
+            "ankunft.dorf-geplant": ["das Dorf wird geplant", "the village is being planned"],
+            "ankunft.dorf-kehrt": ["das Dorf kehrt wieder", "the village returns"],
+            "ankunft.dorf-gegruendet": ["das Dorf wird gegründet", "the village is being founded"],
+            "ankunft.pflanzung": ["{teile}", "{teile}"],
+            "ankunft.baeume-gepflanzt": ["{n} Bäume werden gepflanzt", "{n} trees are being planted"],
+            "ankunft.boeden-bepflanzt": ["{n} Wald-Böden werden bepflanzt", "{n} forest floors are being planted"],
+            "ankunft.streu": ["{n} Wald-Stücke warten auf ihre Gestalt", "{n} forest pieces await their shape"],
+            "ankunft.karten": ["{n} ferne Bäume werden gemalt", "{n} distant trees are being painted"],
+            // die Untertitel-Tafel (`AnazhRealm.UNTERTITEL`): je Ereignis-Name des Klang-Gesetzes seine Zeile
+            "untertitel.stimme.wind": ["Wind weht", "wind blows"],
+            "untertitel.stimme.laub": ["Laub rauscht", "leaves rustle"],
+            "untertitel.stimme.ufer": ["Wellen am Ufer", "waves on the shore"],
+            "untertitel.stimme.fluss": ["Wasser fließt", "water flows"],
+            "untertitel.stimme.fall": ["Wasserfall rauscht", "waterfall roars"],
+            "untertitel.stimme.regen": ["Regen fällt", "rain falls"],
+            "untertitel.stimme.glut": ["Feuer knistert", "fire crackles"],
+            "untertitel.stimme.vogel": ["Vögel singen", "birds sing"],
+            "untertitel.stimme.grille": ["Grillen zirpen", "crickets chirp"],
+            "untertitel.ruf.freude": ["{wer} ruft freudig", "{wer} calls joyfully"],
+            "untertitel.ruf.ruhe": ["{wer} ruft leise", "{wer} calls softly"],
+            "untertitel.ruf.trauer": ["{wer} klagt", "{wer} laments"],
+            "untertitel.ruf.furcht": ["{wer} schreit ängstlich", "{wer} cries out in fear"],
+            "untertitel.substanz.treffer": ["Treffer: {wer}", "Hit: {wer}"],
+            "untertitel.substanz.singen": ["Eine Form singt", "A form sings"],
+            "untertitel.substanz.abschied": ["Eine Form verklingt", "A form fades away"],
+            "untertitel.substanz.wasser": ["Wasser gluckert", "water gurgles"],
+            "untertitel.substanz.inventar": ["Ding klingt", "a thing chimes"],
+            "untertitel.schritt.schritt": ["Schritte auf {wer}", "steps on {wer}"],
+            "untertitel.schritt.landung": ["Landung auf {wer}", "landing on {wer}"],
+            "untertitel.fahrt.motor": ["Motor brummt", "engine hums"],
+            "untertitel.fahrt.rollen": ["Wagen rollt", "cart rolls"],
+            "untertitel.musik.lofi": ["♪ Musik", "♪ music"],
             "kern.perf-blackbox": ["BLACKBOX schlimmster {ms} ms (GPU-Lücke {luecke} · CPU {cpu}) · {frames}F → anazhRealmPerf.json", "BLACKBOX worst {ms} ms (GPU gap {luecke} · CPU {cpu}) · {frames}F → anazhRealmPerf.json"],
             "kern.perf-chunk": ["chunk SYNC {sync}/f ({syncms} ms)  worker {worker}/f  q{q}", "chunk SYNC {sync}/f ({syncms} ms)  worker {worker}/f  q{q}"],
             "kern.perf-export": ["Export: Einstellungen → Leistung → „Perf-Daten exportieren\"", "Export: Settings → Performance → “Export perf data”"],
@@ -1336,7 +1343,7 @@ class AnazhRealm_daten {
             "kern.perf-ring": ["max-Frame je Sekunde → {n}s", "max frame per second → {n}s"],
             "kern.perf-rload": ["RLOAD  {dc} draw-calls · {tris}M tris  (max {dcmax} / {trismax}M)", "RLOAD  {dc} draw calls · {tris}M tris  (max {dcmax} / {trismax}M)"],
             "kern.perf-spike": ["SPIKE  schlimmster {phase} {ms} ms · frame-max {max} ms", "SPIKE  worst {phase} {ms} ms · frame max {max} ms"],
-            "kern.perf-stellgr": ["stellgr  streamBudget {stream} ms  waterBudget {water} ms", "levers  streamBudget {stream} ms  waterBudget {water} ms"],
+            "kern.perf-stellgr": ["stellgr  streamBudget {stream} ms", "levers  streamBudget {stream} ms"],
             "kern.perf-szene": ["Szene", "Scene"],
             "kern.perf-upload": ["Up MB/s", "Up MB/s"],
             "kern.perf-verteilung": ["ms-Verteilung", "ms distribution"],
@@ -1719,9 +1726,11 @@ class AnazhRealm_daten {
             "speicher.diese-welt": ["(diese Welt)", "(this world)"],
             "speicher.eltern-id": ["— ID {id}…", "— ID {id}…"],
             "speicher.eltern-verloren": ["(verloren) — ID {id}…", "(lost) — ID {id}…"],
-            "speicher.ersetzen-abgelehnt": ["Ersetzen abgelehnt: {grund}", "Replace refused: {grund}"],
             "speicher.ersetzen-fehl": ["Ersetzen fehlgeschlagen: {datei} ließ sich nicht ablegen ({grund}) — du bleibst in deiner Welt.", "Replace failed: {datei} could not be stored ({grund}) — you stay in your world."],
             "speicher.ersetzen-ok": ["Datei {datei} importiert — die Welt erwacht neu.", "File {datei} imported — the world awakens anew."],
+            "speicher.fusion-fehl": ["Fusion fehlgeschlagen: {grund}", "Fusion failed: {grund}"],
+            "speicher.fusion-ohne-welt": ["Fusion verweigert: die aktive Welt fehlt.", "Fusion refused: there is no active world."],
+            "speicher.fusion-ohne-zweite": ["Fusion verweigert: keine zweite Welt gewählt.", "Fusion refused: no second world chosen."],
             "speicher.fusion-strategie": ["Fusion-Strategie: {strategie}", "Fusion strategy: {strategie}"],
             "speicher.fusion-vorbereitung-fehl": ["Fusion-Vorbereitung fehlgeschlagen: {grund}", "Fusion preparation failed: {grund}"],
             "speicher.import-fehl": ["Import fehlgeschlagen: {grund}", "Import failed: {grund}"],
@@ -1729,10 +1738,26 @@ class AnazhRealm_daten {
             "speicher.keine-eltern": ["Diese Welt ist eigenständig — keine Eltern-Welten.", "This world stands on its own — no parent worlds."],
             "speicher.klang-an": ["Klang: an", "Sound: on"],
             "speicher.klang-aus": ["Klang: aus", "Sound: off"],
+            "speicher.laden-gerettet": ["Der Speicher trug die Welt nicht ganz ({befund}) — sie kam aus {quelle}.", "Storage did not hold the world whole ({befund}) — it came from {quelle}."],
+            "speicher.laden-unlesbar": ["Der Speicherstand ist beschädigt und ließ sich nicht lesen ({grund}) — die Welt erwacht ohne ihn.", "The saved state is damaged and could not be read ({grund}) — the world awakens without it."],
+            "speicher.laden-weist": ["Die Wände der Welt wiesen ab: {teile}.", "The world's walls turned away: {teile}."],
             "speicher.namenlos": ["(namenlos)", "(nameless)"],
+            "speicher.quelle-bak": [".bak (ein Stand zurück)", ".bak (one state back)"],
             "speicher.tor-anklopfen": ["„{slug}\" (ID {id}…, {tage} Tage alt, {bauwerke} Bauwerke, {plaene} eigene Baupläne, {erinnerungen} Erinnerungen) klopft an dein Tor. Wie willst du sie empfangen?", "“{slug}” (ID {id}…, {tage} days old, {bauwerke} structures, {plaene} own blueprints, {erinnerungen} memories) is knocking at your gate. How will you receive it?"],
             "speicher.tor-anklopfen-1": ["„{slug}\" (ID {id}…, {tage} Tag alt, {bauwerke} Bauwerke, {plaene} eigene Baupläne, {erinnerungen} Erinnerungen) klopft an dein Tor. Wie willst du sie empfangen?", "“{slug}” (ID {id}…, {tage} day old, {bauwerke} structures, {plaene} own blueprints, {erinnerungen} memories) is knocking at your gate. How will you receive it?"],
             "speicher.unbekannt": ["unbekannt", "unknown"],
+            "speicher.weist.bau": ["{n} × Bau ohne Bauplan (sein Bauplan ist gefallen)", "{n} × structure without a blueprint (its blueprint has fallen)"],
+            "speicher.weist.bauplan": ["{n} × Bauplan (unlesbar oder von widerrufener Herkunft)", "{n} × blueprint (unreadable or of revoked origin)"],
+            "speicher.weist.faehigkeit": ["{n} × gewährte Fähigkeit (die Regel- oder Sende-Wand trägt sie nicht)", "{n} × granted ability (the rule or broadcast wall won't carry it)"],
+            "speicher.weist.halle": ["{n} × Portal-Halle (widerrufene Herkunft oder keine gültige Adresse)", "{n} × portal hall (revoked origin or no valid address)"],
+            "speicher.weist.praegung": ["{n} × Prägung, die ihr Studio-Prüfer abweist", "{n} × imprint its studio check rejects"],
+            "speicher.weist.programm": ["{n} × Fähigkeit (ihr Programm trägt eine Tat, die der Interpreter nicht kennt oder nie ausführt)", "{n} × ability (its program carries a deed the interpreter does not know or never runs)"],
+            "speicher.weist.regel": ["{n} × Welt-Regel (ihre Wirkung pflügt den gefrorenen Weltgrund)", "{n} × world rule (its effect ploughs the frozen world ground)"],
+            "speicher.weist.seele": ["{n} × Seele (ihr Leib bricht den Bau-Vertrag)", "{n} × soul (its body breaks the building contract)"],
+            "speicher.weist.spende": ["{n} × Spende (widerrufener oder unförmiger Anbieter)", "{n} × contribution (revoked or malformed provider)"],
+            "speicher.weist.stoff": ["{n} × Stoff (die Stoff-Wand trägt ihn nicht)", "{n} × material (the material wall won't carry it)"],
+            "speicher.weist.werkzeug": ["{n} × Werkzeug (fremde Wirkungs-Art)", "{n} × tool (unknown kind of effect)"],
+            "speicher.welt-abgewiesen": ["Die fremde Welt kam nicht herein: {grund} — deine Welt bleibt, wie sie war.", "The foreign world was turned away: {grund} — your world stays as it was."],
             "speicher.welt-option": ["{slug} — ID {id}…", "{slug} — ID {id}…"],
             "speicher.welt-wechselt": ["die Welt wechselt", "the world is changing"],
             "stoff.blech": ["Blech", "Sheet metal"],
@@ -2300,6 +2325,7 @@ class AnazhRealm_daten {
             "vorschau.werk": ["Werk", "Work"],
             "welt.brennpunkt-glimmt": ["„{ding}\" glimmt im Brennpunkt von „{linse}\" — rück es aus dem Licht, sonst fängt es Feuer.", "“{ding}” is smouldering in the focus of “{linse}” — move it out of the light before it catches fire."],
             "welt.deine-faust": ["Deine Faust", "Your fist"],
+            "welt.fackel-faengt-nicht": ["Die Glut von „{was}\" zündet hier nichts — der Boden trägt kein Bett, das brennt, oder es ist zu nass.", "The embers of “{was}” light nothing here — the ground bears nothing that burns, or it is too wet."],
             "welt.katalog.begegnung.name": ["Begegnungs-Feld", "Field of Encounters"],
             "welt.katalog.begegnung.text": ["Ein stilles Lichter-Feld — eine fremde single-player Engine, in der ihr euch trotzdem seht: AnazhRealm injiziert die Ko-Präsenz übers Mesh.", "A quiet field of lights — a foreign single-player engine in which you still see each other: AnazhRealm brings in co-presence over the mesh."],
             "welt.katalog.fachwerk.name": ["Fachwerkhaus — parametrisch, begehbar", "Timber-Frame House — parametric, walkable"],
@@ -2509,6 +2535,7 @@ class AnazhRealm_daten {
             "gestalt.geroell": ["Geröll", "Scree"],
             "gestalt.gestruepp": ["Gestrüpp", "Brushwood"],
             "gestalt.gotisch": ["Gotisch · steil", "Gothic · steep"],
+            "gestalt.grabstein": ["Grabstein · Sockel, Tafel, Kreuz", "Gravestone · plinth, slab, cross"],
             "gestalt.gras": ["Gras", "Grass"],
             "gestalt.griechisch": ["Griechisch · Kykladen", "Greek · Cycladic"],
             "gestalt.grossschwert": ["Großschwert", "Greatsword"],
@@ -2731,6 +2758,7 @@ class AnazhRealm_daten {
             "seele.boost.hope": ["Hoffnung belebt", "Hope enlivens"],
             "seele.boost.joy": ["Freude wärmt", "Joy warms"],
             "seele.boost.peace": ["Friede härtet leise", "Peace quietly hardens"],
+            "seele.boost.resonanz": ["Welt-Resonanz", "World resonance"],
             "seele.boost.sorrow": ["Trauer schwingt tief", "Sorrow resonates deep"],
             "substanz.haus": ["Haus", "House"],
             "substanz.kraut": ["Kraut", "Herb"],
@@ -2741,6 +2769,7 @@ class AnazhRealm_daten {
             "bau.gewachsen": ["{name} (gewachsen)", "{name} (grown)"],
             "bau.gewachsen-lod": ["{name} (gewachsen, LOD{lod})", "{name} (grown, LOD{lod})"],
             "bau.kopie": ["{name} (Kopie)", "{name} (copy)"],
+            "bau.portal-zu": ["Portal: {welt}", "Portal: {welt}"],
             "bau.truemmer": ["Trümmer ({name})", "Debris ({name})"],
             "bau.rest": ["{name} (eingestürzt)", "{name} (collapsed)"],
             "kern.perf-draw-calls": ["draw-calls", "draw-calls"],
@@ -3001,10 +3030,8 @@ class AnazhRealm_daten {
             "ergebnis.ding.bauplan": ["Bauplan", "blueprint"],
             "ergebnis.ding.dorf": ["Dorf", "village"],
             "ergebnis.ding.fraktal": ["Fraktal-{was}", "fractal {was}"],
-            "ergebnis.ding.insel": ["Insel", "island"],
             "ergebnis.ding.kreaturen": ["Kreaturen", "creatures"],
             "ergebnis.ding.tempel": ["Tempel", "temple"],
-            "ergebnis.ding.ufo": ["UFO", "UFO"],
             "ergebnis.ding.wasserfall": ["Wasserfall", "waterfall"],
             "ergebnis.ding.werke": ["Werke", "works"],
             "ergebnis.dorf-folgt": ["Das Dorf wird gebaut — es meldet sich, wenn es steht", "The village is being built — it will report when it stands"],
@@ -3021,7 +3048,6 @@ class AnazhRealm_daten {
             "ergebnis.verb.erschienen": ["erschienen", "appeared"],
             "ergebnis.verb.gebaut": ["gebaut", "built"],
             "ergebnis.verb.gepraegt": ["geprägt", "imprinted"],
-            "ergebnis.verb.gerufen": ["gerufen", "called"],
             "ergebnis.verb.gesetzt": ["gesetzt", "placed"],
             "ergebnis.verb.gewachsen": ["gewachsen", "grown"],
             "grund.bau": ["im Grundriss eines Baus wächst nichts", "nothing grows within the footprint of a building"],
@@ -3065,7 +3091,6 @@ class AnazhRealm_daten {
             "chat.satz.hain": ["Hain (5 Bäume) gepflanzt", "Grove (5 trees) planted"],
             "chat.satz.heile-welt": ["Welt geheilt: sonnig, Kreaturen glücklich, Gravitation auf 1.5G zurück", "World healed: sunny, creatures happy, gravity back to 1.5G"],
             "chat.satz.huegel": ["Hügel gehoben", "Hill raised"],
-            "chat.satz.insel": ["Schwebende Insel gesetzt", "Floating island placed"],
             "chat.satz.kommt": ["die nächste Kreatur kommt näher zu mir", "the nearest creature comes closer to me"],
             "chat.satz.konsum": ["Konsum: {was}", "Consumed: {was}"],
             "chat.satz.kreaturen": ["{n} Kreaturen gespawnt (am Spieler)", "{n} creatures spawned (at the player)"],
@@ -3088,7 +3113,6 @@ class AnazhRealm_daten {
             "chat.satz.studio-gewachsen": ["{n}× {was} aus dem Studio {wo} gewachsen", "{n}× {was} grown from the studio {wo}"],
             "chat.satz.trinkt": ["die nächste Kreatur sucht Wasser und trinkt", "the nearest creature looks for water and drinks"],
             "chat.satz.uhr": ["Uhrzeit gesetzt: {wort} ({n})", "Time set: {wort} ({n})"],
-            "chat.satz.ufo": ["UFO gerufen", "UFO called"],
             "chat.satz.vor-dir": ["vor dir", "in front of you"],
             "chat.satz.vor-dir-gebaut": ["{was} vor dir gebaut", "{was} built in front of you"],
             "chat.satz.waffe": ["Waffe: {was}", "Weapon: {was}"],
@@ -3116,7 +3140,6 @@ class AnazhRealm_daten {
             "tat.fraktal": ["lässt „{was}“ fraktal in Tiefe {tiefe} wachsen {ort}", "grows “{was}” as a fractal of depth {tiefe} {ort}"],
             "tat.grundhoehe": ["hebt die Welt-Grundhöhe auf {n}", "raises the world's base height to {n}"],
             "tat.himmel": ["färbt den Himmel", "tints the sky"],
-            "tat.insel": ["setzt eine schwebende Insel {ort}", "places a floating island {ort}"],
             "tat.inventar": ["legt {n}× „{was}“ ins Inventar", "puts {n}× “{was}” into the inventory"],
             "tat.kreatur": ["ruft {n} Kreatur herbei {ort}", "calls {n} creature {ort}"],
             "tat.kreatur-gemuet": ["ruft {n} {gemuet} Kreatur herbei {ort}", "calls {n} {gemuet} creature {ort}"],
@@ -3167,7 +3190,6 @@ class AnazhRealm_daten {
             "tat.tempel": ["errichtet einen Tempel {ort}", "raises a temple {ort}"],
             "tat.tempo": ["wiegt die Lauf-Geschwindigkeit auf {n} (im Gesetz-Band deines Körpers)", "sets the walking speed to {n} (within the law band of your body)"],
             "tat.trank": ["gibt Kreatur #{id} den Trank „{was}“", "gives creature #{id} the potion “{was}”"],
-            "tat.ufo": ["ruft ein UFO {ort}", "calls a UFO {ort}"],
             "tat.uhr": ["stellt die Uhr auf {n}", "sets the clock to {n}"],
             "tat.und": ["{a} und {b}", "{a} and {b}"],
             "tat.unsichtbar": ["macht „{was}“ unsichtbar", "makes “{was}” invisible"],

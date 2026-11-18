@@ -1234,6 +1234,31 @@ class AnazhRealm_bau_vorlagen {
                     },
                 ],
             },
+            // DER GRABSTEIN (die Breite der Stadt) — der Welt-Körper der Gräber des Friedhofs (fachwerk STADT_GRAMMATIK, das
+            // Viertel kirchhof: `gegenstaende` des Exports), gehoben über denselben Chokepoint `_dorfErlebnis`. Die GESTALT baut
+            // das Gesetzbuch (fachwerk AUSSTATTUNG `grabstein`: Sockel und Tafel, Kreuz oder Kopf); die Parts sind ihre Substanz
+            // in ihren Maßen (die Tafel 0,56 × 0,92 × 0,14 m auf dem Sockel 0,72 × 0,1 × 0,32 m): stein dicht → solide.
+            grabstein_dorf: {
+                name: "grabstein_dorf",
+                etikett: ["bau.grabstein"],
+                builtIn: true,
+                instanced: true,
+                studioGestalt: "grabstein",
+                parts: [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 0.05, z: 0 },
+                        size: { x: 0.72, y: 0.1, z: 0.32 },
+                    },
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 0.56, z: 0 },
+                        size: { x: 0.56, y: 0.92, z: 0.14 },
+                    },
+                ],
+            },
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
             felsbogen: {
                 name: "felsbogen",
@@ -1581,10 +1606,19 @@ class AnazhRealm_bau_vorlagen {
         // 1 kHz → η = β/(π·f0) ≈ 0,03). Die Körnung d: der Halm ein Zylinder der Dicke 4/σ, das Blatt eine Platte der Dicke 2/σ
         // (σ die Oberfläche je Volumen der Brennstoff-Modelle unten: Gras 0,35 mm, Laub 0,24 mm), die Krume des Bodens 2 mm, der
         // Stängel des Krauts 1 mm, die Brocken der Glut 3 mm, der Tropfen des Spritzers 3 mm; ein fester Stoff trägt keine.
+        // DAS KORN DES MIKRO-RELIEFS (material.K2, w28-himmel-korn; Leser `_mikroStoff`): die Amplitude, mit der die Höhe der Oktaven
+        // am Schirm die Albedo des Stoffs moduliert (1 + korn · h, h streut `TERRAIN_BUMP.streu` 0,142) — die Zeile `erde` trägt den
+        // offenen Boden, die Zeile `stein` die Fels-Gestalt und den Stein-Rahmen (dessen Gesetz-Zeile nennt den Anteil am Relief,
+        // porta STEIN_GESETZ `korn`); ohne Zahl trägt ein Stoff kein Mikro-Relief. Je Stoff das KLEINSTE Korn, das die Arm-Linse nah
+        // als Korn liest (material.K2#1: glatte Blöcke ≤ 0,09 und nyquist ≤ 0,12 auf 0,5 / 1 / 2 m). GEMESSEN (Radeon 890M, live
+        // gestellt in EINER Welt): Fels 0,6 glatt 0,112 / 0,085 / 0,044 — 0,75 glatt 0,041 / 0,031 / 0,016, nyquist 0,106 / 0,106 /
+        // 0,114; Boden der Mess-Wiese 0,6 glatt 0,460 / 0,388 / 0,381, 0,9 glatt 0,060 / 0,047 / 0,091 — 0,95 glatt 0,038 / 0,030 /
+        // 0,069, nyquist 0,068 / 0,078 / 0,106. Bis dahin trug jede Fläche EINE Zahl (`TERRAIN_BUMP.korn`: 2,0, seit w28-stadt-grund
+        // 0,6 — das Korn überdeckte den Bruchton des Kopfsteins); das Kopfstein trägt seit w28-stein-kamm kein Mikro-Korn mehr.
         // prettier-ignore
         const SI = {
-            //         μ     T_zünd  μ Rad  nass  d
-            stein:    [0.6,  null,   0.8,   0.55, null],
+            //         μ     T_zünd  μ Rad  nass  d        Korn
+            stein:    [0.6,  null,   0.8,   0.55, null,    0.75],
             holz:     [0.6,  573,    0.65,  0.4,  null],
             eisen:    [0.5,  null,   0.6,   0.35, null],
             bronze:   [0.5,  null,   0.6,   0.35, null],
@@ -1598,7 +1632,7 @@ class AnazhRealm_bau_vorlagen {
             schuppen: [0.4,  null,   null,  null, null],
             glut:     [0.6,  623,    0.6,   0.45, 0.003],
             laub:     [0.4,  523,    0.45,  0.2,  0.000244],
-            erde:     [0.6,  null,   0.7,   0.45, 0.002],
+            erde:     [0.6,  null,   0.7,   0.45, 0.002,   0.95],
             kraut:    [0.4,  533,    null,  null, 0.001],
             essenz:   [null, null,   null,  null, 0.003],
             blech:    [0.5,  null,   0.6,   0.35, null],
@@ -1677,6 +1711,7 @@ class AnazhRealm_bau_vorlagen {
                 muRad: si[2],
                 muRadNass: si[3],
                 koernung: si[4],
+                korn: si[5] ?? null,
                 bindung: g.bindung,
                 ...PHASE[name],
                 brenn: BRENN[name] ? Object.freeze(BRENN[name]) : null,
@@ -2007,6 +2042,13 @@ class AnazhRealm_bau_vorlagen {
         return (m && m.label) || String(id);
     }
 
+    // der Name eines Stoffs als WERT einer Zeile, die später neu gelesen wird: sein Etikett (eine Zeile der Tafel), sonst der
+    // Name des Spielers
+    _stoffZeile(id) {
+        const m = this.state.materials && this.state.materials[id];
+        return m && Array.isArray(m.etikett) ? m.etikett : this._stoffName(id);
+    }
+
     // die Menge je Stoff („3× Holz“) in EINER Zeile, getrennt durch `trenner` — Leser: jede Kosten-, Fehlt- und Beute-Zeile
     _kostenText(menge, trenner = " · ") {
         return Object.entries(menge || {})
@@ -2101,4 +2143,10 @@ AnazhRealm._rolleName = function (rolle) {
 AnazhRealm._namensKopf = function (name, schnitt = /\s[·—(]/) {
     const kopf = String(name).split(schnitt)[0];
     return kopf.includes("⟦") && !kopf.endsWith("⟧") ? kopf + "⟧" : kopf;
+};
+// Der Kopf des Namens eines Dings als WERT einer Zeile: trägt es ein Etikett, bleibt der Schlüssel (`{ kopf }`, der Leser
+// schneidet in seiner Sprache, die Zeile wechselt mit ihr), sonst ist der Name Daten (ein Spieler-Werk, ein fremdes Rezept).
+AnazhRealm._namensZeile = function (ding, name) {
+    if (ding && Array.isArray(ding.etikett)) return { kopf: ding.etikett };
+    return AnazhRealm._namensKopf((ding && ding.label) || name);
 };

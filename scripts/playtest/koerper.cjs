@@ -888,6 +888,11 @@ async function checkBandV18196ManaSymmetry({ page, check }) {
             r.applyPlayerSoul("human");
             r.recomputePlayerStats();
             st.player.mana = 0;
+            // der Vitals-Takt läuft 1×/s SPIELZEIT (`tickPlayerVitals`: seit `deathLastTick` < 1 s → kehrt um). 60 Ticks am Stück
+            // decken auf einem schnellen Läufer weniger als diese Sekunde — lag der letzte Takt eben erst zurück, regnete nichts,
+            // und M7a fiel an der Wanduhr statt am Regen (CI 16.11.: zweimal ROT in voll 1/18, mana blieb 0). Der Takt ist fällig
+            // gestellt: der erste Tick der Schleife MUSS regnen, wenn der Loop den Regen-Pfad treibt.
+            st.player.deathLastTick = -Infinity;
             const before = st.player.mana;
             // Simuliere Frames — _gameLoopTick treibt den Regen-Pfad mit
             for (let i = 0; i < 60; i++) {
@@ -2066,10 +2071,13 @@ async function checkBandGamepadVerben({ page, check }) {
                 o.f
             );
             o.bremse = [auslauf(false), auslauf(true)];
-            // die Handbremse sperrt nur die Hinterachse (w28-reibellipse): ihr Zug ist μ·N des Hecks, nie mehr der Deckel beider Achsen;
-            // der Auslauf hängt am μ der Bühne (`haft`), er steht im Text
+            // die Handbremse sperrt nur die Hinterachse (w28-reibellipse): ihr Zug ist μ·N des Hecks, nie mehr der Deckel beider Achsen
+            // (das Gesetz der Achse richtet gate:vehicle-drive A6 je Rezept). Hier urteilt der VERB-Draht: das Pad erreicht den Kern.
+            // Die gesperrte Hinterachse des Pad-Wagens trägt in geschlossener Form μ 0,6 → 1,161 · 0,797 (die Bühne) → 1,272 ·
+            // 1,0 → 1,378, die Handbremse, die den Kern nie erreicht, 0,999; die Schwelle 1,15 liegt dazwischen. Die alten 1,3
+            // waren die Handbremse am Deckel beider Achsen (1,79). Der Auslauf hängt am μ der Bühne (`haft`), er steht im Text.
             o.haft = r._fahrHaft(wagen._fahr);
-            c.handbremse = o.hb === true && o.bremse[1] > 1.3 * o.bremse[0];
+            c.handbremse = o.hb === true && o.bremse[1] > 1.15 * o.bremse[0];
             fx.length = 0;
             o.rumbleFahrt = (fahrt(() => ((pad.axes[0] = 1), knopf(7, 1)), 40), rumble());
             druck(kn("einsteigen"));

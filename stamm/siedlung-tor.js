@@ -264,7 +264,10 @@ class AnazhRealm_siedlung_tor {
         );
         // DAS ZIEL: die Zeile dieses Tors im Atlas (Stoff-Wert `ziel`), die Zeilenhöhe geklemmt (keine Nachbar-Zeile blutet ein),
         // waagrecht umlaufend; die Bild-Werte der Welt durch die Belichtung der Heimat geteilt — die Heimat tont sie, wie die Welt
-        // sich selbst zeigt
+        // sich selbst zeigt. Das Ziel ist ein BILD, kein Stoff der Nacht: es steht VOR dem Auge der Nacht (`_nachtAuge`, seine
+        // Umkehr wie an der Brand-Flamme) — bis w28-tor-nacht las die Post-Kette seine ans Bild gebundenen Werte als dunkle
+        // Leuchtdichte und nahm dem Zielbild nachts die Farbe (grauweiß statt gold). Die Grenze der Umkehr gilt auch hier: ein
+        // dunkler gesättigter Ton (die rote Kuppel) kommt unter dem Auge je Pixel nicht zurück
         const Z = this._torZiele();
         const zv = 0.5 / AnazhRealm.TOR_ZIEL.h;
         const eq = TSL.equirectUV(dir);
@@ -272,7 +275,7 @@ class AnazhRealm_siedlung_tor {
             Z.tex,
             TSL.vec2(eq.x, zielZeile.add(TSL.clamp(eq.y, F(zv), F(1 - zv))).div(Z.uZeilen))
         );
-        const ziel = zielTex.rgb.mul(Z.uBelicht);
+        const ziel = this._nachtAuge(zielTex.rgb.mul(Z.uBelicht), true);
         // ── DER SEIFENFILM: Dicke aus Bogen-Radius (die Ellipse rimAx × rimAy) und Welle, Gangunterschied je Blickwinkel ──
         const rr = TSL.length(xy.sub(centerXY).div(TSL.vec2(ga.y, ga.z)));
         const cosI = TSL.max(TSL.dot(N, Vd), F(0.0));
@@ -310,9 +313,9 @@ class AnazhRealm_siedlung_tor {
         const cr = TSL.cos(dreh);
         const sr = TSL.sin(dreh);
         const RfW = TSL.vec3(Rf.x.mul(cr).add(Rf.z.mul(sr)), Rf.y, Rf.z.mul(cr).sub(Rf.x.mul(sr)));
-        const spiegel = TSL.texture(this._himmelUmgebungTex(), TSL.equirectUV(RfW))
-            .level(F(0))
-            .rgb.mul(this._umgebungLicht());
+        const spiegel = this._umgebungLicht(
+            TSL.texture(this._himmelUmgebungTex(), TSL.equirectUV(RfW)).level(F(0)).rgb
+        );
         const glanz = film.mul(spiegel).mul(F(FI.glanz[0])).mul(pulse.mul(FI.glanz[2]).add(FI.glanz[1])).mul(spiegelK);
         const col = TSL.mix(ziel, glanz, filmW);
         // `ohneFilm`: dieselbe Öffnung ohne den Film — nur das Ziel (die Linse milchweiss: Milch ist, was der Film dem Ziel

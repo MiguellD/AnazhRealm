@@ -13,8 +13,10 @@
 // einem Licht, das die Welt nie zeigt (Radeon: Bild-Differenz Labor ↔ Welt 99,4 %).
 const scene=new THREE.Scene();
 const cam=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,0.05,100);cam.position.set(0.16,0.74,1.78);
-const R=new THREE.WebGPURenderer({antialias:true});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));
-R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFShadowMap;document.body.appendChild(R.domElement);
+// DIE EINE BÜHNE (w28-studio-welt): Renderer, Sonne, das Licht der Welt an ihrer Uhr, Vorbau und Treue trägt die Bühne der Hülle
+// (`AnazhHuelle.buehne`) — dieselbe unter jedem Studio
+const BUEHNE=AnazhHuelle.buehne({szene:scene,sonnenWeite:4});
+const R=BUEHNE.renderer;
 
 // ── Werkbank + Raster ── DER BODEN IST DER BODEN DER ATMOSPHÄRE (die gemessene Welt-Albedo `ATMO_BODEN`, matt), die Waffe wirft
 // ihren Schatten der Sonne auf ihn
@@ -26,10 +28,9 @@ const grid=new THREE.GridHelper(4.5,18,0x241b10,0x130d07);grid.position.y=FLOOR_
 
 // ── Licht ── DIE SONNE DER WELT: EIN Richtlicht, Farbe und Stärke setzt die Bühne der Welt, seine Richtung die der Sonne; es wirft
 // den Schatten (die Karte rahmt die Waffe über der Werkbank)
-const sonne=new THREE.DirectionalLight();sonne.castShadow=true;
+const sonne=BUEHNE.sonne;
 sonne.shadow.mapSize.set(2048,2048);sonne.shadow.bias=-0.00018;Object.assign(sonne.shadow.camera,{left:-1.3,right:1.3,top:1.3,bottom:-1.3,near:0.5,far:9});
-scene.add(sonne);scene.add(sonne.target);sonne.target.position.set(0,LIFT,0);
-let welt=null,himmelWirt=null;   // die Bühne der Welt, sobald der Renderer steht (`R.init`); der Himmel, den die Heimat beim Betreten reicht
+BUEHNE.sonneUeber(0,LIFT,0);
 
 // DIE KUGEL DES BLICKS (die Hülle, `AnazhHuelle.kugel` — dieselbe Gestalt wie die OrbitControls der terrain-Familie)
 const controls=AnazhHuelle.kugel(cam,R.domElement);controls.enableDamping=true;controls.dampingFactor=0.08;
@@ -1214,7 +1215,7 @@ function animate(){const t=clock.getElapsedTime();const dt=Math.min(0.05,t-_last
   } else if(gBladeMesh){const pos=gBladeMesh.geometry.attributes.position,bz=gBladeMesh.userData.baseZ;
     let dirty=false;for(let i=0;i<pos.count;i++){if(pos.getZ(i)!==bz[i]){pos.setZ(i,bz[i]);dirty=true;}}
     if(dirty){pos.needsUpdate=true;gBladeMesh.geometry.computeVertexNormals();}}
-  if(__weltLicht.buehneZeichnet(welt,scene,R))R.render(scene,cam);}   // die Bühne zeichnet erst und allein im Licht der Welt (sonst bricht sie laut)
+  BUEHNE.bild(cam);}   // die Bühne zeichnet erst und allein im Licht der Welt (sonst bricht sie laut)
 
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();
   R.setSize(innerWidth,innerHeight);});
@@ -1228,7 +1229,7 @@ addEventListener('keydown',e=>{if(arena.active)return;const k=e.key.toLowerCase(
 gattungWaehlen(currentGattung);buildSliders();rebuild();appendArenaUI();
 // DIE BÜHNE DER WELT steht, sobald der Renderer steht (Tafeln, Umgebung, Sonne, Tonkurve; die Belichtung, sobald die Bestrahlungs-
 // Tafel zurückkam); der Takt läuft an der Bild-Uhr des Renderers (r184 wartet mit ihm auf `init`)
-R.init().then(()=>{welt=__weltLicht.buehne({renderer:R,szene:scene,sonne,himmel:himmelWirt});sonne.position.copy(sonne.target.position).addScaledVector(welt.richtung,4);});
+BUEHNE.leiste(document.getElementById('buehneOrt'));
 R.setAnimationLoop(animate);
 
 /* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
@@ -1267,8 +1268,7 @@ R.setAnimationLoop(animate);
         // DER HIMMEL DER HEIMAT (w27-studio-mesh, wie die Garage): die Bühne steht unter dem Himmel, den die Welt beim Betreten reicht
         enter: function (_a, m) {
             if (!m.himmel) return;
-            himmelWirt = m.himmel;
-            if (welt) welt.himmelSetzen(himmelWirt);
+            BUEHNE.himmel(m.himmel);
         },
         // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
         panorama: function () {

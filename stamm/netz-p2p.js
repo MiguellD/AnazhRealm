@@ -140,11 +140,6 @@ class AnazhRealm_netz_p2p {
     // alten Welt). → worldId | null
     _importGuestWorld(snapshot, hostInfo, slugHint, { wechseln = false, zeugnisA = null } = {}) {
         if (!snapshot || typeof snapshot !== "object") return null;
-        const erbgutNein = AnazhRealm._erbgutEinlass(snapshot);
-        if (erbgutNein) {
-            this.log(`Gast-Welt abgelehnt: ${erbgutNein}`, "ERROR");
-            return null;
-        }
         const meta = snapshot.worldMeta && typeof snapshot.worldMeta === "object" ? snapshot.worldMeta : {};
         const worldId = (meta.worldId && String(meta.worldId)) || AnazhRealm._neueWeltId();
         const baseSlug = (slugHint && String(slugHint).trim()) || meta.slug || "geladen";
@@ -175,7 +170,7 @@ class AnazhRealm_netz_p2p {
             { wechseln, zeugnisA, p2pAuto: h.url || AnazhRealm.P2P_DEFAULT_WS_URL }
         );
         if (!r.ok) {
-            this.log(`Guest-Welt konnte nicht abgelegt werden: ${r.reason}`, "ERROR");
+            if (!r.abgewiesen) this.log(`Guest-Welt konnte nicht abgelegt werden: ${r.reason}`, "ERROR");
             return null;
         }
         this.log(`Guest-Welt importiert: ${slug} (${worldId.slice(0, 8)}…)`, "INFO");
@@ -1126,7 +1121,7 @@ class AnazhRealm_netz_p2p {
             .map((k) => k + (cw[k] && cw[k].bundleHash ? cw[k].bundleHash : ""))
             .sort()
             .join(",");
-        const sig = peerSig + "##" + mineSig;
+        const sig = AnazhRealm._zeichenSig(peerSig + "##" + mineSig);
         if (host.dataset.sig === sig) return;
         host.dataset.sig = sig;
         host.textContent = "";
@@ -1923,8 +1918,12 @@ class AnazhRealm_netz_p2p {
         const changed = entry.soulName !== soulName;
         entry.soulName = soulName;
         entry.bodyParts = Array.isArray(msg.bodyParts) ? msg.bodyParts : null;
-        if (typeof msg.name === "string" && msg.name.trim()) {
-            const nm = msg.name.trim().slice(0, 48);
+        // ein Schlüssel der Tafel ohne Werte (`nameEtikett`) gilt vor dem Wort des Senders
+        const k = Array.isArray(msg.nameEtikett) ? msg.nameEtikett[0] : null;
+        const T = AnazhRealm.TEXTE.de;
+        const etk = typeof k === "string" && Object.hasOwn(T, k) && !T[k].includes("{") ? this._t(k) : null;
+        if (etk || (typeof msg.name === "string" && msg.name.trim())) {
+            const nm = etk || msg.name.trim().slice(0, 48);
             if (entry.avatarName !== nm) {
                 entry.avatarName = nm;
                 this._p2pRefreshPeerNameLabel(entry);
@@ -2094,12 +2093,6 @@ class AnazhRealm_netz_p2p {
     // Speicher der Host-Welt); ein Snapshot ohne worldId landete roh auf dem Platz der alten Welt.
     _p2pApplyWorldSnapshot(senderId, state) {
         const p2p = this.state.p2p;
-        const erbgutNein = AnazhRealm._erbgutEinlass(state);
-        if (erbgutNein) {
-            this.log(`Welt-Snapshot abgelehnt: ${erbgutNein}`, "ERROR");
-            p2p.pendingWorldSnapshot = false;
-            return { ok: false, reason: erbgutNein };
-        }
         p2p.pendingWorldSnapshot = false;
         const r = this._weltBetreten(
             state,
@@ -2107,7 +2100,7 @@ class AnazhRealm_netz_p2p {
             { wechseln: !p2p._testNoReload }
         );
         if (!r.ok) {
-            this.log(`Welt-Snapshot konnte nicht übernommen werden: ${r.reason}`, "ERROR");
+            if (!r.abgewiesen) this.log(`Welt-Snapshot konnte nicht übernommen werden: ${r.reason}`, "ERROR");
             return r;
         }
         p2p.role = "guest";
@@ -2515,6 +2508,9 @@ class AnazhRealm_netz_p2p {
         if (custom && Array.isArray(custom.bodyParts)) msg.bodyParts = custom.bodyParts;
         const avatarName = this.state.player && this.state.player.name;
         if (typeof avatarName === "string" && avatarName.trim()) msg.name = avatarName.trim().slice(0, 48);
+        // ohne Wort des Spielers reist der Name der Tafel als Schlüssel (`nameEtikett`: der Empfänger liest ihn in SEINER
+        // Sprache) und als Wort des Senders (`name`, für einen Empfänger ohne den Schlüssel — must-ignore)
+        else [msg.name, msg.nameEtikett] = [this._t("ui.schoepfer-2"), ["ui.schoepfer-2"]];
         // W7 Phase 2 — die Welt-Rolle mitteilen, damit ein Guest weiss,
         // welcher verbundene Peer der Host ist (Ziel des Welt-Resync).
         msg.worldRole = (this.state.worldMeta && this.state.worldMeta.role) || "solo";
@@ -3321,23 +3317,6 @@ class AnazhRealm_netz_p2p {
         if (typeof this._renderGuestBanner === "function") this._renderGuestBanner();
     }
 
-    // DIE EINGANGS-WAND DES ERBGUTS: eine fremde Welt tritt nur ein, wenn dieser Build ihr Erbgut trägt — dieselbe
-    // Normalform wie beim Erwachen (`erbgutNormal` im Gelände-Gesetzbuch). Leser: jede Tür, durch die ein Snapshot zur
-    // Welt wird (Welt-Tor daneben/ersetzen `importWorldBeside` · `_weltTorImportReplace`, die Einladung
-    // `_importGuestWorld`, der Snapshot eines Mitspielers `_p2pApplyWorldSnapshot`). Bis 10.10. nahmen die Türen jedes
-    // Erbgut an (`ok:true`): der Zeiger stand auf der Welt, und jeder Reload scheiterte am Ladeschirm. Liefert den Grund
-    // der Absage oder null.
-    static _erbgutEinlass(snapshot) {
-        const meta = snapshot && typeof snapshot === "object" ? snapshot.worldMeta : null;
-        try {
-            // das Gesetz der fremden Welt durch dieselbe Wand wie beim Erwachen (`_weltGesetz`: Schwere, Himmel, Wetter, Erbgut)
-            if (meta && typeof meta === "object") AnazhRealm._weltGesetz(meta);
-            return null;
-        } catch (e) {
-            return String((e && e.message) || e);
-        }
-    }
-
     // DIE WELT REIST NUR ZU EINEM LESER IHRES ERBGUTS (Plan R11): ein Build vor dem Erbgut kennt `worldMeta.erbgut` nicht
     // (must-ignore) und zeichnete still Wildnis unter die Welt und ihre Häuser. Eine Welt, deren Erbgut nicht die Wildnis
     // allein ist, reist darum nur zu einem Empfänger, der sein Lesen im Protokoll erklärt (`erbgut` ≥
@@ -3401,7 +3380,7 @@ AnazhRealm.P2P_SNAP_BUF_MAX = 20;
 // die ganze Welt — ohne Limit ein DoS-Vektor).
 AnazhRealm.P2P_PULL_COOLDOWN_MS = 5000;
 // DIE ERBGUT-STUFE DES PROTOKOLLS: wer eine Welt erbittet (world-request, world-pull), erklärt, dass er
-// `worldMeta.erbgut` liest und eine unbekannte Term-Art ablehnt (`_erbgutEinlass`). Ein Sender reicht eine Welt, deren
+// `worldMeta.erbgut` liest und eine unbekannte Term-Art ablehnt (die Wand der Tür `_weltEinlass`). Ein Sender reicht eine Welt, deren
 // Erbgut nicht die Wildnis allein ist, nur einem Empfänger mit dieser Stufe (`_erbgutTeilbar`) — ein Build davor
 // zeichnete sie still als Wildnis. Stufe 2 (K16b): der Empfänger liest auch die Regler im Wildnis-Term (eine Welt aus
 // einem Plan des Gelände-Studios). Stufe 3 (ultiversum.K1): das Erbgut ist das Gelände des Welt-Gesetzes

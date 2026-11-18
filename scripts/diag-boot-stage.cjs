@@ -53,8 +53,18 @@
 // (Art · Rest · Weg · Kerne) ins Profil; `--kern-wechsel <kern>` serviert die Skripte des Kerns mit einem Kommentar mehr
 // (sein Gesetz-SHA springt) und urteilt gegen die Liste davor: nur seine Leser bauen neu — ein fremder Neubau dessen, was
 // die Platte trug, ist ROT beim Namen, ebenso ein Leser, der noch von der Platte kommt (`wechselUrteil`; --selftest füttert
-// es mit Bruch-Daten).
+// es mit Bruch-Daten). DIE LANDUNG (w28-platte-fein): `--wechsel-marke <n>` hängt die Marke an den Kommentar (jede Marke ein
+// neuer SHA: der n-te Boot nach einer Landung im selben Profil), `--kern-text "<alt>=><neu>"` tauscht dazu einen Text im
+// Gesetz des Kerns (eine Landung, die Bytes ändert). DER ABDRUCK: `--abdruck` legt je Lieferung den EINEN Bau-Fingerabdruck
+// ihrer Bytes ab (asset-worker-harness `bauAbdruck`, dazu Beipack, Plan und Atlas; im `--json` unter `abdruck`),
+// `--gegen <json>` zählt gegen den Lauf dieser Datei, wie viele Lieferungen byte-anders sind, und urteilt: was hier von der
+// Platte kam, trägt die Bytes des Laufs dort — sonst ROT beim Namen „ALT UNTER NEUEM GESETZ“ (der Lauf dort ist der frische
+// Bau unter demselben Gesetz; `abdruckUrteil`, --selftest füttert es mit einem alten Körper). `--jahr-steht` hält das Jahr
+// der Welt an (`autoSeason`): die Platte trägt je Karte EINE Jahres-Stufe, und ohne Stand beginnt jeder Lauf in Stufe 0 — eine
+// Sitzung über 37,5 s Spiel-Zeit backte Stufe 1, überschriebe die Karte der Platte, und der nächste Lauf im selben Profil
+// verfehlte jede (Radeon: 18 Karten, 0,5–0,9 s Haupt-Faden vor dem Bild); im Spiel mit Stand kehrt die Welt in ihre Stufe zurück.
 // ─────────────────────────────────────────────────────────────────────────
+const { MATRIX_LADUNG, RAUSCH_HASH } = require("./lib/shader-kosten.cjs");
 const { statikServer, starteBrowser, sleep, hauptLauf, nullWelt, urteilEnde, pngDatei, path, fs, SELBSTTEST, argOpt: OPT, jsonLesen, jsonSchreiben, bruchBuch, taeter } = require("./lib/welt-boot.cjs");
 const HL = require("./lib/haenger-linse.cjs");
 
@@ -66,7 +76,12 @@ const ARGV = process.argv.slice(2);
 // um mehr als ein Achtel ab (`lueckeKacheln`).
 const [ANKUNFT_SOLL_MS, KONTROLLE_M, KONTROLLE_DRUECKE, RUHE_MS, LUECKE_SOLL] = [5000, 0.1, 1500, 60000, 0.02];
 const KERN = require("../cores.manifest.json").find((k) => k.id === OPT("--kern-wechsel"));
-const server = statikServer({ wandle: (p, roh) => (KERN?.scripts.includes(p.slice(1)) ? roh + "//" : roh) });
+// der Tausch im Gesetz des Kerns (`--kern-text`): ein Text, den keine seiner Dateien trägt, bricht beim Namen
+const TAUSCH = KERN && OPT("--kern-text") ? OPT("--kern-text").split("=>") : null;
+if (TAUSCH && (TAUSCH.length !== 2 || !KERN.scripts.some((s) => fs.readFileSync(path.join(__dirname, "..", s), "utf8").includes(TAUSCH[0]))))
+    throw new Error(`--kern-text: kein Skript des Kerns ${KERN.id} trägt „${TAUSCH[0]}“ (Form "<alt>=><neu>")`);
+const gewechselt = (roh) => (TAUSCH ? String(roh).split(TAUSCH[0]).join(TAUSCH[1]) : roh) + "//" + (OPT("--wechsel-marke") || "");
+const server = statikServer({ wandle: (p, roh) => (roh != null && KERN?.scripts.includes(p.slice(1)) ? gewechselt(roh) : roh) });
 // (Seite) trägt die gehaltene Taste den Leib um `m`? Der Weg in einem Atem von 200 ms, waagrecht — der Fall zählt nicht.
 async function LEIB_WEG(m) {
     const p = () => r?.state.playerMesh?.position;
@@ -149,12 +164,18 @@ function lieferUrteil(roh, zweit) {
     };
 }
 // DIE PROGRAMM-ZEILE (ankunft K3, w28-ankunft-reihe) — die Probe: jede Pipeline des Boots mit der Kennung ihrer Shader-Texte
-// (Länge:FNV-1a von Vertex und Fragment, gemerkt am Modul) — [Etikett, Vertex, Fragment]
-function PROGRAMM_PROBE() {
+// (Länge:FNV-1a von Vertex und Fragment, gemerkt am Modul) und der Zahl ihrer Texel-Ladungen durch die UV-Matrix (`matrixQuelle`:
+// shader-kosten `MATRIX_LADUNG`, gezählt am rohen Text beider Stufen) — [Etikett, Vertex, Fragment, Matrix-Ladungen]
+function PROGRAMM_PROBE(matrixQuelle, rauschQuelle) {
     if (typeof GPUDevice === "undefined" || window.__programmProbe) return;
     const P = (window.__programmProbe = { liste: [], fehler: "" });
     const G = GPUDevice.prototype;
     const texte = new WeakMap();
+    const matrix = new WeakMap();
+    const ladung = new RegExp(matrixQuelle, "g");
+    // der Hash des Rauschens je Modul (shader-kosten `RAUSCH_HASH`) — die siebte Spalte der Zeile, `rauschUrteil`
+    const rausch = new WeakMap();
+    const hash = new RegExp(rauschQuelle, "g");
     const kennung = (s) => {
         let h = 0x811c9dc5;
         for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193) >>> 0;
@@ -164,19 +185,27 @@ function PROGRAMM_PROBE() {
     G.createShaderModule = function (d) {
         const m = modul.call(this, d);
         texte.set(m, kennung(String((d && d.code) || "")));
+        matrix.set(m, (String((d && d.code) || "").match(ladung) || []).length);
+        rausch.set(m, (String((d && d.code) || "").match(hash) || []).length);
         return m;
     };
     for (const art of ["createRenderPipeline", "createRenderPipelineAsync"]) {
         const roh = G[art];
         if (typeof roh !== "function") continue;
         G[art] = function (d) {
+            // je Pipeline ihre Zeit (ms seit Navigation): bestellt, und bereit (asynchron: das Versprechen löst; synchron: der Ruf kehrt)
+            const zeile = [];
             try {
                 const name = String((d && d.label) || "?").replace(/^renderPipeline_/, "");
-                P.liste.push([name, texte.get(d.vertex.module) || "?", (d.fragment && texte.get(d.fragment.module)) || "–"]);
+                P.liste.push(zeile);
+                zeile.push(name, texte.get(d.vertex.module) || "?", (d.fragment && texte.get(d.fragment.module)) || "–", (matrix.get(d.vertex.module) || 0) + ((d.fragment && matrix.get(d.fragment.module)) || 0), Math.round(performance.now()), null, (rausch.get(d.vertex.module) || 0) + ((d.fragment && rausch.get(d.fragment.module)) || 0));
             } catch (e) {
                 P.fehler = String(e && e.message);
             }
-            return roh.call(this, d);
+            const aus = roh.call(this, d);
+            if (aus && typeof aus.then === "function") aus.then(() => (zeile[5] = Math.round(performance.now())), () => {});
+            else zeile[5] = Math.round(performance.now());
+            return aus;
         };
     }
 }
@@ -201,6 +230,88 @@ function programmUrteil(vor, nach, zweit) {
         gruen: false,
         zeile: `Die Wiederkehr verfehlt den Pipeline-Cache: ${fremd.length} von ${nach.length} Pipelines tragen andere Bytes als in den Boots davor — ${namen.join(" · ")}${je.size > 4 ? ` und ${je.size - 4} weitere Programme` : ""} (ihr Text hängt am Gang des Boots: die Reihe der Glieder, ein Puffer ohne festen Namen, ein Graph mit wechselnden Lesern)`,
     };
+}
+// DIE TEXEL-LADUNG DURCH DIE UV-MATRIX (w28-ankunft-faden, shader-kosten `matrixLadungen`) — das Urteil (rein), kalt wie zweit:
+// r184 `TextureNode.load` erbt `updateMatrix`, jede Ladung trägt dann ihre eigene mat3-Uniform und ein Produkt ohne Wirkung, und
+// DXC zahlt sie in der Ankunft (GTX 1050: 249 Ladungen in 9 Programmen, der Bake der Karten 1,27 s statt 0,45 s je Programm).
+// Die EINE Tür nimmt sie (vendor/three-bootstrap.js). ROT beim Namen jedes Programms mit seiner Zahl; ohne Messung ROT (Lehre 6).
+function matrixUrteil(nach) {
+    if (!Array.isArray(nach) || !nach.length || nach.some((e) => !(e[3] >= 0)))
+        return { gruen: false, zeile: "TEXEL-LADUNGEN: keine Messung — die Probe sah keine Pipeline des Boots oder zählte sie nicht" };
+    const je = new Map();
+    for (const [n, , , m] of nach) if (m > 0) je.set(n, Math.max(je.get(n) || 0, m));
+    if (!je.size) return { gruen: true, zeile: `TEXEL-LADUNGEN: keine der ${nach.length} Pipelines lädt ein Texel durch die UV-Matrix` };
+    const namen = [...je].sort((a, b) => b[1] - a[1]);
+    return {
+        gruen: false,
+        zeile: `${namen.reduce((s, e) => s + e[1], 0)} Texel-Ladungen gehen durch eine eigene mat3-Uniform (TextureNode.load erbt updateMatrix; die Tür ist vendor/three-bootstrap.js) — ${namen.slice(0, 5).map(([n, m]) => `${m}× ${n}`).join(" · ")}${namen.length > 5 ? ` und ${namen.length - 5} weitere Programme` : ""}`,
+    };
+}
+// DAS AUSGESCHRIEBENE RAUSCHEN (w28-licht-kern, shader-kosten `rauschHash`) — das Urteil (rein), kalt wie zweit: ein TSL-`Fn`
+// ohne Layout steht je Ruf ausgeschrieben im Programm; als EINE WGSL-Funktion trägt eine Pipeline die Konstante des Hashs
+// zehnmal (je Stufe fünf), das Wasser trug sie 700-mal (GTX 1050: 137,8 KB statt 39,3 KB, Knoten-Bau 306 statt 93 ms vor dem
+// ersten Weltbild). ROT beim Namen jeder Pipeline über der Decke mit ihrer Zahl; ohne Messung ROT (Lehre 6).
+const RAUSCH_DECKE = 16;
+function rauschUrteil(nach) {
+    if (!Array.isArray(nach) || !nach.length || nach.some((e) => !(e[6] >= 0)))
+        return { gruen: false, zeile: "RAUSCH-HASH: keine Messung — die Probe sah keine Pipeline des Boots oder zählte sie nicht" };
+    const je = new Map();
+    for (const e of nach) if (e[6] > RAUSCH_DECKE) je.set(e[0], Math.max(je.get(e[0]) || 0, e[6]));
+    if (!je.size)
+        return { gruen: true, zeile: `RAUSCH-HASH: keine der ${nach.length} Pipelines trägt den Hash ausgeschrieben (höchstens ${Math.max(...nach.map((e) => e[6]))}-mal, Decke ${RAUSCH_DECKE})` };
+    const namen = [...je].sort((a, b) => b[1] - a[1]);
+    return {
+        gruen: false,
+        zeile: `Das Rauschen steht ausgeschrieben im Programm (ein TSL-Fn ohne Layout trägt je Ruf seinen ganzen Text; die Tür ist setLayout wie bei rauschEbene) — ${namen.slice(0, 4).map(([n, z]) => `${z}× ${n}`).join(" · ")}${namen.length > 4 ? ` und ${namen.length - 4} weitere` : ""}`,
+    };
+}
+// (Seite) DER ABDRUCK JEDER LIEFERUNG (`--abdruck`): je Antwort eines Studio-Fadens mit Liefer-Marke — Körper, Dorf-Export,
+// Blatt-Atlas; die Karte backt die GPU — der Fingerabdruck ihrer Bytes, wie sie den Wirt erreichen: für die Teile der EINE
+// Bau-Fingerabdruck (`bauAbdruck`), dazu der Beipack (Skelett, Hüllen, Maß, Krone), der Plan, die Stufen des Atlas.
+// `je`: Rest → [Abdruck, Weg]. Die Probe liest die Puffer im Ereignis der Antwort, vor ihrem Leser.
+function ABDRUCK_PROBE(bauAbdruck) {
+    const A = (window.__lieferAbdruck = { je: {}, offen: 0 });
+    const hex = (b) => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, "0")).join("");
+    const sha = (x) => crypto.subtle.digest("SHA-256", typeof x === "string" ? new TextEncoder().encode(x) : x).then(hex);
+    const W0 = window.Worker;
+    window.Worker = class extends W0 {
+        constructor(u, o) {
+            super(u, o);
+            this.addEventListener("message", (e) => {
+                const m = e.data;
+                if (!m || !m.liefer || m.vorrat || !(m.bau || m.platte)) return;
+                let p = null;
+                if (m.type === "asset") {
+                    const bei = (m.meshes || []).filter((x) => x && typeof x.kind === "string" && x.kind.startsWith("__") && !x.position?.array);
+                    p = Promise.all([bauAbdruck(m.meshes), sha(JSON.stringify(bei))]).then(([a, b]) => a.hash.slice(0, 32) + "+" + b.slice(0, 16));
+                } else if (m.type === "settlement") p = sha(JSON.stringify(m.plan));
+                else if (m.type === "blatt-atlas" && m.blattAtlas)
+                    p = Promise.all(m.blattAtlas.rgba.mips.concat(m.blattAtlas.bc ? m.blattAtlas.bc.mips : []).map((s) => sha(s.data))).then((h) => sha(h.join()));
+                if (!p) return;
+                A.offen++;
+                p.then((h) => (A.je[m.liefer.rest] = [h, m.platte ? "platte" : "werk"])).finally(() => A.offen--);
+            });
+        }
+    };
+}
+// DAS URTEIL DES ABDRUCKS (rein) gegen den Lauf einer anderen Datei (`dort`: Rest → [Abdruck, Weg]): wie viele gemeinsame
+// Lieferungen byte-anders sind (eine Zahl, kein Urteil: zwei Gesetze dürfen sich unterscheiden) — und DAS URTEIL: was HIER von
+// der Platte kam, trägt die Bytes von dort. Der Lauf dort ist der frische Bau unter demselben Gesetz; ein Treffer der Platte mit
+// anderen Bytes ist ein ALTES Ding unter neuem Gesetz, ROT beim Namen. `leser` (mit `--kern-wechsel`: die Reste, deren Marke
+// den gewechselten Kern nennt): ein Treffer mit anderen Bytes, der den Kern NICHT las, kann nicht alt sein — sein Bau ist
+// nicht byte-stabil (er hängt an der Folge seines Fadens), ROT beim eigenen Namen. Ohne gemeinsame Lieferung ROT (Lehre 6).
+function abdruckUrteil(hier, dort, name, leser) {
+    const gemein = Object.keys(hier || {}).filter((r) => dort && dort[r]);
+    if (!gemein.length) return { gruen: false, zeile: `ABDRUCK gegen ${name}: keine Messung — keine gemeinsame Lieferung` };
+    const anders = gemein.filter((r) => hier[r][0] !== dort[r][0]);
+    const platte = gemein.filter((r) => hier[r][1] === "platte");
+    const fremd = platte.filter((r) => hier[r][0] !== dort[r][0]);
+    const [alt, lose] = [fremd.filter((r) => !leser || leser.has(r)), fremd.filter((r) => leser && !leser.has(r))];
+    const kopf = `ABDRUCK gegen ${name}: ${anders.length} von ${gemein.length} Lieferungen byte-anders${anders.length ? ` (${anders.slice(0, 4).join(" · ")})` : ""}`;
+    const stabil = lose.length ? ` · NICHT BYTE-STABIL: ${lose.length} Lieferungen der Platte, die den gewechselten Kern nie lasen, tragen andere Bytes als ihr frischer Bau — ${lose.slice(0, 6).join(" · ")} (der Bau hängt an der Folge seines Fadens)` : "";
+    if (alt.length) return { gruen: false, anders, zeile: `ALT UNTER NEUEM GESETZ: ${alt.length} von ${platte.length} Lieferungen der Platte tragen andere Bytes als ihr frischer Bau — ${alt.slice(0, 6).join(" · ")} · ${kopf}${stabil}` };
+    if (lose.length) return { gruen: false, anders, zeile: `${kopf} · kein altes Ding unter neuem Gesetz (von der Platte ${platte.length})${stabil}` };
+    return { gruen: true, anders, zeile: `${kopf} · von der Platte ${platte.length}, jede trägt die Bytes ihres frischen Baus` };
 }
 // DAS URTEIL DES KERN-WECHSELS über die Listen [Art, Rest, Weg, Kerne] zweier Boots: `neu` sind die neu gebauten Leser
 function wechselUrteil(vor, nach, kern) {
@@ -404,7 +515,9 @@ async function kaltLauf() {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(KALT_PROBE);
     await page.evaluateOnNewDocument(BILD_PROBE);
-    await page.evaluateOnNewDocument(PROGRAMM_PROBE);
+    await page.evaluateOnNewDocument(PROGRAMM_PROBE, MATRIX_LADUNG.source, RAUSCH_HASH.source);
+    if (ARGV.includes("--jahr-steht")) await page.evaluateOnNewDocument(() => __weltDa().then((r) => (r.state.autoSeason = false)));
+    if (ARGV.includes("--abdruck")) await page.evaluateOnNewDocument(`(${ABDRUCK_PROBE})(${require("./lib/asset-worker-harness.cjs").bauAbdruck})`);
     // DIE MUTANTE (`--mutante eigenmeldung`, das Schlupfloch von ankunft K1): die Eigenmeldung steht ab dem Erwachen — die
     // Kontrolle von außen folgt ihr nie; `--mutante bild`: der erste Schuss endet nach 20 m, die Welt dahinter fehlt (ROT)
     const MUT = OPT("--mutante");
@@ -464,6 +577,8 @@ async function kaltLauf() {
         bild = Object.assign(b, { a }, lueckeKacheln(...[a.png, b.png].map((f) => require("./lib/abnahme-urteil.cjs").pngLesen(fs.readFileSync(f)))));
     }
     if (tK && profilBenannt) await page.evaluate(RUHE);
+    // der Abdruck steht, wenn die Foundry ruht und kein Fingerabdruck mehr rechnet
+    const abdruck = ARGV.includes("--abdruck") ? await page.evaluate(async () => (await window.__gebautNach("die Fingerabdrücke", { fertig: () => !window.__lieferAbdruck.offen, max: 600 }), window.__lieferAbdruck.je)) : null; // prettier-ignore
     const out = await page.evaluate((r = window.anazhRealm, st = r.state) => {
         // der Adapter vom Gerät, das zeichnet: r184 hält den Adapter nicht (WebGPUBackend.init, lokal)
         let adapter = null;
@@ -474,7 +589,18 @@ async function kaltLauf() {
         // das Laden der Seite (Navigation und Ressourcen, Seiten-Uhr): HTML da, die Skripte da, DOM bereit
         const nav = performance.getEntriesByType("navigation")[0] || {};
         const skripte = performance.getEntriesByType("resource").filter((e) => e.initiatorType === "script");
+        // jeder Stoff der Welt-Szene beim Träger: Stoff-Id (das Etikett der Pipeline trägt sie) → Zahl der Objekte, Kette des ersten
+        const stoffe = {};
+        try {
+            st.scene.traverse((o) => {
+                for (const m of [].concat(o.material || [])) {
+                    const e = (stoffe[m.id] = stoffe[m.id] || { art: m.type, name: m.name || "", n: 0, kette: "" });
+                    if (!e.n++) for (let p = o, i = 0; p && i < 5; p = p.parent, i++) e.kette += (i ? " < " : "") + (p.name || p.type) + (p.isInstancedMesh ? "[" + p.count + "]" : "");
+                }
+            });
+        } catch {}
         return Object.assign({}, window.__kalt, {
+            stoffe,
             laden: {
                 html: Math.round(nav.responseEnd || 0),
                 skripte: Math.round(Math.max(0, ...skripte.map((e) => e.responseEnd))),
@@ -492,7 +618,8 @@ async function kaltLauf() {
         });
     });
     const liste = path.join(browser.profil || profil, "lieferung.json");
-    const wechsel = KERN && wechselUrteil(jsonLesen(liste), out.lieferung.liste, KERN.id);
+    // ohne Liste davor (ein leeres Profil: der frische Bau unter dem gewechselten Kern) urteilt der Wechsel nicht
+    const wechsel = KERN && fs.existsSync(liste) && wechselUrteil(jsonLesen(liste), out.lieferung.liste, KERN.id);
     if (profilBenannt && !KERN) fs.writeFileSync(liste, JSON.stringify(out.lieferung.liste));
     // DIE PROGRAMM-ZEILE (ankunft K3): das Profil trägt die Text-Paare JEDES Boots davor (was der Pipeline-Cache kennen kann);
     // die Wiederkehr urteilt gegen sie, dann legt der Lauf seine dazu. Ein Kern-Wechsel ändert Programme mit Recht: er legt nicht ab.
@@ -501,7 +628,9 @@ async function kaltLauf() {
     const programm = profilBenannt ? programmUrteil(pVor, out.programme, zweit) : null;
     if (profilBenannt && !KERN && Array.isArray(out.programme))
         fs.writeFileSync(pDatei, JSON.stringify([...new Set((pVor || []).concat(out.programme.map(([, v, f]) => `${v}|${f}`)))]));
-    Object.assign(out, { tK, druecke, offen, bild, zweit });
+    Object.assign(out, { tK, druecke, offen, bild, zweit, abdruck });
+    const leserK = KERN ? new Set(out.lieferung.liste.filter((z) => z[3].split(",").includes(KERN.id)).map((z) => z[1])) : null;
+    const gegen = OPT("--gegen") && abdruckUrteil(abdruck, jsonLesen(path.resolve(OPT("--gegen"))).abdruck, path.basename(OPT("--gegen")), leserK);
     await browser.close();
     server.close();
     // DIE PHASEN der Ankunft (Seiten-Uhr): das Laden (HTML, Skripte, DOM), das Buch, je Term des ersten Weltbilds sein Schluss
@@ -596,8 +725,14 @@ async function kaltLauf() {
     console.log(`  ${zweit ? (k4.gruen ? "✅ " : "❌ ") : ""}${k4.zeile}`);
     console.log(`  ${zweit ? (k4.artGruen ? "✅ " : "❌ ") : ""}${k4.artZeile}`);
     if (wechsel) console.log(`  ${wechsel.gruen ? "✅" : "❌"} ${wechsel.zeile}`);
+    if (gegen) console.log(`  ${gegen.gruen ? "✅" : "❌"} ${gegen.zeile}`);
     // DIE PROGRAMM-ZEILE: am Zweit-Boot urteilt sie (und trägt den Exit, unten — wie die Liefer-Zeile)
     if (programm) console.log(`  ${zweit ? (programm.gruen ? "✅ " : "❌ ") : ""}${programm.zeile}`);
+    // DIE TEXEL-LADUNGEN: kalt wie zweit Urteil (und im Exit, unten)
+    const mat = matrixUrteil(out.programme);
+    console.log(`  ${mat.gruen ? "✅" : "❌"} ${mat.zeile}`);
+    const rau = rauschUrteil(out.programme);
+    console.log(`  ${rau.gruen ? "✅" : "❌"} ${rau.zeile}`);
     const nach = nachBild(out.sync, out.weltbildDa);
     console.log(`  ${nach.length ? "❌" : "✅"} synchron nach dem Bild: ${nach.join(" · ") || "keine Pipeline"}`);
     const gez = gezeichnetUrteil(out.bildProbe);
@@ -609,7 +744,7 @@ async function kaltLauf() {
     // jede ❌-Zeile oben ist Urteil (w28-probe-urteil, Lehre 6): die Liefer-Zeilen am Zweit-Boot und der Wechsel des Kerns tragen den
     // Exit mit — bis dahin „Exit bleibt die Ankunft“, ❌ über Exit 0; die Programm-Zeile ebenso (w28-ankunft-reihe)
     const liefer = !zweit || (k4.gruen && k4.artGruen && (!programm || programm.gruen));
-    process.exit(gut && ganz && !halter.length && !nach.length && gez.gruen && bru.gruen && liefer && (!wechsel || wechsel.gruen) ? 0 : 1);
+    process.exit(gut && ganz && !halter.length && !nach.length && gez.gruen && bru.gruen && mat.gruen && rau.gruen && liefer && (!wechsel || wechsel.gruen) && (!gegen || gegen.gruen) ? 0 : 1);
 }
 
 hauptLauf(async () => {
@@ -742,12 +877,22 @@ hauptLauf(async () => {
     const W = (e, d) => wechselUrteil([[0, "e", "platte", "phyto"], [0, "d", "platte", "fachwerk"]], [[0, "e", e, "phyto"], [0, "d", d, "fachwerk"]], "fachwerk").gruen; // prettier-ignore
     if (SELBSTTEST) checks.push([W("platte", "werk") && !W("werk", "werk") && !W("platte", "platte"), "SELBST-TEST: der Kern-Wechsel urteilt (fremder Neubau, alter Leser ROT)"]); // prettier-ignore
     if (SELBSTTEST) checks.push([nachBild([{ t: 9 }, { t: 1 }], 5).length === 1, "SELBST-TEST: synchron nach dem Bild ROT"]);
+    // das Urteil des Abdrucks: gleiche Bytes von der Platte GRÜN (ein neu gebauter Leser darf anders sein, er zählt), ein Körper
+    // der Platte mit den Bytes des alten Gesetzes ROT beim Namen, ohne gemeinsame Lieferung ROT
+    const AU = (mensch) => abdruckUrteil({ "eiche|1|0": ["aa", "platte"], "mensch|0|0": mensch }, { "eiche|1|0": ["aa", "werk"], "mensch|0|0": ["neu", "werk"] }, "frisch.json"); // prettier-ignore
+    if (SELBSTTEST) checks.push([AU(["neu", "werk"]).gruen && AU(["alt", "werk"]).gruen && AU(["alt", "werk"]).anders.length === 1 && AU(["alt", "platte"]).zeile.startsWith("ALT UNTER NEUEM GESETZ: 1 von 2 Lieferungen der Platte tragen andere Bytes als ihr frischer Bau — mensch|0|0") && !abdruckUrteil({}, {}, "x").gruen && /kein altes Ding unter neuem Gesetz \(von der Platte 2\) · NICHT BYTE-STABIL: 1 Lieferungen der Platte.*— eiche\|1\|0/.test(abdruckUrteil({ "eiche|1|0": ["ab", "platte"], "mensch|0|0": ["neu", "platte"] }, { "eiche|1|0": ["aa", "werk"], "mensch|0|0": ["neu", "werk"] }, "frisch.json", new Set(["mensch|0|0"])).zeile), "SELBST-TEST: der Abdruck urteilt — ein Körper der Platte mit den Bytes des alten Gesetzes ist GEFANGEN beim Namen (ALT UNTER NEUEM GESETZ), ein Treffer mit anderen Bytes, der den gewechselten Kern nie las, heißt NICHT BYTE-STABIL, ohne Messung fällt die Zeile"]); // prettier-ignore
     // die Programm-Zeile: gleiche Bytes GRÜN; eine fremde Pipeline ROT beim Namen; ohne Messung (kein Boot davor, keine Pipeline) ROT
     const PU = programmUrteil;
     const leben = ["MeshStandardNodeMaterial_25", "9184:7fe4bf62", "68205:4b5043f5"];
     const karte = ["impostor#fimp:atlas_109", "25200:1fc6bf95", "133000:18bc6d70"];
     const trug = ["9184:7fe4bf62|68205:4b5043f5"];
     if (SELBSTTEST) checks.push([PU(trug, [leben], true).gruen && !PU(null, [leben], true).gruen && !PU(trug, [], true).gruen && !PU(trug, [leben], false).gruen && PU(trug, [leben, karte], true).zeile.startsWith("Die Wiederkehr verfehlt den Pipeline-Cache: 1 von 2 Pipelines tragen andere Bytes als in den Boots davor — impostor#fimp:atlas_109 (V 25200 · F 133000 B)"), "SELBST-TEST: die Programm-Zeile urteilt (gleiche Bytes GRÜN, eine fremde Pipeline ROT beim Namen, ohne Messung ROT)"]); // prettier-ignore
+    // die Texel-Ladungen: ohne Ladung GRÜN; der Bake mit 81 und der Spiegel mit 47 ROT beim Namen mit der Summe; ohne Zählung ROT
+    const RU = rauschUrteil;
+    const zeit = (n) => [n, "1:a", "2:b", 0, 1, 2];
+    if (SELBSTTEST) checks.push([RU([[...zeit("himmel_22"), 0], [...zeit("wasser_28"), 10]]).gruen && !RU([]).gruen && !RU([zeit("wasser_28")]).gruen && RU([[...zeit("wasser_28"), 700], [...zeit("himmel_22"), 0]]).zeile.includes("700× wasser_28") && !RU([[...zeit("wasser_28"), 17]]).gruen, "SELBST-TEST: das ausgeschriebene Rauschen — eine Pipeline über der Decke ist ROT beim Namen mit ihrer Zahl, ohne Messung ROT"]); // prettier-ignore
+    const MU = matrixUrteil;
+    if (SELBSTTEST) checks.push([MU([[...leben, 0]]).gruen && !MU([]).gruen && !MU([leben]).gruen && MU([[...leben, 0], [...karte, 81], ["spiegel:strahl_36", "1:a", "2:b", 47]]).zeile.startsWith("128 Texel-Ladungen gehen durch eine eigene mat3-Uniform") && MU([[...karte, 81], ["spiegel:strahl_36", "1:a", "2:b", 47]]).zeile.endsWith("— 81× impostor#fimp:atlas_109 · 47× spiegel:strahl_36") && new RegExp(MATRIX_LADUNG.source, "g").test("textureLoad( nodeUniform77, vec2<i32>( ( object.nodeUniform78 * vec3<f32>( vec2<f32>( nodeVar1 ), 1.0 ) ).xy ), u32( 0u ) )"), "SELBST-TEST: die Texel-Ladungen urteilen (keine GRÜN, 81 + 47 ROT beim Namen, ohne Zählung ROT, die Form von r184 zählt)"]); // prettier-ignore
     // die Lücke je Kachel: ein Busch, der fehlt (30 × 30 von 640 × 360, 0,39 % des Bilds), reißt seine Kachel (18,75 %); die Mutante
     // (das Bildmittel von main) hält ihn GRÜN, ein gleiches Bild ist 0
     if (SELBSTTEST) {

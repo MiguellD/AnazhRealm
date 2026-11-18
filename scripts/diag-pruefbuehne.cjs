@@ -6,13 +6,13 @@
 // Nexus (sein Pool `dslComposeAtomic` baut alle 24 s an `far_player`). Diese Linse nennt jeden Wurf beim Namen.
 //
 // Je Welt (Standard = die Wildnis als FELD-KONTROLLE; Bühne, importiert wie im Spiel) misst sie:
-//   (1) DIE WÜRFE: jede Ort-Op der Welt-Akte (Tier, Baum, Studio-Werk, Insel, UFO, Dorf, Tempel, Wasserfall, Bauplan,
+//   (1) DIE WÜRFE: jede Ort-Op der Welt-Akte (Tier, Baum, Studio-Werk, Dorf, Tempel, Wasserfall, Bauplan,
 //       Fraktal, Füll-Kugel) mit der Quelle des Feldes — `nexus` und `rule:nexus` — und ihr Zuwachs an Welt-Substanz
-//       (Bauten, Tiere, Inseln, UFOs, Pflanz-Schlange, Dorf-Zellen, Edits). Bühne: 0 je Op; Wildnis: > 0 (die Linse sieht).
+//       (Bauten, Tiere, Pflanz-Schlange, Dorf-Zellen, Edits). Bühne: 0 je Op; Wildnis: > 0 (die Linse sieht).
 //   (2) DER AKT: dieselbe Op als Mensch (`human`) setzt auch auf der Bühne (das Prädikat hält das Feld, nie die Hand).
 //   (3) DER NEXUS-TAKT, getrieben: N Evolutionen (`generateEvolution` + `_loopNexusUpdate`, Wirk-Kraft voll — im Spiel alle
 //       24 s eine) und ein Takt, in dem seine Regeln feuern. Bühne: Zuwachs 0.
-//   (4) DER ABSENZ-ZENSUS in 300 m nach dem Takt: fremde Bauten, Streu-Zellen, Nah-Streu, Tiere, Inseln, Dorf-Zellen,
+//   (4) DER ABSENZ-ZENSUS in 300 m nach dem Takt: fremde Bauten, Streu-Zellen, Nah-Streu, Tiere, Dorf-Zellen,
 //       Pflanz-Schlange, Flüsse — auf der Bühne 0.
 //   (5) DIE S4-PROBE: die Hindernis-Station (`s4-hindernisse` in spec/pruefbuehne/stationen.json — Würfel, Säule, Mauer,
 //       Gasse, Hausrumpf 45°, Engpass) steht, gesät über die Snapshot-Tür: je Körper die Blocker-Boxen ≤ 0,1 m an der
@@ -30,7 +30,7 @@
 //       Kamera der Nacht 2 Stufen tiefer (seit licht.K1 trägt sie die Nacht, nicht das Sternen-Licht). Dazu DER HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach Mittag und Mitternacht über
 //       den Pfad des Spielers trägt die Umgebung den Himmel des Orts (`_himmelsBestrahlung`). Selbsttest: der Maler taub.
 //       Die Dämmerung und die Belichtung über den Tag urteilt die Tag-Achse auf der Karte (gate:tag-achse:echt). Dazu DAS
-//       BODEN-PROGRAMM (`S0_MS`): seine Pipeline entstand asynchron, auf echter GPU übersetzt es kalt ≤ 250 ms und ≤ 1,1× main.
+//       BODEN-PROGRAMM (`S0_MS`): seine Pipeline entstand asynchron, es wächst nicht (Ratsche `S0_ZEICHEN`); die Zeit ist Auskunft.
 //
 //   node scripts/diag-pruefbuehne.cjs [--json datei] [--evolutionen 60] [--wurzel dir]
 //                                                  (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
@@ -58,8 +58,6 @@ const WUERFE = [
     ["spawn_creature", ["near_player", 20], 3, "happy"],
     ["spawn_tree", ["far_player", 40, 90], 3],
     ["spawn_studio", "eiche", ["far_player", 40, 90], 2],
-    ["spawn_island", ["far_player", 60, 120]],
-    ["spawn_ufo", ["near_player", 30]],
     ["spawn_village", ["far_player", 180, 380]],
     ["spawn_temple", ["far_player", 180, 380]],
     ["spawn_waterfall", ["far_player", 180, 380]],
@@ -249,7 +247,7 @@ async function s0Probe(page, station, schein) {
             delete r._punktLichtBrdf;
             out.poolRuftBrdf = brdf > 0;
             r._setWeather("sunny", "human");
-            s.weatherTransition = null;
+            window.__uebergangFaellt(r);
             // die Uhr springt über den Pfad des Spielers (sein Satz, `setTimeOfDay`): EIN Anwenden des Tags, kein Nachmalen
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
@@ -484,8 +482,6 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
             const substanz = () => ({
                 bauten: new Set(s.architectures || []),
                 tiere: new Set(s.creatures || []),
-                inseln: new Set(s.floatingIslands || []),
-                ufos: new Set(s.ufos || []),
                 pflanzSchlange: new Set(s.pendingVegSpawns || []),
                 dorfZellen: new Set(Object.keys(wm().settlementCells || {})),
                 edits: new Set(wm().voxelEdits || []),
@@ -586,7 +582,6 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                     streuZellen: streu,
                     nahStreu,
                     tiere: (s.creatures || []).filter((c) => c?.position && d(c.position) <= R).length,
-                    inseln: (s.floatingIslands || []).length,
                     dorfZellen: Object.keys(wm().settlementCells || {}).length,
                     pflanzSchlange: (s.pendingVegSpawns || []).length,
                     // jeder Fluss, den kein Term der Bühne trägt (der Bach der Klamm S6 ist ihr Gesetz, kein Wurf)
@@ -815,7 +810,7 @@ const S0_LUMA_2M = 0.15;
 // die Nacht mit — die Glut-Palette des Selbsttests stand gemischt bei 35° im Band (BLIND). Gemessen wird das Licht des Feuers:
 // derselbe Ring im Schuss mit Feuer minus im Schuss ohne (`nacht`, dieselbe Kamera, dieselben Pixel), je Kanal in der Ausgabe
 // (sRGB, ≥ 0).
-const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 } };
+const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 }, paletteUnter: 2 };
 // ZWEI GRÖSSEN, ZWEI LESER (D3-2 mit K66): der FARBTON ist das Licht des Feuers (netto, die Nacht abgezogen — die Farbtemperatur
 // des Gesetzes), die SÄTTIGUNG ist, was das Auge sieht (brutto, das Bild mit der Nacht — die Wand des Auges der Nacht). Netto
 // gemessen trägt jedes Licht seine volle Sättigung (das Feuer allein, ohne den Boden der Nacht: 0,96).
@@ -842,38 +837,47 @@ const s0TonPasst = (t) => s0TonImBand(t) && t.sat <= S0_TON.satMax;
 // DER STOFF DES SCHUSSES (K17-3, die Shader-Kosten-Linse scripts/lib/shader-kosten.cjs): der Schuss zeichnet das Boden-Programm
 // (`voxelChunkMaterial`). Keine Hilfs-Funktion des Programms liest eine Bindung (`bindungInFunktionMax` 0): die Layout-Funktion
 // `wieseRelief` las den Rausch-Atlas und vererbte seinen Namen in jedes weitere Programm — auf der Bühne sagte swiftshader die
-// Pipeline ab. Der Selbsttest (Mutante c) lässt eine Hilfs-Funktion eine Bindung des gezeichneten Programms lesen.
+// Pipeline ab. Der Selbsttest (Mutante c) lässt eine Hilfs-Funktion eine Bindung des gezeichneten Programms lesen. DIE RATSCHE
+// DER GRÖSSE (`zeichenMax`, `S0_ZEICHEN`): das Programm wächst nicht — am 12.11. (main f46b9e81) 95 297 Zeichen auf Radeon 890M
+// und GTX 1060, die Decke der Stand + Luft (bis 18.11. 5 %); sie fällt nur (schrumpft das Programm, sinkt die Zahl hier mit).
+// 18.11. GEHOBEN FÜR DEN WEG-KÖRPER (w28-weg-koerper, Wort des Koordinators): 102 120 Zeichen am Kopf (GTX 1060) — wegBord +2 499,
+// Aufruf/Kante +480, Belag +500, wegAn +96 über main 1f300260 (98 747). Davor hatte main seit 12.11. 3 450 Zeichen still
+// gefressen (95 297 → 98 747), ohne dass eine Abgabe es nannte: die Luft ist darum ENGER, 2 % statt 5 % — sie feuert früher.
+const S0_ZEICHEN = { stand: 102120, luft: 1.02 };
 const S0_STOFF = (() => {
     const SK = require("./lib/shader-kosten.cjs");
-    return (wgsl) => SK.kostenUrteil(SK.wgslKosten(wgsl), { bindungInFunktionMax: 0 }, "S0 Boden-Programm");
+    const budget = { bindungInFunktionMax: 0, zeichenMax: Math.round(S0_ZEICHEN.stand * S0_ZEICHEN.luft) };
+    return (wgsl, name = "S0 Boden-Programm") => SK.kostenUrteil(SK.wgslKosten(wgsl), budget, name);
 })();
-// DIE ÜBERSETZUNG DES BODEN-PROGRAMMS (Regel-Inventur 07.11., Entwurf 3 — ersetzt die Decke „≤ 100 000 Zeichen", an der 4 Züge
-// fielen, während S0 auf der GTX in 14–15 s stand): gemessen wird, was der Spieler zahlt. Je Programm, das ein Schuss zeichnet,
-// (1) DER WEG seiner Pipeline (das Register `s0PipeRegister`): asynchron, wie die Erst-Zeichnung (`_renderObjectDirect`) jede
-// Pipeline der Welt anlegt — synchron übersetzt der GPU-Prozess sie, bevor er das nächste Bild zeigt; (2) auf echter GPU DIE KALTE
-// ÜBERSETZUNG: Vertex und Fragment neu (`createShaderModule`), bis die Pipeline steht (`createRenderPipelineAsync`), je Lauf eine
-// eigene Zahl im Rumpf (kein Cache von Dawn, Chrome oder Treiber trifft), `n` Läufe, wenn kein Bau der Welt mehr übersetzt; es
-// zählt der schnellste (Last legt nur zu). DIE WAND: ≤ `maxMs` (5 % der Ankunft ≤ 5 s, PFLICHT-OFFEN B) — über diesem Ziel nie
-// teurer als `relativ` × main desselben Adapters (`main`: der schnellste Lauf an main, das Höchste aus den ruhigen gpu-probe-
-// Läufen). Steht der Median der Läufe über `ruhe` × dem schnellsten, trug der Läufer fremde Last: das Urteil heißt UNGEMESSEN
-// (Läufer unter Last) und hält wie ein ROT (Regel-Inventur Entwurf 1: die Uhr eines geteilten Läufers urteilt nie das Gesetz).
-// Gemessen 08.11. an cbe910ed + w22-ci-diaet (99 336 Zeichen), 10 Sitzungen: Radeon 890M 681–721 ms ruhig (Median/schnellster
-// 1,05–1,23; unter Last 911 ms bei 1,67), GTX 1060 1 040–1 132 ms (1,02–1,09) — beide über dem Ziel (2,9× und 4,5×). Die
-// Zeichen sind Ausgabe. Auf swiftshader urteilt die Frist des Laufs (`S0_FRIST_S`), nie eine Zeit. Der Selbsttest auf echter GPU zeichnet den K17-Fall (das Fels-Gesetz ausgeschrieben im Pixel,
-// `s0BodenMessung`; 191 751 Zeichen, Radeon +13–17 %, GTX +24 %) auf dem Vendor-Weg: (a) seine Zeit reißt die Wand gegen den
-// Boden derselben Sitzung, (b) sein Weg ist synchron.
-const S0_MS = { maxMs: 250, relativ: 1.1, ruhe: 1.3, n: 9, main: { "amd/rdna-3": 721, "nvidia/pascal": 1132 } };
-function s0BodenUrteil(name, p, bezug) {
-    const [ms, mitte] = [Math.min(...p.ms), rang([...p.ms].sort(aufsteigend))];
-    const [decke, last] = [Math.max(S0_MS.maxMs, S0_MS.relativ * bezug || 0), mitte > S0_MS.ruhe * ms];
-    return [
-        p.weg !== "asynchron" && `${name}: die Pipeline entstand ${p.weg}, nie asynchron wie jede der Erst-Zeichnung (\`_renderObjectDirect\`)`,
-        p.ms.length && last && `${name}: UNGEMESSEN — der Läufer stand unter Last (Median ${mitte} ms > ${S0_MS.ruhe}× schnellster ${ms} ms)`,
-        p.ms.length && !last && ms > decke && `${name}: kalt ${ms} ms (Soll ≤ ${Math.round(decke)} ms: ${S0_MS.maxMs}, darüber ≤ ${S0_MS.relativ}× main ${bezug})`,
-    ].filter(Boolean);
+// DIE ÜBERSETZUNG DES BODEN-PROGRAMMS (Regel-Inventur 07.11., Entwurf 3; Tor-Schnitt 12.11.): IM TOR URTEILT DAS GESETZ DES
+// PROGRAMMS, NIE DIE WANDUHR (Wort des Schöpfers 16.10. und 11.11.: Linsen im Zug urteilen Verhalten und Gesetz, nie Läufer-Zeit;
+// Zeit gehört in eine Station mit Referenzfahrt derselben Sitzung). Je Programm, das ein Schuss zeichnet, urteilt (1) DER WEG
+// seiner Pipeline (das Register `s0PipeRegister`): asynchron, wie die Erst-Zeichnung (`_renderObjectDirect`) jede Pipeline der
+// Welt anlegt — synchron übersetzt der GPU-Prozess sie, bevor er das nächste Bild zeigt; dazu oben (`S0_STOFF`) die Bindung und die
+// Ratsche der Größe. (2) AUSKUNFT ohne Urteil, auf echter GPU: die kalte Übersetzung — Vertex und Fragment neu
+// (`createShaderModule`), bis die Pipeline steht (`createRenderPipelineAsync`), je Lauf eine eigene Zahl im Rumpf (kein Cache von
+// Dawn, Chrome oder Treiber trifft), `n` Läufe, wenn kein Bau der Welt mehr übersetzt; die Zeile nennt die Zeiten, den Median und
+// das Verhältnis zum K17-Fall derselben Sitzung (die Referenzfahrt: an ihr kürzt sich die Last des Läufers). Bis 12.11. urteilte
+// hier ein Zeit-Soll (≤ 250 ms, darüber ≤ 1,1 × main 721 ms Radeon / 1132 ms GTX, gesetzt 08.11. ohne Referenzfahrt): z409 fiel
+// 78 min an 1111 ms unter Last, und die Radeon maß am selben Stand 1295–1740 ms bei Median/schnellster 1,08–1,14 — gleichmäßige
+// Last sieht kein Maß einer Sitzung. Der Selbsttest auf echter GPU zeichnet den K17-Fall (das Fels-Gesetz ausgeschrieben im Pixel,
+// `s0BodenMessung`, ~188 000 Zeichen) auf dem Vendor-Weg: er fällt am Weg (synchron) und an der Ratsche.
+const S0_MS = { n: 9 };
+const s0Median = (p) => (p?.ms?.length ? rang([...p.ms].sort(aufsteigend)) : null);
+function s0BodenUrteil(name, p) {
+    return [p.weg !== "asynchron" && `${name}: die Pipeline entstand ${p.weg}, nie asynchron wie jede der Erst-Zeichnung (\`_renderObjectDirect\`)`].filter(Boolean);
 }
-const s0Zeile = (name, p, u) =>
-    console.log(`  ${name}: ${p.zeichen} Zeichen WGSL · Pipeline ${p.weg} · kalt ${p.ms.length ? `${p.ms.join(" · ")} ms → ${u.length ? "ROT" : "GRÜN"}` : "ungemessen (swiftshader)"}`);
+// die Zeile je Programm: das Urteil (Weg + Stoff: `u`) und die Zeit als Auskunft; `ref` — der K17-Fall derselben Sitzung;
+// `fang` — ein erwarteter Fang des Selbsttests heißt GEFANGEN, nie ROT
+const s0ZeileText = (name, p, u, ref, fang) => {
+    const [m, mr] = [s0Median(p), s0Median(ref)];
+    const zeit = !p.ms.length
+        ? "ungemessen (swiftshader)"
+        : `${p.ms.join(" · ")} ms, Median ${m} ms${mr ? ` · ÷ K17 derselben Sitzung ${String((m / mr).toFixed(2)).replace(".", ",")}` : ""} (Auskunft, kein Zeit-Urteil)`;
+    const urteil = u.length ? (fang ? "GEFANGEN" : "ROT") : fang ? "nicht gefangen" : "GRÜN";
+    return `  ${name}: ${p.zeichen} Zeichen WGSL (Ratsche ≤ ${Math.round(S0_ZEICHEN.stand * S0_ZEICHEN.luft)}) · Pipeline ${p.weg} → ${urteil} · kalt ${zeit}`;
+};
+const s0Zeile = (...a) => console.log(s0ZeileText(...a));
 // DAS REGISTER DER PIPELINES (vor dem ersten Skript der Seite): je Pipeline des Geräts ihr Weg und ihr Deskriptor; `__s0Flug`
 // zählt die Bauten im Flug (die Messung beginnt erst, wenn kein Bau der Welt mehr übersetzt)
 function s0PipeRegister() {
@@ -975,7 +979,7 @@ async function s0BodenMessung({ hw, selbst, n }) {
         while (window.__s0Flug > 0) await sleep(50);
         for (let i = 0; i < (hw ? n : 0); i++) for (const p of k17 ? [...progs, k17] : progs) await kalt(p);
         const aus = ({ e, fs, ms }) => ({ weg: e.weg || "am Register vorbei (die Linse ist blind)", zeichen: fs.length, ms });
-        return { programme: progs.map(aus), k17: k17 && aus(k17) };
+        return { programme: progs.map(aus), k17: k17 && { ...aus(k17), wgsl: k17.fs } };
     } catch (e) {
         return { fehler: String(e?.message || e) };
     }
@@ -999,7 +1003,7 @@ async function himmelProbe(page, taub) {
             };
             const lum = luma709;
             r._setWeather("sunny", "human");
-            s.weatherTransition = null;
+            window.__uebergangFaellt(r);
             uhr(0.3);
             if (!(await r._himmelFrisch())) {
                 out.befunde.push("S0 Himmel: keine Lesung der Umgebung (`_himmelFrisch`) — die Probe ist blind");
@@ -1041,11 +1045,13 @@ async function himmelProbe(page, taub) {
 // „kamera" (Selbsttest) legt die Stufen der Kamera 2 tiefer (linear × 1/4: Luma 27 → ~9 sRGB), die Probe MUSS
 // `_dayNightApplyBelichtung` nennen. Das Sternen-Licht selbst wacht die Umgebung (der Himmel folgt dem Sprung, unten), den
 // Kontrast der Nacht gate:post-kette (h), die Dämmerung die Tag-Achse. DER TÄTER BEIM NAMEN (w27-boden-nah-2): trägt das Mittel
-// und reißt nur der Anteil abgesoffen, ist es der STOFF — das Himmels-Bild des Mikro-Reliefs (`_mikroStoff`) hält seinen Boden
-// nicht (`TERRAIN_BUMP.mulde`). Der Zug z352 fiel so (w26-boden-nah, Korn × Kavität 3,6 linear: Luma 24,6, abgesoffen 10,0 % auf
-// der Radeon wie auf swiftshader; main mit 2,1 stand bei 4,0 %, pascal bei 6,4 %), und das Urteil nannte Belichtung und
-// Post-Kette. Der Zweig „kein Sternen-Licht" fiel dafür: seit licht.K1 schwärzt es den Boden nie (oben). Selbsttest: die Zahlen
-// von z352 MÜSSEN `_mikroStoff` nennen. Die letzte Zeile des Laufs trägt Luma und Anteil der Nacht (der Probe-Post liest sie).
+// und reißt nur der Anteil abgesoffen, ist es der STOFF — das Korn des Mikro-Reliefs (`_mikroStoff`, die Spalte `korn` der Zeile
+// erde in der Stoff-Tafel) nimmt der Mulde zu viel Albedo. Der Zug z352 fiel so (w26-boden-nah, Korn × Kavität 3,6 linear im Himmels-Licht: Luma 24,6,
+// abgesoffen 10,0 % auf der Radeon wie auf swiftshader; main mit 2,1 stand bei 4,0 %, pascal bei 6,4 %), und das Urteil nannte
+// Belichtung und Post-Kette. Seit w28-himmel-korn liest das Himmels-Licht kein eigenes Bild der Höhe mehr: in der Nacht steht
+// das Korn der Albedo allein. Der Zweig „kein Sternen-Licht" fiel dafür: seit licht.K1 schwärzt es den Boden nie (oben).
+// Selbsttest: die Zahlen von z352 MÜSSEN `_mikroStoff` nennen. Die letzte Zeile des Laufs trägt Luma und Anteil der Nacht (der
+// Probe-Post liest sie).
 const S0_NACHT = { nacht: { luma: 22, schwarz: 0.05 } };
 function s0NachtUrteil(e, soll) {
     const g = e.grund;
@@ -1053,8 +1059,8 @@ function s0NachtUrteil(e, soll) {
     if (g.luma >= soll.luma && g.schwarz <= soll.schwarz) return [];
     const taeter =
         g.luma >= soll.luma
-            ? "das Mittel trägt, die Mulden saufen ab — das Himmels-Bild des Mikro-Reliefs hält seinen Boden nicht (`_mikroStoff`, " +
-              "`TERRAIN_BUMP.mulde`)"
+            ? "das Mittel trägt, die Mulden saufen ab — das Korn des Mikro-Reliefs nimmt der Mulde zu viel Albedo (`_mikroStoff`, " +
+              "die Spalte `korn` der Zeile erde in der Stoff-Tafel)"
             : `der Himmel trägt Licht (Sternen-Licht ${e.stern}, Umgebung ${e.himmel}), das Bild schwärzt es — die Belichtung ` +
               "der Nacht (`_dayNightApplyBelichtung`) oder die Post-Kette (Kontrast 25c, gate:post-kette (h))";
     return [
@@ -1550,13 +1556,14 @@ async function lichtLauf() {
             const aus = opt("--wgsl", null);
             if (aus) fs.writeFileSync(aus.replace(/(\.wgsl)?$/, i ? `-${i + 1}.wgsl` : ".wgsl"), wgsl);
         });
-        // DIE ÜBERSETZUNG (oben `S0_MS`): je Programm Zeichen (Ausgabe), Weg und kalte Zeit gegen main desselben Adapters
+        // DIE ÜBERSETZUNG (oben `S0_MS`): je Programm das Urteil des Wegs, die Zeichen gegen die Ratsche, die Zeit als Auskunft
+        // neben dem K17-Fall derselben Sitzung
         if (boden?.fehler || !boden?.programme.length)
             befunde.push(`S0 Boden-Übersetzung: ${boden?.fehler || "kein Programm (die Linse ist blind)"}`);
         else
             boden.programme.forEach((p, i) => {
-                const u = s0BodenUrteil(`S0 Boden-Programm ${i + 1}`, p, S0_MS.main[GERAET]);
-                s0Zeile(`S0 BODEN-PROGRAMM ${i + 1}/${boden.programme.length}`, p, u);
+                const u = s0BodenUrteil(`S0 Boden-Programm ${i + 1}`, p);
+                s0Zeile(`S0 BODEN-PROGRAMM ${i + 1}/${boden.programme.length}`, p, u, boden.k17);
                 befunde.push(...u);
             });
     }
@@ -1589,9 +1596,15 @@ async function lichtLauf() {
         const fb = ergebnis.farbe;
         // das Feuer bis K11b reißt am Farbton (netto), das Auge des Tages an der Sättigung (brutto) bei Farbton im Band
         const fbTon = fb && !fb.fehler ? s0Ton(fb, ergebnis.nacht) : null;
-        const farbGetroffen = !!fbTon && !s0TonImBand(fbTon);
+        // DIE DIFFERENZ IM SELBEN LAUF (w28-glut-nacht): die Mutante gilt als gefangen, wenn ihr Farbton netto mindestens
+        // `S0_TON.paletteUnter` Grad UNTER dem des Kopfs im selben Lauf liegt (Gerät und Lauf kürzen sich heraus). Bis hierher
+        // musste sie aus dem Band 28–45° fallen — das fing sie nur, weil das Rosa des alten Auges der Nacht sie unter 28° zog:
+        // die Linse lehnte am Fehler. Ohne das Rosa liest sie 29,1° (im Band), der Kopf 32,2°. Das Band bleibt dem Kopf.
+        const kopfTon = sauber && !sauber.fehler ? s0Ton(sauber, ergebnis.nacht) : null;
+        const fbUnter = fbTon && kopfTon ? +(kopfTon.hue - fbTon.hue).toFixed(1) : null;
+        const farbGetroffen = fbUnter != null && fbUnter >= S0_TON.paletteUnter;
         console.log(
-            `  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette und nacht 12): ${farbGetroffen ? `getroffen — das Licht des Feuers fällt netto auf Farbton ${fbTon.hue}°: die Farbtemperatur trägt ihn` : "BLIND " + JSON.stringify(fbTon)}`
+            `  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette und nacht 12): ${farbGetroffen ? `getroffen — das Licht des Feuers fällt netto auf Farbton ${fbTon.hue}°, ${fbUnter}° unter dem Kopf (${kopfTon.hue}°, Soll ≥ ${S0_TON.paletteUnter}°): die Farbtemperatur trägt ihn` : `BLIND — ${fbUnter}° unter dem Kopf (Soll ≥ ${S0_TON.paletteUnter}°) ` + JSON.stringify({ kopf: kopfTon, mutante: fbTon })}`
         );
         const tg = ergebnis.tag;
         const tgTon = tg && !tg.fehler ? s0Ton(tg, ergebnis.nacht) : null;
@@ -1605,12 +1618,33 @@ async function lichtLauf() {
         const bindRot = bind ? S0_STOFF(`${prog}\nfn s0Mutante() {\n\tlet s0 = ${bind[1]};\n}\n`) : [];
         const bindGetroffen = bindRot.some((b) => b.includes(`s0Mutante: ${bind[1]}`));
         console.log(`  SELBSTTEST S0 BODEN-PROGRAMM (c: eine Hilfs-Funktion liest eine Bindung): ${bindGetroffen ? `getroffen — ${bindRot[0].split(" — ")[0]}` : "BLIND"}`);
-        // (a) der K17-Fall reißt die Zeit gegen den Boden derselben Sitzung, (b) gezeichnet auf dem Vendor-Weg reißt er den Weg
+        // (a+b) der K17-Fall, gezeichnet auf dem Vendor-Weg: er fällt am Weg (synchron) UND an der Ratsche der Größe; die Bindung
+        // steht als Auskunft daneben (der Fall schreibt das Fels-Gesetz ohne Layout-Funktion aus — die Bindung fängt Mutante c)
         const k17 = boden?.k17;
-        const k17Rot = k17 ? s0BodenUrteil("S0 K17-Fall", k17, Math.min(...boden.programme[0].ms)) : [];
-        if (k17) s0Zeile("S0 K17-FALL (Selbsttest)", k17, k17Rot);
-        const k17Getroffen = !HW || (k17Rot[0]?.includes("entstand synchron") && k17Rot.some((b) => b.includes("Soll ≤")));
-        console.log(`  SELBSTTEST S0 BODEN-PROGRAMM (a+b: der K17-Fall auf dem Vendor-Weg): ${!HW ? "nur auf echter GPU" : k17Getroffen ? "getroffen — " + k17Rot.map((b) => b.split(" — ")[0]).join(" · ") : "BLIND " + JSON.stringify(k17 || boden)}`);
+        const k17Rot = k17 ? [...s0BodenUrteil("S0 K17-Fall", k17), ...S0_STOFF(k17.wgsl || "", "S0 K17-Fall")] : [];
+        if (k17) s0Zeile("S0 K17-FALL (Selbsttest)", k17, k17Rot, null, true);
+        const k17Getroffen =
+            !HW || (k17Rot.some((b) => b.includes("entstand synchron")) && k17Rot.some((b) => b.includes("Zeichen WGSL")));
+        console.log(`  SELBSTTEST S0 BODEN-PROGRAMM (a+b: der K17-Fall auf dem Vendor-Weg, Weg und Ratsche): ${!HW ? "nur auf echter GPU" : k17Getroffen ? "GEFANGEN — " + k17Rot.map((b) => b.split(" (Budget")[0].split(" — ")[0]).join(" · ") : "BLIND " + JSON.stringify(k17 ? { ...k17, wgsl: undefined } : boden)}`);
+        // (d) ZEITEN JEDER ART ÄNDERN DEN EXIT NICHT (z409, Stummel-Zeiten): unter Last (Median 1487 > 1,3 × 1111), ruhig über dem
+        // alten Soll (1111–1170) und schnell (90–99) — dasselbe Urteil, keine Zeile ROT (`istRotZeile`). Die Mutante „Wanduhr
+        // urteilt“ (das Zeit-Soll bis 12.11.: ≤ 1,1 × main 721 ms) muss fallen
+        const { istRotZeile } = require("./lib/urteil-zeile.cjs");
+        const zeiten = [
+            [1111, 1300, 1458, 1629, 1574, 1487, 1671, 1413, 1582],
+            [1111, 1120, 1125, 1130, 1135, 1140, 1150, 1160, 1170],
+            [90, 91, 92, 93, 94, 95, 96, 97, 99],
+        ].map((ms) => ({ weg: "asynchron", zeichen: S0_ZEICHEN.stand, ms }));
+        const zeitProbe = (urteil) =>
+            zeiten.every((p) => {
+                const u = urteil("S0 Zeit-Probe", p);
+                return !u.length && !istRotZeile(s0ZeileText("S0 ZEIT-PROBE", p, u, zeiten[1]));
+            });
+        const wanduhr = (n, p) => [...s0BodenUrteil(n, p), Math.min(...p.ms) > 1.1 * 721 && `${n}: kalt ${Math.min(...p.ms)} ms (Soll ≤ 793 ms)`].filter(Boolean);
+        const zeitGetroffen = zeitProbe(s0BodenUrteil) && !zeitProbe(wanduhr);
+        console.log(
+            `  SELBSTTEST S0 BODEN-PROGRAMM (d: Zeiten jeder Art ändern den Exit nicht — z409 unter Last, ruhig 1111 ms, schnell 90 ms): ${zeitGetroffen ? `getroffen — kein Befund, keine Zeile urteilt · die Mutante „Wanduhr urteilt“ GEFANGEN` : "BLIND"}`
+        );
         const nb = (sauber && !sauber.fehler && sauber.nah) || {};
         const vers = Object.keys(nb.versetzt || {});
         const nahGetroffen = vers.length > 0;
@@ -1639,7 +1673,7 @@ async function lichtLauf() {
             `  SELBSTTEST S0 NACHT (die Kamera der Nacht 2 Stufen tiefer): ${kameraTreffer ? "getroffen — " + kameraTreffer.slice(0, 230) : "BLIND " + JSON.stringify(st && (st.grund || st.fehler))}`
         );
         pass =
-            pass && getroffen && farbGetroffen && tagGetroffen && bindGetroffen && k17Getroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
+            pass && getroffen && farbGetroffen && tagGetroffen && bindGetroffen && k17Getroffen && zeitGetroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
         const stoffTreffer = /`_mikroStoff`/.test(s0NachtUrteil({ grund: { luma: 24.6, schwarz: 0.1 } }, S0_NACHT.nacht));
         console.log(`  SELBSTTEST S0 NACHT (z352): ${stoffTreffer ? "getroffen — der Stoff" : "BLIND"}`);
         pass = pass && taubGetroffen && !!kameraTreffer && stoffTreffer;
@@ -1767,7 +1801,7 @@ hauptLauf(async () => {
             const z = rep.zensus;
             const fremd = Object.keys(z.fremdeBauten);
             if (fremd.length) rep.befunde.push(`Zensus: fremde Bauten ${JSON.stringify(z.fremdeBauten)}`);
-            for (const k of ["streuZellen", "nahStreu", "inseln", "dorfZellen", "pflanzSchlange", "fluesse"])
+            for (const k of ["streuZellen", "nahStreu", "dorfZellen", "pflanzSchlange", "fluesse"])
                 if (z[k]) rep.befunde.push(`Zensus: ${k} ${z[k]}`);
             // die Tiere: nur das gesetzte (der Akt pflanzt einen Baum, kein Tier) — jedes Tier ist ein Wurf
             if (z.tiere) rep.befunde.push(`Zensus: ${z.tiere} Tiere, die niemand setzte`);

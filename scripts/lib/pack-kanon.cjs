@@ -24,9 +24,9 @@ const { statikServer, nullSeite, ausDatei, path, fs, stammLib, jsonLesen, ROOT, 
 const stripComments = require("./stamm.cjs").ohneKommentare;
 
 // ---------------------------------------------------------------------------
-// Der Generator-Quellen-Stempel — EXAKT die Formel der Transport-Schale (`_foundrySchale`, ihr `__stamp`), in Node
+// Der Generator-Quellen-Stempel — EXAKT die Formel der Transport-Schale (`_foundrySchale`, der SHA je Kern `G.sha`), in Node
 // nachgerechnet: je Kern SHA-256 über seine Quellen (scripts · engine · bruecke, UTF-8, mit "\n" verbunden), die ersten 16 Hex,
-// als `<kern>:<sha>` in Manifest-Folge mit "," verbunden. Die Platte stellt `f<FOUNDRY_PLATTE_FORMAT>|` voran — der
+// als `<kern>:<sha>` in Manifest-Folge mit "," verbunden. Die Platte hängt je Lieferung die Paare der gelesenen Kerne an ihren Rest — der
 // Pack-Index trägt den reinen Generator-Stempel (den Stempel des echten Boots misst gate:pack-contract `bootLauf`).
 function computeStamp(root) {
     const lese = (rel) => ausDatei(path.join(root || ROOT, rel));

@@ -51,9 +51,10 @@ const LEICHT =
 // gemessen am Boden-Stoff des echten Frames): kein Gitter-Rauschen — die zwei erlaubten Rausch-Aufrufe sind r184s Schatten-
 // Dither (`interleavedGradientNoise`, 4 Ops je Aufruf, je Kaskade einer); ein MaterialX-Rauschen (548 Ops) bricht dazu die
 // Ops-Decke —, die Ladungen des Rausch-Atlas (76, seit K53 ohne den Fleck des Wiesen-Grunds) und die Ops-Schätzung unter der Decke.
-// Die Zeichen eines Programms (`zeichen`) sind Ausgabe, nie Urteil: was das Programm vor dem ersten Bild kostet, misst die
-// Prüfbühne S0 als kalte Übersetzung auf echter GPU (`S0_MS`, scripts/diag-pruefbuehne.cjs; bis 07.11. hier die Decke
-// 100 000 Zeichen — 4 Züge fielen an 100 211–122 088 Zeichen, während S0 auf der GTX in 14–15 s stand).
+// Die Zeichen eines Programms (`zeichen`) urteilen nur als RATSCHE eines benannten Programms (`zeichenMax`, die Prüfbühne S0:
+// das Boden-Programm, `S0_ZEICHEN` in scripts/diag-pruefbuehne.cjs — der Stand des Tages + 5 %, sie fällt nur); die kalte
+// Übersetzung auf echter GPU ist Auskunft, nie Urteil im Zug (Wanduhr eines geteilten Läufers, z409 12.11.). Bis 07.11. hier die
+// feste Decke 100 000 Zeichen für jeden Stoff — 4 Züge fielen an 100 211–122 088 Zeichen, während S0 auf der GTX in 14–15 s stand.
 // Keine Hilfs-Funktion liest eine Bindung (`bindungInFunktionMax` 0, `bindungenInFunktionen`).
 // EINE Abtastung in einer Schleife (`schleifeMax` 1: die Himmels-Tafel des Grat-Himmels, drei Durchläufe im Zweig): der
 // Luftschatten las die Horizont-Karte in einer zweiten, achtmal je Fragment JEDES Stoffs — GTX 1060, Mess-Wiese Ego 34,3 ms
@@ -187,6 +188,24 @@ function tslLecks(wgsl) {
         }
     }
     return aus;
+}
+
+// DIE TEXEL-LADUNG DURCH DIE UV-MATRIX (w28-ankunft-faden; die Programm-Zeile der Kalt-Zeile, diag-boot-stage `matrixUrteil`):
+// r184 `TextureNode.load(texel)` klont den Knoten samt `updateMatrix`, und jeder Klon multipliziert sein ganzzahliges Texel mit
+// einer EIGENEN mat3-Uniform — `textureLoad( t, vec2<i32>( ( object.nodeUniformN * vec3<f32>( vec2<f32>( texel ), 1.0 ) ).xy ), … )`.
+// Die Matrix einer Textur ist ein UV-Gesetz; am Texel-Index ist sie Arbeit ohne Wirkung, und DXC zahlt sie je Ladung (der Bake
+// der Karten: 81 je Programm, 1,27 s statt 0,45 s Übersetzung). Die Tür: vendor/three-bootstrap.js. Zählt die Ladungen eines Texts.
+const MATRIX_LADUNG = /\btextureLoad\s*\(\s*\w+\s*,\s*vec[23]<[iu]32>\s*\(\s*\(\s*[\w.]+\s*\*\s*vec3<f32>\s*\(/g;
+function matrixLadungen(wgsl) {
+    return (ohneKommentare(String(wgsl || "")).match(MATRIX_LADUNG) || []).length;
+}
+// DAS AUSGESCHRIEBENE RAUSCHEN (w28-licht-kern; diag-boot-stage `rauschUrteil`): ein TSL-`Fn` ohne Layout steht je Ruf
+// ausgeschrieben im Programm. Der Hash des Hauses (pcg2d, die LCG-Konstante 1664525) trägt vier Produkte: als EINE
+// WGSL-Funktion (`setLayout`, wie `rauschEbene`) steht die Konstante je Stufe fünfmal, ausgeschrieben je Probe des
+// Wert-Rauschens zwanzigmal (das Wasser: 700 in einer Pipeline, 58 von 106 KB Fragment). Zählt die Konstante eines Texts.
+const RAUSCH_HASH = /\b1664525u\b/g;
+function rauschHash(wgsl) {
+    return (ohneKommentare(String(wgsl || "")).match(RAUSCH_HASH) || []).length;
 }
 
 // Die Ops-Schätzung eines Rumpfs (ohne Aufrufe): Typ-Annotationen und Deklarationen fallen vor der Operator-Zählung
@@ -344,6 +363,12 @@ const GRENZEN = {
         " — eine Stufe steht nicht mehr hinter ihrer Stärke",
     ],
     schleifeMax: [(k) => k.abtastungen.schleife, "≤", "Abtastungen in Schleifen", ""],
+    zeichenMax: [
+        (k) => k.zeichen,
+        "≤",
+        "Zeichen WGSL",
+        " — die Ratsche des Programms (der Stand + seine Luft, sie fällt nur): jedes Zeichen übersetzt der GPU-Prozess vor dem ersten Bild",
+    ],
     rauschenMax: [(k) => k.rauschen, "≤", "Rausch-Aufrufe je Fragment", ""],
     opsMax: [(k) => k.ops, "≤", "Ops je Fragment (Schätzung)", ""],
     ladungenMax: [(k) => k.ladungen, "≤", "Ladungen je Fragment", ""],
@@ -820,6 +845,13 @@ fn auswahlImZweig() -> f32 {
     pruef("der Stapel der Welt kehrt zurück", stapelJetzt, null);
     pruef("Graph ohne Stoff", stoffGraph(null, RAUSCH_NAME.source, tsl).fehler, "kein Stoff");
     pruef("Graph-Namen", g.rauschNamen, { mx_perlin_noise_float_0: 1 });
+    // die Texel-Ladung durch die UV-Matrix: die Form von r184 zählt; die blanke Ladung, die Probe mit Matrix und der Kommentar nicht
+    const mitMatrix = "nodeVar1 = textureLoad( nodeUniform77, vec2<i32>( ( object.nodeUniform78 * vec3<f32>( vec2<f32>( ( nodeVar117 + vec2<i32>( -1, -1 ) ) ), 1.0 ) ).xy ), u32( 0u ) );";
+    const blank = "nodeVar2 = textureLoad( nodeUniform77, ( nodeVar117 + vec2<i32>( -1, -1 ) ), u32( 0u ) );";
+    const probe = "nodeVar3 = textureSample( nodeUniform5, nodeUniform5_sampler, ( render.nodeUniform6 * vec3<f32>( uv, 1.0 ) ).xy );";
+    pruef("Matrix-Ladungen", [matrixLadungen(mitMatrix + "\n" + mitMatrix.replace("object.", "render.")), matrixLadungen(blank + "\n" + probe), matrixLadungen("// " + mitMatrix), matrixLadungen(null)], [2, 0, 0, 0]);
+    const hash = "let x0 = ( ( u32( i32( p.x ) ) * 1664525u ) + 1013904223u );";
+    pruef("Rausch-Hash", [rauschHash(hash + "\n" + hash), rauschHash("// " + hash), rauschHash("let a = 11664525u;"), rauschHash(null)], [2, 0, 0, 0]);
     return fehler;
 }
 
@@ -836,11 +868,13 @@ function shaderKostenSeite(o) {
         const roh = objs.get;
         const pp = st.postProcessing;
         const traa = st.traaNode;
+        const schacht = st.godrayUniforms && st.godrayUniforms.stufe;
         const stoffe = Object.entries(opt.stoffe || {}).map(([n, z]) => [n, st[z]]);
         const je = new Map();
         const name = (ro) => {
             if (pp && ro.object === pp._quadMesh) return "post:ausgabe";
             if (traa && ro.material === traa._resolveMaterial) return "TRAA.resolve";
+            if (schacht && ro.object === schacht.quad) return "post:godray";
             try {
                 return r._taeterKlasse(ro.object);
             } catch {
@@ -912,6 +946,10 @@ module.exports = {
     STOFFE,
     wgslKosten,
     tslLecks,
+    matrixLadungen,
+    MATRIX_LADUNG,
+    rauschHash,
+    RAUSCH_HASH,
     kostenUrteil,
     kostenTabelle,
     selbsttest,

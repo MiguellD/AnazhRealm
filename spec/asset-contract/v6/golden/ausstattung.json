@@ -137,6 +137,51 @@
       "vertices": 85,
       "sha256": "97d02a04db6cd1e6e8e1f19c38f161577409c042cee33bbcdae7bb6c599e3c1e"
     },
+    "grabstein-s1-L0": {
+      "objects": 1,
+      "vertices": 288,
+      "sha256": "e1d7716a955aca56a5c965c9c59d78a4a3a8f2bdeda0e53299fb36572f1903a7"
+    },
+    "grabstein-s1-L1": {
+      "objects": 1,
+      "vertices": 72,
+      "sha256": "34176aa3da4236526b0d3ff47439f8abd167926fbd8e937ec2a722c60385b2ec"
+    },
+    "grabstein-s1-L3": {
+      "objects": 1,
+      "vertices": 72,
+      "sha256": "34b373b9cd6600b9e1e6aa9966f896af7d3493196a8e739d6089560506d9ebd3"
+    },
+    "grabstein-s2-L0": {
+      "objects": 1,
+      "vertices": 288,
+      "sha256": "10a81dc2bfa1b8c21155079af5cd1bc184a5ecc536d8556904ead6e64ccfde84"
+    },
+    "grabstein-s2-L1": {
+      "objects": 1,
+      "vertices": 72,
+      "sha256": "d642ef83d0a6c10989f96ce2024424a491a52836036d16c35a5683c72a7ce1d8"
+    },
+    "grabstein-s2-L3": {
+      "objects": 1,
+      "vertices": 72,
+      "sha256": "53b2444722fd71314817492c55374873393fe56b1820f0badeb6d92f81f3ad4f"
+    },
+    "grabstein-s3-L0": {
+      "objects": 1,
+      "vertices": 288,
+      "sha256": "b159d237a8da081290350974dfe3d66fa197a46d7742e5d900130cb7db4866d3"
+    },
+    "grabstein-s3-L1": {
+      "objects": 1,
+      "vertices": 72,
+      "sha256": "c3e4376c23de87c5384a340f8f483a45d8bd7bb7ed3cea3ec930511b80764369"
+    },
+    "grabstein-s3-L3": {
+      "objects": 1,
+      "vertices": 72,
+      "sha256": "430e2ffb5f69bb37abc90392644a468dc3a9311890a54120463f15ee268a3504"
+    },
     "feuerstelle-s1-L0-ov_fuelle": {
       "objects": 4,
       "vertices": 906,

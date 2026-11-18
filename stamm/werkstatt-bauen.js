@@ -55,12 +55,12 @@ class AnazhRealm_werkstatt_bauen {
                 const result = this.wieldBlueprint(blueprintName);
                 if (!result.ok) {
                     // Die Absage des Griffs spricht der Spieler-Kanal (Gegenprüfung 08.10.: sie stand nur im
-                    // eingeklappten Log) — derselbe Formatter wie Werkstatt-Knopf und Setzen (`_machTorHint`).
+                    // eingeklappten Log) — dieselbe Zeile wie Werkstatt-Knopf und Setzen (`_machTorZeile`).
                     this._spielerSagt([
                         "bauen.label-grund",
                         {
-                            label: AnazhRealm._namensKopf(label),
-                            grund: this._machTorHint(result),
+                            label: AnazhRealm._namensZeile(this.state.blueprints[blueprintName], blueprintName),
+                            grund: this._machTorZeile(result),
                         },
                     ]);
                 } else {
@@ -121,7 +121,7 @@ class AnazhRealm_werkstatt_bauen {
         let idx = hb.indexOf(name);
         if (idx < 0) {
             idx = hb.findIndex((x) => !x);
-            if (idx < 0) return { ok: false, reason: "hotbar_voll" }; // der Aufrufer sagt es (`_machTorHint`)
+            if (idx < 0) return { ok: false, reason: "hotbar_voll" }; // der Aufrufer sagt es (`_machTorZeile`)
             this.setHotbarSlot(idx, name);
         }
         const bm = this.state.buildMode;
@@ -380,7 +380,8 @@ class AnazhRealm_werkstatt_bauen {
         const spawnPos = { x: p.x, y: p.y + 0.5, z: p.z };
         const name = bm.blueprintName;
         const bpL = this.state.blueprints[name];
-        const label = AnazhRealm._namensKopf((bpL && bpL.label) || name);
+        // der Kopf des Namens als WERT der Zeile (`_namensZeile`): sie steht im Chat und wechselt mit der Sprache
+        const label = AnazhRealm._namensZeile(bpL, name);
         // Jede Absage des Setzens spricht der Spieler-Kanal (`_spielerSagt`, Welle L Folge — Befund: „nicht genug
         // Material" stand nur im eingeklappten Log, der Rechtsklick blieb stumm). Das Urteil ist das des Phantoms
         // (`_setzUrteil`): Standort und Werkstatt sagt es hier, Natur-Wand und Material sagen die Akte unten.
@@ -390,7 +391,9 @@ class AnazhRealm_werkstatt_bauen {
             return false;
         }
         if (urteil.grund === "werkstatt") {
-            this._spielerSagt(["bauen.sagt-werkstatt", { label, domaene: String(urteil.domaene) }]);
+            const D = AnazhRealm.TOOL_DOMAIN_LABELS;
+            const domaene = D[urteil.domaene] ? [D[urteil.domaene]] : String(urteil.domaene);
+            this._spielerSagt(["bauen.sagt-werkstatt", { label, domaene }]);
             this._renderBuildModeHud && this._renderBuildModeHud();
             return false;
         }
@@ -438,7 +441,7 @@ class AnazhRealm_werkstatt_bauen {
                 "bauen.label-grund",
                 {
                     label,
-                    grund: this._machTorHint(Object.assign({ reason: "not_enough_material" }, gate)),
+                    grund: this._machTorZeile(Object.assign({ reason: "not_enough_material" }, gate)),
                 },
             ]);
             this._renderBuildModeHud && this._renderBuildModeHud();
@@ -468,7 +471,10 @@ class AnazhRealm_werkstatt_bauen {
             const consumedStr = Object.entries(gate.cost)
                 .map(([m, n]) => `${n}× ${m}`)
                 .join(", ");
-            this.log(`Gebaut: ${label} (verbraucht ${consumedStr}).`, "INFO");
+            this.log(
+                `Gebaut: ${AnazhRealm._namensKopf(AnazhRealm._etikettQuelle(bpL) || name)} (verbraucht ${consumedStr}).`,
+                "INFO"
+            );
         }
         // V17.30/V17.46 — erschaffen hebt joy + hope, GEFÄRBT von der Substanz des
         // Gebauten (lebendiges Holz ≠ toter Stein) + skaliert mit der Komplexität.
@@ -907,7 +913,10 @@ class AnazhRealm_werkstatt_bauen {
         // speicherte jeder Abbau die ganze Welt synchron: räumt ein Dorf beim Nähern seinen Grund (`_naturRaeumen`, die Flächen
         // seiner Wege und Häuser), lagen 82 volle Saves in wenigen Frames (Null-Renderer, Dorfweg gehend); je Save 40 ms
         // (gate:stand-takt Phase O, Mess-Wiese: 5 Abbauten Σ 200 ms).
-        if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
+        // Ein Wurf des Felds (`_ausGesetz` und `feldWurf`) stand nie im Stand (`_standBauten`): sein Abbau ändert ihn nicht — die
+        // Tat an ihm schreibt und speichert ihr Rufer (`_tatSchreiben`); die Saat, die mit ihrem Chunk geht (`_saatGeht`), sichert nie.
+        if (!(entry._ausGesetz === true && entry.feldWurf === true) && typeof this._scheduleEditSave === "function")
+            this._scheduleEditSave();
         return true;
     }
 
@@ -1477,23 +1486,32 @@ class AnazhRealm_werkstatt_bauen {
         this.renderRecipeBook();
     }
 
-    // EIN Mach-Tor-Formatter: das Tor antwortet strukturiert ({reason, missing, cost, neededDomain}),
-    // EINE Stimme formt den Hint; _showMachTorHint zeigt ihn am Ort der Geste (nicht nur im Log).
-    _machTorHint(result) {
-        if (!result || result.ok) return "";
+    // EIN Mach-Tor-Formatter: das Tor antwortet strukturiert ({reason, missing, cost, neededDomain}), EINE Stimme formt den
+    // Hint als Zeile der Tafel `[schlüssel, werte]` (null: kein Hint) — wer ihn in eine Zeile legt, die später neu gelesen wird
+    // (der Chat, `_spielerSagt`), reicht die Zeile; die Stoffe und die Werkstatt stehen darin als ihre Etiketten. Bis hier
+    // reiste er als Satz der Sprache des Augenblicks in die Chat-Zeile und stand nach dem Wechsel alt.
+    _machTorZeile(result) {
+        if (!result || result.ok) return null;
         if (result.reason === "not_enough_material") {
-            const miss = this._kostenText(result.missing);
+            const miss = Object.entries(result.missing || {}).map(([m, n]) => [
+                "stoff.menge",
+                { n: String(n), stoff: this._stoffZeile(m) },
+            ]);
             // das Gesetz des Modus beim Namen (S2): frieden und pfad zahlen Material, frei ist nur schöpfer
-            return this._t("werk.tor.fehlt", { liste: miss || this._t("werk.tor.material") });
+            return ["werk.tor.fehlt", { liste: miss.length ? miss : ["werk.tor.material"] }];
         }
-        if (result.reason === "hotbar_voll") return this._t("werk.tor.hotbar-voll");
+        if (result.reason === "hotbar_voll") return ["werk.tor.hotbar-voll"];
         if (result.reason === "no_workshop_station")
-            return this._t("werk.tor.braucht-werkstatt", {
-                werkstatt: this._stationLabelForDomain(result.neededDomain),
-            });
+            return ["werk.tor.braucht-werkstatt", { werkstatt: this._stationZeileForDomain(result.neededDomain) }];
         return result.reason
-            ? this._t("werk.tor.fehlgeschlagen-grund", { grund: result.reason })
-            : this._t("werk.tor.fehlgeschlagen");
+            ? ["werk.tor.fehlgeschlagen-grund", { grund: result.reason }]
+            : ["werk.tor.fehlgeschlagen"];
+    }
+
+    // der Hint als Text der Sprache von jetzt — für den Knoten, der ihn sofort zeigt und vergeht (`_showMachTorHint`)
+    _machTorHint(result) {
+        const z = this._machTorZeile(result);
+        return z ? this._t(z[0], z[1]) : "";
     }
 
     // Hint INLINE am Ort der Geste: .mach-tor-hint-Zeile im host (ersetzt die alte — idempotent),

@@ -13,7 +13,7 @@
 //  KULTUREN · Bake-Vokabular der Dorf-Pipeline) lebt im STUDIO-KERN
 //  ../../fachwerk-core.js (__fachwerkCore, VOR diesem Skript geladen) — EINE
 //  Quelle für Lab-Shell, Foundry-Worker und AnazhRealm (G2.1, kein Nachbau).
-//  Hier bleiben: Szene/Renderer · UI/Regler (applyKultur/readParams/metaParams) ·
+//  Hier bleiben: Szene/Renderer · UI/Regler (applyKultur/readParams/applyMeta → bauRezept) ·
 //  DORF (Layout · Straßen · Epochen · Jahresringe · Streaming — die W-A5b-
 //  Quelle, KEIN W-A5a-Kanal) · Begehen/Kollision · LOD-Sonde · Selbsttest.
 // ══════════════════════════════════════════════════════════════════════════
@@ -23,16 +23,16 @@ const M=FC.materials(), _MM=FC._MM;                                          // 
 const _mmFor=FC._mmFor, mLay=FC.mLay, mat=FC.mat;                            // Rollen-Materialien (Bake · Layout · Fabrik)
 const DEFCOL=FC.DEFCOL, KULTUR=FC.KULTUR, KULTNAMES=FC.KULTNAMES;
 let farbeJetzt=DEFCOL; const tintM=c=>{ farbeJetzt=c; return FC.tintM(c); };   // die Farbe reist im Rückgängig-Zustand (Sitzung der Hülle)
-const kulturFromSeed=FC.kulturFromSeed, kulturParams=FC.kulturParams;        // die reine Kultur-Ableitung (Dorf + Regler teilen sie)
+const kulturFromSeed=FC.kulturFromSeed, bauRezept=FC.bauRezept;              // das Bau-Gesetz (Dorf + Regler teilen es)
 const KULLVOL=FC.KULLVOL, DESTNUR=FC.DESTNUR, TURMNUR=FC.TURMNUR, MASSNUR=FC.MASSNUR, LOD1F=FC.LOD1F;
 const bakeHaus=FC.bakeHaus, bakeLOD=FC.bakeLOD, wandTonAus=FC.wandTonAus, stapelBau=FC.stapelBau;
 const fpVon=FC.fpVon, lod2Koerper=FC.lod2Koerper;
 const mischeGeoms=FC.mischeGeoms, hofFuer=FC.hofFuer, fragFuer=FC.fragFuer, masseVon=FC.masseVon;  // die EINE Stufen-Quelle (Sonde ≡ Dorf ≡ Vertrag)
 // ════════════════ Lab-Shell — Szene · UI · DORF (W-A5b-Quelle) ════════════════
-function applyKultur(name, seed){                                                               // setzt Regler + Farben als kohärentes Bündel — QUELLE ist kulturParams (Dorf nutzt dieselbe)
+function applyKultur(name, seed){                                                               // setzt Regler + Farben als kohärentes Bündel — QUELLE ist das Bau-Gesetz bauRezept (Dorf nutzt dasselbe)
   if(name==='manuell'){ tintM(DEFCOL); return; }
   if(name==='samen') name=kulturFromSeed(seed);
-  const kp=kulturParams(name, seed); if(!kp){ tintM(DEFCOL); return; }
+  const kp=bauRezept({bauweise:name}, null, seed); if(!kp){ tintM(DEFCOL); return; }
   formSetzen({pitchDeg:kp.pitchDeg, W:kp.W, D:kp.D, storeys:kp.storeys, hip:kp.hip, roofCurve:kp.roofCurve,
     treppgiebel:+!!kp.treppgiebel, kuppel:+!!kp.kuppel, portikus:+!!kp.portikus, arkade:+!!kp.arkade, turm:+!!kp.turm,
     zinnen:+!!kp.zinnen, veranda:+!!kp.veranda, vorkragung:+!!kp.vorkragung, pilotis:+!!kp.pilotis, terrasse:+!!kp.terrasse});
@@ -105,7 +105,7 @@ function promoteBauen(bi){ const B=dorfB[bi]; if(!B||B.lod!=='chunk') return nul
 function promoteFertig(pend){ const bi=pend.bi, B=dorfB[bi], st=pend.st;                      // PHASE 2: Bake + Szene + Solids/Türen — die vordefinierte Feinstufe
   if(!B||B.lod!=='chunk'){ st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); return; }   // Welt hat sich gedreht (demotiert/neu gebaut) → Bau verwerfen, kein Leck
   const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,B.q.y,B.q.z); wrap.add(st.g); wrap.updateMatrixWorld(true);
-  const geoms={}; bakeLOD(st.g, B.p.col, geoms, 0); B.meshes=finalizeGeoms(geoms, true);      // EIN Bake-Pfad · ATOMAR: Vollbau erscheint im selben Frame, in dem die Hülle fällt — nie Lücke, nie Doppelbild
+  const geoms={}; geoms.__decken=FC.deckenZeile(masseVon(st), FC.raumVon(st, B.p.col)); bakeLOD(st.g, B.p.col, geoms, 0); B.meshes=finalizeGeoms(geoms, true);      // EIN Bake-Pfad · ATOMAR: Vollbau erscheint im selben Frame, in dem die Hülle fällt — nie Lücke, nie Doppelbild
   wrap.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } });            // FLÜGEL-GESETZ: was bakeLOD lebend ließ (Türen/Fenster), muss auch GERENDERT werden
   dorfGroup.add(wrap); B.liveWrap=wrap;                                                      // FIX: wrap hing nie in der Szene → promovierte Häuser hatten unsichtbare Türen/Fenster (Loch-Fassade)
   B.lod='voll'; B.dyn=true; B.H=st.H;
@@ -227,7 +227,7 @@ function buildDorf(dp){
       const eB={x0:bx.min.x,x1:bx.max.x,z0:bx.min.z,z1:bx.max.z,y1:bx.max.y};
       st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); });
       let c=0; st.g.traverse(o=>{if(o.isMesh)c++;}); prims+=Math.max(60,(c*0.3)|0); nProxy++;
-      dorfB.push({p:hp, lod:'chunk', dyn:false, kern:false, ext:eB, dims:st.H.dims, fp:fpVon(st.H), masse:masseVon(st),
+      dorfB.push({p:hp, lod:'chunk', dyn:false, kern:false, ext:eB, dims:st.H.dims, wandX:FC.wandXVon(st.H.solids), fp:fpVon(st.H), masse:masseVon(st),
         spawnL:{x:st.H.spawn.x, z:st.H.spawn.z}, hofGap:plan.norm.gap, meshes:[]}); } }       // HOF-GESETZ: Tür-Punkt + Parzellen-Spielraum wandern mit — das Haus-Wissen formt gleich den Hof
   const ext=dorfB.map(B=>{ if(B.lod!=='voll') return B.ext;
     const bx=new THREE.Box3().setFromObject(B.g); return {x0:bx.min.x,x1:bx.max.x,z0:bx.min.z,z1:bx.max.z,y1:bx.max.y}; });
@@ -236,8 +236,13 @@ function buildDorf(dp){
   { const N=plan.norm;                                                                        // REIHEN-SNAP-GESETZ wohnt im Kern (U6c, __fachwerkCore.reihenSnap) — buildDorf UND exportSettlement rufen DIESELBE Funktion; läuft VOR der Platzierung, damit Solids/OBB konsistent fließen
     const snaps=FC.reihenSnap(dorfB, lay.pl, N.gap);
     if(snaps) console.log('REIHEN-SNAP: '+snaps+' Paare angedockt (Fuge → '+N.gap+'m)');
+    dorfB.forEach((B,i)=>{ B.q=lay.pl[i]; }); FC.brandwand(dorfB, N.gap);                         // die Brandwand VOR dem Los-Gesetz, wie der Export (die Traufe ueber dem Nachbarn ist kein Ueberlapp); der Ruf unten zaehlt dieselben Seiten
+    { const E=FC.loseEntzerren(dorfB, lay.pl, plan.lose);                                        // DIE LOSE UEBERDECKEN SICH NIE: nach Snap und Brandwand, vor allem, was an einer Wand haengt — dieselbe Funktion wie der Export
+      if(E.paare||E.rest.length) console.log('LOSE: '+E.paare+' Paare entzerrt'+(E.rest.length?', '+E.rest.length+' liegen noch ineinander':'')); }
+    FC.mastWeicht(lay.pl, lay);                                                                  // DER MAST WEICHT DER GERUECKTEN WAND: nach dem Snap, vor Brunnen und Wandlaterne — dieselbe Funktion wie der Export
     FC.brunnenWeicht(dorfB, lay.pl, lay);                                                       // DER BRUNNEN WEICHT DEM HAUS (S4-N4): nach dem Snap — dieselbe Funktion wie exportSettlement
-    FC.wandLaternen(dorfB, lay.pl, lay); }                                                     // DIE WANDLATERNE (K66-2): nach dem Snap an der Wand des Kerns — dieselbe Funktion wie exportSettlement
+    FC.wandLaternen(dorfB, lay.pl, lay);
+    FC.platzSaum(lay.pl, lay, plan); }                                                          // DER PLATZ REICHT BIS ZUR BAUFLUCHT: nach dem Snap — dieselbe Funktion wie exportSettlement (die Flaechen malt die Schleife der Zonen unten)                                                     // DIE WANDLATERNE (K66-2): nach dem Snap an der Wand des Kerns — dieselbe Funktion wie exportSettlement
   const ORT=ortAufWelt(dp, plan, lay, hoehe);                                                      // DER ORT AUF DEM WELTGRUND (K10): jedes q trägt y
   dorfB.forEach((B,i)=>{ const q=lay.pl[i]; B.q=q; ymax=Math.max(ymax, ext[i].y1||0);
     if(B.lod==='voll'){ const wrap=new THREE.Group();
@@ -364,9 +369,13 @@ function buildDorf(dp){
       const lz=-f.ez+q2*2*f.ez/nfu, c2=Math.cos(f.phi), s3=Math.sin(f.phi);
       fu.position.set(f.cx+lz*s3,0.11,f.cz+lz*c2); fu.rotation.y=f.phi; fu.receiveShadow=true; dorfGroup.add(fu); } });
   lay.staende.forEach(st=>{ const pz=lay.platz;                                                 // AUSSTATTUNG: der Marktstand kommt aus dem Gesetzbuch, die Front schaut zur Platz-Mitte (dieselbe Regel wie die Welt)
-    const ry=pz? Math.atan2(-(pz.cx-st.x), -(pz.cz-st.z)) : 0;
+    const ry=Number.isFinite(st.th)? st.th : (pz? Math.atan2(-(pz.cx-st.x), -(pz.cz-st.z)) : 0);   // die Reihen des Markts der Stadt tragen ihre Front (STADT_GRAMMATIK), der Stand des Dorfs schaut zur Mitte
     dorfGroup.add(ausstattungAm('marktstand', st.x, st.z, ry));
     solids.push({min:[-1.05,0,-0.5],max:[1.05,0.9,0.5], th:ry, tx:st.x, tz:st.z}); });
+  (lay.zonen||[]).forEach(q=>{ if(q.form!=='kasten') return;                                    // DIE STADT DER GRAMMATIK: ihre Flächen (der Rasen des Friedhofs) und die Gegenstände ihrer Viertel (das Grab) — derselbe Plan, den die Welt hebt
+    const m=new THREE.Mesh(new THREE.BoxGeometry(q.ex*2,0.06,q.ez*2),q.belag==='gras'?M.gras:M.weg); m.position.set(q.cx,0.03,q.cz); m.rotation.y=q.phi; m.receiveShadow=true; dorfGroup.add(m); });
+  (lay.gegenstaende||[]).forEach(q=>{ const T=FC.AUSSTATTUNG[q.art].tritt; dorfGroup.add(ausstattungAm(q.art, q.x, q.z, q.th));
+    solids.push({min:[-T.ex,0,-T.ez],max:[T.ex,0.9,T.ez], th:q.th, tx:q.x, tz:q.z}); });
   { let dh=((plan.seed||7)*1103515245+12345)>>>0; const dr=()=>{ dh^=dh<<13; dh^=dh>>>17; dh^=dh<<5; dh>>>=0; return (dh&0xffff)/0x10000; };   /*AUSSTATTUNGS-DNA + PLATZIERUNGS-BEDINGUNGS-GESETZ: jedes Ding hat REALITAETS-Bedingungen — frei() prueft Fahrbahn+Fluss, setzFrei() streut bis erfuellt*/
     const frei=(x,z,r)=>{
       for(const rd2 of lay.roads){ for(let i2=0;i2+1<rd2.pts.length;i2++){ const A2=rd2.pts[i2],B3=rd2.pts[i2+1];
@@ -612,19 +621,14 @@ function buildGenesis(){
   console.log('GENESIS:', 'Plan-Hash', hash, 'Kern', v2.hoehen.kern, 'Terrasse', v2.hoehen.terrasse, 'Spiegel', v2.hoehen.spiegel, v2.erdbau.length, 'Erdbau');
 }
 function frameGenesis(){ orb.r=320; orb.el=0.62; orb.az=0.55; orb.tx=20; orb.ty=0; orb.tz=-10; applyOrbit(); }
-// ════════════ META-GESETZ ════════════ wohnt im Kern (U6c, __fachwerkCore.metaParams) — eine Quelle für Browser + Sweep
-// Aus Zeit · Klima · Personen · Wohlstand emergiert die ganze Form — nach der Ordnung der Stil-Epochen.
-const metaParams=FC.metaParams;
-
+// ════════════ DER HAUSHALT ════════════ das Bau-Gesetz wohnt im Kern (bauRezept) — eine Quelle für Labor + Dorf + Welt:
+// das Los ist das Haus der gewählten Kultur (oder das von Hand gestellte), der Haushalt legt sein Raumprogramm darüber.
 function applyMeta(){
-  const jahr=RW.jahr, klima=RW.klima/100, leute=RW.leute, wohl=RW.wohl/100;
-  const m=metaParams(jahr,klima,leute,wohl);
-  const F=m.F;
-  formSetzen({pitchDeg:m.pitch, W:m.W, D:m.D, storeys:m.storeys, treppgiebel:+!!F.treppgiebel, kuppel:+!!F.kuppel, portikus:+!!F.portikus,
-    arkade:+!!F.arkade, turm:+!!F.turm, zinnen:+!!F.zinnen, veranda:+!!F.veranda, vorkragung:+!!F.vorkragung, pilotis:+!!F.pilotis, terrasse:+!!F.terrasse});
-  $('pStil').value=m.stil; $('pB').value=(m.stil==='alt')?'andreas':'none';
-  if($('pBogenTyp'))$('pBogenTyp').value=m.bogen; if($('pDachTyp'))$('pDachTyp').value='sattel'; if($('pG'))$('pG').value=m.grund;
-  tintM(Object.assign({},DEFCOL,m.col));
+  const k=$('pK').value, name=k==='samen'?kulturFromSeed(SEED):k;
+  const kp=k!=='manuell'&&bauRezept({bauweise:name},null,SEED), los=kp?Object.assign(kp,{kultur:name}):Object.assign(readParams(),{kultur:null});
+  const hp=bauRezept({nutzung:'wohnhaus',los},{personen:RW.leute,wohl:RW.wohl/50},SEED);
+  formSetzen({W:hp.W, D:hp.D, storeys:hp.storeys, annexN:hp.annexN|0, balcony:hp.balcony|0});
+  if($('pG'))$('pG').value=hp.grundriss;
 }
 // mat lebt im Kern (__fachwerkCore, oben aliast) — eine Quelle für Fabrik + Bake + Layout.
 
@@ -761,6 +765,7 @@ function buildHausLOD(params, stufe){
     const hp2=Object.assign({},params,{nur: turm? {moebel:false,innenwaende:false} : (params.arm? {moebel:false} : {})});
     const st=((params.storeys||1)>11)? stapelBau(hp2,{gelaende:false})
       : (()=>{ const H=HAUS(THREE,mat,hp2); return {g:H.build({gelaende:false}), H}; })();
+    geoms.__decken=FC.deckenZeile(masseVon(st), FC.raumVon(st, params.col));   // der Innen-Stoff liest die Decken (w28-innenlicht, Labor = Welt)
     bakeLOD(st.g, params.col, geoms, 0);
     liveG=st.g;                                                                              // was lebend blieb (Türen/Fenster) wird gerendert — wie promoteB seit dem liveWrap-Fix
     pfad='build{gelaende:false} → bakeLOD(0) + liveWrap · RING-A-WÜRDE: Innenwände immer'+(turm?' · Turm-Schacht (Glasetagen zeigen Böden)':'');
@@ -798,15 +803,17 @@ const $=id=>document.getElementById(id);
 const hipName=h=>h<0.02?'Satteldach':(h>0.98?'Walmdach':'Krüppelwalm');
 const RW={};
 const HAUS_PARAMS=FC.PARAMS_BY_KIND.haus;
-const BED_META=[{id:'jahr',lab:'⏳ Jahr',min:1000,max:2025,step:5,def:1500},{id:'klima',lab:'🌍 Klima',min:0,max:100,step:1,def:50},
-  {id:'leute',lab:'👥 Personen',min:1,max:20,step:1,def:5},{id:'wohl',lab:'💰 Wohlstand',min:0,max:100,step:1,def:40}];
+// DER HAUSHALT (das Bau-Gesetz, `bauRezept`): Personen und Wohlstand legen das Raumprogramm des Wohnhauses auf die Kultur — dasselbe
+// Gesetz, das jedes Los des Dorfs baut. Jahr und Klima fielen mit dem Labor-Meta-Gesetz (w28-bau-rezept): keine Zeile liest sie, bis der rahmen
+// Klima trägt.
+const BED_META=[{id:'leute',lab:'👥 Personen',min:1,max:12,step:1,def:3},{id:'wohl',lab:'💰 Wohlstand',min:0,max:100,step:1,def:50}];
 const BED_LOD=[{id:'lod',lab:'🔍 LOD-Sonde',min:0,max:4,step:1,def:0,law:'Kamera bleibt stehen — die Stufen direkt vergleichbar (Editor · Ring A · Chunk 1–3)'}];
 const BED_DORF=[{id:'nH',lab:'Häuser',min:4,max:320,step:1,def:12},{id:'budget',lab:'Prim-Budget',min:100000,max:400000,step:10000,def:170000}];
 const BED_EXP=[{id:'exp',lab:'Explosionszeichnung',min:0,max:100,step:1,def:0}];
 function reglerFmt(z,v){ switch(z.id){
   case 'W': case 'D': return (+v).toFixed(1)+' m'; case 'pitchDeg': return v+'°'; case 'hip': return hipName(v);
   case 'roofCurve': case 'bend': case 'terrAsym': return Math.round(v*100)+' %'; case 'annexN': return v?v+'×':'aus';
-  case 'klima': return v<30?'Nord':v>72?'Süd':'gemäßigt'; case 'wohl': return v<33?'arm':v>66?'reich':'mittel';
+  case 'wohl': return v<33?'arm':v>66?'reich':'mittel';
   case 'lod': return LODNAME[v|0]; case 'budget': return Math.round(v/1000)+'k'; case 'exp': return v+' %'; }
   return null; }
 function readParams(){
@@ -831,7 +838,7 @@ const sitz=AnazhHuelle.sitzung({werte:RW,sperren:true,seed:SEED,
   beiSeed:s=>sitz.schritt(()=>{ SEED=s; const fest=gesperrteWerte(); if($('pK').value!=='manuell'){ applyKultur($('pK').value, SEED); $('vK').textContent=($('pK').value==='samen'?'Samen→'+kulturFromSeed(SEED):$('pK').value); } formSetzen(fest); regen(true); })});
 sitz.leiste($('sitzung'));
 const gesperrteWerte=()=>{ const f={}; HAUS_PARAMS.forEach(z=>{ if(sitz.gesperrt(z.id)) f[z.id]=RW[z.id]; }); return f; };
-const formRegler=AnazhHuelle.regler($('reglerForm'),HAUS_PARAMS,{werte:RW,sitzung:sitz,format:reglerFmt,basis:()=>{ const kp=$('pK').value!=='manuell'&&kulturParams($('pK').value==='samen'?kulturFromSeed(SEED):$('pK').value,SEED); return kp||null; },
+const formRegler=AnazhHuelle.regler($('reglerForm'),HAUS_PARAMS,{werte:RW,sitzung:sitz,format:reglerFmt,basis:()=>{ const kp=$('pK').value!=='manuell'&&bauRezept({bauweise:$('pK').value==='samen'?kulturFromSeed(SEED):$('pK').value},null,SEED); return kp||null; },
   nachRuhe:()=>regen(true)});
 function formSetzen(o){ formRegler.setzen(o,true); }
 // Die Kosten-Leiste: die WELT-Gestalt der gewählten Kultur (fachwerk-core buildInstance, die B4-Regler als ov — derselbe

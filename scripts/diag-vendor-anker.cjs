@@ -43,7 +43,7 @@ const PINS = [
 ];
 
 // Die Anker: Vendor-Substring → abhängiges Stamm-Organ, je Gruppe ihr Grund (`warum`). Die Tafel ist Daten der Wand
-// (spec/vendor-anker.json, 246 Anker in 60 Gruppen; bis w3w-verkehr ein Literal dieses Skripts). DIE DATEI DER ANKER: ohne
+// (spec/vendor-anker.json, 252 Anker in 60 Gruppen; bis w3w-verkehr ein Literal dieses Skripts). DIE DATEI DER ANKER: ohne
 // `file` der WebGPU-Vendor (in ihm leben fast alle Organe), jede andere steht beim Anker.
 const ANKER_DATEI = PINS[0].file;
 const ANKER = jsonLesen("spec/vendor-anker.json").flatMap((g) => g.anker);

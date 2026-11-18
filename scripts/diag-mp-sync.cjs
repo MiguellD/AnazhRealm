@@ -32,6 +32,14 @@
 //                 des Bestands im Takt der Welt-Uhr, die Pflege von A im Gespräch als Akt), der Pegel des Jahrs (Hub je Höhe aus
 //                 Regen und Schmelze) und der Brand (je Zelle Ankunft, Zünd- und End-Zeit). Verglichen wird im selben Moment des
 //                 Felds (das zuletzt gerechnete Ereignis seiner Folge, `feldLetzt`). Selbsttest: B mit eigener Uhr → der Zug ROT.
+//                 Dazu die Boden-Klasse des Bestands (`_bodenKlasseAt`): mit und ohne Erdbau der Orte dieselbe (sie liest nur die
+//                 Saat, `_terrainSaatY`); Selbsttest: die alte Lesart samt Erdbau kippt. DIE EINE FOLGE DES FELDS (w28-mp-boden):
+//                 kein Akt wirkt, während ein Takt einer nahen Region vor seinem Stempel aussteht (`aktSpion` an `_feldAktWirkt`
+//                 seit der Geburt der Seite; am Eingang `_feldAkt` tritt er in die Reihe, Selbsttest: der alte Eingang lässt ihn
+//                 wirken); die gemerkte Boden-Klasse je Zelle ist die frische, auf beiden Seiten dieselbe (`klasseUrteil`,
+//                 Selbsttest: eine falsch gemerkte Klasse); eine Region über einer Hydro-Kachel, die noch nicht da ist, rechnet
+//                 nicht und merkt nichts (`_bestandBereit`, Selbsttest: das alte Merkbuch). Fällt (f), nennt der BEFUND den Grund
+//                 beim Namen (`lebenBefund`: Moment, Klasse, Bestand, Akte, Folge, Zellen; `pegelBefund`: die Sekunde der Tafel).
 //   (g) STILLE (mp-leitung): ein stiller Partner ist nicht weg. A schweigt 15 s (die Pumpe ruht, der Loop steht wie in einem
 //                 verborgenen Tab), B tickt weiter; zurück ist A, wenn B's Ghost den ersten Anker von A nach der Stille rechnet
 //                 (geurteilt an diesem Ereignis, oder sofort, wenn die Leitung nicht mehr offen steht), und (e) Leib rechnet den
@@ -169,8 +177,165 @@ function abdruck(bauten, nahe) {
     const boden = edits.map(([, , x, y, z]) => [r._terrainDensityAt(x, y, z), r._voxelSurfaceY(x, z)]);
     const wt = st.weatherTransition;
     const wetter = JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.duration]]);
-    const leben = r._lebenImStand(nahe).feld.map(String).sort();
-    return { takt: st.faunaLifecycle.feldLetzt, edits, bauten: B.sort(), boden, zug: r._wetterZug, wetter, wer: st.weather + " von " + st.wetterSchreiber, leben, pegel: r._pegelGilt(), brand: [...(st.brandFeld || [])] };
+    const stand = r._lebenImStand(nahe);
+    const leben = stand.feld.map(String).sort();
+    // (f) DER BEFUND hinter „leben VERSCHIEDEN“ (`lebenBefund`): was das Leben rechnet, je Seite — die gemerkte Boden-Klasse je
+    // Zelle des Bestands neben der frischen (`_bestandKlassen` ↔ `_bodenKlasseAt`), der Bestand je naher Region (Takt, Zähler,
+    // Tiere), die gewirkten Akte, die Folge am Eingang (`aktSpion`) und die Hydro-Kacheln der Seite
+    const [BR, S] = [r.constructor.BESTAND_REGION, r._bestandSeite()];
+    const gemerkt = (r._bestandKlassen && r._bestandKlassen.map) || new Map();
+    const klassen = [];
+    for (const key of nahe || r._bestandNah()) {
+        const [ix, iz] = key.split(",").map(Number);
+        for (let i = 0; i < BR.zellen; i++)
+            for (let j = 0; j < BR.zellen; j++) {
+                const k = key + ":" + i + "," + j;
+                const frisch = r._bodenKlasseAt((ix + (i + 0.5) / BR.zellen) * S, (iz + (j + 0.5) / BR.zellen) * S);
+                klassen.push([k, gemerkt.has(k) ? gemerkt.get(k) : null, frisch]);
+            }
+    }
+    const bestand = Object.entries(stand.bestand)
+        .sort()
+        .map(([k, R]) => [k, R.t, R.seq, R.tiere.map((t) => t.id + "@" + t.alterS).sort().join(" ")]);
+    const befund = {
+        uhr: st.spielZeit,
+        horizont: r._feldHorizont(),
+        klassen,
+        bestand,
+        gewirkt: stand.gewirkt.slice().sort(),
+        offen: stand.akte.length,
+        folge: window.__aktFolge || null,
+        hydro: [...(st.hydroTiles || new Map()).keys()].sort().join(" "),
+        pegelSek: r._pegelSek,
+    };
+    return { takt: st.faunaLifecycle.feldLetzt, edits, bauten: B.sort(), boden, zug: r._wetterZug, wetter, wer: st.weather + " von " + st.wetterSchreiber, leben, pegel: r._pegelGilt(), brand: [...(st.brandFeld || [])], befund };
+}
+// (f) DER SPION DER FOLGE (Seite, vor ihrem ersten Skript, über jeden Reload — auch unter dem Ladeschirm, ehe die Probe sich
+// einhängt): jeder Akt, der wirkt (`_feldAktWirkt`), gegen die Folge des Felds gelesen — `ueberholt`: ein Takt einer nahen Region
+// steht vor seinem Stempel noch aus (der Akt schreibt VOR einem Takt, der auf der anderen Seite davor lag); `spaet`: sein Stempel
+// liegt hinter dem zuletzt gerechneten Ereignis (`feldLetzt`). Beide brechen „EINE Folge nach Welt-Zeit“ beim Namen `_feldAkt`.
+function aktSpion() {
+    // `reihe`: die Akte in der Reihe, in der sie auf DIESER Seite wirkten (je Stempel und Inhalt, die jüngsten 4000)
+    const AF = (window.__aktFolge = { n: 0, ueberholt: 0, spaet: 0, bsp: [], reihe: [] });
+    const t = setInterval(() => {
+        let w;
+        try {
+            w = r && r._feldAktWirkt;
+        } catch {
+            return; // die Welt steht noch nicht
+        }
+        if (!w) return;
+        clearInterval(t);
+        r._feldAktWirkt = function (akt) {
+            const s = this.state;
+            const T = this.constructor._bestandGesetz().B.taktS;
+            const F = (s.faunaBestand && s.faunaBestand.regionen) || {};
+            let vor = Infinity;
+            for (const key of this._bestandNah()) vor = Math.min(vor, F[key] ? F[key].t + T : -Infinity);
+            const [u, sp] = [vor < akt.w, akt.w < s.faunaLifecycle.feldLetzt];
+            AF.n++;
+            AF.reihe.push(akt.w + "|" + akt.k);
+            if (AF.reihe.length > 4000) AF.reihe.splice(0, 1000);
+            if (u) AF.ueberholt++;
+            if (sp) AF.spaet++;
+            if ((u || sp) && AF.bsp.length < 3)
+                AF.bsp.push(
+                    `${u ? "überholt" : "spät"} ${akt.art} w ${akt.w.toFixed(2)} (Takt davor ${vor}, feldLetzt ${s.faunaLifecycle.feldLetzt}, ` +
+                        `Uhr ${s.spielZeit.toFixed(2)}, Horizont ${this._feldHorizont().toFixed(2)}, bereit ${this._kreaturenBereit()})`
+                );
+            return w.call(this, akt);
+        };
+    }, 4);
+}
+// (f) der Befund in einem Satz (Node): WARUM das Leben zweier Abdrücke verschieden ist — der Moment, die gemerkte Klasse, der
+// Bestand, die Akte, die Folge am Eingang, dann die Zellen selbst (nur A, nur B, Betrag, Stempel; der früheste verschiedene Stempel)
+// (f) DIE GEMERKTE KLASSE GEGEN DIE FRISCHE (Node, aus `befund.klassen` zweier Abdrücke): `n` gemerkte Zellen bei A, `a`/`b`
+// gemerkt ≠ frisch je Seite, `ab` gemerkt A ≠ gemerkt B, `frisch` die frische Lesart A ≠ B, das erste Beispiel beim Namen
+function klasseUrteil(A, B) {
+    const kB = new Map(B.befund.klassen.map(([k, g, f]) => [k, [g, f]]));
+    const kl = { n: 0, ab: 0, a: 0, b: 0, frisch: 0, von: A.befund.klassen.length, bsp: "" };
+    for (const [k, g, f] of A.befund.klassen) {
+        const [gb, fb] = kB.get(k) || [null, null];
+        if (g !== null) kl.n++;
+        if (g !== null && gb !== null && g !== gb) kl.ab++, (kl.bsp = kl.bsp || `${k} A ${g} · B ${gb} · frisch ${f}`);
+        if (g !== null && g !== f) kl.a++, (kl.bsp = kl.bsp || `${k} A gemerkt ${g} · frisch ${f}`);
+        if (gb !== null && gb !== fb) kl.b++, (kl.bsp = kl.bsp || `${k} B gemerkt ${gb} · frisch ${fb}`);
+        if (f !== fb) kl.frisch++, (kl.bsp = kl.bsp || `${k} frisch A ${f} · B ${fb}`);
+    }
+    kl.rot = kl.ab + kl.a + kl.b + kl.frisch;
+    kl.satz =
+        `${kl.n} von ${kl.von} Zellen gemerkt (A) · gemerkt≠frisch A ${kl.a}, B ${kl.b} · gemerkt A≠B ${kl.ab} · frisch A≠B ${kl.frisch}` +
+        (kl.rot ? ` (${kl.bsp}) — Täter _bestandFeld: merkt die Klasse vor ihrem fertigen Eingang (Hydro-Kachel, Erdbau)` : "");
+    return kl;
+}
+// (f) der Befund hinter „pegel VERSCHIEDEN“ (Node): die Sekunde der Welt-Uhr, an der jede Seite ihre Tafel zog (`_pegelSek` — die
+// Tafel ist eine Funktion der vollen Sekunde: verschiedene Sekunden sind ein anderer Moment, dieselbe Sekunde ein Täter), und wie
+// weit die Zahlen der Tafeln auseinander liegen
+function pegelBefund(A, B) {
+    const zahlen = (X) => (JSON.stringify(X.pegel) || "").match(/-?\d+(\.\d+)?(e-?\d+)?/g) || [];
+    const [za, zb] = [zahlen(A), zahlen(B)];
+    let [n, max] = [0, 0];
+    for (let i = 0; i < Math.max(za.length, zb.length); i++)
+        if (za[i] !== zb[i]) n++, (max = Math.max(max, Math.abs(Number(za[i]) - Number(zb[i])) || 0));
+    const [sa, sb] = [A.befund.pegelSek, B.befund.pegelSek];
+    return (
+        `Sekunde der Tafel A ${sa} · B ${sb} (Uhr A ${A.befund.uhr.toFixed(2)}, B ${B.befund.uhr.toFixed(2)}) · ${n} von ${za.length} Zahlen verschieden, größter Abstand ${max}` +
+        (sa === sb
+            ? " — Täter: dieselbe Sekunde, zwei Tafeln (`_pegelTafel`: Stempel, Zustand des Stands, Faltung)"
+            : " — nicht derselbe Moment (die Probe las zwei Sekunden)")
+    );
+}
+function lebenBefund(A, B) {
+    const [a, b] = [A.befund, B.befund];
+    const teile = [];
+    if (A.takt !== B.takt) teile.push(`MOMENT verschieden (feldLetzt A ${A.takt} · B ${B.takt})`);
+    const kl = klasseUrteil(A, B);
+    if (kl.rot) teile.push(`KLASSE ${kl.satz}`);
+    const bB = new Map(b.bestand.map((x) => [x[0], x]));
+    const be = a.bestand.filter((x) => JSON.stringify(x) !== JSON.stringify(bB.get(x[0])));
+    if (be.length || a.bestand.length !== b.bestand.length)
+        teile.push(
+            `BESTAND verschieden in ${be.length} von ${a.bestand.length} Regionen` +
+                be.slice(0, 2).map((x) => { const y = bB.get(x[0]) || []; return ` (${x[0]}: t ${x[1]}/${y[1]}, seq ${x[2]}/${y[2]}, Tiere ${x[3].split(" ").length}/${String(y[3] || "").split(" ").length})`; }).join("")
+        );
+    const [gA, gB] = [new Set(a.gewirkt), new Set(b.gewirkt)];
+    const [nurA, nurB] = [a.gewirkt.filter((k) => !gB.has(k)), b.gewirkt.filter((k) => !gA.has(k))];
+    if (nurA.length || nurB.length)
+        teile.push(`AKTE gewirkt nur A ${nurA.length}, nur B ${nurB.length} (offen A ${a.offen}, B ${b.offen}; ${[...nurA, ...nurB].slice(0, 2).join(" ; ").slice(0, 160)})`);
+    for (const [n, f] of [["A", a.folge], ["B", b.folge]])
+        if (f && (f.ueberholt || f.spaet))
+            teile.push(`FOLGE ${n}: ${f.ueberholt} Akt(e) überholten einen Takt, ${f.spaet} kamen spät, von ${f.n} — Täter _feldAkt (${f.bsp.join(" ; ")})`);
+    // DIE REIHE DER AKTE: die Akte, die beide Seiten wirkten, in der Reihe jeder Seite — die erste Stelle, an der sie abweicht
+    // (`_depositLife` zerfällt, addiert und kappt: zwei Akte desselben Stempels in anderer Reihe tragen einen anderen Betrag)
+    const [ra, rb] = [(a.folge && a.folge.reihe) || [], (b.folge && b.folge.reihe) || []];
+    const [inA, inB] = [new Set(ra), new Set(rb)];
+    const [ga, gb] = [ra.filter((x) => inB.has(x)), rb.filter((x) => inA.has(x))];
+    let i = 0;
+    while (i < ga.length && ga[i] === gb[i]) i++;
+    if (i < Math.min(ga.length, gb.length))
+        teile.push(
+            `REIHE der Akte verschieden ab dem ${i + 1}. von ${ga.length} gemeinsamen: A ${ga[i].slice(0, 80)} · B ${gb[i].slice(0, 80)}` +
+                (ga[i].split("|")[0] === gb[i].split("|")[0] ? " (derselbe Stempel)" : "") +
+                " — Täter _feldAkt: am Eingang wirkt der Akt in der Reihe seines Entstehens, in der Folge in der Reihe (Stempel, Inhalt)"
+        );
+    const zelle = (L) => new Map(L.map((s) => { const [x, z, m, t] = s.split(","); return [x + "," + z, [Number(m), Number(t)]]; }));
+    const [zA, zB] = [zelle(A.leben), zelle(B.leben)];
+    const z = { nurA: 0, nurB: 0, betrag: 0, stempel: 0, frueh: Infinity, max: 0, bsp: "" };
+    for (const [k, [m, t]] of zA) {
+        const y = zB.get(k);
+        if (!y) z.nurA++, (z.frueh = Math.min(z.frueh, t));
+        else if (y[1] !== t) z.stempel++, (z.frueh = Math.min(z.frueh, t, y[1]));
+        else if (y[0] !== m) {
+            z.betrag++, (z.frueh = Math.min(z.frueh, t));
+            if (Math.abs(y[0] - m) > z.max) [z.max, z.bsp] = [Math.abs(y[0] - m), `${k}: A ${m} · B ${y[0]} am Stempel ${t}`];
+        }
+    }
+    for (const [k, [, t]] of zB) if (!zA.has(k)) z.nurB++, (z.frueh = Math.min(z.frueh, t));
+    teile.push(
+        `ZELLEN nur A ${z.nurA}, nur B ${z.nurB}, Stempel ${z.stempel}, nur Betrag ${z.betrag}${z.betrag ? ` (größter Abstand ${z.max.toExponential(2)}, ${z.bsp})` : ""} — frühester verschiedener Stempel ${z.frueh} ` +
+            `(Uhr A ${a.uhr.toFixed(1)}, B ${b.uhr.toFixed(1)}; Hydro-Kacheln A [${a.hydro}] B [${b.hydro}])`
+    );
+    return teile.join(" · ");
 }
 // (h) die Sicht einer Seite auf das Gesetz H (ohne H: das jüngste des Spielers): der Wurf der Scheiben k0 … k0+39 der Welt-Uhr,
 // ob es feuerte und seine Erzählung im Wissen steht, ob das Tagebuch das Gesetz eines Mitspielers erinnert (`_gesetzGeber`);
@@ -337,6 +502,7 @@ async function seite(browser, name, alteTuer) {
     await nullRenderer(page);
     await page.evaluateOnNewDocument(netzLog);
     await page.evaluateOnNewDocument(seitenPumpe);
+    await page.evaluateOnNewDocument(aktSpion);
     await page.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
     const da = () =>
         !!r &&
@@ -824,7 +990,25 @@ hauptLauf(async () => {
                 `(f) ${wann}: Teil-Simulationen gleich`,
                 fTeile.every(gl),
                 `${satz(gl, fTeile)} — Leben ${B.leben.filter((z) => A.leben.includes(z)).length}/${A.leben.length} Zellen, ` +
-                    `Brand ${A.brand.length} Zellen${gl("wetter") ? "" : ` (A ${A.wer} · B ${B.wer})`}`
+                    `Brand ${A.brand.length} Zellen${gl("wetter") ? "" : ` (A ${A.wer} · B ${B.wer})`}` +
+                    ` · Folge der Akte ${[A, B].map((X, i) => { const f = X.befund.folge || {}; return `${"AB"[i]} ${f.n} gewirkt/${f.ueberholt} überholt/${f.spaet} spät`; }).join(", ")}` +
+                    (gl("leben") ? "" : ` — BEFUND: ${lebenBefund(A, B)}`) +
+                    (gl("pegel") ? "" : ` — PEGEL: ${pegelBefund(A, B)}`)
+            );
+            // (f) DIE GEMERKTE BODEN-KLASSE IST DIE FRISCHE (w28-mp-boden): der Bestand merkt die Klasse je Zelle EINMAL
+            // (`_bestandFeld`) — gemerkt vor einem fertigen Eingang (die Hydro-Kachel des Orts, der Erdbau), trägt die Seite sie für
+            // immer anders als der Mitspieler und als ihr eigener Reload. Gelesen an jeder Zelle der nahen Regionen auf A und B.
+            const kl = klasseUrteil(A, B);
+            check(`(f) ${wann}: die gemerkte Boden-Klasse des Bestands ist die frische, auf beiden Seiten dieselbe`, kl.n > 0 && !kl.rot, kl.satz);
+            // (f) DIE EINE FOLGE DES FELDS (w28-mp-boden): kein Akt wirkte, während ein Takt einer nahen Region vor seinem Stempel
+            // ausstand (`aktSpion` an `_feldAktWirkt`, seit der Geburt der Seite — auch unter dem Ladeschirm). Der Täter hinter
+            // „leben VERSCHIEDEN“ unter Last: die Annahme der ersten Leiber trat vor die Takte der nachgeholten Stunde.
+            const F = [A, B].map((X) => X.befund.folge || { n: 0, ueberholt: -1, bsp: ["kein Spion"] });
+            check(
+                `(f) ${wann}: kein Akt wirkte vor einem Takt, der vor seinem Stempel ausstand (die EINE Folge des Felds)`,
+                F.every((f) => f.ueberholt === 0) && F[0].n > 0,
+                F.map((f, i) => `${"AB"[i]} ${f.ueberholt} von ${f.n}`).join(" · ") +
+                    (F.some((f) => f.ueberholt) ? ` — Täter _feldAkt: wirkt sofort, gleich wo die Folge steht (${F.flatMap((f) => f.bsp).slice(0, 2).join(" ; ")})` : "")
             );
         };
 
@@ -836,7 +1020,15 @@ hauptLauf(async () => {
                 const nahe = await pageA.evaluate(() => r._bestandNah()); // die nahen Regionen von A auf beiden Seiten
                 const AB = await Promise.all([pageA, pageB].map((p) => p.evaluate(abdruck, bauten, nahe)));
                 const [a, b] = AB.map((x) => x.takt);
-                if (a === b || i > 3) return AB;
+                // … und dieselbe SEKUNDE DES PEGELS: die Tafel ist eine Funktion der vollen Sekunde der Welt-Uhr (`_pegelTafel`), B trägt
+                // die Uhr von A um die Laufzeit einer `pos`-Nachricht später — las die Probe zwei Sekunden, liest sie neu (im Sturm
+                // steigt der Lauf je Sekunde: „pegel VERSCHIEDEN“ ohne Täter, 13.11. ein Lauf allein, Leben 283/283)
+                const sek = AB[0].befund.pegelSek === AB[1].befund.pegelSek;
+                if ((a === b && sek) || i > 7) return AB;
+                if (a === b) {
+                    await sleep(130);
+                    continue;
+                }
                 await waitFor(a < b ? pageA : pageB, (z) => st.faunaLifecycle.feldLetzt >= z, "die Seite rechnet das Feld des Raums", Math.max(a, b)).catch(() => {});
             }
         };
@@ -922,6 +1114,104 @@ hauptLauf(async () => {
                 (g.gleich("zug") ? "" : " — Täter: die Welt-Uhr reist nicht (pos.w)")
         );
         teilSim("Peers", g.A, g.B);
+        // der Selbsttest der Klassen-Linse: A trägt EINE falsch gemerkte Klasse (im selben Zug gesetzt, gelesen und zurückgelegt —
+        // kein Takt rechnet mit ihr) → ROT beim Namen `_bestandFeld`
+        const naheA = await pageA.evaluate(() => r._bestandNah());
+        const falsch = await pageA.evaluate(
+            (nahe, quelle) => {
+                const m = r._bestandKlassen.map;
+                const k = nahe[0] + ":0,0";
+                const alt = m.get(k);
+                m.set(k, "falsch-gemerkt");
+                try {
+                    return (0, eval)("(" + quelle + ")")([], nahe);
+                } finally {
+                    if (alt === undefined) m.delete(k);
+                    else m.set(k, alt);
+                }
+            },
+            naheA,
+            abdruck.toString()
+        );
+        const kf = klasseUrteil(falsch, g.B);
+        check(
+            "(f) Selbsttest: eine falsch gemerkte Klasse bei A macht die Klassen-Linse ROT beim Namen",
+            kf.a === 1 && /Täter _bestandFeld/.test(kf.satz),
+            kf.rot ? kf.satz : "GRÜN, die Linse ist blind"
+        );
+
+        // (f) DIE BODEN-KLASSE DES BESTANDS LIEST NUR DIE SAAT (der Täter hinter „leben VERSCHIEDEN“ am Kopf w28-stadt-grammatik
+        // 22872718, 3/3 ROT): sie las den Hang SAMT Erdbau der Orte (gelaende-core `hoehe` nennt ihn 0, wo ein Erdbau liegt),
+        // der Bestand merkt sie einmal je Zelle — die Seite, die vor dem Erdbau fragte, trug eine andere Klasse als die danach
+        // und als jeder Reload. Gelesen an den Zell-Mitten des Bestands (die Punkte von `_bestandFeld`; die nahen Regionen und jede am Erdbau) und im 4-m-Raster
+        // der Erdbau-Zellen, jede Lesart MIT dem Erdbau und OHNE ihn (derselbe Moment, die Liste kehrt im finally zurück): der
+        // Leser `_bodenKlasseAt` kippt an 0 Punkten; der Selbsttest liest wie bis dahin (`_terrainMacroSurfaceY`) und kippt.
+        const klasse = await pageA.evaluate(() => {
+            const wm = st.worldMeta;
+            const BR = r.constructor.BESTAND_REGION;
+            const LG = r.constructor._lebensraumGesetz();
+            const S = r._bestandSeite();
+            const E = r._erdbauLage();
+            const Z = globalThis.__gelaendeCore.ERDBAU.zelleM;
+            const P = [];
+            // die Regionen des Bestands: die nahen UND jede, die eine Erdbau-Zelle berührt (sie wird nah, sobald ein Spieler dort steht)
+            const regionen = new Set(r._bestandNah());
+            for (const key of E ? E.zellen.keys() : []) {
+                const [x, z] = [(Math.floor(key / 65536) - 32768) * Z, ((key % 65536) - 32768) * Z];
+                for (const [a, b] of [[x, z], [x + Z, z], [x, z + Z], [x + Z, z + Z]])
+                    regionen.add(Math.floor(a / S) + "," + Math.floor(b / S));
+            }
+            for (const key of regionen) {
+                const [ix, iz] = key.split(",").map(Number);
+                for (let i = 0; i < BR.zellen; i++)
+                    for (let j = 0; j < BR.zellen; j++)
+                        P.push([(ix + (i + 0.5) / BR.zellen) * S, (iz + (j + 0.5) / BR.zellen) * S]);
+            }
+            const bestand = P.length;
+            for (const key of E ? E.zellen.keys() : [])
+                for (let i = 2; i < Z; i += 4)
+                    for (let j = 2; j < Z; j += 4)
+                        P.push([(Math.floor(key / 65536) - 32768) * Z + i, ((key % 65536) - 32768) * Z + j]);
+            const alt = (x, z) => {
+                const h = r._hydroDistAt(x, z);
+                const aus = {};
+                r._terrainMacroSurfaceY(x, z, true, aus);
+                return LG.bodenKlasse(h.dist - Math.max(1, h.halfW), aus.hang || 0, r._forestStandDensity(x, z), LG.L);
+            };
+            const lies = () => [P.map(([x, z]) => r._bodenKlasseAt(x, z)), P.map(([x, z]) => alt(x, z))];
+            const mit = lies();
+            const roh = wm.erdbau;
+            let ohne;
+            try {
+                wm.erdbau = undefined;
+                ohne = lies();
+            } finally {
+                wm.erdbau = roh;
+            }
+            const kippt = (a, b) => a.reduce((n, v, i) => n + (v !== b[i] ? 1 : 0), 0);
+            return {
+                n: P.length,
+                bestand,
+                regionen: regionen.size,
+                orte: roh ? Object.keys(roh).length : 0,
+                neu: kippt(mit[0], ohne[0]),
+                alt: kippt(mit[1], ohne[1]),
+                altBestand: kippt(mit[1].slice(0, bestand), ohne[1].slice(0, bestand)),
+            };
+        });
+        const klasseSatz = `${klasse.n} Punkte (${klasse.bestand} Zell-Mitten des Bestands in ${klasse.regionen} Regionen), ${klasse.orte} Ort(e) mit Erdbau`;
+        check(
+            "(f) die Boden-Klasse des Bestands liest nur die Saat: mit und ohne Erdbau der Orte dieselbe",
+            klasse.orte > 0 && klasse.neu === 0,
+            `kippt an ${klasse.neu} von ${klasseSatz}` +
+                (klasse.neu ? " — Täter _bodenKlasseAt: liest den Hang samt Erdbau statt `_terrainSaatY`" : "")
+        );
+        check(
+            "(f) Selbsttest: die alte Lesart (der Hang samt Erdbau, `_terrainMacroSurfaceY`) kippt die Klasse beim Namen",
+            klasse.alt > 0,
+            `kippt an ${klasse.alt} von ${klasse.n} Punkten, davon ${klasse.altBestand} Zell-Mitten des Bestands` +
+                (klasse.alt ? "" : " — GRÜN, die Linse ist blind")
+        );
 
         // ── (i) DIE TAT DER KI REIST: der Begleiter baut (`maybeAnswerWithLlm` → dslRun source "llm:grok"), B trägt das Werk mit
         // derselben Kennung; ein Gesetz der KI (Kopf "rule") bleibt lokal. Geurteilt am Ereignis: danach baut A als Spieler (die
@@ -1114,6 +1404,99 @@ hauptLauf(async () => {
             "(g) Selbsttest: der alte Leerlauf-Abschied macht (g) ROT beim Namen",
             /Täter p2pTick/.test(sa),
             sa.slice(2)
+        );
+
+        // ── (f) DER EINGANG DER AKTE WARTET AUF DIE FOLGE (w28-mp-boden, am Ende: nichts wird danach verglichen) ──
+        // Eine nahe Region von A trägt drei Takte vor dem Stempel des Akts noch nicht (ihr `t` für den Augenblick zurückgestellt, im
+        // selben Zug zurückgelegt): der Akt tritt in die Reihe und wirkt nicht. Selbsttest: der alte Eingang (sofort, gleich wo die
+        // Folge steht) lässt ihn wirken — der Spion nennt ihn „überholt“.
+        const eingang = (alt) =>
+            pageA.evaluate((alt) => {
+                const T = r.constructor._bestandGesetz().B.taktS;
+                const R = r._bestandRegion(r._bestandNah()[0], false);
+                const [AF, t0, reihe] = [window.__aktFolge, R.t, st.feldAkte];
+                const [u0, g0] = [AF.ueberholt, AF.n];
+                const w = r._feldHorizont();
+                const akt = { art: "leben", w, x: pm.position.x + 4000, z: pm.position.z + 4000, a: 1e-6 };
+                st.feldAkte = [];
+                R.t = Math.floor(w / T) * T - 3 * T;
+                try {
+                    if (alt) r._feldFolgeSteht = () => true;
+                    r._feldAkt(akt, false);
+                    return { inReihe: st.feldAkte.includes(akt), gewirkt: AF.n - g0, ueberholt: AF.ueberholt - u0 };
+                } finally {
+                    delete r._feldFolgeSteht;
+                    [R.t, st.feldAkte] = [t0, reihe];
+                }
+            }, alt);
+        const ein = await eingang(false);
+        check(
+            "(f) am Eingang tritt ein Akt in die Reihe, solange ein Takt einer nahen Region vor seinem Stempel aussteht",
+            ein.inReihe && ein.gewirkt === 0 && ein.ueberholt === 0,
+            `in der Reihe ${ein.inReihe} · gewirkt ${ein.gewirkt} · überholt ${ein.ueberholt}` + (ein.gewirkt ? " — Täter _feldAkt: wirkt vor dem Takt" : "")
+        );
+        const einAlt = await eingang(true);
+        check(
+            "(f) Selbsttest: der alte Eingang (sofort, gleich wo die Folge steht) lässt den Akt vor drei Takten wirken — beim Namen",
+            !einAlt.inReihe && einAlt.gewirkt === 1 && einAlt.ueberholt === 1,
+            `in der Reihe ${einAlt.inReihe} · gewirkt ${einAlt.gewirkt} · überholt ${einAlt.ueberholt}` + (einAlt.ueberholt ? " — Täter _feldAkt" : " — GRÜN, die Linse ist blind")
+        );
+
+        // ── (f) DIE KLASSE WARTET AUF IHRE HYDRO-KACHEL (w28-mp-boden, am Ende: die Probe bestellt bei A eine ferne Kachel) ──
+        // Die Regionen des Bestands über der Kachel "1,0" (jenseits der Heimat): mit der Kachel liest jede Zelle ihre Klasse am
+        // Rand ihres Flusses; ohne sie antwortet der Kern aus der Heimat „kein Fluss“ — die frühe Antwort kippt an K Zellen. Die
+        // Kachel wird der Seite genommen (wie vor ihrer Ankunft) und zurückgelegt: `_bestandBereit` hält die Region, `_bestandFeld`
+        // merkt nichts, danach trägt jede Zelle die frische Klasse. Selbsttest: das alte Merkbuch (merkt sofort) trägt K falsche.
+        await pageA.evaluate(() => r._ensureHydroTilesAround(r.constructor.HYDROSPHERE.regionSize, 0, 1));
+        const kachelDa = await waitFor(pageA, () => !!st.hydroTiles && st.hydroTiles.has("1,0"), "A trägt die Hydro-Kachel 1,0").then(
+            () => true,
+            () => false
+        );
+        const spaet = (alt) =>
+            pageA.evaluate((alt) => {
+                const [BR, S, G, T] = [r.constructor.BESTAND_REGION, r._bestandSeite(), r.constructor.HYDROSPHERE.regionSize, st.hydroTiles];
+                const keys = [];
+                for (let ix = Math.ceil(G / 2 / S); (ix + 1) * S <= 1.5 * G; ix++)
+                    for (let iz = Math.ceil(-G / 2 / S); (iz + 1) * S <= G / 2; iz++) keys.push(ix + "," + iz);
+                const lies = () => keys.flatMap((key) => r._bestandFeld(key).zellen.map((z) => z.klasse));
+                const gemerkt = () => [...r._bestandKlassen.map.keys()].filter((k) => keys.includes(k.split(":")[0]));
+                const leeren = () => gemerkt().forEach((k) => r._bestandKlassen.map.delete(k));
+                leeren();
+                const frisch = lies(); // die Kachel steht
+                leeren();
+                const kachel = T.get("1,0");
+                let frueh, davor, bereit;
+                T.delete("1,0"); // die Kachel ist noch nicht da
+                try {
+                    if (alt) r._bestandBereit = () => true; // das alte Merkbuch: jede Region rechnet und merkt sofort
+                    bereit = keys.filter((key) => r._bestandBereit(key)).length;
+                    frueh = lies();
+                    davor = gemerkt().length;
+                } finally {
+                    T.set("1,0", kachel);
+                    delete r._bestandBereit;
+                }
+                const danach = lies(); // die Kachel kam an
+                leeren();
+                const anders = (a) => frisch.reduce((n, v, i) => n + (v !== a[i] ? 1 : 0), 0);
+                return { zellen: frisch.length, regionen: keys.length, bereit, kippt: anders(frueh), davor, falsch: anders(danach), BR: BR.zellen };
+            }, alt);
+        const sp = kachelDa ? await spaet(false) : null;
+        check(
+            "(f) eine Region über einer Hydro-Kachel, die noch nicht da ist, rechnet nicht und merkt keine Klasse; nach der Ankunft trägt sie die frische",
+            !!sp && sp.kippt > 0 && sp.bereit === 0 && sp.davor === 0 && sp.falsch === 0,
+            sp
+                ? `${sp.regionen} Regionen über der Kachel 1,0 (${sp.zellen} Zellen): die frühe Antwort kippt an ${sp.kippt} · bereit ohne Kachel ${sp.bereit} · ` +
+                      `davor gemerkt ${sp.davor} · danach falsch ${sp.falsch}` +
+                      (sp.kippt ? "" : " — die Linse ist blind (kein Fluss an einer Zell-Mitte der Kachel)") +
+                      (sp.bereit || sp.davor || sp.falsch ? " — Täter _bestandFeld/_bestandBereit: die Region rechnet vor ihrer Hydro-Wahrheit" : "")
+                : "die Kachel 1,0 kam nicht"
+        );
+        const spAlt = kachelDa ? await spaet(true) : null;
+        check(
+            "(f) Selbsttest: das alte Merkbuch (merkt sofort, ohne die Kachel) trägt nach ihrer Ankunft falsche Klassen beim Namen",
+            !!spAlt && spAlt.falsch > 0 && spAlt.falsch === spAlt.kippt,
+            spAlt ? `falsch gemerkt ${spAlt.falsch} von ${spAlt.zellen} Zellen (die frühe Antwort kippt an ${spAlt.kippt})` + (spAlt.falsch ? " — Täter _bestandFeld" : " — GRÜN, die Linse ist blind") : "die Kachel 1,0 kam nicht"
         );
     }
     await browser.close();

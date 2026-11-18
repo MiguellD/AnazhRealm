@@ -53,9 +53,9 @@ class AnazhRealm {
         // - Nexus als Herz der Selbstentwicklung, steuert nun alles über Chat, unzerstörbar und unendlich
         // DIE WURF-EBENE (K72): `castShadow` ist ein Bit der Ebenen, bevor der erste Knoten der Welt entsteht
         AnazhRealm._wurfEbene();
-        // DIE BILD-UHR (A9): die EINE Shader-Zeit der Welt in Sekunden — der Loop schreibt sie je Takt, jedes Bild liest sie
+        // DIE BILD-UHR (A9): die EINE Shader-Zeit der Welt in Sekunden — die Spiel-Zeit des Takts, der Loop schreibt sie, jedes Bild liest sie
         this._bildZeit = 0;
-        this._taktZeit = 0; // DIE UHR DES TAKTS (`_taktUhr`): der Stempel des Loops, auf dem Regel und Nexus altern
+        this._taktZeit = 0; // DER STEMPEL DES TAKTS an der Wanduhr (Messung) — Regel und Nexus altern auf der Spiel-Zeit (w28-welt-uhr)
         this.state = {
             // ### Kern ###
             renderer: null,
@@ -160,7 +160,6 @@ class AnazhRealm {
             // Wind-Uniforms (uWindTime/uWindStrength): EIN geteilter Slot für den TSL-positionNode-Wind
             // (Gras, Streu, Baum: `_windUniformsEnsure`); _loopRender schreibt sie pro Frame (Stärke aus dem Wetter).
             windUniforms: null,
-            floatingIslands: [],
             minHeight: 0,
             maxHeight: 0,
             // Kein aktiver Schreiber (Heightfield-Chunks fort; PBR ist die EINE Material-Wahrheit); nur
@@ -172,7 +171,6 @@ class AnazhRealm {
             // versunken ist — der Kreatur-Takt treibt seinen Fall (_tickLeichname), die Sicht liest ihn, kein Wesen-Leser
             leichname: [],
             creatureAnimationTime: 0,
-            ufos: [],
             // Geteiltes horizontales Wasser-Material für Fluss-Ribbons + See-Planes (lazy,
             // _ensureHydroSurfaceMaterial); teilt Farbe/Sonne/Fog mit Meer + Wasserfall.
             hydroSurfaceMaterial: null,
@@ -687,9 +685,10 @@ class AnazhRealm {
                 fahrt: null, // { entry, stimme }
             },
             player: {
-                // Avatar-Name (Default "Schöpfer"), editierbar, persistiert in localStorage; der LLM-System-Prompt
-                // nutzt ihn, damit Grok dich beim Namen ansprechen kann.
-                name: "Schöpfer",
+                // Avatar-Name, editierbar, persistiert in localStorage; der LLM-System-Prompt nutzt ihn, damit Grok dich beim
+                // Namen ansprechen kann. null = unbenannt: wer ihn zeigt, liest den Namen der Tafel (`ui.schoepfer-2`) in
+                // der Sprache von jetzt — bis hier stand hier „Schöpfer", ein Wort des Spiels als Daten des Spielers.
+                name: null,
                 // Ring 5 V2 — Spieler-Seele. Der Mensch (human) + koerper_-Baupläne
                 // mit Multi-Mesh-Group + sin/cos-Animation. Ammo-Body bleibt
                 // identisch (rein visuell). Default "human".
@@ -1520,7 +1519,7 @@ class AnazhRealm {
         if (eq.weapon) lines.push(this._t("kern.stat-waffe", { wert: eq.weapon }));
         if (eq.armor) lines.push(this._t("kern.stat-ruestung", { wert: eq.armor }));
         const boosts = (this.state.player && this.state.player.boosts) || [];
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit; // die Boosts laufen auf der Welt-Uhr ab (`addPlayerBoost`)
         const activeBoosts = boosts.filter((b) => b.expiresAt > now);
         if (activeBoosts.length > 0) {
             lines.push(this._t("kern.stat-boosts", { wert: activeBoosts.length }));
@@ -1713,6 +1712,27 @@ class AnazhRealm {
         return c.set(L.farbe);
     }
 
+    // DAS LICHT EINER FLAMMEN-FLÄCHE (w28-brand-nacht) vom Halbmesser `r` m → { L, masse }. AN der Flamme (d → 0) trägt eine
+    // Fläche die Bestrahlung `BRAND.bild.flamme.schein` — EINE Zahl in Welt-Einheiten, bei Tag und Nacht dieselbe (das Licht einer
+    // Flamme hängt weder an der Stunde noch an der Belichtung der Kamera): Masse·(1 + k²)/k² = schein, mit dem KERN k = ihrem
+    // Halbmesser (fachwerk `lichtAbfall`: die Ausdehnung der Quelle, wie die Membran des Tors). Nah bleibt ihr Licht so unter
+    // dem Deckel, fern wächst es mit ihrer Fläche (∝ k²/d²), ihre Reichweite mit ihrem Halbmesser (höchstens zwei Zellen).
+    // Farbe, Abfall und Flackern sind die des Feuers (`LICHT_GESETZ.feuer`), sein Zeitplan nicht: der hebt das Herdfeuer
+    // nachts × 45 über einen Platz aus Stein. Bis hier leuchtete der Brand als Herdfeuer-Punkt × `BRAND.licht` 4 × Zeitplan:
+    // nachts stand die Bestrahlung in 1 m bei 565 (am Tag 6,4), das Gras 1–6 m um die Front brannte weiß aus, die Flammen gingen
+    // unter, der Rauch stand als helle Scheiben. WIDERLEGT: das Licht am Bild-Ton der Flamme (× ziel ÷ Belichtung) — die Nacht
+    // stimmte, am Tag (Belichtung 0,51) trug die Flamme 22 statt 7,5 und färbte Gras und Rauch orange. Je Viertelmeter ein Datum.
+    _flammenLicht(r) {
+        const Lf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        const k = Math.max(Lf.kernM, Math.round(r * 4) / 4);
+        const M = this._flammenLichter || (this._flammenLichter = new Map());
+        if (!M.has(k)) {
+            const reichweiteM = Math.min(2 * AnazhRealm.LIFE_FIELD.cell, (Lf.reichweiteM * k) / Lf.kernM);
+            M.set(k, Object.freeze({ ...Lf, staerke: 1, zeit: null, kernM: k, reichweiteM }));
+        }
+        return { L: M.get(k), masse: (AnazhRealm.BRAND.bild.flamme.schein * k * k) / (1 + k * k) };
+    }
+
     // DIE STÄRKE einer Quelle zur Bild-Uhr t (K11, A9): Datum × Flackern × Zeitplan über die EINE Übersetzung Labor → Welt × Masse.
     _leuchtStaerke(q, t) {
         const L = q.L;
@@ -1761,41 +1781,44 @@ class AnazhRealm {
             const L = this._lichtDatum(e);
             if (!L) continue; // das Datum ging mit dem Bauplan (das Verzeichnis stempelt beim Eintritt)
             const sk = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
-            const a = this._lichtDatumDerGestalt(e) ? 0 : this._glutFlaeche(e);
+            const gestalt = !!this._lichtDatumDerGestalt(e);
+            const a = gestalt ? 0 : this._glutFlaeche(e);
+            // DER LEIB DER QUELLE (schatten.K5): die Gestalt trägt ihren Kopf (fachwerk `lichtLeib`, die nahe Ebene des Wurfs); eine
+            // Glut ohne Gestalt brennt `hoeheM` über IHREM Bett (`_glutBett`) — das Licht der Esse stand 0,35 m über dem Boden IN
+            // ihrem Herd (Feuerbox 1,1 m, das Bett darauf), und jede Wand des Herds warf ihr ganzes Licht
             nimm(e, {
                 quelle: e.type,
                 x: p.x,
-                y: p.y - 0.5 + (L.hoeheM || 0) * sk,
+                y: p.y - 0.5 + ((gestalt ? 0 : this._glutBett(e)) + (L.hoeheM || 0)) * sk,
                 z: p.z,
                 L,
+                leibM: gestalt ? this._lichtLeibDerGestalt(e) * sk : 0,
                 masse: a > 0 ? a / bezug : sk * sk,
                 phase: (((p.x * 12.9898 + p.z * 78.233) % 6.2832) + 6.2832) % 6.2832,
             });
         }
         // DER BRAND (feld.K3#2): jede glühende Zelle des Felds um das Auge (`_brandGlutUm`, die Blöcke ihres letzten Schritts) leuchtet
-        // als Feuer über ihrer Mitte (`_brandOrt`), die Masse folgt der Glut
-        const Lf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        // als FLAMMEN-FLÄCHE (`_flammenLicht`) vom Ort ihrer stärksten Flamme (`_brandOrt`): ihr Halbmesser ist der der Ellipse
+        // ihrer Front (a = Alter·R/(1 + ecc), b = a·√(1 − ecc²), √(a·b)), höchstens die halbe Zelle; die Masse folgt der Glut
+        const cs = AnazhRealm.LIFE_FIELD.cell;
         this._brandGlutUm(x, z, R, (b) => {
             const o = b.ort || this._brandOrt(b);
             if ((o.x - x) * (o.x - x) + (o.z - z) * (o.z - z) > R * R) return;
-            nimm(b, {
-                quelle: "brand",
-                x: o.x,
-                y: o.y,
-                z: o.z,
-                L: Lf,
-                masse: AnazhRealm.BRAND.licht * b.glut,
-                phase: o.phase,
-            });
+            const a = (Math.max(0, this.state.spielZeit - b.t0) * b.R) / (1 + b.ecc);
+            const F = this._flammenLicht(Math.min(cs / 2, a * Math.pow(Math.max(0, 1 - b.ecc * b.ecc), 0.25)));
+            nimm(b, { quelle: "brand", x: o.x, y: o.y, z: o.z, L: F.L, masse: F.masse * b.glut, phase: o.phase });
         });
-        // DIE LAVA (stoffe.K3-2): jede glühende Decke leuchtet als Feuer über ihrem Ort, die Masse folgt ihrer Glut (`_lavaZustand`)
+        // DIE LAVA (stoffe.K3-2 · w28-lava-zuendet): jede glühende Decke leuchtet als FLAMMEN-FLÄCHE ihrer Zelle (`_flammenLicht`,
+        // der Weg des Brands: an der Decke die Bestrahlung `schein`, fern wächst ihr Licht mit ihrer Fläche), die Masse folgt ihrer
+        // Glut (`_lavaZustand`). Bis hier stand sie als Herdfeuer-Punkt × `BRAND.licht` 1 m über ihrer Mitte: nachts brannte die
+        // Kruste dort weiß-rosa aus, die Risse verloren ihr Orange, und der Schein reichte kaum über ihren Rand.
+        const lavaLicht = this._flammenLicht(cs / 2);
         for (const a of this._tatIndex().lava) {
             if ((a.x - x) * (a.x - x) + (a.z - z) * (a.z - z) > R * R) continue;
             const g = this._lavaZustand(a).glut;
             if (!(g > 0)) continue;
             const phase = (((a.x * 12.9898 + a.z * 78.233) % 6.2832) + 6.2832) % 6.2832;
-            const L = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
-            nimm(a, { quelle: "lava", x: a.x, y: a.y + 1, z: a.z, L, masse: AnazhRealm.BRAND.licht * g, phase });
+            nimm(a, { quelle: "lava", x: a.x, y: a.y, z: a.z, L: lavaLicht.L, masse: lavaLicht.masse * g, phase });
         }
         // DER STAHL DER ESSE (stoffe.K3-2): das glühende Gerät leuchtet an der Hand in der Farbe seiner Temperatur (`_stahlGlut`)
         const stahl = this._stahlGlut();
@@ -1820,6 +1843,30 @@ class AnazhRealm {
         const bp = this.state.blueprints && typeof entry.type === "string" ? this.state.blueprints[entry.type] : null;
         const pre = bp && typeof bp.studioGestalt === "string" ? FC.PRESETS[bp.studioGestalt] : null;
         return pre && pre.fx && pre.fx.licht ? pre.fx.licht : null;
+    }
+
+    // Der Leib der Studio-Gestalt eines Eintrags um ihren Licht-Mittelpunkt (fachwerk `lichtLeib`: der Glas-Kopf einer Leuchte;
+    // 0 für eine Gestalt ohne Kopf, die Feuerstelle) — in der Größe des Rezepts, die Skala des Eintrags trägt der Rufer.
+    _lichtLeibDerGestalt(entry) {
+        const bp = this.state.blueprints && typeof entry.type === "string" ? this.state.blueprints[entry.type] : null;
+        return bp && typeof bp.studioGestalt === "string" ? globalThis.__fachwerkCore.lichtLeib(bp.studioGestalt) : 0;
+    }
+
+    // DAS BETT EINER GLUT ohne Gestalt (m, vor der Skala des Eintrags): der tiefste Fuß ihrer Glut-Teile (`material` glut, die
+    // Teile, deren Fläche `_glutFlaeche` misst) — dort brennt das Herdfeuer des Gesetzbuchs (LICHT_GESETZ.feuer `hoeheM` „über
+    // dem Bett"). Auf dem Boden 0 (der Glutbrunnen: Kugel 0,18 ± 0,18), die Esse trägt ihr Bett auf dem Herd. Je Bauplan gemerkt.
+    _glutBett(entry) {
+        const memo = this._glutBettMemo || (this._glutBettMemo = new Map());
+        let b = memo.get(entry.type);
+        if (b === undefined) {
+            const bp = this.state.blueprints && this.state.blueprints[entry.type];
+            const fuesse = (bp && Array.isArray(bp.parts) ? bp.parts : [])
+                .filter((pt) => pt && pt.material === "glut" && pt.size && pt.position)
+                .map((pt) => (+pt.position.y || 0) - (+pt.size.y || 0) / 2);
+            b = fuesse.length ? Math.max(0, Math.min(...fuesse)) : 0;
+            memo.set(entry.type, b);
+        }
+        return b;
     }
 
     // DIE EINE ÜBERSETZUNG LABOR → WELT eines Punktlichts (K11): das r128-Labor rechnet ohne 1/π-Normierung — derselbe EINE
@@ -1887,7 +1934,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.263";
+AnazhRealm.VERSION = "18.546.335";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

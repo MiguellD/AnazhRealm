@@ -27,7 +27,7 @@ __fachwerkCore.buildInstance(rezeptId, seed, lod, ov?) → THREE.Group | null
   skandinavisch · norwegisch · russisch · schwarzwald · japanisch · gotisch ·
   barock · renaissance · chinesisch`). Jedes Rezept trägt `kind:"haus"` +
   `lab` (der Schöpfer-Wortlaut der Kultur-Wahl) + `s` (die FLACHEN numerischen
-  Dials, eingefroren am LAB-STARTZUSTAND `kulturParams(name, 3)` — `SEED=3`
+  Dials, eingefroren am LAB-STARTZUSTAND `bauRezept({bauweise: name}, null, 3)` — `SEED=3`
   ist der Boot-Samen des Labs) + `fx` (Strings/Farben der Kultur: `brace ·
   stil · dachTyp · bogenTyp · grundriss · col` sowie `place {mode:"site",
   siteTag:"haus"}` — das Platzierungs-Gesetz als Daten, Wörterbuch v1
@@ -85,7 +85,7 @@ Semantik ein) = 194; plus die aktiven Proben (nicht golden-gespeichert):
 Determinismus-Doppelbau (Stichproben-Fälle), Seed-GETRIEBEN (alemannisch/tudor
 seed 7 != 12345 an L0), lod-Klemme (lod 9 == lod 2 · lod −1 == lod 0) und die
 Split-Parität `buildInstance == Shell-Komposition der Kern-Primitive`
-(kulturParams-frisch → stapelBau/HAUS.build/bakeLOD/fragFuer/mischeGeoms —
+(bauRezept-frisch → stapelBau/HAUS.build/bakeLOD/fragFuer/mischeGeoms —
 Kern-Vertrags-Pfad und Lab-Pfad bleiben EIN Bau) je Stichproben-Rezept × Stufe.
 
 ## Nachtrag W-A5b (10.07.2026) — der Settlement-Export (N5.7)

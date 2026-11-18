@@ -1214,12 +1214,19 @@ class AnazhRealm_feld_nexus {
         const eqLine = eqParts.length > 0 ? eqParts.join(", ") : "unbewaffnet, ohne Rüstung";
         // Aktive Boosts
         const boosts = Array.isArray(ud.boosts) ? ud.boosts : [];
-        const nowSec = performance.now() / 1000;
+        // die EINE Uhr der Boosts: `applyCreatureBoost` schreibt `expiresAt` in Spielzeit (`state.spielZeit`), der Takt räumt in
+        // ihr — bis hier las der Prompt die Wanduhr der Seite, und nach `spielZeit + Dauer` Sekunden Seitenleben fehlte jeder Trank
+        const nowSec = this.state.spielZeit;
         const boostList = boosts.filter((b) => b && b.expiresAt > nowSec);
         const boostLine =
             boostList.length > 0
                 ? boostList
-                      .map((b) => `${AnazhRealm._datum(b.label || b.source)} (${Math.round(b.expiresAt - nowSec)}s)`)
+                      .map((b) => {
+                          // die Tür zum Modell spricht die Quell-Sprache (de): der Name des Boosts aus seiner Quelle
+                          const z = this._boostZeile(b);
+                          const name = Array.isArray(z) ? AnazhRealm._tIn("de", z[0], z[1]) : z;
+                          return `${AnazhRealm._datum(name)} (${Math.round(b.expiresAt - nowSec)}s)`;
+                      })
                       .join(", ")
                 : "kein aktiver Trank-Effekt";
         // das Gedächtnis, nummeriert (`_creatureGedaechtnis`): die Antwort-Form verlangt eine dieser Zeilen wörtlich
@@ -1570,7 +1577,7 @@ class AnazhRealm_feld_nexus {
         // Throttle: per-Kreatur UND welt-weit müssen erfüllt sein. Die Gaps atmen mit der Emotions-Balance
         // (derselbe Leser wie die Nexus-Ökonomie): kippt der Spieler, werden die Stimmen stiller (bis ×2).
         // Der Toggle bleibt der harte Aus.
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         const gapMul = 2 - this._emotionBalanceFactor();
         const lastSelf = creature.userData.lastProactiveSpeech || -Infinity;
         if (now - lastSelf < AnazhRealm.CREATURE_PROACTIVE_GAP_PER_CREATURE * gapMul) return false;
@@ -2081,7 +2088,7 @@ AnazhRealm.ACHSEN_FARBE = Object.freeze({
 // WORLD_RULES (unten) — frozen, _tickWorldRules liest jeden Frame: cap (max Regeln, Verdrängung in
 // _evictWorldRule) · budgetPerFrame (max Effekte je Frame) · defaultEverySec · minEverySec (Floor
 // gegen Per-Frame-Feuern). Nexus-Komposition (composeRuleProb, ruleEverySec…, ruleTtl…) + Fitness über
-// ein Lebens-Fenster (costBudgetMs/renewFitness/mutateSurvivorProb): eine Nexus-Regel ist EPHEMER
+// ein Lebens-Fenster (renewFitness/mutateSurvivorProb; die Kosten = der Budget-Anteil je Feuern): eine Nexus-Regel ist EPHEMER
 // (ttlSec) — gut → erneuern, schlecht/inert → verfallen.
 AnazhRealm.GESTURE_CRYSTAL = Object.freeze({
     cooldownSec: 45, // höchstens alle 45 s ein Kristallisations-Versuch

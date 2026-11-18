@@ -85,15 +85,15 @@ hauptLauf(async () => {
 
             // JETZT: ÜBER-Budget erzwingen + den Konvert-Tick pumpen. Vor der Heilung (bakeBudget=0) würde KEIN kalter
             // Baum konvergieren; mit der Heilung (bakeBudget=2) konvergieren sie. Der Takt unter Dauer-Last ist BEIDES,
-            // was das Spiel dann trägt: die Schlange des Walds mit dem Boden der Welt-Substanz (`_dispatchFrameJobs`:
-            // prio 1 bekommt über Budget `FRAME_SCHED_SUBSTANZ_FLOOR_MS`) und der Rewarm — seit K69 wartet die Gestalt
+            // was das Spiel dann trägt: die Schlange des Walds mit 4 ms je Takt (bis w28-takt-frist der Zeit-Boden der
+            // Welt-Substanz, heute der Rest der EINEN Frist oder sein Pflicht-Stück) und der Rewarm — seit K69 wartet die Gestalt
             // eines Baums auf den Plan seines Walds (`_ortGestaltSame`), ein Pumpen nur des Rewarms ließ 8 von 8 kalt.
             const A = window.AnazhRealm || AnazhRealm;
             for (let i = 0; i < 400; i++) {
                 st._frameOverBudget = true; // Dauer-Last simulieren
                 st._frameChunksBuilt = false; // das terrain-first-Gate offen halten
                 try {
-                    r._tickWaldPlan(A.FRAME_SCHED_SUBSTANZ_FLOOR_MS);
+                    r._tickWaldPlan(4);
                     r._foundryRewarmColdTrees();
                 } catch (e) {
                     // ein Wurf im Takt ist ROT beim Namen, nie still verschluckt

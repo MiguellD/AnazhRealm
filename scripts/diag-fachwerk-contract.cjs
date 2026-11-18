@@ -19,7 +19,7 @@
 //
 // SPLIT-PARITÄT (aktiv, je Lauf, Stichproben-Rezepte × alle 4 Stufen): der
 // Vertrags-Pfad buildInstance(id, seed, L) == die SHELL-KOMPOSITION derselben
-// Kern-Primitive (kulturParams(name, LAB_SEED) frisch → stapelBau/HAUS.build/
+// Kern-Primitive (bauRezept({bauweise: name}, null, LAB_SEED) frisch → stapelBau/HAUS.build/
 // bakeLOD/fragFuer/mischeGeoms — wörtlich der promoteBauen-/LOD-Sonden-Pfad
 // des Labs) — Kern-Vertrags-Pfad und Lab-Pfad bleiben EIN Bau, und die
 // eingefrorene PRESETS-Ableitung drift-wacht gegen die lebende Kultur-Quelle.
@@ -49,7 +49,9 @@ const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 
 // DIE LEUCHTDICHTE der Vertex-Farbe i × Stoff-Farbe mc (Rec. 709; `f` liest den Kanal — die Welt roh, der Selbsttest als sRGB):
 // die Albedo der Häuser (flächengewichtet) und der Ausstattung (je Stoff) lesen sie EINMAL
-const luma = (C, i, mc, f = (x) => x) => 0.2126 * f(C[i * 3]) * mc.r + 0.7152 * f(C[i * 3 + 1]) * mc.g + 0.0722 * f(C[i * 3 + 2]) * mc.b;
+// `s` = Werte je Ecke: die Gestalt trägt die Farbe im Eck-Format (half × 4, `_eckForm`)
+const luma = (C, i, mc, f = (x) => x, s = 3) =>
+    0.2126 * f(C[i * s]) * mc.r + 0.7152 * f(C[i * s + 1]) * mc.g + 0.0722 * f(C[i * s + 2]) * mc.b;
 
 // Wegwerf-Bau sauber entsorgen (194 Häuser in einem Node-Prozess).
 function disposeGroup(g) {
@@ -90,10 +92,10 @@ const shaVon = (g) => {
 
 // ── DIE SHELL-KOMPOSITION (Split-Paritäts-Referenz): derselbe Bau aus den
 //    Kern-PRIMITIVEN, wörtlich wie das Lab (promoteBauen · LOD-Sonde) — mit
-//    FRISCHER kulturParams-Ableitung statt der eingefrorenen PRESETS (die
+//    FRISCHER bauRezept-Ableitung statt der eingefrorenen PRESETS (die
 //    Probe drift-wacht beide Nähte: Stufen-Komposition UND Rezept-Ableitung). ──
 function shellPfad(name, seed, stufe) {
-    const kp = FC.kulturParams(name, FC.LAB_SEED);
+    const kp = FC.bauRezept({ bauweise: name }, null, FC.LAB_SEED);
     // ≡ hausParams-Basis: B4-Defaults + terrain:0, dann die Kultur-Felder (applyKultur → readParams).
     const p = { terrain: 0, seed: seed };
     for (const row of FC.PARAMS_BY_KIND.haus) p[row.id] = row.def;
@@ -143,6 +145,7 @@ function shellPfad(name, seed, stufe) {
             tuerWraps.push(wg);
         }
         if (tuerWraps.length) geoms.__tuerFluegel = tuerWraps;
+        geoms.__decken = FC.deckenZeile(FC.masseVon(st), FC.raumVon(st, p.col)); // der Innen-Stoff liest die Decken (w28-innenlicht)
         FC.bakeLOD(st.g, p.col, geoms, 0, true);
         disposeGroup(st.g);
     } else {
@@ -520,6 +523,93 @@ function posenLinse() {
     check(`POSEN: jede Station hält ihre Pose (${P.posen.length - P.fehl.length}/${P.posen.length}, Plan-Hash ${FC.ortHash(plan)}; leer ist ROT)`, P.posen.length > 0 && !P.fehl.length, P.fehl.map((u) => u.text).join(" | "));
 }
 
+// ── DAS RAUM-LICHT (w28-innenlicht, Familie siedlung.K1): die sechste Zahl der Decken-Zeile ist der mittlere Tageslicht-Quotient
+//    des Körpers (fachwerk `raumLicht`), der Dach-Pool des Wirts reicht sie dem EINEN Umgebungs-Term und der Kamera
+//    (`_dachTakt` → `_raumHimmel`, `_raumBlendeTakt`). Je Kultur am Mass-Bau:
+//    R1 jede Decke trägt elf Zahlen (D, die vier Seiten des Sonnen-Rückstrahls und das Feld des Messers, fachwerk `raumSonne`), D auf dem Raster, 0 < D ≤ 0,2 (ein Körper mit Decke und ohne Öffnung wäre ein Raum ohne Licht);
+//    R2 MUTANTEN am selben Bau: ohne Öffnung D = 0 an jeder Decke · jede Öffnung doppelt so breit hebt D an jeder Decke · dichtes
+//       Glas (Durchlass 0) senkt die Summe · heller Rückwurf (0,8) hebt D an jeder Decke · eine Öffnung an der Wand zweier Körper zählt keinem.
+//    Der Täter steht beim Namen: Kultur · Körper-Index · D.
+function raumLinse() {
+    const R = FC.RAUM_LICHT,
+        rot = [],
+        mut = [];
+    let n = 0,
+        min = 1,
+        max = 0;
+    const summe = (z) => z.reduce((s, d) => s + d[5], 0);
+    for (const k of KULTUREN) {
+        const B = FC.massBau(FC.hausParams(FC.PRESETS[k], {})),
+            Z = FC.deckenZeile(B.masse, B.raum);
+        if (!Z.length) rot.push(k + " ohne Decke");
+        Z.forEach((d, i) => {
+            n++;
+            const D = d[5];
+            if (d.length !== 11 || d.slice(6).some((v) => !(v >= 0 && v <= 1)) || !(D > 0 && D <= 0.2) || Math.round(D * R.raster) !== D * R.raster) rot.push(`${k}#${i} D ${D}`);
+            else [min, max] = [Math.min(min, D), Math.max(max, D)];
+        });
+        const mit = (o) => FC.deckenZeile(B.masse, Object.assign({}, B.raum, o));
+        const zu = mit({ oeffnungen: [] }),
+            breit = mit({ oeffnungen: B.raum.oeffnungen.map((o) => Object.assign({}, o, { w: o.w * 2 })) }),
+            dicht = mit({ glas: 0 }),
+            hell = mit({ wand: 0.8, boden: 0.8 });
+        if (zu.some((d) => d[5] !== 0)) mut.push(k + " ohne Öffnung hell");
+        if (breit.some((d, i) => !(d[5] > Z[i][5]))) mut.push(k + " doppelte Öffnung hebt nicht");
+        if (!(summe(dicht) < summe(Z))) mut.push(k + " dichtes Glas senkt nicht");
+        if (hell.some((d, i) => !(d[5] > Z[i][5]))) mut.push(k + " heller Rückwurf hebt nicht");
+        if (zu.some((d) => d.slice(6).some((v) => v !== 0))) mut.push(k + " ohne Öffnung Sonne im Raum");
+        if (!Z.some((d) => d.slice(6).some((v) => v > 0))) mut.push(k + " keine Seite trägt Sonne");
+    }
+    // die Wand zwischen zwei Körpern sieht keinen Himmel: zwei Kästen Wand an Wand, EINE Öffnung in der gemeinsamen Wand, eine außen
+    const zwei = [
+        { art: "haupt", x0: 0, x1: 4, z0: 0, z1: 4, eY: 3, egTop: 3 },
+        { art: "anbau", x0: 4, x1: 7, z0: 0, z1: 4, yLow: 2.5 },
+    ];
+    const raum = (o) => ({ oeffnungen: o, glas: 0.6, wand: 0.3, boden: 0.2 });
+    const innen = FC.deckenZeile(zwei, raum([{ cx: 4, cy: 1, cz: 2, w: 1, h: 2, perp: "x", glas: 0 }])),
+        aussen = FC.deckenZeile(zwei, raum([{ cx: 0, cy: 1, cz: 2, w: 1, h: 2, perp: "x", glas: 0 }]));
+    if (innen.some((d) => d[5] !== 0)) mut.push("Öffnung zwischen zwei Körpern zählt: " + innen.map((d) => d[5]).join(" · "));
+    // die Öffnung in der Wand −x trägt die Seite −x (Index 7) und keine andere
+    if (!(aussen[0][7] > 0) || aussen[0][6] + aussen[0][8] + aussen[0][9] !== 0) mut.push("Sonnen-Seite falsch: " + aussen[0].slice(6).join(" · "));
+    if (!(aussen[0][5] > 0) || aussen[1][5] !== 0) mut.push("Öffnung außen zählt dem falschen Körper: " + aussen.map((d) => d[5]).join(" · "));
+    // R3 GEZEICHNET = GELESEN (der Innen-Stoff): am gebauten Haus der Stufe 0 tragen die Wand-Flächen, die in einen Körper mit Decke
+    // schauen (`innenAn`, dieselbe Regel wie der Bake), im Median die Zahl, die das Raum-Licht als Rückwurf der Wand liest
+    // (`raumVon`), bis auf Kontakt-AO und Brett-Ton (0,6–1,15). MUTANT: liest der Raum die Außen-Zahl der Rolle, reißt das Band.
+    const stoff = [];
+    for (const k of ["alpenchalet", "schwarzwald"]) {
+        const p = FC.hausParams(FC.PRESETS[k], {});
+        p.seed = 7;
+        const g = FC.buildInstance(k, 7, 0),
+            rows = g.userData.__huelle.decken,
+            raum = FC.raumVon({ H: { dims: {} } }, p.col),
+            aussen = FC.RAUM_LICHT && 0.2126 * FC._colFor("blockholz", p.col)[0] + 0.7152 * FC._colFor("blockholz", p.col)[1] + 0.0722 * FC._colFor("blockholz", p.col)[2],
+            lese = FC.massBau(p).raum.wand,
+            L = [];
+        g.updateMatrixWorld(true);
+        g.traverse((o) => {
+            const A = o.geometry && o.geometry.attributes;
+            if (!A || !A.color || !A.normal) return;
+            for (let v = 0; v < A.position.count; v++) {
+                if (Math.abs(A.normal.getY(v)) > 0.3) continue;
+                const P = [A.position.getX(v), A.position.getY(v), A.position.getZ(v)],
+                    N = [A.normal.getX(v), A.normal.getY(v), A.normal.getZ(v)];
+                if (P[1] < 0.6 || !FC.innenAn(P, N, rows, null)) continue;
+                L.push(0.2126 * A.color.getX(v) + 0.7152 * A.color.getY(v) + 0.0722 * A.color.getZ(v));
+            }
+        });
+        disposeGroup(g);
+        L.sort((x, y) => x - y);
+        const med = rang(L),
+            im = (z) => med / z >= 0.6 && med / z <= 1.15;
+        void raum;
+        if (!(L.length > 200) || !im(lese)) stoff.push(`${k}: ${L.length} Innen-Ecken, Median ${med && med.toFixed(3)} gegen gelesen ${lese.toFixed(3)}`);
+        if (im(aussen)) stoff.push(`${k}: der Mutant (Außen-Zahl ${aussen.toFixed(3)}) bleibt im Band — die Linse ist blind`);
+    }
+    check("Raum-Licht R3: gezeichnet = gelesen — die Innenwand trägt den Ton, den das Raum-Licht liest (Mutant Außen-Zahl ROT)", !stoff.length, stoff.join(" · "));
+    check(`Raum-Licht R1: ${n} Decken in ${KULTUREN.length} Kulturen tragen D ${(min * 100).toFixed(2)}–${(max * 100).toFixed(2)} % auf dem Raster`, !rot.length, rot.slice(0, 6).join(" · "));
+    check("Raum-Licht R2 Mutanten: ohne Öffnung dunkel · doppelte Öffnung · dichtes Glas · heller Rückwurf · Wand zweier Körper", !mut.length, mut.slice(0, 6).join(" · "));
+}
+
 (async function main() {
     // EINE Teil-Linse allein (`--bogen` · `--posen`)
     const teil = process.argv.includes("--bogen") ? bogenLinse : process.argv.includes("--posen") ? posenLinse : null;
@@ -747,6 +837,7 @@ function posenLinse() {
                 const r = rolleVon(o.material) || "?";
                 const P = o.geometry.attributes.position.array,
                     C = o.geometry.attributes.color.array,
+                    cs = o.geometry.attributes.color.itemSize,
                     I = o.geometry.index ? o.geometry.index.array : null,
                     mc = o.material.color;
                 const n = I ? I.length : P.length / 3;
@@ -763,7 +854,7 @@ function posenLinse() {
                         vz = P[p2 + 2] - P[p0 + 2];
                     const ar = 0.5 * Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx);
                     let l = 0;
-                    for (const v of q) l += luma(C, v, mc, farbe) / 3;
+                    for (const v of q) l += luma(C, v, mc, farbe, cs) / 3;
                     a += ar;
                     y += ar * l;
                 }
@@ -822,10 +913,10 @@ function posenLinse() {
     //     Stufen echt verschieden UND deckungsgleich (L1 ersetzt L0 ohne Sprung: Hülle ± 8 cm), Boden-Anschluss (jedes
     //     Stück taucht unter y = 0), die Glut leuchtet und wirft nie, jede Zahl auf dem Raster 2^-12 (plattformgleich:
     //     V8 rundet sin/cos auf Linux und Windows verschieden — das Raster macht die Bytes gleich), Determinismus, Goldens.
-    console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen · Laterne · Wandlaterne (dasselbe Gesetzbuch) ===");
+    console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen · Laterne · Wandlaterne · Grabstein (dasselbe Gesetzbuch) ===");
     check(
-        `fünf Ausstattungs-Rezepte mit Stufen [0,1,3] und Gestalten (${AUS.join(", ")})`,
-        AUS.length === 5 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 25
+        `sechs Ausstattungs-Rezepte mit Stufen [0,1,3] und Gestalten (${AUS.join(", ")})`,
+        AUS.length === 6 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 34
     );
     // DIE LATERNE: der Leib und das Licht EINER Quelle — das Rezept trägt das Datum LICHT_GESETZ.laterne, und der
     // Glas-Kopf (Seh-Klasse glas, die Rolle des Fensters: er zündet nachts) umschließt die Licht-Höhe `hoeheM` je Stufe 0/1.
@@ -882,7 +973,7 @@ function posenLinse() {
             if (col && seh !== "glas" && !nurWurf) {
                 const mc = o.material.color;
                 let s = 0;
-                for (let i = 0; i < col.count; i++) s += luma(col.array, i, mc);
+                for (let i = 0; i < col.count; i++) s += luma(col.array, i, mc, undefined, col.itemSize);
                 const Y = s / col.count;
                 const k = `${c.rezeptId}:${seh}`;
                 albedo[k] = Math.max(albedo[k] || 0, Y);
@@ -968,6 +1059,9 @@ function posenLinse() {
 
     // 13) DIE POSEN DES GENESIS-ORTS
     posenLinse();
+
+    // 14) DAS RAUM-LICHT
+    raumLinse();
 
     wandEnde(errs, "der Haus-Asset-Vertrag steht (cv:6) — jede Prüfung oben.");
 })();

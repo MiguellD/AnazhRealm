@@ -690,6 +690,9 @@ const FORBIDDEN = [
     ["_tierFernFolgt", "V18.538 — EIN Skelett: die Grobstufe trägt die Knochen der feinen (_gelenkGestalt)"],
     ["fernStarr", "V18.538 — der Gelenk-Guss bindet die Grobstufe für Tier UND Mensch (S3), kein Tier-Sonderweg", ["foundry-core.js"]],
     ["__wurf", "S3 — der Schatten-Teil (teil schatten) trägt den Wurf, kein Index-Vorsatz", ["foundry-core.js", "worlds/terrain/phytogenesis.js", "foundry-bruecke.js"]],
+    // w28-leib-nah: jedes Kleid ist Stoff aus der Haut (koerper `kleidZonen` dicke), der Schuh der Guss des Fußes um seine Dicke —
+    // die Voxel-Hülle über Teil-Punkten (der Poncho, zuletzt der Schuh) fiel samt ihrer Maschine und ihren Zonen-Zahlen
+    ...["backeHuelle", "stoffHuellen", "__imKleid", "__stoffErbtHaut", "faelltAb", "voxDilate", "voxErode", "voxFill", "_vox_dilate", "_vox_erode", "_vox_fill", "_gauss1d", "_blur3", "inflate:", "z.abstand"].map((token) => [token, "w28-leib-nah — das Kleid aus der Haut, der Schuh aus dem Guss des Fußes (kleidZonen dicke); keine Voxel-Hülle über Teil-Punkten", ["foundry-core.js", "koerper-core.js"]]), // prettier-ignore
     ["lf.wurf", "S3 — der Schatten-Teil ist selbst der Zwilling (_foundryFlattenFor)"],
     ["wurfe", "S3 — das Verschmelzen legt keinen Wurf-Vorsatz mehr nach vorn (_geoVerbinden)"],
     ["_wurfDreiecke", "S3 — der Wurf-Vorsatz der L1-Rinde", ["foundry-core.js"]],
@@ -803,6 +806,20 @@ const FORBIDDEN = [
     // w26-winter-fichte-2 — emitGrass gebiert den Anker der Ähre auf dem Fuß ihres Stängels: kein Leser (Wirt, Labor, Ferne) sucht
     // ihn per Float-Schlüssel nach (die Nachsuche warf am Schilf, Zug z349)
     ...["halmAehrenFuss", "_aehrenFuesse", "aehrenFussLabor"].map((token) => [token, "w26-winter-fichte-2 — der Anker der Ähre ist geboren", ["phyto-core.js", "worlds/terrain/phytogenesis.js"]]), // prettier-ignore
+    // w28-wiese-schale — die Schale fiel ganz: die Ferne der Wiese zeichnet dieselben Büschel UNVERFORMT, die Deckung trägt die Zahl
+    // (`_wieseFern`: die Lücke des Strahls bis zur Kappe). Die Schale aus Zacken-Karten (die Senke `nahWiese:Lf:schale`, die Art 7 der
+    // Wahl der GPU, ihre Schichten), die Streckung bis `streckMax` mit der Grenze je Büschel über dem Gitter des Bodens — Zacken-Wände
+    // im ersten Bild des Spielers (die Beete der Ankunft, der Hang des Dorfs, das Band 10–40 m der Wiese)
+    ...["_wieseSchale", "WIESE_SCHALE_SCHICHTEN", "Lf:schale", "aZahn", "wieseSchale(", "streckMax", "_wieseFernGrenzen", "_wieseFernGitter", "_wieseFernFeld", "WIESE_ACHT"].map((token) => [token, "w28-wiese-schale — die Schale und die Streckung der Ferne"]), // prettier-ignore
+    // w28-nexus-uhr — die Kosten einer Regel zählen Schritte des Spiels (der Anteil ihres Budgets je Feuern, `kostenSum`), nie die
+    // Wandzeit des Effekts: dieselbe Regel wurde je Gerät anders erneuert, eine Pause des Schedulers ließ sie verfallen
+    ...["costMsSum", "costBudgetMs"].map((token) => [token, "w28-nexus-uhr — die Regel-Kosten sind ihr Budget-Anteil (kostenSum), nie Wandzeit", ["scripts/playtest.cjs"]]), // prettier-ignore
+    // w28-takt-frist — DIE EINE FRIST AB DEM KOPF DES TAKTS (`_fristStellen`): jede Uhr daneben fiel
+    ...["BAU_FRIST_MS", "BAU_ALTER_", "_makeFrameBudget", "_deferrableBudgetMs", "FRAME_SCHED_", "SCATTER_SLICE_MS", "PERF_RENDER_CALL_MS"].map((t) => [t, "w28-takt-frist — die EINE Frist (TAKT_FRIST), der Regler liest phase.gpuMs"]),
+    // w28-himmel-korn — DAS HIMMELS-LICHT LIEST DASSELBE KORN WIE DIE SONNE: das zweite Bild der Höhe im aoNode (`_mikroStoff`) fiel mit
+    // seinen Zahlen in `TERRAIN_BUMP` — im Schlagschatten sprang es je Kiesel 1 : 5,8 (gate:schatten-terminator (K) misst das Bild)
+    // … und das Korn ist eine Spalte des Stoffs (die Stoff-Tafel, Zeilen erde und stein), nie wieder EINE Zahl in `TERRAIN_BUMP`
+    ...["krume", "kavitaet:", "BUMP.korn"].map((t) => [t, "w28-himmel-korn — das Korn der Albedo ist das EINE Bild der Höhe (_mikroStoff)"]),
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -899,7 +916,7 @@ const ZWILLINGE = [
         fiel: "U3 — die morph()-Dial-Mathe wohnt im Gesetzbuch (labMorph)",
     },
     {
-        fingerprint: "reg('glute'+(sd===1?'1':'-1')",
+        fingerprint: "reg('deltoid'+(sd===1?'1':'-1')", // (w28-leib-kanon Nummer 4: die Gesäß-Kugel fiel ins Profil des Rumpfs — der Abdruck des Baums ist die Kappe)
         gesetzbuch: "koerper-core.js",
         verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ — der Da-Vinci-Teile-Baum (bauMensch) wohnt NUR im Gesetzbuch; Shell + Stamm bauen per Fabrik-Haken (kein Nachbau, nie wieder)",
@@ -935,10 +952,10 @@ const ZWILLINGE = [
         fiel: "U6c — das BRANDWAND-Gesetz wohnt im Gesetzbuch (brandwand)",
     },
     {
-        fingerprint: "jahr<1150?'romanik'",
+        fingerprint: "function bauProgramm(",
         gesetzbuch: "fachwerk-core.js",
         verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
-        fiel: "U6c — das META-Gesetz (Jahr×Klima×Personen×Wohlstand → Form) wohnt im Gesetzbuch (metaParams)",
+        fiel: "U6c, w28-bau-rezept — das Gesetz Haushalt × Nutzung → Form wohnt im Gesetzbuch (bauProgramm; das Labor-Meta-Gesetz fiel)",
     },
     {
         fingerprint: "_SNED=[[0,1],[2,3],[4,5],[6,7]",
@@ -1309,6 +1326,11 @@ const ENTSORGUNG_BESITZER = {
     _kammKroneDispose: { arten: ["geometry"], grund: "die Kamm-Krone (ihr Netz und ihr Gast, Ring-Besitz)" },
     _kammKroneVorbau: { arten: ["geometry"], grund: "der Gast der Kamm-Krone: sein leeres Dreieck, sobald das Netz zeichnete (w28-leben-vorbau)" },
     verifyComputeContribution: { arten: ["geometry", "material"], grund: "das Prüf-Mesh der Compute-Probe" },
+    _arenaKlasse: {
+        arten: ["geometry"],
+        // Gegner Speicher F7 (Runden-Zensus 16.11.): ihre Puffer gehören dem Lager, ihr Entsorgen bucht nur den Abgang
+        grund: "die Geometrie-Arena: ihre eigene Hülle (je `_geoNeu` frisch) — die alte beim Neubau, ihre beim Fallen",
+    },
     _tickPortalMembranes: {
         arten: ["material"],
         grund: "Membran- und Nebel-Stoff je Tor (die Geometrie gehört dem Memo je Gestalt)",
@@ -1639,18 +1661,8 @@ const STOFF_ZWEIGE = [
         grund: OHNE_SEITE,
         bild: "die Blatt-Karte schneidet Alpha und Farbe aus dem Atlas (der EINE Leser); gate:pflanzen-nah (F)",
     },
-    {
-        methode: "_getVoxelWorker",
-        art: "Fang",
-        anker: "throw _workerErr; this._voxelFadenBlobWeg()",
-        grund:
-            "der null-origin-Sandbox verbietet `new Worker(url)` (SecurityError): der Voxel-Faden startet EINMAL über die " +
-            "Blob-URL derselben Quelle (`voxel-worker.js?v=`); scheitert der Blob-Weg oder ein zweiter Start, bricht er laut " +
-            "(`_stoffBruch`, der äußere Fang meldet ERROR)",
-        bild:
-            "bis der Blob-Faden steht, baut der Haupt-Thread den Chunk aus derselben Dichte (der bit-identische Spiegel, " +
-            "gate:worker-dichte maxDiff 0), danach der Faden",
-    },
+    // (der Fang des Sandbox-Wegs in `_getVoxelWorker` fiel mit w28-faden-quelle: jeder Faden entsteht aus der EINEN Quelle des
+    // Wirts, `_fadenQuelle` — ein Start, der wirft, bricht beim Namen über den Melder)
 ];
 // DER EINE MELDER (Nachbesserung 3): `_bruchMelden` meldet jede NEUE Bruch-Meldung sofort ERROR und dieselbe wieder mit ihrem
 // Zähler höchstens alle 2 s (`_stoffBruch` und die Fehler-Grenze des Loops `_loopErrorBoundary` melden über ihn; der Loop
@@ -2340,11 +2352,14 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 if (wurzel.callee.property.name === "then") glieder.push(wurzel.arguments[0]);
                 wurzel = wurzel.callee.object;
             }
+            // die Antwort eines Fadens spricht nicht für sich (w28-faden-quelle): was der Faden der Quelle liefert
+            // (`_quelleFrage`), kommt von außen wie ein fetch — die Kette prüft es selbst
             const stammRuf = (e) =>
                 !!e &&
                 e.type === "CallExpression" &&
                 e.callee.type === "MemberExpression" &&
-                e.callee.object.type === "ThisExpression";
+                e.callee.object.type === "ThisExpression" &&
+                gliedName(e.callee) !== "_quelleFrage";
             const stammQuelle =
                 stammRuf(wurzel) ||
                 (wurzel &&
@@ -3454,10 +3469,11 @@ function main() {
                     /^Fang$/,
                 ],
                 [
-                    // (B3a: die Manifest-Kette fiel — der Faden liest sein Manifest selbst; die Kette des Voxel-Fadens trägt den Fall)
+                    // (B3a: die Manifest-Kette fiel — der Faden liest sein Manifest selbst; w28-faden-quelle: die Kette der Quelle der
+                    // Fäden des Gesetzes trägt den Fall)
                     "stiller Ausstieg der Kette",
-                    "            .then((src) => {\n                // V18.112",
-                    "            .then((src) => { if (!src) return;\n                // V18.112",
+                    "            .then((m) => (S.url = m.url))",
+                    "            .then((m) => { if (!m) return; S.url = m.url; })",
                     /^Fang$/,
                 ],
                 // Prüfer K22-3: der Melder ohne Frist und die Frist, die INFO meldet (die Fänge um die Stufen-Stempel, die

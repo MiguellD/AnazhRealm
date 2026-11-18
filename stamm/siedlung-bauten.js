@@ -4,6 +4,15 @@ class AnazhRealm_siedlung_bauten {
     // den bestehenden `grown_<species>_v<idx>` (keine Doppel-Registrierung), LOD1/2 on-demand. Alle
     // Stufen teilen den variantSeed (nur die Polylinien-Dichte sinkt) und die (shape, material)-Combos
     // → identische Tags. _loadStateRestoreWorldMeta räumt sie beim Welt-Wechsel.
+    // DER NAME EINES GEWACHSENEN BAUPLANS (spielgang.K5) ist eine Funktion seiner Art: eine Zeile der Tafel mit dem Namen der
+    // Art als Wert (das Etikett ihres Bauplans, sonst ihr Name als Daten) — die EINE Quelle für Wuchs, Streu und Laden; der Stand
+    // trägt nur die Art (`_grownSpecies`), nie den aufgelösten Satz
+    _gewachsenEtikett(species, lod = 0) {
+        const artBp = this.state.blueprints && this.state.blueprints[species];
+        const name = (artBp && Array.isArray(artBp.etikett) && artBp.etikett) || artBp?.label || String(species);
+        return lod ? ["bau.gewachsen-lod", { name, lod }] : ["bau.gewachsen", { name }];
+    }
+
     _buildVariantLODs(species, variantIndex) {
         if (!this.state.blueprints) return null;
         // DER CHOKEPOINT: _buildVariantLODs ist die EINE Quelle gewachsener Baum-Geometrie. Lebt die Foundry
@@ -26,9 +35,6 @@ class AnazhRealm_siedlung_bauten {
         if (!seeds) return null;
         if (!Number.isFinite(variantIndex) || variantIndex < 0 || variantIndex >= N) return null;
         const variantSeed = seeds[variantIndex];
-        // der Name der Art: das Etikett ihres Bauplans (ein Schlüssel der Tafel), sonst ihr Name (Daten)
-        const artBp = this.state.blueprints[species];
-        const speciesLabel = (artBp && artBp.etikett) || artBp?.label || String(species);
         const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
         const isMerged = genV >= 6;
         const keys = {};
@@ -45,10 +51,7 @@ class AnazhRealm_siedlung_bauten {
                 genV >= 7 && this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches);
             this.state.blueprints[cacheKey] = {
                 name: cacheKey,
-                etikett:
-                    lod === 0
-                        ? ["bau.gewachsen", { name: speciesLabel }]
-                        : ["bau.gewachsen-lod", { name: speciesLabel, lod }],
+                etikett: this._gewachsenEtikett(species, lod),
                 builtIn: true,
                 _isGrown: true,
                 _grownSpecies: species,
@@ -188,6 +191,7 @@ class AnazhRealm_siedlung_bauten {
             gang.push(e);
         }
         let besucht = 0;
+        let wartet = null; // der erste, dessen Urteil wartet (`z.offen`) — der Name, wenn die Welt auf die Stufen-Wahl wartet
         const Z = W.zusagen;
         // DIE EINE FRIST DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): ein Urteil baut die Stufe, die es wählt (die Platte der Karte,
         // die Instanz) — nach dem ersten Urteil geht der Gang nur, solange die Frist offen ist; der Rest bleibt vorn. Bis hier
@@ -198,7 +202,9 @@ class AnazhRealm_siedlung_bauten {
             besucht++;
             W.wach.delete(entry);
             W.zusage.delete(entry); // sein Urteil sagt neu, ob er wartet
+            const offen0 = z.offen;
             let rest = this._zusagenVon(entry.position, () => this._archStufeUrteil(entry, pm, occlOn, z), Z);
+            if (z.offen > offen0 && !wartet) wartet = entry;
             if (entry._stufeEimer === -1) continue; // der Abbau nahm ihn während seines Urteils
             // DER WARTENDE SCHLÄFT AUF SEINER ZUSAGE (`_schlafen`, die EINE Regel jedes Wartenden): lädt seine Höhe, seine Stufe
             // oder sein Partner, holt ihn die Zusage zurück — oder der Weg einer Hysterese-Breite der Bäume (LOD_DISTANCES
@@ -236,7 +242,22 @@ class AnazhRealm_siedlung_bauten {
         // über ungeurteilten Einträgen (gate:stand-takt TREUE-LÜCKE „33 → 27 Einheiten": nach dem Fixpunkt wechselten 7 Bäume in
         // 51–93 m, die Runde 2 807 endete, die neue maß 33 gegen 2 048 leere Gänge — 6 Bäume schliefen ungeurteilt wach).
         if (wirkt || offen) W.rest = 0;
-        this._standMeldet("archLod", besucht, wirkt, offen);
+        // WORAUF SIE WARTET, BEIM NAMEN (w28-stadt-grammatik): bis hier hieß es nur „Fege-Takt archLod wartet“, auch als nichts mehr
+        // offen war (bild:stadt 3733677a, Radeon: 2170 Takte ohne Ruhe) — jetzt nennt die Wache den Grund und den ersten Wartenden
+        const nenne = (e) =>
+            e
+                ? `${e.type} L${e._lodLevel} in ${Math.round(Math.hypot(e.position.x - pm.x, e.position.z - pm.z))} m`
+                : "";
+        const warum = !offen
+            ? null
+            : z.offen > 0
+              ? `${z.offen} Stufen laden, zuerst ${nenne(wartet)}${wartet && wartet._lodHaltWartet === true ? " (Partner)" : ""}`
+              : W.zusage.size > 0
+                ? `${W.zusage.size} Zusagen, zuerst ${nenne(W.zusage.values().next().value)}`
+                : gitterAlt
+                  ? "das Gitter der Verdeckung ist älter als die Welt"
+                  : `Nachlese ${W.nach}`;
+        this._standMeldet("archLod", besucht, wirkt, offen, warum);
         return bewegt + z.switches;
     }
 
@@ -334,6 +355,20 @@ class AnazhRealm_siedlung_bauten {
     _stufeWecken(entry, art) {
         const W = this._stufenWacheStand;
         if (!W || !entry || W.epoche[0] !== this.state.architectures) return;
+        // DER FAHRENDE URTEILT SICH SELBST (`_archFahrende`: der Wagen des Verkehrs zwischen Einsteigen und Parken) — in jedem
+        // Takt, in dem er oder das Auge wandert (`_archBewegteUrteilen`); sein Schritt weckt keinen Gang über die Wachen („die
+        // Kosten tragen die Bewegten, nie die Menge“), wer parkt, tritt wieder in die Wache (`_archFahrt`). Bis hier begann
+        // jeder Schritt jedes Wagens die Runde der Stufen-Wahl neu (`_blockerBewegt` → `_cullWecken`): wo mehr Einträge wach
+        // bleiben, als ein Gang geht (STUFEN_GANG 256 — die Verdeckung hält jede 3D-Stufe jenseits `occDist` wach), endete die
+        // Runde nie. Messort stadt-voll der Stadt-Grammatik, Radeon: 349 Wache (209 Laternen, 80 Wandlaternen, 24 Grabsteine),
+        // 21 Wagen, 1550 Weckrufe in 360 Takten, die längste Ruhe 0 Takte — „Fege-Takt archLod 256/355“, die Welt stand nie.
+        // Seine ZUSAGE aber löst der Weckruf auch ihm (`W.zusage`: wer auf sie schläft, hält die Wahl offen): bis hier kehrte er vor
+        // ihr um, die Zusage kam und blieb gehalten — „archLod wartet (1 Zusagen, zuerst fahrzeug_limousine L2 in 87 m)“, die Welt
+        // stand an stadt und stadt-voll nie (gpu-probe 66a4c85b, Radeon, 2114 und 2639 Takte)
+        if (art === undefined && this._archFahrende && this._archFahrende.has(entry)) {
+            W.zusage.delete(entry);
+            return;
+        }
         W.zusage.delete(entry);
         W.schlaf.delete(entry);
         if (art === "weg") {
@@ -585,7 +620,7 @@ class AnazhRealm_siedlung_bauten {
     _archFahrt(entry, an) {
         const F = this._archFahrende || (this._archFahrende = new Set());
         if (an) F.add(entry);
-        else F.delete(entry);
+        else if (F.delete(entry)) this._cullWecken(entry); // er steht: Cull und Stufen-Wahl urteilen ihn wieder aus ihrer Wache
     }
 
     // Instanced Architektur auf andere LOD-Stufe: _archInstanceRemove → entry.type auf den neuen
@@ -1357,7 +1392,10 @@ class AnazhRealm_siedlung_bauten {
     // die Erst-Zeichnung baut Knoten und Pipeline ohne Draw — nach dem Bild, unter der Frist des Render-Aufrufs —, bis jedes
     // seiner Teile in jedem Pass steht (`_vorbauFehlt`). Gebaut wird nur, wenn die Welt steht (`_weltSteht`) und die Eingabe
     // ruht (`_eingabeRuht`): der Leib-Vorbau baute bis dahin auch mitten in der Bedienung (Radeon headless: acht Knoten-Bauten
-    // „vorwaermen:human" zu 78–100 ms zwischen den Klicks). Kienspan (CPU-Raster) baut nie vor. Gerufen je Takt aus dem Loop.
+    // „vorwaermen:human" zu 78–100 ms zwischen den Klicks). Kienspan (CPU-Raster) baut nie vor. Gerufen am Tor der EINEN Frist
+    // (`_bauer("vorbau")` im Planer, Schnitt 3): ein Schritt je Takt vor der Frist, nach ihr nur als Pflicht-Stück — und kein
+    // Schritt trägt mehr als ein Stück: das Tuch-Gitter rechnet der Faden (`_tuchVorbau`), Rezeptbuch und Werkstatt bauen je
+    // Stück bis zur Frist (`_rezeptBau`, `_werkstattTeile`).
     // DER LEIB ZUERST (w20-leib-takt): trägt der Leib des Spielers nah noch die Grobstufe und kam die feine (roh, `_ofenRoh`),
     // gießt und tauscht der erste Schritt sie (`_leibFeinTausch`) — vor jedem anderen, auch unter Kienspan (ein Bau des Leibs,
     // kein Vorbau einer Pipeline): jeder Schritt danach (das Tuch, der Leib im Vorwärmen) liest den Leib, der bleibt. Die Sicht
@@ -1443,7 +1481,9 @@ class AnazhRealm_siedlung_bauten {
         gruppe.traverse((o) => {
             o.frustumCulled = false;
             if (!o.isMesh) return;
-            o.__vorbauGast = art; // true: der Gast der Bedienung · "ankunft": er baut schon unter dem Ladeschirm (`_vorbauWahl`)
+            // true: der Gast der Bedienung · "ankunft": er hängt schon unter dem Ladeschirm und baut gleich nach dem Bild ·
+            // "bild": ein Bürger des ersten Bilds vor seinen Daten, er baut unter dem Ladeschirm (`_vorbauWahl`)
+            o.__vorbauGast = art;
             o.raycast = () => {};
         });
         this.state.scene.add(gruppe);
@@ -1466,21 +1506,22 @@ class AnazhRealm_siedlung_bauten {
     // WAS EINEM GAST DES VORBAUS FEHLT (0: er steht): je sichtbarem Teil die Pässe, in die er gehört (das Auge und, wirft er,
     // der Schatten), vorgebaut oder gezeichnet — und jedes seiner Render-Objekte trägt seinen Knoten-Bau und eine fertige
     // Pipeline. Der Leser: `_geistVorbau` und `_leibVorwaermen`.
-    _vorbauFehlt(gruppe) {
+    // `einer` (die Wiederkehr eines Stands, `_ofenStandVorbau`): ein Teil steht, sobald EINES seiner Render-Objekte Bau und
+    // Pipeline trägt. Der Schatten-Werfer eines Tier-Leibs trägt je Kaskade eines (GTX 1050, Fuchs: drei) — der Gast baut das
+    // erste, die Zwillinge der anderen Kaskaden kommen ohne Leib in ihrem Kegel nie an die Reihe (die Frage ohne `einer` blieb
+    // bei „1 Teil fehlt“ bis VORBAU_TAKTE, 22 s); sie übernehmen den Bau ihres Schlüssels, sobald ihr Pass sie zeichnet.
+    _vorbauFehlt(gruppe, einer = false) {
         const st = this.state;
         const R = st.renderer;
         const E = this._erstZeichnungStand();
+        const steht = (ro) => !!R._nodes.get(ro).nodeBuilderState && R._pipelines.isReady(ro);
         let fehlt = 0;
         gruppe.traverseVisible((o) => {
             if (!o.isMesh) return;
             const soll = +st.camera.layers.test(o.layers) + +(o.castShadow && R.shadowMap.enabled);
             const p = E.vorgebaut.get(o) || E.gezeichnet.get(o);
             const ros = o.__renderObjekte || [];
-            if (
-                (p ? p.size : 0) < soll ||
-                ros.some((ro) => !R._nodes.get(ro).nodeBuilderState || !R._pipelines.isReady(ro))
-            )
-                fehlt++;
+            if ((p ? p.size : 0) < soll || (einer ? soll > 0 && !ros.some(steht) : !ros.every(steht))) fehlt++;
         });
         return fehlt;
     }
@@ -1769,7 +1810,14 @@ class AnazhRealm_siedlung_bauten {
     _archImBild(entry) {
         return (
             this._archIsRendered(entry) ||
-            !!(entry && entry._ziegelSlot && this._weltMarchGezeichnet() && this._weltFeldZeichnet(entry._ziegelSlot))
+            !!(
+                entry &&
+                entry._ziegelSlot &&
+                this._weltMarchGezeichnet() &&
+                this._weltFeldZeichnet(entry._ziegelSlot)
+            ) ||
+            // jenseits seines Pixel-Horizonts wählt die Kette KEIN Bild (w28-march-schirm, `_archUnterPixel`): dort fehlt nichts
+            this._archUnterPixel(entry)
         );
     }
 
@@ -2076,6 +2124,9 @@ class AnazhRealm_siedlung_bauten {
             g.setIndex(new THREE.BufferAttribute(idx, 1));
             s.iKap = iKap;
         }
+        // die Render-Objekte lassen die getauschten Puffer los (`_renderObjekteFolgen`: ein Pass, der den Satz nicht mehr
+        // zeichnet, hielt sie sonst für immer)
+        if (!neu && s.mesh) AnazhRealm._renderObjekteFolgen(s.mesh);
         if (neu) {
             g.setDrawRange(0, 0);
             // frustumCulled=false: eine ehrliche „überall"-Kugel statt eines Laufs über die ganze Kapazität. Ihre Mitte liest
@@ -2419,7 +2470,12 @@ class AnazhRealm_siedlung_bauten {
         // EIN FLÜCHTIGER BLOCK (K69, `_satzBlock`): seine Arrays sind Views der Werkbank — der Bereich hält keine davon (die
         // nächste Rechnung überschreibt sie), nur die Views in den Satz; wer die Werte braucht, rechnet sie aus `quelle` nach.
         if (geom.fluechtig) {
-            for (const { name, form } of s.attr) if (form) geom.attributes[name].array = null;
+            // (auch der Begleiter der vierten Stelle, `w`: Verband und Lage in der Wand sind Views derselben Werkbank)
+            for (const { name, form, w } of s.attr)
+                if (form) {
+                    geom.attributes[name].array = null;
+                    if (w && geom.attributes[w]) geom.attributes[w].array = null;
+                }
             geom.index = null;
             geom.zellen = null;
         }
@@ -2723,8 +2779,19 @@ class AnazhRealm_siedlung_bauten {
         const kugel = new THREE.Sphere();
         for (const s of this.state.chunkSaetze ? this.state.chunkSaetze.values() : []) {
             if (!s.mesh.visible || ohne.has(s.mesh)) continue;
+            // NUR DER BAU-SATZ TRÄGT SLOTS (`userData.bauSatz`, `_chunkSatzArt`): sein Bereich ist eine Instanz-Gruppe, ihr
+            // Schlüssel der des Bereichs. Boden, Wasser und Tiere legen Bereiche je Chunk, die keine Gruppe kennt — bis hier
+            // fragte jeder Bereich jedes Satzes die Gruppen, und an der Prüfbühne (kein Bau, also keine Karte der Gruppen,
+            // `_archGroupAlloc`) warf die Abnahme jedes Bilds „Cannot read properties of null“. Ein Bau-Bereich ohne seine
+            // Gruppe ist ein Bruch beim Namen, nie ein stilles „kein Eintrag“
+            const bauSatz = s.mesh.userData && s.mesh.userData.bauSatz;
             for (const b of s.bloecke.values()) {
-                const se = this.state.archInstanceGroups.get(b.key)?.slotEntry;
+                const g = bauSatz ? this.state.archInstanceGroups && this.state.archInstanceGroups.get(b.key) : null;
+                if (bauSatz && !g)
+                    throw new Error(
+                        `_satzZelleBei: der Bau-Satz ${bauSatz} trägt den Bereich ${b.key} ohne seine Instanz-Gruppe`
+                    );
+                const se = g ? g.slotEntry : null;
                 (b.zellen || []).forEach((z, i) => {
                     if (!(z.huelle.distanceToPoint(p) < 0.5) || h?.rad <= z.huelle.getBoundingSphere(kugel).radius)
                         return;

@@ -853,6 +853,220 @@ function lichtBilanz(o) {
     })();
 }
 
+// DIE TAFELN DER ATMOSPHÄRE SIND GEZEICHNET (w28-tafel-ganz, `werkbank licht --tafeln`): eine Einmal-Zeichnung gilt erst als ganz, wenn
+// sie gezeichnet hat. Bis hier meldete `_einmalRender` außerhalb des Vorbaus (ruhender Loop, ein Takt vor dem Weltbild) jeden Ruf als
+// ganz, auch wenn der Draw an einer Pipeline im Bau vorbeiging (`zeichne` → false, ungelesen) — die Tafel Ψ_ms blieb die ganze Sitzung
+// 0 (`tafelnFrisch` stand, der Schlüssel der klaren Luft wechselt nie): der Himmel ohne Mehrfachstreuung, Himmel ÷ Karte 0,368
+// statt 0,614, die Umgebung −25 % (Radeon, Genesis Mittag, main 7f778d44). Die Linse in der Seite:
+// (1) IST — je Tafel (Durchlass, Ψ_ms, Himmels-Sicht, Umgebung, Bestrahlung) ihr größter Kanal, sobald `tafelnFrisch` steht;
+// (2) DIE VERZÖGERTE PIPELINE — Ψ_ms und die Himmels-Sicht geleert, die Kette offen, die Pipeline von Ψ_ms meldet sich `verzoegert`
+//     Takte lang nicht bereit (`_pipelines.isReady`, der Zeuge, den `zeichne` liest); dann takten, bis die Kette frisch ist: steht
+//     `tafelnFrisch` über einer leeren Tafel, ist sie „ganz, nie gezeichnet";
+// (3) DIE MUTANTE — dasselbe mit dem alten `_einmalRender` (außerhalb des Vorbaus `fn(); return true`): sie MUSS ROT sein, sonst sieht
+//     die Linse den Täter nicht. → { ist, probe, mutante } je { tafeln: {name: max}, frisch, takte }.
+function tafelGanz(o) {
+    return (async () => {
+        o = o || {};
+        const T = window.THREE;
+        const rend = st.renderer,
+            A = st.atmoLut,
+            P = rend._pipelines;
+        rend.setAnimationLoop(null);
+        const groesster = async (rt) => {
+            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, rt.width, rt.height);
+            const s = px.length > rt.width * 4 * rt.height ? Math.ceil(rt.width / 32) * 128 : rt.width * 4;
+            let m = 0;
+            for (let y = 0; y < rt.height; y++)
+                for (let x = 0; x < rt.width; x++)
+                    for (let c = 0; c < 3; c++) {
+                        const i = y * s + x * 4 + c;
+                        const v = px instanceof Float32Array ? px[i] : T.DataUtils.fromHalfFloat(px[i]);
+                        if (v > m) m = v;
+                    }
+            return +m.toPrecision(4);
+        };
+        const tafeln = async () => ({
+            "atmo-durchlass": await groesster(A.rtT),
+            "atmo-mehrfach": await groesster(A.rtMS),
+            "atmo-himmel": await groesster(A.rtSV),
+            "himmel-umgebung": await groesster(A.rtEq),
+            "atmo-bestrahlung": await groesster(A.rtBS),
+        });
+        const leere = (rt) => {
+            const vor = rend.getRenderTarget();
+            rend.setRenderTarget(rt);
+            rend.clear(true, false, false);
+            rend.setRenderTarget(vor);
+        };
+        // die Kette offen, Ψ_ms und die Himmels-Sicht leer, Ψ_ms `n` Takte ohne bereite Pipeline — dann takten (höchstens 12)
+        const probe = async (n) => {
+            leere(A.rtMS);
+            leere(A.rtSV);
+            A.tafelnFrisch = false;
+            A.himmelSchluessel = null;
+            A.tafelSchluessel = null;
+            const bereit = P.isReady;
+            let rest = n;
+            const zeuge = new Set();
+            P.isReady = function (ro) {
+                if (ro && ro.object === A.qMS && rest > 0) return (zeuge.add(P.get(ro).pipeline), false);
+                return bereit.call(this, ro);
+            };
+            let takte = 0,
+                falsch = null;
+            try {
+                for (; takte < 12; takte++) {
+                    r._applyDayNightToScene();
+                    rest--;
+                    await sleep(30);
+                    if (A.tafelnFrisch && falsch === null && (await groesster(A.rtMS)) === 0) falsch = takte;
+                    if (A.tafelnFrisch && A.himmelSchluessel && A.tafelSchluessel && rest < 0) break;
+                }
+            } finally {
+                P.isReady = bereit;
+                // der Zeuge hielt eine Pipeline, die längst stand: ihr Warten löst sich hier (kein Setter feuert mehr)
+                const E = r._erstZeichnung;
+                if (E) for (const p of zeuge) if (p) E.offen.delete(p);
+            }
+            return { tafeln: await tafeln(), frisch: A.tafelnFrisch, takte, frischLeer: falsch };
+        };
+        // (4) DIE WOLKE VON UNTEN (w28-wolke-licht): über die Kuppel (Azimut 0–360°, Höhe 10–79°) je Pixel die Menge und die
+        // Leuchtdichte der Himmels-Sicht, die Leuchtdichte der vollen Wolke C = (L − (1 − m) · Blau) / m gegen die 18-%-Karte der Uhr:
+        // der Kern (m > 0,8) im Mittel, der dünne Rand (0,1 < m < 0,35, mehr als 30° von der Sonne) im Median, und der Anteil
+        // der Kern-Pixel, die k · L über die Schulter der Tonkurve (0,76) trägt
+        const wolke = async () => {
+            const TSL = T.TSL;
+            const lb = await window.__lichtBilanz({ uhr: st.timeOfDay });
+            const Lk = (0.18 / Math.PI) * lb.alle.oben.E;
+            const HG = AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null),
+                H = r._himmelUniformen();
+            const W = 256,
+                Hh = 96;
+            const q = TSL.uv();
+            const a = q.x.mul(2 * Math.PI),
+                e = q.y.mul(1.2).add(0.17);
+            const dir = TSL.vec3(e.cos().mul(a.cos()), e.sin(), e.cos().mul(a.sin())).normalize();
+            const male = async (node) => {
+                const rt = new T.RenderTarget(W, Hh, { type: T.HalfFloatType, depthBuffer: false });
+                const s2 = new T.Scene(),
+                    c2 = new T.OrthographicCamera(0, 1, 1, 0, -1, 1);
+                const m = new T.MeshBasicNodeMaterial();
+                m.colorNode = node;
+                m.fog = false;
+                m.toneMapped = false;
+                const me = new T.Mesh(new T.PlaneGeometry(1, 1), m);
+                me.position.set(0.5, 0.5, 0);
+                s2.add(me);
+                // zweimal gezeichnet: der erste Render baut das Programm (wie jede Linse, `ruhe`), der zweite zählt
+                const vor = rend.getRenderTarget();
+                for (let k = 0; k < 2; k++, await sleep(20)) {
+                    rend.setRenderTarget(rt);
+                    rend.render(s2, c2);
+                    rend.setRenderTarget(vor);
+                }
+                const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, Hh);
+                const f = new Float32Array(W * Hh * 4);
+                for (let i = 0; i < f.length; i++) f[i] = px instanceof Float32Array ? px[i] : T.DataUtils.fromHalfFloat(px[i]);
+                me.geometry.dispose();
+                m.dispose();
+                rt.dispose();
+                return f;
+            };
+            const L = await male(r._himmelSicht(dir)),
+                M = await male(TSL.vec3(__weltLicht.wolkenMenge(HG, H, dir))),
+                B = await male(A.himmelFarbe(dir));
+            const k = rend.toneMappingExposure,
+                so = r._sonnenRichtung();
+            const Y = (f, i) => 0.2126 * f[i] + 0.7152 * f[i + 1] + 0.0722 * f[i + 2];
+            let kn = 0,
+                ks = 0,
+                kSch = 0;
+            const rand = [];
+            for (let y = 0; y < Hh; y++)
+                for (let x = 0; x < W; x++) {
+                    const i = (y * W + x) * 4,
+                        m = M[i];
+                    if (m <= 0.1) continue;
+                    const l = Y(L, i),
+                        C = (l - (1 - m) * Y(B, i)) / m;
+                    const az = (x / W) * 2 * Math.PI,
+                        el = (y / Hh) * 1.2 + 0.17;
+                    const zu = Math.cos(el) * Math.cos(az) * so.x + Math.sin(el) * so.y + Math.cos(el) * Math.sin(az) * so.z;
+                    if (m > 0.8) (kn++, (ks += C), k * l > 0.76 && kSch++);
+                    else if (m < 0.35 && zu < Math.cos(Math.PI / 6)) rand.push(C);
+                }
+            rand.sort((u, v) => u - v);
+            const r3 = (v) => +v.toFixed(3);
+            return {
+                kernN: kn,
+                kern: kn ? r3(ks / kn / Lk) : null,
+                rand: rand.length ? r3(rang(rand, 0.5) / Lk) : null,
+                kernSchulter: kn ? r3(kSch / kn) : null,
+            };
+        };
+        const ist = { tafeln: await tafeln(), frisch: A.tafelnFrisch };
+        const out = { ist, probe: await probe(o.verzoegert || 3) };
+        out.wolke = await wolke();
+        // DIE MUTANTE: das alte `_einmalRender` (außerhalb des Vorbaus fn(); return true) — die Linse muss sie ROT nennen
+        const echt = r._einmalRender;
+        r._einmalRender = function (schluessel, fn) {
+            if (!this._einmalVorbau()) return (fn(), true);
+            return echt.call(this, schluessel, fn);
+        };
+        try {
+            out.mutante = await probe(o.verzoegert || 3);
+        } finally {
+            r._einmalRender = echt;
+        }
+        // die Welt bleibt, wie sie war: die Kette einmal ganz gezeichnet
+        await probe(0);
+        return out;
+    })();
+}
+// DAS URTEIL DER TAFELN (rein): ROT „TAFEL <name> gilt als ganz, wurde nie gezeichnet", wenn `tafelnFrisch` über einer Tafel mit dem
+// größten Kanal 0 steht — im Ist und in der Probe der verzögerten Pipeline; ROT „MUTANTE", wenn das alte `_einmalRender` in der Probe
+// NICHT als leer-frisch erkannt wird (die Linse sähe den Täter nicht). → { urteil, befunde }
+function tafelGanzUrteil(m) {
+    const befunde = [];
+    const leer = (z, wo) => {
+        if (!z || !z.tafeln) return befunde.push(`${wo}: keine Messung`);
+        if (z.frisch) for (const [n, v] of Object.entries(z.tafeln)) if (!(v > 0)) befunde.push(`TAFEL ${n} gilt als ganz, wurde nie gezeichnet (${wo})`);
+        if (z.frischLeer != null) befunde.push(`TAFEL atmo-mehrfach gilt als ganz, wurde nie gezeichnet (${wo}, Takt ${z.frischLeer})`);
+    };
+    leer(m && m.ist, "Ist");
+    leer(m && m.probe, "verzögerte Pipeline");
+    // DIE WOLKE VON UNTEN (w28-wolke-licht): der dicke Kern ist nie heller als der dünne Rand, und kein Kern steht in der Schulter
+    const wo = m && m.wolke;
+    if (wo && wo.kernN > 0) {
+        if (!(wo.kern > 0)) befunde.push("WOLKE von unten: die Probe der Kuppel blieb leer (Kern ohne Licht) — die Linse sähe nichts");
+        if (wo.rand != null && wo.kern > wo.rand) befunde.push(`WOLKE von unten: der Kern ${wo.kern}× Karte über dem Rand ${wo.rand}× — Licht der Oberseite (Lambert)`);
+        if (wo.kernSchulter > 0) befunde.push(`WOLKE von unten: ${Math.round(wo.kernSchulter * 100)} % des Kerns in der Schulter der Tonkurve — flacher weißer Kern`);
+    }
+    if (m && m.probe && !m.probe.frisch) befunde.push(`die Kette wurde nach der verzögerten Pipeline in ${m.probe.takte} Takten nie frisch`);
+    const mu = m && m.mutante;
+    if (!mu || mu.frischLeer == null) befunde.push("MUTANTE: das alte _einmalRender (fn(); return true) gilt nicht als leer-frisch — die Linse sähe den Täter nicht");
+    return { urteil: befunde.length ? "ROT" : "GRUEN", befunde };
+}
+function tafelGanzSelbsttest() {
+    const voll = { "atmo-durchlass": 1, "atmo-mehrfach": 0.06, "atmo-himmel": 0.24, "himmel-umgebung": 0.24, "atmo-bestrahlung": 1 };
+    const gut = { ist: { tafeln: voll, frisch: true }, probe: { tafeln: voll, frisch: true, takte: 4, frischLeer: null }, mutante: { tafeln: { ...voll, "atmo-mehrfach": 0 }, frisch: true, takte: 1, frischLeer: 0 } };
+    const fehl = [];
+    const fall = (name, m, soll, muster) => {
+        const u = tafelGanzUrteil(m);
+        if (u.urteil !== soll || (muster && !u.befunde.some((b) => muster.test(b)))) fehl.push(`${name}: ${u.urteil} ${u.befunde.join(" | ")}`);
+    };
+    fall("die ganze Kette", gut, "GRUEN");
+    fall("main 7f778d44: Ψ_ms 0 im Ist", { ...gut, ist: { tafeln: { ...voll, "atmo-mehrfach": 0 }, frisch: true } }, "ROT", /TAFEL atmo-mehrfach gilt als ganz, wurde nie gezeichnet \(Ist\)/);
+    fall("die verzögerte Pipeline frisch über leer", { ...gut, probe: { ...gut.probe, frischLeer: 0 } }, "ROT", /verzögerte Pipeline, Takt 0/);
+    fall("die Kette nie frisch", { ...gut, probe: { ...gut.probe, frisch: false } }, "ROT", /nie frisch/);
+    fall("die Mutante unerkannt", { ...gut, mutante: { ...gut.mutante, frischLeer: null } }, "ROT", /MUTANTE/);
+    // das alte Lambert-Licht der Oberseite (Radeon, Genesis Mittag, 691c8d68): Kern 5,795 · Rand 5,761 · Kern ganz in der Schulter
+    fall("die Wolke im Licht ihrer Oberseite", { ...gut, wolke: { kernN: 88, kern: 5.795, rand: 5.761, kernSchulter: 1 } }, "ROT", /WOLKE von unten: der Kern 5.795/);
+    fall("die Probe der Kuppel leer", { ...gut, wolke: { kernN: 88, kern: -0.6, rand: -0.4, kernSchulter: 0 } }, "ROT", /blieb leer/);
+    fall("die Wolke von unten", { ...gut, wolke: { kernN: 88, kern: 1.334, rand: 2.627, kernSchulter: 0 } }, "GRUEN");
+    return fehl;
+}
+
 // DIE TAG-ACHSE IM BILD (licht.K1, `werkbank licht --tag`): am Messort in Ego je Uhr (über den Pfad des Spielers) der Schuss aus dem
 // Ausgabe-Pfad: Sonnenhöhe, Belichtung des ersten Frames (`sofort`) und des stehenden Himmels (`frisch`), aus der unteren
 // Bildhälfte Luma, Leuchtdichte Y (linear, ausgegeben), die Stufen der Szene X (je Pixel durch die Tonkurve zurück) und R/B;
@@ -2999,8 +3213,11 @@ module.exports = {
         `window.__nahFernSicht = ${nahFernSicht.toString()};` +
         `window.__lichtBilanz = ${lichtBilanz.toString()};` +
         `window.__tagKurve = ${tagKurve.toString()};` +
+        `window.__tafelGanz = ${tafelGanz.toString()};` +
         `window.__lichtWeg = ${lichtWeg.toString()};` +
         `window.__lab = ${lab.toString()};`,
+    tafelGanzUrteil,
+    tafelGanzSelbsttest,
     albedoAuswerten,
     stoffPasst,
     nahFernUrteil,

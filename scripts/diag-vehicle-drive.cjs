@@ -66,28 +66,39 @@ function standVerdict(s) {
     return out;
 }
 
-// ── A6 DIE REIBELLIPSE (fahrzeug.K1, w28-reibellipse): EIN μ·N-Budget je Achse, am Kern je Rezept. Im Bogen (20 m/s, Einschlag
-// 0,25, 1,5 s ohne Gas) voll gebremst tragen die Reifen höchstens μ·g (Rollwiderstand und Schleppmoment liegen außerhalb des
-// Reifens: abgezogen) — vorher 1,36–1,44 μ·g: die Seitenkraft griff voll neben dem vollen Längs-Deckel. Geradeaus 25 → 0 m/s
-// bremst er wie vorher: der Weg am Mitschnitt vor dem Schnitt (main b1531071) ±1 %.
-const ELLIPSE = { bogen: 1.02, weg: 0.01 };
-const ELLIPSE_WEG_VORHER = { gt: 28.73, supersport: 33.29, limousine: 28.73, kompakt_fwd: 28.73, suv: 28.73 };
+// ── A6 DIE REIBELLIPSE JE ACHSE (fahrzeug.K1, w28-reibellipse), am Kern je Rezept. Im Bogen (20 m/s, Einschlag 0,25, 1,5 s ohne
+// Gas) voll gebremst und in der Kehre unter Handbremse (15 m/s, Einschlag 0,6, 1 s) tragen die Reifen höchstens μ·g (der
+// Rollwiderstand liegt außerhalb des Reifens: abgezogen). DIE HANDBREMSE sperrt nur das Heck: ihr Zug über dem Ausrollen
+// (geradeaus aus 20 m/s, 0,25 s) liegt im Band des Gesetzes der gesperrten Hinterachse — höchstens μ·g·b/L (das Heck trägt
+// beim Bremsen weniger als am Stand), mindestens die Hälfte davon (sie greift). Am Kopf von main (ee5c80d4, der EINE Kreis des
+// Wagens aus vorrat5-bremsweg) zog sie 0,88–0,90 μ·g — so stark wie die Vollbremsung, am Deckel beider Achsen — und in der
+// Kehre trugen die Reifen 1,013–1,023 μ·g. Geradeaus 25 → 0 m/s bremst er wie vorher: der Weg am Mitschnitt von main ±1 %.
+const ELLIPSE = { bogen: 1.01, weg: 0.01, hand: [0.5, 1] };
+const ELLIPSE_WEG_VORHER = { gt: 31.27, supersport: 36.74, limousine: 31.27, kompakt_fwd: 31.27, suv: 31.27 };
 function ellipseMessung(VC) {
     const dt = 1 / 60;
     const m = {};
+    const r3 = (x) => Math.round(x * 1000) / 1000;
     for (const pid of Object.keys(VC.PRESETS)) {
         const G = VC.fahrGesetz(VC.exportDrive({ ...VC.DEFAULT_P, ...VC.presetPatch(pid) }));
         const mug = G.maxGrip * G.grip * G.g;
-        let z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 20 });
-        for (let i = 0; i < 90; i++) VC.fahrKraefte(z, { steer: 0.25 }, G, dt);
+        const fahr = (v, e, n, je) => {
+            const z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: v });
+            for (let i = 0; i < n && Math.hypot(z.vlong, z.vlat) > 3; i++) {
+                VC.fahrKraefte(z, e(i), G, dt);
+                if (je) je(z, i);
+            }
+            return z;
+        };
         let bogen = 0;
-        for (let i = 0; i < 60 && z.vlong > 3; i++) {
-            VC.fahrKraefte(z, { steer: 0.25, brake: 1 }, G, dt);
-            bogen = Math.max(bogen, Math.hypot(z.aLong + G.reibung + G.schlepp, z.aLat) / mug);
-        }
-        z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 25 });
+        const reifen = (z) => (bogen = Math.max(bogen, Math.hypot(z.aLong + G.reibung, z.aLat) / mug));
+        fahr(20, (i) => (i < 90 ? { steer: 0.25 } : { steer: 0.25, brake: 1 }), 150, (z, i) => i >= 90 && reifen(z));
+        fahr(15, () => ({ steer: 0.6, hand: true }), 60, reifen);
+        const zug = (hand) => (20 - fahr(20, () => ({ hand }), 15).vlong) / (15 * dt);
+        const hand = (zug(true) - zug(false)) / (mug * (G.b / G.L));
+        const z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 25 });
         for (let n = 0; z.vlong > 0.05 && n < 2000; n++) VC.fahrKraefte(z, { brake: 1 }, G, dt);
-        m[pid] = { bogen: Math.round(bogen * 1000) / 1000, weg: Math.round(Math.hypot(z.x, z.z) * 100) / 100 };
+        m[pid] = { bogen: r3(bogen), hand: r3(hand), weg: Math.round(Math.hypot(z.x, z.z) * 100) / 100 };
     }
     return m;
 }
@@ -97,6 +108,7 @@ function ellipseVerdict(m) {
         const e = m && m[pid];
         if (!e) out.push(`${pid} fehlt`);
         else if (!(e.bogen <= ELLIPSE.bogen)) out.push(`${pid} bogen ${e.bogen} μ·g`);
+        else if (!(e.hand >= ELLIPSE.hand[0] && e.hand <= ELLIPSE.hand[1])) out.push(`${pid} Handbremse ${e.hand} μ·g·b/L`);
         else if (!(Math.abs(e.weg / w - 1) <= ELLIPSE.weg)) out.push(`${pid} weg ${e.weg} m gegen ${w}`);
     }
     return out;
@@ -144,13 +156,15 @@ hauptLauf(async () => {
                 const v = V({ ...basis, ...b });
                 check(`Selbst-Test ${V.name} ${JSON.stringify(b)}`, v.length === Object.keys(b).length, v.join(" · "));
             }
-        // A6: die Reibellipse am Mitschnitt — gesund schweigt sie, der Bogen von main (GT 1,415 μ·g, die Seitenkraft voll neben
-        // dem Längs-Deckel) und ein Bremsweg 3 % länger nennen je ihren Täter
-        const ellipse = Object.fromEntries(Object.entries(ELLIPSE_WEG_VORHER).map(([p, w]) => [p, { bogen: 1, weg: w }]));
+        // A6: die Reibellipse am Mitschnitt — gesund schweigt sie; die Kehre von main (GT 1,023 μ·g), die Handbremse am Deckel
+        // beider Achsen (main 1,8 μ·g·b/L), eine Handbremse, die nie greift, und ein Bremsweg 3 % länger nennen je ihren Täter
+        const ellipse = Object.fromEntries(Object.entries(ELLIPSE_WEG_VORHER).map(([p, w]) => [p, { bogen: 1, hand: 0.76, weg: w }]));
         for (const [b, n] of [
             [{}, 0],
-            [{ gt: { bogen: 1.415, weg: 28.73 } }, 1],
-            [{ suv: { bogen: 1, weg: 29.6 } }, 1],
+            [{ gt: { bogen: 1.023, hand: 0.76, weg: 31.27 } }, 1],
+            [{ limousine: { bogen: 1, hand: 1.8, weg: 31.27 } }, 1],
+            [{ supersport: { bogen: 1, hand: 0, weg: 36.74 } }, 1],
+            [{ suv: { bogen: 1, hand: 0.76, weg: 32.2 } }, 1],
         ]) {
             const v = ellipseVerdict({ ...ellipse, ...b });
             check(`Selbst-Test ellipseVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
@@ -172,9 +186,9 @@ hauptLauf(async () => {
     const ell = ellipseMessung(VC);
     const ellV = ellipseVerdict(ell);
     check(
-        `A6: die Reibellipse — im Bogen voll gebremst ≤ ${ELLIPSE.bogen} μ·g, geradeaus der Bremsweg ±${ELLIPSE.weg * 100} %`,
+        `A6: die Reibellipse je Achse — im Bogen und in der Kehre ≤ ${ELLIPSE.bogen} μ·g, die Handbremse ${ELLIPSE.hand.join("–")} μ·g·b/L, geradeaus der Bremsweg ±${ELLIPSE.weg * 100} %`,
         ellV.length === 0,
-        ellV.join(" · ") || Object.entries(ell).map(([p, e]) => `${p} ${e.bogen} μ·g ${e.weg} m`).join(" · ")
+        ellV.join(" · ") || Object.entries(ell).map(([p, e]) => `${p} ${e.bogen} μ·g Hand ${e.hand} ${e.weg} m`).join(" · ")
     );
 
     // A2 (die Hand-Ableitung exportDrive == carPhys-Primitive) fiel in w11-fahrzeug: sie war ein Zwilling der Formel im Skript —

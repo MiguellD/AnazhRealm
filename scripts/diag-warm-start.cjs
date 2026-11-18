@@ -132,7 +132,8 @@ async function jobKalt(_, V) {
     // Stiftung flushen lassen (fire-and-forget-Puts) + Store befragen.
     await sleep(500);
     const seed = st.worldMeta.seed;
-    const keyA = seed + "|" + probes[0][0] + "," + probes[0][1] + "|0";
+    // der Schlüssel aus der EINEN Quelle, die ihn stiftet (`_chunkIdbKey`: seed|genese|erbgut[ort]|cx,cz|lod) — nie nachgebaut
+    const keyA = r._chunkIdbKey(probes[0][0], probes[0][1], 0);
     const store = (await platte("readonly", (os) => {
         const [c, g] = [os.count(), os.get(keyA)];
         return () => ({ count: c.result, hasKey: g.result != null });
@@ -142,6 +143,7 @@ async function jobKalt(_, V) {
     return {
         seed,
         probes,
+        keyA,
         kaltMs,
         hashA: posHashOf(probes[0][0], probes[0][1]),
         hashB: posHashOf(probes[1][0], probes[1][1]),
@@ -215,7 +217,7 @@ async function jobSelbsttest(kaltIn, V) {
     const [bx, bz] = kaltIn.probes[1];
     for (const weiter = __deckel("der Chunk B", 2400); weiter() && !r._ensureVoxelChunkAt(bx, bz, 0); )
         await sleep(25);
-    const keyA = kaltIn.seed + "|" + kaltIn.probes[0][0] + "," + kaltIn.probes[0][1] + "|0";
+    const keyA = kaltIn.keyA;
     const aus = await platte("readonly", (os) => {
         const [c, st, g] = [os.count(), os.get("__stamp"), os.get(keyA)];
         return () => ({ count: c.result, keyAWeg: g.result == null, stampNeu: st.result !== "kaputt" });

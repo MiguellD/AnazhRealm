@@ -1674,6 +1674,183 @@
         if (Math.abs(q) > UMWEG_GESETZ.quer) return 0;
         return oz * nx - ox * nz < 0 ? -1 : 1;
     }
+    // ════════════════════════════════════════════════════════════════════
+    // DIE ZIEL-KETTE (Breite Leben 10.11., additiv — ZIEL_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): EINE
+    // Kette fuer jeden Leib, der etwas will — Mensch, Tier, Kreatur: BEDUERFNIS → ZIEL → PLAN → BEWEGUNGS-WUNSCH. Der Kern
+    // entscheidet, der Wirt fuehrt aus (Kontakt, Wand, Gedraenge). Vorher trug der Kern Zahlen und der Wirt die Entscheidung:
+    // der Beruf eines Bewohners waehlte seinen Ort in einer Wenn-Kette des Stamms (markt → Platz, feld → Acker, sonst die
+    // eigene Tuer), sein Weg rechnete dort (Dijkstra in `_bewohnerBaum`), der Wunsch eines Tiers zu seinem Ziel auch.
+    //  (1) DAS ZIEL (zielWahl, die Nutzen-Wahl ueber Angebote — utility AI / smart objects: der Ort traegt sein Angebot als
+    //      Daten, das Wesen seinen Drang): jedes Angebot {x, z, bietet: {Art: Guete}} wiegt Drang × Guete × Naehe; die Naehe
+    //      halbiert sich je halbM Weg im Quadrat (zielNaehe: 0,5 ^ (d / halbM)²) — nah schlaegt gut, fern nur, was viel besser
+    //      ist. Ohne Samen gewinnt der hoechste Nutzen (das Tier: die naechste Traenke), mit Samen waehlt ein Rennen aus dem
+    //      Samen im Verhaeltnis des Nutzens (Nutzen / −ln u: die Menge verteilt sich auf die Orte, wie sie wiegen, und jeder
+    //      Same waehlt bei jedem Ruf gleich).
+    //  (2) DER PLAN (wegBaum · wegKette · wegTeile): der Baum der kuerzesten Wege ueber einen Graphen aus Knoten und Kanten
+    //      (Dijkstra 1959, binaerer Haufen), `frei(i, j)` fragt den Wirt nach der Kante (seine Wand); die Kette nennt die
+    //      Knoten vom Anfang zum Ziel, die Teile sagen vorab, wohin kein Plan fuehrt (kein Ziel ohne Plan). Wer keinen Graphen
+    //      hat (das Tier der Wildnis), dessen Plan ist das Ziel selbst.
+    //  (3) DER WUNSCH (zielWunsch): der Wunsch (Welt-XZ, m/s) zum Ziel oder zum naechsten Punkt des Plans im Tempo des
+    //      Ankunfts-Gesetzes ueber den Rest bis zum Halt — der Leib bremst vor dem Halt, nie vor einem Punkt unterwegs. Leser:
+    //      der Wirt je Tier (`_kreaturZiel`: Folgen, Pirsch, Neugier, Sammeln, Bauen, Trinken, Aas) und je Bewohner
+    //      (`_bewohnerGehen`: sein Schritt der Frist, den die Fahrbahn fragt).
+    var ZIEL_GESETZ = Object.freeze({ halbM: 60 });
+    function zielNaehe(d, halbM) {
+        var q = d / halbM;
+        return Math.pow(0.5, q * q);
+    }
+    // die Zahl zu (Same, Wort, Index) in (0, 1): rein — derselbe Same waehlt dasselbe
+    function _zielZahl(same, wort, i) {
+        var h = ((same >>> 0) ^ 0x9e3779b9 ^ Math.imul(i + 1, 0x85ebca6b)) >>> 0;
+        for (var k = 0; k < wort.length; k++) {
+            h = Math.imul(h ^ wort.charCodeAt(k), 0x85ebca6b);
+            h ^= h >>> 13;
+        }
+        h = Math.imul(h ^ (h >>> 16), 0xc2b2ae35);
+        h ^= h >>> 16;
+        return ((h >>> 0) + 0.5) / 4294967296;
+    }
+    // drang = {Art: Drang ≥ 0}, angebote = [{x, z, bietet}], (x, z) = von wo der Weg zaehlt. opt: halbM (sonst ZIEL_GESETZ),
+    // same + wort (die Wahl des Samens), bietet(a, i) (das Angebot aus der Sicht dessen, der waehlt — sonst a.bietet),
+    // ohne(a, i) (nicht zu haben). Liefert {i, art, nutzen} oder null: kein Angebot stillt den Drang.
+    function zielWahl(drang, angebote, x, z, opt) {
+        var o = opt || {};
+        var halb = o.halbM > 0 ? o.halbM : ZIEL_GESETZ.halbM;
+        var best = -1,
+            bestN = 0,
+            bestArt = null;
+        for (var i = 0; i < angebote.length; i++) {
+            var a = angebote[i];
+            if (!a || (o.ohne && o.ohne(a, i))) continue;
+            var B = o.bietet ? o.bietet(a, i) : a.bietet;
+            if (!B) continue;
+            var n = 0,
+                art = null;
+            for (var k in drang) {
+                var w = drang[k] * (B[k] || 0);
+                if (w > n) {
+                    n = w;
+                    art = k;
+                }
+            }
+            if (!(n > 0)) continue;
+            n *= zielNaehe(Math.hypot(a.x - x, a.z - z), halb);
+            if (o.same != null) n /= -Math.log(_zielZahl(o.same, o.wort || "", i));
+            if (n > bestN) {
+                best = i;
+                bestN = n;
+                bestArt = art;
+            }
+        }
+        return best < 0 ? null : { i: best, art: bestArt, nutzen: bestN };
+    }
+    // n = die Zahl der Knoten, kanten[i] = [j, Laenge, j, Laenge, …], a = der Anfang, frei(i, j) = die Kante traegt (ohne: jede).
+    // Liefert vor (Int32Array): je Knoten sein Vorgaenger auf dem kuerzesten Weg von a, −1 = unerreicht (und a selbst).
+    function wegBaum(n, kanten, a, frei) {
+        var dist = new Float64Array(n).fill(Infinity);
+        var vor = new Int32Array(n).fill(-1);
+        var hd = [0],
+            hk = [a];
+        dist[a] = 0;
+        while (hk.length) {
+            var d = hd[0],
+                i = hk[0],
+                ld = hd.pop(),
+                lk = hk.pop();
+            if (hk.length) {
+                // der letzte an die Wurzel, hinab
+                var p = 0;
+                for (;;) {
+                    var l = 2 * p + 1,
+                        r = l + 1,
+                        m = p,
+                        md = ld;
+                    if (l < hk.length && hd[l] < md) {
+                        m = l;
+                        md = hd[l];
+                    }
+                    if (r < hk.length && hd[r] < md) m = r;
+                    if (m === p) break;
+                    hd[p] = hd[m];
+                    hk[p] = hk[m];
+                    p = m;
+                }
+                hd[p] = ld;
+                hk[p] = lk;
+            }
+            if (d > dist[i]) continue;
+            var K = kanten[i];
+            for (var k = 0; k < K.length; k += 2) {
+                var j = K[k],
+                    dj = d + K[k + 1];
+                if (dj < dist[j] && (!frei || frei(i, j))) {
+                    dist[j] = dj;
+                    vor[j] = i;
+                    // hinten an, hinauf
+                    var c = hk.length;
+                    hd.push(dj);
+                    hk.push(j);
+                    while (c > 0) {
+                        var e = (c - 1) >> 1;
+                        if (hd[e] <= dj) break;
+                        hd[c] = hd[e];
+                        hk[c] = hk[e];
+                        c = e;
+                    }
+                    hd[c] = dj;
+                    hk[c] = j;
+                }
+            }
+        }
+        return vor;
+    }
+    // DIE TEILE EINES GRAPHEN (kein Ziel ohne Plan: wer waehlt, fragt, ob Ziel und Anfang am selben Teil haengen): je Knoten
+    // die Nummer seines Teils (Int32Array, ab 0 in der Reihe der Knoten), `frei(i, j)` wie wegBaum.
+    function wegTeile(n, kanten, frei) {
+        var teil = new Int32Array(n).fill(-1);
+        var t = 0;
+        for (var a = 0; a < n; a++) {
+            if (teil[a] >= 0) continue;
+            var offen = [a];
+            teil[a] = t;
+            while (offen.length) {
+                var i = offen.pop(),
+                    K = kanten[i];
+                for (var k = 0; k < K.length; k += 2) {
+                    var j = K[k];
+                    if (teil[j] < 0 && (!frei || frei(i, j))) {
+                        teil[j] = t;
+                        offen.push(j);
+                    }
+                }
+            }
+            t++;
+        }
+        return teil;
+    }
+    // Die Knoten von a nach e laengs des Baums vor (wegBaum ab a); null: e ist von a nicht erreicht.
+    function wegKette(vor, a, e) {
+        if (e !== a && !(vor[e] >= 0)) return null;
+        var kette = [];
+        for (var k = e; k >= 0 && k !== a; k = vor[k]) kette.push(k);
+        kette.push(a);
+        return kette.reverse();
+    }
+    // (dx, dz) = die Richtung zum Ziel (oder zum naechsten Punkt des Plans), rest = die Meter bis zum Halt (Infinity: kein Halt
+    // voraus), vMax = das Tempo (m/s). Liefert out {x, z, v}: den Wunsch (m/s) und sein Tempo — ohne Richtung, Rest oder Tempo 0.
+    function zielWunsch(dx, dz, rest, vMax, out) {
+        var o = out || { x: 0, z: 0, v: 0 };
+        var d = Math.hypot(dx, dz);
+        if (!(d > 1e-6) || !(rest > 0) || !(vMax > 0)) {
+            o.x = o.z = o.v = 0;
+            return o;
+        }
+        var v = ankunftTempo(rest, vMax);
+        o.x = (dx / d) * v;
+        o.z = (dz / d) * v;
+        o.v = v;
+        return o;
+    }
     // DER VERBAND (S6 18.10.): das Rudel, die Herde — der Wurf, den die Geburt bindet — ist ein DATUM, kein Zufall der
     // Nachbarschaft. Die Form davor (herdeZug) zog nur Nachbarn derselben Gattung im Fenster fensterRaum × Paar-Raum: ein
     // Nachzuegler jenseits des Fensters blieb fuer immer zurueck, zwei fremde Herden derselben Art verschmolzen, und die
@@ -1802,6 +1979,14 @@
     // laeuft vom Ort der Bedrohung bis fluchtWegJeRadius Flucht-Radien jenseits des Radius — die Beute flieht eine Strecke, nicht
     // bis zur Kante der Furcht, und wer frueher flieht, flieht weiter (Stankowich 2008, „distance fled"); vorher endete die
     // Flucht am Radius selbst.
+    // DIE FLUCHTDISTANZ VOR DEM MENSCHEN (leben.tiere.mensch S1, 16.11., additiv): fluchtDistanzM je Gattung ist das Feldmass
+    // der Flucht eines wilden, nicht gewoehnten Tiers vor einem Menschen, der zu Fuss auf es zugeht (flight initiation
+    // distance) — der Mensch ist der Super-Raeuber, den jede dieser Arten flieht (Clinchy/Zanette 2023). Rothirsch 120 m (bejagte
+    // Bestaende ~100–200 m: Stankowich 2008, Biol. Conserv. 141:2159), Wolf 106 m (Karlsson et al. 2007, Can. J. Zool.
+    // 85:1193), Braunbaer 55 m (Moen et al. 2012, PLoS ONE 7:e31699), Rotfuchs 40 m (Feldmass duenn, Band der Kleinraeuber).
+    // Sie antwortet der NAEHERUNG: erst wer mit naeherungMS (m/s) oder schneller auf das Tier zugeht, wird geflohen; wer
+    // steht oder schleicht, wird beaeugt (Stankowich & Blumstein 2005, Proc. R. Soc. B 272:2627: langsame Naeherung, kuerzere
+    // Flucht). Vorher floh jede Gattung bei EINEM fleeRadius von 14 m, Wolf und Baer nie.
     var FURCHT_GESETZ = Object.freeze({
         erinnerung: Object.freeze({ geschlagen: 2, gefuettert: -1.5, gewalt: 1 }),
         deckel: 3,
@@ -1810,6 +1995,8 @@
         riss: Object.freeze({ chaos: 1.6, sorrow: 1.6 }),
         ortGewicht: 1,
         ortRadiusZellen: 1.5,
+        fluchtDistanzM: Object.freeze({ deer: 120, wolf: 106, bear: 55, fox: 40 }),
+        naeherungMS: 0.5,
     });
     // e = die Emotions-Achsen {chaos, sorrow, peace, joy, …}, NAT = VERHALTEN.furcht. Liefert die Bedrohung (negativ = beruhigt).
     function bedrohung(e, NAT) {
@@ -1847,6 +2034,16 @@
             r = Math.max(r, Math.sqrt((p.x - B.x) * (p.x - B.x) + (p.z - B.z) * (p.z - B.z)));
         }
         return r + FURCHT_GESETZ.fluchtWegJeRadius * B.r;
+    }
+    // d = fluchtDistanzM der Gattung (m), erinnert = furchtErinnert des Wesens, menace = die Bedrohung der Aura (bedrohung),
+    // bond = die Bindung ∈ [0, 1]. Liefert die Fluchtdistanz vor dem Menschen JETZT (m; 0 = es flieht ihn nicht): erinnerte
+    // Furcht und eine bedrohliche Aura weiten sie um fluchtJeFurcht je Einheit (wer geschlagen wurde und wer einen schnellen,
+    // drohenden Naeherer sieht, flieht frueher: Stankowich & Blumstein 2005, Proc. R. Soc. B 272:2627), die Gabe (erinnert < 0)
+    // gewoehnt das Tier an ihn bis zur Naehe, die Bindung hebt sie auf.
+    function fluchtDistanz(d, erinnert, menace, bond, F) {
+        var furcht = 1 + (erinnert + (menace > 0 ? menace : 0)) * F.fluchtJeFurcht;
+        var frei = 1 - (bond > 0 ? (bond < 1 ? bond : 1) : 0);
+        return furcht > 0 ? d * furcht * frei : 0;
     }
 
     // DIE JAGD HAT EIN ENDE (Tiere K2, 23.10., additiv — JAGD_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): eine
@@ -2029,6 +2226,133 @@
         if (n < K) return { geburt: B.geburt * (1 - n / K), tod: 0 };
         var u = n / K - 1;
         return { geburt: 0, tod: B.tod * (u < 1 ? u : 1) };
+    }
+
+    // DAS GEHEGE (Prüfplatz, der Zoo mit fester Zahl; w28-gehege, additiv — GEHEGE_GESETZ wohnt nicht in VERHALTEN, der
+    // v7-Fingerabdruck bleibt): ein Term DES Bestands-Gesetzes, nie ein zweites Register — die Tiere eines Geheges stehen im
+    // Verzeichnis ihrer Region wie jedes Tier, mit dem Term. DIE ZEILE (gehegeZeile) bringt der Plan: Gattung und Kopfzahl,
+    // das Lager, der Rand (ein konvexes Vieleck, x/z in m) und die Ruhe-Plätze seiner Tiere; der Graben ist Erdbau des Plans, der
+    // Term liest ihn nie. Die Art wählt der Plan, nie ein Tag (Lehre 8); eine Zeile ohne Gattung des Buchs, ohne ganze Kopfzahl,
+    // ohne Lager im Rand, ohne konvexen Rand oder ohne je Tier einen Ruhe-Platz im Rand wirft laut (fail-closed, kein Ersatz:
+    // kein gewürfelter Platz). DER BESTAND (gehegeTiere) ist fest: n Tiere, das k-te an seinem Ruhe-Platz — dem k-ten des
+    // Plans, um platzM in den Rand gerückt; ihre Nummern trägt die Zeile, dieselben Tiere in jedem Boot (die deterministische
+    // Setzung, Horizon), und ein Tier, das fiel, steht wieder in ihr (der Pfleger hält die Zahl).
+    // DIE RATEN des Gehege-Tiers sind 0: geboren wird nie (kein Wurf führt in den festen Bestand, die Zeile IST er), und je
+    // Takt der Tod am Hunger, der Durst und das Altern mit raten (hunger, durst, alter — der Pfleger füttert und tränkt);
+    // gerissen wird nur unter Tieren DESSELBEN Geheges (die eine Antwort bestandRiss über seine Jäger und seine Beute — die
+    // Wölfe haben dort keine). DER RAND (gehegeRand) ist ein Glied der EINEN Hülle des Wirts: der Leib (der Kreis r um x, z)
+    // steht nie jenseits einer Kante. Hagenbeck: kein Gitter im Blick, den Gast trennt der Graben, das Tier hält der Rand.
+    var GEHEGE_GESETZ = Object.freeze({
+        raten: Object.freeze({ hunger: 0, durst: 0, alter: 0 }),
+        platzM: 0.8,
+    });
+    // Liegt (x, z) im Rand (konvex, gegen den Uhrzeigersinn: das Innere links jeder Kante)?
+    function gehegeDrin(rand, x, z) {
+        for (var i = 0; i < rand.length; i++) {
+            var p = rand[i],
+                q = rand[(i + 1) % rand.length];
+            if ((q.x - p.x) * (z - p.z) - (q.z - p.z) * (x - p.x) < 0) return false;
+        }
+        return true;
+    }
+    // Der Abstand von (x, z) zum Rand (m; 0 im Rand) — der Weg des Gasts bis an das Gehege.
+    function gehegeAbstand(rand, x, z) {
+        if (gehegeDrin(rand, x, z)) return 0;
+        var d = Infinity;
+        for (var i = 0; i < rand.length; i++) {
+            var p = rand[i],
+                q = rand[(i + 1) % rand.length];
+            var ex = q.x - p.x,
+                ez = q.z - p.z;
+            var u = ((x - p.x) * ex + (z - p.z) * ez) / (ex * ex + ez * ez);
+            u = u < 0 ? 0 : u > 1 ? 1 : u;
+            var dx = x - p.x - u * ex,
+                dz = z - p.z - u * ez;
+            var e = Math.sqrt(dx * dx + dz * dz);
+            if (e < d) d = e;
+        }
+        return d;
+    }
+    // DER RAND IN DER HÜLLE: der Kreis (x, z, r) gegen jede Kante — wer jenseits ihrer um r eingerückten Linie steht, rückt längs
+    // ihrer Innen-Normalen zurück; zwei Gänge, Kante für Kante (in einer spitzen Ecke rückt die zweite Kante, was die erste
+    // schob). In aus.x / aus.z die Summe der Rückungen. Liefert, ob er rückte.
+    function gehegeRand(rand, x, z, r, aus) {
+        var dx = 0,
+            dz = 0;
+        for (var gang = 0; gang < 2; gang++)
+            for (var i = 0; i < rand.length; i++) {
+                var p = rand[i],
+                    q = rand[(i + 1) % rand.length];
+                var ex = q.x - p.x,
+                    ez = q.z - p.z,
+                    L = Math.sqrt(ex * ex + ez * ez);
+                var nx = -ez / L,
+                    nz = ex / L;
+                var s = (x + dx - p.x) * nx + (z + dz - p.z) * nz - r;
+                if (s < 0) {
+                    dx -= s * nx;
+                    dz -= s * nz;
+                }
+            }
+        aus.x = dx;
+        aus.z = dz;
+        return dx !== 0 || dz !== 0;
+    }
+    // Die Zeile des Plans {gattung, n, lager, rand, ruhe, id?} (Punkte als {x, z} oder [x, z]), geprüft und eingefroren:
+    // { id, gattung, n, lager: {x, z}, rand: [{x, z} …] gegen den Uhrzeigersinn, ruhe: [{x, z} × n] }; die Nummer ohne id ist
+    // das gerundete Lager.
+    function gehegeZeile(z) {
+        var nein = function (w) {
+            throw new Error("tetrapoda gehegeZeile: " + w);
+        };
+        var punkt = function (p) {
+            var x = Array.isArray(p) ? p[0] : p && p.x,
+                y = Array.isArray(p) ? p[1] : p && p.z;
+            return typeof x === "number" && typeof y === "number" && isFinite(x) && isFinite(y)
+                ? Object.freeze({ x: x, z: y })
+                : null;
+        };
+        if (!z || typeof z !== "object") nein("keine Zeile");
+        if (!Object.prototype.hasOwnProperty.call(GATTUNGEN, z.gattung))
+            nein("die Gattung " + z.gattung + " trägt das Buch nicht");
+        if (!(typeof z.n === "number" && z.n >= 1 && z.n % 1 === 0)) nein("die Kopfzahl " + z.n + " ist keine ganze Zahl ≥ 1");
+        var lager = punkt(z.lager);
+        if (!lager) nein("ohne Lager");
+        var rand = (Array.isArray(z.rand) ? z.rand : []).map(punkt);
+        if (rand.length < 3 || rand.indexOf(null) >= 0) nein("der Rand trägt keine drei Ecken");
+        var flaeche = 0,
+            i;
+        for (i = 0; i < rand.length; i++) flaeche += rand[i].x * rand[(i + 1) % rand.length].z - rand[(i + 1) % rand.length].x * rand[i].z;
+        if (flaeche < 0) rand.reverse();
+        for (i = 0; i < rand.length; i++) {
+            var a = rand[i],
+                b = rand[(i + 1) % rand.length],
+                c = rand[(i + 2) % rand.length];
+            if ((b.x - a.x) * (c.z - b.z) - (b.z - a.z) * (c.x - b.x) <= 0) nein("der Rand ist nicht konvex");
+        }
+        if (!gehegeDrin(rand, lager.x, lager.z)) nein("das Lager liegt nicht im Rand");
+        var ruhe = (Array.isArray(z.ruhe) ? z.ruhe : []).map(punkt);
+        for (i = 0; i < Math.max(ruhe.length, z.n); i++)
+            if (ruhe.length !== z.n || !ruhe[i] || !gehegeDrin(rand, ruhe[i].x, ruhe[i].z))
+                nein("die Ruhe-Plätze sind nicht " + z.n + " Punkte im Rand");
+        var id = typeof z.id === "string" && z.id ? z.id : Math.round(lager.x) + "/" + Math.round(lager.z);
+        return Object.freeze({ id: id, gattung: z.gattung, n: z.n, lager: lager, rand: Object.freeze(rand), ruhe: Object.freeze(ruhe) });
+    }
+    // DER FESTE BESTAND der Zeile Z (aus gehegeZeile): je Platz k = 1 … n das Tier { id, k, g, x, z } an seinem Ruhe-Platz, ein
+    // Platz am Rand um platzM in ihn gerückt.
+    function gehegeTiere(Z, G) {
+        var aus = { x: 0, z: 0 },
+            tiere = [];
+        for (var k = 1; k <= Z.n; k++) {
+            var x = Z.ruhe[k - 1].x,
+                z = Z.ruhe[k - 1].z;
+            if (gehegeRand(Z.rand, x, z, G.platzM, aus)) {
+                x += aus.x;
+                z += aus.z;
+            }
+            tiere.push({ id: Z.id + "." + k, k: k, g: Z.gattung, x: x, z: z });
+        }
+        return tiere;
     }
 
     // DER VOGEL (Klang K1, 25.10., additiv — VOGEL_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): jeder Vogel-Ruf
@@ -2696,6 +3020,11 @@
     //  (e) Entscheidung + Antrieb — M koerper-core `tagesPlan` (Bewohner) + Eingabe · T stamm `_tickKreaturVerhalten`
     //      (Stimmung) + hier FURCHT_/JAGD_/ETHOGRAMM_GESETZ; die Wahl der Aktion `verhaltenWahl` (hier, Welt UND Labor —
     //      vorher würfelte das Labor `Math.random` über eigene Aktionen `getBeh`). Zwei Seelen, je ihr Gesetzbuch.
+    //      DIE ZIEL-KETTE (w28-ziel-plan, hier ZIEL_GESETZ): M EINS in allen drei Gliedern — das Ziel (`zielWahl` über die
+    //      Orte seiner Bindung, koerper-core `tagesBindung`), der Plan (`wegBaum` · `wegKette` · `wegTeile` über das Wege-
+    //      Netz), der Wunsch (`zielWunsch`). T liest den Wunsch (`zielWunsch` in stamm `_kreaturZiel`); sein Ziel wählt
+    //      weiter die Kaskade des Stamms (`updateCreatures`: Flucht · Aas · Jagd · Neugier · Wandern, die Tränke
+    //      `_tickCreatureDrink`) — ZWILLING (offen): zwei Wege zum Ziel, das Tier hat keinen Graphen (sein Plan ist das Ziel).
     // DER WIRT W (die Welt: stamm `_tierWirt`; das Labor: tetrapoda.js `wirt`): {M3 die THREE-Mathe des Wirts (Vector3 ·
     // Matrix4 · Quaternion · Euler — der Kern bleibt THREE-frei, er rechnet in den Objekten seines Halters), nowS() die
     // Kreatur-Uhr, boden(group, x, z) der Boden unter der Pfote, kipp(x, z, gier, y, group) die Neigung dort {laengs, quer},
@@ -4933,6 +5262,13 @@
         ankunftTempo: ankunftTempo,
         UMWEG_GESETZ: UMWEG_GESETZ,
         umwegSeite: umwegSeite,
+        ZIEL_GESETZ: ZIEL_GESETZ,
+        zielNaehe: zielNaehe,
+        zielWahl: zielWahl,
+        wegBaum: wegBaum,
+        wegTeile: wegTeile,
+        wegKette: wegKette,
+        zielWunsch: zielWunsch,
         VERBAND_GESETZ: VERBAND_GESETZ,
         verbandZug: verbandZug,
         rudelPlatz: rudelPlatz,
@@ -4942,6 +5278,7 @@
         furchtErinnert: furchtErinnert,
         furchtOrt: furchtOrt,
         fluchtRadius: fluchtRadius,
+        fluchtDistanz: fluchtDistanz,
         JAGD_GESETZ: JAGD_GESETZ,
         wundTempo: wundTempo,
         LEBENSRAUM_GESETZ: LEBENSRAUM_GESETZ,
@@ -4960,6 +5297,12 @@
         bestandBilanz: bestandBilanz,
         bestandFrass: bestandFrass,
         bestandRiss: bestandRiss,
+        GEHEGE_GESETZ: GEHEGE_GESETZ,
+        gehegeZeile: gehegeZeile,
+        gehegeTiere: gehegeTiere,
+        gehegeRand: gehegeRand,
+        gehegeDrin: gehegeDrin,
+        gehegeAbstand: gehegeAbstand,
         VOGEL_GESETZ: VOGEL_GESETZ,
         vogelWurf: vogelWurf,
         vogelRevier: vogelRevier,

@@ -447,6 +447,9 @@ function stempelWache() {
 // (renderer.info, die Quelle von HUD und Flugschreiber). Die Bühne (Mittag · Sonne · Sommer) und stille Tiere halten den Vergleich
 // gleich; „voll" hebt die Regler-Decke, der PID wächst loadScale → 1 (die volle Welt, wie die Cloud maß).
 function lauf(k) {
+    // DAS GERÄT URTEILEN (w28-bild-preis): der Lauf und die Bank fahren die am Gerät EINGEMESSENE Szenen-Skala — der Schuss hält
+    // sie sonst am Standard (`__halten` skala, scripts/lib/ausgabe-aufnahme.cjs); eine Öffnung, die ein anderer setzte, bleibt offen
+    const skalaOffen = !(window.__offen ||= new Set()).has("skala") && !!window.__offen.add("skala");
     return (async () => {
         const st = r.state;
         const rend = st.renderer;
@@ -502,7 +505,7 @@ function lauf(k) {
         // DIE SICHTUNG: ein Tier (`_tierBaum`, die Klasse `tier:` der Teilung) deckt ≥ 200 px der Klassen-Maske am Maß 1280×720 —
         // drei Schüsse des Ausgabe-Pfads unter der EINEN Uhr: G und G2 mit, dann O ohne Tiere (`toggleCreatures`, das Wort des
         // Spiels: Leib, Feld und Satz — das Wieder-Einschalten wirkt erst im nächsten Takt, darum steht O zuletzt); ein Pixel ist
-        // Tier, wenn G UND G2 von O abweichen (`__klassenTeilung`): was zwischen zwei Schüssen wandert (headless 0,5 % des Bilds,
+        // Tier, wenn G UND G2 von O abweichen (`__wirkungTeilung`): was zwischen zwei Schüssen wandert (headless 0,5 % des Bilds,
         // die Welt streamt im Gang), steht in O wie in G2 und fällt heraus; ein Pixel gehört unter ALLEN Tieren im Blick dem, dessen Körper-Kugel
         // (`_kreaturAusserBlick`) ihn deckt und dessen Mitte im Bild ihm relativ zum Radius am nächsten liegt (ein Glied des
         // Verbands schluckt nie die Pixel seiner Nachbarn); der Schatten am Boden zählt mit (mittags unter dem Leib, im flachen
@@ -541,7 +544,7 @@ function lauf(k) {
                     r.toggleCreatures(false);
                     const O = await schuss("halten").finally(() => r.toggleCreatures(true)); // das Licht von unten steht wie in G
                     await wieder();
-                    const [teil, auch] = G.map((g) => __klassenTeilung(g, [O], W, H, 18).teil);
+                    const [teil, auch] = G.map((g) => __wirkungTeilung(g, [O], W, H, 18).teil);
                     for (let p = 0; p < W * H; p++) {
                         let q = null, e = 1;
                         if (teil[p] && auch[p]) for (const k of kand) e > (k.e = ((k.x - (p % W)) ** 2 + (k.y - Math.floor(p / W)) ** 2) / k.rp ** 2) && ((e = k.e), (q = k));
@@ -681,6 +684,9 @@ function lauf(k) {
                 ruhe = Object.assign({ ruhig, sek: +((performance.now() - t0) / 1000).toFixed(1) }, vor);
             }
             const v0 = Object.assign({}, window.__vram);
+            // DER PREIS NENNT SEINE SKALA (w28-bild-preis): die Szenen-Skala bei Beginn und Ende des Fensters (`stellgroessen`) — sie
+            // misst sich am Gerät ein (`_szeneSkalaMessen`); eine Ersparnis an der GPU zeigt sich als steigende Skala, nie unsichtbar
+            const skala0 = r._szeneSkalaWirk();
             const wache = window.__stempelWache;
             const s0 = wache();
             // DAS INSTRUMENT LÄUFT AN (w11-stoss): `Tracing.start` mit dem Stich-Profiler (PROBEN, `disabled-by-default-v8.cpu_profiler`)
@@ -800,6 +806,8 @@ function lauf(k) {
                 stellgroessen: {
                     loadScale: +s.loadScale.toFixed(2),
                     szeneSkala: r._szeneSkalaWirk(),
+                    szeneSkalaAnfang: skala0,
+                    geraet: r._geraeteProfil().messung,
                     pixelRatio: rend.getPixelRatio(),
                     foliageRadius: st.foliageRadius != null ? Math.round(st.foliageRadius) : null,
                     foliageDichte: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
@@ -839,13 +847,16 @@ function lauf(k) {
             if (kreis) st.yaw = kreis.gier;
             if (fahrt?.e) (clearInterval(fahrt.uhr), r.dismountArchitecture(), r.removeArchitecture(fahrt.e));
         }
-    })();
+    })().finally(() => skalaOffen && window.__offen.delete("skala"));
 }
 
 // DIE GPU-BANK (Seiten-Kontext): n Frames direkt hintereinander rendern (ohne rAF, ohne VSync), dann auf die GPU
 // warten. Liegt die GPU je Frame über der CPU, ist Gesamtzeit / n die reine GPU-Zeit je Frame — die rAF-Kadenz rastet
 // am VSync ein und misst nur bei tiefer Schlange die GPU.
 function gpuBank(k) {
+    // DAS GERÄT URTEILEN (w28-bild-preis): der Lauf und die Bank fahren die am Gerät EINGEMESSENE Szenen-Skala — der Schuss hält
+    // sie sonst am Standard (`__halten` skala, scripts/lib/ausgabe-aufnahme.cjs); eine Öffnung, die ein anderer setzte, bleibt offen
+    const skalaOffen = !(window.__offen ||= new Set()).has("skala") && !!window.__offen.add("skala");
     return (async () => {
         const rend = r.state.renderer;
         rend.setAnimationLoop(null);
@@ -870,7 +881,7 @@ function gpuBank(k) {
             gpuGebunden: jeFrame > cpu * 1.15,
             nachlaufMs: med("nachlauf"),
         };
-    })();
+    })().finally(() => skalaOffen && window.__offen.delete("skala"));
 }
 
 // DIE FRAME-ANATOMIE: n Bank-Frames mit Zähl-Haken an den WebGPU-Prototypen — jeder Befehl je Frame beim Namen.

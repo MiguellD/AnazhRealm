@@ -29,7 +29,7 @@
 //   (KLANG_WURZEL=<baum> misst einen anderen Arbeitsbaum unter derselben Linse)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, halteBis, argOpt, ROOT: root, path, fs, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, halteBis, argOpt, ROOT: root, path, fs, stammLib, SELBSTTEST, mass } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const MESS = require("./lib/welt-orte.cjs").messort("wiese"); // der Messort aus spec/profiband/haushalt.json
 
@@ -398,6 +398,9 @@ function werkzeug() {
         await fang("treffer", () => r._trefferPaar("stahl", "stein"));
         // Wasser strömt zurück — am Wasser des Seeufers; auf der trockenen Wiese (das Ohr steht dort) bleibt es still.
         const wp = W.wasserPunkt;
+        // die Kachel des Ufers steht beim Fragen (der Ort liegt fern vom Ohr): die Welt hält nur die Kacheln in der Reichweite
+        // ihrer Leser (w28-speicher-ring, `ZELL_GEDAECHTNISSE`) — wer fern fragt, bestellt sie, wie die Suche des Ufers oben
+        if (wp) await __weltDa(() => !r._ensureHydroTilesAround(wp.x, wp.z, 32));
         await fang("wasser", () => r._playWaterReactionPing(wp ? [{ cx: wp.x, cz: wp.z, r: 1 }] : []));
         const pm0 = st.playerMesh.position;
         await fang("wasserTrocken", () => r._playWaterReactionPing([{ cx: pm0.x, cz: pm0.z, r: 1 }]), 0, true);
@@ -646,7 +649,7 @@ async function messeOrt(page, name, ort, stubs) {
                 const baeume = W.bestand(p.x, p.z, 15);
                 // (Ü) die gespielten Stimmen, deren Satz in keiner stehenden Zeile steht
                 const ut = document.getElementById("untertitel").textContent;
-                const ohneZeile = (zensus ? zensus.stimmen : []).filter((v) => v.an && !ut.includes(AnazhRealm.UNTERTITEL.stimme[v.name])).map((v) => v.name);
+                const ohneZeile = (zensus ? zensus.stimmen : []).filter((v) => v.an && !ut.includes(AnazhRealm._t(AnazhRealm.UNTERTITEL.stimme[v.name]))).map((v) => v.name);
                 return { name, ort, um, laufend, zensus, baeume, hauptSynthese: syn1 - syn0, ohneZeile };
             } finally {
                 halt.vor = halt.zurueck = W.szene = false;
@@ -1152,7 +1155,8 @@ async function takt(page, erg) {
     else if (aus.n) rot.push(`T aussetzer: ${aus.n} in ${aus.s} s Wiedergabe`);
     for (const [name, z] of Object.entries(ph)) {
         if (!(z.bilder >= 300 && z.weg >= 10)) rot.push(`T ${name}: ${z.bilder} Bilder, ${z.weg} m`);
-        else if (!(z.p95 <= TAKT_SOLL_MS))
+        // ZEIT (w28-tor-bruch): p95 der Wanduhr meldet am Lande-Tor (`mass`), ihr Richter ist das Band-Gerät
+        else if (!mass("ZEIT", z.p95 <= TAKT_SOLL_MS, `T ${name}: p95 ${z.p95} > ${TAKT_SOLL_MS} ms`))
             rot.push(`T ${name}: p95 ${z.p95} > ${TAKT_SOLL_MS} ms (${z.traeger.join(" · ")})`);
     }
     if (!ph.fahrt.sattel) rot.push("T fahrt: nicht im Sattel");

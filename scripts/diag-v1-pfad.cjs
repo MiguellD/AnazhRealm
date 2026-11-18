@@ -19,7 +19,7 @@
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib, nullWelt, bruchFaelle, probeUrteil } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib, nullWelt, bruchFaelle, probeUrteil, mass, alsSelbsttest } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
@@ -175,8 +175,6 @@ const ORT_OPS = [
     "spawn_creature",
     "spawn_tree",
     "spawn_studio",
-    "spawn_island",
-    "spawn_ufo",
     "spawn_village",
     "spawn_temple",
     "spawn_waterfall",
@@ -209,9 +207,9 @@ function ortVerdict(m) {
         if (c.ok) out.push("chain: meldet Erfolg ohne Ort");
         if (c.fehler) out.push(`chain: wirft (${c.fehler.slice(0, 80)})`);
         if (!(soll.test(c.grund || "") && c.effekt === "spawn_tree")) out.push("chain: nennt den Grund nicht");
-        const spawns = (c.akte || []).filter((a) => a.nm !== "_depositLife");
+        const spawns = (c.akte || []).filter((a) => a.nm !== "_lebenGabe");
         if (spawns.length) out.push(`chain: wirkt ohne Ort (${spawns.map((a) => a.nm).join(", ")})`);
-        if (!(c.akte || []).some((a) => a.nm === "_depositLife"))
+        if (!(c.akte || []).some((a) => a.nm === "_lebenGabe"))
             out.push("chain: bricht ganz ab (der Feld-Akt beim Spieler fehlt)");
     }
     if (!m.buchWarm) out.push("dorf: Buch kalt (Vorbedingung)");
@@ -230,7 +228,7 @@ const KNOTEN = [
     ],
     ["leerer Knoten", ["spawn_tree", [], 1, "eiche", 5], "^leerer Ort-Knoten", "spawn_tree"],
     ["Zahl statt Knoten", ["spawn_creature", 42, 1, "happy"], "^„42“ ist kein Ort-Knoten", "spawn_creature"],
-    ["Objekt statt Knoten", ["spawn_ufo", { x: 3, z: 4 }], "ist kein Ort-Knoten", "spawn_ufo"],
+    ["Objekt statt Knoten", ["spawn_waterfall", { x: 3, z: 4 }, 7], "ist kein Ort-Knoten", "spawn_waterfall"],
     [
         "Text statt Knoten im Feld-Akt",
         ["deposit_life", "near_water", 0.5],
@@ -250,8 +248,8 @@ const KNOTEN = [
         "^at: x fehlt",
         "spawn_creature",
     ],
-    ["at ohne z", ["spawn_ufo", ["at", 12, 3]], "^at: z fehlt", "spawn_ufo"],
-    ["at mit Text-Höhe", ["spawn_island", ["at", 5, "hoch", 5], 6, 7], "^at: y „hoch“ ist keine Zahl", "spawn_island"],
+    ["at ohne z", ["spawn_creature", ["at", 12, 3], 1, "happy"], "^at: z fehlt", "spawn_creature"],
+    ["at mit Text-Höhe", ["spawn_waterfall", ["at", 5, "hoch", 5], 7], "^at: y „hoch“ ist keine Zahl", "spawn_waterfall"],
     [
         "near_water mit Text-Radius",
         ["spawn_tree", ["near_water", "abc"], 1, "eiche", 5],
@@ -278,9 +276,9 @@ const KNOTEN = [
     ],
     [
         "random_position mit Text-Spanne",
-        ["spawn_ufo", ["random_position", "x"]],
+        ["spawn_tree", ["random_position", "x"], 1, "eiche", 5],
         "^random_position: Spanne „x“ ist keine Zahl",
-        "spawn_ufo",
+        "spawn_tree",
     ],
     [
         "at_player_forward mit Text-Abstand",
@@ -1041,7 +1039,9 @@ function korpusVerdict(m) {
     const soll = m.soll || KORPUS_SOLL;
     if (m.echt) {
         for (const k of ["gueltig", "absicht"]) if (q(k) < soll[k]) out.push(`${k} ${pz(q(k))} < ${pz(soll[k])}`);
-        if (soll.p95Ms && !(m.p95 <= soll.p95Ms)) out.push(`p95 Satz → Welt ${m.p95} ms > ${soll.p95Ms} ms`);
+        // ZEIT (w28-tor-bruch): die Wanduhr Satz → Welt meldet am Lande-Tor (`mass`), ihr Richter ist das Band-Gerät
+        const pz95 = `p95 Satz → Welt ${m.p95} ms > ${soll.p95Ms} ms`;
+        if (soll.p95Ms && !mass("ZEIT", m.p95 <= soll.p95Ms, pz95)) out.push(pz95);
     } else if (r.quote && q("absicht") < r.quote.absicht)
         out.push(`Rückschritt am Mitschnitt: Absicht ${pz(q("absicht"))} < ${pz(r.quote.absicht)} des echten Laufs`);
     return out;
@@ -1304,10 +1304,8 @@ async function probe(arg) {
         const ortVon = {
             spawnCreatureAt: (a) => ({ x: a[0], z: a[2] }),
             spawnArchitecture: (a) => a[1] || null,
-            spawnIslandAt: (a) => ({ x: a[0], z: a[2] }),
-            spawnUfoAt: (a) => ({ x: a[0], z: a[2] }),
             spawnSettlement: (a) => (a[0] && a[0].position) || null,
-            _depositLife: (a) => ({ x: a[0], z: a[1] }),
+            _lebenGabe: (a) => ({ x: a[0], z: a[1] }), // die Gabe am Eingang (`_feldAkt`): wann sie ins Feld schreibt, ordnet die Folge (`_feldFolgeSteht`)
             _depositEmotion: (a) => ({ x: a[0], z: a[1] }),
             carveVoxel: (a) => ({ x: a[0], z: a[2] }),
             fillVoxel: (a) => ({ x: a[0], z: a[2] }),
@@ -1336,8 +1334,6 @@ async function probe(arg) {
             ["spawn_creature", NW, 2, "happy"],
             ["spawn_tree", NW, 2, "eiche", 5],
             ["spawn_studio", "eiche", NW, 3, 5],
-            ["spawn_island", NW, 10, 5, 12],
-            ["spawn_ufo", NW],
             ["spawn_village", NW, 7],
             ["spawn_temple", NW, 7],
             ["spawn_waterfall", NW, 7],
@@ -2083,7 +2079,7 @@ async function regelRaffer(a) {
             (d[k] = (d[k] || 0) + 1);
         for (const [x, [born]] of R.dl)
             if (!st.worldRules.includes(x)) {
-                zaehl(x, performance.now() / 1000 - born >= x.ttlSec ? "verfallen" : "verdraengt");
+                zaehl(x, st.spielZeit - born >= x.ttlSec ? "verfallen" : "verdraengt");
                 R.dl.delete(x);
             }
         for (const x of st.worldRules.filter(q)) {
@@ -2094,11 +2090,11 @@ async function regelRaffer(a) {
     };
     for (const ende = R.s + a.schritte; R.s < ende; R.s++, R.vor += 250) {
         sieh();
-        // DIE UHR DES TAKTS (`_taktUhr`) rückt mit, wie der Loop sie vor dem Tick setzt: eine Regel wird auf ihr geboren
-        // und altert auf der Uhr des Ticks
-        r._taktZeit = performance.now() / 1000;
+        // DIE WELT-UHR rückt mit, wie der Loop sie vor dem Tick setzt (`spielZeit`, w28-welt-uhr): eine Regel wird auf ihr geboren
+        // und altert auf ihr — je Schritt 250 ms wie die Wanduhr des Raffers
+        st.spielZeit += 0.25;
         if (R.s % (R.lauf ? 4 : 12) === 0) r.dslRun(r._composeNexusRule(R.rng), { source: "nexus" });
-        r._tickWorldRules(r._taktZeit);
+        r._tickWorldRules(st.spielZeit);
     }
     return R.z;
 }
@@ -2458,7 +2454,7 @@ hauptLauf(async () => {
                 grund: "kein Wasser im Umkreis von 60 m",
                 effekt: "spawn_tree",
                 fehler: null,
-                akte: [{ nm: "_depositLife", abstand: 0 }],
+                akte: [{ nm: "_lebenGabe", abstand: 0 }],
             },
             buchWarm: true,
             dorfAuftraege: 0,
@@ -3038,7 +3034,7 @@ hauptLauf(async () => {
             ["die Türen nie geprüft", { m: { tueren: [] } }, "nie geprüft"],
             ["die Aufnahme sänke die Ratsche", { m: { sinkt: [0.7, 0.75] } }, "sänke die Ratsche"],
         ]) {
-            taeterTest(`WORT: ‚${name}'`, korpusVerdict(kLauf(b)), soll);
+            taeterTest(`WORT: ‚${name}'`, alsSelbsttest(() => korpusVerdict(kLauf(b))), soll);
         }
         // SEELE (KI K3): der Bezug auf die erlebte Tat, nie auf eine fremde (ein Vorschlag ist kein Schlag), das leere Gedächtnis nie
         const bezug = require(KORPUS_PFAD).seele.bezug;

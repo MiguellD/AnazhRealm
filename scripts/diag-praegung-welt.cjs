@@ -7,7 +7,7 @@
 // (Welt, Regel, Bauplan, Gesetzbuch) ein signierter Eintrag ≤ 8 KB, über den Code wieder, Byte-, Code- und Mesh-Mutante ROT, Fork
 // mit Kette, das Buch im Foundry-Faden (`--bibliothek` endet danach, ohne Gerät B); jede Wand mit ihrer Täter-Probe.
 "use strict";
-const { frageJa, statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis, wandEnde, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
+const { frageJa, statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis, wandEnde, jsonKlon, fehlerStapel, mass } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
@@ -676,7 +676,8 @@ hauptLauf(async () => {
     check("SELBST-TEST: B als zweiter Kontext im Chrome von A ist ROT", ger[0] === ger[2]);
     check("B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A (der Peer am Anschluss)", b.gut?.ok && b.gut.autor === a.autor && b.gut.name === "fahrzeug_gt", b.netz + JSON.stringify(b.gut));
     check("B: gezeichnet an der eigenen Pose (≤ 24 m, im Bild)", t.d <= 24 && t.ndc.every((v) => Math.abs(v) <= 1), `${t.d} m ${t.ndc}`);
-    check("ZEIT: Klick bis Code + Enter bis gezeichnet ≤ 10 s", t.ms <= 10000, `${t.ms} ms (A ${msA})`);
+    // ZEIT (w28-tor-bruch): die Wanduhr meldet am Lande-Tor (`mass`), ihr Richter ist das Band-Gerät
+    check("ZEIT: Klick bis Code + Enter bis gezeichnet ≤ 10 s", mass("ZEIT", t.ms <= 10000, `B gezeichnet ${t.ms} ms > 10 s`), `${t.ms} ms (A ${msA})`);
     check("B: Stempel und Same reisen tief gleich", b.stempel);
     check(
         "BAU-HASH A ↔ B byte-gleich, der Stempel wirkt (≠ ungeprägt)",
@@ -687,7 +688,7 @@ hauptLauf(async () => {
     const [hw, ms, { worldId, seed, role }] = [JSON.parse(Buffer.from(wCode.replace("anazh-werk:", ""), "base64url")), msW + w[0] - uhr, w[1]];
     check("WELT: A teilt die Welt — EIN Code, die Hülle des Werks, Signatur von A", hw.welt && hw.autor === a.autor && wCode.length <= 4096, `${wCode.length} Zeichen`);
     check("WELT: B steht in A's Welt (Id, Same, Gast, > 128 KB) und kennt A am Anschluss", worldId === wId && seed === wSame && role === "guest" && w[2] && kb > 128, `${worldId} ${kb} KB ${role} ${w[2]}`);
-    check("WELT: KONTROLLE ≤ 5 s — Klick bis Code + Enter bis zum ersten Weltbild", ms <= 5000, `${Math.round(ms)} ms (A ${msW}, B ${B_ART})`);
+    check("WELT: KONTROLLE ≤ 5 s — Klick bis Code + Enter bis zum ersten Weltbild", mass("ZEIT", ms <= 5000, `Kontrolle ${Math.round(ms)} ms > 5 s`), `${Math.round(ms)} ms (A ${msW}, B ${B_ART})`);
     check("WELT: am Ort — die Seite von B lädt nicht neu", seiten === 0, `${seiten} Navigationen`);
     check("WELT: der Leib geht unter W ≥ 1 m", geht.erreicht, `${geht.ms} ms`);
 

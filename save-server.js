@@ -1118,7 +1118,12 @@ const server = http.createServer((req, res) => {
     sendJson(res, 405, { error: "Method not allowed" });
 });
 
-server.listen(PORT, HOST, () => {
-    console.log(`Anazh Save-Server läuft: http://${HOST}:${PORT}`);
-    console.log("Öffne das Spiel über diese URL, damit direkt in den Spielordner gespeichert wird.");
-});
+// DIE EINE QUELLE DER KÖPFE (w28-mess-server-kopf): der Mess-Server der Linsen (scripts/lib/welt-boot.cjs `statikServer`) liefert
+// jede Datei mit DENSELBEN Köpfen wie dieser Server — er lädt diese Datei und liest `statischerKopf` und `frischBeimLeser`, kein
+// zweiter Satz Köpfe daneben. Der Server lauscht darum nur als Hauptprogramm (`node save-server.js`), nie beim Laden als Modul.
+if (require.main === module)
+    server.listen(PORT, HOST, () => {
+        console.log(`Anazh Save-Server läuft: http://${HOST}:${PORT}`);
+        console.log("Öffne das Spiel über diese URL, damit direkt in den Spielordner gespeichert wird.");
+    });
+module.exports = { statischerKopf, frischBeimLeser };

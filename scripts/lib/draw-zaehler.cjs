@@ -97,8 +97,7 @@ function drawZensus(opts) {
         // Name ist ihr Täter).
         const satzOf = new Map();
         if (st.chunkSaetze)
-            for (const s of st.chunkSaetze.values())
-                if (s?.mesh && s.spec?.userData?.bauSatz) satzOf.set(s.mesh, s);
+            for (const s of st.chunkSaetze.values()) if (s?.mesh && s.spec?.userData?.bauSatz) satzOf.set(s.mesh, s);
         const inhalt = {};
         const instanzKlasse = (key) => AnazhRealm._instanzKlasse(key);
         // DIE WAHL DER GPU (`_instanzWahlGpu`): die Zahl eines Zugs zählt der Compute — nach dem Frame liest der Zähler sie
@@ -589,13 +588,17 @@ function gangUrteil({ vor, nach }) {
         const [a, b] = [(vor.tiere || {})[k] | 0, (nach.tiere || {})[k] | 0];
         return a ? ((vm.get(k) || 0) / a) * (b - a) : b ? nm.get(k) || 0 : 0;
     };
-    const drift = nach.vram.mb - vor.vram.mb - [...new Set([...vm.keys(), ...nm.keys()])].reduce((s, k) => s + bestand(k), 0);
+    const drift =
+        nach.vram.mb - vor.vram.mb - [...new Set([...vm.keys(), ...nm.keys()])].reduce((s, k) => s + bestand(k), 0);
     if (drift > GANG.vramMB)
         f.push(
             "vram: +" +
                 drift.toFixed(1) +
                 " MB zurück am Start — " +
-                wuchs(vg(vor), [...nm].map(([k, x]) => [k, x - bestand(k)]))
+                wuchs(
+                    vg(vor),
+                    [...nm].map(([k, x]) => [k, x - bestand(k)])
+                )
         );
     for (const [k, x] of Object.entries(nach.puffer?.halter || {}))
         if (/ruhend|verwaist/.test(k) && x > 0) f.push("buf:" + k + " " + x + " MB");
@@ -613,7 +616,13 @@ function gangSelbsttest() {
                 min: v,
                 heapMB: halter.reduce((s, [, x]) => s + x, 0) / 1048576,
                 halter,
-                vram: { mb: a + w, liste: [{ k: "buf:a", mb: a }, { k: "buf:szene:tier:wolf", mb: w }] },
+                vram: {
+                    mb: a + w,
+                    liste: [
+                        { k: "buf:a", mb: a },
+                        { k: "buf:szene:tier:wolf", mb: w },
+                    ],
+                },
                 tiere: { "buf:szene:tier:wolf": v ? 2 : 1 },
             };
         };
@@ -628,6 +637,351 @@ function gangSelbsttest() {
     const soll =
         "heap: +8.0 MB/min > 5 — Halter: r.state.offen +8.0 MB | vram: +4.2 MB zurück am Start — buf:a +3.0 MB · buf:szene:tier:wolf +1.2 MB";
     return [lauf(false), lauf(true)].join(" / ") === " / " + soll ? [] : ["der Gang urteilt falsch: " + lauf(true)];
+}
+
+// DER WEG (Preis des Orts, Schnitt 2 „der Speicher folgt dem Blick“): EINE Sitzung fährt Posen und kehrt zur ersten zurück
+// (Wiese · Wiese-Ost · Dorf · West · Wiese, je Pose nach zwei GC: `heapMB`, die Typed-Halter `halter` [Pfad, MB], `min` seit
+// der vorigen). Was ein Leser im Blick oder in Reichweite liest, lebt; was mit dem Weg wächst, ist ROT beim Pfad seines Halters:
+// der Preis je Pose (≤ 400 MB), die Ratsche je Pose (`spec/profiband/weg-*.json`, fällt nur nach unten) und der Zuwachs von der
+// ersten Pose bis zur Rückkehr an dieselbe Pose je Minute der Fahrt (≤ 5, die Preis-Treppe).
+const WEG = { heapMB: 400, heapMBjeMin: 5 };
+function wegUrteil(posen, ratsche) {
+    const f = [];
+    const soll = new Map(((ratsche && ratsche.posen) || []).map((p) => [p.pose, p.heapMB]));
+    const tol = (ratsche && ratsche.toleranzMB) || 0;
+    for (const p of posen) {
+        if (p.heapMB > WEG.heapMB) f.push(`${p.pose}: Heap ${p.heapMB.toFixed(1)} MB > ${WEG.heapMB} (Preis)`);
+        const s = soll.get(p.pose);
+        if (s != null && p.heapMB > s + tol)
+            f.push(`${p.pose}: Heap ${p.heapMB.toFixed(1)} MB über der Ratsche ${s} + ${tol}`);
+    }
+    const [a, z] = [posen[0], posen[posen.length - 1]];
+    const rueck = z.heapMB - a.heapMB;
+    const min = posen.slice(1).reduce((s, p) => s + (p.min || 0), 0);
+    const m = new Map(a.halter || []);
+    const halter =
+        (z.halter || [])
+            .map(([k, x]) => [k, x - (m.get(k) || 0)])
+            .filter(([, x]) => x >= 1)
+            .sort((p, q) => q[1] - p[1])
+            .slice(0, 3)
+            .map(([k, x]) => k + " +" + x.toFixed(1) + " MB")
+            .join(" · ") || "—";
+    if (min > 0 && rueck / min > WEG.heapMBjeMin)
+        f.push(
+            `rückkehr: ${z.pose} +${rueck.toFixed(1)} MB über ${a.pose} in ${min.toFixed(1)} min = ${(rueck / min).toFixed(1)} MB/min > ` +
+                `${WEG.heapMBjeMin} — Halter: ${halter}`
+        );
+    return f;
+}
+// Selbsttest: je Naht ein Mutant — das Render-Objekt am Stoff nach seiner Geometrie (N1), die Saat, die ihren Chunk überlebt
+// (N2), der Bauer nach seinem Stand (N3) — ist ROT beim Pfad seines Halters; derselbe Weg mit Räumung ist GRÜN.
+function wegSelbsttest() {
+    const fahrt = (mutant) => {
+        const r = { state: { ring: new Map(), renderObjekte: [], architectures: [] }, renderer: { bauer: [] } };
+        const halter = { N1: r.state.renderObjekte, N2: r.state.architectures, N3: r.renderer.bauer };
+        const posen = [];
+        for (let i = 0; i < 5; i++) {
+            // der Ring folgt dem Blick (zwei Einträge), die drei Nähte tragen je Pose 8 MB
+            r.state.ring.set(i, new Float32Array(262144));
+            if (r.state.ring.size > 2) r.state.ring.delete(r.state.ring.keys().next().value);
+            for (const [n, liste] of Object.entries(halter)) {
+                liste.push(new Float32Array(2097152));
+                if (n !== mutant) liste.splice(0, liste.length - 1);
+            }
+            const h = heapHalter(r, 3).map(([k, b]) => [k, b / 1048576]);
+            posen.push({ pose: "p" + i, heapMB: 300 + h.reduce((s, [, x]) => s + x, 0), halter: h, min: i ? 1 : 0 });
+        }
+        return wegUrteil(posen, null).join(" | ");
+    };
+    const f = [];
+    if (fahrt(null)) f.push("der geräumte Weg ist rot: " + fahrt(null));
+    for (const [n, p] of [
+        ["N1", "r.state.renderObjekte"],
+        ["N2", "r.state.architectures"],
+        ["N3", "r.renderer.bauer"],
+    ]) {
+        const u = fahrt(n);
+        if (!/rückkehr: /.test(u) || !u.includes(p + " +"))
+            f.push(`der Mutant ${n} ist nicht rot beim Pfad ${p}: ${u || "GRÜN"}`);
+    }
+    return f;
+}
+
+// DER RUNDEN-ZENSUS (Preis des Orts, Schnitt 2 „der Speicher folgt dem Blick“; `werkbank runde`): dieselbe Runde zweimal, nach
+// jeder an der START-Pose zwei GC — was zwischen Runde 1 und Runde 2 entstand und an der Start-Pose noch lebt, ist das Leck (die
+// Drei-Schnappschuss-Methode). Der Zensus zählt JEDE Map/Set/Array am Stamm und an `state` bis Tiefe 2 (schlichte Objekte),
+// ein Behälter, den mehrere Namen halten, steht unter dem ersten.
+function behaelterZensus(r) {
+    const aus = {};
+    const groesse = (v) => (v instanceof Map || v instanceof Set ? v.size : Array.isArray(v) ? v.length : null);
+    const schlicht = (v) => [Object.prototype, null].includes(Object.getPrototypeOf(v)) && !Array.isArray(v);
+    const gesehen = new WeakSet([r.state]);
+    const geh = (o, p, tiefe) => {
+        for (const k of Object.keys(o)) {
+            let v;
+            try {
+                v = o[k];
+            } catch {
+                continue;
+            }
+            if (!v || typeof v !== "object" || gesehen.has(v)) continue;
+            gesehen.add(v);
+            const g = groesse(v);
+            if (g != null) aus[p + "." + k] = g;
+            else if (tiefe > 1 && schlicht(v)) geh(v, p + "." + k, tiefe - 1);
+        }
+    };
+    geh(r, "r", 2);
+    geh(r.state, "r.state", 2);
+    return aus;
+}
+// DER ZELL-ZENSUS (w28-halter-register; `werkbank runde`): je Gedächtnis der EINEN Tafel (`AnazhRealm.ZELL_GEDAECHTNISSE`) die
+// Einträge und die außerhalb des Blicks — eine Zelle, von der kein Teil im Saum (Ring + 2 Chunks um den Spieler) und keiner in der
+// Reichweite ihrer Leser liegt; ein Gedächtnis des Rings „boden“ außerhalb Ring + 1, dessen Chunk nicht steht. Gezählt unabhängig vom
+// Räumer (die Linse rechnet die Lage selbst). Daneben jeder Behälter mit Zell-Schlüssel („[schicht:]i,j“, auch „o12,3“), der in
+// keiner Tafel steht: unangemeldet. `A` die Klasse (die Seite: `AnazhRealm`). → { je: [{ name, n, aussen, bestand }], unangemeldet }
+function zellZensus(r, A) {
+    A = A || (typeof AnazhRealm !== "undefined" ? AnazhRealm : {});
+    const st = r.state;
+    const { span, ringRadius: R } = r._voxelChunkConfig(0);
+    const p = st.playerMesh.position;
+    const [pcx, pcz] = [Math.floor(p.x / span), Math.floor(p.z / span)];
+    const lage = (k) => {
+        const m = typeof k === "string" && /^(?:([^:,]*):)?(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/.exec(k);
+        return m ? [+m[2], +m[3], m[1] || ""] : null;
+    };
+    const je = [];
+    const angemeldet = new Set();
+    (A.ZELL_GEDAECHTNISSE || []).forEach((E, i) => {
+        const karte = E.karte(r);
+        if (karte) angemeldet.add(karte);
+        // ein Gedächtnis mit eigener Schranke, das `zaehlen` trägt (ein Halter der Zeichnung), zählt wie ein räumbares
+        const o = { name: E.name || "#" + i, n: karte ? karte.size : 0, aussen: 0, bestand: E.bestand || (!E.zaehlen && E.schranke) || null }; // prettier-ignore
+        je.push(o);
+        if (!karte || !karte.size || o.bestand) return;
+        const rw = E.reichweite ? E.reichweite(r) : 0;
+        for (const k of karte instanceof Map ? karte.keys() : karte) {
+            const ij = E.lage ? E.lage(k) : lage(k);
+            if (!ij) continue;
+            const Z = typeof E.zelle === "function" ? E.zelle(r, ij[2]) : E.zelle;
+            const [m, ab] = typeof Z === "number" ? [Z, 0] : [Z.m, Z.ab];
+            const [x0, z0] = [ij[0] * m + ab, ij[1] * m + ab];
+            const [c0, c1, d0, d1] = [Math.floor(x0 / span), Math.ceil((x0 + m) / span) - 1, Math.floor(z0 / span), Math.ceil((z0 + m) / span) - 1]; // prettier-ignore
+            let drin;
+            if (E.ring === "boden") {
+                const [mx, mz] = [Math.floor((x0 + m / 2) / span), Math.floor((z0 + m / 2) / span)];
+                drin = (Math.abs(mx - pcx) <= R + 1 && Math.abs(mz - pcz) <= R + 1) || !!(st.voxelChunks && st.voxelChunks.has(mx + "," + mz)); // prettier-ignore
+            } else
+                drin =
+                    (c0 <= pcx + R + 2 && c1 >= pcx - R - 2 && d0 <= pcz + R + 2 && d1 >= pcz - R - 2) ||
+                    (rw > 0 && x0 <= p.x + rw && x0 + m >= p.x - rw && z0 <= p.z + rw && z0 + m >= p.z - rw);
+            if (!drin && !(E.lebt && E.lebt(r, karte instanceof Map ? karte.get(k) : k))) o.aussen++;
+        }
+    });
+    const unangemeldet = {};
+    const gesehen = new WeakSet([st]);
+    const geh = (o, pfad, tiefe) => {
+        for (const k of Object.keys(o)) {
+            let v;
+            try {
+                v = o[k];
+            } catch {
+                continue;
+            }
+            if (!v || typeof v !== "object" || gesehen.has(v)) continue;
+            gesehen.add(v);
+            if (v instanceof Map || v instanceof Set) {
+                if (angemeldet.has(v) || !v.size) continue;
+                const k0 = v.keys().next().value;
+                if (lage(k0)) unangemeldet[pfad + "." + k] = v.size;
+            } else if (tiefe > 1 && !Array.isArray(v) && [Object.prototype, null].includes(Object.getPrototypeOf(v)))
+                geh(v, pfad + "." + k, tiefe - 1);
+        }
+    };
+    geh(r, "r", 2);
+    geh(st, "r.state", 2);
+    return { je, unangemeldet };
+}
+// DER RENDER-OBJEKT-ZENSUS (w28-halter-register): je Objekt der Szene seine Render-Objekte (`__renderObjekte`, das Register der
+// Klasse), die eine andere Geometrie tragen als das Objekt oder Attribute, die seine Geometrie nicht mehr trägt — ein Pass, der
+// das Objekt nach einem Tausch nicht mehr zeichnete, hielt die alten Puffer (`_renderObjekteFolgen`). Instanz- und verschränkte
+// Attribute gehören dem Knoten, nicht der Geometrie. → { fremd, alt, mb }
+function renderObjektZensus(r) {
+    let fremd = 0,
+        alt = 0,
+        b = 0;
+    const seen = new Set();
+    r.state.scene.traverse((o) => {
+        const l = o.__renderObjekte;
+        if (!l || !l.length) return;
+        const g = o.geometry;
+        const jetzt = new Set(g ? Object.values(g.attributes || {}) : []);
+        if (g && g.index) jetzt.add(g.index);
+        for (const ro of l) {
+            if (ro.geometry !== g) fremd++;
+            else if ((ro.attributes || []).some((a) => !jetzt.has(a) && !a.isInstancedBufferAttribute && !a.isInterleavedBufferAttribute)) alt++; // prettier-ignore
+            else continue;
+            for (const a of ro.attributes || Object.values(ro.geometry.attributes || {}))
+                if (a && a.array && !jetzt.has(a) && !seen.has(a)) (seen.add(a), (b += a.array.byteLength));
+        }
+    });
+    return { fremd, alt, mb: +(b / 1048576).toFixed(2) };
+}
+// DIE GEBURT DER GEOMETRIEN: r184 zählt `info.memory.geometries` beim ersten Zeichnen einer Geometrie (`Geometries.initGeometry`)
+// und zieht erst bei ihrem `dispose` ab — eine Geometrie, die keiner entsorgt, zählt (und hält ihre Attribute in
+// `info.memoryMap`, Lehre 27), auch wenn der GC sie nahm. Die Linse merkt je Geometrie die oberste Stamm-Zeile ihres Stapels
+// (beim ersten `setAttribute`/`setIndex` — jeder Bau, jeder Klon) und zählt je Geburts-Stelle: gezählt (im Zähler des
+// Renderers), davon lebend und verwaist (der GC nahm sie, `dispose` nie), geboren, entsorgt. Fehlt die Naht im Vendor, wirft sie.
+function geburtLinse(T, renderer) {
+    if (window.__geburt) return window.__geburt.schluessel.size;
+    const geo = renderer && renderer._geometries;
+    if (!geo || typeof geo.initGeometry !== "function")
+        throw new Error("geburtLinse: renderer._geometries.initGeometry fehlt (r184-Naht verschoben)");
+    const G = (window.__geburt = { von: new WeakMap(), schluessel: new Map() });
+    const stelle = () => {
+        const alt = Error.stackTraceLimit;
+        Error.stackTraceLimit = 40;
+        const s = new Error().stack || "";
+        Error.stackTraceLimit = alt;
+        const m = /(stamm\/[\w-]+\.js)(?:\?[^:\s)]*)?:(\d+)/.exec(s);
+        return m ? m[1] + ":" + m[2] : "ohne Stamm";
+    };
+    const P = T.BufferGeometry.prototype;
+    for (const n of ["setAttribute", "setIndex"]) {
+        const f = P[n];
+        P[n] = function (...a) {
+            if (!G.von.has(this)) G.von.set(this, stelle());
+            return f.apply(this, a);
+        };
+    }
+    const init = geo.initGeometry;
+    geo.initGeometry = function (ro) {
+        const g = ro.geometry;
+        const k = G.von.get(g) || "vor der Linse";
+        let e = G.schluessel.get(k);
+        if (!e) G.schluessel.set(k, (e = { geboren: 0, entsorgt: 0, refs: new Set() }));
+        e.geboren++;
+        const ref = new WeakRef(g);
+        e.refs.add(ref);
+        const weg = () => {
+            e.entsorgt++;
+            e.refs.delete(ref);
+            g.removeEventListener("dispose", weg);
+        };
+        g.addEventListener("dispose", weg);
+        return init.call(this, ro);
+    };
+    return 0;
+}
+function geburtZensus() {
+    const aus = {};
+    for (const [k, e] of window.__geburt.schluessel) {
+        let lebend = 0;
+        for (const ref of e.refs) if (ref.deref()) lebend++;
+        aus[k] = { gezaehlt: e.refs.size, lebend, verwaist: e.refs.size - lebend, geboren: e.geboren, entsorgt: e.entsorgt };
+    }
+    return aus;
+}
+// DAS URTEIL EINER RUNDE: `stand` = [Start, nach Runde 1, nach Runde 2] an derselben Pose, je { heapMB, geometries, zensus,
+// geburt, bildMax, halter }. ROT: Heap Runde 2 − Runde 1 > 5 MB · die Geometrien des Renderers wachsen (beim Namen ihrer Geburts-Stelle) ·
+// ein Typed-Halter (`heapHalter`, Pfad Tiefe 3) wächst um ≥ 1 MB (wenige schwere Einträge, die Hydro-Kachel: 1 MB je Eintrag) ·
+// ein Behälter wächst von Runde 1 zu Runde 2 (beim Namen und der Zeile seiner Anlage, `anlage(pfad)`) · ein Bild der Runde über
+// 101 ms. Die Tafel trägt jeden Wachser mit Start → Runde 1 → Runde 2.
+const RUNDE = { heapMB: 5, bildMs: 101, wachsMin: 16, wachsAnteil: 0.05, halterMB: 1 };
+function rundenUrteil({ name, stand }, anlage) {
+    const [s, a, b] = stand;
+    const f = [];
+    const dh = b.heapMB - a.heapMB;
+    if (dh > RUNDE.heapMB) f.push(`${name}: Heap Runde 2 − Runde 1 = +${dh.toFixed(1)} MB > ${RUNDE.heapMB}`);
+    const tafel = Object.entries(b.zensus)
+        .map(([k, n2]) => ({ name: k, start: s.zensus[k] || 0, r1: a.zensus[k] || 0, r2: n2 }))
+        .filter((t) => t.r2 - t.r1 >= Math.max(RUNDE.wachsMin, t.r1 * RUNDE.wachsAnteil))
+        .sort((p, q) => q.r2 - q.r1 - (p.r2 - p.r1));
+    const un = (b.zell && b.zell.unangemeldet) || {};
+    for (const t of tafel) {
+        t.anlage = anlage(t.name);
+        f.push(`${name}: ${t.name} (${t.anlage}${t.name in un ? ", unangemeldet" : ""}) ${t.start} → ${t.r1} → ${t.r2}`);
+    }
+    // das Register (`zellZensus`): nach der Runde liegt kein Eintrag eines räumbaren Zell-Gedächtnisses außerhalb des Blicks
+    for (const z of (b.zell && b.zell.je) || [])
+        if (!z.bestand && z.aussen > 0)
+            f.push(`${name}: Zell-Gedächtnis ${z.name} hält ${z.aussen} von ${z.n} Einträgen außerhalb des Blicks (Soll 0)`);
+    // die Render-Objekte (`renderObjektZensus`): keines hält nach der Runde getauschte Puffer
+    if (b.ro && b.ro.fremd + b.ro.alt > 0)
+        f.push(`${name}: ${b.ro.fremd + b.ro.alt} Render-Objekte halten getauschte Puffer (fremde Geometrie ${b.ro.fremd}, alte Attribute ${b.ro.alt}, ${b.ro.mb} MB; Soll 0, \`_renderObjekteFolgen\`)`); // prettier-ignore
+    const mb = (x, k) => new Map(x.halter || []).get(k) || 0;
+    for (const [k, x] of b.halter || [])
+        if (x - mb(a, k) >= RUNDE.halterMB)
+            f.push(`${name}: Halter ${k} (${anlage(k)}) ${mb(s, k).toFixed(1)} → ${mb(a, k).toFixed(1)} → ${x.toFixed(1)} MB`);
+    if (b.geometries > a.geometries) {
+        const g = Object.entries(b.geburt)
+            .map(([k, e]) => [k, e.gezaehlt - ((a.geburt[k] && a.geburt[k].gezaehlt) || 0), e])
+            .filter(([, d]) => d > 0)
+            .sort((p, q) => q[1] - p[1])
+            .slice(0, 5)
+            .map(([k, d, e]) => `${k} +${d} (lebend ${e.lebend}, verwaist ${e.verwaist})`);
+        f.push(`${name}: geometries ${s.geometries} → ${a.geometries} → ${b.geometries} — Geburt: ${g.join(" · ") || "?"}`);
+    }
+    [a, b].forEach((x, i) => {
+        if (x.bildMax > RUNDE.bildMs) f.push(`${name}: größtes Bild der Runde ${i + 1} ${x.bildMax.toFixed(1)} ms > ${RUNDE.bildMs}`);
+    });
+    return { f, tafel };
+}
+// Selbsttest: eine Welt mit Ring (folgt dem Blick), einem Zell-Gedächtnis, das jede Runde neue Schlüssel legt (die Zeit im
+// Schlüssel, Klasse F2/F3), und einer Geometrie, die je Runde neu gebaut und nie entsorgt wird (F7) — ROT beim Namen des
+// Gedächtnisses samt Anlage und bei der Geburts-Stelle; dieselbe Welt mit Räumung nach Abstand ist GRÜN.
+function rundenSelbsttest() {
+    const fahrt = (mutant) => {
+        const r = { state: { ring: new Map(), memo: new Map(), kacheln: new Map(), zmemo: new Map(), playerMesh: { position: { x: 5, z: 5 } } }, _tritt: new Map() }; // prettier-ignore
+        r._voxelChunkConfig = () => ({ span: 10, ringRadius: 1 });
+        // das Register (`zellZensus`): ein angemeldetes Zell-Gedächtnis (10-m-Zellen, Saum ±3 Chunks) und, im Mutanten, ein
+        // ferner Eintrag darin und ein unangemeldetes, das je Runde wächst
+        // dazu ein Halter der Zeichnung (`schranke` + `zaehlen`): Körper an ihrer Lage, ein ferner, der zeichnet (`lebt`), steht im
+        // Blick; im Mutanten einer fern, der nicht zeichnet
+        const leib = { name: "leib", karte: (w) => w.state.leib, zelle: 1, lage: (o) => [o.x, o.z], lebt: (w, o) => o.lebt, schranke: "s", zaehlen: true }; // prettier-ignore
+        const A = { ZELL_GEDAECHTNISSE: [{ name: "zmemo", karte: (w) => w.state.zmemo, zelle: 10 }, leib] };
+        r.state.leib = new Set([{ x: 5, z: 5 }, { x: 900, z: 0, lebt: true }]);
+        if (mutant) r.state.leib.add({ x: -900, z: 0 });
+        if (mutant) r._wild = new Map();
+        let geom = 10;
+        const geburt = {};
+        const stand = [];
+        for (let runde = 0; runde < 3; runde++) {
+            for (let zelle = 0; zelle < 40; zelle++) {
+                r.state.ring.set(zelle, 1);
+                if (r.state.ring.size > 9) r.state.ring.delete(r.state.ring.keys().next().value);
+                r._tritt.set(zelle + ":" + (mutant ? runde : 0), 1);
+                r.state.memo.set(zelle, 1);
+                r.state.zmemo.set((zelle % 7) - 3 + "," + (mutant && zelle === 39 ? 50 : 0), 1);
+                if (mutant) r._wild.set(runde * 40 + zelle + ",0", 1);
+                if (!mutant && Math.abs(zelle - 39) > 4) (r._tritt.delete(zelle + ":0"), r.state.memo.delete(zelle));
+            }
+            // die Kachel der Fernreise (1 MB je Eintrag, zwei je Runde): geräumt bleibt die am Start
+            for (const k of [runde * 2, runde * 2 + 1]) r.state.kacheln.set(k, new Float32Array(262144));
+            if (!mutant) for (const k of r.state.kacheln.keys()) if (k > 0) r.state.kacheln.delete(k);
+            if (mutant && runde) geburt["stamm/gelaende-fern.js:741"] = { gezaehlt: 8 * runde, lebend: 8 * runde, verwaist: 0 };
+            geom = 10 + (mutant ? 8 * runde : 0);
+            const halter = heapHalter(r, 3).map(([k, x]) => [k, x / 1048576]);
+            const zell = zellZensus(r, A);
+            const ro = { fremd: mutant && runde === 2 ? 1 : 0, alt: 0, mb: 0.5 }; // im Mutanten hält ein Pass die alte Geometrie
+            stand.push({ heapMB: 300, geometries: geom, zensus: behaelterZensus(r), zell, geburt: { ...geburt }, bildMax: 40, halter, ro }); // prettier-ignore
+        }
+        return rundenUrteil({ name: "a", stand }, (k) => (k === "r._tritt" ? "stamm/siedlung-wege.js:1014" : "?")).f.join(" | ");
+    };
+    const f = [];
+    const gruen = fahrt(false);
+    if (gruen) f.push("die geräumte Runde ist rot: " + gruen);
+    const rot = fahrt(true);
+    if (!/r\._tritt \(stamm\/siedlung-wege\.js:1014\) 40 → 80 → 120/.test(rot) || !/geometries 10 → 18 → 26 — Geburt: stamm\/gelaende-fern\.js:741 \+8/.test(rot) || !/Halter r\.state\.kacheln \(\?\) 2\.0 → 4\.0 → 6\.0 MB/.test(rot))
+        f.push("der Mutant ist nicht rot beim Namen: " + (rot || "GRÜN"));
+    if (!/Zell-Gedächtnis zmemo hält 1 von \d+ Einträgen außerhalb des Blicks/.test(rot) || !/r\._wild \(\?, unangemeldet\) 40 → 80 → 120/.test(rot))
+        f.push("der Mutant des Registers ist nicht rot beim Namen: " + (rot || "GRÜN"));
+    if (!/Zell-Gedächtnis leib hält 1 von 3 Einträgen außerhalb des Blicks/.test(rot))
+        f.push("der Mutant des Halters der Zeichnung ist nicht rot beim Namen: " + (rot || "GRÜN"));
+    if (!/1 Render-Objekte halten getauschte Puffer \(fremde Geometrie 1/.test(rot))
+        f.push("der Mutant der Render-Objekte ist nicht rot: " + (rot || "GRÜN"));
+    return f;
 }
 
 // DER GANG (profiband K5, `werkbank puffer --gang`): am Start eingeschwungen messen (`stand`, die Puffer-Linse der Werkbank),
@@ -678,9 +1032,7 @@ async function gangLauf(page, pufferStand, b) {
             (await taste("w", "keyDown"), (rest = await bilder(rest, true)));
     };
     const drittel = Math.round((Number(b.min) || 6) * 1200);
-    await page.evaluate(() =>
-        st.renderer.setAnimationLoop((t) => r._gameLoopTick(t))
-    );
+    await page.evaluate(() => st.renderer.setAnimationLoop((t) => r._gameLoopTick(t)));
     await ruhig();
     await bilder(1200);
     // EINE RUNDE ab dem Start: je ein Drittel gehen · fahren (GT, Taste E; der Gang räumt seinen GT) · das Uhr-Wort, dann
@@ -731,7 +1083,8 @@ async function gangLauf(page, pufferStand, b) {
         page.evaluate(() => {
             const n = {};
             for (const { userData: u } of st.creatures)
-                if (u?._tierBaum) n["buf:szene:tier:" + (u.soul || "?")] = (n["buf:szene:tier:" + (u.soul || "?")] | 0) + 1;
+                if (u?._tierBaum)
+                    n["buf:szene:tier:" + (u.soul || "?")] = (n["buf:szene:tier:" + (u.soul || "?")] | 0) + 1;
             return n;
         });
     const vor = Object.assign(await pufferStand(true, 60), { min: 0, tiere: await tiere() });
@@ -745,13 +1098,23 @@ async function gangLauf(page, pufferStand, b) {
         urteil.push(
             `uhr: das Spieler-Wort setzte die Uhr auf ${ein.uhr} · ${nacht} · ${lauf.uhr} (Mittag · Mitternacht · Mittag)`
         );
-    return { urteil, heapMB: [vor.heapMB, nach.heapMB], vramMB: [vor.vram.mb, nach.vram.mb], min: lauf.min, tiere: [vor.tiere, nach.tiere] };
+    return {
+        urteil,
+        heapMB: [vor.heapMB, nach.heapMB],
+        vramMB: [vor.vram.mb, nach.vram.mb],
+        min: lauf.min,
+        tiere: [vor.tiere, nach.tiere],
+    };
 }
 
 module.exports = {
     gangLauf,
     gangUrteil,
     gangSelbsttest,
+    wegUrteil,
+    wegSelbsttest,
+    rundenUrteil,
+    rundenSelbsttest,
     satzInhalt,
     texturErzeuger,
     vramFalte,
@@ -763,6 +1126,11 @@ module.exports = {
         `window.__drawZensus = ${drawZensus.toString()};` +
         `window.__pufferZensus = ${pufferZensus.toString()};` +
         `window.__heapHalter = ${heapHalter.toString()};` +
+        `window.__behaelterZensus = ${behaelterZensus.toString()};` +
+        `window.__zellZensus = ${zellZensus.toString()};` +
+        `window.__renderObjektZensus = ${renderObjektZensus.toString()};` +
+        `window.__geburtLinse = ${geburtLinse.toString()};` +
+        `window.__geburtZensus = ${geburtZensus.toString()};` +
         `window.__kehrausJetzt = ${kehrausJetzt.toString()};` +
         `window.__texturErzeuger = ${texturErzeuger.toString()};` +
         `window.__texturZensus = ${texturZensus.toString()};`,
