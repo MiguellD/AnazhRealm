@@ -1,4 +1,4 @@
-# Reibellipse am Fenster — OMEN GTX 1060 (ZWISCHENSTAND, 18.11. 16:10)
+# Reibellipse am Fenster — OMEN GTX 1060 (ZWISCHENSTAND, 18.11. 16:05)
 
 Kopf `w28-reibellipse-3` **19f5281e** gegen main **1857c808**. Genesis (Werkbank `--ort genesis`, echte GPU), Mittag, GT,
 Start 15 m/s, Tasten gehalten, 60 Bilder je s über `_gameLoopTick` (der echte Takt der Welt, Spieler am Steuer). Strecke

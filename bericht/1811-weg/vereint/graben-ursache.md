@@ -49,3 +49,12 @@ Hang aufwärts), das Netz zeichnet dort 51,17 — dieselbe Klasse (eine 1 m brei
 Aus meinen Läufen NICHT beantwortbar: alle fuhren auf der Werkbank. Dort blieb `genesisOrt.steht` false — ohne Ort-Takt
 (180 s, 55 s `/lauf`) und mit vom Treiber gerufenem `_genesisOrt` (115 s, 16 Werke, keine Absage). Die Ankunft ohne Werkbank
 habe ich nicht gefahren.
+
+## Nachtrag 16:12 — die Ankunft OHNE Werkbank (main 1857c808, ZWISCHENSTAND)
+
+Echter Spiel-Pfad: save-server, Fenster am Hardware-Adapter, Seite frisch geladen, kein Stand auf der Platte, kein Werkzeug in
+der Seite; 1×/s gelesen (`ankunft-echt.cjs`, Rohes `ankunft-echt.json`). **`worldMeta.genesisOrt.steht` wird wahr: JA, 3,4 s
+nach dem Laden der Seite** (2,2 s nach dem Welt-Objekt, im ersten Ort-Takt; Schlüssel `genesis:2032166845:0,0:680d5a78`, Welt
+`klare-weiher`, Spieler an (0 | 91 | 0)). Fund 2 trifft damit das Werkzeug, nicht den Spieler. Nicht getrennt: ob in der
+Werkbank der fehlende Ort-Takt allein oder mein Stand 200 m vor der Mitte (die Tore dort nicht fällig) `steht` falsch hielt.
+Ein Lauf, 9 s lang; Werke und Bild der Ankunft habe ich in diesem Lauf nicht gezählt.
