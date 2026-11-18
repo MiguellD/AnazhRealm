@@ -1225,6 +1225,28 @@ async function himmelProbe(page, taub) {
 // Selbsttest: die Zahlen von z352 MÜSSEN `_mikroStoff` nennen. Die letzte Zeile des Laufs trägt Luma und Anteil der Nacht (der
 // Probe-Post liest sie).
 const S0_NACHT = { nacht: { luma: 22, schwarz: 0.05 } };
+// DER LICHTMESSER AM BECKEN (w28-strahler, `S0_MESSER`): unter der mesopischen Decke (welt-licht.js `MESOPISCH.zapfenCd` auf der
+// Karte, 87,3 lx am Auge) schließt die Kamera nie — die Belichtung des Schreibers steht am Gesetz der Linse (`ev` EV), und der
+// Feuerkreis der Bühne aus 2 m liegt darunter; über ihr (`ueberLux` am Auge gestellt: die Lava der Mess-Wiese, 2 157 lx)
+// schließt sie am selben Gesetz. Selbsttest: der Schreiber liest unter der Decke (Schuss), der Schreiber taub (gestellt).
+const S0_MESSER = { ev: 0.02, ueberLux: 2157 };
+function s0MesserUrteil(m) {
+    if (!m) return ["S0 Messer: der Schuss der Nacht trägt keine Messung des Lichtmessers — die Probe ist blind"];
+    const b = [];
+    const ev = Math.log2(m.k / m.gesetz);
+    const evU = Math.log2(m.kUeber / m.gesetzUeber);
+    if (!(Math.abs(ev) <= S0_MESSER.ev))
+        b.push(
+            `S0 Messer: ${m.becken < m.decke ? "unter" : "an"} der mesopischen Decke (${m.becken} lx am Auge, Decke ${m.decke} lx) steht die Kamera ` +
+                `${ev.toFixed(2)} EV neben dem Gesetz (k ${m.k} gegen ${m.gesetz}) — der Schreiber der Belichtung (\`_belichtungAusLicht\`) liest das Becken nicht über \`augeMesser\``
+        );
+    if (!(Math.abs(evU) <= S0_MESSER.ev) || !(m.gesetzUeber < m.gesetz))
+        b.push(
+            `S0 Messer: über der mesopischen Decke (${m.ueberLux} lx am Auge gestellt) steht die Kamera ${evU.toFixed(2)} EV neben dem Gesetz ` +
+                `(k ${m.kUeber} gegen ${m.gesetzUeber}, ohne Becken ${m.gesetz}) — der Schreiber der Belichtung (\`_belichtungAusLicht\`) schließt für die Quelle nicht`
+        );
+    return b;
+}
 function s0NachtUrteil(e, soll) {
     const g = e.grund;
     if (!g) return ["S0 Nacht: kein Boden im Schuss um Mitternacht — die Probe ist blind"];
@@ -1458,12 +1480,12 @@ async function lichtLauf() {
         // Gesetzes, im Selbsttest dazu die alte Stärke und das Auge des Tages mit seinem eigenen Schuss ohne Feuer
         const schuesse = ergebnis.sauber
             ? []
-            : [false, "nacht", "eich", ...(SELBSTTEST ? ["farbe", "kamera", "tag", "tagOhne", "stark"] : [])];
+            : [false, "nacht", "eich", ...(SELBSTTEST ? ["farbe", "kamera", "messer", "tag", "tagOhne", "stark"] : [])];
         for (const schein of schuesse) {
             await page.evaluate(s0GesetzStellen);
             ergebnis[schein || "sauber"] = await phase(schein ? "Schuss " + schein : "Schuss", () =>
                 page.evaluate(
-                    async (schein, nahM, palette, starkMal) => {
+                    async (schein, nahM, palette, starkMal, ueberLux) => {
                         const s = st;
                         const T = window.THREE;
                         const rend = s.renderer;
@@ -1483,7 +1505,7 @@ async function lichtLauf() {
                         const w = 640;
                         const h = 360;
                         const alt = r._leuchtTakt;
-                        const ohneFeuer = schein === "nacht" || schein === "kamera" || schein === "tagOhne";
+                        const ohneFeuer = schein === "nacht" || schein === "kamera" || schein === "tagOhne" || schein === "messer";
                         const tagAuge = schein === "tag" || schein === "tagOhne";
                         const lumaL = (x, y, z) => 0.2126 * x + 0.7152 * y + 0.0722 * z;
                         // DAS GESETZ DES FEUERKREISES (`S0_KREIS`): die Candela des Platzes aus dem Gesetz, von der Linse gerechnet (`__s0Gesetz`)
@@ -1515,6 +1537,16 @@ async function lichtLauf() {
                         const AR = AnazhRealm;
                         const stufenAlt = AR._belichtungStufen;
                         if (schein === "kamera") AR._belichtungStufen = (h, q) => stufenAlt.call(AR, h, q) - 2;
+                        // der Schein des Messers: der Schreiber liest das Becken schon UNTER der mesopischen Decke (sein Σ E um die Decke
+                        // gehoben) — die Kamera schließt am Feuerkreis, die Nacht der Bühne sinkt
+                        const WL = window.__weltLicht;
+                        const deckeLux = (WL.MESOPISCH.zapfenCd * Math.PI) / WL.MESOPISCH.karte;
+                        const beckenAlt = r._beckenAmAuge;
+                        if (schein === "messer")
+                            r._beckenAmAuge = function () {
+                                return beckenAlt.call(this) + deckeLux;
+                            };
+                        let messerP = null;
                         // der Farb-Schein: der Platz des Feuers leuchtet wie bis K11b — in der Glut-Palette (sRGB → linear) und mit
                         // der Stärke des Kopfs (gleiche Luma am Platz) — die Farbe des Stoffs statt der Farbtemperatur
                         // der Tag-Schein: das Auge des Tages — die Post-Kette ohne das Auge der Nacht (`nightFactor` 0, volle
@@ -1591,8 +1623,49 @@ async function lichtLauf() {
                             const sonneY = r._dayNightSunDirection(r._sonnenWinkel(s.timeOfDay)).y;
                             himmelL = env ? +(Math.PI * luma709(env.oben)).toFixed(4) : null;
                             sternL = +luma709(r._atmoSternenLicht(sonneY)).toFixed(4);
+                            // DER MESSER (`S0_MESSER`, unten): das Becken am Auge des Schusses, die Belichtung des Schreibers und die des
+                            // Gesetzes — von der Linse selbst gerechnet (der Überschuss über der Decke durch `augeZeig` über der Umgebung an
+                            // ihr) —, dann dasselbe mit einem Becken ÜBER der Decke (die Lava: `ueberLux` am Auge gestellt)
+                            if (schein === "nacht" || schein === "messer") {
+                                const kGesetz = (E) => {
+                                    const w = r._belichtungE;
+                                    const lu = luma709(w);
+                                    const bz =
+                                        WL.augeZeig(Math.max(0, E - deckeLux), WL.augeLux(lu, r._belichtungTag) + deckeLux) *
+                                        WL.augeMass(lu, r._belichtungTag);
+                                    return WL.belichtung(
+                                        w.map((x) => x + bz),
+                                        r._belichtungAnker(),
+                                        r._sonnenRichtung().y,
+                                        (h, q) => AR._belichtungStufen(h, q),
+                                        AR.BELICHTUNG
+                                    );
+                                };
+                                const becken = beckenAlt.call(r);
+                                const k = rend.toneMappingExposure;
+                                const eigen = Object.getOwnPropertyDescriptor(r, "_beckenAmAuge");
+                                r._beckenAmAuge = () => ueberLux;
+                                r._applyDayNightToScene();
+                                const kUeber = rend.toneMappingExposure;
+                                if (eigen) Object.defineProperty(r, "_beckenAmAuge", eigen);
+                                else delete r._beckenAmAuge;
+                                r._applyDayNightToScene();
+                                messerP = {
+                                    decke: +deckeLux.toFixed(1),
+                                    becken: +becken.toFixed(1),
+                                    k: +k.toFixed(4),
+                                    gesetz: +kGesetz(becken).toFixed(4),
+                                    ueberLux,
+                                    kUeber: +kUeber.toFixed(4),
+                                    gesetzUeber: +kGesetz(ueberLux).toFixed(4),
+                                };
+                            }
                         } finally {
                             r._leuchtTakt = alt;
+                            if (schein === "messer") {
+                                delete r._beckenAmAuge;
+                                r._applyDayNightToScene();
+                            }
                             if (tagAuge) {
                                 delete r._applyDayNightToScene;
                                 r._applyDayNightToScene();
@@ -1697,6 +1770,7 @@ async function lichtLauf() {
                             kelvin: FC.LICHT_GESETZ.feuer.kelvin == null ? null : FC.LICHT_GESETZ.feuer.kelvin,
                             belichtung: +rend.toneMappingExposure.toFixed(3),
                             becken: +r._beckenAmAuge().toFixed(1),
+                            messer: messerP,
                             nacht: s.postProcessingUniforms
                                 ? +s.postProcessingUniforms.nightFactor.value.toFixed(3)
                                 : null,
@@ -1716,7 +1790,8 @@ async function lichtLauf() {
                     schein,
                     ECHT ? 0 : S0_NAH_M,
                     S0_TON.palette,
-                    S0_KREIS.stark
+                    S0_KREIS.stark,
+                    S0_MESSER.ueberLux
                 )
             );
             zeit(schein ? `der Schuss (${schein}) aufgenommen` : "das Feuer aufgenommen");
@@ -1750,20 +1825,21 @@ async function lichtLauf() {
             nacht: "NACHT (ohne das Feuer)",
             farbe: "SCHEIN (das Feuer bis K11b)",
             kamera: "SCHEIN (die Kamera der Nacht 2 Stufen tiefer)",
+            messer: "SCHEIN (der Messer liest unter der Decke)",
             tag: "SCHEIN (das Auge des Tages)",
             tagOhne: "SCHEIN (das Auge des Tages, ohne das Feuer)",
             eich: "EICH (der Platz mit Leuchtdichte × Bett des Gesetzes)",
             stark: `SCHEIN (die ${S0_KREIS.stark}-fache Candela)`,
         }[k];
         console.log(
-            `  S0 BILD ${wer}: Uhr ${e.uhr} · Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, linear ${e.kreisLin}) · Boden 1–3 m Luma ${e.grund && e.grund.luma} abgesoffen ${e.grund && e.grund.schwarz} Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Himmel ${e.himmel} Sternen-Licht ${e.stern} · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Becken am Auge ${e.becken} lx · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
+            `  S0 BILD ${wer}: Uhr ${e.uhr} · Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, linear ${e.kreisLin}) · Boden 1–3 m Luma ${e.grund && e.grund.luma} abgesoffen ${e.grund && e.grund.schwarz} Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Himmel ${e.himmel} Sternen-Licht ${e.stern} · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Becken am Auge ${e.becken} lx${e.messer ? " · Messer " + JSON.stringify(e.messer) : ""} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
         );
     }
     // DIE NACHT ohne das Feuer (oben `S0_NACHT`)
     const nacht = ergebnis.nacht;
     if (sauber && !sauber.fehler) {
         if (!nacht) befunde.push("S0 Nacht: der Schuss lief nicht");
-        else if (!nacht.fehler) befunde.push(...s0NachtUrteil(nacht, S0_NACHT.nacht));
+        else if (!nacht.fehler) befunde.push(...s0NachtUrteil(nacht, S0_NACHT.nacht), ...s0MesserUrteil(nacht.messer));
     }
     for (const [k, e] of Object.entries(himmel))
         for (const h of e.himmel)
@@ -1966,7 +2042,16 @@ async function lichtLauf() {
             s0NachtUrteil({ grund: { luma: 24.6, schwarz: 0.1 } }, S0_NACHT.nacht)
         );
         console.log(`  SELBSTTEST S0 NACHT (z352): ${stoffTreffer ? "getroffen — der Stoff" : "BLIND"}`);
-        pass = pass && taubGetroffen && !!kameraTreffer && stoffTreffer;
+        const ms = ergebnis.messer;
+        const messerB = ms && !ms.fehler ? [...s0NachtUrteil(ms, S0_NACHT.nacht), ...s0MesserUrteil(ms.messer)] : [];
+        const messerTreffer = messerB.some((b) => /^S0 Messer: unter der mesopischen Decke/.test(b)) && messerB.some((b) => /^S0 Nacht/.test(b));
+        console.log(
+            `  SELBSTTEST S0 MESSER (der Messer liest unter der Decke): ${messerTreffer ? "getroffen — " + messerB.map((b) => b.slice(0, 150)).join(" · ") : "BLIND " + JSON.stringify(ms && (ms.messer || ms.fehler)) + " " + JSON.stringify(messerB)}`
+        );
+        const taubM = s0MesserUrteil({ decke: 87.3, becken: 66.5, k: 1.495, gesetz: 1.495, ueberLux: 2157, kUeber: 1.495, gesetzUeber: 0.21 });
+        const messerTaub = taubM.length === 1 && /^S0 Messer: über der mesopischen Decke/.test(taubM[0]);
+        console.log(`  SELBSTTEST S0 MESSER (der Schreiber taub, gestellt): ${messerTaub ? "getroffen — " + taubM[0].slice(0, 160) : "BLIND"}`);
+        pass = pass && taubGetroffen && !!kameraTreffer && stoffTreffer && messerTreffer && messerTaub;
     }
     console.log(
         `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} · Nacht ${JSON.stringify(nacht?.grund)} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
