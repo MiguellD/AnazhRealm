@@ -1935,8 +1935,17 @@ class AnazhRealm_bild_himmel {
         this._raumBlendeTakt();
         if (k == null) return;
         this._kMain = k;
-        this.state.renderer.toneMappingExposure = this._lichtKappe > 0 ? Math.min(k, this._lichtKappe) : k;
+        this.state.renderer.toneMappingExposure = this._mitKappe(k);
         this.state._belichtungSteht = true;
+    }
+
+    // k = min(k_main, Kappe); Spike-Variante B (`_kappeNurNacht`): die Kappe gilt nur unter der Nacht (nightFactor ≥ 0,5)
+    _mitKappe(k) {
+        const kap = this._lichtKappe;
+        if (!(kap > 0)) return k;
+        const nf = this.state.postProcessingUniforms?.nightFactor?.value ?? 0;
+        if (this._kappeNurNacht && !(nf >= 0.5)) return k;
+        return Math.min(k, kap);
     }
 
     // DIE KAPPE (Licht-Spike, entscheid §1.3 mit §8 #1): k = min(k_main, 0,76 ÷ L_diff,max), L_diff,max = der hellste Kanal des
@@ -2046,9 +2055,7 @@ class AnazhRealm_bild_himmel {
                     format: pack ? "rg11b10" : "rgba16f",
                 };
                 this._lichtKappe = max > 0 ? 0.76 / max : 0;
-                if (this._kMain > 0)
-                    R.toneMappingExposure =
-                        this._lichtKappe > 0 ? Math.min(this._kMain, this._lichtKappe) : this._kMain;
+                if (this._kMain > 0) R.toneMappingExposure = this._mitKappe(this._kMain);
                 return this._kappeMess;
             })
             .finally(() => (this._kappeFlug = null));
