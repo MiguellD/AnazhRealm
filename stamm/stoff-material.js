@@ -2340,7 +2340,11 @@ class AnazhRealm_stoff_material {
                 auge.addAssign(b.rgb.mul(ersatz));
             });
             const A = atmo.lichtAuge;
-            const zeig = A.y.mul(summe.a.div(A.x).add(1).pow(AnazhRealm.AUGE.q).sub(1));
+            // der obere Ast (welt-licht.js `augeZeig`): die Summe zeigt höchstens ihren Anteil an der Anpassung, S(A + E) × E ÷ (A + E)
+            const U = AnazhRealm.AUGE;
+            const zeig = A.y
+                .mul(summe.a.div(A.x).add(1).pow(U.q).sub(1))
+                .min(summe.a.mul(A.x.add(summe.a).pow(U.p - 1)).mul(U.welt / U.lux ** U.p));
             return auge.add(summe.rgb.mul(zeig.div(summe.a.max(1e-9))));
         })();
     }

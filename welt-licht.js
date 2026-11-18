@@ -86,16 +86,29 @@ var __weltLicht = (function () {
     const augeS = (lux) => AUGE.welt * Math.pow(Math.max(0, lux) / AUGE.lux, AUGE.p);
     // die Umkehr: die Lux, die eine Zahl der Welt auf der Skala trägt (die Umgebung der Stunde aus dem Lichtmesser)
     const augeLux = (welt) => AUGE.lux * Math.pow(Math.max(0, welt) / AUGE.welt, 1 / AUGE.p);
-    // das gezeigte Licht einer Beleuchtungsstärke `lux` über der Umgebung `aLux`
-    const augeZeig = (lux, aLux) =>
-        augeS(aLux + AUGE.knieLux) * (Math.pow(1 + Math.max(0, lux) / (aLux + AUGE.knieLux), AUGE.q) - 1);
-    // DIE GLUT EINER LEUCHTENDEN FLÄCHE (Fenster, Laternen-Kopf, Glutbett, Lava): eine Fläche der Leuchtdichte `cdM2` zeigt, was
-    // die weiße Karte unter E = π · L Lux zeigte — ihre Strahldichte im Bild ist zeig(π · L) ÷ π. Kein Zeitplan: am Mittag trägt
-    // ein Fenster von 20 cd/m² 0,0006, in der Dämmerung (10 lx) 0,45, in der Mondnacht 0,62. Der Stoff rechnet dasselbe je
-    // Pixel (`_augeGlutNode`).
+    // das gezeigte Licht einer Beleuchtungsstärke `lux` über der Umgebung `aLux`: das q-Gesetz, oben gedeckelt von der S-FORM
+    // (`augeGlut`: mehr als seinen Anteil an der Anpassung zeigt kein Licht) — der obere Ast greift nachts ab E ≈ 6 × (A + knie),
+    // 17 lx: der Kreis am Herd, das Gras am Lava-Ufer; darunter, wo der Abfall den Kreis zeichnet, steht das q-Gesetz allein.
+    const augeZeig = (lux, aLux) => {
+        const E = Math.max(0, lux),
+            ak = aLux + AUGE.knieLux;
+        return Math.min(augeS(ak) * (Math.pow(1 + E / ak, AUGE.q) - 1), (augeS(ak + E) * E) / (ak + E));
+    };
+    // DIE GLUT EINER LEUCHTENDEN FLÄCHE (Fenster, Laternen-Kopf, Glutbett und Flamme, Lava) — die S-FORM: das Auge passt sich an
+    // Umgebung + Knie + Fläche an und die Fläche zeigt ihren Anteil daran,
+    //     Höhe = S(A + knie + E) × E ÷ (A + knie + E) ÷ π,   E = π · L
+    // (eine Fläche der Leuchtdichte L steht wie die weiße Karte unter π · L Lux). Oben begrenzt (nachts die Skala S selbst), am
+    // Tag linear wahr; kein Zeitplan: ein Fenster von 20 cd/m² trägt mittags 0,001, in der Mondnacht 0,53. Das q-Gesetz des
+    // Beckens trägt hier nicht (GTX 1050, 18.11.): E^q hat oben keine Grenze — das Glutbett stand nachts bei 4,06 (cremige
+    // Scheibe), die Lava bei 23,6 (weiße Risse) —, und am Tag ist seine Steigung q × die Wahrheit (die Flamme 0,019: ein matter
+    // Kegel). Umgekehrt trägt die S-Form das Becken nicht: sie fällt zu flach (Herd, ferne Wiese ×1,38, Vordergrund ×1,94 —
+    // die Farb-Wäsche). ZWEI Formeln also an diesem Ort, mit der gemessenen Lücke: die weiße Karte unter 63 lx des Beckens
+    // zeigt 0,80, das Fenster gleicher Leuchtdichte 0,53. Die Höhe ist EINE Zahl je Datum und Bild (`_leuchtTakt` →
+    // `lichtGlut`, `lavaGlut`), das Gemalte bleibt in sich linear.
     const augeGlut = (cdM2, aLux) => {
-        const E = Math.PI * Math.max(0, cdM2);
-        return E > 0 ? (augeS(aLux + E) * E) / (aLux + E) / Math.PI : 0;
+        const E = Math.PI * Math.max(0, cdM2),
+            ak = aLux + AUGE.knieLux;
+        return (augeS(ak + E) * E) / (ak + E) / Math.PI;
     };
     // die Reichweite (m) einer Quelle von `candela` über der Umgebung `aLux`: wo zeig(candela ÷ d²) unter eps · S(aLux) fällt
     const augeReichweite = (candela, aLux) => {
