@@ -5220,14 +5220,16 @@
         // `_bewohnerSoll` und `binden`): jeder Mensch trägt aus seinem Samen EINEN Zug (`tagesZug`, die Anteile `anteil`), und
         // der Zug ändert die Wenden und die Ortswahl seines Tags. Der Zug ist die EINE Quelle der Abweichung, streuH bleibt das
         // Rauschen der Wende. fleissig: früher ans Werk (werkVorH) und länger (werkNachH), das Mittag am Werk; gesellig: der
-        // Abend am Treff (das eigene Haus bietet den Abend nur mit daheimTreff); haeuslich: der Abend daheim (jeder Treff
+        // Abend am Treff (das eigene Haus bietet den Abend nur mit daheimTreff) und länger (ruheNachH, die Ruhe bleibt vor
+        // Mitternacht) — mit daheimTreff allein änderte sich der Tag von 6 der 24 Geselligen im Dorf der Linse, weil die
+        // Bindung die meisten schon an den Treff band (main ↔ Kopf, je 15 min); haeuslich: der Abend daheim (jeder Treff
         // außer Haus × treffMal), kein Besuch (besuch: false), der Morgengang × morgenMal. Wer einen Posten hat (die Rolle
         // `regenfest`: der Händler, der Fahrer, die Wache), hält seine Schicht — der Zug verschiebt sein Werk nicht. Bis hier
         // verschob der Same jede Wende nur symmetrisch um ±streuH und die Bindung wählte jeden nach derselben Güte: ein
         // blinder Zuordner traf an 100 Bewohnern eines Dorfs 0,19 (Zufall 0,25), mit dem Zug 0,72 (gate:mensch-zuege).
         zuege: Object.freeze({
             anteil: Object.freeze({ gesellig: 0.25, fleissig: 0.25, haeuslich: 0.25, ausgeglichen: 0.25 }),
-            gesellig: Object.freeze({ daheimTreff: 0.5 }),
+            gesellig: Object.freeze({ daheimTreff: 0.5, ruheNachH: 1 }),
             fleissig: Object.freeze({ werkVorH: 1, werkNachH: 1.5, mittagAmWerk: true }),
             haeuslich: Object.freeze({ treffMal: 0.1, besuch: false, morgenMal: 0.5 }),
             ausgeglichen: Object.freeze({}),
@@ -5377,6 +5379,8 @@
         var m0 = G.mittag[0] + j("mittag");
         var m1 = m0 + (G.mittag[1] - G.mittag[0]);
         var ruhe = (R.ruhe || G.ruhe) + j("ruhe");
+        // der gesellige Abend dauert länger (ruheNachH); die Ruhe bleibt vor Mitternacht seiner Stunde
+        if (Z.ruheNachH) ruhe = Math.max(ruhe, Math.min(ruhe + Z.ruheNachH, 23.75));
         var heim = orte.heim,
             besuch = orte.besuch;
         var W = G.regen,
