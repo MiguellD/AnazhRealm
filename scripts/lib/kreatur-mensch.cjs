@@ -535,13 +535,14 @@ async function menschBuehnen() {
         const haltung = { n: 0, mit: 0, maxGrad: 0, wer: "", je: {}, ruheGrad: 0 };
         const haltungMessen = () => {
             const Z = S.satz;
-            const modell = liste.find((b) => b.leib && b.leib.userData.rig && !b.amSteuer && !b.backt);
-            if (!Z || !Z.fertig || !Z.leib || !modell) return;
-            const g = modell.leib;
-            const rig = g.userData.rig;
-            const namen = [rig.armL.shoulder, rig.armL.elbow, rig.armR.shoulder, rig.armR.elbow].map((k) => k.name);
+            const kandidaten = liste.filter((b) => b.leib && b.leib.userData.rig && !b.amSteuer && !b.backt);
+            if (!Z || !Z.fertig || !Z.leib || !kandidaten.length) return;
             const aG = Z.leib.geometry.attributes.aGang;
             const D = Z.tex.image.data;
+            let modell = kandidaten[0],
+                g = modell.leib,
+                rig = g.userData.rig,
+                namen = [];
             // Täter (Selbsttest): der Satz ohne Haltung — jede Instanz liest den neutralen Stand
             if (hat("bewohner-haltung")) for (let q = 0; q < aG.count; q++) aG.setY(q, aG.getY(q) % 2);
             const [mA, mB, inv] = [new T.Matrix4(), new T.Matrix4(), new T.Matrix4()];
@@ -572,14 +573,32 @@ async function menschBuehnen() {
                     je(p, qA);
                 });
             };
-            pose(null, (p, q) => {
-                nahe0.set(p, q.clone());
-                lies(Z.n * Z.baender, p, qB);
-                satz0.set(p, qB.clone());
-                // DIE KÖRPER-RUHE (gemessen, nie geurteilt): der neutrale Stand des Modells gegen den des Satzes — die Arme hängen am
-                // Leib nach SEINEM Bau (koerper `leibBauArme`), im Satz nach dem der Vorlage
-                haltung.ruheGrad = Math.max(haltung.ruheGrad, q3(winkel(q, qB)));
-            });
+            // DAS MODELL ist der Leib, an dem der Satz seine Stände buk (`_bewohnerSatz`: der Erstgeborene der Siedlung) — unter den
+            // nahen Leibern der mit der kleinsten Körper-Ruhe. DIE KÖRPER-RUHE (gemessen, nie geurteilt): der neutrale Stand des
+            // Modells gegen den des Satzes — die Arme hängen am Leib nach SEINEM Bau (koerper `leibBauArme`), im Satz nach dem der
+            // Vorlage. Bis w28-kern-sprossen nahm die Linse den ersten nahen Leib: mit den Charakterzügen war das ein anderer Bau
+            // (Körper-Ruhe 1,205°), und sein Bau stand als „Haltung“ 1,299° in der Zeile (je Stand 0,4–1,3°, am Bake-Leib 0,015°).
+            let best = null;
+            for (const k of kandidaten) {
+                [modell, g, rig] = [k, k.leib, k.leib.userData.rig];
+                namen = [rig.armL.shoulder, rig.armL.elbow, rig.armR.shoulder, rig.armR.elbow].map((x) => x.name);
+                const [n0, s0] = [new Map(), new Map()];
+                let ruhe = 0;
+                pose(null, (p, q) => {
+                    n0.set(p, q.clone());
+                    lies(Z.n * Z.baender, p, qB);
+                    s0.set(p, qB.clone());
+                    ruhe = Math.max(ruhe, winkel(q, qB));
+                });
+                r._animateHuman(g, k.uhr + k.atem, k.walkPhase || 0, !!k.weg, false, r._bewohnerGemuet(k), k._gait);
+                r._leibMatrix(g);
+                if (!best || ruhe < best.ruhe) best = { k, n0, s0, ruhe };
+            }
+            [modell, g, rig] = [best.k, best.k.leib, best.k.leib.userData.rig];
+            namen = [rig.armL.shoulder, rig.armL.elbow, rig.armR.shoulder, rig.armR.elbow].map((x) => x.name);
+            best.n0.forEach((q, p) => nahe0.set(p, q));
+            best.s0.forEach((q, p) => satz0.set(p, q));
+            haltung.ruheGrad = Math.max(haltung.ruheGrad, q3(best.ruhe));
             const neutral = A.MOTION_PROFILE_MAP.koerper.idle;
             for (const b of liste) {
                 if (!b.leib || b.leib.userData._satz !== true || b.weg || b._gaitW > 0 || b.drinnen) continue;

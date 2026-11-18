@@ -5223,7 +5223,9 @@
         // Abend am Treff (das eigene Haus bietet den Abend nur mit daheimTreff) und länger (ruheNachH, die Ruhe bleibt vor
         // Mitternacht) — mit daheimTreff allein änderte sich der Tag von 6 der 24 Geselligen im Dorf der Linse, weil die
         // Bindung die meisten schon an den Treff band (main ↔ Kopf, je 15 min); haeuslich: der Abend daheim (jeder Treff
-        // außer Haus × treffMal), kein Besuch (besuch: false), der Morgengang × morgenMal. Wer einen Posten hat (die Rolle
+        // außer Haus × treffMal), der Morgengang × morgenMal; den Besuch macht auch er — ohne ihn ging ein häuslicher Wirt,
+        // dessen Werk sein Haus ist, nur zum Platz und zurück (gate:kreatur-takt bewohner: 3 Wege, 25 m je Tag, Soll 4 und
+        // 100 m; main 4 Wege, 130 m). Wer einen Posten hat (die Rolle
         // `regenfest`: der Händler, der Fahrer, die Wache), hält seine Schicht — der Zug verschiebt sein Werk nicht. Bis hier
         // verschob der Same jede Wende nur symmetrisch um ±streuH und die Bindung wählte jeden nach derselben Güte: ein
         // blinder Zuordner traf an 100 Bewohnern eines Dorfs 0,19 (Zufall 0,25), mit dem Zug 0,72 (gate:mensch-zuege).
@@ -5231,7 +5233,7 @@
             anteil: Object.freeze({ gesellig: 0.25, fleissig: 0.25, haeuslich: 0.25, ausgeglichen: 0.25 }),
             gesellig: Object.freeze({ daheimTreff: 0.5, ruheNachH: 1 }),
             fleissig: Object.freeze({ werkVorH: 1, werkNachH: 1.5, mittagAmWerk: true }),
-            haeuslich: Object.freeze({ treffMal: 0.1, besuch: false, morgenMal: 0.5 }),
+            haeuslich: Object.freeze({ treffMal: 0.1, morgenMal: 0.5 }),
             ausgeglichen: Object.freeze({}),
         }),
     });
@@ -5351,7 +5353,7 @@
             platz: platz,
             mahl: wahl("mahl", orte[werk], "mahl", G.daheim, null, G.amWerk),
             abend: wahl("treff", H, "abend", daheimAbend, null, null, treffMal),
-            besuch: Z.besuch === false ? -1 : wahl("besuch", H, "besuch", null, [H, orte[platz]]),
+            besuch: wahl("besuch", H, "besuch", null, [H, orte[platz]]),
         };
     }
     // DER PLAN DER STUNDE: orte = {heim, werk, platz, mahl, abend, besuch} sind die Orte des Menschen, wie der Wirt sie nach
