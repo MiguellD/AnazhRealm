@@ -189,6 +189,11 @@ class AnazhRealm_kreatur_fauna {
         const leit = c.leit;
         const krone = leit && leit.krone;
         let vb = c.verband;
+        // DER FADEN REISST wie der des Leittiers (`_schwarmLeit`, leittier.dtMax): lag mehr als verband.dtMax Welt-Uhr ohne Takt
+        // dazwischen (fern, Pause, die gestellte Uhr), gilt wieder der Wurf der Formation zu dieser Uhr. Bis hier trug der Verband
+        // die Lagen des letzten Flugs über jeden Sprung: zwei Boots derselben Welt zur selben Uhr hielten die Formation, die ihre
+        // verschieden vielen Takte vor dem Sprung flogen (A gegen A an 88b3f266: `_schwarmKarte` lage · lauf · welt anders).
+        if (vb && !(uhr - vb.zeit >= 0 && uhr - vb.zeit <= S.verband.dtMax)) vb = null;
         if (!vb || vb.n !== n) {
             vb = c.verband = { n, lage: new Float32Array(2 * n), lauf: new Float32Array(2 * n), zeit: uhr };
             for (let i = 0; i < n; i++) {
