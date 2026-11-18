@@ -753,7 +753,10 @@ class AnazhRealm_siedlung_bewohner {
             }
             return null;
         };
-        // DIE TÜREN der stehenden Häuser (die Tür, die Richtung aus dem Haus, die Rolle) — die Tür des Heims und die des Besuchs
+        // DIE TÜREN der stehenden Häuser (die Tür, die Richtung aus dem Haus, die Rolle) — die Tür des Heims und die des Besuchs.
+        // Die Tür ist der EINGANG des Gesetzbuchs (`_slotEingang`, fachwerk `eingangVon`: beim Hof-Haus das Tor im Torriegel),
+        // die Richtung aus dem Haus seine Front (haus-lokal −z, die Achse des Vorplatzes und des Gangs zur Gasse) — nie mehr
+        // Tür minus Mitte des Loses (am Hof-Haus zeigte sie ins Haus, am Los mit Flügel schräg neben den Vorplatz).
         const tueren = [];
         for (const [si, sl] of plan.slots.entries()) {
             const wx = S.ox + sl.x;
@@ -762,13 +765,10 @@ class AnazhRealm_siedlung_bewohner {
             if (!haus) continue; // kein Haus, keine Leute
             const c = Math.cos(sl.phi || 0);
             const s = Math.sin(sl.phi || 0);
-            const tu = sl.tuer || { x: 0, z: 0 };
+            const tu = this._slotEingang(sl) || { x: 0, z: 0 };
             const tx = wx + tu.x * c + tu.z * s;
             const tz = wz - tu.x * s + tu.z * c;
-            const mx = sl.obb ? S.ox + sl.obb.cx : wx;
-            const mz = sl.obb ? S.oz + sl.obb.cz : wz;
-            const ul = Math.hypot(tx - mx, tz - mz) || 1;
-            tueren.push({ si, sl, haus, tx, tz, ux: (tx - mx) / ul, uz: (tz - mz) / ul });
+            tueren.push({ si, sl, haus, tx, tz, ux: -s, uz: -c });
         }
         for (const T of tueren) legen(T.tx + T.ux * BW.vorM, T.tz + T.uz * BW.vorM);
         // DER REST DES WERKS (`_weltOffen` leute): je Person ihr Stand und ihr Besuch — er fällt mit jedem gestellten

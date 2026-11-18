@@ -1241,8 +1241,9 @@ class AnazhRealm_gelaende_boden {
             if (fp) {
                 const s = fp.saum || 0;
                 const raster = { ex: fp.ex + s, ez: fp.ez + s, ox: fp.ox, oz: fp.oz };
-                const grob = AnazhRealm._fundamentRaster(raster, sl.tuer, grobM);
-                const wand = AnazhRealm._fundamentRaster(raster, sl.tuer, 0.5);
+                const ein = this._slotEingang(sl); // derselbe Vorplatz wie die Wasser-Wand des Slots (`_spawnSettlementSlot`)
+                const grob = AnazhRealm._fundamentRaster(raster, ein, grobM);
+                const wand = AnazhRealm._fundamentRaster(raster, ein, 0.5);
                 for (const p of grob.concat(wand)) {
                     lx.push(p[0]);
                     lz.push(p[1]);
@@ -1267,7 +1268,7 @@ class AnazhRealm_gelaende_boden {
             const wx = k.ort.x + sl.x;
             const wz = k.ort.z + sl.z;
             if (p && Math.hypot(p.x - wx, p.z - wz) < Math.hypot(fp.ex, fp.ez) + frei) return false;
-            if (!this._bauFrei(wx, wz, sl.phi || 0, fp, sl.tuer, sl.y)) return false;
+            if (!this._bauFrei(wx, wz, sl.phi || 0, fp, this._slotEingang(sl), sl.y)) return false;
         }
         return true;
     }

@@ -347,6 +347,17 @@ class AnazhRealm_siedlung_ort {
             for (const a of flaechen) if (this._rechteckeSchneiden(a, b2)) return true;
             return false;
         };
+        // (der Grundriss `g` {ex, ez, ox, oz} des Baus `e`, gedreht um seine Gier: trifft ihn eine der Flächen?)
+        const imGrund = (e, g) => {
+            const ery = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+            b2.c = Math.cos(ery);
+            b2.s = Math.sin(ery);
+            b2.cx = e.position.x + g.ox * b2.c + g.oz * b2.s;
+            b2.cz = e.position.z - g.ox * b2.s + g.oz * b2.c;
+            b2.hx = g.ex;
+            b2.hz = g.ez;
+            return trifft();
+        };
         // die Nähe aus dem Platz-Netz (`_blockerUmPlatz`: Ort ± Reichweite, eine Obermenge), nie der ganze Bestand — bis
         // stadt-erwachen fragte jede Laterne des Erwachens jeden Bau der Welt (nH 300: 104 × ~2 000)
         const nahe = this._bauFreiNahe || (this._bauFreiNahe = []);
@@ -356,6 +367,12 @@ class AnazhRealm_siedlung_ort {
             const r = R + (e._blockerReach || 0) + 8;
             if (Math.abs(e.position.x - x) > r || Math.abs(e.position.z - z) > r) continue;
             if (!nur && this._weichtDemBau(e)) continue; // Natur und die Würfe des Felds weichen dem Haus (`_naturRaeumen`)
+            // DAS LOS EINES HAUSES SPERRT WIE SEINE WÄNDE (w28-bau-rezept): das Haus eines Orts trägt sein Los (`fundament`, die obb
+            // des Exports: Hof, Torriegel und Flügel gehören dazu) vom ersten Bild an — seine Boxen sind bis zur ersten Stufe des
+            // Studios nur der Kern der Tür-Zeile (vier Wände des Hauptbaus, `_hausHuelleSetzen`), und der Hof bleibt auch danach
+            // unter der Stufe (Pflaster, Sockel). Bis hier prüfte die Wand ein Haus mit Boxen nur an ihnen: kam die Hülle spät
+            // (CI), landete das zweite Dorf am selben Anker mit 3 von 28 Häusern in Hof und Flügel des ersten (gate:haus-welt W7).
+            if (e.fundament && imGrund(e, e.fundament)) return ((this._bauFreiAn = e), false);
             const boxen = e.blockerAABBs;
             if (boxen && boxen.length) {
                 for (const b of boxen) {
@@ -384,14 +401,7 @@ class AnazhRealm_siedlung_ort {
             // (0,8 m, `_naturWand`) — es weicht keinem Haus, also steht keins auf ihm
             const g = this._grundrissVon(e) || (e.werk === true ? { ex: 0.8, ez: 0.8, ox: 0, oz: 0 } : null);
             if (!g) continue;
-            const ery = Number.isFinite(e.rotationY) ? e.rotationY : 0;
-            b2.c = Math.cos(ery);
-            b2.s = Math.sin(ery);
-            b2.cx = e.position.x + g.ox * b2.c + g.oz * b2.s;
-            b2.cz = e.position.z - g.ox * b2.s + g.oz * b2.c;
-            b2.hx = g.ex;
-            b2.hz = g.ez;
-            if (trifft()) return ((this._bauFreiAn = e), false);
+            if (imGrund(e, g)) return ((this._bauFreiAn = e), false);
         }
         return true;
     }
@@ -447,6 +457,22 @@ class AnazhRealm_siedlung_ort {
         return out;
     }
 
+    // DER EINGANG EINES SLOTS IM WIRT (fachwerk `eingangVon`, die EINE Regel des Gesetzbuchs): die Tür-Zeile des Slots mit dem z
+    // seines Eingangs — die Haustür; beim HOF-Haus das Tor im Torriegel vor dem Hof (seine Haustür öffnet auf das Hofpflaster,
+    // der Gang betritt das Tor). Leser: der Vorplatz der Wasser- und der Bau-Wand (`_spawnSettlementSlot`, `_ortTraegtWirt`),
+    // das Raster der Ort-Wahl (`_ortRaster`) und die Tür der Bewohner (`_bewohnerListe`: wo sie hinein- und hinausgehen, der
+    // Punkt vor ihr, der Ring ihrer Stände). Bis w28-bau-rezept las der Wirt hier die Haustür der Tür-Zeile und die Richtung
+    // „aus dem Haus" als Tür minus Mitte des Loses: am Hof-Haus liegt die Mitte des Loses VOR der Haustür (Hof und Torriegel,
+    // 7,8–11,8 m), die Richtung zeigte ins Haus. Am Messort stadt („dorf 7 120", 35 Häuser) erreichte der Punkt vor der Tür von
+    // 7 der 7 bewohnten Hof-Häuser keinen Knoten des Netzes (0 der 25 anderen): „kein Weg im Dorf-Plan", der Bewohner blieb
+    // stehen, der Zeuge wich nicht, um 23 Uhr standen 10,8 % ohne Ziel (gate:kreatur-takt zielplan · begegnung · bewohner).
+    _slotEingang(sl) {
+        const tu = sl && sl.tuer;
+        if (!tu || !Number.isFinite(tu.x) || !Number.isFinite(tu.z)) return tu || null;
+        const ein = globalThis.__fachwerkCore.eingangVon(sl);
+        return ein.hof ? { ...tu, z: ein.z, hof: true } : tu;
+    }
+
     _spawnSettlementSlot(slot, origin, f, so) {
         if (!slot || typeof slot.kultur !== "string" || !origin) return false;
         // DER BODEN DES PLANS (K10): der Slot trägt seine Höhe `y` aus dem Plan v2 (fachwerk `ortPlan`, `_ortPlanSetzen`) — die
@@ -488,7 +514,7 @@ class AnazhRealm_siedlung_ort {
         const name = this._slotBauplan(slot, f);
         if (!name) return zu("kein Bauplan"); // fail-closed
         const ry = slot.phi || 0;
-        const tu = slot.tuer;
+        const tu = this._slotEingang(slot); // der Vorplatz beider Wände liegt vor dem EINGANG (beim Hof-Haus vor dem Tor)
         const fp = this._grundrissVon(slot);
         // DIE WASSER-WAND über dem ganzen Grundriss und dem Vorplatz der Tür (`_fundamentLand`, die EINE Probe mit der Wand
         // jedes Werks) und DIE BAU-WAND (kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand, `_bauFrei`): der
