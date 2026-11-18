@@ -43,9 +43,9 @@ function erdbauMedian(v2, grund) {
 // v2 = der Ort, wie die Welt ihn trägt (plan-lokal um `ort` {x, z}): je Haus x · z · phi · y (der Boden, absolut) · tuer
 // (die Tür-Zeile: x, z, y = Diele, W × D = die Wand) · obb (der Grundriss mit Dach); roads (pts, w) und platz (cx, cz, phi, ex,
 // ez). hoehe(x, z) = die Welt-Höhe an einem WELT-Ort. Gemessen:
-//   Sockel je Haus = Boden − tiefster Grund unter seinen Wänden (9 × 9 Punkte je Box des Körper-Satzes `grund.boxen`, ohne Boxen
-//   die obb; nie im hohlen Keller `grund.keller`, S4), Median
-//   und Maximum;
+//   Sockel je Haus = der Fuß des gebauten Körpers über dem Grund unter ihm (9 × 9 Punkte je Box des Körper-Satzes `grund.boxen`,
+//   ohne Boxen die obb; nie im hohlen Keller `grund.keller`, S4; der Fuß: das tiefste feste Stück der Hülle des Slots über dem
+//   Punkt, `huelle` aus `slotHuelle`, ohne Hülle Grade), Median und Maximum;
 //   Tür erreichbar = die Schwelle des Eingangs (`eingang` des Slots, die EINE Regel `eingangVon`: beim Hof-Haus das Tor im
 //   Torriegel; ohne ihn die Tür-Zeile) liegt höchstens STUFE über dem Grund 0,3 m vor ihr, die 2 m geradeaus aus
 //   der Tür tragen keine Stufe > STUFE (kein Absatz vor der Schwelle), und ein Gang über ein 0,5-m-Raster (Nachbarn mit
@@ -56,6 +56,21 @@ function erdbauMedian(v2, grund) {
 // w12-dorf-probe ruhte er, sobald nur der Null-Renderer stand: jede headless Probe am Messort dorf urteilte eine leere Welt
 // (0 Häuser nach 9000 Takten, mit Renderer 16).
 const dorfZugAmOrt = (c) => c.ohne && c.still;
+// DIE HÜLLE EINES SLOTS (Node, am Kern des Gesetzbuchs `FC`): die festen Boxen seines Stufe-0-Baus [x0, y0, z0, x1, y1, z1]
+// haus-lokal (Grade = 0) — die Solids, die das Haus in der Welt als Hülle trägt (Kollision == Optik). `ortUrteil` liest an
+// ihnen den Fuß je Körper (`sl.huelle`). null: der Slot trägt kein Haus des Gesetzbuchs.
+function slotHuelle(FC, sl) {
+    const pre = FC.PRESETS[sl.kultur];
+    if (!pre || (pre.kind && pre.kind !== "haus")) return null;
+    FC.materials();
+    const p = FC.hausParams(pre, sl.ov || null);
+    if (Number.isFinite(Number(sl.seed)) && !(sl.ov && sl.ov.seed != null)) p.seed = Number(sl.seed);
+    p.nur = { moebel: false };
+    const st = FC.stapelBau(p, { gelaende: false });
+    const boxen = st.H.solids.map((s) => [...s.min, ...s.max].map((v) => Math.round(v * 1000) / 1000));
+    st.g.traverse((o) => o.geometry && o.geometry.dispose());
+    return boxen;
+}
 // DER BELAG DER GASSEN (w28-stadt-boden, fachwerk BELAG_GESETZ): je Gasse { i, gen, quer, soll, pflaster, erde } — das Gesetz neben
 // den gemalten Bytes ihrer Mitte und ihres Gehwegs 0,4 m vor der Bauflucht (`_wegeBelagAt`). → die Täter beim Namen: eine gepflasterte Gasse ohne Pflaster (bis
 // w28-stadt-boden malte der Wirt jede Gasse als Erde), eine Erd-Gasse mit Pflaster oder ohne Erde.
@@ -103,29 +118,47 @@ function ortUrteil(v2, hoehe, o) {
         if (!ob) continue;
         const c = Math.cos(ob.phi || 0);
         const s = Math.sin(ob.phi || 0);
-        let mn = Infinity;
         let bei = null;
         // UNTER DEN WÄNDEN (`grund.boxen`, der Körper-Satz des Hauses im Rahmen des Slots): das Haus steht auf seinen Boxen — die
         // obb trägt das Dach und beim L-, U- und Hof-Haus die leere Ecke zwischen den Flügeln (bis w28-bau-rezept las der Sockel dort
         // den Grund der Gasse unter der Ecke: Auto-Dorf, Gasthaus L, 1,136 m an der Ecke ohne Wand); ohne Boxen die obb
         const bx = sl.grund?.boxen?.length ? sl.grund.boxen : null;
         const flaechen = bx
-            ? bx.map((b) => ({ cx: sl.x, cz: sl.z, c: Math.cos(sl.phi || 0), s: Math.sin(sl.phi || 0), x0: b[0], x1: b[1], z0: b[2], z1: b[3] }))
-            : [{ cx: ob.cx, cz: ob.cz, c, s, x0: -ob.ex, x1: ob.ex, z0: -ob.ez, z1: ob.ez }];
+            ? bx.map((b, k) => ({ cx: sl.x, cz: sl.z, c: Math.cos(sl.phi || 0), s: Math.sin(sl.phi || 0), x0: b[0], x1: b[1], z0: b[2], z1: b[3], art: sl.grund.arten?.[k] || null }))
+            : [{ cx: ob.cx, cz: ob.cz, c, s, x0: -ob.ex, x1: ob.ex, z0: -ob.ez, z1: ob.ez, art: null }];
+        // DER FUSS DES GEBAUTEN KÖRPERS (`sl.huelle`, die festen Boxen der Hülle des Hauses [x0, y0, z0, x1, y1, z1] haus-lokal —
+        // was das Haus an diesem Punkt wirklich baut): der Sockel misst vom tiefsten gebauten Stück über dem Punkt bis zum Grund,
+        // nie von der Höhe des Slots allein. Bis hier schwebte der Hof-Ring (Arme und Torriegel, Boden auf 0,55 m über Grade, kein
+        // Fundament darunter) über ebenem Grund mit Sockel 0 — das Auge sah unter der Wand hindurch (Dorf-Gasse, 18.11.). Ohne
+        // Hülle steht der Körper auf Grade (Fuß 0); ein Punkt ohne gebautes Stück (der offene Hof) zählt nicht
+        const hu = Array.isArray(sl.huelle) && sl.huelle.length ? sl.huelle : null;
+        const fussBei = (lx, lz) => {
+            if (!hu) return 0;
+            let f = Infinity;
+            for (const q of hu) if (lx >= q[0] && lx <= q[3] && lz >= q[2] && lz <= q[5] && q[1] < f) f = q[1];
+            return f;
+        };
+        let hoch = -Infinity; // der höchste Fuß über seinem Grund
+        let art = null;
+        let fuss = 0;
         for (const f of flaechen)
             for (let i = 0; i <= 8; i++)
                 for (let j = 0; j <= 8; j++) {
-                    const lx = f.x0 + ((f.x1 - f.x0) * i) / 8;
-                    const lz = f.z0 + ((f.z1 - f.z0) * j) / 8;
+                    // mit Hülle die Mitten des Rasters (ein Punkt auf der Kante läse den Nachbar-Körper), ohne die Ecken wie bisher
+                    const lx = f.x0 + ((f.x1 - f.x0) * (hu ? i + 0.5 : i)) / (hu ? 9 : 8);
+                    const lz = f.z0 + ((f.z1 - f.z0) * (hu ? j + 0.5 : j)) / (hu ? 9 : 8);
                     const [px, pz] = [f.cx + lx * f.c + lz * f.s, f.cz - lx * f.s + lz * f.c];
                     if (imKeller(sl, px, pz)) continue;
+                    const fu = fussBei(lx, lz);
+                    if (fu === Infinity) continue;
                     const h = hoehe(ox + px, oz + pz);
-                    if (h < mn) [mn, bei] = [h, [Math.round(10 * lx) / 10, Math.round(10 * lz) / 10]];
+                    if (sl.y + fu - h > hoch) [hoch, bei, art, fuss] = [sl.y + fu - h, [Math.round(10 * lx) / 10, Math.round(10 * lz) / 10], f.art, fu];
                 }
-        sockel.push(Math.max(0, sl.y - mn));
-        // `bei`: der tiefste Punkt im Rahmen der obb (x quer, z längs; ex × ez die Halbachsen)
-        if (sl.y - mn > 0)
-            sockelTaeter.push({ si: v2.slots.indexOf(sl), rolle: sl.rolle || null, m: Math.round(1000 * (sl.y - mn)) / 1000, bei, ex: ob.ex, ez: ob.ez });
+        sockel.push(Math.max(0, hoch));
+        // `bei`: der Punkt mit dem höchsten Fuß über dem Grund im Rahmen des Hauses (x quer, z längs; ex × ez die Halbachsen der
+        // obb), `art` sein Körper (haupt · fluegel · hofarm · anbau · turm), `fuss` das tiefste gebaute Stück dort über Grade
+        if (hoch > 0)
+            sockelTaeter.push({ si: v2.slots.indexOf(sl), rolle: sl.rolle || null, m: Math.round(1000 * hoch) / 1000, bei, art, fuss: Math.round(1000 * fuss) / 1000, ex: ob.ex, ez: ob.ez });
     }
     // die WAND je Haus: das Rechteck der Tür-Zeile (W × D um den Slot), sonst der Grundriss (das Dach ragt über die Wand)
     const waende = v2.slots
@@ -279,6 +312,9 @@ function ortVerdikt(m) {
             `Häuser ${m.haeuser}/${m.slots} des Exports${m.wasserSlots ? ` (${m.wasserSlots} Slots im Wasser aus dem Plan v2 geworfen)` : ""}`
         );
     if (!(m.sockelMax === 0)) fehl.push(`Sockel max ${m.sockelMax} m (Median ${m.sockelMedian})`);
+    // der Sockel misst den Fuß des gebauten Körpers: ein Haus ohne Hülle (`slotHuelle`) ist nicht gemessen
+    if (!(m.huellen === m.haeuser))
+        fehl.push(`Hüllen ${m.huellen}/${m.haeuser}: der Sockel misst den gebauten Fuß nur am Haus mit Hülle`);
     if (!(m.tuerenN > 0 && m.tuerenOk === m.tuerenN)) fehl.push(`Türen erreichbar ${m.tuerenOk}/${m.tuerenN}`);
     if (!(m.kronen === 0)) fehl.push(`Kronen in Grundrissen ${m.kronen}`);
     if (!(m.laternenPlan > 0 && m.laternenWelt === m.laternenPlan))
@@ -573,6 +609,7 @@ module.exports = {
     lokal,
     kasten,
     ortUrteil,
+    slotHuelle,
     POOL_AUSSER_RANG,
     poolZaehlen,
     ortVerdikt,

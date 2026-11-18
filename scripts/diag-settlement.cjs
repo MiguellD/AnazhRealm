@@ -35,6 +35,7 @@ const {
     lokal,
     kasten,
     ortUrteil,
+    slotHuelle,
     POOL_AUSSER_RANG,
     poolZaehlen,
     ortVerdikt,
@@ -792,6 +793,55 @@ hauptLauf(async () => {
             u6.sockelMax === 0 && u7.sockelMax === 1 && u7.sockelTaeter[0].si === 0,
             { waende: u6.sockelTaeter, obb: u7.sockelTaeter }
         );
+        // DER FUSS DES GEBAUTEN KÖRPERS (`sl.huelle`): ein Hof-Haus auf ebenem Grund, dessen Ring (hofarm) erst 0,55 m über Grade
+        // beginnt, fällt mit 0,55 beim Namen seines Körpers; mit Sockel bis Grade hält es. Und am echten Kern: jedes Hof-Haus
+        // des Messort-Plans steht mit dem Fuß jedes Körpers auf Grade (`slotHuelle`); ohne die Solids unter der Diele vor der
+        // Front (die Mutante: der Hof-Ring ohne seinen Sockel, wie bis w28-bau-rezept) fällt es am hofarm
+        const ringHaus = (fuss) =>
+            Object.assign(haus(8, 8, 10), {
+                grund: {
+                    boxen: [
+                        [-2.5, 2.5, -2.5, 0, 1],
+                        [-2.5, 2.5, 0, 2.5, 1],
+                    ],
+                    arten: ["hofarm", "haupt"],
+                },
+                huelle: [
+                    [-2.5, fuss, -2.5, 2.5, 3, 0],
+                    [-2.5, 0, 0, 2.5, 3, 2.5],
+                ],
+            });
+        const [u8, u9] = [ortUrteil(ortT([ringHaus(0.55)]), eben), ortUrteil(ortT([ringHaus(0)]), eben)];
+        const hofSlots = FC.exportSettlement({ seed: 4291161376, nH: 13 })
+            .slots.filter((sl) => (sl.grund?.arten || []).includes("hofarm"))
+            .slice(0, 2);
+        const amKern = (mutante) =>
+            ortUrteil(
+                ortT(
+                    hofSlots.map((sl) => {
+                        const hu = slotHuelle(FC, sl);
+                        return Object.assign({}, sl, {
+                            y: 10,
+                            // die Mutante: ohne jeden Körper, der unter der Diele ganz vor der Front liegt (die Sockel-Platte des Rings)
+                            huelle: mutante ? hu.filter((q) => !(q[4] <= sl.tuer.y + 0.01 && q[5] < sl.tuer.z - 0.1)) : hu,
+                        });
+                    })
+                ),
+                eben
+            );
+        const [u10, u11] = [amKern(false), amKern(true)];
+        check(
+            "Selbst-Test 11e: der Fuß des gebauten Körpers — der schwebende Hof-Ring fällt mit 0,55 beim Namen (hofarm), mit Sockel hält er; am Kern steht jedes Hof-Haus auf Grade, ohne den Sockel des Rings fällt es",
+            u8.sockelMax === 0.55 &&
+                u8.sockelTaeter[0].art === "hofarm" &&
+                u8.sockelTaeter[0].fuss === 0.55 &&
+                u9.sockelMax === 0 &&
+                hofSlots.length === 2 &&
+                u10.sockelMax === 0 &&
+                u11.sockelMax > 0.3 &&
+                u11.sockelTaeter.every((q) => q.art === "hofarm"),
+            { schwebt: u8.sockelTaeter, kern: u10.sockelTaeter, mutante: u11.sockelTaeter }
+        );
         // DIE SICHT DER POSE: der freie Strahl hält; ein Kamm 3 m über dem Boden und die lange Wand eines Nachbarn (ihr Kreis mit
         // der kleineren Halbachse erreicht den Strahl nicht) fallen je beim Namen; die Wand des Ziels selbst zählt nicht
         const ziel = { cx: 20, cz: 0, phi: 0, ex: 3, ez: 3 };
@@ -839,6 +889,7 @@ hauptLauf(async () => {
             slots: 16,
             sockelMax: 0,
             sockelMedian: 0,
+            huellen: 16,
             tuerenOk: 2,
             tuerenN: 2,
             kronen: 0,
@@ -2788,6 +2839,9 @@ hauptLauf(async () => {
                             phi: e.rotationY || 0,
                             y: e.position.y - 0.5,
                             rolle: sl.rolle,
+                            kultur: sl.kultur,
+                            ov: sl.ov || null,
+                            seed: sl.seed,
                             tuer: sl.tuer,
                             // der Eingang der EINEN Regel (`eingangVon`): beim Hof-Haus das Tor im Torriegel, nie die Haustür
                             // über dem Hofpflaster
@@ -2797,7 +2851,8 @@ hauptLauf(async () => {
                         });
                     }
                     const ortW = { ort: anker, slots, roads: P.roads || [], platz: P.platz || null };
-                    res.urteil = anker ? ortUrteil(ortW, (x, z) => r.getTerrainHeightAt(x, z)) : null;
+                    // das Urteil fällt nach diesem Gang (unten): Node legt je Slot die Hülle seines Baus dazu (`slotHuelle`)
+                    res.ortW = anker ? ortW : null;
                     // die Kronen des Wald-Plans über den Grundrissen (Dach-Fläche + Krone T)
                     const F = AnazhRealm.FOREST;
                     const seedInt = r._forestSeedInt();
@@ -3157,6 +3212,18 @@ hauptLauf(async () => {
             modus,
             messort
         );
+        // DAS URTEIL DES ORTS mit dem Fuß des gebauten Körpers: je Slot die Hülle seines Stufe-0-Baus aus dem Kern (`slotHuelle`,
+        // hier in Node — die Seite baut kein Haus im Haupt-Faden), dann das Urteil an der Höhe der Welt
+        if (outO.ortW) {
+            for (const sl of outO.ortW.slots) sl.huelle = slotHuelle(FC, sl);
+            outO.huellen = outO.ortW.slots.filter((sl) => sl.huelle && sl.huelle.length).length;
+            outO.urteil = await page.evaluate(
+                (urteilSrc, ortW) => new Function(urteilSrc)()[0](ortW, (x, z) => r.getTerrainHeightAt(x, z)),
+                `${lokal}\n${kasten}\nreturn [${ortUrteil}, kasten]`,
+                outO.ortW
+            );
+            delete outO.ortW;
+        }
         // DIE GASSE (rein, hier) und IHR LICHT-POOL (die Seite): Mitternacht, die Kamera der Gasse in Augenhöhe, ein frischer Pool
         // über den EINEN Schreiber (`_leuchtTakt`) — gezählt die Plätze, die eine sichtbare Quelle des Orts trägt, und die an
         // einer näheren brennenden Quelle des Orts, als jede sichtbare ist, die noch wartet (`poolNaeher`).
@@ -3421,6 +3488,7 @@ hauptLauf(async () => {
             ...je(outO, "haeuser slots wasserSlots kronen laternenWelt laternenPlan laterneWand laterneWandSoll"),
             ...je(outO, "laterneWeg laterneWegSoll vorplatzOk vorplatzN vorplatzFehl terrasseWand terrasseWiese"),
             ...je(outO, "terrasseHalm terrasseFerne terrasseFerneFehl vorplatzFeld fremdBauten"),
+            ...je(outO, "huellen"),
             ...je(u, "sockelMedian sockelMax tuerenOk tuerenN"),
         ]);
         Object.assign(m, {
