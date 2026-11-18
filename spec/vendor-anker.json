@@ -1332,6 +1332,23 @@
         ]
     },
     {
+        "warum": "DIE KURZE ZAHL (_configureRenderer, w28-strahler): r184 schreibt jede Gleitkomma-Konstante mit den 17 Stellen des double ins Programm (KN) — der Wirt reicht die kürzeste Dezimale desselben f32 an generateConst, am ersten Bauer des Backends",
+        "anker": [
+            {
+                "sub": "(e=Number(e))+(e%1?\"\":\".0\");class QN",
+                "organ": "DIE KURZE ZAHL (KN: die Zahl als Text, Number(e) mit allen Stellen)"
+            },
+            {
+                "sub": "\"float\"===i)return KN(n);",
+                "organ": "DIE KURZE ZAHL (generateConst: float geht durch KN)"
+            },
+            {
+                "sub": "u=e=>this.generateConst(o,e);",
+                "organ": "DIE KURZE ZAHL (generateConst: jedes Glied eines Vektors fragt wieder generateConst)"
+            }
+        ]
+    },
+    {
         "warum": "DER ZEILEN-SCHRITT EINER LESUNG: die letzte Zeile trägt kein Polster (w21-laub-unten)",
         "anker": [
             {

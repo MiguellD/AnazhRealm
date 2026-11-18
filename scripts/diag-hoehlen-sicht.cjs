@@ -1440,6 +1440,7 @@ const server = statikServer();
                     farbe: atmo.lichtFarbe[k],
                     ersatz: atmo.lichtErsatz[k],
                     kern: atmo.lichtKern[k],
+                    seite: atmo.lichtSeite[k],
                 });
                 const terme = [];
                 try {

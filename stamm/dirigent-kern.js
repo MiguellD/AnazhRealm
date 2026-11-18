@@ -1665,6 +1665,7 @@ class AnazhRealm {
                 farbe.set(0, 0, 0, 0);
                 atmo.lichtErsatz[k].value = 0;
                 atmo.lichtKern[k].value = 0;
+                atmo.lichtSeite[k].value = 0;
                 continue;
             }
             if (q.quelle === "stahl") this._stahlGlut(); // das Licht des Stahls folgt der Hand und seiner Glut je Bild
@@ -1683,6 +1684,7 @@ class AnazhRealm {
             farbe.set(c.r * In, c.g * In, c.b * In, L.abfall);
             atmo.lichtErsatz[k].value = L.ersatz ? 1 : 0;
             atmo.lichtKern[k].value = k2;
+            atmo.lichtSeite[k].value = L.seiteM || 0;
             pool.plaetze.push({
                 quelle: q.quelle,
                 x: q.x,
@@ -1692,6 +1694,7 @@ class AnazhRealm {
                 reichweite: L.reichweiteM,
                 abfall: L.abfall,
                 kern: L.kernM,
+                seite: L.seiteM || 0,
                 farbe: [c.r, c.g, c.b],
                 ersatz: !!L.ersatz,
                 blende: pool.blende[k],

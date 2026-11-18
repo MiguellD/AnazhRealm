@@ -241,6 +241,31 @@ class AnazhRealm_bild_kosten {
                     };
                     K.__anazhReihe = true;
                 }
+                // DIE KURZE ZAHL (w28-strahler, r184 gelesen: `generateConst` → `KN` schreibt `Number(e)` mit den 17 Stellen
+                // des double): eine Konstante des Shaders ist f32 — die kürzeste Dezimale, die dasselbe f32 trifft (≤ 9 Stellen),
+                // trägt dieselben Bits (die Bilder byte-gleich) und spart im Boden-Programm 593 Zeichen in 84 Zahlen. Jeder
+                // Vektor, jede Farbe und jede Matrix fragt je Glied wieder hier (`this.generateConst(o, e)`); die Farbe liest r, g, b.
+                let G = Object.getPrototypeOf(b);
+                while (G && !Object.prototype.hasOwnProperty.call(G, "generateConst")) G = Object.getPrototypeOf(G);
+                if (!G)
+                    welt.log("DIE KURZE ZAHL: r184-NodeBuilder.generateConst nicht gefunden (Vendor-Drift)", "ERROR");
+                else if (!G.__anazhZahl) {
+                    const zahlRoh = G.generateConst;
+                    const kurz = (v) => {
+                        if (typeof v !== "number" || !Number.isFinite(v) || v % 1 === 0) return v;
+                        const f32 = Math.fround(v);
+                        for (let p = 1; p < 9; p++)
+                            if (Math.fround(+v.toPrecision(p)) === f32) return +v.toPrecision(p);
+                        return +v.toPrecision(9);
+                    };
+                    G.generateConst = function (typ, wert = null) {
+                        if (typ === "float") wert = kurz(wert);
+                        else if (typ === "color" && wert && wert.isColor)
+                            wert = { r: kurz(wert.r), g: kurz(wert.g), b: kurz(wert.b) };
+                        return zahlRoh.call(this, typ, wert);
+                    };
+                    G.__anazhZahl = true;
+                }
                 return b;
             };
         }
