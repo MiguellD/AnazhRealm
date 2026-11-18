@@ -1,0 +1,383 @@
+{
+ "probe": "b Volk",
+ "same": "anazh",
+ "pruef": [
+  {
+   "name": "Anteil 60+",
+   "gemessen": 0.0682,
+   "soll": [
+    0.06,
+    0.1
+   ],
+   "ok": true
+  },
+  {
+   "name": "Anteil 0–14",
+   "gemessen": 0.2279,
+   "soll": [
+    0.35,
+    1
+   ],
+   "ok": false
+  },
+  {
+   "name": "e₀ (Geburten 1550–1650) J",
+   "gemessen": 32.271,
+   "soll": [
+    35,
+    40
+   ],
+   "ok": false
+  },
+  {
+   "name": "Größe m 1 J (z des Medians)",
+   "gemessen": -3.958,
+   "soll": [
+    -1,
+    1
+   ],
+   "ok": false
+  },
+  {
+   "name": "Größe w 1 J (z des Medians)",
+   "gemessen": -3.477,
+   "soll": [
+    -1,
+    1
+   ],
+   "ok": false
+  },
+  {
+   "name": "Größe m 2 J (z des Medians)",
+   "gemessen": -2.153,
+   "soll": [
+    -1,
+    1
+   ],
+   "ok": false
+  },
+  {
+   "name": "Größe w 2 J (z des Medians)",
+   "gemessen": -2.306,
+   "soll": [
+    -1,
+    1
+   ],
+   "ok": false
+  },
+  {
+   "name": "Größe m 5 J (z des Medians)",
+   "gemessen": 1.424,
+   "soll": [
+    -1,
+    1
+   ],
+   "ok": false
+  },
+  {
+   "name": "Größe w 5 J (z des Medians)",
+   "gemessen": 0.754,
+   "soll": [
+    -1,
+    1
+   ],
+   "ok": true
+  },
+  {
+   "name": "Größe m 10 J (z des Medians)",
+   "gemessen": 2.154,
+   "soll": [
+    -1,
+    1
+   ],
+   "ok": false
+  },
+  {
+   "name": "Größe w 10 J (z des Medians)",
+   "gemessen": 0.698,
+   "soll": [
+    -1,
+    1
+   ],
+   "ok": true
+  },
+  {
+   "name": "Größe m 15 J (z des Medians)",
+   "gemessen": -0.295,
+   "soll": [
+    -1,
+    1
+   ],
+   "ok": true
+  },
+  {
+   "name": "Größe w 15 J (z des Medians)",
+   "gemessen": -1.191,
+   "soll": [
+    -1,
+    1
+   ],
+   "ok": false
+  },
+  {
+   "name": "Größe m 18 J (z des Medians)",
+   "gemessen": -0.719,
+   "soll": [
+    -1,
+    1
+   ],
+   "ok": true
+  },
+  {
+   "name": "Größe w 18 J (z des Medians)",
+   "gemessen": -0.48,
+   "soll": [
+    -1,
+    1
+   ],
+   "ok": true
+  },
+  {
+   "name": "SD Größe 18–19 J m ÷ WHO-SD",
+   "gemessen": 1.421,
+   "soll": [
+    0.75,
+    1.25
+   ],
+   "ok": false
+  },
+  {
+   "name": "SD Größe 18–19 J w ÷ WHO-SD",
+   "gemessen": 1.488,
+   "soll": [
+    0.75,
+    1.25
+   ],
+   "ok": false
+  },
+  {
+   "name": "Reife Frau J (Median)",
+   "gemessen": 15.486,
+   "soll": [
+    13.93,
+    14.93
+   ],
+   "ok": false
+  },
+  {
+   "name": "Haushalt Mittel",
+   "gemessen": 4.618,
+   "soll": [
+    4.25,
+    5.25
+   ],
+   "ok": true
+  },
+  {
+   "name": "Personen in Haushalten ≥ 6",
+   "gemessen": 0.4629,
+   "soll": [
+    0.5000001,
+    1
+   ],
+   "ok": false
+  },
+  {
+   "name": "Gesinde-Anteil",
+   "gemessen": 0.2829,
+   "soll": [
+    0.104,
+    0.164
+   ],
+   "ok": false
+  },
+  {
+   "name": "Kinder mit Eltern derselben Adresse",
+   "gemessen": 1,
+   "soll": [
+    1,
+    1
+   ],
+   "ok": true
+  },
+  {
+   "name": "Steigung lnM Kind auf Eltern-Mittel",
+   "gemessen": 0.4547,
+   "soll": [
+    0.41,
+    0.51
+   ],
+   "ok": true
+  }
+ ],
+ "det": {
+  "personen": 100005,
+  "lose": 21656,
+  "haushalte": 21656,
+  "pyramide": {
+   "anteil60": 0.0682,
+   "anteil0bis14": 0.2279,
+   "e0": 32.271,
+   "e0Siler": 32.614,
+   "geburten": 204267
+  },
+  "groesse": [
+   {
+    "alter": 1,
+    "sex": "m",
+    "n": 452,
+    "median": 66.34,
+    "who": 75.7391,
+    "whoSD": 2.38,
+    "z": -3.958
+   },
+   {
+    "alter": 1,
+    "sex": "w",
+    "n": 433,
+    "median": 65.05,
+    "who": 74.0049,
+    "whoSD": 2.57,
+    "z": -3.477
+   },
+   {
+    "alter": 2,
+    "sex": "m",
+    "n": 437,
+    "median": 81.22,
+    "who": 87.8018,
+    "whoSD": 3.05,
+    "z": -2.153
+   },
+   {
+    "alter": 2,
+    "sex": "w",
+    "n": 369,
+    "median": 78.96,
+    "who": 86.4008,
+    "whoSD": 3.23,
+    "z": -2.306
+   },
+   {
+    "alter": 5,
+    "sex": "m",
+    "n": 400,
+    "median": 116.56,
+    "who": 109.9593,
+    "whoSD": 4.63,
+    "z": 1.424
+   },
+   {
+    "alter": 5,
+    "sex": "w",
+    "n": 385,
+    "median": 113,
+    "who": 109.4189,
+    "whoSD": 4.76,
+    "z": 0.754
+   },
+   {
+    "alter": 10,
+    "sex": "m",
+    "n": 364,
+    "median": 151.51,
+    "who": 137.7795,
+    "whoSD": 6.37,
+    "z": 2.154
+   },
+   {
+    "alter": 10,
+    "sex": "w",
+    "n": 347,
+    "median": 143.1,
+    "who": 138.6363,
+    "whoSD": 6.4,
+    "z": 0.698
+   },
+   {
+    "alter": 15,
+    "sex": "m",
+    "n": 297,
+    "median": 166.66,
+    "who": 168.958,
+    "whoSD": 7.8,
+    "z": -0.295
+   },
+   {
+    "alter": 15,
+    "sex": "w",
+    "n": 213,
+    "median": 153.48,
+    "who": 161.6692,
+    "whoSD": 6.88,
+    "z": -1.191
+   },
+   {
+    "alter": 18,
+    "sex": "m",
+    "n": 930,
+    "median": 170.77,
+    "who": 176.1449,
+    "whoSD": 7.47,
+    "z": -0.719
+   },
+   {
+    "alter": 18,
+    "sex": "w",
+    "n": 789,
+    "median": 159.89,
+    "who": 163.0595,
+    "whoSD": 6.61,
+    "z": -0.48
+   }
+  ],
+  "streuung": [
+   {
+    "sex": "m",
+    "n": 1857,
+    "sd": 10.492,
+    "whoSD": 7.382,
+    "verh": 1.421
+   },
+   {
+    "sex": "w",
+    "n": 1600,
+    "sd": 9.781,
+    "whoSD": 6.574,
+    "verh": 1.488
+   }
+  ],
+  "reifeFrau": {
+   "median": 15.486,
+   "mittelFrau": 15.475,
+   "n": 48075
+  },
+  "haushalt": {
+   "mittel": 4.618,
+   "anteilPersonenIn6": 0.4629,
+   "gesindeAnteil": 0.2829,
+   "groessen": {
+    "1": 807,
+    "2": 2180,
+    "3": 3664,
+    "4": 4304,
+    "5": 4068,
+    "6": 3110,
+    "7": 1824,
+    "8": 935,
+    "9": 434,
+    "10": 208,
+    "11": 79,
+    "12": 32,
+    "13": 11
+   }
+  },
+  "erbe": {
+   "kinder": 47272,
+   "gleicheAdresse": 47272,
+   "anteil": 1,
+   "steigung": 0.4547,
+   "paare": 47272
+  }
+ }
+}

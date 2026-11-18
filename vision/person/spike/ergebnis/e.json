@@ -1,0 +1,100 @@
+{
+ "probe": "e Determinismus",
+ "same": "anazh",
+ "anders": "anazh-2",
+ "pruef": [
+  {
+   "name": "gleicher Same, zwei Prozesse: sha256 gleich",
+   "gemessen": true,
+   "soll": true,
+   "ok": true
+  },
+  {
+   "name": "gleicher Same: a gleich",
+   "gemessen": true,
+   "soll": true,
+   "ok": true
+  },
+  {
+   "name": "gleicher Same: b gleich",
+   "gemessen": true,
+   "soll": true,
+   "ok": true
+  },
+  {
+   "name": "gleicher Same: c gleich",
+   "gemessen": true,
+   "soll": true,
+   "ok": true
+  },
+  {
+   "name": "gleicher Same: d gleich",
+   "gemessen": true,
+   "soll": true,
+   "ok": true
+  },
+  {
+   "name": "anderer Same: sha256 verschieden",
+   "gemessen": true,
+   "soll": true,
+   "ok": true
+  },
+  {
+   "name": "anderer Same: a verschieden (1 = ja)",
+   "gemessen": 1,
+   "soll": [
+    0,
+    1
+   ],
+   "ok": true
+  },
+  {
+   "name": "anderer Same: b verschieden (1 = ja)",
+   "gemessen": 1,
+   "soll": [
+    0,
+    1
+   ],
+   "ok": true
+  },
+  {
+   "name": "anderer Same: c verschieden (1 = ja)",
+   "gemessen": 1,
+   "soll": [
+    0,
+    1
+   ],
+   "ok": true
+  },
+  {
+   "name": "anderer Same: d verschieden (1 = ja)",
+   "gemessen": 1,
+   "soll": [
+    0,
+    1
+   ],
+   "ok": true
+  }
+ ],
+ "lauf1": {
+  "gesamt": "3e5b1f62349b4b1991316e78f98fd36442e374ca5ca021759a223486902e5016",
+  "a": "2c4f3518844b8fe08c83c890dddae5583180d5a10ae1182f225dcfb05a877a1a",
+  "b": "2b16f7d4baf342fa0c4e592b5b254975be63a904c66f671eef60068c4fa1f044",
+  "c": "eace8a81b623690863ec55ee1563363c60305dcf8044836bc383b7a157409e1a",
+  "d": "d8f17cdb40b3285273dc9b535160288a2569ff4440db8c8084f52ebe174d8c03"
+ },
+ "lauf2": {
+  "gesamt": "3e5b1f62349b4b1991316e78f98fd36442e374ca5ca021759a223486902e5016",
+  "a": "2c4f3518844b8fe08c83c890dddae5583180d5a10ae1182f225dcfb05a877a1a",
+  "b": "2b16f7d4baf342fa0c4e592b5b254975be63a904c66f671eef60068c4fa1f044",
+  "c": "eace8a81b623690863ec55ee1563363c60305dcf8044836bc383b7a157409e1a",
+  "d": "d8f17cdb40b3285273dc9b535160288a2569ff4440db8c8084f52ebe174d8c03"
+ },
+ "anderer": {
+  "gesamt": "65234156f014b487abb82c83b3de529c97a07018cadc83164d4c98b5206c11e6",
+  "a": "b9ee0786b924e65cfe2b794cfb6ea7e66895f4ae92554b9d9ca7aae00e665bae",
+  "b": "09ee44a458ef2ee117d80ccebc112bb7938c21162b67facc6a31e777834aee77",
+  "c": "126de180f5212d6475ef22f21a4f01733f0c93eae9e7c6b6587efe229aabddb2",
+  "d": "fd26129e533d300600f47c7fb19b9387e418468c115b46d96b09a75b268f190a"
+ }
+}

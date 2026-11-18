@@ -1,0 +1,104 @@
+{
+ "probe": "c Tag",
+ "same": "anazh",
+ "pruef": [
+  {
+   "name": "eine Person: Schlaf-Minuten außerhalb des eigenen Loses",
+   "gemessen": 0,
+   "soll": [
+    0,
+    0
+   ],
+   "ok": true
+  },
+  {
+   "name": "eine Person: Schritte > Tempo·60 s",
+   "gemessen": 0,
+   "soll": [
+    0,
+    0
+   ],
+   "ok": true
+  },
+  {
+   "name": "1 000 Personen: Schlaf-Minuten außerhalb des eigenen Loses",
+   "gemessen": 0,
+   "soll": [
+    0,
+    0
+   ],
+   "ok": true
+  },
+  {
+   "name": "1 000 Personen: Schritte > Tempo·60 s",
+   "gemessen": 0,
+   "soll": [
+    0,
+    0
+   ],
+   "ok": true
+  },
+  {
+   "name": "Ids doppelt in der Stadt",
+   "gemessen": 0,
+   "soll": [
+    0,
+    0
+   ],
+   "ok": true
+  }
+ ],
+ "det": {
+  "einePerson": {
+   "id": "2.5.2",
+   "rolle": "vater",
+   "gewerbe": "tageloehner",
+   "werkLos": 83,
+   "alter": 44.84,
+   "tempo": 1.5772,
+   "schlaf": 3570,
+   "schlafFehl": 0,
+   "schrittFehl": 0,
+   "maxVerh": 1,
+   "wegMinuten": 163,
+   "minutenJeOrt": {
+    "bett": 3570,
+    "herd": 2865,
+    "kirche": 90,
+    "platz": 675,
+    "werk": 2880
+   },
+   "wegJeTagM": [
+    1401.3,
+    1875,
+    1916.9,
+    1911.6,
+    1910.6,
+    1844,
+    1793.8
+   ]
+  },
+  "viele": {
+   "personen": 1000,
+   "nichtGanzeWoche": 0,
+   "schlaf": 3569364,
+   "schlafFehl": 0,
+   "schrittFehl": 0,
+   "maxVerh": 1,
+   "wegMinuten": 56040,
+   "rollen": {
+    "erbe": 67,
+    "kind": 134,
+    "gesinde": 273,
+    "mutter": 180,
+    "alt": 86,
+    "vater": 172,
+    "klein": 88
+   }
+  },
+  "ids": {
+   "gesamt": 5286,
+   "eindeutig": 5286
+  }
+ }
+}

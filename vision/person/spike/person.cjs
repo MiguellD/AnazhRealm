@@ -181,30 +181,36 @@ function hauslauf(S, adr, T0, Y) {
     return gens;
 }
 
-// Bewohner zur Zeit Y mit Rolle: "vater" "mutter" "alt" "erbe" "kind" "klein" "gesinde"
+// Bewohner zur Zeit Y mit Rolle: "vater" "mutter" "alt" "erbe" "kind" "klein" "gesinde".
+// Geburt und Tod gelten zur Zeit Y; Hochzeit, Auszug, Rolle und Dienstjahr gelten am Tagesbeginn Yd (der Tag-Plan §5 ist einer je Tag —
+// ein Rollenwechsel mitten im Tag würde die Person springen lassen).
+function tagesBeginn(Y) {
+    return jahrVon(Math.floor(tagVon(Y) + 1e-7), 0);
+}
 function bewohner(S, stadt, adr, Y) {
     const H = stadt.haus(adr);
     if (H.sonderbau) return [];
+    const Yd = tagesBeginn(Y);
     const gens = hauslauf(S, adr, H.baujahr, Y);
     const out = [];
-    if (gens[0].T > Y) return out; // noch nicht gegründet
+    if (gens[0].T > Yd) return out; // noch nicht gegründet
     let gc = 0;
-    for (const x of gens) if (x.T <= Y) gc = x.g;
+    for (const x of gens) if (x.T <= Yd) gc = x.g;
     for (const x of gens) {
-        if (x.T > Y) continue;
+        if (x.T > Yd) continue;
         for (const P of [x.mann, x.frau]) {
             if (P.herkunft !== 0) continue; // der Erbe zählt als Kind seines Hauses
-            if (Y >= x.T && Y < P.tod) out.push(P);
+            if (Y < P.tod) out.push(P);
         }
         for (const c of x.kinder) {
             if (Y < c.geburt || Y >= c.tod) continue;
-            if (!c.erbe && Y >= c.geburt + HL.auszug) continue;
+            if (!c.erbe && Yd >= c.geburt + HL.auszug) continue;
             out.push(c);
         }
     }
     const cur = gens[gc];
     for (const P of out) {
-        const J = Y - P.geburt;
+        const J = Yd - P.geburt;
         if (P === cur.mann) P.rolle = "vater";
         else if (P === cur.frau) P.rolle = "mutter";
         else if (P.herkunft === 0 || gens.some((x) => x.g < gc && (x.mann === P || x.frau === P))) P.rolle = "alt";
@@ -213,7 +219,7 @@ function bewohner(S, stadt, adr, Y) {
         else P.rolle = "erbe";
     }
     // Gesinde des Dienstjahres (Plätze aus dem Bau-Gesetz)
-    const y = Math.floor(Y);
+    const y = Math.floor(Yd);
     for (let s = 0; s < H.gesinde; s++) {
         const alter = HL.dienstAb + HL.dienstSpanne * u01(S, adr, -1 - s, y, Z.alter);
         const P = { adr, g: -1 - s, slot: y, herkunft: 2, geburt: y - alter, sex: sexVon(S, adr, -1 - s, y), mutter: null, vater: null, tod: Infinity, erbe: false, _a: null, _e: null, _M: 0, rolle: "gesinde" };
@@ -491,11 +497,13 @@ function plan(P, d, dl) {
     e.push([T.ruhe + dl, "bett"]);
     return e;
 }
-const V_MIN = 1.0; // Schranke für die Abkürzung „angekommen“ (geprüft: jeder Gehende ist schneller, sonst wirft tempo())
+// Schranke für die Abkürzung „angekommen“, gilt ab 6 J (geprüft: tempo() wirft, wenn ein Gehender ab 6 J langsamer ist). Das Kleinkind
+// (Bein < 0,41 m kann darunter liegen) geht nur im eigenen Los und rechnet sein Tempo immer exakt.
+const V_MIN = 1.0;
 function tempo(S, P, Y) {
     if (P._v) return P._v;
     const v = gang(leib(S, P, Y)).v;
-    if (!(v >= V_MIN)) throw new Error("person: Gehtempo " + v + " < V_MIN bei " + personId(P));
+    if (P.rolle !== "klein" && !(v >= V_MIN)) throw new Error("person: Gehtempo " + v + " < V_MIN bei " + personId(P));
     P._v = v;
     return v;
 }
@@ -507,7 +515,7 @@ function ort(S, stadt, P, d, h) {
     const ziel = O[e[i][1]];
     if (i === 0) return { x: ziel.p.x, z: ziel.p.z, ort: e[i][1], weg: false };
     const von = O[e[i - 1][1]], R = route(von, ziel), len = laenge(R), dt = (h - e[i][0]) * 3600;
-    if (dt * V_MIN >= len) return { x: ziel.p.x, z: ziel.p.z, ort: e[i][1], weg: false };
+    if (P.rolle !== "klein" && dt * V_MIN >= len) return { x: ziel.p.x, z: ziel.p.z, ort: e[i][1], weg: false };
     const v = tempo(S, P, jahrVon(d, h));
     if (dt * v >= len) return { x: ziel.p.x, z: ziel.p.z, ort: e[i][1], weg: false };
     const p = aufRoute(R, dt * v);
@@ -579,5 +587,5 @@ module.exports = {
     hauslauf, bewohner, personId, masseInf, erbeA, leib,
     gang, stoss, standSprung, hochSprung, beinKraft, sprint, weitSprung, wurf,
     machStadt, orte, plan, route, laenge, ort, tempo, versatz, tagVon, jahrVon,
-    abfrage, sackScan, geoKonst: { LB, LT, GASSE, BX, BZ, QX, QZ },
+    abfrage, sackScan, tagesBeginn, geoKonst: { LB, LT, GASSE, BX, BZ, QX, QZ },
 };

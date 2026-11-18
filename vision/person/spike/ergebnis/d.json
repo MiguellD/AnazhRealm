@@ -1,0 +1,252 @@
+{
+ "probe": "d Bewegung",
+ "same": "anazh",
+ "pruef": [
+  {
+   "name": "Gang Mann 30 J m/s",
+   "gemessen": 1.512,
+   "soll": [
+    1.27,
+    1.46
+   ],
+   "ok": false
+  },
+  {
+   "name": "Gang Frau 30 J m/s",
+   "gemessen": 1.4543,
+   "soll": [
+    1.27,
+    1.46
+   ],
+   "ok": true
+  },
+  {
+   "name": "Gang Junge 6 J m/s",
+   "gemessen": 1.283,
+   "soll": [
+    0.62,
+    1.04
+   ],
+   "ok": false
+  },
+  {
+   "name": "Gang Mädchen 6 J m/s",
+   "gemessen": 1.2552,
+   "soll": [
+    0.62,
+    1.04
+   ],
+   "ok": false
+  },
+  {
+   "name": "Gang Greisin 85 J m/s",
+   "gemessen": 1.4563,
+   "soll": [
+    0.8,
+    1.08
+   ],
+   "ok": false
+  },
+  {
+   "name": "Schritt Greis 85 J cm",
+   "gemessen": 70.99,
+   "soll": [
+    43.6,
+    59
+   ],
+   "ok": false
+  },
+  {
+   "name": "Schritt Greisin 85 J cm",
+   "gemessen": 65.61,
+   "soll": [
+    43.6,
+    59
+   ],
+   "ok": false
+  },
+  {
+   "name": "Stand-Sprung Junge 9 J cm",
+   "gemessen": 120.5,
+   "soll": [
+    87,
+    131
+   ],
+   "ok": true
+  },
+  {
+   "name": "Stand-Sprung Junge 17,9 J cm",
+   "gemessen": 135.19,
+   "soll": [
+    132,
+    198
+   ],
+   "ok": true
+  },
+  {
+   "name": "Stand-Sprung Mädchen 9 J cm",
+   "gemessen": 105.4,
+   "soll": [
+    77,
+    115
+   ],
+   "ok": true
+  },
+  {
+   "name": "Stand-Sprung Mädchen 17,9 J cm",
+   "gemessen": 116.81,
+   "soll": [
+    96,
+    144
+   ],
+   "ok": true
+  },
+  {
+   "name": "Stand-Sprung 75 J < 30 J",
+   "gemessen": true,
+   "soll": true,
+   "ok": true
+  },
+  {
+   "name": "Sprint Mittel-Mann 25 J v_top m/s",
+   "gemessen": 3.0576,
+   "soll": [
+    6.2,
+    11.1
+   ],
+   "ok": false
+  },
+  {
+   "name": "Sprint Mittel-Mann 25 J 100 m s",
+   "gemessen": 33.612,
+   "soll": [
+    9.58,
+    17.6
+   ],
+   "ok": false
+  },
+  {
+   "name": "Sprint Bester von 1 000 s",
+   "gemessen": 27.046,
+   "soll": [
+    9.58,
+    null
+   ],
+   "ok": true
+  },
+  {
+   "name": "Sprint CV der 100-m-Zeit",
+   "gemessen": 0.0588,
+   "soll": [
+    0.1,
+    0.2
+   ],
+   "ok": false
+  },
+  {
+   "name": "Weitsprung Bester von 1 000 m",
+   "gemessen": 0.96,
+   "soll": [
+    0,
+    8.95
+   ],
+   "ok": true
+  },
+  {
+   "name": "Weitsprung Mittel-Mann > eigener Stand-Sprung",
+   "gemessen": false,
+   "soll": true,
+   "ok": false
+  },
+  {
+   "name": "Wurf: der Regler liefert einen Abwurf",
+   "gemessen": false,
+   "soll": true,
+   "ok": false
+  }
+ ],
+ "det": {
+  "gang": {
+   "m30": {
+    "v": 1.512,
+    "schrittCm": 70.72,
+    "H": 1.7588
+   },
+   "w30": {
+    "v": 1.4543,
+    "schrittCm": 65.43,
+    "H": 1.6271
+   },
+   "m6": {
+    "v": 1.283,
+    "schrittCm": 50.93,
+    "H": 1.2665
+   },
+   "w6": {
+    "v": 1.2552,
+    "schrittCm": 48.74,
+    "H": 1.2121
+   },
+   "w85": {
+    "v": 1.4563,
+    "schrittCm": 65.61,
+    "H": 1.6315
+   },
+   "m85": {
+    "v": 1.5148,
+    "schrittCm": 70.99,
+    "H": 1.7654
+   }
+  },
+  "stand": {
+   "m9": {
+    "cm": 120.5,
+    "phiS": 30,
+    "theta": 25
+   },
+   "m17_9": {
+    "cm": 135.19,
+    "phiS": 30,
+    "theta": 22.5
+   },
+   "w9": {
+    "cm": 105.4,
+    "phiS": 30,
+    "theta": 22.5
+   },
+   "w17_9": {
+    "cm": 116.81,
+    "phiS": 30,
+    "theta": 20
+   },
+   "m30": {
+    "cm": 138.4,
+    "phiS": 30,
+    "theta": 22.5
+   },
+   "m75": {
+    "cm": 110.96,
+    "phiS": 30,
+    "theta": 15
+   }
+  },
+  "mittelMann": {
+   "vTop": 3.0576,
+   "t100": 33.612,
+   "FW": 1.065,
+   "fwNoetig62": 1.6457,
+   "a0": 3.375,
+   "weit": 0.619,
+   "alpha": 30,
+   "stand": 1.378
+  },
+  "volk": {
+   "n": 1000,
+   "besterT100": 27.046,
+   "mittelT100": 32.688,
+   "cv": 0.0588,
+   "besterWeit": 0.96
+  },
+  "wurf": null
+ }
+}
