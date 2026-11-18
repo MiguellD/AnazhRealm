@@ -1471,12 +1471,23 @@ async function checkBandTierSeparation({ page, check }) {
             oB = outDir(anchBold);
         shy.position.set(anchShy.x + oS.x * o.b2Aus, shy.position.y, anchShy.z + oS.z * o.b2Aus);
         bold.position.set(anchBold.x + oB.x * o.b2Aus, bold.position.y, anchBold.z + oB.z * o.b2Aus);
-        tick(400, 0.05); // 20 s Sim
+        // 20 s Sim, je Sekunde ein Abstand: das Mittel trägt das Streifen, der Endwert allein ist ein Würfel der Wanderung
+        o.b2SpurShy = [];
+        o.b2SpurBold = [];
+        for (let k = 0; k < 20; k++) {
+            tick(20, 0.05);
+            o.b2SpurShy.push(+distXZ(shy, anchShy).toFixed(1));
+            o.b2SpurBold.push(+distXZ(bold, anchBold).toFixed(1));
+        }
+        const mittel = (a) => a.reduce((s, v) => s + v, 0) / a.length;
         o.b2DistShy = distXZ(shy, anchShy);
         o.b2DistBold = distXZ(bold, anchBold);
+        o.b2MittelShy = mittel(o.b2SpurShy);
+        o.b2MittelBold = mittel(o.b2SpurBold);
         // harte Schranke der Leine: leash × (1 + wanderSpeedMul/anchorPull) ≈ 1.375×
         o.checks.b2ShyReturns = o.b2DistShy < schranke + 2;
-        o.checks.b2BoldRoams = o.b2DistBold > 0.8 * o.b2Aus && o.b2DistBold > o.b2DistShy + 4; // frei in seiner Leine
+        // frei in seiner Leine: das große Tier streift im Mittel weiter vom Anker als die Schranke des Jungtiers
+        o.checks.b2BoldRoams = o.b2MittelBold > schranke && o.b2MittelBold > o.b2MittelShy * 1.5;
         cleanup([shy, bold]);
     
         // ── (D) LEIB AN LEIB, (E) TIER AM SPIELER, (F) LOCKSTEP, (C2) SELBST-TEST ──
@@ -1642,7 +1653,7 @@ async function checkBandTierSeparation({ page, check }) {
     const a = rot("aStacked0", "aSeparated", "aBounded", "cLensFires");
     check(`Tier-Separation (A)(C): das deckungsgleiche Paar trennt sich nach 200 Ticks (${out.aGap && out.aGap.toFixed(2)} m > ${out.aBodyRadius} m), beschränkt; der Selbsttest feuert`, !a, a && "ROT: " + a);
     const b = rot("b1MulDiff", "b1PathDiff", "b2LeashDiff", "b2MutConsumed", "b2ShyReturns", "b2BoldRoams");
-    check("Tier-Separation (B): Größe und Mut werden KONSUMIERT — verschiedene speedMul und Weg-Längen, verschiedene Leinen, das scheue kehrt heim, das kühne streift", !b, b && "ROT: " + b);
+    check(`Tier-Separation (B): Größe und Mut werden KONSUMIERT — verschiedene speedMul und Weg-Längen, verschiedene Leinen, das scheue kehrt heim, das kühne streift (Mittel-Abstand vom Anker ${(+out.b2MittelShy).toFixed(1)} / ${(+out.b2MittelBold).toFixed(1)} m)`, !b, b && "ROT: " + b + ` (Leine ${(+out.b2LeashShy).toFixed(1)}/${(+out.b2LeashBold).toFixed(1)} m, ausgesetzt ${(+out.b2Aus).toFixed(1)} m, nach 20 s ${(+out.b2DistShy).toFixed(1)}/${(+out.b2DistBold).toFixed(1)} m, Mittel ${(+out.b2MittelShy).toFixed(1)}/${(+out.b2MittelBold).toFixed(1)} m, Spur ${JSON.stringify(out.b2SpurShy)} / ${JSON.stringify(out.b2SpurBold)})`);
     const L = out.leib || {};
     const lv = leibVerdict(L);
     check("Tier-Separation 0710-4 (D–F) LEIB AN LEIB: keine Durchdringung, Impuls nach Masse, der Spieler bekommt seinen Stoß, Lockstep", lv.length === 0, lv.join(" · "));
