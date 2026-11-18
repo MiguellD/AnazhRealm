@@ -5660,7 +5660,7 @@
   },
   "karte2.mensch.zeit.erleben": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 91 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon · gehalten: Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 95 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal an d39e0d6e gtx",
+   "beleg": "Maschine: gehalten: Bildpaar an der Kamera -238.1,38.6,-1046.6,-248,26.6,-1064: 91 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] amd/rdna-3 an d39e0d6e radeon — offen: karte2.mensch.zeit.erleben#1 gtx: ROT: Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 32 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 0 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal an c1e6f29a",
    "stationen": [
     {
      "id": "karte2.mensch.zeit.erleben#1",
@@ -5676,11 +5676,11 @@
     {
      "id": "karte2.mensch.zeit.erleben#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 95 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 1 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal",
-     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "gruen": false,
+     "zahl": "Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 32 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 0 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal",
+     "sha": "c1e6f29a227befd15c4cd90bcf0f3e40bd228da4",
+     "grund": "ROT: Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 32 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 0 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6336,10 +6336,12 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "karte2.mensch.zeit.erleben#1 gtx: Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 32 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 0 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal an c1e6f29a (grün gebucht an d39e0d6e)"
+ ],
  "r6": {
   "haelften": 507,
-  "konsum": 192,
+  "konsum": 193,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6501,10 +6503,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 156
+  "ohne": 155
  },
  "kopfVoll": "c1e6f29a227befd15c4cd90bcf0f3e40bd228da4",
- "zeit": "2026-11-18T03:09:26.226Z",
+ "zeit": "2026-11-18T03:45:19.050Z",
  "vorher": "c1e6f29a",
  "bilanz": {
   "gewinn": [],
