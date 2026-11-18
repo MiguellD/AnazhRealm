@@ -625,7 +625,7 @@ function frameGenesis(){ orb.r=320; orb.el=0.62; orb.az=0.55; orb.tx=20; orb.ty=
 // das Los ist das Haus der gewählten Kultur (oder das von Hand gestellte), der Haushalt legt sein Raumprogramm darüber.
 function applyMeta(){
   const k=$('pK').value, name=k==='samen'?kulturFromSeed(SEED):k;
-  const los=(k!=='manuell'&&bauRezept({bauweise:name},null,SEED))||Object.assign(readParams(),{kultur:null});
+  const kp=k!=='manuell'&&bauRezept({bauweise:name},null,SEED), los=kp?Object.assign(kp,{kultur:name}):Object.assign(readParams(),{kultur:null});
   const hp=bauRezept({nutzung:'wohnhaus',los},{personen:RW.leute,wohl:RW.wohl/50},SEED);
   formSetzen({W:hp.W, D:hp.D, storeys:hp.storeys, annexN:hp.annexN|0, balcony:hp.balcony|0});
   if($('pG'))$('pG').value=hp.grundriss;

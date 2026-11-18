@@ -154,6 +154,16 @@
     //  { P, subsystems, order, solids, build, spawn, floors, windows,
     //    annexDoors, cellar, wings, grundriss, dims, furniture, chimney, roofY }
     // ═══════════════════════════════════════════════════════════════════════
+    // DIE GRENZNEIGUNG JE STIL (w28-bau-rezept, EINE Quelle): so flach trägt die Deckung des Stils — HAUS klemmt jede Neigung darauf,
+    // und das Bau-Gesetz schreibt die gebaute Neigung ins Rezept (`grenzNeigung`); vorher stand sie nur in STILMODE, und das Rezept
+    // trug eine tote Zahl: die griechischen Wohnhäuser 10–14° im Plan, 18° gebaut. Ohne Stil-Eintrag (alt) 28°.
+    var STIL_GRENZNEIGUNG = { modern: 14, huette: 30, stein: 18, glas: 4, klinker: 22, stroh: 38 };
+    // der Stil, den HAUS baut (das Monument trägt keinen Holzbau: FEATURE→MATERIAL), und seine Grenzneigung
+    function grenzNeigung(P) {
+        var stil = ["alt", "modern", "huette", "stein", "glas", "klinker", "stroh"].indexOf(P.stil) >= 0 ? P.stil : "alt";
+        if ((P.portikus || P.zinnen || P.kuppel || P.arkade) && (stil === "alt" || stil === "huette" || stil === "stroh")) stil = "stein";
+        return STIL_GRENZNEIGUNG[stil] != null ? STIL_GRENZNEIGUNG[stil] : 28;
+    }
     // prettier-ignore
     function HAUS(THREE, mat, PARAMS){
   const D2R=Math.PI/180, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -178,12 +188,12 @@
   P.stil = ['alt','modern','huette','stein','glas','klinker','stroh'].includes(P.stil) ? P.stil : 'alt';
   if((P.portikus||P.zinnen||P.kuppel||P.arkade) && (P.stil==='alt'||P.stil==='huette'||P.stil==='stroh')) P.stil='stein';   // FEATURE→MATERIAL (Parametererweiterung wie STILMODE): Tempel/Burg/Kuppel/Riad implizieren monumentale Fassade — kein Fachwerk am Monument
   const STILMODE={
-    modern:{ RM:{holz:'putz',backstein:'putz',gefach:'putz',lehm:'putz',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:14 },   // glatt verputzt, flaches Dach
-    huette:{ RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stamm',ziegel2:'stamm'},      brace:null,   flat:0, pMin:30 },   // Blockhütte: Holzwände + Holzschindeln, Sichtbalken bleiben
-    stein: { RM:{holz:'putz',gefach:'putz',lehm:'putz',backstein:'putz'},                                      brace:'none', flat:0, pMin:18 },   // glatt verputzt (FR/IT), Ziegeldach bleibt
-    glas:  { RM:{gefach:'metall',lehm:'metall',backstein:'metall',holz:'metall',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:4  },   // Glas-Vorhangfassade + Stahl, (fast) flaches Dach (Hochhaus/Moderne)
-    klinker:{ RM:{holz:'backstein',gefach:'backstein',lehm:'backstein',stein:'backstein'},                         brace:'none', flat:0, pMin:22 },   // Sichtmauerwerk: Vollziegelwand + Tonziegeldach (NL/Hanse/England) — KEINE Sichtbalken, massiver Klinker
-    stroh:  { RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stroh',ziegel2:'stroh'},          brace:null,   flat:0, pMin:38 },   // Reet/Stroh: Holzwände + dickes Strohdach (angelsächsisch/afrikanisch/neolith)
+    modern:{ RM:{holz:'putz',backstein:'putz',gefach:'putz',lehm:'putz',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:STIL_GRENZNEIGUNG.modern },   // glatt verputzt, flaches Dach
+    huette:{ RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stamm',ziegel2:'stamm'},      brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.huette },   // Blockhütte: Holzwände + Holzschindeln, Sichtbalken bleiben
+    stein: { RM:{holz:'putz',gefach:'putz',lehm:'putz',backstein:'putz'},                                      brace:'none', flat:0, pMin:STIL_GRENZNEIGUNG.stein },   // glatt verputzt (FR/IT), Ziegeldach bleibt
+    glas:  { RM:{gefach:'metall',lehm:'metall',backstein:'metall',holz:'metall',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:STIL_GRENZNEIGUNG.glas },   // Glas-Vorhangfassade + Stahl, (fast) flaches Dach (Hochhaus/Moderne)
+    klinker:{ RM:{holz:'backstein',gefach:'backstein',lehm:'backstein',stein:'backstein'},                         brace:'none', flat:0, pMin:STIL_GRENZNEIGUNG.klinker },   // Sichtmauerwerk: Vollziegelwand + Tonziegeldach (NL/Hanse/England) — KEINE Sichtbalken, massiver Klinker
+    stroh:  { RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stroh',ziegel2:'stroh'},          brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.stroh },   // Reet/Stroh: Holzwände + dickes Strohdach (angelsächsisch/afrikanisch/neolith)
   };
   const sm=STILMODE[P.stil], modern = (P.stil==='modern'||P.stil==='glas');
   const TRIMR=(P.stil==='modern'||P.stil==='glas')?'metall':'lattung';   // TRIM-STIL-GESETZ: Dachabschlussprofile folgen der Stilistik (modern = Metall, sonst Holzton)
@@ -195,7 +205,7 @@
   }
   // ════ DIE WAND DES STILS (w28-putz-wand) — malt der Stil das Gerüst in den Stoff der Wand (RM.holz ≡ RM.gefach: stein · modern → putz, glas → metall, klinker → backstein), dann IST die Fassade eine WAND: kein Ständer, kein Rähm, keine Schwelle, kein Riegel, keine Strebe, kein Nagel unter der Farbe — die Felder schließen als Platten über die Achsen (`wandFelder`), EIN Ton statt der Patina je Brett. Der Verband Stein für Stein steht nur, wo der Stil ihn als Backstein zeigt (klinker); umgemalt wäre er Relief ohne Stoff. Vorher (griechisch, Saat 902392) waren 37 548 von 61 324 Dreiecken der L0, 8 280 von 10 768 der L1 und 2 464 von 2 838 der L2 umgemaltes Fachwerk — das Gitter, das im Bild als Schleier vor der Wand stand. ════
   const GLATT=!!(sm&&sm.RM.holz&&sm.RM.holz===sm.RM.gefach), VERBAND=!GLATT||!sm.RM.backstein;
-  const pitch=clamp(P.pitchDeg, sm?sm.pMin:28, 62)*D2R;
+  const pitch=clamp(P.pitchDeg, grenzNeigung(P), 62)*D2R;   // EINE Grenzneigung (STIL_GRENZNEIGUNG), dieselbe, die das Bau-Gesetz ins Rezept schreibt
   let _s=(P.seed*2654435761>>>0)||1; const rnd=()=>((_s=(_s*1664525+1013904223)>>>0)/4294967296);
 
   const baseY=P.foundH+(P.pilotis?2.6:0);   // PILOTIS: das ganze Haus steigt → alles relativ zu baseY folgt automatisch (Synergie)
@@ -2088,6 +2098,7 @@
   if(N.mass) for(const o of N.mass){ if(!_bauWenn(o[3],hp,z.rahmen)) continue; const f=o[0], v=o[2];
     hp[f]= o[1]==='setze'?v : o[1]==='plus'?hp[f]+v : o[1]==='mindestens'?Math.max(hp[f],v) : Math.min(hp[f],v); }
   if(haushalt&&N.raeume) bauProgramm(N, hp, haushalt, z.rahmen||{});
+  hp.pitchDeg=Math.max(hp.pitchDeg, grenzNeigung(hp));   // die gebaute Neigung steht im Rezept (STIL_GRENZNEIGUNG), keine tote Zahl
   return hp;
 }
     // DAS RAUMPROGRAMM (der Packer): die Räume der Nutzung für den Haushalt → Geschosse · Grundriss · Flügel · Anbau · Keller
@@ -2095,7 +2106,7 @@
     //   Fläche je Raum: je Person (personen × (m² + m²·wohl)), je Bau, je Stück (× zahl); netto ÷ LEUTE_GESETZ.nutz = brutto.
     //   Die Parzelle (`hp.parzelle`, sonst der Bau selbst) ist das Land: ihr Fuß × (dicht 1,3 · frei 1,6) trägt den Körper,
     //   × (dicht 1,6 · frei 2,6) Körper samt Hof und Flügeln. Geschosse: das kleinste in [min, max] der Zeile (und nie unter dem,
-    //   was der Ort über die Kultur hob), dessen Körper die Parzelle trägt. Turm-Räume ≥ halber Körper: der Körper bleibt schlank
+    //   was der Ort über die Kultur hob — dann auch über ihrem Maximum), dessen Körper die Parzelle trägt. Turm-Räume ≥ halber Körper: der Körper bleibt schlank
     //   (0,55 × Parzelle) und steigt. Grundriss: die erste Form der Rangfolge, die trägt — hof (ein offener Raum ≥ 20 m², Raum
     //   `hof`), U/T (Flügel ≥ 24 m²), kreuz (≥ 36), L (Flügel ≥ 8 oder Überlauf des Körpers ≥ 8), I (kein Flügel, kein Überlauf).
     //   Was die Form nicht aufnimmt, geht in den Körper. Anbau-Räume werden Anbau-Zellen (je 18 m², höchstens 2, der Würfel des
@@ -2114,7 +2125,7 @@
     A[g==='og'?'og':g==='alle'?'alle':'eg']+=a; }
   const pz=hp.parzelle||hp, F0=Math.max(20,pz.W*pz.D), dicht=!!rahmen.dicht, kultSt=(KULTUR[hp.kultur]||{}).st||1;
   const turmig=A.turm>0&&A.turm>=0.5*(A.eg+A.og+A.alle), capK=Math.min(165, F0*(turmig?0.55:dicht?1.3:1.6)), capL=F0*(dicht?1.6:2.6);
-  const [gmin,gmax]=N.geschosse, sOrt=(pz.storeys||1)>kultSt?pz.storeys:gmin;
+  const gmin=N.geschosse[0], sOrt=(pz.storeys||1)>kultSt?pz.storeys:gmin, gmax=Math.max(N.geschosse[1],sOrt);   // was der Ort über die Kultur hob (Stadtkörper, Viertel), steht über dem Maximum der Zeile
   const fuss=(eg,s)=>(s>1?Math.max(eg+A.alle/s, A.og/(s-1)+A.alle/s):eg+A.og+A.alle)/nutz;
   let gr='I', armF=0;
   for(const g of N.grundriss){
