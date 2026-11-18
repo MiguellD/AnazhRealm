@@ -605,13 +605,6 @@ class AnazhRealm_kreatur_verhalten {
         return true;
     }
 
-    // DIE GRENZEN DES GESETZES für eine Größe, die kein Gesetz trägt (`__lebenCore.spanne`: das Neugeborene des −4σ-Tiers bis
-    // das +4σ-Erwachsene): der Wunsch eines Programms und der Leib eines Stands ohne sein Tier.
-    _lebenSpanne(bs) {
-        const [lo, hi] = AnazhRealm._lebenKern().spanne();
-        return Math.min(hi, Math.max(lo, bs));
-    }
-
     _kreaturGroesseHauch(faktor, ctx) {
         const f = Number(faktor);
         if (!(f > 0)) {
@@ -3772,27 +3765,6 @@ AnazhRealm._verhaltenGesetz = function () {
         }
     } catch (_e) {}
     return AnazhRealm._kernPflichtBruch("tetrapoda:VERHALTEN");
-};
-// DAS GESETZ DES LEBENS (leben-erbe): der EINE Leser von leben-core (`__lebenCore` — Erbe, Leib über das Alter, Auslese
-// nach dem Leib, Adresse) für jeden Stamm-Leser. Fail-closed: ein Kern ohne seine Funktionen ist ein Bruch, nie ein Ersatz.
-AnazhRealm._lebenKern = function () {
-    if (AnazhRealm._lebenKernMemo) return AnazhRealm._lebenKernMemo;
-    const k = typeof globalThis !== "undefined" ? globalThis.__lebenCore : null;
-    const erbe = ["gesetz", "normal", "gruender", "kind", "umwelt", "erbeAusLeib", "artId", "indId"];
-    const leib = [
-        "masseAdult",
-        "lebensdauerS",
-        "masseZurZeit",
-        "alterZurMasse",
-        "reifeS",
-        "fastenRang",
-        "rissGewicht",
-        "wurfGewicht",
-        "eignung",
-        "spanne",
-    ];
-    if (k && [...erbe, ...leib].every((n) => typeof k[n] === "function")) return (AnazhRealm._lebenKernMemo = k);
-    return AnazhRealm._kernPflichtBruch("leben:__lebenCore");
 };
 // DAS STEUER-GESETZ (tetrapoda STEUER_GESETZ + steuerSchritt · tempoEinheit · ankunftTempo, Welle L; verbandZug ·
 // rudelPlatz, S6): der EINE Steuer-Schritt je Tier und Takt, das Ankunfts-Gesetz, die Tempo-Einheit √(g·L), der Verband

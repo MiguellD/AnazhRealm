@@ -83,6 +83,7 @@
                 "stamm/kreatur-verhalten.js": "c:0000000000000000",
                 "stamm/kreatur-furcht.js": "c:0000000000000000",
                 "stamm/kreatur-gehege.js": "c:0000000000000000",
+                "stamm/kreatur-erbe.js": "c:0000000000000000",
                 "stamm/kampf.js": "c:0000000000000000",
                 "stamm/netz-p2p.js": "c:0000000000000000",
                 "stamm/netz-identitaet.js": "c:0000000000000000",
@@ -174,6 +175,7 @@
                 "stamm/kreatur-verhalten.js": "c:0000000000000000",
                 "stamm/kreatur-furcht.js": "c:0000000000000000",
                 "stamm/kreatur-gehege.js": "c:0000000000000000",
+                "stamm/kreatur-erbe.js": "c:0000000000000000",
                 "stamm/kampf.js": "c:0000000000000000",
                 "stamm/netz-p2p.js": "c:0000000000000000",
                 "stamm/netz-identitaet.js": "c:0000000000000000",
@@ -522,6 +524,7 @@
                 "stamm/kreatur-verhalten.js",
                 "stamm/kreatur-furcht.js",
                 "stamm/kreatur-gehege.js",
+                "stamm/kreatur-erbe.js",
                 "stamm/kampf.js",
                 "stamm/netz-p2p.js",
                 "stamm/feld-leben.js",
@@ -978,6 +981,7 @@
                 "stamm/kreatur-leben.js",
                 "stamm/kreatur-fauna.js",
                 "stamm/kreatur-gehege.js",
+                "stamm/kreatur-erbe.js",
                 "stamm/werkstatt-bauen.js"
             ],
             "ist": {
