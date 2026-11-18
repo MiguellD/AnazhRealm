@@ -5078,7 +5078,7 @@
   },
   "karte2.erleben.spieler.praesenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#1 gtx: Station seit der Messung geändert — zuletzt an 18058dba: Last: Referenz f 1,991 (Faden 1,991 · alle Kerne 1,621; vor 179/370,3 ms, nach 172,8/300,1 ms, Ruhe 89,9/228,5 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#1 gtx: Station seit der Messung geändert — zuletzt an b7ed8419: Wirt-Wache: den Kontext der Probe hält noch: if (!window.__zeigerDerProbe) { const stand = (window.__zeigerDerProbe = { el: null, rpl: HTMLCanvasElement.prototype.re — Heap nach der Rücknahme 229.1 → ",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.praesenz#1",
@@ -5096,7 +5096,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 18058dba: Last: Referenz f 1,991 (Faden 1,991 · alle Kerne 1,621; vor 179/370,3 ms, nach 172,8/300,1 ms, Ruhe 89,9/228,5 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
+     "grund": "Station seit der Messung geändert — zuletzt an b7ed8419: Wirt-Wache: den Kontext der Probe hält noch: if (!window.__zeigerDerProbe) { const stand = (window.__zeigerDerProbe = { el: null, rpl: HTMLCanvasElement.prototype.re — Heap nach der Rücknahme 229.1 → ",
      "ungemessen": true,
      "beide": true
     }
@@ -6495,7 +6495,7 @@
   "ohne": 149
  },
  "kopfVoll": "b7ed8419454b22964d72b81d26f1f56128e41735",
- "zeit": "2026-11-18T22:31:53.348Z",
+ "zeit": "2026-11-18T22:37:48.990Z",
  "vorher": "b7ed8419",
  "bilanz": {
   "gewinn": [],
