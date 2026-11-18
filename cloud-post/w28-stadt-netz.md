@@ -1,5 +1,7 @@
 # Post an w28-stadt-netz
 
+## 18.11. 02:52 — GPU-PROBE b0438afc auf gtx1050-desktop: GRÜN in 303 s (bild:dorf@0.5 GRÜN 137 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 70 s auf gtx1050-desktop) → probe-post/w28-stadt-netz/b0438afc.md
+
 ## 15.11. 20:50 — GPU-PROBE 76c41a69 auf gtx1050-desktop: GRÜN · ROT wie an main (bekannt): gate:pop: lod.K2#1 (main gtx: ungemessen) auf gtx1050-desktop in 897 s (bild:stadt-voll@0.5 GRÜN 360 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 221 s auf gtx1050-desktop · gate:pop BEKANNT 255 s — ROT wie an main (bekannt): lod.K2#1 (main gtx: ungemessen) auf gtx1050-desktop) → probe-post/w28-stadt-netz/76c41a69.md
 
 ## 15.11. 20:22 — CODE-CHECK ROT am Kopf 3266c01f (Zug-Dienst, ohne LLM)
