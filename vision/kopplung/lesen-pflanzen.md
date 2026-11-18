@@ -1,4 +1,4 @@
-# Lesen (e) PFLANZEN — Zensus der Kopplung, Stand b7ed841
+# Lesen (e) PFLANZEN — Zensus der Kopplung, Code am b7ed841 (bis HEAD 856fa1f5 nur `vision/kopplung/` geändert), koordination 9102d555
 
 Die Pflanzen sind im Code keine Simulation, sondern drei Funktionen der Saat plus eine Liste von Taten: das gefrorene Rauschen
 `lebendig` (`worldFieldAt`, stamm/feld-leben.js:1793), die Bild-Gesetze der Bodenschicht (foundry-core `groundCover`, die Nah-Wiese
@@ -150,23 +150,37 @@ Herein:
     Gras ohne Wind: R 0,028–0,041 m/s bei `lebendig` 0,15–1, also 391–575 s je 16-m-Zelle. Bei 3 m/s: 0,053–0,207 m/s
     (78–303 s). Bei 6 m/s: 0,053–0,74 m/s (22–303 s). Laub: 0,0064–0,05 m/s. Unter Wind hängt das Tempo stark an der
     Rausch-Last (×3,9 bei 3 m/s, ×14 bei 6 m/s), weil die Wind-Kappe `min(0,9·IR, u)` (stamm/feld-brand.js:330) bei kleiner Last
-    greift. Ohne Wind braucht die Front 7–10 min je Zelle. Das passt zu „nach 60 s EINE Zelle“, solange Wind und Last klein sind.
-    Gemessen ist das am Kopf nicht, siehe §6.
+    greift. Ohne Wind braucht die Front 7–10 min je Zelle. Das passt zum FUND `same.kopplung.kaskade#1` „trocken brennt nach 60 s
+    EINE Zelle (Soll ≥ 200)“ (koordination LAGE.md:136, am 18058dba), solange Wind und Last klein sind. Am Kopf gemessen ist das
+    nicht, siehe §6. Die Sprosse `same.physik.feuer` S2 schreibt „Front mit Wind und Hang 0,5–2 m/s“. Als Front-Tempo gelesen
+    erreicht die Probe das nur bei 6 m/s Wind und `lebendig` ≥ 0,5 (0,526–0,74 m/s). Bei 3 m/s und dem Median `lebendig` 0,5
+    liegt sie bei 0,202 m/s.
+12. **Stale Anker in meisterkarte-2.** `same.physik.feuer` belegt mit „stamm/feld-leben.js:2477-2620“ (MEISTERKARTE-2.md:4223).
+    Dort steht heute der Lava-Index (stamm/feld-leben.js:2477–2480); der Brand liegt in stamm/feld-brand.js:214–339 und :470.
+    `leben.oeko.stoffe` belegt mit „stamm/feld-leben.js:3736“ (MEISTERKARTE-2.md:1533), aber die Datei hat 3 139 Zeilen. Der
+    Nährstoff steht in `TAT_NARBE` stamm/feld-leben.js:3098–3107.
 
 ## 5. Sprossen aus meisterkarte-2
 
-**Nicht gelesen:** `origin/koordination` fehlt in diesem Checkout (`git show origin/koordination:…` → „invalid object name“, auch am
-Ende des Lesens). Der Code zitiert diese Sprossen für das Thema; ihr Wortlaut ist nicht geprüft:
-- stoffe.K2, stoffe.K2#2: Bett, Front und Feuchte, die Asche. Bedient von stamm/feld-brand.js:214–339.
-- stoffe.K5: das Wuchs-Gesetz. stamm/vegetation-wiese.js:2078.
-- stoffe.K5#2: Nährstoff und Sukzession. stamm/vegetation-wiese.js:2097, :2120.
-- feld.K4: die Tat bleibt. stamm/feld-leben.js:2586–2705.
-- feld.K3#2: der Brand im Feld. stamm/feld-leben.js:1861.
-- feld.K5: das Leben am Ort in der Nah-Streu. phyto-core `bodenGewicht`.
-- vegetation.K5: das Jahr. stamm/bild-himmel.js:896.
-- wetter.K2/K3: Nässe und Pegel. stamm/bild-himmel.js:3054, stamm/wasser-hydro.js:71.
-- Ökologie K1: der Fraß. stamm/kreatur-leben.js:2187.
-- `karte2.same.kopplung.kaskade#1`: Station nicht gefunden. grep `kaskade` in scripts/ liefert nur Bild- und Schatten-Kaskaden.
+Gelesen aus `origin/koordination:vision/MEISTERKARTE-2.md` (9102d555). Kopie im Scratchpad unter `pflanzen/mk2.md`. Alle
+Sprossen unten stehen HEUTE 0. Die alten Namen, die der Code zitiert, gehören so zu den neuen: stoffe.K2/K3 → `same.physik.feuer`;
+stoffe.K5 → `leben.oeko.sukzession`, `leben.oeko.stoffe` und `same.kopplung.stoerung`; feld.K1 → `same.kopplung.kaskade`;
+vegetation.K5 → `leben.pflanzen.jahreslauf`; vegetation.K3 → `leben.pflanzen.lebenslauf`.
+
+| Sprosse (MEISTERKARTE-2.md) | Soll | Was der Code dazu trägt |
+|---|---|---|
+| `same.physik.feuer` S1 (:4229) | Fackel an trockenes/nasses Gras: zündet / zündet nicht | M = 0,06 + 0,29·Boden + 2,5·Nässe gegen mx 0,12 (stamm/feld-brand.js:282–285, :509–510). Die Fackel ist nicht gelesen. |
+| `same.physik.feuer` S2 (:4230) | Front mit Wind und Hang 0,5–2 m/s; Halt an nassem Gras; Regen löscht | Probe: Gras 0,028–0,74 m/s, im Band nur bei 6 m/s und `lebendig` ≥ 0,5 (§4.11). Die Last ist Rauschen (Bruch 1). |
+| `same.physik.feuer` S4 (:4232) | 1 km² Wald: Boden → Krone, Funkenflug | Fehlt: Busch und Krone tragen kein `brenn` (stamm/bau-vorlagen.js:1646–1649); kein Kronenfeuer. |
+| `same.physik.feuer` S7 (:4235) | Rate aus Klima; das Ökosystem liest die Asche | Die Asche liest es (Sukzession, stamm/vegetation-wiese.js:2120). Eine Rate aus dem Klima fehlt: `trocken` ist konstant (stamm/feld-brand.js:975). |
+| `leben.oeko.sukzession` S1 (:1519) | Brand-Zellen ums Dorf: Asche → Gras → Busch → Wald, Asche düngt; Halm-, Asche- und Sämling-Zahlen im Fenster | Die Mechanik steht (stamm/vegetation-wiese.js:2120–2135, :2106). Das Bild antwortet in Halm, Kraut, Wald und Boden, aber nicht in der Streu „under“ und nicht in der Fern-Krone (§3). |
+| `leben.oeko.sukzession` S2 (:1520) | 1 km² Waldbrand aus Brennstoff und Wind, Inseln Überlebender | Fehlt: der Brennstoff ist Bild-Fenster und Rauschen (Bruch 1, 6); kein Kronenfeuer. |
+| `same.kopplung.stoerung` S2 (:5279) | 1 Spieljahr: Nachwuchs auf Asche, r(Tempo, Feuchte × Licht) ≥ 0,5 | Das Tempo ist w/72 h mit w = Feuchte × Licht × N × decke, EINMAL beim Schreiben gemessen (Bruch 7). Das r folgt aus der Formel; später fallender Regen wirkt nicht. |
+| `same.kopplung.kaskade` S1/S2 (:5221–5222) | Regen löscht Brand; Regen → Nässe → Stoff → Brand → Licht | Regen → Nässe → Feuchte des Betts liest das Feuer (stamm/feld-brand.js:284). Das Glied „Regen → Pflanze“ fehlt (§3). FUND #1 am 18058dba: nach 60 s EINE Zelle (LAGE.md:136). |
+| `leben.pflanzen.jahreslauf` S1 ◐ (:1155) | Krone Winter ≤ 0,3 × Sommer, Wiese ≤ 0,5 × Sommer | Nur im Bild (uSeasonMul, uLaubPraesenz, stamm/bild-himmel.js:916–918). Brennstoff und Wuchs lesen die Jahreszeit nicht. |
+| `leben.pflanzen.lebenslauf` S4/S6 (:1139, :1141) | Rückkehr nach 50 Jahren: der gewachsene Wald; der Zustand ist eine Funktion der Zeit | Eine Funktion der Zeit gibt es nur für eine Tat (Sukzession aus `tat.h` und Welt-Stunde). Ohne Tat ist die Vegetation zeitlos: Saat, Hydrosphäre, Ort. |
+| `same.kopplung.kohaerenz` S2 (:5242) | Relief → Wasser → Feuchte → Pflanze; die Pflanzen-Dichte fällt monoton mit dem Abstand zum Wasser | Der Gras-Wurf liest Feuchte (Gewicht 0,22, foundry-core.js:3138–3154), ebenso die Wald-Nische (phyto-core.js:3055). Kein Wasser lesen die Brand-Last `lebendig` (stamm/feld-leben.js:1828) und die Dichte der Streu-Schichten tree/under (phyto-core.js:7065). Die Feuchte liest dort nur der Fels-Zweig (:7062). Nicht gemessen. |
+| `leben.pflanzen.biome` (Beleg :1113) | Biome aus Temperatur × Niederschlag | Der Beleg stimmt mit dem Code: die Streu folgt `lebendig` (phyto-core.js:7065); ein Klimafeld T × N fehlt (§3). |
 
 ## 6. Nicht verifiziert
 
@@ -177,7 +191,9 @@ Ende des Lesens). Der Code zitiert diese Sprossen für das Thema; ihr Wortlaut i
     23,1 %. Die Saat ist der Fallback „anazh-realm-seed“, nicht die Saat der Mess-Wiese.
 - **Nicht gelaufen:**
   - `gate:stand-takt --brand` (Welt-Boot, über 60 s).
-  - Die Station kaskade: ihr Ort, Wind und Wort sind unbekannt, darum ist §4.11 nur eine Erklärung, kein Befund.
+  - Die Station `same.kopplung.kaskade#1`: ihr FUND „nach 60 s EINE Zelle“ steht in LAGE.md:136 (am 18058dba). Ihr Ort, Wind und
+    `lebendig` sind nicht gelesen, darum ist §4.11 eine Erklärung und kein Befund. Später zählt die Station Flammen-Pixel unter
+    ruhendem Licht, nicht die Ausbreitung (Radeon +244 … +284 px, LAGE.md:196, :238).
   - Kein Bild und keine Blick-Sonde.
 - **Nicht gelesen:**
   - wie der voxel-worker `gruenMap` schreibt (die Quelle des Grün-Kanals);
