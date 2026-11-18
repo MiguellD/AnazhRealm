@@ -741,6 +741,13 @@ class AnazhRealm_siedlung_wege {
         return q >= 1 ? 1 : q * q * (3 - 2 * q);
     }
 
+    // Die Lage EINES Punkts zum Bord der Fahrbahn `f` (0 … 1, LINEAR über ±rand um ihren Rand: 0 ab +rand außen, ½ am Bord,
+    // 1 ab −rand innen). Leser: der Maler (`_wegeKarteMale`) und die Linse des Weg-Körpers — DIESELBE Zahl.
+    static _wegeFahrLage(f, px, pz, rand) {
+        const q = (rand - AnazhRealm._wegeFormAbstand(f, px, pz)) / (2 * rand);
+        return q <= 0 ? 0 : q >= 1 ? 1 : q;
+    }
+
     // DER SCHUB EINER KARTE um (di, dj) Texel (der Umzug ihres Fensters): neu[j][i] = alt[j + dj][i + di] je `k` Kanälen, was keine
     // Quelle hat, wird `leer`; der Rahmen außerhalb [a, b] bleibt `leer` (der Rand-Texel der Wege-Karte). → die Streifen in [a, b]
     // ([i0, i1, j0, j1], geleert), deren Quelle außerhalb lag — die Spalten über die volle Höhe, die Zeilen ohne sie (keine Ecke
@@ -810,10 +817,18 @@ class AnazhRealm_siedlung_wege {
         } else rand = Math.max(f.rand !== undefined ? f.rand : AnazhRealm.WEGE_KARTE.randM, S.randMinM);
         // DER GEMALTE SAUM (der gepflasterte Gehweg einer Gasse, `_stlWegeBuild`): der Maler deckt die Form um ihn breiter, die Form
         // selbst bleibt die Fahrbahn — EINE gemerkte Mal-Form je Gasse
+        // DIE FAHRBAHN IST DIE ZWEITE HÖHE DES PFLASTERS (w28-weg-koerper, fachwerk WEG_GESETZ, `fahr` an der Form der Fahrstraße):
+        // das Pflaster trägt bis `gehAnteil` seine Deckung (wie bisher das Gewicht der Form: der Gehweg, der Platz), darüber die
+        // Lage zum Bord — LINEAR über ±`fahrRandM` um den Rand der Fahrbahn (`_wegeFahrLage`: am Bord ½, in der Fahrbahn 1). Die
+        // bilineare Probe einer linearen Rampe trägt die gerade Bordlinie genau, der Boden-Stoff liest aus ihr den Abstand zum
+        // Bord in Metern (`_wegBord`). Je Texel das Maximum (wie jede Art): die Mischung kennt weiter keine Reihenfolge.
+        const WK = AnazhRealm.WEGE_KARTE;
+        const fahr = f.fahr ? f : null;
+        const fahrRand = fahr ? Math.max(WK.fahrRandM, S.randMinM) : 0;
         if (f.saum) f = f._mal || (f._mal = { ...f, halb: f.halb + f.saum, saum: 0 });
         const x0w = stufe.mitteX - S.fensterM / 2;
         const z0w = stufe.mitteZ - S.fensterM / 2;
-        const ausdehnung = AnazhRealm._wegeFormRadius(f) + rand;
+        const ausdehnung = AnazhRealm._wegeFormRadius(f) + Math.max(rand, fahrRand - (fahr ? fahr.saum || 0 : 0));
         const minX = Math.min(f.ax, f.bx) - ausdehnung;
         const maxX = Math.max(f.ax, f.bx) + ausdehnung;
         const minZ = Math.min(f.az, f.bz) - ausdehnung;
@@ -827,8 +842,9 @@ class AnazhRealm_siedlung_wege {
         // nicht-leer, der nächste Umzug lädt sie leer hoch — kein Maler kann die Marke vergessen.
         stufe.wegeLeer = false;
         const daten = stufe.daten;
-        const { voll, null: nul } = AnazhRealm.WEGE_KARTE;
+        const { voll, null: nul } = WK;
         const wert = f.wert || 1;
+        const stein = f.kanal === WK.belag.pflaster.kanal && wert === WK.belag.pflaster.wert;
         for (let j = j0; j <= j1; j++) {
             const pz = z0w + (j + 0.5) * t;
             for (let i = i0; i <= i1; i++) {
@@ -836,7 +852,12 @@ class AnazhRealm_siedlung_wege {
                 const q = AnazhRealm._wegeFormGewicht(f, px, pz, rand);
                 if (!(q > 0)) continue;
                 const k = (j * N + i) * 2 + f.kanal;
-                const v = Math.round(q * voll) * wert;
+                let m = q;
+                if (stein) {
+                    m *= WK.gehAnteil;
+                    if (fahr) m += AnazhRealm._wegeFahrLage(fahr, px, pz, fahrRand) * (1 - WK.gehAnteil);
+                }
+                const v = Math.round(m * voll) * wert;
                 const alt = daten[k] - nul;
                 if (wert > 0 ? v > alt : alt <= 0 && v < alt) daten[k] = v + nul;
             }
@@ -876,10 +897,14 @@ class AnazhRealm_siedlung_wege {
                 if (war && stufe.fluss.hydroN === hydroN) this._flussKarteMalen(stufe, hydroN, war);
                 else stufe.fluss.hydroN = -1; // ohne Bild (oder mit neuer Kachel) die Flüsse ganz neu
             } else if (stufe.grundNeu) {
-                // ein Haus legte seinen Grund (S4): die Stufe malt ihre Flächen neu (die Flüsse tragen eigene Bytes)
+                // ein Grund fiel oder ein Ort plante neu (S4): die Stufe malt ihre Flächen neu (die Flüsse tragen eigene Bytes)
                 this._wegeStufeMalen(stufe);
             }
+            // ein Haus legte seinen Grund (`_erdbauWirkt`, erdbauDazu): nur seine Boxen malen — auch nach einem Umzug, dessen
+            // Streifen den Rest des Fensters nicht berührten (w28-stadt-netz)
+            if (stufe.grundDazu) this._wegeStufeMalen(stufe, null, stufe.grundDazu);
             stufe.grundNeu = false;
+            stufe.grundDazu = null;
             // ein neuer Tritt (`_tritt`) geht gebündelt hoch, höchstens ein Upload je `TRITT.uploadMs`
             if (stufe.trittHoch && !(jetzt - (stufe.trittUpload || -Infinity) < AnazhRealm.TRITT.uploadMs)) {
                 this._wegeSchichtHoch(stufe.tex, stufe.schicht);
@@ -1007,25 +1032,86 @@ class AnazhRealm_siedlung_wege {
     // das Bild um den Versatz und malt nur die freigelegten Streifen (`_karteSchieben`): jede Form trägt je Texel denselben Wert
     // aus seiner Welt-Lage, die Mischung (je Art das Maximum, die positive schlägt die negative) kennt keine Reihenfolge — der
     // Schub trägt dieselben Bytes wie ein Neu-Malen, die Kosten binden an den Streifen statt an das Fenster.
-    _wegeStufeMalen(stufe, war) {
+    _wegeStufeMalen(stufe, war, nurGruende, kasten) {
         const S = stufe.S;
         const N = stufe.N;
         const nul = AnazhRealm.WEGE_KARTE.null;
         const warLeer = stufe.wegeLeer === true;
         const t = S.texelM;
+        // die Boxen der Gründe `gruende` (Normalform des Erdbaus), deren Boden der Grund ist, DECKEND in die Streifen `c`
+        const gruendeMalen = (gruende, c, weit, welt) => {
+            for (const g of gruende) {
+                if (Math.abs(g.cx - stufe.mitteX) > weit + 64 || Math.abs(g.cz - stufe.mitteZ) > weit + 64) continue;
+                // nur Streifen: ein Grund, der keinen trifft (seine Boxen liegen binnen 48 m um ihn), malt nichts
+                if (
+                    welt &&
+                    !welt.some((w) => g.cx + 48 > w[0] && g.cx - 48 < w[1] && g.cz + 48 > w[2] && g.cz - 48 < w[3])
+                )
+                    continue;
+                for (const b of g.boxen) {
+                    if (b[4]) continue;
+                    const lx = (b[0] + b[1]) / 2;
+                    const lz = (b[2] + b[3]) / 2;
+                    const ax = g.cx + lx * g.c + lz * g.s;
+                    const az = g.cz - lx * g.s + lz * g.c;
+                    const phi = Math.atan2(g.s, g.c);
+                    const [ex, ez] = [(b[1] - b[0]) / 2, (b[3] - b[2]) / 2];
+                    const form = { typ: "kasten", kanal: 0, ax, az, bx: ax, bz: az, ex, ez, phi, halb: 0, deckt: true };
+                    for (const q of c) this._wegeKarteMale(stufe, form, q);
+                }
+            }
+        };
+        // NUR DIE GELEGTEN GRÜNDE (`nurGruende`, w28-stadt-netz): das Bild bleibt, ihre Boxen kommen dazu (das Maximum je Texel
+        // kennt keine Reihenfolge) — die Kosten binden an den neuen Grund, nie an das Fenster
+        if (nurGruende) {
+            gruendeMalen(nurGruende, [[1, N - 2, 1, N - 2]], S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM);
+            if (!warLeer || !stufe.wegeLeer) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
+            return;
+        }
         let streifen = war
             ? AnazhRealm._karteSchieben(stufe.daten, N, 2, Math.round((stufe.mitteX - war[0]) / t), Math.round((stufe.mitteZ - war[1]) / t), 1, N - 2, nul) // prettier-ignore
             : null;
+        // NUR EIN KASTEN (`kasten` {x0, z0, x1, z1} in der Welt, w28-stadt-netz): eine Fläche fiel aus der Karte — die Texel ihres
+        // Kastens (samt dem weichen Rand und einem Texel) werden leer, und jede Form, die ihn trifft, malt in ihm neu: dieselben
+        // Bytes wie ein Neu-Malen (jeder Texel trägt das Maximum seiner Formen), die Kosten binden an den Kasten
+        if (kasten && !streifen) {
+            const r = AnazhRealm.WEGE_KARTE.randM + S.randMinM + t;
+            const [x0w, z0w] = [stufe.mitteX - S.fensterM / 2, stufe.mitteZ - S.fensterM / 2];
+            const i0 = Math.max(1, Math.floor((kasten.x0 - r - x0w) / t));
+            const i1 = Math.min(N - 2, Math.ceil((kasten.x1 + r - x0w) / t));
+            const j0 = Math.max(1, Math.floor((kasten.z0 - r - z0w) / t));
+            const j1 = Math.min(N - 2, Math.ceil((kasten.z1 + r - z0w) / t));
+            if (i1 < i0 || j1 < j0) return;
+            for (let j = j0; j <= j1; j++) stufe.daten.fill(nul, (j * N + i0) * 2, (j * N + i1 + 1) * 2);
+            streifen = [[i0, i1, j0, j1]];
+            war = [stufe.mitteX, stufe.mitteZ]; // das Fenster steht: der Tritt malt in den Streifen
+        }
         if (!streifen) {
             stufe.daten.fill(nul);
             stufe.wegeLeer = true;
             streifen = [[1, N - 2, 1, N - 2]];
         }
         const h = S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM;
+        // DER STREIFEN FRAGT NUR SEINE FORMEN (w28-stadt-netz, Gebot 7): malt die Stufe nur Streifen (der Umzug, ein Kasten), holt
+        // jede Siedlung die Formen aus den Zellen ihres Rasters (`_wegeFormenIm`: 32 m, je Form die Hülle samt 8 m Reichweite — der
+        // weiche Rand, der Saum und der gewachsene Kasten einer deckenden Form liegen darunter), die ein Streifen trifft — eine
+        // Form, die keinen Streifen trifft, malt nichts, das Bild ist dasselbe. Bis hier fragte jeder Umzug (alle 48 m) jede Form
+        // jeder Siedlung im Fenster: in der Stadt der Kacheln rund 20 000 Formen, 203–209 ms in einem Bild (GTX, 15.11.).
+        const [x0w, z0w] = [stufe.mitteX - S.fensterM / 2, stufe.mitteZ - S.fensterM / 2];
+        const ganz = streifen.some((c) => c[0] <= 1 && c[1] >= N - 2 && c[2] <= 1 && c[3] >= N - 2);
+        const welt = ganz
+            ? null
+            : streifen.map((c) => [x0w + c[0] * t, x0w + (c[1] + 1) * t, z0w + c[2] * t, z0w + (c[3] + 1) * t]);
         for (const sd of this.state.wegeKarte.siedlungen) {
             if (sd.x1 < stufe.mitteX - h || sd.x0 > stufe.mitteX + h) continue;
             if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
-            for (const f of sd.formen) for (const c of streifen) this._wegeKarteMale(stufe, f, c);
+            if (!welt) {
+                for (const f of sd.formen) for (const c of streifen) this._wegeKarteMale(stufe, f, c);
+                continue;
+            }
+            for (let q = 0; q < streifen.length; q++)
+                for (const f of this._wegeFormenIm(sd, welt[q][0], welt[q][1], welt[q][2], welt[q][3]))
+                    this._wegeKarteMale(stufe, f, streifen[q]);
         }
         // DER TRAMPELPFAD (stoffe.K4, `_tritt`): die Nah-Stufe malt jede getretene Zelle in ihrer Stufe von heute (die Ferne trägt
         // 2-m-Texel, ein Pfad von Leibes-Breite zerfiele dort in Punkte)
@@ -1037,22 +1123,50 @@ class AnazhRealm_siedlung_wege {
         // Texel) AUF der Wand: im Turm des haus_gotisch (2,2 m) las der Boden 0,1–0,3 m vor der Wand 0,39–0,9 Erde, die Wiese
         // schien durch (vegetation.K4, Radeon: 7 290 Boden-Pixel)
         const E = this._erdbauLage();
-        if (E && E.gruende)
-            for (const g of E.gruende) {
-                if (Math.abs(g.cx - stufe.mitteX) > h + 64 || Math.abs(g.cz - stufe.mitteZ) > h + 64) continue;
-                for (const b of g.boxen) {
-                    if (b[4]) continue;
-                    const lx = (b[0] + b[1]) / 2;
-                    const lz = (b[2] + b[3]) / 2;
-                    const ax = g.cx + lx * g.c + lz * g.s;
-                    const az = g.cz - lx * g.s + lz * g.c;
-                    const phi = Math.atan2(g.s, g.c);
-                    const [ex, ez] = [(b[1] - b[0]) / 2, (b[3] - b[2]) / 2];
-                    const form = { typ: "kasten", kanal: 0, ax, az, bx: ax, bz: az, ex, ez, phi, halb: 0, deckt: true };
-                    for (const c of streifen) this._wegeKarteMale(stufe, form, c);
-                }
-            }
+        if (E && E.gruende) gruendeMalen(E.gruende, streifen, h, welt);
         if (!warLeer || !stufe.wegeLeer) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
+    }
+
+    // DIE FORMEN EINER SIEDLUNG AM ORT (w28-stadt-netz, Gebot 7): die Formen von `sd`, deren Hülle samt 8 m Reichweite (der weiche
+    // Rand, der Saum, der gewachsene Kasten einer deckenden Form, der Rand der Natur-Wand) den Kasten x0…x1 · z0…z1 (m) erreichen
+    // kann, in der Reihe ihres Baus — aus dem Raster der Siedlung (32 m; ihre Formen kommen nur hinzu, `_stlWegeRaten`: das Raster
+    // wächst mit ihnen). Unter 64 Formen, ohne endlichen Kasten und über 1 km² alle. Leser: der Streifen der Wege-Karte
+    // (`_wegeStufeMalen`) und die Räumung am Ort (`_grundrissWegeIn`) — bis hier fragte jede Räumung jede Form ihrer Siedlung:
+    // die Kachel einer Stadt trägt rund 2 000, jedes Haus des Zugs räumte sechsmal (GTX, Gang durch drei Kacheln: 3 760 Räumungen
+    // zu 0,58 ms — 3,5 von 5,7 ms je Haus).
+    _wegeFormenIm(sd, x0, x1, z0, z1) {
+        if (sd.formen.length < 64 || !((x1 - x0) * (z1 - z0) < 1e6)) return sd.formen;
+        const Z = 32;
+        if (!sd.netz) [sd.netz, sd.netzN] = [new Map(), 0];
+        for (; sd.netzN < sd.formen.length; sd.netzN++) {
+            const f = sd.formen[sd.netzN];
+            f._nr = sd.netzN;
+            const r = AnazhRealm._wegeFormRadius(f) + (f.saum || 0) + 8;
+            for (
+                let a = Math.floor((Math.min(f.ax, f.bx) - r) / Z);
+                a <= Math.floor((Math.max(f.ax, f.bx) + r) / Z);
+                a++
+            )
+                for (
+                    let b = Math.floor((Math.min(f.az, f.bz) - r) / Z);
+                    b <= Math.floor((Math.max(f.az, f.bz) + r) / Z);
+                    b++
+                ) {
+                    const l = sd.netz.get(a * 2097152 + b);
+                    if (l) l.push(f);
+                    else sd.netz.set(a * 2097152 + b, [f]);
+                }
+        }
+        const marke = (this._wegeMarke = (this._wegeMarke || 0) + 1); // Instanz-Feld (die _editSaveTimer-Klasse)
+        const aus = [];
+        for (let a = Math.floor(x0 / Z); a <= Math.floor(x1 / Z); a++)
+            for (let b = Math.floor(z0 / Z); b <= Math.floor(z1 / Z); b++)
+                for (const f of sd.netz.get(a * 2097152 + b) || AnazhRealm.STAND_LEER)
+                    if (f._marke !== marke) {
+                        f._marke = marke;
+                        aus.push(f);
+                    }
+        return aus.sort((p, q) => p._nr - q._nr);
     }
 
     // Der getretene Grund an (x, z) ∈ [0, 1]: die getretene Erde und das Pflaster (`_wegeBelagAt`) — dort wächst kein Halm und
@@ -1063,7 +1177,7 @@ class AnazhRealm_siedlung_wege {
 
     // DER BELAG an (x, z) — bilinear aus DENSELBEN Bytes, die der Boden-Shader liest: die NAH-Stufe innerhalb ihrer Grenze
     // (`_wegeStufeNah`), sonst die FERN-Stufe; je Kanal das Vorzeichen gefiltert, dann geteilt wie im Shader (`_wegeBodenFarbe`,
-    // `WEGE_KARTE.belag`). `aus` (optional) trägt erde · rasen · acker · pflaster (0 … 1). → der getretene Grund (Erde + Pflaster,
+    // `WEGE_KARTE.belag`). `aus` (optional) trägt erde · rasen · acker · pflaster · fahr (0 … 1). → der getretene Grund (Erde + Pflaster,
     // höchstens 1). Leser: das Pfad-Feld der Wiese und der Streu (`_wegeFeldAt`) und der gezeichnete Boden (`_bodenSichtAt`: der
     // Rasen grünt, das Pflaster deckt).
     _wegeBelagAt(x, z, aus) {
@@ -1094,14 +1208,21 @@ class AnazhRealm_siedlung_wege {
         const r = bi(0);
         const gk = bi(1);
         const erde = r > 0 ? r : 0;
-        const pflaster = gk < 0 ? -gk : 0;
+        // das Pflaster trägt zwei Höhen (`_wegeKarteMale`): bis `gehAnteil` seine Deckung, darüber die Lage zum Bord der Fahrbahn
+        const G = AnazhRealm.WEGE_KARTE.gehAnteil;
+        const stein = gk < 0 ? -gk : 0;
+        const pflaster = stein < G ? stein / G : 1;
         if (aus) {
             aus.erde = erde;
             aus.rasen = r < 0 ? -r : 0;
             aus.acker = gk > 0 ? gk : 0;
             aus.pflaster = pflaster;
+            aus.fahr = stein > G ? (stein - G) / (1 - G) : 0;
         }
-        return Math.min(1, erde + pflaster);
+        // DAS PFLASTER HAT EINE KANTE (w28-weg-koerper): der Boden zeichnet es ab der halben Deckung ganz (`_wegeBodenFarbe`, die
+        // Reihe seiner Randsteine) — ab dort steht kein Halm. Bis hier lichtete die Wiese über den weichen Rand (±randM) nur
+        // anteilig: auf den äußeren 0,6 m jedes Pflasters standen Halme im Stein.
+        return Math.min(1, erde + 2 * pflaster);
     }
 
     // Die Boden-Farbe unter Kronen und Wegen (TSL): die Vertex-Farbe mischt zum Rasen (R −), zur Laubstreu der Kronen-Karte,
@@ -1139,7 +1260,15 @@ class AnazhRealm_siedlung_wege {
         const _erde = _wm.r.max(0.0).mul(_begehbar);
         const _rasen = _wm.r.negate().max(0.0).mul(_begehbar);
         const _acker = _wm.g.max(0.0).mul(_begehbar);
-        const _pflaster = _wm.g.negate().max(0.0).mul(_begehbar);
+        // DAS PFLASTER TRÄGT ZWEI HÖHEN (w28-weg-koerper, `_wegeKarteMale`): bis `gehAnteil` seine Deckung `_pq`, darüber die Lage
+        // zum Bord der Fahrbahn (`_wegBord`). SEINE KANTE: es deckt ab der halben Deckung ganz (die Linie der Form selbst, über
+        // einen Pixel weich, nie schärfer als `kantWeich` der Deckung — zwei Formen, die sich nur berühren, tragen an ihrer Naht
+        // je ½) — bis hier lief jedes Pflaster über ±randM in Erde und Wiese aus, ein Anstrich ohne Rand.
+        const _stein = _wm.g.negate().max(0.0);
+        const _pq = _stein.div(WK.gehAnteil).min(1.0);
+        const _pa = _T.fwidth(_pq).max(WK.kantWeich);
+        const _pk = _pq.sub(0.5).div(_pa).add(0.5).clamp(0.0, 1.0);
+        const _pflaster = _pk.mul(_begehbar);
         // DER RASEN (das Gras-Gesetz): wo der Plan Rasen erklärt, ist der Grund das Mittel des Halms (`WIESEN_GRUND`) — die
         // Geologie legt das Relief der Halme darauf (Grün × Flachheit), die Nah-Wiese ihre Büschel (`_bodenSichtAt`: er grünt)
         const _wg = AnazhRealm.WIESEN_GRUND.farbe;
@@ -1177,7 +1306,35 @@ class AnazhRealm_siedlung_wege {
         // legt danach sein Korn, seine Kavität und sein Mikro-Relief über jede Farbe — `aus.stein` nennt ihm den Belag (Albedo,
         // Deckung, die Kante als Kipp der Normale, das Korn seiner Zeile), er hält unter ihm den Stein (`_buildPbrNodeMaterial`)
         const stein = {};
-        const pflaster = this._kopfsteinFarbe(_T, xz, stein);
+        // DER KÖRPER DES WEGS (fachwerk WEG_GESETZ, `_wegBord`): der Ton je Teil des Querschnitts, wo Bord, Flanke und Kante glatt
+        // gesägt sind statt Kleinpflaster (`glatt`: der blanke Stein des Farb-Gesetzes, ohne die Kante der Köpfe), und der Kipp der
+        // Flanke des Bords
+        const bord = this._wegBord(
+            _T,
+            _stein
+                .sub(WK.gehAnteil)
+                .div(1 - WK.gehAnteil)
+                .max(0.0),
+            _T.mix(
+                _T.float(Math.max(WK.fahrRandM, fern.S.randMinM)),
+                _T.float(Math.max(WK.fahrRandM, nah.S.randMinM)),
+                innen
+            ),
+            _pk.sub(
+                _pq
+                    .sub(0.5 + AnazhRealm._wegKantAnteil())
+                    .div(_pa)
+                    .add(0.5)
+                    .clamp(0.0, 1.0)
+            ),
+            xz
+        );
+        const kopf = this._kopfsteinFarbe(_T, xz, stein);
+        const blank = AnazhRealm._srgbHexLinear(
+            AnazhRealm.Gesetz("porta:STEIN_GESETZ.farbe")[AnazhRealm.Gesetz("porta:STEIN_GESETZ.kopfstein").stein]
+        ).map(AnazhRealm._f32);
+        const pflaster = _T.mix(kopf, _T.vec3(blank[0], blank[1], blank[2]), bord.glatt).mul(bord.ton);
+        stein.kipp = stein.kipp ? stein.kipp.mul(_T.float(1).sub(bord.glatt)).add(bord.kipp) : bord.kipp;
         // DIE LAVA (stoffe.K3-2, `_lavaFlaeche`): ihre Decke (B) liegt über jedem Grund, auch über Weg und Pflaster — ihre Kruste
         // aus Basalt mit den Rissen, die ihre Temperatur (A) öffnet (`_lavaKruste`); der Boden-Stoff trägt die Kruste als Belag aus
         // Stein (`aus.stein`: das Stein-Gesetz unter ihr, die Kanten der Schollen kippen die Normale) und die Glut als sein
@@ -1208,6 +1365,126 @@ class AnazhRealm_siedlung_wege {
             };
         }
         return _T.mix(_T.mix(mitAcker, pflaster, _pflaster), kruste.farbe, _lava);
+    }
+
+    // Die halbe Breite der Kante des Pflasters als Anteil seiner Deckung: die Reihe der Randsteine (`WEG_GESETZ.kant.breitM`) liegt
+    // innen an der Linie der Form; dort steigt das Gewicht der Form mit 1,5 ÷ (2 · randM) je Meter (`_wegeFormGewicht`).
+    static _wegKantAnteil() {
+        return (AnazhRealm.Gesetz("fachwerk:WEG_GESETZ").kant.breitM * 1.5) / (2 * AnazhRealm.WEGE_KARTE.randM);
+    }
+
+    // DER BORD DES WEGS (TSL, Leser `_wegeBodenFarbe`; fachwerk WEG_GESETZ — w28-weg-koerper): der Körper der Fahrstraße als
+    // FUNKTION im Boden-Stoff, keine Geometrie und kein Befehl. `f` die Lage zum Bord aus der Wege-Karte (0 … 1, ½ am Bord,
+    // linear über ±`R` Meter: d = (f − ½) · 2R ist der Abstand zum Bord, + in der Fahrbahn), `k` die Kante des Pflasters (0 … 1).
+    // Die Richtung quer zum Bord `n` ist ∇d in der Welt (aus den Ableitungen am Schirm durch die der Welt-Lage, wie die Schollen
+    // der Lava). Der Boden bleibt die Ebene der Fahrbahn; der Gehweg steht `hochM` darüber:
+    //   DER SCHATTEN des Bords fällt auf die Fahrbahn, 0 < d < hochM · cot(Sonnenhöhe) · cos(Azimut zum Bord)
+    //     (= hochM · (−n · s.xz) ÷ s.y, `s` die Richtung des aktiven Körpers, `uSunDir`) — mittags schmal, bei tiefer Sonne breit;
+    //   DIE FLANKE des Bords steht vor dem Gehweg, −hochM · (n · v.xz) ÷ v.y < d < 0 (`v` zum Auge: was der Strahl des Auges von
+    //     der Ebene der Fahrbahn hinter dem Bord nicht sieht, ist die Flanke) — im eigenen Ton, ihre Normale liegt waagrecht (`kipp`);
+    //   DER BORDSTEIN hinter der Flanke (`breitM`), glatt, je `steinM` längs eine Stoßfuge; DIE RINNE vor dem Bord (`rinneM`);
+    //   DIE FAHRBAHN im Ton `ton.fahr`; DIE KANTE des Pflasters (`k`) im Ton `ton.kant`.
+    // Jede Linie ist über einen Pixel weich (`wegAn`), Schatten, Flanke und Bordstein tragen ihr Relief bis `fernM` (halb ab
+    // ½ · fernM), dahinter bleibt der Ton der Fahrbahn — kein Flimmern. Beide Bänder halten ¾ der Rampe der Karte.
+    // ZWEI WGSL-FUNKTIONEN (`wegAn`, `wegBord`, wie die Kruste der Lava): ihre Zwischenwerte leben in ihnen statt im
+    // Boden-Programm (die Ratsche `S0_ZEICHEN`). Rückgabe { ton, glatt, kipp }.
+    // OFFEN: der Schatten des Bords liest die Schattenkarte nicht — im Schlagschatten eines Hauses steht er weiter (Lehre 21).
+    _wegBord(_T, f, R, k, xz) {
+        const W = AnazhRealm.Gesetz("fachwerk:WEG_GESETZ");
+        if (
+            !W ||
+            !W.bord ||
+            !(W.bord.hochM > 0) ||
+            !(W.bord.breitM > 0) ||
+            !(W.bord.steinM > 0) ||
+            !W.ton ||
+            !(W.fernM > 0)
+        )
+            throw new Error("Weg-Körper: das Gesetz fachwerk:WEG_GESETZ trägt Bord, Ton oder Ferne nicht");
+        const [B, T, k7] = [W.bord, W.ton, AnazhRealm._f32];
+        const an =
+            this._wegAnFn ||
+            (this._wegAnFn = _T
+                .Fn(([x, a]) => x.div(a).add(0.5).clamp(0.0, 1.0))
+                .setLayout({
+                    name: "wegAn",
+                    type: "float",
+                    inputs: [
+                        { name: "x", type: "float" },
+                        { name: "a", type: "float" },
+                    ],
+                }));
+        const fn =
+            this._wegBordFn ||
+            (this._wegBordFn = _T
+                .Fn(([f, R, k, xz, s, v]) => {
+                    const d = f.sub(0.5).mul(R).mul(2);
+                    const [px, py, sx, sy] = [_T.dFdx(xz), _T.dFdy(xz), _T.dFdx(d), _T.dFdy(d)];
+                    const det = px.x.mul(py.y).sub(px.y.mul(py.x));
+                    const g = _T
+                        .vec2(sx.mul(py.y).sub(sy.mul(px.y)), sy.mul(px.x).sub(sx.mul(py.x)))
+                        .mul(det.div(det.mul(det).max(1e-24)));
+                    const n = g.div(g.length().max(1e-4));
+                    const a = px.length().add(py.length()).max(1e-3); // die Spanne des Pixels am Boden (m)
+                    const nah = _T
+                        .float(1)
+                        .sub(_T.smoothstep(_T.float(W.fernM / 2), _T.float(W.fernM), v.length()))
+                        .mul(f.mul(40).min(1.0)); // jenseits der Rampe (f = 0: tief im Gehweg) steht kein Band
+                    const lim = R.mul(0.75);
+                    const ws = n.dot(s.xz).negate().max(0.0).mul(B.hochM).div(s.y.max(0.05)).min(lim);
+                    const wf = n.dot(v.xz).max(0.0).mul(B.hochM).div(v.y.max(0.1)).min(lim);
+                    const fb = an(d, a).mul(f.mul(40).min(1.0)); // ohne Rampe (f = 0: Gehweg, Platz, Gasse) keine Fahrbahn
+                    const schatten = fb
+                        .mul(an(ws.sub(d), a))
+                        .mul(ws.div(a).min(1.0))
+                        .mul(nah);
+                    const rinne = fb.mul(an(d.negate().add(B.rinneM), a));
+                    const o = d.add(wf); // der Abstand hinter der Flanke (− im Gehweg)
+                    const flanke = an(d.negate(), a).mul(an(o, a)).mul(wf.div(a).min(1.0)).mul(nah);
+                    const stein = an(o.negate(), a)
+                        .mul(an(o.add(B.breitM), a))
+                        .mul(nah);
+                    // die Stoßfuge des Bordsteins: der Abstand zur nächsten Fuge längs des Bords (m)
+                    const fuge = an(
+                        _T
+                            .fract(xz.dot(_T.vec2(n.y.negate(), n.x)).div(B.steinM))
+                            .sub(0.5)
+                            .abs()
+                            .sub(0.5)
+                            .mul(B.steinM)
+                            .add(0.008),
+                        a
+                    );
+                    const ton = _T.mix(
+                        _T.mix(
+                            fb
+                                .mul(k7(T.fahr - 1))
+                                .add(1)
+                                .mul(rinne.mul(k7(T.rinne / T.fahr - 1)).add(1))
+                                .mul(schatten.mul(k7(T.schatten - 1)).add(1))
+                                .mul(k.mul(k7(T.kant - 1)).add(1)),
+                            _T.float(T.flanke),
+                            flanke
+                        ),
+                        fuge.mul(k7(-0.35 * T.bord)).add(T.bord),
+                        stein
+                    );
+                    return _T.vec4(ton, flanke.add(stein).add(k).min(1.0), n.mul(flanke).mul(4));
+                })
+                .setLayout({
+                    name: "wegBord",
+                    type: "vec4",
+                    inputs: [
+                        { name: "f", type: "float" },
+                        { name: "R", type: "float" },
+                        { name: "k", type: "float" },
+                        { name: "xz", type: "vec2" },
+                        { name: "s", type: "vec3" },
+                        { name: "v", type: "vec3" },
+                    ],
+                }));
+        const q = fn(f, R, k, xz, this._windUniformsEnsure().uSunDir, _T.cameraPosition.sub(_T.positionWorld));
+        return { ton: q.x, glatt: q.y, kipp: _T.vec3(q.z, 0, q.w) };
     }
 
     // DIE KRUSTE DER LAVA (TSL, Leser `_wegeBodenFarbe`): EIN Gesetz aus der Temperatur `w` (das Byte A, `_lavaFlaeche`: der Gang
@@ -1356,11 +1633,21 @@ class AnazhRealm_siedlung_wege {
     // DER GANG DER LEIBER im Sim-Schritt: jedes Tier und der Spieler zu Fuß (dieselben Leiber wie im Leib-Löser
     // `_leibKontakte`, an ihrer Lage vor ihm) treten den Pfad; der Spieler tritt, wo er steht, ein Tier geht am Boden. Bis zum
     // Merge von main f69a7305 lag dieser Schreib-Akt im Leib-Löser (stamm/kreatur-verhalten.js riss die Decke von 4 000 Zeilen).
+    // EIN Tier tritt nur in der Reichweite des Gedächtnisses (`_trittReichweite`, w28-halter-register): jenseits fiele seine Zelle
+    // am nächsten Gang des Registers (Radeon 18.11., Runde reise: Tiere 2,6–6,5 km fern hielten 70 von 789 Einträgen außerhalb).
     _trittDerLeiber() {
         const st = this.state;
-        for (const c of st.creatures || AnazhRealm.STAND_LEER)
-            if (c && c.position && c.userData) this._tritt(c, c.position.x, c.position.z, true, false);
         const pm = st.playerMesh;
+        const p = pm && pm.position;
+        const rw = p ? AnazhRealm._trittReichweite(this) : Infinity;
+        for (const c of st.creatures || AnazhRealm.STAND_LEER)
+            if (
+                c &&
+                c.position &&
+                c.userData &&
+                !(p && Math.max(Math.abs(c.position.x - p.x), Math.abs(c.position.z - p.z)) > rw)
+            )
+                this._tritt(c, c.position.x, c.position.z, true, false);
         if (!pm || !pm.position || (st.player && st.player.mountedArch != null)) return;
         const K = this._spielerKapsel(this._trittKapsel || (this._trittKapsel = {}));
         this._tritt(pm, K.x, K.z, st.isInAir !== true && st.playerUnderwater !== true, true);
@@ -1629,7 +1916,7 @@ class AnazhRealm_siedlung_wege {
         if (i >= 0) wk.siedlungen.splice(i, 1);
         this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1); // die Fläche fällt aus der Natur-Wand (`_aufWeg`)
         entry._trittBox = undefined;
-        for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeStufeMalen(stufe);
+        for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeStufeMalen(stufe, null, null, box); // nur ihr Kasten malt neu
         this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
     }
 
@@ -1724,6 +2011,381 @@ class AnazhRealm_siedlung_wege {
         st.stlMauer = { mesh, cap: 256, top: 0 };
         return st.stlMauer;
     }
+    // DIE FERNE DER STADT (w28-stadt-netz, Stufe 1 im Bild): jede Kachel einer Stadt, die in dieser Sitzung nicht steht, trägt
+    // ihre Häuser als MASSEN — die Liste des Gesetzbuchs (fachwerk `kachelMassen`: Zahl, Maße, Geschosse, Ton der Kachel an den
+    // Straßen ihres Netzes), je Haus eine Kiste bis zur Traufe und ein Satteldach, in zwei Pools der EINEN Kiste (EIN Programm,
+    // zwei Draws für die ganze Stadt; die Farbe je Instanz ist der Ton des Hauses). Der Grund je Haus ist die Höhe des Gesetzes
+    // an seiner Mitte, die Kiste reicht `sockelM` darunter; was im Wasser stünde, steht nicht. Die Kachel steht, sobald die
+    // Sitzung ihre Siedlung kennt (`_bewohnerSiedlungen`) und ihr Zug endete — dann fallen ihre Massen (die Häuser der Stufe 2
+    // stehen auf demselben Netz an anderen Losen). Bis hier trug die Stadt jenseits der wachen Kacheln nichts: „dorf 7 4750“
+    // stand als neun Kacheln auf der Wiese. Je `jeTakte` Takte baut der Takt EINE Kachel (2–4 ms im Kern, einmal je Sitzung).
+    _stadtFerneTakt(playerPos) {
+        const st = this.state;
+        const staedte = this._staedte();
+        if (!staedte.length || !st.scene) return;
+        const A = AnazhRealm.STADT_FERNE;
+        const F = this._stadtFerneStand();
+        const [B, q, M] = [this._bewohnerSiedlungen, this._autoSettlementQueue, AnazhRealm._siedlungGesetz().cellM];
+        const V = this._dorfVorraete;
+        let darf = ++F.takt % A.jeTakte === 0;
+        let weg = F.takt % A.jeTakte === 3; // EINE Kachel je Takt-Runde legt oder löst ihre Straßen
+        for (const s of staedte) {
+            if (Math.hypot(s.x - playerPos.x, s.z - playerPos.z) > A.reichM + s.ringe * M) continue;
+            for (let k = -s.ringe; k <= s.ringe; k++)
+                for (let i = -s.ringe; i <= s.ringe; i++) {
+                    const key = !i && !k ? s.key : s.cx + i + "," + (s.cz + k);
+                    const imZug = !!(q && q.cellKey === key && q.plan && q.origin);
+                    // der Plan der Kachel: die Sitzung kennt ihre Siedlung, ihr Zug hebt sie gerade — oder ihr Vorrat liegt
+                    // bereit (`_dorfBereiten`: der Plan v2 am Ort der Kachel, im Vorlauf des Erwachens): die Massen stehen an
+                    // ihren Losen, ehe die Kachel erwacht, und das Erwachen stellt kein Haus um
+                    const w = V && V.get(key);
+                    const S2 =
+                        (B && B.get(key)) ||
+                        (imZug ? { plan: q.plan, ox: q.origin.x, oz: q.origin.z } : null) ||
+                        (w && w.da && w.v2 && Array.isArray(w.v2.slots) ? { plan: w.v2, ox: w.x, oz: w.z } : null);
+                    let e = F.je.get(key);
+                    if (S2 && !(e && e.los)) {
+                        // STUFE 2: dieselben Massen an den ECHTEN Losen — sofort, ehe das erste Haus des Zugs steht
+                        const alt = e;
+                        if (alt) this._stadtFerneLoesen(F, alt);
+                        e = this._stadtFerneBauen(
+                            F,
+                            AnazhRealm.Gesetz("fachwerk:planMassen")(S2.plan),
+                            S2.ox,
+                            S2.oz,
+                            S2.plan
+                        );
+                        if (alt) [e.strassen, e.box, e.band] = [alt.strassen, alt.box, alt.band];
+                        F.je.set(key, e);
+                    } else if (!e && darf) {
+                        const m = AnazhRealm.Gesetz("fachwerk:kachelMassen")(s.seed, s.nH, i, k, s.epoche);
+                        e = this._stadtFerneBauen(F, m, s.x + i * M, s.z + k * M, null);
+                        e.strassen = m ? m.strassen : null;
+                        F.je.set(key, e);
+                        darf = false;
+                    }
+                    if (!e) continue;
+                    // der Zug endete: ein Los, das kein Haus trägt (es fiel an der Bau-Wand), trägt auch keine Masse
+                    // (die Kachel STEHT: die Sitzung kennt ihre Siedlung und ihr Zug ist durch — ein Vorrat steht noch nicht)
+                    if (e.los && !e.steht && !imZug && B && B.has(key)) this._stadtMasseZugEnde(F, e);
+                    const d = Math.hypot(s.x + i * M - playerPos.x, s.z + k * M - playerPos.z);
+                    // eine Kachel, die ihren Plan ohne Stufe 1 bekam (der Reload: die Sitzung kennt ihre Siedlung), holt die
+                    // Gassen ihres Netzes für das Band, sobald sie jenseits `bandAbM` liegt
+                    if (!e.strassen && e.los && darf && d > A.bandAbM) {
+                        const m = AnazhRealm.Gesetz("fachwerk:kachelMassen")(s.seed, s.nH, i, k, s.epoche);
+                        e.strassen = m ? m.strassen : [];
+                        darf = false;
+                    }
+                    if (!e.strassen) continue;
+                    // das Band der Straßen: jenseits `bandAbM` (dort malt keine Stufe der Wege-Karte mehr die ganze Kachel)
+                    // liegt es, diesseits fällt es (`bandSpielM` Spiel gegen das Flattern an der Grenze)
+                    if (!!e.band !== d > A.bandAbM - (e.band ? A.bandSpielM : 0))
+                        this._stadtFerneBand(F, e, !e.band, s.x + i * M, s.z + k * M);
+                    // die Straßen der Stufe 1: bis `strassenM` vom Spieler (dahinter malt keine Stufe der Wege-Karte); sie
+                    // fallen eine Kachel weiter draußen — und sobald die Kachel steht (ihr Plan malt seine Gassen selbst)
+                    if (e.box ? e.steht || d > A.strassenM + M : !e.los && d < A.strassenM && weg) {
+                        this._stadtFerneStrassen(e, !e.box);
+                        weg = false;
+                    }
+                }
+        }
+        this._stadtMasseStand();
+    }
+    // der Stand der Ferne (je Welt): die zwei Pools, je Kachel ihr Eintrag, die Lose der Stufe 2 nach ihrem Ort (`los`), je
+    // gebundenem Haus seine Masse (`von`) und die Häuser, deren Bild wechselte (`schmutz`)
+    _stadtFerneStand() {
+        const st = this.state;
+        return (
+            st.stadtFerne ||
+            (st.stadtFerne = {
+                wand: null,
+                dach: null,
+                band: null,
+                je: new Map(),
+                takt: 0,
+                los: new Map(),
+                von: new Map(),
+                schmutz: new Set(),
+            })
+        );
+    }
+    static _stadtLosKey(x, z) {
+        return Math.round(x * 20) + "," + Math.round(z * 20);
+    }
+    // EIN HAUS DER STADT TRÄGT EIN BILD (w28-stadt-netz, der Schnitt der Kapsel-Liste): sein Mesh in der Mesh-Zone, seinen Satz
+    // im Welt-March bis `STADT_FERNE.nahM` (`_archSatzHorizont`), dahinter — und solange es weder Mesh noch Satz trägt — seine
+    // MASSE in den Pools der Ferne, an seinem Los. Bis hier trug jedes stehende Haus bis zu seinem Pixel-Horizont einen Satz:
+    // die Liste des March wuchs mit der Stadt (3 × 3 Kacheln, 1641 Häuser: 6779 von 8192 Plätzen; bei 14 Kacheln voll).
+    // `_stadtMasseRegt`: der Weckruf des Baus (`_cullWecken`: Eintritt, Abbau, Mesh und Instanz) und sein Satz
+    // (`_archZiegelHalten`, `_archZiegelTod`) melden den Wechsel; der Eintritt bindet das Haus an das Los seines Orts.
+    _stadtMasseRegt(entry, art) {
+        const F = this.state.stadtFerne;
+        if (!F || !F.los.size || !entry || entry._masse === null) return;
+        if (entry._masse === undefined) {
+            const p = entry.position;
+            const m = p ? F.los.get(AnazhRealm._stadtLosKey(p.x, p.z)) : null;
+            if (!m || m.e.gebunden[m.j]) {
+                entry._masse = null;
+                return;
+            }
+            entry._masse = true;
+            m.e.gebunden[m.j] = 1;
+            F.von.set(entry, m);
+        }
+        const m = F.von.get(entry);
+        if (!m) return;
+        if (art === "weg") m.weg = true; // abgebaut: an seinem Los steht nichts mehr
+        F.schmutz.add(entry);
+    }
+    // der Stand der Massen nach den Wechseln dieses Takts: die Masse steht, wo das Haus kein eigenes Bild trägt
+    _stadtMasseStand() {
+        const F = this.state.stadtFerne;
+        if (!F || !F.schmutz.size) return;
+        for (const entry of F.schmutz) {
+            const m = F.von.get(entry);
+            if (!m) continue;
+            const an = !m.weg && !entry._ziegelSlot && !this._archIsRendered(entry);
+            if (!!m.e.anH[m.j] !== an) this._stadtMasseSchreiben(F, m.e, m.j, an);
+            if (m.weg) F.von.delete(entry);
+        }
+        F.schmutz.clear();
+    }
+    _stadtMasseSchreiben(F, e, j, an) {
+        e.anH[j] = an ? 1 : 0;
+        for (const art of ["wand", "dach"]) {
+            const [t, P] = [e[art], F[art]];
+            if (!t || !P) continue;
+            const [ziel, o] = [P.mesh.instanceMatrix.array, (t.a + j) * 16];
+            if (an) ziel.set(t.matrizen.subarray(j * 16, j * 16 + 16), o);
+            else {
+                ziel.fill(0, o, o + 16);
+                ziel[o + 15] = 1;
+            }
+            P.mesh.instanceMatrix.needsUpdate = true;
+        }
+    }
+    _stadtMasseZugEnde(F, e) {
+        e.steht = true;
+        for (let j = 0; j < e.anH.length; j++)
+            if (e.anH[j] && !e.gebunden[j]) this._stadtMasseSchreiben(F, e, j, false);
+    }
+    // die zwei Pools der Ferne: die Kiste (die Wände) und das Dach — das Prisma der Einheit: Grund 1 × 1 um die Mitte, der First
+    // längs x in der Höhe 1 (zwei Schrägen, zwei Giebel)
+    _stadtFernePool(F, art) {
+        if (F[art]) return F[art];
+        let geo;
+        if (art === "dach") {
+            const [h, n] = [0.5, Math.hypot(0.5, 1)];
+            // prettier-ignore
+            const P = [-h, 0, h, h, 0, h, h, 1, 0, -h, 1, 0, h, 0, -h, -h, 0, -h, -h, 1, 0, h, 1, 0, h, 0, h, h, 0, -h, h, 1, 0, -h, 0, -h, -h, 0, h, -h, 1, 0];
+            // prettier-ignore
+            const N = [0, 0.5 / n, 1 / n, 0, 0.5 / n, 1 / n, 0, 0.5 / n, 1 / n, 0, 0.5 / n, 1 / n, 0, 0.5 / n, -1 / n, 0, 0.5 / n, -1 / n, 0, 0.5 / n, -1 / n, 0, 0.5 / n, -1 / n, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0];
+            geo = new THREE.BufferGeometry();
+            geo.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
+            geo.setAttribute("normal", new THREE.Float32BufferAttribute(N, 3));
+            geo.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(28), 2));
+            geo.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 11, 12, 13]);
+        }
+        const mesh = this._kistenPool("stadt-ferne-" + art, 1024, geo);
+        this.state.scene.add(mesh);
+        return (F[art] = { mesh, cap: 1024, top: 0, geo, frei: [] });
+    }
+    // n Plätze am Ende eines Pools der Ferne (er wächst durch Verdopplung, wie jeder Bau-Pool) → der erste Platz
+    _stadtFernePlatz(P, n) {
+        // ein gelöster Bereich (die Massen der Stufe 1 einer Kachel, die ihren Plan bekam) trägt den nächsten, der passt
+        const f = P.frei.findIndex((r) => r.n >= n);
+        if (f >= 0) {
+            const r = P.frei[f];
+            const a = r.a;
+            if (r.n === n) P.frei.splice(f, 1);
+            else [r.a, r.n] = [r.a + n, r.n - n];
+            return a;
+        }
+        if (P.top + n > P.cap) {
+            let cap = P.cap;
+            while (P.top + n > cap) cap *= 2;
+            const neu = this._kistenPool(P.mesh.name, cap, P.geo);
+            neu.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
+            neu.instanceColor.array.set(P.mesh.instanceColor.array);
+            this.state.scene.add(neu);
+            this.state.scene.remove(P.mesh);
+            this._instanzAbschied(P.mesh);
+            [P.mesh, P.cap] = [neu, cap];
+        }
+        const a = P.top;
+        P.top += n;
+        AnazhRealm._instanzZahl(P.mesh, P.top);
+        return a;
+    }
+    // die Massen EINER Kachel in die Pools (`m`: fachwerk `kachelMassen` oder `planMassen`, um den Ursprung ox/oz): je Haus
+    // seine Kiste und (mit First) sein Dach am Platz seiner Nummer — der Eintrag merkt ihre Matrizen (ein Haus ohne Masse,
+    // im Wasser oder ohne First trägt die Null-Kiste). Mit `plan` (Stufe 2) steht jedes Haus an seinem Los: sein Grund ist
+    // der des Slots, sein Ort trägt es ins Register der Lose (`F.los`), und die Häuser, die dort schon stehen, binden sich.
+    _stadtFerneBauen(F, m, ox, oz, plan) {
+        const A = AnazhRealm.STADT_FERNE;
+        const n = m ? m.n : 0;
+        const e = { wand: null, dach: null, band: null, ox, oz, strassen: null, box: null, los: !!plan, steht: false, anH: new Uint8Array(n), gebunden: new Uint8Array(n) }; // prettier-ignore
+        if (!n) return e;
+        const [L, T] = [m.lage, m.ton];
+        const [mat, quat, pos, mass, auf] = [new THREE.Matrix4(), new THREE.Quaternion(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(0, 1, 0)]; // prettier-ignore
+        const [wm, dm] = [new Float32Array(n * 16), new Float32Array(n * 16)];
+        for (let h = 0; h < n; h++) {
+            wm[h * 16 + 15] = dm[h * 16 + 15] = 1; // die Null-Kiste: kein Dreieck trägt Fläche
+            const [x, z, gier, W, D, traufe, first] = [ox + L[h * 7], oz + L[h * 7 + 1], L[h * 7 + 2], L[h * 7 + 3], L[h * 7 + 4], L[h * 7 + 5], L[h * 7 + 6]]; // prettier-ignore
+            const sl = plan ? plan.slots[h] : null;
+            if (!(W > 0)) continue;
+            const y = sl && Number.isFinite(sl.y) ? sl.y : this.getTerrainHeightAt(x, z);
+            if (!Number.isFinite(y) || (!sl && !this._landAt(x, z, 0.2))) continue;
+            if (sl) F.los.set(AnazhRealm._stadtLosKey(ox + sl.x, oz + sl.z), { e, j: h, weg: false });
+            e.anH[h] = 1;
+            quat.setFromAxisAngle(auf, gier);
+            mat.compose(pos.set(x, y + (traufe - A.sockelM) / 2, z), quat, mass.set(W, traufe + A.sockelM, D));
+            wm.set(mat.elements, h * 16);
+            if (!(first > 0)) continue;
+            mat.compose(pos.set(x, y + traufe, z), quat, mass.set(W + A.ueberM, first, D + A.ueberM));
+            dm.set(mat.elements, h * 16);
+        }
+        const lege = (art, matrizen, ab) => {
+            const P = this._stadtFernePool(F, art);
+            const a = this._stadtFernePlatz(P, n);
+            const farben = P.mesh.instanceColor.array;
+            for (let h = 0; h < n; h++) farben.set(T.subarray(h * 6 + ab, h * 6 + ab + 3), (a + h) * 3);
+            P.mesh.instanceColor.needsUpdate = true;
+            P.mesh.instanceMatrix.array.set(matrizen, a * 16);
+            P.mesh.instanceMatrix.needsUpdate = true;
+            return { a, n, matrizen };
+        };
+        [e.wand, e.dach] = [lege("wand", wm, 0), lege("dach", dm, 3)];
+        // die Häuser, die schon stehen (der Wege-Bau nach dem Reload, der Akt): jedes bindet sich an sein Los
+        if (plan) for (const entry of this.state.architectures || []) if (entry && entry._masse !== true) [(entry._masse = undefined), this._stadtMasseRegt(entry)]; // prettier-ignore
+        return e;
+    }
+    // die Massen einer Kachel fallen aus den Pools (Stufe 1, wenn ihr Plan kommt): Null-Kisten, die Plätze frei für die nächste
+    // (`arten`: die Pools — ohne sie Wand und Dach; das Band der Straßen löst `_stadtFerneBand`)
+    _stadtFerneLoesen(F, e, arten = ["wand", "dach"]) {
+        for (const art of arten) {
+            const [t, P] = [e[art], F[art]];
+            if (!t || !P) continue;
+            const ziel = P.mesh.instanceMatrix.array;
+            ziel.fill(0, t.a * 16, (t.a + t.n) * 16);
+            for (let j = t.a; j < t.a + t.n; j++) ziel[j * 16 + 15] = 1;
+            P.mesh.instanceMatrix.needsUpdate = true;
+            P.frei.push({ a: t.a, n: t.n });
+            e[art] = null;
+        }
+    }
+    // DAS BAND DER STRASSEN EINER FERNEN KACHEL (`an`: legen, sonst lösen; `ox`/`oz` die Mitte der Kachel): jenseits `bandAbM`
+    // malt keine Stufe der Wege-Karte die ganze Kachel (ihr fernes Fenster reicht 1024 m) — dort trägt jede Gasse ihres Netzes
+    // (fachwerk `kachelMassen` `strassen`) EINE Kiste im dritten Pool der Ferne: von ihrem ersten zu ihrem letzten Punkt, so
+    // breit wie Belag und Saum, `bandHubM` über dem Grund des Gesetzes an ihren Enden (`bandDickM` dick: der Hang), im Ton des
+    // Kopfsteins (der Stein des Farb-Gesetzes mal dem Anteil seiner Fuge, porta `STEIN_GESETZ`). EIN Draw für alle Straßen
+    // aller fernen Kacheln. Bis hier standen die Massen jenseits 1 200 m ohne Weg: aus 1 km lag fast die Hälfte der Stadt als
+    // Konfetti auf der Wiese.
+    _stadtFerneBand(F, e, an, ox, oz) {
+        if (!an) {
+            if (e.band && e.band.n) this._stadtFerneLoesen(F, e, ["band"]);
+            e.band = null;
+            return;
+        }
+        const A = AnazhRealm.STADT_FERNE;
+        const n = e.strassen.length;
+        e.band = { a: 0, n: 0 }; // auch leer gemerkt: die Kachel fragt nicht je Takt neu
+        if (!n) return;
+        const K = AnazhRealm.Gesetz("porta:STEIN_GESETZ.kopfstein");
+        const c = AnazhRealm._srgbHexLinear(AnazhRealm.Gesetz("porta:STEIN_GESETZ.farbe")[K.stein]);
+        const ton = 1 - ((1 - K.fugeTon) * 2 * K.fuge) / K.steinM;
+        // DER TON DES BANDS FOLGT DEM WEG (w28-weg-koerper, fachwerk WEG_GESETZ): die Erd-Gasse trägt die getretene Erde der Palette,
+        // das Pflaster den Stein, die Fahrstraße ihn im Mittel aus Fahrbahn (`ton.fahr`) und Gehweg nach ihren Breiten — derselbe
+        // Ton, den der Boden-Stoff in der Wege-Karte zeichnet. Bis hier trug jedes Band Kopfstein, auch die Erd-Gasse.
+        const W = AnazhRealm.Gesetz("fachwerk:WEG_GESETZ");
+        const erde = AnazhRealm.BODEN_FARBE.dirt;
+        const P = this._stadtFernePool(F, "band");
+        const a = this._stadtFernePlatz(P, n);
+        const [ziel, farben] = [P.mesh.instanceMatrix.array, P.mesh.instanceColor.array];
+        const [mat, quat, pos, mass, dreh] = [new THREE.Matrix4(), new THREE.Quaternion(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Euler()]; // prettier-ignore
+        for (let h = 0; h < n; h++) {
+            const [s, o] = [e.strassen[h], (a + h) * 16];
+            ziel.fill(0, o, o + 16);
+            ziel[o + 15] = 1; // die Null-Kiste: eine Gasse im Wasser trägt kein Band
+            const [fahrM, breit] = [Math.max(1.2, s.w), Math.max(1.2, s.w) + 2 * Math.max(0, s.saum || 0)];
+            const t = ton * (W.art[s.art].bord ? (fahrM * W.ton.fahr + breit - fahrM) / breit : 1);
+            farben.set(s.belag === "pflaster" ? [c[0] * t, c[1] * t, c[2] * t] : erde, (a + h) * 3);
+            const p = s.p;
+            const [ax, az, bx, bz] = [ox + p[0], oz + p[1], ox + p[p.length - 2], oz + p[p.length - 1]];
+            const lang = Math.hypot(bx - ax, bz - az);
+            if (!(lang > 0.5) || !this._landAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue;
+            const [ya, yb] = [this.getTerrainHeightAt(ax, az), this.getTerrainHeightAt(bx, bz)];
+            if (!Number.isFinite(ya) || !Number.isFinite(yb)) continue;
+            quat.setFromEuler(dreh.set(-Math.atan2(yb - ya, lang), Math.atan2(bx - ax, bz - az), 0, "YXZ"));
+            mat.compose(
+                pos.set((ax + bx) / 2, (ya + yb) / 2 + A.bandHubM - A.bandDickM / 2, (az + bz) / 2),
+                quat,
+                mass.set(breit, A.bandDickM, Math.hypot(lang, yb - ya))
+            );
+            ziel.set(mat.elements, o);
+        }
+        P.mesh.instanceColor.needsUpdate = true;
+        P.mesh.instanceMatrix.needsUpdate = true;
+        e.band = { a, n };
+    }
+    // DIE STRASSEN EINER FERNEN KACHEL (`an`: legen, sonst lösen): die Gassen ihres Netzes mit dem Belag des Gesetzbuchs
+    // (fachwerk `kachelMassen` `strassen`) als Formen der Wege-Karte — der Boden malt Pflaster, die Natur-Wand hält die Linie
+    // frei, was auf ihr wuchs, räumt der Takt (`_wegeRaeumen`). Eine Stadt liest sich aus der Ferne über ihr Straßennetz: bis
+    // hier standen die Massen auf der Wiese. Gelöst fällt der Kasten aus dem Register, jede zentrierte Stufe malt ihn neu.
+    // DIE FORM EINES STÜCKS GASSE in der Wege-Karte — nah (`_stlWegeRaten`) und fern (`_stadtFerneStrassen`) DIESELBE: die Form
+    // ist die Fahrbahn (`halb`), das Pflaster deckt dazu den Gehweg als gemalten `saum`; trägt die Art des Wegs einen Bord
+    // (fachwerk WEG_GESETZ.art), ist die Fahrbahn die zweite Höhe des Pflasters (`fahr`, `_wegeKarteMale`).
+    static _wegStueck(B, ax, az, bx, bz, w, saum, art) {
+        const A = globalThis.__fachwerkCore.WEG_GESETZ.art[art];
+        if (!A) throw new Error(`Wege-Karte: eine Gasse trägt die Art „${art}", die das Weg-Gesetz nicht kennt`);
+        const f = { typ: "segment", kanal: B.kanal, wert: B.wert, ax, az, bx, bz, halb: Math.max(1.2, w || 2.5) / 2 };
+        if (saum > 0) f.saum = saum;
+        if (A.bord && saum > 0) f.fahr = true;
+        return f;
+    }
+    _stadtFerneStrassen(e, an) {
+        const wk = this._wegeKarteEnsure();
+        if (!an) {
+            const box = e.box;
+            e.box = null;
+            const i = wk.siedlungen.indexOf(box);
+            if (i < 0) return;
+            wk.siedlungen.splice(i, 1);
+            if (wk.raeumen.includes(box)) wk.raeumen.splice(wk.raeumen.indexOf(box), 1);
+            this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1);
+            for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeStufeMalen(stufe, null, null, box);
+            this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
+            return;
+        }
+        const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [], ferne: true };
+        for (const s of e.strassen) {
+            const belag = AnazhRealm.WEGE_KARTE.belag[s.belag];
+            if (!belag)
+                throw new Error(`Wege-Karte: eine ferne Gasse trägt den Belag „${s.belag}", den der Boden nicht kennt`);
+            for (let j = 0; j + 3 < s.p.length; j += 2) {
+                const [ax, az, bx, bz] = [e.ox + s.p[j], e.oz + s.p[j + 1], e.ox + s.p[j + 2], e.oz + s.p[j + 3]];
+                if (!this._landAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue; // die Wasser-Wand
+                const f = AnazhRealm._wegStueck(belag, ax, az, bx, bz, s.w, s.saum, s.art);
+                box.formen.push(f);
+                const r = AnazhRealm._wegeFormRadius(f);
+                box.x0 = Math.min(box.x0, ax - r, bx - r);
+                box.x1 = Math.max(box.x1, ax + r, bx + r);
+                box.z0 = Math.min(box.z0, az - r, bz - r);
+                box.z1 = Math.max(box.z1, az + r, bz + r);
+            }
+        }
+        e.box = box; // auch leer gemerkt: die Kachel fragt nicht je Runde neu
+        if (!box.formen.length) return;
+        wk.siedlungen.push(box);
+        for (const stufe of wk.stufen)
+            if (stufe.zentriert) {
+                for (const f of box.formen) this._wegeKarteMale(stufe, f);
+                this._wegeSchichtHoch(stufe.tex, stufe.schicht);
+            }
+        wk.raeumen.push(box);
+        this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1);
+        this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
+    }
     _stlZaunAddStrip(x, y, z, yaw, pitch, sx, sy, sz, farbe) {
         this._stlStreifen(this._stlZaunEnsurePool(), x, y, z, yaw, pitch, sx, sy, sz, farbe);
     }
@@ -1769,6 +2431,17 @@ class AnazhRealm_siedlung_wege {
     // stadt-voll („dorf 7 300") trägt 1 646 Gassen- und Feldweg-Stücke, gemalt wurden die ersten 900 — ihr Platz, alle 300 Vorplätze
     // und die 47 Äcker fielen ungenannt, 76,9 % des Grunds vor den Türen trug Wiese (Halme kniehoch in Gasse und Vorplatz).
     _stlWegeBuild(plan, origin, key, nurWege) {
+        for (const g = this._stlWegeRaten(plan, origin, key, nurWege); ;) {
+            const s = g.next();
+            if (s.done) return s.value;
+        }
+    }
+    // DER WEGE-BAU IN RATEN (w28-stadt-netz, Lehre 14): derselbe Bau als Gang — nach je `rate` Gassen eine Rate (`yield`), der
+    // Rest (Flächen, Platz, Vorplätze, Zäune, Mauer) in der letzten; die Siedlung steht von der ersten Form an im Register der
+    // Karte (ein Umzug des Fensters zwischen zwei Raten malt, was schon liegt). Leser: der Gang des Erlebnisses (`_dorfErlebnis`:
+    // je Zug-Schritt eine Rate) und `_stlWegeBuild` (alle Raten in einem Zug — jeder andere Rufer). Bis hier legte das Erwachen
+    // die Wege eines Orts in EINEM Stück: die Kachel einer Stadt trägt rund 2 000 Formen, 227–257 ms in einem Bild (GTX, 15.11.).
+    *_stlWegeRaten(plan, origin, key, nurWege) {
         if (!plan || !origin || !this.state.scene) return 0;
         if (!this._stlWegeKeys) this._stlWegeKeys = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
         if (key && this._stlWegeKeys.has(key)) return 0;
@@ -1777,6 +2450,7 @@ class AnazhRealm_siedlung_wege {
         let n = 0;
         // Die Siedlung merkt ihre Formen samt Hülle (der Fenster-Umzug verwirft ferne Siedlungen in O(1)).
         const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [], plan };
+        wk.siedlungen.push(box); // von der ersten Form an im Register (leer fällt sie am Ende wieder heraus)
         const form = (f) => {
             box.formen.push(f);
             for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeKarteMale(stufe, f);
@@ -1799,7 +2473,7 @@ class AnazhRealm_siedlung_wege {
             if (!B) throw new Error(`Wege-Karte: ${wer} trägt den Belag „${art}", den der Boden nicht kennt`);
             return B;
         };
-        const strasse = (pts, w, belag, saum) => {
+        const strasse = (pts, w, belag, saum, art) => {
             if (!Array.isArray(pts)) return;
             const B = belagVon(belag, "eine Gasse");
             for (let i = 0; i + 1 < pts.length; i++) {
@@ -1809,22 +2483,19 @@ class AnazhRealm_siedlung_wege {
                 const bz = origin.z + pts[i + 1].z;
                 if (!(Math.hypot(bx - ax, bz - az) > 0.01)) continue;
                 if (!this._landAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue; // die Wasser-Wand
-                form({
-                    typ: "segment",
-                    kanal: B.kanal,
-                    wert: B.wert,
-                    ax,
-                    az,
-                    bx,
-                    bz,
-                    halb: Math.max(1.2, w || 2.5) / 2,
-                    ...(saum > 0 ? { saum } : {}),
-                });
+                form(AnazhRealm._wegStueck(B, ax, az, bx, bz, w, saum, art));
             }
         };
-        for (const rd of plan.roads || [])
-            strasse(rd.pts, rd.w, FC.gassenBelag(plan, rd), (FC.gassenBreite(plan, rd) - rd.w) / 2);
-        for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w, "weg", 0);
+        let gassen = 0;
+        for (const rd of plan.roads || []) {
+            const Q = FC.wegQuerschnitt(plan, rd);
+            strasse(rd.pts, Q.fahrM, Q.belag, Q.gehM, Q.art);
+            if (++gassen % AnazhRealm.WEGE_KARTE.bauRate === 0) yield;
+        }
+        for (const fw of plan.feldwege || []) {
+            const Q = FC.wegQuerschnitt(plan, fw, true);
+            strasse(fw.pts, Q.fahrM, Q.belag, Q.gehM, Q.art);
+        }
         // DIE FLÄCHEN EINES PLANS (fachwerk `zonen`, der Genesis-Ort): jede Fläche mit Belag in ihrem Kanal und Vorzeichen
         // (`WEGE_KARTE.belag`), gemalt mit dem Rand ihres Gesetzbuchs (`zone`, `genesisZoneRand`) — eine Art, die die Karte nicht
         // kennt, wirft laut (kein stiller Rückfall auf Erde). Das Wasser des Plans, das nach einer Fläche kommt, nimmt sie aus
@@ -1838,7 +2509,9 @@ class AnazhRealm_siedlung_wege {
         // das halbe Bild braune Rausch-Erde bis an die Baumreihe).
         const zonen = plan.zonen || [];
         zonen.forEach((q, i) => {
-            const belag = q.art === "feld" ? "gras" : q.art === "flaeche" ? q.belag : null;
+            // jede Zone, die einen Belag erklärt — die Fläche wie das Gehege und sein Graben (w28-gehege: bis hier malte der Maler
+            // nur die Art `flaeche`; Gehege und Graben lagen unter dem Schau-Rasen des Zoos, der Graben war im Bild nicht zu lesen)
+            const belag = q.art === "feld" ? "gras" : q.belag || null;
             if (!belag) return;
             const B = AnazhRealm.WEGE_KARTE.belag[belag];
             if (!B)
@@ -2020,10 +2693,9 @@ class AnazhRealm_siedlung_wege {
             });
         }
         if (box.formen.length) {
-            wk.siedlungen.push(box);
             wk.raeumen.push(box); // was schon auf Weg, Platz und Acker wuchs, räumt der Takt (`_wegeRaeumen`)
             this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1); // die Natur-Wand kennt die neue Fläche (`_aufWeg`)
-        }
+        } else wk.siedlungen.splice(wk.siedlungen.indexOf(box), 1); // ein Plan ohne Form steht nicht im Register
         for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
         // DIE ERSTE SIEDLUNG zentriert die Karte SOFORT: die Wiese über ihr wächst im selben Takt neu
         // (`_nahWieseNeuIn` → `_tickNahWiese` vor `_tickWegeKarte`) und läse vor dem Zentrieren 0 — Halme im Weg.
@@ -2251,6 +2923,12 @@ AnazhRealm.WEGE_KARTE = Object.freeze({
         Object.freeze({ name: "fern", fensterM: 2048, texelM: 2, umzugM: 256, randMinM: 2 }),
     ]),
     randM: 0.6,
+    // das Pflaster trägt zwei Höhen (w28-weg-koerper, `_wegeKarteMale`): bis `gehAnteil` des Bytes seine Deckung (Gehweg, Platz),
+    // darüber die Lage zum Bord der Fahrbahn, linear über ±`fahrRandM` (die ferne Stufe: ± ihr `randMinM`)
+    gehAnteil: 0.5,
+    fahrRandM: 1,
+    kantWeich: 0.08, // die Kante des Pflasters ist nie schärfer als dieser Anteil seiner Deckung (`_wegeBodenFarbe`)
+    bauRate: 12, // der Wege-Bau eines Orts in Raten: je so viele Gassen eine Rate des Gangs (`_stlWegeRaten`, w28-stadt-netz)
     voll: 127,
     null: 127,
     belag: Object.freeze({
@@ -2288,6 +2966,24 @@ AnazhRealm.LAVA_KRUSTE = Object.freeze({
 // Sichthöhe für Streu-Arten ohne Kronen-Eintrag im Wald-Generator; `uploadMs` = höchstens ein Upload je Stufe in diesem
 // Takt; `zelleM` = die Kante der Index-Zellen des Kronen-Registers (ein Nah-Umzug fragt ≤ 30 Zellen, ein ferner ≤ 204 —
 // um den größten Laub-Rand 21 m erweitert —, nie den Bestand).
+// DIE FERNE DER STADT (`_stadtFerneTakt`): bis `reichM` vom Spieler trägt eine Stadt ihre Massen (plus ihre Ringe); die Kiste
+// eines Hauses reicht `sockelM` unter seinen Grund (der Hang), das Dach steht `ueberM` über die Wand; je `jeTakte` Takte EINE Kachel.
+// Ihre Straßen liegen bis `strassenM` in der Wege-Karte (das Fenster der fernen Stufe reicht 1024 m), jenseits `bandAbM`
+// (drei Kacheln: bis dahin liegt jede Kachel ganz im Fenster) als Band im Pool der Ferne (`_stadtFerneBand`: `bandHubM` über
+// dem Grund, `bandDickM` dick, `bandSpielM` Spiel an der Grenze).
+// Ein stehendes Haus der Stadt trägt bis `nahM` seinen Satz im Welt-March, dahinter seine Masse (`_stadtMasseRegt`).
+AnazhRealm.STADT_FERNE = Object.freeze({
+    reichM: 3000,
+    strassenM: 1200,
+    bandAbM: 768,
+    bandSpielM: 64,
+    bandHubM: 0.6,
+    bandDickM: 3,
+    sockelM: 2.5,
+    ueberM: 0.5,
+    jeTakte: 6,
+    nahM: 300,
+});
 AnazhRealm.LAUB_STREU = Object.freeze({
     texelM: Object.freeze([1, 4]),
     dichte: 0.6,

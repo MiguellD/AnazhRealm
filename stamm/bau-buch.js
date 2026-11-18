@@ -2243,9 +2243,10 @@ class AnazhRealm_bau_buch {
         if (bp.role === "machine") {
             precisionCap = Math.min(1.0, precisionCap + AnazhRealm.MACHINE_PRECISION_BONUS);
         }
-        this.state.tools[name] = {
+        // der Name des Werkzeugs ist der seines Bauplans: sein Etikett (der Schlüssel reist), sonst sein Wort (Daten)
+        this.state.tools[name] = AnazhRealm._etikett({
             name,
-            label: bp.label || name,
+            ...(Array.isArray(bp.etikett) ? { etikett: bp.etikett } : { label: bp.label || name }),
             opClass: bp.toolMeta.opClass,
             opName: bp.toolMeta.opName,
             precisionCap,
@@ -2253,7 +2254,7 @@ class AnazhRealm_bau_buch {
             builtIn: false,
             sourceBlueprint: name,
             isMachine: bp.role === "machine",
-        };
+        });
         if (!Array.isArray(this.state.player.tools)) this.state.player.tools = [];
         if (!this.state.player.tools.includes(name)) this.state.player.tools.push(name);
         if (typeof this._renderWorkshopDOM === "function") this._renderWorkshopDOM();
@@ -2310,12 +2311,15 @@ class AnazhRealm_bau_buch {
             this.log(`cloneBlueprint: Ziel-Name '${cleanNew}' leer oder schon belegt`, "ERROR");
             return false;
         }
-        this.state.blueprints[cleanNew] = {
+        // der Name der Kopie ist eine Zeile der Tafel mit dem Namen der Quelle als Wert (ihr Etikett oder ihr Wort als Daten),
+        // nie der aufgelöste Satz der Sprache von jetzt (spielgang.K5) — er wechselt mit der Sprache und reist als Schlüssel
+        const quelleName = Array.isArray(source.etikett) ? source.etikett : source.label;
+        this.state.blueprints[cleanNew] = AnazhRealm._etikett({
             name: cleanNew,
-            label: source.label ? this._t("bau.kopie", { name: source.label }) : cleanNew,
+            ...(quelleName ? { etikett: ["bau.kopie", { name: quelleName }] } : { label: cleanNew }),
             builtIn: false,
             parts: JSON.parse(JSON.stringify(source.parts || [])),
-        };
+        });
         // M2 (meister-plan Befund 6/7, GEMESSEN): der Klon erbt die volle SUBSTANZ — connections
         // (Gelenke/Anker) SIND Substanz wie parts. Ohne sie verlor ein geklonter Wagen seine
         // rad-Gelenke + den Sitz (keine rollenden Räder, kein Reiten, keine fahrzeug-Rolle).

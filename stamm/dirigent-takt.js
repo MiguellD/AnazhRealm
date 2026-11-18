@@ -1010,6 +1010,7 @@ class AnazhRealm_dirigent_takt {
                 const initialFitness = result.ok ? Math.max(0, 1 - fpsDmg / 100) : 0;
                 const abilityEntry = {
                     name: evolution.name,
+                    ...(Array.isArray(evolution.etikett) ? { etikett: evolution.etikett } : {}), // der Name der Seite
                     program: evolution.program,
                     source: evolution.source || "nexus",
                     createdAt: evolution.createdAt || this.state.spielZeit,
@@ -2320,6 +2321,7 @@ class AnazhRealm_dirigent_takt {
         st._frameBodenWartet = false; // der Boden-Strom setzt ihn, wenn ein Netz im Fenster seines Fadens wartet
         st._bodenEinbau = null; // der Einbau des Frames (`_finalizeVoxelChunkBuild` → `_tickDirtyVoxelChunks`, K69-2)
         this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos));
+        this._bauer("dorf", B.dorf, playerPos); // die Orte der Welt (Zell-Wahl, Vorrat, Häuser-Zug): Welt-Substanz gleich nach den Jobs des Planers
         this._bauer("pflanz", B.pflanz, this._pflanzKappe(wandDelta));
         this._bauer("huellen", B.huellen); // nach dem ersten Bild und dem ersten Leib: die Hüllen der Bäume, die warteten (nah zuerst)
         const auge = this._lodAuge(); // das EINE Auge der Stufen (Maske und Wahl messen vom selben Ort)
@@ -2666,6 +2668,7 @@ AnazhRealm.TAKT_BAUER = Object.freeze({
     streuLod: (w, auge) => w._tickScatterLod(auge, 4, 160),
     horizont: (w, pos) => w._tickFernRing(pos),
     boden: (w, pos) => w._tickDirtyVoxelChunks(pos),
+    dorf: (w, pos) => w._tickAutoSettlement(pos), // der Häuser-Zug der Orte: er fragt die Frist vor jedem Haus (`_dorfZugSchritt`)
     todLage: (w) => w._todLageTakt(),
     // ein Wurf im Vorbau reißt den Planer nicht (sein try/catch stand bis Schnitt 3 im Loop)
     vorbau: (w) => {

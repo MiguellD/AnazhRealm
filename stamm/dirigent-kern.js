@@ -685,9 +685,10 @@ class AnazhRealm {
                 fahrt: null, // { entry, stimme }
             },
             player: {
-                // Avatar-Name (Default "Schöpfer"), editierbar, persistiert in localStorage; der LLM-System-Prompt
-                // nutzt ihn, damit Grok dich beim Namen ansprechen kann.
-                name: "Schöpfer",
+                // Avatar-Name, editierbar, persistiert in localStorage; der LLM-System-Prompt nutzt ihn, damit Grok dich beim
+                // Namen ansprechen kann. null = unbenannt: wer ihn zeigt, liest den Namen der Tafel (`ui.schoepfer-2`) in
+                // der Sprache von jetzt — bis hier stand hier „Schöpfer", ein Wort des Spiels als Daten des Spielers.
+                name: null,
                 // Ring 5 V2 — Spieler-Seele. Der Mensch (human) + koerper_-Baupläne
                 // mit Multi-Mesh-Group + sin/cos-Animation. Ammo-Body bleibt
                 // identisch (rein visuell). Default "human".
@@ -1933,7 +1934,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.330";
+AnazhRealm.VERSION = "18.546.335";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

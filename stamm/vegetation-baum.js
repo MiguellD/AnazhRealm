@@ -2027,7 +2027,8 @@ class AnazhRealm_vegetation_baum {
             )
                 continue;
             const je = new Map();
-            for (const f of b.formen) {
+            // nur die Formen, die den Kasten der Zellen erreichen können (`_wegeFormenIm`: das Raster der Siedlung)
+            for (const f of this._wegeFormenIm(b, gx0 * G, (gx1 + 1) * G, gz0 * G, (gz1 + 1) * G)) {
                 if (f.sperr === -Infinity) continue; // der Rasen eines Plans ist kein Weg (`_stlWegeBuild`)
                 const r = AnazhRealm._wegeFormRadius(f) + 1;
                 const [ax0, ax1] = [
@@ -2700,6 +2701,7 @@ class AnazhRealm_vegetation_baum {
         // billig → ungedeckelt.
         const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
         if (!playerPos) return;
+        this._stadtMasseStand();
         // DIE STAND-WACHE: ging der Gang über alle Einträge ohne Bau, Räumung und Wartende, und regt sich nichts (Ort,
         // Bau-Menge, Ankunft, Cull-Radius), träfe er dieselben Urteile — kein Gang (gemessen 07.10., Mess-Wiese, Stand:
         // 1540 Einträge je Takt, 0 Bauten, 0 Räumungen).
@@ -3012,6 +3014,7 @@ class AnazhRealm_vegetation_baum {
         // V18.297 — die Welt ATMET: autonome (Nexus-)Bauten sind gedeckelt; ist das
         // Limit erreicht, verblasst das FERNSTE (am Horizont, am wenigsten vermisst).
         this._capNexusStructures(playerPos);
+        this._stadtMasseStand();
         this._standMeldet("archCull", 1, regung > 0, offen + kalt > 0 && (kalt || !nurSatz || "felder"));
     }
 
@@ -3075,6 +3078,7 @@ class AnazhRealm_vegetation_baum {
         // sein Urteil liest Lage, Typ und Stufe: die gemerkte Bereitschaft (`_bereitStand`) und sein Schlaf (`_schlafen`) gelten
         // nicht mehr
         if (entry) entry._platzNein = entry._dockNein = entry._schlaf = entry._ziegelSchlaf = undefined;
+        this._stadtMasseRegt(entry, art); // das Haus einer Stadt: seine Masse steht, wo es kein eigenes Bild trägt
         this._stufeWecken(entry, art); // die Stufen-Wahl liest dasselbe (`_stufenWache`): EIN Weckruf für beide Bau-Takte
         const K = this._cullWacheStand;
         if (!K || K.liste !== this.state.architectures || !entry || (entry._cullEimer === -1 && art !== "ein")) return;

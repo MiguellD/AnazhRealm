@@ -284,7 +284,7 @@ class AnazhRealm_feld_leben {
             spawn_studio: (a) => {
                 const name = typeof a[0] === "string" ? this._studioBlueprintForWord(a[0].toLowerCase()) : null;
                 const bp = name && this.state.blueprints ? this.state.blueprints[name] : null;
-                const was = (bp && bp.label) || (name && this._werkLabel(name)) || s(a[0]);
+                const was = (bp && (bp.etikett || bp.label)) || (name && this._werkLabel(name)) || s(a[0]); // Etikett: Zeile
                 if (name && this._studioWerkVerb(name) === "praegung") return ["tat.praegt", { was }];
                 return ["tat.studio", { n: n(a[2]), was, ort: pos(a[1]) }];
             },
@@ -293,7 +293,9 @@ class AnazhRealm_feld_leben {
             spawn_waterfall: (a) => ["tat.wasserfall", { ort: pos(a[0]) }],
             spawn_blueprint: (a) => {
                 const bp = this.state.blueprints && this.state.blueprints[a[0]];
-                return ["tat.baut", { was: (bp && bp.label) || s(a[0]), ort: pos(a[1]) }]; // das Label, nie die id (V-D8)
+                // der Name, nie die id (V-D8): das Etikett als Zeile (es wechselt mit der Sprache), sonst das Wort als Daten
+                const was = bp && (Array.isArray(bp.etikett) ? bp.etikett : bp.label);
+                return ["tat.baut", { was: was || s(a[0]), ort: pos(a[1]) }];
             },
             remove_architecture: () => ["tat.abbau"],
             spawn_fractal: (a) => ["tat.fraktal", { was: s(a[1]), tiefe: s(a[2]), ort: pos(a[0]) }],
@@ -441,11 +443,10 @@ class AnazhRealm_feld_leben {
     }
 
     generateEvolution() {
-        // ### Nexus-Evolution als DSL-Programm ###
-        // Komponiert ein zufälliges DSL-Programm — die DSL ist der einzige Pfad für neue Effekte (keine
-        // Code-Generierung). Mit composeRuleProb wird es eine stehende Regel: der `rule`-Op registriert sie
-        // über denselben dslRun-Pfad in state.worldRules. Der Wurf des Nexus ist ein Strom der Welt (`_bauSame`, Γ5) — die
-        // Komposition darunter zieht aus demselben Strom.
+        // ### Nexus-Evolution als DSL-Programm ### Komponiert ein zufälliges DSL-Programm — die DSL ist der einzige Pfad für neue
+        // Effekte (keine Code-Generierung). Mit composeRuleProb wird es eine stehende Regel: der `rule`-Op registriert sie über
+        // denselben dslRun-Pfad in state.worldRules. Der Wurf des Nexus ist ein Strom der Welt (`_bauSame`, Γ5) — die
+        // Komposition darunter zieht aus demselben Strom. Die Kennung `evo_<n>` ist der Schlüssel, die Seite liest `etikett`.
         const rng = this._samenStrom(this._bauSame("nexus"));
         // Keine Struktur-Batch-Bomben: ≤1 schwerer Welt-Bau (spawn_village/temple/…) pro Evolution, egal wie
         // in repeat/chain verschachtelt — jeder Bau ist ein synchroner Footprint-Remesh (~140 ms), N davon =
@@ -458,8 +459,10 @@ class AnazhRealm_feld_leben {
             const heavyCount = (JSON.stringify(program).match(HEAVY) || []).length;
             if (heavyCount <= 1) break; // frame-sicher → nehmen
         }
+        const n = String(this.state.dsl.nextEntryId++);
         return {
-            name: `evo_${this.state.dsl.nextEntryId++}`,
+            name: `evo_${n}`,
+            etikett: ["hud.geste-nexus", { n }],
             program,
             source: "nexus",
             createdAt: this.state.spielZeit,
@@ -2179,7 +2182,7 @@ class AnazhRealm_feld_leben {
             kacheln.push([ix * S - cs, iz * S - cs, (ix + 1) * S + cs, (iz + 1) * S + cs]);
             const R = F[key];
             if (!R) continue;
-            const tiere = R.tiere.map(({ id, soul, g, bs, alterS, x, z, v, name }) => ({
+            const tiere = R.tiere.map(({ id, soul, g, bs, alterS, x, z, v, name, gehege }) => ({
                 id,
                 soul,
                 g,
@@ -2189,6 +2192,7 @@ class AnazhRealm_feld_leben {
                 z,
                 v,
                 name,
+                gehege, // der Term des Geheges (tetrapoda GEHEGE_GESETZ): das Tier kehrt als Tier seines Geheges wieder
             }));
             bestand[key] = { t: R.t, seq: R.seq, tiere };
         }
@@ -2859,7 +2863,7 @@ class AnazhRealm_feld_leben {
         const ops = new Map();
         for (const e of log || []) {
             if (!e || e.event !== "ergebnis") continue;
-            const key = e.op + "|" + (e.art || "");
+            const key = e.op + "|" + JSON.stringify(e.art || ""); // die Art: ein Wort, eine Zeile oder `{ kopf }`
             let a = ops.get(key);
             if (!a) ops.set(key, (a = { art: e.art, verb: e.verb, gewollt: 0, gesetzt: 0, gruende: {}, folgt: null }));
             a.gewollt += e.gewollt || 0;
@@ -2923,7 +2927,8 @@ class AnazhRealm_feld_leben {
     _werkLabel(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         const rec = !bp && this._foundry && this._foundry.recipes ? this._foundry.recipes[name] : null;
-        return AnazhRealm._namensKopf((bp && bp.label) || (rec && rec.lab) || name);
+        // ein Etikett bleibt Schlüssel (`{ kopf }`, wechselt mit der Sprache), ein Rezept trägt den Namen seines Studios (Daten)
+        return bp ? AnazhRealm._namensZeile(bp, name) : AnazhRealm._namensKopf((rec && rec.lab) || name);
     }
 
     // Das Grundriss-Gesetz einer Art: { preset, pre (die Zeile des Gesetzbuchs der Architektur), rec (die des Buchs) } für ein

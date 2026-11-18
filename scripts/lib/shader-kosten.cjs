@@ -367,7 +367,7 @@ const GRENZEN = {
         (k) => k.zeichen,
         "≤",
         "Zeichen WGSL",
-        " — die Ratsche des Programms (der Stand + 5 %, sie fällt nur): jedes Zeichen übersetzt der GPU-Prozess vor dem ersten Bild",
+        " — die Ratsche des Programms (der Stand + seine Luft, sie fällt nur): jedes Zeichen übersetzt der GPU-Prozess vor dem ersten Bild",
     ],
     rauschenMax: [(k) => k.rauschen, "≤", "Rausch-Aufrufe je Fragment", ""],
     opsMax: [(k) => k.ops, "≤", "Ops je Fragment (Schätzung)", ""],
