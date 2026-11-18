@@ -1653,3 +1653,4 @@ omen-gtx-gtx-c1e6f29a-1-c1e6f29a ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT karte
 2026-11-18 04:41 landung Zwischenstand main c1e6f29a: misst 53 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (1 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-gtx-c1e6f29a-w0441-1-c1e6f29a GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN vegetation.K4#1 ‖ vegetation.K4#1: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20481 px (punkte-maschine 09d6a80b messung/c1e6f29a-gtx.json)
 2026-11-18 04:58 landung ABGEBROCHEN main c1e6f29a: nachwache wartete am GPU-Schloss — BEHALTEN 1 Station(en) (gepusht), 52 stellen sich hinten an
+2026-11-18 04:59 landung Zwischenstand main c1e6f29a: misst 52 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (54) je allein (2 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
