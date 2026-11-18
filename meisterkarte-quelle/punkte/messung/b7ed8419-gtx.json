@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-18T22:41:25.451Z",
+ "zeit": "2026-11-18T22:46:20.069Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -1320,6 +1320,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "wetter.K1#2": {
+   "gruen": true,
+   "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6)",
+   "exit": 0,
+   "minuten": 0.11,
+   "gpu": "nvidia/pascal",
+   "konsum": "ke11fb2fc7c6d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2bbe263ca652",
+   "s": 6.1,
+   "fremd": {
+    "s": 8.8,
+    "takte": 4,
+    "fremdS": 13.73,
+    "kerne": 1.568,
+    "fensterKerne": 1.568,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      7.16
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.95
+     ],
+     [
+      "git.exe",
+      1.06
+     ]
+    ],
+    "dienerS": 4.75,
+    "diener": [
+     [
+      "System",
+      2.16
+     ],
+     [
+      "dwm.exe",
+      2.03
+     ]
+    ],
+    "geraetS": 2.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.95
+     ],
+     [
+      "svchost.exe",
+      0.73
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 17.34,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T22:46:20.069Z",
+   "abdruck": "c4f1899c688a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1345,20 +1414,20 @@
   "k5767402a13c1": "bVXbbqMwEP2XPO4udbi4GEt9cEKkVGql9BPGZgw0BCIbym5W+++rkDgJ0HkCdMZz5szx8HdxBLWHHJ8+bVMv+OLH4tfCwhd6Fs0XmqdPu+CLpYqAMi4uQYQQ6zNMmfLYWlKVkoCsoTig15kWy+pJDWm+YgjISb8R/Y6QHYnJqhe3WImXl+kxlcSs8VrQ6A6RWRCHwKfAzuYg0YNOD4WvYBr5UUg5GYKlYvdJXIgPIUi/mVaUUGdj1joEqn3++keIzZxhVgK2XlXW1tVUGZVhwG+F+nmOgd47ARYVmmsS+DH40hEd5Oh3CZkk6qqzdlSMhRkNGCdkhs3RlqpovaNpJNZOvCSIfeCrOaf82Hl6xEhKYHKqcwFY52jGHOKIqoiT32x66B4OaMCrobhCk2UYB/KuDSFkO+dSDcSHEo44y2QS61EiISTfDvZJ2fBy+8y2F0Ol+d1c4mNSxKqiNIexPFrTDJb8bU7JFpCh8faNbe+cIgB0tyAdDCV2UTrNvDdzzQvk85Kyh14YEduZdrbRbQ8GvfzYXRMxQhpTLsTrDNzC4eCaUAEyOh2cbc/GfqRBI/SfY+6U+2YOl2vgnbCsXFKslB8iX7+LaZ9fBg4eyNyUWrtpS6p08p05e6xaTzZN65BhBqHiJCT1TZWEXZbCLdK+UZt1/iHGsTK5mHMfKjSmvXUrn5c64nq4kWqGLk3r9aCK24y0REj4N9ATmgpzHEmZRTKE7Ix+YBu5h58jz55mkz6VeBa5tp11zkriLLm6/bogX8erp0ezl1DvHV0qQ+rzs+Xffgpn/2VKUrLrH8VaC31+X6/YSMN3MRx+REWOptHleQuSAjpbQNXefwX//gM="
  },
  "sitzung": {
-  "start": "2026-11-18T22:40:54.814Z",
-  "ordner": "sitzung-20261118-234054",
+  "start": "2026-11-18T22:45:42.860Z",
+  "ordner": "sitzung-20261118-234542",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 6.3,
+  "warten": 0.02,
+  "bootS": 8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "karte2.mensch.menge.bevoelkerung#1",
-    "s": 22.1,
-    "takte": 573,
+    "ort": "wiese",
+    "vor": "wetter.K1#2",
+    "s": 26.1,
+    "takte": 585,
     "chunks": 81,
     "nach": null
    }
@@ -1366,33 +1435,31 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.mensch.menge.bevoelkerung#1",
+    "probe": "wetter.K1#2",
     "anders": [
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
      "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     228.6,
-     393.4
+     231,
+     236.3
     ],
     "ungemessen": null
    }
   ],
-  "wanderung": [
-   {
-    "probe": "karte2.mensch.menge.bevoelkerung#1",
-    "ort": "genesis",
-    "m": 218.92,
-    "dreh": 0.067
-   }
-  ],
   "messHalt": [
    {
-    "probe": "karte2.mensch.menge.bevoelkerung#1",
+    "probe": "wetter.K1#2",
     "gehalten": [
+     "skala",
+     "spiegel",
      "tiere"
     ],
     "offen": []
@@ -1401,21 +1468,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2600,
-   "frameP95": 33.32,
-   "taktP95": 20.2,
-   "vramMax": 174.3,
+   "bilder": 2322,
+   "frameP95": 33.36,
+   "taktP95": 19.71,
+   "vramMax": 136.4,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 168,
+   "zapfen": 110,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 176.2,
-  "minuten": 3.02
+  "fahrtS": 119.3,
+  "minuten": 2.06
  },
  "ungemessen": {
   "mensch.K5#1": {
