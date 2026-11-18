@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-18T23:39:49.152Z",
+ "zeit": "2026-11-18T23:48:15.160Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -2083,6 +2083,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.mensch.stadt.siedlungsnetz#1": {
+   "gruen": true,
+   "zahl": "✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km",
+   "exit": 0,
+   "minuten": 1.09,
+   "gpu": "nvidia/pascal",
+   "konsum": "k7880b4bc4787",
+   "konsumN": 39,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k2bbe263ca652",
+   "s": 63.6,
+   "fremd": {
+    "s": 66.9,
+    "takte": 27,
+    "fremdS": 154.63,
+    "kerne": 2.312,
+    "fensterKerne": 2.842,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      45.58
+     ],
+     [
+      "node.exe zaehl-hoehe.cjs",
+      42.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      13.61
+     ]
+    ],
+    "dienerS": 34.05,
+    "diener": [
+     [
+      "dwm.exe",
+      14.25
+     ],
+     [
+      "System",
+      13.92
+     ]
+    ],
+    "geraetS": 38.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.55
+     ],
+     [
+      "svchost.exe",
+      14.25
+     ],
+     [
+      "SearchIndexer.exe",
+      1.72
+     ]
+    ],
+    "eigenS": 377.92,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T23:48:15.160Z",
+   "abdruck": "89ab8f6ba2b3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -2111,20 +2180,20 @@
   "kb04d74aafa97": "hVXbjpswEP2XPG7rdbh4AUv74IRIWamrZj9hbMZAQiCyYWlT9d8r2JAEiNR5wugcz5kzY/vP4gTqACk+721VLvjiafF9YeETiUXzieZ5bxd8sVQ+sJCLr6BCiHUHUyY/1ZYmOaQkg8aSFov6WfWUpztAkUsKsoTsiKQxNebFBeSoEAE5bTei3VG6owFdta+vU2ohMalIDRoHokzcwAM+BTY2BYkEGt0nu4CZ7/ge47SPMBa7PR1CfAhB2800o4QyGSvVHjDt8LffQmzETGGSA9akyEs75FQJk57Lr4nmVSUGWnIGzAo0FxI4AThyENp73e4iOiHqorF2lCz0EuaGnNIZNkWbq6wmJ1NJLAfzIjdwgD9wOj01RI8USQmhnPqcAZYpmrGGwGfK5/RXON30AEc0QErILtBo6QWuvHlDKd3OtRS98D7FIDxMZBToEbHr4bbtnIrDbpFef4fbr2mNU3GLj0kSq7LcHMf2aM0SWPIfc0k2gwQNOVS2vmnyAXA4GnE/UGLnx1PmrZgLz5UvSxbe1RJSsZ15Zytdt2CQpKfmQkQfWcC4EG8zcA3H41CEcjFk08bZuhvsexnMR+cl4INzD/rwdQzIGfNiIAVKOR7y9buY1vlp4EhApibXeui2ZEpHj4azBWsnU+RHEDB32uFxtO9itD7PXOuuISKrariLIi8BT3Hq0fLO765hq9toxG2lNuv0Q0xin4q5KX2GytRXG+XLUvtc9/rUDJ2bmrSgsmvztUSI+APoGU2BKY5MSXzpQdKh79T6w8e3/5hxzrHrXmkbO4xsFCTR5RiNS2vRHCSUh0Emkx5z+tle/RTDeVrGNKa79t6jtdDder0Ku81OqOjJVDrvrlHaPQwZFPXtgfn7Dw=="
  },
  "sitzung": {
-  "start": "2026-11-18T23:39:18.067Z",
-  "ordner": "sitzung-20261119-003918",
+  "start": "2026-11-18T23:47:38.637Z",
+  "ordner": "sitzung-20261119-004738",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 7.4,
+  "warten": 0.02,
+  "bootS": 8.2,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "vegetation.K4#1",
-    "s": 21.5,
-    "takte": 592,
+    "ort": null,
+    "vor": "karte2.mensch.stadt.siedlungsnetz#1",
+    "s": 25.5,
+    "takte": 882,
     "chunks": 81,
     "nach": null
    }
@@ -2132,100 +2201,39 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "vegetation.K4#1",
+    "probe": "karte2.mensch.stadt.siedlungsnetz#1",
     "anders": [
-     "r._newArchId",
-     "r._tickNahWiese",
-     "r._bauFrist",
-     "window.luma709",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__weltOrte",
-     "window.__weltOrt",
-     "window.__strecke",
-     "window.__ortSchritt",
-     "window.__wasserOrte",
-     "window.__wasserLeser",
-     "window.__wasserLeib",
-     "window.__wasserMutation",
-     "window.__wasserKarte",
-     "window.__wasserLaeufe",
-     "window.__wasserTreibt",
-     "window.__wasserHoehle",
-     "window.__wasserWagen",
-     "window.__wasserSichtNetz",
-     "window.__wasserFlora",
-     "window.__wasserSee",
-     "window.__wasserQuelle",
-     "window.__wasserQuellTeil",
-     "window.__wasserBach",
-     "window.__wasserBank",
-     "window.__wasserFluss",
-     "window.__wasserKroneVon",
-     "window.__wasserUfer",
-     "window.__wasserStrom",
-     "window.__wasserFlussNah",
-     "window.__wasserGraben",
-     "window.__wasserDamm",
-     "window.__wasserUferFarbe",
-     "window.__wasserKoerper",
-     "window.__wasserBild",
-     "window.__wasserSeeAm",
-     "window.__wasserLicht",
-     "window.__wasserRegen"
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__ortSchritt"
     ],
     "wie": {
-     "r._newArchId": "neu: _newArchId() { return \"a-\" + Math.random().toString(36).slice(2, 10) + Date.now(",
-     "r._tickNahWiese": "neu: _tickNahWiese(deadline) { const st = this.state; if (!st.scene || !st.camera || ",
-     "r._bauFrist": "neu: _bauFrist(wer, zeichnung = false) { const T = this._bauFristTakt || this._fristA",
-     "window.luma709": "getauscht: (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2]",
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__weltOrte": "getauscht: function weltOrte(art, opts) { const o = opts || {}; const [mx, mz] = o.mitte ||",
-     "window.__weltOrt": "getauscht: function weltOrt(art, opts) { return window.__weltOrte(art, Object.assign({}, op",
-     "window.__strecke": "getauscht: function strecke(mitte, ringe, stufeMax = Infinity, querMax = Infinity, naechste",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
-     "window.__wasserOrte": "neu: async function wasserOrte(o = {}) { const G = window.__gelaendeCore; const mitte",
-     "window.__wasserLeser": "neu: async function wasserLeser(o = {}) { if (!st.hydrosphere || !st.hydrosphere.read",
-     "window.__wasserLeib": "neu: function wasserLeib() { const [r, A] = [window.anazhRealm, window.anazhRealm.con",
-     "window.__wasserMutation": "neu: async function wasserMutation(o = {}) { const A = AnazhRealm; const [RHO, TIEF] ",
-     "window.__wasserKarte": "neu: async function wasserKarte(o) { const [orte, zufall] = [[], window.__phytoCore.m",
-     "window.__wasserLaeufe": "neu: async function wasserLaeufe() { const [G, L] = [window.__gelaendeCore, r._gelaen",
-     "window.__wasserTreibt": "neu: async function wasserTreibt(o) { const [r, A] = [window.anazhRealm, window.anazh",
-     "window.__wasserHoehle": "neu: async function wasserHoehle(o = {}) { const A = AnazhRealm; const cfg = r._voxel",
-     "window.__wasserWagen": "neu: async function wasserWagen(o = {}) { const ziel = o.see || (await window.__wasse",
-     "window.__wasserSichtNetz": "neu: function wasserSichtNetz() { const cfg = r._voxelChunkConfig(0); const span = cf",
-     "window.__wasserFlora": "neu: function wasserFlora(o = {}) { const sicht = o.sicht || window.__wasserSichtNetz",
-     "window.__wasserSee": "neu: async function wasserSee(o = {}) { const f = o.fenster || (await window.__wasser",
-     "window.__wasserQuelle": "neu: async function wasserQuelle(o = {}) { if (!st.hydrosphere || !st.hydrosphere.rea",
-     "window.__wasserQuellTeil": "neu: function wasserQuellTeil(p, n) { const h = (Math.imul(Math.round(p.x * 4), 73856",
-     "window.__wasserBach": "neu: async function wasserBach(o = {}) { const R = wasserRund(2); const bachOrt = Num",
-     "window.__wasserBank": "neu: async function wasserBank(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
-     "window.__wasserFluss": "neu: function wasserFluss() { const h = st.hydrosphere; if (!h || !h.ready || !Array.",
-     "window.__wasserKroneVon": "neu: function __wasserKroneVon(r, p) { const A = r.constructor; const HC = A.HYDROSPH",
-     "window.__wasserUfer": "neu: async function wasserUfer(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
-     "window.__wasserStrom": "neu: async function wasserStrom(ort, hoehe) { const zurueck = [leihe(st, { postProces",
-     "window.__wasserFlussNah": "neu: function __wasserFlussNah(r, x, z) { const st = r.state; const fluesse = []; for",
-     "window.__wasserGraben": "neu: async function wasserGraben(o = {}) { const K = AnazhRealm.NAH_WIESE.kachel; con",
-     "window.__wasserDamm": "neu: async function wasserDamm(o = {}) { const f2 = wasserRund(2); const S = (q) => r",
-     "window.__wasserUferFarbe": "neu: async function wasserUferFarbe(o = {}) { const h = st.hydrosphere; if (!h || !h.",
-     "window.__wasserKoerper": "neu: async function wasserKoerper(o = {}) { const A = AnazhRealm; const DT = A.FIXED_",
-     "window.__wasserBild": "neu: async function wasserBild(o = {}) { const T = window.THREE; const renderer = st.",
-     "window.__wasserSeeAm": "neu: function __wasserSeeAm(r, ziel) { const st = r.state; const h = r._hydroFor(ziel",
-     "window.__wasserLicht": "neu: async function wasserLicht(o = {}) { if (!st.renderer || st.renderer._isHeadless",
-     "window.__wasserRegen": "neu: async function wasserRegen(o = {}) { const T = window.THREE; const renderer = st"
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     222.3,
-     510.5
+     189.7,
+     339.4
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "vegetation.K4#1",
+    "probe": "karte2.mensch.stadt.siedlungsnetz#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.mensch.stadt.siedlungsnetz#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -2237,28 +2245,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 5280,
-   "frameP95": 16.71,
-   "taktP95": 15.21,
-   "vramMax": 116.7,
+   "bilder": 3337,
+   "frameP95": 25.04,
+   "taktP95": 18.32,
+   "vramMax": 139.9,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "vegetation.K4#1",
-     "m": 6443,
+     "probe": "karte2.mensch.stadt.siedlungsnetz#1",
+     "m": 1349,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 368,
+   "zapfen": 168,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 383.2,
-  "minuten": 6.45
+  "fahrtS": 178.8,
+  "minuten": 3.09
  },
  "ungemessen": {
   "mensch.K5#1": {
