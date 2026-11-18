@@ -5856,7 +5856,7 @@
   },
   "karte2.planet.kosmos.welten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,346 (Faden 1,346 · alle Kerne 1,259; vor 95,9/330,7 ms, nach 112,9/302,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an c50e6b61: Last: Referenz f 1,564 (Faden 1,446 · alle Kerne 1,564; vor 114,6/337,8 ms, nach 130,7/361,7 ms, Ruhe 90,4/231,3 ms seit 2026-11-15) · fremd: node.exe --js-float16array hs/lieferung.cjs n1011-hg lief/",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,346 (Faden 1,346 · alle Kerne 1,259; vor 95,9/330,7 ms, nach 112,9/302,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an 18058dba: Last: Referenz f 1,709 (Faden 1,709 · alle Kerne 1,367; vor 153,6/312,4 ms, nach 97,5/274,7 ms, Ruhe 89,9/228,5 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.welten#1",
@@ -5874,7 +5874,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an c50e6b61: Last: Referenz f 1,564 (Faden 1,446 · alle Kerne 1,564; vor 114,6/337,8 ms, nach 130,7/361,7 ms, Ruhe 90,4/231,3 ms seit 2026-11-15) · fremd: node.exe --js-float16array hs/lieferung.cjs n1011-hg lief/",
+     "grund": "ungemessen (R10) — zuletzt an 18058dba: Last: Referenz f 1,709 (Faden 1,709 · alle Kerne 1,367; vor 153,6/312,4 ms, nach 97,5/274,7 ms, Ruhe 89,9/228,5 ms seit 2026-11-16) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
      "ungemessen": true,
      "beide": true
     }
@@ -6275,7 +6275,7 @@
      "gruen": true,
      "zahl": "0 harte UI-Zeilen im DOM von 637 Zeilen (625 aus der Tafel, 12 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2431, en 2431) · [linse-gpu] nvidia/pascal",
      "sha": "fe885d9de1ae25cb5b5caf0e929dd71bdcfeaedb",
-     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +58) — zuletzt an c50e6b61: Wirt-Wache: den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. — Heap nach der Rücknahme 190.8 → 369 MB (",
+     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +58) — zuletzt an 18058dba: Wirt-Wache: den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. — Heap nach der Rücknahme 188.7 → 267.4 MB",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -6511,7 +6511,7 @@
   "ohne": 149
  },
  "kopfVoll": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
- "zeit": "2026-11-18T17:22:03.081Z",
+ "zeit": "2026-11-18T17:33:13.852Z",
  "vorher": "18058dba",
  "bilanz": {
   "gewinn": [],
