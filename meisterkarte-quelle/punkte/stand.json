@@ -887,7 +887,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert — zuletzt an e4e3f363: die Seite warf: (b)(d) 13.5 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
+     "grund": "Station seit der Messung geändert — zuletzt an b7ed8419: die Seite warf: (b)(d) 14.5 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
      "gehalten": true
     },
     {
@@ -2130,7 +2130,7 @@
   },
   "luftwasser.K4": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert · luftwasser.K4#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs, stamm/dirigent-takt.js +1)",
+   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert · luftwasser.K4#1 gtx: ROT: 7 Orte im Bild, Bestäuber (im Kegel) 14/8/8/0/2/14/6 (Pixel 33/1/6/0/3/4/14), Blüten (Pixel) 1099/420/1560/869/3245/1263/606, r -0.272 (Soll ≥ 0,5) · ROT r -0.272 < 0,5 an b7ed8419",
    "stationen": [
     {
      "id": "luftwasser.K4#1",
@@ -2155,10 +2155,9 @@
      "id": "luftwasser.K4#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs, stamm/dirigent-takt.js +1)",
-     "ungemessen": true,
+     "zahl": "7 Orte im Bild, Bestäuber (im Kegel) 14/8/8/0/2/14/6 (Pixel 33/1/6/0/3/4/14), Blüten (Pixel) 1099/420/1560/869/3245/1263/606, r -0.272 (Soll ≥ 0,5) · ROT r -0.272 < 0,5",
+     "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
+     "grund": "ROT: 7 Orte im Bild, Bestäuber (im Kegel) 14/8/8/0/2/14/6 (Pixel 33/1/6/0/3/4/14), Blüten (Pixel) 1099/420/1560/869/3245/1263/606, r -0.272 (Soll ≥ 0,5) · ROT r -0.272 < 0,5",
      "r6": "konsum"
     },
     {
@@ -2519,7 +2518,7 @@
      "gruen": true,
      "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 74°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1)",
      "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/diag-kreatur-leben.cjs +24) — zuletzt an e4e3f363: Last: Referenz f 1,446 (Faden 1,163 · alle Kerne 1,446; vor 104,8/250,7 ms, nach 104,8/333 ms, Ruhe 90,1/230,3 ms seit 2026-11-17) · fremd: LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightS",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/diag-kreatur-leben.cjs +24) — zuletzt an b7ed8419: Last: Referenz f 1,489 (Faden 1,314 · alle Kerne 1,489; vor 104,9/277,1 ms, nach 117,3/336,2 ms, Ruhe 89,3/225,8 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -5118,9 +5117,8 @@
      "gruen": true,
      "zahl": "4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.2 s, kaempfen 0.01 s · gehen Änderung Δ 3.32 % (Rauschen 0.05 %) · bauen Änderung Δ 2.12 % (Rauschen 0.00 %) · fahren Änderung Δ 3.55 % (Rauschen 0.04 %) · kaempfen Änderung Δ 0.82 % (Rauschen 0.20 %) · [linse-gpu] amd/rdna-3",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, index.html, scripts/lib/draw-zaehler.cjs +23)",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true,
-     "r6": "konsum",
      "beide": true
     },
     {
@@ -5129,9 +5127,8 @@
      "gruen": true,
      "zahl": "4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.03 s, bauen 0 s, fahren 0.32 s, kaempfen 0.01 s · gehen Änderung Δ 3.32 % (Rauschen 0.06 %) [Wesen gattung deer, groesse 0.81, temperament scheu, task wander, ruht false, nah true, satz false, sichtbar true, zustand flucht, 13.9 m] · bauen Änderung Δ 2.07 % (Rauschen 0.00 %) · fahren Änderung Δ 3.51 % (Rauschen 0.04 %) · kaempfen Änderung Δ 0.82 % (Rauschen 0.21 %) · [linse-gpu] nvidia/pascal",
      "sha": "d3ddb51c3c2cf097ccfd248872ca02e8266d0094",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs, stamm/dirigent-takt.js)",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true,
-     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6346,7 +6343,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 200,
+  "konsum": 198,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6508,11 +6505,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 148
+  "ohne": 150
  },
  "kopfVoll": "b7ed8419454b22964d72b81d26f1f56128e41735",
- "zeit": "2026-11-18T20:41:08.977Z",
- "vorher": "18058dba",
+ "zeit": "2026-11-18T20:50:20.993Z",
+ "vorher": "b7ed8419",
  "bilanz": {
   "gewinn": [],
   "fall": [],
