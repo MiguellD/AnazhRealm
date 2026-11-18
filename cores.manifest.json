@@ -50,6 +50,13 @@
         "ns": "__tetrapodaCore"
     },
     {
+        "id": "leben",
+        "scripts": ["leben-core.js"],
+        "vertrag": "leben-core.js",
+        "ns": "__lebenCore",
+        "funktion": true
+    },
+    {
         "id": "gelaende",
         "scripts": ["gelaende-core.js"],
         "vertrag": "gelaende-core.js",
