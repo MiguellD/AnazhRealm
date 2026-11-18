@@ -1,7 +1,7 @@
 {
  "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
  "geraet": "gtx",
- "zeit": "2026-11-18T19:58:36.785Z",
+ "zeit": "2026-11-18T20:03:19.577Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -1667,6 +1667,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.schoepfen.teilen#1": {
+   "gruen": true,
+   "zahl": "2/2 Werke: Original ↔ Import an derselben Kamera gleich · bank_sitzbank Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 11.7 % · eigen_bruecke Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 17.2 % · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.76,
+   "gpu": "nvidia/pascal",
+   "konsum": "kca6323da7b50",
+   "konsumN": 31,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "k07740f03b59d",
+   "s": 44.6,
+   "fremd": {
+    "s": 47.1,
+    "takte": 21,
+    "fremdS": 97.91,
+    "kerne": 2.078,
+    "fensterKerne": 2.643,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      53.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      12.08
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=mediu",
+      11.11
+     ]
+    ],
+    "dienerS": 31.8,
+    "diener": [
+     [
+      "System",
+      15.08
+     ],
+     [
+      "dwm.exe",
+      12.56
+     ]
+    ],
+    "geraetS": 33.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      24.45
+     ],
+     [
+      "svchost.exe",
+      6.94
+     ],
+     [
+      "SearchIndexer.exe",
+      0.81
+     ]
+    ],
+    "eigenS": 108.52,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T20:03:19.577Z",
+   "abdruck": "e97a32d87505",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -2420,20 +2489,20 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-18T19:58:07.758Z",
-  "ordner": "sitzung-20261118-205807",
+  "start": "2026-11-18T20:02:41.527Z",
+  "ordner": "sitzung-20261118-210241",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.9,
+  "bootS": 8.6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "karte2.erleben.schoepfen.schutz#1",
-    "s": 20.6,
-    "takte": 678,
+    "vor": "karte2.erleben.schoepfen.teilen#1",
+    "s": 26.7,
+    "takte": 831,
     "chunks": 81,
     "nach": null
    }
@@ -2441,7 +2510,7 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.erleben.schoepfen.schutz#1",
+    "probe": "karte2.erleben.schoepfen.teilen#1",
     "anders": [
      "r._bildZeit",
      "r._wolkenZeit",
@@ -2458,20 +2527,20 @@
     },
     "haelt": [],
     "heap": [
-     185,
-     218.3
+     187.9,
+     218.1
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.erleben.schoepfen.schutz#1",
+    "probe": "karte2.erleben.schoepfen.teilen#1",
     "halt": -1000000000,
     "zurueck": 0
    },
    {
-    "probe": "karte2.erleben.schoepfen.schutz#1",
+    "probe": "karte2.erleben.schoepfen.teilen#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -2483,20 +2552,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2602,
-   "frameP95": 33.32,
-   "taktP95": 17.05,
+   "bilder": 2604,
+   "frameP95": 33.3,
+   "taktP95": 15.59,
    "vramMax": 132.8,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 141,
+   "zapfen": 148,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 145.8,
-  "minuten": 2.53
+  "fahrtS": 159.2,
+  "minuten": 2.75
  }
 }
