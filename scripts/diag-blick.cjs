@@ -113,7 +113,8 @@ const STUDIOS = {
     // ist der EINE Takt der Seite (die Rückrufe, die HALT sammelt) — die Flügel stehen, wie die Seite sie stellt.
     portale: {
         ansichten: ["front"],
-        bereit: () => (window.STUDIO ? !!STUDIO.wurzel : typeof gate !== "undefined" && !!gate && typeof composer !== "undefined"),
+        // die Bühne steht erst nach Bildern (Vorbau, Licht): das Warten lässt die gesammelten Rückrufe der Seite laufen
+        bereit: () => (window.__rafQ.splice(0).forEach((f) => f(performance.now())), window.STUDIO ? !!STUDIO.wurzel : typeof gate !== "undefined" && !!gate && typeof composer !== "undefined"),
         ruhe: () => {
             const neu = !!window.STUDIO,
                 [kam, objekt, kugel] = neu ? [STUDIO.kamera, STUDIO.wurzel, STUDIO.kugel] : [camera, gate, controls],
