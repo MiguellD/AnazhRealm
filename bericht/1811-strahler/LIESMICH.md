@@ -285,3 +285,24 @@ des Auftrags), sonst brennt es aus; dann wird die Wiese am Feuer dunkler als heu
 Linsen tag-achse · S0 · licht.K1/K5 · hoehlen-sicht · post-kette). Vorschlag an den Koordinator (Antwort steht aus): erstes
 Stück ≈ 1 Tag — der Gewinn bekommt EINEN Namen und EINE Stelle, die Mond-Zahlen bleiben numerisch als „ehrlich × Gewinn",
 Strahler und gemalte Glut gehen am Chokepoint `_leuchtTakt` durch ihn, der Lichtmesser liest das Becken am Auge mit.
+
+## Spike 18.11. ≈ 05:15 — das Auge der Nacht als Potenz auf der Becken-Summe (uncommittet, Kopf bleibt 3147ee40)
+
+Entscheid des Koordinators: p = ln 13,1 ÷ ln 385 000 = 0,200 an EINER Stelle auf der SUMME des Beckens,
+`E_zeig = A × ((1 + E_ehrlich ÷ A_ehrlich)^p − 1)`. Der Spike (`spike/spike-auge.diff`): `_lichtPlatz` gibt die Bestrahlung
+als Luma je Platz mit, `_lichtPoolTerm` (stamm/stoff-material.js, die EINE Schleife) staucht die Summe einmal; A aus dem
+Lichtmesser in `_leuchtTakt`, A_lux = 115 000 × (A ÷ 7,83)^(1/p).
+
+| Fall (Herd-Pose a) | gerechnet | im Bild (Ausgabe-Luma) |
+|---|---|---|
+| Mitternacht 2 m (A 0,567 ↔ 0,257 lx) | 3,9–4,2 | Kreis 36,4 → 100,5 (×2,76) |
+| Mitternacht 7 m | 2,4–2,5 | 1,00 — ROT, die Reichweite schneidet hart bei ~4 m |
+| Mittag 2 m (A 7,40 ↔ 87 140 lx) | 1,001 | an ↔ aus identisch (118,5 = 118,5) |
+
+Bilder `spike/sp-{nah,fern}-nacht-{mit,ohne}.png`, `spike/sp-nah-tag-{mit,ohne}.png`. Mein Blick: nah leuchtet das Feuer warm
+in die Wiese, das Bett brennt nicht aus (Luma 82); fern steht eine Scheibe mit harter Kante — die Reichweite des Gesetzes
+(eMin 0,05 linear) endet, wo das gestauchte Licht noch ×2,4 trägt; sie muss aus derselben Stauchung folgen.
+Offen am Spike: K = 850 lx je Luma-Einheit ist eine Spike-Zahl (das Datum sind Candela je Strahler); der Messer liest das
+Becken noch nicht; der Augen-Ersatz-Platz läuft mit durch die Stauchung; der Preis in ms ist nicht gemessen.
+Tor-Satz von 04:39: format, check, welt-boot am Kopf GRÜN; die Läufe danach fuhren mit dem Spike im Baum und sind kein Beleg
+für den Kopf.
