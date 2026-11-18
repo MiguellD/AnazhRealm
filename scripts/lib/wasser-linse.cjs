@@ -531,6 +531,10 @@ function wasserErstarrung(r, orte) {
     const aus = orte.map(([x, z]) => ({ x, z, y: r._voxelSurfaceY(x, z), frei: r.auraAt(x, z).glut, reihe: [] }));
     try {
         for (const o of aus) r.dslRun(["lava", o.x, o.y, o.z], { source: "human" });
+        // DAS LICHT FRAGT DIE NACHT (w28-strahler): eine Quelle steht zur Wahl, wo ihr gezeigtes Licht die Umgebung der Stunde hebt
+        // (`_leuchtReichweite`) — am Mittag (88 000 lx) trägt keine Decke über ihren Kern, die Probe läse „kein Licht“ an glühender Lava
+        r.setTimeOfDay(0, "regler");
+        r._leuchtTakt();
         for (let k = 0; k <= 15; k++) {
             if (k) st.spielZeit += AnazhRealm.PEGEL_TAG_S / 60; // je Schritt 0,4 h am Tag der Prozesse (`_weltTag`)
             aus.forEach((o, i) => {
@@ -543,6 +547,8 @@ function wasserErstarrung(r, orte) {
         wm.taten.splice(n);
         r._tatGen = (r._tatGen | 0) + 1;
         [st.timeOfDay, st.dayLengthMinutes, st._uhrSpielZeit, st.spielZeit] = alt;
+        r._applyDayNightToScene();
+        r._leuchtTakt();
     }
     for (const o of aus) o.ab = o.reihe.findIndex((s) => s.erstarrt);
     return aus;
@@ -570,7 +576,14 @@ async function wasserGluehen(r, [x, z]) {
             r._tickEsse(1);
             if (!wechsel && glut() > 0 !== vor) wechsel = t;
         }
+        // das Licht des Stahls fragt die Nacht (w28-strahler: am Mittag steht keine Glut zur Wahl, `_leuchtReichweite`); der Gang
+        // selbst bleibt am Mittag des Spieler-Worts (die Luft des Felds)
+        const mittag = st.timeOfDay;
+        r.setTimeOfDay(0, "regler");
+        r._leuchtTakt();
         const q = r._leuchtQuellen(pm.position.x, pm.position.y, pm.position.z, 30).find((l) => l.quelle === "stahl");
+        r.setTimeOfDay(mittag, "regler");
+        r._leuchtTakt();
         const T = r._stahl ? R(r._stahl.T) : null;
         return { wechsel, T, glut: R(glut()), kelvin: q ? R(q.L.kelvin, 0) : null, luft: R(r._temperaturAt(pm.position.y)), esse: r._stahl && r._stahl.esse };
     };

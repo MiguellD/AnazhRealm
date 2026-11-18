@@ -223,10 +223,13 @@ function seitenPruefer() {
             // vor jeder Laterne des Genesis-Orts: seine Kern-Laternen hielten sonst die vier Plätze, ein Tor seitlich hinter dem
             // Spieler rangiert hinter jeder im Bild), der Pool wählt frisch wie nach dem Boot
             const cam = st.camera.position;
+            // um Mitternacht (w28-strahler: eine Quelle steht zur Wahl, wo ihr gezeigtes Licht die Umgebung der Stunde hebt —
+            // am Mittag hält der Pool kein Tor, die Pflanzung wäre blind)
+            r.setTimeOfDay(0, "regler");
             r._leuchtPool = null;
             r._tickPortalLicht({
                 entry: { position: st.camera.getWorldDirection(cam.clone()).setY(0).normalize().multiplyScalar(3).add(cam), scale: 1 },
-                tor: { mu: { springY: 1 } },
+                tor: { mu: { springY: 1, spanW: 2 } }, // (die Breite des Bogens: der Kern seines Lichts, ohne sie trägt es keine Reichweite)
                 _act: 1,
                 u: null,
             });
