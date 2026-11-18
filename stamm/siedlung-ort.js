@@ -2561,6 +2561,12 @@ class AnazhRealm_siedlung_ort {
         });
         plan.haeuser.forEach((h, i) => w("haus", "S2", "haus_" + h.kultur, Object.assign({}, h, { gier: h.phi }), i));
         plan.formationen.forEach((f, i) => w("fels", "S2", "felsbogen", f, i, { dy: 0 }));
+        // DER GRABEN DES GEHEGES (w28-graben-koerper): sein Körper ist das Werk des Plans (`graben.werk`, Bauplan der Zeile B7) um
+        // die Mitte des Rands auf dem Grund des Zoos — sein Grund (S4: das Feld hohl, der gezeichnete Boden geschnitten) liegt im
+        // Erdbau des Orts. Bis hier zeichnete der Boden die Trassen des Plans als Mulde.
+        plan.gehege.forEach((g, i) =>
+            w("graben", "zoo", FC.WERKE[g.graben.werk].kind + "_" + g.graben.werk, { x: g.rand.cx, z: g.rand.cz, seed: g.graben.seed }, i)
+        );
         // DIE BÜHNEN DER BREITE: der Spielplatz mit den Werken, die sein Gesetzbuch für ihn trägt (fachwerk WERKE `siteTag`
         // spielplatz, der Plan nennt sie: `spielplatzGeraete`; Bauplan `<kind>_<art>`), und den Bänken der Eltern. Die Arena bleibt
         // Fläche, bis ein Gesetzbuch ihren Hof trägt — nie eine Ersatz-Box.

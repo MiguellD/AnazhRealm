@@ -84,7 +84,7 @@
     var GESTALTEN_JE_REZEPT = 16;
     var PORTAL_RENDER_CONFIG = {
         lod: {
-            kindStages: { haus: [0, 1, 2, 3], ausstattung: [0, 1, 3], bank: [0, 1, 3], leiter: [0, 1, 3], bruecke: [0, 1, 3] },
+            kindStages: { haus: [0, 1, 2, 3], ausstattung: [0, 1, 3], bank: [0, 1, 3], leiter: [0, 1, 3], bruecke: [0, 1, 3], graben: [0, 1, 3] },
             budget: {
                 // DAS EINE WURF-GESETZ (S3, E1): jede gezeigte Stufe wirft die Stufe 3 — der grundriss-treue Fernkörper,
                 // nurWurf (nie gezeigt, ≤ 96 Dreiecke in EINEM Draw, gate:haus-fern); vorher warf die L0 sich selbst
@@ -140,6 +140,15 @@
                     0: { tris: 1750, draws: 1, schatten: 0 },
                     1: { tris: 150, draws: 1, schatten: 3 },
                     3: { tris: 18, draws: 1, schatten: 3, nurWurf: true },
+                    fernform: "huelle",
+                },
+                // DER GRABEN (w28-graben-koerper, der Trockengraben unten): nah die Platten der Sohle, die Quader der Mauern in fünf
+                // Lagen und die gefasten Kronensteine in EINEM Stoff (Stein), die L1 je Kasten und Flucht EIN Körper, die Stufe 3
+                // wirft für die L1 (32 Dreiecke: die Mauern und die Kronen); gemessen am Samen 1 (EINE Gestalt): L0 15 216, L1 240.
+                graben: {
+                    0: { tris: 15400, draws: 1, schatten: 0 },
+                    1: { tris: 240, draws: 1, schatten: 3 },
+                    3: { tris: 32, draws: 1, schatten: 3, nurWurf: true },
                     fernform: "huelle",
                 },
                 gestalten: {},
@@ -4660,6 +4669,57 @@
     // der Handlauf über der Bahn · pfahlM = so tief reichen die Pfähle unter die Bahn · einbindM = so weit liegt die Bahn am
     // Widerlager unter dem Grund (sie bindet in das Ufer ein: Rad und Fuß treten vom Grund auf die Bohlen, nie gegen sie).
     var BRUECKE_GESETZ = { feldM: 4, lichtM: 4, gelaenderM: 1.05, pfahlM: 3.5, einbindM: 0.05 };
+    // DER TROCKENGRABEN (w28-graben-koerper, Hagenbeck 1907: der Graben um das Gehege statt eines Zauns): EIN gebauter Körper,
+    // kein Relief des Bodens — die Sohle aus Platten, die Stützmauer je Seite aus Quadern in Lagen, auf jeder Mauer die Reihe
+    // der Kronensteine. Bis hier legte der Plan vier Trassen `tiefeM` unter den Zoo, und das 1,8-m-Gitter des Bodens zeichnete
+    // sie als Mulde: die Sohle 0,61 m über dem Feld, die Flanken bei 28–33° (OMEN, 18.11.). Jetzt trägt der Graben den Grund
+    // eines Bau-Körpers (S4, gelaende-core `grund`): das Feld ist hohl, wo er steht (der Leib steht auf der Sohle, die Wand hält
+    // ihn), der gezeichnete Boden fällt in ihm, das Werk `trockengraben` zeichnet Sohle, Mauern und Krone.
+    //   innenM [x, z]  das Gehege, das er umschließt (die Innenkante der Sohle) · breiteM die lichte Weite von Mauer zu Mauer ·
+    //   tiefeM die Sohle unter dem Grund des Zoos · krone: der Kronenstein (`breitM` von der Mauer-Flucht `ueberM` über den Graben,
+    //   der Rest auf dem Grund, `hochM` über ihm, `dickM` dick, je `steinM` eine Stoßfuge) · lageM die Höhe einer Lage der Quader,
+    //   steinM [min, max] ihre Länge, fugeM die Tiefe der Fuge hinter der Flucht · platteM [längs, quer] die Platten der Sohle.
+    var GRABEN_GESETZ = {
+        innenM: [16, 12],
+        breiteM: 3,
+        tiefeM: 2,
+        krone: { breitM: 0.3, ueberM: 0.04, hochM: 0.06, dickM: 0.14, steinM: 1.2 },
+        lageM: 0.4,
+        steinM: [0.7, 1.3],
+        fugeM: 0.02,
+        platteM: [1.5, 1],
+    };
+    // Die vier Kästen des Grabens um die Mitte des Geheges (lokal, +z nach Norden, [x0, x1, z0, z1]): Süd und Nord über die
+    // ganze Breite, West und Ost zwischen ihnen — EINE Quelle für den Körper (`ausTrockengraben`) und seinen Grund (`ortPlan`).
+    function grabenKaesten(G) {
+        var ix = G.innenM[0] / 2,
+            iz = G.innenM[1] / 2,
+            ox = ix + G.breiteM,
+            oz = iz + G.breiteM;
+        return [
+            [-ox, ox, -oz, -iz],
+            [-ox, ox, iz, oz],
+            [-ox, -ix, -iz, iz],
+            [ix, ox, -iz, iz],
+        ];
+    }
+    // Die acht Fluchten der Mauern: je Seite des Geheges (innen) und des Grabens (außen) a → b mit der Normale n zum Graben.
+    function grabenFluchten(G) {
+        var ix = G.innenM[0] / 2,
+            iz = G.innenM[1] / 2,
+            ox = ix + G.breiteM,
+            oz = iz + G.breiteM;
+        return [
+            { a: [-ix, -iz], b: [ix, -iz], n: [0, -1] },
+            { a: [ix, -iz], b: [ix, iz], n: [1, 0] },
+            { a: [ix, iz], b: [-ix, iz], n: [0, 1] },
+            { a: [-ix, iz], b: [-ix, -iz], n: [-1, 0] },
+            { a: [-ox, -oz], b: [ox, -oz], n: [0, 1] },
+            { a: [ox, -oz], b: [ox, oz], n: [-1, 0] },
+            { a: [ox, oz], b: [-ox, oz], n: [0, -1] },
+            { a: [-ox, oz], b: [-ox, -oz], n: [1, 0] },
+        ];
+    }
     // DIE NASSEN LÄUFE eines Wegs: je zusammenhängendem Lauf nasser Punkte {k, e} (erster und letzter nasser Punkt) und seine
     // Widerlager {wa, wb} (der trockene Punkt davor und danach; am Ende des Wegs der Lauf selbst). Leser: das Brücken-Etikett
     // der Gasse (`ortPlan`) und der Feldweg (`brueckenAmWeg`).
@@ -7604,6 +7664,10 @@
         // Welt legt so viele Felder, wie die Spanne verlangt (`brueckenFelder`). Sein Verb trägt die Form: die Bohlen sind
         // Trittfläche für Rad und Fuß, das Geländer hält den Wagen auf der Bahn, unter ihm fließt das Wasser (`durchlass`).
         jochfeld: { kind: "bruecke", art: "Brücke", lab: "Jochbrücke · Bohlen, Träger, Geländer, Joch", gestalten: 2, siteTag: "weg", salz: 0x83d9 },
+        // DER TROCKENGRABEN (w28-graben-koerper, rein additiv; GRABEN_GESETZ oben): der Graben um das Gehege des Zoos als gebauter
+        // Körper — die Sohle aus Platten, die Stützmauern aus Quadern in Lagen, die Kronensteine. Sein Grund (S4) ist der Hohlraum
+        // im Feld und der Schnitt im gezeichneten Boden (`ortPlan`), sein Maß ist Norm (Kollision == Optik == Grund).
+        trockengraben: { kind: "graben", art: "Graben", lab: "Trockengraben · Sohle, Stützmauern, Kronensteine", gestalten: 1, siteTag: "gehege", salz: 0x85eb },
     };
     // B4 — die Regler der Werke: nur, was die Norm nicht verschiebt (Sitzhöhe, Steigmaß und Podest bleiben stehen).
     var BANK_PARAMS = [
@@ -7622,6 +7686,10 @@
     var BRUECKE_PARAMS = [
         { id: "bohle", lab: "Bohle", min: 0.2, max: 0.32, step: 0.02, def: 0.26, law: "die Breite einer Bohle — schmale Bohlen tragen mehr Fugen über das Feld", grp: "FORM" },
         { id: "verwitterung", lab: "Verwitterung", min: 0, max: 1, step: 0.05, def: 0.5, law: "das Alter des Holzes — Sonnenbleiche auf den Bohlen, das Nasse an Joch und Pfahl", grp: "MATERIAL" },
+    ];
+    // Die Regler des Grabens: nur das Alter — Weite, Tiefe und Lage der Mauern sind Norm (sie tragen den Grund und halten das Tier).
+    var GRABEN_PARAMS = [
+        { id: "verwitterung", lab: "Verwitterung", min: 0, max: 1, step: 0.05, def: 0.5, law: "das Alter des Steins — der Erdsaum am Fuß der Mauer, der grüne Belag auf Sohle und Krone", grp: "MATERIAL" },
     ];
     // ═══ DIE GERÄTE DES SPIELPLATZES (w4-koerper-park, rein additiv): Schaukel · Rutsche · Klettergerüst · Wippe · Reck · Balken ·
     //     Kletterwand · Hangel-Leiter — Werke des Zimmermanns auf derselben Maschine (Bake · Stufen [0, 1, 3] · Wurf · Hülle · Raster ·
@@ -7669,7 +7737,7 @@
         PORTAL_RENDER_CONFIG.lod.kindStages[GERAETE[_gw].kind] = [0, 1, 3];
         PORTAL_RENDER_CONFIG.lod.budget[GERAETE[_gw].kind] = GERAET_BUDGET[GERAETE[_gw].kind];
     }
-    var AUS_ARTEN = { ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS };
+    var AUS_ARTEN = { ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS, graben: GRABEN_PARAMS };
     for (var _ga in GERAETE) AUS_ARTEN[GERAETE[_ga].kind] = GERAET_PARAMS;
     for (var _wk in WERKE)
         PRESETS[_wk] = { kind: WERKE[_wk].kind, lab: WERKE[_wk].lab, s: ausParams({ kind: WERKE[_wk].kind }, null), fx: { place: { mode: "site", siteTag: WERKE[_wk].siteTag } } };
@@ -7864,7 +7932,121 @@
             );
         return B;
     }
-    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, grabstein: ausGrabstein, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld };
+    // ── DER TROCKENGRABEN (Ursprung die Mitte des Geheges auf dem Grund des Zoos, y = 0; +z nach Norden): die Sohle `tiefeM` unter
+    //    dem Grund aus Platten im Verband (die Fuge liegt auf dem dunklen Bett), je Flucht die Stützmauer aus Quadern in Lagen —
+    //    jede Lage um einen halben Stein versetzt, die Stirn genau in der Flucht des Grunds (die Wand des Felds), die Fuge auf
+    //    dem Mörtel-Bett `fugeM` dahinter —, auf jeder Mauer die Reihe der Kronensteine, gefast nah. Gefärbt im Rahmen der Sohle:
+    //    der Erdsaum des Verwitterungs-Gesetzes liegt am Fuß der Mauer, das Moos auf der Sohle. Die L1: die Sohle je Kasten
+    //    EINE Platte, die Mauer je Flucht EINE Scheibe, die Krone je Flucht EIN Stein ohne Fase. ──
+    function ausTrockengraben(g, p, seed, stufe) {
+        var m = AUS_MASS.trockengraben(0, p),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            T = m.T,
+            zQ = ausZufall(seed, 0xc1),
+            zP = ausZufall(seed, 0xc2),
+            zK = ausZufall(seed, 0xc3);
+        var stein = function (geo, ton) {
+            geo.translate(0, T, 0);
+            ausFaerbe(geo, "stein", W, function () {
+                return { ton: ton };
+            });
+            geo.translate(0, -T, 0);
+            ausTeil(g, geo, "stein");
+        };
+        // ein Quader längs der Flucht F: von s0 bis s1 (m längs a → b), y0 … y1, `tief` hinter der Flucht, `vor` davor
+        var quader = function (F, s0, s1, y0, y1, tief, vor, fa, ton) {
+            var geo = ausKiste(s1 - s0, y1 - y0, tief + vor, fa),
+                s = (s0 + s1) / 2,
+                q = (vor - tief) / 2;
+            stein(ausSetze(geo, F.a[0] + F.u[0] * s + F.n[0] * q, (y0 + y1) / 2, F.a[1] + F.u[1] * s + F.n[1] * q, 0, Math.atan2(-F.u[1], F.u[0]), 0), ton);
+        };
+        var i, k;
+        // DIE SOHLE: das Bett (die Fuge), darauf die Platten im Verband längs der langen Seite jedes Kastens
+        for (i = 0; i < m.kaesten.length; i++) {
+            var B = m.kaesten[i],
+                lx = B[1] - B[0],
+                lz = B[3] - B[2];
+            if (!fein) {
+                stein(ausSetze(ausKiste(lx, 0.06, lz, 0), (B[0] + B[1]) / 2, -T - 0.03, (B[2] + B[3]) / 2), ausTon(zP, 0.06, 0.02));
+                continue;
+            }
+            stein(ausSetze(ausKiste(lx, 0.02, lz, 0), (B[0] + B[1]) / 2, -T - 0.03, (B[2] + B[3]) / 2), [0.55, 0.55, 0.55]);
+            var langX = lx >= lz,
+                pl = m.platte[0],
+                pq = m.platte[1],
+                L = langX ? lx : lz,
+                Q = langX ? lz : lx,
+                reihen = Math.max(1, Math.round(Q / pq)),
+                bq = Q / reihen;
+            for (k = 0; k < reihen; k++) {
+                var s = k % 2 ? -pl / 2 : 0;
+                while (s < L - 1e-6) {
+                    var s0 = Math.max(0, s),
+                        s1 = Math.min(L, s + pl);
+                    s = s1;
+                    if (s1 - s0 < 0.05) continue;
+                    var a0 = (langX ? B[0] : B[2]) + s0,
+                        a1 = (langX ? B[0] : B[2]) + s1,
+                        q0 = (langX ? B[2] : B[0]) + k * bq,
+                        q1 = q0 + bq,
+                        f = m.platteFuge,
+                        dy = (zP() - 0.5) * 0.006,
+                        geo = ausKiste((langX ? a1 - a0 : q1 - q0) - f, 0.04, (langX ? q1 - q0 : a1 - a0) - f, 0);
+                    stein(ausSetze(geo, langX ? (a0 + a1) / 2 : (q0 + q1) / 2, -T - 0.02 + dy, langX ? (q0 + q1) / 2 : (a0 + a1) / 2), ausTon(zP, 0.1, 0.03).map(function (v) {
+                        return v * 0.9;
+                    }));
+                }
+            }
+        }
+        // DIE MAUERN: je Flucht das Mörtel-Bett `fugeM` hinter der Stirn, davor die Quader in Lagen
+        for (i = 0; i < m.fluchten.length; i++) {
+            var F = m.fluchten[i];
+            if (!fein) {
+                quader(F, 0, F.L, -T - 0.04, 0, 0.1, 0, 0, ausTon(zQ, 0.05, 0.02));
+                continue;
+            }
+            quader(F, 0, F.L, -T - 0.04, 0, 0.06, -m.fuge, 0, [0.55, 0.55, 0.55]);
+            for (k = 0; k < m.lagen; k++) {
+                var y0 = -T + k * m.lage,
+                    y1 = Math.min(0, y0 + m.lage),
+                    t = k % 2 ? -(m.stein[0] + m.stein[1]) / 4 : 0;
+                while (t < F.L - 1e-6) {
+                    var l = m.stein[0] + zQ() * (m.stein[1] - m.stein[0]),
+                        t0 = Math.max(0, t),
+                        t1 = Math.min(F.L, t + l);
+                    if (F.L - t1 < m.stein[0] / 2) t1 = F.L; // kein Splitter am Ende der Flucht
+                    t = t1;
+                    if (t1 - t0 < 0.05) continue;
+                    var vor = (zQ() - 0.5) * 0.012,
+                        hf = m.quaderFuge / 2;
+                    quader(F, t0 + hf, t1 - hf, y0 + hf, y1 - hf, 0.1, vor, 0, ausTon(zQ, 0.12, 0.03));
+                }
+            }
+        }
+        // DIE KRONE: je Flucht ihre Steine (`grabenKrone`: die Ecken schließen ohne Doppel), nah gefast
+        var KR = grabenKrone(m);
+        for (i = 0; i < KR.length; i++) {
+            var R = KR[i],
+                n = fein ? Math.max(1, Math.round(R.L / m.K.steinM)) : 1,
+                sl = R.L / n;
+            for (k = 0; k < n; k++)
+                quader(R, k * sl + (fein ? 0.004 : 0), (k + 1) * sl - (fein ? 0.004 : 0), m.K.hochM - m.K.dickM, m.K.hochM, m.K.breitM - m.K.ueberM, m.K.ueberM, fein ? 0.012 : 0, ausTon(zK, 0.07, 0.02));
+        }
+    }
+    // DIE KRONE DES GRABENS je Flucht: die Strecke ihrer Steine {a, u, n, L} — die Flucht längs x reicht über die Ecke (innen um den
+    // Überstand, außen um den Teil auf dem Grund), die längs z endet vor ihr: jede Ecke trägt genau EINEN Stein. Leser: der Bau, der
+    // Wurf, die Hülle und die Substanz.
+    function grabenKrone(m) {
+        return m.fluchten.map(function (F, i) {
+            var innen = i < 4,
+                laengsX = Math.abs(F.u[0]) > 0.5,
+                land = m.K.breitM - m.K.ueberM,
+                d = laengsX ? (innen ? m.K.ueberM : land) : -(innen ? land : m.K.ueberM);
+            return { a: [F.a[0] - F.u[0] * d, F.a[1] - F.u[1] * d], u: F.u, n: F.n, L: F.L + 2 * d };
+        });
+    }
+    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, grabstein: ausGrabstein, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld, trockengraben: ausTrockengraben };
     // DER LEIB EINER LEUCHTE (schatten.K5, rein additiv): der Halbmesser ihres Glas-Kopfs um den Licht-Mittelpunkt `yL` (die Mitte
     // des Kopfs) — der Boden des Kopfs liegt `yL − yK0` unter dem Licht (die Platte der Stufe 3 genau dort, Halbweite kb/2 + 0,02),
     // die Eck-Stäbe in kb/2, die Haube über `yK1`. Was im Leib liegt, wirft das eigene Licht nicht: die Welt stellt die nahe Ebene
@@ -7991,6 +8173,29 @@
                 L: L, B: B, d: d, Bd: 2 * zG + gB + 0.1, fuge: 0.015, bohle: p.bohle, tH: tH, tB: 0.2, zT: [-1.65, -0.55, 0.55, 1.65],
                 hB: 0.3, hH: hH, xJ: -L / 2 + 0.2, yJ: yJ, zP: [-1.75, 0, 1.75], pr: 0.14, yP: -BG.pfahlM, yK: yJ - 2,
                 zG: zG, xG: [-L / 2 + 0.2, 0.2], gB: gB, gH: BG.gelaenderM, yG: -d - 0.15, hlH: 0.1, hlB: 0.14, rH: 0.12, rB: 0.12,
+            };
+        },
+        // DER TROCKENGRABEN (GRABEN_GESETZ): die Tiefe T, die Lagen der Quader, die Kästen der Sohle, die acht Fluchten der Mauern
+        // (a → b, u die Richtung, n zum Graben, L die Länge) und die Krone K; die Fuge der Quader 12 mm, der Platten 15 mm
+        trockengraben: function () {
+            var G = GRABEN_GESETZ;
+            return {
+                T: G.tiefeM,
+                lage: G.lageM,
+                lagen: Math.ceil(G.tiefeM / G.lageM - 1e-9),
+                stein: G.steinM,
+                fuge: G.fugeM,
+                quaderFuge: 0.012,
+                platte: G.platteM,
+                platteFuge: 0.015,
+                K: G.krone,
+                kaesten: grabenKaesten(G),
+                fluchten: grabenFluchten(G).map(function (F) {
+                    var dx = F.b[0] - F.a[0],
+                        dz = F.b[1] - F.a[1],
+                        L = Math.hypot(dx, dz);
+                    return { a: F.a, b: F.b, n: F.n, u: [dx / L, dz / L], L: L };
+                }),
             };
         },
     };
@@ -8626,6 +8831,19 @@
             parts.push(teil(0, m.H - m.dL / 2, 0, m.L, m.dL, m.T));
             for (a = -1; a <= 1; a += 2) for (k = -1; k <= 1; k += 2) parts.push(teil(a * m.wx, m.hZ / 2, k < 0 ? m.zH : m.zV, m.b, m.hZ, m.b));
             parts.push(teil(0, m.pA[0] + tm * c + m.o * s, m.pA[1] - tm * s + m.o * c, m.L - 0.04, m.lehneT[1] - m.lehneT[0] + 0.09, 0.03, -m.phi));
+        } else if (id === "trockengraben") {
+            // DER GRABEN: die Kronensteine sind TRITTFLÄCHE (der Fuß steigt auf sie, `tritt`); Sohle und Mauer trägt das Feld —
+            // sein Grund ist hohl bis zur Sohle (S4, `erdbauHohl`), die Wand des Felds steht in der Flucht der Quader
+            var KR = grabenKrone(m),
+                land = m.K.breitM - m.K.ueberM;
+            for (k = 0; k < KR.length; k++) {
+                var R = KR[k],
+                    q = (m.K.ueberM - land) / 2,
+                    t = teil(R.a[0] + R.u[0] * (R.L / 2) + R.n[0] * q, m.K.hochM - m.K.dickM / 2, R.a[1] + R.u[1] * (R.L / 2) + R.n[1] * q, Math.abs(R.u[0]) * R.L + Math.abs(R.n[0]) * m.K.breitM, m.K.dickM, Math.abs(R.u[1]) * R.L + Math.abs(R.n[1]) * m.K.breitM);
+                t.material = "stein";
+                t.tritt = true;
+                parts.push(t);
+            }
         } else if (id === "jochfeld") {
             // DIE BRÜCKE: die Bahn samt Trägern ist TRITTFLÄCHE (`tritt`: Rad und Fuß stehen auf ihrer Oberkante, kein Gehender
             // stößt an sie), das Geländer je Seite vom Radabweiser bis zum Handlauf ist Wand, das Joch steht als Holm und Pfähle
@@ -8761,6 +8979,17 @@
                 flaeche([[[-h, k0, -h], [h, k0, -h], [h, k1, -h], [-h, k1, -h]], [[-h, k0, h], [h, k0, h], [h, k1, h], [-h, k1, h]], [[-h, k0, -h], [-h, k0, h], [-h, k1, h], [-h, k1, -h]], [[h, k0, -h], [h, k0, h], [h, k1, h], [h, k1, -h]]]);
                 teil(ausSetze(ausKiste(0.035, 0.055, 0.035, 0), 0, m.yT + 0.0275, 0));
             }
+        } else if (rezeptId === "trockengraben") {
+            // DER GRABEN (32 Dreiecke): je Flucht die Mauer als EINE Fläche von der Sohle bis zur Krone, je Krone ihre Platte
+            for (var gf = 0; gf < m.fluchten.length; gf++) {
+                var GF = m.fluchten[gf];
+                flaeche([[[GF.a[0], -m.T, GF.a[1]], [GF.b[0], -m.T, GF.b[1]], [GF.b[0], m.K.hochM, GF.b[1]], [GF.a[0], m.K.hochM, GF.a[1]]]]);
+            }
+            grabenKrone(m).forEach(function (R) {
+                var lnd = m.K.breitM - m.K.ueberM,
+                    e = [R.a[0] + R.u[0] * R.L, R.a[1] + R.u[1] * R.L];
+                flaeche([[[R.a[0] - R.n[0] * lnd, m.K.hochM, R.a[1] - R.n[1] * lnd], [e[0] - R.n[0] * lnd, m.K.hochM, e[1] - R.n[1] * lnd], [e[0] + R.n[0] * m.K.ueberM, m.K.hochM, e[1] + R.n[1] * m.K.ueberM], [R.a[0] + R.n[0] * m.K.ueberM, m.K.hochM, R.a[1] + R.n[1] * m.K.ueberM]]]);
+            });
         } else if (rezeptId === "jochfeld") {
             // DIE BRÜCKE (18 Dreiecke): die Bahn als Platte auf der Oberkante der Bohlen, je Seite das Geländer als EINE Fläche vom
             // Radabweiser bis zum Handlauf, die drei Pfähle des Jochs als Kreuze vom Holm bis an ihren Fuß
@@ -8850,6 +9079,17 @@
         } else if (rezeptId === "sitzbank") {
             dazu(huelleTeil("box", -m.L / 2, m.L / 2, 0, m.H, -m.T / 2, m.T / 2, F("holz")));
             dazu(huelleTeil("box", -m.L / 2 + 0.02, m.L / 2 - 0.02, m.H, m.pB[0], m.pB[1] - 0.04, m.zH + 0.04, F("holz")));
+        } else if (rezeptId === "trockengraben") {
+            // je Kasten die Sohle, je Flucht die Krone (die Mauern sieht fern niemand: sie stehen unter dem Grund)
+            m.kaesten.forEach(function (B) {
+                dazu(huelleTeil("box", B[0], B[1], -m.T - 0.06, -m.T, B[2], B[3], F("stein")));
+            });
+            grabenKrone(m).forEach(function (R) {
+                var lnd = m.K.breitM - m.K.ueberM,
+                    xs = [R.a[0] - R.n[0] * lnd, R.a[0] + R.u[0] * R.L + R.n[0] * m.K.ueberM],
+                    zs = [R.a[1] - R.n[1] * lnd, R.a[1] + R.u[1] * R.L + R.n[1] * m.K.ueberM];
+                dazu(huelleTeil("box", Math.min(xs[0], xs[1]), Math.max(xs[0], xs[1]), m.K.hochM - m.K.dickM, m.K.hochM, Math.min(zs[0], zs[1]), Math.max(zs[0], zs[1]), F("stein")));
+            });
         } else if (rezeptId === "jochfeld") {
             // die Bahn samt Trägern, je Seite das Geländer, je Pfahl sein Stamm unter dem Holm
             dazu(huelleTeil("box", -m.L / 2, m.L / 2, -m.d - m.tH, 0, -m.Bd / 2, m.Bd / 2, F("holz")));
@@ -8896,6 +9136,8 @@
         if (rezeptId === "grabstein") return { stein: pick([0xa8a294, 0x9c9282, 0x8a8a86]) }; // Kalkstein, Sandstein, Granit
         // die Geräte: das vergraute Holz der Werke, das Eisen (verzinkt, gestrichen) und die Griffe der Kletterwand
         if (GERAETE[rezeptId]) return { holz: pick([0x8e7860, 0x977f66, 0x86705a]), metall: pick([0x7d8288, 0x737a80, 0x858a8e]), stein: pick([0x9a5a48, 0x56708c, 0x9a8a50]) };
+        // der Graben: Muschelkalk, Sandstein oder Granit der Gegend — ein Stein für Sohle, Mauer und Krone
+        if (rezeptId === "trockengraben") return { stein: pick([0x9c968a, 0x9e9280, 0x8c8c88]) };
         if (WERKE[rezeptId]) return { holz: pick([0x8e7860, 0x977f66, 0x86705a]) }; // die Werke: ungestrichenes Holz, vergraut
         return { stein: pick([0xa29b8e, 0x9a9488, 0xaaa397]), holz: pick([0x7c6650, 0x86705a]), lattung: 0x8f7a56, stamm: pick([0x847866, 0x7a6e5e]) };
     }
@@ -11405,8 +11647,10 @@
             // der Grund des Geheges und seines Grabens (`belag`, dasselbe Feld wie jede Fläche): drei Wölfe halten 192 m² kahl
             // (getretene Erde), die Sohle des Grabens ist mit Stein gefasst (Hagenbecks Trockengraben) — kein Rasen wächst über
             // sie, der Gast liest die Grenze am Grund: Rasen · Stein in der Tiefe · Erde
-            gehege: { gattung: "wolf", n: 3, z0: 5, z1: 17, ex: 8, lagerDz: 7, ruhe: [[-3, 1], [0, 3.5], [3, 6]], belag: "weg" }, // nördlich der Mitte
-            graben: { b: 3, tiefeM: 2, belag: "pflaster" }, // Hagenbeck: der Graben um das Gehege statt eines Zauns, `tiefeM` unter dem Zoo
+            // nördlich der Mitte; sein Maß ist das Innere des Trockengrabens (GRABEN_GESETZ.innenM, 16 × 12 m)
+            gehege: { gattung: "wolf", n: 3, z0: 5, z1: 5 + GRABEN_GESETZ.innenM[1], ex: GRABEN_GESETZ.innenM[0] / 2, lagerDz: 7, ruhe: [[-3, 1], [0, 3.5], [3, 6]], belag: "weg" },
+            // Hagenbeck: der Graben um das Gehege statt eines Zauns, `tiefeM` unter dem Zoo — der Körper des Werks `trockengraben`
+            graben: { b: GRABEN_GESETZ.breiteM, tiefeM: GRABEN_GESETZ.tiefeM, belag: "pflaster", werk: "trockengraben" },
             laternen: [[-9, -7], [9, -7], [-9, 1], [9, 1]], // an der Schau-Terrasse südlich der Mitte
             // der Grund des Zoos: Schau-Rasen (bis zur fernen Station), Gehege und Graben auf EINER Platte (dem Median ihres Grunds) —
             // Besucher und Tiere auf einer Höhe, der Graben senkrecht in ihr (am Hang der Standard-Welt trug die Schau-Terrasse sonst
@@ -11780,7 +12024,8 @@
                 ruhe: GH.ruhe.map(function (q) {
                     return xz(lager.x + q[0], lager.z + q[1]);
                 }),
-                graben: { b: M.graben.b, tiefeM: M.graben.tiefeM, kanten: kanten },
+                // der Körper des Grabens: das Werk um die Mitte des Rands (`werk`, sein Same `seed`), sein Grund im Erdbau (`ortPlan`)
+                graben: { b: M.graben.b, tiefeM: M.graben.tiefeM, kanten: kanten, werk: M.graben.werk, seed: genesisSame(sd, 10, 0) },
             },
         ];
         var wp = pol(G.wache.r, wacheW);
@@ -11841,7 +12086,9 @@
         zone("teich", "wasser", "ellipse", { cz: T.cz, a: T.a, b: T.b });
         zone("gehege", "gehege", "kasten", rand, GH.belag, { akteur: true });
         kanten.forEach(function (e, i) {
-            zone("graben_" + i, "graben", "band", { pts: [xz(e[0], e[1]), xz(e[2], e[3])], w: M.graben.b }, M.graben.belag);
+            // die Fläche des Grabens reicht unter seine Kronensteine (ihr Teil auf dem Grund): dort wächst kein Halm durch den Stein
+            var KR = GRABEN_GESETZ.krone;
+            zone("graben_" + i, "graben", "band", { pts: [xz(e[0], e[1]), xz(e[2], e[3])], w: gr6(M.graben.b + 2 * (KR.breitM - KR.ueberM)) }, M.graben.belag);
         });
         zone("viertel", "ort", "kreis", { cx: viertel.x, cz: viertel.z, r: viertel.r });
         tore.forEach(function (q) {
@@ -12242,7 +12489,11 @@
             var xh = ai * Math.min(Math.cos(th0), Math.cos(th1));
             erdbau.push({ art: "platte", cx: gr6(ox), cz: gr6(oz + TE.cz + (zA + zB) / 2), phi: 0, ex: gr6(xh), ez: gr6((zB - zA) / 2), y: yB });
         }
-        // der Zoo auf seiner Platte, der Graben `tiefeM` unter ihr (zwei Flächen nebeneinander: die Wand des Grabens ist senkrecht)
+        // der Zoo auf seiner Platte, der Graben `tiefeM` unter ihr: der GRUND seines Körpers (S4, `grund` je Kasten des Grabens,
+        // `grabenKaesten`) — das Werk `trockengraben` zeichnet Sohle, Mauern und Krone, der gezeichnete Boden fällt in ihm
+        // (`erdbauSchnitt`), das Feld ist hohl bis zur Sohle (`erdbauHohl`: der Leib steht auf ihr, die Wand hält ihn). Bis hier
+        // trugen vier Trassen die Sohle in die Höhe des Bodens, und sein 1,8-m-Gitter zeichnete sie als Mulde (Sohle 0,61 m zu hoch,
+        // Flanken 28–33°) — der Hohlraum im Gitter riss die Rinne vor die Wand, die der Keller des Hauses nie zeichnet.
         var ZP = G.zoo.platte;
         var gehege = plan.gehege.map(function (g) {
             var zx = g.rand.cx;
@@ -12252,8 +12503,21 @@
             var gk = g.graben.kanten.map(function (e) {
                 return [e[0], e[1], gr6(yZ - g.graben.tiefeM), e[2], e[3], gr6(yZ - g.graben.tiefeM)];
             });
-            gk.forEach(function (e) {
-                erdbau.push({ art: "trasse", x0: gr6(ox + e[0]), z0: gr6(oz + e[1]), y0: e[2], x1: gr6(ox + e[3]), z1: gr6(oz + e[4]), y1: e[5], w: g.graben.b, weg: 2000 });
+            var GG = GRABEN_GESETZ;
+            var aussen = [GG.innenM[0] / 2 + GG.breiteM, GG.innenM[1] / 2 + GG.breiteM];
+            grabenKaesten(GG).forEach(function (b) {
+                erdbau.push({
+                    art: "grund",
+                    cx: gr6(ox + g.rand.cx),
+                    cz: gr6(oz + g.rand.cz),
+                    phi: 0,
+                    ex: aussen[0],
+                    ez: aussen[1],
+                    saum: 0,
+                    y: yZ,
+                    boxen: [[b[0], b[1], b[2], b[3], 1]],
+                    keller: [b[0], b[1], b[2], b[3], -GG.tiefeM, 0],
+                });
             });
             return Object.assign({}, g, { y: yZ, graben: Object.assign({}, g.graben, { kanten: gk }) });
         });
@@ -12304,7 +12568,7 @@
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         // die Arten des Buchs als Literal (die Karte liest sie statisch, diag-atlas --find): die Geräte des Spielplatzes je ihre Art
-        PARAMS_BY_KIND: { haus: PARAMS, ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS, schaukel: GERAET_PARAMS, rutsche: GERAET_PARAMS, klettergeruest: GERAET_PARAMS, wippe: GERAET_PARAMS, reck: GERAET_PARAMS, balken: GERAET_PARAMS, wand: GERAET_PARAMS, hangelleiter: GERAET_PARAMS },
+        PARAMS_BY_KIND: { haus: PARAMS, ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS, schaukel: GERAET_PARAMS, rutsche: GERAET_PARAMS, klettergeruest: GERAET_PARAMS, wippe: GERAET_PARAMS, reck: GERAET_PARAMS, balken: GERAET_PARAMS, wand: GERAET_PARAMS, hangelleiter: GERAET_PARAMS, graben: GRABEN_PARAMS },
         buildInstance: buildInstance,
         // B7 — die Wirts-Zeilen der Werke (Bank, Leiter): Bauplan-Namensraum und Substanz in den Maßen der Gestalt
         KIND_POLICY: KIND_POLICY,
@@ -12433,6 +12697,8 @@
         verkehrsNetz: verkehrsNetz, // PFLICHT-OFFEN C — das Netz der Wagen: die zweispurigen Trassen, ihre Kreuzungen, Spuren, Wenden und Plätze
         planSperren: planSperren, // fahrzeug.K2 — was einem Weg im Plan im Weg steht (Grundrisse und Tritte, um die halbe Wagen-Breite)
         BRUECKE_GESETZ: BRUECKE_GESETZ, // fahrzeug.K2 — die Jochbrücke des Wegs (Feld, lichte Breite, Geländer, Pfahl, Einbindung)
+        GRABEN_GESETZ: GRABEN_GESETZ, // w28-graben-koerper — der Trockengraben des Geheges (Weite, Tiefe, Mauer, Krone, Sohle)
+        grabenKaesten: grabenKaesten, // die vier Kästen seines Grunds (S4) — der Körper und der Erdbau lesen sie
         nasseLaeufe: nasseLaeufe, // fahrzeug.K2 — die nassen Läufe eines Wegs und ihre Widerlager (Gasse und Feldweg)
         brueckenAmWeg: brueckenAmWeg, // fahrzeug.K2 — die Spannen der Brücken eines Wegs (der Feldweg zwischen zwei Orten)
         brueckenFelder: brueckenFelder, // fahrzeug.K2 — die Jochfelder einer Spanne (der Wirt legt sie als Werke)
