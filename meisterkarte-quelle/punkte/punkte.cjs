@@ -319,7 +319,8 @@ function pruefeStationen(liste, karte) {
             f.push("ein Pflicht-Richter trägt pflicht: true UND kriterium pflicht.<Eintrag>");
         if (st && (st.karte2 !== undefined || /^karte2\./.test(st.kriterium || "")) && !istKarte2(st))
             f.push("ein Richter der Karte 2 trägt karte2: true UND kriterium karte2.<Leiter>");
-        if (![1, 2].includes(st.staffel)) f.push("staffel nicht 1|2");
+        // die Staffel einer Station der Karte 2 IST ihre Sprosse (1 … n der Leiter; ob es sie gibt, urteilt die quelle unten), jede andere 1|2
+        if (istKarte2(st) ? !(Number.isInteger(st.staffel) && st.staffel >= 1) : ![1, 2].includes(st.staffel)) f.push(istKarte2(st) ? "staffel keine Sprosse ≥ 1" : "staffel nicht 1|2");
         if (st && st.befehl === null) {
             fehler.push(wer + ": befehl null gehört in module.exports.fehlt (mit grund), nie in die fahrbare Liste");
             continue;
@@ -554,9 +555,14 @@ function sitzStartGrenze(st, geraet, fahrtMaxS) {
     const g = grundDeckel(st, geraet), bedarfS = g * teileVon(st);
     return bedarfS <= fahrtMaxS / 2 ? { bedarfS, restMin: bedarfS + ZWISCHEN_S, sekMin: g } : { bedarfS, restMin: 0, sekMin: 1 };
 }
+// DIE LEITERN DER KARTE 2 (18.11., richter-erleben-same-kosmos): stationen/k2-<Kapitel>.js tragen je Leiter EIN Messprogramm, ihre
+// Sprossen als Zwillinge derselben Probe (staffel = die Sprosse) — dieselbe Liste, derselbe Vertrag wie gN.js, nach ihnen geladen.
+// GRUPPEN bleibt die Gruppe der alten Karte (src/gN.js trägt ihre Kriterien); eine k2-Datei hat kein src
+const K2_DATEI = /^k2-[a-z0-9-]+\.js$/;
 function ladeStationen(dir = path.join(DIR, "stationen"), teil = "liste") {
     const alle = [];
-    for (const g of GRUPPEN) {
+    const k2 = fs.existsSync(dir) ? fs.readdirSync(dir).filter((n) => K2_DATEI.test(n)).sort().map((n) => n.slice(0, -3)) : [];
+    for (const g of [...GRUPPEN, ...k2]) {
         const f = path.join(dir, g + ".js");
         if (!fs.existsSync(f)) continue;
         const m = require(f);
