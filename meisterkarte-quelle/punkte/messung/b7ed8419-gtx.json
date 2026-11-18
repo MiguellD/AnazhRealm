@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-18T21:42:42.105Z",
+ "zeit": "2026-11-18T21:46:59.159Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -795,6 +795,78 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "tiere.K5#1": {
+   "gruen": true,
+   "zahl": "ego (first) 5 Sichtungen in 601 Spiel-s (wesen 440 px 36 m 69 s · wesen 230 px 60 m 231 s · wesen 637 px 31 m 411 s · wesen 306 px 36 m 420 s · wolf 219 px 19 m 543 s), 620 Prüfungen, 39 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 3 Sichtungen in 600 Spiel-s (wolf 843 px 8 m 1 s · wesen 1213 px 48 m 56 s · wesen 310 px 40 m 501 s), 608 Prüfungen, 16 Masken, Bestand bis 20, im Blick erschienen 0",
+   "exit": 0,
+   "minuten": 2.11,
+   "gpu": "nvidia/pascal",
+   "konsum": "k28dac2c8cc76",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "k2bbe263ca652",
+   "s": 125.5,
+   "teile": [
+    125.5
+   ],
+   "fremd": {
+    "s": 127.9,
+    "takte": 58,
+    "fremdS": 190.8,
+    "kerne": 1.492,
+    "fensterKerne": 1.706,
+    "namen": [
+     [
+      "node.exe grundriss-proto.cjs",
+      127.63
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      26.95
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.52
+     ]
+    ],
+    "dienerS": 49.52,
+    "diener": [
+     [
+      "dwm.exe",
+      25.02
+     ],
+     [
+      "System",
+      16.39
+     ]
+    ],
+    "geraetS": 40.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      23.25
+     ],
+     [
+      "svchost.exe",
+      15.56
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 376.5,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T21:46:59.159Z",
+   "abdruck": "55eca60f50c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -810,23 +882,24 @@
   "k509e943c399e": "dVTRbqMwEPwXHttzHQIUsNQHJ0RqpKuU+4S1WQMNgcg25S6n+/cTBNIA7T4hMbM7O7vev84Z5BEyfHo3deUw58H54Rj4QGJQf6B+ejcOc1bShyBi/BqUc77tYFIXZ2toWQgKooL8hKTRFovySfY0V0YIyGi74+2B0gMN6ablt9jwl5d5mlJgWhMLCsckIl2HHrA5sDEZCCTQqL7wAH6YwQRU6VST8iBQLtv/4Xy3rJ8WgJaURWXGjDINhLdmdIx2ydHQkgtgXqIeSOCG4IqBFPXNtoeYzoiqbIyZFIu8NFhHjNIFNkNTyNySs64FVqM18Tp0gW2WmrJzQ9REkRAQibmLOWCVoZ5qCP1A+oz+juZJj3BCDaSCfIDGKy9ci09vKKWvSy1lL7wvUX0zJiPzQp+mzSkVpLBiP5cJTQ4panKsjb2hIx8Axw1NKP/FOT/4yZz5KWXgrcXzKojuWogof110bmplW9BIsnMzENHHIAwY5/sF2MLpNDYh1xgFc9uN7dbyXkbgo/scdjKyb1y8LjG5YFGOpFBK10O2fePzPj80nAiITBdKjbMSgVTxV6vVYmmJqGs7Ir0UPNlpqW6uxNH1wd4iaWu522a/+DQ2OuNL7X2FWttbt+J5pXym+vckF+hCW9KCzG8zUgIhZl9AL6hLzHBiZeoLD9IOfafWHz8e75eVXhaTvhTYmVyZxoybFYdprK4bMhyv/fRwtKiPAqrjKDcQXuCyhCcZfdy9DoVXCU3oob03a8tVy/l+u4kmHr5xnvFdX+CMkirQAqmFjGhUkyvd/T3rWhXdlaM5NCaH0n5C/v0H",
   "kfa94134390a7": "bVTRjpswEPyXPLb1OQR8gKU+OCFSTmrV3CeszRpICEQ2HG2q/nsFFycBsk+AZtjZ2bH/Ls6gjpDhy8HW1YIvviy+LSx8ILFoPtC8HOyCL5YqABZx8VlUCLHpYcoU58bSspAUZAX5CUlrGizKFzXQPBUhIKfdVnR7Svc0pOvu+/cptZSY1qQBjY4o01XoA58CW5uBRAKtHppdwSzwAp9xOlSUiP2BuhLvQtBuO+0ooUrHSrUPTHv87Y8QWzFTmBaADSmLyrqeKmXSX/Fbo/lUqYGOXADzEs2VBF4InnRCByu7fUwnRF221o6aRX7KVhGndIbN0BYqb8jZ1BIrZ168Cj3gT5zOzi3RI0VSQiSnPueAVYZmrCEMmAo4/R1Nf3qEExogFeRXaLz0w5W8e0Mp3c21lIPwoYUTHqUyDvWI2O9w1/VOJVH/kt0+R7vPMCaZuNf7pIlVeWFOY3u0Ziks+Y+5JJtDioYca9vcNQUA6JKfDIES+yCZMu/DXHkr+bpk0cMsERW7mXe21k0HBkl2bq9EDJCFjAvxNgM3cDq5IdQKIzZdnG36YD/KYAF6ryF3zj3Zw+cxIBcsSkcKlfJ85JufYjrnh4ETAZmZQmu3bcmUjp+Fs8OyIbKuG4f0U/AVpz6tbq7EwzFY3zeYdLXabrJ3MalDJubahw61aW7TytelDrgeTqSaoQvTkA5UftuRlggxfwK9oCkxw5GVaSB9SHv0g9rAPXwdZfYy2/SlwN7kyrbWJSsO0/ia9vFoHZqjhOroZDLpM2+I4PqXcLFfJjSh++7Ro43QnRBvm3XU/+yMip5NrYv+tqM5tDaHsrlf8//+Aw==",
   "k89ccc75d32b3": "bVTBjpswEP2XHNt6HQJewNIenLDSbtVVs8cex2YMJAQiG5Y2Vf+9go2TAJkToPc8b94883dxBLWHDB92tq4WfPFl8W1h4QOJRfOB5mFnF3yxVAGwiIvPokKITQ9Tpjg2lpaFpCAryA9IWtNgUT6ogeapCAE57d5Et6V0S0O67sSlNuLpaXpMKTGtSQMa3SEyXYU+8CmwtRlIJNDqofEZzAIv8BmnQ0WJ2O6oK/EuBO2e73WVUKVj5doHpj3++keI5zk+LQAbUhaVdX1VyqS/4pdm3ZxjoCMnwLxEcyaBF4InndjBkm4b0wlRl621o2aRn7JVxCmdYTO0hcobcjS1xMoZGK9CD/h6rik7tkSPFEkJkZx6nQNWGZqxhjBgKuD0dzQ9dA8HNEAqyM/QeOmHK3n1hlL6MtdSDsKHFk54lMo41CNiv8eXIUJJ1L9kl8/Ry2eokuwaMPE+aWJVXpjD2B6tWQpL/mMuyeaQoiH72jZXTQEAupuQDKES2yCZMq/DnHkr+bhk0c0sERUvM+9srZsODJLs2J6JGCALGRfidQZu4HBwQ6gVRmy6ONv0wb6VwQL0HkPunLuzh89rQE5YlI4UKuX5yDdvYjrnh4EDAZmZQmu3bcmUju+Fs8OyIbKuG4f0U/BVr6W6saX3dX3dYNLV6nmTvYtJ7TIx1z50qE1zmVY+LnXA9XAj1QxdmIZ0oPLLjrREiPkd6AlNiRmOrEwD6UPao2/UBu7h6yizp9mmTwX2Jle2tS5ZcZjG57SPR+vQ7CVUeyeTSZ95/Htv1E/hYr9MaEKnpTshfm3WUX/YERU9mloX/d+O5tDaHMrm+tv/9x8=",
-  "k1b6c047b135c": "bVTbbqMwEP2XPLZ1HW4FLPXBCZFSaSulnzA2Y6AhENmm7Ga1/76CQhKg84Stczxnzgzzd3UGeYQMnz9NXa3Y6mH1tDLwhcSg/kL9/GlWbLWWPgQR499BOefbDiZ1cbaGloWgICrIT0gabbEon2VPc2SEgIy2O94eKD3QkG5afo0Nf32dP1MKTGtiQeH4iEjd0AM2BzYmA4EEGtUnHsAPM5iAKp1qUh4EymFvfzjfLfOnBaAlZVGZ8UWZBsJzGR2jXXI0tOQCmJeoBxI4IThiIEV9se0hpjOiKhtjJskiLw3ciFG6wGZoCplbcta1wGq0JnZDB9hmqSk7N0RNFAkBkZi7mANWGeqphtAPpM/o72j+6BFOqIFUkA/QeO2Frrh5QyndL7WUvfA+xSg8SkUcqgmRUprt++FIov5wvX7c0+7+cKGqO3q9nx+zJEbmhT5N7VEqSGHNfi0lmRxS1ORYG3vT5APgOOMJ5R9dTj+ZM2/FDDxXvKyD6K6WiPL9wjtTK9uCRpKdm4GIPgZhwDh/W4AtnE5jEdLFKJg3zthusO9lBD46LyEbnfuhD9+/AblgUY6kUErHQ7Z95/M6vzScCIhMF0qN3RaBVPFPw9liaYmoazsivRQ82Wmprq7E0fcvf42kreVum33w+9jxjc74Unufodb2Wq14WSuf9QPRygW60Ja0IPNrj5RAiNkP0AvqEjOcWJn6woO0Q9+p9cePx8nMXhadvhTYmVyZxoyTFYdpPEz7sP7epqunRX0UUB1HuYHwAoclPMnoI98PidcJTeihvbdry1V33m6iiYvvvZN9gjNKqkALpGWjLNGoUGN1mWz7DnPWtSq6bUlzaEwOpb1B/v0H"
+  "k1b6c047b135c": "bVTbbqMwEP2XPLZ1HW4FLPXBCZFSaSulnzA2Y6AhENmm7Ga1/76CQhKg84Stczxnzgzzd3UGeYQMnz9NXa3Y6mH1tDLwhcSg/kL9/GlWbLWWPgQR499BOefbDiZ1cbaGloWgICrIT0gabbEon2VPc2SEgIy2O94eKD3QkG5afo0Nf32dP1MKTGtiQeH4iEjd0AM2BzYmA4EEGtUnHsAPM5iAKp1qUh4EymFvfzjfLfOnBaAlZVGZ8UWZBsJzGR2jXXI0tOQCmJeoBxI4IThiIEV9se0hpjOiKhtjJskiLw3ciFG6wGZoCplbcta1wGq0JnZDB9hmqSk7N0RNFAkBkZi7mANWGeqphtAPpM/o72j+6BFOqIFUkA/QeO2Frrh5QyndL7WUvfA+xSg8SkUcqgmRUprt++FIov5wvX7c0+7+cKGqO3q9nx+zJEbmhT5N7VEqSGHNfi0lmRxS1ORYG3vT5APgOOMJ5R9dTj+ZM2/FDDxXvKyD6K6WiPL9wjtTK9uCRpKdm4GIPgZhwDh/W4AtnE5jEdLFKJg3zthusO9lBD46LyEbnfuhD9+/AblgUY6kUErHQ7Z95/M6vzScCIhMF0qN3RaBVPFPw9liaYmoazsivRQ82Wmprq7E0fcvf42kreVum33w+9jxjc74Unufodb2Wq14WSuf9QPRygW60Ja0IPNrj5RAiNkP0AvqEjOcWJn6woO0Q9+p9cePx8nMXhadvhTYmVyZxoyTFYdpPEz7sP7epqunRX0UUB1HuYHwAoclPMnoI98PidcJTeihvbdry1V33m6iiYvvvZN9gjNKqkALpGWjLNGoUGN1mWz7DnPWtSq6bUlzaEwOpb1B/v0H",
+  "k28dac2c8cc76": "bVRdj5swEPwvPJ7qc/g6wNI9OCFSTqrU3E9YmzVwIYBsCG2q/vcKDpIA8RtoZnd2duy/Vg3yBCm+fpmqtJj1Yv2wDFyQGNQX1K9fxmLWRnrgh4x/H8o53/UwqfO6MbTIBQVRQnZG0uoG8+JVDjRbhgjIaLfn3ZHSIw3otnt/X1ILgUlFGlA4EUXiBC6wJbA1KQgk0Kqh2Qh+WcAElMlch3LBVzb7+MP5nq/6JzlgQ4q8NFNFmfjCdRidzlpzoqEjV8CsQD2SwA7AFiMpHIzqjhFdEFXRGjNrFrqJ74SM0hU2RZPLrCG1rgSWkzWRE9jAnviY1i1RM0VCQCiWLmaAZYp6riHwfOkx+jtcFj3BGTWQErIRGm3cwBF3byilh7WWYhA+tJiEh4mIAjUjUkr5oeudisP+I739Dg/fUYtTfj+fiyZGZrk+z+1Ryk9gw36uJZkMEtTkVJnmrskDwCnXMeWfnPOjFy+Z92FGniPeNn74MEtI+WHlnalU04FGktbtSEQP/cBnnH+swA2cz9MQ0sHQXy7ONH2wH2X4HtpvAZuce7KH72tArpgXEymQ0nZxWfyi4UxApDpXatq08KWKngWzw6IhoqqaCekm4EpGXVreHImGK7C9by/uKrnfpZ98cdKl5qF6pZvblOJtozymLv1NlCt0rhvSgcxuu1ECIWJPoFfUBaY4s3D5eFxz7O0qTWumjERBEo25nRvcoT4JKE9TY1+4vj2EafuL9wHecx5vYhrTY/c48Y4nXZx+7LZhX6xGSWtdqbx/t2gGrcmgaO7P8b//"
  },
  "sitzung": {
-  "start": "2026-11-18T21:42:04.240Z",
-  "ordner": "sitzung-20261118-224204",
+  "start": "2026-11-18T21:46:21.577Z",
+  "ordner": "sitzung-20261118-224621",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 8.1,
+  "bootS": 7.6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "karte2.planet.kopplung.wetter-welt#1",
-    "s": 27.1,
-    "takte": 573,
+    "ort": "wiese",
+    "vor": "tiere.K5#1",
+    "s": 27.5,
+    "takte": 594,
     "chunks": 81,
     "nach": null
    }
@@ -834,24 +907,36 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.planet.kopplung.wetter-welt#1",
+    "probe": "tiere.K5#1",
     "anders": [
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
      "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     224.1,
-     250.5
+     227.9,
+     287.4
     ],
     "ungemessen": null
    }
   ],
+  "wanderung": [
+   {
+    "probe": "tiere.K5#1",
+    "ort": "wiese",
+    "m": 0.7,
+    "dreh": 0
+   }
+  ],
   "messHalt": [
    {
-    "probe": "karte2.planet.kopplung.wetter-welt#1",
+    "probe": "tiere.K5#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -863,21 +948,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3447,
-   "frameP95": 17.25,
-   "taktP95": 7.73,
-   "vramMax": 129.6,
+   "bilder": 3105,
+   "frameP95": 25.08,
+   "taktP95": 16.67,
+   "vramMax": 129.7,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 135,
+   "zapfen": 230,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 145,
-  "minuten": 2.52
+  "fahrtS": 239.9,
+  "minuten": 4.09
  },
  "ungemessen": {
   "mensch.K5#1": {
