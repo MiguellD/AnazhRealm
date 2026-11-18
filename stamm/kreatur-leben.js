@@ -2594,7 +2594,7 @@ class AnazhRealm_kreatur_leben {
             const fehlt = G.tiere.filter((t) => soll.has(t) && !t.leib);
             if (!fehlt.length || fehlt[0]._ohneOrt > st.spielZeit) continue;
             if (G.gehege) {
-                this._gehegeLeiber(fehlt, G.tiere);
+                this._gehegeLeiber(fehlt, G.tiere, G.ankunft);
                 continue;
             }
             if (this._bestandLeiber(fehlt, G.tiere).length || !--suchen) break;
@@ -2714,7 +2714,9 @@ class AnazhRealm_kreatur_leben {
         const B = AnazhRealm._bestandGesetz().B;
         if (!this._kreaturenBereit()) return;
         this._feldTakt();
-        if (st.spielZeit - (L.lastTick || 0) < B.taktS) return;
+        // zwischen zwei Takten zeichnet nur die Ankunft eines Geheges (`_gehegeKommtAn`: seine Tiere stehen im selben Bild)
+        if (st.spielZeit - (L.lastTick || 0) < B.taktS)
+            return void (this._gehegeKommtAn() && this._bestandVerkoerpern());
         L.lastTick = st.spielZeit;
         this._bestandAdoptieren();
         // DIE OFFENEN RISSE (oekologie.K2): ein Leib, den ein Riss im Nah-Kreis seinem Jäger nannte (sein Tier starb im Gesetz),

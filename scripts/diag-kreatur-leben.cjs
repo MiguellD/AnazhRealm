@@ -1119,13 +1119,18 @@ async function lebenBuehnen() {
     // Tiefe seines Punkts hinter der nächsten Kante), je Takt des Lebens dieselben Nummern im Verzeichnis, kein Tier des Geheges
     // im wilden Gesetz (`_kreaturBestand` zählt die Freien) und keines gealtert; über den Tag der Anteil der Ruhe gegen das
     // Ethogramm seiner Gattung; unter dem Hieb hält der Rand, ein gefallenes Tier steht im nächsten Takt wieder in der Zeile;
-    // fern kein Leib, zurück dieselben an ihren Plätzen ──
+    // fern kein Leib, zurück dieselben an ihren Plätzen; an S8 gestellt (die Ankunft) alle im ersten Bild ──
     await buehne("gehege", async (restore) => {
         if (taeter === "gehege-rand") decke("_gehegeRandKontakt", () => () => {});
         if (taeter === "gehege-term") decke("_bestandFreie", () => (R) => R.tiere);
         // die Zeile tritt je Region einmal ein (bis w28-gehege): ein gefallenes Tier fehlte bis zum nächsten Laden
         if (taeter === "gehege-zeile")
             decke("_gehegeEinsetzen", (alt) => (key, R) => (R._gehege ? undefined : alt.call(r, key, R)));
+        // die Ankunft wartet auf den Takt und auf den Blick (bis w28-gehege): wer mit dem Blick ins Gehege ankam, sah es leer
+        if (taeter === "gehege-ankunft") {
+            decke("_gehegeKommtAn", () => () => false);
+            decke("_gehegeLeiber", (alt) => (fehlt, gruppe) => alt.call(r, fehlt, gruppe, false));
+        }
         const [GG, LG, P] = [A._gehegeGesetz(), A._lebensraumGesetz(), r._genesisPlan];
         const Z = r._gehegeListe()[0];
         if (!Z) throw new Error("die Welt trägt kein Gehege (`_gehegeListe` leer: ohne Plan oder ohne Wildnis)");
@@ -1226,6 +1231,17 @@ async function lebenBuehnen() {
         for (let k = 0; k < 3; k++) (leben(), bild(false));
         z.wieder = leiber().length;
         z.wiederPlatz = rund(Math.max(-1, ...leiber().map((c) => Math.min(...Z.ruhe.map((q) => ab(c.position, q))))), 2);
+        // (6) DIE ANKUNFT: der Gast geht wieder fort (kein Leib) und wird an S8 GESTELLT, den Blick ins Gehege (ein Stand lädt ihn
+        // dorthin, ein Tor, ein Instrument) — im ersten Bild des Spiels danach (ein Schritt von 1/30 s, kein Takt des Lebens)
+        // stehen alle Tiere an ihren Ruhe-Plätzen
+        ort(fernM + 30, -1);
+        for (let k = 0; k < 3; k++) leben();
+        const davor = leiber().length;
+        blick();
+        s.spielZeit += 1 / 30;
+        r.tickFaunaLifecycle();
+        const nebenM = rund(Math.max(-1, ...leiber().map((c) => Math.min(...Z.ruhe.map((q) => ab(c.position, q))))), 2);
+        z.ankunft = { vor: davor, erstes: leiber().length, platz: nebenM };
         z.randMin = rund(z.randMin, 2);
         return z;
     });
@@ -1285,6 +1301,10 @@ function lebenUrteil(name, z, soll) {
         soll(
             z.fern === 0 && z.wieder === z.tiere && z.wiederPlatz <= 0.5,
             `das Gehege folgt dem Gast nicht: fern ${z.fern} Leiber (Soll 0), zurück ${z.wieder} (Soll ${z.tiere}), ${z.wiederPlatz} m neben ihrem Ruhe-Platz (Soll ≤ 0,5)`
+        );
+        soll(
+            z.ankunft.vor === 0 && z.ankunft.erstes === z.tiere && z.ankunft.platz <= 0.5,
+            `die Ankunft steht leer: ${z.ankunft.erstes} von ${z.tiere} Leibern im ersten Bild des Gasts, der mit dem Blick ins Gehege ankommt (davor ${z.ankunft.vor}, Soll 0; ${z.ankunft.platz} m neben ihrem Ruhe-Platz, Soll ≤ 0,5)`
         );
     }
     if (name === "kaskade") {
@@ -1464,6 +1484,7 @@ module.exports = {
             ["gehege-rand", /Ausbruch: [1-9]/],
             ["gehege-term", /das wilde Gesetz zählt das Gehege: [1-9]/],
             ["gehege-zeile", /die Zeile ist nicht der Bestand: [1-9]/],
+            ["gehege-ankunft", /die Ankunft steht leer: [0-2] von/],
         ],
         zielplan: [
             ["zielplan-planlos", /Bewohner ohne Ziel/],

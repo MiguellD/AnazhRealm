@@ -92,17 +92,43 @@ class AnazhRealm_kreatur_gehege {
     // hält es um `GEHEGE_HALT` länger. Ein fälliges zeichnet seine Tiere vor jeder Gruppe, gleich ob seine Region nah ist; ein
     // nicht fälliges belegt keinen Platz der Kappe: seine Leiber gehen als Zahl in ihr Tier zurück, sobald kein Blick sie hält
     // (`_bestandAusserBlick` — auch jenseits ihres Pixel-Horizonts), und kehren mit ihrem Stand an ihren Platz wieder.
+    // DIE ANKUNFT (`_gehegeDa`: je fälligem Gehege, ob sie offen ist): ein Gehege, das in die Zeichnung tritt, bringt seine Tiere
+    // mit — offen, bis alle einmal stehen (`_gehegeLeiber` setzt sie dann auch vor das Auge: der Gast, der dort ankommt, hat das
+    // Gehege nie leer gesehen); danach entsteht kein Leib mehr im Blick (ein gefallenes Tier kehrt wieder, wenn der Blick geht).
     _gehegeGruppen(gruppen, p) {
         const zeilen = this._gehegeListe();
         if (!zeilen.length) return;
         const R = globalThis.__fachwerkCore.GENESIS_ORT.regel.residentM;
         const abstand = AnazhRealm._gehegeGesetz().abstand;
+        const da = this._gehegeDa || (this._gehegeDa = new Map());
         for (const Z of zeilen) {
             const d = abstand(Z.rand, p.x, p.z);
-            if (d > R * (1 + AnazhRealm.GEHEGE_HALT)) continue;
-            const tiere = this._gehegeTiereVon(Z);
-            if (d <= R || tiere.some((t) => t.leib)) gruppen.set("gehege|" + Z.id, { d: -Infinity, gehege: Z, tiere });
+            const tiere = d > R * (1 + AnazhRealm.GEHEGE_HALT) ? null : this._gehegeTiereVon(Z);
+            if (!tiere || !(d <= R || tiere.some((t) => t.leib))) {
+                da.delete(Z.id);
+                continue;
+            }
+            const steht = tiere.length >= Z.n && tiere.every((t) => t.leib);
+            const ankunft = da.get(Z.id) !== false && !steht;
+            da.set(Z.id, ankunft);
+            gruppen.set("gehege|" + Z.id, { d: -Infinity, gehege: Z, tiere, ankunft });
         }
+    }
+    // TRITT EIN GEHEGE IN DIESEM BILD IN DIE ZEICHNUNG (der Gast kam an: ein Stand lud ihn dorthin, ein Tor, ein Instrument stellte
+    // ihn — oder er überschritt die Grenze der Fälligkeit zu Fuß)? Dann zeichnet die EINE Zeichnung sofort (`tickFaunaLifecycle`
+    // → `_bestandVerkoerpern`), nie erst am nächsten Takt des Lebens: die Tiere stehen in dem Bild, in dem das Gehege zum ersten
+    // Mal steht. Je Bild ein Abstand je Zeile. Bis hierher wartete die Ankunft auf den Takt (bis taktS der Spiel-Zeit) und dann
+    // auf den Blick: wer mit dem Blick ins Gehege ankam, sah es leer, bis er sich abwandte.
+    _gehegeKommtAn() {
+        const zeilen = this._gehegeListe();
+        const pm = this.state.playerMesh;
+        if (!zeilen.length || !pm) return false;
+        const R = globalThis.__fachwerkCore.GENESIS_ORT.regel.residentM;
+        const abstand = AnazhRealm._gehegeGesetz().abstand;
+        const da = this._gehegeDa;
+        for (const Z of zeilen)
+            if (!(da && da.has(Z.id)) && abstand(Z.rand, pm.position.x, pm.position.z) <= R) return true;
+        return false;
     }
     // EIN TAKT DER GEHEGE der Region R (tetrapoda GEHEGE_GESETZ): je Gehege seine Gemeinschaft — das Altern mit raten.alter, der
     // Tod am Hunger mit raten.hunger (das Älteste), der Riss NUR unter seinen Tieren (`_bestandJagd`, bestandRiss) — aus seinem
@@ -128,16 +154,17 @@ class AnazhRealm_kreatur_gehege {
             }
         }
     }
-    // DAS GEHEGE WIRD GEZEICHNET: jeder fehlende Leib entsteht an seinem Ruhe-Platz — nie im Blick diesseits der Nah-Grenze
-    // (`ANALOG_NAH_M`, der Leib als Kugel, `_kreaturLeibImBlick`: kein Tier erscheint vor dem Auge, es wartet, bis der Blick
-    // geht), höchstens leiberJeTakt je Takt und nur in freien Platz der Kappe; der Verband bindet die gezeichneten Glieder.
-    _gehegeLeiber(fehlt, gruppe) {
+    // DAS GEHEGE WIRD GEZEICHNET: jeder fehlende Leib entsteht an seinem Ruhe-Platz — bei der ANKUNFT des Geheges jeder
+    // (`ankunft`, `_gehegeGruppen`), danach nie im Blick diesseits der Nah-Grenze (`ANALOG_NAH_M`, der Leib als Kugel,
+    // `_kreaturLeibImBlick`: kein Tier erscheint vor dem Auge, es wartet, bis der Blick geht), höchstens leiberJeTakt je Takt und
+    // nur in freien Platz der Kappe; der Verband bindet die gezeichneten Glieder.
+    _gehegeLeiber(fehlt, gruppe, ankunft) {
         const st = this.state;
         const p = st.playerMesh.position;
         let platz = Math.min(st.maxCreatures - st.creatures.length, AnazhRealm.BESTAND_REGION.leiberJeTakt);
         for (const t of fehlt) {
             if (platz <= 0) break;
-            const nah = Math.hypot(t.x - p.x, t.z - p.z) <= AnazhRealm.ANALOG_NAH_M;
+            const nah = !ankunft && Math.hypot(t.x - p.x, t.z - p.z) <= AnazhRealm.ANALOG_NAH_M;
             if (nah && this._kreaturLeibImBlick(t.x, t.z, t.g, t.bs)) continue;
             const gY = this.getTerrainHeightAt(t.x, t.z);
             const c = this._bestandLeib(t, t.x, (Number.isFinite(gY) ? gY : p.y) + 1, t.z);
