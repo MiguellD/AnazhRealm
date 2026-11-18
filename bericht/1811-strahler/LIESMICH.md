@@ -138,6 +138,26 @@ nicht; gepusht wird erst auf einem main, das sie trägt).
 - **Prozent je Punkt des Auftrags:** 1 Gesetz 70 % (Funktion, Chokepoint, Nahfeld; die Linse gegen das Integral fehlt) ·
   2 Leser 2 von 13 Strahlern (Brand, Lava) · 3 Fälle 1 von 9 (`_flammenLicht`) · 4 Auge 0 % · 5 Wärme/Zündung 0 %.
 
+## Entscheid des Koordinators 18.11. ≈ 02:50 und Stand 03:00 — Kopf b5be3ff6 (WIP, UNGEPRÜFT, Gerät startet neu)
+
+- **Kein Stempel an 68ca2ed7.** Das Gesetz Leuchtdichte × Fläche bleibt, nichts wird zum Zielbild gebogen; falsch war der
+  LESER am Gras (es las die Dach-Normale, 0,9 oben — am Code bestätigt, `_halmStoff`). Gras ist ein Volumen stehender Halme.
+- **STÜCK 1 (diese Abgabe):** Gesetz + Lava als Fläche + Gras als Volumen-Leser + Masken im Budget; Paare (a), (c), (d), (e)
+  nur als Rückfall-Probe gegen main; im Betreff offen: 11 Strahler lesen noch nicht. **STÜCK 2:** Lampen mit `leucht` (die
+  Wand-Laterne bekommt `leucht` und ihre wahre Fläche, das K66-Wand-Gesetz ist Leser, nie zweite Quelle). **STÜCK 3:**
+  Temperatur-Strahler, Zündung, Auge. w28-fruehbild fällt offen (nicht weiterbauen; löschen nur der Schöpfer).
+- **Maß Stück 1:** Rand-Gras nah-nacht, gleiche Kamera: Luma Kopf ≥ main (46) UND R/G über main; Richter gegen das Integral:
+  Halm in 0,4 m Höhe bei 0,5 · 2 · 5 m vom Rand ≤ 15 %. Budget: S0 Boden hat 241 Zeichen Luft, dort kommt nichts dazu; ms an
+  der Lava-Pose Kopf ↔ main im selben Boot. Tore: check, playtest, kaskade/ereignis, Ankunft kalt + die grünen fünf.
+- **Gebaut (b5be3ff6):** EINE Stelle `_lichtPlatz(…, volumen)`, volumen = das Dach der Wiese (`_halmDach`, EIN Knoten):
+  Bestrahlung = Mittel über die Halm-Stellungen = 2/π × waagrechter Anteil × 0,89 + senkrechter × 0,34
+  (`AnazhRealm.HALM_VOLUMEN`, an der Geometrie der Nah-Wiese gemessen: 0,892 / 0,338, 20 432 Dreiecke).
+  Gemessen (Region Saum-Gras 200,400–560,470, nah-nacht): main 46,4 (R/G 1,17) → Kopf **69,8 (R/G 1,51)**; nackter Grund vorn
+  43,3 → 32,3 (dunkel, wie das Gesetz ihn gibt).
+- **NICHT getan an b5be3ff6:** kein Bild angesehen, keine Linse, kein Tor; Richter gegen das Integral, ms, Text des
+  Gras-Programms, eine Linse für `HALM_VOLUMEN` gegen die Geometrie, die Bildpaare in koordination (die `kopf-b-*` hier
+  sind noch die von 68ca2ed7). Das Blatt trägt deshalb NICHT „bereit zum Blick“.
+
 ## Nächster Schritt
 
 1. Blick des Koordinators auf das Paar (b); davor keine Abgabe.
