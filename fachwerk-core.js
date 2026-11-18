@@ -1819,8 +1819,11 @@
     //                    grund die Farbe der Rolle ziegel
     //   putz             Kellenwurf auf `grund`: `sprenkel` Körner von kornPx[0] … kornPx[0] + kornPx[1] − 1 Pixeln im Ton
     //                    (× `korn` je Kanal, Deckung `deck`), die Kellenzüge alle zug[0] + ⌊Zufall · zug[1]⌋ Pixel, einen Pixel
-    //                    stark, in `zugFarbe` mit der Deckung `zugDeck`
-    //   naturstein       Quaderverband · fuge die Farbe der Fuge, stein der Ton des Quaders je Kanal (× 255 · t)
+    //                    stark, in `zugFarbe` mit der Deckung `zugDeck` · zugWelt die Stärke dieses Zugs in der WELT (0 … 1): 0 —
+    //                    der Maler zieht jeden Zug über die ganze Karte, an der Wand eines Hauses läuft er als durchgehende Linie
+    //                    und liest sich als Stülpschalung, nicht als Putz (Blick des Koordinators 18.11.); offen bis zum kurzen
+    //                    Zug (0,3–0,8 m, je Reihe versetzt, Richtung gestreut) in beiden Lesern
+    //   naturstein      Quaderverband · fuge die Farbe der Fuge, stein der Ton des Quaders je Kanal (× 255 · t)
     //   fachwerk         das Gefüge der Wand als Verband — für die Stufe, die keine Balken mehr baut (ab der Stufe 2 steht die Wand
     //                    als Körper im gemessenen Ton der Fassade): der „Stein" ist das Gefach, die „Fuge" der Balken. feldM das
     //                    Feld zwischen zwei Ständern (höchstens; `bayMax` des Gerüsts), riegelM das Feld zwischen zwei Riegeln
@@ -1833,7 +1836,7 @@
         pxJeM: 128,
         mauerwerk: { steinM: 0.24, hoeheM: 0.071, fugeM: 0.011, versatz: 0.5, ton: [0.84, 0.3], fuge: 0xb7b0a2, grund: 0x964e3e },
         deckung: { breiteM: 0.18, deckM: 0.32, spaltPx: 2, reihePx: 1, schattenPx: 3, schatten: 0.27, versatz: 0.5, ton: [0.82, 0.32], grund: 0x9c4a35 },
-        putz: { sprenkel: 5200, ton: [0.86, 0.2], korn: [255, 255, 252], deck: 0.5, kornPx: [1, 2], zug: [9, 7], zugFarbe: [120, 116, 108], zugDeck: 0.1, grund: 0xffffff },
+        putz: { sprenkel: 5200, ton: [0.86, 0.2], korn: [255, 255, 252], deck: 0.5, kornPx: [1, 2], zug: [9, 7], zugFarbe: [120, 116, 108], zugDeck: 0.1, grund: 0xffffff, zugWelt: 0 },
         naturstein: { steinM: 0.46, hoeheM: 0.28, fugeM: 0.016, versatz: 0.5, ton: [0.88, 0.24], fuge: 0x6f6a60, stein: [0.92, 0.9, 0.86] },
         reihe: ["", "mauerwerk", "deckung", "putz", "naturstein", "fachwerk"],
         rolle: { backstein: "mauerwerk", ziegel: "deckung", ziegel2: "deckung", putz: "putz", stein: "naturstein" },
@@ -1889,7 +1892,8 @@
         for (var k = 0; k < 3; k++) {
             for (var i = 0; i < 64; i++) pK[k] += _lin((1 - p.deck) * (((p.grund >> (16 - 8 * k)) & 255) / 255) + p.deck * Math.min(1, ((p.korn[k] * (p.ton[0] + ((i + 0.5) / 64) * p.ton[1])) | 0) / 255)) / 64;
             var mittel = (1 - deckt) * pG[k] + deckt * pK[k];
-            pZ[k] = _lin((1 - p.zugDeck) * (((p.grund >> (16 - 8 * k)) & 255) / 255) + (p.zugDeck * p.zugFarbe[k]) / 255) / mittel;
+            // (die Welt trägt den Zug in der Stärke `zugWelt`: 0 lässt die Fuge im Ton des Putzes, das Mittel bleibt 1)
+            pZ[k] = 1 + p.zugWelt * (_lin((1 - p.zugDeck) * (((p.grund >> (16 - 8 * k)) & 255) / 255) + (p.zugDeck * p.zugFarbe[k]) / 255) / mittel - 1);
         }
         return [
             null,
