@@ -4641,7 +4641,7 @@
      "gruen": true,
      "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6)",
      "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/stand-linse.cjs +6)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/stand-linse.cjs, stamm/bild-himmel.js, stamm/feld-brand.js +1)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -5111,7 +5111,7 @@
      "gruen": true,
      "zahl": "4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.2 s, kaempfen 0.01 s · gehen Änderung Δ 3.32 % (Rauschen 0.05 %) · bauen Änderung Δ 2.12 % (Rauschen 0.00 %) · fahren Änderung Δ 3.55 % (Rauschen 0.04 %) · kaempfen Änderung Δ 0.82 % (Rauschen 0.20 %) · [linse-gpu] amd/rdna-3",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +2)",
+     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/stand-linse.cjs)",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -6498,7 +6498,7 @@
   "ohne": 157
  },
  "kopfVoll": "21f279f5f5b87f86c0bea764dab99fb36670725e",
- "zeit": "2026-11-18T01:22:56.806Z",
+ "zeit": "2026-11-18T01:50:19.039Z",
  "vorher": "21f279f5",
  "bilanz": {
   "gewinn": [],
