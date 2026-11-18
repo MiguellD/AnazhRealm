@@ -521,7 +521,10 @@ const PORTAL_RENDER_CONFIG = {
                     quote: 0.35,
                     geruest: 0.25,
                     vorhang: 0.6,
-                    wedel: { ab: 0, teile: 2, breite: 2.03, nadel: 0.045, rand: 0.3, winkel: 40, spalte: 1.5, holz: 0.15 },
+                    // wedel.teile (laub-kante): die L1 trägt je Strähne nie mehr Stücke als die L0 (tree[0].wedel.teile 1) — der Kegel
+                    // (phyto-core `koniferenKegel`) gibt der Fichte mehr kurze Nadel-Äste, jeder stand mit dem Mindest-Maß 2 Stücke:
+                    // Fichte s7 L1-Wedel 2320 → 3152 Dreiecke, Quote fichte-s2 0,38 > 0,35. Das Nadel-Maß (`nadel`) teilt die langen.
+                    wedel: { ab: 0, teile: 1, breite: 2.03, nadel: 0.045, rand: 0.3, winkel: 40, spalte: 1.5, holz: 0.15 },
                     straehne: { teile: 1, breite: 0.95, holz: 0.06 },
                     deckung: [0.8, 1.15],
                     ringToleranz: 0.001,
