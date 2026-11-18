@@ -4527,7 +4527,7 @@
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20586 px an d39e0d6e radeon · gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20494 px an d39e0d6e gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert · vegetation.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20586 px an d39e0d6e radeon · 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20481 px an c1e6f29a gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert · vegetation.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -4542,10 +4542,10 @@
      "id": "vegetation.K4#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20494 px",
-     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20481 px",
+     "sha": "c1e6f29a227befd15c4cd90bcf0f3e40bd228da4",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "vegetation.K4#2",
@@ -6336,12 +6336,10 @@
    ]
   }
  },
- "rueckfall": [
-  "karte2.mensch.zeit.erleben#1 gtx: Bildpaar an der Kamera -233.4,38.4,-1066.3,-248,26.4,-1080: 32 % des Ausschnitts um ≥ 30 % dunkler (Soll ≥ 50 %) · Asche 0 (Soll ≥ 0,99) · [linse-gpu] nvidia/pascal an c1e6f29a (grün gebucht an d39e0d6e)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 193,
+  "konsum": 194,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6503,10 +6501,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 155
+  "ohne": 154
  },
  "kopfVoll": "c1e6f29a227befd15c4cd90bcf0f3e40bd228da4",
- "zeit": "2026-11-18T03:45:19.050Z",
+ "zeit": "2026-11-18T04:01:08.708Z",
  "vorher": "c1e6f29a",
  "bilanz": {
   "gewinn": [],
