@@ -1336,7 +1336,7 @@
   function fluegel(){ const g=grp(); if(ROUND)return g; if(!wings.length) return g;
     const post=0.14;
     const panel=(horiz,fixed,a0,a1,yB,yT,opt)=>{ opt=opt||{}; const sw=0.13, brick=opt.brick!==false;
-      const open=[]; if(opt.door)open.push(opt.door); if(opt.win){const{c,wd}=opt.win;open.push([c-wd/2,c+wd/2]);}
+      const open=[], NB=opt.neben||[]; if(opt.door)open.push(opt.door); if(opt.win){const{c,wd}=opt.win;open.push([c-wd/2,c+wd/2]);} for(const n of NB) open.push([n.c-n.wd/2,n.c+n.wd/2]);   // NB: die Fenster NEBEN der Tür (die Stirn des Flügels) — dieselbe Öffnung wie `win`, im Lauf links und rechts der Tür
       const inOpen=a=>open.some(([o0,o1])=>a>o0-0.06 && a<o1+0.06);
       // GLATT (die glatte Wand des Flügels): kein Rähm, kein Ständer — das Paneel als Platten in Ständer-Stärke um seine Öffnung, über die Eckständer hinweg (e0/e1: so weit über a0/a1 — die Giebelwand des Flügels nimmt die Ecken, die Traufwand stößt innen an), geteilt an den Kanten der Öffnung; Türstock, Fenster und die Hülle (addSolid) wie gebaut
       if(GLATT){}
@@ -1346,13 +1346,14 @@
         if(horiz)beam(g,a,(yB+yT)/2,fixed,post,yT-yB,0.13,'holz'); else beam(g,fixed,(yB+yT)/2,a,0.13,yT-yB,post,'holz'); });
       const yI0=yB+sw, yI1=yT-sw, fill=(b0,b1,c0,c1)=>infill(g,b0,b1,c0,c1,fixed,horiz,brick);
       if(GLATT){ const G0=a0-(opt.e0||0), G1=a1+(opt.e1||0), rs=m=>wandReihen((VERBAND?[yB,yI0,yI1,yT]:[yB,yT]).concat(P.flaechig?[AO_KNIE]:m).map(v=>Math.max(yB,Math.min(yT,v)))), gz=(b0,b1,u,o,ys)=>wandSaeule(g,horiz,fixed,b0,b1,u,o,ys,yI0,yI1,brick,post);
-        if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH, ys=rs([dh]); gz(G0,dL,yB,yT,ys); gz(dR,G1,yB,yT,ys); if(yT>dh+0.05)gz(dL,dR,dh,yT,ys); }
+        if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH, ys=rs([dh].concat(...NB.map(n=>[n.cy-n.ch/2,n.cy+n.ch/2]))), lauf=(b0,b1)=>{ let a=b0; for(const n of NB){ if(!(n.c>b0&&n.c<b1))continue; const L=n.c-n.wd/2,R=n.c+n.wd/2; gz(a,L,yB,yT,ys); gz(L,R,yB,n.cy-n.ch/2,ys); gz(L,R,n.cy+n.ch/2,yT,ys); a=R; } gz(a,b1,yB,yT,ys); }; lauf(G0,dL); lauf(dR,G1); if(yT>dh+0.05)gz(dL,dR,dh,yT,ys); }
         else if(opt.win){ const {c,wd,cy,ch}=opt.win, L=c-wd/2,R=c+wd/2,wb=cy-ch/2,wt=cy+ch/2, ys=rs([wb,wt]); gz(G0,L,yB,yT,ys); gz(R,G1,yB,yT,ys); gz(L,R,yB,wb,ys); gz(L,R,wt,yT,ys); }
         else gz(G0,G1,yB,yT,rs([])); }
       if(opt.door){ const [dL,dR]=opt.door, dh=yB+P.doorH; lichtAuf(horiz?(dL+dR)/2:fixed,(yB+dh)/2,horiz?fixed:(dL+dR)/2,dR-dL,dh-yB,horiz?'z':'x',0);
-        if(!GLATT){ fill(a0,dL,yI0,yI1); fill(dR,a1,yI0,yI1); if(yI1>dh+0.05)fill(dL,dR,dh,yI1); }
+        if(!GLATT){ const lauf=(b0,b1)=>{ let a=b0; for(const n of NB){ if(!(n.c>b0&&n.c<b1))continue; const L=n.c-n.wd/2,R=n.c+n.wd/2,wb=n.cy-n.ch/2,wt=n.cy+n.ch/2; fill(a,L,yI0,yI1); fill(L,R,yI0,wb); fill(L,R,wt,yI1); if(horiz){ beam(g,(L+R)/2,wb,fixed,R-L,0.1,0.13,'holz'); beam(g,(L+R)/2,wt,fixed,R-L,0.1,0.13,'holz'); } else { beam(g,fixed,wb,(L+R)/2,0.13,0.1,R-L,'holz'); beam(g,fixed,wt,(L+R)/2,0.13,0.1,R-L,'holz'); } a=R; } fill(a,b1,yI0,yI1); }; lauf(a0,dL); lauf(dR,a1); if(yI1>dh+0.05)fill(dL,dR,dh,yI1); }
         if(horiz){ beam(g,(dL+dR)/2,dh+0.06,fixed,dR-dL+0.26,0.13,0.15,'holz'); [dL,dR].forEach(d=>beam(g,d,(yB+dh)/2,fixed,0.13,dh-yB,0.14,'holz')); }
         else      { beam(g,fixed,dh+0.06,(dL+dR)/2,0.15,0.13,dR-dL+0.26,'holz'); [dL,dR].forEach(d=>beam(g,fixed,(yB+dh)/2,d,0.14,dh-yB,0.13,'holz')); }
+        for(const n of NB) fensterAt(g, horiz?n.c:fixed, n.cy, horiz?fixed:n.c, n.wd, n.ch, horiz, null, opt.aus);
         if(horiz){ addSolid((a0+dL)/2,(yB+yT)/2,fixed,dL-a0,yT-yB,0.13); addSolid((dR+a1)/2,(yB+yT)/2,fixed,a1-dR,yT-yB,0.13); if(yT>dh+0.05)addSolid((dL+dR)/2,(dh+yT)/2,fixed,dR-dL,yT-dh,0.13); }
         else     { addSolid(fixed,(yB+yT)/2,(a0+dL)/2,0.13,yT-yB,dL-a0); addSolid(fixed,(yB+yT)/2,(dR+a1)/2,0.13,yT-yB,a1-dR); if(yT>dh+0.05)addSolid(fixed,(dh+yT)/2,(dL+dR)/2,0.13,yT-dh,dR-dL); }
       } else if(opt.win){ const {c,wd,cy,ch}=opt.win, L=c-wd/2,R=c+wd/2,wb=cy-ch/2,wt=cy+ch/2;
@@ -1375,11 +1376,14 @@
       [u0,u1].forEach(u=>{ const A=loc(u,v0),B=loc(u,v1), eh=outIsX, fx=eh?A[1]:A[0], c0=eh?A[0]:A[1], c1=eh?B[0]:B[1], lo=Math.min(c0,c1), hi=Math.max(c0,c1), wd=clamp(breadth-1.4,0.85,1.2), e0=c0<c1?post/2:0, e1=c0<c1?0:post/2, aus=fx<(eh?zc:xc)?-1:1;   // e0/e1 (GLATT): am Haus bis auf die Achse, außen stößt die Traufwand innen an die Giebelwand
         if(merge){ levels.forEach((lv,k)=>{ const yB=lv.y, yT=(k<levels.length-1)?lv.top:eY; if(yT-yB<0.5)return; panel(eh,fx,lo+post/2,hi-post/2,yB,yT,{win:{c:(lo+hi)/2,wd,cy:yB+(k===0?1.25:1.0),ch:k===0?0.95:0.9},e0,e1,aus}); }); }   // Traufwand + Fenster JE Geschoss
         else panel(eh,fx,lo+post/2,hi-post/2,baseY,eY,{win:{c:(lo+hi)/2,wd,cy:baseY+1.25,ch:0.95},e0,e1,aus}); });
-      const G0=loc(u0,v1),G1=loc(u1,v1), gh=!outIsX, gfx=gh?G0[1]:G0[0], gc0=gh?G0[0]:G0[1], gc1=gh?G1[0]:G1[1], glo=Math.min(gc0,gc1), ghi=Math.max(gc0,gc1), gdc=(glo+ghi)/2, dL=gdc-0.49, dR=gdc+0.49;
+      const G0=loc(u0,v1),G1=loc(u1,v1), gh=!outIsX, gfx=gh?G0[1]:G0[0], gc0=gh?G0[0]:G0[1], gc1=gh?G1[0]:G1[1], glo=Math.min(gc0,gc1), ghi=Math.max(gc0,gc1), gdc=(glo+ghi)/2, dL=gdc-0.49, dR=gdc+0.49, gaus=gfx<(gh?zc:xc)?-1:1;
+      // DIE STIRN TRÄGT FENSTER (Vorrat 14): neben der Tür stand die Stirn blind (Export-Sweep: die Stirn des U-Flügels bis 6,6 m breit, 7 Klassen, 35 Häuser) —
+      // ein Lauf ab 1,4 m zwischen Eckständer und Türstock trägt EIN Fenster in seiner Mitte (Brüstung und Höhe wie das Fenster der Traufwand, 0,6–0,9 m breit).
+      const gLauf=dL-(glo+post/2), nebenAb=(yB)=>gLauf<1.4?[]:[glo+post/2+gLauf/2, ghi-post/2-gLauf/2].map(c=>({c,wd:clamp(gLauf-0.75,0.6,0.9),cy:yB+1.25,ch:0.95}));
       if(merge){ levels.forEach((lv,k)=>{ const yB=lv.y, yT=(k<levels.length-1)?lv.top:eY; if(yT-yB<0.5)return;
-        if(k===0) panel(gh,gfx,glo+post/2,ghi-post/2,yB,yT,{door:[dL,dR],e0:post,e1:post});
-        else panel(gh,gfx,glo+post/2,ghi-post/2,yB,yT,{win:{c:gdc,wd:clamp(breadth-1.6,0.8,1.1),cy:yB+1.0,ch:0.9},e0:post,e1:post,aus:gfx<(gh?zc:xc)?-1:1}); }); }   // Giebelwand: Tür im EG, Fenster JE OG (e0/e1, GLATT: sie nimmt die Ecken)
-      else panel(gh,gfx,glo+post/2,ghi-post/2,baseY,eY,{door:[dL,dR],e0:post,e1:post});
+        if(k===0) panel(gh,gfx,glo+post/2,ghi-post/2,yB,yT,{door:[dL,dR],neben:nebenAb(yB),e0:post,e1:post,aus:gaus});
+        else panel(gh,gfx,glo+post/2,ghi-post/2,yB,yT,{win:{c:gdc,wd:clamp(breadth-1.6,0.8,1.1),cy:yB+1.0,ch:0.9},e0:post,e1:post,aus:gaus}); }); }   // Giebelwand: Tür im EG, Fenster JE OG (e0/e1, GLATT: sie nimmt die Ecken)
+      else panel(gh,gfx,glo+post/2,ghi-post/2,baseY,eY,{door:[dL,dR],neben:nebenAb(baseY),e0:post,e1:post,aus:gaus});
       { const dd=loc(uc,v1), dx=dd[0], dz=dd[1], dh=P.doorH, dwid=dR-dL, lw=dwid-0.06, lh=dh-0.06, dcy=baseY+dh/2, oA=0.95;   // SCHWINGTÜR (öffenbar) — generisch über die Außennormale
         const base=Math.atan2(-az,ax), sgn=(ox+oz>0?1:-1), hx=dx-ax*dwid/2, hz=dz-az*dwid/2;               // Scharnier an einer Türkante, schwingt nach aussen
         const L=grp(); const inner=leafFrame(lw,lh,'holz',+1); inner.position.x=lw/2; L.add(inner); beam(L,lw-0.13,0,0.05,0.07,0.07,0.06,'metall');
