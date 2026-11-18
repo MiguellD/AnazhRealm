@@ -162,7 +162,7 @@ async function probeLeben(expected) {
     // Das Wort des Spielers hält Sonne und Trockenheit über den EINEN Schreiber; die Nässe am Rad misst die Kette W (feld.K1).
     const wetter = (wort, s) => {
         r._setWeather(wort, "human");
-        st.weatherTransition = null; // der Übergang fällt: das Wort steht ab diesem Takt
+        window.__uebergangFaellt(r); // der Übergang fällt im Bild und auf dem Weg des Regens: das Wort steht ab diesem Takt
         r._naesseTakt(s);
     };
     wetter("sunny", 1e6);
@@ -173,12 +173,16 @@ async function probeLeben(expected) {
     // der Bär (Wagen 0,22 m · Bär 3,21 m) — 6 von 38 Läufen unter 6–8 parallelen Linsen rot, mit der Ruhe 0 von 32 (der Takt
     // fiele 19-mal in den gemischten Lauf). Gemessen wird der Stoß; den Bestand misst sein eigenes Gesetz (gate:kreatur-leben).
     r.tickFaunaLifecycle = () => {};
+    // … und mit ihm die Folge des Felds: kein Takt des Bestands steht aus, ein Akt (das Entfachen der Brand-Probe) ist am Eingang
+    // an der Reihe (`_feldFolgeSteht`, w28-mp-boden — im Spiel tritt er hinter die Takte, die die nahen Regionen noch nachholen)
+    r._feldFolgeSteht = () => true;
     const aufraeumen = () => {
         delete r._loopFixedStep;
         delete r._stepFixedSim;
         delete r._stepCharacter;
         delete r._fahrWind;
         delete r.tickFaunaLifecycle;
+        delete r._feldFolgeSteht;
     };
     const tasten = (w, a) => {
         for (const k of ["vor", "links", "zurueck", "rechts", "sprint", "jump"]) halt[k] = false;
@@ -748,6 +752,21 @@ async function probeLeben(expected) {
                 return P._loopErrorBoundary.call(this, e);
             },
         });
+        // DER BAU, AN DEN EIN WAGEN STÖSST, BEIM NAMEN (w28-stadt-grammatik): die Zahl `stoss.bau` nannte nur, dass — je Bau (Art, Same,
+        // Ort) die Stöße der Stunde (`stossBau`, die vier häufigsten), dazu jedes Ende ohne Wende (`endeOhne`)
+        const stossWer = new Map();
+        const stossAus = leihe(r, {
+            _wagenSchritt(e, ...a) {
+                const g = P._wagenSchritt.call(this, e, ...a);
+                if (g)
+                    for (const o of g)
+                        if (o && !o._verkehrWagen && !o.isObject3D && o.position) {
+                            const k = `${o.type} #${o.seed >>> 0} ${Math.round(o.position.x)}/${Math.round(o.position.z)}`;
+                            stossWer.set(k, (stossWer.get(k) || 0) + 1);
+                        }
+                return g;
+            },
+        });
         // DIE STUNDE OHNE VORGESCHICHTE (w28-verkehr-takt, mensch.K2: der Tag nach dem Sprung ist f(Same, t)): vor allen Stunden
         // springt die Uhr einmal in die erste (`zwillingS` Sekunden, der Zwilling: nur der Abdruck) — ihr Lauf danach trägt
         // seine Vorgeschichte, das Gesetz nicht: der Abdruck jedes Bilds (die Lage jedes Leibs und jedes Wagens, bitgenau) gleicht
@@ -773,6 +792,7 @@ async function probeLeben(expected) {
             // die Probe mied den Fall, den das Spiel stellt: an der Radeon stand er 0,5 m neben der Mitte der Kreuzung am Markt,
             // ihre Halter warteten auf ihn, und von 20 Wagen fuhren 15–55 s nach dem Sprung nur 9 (10 Uhr) und 8 (23 Uhr) 30 m
             [wurf[0], wurf[1]] = [0, null];
+            stossWer.clear();
             stelle(sx, sz, 0.2);
             r._uhrSetzen(stunde / 24, "regler");
             // DER SPRUNG GEHT IM TAKT (`_tickBewohner`): erst ein Bild, dann die Frage — und keiner kommt mehr an. Bis pflicht.C#1 hieß
@@ -816,6 +836,12 @@ async function probeLeben(expected) {
             await bis("verkehr: der Anfang", bereit);
             const VK = S.verkehr;
             if (!VK) throw new Error("die Stadt trägt keinen Verkehr");
+            // die Stadt ohne Wagen beim Namen (bis hier ein TypeError der Minuten-Probe: der kürzeste Weg von keinem Wagen)
+            if (!VK.wagen.length)
+                throw new Error(
+                    `die Stadt stellt keinen Wagen (Soll ${VK.zahl.soll}, ohne Platz ${VK.zahl.ohnePlatz}, ` +
+                        `Wenden ${VK.wenden.size} an ${VK.kp.filter((K) => K.ende).length} Enden, Netz ${Math.round(VK.zahl.laengeM)} m)`
+                );
             const m = {
                 leib: 0,
                 leibOrte: [],
@@ -1184,6 +1210,8 @@ async function probeLeben(expected) {
                 stufen: VK.zahl.stufen.slice(0, 6),
                 fest: VK.wagen.filter((W) => W.festOrt).map((W) => ({ ...W.festOrt, nr: W.nr })),
                 stoss: Object.fromEntries(Object.entries(VK.zahl.stoss).map(([k, v]) => [k, v - stoss0[k]])),
+                stossBau: [...stossWer].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => `${k}: ${n}`),
+                endeOhne: VK.kp.filter((K) => K.ende && !K.wende).map((K) => [Math.round(K.x), Math.round(K.z)]),
                 beruehrt: { leib: m.leib, wagen: m.wagen, bau: m.bau, orte: m.leibOrte, bauOrte: m.bauOrte },
                 knapp: m.knapp,
                 ankunft,
@@ -1225,6 +1253,7 @@ async function probeLeben(expected) {
             };
         }
         wurfAus();
+        stossAus();
         return aus;
     };
     if (expected.nurKette || expected.nurRueck || expected.wegenetz || expected.verkehr) {
@@ -1952,7 +1981,6 @@ async function probeLeben(expected) {
                             },
                         ],
                         creatures: [],
-                        floatingIslands: [],
                         player: { mountedArch: -1 },
                     };
                     w._terrainColumnContext = () => null;

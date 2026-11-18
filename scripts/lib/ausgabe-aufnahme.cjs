@@ -148,7 +148,11 @@ function wetterBuch(seit) {
 // taut für DIESEN Zug (im Buch Quelle „buehne") und steht danach wieder, wie sie stand (oder eingefroren). Der Cross-Fade
 // fällt. Die Bühne spricht wie der Spieler („setze wetter sonnig", wie jede Spur der Leben-Schau): das Gesetz der Schreiber
 // lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs. `zug`: der Übergang des Spiels
-// bleibt (der Wetter-Zug der Licht-Linse).
+// bleibt (der Wetter-Zug der Licht-Linse). Ohne Zug fällt der Übergang im Bild UND auf dem Weg des Regens: `__uebergangFaellt`
+// (welt-boot.cjs, in jeder Seite: der Zweig des Spiels für ein Wort ohne Übergang). Bis
+// w28-wetter-ohne-rampe fiel nur der Übergang des Bilds, die Stempel blieben als Rampe von 45 s ± Gemüt liegen (`_setWeather` hatte
+// sie gelegt): 10 s Niesel stempelten 23,6–24,4 s, jeder Leser von Pegel und Abfluss nach der Bühne las die Rampe mit
+// (planet.wasser.kreislauf S1: Bilanz 2,087 / 2,332 statt ≈ 1).
 function wetterSetzen(wort, zug) {
     const S = window.__wetterSpion();
     const uhr = st.weatherEffectTime;
@@ -161,7 +165,7 @@ function wetterSetzen(wort, zug) {
     }
     st.weatherEffectTime = uhr;
     window.__wetterHalten();
-    if (!zug) st.weatherTransition = null;
+    if (!zug) window.__uebergangFaellt(r);
     return st.weather;
 }
 
@@ -304,15 +308,17 @@ function bildUhren() {
     return u.filter((x) => x[1]);
 }
 
-// DIE UHR DER BÜHNE (A9): die Bühne hält NUR die EINE Bild-Uhr `_bildZeit` auf T = 12,5 s und zählt jeden Zug des Loops, den
+// DIE UHR DER BÜHNE (A9): die Bühne hält die Bild-Uhr `_bildZeit` und die Wolken-Uhr `_wolkenZeit` auf T = 12,5 s und zählt jeden Zug des Loops, den
 // sie verweigert (die Uhr-Wache liest ihn); das Tor, das im Takt schreibt, liest sie einmal beim Halt.
 function uhrHalten() {
     const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, verweigert: 0 });
     const d = Object.getOwnPropertyDescriptor(r, "_bildZeit");
     if (d?.get?.__buehne) return;
     const get = Object.assign(() => S.T, { __buehne: true });
-    Object.defineProperty(r, "_bildZeit", { configurable: true, enumerable: true, get, set: () => void S.verweigert++ });
-    r._tickPortalMembranes(performance.now() / 1000);
+    // … und die Wolken-Uhr (w28-wolke-zeit, Spiel-Zeit + Saat) auf demselben T: die Wolken der Bühne liegen wie vorher
+    for (const uhr of ["_bildZeit", "_wolkenZeit"])
+        Object.defineProperty(r, uhr, { configurable: true, enumerable: true, get, set: () => void S.verweigert++ });
+    r._tickPortalMembranes(r.state.spielZeit); // das Tor altert auf der Spiel-Zeit wie im Takt (w28-welt-uhr)
 }
 
 // DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie über das EINE Einschwingen (welt-boot
@@ -522,11 +528,14 @@ function membranOhneFilm(an) {
 // Die Marke trägt die Hülle, nie der Prototyp: er trägt nie Stand (`_weltAbschied` bricht beim Namen) — bis 30.10. lag
 // `__tiereGehalten` auf ihm, und jeder Tausch am Ort nach einem gehaltenen Lauf brach an dieser Marke. Offen rechnet der
 // Spiegel in jedem Frame des Schusses neu (die Rausch-Linse der Station zug/a-spawn.cjs misst so seinen Lauf).
+// Die Hülle ist ein Instrument der Werkbank, keine Probe: sie trägt ihre Absicht für die Wirt-Wache (`__wirtBleibt`, lib/wirt-wache.cjs)
+// — ohne gehaltene Quelle reicht sie durch, und was gehalten bleibt, gibt der Halt der Sitzung frei (punkte.cjs `messHaltRuf`)
 function halten(quellen) {
     const P = Object.getPrototypeOf(r),
         H = (window.__gehalten ||= new Set()),
         zu = (q) => H.has(q) && !window.__offen?.has(q),
-        huelle = (m, f) => P[m].__gehalten || (P[m] = Object.assign(f(P[m]), { __gehalten: true }));
+        bleibt = "die Hülle des Halters der Werkbank (ausgabe-aufnahme halten)",
+        huelle = (m, f) => P[m].__gehalten || (P[m] = Object.assign(f(P[m]), { __gehalten: true, __wirtBleibt: bleibt }));
     for (const q of quellen || ["tiere"]) H.add(q);
     huelle("updateCreatures", (g) =>
         function (d) {
@@ -545,6 +554,12 @@ function halten(quellen) {
     huelle("animatePlayerSoul", (g) =>
         function (t) {
             g.call(this, zu("leib") ? (H.t ??= t) : (H.t = t));
+        });
+    // DIE SKALA DES SCHUSSES (w28-bild-preis, `ausgabeAufnahme`): gehalten zeichnet die Szene in `SZENE_SKALA`, nie in der am Gerät
+    // eingemessenen (`_szeneSkalaMessen`); der Wert des Spielers gilt immer, ohne zeitliche Auflösung ist sie 1 wie im Spiel
+    huelle("_szeneSkalaWirk", (g) =>
+        function () {
+            return zu("skala") && this.state._traa && this.state.szeneSkala == null ? this.constructor.SZENE_SKALA : g.call(this);
         });
     // im Schuss rechnet der Pass gehalten nur über den Sprung des ersten gezählten Frames (`_traaR.neu` → `L.an` 0), offen in jedem
     huelle("_spiegelPassWach", (g) =>
@@ -702,8 +717,11 @@ function abnahmeMessen(opt) {
     const zielUm = z ? { punkte: [[z.x, z.y, z.z], ...zp], r: z.r ?? 1.5 } : null;
     // Der Satz „messung" (Takt- und Luma-Frames) misst keine Sicht: die Strahlen kosteten jeden Mess-Frame Zeit, die er nicht prüft. Die
     // Blick-Wahl fragt je Pose zuerst das Ziel allein (`o.nurZiel`): ohne die Strahlen der Nah-Deckung, `sicht` bleibt ungemessen.
-    // DER LEIB (w28-linse-wahr): ohne Ziel ein Täter der Sicht bis zum Nah-Radius, mit Ziel bis zum Vordergrund V (unten) — beide
-    // Male zählt er in `sicht.deckung`, deren Schwelle 2 % ihn trifft
+    // DER LEIB (w28-linse-wahr, w28-ziel-plan): ohne Ziel ein Täter der Sicht bis zum Nah-Radius (`sicht.deckung` ≤ 2 %: ein Kopf vor
+    // der Linse), mit Ziel EIN Täter des Vordergrunds V (unten, ≤ 25 %) und nie der Sicht — der Tag des Menschen bindet die Bewohner an
+    // Orte nach Angebot (Gruppen am Markt), ein Bewohner am Platz ist Szene. Bis hier zählte er mit Ziel ZWEIMAL, im Vordergrund und
+    // obendrauf in `sicht.deckung`: am Dorf stand am Mittag ein Bewohner 2,6 m vor der Linse, „Sicht verdeckt 3.3 % (Leib bewohner)“,
+    // GTX 1050 zweimal identisch bei freiem Blickziel 5,2 m
     const nd =
         o.satz === "messung"
             ? { deckung: null, taeter: null, ziel: null }
@@ -720,10 +738,9 @@ function abnahmeMessen(opt) {
                   ziel: z ? { ...z, punkte: zp, punktNamen: zp.map((_, i) => (fussDa && !i ? "Fuß" : `Punkt ${i + !fussDa}`)), tiefe: o.tiefe || null } : null,
               });
     // DER VORDERGRUND: mit benanntem Ziel zählt jede Täter-Fläche (Laub · Rinde · Fels · Bau · Böschung · Leib) näher als der halbe
-    // Ziel-Abstand (2–8 m) — das Bild zeigt sein Ziel, nicht, was davor steht. Der Leib darin ist ein Täter der Sicht (≤ 2 %), nicht des
-    // Vordergrunds (≤ 25 %): ein Kopf vor der Linse ist kein Laub am Rand.
+    // Ziel-Abstand (2–8 m) — das Bild zeigt sein Ziel, nicht, was davor steht. Der Leib zählt darin wie jede Fläche und steht als
+    // `vordergrund.leib` beim Namen; was das Ziel selbst verdeckt, urteilt `ziel.frei`.
     let vorn = null;
-    let leib = nd.leib || null;
     if (z && nd.ziel && !o.nurZiel) {
         const v = window.__nahDeckung({
             radien: { Laub: V, Rinde: V, Fels: V, Bau: V, Gelände: V, Leib: V },
@@ -735,16 +752,11 @@ function abnahmeMessen(opt) {
             ohne,
             zielUm,
         });
-        vorn = { radius: +V.toFixed(2), deckung: v.deckung, taeter: v.taeter };
-        leib = v.leib;
+        vorn = { radius: +V.toFixed(2), deckung: v.deckung, taeter: v.taeter, leib: { deckung: v.leib ? v.leib.deckung : 0, taeter: v.leib ? v.leib.taeter : {} } }; // prettier-ignore
     }
-    // die Sicht samt Leib: sein Anteil zur Deckung, seine Namen zu den Tätern (mit seinem Radius: der Rest der Zeile nennt den Nah-Radius)
     const sicht = { radius: RADIUS, deckung: nd.deckung, taeter: nd.taeter, vordergrund: vorn };
-    if (z && leib && nd.deckung != null) {
-        sicht.deckung = +(nd.deckung + leib.deckung).toFixed(4);
-        sicht.taeter = { ...nd.taeter, ...Object.fromEntries(Object.entries(leib.taeter).map(([k, a]) => [`${k} (≤ ${+V.toFixed(1)} m)`, a])) };
-    }
-    if (nd.deckung != null) sicht.leib = { radius: +V.toFixed(2), deckung: leib ? leib.deckung : 0, taeter: leib ? leib.taeter : {} };
+    // der Leib der Sicht (nur ohne Ziel): sein Anteil an `sicht.deckung`, der Schlüssel der Ratsche liest ihn (`rotSchluessel`)
+    if (!z && nd.deckung != null) sicht.leib = { radius: RADIUS, deckung: nd.leib ? nd.leib.deckung : 0, taeter: nd.leib ? nd.leib.taeter : {} }; // prettier-ignore
     const rend = st.renderer;
     const be = rend?.backend;
     const db =
@@ -905,6 +917,13 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // Aufnahme stand das Aufnahme-Ziel als aktuelles Ziel, jeder folgende Frame schrieb in das entsorgte Ziel und jede
         // weitere Aufnahme las ein nie beschriebenes (`copyTextureToBuffer: format of undefined`).
         const prevZiel = rend.getRenderTarget();
+        // DAS BILD URTEILT DEN INHALT, NIE DAS GERÄT (w28-bild-preis): die Szenen-Skala misst sich je Sitzung am Gerät ein
+        // (`_szeneSkalaMessen`, die Radeon an der Wiese 0,5) — jede Station, die Schärfe am Bild misst (material.K2#1, laub-kante,
+        // vegetation.K2#1, Pop), verschöbe sich am Gerät, ohne dass sich der Inhalt ändert. Der Schuss hält darum die Skala am
+        // Standard (`__halten` skala: `SZENE_SKALA`, solange der Spieler keine gesetzt hat) — ab dem Einschwingen und der Blick-Wahl
+        // und über den Schuss hinaus für jede Lesung derselben Linse (die Tiefen der Klassen-Teilung lesen nach der Aufnahme);
+        // der Preis-Lauf und die GPU-Bank öffnen sie (`lauf`, `gpuBank` in scripts/lib/zerlege-linse.cjs) und urteilen das Gerät.
+        window.__halten(["skala"]);
         // DIE WELT STEHT (A9): unter der Bühne wartet jeder Beweis-Schuss auf sie (Mess-Frames eines Satzes schießen in derselben)
         // … außer im Bild AUS BEWEGUNG (`opt.bewegt`, `werkbank bild --bewegung`): die Welt steht dort nie, der Schuss friert sie ein
         const weltTakte =
@@ -922,7 +941,9 @@ function ausgabeAufnahme(W, H, warm, opt) {
             m.buehne.weltTakte = weltTakte; // so viele Takte wartete der Schuss, bis die Welt stand (A9)
             m.bild = window.__bildMasse(u8, W2, H2);
             if (wahl) m.wahl = wahl;
-            const u = window.__leinwandRot(window.__abnahmeUrteil(m), m.satz, [BW, BH], [W2, H2]);
+            // (der Schirm der Welt, `schirmRot`: die Zeilen ihres letzten Takts gegen die des Bilds)
+            m.buehne.zeilen = r._weltStand ? r._weltStand.zeilen : null;
+            const u = window.__schirmRot(window.__leinwandRot(window.__abnahmeUrteil(m), m.satz, [BW, BH], [W2, H2]), m.satz, m.buehne.zeilen, BH);
             m.ok = u.ok;
             m.zeile = u.zeile;
             m.rot = u.rot;
@@ -939,7 +960,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // DER RÜCKSTRAHL STEHT (`opt.rueckstrahl` "halten": die Schüsse einer Klassen-Teilung OHNE ihren Teil, w28-wald-saum): jeder
         // Schuss misst den Boden seiner Szene neu (`_rueckstrahlZeichne` unter `_rueckstrahlJetzt`) — ohne den verborgenen Teil trüge
         // O_k ein anderes Licht von unten als G, und jedes Pixel, das es liest (Stamm, Strauch, Unterseite der Krone), zählte zu dem
-        // Teil, der fehlt (`klassenTeilung`: wessen Fehlen das Pixel am stärksten ändert). Mess-Wiese, Third, Mittag, GTX 1050,
+        // Teil, der fehlt (die Wirkungs-Teilung `wirkungTeilung`: wessen Fehlen das Pixel am stärksten ändert). Mess-Wiese, Third, Mittag, GTX 1050,
         // b269f840: 168 „Grund“-Pixel im Ring 20–40 m, 53 % am Strahl durch Baum oder Strauch (am Merge 6afdda0a 2 059, 86 %),
         // gehalten 7. Der Schuss zeichnet dann unter dem Boden, der steht; ein Schreiber, der ihn doch bewegt, bricht beim Namen.
         const RL = opt?.rueckstrahl === "halten" ? st.rueckstrahlLeser : null;
@@ -1563,6 +1584,75 @@ function leinwandRot(u, satz, [BW, BH], [W, H]) {
     return { ok: false, rot, zeile: `ABNAHME ROT [${rot.map((q) => q.grund).join(" · ")}]` + u.zeile.slice(kopf.length) };
 }
 
+// DER SCHIRM DER WELT (rein, Seite und Node; w28-probe-schirm): ein Beweisbild zeichnet in den Zeilen seines Puffers — die Welt wählte
+// ihre Stufen in den Zeilen ihres letzten Takts (`_weltStand.zeilen`, der Stamm). Wechselte das Fenster dazwischen ohne Takt, trägt das
+// Bild die Stufen eines anderen Schirms: ROT beim Maß. Der Täter: die Werkbank lebt in 640 × 360 und stellt das Fenster für jedes Bild
+// auf seine Leinwand — bis w28-probe-schirm stand die Welt danach ohne Takt (GTX 1050, Dorf: 10 von 50 Bewohnern als Feld-Kapseln bis
+// 6,6 m ans Auge, die Grenze des Felds bei 64 px von 360 statt von 1080 Zeilen). `gelebt` ohne Zahl: die Welt nennt ihren Schirm nicht.
+function schirmRot(u, satz, gelebt, BH) {
+    if (satz === "messung" || gelebt === BH) return u;
+    const kopf = u.ok ? "ABNAHME GRÜN" : `ABNAHME ROT [${u.rot.map((q) => q.grund).join(" · ")}]`;
+    const grund = Number.isFinite(gelebt) ? `die Welt wählte ihre Stufen zuletzt in ${gelebt} Zeilen, das Bild zeichnet ${BH}` : `die Welt nennt den Schirm ihres letzten Takts nicht (das Bild zeichnet ${BH} Zeilen)`; // prettier-ignore
+    const rot = [...u.rot, { feld: "geraet.schirm", grund }];
+    return { ok: false, rot, zeile: `ABNAHME ROT [${rot.map((q) => q.grund).join(" · ")}]` + u.zeile.slice(kopf.length) };
+}
+
+// DER STUFEN-ZENSUS (Seite; w28-probe-schirm, `werkbank stufen`): an der Kamera des Spiels je Täter-Klasse (`_taeterKlasse`: die Stufe
+// steht im Namen — `fimp:atlas:L2`, `nahWiese:Lf`, `bewohner-satz`, `bauSatz` / `bauWurf`) die Instanzen im Hauptbild (`__drawZensus`),
+// je Bewohner seine Gestalt (leib · satz · feld · drinnen), dazu der Schirm und das Wort der Welt. Was lebt oder ein Pass ist, trägt
+// keine Stufe des Schirms (`STUFEN_OHNE`: seine Zahl folgt der Uhr, nie den Zeilen) und zählt nicht. Ebenso der Gast des Vorbaus
+// (`vorbau:<Bauplan>`, der Stamm `_vorbauGast`: Maßstab 0, je Bauplan der Leiste einige Takte in der Szene, nach der Wanduhr gefragt)
+// — Radeon 15.11., gate:schirm-stufen: „vorbau:baum_eiche 0→3“, die Welt ab dem Boot in 1080 Zeilen trug ihn im Schuss eben noch.
+function stufenZensus() {
+    return (async () => {
+        const s = r._schirm();
+        const steht = r._weltSteht();
+        const z = await window.__drawZensus({ alle: true });
+        const klassen = {};
+        for (const k of z.klassen) if (!window.__stufenOhne.test(k.klasse) && (k.inst || k.cmd)) klassen[k.klasse] = k.inst || k.cmd;
+        const bewohner = {};
+        for (const [sid, S] of r._bewohnerSiedlungen || [])
+            (S.liste || []).forEach((b, i) => {
+                if (b.leib) bewohner[sid + ":" + i] = b.drinnen ? "drinnen" : b.nah ? "leib" : b.kreis ? "satz" : "feld";
+            });
+        return { schirm: [s.breite, s.hoehe], gelebt: r._weltStand ? r._weltStand.zeilen : null, steht, klassen, bewohner };
+    })();
+}
+const STUFEN_OHNE = /^(tier:|vogel$|dorf-rauch$|vorbau:|rueckstrahl:|spiegel:|kontakt:|feld-pass$|Render Pipeline$|TRAA$|himmel)/;
+
+// DIE ABWEICHUNG ZWEIER ZENSUS (rein): die Dinge, die in `b` eine andere Stufe tragen als in `a` — je Bewohner sein Wechsel, je Klasse
+// die Differenz ihrer Instanzen. `dinge` zählt sie (ein Bewohner einmal: sein Satz `bewohner-satz` zählt nicht noch als Klasse).
+function stufenAbweichung(a, b) {
+    const wechsel = {};
+    for (const k of new Set([...Object.keys(a.bewohner), ...Object.keys(b.bewohner)]))
+        if (a.bewohner[k] !== b.bewohner[k]) {
+            const w = `${a.bewohner[k] || "—"}→${b.bewohner[k] || "—"}`;
+            wechsel[w] = (wechsel[w] || 0) + 1;
+        }
+    const klassen = [...new Set([...Object.keys(a.klassen), ...Object.keys(b.klassen)])]
+        .filter((k) => !/^bewohner(-satz)?$/.test(k) && (a.klassen[k] || 0) !== (b.klassen[k] || 0))
+        .sort()
+        .map((k) => ({ klasse: k, a: a.klassen[k] || 0, b: b.klassen[k] || 0 }));
+    const dinge = Object.values(wechsel).reduce((n, x) => n + x, 0) + klassen.reduce((n, k) => n + Math.abs(k.a - k.b), 0);
+    const zeile = [...Object.entries(wechsel).map(([w, n]) => `${n} Bewohner ${w}`), ...klassen.map((k) => `${k.klasse} ${k.a}→${k.b}`)].join(" · ");
+    return { dinge, wechsel, klassen, zeile };
+}
+// DAS URTEIL DER STUFEN AM SCHIRM (rein; `werkbank stufen`): `schuss` der Zensus, wie das Bild ihn schießt (nach dem Fenster-Wechsel und
+// dem Warten der Bühne), `gelebt` der einer Welt, die ab dem Boot in den Zeilen des Bilds lebte, `stand` der direkt nach dem
+// Fenster-Wechsel, ohne Takt (die Welt auf dem Schirm der Sitzung — der Täter von main). GRÜN: `schuss` = `gelebt`, 0 Dinge. Die Probe
+// ist LEER (ROT), wo `stand` = `gelebt`: an dieser Pose hängt keine Stufe am Schirm, die Linse sähe den Täter nicht.
+function stufenUrteil({ schuss, gelebt, stand }) {
+    const rot = [];
+    for (const [name, z] of [["das Bild", schuss], ["die gelebte Welt", gelebt]]) // prettier-ignore
+        if (z.gelebt !== z.schirm[1]) rot.push(`SCHIRM: ${name} zeichnet ${z.schirm[1]} Zeilen, die Welt wählte ihre Stufen zuletzt in ${z.gelebt}`);
+    if (schuss.schirm[1] !== gelebt.schirm[1]) rot.push(`SCHIRM: das Bild zeichnet ${schuss.schirm[1]} Zeilen, die gelebte Welt ${gelebt.schirm[1]}`);
+    const A = stufenAbweichung(schuss, gelebt);
+    if (A.dinge) rot.push(`STUFEN: ${A.dinge} Dinge tragen im Bild eine andere Stufe als in der Welt, die in ${gelebt.schirm[1]} Zeilen lebte: ${A.zeile}`);
+    const T = stufenAbweichung(stand, gelebt);
+    if (!T.dinge) rot.push(`LEER: an dieser Pose trägt nach dem Fenster-Wechsel ${stand.gelebt} → ${gelebt.schirm[1]} Zeilen kein Ding eine andere Stufe — die Probe sähe den Täter nicht`);
+    return { rot, schuss: A, taeter: T };
+}
+
 // DER INHALT DES ORTS (rein; D der Augen-Karte, w28-linse-wahr): was ein Messort IST, zeigt sein Bild — je Klasse seines `imBild`
 // (spec/profiband/haushalt.json, die Familie: der Schlüssel und jede Klasse, die mit `-` `_` `:` weitergeht) ein Mindest-Anteil der
 // Leinwand und am Tag (Uhr 0,25–0,75; ohne Wort Mittag) das Band ihrer Farbe aus der EINEN Tafel `inhaltBand` (der Farbton
@@ -1689,6 +1779,18 @@ async function bildLinsenSelbsttest() {
     klasse("B Leib vor der Linse", leibRot, KN.nahDeckungInSeite, mutante(KN.nahDeckungInSeite, "(LEIB || !leib(obj))", "!leib(obj)", {}));
     if (lauf(KN.nahDeckungInSeite, { ...leibFrage, zielUm: { punkte: [[0.15, -0.25, -0.8]], r: 1.5 } }).jeKlasse.Leib) v.push("B: der Leib am Ziel deckt — er ist das Ziel, nie sein Täter"); // prettier-ignore
     if (lauf(KN.nahDeckungInSeite, { radien: { Laub: 2 }, gw: 48, gh: 27, neu: true }).jeKlasse.Leib) v.push("B: ohne Radius zählt der Leib (die Kamera-Laub-Wand fragt ihn nie)"); // prettier-ignore
+    // L: der Leib mit Ziel (w28-ziel-plan) — die volle Messung der Abnahme an derselben Szene, das Haus 30 m fern ist das Blickziel: der
+    // Kopf 0,8 m vor der Linse zählt im Vordergrund beim Namen („Leib spieler“ in `vordergrund.leib`), nie in `sicht.deckung`; ohne
+    // Ziel zählt er dort wie bisher. Die Mutante (main: der Leib auch mit Ziel in der Sicht) steht ROT in der Sicht.
+    Object.assign(welt, { __nahDeckung: KN.nahDeckungInSeite, __zielGestalt: zielGestalt, __gestaltLeben: gestaltLeben });
+    Object.assign(r, { _voxelSurfaceY: () => NaN, _archImBild: () => true });
+    const haus30 = { ziel: { x: 0, y: 0, z: -30, name: "Blickziel", fuss: false } }; // BÜHNE: die gestellte Szene des Selbsttests, kein Ort der Welt
+    const leibZielRot = (fn) => ((m) => !(m.sicht.deckung <= 0.02 && !m.sicht.leib && m.sicht.vordergrund?.leib?.taeter["Leib spieler"] > 0.02 && m.sicht.vordergrund.deckung >= m.sicht.vordergrund.leib.deckung) && `mit Ziel: ${JSON.stringify(m.sicht)}`)(lauf(fn, haus30)); // prettier-ignore
+    klasse("L Leib mit Ziel", leibZielRot, abnahmeMessen, mutante(abnahmeMessen, "...(z ? {} : { Leib: RADIUS })", "Leib: RADIUS", {}));
+    {
+        const m = lauf(abnahmeMessen, {});
+        if (!(m.sicht.deckung > 0.02 && m.sicht.leib?.taeter["Leib spieler"] > 0.02)) v.push(`L: ohne Ziel zählt der Kopf vor der Linse nicht in der Sicht: ${JSON.stringify(m.sicht)}`); // prettier-ignore
+    }
     // F: das Haus im Bild, sein Fuß 40 m tiefer unter dem Bild — der Grund nennt den Fuß mit SEINER Projektion
     const zielFrage = { radien: {}, nurZiel: true, ziel: { x: 0, y: 0, z: -30, name: "Haus", punkte: [[0, -40, -30]], punktNamen: ["Fuß"] } }; // BÜHNE: die gestellte Szene des Selbsttests, kein Ort der Welt
     const fussRot = (fn) => ((Z) => !(!Z.imBild && /am Fuß/.test(Z.name) && Z.ndc[1] < -0.95) && `${Z.name} ndc ${Z.ndc}`)(lauf(fn, zielFrage).ziel);
@@ -1715,6 +1817,23 @@ async function bildLinsenSelbsttest() {
     const lwRot = (f) => ((u) => !(!u.ok && /^ABNAHME ROT \[Leinwand 640 × 360 trägt kein Bild 960 × 540 \(hochgerechnet\)\] · beweis · x$/.test(u.zeile)) && u.zeile)(f(gut, "beweis", [640, 360], [960, 540])); // prettier-ignore
     klasse("F Leinwand", lwRot, leinwandRot, mutante(leinwandRot, "(BW >= W && BH >= H)", "true", {}));
     if (!leinwandRot(gut, "messung", [64, 36], [960, 540]).ok || !leinwandRot(gut, "beweis", [1920, 1080], [960, 540]).ok) v.push("F: ein Mess-Frame oder ein verkleinertes Bild fällt"); // prettier-ignore
+    // S: der Schirm der Welt (w28-probe-schirm) — das Bild in 1080 Zeilen aus einer Welt, die zuletzt in 360 wählte; die Mutante ist main
+    const scRot = (f) => ((u) => !(!u.ok && /^ABNAHME ROT \[die Welt wählte ihre Stufen zuletzt in 360 Zeilen, das Bild zeichnet 1080\] · beweis · x$/.test(u.zeile)) && u.zeile)(f(gut, "beweis", 360, 1080)); // prettier-ignore
+    klasse("S Schirm der Welt", scRot, schirmRot, mutante(schirmRot, "gelebt === BH", "true", {}));
+    if (!schirmRot(gut, "beweis", 1080, 1080).ok || !schirmRot(gut, "messung", 360, 1080).ok) v.push("S: ein Bild am Schirm der Welt oder ein Mess-Frame fällt");
+    if (!/nennt den Schirm ihres letzten Takts nicht/.test(schirmRot(gut, "beweis", null, 1080).zeile)) v.push("S: eine Welt ohne Schirm ihres Takts hält");
+    // S: die Stufen am Schirm (`werkbank stufen`) — das Dorf: 10 Bewohner im Feld, die in 1080 Zeilen im Satz stehen
+    {
+        const zens = (zeilen, gelebt, feld) => ({ schirm: [(zeilen * 16) / 9, zeilen], gelebt, steht: true, klassen: { "fimp:atlas:L2": 232, "bewohner-satz": feld ? 3 : 6 }, bewohner: Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`d:${i}`, i < 2 ? "leib" : feld && i < 12 ? "feld" : "satz"])) }); // prettier-ignore
+        const [stand, wahr] = [zens(1080, 360, true), zens(1080, 1080, false)];
+        const U = (schuss, st = stand, f = stufenUrteil) => f({ schuss, gelebt: wahr, stand: st }).rot.join(" | ");
+        if (U(wahr)) v.push(`S: das Bild der gelebten Welt fällt: ${U(wahr)}`);
+        klasse("S Stufen eines anderen Schirms", (f) => !/^SCHIRM: das Bild zeichnet 1080 Zeilen, die Welt wählte ihre Stufen zuletzt in 360 \| STUFEN: 10 Dinge .*: 10 Bewohner feld→satz$/.test(U(stand, stand, f)) && (U(stand, stand, f) || "kein ROT"), stufenUrteil, mutante(stufenUrteil, "if (A.dinge)", "if (false)", { stufenAbweichung })); // prettier-ignore
+        klasse("S leere Pose", (f) => !/^LEER: an dieser Pose trägt nach dem Fenster-Wechsel 1080 → 1080 Zeilen kein Ding/.test(U(wahr, wahr, f)) && (U(wahr, wahr, f) || "kein ROT"), stufenUrteil, mutante(stufenUrteil, "if (!T.dinge)", "if (false)", { stufenAbweichung })); // prettier-ignore
+        const kl = stufenAbweichung(wahr, { ...wahr, klassen: { "fimp:atlas:L2": 230, "f:haus:L1": 2, "bewohner-satz": 9 } });
+        if (kl.dinge !== 4 || kl.zeile !== "f:haus:L1 0→2 · fimp:atlas:L2 232→230") v.push(`S: die Klassen-Abweichung zählt falsch: ${kl.dinge} · ${kl.zeile}`);
+        if (!STUFEN_OHNE.test("tier:bestaeuber") || !STUFEN_OHNE.test("dorf-rauch") || !STUFEN_OHNE.test("vorbau:baum_eiche") || STUFEN_OHNE.test("fimp:atlas:L2") || STUFEN_OHNE.test("bewohner-satz")) v.push("S: die Liste ohne Stufe trennt Leben und Stufen nicht"); // prettier-ignore
+    }
     // R: die Ratsche des Orts
     const rot = [{ schluessel: "leib", grund: "Sicht verdeckt 4.9 %" }];
     const R = ortUrteil(rot, { leib: "main 5 %" }, "stadt");
@@ -1728,6 +1847,8 @@ async function bildLinsenSelbsttest() {
 
 module.exports = {
     bildLinsenSelbsttest,
+    stufenUrteil,
+    stufenAbweichung,
     inhaltFamilie,
     inhaltUrteil,
     rotSchluessel,
@@ -1744,6 +1865,7 @@ module.exports = {
         KAMERA_NAH_INSTALL +
         ABNAHME_INSTALL +
         `window.__abnahmeMessen = ${abnahmeMessen}; window.__zielGestalt = ${zielGestalt}; window.__gestaltLeben = ${gestaltLeben}; window.__leinwandRot = ${leinwandRot};` +
+        `window.__schirmRot = ${schirmRot}; window.__stufenZensus = ${stufenZensus}; window.__stufenOhne = ${STUFEN_OHNE};` +
         `window.__blickWahl = ${blickWahl}; window.__nahFolgt = ${nahFolgt};` +
         // DIE TIEFE DES BILDS an der Kamera (EIN Bild nach dem Neubeginn, `opt.tiefe` der Aufnahme): die Blick-Wahl und der Arm
         `window.__zielMessen = ${zielMessen};` +

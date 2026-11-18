@@ -502,7 +502,7 @@ async function tempo(K) {
     // an der Mess-Wiese zur Uhr 0 Regen — die Nässe senkt die Haftung am Rad (`_fahrHaft`), der GT bei vmax blieb 0,051 m vor dem
     // Mammut stehen. Das Wort des Spielers hält Sonne, die Nässe steht trocken; die Nässe am Rad misst gate:fahr-leben W.
     r._setWeather("sunny", "human");
-    st.weatherTransition = null;
+    window.__uebergangFaellt(r);
     r._naesseTakt(1e6);
     // DAS EINDRINGEN zweier konvexer Vielecke (Ecken im Umlauf, Welt-XZ): die kleinste Überlappung über die Normalen jeder Kante
     // (getrennt negativ); eine Box ihre vier Ecken in ihrem Rahmen (`lok`), die Achse eines Leibs ihr Kreis als 24-Eck
@@ -747,7 +747,7 @@ async function tempo(K) {
             .reduce((a, b) => (vmaxVon(b) > vmaxVon(a) ? b : a));
         // DAS BEWEISBILD DES STOSSES (`--bild`): nach dem letzten Stoß liegen Wagen und Bär an der Mauer — EIN Schuss aus dem
         // Ausgabe-Pfad (Lehre 5) unter der Bühne, die Blick-Wahl sucht freie Sicht auf den Bären (Lehre 17); je Klasse die Pixel
-        // der Klassen-Teilung (`__klassenTeilung`: dieselbe Pose ohne die Klasse, beide ohne Schattenwurf); das Bild als PNG
+        // der Wirkungs-Teilung (`__wirkungTeilung`: dieselbe Pose ohne die Klasse, beide ohne Schattenwurf); das Bild als PNG
         const stossBild = async (e, b) => {
             const [W, HO, q, M] = [640, 360, b.position, { satz: "messung", rueckstrahl: "halten" }]; // die Schüsse ohne Teil: das Licht von unten steht wie in G
             for (const o of [b, ...(e.instSlots || []).map(({ key }) => st.archInstanceGroups.get(key).mesh)]) o.traverse((m) => (m.castShadow = false));
@@ -764,7 +764,7 @@ async function tempo(K) {
                 const Ob = (await schuss(M)).u8;
                 b.visible = true;
                 r._cullArchitectureMesh(e);
-                const { teil } = __klassenTeilung(G.u8, [(await schuss(M)).u8, Ob], W, HO, 18);
+                const { teil } = __wirkungTeilung(G.u8, [(await schuss(M)).u8, Ob], W, HO, 18);
                 const px = { wagen: 0, gestossen: 0 };
                 for (const t of teil) if (t) px[t > 1 ? "gestossen" : "wagen"]++;
                 return { px, zeile: G.abnahme.zeile, png: __png(G.u8, W, HO) };
@@ -824,9 +824,9 @@ async function strauch(K) {
     const [st, A] = [r.state, AnazhRealm];
     const pm = st.playerMesh;
     const hh = (x, z) => r._voxelSurfaceY(x, z);
-    // DIE UHR DER WELT: die Probe setzt den Takt fort (`_taktUhr`) — ihre eigene Uhr ab der Wanduhr lag hinter dem letzten Takt
+    // DIE UHR DER WELT: die Probe setzt den Takt fort (sein Stempel `_taktZeit`) — ihre eigene Uhr ab der Wanduhr lag hinter dem letzten Takt
     // der Zählung, sobald die Linse schneller taktet als die Wand (die CI): ihr erster Takt trug 1 ms und keinen Sim-Schritt
-    let tMs = r._taktUhr() * 1000;
+    let tMs = r._taktZeit * 1000;
     const takt = (ms = 1000 / 60) => r._gameLoopTick((tMs += ms));
     const tc = globalThis.__terrainCore;
     const strauchArt = (e) => {

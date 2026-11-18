@@ -205,7 +205,6 @@ async function checkBandSchrittKlang({ page, check }) {
 
         // ── die Absenz-Wachen (der Konsum der EINEN Quelle beweist sich unten am Verhalten: (A) zählt Schritte nur über den
         // Tick aus animatePlayerSoul, S1 steht mit ω ≡ 0; Boden und Wasser am Fuß trägt die Stoff-Linse) ──
-        o.checks.keineEigeneUhr = __fehlt(r._schrittKlangTick, /performance\.now|Date\.now/);
         o.checks.klangEineMaschine = __fehlt(r._playSchrittOneShot, /new\s+AudioContext/);
         o.checks.simUnberuehrt = __fehlt([r._stepFixedSim, r._loopFixedStep, r._stepCharacter], /_schrittKlang/);
         // Stimme-aus fail-closed an der Stimme selbst (headless: nie aktiviert)
@@ -325,7 +324,7 @@ async function checkBandSchrittKlang({ page, check }) {
     const c = out.checks || {};
     const alle = (...k) => k.filter((x) => c[x] !== true);
     const zeig = (k) => (k.length ? "ROT: " + k.join(" · ") : "");
-    const konsum = alle("keineEigeneUhr", "klangEineMaschine", "simUnberuehrt", "stimmeFailClosed");
+    const konsum = alle("klangEineMaschine", "simUnberuehrt", "stimmeFailClosed"); // die eigene Uhr: gate:wetter-wache (W)
     check("Schritt-Klang: Absenz-Wachen und Stimme-aus", !konsum.length, zeig(konsum));
     const takt = alle("aTakt6", "aTakt3", "bStandNull", "bSchleichNull", "bLuftNull", "bSchwimmNull");
     check(`Schritt-Klang (A)(B): N Halbzyklen ⇒ N Schritte ±1 (v=6 ${out.takt.n6}/${out.takt.soll6} · v=3 ${out.takt.n3}/${out.takt.soll3}), Stand/Schleichen/Luft/Schwimmen 0`, !takt.length, zeig(takt));

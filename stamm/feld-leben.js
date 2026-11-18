@@ -1,156 +1,5 @@
 class AnazhRealm_feld_leben {
     // ===== ATLAS · Feld/leben — Lebens-Feld · Aura · Wohl · Welt-Feld · Selbst-Analyse =====
-    // DIE ASCHE an (x, z) ∈ [0, 1] (stoffe.K2#2) — der Kanal G derselben Karte, bilinear aus denselben Bytes, die der Boden-Stoff
-    // liest (`_wegeBodenFarbe`): 1 frisch verbrannt, 0 nachgegrünt. Die Nah-Wiese liest sie (auf der Asche steht kein Halm).
-    _ascheAt(x, z) {
-        return this._bodenDeckeAt(x, z, true);
-    }
-
-    // DIE NARBE DES BRANDS an (x, z) (stoffe.K2#2) → { m, asche, busch, wald } oder null (kein Brand um den Ort): die verbrannte
-    // Fläche ist eine weiche Grenze AUS DEM FELD, nie das 16-m-Raster seiner Zellen. Der Anteil `o` der verbrannten Zellen um den
-    // Ort (die vier Zell-Mitten um ihn, smoothstep-bilinear — eine Zerlegung der Eins: im Innern einer Brandfläche 1, auf der
-    // Kante einer verbrannten und einer stehenden Zelle 0,5, eine Treppe von Zellen ein glatter Zug) ist der Abstand zum
-    // Brand-Rand; das EINE Rauschen (gelaende-core `rauschRaum`, die Schicht aus der Saat der Welt) verschiebt ihn in den Oktaven
-    // von `BRAND.narbe`, und die Grenze fällt über `band`: `m` ∈ [0, 1], wie sehr der Ort verbrannte. `asche`, `busch`, `wald`
-    // sind die Sukzession der verbrannten Zellen um ihn (ihr gewichtetes Mittel, `_brandZelle`). `zelle(cx, cz)` → null oder die
-    // Sukzession der Zelle — der Maler reicht seinen Speicher (`_brandZellen`). `_brandNarbeFn(zelle)` ist dieselbe Narbe als
-    // reine Funktion (x, z) für EINEN Gang (der Maler je Texel: die Saat einmal, die Zellen aus dem Speicher — der Schritt des
-    // Brands kostet seine Zellen, nie ihre Texel). Bis w3v-brand-bild malte jede Zelle ihr Quadrat: die Asche lag als Platte mit
-    // geraden Kanten im 16-m-Raster, die Halme endeten an der Zellkante.
-    _brandNarbe(x, z, zelle = this._brandZellen()) {
-        return this._brandNarbeFn(zelle)(x, z);
-    }
-    _brandNarbeFn(zelle) {
-        const [cs, N, R, L] = [
-            AnazhRealm.LIFE_FIELD.cell,
-            AnazhRealm.BRAND.narbe,
-            globalThis.__gelaendeCore.rauschRaum,
-            this._forestSeedInt() % 251,
-        ];
-        const S = (t) => t * t * (3 - 2 * t);
-        const amp = N.amp.reduce((s, a) => s + a, 0);
-        return (x, z) => {
-            const u = x / cs - 0.5;
-            const v = z / cs - 0.5;
-            const i = Math.floor(u);
-            const j = Math.floor(v);
-            const a = S(u - i);
-            const b = S(v - j);
-            let [o, as, bu, wa] = [0, 0, 0, 0];
-            for (let k = 0; k < 4; k++) {
-                const w = (k & 1 ? a : 1 - a) * (k & 2 ? b : 1 - b);
-                const c = w > 0 ? zelle(i + (k & 1), j + (k >> 1)) : null;
-                if (c) ((o += w), (as += w * c.asche), (bu += w * c.busch), (wa += w * c.wald));
-            }
-            if (!(o > 0)) return null;
-            // das Rauschen wirkt am Rand (4·o·(1 − o)): im Innern einer Brandfläche bleibt sie ganz, fern von ihr ganz frei —
-            // gerechnet nur, wo es die Grenze verschieben kann (|Rauschen| ≤ 1, gelaende-core `RAUSCH.skala`)
-            const rand = 4 * o * (1 - o);
-            let r = 0;
-            if (Math.abs(o - 0.5) < N.band / 2 + amp * rand)
-                for (let k = 0; k < N.lambda.length; k++)
-                    r += N.amp[k] * R(x / N.lambda[k], z / N.lambda[k], L + 7 * k);
-            return {
-                m: Math.min(1, Math.max(0, (o - 0.5 + r * rand) / N.band + 0.5)),
-                asche: as / o,
-                busch: bu / o,
-                wald: wa / o,
-            };
-        };
-    }
-
-    // Die Sukzession der verbrannten Zelle (cx, cz) → { asche, busch, wald } (die stärkste Asche, der jüngste Busch und Wald
-    // ihrer Taten `brand`, `_sukzession`) oder null; `_brandZellen` ist ihr Speicher für EINEN Gang (der Maler, die Wiese).
-    _brandZelle(cx, cz) {
-        const I = this._tatIndex();
-        let c = null;
-        for (const a of I.brand.length ? I.je.get(cx + "," + cz) || [] : []) {
-            if (a.tat !== "brand") continue;
-            const s = this._sukzession(a);
-            c = c
-                ? {
-                      asche: Math.max(c.asche, s.asche),
-                      busch: Math.min(c.busch, s.busch),
-                      wald: Math.min(c.wald, s.wald),
-                  }
-                : { asche: s.asche, busch: s.busch, wald: s.wald };
-        }
-        return c;
-    }
-    _brandZellen() {
-        const M = new Map();
-        return (cx, cz) => {
-            const k = (cx + 32768) * 65536 + cz + 32768;
-            let c = M.get(k);
-            if (c === undefined) M.set(k, (c = this._brandZelle(cx, cz)));
-            return c;
-        };
-    }
-
-    // DIE ASCHE MALEN (stoffe.K2#2): die Asche der Zelle (cx, cz) und ihrer Ränder in jeder zentrierten Stufe — der Kanal G
-    // jedes Texels ist die Narbe an seiner Mitte mal ihre Asche (`_brandNarbe`); die Narbe einer Zelle reicht bis an die Mitten
-    // ihrer Nachbarinnen, gemalt wird die Fläche ±½ Zelle um sie. Wo sich ein Texel ändert, baut die Nah-Wiese darüber neu (auf
-    // der Asche steht kein Halm, über die Grenze dünnen sie aus). Rückgabe: ob sich ein Texel änderte.
-    _ascheMalen(cx, cz) {
-        const wk = this.state.wegeKarte;
-        if (!wk) return false;
-        const cs = AnazhRealm.LIFE_FIELD.cell;
-        const [x0, z0, x1, z1] = [(cx - 0.5) * cs, (cz - 0.5) * cs, (cx + 1.5) * cs, (cz + 1.5) * cs];
-        const zelle = this._brandZellen();
-        let neu = false;
-        for (const stufe of wk.stufen)
-            if (stufe.zentriert && this._ascheFlaeche(stufe, x0, z0, x1, z1, zelle)) neu = true;
-        if (neu) this._nahRingNeuIn(x0, z0, x1, z1);
-        return neu;
-    }
-
-    // Die Fläche [x0, x1) × [z0, z1) in EINE Stufe malen: jedes Texel, dessen Mitte in ihr liegt, trägt die Asche der Narbe an
-    // seiner Mitte. Rückgabe: ob sich ein Texel änderte.
-    _ascheFlaeche(stufe, x0, z0, x1, z1, zelle) {
-        const kr = stufe.kronen;
-        const N = kr.N;
-        const t = stufe.S.fensterM / N;
-        const x0w = stufe.mitteX - stufe.S.fensterM / 2;
-        const z0w = stufe.mitteZ - stufe.S.fensterM / 2;
-        const i0 = Math.max(0, Math.ceil((x0 - x0w) / t - 0.5));
-        const i1 = Math.min(N - 1, Math.ceil((x1 - x0w) / t - 0.5) - 1);
-        const j0 = Math.max(0, Math.ceil((z0 - z0w) / t - 0.5));
-        const j1 = Math.min(N - 1, Math.ceil((z1 - z0w) / t - 0.5) - 1);
-        if (i1 < i0 || j1 < j0) return false;
-        const [A, narbe] = [kr.asche, this._brandNarbeFn(zelle)];
-        let neu = false;
-        for (let j = j0; j <= j1; j++)
-            for (let i = i0; i <= i1; i++) {
-                const n = narbe(x0w + (i + 0.5) * t, z0w + (j + 0.5) * t);
-                const v = n ? Math.round(n.m * n.asche * 255) : 0;
-                if (v !== A[j * N + i]) ((A[j * N + i] = v), (neu = true));
-            }
-        if (neu) AnazhRealm._kronenSchmutz(kr, i0, i1, j0, j1);
-        return neu;
-    }
-
-    // Die Asche EINER zentrierten Stufe ganz neu (nach ihrem Umzug, einer geladenen Welt): leeren, jede Tat `brand` im Fenster
-    // malt die vier Flächen zwischen den Zell-Mitten um ihre Zelle, jede Fläche einmal — die Kosten tragen die Aschen, nie die Welt.
-    _ascheStufeMalen(stufe) {
-        const kr = stufe.kronen;
-        kr.asche.fill(0);
-        const cs = AnazhRealm.LIFE_FIELD.cell;
-        const h = stufe.S.fensterM / 2 + cs;
-        const [zelle, gemalt] = [this._brandZellen(), new Set()];
-        for (const a of this._tatIndex().brand) {
-            if (Math.abs(a.x - stufe.mitteX) > h || Math.abs(a.z - stufe.mitteZ) > h) continue;
-            const [cx, cz] = [Math.floor(a.x / cs), Math.floor(a.z / cs)];
-            for (let qj = cz - 1; qj <= cz; qj++)
-                for (let qi = cx - 1; qi <= cx; qi++) {
-                    if (gemalt.has(qi + "," + qj)) continue;
-                    gemalt.add(qi + "," + qj);
-                    const [x0, z0] = [(qi + 0.5) * cs, (qj + 0.5) * cs];
-                    this._ascheFlaeche(stufe, x0, z0, x0 + cs, z0 + cs, zelle);
-                }
-        }
-        kr.schmutz = [0, kr.N - 1, 0, kr.N - 1];
-    }
-
     creatureJump(creature, ansprung = false) {
         const ud = creature && creature.userData;
         if (!ud || ud._hopV > 0 || ud._hopH > 0) return false;
@@ -193,7 +42,7 @@ class AnazhRealm_feld_leben {
             }
             const sphere = object.geometry.boundingSphere;
             if (sphere && Number.isFinite(sphere.radius) && sphere.radius > 0) {
-                // boundingSphere der Chunks liegt schon in Welt-Koordinaten; bei Position-Offset (Inseln,
+                // boundingSphere der Chunks liegt schon in Welt-Koordinaten; bei Position-Offset (Bauten,
                 // Vegetation) wird das Center über eine gepoolte Scratch-Sphere verschoben.
                 if (
                     object.position &&
@@ -270,7 +119,7 @@ class AnazhRealm_feld_leben {
             name,
             program,
             source,
-            createdAt: performance.now() / 1000,
+            createdAt: this.state.spielZeit,
         };
         if (existingIdx >= 0) this.state.dsl.abilities[existingIdx] = entry;
         else this.state.dsl.abilities.push(entry);
@@ -435,18 +284,18 @@ class AnazhRealm_feld_leben {
             spawn_studio: (a) => {
                 const name = typeof a[0] === "string" ? this._studioBlueprintForWord(a[0].toLowerCase()) : null;
                 const bp = name && this.state.blueprints ? this.state.blueprints[name] : null;
-                const was = (bp && bp.label) || (name && this._werkLabel(name)) || s(a[0]);
+                const was = (bp && (bp.etikett || bp.label)) || (name && this._werkLabel(name)) || s(a[0]); // Etikett: Zeile
                 if (name && this._studioWerkVerb(name) === "praegung") return ["tat.praegt", { was }];
                 return ["tat.studio", { n: n(a[2]), was, ort: pos(a[1]) }];
             },
-            spawn_island: (a) => ["tat.insel", { ort: pos(a[0]) }],
-            spawn_ufo: (a) => ["tat.ufo", { ort: pos(a[0]) }],
             spawn_village: (a) => ["tat.dorf", { ort: pos(a[0]) }],
             spawn_temple: (a) => ["tat.tempel", { ort: pos(a[0]) }],
             spawn_waterfall: (a) => ["tat.wasserfall", { ort: pos(a[0]) }],
             spawn_blueprint: (a) => {
                 const bp = this.state.blueprints && this.state.blueprints[a[0]];
-                return ["tat.baut", { was: (bp && bp.label) || s(a[0]), ort: pos(a[1]) }]; // das Label, nie die id (V-D8)
+                // der Name, nie die id (V-D8): das Etikett als Zeile (es wechselt mit der Sprache), sonst das Wort als Daten
+                const was = bp && (Array.isArray(bp.etikett) ? bp.etikett : bp.label);
+                return ["tat.baut", { was: was || s(a[0]), ort: pos(a[1]) }];
             },
             remove_architecture: () => ["tat.abbau"],
             spawn_fractal: (a) => ["tat.fraktal", { was: s(a[1]), tiefe: s(a[2]), ort: pos(a[0]) }],
@@ -502,7 +351,7 @@ class AnazhRealm_feld_leben {
     }
 
     selfAwarenessAnalyze() {
-        const currentTime = this._taktUhr();
+        const currentTime = this.state.spielZeit;
         if (this.state.lastSelfAnalysis && currentTime - this.state.lastSelfAnalysis < 2.0) {
             return; // Strengere Debounce: Nur einmal alle 2 Sekunden analysieren
         }
@@ -558,7 +407,7 @@ class AnazhRealm_feld_leben {
             // zweiter, kaputter fps-Regler (Physik heilt keinen Render-Freeze) — der eine
             // Perf-Regelkreis (V18.263) regelt die fps. Der Loop-Trigger ist mit weg.
         };
-        this.state.nexusLastEvolution = this._taktUhr();
+        this.state.nexusLastEvolution = this.state.spielZeit;
         this._gemuetGesetze(); // die Gesetze des Gemüts erwachen mit der Welt (affekt.K2)
         this.log("Nexus der Unendlichkeit erwacht – bereit für unendliche Evolution", "INFO");
     }
@@ -594,16 +443,15 @@ class AnazhRealm_feld_leben {
     }
 
     generateEvolution() {
-        // ### Nexus-Evolution als DSL-Programm ###
-        // Komponiert ein zufälliges DSL-Programm — die DSL ist der einzige Pfad für neue Effekte (keine
-        // Code-Generierung). Mit composeRuleProb wird es eine stehende Regel: der `rule`-Op registriert sie
-        // über denselben dslRun-Pfad in state.worldRules. Der Wurf des Nexus ist ein Strom der Welt (`_bauSame`, Γ5) — die
-        // Komposition darunter zieht aus demselben Strom.
+        // ### Nexus-Evolution als DSL-Programm ### Komponiert ein zufälliges DSL-Programm — die DSL ist der einzige Pfad für neue
+        // Effekte (keine Code-Generierung). Mit composeRuleProb wird es eine stehende Regel: der `rule`-Op registriert sie über
+        // denselben dslRun-Pfad in state.worldRules. Der Wurf des Nexus ist ein Strom der Welt (`_bauSame`, Γ5) — die
+        // Komposition darunter zieht aus demselben Strom. Die Kennung `evo_<n>` ist der Schlüssel, die Seite liest `etikett`.
         const rng = this._samenStrom(this._bauSame("nexus"));
         // Keine Struktur-Batch-Bomben: ≤1 schwerer Welt-Bau (spawn_village/temple/…) pro Evolution, egal wie
         // in repeat/chain verschachtelt — jeder Bau ist ein synchroner Footprint-Remesh (~140 ms), N davon =
         // Sekunden-Freeze. Sonst neu würfeln (wenige Versuche); ein einzelner Bau bleibt ein Einzel-Hitch.
-        const HEAVY = /spawn_(village|temple|island|fractal|waterfall)/g;
+        const HEAVY = /spawn_(village|temple|fractal|waterfall)/g;
         let program = null;
         for (let tries = 0; tries < 4; tries++) {
             program =
@@ -611,11 +459,13 @@ class AnazhRealm_feld_leben {
             const heavyCount = (JSON.stringify(program).match(HEAVY) || []).length;
             if (heavyCount <= 1) break; // frame-sicher → nehmen
         }
+        const n = String(this.state.dsl.nextEntryId++);
         return {
-            name: `evo_${this.state.dsl.nextEntryId++}`,
+            name: `evo_${n}`,
+            etikett: ["hud.geste-nexus", { n }],
             program,
             source: "nexus",
-            createdAt: this._taktUhr(),
+            createdAt: this.state.spielZeit,
         };
     }
 
@@ -641,7 +491,7 @@ class AnazhRealm_feld_leben {
 
     // ### Wissens- und Narrativ-Modul ###
     addKnowledge(type, content) {
-        this.state.knowledgeBase.push({ type, content, timestamp: performance.now() / 1000 });
+        this.state.knowledgeBase.push({ type, content, timestamp: this.state.spielZeit });
         if (this.state.knowledgeBase.length > 500) this.state.knowledgeBase.shift(); // Strengere Begrenzung
         this.log(`Wissen hinzugefügt: ${type} - ${content}`, "INFO");
     }
@@ -831,7 +681,7 @@ class AnazhRealm_feld_leben {
     _chatRecordInputForLearning(command) {
         this.addKnowledge("chat", command);
         this.collectPlayerEmotions(command);
-        const nowSec = performance.now() / 1000;
+        const nowSec = this.state.spielZeit;
         this.rememberChatKeywords(command, nowSec);
         if (this.state.player && this.state.player.recentActivity) {
             this.state.player.recentActivity.chats++;
@@ -1079,7 +929,7 @@ class AnazhRealm_feld_leben {
         const result = this.dslRun(parsed.program, { source: "human" });
         this.state.dsl.lastUserProgram = parsed.program;
         this.state.dsl.lastUserOutcome = result.outcome;
-        this.state.dsl.lastUserAt = performance.now() / 1000;
+        this.state.dsl.lastUserAt = this.state.spielZeit;
         // Ein Ort, den es nicht gibt, wird laut gesagt, mit seinem Grund (V-k5, `dslEvalPos`): „Kein Wasser im Umkreis von
         // 80 m — am Wasser wächst hier nichts."
         const ohneOrt = result.log.find((e) => e.event === "invalid_position");
@@ -1357,6 +1207,130 @@ class AnazhRealm_feld_leben {
                         else append(this._t("chat.befehl.welt.wechsel-verweigert"));
                     }
                 },
+            },
+            {
+                // DER ORT DER WELT (Reise): „reise“ ohne Ziel sagt, wo diese Welt auf ihrem Planeten liegt — eine Reise-Welt aus
+                // dem Teil `ort` ihres Gesetzes (Lage und Zeit, ohne Rechnung), die Heimat aus dem Anker (`_planetAnker`, im
+                // Planet-Faden, geboren mit diesem Satz). Trägt der Planet des Samens keinen Anker (oder fiel der Faden), hört der
+                // Spieler den Grund, und der Bruch geht beim Namen ins Log (`_chatBefehlLauf`).
+                example: "reise",
+                re: /^reise$/i,
+                run: (m, append) => {
+                    const teil = this._gelaende().ort.teil;
+                    if (teil) {
+                        append([
+                            "chat.befehl.reise.hier-ort",
+                            this._reiseWorte(teil.breite, teil.laenge, teil.zeitMa, teil),
+                        ]);
+                        return null;
+                    }
+                    return this._planetAnker().then(
+                        (a) => {
+                            const grad = (rad) => (rad * 180) / Math.PI;
+                            const w = this._reiseWorte(grad(a.breite), grad(a.laenge), 0, a);
+                            append([
+                                "chat.befehl.reise.ort",
+                                Object.assign(w, { kueste: this._reiseZahl(a.kuesteKm, 0) }),
+                            ]);
+                        },
+                        (e) => {
+                            append(["chat.befehl.reise.ohne-ort", { grund: String((e && e.message) || e) }]);
+                            throw e;
+                        }
+                    );
+                },
+            },
+            {
+                // HEIM (Reise): aus einer Reise-Welt in die Welt ihres Heimtors (`worldMeta.heimTor`, die Heimat des Planeten) —
+                // derselbe Wechsel wie „wechsle zu“ (`switchToWorld`); in der Heimat sagt der Satz, dass sie es ist. Steht VOR
+                // dem Ziel-Satz und vor der Ähnlichkeit der Konsole (Gegner Spiel F4: „reise heim“ schlug „ziehe heim“ vor).
+                example: "reise heim",
+                re: /^reise\s+(?:heim|nach\s+hause|zurück)$/i,
+                run: (m, append) => {
+                    const wm = this.state.worldMeta || {};
+                    const ht = wm.heimTor;
+                    if (!this._gelaende().ort.teil || !ht || typeof ht.weltId !== "string") {
+                        append(["chat.befehl.reise.daheim"]);
+                        return;
+                    }
+                    if (!localStorage.getItem(this.worldStorageKey(ht.weltId))) {
+                        append(["chat.befehl.reise.heim-fehlt", { welt: ht.weltId.slice(0, 8) }]);
+                        return;
+                    }
+                    append(["chat.befehl.reise.heim", { welt: String(ht.label || ht.weltId.slice(0, 8)) }]);
+                    if (!this.switchToWorld(ht.weltId, { reload: true }))
+                        append(["chat.befehl.welt.wechsel-verweigert"]);
+                },
+            },
+            {
+                // DIE REISE (Reise, Schnitt 3): „reise <Breite> <Länge> [<Zeit in Ma>]“ — Grad (Süden und Westen negativ, oder
+                // mit N/S/O/E/W), die Zeit in ganzen Millionen Jahren (−4 000 bis +1 000, ohne sie heute). Der Planet-Faden rechnet
+                // den Ort zur Zeit (`planet-ort`: EIN Auftrag, die Zeit ist sein Parameter), liegt dort Meer, sagt es der Satz und
+                // gebiert nichts; sonst führt die EINE Tür in die Welt des Orts (`_reiseBetreten`). An der Lage des Ankers (heute)
+                // gibt es nur die Heimat. Ein System-Akt der Konsole, nie eine Op der DSL (die KI trägt den Spieler nicht fort).
+                example: "reise <Breite> <Länge> [<Zeit in Ma>]",
+                re: /^reise\s+(-?\d{1,3}(?:[.,]\d+)?)\s*°?\s*([NS])?\s+(-?\d{1,3}(?:[.,]\d+)?)\s*°?\s*([OEW])?(?:\s+(-?\d{1,4}))?$/i,
+                run: (m, append) => {
+                    const zahl = (s) => Number(String(s).replace(",", "."));
+                    const breite = Math.round(zahl(m[1]) * (/s/i.test(m[2] || "") ? -1 : 1) * 100) / 100;
+                    const laenge = Math.round(zahl(m[3]) * (/w/i.test(m[4] || "") ? -1 : 1) * 100) / 100;
+                    const zeitMa = m[5] ? Number(m[5]) : 0;
+                    if (!(Math.abs(breite) <= 90 && Math.abs(laenge) <= 180 && zeitMa >= -4000 && zeitMa <= 1000)) {
+                        append(["chat.befehl.reise.form"]);
+                        return null;
+                    }
+                    const samen = this._planetSamen();
+                    return Promise.all([
+                        this._planetAnker(),
+                        this._fadenQuelle().then(() =>
+                            this._planetAuftrag({ type: "planet-ort", samen, breite, laenge, zeitMa })
+                        ),
+                    ]).then(
+                        ([a, o]) => {
+                            const w = this._reiseWorte(breite, laenge, zeitMa, o);
+                            const zwei = (rad) => Math.round((rad * 180 * 100) / Math.PI) / 100;
+                            if (zeitMa === 0 && zwei(a.breite) === breite && zwei(a.laenge) === laenge) {
+                                const wm = this.state.worldMeta || {};
+                                if (!this._gelaende().ort.teil) append(["chat.befehl.reise.daheim"]);
+                                else if (wm.heimTor && this.switchToWorld(wm.heimTor.weltId, { reload: true }))
+                                    append(["chat.befehl.reise.heim", { welt: String(wm.heimTor.label || "") }]);
+                                return;
+                            }
+                            if (!o.land) {
+                                append([
+                                    "chat.befehl.reise.meer",
+                                    Object.assign(w, { kueste: this._reiseZahl(-o.kuesteKm, 0) }),
+                                ]);
+                                return;
+                            }
+                            const r = this._reiseBetreten(o);
+                            if (!r.ok) {
+                                append(["chat.befehl.reise.nicht", { grund: String(r.reason) }]);
+                                return;
+                            }
+                            const O = globalThis.__gelaendeCore.ortGesetz(r.ort);
+                            append([
+                                "chat.befehl.reise.ziel",
+                                Object.assign(w, {
+                                    sommer: this._reiseZahl(O.klimaHeute.sommer, 1),
+                                    winter: this._reiseZahl(O.klimaHeute.winter, 1),
+                                    schnee: this._reiseZahl(globalThis.__gelaendeCore.SCHNEE.start + O.schneeBandM, 0),
+                                    meer: this._reiseZahl(-O.meerUnterBasisM, 1),
+                                }),
+                            ]);
+                        },
+                        (e) => {
+                            append(["chat.befehl.reise.ohne-ort", { grund: String((e && e.message) || e) }]);
+                            throw e;
+                        }
+                    );
+                },
+            },
+            {
+                // jede andere Form der Reise antwortet mit der Form — nie mit einem fremden Satz der Ähnlichkeit
+                example: "reise …",
+                re: /^reise\s+.+$/i,
+                run: (m, append) => append(["chat.befehl.reise.form"]),
             },
             {
                 example: "lösche welt <slug>",
@@ -1751,7 +1725,7 @@ class AnazhRealm_feld_leben {
         this.state.knowledgeBase.push({
             type: "ability",
             content: { name, description, program },
-            timestamp: performance.now() / 1000,
+            timestamp: this.state.spielZeit,
         });
     }
     proactiveSuggestions() {
@@ -2135,11 +2109,29 @@ class AnazhRealm_feld_leben {
             delete feld.k; // der Schlüssel der Reihe ist die Sache jeder Seite
             this._aktSenden({ type: "dsl", w: akt.w, feld });
         }
-        if (sofort && akt.w <= this._feldHorizont() && !A.some((x) => x.w <= akt.w)) {
+        if (sofort && akt.w <= this._feldHorizont() && !A.some((x) => x.w <= akt.w) && this._feldFolgeSteht(akt.w)) {
             const wirkt = this._feldAktWirkt(akt);
             return akt.art === "brand" ? wirkt : true; // das Entfachen sagt, ob die Zelle fing
         }
         A.splice(i, 0, akt);
+        return true;
+    }
+
+    // DIE FOLGE STEHT BIS w (feld.K2#2, w28-mp-boden): das Feld hat EINEN Schreiber — die Folge der Takte und Akte nach Welt-Zeit
+    // (`_feldTakt`). Am Eingang wirkt ein Akt nur sofort, wenn er dort an der Reihe ist: kein Takt einer nahen Region steht vor
+    // seinem Stempel aus (jede trägt ihren Takt bis w: R.t + taktS ≥ w). Sonst tritt er in die Reihe, und die Folge nimmt ihn
+    // hinter den Takten davor. Bis hier wirkte er sofort, gleich wo die Folge stand: holten die nahen Regionen ihre Stunde noch
+    // nach (aufholJeTakt je Bild — auf einem langsamen Gerät länger als die taktS bis zur ersten Annahme), trat jedes angenommene
+    // Tier VOR den Takten seiner Stunde in den Bestand und alterte, fraß und warf in ihnen mit; die Seite daneben nahm es nach
+    // ihnen an. Gemessen unter Last (3 Wände auf 2 Kernen, gate:mp-sync (f)): bei B 20 Annahmen bei w 124 vor den Takten ab
+    // −2990, der Zähler der Geburt zweier Regionen 190/199 und 255/207, Leben 176 von 356 Zellen gleich.
+    _feldFolgeSteht(w) {
+        const T = AnazhRealm._bestandGesetz().B.taktS;
+        const F = this._bestandRegionen().regionen;
+        for (const key of this._bestandNah()) {
+            const R = F[key];
+            if (!R || R.t + T < w) return false;
+        }
         return true;
     }
 
@@ -2190,7 +2182,7 @@ class AnazhRealm_feld_leben {
             kacheln.push([ix * S - cs, iz * S - cs, (ix + 1) * S + cs, (iz + 1) * S + cs]);
             const R = F[key];
             if (!R) continue;
-            const tiere = R.tiere.map(({ id, soul, g, bs, alterS, x, z, v, name }) => ({
+            const tiere = R.tiere.map(({ id, soul, g, bs, alterS, x, z, v, name, gehege }) => ({
                 id,
                 soul,
                 g,
@@ -2200,6 +2192,7 @@ class AnazhRealm_feld_leben {
                 z,
                 v,
                 name,
+                gehege, // der Term des Geheges (tetrapoda GEHEGE_GESETZ): das Tier kehrt als Tier seines Geheges wieder
             }));
             bestand[key] = { t: R.t, seq: R.seq, tiere };
         }
@@ -2321,7 +2314,7 @@ class AnazhRealm_feld_leben {
         st.spielZeit = akt.w;
         try {
             if (akt.art === "leben") return void this._depositLife(akt.x, akt.z, akt.a);
-            if (akt.art === "brand") return this._brandFangen(akt.x, akt.z);
+            if (akt.art === "brand") return this._brandFangen(akt.x, akt.z, akt.ein);
             const R = this._bestandRegion(akt.key, false);
             if (akt.art === "annahme") {
                 const offen = this._annahmeOffen && this._annahmeOffen.get(akt.id);
@@ -2446,619 +2439,14 @@ class AnazhRealm_feld_leben {
 
     // Kreatur-Trickle: eine tendende Kreatur (userData.tendsLife) träufelt Leben in ihre Zelle,
     // rate-limitiert (trickleEverySec); wandernd ergibt das einen decayenden Lebens-Pfad. NUR tendsLife —
-    // ambiente Fauna träufelt nie (sonst positiver Feedback-Runaway). Pro Frame aus updateCreatures.
+    // ambiente Fauna träufelt nie (sonst positiver Feedback-Runaway). Pro Frame aus updateCreatures. `now` ist die Spiel-Uhr
+    // (`spielZeit`); steht sie hinter der letzten Gabe (ein Stand lud eine frühere Uhr), zählt die Frist ab ihr neu.
     _tickCreatureLifeTrickle(creature, now) {
         if (!creature || !creature.userData || !creature.userData.tendsLife || !creature.position) return;
         const last = creature.userData.lastLifeTrickle ?? -Infinity;
-        if (now - last < AnazhRealm.LIFE_FIELD.trickleEverySec) return;
+        if (now >= last && now - last < AnazhRealm.LIFE_FIELD.trickleEverySec) return;
         creature.userData.lastLifeTrickle = now;
         this._lebenGabe(creature.position.x, creature.position.z, AnazhRealm.LIFE_FIELD.trickle, null); // ein Akt der Seite (feld.K2#2)
-    }
-
-    // === DER BRAND (stoffe.K2 · feld.K3#2): das Feuer auf dem Feld — die Front läuft nach Rothermel, gerechnet, wo es brennt ===
-    // `state.brandFeld`: "cx,cz" (die 16-m-Zelle des Lebens) → die Zellen des Feuers: die brennenden (`t0` die Ankunft der Front,
-    // `ende` die Zeit, zu der sie ausgebrannt ist, `glut`, ihr Bett `stoff`, ihr Tempo `R` längs `kopf`) und die, die die Front
-    // erreichen wird (`t0` null, `an` ihre Ankunft); jede trägt den Punkt, an dem die Front sie erreicht (`ex`, `ez`), und die
-    // Zelle, von der sie kam (`von`).
-    // Die Front ist die KÜRZESTE LAUF-ZEIT über die acht Nachbarn (Finney 2002, FARSITE): fängt eine Zelle, trägt sie ihr Tempo
-    // je Richtung (`_brandTempo`, die EINE Funktion von Bett, Wind und Hang) als Ankunft in jede Nachbarin (`_brandZuenden`), die
-    // früheste gilt — eine Funktion der Spielzeit, gleich für jede Bildrate. Sie fängt, wo die Welt Feuer fängt (das Brennglas,
-    // `_tickFocusingAffordances`), hält, wo kein Bett brennt (Fels, Wasser, Asche) und wo die Nässe das Bett erstickt, und
-    // hinterlässt die Tat `brand` (die Asche: ihre Narbe senkt lebendig, auf ihr brennt nichts, bis sie heilt). Nicht
-    // persistiert (reaktiv wie das Leben-Overlay), die Asche reist als Tat. Leser: `auraAt` (glut) und die Leuchtquellen.
-
-    // Das Bett einer Zelle → { zeile, leb, x, z, y, boden } oder null: die Zeile der Stoff-Tafel unter ihrer Mitte
-    // (`_kontaktStoffAt`), wenn sie ein Brennstoff-Bett trägt (ihre Spalte `brenn`), ihr lebendig (die Vegetation samt Narbe,
-    // `auraAt`) als Anteil ihrer Last und die Feuchte ihres Bodens (`_feuchteAt`, die Hydrosphäre: am Ufer und in der Niederung,
-    // über dem Spiegel, den der Pegel des Regens hebt) — kein Bett auf Asche, über Wasser (das EINE Urteil `_nassAt`) und unter
-    // `minStoff`.
-    // DAS BETT, WIE DIE FRONT ES ANTRIFFT (stoffe.K2#2): je Brand misst die Welt jede Zelle EINMAL — Stoff, Last, Boden, Höhe und
-    // das Gefälle über die Zelle (`gx`, `gz`, das `_brandTempo` liest) —, erreicht sie die Front wieder (eine zweite Nachbarin
-    // brennt), liest sie das Gemessene (`_brandBett`, geleert, wenn ein neuer Brand fängt). Die Asche fragt der Index jedes Mal.
-    _brandStoff(cx, cz) {
-        const key = cx + "," + cz;
-        const je = this._tatIndex().je.get(key);
-        if (je && je.some((a) => a.tat === "brand")) return null;
-        const M = this._brandBett || (this._brandBett = new Map());
-        if (M.has(key)) return M.get(key);
-        const cs = AnazhRealm.LIFE_FIELD.cell;
-        const [x, z] = [(cx + 0.5) * cs, (cz + 0.5) * cs];
-        const leb = this.auraAt(x, z).lebendig;
-        let f = null;
-        if (leb >= AnazhRealm.BRAND.minStoff && !this._nassAt(x, z)) {
-            const y = this._voxelSurfaceY(x, z);
-            const zeile = this._stoff(this._kontaktStoffAt(x, z, y));
-            if (zeile && zeile.brenn) {
-                const h = cs / 2;
-                const [gx, gz] = [(this._voxelSurfaceY(x + h, z) - y) / h, (this._voxelSurfaceY(x, z + h) - y) / h];
-                f = { zeile, leb, x, z, y, gx, gz, boden: this._feuchteAt(x, z, y) };
-            }
-        }
-        M.set(key, f);
-        return f;
-    }
-
-    // DIE FEUCHTE DES BETTS AM ORT (stoffe.K2#2) — Wasser je Trocken-Masse des toten Fein-Brennstoffs, EINE Funktion des Bodens
-    // (`boden`, die Feuchte der Zelle aus `_brandStoff`) und der EINEN Nässe der Welt (`state.naesse`, wetter.K2): die
-    // Luft-Trockene `trocken`; über nassem Boden steht das Bett in gesättigter Luft und nimmt Wasser bis zur Faser-Sättigung
-    // `faser` (das Gras am Ufer hält die Front); der Regen legt freies Wasser auf die Faser, bis zu dem, was durchnässte Streu
-    // hält (`nass`) — er löscht, wo sie die Erlöschungs-Feuchte des Betts erreicht. Bis stoffe.K2#2 trug die Nässe nur bis zur
-    // Faser-Sättigung (0,35) und kein Ort sein eigenes Bett: das Laub fiel im Landregen erst nach 196 s, das Gras am Ufer
-    // brannte wie das auf der Kuppe.
-    _brandFeuchte(boden) {
-        const F = AnazhRealm.BRAND.feuchte;
-        return F.trocken + (F.faser - F.trocken) * (boden || 0) + F.nass * (this.state.naesse || 0);
-    }
-
-    // DAS TEMPO DER FRONT (stoffe.K2) → { R, ecc, px, pz, tr } oder null (das Bett erstickt): Rothermel 1972 (USDA INT-115) mit
-    // Albini 1976 — das Bett aus der Zeile seines Stoffs (σ, Last × lebendig, Tiefe, Heizwert, Erlöschungs-Feuchte `mx`, ρ der
-    // Partikel), die Zünd-Wärme Q_ig = c·(T_zünd − T_Luft) + M·(c_w·(100 °C − T_Luft) + L_v) aus derselben Zeile, der des Wassers
-    // und der Luft des Temperatur-Felds (`_temperaturAt`); der Wind des EINEN Felds (`_windAt` am Ort zur Uhr des Brands) in der
-    // Stärke, die das Gesetz ihm gibt — `sturmMS` bei Böe 1 ist Beaufort (WIND_FELD), also ohne die wandernde Böe und ihre Drift
-    // (`_windWob`), die die Front über die Querung einer Zelle (zwei Böen-Perioden) mittelt; die Böe des Zünd-Augenblicks gehalten
-    // streute die Köpfe an EINER Pose 0,10–1,14 m/s, ihr Mittel 0,7 statt der Beaufort-Stärke hielt sie bei 0,51 —, in 10 m Höhe
-    // (÷ 1,15 auf 20 ft) auf Flammenhöhe (Albini–Baughman 1979 aus der Tiefe des Betts, gedeckelt bei 0,9·I_R), und der Hang (das
-    // Gefälle der Oberfläche über die Zelle) addieren als Vektoren zum effektiven φ (BehavePlus). R ist das Tempo der Spitze in
-    // m/s längs (px, pz); die Ellipse (Anderson 1983, L/B aus dem effektiven Wind) gibt R(θ) = R·(1 − ecc)/(1 − ecc·cos θ), gegen
-    // den Wind das Rückfeuer R·(1 − ecc)/(1 + ecc). tr: die Verweilzeit der Flamme (384/σ min). Die Gleichungen in ihren
-    // Einheiten (ft, lb, Btu, min).
-    _brandTempo(f, t) {
-        const B = AnazhRealm.BRAND;
-        const [Z, b] = [f.zeile, f.zeile.brenn];
-        const [sig, tiefe, w0] = [b.sigma * 0.3048, b.tiefe / 0.3048, b.last * Math.min(1, f.leb) * 0.204816];
-        const beta = w0 / tiefe / (Z.rho * 0.062428);
-        const q = beta / (3.348 * sig ** -0.8189);
-        const A = 133 * sig ** -0.7913;
-        const gam = (sig ** 1.5 / (495 + 0.0594 * sig ** 1.5)) * q ** A * Math.exp(A * (1 - q));
-        const M = this._brandFeuchte(f.boden);
-        // an der Erlöschungs-Feuchte ist η_M null (Rothermel 1972) — im Gleitkomma blieb das Polynom bei 4·10⁻¹⁶, und das nasse Bett
-        // fing mit einem Tempo, das nie ausbrannte (stoffe.K2#2: 3 nasse Zellen am Ufer brannten)
-        if (!(M < b.mx)) return null;
-        const r = M / b.mx;
-        const etaM = 1 - 2.59 * r + 5.11 * r * r - 3.52 * r * r * r;
-        const IR = gam * w0 * (1 - B.mineral.gesamt) * b.heiz * 4.2992e-4 * etaM * 0.174 * B.mineral.frei ** -0.19;
-        if (!(IR > 0)) return null;
-        const [W, luft] = [this._stoff("wasser"), this._temperaturAt(f.y)];
-        const Qig = ((Z.tZuend - 273.15 - luft) * Z.c + M * (W.c * (100 - luft) + W.Lv)) * 4.2992e-4;
-        const R0 =
-            (IR * Math.exp((0.792 + 0.681 * sig ** 0.5) * (beta + 0.1))) /
-            (192 + 0.2595 * sig) /
-            ((w0 / tiefe) * Math.exp(-138 / sig) * Qig);
-        const w = this._windAt(f.x, f.z, t);
-        const [C, Bw, E] = [
-            7.47 * Math.exp(-0.133 * sig ** 0.55),
-            0.02526 * sig ** 0.54,
-            0.715 * Math.exp(-3.59e-4 * sig),
-        ];
-        const u =
-            ((w.ms / 1.15 / (w.boe * this._windWob(t))) * 196.85 * 1.83) /
-            Math.log((20 + 0.36 * tiefe) / (0.13 * tiefe));
-        const phiW = C * Math.min(0.9 * IR, u) ** Bw * q ** -E;
-        const [gx, gz] = [f.gx, f.gz];
-        const phiS = (5.275 * beta ** -0.3 * (gx * gx + gz * gz)) / (Math.hypot(gx, gz) || 1);
-        const [vx, vz] = [phiW * w.x + phiS * gx, phiW * w.z + phiS * gz];
-        const phi = Math.hypot(vx, vz);
-        const mph = ((phi * q ** E) / C) ** (1 / Bw) / 88;
-        const lb = Math.min(B.lbMax, 0.936 * Math.exp(0.2566 * mph) + 0.461 * Math.exp(-0.1548 * mph) - 0.397);
-        const ecc = Math.sqrt(Math.max(0, lb * lb - 1)) / lb;
-        return { R: R0 * (1 + phi) * 0.00508, ecc, px: phi ? vx / phi : 1, pz: phi ? vz / phi : 0, tr: 23040 / sig };
-    }
-
-    // DAS ENTFACHEN IST EIN AKT DER SEITE (feld.K2#2, `_feldAkt`): was eine Seite entzündet (das Brennglas, die Probe), fängt auf jeder
-    // Seite zur selben Welt-Zeit — allein sofort (→ die Zelle oder null), mit Mitspielern im Vorlauf (→ true). Bis feld.K2#2 brannte
-    // es nur auf der Seite, deren Brennglas zündete.
-    _brandEntfachen(x, z) {
-        return this._feldAkt({ art: "brand", w: this.state.spielZeit, x, z }, true);
-    }
-
-    // Die Zelle unter (x, z) fängt Feuer → die Zelle oder null (sie brennt schon, trägt kein Bett, die Welt ist zu nass).
-    _brandFangen(x, z) {
-        const st = this.state;
-        const bf = st.brandFeld || (st.brandFeld = new Map());
-        const cs = AnazhRealm.LIFE_FIELD.cell;
-        const [cx, cz] = [Math.floor(x / cs), Math.floor(z / cs)];
-        const n = bf.get(cx + "," + cz);
-        if (n && n.t0 !== null) return null;
-        // ein neuer Brand misst sein Bett neu, und nichts eines alten wartet: die Aschen, die der erloschene noch trug, liegen
-        // zuerst (ohne Feld zündet der Rest nichts mehr) — bis w13-brand-takt fielen sie hier weg
-        if (!bf.size) {
-            if (this._brandRest) this._brandArbeit(Infinity);
-            [this._brandUhr, this._brandBett, this._brandRest, bf.glutBlock] = [st.spielZeit, null, null, null];
-        }
-        return this._brandZuenden(cx, cz, st.spielZeit, x, z);
-    }
-
-    // Die Front erreicht die Zelle zur Zeit t am Punkt (ex, ez) ihres Rands (der Herd: am Ort der Tat). Ihr Bett und ihr Tempo
-    // tragen die Front weiter, als Welle vom Eintrittspunkt (Huygens): die Zeit bis zu einem Punkt v ist
-    // (|v| − ecc·v·ψ) / (R·(1 − ecc)) — die Ellipse mit dem Herd im Brennpunkt —, und jede Nachbarin, die noch nicht brennt,
-    // erhält die Ankunft am ersten Punkt ihrer Fläche, den die Welle berührt (das Minimum über Ecken, Kanten-Mitten, den nächsten
-    // Punkt und den Eintritt der Achse) — die frühere gewinnt. So läuft die Spitze längs ihrer Achse durch die Zellen, die sie
-    // kreuzt, in ihrem Tempo, wie schmal die Ellipse auch ist (an den Mitten gemessen verlor das Gitter der acht Nachbarn 75 %
-    // der Spitze). Die Zelle brennt, bis die Spitze sie längs ihres Kopfs durchquert hat (bis an ihre fernste Ecke), und die
-    // Flamme ihre Verweilzeit; was langsamer in sie zurückläuft (Flanke, Rückfeuer), trägt die Ankunft ihrer Nachbarinnen, nicht
-    // ihr Brennen. Ohne Bett oder Tempo fällt sie aus dem Feld (null).
-    _brandZuenden(cx, cz, t, ex, ez) {
-        const bf = this.state.brandFeld;
-        const key = cx + "," + cz;
-        const f = this._brandStoff(cx, cz);
-        const T = f && this._brandTempo(f, t);
-        if (!T || !(T.R > 0)) {
-            bf.delete(key);
-            return null;
-        }
-        const cs = AnazhRealm.LIFE_FIELD.cell;
-        const k = 1 / (T.R * (1 - T.ecc));
-        const zeit = (x, z) => (Math.hypot(x - ex, z - ez) - T.ecc * ((x - ex) * T.px + (z - ez) * T.pz)) * k;
-        // die erste Berührung der Fläche [x0, x0 + cs] × [z0, z0 + cs] → [Zeit, x, z]
-        const ankunft = (x0, z0) => {
-            const [x1, z1] = [x0 + cs, z0 + cs];
-            const P = [
-                [x0, z0],
-                [x1, z0],
-                [x0, z1],
-                [x1, z1],
-                [x0 + cs / 2, z0],
-                [x0 + cs / 2, z1],
-                [x0, z0 + cs / 2],
-                [x1, z0 + cs / 2],
-            ];
-            P.push([Math.min(x1, Math.max(x0, ex)), Math.min(z1, Math.max(z0, ez))]);
-            const sx = T.px ? [(x0 - ex) / T.px, (x1 - ex) / T.px] : [0, 0];
-            const sz = T.pz ? [(z0 - ez) / T.pz, (z1 - ez) / T.pz] : [0, 0];
-            const s = Math.max(0, Math.min(...sx), Math.min(...sz));
-            const [ax, az] = [ex + s * T.px, ez + s * T.pz];
-            if (ax >= x0 - 1e-6 && ax <= x1 + 1e-6 && az >= z0 - 1e-6 && az <= z1 + 1e-6) P.push([ax, az]);
-            let best = null;
-            for (const [x, z] of P) {
-                const z0t = zeit(x, z);
-                if (!best || z0t < best[0]) best = [z0t, x, z];
-            }
-            return best;
-        };
-        const [x0, z0] = [cx * cs, cz * cs];
-        const quer = Math.max(
-            ...[x0, x0 + cs].flatMap((x) => [z0, z0 + cs].map((z) => (x - ex) * T.px + (z - ez) * T.pz))
-        );
-        const zelle = Object.assign(bf.get(key) || { cx, cz, y: null }, {
-            t0: t,
-            an: t,
-            ende: t + quer / T.R + T.tr,
-            glut: 0,
-            mx: f.zeile.brenn.mx,
-            boden: f.boden,
-            y: f.y,
-            stoff: f.zeile.name,
-            ex,
-            ez,
-            R: T.R,
-            kopf: [T.px, T.pz],
-            ecc: T.ecc,
-            tr: T.tr,
-            gx: f.gx,
-            gz: f.gz,
-            // H·w (kJ/m²): die Wärme des Betts je Fläche — mal dem Tempo die Intensität der Front (Byram), die das Bild liest
-            iw: (f.zeile.brenn.heiz / 1000) * f.zeile.brenn.last * Math.min(1, f.leb),
-        });
-        bf.set(key, zelle);
-        for (const [dx, dz] of AnazhRealm.BRAND.nachbarn) {
-            const nk = cx + dx + "," + (cz + dz);
-            const n = bf.get(nk);
-            if (n && n.t0 !== null) continue;
-            const [dt, ax, az] = ankunft(x0 + dx * cs, z0 + dz * cs);
-            if (n && n.an <= t + dt) continue;
-            const neu = n || { cx: cx + dx, cz: cz + dz, y: null, glut: 0, t0: null };
-            bf.set(nk, Object.assign(neu, { an: t + dt, ex: ax, ez: az, mx: zelle.mx, boden: zelle.boden, von: key }));
-        }
-        return zelle;
-    }
-
-    // DER TAKT DES BRANDS: ohne Feuer kein Schritt und keine Arbeit (Ruhe ist Null); sonst je `schrittS` Spielzeit EIN Schritt
-    // über die Zellen des Feuers — es kostet, was brennt (Lehre 25), die Welt drumherum nie. DIE ARBEIT EINES SCHRITTS IST GETEILT
-    // (stoffe.K2#2): die Aschen und die Zündungen, die er findet (`_brandSchritt`), geht der Takt in seinem Budget je Bild
-    // (`BRAND.budgetMs`, mindestens `BRAND.mindestJeBild` Stück), den Rest im nächsten (`_brandArbeit`); der nächste Schritt beginnt
-    // erst, wenn der vorige ganz ist, und jede Zelle fängt zur Zeit ihrer Ankunft, nie zur Zeit des Bilds. Bis stoffe.K2#2 ging ein
-    // Schritt in einem Bild: 2 000 brennende Zellen kosteten 7,4 ms (headless, Radeon-Laptop), die Aschen eines Schritts zusammen.
-    // DER BRAND LEBT, solange sein Feld brennt oder sein Rest Arbeit trägt — die EINE Frage, ob er noch etwas tut (der Takt, die
-    // Linsen, die ihn bis zum Ende fahren)
-    _brandLebt() {
-        const bf = this.state.brandFeld;
-        return !!(bf && bf.size) || !!this._brandRest;
-    }
-
-    // DER REST NACH DEM ERLÖSCHEN: leert ein Schritt das Feld (der Regen löscht jede Zelle zugleich), trägt sein Rest die Aschen
-    // aller gelöschten Zellen — der Takt geht ihn weiter in seinem Budget, bis er ganz ist. Bis w13-brand-takt kehrte er am
-    // leeren Feld um: was die Frist des Bilds nicht schrieb, fiel (Mess-Wiese, Regen, CPU zweifach gedrosselt 1 von 9 Aschen,
-    // vierfach 2 von 10) — die Asche hing an der Wanduhr.
-    _tickBrand() {
-        const bf = this.state.brandFeld;
-        // die Frage `_brandLebt` ohne ihren Ruf: in Ruhe kostet der Takt nichts (die Stand-Linse zählt jeden Ruf im Takt)
-        if (!bf || (!bf.size && !this._brandRest)) return;
-        const B = AnazhRealm.BRAND;
-        const frist = performance.now() + B.budgetMs;
-        // der Schritt fällt, sobald die Uhr ihn erreicht — im Gleitkomma mit einem Hauch (`(a + 1) − a` ist für ~0,1 % der Uhren
-        // 0,99999…: bis w3v-brand-bild hing jeder, der die Uhr auf `_brandUhr + schrittS` stellte, an dieser Uhr, und derselbe
-        // Herd trug 0 bis 95 Aschen)
-        while (this._brandArbeit(frist) && bf.size && this.state.spielZeit - this._brandUhr >= B.schrittS - 1e-9)
-            this._brandSchritt((this._brandUhr += B.schrittS));
-        if (!bf.size && !this._brandRest) this._brandBett = null; // erloschen: das Gemessene fällt
-    }
-
-    // Ein Schritt zur Spielzeit t: wo die Feuchte das Bett erstickt (die Feuchte am Ort der Zelle über ihrem `mx`, der Front die
-    // ihrer Quelle), erlischt das Feuer; jede brennende Zelle glüht auf (die glühenden lesen Licht, Rauch und Ohr: `glutBlock`) und
-    // fällt ausgebrannt als Asche; die Front erreicht die fälligen Zellen in der Folge ihrer Ankunft — die Arbeit (Aschen, Zündungen)
-    // liegt danach in `_brandRest`.
-    _brandSchritt(t) {
-        const bf = this.state.brandFeld;
-        const [aschen, faellig, glueht] = [[], [], []];
-        for (const [key, z] of bf) {
-            const M = this._brandFeuchte(z.boden);
-            if (M < z.mx && z.t0 === null) {
-                if (z.an <= t) faellig.push(z);
-                continue;
-            }
-            if (M < z.mx && t < z.ende) {
-                z.glut = Math.min(1, (t - z.t0) / AnazhRealm.BRAND.aufS);
-                if (z.glut > 0) glueht.push(z);
-                continue;
-            }
-            bf.delete(key);
-            if (z.t0 !== null) aschen.push(z);
-        }
-        faellig.sort((a, b) => a.an - b.an);
-        // die glühenden je Block von `blockZellen`² Zellen: die Leser fragen nur die Blöcke um ihren Ort (`_brandGlutUm`)
-        const G = new Map();
-        const K = AnazhRealm.BRAND.blockZellen;
-        for (const z of glueht) {
-            const k = Math.floor(z.cx / K) + "," + Math.floor(z.cz / K);
-            const L = G.get(k);
-            if (L) L.push(z);
-            else G.set(k, [z]);
-        }
-        bf.glutBlock = G;
-        this._brandRest = { t, aschen, faellig, i: 0 };
-    }
-
-    // Die glühenden Zellen des letzten Schritts in den Blöcken um (x, z) bis R — `fn(zelle)` je Zelle, die feine Prüfung trägt der
-    // Leser (das Licht, der Rauch, das Ohr). Die Kosten tragen die Blöcke um den Ort, nie der ganze Brand (Gebot 7).
-    _brandGlutUm(x, z, R, fn) {
-        const bf = this.state.brandFeld;
-        const G = bf && bf.size ? bf.glutBlock : null;
-        if (!G || !G.size) return;
-        const K = AnazhRealm.LIFE_FIELD.cell * AnazhRealm.BRAND.blockZellen;
-        for (let bz = Math.floor((z - R) / K), z1 = Math.floor((z + R) / K); bz <= z1; bz++)
-            for (let bx = Math.floor((x - R) / K), x1 = Math.floor((x + R) / K); bx <= x1; bx++) {
-                const L = G.get(bx + "," + bz);
-                if (L) for (const b of L) fn(b);
-            }
-    }
-
-    // Die Arbeit des angefangenen Schritts bis zur Frist (`performance.now`; mindestens `mindestJeBild` Stück): zuerst die Aschen
-    // (jede misst den Wuchs ihres Orts mit der Feuchte, die ihr Bett schon trägt — `_tatDauer` liest `w`), dann die Zündungen in
-    // der Folge ihrer Ankunft. Rückgabe: ob der Schritt ganz ist.
-    _brandArbeit(frist) {
-        const R = this._brandRest;
-        if (!R) return true;
-        const [B, cs, bf] = [AnazhRealm.BRAND, AnazhRealm.LIFE_FIELD.cell, this.state.brandFeld];
-        const n = R.aschen.length;
-        for (let k = 0; R.i < n + R.faellig.length; R.i++, k++) {
-            if (k >= B.mindestJeBild && performance.now() > frist) return false;
-            if (R.i < n) {
-                const z = R.aschen[R.i];
-                const [ax, az] = [(z.cx + 0.5) * cs, (z.cz + 0.5) * cs];
-                this._tatSchreiben("brand", ax, az, { w: Math.round(this._wuchsAt(ax, az, z.boden) * 1e3) / 1e3 });
-                continue;
-            }
-            const z = R.faellig[R.i - n];
-            if (z.t0 === null && bf.get(z.cx + "," + z.cz) === z) this._brandZuenden(z.cx, z.cz, z.an, z.ex, z.ez);
-        }
-        this._brandRest = null;
-        return true;
-    }
-
-    // Der Ort einer glühenden Zelle für ihre Leser (Licht, Rauch): über ihrer Mitte, gemessen beim ersten Lesen.
-    _brandOrt(b) {
-        const cs = AnazhRealm.LIFE_FIELD.cell;
-        const [x, z] = [(b.cx + 0.5) * cs, (b.cz + 0.5) * cs];
-        const y = (b.y != null ? b.y : this._voxelSurfaceY(x, z) || 0) + 1;
-        const phase = (((x * 12.9898 + z * 78.233) % 6.2832) + 6.2832) % 6.2832;
-        return (b.ort = { x, y, z, phase, brand: true, id: "brand:" + b.cx + "," + b.cz });
-    }
-
-    // DAS BILD DES BRANDS (stoffe.K2#2): jede glühende Zelle um das Auge (`_brandGlutUm` bis `BRAND.bild.weiteM` — dieselben
-    // Zellen in demselben Zustand, den Licht, Ohr und Asche lesen) zeichnet ihre FLAMMEN auf ihrer Front und ihren RAUCH als
-    // Fahne. DIE FRONT einer Zelle zur Spielzeit t ist die Ellipse ihres Eintritts (`_brandZuenden`: der Brennpunkt am Eintritt,
-    // die Spitze längs `kopf`): r(θ) = (t − t0)·R(θ), R(θ) = R·(1 − ecc)/(1 − ecc·cos θ). Die Flammen stehen auf ihr, soweit sie
-    // in der Zelle liegt, je eine halbe Länge auseinander; die Länge nach Byram 1959 (L = 0,0775·I^0,46, I = H·w·R(θ) in kW/m aus
-    // der Zeile des Betts), geneigt mit dem EINEN Wind (Froude: tan φ = u/√(g·L)), flackernd nach dem Datum des Feuer-Lichts
-    // (fachwerk `lichtFlackern`), Gestalt und Ton aus dem Flammen-Gesetz des Fachwerks (`FLAMME`, wie die Feuerstelle). DER RAUCH
-    // ist eine Linien-Fahne (Morton–Taylor–Turner 1956): je glühende Zelle Ballen im Takt ihrer Glut von ihren Flammen, sie
-    // steigen mit der Auftriebs-Geschwindigkeit der Front w = (g·I/(ρ·c·T))^⅓, wachsen mit der Höhe (b = b0 + α·Δz), verdünnen
-    // (Deckung ∝ b0/b) und ziehen mit dem Wind. Bis w3v-brand-bild las nur der Kamin-Rauch die Zelle (Kistchen à 0,34 m, 26 für
-    // jede Quelle der Welt: ein Faden, durch den die Krone schien), und keine Flamme stand im Bild — nur der Fleck des Lichts.
-    _brandBild(dt) {
-        const st = this.state;
-        const auge = st.camera ? st.camera.position : st.playerMesh && st.playerMesh.position;
-        // die Flammen des Bilds aus dem Vorrat der Instanz (je Bild keine neuen Objekte: der Müll trüge die Spitzen)
-        const [fl, vorrat] = [
-            this._brandFlammen || (this._brandFlammen = []),
-            this._flammenVorrat || (this._flammenVorrat = []),
-        ];
-        // DAS BILD KOSTET, WAS BRENNT (Gebot 7): ohne Feuer im Feld, ohne Flamme des letzten Bilds und ohne Ballen am Himmel geht
-        // kein Bild — bis w12-brand-halt rechnete jeder Takt der Welt Flackern, Wind-Merker und Fahne, auch wo nie ein Brand fing
-        if (!fl.length && !st.brandRauch.teilchen.length && !(st.brandFeld && st.brandFeld.size)) return;
-        fl.length = 0;
-        const qu = [];
-        const [B, K, t] = [AnazhRealm.BRAND.bild, AnazhRealm.LIFE_FIELD.cell, st.spielZeit];
-        const FW = globalThis.__fachwerkCore;
-        const L = FW.LICHT_GESETZ.feuer;
-        // das Flackern des Licht-Gesetzes in `flackerPhasen` Phasen je Bild (jede Flamme trägt eine), die Winkel der Front je
-        // Abtastung N EINMAL (cos, sin, gemerkt an der Instanz)
-        const P = B.flackerPhasen;
-        const fla = Array.from(
-            { length: P },
-            (_, k) => 1 + L.flacker.amp * FW.lichtFlackern(L, this._bildZeit, (2 * Math.PI * k) / P)
-        );
-        const tafeln = this._brandWinkel || (this._brandWinkel = new Map());
-        const tafel = (N) => {
-            if (!tafeln.has(N))
-                tafeln.set(
-                    N,
-                    Array.from({ length: 2 * N + 2 }, (_, i) =>
-                        Math[i % 2 ? "sin" : "cos"](Math.PI * ((2 * (i >> 1)) / N - 1))
-                    )
-                );
-            return tafeln.get(N);
-        };
-        // DIE EINE WIND-UHR DES BRANDS: Front (`_brandTempo`), Flammen und Fahne lesen den Wind zur Welt-Uhr `t` — die Bild-Uhr
-        // (A9) trägt nur das Flackern und die Zeit des Shaders, sie wählt nie den Wind. Bis w13-brand-wind zog die Fahne zur
-        // Bild-Uhr (der Wanduhr der Seite): nach dem Laden eines Stands (`_weltUhrNimm`) lagen beide Stunden auseinander, und
-        // der Rauch wehte in einen anderen Wind als die Front, die ihn trug (der Mäander `windRichtung` bis ±41°). Je Zelle des
-        // Felds EINMAL je Bild (seine Form hängt an der Zelle, die Böe wandert über 100 m)
-        const WM = new Map();
-        const wind = (x, z) => {
-            const k = (Math.floor(x / 16) + 32768) * 65536 + Math.floor(z / 16) + 32768;
-            let w = WM.get(k);
-            if (!w) WM.set(k, (w = this._windAt(x, z, t)));
-            return w;
-        };
-        // die brennenden Zellen im Bild, die nächste zuerst: die Deckel der Flammen und der Fahne fallen fern, nie nah
-        const [Z, paare] = [[], this._brandUmVorrat || (this._brandUmVorrat = [])];
-        if (auge)
-            this._brandGlutUm(auge.x, auge.z, B.weiteM, (b) => {
-                const d = Math.hypot((b.cx + 0.5) * K - auge.x, (b.cz + 0.5) * K - auge.z);
-                if (!(b.t0 !== null && b.R > 0 && t > b.t0 && d <= B.weiteM)) return;
-                const e = paare[Z.length] || (paare[Z.length] = [0, null]);
-                e[0] = d;
-                e[1] = b;
-                Z.push(e);
-            });
-        Z.sort((u, v) => u[0] - v[0]);
-        for (const [d, b] of Z) {
-            if (fl.length >= B.flammenMax || qu.length >= B.zellenMax) break;
-            const [x0, z0, xc, zc] = [b.cx * K, b.cz * K, (b.cx + 0.5) * K, (b.cz + 0.5) * K];
-            const [px, pz] = b.kopf;
-            const w = wind(xc, zc);
-            const u = w.ms * B.flammenWind;
-            const n0 = fl.length;
-            // die Front fern gröber abgetastet (die Kosten tragen der Schirm und die Nähe, Gebot 7), eine junge nach ihrem Umfang
-            // (höchstens 2π·R·Alter, je Flamme mindestens `abstandMinM`)
-            const umfang = Math.ceil((2 * Math.PI * b.R * (t - b.t0)) / B.abstandMinM);
-            const N = Math.max(B.winkelMin, Math.min(B.winkel, Math.round((B.winkel * B.nahM) / d), umfang));
-            const wt = tafel(N);
-            let [s, naechste, vx, vz] = [0, 0, null, null];
-            for (let i = 0; i <= N; i++) {
-                const [c, sn] = [wt[2 * i], wt[2 * i + 1]];
-                const Rt = (b.R * (1 - b.ecc)) / (1 - b.ecc * c);
-                const r = (t - b.t0) * Rt;
-                const [x, z] = [b.ex + r * (px * c - pz * sn), b.ez + r * (pz * c + px * sn)];
-                if (vx !== null) s += Math.sqrt((x - vx) * (x - vx) + (z - vz) * (z - vz));
-                [vx, vz] = [x, z];
-                if (s < naechste || x < x0 || x >= x0 + K || z < z0 || z >= z0 + K) continue;
-                const lang = 0.0775 * Math.pow(b.iw * Rt, 0.46);
-                naechste = s + Math.max(B.abstandMinM, B.abstand * lang);
-                const phase = (((x * 12.9898 + z * 78.233) % 6.2832) + 6.2832) % 6.2832;
-                const f = vorrat[fl.length] || (vorrat[fl.length] = {});
-                f.x = x;
-                f.y = b.y + b.gx * (x - xc) + b.gz * (z - zc);
-                f.z = z;
-                f.lang = lang * fla[Math.floor((phase / 6.2832) * P) % P];
-                f.kipp = Math.atan(u / Math.sqrt(9.81 * lang));
-                f.wx = w.x;
-                f.wz = w.z;
-                f.dreh = phase;
-                f.I = b.iw * Rt;
-                fl.push(f);
-            }
-            if (fl.length > n0) qu.push({ b, von: n0, bis: fl.length });
-        }
-        this._brandFlammenZeichnen(fl);
-        this._brandRauch(dt, qu, wind);
-    }
-
-    // DIE FAHNE DES BRANDS (`_brandBild`): `qu` die glühenden Zellen mit ihren Flammen [von, bis) im Bild. Je Zelle und Sekunde
-    // `rauch.jeS` × Glut Ballen an einer ihrer Flammen (der Same ist der Zähler der Fahne, kein Zufall der Bild-Uhr), höchstens
-    // `rauch.max` im Himmel (der älteste weicht dem neuen); jeder steigt, wächst, verdünnt und zieht (`_windAt` am Ballen, zur
-    // Welt-Uhr wie die Front, die ihn trägt).
-    _brandRauch(dt, qu, wind = (x, z) => this._windAt(x, z, this.state.spielZeit)) {
-        const st = this.state;
-        const R = AnazhRealm.BRAND.bild.rauch;
-        const T = st.brandRauch.teilchen;
-        const s = Number.isFinite(dt) && dt > 0 ? Math.min(dt, 0.1) : 0;
-        const fl = this._brandFlammen;
-        // das Budget der Fahne: `max` Ballen über alle Zellen ihres Lebens lang — trägt ein großer Brand mehr Zellen, als es
-        // fasst, steigt je Zelle seltener ein größerer Ballen (bis `kMax`: dieselbe Deckung der Fläche); bis w3v-brand-bild schob
-        // jeder neue den ältesten aus dem Himmel, und die Fahne eines großen Brands stieg nie
-        const anteil = R.max / (Math.max(1, qu.length) * R.lebenS);
-        for (const q of qu) {
-            const voll = R.jeS * q.b.glut;
-            const rate = Math.min(voll, anteil);
-            const k = rate > 0 ? Math.min(R.kMax, Math.sqrt(voll / rate)) : 1;
-            q.b.rauchSchuld = (q.b.rauchSchuld || 0) + rate * s;
-            for (; q.b.rauchSchuld >= 1; q.b.rauchSchuld--) {
-                if (T.length >= R.max) T.shift(); // die ältesten Ballen verwehen, der Fuß der Fahne bleibt dicht
-                const h = Math.imul(++st.brandRauch.n, 2654435761) >>> 0;
-                const f = fl[q.von + (h % (q.bis - q.von))];
-                T.push({
-                    x: f.x,
-                    y: f.y + f.lang,
-                    z: f.z,
-                    y0: f.y + f.lang,
-                    b0: R.b0 * f.lang * k,
-                    s: R.b0 * f.lang * k,
-                    w: Math.min(R.wMax, Math.cbrt((9.81 * f.I * 1000) / (1.2 * 1005 * 300))),
-                    a: R.a0,
-                    alt: 0,
-                    saat: (h >>> 8) / 16777216, // das Muster des Ballens (`_rauchZeichnen`), aus demselben Samen
-                });
-            }
-        }
-        for (let k = T.length - 1; k >= 0; k--) {
-            const p = T[k];
-            const w = wind(p.x, p.z);
-            p.y += p.w * s;
-            p.x += w.x * w.ms * s;
-            p.z += w.z * w.ms * s;
-            p.alt += s;
-            p.s = p.b0 + R.alpha * (p.y - p.y0);
-            p.a = (R.a0 * p.b0) / p.s;
-            if (p.a < R.aKill || p.alt > R.lebenS) T.splice(k, 1);
-        }
-        this._rauchZeichnen(R, T, "brandRauchSatz");
-    }
-
-    // Die Flammen des Bilds (`_brandBild`) als EIN Satz. DIE ZUNGE IST DER DREHKÖRPER des Flammen-Gesetzes (fachwerk `FLAMME`),
-    // gezeichnet als sein Abbild: je Flamme eine Fläche längs ihrer Achse (Länge, Neigung in den Wind), quer zur Sicht gedreht
-    // (`cameraWorldMatrix`; blickt das Auge längs der Achse, steht sie in der Rechten der Kamera), Breite `breite` × Länge × größter
-    // Radius. Je Höhe h liest sie die Tafel der Zunge (`bild.flamme.tafel` Texel): ihren Radius r(h) und ihren TON aus der
-    // TEMPERATUR — von der Wurzel zur Spitze fällt sie von kelvin[0] auf kelvin[1], die Farbe ist ihr Planck-Ort (fachwerk
-    // `lichtFarbe`, dasselbe Gesetz wie das Feuer-Licht), die Strahlung fällt mit (T/T0)⁴ (Stefan–Boltzmann): der Kern gelb-orange,
-    // die Spitze dunkel-rot. DIE ZUNGE IST EIN MEDIUM, das strahlt und schluckt: ihre Dicke im Abstand ξ = |x|/r(h) von der Achse ist
-    // (1 − ξ²)^`rand` (der Rand weich, ohne Kante), × (1 − h)^spitze; Rand und Dichte zerreißen im Rausch-Gesetz, das mit `zug`
-    // Längen je Sekunde steigt (`rausch`: Skala quer, hoch, Hub zur Spitze hin; zwei Lagen des EINEN Rausch-Atlas); die Deckung
-    // 1 − exp(−`dicke` · Dicke), gemischt vormultipliert (Licht × Deckung + Grund × (1 − Deckung)): wie viele Zungen sich auch decken,
-    // keine strahlt heller als ihr Ton. Der Ton steht im Bild bei `ziel` vor der Tonkurve (÷ Belichtung): die Kurve rollt ihn nie ins
-    // Weiß. Gegen Gras und Boden läuft sie über `saumM` aus (`_tiefenSaum`). Bis w12-brand-rauch: der Drehkörper selbst (6 Kanten),
-    // Ton × LEUCHT_FEUER additiv — gedeckte Zungen sättigten weiß, jede Kante stand hart.
-    _brandFlammenZeichnen(fl) {
-        const st = this.state;
-        let S = st.brandFlammenSatz;
-        if ((!S && !fl.length) || typeof THREE === "undefined" || !st.scene) return;
-        const B = AnazhRealm.BRAND.bild;
-        const BF = B.flamme;
-        const [sq, sh, hub] = BF.rausch;
-        const weit = 1 + 1.25 * hub; // so weit weitet das Rauschen den Radius höchstens: die Fläche trägt den Rand ganz
-        if (!S) {
-            const FW = globalThis.__fachwerkCore;
-            const Z = FW.FLAMME.zunge;
-            const rMax = Math.max(...Z.map((p) => p[0]));
-            const [N, [K0, K1]] = [BF.tafel, BF.kelvin];
-            const daten = new Uint8Array(4 * N);
-            for (let i = 0; i < N; i++) {
-                const h = i / (N - 1);
-                let j = 1;
-                while (j < Z.length - 1 && Z[j][1] < h) j++;
-                const [a, b] = [Z[j - 1], Z[j]];
-                const r = a[0] + ((b[0] - a[0]) * (h - a[1])) / Math.max(1e-6, b[1] - a[1]);
-                const K = K0 + (K1 - K0) * h;
-                const [c, w] = [FW.lichtFarbe(K), Math.pow(K / K0, 4)];
-                for (let k = 0; k < 3; k++) daten[4 * i + k] = Math.round(255 * c[k] * w);
-                daten[4 * i + 3] = Math.round((255 * Math.max(0, r)) / rMax);
-            }
-            const tafel = new THREE.DataTexture(daten, N, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
-            tafel.name = "brand-flamme:tafel";
-            tafel.magFilter = tafel.minFilter = THREE.LinearFilter;
-            tafel.generateMipmaps = false;
-            tafel.needsUpdate = true;
-            const geo = new THREE.PlaneGeometry(2, 1);
-            geo.translate(0, 0.5, 0);
-            const achse = new THREE.InstancedBufferAttribute(new Float32Array(4 * B.flammenMax), 4);
-            const phase = new THREE.InstancedBufferAttribute(new Float32Array(B.flammenMax), 1);
-            geo.setAttribute("aAchse", achse);
-            geo.setAttribute("aFlamme", phase);
-            const T = THREE.TSL;
-            const mat = new THREE.MeshBasicNodeMaterial({
-                transparent: true,
-                depthWrite: false,
-                premultipliedAlpha: true,
-            });
-            // die Fläche: längs der Achse (aAchse.xyz = Achse × Länge), quer zu ihr und zur Sicht (halbe Breite aAchse.w × weit)
-            const A = T.attribute("aAchse", "vec4");
-            const quer = T.cross(A.xyz, T.cameraWorldMatrix.mul(T.vec4(0, 0, 1, 0)).xyz);
-            const seite = T.select(
-                quer.length().greaterThan(A.xyz.length().mul(0.05)),
-                quer.normalize(),
-                T.cameraWorldMatrix.mul(T.vec4(1, 0, 0, 0)).xyz
-            );
-            const g = T.positionGeometry;
-            mat.positionNode = A.xyz.mul(g.y).add(seite.mul(g.x.mul(A.w).mul(weit)));
-            const uZeit = T.uniform(0);
-            const [q, ra, ph] = [T.uv(), this._rauschAtlas(), T.attribute("aFlamme", "float")];
-            const [h, x] = [q.y, q.x.mul(2).sub(1).mul(weit)];
-            const z = T.texture(tafel, T.vec2(h, 0.5));
-            const p = T.vec3(x.mul(sq), h.mul(sh).sub(uZeit.mul(BF.zug)), ph.mul(7.9)).add(T.vec3(ph.mul(31.7), ph.mul(17.3), 0)); // prettier-ignore
-            const rausch = ra.raum(p).add(ra.raum(p.mul(2.07)).mul(0.5));
-            const r = z.a.mul(T.float(1).add(rausch.mul(h.add(0.25).mul(hub)))).max(1e-3);
-            const dicke = T.float(1)
-                .sub(x.div(r).pow2())
-                .max(0)
-                .pow(BF.rand)
-                .mul(T.float(1).sub(h).pow(B.spitze))
-                .mul(T.float(1).add(rausch.mul(0.5)).max(0));
-            mat.colorNode = T.vec4(
-                z.rgb.mul(T.float(BF.ziel).div(T.toneMappingExposure)),
-                T.float(1)
-                    .sub(T.exp(dicke.mul(BF.dicke).negate()))
-                    .mul(this._tiefenSaum(BF.saumM))
-            );
-            const mesh = AnazhRealm._instanzMesh(geo, mat, B.flammenMax);
-            mesh.name = "brand-flammen";
-            mesh.userData.inventar = "brand"; // Identitäts-Stempel (gate:asset-inventory: Welt-Substanz)
-            mesh.castShadow = false;
-            mesh.receiveShadow = false;
-            mesh.frustumCulled = false;
-            AnazhRealm._instanzZahl(mesh, 0);
-            st.scene.add(mesh);
-            S = st.brandFlammenSatz = { mesh, achse, phase, uZeit, tafel, rMax };
-        }
-        S.uZeit.value = this._bildZeit || 0;
-        const n = Math.min(fl.length, B.flammenMax);
-        const [M, Ac] = [S.mesh.instanceMatrix.array, S.achse.array];
-        for (let k = 0; k < n; k++) {
-            const f = fl[k];
-            // die Achse der Flamme: hoch, um `kipp` in den Wind geneigt, × Länge; die halbe Breite; der Ort in ihrer Matrix (die
-            // übrigen Glieder bleiben die der Einheit)
-            const [wl, sp, l, o, i] = [Math.hypot(f.wx, f.wz) || 1, Math.sin(f.kipp), f.lang, 16 * k, 4 * k];
-            Ac[i] = (sp * f.wx * l) / wl;
-            Ac[i + 1] = Math.cos(f.kipp) * l;
-            Ac[i + 2] = (sp * f.wz * l) / wl;
-            Ac[i + 3] = B.breite * l * S.rMax;
-            M[o + 12] = f.x;
-            M[o + 13] = f.y;
-            M[o + 14] = f.z;
-            S.phase.array[k] = f.dreh / 6.2832;
-        }
-        AnazhRealm._instanzZahl(S.mesh, n);
-        if (n > 0) S.mesh.instanceMatrix.needsUpdate = S.achse.needsUpdate = S.phase.needsUpdate = true;
     }
 
     // === DIE LAVA (stoffe.K3-2): geschmolzener Stein auf der glut-Achse, der zu Stein erstarrt ===
@@ -3072,18 +2460,24 @@ class AnazhRealm_feld_leben {
     _lavaGiessen(x, z) {
         const y = this._voxelSurfaceY(x, z);
         const wasser = this._nassAt(x, z) ? 1 : 0;
+        this._lavaTaktT = -Infinity; // der nächste Takt malt die neue Decke in den Boden (`_lavaTakt`)
         return this._tatSchreiben("lava", x, z, { y: Math.round(y * 100) / 100, wasser });
     }
 
     // Die Decke der Zelle unter (x, z) — der Zustand ihrer jüngsten Lava (`temperatur` °C, `glut` 0…1, `erstarrt`, `dampf`,
     // `alterS`) oder null ohne Lava.
     _lavaAt(x, z) {
+        const a = this._lavaJuengste(this._lifeCellKey(x, z));
+        return a ? this._lavaZustand(a) : null;
+    }
+    // Die jüngste Lava-Tat der Zelle mit dem Schlüssel `k` (`_lifeCellKey`) oder null — die EINE Wahl der Decke.
+    _lavaJuengste(k) {
         const I = this._tatIndex();
         if (!I.lava.length) return null;
-        const je = I.je.get(this._lifeCellKey(x, z));
+        const je = I.je.get(k);
         let a = null;
         if (je) for (const t of je) if (t.tat === "lava" && !(a && a.h >= t.h)) a = t;
-        return a ? this._lavaZustand(a) : null;
+        return a;
     }
     _lavaZustand(a) {
         const alterS = (this._weltStunde() - a.h) * 3600;
@@ -3199,10 +2593,31 @@ class AnazhRealm_feld_leben {
     // (FORAGE.regrowMs, 300 s Wanduhr), das Fällen schrieb nichts ins Feld (Mess-Wiese, Null-Renderer, main f7dd313c: 8 Bäume
     // und 23 Pflanzen mit tryMouseBreak — Δlebendig 0, kein Stumpf, nach dem Reload 23 von 23 Pflanzen zurück).
 
-    // DIE WELT-STUNDE: Stunden seit dem ersten Tag der Welt — ihr Tag (`worldMeta.tag`, `_uhrSetzen` zählt ihn) und die Uhr.
-    _weltStunde() {
+    // DER TAG DER PROZESSE (w28-lava-nachlauf): die EINE Zeit, an der alles altert, was ein Prozess ist — die Welt-Uhr
+    // (`spielZeit`: sie reist, geht nie zurück, die spätere gilt, `_weltUhrNimm`) im Tag des Gesetzes (`PEGEL_TAG_S` Welt-Uhr je
+    // Tag, nie die Tag-Länge einer Seite), ab dem Null-Punkt der Welt (`worldMeta.tagNull`, `_weltTagEichen`). Leser: die
+    // Welt-Stunde (`_weltStunde`: das Erkalten der Lava, Stempel und Heilung der Taten, der Nachwuchs, die Sukzession), der
+    // Pfad (`_trittJetzt`, sein Tag-Wechsel in `_tickWegeKarte`) und das Alter der Werke (`_werkAlter`, `_werkeAltern`). Bis
+    // hier lasen sie den Tag der SICHT (`worldMeta.tag` + `timeOfDay`, der Sonnenstand des Spielers): ein Zug am Regler der Uhr
+    // ließ die Lava erkalten und die Narbe heilen, Brand, Nässe und Wetter (an der Welt-Uhr) standen — zwei Uhren für eine
+    // Welt, und die eine reiste nie. Die Uhr des Spielers (`_uhrSetzen`) bewegt jetzt keinen Prozess mehr.
+    _weltTag() {
         const st = this.state;
-        return 24 * (((st.worldMeta && st.worldMeta.tag) || 0) + (st.timeOfDay || 0));
+        return (+(st.worldMeta && st.worldMeta.tagNull) || 0) + (st.spielZeit || 0) / AnazhRealm.PEGEL_TAG_S;
+    }
+
+    // DER NULL-PUNKT EINES STANDS VON VOR DEM SCHNITT: seine Stempel (Taten `h`, Lava `h`, Werke `geburt`, Tritte) tragen den
+    // Tag der Sicht — der Null-Punkt legt den Tag der Prozesse EINMAL auf ihn, nach Welt-Uhr und Stunde des Stands
+    // (`_applyLoadedState`); von da an läuft er nur noch an der Welt-Uhr. Eine neue Welt beginnt bei 0.
+    _weltTagEichen() {
+        const [st, wm] = [this.state, this.state.worldMeta];
+        if (!wm || Number.isFinite(wm.tagNull)) return;
+        wm.tagNull = (wm.tag || 0) + (st.timeOfDay || 0) - (st.spielZeit || 0) / AnazhRealm.PEGEL_TAG_S;
+    }
+
+    // DIE WELT-STUNDE: Stunden seit dem ersten Tag der Welt, am Tag der Prozesse (`_weltTag`).
+    _weltStunde() {
+        return 24 * this._weltTag();
     }
 
     // Die Tat schreibt: an ihren Ort, zur Welt-Stunde; `mehr` trägt, was ihre Klasse braucht (die Ernte ihre Kachel und Kennung,
@@ -3365,42 +2780,6 @@ class AnazhRealm_feld_leben {
         geometry.setAttribute("aField", new THREE.BufferAttribute(field, 4));
     }
 
-    // Per-Vertex-Farbe für eine fliegende Insel: Surface-Nets-Geometrie hat nur position+normal (kein
-    // aField/uv) — der Terrain-ShaderMaterial-Pfad rendert damit kaputt, darum PBR + vertexColors.
-    // Farbe folgt der Normale: oben Wiese, seitlich Erd-Hang, unten Fels — die EINE Boden-Palette (`BODEN_FARBE`,
-    // Studio PORTAL_GROUND nach dem Farb-Gesetz), wie der Boden darunter; bis 06.10. trug die Insel eigene Literale.
-    _attachIslandColors(geom) {
-        const pos = geom && geom.getAttribute ? geom.getAttribute("position") : null;
-        const norm = geom && geom.getAttribute ? geom.getAttribute("normal") : null;
-        if (!pos || !norm) return;
-        const n = pos.count;
-        const colors = new Float32Array(n * 3);
-        const P = AnazhRealm.BODEN_FARBE;
-        const grass = P.mead;
-        const earth = P.dirt;
-        const rock = P.rock;
-        for (let i = 0; i < n; i++) {
-            const ny = norm.getY(i);
-            let c;
-            if (ny > 0.55) {
-                c = grass;
-            } else if (ny < -0.1) {
-                c = rock;
-            } else {
-                const t = Math.max(0, Math.min(1, (0.55 - ny) / 0.65));
-                c = [
-                    grass[0] + (earth[0] - grass[0]) * t,
-                    grass[1] + (earth[1] - grass[1]) * t,
-                    grass[2] + (earth[2] - grass[2]) * t,
-                ];
-            }
-            colors[i * 3] = c[0];
-            colors[i * 3 + 1] = c[1];
-            colors[i * 3 + 2] = c[2];
-        }
-        geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-    }
-
     // STEHT DAS WERK IM WASSER? (Schau-2 wasser-wahrheit, Gegenprüfung) — das Urteil für ein Werk mit Grundriss-Gesetz
     // (`_grundrissVon` mit der Art: Haus, Tempel, Ausstattung) am Ort `position` mit der Drehung `opts.rotationY`: sein ganzes Fundament
     // samt dem Vorplatz der Haustür auf dem Land (`_fundamentLand`)? false für jedes Werk ohne Grundriss-Gesetz (Natur
@@ -3454,7 +2833,7 @@ class AnazhRealm_feld_leben {
     }
 
     // DAS ERGEBNIS EINES SETZ-OPS (Schau-2 wasser-wahrheit, Gegenprüfung Runde 3): jeder Op, der etwas in die Welt setzt
-    // (Kreatur, Baum, Studio-Werk, Insel, UFO, Dorf, Tempel, Wasserfall, Bauplan, Fraktal), legt EINMAL ins Log, was tatsächlich
+    // (Kreatur, Baum, Studio-Werk, Dorf, Tempel, Wasserfall, Bauplan, Fraktal), legt EINMAL ins Log, was tatsächlich
     // steht — gewollt, gesetzt, je gefallenem Wurf sein Grund (`SETZ_GRUND`: die Wand, das Budget, die Obergrenze, das Buch,
     // die Wurzel nennt ihren über `opts.absage`) —; ein Bau, der folgt (das Dorf), trägt seinen Satz (`folgt`) und meldet sein
     // Ergebnis selbst, wenn er steht. Der Satz des Spielers (`_ergebnisSatz`) liest nur das.
@@ -3484,7 +2863,7 @@ class AnazhRealm_feld_leben {
         const ops = new Map();
         for (const e of log || []) {
             if (!e || e.event !== "ergebnis") continue;
-            const key = e.op + "|" + (e.art || "");
+            const key = e.op + "|" + JSON.stringify(e.art || ""); // die Art: ein Wort, eine Zeile oder `{ kopf }`
             let a = ops.get(key);
             if (!a) ops.set(key, (a = { art: e.art, verb: e.verb, gewollt: 0, gesetzt: 0, gruende: {}, folgt: null }));
             a.gewollt += e.gewollt || 0;
@@ -3548,7 +2927,8 @@ class AnazhRealm_feld_leben {
     _werkLabel(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         const rec = !bp && this._foundry && this._foundry.recipes ? this._foundry.recipes[name] : null;
-        return AnazhRealm._namensKopf((bp && bp.label) || (rec && rec.lab) || name);
+        // ein Etikett bleibt Schlüssel (`{ kopf }`, wechselt mit der Sprache), ein Rezept trägt den Namen seines Studios (Daten)
+        return bp ? AnazhRealm._namensZeile(bp, name) : AnazhRealm._namensKopf((rec && rec.lab) || name);
     }
 
     // Das Grundriss-Gesetz einer Art: { preset, pre (die Zeile des Gesetzbuchs der Architektur), rec (die des Buchs) } für ein
@@ -3676,7 +3056,6 @@ AnazhRealm.SETZ_VERB = Object.freeze({
     gepraegt: "steht",
     gewachsen: "waechst",
     erschienen: "erscheint",
-    gerufen: "erscheint",
 });
 // DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·
 // Hain/Wald/Gruppe · am Wasser | hier/vor mir.
@@ -3732,94 +3111,6 @@ AnazhRealm.TAT_LEER = Object.freeze(new Set()); // die Kachel ohne Ernte (`_geer
 // über ihrem Tod in der Karte (gelesen ist sie schon tot); FELD_LEER die fehlende Zelle.
 AnazhRealm.FELD_TOD_EIMER_S = 8;
 AnazhRealm.FELD_LEER = Object.freeze({});
-
-// BRAND — das Feuer auf dem Feld (stoffe.K2 · feld.K3#2, `_tickBrand`): der Takt zieht je `schrittS` Spielzeit EINEN Schritt; eine
-// Zelle glüht in `aufS` auf, unter `minStoff` lebendig trägt sie kein Bett. Das Bett selbst ist die Zeile seines Stoffs (die
-// Spalte `brenn` der Stoff-Tafel, `_brandTempo`); hier steht nur, was kein Stoff trägt: die Feuchte des toten Fein-Brennstoffs
-// (`feuchte`, `_brandFeuchte`: luft-trocken an einem klaren Tag 6 %, über nassem Boden bis zur Faser-Sättigung 35 %, Rothermel
-// 1972, Anderson 1982; der Regen als freies Wasser bis zu dem, was durchnässte Streu hält, 250 %, Matthews 2006 — im Landregen
-// erstickt das Gras nach 6 s, das Laub nach 20 s, im Sturm nach 4 und 12 s), der Mineral-Anteil der Partikel (gesamt, kieselfrei; Rothermel 1972, gleich für jedes Modell), das größte L/B der
-// Ellipse (Anderson 1983) und die acht Nachbarn der Front. Glut leuchtet als Feuer (LICHT_GESETZ.feuer, Masse `licht` × Glut)
-// und hebt glut in `auraAt`.
-AnazhRealm.BRAND = Object.freeze({
-    schrittS: 1,
-    aufS: 4,
-    minStoff: 0.15,
-    licht: 4,
-    budgetMs: 0.25, // so viel Arbeit eines Schritts geht je Bild (`_brandArbeit`) …
-    mindestJeBild: 8, // … und mindestens so viele Aschen und Zündungen (ein kleiner Brand geht seinen Schritt in einem Bild)
-    blockZellen: 4, // die Leser fragen die glühenden Zellen je Block von 4 × 4 Zellen (64 m, `_brandGlutUm`)
-    hoerM: 256, // so weit hört das Ohr den Brand knistern (`_glutAmOhr`)
-    // das Bild (`_brandBild`): bis `weiteM` um das Auge, die Front in `winkel` Schritten abgetastet (jenseits von `nahM` je
-    // Abstand gröber, nie unter `winkelMin`), je Flamme ein Abstand von
-    // `abstand` × ihrer Länge (mindestens `abstandMinM`), höchstens `flammenMax` je Bild aus höchstens `zellenMax` Zellen, die
-    // nächsten zuerst (ein Brand von 2 000 Zellen kostet das Bild, nie die Welt); das Flackern in `flackerPhasen`; `flammenWind` der Wind auf Flammenhöhe je Wind
-    // in 10 m (Albini–Baughman 1979, offenes Gras); die Zunge `breite` × Länge breit, ihre Deckung
-    // fällt zur Spitze mit (1 − h)^spitze; ihr Bild `flamme` (`_brandFlammenZeichnen`): die Temperatur `kelvin` [Wurzel, Spitze], `ziel` ihr Ton vor der
-    // Tonkurve, die Dicke `dicke`, ihr Fall zum Rand (1 − ξ²)^`rand`, die Tafel der Zunge in `tafel` Texeln, das Rausch-Gesetz `rausch` [Skala quer, hoch, Hub], steigend mit `zug` Längen je
-    // Sekunde, der Saum gegen die Tiefe `saumM`. Der Rauch: `jeS` Ballen je Zelle und Sekunde bei voller Glut, höchstens `max` (ein
-    // großer Brand je Zelle seltener, bis `kMax` × größer), die Ballen beginnen mit `b0` × Flammen-Länge, wachsen um `alpha` je Meter Steigen, decken anfangs `a0` und fallen unter
-    // `aKill` oder nach `lebenS`; Steigen höchstens `wMax` m/s; der Satz (Ballen, Stoff `color`, Radius je Einheit `size`) zeichnet das
-    // EINE Rauch-Bild der Welt (`_rauchZeichnen`, RAUCH_BILD)
-    bild: Object.freeze({
-        weiteM: 160,
-        winkel: 96,
-        winkelMin: 4,
-        nahM: 12,
-        abstand: 0.45,
-        abstandMinM: 0.5,
-        flammenMax: 384,
-        zellenMax: 32,
-        flackerPhasen: 8,
-        flammenWind: 0.4,
-        breite: 0.42,
-        spitze: 0.8,
-        flamme: Object.freeze({
-            kelvin: Object.freeze([3000, 1700]),
-            ziel: 1.6,
-            dicke: 6,
-            rand: 1.5,
-            rausch: Object.freeze([1.6, 2.5, 0.8]),
-            tafel: 32,
-            zug: 3,
-            saumM: 0.15,
-        }),
-        rauch: Object.freeze({
-            jeS: 12,
-            max: 600,
-            b0: 1.2,
-            alpha: 0.16,
-            a0: 0.5,
-            aKill: 0.08,
-            lebenS: 25,
-            kMax: 3,
-            wMax: 7,
-            color: 0x8d8881,
-            size: 1,
-            maxTeilchen: 600,
-            name: "brand-rauch",
-            inventar: "brand",
-        }),
-    }),
-    // die Grenze der Narbe (`_brandNarbe`): das Rauschen je Oktave (Wellenlänge m, Hub im Anteil der Zellen am Rand — der Hub
-    // verschiebt die Kante um bis zu 4 m, eine halbe Zelle) und die Breite, über die sie fällt (0,18 im Anteil: ~2 m angesengter Saum)
-    narbe: Object.freeze({ lambda: Object.freeze([14, 5]), amp: Object.freeze([0.7, 0.25]), band: 0.18 }),
-    feuchte: Object.freeze({ trocken: 0.06, faser: 0.35, nass: 2.5 }),
-    mineral: Object.freeze({ gesamt: 0.0555, frei: 0.01 }),
-    lbMax: 8,
-    nachbarn: Object.freeze(
-        [
-            [1, 0],
-            [-1, 0],
-            [0, 1],
-            [0, -1],
-            [1, 1],
-            [1, -1],
-            [-1, 1],
-            [-1, -1],
-        ].map(Object.freeze)
-    ),
-});
 
 // DER STAHL DER ESSE (stoffe.K3-2, `_tickEsse`): das Feuer der Esse (Holzkohle unter dem Blasebalg, gelbe Glut 1 300 °C), die
 // Klinge (`dickeM`, τ = ρ·c·d/2 / α — Stahl im Feuer 32 s, an der Luft 160 s: ab 16 s glüht sie, 2,3 min nach dem Feuer nicht

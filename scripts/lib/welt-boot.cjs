@@ -21,6 +21,9 @@ const os = require("os");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile } = require("./software-gpu.cjs");
 // DIE URTEILS-WACHE (Lehre 6, w28-probe-urteil): jede Linse dieses Boots — eine gedruckte ROTE Zeile (❌ · ⛔ · ROT) bei Exit 0 wird Exit 1
 require("./urteil-zeile.cjs").wache();
+// DAS MASS AM LANDE-TOR (w28-tor-bruch): eine Schwelle auf ZEIT oder AUSSEHEN meldet dort statt zu sperren; jeder Selbsttest unten
+// (taeterFaelle, bruchFaelle) urteilt sie voll — die Mutante MUSS reißen
+const { mass, alsSelbsttest } = require("./urteil-zeile.cjs");
 const stammLib = require("./stamm.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
 
@@ -184,6 +187,7 @@ async function bedienung2(vor) {
             return [liste, el.textContent, el];
         });
         r._menueZeigen(null);
+        __handTakt(); // die Leiste, wie ein Takt sie zeigt — nie der Stand des letzten Takts einer anderen Probe (Modus, Werte)
         const schrift = { hud: r._schriftZensus() };
         const blind = gepflanzt
             .filter(([liste, text, el]) => (el.remove(), !schrift.hud[liste].some((z) => z.text === text)))
@@ -370,8 +374,14 @@ function deckel(name, max, offen) {
         const jetzt = JSON.stringify(o);
         still = auf && jetzt === vor ? still + 1 : 0;
         vor = jetzt;
-        if (still > 3600)
-            throw new Error(`DIE WELT HÄNGT: ${name} nach ${n} Takten — offen ${jetzt} ohne Bau-Ereignis · ${r._weltOffenAkte()}`);
+        if (still > 3600) {
+            // DER HALTER VORN (Fund 14.11., gate:kamera-leib:echt K6): steht das erste Weltbild nicht, wartet alles außer Blick auf
+            // es (Würfe, die Kacheln der Nah-Wiese und der Nah-Streu, die Fenster der Tore) — sein Satz steht VOR dem Zensus des
+            // Offenen. Die Akte nannte ihn erst hinter 600 Zeichen, die Probe-Post reicht je Zeile 600 („… · Wesen de").
+            const fehlt = r._weltbildFehlt && !(r.state && r.state._weltbildDa) ? r._weltbildFehlt() : null;
+            const halter = fehlt ? `das erste Weltbild fehlt: ${fehlt.join(" · ") || "keine Lücke im Blick"} · ` : "";
+            throw new Error(`DIE WELT HÄNGT: ${name} nach ${n} Takten — ${halter}offen ${jetzt} ohne Bau-Ereignis · ${r._weltOffenAkte()}`);
+        }
         if ((offen === false || (!auf && !(offen && offen()))) && ++k > (max || 120))
             throw new Error(
                 `DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}${(r?._weltbildFehlt?.(true) || []).map((l) => ` · dem Weltbild fehlt: ${l}`).join("")}`
@@ -396,17 +406,19 @@ async function weltDa(bed) {
 }
 // DIE FARBEN EINER GESTALT (`window.__farben(g)`): je Mesh die erste Vertex-Farbe auf drei Stellen; `window.__lin(hex)` schreibt
 // eine Farbe der Tafel (sRGB-Hex) linear in derselben Form. Bis w6-spielgang-decke trugen p2p-gestalt und studio-uebergabe je beide.
+// DIE FORM IST DIE DER PIPE (`_eckForm`, w28-preis-ort): die Farbe einer Gestalt steht in half — beide Seiten lesen durch half
+// (`Math.f16round`, auf half-Werten die Identität), sonst stand die Haut porzellan als 0,792 gegen die Tafel 0,791 (R 0,79150).
 function farben(g) {
     const set = new Set();
     g?.traverse((o) => {
         const c = o.geometry?.attributes?.color?.array;
-        if (c?.length >= 3) set.add([c[0], c[1], c[2]].map((v) => v.toFixed(3)).join(","));
+        if (c?.length >= 3) set.add([c[0], c[1], c[2]].map((v) => Math.f16round(v).toFixed(3)).join(","));
     });
     return set;
 }
 const lin = (hx) =>
     [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]
-        .map((c) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4).toFixed(3))
+        .map((c) => Math.f16round((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4).toFixed(3))
         .join(",");
 // DER EINE ABDRUCK einer Gestalt (`window.__abdruck(x, alle)`): FNV-1a über die Puffer einer Gruppe (traverse), eines Flats (je
 // Geometrie seiner Blätter einmal, ohne Schatten-Zwilling) oder einer Geometrie — die Lage, mit `alle` jedes Attribut und der
@@ -517,7 +529,18 @@ const rahmen = (b) =>
         hx: (b.maxX - b.minX) / 2,
         hz: (b.maxZ - b.minZ) / 2,
     };
-const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__pufferLesen = ${pufferLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__eichMs = ${eichMs}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+// DER ÜBERGANG FÄLLT (`window.__uebergangFaellt(r)`, in jeder Seite, `WARTEN_SEITE`): jede Probe, die das Wetter ohne Übergang will —
+// die Bühne (`__wetterSetzen` ohne Zug, ausgabe-aufnahme.cjs), die Wasser-Linse, jede Linse mit eigenem Wort oder eigener Leinwand des
+// Übergangs. Das Wort, das gilt (`state.weather`), steht ab jetzt im Bild UND auf dem Weg des Regens — der Zweig des Spiels für ein
+// Wort ohne Übergang (`requestWeatherTransition` from === target: Übergang null, `_regenWeg(w, w, jetzt, 0)`); vorher fällt der
+// laufende Übergang, sonst nähme das Spiel denselben Zielwert als „schon unterwegs“ und ließe die Rampe liegen. Bis w28-wetter-ohne-
+// rampe nullte jede Probe nur `weatherTransition` (13 Stellen): die Stempel, die `_setWeather` schon als Rampe von 45 s ± Gemüt gelegt
+// hatte, blieben liegen — 10 s Niesel stempelten 23,6–24,4 s (planet.wasser.kreislauf S1: Bilanz 2,087 / 2,332 statt ≈ 1).
+function uebergangFaellt(r) {
+    r.state.weatherTransition = null;
+    r.requestWeatherTransition(r.state.weather, 0, r.state.weather);
+}
+const WARTEN_SEITE = `${weltR} window.__uebergangFaellt = ${uebergangFaellt}; window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__pufferLesen = ${pufferLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__eichMs = ${eichMs}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -1763,7 +1786,7 @@ function taeterFaelle(faelle, urteil, { fehler = [], klon, gruen } = {}) {
             else if (tat[0].endsWith("=")) o[p.at(-1)] = tat[1];
             else Object.assign(o[p.at(-1)], tat[1]);
         } else if (tat) tat(z);
-        const v = urteil(z);
+        const v = alsSelbsttest(() => urteil(z));
         const fehlt =
             muss == null ? v.slice(0, v.length && 1) : [].concat(muss).filter((re) => !v.some((s) => re.test(s)));
         for (const re of fehlt) fehler.push(`${name}: die Wand nennt den Täter nicht (${re})`);
@@ -1794,9 +1817,10 @@ function selbstTafel(tests = []) {
 // w26-winter-fichte-2 dieselbe Schleife in diag-ankunft und diag-v1-pfad
 function bruchFaelle(check, faelle) {
     for (const [kurz, urteil, gesund, brueche] of faelle) {
-        check(`Selbst-Test ${kurz}: gesund == 0 Täter`, !urteil(gesund).length, urteil(gesund).join(" · "));
+        const g = alsSelbsttest(() => urteil(gesund));
+        check(`Selbst-Test ${kurz}: gesund == 0 Täter`, !g.length, g.join(" · "));
         for (const [name, bruch, soll] of brueche) {
-            const v = urteil(Object.assign({}, gesund, bruch));
+            const v = alsSelbsttest(() => urteil(Object.assign({}, gesund, bruch)));
             check(`Selbst-Test ${kurz}: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
     }
@@ -1816,6 +1840,13 @@ function selbsttestEnde(fehler, satz = "jeder injizierte Täter fällt rot und w
     console.log("\n✅ SELBSTTEST GRÜN — " + satz);
 }
 
+// DAS FEHLER-WORT eines Kinds, das vor seiner Bereitschaft endete: seine letzte ABSTURZ-Zeile (`hauptLauf`), sonst das erste
+// Fehler-Wort (EADDRINUSE, „Error: …“), sonst sein Ende — der EINE Leser für den Dienst (`startProc`) und die Werkbank (`werkbankTor`)
+const fehlerWort = (text) => {
+    const t = String(text);
+    const wort = (t.match(/[^\n]*ABSTURZ[^\n]*/g) || []).pop() || (t.match(/\b(E[A-Z]{4,}|Error: [^\n]+)/) || [])[0];
+    return (wort || t.slice(-200)).trim().slice(0, 300);
+};
 // DER DIENST ALS KIND (save-server, signaling-server): `script` (relativ zur Wurzel, `vor` davor, in `cwd`) mit `env` — bereit,
 // sobald seine Ausgabe `bereit` trifft; endet er vorher, ROT mit seinem Fehler-Wort (EADDRINUSE). Das Urteil fällt am Ereignis,
 // nie an einer Frist (K-WANDUHR).
@@ -1828,14 +1859,8 @@ function startProc(script, bereit, env = {}, { vor = [], cwd = ROOT } = {}) {
         });
         let fehler = "";
         proc.stderr.on("data", (c) => (fehler = (fehler + c).slice(-2000)));
-        const ende = (code) => {
-            const wort = fehler.match(/\b(E[A-Z]{4,}|Error: [^\n]+)/);
-            reject(
-                new Error(
-                    `${script} endete vor seiner Bereitschaft (Code ${code}): ${wort ? wort[0] : fehler.trim().slice(-200)}`
-                )
-            );
-        };
+        const ende = (code) =>
+            reject(new Error(`${script} endete vor seiner Bereitschaft (Code ${code}): ${fehlerWort(fehler)}`));
         proc.stdout.on("data", (chunk) => bereit.test(chunk.toString()) && (proc.off("exit", ende), resolve(proc)));
         proc.on("exit", ende);
         proc.on("error", reject);
@@ -1951,7 +1976,9 @@ function werkbankTor(port, zusatz = []) {
     };
     tor.bereit = new Promise((ok, nein) => {
         for (const s of [kind.stdout, kind.stderr]) s.on("data", (d) => /WERKBANK bereit/.test((tor.log += d)) && ok());
-        kind.on("exit", (c) => nein(new Error(`die Werkbank endete vor dem Start (Exit ${c})`)));
+        // endet sie vorher, mit ihrem Fehler-Wort (w28-stamm-krone: die GPU-Probe 21783ddb las nur „Exit 1" nach 13 s — der Grund
+        // stand in der verschluckten Ausgabe des Kinds)
+        kind.on("exit", (c) => nein(new Error(`die Werkbank endete vor dem Start (Exit ${c}): ${fehlerWort(tor.log)}`)));
     });
     tor.stop = () => (tor.rufe(["stop"], 30000), kind.kill());
     return tor;
@@ -2150,6 +2177,8 @@ function frageJa() {
 }
 
 module.exports = {
+    mass,
+    alsSelbsttest,
     eichMs,
     OFEN_KERNE,
     ENGINE_MODUL,
@@ -2608,6 +2637,13 @@ async function selbsttest() {
         (x) => x.message
     );
     const startMs = Date.now() - t1;
+    // DAS FEHLER-WORT DER WERKBANK (w28-stamm-krone): ihr Log vor dem Start trägt Chromes eigene ERROR-Zeilen vor ihrer ABSTURZ-Zeile;
+    // das Tor (`werkbankTor`) nennt die ABSTURZ-Zeile — das erste Fehler-Wort allein hieße „ERROR" (gemessen lokal: Seiten-Server auf
+    // PORT − 1 belegt → „Exit 1: Error: listen EADDRINUSE …“, in der CPU-Gruppe „Exit 2: … CI_KLASSE=cpu …“). Die Werkbank startet
+    // hier nicht: sie zeichnet, ihre Klasse ist die Karte (gate:ci-deckung (K))
+    const wbLog = "[linse-gpu] nvidia/pascal\n[1:2:ERROR:google_apis/gcm/registration_request.cc:291] PHONE_REGISTRATION_ERROR\n" +
+        "werkbank.cjs ABSTURZ: Error: listen EADDRINUSE: address already in use 127.0.0.1:4791\n"; // prettier-ignore
+    const wbWort = fehlerWort(wbLog);
     besetzt.close();
     const urteile = [
         [
@@ -2661,7 +2697,8 @@ async function selbsttest() {
             `Bau TOT (nichts offen): ${bau ? bau.tot : "kein Befund"}`,
         ],
         [
-            !!bau && /^DIE WELT HÄNGT: haenger nach 3601 Takten — offen .*"karten":1/.test(bau.haengt),
+            // der Halter (das fehlende erste Weltbild) steht VOR dem Zensus des Offenen
+            !!bau && /^DIE WELT HÄNGT: haenger nach 3601 Takten — das erste Weltbild fehlt: das Licht des Orts wird gemessen · offen .*"karten":1/.test(bau.haengt),
             `Bau HÄNGT: ${bau ? bau.haengt : "kein Befund"}`,
         ],
         [
@@ -2677,6 +2714,7 @@ async function selbsttest() {
             `Weiche: ${weiche[0]} · nach einem Draw ${weiche[1] || "trägt"}`,
         ],
         [/EADDRINUSE/.test(start) && startMs < 5000, `Start auf belegtem Port: ${start} (${startMs} ms)`],
+        [/^werkbank\.cjs ABSTURZ: Error: listen EADDRINUSE/.test(wbWort), `Fehler-Wort der Werkbank (die ABSTURZ-Zeile, nicht Chromes ERROR davor): ${wbWort}`],
         [
             gb.posts === 1 && gb.leer && gb.laut && /^GEBROCHEN: mensch L0: LEIB-HAUT/.test(gb.grund || ""),
             `Guss wirft (Mutante): ${gb.posts} Auftrag im Faden (Soll 1, keine Neubestellung), Welt: ${gb.grund}, laut ${gb.laut}`,

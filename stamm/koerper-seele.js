@@ -141,9 +141,10 @@ class AnazhRealm_koerper_seele {
         return this.computeCompoundTags({ parts: soulDef.bodyParts });
     }
 
-    // addPlayerBoost({source, tagDelta, durationSeconds, label}). Sources: "emotion:<axis>" +
+    // addPlayerBoost({source, tagDelta, durationSeconds}). Sources: "emotion:<axis>" +
     // "world:resonance" (auto via tickPlayerBoosts) · "consume:<name>" (DSL-Op `apply_boost`).
-    // Gleiche source verlängert expiresAt statt eines zweiten Eintrags.
+    // Gleiche source verlängert expiresAt statt eines zweiten Eintrags. Der Boost trägt KEINEN Text: sein Name ist eine
+    // Funktion der Quelle (`_boostZeile`), gelesen am Schirm in der Sprache von jetzt.
     addPlayerBoost(spec) {
         if (!spec || typeof spec !== "object") return false;
         const source = String(spec.source || "").slice(0, 60);
@@ -156,20 +157,47 @@ class AnazhRealm_koerper_seele {
         }
         if (Object.keys(tagDelta).length === 0) return false;
         const duration = Math.max(0.5, Math.min(600, Number(spec.durationSeconds) || 30));
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit; // ein Boost läuft auf der Welt-Uhr ab (er reist im Stand)
         const expiresAt = now + duration;
-        const label = String(spec.label || source).slice(0, 80);
         if (!Array.isArray(this.state.player.boosts)) this.state.player.boosts = [];
         const existing = this.state.player.boosts.find((b) => b.source === source);
         if (existing) {
             existing.expiresAt = expiresAt;
             existing.tagDelta = tagDelta;
-            existing.label = label;
         } else {
-            this.state.player.boosts.push({ source, tagDelta, expiresAt, label });
+            this.state.player.boosts.push({ source, tagDelta, expiresAt });
         }
         this.recomputePlayerStats();
         return true;
+    }
+
+    // DER NAME EINES BOOSTS (spielgang.K5) ist eine Funktion seiner Quelle, nie ein gespeicherter Satz: `emotion:<achse>` liest
+    // das Etikett der Achse, `world:resonance` seine Zeile, `consume:<name>` den Namen des Tranks (das Wort der DSL als Daten,
+    // sonst das Etikett seines Bauplans). Zurück kommt ein Wert einer Zeile — `[schlüssel, werte]` oder Daten —, den jeder Leser
+    // in seiner Sprache liest (der Chip `_boostName`, die Stimme als Wert, die Tür zum Modell in der Quell-Sprache). So wechselt
+    // der Chip mit der Sprache, ein Stand trägt nur die Quelle, und ein alter Stand mit Text zeigt den Namen aus der Quelle.
+    _boostZeile(b) {
+        const source = String((b && b.source) || "");
+        const i = source.indexOf(":");
+        const [art, rest] = [source.slice(0, i), source.slice(i + 1)];
+        if (art === "emotion" && AnazhRealm.BOOST_EMOTION_TAG[rest]) return AnazhRealm.BOOST_EMOTION_TAG[rest].etikett;
+        if (source === "world:resonance") return ["seele.boost.resonanz"];
+        // eine Quelle ohne Gesetz ihres Namens (ein Prüf-Boost `test:…`) heißt wie sie selbst — ihre Kennung ist Daten
+        if (art !== "consume") return source;
+        // dieselbe Reihe wie `activateConsumable`: der Bauplan mit Rolle Trank vor der Tafel der DSL
+        const bp = this.state.blueprints && this.state.blueprints[rest];
+        const c = this.state.consumables && this.state.consumables[rest];
+        if (bp && (bp.role === "consumable" || !c)) {
+            const wort = bp.consumableMeta && bp.consumableMeta.label;
+            return typeof wort === "string" && wort ? wort : Array.isArray(bp.etikett) ? bp.etikett : bp.label || rest;
+        }
+        return (c && c.label) || rest;
+    }
+
+    // der Name eines Boosts am Schirm, in der Sprache von jetzt (Daten isoliert)
+    _boostName(b) {
+        const z = this._boostZeile(b);
+        return Array.isArray(z) ? this._t(z[0], z[1]) : AnazhRealm._datum(z);
     }
 
     // 1×/s aus dem Game-Loop: (1) Abgelaufene entfernen, (2) Emotions-Achsen >0.7 → Tag-Delta,
@@ -178,7 +206,7 @@ class AnazhRealm_koerper_seele {
         if (!this.state.player) return;
         if (currentTime - (this.state.player.boostLastTick || -Infinity) < 1.0) return;
         this.state.player.boostLastTick = currentTime;
-        const now = performance.now() / 1000;
+        const now = currentTime;
         let changed = false;
         if (!Array.isArray(this.state.player.boosts)) this.state.player.boosts = [];
 
@@ -206,7 +234,6 @@ class AnazhRealm_koerper_seele {
                     source,
                     tagDelta: { [def.tag]: def.delta },
                     expiresAt: now + AnazhRealm.BOOST_EMOTION_DURATION,
-                    label: def.label,
                 });
                 changed = true;
             } else if (!active && lastTrig[source] === undefined) {
@@ -257,7 +284,6 @@ class AnazhRealm_koerper_seele {
                     source: "world:resonance",
                     tagDelta: { resoniert: AnazhRealm.BOOST_RESONANCE_DELTA },
                     expiresAt: now + 3,
-                    label: AnazhRealm.BOOST_RESONANCE_LABEL,
                 });
                 changed = true;
             }
@@ -637,11 +663,12 @@ class AnazhRealm_koerper_seele {
         eq.held = bpName;
         this.recomputePlayerStats();
         // die Hand liest die Hand-Mitte der feinen Stufe (`handMitte`, nur lod 0 gegossen): vor dem Bild wünscht sie die feine
-        // (`_leibWunsch`, B5), danach trägt der Leib sie aus dem Leerlauf (`_leibFeinTausch` im Vorbau, w20-leib-takt) — nur ein
-        // Griff vor diesem Tausch tauscht selbst (er trägt die Hand dabei neu, `applyPlayerSoul`), jeder danach baut nichts
+        // (`_leibWunsch`, B5), danach trägt der Leib sie aus dem Leerlauf (`_leibFeinTausch` im Vorbau, w20-leib-takt) — der
+        // Griff tauscht nie (die Faust liest die Hand-Mitte der feinen Vorlage, `_leibHandMitte`); ist die feine nach dem Bild noch
+        // im Werk, hebt der Griff ihren Auftrag (`_leibFuerHand`), ihre Ankunft trägt die Hand neu
         this._leibWunsch();
-        const z = this._spielerVorlagen;
-        if (!(this.state._weltbildDa && z && z.feinDa === true && this._leibFeinTausch())) this._refreshHeldMesh(); // S9
+        this._leibFuerHand();
+        this._refreshHeldMesh(); // S9
         this._refreshIchIfOpen(); // M5 — Equip-Feedback ist instant
         return { ok: true, equipped: bpName };
     }
@@ -738,18 +765,31 @@ class AnazhRealm_koerper_seele {
             // UND ist die Foundry-Gruppe warm, tragen Wrapper um die GETEILTE Studio-Geometrie die Optik; die
             // Parts bleiben unsichtbare Substanz-Wahrheit (Tags · Ω-PHYSIS · wield). "pending" → der Part-Bau
             // trägt sichtbar als Interim (die Hand ist nie leer); null → Part-Pfad byte-alt.
-            const studio = this._heldFoundryGroup(bpName);
+            // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
+            // benennt, sonst die Körper-Wurzel (Custom-/Flug-Seelen).
+            const anchor =
+                (parts && (side === "left" ? parts.leftArm || parts.leftWing : parts.rightArm || parts.rightWing)) ||
+                pm;
+            const rig = pm.userData && pm.userData.rig;
+            const imGelenk =
+                !!rig && ((rig.armR && anchor === rig.armR.wrist) || (rig.armL && anchor === rig.armL.wrist));
+            // DIE FAUST LIEST DIE HAND-MITTE DES LEIBS (`_leibHandMitte`, physik.K4 · same.physik.verformung): an der Grobstufe (B5,
+            // der Ego-Boot) die der feinen Vorlage; ist die feine noch im Werk, trägt der Part-Bau wie bei kaltem Buch, bis ihre
+            // Ankunft die Hand neu trägt (`_leibFuerHand`). Bis hier fiel jede Studio-Gestalt dort aus der Hand (die Faust ohne
+            // Hand-Mitte: null), bis der Leerlauf tauschte.
+            const handMitte = imGelenk ? this._leibHandMitte(rig) : null;
+            const grobOhneMitte =
+                imGelenk &&
+                !(handMitte && handMitte[anchor.name]) &&
+                !!pm.userData._gelenk &&
+                pm.userData._gelenk.nahStufe === 1;
+            const studio = grobOhneMitte ? "pending" : this._heldFoundryGroup(bpName);
             const isStudio = !!(studio && studio !== "pending");
             const mesh = isStudio ? studio : this._buildFromBlueprint({ name: `held_${bpName}`, parts: bp.parts });
             // das Gerät in der Hand ist keine Haut: die Ich-Regel (_applyEgoSicht) lässt es sichtbar
             mesh.userData._gehalten = true;
             // Der Erst-Zeig-Stall (die V18.367-Klasse) fällt an der Erst-Zeichnung (`_configureRenderer`): die Hand
             // zeichnet ab dem Frame, in dem ihr Stoff gebaut und ihre Pipeline steht.
-            // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
-            // benennt, sonst die Körper-Wurzel (Custom-/Flug-Seelen).
-            const anchor =
-                (parts && (side === "left" ? parts.leftArm || parts.leftWing : parts.rightArm || parts.rightWing)) ||
-                pm;
             // DIE WAHRE GRÖSSE (W5 Gegenstände): das Gerät erbt die Welt-Skala seines Ankers — der Studio-Mensch steht
             // als Baum in Studio-Einheiten unter einer 0,283-Gruppe, sein Handgelenk misst 0,26–0,28 Welt je Einheit.
             // Bis W5 skalierte die Hand im Anker-Raum: das Langschwert (Gesetzbuch 1,228 m) schrumpfte auf 0,62 Einheiten
@@ -779,16 +819,12 @@ class AnazhRealm_koerper_seele {
             // Spaten) in der Schwung-Ebene nach unten; der Bogen liegt mit seiner Länge im Griff. Die Gelenk-Achsen des
             // Handgelenks: −y zu den Fingern, +z nach vorn (Daumenseite), x quer. Vorher stand die Klinge mit 0,5 rad
             // Kipp den Unterarm hinauf (ein Handgelenk, um 160° überstreckt) — Messname: Haltung, Hand-Griff-Versatz.
-            const rig = pm.userData && pm.userData.rig;
-            const faust =
-                isStudio &&
-                !!rig &&
-                ((rig.armR && anchor === rig.armR.wrist) || (rig.armL && anchor === rig.armL.wrist));
+            const faust = isStudio && imGelenk;
             if (faust) {
                 // DIE HAND-MITTE kommt aus der Hand selbst (Ofen-Beipack: der Schwerpunkt der Hand-Haut im Hand-Raum) —
                 // vorher eine Welt-Konstante der Hand vor Welle 5 (0,107 m fingerwärts); die neue Hand (kleiner, höher)
                 // ließ den Griff 0,072 m neben ihr (gate:nervensystem-schmiede H-F). Ohne Mitte keine Faust: LAUT.
-                const hm = rig.handMitte && rig.handMitte[anchor.name];
+                const hm = handMitte && handMitte[anchor.name];
                 if (!hm) {
                     this.log("FAUST: die Hand trägt keine Hand-Mitte (Ofen-Beipack handMitte) — kein Griff.", "ERROR");
                     return null;
@@ -966,14 +1002,12 @@ class AnazhRealm_koerper_seele {
             return "pending";
         }
         if (group === null || !group.children || !group.children.length) return null;
-        const wrap = this._workshopWrapFoundryGroup(group); // EINE Wrapper-Quelle (W-A1)
+        // EINE Wrapper-Quelle (W-A1); V4(B)-Ref: die Hülle hält die Quell-Geometrie lebendig (`foundrySrcGroup`) — die LRU
+        // räumt sie erst nach der Rückgabe (_disposeSoulGroup) wirklich frei.
+        const wrap = this._workshopWrapFoundryGroup(group);
         if (!wrap) return null;
         wrap.userData.foundryHeld = true;
         wrap.userData.heldPreset = preset;
-        // V4(B)-Ref: die Hand hält die Quell-Geometrie lebendig — die LRU räumt sie erst
-        // nach der Rückgabe (_disposeSoulGroup) wirklich frei.
-        group._liveRefs = (group._liveRefs || 0) + 1;
-        wrap.userData.foundrySrcGroup = group;
         // Griff + Achse als DATEN: die KIND_POLICY-Zeile deklariert die Template-Handachse (weapon: handAxis
         // "x"), das LIVE-Buch die Griff-Mitte (`fx.held.gripX`, im Kern aus stations(P) wie buildInstance).
         // Kein Dial-Raten im Wirt; Fallback ohne held-Feld: die Klingen-Formel s.griff/2, sonst 0.
@@ -1358,7 +1392,7 @@ class AnazhRealm_koerper_seele {
             label: typeof label === "string" ? label.slice(0, 60) : safe.replace(/_/g, " "),
             tagBonus: cleanedBonus,
             durationSeconds: dur,
-            createdAt: performance.now() / 1000,
+            createdAt: this.state.spielZeit,
         };
         return { ok: true, name: safe };
     }
@@ -1377,7 +1411,8 @@ class AnazhRealm_koerper_seele {
         bp.consumableMeta = {
             durationSeconds: dur,
             scale: sc,
-            label: typeof label === "string" ? label.slice(0, 60) : bp.label || name,
+            // das Wort der DSL ist Daten; ohne Wort heißt der Trank wie sein Bauplan (`_boostZeile` liest das Etikett am Schirm)
+            ...(typeof label === "string" && label ? { label: label.slice(0, 60) } : {}),
         };
         return { ok: true, name };
     }
@@ -1480,7 +1515,10 @@ class AnazhRealm_koerper_seele {
             if (!this.cloneBlueprint("welt_portal", bpName)) {
                 return { ok: false, reason: "clone_failed" };
             }
-            this.state.blueprints[bpName].label = `Portal: ${entry.label}`;
+            // der Name des Tors ist eine Zeile mit dem Namen der Welt als Wert (`_weltNameZeile`), er wechselt mit der Sprache
+            const tor = this.state.blueprints[bpName];
+            tor.etikett = ["bau.portal-zu", { welt: this._weltNameZeile(entry) }];
+            AnazhRealm._etikett(tor);
         }
         // Immer (neu) ausrichten: danach trägt der Bauplan garantiert role "portal" + frisches portalMeta —
         // auch ein Portal, das seine Ausrichtung verlor, heilt so.
@@ -1532,7 +1570,6 @@ class AnazhRealm_koerper_seele {
                 source: `consume:${name}`,
                 tagDelta: tagBonus,
                 durationSeconds: meta.durationSeconds || 30,
-                label: meta.label || bp.label || name,
             });
             return { ok };
         }
@@ -1543,7 +1580,6 @@ class AnazhRealm_koerper_seele {
             source: `consume:${c.name}`,
             tagDelta: c.tagBonus,
             durationSeconds: c.durationSeconds,
-            label: c.label,
         });
         return { ok };
     }
@@ -1565,7 +1601,7 @@ class AnazhRealm_koerper_seele {
             name: safe,
             label: safe.replace(/_/g, " "),
             bodyParts: bodyParts,
-            createdAt: performance.now() / 1000,
+            createdAt: this.state.spielZeit,
         };
         return { ok: true, name: safe };
     }
@@ -1805,7 +1841,6 @@ AnazhRealm.BOOST_EMOTION_DURATION = 30; // s, läuft mit Emotion mit
 AnazhRealm.BOOST_EMOTION_REFRACT = 60; // s Pause nach Ablauf, sonst Endlos-Pulsen
 AnazhRealm.BOOST_RESONANCE_RADIUS = 18; // m, in deren Nähe das Welt-Effekt-Boost greift
 AnazhRealm.BOOST_RESONANCE_DELTA = 0.15; // +0.15 resoniert auf Spieler-Compound
-AnazhRealm.BOOST_RESONANCE_LABEL = "Welt-Resonanz";
 // Werkzeug-Abnutzung (kein Perpetuum mobile): ein gehaltenes Gerät trägt wear (0..1), der je Hieb
 // sinkt; unter WEAR_KAPUTT_SCHWELLE ist es verbraucht. Reparieren zahlt MATERIAL
 // (REPAIR_COST_FRACTION × Voll-Bau-Kosten × Schaden-Anteil) → wear=1: Bauen → Abbauen → Reparieren

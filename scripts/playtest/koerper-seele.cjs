@@ -1247,7 +1247,7 @@ async function checkBandWelle6DSoul({ page, check }) {
         const boost = st.player.boosts.find((b) => b.source === "consume:wave6d_potion");
         out.boostExists = !!boost;
         out.boostTagBonusFromCompound = boost && boost.tagDelta && (boost.tagDelta.magieleitung || 0) > 0.05;
-        out.boostUsesBlueprintDuration = boost && Math.abs(boost.expiresAt - performance.now() / 1000 - 45) < 2;
+        out.boostUsesBlueprintDuration = boost && Math.abs(boost.expiresAt - st.spielZeit - 45) < 2;
         // Cleanup
         delete st.blueprints.wave6d_potion;
         st.player.boosts = [];
@@ -1648,14 +1648,14 @@ async function checkBandWelle6DSoul({ page, check }) {
         // nah an hochresonanter Architektur wie kristall_geode/quarz).
         st.player.boosts[0].expiresAt = -100; // bereits abgelaufen
         st.player.boostLastTick = -Infinity; // Throttle umgehen
-        r.tickPlayerBoosts(performance.now() / 1000);
+        r.tickPlayerBoosts(st.spielZeit);
         out.expiredRemoved = !st.player.boosts.some((b) => b.source === "test:flame");
 
         // Emotion-Trigger: awe hoch → magieleitung-Boost
         st.player.emotions.awe = 0.9;
         st.player.boostLastTriggered["emotion:awe"] = -Infinity; // Refract umgehen
         st.player.boostLastTick = -Infinity;
-        r.tickPlayerBoosts(performance.now() / 1000);
+        r.tickPlayerBoosts(st.spielZeit);
         const aweBoost = st.player.boosts.find((b) => b.source === "emotion:awe");
         out.emotionAweTriggered = !!aweBoost;
         out.aweBoostHasMagieleitung = aweBoost && aweBoost.tagDelta.magieleitung && aweBoost.tagDelta.magieleitung > 0;
@@ -1692,7 +1692,7 @@ async function checkBandWelle6DSoul({ page, check }) {
         out.distanceToSig = Math.hypot(82 - 80, 82 - 80);
         st.player.boosts = []; // Reset
         st.player.boostLastTick = -Infinity;
-        r.tickPlayerBoosts(performance.now() / 1000);
+        r.tickPlayerBoosts(st.spielZeit);
         const resBoost = st.player.boosts.find((b) => b.source === "world:resonance");
         out.resonanceBoostTriggered = !!resBoost;
         out.resonanceHasResonierDelta = resBoost && resBoost.tagDelta.resoniert && resBoost.tagDelta.resoniert > 0;
@@ -1702,7 +1702,7 @@ async function checkBandWelle6DSoul({ page, check }) {
         st.playerMesh.position.set(-200, 5, -200);
         st.player.boosts = [];
         st.player.boostLastTick = -Infinity;
-        r.tickPlayerBoosts(performance.now() / 1000);
+        r.tickPlayerBoosts(st.spielZeit);
         const resBoost2 = st.player.boosts.find((b) => b.source === "world:resonance");
         out.resonanceNotTriggeredFar = !resBoost2;
 
@@ -2308,6 +2308,7 @@ async function checkBandPhasenBF({ page, check }) {
             if (!row) return false;
             const savedMode = r.getGameMode();
             const savedMana = st.player.mana;
+            const savedTick = st._statsHudLastTick; // die Drossel der Leiste trägt nie die Uhr der Probe (1e9) weiter
             try {
                 r.setGameMode("pfad");
                 st.player.mana = 7;
@@ -2322,6 +2323,7 @@ async function checkBandPhasenBF({ page, check }) {
             } finally {
                 r.setGameMode(savedMode);
                 st.player.mana = savedMana;
+                st._statsHudLastTick = savedTick;
             }
         })();
         // C1-GELENK-READOUT (eine Wahrheit für Animation UND Panel): der Readout ruft computeMotionRoles
@@ -2521,20 +2523,20 @@ async function checkBandPhasenBF({ page, check }) {
             // Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5) — die Probe setzt den Strom, nie Math.random.
             const hatteStrom = Object.hasOwn(r, "_faunaRng");
             try {
-                st.weatherTransition = null;
                 st.weather = "rainy";
+                window.__uebergangFaellt(r);
                 const vRainy = r._weatherBlendedValue(0, 1);
                 st.weather = "stormy";
                 const vStormy = r._weatherBlendedValue(0, 1);
                 st.weatherTransition = { from: "sunny", to: "rainy", progress: 0.5 };
                 const vMitte = r._weatherBlendedValue(0, 1);
-                st.weatherTransition = null;
                 st.weather = "sunny";
+                window.__uebergangFaellt(r);
                 const vSunny = r._weatherBlendedValue(0, 1);
                 if (!(vSunny === 0 && Math.abs(vMitte - 0.5) < 1e-3 && Math.abs(vRainy - 1) < 1e-9 && vStormy > 1))
                     return `Achse: sunny=${vSunny} mitte=${vMitte} rainy=${vRainy} stormy=${vStormy}`;
                 if (!r.requestWeatherTransition("sunny")) return "Gate: sunny abgelehnt";
-                st.weatherTransition = null;
+                window.__uebergangFaellt(r);
                 if (r.requestWeatherTransition("xyz")) return "Gate: xyz angenommen";
                 const fake = {
                     userData: { emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 } },

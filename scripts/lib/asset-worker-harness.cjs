@@ -501,11 +501,14 @@ function kanalImVm(quellen = {}) {
             : ausDatei(path.join(ROOT, f));
         vm.runInContext(src, ctx, { filename: f, timeout: 60000 });
     }
-    return (msg) => {
+    const kanal = (msg) => {
         ctx.__frage = Object.assign({ reqId: "vm" + posts.length }, msg);
         vm.runInContext("foundryKanal(__frage)", ctx, { timeout: 60000 });
         return posts.find((p) => p && p.reqId === ctx.__frage.reqId) || null;
     };
+    // der Kern des Fadens beim Namen (`__phytoCore` …): eine Linse liest seine Zähler nach dem Bau (gate:asset-contract R)
+    kanal.kern = (name) => ctx[name];
+    return kanal;
 }
 
 // DIE ERSTE ABWEICHUNG zweier JSON-Werte beim Pfad: eine Linse, die nur „divergiert" sagt, nennt den Täter nicht — diese

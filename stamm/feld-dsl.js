@@ -48,7 +48,7 @@ class AnazhRealm_feld_dsl {
         return {
             state: this.state,
             realm: this,
-            startTime: this._taktUhr(),
+            startTime: this.state.spielZeit,
             rng: this._samenStrom(typeof opts.seed === "number" ? opts.seed : this._bauSame("dsl")),
             budget: opts.budget || this.dslDefaultBudget(),
             log: opts.log || [],
@@ -70,7 +70,7 @@ class AnazhRealm_feld_dsl {
 
     dslRun(program, opts = {}) {
         const ctx = this.dslCtx(opts);
-        const startedAt = this._taktUhr();
+        const startedAt = this.state.spielZeit;
         const fpsBefore = this.state.fps || 0;
         const startY = this.state.playerMesh ? this.state.playerMesh.position.y : 0;
         const creaturesBefore = this.state.creatures.length;
@@ -207,8 +207,6 @@ class AnazhRealm_feld_dsl {
                 "spawn_waterfall",
                 "spawn_fractal",
                 "spawn_blueprint",
-                "spawn_island",
-                "spawn_ufo",
                 "spawn_tree",
                 "spawn_studio",
                 "remove_architecture",
@@ -237,6 +235,21 @@ class AnazhRealm_feld_dsl {
             node.length > 0 &&
             !this._dslContainsAnyOp(node, AnazhRealm.RULE_FORBIDDEN_EFFECT_OPS)
         );
+    }
+
+    // DAS GESETZ EINER FÄHIGKEIT (erleben.schoepfen.schutz): ein Name, der Schlüssel werden kann, und ein Programm, das der
+    // Interpreter als Tat kennt — sein Kopf ist ein Verb der Op-Tafel (`dslEffects`, die EINE Quelle der Taten; sonst
+    // `unknown_op` bei jedem Ruf) und nirgends steht eine souveräne Aktion (`SOVEREIGN_ACTIONS`, sonst `sovereign_blocked`).
+    // Leser: die Geburt (`define_ability`), das Laden des eigenen Stands (`_loadStateRestoreEmotionsAndDsl`, die Lade-Wand spricht)
+    // und die Wand der Tür (`_weltEinlass`: eine fremde Welt mit solch einer Fähigkeit fällt ganz). → Grund | null
+    _faehigkeitGrund(name, program) {
+        if (typeof name !== "string" || name.length === 0 || name.length > 40) return "kein Name (1–40 Zeichen)";
+        if (!Array.isArray(program) || program.length === 0) return "kein Programm";
+        const kopf = program[0];
+        if (typeof kopf !== "string" || !Object.prototype.hasOwnProperty.call(this.dslEffects, kopf))
+            return `unbekannte Tat „${String(kopf).slice(0, 40)}“`;
+        const souveraen = AnazhRealm.SOVEREIGN_ACTIONS.find((op) => this._dslContainsAnyOp(program, new Set([op])));
+        return souveraen ? `souveräne Tat „${souveraen}“` : null;
     }
 
     // gegen CREATURE_PROPOSED_OPS. Liefert {ok, forbiddenOp?}.
@@ -370,7 +383,7 @@ class AnazhRealm_feld_dsl {
     // sich seinen Ort im Kontext (`ctx.orte`): der Absender schickt ihn mit (V-k6, `_dslMitOrten`).
     // DAS FELD HAT KEINEN ORT, WO DIE WILDNIS NICHT TRÄGT: wählt das Feld selbst (`_feldHandelt` — der Nexus und seine
     // Regeln) einen Ort, den die Wildnis nicht trägt (`_wildnisTraegt`), gibt es ihn nicht — jeder Wurf daran (Tier, Baum,
-    // Werk, Insel, UFO, Dorf, Tempel, Wasserfall, Bauplan, Fraktal, Kugel) bricht hier benannt ab; Akte setzen überall.
+    // Werk, Dorf, Tempel, Wasserfall, Bauplan, Fraktal, Kugel) bricht hier benannt ab; Akte setzen überall.
     // Bis 10.10. fragte nur die Tier-Geburt: auf einer Welt ohne Wildnis-Term warfen 18 von 20 Nexus-Würfen (ein Dorf aus
     // 33 Bauten, Tempel, Wasserfall, Fraktal, Insel, UFO, Baum, Werk) — die Linse der Feld-Würfe nennt jeden beim Namen.
     dslEvalPos(node, ctx) {
@@ -537,7 +550,7 @@ class AnazhRealm_feld_dsl {
             ctx.log.push({ event: "budget_exceeded", budget: "concurrent", program_id: ctx.programId });
             return;
         }
-        const runAt = this._taktUhr() + Math.max(0, delaySeconds);
+        const runAt = this.state.spielZeit + Math.max(0, delaySeconds);
         this.state.dsl.pending.push({ runAt, program, ctx, weil: ctx.weil });
     }
 
@@ -612,8 +625,8 @@ class AnazhRealm_feld_dsl {
             born: now,
             _sig: sig,
             // Fitness-Akkus je Regel über das Lebens-Fenster (am ttl-Ende → erneuern/verfallen):
-            // costMsSum = Σ Effekt-Wallzeit, errors = Effekt-Exceptions, fires = Engagement (inert → verfällt).
-            costMsSum: 0,
+            // kostenSum = Σ Budget-Anteil je Feuern (`_tickWorldRules`), errors = Effekt-Exceptions, fires = Engagement (inert → verfällt).
+            kostenSum: 0,
             errors: 0,
             fitness: 0,
             // Gelernter WERT der Regel: EMA des lokal-attribuierten Rewards (struktureller δ am berührten
@@ -685,7 +698,7 @@ class AnazhRealm_feld_dsl {
                 if (r.fitness >= cfg.renewFitness && (r.fires || 0) > 0) {
                     r.born = currentTime; // erneuern
                     r.fires = 0;
-                    r.costMsSum = 0;
+                    r.kostenSum = 0;
                     r.errors = 0;
                     // value BLEIBT (der gelernte Wert ist die Identität der Regel über
                     // Renewals hinweg — nur die per-Fenster-Akkus oben werden zurückgesetzt).
@@ -725,16 +738,29 @@ class AnazhRealm_feld_dsl {
             r._vBase = this._observeFieldWohl(rp.x, rp.z, currentTime);
             r._vPos = rp;
             r._vPending = true;
-            // V17.35 — die Effekt-Wallzeit ist das attributierbare Kosten-Signal der
-            // per-Regel-Fitness (ein FPS-Hog wird so gepruned, die 119 FPS bleiben heilig).
-            const t0 = performance.now();
+            // DIE KOSTEN EINES FEUERNS ZÄHLEN SCHRITTE DES SPIELS, NIE DIE WANDUHR (wie das Budget, G4a): der größte Anteil, den
+            // der Effekt von seinem eigenen Budget verbraucht (Schritte · Würfe · vertagte Schritte, `_worldRuleBudget`) ∈ [0, 1] —
+            // auf jedem Gerät und bei jedem Mitspieler dieselbe Zahl; das Kosten-Signal der per-Regel-Fitness (`_worldRuleFitness`).
+            // Bis w28-nexus-uhr die Wandzeit des Effekts (performance.now(), Soll < 4 ms): ein Wesen-Wurf kostete an der GTX 1050
+            // 2,0–5,7 ms (Kosten-Note 0,5 bis 0), auf einem schnellen Gerät ein Achtel davon — dieselbe Regel wurde hier nie
+            // erneuert und dort immer, und eine Pause des Schedulers ließ eine billige Regel verfallen (Playtest V1735, voll 1/18).
+            const B = ctx.budget;
+            const s0 = B.stepsLeft;
+            const w0 = B.spawnsLeft;
+            const v0 = B.delayedSteps;
             try {
                 this.dslEval(r.effect, ctx);
             } catch (err) {
                 r.errors = (r.errors || 0) + 1;
                 ctx.log.push({ event: "rule_effect_exception", message: err.message });
             }
-            r.costMsSum = (r.costMsSum || 0) + (performance.now() - t0);
+            r.kostenSum =
+                (r.kostenSum || 0) +
+                Math.max(
+                    s0 > 0 ? (s0 - B.stepsLeft) / s0 : 0,
+                    w0 > 0 ? (w0 - B.spawnsLeft) / w0 : 0,
+                    v0 > 0 ? (v0 - B.delayedSteps) / v0 : 0
+                );
             // Das ERSTE Feuern eines Spieler-Gesetzes wird eine Welt-Erinnerung („weil dein Gesetz wirkte", beim Mitspieler sein
             // Name); fires===1 ist eindeutig, da Spieler-Gesetze permanent sind (kein TTL-Renew setzt zurück).
             if (r.fires === 1 && this._gesetzGeber(r)) this._journalRuleAwoke(r);
@@ -797,15 +823,14 @@ class AnazhRealm_feld_dsl {
     }
 
     // Fitness je Regel über das Lebens-Fenster, nur aus der Regel SELBST zuordenbaren Achsen:
-    // Engagement (feuert sie? inert = 0 → verfällt), Kosten (Effekt-Wallzeit, FPS heilig), Erfolg
+    // Engagement (feuert sie? inert = 0 → verfällt), Kosten (der Budget-Anteil des Effekts in Schritten des Spiels, `_tickWorldRules`), Erfolg
     // (keine Exceptions/Budget-Brüche). NICHT der globale Emotions-Trend — der ist keiner einzelnen
     // Regel zuzuschreiben (Passagier-Trugschluss).
     _worldRuleFitness(rule) {
         const fires = rule.fires || 0;
         if (fires === 0) return 0; // inert (Bedingung nie wahr) → verfallen, Platz schaffen
-        const cfg = AnazhRealm.WORLD_RULES;
-        const avgMs = (rule.costMsSum || 0) / fires;
-        const costScore = Math.max(0, Math.min(1, 1 - avgMs / cfg.costBudgetMs));
+        const kosten = (rule.kostenSum || 0) / fires; // Ø Anteil des Regel-Budgets je Feuern (Schritte des Spiels, nie Wandzeit)
+        const costScore = Math.max(0, Math.min(1, 1 - kosten));
         const successScore = Math.max(0, 1 - (rule.errors || 0) / fires);
         // Der WERT entscheidet (die EINE Wertung δ, `_measureRuleReward`): valueScore 0.5 + 0.5·value, neutral 0.5 = die
         // Erneuerungs-Schwelle; Kosten und Erfolg mindern ihn nur (Produkt) — erneuert wird, wessen δ seine Kosten trägt.
@@ -1008,7 +1033,7 @@ class AnazhRealm_feld_dsl {
             },
             // spawn_tree läuft durch denselben Pfad wie jede Struktur (spawnArchitecture mit baum_eiche/
             // baum_kiefer) — kein Parallelcode: Compound-Tags, Welt-Effekte, Save, Werkstatt, Culling und
-            // Kollision kommen geschenkt. spawn_island/spawn_ufo bleiben eigen (Inseln = Noise-Heightfields).
+            // Kollision kommen geschenkt.
             spawn_tree: ([positionNode, count, kind, seed], ctx) => {
                 const n = c(count, 1, 20);
                 const pos = this.dslEvalPos(positionNode, ctx);
@@ -1059,67 +1084,6 @@ class AnazhRealm_feld_dsl {
             // die Signatur ist die Form des Verbs (`_dslForm`: Prompt und Antwort-Form der Welt-KI lesen sie) — sie bleibt hier
             spawn_studio: ([what, positionNode, count, seed, ov], ctx) =>
                 this._spawnStudioWerk([what, positionNode, count, seed, ov], ctx),
-            spawn_island: ([positionNode, height, seed, size], ctx) => {
-                const pos = this.dslEvalPos(positionNode, ctx);
-                if (ctx.budget.spawnsLeft <= 0) {
-                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
-                    this._setzErgebnis(ctx, "spawn_island", 1, 0, { budget: 1 }, ["ergebnis.ding.insel"], "gesetzt");
-                    return;
-                }
-                ctx.budget.spawnsLeft--;
-                const h = c(height, 1, 200);
-                // Ring 11 V2.1-Stil: optionales Seed-Argument für Multi-User-
-                // Determinismus. Wenn nicht gesetzt, würfeln. Chat-Pattern
-                // „setze insel hier" embedded das Seed bei Build-Zeit.
-                const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                // V9.42-b — `size` (Durchmesser in m) ist DSL-erreichbar, 6..48.
-                const sz = Number.isFinite(Number(size)) ? c(Number(size), 6, 48) : undefined;
-                // Islands spawnen ein Stück über dem angegebenen Punkt —
-                // sonst würde der at_player-Pfad sie auf Spieler-Höhe legen
-                // und der Spieler stünde im Erd-Inneren der Insel.
-                const opts = { seed: s };
-                if (sz !== undefined) opts.size = sz;
-                const island = this.spawnIslandAt(pos.x, pos.y + 12, pos.z, h, opts);
-                ctx.log.push({
-                    event: "spawned_island",
-                    pos: island ? { x: island.position.x, y: island.position.y, z: island.position.z } : pos,
-                    height: h,
-                    size: sz,
-                    seed: s,
-                });
-                this._setzErgebnis(
-                    ctx,
-                    "spawn_island",
-                    1,
-                    island ? 1 : 0,
-                    island ? {} : { buehne: 1 },
-                    ["ergebnis.ding.insel"],
-                    "gesetzt"
-                );
-            },
-            spawn_ufo: ([positionNode], ctx) => {
-                const pos = this.dslEvalPos(positionNode, ctx);
-                if (ctx.budget.spawnsLeft <= 0) {
-                    ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
-                    this._setzErgebnis(ctx, "spawn_ufo", 1, 0, { budget: 1 }, ["ergebnis.ding.ufo"], "gerufen");
-                    return;
-                }
-                ctx.budget.spawnsLeft--;
-                const ufo = this.spawnUfoAt(pos.x, pos.y + 18, pos.z);
-                ctx.log.push({
-                    event: "spawned_ufo",
-                    pos: ufo ? { x: ufo.position.x, y: ufo.position.y, z: ufo.position.z } : pos,
-                });
-                this._setzErgebnis(
-                    ctx,
-                    "spawn_ufo",
-                    1,
-                    ufo ? 1 : 0,
-                    ufo ? {} : { buehne: 1 },
-                    ["ergebnis.ding.ufo"],
-                    "gerufen"
-                );
-            },
             // Bau-Primitive: Position über die Selektor-Form (at_player, at_origin, near_player N), jeder Bau
             // = 1 Spawn-Budget. Optionales Seed für deterministische Visuals; beim Broadcast bettet der Sender
             // das verwendete Seed ein, damit alle Peers DIESELBEN Häuser sehen. spawn_village hebt das
@@ -1717,8 +1681,9 @@ class AnazhRealm_feld_dsl {
                     ctx.log.push({ event: "invalid_ability_name", name });
                     return;
                 }
-                if (!Array.isArray(program) || program.length === 0) {
-                    ctx.log.push({ event: "invalid_ability_program", name });
+                const grund = this._faehigkeitGrund(name, program); // das Gesetz der Fähigkeit, wie beim Laden und an der Tür
+                if (grund) {
+                    ctx.log.push({ event: "invalid_ability_program", name, grund });
                     return;
                 }
                 // Sandbox: Tiefen-Cap und kein verschachteltes define_*.
@@ -2335,7 +2300,7 @@ class AnazhRealm_feld_dsl {
         this._dslConditionsCache = {
             fps_below: ([value], ctx) => (ctx.state.fps || 0) < Number(value),
             weather_is: ([name], ctx) => ctx.state.weather === name,
-            time_passed: ([seconds], ctx) => this._taktUhr() - ctx.startTime >= Number(seconds),
+            time_passed: ([seconds], ctx) => this.state.spielZeit - ctx.startTime >= Number(seconds),
             creatures_count_above: ([value], ctx) => ctx.state.creatures.length > Number(value),
             player_y_below: ([value], ctx) => {
                 const y = ctx.state.playerMesh ? ctx.state.playerMesh.position.y : 0;
@@ -2413,7 +2378,6 @@ AnazhRealm.WORLD_RULES = Object.freeze({
     ruleTtlMax: 90,
     mutateSurvivorProb: 0.4, // P(eine neue Nexus-Regel ist ein mutierter Nachkomme eines Überlebenden)
     // Phase C — Fitness (per-Regel, attributierbar: Kosten + Erfolg + Engagement)
-    costBudgetMs: 4, // ein Regel-Effekt sollte < ~4 ms kosten (sonst Cost-Penalty)
     renewFitness: 0.5, // ab dieser Fitness wird eine Nexus-Regel am ttl-Ende erneuert
     // Gesetzes-Faden: ein Gesetz, das binnen dieser Frist gefeuert hat, gilt als „feuert gerade"
     // (Live-Puls der Gesetze-Console); > ruleEverySecMax (5) → ein aktives Gesetz pulst durchgehend.
@@ -2465,8 +2429,6 @@ AnazhRealm.DSL_WELTAKTE = Object.freeze([
     "spawn_creature",
     "spawn_tree",
     "spawn_studio",
-    "spawn_island",
-    "spawn_ufo",
     "spawn_village",
     "spawn_temple",
     "spawn_waterfall",

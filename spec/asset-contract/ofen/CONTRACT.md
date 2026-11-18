@@ -60,7 +60,7 @@ Dicke entlang der Haut-Normale gehoben, mit IDENTISCHEN Gewichten, gespannt übe
 näher als die Dicke), der Saum liegt auf der Haut; die Haut darunter fällt; die Grobstufe hebt ihren Stoff um das halbe
 Raster-Mehr (0,015), damit ihr Wurf den Umriss der feinen trägt (der Band `checkBandKreaturKosten` des vollen Playtests, DECKUNG mensch IoU min 0,947, Basis 0,949). (2) DER LEIB unter dem Stoff: die gemalten Shorts
 und die Gelenk-Kugeln sind Volumen der Haut (`leibV` 5,10 → 5,76, das Becken war kein Leib). (3) Der Poncho (weit, Lab-Drapé)
-bleibt eine Hülle und ERBT die Gewichte der Haut (`__stoffErbtHaut`, das Lab-Gesetz `_inheritWeights` + `_smoothInfl`).
+blieb eine Hülle, die die Gewichte der Haut erbte — bis w28-leib-nah (unten): er ist Stoff aus der Haut.
 Neu geprägt NUR die 16 Mensch-Schlüssel: `mensch-L0|haut|{mensch,head,hand1,hand-1}` · `mensch-L0|stoff_{233047,2a2c30,e8e6e0}|mensch`
 · `mensch-L1|haut|mensch` · `mensch-L1|stoff_{233047,2a2c30,e8e6e0}|mensch` · beide Beipacks (`leibV`); es fallen
 `mensch-L0|joint|arm1` · `mensch-L0|joint|arm-1` · `mensch-L1|joint|mensch` (die Kugeln liegen in der Haut). Die Stufen tragen
@@ -101,6 +101,122 @@ die Haut um nichts (die Haut lag in der Mulde ÜBER dem Hemd, die Hose über dem
 über dem Stoff an den schweren Körpern von ARM_RUHE.koerper → 0). Neu geprägt NUR zwei Klassen: `mensch-L0|stoff_2a2c30|mensch`
 und `mensch-L1|stoff_2a2c30|mensch` (die Hose der Start-Tracht: 0,024 → 0,040 E unter dem Arm, unter dem Hemd); 508 Klassen
 byte-gleich (das Hemd ist die äußerste Lage, die Haut der Start-Tracht trägt keine Rumpf-Ecke an der Anlage).
+
+Vertrags-Akt w28-leib-nah (13.11.2026, das Kleid-Gesetz — gate:mensch-anatomie KLEID): Saum und Bund sind LINIEN des Kleids
+(koerper `kleidZonen` `saum`, `bund`; der Ofen schneidet die Haut-Region an ihrer Ebene, `__stoffAusHaut`) — bis hier war
+jeder Rand die Grenze der Haut-Region seiner Teile (der untere Rand des Hemds lief als zwei Ringe um die Schenkel, der Bund
+der Hose 1 cm wellig). Das Hemd endet 0,3 E unter dem Bund als EIN Ring (Streuung der Höhe 0,25 → 0,009 E), die Hose endet
+unter ihm 0,12 E über seinem Saum und läuft dort zur Haut aus (`unter`; 57 Ecken der Hose über dem Hemd in der Mulde unter
+dem ruhenden Arm → 0), der Relief-Leser liest jeden Stoff an der Soll-Hebung seiner Ecken (`leibRelief` `heb`). Der Poncho
+ist Stoff aus der Haut mit Weite (keine Klasse des Goldens trägt ihn: die Start-Tracht ist das Hemd). Neu geprägt NUR acht
+Klassen: `mensch-L0|{haut,stoff_233047,stoff_2a2c30,stoff_e8e6e0}|mensch` und dieselben vier der L1 (Hemd 7 178 → 7 472,
+Hose 8 762 → 8 444, Haut des Leibs 3 782 → 3 745, Schuh 2 274 → 2 334 Dreiecke: die Zeile 40 000 hält ihren Anteil); 502
+Klassen byte-gleich (jedes Tier, jedes Gelenk, Kopf und Hände).
+
+Vertrags-Akt w28-leib-nah, zweiter (13.11.2026, der Schuh — gate:mensch-anatomie KLEID `schuhLage` · `schuhSohle` ·
+`schuhSchaft`): der Schuh ist der Guss des Fußes, jede Form um die Dicke seiner Zone gehoben (koerper `kleidZonen`: `dicke`
+0,05, die Linie `schaft` 0,06 E über dem Gelenk, `sohle`; der Ofen gießt ihn bei der Fuß-Haut auf ihrem Raster, die Sohle
+über `__sohleFlach`) — bis hier die letzte Voxel-Hülle über Teil-Punkten (`backeHuelle`: EIN Netz beider Füße an den
+Gewichten der Beine). Mit ihm fielen der Weg und seine Maschine (Kern: dilatieren, erodieren, füllen, weichzeichnen) und die
+Zonen-Zahlen `inflate` und `abstand`; eine Zone ohne Dicke wirft. Der Satz der Menge las diese Auflage schon (0,05): die
+Stufen 2 und 3 sind byte-gleich. Elf Zeilen des Goldens (acht neu geprägt, eine fiel, zwei neu): `mensch-L0|stoff_e8e6e0|mensch` fiel (2 334 Dreiecke), neu
+`mensch-L0|stoff_e8e6e0|{ankle1,ankle-1}` (je Fuß am Gelenk, 1 000 und 998 — der Deckel des Fußes, koerper `haushalt`; über
+der Linie des Schafts staucht der Guss wie an der Sohle auf 2 %: als Ebene kippte `ankle-1` an ±1 ULP von hypot);
+`mensch-L0|{haut,stoff_233047,stoff_2a2c30}|mensch` tragen den freien Anteil der Zeile (3 745 → 3 809, 7 472 → 7 598,
+8 444 → 8 588); in der L1 der Schuh 956 → 700 (derselbe Deckel), `skin|mensch` 4 192 → 4 032 (die Fessel stand unter dem
+Schuh als rohe Kugel), Haut, Hemd und Hose mit dem freien Anteil (1 841 → 1 943, 2 696 → 2 844, 3 032 → 3 198); 501 Klassen
+byte-gleich, das Golden trägt 511.
+
+Vertrags-Akt w28-kopf-kalotte (14.11.2026, die Kalotte — gate:mensch-anatomie KALOTTE `kalotteBreite` · `kalotteHalt` ·
+`scheitelHalt` · `ohrStand`): die Kopfbreite gehört der Kalotte (koerper `MENSCH_GESTALT.schaedel`: `breit` 1,165 — die
+Kugel des Schädels trägt die Breite, `hinten` 0,02 — ihre Mitte hinter der Mitte des Kopfs, `schlaefe` 0,955 — die Schläfe
+liegt in ihr; `ohr.ab` 0,02 und `ohr.neig` 0,18 — das Ohr setzt an ihrer Seite an und steht oben ab; die Kappe des Haars
+trägt Breite und Lage der Kalotte). Bis hier trug die Schläfe die Breite: das spitze Ei mit Schläfen-Lappen — am kahlen
+Guss hielt die Kuppel auf 0,76–0,80 kH 0,760 ihrer Breite und auf 0,86–0,90 kH 0,628; jetzt 0,882 und 0,715.
+Sechzehn Zeilen des Goldens neu geprägt, alle am Menschen, die Klassen-Zahl bleibt 511 und jede Stufe hält ihre Zeile
+(39 990/40 000 · 13 997/14 000 · 1 700 · 360): in der L0 `hair|head` 2 654 → 2 694 und `haut|head` 7 665 → 7 625 (zusammen
+10 319 davor wie danach: der Kopf hält seinen Anteil der Zeile), `haut|mensch`, `stoff_233047|mensch`
+und der Beipack bei gleicher Dreieck-Zahl; in der L1 `skin|mensch` 4 032 → 4 192, dafür `haut` 1 943 →
+1 915, `stoff_233047` 2 844 → 2 782 und `stoff_2a2c30` 3 198 → 3 128 (der freie Anteil der Zeile), `socket`, `hair` und
+der Beipack bei gleicher Zahl; der Satz der Menge `mensch-L2|leib` und `mensch-L3|leib` bei 1 700 und 360 (der Kopf der
+Hülle ist breiter) samt Beipack. 495 Klassen byte-gleich. Die Neigung des Ohrs trägt die Gruppe seiner Haut-Formen
+(Muschel, Tragus, Läppchen); mit der Mulde gedreht kippte `mensch-L1|socket|mensch` an ±1 ULP von cos und sin (273 > 272,
+234 > 233) — die Ratsche steht unverändert (cos 272 · sin 233).
+
+Vertrags-Akt w28-gesicht (14.11.2026, das Gesicht — gate:mensch-anatomie KOPF `lidSpalt` · `lidSchulter` · `lidZu` ·
+`haarHaube` · `hautFleck`): das Lid ist eine Schale hinter dem Augapfel (koerper `auge.lid` = { oben, unten, winkel, hinten,
+woelbung }, `_lidSchale`: ihr Schnitt mit ihm ist der Rand des Lids), ihr Netz umschreibt sie auf eigenem Raster (koerper
+`lidRaster` 16 × 10, vorher 12 × 8 auf der Schale: die Facetten ließen das Weiß an den Winkeln als eckige Lappen stehen,
+`lidSchulter` 0,167 → 0,097), der Lidschlag wandert und reitet über die Wölbung der Iris (`lidLage` → [y, z], Wirt und Labor
+lesen ihn; ohne den Weg nach vorn standen 90 % der Iris-Front durch das geschlossene Lid, `lidZu` jetzt 0), das Lid trägt den
+Ton der Kopf-Haut an seinem Ort samt ihrer Verdeckung (vorher den hellen Haut-Ton: eine helle Scheibe in der dunkleren
+Höhle); die Verdeckung der Kopf-Haut
+zählt halb (`kopfHaut.verdeckung.staerke` 2 → 1, `hoehleSaum` 0,8 → 0,4, `KOPF_TON.hoehle`); das Lippenrot ist schmaler und
+ruhiger (`gesicht.lippe` 0,55 → 0,4, `KOPF_TON.lippe`); die Nase trägt Wurzel, Rücken, Spitze und Flügel (`gesicht.naseRuecken`
+· `naseSpitze` · `naseFluegel`); die Kappe des Haars zählt nur über der Linie von Schläfe und Nacken (koerper `HAAR_GRENZE`,
+foundry `__unterHaarGrenze`) — in der Kopf-Haut der Nah-Stufe, im Leib der Menge und als Netz der Grobstufe. Bis hier lagen
+zwei flache Ellipsoide über und unter dem Augapfel (die Lidspalte Höhe / Breite 0,61, jetzt 0,44), die Haut-Ecken neben dem
+Mund standen zu 15,7 % unter 60 % des hellen Tons (jetzt 0,4 %), und der Afro trug seinen Ton über Wange, Kiefer und Hals
+(`haarHaube` 0,40, jetzt 0). 44 Zeilen des Goldens neu geprägt, alle am Menschen, die Klassen-Zahl bleibt 511 und jede Stufe
+hält ihre Zeile (39 990/40 000 · 13 996/14 000 · 1 700 · 360): 33 Zeilen bei gleicher Dreieck-Zahl (Augapfel, Iris, Haut,
+Stoff, die Gelenke der Lider und der Beipack jeder Stufe: Form und Lage der Lider, die Töne), elf mit anderer — in der L0
+die vier Lider je 168 → 288 (ihr Raster), `hair|head` 2 694 → 2 654 und `haut|head` 7 625 → 7 185 (die Kopf-Haut gibt den
+Lidern 480 und nimmt dem Haar 40: zusammen 10 991 davor wie danach); in der L1 `skin|mensch`
+4 192 → 3 952 (die vier Lider fallen: die Grobstufe gießt keine), `hair` 272 → 259 (die Dreiecke der Kappe unter der
+Haar-Grenze), dafür `haut` 1 915 → 1 971, `stoff_233047` 2 782 → 2 874 und `stoff_2a2c30` 3 128 → 3 232 (der freie Anteil
+der Zeile). 467 Klassen byte-gleich, die Plattform-Ratsche steht unverändert (cos 272 · sin 233).
+
+Vertrags-Akt w28-auge (14.11.2026, das Auge — gate:mensch-anatomie KOPF `lidWulst` · `augeWeiss`): Iris und Pupille sind
+flache Ellipsoide statt Kugeln (koerper `auge.iris` = { hoch, vor, flach, pupilleVor, pupilleFlach }: ihr Scheitel 0,124 ·
+0,1255 vor der Mitte des Auges statt 0,146 · 0,150, der sichtbare Rand der Iris bleibt 0,053 und rund), damit die Schale des
+Lids sie geschlossen deckt, ohne vor das Gesicht zu reiten (`auge.lid.woelbung` 0,04 → 0,013, zur Laufzeit; `lidWulst` 0,29 →
+0,065 Augapfel-Radien); Sklera, Iris und Pupille tragen EINE Rauheit 0,25 (koerper MATERIAL_KLASSEN eye · iris · pupil,
+vorher 0,08 · 0,15 · 0,2 — in der Welt sind sie EIN Stoff, und mit 0,08 lag der Spiegel der Sonne unter einem Bildpunkt).
+17 Zeilen des Goldens neu geprägt, alle am Auge des Menschen und alle bei gleicher Dreieck-Zahl: in der L0 `eye` · `iris` ·
+`pupil` je Auge (sechs Zeilen, je 168), in der L1 `eye` · `iris` · `pupil` (drei, je 160) und das Gelenk der Iris jeder Stufe
+(acht: seine Lage `vor`). 494 Klassen byte-gleich, die Plattform-Ratsche steht unverändert (cos 272 · sin 233).
+
+Vertrags-Akt w28-gesicht-grob (15.11.2026, das Gesicht der Grobstufe — gate:mensch-anatomie KOPF `grobAugeFrei` · `grobLose` ·
+`grobToene` · `grobKopfDreiecke`): die Grobstufe des Menschen (mensch-L1: der Leib ab 40 m und vor dem ersten Weltbild) gießt
+den Kopf wie die nahe — das EINE Feld auf zwei Rastern mit der Naht im Hals (`__leibHaut`, das Gesicht um
+`kopfHaut.voxGrob` 1,25 gröber als nah), dieselbe Ton-Regel der Kopf-Haut (`hautTonAn`: Lippe, Höhle, Braue, die Kappe des
+Haars), dieselben Lider auf eigenem Raster (`lidRaster.grob`), der Schatten des Lids auf dem Augapfel; ihr Kopf trägt
+höchstens `haushalt.kopfGrob` 3 000 Dreiecke. Bis hier goss sie den Kopf auf dem Raster des Leibs: eine glatte Blase über
+Augen und Höhlen, davor lose Nasen-Kugeln, Lippen-Scheiben, Falten-Stäbe und Höhlen-Kugeln, kein Ton. 12 Zeilen des Goldens
+bewegt, alle mensch-L1: `haut` 1 971 → 3 773 Dreiecke (der Kopf mit seinen Tönen), `skin` 3 952 → 3 392 (die Primitive des
+Gesichts fallen, die Lider kommen), `stoff_233047` 2 874 → 2 660 und `stoff_2a2c30` 3 232 → 2 992 (der Haushalt der Zeile),
+`eye` · `iris` · `pupil` bei gleicher Dreieck-Zahl (der Schatten des Lids), der Beipack; `socket`, `shadow`, `lips` und `hair`
+fallen als Klassen (511 → 507, der Nenner der Plattform-Ratsche folgt). 499 Klassen byte-gleich — die nahe Stufe, die Menge und
+jedes Tier; cos 272 · sin 233 unverändert.
+
+Vertrags-Akt w28-wange (15.11.2026, die Wange vor dem Auge — gate:mensch-anatomie KOPF `orbitaOben` · `orbitaUnten` · `wangeVor` ·
+`lidHinterRand`; die Quelle des Solls: Matros, Momoh, Yaremchuk 2009, im Kern beim Band): das Gesicht des Menschen trägt die
+Kuppe der Wange (koerper `MENSCH_GESTALT.gesicht.wangeKuppe`, das Primitiv `malar±`), die Wange darunter liegt seitlich des
+Mundwinkels (`gesicht.wange`, das Primitiv `buccal±`), die Brauenwulst steht 0,005 weiter vor (`gesicht.brauWulst`). Bis hier
+fiel die Haut unter dem Auge ein (der untere Höhlenrand 7,5 mm, die Wange 11,6 mm HINTER der Hornhaut): unter der Mittags-Sonne
+stand das Untergesicht jedes Bewohners als dunkle Maske, der Augapfel als Buckel vor Stirn und Wange. EIN Guss, jede Stufe liest
+ihn: 17 Zeilen des Goldens bewegt, alle Mensch — L0 `haut|head` (das Gesicht), die vier Lider `skin|lid…` (ihr Ton am Ort der
+Haut), `haut|mensch` und `stoff_233047|mensch` (der Ring der Naht und der Haushalt der Zeile), L1 `haut` · `skin` ·
+`stoff_233047`, L2 `leib` (945 → 946 Ecken) und L3 `leib`, je der Beipack. Keine Klasse fällt, keine kommt (507); 491 Klassen
+byte-gleich — jedes Tier; cos 272 · sin 233 unverändert.
+
+Vertrags-Akt w28-iris-frei (15.11.2026, die Höhle steht vorn — gate:mensch-anatomie KOPF `hoehleVorn`): vor der Mitte ihrer Kugel
+ist die Höhle des Auges ihre Öffnung (foundry `hautTonAn` · `inOrbita`: die Ellipse der Höhlen-Kugel quer zum Blick, gleich wie
+weit vorn die Haut steht) — das Unterlid und die Haut darunter tragen den Ton der Höhle. Der Saum im Raum (`hoehleSaum`) trug ihn
+seit den Lid-Schalen (w28-gesicht) nur noch an 13 Ecken je Seite am äußeren Augenwinkel: die Station mensch.K4#1 las an der Kamera
+des Spiels zwei Flecken im Streiflicht statt der Höhle. Dazu die Töne (koerper `KOPF_TON`): die Lippe Δa* 9 → 13, die Höhle −4/+3 →
+−6/+1. EIN Guss, die nahen Stufen lesen ihn: 7 Zeilen des Goldens bewegt, alle Mensch — L0 `haut|head` und die vier Lider
+`skin|lid…` (Ton und Farbe je Ecke), L1 `haut|mensch` und `skin|mensch`. Keine Klasse fällt, keine kommt (507); 500 Klassen
+byte-gleich — jedes Tier, L2 und L3 des Menschen: am Guss der Menge (946 Ecken: 174 Haut · 54 Haar · 718 Kleid) trägt keine Ecke
+Lippe, Höhle oder Braue (`__mengenFarben`) — ihr Gesicht ist der nächste Schnitt.
+
+Vertrags-Akt w28-satz-menge (15.11.2026, das Gesicht der Menge — gate:mensch-anatomie KOPF `mengeGesicht`): der Guss der Menge packt
+das Gesetz seines Gesichts bei (foundry `__gesichtFern`: `__skelett.gesicht` — der Radius des Augapfels, die Augen-Mitten, die
+Lidspalte und die Iris in Radien, die Zonen der Brauen, der Kasten der Lippen mit der Mund-Linie, die festen Farben), im Raum seiner
+Vorlage. Der Leib der Menge trägt keine Ecke für Auge, Braue oder Lippe (946 Ecken: 174 Haut · 54 Haar · 718 Kleid): der Stoff des
+Satzes zeichnet die Züge als Funktion (stoff-gang `_gangSeite`), kein Dreieck und kein Befehl je Bewohner. 2 Zeilen des Goldens
+bewegt: `mensch-L2|beipack` und `mensch-L3|beipack`. Keine Klasse fällt, keine kommt (507); 505 Klassen byte-gleich — jede Ecke,
+jedes Gelenk, jedes Tier.
 
 ## Invarianten des Gates
 

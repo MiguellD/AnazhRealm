@@ -722,6 +722,225 @@ class AnazhRealm_dienst {
         return this._spielerD2(p.x || 0, p.z || 0);
     }
 
+    // ═══ DER SATZ HÄNGT AM SCHIRM (w28-march-schirm, 15.11.2026; Gebot 7: Kosten an den Schirm) ═══
+    // Befund (OMEN, GTX 1060, Netz-Stadt „dorf 7 4750“, 3 × 3 Kacheln wach, stehend): von 1829 Häusern trugen 990 KEIN Bild —
+    // weder Mesh noch Karte noch Satz. Jedes Haus hielt seinen eigenen Satz (7,7 Kapsel-Slots, 6459 von 8192), die Liste war
+    // voll, und wer an ihr achtmal scheiterte, gab für immer auf (`_ziegelGebacken`, „kein Rückweg“); an derselben vollen Liste
+    // bekam kein Mensch der Ferne seine Glieder (`_kzVersuch`, unsichtbar für immer). Mit einer groben Hülle stand die
+    // FELD-Liste an ihrer Decke (4096 von 4096: 2220 Felder der Glieder der Menschen, 1368 der Laternen) — an main schon am
+    // Messort stadt-voll bei 4089. Beide Listen wuchsen mit der Stadt, und ihr Deckel war still.
+    // DAS GESETZ, EINES für jede Art (Haus, Laterne, Mensch):
+    //   1 VOLL HEISST WARTEN, nie aufgeben: wer an einer vollen Liste keinen Platz bekommt, nennt die EINE Zusage „Platz im
+    //     Welt-March“ (`_weltPlatzWarten`) und schläft auf ihr; ein freies Feld oder Segment weckt die Wartenden
+    //     (`_weltPlatzTakt`, höchstens je `platzMs`), der Nächste fragt zuerst (die Ziegel-Schlange reiht nach Abstand).
+    //   2 DER SATZ IST EINE FUNKTION DER PIXEL: jenseits seines Pixel-Horizonts (`_satzHorizont`: die Ansicht in m² gegen
+    //     `satzPx` Bildpunkte²) trägt ein Ding weder Satz noch Feld — eine Laterne und ein Mensch rund 170 m weit, ein Haus
+    //     Kilometer; das Haus trägt fern seine grobe Hülle (`_huelleFern`: Kasten, Dach, jedes Teil ab einem Viertel).
+    //   3 DER FERNSTE WEICHT: ist eine Liste voll, gibt der fernste Halter sein Feld dem Warter, der mindestens
+    //     `weichFaktor`-mal näher steht (`_weltSatzWeichen`) — die Liste trägt die Nächsten, in jeder Reihenfolge des Erwachens;
+    //     die Schwelle hält den Stand ruhig (kein Paar tauscht hin und her).
+    // Der Pixel-Horizont (m) einer Ansicht von `flaeche` m²: bis dorthin füllt sie `satzPx` Bildpunkte² (Infinity ohne Schirm).
+    _satzHorizont(flaeche) {
+        const px = this._schirm().pxJeM;
+        if (!(flaeche > 0) || px == null) return Infinity;
+        return px * Math.sqrt(flaeche / AnazhRealm.WELT_MARCH.satzPx);
+    }
+    // Die Ansicht eines Satzes (m²): die größte Seite seiner lokalen Box (das Produkt ihrer zwei größten Kanten), mal dem
+    // Maßstab² seines Trägers.
+    static _satzAnsicht(brick, massstab = 1) {
+        const g = brick && brick.lokalGroesse;
+        if (!g) return 0;
+        const k = Math.min(g.x, g.y, g.z);
+        return k > 0
+            ? ((g.x * g.y * g.z) / k) * massstab * massstab
+            : Math.max(g.x * g.y, g.y * g.z, g.x * g.z) * massstab * massstab;
+    }
+    // Ist eine der zwei Listen voll (die Kapsel-Liste nach einer gescheiterten Allokation, die Feld-Liste ohne freien Platz)?
+    _weltPlatzVoll() {
+        const wm = this.state.weltMarch;
+        return !!wm && (wm.kapselVoll || wm.freiFelder.length === 0);
+    }
+    // Der Wartende nennt die EINE Zusage (`_wartetAuf`: der Sammler seines Takts legt sie zu seinen übrigen) — er schläft, bis
+    // Platz frei wird; ohne Sammler liest er die Generation (`wm.platzGen`).
+    _weltPlatzWarten(vorab = false) {
+        const wm = this.state.weltMarch;
+        if (!wm) return;
+        if (!wm.platz) {
+            let kam = null;
+            const z = new Promise((ja) => (kam = ja));
+            wm.platz = { z, kam, echt: false };
+        }
+        if (!vorab) wm.platz.echt = true; // einer, den sein Feld zeichnete: jedes freie Feld weckt (`_weltPlatzTakt`)
+        wm.wartend++;
+        this._wartetAuf(wm.platz.z);
+    }
+    // Der Wecker der Wartenden (je Bild, `_weltSchwundTakt`): fiel seit der Zusage ein Feld oder ein Segment frei, kommt sie —
+    // höchstens je `platzMs` (ein Dorf, das Felder im Takt tauscht, weckt nicht je Bild jeden Wartenden); die Welt regt sich
+    // (der Gang der Bauten ruht sonst unter der Stand-Wache).
+    _weltPlatzTakt(wm) {
+        if (!wm.platzFrei) return;
+        const jetzt = performance.now();
+        if (jetzt - wm.platzLetzt < AnazhRealm.WELT_MARCH.platzMs) return;
+        // warten nur Vorbacker (`_weltPlatzWarten(true)`), weckt sie erst Platz ÜBER der Reserve — sonst weckte jeder Leib, der im
+        // Gehen seine Stufe wechselt, den Gang der Bauten, und die Welt stünde nie
+        const p = wm.platz;
+        if (p && !p.echt && wm.freiFelder.length <= AnazhRealm.WELT_MARCH.reserve) return;
+        wm.platzFrei = false;
+        wm.platzLetzt = jetzt;
+        wm.platzGen++;
+        if (!p) return;
+        wm.platz = null;
+        p.kam();
+        this._weltRegt();
+    }
+    // DER PIXEL-HORIZONT DER LEIBER (dieselbe Regel wie der Bau, `_satzHorizont`, je Feld: `_leibSatzStufe`): je `platzMs` EIN
+    // Gang über die Leiber, die Felder halten, und über die geparkten. Ein Halter fällt hinter dem Totband auf seine Hülle (EIN
+    // Feld); jenseits des Horizonts der Hülle gibt er sein Feld frei und parkt (unsichtbar: unter `satzPx` Bildpunkten² trägt ihn
+    // kein Bild); ein geparkter diesseits des Horizonts — oder einer, der an einer vollen Liste wartete, sobald Platz frei wurde
+    // (`wm.platzGen`) — fragt im nächsten Takt neu (`_kzVersuch` fällt, `_kzLeib` backt). Ein Leib, der die Welt verließ, fällt
+    // aus beiden Mengen.
+    // DIE GLIEDER SIND DER DEHNBARE TEIL DER LISTE: sie nehmen nur, was über der RESERVE (`WELT_MARCH.reserve` Felder) frei ist,
+    // und geben zuerst zurück — sinkt die Liste unter die Reserve, fallen erst die schweigenden Felder (`_weltStillWeicht`), dann
+    // die fernsten Leiber mit Gliedern auf ihre Hülle; trägt die Liste wieder Glieder über der Reserve, bekommt sie der nächste
+    // Leib, der sie will; sonst tauscht er sie mit dem fernsten Träger, der mindestens `weichFaktor`-mal so weit steht. So findet
+    // ein Haus, eine Laterne, eine Hülle im Stand immer ein freies Feld: an der Netz-Stadt (15.11., Liste randvoll) warteten
+    // sonst dauernd Leiber und Laternen und tauschten im Takt (45 Wechsel der Bauten und 172 der Leiber in 66 s Stand).
+    _weltLeibTakt(wm) {
+        const R = AnazhRealm.WELT_MARCH.reserve;
+        const frei = () => wm.freiFelder.length;
+        if (frei() >= R && !wm.leibHalter.size && !wm.leibFern.size) return;
+        const jetzt = performance.now();
+        if (jetzt - (wm.leibLetzt || 0) < AnazhRealm.WELT_MARCH.platzMs) return;
+        wm.leibLetzt = jetzt;
+        // DIE RESERVE: unter ihr fallen die schweigenden Felder, dann (unten) die fernsten Glieder; über ihr steigt der Nächste auf
+        while (frei() < R && this._weltStillWeicht(null));
+        if (!this._lodAuge()) return;
+        const p = this.state.playerMesh && this.state.playerMesh.position;
+        const d2 = (cr) => (p ? (cr.position.x - p.x) ** 2 + (cr.position.z - p.z) ** 2 : 0);
+        const glieder = []; // die Leiber, die ihre Glieder behalten: [Abstand², Leib]
+        const wunsch = []; // die Leiber mit Hülle diesseits des Glied-Horizonts: [Abstand², Leib, Stufe]
+        for (const cr of wm.leibHalter) {
+            const u = cr.userData;
+            if (!u || !u._kzGlieder || !cr.parent) {
+                wm.leibHalter.delete(cr);
+                continue;
+            }
+            if (u._kzNah === true) continue;
+            const S = this._leibSatzStufe(cr);
+            if (!S || !S.H) continue;
+            if (!S.fern) {
+                if (S.grob && u._kzGrob !== true) {
+                    if (this._leibStufeTauschen(cr, S)) wm.stufen++; // hinter dem Totband: die Glieder fallen auf die Hülle
+                } else if (u._kzGrob === true) {
+                    if (!S.grob) wunsch.push([d2(cr), cr, S]);
+                } else glieder.push([d2(cr), cr]);
+                continue;
+            }
+            for (const gl of u._kzGlieder) this._weltFeldFrei(gl.handle);
+            u._kzGlieder = null;
+            u._kzVersuch = true; // geparkt: `_kzLeib` hält ihn unsichtbar und fragt nicht
+            u._kzFern = -1;
+            cr.visible = false;
+            wm.leibHalter.delete(cr);
+            wm.leibFern.add(cr);
+            wm.horizont++;
+        }
+        glieder.sort((a, b) => a[0] - b[0]);
+        while (frei() < R && glieder.length) this._leibWeicht(glieder.pop()[1]);
+        wunsch.sort((a, b) => a[0] - b[0]);
+        const f2 = AnazhRealm.WELT_MARCH.weichFaktor ** 2;
+        for (const [d, cr, S] of wunsch) {
+            if (cr.userData._kzGrob !== true || !cr.userData._kzGlieder) continue;
+            if (frei() + 1 - S.namen.length < R) {
+                const fern = glieder[glieder.length - 1];
+                if (!fern || fern[0] < d * f2) break; // kein fernerer Träger: auch kein späterer Wunsch findet einen
+                this._leibWeicht(glieder.pop()[1]);
+            }
+            if (this._leibStufeTauschen(cr, S)) wm.stufen++;
+        }
+        for (const cr of wm.leibFern) {
+            const u = cr.userData;
+            if (!u || !cr.parent || u._kzGlieder || u._kzFern === undefined) {
+                wm.leibFern.delete(cr);
+                continue;
+            }
+            // `_kzFern`: −1 = jenseits des Horizonts geparkt, sonst die Generation des Platzes, an der er wartete
+            const S = this._leibSatzStufe(cr);
+            const nah = !S || !S.fern;
+            if (u._kzFern === -1 ? !nah : !nah || u._kzFern === wm.platzGen) continue;
+            u._kzVersuch = false;
+            u._kzFern = undefined;
+            wm.leibFern.delete(cr);
+        }
+    }
+    // EIN SCHWEIGENDES FELD FÄLLT (ein Bau, dessen Mesh zeichnet — der innerste zuerst: er braucht seinen Satz zuletzt —, sonst
+    // ein Leib, den sein Studio-Tier trägt): beide backten nur vor, ihr Feld zeichnet nicht. → fiel eines?
+    _weltStillWeicht(ausser) {
+        const wm = this.state.weltMarch;
+        const p = this.state.playerMesh && this.state.playerMesh.position;
+        if (!wm || !p) return false;
+        let still = null,
+            sd = Infinity;
+        for (const h of wm.halter) {
+            if (h === ausser || !h._ziegelSlot || h._ziegelNah !== true || !h.position) continue;
+            const q = (h.position.x - p.x) ** 2 + (h.position.z - p.z) ** 2;
+            if (q < sd && this._archIsRendered(h)) [still, sd] = [h, q];
+        }
+        if (still) {
+            this._archZiegelWeicht(still);
+            this._cullWecken(still);
+            wm.stillWich++;
+            return true;
+        }
+        for (const cr of wm.leibHalter) {
+            const u = cr.userData;
+            if (cr === ausser || !u || !u._kzGlieder || u._kzNah !== true) continue;
+            this._leibWeicht(cr);
+            wm.stillWich++;
+            return true;
+        }
+        return false;
+    }
+    // AN DER VOLLEN LISTE WEICHT, WER JE FELD DIE WENIGSTEN BILDPUNKTE LIEST — dem Warter `entry`, dessen Feld `ansicht` m² zeigt
+    // (ohne Maß: jedem). Zuerst fällt ein Feld, das schweigt (`_weltStillWeicht`: es nimmt keinem das einzige Bild). Sonst gibt
+    // der Halter mit den wenigsten Bildpunkten je Feld frei (Ansicht ÷ Abstand², Bauten jenseits der Mesh-Zone und Leiber im
+    // Feld), wenn der Warter mindestens `weichFaktor`² mal so viele liest (bei gleicher Größe: `weichFaktor`-mal näher steht —
+    // die Schwelle hält den Stand ruhig): ein Bau gibt sein Feld und wartet selbst auf Platz (`_cullWecken`), ein Leib mit
+    // Gliedern fällt auf seine Hülle, einer mit Hülle parkt (`_leibWeicht`). So verliert kein Haus sein Bild für die Glieder
+    // eines fernen Menschen: am Messort der Netz-Stadt standen 219 Menschen binnen 75 m mit je 12 Feldern, 1143 von 1829
+    // Häusern warteten (15.11.). Rufen darf nur, wen sein Feld ZEICHNETE: wer vorbackt (`_archZiegelVoll`,
+    // `_kreaturGliederBacken`), verdrängt keinen. → wich einer?
+    _weltSatzWeichen(entry, ansicht) {
+        const wm = this.state.weltMarch;
+        const p = this.state.playerMesh && this.state.playerMesh.position;
+        if (!wm || !p || !entry || !entry.position) return false;
+        if (this._weltStillWeicht(entry)) return true;
+        const d2 = (e) => Math.max(1, (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2);
+        const f = AnazhRealm.WELT_MARCH.weichFaktor;
+        let opfer = null,
+            leib = false,
+            min = (ansicht > 0 ? ansicht : Infinity) / d2(entry) / (f * f);
+        for (const h of wm.halter) {
+            if (h === entry || !h._ziegelSlot || h._ziegelNah === true || !h.position) continue;
+            const px = (h._satzA > 0 ? h._satzA : Infinity) / d2(h);
+            if (px < min) [opfer, leib, min] = [h, false, px];
+        }
+        for (const cr of wm.leibHalter) {
+            const u = cr.userData;
+            if (cr === entry || !u || !u._kzGlieder || !cr.parent || u._kzNah === true) continue;
+            const px = (u._satzA > 0 ? u._satzA : Infinity) / d2(cr);
+            if (px < min) [opfer, leib, min] = [cr, true, px];
+        }
+        if (!opfer) return false;
+        if (leib) this._leibWeicht(opfer);
+        else {
+            this._archZiegelWeicht(opfer);
+            this._cullWecken(opfer);
+            wm.wechsel++;
+        }
+        return true;
+    }
+
     _weltMarchEnsure() {
         const st = this.state;
         if (st.weltMarch) return st.weltMarch;
@@ -777,6 +996,24 @@ class AnazhRealm_dienst {
             freiFelder: Array.from({ length: W.felder }, (_x, i) => W.felder - 1 - i), // pop() vergibt 0 zuerst — die Obergrenze bleibt eng
             belegt: 0, // Feld-EINTRÄGE (Instanzen)
             obergrenze: 0, // höchster belegter Feld-Index + 1 (× gesetzBlock = die Stellvertreter des March-Draws)
+            // DER SATZ HÄNGT AM SCHIRM (w28-march-schirm): die Bauten, die ein Feld halten (`_archZiegelHalten` — der fernste weicht
+            // dem näheren Warter, `_weltSatzWeichen`); die EINE Zusage „Platz im Welt-March“ ({ z, kam }), auf der schläft, wer an
+            // einer vollen Liste wartet (`_weltPlatzWarten`), ihre Generation für Leser ohne Sammler (die Leiber); die Zähler der
+            // drei Urteile (gewartet · gewichen · am Pixel-Horizont gefallen) liest jede Linse
+            halter: new Set(),
+            platz: null,
+            platzFrei: false,
+            platzLetzt: 0,
+            platzGen: 0,
+            wartend: 0,
+            wechsel: 0,
+            horizont: 0,
+            ansichtTyp: new Map(), // Bau-Typ → Ansicht (m²) seines letzten Satzes: der Pixel-Horizont eines Baus, der noch keinen trug
+            leibHalter: new Set(), // die Leiber, deren Glieder Felder halten (`_kreaturGliederBacken`)
+            leibFern: new Set(), // die Leiber jenseits ihres Pixel-Horizonts oder wartend auf Platz (`_weltLeibTakt` ruft sie zurück)
+            stufen: 0, // Wechsel eines Leibs zwischen Gliedern und Hülle (`_leibStufeTauschen`)
+            leibWich: 0, // Leiber, die an der vollen Liste wichen (`_leibWeicht`: auf die Hülle, oder geparkt)
+            stillWich: 0, // schweigende Felder, die fielen (`_weltStillWeicht`: vorgebacken, kein Bild ging verloren)
         };
         return st.weltMarch;
     }
@@ -1350,7 +1587,10 @@ class AnazhRealm_dienst {
     // Der Schwund-Takt (je Feld-Pass-Takt): Anteil = Zeit / WELT_SCHWUND_MS in Texel 5.w; am Ende fällt der Satz aus der
     // Zeichnung (d = 0).
     _weltSchwundTakt(wm) {
-        if (!wm || !wm.schwund.size) return;
+        if (!wm) return;
+        this._weltPlatzTakt(wm);
+        this._weltLeibTakt(wm);
+        if (!wm.schwund.size) return;
         const L = wm.listeDaten;
         const jetzt = performance.now();
         for (const h of wm.schwund) {
@@ -1461,7 +1701,9 @@ class AnazhRealm_dienst {
 
     // Ein FELD-EINTRAG stirbt: der Listen-Slot fällt frei, das Brick nur, wenn
     // KEIN anderer Eintrag mehr darauf zeigt (Dedup-Refcount).
-    _weltFeldFrei(handle) {
+    // `rueckgabe`: der Ruf gibt nur zurück, was er im selben Zug nahm (ein halber Leib an der vollen Liste) — das ist kein neuer
+    // Platz und weckt keinen Wartenden (`platzFrei`).
+    _weltFeldFrei(handle, rueckgabe = false) {
         const wm = this.state.weltMarch;
         if (!wm || !handle) return;
         if (handle._frei) return; // Doppel-Frei-Wand
@@ -1484,6 +1726,7 @@ class AnazhRealm_dienst {
         wm.handles[handle.feld] = null;
         while (wm.obergrenze > 0 && !wm.handles[wm.obergrenze - 1]) wm.obergrenze--;
         wm.belegt--;
+        if (!rueckgabe) wm.platzFrei = true;
         const brick = handle.brick;
         if (brick) {
             brick.refs--;
@@ -1645,6 +1888,10 @@ class AnazhRealm_dienst {
                 if (Array.isArray(w) && Array.isArray(w[0]))
                     return w.map((z) => AnazhRealm._tIn(sp, z[0], z[1], wert)).join(", ");
                 if (Array.isArray(w)) return AnazhRealm._tIn(sp, w[0], w[1], wert);
+                // `{ kopf: [schlüssel, werte] }` ist der KOPF eines Namens der Tafel („Meister-Esse (Eisen)“ → „Meister-Esse“),
+                // geschnitten erst in der Sprache des Lesens (`AnazhRealm._namensZeile`)
+                if (w && Array.isArray(w.kopf))
+                    return AnazhRealm._namensKopf(AnazhRealm._tIn(sp, w.kopf[0], w.kopf[1], wert));
                 // in der Linsen-Sprache steht ein Wert (ein Name, eine Zahl: Daten) zwischen den Isolat-Zeichen U+2068 … U+2069
                 return sp === "pseudo" ? `⁨${wert(w)}⁩` : wert(w);
             })
@@ -1731,6 +1978,14 @@ class AnazhRealm_dienst {
         return sp === "pseudo" ? "de" : sp;
     }
 
+    // DIE ZEICHEN-SIGNATUR (spielgang.K5, der Wechsel am Ort): ein Zeichner, der sein Stück nur bei neuer Lage neu baut, trägt
+    // die Sprache in der Lage — sonst ruft ihn der Wechsel (`SPRACH_ZEICHNER`, der Status-Takt), und er lässt die alte Spalte
+    // stehen (Radeon 2676a667, same.preis.zugang: 10 Zeilen des Welt-Journals). Leser: Welt-Journal, Rezeptbuch, Gesten,
+    // Gesetze, der Welt-Katalog der Mitspieler.
+    static _zeichenSig(lage) {
+        return AnazhRealm._sprache() + "|" + lage;
+    }
+
     // der Wechsel am Ort: das Wort auf dem Gerät, die Spalte neu gelesen, das DOM aus index.html neu gefüllt (`_sprachDom`) —
     // jede Zeile, die danach entsteht, liest die neue Spalte; die Seite lädt nie neu (gate:weltgrenze: `location.reload`
     // steht nur im lauten Rückfall des Welt-Wechsels)
@@ -1743,6 +1998,19 @@ class AnazhRealm_dienst {
         // die Zeichner der Oberfläche zeichnen neu (jeder liest die Tafel und die Etiketten in der neuen Spalte); die Linse
         // (gate:sprache --lebend, der Wechsel am Ort) nennt jede Zeile, die danach noch in der alten Sprache steht, beim Erzeuger
         for (const z of AnazhRealm.SPRACH_ZEICHNER) this[z]();
+        // die Takt-Schreiber des HUD (die Status-Leiste 2,5 Hz: Wetter · Leistung · Bauten · Seele · Gefühl; das Lebens-HUD
+        // 10 Hz und sein Tooltip 1 Hz) schreiben ihre Zeilen JETZT in der neuen Spalte — bis hier standen sie bis zu ihrem
+        // nächsten Takt in der alten (Radeon a996d0ae, same.preis.zugang: 13 Zeilen stehen nach dem Wechsel)
+        const st = this.state;
+        if (st) {
+            st._statsHudLastTick = st._statsHudTooltipLastTick = 0;
+            if (this._statusRefs) this._statusRefs.lastTick = -Infinity;
+            const jetzt = performance.now() / 1000;
+            this.tickStatsHud(jetzt);
+            this.updateStatusPanel(jetzt);
+            // die FPS-Zeile (1-s-Takt): in de und en dieselbe Zeichenfolge, aus der Linsen-Sprache pseudo stand sie bis zu ihrem Takt
+            this._fpsSchreib();
+        }
     }
 
     // DIE ZEILE AM KNOTEN (spielgang.K5): ein Knoten, den ein Bauer EINMAL füllt, trägt seinen Schlüssel (`data-t`, je Attribut
@@ -1938,11 +2206,12 @@ class AnazhRealm_dienst {
     // Der Gang ist gegangen: `besucht` Einheiten, `gewirkt` = er änderte die Welt (er geht noch einmal; ein Bau-Takt weckt
     // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach; "felder": nur auf die Bake-Uhr, ein Asset oder das
     // Buch — ihn wecken ihr Wecker und der Stempel). Beides beginnt seine Runde neu.
-    _standMeldet(name, besucht, gewirkt, offen) {
+    _standMeldet(name, besucht, gewirkt, offen, warum = null) {
         const t = this._standWache ? this._standWache.takte.get(name) : null;
         if (!t) return;
         t.arbeit += besucht;
         t.offen = offen === "felder" ? offen : !!offen;
+        t.warum = offen ? warum : null; // worauf er wartet, beim Namen (`_standGeht`)
         t.wecker = this._weltBakeWecker();
         if (gewirkt) {
             t.leer = 0;
@@ -2045,6 +2314,16 @@ AnazhRealm.WELT_MARCH = Object.freeze({
     // bleiben Kreaturen/Bauten/Bäumen.
     gesetzKachelM: 64, // Kachel-Kante der Gesetz-Blöcke (Schirm-Bindung: kleine Hüll-AABBs)
     gesetzBlock: 16, // Plätze je Block (1 Kapsel-Slot = 2 Texel je Platz)
+    // DER SATZ HÄNGT AM SCHIRM (w28-march-schirm, `_satzHorizont`): ein Ding trägt Satz und Feld, solange seine Ansicht am Schirm
+    // `satzPx` Bildpunkte² füllt; `satzBand` (Anteil des Horizonts) ist das Totband am Rand. Ist eine Liste voll, weicht, wer je
+    // Feld die wenigsten Bildpunkte liest, dem Warter, der `weichFaktor`² mal so viele liest; freier Platz weckt die Wartenden
+    // höchstens je `platzMs`. `reserve`: so viele Felder lassen die Glieder der Leiber und die vorgebackenen Sätze frei
+    // (`_weltLeibTakt`) — gesetzt auf rund zwei Drittel einer erwachenden Kachel (190 Häuser): der Zuwachs zwischen zwei Gängen.
+    satzPx: 16,
+    satzBand: 0.1,
+    weichFaktor: 1.25,
+    platzMs: 250,
+    reserve: 128,
 });
 // DER SCHWUND (ms): so lange dithert ein Analog-Satz aus, wenn sein Mesh übernimmt (`_weltFeldAktiv`) — der
 // Übergang Satz → Studio-Stufe trägt die Blende der Stufen statt eines Pops.
@@ -2053,11 +2332,17 @@ AnazhRealm.WELT_SCHWUND_MS = 500;
 // (`data-hud-zeigen` liest das CSS: der Wink `body.hud-hidden::after`).
 AnazhRealm.SPRACH_ATTRIBUTE = Object.freeze(["title", "placeholder", "aria-label", "alt", "data-hud-zeigen"]);
 // DIE ZEICHNER DER OBERFLÄCHE (spielgang.K5, der Wechsel am Ort): jeder baut sein Stück aus Tafel und Etiketten neu und ist
-// wiederholbar; was ein Bauer EINMAL baut, trägt seine Schlüssel am Knoten (`_tSetze`) und füllt `_sprachDom`
+// wiederholbar; was ein Bauer EINMAL baut, trägt seine Schlüssel am Knoten (`_tSetze`) und füllt `_sprachDom`. Das Blatt des
+// Ich, die Karte des Wesens im Hof und die Stoff- und Werkzeug-Paletten der Werkstatt baute bis hier nur ihr Öffner (die
+// Paletten einmal je Sitzung): nach dem Wechsel standen sie in der alten Sprache, bis der Spieler sie neu öffnete.
 AnazhRealm.SPRACH_ZEICHNER = Object.freeze([
     "renderInventoryUI",
+    "_ichRenderSpecSheet",
+    "_hofRefreshFocus",
     "_renderHotbarDOM",
     "_renderWorkshopDOM",
+    "_workshopRenderMaterialPalette",
+    "_workshopRenderToolPalette",
     "renderLibraryUI",
     "_renderKeybindingsUI",
     "updateWorldInfo",

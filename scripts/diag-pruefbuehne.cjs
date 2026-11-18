@@ -6,13 +6,13 @@
 // Nexus (sein Pool `dslComposeAtomic` baut alle 24 s an `far_player`). Diese Linse nennt jeden Wurf beim Namen.
 //
 // Je Welt (Standard = die Wildnis als FELD-KONTROLLE; Bühne, importiert wie im Spiel) misst sie:
-//   (1) DIE WÜRFE: jede Ort-Op der Welt-Akte (Tier, Baum, Studio-Werk, Insel, UFO, Dorf, Tempel, Wasserfall, Bauplan,
+//   (1) DIE WÜRFE: jede Ort-Op der Welt-Akte (Tier, Baum, Studio-Werk, Dorf, Tempel, Wasserfall, Bauplan,
 //       Fraktal, Füll-Kugel) mit der Quelle des Feldes — `nexus` und `rule:nexus` — und ihr Zuwachs an Welt-Substanz
-//       (Bauten, Tiere, Inseln, UFOs, Pflanz-Schlange, Dorf-Zellen, Edits). Bühne: 0 je Op; Wildnis: > 0 (die Linse sieht).
+//       (Bauten, Tiere, Pflanz-Schlange, Dorf-Zellen, Edits). Bühne: 0 je Op; Wildnis: > 0 (die Linse sieht).
 //   (2) DER AKT: dieselbe Op als Mensch (`human`) setzt auch auf der Bühne (das Prädikat hält das Feld, nie die Hand).
 //   (3) DER NEXUS-TAKT, getrieben: N Evolutionen (`generateEvolution` + `_loopNexusUpdate`, Wirk-Kraft voll — im Spiel alle
 //       24 s eine) und ein Takt, in dem seine Regeln feuern. Bühne: Zuwachs 0.
-//   (4) DER ABSENZ-ZENSUS in 300 m nach dem Takt: fremde Bauten, Streu-Zellen, Nah-Streu, Tiere, Inseln, Dorf-Zellen,
+//   (4) DER ABSENZ-ZENSUS in 300 m nach dem Takt: fremde Bauten, Streu-Zellen, Nah-Streu, Tiere, Dorf-Zellen,
 //       Pflanz-Schlange, Flüsse — auf der Bühne 0.
 //   (5) DIE S4-PROBE: die Hindernis-Station (`s4-hindernisse` in spec/pruefbuehne/stationen.json — Würfel, Säule, Mauer,
 //       Gasse, Hausrumpf 45°, Engpass) steht, gesät über die Snapshot-Tür: je Körper die Blocker-Boxen ≤ 0,1 m an der
@@ -58,8 +58,6 @@ const WUERFE = [
     ["spawn_creature", ["near_player", 20], 3, "happy"],
     ["spawn_tree", ["far_player", 40, 90], 3],
     ["spawn_studio", "eiche", ["far_player", 40, 90], 2],
-    ["spawn_island", ["far_player", 60, 120]],
-    ["spawn_ufo", ["near_player", 30]],
     ["spawn_village", ["far_player", 180, 380]],
     ["spawn_temple", ["far_player", 180, 380]],
     ["spawn_waterfall", ["far_player", 180, 380]],
@@ -249,7 +247,7 @@ async function s0Probe(page, station, schein) {
             delete r._punktLichtBrdf;
             out.poolRuftBrdf = brdf > 0;
             r._setWeather("sunny", "human");
-            s.weatherTransition = null;
+            window.__uebergangFaellt(r);
             // die Uhr springt über den Pfad des Spielers (sein Satz, `setTimeOfDay`): EIN Anwenden des Tags, kein Nachmalen
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
@@ -484,8 +482,6 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
             const substanz = () => ({
                 bauten: new Set(s.architectures || []),
                 tiere: new Set(s.creatures || []),
-                inseln: new Set(s.floatingIslands || []),
-                ufos: new Set(s.ufos || []),
                 pflanzSchlange: new Set(s.pendingVegSpawns || []),
                 dorfZellen: new Set(Object.keys(wm().settlementCells || {})),
                 edits: new Set(wm().voxelEdits || []),
@@ -586,7 +582,6 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                     streuZellen: streu,
                     nahStreu,
                     tiere: (s.creatures || []).filter((c) => c?.position && d(c.position) <= R).length,
-                    inseln: (s.floatingIslands || []).length,
                     dorfZellen: Object.keys(wm().settlementCells || {}).length,
                     pflanzSchlange: (s.pendingVegSpawns || []).length,
                     // jeder Fluss, den kein Term der Bühne trägt (der Bach der Klamm S6 ist ihr Gesetz, kein Wurf)
@@ -815,7 +810,7 @@ const S0_LUMA_2M = 0.15;
 // die Nacht mit — die Glut-Palette des Selbsttests stand gemischt bei 35° im Band (BLIND). Gemessen wird das Licht des Feuers:
 // derselbe Ring im Schuss mit Feuer minus im Schuss ohne (`nacht`, dieselbe Kamera, dieselben Pixel), je Kanal in der Ausgabe
 // (sRGB, ≥ 0).
-const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 } };
+const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 }, paletteUnter: 2 };
 // ZWEI GRÖSSEN, ZWEI LESER (D3-2 mit K66): der FARBTON ist das Licht des Feuers (netto, die Nacht abgezogen — die Farbtemperatur
 // des Gesetzes), die SÄTTIGUNG ist, was das Auge sieht (brutto, das Bild mit der Nacht — die Wand des Auges der Nacht). Netto
 // gemessen trägt jedes Licht seine volle Sättigung (das Feuer allein, ohne den Boden der Nacht: 0,96).
@@ -844,8 +839,11 @@ const s0TonPasst = (t) => s0TonImBand(t) && t.sat <= S0_TON.satMax;
 // `wieseRelief` las den Rausch-Atlas und vererbte seinen Namen in jedes weitere Programm — auf der Bühne sagte swiftshader die
 // Pipeline ab. Der Selbsttest (Mutante c) lässt eine Hilfs-Funktion eine Bindung des gezeichneten Programms lesen. DIE RATSCHE
 // DER GRÖSSE (`zeichenMax`, `S0_ZEICHEN`): das Programm wächst nicht — am 12.11. (main f46b9e81) 95 297 Zeichen auf Radeon 890M
-// und GTX 1060, die Decke der Stand + 5 %; sie fällt nur (schrumpft das Programm, sinkt die Zahl hier mit).
-const S0_ZEICHEN = { stand: 95297, luft: 1.05 };
+// und GTX 1060, die Decke der Stand + Luft (bis 18.11. 5 %); sie fällt nur (schrumpft das Programm, sinkt die Zahl hier mit).
+// 18.11. GEHOBEN FÜR DEN WEG-KÖRPER (w28-weg-koerper, Wort des Koordinators): 102 120 Zeichen am Kopf (GTX 1060) — wegBord +2 499,
+// Aufruf/Kante +480, Belag +500, wegAn +96 über main 1f300260 (98 747). Davor hatte main seit 12.11. 3 450 Zeichen still
+// gefressen (95 297 → 98 747), ohne dass eine Abgabe es nannte: die Luft ist darum ENGER, 2 % statt 5 % — sie feuert früher.
+const S0_ZEICHEN = { stand: 102120, luft: 1.02 };
 const S0_STOFF = (() => {
     const SK = require("./lib/shader-kosten.cjs");
     const budget = { bindungInFunktionMax: 0, zeichenMax: Math.round(S0_ZEICHEN.stand * S0_ZEICHEN.luft) };
@@ -1005,7 +1003,7 @@ async function himmelProbe(page, taub) {
             };
             const lum = luma709;
             r._setWeather("sunny", "human");
-            s.weatherTransition = null;
+            window.__uebergangFaellt(r);
             uhr(0.3);
             if (!(await r._himmelFrisch())) {
                 out.befunde.push("S0 Himmel: keine Lesung der Umgebung (`_himmelFrisch`) — die Probe ist blind");
@@ -1047,11 +1045,13 @@ async function himmelProbe(page, taub) {
 // „kamera" (Selbsttest) legt die Stufen der Kamera 2 tiefer (linear × 1/4: Luma 27 → ~9 sRGB), die Probe MUSS
 // `_dayNightApplyBelichtung` nennen. Das Sternen-Licht selbst wacht die Umgebung (der Himmel folgt dem Sprung, unten), den
 // Kontrast der Nacht gate:post-kette (h), die Dämmerung die Tag-Achse. DER TÄTER BEIM NAMEN (w27-boden-nah-2): trägt das Mittel
-// und reißt nur der Anteil abgesoffen, ist es der STOFF — das Himmels-Bild des Mikro-Reliefs (`_mikroStoff`) hält seinen Boden
-// nicht (`TERRAIN_BUMP.mulde`). Der Zug z352 fiel so (w26-boden-nah, Korn × Kavität 3,6 linear: Luma 24,6, abgesoffen 10,0 % auf
-// der Radeon wie auf swiftshader; main mit 2,1 stand bei 4,0 %, pascal bei 6,4 %), und das Urteil nannte Belichtung und
-// Post-Kette. Der Zweig „kein Sternen-Licht" fiel dafür: seit licht.K1 schwärzt es den Boden nie (oben). Selbsttest: die Zahlen
-// von z352 MÜSSEN `_mikroStoff` nennen. Die letzte Zeile des Laufs trägt Luma und Anteil der Nacht (der Probe-Post liest sie).
+// und reißt nur der Anteil abgesoffen, ist es der STOFF — das Korn des Mikro-Reliefs (`_mikroStoff`, die Spalte `korn` der Zeile
+// erde in der Stoff-Tafel) nimmt der Mulde zu viel Albedo. Der Zug z352 fiel so (w26-boden-nah, Korn × Kavität 3,6 linear im Himmels-Licht: Luma 24,6,
+// abgesoffen 10,0 % auf der Radeon wie auf swiftshader; main mit 2,1 stand bei 4,0 %, pascal bei 6,4 %), und das Urteil nannte
+// Belichtung und Post-Kette. Seit w28-himmel-korn liest das Himmels-Licht kein eigenes Bild der Höhe mehr: in der Nacht steht
+// das Korn der Albedo allein. Der Zweig „kein Sternen-Licht" fiel dafür: seit licht.K1 schwärzt es den Boden nie (oben).
+// Selbsttest: die Zahlen von z352 MÜSSEN `_mikroStoff` nennen. Die letzte Zeile des Laufs trägt Luma und Anteil der Nacht (der
+// Probe-Post liest sie).
 const S0_NACHT = { nacht: { luma: 22, schwarz: 0.05 } };
 function s0NachtUrteil(e, soll) {
     const g = e.grund;
@@ -1059,8 +1059,8 @@ function s0NachtUrteil(e, soll) {
     if (g.luma >= soll.luma && g.schwarz <= soll.schwarz) return [];
     const taeter =
         g.luma >= soll.luma
-            ? "das Mittel trägt, die Mulden saufen ab — das Himmels-Bild des Mikro-Reliefs hält seinen Boden nicht (`_mikroStoff`, " +
-              "`TERRAIN_BUMP.mulde`)"
+            ? "das Mittel trägt, die Mulden saufen ab — das Korn des Mikro-Reliefs nimmt der Mulde zu viel Albedo (`_mikroStoff`, " +
+              "die Spalte `korn` der Zeile erde in der Stoff-Tafel)"
             : `der Himmel trägt Licht (Sternen-Licht ${e.stern}, Umgebung ${e.himmel}), das Bild schwärzt es — die Belichtung ` +
               "der Nacht (`_dayNightApplyBelichtung`) oder die Post-Kette (Kontrast 25c, gate:post-kette (h))";
     return [
@@ -1596,9 +1596,15 @@ async function lichtLauf() {
         const fb = ergebnis.farbe;
         // das Feuer bis K11b reißt am Farbton (netto), das Auge des Tages an der Sättigung (brutto) bei Farbton im Band
         const fbTon = fb && !fb.fehler ? s0Ton(fb, ergebnis.nacht) : null;
-        const farbGetroffen = !!fbTon && !s0TonImBand(fbTon);
+        // DIE DIFFERENZ IM SELBEN LAUF (w28-glut-nacht): die Mutante gilt als gefangen, wenn ihr Farbton netto mindestens
+        // `S0_TON.paletteUnter` Grad UNTER dem des Kopfs im selben Lauf liegt (Gerät und Lauf kürzen sich heraus). Bis hierher
+        // musste sie aus dem Band 28–45° fallen — das fing sie nur, weil das Rosa des alten Auges der Nacht sie unter 28° zog:
+        // die Linse lehnte am Fehler. Ohne das Rosa liest sie 29,1° (im Band), der Kopf 32,2°. Das Band bleibt dem Kopf.
+        const kopfTon = sauber && !sauber.fehler ? s0Ton(sauber, ergebnis.nacht) : null;
+        const fbUnter = fbTon && kopfTon ? +(kopfTon.hue - fbTon.hue).toFixed(1) : null;
+        const farbGetroffen = fbUnter != null && fbUnter >= S0_TON.paletteUnter;
         console.log(
-            `  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette und nacht 12): ${farbGetroffen ? `getroffen — das Licht des Feuers fällt netto auf Farbton ${fbTon.hue}°: die Farbtemperatur trägt ihn` : "BLIND " + JSON.stringify(fbTon)}`
+            `  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette und nacht 12): ${farbGetroffen ? `getroffen — das Licht des Feuers fällt netto auf Farbton ${fbTon.hue}°, ${fbUnter}° unter dem Kopf (${kopfTon.hue}°, Soll ≥ ${S0_TON.paletteUnter}°): die Farbtemperatur trägt ihn` : `BLIND — ${fbUnter}° unter dem Kopf (Soll ≥ ${S0_TON.paletteUnter}°) ` + JSON.stringify({ kopf: kopfTon, mutante: fbTon })}`
         );
         const tg = ergebnis.tag;
         const tgTon = tg && !tg.fehler ? s0Ton(tg, ergebnis.nacht) : null;
@@ -1795,7 +1801,7 @@ hauptLauf(async () => {
             const z = rep.zensus;
             const fremd = Object.keys(z.fremdeBauten);
             if (fremd.length) rep.befunde.push(`Zensus: fremde Bauten ${JSON.stringify(z.fremdeBauten)}`);
-            for (const k of ["streuZellen", "nahStreu", "inseln", "dorfZellen", "pflanzSchlange", "fluesse"])
+            for (const k of ["streuZellen", "nahStreu", "dorfZellen", "pflanzSchlange", "fluesse"])
                 if (z[k]) rep.befunde.push(`Zensus: ${k} ${z[k]}`);
             // die Tiere: nur das gesetzte (der Akt pflanzt einen Baum, kein Tier) — jedes Tier ist ein Wurf
             if (z.tiere) rep.befunde.push(`Zensus: ${z.tiere} Tiere, die niemand setzte`);

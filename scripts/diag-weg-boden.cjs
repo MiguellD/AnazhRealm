@@ -13,8 +13,11 @@
 //                 echten Abbau (`removeArchitecture`) sind die Bytes sofort leer und gehen hoch, der CPU-Leser liest 0,
 //                 die Kacheln fallen (der nächste Takt lässt Wiese und Nah-Streu zurückwachsen)
 //   9 VOLL        ein Plan über der alten Kappe (1 000 Gassen-Stücke, danach ein Platz) malt jede Form, der Platz steht
+//  10 KÖRPER      die Fahrstraße der Stadt (fachwerk WEG_GESETZ, Art `strasse`) trägt ihren Querschnitt in der Karte: die
+//                 Fahrbahn als zweite Höhe des Pflasters (Mitte 1, am Bord ½, linear über ±fahrRandM), der Gehweg volles
+//                 Pflaster ohne Fahrbahn, hinter der Bauflucht nichts — und auf dem Pflaster steht bis an seine Kante kein Halm
 // --selftest: ein injizierter Boden-Streifen im Pool, eine harte Kante, der vergessliche ferne Umzug, der alte
-// Abbau der Trittfläche und die stille Kappe von 900 Formen müssen beim Namen rot werden.
+// Abbau der Trittfläche, die stille Kappe von 900 Formen und die Fahrstraße ohne Bord müssen beim Namen rot werden.
 //   node scripts/diag-weg-boden.cjs [--selftest]
 
 const { statikServer, hauptLauf, SELBSTTEST, nullWelt } = require("./lib/welt-boot.cjs");
@@ -179,6 +182,30 @@ function probe(stoerung) {
     const pts = Array.from({ length: k ? 901 : 1001 }, (_, i) => ({ x: i / 50 - 10, z: -8 }));
     r._stlWegeBuild({ roads: [{ pts, w: 2 }], platz: k ? null : { cx: 8, cz: -12, ex: 2, ez: 1.5 } }, o, "probe:voll", true);
     out.voll = [wk.siedlungen.length > vor ? wk.siedlungen.at(-1).formen.length : 0, +kanal(o.x + 8, o.z - 12, 0).toFixed(3)];
+    // 10 KÖRPER (w28-weg-koerper): die Fahrstraße einer Metropole von 1800 (gen 0, 5 m ≥ VERKEHR_GESETZ.breiteM: Pflaster, Art
+    // `strasse`) 40 m neben der Probe. Gelesen über den EINEN CPU-Leser (`_wegeBelagAt`: dieselben Bytes wie der Boden-Stoff).
+    // Die Störung `ohnebord`: das Gesetz nimmt der Art ihren Bord — die Karte trägt eine Ebene.
+    const FC = globalThis.__fachwerkCore;
+    const artAlt = FC.WEG_GESETZ.art.strasse;
+    if (stoerung === "ohnebord") FC.WEG_GESETZ.art.strasse = Object.assign({}, artAlt, { bord: false });
+    const stadt = { staedtisch: true, groesse: "metropole", jahr: 1800, roads: [{ pts: [{ x: -20, z: 40 }, { x: 20, z: 40 }], w: 5, gen: 0 }] };
+    const Q = FC.wegQuerschnitt(stadt, stadt.roads[0]);
+    try {
+        r._stlWegeBuild(stadt, o, "probe:koerper", true);
+    } finally {
+        FC.WEG_GESETZ.art.strasse = artAlt;
+    }
+    const lies = (dz) => {
+        const aus = {};
+        const feld = r._wegeBelagAt(o.x, o.z + 40 + dz, aus);
+        return [+aus.pflaster.toFixed(3), +aus.fahr.toFixed(3), +feld.toFixed(3)];
+    };
+    const [halb, R] = [Q.fahrM / 2, A.WEGE_KARTE.fahrRandM];
+    out.koerper = {
+        art: Q.art, gehM: Q.gehM, bordM: Q.bordM,
+        mitte: lies(0), bord: lies(halb), innen: lies(halb - R / 2), aussen: lies(halb + R / 2),
+        gehweg: lies(halb + Q.gehM - 0.7), hinter: lies(halb + Q.gehM + 1.5),
+    };
     A.WEGE_KARTE = randAlt;
     r._stlWegeDispose();
     return out;
@@ -297,6 +324,17 @@ function urteil(S) {
                 `Streu unter ihr ${S.bestandStreu} (soll > 0,5), ${S.bestandUngleich} Texel ungleich dem vollen Neumalen (soll 0)`
         );
     if (!(S.voll[0] === 1001 && S.voll[1] > 0.9)) rot.push(`9 VOLL: ${S.voll[0]} von 1001 Formen, der Platz danach ${S.voll[1]}`);
+    const K = S.koerper;
+    const um = (v, soll) => Math.abs(v - soll) <= 0.07; // ein Byte der Lage ist 1/63, die Probe liegt bis ¼ Texel neben dem Soll
+    if (
+        !(K.art === "strasse" && K.bordM > 0 && K.mitte[0] === 1 && K.mitte[1] > 0.95 && um(K.bord[1], 0.5) && um(K.innen[1], 0.75) && um(K.aussen[1], 0.25) &&
+          K.gehweg[0] > 0.95 && K.gehweg[1] < 0.07 && K.gehweg[2] === 1 && K.hinter[0] < 0.02)
+    )
+        rot.push(
+            `10 KÖRPER: Art ${K.art} (Bord ${K.bordM} m, Gehweg ${K.gehM} m) — Pflaster · Lage zum Bord: Mitte ${K.mitte[0]} · ${K.mitte[1]} (soll 1 · > 0,95), ` +
+                `am Bord ${K.bord[1]} (soll 0,5), ½ m innen ${K.innen[1]} (0,75), ½ m außen ${K.aussen[1]} (0,25), Gehweg ${K.gehweg[0]} · ${K.gehweg[1]} ` +
+                `(soll > 0,95 · < 0,07, Halm-Feld ${K.gehweg[2]} soll 1), hinter der Bauflucht ${K.hinter[0]} (soll < 0,02)`
+        );
     const T = S.tritt;
     if (!T) rot.push("8 TRITT: nicht gemessen");
     else if (T.fehler) rot.push("8 TRITT: " + T.fehler);
@@ -343,6 +381,7 @@ hauptLauf(async () => {
         const vergessen = urteil(await messen("vergessen"));
         const tritt = urteil(await messen("tritt"));
         const kappe = urteil(await messen("kappe"));
+        const ohnebord = urteil(await messen("ohnebord"));
         const heil = urteil(await messen(null));
         selbst = {
             streifenRot: streifen.some((e) => e.startsWith("1 KEIN QUAD")),
@@ -350,6 +389,8 @@ hauptLauf(async () => {
             vergessenRot: vergessen.some((e) => e.startsWith("7 BESTAND")),
             trittRot: tritt.some((e) => e.startsWith("8 TRITT gelöst")),
             kappeRot: kappe.some((e) => e.startsWith("9 VOLL")),
+            ohnebordRot: ohnebord.some((e) => e.startsWith("10 KÖRPER")),
+            ohnebord: ohnebord.find((e) => e.startsWith("10 KÖRPER")) || ohnebord[0] || "-",
             heilGruen: heil.length === 0,
             streifen: streifen[0] || "-",
             hart: hart.find((e) => e.startsWith("3 KANTE")) || hart[0] || "-",
@@ -368,6 +409,7 @@ hauptLauf(async () => {
         console.log(`  Platz ${S.platz} · Acker ${S.acker} · Feldweg ${S.feldweg}`);
         console.log(`  Konsum: Boden-Shader ${S.shaderLiest} · Wiese ${JSON.stringify(S.wiese)}`);
         console.log(`  Ecke (45°-Acker) ${S.ecke} · Weg in 300 m ${S.fernWeg} · voll ${S.voll}`);
+        console.log(`  Körper der Fahrstraße (Pflaster · Lage zum Bord · Halm-Feld): ${JSON.stringify(S.koerper)}`);
         console.log(
             `  Kronen-Bestand nach 1,6 km Ausflug: im Register ${S.bestandRegister} · Streu ${S.bestandStreu} · ` +
                 `${S.bestandUngleich} Texel ungleich dem vollen Neumalen`
@@ -392,6 +434,8 @@ hauptLauf(async () => {
         if (!selbst.vergessenRot) rot.push("SELBSTTEST: der vergessene Kronen-Bestand blieb grün");
         if (!selbst.trittRot) rot.push("SELBSTTEST: der alte Abbau der Trittfläche blieb grün");
         if (!selbst.kappeRot) rot.push("SELBSTTEST: die stille Kappe blieb grün");
+        console.log(`  Selbsttest: die Fahrstraße ohne Bord → ${selbst.ohnebord}`);
+        if (!selbst.ohnebordRot) rot.push("SELBSTTEST: die Fahrstraße ohne Bord blieb grün");
         if (!selbst.heilGruen) rot.push("SELBSTTEST: nach der Heilung nicht grün");
     }
     require("./lib/welt-boot.cjs").wandEnde(rot, "der Weg ist getretene Erde im Boden: weich gerändert, kein Quad, die Wiese weicht ihm.");

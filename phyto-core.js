@@ -80,32 +80,59 @@
         const D = Math.pow((P.height / k) * 2, 1.5);
         const trunkForm = clamp(D * 0.5, 0.07, 1.25) * (P.trunkMul || 1);
         // DAS WELT-MASS (K20, 12.10.): ein Baum, dessen Phänotyp sein Maß in Metern trägt (`P.hoeheM` die Wipfel-Höhe des
-        // Individuums in der Größe 1 — das Laub steht 1–2,5 m darüber —, `P.hd` die Schlankheit H/D seines Standorts, `P.weltSkala` Meter je Vorlagen-Einheit), wächst in
-        // der Welt so hoch und so schlank: der Stamm misst H/hd (Bestand 40–100, der Solitär gedrungener —
-        // waldwissen, McMahon 1973), die Höhe trägt der Schaft (`schaftHub`, unten). Die Formel oben in Vorlagen-
-        // Einheiten las H/D 13–18 für jeden Baum (gate:pflanzen-nah (H)); sie bleibt das Maß der FORM — die Quirl-
-        // Teilung der Konifere liest sie —, alle übrigen Radien sind relativ zum Stamm (da Vinci): das Skelett und
-        // der Zufalls-Strom bleiben gleich, jeder Ast wird mit dem Stamm schlanker. Ohne Welt-Maß (der Bauplan-Baum
-        // der Werkstatt, das stehende Totholz — die Bruch-Höhe ist sein Maß) wächst der Stamm nach der Formel oben.
+        // Individuums in der Größe 1 — das Laub steht 1–2,5 m darüber —, `P.weltSkala` Meter je Vorlagen-Einheit), wächst in
+        // der Welt so hoch: die Höhe trägt der Schaft (`schaftHub`, unten). Die Formel oben in Vorlagen-Einheiten las H/D 13–18
+        // für jeden Baum (gate:pflanzen-nah (H)); sie bleibt das Maß der FORM — die Quirl-Teilung der Konifere liest sie —,
+        // alle übrigen Radien sind relativ zum Stamm (da Vinci): das Skelett und der Zufalls-Strom hängen nicht an ihm. Ohne
+        // Welt-Maß (der Bauplan-Baum der Werkstatt, das stehende Totholz — die Bruch-Höhe ist sein Maß) wächst der Stamm nach
+        // der Formel oben.
+        // DER STAMM AUS DER KRONE (w28-stamm-krone, STAMM_KRONE unten): der Stamm eines Laubbaums misst, was er trägt — sein
+        // Querschnitt folgt aus dem Schirm der gewachsenen Krone (`stammAusKrone`, nach Wuchs und Hub), nie aus der Höhe. Der
+        // Wuchs rechnet darum in der Form-Einheit `trunkForm`, und die Radien aller Stränge reisen danach mit dem Stamm
+        // (da Vinci von der Wurzel: jeder Radius ist ein Anteil des Stamms — die EINE Randbedingung steht jetzt an der Krone).
+        // H/D ist damit ein Mess-Ergebnis (gate:pflanzen-nah (H) hält es im Band), der Solitär trägt seinen dicken Stamm, weil
+        // sein Schirm breit ist (kein eigener Faktor).
+        // DIE KONIFERE trägt ihren Stamm weiter aus der Höhe (`P.hd` die Schlankheit H/D ihres Standorts, Bestand 40–100 —
+        // waldwissen, McMahon 1973; der Solitär hd · FREISTAND.hd): ihr Schirm misst im Kern 19–23 m bei 22–25 m Höhe, und ihr
+        // Solitär trägt den kleineren (Fichte Same 3 9,7 m Radius gegen 11,5 im Bestand) — aus ihm folgte ein Stamm von über
+        // einem Meter und ein Solitär, der schlanker ist als sein Bestand. Offen, bis die Krone der Konifere ihr Maß trägt.
         // DER SOLITÄR (K20, `P.freistand`, FREISTAND unten): ein Baum im Offenen trägt seine Krone tief — der Schaft hebt sie
-        // nur bis zum Kronenansatz FREISTAND.ansatz (kein Hub auf die Bestandshöhe), sein Stamm misst die Höhe durch die
-        // gedrungene Schlankheit hd · FREISTAND.hd (Solitäreiche Marbach: kurzer, dicker Stamm unter breiter Krone).
-        const weltMass = P.weltSkala > 0 && P.hoeheM > 0 && P.hd > 0;
+        // nur bis zum Kronenansatz FREISTAND.ansatz (kein Hub auf die Bestandshöhe).
+        const weltMass = P.weltSkala > 0 && P.hoeheM > 0;
         const frei = weltMass && P.freistand === 1;
+        const kroneTraegt = weltMass && !P.conifer;
+        if (weltMass && P.conifer && !(P.hd > 0))
+            throw new Error("[phyto] die Konifere im Welt-Maß trägt keine Schlankheit hd");
         // DER BESTAND (T2, BESTAND unten): ein Laubbaum im Bestand wächst kurze Seitenäste und trägt seine Krone hoch und schmal.
-        const bestand = weltMass && !frei && !P.conifer && P.hd >= BESTAND.hd;
+        const bestand = kroneTraegt && !frei && bestandArt(P);
         const horst = P.basalStems > 1; // der Strauch (STRAUCH_WUCHS unten)
         const seitenast = bestand ? BESTAND.seitenast : horst ? STRAUCH_WUCHS.seitenast : 1;
-        const trunkR = !weltMass
-            ? trunkForm
-            : frei
-              ? (P.height / (P.hd * FREISTAND.hd) / 2) * (P.trunkMul || 1)
-              : (P.hoeheM / P.hd / 2 / P.weltSkala) * (P.trunkMul || 1);
+        const trunkR =
+            !weltMass || kroneTraegt
+                ? trunkForm
+                : frei
+                  ? (P.height / (P.hd * FREISTAND.hd) / 2) * (P.trunkMul || 1)
+                  : (P.hoeheM / P.hd / 2 / P.weltSkala) * (P.trunkMul || 1);
 
+        // DER SCHIRM KENNT KEINE KAPPE (w28-stamm-krone): `countCap` schneidet Detail (der gefühlte Baum der Werkstatt wächst mit
+        // 3 600 · 600 · 90 Strängen), der Stamm aber trägt die Krone des GANZEN Wuchses. Ein Lauf über der Kappe wächst darum als
+        // Maß weiter (`ueberKappe`: kein Strang, kein Lauf, kein Schwung — nur die Blatt-Anker seines Schirms, `schirmNur`):
+        // die Stufen eines Plans tragen denselben Stamm (Eiche 0,330 m bei 8 800 und 3 600; die Kappe 600 las 0,287, 90 las
+        // 0,118 m). Nur der Laubbaum im Welt-Maß misst so; jeder andere Wuchs endet an der Kappe wie zuvor.
+        const schirmNur = [];
+        let ueberKappe = false;
         const grow = (pos, dir, radius, length, depth, accSway, parentRun, isLead) => {
-            if (count > countCap) return;
-            const myRun = runId++;
-            runMeta[myRun] = { parentRun: parentRun == null ? -1 : parentRun, isLead: !!isLead };
+            if (count > countCap || ueberKappe) {
+                if (!kroneTraegt) return;
+                if (!ueberKappe) {
+                    ueberKappe = true;
+                    grow(pos, dir, radius, length, depth, accSway, parentRun, isLead);
+                    ueberKappe = false;
+                    return;
+                }
+            }
+            const myRun = ueberKappe ? -2 : runId++;
+            if (!ueberKappe) runMeta[myRun] = { parentRun: parentRun == null ? -1 : parentRun, isLead: !!isLead };
             const rMin = trunkR * 0.045,
                 lMin = P.height * 0.012;
             const NSEG = depth < 2 ? 5 : 3;
@@ -139,7 +166,7 @@
                 const sw0 = aSw,
                     sw1 = aSw + dSw;
                 aSw = sw1;
-                if (sw1 > maxSway) maxSway = sw1;
+                if (sw1 > maxSway && !ueberKappe) maxSway = sw1;
                 const omega = clamp(0.18 + 1.7 * (r0 / trunkR), 0.18, 2.4); // f ~ r/L²
                 const phase = depth * 1.7 + i * 0.6 + azim.v * 0.3;
                 // Konifere-Whorls: der Leittrieb setzt in Intervallen Quirle aus Seitenästen.
@@ -175,8 +202,10 @@
                         }
                     }
                 }
-                segs.push({ p0: p, p1: p2, r0, r1, depth, sway0: sw0, sway1: sw1, phase, omega, runId: myRun });
-                count++;
+                if (!ueberKappe) {
+                    segs.push({ p0: p, p1: p2, r0, r1, depth, sway0: sw0, sway1: sw1, phase, omega, runId: myRun });
+                    count++;
+                }
                 p = p2;
             }
             const tip = p,
@@ -210,30 +239,31 @@
                     const whipLen = P.height * rrange(0.2, 0.38),
                         wseg = 9,
                         wr = tipR * 0.6;
-                    const wRun = runId++;
-                    runMeta[wRun] = { parentRun: myRun, isLead: false };
+                    const wRun = ueberKappe ? -2 : runId++;
+                    if (!ueberKappe) runMeta[wRun] = { parentRun: myRun, isLead: false };
                     for (let s = 0; s < wseg; s++) {
                         wd = vnorm(vadd(wd, [0, -0.7, 0]));
                         const np = vadd(wp, vscl(wd, whipLen / wseg));
                         const sw0 = tipSway + s * 0.2,
                             sw1 = tipSway + (s + 1) * 0.2;
-                        if (sw1 > maxSway) maxSway = sw1;
-                        segs.push({
-                            p0: wp,
-                            p1: np,
-                            r0: wr * (1 - s / wseg),
-                            r1: wr * (1 - (s + 1) / wseg),
-                            depth: depth + 1,
-                            sway0: sw0,
-                            sway1: sw1,
-                            phase: s * 0.5 + azim.v * 0.2,
-                            omega: 0.45,
-                            runId: wRun,
-                        });
+                        if (sw1 > maxSway && !ueberKappe) maxSway = sw1;
+                        if (!ueberKappe)
+                            segs.push({
+                                p0: wp,
+                                p1: np,
+                                r0: wr * (1 - s / wseg),
+                                r1: wr * (1 - (s + 1) / wseg),
+                                depth: depth + 1,
+                                sway0: sw0,
+                                sway1: sw1,
+                                phase: s * 0.5 + azim.v * 0.2,
+                                omega: 0.45,
+                                runId: wRun,
+                            });
                         if (s > 0) {
                             azim.v += GOLDEN;
                             const lp = vlerp(wp, np, 0.5);
-                            leaves.push({
+                            (ueberKappe ? schirmNur : leaves).push({
                                 pos: lp,
                                 dir: [0, -1, 0.0001],
                                 up: [0.0001, 0, 1],
@@ -255,7 +285,7 @@
                         let ldir = vnorm(vadd(vscl(tipDir, 0.5), vscl(sd, 0.85)));
                         if (P.trop > 0.5) ldir = vnorm(vadd(ldir, [0, -0.9, 0]));
                         const bp = vadd(tip, vscl(tipDir, -length * (0.2 + 0.6 * rnd())));
-                        leaves.push({
+                        (ueberKappe ? schirmNur : leaves).push({
                             pos: bp,
                             dir: ldir,
                             up: vnorm(vadd(perp(ldir), vscl(tipDir, 0.3))),
@@ -360,11 +390,30 @@
         // Der Solitär trägt seinen kurzen Stamm (FREISTAND.ansatz): der Schaft hebt die Krone, bis ihr tiefster Blatt-Anker
         // bei ansatz × Höhe steht (der Stamm misst die Höhe seines Wuchses, H/D bleibt unter dem Bestand).
         // Der Bestand (T2) hebt Stamm UND Krone: die Krone reicht über BESTAND.krone der Höhe (kein Ballen auf dem Stiel).
+        const hVor = schirmNur.length ? segs.reduce((h, q) => Math.max(h, q.p0[1], q.p1[1]), 0) : 0;
         const schaft = !weltMass
             ? 0
             : frei
               ? schaftHub(segs, leaves, runMeta, 0, FREISTAND.ansatz, 0, P.alter > 0)
               : schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala, 0, bestand ? BESTAND.krone : 0, P.alter > 0);
+        // DER STAMM AUS DER KRONE: der Radius des Stamms aus dem Schirm, den die Krone nach Wuchs und Hub spannt (vor dem
+        // Blatt-Budget: jede Stufe misst dieselben Anker), jeder Strang reist mit seinem Anteil.
+        // (die Anker über der Kappe wuchsen ohne den Hub: lotrecht ändert er den Schirm nicht, die Jugend wächst um den Fuß —
+        // ihr Maßstab ist die Höhe nach ÷ vor dem Hub)
+        if (schirmNur.length && P.alter > 0 && hVor > 0) {
+            const k = segs.reduce((h, q) => Math.max(h, q.p0[1], q.p1[1]), 0) / hVor;
+            for (const l of schirmNur) l.pos = [l.pos[0] * k, l.pos[1] * k, l.pos[2] * k];
+        }
+        const stammR = kroneTraegt
+            ? stammAusKrone(schirmNur.length ? leaves.concat(schirmNur) : leaves, P._ls) * (P.trunkMul || 1)
+            : trunkR;
+        if (kroneTraegt) {
+            const k = stammR / trunkR;
+            for (const s of segs) {
+                s.r0 *= k;
+                s.r1 *= k;
+            }
+        }
         // Wind-Schwung normieren (foundry-core trägt sway0/sway1 ins Vorlagen-Attribut aWind).
         const gain = Number.isFinite(P.windGain) ? P.windGain : 1;
         for (const s of segs) {
@@ -382,7 +431,40 @@
             leaves.length = 0;
             for (const _k of kp) leaves.push(_k);
         }
-        return { segs, leaves, trunkR, trunkForm, height: P.height, runMeta, schaftHub: schaft };
+        return { segs, leaves, trunkR: stammR, trunkForm, height: P.height, runMeta, schaftHub: schaft };
+    }
+    // DER STAMM AUS DER KRONE (w28-stamm-krone): der Radius des Stamms eines Laubbaums aus dem Schirm seiner Krone, in der
+    // Einheit der Blatt-Anker `leaves` (das Verhältnis ist skalenfrei). Der Schirm ist die Breite der Krone, wie der Förster
+    // sie misst und wie die Kronen-Tafel FOREST_PACK.crown sie trägt: das Mittel ihrer Breite über `azimute` Richtungen (der
+    // Abstand ihrer zwei äußersten Blätter je Richtung) — jeder Anker samt seinem Blatt: die Karte zeigt ihr Laub bis zum
+    // Kern ihrer Zelle (BLATT_ATLAS_BREIT.kern × die Blatt-Größe über ihren Anker; `blattMass` = das Blatt-Maß der Stufe,
+    // treeParams `_ls`: jede Stufe misst das Blatt der L0). Der Stamm: BHD = Schirm-⌀ ÷ `kd`.
+    //   kd  das Verhältnis Kronen-⌀ ÷ BHD frei gewachsener Laubbäume: die Mitte des Bands 17–26 (Hemery, Savill & Pryor 2005,
+    //       For. Ecol. Manage. 215: 285–294 — das Band wie am BESTAND unten zitiert; die Zeile je Art ist nicht nachgelesen:
+    //       UNGEPRÜFT).
+    // Der Schirm gegen die sichtbare Krone (Atlas-Alpha ≥ 0,5, dasselbe Maß über 8 Azimute, gate:pflanzen-nah (H), L0
+    // Gestalt 1 im Bestand und frei, acht Bäume aus fünf Arten): im Mittel +1,8 %, −3 bis +8 % (ohne das Blatt −16 %, mit
+    // der ganzen Blatt-Größe +9 %). gate:pflanzen-nah (H) „Krone/BHD" hält das Ergebnis an der sichtbaren Krone im Band.
+    const STAMM_KRONE = Object.freeze({ kd: 21.5, azimute: 8 });
+    function stammAusKrone(leaves, blattMass) {
+        const N = STAMM_KRONE.azimute,
+            ls = blattMass > 0 ? blattMass : 1;
+        let breite = 0;
+        for (let k = 0; k < N; k++) {
+            const c = Math.cos((k * Math.PI) / N),
+                s = Math.sin((k * Math.PI) / N);
+            let lo = Infinity,
+                hi = -Infinity;
+            for (const l of leaves) {
+                const u = l.pos[0] * c + l.pos[2] * s,
+                    b = (BLATT_ATLAS_BREIT.kern * l.scale) / ls;
+                if (u - b < lo) lo = u - b;
+                if (u + b > hi) hi = u + b;
+            }
+            breite += hi - lo;
+        }
+        if (!(breite > 0)) throw new Error("[phyto] der Stamm aus der Krone: die Krone spannt keinen Schirm");
+        return breite / N / 2 / STAMM_KRONE.kd;
     }
 
     // DER STROM EINES GENOMS (w4-b-pflanzen): xorshift32 über dem FNV-1a-Zustand `h` seines Namens (`<Raum>|<Same>#<Strom>`,
@@ -1296,10 +1378,50 @@
     }
     // Die Lagen beliebiger Karten (je Karte vier Ecken in Bau-Reihenfolge, Dreiecke 0-1-2 und 0-2-3): die Strähnen der
     // Trauer-Krone und der Wedel lesen dasselbe Raster wie die Laub-Karten.
+    // DIE PROBE NUR AM RAND (w28-ankunft-faden): das Raster zählt je Pixel die Lagen, das Ergebnis ist die Summe ganzer
+    // Zahlen — bit-gleich, solange jedes Pixel dasselbe Urteil trägt. Bis hier fragte jedes Dreieck JEDES Pixel seines Rechtecks
+    // von floor(min) bis ceil(max) mit zwei Divisionen (die Karten einer Krone sind groß: 261 Proben je Dreieck für 96 Treffer;
+    // GTX 1050 kalt 6,2 CPU-s Selbstzeit auf den beiden Foundry-Fäden vor dem ersten Bild, die Hälfte jedes Laub-Körpers).
+    // Jetzt je Zeile des Dreiecks — die drei Gewichte sind entlang einer Zeile LINEAR, g_i(x) = m_i + x · s_i:
+    //   (1) Tragen zwei Pixel einer Zeile alle drei Gewichte ≥ LAGEN_FEST (die Rundung der Probe liegt ≥ 6-fach darunter),
+    //       tragen es alle Pixel dazwischen: sie zählen ohne Probe. Die Kandidaten kommen aus den Nullstellen der Gewichte,
+    //       der Beweis ist allein die Probe der zwei Enden.
+    //   (2) Von dort nach links und nach rechts trägt jedes Pixel das Urteil, wie es stand — im Saum |g| < LAGEN_FEST mit den
+    //       Quotienten selbst (n/fl < 0 ⟺ n und fl tragen verschiedene Vorzeichen: der Zähler ist 0 oder ≥ 2⁻¹⁵⁸, der Quotient
+    //       läuft nie unter), außerhalb des Saums entscheidet das Vorzeichen allein —, bis ein Gewicht ≤ −LAGEN_FEST steht,
+    //       das in der Lauf-Richtung weiter fällt: dahinter fällt jedes Pixel. Eine Zeile ohne festes Inneres (die Spitze,
+    //       die flache Kante) läuft so von ihrer Mitte aus.
+    //   (3) Spalten und Zeilen, deren Pixel-Mitte ≥ LAGEN_RAND außerhalb des Rechtecks der Ecken liegt, tragen ein Gewicht
+    //       ≤ −LAGEN_RAND/(2·D) (D die Raster-Kante) und fielen immer.
+    //   (4) Wo der Beweis nicht trägt — der Splitter (|fl| < LAGEN_SPLITTER·D³: dort urteilt die Rundung), eine Ecke ohne
+    //       Zahl —, bleibt das Urteil je Pixel über das ganze Rechteck, wie es stand.
+    // Die Lagen stehen als Stufen je Zeile (+1 am Anfang einer Spanne, −1 dahinter), die Summe läuft am Ende einmal durch.
+    // `lagenZaehler` zählt Dreiecke, Proben und Treffer (Leser: gate:asset-contract, die Wand der Lagen-Kosten).
+    const LAGEN_RAND = 0.25;
+    const LAGEN_FEST = 1e-6;
+    const LAGEN_SPLITTER = 1e-9;
+    const _lagenZahl = { rufe: 0, dreiecke: 0, proben: 0, treffer: 0 };
+    function lagenZaehler(leeren) {
+        const z = {
+            rufe: _lagenZahl.rufe,
+            dreiecke: _lagenZahl.dreiecke,
+            proben: _lagenZahl.proben,
+            treffer: _lagenZahl.treffer,
+        };
+        if (leeren) _lagenZahl.rufe = _lagenZahl.dreiecke = _lagenZahl.proben = _lagenZahl.treffer = 0;
+        return z;
+    }
     function quadLagen(P, n, aufl) {
         if (!n) return 0;
         const U = new Float32Array(n * 4),
             V = new Float32Array(n * 4);
+        const X = new Float64Array(n * 4),
+            Y = new Float64Array(n * 4);
+        const Z = _lagenZahl;
+        const boden = Math.floor,
+            decke = Math.ceil,
+            fern = Infinity;
+        Z.rufe++;
         let sQ = 0,
             nQ = 0;
         for (let k = 0; k < 8; k++) {
@@ -1326,39 +1448,174 @@
             if (!(px > 0)) continue;
             const W = Math.ceil((u1 - u0) / px) + 2,
                 H = Math.ceil((v1 - v0) / px) + 2;
-            const buf = new Uint16Array(W * H);
+            const buf = new Int32Array(W * H + 1); // die Stufen: +1 am Anfang einer Spanne, −1 hinter ihr
+            for (let i = 0; i < n * 4; i++) {
+                X[i] = (U[i] - u0) / px;
+                Y[i] = (V[i] - v0) / px;
+            }
+            const D = Math.max(W, H);
+            const splitter = Math.max(LAGEN_SPLITTER * D * D * D, 1e-6);
+            let proben = 0;
             for (let c = 0; c < n; c++)
                 for (let d = 0; d < 2; d++) {
                     const a = c * 4,
                         b = c * 4 + 1 + d,
                         f = c * 4 + 2 + d;
-                    const ax = (U[a] - u0) / px,
-                        ay = (V[a] - v0) / px,
-                        bx = (U[b] - u0) / px,
-                        by = (V[b] - v0) / px,
-                        qx = (U[f] - u0) / px,
-                        qy = (V[f] - v0) / px;
+                    const ax = X[a],
+                        ay = Y[a],
+                        bx = X[b],
+                        by = Y[b],
+                        qx = X[f],
+                        qy = Y[f];
                     const fl = (bx - ax) * (qy - ay) - (by - ay) * (qx - ax);
                     if (Math.abs(fl) < 1e-12) continue;
-                    const xa = Math.max(0, Math.floor(Math.min(ax, bx, qx))),
-                        xb = Math.min(W - 1, Math.ceil(Math.max(ax, bx, qx))),
-                        ya = Math.max(0, Math.floor(Math.min(ay, by, qy))),
-                        yb = Math.min(H - 1, Math.ceil(Math.max(ay, by, qy)));
-                    for (let y = ya; y <= yb; y++)
-                        for (let x = xa; x <= xb; x++) {
-                            const sx = x + 0.5,
-                                sy = y + 0.5;
-                            const w0 = ((bx - sx) * (qy - sy) - (by - sy) * (qx - sx)) / fl,
-                                w1 = ((qx - sx) * (ay - sy) - (qy - sy) * (ax - sx)) / fl;
-                            if (w0 < 0 || w1 < 0 || 1 - w0 - w1 <= 0) continue;
-                            buf[y * W + x]++;
+                    const x0 = Math.min(ax, bx, qx),
+                        x1 = Math.max(ax, bx, qx),
+                        y0 = Math.min(ay, by, qy),
+                        y1 = Math.max(ay, by, qy);
+                    let xa = Math.max(0, Math.floor(x0)),
+                        xb = Math.min(W - 1, Math.ceil(x1)),
+                        ya = Math.max(0, Math.floor(y0)),
+                        yb = Math.min(H - 1, Math.ceil(y1));
+                    Z.dreiecke++;
+                    if (!(Math.abs(fl) >= splitter) || fl - fl !== 0) {
+                        // der Splitter und die Ecke ohne Zahl: das Urteil der Quotienten über das ganze Rechteck, wie es stand
+                        for (let y = ya; y <= yb; y++)
+                            for (let x = xa; x <= xb; x++) {
+                                const sx = x + 0.5,
+                                    sy = y + 0.5;
+                                const w0 = ((bx - sx) * (qy - sy) - (by - sy) * (qx - sx)) / fl,
+                                    w1 = ((qx - sx) * (ay - sy) - (qy - sy) * (ax - sx)) / fl;
+                                proben++;
+                                if (w0 < 0 || w1 < 0 || 1 - w0 - w1 <= 0) continue;
+                                buf[y * W + x]++;
+                                buf[y * W + x + 1]--;
+                            }
+                        continue;
+                    }
+                    if (x0 - (xa + 0.5) >= LAGEN_RAND) xa++;
+                    if (xb + 0.5 - x1 >= LAGEN_RAND) xb--;
+                    if (xb + 0.5 - x1 >= LAGEN_RAND) xb--;
+                    if (y0 - (ya + 0.5) >= LAGEN_RAND) ya++;
+                    if (yb + 0.5 - y1 >= LAGEN_RAND) yb--;
+                    if (yb + 0.5 - y1 >= LAGEN_RAND) yb--;
+                    if (xb < xa || yb < ya) continue;
+                    // mit dem Vorzeichen der Fläche: g_i = sg · n_i, innen ⟺ jedes g_i ≥ 0, ihre Summe ist fa
+                    const sg = fl > 0 ? 1 : -1,
+                        fa = sg * fl,
+                        fest = LAGEN_FEST * fa;
+                    const s0 = sg * (by - qy),
+                        s1 = sg * (qy - ay),
+                        s2 = sg * (ay - by);
+                    const i0 = s0 !== 0 ? -1 / s0 : 0,
+                        i1 = s1 !== 0 ? -1 / s1 : 0,
+                        i2 = s2 !== 0 ? -1 / s2 : 0;
+                    for (let y = ya; y <= yb; y++) {
+                        const sy = y + 0.5,
+                            zeile = y * W;
+                        const m0 = sg * (bx * (qy - sy) - (by - sy) * qx),
+                            m1 = sg * (qx * (ay - sy) - (qy - sy) * ax),
+                            m2 = sg * (ax * (by - sy) - (ay - sy) * bx);
+                        // die Kandidaten des festen Inneren: zwischen den Nullstellen der drei Gewichte
+                        let lo = -fern,
+                            hi = fern,
+                            w;
+                        if (s0 > 0) lo = m0 * i0;
+                        else if (s0 < 0) hi = m0 * i0;
+                        else if (m0 < 0) hi = -fern;
+                        if (s1 > 0) {
+                            if ((w = m1 * i1) > lo) lo = w;
+                        } else if (s1 < 0) {
+                            if ((w = m1 * i1) < hi) hi = w;
+                        } else if (m1 < 0) hi = -fern;
+                        if (s2 > 0) {
+                            if ((w = m2 * i2) > lo) lo = w;
+                        } else if (s2 < 0) {
+                            if ((w = m2 * i2) < hi) hi = w;
+                        } else if (m2 < 0) hi = -fern;
+                        let cl = decke(lo - 0.5),
+                            cr = boden(hi - 0.5);
+                        if (!(cl >= xa)) cl = xa;
+                        if (!(cr <= xb)) cr = xb;
+                        let innen = cl <= cr;
+                        if (innen) {
+                            // der Beweis: beide Enden tragen alle drei Gewichte ≥ LAGEN_FEST (× |fl|, ohne Division)
+                            const sl = cl + 0.5,
+                                sr = cr + 0.5;
+                            proben += 2;
+                            innen =
+                                m0 + sl * s0 >= fest &&
+                                m1 + sl * s1 >= fest &&
+                                m2 + sl * s2 >= fest &&
+                                m0 + sr * s0 >= fest &&
+                                m1 + sr * s1 >= fest &&
+                                m2 + sr * s2 >= fest;
                         }
+                        if (innen) {
+                            buf[zeile + cl]++;
+                            buf[zeile + cr + 1]--;
+                        } else {
+                            // kein festes Inneres: die Zeile läuft von ihrer Mitte aus
+                            cr = boden((lo + hi) * 0.5);
+                            if (!(cr >= xa)) cr = xa;
+                            if (cr > xb) cr = xb;
+                            cl = cr + 1;
+                        }
+                        for (let x = cl - 1; x >= xa; x--) {
+                            const sx = x + 0.5;
+                            const n0 = (bx - sx) * (qy - sy) - (by - sy) * (qx - sx),
+                                n1 = (qx - sx) * (ay - sy) - (qy - sy) * (ax - sx);
+                            const g0 = sg * n0,
+                                g1 = sg * n1,
+                                g2 = fa - g0 - g1;
+                            proben++;
+                            if (g0 >= fest && g1 >= fest && g2 >= fest) {
+                                buf[zeile + x]++;
+                                buf[zeile + x + 1]--;
+                            } else if (g0 > -fest && g1 > -fest && g2 > -fest) {
+                                // der Saum: das Urteil der Quotienten, wie es stand
+                                if (!(g0 < 0 || g1 < 0 || 1 - n0 / fl - n1 / fl <= 0)) {
+                                    buf[zeile + x]++;
+                                    buf[zeile + x + 1]--;
+                                }
+                            } else if ((g0 <= -fest && s0 >= 0) || (g1 <= -fest && s1 >= 0) || (g2 <= -fest && s2 >= 0))
+                                break;
+                        }
+                        for (let x = cr + 1; x <= xb; x++) {
+                            const sx = x + 0.5;
+                            const n0 = (bx - sx) * (qy - sy) - (by - sy) * (qx - sx),
+                                n1 = (qx - sx) * (ay - sy) - (qy - sy) * (ax - sx);
+                            const g0 = sg * n0,
+                                g1 = sg * n1,
+                                g2 = fa - g0 - g1;
+                            proben++;
+                            if (g0 >= fest && g1 >= fest && g2 >= fest) {
+                                buf[zeile + x]++;
+                                buf[zeile + x + 1]--;
+                            } else if (g0 > -fest && g1 > -fest && g2 > -fest) {
+                                if (!(g0 < 0 || g1 < 0 || 1 - n0 / fl - n1 / fl <= 0)) {
+                                    buf[zeile + x]++;
+                                    buf[zeile + x + 1]--;
+                                }
+                            } else if ((g0 <= -fest && s0 <= 0) || (g1 <= -fest && s1 <= 0) || (g2 <= -fest && s2 <= 0))
+                                break;
+                        }
+                    }
                 }
-            for (let i = 0; i < buf.length; i++)
-                if (buf[i]) {
-                    sQ += buf[i];
+            // die Stufen laufen durch: je Pixel seine Lagen (gezählt wie zuvor in 16 Bit)
+            let lagen = 0,
+                treffer = 0;
+            for (let i = 0; i < W * H; i++) {
+                lagen += buf[i];
+                treffer += lagen;
+                const z = lagen & 65535;
+                if (z) {
+                    sQ += z;
                     nQ++;
                 }
+            }
+            Z.proben += proben;
+            Z.treffer += treffer;
         }
         return nQ ? sQ / nQ : 0;
     }
@@ -1963,7 +2220,7 @@
     // Bestands, der die unteren Äste nahm — der Jungwuchs steht im Licht, seine Krone reicht zum Grund. Er wächst in seiner
     // Form auf dieselbe Höhe h0 + dh (das Maß der Art, die Welt pflanzt ihn in `alter` × seiner Größe, gekappt auf das Maß seiner
     // Kohorte: `SUKZESSION.kappe` im Stamm, w13-jung-gestalt): jeder Punkt × (h0 +
-    // dh) / h0 um den Fuß, die Radien bleiben die des Welt-Maßes (H/D = hd); kein Hub (Rückgabe 0, die Sichthöhe misst die
+    // dh) / h0 um den Fuß, die Radien bleiben die des Welt-Maßes (der Stamm aus der Krone, die Konifere H/D = hd); kein Hub (Rückgabe 0, die Sichthöhe misst die
     // ganze Gestalt). Bis w12-riesenhalm hob der Hub das junge Skelett — weniger Ordnungen, die halbe Form-Höhe — auf die
     // Höhe des gewachsenen: je jünger, desto länger der kahle Schaft unter einer kleinen Krone (Kronen-Fuß der Tanne @0,06
     // bei 0,51 H, gewachsen 0,34 H; die Fichte 0,40 gegen 0,26) — aus dem Jungwuchs der Narbe ragten Riesenhalme.
@@ -2260,12 +2517,17 @@
             P.crown = "kahl";
         }
         // DAS WELT-MASS (K20): ein lebender Baum trägt seinen Phänotyp in Metern (`ph.hoeheM` die Wipfel-Höhe der Größe 1,
-        // mit dem Höhen-Wurf seiner Gestalt; `ph.hd` die Schlankheit H/D seines Standorts) und die Welt-Skala, mit der der
-        // Wald ihn pflanzt (`weltSkala`, Meter je Vorlagen-Einheit — die Render-Zeile trägt der Wirt) — `growSkeleton` lässt
-        // ihn so hoch und so schlank wachsen. Kein Wurf (der Zufalls-Strom bleibt); ohne Welt-Skala baut er in der Form-Höhe.
-        if (ph.kind === "tree" && ph.hoeheM > 0 && ph.hd > 0 && !ph.tot && weltSkala > 0) {
+        // mit dem Höhen-Wurf seiner Gestalt) und die Welt-Skala, mit der der Wald ihn pflanzt (`weltSkala`, Meter je
+        // Vorlagen-Einheit — die Render-Zeile trägt der Wirt) — `growSkeleton` lässt ihn so hoch wachsen. Der Stamm des
+        // Laubbaums folgt aus seiner Krone (w28-stamm-krone, STAMM_KRONE; `ph.solitaer`: die Art steht nie im Bestand — Weide
+        // und Karst), die Konifere trägt die Schlankheit H/D ihres Standorts (`ph.hd`). Kein Wurf (der Zufalls-Strom bleibt);
+        // ohne Welt-Skala baut er in der Form-Höhe.
+        if (ph.kind === "tree" && ph.hoeheM > 0 && !ph.tot && weltSkala > 0) {
             P.hoeheM = ph.hoeheM * (P.height / ph.height);
-            P.hd = ph.hd;
+            if (ph.conifer) P.hd = ph.hd;
+            else if (ph.hd != null)
+                throw new Error("[phyto] der Laubbaum trägt keine Schlankheit hd: sein Stamm folgt aus der Krone");
+            if (ph.solitaer) P.solitaer = 1;
             P.weltSkala = weltSkala;
         }
         // DIE JUGEND-GESTALT (stoffe.K5#2): `alter` ∈ (0, 1) ist der Jungwuchs desselben Individuums (derselbe Same, derselbe
@@ -2467,8 +2729,9 @@
         lab: { contrast: 1.9, mid: 0.5 },
         host: { contrast: 1.35, mid: 0.72 },
     };
-    // DER SOLITÄR (K20, nordstern §4.5: „Solitär gedrungener", Solitäreiche Marbach): die Schlankheit eines frei stehenden
-    // Baums ist hd · FREISTAND.hd seiner Art im Bestand (Eiche 60 → 27; Bestand H/D 40–100) — growSkeleton liest `P.freistand`.
+    // DER SOLITÄR (K20, nordstern §4.5: „Solitär gedrungener", Solitäreiche Marbach): der frei stehende Laubbaum trägt den
+    // dicken Stamm seines breiten Schirms (STAMM_KRONE, w28-stamm-krone); die Schlankheit einer frei stehenden Konifere ist
+    // hd · FREISTAND.hd ihrer Art im Bestand (Fichte 70 → 31,5; Bestand H/D 40–100) — growSkeleton liest `P.freistand`.
     // Frei steht ein Baum, wenn kein stehender Nachbar näher ist als FREISTAND.abstand × die Summe der Kronen (der Wirt,
     // `_forestStehtFrei`): Lichtkonkurrenz reicht über die Kronen-Berührung (pack 1,16) hinaus, ab dem Doppelten fehlt sie.
     // ansatz: der tiefste Blatt-Anker des Solitärs bei 0,3 × Höhe, die Karten hängen darunter: die sichtbare Krone beginnt
@@ -2479,13 +2742,18 @@
     // V Individuen (kein Klon), der Solitär ist ein eigenes. Die Arten mit einer Gestalt (Weide, Mammut) tragen keinen.
     const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, ansatz: 0.3, ab: 2 });
     // DER BESTAND (T2, 16.10., nordstern §4.5 „hohe, schlanke Stämme im Bestand, breite Solitäre im Offenen"): ein Laubbaum,
-    // der im Bestand steht (Welt-Maß, nicht frei, keine Konifere, die Schlankheit seines Standorts hd ≥ BESTAND.hd — das
-    // Bestands-Band H/D 40–100; Weide und Karst sind Solitäre ihrer Art), wächst seine Seitenäste × BESTAND.seitenast (der
+    // der im Bestand steht (Welt-Maß, nicht frei, keine Konifere, keine Solitär-Art — Weide und Karst tragen `ph.solitaer`,
+    // `bestandArt` ist der EINE Leser), wächst seine Seitenäste × BESTAND.seitenast (der
     // Nachbar nimmt die Seite, das Licht kommt von oben), und der Hub des Schafts hebt Stamm UND Krone: die Krone reicht über
     // BESTAND.krone der Höhe (schaftHub `krone`). Spike T1 (Mess-Wiese, Eiche · Birke · Buche): Kronenbreite/BHD 48–84 → 23–36
     // (Natur frei 17–26, Hemery 2005), Breite/Höhe 0,74–1,06 → 0,35–0,45, Kronen-Anteil 0,60–0,63, Karten −44 bis −60 %;
     // die Seitenäste ohne den Hub der Krone trugen 0,42–0,46 Kronen-Anteil (der Ballen auf dem Stiel).
-    const BESTAND = Object.freeze({ hd: 40, seitenast: 0.6, krone: 0.6 });
+    const BESTAND = Object.freeze({ seitenast: 0.6, krone: 0.6 });
+    // Steht die Art im Bestand? Der Phänotyp `d` (artPhaenotyp) eines Laubbaums ohne `solitaer` — der EINE Leser für den
+    // Wuchs (`growSkeleton`: P trägt dieselben Felder) und die Kamm-Krone des Wirts (`_kammKroneArten`).
+    function bestandArt(d) {
+        return !!d && !d.conifer && !d.solitaer;
+    }
     // DER WUCHS DES STRAUCHS (w28-strauch-gestalt): ein Strauch ist kein Baum ohne Stamm, er ist ein Horst aus Trieben — jeder
     // basale Trieb trägt seine eigene Partie, die Krone liest als Lappen über einem unregelmäßigen Wipfel, belaubt bis zum Boden.
     // `triebe` die Zahl der Stockausschläge bei api 0 … 0,22 (Hasel, Holunder: 5–15); je Trieb sein Rang ρ ∈ [0, 1) — der
@@ -2703,12 +2971,13 @@
     const _deckWert = new Float64Array(_deckNQ + _deckNU); // die geklemmte Größe je Stufe (je Ruf aus sd)
     const _deckFaktor = new Float64Array(_deckNQ + _deckNU); // der Matérn-Faktor je Stufe (je Art)
     const _deckHat = new Uint8Array(_deckNQ + _deckNU);
-    function forestKronenDeckung(sd, geburt, kronen, F, st, schnee, ort) {
+    function forestKronenDeckung(sd, geburt, kronen, F, st, schnee, ort, wald) {
         // der Bestand am Standort (FOREST_PACK.bestand, `st` der Stand): Lichtung und Schluss wie in planForestCell / forestSteht;
-        // die Waldgrenze im Schnee des Sommers (`forestWaldgrenze`, `schnee` der Anteil des Gelände-Kerns zur Sommer-Mitte); der
-        // Saum am Siedlungsrand (`forestOrt`, `ort` der Abstand jenseits des nächsten Rands, `forestOrtAbstand`)
+        // die Waldgrenze im Schnee des Sommers und im Klima des Orts (`forestWaldgrenze`, `schnee` der Anteil des Gelände-Kerns zur
+        // Sommer-Mitte, `wald` der Wald-Anteil seines Ort-Gesetzes); der Saum am Siedlungsrand (`forestOrt`, `ort` der Abstand
+        // jenseits des nächsten Rands, `forestOrtAbstand`)
         const schluss = forestSchluss(st);
-        const g = geburt * forestLichtung(st) * forestWaldgrenze(schnee) * forestOrt(ort);
+        const g = geburt * forestLichtung(st) * forestWaldgrenze(schnee, wald) * forestOrt(ort);
         const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (g > 0 ? g : 0);
         if (!(lambda > 0) || !kronen || !kronen.length) return 0;
         let wSumme = 0;
@@ -2767,7 +3036,10 @@
     // Höhen-Trockenheit und Offenheit am Ort (x, z) auf der Oberfläche surfaceY bei Bestandsdichte sd → die Arten-
     // Gewichte der fünf Wald-Arten (wF Kiefer · wT Tanne · wE Eiche · wB Birke · wW Erle, ohne die Auto-Arten) samt
     // clim/patch/feu. planForestCell würfelt daraus die Art, die Fernform des Hosts mischt daraus die Kronen-Farbe.
-    // Keine rng-Aufrufe. ctx = { F (dryScale), baseH, fbm(px,pz), feuchteAt(x,z,surfY), fussM? }.
+    // Keine rng-Aufrufe. ctx = { F (dryScale), baseH, fbm(px,pz), feuchteAt(x,z,surfY), wuchs, fussM? }.
+    // DER WUCHS DES ORTS (Reise, Welle 3 — `ctx.wuchs`, Pflicht: gelaende-core `ortGesetz(teil).wuchs`): das Nadelholz (Kiefer,
+    // Tanne) trägt den Faktor `nadel` (es meidet die Tropen), der Laubbaum (Eiche, Birke, Erle) `laub` (vor der Zeit der
+    // Bedecktsamer steht Nadelholz) — in der Heimat beide 1, jedes Gewicht Bit für Bit wie zuvor.
     // DER FUSSABDRUCK (K16, die Fern-Farbe): `ctx.fussM` = die Kante der Fläche, für die der Ort steht (eine Masche des Fern-
     // Rings, ein Texel des Feld-Passes). Das Bestands-Mosaik (λ 20 m) und das Klima (λ 83 m) tragen darunter ihr Mittel
     // (forestMosaikMittel, forestOktavMittel): ihr Wert wechselte unter einer 13 × 39-m-Masche je Punkt die Art, und jede
@@ -2804,16 +3076,26 @@
                   }
                 : { ss }
         );
+        const W = forestWuchs(ctx);
         return {
-            wF: NW.wF,
-            wT: NW.wT,
-            wE: NW.wE,
-            wB: NW.wB,
-            wW: NW.wW + feu * feu * 6.0, // Host: waterProx = feu
+            wF: NW.wF * W.nadel,
+            wT: NW.wT * W.nadel,
+            wE: NW.wE * W.laub,
+            wB: NW.wB * W.laub,
+            wW: (NW.wW + feu * feu * 6.0) * W.laub, // Host: waterProx = feu
             clim,
             patch,
             feu,
         };
+    }
+    // Der Wuchs des Orts im ctx des Walds — Pflicht wie Schnee und Ort: ohne ihn bricht der Wald beim Namen, nie der der Heimat als Ersatz.
+    function forestWuchs(ctx) {
+        const W = ctx && ctx.wuchs;
+        if (!W || !Number.isFinite(W.wald) || !Number.isFinite(W.laub) || !Number.isFinite(W.nadel))
+            throw new Error(
+                "phyto-core: der Wuchs des Orts fehlt im ctx des Walds (wuchs: wald · laub · nadel, KERN-PFLICHT)"
+            );
+        return W;
     }
 
     // reverse-J Größe + Selbstausdünnung + seltene Überhälter. RNG-REIHENFOLGE heilig
@@ -2939,12 +3221,17 @@
     // 46 Bäume binnen 25 m, Kronen-Deckung 0,285 — der Blick vom Gipfel stand im Wald; jetzt 0 Bäume binnen 25 m, der
     // Blick-Strahl zur Stadt frei bis 120 m); die Geburt allein (1 − schnee) hob ihn auf 49 (Matérn sättigt: weniger Dach,
     // mehr freie Darts).
-    function forestWaldgrenze(schnee) {
+    // DIE TROCKENGRENZE (Reise, Welle 3): `wald` ist der Wald-Anteil, den das Klima des Orts trägt (gelaende-core
+    // `ortGesetz(teil).wuchs.wald`: der Niederschlag gegen die Verdunstung, in der Heimat 1) — die Geburt trägt ihn als Faktor:
+    // die Wüste gebiert keinen Baum, die Savanne wenige. In der Heimat (× 1) ist jeder Wurf, wie er war.
+    function forestWaldgrenze(schnee, wald) {
         if (!Number.isFinite(schnee))
             throw new Error("phyto-core forestWaldgrenze: der Schnee-Anteil fehlt (KERN-PFLICHT)");
+        if (!Number.isFinite(wald))
+            throw new Error("phyto-core forestWaldgrenze: der Wald-Anteil des Klimas fehlt (KERN-PFLICHT)");
         let t = schnee / FOREST_PACK.bestand.waldgrenze;
         t = t < 0 ? 0 : t > 1 ? 1 : t;
-        return 1 - t * t * (3 - 2 * t);
+        return (1 - t * t * (3 - 2 * t)) * wald;
     }
     // DER WALD AM SIEDLUNGSRAND (w20-wald-kosten, der Befund KOSTEN der vp-0611h: das Dorf trug 1 117 statt 486 Bäume binnen
     // 150 m): ein Ort trägt seine Dichte — sein Rand ist die Reichweite nach dem Ort-Gesetz (fachwerk `siedlungsReich`: 30 +
@@ -3338,7 +3625,7 @@
     // Arten-Nische (Klima × Patch-Mosaik × Feuchte × Höhen-Trockenheit × Offenheit, inkl. der
     // AUTO-Arten aus dem Rezeptbuch via ctx.extras) → reverse-J-Größe → Mammut-Promotion.
     // ctx = { F, baseH, extras, fbm(px,pz), surfaceYAt(x,z), waterYAt(x,z), slopeAt(x,z),
-    // feuchteAt(x,z,surfY), stand(x,z), schnee(x,z,y), ort(x,z), ortFrei?(x,z,T) }. Die rng()-Aufruf-REIHENFOLGE ist heilig
+    // feuchteAt(x,z,surfY), stand(x,z), schnee(x,z,y), ort(x,z), wuchs, ortFrei?(x,z,T) }. Die rng()-Aufruf-REIHENFOLGE ist heilig
     // (byte-deterministisch).
     // FOREST_TOPOLOGY.host = "cell" — cell-darts + Host shy prio-max; Feel-Entscheid .116; no fake merge with Lab disk.
     function planForestCell(cx, cz, seedInt, ctx) {
@@ -3351,6 +3638,7 @@
             return t * t * (3 - 2 * t);
         };
         const extras = ctx.extras || [];
+        const wuchs = forestWuchs(ctx); // der Wuchs des Orts (Pflicht): die Trockengrenze und die Arten nach Klima und Zeit
         const out = [];
         for (let i = 0; i < F.dartsPerCell; i++) {
             const x = (cx + rng()) * CELL;
@@ -3369,7 +3657,7 @@
             if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
             // die Waldgrenze (`forestWaldgrenze`): derselbe Wurf gegen die Geburt im Schnee des Sommers am Boden des Darts —
             // ohne Schnee bleibt jeder Wurf, wie er war
-            const grenze = geburt * forestWaldgrenze(ctx.schnee(x, z, surfaceY));
+            const grenze = geburt * forestWaldgrenze(ctx.schnee(x, z, surfaceY), wuchs.wald);
             if (wurf > grenze) continue;
             const above = surfaceY - waterY;
             if (above <= 0.4) continue; // im offenen/flachen Wasser wächst NICHTS (Vorlage _de<-0.2)
@@ -3395,6 +3683,9 @@
                 wXsum += extras[xi].w0 * (0.2 + 3.6 * pf(extras[xi].center));
             }
             const wsum = wF + wT + wE + wB + wW + wXsum;
+            // trägt der Ort keine Art (Klima und Zeit nehmen Nadel- UND Laubholz, kein Auto-Rezept streut), steht kein Baum —
+            // in der Heimat nie (jedes Gewicht trägt seinen Sockel > 0)
+            if (!(wsum > 0)) continue;
             let pick = rng() * wsum;
             let sp;
             // pick strings Host-lokal (RNG heilig) — Lab-Zwilling fichte via FOREST_SPECIES.labToHost
@@ -3751,6 +4042,9 @@
             const rPx = (rMax / Math.max(1e-6, P.height)) * STUFEN_BILD_PX[__lod];
             const nUmriss = rPx > 0.5 ? Math.ceil(Math.PI / Math.acos(1 - 0.5 / rPx)) : 3;
             R = Math.min(R, Math.max(5, nUmriss, 2 * ridges));
+            // DIE STUFE HÄLT IHRE ZEILE (w28-stamm-krone, `P._roehreDetail`): steht der Baum über dem Budget seiner Stufe,
+            // senkt foundry-core buildInstance das Detail, und jede Röhre gibt Seiten ab — die Seiten-Zahl folgt dem Budget.
+            if (P._roehreDetail > 0 && P._roehreDetail < 1) R = Math.max(5, Math.floor(R * P._roehreDetail));
         }
         const depth = prof.depth * lerp(0.28, 1, bthick),
             lichenA = prof.lichen * 0.6; // __lichen existierte in keinem Regime — der alte Guard fiel IMMER auf 0.6
@@ -4001,7 +4295,11 @@
     var WX_VIS = { lab: "wx-4", host: "WEATHER_FIELD" };
     // K2 (rein additiv): das LICHT des Wetters — die Sonne der Zeile dimmt das Richtlicht auf sockel + sonne·sun (Labor:
     // keyLight und Spiegel-Farbe, Welt: WEATHER_TINTS.lightMul); den Himmel der Welt dimmt die Sonne der Zeile selbst (skyMul).
-    var WX_LICHT = { sockel: 0.35, sonne: 0.65 };
+    // w28-licht-regen (rein additiv): sockel + sonne·sun ist das GESAMTE Licht der Zeile. Die Decke (grey) teilt es: von der
+    // direkten Sonne bleibt (1 − grey)^direktHoch (unter Regen 6 %, unter Sturm 0,2 % — der harte Schatten weicht), der Himmel
+    // traegt den Rest als diffuses Licht (× 1 + himmelHub·grey, wie das Hemi-Licht des Labors) und ergraut mit himmelGrau·grey
+    // (wie der Himmel des Labors zur Decke lerpt).
+    var WX_LICHT = { sockel: 0.35, sonne: 0.65, direktHoch: 3, himmelHub: 0.35, himmelGrau: 0.82 };
 
     // DER EINE WIND UND DIE FRONT (wetter.K5 · wetter.K1, rein additiv — kein bestehender Wert bewegt sich). Die RICHTUNG des
     // Winds ist eine Funktion der Saat und der Zeit: θ(t) = θ0 + 0,5·sin(0,009·t + φ1) + 0,22·sin(0,0257·t + φ2), ±41° Mäander
@@ -4064,7 +4362,65 @@
         var w = windSaat(saat);
         return { x: Math.sin(w.t0), z: Math.cos(w.t0) };
     }
-    function wetterAt(saat, x, z, t) {
+    // DIE VERTEILUNG DES WETTERS AM ORT (Reise, rein additiv — ohne `ort` bewegt sich kein Wert): `ort` ist das Δ des Planeten
+    // zum Anker (gelaende-core `ortGesetz(teil).wetter`: `regenQuote` der Anteil der nassen Zeit, `sturmQuote` der des Sturms).
+    // Die Stufe am Ort ist die Stufe der Heimat plus der Weg des Quantils der Front: Q(1 − Anteil − Δ) − Q(1 − Anteil), der Anteil
+    // aus derselben Verteilung gelesen (die drei Wellen mit unabhängiger Phase, 48³ Punkte, einmal je Faden) — am Anker ist der
+    // Weg Q(x) − Q(x) = 0. Gemerkt je Δ-Objekt. Leser: `wetterAt`.
+    var _frontV = null;
+    function frontVerteilung() {
+        if (_frontV) return _frontV;
+        var W = WIND_FELD.front.wellen,
+            N = 48,
+            sw = 0;
+        for (var i = 0; i < W.length; i++) sw += W[i][1];
+        var v = new Float64Array(N * N * N),
+            k = 0;
+        for (var a = 0; a < N; a++)
+            for (var b = 0; b < N; b++)
+                for (var c = 0; c < N; c++) {
+                    var f =
+                        W[0][1] * Math.sin((2 * Math.PI * (a + 0.5)) / N) +
+                        W[1][1] * Math.sin((2 * Math.PI * (b + 0.5)) / N) +
+                        W[2][1] * Math.sin((2 * Math.PI * (c + 0.5)) / N);
+                    v[k++] = 0.5 + (0.5 * f) / sw;
+                }
+        v.sort();
+        return (_frontV = v);
+    }
+    function frontAnteil(V, stufe) {
+        var lo = 0,
+            hi = V.length;
+        while (lo < hi) {
+            var m = (lo + hi) >> 1;
+            if (V[m] < stufe) lo = m + 1;
+            else hi = m;
+        }
+        return (V.length - lo) / V.length;
+    }
+    function frontQuantil(V, p) {
+        if (p >= 1) return 1.01;
+        if (p <= 0) return -0.01;
+        return V[Math.min(V.length - 1, Math.floor(p * V.length))];
+    }
+    var _wetterVersatzJe = new WeakMap();
+    function wetterVersatz(ort) {
+        var vs = _wetterVersatzJe.get(ort);
+        if (vs) return vs;
+        if (!(Number.isFinite(ort.regenQuote) && Number.isFinite(ort.sturmQuote)))
+            throw new Error("wetterAt: das Δ des Orts trägt regenQuote oder sturmQuote nicht");
+        var V = frontVerteilung(),
+            st = WIND_FELD.front.stufen;
+        var weg = function (stufe, d) {
+            var a = frontAnteil(V, stufe);
+            var z = Math.min(1, Math.max(0, a + d));
+            return frontQuantil(V, 1 - z) - frontQuantil(V, 1 - a);
+        };
+        vs = { regen: weg(st.regen, ort.regenQuote), sturm: weg(st.sturm, ort.sturmQuote) };
+        _wetterVersatzJe.set(ort, vs);
+        return vs;
+    }
+    function wetterAt(saat, x, z, t, ort) {
         if (!(Number.isFinite(x) && Number.isFinite(z) && Number.isFinite(t)))
             throw new Error("wetterAt: Ort und Zeit sind endlich (" + x + ", " + z + ", " + t + ")");
         var F = WIND_FELD.front;
@@ -4082,9 +4438,16 @@
         f = 0.5 + (0.5 * f) / sw;
         var feuchte = 0.5 + 0.5 * Math.sin((2 * Math.PI * s) / F.feuchteM + w.feuchte);
         var st = F.stufen;
+        var stSturm = st.sturm,
+            stRegen = st.regen;
+        if (ort) {
+            var vs = wetterVersatz(ort);
+            stSturm += vs.sturm;
+            stRegen += vs.regen;
+        }
         var zeile = "klar";
-        if (f >= st.sturm) zeile = "sturm";
-        else if (f >= st.regen) zeile = "regen";
+        if (f >= stSturm) zeile = "sturm";
+        else if (f >= stRegen) zeile = "regen";
         else if (f >= st.bewoelkt) zeile = "bewoelkt";
         else if (feuchte >= st.nebel) zeile = "nebel";
         return { zeile: zeile, front: f, feuchte: feuchte };
@@ -4162,6 +4525,11 @@
     //                 Krone aus 147 Klecksen trug runde Bögen: Radeon, Spielgang der Station, f:eiche:L1 0,3261. Kronen-Modell (147
     //                 Karten, Test an ½, kante je λ 2–4, die schlechteste): Zelle 0 · 1 · 2 · 3 main 0,243 · 0,208 · 0,202 · 0,160 →
     //                 0,175 · 0,208 (λ 2, unberührt) · 0,168 · 0,163 (Zelle 48: Zelle 0 0,210; ab Stufe 2: λ 2 0,150 → 0,201)
+    //   saumGestalt   DER RAND DER GESTALT (w28-karte-stamm, `karteSaumGestalt`): die Kohärenz des eigenen Umrisses, bis zu der
+    //                 die Stufe ihre eigene Deckung wählt (w = 1), und die, ab der sie den Saum erfindet (w = 0)
+    //   saumEigen     die Glättung der eigenen Deckung in binomialen 3×3-Gängen (`karteSaumEigen`; 8: σ 2 Texel, das Maß der Linse)
+    //   saumTensor    der Schritt des Tensor-Kerns in Texeln der gröberen Achse (`karteSaumGestalt`: der binomiale Kern des Bands,
+    //                 σ 2 Schritte — 2,5: σ 5 Texel, das Fenster der Linse)
     var KARTEN_GESETZ = {
         schwelle: 0.45,
         normalTeiler: 2,
@@ -4177,6 +4545,9 @@
         saumWeite: 3,
         lappen: 64,
         lappenHub: 8.4,
+        saumGestalt: [0.15, 0.3],
+        saumEigen: 8,
+        saumTensor: 2.5,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
@@ -4199,7 +4570,8 @@
         return Math.max(1, n);
     }
 
-    // Die Glätte-Gänge der deckungstreuen Mip-Stufe k — EINE Formel für die Mips im Kern und die GPU-Ablage des Hosts
+    // Die Glätte-Gänge der deckungstreuen Mip-Stufe k — die Mips ohne Saum (die glatte Kette des Blatt-Atlas). Die Karte mit
+    // Saum liest sie nicht mehr: bis w28-karte-stamm glättete sie damit ihren Stamm, im Kern und in der GPU-Ablage des Hosts
     function karteGlaetteGaenge(k) {
         return k <= KARTEN_GESETZ.glaetteBis ? KARTEN_GESETZ.glaette : 1;
     }
@@ -4261,7 +4633,7 @@
     }
     // DER SCHLÜSSEL DER WAHL EINER STUFE k (w23-karte-l2) — EIN Gesetz für jede Art und jede Stufe, die GPU-Ablage rechnet es
     // (KARTE_RECHNER_WGSL saumK): `c` die Deckung jedes Texels einer Ansicht (w × h, Stufe 0 binär, sonst der Anteil seines
-    // Fußabdrucks), `dK` die geglättete Deckung des Stamms (Stufe ≥ 1), `saum` { seite, fuss, nadel } ihres Rings.
+    // Fußabdrucks), `saum` { seite, fuss, nadel } ihres Rings.
     //   über dem Kronen-Fuß das BAND: g = c im binomialen Kern (`KARTEN_GESETZ.saumBand` Gänge, der Rand der Ansicht leer — der
     //     Rahmen ist nie der Umriss: die Sohle des Strauchs franst wie seine Kuppel); wählbar ab g ≥ saumMin, der Schlüssel
     //     g + saum · (Muster − ½) — ein Texel mit eigener Deckung immer (die Karte verschwindet nie, auch wo das Band über ihre
@@ -4285,7 +4657,15 @@
     //     (`saumSchritt`): beim Strauch (das Texel 3,5-mal so breit wie hoch) schritt das Muster sonst in der feinen Achse, seine
     //     Lappen standen 3,5-mal kleiner als die der Bäume, und die Messung sah sie nicht (Radeon 5c26df02: strauch 0,3909 →
     //     0,3919, die Bäume 0,17–0,21)
-    //   unter ihm der STAMM: Stufe 0 bleibt, wie sie backt (4), jede tiefere wählt ihn geglättet (dK) — ganz oder gar nicht
+    //   unter ihm der STAMM (w28-karte-stamm): JEDE Stufe wählt ihn ZEILENWEISE MASSENTREU — je Zeile der Ansicht so viele
+    //     Texel, wie die Deckung der Zeile trägt (round(Σ c)), die deckendsten zuerst, der Gleichstand nach der Lage; ein
+    //     gewähltes trägt 3 + c: über jedem Schlüssel des Bands (≤ 1 + saum / 2), unter dem ganz Gedeckten (1 + 2 · saum),
+    //     reicht M nicht, fällt zuerst, was am wenigsten deckt. Stufe 0 bleibt, wie sie backt (c = 1: jedes deckende Texel, 4).
+    //     Bis hier trug der Stamm ab Stufe 1 seine GEGLÄTTETE Deckung (vier binomiale Gänge: ein Stamm von ein, zwei Texeln
+    //     liest ≤ ½) in dieselbe Sortierung wie das Band, dessen Grenze um g = ½ liegt — er unterlag ganz, seine Masse fiel
+    //     der Krone zu, die Krone schwebte (Abzug der Bühne, Radeon, Ring 0°, 8 Peilungen — Buche: Stufe 1 / 2 hielt 3 % /
+    //     0 % seiner Masse, 321 von 328 Zeilen gerissen; jetzt 124 % / 129 % ohne Riss, bei gleichem M, Stufe 0 Byte für
+    //     Byte wie zuvor; Fichte 55 % / 0 % → 104 % / 190 %. Über 100 %: die Zeile rundet auf ganze Texel).
     // Gewählt werden je Ansicht die M größten Schlüssel (M wie Stufe 0 deckt, deckungstreu); 0 heißt nie.
     // Der Schritt je Achse in feinen Texeln für EIN Texel der gröberen Achse (seite = Breite durch Höhe des Texels)
     function saumSchritt(seite) {
@@ -4314,7 +4694,65 @@
         const zeilen = lauf(c, 1, w, (i) => i % w, schritt[0], moment === 1);
         return lauf(zeilen, w, h, (i) => (i / w) | 0, schritt[1], moment === 2);
     }
-    function karteSaumSchluessel(c, w, h, k, saum, dK) {
+    //     (3) DER RAND DER GESTALT (w28-karte-stamm): erfunden wird nur, was die Gestalt im Maß der Karte nicht
+    //     trägt. Je Texel die Geradheit des EIGENEN Umrisses im Band — die Kohärenz des Struktur-Tensors der eigenen Deckung im
+    //     Maß der Linse (klassenMasse kante: die Maske im Gauß σ 2 px, der Tensor im Fenster 17 px; hier `karteSaumEigen`: c in acht
+    //     binomialen 3×3-Gängen, σ 2 Texel, der Tensor im binomialen Kern σ 5 Texel der gröberen Achse) —, daraus das Gewicht der
+    //     Gestalt w = 1 bei Kohärenz ≤ saumGestalt[0], 0 ab saumGestalt[1]: der Schlüssel g + w · (c̃ − g) + (1 − w) · Hub ·
+    //     (Muster − ½). Wo die Gestalt fransig ist, wählt die Stufe ihre eigene Deckung (keine Verlegung, kein erfundener Lappen);
+    //     wo sie gerade ist (die Scheibe, ein glatter Laib), wählt sie wie (1)/(2). Bis hier las der Schlüssel im Band nur das
+    //     verwischte g, die eigene Deckung brach den Gleichstand (1e-6 · c): an der echten Fichte verlegte Stufe 0 29 % ihrer
+    //     Fläche, obwohl ihr eigener Umriss 0,21 las (Befund im Zweig w28-samen-karten-stufe, Ordner samen/karten-stufe). Die
+    //     GPU-Ablage rechnet dasselbe (KARTE_RECHNER_WGSL `eigenK` die Gänge, `gestaltW` das Gewicht in `saumK`; die Zahlen reicht
+    //     `_karteSaumVon`): der Rand der Ansicht geklemmt, das Gefälle auf ihrem Rahmen 0, der Abgriff des Kerns bei ⌊d · Schritt + ½⌋.
+    function karteSaumEigen(c, w, h) {
+        let a = Float64Array.from(c);
+        const b = new Float64Array(w * h);
+        for (let gang = 0; gang < KARTEN_GESETZ.saumEigen; gang++) {
+            mipGlaette(a, b, w, h, 0, w, 0, h);
+            a = Float64Array.from(b);
+        }
+        return a;
+    }
+    function karteSaumGestalt(e, w, h, seite) {
+        const t = KARTEN_GESETZ.saumTensor,
+            st = [t * Math.max(1 / seite, 1), t * Math.max(seite, 1)];
+        const gx = new Float64Array(w * h),
+            gy = new Float64Array(w * h);
+        for (let y = 0; y < h; y++)
+            for (let x = 0; x < w; x++) {
+                const i = y * w + x;
+                gx[i] = x > 0 && x < w - 1 ? (e[i + 1] - e[i - 1]) / 2 : 0;
+                gy[i] = y > 0 && y < h - 1 ? (e[i + w] - e[i - w]) / 2 : 0;
+            }
+        const jxx = karteSaumBand(
+                gx.map((v) => v * v),
+                w,
+                h,
+                st
+            ),
+            jyy = karteSaumBand(
+                gy.map((v) => v * v),
+                w,
+                h,
+                st
+            ),
+            jxy = karteSaumBand(
+                gx.map((v, i) => v * gy[i]),
+                w,
+                h,
+                st
+            ),
+            [k0, k1] = KARTEN_GESETZ.saumGestalt,
+            out = new Float64Array(w * h);
+        for (let i = 0; i < w * h; i++) {
+            const tr = jxx[i] + jyy[i],
+                koh = tr > 1e-12 ? ((jxx[i] - jyy[i]) ** 2 + 4 * jxy[i] * jxy[i]) / (tr * tr) : 1;
+            out[i] = Math.min(1, Math.max(0, (k1 - koh) / (k1 - k0)));
+        }
+        return out;
+    }
+    function karteSaumSchluessel(c, w, h, k, saum) {
         const G = KARTEN_GESETZ,
             st = saumSchritt(saum.seite),
             g = karteSaumBand(c, w, h, st),
@@ -4322,17 +4760,35 @@
             zx = karteSaumBand(c, w, h, st, 1),
             zy = karteSaumBand(c, w, h, st, 2),
             sigma = Math.sqrt(G.saumBand / 2),
+            eigen = karteSaumEigen(c, w, h),
+            gestalt = karteSaumGestalt(eigen, w, h, saum.seite),
             key = new Float64Array(w * h);
         for (let i = 0; i < w * h; i++) {
             const X = ((i % w) + 0.5) * f,
                 Y = (((i / w) | 0) + 0.5) * f;
-            if (Y > saum.fuss) key[i] = c[i] > 0 ? (k ? dK[i] : 4) : 0;
-            else if (g[i] >= G.saumMin || c[i] > 0) {
+            if (Y > saum.fuss) {
+                // DER STAMM, zeilenweise massentreu: die Deckung der Zeile und der Rang des Texels in ihr
+                if (c[i] > 0) {
+                    const z0 = i - (i % w);
+                    let summe = 0,
+                        vor = 0;
+                    for (let x = 0; x < w; x++) {
+                        const q = c[z0 + x];
+                        summe += q;
+                        if (q > c[i] || (q === c[i] && z0 + x < i)) vor++;
+                    }
+                    key[i] = vor < Math.round(summe) ? 3 + c[i] : 0;
+                }
+            } else if (g[i] >= G.saumMin || c[i] > 0) {
                 const gg = Math.min(0.999, Math.max(0.001, g[i])),
                     zug = (-sigma * f * Math.log(gg / (1 - gg))) / 1.702 / Math.max(1e-6, Math.hypot(zx[i], zy[i])),
                     hub = G.saum * 4 * gg * (1 - gg),
-                    m = karteSaumMuster(X / st[0] + zx[i] * zug, Y / st[1] + zy[i] * zug, G.saumZelle * f, saum.nadel);
-                key[i] = Math.max(1e-9, g[i] + (g[i] >= 1 ? 2 * G.saum : 0) + hub * (m - 0.5));
+                    m = karteSaumMuster(X / st[0] + zx[i] * zug, Y / st[1] + zy[i] * zug, G.saumZelle * f, saum.nadel),
+                    wg = gestalt[i];
+                key[i] = Math.max(
+                    1e-9,
+                    g[i] + wg * (eigen[i] - g[i]) + (g[i] >= 1 ? 2 * G.saum : 0) + (1 - wg) * hub * (m - 0.5)
+                );
             }
             if (key[i] > 0) key[i] += 1e-6 * c[i];
         }
@@ -4715,7 +5171,7 @@
                     )
                 );
                 const g = karteSaumBand(c, wA, hA, st);
-                const wahl = saumWahl(karteSaumSchluessel(c, wA, hA, 0, saum, null), Math.round(cov0[v] * wA * hA));
+                const wahl = saumWahl(karteSaumSchluessel(c, wA, hA, 0, saum), Math.round(cov0[v] * wA * hA));
                 for (let i = 0; i < wA * hA; i++) {
                     const o = (o0 + i) * 4;
                     if (!wahl[i]) d0[o] = d0[o + 1] = d0[o + 2] = d0[o + 3] = 0;
@@ -4770,7 +5226,8 @@
                 // Gleichstand über einen Orts-Hash (bis 12.10.) säte Einzel-Texel quer über die Krone: das Korn der
                 // Mittelsicht, das unter dem ½-Pixel-Versatz flimmerte (gate:pflanzen-nah (Z)).
                 for (let i = 0; i < nA; i++) dicht[i] = ta[ort[i]] / fuss;
-                const gaenge = karteGlaetteGaenge(k);
+                // der Saum liest sie nicht mehr (w28-karte-stamm: der Stamm wählt zeilenweise aus seiner eigenen Deckung)
+                const gaenge = saum ? 0 : karteGlaetteGaenge(k);
                 // DER RAHMEN DER DECKUNG: außerhalb von ihm und seinem Rand ist jede der neun Summen 0 — jeder Gang rechnet
                 // nur ihn, um einen Texel je Gang gewachsen; `weich` trägt außerhalb die Nullen, die der Gang schriebe
                 let ya = nhA,
@@ -4801,9 +5258,9 @@
                         );
                     dicht.set(weich);
                 }
-                // DER SAUM (`karteSaumSchluessel`): die Wahl jeder Stufe, Stamm unter dem Kronen-Fuß geglättet
+                // DER SAUM (`karteSaumSchluessel`): die Wahl jeder Stufe, der Stamm unter dem Kronen-Fuß zeilenweise massentreu
                 const c = saum ? Float64Array.from({ length: nA }, (_, i) => ta[ort[i]] / fuss) : null;
-                if (saum) schluessel.set(karteSaumSchluessel(c, nwA, nhA, k, saum, dicht));
+                if (saum) schluessel.set(karteSaumSchluessel(c, nwA, nhA, k, saum));
                 for (let i = 0; i < nA; i++) {
                     const s = ta[ort[i]];
                     // wählbar: glatt jeder Texel mit Deckung in der Nachbarschaft (er trägt die Blut-Farbe), sonst nur mit
@@ -5471,7 +5928,7 @@
         // der Flatten verschmilzt Teile EINES Stoffs nur bis zu dieser Summe (sonst je Teil) — die EINE Zahl, der Wirt
         // liest sie (`_foundryFlatVerschmelzen`)
         verschmelzVerts: 65536,
-        formAttr: ["uv", "aWurzel", "aSchale", "skinIndex"], // die Attribute, die der Wirt nur trägt, wo sie reisen
+        formAttr: ["uv", "aWurzel", "aSchale", "skinIndex", "aVerband", "aLage"], // die Attribute, die der Wirt nur trägt, wo sie reisen
         // DIE SEH-KLASSEN (Integration W8, 05.10.): was ein Stoff dem AUGE ist. Jedes Gesetzbuch stempelt sie an seinen
         // Stoff (`material.userData.__seh`), der Extraktor reicht sie als `mat.seh`; gefaltet wird nur innerhalb EINER.
         //   stoff  Holz · Putz · Stein · Textil · Gummi · Kunststoff — das Matte, Dielektrische
@@ -5562,10 +6019,17 @@
             // das Gesetzbuch sie trägt — sonst byte-alt)
             (R.ub ? "|ub" : "") +
             (mp && typeof mp.stein === "string" ? "|st:" + mp.stein : "") +
+            // w28-haus-stoff: der Verband (fachwerk VERBAND_GESETZ, die Nummer seiner Zeile) ist Teil der Identität — der Stoff
+            // webt Stein, Fuge und Ton seiner Zeile (nur wo das Gesetzbuch ihn trägt — sonst byte-alt)
+            (mp && mp.verband > 0 ? "|vb:" + (mp.verband | 0) : "") +
             // die Seh-Klasse gehört zur Identität: zwei Stoffe gleicher Regler und verschiedener Funktion (Klaue und
             // Pupille, beide 0,2 matt-schwarz) sind zwei Materialien — sonst trüge die Pupille die Klaue in den Stoff
             (budgetSeh(mp) ? "|v:" + mp.seh : "")
         );
+    }
+    // Der Verband eines Stoffs (`mat.verband` aus dem Gesetzbuch, fachwerk VERBAND_GESETZ): die Nummer seiner Zeile — 0 ohne.
+    function budgetVerband(mp) {
+        return mp && mp.verband > 0 ? mp.verband | 0 : 0;
     }
     // Die Seh-Klasse eines Stoffs (`mat.seh` aus dem Gesetzbuch) — null, wenn er keine gültige trägt (ein Bruch).
     function budgetSeh(mp) {
@@ -5836,7 +6300,8 @@
         }
         const out = { kind: ziel.kind, mat: Object.assign({}, ziel.mat) };
         const A = {};
-        for (const a of attrs) A[a.name] = new Float32Array(nV * a.size);
+        // (der Verband je Ecke ist eine Nummer 0 … 255: ein Byte je Ecke, nie vier)
+        for (const a of attrs) A[a.name] = a.name === "aVerband" ? new Uint8Array(nV) : new Float32Array(nV * a.size);
         const index = new Uint32Array(nI);
         let ov = 0,
             oi = 0;
@@ -5861,6 +6326,11 @@
                             dst[(ov + q) * 3 + 1] = c[1];
                             dst[(ov + q) * 3 + 2] = c[2];
                         }
+                    } else if (a.name === "aVerband" && !(m.aVerband && m.aVerband.array)) {
+                        // der Verband des Teils (w28-haus-stoff): die Nummer der Zeile seines Stoffs in jede seiner Ecken
+                        dst.fill(budgetVerband(m.mat), ov, ov + v);
+                    } else if (a.name === "aLage" && !(m.aLage && m.aLage.array)) {
+                        // ein Teil ohne Lage im Gefüge trägt 0 (der Puffer ist frisch): seine Zeile liest die Lage der Welt
                     } else {
                         const src = m[a.name].array;
                         const si = m[a.name].itemSize || s;
@@ -6032,6 +6502,21 @@
                 if (g.teile.every((p) => p.m[a] && p.m[a].array && p.m[a].itemSize === at.itemSize))
                     attrs.push({ name: a, size: at.itemSize });
             }
+            // DER VERBAND JE ECKE (w28-haus-stoff, fachwerk VERBAND_GESETZ): faltet die Gruppe Stoffe verschiedener Verbände (das
+            // Dach, den Sockel und das Holz in den Putz), trägt jede Ecke die Nummer der Zeile IHRES Stoffs (`aVerband`) — der Wirt
+            // legt sie in ein freies Byte seines Satzes und webt den Verband je Fläche. Tragen alle Teile denselben (oder keinen),
+            // reist kein Attribut: der Stoff der Gruppe nennt ihn (`mat.verband`) — byte-alt.
+            // Ein Teil, das seine Zeile je Ecke schon trägt (die ferne Fachwerk-Wand, fachwerk `_wandLage`), zieht das Attribut mit;
+            // seine Lage im Gefüge (`aLage`: Felder quer · Felder hoch) reist ebenso — die Teile ohne sie tragen 0.
+            if (
+                !attrs.some((x) => x.name === "aVerband") &&
+                g.teile.some(
+                    (p) => (p.m.aVerband && p.m.aVerband.array) || budgetVerband(p.m.mat) !== budgetVerband(g.mat)
+                )
+            )
+                attrs.push({ name: "aVerband", size: 1 });
+            if (!attrs.some((x) => x.name === "aLage") && g.teile.some((p) => p.m.aLage && p.m.aLage.array))
+                attrs.push({ name: "aLage", size: 2 });
             for (const p of g.teile) p.rueck = p.seite === 2 && g.seite !== 2;
             // Je Gelenk ein Eimer (geometrisch faltet nur, was am selben Gelenk hängt; der Ofen bindet die Eimer
             // eines Stoffs starr zu EINEM Draw). Unverändert reist ein Teil, an dem nichts zu tun ist: allein im
@@ -6536,11 +7021,20 @@
             return { slope: w(0), moisture: w(1), lebendig: w(2) };
         };
     }
+    // DER WUCHS DES ORTS (Reise, Welle 3 — `a.wuchs`, Pflicht: gelaende-core `ortGesetz(teil).wuchs`): der Wurf der Baum-Schicht
+    // trägt den Wald-Anteil des Orts (`wald`), der der Kraut- und Strauch-Schicht den der Krautschicht (`decke`), der Fels keinen —
+    // in der Heimat 1, jeder Wurf wie zuvor.
     function streuRegion(a) {
         const SC = a.SC;
+        const W = a.wuchs;
+        if (!W || !Number.isFinite(W.wald) || !Number.isFinite(W.decke))
+            throw new Error(
+                "phyto-core streuRegion: der Wuchs des Orts fehlt im Auftrag (wuchs: wald · decke, KERN-PFLICHT)"
+            );
         const feld = streuFelder(a.bake, a.leser);
         return a.layers.map((layer) => {
             const out = [];
+            const klima = layer.kind === "rock" ? 1 : layer.kind === "tree" ? W.wald : W.decke;
             const cellM = layer.cellM;
             const n = Math.round(SC.regionM / cellM);
             const bx = Math.round((a.regX * SC.regionM) / cellM);
@@ -6569,7 +7063,7 @@
                                           dScale
                               )
                             : Math.min(0.95, floor + f.lebendig * SC.densityScale);
-                    if (streuPcgFloat(cellX ^ salt, cellZ, 9) >= prob * a.fdScale) continue;
+                    if (streuPcgFloat(cellX ^ salt, cellZ, 9) >= prob * a.fdScale * klima) continue;
                     const h = streuPcg((cellX ^ a.seedHash ^ salt) >>> 0, (cellZ * 2654435761) >>> 0);
                     out.push(cellX, cellZ, tf.x, tf.z, tf.yaw, tf.scale, h, f.lebendig, f.moisture);
                 }
@@ -6599,6 +7093,9 @@
         FOREST_STAND: FOREST_STAND,
         FREISTAND: FREISTAND,
         BESTAND: BESTAND, // T2: der Laubbaum im Bestand (Seitenast-Länge und Kronen-Hub)
+        bestandArt: bestandArt, // steht die Art im Bestand (Laubbaum ohne `solitaer`)?
+        STAMM_KRONE: STAMM_KRONE, // w28-stamm-krone: der Stamm des Laubbaums aus dem Schirm seiner Krone
+        stammAusKrone: stammAusKrone,
         solitaerGestalt: solitaerGestalt,
         forestStandDensity: forestStandDensity,
         forestGeburt: forestGeburt,
@@ -6665,6 +7162,7 @@
         mulberry32: mulberry32, // der Vorlagen-RNG (der Strom des Wuchses; gate:pflanzen-nah wächst dasselbe Skelett)
         kronenLagen: kronenLagen, // S3: die Lagen einer Krone — der Bau-Regler der Karten-Wahl (foundry-core __lagenWahl)
         quadLagen: quadLagen, // S3: die Lagen beliebiger Karten (Strähnen der Trauer-Krone)
+        lagenZaehler: lagenZaehler, // die Arbeit des Lagen-Rasters: Rufe · Dreiecke · Proben · Treffer (gate:asset-contract)
         BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Zellen + Kern + Füllung) der Breitblatt-Zellen
         BLATT_ATLAS_WEDEL: BLATT_ATLAS_WEDEL, // der Atlas-Steckbrief (Zelle + Kern + Füllung) des Wedels (S3: Zelle 3)
         buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0

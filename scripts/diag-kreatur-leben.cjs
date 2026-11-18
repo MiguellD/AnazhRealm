@@ -4,8 +4,11 @@
 "use strict";
 
 // ── furcht (Ökologie K3, tetrapoda FURCHT_GESETZ): (A) je Ort und Rolle ein Tier allein — geschlagen, gefüttert, gebunden,
-// zur Kontrolle, der Bär vor ruhiger, zorniger, friedlicher Aura — über den Speicherstand, dann geht der Spieler bis 8 m
-// heran und steht 15 s: der Median des Abstands. (B) ein Rudel um einen Riss: sein Aufenthalt in dessen Zelle über 90 s,
+// zur Kontrolle, der Bär vor ruhiger, zorniger, friedlicher Aura, Wolf und Fuchs fremd — über den Speicherstand, dann geht der
+// Spieler in Stufen aus 480 m auf es zu, bis es flieht (der Abstand dann: die Fluchtdistanz, tetrapoda fluchtDistanz) oder bis 8 m, und
+// steht 15 s: der Median des Abstands. Seit leben.tiere.mensch S1 flieht jedes Wild den gehenden Menschen ab der Distanz seiner
+// Gattung, Gedächtnis und Aura weiten sie; vorher ging er aus 30 m bis 8 m heran, und der Median nach 40 s Hetze maß den Sprint
+// des Tiers, nicht sein Gedächtnis (Kontrolle 342 m, geschlagen 358 m). (B) ein Rudel um einen Riss: sein Aufenthalt in dessen Zelle über 90 s,
 // gegen den Gegenlauf ohne Feld-Furcht. (C) eine Herde 15 m vom Herd eines Brands: wer binnen 10 s flieht, gegen den Lauf ohne
 // Brand (w28-brand-flucht: vorher las die Furcht die Glut nie) ──
 // Die Bühnen stehen an der Marke LEBEN_BUEHNEN im Leib von `kreaturProben` (scripts/lib/kreatur-proben.cjs): r, s, A, pm, buehne,
@@ -16,6 +19,7 @@ async function lebenBuehnen() {
     await buehne("furcht", async (restore) => {
         if (taeter === "furcht-gedaechtnis") decke("_kreaturFurchtErinnert", () => () => 0);
         if (taeter === "furcht-ort") decke("_kreaturFurchtOrt", () => (c, NAT, von, w) => w);
+        if (taeter === "furcht-mensch") decke("_kreaturMenschFlucht", () => () => 0);
         if (taeter === "furcht-speicher")
             decke("_serializeCreature", (alt) => (c) => Object.assign(alt.call(r, c), { memory: [] }));
         if (taeter === "furcht-aura") {
@@ -38,10 +42,12 @@ async function lebenBuehnen() {
             baerRuhig: ["baer"],
             baerZornig: ["baer", zorn],
             baerFrieden: ["baer", zorn, "frieden"],
+            wolf: ["wolf"], // satt
+            fuchs: ["fuchs"],
         };
         const erinnert = {};
         for (const [rolle, [seele, e, modus]] of Object.entries(rollen)) {
-            const R = { abstand: [], naeher: [], erinnerungen: [] };
+            const R = { abstand: [], naeher: [], erinnerungen: [], flucht: [] };
             r.setGameMode(modus || "pfad");
             for (let o = 0; o < 4; o++) {
                 s.creatureAnimationTime = 100;
@@ -60,15 +66,26 @@ async function lebenBuehnen() {
                 const c = r._restoreCreatureFromSnapshot(snap);
                 ruhig(c);
                 if (rolle === "gebunden") c.userData.bond = 1;
+                // der Wolf satt (VERHALTEN.aas): ein hungriger jagt den Spieler und flieht ihn nicht (`_kreaturJagdBereit`)
+                if (rolle === "wolf") c.userData.magen = r._kreaturMagenVoll(c);
                 R.erinnerungen.push((c.userData.memory || []).length);
-                pm.set(c.position.x + 30, boden(c.position.x + 30, c.position.z), c.position.z);
-                for (let k = 0, d = 30; k < 2400 && d > 8; k++) {
-                    d = ab(c.position, pm);
-                    pm.x += ((c.position.x - pm.x) / d) * s.speed * dt;
-                    pm.z += ((c.position.z - pm.z) / d) * s.speed * dt;
-                    pm.y = boden(pm.x, pm.z);
-                    lauf(1, e);
+                // DIE LEITER DER NÄHERUNG: der Spieler tritt in Stufen aus 480 m heran (je Stufe 12 % näher am Tier), geht dort 1 s
+                // in seinem Lauf auf es zu, bis es flieht (`_motionZustand` "flucht"): `fluchtM` (0 = es floh nicht); sonst steht
+                // er nach der letzten Stufe bei 8 m (ein Gang aus 480 m wären bei s.speed Minuten je Tier)
+                let fluchtM = 0;
+                for (let d = 480; !fluchtM; d = Math.max(8, d * 0.88)) {
+                    pm.set(c.position.x + d, boden(c.position.x + d, c.position.z), c.position.z);
+                    for (let k = 0; k < 60 && !fluchtM; k++) {
+                        const dk = ab(c.position, pm);
+                        pm.x += ((c.position.x - pm.x) / dk) * s.speed * dt;
+                        pm.z += ((c.position.z - pm.z) / dk) * s.speed * dt;
+                        pm.y = boden(pm.x, pm.z);
+                        lauf(1, e);
+                        if (c.userData._motionZustand === "flucht") fluchtM = ab(c.position, pm);
+                    }
+                    if (d === 8) break;
                 }
+                R.flucht.push(rund(fluchtM, 1));
                 const d0 = ab(c.position, pm);
                 for (let k = 0; k < 900; k++) {
                     lauf(1, e);
@@ -80,6 +97,8 @@ async function lebenBuehnen() {
             erinnert[rolle] = {
                 medianM: rund(quantil(R.abstand, 0.5), 2),
                 naeherM: rund(quantil(R.naeher, 0.5), 2),
+                fluchtM: rund(quantil(R.flucht, 0.5), 1),
+                flucht: R.flucht,
                 erinnerungen: R.erinnerungen,
             };
         }
@@ -129,6 +148,9 @@ async function lebenBuehnen() {
         const altNaesse = s.naesse;
         const orte = [];
         if (taeter === "brand-flucht") decke("_kreaturGlutNah", () => () => false);
+        // die Bühne führt die Uhr von Hand (`s.spielZeit += dt`, `_tickBrand`) und rechnet keinen Takt des Bestands: das Entfachen ist am
+        // Eingang an der Reihe (`_feldFolgeSteht`, w28-mp-boden — im Spiel tritt es hinter die Takte, die die nahen Regionen nachholen)
+        decke("_feldFolgeSteht", () => () => true);
         for (const gegen of [false, true])
             for (let o = 0; o < 8 && (gegen ? o < orte.length : orte.length < 3); o++) {
                 s.creatureAnimationTime = 100;
@@ -170,6 +192,7 @@ async function lebenBuehnen() {
         const mittel = (a) => rund(a.reduce(addiere, 0) / a.length, 3);
         return {
             erinnert,
+            witterungM: A._verhaltenGesetz().furcht.noticeRadius,
             ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) },
             brand: { flieht: mittel(brand.feuer), gegenlauf: mittel(brand.gegenlauf), herde: orte.length, je: brand.feuer },
         };
@@ -297,7 +320,8 @@ async function lebenBuehnen() {
         // der Täter der Dichte (tiere.K5): das Revier auf dem Land von vor w27-tiere-sicht (Kachel 354 m)
         if (taeter === "bestand-duenn") decke("_bestandSeite", () => () => 354);
         // der Täter der jungen Welt: die Region beginnt ohne ihre Stunde (bis w27-tiere-sicht frühestens an der Welt-Uhr 0)
-        if (taeter === "bestand-jung") aufraeumen.push(leihe(A, { BESTAND_REGION: { ...A.BESTAND_REGION, aufholS: 0 } }));
+        if (taeter === "bestand-jung")
+            aufraeumen.push(leihe(A, { BESTAND_REGION: { ...A.BESTAND_REGION, aufholS: 0 } }));
         // DAS TAL DER WILDNIS: die Kaskade misst, wo das Feld wirft — keine Zelle des Bestands der nahen Regionen liegt auf einer
         // Fläche des Genesis-Orts (Kern, Ring, Mall, Wiese, Ufer, die Bühnen: dort fällt jede Geburt und jeder Leib,
         // `_kreaturGrundFrei`). Der Zeitraffer steht ganze Regionen westlich der Ankunft, bis keine mehr dort liegt (709 m). Bis
@@ -305,7 +329,7 @@ async function lebenBuehnen() {
         // um 0,222 statt 0,391 (dieselben Saaten, die Flächen still). Täter (Selbsttest): der Zeitraffer an der Ankunft
         const park = () => r._bestandNah().flatMap((k) => r._bestandFeld(k).zellen).filter((c) => r._genesisFlaeche(c.x, c.z)).length; // prettier-ignore
         for (let x = pm.x; taeter !== "kaskade-park" && park(); kamera(0, -1))
-            (x -= r._bestandSeite()), pm.set(x, boden(x, pm.z), pm.z);
+            ((x -= r._bestandSeite()), pm.set(x, boden(x, pm.z), pm.z));
         if (park()) throw new Error(`das Tal liegt im Genesis-Ort: ${park()} Zellen`);
         // die vier Regionen schräg an den Ecken des Tals (nicht nah, ihr Bestand nur als Zahl)
         const [ix, iz] = [pm.x, pm.z].map((v) => Math.round(v / r._bestandSeite()));
@@ -700,14 +724,17 @@ async function lebenBuehnen() {
         r._uhrSetzen(0.5, "regler");
         const takte = Math.round((0.1 / 24) * (s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES) * 600);
         const z = { budget: {}, soll: {}, ruhe: [0, 0] };
-        const tagLauf = (seelen, ein, mess, z) => {
+        const amUfer = (seele, i) => ({
+            x: U.x + Math.cos(i * 2.1 + seele.length) * 6,
+            z: U.z + Math.sin(i * 2.1 + seele.length) * 6,
+        });
+        const tagLauf = (seelen, ein, mess, z, ort = amUfer) => {
             const tiere = seelen.flatMap((seele) =>
                 [0, 1, 2].map((i) => {
-                    const x = U.x + Math.cos(i * 2.1 + seele.length) * 6,
-                        zz = U.z + Math.sin(i * 2.1 + seele.length) * 6;
+                    const { x, z: zz } = ort(seele, i);
                     const c = tier({ x, y: boden(x, zz), z: zz }, seele, 1);
                     ruhig(c);
-                    return { c, g: A.TETRAPODA_SOUL_MAP[seele], x, z: zz, ruhK: 0, trunk: 0, nass: 0 };
+                    return { c, g: A.TETRAPODA_SOUL_MAP[seele], x, z: zz, ruhK: 0, trunk: 0, nass: 0, spur: [] };
                 })
             );
             pm.set(U.x, r.getTerrainHeightAt(U.x, U.z + 90) + 0.5, U.z + 90);
@@ -716,7 +743,10 @@ async function lebenBuehnen() {
                 for (let k = 0; k < takte; k++) {
                     ruhigSpieler();
                     takt(0.1);
+                    // die Lage je Spiel-Minute (der Schritt der Uhr: 0,1 Spielstunde = 6 Minuten in `takte` Takten)
+                    const minute = i >= ein * 10 && Math.floor(((k + 1) * 6) / takte) > Math.floor((k * 6) / takte);
                     for (const t of tiere) {
+                        if (minute) t.spur.push({ x: t.c.position.x, z: t.c.position.z });
                         const ud = t.c.userData,
                             p = t.c.position;
                         if (t.g0 !== undefined && ud._getrunken !== t.g0)
@@ -727,14 +757,19 @@ async function lebenBuehnen() {
                         if (i >= ein * 10) {
                             const B = z.budget[t.g] || (z.budget[t.g] = { ruhen: 0, nahrung: 0, ziehen: 0 });
                             B[kat]++;
-                            if (t.ruhK > 20)
-                                (z.ruhe[0]++, (z.ruhe[1] += ab(p, t) > 0.01 ? 1 : 0));
+                            if (t.ruhK > 20) (z.ruhe[0]++, (z.ruhe[1] += ab(p, t) > 0.01 ? 1 : 0));
                         }
                         [t.x, t.z] = [p.x, p.z];
                     }
                 }
             }
-            for (const t of tiere) r.removeCreature(t.c);
+            for (const t of tiere) {
+                // der Anker und die Leine, wie der Takt sie liest (_creatureCharacterWander: wanderAnchor, leashM)
+                const ud = t.c.userData;
+                t.anker = ud.wanderAnchor ? { x: ud.wanderAnchor.x, z: ud.wanderAnchor.z } : null;
+                t.leineM = r._creatureMoveCharacter(t.c).leashM;
+                r.removeCreature(t.c);
+            }
             return tiere;
         };
         const tiere = tagLauf(["wesen", "baer", "fuchs", "wolf"], ...(taeter ? [2, 12] : [12, 72]), z);
@@ -747,6 +782,70 @@ async function lebenBuehnen() {
         }
         z.truenke = tiere.map((t) => t.trunk);
         z.amWasser = tiere.reduce((a, t) => a + t.nass, 0);
+        // DIE WANDERUNG (leben.tiere.wanderung S1): je Gattung drei Tiere, geboren, wo die Geburt des Spiels wirft — in ihrem
+        // Lebensraum (_bodenKlasseAt × LG.lebensraum > 0), auf trockenem Land, ≥ CREATURE_SPAWN_FAR_MIN vom Spieler, gleichverteilt
+        // im Quadrat 400 m um das Ufer (die Folge des goldenen Schnitts: kein Ort ist gewählt, auch der Saum nicht) — über 24
+        // Spielstunden nach 2 Einlauf. Je Tier die Aufenthaltsfläche aus seiner Spur, die konvexe Hülle der 95 % ankernächsten Lagen
+        // (MCP 95, Hülle und Fläche des Spiels: _convexHull2D, _polygonArea2D), gegen seine Leine, und der Anteil der Lagen in
+        // seinem Lebensraum. Die Probe 68f84acf maß am Ufer U und setzte die Tiere an den ufernächsten Ort ihres Lebensraums, den
+        // Saum (die halbe Leine draußen, das Wasser jenseits trinkSuchM: Hirsch, Fuchs und Wolf tranken nie) — der Tag am Ufer
+        // (Ethogramm, Durst) blieb, wie er war
+        if (!taeter) {
+            const lebt = (g, x, zz) => LG.lebensraum(g, r._bodenKlasseAt(x, zz), LG.L) > 0;
+            const spieler = { x: U.x, z: U.z + 90 };
+            const orte = {};
+            const imRaum = (seele, i) => {
+                const g = A.TETRAPODA_SOUL_MAP[seele];
+                const O = orte[g] || (orte[g] = []);
+                for (let k = O.k || 0; O.length <= i && k < 20000; k++) {
+                    const x = U.x + (((k * 0.6180339887) % 1) - 0.5) * 400,
+                        zz = U.z + (((k * 0.7548776662) % 1) - 0.5) * 400;
+                    O.k = k + 1;
+                    if (Math.hypot(x - spieler.x, zz - spieler.z) < A.CREATURE_SPAWN_FAR_MIN) continue;
+                    if (r._landAt(x, zz) && !r._nassAt(x, zz) && lebt(g, x, zz)) O.push({ x, z: zz });
+                }
+                if (!O[i]) throw new Error("kein Lebensraum der Gattung " + g + " im Quadrat 400 m um das Ufer");
+                return O[i];
+            };
+            z.wander = tagLauf(["wesen", "baer", "fuchs", "wolf"], 2, 24, { budget: {}, ruhe: [0, 0] }, imRaum).map((t) => {
+                const w = { g: t.g, leineM: rund(t.leineM, 2), punkte: t.spur.length, flaecheM2: null, anteil: null };
+                if (!t.anker || !t.spur.length) return Object.assign(w, { fehler: "kein Anker der Leine" });
+                const nah = t.spur
+                    .map((p) => [Math.hypot(p.x - t.anker.x, p.z - t.anker.z), p])
+                    .sort((a, b) => a[0] - b[0])
+                    .slice(0, Math.ceil(0.95 * t.spur.length))
+                    .map((e) => e[1]);
+                w.flaecheM2 = rund(r._polygonArea2D(r._convexHull2D(nah)), 1);
+                w.anteil = rund(t.spur.filter((p) => lebt(t.g, p.x, p.z)).length / t.spur.length, 3);
+                // der Anker gegen das Ufer U (der Ort im Bild der Spur)
+                w.anker = [rund(t.anker.x - U.x, 1), rund(t.anker.z - U.z, 1)];
+                // DIE GETRAGENE SCHEIBE (der Maßstab der Fläche): im Raster zu Leine/10 der Anteil der Leinen-Scheibe um den Anker,
+                // den der Lebensraum auf trockenem Grund trägt (traegt), und davon der vom Anker aus über ihn erreichbare (erreicht:
+                // vier Nachbarn, Wasser trennt): trägt er ≥ 0,5, ist die Fläche ≥ 0,5·π·Leine² dort erreichbar, und ihr Fehlen ist
+                // das Wandern, nicht der Ort (17.11.: getragen 0,64–0,97 je Tier, die Bären 0,74/0,92/0,85)
+                const G = new Map();
+                for (let i = -10; i <= 10; i++)
+                    for (let j = -10; j <= 10; j++) {
+                        if (i * i + j * j > 100) continue;
+                        const [x, zz] = [t.anker.x + (i * t.leineM) / 10, t.anker.z + (j * t.leineM) / 10];
+                        G.set(i + "," + j, lebt(t.g, x, zz) && !r._nassAt(x, zz));
+                    }
+                const [zu, weg] = [[[0, 0]], new Set(["0,0"])];
+                let n = 0;
+                while (zu.length) {
+                    const [i, j] = zu.pop();
+                    if (!G.get(i + "," + j)) continue;
+                    n++;
+                    for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                        const k = i + a + "," + (j + b);
+                        if (G.has(k) && !weg.has(k)) (weg.add(k), zu.push([i + a, j + b]));
+                    }
+                }
+                w.traegt = rund([...G.values()].filter(Boolean).length / G.size, 3);
+                w.erreicht = rund(n / G.size, 3);
+                return w;
+            });
+        }
         durstAus();
         z.durstAus = tagLauf(["wesen"], 0, 10, { budget: {}, ruhe: [0, 0] }).reduce((a, t) => a + t.trunk, 0);
         return z;
@@ -800,11 +899,7 @@ async function lebenBuehnen() {
                     z.klasse[kl] = (z.klasse[kl] || 0) + 1;
                     z.minM = Math.min(z.minM, rund(ab(c.position, pm), 1));
                     if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) z.imBlick++;
-                    const nn = Math.min(
-                        ...neu
-                            .filter((o) => o !== c)
-                            .map((o) => ab(c.position, o.position) / paar)
-                    );
+                    const nn = Math.min(...neu.filter((o) => o !== c).map((o) => ab(c.position, o.position) / paar));
                     if (nn < Infinity) z.fensterMax = rund(Math.max(z.fensterMax, nn), 2);
                 }
                 leer();
@@ -843,9 +938,375 @@ async function lebenBuehnen() {
             fensterRaum: A._verhaltenGesetz().herde.fensterRaum,
         });
     });
+    // ── zielplan (mensch Breite: „Bewohner folgen Tagesplänen mit Zielen — Arbeit, Markt, Hafen, Heimweg —, je Ziel ein Ort“):
+    // die Stadt am Messort (`--ort stadt-voll`: die Metropole; sonst stadt), ein Tag an fünf Stunden (6 · 10 · 13 · 18 · 23 Uhr:
+    // der Sprung der Uhr stellt jeden, wo sein Tag ihn sieht, dann 5 s Takt mit der Uhr des Spiels). DER RICHTER LIEST DEN PLAN,
+    // nie die Liste des Wirts: die Orte sind die Türen der Slots mit ihrer Rolle, der Platz und die Äcker; das Ziel jedes
+    // Bewohners (der Punkt, auf den er geht oder an dem er steht) fällt in den Ort, in dem es liegt. Es PASST zur Stunde: nachts
+    // das eigene Haus (drinnen) oder ein Haus mit Rolle (die Nachtschicht), zur Arbeit ein Werk-Ort — der Platz, ein Acker, ein
+    // Haus mit Rolle (wer in einem Haus mit Rolle wohnt: ein Haus SEINER Rolle), am Steuer der Wagen —, mittags ein Werk-Ort
+    // oder der eigene Tisch (drinnen), abends jeder Ort. Gezählt je Stunde: am passenden Ort angekommen (≤ 1,5 m, drinnen an
+    // der Tür) · unterwegs zu ihm (sein Rest-Weg schrumpft) · OHNE ZIEL (sein Ziel passt nicht, oder er kommt nicht voran); über
+    // den Tag die Ziel-Orte, die ein Fremder erreichte (nicht sein eigenes Haus), je Rolle des Plans. ──
+    await buehne("zielplan", async (restore) => {
+        dorf.hier = true; // eine eigene Stadt am Messort, nie das Start-Dorf
+        const G = await stadtAm((opts && opts.ort) || "stadt", "zielplan");
+        if (G.fehler) return G;
+        const { S, da, nH } = G;
+        const [plan, tagS, q3] = [S.plan, s.dayLengthMinutes * 60, (v) => Math.round(v * 1000) / 1000];
+        const rolleVon = (sl) => (typeof sl.rolle === "string" ? sl.rolle : "wohnhaus");
+        const tueren = plan.slots.map((sl, si) => {
+            const [c, sn, t] = [Math.cos(sl.phi || 0), Math.sin(sl.phi || 0), sl.tuer || { x: 0, z: 0 }];
+            return { x: S.ox + sl.x + t.x * c + t.z * sn, z: S.oz + sl.z - t.x * sn + t.z * c, rolle: rolleVon(sl), k: "haus#" + (sl.seed >>> 0), si, mitte: { x: S.ox + sl.x, z: S.oz + sl.z } }; // prettier-ignore
+        });
+        const heimVon = new Map(tueren.map((t) => [t.k, t]));
+        // im gedrehten Rechteck q (Mitte, Halbachsen, phi) samt Rand — der Platz dreht wie der Wirt ihn liest, der Acker längs phi
+        const im = (q, x, z, rand, acker) => {
+            const [c, sn, dx, dz] = [Math.cos(q.phi || 0), Math.sin(q.phi || 0), x - S.ox - q.cx, z - S.oz - q.cz];
+            const [lx, lz] = acker ? [dx * c + dz * sn, dz * c - dx * sn] : [dx * c - dz * sn, dx * sn + dz * c];
+            return Math.hypot(Math.max(0, Math.abs(lx) - q.ex), Math.max(0, Math.abs(lz) - q.ez)) <= rand;
+        };
+        const pz = plan.platz && Number.isFinite(plan.platz.cx) ? plan.platz : null;
+        const aecker = (plan.felder || []).filter((f) => f && Number.isFinite(f.cx) && Number.isFinite(f.ex));
+        // DER ORT EINES PUNKTS: der Kern des Platzes oder eines Ackers; der Ring der Stände vor der eigenen Tür oder der eines
+        // Hauses mit Rolle (die nähere, bis 20 m); der Rand des Platzes (`platzRandM`); der Ring vor dem nächsten Wohnhaus (bis
+        // 16 m); der Rand eines Ackers — sonst keiner
+        const ortVon = (p, heim) => {
+            const platz = (rand) => (pz && im(pz, p.x, p.z, rand) ? { k: "platz", rolle: "platz" } : null);
+            const tuer = (wahl, bis) => {
+                let [t, d] = [null, bis];
+                for (const q of tueren) if (wahl(q) && ab(p, q) < d) [t, d] = [q, ab(p, q)];
+                return t && { k: t.k, rolle: t.rolle, haus: true };
+            };
+            const feld = (rand, f = aecker.findIndex((q) => im(q, p.x, p.z, rand, true))) =>
+                f >= 0 ? { k: "feld#" + f, rolle: "feld" } : null;
+            return (
+                platz(0) ||
+                feld(0) ||
+                tuer((q) => q.k === heim || q.rolle !== "wohnhaus", 20) ||
+                platz(A.BEWOHNER.platzRandM + 2) ||
+                tuer(() => true, 16) ||
+                feld(1)
+            );
+        };
+        // (der Fahrer: sein Werk ist sein Wagen — am Steuer oder am Stand neben ihm; der Frühaufsteher geht schon über den Platz;
+        // die Nachtschicht, `versatzH` des Tages-Gesetzes, lebt die Gegen-Stunde: um 10 und 13 Uhr schläft sie, um 23 arbeitet sie)
+        const NACHT = { 6: 18, 10: 23, 13: 23, 18: 6, 23: 10 };
+        const passt = (o, uhr, b, drinnen) => {
+            const h = (window.__koerperCore.TAGES_GESETZ.rollen[b.rolle] || {}).versatzH ? NACHT[uhr] : uhr;
+            const [eigen, hr] = [
+                !!o && o.k === "haus#" + b.heim,
+                (heimVon.get("haus#" + b.heim) || {}).rolle || "wohnhaus",
+            ];
+            const wagen = !!b.amSteuer || (!!b.wagen && !o);
+            const werk = wagen || (!!o && o.rolle !== "wohnhaus" && (hr === "wohnhaus" || !o.haus || o.rolle === hr));
+            if (h === 6 || h === 23) return (eigen && drinnen) || wagen || (!!o && o.rolle !== "wohnhaus");
+            return h === 10 ? werk : h === 13 ? werk || (eigen && drinnen) : !!o || wagen;
+        };
+        // Täter (Selbsttest): keiner trägt einen Plan — jeder steht den ganzen Tag vor seiner Tür · jeder Plan nennt den Platz
+        if (taeter === "zielplan-planlos") decke("_bewohnerSoll", () => (b) => ({ ziel: b.orte.heim, drinnen: false, akt: "ohne" })); // prettier-ignore
+        if (taeter === "zielplan-einort")
+            decke("_bewohnerSoll", (alt) => (b, h) => {
+                const z = alt.call(r, b, h);
+                return z.drinnen ? z : { ziel: b.orte.platz || b.orte.heim, drinnen: false, akt: z.akt };
+            });
+        // DER ORT EINES STANDS VOR EINER TÜR IST DIE TÜR, FÜR DIE DER WIRT IHN LEGTE (w28-stadt-grammatik): der Stand trägt sie
+        // (`anker`, `_bewohnerListe` ringStand; ihr Leser im Spiel: die Seite der Fahrbahn, `_bewohnerStandPruefen`). Bis hier riet
+        // die Probe die NÄCHSTE Tür (`ortVon`: die eigene oder ein Haus mit Rolle bis 20 m) — im lockeren Dorf trifft das, in der
+        // geschlossenen Stadt nicht: sieben Leute der Burg #304883 an ihrem Werk (4–12 m vor der eigenen Tür) zählten als „an der
+        // Kapelle #899220" (2,4–4,7 m), der Wirt des Gasthauses #846868 (sein Stand 21,9 m vor seiner Tür) als „am Wohnhaus
+        // #91693", der Fahrer neben seinem Wagen als „am Wohnhaus 15 m daneben" — 26 von 30 „ohne Ziel" standen an ihrem
+        // gebundenen Ort (10 Uhr 11 %, 13 Uhr 11 %; mit der Marke 2 % · 2 %). Die Geometrie bleibt die SCHRANKE der Marke: der
+        // Ursprung des Stands liegt im Ring des Wirts um seine Tür (BEWOHNER.ring — dieselbe Tafel, die `ringStand` fährt), sonst
+        // „fern von seiner Tür" (Täter zielplan-fremd); jedes Ziel ohne Marke (der Platz, der Acker, die Tür selbst) liest `ortVon`.
+        const RG = A.BEWOHNER.ring;
+        const ringM = Math.hypot(RG.vor0M + (RG.alle / RG.jeStufe - 1) * RG.stufeM + RG.streuM, RG.quer0M + RG.alle / RG.jeStufe - 1);
+        const standVon = (b, ziel) => Object.values(b.orte).find((q) => q && q.anker && ab(q, ziel) < 0.05);
+        // Täter (Selbsttest): die Marke eines Werk-Stands nennt die fernste Tür der Stadt, er steht, wo er stand
+        if (taeter === "zielplan-fremd") {
+            const st = S.liste.map((b) => b.orte.werk).find((q) => q && q.anker);
+            const [alt, f] = [st.anker, tueren.reduce((m, q) => (ab(q, st) > ab(m, st) ? q : m))];
+            st.anker = { x: f.x, z: f.z };
+            restore.push(() => (st.anker = alt));
+        }
+        const [je, fremd, rollen, bruch, fern] = [{}, new Map(), {}, [], []];
+        // die lauten Brüche der Bewohner im Tag (kein Weg, kein Ort): je Text einmal
+        decke(
+            "_bruchMelden",
+            (alt) => (t) => (/^BEWOHNER/.test(t) && !bruch.includes(t) && bruch.push(t), alt.call(r, t))
+        );
+        // DIE ROLLEN AUS DEN STEHENDEN HÄUSERN GEGEN DEN PLAN (w28-stadt-grammatik): ein Los, das der Plan trägt und dessen Haus
+        // nicht steht, hat keine Tür — niemand wohnt dort, niemand bindet sich an sie (`_bewohnerListe` nimmt nur stehende Häuser).
+        // Bis hier zählte die Probe die Rollen aus `plan.slots`: an der Stadt „dorf 7 30" fielen Bergfried #771582 und Kapelle
+        // #899220 an der Bau-Wand (ihre Lose überdecken das Torhaus um 0,21 m, ein Wohnhaus um 0,39 m), die Probe meldete „kein
+        // Fremder erreicht den Bergfried". Jetzt nennt sie die Lücke: das Los, seine Rolle und die Wand des Wirts
+        // (`plan.gefallen`, `_spawnSettlementSlot`); ein Los, das ohne Namen fehlt, fiel still.
+        const hausAn = (q) => s.architectures.some((e) => /^haus_/.test(e.type || "") && (e.seed >>> 0) === +q.k.slice(5) && ab(e.position, q.mitte) < 2); // prettier-ignore
+        // Täter (Selbsttest): ein Haus mit Rolle fällt nach dem Bau, keine Zeile nennt es
+        if (taeter === "zielplan-los") {
+            const q = tueren.find((d) => d.rolle !== "wohnhaus");
+            const e = s.architectures.find((x) => /^haus_/.test(x.type || "") && (x.seed >>> 0) === +q.k.slice(5) && ab(x.position, q.mitte) < 2); // prettier-ignore
+            r.removeArchitecture(e);
+        }
+        const fehlt = tueren.filter((q) => !hausAn(q)).map((q) => {
+            const g = (plan.gefallen || []).find((x) => x.si === q.si);
+            return `Los ${q.si} ${q.rolle} #${q.k.slice(5)} steht nicht: ${g ? g.wand : "fiel still"}`;
+        });
+        for (const t of tueren) if (t.rolle !== "wohnhaus" && hausAn(t)) rollen[t.rolle] = [0, (rollen[t.rolle] || [0, 0])[1] + 1];
+        const liste = () => S.liste.filter((b) => b.leib);
+        for (const h of [6, 10, 13, 18, 23]) {
+            await uhrAuf(h, `zielplan: ${h} Uhr`, da, 4 * nH);
+            const rest0 = new Map(liste().map((b) => [b, b.weg ? b.wegRest : null]));
+            for (let k = 0; k < 300; k++) (r._uhrSetzen((s.timeOfDay + 1 / 60 / tagS) % 1, "uhr"), leute(1 / 60));
+            const z = { am: 0, unterwegs: 0, ohne: 0, n: 0, wer: [] };
+            for (const b of liste()) {
+                const ziel = b.ziel || b.leib.position;
+                const drinnen = !!b.drinnenSoll;
+                const st = standVon(b, ziel);
+                const tuer = st && tueren.find((q) => ab(q, st.anker) < 0.05);
+                const fernM = tuer ? ab(st.ur || st, tuer) : 0;
+                if (fernM > ringM && !fern.some((f) => f.st === st)) fern.push({ st, text: `${wer(b)}: ${q3(fernM)} m von ${tuer.k}` }); // prettier-ignore
+                // (der Stand neben dem eigenen Wagen ist der Ort des Fahrers, `_verkehrAnlegen` — kein Haus daneben; am Steuer
+                // ist es der Wagen selbst, `_bewohnerSoll`: kein Haus, an dem er vorbeifährt)
+                const o = tuer
+                    ? { k: tuer.k, rolle: tuer.rolle, haus: true }
+                    : b.wagen && (ziel === b.orte.werk || ziel === (b.wagen.entry && b.wagen.entry.position))
+                      ? null
+                      : ortVon(ziel, "haus#" + b.heim);
+                const dort = b.amSteuer || (drinnen ? !!b.drinnen : !b.weg && ab(b.leib.position, ziel) < 1.5);
+                // voran: wer geht, dessen Rest-Weg schrumpfte in den 5 s (oder er ging eben los, wartet in der Tür)
+                const voran = !!b.weg && (rest0.get(b) == null || b.wegRest < rest0.get(b) - 0.5 || b.hinaus);
+                z.n++;
+                if (!passt(o, h, b, drinnen) || !(dort || voran || b.hinaus)) {
+                    z.ohne++;
+                    if (z.wer.length < 3) z.wer.push(`${wer(b)} → ${o ? o.k : "kein Ort"}${dort ? "" : voran ? " (geht)" : " (steht fern)"}`); // prettier-ignore
+                } else if (dort) z.am++;
+                else z.unterwegs++;
+                // der Ziel-Ort, den ein Fremder erreichte: ein Werk-Ort (kein Wohnhaus), nicht sein eigenes Haus
+                if (dort && o && o.rolle !== "wohnhaus" && o.k !== "haus#" + b.heim && passt(o, h, b, drinnen))
+                    fremd.set(o.k, o.rolle);
+            }
+            je[h] = { am: q3(z.am / z.n), unterwegs: q3(z.unterwegs / z.n), ohne: q3(z.ohne / z.n), wer: z.wer };
+        }
+        for (const ro of fremd.values()) if (rollen[ro]) rollen[ro][0]++;
+        // je Rolle: so viele Fremde tragen einen Stand vor einer ihrer Türen (die Bindung des Wirts) — „keiner kommt an" und
+        // „keiner ist gebunden" sind zwei Täter
+        const gebunden = {};
+        for (const b of S.liste)
+            for (const tk of new Set(Object.values(b.orte).map((q) => q && q.anker && tueren.find((d) => ab(d, q.anker) < 0.05)).filter(Boolean))) // prettier-ignore
+                if (tk.rolle !== "wohnhaus" && tk.k !== "haus#" + b.heim) gebunden[tk.rolle] = (gebunden[tk.rolle] || 0) + 1;
+        for (const ro in rollen) rollen[ro][2] = gebunden[ro] || 0;
+        return {
+            haeuser: tueren.length,
+            gesamt: liste().length,
+            je,
+            zielOrte: fremd.size,
+            orte: tueren.filter((t) => t.rolle !== "wohnhaus").length + (pz ? 1 : 0) + aecker.length,
+            rollen,
+            bruchN: bruch.length,
+            bruch: bruch.slice(0, 3),
+            ringM: q3(ringM),
+            fehlt,
+            fernN: fern.length,
+            fern: fern.slice(0, 3).map((f) => f.text),
+        };
+    });
+    // ── gehege (Pflicht F, w28-gehege; tetrapoda GEHEGE_GESETZ): das Wolfs-Gehege des Ort-Plans, wie die Welt es liest
+    // (`_gehegeListe`: die Zeile aus `plan.gehege` — kein Haken der Bühne). Der Gast naht aus 100 m südlich der Zoo-Mitte (das
+    // Gehege ist fällig, seine Leiber entstehen fern an ihren Ruhe-Plätzen), steht 300 s an der Station S8 des Plans (Blick ins
+    // Gehege, der Schritt des Spiels 1/30 s), sieht den Tieren einen Spieltag zu (der Schritt des Tages-Budgets, 0,1 s), geht
+    // jenseits der Fälligkeit (residentM × (1 + GEHEGE_HALT), den Blick fort) und kehrt wieder. Je Bild jeder Leib im Rand (die
+    // Tiefe seines Punkts hinter der nächsten Kante), je Takt des Lebens dieselben Nummern im Verzeichnis, kein Tier des Geheges
+    // im wilden Gesetz (`_kreaturBestand` zählt die Freien) und keines gealtert; über den Tag der Anteil der Ruhe gegen das
+    // Ethogramm seiner Gattung; unter dem Hieb hält der Rand, ein gefallenes Tier steht im nächsten Takt wieder in der Zeile;
+    // fern kein Leib, zurück dieselben an ihren Plätzen; an S8 gestellt (die Ankunft) alle im ersten Bild ──
+    await buehne("gehege", async (restore) => {
+        if (taeter === "gehege-rand") decke("_gehegeRandKontakt", () => () => {});
+        if (taeter === "gehege-term") decke("_bestandFreie", () => (R) => R.tiere);
+        // die Zeile tritt je Region einmal ein (bis w28-gehege): ein gefallenes Tier fehlte bis zum nächsten Laden
+        if (taeter === "gehege-zeile")
+            decke("_gehegeEinsetzen", (alt) => (key, R) => (R._gehege ? undefined : alt.call(r, key, R)));
+        // die Ankunft wartet auf den Takt und auf den Blick (bis w28-gehege): wer mit dem Blick ins Gehege ankam, sah es leer
+        if (taeter === "gehege-ankunft") {
+            decke("_gehegeKommtAn", () => () => false);
+            decke("_gehegeLeiber", (alt) => (fehlt, gruppe) => alt.call(r, fehlt, gruppe, false));
+        }
+        const [GG, LG, P] = [A._gehegeGesetz(), A._lebensraumGesetz(), r._genesisPlan];
+        const Z = r._gehegeListe()[0];
+        if (!Z) throw new Error("die Welt trägt kein Gehege (`_gehegeListe` leer: ohne Plan oder ohne Wildnis)");
+        const S8 = P.stationen.find((q) => q.name === "S8");
+        const [gast, mitte] = [S8.third, S8.blick].map((q) => ({ x: P.ort.x + q.x, z: P.ort.z + q.z }));
+        const fernM = globalThis.__fachwerkCore.GENESIS_ORT.regel.residentM * (1 + A.GEHEGE_HALT);
+        // die Tiefe im Rand: der kleinste Abstand des Punkts zu einer Kante, nach innen positiv
+        const tiefe = (x, z) =>
+            Z.rand.reduce((m, p, i) => {
+                const q = Z.rand[(i + 1) % Z.rand.length];
+                return Math.min(m, ((q.x - p.x) * (z - p.z) - (q.z - p.z) * (x - p.x)) / Math.hypot(q.x - p.x, q.z - p.z));
+            }, Infinity);
+        const ort = (dz, blick) => (pm.set(gast.x, boden(gast.x, gast.z - dz) + 0.7, gast.z - dz), kamera(0, blick));
+        const nummern = GG.tiere(Z, GG.G).map((t) => t.id).sort().join(); // prettier-ignore
+        const z = { tiere: Z.n, bilder: 0, aus: 0, randMin: Infinity, leer: 0, anders: 0, wild: 0, alterS: 0, takte: 0 };
+        const leiber = () => r._gehegeTiereVon(Z).map((t) => t.leib).filter(Boolean); // prettier-ignore
+        const bild = (voll, B) => {
+            const L = leiber();
+            z.leer += voll && L.length !== Z.n;
+            for (const c of L) {
+                const d = tiefe(c.position.x, c.position.z);
+                [z.bilder, z.aus, z.randMin] = [z.bilder + 1, z.aus + (d < 0), Math.min(z.randMin, d)];
+                const ud = c.userData;
+                if (B) B[(ud.task && ud.task.name === "drink") || !ud._gezeigt ? "ziehen" : ud._gezeigt]++;
+            }
+        };
+        // ein Takt des Lebens (taktS der Spiel-Zeit): das Verzeichnis trägt die Zeile, das wilde Gesetz zählt sie nicht
+        const leben = () => {
+            s.spielZeit += A._bestandGesetz().B.taktS;
+            ruhigSpieler();
+            r.tickFaunaLifecycle();
+            const T = r._gehegeTiereVon(Z);
+            z.takte++;
+            z.anders += T.map((t) => t.id).sort().join() !== nummern; // prettier-ignore
+            for (const t of T) z.alterS = Math.max(z.alterS, t.alterS);
+            for (const key of new Set(T.map((t) => r._bestandKey(t.x, t.z)))) {
+                const frei = s.faunaBestand.regionen[key].tiere.filter((t) => t.g === Z.gattung && !t.gehege).length;
+                z.wild = Math.max(z.wild, r._kreaturBestand(null, key)[Z.gattung].n - frei);
+            }
+        };
+        s.faunaLifecycle = { lastTick: 0 }; // die Marke der Bühne reist als Verweis — der Takt des Lebens beginnt hier
+        const tag0 = s.timeOfDay;
+        restore.push(() => r._uhrSetzen(tag0, "regler"));
+        r._uhrSetzen(0.5, "regler");
+        // (1) der Gast naht: die Leiber entstehen fern
+        ort(100, 1);
+        for (let k = 0; k < 3; k++) (leben(), bild(false));
+        z.nahen = leiber().length;
+        // (2) der Gast steht 300 s an S8 (ein Täter fährt 60 s und 1,2 Stunden des Tags: sein Befund steht am Hieb und am ersten Takt)
+        const blick = () => (pm.set(gast.x, boden(gast.x, gast.z) + 0.7, gast.z), kamera(mitte.x - gast.x, mitte.z - gast.z));
+        for (let k = 0; k < (taeter ? 1800 : 9000); k++) {
+            if (k % 300 === 0) (leben(), blick());
+            takt(1 / 30);
+            bild(true);
+        }
+        // (3) ein Spieltag am Gehege (der Schritt des Tages-Budgets)
+        const takte = Math.round((0.1 / 24) * (s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES) * 600);
+        const B = { ruhen: 0, nahrung: 0, ziehen: 0 };
+        for (let i = 0, n = 0; i < (taeter ? 12 : 240); i++) {
+            r._uhrSetzen(((s.timeOfDay * 24 + 0.1) % 24) / 24, "regler");
+            for (let k = 0; k < takte; k++, n++) {
+                if (n % 100 === 0) (leben(), blick());
+                ruhigSpieler();
+                takt(0.1);
+                bild(true, B);
+            }
+        }
+        const summe = B.ruhen + B.nahrung + B.ziehen;
+        z.budget = Object.fromEntries(Object.entries(B).map(([k, v]) => [k, rund(v / Math.max(1, summe), 3)]));
+        z.sollRuhen = LG.E.gattung[Z.gattung].ruhen;
+        z.plaetze = leiber().map((c) => rund(Math.min(...Z.ruhe.map((q) => ab(c.position, q))), 1));
+        // (3b) DER HIEB: der Gast trifft jedes Tier von S8 aus (`damageCreature` — der eine Fall, in dem es ihn liest): sie fliehen
+        // 30 s lang von ihm fort an den fernen Rand, und der Rand hält den Leib (`hieb`: die kleinste Tiefe dieser Bilder)
+        const vor = [z.bilder, z.randMin];
+        z.randMin = Infinity;
+        for (const c of leiber()) r.damageCreature(c, 1, { source: "player", fromPos: pm.clone() });
+        for (let k = 0; k < 900; k++) (ruhigSpieler(), takt(1 / 30), bild(true));
+        z.hieb = { bilder: z.bilder - vor[0], randMin: rund(z.randMin, 2) };
+        z.randMin = Math.min(z.randMin, vor[1]);
+        // (3c) DER TOD: ein Tier fällt unter der Hand des Gasts — der Feld-Akt „aus“ nimmt es aus dem Verzeichnis, sobald die
+        // Folge des Felds an seinem Stempel steht (die Regionen holen ihre Stunde mit aufholJeTakt je Takt nach: die Bühne taktet,
+        // bis sie steht). Die Zeile IST der Bestand: das alte Tier ist fort (`fort`), der nächste Takt liest dieselben Nummern,
+        // und sein Leib steht nach (5) wieder an seinem Ruhe-Platz
+        for (let k = 0; k < 400 && !r._feldFolgeSteht(s.spielZeit); k++) leben();
+        const opfer = leiber()[0]; // ohne Leib (das Gehege steht leer) fällt keiner: `fiel` 0
+        const alt = opfer && opfer.userData._bestand;
+        if (opfer) r.damageCreature(opfer, 1e9, { source: "player", fromPos: pm.clone() });
+        restore.push(() => s.leichname.includes(opfer) && r.removeCreature(opfer));
+        leben();
+        const zeile = r._gehegeTiereVon(Z);
+        z.tod = { fiel: +s.leichname.includes(opfer), fort: +(!!alt && !zeile.includes(alt)), zeile: zeile.length };
+        // (4) der Gast geht jenseits der Fälligkeit, den Blick fort: kein Leib trägt das Gehege
+        ort(fernM + 30, -1);
+        for (let k = 0; k < 3; k++) leben();
+        z.fern = leiber().length;
+        // (5) und kehrt wieder: dieselben Tiere an ihren Plätzen
+        ort(100, 1);
+        for (let k = 0; k < 3; k++) (leben(), bild(false));
+        z.wieder = leiber().length;
+        z.wiederPlatz = rund(Math.max(-1, ...leiber().map((c) => Math.min(...Z.ruhe.map((q) => ab(c.position, q))))), 2);
+        // (6) DIE ANKUNFT: der Gast geht wieder fort (kein Leib) und wird an S8 GESTELLT, den Blick ins Gehege (ein Stand lädt ihn
+        // dorthin, ein Tor, ein Instrument) — im ersten Bild des Spiels danach (ein Schritt von 1/30 s, kein Takt des Lebens)
+        // stehen alle Tiere an ihren Ruhe-Plätzen
+        ort(fernM + 30, -1);
+        for (let k = 0; k < 3; k++) leben();
+        const davor = leiber().length;
+        blick();
+        s.spielZeit += 1 / 30;
+        r.tickFaunaLifecycle();
+        const nebenM = rund(Math.max(-1, ...leiber().map((c) => Math.min(...Z.ruhe.map((q) => ab(c.position, q))))), 2);
+        z.ankunft = { vor: davor, erstes: leiber().length, platz: nebenM };
+        z.randMin = rund(z.randMin, 2);
+        return z;
+    });
 }
 // das Soll der Lebens-Proben (`soll(bedingung, grund)` aus dem Urteil der Kreatur-Proben)
 function lebenUrteil(name, z, soll) {
+    // DER ZIEL-PLAN (mensch Breite): zu jeder der fünf Stunden trägt höchstens jeder Zwanzigste kein Ziel, um 10 Uhr steht die
+    // Hälfte an ihrem Werk-Ort, und jede Rolle des Plans hat einen Ort, den ein Fremder am Tag erreicht
+    if (name === "zielplan") {
+        const H = Object.entries(z.je);
+        soll(
+            z.gesamt >= 60 && z.haeuser >= 27,
+            `die Stadt ist leer: ${z.gesamt} Bewohner in ${z.haeuser} Häusern (Soll ≥ 60 in ≥ 27)`
+        );
+        soll(
+            H.every(([, v]) => v.ohne <= 0.05),
+            `Bewohner ohne Ziel: ${H.map(([h, v]) => `${h} Uhr ${Math.round(v.ohne * 100)} %`).join(" · ")} (Soll ≤ 5 % je Stunde; ${H.flatMap(([h, v]) => v.wer.slice(0, 1).map((w) => `${h} Uhr ${w}`)).join(" · ")})`
+        );
+        soll(!z.fehlt.length, `Lose des Plans stehen nicht: ${z.fehlt.length} von ${z.haeuser} (${z.fehlt.join(" · ")})`);
+        soll(!z.fernN, `Stand fern von seiner Tür (Ring ${z.ringM} m): ${z.fernN} (${z.fern.join(" · ")})`);
+        soll(z.je[10].am >= 0.5, `um 10 Uhr am Werk-Ort angekommen: ${Math.round(z.je[10].am * 100)} % (Soll ≥ 50 %)`);
+        const leer = Object.entries(z.rollen)
+            .filter(([, [n]]) => !n)
+            .map(([ro, [, m, g]]) => `${ro} (${m}, gebunden ${g})`);
+        soll(
+            !leer.length,
+            `Rollen ohne Ziel-Ort: ${leer.join(" · ")} — kein Fremder erreicht einen ihrer Orte (belebt ${z.zielOrte} von ${z.orte} Orten)`
+        );
+    }
+    // DAS GEHEGE (Pflicht F): der Rand hält, die Zeile ist der Bestand, die Wildnis zählt sie nicht, die Tiere leben ihren Tag
+    if (name === "gehege") {
+        soll(
+            z.nahen === z.tiere && z.leer === 0 && z.bilder > 0,
+            `das Gehege steht leer: ${z.nahen} von ${z.tiere} Leibern nach dem Nahen, ${z.leer} Bilder am Rand ohne alle ${z.tiere}`
+        );
+        soll(z.aus === 0, `Ausbruch: ${z.aus} von ${z.bilder} Leib-Bildern jenseits des Rands (tiefster ${z.randMin} m; Soll 0)`);
+        soll(
+            z.hieb.bilder > 0 && z.hieb.randMin < 1,
+            `LEER: der Hieb trieb kein Tier an den Rand (${z.hieb.bilder} Bilder, nächstes ${z.hieb.randMin} m vor ihm; Soll < 1 m)`
+        );
+        soll(
+            z.tod.fiel === 1 && z.tod.fort === 1,
+            `LEER: der Tod nahm kein Tier aus dem Verzeichnis (gefallen ${z.tod.fiel}, das alte Tier fort ${z.tod.fort}; Soll 1 · 1)`
+        );
+        soll(
+            z.anders === 0 && z.tod.zeile === z.tiere,
+            `die Zeile ist nicht der Bestand: ${z.anders} von ${z.takte} Takten mit anderen Nummern, nach dem Tod eines Tiers trägt sie ${z.tod.zeile} von ${z.tiere}`
+        );
+        soll(
+            z.wild === 0 && z.alterS === 0,
+            `das wilde Gesetz zählt das Gehege: ${z.wild} seiner Tiere im Bestand der Region, gealtert ${z.alterS} s (Soll 0 · 0)`
+        );
+        soll(
+            Math.abs(z.budget.ruhen - z.sollRuhen) <= 0.2 * z.sollRuhen,
+            `das Gehege verfehlt das Ethogramm: ruhen ${z.budget.ruhen} (Soll ${z.sollRuhen} ± 20 %; ${JSON.stringify(z.budget)})`
+        );
+        soll(
+            z.fern === 0 && z.wieder === z.tiere && z.wiederPlatz <= 0.5,
+            `das Gehege folgt dem Gast nicht: fern ${z.fern} Leiber (Soll 0), zurück ${z.wieder} (Soll ${z.tiere}), ${z.wiederPlatz} m neben ihrem Ruhe-Platz (Soll ≤ 0,5)`
+        );
+        soll(
+            z.ankunft.vor === 0 && z.ankunft.erstes === z.tiere && z.ankunft.platz <= 0.5,
+            `die Ankunft steht leer: ${z.ankunft.erstes} von ${z.tiere} Leibern im ersten Bild des Gasts, der mit dem Blick ins Gehege ankommt (davor ${z.ankunft.vor}, Soll 0; ${z.ankunft.platz} m neben ihrem Ruhe-Platz, Soll ≤ 0,5)`
+        );
+    }
     if (name === "kaskade") {
         soll(
             z.kappe === 0,
@@ -931,9 +1392,7 @@ function lebenUrteil(name, z, soll) {
             `${((100 * z.ruhe[1]) / z.ruhe[0]).toFixed(1)} % bewegt während ruhen (${z.ruhe[0]} Takte)`
         );
         soll(
-            z.truenke.length >= 12 &&
-                z.truenke.every((n) => n >= 1) &&
-                z.amWasser === z.truenke.reduce(addiere, 0),
+            z.truenke.length >= 12 && z.truenke.every((n) => n >= 1) && z.amWasser === z.truenke.reduce(addiere, 0),
             `kein Tier trinkt aus Durst: Trünke ${z.truenke}, ${z.amWasser} am Wasser`
         );
         soll(z.durstAus === 0, `das Trinken folgt dem Durst nicht: ohne Durst ${z.durstAus} Trünke`);
@@ -975,23 +1434,33 @@ function lebenUrteil(name, z, soll) {
     }
     if (name !== "furcht") return;
     const { kontrolle: K, geschlagen: G, gefuettert: F, gebunden: B, baerRuhig, baerZornig, baerFrieden } = z.erinnert;
+    const { wolf: W, fuchs: Fu } = z.erinnert;
     soll(
         [...G.erinnerungen, ...F.erinnerungen].every((n) => n >= 1),
         `das Gedächtnis reist nicht über den Speicherstand: geschlagen ${G.erinnerungen}, gefüttert ${F.erinnerungen}`
     );
     soll(K.medianM >= 5, `der Kontroll-Hirsch hält keinen Abstand (Median ${K.medianM} m, vakuös)`);
+    // DER MENSCH IST DER SUPER-RÄUBER (leben.tiere.mensch S1): das Wild flieht den gehenden Fremden jenseits der Witterung der
+    // Aura (VERHALTEN.furcht.noticeRadius) — vorher floh der Hirsch erst bei 14 m, Wolf und Bär nie
     soll(
-        G.medianM >= 2 * K.medianM,
-        `das Wesen vergisst, wer es schlug: ${G.medianM} m gegen ${K.medianM} m der Kontrolle (Soll ≥ 2×)`
+        [K, baerRuhig, W, Fu].every((R) => R.fluchtM > z.witterungM),
+        `das Wild flieht den Menschen nicht: Hirsch ab ${K.fluchtM} m, Bär ${baerRuhig.fluchtM} m, Wolf ${W.fluchtM} m, Fuchs ${Fu.fluchtM} m (Soll > ${z.witterungM} m)`
     );
     soll(
-        F.medianM <= 0.5 * K.medianM && F.naeherM >= 2,
-        `das gefütterte Wesen nähert sich nicht: ${F.medianM} m (Soll ≤ ½×), selbst ${F.naeherM} m näher (Soll ≥ 2 m)`
+        G.fluchtM >= 2 * K.fluchtM,
+        `das Wesen vergisst, wer es schlug: es flieht ab ${G.fluchtM} m gegen ${K.fluchtM} m der Kontrolle (Soll ≥ 2×)`
     );
-    soll(B.medianM <= 0.8 * K.medianM, `die Bindung macht nicht mutig: ${B.medianM} m`);
     soll(
-        baerZornig.medianM >= 2 * baerRuhig.medianM && baerFrieden.medianM <= 0.5 * baerZornig.medianM,
-        `die Aura treibt die Furcht nicht: der Bär ruhig ${baerRuhig.medianM} m, zornig ${baerZornig.medianM} m, im frieden ${baerFrieden.medianM} m`
+        F.medianM <= 0.5 * K.medianM && F.naeherM >= 2 && F.fluchtM <= 0.5 * K.fluchtM,
+        `das gefütterte Wesen nähert sich nicht: ${F.medianM} m (Soll ≤ ½×), selbst ${F.naeherM} m näher (Soll ≥ 2 m), flieht ab ${F.fluchtM} m (Soll ≤ ½×)`
+    );
+    soll(
+        B.medianM <= 0.8 * K.medianM && B.fluchtM <= 0.8 * K.fluchtM,
+        `die Bindung macht nicht mutig: ${B.medianM} m, flieht ab ${B.fluchtM} m`
+    );
+    soll(
+        baerZornig.fluchtM >= 2 * baerRuhig.fluchtM && baerFrieden.fluchtM <= 0.5 * baerZornig.fluchtM,
+        `die Aura treibt die Furcht nicht: der Bär flieht ruhig ab ${baerRuhig.fluchtM} m, zornig ${baerZornig.fluchtM} m, im frieden ${baerFrieden.fluchtM} m`
     );
     const O = z.ort;
     soll(O.gegenlauf >= 0.2, `das Rudel steht im Gegenlauf nicht am Riss-Ort (${O.gegenlauf}, vakuös)`);
@@ -1009,8 +1478,20 @@ function lebenUrteil(name, z, soll) {
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
     BUEHNEN: `await (${lebenQuelle})();`,
-    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen"],
+    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen", "gehege"],
     TAETER: {
+        gehege: [
+            ["gehege-rand", /Ausbruch: [1-9]/],
+            ["gehege-term", /das wilde Gesetz zählt das Gehege: [1-9]/],
+            ["gehege-zeile", /die Zeile ist nicht der Bestand: [1-9]/],
+            ["gehege-ankunft", /die Ankunft steht leer: [0-2] von/],
+        ],
+        zielplan: [
+            ["zielplan-planlos", /Bewohner ohne Ziel/],
+            ["zielplan-einort", /Rollen ohne Ziel-Ort/],
+            ["zielplan-fremd", /Stand fern von seiner Tür/],
+            ["zielplan-los", /steht nicht: fiel still/],
+        ],
         tagesbudget: [
             ["durst", /kein Tier trinkt aus Durst/],
             ["tagesbudget-ruhe", /verfehlt das Ethogramm \(\w+ ruhen\)/],
@@ -1048,6 +1529,7 @@ module.exports = {
         furcht: [
             ["furcht-gedaechtnis", /vergisst, wer es schlug[\s\S]*nähert sich nicht/],
             ["furcht-ort", /meidet den Riss nicht/],
+            ["furcht-mensch", /das Wild flieht den Menschen nicht/],
             ["furcht-speicher", /reist nicht über den Speicherstand/],
             ["furcht-aura", /die Aura treibt die Furcht nicht/],
             ["brand-flucht", /die Glut ist keine Bedrohung/],

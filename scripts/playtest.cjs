@@ -98,7 +98,6 @@ async function gatherInitialFinalState(page) {
             playerX: st.playerMesh?.position?.x,
             playerZ: st.playerMesh?.position?.z,
             creatures: st.creatures?.length || 0,
-            floatingIslands: st.floatingIslands?.length || 0,
             hasPlayerBody: !!st.playerVel,
             grokSeenFirstSpawn: st.grok?.seenFirstSpawn === true,
             grokLastSpoke: st.grok?.lastSpoke || 0,
@@ -882,6 +881,7 @@ if (require.main === module) hauptLauf(async () => {
             await timed(BAND.checkBandV18331ReplayDeterminism, ctx);
             await timed(BAND.checkBandV18493CoSchoepferStudio, ctx);
             await timed(BAND.checkBandWetterVektor, ctx);
+            await timed(BAND.checkBandWeltUhr, ctx);
             await timed(BAND.checkBandFoundrySpeicherFlach, ctx);
             await timed(BAND.checkBandSeamNormal, ctx);
             await timed(BAND.checkBandCarveWorker, ctx);

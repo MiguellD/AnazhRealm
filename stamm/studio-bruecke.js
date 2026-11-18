@@ -1693,8 +1693,10 @@ class AnazhRealm_studio_bruecke {
     // Budget halbe Rate (der Stau schrumpft immer, kein LongTask). Ohne dt (Gate/Test): 3 unter / 1 über
     // Budget (gate:leistungs-vertrag).
     _tickFoundryIngest(dtSec) {
-        // eine Rückgabe im letzten Takt (`_foundryLoslassen`): der Ruhe-Deckel wiegt, was untätig wurde
-        if (this._foundry && this._foundry.ruheOffen) this._foundryRuheDeckel();
+        // eine Rückgabe im letzten Takt (`_foundryLoslassen`) oder ein Untätiger, dessen Ruhezeit ablief (`ruheFaellig`): der
+        // Ruhe-Deckel wiegt, was untätig wurde
+        const _f = this._foundry;
+        if (_f && (_f.ruheOffen || performance.now() >= _f.ruheFaellig)) this._foundryRuheDeckel();
         const q = this._foundryIngestQueue;
         if (!q || !q.length) return;
         let n;
@@ -2031,16 +2033,24 @@ class AnazhRealm_studio_bruecke {
         const h = typeof reqIdOderMsg === "string" ? /w(\d+)_\d+$/.exec(reqIdOderMsg) : null;
         return h ? "werk" + h[1] : "werk";
     }
-    // Die Pumpe speist die Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug, die Wahl unter den
+    // Die Pumpe speist die Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug (vor dem ersten Weltbild
+    // FOUNDRY_IM_FLUG_ANKUNFT), die Wahl unter den
     // Wartenden ist die EINE Wahl (`_foundryWahl`: nah zuerst, nie verhungert). Ein Auftrag geht in die Bahn mit den meisten freien Plätzen
     // (das Werk und jeder bereite Helfer, `_foundryHelfer`; unter Gleichen das Werk).
     // DER BILD-RANG DER BAHN (B5): nach dem Buch malt das Werk den Blatt-Atlas (bis seine Fracht ankommt, `f.blattAtlas`) — es
     // ist belegt, auch ohne Auftrag im Flug. Ein Kopf der Ankunft (`rang.kopf`: der Leib, das Start-Dorf) geht in eine Bahn ohne
     // Arbeit, und keiner stellt sich hinter ihn, solange eine Bahn ohne Kopf Platz hat. Befund B5 (OMEN 18.10., GTX kalt): die
     // Leib-Stufe wartete im Werk hinter dem Atlas, hinter dem Dorf-Export (3,4–5,4 s) wartete jeder Auftrag seiner Bahn.
+    // DIE WAHL FÄLLT, WENN DER FADEN FREI WIRD (w28-ankunft-faden): ein gesendeter Auftrag gehört seinem Faden, der arbeitet
+    // FIFO — kein anderer Faden nimmt ihn je. Vor dem ersten Weltbild hält eine Bahn darum nur FOUNDRY_IM_FLUG_ANKUNFT im Flug
+    // (einer in Arbeit, einer dahinter gegen den Rundlauf), die übrigen warten beim Host auf den Faden, der zuerst frei wird.
+    // Befund GTX 1050 kalt, main 3e4f99cd (2 Paare im Wechsel, Sonde): der Leib (ein Kopf, 5–7,5 s) hielt seine Bahn, die
+    // Pflanzung stellte derweil 12 Baum-Körper L1 in die andere — der Helfer stand danach 2,5 und 5,6 s leer, während dort noch
+    // fünf Körper warteten: letzter Baum-Körper 19,7 · 20,6 → 16,2 · 16,2 s, alle Karten gebacken 19,8 · 20,7 → 15,9 · 16,5 s.
     _foundryPumpe(f) {
         const q = f && f.warte;
         if (!q || !f.worker) return;
+        const K = this.state._weltbildDa ? AnazhRealm.FOUNDRY_IM_FLUG : AnazhRealm.FOUNDRY_IM_FLUG_ANKUNFT;
         const werke = [{ bahn: "werk", ziel: f.worker, k: 0 }];
         for (const h of f.helfer || []) if (h.bereit) werke.push({ bahn: "werk" + h.k, ziel: h.w, k: h.k });
         let frei = 0,
@@ -2049,10 +2059,7 @@ class AnazhRealm_studio_bruecke {
         // LEERE Bahn — der Faden arbeitet seine Nachrichten nacheinander ab, und jeder Auftrag im Blick wartete hinter bis zu
         // FOUNDRY_IM_FLUG außer Blick (Radeon kalt am Kopf 1aebfc6e: 0 wartend, bis 33 im Werk, die Bauten im Blick bis 18 s)
         let leer = null;
-        const darf = (a) =>
-            a.rang.kopf
-                ? !!(leer || bahn)
-                : !!bahn && (frei === AnazhRealm.FOUNDRY_IM_FLUG || this._rangImBild(a.rang));
+        const darf = (a) => (a.rang.kopf ? !!(leer || bahn) : !!bahn && (frei === K || this._rangImBild(a.rang)));
         const koepfe = f.koepfe || (f.koepfe = new Set());
         while (q.length) {
             const im = new Map();
@@ -2070,7 +2077,7 @@ class AnazhRealm_studio_bruecke {
             for (const w of werke) {
                 const n = im.get(w.bahn) || 0;
                 if (!n && !leer) leer = w;
-                const fr = AnazhRealm.FOUNDRY_IM_FLUG - n;
+                const fr = K - n;
                 if (!mitKopf.has(w.bahn) && fr > frei) {
                     frei = fr;
                     bahn = w;
@@ -3001,6 +3008,25 @@ class AnazhRealm_studio_bruecke {
         }
         return out;
     }
+    // DIE HÜLLE FERN (w28-march-schirm): eine Lese-Regel des Wirts über der Liste des Gesetzbuchs, kein Fit und kein zweites Haus —
+    // jenseits der Mesh-Zone trägt ein Bau im Welt-March jeden Kasten ab einem Viertel seines größten (Turm, Flügel) und jeden
+    // Keil ab einem Viertel seines größten Keils (das Dach: es trägt den Ton der Stadt); Schornstein, Gaube und Vorbau fallen
+    // (bei 150 m unter drei Bildpunkten). Bis hier trug jedes Haus die ganze Liste (9,2 Teile im Mittel der Kulturen, jetzt
+    // 3,3): 839 Häuser füllten 6459 der 8192 Kapsel-Slots, 990 standen ohne Bild. Die Keile messen sich an den KEILEN: das
+    // Satteldach sind zwei gleiche (je ein Viertel des Kastens) — am Kasten gemessen fiel der zweite, und 420 von 516 Häusern
+    // trugen fern das halbe Dach über einem hellen Deckel (Netz-Stadt, das Bild aus 90 m). Linse: gate:haus-fern (H).
+    static _huelleFern(teile) {
+        if (!Array.isArray(teile) || teile.length <= 2) return teile;
+        const vol = (q) => (q.h ? Math.abs(q.h[0] * q.h[1] * q.h[2]) * (q.art === "keil" ? 0.5 : 1) : 0);
+        let kasten = 0,
+            dach = 0;
+        for (const q of teile) {
+            if (q.art === "keil") dach = Math.max(dach, vol(q));
+            else kasten = Math.max(kasten, vol(q));
+        }
+        const aus = teile.filter((q) => vol(q) >= (q.art === "keil" ? dach : kasten) / 4);
+        return aus.length ? aus : teile;
+    }
     // Die Teile einer Hülle als Welt-March-Defs (`_weltKapselHolen`): Kasten, Keil (Typ 2..5 = First +z · −z · +x · −x, der
     // Walm im Bruchteil), Kapsel — die Farbe linear wie jedes Mesh.
     static _huelleMarchDefs(teile) {
@@ -3313,6 +3339,17 @@ class AnazhRealm_studio_bruecke {
         }
         if (entry._ziegelGebacken) return false; // endgültig aufgegeben (8 Versuche / Erschöpfung)
         const wm = this._weltMarchEnsure();
+        // wer vorbackt (sein Mesh zeichnet), nimmt nur, was über der Reserve frei ist (w28-march-schirm, `_weltLeibTakt`) — sonst
+        // wartet er als Vorbacker (`_weltPlatzWarten(true)`: ihn weckt erst Platz über der Reserve)
+        if (
+            wm &&
+            wm.freiFelder.length <= AnazhRealm.WELT_MARCH.reserve &&
+            entry._ziegelNah === true &&
+            this._archIsRendered(entry)
+        ) {
+            this._weltPlatzWarten(true);
+            return false;
+        }
         const ov =
             entry.studioOv && typeof entry.studioOv === "object" && !Array.isArray(entry.studioOv)
                 ? entry.studioOv
@@ -3344,11 +3381,7 @@ class AnazhRealm_studio_bruecke {
             },
             einblenden
         );
-        if (handle) {
-            entry._ziegelGebacken = true; // genau EIN Eintrag je Bau
-            entry._ziegelSlot = handle;
-            return true;
-        }
+        if (handle) return this._archZiegelHalten(entry, handle); // genau EIN Eintrag je Bau
         if (fitWar === "leer") {
             // ASYNC-Foundry: der temporäre Bau war beim ersten Tick noch leer —
             // begrenzt wiederversuchen statt den Einmal-Schuss verbrennen.
@@ -3356,7 +3389,9 @@ class AnazhRealm_studio_bruecke {
             if (entry._ziegelVersuche >= 8) entry._ziegelGebacken = true;
             return true;
         }
-        entry._ziegelGebacken = true; // Erschöpfung (Kapsel-Liste voll) — kein Rückweg
+        // VOLL HEISST WARTEN (w28-march-schirm, `_archZiegelVoll`): bis hier gab der Bau an der vollen Liste für immer auf
+        if (this._weltPlatzVoll()) return this._archZiegelVoll(entry);
+        entry._ziegelGebacken = true; // kein Satz und kein voller Platz: der Bau trägt keinen
         return true;
     }
 
@@ -3463,7 +3498,9 @@ class AnazhRealm_studio_bruecke {
             () => {
                 if (huelle)
                     return AnazhRealm._huelleMarchDefs(
-                        AnazhRealm._huelleVon(bf.fern, "sicht", "fachwerk:__fern (" + preset + ")")
+                        AnazhRealm._huelleFern(
+                            AnazhRealm._huelleVon(bf.fern, "sicht", "fachwerk:__fern (" + preset + ")")
+                        )
                     );
                 const g = new THREE.Group();
                 for (const lf of bf.leaves) {
@@ -3477,12 +3514,10 @@ class AnazhRealm_studio_bruecke {
             },
             einblenden
         );
-        if (handle) {
-            entry._ziegelGebacken = true;
-            entry._ziegelSlot = handle;
-            return true;
-        }
-        // Fit leer ODER Kapsel-Liste voll: begrenzt wiederversuchen (die Flat war da).
+        if (handle) return this._archZiegelHalten(entry, handle);
+        // VOLL HEISST WARTEN (w28-march-schirm, `_archZiegelVoll`): bis hier zählte die volle Liste als Versuch — nach acht gab der
+        // Bau für immer auf (Netz-Stadt, 3 × 3 Kacheln: 989 von 1829 Häusern ohne Bild). Ein leerer Fit versucht begrenzt wieder.
+        if (this._weltPlatzVoll()) return this._archZiegelVoll(entry);
         entry._ziegelVersuche = (entry._ziegelVersuche || 0) + 1;
         if (entry._ziegelVersuche >= 8) entry._ziegelGebacken = true;
         return true;
@@ -3564,6 +3599,86 @@ class AnazhRealm_studio_bruecke {
         if (!entry._ziegelSlot) return;
         this._weltFeldFrei(entry._ziegelSlot);
         entry._ziegelSlot = null;
+        this._stadtMasseRegt(entry);
+        const wm = this.state.weltMarch;
+        if (wm) wm.halter.delete(entry);
+    }
+    // DER SATZ HÄNGT AM SCHIRM (w28-march-schirm, das Gesetz in stamm/dienst.js) — die Glieder des Baus:
+    // Der Bau hält sein Feld: er steht unter den Haltern (der fernste weicht dem näheren Warter, `_weltSatzWeichen`), und die
+    // Ansicht seines Satzes ist sein Pixel-Horizont (`_archSatzHorizont`; sein Typ merkt sie für den, der noch keinen trug). → true
+    _archZiegelHalten(entry, handle) {
+        entry._ziegelGebacken = true;
+        entry._ziegelSlot = handle;
+        entry._ziegelVersuche = 0;
+        this._stadtMasseRegt(entry);
+        const wm = this.state.weltMarch;
+        if (!wm) return true;
+        wm.halter.add(entry);
+        entry._satzA = AnazhRealm._satzAnsicht(handle.brick, this._archWeltMatrix(entry).getMaxScaleOnAxis());
+        if (entry._satzA > 0) wm.ansichtTyp.set(entry.type, entry._satzA);
+        return true;
+    }
+    // Der Satz fällt, der Bau darf wieder fragen (am Pixel-Horizont, oder er wich einem Näheren).
+    _archZiegelWeicht(entry) {
+        this._archZiegelTod(entry);
+        entry._ziegelGebacken = false;
+        entry._ziegelVersuche = 0;
+    }
+    // VOLL HEISST WARTEN: der fernste Halter weicht (→ true: der nächste Gang fragt neu), sonst nennt der Bau die Zusage „Platz
+    // im Welt-March“ und schläft auf ihr (→ false, wie „lädt noch“: nichts verbrannt). Wer sein Mesh zeigt, backt nur vor (für
+    // den Rand der Mesh-Zone): er verdrängt keinen — sein Satz schwiege, und ein ferner Bau verlöre dafür sein einziges Bild.
+    _archZiegelVoll(entry) {
+        const vorab = entry._ziegelNah === true && this._archIsRendered(entry);
+        const wm = this.state.weltMarch;
+        const A = entry._satzA > 0 ? entry._satzA : wm ? wm.ansichtTyp.get(entry.type) : 0; // ohne Maß (der erste seines Typs): jedem
+        if (!vorab && !entry._ziegelWich && this._weltSatzWeichen(entry, A)) {
+            // das freie Feld nimmt der Verdränger im selben Zug — bis zum nächsten Gang holte es sich der Verdrängte zurück
+            // (gate:arch-feld S2: 158 Wechsel in 120 Takten)
+            entry._ziegelWich = true;
+            this._archZiegelFern(entry);
+            entry._ziegelWich = false;
+            return true;
+        }
+        if (vorab) {
+            this._weltPlatzWarten(true);
+            return false;
+        }
+        this._weltPlatzWarten();
+        return false;
+    }
+    // Der Pixel-Horizont eines Baus (m): die Ansicht seines Satzes, sonst die seines Typs; Infinity, solange keine bekannt ist
+    // (der erste Satz des Typs misst sie).
+    _archSatzHorizont(entry) {
+        const wm = this.state.weltMarch;
+        const A = entry._satzA > 0 ? entry._satzA : wm ? wm.ansichtTyp.get(entry.type) : 0;
+        const h = A > 0 ? this._satzHorizont(A) : Infinity;
+        // das Haus einer Stadt trägt jenseits des Nah-Rings seine Masse (`_stadtMasseRegt`): sein Satz endet dort
+        return entry._masse === true ? Math.min(h, AnazhRealm.STADT_FERNE.nahM) : h;
+    }
+    // DER BAU JENSEITS DER MESH-ZONE FRAGT SEINEN PIXEL-HORIZONT (der Gang der Bauten, `tickArchitectureCulling`): → die Meter,
+    // die er bis dorthin schläft (> 0: er trägt keinen Satz — ein gehaltener fiel hinter dem Totband `satzBand`), 0: er trägt
+    // seinen Satz wie bisher. Ein Karten-Ding hat keinen Satz und fragt nicht.
+    _archSatzFern(entry, d) {
+        const h = this._archSatzHorizont(entry);
+        if (h === Infinity) return 0;
+        if (!entry._ziegelSlot) return d > h ? d - h : 0;
+        if (d <= h * (1 + AnazhRealm.WELT_MARCH.satzBand)) return 0;
+        this._archZiegelWeicht(entry);
+        this.state.weltMarch.horizont++;
+        return d - h;
+    }
+    // Steht der Bau (ohne Mesh, ohne Satz) jenseits seines Pixel-Horizonts — vom Auge der Stufen gemessen? Dort wählt seine Kette
+    // kein Bild; der Leser `_archImBild` (die Abnahme des Blicks) zählt ihn nicht als fehlend.
+    _archUnterPixel(entry) {
+        if (!entry || !entry.position || entry._ziegelSlot) return false;
+        const h = this._archSatzHorizont(entry);
+        const auge = h === Infinity ? null : this._lodAuge();
+        return !!auge && Math.hypot(entry.position.x - auge.x, entry.position.z - auge.z) > h;
+    }
+    // Der Rest bis zum Rand, an dem ein gehaltener Satz fällt (m; der Schlaf eines Baus, dessen Satz steht, endet auch dort).
+    _archSatzRand(entry, d) {
+        const h = this._archSatzHorizont(entry);
+        return h === Infinity ? Infinity : h * (1 + AnazhRealm.WELT_MARCH.satzBand) - d;
     }
     // DAS WURF-RECHT EINES GELIEFERTEN TEILS (der Leser der Welt: `_foundryBuildMesh`): das EINE Gesetz steht im Licht-Baustein
     // (welt-licht.js `teilWirft` — Fell-Schale, Lichtquelle und durchsichtiger Stoff werfen nie); die Bühne jedes Studios wirft
@@ -3800,6 +3915,8 @@ AnazhRealm.FOUNDRY_LESEN = [
     "aSchale",
     "aDeckt",
     "aTon",
+    "aVerband", // der Verband je Ecke einer gefalteten Stufe (w28-haus-stoff, fachwerk VERBAND_GESETZ)
+    "aLage", // die Lage der Ecke in ihrer Wand (das Gefüge der fernen Fachwerk-Wand, fachwerk `_wandLage`)
     "skinIndex",
     "skinWeight",
     "aCenter",
@@ -3851,6 +3968,10 @@ AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // schneller als er — gemessen 03.10. (Boot-Vorrat leer · nahe Eiche/Tanne-L0): FIFO 12,4 s · 9,0/9,4 s; im Flug 2:
 // 20,4 s · 0,4/0,9 s; 4: 15,2 s; 8: 13,2 s; 12: 12,3 s · 0,9/1,4 s — zwölf halten den Worker ohne Lücke beschäftigt.
 AnazhRealm.FOUNDRY_IM_FLUG = 12;
+// VOR DEM ERSTEN WELTBILD (`_foundryPumpe`): einer in Arbeit, einer dahinter. Dort sind die Aufträge im Blick groß (ein
+// Baum-Körper 0,3–2,6 s) und die Bahnen ungleich belegt (der Leib, der Blatt-Atlas) — zwölf im Flug binden die Arbeit an einen
+// Faden, während der andere leer steht; der Vorrat außer Blick geht dann ohnehin nur in eine leere Bahn (B3d).
+AnazhRealm.FOUNDRY_IM_FLUG_ANKUNFT = 2;
 AnazhRealm.FOUNDRY_ALTER_MS = 6000;
 // Die Werk-Fäden (`_foundryHelfer`, K60): höchstens so viele Fäden bauen Körper (das Werk zählt mit), einer je vier Kerne.
 AnazhRealm.FOUNDRY_WERK_FAEDEN = 4;

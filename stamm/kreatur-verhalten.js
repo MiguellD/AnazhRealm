@@ -21,7 +21,7 @@ class AnazhRealm_kreatur_verhalten {
         creature.userData.task = {
             name: taskName,
             args: args && typeof args === "object" ? args : {},
-            since: performance.now() / 1000,
+            since: this.state.spielZeit,
         };
         this._refreshCreatureTaskAura(creature);
         // Welle 6.H V2 — Vision-Antwort bei echtem Task-Wechsel. `silent` ist
@@ -186,16 +186,12 @@ class AnazhRealm_kreatur_verhalten {
     // Gradienten des Felds über vier Proben: nah an der Quelle wog der Wind-Winkel bis zwölfmal mehr als der Abstand, der
     // Gradient zeigte vom Ziel fort (Leben-Schau 07.10.: ein Wolf 1200 Takte „jagd", 0,3 m bewegt, 0 Bisse in 3600 Takten).
     // Kein Ziel → null (der Aufrufer wandert neutral). Nur pfad; verängstigt (wariness ≥ fleeThreshold), satt oder
-    // erschöpft jagt nicht.
+    // erschöpft jagt nicht (`_kreaturJagdBereit`).
     _creatureScentHuntDir(creature, wariness) {
         const ud = creature.userData || {};
         ud._beute = null;
-        if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return null;
-        if (this._creatureTemperament(creature) !== "wild") return null;
+        if (!this._kreaturJagdBereit(creature, wariness)) return null;
         const VG = AnazhRealm._verhaltenGesetz();
-        if (wariness >= VG.furcht.fleeThreshold) return null;
-        if (this._kreaturSatt(creature)) return null; // satt jagt keine Beute (VERHALTEN.aas)
-        if (this._kreaturErschoepft(creature)) return null; // die Jagd endete, der Jäger ruht (Tiere K2)
         const scentRange = VG.jagd.scentRangeM;
         const cx = creature.position.x;
         const cz = creature.position.z;
@@ -240,6 +236,17 @@ class AnazhRealm_kreatur_verhalten {
         return out;
     }
 
+    // DER JÄGER IST BEREIT (die EINE Pforte der Jagd): im pfad, wild, nicht verängstigt (wariness unter fleeThreshold; ohne
+    // wariness fragt die Fluchtdistanz vor dem Menschen, `_kreaturMenschFlucht`, ob er jagen WILL), nicht satt (VERHALTEN.aas),
+    // nicht erschöpft (Tiere K2).
+    _kreaturJagdBereit(creature, wariness = -Infinity) {
+        if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return false;
+        if (this._creatureTemperament(creature) !== "wild") return false;
+        if (wariness >= AnazhRealm._verhaltenGesetz().furcht.fleeThreshold) return false;
+        if (this._kreaturSatt(creature)) return false; // satt jagt keine Beute (VERHALTEN.aas)
+        return !this._kreaturErschoepft(creature); // die Jagd endete, der Jäger ruht (Tiere K2)
+    }
+
     // DER KADAVER RUFT (Meisterkarte Tiere H3, tetrapoda VERHALTEN.aas): ein Tier, das kein Pflanzenfresser ist (diet über
     // temperament.gattung.pflanzDiet) und nicht satt, wittert die Gefallenen mit Fleisch über das Geruch-Feld (_scentAt an
     // seiner Nase, Quelle = das Fleisch in kg, in jagd.scentRangeM — dieselbe Nase wie die Jagd), wählt den stärksten Geruch
@@ -265,7 +272,7 @@ class AnazhRealm_kreatur_verhalten {
             bestS = 0;
         for (const k of L) {
             const K = k.userData.kadaver;
-            if (!K || !(K.fleisch > 0)) continue;
+            if (!K || !(K.fleisch > 0) || this._gehegeVon(k) !== this._gehegeVon(creature)) continue; // nie durch den Rand
             const dx = k.position.x - cx,
                 dz = k.position.z - cz;
             if (dx * dx + dz * dz > R * R) continue;
@@ -323,6 +330,7 @@ class AnazhRealm_kreatur_verhalten {
     _kreaturIstBeute(jaeger, o) {
         if (!o || o === jaeger || !o.position || !o.userData) return false;
         if (o !== this.state.playerMesh && this._creatureTemperament(o) === "wild") return false;
+        if (this._gehegeVon(jaeger) !== this._gehegeVon(o)) return false; // die Gemeinschaft: nie durch den Rand eines Geheges
         return this._leibMasse(o) <= AnazhRealm._verhaltenGesetz().jagd.beuteMasse * this._leibMasse(jaeger);
     }
 
@@ -687,20 +695,21 @@ class AnazhRealm_kreatur_verhalten {
     // sie, geht es längs der Wand um sie herum — `umweg` ist das Tier (auch wo der Paar-Raum nicht gilt: Pirsch, Aas).
     _kreaturZiel(out, dx, dz, rest, vMax, creature, umweg = creature) {
         if (creature) rest = Math.min(rest, this._kreaturFreierWeg(creature, dx, dz, this._kreaturRaum(creature)));
-        const d = Math.hypot(dx, dz);
-        if (!(d > 1e-6) || !(rest > 0) || !(vMax > 0)) return out.set(0, 0, 0);
-        const v = AnazhRealm._steuerGesetz().ankunftTempo(rest, vMax);
-        let [ux, uz] = [dx / d, dz / d];
+        // DER WUNSCH DER ZIEL-KETTE (tetrapoda `zielWunsch`: der Kern rechnet ihn für Tier und Mensch); der Wirt trägt den Umweg
+        const W = globalThis.__tetrapodaCore.zielWunsch(dx, dz, rest, vMax, this._zielWunschAus || (this._zielWunschAus = { x: 0, z: 0, v: 0 })); // prettier-ignore
+        if (!(W.v > 0)) return out.set(0, 0, 0);
         const h = umweg && umweg.userData._halt;
         const t = this.state.creatureAnimationTime;
         const U = h && AnazhRealm._umwegGesetz();
+        const d = Math.hypot(dx, dz);
+        const [ux, uz] = [dx / d, dz / d];
         if (h && t - h.t <= U.UMWEG_GESETZ.haltS && ux * h.nx + uz * h.nz < 0) {
             const p = umweg.position;
             const alt = t - h.umweg <= U.UMWEG_GESETZ.haltS ? h.seite : 0;
             h.seite = U.umwegSeite(ux, uz, h.nx, h.nz, p.x - h.cx, p.z - h.cz, alt);
-            if (h.seite) [h.umweg, ux, uz] = [t, -h.nz * h.seite, h.nx * h.seite];
+            if (h.seite) return ((h.umweg = t), out.set(-h.nz * h.seite * W.v, 0, h.nx * h.seite * W.v));
         }
-        return out.set(ux * v, 0, uz * v);
+        return out.set(W.x, 0, W.z);
     }
 
     // DER HALT AN DER WAND (der Umweg liest ihn): ein Schub aus einer Hülle merkt seine Normale (nx, nz) und die Mitte (cx, cz)
@@ -1255,6 +1264,7 @@ class AnazhRealm_kreatur_verhalten {
                 p.z -= wh.nz * ein;
             }
         }
+        if (ud && ud._bestand && ud._bestand.gehege) this._gehegeRandKontakt(creature, L, ud._bestand.gehege); // sein Rand hält
         const arches = this.state.architectures;
         if (!arches || !arches.length) return;
         const t = this.state.creatureAnimationTime;
@@ -1373,7 +1383,13 @@ class AnazhRealm_kreatur_verhalten {
     // (strideSec), Heading deterministisch aus netId × Slot (sin-Hash; ein Goldwinkel-INKREMENT wäre
     // falsch — rotierende Einheitsvektoren summieren sich zum Kreisel). Emotionen modulieren Amplitude
     // + Rhythmus (chaos bis +50 %, sorrow bis −40 %, Boden 0.3); die LEINE (leashM) zieht zum Anker
-    // (Geburtsort, lazy beim ersten freien Tick — Restore-sicher).
+    // (Geburtsort, lazy beim ersten freien Tick — Restore-sicher). DAS REVIER IM LEBENSRAUM (leben.tiere.wanderung S1, „Aufenthalt
+    // folgt dem Lebensraum“): der Anker legt sich einmal in den Lebensraum der Gattung (`_kreaturRevier`), das Tier zieht von
+    // Ziel zu Ziel in seiner Leine, jedes Ziel im Lebensraum (`_kreaturWanderZiel`), am Ziel streift es mit dem gewürfelten
+    // Kurs, und jeder Zug meidet, was der Lebensraum nicht trägt (`_kreaturWanderKurs`). Vorher wanderte es blind für ihn:
+    // headless an der Probe tagesbudget (Lebensraum, 24 Spielstunden) lagen beim Wolf 0,56–0,86, beim Hirsch 0,27–0,96 seiner
+    // Lagen in ihm, der Bär im Rand-Gleichgewicht seiner Leine (Median 17–27 m bei 28 m, 0,20–0,25 × π·Leine²); 3 von 12 Tieren
+    // im Soll, mit dem Revier 8 von 12.
     _creatureCharacterWander(creature, direction, speed, zeigt = true) {
         const K = AnazhRealm._verhaltenGesetz().wandern;
         const ud = creature.userData || {};
@@ -1383,23 +1399,33 @@ class AnazhRealm_kreatur_verhalten {
         const stride = K.strideSec / Math.max(0.5, amp);
         const t = this.state.creatureAnimationTime || 0;
         const slot = Math.floor(t / stride);
-        if (ud._wanderSlot !== slot || !Number.isFinite(ud._wanderHeading)) {
-            ud._wanderSlot = slot;
-            const idNum = parseInt(String(ud.netId || "c0").slice(1), 10) || 0;
-            const h = Math.sin((idNum * 131 + slot) * 12.9898) * 43758.5453;
-            ud._wanderHeading = (h - Math.floor(h)) * Math.PI * 2;
-        }
         const mag = speed * K.wanderSpeedMul * amp;
-        direction.set(Math.cos(ud._wanderHeading) * mag, 0, Math.sin(ud._wanderHeading) * mag);
         // die LEINE: furchtsam bleibt nah am Anker, mutig streift weiter.
         if (!ud.wanderAnchor) ud.wanderAnchor = { x: creature.position.x, z: creature.position.z };
-        const leash = this._creatureMoveCharacter(creature).leashM;
+        const leash = this._gehegeLeine(creature, this._creatureMoveCharacter(creature).leashM);
+        if (!ud.wanderAnchor.revier) ud.wanderAnchor = this._kreaturRevier(creature, ud.wanderAnchor, leash);
         const dx = ud.wanderAnchor.x - creature.position.x;
         const dz = ud.wanderAnchor.z - creature.position.z;
         const d = Math.hypot(dx, dz);
         // das Wandern zeigt die Tätigkeit des Tiers (Tiere K4, _kreaturTaetigkeit) — in seiner Leine; jenseits zieht es heim:
-        // es ruht und äst nur in seinem Revier (vorher graste das scheue Kitz 45 m vor dem Anker im Tempo des Grasens weiter)
-        ud._gezeigt = zeigt && ud._taetigkeit ? (d > leash ? "ziehen" : ud._taetigkeit) : null;
+        // es ruht und äst nur in seinem Revier (vorher graste das scheue Kitz 45 m vor dem Anker im Tempo des Grasens weiter) und
+        // nur, wo sein Lebensraum es trägt (_kreaturRevierTraegt, je Slot): außerhalb zieht es (vorher äste der erste Bär eine
+        // Spielminute lang durch die Lücke zwischen den Teilen seines Reviers, 1,8 % seines Tags draußen)
+        const neu = ud._wanderSlot !== slot || !Number.isFinite(ud._wanderHeading);
+        const p = creature.position;
+        if (neu) ud._draussen = !this._kreaturRevierTraegt(creature, p.x, p.z, true);
+        ud._gezeigt = zeigt && ud._taetigkeit ? (d > leash || ud._draussen ? "ziehen" : ud._taetigkeit) : null;
+        if (neu) {
+            ud._wanderSlot = slot;
+            const idNum = parseInt(String(ud.netId || "c0").slice(1), 10) || 0;
+            // der Weg dieses Slots im Tempo der Tätigkeit, die das Tier zeigt (äsen schleicht), wenigstens sein Raum
+            const blick = Math.max(this._kreaturRaum(creature), mag * stride * this._kreaturTaetigkeitTempo(creature));
+            const Z = this._kreaturWanderZiel(creature, idNum, slot, blick, leash);
+            const h = Math.sin((idNum * 131 + slot) * 12.9898) * 43758.5453;
+            const kurs = Z ? Math.atan2(Z.z - p.z, Z.x - p.x) : (h - Math.floor(h)) * Math.PI * 2;
+            ud._wanderHeading = this._kreaturWanderKurs(creature, kurs, blick, leash, Z);
+        }
+        direction.set(Math.cos(ud._wanderHeading) * mag, 0, Math.sin(ud._wanderHeading) * mag);
         if (d > leash) {
             const pull = K.anchorPull * speed * Math.min(1, (d - leash) / Math.max(1, leash));
             direction.x += (dx / d) * pull;
@@ -1996,7 +2022,7 @@ class AnazhRealm_kreatur_verhalten {
                 creature.userData.carrying = {
                     materials: { ...harvest.materials },
                     blueprint: harvest.blueprint,
-                    since: performance.now() / 1000,
+                    since: this.state.spielZeit,
                 };
                 if (typeof this._refreshCreatureCarryingVisual === "function") {
                     this._refreshCreatureCarryingVisual(creature);
@@ -2085,7 +2111,7 @@ class AnazhRealm_kreatur_verhalten {
                     materials: symbolicCost,
                     blueprint,
                     free: !!gate.free,
-                    since: performance.now() / 1000,
+                    since: this.state.spielZeit,
                 };
                 if (typeof this._refreshCreatureCarryingVisual === "function") {
                     this._refreshCreatureCarryingVisual(creature);
@@ -2781,7 +2807,8 @@ class AnazhRealm_kreatur_verhalten {
         // frei und sagte 10,7 Mio. Mal nein — Takt 13 000 … 34 000 wartete die Welt auf Treffer. Mit Treffern frei gehen die
         // Leiber 461 → 0 in ~4 500 Takten (die Geburten, 2 je Takt), der Ort steht nach 21 441 Takten samt Gipfel.
         const darf = () => {
-            const namen = this._gattungGlieder(cr);
+            const S = this._leibSatzStufe(cr); // die Einträge seiner Stufe: die Glieder oder fern die EINE Hülle
+            const namen = S && S.namen;
             const wm = namen && this.state.weltMarch;
             return !!namen && (namen.every((nm) => wm && wm.kapselCache.has(nm.key)) || this._weltBakeErlaubt(d2));
         };
@@ -2792,8 +2819,11 @@ class AnazhRealm_kreatur_verhalten {
                 this._leibMatrix(cr);
                 u._kzGlieder = this._kreaturGliederBacken(cr, false);
             }
-            // Der schwindende Satz folgt den Knochen weiter (sonst geisterte er 0,5 s an der alten Pose).
-            if (u._kzGlieder)
+            // Der schwindende Satz folgt den Knochen weiter (sonst geisterte er 0,5 s an der alten Pose) — der des Bewohners
+            // der Lage seiner Gestalt (`_bewohnerFeldLage`: EIN Schreiber, w28-leib-im-ring).
+            const BL = u._feldLageVon;
+            if (BL) this._bewohnerFeldLage(BL.b, BL.S, false);
+            else if (u._kzGlieder)
                 for (const gl of u._kzGlieder) {
                     if (gl.handle._schwundT0 !== undefined) this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
                     this._weltFeldAktiv(gl.handle, false);
@@ -2820,19 +2850,24 @@ class AnazhRealm_kreatur_verhalten {
         // DIE KNOCHEN TRAGEN DIE FELDER (die Pose der letzten Animations-Auswertung als inverse
         // Welt-Matrix je Glied):
         const an = this.state.creaturesHidden !== true;
-        for (const gl of u._kzGlieder) {
-            this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
-            this._weltFeldAktiv(gl.handle, an);
-        }
+        const BL = u._feldLageVon; // der Bewohner: die Lage seiner Gestalt trägt seine Glieder (`_bewohnerFeldLage`)
+        if (BL) this._bewohnerFeldLage(BL.b, BL.S, an);
+        else
+            for (const gl of u._kzGlieder) {
+                this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
+                this._weltFeldAktiv(gl.handle, an);
+            }
         cr.visible = false; // fern IST das Feld die Gestalt
     }
 
     // Gehört dieses Tier dem Feld? Nur FERN und sobald ein Bake-Versuch lief (mit Gliedern oder
     // gescheitert); nah und in der Bake-Rampe ist das Studio-Tier sichtbar, three cullt es je Pass. Ein Bewohner in seinem
-    // Haus (`_drinnen`, mensch.K2) gehört keinem Feld.
+    // Haus (`_drinnen`, mensch.K2) gehört keinem Feld, einer am Steuer auch nicht — sein Leib gehört dem Wagen (`_verkehrSitz`).
     _kzBesitztFeld(cr) {
         const u = cr && cr.userData;
-        return !!(u && u._kzNah !== true && u._drinnen !== true && (u._kzGlieder || u._kzVersuch));
+        if (!u || u._kzNah === true || u._drinnen === true || (u._feldLageVon && u._feldLageVon.b.amSteuer))
+            return false;
+        return !!(u._kzGlieder || u._kzVersuch);
     }
 
     // DAS FELL-BILDSCHIRM-GESETZ (Gebot 7: Kosten an den Schirm): das Fell (die Schalen, dazu Rest-Strähnen wie der
@@ -3182,7 +3217,9 @@ class AnazhRealm_kreatur_verhalten {
             if (!glieder) verbaende.set(vb, (glieder = this._verbandPool.pop() || []));
             glieder.push(c); // der Leib, nie sein Index: ein Tod mitten im Takt verschiebt die Liste
         }
-        const lifeTrickleNow = performance.now() / 1000;
+        // die Uhr des Träufelns ist die Spiel-Uhr (feld.K2#2: was die Welt schreibt, folgt der Welt-Uhr — das Portal friert sie
+        // ein, ein Sprung trägt EINEN Akt; bis w28-mp-boden die Wanduhr der Seite: sie lief unter dem Portal und je Gerät anders)
+        const lifeTrickleNow = this.state.spielZeit;
         // Frame-Budget für volle `_voxelSurfaceY`-Scans in `_creatureGroundY`, egal wie viele Kreaturen;
         // der Rest nutzt den Cache.
         this._creatureGroundBudget = 20;
@@ -3765,7 +3802,9 @@ AnazhRealm._steuerGesetz = function () {
     return AnazhRealm._kernPflichtBruch("tetrapoda:STEUER_GESETZ");
 };
 // DAS FURCHT-GESETZ (tetrapoda FURCHT_GESETZ + bedrohung · furchtErinnert · furchtOrt, Ökologie K3): die EINE Bedrohung eines
-// Gefühls (Aura des Spielers, Abdruck am Ort), das Gedächtnis des Wesens an den Spieler und die Furcht des Orts. Fail-closed.
+// Gefühls (Aura des Spielers, Abdruck am Ort), das Gedächtnis des Wesens an den Spieler und die Furcht des Orts; die
+// Fluchtdistanz vor dem Menschen je Gattung (fluchtDistanzM + fluchtDistanz, leben.tiere.mensch S1) trägt JEDE Gattung des
+// Kerns. Fail-closed.
 AnazhRealm._furchtGesetz = function () {
     if (AnazhRealm._furchtGesetzMemo) return AnazhRealm._furchtGesetzMemo;
     const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -3784,7 +3823,12 @@ AnazhRealm._furchtGesetz = function () {
         typeof k.bedrohung === "function" &&
         typeof k.furchtErinnert === "function" &&
         typeof k.furchtOrt === "function" &&
-        typeof k.fluchtRadius === "function"
+        typeof k.fluchtRadius === "function" &&
+        typeof k.fluchtDistanz === "function" &&
+        F.fluchtDistanzM &&
+        Number.isFinite(F.naeherungMS) &&
+        k.GATTUNGEN &&
+        Object.keys(k.GATTUNGEN).every((g) => F.fluchtDistanzM[g] > 0)
     ) {
         AnazhRealm._furchtGesetzMemo = Object.freeze({
             F,
@@ -3792,6 +3836,7 @@ AnazhRealm._furchtGesetz = function () {
             furchtErinnert: k.furchtErinnert,
             furchtOrt: k.furchtOrt,
             fluchtRadius: k.fluchtRadius,
+            fluchtDistanz: k.fluchtDistanz,
         });
         return AnazhRealm._furchtGesetzMemo;
     }

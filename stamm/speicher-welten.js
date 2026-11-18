@@ -84,7 +84,7 @@ class AnazhRealm_speicher_welten {
     // und das Gelände (`_erbgut`: das Erbgut des Gelände-Kerns). Fehlt ein Teil, gilt der der Erde (`WELT_GESETZ_ERDE`); ein
     // Erbgut von vor dem Gesetz (`worldMeta.erbgut`) zieht hier einmal hinein. Fail-closed: eine Zahl außerhalb ihres Bands, ein
     // Wort, das die Welt nicht kennt, ein Erbgut, das der Kern ablehnt, WIRFT beim Namen. Die Normalform ist gemerkt (je Objekt);
-    // wer einen Teil ändert, geht durch `_weltGesetzSetzen`.
+    // wer einen Teil ändert, geht durch `_weltGesetzSetzen`. Der Ort (Reise, `ort`): null die Heimat, sonst prüft ihn `ortGesetz`.
     static _weltGesetz(meta) {
         if (!meta || typeof meta !== "object") throw new Error("Das Gesetz der Welt: kein worldMeta");
         const roh = meta.gesetz;
@@ -113,6 +113,7 @@ class AnazhRealm_speicher_welten {
             himmel: { rayleighTiefe: rt.slice() },
             wetter,
             gelaende: gelaende == null ? null : gelaende,
+            ort: q.ort == null ? null : globalThis.__gelaendeCore.ortGesetz(q.ort).teil,
         };
         meta.gesetz = n;
         AnazhRealm._GESETZ_NORMAL.add(n);
@@ -163,7 +164,7 @@ class AnazhRealm_speicher_welten {
         // Stufen: 1 Legacy · 2 Feuchte · 3 Makro-Geographie · 4 prozedurale Baum-Baupläne · 5 Skeleton-
         // Wuchs aus dem Gesetz (_phytoArt → treeParams) · 6 Mesh-Merge · 7 Tube-Geometrie/Foliage-Cards/Wind ·
         // 8 Palette/Tag-Vektoren/Understory · 9 baum_karst + Busch-Baupläne.
-        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 9;
+        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = AnazhRealm.GEN_VERSION;
         // Seed und Voxel-Boden heilt das EINE Heil jeder Welt (`_weltMetaHeil`, auch jede geladene); Journal-Eintrag nur
         // bei `!fresh` (geladene Welt verdichtet sich), die frische Welt schreibt nur „Ich erwache als <slug>".
         const warVoxel = m.voxelTerrain === true;
@@ -410,8 +411,7 @@ class AnazhRealm_speicher_welten {
     }
 
     // Generator-Helfer: erzeugt einen frischen worldMeta-Block (UUID + slug
-    // + bornAt). Nicht idempotent — jeder Aufruf eine neue ID. Wird von
-    // createNewWorld genutzt.
+    // + bornAt). Nicht idempotent — jeder Aufruf eine neue ID. Rufer: createNewWorld, das Welt-Tor, die Reise.
     _generateFreshWorldMeta(slug) {
         const worldId = AnazhRealm._neueWeltId();
         let finalSlug = (slug || "")
@@ -425,8 +425,7 @@ class AnazhRealm_speicher_welten {
             const n = nouns[Math.floor(Math.random() * nouns.length)];
             finalSlug = `${a}-${n}`;
         }
-        // Slug-Eindeutigkeit: wenn ein Index-Eintrag denselben slug hat,
-        // hängen wir `-2`/`-3`/… an, bis frei.
+        // Slug-Eindeutigkeit: wenn ein Index-Eintrag denselben slug hat, hängen wir `-2`/`-3`/… an, bis frei.
         const usedSlugs = new Set(this.worldsIndexLoad().map((e) => e.slug));
         if (usedSlugs.has(finalSlug)) {
             let n = 2;
@@ -440,7 +439,7 @@ class AnazhRealm_speicher_welten {
         // behalten ihr Gesicht (Genese ist Welt-Identität). Der Varianten-Pool (variantSeed[]) ist
         // Genese-Konstante: je Art eine Zeile, gepinnt beim ersten Wuchs der Art (_variantSeedsFor).
         const variantSeed = {};
-        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 9, variantSeed };
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: AnazhRealm.GEN_VERSION, variantSeed };
     }
 
     // Snapshot einer leeren Welt mit gegebenem worldMeta (optional mit Player-Snapshot für „Person
@@ -525,10 +524,10 @@ class AnazhRealm_speicher_welten {
             snap.tools = Object.values(this.state.tools || {})
                 .filter((t) => t && !t.builtIn)
                 .map((t) => this._serializeTool(t));
-            // Eigene Baupläne wandern mit (Schöpfer-Wissen); die Hotbar bleibt leer (welt-spezifisch).
-            // Nur über _serializeBlueprint — sonst gehen Portal-Rolle + Signatur still verloren.
-            snap.blueprints = this._bauplaeneDesStands(
-                new Set(snap.tools.map((t) => t.sourceBlueprint).filter(Boolean))
+            // Eigene Baupläne wandern mit, nur über _serializeBlueprint (Portal-Rolle + Signatur); der Gang ist ein Generator, in EINEM
+            // Zug getrieben (`_standZug` — 05.11.–16.11. reiste er ungetrieben als `{}`, die Person verlor ihre Baupläne).
+            snap.blueprints = this._standZug(
+                this._bauplaeneDesStands(null, new Set(snap.tools.map((t) => t.sourceBlueprint).filter(Boolean)))
             ).map((bp) => this._serializeBlueprint(bp));
         }
         return snap;
@@ -658,7 +657,8 @@ class AnazhRealm_speicher_welten {
     _serializeTool(t) {
         const out = {
             name: t.name,
-            label: t.label,
+            // ein Name aus der Tafel reist als sein Schlüssel (`etikett`), nie als aufgelöster Text (spielgang.K5)
+            ...(Array.isArray(t.etikett) ? { etikett: t.etikett } : { label: t.label }),
             opClass: t.opClass,
             opName: t.opName,
             precisionCap: t.precisionCap,
@@ -674,9 +674,9 @@ class AnazhRealm_speicher_welten {
     // kommt. Bis w8-snapshot-schlank reiste jede Art: an der Playtest-Welt trugen 125 Arten 154 082 von 262 028 B des Stands (59 %),
     // der Pin der Welt (`pinCurrentWorld`, 256 KiB) hatte 116 B Luft. IN SCHRITTEN (speicher.K2#2): je vier Baupläne ein Schritt samt
     // seinem Werk (das Urteil der Geburt zählt seins, `_bauplanAusBuch`) — die Menge der Playtest-Welt (196 Baupläne) kostete als
-    // EIN Schritt 0,29 ms. `K` der Kontext des Stands. → (am Ende) die Baupläne
-    *_bauplaeneDesStands(K) {
-        const bezug = yield* this._standBezug(K);
+    // EIN Schritt 0,29 ms. `K` der Kontext des Stands, `bezug` ohne Stand (die Geburt mit der Person). → (am Ende) die Baupläne
+    *_bauplaeneDesStands(K, bezug = null) {
+        bezug ||= yield* this._standBezug(K);
         const S = this._speicher || { werk: 0 };
         const out = [];
         let i = 0;
@@ -1186,7 +1186,7 @@ class AnazhRealm_speicher_welten {
                     if (G.himmel.rayleighTiefe.some((v, i) => v !== E.himmel.rayleighTiefe[i])) ab.himmel = G.himmel;
                     const wetter = Object.keys(E.wetter).filter((z) => G.wetter[z] !== E.wetter[z]);
                     if (wetter.length) ab.wetter = Object.fromEntries(wetter.map((z) => [z, G.wetter[z]]));
-                    if (G.gelaende != null) ab.gelaende = G.gelaende;
+                    for (const t of ["gelaende", "ort"]) if (G[t] != null) ab[t] = G[t]; // der Ort einer Reise-Welt reist mit (w28-reise-ort)
                     if (Object.keys(ab).length) wm.gesetz = ab;
                     else delete wm.gesetz;
                     if (stand) delete wm.voxelEdits;
@@ -1216,7 +1216,7 @@ class AnazhRealm_speicher_welten {
                 },
             ],
             // Stehende Welt-Regeln persistieren NUR mit den definierenden Feldern (cond/effect/everySec/source/
-            // ttlSec); die Laufzeit-Akkus (fires/born/_sig/costMsSum) setzt der Restore frisch.
+            // ttlSec); die Laufzeit-Akkus (fires/born/_sig/kostenSum) setzt der Restore frisch.
             [
                 "worldRules",
                 () =>
@@ -1274,7 +1274,8 @@ class AnazhRealm_speicher_welten {
             // Maximums (das Maximum rechnet der Leib beim Laden neu, wie `hpAnteil` des Tiers), dazu die Wunde des Tods —
             // vorher heilte jeder Reload (hp 69,6 → 134 von 134, die Wunde 1 → 0). `_loadStateRestoreLeben` liest sie. DIE NAHRUNG
             // reist mit (halten.K5 Staffel 2): was der Leib gegessen hat (`consume:`-Boosts, `activateConsumable`), mit ihrer
-            // Restzeit — sie hebt das Maximum, an dem die Anteile hängen; vorher fiel sie im Reload, hpMax mit ihr.
+            // Restzeit — sie hebt das Maximum, an dem die Anteile hängen; vorher fiel sie im Reload, hpMax mit ihr. Ihr Name reist
+            // nicht: er ist eine Funktion der Quelle (`_boostZeile`), ein Stand bis V18.546.325 trug ihn als Text — der Leser übergeht ihn.
             [
                 "playerLeben",
                 () => {
@@ -1292,7 +1293,6 @@ class AnazhRealm_speicher_welten {
                                 quelle: b.source,
                                 tags: { ...b.tagDelta },
                                 rest: +(b.expiresAt - jetzt).toFixed(2),
-                                label: b.label,
                             })),
                     };
                 },
@@ -1417,7 +1417,6 @@ class AnazhRealm_speicher_welten {
                         const bp = bps[a.type];
                         if (bp && bp._isGrown && !out[a.type])
                             out[a.type] = {
-                                label: bp.label,
                                 _grownSpecies: bp._grownSpecies,
                                 _grownSeed: bp._grownSeed,
                             };
@@ -3490,10 +3489,10 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_speicher",
         "_speicherOhnePlatte",
         "_nebenFaeden",
+        "_planetFadenStand", // der Planet-Faden (Reise): ohne Stand der Welt, er merkt Plan und Scheiben je Samen
         "_quelle",
         "_bodenFaden",
         "_hydroWelt",
-        "_stauHoert",
         "_fernMemoGen",
         "_takt",
         "_imTakt", // der Takt läuft (`_psoVorbau`): der Abschied mitten im Takt löscht ihn nicht

@@ -690,6 +690,9 @@ const FORBIDDEN = [
     ["_tierFernFolgt", "V18.538 — EIN Skelett: die Grobstufe trägt die Knochen der feinen (_gelenkGestalt)"],
     ["fernStarr", "V18.538 — der Gelenk-Guss bindet die Grobstufe für Tier UND Mensch (S3), kein Tier-Sonderweg", ["foundry-core.js"]],
     ["__wurf", "S3 — der Schatten-Teil (teil schatten) trägt den Wurf, kein Index-Vorsatz", ["foundry-core.js", "worlds/terrain/phytogenesis.js", "foundry-bruecke.js"]],
+    // w28-leib-nah: jedes Kleid ist Stoff aus der Haut (koerper `kleidZonen` dicke), der Schuh der Guss des Fußes um seine Dicke —
+    // die Voxel-Hülle über Teil-Punkten (der Poncho, zuletzt der Schuh) fiel samt ihrer Maschine und ihren Zonen-Zahlen
+    ...["backeHuelle", "stoffHuellen", "__imKleid", "__stoffErbtHaut", "faelltAb", "voxDilate", "voxErode", "voxFill", "_vox_dilate", "_vox_erode", "_vox_fill", "_gauss1d", "_blur3", "inflate:", "z.abstand"].map((token) => [token, "w28-leib-nah — das Kleid aus der Haut, der Schuh aus dem Guss des Fußes (kleidZonen dicke); keine Voxel-Hülle über Teil-Punkten", ["foundry-core.js", "koerper-core.js"]]), // prettier-ignore
     ["lf.wurf", "S3 — der Schatten-Teil ist selbst der Zwilling (_foundryFlattenFor)"],
     ["wurfe", "S3 — das Verschmelzen legt keinen Wurf-Vorsatz mehr nach vorn (_geoVerbinden)"],
     ["_wurfDreiecke", "S3 — der Wurf-Vorsatz der L1-Rinde", ["foundry-core.js"]],
@@ -803,6 +806,20 @@ const FORBIDDEN = [
     // w26-winter-fichte-2 — emitGrass gebiert den Anker der Ähre auf dem Fuß ihres Stängels: kein Leser (Wirt, Labor, Ferne) sucht
     // ihn per Float-Schlüssel nach (die Nachsuche warf am Schilf, Zug z349)
     ...["halmAehrenFuss", "_aehrenFuesse", "aehrenFussLabor"].map((token) => [token, "w26-winter-fichte-2 — der Anker der Ähre ist geboren", ["phyto-core.js", "worlds/terrain/phytogenesis.js"]]), // prettier-ignore
+    // w28-wiese-schale — die Schale fiel ganz: die Ferne der Wiese zeichnet dieselben Büschel UNVERFORMT, die Deckung trägt die Zahl
+    // (`_wieseFern`: die Lücke des Strahls bis zur Kappe). Die Schale aus Zacken-Karten (die Senke `nahWiese:Lf:schale`, die Art 7 der
+    // Wahl der GPU, ihre Schichten), die Streckung bis `streckMax` mit der Grenze je Büschel über dem Gitter des Bodens — Zacken-Wände
+    // im ersten Bild des Spielers (die Beete der Ankunft, der Hang des Dorfs, das Band 10–40 m der Wiese)
+    ...["_wieseSchale", "WIESE_SCHALE_SCHICHTEN", "Lf:schale", "aZahn", "wieseSchale(", "streckMax", "_wieseFernGrenzen", "_wieseFernGitter", "_wieseFernFeld", "WIESE_ACHT"].map((token) => [token, "w28-wiese-schale — die Schale und die Streckung der Ferne"]), // prettier-ignore
+    // w28-nexus-uhr — die Kosten einer Regel zählen Schritte des Spiels (der Anteil ihres Budgets je Feuern, `kostenSum`), nie die
+    // Wandzeit des Effekts: dieselbe Regel wurde je Gerät anders erneuert, eine Pause des Schedulers ließ sie verfallen
+    ...["costMsSum", "costBudgetMs"].map((token) => [token, "w28-nexus-uhr — die Regel-Kosten sind ihr Budget-Anteil (kostenSum), nie Wandzeit", ["scripts/playtest.cjs"]]), // prettier-ignore
+    // w28-takt-frist — DIE EINE FRIST AB DEM KOPF DES TAKTS (`_fristStellen`): jede Uhr daneben fiel
+    ...["BAU_FRIST_MS", "BAU_ALTER_", "_makeFrameBudget", "_deferrableBudgetMs", "FRAME_SCHED_", "SCATTER_SLICE_MS", "PERF_RENDER_CALL_MS"].map((t) => [t, "w28-takt-frist — die EINE Frist (TAKT_FRIST), der Regler liest phase.gpuMs"]),
+    // w28-himmel-korn — DAS HIMMELS-LICHT LIEST DASSELBE KORN WIE DIE SONNE: das zweite Bild der Höhe im aoNode (`_mikroStoff`) fiel mit
+    // seinen Zahlen in `TERRAIN_BUMP` — im Schlagschatten sprang es je Kiesel 1 : 5,8 (gate:schatten-terminator (K) misst das Bild)
+    // … und das Korn ist eine Spalte des Stoffs (die Stoff-Tafel, Zeilen erde und stein), nie wieder EINE Zahl in `TERRAIN_BUMP`
+    ...["krume", "kavitaet:", "BUMP.korn"].map((t) => [t, "w28-himmel-korn — das Korn der Albedo ist das EINE Bild der Höhe (_mikroStoff)"]),
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -935,10 +952,10 @@ const ZWILLINGE = [
         fiel: "U6c — das BRANDWAND-Gesetz wohnt im Gesetzbuch (brandwand)",
     },
     {
-        fingerprint: "jahr<1150?'romanik'",
+        fingerprint: "function bauProgramm(",
         gesetzbuch: "fachwerk-core.js",
         verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
-        fiel: "U6c — das META-Gesetz (Jahr×Klima×Personen×Wohlstand → Form) wohnt im Gesetzbuch (metaParams)",
+        fiel: "U6c, w28-bau-rezept — das Gesetz Haushalt × Nutzung → Form wohnt im Gesetzbuch (bauProgramm; das Labor-Meta-Gesetz fiel)",
     },
     {
         fingerprint: "_SNED=[[0,1],[2,3],[4,5],[6,7]",
@@ -1309,6 +1326,11 @@ const ENTSORGUNG_BESITZER = {
     _kammKroneDispose: { arten: ["geometry"], grund: "die Kamm-Krone (ihr Netz und ihr Gast, Ring-Besitz)" },
     _kammKroneVorbau: { arten: ["geometry"], grund: "der Gast der Kamm-Krone: sein leeres Dreieck, sobald das Netz zeichnete (w28-leben-vorbau)" },
     verifyComputeContribution: { arten: ["geometry", "material"], grund: "das Prüf-Mesh der Compute-Probe" },
+    _arenaKlasse: {
+        arten: ["geometry"],
+        // Gegner Speicher F7 (Runden-Zensus 16.11.): ihre Puffer gehören dem Lager, ihr Entsorgen bucht nur den Abgang
+        grund: "die Geometrie-Arena: ihre eigene Hülle (je `_geoNeu` frisch) — die alte beim Neubau, ihre beim Fallen",
+    },
     _tickPortalMembranes: {
         arten: ["material"],
         grund: "Membran- und Nebel-Stoff je Tor (die Geometrie gehört dem Memo je Gestalt)",

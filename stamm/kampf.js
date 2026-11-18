@@ -95,7 +95,7 @@ class AnazhRealm_kampf {
         if (p._swing && p._swing.t < p._swing.dauer) return false; // noch im Schwung
         // WERKZEUG-WAND (Welle L, K-D6): ein verbrauchtes Gerät schlägt nicht — dieselbe Wand wie Schuss und Abbau.
         if (this._geraetVerbraucht(this._heldImplementBlueprint(), "Hieb")) return false;
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         p.lastAttackAt = now; // Alt-Leser bleiben versorgt (reine Chronik, kein Gate mehr)
         this._consumeMouseStamina();
         // der Affekt beim AUSLÖSEN: Zorn/Kampf-Intensität ∝ der Substanz des GEHALTENEN
@@ -217,10 +217,11 @@ class AnazhRealm_kampf {
         return o;
     }
 
-    // Die Hand-Mitte der rechten Hand in Welt (dort sitzt der Griff der Faust, Ofen-Beipack rig.handMitte), sonst das Handgelenk.
+    // Die Hand-Mitte der rechten Hand in Welt (dort sitzt der Griff der Faust, der EINE Leser `_leibHandMitte`), sonst das Handgelenk.
     _kampfHandMitte(rig, out) {
         const w = rig.armR.wrist;
-        const hm = rig.handMitte && rig.handMitte[w.name];
+        const H = this._leibHandMitte(rig);
+        const hm = H && H[w.name];
         return hm ? w.localToWorld(out.set(hm[0], hm[1], hm[2])) : w.getWorldPosition(out);
     }
 
@@ -1122,7 +1123,7 @@ class AnazhRealm_kampf {
         const rec = this._heldBogenRecipe();
         if (!rec) return;
         const A = AnazhRealm._arenaGesetz().bogen;
-        const held = Math.max(0, performance.now() / 1000 - d.start);
+        const held = Math.max(0, this.state.spielZeit - d.start);
         const frac = Math.max(
             Number.isFinite(A.minAuszugFrac) ? A.minAuszugFrac : 1,
             Math.min(1, A.auszugSec > 0 ? held / A.auszugSec : 1)
@@ -1142,7 +1143,7 @@ class AnazhRealm_kampf {
         const p = this.state.player;
         const pm = this.state.playerMesh;
         if (!p || !pm) return false;
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         if (Number.isFinite(p._shotCooldownUntil) && now < p._shotCooldownUntil) return false;
         const bp = this._heldImplementBlueprint();
         if (this._geraetVerbraucht(bp, "Schuss")) return false;
@@ -2207,7 +2208,7 @@ class AnazhRealm_kampf {
             g.break = false;
             return;
         }
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         const last = Number.isFinite(p.lastHarvestStrikeAt) ? p.lastHarvestStrikeAt : -Infinity;
         if (now - last < AnazhRealm.HARVEST.strikeIntervalSec) return;
         p.lastHarvestStrikeAt = now;
@@ -2238,7 +2239,7 @@ class AnazhRealm_kampf {
             if (!(AB.auszugSec > 0)) return this._beginPlayerShot();
             const pB = this.state.player;
             if (pB._bogenDraw) return true; // spannt schon (Halte-Tick)
-            const nowB = performance.now() / 1000;
+            const nowB = this.state.spielZeit;
             if (Number.isFinite(pB._shotCooldownUntil) && nowB < pB._shotCooldownUntil) return false;
             pB._bogenDraw = { start: nowB };
             return true;
@@ -2266,6 +2267,7 @@ class AnazhRealm_kampf {
         let ort = null; // der Punkt des Ziels auf dem Strahl (Bauwerk · Blüte · Boden)
         let flora = null;
         let boden = null;
+        let inArm = false;
         const pmB = this.state.playerMesh;
         const R = pmB ? this._kampfSchwungRahmen(this._torRahmen || (this._torRahmen = {})) : null;
         const klinge = R ? R.reach + AnazhRealm._arenaGesetz().schwung.bladeRadiusM : 0;
@@ -2292,6 +2294,12 @@ class AnazhRealm_kampf {
             } else if (pick && pick.entry) {
                 verb = "abbau";
                 ort = pick.point;
+            } else if (this._fackelGlut()) {
+                // DIE FACKEL (same.physik.feuer S1): wer Glut in der Hand hält, legt sie an den Boden unter dem Fadenkreuz — vor
+                // dem Pflücken und dem Graben: die Glut fasst den Halm nicht, sie zündet ihn
+                verb = "zuenden";
+                boden = this._raycastWorldHit(30);
+                if (boden.hit) ort = boden;
             } else if ((flora = this._ernteZiel())) {
                 // S6-B (V18.133) — FORAGING vor dem Graben: wer auf die Blüte zielt, will sie, kein Loch darunter; ein Gerät,
                 // dessen Schneide den Halm fasst, mäht ihn auch unter dem Fadenkreuz in der Wiese (halten.K3, `_ernteZiel`)
@@ -2303,7 +2311,7 @@ class AnazhRealm_kampf {
                 if (boden.hit) ort = boden;
             }
             const F = ort ? this._fadenkreuzStrahl() : null;
-            const inArm = !!F && Math.hypot(ort.x - F.o.x, ort.y - F.o.y, ort.z - F.o.z) <= AnazhRealm.FORAGE.reach;
+            inArm = !!F && Math.hypot(ort.x - F.o.x, ort.y - F.o.y, ort.z - F.o.z) <= AnazhRealm.FORAGE.reach;
             const tier = pmB && !inArm && !geraetPick ? this._kampfKegelZiel(R, klinge) : null;
             if (tier) {
                 verb = "hieb";
@@ -2337,6 +2345,7 @@ class AnazhRealm_kampf {
         // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
         if (verb === "abbau") return this._strikeArchitecture(pick.entry, pick.point);
         if (verb === "pfluecken") return flora.mahd ? this._maehen(flora.mahd) : this._harvestScatterPick(flora);
+        if (verb === "zuenden") return this._fackelZuenden(inArm ? ort : null);
         const target = boden || this._raycastWorldHit(30);
         if (!target.hit) {
             this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
@@ -2407,6 +2416,37 @@ class AnazhRealm_kampf {
             this.log(`Gegraben (${digMat}), aber das Inventar ist voll.`, "INFO");
         }
         return true;
+    }
+
+    // DIE GLUT IN DER HAND (same.physik.feuer S1): das gehaltene Gerät trägt Glut, wenn seine Teile eine Brenn-Fläche tragen —
+    // dasselbe Maß (`_glutFlaeche`), nach dem jeder Bau ins Verzeichnis „glut" tritt, knistert und leuchtet. Die Fackel ist so
+    // kein Name und keine Gattung: ein Stiel mit Glut am Kopf, in der Werkstatt gebaut; ein Bauwerk in der Hand ist ein Phantom.
+    _fackelGlut() {
+        const bp = this._heldImplementBlueprint();
+        return !!bp && !this._isPlaceableBlueprint(bp) && this._glutFlaeche({ type: bp.name }) > 0;
+    }
+
+    // DIE FACKEL AM BODEN (same.physik.feuer S1): die Glut berührt den Boden in Arm-Reichweite (`ort`, FORAGE.reach wie Pflücken
+    // und Streu-Pick; null jenseits) — derselbe Akt wie das Brennglas (`_brandEntfachen`, ein Akt der Seite, jeder Mitspieler
+    // sieht den Brand). Ob die Zelle fängt, urteilt allein das Gesetz des Brands: ihr Bett (`_brandStoff`: Stoff, Last, kein
+    // Wasser, keine Asche) und Rothermel mit der Erlöschungs-Feuchte (`_brandTempo`) — trockenes Gras fängt, nasses hält. Was
+    // nicht fängt, nennt sich dem Spieler; wo es schon brennt, schweigt die Fackel. Bis hier zündete der Spieler nur über das
+    // Brennglas in der Sonne (stamm: 0 Treffer „fackel").
+    _fackelZuenden(ort) {
+        const bp = this._heldImplementBlueprint();
+        if (this._geraetVerbraucht(bp, "Zünden")) return false;
+        if (!ort) {
+            this.log("Zünden: kein Boden in Arm-Reichweite.", "INFO");
+            return false;
+        }
+        const bf = this.state.brandFeld;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const n = bf && bf.get(Math.floor(ort.x / cs) + "," + Math.floor(ort.z / cs));
+        if (n && n.t0 !== null) return true; // die Zelle brennt schon
+        if (this._brandEntfachen(ort.x, ort.z)) return true;
+        const was = Array.isArray(bp.etikett) ? bp.etikett : AnazhRealm._namensKopf(bp.label || bp.name); // das Etikett wechselt mit
+        this._spielerSagt(["welt.fackel-faengt-nicht", { was }]);
+        return false;
     }
 
     // DAS TIER UNTER DEM FADENKREUZ (halten.K2): der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`, far 30 m) gegen die EINE
@@ -2537,7 +2577,10 @@ class AnazhRealm_kampf {
             if (!bauRes.ok)
                 this._spielerSagt([
                     "bauen.label-grund",
-                    { label: heldP.label || heldP.name, grund: this._machTorHint(bauRes) },
+                    {
+                        label: Array.isArray(heldP.etikett) ? heldP.etikett : heldP.label || heldP.name,
+                        grund: this._machTorZeile(bauRes),
+                    },
                 ]);
             return bauRes.ok;
         }

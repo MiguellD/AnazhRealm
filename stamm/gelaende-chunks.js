@@ -147,6 +147,13 @@ class AnazhRealm_gelaende_chunks {
                             });
                         pending.resolve(msg);
                     }
+                } else if (msg.type === "tuch-gitter-result" && msg.requestId) {
+                    // DAS GITTER DES TUCHS AUS DEM FADEN (`_tuchVorbau`, Schnitt 3)
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        pending.resolve(msg.gitter);
+                    }
                 } else if (msg.type === "genesis-plan-result" && msg.requestId) {
                     // DER GENESIS-ORT AUS DEM FADEN (Pflicht F): der Plan v2 und die Zeit seines Auftrags (`_genesisPlanBestellen`)
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
@@ -154,6 +161,9 @@ class AnazhRealm_gelaende_chunks {
                         this.state.voxelWorkerPending.delete(msg.requestId);
                         pending.resolve(msg);
                     }
+                } else if (msg.type === "stau-result") {
+                    // DER STAU AUS DEM FADEN (`_stauFelder`): die Felder gehen in den Zustand (`_stauAn`)
+                    this._stauAn(msg);
                 } else if (msg.type === "boden-morph") {
                     // DER GEOMORPH AUS DEM FADEN (w4-b-boden2): je gemorphtem Netz die fertigen Puffer — der Takt legt sie an
                     this._bodenAntwort(msg);
@@ -175,6 +185,7 @@ class AnazhRealm_gelaende_chunks {
                         }
                     }
                     this.log(`Voxel-Worker-Fehler (${msg.op}): ${msg.message}`, "ERROR");
+                    if (msg.op === "stau") this._stauAn(msg); // der Stau bricht laut (`_stauAn`: `_bruchMelden`)
                 }
             };
             worker.onerror = (err) => {
@@ -357,6 +368,8 @@ class AnazhRealm_gelaende_chunks {
             seed,
             baseHeight: this.state.terrainBaseHeight || 0,
             waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
+            // DER ORT AUF DEM PLANETEN (Reise): der Teil `ort` des Gesetzes (die Heimat: null) — der Faden baut dieselbe Tafel
+            ort: this._gelaende().ort.teil,
             voxelEdits: this._snapshotVoxelEdits(),
             stau: this.state.waterStau || null, // die Felder des Staus (`_stauFelder`), dieselben im Faden
 
@@ -515,9 +528,10 @@ class AnazhRealm_gelaende_chunks {
     // DAS SPIEGEL-FELD off-thread (D10): ein Rechteck der Welt-Zellen (`auftrag`: i0, j0, w, h, texel, bezug, wasserFarbe,
     // baeume, gestalten, block — `spiegelFeldBacken` im Worker) → { hoehen (RGBA-Halbfloat), stoff (RGBA8), hoechste je Block, wasser,
     // hMax } am
-    // synchronisierten Zustand.
+    // synchronisierten Zustand. EINE BESTELLUNG GEBIERT NIE (w28-strom-haengt): sie geht an den Faden, der den Stand trägt —
+    // `_getVoxelWorker` gebar hier bei ausgehängtem Faden (Test-Naht der Wasser-Linse) einen Zwilling, der den Boden übernahm.
     _voxelWorkerSpiegel(auftrag) {
-        const worker = this._getVoxelWorker();
+        const worker = this._voxelFadenTraegt() ? this.state.voxelWorker : null;
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
         return this._voxelFadenAuftrag(worker, Object.assign({ type: "spiegel-feld" }, auftrag));
     }
@@ -568,8 +582,10 @@ class AnazhRealm_gelaende_chunks {
         const alle = this._nebenFaeden || (this._nebenFaeden = new Map());
         let f = alle.get(name);
         if (f) return f;
-        // der Voxel-Faden zuerst (lazy wie jeder Chunk-Auftrag; er gibt die Regionen) — steht er noch nicht, wartet der Rufer
-        if (!this._getVoxelWorker()) return null;
+        // der Voxel-Faden zuerst (lazy wie jeder Chunk-Auftrag; er gibt die Regionen) — steht er noch nicht, wartet der Rufer;
+        // lebt er und ist nur ausgehängt (eine Test-Naht: `_bodenFaden` ohne `state.voxelWorker`), gibt DIESER die Regionen — kein Zwilling
+        const voxel = this.state.voxelWorker || this._bodenFaden || this._getVoxelWorker();
+        if (!voxel) return null;
         const worker = new Worker(this._quelleStand().url, { name });
         f = { worker, pending: new Map(), next: 1, geboren: performance.now(), quittiert: null };
         const NAME = name.toUpperCase();
@@ -601,7 +617,7 @@ class AnazhRealm_gelaende_chunks {
         // trägt, per Transfer — der Haupt-Faden klont nie eine); jede spätere Änderung bringt der Sender des Zustands
         // (`_voxelZustandPost`), auch jede Bestellung ab jetzt
         const port = new MessageChannel();
-        this.state.voxelWorker.postMessage({ type: "hydro-an", port: port.port1 }, [port.port1]);
+        voxel.postMessage({ type: "hydro-an", port: port.port1 }, [port.port1]);
         worker.postMessage(
             { type: "state-set", snapshot: this._voxelWorkerSnapshotState(), hydroVon: port.port2, requestId: geburt },
             [port.port2]
@@ -616,6 +632,62 @@ class AnazhRealm_gelaende_chunks {
         const promise = new Promise((resolve, reject) => f.pending.set(requestId, { resolve, reject }));
         f.worker.postMessage(Object.assign(msg, { requestId }), transfer || []);
         return promise;
+    }
+    // DER PLANET-FADEN (Reise, Gegner F2 und F8): ein schlanker Faden aus der EINEN Quelle (`_fadenQuelle`) — OHNE den Stand der
+    // Welt, ohne Regionen, ohne Zustands-Nachrichten: der Planet ist eine reine Funktion seines Samens und liest keinen Weltzustand
+    // (bis hier war er ein voller Neben-Faden, `_nebenFaden`, und rechnete jede Hydro-Kachel der Sitzung ein zweites Mal, 134–282
+    // ms je Kachel). Geboren mit dem ersten Satz, der ihn fragt (`reise`), nie mit der Welt: die Ankunft und jede Welt ohne Satz
+    // zahlen ihn nicht (bis hier bestellte jede Weltgeburt den Anker, 0,4–0,9 s im Faden). Er lebt über den Welt-Wechsel (er trägt
+    // keinen Stand; der Kern merkt Plan, Scheiben und Anker je Samen — die zweite Reise rechnet keinen Plan neu). → das Versprechen
+    // der Antwort; ein Wurf des Fadens bricht beim Namen.
+    _planetAuftrag(msg) {
+        let f = this._planetFadenStand;
+        if (!f) {
+            const worker = new Worker(this._quelleStand().url, { name: "planet" });
+            f = this._planetFadenStand = { worker, pending: new Map(), next: 1 };
+            worker.onmessage = (e) => {
+                const m = e.data;
+                const p = m && m.requestId ? f.pending.get(m.requestId) : null;
+                if (m && m.type === "error")
+                    this._bruchMelden(`PLANET: der Planet-Faden warf (${m.op}) — ${m.message}`);
+                if (!p) return;
+                f.pending.delete(m.requestId);
+                if (m.type === "error") p.reject(new Error(m.message));
+                else p.resolve(m);
+            };
+            worker.onerror = (err) => {
+                this._bruchMelden("PLANET: der Planet-Faden brach — " + (err && err.message));
+                for (const p of f.pending.values()) p.reject(new Error("der Planet-Faden brach"));
+                f.pending.clear();
+                this._planetFadenStand = null;
+            };
+        }
+        const requestId = f.next++;
+        const promise = new Promise((resolve, reject) => f.pending.set(requestId, { resolve, reject }));
+        f.worker.postMessage(Object.assign({ requestId }, msg));
+        return promise;
+    }
+    // DER SAMEN DES PLANETEN (Reise, Gegner F1): die Heimat trägt ihn als ihre Saat, eine Reise-Welt im Teil `ort` ihres Gesetzes
+    // (`ort.samen`) — nie die Ort-Saat der Reise-Welt (sie gäbe jedem Ziel einen eigenen Planeten).
+    _planetSamen() {
+        const L = this._gelaende();
+        return L.ort.teil ? L.ort.teil.samen : L.seed;
+    }
+    // DER ORT DER WELT AUF IHREM PLANETEN (Reise): der Anker — der Punkt des Planeten, an dem das Ort-Gesetz der Heimat wahr ist
+    // (planet-core `planetAnker` am Samen des Planeten `_planetSamen` und am Ort-Gesetz `ortGesetz()`), gerechnet im Planet-Faden
+    // (`_planetAuftrag`) → das Versprechen von { samen, version, breite, laenge (rad), kuesteKm }, EINES je Samen und Sitzung.
+    // Leser: der Satz „reise“ der Konsole (`chatSystemPatterns`).
+    _planetAnker() {
+        const samen = this._planetSamen();
+        const je = this._planetAnkerJe || (this._planetAnkerJe = new Map());
+        if (!je.has(samen))
+            je.set(
+                samen,
+                this._fadenQuelle().then(() => this._planetAuftrag({ type: "planet-anker", samen }))
+            );
+        const p = je.get(samen);
+        p.catch(() => je.get(samen) === p && je.delete(samen));
+        return p;
     }
     // DIE STUMMEN FÄDEN (w28-krone-vor-kachel): die Neben-Fäden, die ihre Geburt nie quittierten (`quittiert`: das `ack` ihres
     // Geburts-Stands, die EINE Wahrheit „der Faden lebt“, w28-faden-quelle), während Aufträge bei ihnen offen sind (ohne den
@@ -789,20 +861,28 @@ class AnazhRealm_gelaende_chunks {
             typeof indexedDB !== "undefined" &&
             hook !== false &&
             (hook === true || !(this.state.renderer && this.state.renderer._isHeadlessNull));
-        const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
-        const stempel =
-            AnazhRealm.VERSION + "|" + genV + "|landform|" + this._erbgut().hash + "|" + AnazhRealm.CHUNK_IDB_FORM;
-        return { an, stempel, max: AnazhRealm.CHUNK_IDB_MAX };
+        // DER STEMPEL TRÄGT NUR, WAS DER SEITE GEHÖRT (Reise, Gegner F3): Version und Form des Replys. Was der WELT gehört — Genese,
+        // Erbgut, Ort —, steht im Schlüssel (`_chunkIdbKey`): bis hier leerte jedes fremde Erbgut den GANZEN Speicher, eine
+        // Reise-Welt löschte die Platte der Heimat (Heimat → Ziel → Heimat: Treffer 0 von 4). DER DECKEL hält die Welt, in der der
+        // Spieler steht, und die Heimat ihres Planeten (`halte`: die Saaten vor dem ersten „|“ des Schlüssels); die Bytes der
+        // anderen Welten fallen zuerst.
+        const stempel = AnazhRealm.VERSION + "|" + AnazhRealm.CHUNK_IDB_FORM;
+        const L = this._gelaende();
+        const teil = L.ort.teil;
+        const halte = teil ? [L.seed, teil.samen] : [L.seed];
+        return { an, stempel, max: AnazhRealm.CHUNK_IDB_MAX, halte };
     }
-    // Der Warm-Start-Key: seed|cx,cz|lod — mehrere Welten teilen den Store
-    // (der Stempel bustet grob bei Erbgut-/Versions-Wechsel, s. _chunkPlatte).
+    // Der Warm-Start-Key: seed|genese|erbgut[ort]|cx,cz|lod — mehrere Welten teilen den Store; Genese, Erbgut und Ort der Welt
+    // stehen im Schlüssel (ein fremdes Erbgut liest nie alte Bytes, keine Welt leert die einer anderen).
     // Ein Versatz der Schneegrenze (stoffe.K3-2, `_schneeGilt`) färbt den Chunk: er trägt seinen Schlüssel (die Sommer-Mitte 0
     // den alten); ebenso der Pegel, der sein Wasser hebt (`_pegelMarke`, "" wo nichts steigt).
     _chunkIdbKey(cx, cz, lod) {
-        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const L = this._gelaende();
+        const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
+        const welt = `${L.seed}|${genV}|${this._erbgut().hash}${L.ort.marke}`;
         const schnee = this._schneeGilt();
         const pegel = this._pegelMarke(cx, cz);
-        return `${seed}|${cx},${cz}|${lod}` + (schnee ? `|s${schnee}` : "") + (pegel ? `|p${pegel}` : "");
+        return `${welt}|${cx},${cz}|${lod}` + (schnee ? `|s${schnee}` : "") + (pegel ? `|p${pegel}` : "");
     }
     // Warm-Start-Gate (Read UND Write): liegt irgendein Edit in der 3×3-Chunk-Box um (cx,cz)? Wie
     // `_chunkRegionHasCarve`, aber ohne mode-Filter (auch fill ändert die Density). r ≤ 12 < span 43.2
@@ -1210,10 +1290,6 @@ class AnazhRealm_gelaende_chunks {
 
     // ### Welten-Generierung ### V7.56
     generateTerrainWithParameters(steepness, baseHeight) {
-        // V18.272 — WIDTH/DEPTH/CHUNK_SIZE waren nur die Maße des toten
-        // Heightfield-Chunk-State (gekehrt); WORLD_SIZE lebt (Insel-Streuung).
-        const WORLD_SIZE = 300;
-
         this._worldgenCleanupOldObjects();
 
         // Spieler-Position: first-spawn setzt auf (0,50,0), spätere Regen
@@ -1237,8 +1313,6 @@ class AnazhRealm_gelaende_chunks {
             this.state.scaleFactor = 1.0;
             this.log("scaleFactor ungültig oder nicht gesetzt, Fallback auf 1.0", "WARNING");
         }
-
-        this._worldgenSpawnFloatingIslands(WORLD_SIZE);
 
         // V9.38/V9.43-c — `state.vegetation` bleibt als Sammler-Liste
         // (Worldgen-Vegetations-Pass + per-Chunk-Wasserfälle sind tot).
@@ -1270,7 +1344,7 @@ class AnazhRealm_gelaende_chunks {
         });
     }
 
-    // Alle alten Welt-Objekte abräumen: groundMesh, floatingIslands, ufos, creatures (+ creatureEmotions),
+    // Alle alten Welt-Objekte abräumen: groundMesh, creatures (+ creatureEmotions),
     // vegetation, Hydrosphären-Meshes (Fluss/See/Wasserfall).
     _worldgenCleanupOldObjects() {
         if (this.state.groundMesh) {
@@ -1282,18 +1356,6 @@ class AnazhRealm_gelaende_chunks {
             this.log("Alter Boden entfernt");
         }
         // Log nur bei count > 0 — `if (array)` ist auch für [] wahr (Phantom-Abriss im Boot-Log).
-        if (this.state.floatingIslands && this.state.floatingIslands.length) {
-            this.state.floatingIslands.forEach((island) => {
-                this.state.scene.remove(island);
-            });
-            this.log(`Alte fliegende Inseln entfernt (${this.state.floatingIslands.length})`);
-        }
-        this.state.floatingIslands = [];
-        if (this.state.ufos && this.state.ufos.length) {
-            this.state.ufos.forEach((ufo) => this.state.scene.remove(ufo));
-            this.log(`Alte UFOs entfernt (${this.state.ufos.length})`);
-        }
-        this.state.ufos = [];
         if (this.state.creatures && this.state.creatures.length) {
             this.state.creatures.forEach((creature) => {
                 this.state.scene.remove(creature);
@@ -1700,6 +1762,13 @@ class AnazhRealm_gelaende_chunks {
         if (msg.fehlt) {
             const e = this.state.voxelChunks && this.state.voxelChunks.get(msg.key);
             if (!e || !e.mesh || e.mesh.geometry.userData.bid !== msg.bid) return;
+            // DER ZWILLING BEIM NAMEN (w28-strom-haengt): trägt den Boden ein anderer Faden als der, der baut, hält er KEIN
+            // gebautes Netz — jeder Neubau fiele wieder (am Fluss-Ort der Strömungs-Probe 7 Neubauten je Sekunde und Chunk,
+            // die Welt stand nie). Das bricht laut und baut nicht neu.
+            if (this.state.voxelWorker && this._bodenFaden !== this.state.voxelWorker)
+                return void this._bruchMelden(
+                    `BODEN-NAHT: den Boden trägt ein Zwilling des Voxel-Fadens — er hält das Netz ${msg.key} (${msg.bid}) nicht, der Bau-Faden baute es`
+                );
             (this.state.dirtyVoxelChunks || (this.state.dirtyVoxelChunks = new Set())).add(msg.key);
             this.log(`BODEN-NAHT: der Faden hält das Netz ${msg.key} (${msg.bid}) nicht mehr — es baut neu`, "WARNING");
             return;
@@ -3319,7 +3388,7 @@ class AnazhRealm_gelaende_chunks {
         // Cool-Down verhindert Death-Spirals: ohne ihn rief die Selbstanalyse
         // generateNewWorld() im Sekundentakt, während der Spieler durch das
         // gerade gelöschte Terrain fiel.
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         if (!force && now - this.state.lastWorldgen < this.state.worldgenCooldown) {
             this.log(
                 `generateNewWorld unterdrückt (Cool-Down, noch ${(this.state.worldgenCooldown - (now - this.state.lastWorldgen)).toFixed(1)}s)`,
@@ -3378,7 +3447,7 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 AnazhRealm.FADEN_QUELLE = Object.freeze({
     faden: "voxel-worker.js",
     kerne: Object.freeze(["vendor/simplex-noise.js", "phyto-core.js", "gelaende-core.js"]),
-    spaet: Object.freeze({ fachwerk: "fachwerk-core.js" }),
+    spaet: Object.freeze({ fachwerk: "fachwerk-core.js", koerper: "koerper-core.js", planet: "planet-core.js" }),
 });
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.

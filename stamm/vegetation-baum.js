@@ -21,7 +21,7 @@ class AnazhRealm_vegetation_baum {
     }
 
     // Trägt die Wildnis den Ort? Das EINE Prädikat an den WÜRFEN des Feldes (Wald, Streu, Nah-Streu, Geburts-Ort, Dorf-
-    // Ort, Schwebe-Inseln und jeder Ort, den der Nexus wählt — `dslEvalPos`): wo der Wildnis-Term nicht wiegt, wirft das
+    // Ort und jeder Ort, den der Nexus wählt — `dslEvalPos`): wo der Wildnis-Term nicht wiegt, wirft das
     // Feld nichts — Akte (Mensch, KI, Saat, Linse) setzen überall. Liest das Gewicht des Erbguts (heute je Welt: 1 oder
     // 0, der Ort ist die Naht künftiger Masken).
     _wildnisTraegt(_x, _z) {
@@ -1350,7 +1350,8 @@ class AnazhRealm_vegetation_baum {
                     if (wurf >= glocke * 0.42 * (1 - trail * 0.92)) continue;
                     const slopeB = this._slopeAt(bxp, bzp);
                     const rk = Math.max(0, Math.min(1, (slopeB - GS.lo) / (GS.hi - GS.lo)));
-                    const pShrub = glocke * (1 - rk) * 0.42 * (1 - trail * 0.92);
+                    // × die Krautschicht des Orts (Reise: die Tafel `ortGesetz(teil).wuchs.decke`; die Heimat 1)
+                    const pShrub = glocke * (1 - rk) * 0.42 * (1 - trail * 0.92) * this._gelaende().ort.wuchs.decke;
                     if (wurf >= pShrub) continue;
                     if (!this._landAt(bxp, bzp, 0.1)) continue;
                     // Busch-Spawn-Name ist ein GEWACHSENER Bauplan: busch_hazel ist eine Grammatik-Spezies, kein Built-in
@@ -1530,10 +1531,11 @@ class AnazhRealm_vegetation_baum {
             }
         }
 
-        // Wurde diese Zelle schon promotet (ein REALER Baum lebt hier), wird sie übersprungen.
-        if (this._scatterIsCellPromoted && this._scatterIsCellPromoted(sampleX, sampleZ, "tree")) {
-            return 0;
-        }
+        // DIE SAAT LIEST KEINE MARKE (Gegner Bild F1, 15.11.): die Probe ist eine Funktion des Samens, nie des Wegs. Bis hier übersprang
+        // sie eine Zelle, deren Marke (`scatterPromoted`) ein gewachsener Bau gesetzt hatte — gesetzt beim Spawn aus der Schlange,
+        // also nach der Zeit des Takts, und vom ersten Besuch gehalten: die Wiederkehr der Wiese säte 6 von 46 Glutbrunnen nicht,
+        // und der Wald pflanzte an ihrem Ort (Bestand 150 m, gegner-speicher). Die Marke schützt die Deko-Streu vor dem Doppel
+        // (`_scatterCellTransform`-Leser in vegetation-streu); die Bäume pflanzt der Wald, nie diese Probe.
         // V18.220 — die CAP-Wand. Plan §13 (600k Tree / 700k Under / 1.5M Stone).
         // Bei einer CPU-First-Welt ist die echte Decke ~10k pro Layer — der Cap
         // schützt vor Memory-Explosion bei extremen Welten.
@@ -2025,7 +2027,8 @@ class AnazhRealm_vegetation_baum {
             )
                 continue;
             const je = new Map();
-            for (const f of b.formen) {
+            // nur die Formen, die den Kasten der Zellen erreichen können (`_wegeFormenIm`: das Raster der Siedlung)
+            for (const f of this._wegeFormenIm(b, gx0 * G, (gx1 + 1) * G, gz0 * G, (gz1 + 1) * G)) {
                 if (f.sperr === -Infinity) continue; // der Rasen eines Plans ist kein Weg (`_stlWegeBuild`)
                 const r = AnazhRealm._wegeFormRadius(f) + 1;
                 const [ax0, ax1] = [
@@ -2657,7 +2660,6 @@ class AnazhRealm_vegetation_baum {
     tickArchitectures(currentTime) {
         const list = this.state.architectures;
         if (!list || list.length === 0) return;
-        const tSec = currentTime / 1000;
         const mountedId = this.state.player && this.state.player.mountedArch;
         for (const entry of list) {
             if (!entry.mesh || !entry.mesh.userData) continue;
@@ -2683,8 +2685,10 @@ class AnazhRealm_vegetation_baum {
                     : null;
                 entry.mesh.userData._idleMotion = idle && idle.some(Boolean) ? idle : null;
             }
+            // die Leerlauf-Bewegung in Sekunden der Bild-Uhr (w28-welt-uhr): bis hier las sie den rAF-Stempel ÷ 1000 — Rad, Segel und
+            // Wirbel drehten sich tausendfach verlangsamt, sie standen
             if (entry.mesh.userData._idleMotion) {
-                this._animateCompoundMotion(entry.mesh, entry.mesh.userData._idleMotion, tSec, 0, false);
+                this._animateCompoundMotion(entry.mesh, entry.mesh.userData._idleMotion, currentTime, 0, false);
             }
         }
     }
@@ -2697,6 +2701,7 @@ class AnazhRealm_vegetation_baum {
         // billig → ungedeckelt.
         const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
         if (!playerPos) return;
+        this._stadtMasseStand();
         // DIE STAND-WACHE: ging der Gang über alle Einträge ohne Bau, Räumung und Wartende, und regt sich nichts (Ort,
         // Bau-Menge, Ankunft, Cull-Radius), träfe er dieselben Urteile — kein Gang (gemessen 07.10., Mess-Wiese, Stand:
         // 1540 Einträge je Takt, 0 Bauten, 0 Räumungen).
@@ -2877,10 +2882,21 @@ class AnazhRealm_vegetation_baum {
                 const vor = this._archVorbau(entry, radius, bahn); // die Stufe des Eintritts, binnen `vorbauS` bestellt
                 // NAH ZUERST: lebende Slots aktivieren sofort (billig); ungebackene ferne Bauten warten auf den Gang
                 // NACH der Liste, dort nach Distanz sortiert — sonst verhungert ein frisch gesetzter Bau hinter alten.
-                if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {
+                // DER SATZ HÄNGT AM SCHIRM (w28-march-schirm, das Gesetz in stamm/dienst.js): jenseits seines Pixel-Horizonts trägt der
+                // Bau keinen Satz und schläft bis dorthin (`_archSatzFern`); wer auf Platz im Welt-March wartet, schläft auf seiner
+                // Zusage, bis sie kommt oder die Mesh-Zone ihn braucht — er hält den Gang nicht wach
+                const d = Math.sqrt(distSq);
+                const hatte = !!entry._ziegelSlot;
+                const rest = ohneFeld ? 0 : this._archSatzFern(entry, d);
+                if (rest > 0) {
+                    if (hatte) regung++;
+                    schlaf(entry, rest);
+                } else if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {
                     if (this._archZiegelFern(entry)) regung++;
-                    else if (!this._archIsRendered(entry)) schlaf(entry, Math.sqrt(distSq) - radius - vor); // der Satz steht
-                } else {
+                    else if (!this._archIsRendered(entry))
+                        schlaf(entry, Math.min(d - radius - vor, this._archSatzRand(entry, d))); // der Satz steht
+                } else if (this._schlaeft(entry._ziegelSchlaf, wunsch)) schlaf(entry, d - radius - vor);
+                else {
                     entry._ziegelD2 = rang;
                     ziegelOffen.push(entry);
                 }
@@ -2998,6 +3014,7 @@ class AnazhRealm_vegetation_baum {
         // V18.297 — die Welt ATMET: autonome (Nexus-)Bauten sind gedeckelt; ist das
         // Limit erreicht, verblasst das FERNSTE (am Horizont, am wenigsten vermisst).
         this._capNexusStructures(playerPos);
+        this._stadtMasseStand();
         this._standMeldet("archCull", 1, regung > 0, offen + kalt > 0 && (kalt || !nurSatz || "felder"));
     }
 
@@ -3061,13 +3078,22 @@ class AnazhRealm_vegetation_baum {
         // sein Urteil liest Lage, Typ und Stufe: die gemerkte Bereitschaft (`_bereitStand`) und sein Schlaf (`_schlafen`) gelten
         // nicht mehr
         if (entry) entry._platzNein = entry._dockNein = entry._schlaf = entry._ziegelSchlaf = undefined;
+        this._stadtMasseRegt(entry, art); // das Haus einer Stadt: seine Masse steht, wo es kein eigenes Bild trägt
         this._stufeWecken(entry, art); // die Stufen-Wahl liest dasselbe (`_stufenWache`): EIN Weckruf für beide Bau-Takte
         const K = this._cullWacheStand;
         if (!K || K.liste !== this.state.architectures || !entry || (entry._cullEimer === -1 && art !== "ein")) return;
         entry._cullEimer = art === "weg" ? -1 : undefined;
         K.schlaefer.delete(entry);
         if (art === "weg") [K.wach.delete(entry), K.autos.delete(entry)];
-        else [K.wach.add(entry), entry.autonomous && K.autos.add(entry)];
+        else {
+            // DER WECKRUF WECKT DEN TAKT (b-ankunft, das Muster der Streu: `_standWecken("streuLod")`): tritt er in die Wache,
+            // geht der nächste Gang des Culls. Ein Schläfer auf seiner Zusage zählt in keinem Gang (`K.schlaefer`) — schliefen alle
+            // Offenen, ruhte der Takt (`_standRuht`), und kam die Zusage als letztes Ereignis, stand der Eintrag wach mit seinem
+            // gedockten Asset, bis ein fremdes Ereignis die Bau-Takte regte. GTX 1050 kalt, main 2b826a89: 10–28 Bäume der
+            // Mesh-Zone standen so 6–8 s vor dem ersten Weltbild („Bäume und Bauten wachsen“, der Haupt-Faden leer).
+            if (!K.wach.has(entry)) this._standWecken("archCull");
+            [K.wach.add(entry), entry.autonomous && K.autos.add(entry)];
+        }
     }
 
     // Autonome Bauten bounded: sie spawnen fern (far_player, jenseits des Cull-Radius), der Bestand ist

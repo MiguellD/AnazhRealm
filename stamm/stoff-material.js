@@ -46,19 +46,20 @@ class AnazhRealm_stoff_material {
     // Instanz über die Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das `_wieseAugeTakt` je Hauptbild legt), ihr
     // Fußabdruck-Abstand Q (`_wieseFuss`: der Fuß, die Ebene ihres Hangs aus den waagrechten Achsen der Instanz, die Höhe des
     // Auges über dem eigenen Boden), o ihre Ordnung (`_wieseOrdnung` über der Wort-Algebra des Stoffs: die Ziehung des Orts
-    // `_ortZiehung`, Zug 0, geschichtet über dem Gitter der Wiese — dieselbe Rechnung wie die CPU), Anteil a und Streckung s aus
-    // dem EINEN Gesetz `_wieseFern` über der TSL-Algebra (der Takt in Zahlen, die Wahl der GPU als WGSL
-    // rechnen es in Zahlen). Steht o unter a, steht das Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den
-    // Boden (das Büschel × v um seinen Fuß) statt zu
-    // springen — an der Übergabe (a = 1, s = 1) steht jedes, wie die Nähe es legt. DIE STRECKUNG: das Büschel spreizt seine
-    // Halme um s (ihre Füße, `aCenter`, um den Fuß des Büschels), jeder Halm hält quer mindestens einen Pixel (nie um s
-    // breiter), Neigung und Höhe bleiben;
-    // die Ähre wandert mit ihrem Stängel, ihre Ährchen bleiben in ihrer Größe (gestreckt lasen sie im Modell der Station als
-    // helle Striche am Horizont). Bis w4-gras-l2 rückten nur die Mitten (höchstens 2,5×) und die Füße um √f — die Halme
-    // blieben schmal, jenseits 30 m lag der Boden frei. Diesseits der Übergabe (d < radius) wählt die GPU dasselbe
-    // Büschel als Nah-Wiese — hier steht es nicht. EIN Knoten für jede Vorlage (EIN Programm); der Wind schwingt mit dem
-    // Büschel (× v). DIE GRENZE (w21-wiese-fern): die Streckung endet an der Grenze des Büschels (`_wieseFernGrenzen`, in der
-    // vierten Zeile seiner Instanz-Matrix) — es spreizt seine Halme nie über die Wiese der Nähe und seinen Boden hinaus.
+    // `_ortZiehung`, Zug 0, geschichtet über dem Gitter der Wiese — dieselbe Rechnung wie die CPU), der Anteil a aus dem EINEN
+    // Gesetz `_wieseFern` über der TSL-Algebra (der Takt in Zahlen, die Wahl der GPU als WGSL). Steht o unter a, steht das
+    // Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den Boden (das Büschel × v um seinen Fuß) statt zu
+    // springen — an der Übergabe (a = 1) steht jedes, wie die Nähe es legt. Diesseits der Übergabe (d < radius) wählt die GPU
+    // dasselbe Büschel als Nah-Wiese — hier steht es nicht. EIN Knoten für jede Vorlage (EIN Programm); der Wind schwingt mit
+    // dem Büschel (× v).
+    // DAS BÜSCHEL WIRD NIE VERFORMT (w28-wiese-schale): seine Halme stehen, wo das Studio sie setzt, in Neigung, Höhe und Breite —
+    // nur hält jeder Halm quer mindestens einen Pixel (Ghost of Tsushima: das Blatt hält mindestens EINEN Pixel der Szene): längs
+    // seiner Breiten-Richtung t = Y × n (u wächst längs t, wie im Halm-Stoff `_halmStoff`; uv.x zählt die Adern seiner halben
+    // Breite, u · aderM je Welt-Meter) rückt jede Ecke höchstens bis zum halben Pixel an ihrem Abstand (`_halmFernePixel`, aus dem
+    // EINEN Schirm `_schirm` × der Szenen-Skala), die Spitze (u = 0) und die Ähre bleiben. Bis w28-wiese-schale spreizte der Stoff
+    // die Füße der Halme um die Streckung des Gesetzes (bis 14-fach, begrenzt von `_wieseFernGrenzen` in der vierten Zeile der
+    // Instanz-Matrix), bis w22-strauch-karte wurde der Halm quer um sie breiter (Keile von 2,5 m Breite im mittleren Gras), bis
+    // w14-wiese-saum streckte er jede waagrechte Lage (der Halm lag 12° über dem Boden).
     _halmFerne(mat) {
         const da = this._halmFerneStoffe && this._halmFerneStoffe.get(mat);
         if (da) return da;
@@ -67,7 +68,7 @@ class AnazhRealm_stoff_material {
             const NW = AnazhRealm.NAH_WIESE;
             const F = NW.fern;
             // das Auge der Wiese (`_wieseAuge`): xyz die Lage, w die Höhe über dem eigenen Boden
-            this._halmFerneAuge = this._halmFerneAuge || T.uniform(new THREE.Vector4()); // die Schale der Ferne teilt es
+            this._halmFerneAuge = this._halmFerneAuge || T.uniform(new THREE.Vector4());
             const naht = this._weltNaht(T);
             const ank = naht.anker;
             const auge = this._halmFerneAuge;
@@ -77,34 +78,15 @@ class AnazhRealm_stoff_material {
             const v0 = ank.sub(auge.xyz);
             const o = AnazhRealm._wieseOrdnung(ank.x, ank.z, AnazhRealm._wortAlgebra(T));
             const A = AnazhRealm._windTsl(T);
-
-            // DIE GRENZE DES BÜSCHELS (w21-wiese-fern): das erste Feld der vierten Zeile seiner Instanz-Matrix
-            // (`_nahWieseFernBlock`) — so weit tragen es die Wiese der Nähe und sein Boden (`_wieseFernGrenzen`); die Spreizung
-            // seiner Füße endet an ihr (`spreiz`), wie in der Wahl der GPU
-            const grenze = this._instanzMatrixNode(T).element(0).w;
-            const G = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w), grenze); // prettier-ignore
-            const anteil = G.anteil;
+            const G = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w)); // prettier-ignore
+            const [anteil, s] = [G.anteil, G.skala];
             const v = anteil
                 .mul(1 + F.rand)
                 .sub(o)
                 .div(anteil.mul(F.rand).max(1e-6))
                 .clamp(0, 1)
                 .mul(T.step(NW.radius, d));
-            // DER FUSSABDRUCK SPREIZT, DER PIXEL BREITET: der Fuß jedes Halms (`aCenter`) rückt um die SPREIZUNG vom Fuß des
-            // Büschels fort (`G.spreiz` = min(s, Grenze), w21-wiese-fern: die Fläche je Pixel, nie über die Wiese der Nähe und
-            // ihren Boden hinaus, `_wieseFern`), Neigung und Höhe bleiben. Der Halm selbst ist nur so breit, wie der Pixel
-            // es verlangt (Ghost of Tsushima: das Blatt hält mindestens EINEN Pixel der Szene, sonst bleibt es, wie das Studio
-            // es baut) — längs seiner Breiten-Richtung t = Y × n (u wächst längs t, wie im Halm-Stoff `_halmStoff`; uv.x zählt
-            // die Adern seiner halben Breite, u · aderM je Welt-Meter) rückt jede Ecke höchstens bis zum halben Pixel an ihrem
-            // Abstand (`_halmFernePixel`, aus dem EINEN Schirm `_schirm` × der Szenen-Skala), die Spitze (u = 0) bleibt. Bis
-            // w22-strauch-karte wurde der Halm quer um s breiter: das L2-Blatt (halbe Breite 4–9 cm) lag bei s = 14 als Keil von
-            // 2,5 m Breite und 0,8 m Höhe in der Wiese — am See (Radeon, Mittag) große flache Pyramiden im mittleren Gras, mit
-            // s ≥ 9 schon diesseits 20 m am abgewandten Hang. Die Ähre (ihr Anker über dem Boden: der Fuß ihres Stängels in der
-            // Höhe seiner Spitze, geboren in emitGrass) wandert mit ihrem Stängel, in ihrer Größe. Bis w14-wiese-saum streckte der
-            // Stoff jede waagrechte Lage um s: die Neigung der Halme (p50 0,34 der Höhe) mit ihr — bei s = 14 lag der Halm 12°
-            // über dem Boden (der Saum der Mess-Wiese, swiftshader-Maske 06.11.)
             const c = T.attribute("aCenter", "vec3");
-            const sp1 = G.spreiz.sub(1);
             const sk = this._foundryWorldScaleMatrix("gras").elements[0];
             const nG = T.normalGeometry;
             const quer = T.vec3(nG.z, 0, nG.x.negate());
@@ -114,14 +96,15 @@ class AnazhRealm_stoff_material {
             this._halmFernePixel = T.uniform(0);
             const u = T.uv().x;
             const halb = u.abs().mul(globalThis.__phytoCore.HALM_GESETZ.aderM / sk);
-            const pixHalb = v0.length().mul(this._halmFernePixel).mul(0.5).div(naht.skala.max(1e-6));
+            const pixHalb = v0.length().mul(this._halmFernePixel).mul(0.5).div(naht.skala.mul(s).max(1e-6));
             const breit = T.sign(u).mul(pixHalb.sub(halb).max(0)).mul(T.step(c.y, 1e-4));
-            const lage = T.positionLocal.add(T.vec3(c.x, 0, c.z).mul(sp1)).add(t.mul(breit));
-            // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2, `_halmImJahr`): um seinen gespreizten Fuß
+            const lage = T.positionLocal.add(t.mul(breit));
+            // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2, `_halmImJahr`): um seinen Fuß
             const ha = this._ensureSeasonUniforms().uLaubPraesenz.z;
             const sway = this._windSwayOffset(T, { hoehe: T.positionGeometry.y.mul(sk).mul(ha) });
-            const jahr = this._halmImJahr(T, T.vec3(c.x, 0, c.z).mul(G.spreiz), lage);
-            this._halmFerneKnoten = jahr.mul(v).add(sway.mul(v));
+            const jahr = this._halmImJahr(T, T.vec3(c.x, 0, c.z), lage);
+            // die Deckung im Blick (`_wieseFern` skala): das Büschel wächst gleichförmig um seinen Fuß, sein Wiegen mit ihm
+            this._halmFerneKnoten = jahr.add(sway).mul(v.mul(s));
             this._halmFerneStoffe = new Map();
         }
         // der Klon trägt die Stoff-Werte des Halms (Zahlen; `userData` als Kopie, `_stoffWert` liest sie am Stoff)
@@ -134,7 +117,7 @@ class AnazhRealm_stoff_material {
     // DER HALM IM JAHR (w26-winter-fichte, vegetation.K5#2) — der EINE Leser der Gestalt des Halms im Stoff: phyto-core
     // `halmImJahr` über der TSL-Algebra, der Halm kürzt sich längs seiner Achse um seinen Fuß (Höhe und Neigung × `ha`,
     // `uLaubPraesenz.z`, `_saisonPraesenz`), die Breite bleibt — die Fläche fällt genau mit `ha`. `fuss` der Fuß am Boden (vec3,
-    // y 0: aCenter x/z der Vorlage, in der Ferne gespreizt), `lage` die Ecke in der Vorlage; die Ähre (aCenter y > 0) kürzt als
+    // y 0: aCenter x/z der Vorlage), `lage` die Ecke in der Vorlage; die Ähre (aCenter y > 0) kürzt als
     // Ganzes um den Fuß ihres Stängels (ihr Anker, geboren in emitGrass). Leser: der Gras-Stoff der Nah-Wiese (`_foundryTreeMaterial`)
     // und ihre Ferne (`_halmFerne`). Bis hierher staute jeder Leser nur y: Neigung und Fußabdruck blieben, die Wiese deckte im
     // Winter von oben wie im Sommer (Radeon 87537d3f: LAI 2–10 m Winter 0,567 × Sommer).
@@ -412,6 +395,20 @@ class AnazhRealm_stoff_material {
         return fn;
     }
 
+    // DIE KÜRZESTE ZAHL DESSELBEN f32: eine Konstante des Shaders trägt die wenigsten Stellen, die zum selben f32 runden — das
+    // Programm rechnet bitgleich, nur kürzer (r184 schreibt die volle Doppel-Genauigkeit, 0.8253356149096783 statt 0.8253356;
+    // jedes Zeichen übersetzt der GPU-Prozess vor dem ersten Bild, `S0_ZEICHEN`). Nur an Konstanten, die
+    // allein der Shader liest — nie im Rechenwerk des Fels-Gesetzes: das rechnet die Zahlen des Gesetzes (gate:hoehlen-sicht
+    // wertet `_felsRechenwerkTSL` in f64 gegen gelaende-core aus, Abstand ≤ 1e-6; gekürzt 6,2e-4 an 400 Punkten).
+    static _f32(v) {
+        const f = Math.fround(v);
+        for (let p = 1; p < 9; p++) {
+            const k = +v.toPrecision(p);
+            if (Math.fround(k) === f) return k;
+        }
+        return +f.toPrecision(9);
+    }
+
     // DAS RECHENWERK DES FELS-GESETZES IM SHADER (K17, Nachbesserung 2): gelaende-core rechnet seinen Fein-Term (`felsFein`,
     // `schuttKorn`) über ein Rechenwerk — hier dieselben Schritte als TSL-Knoten, die Ziehung `zufall` als dieselben 32-Bit-
     // Ganzzahl-Schritte (u32: Multiplikation modulo 2^32, Xor, logisches Schieben), `rausch` als EINE Probe im Rausch-Atlas
@@ -489,7 +486,7 @@ class AnazhRealm_stoff_material {
     }
 
     // V12.0-f — Toon-Material-Helper: alle Toon-Materials der Welt (Voxel-
-    // Chunks, Architektur-Parts, Inseln, Avatar-Torso) sind native
+    // Chunks, Architektur-Parts, Avatar-Torso) sind native
     // `THREE.MeshToonNodeMaterial` (r184, lights=true). Die EINE Wahrheits-
     // ═══ DIE UNIFORM-HEIMAT (18.07., sechster Schöpfer-Trace: 60M Klein-Uploads
     // ≤16K = 9.3 GB, ~9k writeBuffer je Frame bei 631 Draws — die per-Draw-
@@ -833,6 +830,8 @@ class AnazhRealm_stoff_material {
         let emissiveColor = null;
         let emissiveIntensity = 0;
         let _wieseGrund = null; // der Bestand der Wiese am Boden (`_terrainGeologyAlbedo` → `gruen`), sein Grund liest die Narbe
+        let _ascheDecke = null; // die Asche des Brands auf dem Boden (`aus.asche`): unter ihr ruht das Mikro-Relief
+        let _steinBelag = null; // der Belag aus Stein auf dem Boden (`_wegeBodenFarbe` → `aus.stein`): unter ihm gilt das Stein-Gesetz
         const params = {};
         if (opts.color !== undefined) params.color = opts.color;
         if (opts.side !== undefined) params.side = opts.side;
@@ -905,14 +904,34 @@ class AnazhRealm_stoff_material {
                         const _terrRough = {};
                         // DIE WEGE-KARTE (Chunk-Boden, V18.530): der Weg IST die Boden-Farbe des Fragments — die
                         // Vertex-Farbe mischt zur Pfad-Erde (`_wegeBodenFarbe`), und DIESE Farbe liest die Geologie.
-                        const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode) : null;
-                        const _geo = this._terrainGeologyAlbedo(
+                        const _weg = {};
+                        const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode, _weg) : null;
+                        // die Asche des Brands (w28-brand-bild): die Geologie hält auf ihr Rauheit und Farbe ihrer Zeile
+                        if (_weg.asche) {
+                            _terrRough.asche = _weg.asche;
+                            _ascheDecke = _weg.asche.deckung;
+                        }
+                        let _geo = this._terrainGeologyAlbedo(
                             _Ta,
                             _bodenVc || albedoNode,
                             _Ta.positionWorld,
                             _terrRough,
                             opts.felsImVertex === true
                         );
+                        // DER STEIN IST KEIN ERDREICH (w28-stein-kamm): die Geologie legt Korn, Ton-Flecken, Kavität und Schmutz des
+                        // Bodens über jede Farbe, die sie liest — auch über das Kopfstein, dessen Steine darunter als graues Rauschen
+                        // standen (die Ankunft, Radeon 7f778d44). Unter dem Belag aus Stein steht seine Albedo, wie der Kamm sie
+                        // rechnet, bis auf den Teil, den das Korn seiner Zeile dem Erdreich lässt (`korn` 0: keinen); ihre Treiber
+                        // (Grün, Feuchte, Rauheit) liest die Geologie weiter am Stein, darum mischt er davor UND danach.
+                        if (_weg.stein) {
+                            const S = _weg.stein;
+                            _steinBelag = {
+                                kipp: S.kipp,
+                                deckung: S.deckung,
+                                stein: S.korn > 0 ? S.deckung.mul(1 - S.korn) : S.deckung,
+                            };
+                            _geo = _Ta.mix(_geo, S.farbe, _steinBelag.stein);
+                        }
                         {
                             // DAS KRONENDACH (0910-8, K16 — EINE Quelle): wo kein echter Wald zeichnet, trägt der Boden mit Wege-Karte
                             // das Kronendach im Jahr nach der Deckung (`_fernKroneNahMisch`) — der Chunk-Boden UND der Fern-Ring,
@@ -938,6 +957,9 @@ class AnazhRealm_stoff_material {
                                 _alb = _alb.mul(_Ta.float(1.0).sub(_nass));
                                 mat.emissiveNode = this._fernWasserBlickNode(_Ta).mul(_nass);
                             }
+                            // DIE GLUT DER LAVA (stoffe.K3-2, `_lavaGlutNode`): wo ihre Decke liegt, leuchtet der Boden
+                            if (_weg.glut)
+                                mat.emissiveNode = mat.emissiveNode ? mat.emissiveNode.add(_weg.glut) : _weg.glut;
                             albedoNode = _alb;
                             mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
@@ -1786,7 +1808,7 @@ class AnazhRealm_stoff_material {
                     // DIE VERTEX-FARBE EINMAL (der EINE Ort der Klasse „Albedo = Farbe²"): r184 setupDiffuseColor
                     // multipliziert den colorNode mit der Vertex-Farbe, solange vertexColors an ist und die Geometrie ein
                     // color-Attribut trägt. Jeder colorNode dieses Zweigs TRÄGT sie schon — Fels (`vertexColorAlbedo`),
-                    // Boden (Chunk, Insel, Voxel-Test, Bauplan-Verschmelzung), Rinde, Laub, Klinge, Kronen-Kern; die
+                    // Boden (Chunk, Voxel-Test, Bauplan-Verschmelzung), Rinde, Laub, Klinge, Kronen-Kern; die
                     // Karte ersetzt sie durch den Atlas und hat kein color-Attribut. Bis 06.10. schaltete nur der Boden ab:
                     // Grammatik-Rinde/-Laub und der Fels zeichneten Farbe², die Werkstatt-Vorschau desselben Baums Farbe¹.
                     // `eckeImKnoten` sagt es jedem späteren Schreiber der Ecke (das Alter, `_werkAlterFaerbe`).
@@ -1831,7 +1853,7 @@ class AnazhRealm_stoff_material {
         // ob er zur Sonne stand oder nicht (Radeon 2674ff9a ferne.K4: Schatten-/Lichthang 0,7162, Soll ≤ 0,4; der Feld-Pass
         // jenseits 8 km rechnete schon die wahre Normale — zwei Lichtungen für EINEN Boden).
         // Vegetation (pflanzenStoff) und Fels (vertexColorAlbedo) tragen ihre eigene Normale (unten nicht berührt).
-        let _mikroH = null; // die Höhe des Mikro-Reliefs und ihre Blende (`_mikroStoff`: das Himmels-Bild auf der Himmels-Sicht, das Korn in der Albedo)
+        let _mikroH = null; // die Höhe des Mikro-Reliefs und ihre Blende (`_mikroStoff`: das Korn in der Albedo, jedes Licht liest es)
         if (opts.vertexColors && !opts.pflanzenStoff && !opts.vertexColorAlbedo) {
             try {
                 const _Tn = THREE.TSL;
@@ -1840,7 +1862,7 @@ class AnazhRealm_stoff_material {
                     // Variable je Programm, und las dieser normalNode (er baut in der NORMAL-Stufe) sie zuerst, übernahmen der
                     // Schatten-Lookup (normalBias), das Halbkugel- und das Umgebungslicht ihre NORMAL-Fassung — die
                     // Geometrie-Normale mit Flächen-Vorzeichen (gate:altlasten Normal-Wand). OHNE Flächen-Vorzeichen: jede
-                    // Boden-Normale zeigt in die Luft (der Chunk −∇d, der Ring die Kreuze seiner Maschen nach +Y, die Insel −∇d),
+                    // Boden-Normale zeigt in die Luft (der Chunk −∇d, der Ring die Kreuze seiner Maschen nach +Y),
                     // die Windung des Netzes kennt die Seite der Luft nicht — die Boden-Dreiecke zeigen oben ihre Rückseite
                     // (DoubleSide), × faceDirection zeigte die Normale dort nach unten.
                     // der Boden (K51-2): die Geometrie-Normale wandert im Übergangs-Band mit der Lage zur Normale der gröberen Stufe
@@ -1877,8 +1899,18 @@ class AnazhRealm_stoff_material {
                             .clamp(0.0, 1.0)
                             .mul(_flatGate);
                         const _mk = this._mikroRelief(_Tn, _wp);
-                        _baseN = _baseN.add(_mk.neigung.mul(_lod));
-                        _mikroH = [_mk.hoehe, _lod];
+                        // DER BELAG AUS STEIN (w28-stein-kamm, `_steinBelag`): unter ihm trägt der Boden vom Mikro-Relief nur, was das
+                        // Korn seiner Zeile lässt, und die Kante seiner Steine kippt die Normale (der EINE Kamm, `_steinStoff`)
+                        // DIE ASCHE IST PULVER (w28-brand-bild): sie füllt Klumpen und Kiesel, ihr Korn trägt die Albedo (`BRAND.ascheKorn`),
+                        // die Normale bleibt die des Bodens (bei 0,3 des Reliefs standen die Trapeze noch) — unter dem Licht ihres Feuers
+                        // (1 m über dem Boden, ab 4 m flacher als die 13° des Reliefs) stand der Boden sonst als helle und schwarze
+                        // Trapeze, ein Wellen-Muster wie Wasser (Dorf-Wiese, Nacht, 300 s)
+                        const _mkS = _steinBelag ? _lod.mul(_Tn.float(1.0).sub(_steinBelag.stein)) : _lod;
+                        const _mkK = _ascheDecke ? _mkS.mul(_Tn.float(1.0).sub(_ascheDecke)) : _mkS;
+                        _baseN = _baseN.add(_mk.neigung.mul(_mkK));
+                        if (_steinBelag && _steinBelag.kipp)
+                            _baseN = _baseN.add(_steinBelag.kipp.mul(_steinBelag.deckung));
+                        _mikroH = [_mk.hoehe, _mkK];
                     }
                     // DIE PFÜTZE (wetter.K2, `_pfuetzeKnoten`): ihr Spiegel steht waagrecht über der Mulde, im Regen kippen ihn die
                     // Ringe der Tropfen — die Normale des Bodens geht mit ihrer Deckung in die des Wassers über
@@ -1928,11 +1960,19 @@ class AnazhRealm_stoff_material {
                         _Tg.float(AnazhRealm.NAH_WIESE.fussNarbe),
                         _Tg.float(1.0)
                     ).himmel;
-                    _kontakt = _Tg.max(_kontakt, _narbe.mul(_wieseGrund));
+                    // JENSEITS DER ÜBERGABE (w28-wiese-schale) steht der Grund für die Krone des Bestands, nicht für den Fuß unter
+                    // gezeichneten Halmen: die Narbe weicht dort dem offenen Himmel (dasselbe Band wie das Relief, radius/2 … radius)
+                    const _nwR = AnazhRealm.NAH_WIESE.radius;
+                    const _ueber = _Tg.smoothstep(
+                        _Tg.float(_nwR * 0.5),
+                        _Tg.float(_nwR),
+                        _Tg.positionWorld.sub(_Tg.cameraPosition).length()
+                    );
+                    _kontakt = _Tg.max(_kontakt, _Tg.mix(_narbe, _Tg.float(1.0), _ueber).mul(_wieseGrund));
                 }
                 mat.aoNode = this._bodenStufenKnoten().himmel.mul(_kontakt);
             }
-            if (_mikroH) this._mikroStoff(THREE.TSL, mat, ..._mikroH);
+            if (_mikroH) this._mikroStoff(THREE.TSL, mat, ..._mikroH, "erde");
             // DAS LICHT DES AUGES (K02a, K15, K11 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`) ist ein Platz des Licht-Pools mit
             // Himmels-Ersatz: es trägt nur, wo der Himmel fehlt — der Boden reicht dem Pool seine Himmels-Sicht (`aHimmel`) unten
             // durch `_leuchtStoff`, ein Stoff ohne Himmels-Sicht gilt als offen (er trägt das Himmels-Licht ganz).
@@ -2206,175 +2246,6 @@ class AnazhRealm_stoff_material {
         return this._naesseHimmelK;
     }
 
-    // DIE HIMMELS-SICHT DES REGENS am Welt-Ort `p`: 1 unter offenem Himmel, 0 unter einer Decke des Dach-Pools — je Platz die
-    // Decke eines Baus (Mitte xz, Gier cos/sin; halbe Kanten, Oberkante y), ein Ort darunter und im Grundriss der Decke liegt
-    // unter ihr. Leser: die Nässe der Stoffe (`_naesseHimmel`, je Fragment) und die Schliere des Regens (`_ensureRainSystem`,
-    // je Schliere: unter der Decke fällt kein Regen — bis dahin fiel er durch jedes Dach, gate:naesse:echt sah ihn am Haus des
-    // Dorfs auf der Trasse: 27 Regen-Punkte innen).
-    // DIE PLÄTZE SIND EINE SCHLEIFE (w28-baum-programm, wie der Licht-Pool `_lichtPoolTerm`): die Decken laufen über `T.Loop` je
-    // Platz, ihre Werte wählt der Zähler (`_jePlatz`: dieselben Uniforms, EIN Schreiber `_dachTakt`) — dieselbe Rechnung in derselben
-    // Reihenfolge (das Maximum beginnt bei 0), nur nicht ausgeschrieben: acht Plätze standen in jedem beleuchteten Programm.
-    // Die Schleife steht im Zweig der Hülle (`If`), wie zuvor die Plätze: draußen zahlt kein Fragment sie.
-    _offenerHimmel(T, p) {
-        const U = this._ensureAtmoUniforms();
-        // DIE HÜLLE DES POOLS (naesse-kosten): die Plätze prüft nur ein Ort im Kasten um alle Decken und unter ihrer höchsten
-        // Oberkante (`dachHuelle`/`dachOben`, `_dachTakt`) — draußen steht er unter offenem Himmel, ohne Decke ist der Kasten leer.
-        // Gemessen GTX in EINER Welt (Wiese Ego, Regen 10 min, gpu-bank): der Pool kostete jedes nasse Fragment +0,54 ms je Bild,
-        // auch ohne ein Dach im Umkreis; das Gesetz selbst +0,05
-        const H = U.dachHuelle;
-        const drin = p.x
-            .greaterThanEqual(H.x)
-            .and(p.x.lessThanEqual(H.z))
-            .and(p.z.greaterThanEqual(H.y))
-            .and(p.z.lessThanEqual(H.w))
-            .and(p.y.lessThanEqual(U.dachOben));
-        return T.Fn(() => {
-            const offen = T.float(1).toVar();
-            T.If(drin, () => {
-                const unter = T.float(0).toVar();
-                T.Loop(U.dachLage.length, ({ i: k }) => {
-                    const L = AnazhRealm._jePlatz(T, U.dachLage, k);
-                    const M = AnazhRealm._jePlatz(T, U.dachMass, k);
-                    const d = p.xz.sub(L.xy);
-                    const lx = d.x.mul(L.z).sub(d.y.mul(L.w)).abs();
-                    const lz = d.x.mul(L.w).add(d.y.mul(L.z)).abs();
-                    unter.assign(unter.max(T.step(lx, M.x).mul(T.step(lz, M.y)).mul(T.step(p.y, M.z))));
-                });
-                offen.assign(T.float(1).sub(unter));
-            });
-            return offen;
-        })();
-    }
-
-    // DIE DECKE ÜBER DEM AUGE (je Takt, einmal auf der CPU — Lehre 14): dieselbe Regel wie `_offenerHimmel`, am Ort des Auges aus
-    // den Werten des Dach-Pools (EIN Schreiber `_dachTakt`). Leser: der Rückstrahl (`_rueckstrahlZeichne`) — steht das Auge
-    // unter einer Decke, trägt keine Umgebung den Boden des offenen Himmels. Bis dahin fragte jedes Fragment des Boden-Stoffs
-    // den Pool ein zweites Mal (8 Plätze ausgeschrieben): die Prüfbühne S0 zählte 101 063 Zeichen WGSL > 100 000.
-    _augeUnterDach() {
-        const st = this.state;
-        const U = st.atmoUniforms;
-        const e = st.camera && st.camera.matrixWorld.elements;
-        if (!e || !U || !U.dachLage) return false;
-        const [x, y, z] = [e[12], e[13], e[14]];
-        const H = U.dachHuelle.value;
-        if (x < H.x || x > H.z || z < H.y || z > H.w || y > U.dachOben.value) return false;
-        return U.dachLage.some((L, i) => {
-            const [l, m] = [L.value, U.dachMass[i].value];
-            const [dx, dz] = [x - l.x, z - l.y];
-            return Math.abs(dx * l.z - dz * l.w) <= m.x && Math.abs(dx * l.w + dz * l.z) <= m.y && y <= m.z;
-        });
-    }
-
-    // DER DACH-POOL (EIN Schreiber, aus `_naesseTakt`): die Decken der Bauten, die dem Auge am nächsten stehen (im
-    // `dachUmkreisM`, die nächsten `NAESSE.dachPlaetze`), neu gewählt nach `dachSchrittM` Weg des Auges, einem neuen Stand der
-    // Grundrisse oder einer neuen Decke (`_dachKastenSetzen`). Die Decken eines Hauses trägt seine Hülle (`__huelle.decken`,
-    // fachwerk `deckenZeile`: je Körper mit Raum sein Grundriss bis zur Traufe, haus-lokal über `position.y − 0,5` wie die
-    // Kollision) — jede ein Platz; die eines Baus ohne Haus-Hülle sein Kasten (`_dachKasten`). Ein leerer Platz hat die Kanten 0.
-    // DAS GESETZBUCH NENNT SEINE DECKEN (w18-innen-licht, siedlung.K1#2): bis hier riet der Pool sie aus den Solids (die höchste
-    // Box mit der halben Fläche der größten, 0,5 m über der Hülle) — das Gesetzbuch teilt jedes Obergeschoss am Treppenloch, und
-    // der Anbau trägt keine Solid-Box: 11 der 18 Häuser des Start-Dorfs hatten die Diele des Erdgeschosses als Decke, jeder
-    // Anbau keine; ihr Inneres stand unter offenem Himmel, der Regen fiel hinein, und der Rückstrahl (schatten.K4) legte den
-    // gemessenen Dielenboden unter jede Fläche des Raums (haus_schwarzwald 16036, swiftshader, Innen-Blick 0,0062 → 0,0137).
-    _dachTakt() {
-        const st = this.state;
-        const N = AnazhRealm.NAESSE;
-        const auge = st.camera && st.camera.position;
-        const stand = this._grundrissStand();
-        const w = this._dachWahl;
-        if (!auge || (w && w.stand === stand && Math.hypot(auge.x - w.x, auge.z - w.z) < N.dachSchrittM)) return;
-        this._dachWahl = { stand, x: auge.x, z: auge.z };
-        const decken = [];
-        for (const e of st.architectures || []) {
-            const hu = e._hausHuelle;
-            if (!(hu || e._dachKasten) || !e.position) continue;
-            if (Math.hypot(e.position.x - auge.x, e.position.z - auge.z) > N.dachUmkreisM) continue;
-            const k = hu ? (Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1) : e._dachKasten.k;
-            const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
-            const [co, si] = [Math.cos(ry), Math.sin(ry)];
-            // je Decke [x0, x1, z0, z1, y] haus-lokal; der Kasten als dieselbe Zeile (seine Mitte, halbe Kanten, Oberkante)
-            const kasten = !hu && e._dachKasten;
-            const zeilen = hu
-                ? hu.decken || []
-                : [
-                      [
-                          kasten.c[0] - kasten.h[0],
-                          kasten.c[0] + kasten.h[0],
-                          kasten.c[2] - kasten.h[2],
-                          kasten.c[2] + kasten.h[2],
-                          kasten.c[1] + kasten.h[1],
-                      ],
-                  ];
-            const fuss = e.position.y + (hu ? -0.5 : kasten.dy);
-            for (const [x0, x1, z0, z1, y] of zeilen) {
-                const [cx, cz] = [(x0 + x1) / 2, (z0 + z1) / 2];
-                const x = e.position.x + (cx * co + cz * si) * k;
-                const z = e.position.z + (cz * co - cx * si) * k;
-                decken.push({
-                    d: Math.hypot(x - auge.x, z - auge.z),
-                    x,
-                    z,
-                    co,
-                    si,
-                    ex: ((x1 - x0) / 2) * k,
-                    ez: ((z1 - z0) / 2) * k,
-                    y: fuss + y * k,
-                });
-            }
-        }
-        decken.sort((a, b) => a.d - b.d);
-        const U = this._ensureAtmoUniforms();
-        // die Hülle des Pools: der achsparallele Kasten um alle gewählten Decken (je Decke ihr gedrehter Grundriss) und die höchste
-        // Oberkante — leer (min > max) ohne Decke; `_naesseHimmel` prüft die Plätze nur darin
-        const h = [Infinity, Infinity, -Infinity, -Infinity, -1e6];
-        for (let i = 0; i < U.dachLage.length; i++) {
-            const d = decken[i];
-            U.dachLage[i].value.set(d ? d.x : 0, d ? d.z : 0, d ? d.co : 1, d ? d.si : 0);
-            U.dachMass[i].value.set(d ? d.ex : 0, d ? d.ez : 0, d ? d.y : -1e6, 0);
-            if (!d) continue;
-            const hx = Math.abs(d.co) * d.ex + Math.abs(d.si) * d.ez;
-            const hz = Math.abs(d.si) * d.ex + Math.abs(d.co) * d.ez;
-            h[0] = Math.min(h[0], d.x - hx);
-            h[1] = Math.min(h[1], d.z - hz);
-            h[2] = Math.max(h[2], d.x + hx);
-            h[3] = Math.max(h[3], d.z + hz);
-            h[4] = Math.max(h[4], d.y);
-        }
-        if (h[0] > h[2]) h.splice(0, 4, 1, 1, -1, -1);
-        U.dachHuelle.value.set(h[0], h[1], h[2], h[3]);
-        U.dachOben.value = h[4];
-    }
-
-    // DIE DECKE OHNE HAUS-HÜLLE (wetter.K2, beim Platz der Studio-Gestalt `_archInstanceAdd`): ein Bau der `NAESSE.dachArten`
-    // (Marktstand · Brunnen · Tor) trägt keine Hülle mit Decke, seine Form schließt oben über ihrem Grundriss (die Plane, das
-    // Schindeldach, das Gewölbe) — seine Decke ist der Kasten der gezeichneten Teile im Raum des Eintrags (`leaf.localMatrix` ×
-    // Geometrie-Kasten, die Welt-Matrix `_archEntryWorldMatrix`: Skala und 0,5 m unter der Lage), einmal je Eintrag (null: ohne Dach).
-    _dachKastenSetzen(entry, leaves) {
-        const preset = this._foundryPresetForEntry(entry);
-        const rec = preset && this._foundry && this._foundry.recipes ? this._foundry.recipes[preset] : null;
-        const arten = AnazhRealm.NAESSE.dachArten;
-        if (!rec) return; // das Buch ist kalt: der nächste Platz fragt wieder
-        if (!(arten.includes(preset) || arten.includes(rec.kind))) {
-            entry._dachKasten = null; // kein Dach: nie wieder gefragt
-            return;
-        }
-        const b = new THREE.Box3();
-        const t = new THREE.Box3();
-        for (const lf of leaves || []) {
-            const g = lf && lf.geom;
-            if (!g || !g.attributes || !g.attributes.position) continue;
-            if (!g.boundingBox) g.computeBoundingBox();
-            t.copy(g.boundingBox);
-            if (lf.localMatrix) t.applyMatrix4(lf.localMatrix);
-            b.union(t);
-        }
-        if (b.isEmpty()) return;
-        const k = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
-        const c = b.getCenter(new THREE.Vector3());
-        const h = b.getSize(new THREE.Vector3()).multiplyScalar(0.5);
-        entry._dachKasten = { c: c.toArray(), h: h.toArray(), k, dy: -0.5 };
-        this._dachWahl = null;
-    }
-
     // DER LICHT-POOL ALS TERM (K11) — DAS EINE PUNKTLICHT-GESETZ des Stamms (jede Leuchtquelle und das Licht des Auges): je
     // Platz ein Zweig mit dem Abfall des Gesetzes (fachwerk `lichtAbfall`, K11b: (1 − (d/R)⁴)² · (d² + k²)^(−abfall/2); den
     // Bezug in 1 m, (1 + k²)^(abfall/2), trägt die Stärke des Platzes, `_leuchtTakt`), die Stärke schon durch LEGACY_LICHT
@@ -2405,7 +2276,7 @@ class AnazhRealm_stoff_material {
     // Standard-Programme Σ 9,49 → 8,97 s, die GPU-Zeit je Bild gleich (gpu-bank an der Wiese 12,05–12,48 ↔ 12,22–12,35 ms). VOR der
     // Schleife steht, was jeder Platz liest und nur EINMAL entsteht (in der Fn auf dem Stapel, `toVar`): die Lage und die Normale des
     // Blicks (r184 baut eine Variable dort, wo sie zuerst gebaut wird — in der Schleife liefe die Normale des Stoffs je Platz neu)
-    // und der Faktor des Wurfs. Die Werte des Platzes wählt der Zähler über eine Kette von `select` (`_jePlatz`, dieselben Uniforms,
+    // und der Faktor des Wurfs. Die Werte des Platzes wählt der Zähler über EINE Kette von Zweigen (`_jePlatz`, dieselben Uniforms,
     // EIN Schreiber `_leuchtTakt`) — als Reihe im Speicher des Fragments (`array(...).toVar()`, der Zähler als Index) verdoppelte die
     // Schleife die GPU-Zeit je Bild (12,3 → 23,9 ms), als Uniform-Reihe (`uniformArray`) kostete sie +0,7–1,0 ms GPU und +0,45 ms
     // CPU. NICHT als Schleife: die fünf Punkte des Kaskaden-Filters (`_schattenFilter`) — eine Schleife mit Abtastung kostete
@@ -2419,12 +2290,12 @@ class AnazhRealm_stoff_material {
             const wurf = W.faktor.toVar();
             const summe = Te.vec3(0).toVar();
             Te.Loop(atmo.lichtLage.length, ({ i: k }) => {
-                const platz = {
-                    lage: AnazhRealm._jePlatz(Te, atmo.lichtLage, k),
-                    farbe: AnazhRealm._jePlatz(Te, atmo.lichtFarbe, k),
-                    ersatz: AnazhRealm._jePlatz(Te, atmo.lichtErsatz, k),
-                    kern: AnazhRealm._jePlatz(Te, atmo.lichtKern, k),
-                };
+                const [lage, farbe, ersatz, kern] = AnazhRealm._jePlatz(
+                    Te,
+                    [atmo.lichtLage, atmo.lichtFarbe, atmo.lichtErsatz, atmo.lichtKern],
+                    k
+                );
+                const platz = { lage, farbe, ersatz, kern };
                 summe.addAssign(
                     this._lichtPlatz(Te, platz, himmel).mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
                 );
@@ -2433,13 +2304,21 @@ class AnazhRealm_stoff_material {
         })();
     }
 
-    // DIE WAHL DES PLATZES (die Schleifen der Pools): das Glied `k` (der Zähler der Schleife) einer Reihe von Uniforms als Kette
-    // von `select` — der Zähler ist in jedem Fragment derselbe, die Zweige laufen gleich; KEINE Reihe im Speicher des Fragments
-    // (`array(...).toVar()` mit dem Zähler als Index: gpu-bank GTX 1050 an der Wiese 12,28 → 23,87 ms je Bild).
-    static _jePlatz(T, reihe, k) {
-        let w = reihe[reihe.length - 1];
-        for (let j = reihe.length - 2; j >= 0; j--) w = T.select(k.equal(j), reihe[j], w);
-        return w;
+    // DIE WAHL DES PLATZES (die Schleifen der Pools): die Glieder `k` (der Zähler der Schleife) ALLER Reihen eines Platzes in
+    // EINER Kette von Zweigen — der Zähler ist in jedem Fragment derselbe, die Zweige laufen gleich; KEINE Reihe im Speicher des
+    // Fragments (`array(...).toVar()` mit dem Zähler als Index: gpu-bank GTX 1050 an der Wiese 12,28 → 23,87 ms je Bild). Bis
+    // w28-innenlicht trug jede Reihe ihre eigene Kette von `select` (r184 schreibt je `select` eine Variable und ein if/else):
+    // der Dach-Pool des Raum-Lichts stand mit 2 × 7 Zweigen und 16 Variablen je Seite im Boden-Programm (S0: 97 524 → 104 680
+    // Zeichen, die Ratsche riss). → je Reihe EINE Variable, in der Reihe von `reihen`.
+    static _jePlatz(T, reihen, k) {
+        const n = reihen[0].length;
+        const v = reihen.map((r) => r[n - 1].toVar());
+        let kette = null;
+        for (let j = 0; j < n - 1; j++) {
+            const nimm = () => reihen.forEach((r, a) => v[a].assign(r[j]));
+            kette = kette ? kette.ElseIf(k.equal(j), nimm) : T.If(k.equal(j), nimm);
+        }
+        return v;
     }
 
     // DAS GESETZ EINES PLATZES (K11, der Rumpf der Schleife des Pools): `platz` = { lage, farbe, ersatz, kern } — Knoten des Platzes
@@ -2532,9 +2411,16 @@ class AnazhRealm_stoff_material {
         // die Komponente c der vier Ecken der Zelle (i, j): EIN Texel, roh geladen — die Ladung steht im Programm, das die
         // Probe ruft (eine Bindung lebt nie in einer Layout-Funktion: r184 baut sie EINMAL je Builder-Klasse, jedes weitere
         // Programm erbte den Namen der Textur aus dem ersten)
-        const ecken = (i, j, c) => T.textureLoad(tex, T.ivec2(i.mul(3).add(c), j));
-        // 0 · 127 · 254 → −1 · 0 · +1
-        const dekod = (e) => e.mul(255 / 127).sub(1.0);
+        // Die Zelle (i, j) ist EIN ivec2 `ij` (die Lage im Atlas als Vektor, ein Wert je Probe statt zwei: jedes Zeichen des
+        // Boden-Programms zählt, `S0_ZEICHEN`), c = 0 ohne „+ 0“.
+        const AB = T.ivec2(A, B);
+        const ecken = (ij, c) => T.textureLoad(tex, T.ivec2(c ? ij.x.mul(3).add(c) : ij.x.mul(3), ij.y));
+        // 0 · 127 · 254 → −1 · 0 · +1, als EINE reine Funktion (die Mischungen rufen sie zehnmal)
+        const dekod = T.Fn(([e]) => e.mul(AnazhRealm._f32(255 / 127)).sub(1.0)).setLayout({
+            name: "rauschDekod",
+            type: "vec4",
+            inputs: [{ name: "e", type: "vec4" }],
+        });
         const blende = (t) =>
             t
                 .mul(t)
@@ -2608,27 +2494,24 @@ class AnazhRealm_stoff_material {
         const ebeneProbe = (misch) => (p, k, achse) => {
             const c = T.floor(p);
             const ci = T.ivec2(c);
-            const i0 = ci.x.add(A * k).bitAnd(m);
-            const j0 = ci.y.add(B * k).bitAnd(m);
-            return misch(p.sub(c), ecken(i0, j0, 0), ecken(i0, j0, achse === "z" ? 2 : 1));
+            const ij = (k ? ci.add(T.ivec2(A * k, B * k)) : ci).bitAnd(m);
+            return misch(p.sub(c), ecken(ij, 0), ecken(ij, achse === "z" ? 2 : 1));
         };
         const ebene = ebeneProbe(ebeneMisch);
         const ebeneNeigung = ebeneProbe(ebeneNeigungMisch);
         const raum = (p) => {
             const c = T.floor(p);
             const ci = T.ivec3(c);
-            const i0 = ci.x.add(ci.z.mul(A)).bitAnd(m);
-            const j0 = ci.y.add(ci.z.mul(B)).bitAnd(m);
-            const i1 = i0.add(A).bitAnd(m);
-            const j1 = j0.add(B).bitAnd(m);
+            const ij0 = ci.xy.add(AB.mul(ci.z)).bitAnd(m);
+            const ij1 = ij0.add(AB).bitAnd(m);
             return raumMisch(
                 p.sub(c),
-                ecken(i0, j0, 0),
-                ecken(i0, j0, 1),
-                ecken(i0, j0, 2),
-                ecken(i1, j1, 0),
-                ecken(i1, j1, 1),
-                ecken(i1, j1, 2)
+                ecken(ij0, 0),
+                ecken(ij0, 1),
+                ecken(ij0, 2),
+                ecken(ij1, 0),
+                ecken(ij1, 1),
+                ecken(ij1, 2)
             );
         };
         // DIE STREUUNG EINER EBENE (`streu`, σ 0,237) aus dem Gitter des Kerns, nie getippt: der Wert der Ebene (x | z) ist die
@@ -2659,8 +2542,8 @@ class AnazhRealm_stoff_material {
     // Ebene (x, z) des Bodens mit seinen festen Oktaven (Klumpen `freq`, Kiesel `freq2`), mit ihr die Fläche in jeder Lage
     // (dreiplanar nach |n|⁴, in ihre Tangential-Ebene gelegt). Rückgabe { neigung (Welt, kippt die Normale gegen den Gradienten),
     // hoehe (die Höhe der Oktaven am Schirm, mittelfrei in −1 … 1, ihre Streuung `TERRAIN_BUMP.streu` in jeder Lage) } — die Höhe
-    // trägt KORN und HIMMELS-BILD (`_mikroStoff`): unter der Mittags-Sonne kippt die Normale das Licht nur zweiter Ordnung (cos),
-    // im Schatten sieht das Auge nur das Himmels-Licht.
+    // trägt das KORN (`_mikroStoff`, die Albedo): unter der Mittags-Sonne kippt die Normale das Licht nur zweiter Ordnung (cos),
+    // im Schatten sieht das Auge nur das Himmels-Licht — beide lesen dasselbe Korn.
     _mikroRelief(T, wp, n) {
         const B = AnazhRealm.TERRAIN_BUMP;
         const ra = this._rauschAtlas();
@@ -2690,18 +2573,19 @@ class AnazhRealm_stoff_material {
             [T.exp2(L0.sub(2.0)), aus, T.sqrt(aus).mul(mH * mH)],
         ].map(([f, w, h]) => [f, w.mul(-B.mikro), h]);
         const stufe = T.pow(T.float(mH), fr).mul(B.streu / (ra.streu * Math.sqrt(mH * mH + mH ** 4)));
-        if (!n)
-            oktaven.push(
-                [T.float(B.freq), T.float(-B.strength), T.float(0.0)],
-                [T.float(B.freq2), T.float(-B.strength2), T.float(0.0)]
-            );
-        // je Ebene (a, b) die Neigung (x, y) und die Höhe (z)
+        // die festen Oktaven des Bodens (Klumpen, Kiesel) sind EINE Probe je Welt-Lage (`_mikroFestProbe`): ihre Leser teilen sie
+        if (!n) oktaven.push([B.freq, T.float(-B.strength), 0], [B.freq2, T.float(-B.strength2), 0]);
+        // je Ebene (a, b) die Neigung (x, y) und die Höhe (z) — die festen Oktaven tragen keine Höhe (0, kein Glied im Programm),
+        // die Summe beginnt bei der ersten Oktave (kein „vec3(0) +“: jedes Zeichen des Boden-Programms zählt, `S0_ZEICHEN`)
         const ebene = (a, b) => {
-            let g = T.vec3(0.0, 0.0, 0.0);
+            let g = null;
             for (const [f, w, h] of oktaven) {
-                const q = T.vec2(a, b).mod(T.float(P).div(f)).mul(f).add(T.vec2(0.37, 0.71));
-                const e = ra.ebeneNeigung(q, 0, "z");
-                g = g.add(T.vec3(e.y.mul(w), e.z.mul(w), e.x.mul(h)));
+                const e =
+                    typeof f === "number"
+                        ? this._mikroFestProbe(T, wp, f)
+                        : ra.ebeneNeigung(T.vec2(a, b).mod(T.float(P).div(f)).mul(f).add(T.vec2(0.37, 0.71)), 0, "z");
+                const o = T.vec3(e.y.mul(w), e.z.mul(w), h === 0 ? 0 : e.x.mul(h));
+                g = g ? g.add(o) : o;
             }
             return g;
         };
@@ -2724,26 +2608,46 @@ class AnazhRealm_stoff_material {
         return { neigung: g.sub(n.mul(n.dot(g))), hoehe: hoehe.mul(stufe).mul(T.inverseSqrt(w.dot(w))) };
     }
 
-    // DER STOFF des Mikro-Reliefs — ZWEI BILDER EINER HÖHE (`hoehe`, ausgeblendet mit `k`): die SONNE liest das KORN (colorNode:
-    // die Albedo der Mulde dunkler, der Erhebung heller, 1 + korn · h, mittelfrei — K53: was der Pixel nicht trägt, ist kein
-    // Mittel-Versatz), der HIMMEL liest DAS HIMMELS-BILD (aoNode: r184 multipliziert ihn in das indirekte Licht, diffus und
-    // Glanz). Der aoNode ist Himmels-Bild / Korn — im Himmels-Licht steht das Bild allein, die Mulde wird EINMAL dunkel.
-    // DAS HIMMELS-BILD ist im Logarithmus beschränkt (`TERRAIN_BUMP.mulde · kavitaet · krume`, dort die Zahlen und die
-    // Messung): exp(−ln(mulde) · s(kavitaet · (h − krume))) mit s(x) = x / √(1 + x²) — die tiefste Mulde hält `mulde` des
-    // Lichts, die höchste Krume 1/mulde. Beim Ausblenden geht die Höhe mit k, die Schwelle mit k² (zweite Ordnung wie die
-    // Streuung: das Mittel wandert stetig von 1,13 auf 1). Bis w27-boden-nah-2 las das Himmels-Licht Korn × Kavität derselben
-    // Höhe, beide linear bis 0 — die Mulde verlor Albedo UND Himmel, 4–10 % des offenen Bodens standen in der Nacht schwarz
-    // (gate:pruefbuehne-licht S0 Nacht nennt den Stoff). Das Korn hält 0,1 der Albedo (h < −0,45, 3σ: der Teiler). Die Alpha des
-    // Stoffs bleibt (Lehre 26: der Schattenpass liest colorNode.a); ohne colorNode trägt die Stoff-Farbe (r184 multipliziert
-    // die Vertex-Farbe danach).
-    _mikroStoff(T, mat, hoehe, k) {
-        const B = AnazhRealm.TERRAIN_BUMP;
-        const h = hoehe.mul(k);
-        const korn = T.float(1.0).add(h.mul(B.korn)).max(0.1);
-        const x = h.sub(k.mul(k).mul(B.krume)).mul(B.kavitaet);
-        const himmel = T.exp(x.mul(T.inverseSqrt(x.mul(x).add(1.0))).mul(-Math.log(B.mulde)));
-        const ao = himmel.div(korn);
-        mat.aoNode = mat.aoNode ? mat.aoNode.mul(ao) : ao;
+    // DIE FESTE OKTAVE DES BODENS (`_mikroRelief` ohne `n`: Klumpen `freq`, Kiesel `freq2` je Meter) als EIN Knoten je Welt-Lage
+    // `wp` und Frequenz: Wert und Neigung der Ebene (x, z) — `ebeneNeigung`, die Neigung je Zelle (mal `f` je Meter). Wer an
+    // demselben Fragment dieselbe Oktave liest, liest DIESELBE Probe (die Kruste der Lava, `_lavaKruste`: ihre Risse sind die
+    // Kiesel-Oktave) — der Graph lädt sie einmal, keine zweite Ladung des Atlas.
+    _mikroFestProbe(T, wp, f) {
+        const c = this._mikroFestCache || (this._mikroFestCache = new WeakMap());
+        let je = c.get(wp);
+        if (!je) c.set(wp, (je = new Map()));
+        let e = je.get(f);
+        if (!e) {
+            const P = AnazhRealm.RAUSCH_GESETZ.P;
+            const q = T.vec2(wp.x, wp.z).mod(T.float(P).div(f)).mul(f).add(T.vec2(0.37, 0.71));
+            je.set(f, (e = this._rauschAtlas().ebeneNeigung(q, 0, "z")));
+        }
+        return e;
+    }
+
+    // DER STOFF des Mikro-Reliefs — EIN BILD EINER HÖHE (`hoehe`, ausgeblendet mit `k`): DAS KORN in der Albedo (colorNode: die
+    // Mulde dunkler, die Erhebung heller, 1 + korn · h, mittelfrei — K53: was der Pixel nicht trägt, ist kein Mittel-Versatz).
+    // JEDES LICHT LIEST ES: die Sonne, der Licht-Pool und das Himmels-Licht multiplizieren dieselbe Albedo — im Schlagschatten
+    // und in der Nacht, wo nur der Himmel leuchtet, steht dasselbe Korn wie in der Sonne, im Maß des Lichts, das dort ist. Der
+    // aoNode bleibt, was er vor dem Ruf war (der Boden: Himmels-Sicht × Kontakt, eine Verdeckung ≤ 1; Fels und Stein: keiner).
+    // Bis w28-himmel-korn schrieb der Stoff ein zweites Bild derselben Höhe in den aoNode (im Logarithmus beschränkt zwischen
+    // 0,38 und 1/0,38, geteilt durch das Korn): im Himmels-Licht kürzte sich das Korn, das zweite Bild stand allein und sprang
+    // je Kiesel zwischen 0,41 und 2,35 — der Schlagschatten des Hauses im Dorf stand als Salz und Pfeffer (Radeon 890M, Probe
+    // `bild:dorf@0.5`: Korn im Schatten σ_hp 9,06 Luma gegen 8,36 im Licht daneben), und ein Faktor über 1 im Himmels-Licht ist
+    // erzeugte Energie. gate:schatten-terminator (K) misst das Korn im Schlagschatten gegen das Korn im Licht am selben Boden.
+    // DAS KORN GEHÖRT DEM STOFF (w28-himmel-korn, zweite Hälfte): seine Amplitude ist die Spalte `korn` der Stoff-Tafel
+    // (`_defaultMaterials`, gelesen über den EINEN Leser `_stoff`) — der Leser nennt die Zeile (`stoff`): der offene Boden `erde`,
+    // die Fels-Gestalt und der Stein-Rahmen `stein`. Bis dahin trug jede Fläche EINE Zahl (`TERRAIN_BUMP.korn` 0,6, am
+    // Kopfstein geeicht): seit das zweite Bild im Himmels-Licht fiel, stand die offene Erde nah zu glatt (material.K2#1 Boden
+    // glatt 0,46). Unter dem Stein-Belag trägt der Boden kein Korn (die Blende `k` fällt dort mit dem Belag): der Kopfstein
+    // trägt sein eigenes Bild. Eine Zeile ohne Korn bricht laut. Das Korn hält 0,1 der Albedo. Die Alpha des Stoffs bleibt
+    // (Lehre 26: der Schattenpass liest colorNode.a); ohne colorNode trägt die Stoff-Farbe (r184 multipliziert die
+    // Vertex-Farbe danach).
+    _mikroStoff(T, mat, hoehe, k, stoff) {
+        const zeile = this._stoff(stoff, "das Mikro-Relief liest das Korn der Zeile „" + stoff + "“");
+        if (!zeile || !(zeile.korn > 0))
+            throw this._stoffBruch("das Korn des Mikro-Reliefs fehlt der Stoff-Zeile " + stoff);
+        const korn = T.float(1.0).add(hoehe.mul(k).mul(zeile.korn)).max(0.1);
         // die Farbe EINMAL im Pixel: r184 cacht einen Knoten mit zwei Lesern in einer Variable, eine Typ-Umwandlung
         // (`vec4(vec4)`, ConvertNode) aber nie — sie schrieb ihren ganzen Ausdruck je Leser aus (`.rgb` und `.a`: der Boden trug
         // seine Stoff-Farbe zweimal, 727 Zeichen WGSL, w15-pfuetze). `toVar` legt sie in EINE Variable.
@@ -2751,7 +2655,7 @@ class AnazhRealm_stoff_material {
         mat.colorNode = T.vec4(c.rgb.mul(korn), c.a);
     }
 
-    // DIE GESTALT mit ihrem Mikro-Relief (der Fels: Vertex-Stoff und Studio-Fels) setzt normalNode, aoNode und Korn des Stoffs: die
+    // DIE GESTALT mit ihrem Mikro-Relief (der Fels: Vertex-Stoff und Studio-Fels) setzt normalNode und Korn des Stoffs: die
     // Geometrie-Normale × Seite (Lehre 26, nie `normalWorld`) — facettiert (`flach`) die Normale der Facette aus den Ableitungen
     // der Welt-Lage, zum Auge gewandt —, in ihrer Tangential-Ebene gekippt, fern mit dem Bump des Bodens ausgeblendet
     // (lodNear … lodFar), mal `staerke` (Knoten oder Zahl), in Sicht-Lage (normalNode ist VIEW-space).
@@ -2765,38 +2669,115 @@ class AnazhRealm_stoff_material {
         const k = nah.mul(staerke == null ? 1.0 : staerke);
         const m = this._mikroRelief(T, wp, n);
         mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(n.add(m.neigung.mul(k))));
-        this._mikroStoff(T, mat, m.hoehe, k);
+        this._mikroStoff(T, mat, m.hoehe, k, "stein");
     }
 
-    // DAS STEIN-GESETZ (porta STEIN_GESETZ, w4-genesis-tore): ein Stein-Stoff eines Studio-Rahmens trägt seine Lage im Verband im uv
-    // (u = die Nummer des Steins + der Weg durch ihn, eine ganze Zahl ist eine Fuge; v = seine Länge in Metern). Je Pixel daraus: der
-    // BRUCHTON je Stein (floor(u), ± `ton`), die FUGE als Box-Abdeckung des Pixels (die halbe Fuge in Metern, die Spanne des Pixels
-    // aus der Ableitung von u — fern mittelt die Fuge zu ihrem Anteil, nie zu einer Linie), die KANTE als Normale (die Fase zwischen
-    // Fuge und Stirn fällt 45° zur Fuge; der Gradient von u in der Fläche aus den Ableitungen am Schirm, Mikkelsen 2010 — kein
-    // Tangenten-Raum; unter einem Pixel blendet sie aus) und das MIKRO-RELIEF des Felsens (`_mikroRelief`, `_mikroStoff`: Neigung,
-    // Kavität und Korn, mal `staerke`). Dieselbe Rechnung zeigt das Labor (worlds/portale/porta.js `steinLabor`). Setzt colorNode
-    // (aus `farbe`, der Farbe der Ecke), normalNode und aoNode.
-    _steinStoff(T, mat, farbe, G, staerke) {
-        const B = AnazhRealm.TERRAIN_BUMP;
+    // DER STEIN-KAMM (porta STEIN_GESETZ, w28-stein-kamm) — DER EINE: jeder Stein im Verband ist diese Rechnung, ein Leser liefert nur
+    // seine LAGE und die Zeile seines Gesetzes. Die Lage: `u` (die Nummer des Steins in seiner Lage + der Weg durch ihn — eine ganze
+    // Zahl IST eine Stoßfuge), optional `v` (die Lage + der Weg durch sie, eine ganze Zahl ist eine Lagerfuge; den Versatz des
+    // Läufer-Verbands legt der Leser in u), `mU`/`mV` (Meter je Einheit: die Länge des Steins), optional `sU`/`sV` (die Spanne des
+    // Pixels in Einheiten, sonst die Ableitung am Schirm) und `rU`/`rV` (die Richtung wachsender Lage in der Fläche, Welt, Einheit).
+    // Je Pixel daraus:
+    //   DER BRUCHTON je Stein (± `ton`): die Ziehung des Gesetzbuchs aus (floor u, floor v) in ganzen Zahlen (porta `steinZiehung`)
+    //   DIE FUGE als Deckung des Pixels: das Integral des Kamms (± `fuge` Meter um jede ganze Zahl) über die Spanne des Pixels,
+    //     gerechnet um die nächste Fuge (kleine Zahlen: die Nummer des Steins löscht keine Stelle) — nah die Kante der Fuge auf
+    //     einen Pixel genau, fern ihr Anteil an der Fläche, nie eine Linie und nie ein Flimmern; je Achse mit ihrer eigenen Spanne
+    //     (im streifenden Blick bleibt die Fuge längs des Blicks stehen, die quer zu ihm geht in ihren Anteil)
+    //   DIE KANTE als Normale (`fase`, optional): die Fase zwischen Fuge und Stirn fällt zur Fuge (45°, oder der Fall `fall` der
+    //     Zeile: der Tangens ihres Winkels) — dasselbe Integral über den Pixel: nah die Fase auf einen Pixel genau, darunter ihr
+    //     Anteil, über einen ganzen Stein heben die zwei Fasen sich auf (fern steht keine Kante und flimmert keine)
+    //   DER KOPF (`kuppe`, optional): zur Fuge hin sieht der Stein weniger Himmel (Albedo × 1 − kuppe · (1 − e)², e = 0 an der Fuge)
+    // DIE FERN-REGEL, EINMAL und am SCHIRM, nie in Metern: was je Stein würfelt oder sich wölbt (Bruchton, Kopf), steht, wo ein Stein
+    // 2,5 … 5 Pixel über die LANGE Achse des Pixels misst (`sicht`; darunter stünde je Pixel ein eigener Ton — das Pflaster las als
+    // Rauschen, w28-stadt-grund), und geht darunter in sein Mittel. Das Raster der Fugen und Fasen steht je Achse ab 2 … 3,5
+    // Pixeln je Stein (`raster`: darunter schwebte es gegen das Raster der Pixel), dann trägt die Fläche den Anteil der Fuge. Ein
+    // großer Schirm trägt den Stein weiter als ein kleiner — die Entfernung entscheidet nichts.
+    // Das KORN des Gesetzes (`korn`) wiegt der Leser: wie viel vom Mikro-Relief des Wirts der Stein trägt (`_steinRahmen`, der Boden).
+    // Leser: der Rahmen eines Tors (`_steinRahmen`, die Lage im uv), das Kopfstein des Bodens (`_kopfsteinFarbe`, die Lage aus der
+    // Welt). Bis w28-stein-kamm rechneten beide je eine Abschrift (Box-Abdeckung um die nächste Fuge: fern fiel sie auf 0 statt auf
+    // ihren Anteil; je eine Sinus-Ziehung), das Kopfstein dazu eine eigene Fern-Regel.
+    // → { farbe (Faktor der Albedo: Ton × Kopf × Fuge), ton, fuge (Deckung 0 … 1), kipp (Welt, zur Einheits-Normale zu addieren;
+    //     null ohne Fase oder Richtung), sicht }
+    _steinStoff(T, G, lage) {
+        const f = (x) => T.float(x);
+        // die Algebra der Ziehung über Knoten (porta `steinZiehung`): `mod` ist der Rest ganzer Zahlen
+        const A = {
+            k: f,
+            add: (a, b) => a.add(b),
+            mul: (a, b) => a.mul(b),
+            mod: (a, b) => a.sub(b.mul(T.floor(a.add(0.5).div(b)))),
+        };
+        const fase = G.fase > 0 ? G.fase : 0;
+        const achsen = [];
+        for (const [x, m, s, r] of [
+            [lage.u, lage.mU, lage.sU, lage.rU],
+            [lage.v, lage.mV, lage.sV, lage.rV],
+        ]) {
+            if (x == null) continue;
+            const sp = (s || T.fwidth(x)).max(1e-5); // die Spanne des Pixels in Einheiten
+            // die Maße der Zeile in Einheiten der Lage — eine Länge als Zahl ist gefaltet (kurze Literale: jedes Zeichen des
+            // Boden-Programms zählt, `S0_ZEICHEN`)
+            const inE = (meter) => (typeof m === "number" ? f(AnazhRealm._f32(meter / m)) : f(meter).div(m));
+            const [j, j2] = [inE(G.fuge), inE(2 * G.fuge)]; // die halbe und die ganze Fuge
+            // die zwei Ränder des Pixels, um ½ versetzt: `floor` zählt die Fugen davor, `fract` − ½ ist der Weg zur nächsten
+            const [xP, xM] = [x.add(sp.mul(0.5).add(0.5)), x.sub(sp.mul(0.5).sub(0.5))];
+            const [rP, rM] = [T.fract(xP).sub(0.5), T.fract(xM).sub(0.5)];
+            // das Raster der Fugen dieser Achse am Schirm: voll ab 3,5 Pixeln je Stein, unter 2 ihr Anteil (die Fern-Regel)
+            const raster = T.smoothstep(2.0, 3.5, f(1.0).div(sp));
+            const deckung = T.mix(
+                j2,
+                T.floor(xP)
+                    .sub(T.floor(xM))
+                    .mul(j2)
+                    .add(T.clamp(rP, j.negate(), j))
+                    .sub(T.clamp(rM, j.negate(), j))
+                    .div(sp)
+                    .clamp(0.0, 1.0),
+                raster
+            );
+            let kipp = null;
+            if (fase > 0 && r) {
+                // zur Fuge hin fällt die Fase: vor der Fuge kippt die Normale in die Richtung der Lage, hinter ihr gegen sie —
+                // das Integral beider Bänder über den Pixel (über einen ganzen Stein heben sie sich auf: fern keine Kante)
+                const [fN, bis] = [inE(fase), inE(G.fuge + fase)];
+                const band = (t) => T.clamp(t.add(bis), 0.0, fN).sub(T.clamp(t.sub(j), 0.0, fN));
+                kipp = r.mul(
+                    band(rP)
+                        .sub(band(rM))
+                        .div(sp)
+                        .mul(G.fall > 0 && G.fall !== 1 ? raster.mul(G.fall) : raster)
+                );
+            }
+            // der Weg zur nächsten Fuge (−½ … ½), nur der Kopf liest ihn
+            achsen.push({ sp, deckung, kipp, nr: T.floor(x), rel: () => T.fract(x.add(0.5)).sub(0.5) });
+        }
+        const [a, b] = achsen;
+        const fuge = b ? f(1.0).sub(f(1.0).sub(a.deckung).mul(f(1.0).sub(b.deckung))) : a.deckung;
+        const sicht = T.smoothstep(2.5, 5.0, f(1.0).div(b ? T.max(a.sp, b.sp) : a.sp));
+        const zufall = AnazhRealm.Gesetz("porta:steinZiehung")(A, a.nr, b ? b.nr : f(0.0));
+        const ton = f(1.0).add(zufall.mul(2.0).sub(1.0).mul(G.ton).mul(sicht));
+        let farbe = ton.mul(T.mix(f(1.0), f(G.fugeTon), fuge));
+        if (G.kuppe > 0) {
+            // der Kopf: e = 0 an der Fuge, 1 in der Mitte, k = 1 − e; fern sein Mittel über die Fläche des Steins (E[k²] = ½ im
+            // Verband zweier Achsen, ⅓ in der Kette)
+            const k = f(1.0).sub((b ? T.min(a.rel().abs(), b.rel().abs()) : a.rel().abs()).mul(2.0));
+            farbe = farbe.mul(T.mix(f(1 - G.kuppe * (b ? 1 / 2 : 1 / 3)), f(1.0).sub(k.mul(k).mul(G.kuppe)), sicht));
+        }
+        const kipp = a.kipp && b && b.kipp ? a.kipp.add(b.kipp) : a.kipp || (b && b.kipp) || null;
+        return { farbe, ton, fuge, kipp, sicht, achse: [a.deckung, b ? b.deckung : null] }; // `achse`: die Deckung je Achse (`_verbandStoff`)
+    }
+
+    // DER STEIN EINES STUDIO-RAHMENS (porta STEIN_GESETZ, w4-genesis-tore): ein Stein-Stoff trägt seine Lage im Verband im uv (u = die
+    // Nummer des Steins + der Weg durch ihn, v = seine Länge in Metern; eine Kette kennt nur Stoßfugen) — ein Leser des EINEN Kamms
+    // (`_steinStoff`). Die Richtung der Lage in der Fläche aus den Ableitungen am Schirm (Mikkelsen 2010, kein Tangenten-Raum). Das
+    // KORN ist die Zahl seiner Zeile (`G.korn`): bei 0 baut der Stoff kein Mikro-Relief (kein Rauschen im Programm des Tors), sonst
+    // trägt er das des Felsens (`_mikroRelief`, `_mikroStoff`) mal Korn. Bis w28-stein-kamm wog die Rauheit des Stoffs es
+    // (smoothstep 0,3 … 0,6: der Rahmen mit 0,88 trug es ganz) — die Tore der Ankunft standen unter Flecken gröber als ihre Fuge.
+    // Dieselbe Rechnung zeigt das Labor (worlds/portale/porta.js `steinLabor`, dieselbe Ziehung). Setzt colorNode (aus `farbe`, der
+    // Farbe der Ecke) und normalNode; das Korn steht in der Farbe.
+    _steinRahmen(T, mat, farbe, G) {
         const uv = T.attribute("uv", "vec2");
         const u = uv.x;
-        const L = uv.y.max(1e-3);
-        const t = T.fract(u);
-        const d = T.min(t, T.float(1.0).sub(t)).mul(L); // Meter zur nächsten Fuge
-        const aa = T.fwidth(u).mul(L).max(1e-5); // die Spanne des Pixels in Metern
-        const halb = aa.mul(0.5);
-        const fuge = T.min(d.add(halb), T.float(G.fuge))
-            .sub(T.max(d.sub(halb), T.float(-G.fuge)))
-            .div(aa)
-            .clamp(0.0, 1.0);
-        const zufall = T.fract(T.sin(T.floor(u).mul(12.9898)).mul(43758.5453));
-        const ton = T.float(1.0).add(zufall.mul(2.0).sub(1.0).mul(G.ton));
-        mat.colorNode = T.vec4(
-            T.vec3(farbe)
-                .mul(ton)
-                .mul(T.mix(T.float(1.0), T.float(G.fugeTon), fuge)),
-            1.0
-        );
         const wp = T.positionWorld;
         const n = T.normalize(T.normalWorldGeometry.mul(T.faceDirection));
         const dpx = T.dFdx(wp);
@@ -2807,25 +2788,22 @@ class AnazhRealm_stoff_material {
             .mul(T.dFdx(u))
             .add(T.cross(n, dpx).mul(T.dFdy(u)))
             .div(T.select(det.abs().greaterThan(1e-12), det, T.float(1e-12)));
-        // zur Fuge hin fällt die Fase: die Normale kippt gegen den Gradienten des Abstands (er zeigt zur Mitte des Steins)
-        const gD = gU.mul(T.select(t.lessThan(0.5), T.float(1.0), T.float(-1.0)));
-        const gl = gD.length();
-        const kante = T.smoothstep(T.float(G.fuge).sub(halb), T.float(G.fuge).add(halb), d)
-            .mul(
-                T.float(1.0).sub(
-                    T.smoothstep(T.float(G.fuge + G.fase).sub(halb), T.float(G.fuge + G.fase).add(halb), d)
-                )
-            )
-            .mul(T.float(G.fase).div(aa).clamp(0.0, 1.0))
-            .mul(T.step(1e-6, gl));
+        const gl = gU.length();
+        const S = this._steinStoff(T, G, { u, mU: uv.y.max(1e-3), rU: gU.div(gl.max(1e-6)).mul(T.step(1e-6, gl)) });
+        mat.colorNode = T.vec4(T.vec3(farbe).mul(S.farbe), 1.0);
+        const nK = S.kipp ? n.add(S.kipp) : n;
+        if (!(G.korn > 0)) {
+            mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(nK));
+            return;
+        }
+        const B = AnazhRealm.TERRAIN_BUMP;
         const nah = T.float(1.0).sub(
             T.smoothstep(T.float(B.lodNear), T.float(B.lodFar), T.cameraPosition.sub(wp).length())
         );
-        const k = nah.mul(staerke == null ? 1.0 : staerke);
+        const k = nah.mul(G.korn);
         const m = this._mikroRelief(T, wp, n);
-        const kipp = m.neigung.mul(k).sub(gD.div(gl.max(1e-6)).mul(kante));
-        mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(n.add(kipp)));
-        this._mikroStoff(T, mat, m.hoehe, k);
+        mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(nK.add(m.neigung.mul(k))));
+        this._mikroStoff(T, mat, m.hoehe, k, "stein");
     }
 
     // ── DER EINE SUBSTANZ-CHARAKTER-KERN ──
@@ -3099,6 +3077,32 @@ class AnazhRealm_stoff_material {
             // (Fels/Geröll) bleibt terrain-eigen. objectLocal:false (absolute Welt-Höhe). Feucht-/Grün-Treiber
             // × Flachheit speisen das Moos; `wp·0.16` = welt-kohärente Feature-Skala (naht-frei).
             const _flat = _T.float(1.0).sub(_steep);
+            // DER GRUND TRÄGT DIE WIESE (w28-wiese-schale): der Vertex trägt die Wiese als BESTAND (`WIESEN_GRUND.farbe` = das Mittel
+            // des Halms × die Selbstbeschattung `FERN_FARBE.halmSchatten`, × der Tint des Orts) — so liest sie aus Kilometern. Wo
+            // die Büschel der Ferne ausdünnen (jenseits der Übergabe bis zum Ende der Ferne `fern.bis`), sieht das Auge die besonnte
+            // Krone des Bestands: der Grund der Wiese trägt dort das Mittel des Halms selbst (÷ halmSchatten), über radius/2 … radius
+            // eingeblendet, über 0,4 … 0,8 × bis zurück zum Bestand (vor dem Ring der Chunks, 172,8 m: der Fern-Ring trägt den
+            // Bestand, keine Naht). Bis hier lag dort der Bestands-Ton (0,4 ×): zwischen den
+            // ausdünnenden Büscheln ein dunkler, nackter Grund.
+            {
+                const _NW = AnazhRealm.NAH_WIESE;
+                const _camW = wp.sub(_T.cameraPosition).length();
+                const _kroneW = _T
+                    .smoothstep(_T.float(_NW.radius * 0.5), _T.float(_NW.radius), _camW)
+                    .mul(
+                        _T
+                            .float(1.0)
+                            .sub(_T.smoothstep(_T.float(_NW.fern.bis * 0.4), _T.float(_NW.fern.bis * 0.8), _camW))
+                    );
+                const _gW = _T.smoothstep(
+                    _T.float(0.0),
+                    _T.float(G.gruenSchwelle),
+                    albedo.y.sub(albedo.x.add(albedo.z).mul(0.5))
+                );
+                _out = _out.mul(
+                    _T.mix(_T.float(1.0), _T.float(1 / AnazhRealm.FERN_FARBE.halmSchatten), _gW.mul(_kroneW).mul(_flat))
+                );
+            }
             const _g2 = _out.y;
             const _rb2 = _out.x.add(_out.z).mul(0.5);
             const _lum2 = _out.x.mul(0.3).add(_out.y.mul(0.59)).add(_out.z.mul(0.11));
@@ -3108,7 +3112,12 @@ class AnazhRealm_stoff_material {
             const _mossDrive = _green.mul(_damp).mul(_gMoss).mul(_T.float(G.mossMax));
             // Feuchte-Glanz: eine nasse, KAHLE Niederung (damp hoch, nicht grün) glänzt (niedrigere Rauheit);
             // Moos bleibt matt. Aus DEMSELBEN Feld, das das Moos treibt.
-            const _wetDrive = _damp.mul(_T.float(1.0).sub(_green)).clamp(0.0, 1.0);
+            // DIE ASCHE IST TROCKENES PULVER (w28-brand-bild, `roughOut.asche` aus `_wegeBodenFarbe`): dunkel und nicht grün las
+            // dieser Treiber sie als nasse Niederung (Y 0,052 an `mossDampLo`: Rauheit 0,94 → 0,54, der Brandfleck glänzte wie
+            // nasser Fels) — auf ihrer Decke steht er, die Nässe des Regens legt `_naesseImStoff` weiter darüber
+            const _asche = roughOut && roughOut.asche ? roughOut.asche : null;
+            const _wet0 = _damp.mul(_T.float(1.0).sub(_green)).clamp(0.0, 1.0);
+            const _wetDrive = _asche ? _wet0.mul(_T.float(1.0).sub(_asche.deckung)) : _wet0;
             // (Die „trockenen braun-gelben Flecken" — Albedo × (1,32 · 1,12 · 0,6) auf jedem nicht-grünen, nicht-
             // feuchten Boden — sind gefallen: sie färbten die Laubstreu orange, Farben außerhalb der Palette.)
             // DER WIESEN-GRUND liegt im Gesetz (K53, `_bodenFarbeAt` · `attachFieldColors`, `WIESEN_GRUND`): der Vertex trägt das
@@ -3229,10 +3238,17 @@ class AnazhRealm_stoff_material {
                 wetDrive: _wetDrive,
                 hardDrive: _hardDrive,
             });
-            if (roughOut && _r.roughNode) roughOut.node = _r.roughNode;
+            // auf der Asche: die Rauheit ihrer Zeile im Stoff-Gesetz (schmiede `STOFF_GESETZ` asche) und ihre Albedo — Korn und
+            // Kavität des Erdreichs bleiben zu `BRAND.ascheKorn` (das Pulver liegt auf dem Boden, es ist kein Geröll)
+            const _aR = _asche ? globalThis.__schmiedeCore.STOFF_GESETZ.zeile("asche").rauheit : 0;
+            if (_asche && !Number.isFinite(_aR)) AnazhRealm._kernPflichtBruch("schmiede:STOFF_GESETZ asche.rauheit");
+            if (roughOut && _r.roughNode)
+                roughOut.node = _asche ? _T.mix(_r.roughNode, _T.float(_aR), _asche.deckung) : _r.roughNode;
             // der Bestand der Wiese (`_green`, derselbe Treiber wie Moos und Halm-Schicht): der Grund der Wiese liest ihn (`_wieseGrund`)
             if (roughOut) roughOut.gruen = _green;
-            return _r.albedo;
+            return _asche
+                ? _T.mix(_r.albedo, _asche.farbe, _asche.deckung.mul(1 - AnazhRealm.BRAND.ascheKorn))
+                : _r.albedo;
         } catch (_e) {
             throw this._stoffBruch("die Boden-Geologie", _e);
         }

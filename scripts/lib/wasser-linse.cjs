@@ -288,6 +288,9 @@ async function wasserKoerper(o = {}) {
             const WK = A.Gesetz("terrain:WASSER_GESETZ").koerper;
             const GK = window.__gelaendeCore;
             const fl = o.fluss || (await window.__wasserOrte({})).fluss;
+            // der Bach liegt Kilometer hinter dem See: seine Kachel räumt das Register, sobald sie die Reichweite ihrer Leser um
+            // den Spieler verlässt (`ZELL_GEDAECHTNISSE` hydroTiles) — der Leser an fernem Ort bestellt die Wahrheit, ehe er fragt
+            await __weltDa(() => !r._ensureHydroTilesAround(fl.x, fl.z, 0));
             const bb = r._voxelSurfaceY(fl.x, fl.z);
             const modus = (x, z, camY, augen) => {
                 cam.position.set(x, camY, z);
@@ -394,6 +397,7 @@ async function wasserKoerper(o = {}) {
         aus.eis.mutation = gang();
         delete r._temperaturFeld;
         const fl = o.fluss || (await window.__wasserOrte({})).fluss;
+        await __weltDa(() => !r._ensureHydroTilesAround(fl.x, fl.z, 0)); // die Kachel des Bachs, wie am Medium (5c)
         [aus.schmelze, aus.pegel] = wasserSchmelze(r, x0 + 20, mz, { see: [mx, mz], ruhe: spiegel, ufer: x0, fluss: [fl.x, fl.z] });
         aus.erstarrung = wasserErstarrung(r, [[x0, mz], [mx, mz]]);
         aus.gluehen = await wasserGluehen(r, [x0 + 6, mz]);
@@ -491,7 +495,7 @@ function wasserSchmelze(r, x, z, P) {
         // Danach fallen die Stempel des Regens mit der Probe (die Welt der Linse beginnt ihren Regen neu, der Grund im Mittel des
         // Klimas): der Sturm flösse über die Lag-Zeit seines Laufs ab (gelaende-core `pegelLauf`), das Jahr danach (P3) misst ohne ihn.
         const sturm = () => {
-            const wort = (w, s) => (r._setWeather(w, "human"), (st.weatherTransition = null), r._naesseTakt(s));
+            const wort = (w, s) => (r._setWeather(w, "human"), window.__uebergangFaellt(r), r._naesseTakt(s));
             const [vor, p0] = [(wort("sunny", 1e6), r._waterLevelAt(...P.fluss)), pg.post];
             wort("stormy", 0);
             for (let k = 0; k < 240; k++) (st.spielZeit += 5), r._tickRain();
@@ -516,7 +520,7 @@ function wasserSchmelze(r, x, z, P) {
 }
 
 // (13) DIE ERSTARRUNG ÜBER SPIELZEIT (stoffe.K3-2): die DSL gießt Lava (`lava`) an Land und ins Wasser des Sees, die Uhr läuft
-// im Takt des Tags (`tickDayNight` an der Welt-Uhr, Tag 1 min: ein Takt = 1 s Spielzeit = 0,4 Welt-Stunden); je Takt die glut-Achse der Welt (`auraAt`, `frei`
+// an der Welt-Uhr (der Tag der Prozesse `_weltTag`: ein Takt = 60 s Welt-Uhr = 0,4 Welt-Stunden); je Takt die glut-Achse der Welt (`auraAt`, `frei`
 // ohne Lava), der Stoff unter dem Fuß (`_kontaktStoffAt`), die Decke (`_lavaAt`) und ihr Licht (`_leuchtQuellen`); `ab` der
 // erste erstarrte Takt. Die Taten fallen danach.
 function wasserErstarrung(r, orte) {
@@ -527,9 +531,8 @@ function wasserErstarrung(r, orte) {
     const aus = orte.map(([x, z]) => ({ x, z, y: r._voxelSurfaceY(x, z), frei: r.auraAt(x, z).glut, reihe: [] }));
     try {
         for (const o of aus) r.dslRun(["lava", o.x, o.y, o.z], { source: "human" });
-        Object.assign(st, { dayLengthMinutes: 1, _uhrSpielZeit: st.spielZeit });
         for (let k = 0; k <= 15; k++) {
-            if (k) (st.spielZeit += 1), r.tickDayNight(k);
+            if (k) st.spielZeit += AnazhRealm.PEGEL_TAG_S / 60; // je Schritt 0,4 h am Tag der Prozesse (`_weltTag`)
             aus.forEach((o, i) => {
                 const d = r._lavaAt(o.x, o.z);
                 const licht = r._leuchtQuellen(o.x, o.y, o.z, 30).some((q) => q.id === wm.taten[n + i]);
@@ -1511,7 +1514,7 @@ async function wasserRegen(o = {}) {
         eltern = null;
     try {
         r._setWeather("stormy", "human");
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         st.camera = cam;
         r._bildZeit = t; // die Bild-Uhr (A9), die der Regen liest
         r._tickRain();
@@ -1530,7 +1533,7 @@ async function wasserRegen(o = {}) {
         if (mesh && eltern) eltern.add(mesh);
         st.camera = camAlt;
         r._setWeather(wetterAlt, "human");
-        st.weatherTransition = null;
+        window.__uebergangFaellt(r);
         rt.dispose();
     }
     const lit = new Uint8Array(W * H);

@@ -44,19 +44,19 @@ class AnazhRealm_studio_gestalt {
             // keiner einen Baum, bis ein Leib in seine Nähe tritt (`_huellenBedarf`) — wer nach dem Bild in die Ankunft tritt,
             // wartet mit den Wartenden, bis eine Kreatur lebt; danach wächst jede Hülle wie immer am Spawn.
             // DIE UHR DER SKELETTE (w19-gang-hitch, die Idee von w16-haenger auf main): im laufenden Spiel wächst je Takt höchstens
-            // EIN neues Skelett (`_taktZeit`); wer im selben Takt danach kommt, wartet in derselben Schlange (`_huellenNach`, nah
+            // EIN neues Skelett (`weltTakt`); wer im selben Takt danach kommt, wartet in derselben Schlange (`_huellenNach`, nah
             // zuerst — `_tickHuellenNach` geht sie unter der EINEN Frist der Bau-Arbeit weiter). Bis hier wuchs jeder Rufer am Stück,
             // sobald eine Kreatur lebte (`_huellenBedarf` "alle"): die Pflanz-Schlange setzte je Takt bis zu 8 Würfe, jeder mit
             // eigener Gestalt ein Skelett (w16-haenger headless: zwei Skelette 95 + 62 ms in EINEM Takt). Ruhender Loop wächst sofort.
             if (
                 !this.state._weltbildDa ||
                 (this._huellenNach && this._huellenNach.size && this._huellenBedarf() !== "alle") ||
-                (this._skelettTakt === this._taktZeit && !this._loopRuht())
+                (this._skelettTakt === this.state.weltTakt && !this._loopRuht())
             ) {
                 (this._huellenNach || (this._huellenNach = new Set())).add(entry);
                 return null;
             }
-            this._skelettTakt = this._taktZeit;
+            this._skelettTakt = this.state.weltTakt;
             // der Welt-Name, unter dem die Art ihre Rezept-Zeile trägt (wie `_foundryPresetForEntry` sie fand)
             const art = [entry._lodSpecies, entry.type, (entry.type.match(/^grown_(baum_[a-z]+)/) || [])[1]].find(
                 (s) => typeof s === "string" && this._foundryPresetFor(s) === preset
@@ -222,12 +222,23 @@ class AnazhRealm_studio_gestalt {
         const T = THREE;
         const geo = new T.BufferGeometry();
         geo.setAttribute("position", new T.BufferAttribute(m.position.array, 3));
-        if (m.normal && m.normal.array) geo.setAttribute("normal", new T.BufferAttribute(m.normal.array, 3));
         const vcount = m.position.array.length / 3;
+        // DAS ECK-FORMAT (`_eckForm`): die Normale in snorm8 × 4, die Farbe in half × 4 — Float32 trägt nur die Lage. Haut und Tuch
+        // des Leibs (`seh` haut · stoff) tragen die Normale weiter in Float32: das Tuch-Gesetz liest sie dicht (koerper-core
+        // `_tuchBind`, `tuchGitter`), und das Drapieren rechnet sie neu (`_tuchVorlageDrapieren`, three `computeVertexNormals`
+        // summiert in ihr Attribut — in snorm8 fielen kleine Dreiecke auf 0)
+        const tuchLiest = !!(m.mat && (m.mat.seh === "haut" || m.mat.seh === "stoff"));
+        const normale = (a) => (tuchLiest ? new T.BufferAttribute(a, 3) : AnazhRealm._eckForm("normal", a, vcount));
+        if (m.normal && m.normal.array) geo.setAttribute("normal", normale(m.normal.array));
         if (m.color && m.color.array && m.color.array.length >= vcount * 3)
             geo.setAttribute(
                 "color",
-                new T.BufferAttribute(m.color.array, m.color.itemSize && m.color.itemSize <= 3 ? m.color.itemSize : 3)
+                AnazhRealm._eckForm(
+                    "color",
+                    m.color.array,
+                    vcount,
+                    m.color.itemSize && m.color.itemSize <= 3 ? m.color.itemSize : 3
+                )
             );
         else {
             // WebGPU-STRIKT: colorNode = attribute("color") verlangt das Attribut IMMER (sonst schwarz/Crash) →
@@ -241,7 +252,7 @@ class AnazhRealm_studio_gestalt {
                 carr[v * 3 + 1] = def[1];
                 carr[v * 3 + 2] = def[2];
             }
-            geo.setAttribute("color", new T.BufferAttribute(carr, 3));
+            geo.setAttribute("color", AnazhRealm._eckForm("color", carr, vcount));
         }
         // DIE ECKEN (vegetation.K5, w14-wiese-saum): die Mitte jedes Blatts und sein Typ — das Laub fällt im Winter auf seine
         // Mitte (`_jahrLage`), die Ferne der Wiese streckt das Büschel um die Mitten seiner Halme (`_halmFerne`); die Schale
@@ -280,6 +291,11 @@ class AnazhRealm_studio_gestalt {
             if (m[nm] && m[nm].array) geo.setAttribute(nm, new T.BufferAttribute(m[nm].array, m[nm].itemSize || 3));
         // Der Schatten-Teil (S3) trägt je Vertex, ob er deckt (Rinde 1) oder die Atlas-Alpha schneidet (Karte 0).
         if (m.aDeckt && m.aDeckt.array) geo.setAttribute("aDeckt", new T.BufferAttribute(m.aDeckt.array, 1));
+        // DER VERBAND JE ECKE (w28-haus-stoff, phyto-core `_budgetVerbinden`): eine gefaltete Stufe trägt die Nummer der Zeile des
+        // Verband-Gesetzes je Ecke — der Bau-Satz legt sie in die vierte Stelle seines `aRegler` (`_satzBlockEcken`)
+        if (m.aVerband && m.aVerband.array) geo.setAttribute("aVerband", new T.BufferAttribute(m.aVerband.array, 1));
+        // und ihre Lage in der Wand (`aLage`, fachwerk `_wandLage`) — der Bau-Satz legt sie in die vierten Stellen von Farbe und Glut
+        if (m.aLage && m.aLage.array) geo.setAttribute("aLage", new T.BufferAttribute(m.aLage.array, 2));
         // DER TON JE ECKE (mensch.K4, koerper `menschTon`): der Mensch trägt ihn — sein Stoff färbt jede Ecke nach der Palette
         // des Leibs, der ihn zeichnet (`_tonFaktor`)
         const ton = !!(m.aTon && m.aTon.array);
@@ -287,7 +303,10 @@ class AnazhRealm_studio_gestalt {
         // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton und Jahr an ihrem Namen (`_foundryTreeMaterial`)
         const ecken = { ton, jahr };
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
-        if (!m.normal || !m.normal.array) geo.computeVertexNormals();
+        if (!m.normal || !m.normal.array) {
+            geo.computeVertexNormals();
+            geo.setAttribute("normal", normale(geo.attributes.normal.array));
+        }
         // Attribut-Wand: die geteilten foundry-Materialien lesen aH0/aH0L/aLodLevel (die Maske ist Gesetz des Stoffs,
         // `_foundryTreeMaterial`) — jeder Direkt-Konsument dieser Konversion (Kreatur-Ofen …) braucht sie, sonst warnt three je
         // RenderObject. Der Null-Stempel macht „0 = ungemaskt" physisch wahr (Bild gleich); der Gruppen-Bau
@@ -365,6 +384,50 @@ class AnazhRealm_studio_gestalt {
         geo.setAttribute("aCenter", new THREE.InterleavedBufferAttribute(ib, 3, o));
         geo.setAttribute("aType", new THREE.InterleavedBufferAttribute(ib, 1, o + 3));
         return ib;
+    }
+    // DAS ECK-FORMAT DER EINEN PIPE (w28-preis-ort, der Preis des Orts): Float32 trägt nur die Lage. Die Normale steht in snorm8 × 4
+    // (normiert, die vierte Stelle 0), die Farbe in half × 4 (die vierte Stelle 1) — die Formen, mit denen Boden- und Bau-Satz
+    // schon zeichnen (`_chunkSatzGeometrie`, `BAU_SATZ_ATTR`). r184 verlangt je Ecke ein Vielfaches von 4 Byte (snorm8x3 und
+    // float16x3 gibt es nicht), darum vier Stellen. An der Mess-Wiese (Radeon, 337846dc) trugen Normale und Farbe der gezeichneten
+    // Gestalten 15,1 von 40,9 MB Eck-Bytes in Float32; snorm8 legt die Normale auf 1/127 (0,45°), half die Farbe auf 2⁻¹¹ relativ.
+    // `a` = die Werte dicht (`is` je Ecke, Vorgabe 3), `n` Ecken → das Attribut in seiner Form. Jeder Schreiber einer Gestalt ruft sie
+    // (Pipe, Haut-Verschmelzung `_leibStarr…`, Alter `_werkAltern`), jeder CPU-Leser dichter Werte `_eckDicht`.
+    static _eckForm(name, a, n, is = 3) {
+        if (name === "normal") {
+            const o = new Int8Array(n * 4);
+            for (let i = 0; i < n; i++)
+                for (let c = 0; c < 3; c++) {
+                    const v = a[i * is + c];
+                    o[i * 4 + c] = Math.round((v > 1 ? 1 : v < -1 ? -1 : v) * 127);
+                }
+            return new THREE.BufferAttribute(o, 4, true);
+        }
+        if (name === "color") {
+            const F16 = globalThis.Float16Array;
+            if (typeof F16 !== "function") throw new Error("ECK-FORMAT: Float16Array fehlt (Browser vor Chrome 135)");
+            const o = new F16(n * 4);
+            for (let i = 0; i < n; i++) {
+                for (let c = 0; c < 3; c++) o[i * 4 + c] = c < is ? a[i * is + c] : 0;
+                o[i * 4 + 3] = 1;
+            }
+            return new THREE.BufferAttribute(o, 4);
+        }
+        throw new Error("ECK-FORMAT: keine Form für " + name);
+    }
+    // DIE DICHTE LESUNG (`_eckForm`): drei Werte je Ecke als Float32 aus jeder Form — die Normale entnormt wie r184 (`v / 127`,
+    // höchstens −1), die Farbe wie sie steht; `ziel` (optional) nimmt sie auf (die Werkbank des Satzes).
+    static _eckDicht(q, ziel) {
+        const n = q.count,
+            a = q.array,
+            s = q.itemSize;
+        const d = ziel || new Float32Array(n * 3);
+        const k = q.normalized && a instanceof Int8Array ? 1 / 127 : 1;
+        for (let i = 0; i < n; i++)
+            for (let c = 0; c < 3; c++) {
+                const v = c < s ? a[i * s + c] * k : 0;
+                d[i * 3 + c] = v < -1 && k !== 1 ? -1 : v;
+            }
+        return d;
     }
     // Die Welt-Höhe einer Foundry-Gruppe: y-Ausdehnung ihrer Vorlage × Preset-Welt-Skala (mindestens 0,1 m) — der
     // aH0-Stempel und das Höhen-Buch lesen DIESE Zahl. DIE SICHTHÖHE EINES BAUMS (K20): ohne den Hub seines Schafts (Beipack
@@ -964,6 +1027,7 @@ class AnazhRealm_studio_gestalt {
         const v = f.cache.get(key);
         f.cache.delete(key);
         f.cache.set(key, v); // LRU-Berührung: ans Ende (jüngste)
+        if (v && typeof v === "object") v._ruheSeit = performance.now(); // bestellt: die Ruhezeit beginnt neu
         return v;
     }
     // Eintrags-Gewicht: Byte-Längen der Kind-Geometrien (Attribute + Index), EINMAL beim Einfügen.
@@ -1000,6 +1064,7 @@ class AnazhRealm_studio_gestalt {
         if (prev && Number.isFinite(prev._cacheBytes)) f.cacheBytes -= prev._cacheBytes;
         if (v && typeof v === "object" && !Number.isFinite(v._cacheBytes)) v._cacheBytes = this._foundryGroupBytes(v);
         if (v && Number.isFinite(v._cacheBytes)) f.cacheBytes += v._cacheBytes;
+        if (v && typeof v === "object") v._ruheSeit = performance.now(); // gebaut: die Ruhezeit beginnt
         f.cache.set(key, v);
         // DAS HÖHEN-BUCH: die Höhe eines Baum-Körpers je Körper-Schlüssel — deterministisch (gleicher Schlüssel =
         // gleiche Geometrie), wenige Bytes, nie geräumt: die LRU vergisst die Geometrie, nie die Höhe.
@@ -1017,21 +1082,32 @@ class AnazhRealm_studio_gestalt {
         }
         this._foundryRuheDeckel(key);
     }
-    // DER RUHE-DECKEL (profiband K5, Gebot 7): ein Körper, den keine Senke zeichnet (`_liveRefs` 0), wuchs mit der bereisten
-    // Welt bis an den Gewichts-Deckel (Gang 6 min: 110 untätige = 146,5 MB neben 40,6 MB lebenden). Die ältesten Untätigen
-    // fallen, bis ihr Gewicht unter FOUNDRY_RUHE_BYTES steht — die jüngsten (eben gewärmt, eben verlassen) bleiben; `schone`
-    // ist der eben gesetzte Schlüssel. Gerufen beim Setzen und im Takt nach jeder Rückgabe (`_foundryLoslassen`).
+    // DER RUHE-DECKEL (profiband K5, Gebot 7): ein Körper, den keine Senke zeichnet (`_liveRefs` 0), ist kein Besitz — das
+    // Gesetz leitet ihn neu ab, die Platte trägt ihn. Zwei Wände an EINEM Räumer: (1) DIE RUHEZEIT — ein Untätiger, den seit
+    // `_foundryRuheMs()` niemand bestellt (`_foundryCacheGet`), gebaut (`_foundryCacheSet`) oder verlassen hat
+    // (`_foundryLoslassen`), fällt; bis w28-foundry-ruhe lag er an einem stehenden Ort für immer (Radeon 16.11., Dorfplatz
+    // 8 Uhr Third, 77 Bewohner: 134 Untätige = 36,8 MB von 63,0 MB, unter der Gewichts-Wand). (2) DAS GEWICHT — die ältesten
+    // Untätigen fallen, bis ihr Gewicht unter FOUNDRY_RUHE_BYTES steht (Gang 6 min: 110 untätige = 146,5 MB neben 40,6 MB
+    // lebenden). Die Jüngsten (eben gewärmt, eben verlassen) hält nur die Gewichts-Wand an; `schone` ist der eben gesetzte
+    // Schlüssel. Gerufen beim Setzen, im Takt nach jeder Rückgabe (`ruheOffen`) und wenn der nächste Untätige fällig wird
+    // (`ruheFaellig`, die früheste Ruhezeit des letzten Rufs — ein stehender Ort ruft ihn so, ohne Ereignis).
     _foundryRuheDeckel(schone) {
         const f = this._foundry;
         f.ruheOffen = false;
+        const jetzt = performance.now();
+        const frist = AnazhRealm._foundryRuheMs();
         let ruhe = 0;
         for (const v of f.cache.values()) if (v && !(v._liveRefs > 0)) ruhe += v._cacheBytes || 0;
+        let faellig = Infinity;
         for (const [k, v] of f.cache) {
-            if (ruhe <= AnazhRealm.FOUNDRY_RUHE_BYTES) break;
-            if (k === schone || !v || v._liveRefs > 0) continue;
-            ruhe -= v._cacheBytes || 0;
-            this._foundryCacheEvict(k);
+            if (!v || typeof v !== "object" || v._liveRefs > 0) continue;
+            if (!(v._ruheSeit >= 0)) v._ruheSeit = jetzt; // ein Eintrag ohne Stempel (am Setzen vorbei) ruht ab jetzt
+            if (k !== schone && (ruhe > AnazhRealm.FOUNDRY_RUHE_BYTES || jetzt - v._ruheSeit >= frist)) {
+                ruhe -= v._cacheBytes || 0;
+                this._foundryCacheEvict(k);
+            } else if (v._ruheSeit + frist < faellig) faellig = v._ruheSeit + frist;
         }
+        f.ruheFaellig = faellig;
     }
     // DIE EINE RÜCKGABE einer Cache-Gruppe durch ihren Halter (Senke, Leib, Schatten-Stellvertreter): war sie WÄHREND des
     // Haltens geräumt (`_evicted`), fällt ihre Geometrie mit dem letzten Halter (nie mitten im Leben, nie geleakt); wird sie
@@ -1040,6 +1116,7 @@ class AnazhRealm_studio_gestalt {
         if (!src) return;
         src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
         if (src._liveRefs > 0) return;
+        src._ruheSeit = performance.now(); // verlassen: die Ruhezeit beginnt
         if (src._evicted) this._disposeFoundryGroupGeom(src);
         else if (this._foundry) this._foundry.ruheOffen = true;
     }
@@ -1473,6 +1550,15 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 512;
 AnazhRealm.FOUNDRY_CACHE_BYTES = 512 * 1024 * 1024;
 // Der RUHE-DECKEL: das Gewicht der Körper ohne lebende Senke (`_liveRefs` 0), das der Cache hält (`_foundryCacheSet`).
 AnazhRealm.FOUNDRY_RUHE_BYTES = 64 * 1024 * 1024;
+// DIE RUHEZEIT des Ruhe-Deckels: die längste Rückkehr, die das Spiel einer verlassenen Senke gewährt — die Gnade der leeren
+// Instanz-Hülle mal dem Mint-Deckel der Churn-Linse (`ARCH_LEER_GNADE_MS` × `ARCH_LEER_MINT_DECKEL` = 60 s, vegetation-streu).
+// Die Hülle hält ihren Körper (`_liveRefs`), solange sie wartet; erst danach ruht er, und wer nach dieser Frist zurückkehrt, baut
+// auch seine Hülle neu. Kein eigenes Literal: wächst die Gnade, wächst die Ruhezeit mit. Fehlt eine der beiden, bricht der Ruf laut.
+AnazhRealm._foundryRuheMs = function () {
+    const ms = AnazhRealm.ARCH_LEER_GNADE_MS * AnazhRealm.ARCH_LEER_MINT_DECKEL;
+    if (!(ms > 0)) throw new Error("RUHE-DECKEL: keine Ruhezeit (ARCH_LEER_GNADE_MS × ARCH_LEER_MINT_DECKEL)");
+    return ms;
+};
 // Proaktiver Dock, zwei Kosten: ein GEDOCKTES Asset (schon im Cache) ist ein billiger
 // WebGPU-Instance → viele je Idle-Tick; ein nicht gedocktes löst einen Studio-Bake aus (das iframe
 // ist EIN Thread) → streng limitiert, damit die Bake-Schlange nicht flutet.

@@ -394,6 +394,11 @@ function standLauf(k) {
 // jede (sonst STUMPF), danach schläft sie; der Wasser-Automat geht nach einem Wecken am Fixpunkt genau EINEN Takt; das Feld und
 // der Brand arbeiten nur in berührten Zellen.
 const BRAND_JE = 64; // je Zelle des Feuers und Schritt: ihr Gang, die Zündung (Bett, Tempo, acht Ankünfte), die Asche
+// je Zelle, die in dem Schritt die MASKE ihres Betts misst (w28-lava-nachlauf: nur eine Zelle mit Brennstoff UND Kahlem, einmal je
+// Brand — ein neuer Eintrag des Gemessenen `_brandBett` mit Anteil zwischen 0 und 1): ihre `BRAND.bettGitter`² = 64 Punkte sind
+// 64 Teile der Zelle, je Punkt dasselbe Soll wie je Zelle (der EINE Stoff-Leser `_kontaktStoffAt` mit seinen Lese-Stellen;
+// gemessen an der Mess-Wiese 2 Masken in einem Schritt mit 79 Zellen: 10 882 Einheiten, ≈ 61 je Punkt)
+const BRAND_MASKE = BRAND_JE * 64;
 function simUrteil(b, v) {
     const R = b.simRuhe;
     if (!R || !R.frames) v.push("LEER: keine Sim-Ruhe gemessen");
@@ -441,9 +446,10 @@ function simUrteil(b, v) {
     const Z = W.brand;
     if (!Z || !Z.start) v.push("LEER: an der Mess-Wiese fing kein Brand");
     else {
-        const i = Z.zellen.findIndex((n, k) => Z.einheiten[k] > BRAND_JE * n);
+        const soll = (k) => BRAND_JE * Z.zellen[k] + BRAND_MASKE * ((Z.masken && Z.masken[k]) || 0);
+        const i = Z.zellen.findIndex((n, k) => Z.einheiten[k] > soll(k));
         if (!Z.einheiten.some((e) => e > 0)) v.push("STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt");
-        if (i >= 0) v.push(`BRAND-ZELLEN: Schritt ${i + 1} kostete ${Z.einheiten[i]} Einheiten bei ${Z.zellen[i]} brennenden Zellen (Soll ≤ ${BRAND_JE} je Zelle)`);
+        if (i >= 0) v.push(`BRAND-ZELLEN: Schritt ${i + 1} kostete ${Z.einheiten[i]} Einheiten bei ${Z.zellen[i]} brennenden Zellen (Soll ≤ ${BRAND_JE} je Zelle${Z.masken && Z.masken[i] ? ` + ${BRAND_MASKE} je gemessene Bett-Maske, hier ${Z.masken[i]}` : ""})`);
         if (Z.brennt) v.push(`BRAND-ERLISCHT: im Regen brennen noch ${Z.brennt} Zellen`);
         if (!(Z.mit >= 0.5 && Z.mit <= 2)) v.push(`FRONT-MIT: ${Z.koepfe} Köpfe mit dem Wind, Median ${Z.mit} m/s (Soll 0,5–2)`);
         if (!(Z.gegen <= 0.2)) v.push(`FRONT-GEGEN: gegen den Wind bis ${Z.gegen} m/s (Soll ≤ 0,2)`);
@@ -572,6 +578,18 @@ function standUrteil(b) {
         if (!W.regler) v.push("LEER: kein Regler-Schritt in der Weck-Phase");
         else if (!W.regler.takte.archCull || !(W.regler.takte.archCull.summe > 0))
             v.push("WECKEN: ein Regler-Schritt (der Cull-Radius) weckt archCull nicht — der Rand bliebe stehen");
+        // die Zusage eines Schläfers weckt den Cull (b-ankunft): er tritt in die Wache, sein Gang geht — sonst steht er wach mit
+        // seinem gedockten Asset, bis ein fremdes Ereignis die Bau-Takte regt (GTX 1050 kalt: 6–8 s vor dem ersten Weltbild)
+        if (!W.zusage) v.push("LEER: keine Zusage eines Schläfers in der Weck-Phase");
+        else {
+            if (W.zusage.vor !== 0) v.push(`LEER: vor der Zusage des Schläfers ruhte archCull nicht (${W.zusage.vor} Einheiten)`);
+            if (W.zusage.wach !== true) v.push("WECKEN: die Zusage holt den Schläfer nicht in die Wache des Culls");
+            else if (!W.zusage.takte.archCull || !(W.zusage.takte.archCull.summe > 0))
+                v.push(
+                    "WECKEN: die Zusage eines Schläfers weckt archCull nicht — er stünde wach mit seinem Asset, bis ein fremdes " +
+                        "Ereignis den Takt regt"
+                );
+        }
         // der Stempel liest die Wahrnehmung selbst (kein Weckruf am Schreiber): eine neue LOD-Distanz weckt die Stufen-Wahlen
         if (!W.wahrnehmung) v.push("LEER: kein Wahrnehmungs-Schritt in der Weck-Phase");
         else
@@ -581,6 +599,24 @@ function standUrteil(b) {
                         `WECKEN: ein Wahrnehmungs-Schritt (LOD_DISTANCES, ohne Weckruf) weckt ${n} nicht — der Stempel ` +
                             `liest die Wahrnehmung nicht`
                     );
+        // der Stempel liest den Schirm (w28-probe-schirm): jede Grenze des Stufen-Gesetzes liest die Zeilen des Zeichenpuffers — nach
+        // einem Fenster-Wechsel steht die Welt erst, wenn ein Takt am neuen Schirm ging, und die Stufen-Wahlen gehen
+        if (!W.schirm) v.push("LEER: kein Schirm-Schritt in der Weck-Phase");
+        else {
+            const [z0, z1] = W.schirm.zeilen || [];
+            if (!(z1 !== z0)) v.push(`LEER: der Schirm-Schritt wechselte keine Zeile (${z0} → ${z1})`);
+            if (W.schirm.stehtSofort !== false)
+                v.push(
+                    `WECKEN: nach einem Schirm-Schritt (${z0} → ${z1} Zeilen) steht die Welt ohne einen Takt — ein Bild trüge die ` +
+                        `Stufen des alten Schirms`
+                );
+            for (const n of ["archLod", "streuLod"])
+                if (!W.schirm.takte[n] || !(W.schirm.takte[n].summe > 0))
+                    v.push(
+                        `WECKEN: ein Schirm-Schritt (der Zeichenpuffer wechselt seine Zeilen, ohne Weckruf) weckt ${n} nicht — der ` +
+                            `Stempel liest die Zeilen des Schirms nicht`
+                    );
+        }
         if (W.eintrag && !W.versorgt)
             v.push("WECKEN: der neue Bau trägt nach dem Wecken weder Stufe noch Gestalt (der Cull-Gang ging ihn nie)");
         if (!W.nachher || W.nachher.summe > 0)

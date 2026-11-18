@@ -255,6 +255,22 @@ class AnazhRealm_siedlung_verkehr {
             for (let a = 0; a <= 2 * Math.PI + 1e-9; a += 1 / w.r)
                 ring.push({ x: w.x + Math.cos(a) * w.r, z: w.z + Math.sin(a) * w.r });
             linie(ring, kurveAus);
+            // DER PLATZ UND SEIN BOGEN SIND FAHRBAHN (w28-ziel-plan): wer stundenlang steht, steht nie im Platz eines Wagens und nie
+            // im Bogen, den er aus- und einparkt — der Platz bis an den Stand seines Fahrers (`standM` neben ihm), der Bogen ab dem
+            // Ende des Platzes. Bis hier hielt nur die Hülle des geparkten Wagens den Stand fern: fuhr er fort, rückte der Stand
+            // an seinen Ursprung zurück, und der Wagen fand ihn bei der Heimkehr im Platz (die Metropole um 10 Uhr, seit am Tor der
+            // Burg auch Fremde arbeiten: Wagen 8 berührte zwei Stehende 156-mal und erreichte kein Ziel, gate:fahr-leben --verkehr)
+            for (const p of w.plaetze) {
+                const [fx, fz] = [Math.sin(p.fahrt) * VG.parkL * 0.5, Math.cos(p.fahrt) * VG.parkL * 0.5];
+                const platzAus = VG.parkB / 2 + V.standM - 0.1 - VG.halbM - AnazhRealm.PLAYER_WALL_RADIUS - V.spurRandM;
+                stueck({ x: p.x - fx, z: p.z - fz }, { x: p.x + fx, z: p.z + fz }, platzAus);
+                for (const s of [1, -1])
+                    linie(
+                        this._verkehrPlatzBogen(w, p, s).B.filter(
+                            (q) => Math.hypot(q.x - p.x, q.z - p.z) >= VG.parkL / 2
+                        )
+                    );
+            }
         }
         // DIE ORTE, DIE EINER ZUR ZEIT BEFÄHRT (`_verkehrZonen`: verträgliche zugleich): jede Kreuzung (drei und mehr fahrbare
         // Strecken), jede Enge, jede Wende samt Platz und ihren Bahnen bis an ihren Abzweig
@@ -430,7 +446,7 @@ class AnazhRealm_siedlung_verkehr {
     }
 
     // LIEGT (x, z) IN DER SPUR EINES WAGENS? Näher als ein halber Wagen samt Kapsel, seinem Ausscheren in der Kurve (das fünfte
-    // Feld des Stücks) und `rand` an einer Spur, einem Abbieger, der Bahn oder dem Ring einer Wende (das Raster der Spuren,
+    // Feld des Stücks) und `rand` an einer Spur, einem Abbieger, der Bahn, dem Ring, einem Platz oder Park-Bogen einer Wende (das Raster der Spuren,
     // `VK.spurRaster`) — DIE FAHRBAHN, das EINE Gesetz, nach dem Fuß und Wagen die Straße teilen. Leser: der Stand der Bewohner
     // (`_bewohnerStandPruefen`, `spurRandM` Raum), und mit `rand` 0 jeder Ort, den ein Gehender wählt — der Punkt seines Wegs
     // (`_bewohnerStrecke`), der Punkt um einen Stehenden (`_bewohnerUm`), der Platz, auf den er tritt (`_bewohnerPlatz`), der
@@ -769,7 +785,15 @@ class AnazhRealm_siedlung_verkehr {
                     Math.hypot(g.position.x - werk.x, g.position.z - werk.z) < V.einsteigM
                 )
                     this._verkehrEinsteigen(S, W);
-                else if (b.amSteuer && W.zustand === "faehrt" && !W.heim && b.ziel !== werk) this._verkehrHeim(S, W);
+                // heim fährt, wessen Soll vom Werk ging — am Steuer ist sein Werk sein Wagen (`_bewohnerSoll`), davor der Stand
+                else if (
+                    b.amSteuer &&
+                    W.zustand === "faehrt" &&
+                    !W.heim &&
+                    b.ziel !== werk &&
+                    b.ziel !== W.entry.position
+                )
+                    this._verkehrHeim(S, W);
                 else if (b.amSteuer && W.zustand === "steht") this._verkehrAussteigen(S, b);
                 if (b.amSteuer) this._verkehrSitz(W, p);
             }
@@ -787,9 +811,12 @@ class AnazhRealm_siedlung_verkehr {
     _verkehrSitz(W, p) {
         const g = W.b.leib;
         const e = W.entry;
-        const sicht = this._archTraegt(e);
+        // (w28-leib-im-ring: der Fahrer im gezeichneten Wagen ist ein Leser des Leibs — er zieht mit dem Bild des Wagens
+        // in die Hülle und geht mit ihm; trägt der Bau ihn nicht, fährt der Wagen ohne Bild des Fahrers, laut)
+        const sicht = this._archTraegt(e) && this._bewohnerLeibAn(W.b._feldLageVon.S, W.b);
         if (sicht !== g.visible) g.visible = sicht;
         if (!sicht) {
+            this._bewohnerLeibAb(W.b);
             // ungezeichnet folgt der Leib seinem Wagen nur mit der Lage (kein Knochen): wer ihn liest (die Linse, die Ankunft),
             // findet ihn im Wagen — bis hier blieb er am Platz, an dem er einstieg
             g.position.set(e.position.x, e.position.y, e.position.z);
@@ -818,8 +845,10 @@ class AnazhRealm_siedlung_verkehr {
     }
 
     // DER FAHRER STEIGT EIN: er verlässt das Gedränge (kein Kreis, kein Satz, kein Feld, keine Ankunft im Takt — sein Leib gehört
-    // dem Wagen), der Wagen verlässt die Wand der Wege (`_verkehrFaehrt`: ab hier ist er ein Leib mit Vorrang; die Wache
-    // erfährt, dass seine Hülle vom Platz ging), und er fährt los — vom Platz über die Wende auf die Trasse. Die ERSTE Fahrt
+    // dem Wagen; er ist nicht drinnen wie im Haus, sondern am Steuer: sein Ort ist der Wagen, `_bewohnerSoll`, gezeichnet in
+    // dessen 3D-Stufe, `_verkehrSitz`; kein Feld trägt ihn, `_kzBesitztFeld`), der Wagen verlässt die Wand der Wege
+    // (`_verkehrFaehrt`: ab hier ist er ein Leib mit Vorrang; die Wache erfährt, dass seine Hülle vom Platz ging), und er fährt
+    // los — vom Platz über die Wende auf die Trasse. Die ERSTE Fahrt
     // nach der Ankunft der Siedlung beginnt, wo sein Tag ihn sähe (`_verkehrAnkunft`): unterwegs auf seiner Route.
     _verkehrEinsteigen(S, W) {
         const b = W.b;
@@ -828,7 +857,6 @@ class AnazhRealm_siedlung_verkehr {
         b.amSteuer = true;
         [b.kreis, b.nah, b.weg, b.drehen, b.vx, b.vz, b.platz] = [false, false, null, null, 0, 0, false];
         this._bewohnerRasterLage(S, b);
-        g.userData._drinnen = true; // kein Feld trägt ihn (`_kzBesitztFeld`)
         if (g.userData._kzGlieder) for (const gl of g.userData._kzGlieder) this._weltFeldAktiv(gl.handle, false);
         g.visible = false;
         (e._passagiere || (e._passagiere = new Set())).add(g); // das Komposit: er zeigt sich nur mit der Stufe des Wagens
@@ -880,10 +908,7 @@ class AnazhRealm_siedlung_verkehr {
             const nah = (o) => o && Math.hypot(o.x - q.x, o.z - q.z) < W.hl + 1;
             const unter = (b) =>
                 (b.leib && !b.drinnen && !b.amSteuer && !b.ankunft && nah(b.leib.position)) ||
-                nah(b.orte.heim) ||
-                nah(b.orte.platz) ||
-                nah(b.orte.werk) ||
-                nah(b.orte.besuch);
+                AnazhRealm.BEWOHNER.staende.some((k) => nah(b.orte[k]));
             if (S.liste.some(unter)) continue;
             if (W.zonen.some((z) => s + W.hl >= z.ein - 2 && s - W.hl <= z.aus + 2)) continue;
             const fahrt = Math.atan2(r.x - q.x, r.z - q.z);
@@ -967,7 +992,6 @@ class AnazhRealm_siedlung_verkehr {
         const werk = b.orte.werk;
         this._bewohnerStellen(b, g, werk.x, werk.z);
         g.rotation.set(0, werk.blick, 0);
-        g.userData._drinnen = false;
         g.visible = false;
         this._leibMatrix(g);
         Object.assign(b, { stand: werk, da: b.ziel === werk, weg: null, tagVon: null, zielUhr: NaN, lageNeu: true });

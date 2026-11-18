@@ -120,7 +120,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
                 name: `evo_test_${i}`,
                 program: ["weather", "rainy"],
                 source: "nexus",
-                createdAt: performance.now() / 1000 - i * 2,
+                createdAt: st.spielZeit - i * 2,
                 fitness: 0.5,
             });
         st.hofGestenExpanded = false;
@@ -438,7 +438,6 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
             source: "test:tonic",
             tagDelta: { dichte: 0.3 },
             durationSeconds: 60,
-            label: "Test-Tonic",
         });
         const prompt = r._buildCreaturePersonaPrompt(c);
         out.promptIsString = typeof prompt === "string" && prompt.length > 0;
@@ -447,7 +446,7 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
         out.promptHasStats = /HP\s+\d/.test(prompt) && /SPD\s+\d/.test(prompt);
         out.promptHasSpecs = /Sammler/.test(prompt) && /holz/.test(prompt);
         out.promptHasEquipped = /hammer/.test(prompt);
-        out.promptHasBoost = /Test-Tonic/.test(prompt);
+        out.promptHasBoost = /test:tonic/.test(prompt); // der Name eines Boosts ist eine Funktion seiner Quelle (`_boostZeile`)
         out.promptHasMemory = /sammelte holz/.test(prompt) || /baute/.test(prompt);
         out.promptHasWeather = new RegExp(st.weather || "sunny").test(prompt);
         out.promptInstructsJson = /JSON-Objekt/.test(prompt) && /say/.test(prompt) && /program/.test(prompt);

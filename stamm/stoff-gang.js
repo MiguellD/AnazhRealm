@@ -2,9 +2,10 @@ class AnazhRealm_stoff_gang {
     // ===== ATLAS · Stoff/gang — Der Gang-Satz: je Gestalt EIN Knochen-Puffer · Pose · Ecken · Instanz-Gang · die Hülle der Wahl (Bewohner und Tiere) =====
     // DER GANG-SATZ — der EINE Baustein jeder Menge gelenkiger Gestalten (Bewohner, Tiere; Lehre 23: WebGPU zieht jeden Draw
     // einzeln — die Kosten der Menge hängen nie an der Kopfzahl): je Gestalt EIN Knochen-Puffer, eine Textur — `baender` Bänder
-    // zu je `n` Phasen des Doppelschritts und der Stand (Zeile baender·n), je Zeile die Matrix jedes Knochens jeder Quelle in den
+    // zu je `n` Phasen des Doppelschritts und `staende` Stände (die Zeilen ab baender·n: der neutrale zuerst, dann je Haltung
+    // des Gesetzes einer — `spec.staende`, ohne Wort einer; w28-steh-haltung), je Zeile die Matrix jedes Knochens jeder Quelle in den
     // Raum des Leibs (`_gangSatzPose`, drei Texel je Knochen: die Zeilen der affinen Matrix). Die Kosten gehören dem Skelett,
-    // nie den Ecken (Lehre 19: je Gestalt 3·J·(baender·n + 1) Texel statt einer Lage je Ecke und Phase). Jede Senke
+    // nie den Ecken (Lehre 19: je Gestalt 3·J·(baender·n + staende) Texel statt einer Lage je Ecke und Phase). Jede Senke
     // (`spec.senken`: ihr Teil, ihre Quellen, ihr Stoff, ob sie wirft) ist eine Instanz-Senke über den EINEN Zeichner
     // (`_instanzMesh`); jede Ecke trägt ihre Vorlage (`aRoh`, `aRohN` — die Rückseite eines beidseitigen Teils mit gekehrter
     // Normale), ihre vier Knochen (`aKnochen`, Platz im Puffer) und Gewichte (`aGewicht`), ihre Lage im Stand (`position`,
@@ -34,6 +35,7 @@ class AnazhRealm_stoff_gang {
         const J = knochen.length;
         const N = spec.n;
         const B = spec.baender || 1;
+        const H = spec.staende || 1;
         // DER TON JE ECKE (mensch.K4): tragen die Quellen ihn (der Mensch, koerper `menschTon`), färbt jede Instanz ihre Ecken nach
         // ihrer Palette — die Zeilen der Ton-Tafel [Leib, Gestalt] reisen je Instanz in `aGang.zw` (`_gangSatzInstanz`), gelesen am
         // Index des Gangs (`_senkenKnoten().gang`: in der Wahl der GPU der Eintrag ihrer Liste, nie der Index des Zugs)
@@ -48,12 +50,13 @@ class AnazhRealm_stoff_gang {
                 `der Leib-Raum des Satzes (${spec.name})`,
                 new Error("eine Quelle ohne Ton oder Tafel")
             );
-        const seite = this._gangSeite(spec.name, N, B, ton, J, raum);
+        const seite = this._gangSeite(spec.name, N, B, ton, J, raum, H);
         const tex = seite.tex;
         const satz = {
             quellen: spec.quellen,
             n: N,
             baender: B,
+            staende: H,
             J,
             knochen,
             tex,
@@ -77,6 +80,28 @@ class AnazhRealm_stoff_gang {
         const knoten = seite.knoten;
         satz.ton = ton;
         const tonFarbe = seite.tonFarbe;
+        // DAS GESICHT DES SATZES (w28-satz-menge, foundry-core `__gesichtFern`): trägt die Vorlage die Züge ihres Baus (`spec.gesicht`),
+        // zeichnet der Stoff im Auge sie als Funktion (`seite.tonGesicht`) — ihre Zahlen stehen am Stoff des Satzes (`userData.gangGesicht0…10`,
+        // elf Vierer: Auge L + Radius · Auge R + halbe Breite der Lidspalte · oben, unten, Iris quer, hoch · Weiß + Pupille ·
+        // Iris · Pupille · Braue L + halbe Breite · Braue R + halbe Höhe · Mund + halbe Breite · halbe Höhe, Linie, ihre halbe Höhe ·
+        // der Anteil der Mund-Linie je Kanal); der Wurf zeichnet keine Farbe
+        const GE = ton && spec.gesicht ? spec.gesicht : null;
+        const gesicht = GE
+            ? Float32Array.from([
+                  ...GE.augen.slice(0, 3), GE.r,
+                  ...GE.augen.slice(3, 6), GE.spalt[0],
+                  GE.spalt[1], GE.spalt[2], GE.iris[0], GE.iris[1],
+                  ...GE.fest.slice(0, 3), GE.iris[2],
+                  ...GE.fest.slice(3, 6), 0,
+                  ...GE.fest.slice(6, 9), 0,
+                  ...GE.brauen.slice(0, 3), GE.brauen[3],
+                  ...GE.brauen.slice(5, 8), GE.brauen[4],
+                  ...GE.mund.slice(0, 3), GE.mund[3],
+                  GE.mund[4], GE.mund[5], GE.mund[6], 0,
+                  ...GE.mundLinie, 0,
+              ]) // prettier-ignore
+            : null;
+        satz.gesicht = gesicht;
         const S = (ton ? 15 : 14) + (raum ? 1 : 0); // die Ecke im EINEN Puffer: Vorlage, Normale, Knochen, Gewichte (Ton, Zeile)
         const klone = new Map();
         const e = new Float32Array(6);
@@ -86,7 +111,10 @@ class AnazhRealm_stoff_gang {
                 stoff = sk.stoff.clone();
                 stoff.name = spec.name;
                 stoff.positionNode = knoten;
-                if (tonFarbe) stoff.colorNode = tonFarbe;
+                if (tonFarbe) stoff.colorNode = gesicht && !sk.wurf ? seite.tonGesicht : tonFarbe;
+                if (gesicht)
+                    for (let i = 0; i < 11; i++)
+                        stoff.userData["gangGesicht" + i] = new T.Vector4().fromArray(gesicht, i * 4);
                 klone.set(sk.stoff, stoff);
                 satz.stoffe.push(stoff);
             }
@@ -183,9 +211,10 @@ class AnazhRealm_stoff_gang {
             m.userData.gang = {
                 n: N,
                 baender: B,
+                staende: H,
                 J: seite.breite,
                 puffer: tex.image.data,
-                bytes: 3 * J * (B * N + 1) * 16,
+                bytes: 3 * J * (B * N + H) * 16,
             };
             m.receiveShadow = !sk.wurf;
             m.layers.mask = sk.wurf ? 0 : 1; // der Wurf nur auf der Wurf-Ebene (`_wurfEbene`), das Auge nur auf Ebene 0
@@ -196,6 +225,8 @@ class AnazhRealm_stoff_gang {
             satz.senken.push(m);
         }
         satz.kugeln = AnazhRealm._gangSatzKugeln(satz);
+        // jeder weitere Stand (`staende`: geschrieben vor den Senken) weitet die Kugel wie jede gebackene Zeile
+        for (let h = 1; h < H; h++) AnazhRealm._gangSatzHuelle(satz, B * N + h);
         return satz;
     }
 
@@ -245,12 +276,14 @@ class AnazhRealm_stoff_gang {
 
     // DIE INSTANZ i EINER SENKE DES SATZES: die Matrix und der Gang (Band + Phase in Zyklen — der ganze Teil wählt das Band,
     // der Rest die Phase — und das Gewicht des Gangs, 0 = der Stand); trägt der Satz den Ton (mensch.K4), die Zeilen ihrer
-    // Palette in der Ton-Tafel [Leib, Gestalt] (`zeilen`, ohne sie die Eins)
-    static _gangSatzInstanz(m, i, m4, band, phase, w, zeilen) {
+    // Palette in der Ton-Tafel [Leib, Gestalt] (`zeilen`, ohne sie die Eins). DER STAND DER INSTANZ (w28-steh-haltung): die Zeile
+    // ihres Stands unter den Ständen des Satzes (`stand`, 0 = neutral) reist mit dem Gewicht — y = 2 · Stand + Gewicht, der
+    // Knoten liest beides (`_gangSatzKnoten`); `aGang` trägt keine freie Komponente
+    static _gangSatzInstanz(m, i, m4, band, phase, w, zeilen, stand = 0) {
         m.setMatrixAt(i, m4);
         const a = m.geometry.attributes.aGang;
         const x = band + phase - Math.floor(phase);
-        a.setXYZW(i, x, w, zeilen ? zeilen[0] : 0, zeilen ? zeilen[1] : 0);
+        a.setXYZW(i, x, 2 * stand + Math.min(1, w), zeilen ? zeilen[0] : 0, zeilen ? zeilen[1] : 0);
     }
     // DIE ZAHL EINER SENKE DES SATZES (dicht, [0, n) lebt): `_instanzZahl`, und was sich schrieb, lädt neu
     static _gangSatzZahl(m, n) {
@@ -283,17 +316,17 @@ class AnazhRealm_stoff_gang {
     // V18.546.159: 8 Bauten des bewohner-satz und 10 seines Wurfs, EIN Programm je Pass). Die Seite wächst in der Breite (doppelt,
     // bis GANG_SEITE.max Plätze: drei Texel je Platz unter der Textur-Grenze 8192), jede Zeile zieht dabei um; erst eine volle
     // Seite öffnet die nächste (ein Knoten mehr).
-    _gangSeite(name, n, baender, ton, J, raum = false) {
+    _gangSeite(name, n, baender, ton, J, raum = false, staende = 1) {
         const S = this._gangSeiten || (this._gangSeiten = new Map());
         const G = AnazhRealm.GANG_SEITE;
         if (!(J <= G.max)) throw this._stoffBruch(`die Seite des Gangs (${name})`, new Error(`${J} Plätze > ${G.max}`));
-        const key = `${name}|${n}|${baender}|${ton ? "ton" : ""}|${raum ? "raum" : ""}`;
+        const key = `${name}|${n}|${baender}|${staende}|${ton ? "ton" : ""}|${raum ? "raum" : ""}`;
         const liste = S.get(key) || S.set(key, []).get(key);
         let seite = liste.find((x) => x.passt(J));
         if (seite) return seite;
         const T = THREE;
         const TSL = T.TSL;
-        const zeilen = baender * n + 1;
+        const zeilen = baender * n + staende;
         const tex = new T.DataTexture(
             new Float32Array(3 * G.start * zeilen * 4),
             3 * G.start,
@@ -305,6 +338,77 @@ class AnazhRealm_stoff_gang {
         tex.minFilter = tex.magFilter = T.NearestFilter;
         tex.generateMipmaps = false;
         const ziel = raum ? this._gangZielTafel(name) : null;
+        const tonFarbe = ton
+            ? TSL.vec4(
+                  TSL.varying(
+                      TSL.attribute("color", "vec3").mul(this._tonFaktor(TSL, AnazhRealm._senkenKnoten().gang.zw)),
+                      "vTonFarbe"
+                  ),
+                  1
+              )
+            : null;
+        // DAS GESICHT IM STOFF DES SATZES (w28-satz-menge): der Leib der Menge ist EINE Hülle ohne Auge, Braue und Lippe (946 Ecken) —
+        // seine Züge zeichnet das Fragment am Ort der Ecke in der VORLAGE (`aRoh`, starr unter Pose und Formziel): die Lidspalte
+        // (die Mandel des Gesetzes: halbe Breite, oben, unten) mit Weiß, Iris und Pupille, die Braue und der Mund als Ellipsen ihrer
+        // Kästen, die Mund-Linie darin — jede Kante über den Fußabdruck des Bildpunkts geglättet (ein Zug unter einem Bildpunkt trägt
+        // seinen Anteil, nie Rauschen). Lippe und Braue färbt die Palette des Bewohners (die Zeile seiner Instanz in der Ton-Tafel),
+        // die Zahlen der Vorlage liest der Stoff (`userData.gangGesicht0…10`, `_gangSatz`). Kein Dreieck, kein Befehl, kein Programm je
+        // Bewohner: die Kosten hängen an den Bildpunkten des Kopfs. Bis hier zeigte jeder Bewohner im Satz EINE Fläche unter der Haar-Kappe.
+        const tonGesicht = ton
+            ? (() => {
+                  const KC = window.__koerperCore;
+                  const tafel = this._tonTafel();
+                  const zeile = TSL.int(AnazhRealm._senkenKnoten().gang.z);
+                  const palette = (klasse, nm) => TSL.varying(TSL.textureLoad(tafel, TSL.ivec2(TSL.int(KC.menschTon(klasse)), zeile), TSL.int(0)).rgb, nm); // prettier-ignore
+                  const [lippe, braue] = [palette("lips", "vGesichtLippe"), palette("braue", "vGesichtBraue")];
+                  // die Zahlen der Vorlage sind Stoff-Werte (`_stoffWert`): der Stoff ist je Satz geklont, der Graph EINER je Seite
+                  const U = Array.from({ length: 11 }, (_, i) =>
+                      this._stoffWert(TSL, "userData.gangGesicht" + i, "vec4")
+                  );
+                  const ort = TSL.varying(TSL.attribute("aRoh", "vec3"), "vGesichtOrt");
+                  const R = U[0].w.max(1e-6);
+                  const px = TSL.fwidth(ort.x).max(TSL.fwidth(ort.y)).div(R).max(1e-4); // der Bildpunkt in Augapfel-Radien
+                  const ab = (kante, x) => TSL.smoothstep(kante.sub(px), kante.add(px), x); // 0 unter der Kante, 1 darüber
+                  const band = (lo, hi, x) => ab(lo, x).sub(ab(hi, x));
+                  let c = tonFarbe.rgb;
+                  // der Mund: die Ellipse im Kasten beider Lippen im Ton der Lippe, die Linie darin
+                  const dm = ort.sub(U[8].xyz).div(R);
+                  const [mw, mh] = [U[8].w.div(R), U[9].x.div(R).max(1e-4)];
+                  const vornM = TSL.step(-2.5, dm.z);
+                  c = TSL.mix(
+                      c,
+                      lippe,
+                      TSL.float(1)
+                          .sub(ab(mw, TSL.length(TSL.vec2(dm.x, dm.y.mul(mw).div(mh)))))
+                          .mul(vornM)
+                  );
+                  const [ly, lh] = [U[9].y.div(R), U[9].z.div(R)];
+                  c = TSL.mix(c, lippe.mul(U[10].xyz), band(ly.sub(lh), ly.add(lh), dm.y).mul(TSL.float(1).sub(ab(mw.mul(0.92), dm.x.abs()))).mul(vornM)); // prettier-ignore
+                  for (const [e, b, bh] of [
+                      [U[0], U[6], U[7].w],
+                      [U[1], U[7], U[7].w],
+                  ]) {
+                      const d = ort.sub(e.xyz).div(R);
+                      const wk = U[1].w;
+                      const bogen = TSL.float(1).sub(d.x.div(wk).pow(2)).max(0); // 1 in der Mitte, 0 an den Winkeln
+                      const spalt = band(wk.negate(), wk, d.x).mul(band(bogen.mul(U[2].y).negate(), bogen.mul(U[2].x), d.y)).mul(TSL.step(0, d.z)); // prettier-ignore
+                      const rI = TSL.length(TSL.vec2(d.x, d.y.mul(U[2].z).div(U[2].w.max(1e-4))));
+                      c = TSL.mix(c, U[3].xyz, spalt);
+                      c = TSL.mix(c, U[4].xyz, TSL.float(1).sub(ab(U[2].z, rI)).mul(spalt));
+                      c = TSL.mix(
+                          c,
+                          U[5].xyz,
+                          TSL.float(1)
+                              .sub(ab(U[3].w, TSL.length(d.xy)))
+                              .mul(spalt)
+                      );
+                      const db = ort.sub(b.xyz).div(R);
+                      const bw = U[6].w.div(R);
+                      c = TSL.mix(c, braue, TSL.float(1).sub(ab(bw, TSL.length(TSL.vec2(db.x, db.y.mul(U[6].w).div(bh.max(1e-6)))))).mul(TSL.step(-1.5, db.z))); // prettier-ignore
+                  }
+                  return TSL.vec4(c, 1);
+              })()
+            : null;
         seite = {
             tex,
             breite: G.start,
@@ -314,15 +418,8 @@ class AnazhRealm_stoff_gang {
             zielNimm: ziel ? ziel.nimm : null,
             zielGib: ziel ? ziel.gib : null,
             ziel,
-            tonFarbe: ton
-                ? TSL.vec4(
-                      TSL.varying(
-                          TSL.attribute("color", "vec3").mul(this._tonFaktor(TSL, AnazhRealm._senkenKnoten().gang.zw)),
-                          "vTonFarbe"
-                      ),
-                      1
-                  )
-                : null,
+            tonFarbe,
+            tonGesicht,
             passt: (j) => seite.frei.some(([, z]) => z >= j) || seite.breite < G.max,
             nimm: (j) => {
                 let f = seite.frei.find(([, z]) => z >= j);
@@ -514,7 +611,9 @@ class AnazhRealm_stoff_gang {
             const f = T.fract(a.x).mul(n);
             const k0 = T.floor(f);
             const t = f.sub(k0).toVar();
-            const zs = T.int(baender * n);
+            const hs = T.floor(a.y.mul(0.5));
+            const wg = a.y.sub(hs.mul(2));
+            const zs = T.int(hs.add(baender * n)).toVar();
             const z0 = T.int(band.add(k0)).toVar();
             const z1 = T.int(band.add(T.mod(k0.add(1), n))).toVar();
             const lage = T.vec3(0).toVar();
@@ -522,7 +621,7 @@ class AnazhRealm_stoff_gang {
             for (const c of ["x", "y", "z", "w"]) {
                 const j = T.int(ki[c]).mul(3).toVar();
                 const lies = (r, z) => T.textureLoad(tex, T.ivec2(j.add(r), z), T.int(0));
-                const R = [0, 1, 2].map((r) => T.mix(lies(r, zs), T.mix(lies(r, z0), lies(r, z1), t), a.y).toVar());
+                const R = [0, 1, 2].map((r) => T.mix(lies(r, zs), T.mix(lies(r, z0), lies(r, z1), t), wg).toVar());
                 lage.addAssign(T.vec3(T.dot(R[0], roh), T.dot(R[1], roh), T.dot(R[2], roh)).mul(kw[c]));
                 nrm.addAssign(T.vec3(T.dot(R[0].xyz, rohN), T.dot(R[1].xyz, rohN), T.dot(R[2].xyz, rohN)).mul(kw[c]));
             }
