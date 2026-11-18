@@ -86,7 +86,9 @@ const BILD = process.argv.includes("--bild");
 //   loswand: die Bau-Wand kennt das Los eines Hauses nicht (nur seine Boxen): kommt das zweite Dorf, solange das erste erst
 //       den Kern seiner Tür-Zeile trägt (der Akt der späten Hülle, W7), stehen Häuser in Hof und Flügel — dem Urteil am Slot
 //       (`_bauFrei`) und dem Vor-Filter des Fadens (`_ortBauten`) nimmt der Defekt das Los; seine Welt ist die des Hauptlaufs
-//       (haus + start + fremd: dort wählt das zweite Dorf den Ort, an dem drei Lose in Hof und Flügel fallen)
+//       (haus + start + fremd). Rot fällt er an der Los-Probe des Akts (je Haus mit später Hülle ein Punkt seines Loses neben
+//       dem Kern, die Wand allein gegen dieses Haus gefragt) — ob ein Los des zweiten Dorfs in Hof oder Flügel fällt, hängt an
+//       seinem Plan (bis zum Land-Maß `BAU_LAND` drei Lose, seither keines)
 //   stab:
 //   kletter: W10: der Stab (die Brüstung) trägt · der Spieler klettert an jeder gestreiften Wand · an keiner
 //   startslot: W10: jeder Slot des Start-Dorfs östlich seiner Mitte fällt geschlossen — das Dorf steht nicht ganz
@@ -1121,6 +1123,21 @@ async function proben(phasen) {
             const stelle = (e, hu) => ((e._hausHuelle = hu), r._populateBlockerAABBs(e));
             for (const e of spaet) stelle(e, null);
             try {
+                // DIE LOS-PROBE (der Akt am Ort, den kein Plan wählen muss): je Haus mit später Hülle ein Punkt seines Loses, den sein
+                // Kern nicht deckt (Hof, Torriegel, Flügel — `_grundrissVon`, das Raster 5 × 5, über 1 m von jeder Box des Kerns) —
+                // die Wand, allein gegen dieses Haus gefragt (`_bauFrei` nur), sagt nein. Bis hier trug das zweite Dorf den Akt
+                // allein: ob eines seiner Lose in Hof oder Flügel fiel, hing an seinem Plan (seed 7, nH 18: drei Lose) — seit die
+                // Körper an ihrem Land enden (`BAU_LAND`), fällt keines mehr hinein, und der Täter `loswand` blieb grün (blind).
+                [w7.losProben, w7.losFrei] = [0, 0];
+                for (const e of spaet) {
+                    const q = raster5(e, r._grundrissVon(e)).find((q) =>
+                        (e.blockerAABBs || []).every((bx) => r._boxAbstand2(bx, q.x, q.z) > 1)
+                    );
+                    if (!q) continue;
+                    w7.losProben++;
+                    if (!r._bauFrei(q.x, q.z, 0, { ex: 0.2, ez: 0.2, ox: 0, oz: 0 }, null, e.position.y, e)) continue;
+                    if (w7.losFrei++ < 4) w7.taeter.push(`Los-Probe: ein Bau im Los von ${e.type}@${gierVon(e)}° angenommen`);
+                }
                 const res = await r.spawnSettlement({ seed: 7, nH: 18, position: { x: zelle[1].x, y: start.y, z: zelle[1].z } });
                 // (woran die Lose des zweiten Dorfs fielen: die Wand beim Namen, je Wand die Zahl)
                 w7.gefallen = {};
@@ -2004,13 +2021,13 @@ function urteil(o) {
             );
         if (!o.w7 || !(o.w7.haeuser >= 6))
             f.push(`W7 Aufbau: ${o.w7 ? o.w7.haeuser : "?"} Dorf-Häuser abgetastet (Soll ≥ 6)`);
-        else if (Number.isFinite(o.w7.zweitesDorf) && !(o.w7.spaet >= 6))
+        else if (Number.isFinite(o.w7.zweitesDorf) && !(o.w7.spaet >= 6 && o.w7.losProben >= 6))
             f.push(
-                `W7 Aufbau: ${o.w7.spaet} Häuser des ersten Dorfs trugen beim zweiten die Hülle des Studios (Soll ≥ 6) — der Akt der späten Hülle ist blind`
+                `W7 Aufbau: ${o.w7.spaet} Häuser des ersten Dorfs trugen beim zweiten die Hülle des Studios, ${o.w7.losProben} mit einem Punkt ihres Loses neben dem Kern (Soll je ≥ 6) — der Akt der späten Hülle ist blind`
             );
-        else if (o.w7.imBau || o.w7.zweitesImBau || !Number.isFinite(o.w7.zweitesDorf))
+        else if (o.w7.imBau || o.w7.zweitesImBau || o.w7.losFrei || !Number.isFinite(o.w7.zweitesDorf))
             f.push(
-                `W7 Bau im Bau: ${o.w7.imBau} Häuser in einem früheren Bau oder mit der Tür an seiner Wand, zweites Dorf am selben Anker ${o.w7.zweitesImBau}/${o.w7.zweitesDorf} im ersten (${o.w7.taeter.join(" · ") || "Akt fehlt"})`
+                `W7 Bau im Bau: ${o.w7.imBau} Häuser in einem früheren Bau oder mit der Tür an seiner Wand, zweites Dorf am selben Anker ${o.w7.zweitesImBau}/${o.w7.zweitesDorf} im ersten, im Los eines Hauses mit später Hülle angenommen ${o.w7.losFrei}/${o.w7.losProben} (${o.w7.taeter.join(" · ") || "Akt fehlt"})`
             );
         const ueber = hs.filter((h) => !(h.grundrissUeberM <= 0.05));
         if (ueber.length)
