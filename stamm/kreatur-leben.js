@@ -2696,7 +2696,20 @@ class AnazhRealm_kreatur_leben {
               )
             : this.spawnCreatureAt(x, y, z, "happy", t.soul, { bodySize: t.bs });
         if (!c) return null;
-        Object.assign(c.userData, { alterS: t.alterS, wanderAnchor: { x: t.x, z: t.z }, name: this._bestandName(t) });
+        // DIE KENNUNG IST DIE DES TIERS (w28-funktion-welt-2): die netId des Leibs trägt den Kurs seines Wanderns, die Ziele
+        // seines Reviers und den Verband (`_kreaturVerbinden`) — aus der Nummer des Tiers im Bestand (`t.id`, je Region gezählt),
+        // nie aus der Zahl der Leiber, die vor ihm gezeichnet wurden (`_creatureNetSeq`): A gegen A an ea7885fb `tier:wesen`
+        // anders, weil vor dem Sprung der Welt-Uhr je Lauf andere Leiber kamen und gingen
+        const s = String(t.id);
+        let h = 2166136261;
+        for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+        const netId = "c" + (1e6 + ((h >>> 0) % 9e8));
+        Object.assign(c.userData, {
+            netId,
+            alterS: t.alterS,
+            wanderAnchor: { x: t.x, z: t.z },
+            name: this._bestandName(t),
+        });
         [c.userData._bestand, t.leib, t.snap] = [t, c, null];
         return c;
     }

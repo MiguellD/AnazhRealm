@@ -921,6 +921,9 @@ class AnazhRealm_kreatur_verhalten {
         }
         const pm = st.playerMesh;
         if (pm && pm.position && !(st.player && st.player.mountedArch != null)) this._leibTeil(pm, teil(n++));
+        // ein Teil über der Zahl der Leiber fällt (w28-funktion-welt-2): er hielt den gegangenen Leib samt Gestalt fest
+        // (A gegen A an ea7885fb `r._leibKontaktTeile[13].q` — 54 Puffer, die die Welt nicht mehr trug)
+        if (T.length > n) T.length = n;
         if (n < 2) return;
         const nah = this._leibKontaktNah || (this._leibKontaktNah = {});
         for (let gang = 0; gang < AnazhRealm.LEIB_GAENGE; gang++) {
