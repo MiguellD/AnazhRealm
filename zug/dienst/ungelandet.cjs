@@ -17,7 +17,10 @@ const TAGE = +arg('--tage', 7);
 const MIN = +arg('--min', 20);
 const SCHWELLE = +arg('--schwelle', 85);
 const PFAD = ['--', '*.js', '*.cjs', '*.mjs', '*.html', '*.css', ':(exclude)vendor', ':(exclude)node_modules'];
-const OPT = { cwd: REPO, encoding: 'utf8', maxBuffer: 1 << 30 };
+// windowsHide (18.11.): der Blick startet diese Datei ABGELÖST (messplatz-blick.cjs, detached, ohne Konsole) — ohne die Zeile bekam
+// jedes git-Kind eine eigene Konsole, und Windows Terminal öffnete je Zweig ein Fenster (hunderte je Auffrischung, am Laptop gesehen).
+// timeout: ein git diff, das am Nachladen hängt (Teil-Klon), hielt sein Fenster minutenlang offen; es fällt nach 120 s als „leer“.
+const OPT = { cwd: REPO, encoding: 'utf8', maxBuffer: 1 << 30, windowsHide: true, timeout: 120000 };
 
 const gitSync = (a) => execFileSync('git', a, { ...OPT, stdio: ['ignore', 'pipe', 'ignore'] });
 const gitAsync = (a) => new Promise((ok) => execFile('git', a, OPT, (e, out) => ok(e ? (out || '') : out)));
