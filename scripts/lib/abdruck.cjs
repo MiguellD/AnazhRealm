@@ -580,11 +580,14 @@ function abdruckKern(G) {
             r = G.r,
             aus = {},
             art = {};
-        // ein Tier ist, wer es ist (Seele, Gattung, Nummer, Größe, Gehege, Leben) — seine Lage ist die eines Leibs in Bewegung
-        // (`leiber`), sein Ort im Bestand trägt der Halter (`_bestandRegion`)
+        // ein Tier ist, wer es ist (Seele, Gattung, Adresse und Erbe im Bestand, Größe, Gehege, Leben) — seine Lage ist die eines
+        // Leibs in Bewegung (`leiber`), sein Ort im Bestand trägt der Halter (`_bestandRegion`). Die Adresse ist `indId` des
+        // Gesetzes (Region, Welt-Takt, Lauf-Nummer), das Erbe `a`; die netId ist reiner Sync-Schlüssel der Sitzung (sie zählt
+        // die Leiber der Seite) und kein Merkmal des Tiers — bis leben-erbe hashte der Abdruck sie, der Täter von A gegen A an tier:*.
         const tier = (c, tot) => {
             const u = c.userData || {};
-            return W({ s: u.soul, g: u.gattung, k: u.kind, n: u.netId, b: u.bodySize, h: u.gehege, tot }, 2);
+            const t = u._bestand || null;
+            return W({ s: u.soul, g: u.gattung, k: u.kind, n: t && t.id, a: t && t.a, b: u.bodySize, h: u.gehege, tot }, 2); // prettier-ignore
         };
         (st.creatures || []).forEach((c) => (art[(c.userData && c.userData.soul) || "?"] ||= []).push(tier(c, 0)));
         (st.leichname || []).forEach((c) => (art[(c.userData && c.userData.soul) || "?"] ||= []).push(tier(c, 1)));

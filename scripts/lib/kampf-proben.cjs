@@ -850,8 +850,8 @@ async function WELLE_L(ort) {
         const grobTor = (c, x, z, sp) => r._trefferErreichbar(c, x, z, sp);
         const gestaltSchar = [];
         {
-            const G = A._verhaltenGesetz().groessen;
-            const groessen = [...new Set(G.flatMap((k) => [k.min, k.max]))].sort(aufsteigend);
+            // die Grenzen des Lebens-Gesetzes (`__lebenCore.spanne()`: das Neugeborene, das größte Erwachsene) und das Art-Mittel
+            const groessen = [...new Set([...A._lebenKern().spanne(), 1])].sort(aufsteigend);
             let n = 0;
             for (const seele of ["wesen", "wolf", "fuchs", "baer"]) {
                 for (const bs of groessen) {

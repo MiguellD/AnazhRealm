@@ -196,7 +196,8 @@ function abdruck(bauten, nahe) {
     }
     const bestand = Object.entries(stand.bestand)
         .sort()
-        .map(([k, R]) => [k, R.t, R.seq, R.tiere.map((t) => t.id + "@" + t.alterS).sort().join(" ")]);
+        // je Tier Adresse, Alter und Erbe `a` (leben-erbe: die Region zählt keine `seq` mehr, die Kennung ist `indId`)
+        .map(([k, R]) => [k, R.t, R.tiere.map((t) => t.id + "@" + t.alterS + "#" + [].concat(t.a).join(",")).sort().join(" ")]); // prettier-ignore
     const befund = {
         uhr: st.spielZeit,
         horizont: r._feldHorizont(),

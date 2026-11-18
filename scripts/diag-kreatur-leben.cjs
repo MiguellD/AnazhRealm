@@ -213,18 +213,24 @@ async function lebenBuehnen() {
             const f = wfa.call(r, x, z);
             return halb ? Object.assign({}, f, { lebendig: f.lebendig / 2 }) : f;
         });
-        const tod = { n: 0, aeltester: 0, trauer: 0, journal: 0 };
+        const tod = { n: 0, trauer: 0, journal: 0, bestand: 0, reserve: 0 };
+        // DAS OPFER DES HUNGERS im Verzeichnis (leben-erbe): wem die Reserve zuerst ausgeht — kein Freier seiner Gattung in seiner
+        // Region trägt im Augenblick der Wahl weniger Masse (Fasten-Ausdauer ∝ M^¼ ist monoton in der Masse). Bis leben-erbe nahm
+        // der Hunger das Älteste.
+        decke("_bestandStirbt", (alt) => (R, t, ursache, ...rest) => {
+            if (ursache === "hunger") {
+                const kg = r._bestandKg(t);
+                const leerste = r._bestandFreie(R).every((o) => o.g !== t.g || !(r._bestandKg(o) < kg));
+                Object.assign(tod, { bestand: tod.bestand + 1, reserve: tod.reserve + leerste });
+            }
+            return alt.call(r, R, t, ursache, ...rest);
+        });
         decke("_creatureNaturalDeath", (dies) => (c, grund, ...rest) => {
-            // der Älteste: kein Tier seiner Gattung in der Region seines Ankers ist älter
-            const [a, g] = [c.userData.wanderAnchor, A.TETRAPODA_SOUL_MAP[c.userData.soul]];
-            const R = s.faunaBestand.regionen[r._bestandKey(a.x, a.z)];
-            const aelteste = R.tiere.every((o) => o.g !== g || !(o.alterS > c.userData.alterS));
             const o = dies.call(r, c, grund, ...rest);
             const j = s.worldJournal.entries;
             if (grund === "hunger")
                 Object.assign(tod, {
                     n: tod.n + 1,
-                    aeltester: tod.aeltester + aelteste,
                     trauer: tod.trauer + (s.player.emotions.sorrow > 0),
                     journal: tod.journal + (j[j.length - 1].type === "loss"),
                 });
@@ -368,7 +374,7 @@ async function lebenBuehnen() {
                     if (k >= 720 && k < 2160 && !(k % 10)) R.forEach((Rj, j) => (z.orte[j] = (z.orte[j] || 0) + Rj.tiere.length / 144)); // prettier-ignore
                     if (/ohneWolf|kappeHalb/.test(name)) z.spur.push(R.slice(0, nah.length).map((Rj) => Rj.tiere.map((t) => t.id).join()).join("|")); // prettier-ignore
                     z.leiber = Math.max(z.leiber, s.creatures.length);
-                    z.fremd += s.creatures.filter((c) => c.userData._bestand && !nah.includes(c.userData._bestand.id.split(".")[0])).length; // prettier-ignore
+                    z.fremd += s.creatures.filter((c) => c.userData._bestand && !nah.includes(c.userData._bestand.id.split(":")[0])).length; // prettier-ignore
                 });
                 L[name].push(Object.assign(l, z));
                 // zwischen den Läufen eine Aufgaben-Grenze (der EINE Schlaf der Seite): erst dort räumt die Speicher-Bereinigung die
@@ -1147,6 +1153,7 @@ async function lebenBuehnen() {
         const nummern = GG.tiere(Z, GG.G).map((t) => t.id).sort().join(); // prettier-ignore
         const z = { tiere: Z.n, bilder: 0, aus: 0, randMin: Infinity, leer: 0, anders: 0, wild: 0, alterS: 0, takte: 0 };
         const leiber = () => r._gehegeTiereVon(Z).map((t) => t.leib).filter(Boolean); // prettier-ignore
+        const eintritt = new Map(); // je Kennung das Alter, mit dem ihr Tier in die Zeile trat
         const bild = (voll, B) => {
             const L = leiber();
             z.leer += voll && L.length !== Z.n;
@@ -1165,7 +1172,11 @@ async function lebenBuehnen() {
             const T = r._gehegeTiereVon(Z);
             z.takte++;
             z.anders += T.map((t) => t.id).sort().join() !== nummern; // prettier-ignore
-            for (const t of T) z.alterS = Math.max(z.alterS, t.alterS);
+            // gealtert gegen den Eintritt: die Zeile tritt erwachsen ein (alterS = reifeS(M∞), leben-erbe) und altert nie im Takt
+            for (const t of T) {
+                if (!eintritt.has(t.id)) eintritt.set(t.id, t.alterS);
+                z.alterS = Math.max(z.alterS, t.alterS - eintritt.get(t.id));
+            }
             for (const key of new Set(T.map((t) => r._bestandKey(t.x, t.z)))) {
                 const frei = s.faunaBestand.regionen[key].tiere.filter((t) => t.g === Z.gattung && !t.gehege).length;
                 z.wild = Math.max(z.wild, r._kreaturBestand(null, key)[Z.gattung].n - frei);
@@ -1292,7 +1303,7 @@ function lebenUrteil(name, z, soll) {
         );
         soll(
             z.wild === 0 && z.alterS === 0,
-            `das wilde Gesetz zählt das Gehege: ${z.wild} seiner Tiere im Bestand der Region, gealtert ${z.alterS} s (Soll 0 · 0)`
+            `das wilde Gesetz zählt das Gehege: ${z.wild} seiner Tiere im Bestand der Region, gealtert ${z.alterS} s gegen den Eintritt (Soll 0 · 0)`
         );
         soll(
             Math.abs(z.budget.ruhen - z.sollRuhen) <= 0.2 * z.sollRuhen,
@@ -1314,8 +1325,8 @@ function lebenUrteil(name, z, soll) {
         );
         const T = z.hungertod;
         soll(
-            T.n >= 1 && T.aeltester === T.n && T.trauer === T.n && T.journal === T.n,
-            `der Hungertod nimmt nicht das Älteste, trauert nicht oder schreibt kein Journal: ${T.n} Tode, ${T.aeltester} die Ältesten, ${T.trauer} betrauert, ${T.journal} im Journal`
+            T.n >= 1 && T.trauer === T.n && T.journal === T.n && T.bestand >= 1 && T.reserve === T.bestand,
+            `der Hungertod nimmt nicht, wem die Reserve zuerst ausgeht (fastenRang), trauert nicht oder schreibt kein Journal: ${T.bestand} Tode im Bestand, ${T.reserve} die Leichtesten; gezeichnet ${T.n}, ${T.trauer} betrauert, ${T.journal} im Journal`
         );
         const paare = z.saaten.flatMap((je, i) =>
             Object.entries(je).map(([g, [a, e]]) => ({ wo: `Saat ${i + 1} ${g} ${a} → ${e}`, a, e }))
@@ -1564,12 +1575,13 @@ if (V) {
     }
     check("Aktions-Profile nutzen nur bekannte MOTION-Felder", fremd.length === 0, fremd.join(","));
     // (die Blöcke des Buchs prüft der EINE Leser _verhaltenGesetz beim Boot, die Rezepte der Umschlag: gate:studio-vertrag)
-    // Die Größen-Bänder sind lückenlos aufsteigend (die letzte Zeile fängt den Rest).
-    const gr = Array.isArray(V.groessen) ? V.groessen : [];
-    let grOk = gr.length >= 2;
-    for (let i = 1; i < gr.length; i++) if (!(gr[i].bis > gr[i - 1].bis)) grOk = false;
-    check("groessen-Bänder strikt aufsteigend (bis-Schwellen)", grOk);
 }
+// ── die Größe ist das Gesetz des Lebens (leben-core `__lebenCore`, leben-erbe): die Spanne des Gesetzes umschließt das Art-Mittel
+// (das Neugeborene unten, das größte Erwachsene bei +4σ oben) — bis leben-erbe vier Größen-Bänder im Buch der Tiere ──
+require(path.join(root, "leben-core.js"));
+const LK = global.__lebenCore;
+const sp = LK && LK.spanne();
+check("Spanne des Lebens-Gesetzes [Neugeborenes < 1 < größtes Erwachsenes]", !!sp && sp[0] > 0 && sp[0] < 1 && sp[1] > 1);
 
 urteilEnde(
     errs.length,

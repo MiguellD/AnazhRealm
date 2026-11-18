@@ -1369,7 +1369,7 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 150; k++) {
             x += 1.5 * dt;
             r._p2pHandleCreaturePos("linse-peer", {
-                list: [{ id: "c9001", x, y: o.y, z: o.z, yaw: Math.PI / 2, soul: "wesen" }],
+                list: [{ id: "c9001", x, y: o.y, z: o.z, yaw: Math.PI / 2, b: 1, soul: "wesen" }],
             });
             r._p2pTickRemoteCreatures(100 + k * dt, dt);
         }
@@ -1457,10 +1457,9 @@ async function kreaturProben(r, T, opts) {
         const speedNach = s.speed,
             sprintNach = s.sprintSpeed,
             sprungNach = s.jumpPower;
-        // (c) DIE GRÖSSE nur über die bodySize-Achse, in den Bändern des Gesetzes.
-        const GB = A._verhaltenGesetz().groessen;
-        const bsMin = Math.min(...GB.map((z) => z.min)),
-            bsMax = Math.max(...GB.map((z) => z.max));
+        // (c) DIE GRÖSSE nur über die bodySize-Achse, in der Spanne des Lebens-Gesetzes (`__lebenCore.spanne()`; bis leben-erbe
+        // die vier Größen-Bänder 0,6–2,7) — auch das Tier, das mit 2,5 gerufen wird, und nach dem Hauch × 3.
+        const [bsMin, bsMax] = A._lebenKern().spanne();
         const o = land(40, -30);
         const tiere = [1, 0.7, 2.5, 1.2].map((bs, i) => tier({ x: o.x + i * 4, y: o.y, z: o.z }, "wesen", bs));
         r.dslRun(["creatures_size_mul", 1.11], { source: "nexus" });
@@ -1502,7 +1501,7 @@ async function kreaturProben(r, T, opts) {
             sprintSoll: rund(speedNach * A._sprintMulGesetz(), 3),
             sprungBand: [rund(bJ.min, 3), rund(bJ.max, 3)],
             sprungNach: rund(sprungNach, 3),
-            groessen: tiere.length,
+            groesseN: tiere.length,
             ohneAchse,
             ausserBand,
             tempoVor: rund(vor, 3),
@@ -2708,7 +2707,7 @@ async function kreaturProben(r, T, opts) {
         const kopien = [];
         for (let i = 0; i < 8; i++) {
             const o = land(Math.cos(i * 0.785 + 0.3) * (20 + 2.5 * i), Math.sin(i * 0.785 + 0.3) * (20 + 2.5 * i));
-            kopien.push({ id: "k" + i, x: o.x, y: o.y, z: o.z, yaw: 0, soul: seelen[i % 4] });
+            kopien.push({ id: "k" + i, x: o.x, y: o.y, z: o.z, yaw: 0, b: 1, soul: seelen[i % 4] });
         }
         for (let k = 0; k < 120; k++) {
             r._p2pHandleCreaturePos("linse-satz", { list: kopien });
@@ -2971,9 +2970,9 @@ function urteil(name, z) {
             z.sprungNach >= z.sprungBand[0] - eps && z.sprungNach <= z.sprungBand[1] + eps,
             `Sprungkraft ${z.sprungNach} jenseits des Gesetz-Bands ${z.sprungBand.join("–")}`
         );
-        soll(z.groessen > 0, "keine Tiere für die Größen-Probe (vakuös)");
-        soll(z.ohneAchse === 0, `${z.ohneAchse} von ${z.groessen} Tieren: Skala ohne bodySize-Achse`);
-        soll(z.ausserBand === 0, `${z.ausserBand} von ${z.groessen} Tieren: bodySize außerhalb der Größen-Bänder`);
+        soll(z.groesseN > 0, "keine Tiere für die Größen-Probe (vakuös)");
+        soll(z.ohneAchse === 0, `${z.ohneAchse} von ${z.groesseN} Tieren: Skala ohne bodySize-Achse`);
+        soll(z.ausserBand === 0, `${z.ausserBand} von ${z.groesseN} Tieren: bodySize außerhalb der Spanne des Lebens-Gesetzes`);
         soll(
             z.tempoNach < z.tempoVor - 1e-6,
             `creatures_speed_mul ohne Leser: der Charakter ${z.tempoVor} → ${z.tempoNach} (der Tempo-Hauch wirkt nicht)`

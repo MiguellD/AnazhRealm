@@ -1410,7 +1410,7 @@ async function checkBandLateMultiUser({ page, check }) {
         p2p.remoteCreatures.clear();
         r._p2pHandleChannelMessage(
             "chPeer",
-            JSON.stringify({ type: "creature-pos", list: [{ id: "c1", x: 1, y: 6, z: 1, soul: "wesen" }] })
+            JSON.stringify({ type: "creature-pos", list: [{ id: "c1", x: 1, y: 6, z: 1, b: 1, soul: "wesen" }] })
         );
         out.creaturePosChannelAllowed = p2p.remoteCreatures.has("chPeer:c1");
 

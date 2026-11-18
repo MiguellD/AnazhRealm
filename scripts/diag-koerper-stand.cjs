@@ -941,10 +941,17 @@ async function rollen(n) {
             return { ...mass(a), stecken: stecken + (a.length < n) };
         };
         R.fuss = bahn([auf - Math.PI / 2, auf + Math.PI / 2].map((y) => [y, 25]));
-        // der Huf: je Größen-Band ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im Gang (die Beine im Stand:
-        // Hub 0 ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm
+        // der Huf: je Grenze der Spanne des Lebens-Gesetzes (`__lebenCore.spanne()`: das Neugeborene an −4σ, das Art-Mittel 1, das
+        // größte Erwachsene an +4σ) ein Reh 4 m neben dem Spieler, frei im Gang (die Beine im Stand: Hub 0 ihres Ziels); netId und
+        // Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm. Bis leben-erbe: die Obergrenzen der vier Größen-Bänder.
         const [max, seq] = [s.maxCreatures, s._creatureNetSeq];
-        for (const [k, band] of AnazhRealm._verhaltenGesetz().groessen.entries()) {
+        const [klein, gross] = AnazhRealm._lebenKern().spanne();
+        const spanne = [
+            { name: "jung", max: klein },
+            { name: "mittel", max: 1 },
+            { name: "gross", max: gross },
+        ];
+        for (const [k, band] of spanne.entries()) {
             [s.maxCreatures, s._creatureNetSeq, s.creatureAnimationTime] = [s.creatures.length + 3, 9e5 + k, 1000];
             const reh = r.spawnCreatureAt(
                 P.x + 4,
