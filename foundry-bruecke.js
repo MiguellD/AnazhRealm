@@ -696,6 +696,10 @@ const foundryKanal = (() => {
             // DAS STEIN-GESETZ reist mit (w4-genesis-tore, must-ignore): ein Stein-Rahmen (porta `__stein`) trägt den Namen seiner
             // Zeile — die Welt webt Fuge, Kante und Ton aus dem uv seiner Teile (`_steinStoff`). Stoffe ohne das Feld bleiben byte-alt.
             if (zweitKern && mat.userData && typeof mat.userData.__stein === "string") out.mat.stein = mat.userData.__stein;
+            // DAS VERBAND-GESETZ reist mit (w28-haus-stoff, must-ignore): ein Stoff, dem das Labor eine Karte seines Verbands legt
+            // (fachwerk `VERBAND_GESETZ`: Mauerwerk, Deckung, Putz, Naturstein), trägt die Nummer seiner Zeile — die Welt webt Stein,
+            // Fuge und Ton als Funktion (`_verbandStoff`), ohne Karte und ohne uv. Stoffe ohne das Feld bleiben byte-alt.
+            if (zweitKern && mat.userData && mat.userData.__verband > 0) out.mat.verband = mat.userData.__verband | 0;
             // DAS LEUCHT-GESETZ reist mit (Architektur-Welle 05.10., must-ignore): ein Stoff, der in seiner Vertex-Farbe
             // leuchtet (fachwerk `feuer`: Glut, Flamme, Herdfeuer), trägt die Stärke — die Welt webt emissiveNode = Farbe ×
             // leucht. Stoffe ohne das Feld (Pflanzen, jede andere Glut) bleiben byte-alt.

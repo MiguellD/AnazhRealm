@@ -1010,6 +1010,7 @@ class AnazhRealm_dirigent_takt {
                 const initialFitness = result.ok ? Math.max(0, 1 - fpsDmg / 100) : 0;
                 const abilityEntry = {
                     name: evolution.name,
+                    ...(Array.isArray(evolution.etikett) ? { etikett: evolution.etikett } : {}), // der Name der Seite
                     program: evolution.program,
                     source: evolution.source || "nexus",
                     createdAt: evolution.createdAt || this.state.spielZeit,

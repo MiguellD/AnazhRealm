@@ -463,7 +463,7 @@ class AnazhRealm_kreatur_leben {
 
     // === Kreatur-Boosts via Konsumables ===
     // Boost EMERGIERT aus computeCompoundTags(blueprint) × scale (symmetrisch zu activateConsumable).
-    // userData.boosts = [{source, tagDelta, expiresAt, label}]; gleiche source verlängert, der 1-Hz-Tick
+    // userData.boosts = [{source, tagDelta, expiresAt}] (der Name ist eine Funktion der Quelle, `_boostZeile`); gleiche source verlängert, der 1-Hz-Tick
     // (boostLastTick) entfernt Abgelaufene; computeCreatureStats summiert tagDelta. NICHT persistiert.
 
     applyCreatureBoost(creature, spec) {
@@ -481,25 +481,22 @@ class AnazhRealm_kreatur_leben {
         const duration = Math.max(0.5, Math.min(600, Number(spec.durationSeconds) || 30));
         const now = this.state.spielZeit;
         const expiresAt = now + duration;
-        const label = String(spec.label || source).slice(0, 80);
         if (!Array.isArray(creature.userData.boosts)) creature.userData.boosts = [];
         const existing = creature.userData.boosts.find((b) => b.source === source);
         const isNewBoost = !existing;
         if (existing) {
-            // Selbe Quelle erneut → expiresAt verlängern, tagDelta + label
-            // aktualisieren (Konsumable könnte sich zwischen Aktivierungen
-            // verändert haben). Selbe Disziplin wie Player.addPlayerBoost.
+            // Selbe Quelle erneut → expiresAt verlängern, tagDelta aktualisieren (Konsumable könnte sich zwischen
+            // Aktivierungen verändert haben). Selbe Disziplin wie Player.addPlayerBoost.
             existing.expiresAt = expiresAt;
             existing.tagDelta = tagDelta;
-            existing.label = label;
         } else {
-            creature.userData.boosts.push({ source, tagDelta, expiresAt, label });
+            creature.userData.boosts.push({ source, tagDelta, expiresAt });
         }
         this._afterCreatureEquipChange(creature);
         // Proaktive Sprache nur bei NEUEM Boost (nicht beim Verlängern, sonst spräche sie jeden Tick);
         // der Throttle in _creatureSpeakProactive ist die zweite Verteidigung gegen Flood.
         if (isNewBoost && typeof this._creatureSpeakProactive === "function") {
-            this._creatureSpeakProactive(creature, "boost_received", { label });
+            this._creatureSpeakProactive(creature, "boost_received", { label: this._boostZeile({ source }) });
         }
         return true;
     }
@@ -553,10 +550,14 @@ class AnazhRealm_kreatur_leben {
             source: `consume:${blueprintName}`,
             tagDelta: tagBonus,
             durationSeconds: meta.durationSeconds || 30,
-            label: meta.label || bp.label || blueprintName,
         });
         // DAS WESEN ERINNERT, WER ES FÜTTERTE (Ökologie K3): die Gabe senkt die Furcht vor dem Spieler (`_kreaturFurchtErinnert`)
-        if (ok) this._creatureRemember(creature, "gefuettert", { gabe: blueprintName, label: bp.label });
+        // die Erinnerung spricht zur Tür des Modells in der Quell-Sprache des Gesetzes (de), nie in der Sprache des Spielers von jetzt
+        if (ok)
+            this._creatureRemember(creature, "gefuettert", {
+                gabe: blueprintName,
+                label: AnazhRealm._etikettQuelle(bp),
+            });
         return ok ? { ok: true, tagBonus } : { ok: false, reason: "boost_apply_failed" };
     }
 

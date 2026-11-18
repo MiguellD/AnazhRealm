@@ -4,7 +4,7 @@
 // Gerüst · Riegel · Streben · Gefache · Giebel · Dachwerk · Eindeckung · Böden · Innenwände ·
 // Herd · Treppe · Türen · Fenster · Möbel · Anbau/Flügel/Balkon · Kuppel/Portikus/Hof/Arkade/
 // Turm/Zinnen/Veranda/Vorkragung/Pilotis/Terrasse/Rundbau) · die KULTUR-Archetypen (32
-// klickbare Haus-Typen, `kulturParams` = die reine Ableitung) · das Bake-Vokabular der
+// klickbare Haus-Typen, die bauweise-Zeilen des Bau-Gesetzes `bauRezept`) · das Bake-Vokabular der
 // Dorf-Pipeline (bakeHaus/bakeLOD · stapelBau · fragFuer · lod2Koerper · fensterFern ·
 // mischeGeoms · hofFuer · wandTonAus). Byte-treu aus dem Schöpfer-Werk extrahiert
 // (Zeilen-Slices, Paritäts-Hash-bewiesen) — die Shell UND AnazhRealm lesen DIESE eine
@@ -21,7 +21,7 @@
 // fragFuer Stufe 1 würfelt den FENSTER-SCHLAF aus demselben Samen. buildInstance(id, 7, …)
 // != buildInstance(id, 12345, …) — jede Instanz eine ANDERE gewachsene Variante; die
 // WAHRHEIT ist eingefroren in spec/asset-contract/v6 (cv:6, seed-getrieben). Die REZEPT-
-// Dials selbst (PRESETS.s) sind am LAB-STARTZUSTAND eingefroren (kulturParams(name, 3) —
+// Dials selbst (PRESETS.s) sind am LAB-STARTZUSTAND eingefroren (bauRezept({bauweise: name}, null, 3) —
 // `let SEED=3` ist der Boot-Samen des Labs); das seed-Argument variiert die INSTANZ.
 //
 // DIE STUFEN-WAHRHEIT (B2, die erste Mehr-Stufen-Domäne außerhalb der Bäume): das Lab trägt
@@ -154,6 +154,16 @@
     //  { P, subsystems, order, solids, build, spawn, floors, windows,
     //    annexDoors, cellar, wings, grundriss, dims, furniture, chimney, roofY }
     // ═══════════════════════════════════════════════════════════════════════
+    // DIE GRENZNEIGUNG JE STIL (w28-bau-rezept, EINE Quelle): so flach trägt die Deckung des Stils — HAUS klemmt jede Neigung darauf,
+    // und das Bau-Gesetz schreibt die gebaute Neigung ins Rezept (`grenzNeigung`); vorher stand sie nur in STILMODE, und das Rezept
+    // trug eine tote Zahl: die griechischen Wohnhäuser 10–14° im Plan, 18° gebaut. Ohne Stil-Eintrag (alt) 28°.
+    var STIL_GRENZNEIGUNG = { modern: 14, huette: 30, stein: 18, glas: 4, klinker: 22, stroh: 38 };
+    // der Stil, den HAUS baut (das Monument trägt keinen Holzbau: FEATURE→MATERIAL), und seine Grenzneigung
+    function grenzNeigung(P) {
+        var stil = ["alt", "modern", "huette", "stein", "glas", "klinker", "stroh"].indexOf(P.stil) >= 0 ? P.stil : "alt";
+        if ((P.portikus || P.zinnen || P.kuppel || P.arkade) && (stil === "alt" || stil === "huette" || stil === "stroh")) stil = "stein";
+        return STIL_GRENZNEIGUNG[stil] != null ? STIL_GRENZNEIGUNG[stil] : 28;
+    }
     // prettier-ignore
     function HAUS(THREE, mat, PARAMS){
   const D2R=Math.PI/180, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -178,12 +188,12 @@
   P.stil = ['alt','modern','huette','stein','glas','klinker','stroh'].includes(P.stil) ? P.stil : 'alt';
   if((P.portikus||P.zinnen||P.kuppel||P.arkade) && (P.stil==='alt'||P.stil==='huette'||P.stil==='stroh')) P.stil='stein';   // FEATURE→MATERIAL (Parametererweiterung wie STILMODE): Tempel/Burg/Kuppel/Riad implizieren monumentale Fassade — kein Fachwerk am Monument
   const STILMODE={
-    modern:{ RM:{holz:'putz',backstein:'putz',gefach:'putz',lehm:'putz',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:14 },   // glatt verputzt, flaches Dach
-    huette:{ RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stamm',ziegel2:'stamm'},      brace:null,   flat:0, pMin:30 },   // Blockhütte: Holzwände + Holzschindeln, Sichtbalken bleiben
-    stein: { RM:{holz:'putz',gefach:'putz',lehm:'putz',backstein:'putz'},                                      brace:'none', flat:0, pMin:18 },   // glatt verputzt (FR/IT), Ziegeldach bleibt
-    glas:  { RM:{gefach:'metall',lehm:'metall',backstein:'metall',holz:'metall',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:4  },   // Glas-Vorhangfassade + Stahl, (fast) flaches Dach (Hochhaus/Moderne)
-    klinker:{ RM:{holz:'backstein',gefach:'backstein',lehm:'backstein',stein:'backstein'},                         brace:'none', flat:0, pMin:22 },   // Sichtmauerwerk: Vollziegelwand + Tonziegeldach (NL/Hanse/England) — KEINE Sichtbalken, massiver Klinker
-    stroh:  { RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stroh',ziegel2:'stroh'},          brace:null,   flat:0, pMin:38 },   // Reet/Stroh: Holzwände + dickes Strohdach (angelsächsisch/afrikanisch/neolith)
+    modern:{ RM:{holz:'putz',backstein:'putz',gefach:'putz',lehm:'putz',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:STIL_GRENZNEIGUNG.modern },   // glatt verputzt, flaches Dach
+    huette:{ RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stamm',ziegel2:'stamm'},      brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.huette },   // Blockhütte: Holzwände + Holzschindeln, Sichtbalken bleiben
+    stein: { RM:{holz:'putz',gefach:'putz',lehm:'putz',backstein:'putz'},                                      brace:'none', flat:0, pMin:STIL_GRENZNEIGUNG.stein },   // glatt verputzt (FR/IT), Ziegeldach bleibt
+    glas:  { RM:{gefach:'metall',lehm:'metall',backstein:'metall',holz:'metall',ziegel:'dachmod',ziegel2:'dachmod'}, brace:'none', flat:1, pMin:STIL_GRENZNEIGUNG.glas },   // Glas-Vorhangfassade + Stahl, (fast) flaches Dach (Hochhaus/Moderne)
+    klinker:{ RM:{holz:'backstein',gefach:'backstein',lehm:'backstein',stein:'backstein'},                         brace:'none', flat:0, pMin:STIL_GRENZNEIGUNG.klinker },   // Sichtmauerwerk: Vollziegelwand + Tonziegeldach (NL/Hanse/England) — KEINE Sichtbalken, massiver Klinker
+    stroh:  { RM:{gefach:'blockholz',lehm:'blockholz',backstein:'blockholz',stein:'blockholz',ziegel:'stroh',ziegel2:'stroh'},          brace:null,   flat:0, pMin:STIL_GRENZNEIGUNG.stroh },   // Reet/Stroh: Holzwände + dickes Strohdach (angelsächsisch/afrikanisch/neolith)
   };
   const sm=STILMODE[P.stil], modern = (P.stil==='modern'||P.stil==='glas');
   const TRIMR=(P.stil==='modern'||P.stil==='glas')?'metall':'lattung';   // TRIM-STIL-GESETZ: Dachabschlussprofile folgen der Stilistik (modern = Metall, sonst Holzton)
@@ -195,7 +205,7 @@
   }
   // ════ DIE WAND DES STILS (w28-putz-wand) — malt der Stil das Gerüst in den Stoff der Wand (RM.holz ≡ RM.gefach: stein · modern → putz, glas → metall, klinker → backstein), dann IST die Fassade eine WAND: kein Ständer, kein Rähm, keine Schwelle, kein Riegel, keine Strebe, kein Nagel unter der Farbe — die Felder schließen als Platten über die Achsen (`wandFelder`), EIN Ton statt der Patina je Brett. Der Verband Stein für Stein steht nur, wo der Stil ihn als Backstein zeigt (klinker); umgemalt wäre er Relief ohne Stoff. Vorher (griechisch, Saat 902392) waren 37 548 von 61 324 Dreiecken der L0, 8 280 von 10 768 der L1 und 2 464 von 2 838 der L2 umgemaltes Fachwerk — das Gitter, das im Bild als Schleier vor der Wand stand. ════
   const GLATT=!!(sm&&sm.RM.holz&&sm.RM.holz===sm.RM.gefach), VERBAND=!GLATT||!sm.RM.backstein;
-  const pitch=clamp(P.pitchDeg, sm?sm.pMin:28, 62)*D2R;
+  const pitch=clamp(P.pitchDeg, grenzNeigung(P), 62)*D2R;   // EINE Grenzneigung (STIL_GRENZNEIGUNG), dieselbe, die das Bau-Gesetz ins Rezept schreibt
   let _s=(P.seed*2654435761>>>0)||1; const rnd=()=>((_s=(_s*1664525+1013904223)>>>0)/4294967296);
 
   const baseY=P.foundH+(P.pilotis?2.6:0);   // PILOTIS: das ganze Haus steigt → alles relativ zu baseY folgt automatisch (Synergie)
@@ -1748,11 +1758,14 @@
         tri(g,P00,P10,P11,'kupfer'); tri(g,P00,P11,P01,'kupfer'); } }
     const tp=prof(1)[1]; beam(g,0,tp+0.3,0,0.16,0.7,0.16,'metall'); beam(g,0,tp+0.78,0,0.34,0.1,0.06,'metall'); beam(g,0,tp+0.78,0,0.06,0.1,0.34,'metall');   // Spitze + Kreuz/Mond
     P.__sehne=_alt; return g; }
+  // DER FLÜGEL FÄNGT NICHT MEHR STILL (w28-bau-rezept): bis hier schluckte ein catch seinen Fehler (console.warn, das Haus ohne Flügel —
+  // fail-soft); gezählt an main 0 Fänge über 32 Kulturen × 16 Samen und 324 Häuser der Pläne Messort + s7. Treibt das Raumprogramm die
+  // Flügel, bricht ein Flügel jetzt beim Namen.
   const MK=(k,f)=>(P.nur&&P.nur[k]===false)?grp():f();   // LAZY-KERN: Mass-Modus baut Verdichter gar nicht erst
   const _mkSubs=()=>({ fundament:MK('fundament',fundament), gelaende:MK('gelaende',gelaende), geruest:MK('geruest',geruest), riegel:MK('riegel',riegel), streben:MK('streben',streben), zimmermann:MK('zimmermann',zimmermann),
     gefache:MK('gefache',gefache), giebel:MK('giebel',giebel), dachwerk:MK('dachwerk',dachwerk), dachdeckung:MK('dachdeckung',dachdeckung),
     boeden:MK('boeden',boeden), innenwaende:MK('innenwaende',innenwaende), herd:MK('herd',herd), treppe:MK('treppe',treppe), tueren:MK('tueren',tueren), fenster:MK('fenster',fenster), moebel:MK('moebel',moebel),
-    anbau:MK('anbau',anbau), fluegel:MK('fluegel',()=>{ try{ return fluegel(); }catch(e){ console.warn('Flügel übersprungen:',e.message); return grp(); } }), balkon:MK('balkon',balkon), kuppel:MK('kuppel',kuppel), portikus:MK('portikus',portikus), hof:MK('hof',hof), dachAlt:MK('dachAlt',dachAlt), arkade:MK('arkade',arkade), turm:MK('turm',turm), zinnen:MK('zinnen',zinnen), veranda:MK('veranda',veranda), vorkragung:MK('vorkragung',vorkragung), pilotis:MK('pilotis',pilotis), terrasse:MK('terrasse',terrasse), rundbau:MK('rundbau',rundbau) });   // NUR-VOLLGATTER-GESETZ: JEDE Fabrik durch MK — 16 von 30 liefen am nur-Gate vorbei, DESTNUR/Aufsatz-Schlüssel waren drei Runden lang TOT (Eigendach- und Giebel-Fix griffen nie)
+    anbau:MK('anbau',anbau), fluegel:MK('fluegel',()=>{ try{ return fluegel(); }catch(e){ throw new Error('fachwerk: der Flügel bricht ('+P.grundriss+', W '+W+', D '+Dp+'): '+e.message); } }), balkon:MK('balkon',balkon), kuppel:MK('kuppel',kuppel), portikus:MK('portikus',portikus), hof:MK('hof',hof), dachAlt:MK('dachAlt',dachAlt), arkade:MK('arkade',arkade), turm:MK('turm',turm), zinnen:MK('zinnen',zinnen), veranda:MK('veranda',veranda), vorkragung:MK('vorkragung',vorkragung), pilotis:MK('pilotis',pilotis), terrasse:MK('terrasse',terrasse), rundbau:MK('rundbau',rundbau) });   // NUR-VOLLGATTER-GESETZ: JEDE Fabrik durch MK — 16 von 30 liefen am nur-Gate vorbei, DESTNUR/Aufsatz-Schlüssel waren drei Runden lang TOT (Eigendach- und Giebel-Fix griffen nie)
   const _s0=_s;                                                                                          // RNG-Schnappschuss vor Einheit A
   const subsystems=_mkSubs();                                                                            // Einheit A
   if(P.doppel){ _s=_s0; SHIFT=W; const B=_mkSubs(); SHIFT=0;                                             // Einheit B: identisch, Collision um +W (SHIFT), Geometrie um +W über Gruppen-Transform
@@ -1805,48 +1818,176 @@
     //  Quaderverband). document-gegated (try/catch → null): Worker/Node backen
     //  kartenlos, die Vertex-Farben tragen den Ton (die Karte nur ihr Relief, Kopf (d)).
     // ═══════════════════════════════════════════════════════════════════════
+    // DAS VERBAND-GESETZ (w28-haus-stoff): der Verband einer Fläche als ZAHLEN — Stein, Fuge, Versatz der Reihen, Ton je Stein.
+    // EIN Gesetz, zwei Leser: die vier Maler des Labors (unten) malen daraus ihre Karte, die Welt webt denselben Verband als
+    // FUNKTION im Stoff des Hauses (`verbandZeilen` → der Wirt, `_verbandStoff`) — keine Karte, kein uv, kein Speicher je Haus.
+    // Bis hier standen die Zahlen als Literale in den Malern, und die laufen nur mit `document`: der Faden backte kartenlos,
+    // die Welt zeichnete Dach, Putz, Sockel und Mauerwerk in EINEM Ton je Fläche (Messort dorf, 17.11.).
+    //   pxJeM            das Raster der Maler (Pixel je Meter; ihre Karte misst 2 m)
+    //   steinM · hoeheM  der Stein ohne Fuge (m) · fugeM die Fuge (m) · versatz der Reihen (Anteil des Steins)
+    //   ton [t0, dt]     der Ton je Stein: t0 + Zufall · dt (sRGB, mal die Farbe `grund` bzw. `stein`)
+    //   mauerwerk        Läuferverband NF · fuge die Farbe des Mörtels, grund die des Steins (die Farbe der Rolle backstein)
+    //   deckung          Biberschwanz: breiteM × deckM · spaltPx der Spalt zwischen zwei Ziegeln, reihePx die offene Fuge der
+    //                    Reihe (beide schwarz) · schattenPx die Schattenfuge der Überdeckung über ihr (Schwärze `schatten`) ·
+    //                    grund die Farbe der Rolle ziegel
+    //   putz             Kellenwurf auf `grund`: `sprenkel` Körner von kornPx[0] … kornPx[0] + kornPx[1] − 1 Pixeln im Ton
+    //                    (× `korn` je Kanal, Deckung `deck`), die Kellenzüge alle zug[0] + ⌊Zufall · zug[1]⌋ Pixel, einen Pixel
+    //                    stark, in `zugFarbe` mit der Deckung `zugDeck` · zugWelt die Stärke dieses Zugs in der WELT (0 … 1): 0 —
+    //                    der Maler zieht jeden Zug über die ganze Karte, an der Wand eines Hauses läuft er als durchgehende Linie
+    //                    und liest sich als Stülpschalung, nicht als Putz (Blick des Koordinators 18.11.); offen bis zum kurzen
+    //                    Zug (0,3–0,8 m, je Reihe versetzt, Richtung gestreut) in beiden Lesern
+    //   naturstein      Quaderverband · fuge die Farbe der Fuge, stein der Ton des Quaders je Kanal (× 255 · t)
+    //   fachwerk         das Gefüge der Wand als Verband — für die Stufe, die keine Balken mehr baut (ab der Stufe 2 steht die Wand
+    //                    als Körper im gemessenen Ton der Fassade): der „Stein" ist das Gefach, die „Fuge" der Balken. feldM das
+    //                    Feld zwischen zwei Ständern (höchstens; `bayMax` des Gerüsts), riegelM das Feld zwischen zwei Riegeln
+    //                    (drei je Geschoss: Schwelle · Brüstung · Sturz · Rähm), staenderM · riegelStarkM die Balken. Die Lage der
+    //                    Ecke in IHRER Wand (in Feldern, `_wandLage`) reist mit ihr: der Ständer steht an der Ecke des Hauses,
+    //                    die Schwelle an seinem Fuß — nie am Raster der Welt.
+    //   reihe            die NUMMER eines Verbands (0 = keiner): sie reist je Ecke zur Welt · rolle: welche Rolle welchen trägt
+    var VERBAND_GESETZ = {
+        fachwerk: { feldM: 1.7, riegelM: 0.85, staenderM: 0.16, riegelStarkM: 0.13 },
+        pxJeM: 128,
+        mauerwerk: { steinM: 0.24, hoeheM: 0.071, fugeM: 0.011, versatz: 0.5, ton: [0.84, 0.3], fuge: 0xb7b0a2, grund: 0x964e3e },
+        deckung: { breiteM: 0.18, deckM: 0.32, spaltPx: 2, reihePx: 1, schattenPx: 3, schatten: 0.27, versatz: 0.5, ton: [0.82, 0.32], grund: 0x9c4a35 },
+        putz: { sprenkel: 5200, ton: [0.86, 0.2], korn: [255, 255, 252], deck: 0.5, kornPx: [1, 2], zug: [9, 7], zugFarbe: [120, 116, 108], zugDeck: 0.1, grund: 0xffffff, zugWelt: 0 },
+        naturstein: { steinM: 0.46, hoeheM: 0.28, fugeM: 0.016, versatz: 0.5, ton: [0.88, 0.24], fuge: 0x6f6a60, stein: [0.92, 0.9, 0.86] },
+        reihe: ["", "mauerwerk", "deckung", "putz", "naturstein", "fachwerk"],
+        rolle: { backstein: "mauerwerk", ziegel: "deckung", ziegel2: "deckung", putz: "putz", stein: "naturstein" },
+    };
+    function _verbandHex(hx) { return "#" + (hx + 0x1000000).toString(16).slice(1); }
+    // Der Ton eines Steins im Licht: die Farbe `g` (0 … 255 je Kanal) mal t0 + Zufall · dt, wie der Maler sie setzt (ganze Zahl,
+    // gedeckelt bei 255), durch die EINE Kurve `_lin` — das Mittel je Kanal über den Zufall und die halbe Spanne gegen das Mittel
+    // (über die Kanäle gemittelt). `mal` (optional): ein Faktor auf den sRGB-Wert (die Schattenfuge der Deckung).
+    function _verbandTon(g, ton, mal) {
+        var N = 64, mittel = [0, 0, 0], sp = 0;
+        for (var k = 0; k < 3; k++) {
+            var wert = function (t) { return _lin((Math.min(255, (g[k] * t) | 0) * (mal == null ? 1 : mal)) / 255); };
+            for (var i = 0; i < N; i++) mittel[k] += wert(ton[0] + ((i + 0.5) / N) * ton[1]) / N;
+            sp += (wert(ton[0] + ton[1]) - wert(ton[0])) / 2 / Math.max(mittel[k], 1e-9) / 3;
+        }
+        return { mittel: mittel, spanne: sp };
+    }
+    // DIE ZEILEN DES VERBANDS FÜR DIE WELT (Leser: der Wirt, `_verbandStoff`): je Nummer der Reihe EINE Zeile in Metern und
+    // linearen Faktoren, gerechnet aus den Zahlen der Tafel wie die Karte des Malers sie trägt (das Karten-Gesetz: die Karte ist
+    // Relief um das Mittel 1, die Farbe steht im Stoff):
+    //   lM · hM          das Raster: der Stein samt seiner Fuge (quer · längs der Falllinie der Fläche)
+    //   fugeU · fugeV    die HALBE Fuge je Achse (m) · versatz der Reihen
+    //   ton              die halbe Spanne des Tons je Stein um sein Mittel
+    //   tonU · tonV      der Faktor der Fuge gegen das Mittel des Steins je Kanal (U: die Stoßfuge, V: die Lagerfuge)
+    //   kreuz            wo beide Fugen sich kreuzen, steht EINE Fuge (die dunklere je Kanal), nie ihr Produkt: der Zuschlag
+    //                    kreuz − tonU · tonV auf das Produkt der Achsen (am Mörtel eine Spur, am Balken der schwarze Fleck)
+    //   eins             der Kehrwert des Mittels der Fläche je Kanal: Stein und Fugen mal `eins` mitteln auf 1
+    //   unruhe           die Reihen stehen ungleich weit: ihr Abstand schwankt um diesen Anteil (der Kellenzug des Putzes)
+    //   lage             1: die Lage in der Fläche trägt die Ecke selbst (`_wandLage`, in Feldern) — sonst ist sie die der Welt
+    // Die Zeile 0 trägt keinen Verband (null).
+    function verbandZeilen() {
+        var V = VERBAND_GESETZ, px = 1 / V.pxJeM, kan = function (hx) { return [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]; };
+        var zeile = function (lM, hM, fU, fV, versatz, ton, tonU, tonV, mehr) {
+            var cU = (2 * fU) / lM, cV = (2 * fV) / hM, eins = [0, 0, 0], kreuz = [0, 0, 0];
+            for (var k = 0; k < 3; k++) {
+                kreuz[k] = Math.min(tonU[k], tonV[k]) - tonU[k] * tonV[k];
+                eins[k] = 1 / ((1 - cU + cU * tonU[k]) * (1 - cV + cV * tonV[k]) + cU * cV * kreuz[k]);
+            }
+            return { lM: lM, hM: hM, fugeU: fU, fugeV: fV, versatz: versatz, ton: ton, tonU: tonU, tonV: tonV, kreuz: kreuz, eins: eins, unruhe: (mehr && mehr.unruhe) || 0, lage: mehr && mehr.lage ? 1 : 0 };
+        };
+        var gegen = function (a, b) { return [a[0] / b[0], a[1] / b[1], a[2] / b[2]]; };
+        var m = V.mauerwerk, d = V.deckung, p = V.putz, n = V.naturstein, f = V.fachwerk, fB = gegen(_colFor("holz", null), _colFor("gefach", null));
+        // Mauerwerk und Naturstein: der Mörtel gegen das Mittel des Steins, auf beiden Achsen derselbe
+        var mT = _verbandTon(kan(m.grund), m.ton), mF = gegen(_linHex(m.fuge), mT.mittel);
+        var nT = _verbandTon([255 * n.stein[0], 255 * n.stein[1], 255 * n.stein[2]], n.ton), nF = gegen(_linHex(n.fuge), nT.mittel);
+        // Deckung: der Spalt ist offen (schwarz); die Fuge der Reihe misst die Schattenfuge, davon die offene Fuge schwarz
+        var dT = _verbandTon(kan(d.grund), d.ton), dS = gegen(_verbandTon(kan(d.grund), d.ton, 1 - d.schatten).mittel, dT.mittel);
+        var dV = dS.map(function (s) { return (s * (d.schattenPx - d.reihePx)) / d.schattenPx; });
+        // Putz: das Mittel der Fläche unter den Körnern (ihre Deckung 1 − e^(−Körner · Fläche / Karte)), der Kellenzug dagegen;
+        // das Korn selbst (1,2 cm) mittelt in jeder Zelle des Zugs auf seinen Ton — der Verband des Putzes ist der Zug
+        var seite = 2 * V.pxJeM, kornFl = Math.pow(p.kornPx[0] + (p.kornPx[1] - 1) / 2, 2), deckt = 1 - Math.exp((-p.sprenkel * kornFl) / (seite * seite));
+        var pG = _linHex(p.grund), pK = [0, 0, 0], pZ = [0, 0, 0], zugM = (p.zug[0] + (p.zug[1] - 1) / 2) * px;
+        for (var k = 0; k < 3; k++) {
+            for (var i = 0; i < 64; i++) pK[k] += _lin((1 - p.deck) * (((p.grund >> (16 - 8 * k)) & 255) / 255) + p.deck * Math.min(1, ((p.korn[k] * (p.ton[0] + ((i + 0.5) / 64) * p.ton[1])) | 0) / 255)) / 64;
+            var mittel = (1 - deckt) * pG[k] + deckt * pK[k];
+            // (die Welt trägt den Zug in der Stärke `zugWelt`: 0 lässt die Fuge im Ton des Putzes, das Mittel bleibt 1)
+            pZ[k] = 1 + p.zugWelt * (_lin((1 - p.zugDeck) * (((p.grund >> (16 - 8 * k)) & 255) / 255) + (p.zugDeck * p.zugFarbe[k]) / 255) / mittel - 1);
+        }
+        return [
+            null,
+            zeile(m.steinM + m.fugeM, m.hoeheM + m.fugeM, m.fugeM / 2, m.fugeM / 2, m.versatz, mT.spanne, mF, mF),
+            zeile(d.breiteM, d.deckM, (d.spaltPx * px) / 2, (d.schattenPx * px) / 2, d.versatz, dT.spanne, [0, 0, 0], dV),
+            // (der Maler setzt seine Züge alle zug[0] … zug[0] + zug[1] − 1 Pixel: die halbe Spanne gegen ihr Mittel ist die Unruhe)
+            zeile(zugM, zugM, 0, px / 2, 0, 0, [1, 1, 1], pZ, { unruhe: ((p.zug[1] - 1) / 2) * px / zugM }),
+            zeile(n.steinM + n.fugeM, n.hoeheM + n.fugeM, n.fugeM / 2, n.fugeM / 2, n.versatz, nT.spanne, nF, nF),
+            // Fachwerk: der Balken (die Rolle holz) gegen das Gefach, auf beiden Achsen derselbe; die Lage trägt die Ecke
+            zeile(f.feldM, f.riegelM, f.staenderM / 2, f.riegelStarkM / 2, 0, 0, fB, fB, { lage: 1 }),
+        ];
+    }
+    // DIE LAGE DER ECKEN EINER WAND IN IHREM GEFÜGE (die Zeile „fachwerk"): je Ecke [u, v, Nummer der Zeile] — u in Feldern
+    // zwischen den Ständern längs der Wand, v in Feldern zwischen den Riegeln. Die Teilung wie das Gerüst sie setzt: von der
+    // Mitte des ersten bis zur Mitte des letzten Balkens so viele gleiche Felder, dass keines über `feldM` misst (`axis`), in
+    // der Höhe die nächste ganze Zahl von Riegel-Feldern. An jeder ganzen Zahl steht ein Balken, der erste und der letzte ganz
+    // in der Wand (der Eckständer, die Schwelle, das Rähm). `G` = { pos, nrm } haus-lokal, `rahmen` = [x0, x1, y0, y1, z0, z1]
+    // der Wand, deren Gefüge die Ecken tragen (der Giebel trägt das seiner Wand weiter).
+    function _wandLage(G, rahmen) {
+        var F = VERBAND_GESETZ.fachwerk, nr = VERBAND_GESETZ.reihe.indexOf("fachwerk"), n = G.pos.length / 3, aus = new Array(n * 3);
+        var teilung = function (a0, a1, soll, balken, rund) {
+            var l = a1 - a0 - balken;
+            if (!(l > 0.05)) return [a0, Math.max(a1 - a0, 0.05)];
+            return [a0 + balken / 2, l / Math.max(1, rund ? Math.round(l / soll) : Math.ceil(l / soll - 1e-6))];
+        };
+        var tx = teilung(rahmen[0], rahmen[1], F.feldM, F.staenderM, false),
+            ty = teilung(rahmen[2], rahmen[3], F.riegelM, F.riegelStarkM, true),
+            tz = teilung(rahmen[4], rahmen[5], F.feldM, F.staenderM, false);
+        for (var i = 0; i < n; i++) {
+            var laengsZ = Math.abs(G.nrm[i * 3]) >= Math.abs(G.nrm[i * 3 + 2]), q = laengsZ ? tz : tx;
+            aus[i * 3] = (G.pos[i * 3 + (laengsZ ? 2 : 0)] - q[0]) / q[1];
+            aus[i * 3 + 1] = (G.pos[i * 3 + 1] - ty[0]) / ty[1];
+            aus[i * 3 + 2] = nr;
+        }
+        return aus;
+    }
+    // DIE NUMMER DES VERBANDS EINER ROLLE (0: sie trägt keinen)
+    function verbandReihe(rolle) { var i = VERBAND_GESETZ.reihe.indexOf(VERBAND_GESETZ.rolle[rolle] || "?"); return i > 0 ? i : 0; }
     // prettier-ignore
     function texZiegelwand(grund,seed2){ try{                                                     // TEXTUR-SAME MAUERWERK: Läuferverband aus NF-Regeln (24×7.1cm, Fuge 1.1cm, Halbstein-Versatz, Brandton je Stein) — wächst aus demselben Wissen wie die Stein-für-Stein-Geometrie
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
-  const M1=128, sw=0.24*M1, sh=0.071*M1, fu=0.011*M1;
+  const V=VERBAND_GESETZ.mauerwerk, M1=VERBAND_GESETZ.pxJeM, sw=V.steinM*M1, sh=V.hoeheM*M1, fu=V.fugeM*M1;
   let hh=(seed2*2654435761)>>>0; const r2=()=>{hh^=hh<<13;hh^=hh>>>17;hh^=hh<<5;hh>>>=0;return (hh&0xffff)/0x10000;};
   const gr=grund>>16&255, gg=grund>>8&255, gb=grund&255;
-  cx.fillStyle='#b7b0a2'; cx.fillRect(0,0,256,256);
-  for(let y=0,reihe=0;y<256;y+=sh+fu,reihe++){ const off=(reihe%2)*(sw+fu)/2;
-    for(let x=-sw;x<256+sw;x+=sw+fu){ const t=0.84+r2()*0.3;
+  cx.fillStyle=_verbandHex(V.fuge); cx.fillRect(0,0,256,256);
+  for(let y=0,reihe=0;y<256;y+=sh+fu,reihe++){ const off=(reihe%2)*(sw+fu)*V.versatz;
+    for(let x=-sw;x<256+sw;x+=sw+fu){ const t=V.ton[0]+r2()*V.ton[1];
       cx.fillStyle='rgb('+Math.min(255,gr*t|0)+','+Math.min(255,gg*t|0)+','+Math.min(255,gb*t|0)+')';
       cx.fillRect(x+off,y,sw,sh); } }
   return _karte(cv); }catch(e){ return null; } }
     // prettier-ignore
     function texDach(grund,seed2){ try{                                                           // TEXTUR-SAME DECKUNG: Biberschwanz (Deckmaß 0.32m, Breite 0.18, Halbversatz, Schattenfuge = Reihenüberdeckung)
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
-  const M1=128, rw=0.32*M1, zb=0.18*M1;
+  const V=VERBAND_GESETZ.deckung, M1=VERBAND_GESETZ.pxJeM, rw=V.deckM*M1, zb=V.breiteM*M1;
   let hh=(seed2*40503)>>>0; const r2=()=>{hh^=hh<<13;hh^=hh>>>17;hh^=hh<<5;hh>>>=0;return (hh&0xffff)/0x10000;};
   const gr=grund>>16&255, gg=grund>>8&255, gb=grund&255;
-  for(let y=256,reihe=0;y>-rw;y-=rw,reihe++){ const off=(reihe%2)*zb/2;
-    for(let x=-zb;x<256+zb;x+=zb){ const t=0.82+r2()*0.32;
+  for(let y=256,reihe=0;y>-rw;y-=rw,reihe++){ const off=(reihe%2)*zb*V.versatz;
+    for(let x=-zb;x<256+zb;x+=zb){ const t=V.ton[0]+r2()*V.ton[1];
       cx.fillStyle='rgb('+Math.min(255,gr*t|0)+','+Math.min(255,gg*t|0)+','+Math.min(255,gb*t|0)+')';
-      cx.fillRect(x+off,y-rw,zb-2,rw-1);
-      cx.fillStyle='rgba(0,0,0,0.27)'; cx.fillRect(x+off,y-3,zb-2,3); } }
+      cx.fillRect(x+off,y-rw,zb-V.spaltPx,rw-V.reihePx);
+      cx.fillStyle='rgba(0,0,0,'+V.schatten+')'; cx.fillRect(x+off,y-V.schattenPx,zb-V.spaltPx,V.schattenPx); } }
   return _karte(cv); }catch(e){ return null; } }
     // prettier-ignore
     function texPutz(seed2){ try{                                                                /*TEXTUR-SAME PUTZ: Kellenwurf — koernige Sprenkel + horizontale Kellenzuege, deterministisch*/
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
+  const V=VERBAND_GESETZ.putz, Z=V.zugFarbe;
   let hh=(seed2*747796405)>>>0; const r2=()=>{hh^=hh<<13;hh^=hh>>>17;hh^=hh<<5;hh>>>=0;return (hh&0xffff)/0x10000;};
-  cx.fillStyle='#ffffff'; cx.fillRect(0,0,256,256);
-  for(let k=0;k<5200;k++){ const t=0.86+r2()*0.20; cx.fillStyle='rgba('+(255*t|0)+','+(255*t|0)+','+(252*t|0)+',0.5)';
-    cx.fillRect((r2()*256)|0,(r2()*256)|0, 1+((r2()*2)|0), 1+((r2()*2)|0)); }
-  for(let y=0;y<256;y+=9+((r2()*7)|0)){ cx.fillStyle='rgba(120,116,108,0.10)'; cx.fillRect(0,y,256,1); }
+  cx.fillStyle=_verbandHex(V.grund); cx.fillRect(0,0,256,256);
+  for(let k=0;k<V.sprenkel;k++){ const t=V.ton[0]+r2()*V.ton[1]; cx.fillStyle='rgba('+(V.korn[0]*t|0)+','+(V.korn[1]*t|0)+','+(V.korn[2]*t|0)+','+V.deck+')';
+    cx.fillRect((r2()*256)|0,(r2()*256)|0, V.kornPx[0]+((r2()*V.kornPx[1])|0), V.kornPx[0]+((r2()*V.kornPx[1])|0)); }
+  for(let y=0;y<256;y+=V.zug[0]+((r2()*V.zug[1])|0)){ cx.fillStyle='rgba('+Z[0]+','+Z[1]+','+Z[2]+','+V.zugDeck.toFixed(2)+')'; cx.fillRect(0,y,256,1); }
   return _karte(cv); }catch(e){ return null; } }
     // prettier-ignore
     function texStein(seed2){ try{                                                                /*TEXTUR-SAME NATURSTEIN: Quaderverband 46×28cm, Fuge 1.6, Halbversatz, Bruchton je Stein*/
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
-  const M1=128, sw=0.46*M1, sh=0.28*M1, fu=0.016*M1;
+  const V=VERBAND_GESETZ.naturstein, M1=VERBAND_GESETZ.pxJeM, sw=V.steinM*M1, sh=V.hoeheM*M1, fu=V.fugeM*M1;
   let hh=(seed2*2654435761)>>>0; const r2=()=>{hh^=hh<<13;hh^=hh>>>17;hh^=hh<<5;hh>>>=0;return (hh&0xffff)/0x10000;};
-  cx.fillStyle='#6f6a60'; cx.fillRect(0,0,256,256);
-  for(let y=0,reihe=0;y<256;y+=sh+fu,reihe++){ const off=(reihe%2)*(sw+fu)/2;
-    for(let x=-sw;x<256+sw;x+=sw+fu){ const t=0.88+r2()*0.24;
-      cx.fillStyle='rgb('+(255*t*0.92|0)+','+(255*t*0.90|0)+','+(255*t*0.86|0)+')';
+  cx.fillStyle=_verbandHex(V.fuge); cx.fillRect(0,0,256,256);
+  for(let y=0,reihe=0;y<256;y+=sh+fu,reihe++){ const off=(reihe%2)*(sw+fu)*V.versatz;
+    for(let x=-sw;x<256+sw;x+=sw+fu){ const t=V.ton[0]+r2()*V.ton[1];
+      cx.fillStyle='rgb('+(255*t*V.stein[0]|0)+','+(255*t*V.stein[1]|0)+','+(255*t*V.stein[2]|0)+')';
       cx.fillRect(x+off,y,sw,sh); } }
   return _karte(cv); }catch(e){ return null; } }
     // DAS KARTEN-GESETZ (A6, Kopf (d)): eine Karte trägt nur ihr Relief, nie die Farbe. Der Maler malt sRGB; die Karte liegt
@@ -1919,7 +2060,7 @@
     };
     // prettier-ignore
     function materials(){ if(M) return M;
-      _texBk=texZiegelwand(0x964e3e,7); _texZi=texDach(0x9c4a35,11); _texZi2=texDach(0x803a28,13); _texPu=texPutz(17); _texSt=texStein(23);
+      _texBk=texZiegelwand(VERBAND_GESETZ.mauerwerk.grund,7); _texZi=texDach(VERBAND_GESETZ.deckung.grund,11); _texZi2=texDach(0x803a28,13); _texPu=texPutz(17); _texSt=texStein(23);
       M={
   holz:   new THREE.MeshStandardMaterial({color:0x5a4632,roughness:.88,metalness:0,vertexColors:true,side:THREE.DoubleSide}),
   blockholz: new THREE.MeshStandardMaterial({color:0x8a6a3e,roughness:.9,metalness:0,vertexColors:true,side:THREE.DoubleSide}),   // Blockholz-Wand: warmes Braun, vertexColors + material-basiertes tintWood = Patina wie holz, Kontrast zum Rahmen
@@ -1951,6 +2092,7 @@
       };
       for(const _k in M) _roleByMat.set(M[_k],_k);
       for(const _k in M) if(SEH_DER_ROLLE[_k]) M[_k].userData.__seh=SEH_DER_ROLLE[_k];
+      for(const _k in M) if(verbandReihe(_k)) M[_k].userData.__verband=verbandReihe(_k);   // DAS VERBAND-GESETZ: die Nummer des Verbands reist mit dem Stoff (mat.verband) — die Welt webt ihn als Funktion, wo das Labor seine Karte trägt
       for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); _karteEins(M[_k]); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
       M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 1900 K, Zeitplan abends 1) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
       M.glas.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
@@ -1970,8 +2112,8 @@
 
     // ═══════════════════════════════════════════════════════════════════════
     //  KULTUREN — regionale Archetypen, aus dem Samen erwachsend (byte-treu;
-    //  die B1-Rezept-Quelle: KULTUR × kulturParams). applyKultur (DOM/Slider)
-    //  bleibt Shell-Glue — sie liest kulturParams aus DIESER Quelle.
+    //  die B1-Rezept-Quelle: KULTUR × bauRezept). applyKultur (DOM/Slider)
+    //  bleibt Shell-Glue — sie liest bauRezept aus DIESER Quelle.
     // ═══════════════════════════════════════════════════════════════════════
     // prettier-ignore
     const DEFCOL={holz:0x5a4632, gefach:0xd9d0c1, ziegel:0x9c4a35, ziegel2:0x803a28, putz:0xe7e3da, dachmod:0x3b3e44, stamm:0x5b4327, glas:0x33576a, glasfern:0x46687e, metall:0x6b6b73, backstein:0x964e3e, lehm:0xbfb09a, stein:0x8d857a, stroh:0xcaa44e, kupfer:0x5a917c}; // alle kultur-tragenden Materialien
@@ -2020,10 +2162,46 @@
     function tintM(col){ materials(); for(const k in DEFCOL){ if(M[k]) _setzeHex(k,(col&&col[k]!=null)?col[k]:DEFCOL[k]); } if(M.blockholz){ const _lh=(c,f)=>{const r=Math.min(255,((c>>16&255)*f)|0),g=Math.min(255,((c>>8&255)*f)|0),b=Math.min(255,((c&255)*f)|0);return (r<<16)|(g<<8)|b;}; const _hz=(col&&col.holz!=null)?col.holz:DEFCOL.holz; _setzeHex('blockholz',(col&&col.blockholz!=null)?col.blockholz:_lh(_hz,1.4)); } }
     // prettier-ignore
     function kulturFromSeed(seed){ const idx=((Math.round(seed*131+7)*2654435761)>>>0)%KULTNAMES.length; return KULTNAMES[idx]; }
-    // ── kulturParams — REINE Kultur-Ableitung (identische Streu-Sequenz wie früher applyKultur: pitch→W→D→st) ──
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DAS BAU-GESETZ (w28-bau-rezept) — der Bau folgt aus {nutzung, bauweise, rahmen} × Haushalt × Same, EIN Rezept für
+    //  Labor und Welt. Die Zeilen leben HIER, im Gesetzbuch neben KULTUR (die Sitte der Kerne: die Tafel steht beim Gesetz,
+    //  das sie liest; Labor und Welt erreichen sie über `__fachwerkCore`, der Wirt über den EINEN Export `hausZeile.ov`).
+    //    bauweise  die 32 Kulturen (KULTUR oben): Neigung · Breite · Tiefe · Geschosse mit ihrer Streuung, Stil, Figur, Farbe —
+    //              der Würfel zieht in der Folge pitch → W → D → st (so stand er im früheren Kultur-Rezept; die Bytes der Rezepte hängen daran)
+    //    nutzung   BAU_NUTZUNG unten: je Bau-Typ seine Räume (Raumprogramm, `bauProgramm`) und, wo noch kein Programm steht,
+    //              sein Maß über dem Haus der Kultur (`mass`, die Ops der früheren Tafel STADT_GRAMMATIK.bau als Daten)
+    //    rahmen    der Ort des Loses {region, band, dicht}: was die Bedingungen der Zeilen lesen
+    //    haushalt  {personen, wohl}: ohne ihn baut das Gesetz das Haus der Kultur (Wohnhaus ohne Haushalt ≡ das Rezept der Kultur)
+    //  `los`: der Bau des Loses, den die Nutzung über sich legt (DORF, die Viertel); ohne ihn würfelt `bauweise` ein neues Haus.
+    // ═══════════════════════════════════════════════════════════════════════
+    // Die Ops eines Maßes: [feld, op, wert, wenn] — op setze · plus · mindestens · hoechstens; wenn {aus, ist | nicht | in}
+    // liest erst den rahmen, dann den Bau (stil). Die Räume: [id, je (p Person · b Bau · s Stück), m², m² je wohl und Person,
+    // geschoss (eg · og · alle · keller · dach), lage (kern · strasse · hinten · oben · turm · anbau · fluegel · hof_umlauf ·
+    // offen · laube · keller · dach · getrennt), zahl]; `zeile` nennt die Zeile des Bau-Schwarms, aus der sie stammt.
     // prettier-ignore
-    function kulturParams(name, seed){
-  const k=KULTUR[name]; if(!k) return null;
+    const BAU_NUTZUNG={
+      wohnhaus:{ zeile:'beweis:wohnhaus', geschosse:[1,4], grundriss:['I','L'], raeume:[['wohnen','p',20,20,'alle','kern']] },
+      gasthaus:{ mass:[['W','plus',2.5],['W','hoechstens',15],['D','plus',1],['D','hoechstens',11],['storeys','mindestens',2],['arkade','setze',1,{aus:'region',in:['mitteleuropa','mediterran']}]] },
+      schmiede:{ mass:[['W','setze',5.5],['D','setze',5],['storeys','setze',1],['balcony','setze',0],['annexN','setze',0],['grundriss','setze','I'],['turm','setze',0],['kuppel','setze',0]] },
+      rathaus:{ mass:[['W','mindestens',13],['D','mindestens',10],['storeys','setze',3],['turm','setze',1],['grundriss','setze','I'],['annexN','setze',0],['arm','setze',0],['keller','setze',1],['balcony','setze',0],['zinnen','setze',1,{aus:'band',ist:'mittelalter'}],['arkade','setze',1,{aus:'band',nicht:'mittelalter'}]] },   // der wehrhafte Rat des Mittelalters, die Laube der Neuzeit
+      kaufhaus:{ mass:[['W','hoechstens',8.5],['D','mindestens',10],['storeys','mindestens',3],['grundriss','setze','I'],['annexN','setze',0],['arm','setze',0],['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },   // schmal und tief am Platz, der Laden unten
+      kontor:{ mass:[['W','mindestens',10],['D','mindestens',10],['storeys','setze',3],['arkade','setze',1],['arm','setze',0],['annexN','setze',0],['balcony','setze',0]] },   // der Hof der fremden Kaufleute (Fondaco): Bogengang, drei Geschosse
+      zunfthaus:{ mass:[['W','mindestens',11],['D','mindestens',9],['storeys','setze',3],['portikus','setze',1],['grundriss','setze','I'],['arm','setze',0],['annexN','setze',0]] },
+      pfarrhaus:{ mass:[['W','hoechstens',10],['W','mindestens',8],['storeys','setze',2],['grundriss','setze','I'],['arm','setze',0],['balcony','setze',0]] },
+      kapelle:{ mass:[['W','setze',7],['D','setze',8],['storeys','setze',1],['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['grundriss','setze','I'],['arm','setze',0],['turm','setze',0]] },
+      bergfried:{ mass:[['W','setze',8],['D','setze',8],['storeys','setze',5],['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },   // der Turm des Herrn: fünf Geschosse unter dem Zinnenkranz
+      torhaus:{ mass:[['W','setze',7.5],['D','setze',6.5],['storeys','setze',2],['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },
+      zeughaus:{ mass:[['W','setze',12],['D','setze',8],['storeys','setze',2],['turm','setze',0],['kuppel','setze',0]] },
+      werkstatt:{ mass:[['W','hoechstens',8],['storeys','hoechstens',2],['annexN','setze',1],['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },
+      backhaus:{ mass:[['W','setze',6],['D','setze',6],['storeys','setze',1],['grundriss','setze','I'],['annexN','setze',0],['balcony','setze',0]] },
+      speicher:{ mass:[['W','mindestens',9],['D','setze',11],['storeys','setze',4],['grundriss','setze','I'],['annexN','setze',0],['balcony','setze',0],['arm','setze',0]] },
+      gerberei:{ mass:[['W','mindestens',9],['storeys','setze',2],['veranda','setze',1],['grundriss','setze','I'],['balcony','setze',0]] },   // der Trockenboden vor der Wand
+      wohnturm:{ mass:[['W','setze',6],['D','setze',6],['storeys','setze',6],['zinnen','setze',1],['grundriss','setze','I'],['annexN','setze',0],['balcony','setze',0],['keller','setze',0],['arm','setze',0],['turm','setze',0],['kuppel','setze',0]] },   // der Geschlechterturm: sechs Geschosse über sechs Metern im Geviert
+      patrizierhaus:{ mass:[['W','mindestens',10],['storeys','mindestens',3],['balcony','setze',1],['arm','setze',0]] },
+    };
+    // der Würfel der bauweise (die Streu-Folge pitch → W → D → st, byte-treu dem früheren Kultur-Rezept)
+    // prettier-ignore
+    function _bauweiseWurf(k, seed){
   let s=((Math.round(seed*977+13)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   return {
     pitchDeg: Math.max(8,  Math.min(62, Math.round(k.pitch + (rnd()-0.5)*5))),
@@ -2035,6 +2213,66 @@
     zinnen:k.zinnen?1:0, veranda:k.veranda?1:0, vorkragung:k.vorkragung?1:0, pilotis:k.pilotis?1:0, terrasse:k.terrasse?1:0,
     dachTyp:k.dachTyp||'sattel', bogenTyp:k.bogenTyp||'none', grundriss:k.grundriss||'I',
     col:k.col||null };
+}
+    // prettier-ignore
+    function _bauWenn(w, hp, rahmen){ if(!w) return true; const v=(rahmen&&w.aus in rahmen)?rahmen[w.aus]:hp[w.aus];
+  return ('ist' in w)?v===w.ist : ('nicht' in w)?v!==w.nicht : ('in' in w)?w.in.indexOf(v)>=0 : true; }
+    // prettier-ignore
+    function bauRezept(z, haushalt, seed){
+  z=z||{}; const nz=z.nutzung||'wohnhaus', N=BAU_NUTZUNG[nz];
+  if(!N) throw new Error('fachwerk: die Nutzung „'+nz+'“ trägt keine Zeile in BAU_NUTZUNG');
+  let hp=z.los||null;
+  if(z.bauweise){ const k=KULTUR[z.bauweise]; if(!k) return null; const r=_bauweiseWurf(k, seed); hp=hp?Object.assign(hp,r):r; }
+  if(!hp) return null;
+  if(N.mass) for(const o of N.mass){ if(!_bauWenn(o[3],hp,z.rahmen)) continue; const f=o[0], v=o[2];
+    hp[f]= o[1]==='setze'?v : o[1]==='plus'?hp[f]+v : o[1]==='mindestens'?Math.max(hp[f],v) : Math.min(hp[f],v); }
+  if(haushalt&&N.raeume) bauProgramm(N, hp, haushalt, z.rahmen||{});
+  hp.pitchDeg=Math.max(hp.pitchDeg, grenzNeigung(hp));   // die gebaute Neigung steht im Rezept (STIL_GRENZNEIGUNG), keine tote Zahl
+  return hp;
+}
+    // DAS RAUMPROGRAMM (der Packer): die Räume der Nutzung für den Haushalt → Geschosse · Grundriss · Flügel · Anbau · Keller
+    // auf den VORHANDENEN Teilen des Hauses (GRUND, die Flügel im 3,3-m-Modul, der Hof, die Anbau-Zellen) — keine neue Form.
+    //   Fläche je Raum: je Person (personen × (m² + m²·wohl)), je Bau, je Stück (× zahl); netto ÷ LEUTE_GESETZ.nutz = brutto.
+    //   Die Parzelle (`hp.parzelle`, sonst der Bau selbst) ist das Land: ihr Fuß × (dicht 1,3 · frei 1,6) trägt den Körper,
+    //   × (dicht 1,6 · frei 2,6) Körper samt Hof und Flügeln. Geschosse: das kleinste in [min, max] der Zeile (und nie unter dem,
+    //   was der Ort über die Kultur hob — dann auch über ihrem Maximum), dessen Körper die Parzelle trägt. Turm-Räume ≥ halber Körper: der Körper bleibt schlank
+    //   (0,55 × Parzelle) und steigt. Grundriss: die erste Form der Rangfolge, die trägt — hof (ein offener Raum ≥ 20 m², Raum
+    //   `hof`), U/T (Flügel ≥ 24 m²), kreuz (≥ 36), L (Flügel ≥ 8 oder Überlauf des Körpers ≥ 8), I (kein Flügel, kein Überlauf).
+    //   Was die Form nicht aufnimmt, geht in den Körper. Anbau-Räume werden Anbau-Zellen (je 18 m², höchstens 2, der Würfel des
+    //   Loses bleibt als Umbau), Keller-Räume den Keller, eine Laube im OG den Balkon. `getrennt` und `dach` liegen außerhalb
+    //   dieser Welle (der Dachraum ist das Dach; der getrennte Bau ist die Scheune des Plans).
+    // prettier-ignore
+    function bauProgramm(N, hp, haushalt, rahmen){
+  const nutz=LEUTE_GESETZ.nutz, P=isFinite(N.personen)?N.personen:Math.max(1,Math.round(haushalt.personen||1)), w=isFinite(haushalt.wohl)?Math.max(0,haushalt.wohl):1;
+  const A={eg:0,og:0,alle:0,anbau:0,fluegel:0,offen:0,turm:0,laubeOG:0,keller:0};
+  for(const r of N.raeume){ const [id,je,m2,mw,g,lage,zahl]=r, a=(je==='p'?P*(m2+mw*w):m2)*(zahl||1);
+    if(g==='keller'||lage==='keller'){ A.keller+=a; continue; } if(g==='dach'||lage==='getrennt') continue;
+    if(id==='hof'||lage==='offen'){ A.offen+=a; continue; }
+    if(lage==='laube'){ if(g==='og') A.laubeOG+=a; else A.offen+=a; continue; }
+    if(lage==='anbau'){ A.anbau+=a; continue; } if(lage==='fluegel'||lage==='hof_umlauf'){ A.fluegel+=a; continue; }
+    if(lage==='turm') A.turm+=a;
+    A[g==='og'?'og':g==='alle'?'alle':'eg']+=a; }
+  const pz=hp.parzelle||hp, F0=Math.max(20,pz.W*pz.D), dicht=!!rahmen.dicht, kultSt=(KULTUR[hp.kultur]||{}).st||1;
+  const turmig=A.turm>0&&A.turm>=0.5*(A.eg+A.og+A.alle), capK=Math.min(165, F0*(turmig?0.55:dicht?1.3:1.6)), capL=F0*(dicht?1.6:2.6);
+  const gmin=N.geschosse[0], sOrt=(pz.storeys||1)>kultSt?pz.storeys:gmin, gmax=Math.max(N.geschosse[1],sOrt);   // was der Ort über die Kultur hob (Stadtkörper, Viertel), steht über dem Maximum der Zeile
+  const fuss=(eg,s)=>(s>1?Math.max(eg+A.alle/s, A.og/(s-1)+A.alle/s):eg+A.og+A.alle)/nutz;
+  let gr='I', armF=0;
+  for(const g of N.grundriss){
+    if(g==='hof'&&A.offen>=20){ armF=Math.min(A.fluegel,42); if(fuss(A.eg+A.fluegel-armF,gmax)+A.offen/nutz<=capL){ gr='hof'; break; } armF=0; continue; }
+    if((g==='U'||g==='T')&&A.fluegel>=24){ armF=Math.min(A.fluegel,30); if(fuss(A.eg+A.fluegel-armF,gmax)+armF/nutz<=capL){ gr=g; break; } armF=0; continue; }
+    if(g==='kreuz'&&A.fluegel>=36){ armF=Math.min(A.fluegel,45); if(fuss(A.eg+A.fluegel-armF,gmax)+armF/nutz<=capL){ gr=g; break; } armF=0; continue; }
+    if(g==='L'){ armF=Math.min(A.fluegel,15); const ueber=fuss(A.eg+A.fluegel-armF,gmax)-capK; if((A.fluegel>=8||ueber*nutz>=8)&&fuss(A.eg+A.fluegel-armF,gmax)+15/nutz<=capL){ gr='L'; if(!armF) armF=Math.min(15,ueber*nutz); break; } armF=0; continue; }
+    if(g==='I'&&A.fluegel<8&&fuss(A.eg+A.fluegel,gmax)<=capK){ gr='I'; break; } }
+  const eg=A.eg+Math.max(0,A.fluegel-armF)-(gr==='L'&&!A.fluegel?armF:0);
+  let s=gmax; for(let k=Math.max(gmin,Math.min(sOrt,gmax)); k<=gmax; k++) if(fuss(eg,k)<=capK){ s=k; break; }
+  const F=Math.max(20, 0.45*F0*(turmig?0.55:1), Math.min(165, fuss(eg,s))), r=pz.W/Math.max(1,pz.D);
+  const halb=x=>Math.round(x*2)/2, Wn=Math.max(4.5,Math.min(15,halb(Math.sqrt(F*r))));
+  hp.W=Wn; hp.D=Math.max(4,Math.min(11,halb(F/Wn))); hp.storeys=s; hp.grundriss=gr;
+  if(A.anbau>0) hp.annexN=Math.min(2,Math.max(hp.annexN|0,Math.ceil(A.anbau/18)));
+  if(A.keller>0) hp.keller=1; if(A.laubeOG>0&&s>=2) hp.balcony=1;
+  if(A.turm>0&&!turmig) hp.turm=1;
+  hp.leute=Math.max(0,Math.min(LEUTE_GESETZ.max,P)); hp.programm=N.zeile||null;
+  return hp;
 }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -2218,6 +2456,8 @@
     const e=o.matrixWorld.elements, base=_baseFor(o,role,kol), nv=pa.count;
     const inT=(geoms.__decken&&geoms.__decken.length&&INNEN_HOLZ.rollen[role])?innenTon(role,kol):null, inV=inT?new THREE.Matrix4().copy(g.matrixWorld).invert():null;   // DER INNEN-STOFF (w28-innenlicht): nur wo der Bau seine Decken nennt (Stufe 0)
     const inF=inT?innenFrei(pa,new THREE.Matrix4().multiplyMatrices(inV,o.matrixWorld),geoms.__decken):false;   // das Teil reicht aus der Wand in den Raum (`innenFrei`)
+    const wa=o.geometry.attributes.aWand, wr0=verbandReihe(role);   // DIE LAGE IM GEFÜGE (`_wandLage`): trägt ein Teil der Rolle sie, trägt jede Ecke der Rolle [u, v, Zeile] — ohne eigene die Zeile ihres Stoffs
+    if(wa||G.wand){ G.wand=G.wand||[]; while(G.wand.length<G.vo*3) G.wand.push(0,0,wr0); }
     let wy0=1e9,wy1=-1e9; for(let v=0;v<nv;v++){ const q=e[1]*pa.getX(v)+e[5]*pa.getY(v)+e[9]*pa.getZ(v)+e[13]; if(q<wy0)wy0=q; if(q>wy1)wy1=q; }
     const aoAn=(wy1-wy0)<=4.2;                                                                // AO-PANEEL-GATE: Kontakt-AO nur auf kleinen, geerdeten Meshes — auf vollhohen Wandpaneelen malt die Vertex-Interpolation SÄGEZÄHNE über die Quad-Diagonalen (GESEHEN in nah_voll)
     for(let v=0;v<nv;v++){ const x=pa.getX(v),y=pa.getY(v),z=pa.getZ(v);
@@ -2228,6 +2468,7 @@
       const namp=NOISEAMP[role]||0, nz=namp? (1+namp*(_noise01(G.pos[G.pos.length-3]*1.7, wy*1.7, G.pos[G.pos.length-1]*1.7)*2-1)) : 1;   // MATERIAL-ILLUSION: Welt-Hash → jede Fläche atmet, deterministisch über Rebakes
       const bF=(inT&&innenAn(G.pos,G.nrm,geoms.__decken,inV,role==="boden",inF))?inT:base;                        // innen der unverwitterte Ton der Kultur (`innenTon`)
       G.col.push(bF[0]*tr*ao*nz, bF[1]*tg*ao*nz, bF[2]*tb*ao*nz);                       // AO-REAKTIVIERUNG: ao war GEMESSEN tot (berechnet, nie multipliziert) — das Kontakt-AO-Gesetz war stadtweit stumm
+      if(G.wand){ if(wa) G.wand.push(wa.getX(v),wa.getY(v),wa.getZ(v)); else G.wand.push(0,0,wr0); }
       const wx3=G.pos[G.pos.length-3], wz3=G.pos[G.pos.length-1], nay=na?Math.abs(na.getY(v)):1;   // WELT-UV-GESETZ: Kachelung aus der Weltlage (0.5/m) — Texturen laufen stetig über Bauteilgrenzen
       if(nay>0.6) G.uv.push(wx3*0.5, wz3*0.5); else { const nax=na?Math.abs(na.getX(v)):0; G.uv.push((nax>0.5?wz3:wx3)*0.5, wy*0.5); } }
     const ix=o.geometry.index; if(ix){ for(let v=0;v<ix.count;v++) G.idx.push(G.vo+ix.getX(v)); } else { for(let v=0;v<nv;v++) G.idx.push(G.vo+v); }
@@ -3135,10 +3376,19 @@
     // prettier-ignore
     function lod2Koerper(B, geoms){
   const liste=koerperListe(B), alle=liste.map(x=>x.teil), grp2=new THREE.Group(), wr=_wandRolle(B.p||{}), wf=_wandFaktor(B, wr);
-  const netz=(G, rolle, faktor)=>{ if(!G.pos.length) return;
+  // DAS GEFÜGE DER FERNEN WAND (w28-haus-stoff, VERBAND_GESETZ.fachwerk): die Wand und der Giebel des Fachwerk-Stils (`alt`) tragen je
+  // Ecke ihre Lage im Gefüge (`aWand`, `_wandLage`) — die Welt webt daraus Ständer und Riegel als Funktion; bis hier stand das Haus ab
+  // dieser Stufe als Kasten im Mittel aus Balken und Gefach. `rahmen`: die Wand, deren Gefüge das Teil trägt.
+  const gefuege=(B.p||{}).stil==='alt', kasten=t=>[t.c[0]-t.h[0],t.c[0]+t.h[0],t.c[1]-t.h[1],t.c[1]+t.h[1],t.c[2]-t.h[2],t.c[2]+t.h[2]], waende=[];
+  const wandUnter=t=>{ const k=kasten(t); let best=null, bf=0;   // die Wand unter einem Giebel: die mit der größten gemeinsamen Grundfläche
+    for(const w of waende){ const f=Math.max(0,Math.min(k[1],w[1])-Math.max(k[0],w[0]))*Math.max(0,Math.min(k[5],w[5])-Math.max(k[4],w[4])); if(f>bf){ bf=f; best=w; } }
+    return best||k; };
+  const netz=(G, rolle, faktor, rahmen)=>{ if(!G.pos.length) return;
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(G.pos,3)); bg.setAttribute('normal',new THREE.Float32BufferAttribute(G.nrm,3)); bg.setIndex(G.idx);
+    if(rahmen) bg.setAttribute('aWand',new THREE.Float32BufferAttribute(_wandLage(G, rahmen),3));
     if(faktor){ const n=G.pos.length/3, att=new Float32Array(n*3); for(let i=0;i<n;i++){ att[i*3]=faktor[0]; att[i*3+1]=faktor[1]; att[i*3+2]=faktor[2]; } bg.setAttribute('color',new THREE.Float32BufferAttribute(att,3)); }
     grp2.add(new THREE.Mesh(bg, M[rolle]||M.putz)); };
+  if(gefuege) for(const x of liste) if(x.rolle===wr&&x.teil.art==='box') waende.push(kasten(x.teil));
   for(const x of liste){
     // DIE DACHHAUT IST EINE HAUT (w15-lod-umriss): der Keil mit Haut legt nur seine Schrägen gehoben und um den Ortgang verlängert
     // (mit ihrer Untersicht, der Überstand von unten); seine Giebel stehen im Körper-Keil in der Wand-Ebene, im Stoff und Ton der Wand
@@ -3148,11 +3398,11 @@
       _teilGitter(_mitHaut(x), alle, H, false, n=>n[1]>0.02?2:0);
       _teilGitter(x.teil, alle, H, false, n=>n[1]>0.02?1:0);   // der Körper unter der Haut schließt den Raum zwischen Haut und Giebel (die Walm-Seiten)
       _teilGitter(x.teil, alle, Gi, false, n=>Math.abs(n[1])<=0.02&&Math.abs(amX?n[0]:n[2])>0.98?1:0);
-      netz(H, x.rolle, x.faktor); netz(Gi, wr, wf); continue; }
+      netz(H, x.rolle, x.faktor); netz(Gi, wr, wf, gefuege?wandUnter(x.teil):null); continue; }
     // DIE WAND TRÄGT IHREN RING (w25-lod-pop-3, lod.K5): die Wand des Hauptkörpers steht im Ständer-Ring der L0 (`ring`, 6 cm vor dem
     // Grundriss), nie 1,5 cm dahinter — die Hochhaus-L1 stand an jeder Ecke 7,5 cm innen (4,0 px am Haushalt 12 m).
     const t=x.haut&&x.haut.ring&&x.teil.art==='box'?Object.assign({},x.teil,{h:_hr3([x.teil.h[0]+x.haut.ring,x.teil.h[1],x.teil.h[2]+x.haut.ring])}):x.teil;
-    const G={pos:[],nrm:[],idx:[]}; _teilGitter(t, alle, G, true); netz(G, x.rolle, x.faktor); }
+    const G={pos:[],nrm:[],idx:[]}; _teilGitter(t, alle, G, true); netz(G, x.rolle, x.faktor, gefuege&&x.rolle===wr&&t.art==='box'?kasten(t):null); }
   const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, B.p.col, geoms, 0);
 }
@@ -3255,6 +3505,8 @@
   for(let i=0;i<P.length;i++){ G.pos.push(P[i]); G.nrm.push(N[i]); G.col.push(C2[i]); }
   if(U.length===S.vo*2 && (G.vo===0 || G.uv.length===G.vo*2)){ for(let i=0;i<U.length;i++) G.uv.push(U[i]); }   // WELT-UV mischen (2er-Takt!) — KONSISTENZ-WÄCHTER: passt eine Quelle nicht, verliert die Rolle ihr uv ganz (finalize-Guard schützt), nie halbe Arrays
   else G.uv.length=0;
+  if(S.wand||G.wand){ const r0=verbandReihe(role); G.wand=G.wand||[]; while(G.wand.length<off*3) G.wand.push(0,0,r0);   // die Lage im Gefüge reist mit (`_wandLage`): eine Quelle ohne sie trägt die Zeile ihres Stoffs
+    if(S.wand) for(let i=0;i<S.wand.length;i++) G.wand.push(S.wand[i]); else for(let i=0;i<S.vo;i++) G.wand.push(0,0,r0); }
   for(let i=0;i<I.length;i++) G.idx.push(I[i]+off);
   G.vo+=S.vo; } }
     // prettier-ignore
@@ -4051,7 +4303,7 @@
     // ════════════ DIE STADT-GRAMMATIK (siedlung, die Breite) ════════════
     // Stadt → Viertel (Rolle aus Lage) → Parzelle am Straßen-Gewebe → Bau-Typ aus (Viertel-Rolle × Kultur × Epoche) → Gegenstände
     // des Viertels. EINE Tafel, drei Leser: DORF (`stadtViertel`: je Los sein Viertel, je Bau des Loses der Bau-Typ seiner Epoche —
-    // ein Parameter-Satz des HAUS-Gesetzes über dem Haus seiner Kultur, nie ein eigenes Teil), dorfLayout (`lage`: wohin das
+    // seine Zeile im Bau-Gesetz BAU_NUTZUNG über dem Haus seiner Kultur, nie ein eigenes Teil), dorfLayout (`lage`: wohin das
     // Viertel zieht, `dinge`: was auf seinem Grund steht, `STADT_DICHTE`: das Gewebe im Mauerring) und der Export (`viertel` je
     // Slot, die Viertel des Plans, ihre Flächen und Gegenstände) — Labor und Welt lesen ihn. DIE ZEIT ist eine Achse: `zeit`
     // nennt die Bänder nach dem Baujahr, je Viertel trägt `bauten` je Band seine Folge — dieselbe Regel wählt 1238 den Wohnturm,
@@ -4090,26 +4342,6 @@
         vorstadt:{ lage:'vor der Mauer', lose:()=>[0,0], bauten:{}, dinge:[] },              // was vor der Mauer steht (dorfLayout: der Überlauf des Wohnens)
         hafen:{ lage:'wasser', lose:()=>[0,0], bauten:{}, dinge:[] },                         // was im Ring am Wasser steht (dorfLayout: Handwerk und Wohnen binnen STADT_DICHTE.hafenM am Wasser des Rasters) — die Rolle folgt der LAGE: ohne Wasser am Ring trägt die Stadt keinen Hafen (`lage.wasser` 0)
       },
-      // DER BAU-TYP: sein Parameter-Satz über dem Haus der Kultur (p), o = {region, band}
-      bau:{
-        gasthaus:(p,o)=>{ p.W=Math.min(15,p.W+2.5); p.D=Math.min(11,p.D+1); if(p.storeys<2)p.storeys=2; if(o.region==='mitteleuropa'||o.region==='mediterran')p.arkade=1; },
-        schmiede:p=>{ p.W=5.5; p.D=5; p.storeys=1; p.balcony=0; p.annexN=0; p.grundriss='I'; p.turm=0; p.kuppel=0; },
-        rathaus:(p,o)=>{ p.W=Math.max(p.W,13); p.D=Math.max(p.D,10); p.storeys=3; p.turm=1; p.grundriss='I'; p.annexN=0; p.arm=0; p.keller=1; p.balcony=0; if(o.band==='mittelalter')p.zinnen=1; else p.arkade=1; },   // der wehrhafte Rat des Mittelalters, die Laube der Neuzeit
-        kaufhaus:p=>{ p.W=Math.min(p.W,8.5); p.D=Math.max(p.D,10); p.storeys=Math.max(p.storeys,3); p.grundriss='I'; p.annexN=0; p.arm=0; p.balcony=0; if(p.stil==='alt')p.vorkragung=1; },   // schmal und tief am Platz, der Laden unten
-        kontor:p=>{ p.W=Math.max(p.W,10); p.D=Math.max(p.D,10); p.storeys=3; p.arkade=1; p.arm=0; p.annexN=0; p.balcony=0; },   // der Hof der fremden Kaufleute (Fondaco): Bogengang, drei Geschosse
-        zunfthaus:p=>{ p.W=Math.max(p.W,11); p.D=Math.max(p.D,9); p.storeys=3; p.portikus=1; p.grundriss='I'; p.arm=0; p.annexN=0; },
-        pfarrhaus:p=>{ p.W=Math.max(8,Math.min(10,p.W)); p.storeys=2; p.grundriss='I'; p.arm=0; p.balcony=0; },
-        kapelle:p=>{ p.W=7; p.D=8; p.storeys=1; p.keller=0; p.annexN=0; p.balcony=0; p.grundriss='I'; p.arm=0; p.turm=0; },
-        bergfried:p=>{ p.W=8; p.D=8; p.storeys=5; p.zinnen=1; p.turm=0; p.kuppel=0; },      // der Turm des Herrn: fünf Geschosse unter dem Zinnenkranz
-        torhaus:p=>{ p.W=7.5; p.D=6.5; p.storeys=2; p.zinnen=1; p.turm=0; p.kuppel=0; },
-        zeughaus:p=>{ p.W=12; p.D=8; p.storeys=2; p.turm=0; p.kuppel=0; },
-        werkstatt:p=>{ p.W=Math.min(p.W,8); p.storeys=Math.min(p.storeys,2); p.annexN=1; p.balcony=0; if(p.stil==='alt')p.vorkragung=1; },
-        backhaus:p=>{ p.W=6; p.D=6; p.storeys=1; p.grundriss='I'; p.annexN=0; p.balcony=0; },
-        speicher:p=>{ p.W=Math.max(p.W,9); p.D=11; p.storeys=4; p.grundriss='I'; p.annexN=0; p.balcony=0; p.arm=0; },
-        gerberei:p=>{ p.W=Math.max(p.W,9); p.storeys=2; p.veranda=1; p.grundriss='I'; p.balcony=0; },   // der Trockenboden vor der Wand
-        wohnturm:p=>{ p.W=6; p.D=6; p.storeys=6; p.zinnen=1; p.grundriss='I'; p.annexN=0; p.balcony=0; p.keller=0; p.arm=0; p.turm=0; p.kuppel=0; },   // der Geschlechterturm: sechs Geschosse über sechs Metern im Geviert
-        patrizierhaus:p=>{ p.W=Math.max(p.W,10); p.storeys=Math.max(p.storeys,3); p.balcony=1; p.arm=0; },
-      },
     };
     // DAS GEWEBE UND DER GRUND DER STADT (dorfLayout, die Stadt der Grammatik: ummauert, um ihren Markt). gasse*: die Fußgasse
     // der Dichte — Breite (unter VERKEHR_GESETZ.breiteM: kein Wagen), Abstand zweier Gassen längs ihrer Straße, der erste
@@ -4146,8 +4378,8 @@
       const sakral=geb[0].kultur, herrK=SG.herr[o.region]||'gotisch', fern=SG.fern[o.region]||[];
       const kulturVon=(regel,p)=> regel==='herr'?herrK : regel==='sakral'?sakral : (regel==='fern'&&fern.length)?fern[p.seed%fern.length] : null;
       const setze=(p,z,band,name)=>{ const k=z.kultur?kulturVon(z.kultur,p):null;
-        if(k&&k!==p.kultur) Object.assign(p,kulturParams(k,p.seed),{kultur:k});                // das Haus der Kultur der Zeile über demselben Samen
-        p.rolle=z.typ; p.viertel=name; SG.bau[z.typ](p,{region:o.region,band}); };
+        if(k&&k!==p.kultur) Object.assign(p,bauRezept({bauweise:k},null,p.seed),{kultur:k});                // das Haus der Kultur der Zeile über demselben Samen
+        p.rolle=z.typ; p.viertel=name; bauRezept({nutzung:z.typ,rahmen:{region:o.region,band},los:p},null,p.seed); };
       const vonLos=new Array(n).fill('wohnen');
       for(const name of ['kirchhof','markt','handwerk']){ const [a,b]=V[name].lose(n); for(let i=a;i<Math.min(b,n);i++) vonLos[i]=name; }
       vonLos[0]='kirchhof';
@@ -4163,7 +4395,7 @@
         for(const q of fr[i]){ q.v.W=Math.min(q.v.W,p0.W); q.v.D=Math.min(q.v.D,p0.D); } }       // der frühere Bau steht im Los des jüngeren
       const neu=[], palas=o.burg>=0?geb[o.burg]:null, band=palas?bandVon(palas.baujahr):null;
       if(band){ palas.viertel='burg';
-        for(const z of V.burg.bauten[band]){ const bs=1+((o.rv()*1e6)|0), bp=kulturParams(herrK,bs);
+        for(const z of V.burg.bauten[band]){ const bs=1+((o.rv()*1e6)|0), bp=bauRezept({bauweise:herrK},null,bs);
           Object.assign(bp,{seed:bs,kultur:herrK,terrain:0,baujahr:palas.baujahr,rolle:'wohnhaus',wohl:1.2,keller:0,annexN:0,balcony:0,grundriss:'I',arm:0});
           setze(bp,z,band,'burg'); neu.push(bp); } }
       return neu; }
@@ -4201,7 +4433,7 @@
     else by=jahr+Math.round(spanne*t9r*(0.55+0.45*rnd()));
     gr.push(ringe?chronikJahr(anker,i):by); fr.push([]);
     const pool=poolAt(by, ringe), kn=pool[(rnd()*pool.length)|0], hs=1+((rnd()*1e6)|0);
-    const p=kulturParams(kn,hs); p.seed=hs; p.kultur=kn; p.terrain=0; p.baujahr=by; p.rolle='wohnhaus';
+    const p=bauRezept({bauweise:kn},null,hs); p.seed=hs; p.kultur=kn; p.terrain=0; p.baujahr=by; p.rolle='wohnhaus';
     if(ringe) p.W=Math.max(4.5, Math.min(15, Math.round(p.W*(0.80+0.38*t9r)*2)/2));         /*PARZELLEN-GEDAECHTNIS: schmale Buergerhaeuser im Kern, breite Lose am Saum*/
     const w=(1.22-0.5*(i/Math.max(1,n-1)))*(0.78+0.44*rnd()); p.wohl=Math.round(w*100)/100;
     p.W=Math.max(5,Math.min(15,Math.round(p.W*(0.84+0.30*w)*2)/2));
@@ -4215,7 +4447,7 @@
     p.arm=(n>=16&&w<0.72)?1:0;
     p.balcony=(w>0.95&&p.storeys>=2&&rnd()<0.5)?1:0;
     if(i>0){ const g2=rnd(); p.grundriss=(g2<(staedtisch?0.85:0.68))?'I':((g2<0.9)?'L':p.grundriss); }
-    if(by!==gr[i]){ const P0=poolAt(gr[i], ringe), k0=P0[hs%P0.length]; fr[i].push({ab:gr[i], v:Object.assign({}, p, kulturParams(k0,hs), {kultur:k0, baujahr:gr[i]})}); }
+    if(by!==gr[i]){ const P0=poolAt(gr[i], ringe), k0=P0[hs%P0.length]; fr[i].push({ab:gr[i], v:Object.assign({}, p, bauRezept({bauweise:k0},null,hs), {kultur:k0, baujahr:gr[i]})}); }
     geb.push(p); }
   const modern=(jahr>=1905&&staedtisch), gewerbe=(jahr>=1850&&staedtisch&&n>=20), gwA=rnd()*Math.PI*2;
   if(modern){ for(let i=0;i<n;i++){ if(i>0&&i<n*0.22&&rnd()<0.72){ const p=geb[i];      // DOWNTOWN-GESETZ: der Kern wächst in den Himmel — als NEUBAU des alten Loses im Jahrhundert der Moderne (der alte Bau bleibt in fr)
@@ -4227,18 +4459,18 @@
     p.rolle='halle'; p.stil='klinker'; p.W=12+((rnd()*4)|0); p.D=9+((rnd()*4)|0); p.storeys=1;
     p.pitchDeg=14; p.grundriss='I'; p.balcony=0; p.annexN=0; p.arm=1; p.sektor=gwA; p.turmbau=0; } } }
   const markBei=(L,y)=>(L&&L.mark)?L.mark:(region==='mediterran'?{k:'barock',set:{kuppel:1,W:14,D:11}}:region==='fernost'?{k:'chinesisch',set:{W:15,D:11}}:region==='antik'?{k:'roemisch',set:{arkade:1,W:15,D:11}}:region==='nordisch'?{k:'norwegisch',set:{turm:1,D:10}}:region==='alpin'?{k:'gotisch',set:{turm:1,D:9,W:7}}:(y>1880?{k:'hochhaus',set:{}}:y>1620?{k:'barock',set:{kuppel:1,W:13,D:11}}:{k:'gotisch',set:{turm:1,D:11}}));
-  const kirche=(p,mk,ab)=>Object.assign(p,kulturParams(mk.k,p.seed),{kultur:mk.k},mk.set||{},{rolle:'kirche',mark:1,keller:0,baujahr:ab});
+  const kirche=(p,mk,ab)=>Object.assign(p,bauRezept({bauweise:mk.k},null,p.seed),{kultur:mk.k},mk.set||{},{rolle:'kirche',mark:1,keller:0,baujahr:ab});
   if(n>=8){ const p=geb[0];                                                                   /*DIE KIRCHE DER EPOCHE: je Epoche der Achse vor der Gegenwart ein Bau ihrer Marke (ab der Mitte ihrer Spanne, die erste ab der Gruendung)*/
     if(ringe) fr[0]=achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr).map((k,j)=>{ const E=EPOCHEN[k], ab=j?E.jahr+d+((E.spanne/2)|0):gr[0]; return {ab, v:kirche(Object.assign({},p),markBei(E,E.jahr+d),ab)}; }).filter(f=>f.ab<jahr);
     kirche(p,markBei(leg,jahr),jahr); }
   const losBauten=i=>[geb[i]].concat(fr[i].map(f=>f.v));                                      /*der Bau-Typ ist die Rolle des LOSES: jeder seiner Bauten traegt sie*/
   const SG=STADT_GRAMMATIK, GO={region, jahr};
-  for(const z of SG.grund) if(n>=z.ab) for(const p of losBauten(z.los(n))){ p.rolle=z.typ; SG.bau[z.typ](p,GO); }   /*DER GRUND-SATZ (das SONDERBAU-GESETZ als Zeilen der Tafel): Gasthaus und Schmiede jedes Orts*/
+  for(const z of SG.grund) if(n>=z.ab) for(const p of losBauten(z.los(n))){ p.rolle=z.typ; bauRezept({nutzung:z.typ,rahmen:GO,los:p},null,p.seed); }   /*DER GRUND-SATZ (das SONDERBAU-GESETZ als Zeilen der Tafel): Gasthaus und Schmiede jedes Orts*/
   const grammatik=staedtisch&&SG.zeit.some(z=>jahr>=z[1]&&jahr<z[2]);                        /*DIE STADT DER GRAMMATIK: staedtisch, ihre Gestalt in einem Band der Tafel (`zeit`) — die Chronik-Stadt steht in der Gegenwart, Antike und Moderne tragen keine Zeile: sie bleiben, was sie waren*/
   const herrBar=staedtisch&&jahr<1700&&n>=16, muenze=herrBar&&rnd()<0.5, herr=muenze||(herrBar&&grammatik&&n>=SG.herrAb), burgAb=geb.length;   /*BURG-GESETZ: die Stadt hat einen Herrn — in der Grammatik ab `herrAb` Losen jede (die Muenze faellt wie bisher; ein Herr ohne Muenze zaehlt nicht in das Mass der Gestalt, `nGestalt`)*/
   if(herr){
     const bk=(region==='nordisch')?'norwegisch':'gotisch', bs=1+((rnd()*1e6)|0);
-    const bp=kulturParams(bk,bs); Object.assign(bp,{seed:bs,kultur:bk,terrain:0,baujahr:jahr-((rnd()*80)|0),rolle:'burg',wohl:1.2,
+    const bp=bauRezept({bauweise:bk},null,bs); Object.assign(bp,{seed:bs,kultur:bk,terrain:0,baujahr:jahr-((rnd()*80)|0),rolle:'burg',wohl:1.2,
       W:13+((rnd()*2)|0), D:11, storeys:3, turm:1, zinnen:1, keller:0, annexN:0, balcony:0, grundriss:'I', arm:0});
     geb.push(bp); }
   const alle=[], za=[], schQ={weiler:.75,dorf:.55,markt:.28,stadt:.06,grossstadt:.04,metropole:.03}[groesse];
@@ -5489,7 +5721,7 @@
     //  dokumentierte Quelle. Die String-Wahlen (Kultur · Fachwerk-Figur ·
     //  Grundriss · Stil · Dachtyp · Bogen) sind KEINE B4-Zeilen (B4 ist
     //  numerisch) — sie reisen je Rezept als fx-Daten. Die Meta-Regler
-    //  (Jahr/Klima/Personen/Wohlstand → metaParams) und die Dorf-Regler
+    //  (Personen/Wohlstand → der Haushalt des Bau-Gesetzes `bauRezept`) und die Dorf-Regler
     //  bleiben Lab-UI (Ableitungs-Schicht bzw. W-A5b). Die Werkstatt rendert
     //  ihre Slider AUS diesen Daten (W-A1-Generik), der ov-Kanal von
     //  buildInstance liest dieselben ids.
@@ -5522,7 +5754,7 @@
     // ═══════════════════════════════════════════════════════════════════════
     //  B1 REZEPTE — die 32 klickbaren Haus-Kulturen des Labs (die Kultur-Wahl
     //  minus die Meta-Einträge `manuell`/`samen`). `s` = die FLACHEN
-    //  numerischen Dials aus kulturParams(name, LAB_SEED) — LAB_SEED 3 ist der
+    //  numerischen Dials aus bauRezept({bauweise: name}, null, LAB_SEED) — LAB_SEED 3 ist der
     //  Boot-Samen des Labs (`let SEED=3`), derselbe Zustand, den ein Klick auf
     //  die Kultur beim Lab-Start zeigt (applyKultur → Slider → readParams).
     //  Die String-/Farb-Anteile (brace · stil · dachTyp · bogenTyp · grundriss ·
@@ -5540,7 +5772,7 @@
         var out = {};
         for (var i = 0; i < KULTNAMES.length; i++) {
             var name = KULTNAMES[i];
-            var kp = kulturParams(name, LAB_SEED);
+            var kp = bauRezept({ bauweise: name }, null, LAB_SEED);
             if (!kp) continue;
             var s = {
                 W: kp.W,
@@ -6046,6 +6278,18 @@
             bg.setAttribute("color", new THREE.Float32BufferAttribute(G.col, 3));
             if (G.uv && G.uv.length === (G.pos.length / 3) * 2)
                 bg.setAttribute("uv", new THREE.Float32BufferAttribute(G.uv, 2));
+            // DAS GEFÜGE DER FERNEN WAND (`_wandLage`, VERBAND_GESETZ.fachwerk): je Ecke die Zeile ihres Verbands (`aVerband`, ein
+            // Byte) und ihre Lage in der Wand (`aLage`: Felder quer · Felder hoch) — nur wo ein Teil der Rolle sie trägt
+            if (G.wand && G.wand.length === G.pos.length) {
+                var nW = G.pos.length / 3, vb = new Uint8Array(nW), la = new Float32Array(nW * 2);
+                for (var iW = 0; iW < nW; iW++) {
+                    la[iW * 2] = G.wand[iW * 3];
+                    la[iW * 2 + 1] = G.wand[iW * 3 + 1];
+                    vb[iW] = G.wand[iW * 3 + 2];
+                }
+                bg.setAttribute("aVerband", new THREE.BufferAttribute(vb, 1));
+                bg.setAttribute("aLage", new THREE.BufferAttribute(la, 2));
+            }
             bg.setIndex(G.idx);
             var mm = new THREE.Mesh(bg, _mmFor(role));
             mm.castShadow = true;
@@ -9272,64 +9516,9 @@
             A.p.brandwand=A.p.brandwand||{}; A.p.brandwand[lz>0?'z1':'z0']=1; bwN++; } } }
       return bwN;
     }
-    // ════════════ META-GESETZ ════════════ eine Quelle für Browser + Sweep
-    // Aus Zeit · Klima · Personen · Wohlstand emergiert die ganze Form — nach der Ordnung der Stil-Epochen.
-    function metaParams(jahr, klima, leute, wohl){
-      const kalt=klima<0.3, heiss=klima>0.72, nord=klima<0.5;
-      const epoche = jahr<1150?'romanik' : jahr<1500?'gotik' : jahr<1650?'renaissance' : jahr<1770?'barock' : jahr<1900?'klassik' : jahr<1950?'gruender' : 'moderne';
-      // PITCH — steil(kalt,früh) → flach(heiss,spät); heisse Zonen mediterran gekappt
-      const eraP = jahr<1500?56 : jahr<1770?44 : jahr<1900?34 : jahr<1950?24 : 13;
-      let pitch = Math.round(eraP + (0.5-klima)*34);
-      if(heiss) pitch = Math.min(pitch, Math.round(22-(klima-0.72)*30));
-      pitch = Math.max(7, Math.min(62, pitch));
-      // MATERIAL — Klima × Wohlstand × Epoche (Vernakular ↔ Mauerwerk)
-      let stil;
-      if(epoche==='moderne') stil = wohl>0.55?'glas':'modern';
-      else if(heiss) stil = 'stein';
-      else if(jahr>=1850) stil = 'klinker';
-      else if(wohl>0.62) stil = (jahr>=1450?'klinker':'stein');     // reich → Mauerwerk (Burg: früh Stein)
-      else if(wohl>0.4 && jahr>=1500) stil = 'klinker';             // bürgerlich (Renaissance+) → Backstein-Stadthaus
-      else stil = kalt?'huette':'alt';                              // Vernakular: Norden Holz, Mitte Fachwerk
-      const massiv = (stil==='stein'||stil==='klinker');
-      // BOGEN — Epoche × Mauerwerk
-      let bogen='none';
-      if(heiss && massiv && jahr<1800) bogen='hufeisen';
-      else if(epoche==='gotik' && massiv) bogen='spitz';
-      else if((epoche==='romanik'||epoche==='renaissance') && massiv) bogen='rund';
-      // GRUNDRISS — Süden Hof (Kühlung), grosse Wohlhabende L
-      const grund = heiss ? 'hof' : ((wohl>0.5&&leute>8)?'L':'I');
-      // GRÖSSE — Personen × Wohlstand
-      const storeys = Math.max(1, Math.min(8, Math.round(1 + leute/5 + (wohl>0.55?1:0) + (epoche==='moderne'&&wohl>0.7?Math.floor(leute/3):0))));
-      const W = Math.max(6, Math.min(15, Math.round(6 + leute*0.4 + wohl*3)));
-      const D = Math.max(5, Math.min(11, Math.round(5 + leute*0.3 + wohl*2)));
-      // MONUMENT-VOKABULAR — Wohlstand schaltet die Hochform der Epoche
-      const F={treppgiebel:0,vorkragung:0,portikus:0,kuppel:0,turm:0,zinnen:0,veranda:0,pilotis:0,terrasse:0,arkade:0};
-      const reich = wohl>0.66, mittel = wohl>0.4&&wohl<=0.66;
-      if(reich){
-        if(epoche==='romanik'||epoche==='gotik'){ F.turm=1; if(jahr<1350) F.zinnen=1; }   // Burg / Dom
-        else if(epoche==='renaissance') F.portikus=1;                                      // Palazzo
-        else if(epoche==='barock') F.kuppel=1;                                             // Barock-Kuppel
-        else if(epoche==='klassik') F.portikus=1;                                          // Tempel-Portikus
-        else if(epoche==='gruender'){ F.turm=1; if(!kalt) F.veranda=1; }                   // Viktorianisch
-        else if(epoche==='moderne') F.pilotis=1;                                           // Villa moderne
-      }
-      // Vernakular/bürgerliche Marker — regional, additiv
-      if(nord && stil==='klinker' && jahr>=1400 && jahr<1700 && !reich) F.treppgiebel=1;   // Hanse / Holland (bürgerlich, nicht auf Monument)
-      if(epoche==='gotik' && stil==='alt' && !reich) F.vorkragung=1;                       // Fachwerk-Jetty
-      if(heiss && massiv && (mittel||reich) && jahr<1800) F.arkade=1;                      // Riad / Kreuzgang
-      if(!heiss && !kalt && jahr>=1750 && jahr<1930 && mittel && grund!=='hof') F.veranda=1; // Kolonial
-      // FARBEN — Stil × Klima
-      let col;
-      if(stil==='huette') col = kalt?{holz:0x6b5236,stamm:0x6b655e,ziegel:0x55402a}:{holz:0x82602f,stamm:0x664a2e,ziegel:0x664a2e};
-      else if(stil==='stein') col = heiss?{putz:0xf2efe8,ziegel:0xc06a3a,ziegel2:0x9a5230}:{putz:0xe4d8bc,ziegel:0xab6840,ziegel2:0x824c2c};
-      else if(stil==='klinker') col = nord?{backstein:0x8c4636,ziegel:0x6e3828,ziegel2:0x552a1d}:{backstein:0x9a5a44,ziegel:0x7a3f2c,ziegel2:0x60301f};
-      else if(stil==='modern'||stil==='glas') col = {putz:0xe9e6df,glas:0x9fb8c4,metall:0x8a8a92,dachmod:0x33363c};
-      else col = {holz:0x6a4c2e,gefach:0xe9e3d6,ziegel:0x9c4a35,ziegel2:0x7e3826};
-      return {pitch,W,D,storeys,stil,bogen,grund,col,F,epoche};
-    }
-    // ── DIE LEUTE EINES HAUSES (Meisterkarte mensch.K1, additiv) — das META-GESETZ von der anderen Seite: dort emergiert die
-    //    Größe eines Hauses aus Personen und Wohlstand, hier wohnen in einem gebauten Haus (die Zeile hp des Plans, `slot.ov`)
-    //    so viele, wie seine Wohnfläche bei seinem Wohlstand trägt — je Geschoss die Grundfläche W·D, davon `nutz` bewohnbar
+    // ── DIE LEUTE EINES HAUSES (Meisterkarte mensch.K1, additiv) — das BAU-GESETZ von der anderen Seite: dort (`bauProgramm`) folgt die
+    //    Größe eines Hauses aus Personen und Wohlstand, und das Haus TRÄGT seinen Haushalt (`hp.leute`) — den liest diese Funktion.
+    //    Ein Haus ohne Haushalt (ein Rezept der Kultur, kein Los) bewohnen so viele, wie seine Wohnfläche bei seinem Wohlstand trägt — je Geschoss die Grundfläche W·D, davon `nutz` bewohnbar
     //    (Wände, Stiege), je Person `flaeche` + `wohlFlaeche`·wohl m² (die Kammer der Armen, die Stube der Reichen), ganzzahlig,
     //    mindestens 1, höchstens `max`. Die Rollen ohne Haushalt tragen ihre Zahl (`rolle`): die Scheune und die Halle des
     //    Gewerbes niemanden, die Kirche ihren Pfarrer, die Schmiede Meister und Gesellen. REIN: dieselbe Zeile ⇒ dieselbe Zahl.
@@ -9339,6 +9528,7 @@
         if (!hp || typeof hp !== "object") return 0;
         var rolle = typeof hp.rolle === "string" ? hp.rolle : "wohnhaus";
         if (Object.prototype.hasOwnProperty.call(LEUTE_GESETZ.rolle, rolle)) return LEUTE_GESETZ.rolle[rolle];
+        if (isFinite(hp.leute) && hp.leute !== null) return Math.max(0, Math.min(LEUTE_GESETZ.max, Math.round(Number(hp.leute)))); // der Haushalt des Loses (bauProgramm schreibt ihn)
         var W = Number(hp.W), D = Number(hp.D), st = Number(hp.storeys);
         var wohl = isFinite(hp.wohl) ? Math.max(0, Number(hp.wohl)) : 1;
         if (!(W > 0 && D > 0)) return 1;
@@ -12105,6 +12295,9 @@
         ZEIT_VIS: ZEIT_VIS,
         // K11 — das Leuchtquellen-Gesetz (Labor und Welt lesen dasselbe Datum)
         LICHT_GESETZ: LICHT_GESETZ,
+        // DAS VERBAND-GESETZ (w28-haus-stoff): die Tafel der Maler und ihre Zeilen für die Welt (Leser: der Wirt, `_verbandStoff`)
+        VERBAND_GESETZ: VERBAND_GESETZ,
+        verbandZeilen: verbandZeilen,
         // das Leucht-Gesetz der Glut (Leuchtdichte = lineare Farbe × LEUCHT_FEUER): die Welt webt es in jede Glut ihres Bodens (die Lava)
         LEUCHT_FEUER: LEUCHT_FEUER,
         BOGEN_GESETZ: BOGEN_GESETZ,
@@ -12138,7 +12331,6 @@
         laterneWandM: laterneWandM,
         LICHT_MARKE_M: LICHT_MARKE_M, // das Soll des Dorf-Lichts je Meter Weg (K66-2 N1; Leser gate:settlement DORF-LICHT)
         brandwand: brandwand,
-        metaParams: metaParams,
         LEUTE_GESETZ: LEUTE_GESETZ, // die Leute eines Hauses (Meisterkarte mensch.K1; Leser: der Wirt, gate:kreatur-takt bewohner)
         leuteVon: leuteVon,
         MARKT_GESETZ: MARKT_GESETZ, // der Markt zieht an (Leser: der Wirt marktStand · _ortPose, koerper tagesOrte, gate:kreatur-takt bewohner)
@@ -12230,7 +12422,8 @@
         KULTNAMES: KULTNAMES,
         tintM: tintM,
         kulturFromSeed: kulturFromSeed,
-        kulturParams: kulturParams,
+        bauRezept: bauRezept,
+        BAU_NUTZUNG: BAU_NUTZUNG, // das Bau-Gesetz (w28-bau-rezept): die Zeilen der Nutzung; Leser: DORF, das Labor (worlds/fachwerk)
         // Material-Fläche
         materials: materials,
         mat: mat,

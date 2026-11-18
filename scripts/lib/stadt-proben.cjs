@@ -156,7 +156,7 @@ function breiteOhne(m, S = BREITE) {
         .filter(([, l]) => m.lage && m.lage[l] === 0)
         .map(([rolle, l]) => `Viertel ${rolle}: der Ort trägt es nicht (${l} am Ring 0)`);
 }
-// DAS URTEIL: die Täter beim Namen (leer = GRÜN). `rollen` = die Bau-Typen der Grammatik (fachwerk STADT_GRAMMATIK.bau und die
+// DAS URTEIL: die Täter beim Namen (leer = GRÜN). `rollen` = die Bau-Typen der Grammatik (fachwerk BAU_NUTZUNG, das Bau-Gesetz, und die
 // Rollen des Gesetzes davor): ein Haus im Gang mit einem Typ außerhalb der Tafel oder ohne Viertel kommt nicht aus der EINEN Grammatik.
 function breiteUrteil(m, rollen, S = BREITE) {
     const v = [];

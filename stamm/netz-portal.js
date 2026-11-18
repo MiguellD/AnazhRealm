@@ -389,7 +389,8 @@ class AnazhRealm_netz_portal {
     _portalEnterPayload() {
         const player = this.state.player || {};
         const vp = this.state.vibePass || {};
-        const payload = { name: (player.name && String(player.name)) || "Schöpfer" };
+        // der Name ist ein Wort des Spielers (Daten); ohne ihn reist der Name der Tafel in der Sprache des Senders
+        const payload = { name: (player.name && String(player.name)) || this._t("ui.schoepfer-2") };
         if (vp.ready && vp.publicKeyHex) {
             payload.vibePassId = "ed25519:" + vp.publicKeyHex;
             payload.fingerprint = vp.fingerprint || this._vibeFingerprint(vp.publicKeyHex);
@@ -403,6 +404,10 @@ class AnazhRealm_netz_portal {
             label: String((custom && custom.label) || (builtin && builtin.label) || soulName),
             custom: !!custom,
         };
+        // eine eingebaute Seele trägt ihren Namen als Schlüssel der Tafel (`etikett`): eine Welt mit Tafel liest ihn in IHRER
+        // Sprache, eine ohne zeigt `label` (die Sprache des Senders, must-ignore); eine eigene Seele heißt, wie der Spieler sie nennt
+        const etikett = (custom && custom.etikett) || (builtin && builtin.etikett);
+        if (Array.isArray(etikett)) soul.etikett = JSON.parse(JSON.stringify(etikett));
         if (custom && Array.isArray(custom.bodyParts)) {
             soul.bodyParts = JSON.parse(JSON.stringify(custom.bodyParts.slice(0, 24)));
         }
@@ -430,6 +435,7 @@ class AnazhRealm_netz_portal {
                 label: (t.label && String(t.label)) || String(name),
                 opName: t.opName ? String(t.opName) : "",
                 opClass: t.opClass ? String(t.opClass) : "",
+                ...(Array.isArray(t.etikett) ? { etikett: JSON.parse(JSON.stringify(t.etikett)) } : {}),
             });
             if (tools.length >= 16) break;
         }
