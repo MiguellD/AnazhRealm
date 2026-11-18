@@ -91,7 +91,7 @@ const { AUSGABE_INSTALL, wetterUrteil, buehneSelbsttest } = AA;
 const LL = require("./lib/licht-linsen.cjs");
 // die Fälle eines Selbsttests [ist, soll] (soll: Wert oder Muster), die nicht treffen — Nässe und Laub-Licht
 const istSoll = (f) => f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
-const { ZAEHLER_INSTALL, FALTE_INSTALL, gangLauf } = require("./lib/draw-zaehler.cjs");
+const { ZAEHLER_INSTALL, FALTE_INSTALL, gangLauf, heapStichprobe } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 const DIAET = require("./lib/diaet-linse.cjs");
@@ -624,6 +624,9 @@ async function starte() {
     // DIE SICHT des gestellten Orts: Ego oder Third-Person — der Ort wird in ihr aufgestellt, die Band richtet die
     // Ratsche dieses Orts × Geräts × Sicht.
     let aktSicht = null;
+    // DIE STICHPROBE DES JS-HEAPS (`/puffer` mit `stichprobe`, draw-zaehler `heapStichprobe`): EINE offene Sitzung — ein Ablösen
+    // beendete das Sampling
+    let stichCdp = null;
     // DIE WELT DES ORTS (Toggle-Ort, haushalt.json `welt`): die Prüfbühne ist eine geborene Welt — sie betritt die
     // Seite wie im Spiel durch DIE TÜR (`importWorldBeside` mit `reload`: Sperre, Zeiger, Wechsel am Ort). Steht die Seite schon in ihr
     // (derselbe slug), bleibt sie; ein Import, der nicht greift, oder eine Seite, die danach in einer anderen Welt steht, bricht laut.
@@ -2710,8 +2713,12 @@ async function starte() {
                     );
                     return Object.assign(o, { heapMB: +((u.usedSize + u.backingStorageSize) / 1048576).toFixed(1) });
                 };
-                if (req.url === "/puffer")
-                    return send(await pufferStand(false, Number(b.top) || 30));
+                if (req.url === "/puffer") {
+                    const o = await pufferStand(false, Number(b.top) || 30);
+                    // `stichprobe: "an"` setzt nach den GC das Sampling auf, `"lies"` nennt die seither lebenden Bytes beim Besteller
+                    if (b.stichprobe) o.js = await heapStichprobe((stichCdp = stichCdp || (await page.target().createCDPSession())), b.stichprobe); // prettier-ignore
+                    return send(o);
+                }
                 if (req.url === "/gang")
                     return send(await gangLauf(page, pufferStand, b));
                 if (req.url === "/zaehlen") {
