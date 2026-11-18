@@ -13,7 +13,8 @@ Zeile mit datei:zeile, und jede Zahl der Blätter ist mit ihrem eigenen Mess-Skr
 | `zensus/f-stand-vision.md` + `f-sprossen.json` | was Vision und Meisterkarte-2 schon sagen | — | `zensus/f-sprossen.cjs` |
 
 Gezählt hat `zaehle.cjs`, nicht die Hand: Es liest die fünf Tabellen, prüft jedes Feld, legt Doppelzählungen zusammen und schreibt
-`zensus.json` (alle Zeilen und die Zählung), `zensus-tabelle.md` (die Tafel je Domäne) und `zaehle.out.txt`.
+`zensus.json` (alle Zeilen und die Zählung), `zensus-tabelle.md` (die Tafel je Domäne) und `zaehle.out.txt`. Jede Ortsangabe prüft
+`zensus/pruef-orte.cjs` gegen den Baum b7ed8419: 658 Orte, 0 Fehler (keine Datei fehlt, keine Zeile liegt hinter dem Ende).
 
 Die Urteile: **folgt** heißt, der Wert folgt aus dem Samen oder der Physik, und die Formel steht in der Zeile. **gesetzt, Anker**
 heißt, die Zahl ist gesetzt, trägt aber einen Literatur- oder Norm-Anker (Quelle in der Zeile). **gesetzt** heißt, die Zahl ist von
@@ -22,43 +23,49 @@ Welt.
 
 ## §1 Die Zählung
 
-Insgesamt sind es 638 Zeilen. 31 davon zählt `zaehle.cjs` als doppelt, weil zwei Leser dieselbe Stelle für dieselbe Größe genannt
-haben. Es bleiben **607 Größen**, davon **89 Technik** und **518 Welt-Maße**.
+Insgesamt sind es 638 Zeilen. 53 davon zählt `zaehle.cjs` als doppelt:
+
+- 31 Zeilen, weil zwei Leser dieselbe Stelle für dieselbe Größe genannt haben;
+- 22 Zeilen, weil zwei Leser dieselbe Stelle unter zwei Klassen-Namen genannt haben. Diese Paare stehen als Liste `GLEICH` in
+  `zaehle.cjs`, jedes geprüft auf dieselbe Datei:Zeile. Beispiel: `ks` unter `erosion` (a40) und unter `fluss_gefaelle` (b39), beide
+  `gelaende-core.js:390`.
+
+Es bleiben **585 Größen**, davon **88 Technik** und **497 Welt-Maße**.
 
 | | Welt-Maße | folgt | gesetzt, Anker | **gesetzt ohne Anker** | ohne Leser | mit benanntem Zwilling |
 |---|---|---|---|---|---|---|
-| **alle** | **518** | 104 (20 %) | 56 (11 %) | **358 (69 %)** | **38** | **111** |
-| im Kern `planet-core.js` | 193 | 31 | 22 | 140 (73 %) | 24 | 29 |
-| in der Heimat (Gelände, Stamm, Phyto, Licht …) | 325 | 73 | 34 | 218 (67 %) | 14 | 82 |
+| **alle** | **497** | 100 (20 %) | 51 (10 %) | **346 (70 %)** | **38** | **104** |
+| im Kern `planet-core.js` | 192 | 30 | 22 | 140 (73 %) | 24 | 29 |
+| in der Heimat (Gelände, Stamm, Phyto, Licht …) | 305 | 70 | 29 | 206 (68 %) | 14 | 75 |
 
-Mit Technik (607) lauten die Zahlen: folgt 119, gesetzt mit Anker 57, gesetzt ohne Anker 431, ohne Leser 53.
+Mit Technik (585) lauten die Zahlen: folgt 115, gesetzt mit Anker 52, gesetzt ohne Anker 418, ohne Leser 53.
 
 Je Domäne, mit Technik (`zaehle.out.txt`):
 
 | Domäne | Zeilen | folgt | Anker | gesetzt | ohne Leser |
 |---|---|---|---|---|---|
-| relief | 164 | 24 | 7 | 133 | 15 |
-| klima | 119 | 29 | 18 | 72 | 6 |
-| wasser | 108 | 32 | 13 | 63 | 7 |
-| biom | 55 | 7 | 6 | 42 | 8 |
+| relief | 163 | 23 | 7 | 133 | 15 |
+| klima | 116 | 29 | 17 | 70 | 6 |
+| wasser | 100 | 31 | 11 | 58 | 7 |
+| biom | 49 | 6 | 5 | 38 | 8 |
 | planet | 46 | 5 | 4 | 37 | 7 |
-| tag | 33 | 4 | 4 | 25 | 5 |
+| tag | 30 | 3 | 3 | 24 | 5 |
 | welt | 24 | 8 | 1 | 15 | 0 |
 | jahr | 20 | 6 | 2 | 12 | 3 |
-| gestein | 17 | 2 | 0 | 15 | 1 |
+| gestein | 16 | 2 | 0 | 14 | 1 |
 | wind | 12 | 2 | 2 | 8 | 1 |
 | boden | 9 | 0 | 0 | 9 | 0 |
 
 **Zwillinge**, also zwei Quellen für dieselbe Welt-Größe, in drei Lesarten:
 
-1. **Benannt:** 111 Welt-Maße tragen einen Zwilling, den der Leser mit datei:zeile nennt.
-2. **Kern ↔ Heimat:** 30 Klassen stehen im Kern UND in der Heimat. Das sind 244 Zeilen in den Klassen niederschlag_jahr, gebirge,
-   relief_hoehe, kueste, meeresspiegel, gestein_art, biom, wind_richtung, landform, relief_wellenlaenge, temperatur_jahresmittel,
-   eis, erosion, schelf, saison_phase, wind_staerke, temperatur_jahresamplitude, relief_amplitude, sediment, regen_quote, tageslaenge,
-   kraut_deckung, breite_ort, jahr_laenge, wald_deckung, sonnenstand, temperatur_hoehengradient, koordinate,
+1. **Benannt:** 104 Welt-Maße tragen einen Zwilling, den der Leser mit datei:zeile nennt.
+2. **Kern ↔ Heimat:** 30 Klassen stehen im Kern UND in der Heimat. Das sind 240 Zeilen in den Klassen niederschlag_jahr, gebirge,
+   relief_hoehe, kueste, meeresspiegel, biom, gestein_art, wind_richtung, landform, relief_wellenlaenge, eis, erosion, schelf,
+   temperatur_jahresmittel, saison_phase, wind_staerke, temperatur_jahresamplitude, relief_amplitude, sediment, regen_quote,
+   tageslaenge, kraut_deckung, breite_ort, jahr_laenge, wald_deckung, sonnenstand, temperatur_hoehengradient, koordinate,
    temperatur_tagesamplitude und achsneigung.
-3. **Heimat ↔ Heimat:** 36 Klassen stehen in zwei oder mehr Heimat-Dateien, zusammen 156 Zeilen. Am breitesten sind gestein_art und
-   tag_achse in je 6 Dateien, wind_staerke in 5 und samen in 4.
+3. **Heimat ↔ Heimat:** 35 Klassen stehen in zwei oder mehr Heimat-Dateien, zusammen 145 Zeilen. Am breitesten sind tag_achse und
+   gestein_art in je 6 Dateien, wind_staerke in 5 und samen in 4.
 
 Die Zwillinge mit dem schwersten Gewicht (Blatt e §3.1, Blatt c §0, Blatt d §0, Blatt b §0):
 

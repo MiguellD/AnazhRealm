@@ -1,6 +1,6 @@
 # Zensus PLANET — c · klima-wetter
 
-Leser c, Baum `/home/user/AnazhRealm` = main b7ed8419. Nur gelesen und gerechnet; jede datei:zeile am Baum geprüft (`pruef-json.cjs`: jede Datei existiert, jede Zeile liegt im Bereich; die Quell-Zeile jedes `ort` per Auge verglichen). Das Blatt: `c-klima-wetter.json` (83 Zeilen). Die Messung: `c-mess.cjs` (dieser Ordner).
+Leser c, Baum `/home/user/AnazhRealm` = main b7ed8419. Nur gelesen und gerechnet; jede datei:zeile am Baum geprüft (`pruef-orte.cjs`: jede Datei existiert, jede Zeile liegt im Bereich; die Quell-Zeile jedes `ort` per Auge verglichen). Das Blatt: `c-klima-wetter.json` (83 Zeilen). Die Messung: `c-mess.cjs` (dieser Ordner).
 
 **Zählung:** folgt 21 · gesetzt_anker 11 · gesetzt 51 · ohne Leser 2 · technik 5.
 

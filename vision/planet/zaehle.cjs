@@ -23,6 +23,21 @@ const ids = new Set(); for (const r of zeilen) { if (ids.has(r.id)) throw new Er
 const ortKey = (r) => String(r.ort).split(/[\s–,;(]/)[0] + '|' + r.groesse;
 const gesehen = new Map(), doppelt = [];
 for (const r of zeilen) { const k = ortKey(r); if (gesehen.has(k)) { r.doppelVon = gesehen.get(k); doppelt.push(r.id + '=' + r.doppelVon); } else gesehen.set(k, r.id); }
+// Dieselbe Stelle unter ZWEI Klassen-Namen (zwei Leser, eine Größe): benannt, je Paar geprüft — beide Zeilen müssen an derselben
+// Datei:Anfangs-Zeile stehen, sonst bricht die Zählung beim Namen. Gefunden mit der Suche „gleiche Datei:Zeile aus ≥ 2 Blättern".
+const GLEICH = {
+  b39: 'a40', b40: 'a41', b42: 'a42', b44: 'a48', b49: 'a53', d12: 'a77', e214: 'a78', d5: 'a114', c76: 'b13', c77: 'b14',
+  c19: 'b71', d52: 'b77', d11: 'c1', d57: 'c5', d58: 'c11', d13: 'c64', d14: 'c65', d33: 'c83', b21: 'a47', b22: 'a43',
+  b9: 'a27', a89: 'd2',
+};
+const anfang = (r) => { const m = String(r.ort).match(/^([^\s:]+):(\d+)/); return m ? m[1] + ':' + m[2] : null; };
+const nachId = new Map(zeilen.map(r => [r.id, r]));
+for (const [id, von] of Object.entries(GLEICH)) {
+  const r = nachId.get(id), v = nachId.get(von);
+  if (!r || !v) throw new Error('GLEICH ' + id + '=' + von + ': Zeile fehlt');
+  if (anfang(r) !== anfang(v)) throw new Error('GLEICH ' + id + '=' + von + ': nicht dieselbe Stelle (' + anfang(r) + ' ≠ ' + anfang(v) + ')');
+  if (!r.doppelVon) { r.doppelVon = von; doppelt.push(id + '=' + von + ' (Klasse ' + r.groesse + ' = ' + v.groesse + ')'); }
+}
 const Z = zeilen.filter(r => !r.doppelVon);
 const ohneLeser = (r) => r.ohne_leser === true || r.leser.length === 0;
 const zaehl = (L, f) => L.filter(f).length;

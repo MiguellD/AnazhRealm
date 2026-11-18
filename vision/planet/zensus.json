@@ -1,35 +1,35 @@
 {
  "quelle": "vision/planet/zaehle.cjs über a-relief-gestein.json, b-wasser.json, c-klima-wetter.json, d-biom-tag-jahr.json, e-planet-kern.json",
  "zaehlung": {
-  "zeilen": 607,
+  "zeilen": 585,
   "roh": 638,
-  "doppelt": 31,
-  "folgt": 119,
-  "gesetztAnker": 57,
-  "gesetzt": 431,
-  "technik": 89,
+  "doppelt": 53,
+  "folgt": 115,
+  "gesetztAnker": 52,
+  "gesetzt": 418,
+  "technik": 88,
   "ohneLeser": 53,
-  "mitZwilling": 123,
-  "zwillingsGruppen": 81,
-  "zwillingsZeilen": 453,
+  "mitZwilling": 116,
+  "zwillingsGruppen": 78,
+  "zwillingsZeilen": 435,
   "zwillingeKernHeimat": {
    "klassen": 30,
-   "zeilen": 244,
+   "zeilen": 240,
    "namen": [
     "niederschlag_jahr",
     "gebirge",
     "relief_hoehe",
     "kueste",
     "meeresspiegel",
-    "gestein_art",
     "biom",
+    "gestein_art",
     "wind_richtung",
     "landform",
     "relief_wellenlaenge",
-    "temperatur_jahresmittel",
     "eis",
     "erosion",
     "schelf",
+    "temperatur_jahresmittel",
     "saison_phase",
     "wind_staerke",
     "temperatur_jahresamplitude",
@@ -42,23 +42,22 @@
     "jahr_laenge",
     "wald_deckung",
     "sonnenstand",
-    "temperatur_hoehengradient",
     "koordinate",
+    "temperatur_hoehengradient",
     "temperatur_tagesamplitude",
     "achsneigung"
    ]
   },
   "zwillingeHeimatHeimat": {
-   "klassen": 36,
-   "zeilen": 156,
+   "klassen": 35,
+   "zeilen": 145,
    "namen": [
     "niederschlag_jahr",
     "meeresspiegel",
-    "gestein_art",
     "biom",
     "tag_achse",
+    "gestein_art",
     "landform",
-    "schnee_grenze",
     "schelf",
     "saison_phase",
     "wind_staerke",
@@ -70,7 +69,6 @@
     "tageslaenge",
     "wolken",
     "kraut_deckung",
-    "see_becken",
     "verdunstung",
     "welle",
     "jahr_laenge",
@@ -79,6 +77,7 @@
     "wiese",
     "fluss_tiefe",
     "boden_art",
+    "see_becken",
     "grundwasser",
     "nebel",
     "fluss_spiegel",
@@ -91,18 +90,18 @@
    ]
   },
   "ohneTechnik": {
-   "zeilen": 518,
-   "folgt": 104,
-   "gesetztAnker": 56,
-   "gesetzt": 358,
+   "zeilen": 497,
+   "folgt": 100,
+   "gesetztAnker": 51,
+   "gesetzt": 346,
    "ohneLeser": 38
   },
   "jeDomaene": {
    "biom": {
-    "zeilen": 55,
-    "folgt": 7,
-    "gesetztAnker": 6,
-    "gesetzt": 42,
+    "zeilen": 49,
+    "folgt": 6,
+    "gesetztAnker": 5,
+    "gesetzt": 38,
     "ohneLeser": 8
    },
    "boden": {
@@ -113,10 +112,10 @@
     "ohneLeser": 0
    },
    "gestein": {
-    "zeilen": 17,
+    "zeilen": 16,
     "folgt": 2,
     "gesetztAnker": 0,
-    "gesetzt": 15,
+    "gesetzt": 14,
     "ohneLeser": 1
    },
    "jahr": {
@@ -127,10 +126,10 @@
     "ohneLeser": 3
    },
    "klima": {
-    "zeilen": 119,
+    "zeilen": 116,
     "folgt": 29,
-    "gesetztAnker": 18,
-    "gesetzt": 72,
+    "gesetztAnker": 17,
+    "gesetzt": 70,
     "ohneLeser": 6
    },
    "planet": {
@@ -141,24 +140,24 @@
     "ohneLeser": 7
    },
    "relief": {
-    "zeilen": 164,
-    "folgt": 24,
+    "zeilen": 163,
+    "folgt": 23,
     "gesetztAnker": 7,
     "gesetzt": 133,
     "ohneLeser": 15
    },
    "tag": {
-    "zeilen": 33,
-    "folgt": 4,
-    "gesetztAnker": 4,
-    "gesetzt": 25,
+    "zeilen": 30,
+    "folgt": 3,
+    "gesetztAnker": 3,
+    "gesetzt": 24,
     "ohneLeser": 5
    },
    "wasser": {
-    "zeilen": 108,
-    "folgt": 32,
-    "gesetztAnker": 13,
-    "gesetzt": 63,
+    "zeilen": 100,
+    "folgt": 31,
+    "gesetztAnker": 11,
+    "gesetzt": 58,
     "ohneLeser": 7
    },
    "welt": {
@@ -302,23 +301,6 @@
    ]
   },
   {
-   "groesse": "gestein_art",
-   "zeilen": [
-    "a89",
-    "a90",
-    "a91",
-    "a93",
-    "a94",
-    "a97",
-    "a98",
-    "a103",
-    "a104",
-    "e28",
-    "e222",
-    "e223"
-   ]
-  },
-  {
    "groesse": "biom",
    "zeilen": [
     "c82",
@@ -350,6 +332,22 @@
     "d74",
     "d75",
     "d76"
+   ]
+  },
+  {
+   "groesse": "gestein_art",
+   "zeilen": [
+    "a90",
+    "a91",
+    "a93",
+    "a94",
+    "a97",
+    "a98",
+    "a103",
+    "a104",
+    "e28",
+    "e222",
+    "e223"
    ]
   },
   {
@@ -399,21 +397,6 @@
    ]
   },
   {
-   "groesse": "temperatur_jahresmittel",
-   "zeilen": [
-    "c3",
-    "d11",
-    "d12",
-    "e146",
-    "e148",
-    "e151",
-    "e155",
-    "e180",
-    "e187",
-    "e211"
-   ]
-  },
-  {
    "groesse": "platte",
    "zeilen": [
     "e14",
@@ -440,20 +423,6 @@
     "e149",
     "e150",
     "e192"
-   ]
-  },
-  {
-   "groesse": "schnee_grenze",
-   "zeilen": [
-    "c64",
-    "c65",
-    "c66",
-    "c67",
-    "c69",
-    "c71",
-    "d13",
-    "d14",
-    "d33"
    ]
   },
   {
@@ -519,6 +488,19 @@
     "a74",
     "a102",
     "b34"
+   ]
+  },
+  {
+   "groesse": "temperatur_jahresmittel",
+   "zeilen": [
+    "c3",
+    "e146",
+    "e148",
+    "e151",
+    "e155",
+    "e180",
+    "e187",
+    "e211"
    ]
   },
   {
@@ -596,14 +578,14 @@
    ]
   },
   {
-   "groesse": "frost",
+   "groesse": "schnee_grenze",
    "zeilen": [
-    "c76",
-    "c77",
-    "c78",
-    "c79",
-    "c80",
-    "c81"
+    "c64",
+    "c65",
+    "c66",
+    "c67",
+    "c69",
+    "c71"
    ]
   },
   {
@@ -707,24 +689,6 @@
    ]
   },
   {
-   "groesse": "see_becken",
-   "zeilen": [
-    "b21",
-    "b23",
-    "b24",
-    "b28"
-   ]
-  },
-  {
-   "groesse": "fluss_gefaelle",
-   "zeilen": [
-    "b39",
-    "b40",
-    "b41",
-    "b42"
-   ]
-  },
-  {
    "groesse": "verdunstung",
    "zeilen": [
     "b79",
@@ -749,6 +713,15 @@
     "c13",
     "e8",
     "e183"
+   ]
+  },
+  {
+   "groesse": "frost",
+   "zeilen": [
+    "c78",
+    "c79",
+    "c80",
+    "c81"
    ]
   },
   {
@@ -821,19 +794,19 @@
    ]
   },
   {
-   "groesse": "temperatur_hoehengradient",
-   "zeilen": [
-    "a77",
-    "e160",
-    "e214"
-   ]
-  },
-  {
    "groesse": "boden_art",
    "zeilen": [
     "a108",
     "a109",
     "a110"
+   ]
+  },
+  {
+   "groesse": "see_becken",
+   "zeilen": [
+    "b23",
+    "b24",
+    "b28"
    ]
   },
   {
@@ -890,17 +863,17 @@
    ]
   },
   {
+   "groesse": "temperatur_hoehengradient",
+   "zeilen": [
+    "a77",
+    "e160"
+   ]
+  },
+  {
    "groesse": "fern_wasser",
    "zeilen": [
     "b16",
     "b18"
-   ]
-  },
-  {
-   "groesse": "muendung",
-   "zeilen": [
-    "b22",
-    "b43"
    ]
   },
   {
@@ -985,13 +958,6 @@
    "zeilen": [
     "d34",
     "d35"
-   ]
-  },
-  {
-   "groesse": "temperatur_tag",
-   "zeilen": [
-    "d57",
-    "d58"
    ]
   },
   {
@@ -2811,7 +2777,8 @@
    "zwilling": [
     "voxel-worker.js:2019"
    ],
-   "anmerkung": "liest kein Relief und kein Schicht-Gesetz"
+   "anmerkung": "liest kein Relief und kein Schicht-Gesetz",
+   "doppelVon": "d2"
   },
   {
    "blatt": "a-relief-gestein.json",
@@ -3729,7 +3696,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": "Meer-Anteil der Heimat-Lage (hoehe < −3): 0,24 % (20 km), 0,42 % (40 km), 0,95 % (100 km); nächstes Meer 9,2 km"
+   "anmerkung": "Meer-Anteil der Heimat-Lage (hoehe < −3): 0,24 % (20 km), 0,42 % (40 km), 0,95 % (100 km); nächstes Meer 9,2 km",
+   "doppelVon": "a27"
   },
   {
    "blatt": "b-wasser.json",
@@ -3986,7 +3954,8 @@
    "zwilling": [
     "gelaende-core.js:6417"
    ],
-   "anmerkung": "See-Zwilling im Kern: Netz-Senke (Ebene 0, 1 600 m) ⇄ Flut-See je Kachel; Heimat 3×3: 1 Netz-Senke, deckungsgleich mit 1 Flut-See"
+   "anmerkung": "See-Zwilling im Kern: Netz-Senke (Ebene 0, 1 600 m) ⇄ Flut-See je Kachel; Heimat 3×3: 1 Netz-Senke, deckungsgleich mit 1 Flut-See",
+   "doppelVon": "a47"
   },
   {
    "blatt": "b-wasser.json",
@@ -4006,7 +3975,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": ""
+   "anmerkung": "",
+   "doppelVon": "a43"
   },
   {
    "blatt": "b-wasser.json",
@@ -4348,7 +4318,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": ""
+   "anmerkung": "",
+   "doppelVon": "a40"
   },
   {
    "blatt": "b-wasser.json",
@@ -4367,7 +4338,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": ""
+   "anmerkung": "",
+   "doppelVon": "a41"
   },
   {
    "blatt": "b-wasser.json",
@@ -4408,7 +4380,8 @@
    "zwilling": [
     "gelaende-core.js:725"
    ],
-   "anmerkung": "dieselbe Zahl zweimal inline"
+   "anmerkung": "dieselbe Zahl zweimal inline",
+   "doppelVon": "a42"
   },
   {
    "blatt": "b-wasser.json",
@@ -4446,7 +4419,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": ""
+   "anmerkung": "",
+   "doppelVon": "a48"
   },
   {
    "blatt": "b-wasser.json",
@@ -4550,7 +4524,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": "stufen 12, tafel 128, knick 0,6 sind Technik"
+   "anmerkung": "stufen 12, tafel 128, knick 0,6 sind Technik",
+   "doppelVon": "a53"
   },
   {
    "blatt": "b-wasser.json",
@@ -6080,7 +6055,8 @@
     "gelaende-core.js:1600 (spende)",
     "gelaende-core.js:1459 (SCHMELZE.fall)"
    ],
-   "anmerkung": "[Niederschlag] Mittlerer Regen der Front 0,2984 → 26 140 mm/a Niederschlag, Regen-Abfluss 7 842 mm/a = 23,9× spende; die Flüsse stehen 94–100 % der Zeit an der Krone (c-mess)."
+   "anmerkung": "[Niederschlag] Mittlerer Regen der Front 0,2984 → 26 140 mm/a Niederschlag, Regen-Abfluss 7 842 mm/a = 23,9× spende; die Flüsse stehen 94–100 % der Zeit an der Krone (c-mess).",
+   "doppelVon": "b71"
   },
   {
    "blatt": "c-klima-wetter.json",
@@ -7254,7 +7230,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": "[Frost]"
+   "anmerkung": "[Frost]",
+   "doppelVon": "b13"
   },
   {
    "blatt": "c-klima-wetter.json",
@@ -7273,7 +7250,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": "[Frost] Höhe über dem Meer, keine Meer-Ferne."
+   "anmerkung": "[Frost] Höhe über dem Meer, keine Meer-Ferne.",
+   "doppelVon": "b14"
   },
   {
    "blatt": "c-klima-wetter.json",
@@ -7500,7 +7478,8 @@
    "technik": true,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": ""
+   "anmerkung": "",
+   "doppelVon": "a114"
   },
   {
    "blatt": "d-biom-tag-jahr.json",
@@ -7631,7 +7610,8 @@
    "zwilling": [
     "planet-core.js:2333 (Ort-Klima der Reise, Leser e)"
    ],
-   "anmerkung": "Wirkt auf den Bewuchs der Heimat nur gesättigt (Wuchs 1)."
+   "anmerkung": "Wirkt auf den Bewuchs der Heimat nur gesättigt (Wuchs 1).",
+   "doppelVon": "c1"
   },
   {
    "blatt": "d-biom-tag-jahr.json",
@@ -7650,7 +7630,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": "17× steiler als die Normatmosphäre 0,0065 K/m (planet-core.js:48 nennt s_v = 0,0065 / kuehlungKJeM) — „die Welt staucht die Höhe“ (gelaende-core.js:1304-1305)."
+   "anmerkung": "17× steiler als die Normatmosphäre 0,0065 K/m (planet-core.js:48 nennt s_v = 0,0065 / kuehlungKJeM) — „die Welt staucht die Höhe“ (gelaende-core.js:1304-1305).",
+   "doppelVon": "a77"
   },
   {
    "blatt": "d-biom-tag-jahr.json",
@@ -7671,7 +7652,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": "Anker eigenes Bild."
+   "anmerkung": "Anker eigenes Bild.",
+   "doppelVon": "c64"
   },
   {
    "blatt": "d-biom-tag-jahr.json",
@@ -7690,7 +7672,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": ""
+   "anmerkung": "",
+   "doppelVon": "c65"
   },
   {
    "blatt": "d-biom-tag-jahr.json",
@@ -8078,7 +8061,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": "Die einzige Höhen-Klima-Kopplung des Walds; wirkt (< 0,5) an 0,1 % des Lands ±2 km."
+   "anmerkung": "Die einzige Höhen-Klima-Kopplung des Walds; wirkt (< 0,5) an 0,1 % des Lands ±2 km.",
+   "doppelVon": "c83"
   },
   {
    "blatt": "d-biom-tag-jahr.json",
@@ -8453,7 +8437,8 @@
    "zwilling": [
     "stamm/bild-himmel.js:2640 (Tag der Uhr, Spielerwahl)"
    ],
-   "anmerkung": "Zweiter Tag neben dem der Uhr."
+   "anmerkung": "Zweiter Tag neben dem der Uhr.",
+   "doppelVon": "b77"
   },
   {
    "blatt": "d-biom-tag-jahr.json",
@@ -8556,7 +8541,8 @@
     "welt-licht.js:728 tagAchse",
     "planet-core.js:2333 (tagGipfel der Reise)"
    ],
-   "anmerkung": ""
+   "anmerkung": "",
+   "doppelVon": "c5"
   },
   {
    "blatt": "d-biom-tag-jahr.json",
@@ -8575,7 +8561,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": ""
+   "anmerkung": "",
+   "doppelVon": "c11"
   },
   {
    "blatt": "d-biom-tag-jahr.json",
@@ -13543,7 +13530,8 @@
    "technik": false,
    "ohne_leser": false,
    "zwilling": [],
-   "anmerkung": "Feld o.stauchung :2354 selbst ohne Spiel-Leser"
+   "anmerkung": "Feld o.stauchung :2354 selbst ohne Spiel-Leser",
+   "doppelVon": "a78"
   },
   {
    "blatt": "e-planet-kern.json",

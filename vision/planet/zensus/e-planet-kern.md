@@ -1,6 +1,6 @@
 # Zensus PLANET · e — der Kern `planet-core.js` (VERSION planet-h2-4)
 
-Baum `/home/user/AnazhRealm` (main b7ed8419), gelesen 18.11.; jede Zeilennummer am Baum geprüft. Zeilen: `e-planet-kern.json` (236 Größen, gültig; Prüfung `pruef-json.cjs`: jede datei:zeile existiert). Messung: `e-mess.cjs` im selben Ordner.
+Baum `/home/user/AnazhRealm` (main b7ed8419), gelesen 18.11.; jede Zeilennummer am Baum geprüft. Zeilen: `e-planet-kern.json` (236 Größen, gültig; Prüfung `pruef-orte.cjs`: jede datei:zeile existiert). Messung: `e-mess.cjs` im selben Ordner.
 
 ## §0 Kern-Antwort
 
