@@ -10149,10 +10149,10 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 6,
+    "heute": 7,
     "kern": 2,
     "kernDazu": 2,
-    "anteilHeute": 2.4,
+    "anteilHeute": 2.7,
     "anteilKern": 0.8
    },
    "perspektiven": [
@@ -10322,7 +10322,7 @@
        "richter": "wie S6 über N Planeten und Epochen; dazu Verb-Tiefe einer Zufallsrolle gegen den Richter ihrer Domäne-Leiter (gleiche Sprosse wie dort)"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "kern",
      "beleg": "Bauen, Aufsitzen (stamm/koerper-fahrt.js:1271), Hieb (stamm/kampf.js), Inventar 27 Plätze (stamm/dirigent-kern.js:739) ändern die Welt; Bewohner tragen einen Beruf (stamm/siedlung-bewohner.js:783-798), keiner ist übernehmbar. — KARTE: Kern 1 — Werk wird benutzt (bauen.K5), Hieb trifft (halten.K1), Fahrt (fahrzeug.K3/K4) je an beiden Geräten im Bild; Bild-Preis in Bewegung an der Radeon ROT.",
@@ -14778,10 +14778,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 213,
-    "heute": 5,
+    "heute": 4,
     "kern": 2,
     "kernDazu": 2,
-    "anteilHeute": 2.6,
+    "anteilHeute": 2.3,
     "anteilKern": 1.3
    },
    "perspektiven": [
@@ -16628,7 +16628,7 @@
        "richter": "10/10 Glieder am selben Ort geändert (Bildpaar Weltkarte); Arten-Verlust 50–80 %, Erholung in 5–10 Mio. a"
       }
      ],
-     "heute": 1,
+     "heute": 0,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Brand schwärzt, Asche düngt, Sukzession r = 0,825 (stoffe.K5) — Mechanik headless; Tier-, Wasser-, Siedlungs-Antwort fehlt.",

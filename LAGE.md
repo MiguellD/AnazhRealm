@@ -1,5 +1,24 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
+**STAB-WECHSEL 18.11. (Vorarbeiter 13, Systemuhr 02:40) — main 21f279f5 (V18.546.330, trägt w28-probe-wirt + w28-lava-nachlauf)**
+- **Zähler:** Karte 2 **36 von 1 718, Kern 9** (35 → 36: `erleben.spieler.rolle` S1, Radeon am d3ddb51c GRÜN/GRÜN zur GTX-Hälfte dort). Alte Karte 220/330.
+- **Hälften (koord/haelften.md im Stand-Blatt):** fehlende GTX-Hälften bringen **+1** (`same.kopplung.ereignis` S1, GTX `run --sha d39e0d6e… --geraet gtx --nur karte2.same.kopplung.ereignis#1`); fehlende Radeon-Hälften brachten +2 (rolle gebucht, `wetter.K1#2` am c50e6b61 fährt). Alle übrigen 140 Spiegel bewegen nichts.
+- **LINIEN** (Kopf per ls-remote 02:35):
+  - Stadt: `vorrat11-stadt-netz` daf57354 (Merge main c50e6b61, 00:20) → Stempel `w28-stadt-netz` f23138ba (16.11., alt) · nächster: Stempel am vereinten Kopf, OMEN misst 5×5 und 15×15; danach K2–K5 und `w28-weg-koerper` b1ffbea3 (13.11.) als Neubau, Bild zuerst.
+  - Bau: `vorrat12-bau-rezept` 36dfe5c9 (WIP Kopf 2, 02:28: Raumprogramm auf Flügel/Anbauten/Geschosse) · nächster: gate:settlement, Golden neu minten, Tore, Bildpaar (Blatt bau-rezept.md).
+  - Haus-Stoffe: `w28-haus-stoff` 41dd9e32 (OMEN, WIP 01:29: ferne Fachwerk-Wand zeichnet ihr Gefüge) · nächster: Bildpaar Dorf + stadt-voll an den Koordinator, dann Abgabe.
+  - Licht: `w28-strahler` 494851b2 (GTX 1050, Merge main 21f279f5 01:25) → Tonkurve unter dem Knie → Familie ferne-ton · nächster: Zielbild an den Koordinator.
+  - Mensch: `vorrat9-mensch` 4ea27bf1 (00:35, Zugang P2P mit dem Namen der Tafel) · nächster: zugang-zeilen Klasse ganz, Blick + Stempel.
+  - Register: `vorrat10-register` fc83f932 (WIP 00:46, Gang des Registers in Raten) · nächster: liest w28-reise-raeumt + heap-zensus-Familie.
+  - Ankunft: `vorrat8-ankunft` a3ca7ec6 (Merge main 21f279f5, 01:32) · nächster: Kette der Programme abgeben; danach KEIN zweiter B-Schneider.
+  - Kern-Sprossen: `vorrat13-kern-sprossen` — Zweig existiert am Remote NICHT (ls-remote leer); Schwarm nicht gestartet oder nicht gepusht.
+- **ROT AM SPIEL ohne Schneider:** `kollektiv#1` (Furcht 0 → 1, Abstand 11,11 m bleibt) · `tiere.verhalten#1` (Rudel 25/60 > 0,4) · `physik.verformung#1` (Gestalt 131/104 px Radeon, 180 GTX, Soll ≥ 200) · `kaskade#1` GTX ROT am d39e0d6e · `schatten.K3#1` (`stamm/bild-schatten.js:1426`) · `preis.zugang#1` (`stamm/werkstatt-hof.js:142–143`) · Hülle vor Grund (`stamm/siedlung-instanz.js:898`) · `stadt-im-netz` Heap (`fachwerk-core.js:278` beam 605 MB). Täter-Zeilen der ersten drei: koord/rot-am-spiel.md (folgt in uebergabe/1811/).
+- **STATIONS-FEHLER offen:** `kopplung.bild#1` (Deckel 90 → 240 s im Maschinen-Baum, Zeit je Schritt in der Antwort; ungemessen, nicht gepusht) · `breite.siedlung#1` (läuft dem Spiel voraus, `FC.kachelNetz` fehlt in main) · `bevoelkerung#1` (Σ Soll 18 < 20; Lesewert „draußen je Uhr“ im Baum, Messung im Stück 1 am 21f279f5) · `tiere.masse#1` (Soll ≥ 10 Glieder gegen `tetrapoda-core.js:289`) · `ankunft.K1#1/K1#2` (Kalt-Urteil an der Warm-Frist) · `preis.ausdauer#1` blind.
+- **WARTEND (Blick --kurz 02:34, wörtlich):** `WARTEND 1: w28-feld-fuss +11 (16.11 02:44) · grün ohne Abgabe 1: w28-licht-kern` (beide seit 16.11. als Squash 2ac706fac in main — die Zeile ist alt).
+- **UNGELANDET (ungelandet.cjs 02:38, wörtlich, Kopf):** `UNGELANDET (≤ 7 Tage, Inhalt < 85 % in main 21f279f5): 36 — w28-stoff-stufe-null[Abgabe] +1 74/2% · w28-stadt-netz +22 889/6% · vorrat11-stadt-netz +23 861/3% · w28-stoff-fuge +44 678/1% · w28-studio-seiten +2 531/10% · w28-samen-lichtweg +1 495/4% · w28-baum-ganz +7 451/34% · …` (ganz: uebergabe/1811/vorarbeiter.md).
+- **Radeon fährt:** main 21f279f5, alle 54 Tafel-Stationen in 16 Stücken ≤ 11 min (ohne breite.siedlung#1, kopplung.bild#1 bis geheilt), Buchung nach jedem Stück.
+- **Zeiger:** Blätter der Geräte und Schneider in `uebergabe/1811/` (bau-rezept.md, vorarbeiter.md; weitere folgen) · Bergung `bericht/1811-bergung.md`.
+
 **Koordinator-Stand 18.11. 00:02**
 - main c50e6b61 (z606 23:55: w28-zeugen-weichen). Wartend am Zug: w28-lava-nachlauf 1d835734 (GTX 1050: EINE Prozess-Uhr `spielZeit`, das Bett als Fläche). Karte 2: siehe die Zeilen des Vorarbeiters darunter.
 - Schöpfer 17.11. nachts, wörtlich: „was ist aus der stadt geworden mit den tausenden/milionen von häuser … die Breite setzt du, du kennst die vision“ und „instanzen vom untersten prinzip her sauber lösen … nur so viel messen wie nötig … mehr opusschwärme“. Fable nur noch für Blick · Entscheidung · Stempel.
