@@ -43,9 +43,11 @@ function erdbauMedian(v2, grund) {
 // v2 = der Ort, wie die Welt ihn trägt (plan-lokal um `ort` {x, z}): je Haus x · z · phi · y (der Boden, absolut) · tuer
 // (die Tür-Zeile: x, z, y = Diele, W × D = die Wand) · obb (der Grundriss mit Dach); roads (pts, w) und platz (cx, cz, phi, ex,
 // ez). hoehe(x, z) = die Welt-Höhe an einem WELT-Ort. Gemessen:
-//   Sockel je Haus = Boden − tiefster Grund unter dem Grundriss (9 × 9 Punkte; nie im hohlen Keller `grund.keller`, S4), Median
+//   Sockel je Haus = Boden − tiefster Grund unter seinen Wänden (9 × 9 Punkte je Box des Körper-Satzes `grund.boxen`, ohne Boxen
+//   die obb; nie im hohlen Keller `grund.keller`, S4), Median
 //   und Maximum;
-//   Tür erreichbar = die Schwelle (Boden + Diele) liegt höchstens STUFE über dem Grund 0,3 m vor ihr, die 2 m geradeaus aus
+//   Tür erreichbar = die Schwelle des Eingangs (`eingang` des Slots, die EINE Regel `eingangVon`: beim Hof-Haus das Tor im
+//   Torriegel; ohne ihn die Tür-Zeile) liegt höchstens STUFE über dem Grund 0,3 m vor ihr, die 2 m geradeaus aus
 //   der Tür tragen keine Stufe > STUFE (kein Absatz vor der Schwelle), und ein Gang über ein 0,5-m-Raster (Nachbarn mit
 //   |Δh| ≤ STUFE, nie durch eine Wand oder den Keller) erreicht einen Weg oder den Platz. Das Raster entsteht nur, wo der Gang geht.
 // der Punkt (x, z) im Rahmen um (cx, cz) mit der Drehung phi (reist mit `ortUrteil` als Quelltext in die Seite)
@@ -95,20 +97,35 @@ function ortUrteil(v2, hoehe, o) {
         return !!K && u >= K[0] && u <= K[1] && v >= K[2] && v <= K[3];
     };
     const sockel = [];
+    const sockelTaeter = []; // der Täter beim Namen: je Haus mit Sockel > 0 seine Nummer, Rolle und Höhe
     for (const sl of v2.slots) {
         const ob = sl.obb;
         if (!ob) continue;
         const c = Math.cos(ob.phi || 0);
         const s = Math.sin(ob.phi || 0);
         let mn = Infinity;
-        for (let i = 0; i <= 8; i++)
-            for (let j = 0; j <= 8; j++) {
-                const lx = ob.ex * (i / 4 - 1);
-                const lz = ob.ez * (j / 4 - 1);
-                const [px, pz] = [ob.cx + lx * c + lz * s, ob.cz - lx * s + lz * c];
-                if (!imKeller(sl, px, pz)) mn = Math.min(mn, hoehe(ox + px, oz + pz));
-            }
+        let bei = null;
+        // UNTER DEN WÄNDEN (`grund.boxen`, der Körper-Satz des Hauses im Rahmen des Slots): das Haus steht auf seinen Boxen — die
+        // obb trägt das Dach und beim L-, U- und Hof-Haus die leere Ecke zwischen den Flügeln (bis w28-bau-rezept las der Sockel dort
+        // den Grund der Gasse unter der Ecke: Auto-Dorf, Gasthaus L, 1,136 m an der Ecke ohne Wand); ohne Boxen die obb
+        const bx = sl.grund?.boxen?.length ? sl.grund.boxen : null;
+        const flaechen = bx
+            ? bx.map((b) => ({ cx: sl.x, cz: sl.z, c: Math.cos(sl.phi || 0), s: Math.sin(sl.phi || 0), x0: b[0], x1: b[1], z0: b[2], z1: b[3] }))
+            : [{ cx: ob.cx, cz: ob.cz, c, s, x0: -ob.ex, x1: ob.ex, z0: -ob.ez, z1: ob.ez }];
+        for (const f of flaechen)
+            for (let i = 0; i <= 8; i++)
+                for (let j = 0; j <= 8; j++) {
+                    const lx = f.x0 + ((f.x1 - f.x0) * i) / 8;
+                    const lz = f.z0 + ((f.z1 - f.z0) * j) / 8;
+                    const [px, pz] = [f.cx + lx * f.c + lz * f.s, f.cz - lx * f.s + lz * f.c];
+                    if (imKeller(sl, px, pz)) continue;
+                    const h = hoehe(ox + px, oz + pz);
+                    if (h < mn) [mn, bei] = [h, [Math.round(10 * lx) / 10, Math.round(10 * lz) / 10]];
+                }
         sockel.push(Math.max(0, sl.y - mn));
+        // `bei`: der tiefste Punkt im Rahmen der obb (x quer, z längs; ex × ez die Halbachsen)
+        if (sl.y - mn > 0)
+            sockelTaeter.push({ si: v2.slots.indexOf(sl), rolle: sl.rolle || null, m: Math.round(1000 * (sl.y - mn)) / 1000, bei, ex: ob.ex, ez: ob.ez });
     }
     // die WAND je Haus: das Rechteck der Tür-Zeile (W × D um den Slot), sonst der Grundriss (das Dach ragt über die Wand)
     const waende = v2.slots
@@ -157,14 +174,22 @@ function ortUrteil(v2, hoehe, o) {
         const c = Math.cos(sl.phi || 0);
         const s = Math.sin(sl.phi || 0);
         const vor = (lz) => [sl.x + tu.x * c + lz * s, sl.z - tu.x * s + lz * c];
-        const [vx, vz] = vor(tu.z - 0.3);
-        const schwelle = sl.y + (Number.isFinite(tu.y) ? tu.y : 0) - hoehe(ox + vx, oz + vz);
+        // der EINGANG (`eingangVon` im Slot): beim Hof-Haus das Tor im Torriegel — die Haustür öffnet auf das Hofpflaster
+        // (Bau, nie Grund); bis w28-bau-rezept stand die Probe im Hof vor der Haustür und las den Grund unter dem Pflaster
+        const ein = sl.eingang || { z: tu.z, y: tu.y };
+        const [vx, vz] = vor(ein.z - 0.3);
+        const schwelle = sl.y + (Number.isFinite(ein.y) ? ein.y : 0) - hoehe(ox + vx, oz + vz);
         let vorStufe = 0;
+        let stufeBei = null; // der Täter der Stufe beim Namen: ihr Meter vor der Tür und das Haus, in dessen Grundriss (Keller) sie liegt
         let hv = hoehe(ox + vx, oz + vz);
         for (let k = 1; k <= 8; k++) {
-            const [px, pz] = vor(tu.z - 0.3 - 0.25 * k);
+            const [px, pz] = vor(ein.z - 0.3 - 0.25 * k);
             const hk = hoehe(ox + px, oz + pz);
-            vorStufe = Math.max(vorStufe, Math.abs(hk - hv));
+            if (Math.abs(hk - hv) > vorStufe) {
+                vorStufe = Math.abs(hk - hv);
+                const im = v2.slots.findIndex((q) => q !== sl && q.obb && imRecht(q.obb, px, pz, 0));
+                stufeBei = { m: 0.3 + 0.25 * k, h: Math.round(1000 * (hk - sl.y)) / 1000, haus: im, keller: v2.slots.some((q) => imKeller(q, px, pz)) };
+            }
             hv = hk;
         }
         const i0 = Math.round(vx / G);
@@ -201,6 +226,8 @@ function ortUrteil(v2, hoehe, o) {
             ok: erreicht,
             schwelle: Math.round(schwelle * 1000) / 1000,
             vorStufe: Math.round(vorStufe * 1000) / 1000,
+            vor: [Math.round((ox + vx) * 10) / 10, Math.round((oz + vz) * 10) / 10],
+            ...(vorStufe > STUFE ? { stufeBei } : {}),
         });
     });
     sockel.sort(aufsteigend);
@@ -210,6 +237,7 @@ function ortUrteil(v2, hoehe, o) {
         tuerenOk: tueren.filter((t) => t.ok).length,
         tuerenN: tueren.length,
         tuerenFehl: tueren.filter((t) => !t.ok),
+        sockelTaeter,
         zellen: hz.size,
     };
 }

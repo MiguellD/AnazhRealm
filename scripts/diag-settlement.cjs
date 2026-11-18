@@ -765,6 +765,28 @@ hauptLauf(async () => {
         );
         const u3 = ortUrteil(Object.assign(ortT([haus(-8, 8, 10)]), { roads: [] }), eben, { kappe: 4000 });
         check("Selbst-Test 11: ohne Weg erreicht keine Tür ein Ziel", u3.tuerenOk === 0 && u3.tuerenN === 1);
+        // das HOF-Haus (`eingangVon`): die Haustür (Diele 0,55) öffnet auf das Hofpflaster, der Gang betritt das Tor im Torriegel
+        // (0,63) von seiner Vorplatz-Platte (0,3 über dem Grund) — die Probe am Tor hält, dieselbe Probe an der Haustür fällt mit
+        // der Schwelle 0,55 beim Namen (bis w28-bau-rezept las sie jede Hof-Tür so)
+        const hofHaus = Object.assign(haus(8, 8, 10), { tuer: { x: 0, z: -2, y: 0.55, W: 4, D: 4 } });
+        const platte = (x, z) => (z - 100 < 2 ? 10.3 : 10);
+        const u4 = ortUrteil(ortT([Object.assign({}, hofHaus, { eingang: { z: -6, y: 0.63 } })]), platte);
+        const u5 = ortUrteil(ortT([hofHaus]), platte);
+        check(
+            "Selbst-Test 11c: das Hof-Haus geht durch sein Tor (1/1); die Haustür über dem Hofpflaster fällt mit 0,55",
+            u4.tuerenOk === 1 && u5.tuerenOk === 0 && u5.tuerenFehl[0].schwelle === 0.55,
+            { tor: u4.tuerenFehl, haustuer: u5.tuerenFehl }
+        );
+        // das L-Haus: der Grund unter der leeren Ecke der obb (x > 0, z < 0) liegt 1 m tiefer — unter den Wänden (`grund.boxen`)
+        // steht es eben (Sockel 0), die obb allein läse die Ecke als Sockel 1
+        const lHaus = Object.assign(haus(8, 8, 10), { grund: { boxen: [[-2.5, 0, -2.5, 2.5, 0, 3], [0, 2.5, 0, 2.5, 0, 3]] } });
+        const ecke = (x, z) => (x - 100 > 8.2 && z - 100 < 7.8 ? 9 : 10);
+        const [u6, u7] = [ortUrteil(ortT([lHaus]), ecke), ortUrteil(ortT([haus(8, 8, 10)]), ecke)];
+        check(
+            "Selbst-Test 11d: das L-Haus steht auf seinen Wänden (Sockel 0); die obb allein liest die leere Ecke als Sockel 1",
+            u6.sockelMax === 0 && u7.sockelMax === 1 && u7.sockelTaeter[0].si === 0,
+            { waende: u6.sockelTaeter, obb: u7.sockelTaeter }
+        );
         // DIE SICHT DER POSE: der freie Strahl hält; ein Kamm 3 m über dem Boden und die lange Wand eines Nachbarn (ihr Kreis mit
         // der kleineren Halbachse erreicht den Strahl nicht) fallen je beim Namen; die Wand des Ziels selbst zählt nicht
         const ziel = { cx: 20, cz: 0, phi: 0, ex: 3, ez: 3 };
@@ -2762,6 +2784,9 @@ hauptLauf(async () => {
                             y: e.position.y - 0.5,
                             rolle: sl.rolle,
                             tuer: sl.tuer,
+                            // der Eingang der EINEN Regel (`eingangVon`): beim Hof-Haus das Tor im Torriegel, nie die Haustür
+                            // über dem Hofpflaster
+                            eingang: sl.tuer ? globalThis.__fachwerkCore.eingangVon(sl) : null,
                             obb: ob,
                             grund: sl.grund || null,
                         });
@@ -3413,6 +3438,7 @@ hauptLauf(async () => {
                 )
         );
         if (u.tuerenFehl?.length) console.log("  Türen ohne Gang: " + JSON.stringify(u.tuerenFehl));
+        if (u.sockelTaeter?.length) console.log("  Sockel über dem Grund: " + JSON.stringify(u.sockelTaeter));
         if (outO.terrasseFehl?.length)
             console.log("  Wand im Wiesen-Stoff (x, y, z, Steile, Schutt, Hub): " + JSON.stringify(outO.terrasseFehl));
         if (outO.slotFehl?.length) console.log("  Slots ohne Haus: " + JSON.stringify(outO.slotFehl));

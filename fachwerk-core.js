@@ -2066,7 +2066,7 @@
       kapelle:{ zeile:'sakral:kapelle', geschosse:[1,1], grundriss:['I'], personen:0, raeume:[['schiff','b',45,0,'eg','kern'],['chor','b',10,0,'eg','kern']], mass:[['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['arm','setze',0],['turm','setze',0]] },
       bergfried:{ zeile:'herrschaft:bergfried', geschosse:[6,9], grundriss:['I'], personen:2, raeume:[['verlies','b',25,0,'eg','turm'],['eingang','b',25,0,'og','turm'],['wachstube','b',25,0,'og','turm'],['wehrplatte','b',81,0,'dach','dach']], mass:[['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },   // der Turm des Herrn: fünf Geschosse unter dem Zinnenkranz
       torhaus:{ zeile:'herrschaft:stadttor', geschosse:[2,5], grundriss:['I'], personen:4, raeume:[['durchfahrt','b',28,0,'eg','kern'],['wachstube','b',15,0,'eg','anbau'],['zollstube','b',10,0,'eg','anbau'],['torkammer','b',28,0,'og','kern'],['wehrplatte','b',60,0,'dach','dach']], mass:[['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },
-      zeughaus:{ zeile:'herrschaft:zeughaus', geschosse:[2,3], grundriss:['I','L'], personen:4, raeume:[['ruestkammer','b',80,0,'eg','kern'],['magazin','b',60,0,'og','kern'],['wache','b',15,0,'eg','strasse']], mass:[['turm','setze',0],['kuppel','setze',0]] },
+      zeughaus:{ zeile:'herrschaft:zeughaus', geschosse:[2,3], grundriss:['I','L'], personen:0, raeume:[['ruestkammer','b',80,0,'eg','kern'],['magazin','b',60,0,'og','kern'],['wache','b',15,0,'eg','strasse']], mass:[['turm','setze',0],['kuppel','setze',0]] },
       werkstatt:{ zeile:'werk:werkstatt', geschosse:[1,3], grundriss:['hof','L','I'], raeume:[['werkraum','b',35,0,'eg','strasse'],['lager','b',12,0,'eg','fluegel'],['wohnen','p',20,20,'og','oben'],['schuppen','b',18,0,'eg','anbau'],['werkhof','b',24,0,'eg','offen']], mass:[['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },
       backhaus:{ zeile:'werk:backhaus', geschosse:[1,1], grundriss:['I'], personen:2, raeume:[['ofen','b',10,0,'eg','anbau'],['vorraum','b',15,0,'eg','kern'],['teigraum','b',8,0,'eg','kern']], mass:[['annexN','setze',0],['balcony','setze',0]] },
       speicher:{ zeile:'werk:speicher', geschosse:[3,6], grundriss:['I'], personen:0, raeume:[['schuettboden','b',95,0,'alle','kern']], mass:[['annexN','setze',0],['balcony','setze',0],['arm','setze',0]] },
@@ -2076,7 +2076,7 @@
       // DIE BAUTEN VOR DER GRAMMATIK (w28-bau-rezept, das Schreiber-Ende): bis hier schrieb DORF sie als Literale nach dem Rezept —
       // der Turm der Moderne (DOWNTOWN), die Halle des Gewerbes, die Kirche der Epoche, der Palas des Herrn, die Scheune des Hofs
       turm:{ zeile:'moderne:buerohaus', geschosse:[8,23], grundriss:['I'], personen:60, raeume:[['buero','p',12,4,'og','kern'],['foyer','b',80,0,'eg','strasse'],['kern','s',30,0,'alle','kern']], mass:[['dachTyp','setze','flach'],['grundriss','setze','I'],['balcony','setze',0],['keller','setze',0],['annexN','setze',0],['arm','setze',0],['turmbau','setze',1]] },
-      halle:{ zeile:'werk:fabrikhalle', geschosse:[1,1], grundriss:['I'], personen:20, raeume:[['halle','b',110,0,'eg','kern'],['lager','b',30,0,'eg','kern'],['kontor','b',15,0,'eg','strasse']], mass:[['stil','setze','klinker'],['pitchDeg','setze',14],['grundriss','setze','I'],['balcony','setze',0],['annexN','setze',0],['arm','setze',1],['turmbau','setze',0]] },
+      halle:{ zeile:'werk:fabrikhalle', geschosse:[1,1], grundriss:['I'], personen:0, raeume:[['halle','b',110,0,'eg','kern'],['lager','b',30,0,'eg','kern'],['kontor','b',15,0,'eg','strasse']], mass:[['stil','setze','klinker'],['pitchDeg','setze',14],['grundriss','setze','I'],['balcony','setze',0],['annexN','setze',0],['arm','setze',1],['turmbau','setze',0]] },
       kirche:{ zeile:'sakral:kirche', geschosse:[1,2], grundriss:['I'], personen:1, raeume:[['schiff','b',110,0,'eg','kern'],['chor','b',30,0,'eg','kern'],['sakristei','b',12,0,'eg','hinten']], mass:[['mark','setze',1],['keller','setze',0]] },   // der Turm der Kirche ist ihre Marke (markBei), kein Raum: ein Turm-Raum hebt ihn in die L2 als eigenen Draw
       burg:{ zeile:'herrschaft:palas', geschosse:[3,3], grundriss:['I'], personen:12, raeume:[['saal','b',90,0,'og','kern'],['kammer','s',14,0,'og','kern',4],['kueche','b',30,0,'eg','hinten'],['wache','b',20,0,'eg','strasse']], mass:[['turm','setze',1],['zinnen','setze',1],['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['grundriss','setze','I'],['arm','setze',0]] },
       scheune:{ zeile:'hof:scheune', geschosse:[1,1], grundriss:['I'], personen:0, raeume:[['tenne','b',14,0,'eg','kern'],['stall','b',8,0,'eg','kern']], mass:[['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['grundriss','setze','I']] },
@@ -5457,8 +5457,8 @@
     const g=plan.houses[i];
     if(g.rolle==='scheune'){
       const j=g.parent, P0=pl[j]; if(!P0||Math.abs(P0.obb.cz)>5000){ pl[i]={x:0,z:-9999-i*20,phi:0,obb:{cx:0,cz:-9999-i*20,phi:0,ex:1,ez:1}}; continue; }
-      const e=ext[i]; let exS=(e.x1-e.x0)/2, ezS=(e.z1-e.z0)/2, phi=P0.phi;
-      if(rnd()<0.55&&exS<=P0.obb.ez-0.05&&ezS<=P0.obb.ex+3){ phi=P0.phi+Math.PI/2; const t2=exS; exS=ezS; ezS=t2; }
+      const e=ext[i], exS=(e.x1-e.x0)/2, ezS=(e.z1-e.z0)/2, phi=P0.phi;
+      rnd();   /*DIE SCHEUNE ÖFFNET ZUM HOF (w28-bau-rezept): ihr Tor schaut auf die Rückseite ihres Hauses, der Gang läuft über den Hof. Quer gestellt (der Wurf hier, 55 %) schaute es ins Gelände ohne Gasse — am Hang vor eine Terrassen-Wand (Akt 7/18: 10,5 m bei 1,8 m vor dem Tor, Auto-Dorf: 3,4 m tiefer); der Wurf bleibt im Strom, die Lose danach stehen, wo sie standen*/
       const c=Math.cos(P0.phi), s2=Math.sin(P0.phi), ox=s2, oz=c;
       let done=false;
       for(let k2=0;k2<5&&!done;k2++){
@@ -9402,15 +9402,17 @@
     //    Größe eines Hauses aus Personen und Wohlstand, und das Haus TRÄGT seinen Haushalt (`hp.leute`) — den liest diese Funktion.
     //    Ein Haus ohne Haushalt (ein Rezept der Kultur, kein Los) bewohnen so viele, wie seine Wohnfläche bei seinem Wohlstand trägt — je Geschoss die Grundfläche W·D, davon `nutz` bewohnbar
     //    (Wände, Stiege), je Person `flaeche` + `wohlFlaeche`·wohl m² (die Kammer der Armen, die Stube der Reichen), ganzzahlig,
-    //    mindestens 1, höchstens `max`. Die Rollen ohne Haushalt tragen ihre Zahl (`rolle`): die Scheune und die Halle des
-    //    Gewerbes niemanden, die Kirche ihren Pfarrer, die Schmiede Meister und Gesellen. REIN: dieselbe Zeile ⇒ dieselbe Zahl.
-    //    Leser: der Wirt (die Bewohner je Haus) und gate:kreatur-takt bewohner.
-    var LEUTE_GESETZ = { nutz: 0.7, flaeche: 20, wohlFlaeche: 20, max: 12, rolle: { scheune: 0, halle: 0, kirche: 1, kapelle: 0, zeughaus: 0 } } // die Rollen ohne Raumprogramm; Schmiede, Backhaus, Speicher und Torhaus tragen ihre Leute in ihrer Zeile (BAU_NUTZUNG.personen);
+    //    mindestens 1, höchstens `max`. Ein Haus ohne Haushalt, dessen Rolle eine Zeile mit Leuten hat, trägt die Zahl seiner
+    //    Zeile (BAU_NUTZUNG.personen: die Scheune und die Halle niemanden, die Kirche ihren Pfarrer, die Schmiede Meister und
+    //    Gesellen) — die EINE Quelle; bis w28-bau-rezept hielt eine Rollen-Tafel hier ihren Zwilling. REIN: dieselbe Zeile ⇒
+    //    dieselbe Zahl. Leser: der Wirt (die Bewohner je Haus) und gate:kreatur-takt bewohner.
+    var LEUTE_GESETZ = { nutz: 0.7, flaeche: 20, wohlFlaeche: 20, max: 12 };
     function leuteVon(hp) {
         if (!hp || typeof hp !== "object") return 0;
         var rolle = typeof hp.rolle === "string" ? hp.rolle : "wohnhaus";
-        if (Object.prototype.hasOwnProperty.call(LEUTE_GESETZ.rolle, rolle)) return LEUTE_GESETZ.rolle[rolle];
         if (isFinite(hp.leute) && hp.leute !== null) return Math.max(0, Math.min(LEUTE_GESETZ.max, Math.round(Number(hp.leute)))); // der Haushalt des Loses (bauProgramm schreibt ihn)
+        var N = Object.prototype.hasOwnProperty.call(BAU_NUTZUNG, rolle) ? BAU_NUTZUNG[rolle] : null;
+        if (N && isFinite(N.personen)) return Math.max(0, Math.min(LEUTE_GESETZ.max, N.personen));
         var W = Number(hp.W), D = Number(hp.D), st = Number(hp.storeys);
         var wohl = isFinite(hp.wohl) ? Math.max(0, Number(hp.wohl)) : 1;
         if (!(W > 0 && D > 0)) return 1;
