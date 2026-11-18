@@ -180,7 +180,7 @@ async function s4Probe(page, station, schein) {
 // das Auge 2 m vor dem Feuer. Gezählt wird jedes Licht ≤ 10 m um das Feuer, das ein Stoff liest — ein Punktlicht der Szene mit
 // Stärke oder ein Platz des Licht-Pools mit Candela (`_leuchtPool`) —, einmal mit „Klang: AUS" (der Standard), einmal mit Klang;
 // dazu DAS GESETZ AM PLATZ (w28-strahler): die Candela des Platzes über dem Feuer gegen die, die die Linse selbst aus dem Gesetz
-// rechnet (`S0_GESETZ`: Leuchtdichte der Temperatur × Fläche des Betts, fachwerk `strahler`, ohne den Chokepoint des Wirts) —
+// rechnet (`__s0Gesetz`: Leuchtdichte der Temperatur × Fläche des Betts, fachwerk `strahler`, ohne den Chokepoint des Wirts) —
 // kein Zeitplan, kein Verhältnis zur Nacht: was das Feuer zeigt, entscheidet das Auge (welt-licht.js `AUGE`) — und die
 // Fenster-Glut um Mitternacht und Mittag gegen `augeGlut` ihrer Leuchtdichte über der Umgebung der Stunde
 // (`atmoUniforms.lichtGlut.fenster`). DIE KLASSE (K11 Runde 2): JEDER beleuchtete Stoff trägt den Pool — der Zensus der Bauer
@@ -197,24 +197,29 @@ const S0_LICHT_M = 10; // der Umkreis der gezählten Lichter um das Feuer
 // warmes Licht den Platz auf 2–5 lx, der Rest bleibt im Mondlicht bei 0,1–0,3 lx (2 lx gegen 0,2 lx)
 // DAS GESETZ DES HERDFEUERS, von der Linse gerechnet (läuft in der Seite, EINE Quelle für die Probe und den Bild-Lauf): das Bett
 // — die Studio-Gestalt trägt das Bezugs-Bett ihres Rezepts (Ø `bettRefM` × Skala), ein Bau ohne Gestalt seine Glut-Teile —,
-// darauf fachwerk `strahler` mit der Leuchtdichte der Temperatur × `STRAHLER.emissiv.flamme`.
-const S0_GESETZ = String((feuer) => {
-    const FG = window.__fachwerkCore;
-    const bettRef = AnazhRealm._umweltGesetz().UMWELT.stimmen.glut.bettRefM;
-    const sk = Number.isFinite(feuer.scale) && feuer.scale > 0 ? feuer.scale : 1;
-    const bettM2 = r._lichtDatumDerGestalt(feuer) ? (Math.PI / 4) * bettRef * bettRef * sk * sk : r._glutFlaeche(feuer);
-    if (!(bettM2 > 0)) throw new Error("S0: die Feuerstelle der Linse trägt kein Bett (_glutFlaeche)");
-    return FG.strahler({
-        kelvin: FG.LICHT_GESETZ.feuer.kelvin,
-        flaecheM2: bettM2,
-        emissiv: FG.STRAHLER.emissiv.flamme,
-    });
-});
+// darauf fachwerk `strahler` mit der Leuchtdichte der Temperatur × `STRAHLER.emissiv.flamme`. Die Linse STELLT es als Glied der
+// Seite (`__s0Gesetz`, per `page.evaluate` einer Funktion): ein Text durch `eval` reißt an der CSP der Welt (die Bühne ohne
+// `--licht` bootet sie mit ihrer echten Richtlinie — der Absturz hieß EvalError, w28-strahler).
+const s0GesetzStellen = () => {
+    window.__s0Gesetz = (feuer) => {
+        const FG = window.__fachwerkCore;
+        const bettRef = AnazhRealm._umweltGesetz().UMWELT.stimmen.glut.bettRefM;
+        const sk = Number.isFinite(feuer.scale) && feuer.scale > 0 ? feuer.scale : 1;
+        const bettM2 = r._lichtDatumDerGestalt(feuer) ? (Math.PI / 4) * bettRef * bettRef * sk * sk : r._glutFlaeche(feuer);
+        if (!(bettM2 > 0)) throw new Error("S0: die Feuerstelle der Linse trägt kein Bett (_glutFlaeche)");
+        return FG.strahler({
+            kelvin: FG.LICHT_GESETZ.feuer.kelvin,
+            flaecheM2: bettM2,
+            emissiv: FG.STRAHLER.emissiv.flamme,
+        });
+    };
+};
 // der Platz über dem Feuer trägt die Candela des Gesetzes ± das Flackern der Flamme (`flacker.amp` 0,18)
 const S0_PLATZ = 0.2;
 async function s0Probe(page, station, schein) {
+    await page.evaluate(s0GesetzStellen);
     return page.evaluate(
-        async (st, umkreis, platzTol, gesetzSrc, schein) => {
+        async (st, umkreis, platzTol, schein) => {
             const s = r.state;
             const T = window.THREE;
             const out = {
@@ -377,7 +382,7 @@ async function s0Probe(page, station, schein) {
                     e2 += p.staerke / (4 + p.kern * p.kern);
                 }
                 const aLux = r._augeLux;
-                const gesetz = (0, eval)("(" + gesetzSrc + ")")(feuer).candela;
+                const gesetz = window.__s0Gesetz(feuer).candela;
                 return {
                     n: lichter.length,
                     lichter,
@@ -487,7 +492,6 @@ async function s0Probe(page, station, schein) {
         station,
         S0_LICHT_M,
         S0_PLATZ,
-        S0_GESETZ,
         !!schein
     );
 }
@@ -1430,9 +1434,10 @@ async function lichtLauf() {
             ? []
             : [false, "nacht", "eich", ...(SELBSTTEST ? ["farbe", "kamera", "tag", "tagOhne", "stark"] : [])];
         for (const schein of schuesse) {
+            await page.evaluate(s0GesetzStellen);
             ergebnis[schein || "sauber"] = await phase(schein ? "Schuss " + schein : "Schuss", () =>
                 page.evaluate(
-                    async (schein, nahM, palette, starkMal, gesetzSrc) => {
+                    async (schein, nahM, palette, starkMal) => {
                         const s = st;
                         const T = window.THREE;
                         const rend = s.renderer;
@@ -1455,8 +1460,8 @@ async function lichtLauf() {
                         const ohneFeuer = schein === "nacht" || schein === "kamera" || schein === "tagOhne";
                         const tagAuge = schein === "tag" || schein === "tagOhne";
                         const lumaL = (x, y, z) => 0.2126 * x + 0.7152 * y + 0.0722 * z;
-                        // DAS GESETZ DES FEUERKREISES (`S0_KREIS`): die Candela des Platzes aus dem Gesetz, von der Linse gerechnet (`S0_GESETZ`)
-                        const gesetzL = (0, eval)("(" + gesetzSrc + ")")(feuer);
+                        // DAS GESETZ DES FEUERKREISES (`S0_KREIS`): die Candela des Platzes aus dem Gesetz, von der Linse gerechnet (`__s0Gesetz`)
+                        const gesetzL = window.__s0Gesetz(feuer);
                         let eichK = null;
                         if (schein === "eich" || schein === "stark")
                             r._leuchtTakt = function () {
@@ -1684,8 +1689,7 @@ async function lichtLauf() {
                     schein,
                     ECHT ? 0 : S0_NAH_M,
                     S0_TON.palette,
-                    S0_KREIS.stark,
-                    S0_GESETZ
+                    S0_KREIS.stark
                 )
             );
             zeit(schein ? `der Schuss (${schein}) aufgenommen` : "das Feuer aufgenommen");

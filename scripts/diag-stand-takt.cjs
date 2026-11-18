@@ -1508,13 +1508,13 @@ async function narbeSeite(MESS) {
         // am Mittag 0,03 Einheiten statt der 7,83 des Gesetzes. `welt`: die Linse stellt die Lesung des Messers (`_belichtungE`)
         // darum auf die Zahl des Gesetzes; Leser bleibt der EINE Schreiber `_leuchtTakt` (→ `_augeLux`, `lichtAuge`, Reichweite,
         // Wahl), die nächste Uhr liest den Messer neu. `pool`: ein zweiter Takt nach der Blende des Pools (`LICHT_POOL.blendeS`
-        // auf der Wanduhr, synchron gewartet: kein Takt des Spiels fällt dazwischen) — erst der freie Platz nimmt die neu Gewählte auf
+        // an der Uhr des Pools, `_leuchtPool.uhr`: die Linse stellt sie um 1,1 Blenden zurück — kein Warten an der Wanduhr) — erst der freie Platz nimmt die neu Gewählte auf
         const stunde = (t, welt = null, pool = false) => {
             r.setTimeOfDay(t, "regler");
             if (welt != null) (r._belichtungE ||= [0, 0, 0]).fill(welt), (r._belichtungGelesen = true);
             r._leuchtTakt();
             if (pool) {
-                for (const t0 = performance.now(); performance.now() - t0 < 1100 * C.LICHT_POOL.blendeS; );
+                r._leuchtPool.uhr -= 1.1 * C.LICHT_POOL.blendeS;
                 r._leuchtTakt();
             }
             const A = st.atmoUniforms.lichtAuge.value;
@@ -1880,7 +1880,7 @@ async function lavaSeite(MESS) {
             return { riss: r3(Lc(tK)), scholle: r3(Lc(td + (tK - td) * C.LAVA_KRUSTE.platte)) };
         };
         // DER TAKT DES LICHTS mit dem Auge 1,8 m über der Decke, zweimal: der zweite nach der Blende des Pools (`LICHT_POOL.blendeS`
-        // auf der Wanduhr, synchron gewartet: kein Takt des Spiels fällt dazwischen) — erst der freie Platz nimmt die neu Gewählte
+        // an der Uhr des Pools, `_leuchtPool.uhr`: die Linse stellt sie um 1,1 Blenden zurück — kein Warten an der Wanduhr) — erst der freie Platz nimmt die neu Gewählte
         // auf, und die Wahl fällt neu (`wahlS`) → die Lux der Nacht
         const takt = () => {
             const [cp, vor] = [st.camera.position, st.camera.position.clone()];
@@ -1888,7 +1888,7 @@ async function lavaSeite(MESS) {
             try {
                 r.setTimeOfDay(0, "regler");
                 r._leuchtTakt();
-                for (const t0 = performance.now(); performance.now() - t0 < 1100 * C.LICHT_POOL.blendeS; );
+                r._leuchtPool.uhr -= 1.1 * C.LICHT_POOL.blendeS;
                 r._leuchtTakt();
             } finally {
                 cp.copy(vor);

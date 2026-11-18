@@ -3004,15 +3004,18 @@ AnazhRealm._atmoKern = function () {
 // 1–3 m der Prüfbühne S0 um Mitternacht ohne Feuer trägt dieselbe Luma wie main (24,1 ± 0,3; gate:pruefbuehne-licht, Soll ≥ 22).
 // Der Mondton war die Herleitung für die FORM (V′), der Boden ist der Zweck der STÄRKE (Koordinator 17.11.).
 // `umkehrSchritte`: so oft liest die Umkehr den Stäbchen-Anteil an ihrem Urbild neu (Fixpunkt; gemessen an der Linse (j)).
-AnazhRealm.NACHT_AUGE = Object.freeze({
-    luxJeEinheit: 0.26 / 0.224,
-    staebchenCd: __weltLicht.MESOPISCH.staebchenCd,
-    zapfenCd: __weltLicht.MESOPISCH.zapfenCd,
-    bildZapfen: Object.freeze([0.18, 1]),
-    skotopisch: Object.freeze([0, 0.5437, 0.3599]),
-    staebchenStaerke: 1.22,
-    umkehrSchritte: 3,
-});
+// Die zwei Schwellen sind das Band selbst (`MESOPISCH`), hier nur weitergereicht — kein Leser: gelesen werden sie allein in
+// `_nachtAuge` (gate:post-kette „EINE QUELLE“ nennt jeden anderen).
+AnazhRealm.NACHT_AUGE = (({ staebchenCd, zapfenCd }) =>
+    Object.freeze({
+        luxJeEinheit: 0.26 / 0.224,
+        staebchenCd,
+        zapfenCd,
+        bildZapfen: Object.freeze([0.18, 1]),
+        skotopisch: Object.freeze([0, 0.5437, 0.3599]),
+        staebchenStaerke: 1.22,
+        umkehrSchritte: 3,
+    }))(__weltLicht.MESOPISCH);
 // DIE EINE SZENEN-SKALA (K50, `_szeneSkalaWirk`): die Szene rendert in SZENE_SKALA × Ausgabe, die zeitliche Auflösung
 // (`_zeitAufloesung`, TAAU) löst auf die Ausgabe auf. 0,75 = 56 % der Pixel-Arbeit; der Spieler stellt sie im Menü (0,5..1).
 AnazhRealm.SZENE_SKALA = 0.75;

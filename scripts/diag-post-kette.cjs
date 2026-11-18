@@ -199,9 +199,9 @@ const kanalAbstand = (a, b) => (a && b ? +Math.max(...[0, 1, 2].map((c) => Math.
 // im unteren Viertel, der die ganze Probe über steht (die alte Probe misst mit ihm 49,78 / Hub 0,0147 / Form 0,234 und 0,224 —
 // dieselben fünf Zeilen); (k0) prüft jede Ecke gegen die Wand, MUTANTE-K0 stellt den Störer in die Schicht.
 const RAUCH_PROBE = { uhr: 0, abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, stoerer: 0.05, frames: 6 };
-// GEMESSEN (swiftshader, c5713056, Leinwand 321×241, der Lauf zweimal Zahl für Zahl gleich) — der Kopf und, im selben Lauf, jede
+// GEMESSEN (swiftshader, w28-strahler nach 8cf2de228 — der Pool trägt Candela und zeigt durch das Auge, `augeZeig` —, Leinwand 321×241) — der Kopf und, im selben Lauf, jede
 // Mutante; der Selbsttest urteilt an genau diesen Zahlen (grün am Kopf, rot an jeder Mutanten-Zahl an seiner Stelle). Auf der
-// Karte (GTX 1050, ein Lauf): unten ÷ oben 5,97 / flach 3,28 · Korrelation 0,749 / −0,318 · Höhe zu Breite 2 / 0,926 / 0,926.
+// Karte (GTX 1050, ein Lauf): unten ÷ oben 3,32 / flach 2,6 · Korrelation 0,754 / −0,32 · Höhe zu Breite 2,042 / 0,893 / 0,893.
 const RAUCH_GEMESSEN = {
     kopf: {
         gpuFehler: [],
@@ -210,15 +210,15 @@ const RAUCH_GEMESSEN = {
         k: 1.505,
         leinwand: [321, 241],
         radiusPx: 34.9,
-        licht: [{ quelle: "brand", staerke: 17.177, blende: 1, reichweite: 23.68 }],
-        unten: { unten: 41.4, oben: 6.96, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
-        mutWand: [0, 0, 33.02, 33.01],
-        dunkel: { unten: 0.24, oben: 1, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
-        mutUnten: { unten: 47.5, oben: 14.5, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
-        koerper: { gleich: 0.749, px: 1491, hub: 0.0964, wand: 139.1, ecken: [139.04, 139.04, 139.03, 139.04], boden: 1 },
-        mutKoerper: { gleich: -0.316, px: 1491, hub: 0.0783, wand: 139.1 },
-        zug: { tempo: 1.667, quer: { form: 2, hoch: 96, breit: 48, masse: 0.122 }, laengs: { form: 0.926, hoch: 50, breit: 54, masse: 0.094 } },
-        mutZug: { quer: { form: 0.926, hoch: 50, breit: 54, masse: 0.094 } },
+        licht: [{ quelle: "brand", staerke: 6887.237, blende: 1, reichweite: 48 }],
+        unten: { unten: 43.61, oben: 13.13, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
+        mutWand: [0, 0, 36.06, 36.06],
+        dunkel: { unten: 0.28, oben: 1.33, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
+        mutUnten: { unten: 45.72, oben: 17.59, grund: 0, ecken: [0, 0, 0, 0], px: 4496 },
+        koerper: { gleich: 0.754, px: 1491, hub: 0.0945, wand: 143, ecken: [143, 143, 143, 143], boden: 1 },
+        mutKoerper: { gleich: -0.318, px: 1491, hub: 0.076, wand: 143 },
+        zug: { tempo: 1.667, quer: { form: 2.042, hoch: 98, breit: 48, masse: 0.124 }, laengs: { form: 0.893, hoch: 50, breit: 56, masse: 0.095 } },
+        mutZug: { quer: { form: 0.893, hoch: 50, breit: 56, masse: 0.095 } },
         leser: {
             brand: { teilchen: 1, satz: true, bauer: true, steigMs: 2.5, soll: 2.5, zug: true },
             kamin: { teilchen: 1, satz: true, bauer: true, steigMs: 1.2, soll: 1.2, zug: true },
@@ -228,15 +228,17 @@ const RAUCH_GEMESSEN = {
         },
     },
 };
-// Die Bänder um das Gemessene. (k1) `unten`: Luma unten ÷ oben, Kopf 5,95 (41,4 / 6,96), MUTANTE-K1 3,28 (47,5 / 14,5) — DIE GRENZE
+// Die Bänder um das Gemessene. (k1) `unten`: Luma unten ÷ oben, Kopf 3,32 (43,61 / 13,13), MUTANTE-K1 2,60 (45,72 / 17,59) — DIE GRENZE
 // DES MASSES, benannt: auch die flache Scheibe ist unten heller (die Quelle steht näher an der Unterseite, und der Fuß der Tonkurve
-// spreizt dunkle Töne), das Band liegt darum ±20 % um den Kopf und über der Mutante, nicht bei „oben dunkel"; `lichtMin`: so viel
-// Luma hebt die Quelle die Unterseite mindestens (gemessen 0,24 → 41,4). (k2) `gleich`: die Korrelation der Muster, Kopf 0,749,
-// MUTANTE-K2 −0,316; `boden` derselbe Ballen zweimal (1), `hubMin` die Streuung des Musters (0,096), `kPxMin` gemeinsame Pixel
-// (1491), `pxMin` der Radius im Bild (34,9). (k3) Höhe zu Breite: `quer` Kopf 2,00 (96 Zeilen / 48 Spalten; die Tafel streckt um
-// 1 Radius: 1 + 1), `laengs` 0,926 (50 / 54 — der runde Ballen misst nicht 1: das Muster der Welt franst seinen Rand), MUTANTE-K3
-// 0,926; `masseMin` die Deckung über seiner Scheibe (0,094).
-const RAUCH_BAND = { unten: [4.8, 7.2], lichtMin: 20, gleich: 0.5, boden: 0.95, hubMin: 0.03, pxMin: 25, kPxMin: 1000, masseMin: 0.05, quer: [1.7, 2.3], laengs: [0.8, 1.15], eckeSchwarz: 1, eckeHell: [134, 144] };
+// spreizt dunkle Töne), und das Auge staucht (w28-strahler: der Pool zeigt durch `augeZeig`, q 0,42 — die schwach beleuchtete
+// Oberseite steigt von 6,96 auf 13,13, das Verhältnis fiel von 5,95 auf 3,32, das der Scheibe von 3,28 auf 2,60); das Band liegt
+// darum ±11 % um den Kopf und über der Mutante, nicht bei „oben dunkel"; `lichtMin`: so viel
+// Luma hebt die Quelle die Unterseite mindestens (gemessen 0,28 → 43,61). (k2) `gleich`: die Korrelation der Muster, Kopf 0,754,
+// MUTANTE-K2 −0,318; `boden` derselbe Ballen zweimal (1), `hubMin` die Streuung des Musters (0,095), `kPxMin` gemeinsame Pixel
+// (1491), `pxMin` der Radius im Bild (34,9). (k3) Höhe zu Breite: `quer` Kopf 2,04 (98 Zeilen / 48 Spalten; die Tafel streckt um
+// 1 Radius: 1 + 1), `laengs` 0,893 (50 / 56 — der runde Ballen misst nicht 1: das Muster der Welt franst seinen Rand), MUTANTE-K3
+// 0,893; `masseMin` die Deckung über seiner Scheibe (0,095).
+const RAUCH_BAND = { unten: [2.95, 3.7], lichtMin: 20, gleich: 0.5, boden: 0.95, hubMin: 0.03, pxMin: 25, kPxMin: 1000, masseMin: 0.05, quer: [1.7, 2.3], laengs: [0.8, 1.15], eckeSchwarz: 1, eckeHell: [134, 144] };
 const rauchVerh = (u) => (u ? +((u.unten - u.grund) / Math.max(0.5, u.oben - u.grund)).toFixed(2) : NaN);
 const RAUCH_ORT = "stamm/siedlung-bewohner.js `_rauchStoff`";
 // (k) DAS URTEIL ÜBER DEN RAUCH: je Zeile der Täter (Datei, Glied, Zahl); eine Mutante, die ihr Band nicht reißt, ist „blind".
