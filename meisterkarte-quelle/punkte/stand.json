@@ -5788,7 +5788,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 7de938ab: Last: Referenz f 1,268 (Faden 1,118 · alle Kerne 1,147 · Stoß in der Station 6,42 Kerne fremd → 1,268; vor 90,2/301,3 ms, nach 80,1/276,8 ms, Ruhe 80,7/262,6 ms seit 2026-11-17) · fremd: Claude.exe -- · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an 1f300260: Last: Referenz f 1,376 (Faden 1,285 · alle Kerne 1,376; vor 112,9/317,5 ms, nach 116/296,5 ms, Ruhe 90,3/230,7 ms seit 2026-11-17) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 7de938ab: Last: Referenz f 1,268 (Faden 1,118 · alle Kerne 1,147 · Stoß in der Station 6,42 Kerne fremd → 1,268; vor 90,2/301,3 ms, nach 80,1/276,8 ms, Ruhe 80,7/262,6 ms seit 2026-11-17) · fremd: Claude.exe -- · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an 18058dba: Last: Referenz f 1,226 (Faden 1,189 · alle Kerne 1,226; vor 90/221,2 ms, nach 106,4/277,3 ms, Ruhe 89,5/226,1 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -5806,7 +5806,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 1f300260: Last: Referenz f 1,376 (Faden 1,285 · alle Kerne 1,376; vor 112,9/317,5 ms, nach 116/296,5 ms, Ruhe 90,3/230,7 ms seit 2026-11-17) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
+     "grund": "ungemessen (R10) — zuletzt an 18058dba: Last: Referenz f 1,226 (Faden 1,189 · alle Kerne 1,226; vor 90/221,2 ms, nach 106,4/277,3 ms, Ruhe 89,5/226,1 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --us",
      "ungemessen": true,
      "beide": true
     }
@@ -6495,7 +6495,7 @@
   "ohne": 148
  },
  "kopfVoll": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
- "zeit": "2026-11-18T19:13:24.766Z",
+ "zeit": "2026-11-18T19:19:57.614Z",
  "vorher": "18058dba",
  "bilanz": {
   "gewinn": [],
