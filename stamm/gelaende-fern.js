@@ -134,8 +134,10 @@ class AnazhRealm_gelaende_fern {
     // Gesetz neu. Nie fällt, was nicht neu wächst: die Zelle der Streu am Ort eines bleibenden gewachsenen Baus (eine Promotion,
     // eine Tat), ein Eintrag, den sein Gedächtnis als lebend nennt (`lebt`), ein Gedächtnis des Stands (`bestand`, mit Grund) und
     // eins mit eigener benannter Schranke (`schranke`).
-    // GERÄUMT WIRD in Raten unter der Frist des Abräumens (je Takt mindestens ein Gedächtnis; Radeon 17.11.: der Gang am Stück
-    // kostete 3–12 ms, an jeder Rate des Abschieds neu), wenn sich etwas bewegt: die letzte Rate eines Abschieds fiel, ein Chunk
+    // GERÄUMT WIRD in Raten je Schlüssel (`ZELL_RAEUMEN.jeTakt` je Takt; Radeon 17.11.: der Gang am Stück kostete 3–12 ms, an
+    // jeder Rate des Abschieds neu; Radeon 18.11., Fahrt 500 m bei 16 m/s, A B A B A B in einer Welt: die Raten je Gedächtnis
+    // unter der Frist hoben `_pruneDistantVoxelChunks` p95 0,2–0,5 → 2,9–3,3 ms, der Gang allein p95 2,2–2,5 ms), wenn sich
+    // etwas bewegt: die letzte Rate eines Abschieds fiel, ein Chunk
     // verließ den Saum, der Spieler (oder sein Vorlauf) wechselte den Chunk, die Tafel wuchs seit dem letzten Gang um mehr als
     // `ZELL_RAEUMEN.zuwachs` Einträge, oder sie änderte sich und der letzte Gang liegt `nachMs` zurück (ein ferner Schreiber — die
     // Tritte der Tiere eines verlassenen Orts). Bis hier räumte die Tafel nur, wenn die Saat einen Chunk abgab, und elf
@@ -154,7 +156,6 @@ class AnazhRealm_gelaende_fern {
                 gaenge: 0,
                 fiel: 0,
                 weiter: 0,
-                geht: null,
                 nun: 0,
             });
         let summe = 0;
@@ -168,11 +169,17 @@ class AnazhRealm_gelaende_fern {
         const ruhig = summe === M.summe || jetzt - M.t < ZR.nachMs;
         const neu = L.geht.size || L.ende || lage !== M.lage || summe - M.summe > ZR.zuwachs || !ruhig;
         if (!M.weiter && !neu) return 0;
-        // ein Gang in Raten unter der Frist des Abräumens (`L.frist`, je Takt mindestens ein Gedächtnis): die Chunks, die den Saum
-        // verließen, sammelt er bis zu seinem Ende
-        if (!M.weiter) [M.lage, M.geht, M.nun] = [lage, new Set(), 0];
-        for (const k of L.geht) M.geht.add(k);
-        const geht = M.geht;
+        // ein Gang in Raten je Schlüssel (höchstens `ZELL_RAEUMEN.jeTakt` je Takt, kein neues Gedächtnis nach der Frist des
+        // Abräumens `L.frist`): sein Stand (`M.weiter`) trägt das Gedächtnis, seinen Leser der Schlüssel, die Gefallenen und die
+        // Chunks, die den Saum verließen, bis zu seinem Ende
+        if (!M.weiter) {
+            M.lage = lage;
+            M.nun = 0;
+            M.weiter = { i: -1, it: null, geht: new Set(), halten: null };
+        }
+        const G = M.weiter;
+        for (const k of L.geht) G.geht.add(k);
+        const geht = G.geht;
         const { pcx, pcz, vcx, vcz, R, span } = L;
         const p = st.playerMesh && st.playerMesh.position;
         const ueber = (a0, a1, b0, b1) => a0 <= b1 && b0 <= a1;
@@ -188,33 +195,51 @@ class AnazhRealm_gelaende_fern {
             );
         };
         // der Ort jedes bleibenden gewachsenen Baus hält seine Zelle der Streu (die Marke der Promotion wächst nicht neu) — erst
-        // gezählt, wenn ein Schlüssel fallen soll
-        let halten = null;
+        // gezählt, wenn ein Schlüssel fallen soll, einmal je Gang
         const haelt = (k) => {
-            if (!halten) {
-                halten = new Set();
+            if (!G.halten) {
+                G.halten = new Set();
                 for (const e of st.architectures || []) {
                     if (!e || !e.position || (e._ausGesetz === true && e.feldWurf === true)) continue;
                     const bp = st.blueprints && st.blueprints[e.type];
-                    if (bp && bp._isGrown) halten.add(this._scatterCellKeyAt(e.position.x, e.position.z, "tree"));
+                    if (bp && bp._isGrown) G.halten.add(this._scatterCellKeyAt(e.position.x, e.position.z, "tree"));
                 }
             }
-            return halten.has(k);
+            return G.halten.has(k);
         };
         let fiel = 0;
-        let i = M.weiter;
-        for (; i < T.length; i++) {
-            if (i > M.weiter && L.frist !== undefined && performance.now() > L.frist) break;
-            const E = T[i];
-            if (E.bestand || E.schranke) continue;
-            const karte = E.karte(this);
-            if (!karte || !karte.size) continue;
-            const rw = E.reichweite ? E.reichweite(this) : 0;
+        let n = 0;
+        while (n < ZR.jeTakt) {
+            if (!G.it) {
+                // das nächste Gedächtnis mit Einträgen; nach der Frist beginnt keins mehr
+                if (n > 0 && L.frist !== undefined && performance.now() > L.frist) break;
+                let E = null;
+                let karte = null;
+                while (++G.i < T.length) {
+                    E = T[G.i];
+                    karte = !E.bestand && !E.schranke && E.karte(this);
+                    if (karte && karte.size) break;
+                }
+                if (G.i >= T.length) break;
+                G.E = E;
+                G.karte = karte;
+                G.it = karte.keys();
+                G.rw = E.reichweite ? E.reichweite(this) : 0;
+                G.zjeS = typeof E.zelle === "function" ? new Map() : null; // die Zelle je Schicht, einmal je Gang
+                G.weg = [];
+            }
+            const { E, karte, rw, zjeS, weg } = G;
             const istMap = karte instanceof Map;
-            const zf = typeof E.zelle === "function";
-            const zjeS = zf ? new Map() : null; // die Zelle je Schicht, einmal je Gang
-            const weg = [];
-            for (const k of istMap ? karte.keys() : karte) {
+            const zf = !!zjeS;
+            let durch = false;
+            while (n < ZR.jeTakt) {
+                const x = G.it.next();
+                if (x.done) {
+                    durch = true;
+                    break;
+                }
+                n++;
+                const k = x.value;
                 const ij = E.lage ? E.lage(k) : AnazhRealm._zellLage(k);
                 if (!ij) continue; // kein Zell-Schlüssel (die Heimat „heim“, der Rang einer Stadt)
                 let Z = E.zelle;
@@ -242,7 +267,10 @@ class AnazhRealm_gelaende_fern {
                 if (haelt(k)) continue;
                 weg.push(k);
             }
-            if (!weg.length) continue;
+            if (!durch) break;
+            G.it = null;
+            // das Gedächtnis ist durch: seine Gefallenen gehen (trägt die Welt inzwischen eine neue Karte, fällt nichts)
+            if (!weg.length || E.karte(this) !== karte) continue;
             const werte = istMap ? weg.map((k) => karte.get(k)) : weg;
             for (const k of weg) karte.delete(k);
             if (E.geht) E.geht(this, weg, werte);
@@ -250,12 +278,11 @@ class AnazhRealm_gelaende_fern {
         }
         M.fiel += fiel;
         M.nun += fiel;
-        M.weiter = i < T.length ? i : 0;
-        if (M.weiter) return fiel;
+        if (G.i < T.length) return fiel;
+        M.weiter = 0;
         M.gaenge++;
         M.summe = summe - fiel;
         M.t = jetzt;
-        M.geht = null;
         return fiel;
     }
 
@@ -2578,7 +2605,9 @@ AnazhRealm._zellZahl = (n, B) => {
 // `zuwachs` Einträge wuchs, und `nachMs` nach dem letzten Gang, wenn sie sich seitdem überhaupt änderte (ein ferner Schreiber: die
 // Tiere eines verlassenen Orts treten, bis sie gehen — Radeon 17.11.: 155 Tritte 1,7 km fern nach der Rückkehr, `creature` über
 // `_tickTritt`).
-AnazhRealm.ZELL_RAEUMEN = Object.freeze({ zuwachs: 256, nachMs: 2000 });
+// `jeTakt`: so viele Schlüssel liest ein Gang je Takt höchstens — die Kosten des Takts hängen an diesem Maß, nie an der Zahl der
+// Gedächtnisse oder ihrer Einträge (ein Gang über ~15 000 Einträge geht in ~30 Takten).
+AnazhRealm.ZELL_RAEUMEN = Object.freeze({ zuwachs: 256, nachMs: 2000, jeTakt: 512 });
 // DIE NEIGUNG DES RINGS (`_fernNeigungTakt`): `texelM` die Kante eines Texels der Karte (die Schicht der Kronen-Karte, ihr Raster
 // 512² → ±8 km, die Schale 2 ganz; die Station ferne.K4 misst die Neigung des Gesetzes über 50 m, die Karte über 62,5 m), neu nach
 // `nachM` Wanderung des Ankers, das Gitter in Aufträgen à `zeilenJeAuftrag` Zeilen (514² Rufe des Gesetzes, 2,25 µs je Ruf:
