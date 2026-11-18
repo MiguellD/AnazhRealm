@@ -117,7 +117,7 @@ bereit() {
                 if git -C $R fetch -q origin "+refs/heads/koordination:refs/remotes/origin/koordination" 2>/dev/null &&
                     git -C $R show "origin/koordination:probe-post/$b/${sha:0:8}.md" 2>/dev/null | head -1 | grep -q NACHGEGEBEN; then
                     pm="$W/probe-neu-${sha:0:8}"
-                    if [ ! -f "$pm" ] || [ $(($(date +%s) - $(stat -c %Y "$pm"))) -gt 1200 ]; then
+                    if [ ! -f "$pm" ] || [ $(($(date +%s) - $(mzeit "$pm"))) -gt 1200 ]; then
                         pl=$(awk -F'\t' '$2 ~ /^GPU-Probe/ { print $1; exit }' "$W/ci-runs.tmp" 2>/dev/null)
                         if [ -n "$pl" ]; then
                             PT=$(printf 'protocol=https\nhost=github.com\n\n' | git -C $R credential fill 2>/dev/null | sed -n 's/^password=//p')

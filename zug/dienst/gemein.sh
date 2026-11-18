@@ -29,7 +29,7 @@ halter_lebt() {
     fi
     s=$(powershell -NoProfile -NonInteractive -Command "\$p = Get-CimInstance -ClassName Win32_Process -Filter 'ProcessId=$p' -Property CreationDate; if (\$p -and \$p.CreationDate) { ([DateTimeOffset]\$p.CreationDate).ToUnixTimeSeconds() }" 2>/dev/null | tr -dc 0-9)
     [ -n "$s" ] || return 0
-    [ "$s" -le $(($(stat -c %Y "$m") + START_SPIEL_S)) ]
+    [ "$s" -le $(($(mzeit "$m") + START_SPIEL_S)) ]
 }
 
 # schleife_lebt <pid-datei> — DIE EINE REGEL, ob eine Schleife des Dienstes lebt (Laptop UND OMEN; gelesen von schloss, start.sh,
@@ -95,6 +95,15 @@ selbsttest_lebt() {
 # „^pid=“, fand an jedem gpu-lauf-Schloss KEINE pid und löste es nach der 2-min-Regel „ohne Halter“ — 11.11. 23:09 bis 14.11. 00:47
 # 29 gpu-lauf-Schlösser, ohne je ihre pid zu fragen (Sandkasten: der Halter lebt 170 s, tasklist · gpu-lauf · schloss-puls sagen lebt, der Dienst ab 120 s
 # „verwaist“). Dieselbe Regel (pid= irgendwo) lesen gpu-lauf.sh, der Start-Hook des Läufers und schloss-puls.cjs.
+# mzeit <pfad> — Änderungszeit in s. Ist der Pfad verschwunden (ein Schloss, das zwischen Test und stat gelöst wird), druckt sie 0
+# und endet mit 1: der nackte Ruf $(( … $(stat …) )) beendete sonst die ganze Schleife mit „arithmetic syntax error“ — so starb die
+# Radeon-Schleife am 16.11. 21:23 an der 2-min-Regel von `verwaist` und stand 30 h (Fund 18.11.). Jede Alters-Rechnung liest hier.
+mzeit() {
+    local t
+    t=$(stat -c %Y "$1" 2>/dev/null)
+    case "$t" in "" | *[!0-9]*) echo 0; return 1 ;; esac
+    echo "$t"
+}
 schloss_pid() { tr -d '\r\n' 2>/dev/null <"$1" | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p'; }
 
 # schloss <name> — EINE Instanz je Schleife (Lehre „Schlange einmal“ 05.11., zwei z370 am 10.11.): die PID-Datei trägt die

@@ -38,7 +38,7 @@ HAND_NACH_S=600       # so lange misst eine Fahrt allein, bevor sie einer warten
 ZIEL=$S/radeon.ziel
 ZIEL_MAX_S=3600
 kopf() {
-    if [ -s "$ZIEL" ] && [ $(($(date +%s) - $(stat -c %Y "$ZIEL"))) -lt $ZIEL_MAX_S ]; then head -1 "$ZIEL"; return; fi
+    if [ -s "$ZIEL" ] && [ $(($(date +%s) - $(mzeit "$ZIEL"))) -lt $ZIEL_MAX_S ]; then head -1 "$ZIEL"; return; fi
     rm -f "$ZIEL"
     git -C $R ls-remote origin refs/heads/main | cut -f1
 }
@@ -58,7 +58,7 @@ frei() { [ ! -d "$GS" ] && ! lauf_da && ! ci && [ -z "$(warter)" ]; }
 # verwaist: der Halter (pid= in besitzer.txt) lebt nicht mehr, oder der Ordner steht seit > 2 min ohne Halter (10.11. 21:54: der
 # Konto-Wechsel beendete die Messung, ihr Schloss hing 35 min an pid 30944 — CI und Messung hätten daran gewartet)
 verwaist() {
-    local p
+    local p t
     [ -d "$GS" ] || return 1
     # DAS SCHLOSS EINES LAUFENDEN CI-JOBS IST NIE VERWAIST (12.11.: der Start-Hook des Läufers schreibt „ci-runner <lauf>/<versuch> <job>“
     # OHNE pid — die 2-min-Regel unten löschte es dem laufenden Job weg, 40× im Log seit dem 10.11.; 00:32 fiel daran die Probe
@@ -67,7 +67,7 @@ verwaist() {
     case "$(head -1 "$GS/besitzer.txt" 2>/dev/null)" in ci-runner*) ci && return 1 ;; esac
     # die pid nur über schloss_pid (gemein.sh) — mit pid urteilt allein ihr Leben, die 2-min-Regel gilt nur dem Ordner OHNE Halter
     p=$(schloss_pid "$GS/besitzer.txt")
-    if [ -z "$p" ]; then [ $(($(date +%s) - $(stat -c %Y "$GS"))) -gt 120 ]; else ! tasklist -FI "PID eq $p" -NH 2>/dev/null | grep -qw "$p"; fi
+    if [ -z "$p" ]; then t=$(mzeit "$GS") || return 1; [ $(($(date +%s) - t)) -gt 120 ]; else ! tasklist -FI "PID eq $p" -NH 2>/dev/null | grep -qw "$p"; fi
 }
 # vor_mir_da — steht noch einer der Warter, denen die letzte Fahrt wich? (Name in VOR_MIR; leer: keiner)
 vor_mir_da() {
@@ -268,7 +268,7 @@ takt() {
 # pid-Quelle „^pid=“: der lebende Halter gilt nach 2 min als tot) · reihe (nach HAND_ZEIT_S tritt die Fahrt vor die Hand von
 # vorhin) — jede ROT. d: nach dem Weichen kein Eintritt, solange die Hand von vorhin steht; eine spätere hält ihn nicht auf.
 st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ oder „ROT <fall> …“
-    local X K j a1 a2 b1 b2 vor mp alt z1 z2
+    local X K j a1 a2 c3 b1 b2 vor mp alt z1 z2
     X=$(mktemp -d)
     R=$X/spiel PM=$X/pm W=$X/w S=$X/s GS=$X/schloss STUB=$X/stub
     L=$W/log WACHE=$S/radeon.wache ZIEL=$S/radeon.ziel TAKT_S=0.1 BIS_SPIEL_S=0 WEICH_MAX_S=20 HAND_NACH_S=0 HAND_ZEIT_S=9999999999
@@ -287,8 +287,14 @@ st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ ode
     printf 'punkte-radeon-sitzung\npid=%s\n' "$(/usr/bin/sh -c 'cat /proc/$$/winpid')" >"$GS/besitzer.txt"
     a2=$(verwaist && echo VERWAIST || echo gehalten)
     rm -rf "$GS"
-    if [ "$a1" = gehalten ] && [ "$a2" = VERWAIST ]; then echo "OK c  lebender gpu-lauf-Halter nach 300 s gehalten · toter Halter der Punkte-Sitzung gelöst"
-    else echo "ROT c  lebender Halter baum-ganz (pid in Zeile 1, 300 s): $a1 (Soll gehalten) · toter Halter (pid in Zeile 2): $a2 (Soll VERWAIST)"; fi
+    # das Schloss verschwindet zwischen `-d` und `stat` (16.11. 21:23: stat druckte nichts, „arithmetic syntax error“ an der
+    # 2-min-Regel beendete die Schleife, sie stand 30 h): ein Ordner ohne Halter, dessen stat stumm bleibt, ist NICHT verwaist —
+    # und der Ruf überlebt (stirbt er, bleibt c3 leer)
+    mkdir -p "$GS"
+    c3=$(stat() { :; }; verwaist && echo VERWAIST || echo gehalten)
+    rm -rf "$GS"
+    if [ "$a1" = gehalten ] && [ "$a2" = VERWAIST ] && [ "$c3" = gehalten ]; then echo "OK c  lebender gpu-lauf-Halter nach 300 s gehalten · toter Halter der Punkte-Sitzung gelöst · verschwundenes Schloss überlebt"
+    else echo "ROT c  lebender Halter baum-ganz (pid in Zeile 1, 300 s): $a1 (Soll gehalten) · toter Halter (pid in Zeile 2): $a2 (Soll VERWAIST) · Schloss verschwindet vor stat: '${c3:-GESTORBEN}' (Soll gehalten)"; fi
     [ "$1" = pid ] && { command rm -rf "$X"; return; }
     git init -q --bare "$X/spiel.git" && git init -q -b main "$R" && git -C "$R" remote add origin "$X/spiel.git"
     git init -q --bare "$X/pm.git" && git init -q -b punkte-maschine "$PM" && git -C "$PM" remote add origin "$X/pm.git"

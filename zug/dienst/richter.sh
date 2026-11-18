@@ -133,7 +133,7 @@ miss() {
     echo "${z#*" · "}" | cut -c1-300 >"$ZU/schritt.zahl"
     [ -n "$z" ] || tail -n 1 "$ZU/schritt.out" | cut -c1-300 >"$ZU/schritt.zahl"
     # die Uhr des Schritts: Dauer, und wie lange der Lauf nach seiner letzten Zeile noch lebte (die Baum-Sperre hält er so lange)
-    echo "$((ende - t0)) s (Fahrt $lauf s, vor dem belegten Spiel-Baum $stand s), davon $((ende - $(stat -c %Y "$ZU/schritt.out"))) s nach der letzten Zeile" >"$ZU/schritt.uhr"
+    echo "$((ende - t0)) s (Fahrt $lauf s, vor dem belegten Spiel-Baum $stand s), davon $((ende - $(stat -c %Y "$ZU/schritt.out" 2>/dev/null || echo "$ende"))) s nach der letzten Zeile" >"$ZU/schritt.uhr"
     log "    Uhr $x8: $(cat "$ZU/schritt.uhr")"
     [ -e "$mj" ] && cp "$mj" "$ZU/schritte/${STATION//#/_}-$x8-$t0.json" 2>/dev/null
     cp "$ZU/schritt.out" "$ZU/schritte/${STATION//#/_}-$x8-$t0.out" 2>/dev/null
