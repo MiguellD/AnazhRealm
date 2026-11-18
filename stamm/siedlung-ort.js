@@ -1153,14 +1153,7 @@ class AnazhRealm_siedlung_ort {
         const [q, H] = [lebt && this._autoSettlementQueue, lebt && this._ortWachsHaeuser];
         const zug =
             q && q.plan && Array.isArray(q.plan.slots) ? Math.max(0, q.plan.slots.length - q.idx) + !!q.gang : 0;
-        // DER GRUND IM VORLAUF (w28-funktion-welt-2): ein Vorrat, dessen Export fliegt oder dessen Grund noch nicht liegt
-        // (`_tickAutoSettlement`), baut die Welt noch — sein Erdbau fällt den Wald und die Saat seines Orts. Bis hier stand die
-        // Welt davor: A gegen A an fbfeee30 trug der schnelle Lauf 28 Bäume und einen Glutbrunnen östlich des Dorfs, die der
-        // Grund des Nachbar-Orts im langsamen schon gefällt hatte.
-        let vorrat = 0;
-        if (lebt) for (const w of (this._dorfVorraete || new Map()).values()) if (!w.da || (w.v2 && !w.grund)) vorrat++;
         return (
-            vorrat +
             (this._dorfImFlug | 0) +
             zug +
             (this._autoSettlementPendingKey ? 1 : 0) +
