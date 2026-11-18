@@ -2330,7 +2330,7 @@ class AnazhRealm_siedlung_bewohner {
         b.drehen = null;
         b.drinnenSoll = soll.drinnen;
         b.da = false;
-        b.weg = null;
+        b.weg = b.wegRestAb = null;
         b.wegRest = null;
         b.hinaus = tuer && b.drinnen && !soll.drinnen;
         b.platz = false;
@@ -2358,7 +2358,7 @@ class AnazhRealm_siedlung_bewohner {
         this._bewohnerStellen(b, g, s0.ziel.x, s0.ziel.z);
         if (Number.isFinite(s0.ziel.blick)) g.rotation.y = s0.ziel.blick;
         Object.assign(b, { ziel: s0.ziel, akt: s0.akt, drinnenSoll: s0.drinnen, drinnen: s0.drinnen, da: true });
-        Object.assign(b, { weg: null, wegRest: 0, stand: null, drehen: null, gehDt: 0 });
+        Object.assign(b, { weg: null, wegRestAb: null, wegRest: 0, stand: null, drehen: null, gehDt: 0 });
         for (let n = 0; n < BW.ankunftWenden && h < stunde; n++) {
             const w = this._bewohnerWende(b, h, stunde);
             if (b.weg) this._bewohnerSchritt(b, ((w === null ? stunde : w) - h) * sek);
@@ -2735,7 +2735,7 @@ class AnazhRealm_siedlung_bewohner {
             g.rotation.y += Math.max(-om, Math.min(om, dw));
         }
         if (b.wi >= pts.length) {
-            b.weg = null;
+            b.weg = b.wegRestAb = null;
             b.da = true;
             b.wegRest = 0;
             if (!b.drinnenSoll && Number.isFinite(b.ziel.blick)) b.drehen = b.ziel.blick; // am Ziel der Blick des Plans
@@ -3448,7 +3448,7 @@ class AnazhRealm_siedlung_bewohner {
                 const q = b.weg[i];
                 const tuerBein = q === o.tuer || (q === o.vor && (p === o.tuer || (i === b.wi && b.stand === o.tuer)));
                 if (tuerBein || (trifft && !trifft(p, q)) || !this._bewohnerWand(p, q)) continue;
-                b.weg = null;
+                b.weg = b.wegRestAb = null;
                 b.stand = null;
                 break;
             }
@@ -3772,7 +3772,7 @@ class AnazhRealm_siedlung_bewohner {
                 });
                 for (const b of S.liste)
                     if (b.leib && !b.drinnen && (b.ziel === o || b.stand === o)) {
-                        Object.assign(b, { weg: null, stand: null, wegRest: null });
+                        Object.assign(b, { weg: null, wegRestAb: null, stand: null, wegRest: null });
                         if (b.ziel === o) b.da = false;
                     }
             }
@@ -3797,7 +3797,7 @@ class AnazhRealm_siedlung_bewohner {
             for (const k of K) if (b.orte[k] === o) b.orte[k] = null;
             if (b.leib && !b.drinnen && (b.ziel === o || b.stand === o)) {
                 if (b.ziel === o) b.da = false;
-                Object.assign(b, { weg: null, stand: null, wegRest: null });
+                Object.assign(b, { weg: null, wegRestAb: null, stand: null, wegRest: null });
             }
         }
         return true;
