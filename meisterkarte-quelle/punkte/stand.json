@@ -5863,7 +5863,7 @@
   },
   "karte2.planet.relief.grossform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) · karte2.planet.relief.grossform#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/wasser-linse.cjs, stamm/gelaende-fern.js +1) — zuletzt an 21f279f5: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) · karte2.planet.relief.grossform#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/wasser-linse.cjs, stamm/gelaende-fern.js +1) — zuletzt an b7ed8419: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "karte2.planet.relief.grossform#1",
@@ -5881,7 +5881,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/wasser-linse.cjs, stamm/gelaende-fern.js +1) — zuletzt an 21f279f5: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/wasser-linse.cjs, stamm/gelaende-fern.js +1) — zuletzt an b7ed8419: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -6489,7 +6489,7 @@
   "ohne": 149
  },
  "kopfVoll": "b7ed8419454b22964d72b81d26f1f56128e41735",
- "zeit": "2026-11-18T23:06:49.502Z",
+ "zeit": "2026-11-18T23:12:41.123Z",
  "vorher": "b7ed8419",
  "bilanz": {
   "gewinn": [],
