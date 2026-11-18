@@ -233,5 +233,12 @@ LEER in allen vier: Maß, Fuge, Versatz und Ton liest der Maler aus `VERBAND_GES
 
 Lesart: die GPU trägt den Kopf nicht, der Speicher auch nicht. Die Stadt ist am Prozessor gebunden und sitzt an der Vsync-Stufe
 25 ↔ 33 ms; im ABBA steht der Kopf zweimal oben, die Basis zweimal unten — aber dieselbe Basis stand um 00:02 selbst oben (33,31).
-Ein Boot nennt keinen Täter (Regel: nur über ≥ 2 Boots). Was der Kopf am Prozessor neu tut, sehe ich mir direkt an: die zwei
-Spalten der Lage je Satz-Block (`_satzBlockEcken`) und neue Programme während des Laufs. Roh `p3/n1711/hs/stadt-end-*` (OMEN).
+Ein Boot nennt keinen Täter (Regel: nur über ≥ 2 Boots). Roh `p3/n1711/hs/stadt-end-*` (OMEN).
+
+**Direkt nachgesehen (02:15):** im 20-s-Lauf an stadt-voll rufen die Satz-Glieder, die der Kopf verändert hat (`_satzBlock`,
+`_satzBlockEcken`, `_chunkSatzLege`, `_chunkSatzMarke`), **0-mal** — am Stand entsteht kein Block, der neue Code rechnet nichts
+(Programme im Lauf 209 → 212, drei neue). Die Phasen des Takts zeigen keinen Kopf-eigenen Anteil (render 9,30 · 6,89 Kopf ↔ 8,79 ·
+6,78 · 5,56 Basis, creatures 2,71 · 1,70 ↔ 2,72 · 1,89 · 1,43; Befehle 228, Dreiecke 1,13 Mio., bauSatz-Puffer 39,8–40,1 MB gleich).
+Ein dritter Kopf-Lauf steht auf der unteren Stufe: Frame p95 **25,13** ms, CPU-Takt p95 16,72 ms. Kopf 32,90 · 33,38 · 25,13 ↔ Basis
+33,31 · 25,06 · 25,08 — beide Fassungen fallen auf beide Stufen; das ABBA-Muster war Zufall, kein Preis des Kopfs.
+Roh `p3/n1711/hs/stadt-uhr-nach/uhr.json`.
