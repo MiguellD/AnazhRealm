@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-18T23:11:27.628Z",
+ "zeit": "2026-11-18T23:16:00.512Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -1667,6 +1667,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.same.kopplung.ereignis#1": {
+   "gruen": true,
+   "zahl": "Guss -268,-1046: Glut R/G 2.733 (Soll ≥ 2), Luma 0.119, glut-Achse 1 · erstarrt nach 1 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 1 Schritten = 0.007 h Welt (Soll 1–60), Schuss bei 0.492 h, Gesetz-glut 0 (Soll 0): R/G 0.989 (Soll ≤ 1,25), Luma 0.053, Stoff stein · Brand am Guss 8 Zellen, auf seiner Uhr 20000 s, danach um den Guss 0 brennend (die Front lebt fern: 34 Zellen) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.51,
+   "gpu": "nvidia/pascal",
+   "konsum": "kfa94134390a7",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2bbe263ca652",
+   "s": 29.5,
+   "fremd": {
+    "s": 33.4,
+    "takte": 15,
+    "fremdS": 55.86,
+    "kerne": 1.672,
+    "fensterKerne": 1.813,
+    "namen": [
+     [
+      "node scripts/diag-sprache.cjs --selftest",
+      24.78
+     ],
+     [
+      "node scripts/diag-sprache.cjs",
+      5.31
+     ],
+     [
+      "node scripts/diag-ci-deckung.cjs --selftest",
+      4.31
+     ]
+    ],
+    "dienerS": 14.55,
+    "diener": [
+     [
+      "dwm.exe",
+      6.3
+     ],
+     [
+      "System",
+      5.39
+     ]
+    ],
+    "geraetS": 19.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      10.5
+     ],
+     [
+      "svchost.exe",
+      8
+     ],
+     [
+      "SearchIndexer.exe",
+      0.52
+     ]
+    ],
+    "eigenS": 79.06,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T23:16:00.512Z",
+   "abdruck": "1a849f5c91fb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1693,20 +1762,20 @@
   "k80037f8904ec": "pVVdj6s2EP0veWzrdQgQwNJ9cMKquVWvmn3s49iMgQ2ByDZLm6r/vYKNk/BxpSvVTwk6M3PO4Yz5Z3UBeYIcX95NU6/Y6qfVLysDH0gM6g/UL+9mxVZrGUAYM/55KOd838OkLi/W0KyEnJw0gm01qVBg/SKHsjABCVtGf/Co7suX77W1cLK3rjGodRCwXc75Nz6qqEpBQdRQnJG02mJZ3Uo8GSMgo90r746UHmlEdx2/n/1Cm0pg1hALCl0TkW0iH9gU2JocBBJo1TDYSQ+8wA9v0uOUH9/vMvkb5z2ThakC6mzMXPkQKo99/Zvz1zk+KwEtqcrauLkyC4W/eVjezWs0dOQKWFSob0XgReAJR3awpDsmdFKoqtaY0bDYz8JNzCidYXM0pSwsuejmEQeRbCIP2G7OKb+0RI0YCQGxmHpdANY56jGHKAhlwOhf8bTpCc6ogdRQ3KDJ2o82YhTHw5yLS9wZayNdqQyCLFE/lOT0+y1HbviZv9lKxv/v2eW/TsZVg/WDSW5YnIkkmvHnh2EJ0rj/k98fx4fPzmn+NOZtMsTIotTnsSSlwgzW7Pe5A6aADDU5NcY+OAUA6C6VdFgLfgzSaeVDzK1uI7brMH7SElN+mL190yjbgUaSX9pbIQYYRiHj/OsMbOF8diLkBuNw8b0sJNfYfmWf6YUBetuIOUcXEva54OSKZeWKIik9H9n+G5/q/9BwJiByXSrlcixCqZKlteuwskQ0jbsqEz8DX/Zc6ie7BikPVWnXyNd9/jYRe9D5QpSHCY22d7Viu1YBU8NdI2foUlvSgSzu704JhIQtQK+oK8xxZGUWCB+yHv3ENnA/fh5l+TpLwLXE3uTatMYlLonuWzyW1qE+CahPjmYo/NBjv/VG/cHdOqxTmi58tDj/c7+L+2YXlPSiG1X29zgtoDUFVHb0Zf2EtKhEi0WNfX5s2dRYP1D//gc="
  },
  "sitzung": {
-  "start": "2026-11-18T23:10:47.819Z",
-  "ordner": "sitzung-20261119-001047",
+  "start": "2026-11-18T23:15:22.918Z",
+  "ordner": "sitzung-20261119-001522",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 8,
+  "warten": 0.01,
+  "bootS": 6.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "karte2.same.kopplung.stoerung#1",
-    "s": 29.1,
-    "takte": 635,
+    "vor": "karte2.same.kopplung.ereignis#1",
+    "s": 27.7,
+    "takte": 653,
     "chunks": 81,
     "nach": null
    }
@@ -1714,7 +1783,7 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.same.kopplung.stoerung#1",
+    "probe": "karte2.same.kopplung.ereignis#1",
     "anders": [
      "window.__wieseMessen",
      "window.__wieseUrteil",
@@ -1727,15 +1796,15 @@
     },
     "haelt": [],
     "heap": [
-     230,
-     261.7
+     227.4,
+     260.9
     ],
     "ungemessen": null
    }
   ],
   "messHalt": [
    {
-    "probe": "karte2.same.kopplung.stoerung#1",
+    "probe": "karte2.same.kopplung.ereignis#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -1747,21 +1816,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1887,
-   "frameP95": 33.43,
-   "taktP95": 20.09,
-   "vramMax": 138.5,
+   "bilder": 3258,
+   "frameP95": 25.05,
+   "taktP95": 18.23,
+   "vramMax": 153.6,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 148,
+   "zapfen": 132,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 159.3,
-  "minuten": 2.73
+  "fahrtS": 146.2,
+  "minuten": 2.53
  },
  "ungemessen": {
   "mensch.K5#1": {
