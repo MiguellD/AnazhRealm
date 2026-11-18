@@ -4641,8 +4641,9 @@
      "gruen": true,
      "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6)",
      "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/stand-linse.cjs +6)",
+     "gehalten": true,
+     "r6": "konsum"
     },
     {
      "id": "wetter.K1#2",
@@ -5269,7 +5270,7 @@
   },
   "karte2.leben.tiere.mensch": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.576 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.916 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: Annäherung im Fenster: deer flieht ab 113.894 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.617 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.178 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.963 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] nvidia/pascal an 7de938ab gtx",
+   "beleg": "Maschine: gehalten: Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.576 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.916 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.576 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.923 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] nvidia/pascal an 21f279f5 gtx",
    "stationen": [
     {
      "id": "karte2.leben.tiere.mensch#1",
@@ -5286,10 +5287,9 @@
      "id": "karte2.leben.tiere.mensch#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Annäherung im Fenster: deer flieht ab 113.894 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.617 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.178 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.963 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] nvidia/pascal",
-     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/stand-linse.cjs +4)",
-     "gehalten": true,
+     "zahl": "Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.576 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.923 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] nvidia/pascal",
+     "sha": "21f279f5f5b87f86c0bea764dab99fb36670725e",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -5872,7 +5872,7 @@
   },
   "karte2.planet.relief.grossform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) · karte2.planet.relief.grossform#1 gtx: Station seit der Messung geändert — zuletzt an 31d156e8: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) · karte2.planet.relief.grossform#1 gtx: Station seit der Messung geändert — zuletzt an 21f279f5: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "karte2.planet.relief.grossform#1",
@@ -5890,7 +5890,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 31d156e8: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Station seit der Messung geändert — zuletzt an 21f279f5: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
      "ungemessen": true,
      "beide": true
     }
@@ -6333,7 +6333,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 187,
+  "konsum": 188,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6495,10 +6495,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 161
+  "ohne": 160
  },
  "kopfVoll": "21f279f5f5b87f86c0bea764dab99fb36670725e",
- "zeit": "2026-11-18T00:37:43.516Z",
+ "zeit": "2026-11-18T00:56:13.568Z",
  "vorher": "21f279f5",
  "bilanz": {
   "gewinn": [],
