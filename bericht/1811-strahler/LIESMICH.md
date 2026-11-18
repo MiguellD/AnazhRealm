@@ -112,12 +112,41 @@ nicht; gepusht wird erst auf einem main, das sie trägt).
   w28-feld-fuss und w28-licht-kern steht seit dem 16.11. 05:40 in main (Squash `2ac706fac` „Abgabe w28-ankunft-stapel“).
   Kein Zweig w28-heim-* gebaut. Die drei alten Zweig-Namen stehen noch auf origin; ihr Aufräumen liegt beim Schöpfer.
 
+## Stand 18.11. 02:40 — Zweig w28-strahler, Kopf 68ca2ed7 (WIP, gepusht, NICHT abgegeben)
+
+- **2064a187 — das Gesetz und sein Chokepoint:** fachwerk-core `strahler` + `STRAHLER {ankerK 2000, leucht 7,5, eMin 0,05}`,
+  Wirt `_strahler(TK, A, flach, mit)` (ersetzt `_flammenLicht`). Brand und Lava lesen es; die Lava leuchtet aus IHRER
+  Temperatur (frische Decke 1650 K, Leuchtdichte 3,37 statt fest 2000 K / 7,5). Entscheid des Koordinators (01:40): Körper mit
+  Temperatur als Zustand lesen T; Lampen tragen EIN Datum `leucht` + `kelvin` in EINER Zeile, beide durch `strahler`.
+- **68ca2ed7 — die Fläche strahlt als Fläche:** ein Platz mit Seite (`lichtSeite`, die Lava-Decke) ist ein waagrechtes
+  Quadrat; `_lichtPlatz` rechnet EINEN Vektor der Bestrahlung (Punkt: Richtung × Abfall; Fläche: Lamberts Kantensumme ÷
+  Seite², `_flaechenVektor`), EINE Bedingung, EINE BRDF. Gegen das numerische Integral außerhalb der Fläche 0 % (9/10/40/60 m,
+  in JS gerechnet — die Linse im Shader steht aus); als Punkt lag das Rand-Gras beim 0,22-Fachen.
+  Bild Lava allein, Nacht, main → Kopf (Luma): Decke 71 → 63 · Rand-Gras 46 → 36 · Baumreihe 20 → 17 · Stein 53 → 60;
+  Mittag: Decke 89 → 85 · Rand-Gras 108 → 104. **Befund gegen das Zielbild (b):** das Rand-Gras wird DUNKLER, nicht wärmer —
+  die Decke bei 1633 K trägt das 0,43-Fache der Anker-Leuchtdichte, und eine flache Fläche gibt flachem Boden und dem
+  Halm-Dach (Normale 0,9 oben) streifendes Licht. Gegenprobe als Punkt: Rand-Gras 39,6. Das ist das Gesetz, kein Fehler;
+  ob das Zielbild so bleibt, entscheidet der Koordinator am Paar.
+  Preis: Boden-Programm S0 98 747 → 99 821 Zeichen (Ratsche 100 062). Dafür „die kurze Zahl“ am Knoten-Bauer
+  (`_configureRenderer`: jede Shader-Konstante als kürzeste Dezimale desselben f32, −598 Zeichen je Boden-Programm, wirkt in
+  jedem Programm; Vendor-Stellen gepinnt). ms an der Lava-Pose NICHT gemessen.
+  Grün am Kopf: gate:pruefbuehne-licht, gate:hoehlen-sicht, stand-takt --narbe, gate:vendor-anker, format:check.
+  Nicht gefahren am Kopf: npm run check, playtest, kaskade/ereignis, die Ankunft kalt (jeder Programm-Text hat sich geändert).
+- **Bildpaar für den Blick:** `main-b-lava-allein-{nah,fern}-nacht.png`, `main-b-lava-allein-nah-tag.png` ↔
+  `kopf-b-lava-allein-{nah,fern}-{nacht,tag}.png` (dieser Ordner). Paare (a), (c), (d), (e) am Kopf: NICHT geschossen —
+  Herd, Rauch, Tor und Gasse liest der Kopf noch auf den alten Wegen.
+- **Prozent je Punkt des Auftrags:** 1 Gesetz 70 % (Funktion, Chokepoint, Nahfeld; die Linse gegen das Integral fehlt) ·
+  2 Leser 2 von 13 Strahlern (Brand, Lava) · 3 Fälle 1 von 9 (`_flammenLicht`) · 4 Auge 0 % · 5 Wärme/Zündung 0 %.
+
 ## Nächster Schritt
 
-1. Blick des Koordinators auf dieses Blatt (das Zielbild ist der einzige Zwischenbericht).
-2. Gebaut (siehe Stand 01:15): `worldMeta.tag` fällt, die Masken gehen im Budget des Brands.
-3. Jetzt: die Zahlen des Befund-Blatts an der Quelle prüfen und `strahler(T, A, n)` am Chokepoint bauen (Nahfeld-Term in der
-   EINEN Funktion, Richter das Flächen-Integral an 10 / 40 / 60 m ≤ 15 %); alle Leser ziehen in diesem Kopf um.
+1. Blick des Koordinators auf das Paar (b); davor keine Abgabe.
+2. Linse: die Bestrahlung des Shaders an 10 / 40 / 60 m gegen das Integral ≤ 15 % (bestehende Familie stand-takt --narbe L5
+   oder pruefbuehne-licht, mit Selbsttest; kein Zwilling auf der CPU).
+3. Herd, Glut, Esse, Stahl, Funken über `_strahler`; Laterne, Fenster, Tor, Fahrzeug je EINE Zeile `leucht` + `kelvin`;
+   Fenster und Laterne ins Verzeichnis „licht“. Dann die Fälle (Absenz-Grep), das Auge liest den Pool, die Lava zündet über E(d).
+4. Am letzten Kopf EIN Gate-Satz: format:check, check:statik, playtest, pruefbuehne-licht, hoehlen-sicht, kaskade/ereignis,
+   Preiszeile an der Lava-Pose, Ankunft kalt.
 
 Werkzeug (lokal, GTX 1050): Befehls-Dateien `gtx1050-werkzeug/tmp/sz-main-{wiese,tor,dorf,dorf2,lava3}.bef` über
 `werkbank-ort.sh` (ORT=wiese · genesis · dorf); für den Kopf dieselben Posen mit anderem Vorsatz der Datei-Namen.
