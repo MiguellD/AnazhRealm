@@ -1,0 +1,170 @@
+{
+ "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
+ "geraet": "gtx",
+ "zeit": "2026-11-18T20:32:17.498Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "karte2.mensch.macht.wehrbau#1": {
+   "gruen": true,
+   "zahl": "✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.04,
+   "gpu": "nvidia/pascal",
+   "konsum": "k7880b4bc4787",
+   "konsumN": 39,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k2bbe263ca652",
+   "s": 60.7,
+   "fremd": {
+    "s": 64.4,
+    "takte": 27,
+    "fremdS": 121.34,
+    "kerne": 1.884,
+    "fensterKerne": 2.962,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      59.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      16.19
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      12.48
+     ]
+    ],
+    "dienerS": 36.95,
+    "diener": [
+     [
+      "System",
+      16.52
+     ],
+     [
+      "dwm.exe",
+      14.97
+     ]
+    ],
+    "geraetS": 35.14,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.19
+     ],
+     [
+      "svchost.exe",
+      12.3
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 353.34,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T20:32:17.498Z",
+   "abdruck": "91d02c40c141",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k7880b4bc4787": "bVZNj6NIDP0vOW6GVAjQFEhzcEJrukfTGnpPO0cXuIAOH1EVCVFW+99XEEjz0T5EIXm2n1/ZLv5dRZUivSmwzCTpevOhq3Llr/5afVtJjNKG1NFoIZsPvfJXloPcdn22Zoy53p91yH9D+HFhzGOdNRISKdftI0AA8PetYRaHwZqQMZfJK2NcNheLhaz6wUJ2ZU2c5O/H8AZ7gDcA+B18wPvdxw7voRmXl9uVS/nmusyNZPIKsIcA2JWtnzts8N5GH9vtZgPskwOMrIF/ODTQwL4BCG8d7tr8CCX782sEez/A9++rb6usjOm6Sesi71U5YXTEhMZCabyQoUldSN1l2kY2OtzvQzEAOLSwSGWnWrM4w8TQVNc5FVTWm6jz4Y5pI/dZyWFin+STUYw8EwxFiWlBxlnVlOV9GDPihOSz5rlTO2QuawsdLLhXNQmTC4oro0ZJQxAR71wL/TnwrBMUZOBZdol7sGObtuX4/SEFEH489G/PsGVyWGYVWMZT5tJCR5r+awPwvMTHGVJt5Fmph7xR7Ahr5z+SNUsfhY1xQ0pzUr0Tmi6aYiDbN6XHZo4yP2s9Scat2Nlxv230GTYhnUVpbZxUJagcBPR2ron+fskpOZ0NOWEkBHIx1zpFKhNSUw6u7US2z658HvSIBSk0Skx7qLe13J3wx7PwsuSSd8S7FANxHgvPlRNHxljy0rVQwLuHx8/8pW+qZDw48ySVnmrj2aazpXnBlZpJaFtP9hP2MxQ0rHme09dRmqli6iWlE+PW/7UsVqcYkzKOla4/q7URaZjToGtXCO1g7vkpU++3E09bh49U4gxeFqeiK1k3qMhITufekWxyXMcHeF2Aa4xnCkhTWtKZC6VrLIoBEe2If4Uo4wlfxybzyfWHw/uiFe6TaNwoywcnN4pMi/zDG8wFuZA6Uqp0SfVtStkV9m4bzwldFBYGikRlUg5NIJxIel/NU0N5bYiqGvaiZ8VoRS33cqS3hHb7f661poqeD8n744e37nOvEljW2mWoVP1QRzxtpe3LbolEC3SmaqPBKH0cvhSEnv8F9EYqp4Qm0se2sDBu0SO29vBlPb2uFi10y6g9lFKf9dCynht7/YD2e/11ui3bK1tgeRzoOsJyTP8nBMnPNQwTuw1YwOYmm/be208voDfogp8oYidVyaxd3CzFs04xn7wuXKiMK8XqVBFtuleGIivv9+Hi76KKz/kIgBZ68c5f/fc/",
+  "k2bbe263ca652": "jVTBbtswDP2XHLepimOrlgX0oDTB0gHF0tOwIyVTthvHDiS73jLs34c6URLbPYynxOAjHx+f+Gd2AL2DDO9eXV3NxOzT7MvMwRsSh/YN7d2rm4nZXEfAuJCnoFLKr+9p2haHxtGyUBRUBfkeSWsbLMo73cMCzRFQ0G4tuy2lWxrTZScvsZQPD+MypcK0Jg0Y9EVUuohDEOPE1mWgkEBr+sbnZBYFUcgE7YOv5PaV+pAvUtJuPe6ooEqHrE0IzATiqZNyPWWYFoANKYvK+Z46ZSpciEujboqx0JEjYF6iPYMgiCFQnmgvR7dN6Ahoyta5QTMepmzBBaWT3AxdofOGHGytsPLiJYs4ALGccsoOLTEDRkoBV2Odc8AqQzvkEEdMR4L+4uOiO9ijBVJBfk5N5mG8UFdtKKWbKZeyJ9638MR5qpLYDICU0mzT22fF+z+Xz3xzMtQqu5pLvoyaOJ0Xdj+UxxiWwnw8s8shRUt2tWuufCIA9C9g1ZtJbqPVGHkd5IxbqPs54zdzcCo3E91cbZoOLJLs0J6BGCGLmZDZ8yS5gf3eD6AXyNlkgObd1Lc0WITBfSy8ah/s4PQEyBGL0oNirYMQxeOzHM/5ZmFPQGW2MMZvWjFtko+M2WHZEFXXjc8MUwi1oCGtLqokXMqfcnnd3upY8x+/d79uNyql/FaPeffVa9tcJlX3cxMJ079EPckubEM60PllP0YhJGMBj2hLzHAgYRqpEFJBO33DMvI/Pg98epxs+Fjgu7iVa513VBKnydnh56P4NDw3HdqdgmrnqTIVskD0Nv8uN/JZLuXjJll18v9ifbp9B9T0YGtTvF8+mkPrciib6/n/+w8="
+ },
+ "sitzung": {
+  "start": "2026-11-18T20:31:41.533Z",
+  "ordner": "sitzung-20261118-213141",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "karte2.mensch.macht.wehrbau#1",
+    "s": 25.3,
+    "takte": 780,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wirt": [
+   {
+    "probe": "karte2.mensch.macht.wehrbau#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     187,
+     341.1
+    ],
+    "ungemessen": null
+   }
+  ],
+  "messHalt": [
+   {
+    "probe": "karte2.mensch.macht.wehrbau#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.mensch.macht.wehrbau#1",
+    "gehalten": [
+     "skala",
+     "spiegel",
+     "tiere"
+    ],
+    "offen": []
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 3200,
+   "frameP95": 25.08,
+   "taktP95": 20.18,
+   "vramMax": 134.3,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.mensch.macht.wehrbau#1",
+     "m": 1349,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 169,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 177.5,
+  "minuten": 3.04
+ }
+}
