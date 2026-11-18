@@ -28,7 +28,7 @@ class AnazhRealm_stoff_material {
         const t = quer.div(ql.max(1e-4)).mul(T.smoothstep(0.02, 0.12, ql));
         const n = T.normalize(nGeo.sub(t.mul(PC.halmQuer(A, uv.x, fw)))).mul(T.faceDirection);
         // der Pixel des Schirms in Metern quer über den Halm: fw Adern × aderM
-        const dach = T.smoothstep(H.dach.px[0], H.dach.px[1], fw.mul(H.aderM));
+        const dach = this._halmDach(T);
         mat.normalNode = T.cameraViewMatrix.transformDirection(
             T.normalize(T.mix(n, T.vec3(0.0, 1.0, 0.0), dach.mul(H.dach.oben)))
         );
@@ -39,6 +39,16 @@ class AnazhRealm_stoff_material {
         mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;
         mat.userData.halm = true;
         return mat;
+    }
+
+    // DAS DACH DER WIESE (licht.K1, `HALM_GESETZ.dach`): 0 → 1, wo der Pixel des Schirms quer mehrere Halme trägt (fw Adern ×
+    // aderM in Metern). EIN Knoten für jeden Halm-Stoff: die Normale des Dachs (`_halmStoff`) und der Volumen-Leser des
+    // Licht-Pools (`_lichtPlatz`) lesen denselben.
+    _halmDach(T) {
+        if (this._halmDachKnoten) return this._halmDachKnoten;
+        const H = globalThis.__phytoCore.HALM_GESETZ;
+        const fw = T.fwidth(T.uv().x).mul(this._ensureAtmoUniforms().schirmJeSzene);
+        return (this._halmDachKnoten = T.smoothstep(H.dach.px[0], H.dach.px[1], fw.mul(H.aderM)));
     }
 
     // DER HALM DER FERNE (w4-gras-saum, w4-gras-l2, `NAH_WIESE.fern`): derselbe Halm-Stoff (das Studio-Gras L2 der Nah-Wiese),
@@ -2095,15 +2105,17 @@ class AnazhRealm_stoff_material {
         const jeHimmel = jeBasis.get(basis);
         if (!jeHimmel.has(himmel || ohne)) jeHimmel.set(himmel || ohne, {});
         const knoten = jeHimmel.get(himmel || ohne);
-        const licht = mp && mp.licht ? String(mp.licht) : "";
+        // der Halm liest den Pool als VOLUMEN (`_lichtPlatz`): sein Dach ist Teil des Schlüssels des Knotens
+        const volumen = mat.userData.halm ? this._halmDach(Te) : null;
+        const licht = (mp && mp.licht ? String(mp.licht) : "") + (volumen ? "|volumen" : "");
         if (!knoten[licht]) {
             let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
-            if (licht) {
-                const glut = atmo.lichtGlut[licht];
-                if (!glut) throw new Error(`_leuchtStoff: das Licht-Datum „${licht}“ fehlt im Leuchtquellen-Gesetz`);
+            if (mp && mp.licht) {
+                const glut = atmo.lichtGlut[String(mp.licht)];
+                if (!glut) throw new Error(`_leuchtStoff: das Licht-Datum „${mp.licht}“ fehlt im Leuchtquellen-Gesetz`);
                 em = em.add(glut);
             }
-            knoten[licht] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+            knoten[licht] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null, volumen));
         }
         mat.emissiveNode = knoten[licht];
         mat.userData.lichtPool = true;
@@ -2284,7 +2296,7 @@ class AnazhRealm_stoff_material {
     // CPU. NICHT als Schleife: die fünf Punkte des Kaskaden-Filters (`_schattenFilter`) — eine Schleife mit Abtastung kostete
     // +0,35–0,47 ms GPU je Bild (der Treiber überlappt die Abgriffe nicht mehr) für −0,6 s Übersetzung; der Pool trägt keine.
     // Die Schleife lebt in einer Fn ohne Layout: nur in ihrem Bau hat `Loop` einen Stapel.
-    _lichtPoolTerm(Te, atmo, himmel) {
+    _lichtPoolTerm(Te, atmo, himmel, volumen = null) {
         const W = this._lichtWurf();
         return Te.Fn(() => {
             Te.normalView.toVar();
@@ -2299,7 +2311,9 @@ class AnazhRealm_stoff_material {
                 );
                 const platz = { lage, farbe, ersatz, kern, seite };
                 summe.addAssign(
-                    this._lichtPlatz(Te, platz, himmel).mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
+                    this._lichtPlatz(Te, platz, himmel, volumen).mul(
+                        Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k)))
+                    )
                 );
             });
             return summe;
@@ -2328,7 +2342,7 @@ class AnazhRealm_stoff_material {
     // der Fläche (der Boden: `aHimmel`) oder nichts. Der Abfall des Gesetzes, das Gewicht des Himmels-Ersatzes, die Bedingung
     // (Reichweite, Gewicht, Fläche in ihr und ihm zugewandt — sie liest `positionView` und `normalView`) und die EINE BRDF
     // (`_punktLichtBrdf`). → der Beitrag des Platzes ohne den Faktor des Wurfs.
-    _lichtPlatz(Te, platz, himmel) {
+    _lichtPlatz(Te, platz, himmel, volumen = null) {
         const N = Te.normalView;
         const P = Te.positionView;
         const { lage, farbe, ersatz, kern, seite } = platz;
@@ -2358,7 +2372,22 @@ class AnazhRealm_stoff_material {
             Fl.div(seite.mul(seite).max(1e-6)),
             Te.float(flach)
         ).mul(d.div(lage.w).pow2().pow2().oneMinus().clamp().pow2());
-        const E = F.dot(N);
+        // DER VOLUMEN-LESER (w28-strahler, `volumen` = das Dach der Wiese 0 → 1): Gras ist kein Boden, es ist ein Volumen stehender
+        // Halme — eine ebene Fläche bestrahlt den ebenen Boden in ihrer Ebene mit null, ein Halm am Rand sieht sie fast frontal.
+        // Wo der Pixel viele Halme trägt, liest er das Mittel über ihre Stellungen (Azimut gleichverteilt, beidseitig):
+        // 2/π × der waagrechte Anteil von F × der quer stehende Anteil der Halm-Fläche + der senkrechte × der liegende
+        // (`HALM_VOLUMEN`, gemessen an der Geometrie der Nah-Wiese); auf Armlänge liest der Halm seine eigene Normale.
+        let E = F.dot(N);
+        if (volumen) {
+            const V = AnazhRealm.HALM_VOLUMEN;
+            const oben = Te.cameraViewMatrix.element(1).xyz;
+            const hoch = F.dot(oben);
+            const mittel = F.sub(oben.mul(hoch))
+                .length()
+                .mul((2 / Math.PI) * V.quer)
+                .add(hoch.abs().mul(V.hoch));
+            E = Te.mix(E.max(0), mittel, volumen);
+        }
         const betrag = F.length().max(1e-6);
         const bedingung = lage.w
             .greaterThan(0)
@@ -3823,6 +3852,9 @@ _stammZonen(AnazhRealm, [AnazhRealm_stoff_material]);
 // Uniforms — ein Wechsel der Quellen baut kein Programm) an den Leuchtquellen im `umkreisM` um das Auge, deren Reichweite ihm
 // am nächsten kommt (das Licht des Auges, ein Feuer 9 m, eine Laterne 12 m, ein Tor 14 m), neu gewählt je `wahlS` Sekunden
 // oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt).
+// DIE STELLUNG DER HALM-FLÄCHEN (w28-strahler, der Volumen-Leser in `_lichtPlatz`): der flächen-gewichtete Anteil der
+// Flächen-Normalen quer und hoch — gemessen an der Geometrie der Nah-Wiese (Studio-Gras, 20 432 Dreiecke: 0,892 · 0,338).
+AnazhRealm.HALM_VOLUMEN = Object.freeze({ quer: 0.89, hoch: 0.34 });
 AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5 });
 // DIE NÄSSE (wetter.K2, `_naesseTakt` über `_naesseKurve`, `_naesseImStoff`): Regen benetzt mit τ = `benetzenS` / Regen-Stärke
 // (Wetter-Feld `rain` über `regenAb`; Regen 0,6 nach 10 min 0,91); ohne Regen VERDUNSTET der Film mit konstanter Rate (die erste
