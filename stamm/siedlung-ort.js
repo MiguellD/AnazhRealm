@@ -2034,6 +2034,7 @@ class AnazhRealm_siedlung_ort {
         return this._dorfBereiten(key, i2).then((b) => {
             if (this._dorfWeltGing(st, "Zelle " + key)) return null; // die Zelle und ihr Zug gehören der Welt, die sie rief
             this._autoSettlementPendingKey = null;
+            const vorrat = this._dorfVorraete.get(key);
             this._dorfVorraete.delete(key); // die Zelle ist erwacht: ihr Vorrat ist verbraucht
             if (!b) return null; // fail-closed (Foundry kalt)
             // DER ORT WIRD WELT: die Wahl steht im Gedächtnis des Orts (`_ortPlaene`), der Anker rückt an den Ort des Plans;
@@ -2055,11 +2056,18 @@ class AnazhRealm_siedlung_ort {
                 ort,
                 wachs: this._ortWachsAnfang(v2),
             };
+            // DER ZUG HEBT, WAS DER VORRAT BUK (siedlung.K5): die Reihe des Vorrats am Auge des Erwachens (`_dorfVorbacken`, höchstens
+            // `vorbackNeuM` Weg alt — der Takt liest sie je Gang neu) IST die Reihe des Zugs, EINE Quelle. Bis hier las der Zug
+            // seine eigene am Ort des Spielers: lag der zwei Meter neben dem Auge, hob er ein Haus am Rand des Schirms zuerst,
+            // dessen Stufe keiner bestellt hatte (gate:settlement C-K5, nH 300: das erste Haus im vierten Takt statt im zweiten).
+            // Ohne Vorrat-Reihe (der Sprung in den Ring: kein Takt las sie) liest der Zug am Spieler.
             this._autoSettlementQueue = this._dorfZug(
                 v2,
                 anchor,
                 key,
-                this._dorfErwachen(v2, anchor, ort, key, b.wasser)
+                this._dorfErwachen(v2, anchor, ort, key, b.wasser),
+                null,
+                vorrat && vorrat.v2 === v2 ? vorrat.reihe : null
             );
             return v2;
         }, this._ortWahlWartet(key));
@@ -2240,7 +2248,7 @@ class AnazhRealm_siedlung_ort {
             const auge = { x: o.x + (p.x - o.x) * k, z: o.z + (p.z - o.z) * k };
             const d2 = (e) => (e.position.x - auge.x) ** 2 + (e.position.z - auge.z) ** 2;
             const haeuser = [];
-            const reihe = this._dorfZug(w.v2, o, null, null, auge).reihe;
+            const reihe = (w.reihe = this._dorfZug(w.v2, o, null, null, auge).reihe); // der Zug des Erwachens hebt in ihr
             for (const si of reihe) {
                 const sl = w.v2.slots[si];
                 const type = this._slotBauplan(sl, f);
@@ -2427,7 +2435,17 @@ class AnazhRealm_siedlung_ort {
     }
     // `auge` (der Vorrat, `_dorfVorbacken`): die Reihe, wie sie der Spieler am Ring des Erwachens sieht — der Blick ist
     // verschiebe-gleich (`_imErstenBlick` misst vom Auge der Kamera), das Haus rückt um das, was dem Auge zum Spieler fehlt.
-    _dorfZug(plan, origin, cellKey, gang, auge) {
+    // `vorrat` (das Erwachen, `_autoSettlementSpawnCell`): die Reihe, die der Vorrat dieses Plans zuletzt las — der Zug hebt in ihr.
+    _dorfZug(plan, origin, cellKey, gang, auge, vorrat) {
+        if (vorrat)
+            return {
+                plan,
+                origin: { x: origin.x, z: origin.z },
+                idx: 0,
+                reihe: vorrat.slice(),
+                cellKey,
+                gang: gang || null,
+            };
         const pm = this.state.playerMesh;
         const p = auge || (pm ? pm.position : origin);
         const [vx, vz] = pm && auge ? [pm.position.x - auge.x, pm.position.z - auge.z] : [0, 0];

@@ -2349,7 +2349,7 @@ hauptLauf(async () => {
             const pm = st.playerMesh;
             const p0 = pm.position.clone();
             // kx, kz: die Zelle von C3 (oben einmal aus `key` gelesen)
-            const lauf = async (nH, vorlauf, alt, fern) => {
+            const lauf = async (nH, vorlauf, alt, fern, eigen) => {
                 st._frameOverBudget = false;
                 const seed = (cand.seed ^ Math.imul(nH * 2 + !vorlauf, 0x9e3779b1)) >>> 0;
                 r._autoSettlementCellInfo = (x, z) => (x === kx && z === kz ? { ...cand, seed, nH } : null);
@@ -2383,6 +2383,16 @@ hauptLauf(async () => {
                     return lift.call(this, sl, o, ...a);
                 };
                 const zug = r._dorfZug;
+                // DER ZUG HEBT, WAS DER VORRAT BUK (`ausVorrat`): der Zug des Erwachens dieser Zelle bekommt die Reihe, die ihr Vorrat
+                // zuletzt las (`_autoSettlementSpawnCell` → `_dorfZug` vorrat) — EINE Quelle. Bis w28-bau-rezept las er seine eigene am
+                // Spieler, zwei Meter neben dem Auge des Vorrats: nH 300 hob ein Haus am Rand des Schirms zuerst, dessen Stufe keiner
+                // bestellt hatte, das erste Haus stand im vierten Takt. `eigen` (Selbsttest) nimmt dem Zug die Reihe des Vorrats.
+                let [vrSpur, ausVorrat] = [null, null];
+                const lesen = (...a) => {
+                    if (a[2] === key) ausVorrat = !!vrSpur && a[5] === vrSpur.reihe;
+                    return zug.apply(r, a);
+                };
+                r._dorfZug = eigen ? (...a) => lesen(...a.slice(0, 5)) : lesen;
                 if (alt)
                     r._dorfZug = (p, o, k, g) =>
                         zug.call(
@@ -2396,7 +2406,8 @@ hauptLauf(async () => {
                             })()
                         );
                 // die Umkehr gilt vor dem Gang: die Bahn des Gangs (je Schritt 4 m) kann die Stadt schon wecken (`_bedarfZeit`)
-                if (fern) r._dorfZug = (...a) => ((q) => (q.reihe.reverse(), q))(zug.apply(r, a));
+                // (sie dreht die Reihe an ihrer Quelle — der Vorrat liest sie gedreht, der Zug des Erwachens hebt in ihr: einmal gedreht)
+                if (fern) r._dorfZug = (...a) => ((q) => (a[5] || q.reihe.reverse(), q))(lesen(...a));
                 const stell = (m) => (pm.position.set(cand.x + m, pm.position.y, cand.z), pm.position);
                 const nah = A.nearM + (cand.mehrM || 0); // der Ring, an dem die Zelle erwacht (`_autoSettlementZelle`)
                 // DER VORLAUF IST ZEIT (w13-dorf-strom): die Bahn naht mit 16 m/s 40 m jenseits des Rings der Sicht — der Ort
@@ -2406,6 +2417,7 @@ hauptLauf(async () => {
                 if (vorlauf) r._tickAutoSettlement(stell(nah + 200));
                 if (vorlauf) for (const v of r._dorfVorraete.values()) await v.fertig;
                 const vr = vorlauf && !alt && r._dorfVorraete.get(key);
+                vrSpur = vr || null;
                 for (let i = 0; vorlauf && !alt && i < 20; i++) r._tickAutoSettlement(pm.position);
                 // der Gang durch den Vorlauf-Ring (4 m/s, 20 s bis zum Ring): je 4 m ein Takt, der Vorrat liest die Reihe des Zugs,
                 // bis seine Stufen stehen — dann erwacht die Zelle am Ring (das Auge des Vorrats, `_dorfVorbacken`)
@@ -2462,6 +2474,7 @@ hauptLauf(async () => {
                         runden: r._ortTrasseMass.runden,
                         haus,
                         vorrat: vr?.vorgebacken,
+                        ausVorrat,
                         bild,
                         erstes,
                         nahImSchirm,
@@ -2469,7 +2482,7 @@ hauptLauf(async () => {
                 );
             };
             try {
-                for (const [k, nH, v, alt, fern] of [
+                for (const [k, nH, v, alt, fern, eigen] of [
                     ["vorlauf12", 12, 1],
                     ["vorlauf300", 300, 1],
                     ["fern300", 302, 1, 0, 1],
@@ -2477,8 +2490,9 @@ hauptLauf(async () => {
                     ["teleport300", 300, 0],
                     ["alt300", 301, 1, 1],
                     ["strecke13", 13, 1],
+                    ["eigen300", 303, 1, 0, 0, 1],
                 ])
-                    res.c.k5[k] = await lauf(nH, v, alt, fern);
+                    res.c.k5[k] = await lauf(nH, v, alt, fern, eigen);
                 const y = st.yaw;
                 const slot = (d, w, e = 3) => ({
                     x: d * Math.sin(y + w),
@@ -3701,10 +3715,19 @@ hauptLauf(async () => {
         w.erstes.stufe === "huelle" &&
         w.nahImSchirm &&
         `${w.erstes.typ} als Hülle in ${w.erstes.d} m vor dem nahen`;
+    const imBild = (w) => w.vorrat && w.ausVorrat && w.erstes && w.bild <= soll && !fernVorNah(w);
     check(
-        `C-K5: DAS ERSTE HAUS IM BILD — nH 12 und 300 ≤ ${soll} Takte nach dem Erwachen, das nahe zuerst, vorgebacken`,
-        je(["vorlauf12", "vorlauf300"], (w) => w.vorrat && w.erstes && w.bild <= soll && !fernVorNah(w)),
+        `C-K5: DAS ERSTE HAUS IM BILD — nH 12 und 300 ≤ ${soll} Takte nach dem Erwachen, das nahe zuerst, vorgebacken, der Zug in der Reihe des Vorrats`,
+        je(["vorlauf12", "vorlauf300"], imBild),
         k5
+    );
+    check(
+        // der Zug des Erwachens liest seine eigene Reihe am Spieler statt der des Vorrats (bis w28-bau-rezept der Stand des Spiels)
+        "C-K5 Selbsttest: der Zug mit eigener Reihe ist ROT beim Namen",
+        !!k5.eigen300 && !!k5.eigen300.vorrat && !k5.eigen300.ausVorrat && !imBild(k5.eigen300),
+        k5.eigen300
+            ? `der Zug hebt nicht in der Reihe des Vorrats (ausVorrat ${k5.eigen300.ausVorrat}), das erste Haus im Takt ${k5.eigen300.bild}`
+            : k5
     );
     check(
         "C-K5 Selbsttest: ein fernes Haus vor dem nahen ist ROT beim Namen",
