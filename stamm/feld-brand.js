@@ -236,40 +236,87 @@ class AnazhRealm_feld_brand {
             // w28-lava-zuendet) — tragen alle Brennstoff, liegt das Bett auf der ganzen Zelle, trägt keiner, liegt keins; nur
             // gemischt misst die Zelle ihre Maske. Die Stand-Linse BRAND-ZELLEN (Soll ≤ 64 Einheiten je Zelle und Schritt) nannte
             // 64 Punkte je Zündung mit 4 945 Einheiten bei 16 brennenden Zellen, 16 Punkte mit 2 609.
+            // DIE MASKE GEHT IM BUDGET DES BRANDS (w28-strahler): die gemischte Zelle brennt sofort auf ihrer GROBEN Maske (jeder
+            // Punkt des Gitters trägt den nächsten der fünf) und stellt ihre feine in die Reihe (`_brandMasken`) — der Takt misst
+            // sie Punkt um Punkt. Bis hier maß die Zündung alle 64 Punkte in ihrem Takt: 5,19 ms mit 2 Masken (Mess-Wiese,
+            // 3 600 Takte, GTX 1050; ohne Maske höchstens 3,0)
             const B = AnazhRealm.BRAND;
-            const messen = (P) => {
-                const [bett, je] = [new Uint8Array(P.length), new Map()];
-                P.forEach(([px, pz], k) => {
-                    const [dx, dz] = [px * cs, pz * cs];
-                    const s = this._stoff(this._kontaktStoffAt(x + dx, z + dz, y + gx * dx + gz * dz));
-                    if (s && s.brenn) ((bett[k] = 1), je.set(s, (je.get(s) || 0) + 1));
-                });
-                return { N: P.length, bett, je, n: bett.reduce((a, b) => a + b, 0) };
-            };
-            const fein = () =>
-                Array.from({ length: B.bettGitter ** 2 }, (_, k) => [
-                    ((k % B.bettGitter) + 0.5) / B.bettGitter - 0.5,
-                    (Math.floor(k / B.bettGitter) + 0.5) / B.bettGitter - 0.5,
-                ]);
-            const grob = messen(B.bettGrob);
-            const { N, bett, je, n } = grob.n > 0 && grob.n < grob.N ? messen(fein()) : grob;
+            const [G, P] = [B.bettGrob, AnazhRealm._brandGitter()];
+            const [roh, je] = [new Uint8Array(G.length), new Map()];
+            f = { leb, x, z, y, gx, gz };
+            G.forEach(([px, pz], k) => {
+                const s = this._brandBettPunkt(f, px, pz);
+                if (s) ((roh[k] = 1), je.set(s, (je.get(s) || 0) + 1));
+            });
+            const n = roh.reduce((a, b) => a + b, 0);
             const zeile = [...je].sort((a, b) => b[1] - a[1]).map((e) => e[0])[0];
-            if (zeile)
-                f = {
+            if (!zeile) f = null;
+            else {
+                const bett = n < G.length ? Uint8Array.from(P, (p) => roh[p[2]]) : null;
+                Object.assign(f, {
                     zeile,
-                    leb,
-                    anteil: n / N,
-                    bett: n < N ? bett : null,
-                    x,
-                    z,
-                    y,
-                    gx,
-                    gz,
+                    anteil: bett ? bett.reduce((a, b) => a + b, 0) / bett.length : 1,
+                    bett,
                     boden: this._feuchteAt(x, z, y),
-                };
+                });
+                if (bett)
+                    (this._brandMaskeReihe || (this._brandMaskeReihe = [])).push({
+                        key,
+                        f,
+                        i: 0,
+                        bett: new Uint8Array(P.length),
+                        je: new Map(),
+                    });
+            }
         }
         M.set(key, f);
         return f;
+    }
+
+    // Der Brennstoff unter EINEM Punkt des Betts (px, pz in Zellen um die Mitte, auf der Ebene des Gefälles) → seine Zeile der
+    // Stoff-Tafel oder null: die EINE Lese-Stelle der groben und der feinen Maske (`_brandStoff`, `_brandMasken`).
+    _brandBettPunkt(f, px, pz) {
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const [dx, dz] = [px * cs, pz * cs];
+        const s = this._stoff(this._kontaktStoffAt(f.x + dx, f.z + dz, f.y + f.gx * dx + f.gz * dz));
+        return s && s.brenn ? s : null;
+    }
+
+    // DIE FEINEN MASKEN IM TAKT DES BRANDS (w28-strahler): je Takt misst die vorderste Zelle der Reihe ihre nächsten Punkte — so
+    // viele, wie das Feuer Zellen trägt, durch `BRAND.maskeJe` (mindestens einen: es kostet, was brennt), und nie über die Frist
+    // des Takts hinaus. Steht die Maske ganz, trägt das Gemessene (`_brandBett`) und die brennende Zelle sie; `ganz` (ein
+    // Schlüssel) misst die Maske dieser Zelle zu Ende — ihre Asche schreibt die Maske in die Tat (`_brandArbeit`).
+    _brandMasken(frist, ganz = null) {
+        const Q = this._brandMaskeReihe;
+        if (!Q || !Q.length) return;
+        const [bf, P] = [this.state.brandFeld, AnazhRealm._brandGitter()];
+        const m = ganz === null ? Q[0] : Q.find((q) => q.key === ganz);
+        if (!m) return;
+        const bis = ganz === null ? Math.min(P.length, m.i + Math.max(1, Math.floor(bf.size / AnazhRealm.BRAND.maskeJe))) : P.length; // prettier-ignore
+        for (let k = 0; m.i < bis; m.i++, k++) {
+            if (k && ganz === null && performance.now() > frist) return;
+            const s = this._brandBettPunkt(m.f, P[m.i][0], P[m.i][1]);
+            if (s) ((m.bett[m.i] = 1), m.je.set(s, (m.je.get(s) || 0) + 1));
+        }
+        if (m.i < P.length) return;
+        Q.splice(Q.indexOf(m), 1);
+        const n = m.bett.reduce((a, b) => a + b, 0);
+        const zeile = [...m.je].sort((a, b) => b[1] - a[1]).map((e) => e[0])[0];
+        Object.assign(m.f, { anteil: n / P.length, bett: n < P.length ? m.bett : null }, zeile ? { zeile } : null);
+        const z = bf.get(m.key);
+        if (z && z.t0 !== null) z.bett = m.f.bett;
+    }
+
+    // Die Punkte des feinen Gitters einer Zelle → [px, pz, k]: ihre Lage in Zellen um die Mitte und der nächste der fünf groben
+    // Punkte (`BRAND.bettGrob`) — einmal gerechnet.
+    static _brandGitter() {
+        if (AnazhRealm._brandGitterP) return AnazhRealm._brandGitterP;
+        const [N, G] = [AnazhRealm.BRAND.bettGitter, AnazhRealm.BRAND.bettGrob];
+        return (AnazhRealm._brandGitterP = Array.from({ length: N * N }, (_, k) => {
+            const [px, pz] = [((k % N) + 0.5) / N - 0.5, (Math.floor(k / N) + 0.5) / N - 0.5];
+            const d = G.map(([gx, gz]) => Math.hypot(px - gx, pz - gz));
+            return [px, pz, d.indexOf(Math.min(...d))];
+        }));
     }
 
     // DIE FEUCHTE DES BETTS AM ORT (stoffe.K2#2) — Wasser je Trocken-Masse des toten Fein-Brennstoffs, EINE Funktion des Bodens
@@ -358,6 +405,7 @@ class AnazhRealm_feld_brand {
         if (!bf.size) {
             if (this._brandRest) this._brandArbeit(Infinity);
             [this._brandUhr, this._brandBett, this._brandRest, bf.glutBlock] = [st.spielZeit, null, null, null];
+            this._brandMaskeReihe = null;
         }
         return this._brandZuenden(cx, cz, st.spielZeit, x, z, ein);
     }
@@ -494,8 +542,9 @@ class AnazhRealm_feld_brand {
             }
             this._brandSchritt((this._brandUhr += dt));
         }
+        if (bf.size) this._brandMasken(frist);
         this._brandMalen();
-        if (!bf.size && !this._brandRest) this._brandBett = null; // erloschen: das Gemessene fällt
+        if (!bf.size && !this._brandRest) this._brandBett = this._brandMaskeReihe = null; // erloschen: das Gemessene fällt
     }
 
     // Ein Schritt zur Spielzeit t: wo die Feuchte das Bett erstickt (die Feuchte am Ort der Zelle über ihrem `mx`, der Front die
@@ -561,6 +610,7 @@ class AnazhRealm_feld_brand {
                 const z = R.aschen[R.i];
                 const [ax, az] = [(z.cx + 0.5) * cs, (z.cz + 0.5) * cs];
                 const w = Math.round(this._wuchsAt(ax, az, z.boden) * 1e3) / 1e3;
+                this._brandMasken(0, z.cx + "," + z.cz); // eine Maske, die noch in der Reihe steht, steht vor ihrer Asche ganz
                 // die Maske des Betts reist mit der Tat (je vier Punkte eine Hex-Ziffer): die Asche liegt nach jedem Laden, wo es lag
                 const hex =
                     z.bett &&
@@ -909,6 +959,7 @@ AnazhRealm.BRAND = Object.freeze({
         ].map(Object.freeze)
     ),
     bettGitter: 8, // … misst sie die Maske fein (8² Punkte, 2 m) …
+    maskeJe: 4, // … im Takt des Brands, je Takt ein Punkt je so viele Zellen des Feuers (`_brandMasken`) …
     bettKante: Object.freeze([0.35, 0.65]), // … und über diese Spanne der bilinearen Maske fällt seine Kante (`_brandBettFn`)
     licht: 4,
     budgetMs: 0.25, // so viel Arbeit eines Schritts geht je Bild (`_brandArbeit`) …

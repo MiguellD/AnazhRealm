@@ -539,7 +539,6 @@ function selbsttest() {
         ["kein Brand fängt (die Basis: kein Takt im Stamm)", ["simWecken.brand.start=", false], /LEER: an der Mess-Wiese fing kein Brand/],
         ["der Brand ohne Takt", (b) => b.simWecken.brand.einheiten.fill(0), /STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt/],
         ["der Brand fegt die Welt", ["simWecken.brand.einheiten.3=", 4000], /BRAND-ZELLEN: Schritt 4 kostete 4000 Einheiten bei 3 brennenden/],
-        ["eine Bett-Maske entschuldigt die Welt nicht", (b) => ((b.simWecken.brand.einheiten[3] = 9000), (b.simWecken.brand.masken = [0, 0, 0, 1, 0, 0])), /BRAND-ZELLEN: Schritt 4 kostete 9000 Einheiten bei 3 brennenden Zellen .*je gemessene Bett-Maske, hier 1/],
         ["der Brand erlischt im Regen nicht", ["simWecken.brand.brennt=", 7], /BRAND-ERLISCHT: im Regen brennen noch 7/],
         ["die Front kriecht mit dem Wind", ["simWecken.brand.mit=", 0.3], /FRONT-MIT: .* 0.3 m\/s/],
         ["die Front läuft gegen den Wind", ["simWecken.brand.gegen=", 0.3], /FRONT-GEGEN: .* 0.3 m\/s/],
@@ -1268,6 +1267,7 @@ function narbeUrteil(b) {
 // so weit reicht die Front nach 60 s mindestens längs der Kante (m): die neun Eintritte decken die Kante der Zelle (15,96 m),
 // der EINE Punkt trägt in 60 s seine Ellipse — das Band liegt zwischen den beiden gemessenen Ständen
 const LAVA_RAND_M = 12;
+const L3_MASKE_TAKTE = 64; // BRAND.bettGitter² Punkte, je Takt mindestens einer (`_brandMasken`)
 // je Achtel der Kante ein Eintritt (`_lavaZuendet`)
 const LAVA_EIN = 9;
 function lavaUrteil(b) {
@@ -1288,6 +1288,7 @@ function lavaUrteil(b) {
         km?.kanten >= 1 && km.einMax === 0 && km.spanneMax < LAVA_RAND_M ? "" : `MUTANTE-L2: ohne Eintritte (_brandFangen verwirft „ein“) liest die Linse ${km?.einMax} Eintritte und ${km?.spanneMax} m Front längs der Kante — sie sieht den EINEN Punkt nicht`,
         sv?.iw > 0 && sv.narbe?.[1] >= 0.5 && sh?.faengt && sh.gras >= 4 && sh.anteil >= 0.2 && sh.anteil <= 0.5 ? "" : `L3-LEER: keine Messung des Betts: die Probe-Zelle (${s.ort}) trägt ohne Eingriff H·w ${sv?.iw} und Asche ${sv?.narbe?.[1]} am Ort der Stein-Hälfte, mit Stein rechts der Mitte Anteil ${sh?.anteil}, gefangen ${sh?.faengt}, ${sh?.gras} Flammen auf dem Gras (verlangt ≥ 4)`,
         Math.abs(sh.iw - sh.iwSoll) <= 0.001 * sh.iwSoll && sh.leb === sh.aura ? "" : `L3-LAST: der Anteil des Betts geht als LAST ins Gesetz: mit Stein auf der halben Zelle H·w ${sh.iw} kJ/m² und leb ${sh.leb} statt ${sh.iwSoll} und ${sh.aura} des vollen Betts (Anteil ${sh.anteil}) — die Flamme auf dem Gras brennt kleiner; stamm/feld-brand.js _brandStoff (leb bleibt ganz)`,
+        sh.maske >= 2 && sh.maske <= L3_MASKE_TAKTE ? "" : `L3-MASKE: die feine Maske des Betts geht nicht im Takt des Brands: die Probe-Zelle trug sie ${sh.maske} Takte in der Reihe (verlangt 2 bis ${L3_MASKE_TAKTE}: unter 2 misst die Zündung alle Punkte in ihrem Takt — 5,19 ms mit 2 Masken an der Mess-Wiese —, darüber brennt die Zelle auf ihren fünf groben Punkten) — stamm/feld-brand.js _brandStoff · _brandMasken`,
         sh.stein === 0 ? "" : `L3-FLAMME: Flammen stehen auf dem Stein: ${sh.stein} Flammen-Lagen mehr als 1 m in der Stein-Hälfte der Zelle (${sh.gras} auf dem Gras) — stamm/feld-brand.js _brandBild liest das Bett nicht (_brandBettFn)`,
         sh.narbe?.[1] === 0 && sh.narbe[0] >= 0.5 ? "" : `L3-NARBE: die Asche liegt nicht auf dem Bett: nach dem Ausbrennen Asche ${sh.narbe?.[0]} auf dem Gras (verlangt ≥ 0,5) und ${sh.narbe?.[1]} auf dem Stein (verlangt 0) — stamm/feld-brand.js _brandFront · _brandZelle (die Maske der Tat)`,
         s.mutanteLast?.iw < 0.9 * s.mutanteLast?.iwSoll ? "" : `MUTANTE-L3-LAST: mit leb × Anteil (der Stand von w28-lava-zuendet) liest die Linse H·w ${s.mutanteLast?.iw} bei ${s.mutanteLast?.iwSoll} des vollen Betts — sie sieht die Last nicht`,
@@ -1624,14 +1625,20 @@ async function lavaSeite(MESS) {
             // „lebendig“ — über zwei Brände hinweg verglichen meldete die Probe sich selbst)
             const aura = r.auraAt(px, pz).lebendig;
             const f = r._brandStoff(pcx, pcz);
-            const o = { leb: f ? r3(f.leb) : null, aura: r3(aura), iwSoll: f ? r3((f.zeile.brenn.heiz / 1000) * f.zeile.brenn.last * Math.min(1, aura)) : null, anteil: f ? r3(f.anteil) : null, faengt: !!(f && r._brandFangen(px - cs / 4, pz)), gras: 0, stein: 0 };
+            const o = { leb: f ? r3(f.leb) : null, aura: r3(aura), iwSoll: f ? r3((f.zeile.brenn.heiz / 1000) * f.zeile.brenn.last * Math.min(1, aura)) : null, anteil: f ? r3(f.anteil) : null, faengt: !!(f && r._brandFangen(px - cs / 4, pz)), gras: 0, stein: 0, maske: 0 };
             const z = bf().get(pcx + "," + pcz);
             if (!o.faengt || !z) return o;
             [o.iw, o.R] = [r3(z.iw), r3(z.R)];
             for (o.s = 0; o.s < 900 && bf().get(pcx + "," + pcz) === z && schritt(); o.s++) {
                 r._brandBild(0);
+                // `maske`: so viele Takte steht die feine Maske der Zelle in der Reihe des Brands (`_brandMasken`) — bis dahin brennt sie
+                // auf ihrer groben (fünf Punkte), die Flammen auf dem Stein zählen ab der stehenden Maske
+                const grob = (r._brandMaskeReihe || []).some((m) => m.key === pcx + "," + pcz);
+                const g = !grob && r._brandBett && r._brandBett.get(pcx + "," + pcz);
+                if (grob) o.maske++;
+                else if (g) o.anteil = r3(g.anteil); // der Anteil der stehenden Maske (ein neuer Brand misst sein Bett neu)
                 for (const q of (r._brandFlammen || []).filter((q) => Math.floor(q.x / cs) === pcx && Math.floor(q.z / cs) === pcz))
-                    q.x > px + 1 ? o.stein++ : q.x < px - 1 ? o.gras++ : 0;
+                    q.x > px + 1 ? (grob ? 0 : o.stein++) : q.x < px - 1 ? o.gras++ : 0;
             }
             r._brandArbeit(Infinity);
             const nar = (x) => ((n) => (n ? r3(n.m * n.asche) : 0))(r._brandNarbe(x, pz));
@@ -1891,14 +1898,14 @@ if (SELBSTTEST) {
                     // die Lava-Linse (L1–L5): die Zahlen der Mess-Wiese; `l2` im Stand, in dem die Decke vor dem Zünden gemalt ist
                     l1: { brennend: 8, betten: 8, tK: 1650, tZuend: [523, 533], tau: 13956.667, mutante: 0, kalt: { brennend: 0, tK: 513, glut: 0 }, lau: { brennend: 8, tK: 543, glut: 0 } },
                     l2: { kanten: 4, ein: 9, einMax: 9, decke: 0, amRand: 7, tief: [-1.99, 3.51], uhr: 60, spanne: 16, spanneMax: 16, sicht: [5.75, 15.5, 16, 15.5], flammen: [24, 41, 18, 151], mutante: { kanten: 4, ein: 0, einMax: 0, decke: 0, amRand: 0, tief: null, uhr: 60, spanne: 1.75, spanneMax: 9.25, sicht: [4.75, 9.25, 9.25, 1.75], flammen: [19, 22, 19, 16] } },
-                    l3: { ort: "probe", voll: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 1, faengt: true, gras: 400, stein: 380, iw: 4200, R: 0.076, s: 250, narbe: [1, 1] }, halb: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 400, stein: 0, iw: 4200, R: 0.076, s: 250, narbe: [1, 0] }, mutanteLast: { leb: 0.401, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 300, stein: 0, iw: 2100, R: 0.04, s: 400, narbe: [1, 0] }, mutanteFlaeche: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 400, stein: 380, iw: 4200, R: 0.076, s: 250, narbe: [1, 1] } },
+                    l3: { ort: "probe", voll: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 1, faengt: true, gras: 400, stein: 380, iw: 4200, R: 0.076, s: 250, narbe: [1, 1] }, halb: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 400, stein: 0, maske: 64, iw: 4200, R: 0.076, s: 250, narbe: [1, 0] }, mutanteLast: { leb: 0.401, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 300, stein: 0, iw: 2100, R: 0.04, s: 400, narbe: [1, 0] }, mutanteFlaeche: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 400, stein: 380, iw: 4200, R: 0.076, s: 250, narbe: [1, 1] } },
                     l4: { punkte: 32, max: 0, decke: [0.043, 0.962], aussen: 1, asche: 0, mutante: { max: 0.957, ueber0: 32 } },
                     l5: { quellen: 1, max: 7.918, min: 6.777, kern: 8, kernSoll: 8, zeit: 0, hoch: 0, herd: 45, glut: 1, soll: 7.5, mutante: { quellen: 1, max: 519.05, min: 444.211, kern: 0.76, kernSoll: 8, zeit: 1, hoch: 1, herd: 45, glut: 1, soll: 7.5 } },
                     l6: { regler: { dStunde: 0, dTemp: 0, dUhr: 0, dAschen: 0 }, sprung: { s: 600, dStunde: 4, tempVor: 1377, tempNach: 900, dBrandUhr: 600, schritte: 30, zuend: 110, takte: 40, aschen: 35 }, mutanteSicht: { regler: { dStunde: 4, dTemp: -400, dUhr: 0, dAschen: 0 } }, mutanteSchleife: { sprung: { schritte: 600 } } },
                 },
                 [["N1-LEER", "n1.brennt", false], ["N1-LEER", "n1.s", 3], ["N1-LEER", "n1.fernAn", 12], ["N1-WARTET", "n1.zuend", 0], ["N1-QUADRAT", "n1.fern", 0.9], ["MUTANTE-N1-WARTET", "n1.mutanteWartet.zuend", 1], ["MUTANTE-N1-QUADRAT", "n1.mutanteQuadrat.fern", 0], ["N2-ENDE", "n2.dauer", 31.5], ["MUTANTE-N2", "n2.mutante.dauer", 52.4], ["MUTANTE-N2", "n2.mutante", null], ["N3-LEER", "n3.gemessen", 0], ["N3-LICHT", "n3.max", 5.3, "n3.mitte", true], ["MUTANTE-N3", "n3.mutante.max", 0], ["N4-LEER", "n4.gebaut", false], ["N4-ZEILE", "n4.abrufe", 0], ["MUTANTE-N4", "n4.mutante", 1], ["N5-LEER", "n5.paare", 2], ["N5-LEER", "n5.mass", null], ["N5-SAUM", "n5.mass", 1.6, "n5.abstand", 1.123, "n5.breite", 0.702], ["MUTANTE-N5", "n5.mutante.mass", 1.187], ["MUTANTE-N5", "n5.mutante.paare", 2], ["MUTANTE-N5", "n5.mutante", null], ["N6-LEER", "n6.flammen", 3], ["N6-LEER", "n6.sigma", null], ["N6-BAND", "n6.sigma", 0, "n6.min", 1, "n6.max", 1], ["MUTANTE-N6", "n6.mutante.sigma", 0.246], ["MUTANTE-N6", "n6.mutante.flammen", 3], ["MUTANTE-N6", "n6.mutante", null], ["N7-UHR", "n7.tag", 16], ["MUTANTE-N7-TON", "n7.mutanteTon.tag", 5.6], ["N7-LEER", "n7.quellen", 0], ["N7-LEER", "n7.herd", 1], ["N7-SCHEIN", "n7.max", 460], ["N7-SCHEIN", "n7.zeit", 4], ["N7-DUNKEL", "n7.max", 1], ["MUTANTE-N7", "n7.mutante.max", 8.2], ["MUTANTE-N7", "n7.mutante.zeit", 0], ["MUTANTE-N7", "n7.mutante", null],
                     // die Täter der Lava-Linse: je Fall der Stand vor w28-lava-zuendet (L2-DECKE: der Kopf 163a65de — alle Eintritte 2 m in der Zelle der Lava)
-                    ["LEER", "l3", null], ["L1-LEER", "l1.betten", 0, "l1.brennend", 0], ["L1-LEER", "l1.kalt.tK", 600], ["L1-LEER", "l1.lau", null], ["L1-ZÜNDUNG", "l1.brennend", 0], ["L1-ZÜNDUNG", "l1.brennend", 5], ["L1-KALT", "l1.kalt.brennend", 8], ["L1-LAU", "l1.lau.brennend", 0], ["MUTANTE-L1", "l1.mutante", 8], ["L2-LEER", "l2.kanten", 0], ["L2-LEER", "l2.uhr", 12], ["L2-EIN", "l2.ein", 0], ["L2-DECKE", "l2.decke", 1, "l2.tief", [-1.99, -1.99]], ["L2-DECKE", "l2.decke", 0.3], ["L2-ABSEITS", "l2.amRand", 0], ["L2-SPANNE", "l2.spanne", 9.25], ["MUTANTE-L2", "l2.mutante.einMax", 9], ["MUTANTE-L2", "l2.mutante.spanneMax", 16], ["MUTANTE-L2", "l2.mutante", null], ["L3-LEER", "l3.voll", null], ["L3-LEER", "l3.voll.narbe", [1, 0]], ["L3-LEER", "l3.halb.faengt", false], ["L3-LEER", "l3.halb.gras", 2], ["L3-LEER", "l3.halb.anteil", 1], ["L3-LAST", "l3.halb.iw", 2100, "l3.halb.leb", 0.401], ["L3-LAST", "l3.halb.leb", 0.401], ["L3-FLAMME", "l3.halb.stein", 25], ["L3-NARBE", "l3.halb.narbe", [1, 0.946]], ["L3-NARBE", "l3.halb.narbe", [0, 0]], ["MUTANTE-L3-LAST", "l3.mutanteLast.iw", 4200], ["MUTANTE-L3-LAST", "l3.mutanteLast", null], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.stein", 0], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.narbe", [1, 0]], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche", null], ["L4-LEER", "l4.punkte", 0], ["L4-LEER", "l4.aussen", 0], ["L4-HALM", "l4.max", 0.957], ["MUTANTE-L4", "l4.mutante.max", 0], ["MUTANTE-L4", "l4.mutante", null], ["L5-LEER", "l5.quellen", 0], ["L5-LEER", "l5.herd", 1], ["L5-SCHEIN", "l5.max", 519.05], ["L5-SCHEIN", "l5.zeit", 1], ["L5-DUNKEL", "l5.max", 1], ["L5-KERN", "l5.kern", 0.76], ["L5-HÖHE", "l5.hoch", 1], ["MUTANTE-L5", "l5.mutante.max", 7.918], ["MUTANTE-L5", "l5.mutante.zeit", 0], ["MUTANTE-L5", "l5.mutante.hoch", 0], ["MUTANTE-L5", "l5.mutante", null],
+                    ["LEER", "l3", null], ["L1-LEER", "l1.betten", 0, "l1.brennend", 0], ["L1-LEER", "l1.kalt.tK", 600], ["L1-LEER", "l1.lau", null], ["L1-ZÜNDUNG", "l1.brennend", 0], ["L1-ZÜNDUNG", "l1.brennend", 5], ["L1-KALT", "l1.kalt.brennend", 8], ["L1-LAU", "l1.lau.brennend", 0], ["MUTANTE-L1", "l1.mutante", 8], ["L2-LEER", "l2.kanten", 0], ["L2-LEER", "l2.uhr", 12], ["L2-EIN", "l2.ein", 0], ["L2-DECKE", "l2.decke", 1, "l2.tief", [-1.99, -1.99]], ["L2-DECKE", "l2.decke", 0.3], ["L2-ABSEITS", "l2.amRand", 0], ["L2-SPANNE", "l2.spanne", 9.25], ["MUTANTE-L2", "l2.mutante.einMax", 9], ["MUTANTE-L2", "l2.mutante.spanneMax", 16], ["MUTANTE-L2", "l2.mutante", null], ["L3-LEER", "l3.voll", null], ["L3-LEER", "l3.voll.narbe", [1, 0]], ["L3-LEER", "l3.halb.faengt", false], ["L3-LEER", "l3.halb.gras", 2], ["L3-LEER", "l3.halb.anteil", 1], ["L3-LAST", "l3.halb.iw", 2100, "l3.halb.leb", 0.401], ["L3-LAST", "l3.halb.leb", 0.401], ["L3-MASKE", "l3.halb.maske", 0], ["L3-MASKE", "l3.halb.maske", 200], ["L3-FLAMME", "l3.halb.stein", 25], ["L3-NARBE", "l3.halb.narbe", [1, 0.946]], ["L3-NARBE", "l3.halb.narbe", [0, 0]], ["MUTANTE-L3-LAST", "l3.mutanteLast.iw", 4200], ["MUTANTE-L3-LAST", "l3.mutanteLast", null], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.stein", 0], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.narbe", [1, 0]], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche", null], ["L4-LEER", "l4.punkte", 0], ["L4-LEER", "l4.aussen", 0], ["L4-HALM", "l4.max", 0.957], ["MUTANTE-L4", "l4.mutante.max", 0], ["MUTANTE-L4", "l4.mutante", null], ["L5-LEER", "l5.quellen", 0], ["L5-LEER", "l5.herd", 1], ["L5-SCHEIN", "l5.max", 519.05], ["L5-SCHEIN", "l5.zeit", 1], ["L5-DUNKEL", "l5.max", 1], ["L5-KERN", "l5.kern", 0.76], ["L5-HÖHE", "l5.hoch", 1], ["MUTANTE-L5", "l5.mutante.max", 7.918], ["MUTANTE-L5", "l5.mutante.zeit", 0], ["MUTANTE-L5", "l5.mutante.hoch", 0], ["MUTANTE-L5", "l5.mutante", null],
                     ["L6-LEER", "l6.sprung.tempVor", 20], ["L6-SICHT", "l6.regler.dStunde", 4], ["L6-SICHT", "l6.regler.dTemp", -400], ["L6-SICHT", "l6.regler.dUhr", 600], ["L6-SPRUNG", "l6.sprung.dStunde", 0], ["L6-SPRUNG", "l6.sprung.tempNach", 1377], ["L6-SPRUNG", "l6.sprung.dBrandUhr", 0], ["L6-SCHLEIFE", "l6.sprung.schritte", 600], ["MUTANTE-L6-SICHT", "l6.mutanteSicht.regler.dStunde", 0], ["MUTANTE-L6-SICHT", "l6.mutanteSicht", null], ["MUTANTE-L6-SCHLEIFE", "l6.mutanteSchleife.sprung.schritte", 30],
                 ]
             ),
@@ -2902,7 +2909,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         // die die nahen Regionen danach nachholen, steht dem Entfachen nicht voran (`_feldFolgeSteht`, wie in `brandSeite`)
                         r._feldFolgeSteht = () => true;
                         const lauf = async (n) => {
-                            const [Z, H, bf, gesehen] = [{ zellen: [], einheiten: [], masken: [], start: !!r._brandEntfachen(MESS.x, MESS.z) }, new Map(), st.brandFeld, new Set()];
+                            const [Z, H, bf] = [{ zellen: [], einheiten: [], start: !!r._brandEntfachen(MESS.x, MESS.z) }, new Map(), st.brandFeld];
                             S.frame();
                             for (let i = 0; i < n && bf.size; i++) {
                                 const vor = bf.size;
@@ -2910,11 +2917,6 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 takt();
                                 Z.zellen.push(Math.max(vor, bf.size));
                                 Z.einheiten.push(S.frame().brand);
-                                // die Zellen, die in diesem Schritt die Maske ihres Betts maßen (eine Zelle mit Bett-Kante, einmal je Brand):
-                                // die neuen Einträge des Gemessenen (`_brandBett`) mit Brennstoff UND Kahlem
-                                let masken = 0;
-                                for (const [k, f] of r._brandBett || []) if (f && f.anteil > 0 && f.anteil < 1 && !gesehen.has(k)) gesehen.add(k), masken++;
-                                Z.masken.push(masken);
                                 for (const [k, c] of bf) {
                                     const q = bf.get(c.von);
                                     const [dx, dz] = q && q.t0 !== null ? [c.ex - q.ex, c.ez - q.ez] : [0, 0];
