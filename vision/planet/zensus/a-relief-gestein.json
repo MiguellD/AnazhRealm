@@ -1,0 +1,2357 @@
+[
+ {
+  "id": "a1",
+  "name": "Welt-Form: Höhe als Funktion f(x,z)",
+  "groesse": "weltgroesse",
+  "domaene": "welt",
+  "wert": "unbegrenzte Ebene, Float64, keine Klemme und kein Wrap in x/z",
+  "einheit": "m",
+  "ort": "gelaende-core.js:2819",
+  "leser": [
+   "stamm/gelaende-boden.js:734 – _terrainMacroSurfaceY: die EINE 2D-Höhe, 18 Rufer im Stamm",
+   "voxel-worker.js:1652 – G.dichteGitter → Chunk-Mesh",
+   "gelaende-core.js:7186 – dichteSpalte: surf der 3D-Dichte"
+  ],
+  "urteil": "folgt",
+  "woraus": "hoeheGrund (gelaende-core.js:2836) faltet die Terme, Erdbau als letzter Term (:2825); der Wildnis-Term trägt keine Koordinaten-Grenze",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "gemessen nah ≈ fern (§2). Grenzen setzen nur Schlüssel, Float32 und das Rauschen (Zeilen unten)"
+ },
+ {
+  "id": "a2",
+  "name": "Ursprung / erster Spawn",
+  "groesse": "koordinate",
+  "domaene": "welt",
+  "wert": "(0, 50, 0)",
+  "einheit": "m",
+  "ort": "stamm/gelaende-chunks.js:1392",
+  "leser": [
+   "stamm/gelaende-chunks.js:1392 – die Spielfigur steht beim ersten Welt-Bau dort"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Spawn-Punkt beim Welt-Bau; die Heimat-Hydroregion liegt um den Ursprung (±1024 m, stamm/gelaende-boden.js:592)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a3",
+  "name": "Achsen",
+  "groesse": "koordinate",
+  "domaene": "welt",
+  "wert": "x = Ost, z = Süd, y oben, rechtshändig",
+  "einheit": "m",
+  "ort": "planet-core.js:2241",
+  "leser": [
+   "planet-core.js:2245 – Würfel-Karte um den Anker (auf/ost/nord) der Reise-Orte"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Konvention, im Code benannt (planet-core.js:2241)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "nur der Planet nennt sie; das Heimat-Relief trägt keine Himmelsrichtung"
+ },
+ {
+  "id": "a4",
+  "name": "Saat der Heimat",
+  "groesse": "samen",
+  "domaene": "welt",
+  "wert": "\"anazh-realm-seed\"",
+  "einheit": "Text",
+  "ort": "stamm/speicher-welten.js:64",
+  "leser": [
+   "stamm/gelaende-boden.js:761 – Saat der Lage → lageRausch → jedes noise2D der Höhe",
+   "voxel-worker.js:1556 – state.noise im Faden"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "stamm/speicher-welten.js:27: die allererste Welt fällt auf diese Saat, damit sie ihr Aussehen behält (Anker eigenes Bild)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:2736",
+   "stamm/gelaende-chunks.js:366",
+   "stamm/feld-leben.js:1794",
+   "voxel-worker.js:1404",
+   "voxel-worker.js:1513"
+  ],
+  "anmerkung": "das Literal steht 47× in 20 Spiel-Dateien (grep -c), je als Fallback"
+ },
+ {
+  "id": "a5",
+  "name": "Rausch-Strom der Höhe",
+  "groesse": "samen",
+  "domaene": "welt",
+  "wert": "Saat + \":voxel\"",
+  "einheit": "Text",
+  "ort": "gelaende-core.js:5679",
+  "leser": [
+   "gelaende-core.js:5986 – lageRausch: new Rausch(seed + strom)",
+   "voxel-worker.js:1556 – Rauschen des Fadens"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Name des Stroms",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a6",
+  "name": "Basis-Höhe",
+  "groesse": "basis_hoehe",
+  "domaene": "welt",
+  "wert": "0 (DSL −50…50)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:5679",
+  "leser": [
+   "stamm/gelaende-boden.js:769 – L.baseHeight = state.terrainBaseHeight",
+   "gelaende-core.js:598 – K = base + off + 0,3·rel",
+   "gelaende-core.js:1898 – Tiefsee-Klemme base − 112",
+   "gelaende-core.js:7212 – Höhlen-Boden base − 28"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Grund jeder Welt (gelaende-core.js:5676)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:2736",
+   "stamm/dirigent-kern.js:283"
+  ],
+  "anmerkung": "die DSL terrain_base_height hebt die ganze Welt (stamm/feld-dsl.js:970); Talgrund-Fallback addiert die Basis doppelt (gelaende-core.js:1136)"
+ },
+ {
+  "id": "a7",
+  "name": "Meer unter Basis",
+  "groesse": "meeresspiegel",
+  "domaene": "welt",
+  "wert": "3 → Spiegel −3",
+  "einheit": "m",
+  "ort": "gelaende-core.js:5679",
+  "leser": [
+   "stamm/bild-himmel.js:485 – state.waterLevel = Basis − meerUnterBasisM",
+   "gelaende-core.js:670 – Senke der Ebene 0: Meer (h < wl) oder benannter See",
+   "gelaende-core.js:707 – Meer-Sohle min(hp, wl − 2)",
+   "gelaende-core.js:1885 – Bathymetrie unter wl"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Grund jeder Welt",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:2736",
+   "gelaende-core.js:520",
+   "gelaende-core.js:7190",
+   "gelaende-core.js:1292",
+   "gelaende-core.js:1327",
+   "stamm/gelaende-chunks.js:370",
+   "stamm/gelaende-chunks.js:716",
+   "stamm/gelaende-boden.js:379"
+  ],
+  "anmerkung": "zählt der Wasser-Zensus; steht hier, weil das Relief ihn liest. Die Fallbacks widersprechen sich: base+4 (:520, :7190), base−3 (:1292, :1327), 0 im Stamm"
+ },
+ {
+  "id": "a8",
+  "name": "Hydro-Kachel",
+  "groesse": "kachel",
+  "domaene": "welt",
+  "wert": "2048 (Schlüssel als Text, unbegrenzt)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:5679",
+  "leser": [
+   "stamm/daten.js:203 – HYDROSPHERE.regionSize",
+   "gelaende-core.js:7020 – hydroRegion wählt die Kachel über kachelSchluessel (:25)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Grund jeder Welt",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:2736"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "a9",
+  "name": "Float32-Lage der Boden-Vertices",
+  "groesse": "koordinate",
+  "domaene": "welt",
+  "wert": "0,0625 ab 524 288 m; 0,125 ab 1 048 576 m",
+  "einheit": "m",
+  "ort": "voxel-worker.js:3939",
+  "leser": [
+   "voxel-worker.js:3968 – bodenKarte liest die Lage",
+   "voxel-worker.js:3971 – muldeEcken liest die Lage"
+  ],
+  "urteil": "folgt",
+  "woraus": "ULP von Float32 an der absoluten Weltlage (Lehre 22), gemessen §2",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a10",
+  "name": "Rausch-Periode (vendor)",
+  "groesse": "rausch_periode",
+  "domaene": "welt",
+  "wert": "256/√3 = 147,80 Einheiten diagonal; Kontinent 1330 km",
+  "einheit": "Rausch-Einheit",
+  "ort": "vendor/simplex-noise.js:54",
+  "leser": [
+   "gelaende-core.js:573 – Kontinent C wiederholt sich alle 1330 km diagonal",
+   "gelaende-core.js:576 – Erosion E alle 473 km",
+   "gelaende-core.js:7216 – Höhlen-Wurm alle 4,9 km"
+  ],
+  "urteil": "folgt",
+  "woraus": "perm[i & 255] (vendor/simplex-noise.js:54, :118)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "gemessen: |Δ| 4,4e−13 diagonal, 1,70 nur in x"
+ },
+ {
+  "id": "a11",
+  "name": "Grenze Erdbau-Zelle",
+  "groesse": "weltgroesse",
+  "domaene": "welt",
+  "wert": "±524 288 (Zelle 16 m × 32 768)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:2129",
+  "leser": [
+   "gelaende-core.js:2211 – erdbauY fragt die Zelle → Höhe des Orts"
+  ],
+  "urteil": "folgt",
+  "woraus": "(Zelle + 32768)·65536, zelleM 16 (gelaende-core.js:2094)",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:2211"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "a12",
+  "name": "Grenze Edit-Karte",
+  "groesse": "weltgroesse",
+  "domaene": "welt",
+  "wert": "±1 415 577,6 (32 768 Chunks × 43,2 m)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:7276",
+  "leser": [
+   "voxel-worker.js:1637 – Edits je Chunk im Faden",
+   "stamm/gelaende-boden.js:1448 – Edits je Chunk im Stamm"
+  ],
+  "urteil": "folgt",
+  "woraus": "(cx + 32768)·65536 + (cz + 32768)",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [
+   "stamm/gelaende-boden.js:1011",
+   "stamm/gelaende-boden.js:1471"
+  ],
+  "anmerkung": "gemessen: Schlüssel(0, 32768) = Schlüssel(1, −32768)"
+ },
+ {
+  "id": "a13",
+  "name": "Grenze Bahn-Gitter",
+  "groesse": "weltgroesse",
+  "domaene": "welt",
+  "wert": "±1 048 560 (16-m-Zellen, gx·131071 + gz)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:319",
+  "leser": [
+   "gelaende-core.js:337 – bahnOrt: nächster Punkt der Bahn über das Gitter → bahnY (:349)"
+  ],
+  "urteil": "folgt",
+  "woraus": "Packung gx·131071 + gz",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a14",
+  "name": "Grenze Grundriss-Zelle",
+  "groesse": "weltgroesse",
+  "domaene": "welt",
+  "wert": "±1 048 576 (32 m × 32 768)",
+  "einheit": "m",
+  "ort": "stamm/vegetation-baum.js:3288",
+  "leser": [
+   "stamm/vegetation-baum.js:1034 – Streu meidet Grundrisse",
+   "stamm/siedlung-ort.js:2651 – Grundriss-Stand"
+  ],
+  "urteil": "folgt",
+  "woraus": "Packung (gx + 0x8000)·0x10000, GRUNDRISS_ZELLE 32 (:3287)",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a15",
+  "name": "Klemme der Bühnen-Terme",
+  "groesse": "weltgroesse",
+  "domaene": "welt",
+  "wert": "±100 000",
+  "einheit": "m",
+  "ort": "gelaende-core.js:114",
+  "leser": [
+   "gelaende-core.js:35 – termY setzt Insel/Rampe/Bucht/Rinne/Bahn nur innerhalb"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Normalform erbgutNormal",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:129",
+   "gelaende-core.js:140",
+   "gelaende-core.js:171",
+   "gelaende-core.js:223"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "a16",
+  "name": "Vertikal-Band der Chunks",
+  "groesse": "hoehen_band",
+  "domaene": "welt",
+  "wert": "base −135 … +282,6 (232 × 1,8 = 417,6)",
+  "einheit": "m",
+  "ort": "stamm/gelaende-boden.js:2740",
+  "leser": [
+   "stamm/gelaende-boden.js:2681 – oy des Chunk-Gitters",
+   "voxel-worker.js:1652 – Dichte-Gitter über das Band"
+  ],
+  "urteil": "folgt",
+  "woraus": "dimY·step = 417,6 − floorDrop 135",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:1991"
+  ],
+  "anmerkung": "Kommentar :2724 „Gipfel ~+247 m, Tiefsee bis ~−144 m\" — gemessen max 190 m, Klemme base −120"
+ },
+ {
+  "id": "a17",
+  "name": "Zahl der Terme",
+  "groesse": "landform",
+  "domaene": "relief",
+  "wert": "1–32",
+  "einheit": "Terme",
+  "ort": "gelaende-core.js:93",
+  "leser": [
+   "gelaende-core.js:2840 – hoeheGrund: Term 0 legt die Höhe, jeder weitere formt sie"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Normalform",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "die Heimat trägt [wildnis]; Terme kommen aus worldMeta.gesetz.gelaende (Plan-, Studio-, Reise-Welt)"
+ },
+ {
+  "id": "a18",
+  "name": "Insel-Term",
+  "groesse": "insel",
+  "domaene": "relief",
+  "wert": "r 10–5000, plateau −100…200, kuppel 0–0,05, schelf 1–1000, grund −120…0",
+  "einheit": "m",
+  "ort": "gelaende-core.js:116",
+  "leser": [
+   "gelaende-core.js:35 – termY: Plateau, Kuppel, Schelf, Grund per smoothstep"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Grenzen der Normalform",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a19",
+  "name": "Rampen-Term",
+  "groesse": "rampe",
+  "domaene": "relief",
+  "wert": "winkel 1–60°, lauf 1–500, breite 1–500, krone 0–500, böschung 10–80°",
+  "einheit": "m / °",
+  "ort": "gelaende-core.js:123",
+  "leser": [
+   "gelaende-core.js:35 – termY: Rampe addiert"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Grenzen der Normalform",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a20",
+  "name": "Bucht-Term",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": "sohle 4–500, grund −100…50, ufer 5–60°, kolkTiefe 0–30",
+  "einheit": "m / °",
+  "ort": "gelaende-core.js:155",
+  "leser": [
+   "gelaende-core.js:35 – termY: Bucht als Minimum"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Grenzen der Normalform",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a21",
+  "name": "Rinnen-Term",
+  "groesse": "fluss_netz",
+  "domaene": "relief",
+  "wert": "sohle 2–200, ufer 5–80°, quelle/mündung −100…200, einzug 0,01–1000 km²",
+  "einheit": "m / ° / km²",
+  "ort": "gelaende-core.js:188",
+  "leser": [
+   "gelaende-core.js:35 – termY: Rinne als Minimum"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Grenzen der Normalform",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a22",
+  "name": "Bahn-Term",
+  "groesse": "bahn",
+  "domaene": "relief",
+  "wert": "breite 4–40, höhe −100…200, böschung 10–60°, übergang 0–100, ds 1; Landung R 80",
+  "einheit": "m / °",
+  "ort": "gelaende-core.js:212",
+  "leser": [
+   "gelaende-core.js:35 – termY: Bahn mit Böschung"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Grenzen der Normalform; R 80 m aus v²/R < g bis 28 m/s (:300)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a23",
+  "name": "land",
+  "groesse": "landform",
+  "domaene": "relief",
+  "wert": "0,35 (−0,6…0,9)",
+  "einheit": "1",
+  "ort": "gelaende-core.js:381",
+  "leser": [
+   "gelaende-core.js:574 – C-Versatz → OFFSET-Spline (:577) und Küste (:578)",
+   "planet-core.js:2321 – Reise: land aus der Kontinentalität"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "gemessen Land-Anteil 96–100 % (600 Streu-Adressen über 2000 km), Meer ~1,5 %"
+ },
+ {
+  "id": "a24",
+  "name": "kontinentLambda",
+  "groesse": "relief_wellenlaenge",
+  "domaene": "relief",
+  "wert": "9000 (3000–24000)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:382",
+  "leser": [
+   "gelaende-core.js:571 – Frequenz des Kontinent-Felds C"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "die Reise setzt def (planet-core.js:2323): reist nie"
+ },
+ {
+  "id": "a25",
+  "name": "hoehe (Relief-Skala)",
+  "groesse": "relief_amplitude",
+  "domaene": "relief",
+  "wert": "1 (0,2–1,6)",
+  "einheit": "1",
+  "ort": "gelaende-core.js:383",
+  "leser": [
+   "gelaende-core.js:579 – rel = Spline(E)·hoehe·Küste",
+   "planet-core.js:2322 – Reise: 0,6 + Steile"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a26",
+  "name": "rauhLambda",
+  "groesse": "relief_wellenlaenge",
+  "domaene": "relief",
+  "wert": "3200 (1200–9000)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:384",
+  "leser": [
+   "gelaende-core.js:575 – Frequenz des Erosions-Felds E (Gebirge)",
+   "planet-core.js:2324 – Reise"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a27",
+  "name": "OFFSET-Spline C → m",
+  "groesse": "ebene",
+  "domaene": "relief",
+  "wert": "C −1…1 → −48…+62 (8 Stützen; 0 bei C −0,2)",
+  "einheit": "m über Basis",
+  "ort": "gelaende-core.js:405",
+  "leser": [
+   "gelaende-core.js:577 – off → K (:598) und Hebung U (:599)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild (Fritsch–Carlson-Spline :427)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a28",
+  "name": "RELIEF-Spline E → m",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "E −1…1 → 175…2 (7 Stützen)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:415",
+  "leser": [
+   "gelaende-core.js:579 – rel: Hülle über dem Talgrund (:1142)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a29",
+  "name": "Küsten-Rampe",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": "glatt(−0,28; 0,12; C) → Relief × (0,15 … 1)",
+  "einheit": "1",
+  "ort": "gelaende-core.js:578",
+  "leser": [
+   "gelaende-core.js:579 – flacht das Relief an der Küste"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a30",
+  "name": "Oktaven von C und E",
+  "groesse": "relief_wellenlaenge",
+  "domaene": "relief",
+  "wert": "C = (n + 0,45·n(×2,7))/1,45; E = (n + 0,4·n(×2,3))/1,4",
+  "einheit": "1",
+  "ort": "gelaende-core.js:573",
+  "leser": [
+   "gelaende-core.js:577 – off",
+   "gelaende-core.js:579 – rel"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a31",
+  "name": "Warp der Großform",
+  "groesse": "relief_wellenlaenge",
+  "domaene": "relief",
+  "wert": "0,00026 /m (λ ≈ 3846 m), ±70 m",
+  "einheit": "m",
+  "ort": "gelaende-core.js:1265",
+  "leser": [
+   "gelaende-core.js:569 – verzieht C, E und Stil"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:1268"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "a32",
+  "name": "Grundhöhe K",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "base + off + 0,3·rel",
+  "einheit": "m",
+  "ort": "gelaende-core.js:598",
+  "leser": [
+   "gelaende-core.js:637 – Höhe der Ebene-0-Knoten → Fluss-Richtung und Meer/See",
+   "gelaende-core.js:1136 – Fallback des Talgrunds"
+  ],
+  "urteil": "folgt",
+  "woraus": "Splines OFFSET und RELIEF",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Fallback :1136 rechnet N.base + K = 2·base + …"
+ },
+ {
+  "id": "a33",
+  "name": "Hebung U",
+  "groesse": "hebung",
+  "domaene": "relief",
+  "wert": "0,55 + rel/240 + max(0, off)/160",
+  "einheit": "1",
+  "ort": "gelaende-core.js:599",
+  "leser": [
+   "gelaende-core.js:715 – ks·U: steilere Flüsse im Gebirge"
+  ],
+  "urteil": "folgt",
+  "woraus": "rel, off (Großform)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a34",
+  "name": "Tafelland-Stil",
+  "groesse": "tafelland",
+  "domaene": "relief",
+  "wert": "Feld 0,000192 /m (λ 5208 m), Schwelle 1 − 0,62·tafel; an ab rel 18…45, aus ab 160…195; tafel 0,5",
+  "einheit": "1",
+  "ort": "gelaende-core.js:591",
+  "leser": [
+   "gelaende-core.js:738 – hebt die Sohle der Zuflüsse",
+   "gelaende-core.js:1201 – mischt die Schicht-Treppe in das Talprofil"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Regler tafel 0,5 (gelaende-core.js:393), Schwellen Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a35",
+  "name": "Trog-Gewicht",
+  "groesse": "trog",
+  "domaene": "relief",
+  "wert": "glatt(95; 175; rel) × 0,7",
+  "einheit": "1",
+  "ort": "gelaende-core.js:601",
+  "leser": [
+   "gelaende-core.js:922 – Querprofil b → 2 (Trogtal im Hochgebirge)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Regler trog 0,7 (gelaende-core.js:388), Band 95…175 Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a36",
+  "name": "Höhen-Deckel",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "255 + 12·tanh((h − 255)/12) → ≤ 267",
+  "einheit": "m",
+  "ort": "gelaende-core.js:1883",
+  "leser": [
+   "gelaende-core.js:1883 – kappt die Höhe vor jedem Leser"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "unter der Voxel-Decke 282,6 m (Kommentar gelaende-core.js:1882)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "gemessen max 190,0 m in 700 Streu-Adressen: der Deckel greift dort nie"
+ },
+ {
+  "id": "a37",
+  "name": "Netz-Kanten",
+  "groesse": "fluss_netz",
+  "domaene": "relief",
+  "wert": "1600 / 400 / 100 ÷ netzDichte",
+  "einheit": "m",
+  "ort": "gelaende-core.js:424",
+  "leser": [
+   "gelaende-core.js:544 – S je Ebene",
+   "gelaende-core.js:615 – Lage der Knoten (Talabstand)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a38",
+  "name": "netzDichte",
+  "groesse": "fluss_netz",
+  "domaene": "relief",
+  "wert": "1 (0,6–1,8)",
+  "einheit": "1",
+  "ort": "gelaende-core.js:386",
+  "leser": [
+   "gelaende-core.js:544 – teilt die Kanten"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "reist nie (planet-core.js:2320–2330 setzt ihn nicht)"
+ },
+ {
+  "id": "a39",
+  "name": "rinnen",
+  "groesse": "fluss_netz",
+  "domaene": "relief",
+  "wert": "1 (0–1,5)",
+  "einheit": "1",
+  "ort": "gelaende-core.js:400",
+  "leser": [
+   "gelaende-core.js:545 – Ebene 2 an/aus",
+   "gelaende-core.js:729 – Einschnitt der Rinnen"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a40",
+  "name": "ks (Steilheits-Index)",
+  "groesse": "erosion",
+  "domaene": "relief",
+  "wert": "6 (1–20) × U",
+  "einheit": "m^0,9",
+  "ort": "gelaende-core.js:390",
+  "leser": [
+   "gelaende-core.js:715 – ks·U",
+   "gelaende-core.js:724 – sMax = ks·(A·S²)^−θ: Gefälle der Sohle"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Gesetz S = ks·A^−θ benannt (:390), Wert Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Reise: 3 + 12·Konvergenz (planet-core.js:2326)"
+ },
+ {
+  "id": "a41",
+  "name": "theta (Konkavität)",
+  "groesse": "erosion",
+  "domaene": "relief",
+  "wert": "0,45 (0,3–0,7)",
+  "einheit": "1",
+  "ort": "gelaende-core.js:391",
+  "leser": [
+   "gelaende-core.js:724 – Gefälle Ebene 0",
+   "gelaende-core.js:731 – Gefälle Ebene 1"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Flint-Konkavität θ (gelaende-core.js:391)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a42",
+  "name": "Mindest-Gefälle der Sohle",
+  "groesse": "erosion",
+  "domaene": "relief",
+  "wert": "0,0004",
+  "einheit": "m/m",
+  "ort": "gelaende-core.js:717",
+  "leser": [
+   "gelaende-core.js:725 – Sohle über dem Meer"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:725"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "a43",
+  "name": "Meer-Sohle",
+  "groesse": "schelf",
+  "domaene": "relief",
+  "wert": "min(hp, wl − 2)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:707",
+  "leser": [
+   "gelaende-core.js:1167 – Bett der Segmente in der Fläche"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a44",
+  "name": "Einschnitt Ebene 1",
+  "groesse": "erosion",
+  "domaene": "relief",
+  "wert": "min(2 + 0,05·rel; 0,25·hang·S); Boden hp − 0,18·S",
+  "einheit": "m",
+  "ort": "gelaende-core.js:732",
+  "leser": [
+   "gelaende-core.js:735 – Sohle der Zuflüsse"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a45",
+  "name": "Einschnitt Ebene 2",
+  "groesse": "erosion",
+  "domaene": "relief",
+  "wert": "rinnen·min(1 + 0,03·rel; 0,15·hang·S)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:729",
+  "leser": [
+   "gelaende-core.js:1150 – Rinnen-Profil in der Fläche"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a46",
+  "name": "Knoten-Streuung",
+  "groesse": "fluss_netz",
+  "domaene": "relief",
+  "wert": "0,15 + 0,7·zufall je Zelle",
+  "einheit": "Zelle",
+  "ort": "gelaende-core.js:615",
+  "leser": [
+   "gelaende-core.js:645 – knotenFluss: Lauf der Täler"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a47",
+  "name": "Senke: Meer oder See",
+  "groesse": "see_spiegel",
+  "domaene": "relief",
+  "wert": "Ebene 0: h < wl → Meer (2), sonst benannter See (1)",
+  "einheit": "Art",
+  "ort": "gelaende-core.js:670",
+  "leser": [],
+  "urteil": "folgt",
+  "woraus": "Höhe K des Knotens gegen den Spiegel",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "gelesen nur von benannteSeen (:1937) und flussLaeufe (:2038), beide nur in scripts/; die Seen im Spiel legt die Hydrosphäre"
+ },
+ {
+  "id": "a48",
+  "name": "talForm",
+  "groesse": "talform",
+  "domaene": "relief",
+  "wert": "1,3 (1–2,2): V 1 … Trog 2",
+  "einheit": "1",
+  "ort": "gelaende-core.js:387",
+  "leser": [
+   "gelaende-core.js:922 – Querprofil-Exponent b"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "reist nie"
+ },
+ {
+  "id": "a49",
+  "name": "Auen-Breite F",
+  "groesse": "aue",
+  "domaene": "relief",
+  "wert": "aue·30·(A/1e6)^0,4 (E0); aue·16·(A/1e5)^0,45 (E1); 3 m (E2); aue 1",
+  "einheit": "m",
+  "ort": "gelaende-core.js:920",
+  "leser": [
+   "gelaende-core.js:1180 – flache Aue im Talboden"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "∝ A^0,4 benannt (gelaende-core.js:389), Faktoren Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a50",
+  "name": "Talbreite W",
+  "groesse": "talform",
+  "domaene": "relief",
+  "wert": "(0,36 ¦ 0,3 ¦ 0,34)·S·(0,85 + 0,3·zufall)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:921",
+  "leser": [
+   "gelaende-core.js:1190 – w = u/W: Profil von Sohle zur Hülle"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a51",
+  "name": "Quergefälle der Aue",
+  "groesse": "aue",
+  "domaene": "relief",
+  "wert": "0,006",
+  "einheit": "m/m",
+  "ort": "gelaende-core.js:425",
+  "leser": [
+   "gelaende-core.js:1187 – Aue fällt zur Bahn",
+   "gelaende-core.js:1189 – Sohle am Auen-Rand"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a52",
+  "name": "Talgrund-Mittel",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "R = 1,6·S0, Gewicht (1 − d²/R²)²",
+  "einheit": "m",
+  "ort": "gelaende-core.js:1122",
+  "leser": [
+   "gelaende-core.js:1142 – Hülle = Talgrund + rel"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:1099"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "a53",
+  "name": "Mäander",
+  "groesse": "fluss_netz",
+  "domaene": "relief",
+  "wert": "λ 11 Breiten ±30 %, ω 1,2 rad, voll bis 0,4 %, gerade ab 1,5 % Gefälle",
+  "einheit": "1",
+  "ort": "gelaende-core.js:776",
+  "leser": [
+   "gelaende-core.js:1184 – bahnVersatz: die Aue fällt quer zur Bahn"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Langbein & Leopold 1966; Leopold & Wolman 1960 (gelaende-core.js:768–770)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a54",
+  "name": "Mündungs-Höhe",
+  "groesse": "fluss_netz",
+  "domaene": "relief",
+  "wert": "bed + d·0,05",
+  "einheit": "m",
+  "ort": "gelaende-core.js:1248",
+  "leser": [
+   "gelaende-core.js:653 – kn.aus: Ausfluss des Zuflusses → knotenSohle"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a55",
+  "name": "Netz trägt bis",
+  "groesse": "fluss_netz",
+  "domaene": "relief",
+  "wert": "2,5 × Kante je Ebene",
+  "einheit": "1",
+  "ort": "gelaende-core.js:1859",
+  "leser": [
+   "gelaende-core.js:1862 – netzStufe: Fern-Maschen lesen nur die groben Ebenen"
+  ],
+  "urteil": "folgt",
+  "woraus": "Nyquist der Masche (Kommentar :1855–1858: 463 636 Knoten, 3,1 s je Bild vorher)",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a56",
+  "name": "kliffWinkel",
+  "groesse": "schicht",
+  "domaene": "relief",
+  "wert": "74 (60–85)",
+  "einheit": "°",
+  "ort": "gelaende-core.js:394",
+  "leser": [
+   "gelaende-core.js:555 – tc",
+   "gelaende-core.js:1066 – Kliff der harten Lage"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "reist nie"
+ },
+ {
+  "id": "a57",
+  "name": "schuttWinkel",
+  "groesse": "sediment",
+  "domaene": "relief",
+  "wert": "35 (30–38)",
+  "einheit": "°",
+  "ort": "gelaende-core.js:395",
+  "leser": [
+   "gelaende-core.js:554 – ts",
+   "gelaende-core.js:1063 – Schutthang"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Ruhewinkel des Schutthangs (gelaende-core.js:395)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "stamm/vegetation-baum.js:3271"
+  ],
+  "anmerkung": "der Talus der Streu nimmt eine eigene Schwelle (|∇h| > 0,85 ≈ 40°)"
+ },
+ {
+  "id": "a58",
+  "name": "pedimentWinkel",
+  "groesse": "schicht",
+  "domaene": "relief",
+  "wert": "2,5 (0,5–7)",
+  "einheit": "°",
+  "ort": "gelaende-core.js:396",
+  "leser": [
+   "gelaende-core.js:553 – tp",
+   "gelaende-core.js:1056 – Pediment-Anstieg"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a59",
+  "name": "schichtDicke",
+  "groesse": "schicht",
+  "domaene": "relief",
+  "wert": "26 (8–60)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:397",
+  "leser": [
+   "gelaende-core.js:1043 – schichtMass T"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "die Reise setzt def (planet-core.js:2328); der Fels-Stoff liest ihn nicht (Paket 5,5 m)"
+ },
+ {
+  "id": "a60",
+  "name": "hartAnteil",
+  "groesse": "schicht",
+  "domaene": "relief",
+  "wert": "0,55 (0,3–0,7)",
+  "einheit": "1",
+  "ort": "gelaende-core.js:398",
+  "leser": [
+   "gelaende-core.js:1044 – hc = Kliff-Höhe je Schicht"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Monument Valley: de-Chelly-Kliff über Organ-Rock-Schutt, je etwa die Hälfte (gelaende-core.js:1040)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a61",
+  "name": "Pediment-Länge",
+  "groesse": "schicht",
+  "domaene": "relief",
+  "wert": "140",
+  "einheit": "m",
+  "ort": "gelaende-core.js:1055",
+  "leser": [
+   "gelaende-core.js:1056 – Treppe beginnt nach 140 m"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:1071",
+   "gelaende-core.js:1082",
+   "gelaende-core.js:927"
+  ],
+  "anmerkung": "Literal 140 viermal, nicht aus EINER Konstante"
+ },
+ {
+  "id": "a62",
+  "name": "Bank-Neigung",
+  "groesse": "schicht",
+  "domaene": "relief",
+  "wert": "tp·0,5 (1,25°)",
+  "einheit": "m/m",
+  "ort": "gelaende-core.js:1059",
+  "leser": [
+   "gelaende-core.js:1067 – Bank über dem Kliff"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:1076"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "a63",
+  "name": "Schicht-Periode",
+  "groesse": "schicht",
+  "domaene": "relief",
+  "wert": "33,81 horizontal bei def (hs/tan35 + hc/tan74 + T/2)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:1049",
+  "leser": [
+   "gelaende-core.js:1060 – Treppe",
+   "gelaende-core.js:927 – Reichweite der Talprofile",
+   "gelaende-core.js:2061 – schichtOrt (Linse)"
+  ],
+  "urteil": "folgt",
+  "woraus": "schichtDicke, hartAnteil, Winkel (gerechnet §2)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a64",
+  "name": "Schicht-Bezug",
+  "groesse": "schicht",
+  "domaene": "relief",
+  "wert": "Sohle + min(treppe(u), H − Sohle)",
+  "einheit": "m",
+  "ort": "gelaende-core.js:1200",
+  "leser": [
+   "gelaende-core.js:1201 – Talprofil × Stil"
+  ],
+  "urteil": "folgt",
+  "woraus": "Treppe ab der Sohle JEDES Segments",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "jede Talsohle beginnt ihre eigene Stratigraphie: keine Schicht in absoluter Höhe"
+ },
+ {
+  "id": "a65",
+  "name": "detail",
+  "groesse": "relief_amplitude",
+  "domaene": "relief",
+  "wert": "0,6 (0–1)",
+  "einheit": "1",
+  "ort": "gelaende-core.js:401",
+  "leser": [
+   "gelaende-core.js:1878 – Amplitude des Hang-Details"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "reist nie"
+ },
+ {
+  "id": "a66",
+  "name": "Hang-Detail",
+  "groesse": "relief_wellenlaenge",
+  "domaene": "relief",
+  "wert": "0,0263 /m × 2,6 + 0,059 /m × 1,0 (λ 38 m, 17 m); amp = detail·min(3, steil)·glatt(0,05; 0,45; nah), ab steil 0,02",
+  "einheit": "m",
+  "ort": "gelaende-core.js:1880",
+  "leser": [
+   "gelaende-core.js:1880 – addiert auf die Fläche (nur mitDetail)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Amplitude < ½ Hang × λ/2π benannt (:1876), Faktoren Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a67",
+  "name": "Bathymetrie",
+  "groesse": "schelf",
+  "domaene": "relief",
+  "wert": "ab 1,5 m Tiefe; Maske (d − 3)/6; Abfall −0,6·(d − 4); 0,019·(3 + 0,3s), Rücken 0,026, 0,062",
+  "einheit": "m",
+  "ort": "gelaende-core.js:1887",
+  "leser": [
+   "gelaende-core.js:1895 – Meeresboden"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a68",
+  "name": "Tiefsee-Klemme",
+  "groesse": "schelf",
+  "domaene": "relief",
+  "wert": "base − 112, Asymptote base − 120",
+  "einheit": "m",
+  "ort": "gelaende-core.js:1898",
+  "leser": [
+   "gelaende-core.js:1899 – tiefster Boden"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "über dem Chunk-Boden −135 (gelaende-core.js:1897)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "gemessen min −16,3 m in 700 Streu-Adressen"
+ },
+ {
+  "id": "a69",
+  "name": "Höhlen-Decke",
+  "groesse": "hoehle",
+  "domaene": "relief",
+  "wert": "−24 (Fläche < wl + 1), sonst −16 + 24·hoehlenMund(hang)",
+  "einheit": "m unter Fläche",
+  "ort": "gelaende-core.js:7191",
+  "leser": [
+   "gelaende-core.js:7213 – caveCeil: Höhle bleibt unter der Wiese"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a70",
+  "name": "Höhlen-Mündung",
+  "groesse": "hoehle",
+  "domaene": "relief",
+  "wert": "Hang 40°…50°, Hub 24",
+  "einheit": "° / m",
+  "ort": "gelaende-core.js:2855",
+  "leser": [
+   "gelaende-core.js:7191 – hebt die Decke an der Felsflanke"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild; gemessen 5 · 1 · 14 Mündungen je km² (:2853–2854)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a71",
+  "name": "Höhlen-Boden",
+  "groesse": "hoehle",
+  "domaene": "relief",
+  "wert": "base − 28, Rampe 8",
+  "einheit": "m",
+  "ort": "gelaende-core.js:7212",
+  "leser": [
+   "gelaende-core.js:7214 – Hülle der Höhle"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a72",
+  "name": "Höhlen-Wurm",
+  "groesse": "hoehle",
+  "domaene": "relief",
+  "wert": "noise3D(0,03; 0,034; 0,03), Grat > 0,7, Tiefe 36",
+  "einheit": "/m, m",
+  "ort": "gelaende-core.js:7216",
+  "leser": [
+   "gelaende-core.js:7218 – d −= …·36"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a73",
+  "name": "Kaverne",
+  "groesse": "hoehle",
+  "domaene": "relief",
+  "wert": "noise3D(0,013; 0,018), > 0,55, Tiefe 46",
+  "einheit": "/m, m",
+  "ort": "gelaende-core.js:7219",
+  "leser": [
+   "gelaende-core.js:7221 – d −= …·46"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a74",
+  "name": "Halle",
+  "groesse": "hoehle",
+  "domaene": "relief",
+  "wert": "noise3D(0,0045; 0,006), > 0,5, Tiefe 72",
+  "einheit": "/m, m",
+  "ort": "gelaende-core.js:7222",
+  "leser": [
+   "gelaende-core.js:7224 – d −= …·72"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a75",
+  "name": "Band des Dichte-Gitters",
+  "groesse": "hoehen_band",
+  "domaene": "relief",
+  "wert": "oben surf + 12 + 4·step; unten min(surf, base) − 40",
+  "einheit": "m",
+  "ort": "gelaende-core.js:2656",
+  "leser": [
+   "gelaende-core.js:7246 – Luft darüber",
+   "gelaende-core.js:7247 – Fels darunter"
+  ],
+  "urteil": "folgt",
+  "woraus": "größte 3D-Rauheit + 4 Zellen; Höhlen-Band endet base − 28 (:2651–2653)",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:2659"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "a76",
+  "name": "Gewässer-Schnitt in der Dichte",
+  "groesse": "fluss_tiefe",
+  "domaene": "relief",
+  "wert": "flussKanal / seeBecken über surf",
+  "einheit": "m",
+  "ort": "gelaende-core.js:7201",
+  "leser": [
+   "gelaende-core.js:7227 – gewaesserForm schneidet Bett und Becken"
+  ],
+  "urteil": "folgt",
+  "woraus": "Hydrosphäre über der Relief-Fläche",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "zählt der Wasser-Zensus; liest das Relief (surf :7186)"
+ },
+ {
+  "id": "a77",
+  "name": "Kühlung je Meter",
+  "groesse": "temperatur_hoehengradient",
+  "domaene": "relief",
+  "wert": "18 / ((140 + 185)/2) = 0,1108",
+  "einheit": "K/m",
+  "ort": "gelaende-core.js:5850",
+  "leser": [
+   "gelaende-core.js:1334 – Kühlung = k·(y − wl) aus der Relief-Höhe",
+   "planet-core.js:2307 – Stauchung des Planeten"
+  ],
+  "urteil": "folgt",
+  "woraus": "Sommer-Mittel 18 °C (:1313) auf die Mitte der Schneegrenze (:1282)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "17× die Erde (0,0065 K/m); zählt der Klima-Zensus, steht hier als Leser der Höhe"
+ },
+ {
+  "id": "a78",
+  "name": "Höhen-Stauchung Planet",
+  "groesse": "hoehen_stauchung",
+  "domaene": "relief",
+  "wert": "0,0065 / 0,1108 = 0,0587 (1 Welt-m = 17,04 Planet-m)",
+  "einheit": "1",
+  "ort": "planet-core.js:2307",
+  "leser": [
+   "planet-core.js:2331 – Meer-Δ der Reise",
+   "planet-core.js:2348 – Leit-Stützen huelleM (ohne Leser)"
+  ],
+  "urteil": "folgt",
+  "woraus": "Erde-Gradient 0,0065 K/m gegen kuehlungKJeM",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a79",
+  "name": "Meer der Reise",
+  "groesse": "meeresspiegel",
+  "domaene": "relief",
+  "wert": "3 − Δ waterLevelM",
+  "einheit": "m",
+  "ort": "gelaende-core.js:5910",
+  "leser": [
+   "stamm/bild-himmel.js:485 – waterLevel der Reise-Welt"
+  ],
+  "urteil": "folgt",
+  "woraus": "Planet-Δ (planet-core.js:2331)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a80",
+  "name": "Regler-Δ → Erbgut des Orts",
+  "groesse": "landform",
+  "domaene": "relief",
+  "wert": "Heimat-Regler + Δ, je Regler auf [min, max]",
+  "einheit": "1",
+  "ort": "gelaende-core.js:5951",
+  "leser": [
+   "stamm/netz-portal.js:704 – Geburt der Reise-Welt schreibt gesetz.gelaende",
+   "stamm/gelaende-boden.js:1573 – ortSaatWahl"
+  ],
+  "urteil": "folgt",
+  "woraus": "LANDFORM_REGLER + reglerDelta (:5923)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a81",
+  "name": "Planet → Regler",
+  "groesse": "landform",
+  "domaene": "relief",
+  "wert": "land(kont), hoehe 0,6 + st, rauhLambda, trog, ks 3 + 12·konv, tafel; kontinentLambda, schichtDicke, hartAnteil = def",
+  "einheit": "1",
+  "ort": "planet-core.js:2320",
+  "leser": [
+   "voxel-worker.js:1204 – reicht wildnis an den Stamm",
+   "stamm/netz-portal.js:704 – ortErbgut"
+  ],
+  "urteil": "folgt",
+  "woraus": "Kontinentalität, Steile, Konvergenz, Randabstand des Planeten",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "netzDichte, talForm, aue, theta, Winkel, rinnen, detail reisen nie"
+ },
+ {
+  "id": "a82",
+  "name": "Leit-Stützen 9×9",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "huelleM, landC über 64 km, Kante 8000 m",
+  "einheit": "m",
+  "ort": "planet-core.js:2348",
+  "leser": [],
+  "urteil": "folgt",
+  "woraus": "Planet-Höhe × Stauchung gegen den Anker",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "der Faden reicht nur klima/meer/wetter/wuchs/wildnis (voxel-worker.js:1194–1204); Leser nur scripts/diag-planet.cjs"
+ },
+ {
+  "id": "a83",
+  "name": "Vulkan und Rand des Ortes",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "art, abstandKm, alterMa; rand",
+  "einheit": "km / Ma",
+  "ort": "planet-core.js:2351",
+  "leser": [],
+  "urteil": "folgt",
+  "woraus": "Platten des Planeten",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "fällt im Faden weg (voxel-worker.js:1184–1205)"
+ },
+ {
+  "id": "a84",
+  "name": "Plan-Normalform",
+  "groesse": "samen",
+  "domaene": "relief",
+  "wert": "Saat 1–64 Zeichen; jeder Regler def oder geklemmt",
+  "einheit": "Text / 1",
+  "ort": "gelaende-core.js:5962",
+  "leser": [
+   "stamm/speicher-laden.js:1972 – worldMeta.gesetz.gelaende = planErbgut(plan)"
+  ],
+  "urteil": "folgt",
+  "woraus": "LANDFORM_REGLER (:5968–5973)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a85",
+  "name": "Erbgut der Welt",
+  "groesse": "landform",
+  "domaene": "relief",
+  "wert": "worldMeta.gesetz.gelaende → erbgutNormal",
+  "einheit": "Terme",
+  "ort": "stamm/gelaende-boden.js:1338",
+  "leser": [
+   "stamm/gelaende-boden.js:780 – L.erbgut jeder Höhe"
+  ],
+  "urteil": "folgt",
+  "woraus": "Gesetz der Welt (_weltGesetz)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a86",
+  "name": "Plan-Version",
+  "groesse": "landform",
+  "domaene": "relief",
+  "wert": "1",
+  "einheit": "Version",
+  "ort": "gelaende-core.js:5675",
+  "leser": [
+   "gelaende-core.js:5961 – lehnt fremde Versionen ab"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Vertrag",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a87",
+  "name": "Landung der Reise",
+  "groesse": "landung",
+  "domaene": "relief",
+  "wert": "Ring 12…240, ≥ wl + 1,5, Reihe 16 Saaten",
+  "einheit": "m",
+  "ort": "gelaende-core.js:5790",
+  "leser": [
+   "gelaende-core.js:5823 – ortSaatWahl",
+   "stamm/gelaende-boden.js:1573 – Saat der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a88",
+  "name": "terrainSteepness",
+  "groesse": "relief_amplitude",
+  "domaene": "relief",
+  "wert": "1,0 (DSL 0,1–2,0)",
+  "einheit": "1",
+  "ort": "stamm/dirigent-kern.js:282",
+  "leser": [
+   "stamm/feld-leben.js:479 – Licht-Flachheit terrainFlatten"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Start-Zustand; DSL-Op terrain_steepness klemmt 0,1–2,0 (stamm/feld-dsl.js:967)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "heißt Relief, ändert kein Relief: das Gesetz liest es seit K16 nicht (stamm/gelaende-chunks.js:1323)"
+ },
+ {
+  "id": "a89",
+  "name": "Stein-Achse (Welt-Feld dichte)",
+  "groesse": "gestein_art",
+  "domaene": "gestein",
+  "wert": "λ 340, Warp ±40 / λ 600",
+  "einheit": "m",
+  "ort": "stamm/feld-leben.js:2973",
+  "leser": [
+   "stamm/vegetation-wiese.js:2371 – Material-Wahl stein",
+   "voxel-worker.js:3335 – Flechte auf Stein"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Erst-Wurf aus genese-plan §Γ3 (stamm/feld-leben.js:2971)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:2019"
+  ],
+  "anmerkung": "liest kein Relief und kein Schicht-Gesetz"
+ },
+ {
+  "id": "a90",
+  "name": "Glut-Achse → Basalt",
+  "groesse": "gestein_art",
+  "domaene": "gestein",
+  "wert": "λ 520; Basalt-Mix glatt(0,48; 1,02)·0,65",
+  "einheit": "m / 1",
+  "ort": "stamm/feld-leben.js:2974",
+  "leser": [
+   "stamm/gelaende-boden.js:2596 – Basalt in der Boden-Farbe",
+   "voxel-worker.js:3337 – Basalt im Faden"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Erst-Wurf genese-plan §Γ3",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:2020",
+   "voxel-worker.js:3337"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "a91",
+  "name": "Material-Wahl",
+  "groesse": "gestein_art",
+  "domaene": "gestein",
+  "wert": "dominante Achse erde/stein/glut/quarz; erde + feuchte·0,35",
+  "einheit": "Art",
+  "ort": "stamm/vegetation-wiese.js:2362",
+  "leser": [
+   "stamm/kampf.js:2407 – Graben: welcher Stoff fällt",
+   "stamm/gelaende-kollision.js:1133 – Boden-Stoff am Fuß",
+   "stamm/koerper-bewegung.js:756 – Stoff unter dem Schritt",
+   "stamm/koerper-fahrt.js:1835 – Grund unter dem Fahrzeug"
+  ],
+  "urteil": "folgt",
+  "woraus": "Welt-Feld (stamm/feld-leben.js:1793) + Feuchte (FEUCHTE.erdeGewicht)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a92",
+  "name": "Strata: Stein unter",
+  "groesse": "boden_tiefe",
+  "domaene": "gestein",
+  "wert": "12",
+  "einheit": "m unter Fläche",
+  "ort": "stamm/vegetation-wiese.js:3198",
+  "leser": [
+   "stamm/vegetation-wiese.js:2386 – tiefer als 12 m ist alles stein"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a93",
+  "name": "Eisen-Adern",
+  "groesse": "gestein_art",
+  "domaene": "gestein",
+  "wert": "ab 24 m Tiefe, Ader > 0,7, dichte > 0,4, λ 180 m",
+  "einheit": "m / 1",
+  "ort": "stamm/vegetation-wiese.js:3203",
+  "leser": [
+   "stamm/vegetation-wiese.js:2391 – stein → eisen"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Erst-Wurf 0,7 → ~5–10 % der tiefen Stein-Region (Kommentar)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a94",
+  "name": "Fels-Freilegung rockLo/rockHi",
+  "groesse": "gestein_art",
+  "domaene": "gestein",
+  "wert": "1 − n_y 0,42 (54,5°) … 0,7 (72,5°)",
+  "einheit": "1",
+  "ort": "stamm/daten.js:624",
+  "leser": [
+   "gelaende-core.js:5426 – Fels-Gewicht je Vertex (felsStoff)",
+   "stamm/stoff-material.js:3014 – Fels im Shader"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "stamm/vegetation-baum.js:3269",
+   "stamm/gelaende-boden.js:726"
+  ],
+  "anmerkung": "drei Schwellen für „Fels steht frei\": 55…73° (Normale), |∇h| 0,7 (35°), |∇h| 0,75…1,45 (37…55°)"
+ },
+ {
+  "id": "a95",
+  "name": "Schutt-Schwellen",
+  "groesse": "sediment",
+  "domaene": "gestein",
+  "wert": "Kandidat 0,08, Gitter 5,4 m, Gewicht 0,85",
+  "einheit": "1 / m",
+  "ort": "stamm/daten.js:631",
+  "leser": [
+   "stamm/gelaende-boden.js:3016 – Fels-Stoff",
+   "stamm/gelaende-chunks.js:420 – geoSchutt → voxel-worker.js:4222 Schutt der Ferne"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a96",
+  "name": "Schutt aus dem Relief",
+  "groesse": "sediment",
+  "domaene": "gestein",
+  "wert": "1 am Schutthang, 2 m Fuß, 1 m in die Wand",
+  "einheit": "1",
+  "ort": "gelaende-core.js:1085",
+  "leser": [
+   "gelaende-core.js:5385 – felsStoff liest aus.schutt",
+   "voxel-worker.js:4218 – Schutt der Ferne"
+  ],
+  "urteil": "folgt",
+  "woraus": "Schicht-Gesetz (Abschnitt Schutthang der Treppe)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a97",
+  "name": "Bankung des Fels-Stoffs",
+  "groesse": "gestein_art",
+  "domaene": "gestein",
+  "wert": "Einfallen 0,07 rad, Streichen 0,6 rad, Paket 5,5 m, Bank 0,9 m × [0,35; 2,2], Kluft 3,2 m",
+  "einheit": "m / rad",
+  "ort": "gelaende-core.js:3349",
+  "leser": [
+   "gelaende-core.js:5455 – felsStoff ruft felsFarbe je Vertex (Bänke, Fugen, Klüfte)",
+   "gelaende-core.js:3696 – felsFeinO im Shader-Pfad",
+   "stamm/gelaende-boden.js:2491 – Fels-Farbe je Vertex",
+   "voxel-worker.js:3879 – Fels-Farbe im Faden"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Nachbesserung K17 „las sich als Ziegelmauer\" (:3352–3353): Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "liest schichtDicke 26 m des Reliefs nicht"
+ },
+ {
+  "id": "a98",
+  "name": "Grundton und Korn",
+  "groesse": "gestein_art",
+  "domaene": "gestein",
+  "wert": "grundMax 0,22, korn 0,12",
+  "einheit": "1",
+  "ort": "gelaende-core.js:3385",
+  "leser": [
+   "gelaende-core.js:3424 – felsBasis kappt den Grundton der Palette"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Natur-Band ≤ 0,30 benannt (:3385)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a99",
+  "name": "Geröll",
+  "groesse": "sediment",
+  "domaene": "gestein",
+  "wert": "korn 0,7, Größe 0,45…1,45",
+  "einheit": "m",
+  "ort": "gelaende-core.js:3409",
+  "leser": [
+   "voxel-worker.js:4228 – schuttMittel",
+   "stamm/stoff-material.js:3078 – schuttMittel"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a100",
+  "name": "Fels fein / fern",
+  "groesse": "gestein_art",
+  "domaene": "gestein",
+  "wert": "fern 120…260, Fuge 30…80",
+  "einheit": "m",
+  "ort": "gelaende-core.js:3402",
+  "leser": [
+   "stamm/stoff-material.js:3057 – felsFein im Shader"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Distanz-Auslauf",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a101",
+  "name": "Rausch-Gitter des Fels",
+  "groesse": "gestein_art",
+  "domaene": "gestein",
+  "wert": "P 256, schräg 12…42, skala 0,982",
+  "einheit": "1",
+  "ort": "gelaende-core.js:3439",
+  "leser": [
+   "gelaende-core.js:3443 – rauschGitter",
+   "gelaende-core.js:3478 – rauschRaum: Korn und Fugen des Fels"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Periode 256 wie vendor",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a102",
+  "name": "Himmels-Sicht",
+  "groesse": "hoehle",
+  "domaene": "gestein",
+  "wert": "3",
+  "einheit": "m",
+  "ort": "gelaende-core.js:4309",
+  "leser": [
+   "gelaende-core.js:4315 – Dunkel der Höhle im Fels"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a103",
+  "name": "Rock-Exposure",
+  "groesse": "gestein_art",
+  "domaene": "gestein",
+  "wert": "glatt(0,75; 1,45; |∇h|)",
+  "einheit": "1",
+  "ort": "stamm/gelaende-boden.js:719",
+  "leser": [],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "Leser nur scripts/playtest/gelaende-boden.cjs:1444, scripts/diag-worker-dichte.cjs:320"
+ },
+ {
+  "id": "a104",
+  "name": "Fels-Geologie der Streu",
+  "groesse": "gestein_art",
+  "domaene": "gestein",
+  "wert": "Findling ≤ 0,45, Aufschluss > 0,7 und relH > 18 m, Talus > 0,85 (|∇h|)",
+  "einheit": "1 / m",
+  "ort": "stamm/vegetation-baum.js:3267",
+  "leser": [
+   "stamm/vegetation-baum.js:1694 – Form und Größe der Felsen"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "umgerechnet aus einer Vorlage (sl > 0,155, Kommentar :3269)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "stamm/daten.js:624",
+   "gelaende-core.js:395",
+   "stamm/vegetation-baum.js:3271"
+  ],
+  "anmerkung": "relH über Basis 0: fast jede steile Stelle ist „Aufschluss\""
+ },
+ {
+  "id": "a105",
+  "name": "Mulde",
+  "groesse": "mulde",
+  "domaene": "gestein",
+  "wert": "Gitter 3,6, Tiefe 0,2, Gefälle 0,05…0,14, bis LOD 1; memo 262 144",
+  "einheit": "m",
+  "ort": "gelaende-core.js:5473",
+  "leser": [
+   "voxel-worker.js:3971 – muldeEcken je Chunk",
+   "stamm/gelaende-boden.js:2515 – muldeEcken im Stamm"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a106",
+  "name": "Mikro-Relief",
+  "groesse": "mikro_relief",
+  "domaene": "boden",
+  "wert": "freq 1,1 / 2,7 je m; Kippung 0,24 / 0,1",
+  "einheit": "1/m / 1",
+  "ort": "stamm/daten.js:654",
+  "leser": [
+   "stamm/stoff-material.js:2554 – Bump des Boden-Stoffs",
+   "stamm/siedlung-wege.js:1510 – Kiesel der Wege"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild (13° statt 23°, :681)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a107",
+  "name": "Mikro-Relief Distanz",
+  "groesse": "mikro_relief",
+  "domaene": "boden",
+  "wert": "Bump 14…95, Korn 30…160",
+  "einheit": "m",
+  "ort": "stamm/daten.js:685",
+  "leser": [
+   "stamm/stoff-material.js:2674 – Auslauf des Bump"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a108",
+  "name": "Flechte",
+  "groesse": "boden_art",
+  "domaene": "boden",
+  "wert": "feuchte 0,5…0,9 × dichte 0,5…0,85 × 0,22",
+  "einheit": "1",
+  "ort": "stamm/gelaende-boden.js:3205",
+  "leser": [
+   "stamm/gelaende-boden.js:2590 – Patina auf Stein"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:3335"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "a109",
+  "name": "Feuchte → Erde",
+  "groesse": "boden_art",
+  "domaene": "boden",
+  "wert": "0,35",
+  "einheit": "1",
+  "ort": "stamm/gelaende-boden.js:3226",
+  "leser": [
+   "stamm/vegetation-wiese.js:2370 – Ufer graben als Erde"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Γ1-Lesart Boden",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a110",
+  "name": "Wiesen-Wache",
+  "groesse": "boden_art",
+  "domaene": "boden",
+  "wert": "0,04",
+  "einheit": "1",
+  "ort": "stamm/daten.js:635",
+  "leser": [
+   "stamm/gelaende-boden.js:1729 – Grün-Kanal der Boden-Karte",
+   "stamm/gelaende-chunks.js:408 – an den Faden"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a111",
+  "name": "Boden-Karte Teilung",
+  "groesse": "boden_art",
+  "domaene": "boden",
+  "wert": "4 (LOD 0: 0,45 m)",
+  "einheit": "Teilung",
+  "ort": "stamm/daten.js:464",
+  "leser": [
+   "stamm/gelaende-boden.js:28 – _bodenSichtAt: der gezeichnete Boden",
+   "stamm/gelaende-chunks.js:407 – an den Faden"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "≤ 2 cm Median zur Dreiecks-Fläche (:461–462)",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Stand, Wiese, Streu lesen das Mesh, nicht das Gesetz: Zwilling der Höhe mit gemessener Abweichung"
+ },
+ {
+  "id": "a112",
+  "name": "Boden-Stufen",
+  "groesse": "boden_art",
+  "domaene": "boden",
+  "wert": "bis 36 / 100 / 388,8 / ∞; Saum 12 / 12 / 40 / 0; vorlauf 3, halt 4",
+  "einheit": "m",
+  "ort": "stamm/gelaende-boden.js:3191",
+  "leser": [
+   "stamm/gelaende-boden.js:2765 – LOD je Chunk",
+   "stamm/stoff-material.js:2035 – Stufen im Stoff",
+   "stamm/vegetation-streu.js:861 – Streu je Stufe"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a113",
+  "name": "Boden-Generation",
+  "groesse": "boden_art",
+  "domaene": "boden",
+  "wert": "2",
+  "einheit": "Version",
+  "ort": "gelaende-core.js:2860",
+  "leser": [
+   "stamm/gelaende-boden.js:3033 – Cache-Stempel",
+   "stamm/speicher-welten.js:1082 – Stempel der Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Vertrag",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a114",
+  "name": "Gen-Version",
+  "groesse": "boden_art",
+  "domaene": "boden",
+  "wert": "9 (≥ 2 Feuchte, ≥ 3 Frequenz-Fächer)",
+  "einheit": "Version",
+  "ort": "stamm/speicher-laden.js:2706",
+  "leser": [
+   "stamm/vegetation-wiese.js:2368 – Feuchte in der Material-Wahl",
+   "stamm/feld-leben.js:1815 – λ je Achse"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Vertrag",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a115",
+  "name": "Chunk-Kante",
+  "groesse": "kachel",
+  "domaene": "welt",
+  "wert": "43,2",
+  "einheit": "m",
+  "ort": "stamm/gelaende-boden.js:2740",
+  "leser": [
+   "stamm/gelaende-boden.js:22 – Chunk des Boden-Lesers",
+   "voxel-worker.js:1637 – Edit-Karte je Chunk"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "24 × 1,8 m",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:1991"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "a116",
+  "name": "LOD-Schritte",
+  "groesse": "kachel",
+  "domaene": "welt",
+  "wert": "1,8 / 3,6 / 7,2 / 14,4",
+  "einheit": "m",
+  "ort": "stamm/gelaende-boden.js:2727",
+  "leser": [
+   "voxel-worker.js:1652 – Gitter-Schritt der Dichte"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Halbierung je Stufe",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:1988"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "a117",
+  "name": "Sicht-Ring",
+  "groesse": "kachel",
+  "domaene": "welt",
+  "wert": "4 (1–12)",
+  "einheit": "Chunks",
+  "ort": "stamm/gelaende-boden.js:2716",
+  "leser": [
+   "stamm/gelaende-boden.js:2720 – ringRadius"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Regler",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a118",
+  "name": "Netze im Speicher",
+  "groesse": "cache",
+  "domaene": "welt",
+  "wert": "≤ 6",
+  "einheit": "Netze",
+  "ort": "gelaende-core.js:537",
+  "leser": [
+   "gelaende-core.js:535 – netzNeu: ein Netz je Saat, Basis, Meer, Regler"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Grenze",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a119",
+  "name": "Knoten-Maps",
+  "groesse": "cache",
+  "domaene": "welt",
+  "wert": "unbegrenzt (nie geräumt)",
+  "einheit": "Knoten",
+  "ort": "gelaende-core.js:546",
+  "leser": [
+   "gelaende-core.js:608 – knoten: M.get(key), sonst neu",
+   "gelaende-core.js:684 – knotenA rekursiv über das Einzugsgebiet"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "keine Räumung",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "gemessen ~430 KB und ~1,4 ms je neue Region; 10 000 Streu-Adressen → OOM 2 044 MB"
+ },
+ {
+  "id": "a120",
+  "name": "Zellen- und Tal-Maps",
+  "groesse": "cache",
+  "domaene": "welt",
+  "wert": "Räumung über 300 000",
+  "einheit": "Einträge",
+  "ort": "gelaende-core.js:1011",
+  "leser": [
+   "gelaende-core.js:1150 – zelle in der Fläche"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Grenze",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:1112"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "a121",
+  "name": "Spalten-Plätze",
+  "groesse": "cache",
+  "domaene": "welt",
+  "wert": "4096",
+  "einheit": "Plätze",
+  "ort": "stamm/gelaende-boden.js:3173",
+  "leser": [
+   "stamm/gelaende-boden.js:1394 – Hash der Spalte"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Zweierpotenz",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a122",
+  "name": "Chunk-Speicher IDB",
+  "groesse": "cache",
+  "domaene": "welt",
+  "wert": "600",
+  "einheit": "Chunks",
+  "ort": "stamm/gelaende-chunks.js:3415",
+  "leser": [
+   "stamm/gelaende-chunks.js:873 – Grenze des Speichers"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Grenze",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a123",
+  "name": "Erdbau",
+  "groesse": "erdbau",
+  "domaene": "relief",
+  "wert": "böschung 0,6, reichweite 16, zelle 16, wand 0,5",
+  "einheit": "m/m / m",
+  "ort": "gelaende-core.js:2094",
+  "leser": [
+   "gelaende-core.js:2825 – erdbauY: letzter Term jeder Höhe"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "a124",
+  "name": "Edit-Form",
+  "groesse": "edit",
+  "domaene": "relief",
+  "wert": "tiefe 4, rund 1, kante 0,5",
+  "einheit": "m",
+  "ort": "gelaende-core.js:2546",
+  "leser": [
+   "gelaende-core.js:2606 – mitEdits: editForm formt die Dichte (Graben/Füllen)",
+   "gelaende-core.js:2560 – editReich: Reichweite des Edits"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ }
+]

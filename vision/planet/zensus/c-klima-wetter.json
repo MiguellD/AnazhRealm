@@ -1,0 +1,1733 @@
+[
+  {
+    "id": "c1",
+    "name": "TEMPERATUR.sommer (Tagesmittel am Meer, Sommer-Mitte)",
+    "groesse": "temperatur_sommer_meer",
+    "domaene": "klima",
+    "wert": "18",
+    "einheit": "°C",
+    "ort": "gelaende-core.js:1314",
+    "leser": [
+      "gelaende-core.js:1333 – mittel (18 + −4)/2 im Temperatur-Feld",
+      "gelaende-core.js:1335 – Amplitude der Jahres-Welle (18 − −4)/2",
+      "gelaende-core.js:5850 – die Höhen-Kühlung kuehlungKJeM = sommer / 162,5 m",
+      "gelaende-core.js:5740 – ortWuchs: der Dauer-Frost (Sommer am Meer) schaltet Wuchs",
+      "planet-core.js:2217 – planetAnker sucht den Ort des Planeten, an dem 18 °C gilt",
+      "stamm/bild-himmel.js:2874 – _temperaturAt: die EINE Naht (Saison, Uhr, Wetter-Feld) zu allen Luft-Lesern",
+      "stamm/feld-brand.js:315 – die Zünd-Wärme des Feuers (Q_ig) gegen die Luft",
+      "stamm/feld-leben.js:2484 – die Lava kühlt gegen die Luft",
+      "stamm/feld-leben.js:2509 – die Esse: der Stahl kühlt gegen die Luft",
+      "stamm/klang.js:492 – die Grillen-Stimme (Wärme mit Trägheit der Röhre)",
+      "stamm/koerper-fahrt.js:2398 – das Brennglas: Zünd-Schwelle minus Luft",
+      "stamm/siedlung-wege.js:581 – der Busch auf der Lava (Zündung gegen Luft)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante; Kommentar gelaende-core.js:1302 „gemäßigt-kontinental“, keine Quelle",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "planet-core.js:2332 (o.klima.sommer am Ort, am Anker 18,35 °C — c-mess.cjs)"
+    ],
+    "anmerkung": "[Temperatur] EINE Zahl für die ganze Heimat; keine Breite, keine Meer-Ferne. In einer Reise-Welt Heimat + Δ (gelaende-core.js:5900)."
+  },
+  {
+    "id": "c2",
+    "name": "TEMPERATUR.winter (Tagesmittel am Meer, Winter-Mitte)",
+    "groesse": "temperatur_winter_meer",
+    "domaene": "klima",
+    "wert": "-4",
+    "einheit": "°C",
+    "ort": "gelaende-core.js:1315",
+    "leser": [
+      "gelaende-core.js:1333 – mittel im Temperatur-Feld",
+      "gelaende-core.js:1335 – Amplitude der Jahres-Welle",
+      "gelaende-core.js:5736 – ortWuchs tJ → nadel/sand",
+      "planet-core.js:2217 – planetAnker-Wertung (ΔW/6)²",
+      "stamm/bild-himmel.js:2874 – _temperaturAt: die EINE Naht (Saison, Uhr, Wetter-Feld) zu allen Luft-Lesern",
+      "stamm/feld-brand.js:315 – die Zünd-Wärme des Feuers (Q_ig) gegen die Luft",
+      "stamm/feld-leben.js:2484 – die Lava kühlt gegen die Luft",
+      "stamm/feld-leben.js:2509 – die Esse: der Stahl kühlt gegen die Luft",
+      "stamm/klang.js:492 – die Grillen-Stimme (Wärme mit Trägheit der Röhre)",
+      "stamm/koerper-fahrt.js:2398 – das Brennglas: Zünd-Schwelle minus Luft",
+      "stamm/siedlung-wege.js:581 – der Busch auf der Lava (Zündung gegen Luft)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante; Kommentar gelaende-core.js:1302, keine Quelle",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "planet-core.js:2332 (o.klima.winter; am Anker 0,76 °C statt −4 — der Anker verfehlt die Heimat um 4,8 K, c-mess.cjs)"
+    ],
+    "anmerkung": "[Temperatur] Der Planet trägt die Heimat-Konstante nicht: die beste Stelle (Breite 43,4°, planetAnker-Wertung 0,613) hat Winter +0,76 °C (c-mess.cjs)."
+  },
+  {
+    "id": "c3",
+    "name": "Jahresmittel der Luft am Meer",
+    "groesse": "temperatur_jahresmittel",
+    "domaene": "klima",
+    "wert": "7",
+    "einheit": "°C",
+    "ort": "gelaende-core.js:1333",
+    "leser": [
+      "stamm/bild-himmel.js:2874 – _temperaturAt: die EINE Naht (Saison, Uhr, Wetter-Feld) zu allen Luft-Lesern",
+      "stamm/feld-brand.js:315 – die Zünd-Wärme des Feuers (Q_ig) gegen die Luft",
+      "stamm/feld-leben.js:2484 – die Lava kühlt gegen die Luft",
+      "stamm/feld-leben.js:2509 – die Esse: der Stahl kühlt gegen die Luft",
+      "stamm/klang.js:492 – die Grillen-Stimme (Wärme mit Trägheit der Röhre)",
+      "stamm/koerper-fahrt.js:2398 – das Brennglas: Zünd-Schwelle minus Luft",
+      "stamm/siedlung-wege.js:581 – der Busch auf der Lava (Zündung gegen Luft)",
+      "gelaende-core.js:1473 – schneePegel: das Tagesmittel minus Kühlung → Schnee-Wasser",
+      "stamm/bild-himmel.js:2930 – schneeVersatz → die Schneegrenze, die Boden, Faden und Sicht färben",
+      "stamm/bild-himmel.js:3015 – eisDicke → das Eis, das Körper trägt",
+      "stamm/wasser-hydro.js:98 – pegelSchmelze → der Spiegel von See und Fluss"
+    ],
+    "urteil": "folgt",
+    "woraus": "mittel = (sommer + winter)/2 = (18 + −4)/2, gelaende-core.js:1333; ortWuchs tJ dieselbe Formel :5736",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "gelaende-core.js:5736 (tJ, dieselbe Rechnung zweimal)",
+      "planet-core.js:2211 (tMitte, dieselbe Formel)"
+    ],
+    "anmerkung": "[Temperatur] Null-Grad-Linie des Jahresmittels 63,2 m über dem Meer (c-mess)."
+  },
+  {
+    "id": "c4",
+    "name": "Jahres-Amplitude der Luft",
+    "groesse": "temperatur_jahresamplitude",
+    "domaene": "klima",
+    "wert": "11",
+    "einheit": "K",
+    "ort": "gelaende-core.js:1335",
+    "leser": [
+      "stamm/bild-himmel.js:2874 – _temperaturAt: die EINE Naht (Saison, Uhr, Wetter-Feld) zu allen Luft-Lesern",
+      "stamm/feld-brand.js:315 – die Zünd-Wärme des Feuers (Q_ig) gegen die Luft",
+      "stamm/feld-leben.js:2484 – die Lava kühlt gegen die Luft",
+      "stamm/feld-leben.js:2509 – die Esse: der Stahl kühlt gegen die Luft",
+      "stamm/klang.js:492 – die Grillen-Stimme (Wärme mit Trägheit der Röhre)",
+      "stamm/koerper-fahrt.js:2398 – das Brennglas: Zünd-Schwelle minus Luft",
+      "stamm/siedlung-wege.js:581 – der Busch auf der Lava (Zündung gegen Luft)",
+      "gelaende-core.js:1473 – schneePegel: das Tagesmittel minus Kühlung → Schnee-Wasser",
+      "stamm/bild-himmel.js:2930 – schneeVersatz → die Schneegrenze, die Boden, Faden und Sicht färben",
+      "stamm/bild-himmel.js:3015 – eisDicke → das Eis, das Körper trägt",
+      "stamm/wasser-hydro.js:98 – pegelSchmelze → der Spiegel von See und Fluss"
+    ],
+    "urteil": "folgt",
+    "woraus": "amp = (sommer − winter)/2, gedämpft 1/√(1+(ωτ)²) bei Trägheit τ (gelaende-core.js:1328–1330)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Temperatur] Reine Kosinus-Welle der Phase, nicht von der Sonne getrieben: welt-licht.js:711 sonnenRichtung(winkel) nimmt keine Saison."
+  },
+  {
+    "id": "c5",
+    "name": "TEMPERATUR.tagAmp (Tagesgang ±)",
+    "groesse": "temperatur_tagesamplitude",
+    "domaene": "klima",
+    "wert": "5",
+    "einheit": "K",
+    "ort": "gelaende-core.js:1317",
+    "leser": [
+      "gelaende-core.js:1336 – Tages-Welle des Felds",
+      "gelaende-core.js:1350 – unter Wolke × (1 − 0,5·(1 − sun))",
+      "stamm/bild-himmel.js:2874 – _temperaturAt: die EINE Naht (Saison, Uhr, Wetter-Feld) zu allen Luft-Lesern",
+      "stamm/feld-brand.js:315 – die Zünd-Wärme des Feuers (Q_ig) gegen die Luft",
+      "stamm/feld-leben.js:2484 – die Lava kühlt gegen die Luft",
+      "stamm/feld-leben.js:2509 – die Esse: der Stahl kühlt gegen die Luft",
+      "stamm/klang.js:492 – die Grillen-Stimme (Wärme mit Trägheit der Röhre)",
+      "stamm/koerper-fahrt.js:2398 – das Brennglas: Zünd-Schwelle minus Luft",
+      "stamm/siedlung-wege.js:581 – der Busch auf der Lava (Zündung gegen Luft)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante; Kommentar gelaende-core.js:1302 „Tagesgang ±5 °C“",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "planet-core.js:2080 (tagAmpC = 4 + 10·c·(1 − min(1, P/1500)))",
+      "planet-core.js:2333 (tagAmp = 0,5·tagAmpC; am Anker 2,05 K, Heimat 5 K = 2,44×)"
+    ],
+    "anmerkung": "[Temperatur] Reise: Heimat + Δ (gelaende-core.js:5902)."
+  },
+  {
+    "id": "c6",
+    "name": "TEMPERATUR.tagGipfel (wärmste Uhr)",
+    "groesse": "temperatur_tagesgipfel",
+    "domaene": "klima",
+    "wert": "0.625",
+    "einheit": "Tag-Phase (15 Uhr)",
+    "ort": "gelaende-core.js:1318",
+    "leser": [
+      "gelaende-core.js:1336 – Gipfel der Tages-Welle",
+      "stamm/bild-himmel.js:2874 – _temperaturAt: die EINE Naht (Saison, Uhr, Wetter-Feld) zu allen Luft-Lesern",
+      "stamm/feld-brand.js:315 – die Zünd-Wärme des Feuers (Q_ig) gegen die Luft",
+      "stamm/feld-leben.js:2484 – die Lava kühlt gegen die Luft",
+      "stamm/feld-leben.js:2509 – die Esse: der Stahl kühlt gegen die Luft",
+      "stamm/klang.js:492 – die Grillen-Stimme (Wärme mit Trägheit der Röhre)",
+      "stamm/koerper-fahrt.js:2398 – das Brennglas: Zünd-Schwelle minus Luft",
+      "stamm/siedlung-wege.js:581 – der Busch auf der Lava (Zündung gegen Luft)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante, Kommentar gelaende-core.js:1303 „am wärmsten um 15 Uhr“",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "planet-core.js:2333 (kopiert kh.tagGipfel, kein eigener Wert)"
+    ],
+    "anmerkung": "[Temperatur] Reist nicht (nicht in ORT_FELDER gelaende-core.js:5699)."
+  },
+  {
+    "id": "c7",
+    "name": "TEMPERATUR.sommerPhase (Saison-Phase des Sommer-Gipfels)",
+    "groesse": "saison_phase",
+    "domaene": "klima",
+    "wert": "0.375",
+    "einheit": "Jahr-Phase",
+    "ort": "gelaende-core.js:1316",
+    "leser": [
+      "gelaende-core.js:1335 – Gipfel der Jahres-Welle",
+      "gelaende-core.js:1506 – schneeVersatz misst ab der Sommer-Mitte",
+      "gelaende-core.js:5915 – das Schnee-Band einer Reise-Welt zur Sommer-Mitte",
+      "stamm/bild-himmel.js:2874 – _temperaturAt: die EINE Naht (Saison, Uhr, Wetter-Feld) zu allen Luft-Lesern",
+      "stamm/feld-brand.js:315 – die Zünd-Wärme des Feuers (Q_ig) gegen die Luft",
+      "stamm/feld-leben.js:2484 – die Lava kühlt gegen die Luft",
+      "stamm/feld-leben.js:2509 – die Esse: der Stahl kühlt gegen die Luft",
+      "stamm/klang.js:492 – die Grillen-Stimme (Wärme mit Trägheit der Röhre)",
+      "stamm/koerper-fahrt.js:2398 – das Brennglas: Zünd-Schwelle minus Luft",
+      "stamm/siedlung-wege.js:581 – der Busch auf der Lava (Zündung gegen Luft)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konvention: Sommer = 0,25…0,5 der Phase (stamm/dirigent-kern.js:303)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "stamm/dirigent-kern.js:305 (Start-Phase 0,375)",
+      "stamm/bild-himmel.js:900 (Vorgabe 0,375)",
+      "stamm/bild-himmel.js:965 (setSeason summer 0,375)",
+      "planet-core.js:2333 (Süd-Halbkugel +0,5)"
+    ],
+    "anmerkung": "[Temperatur] Vier Orte tragen dieselbe 0,375 ohne gemeinsame Quelle."
+  },
+  {
+    "id": "c8",
+    "name": "TEMPERATUR.jahrTage (Tage je Saison-Zyklus der Physik)",
+    "groesse": "jahr_laenge",
+    "domaene": "klima",
+    "wert": "365",
+    "einheit": "Tage",
+    "ort": "gelaende-core.js:1319",
+    "leser": [
+      "gelaende-core.js:1335 – Trägheit der Jahres-Welle (ω = 1/jahrTage)",
+      "gelaende-core.js:1477 – schneePegel: Fall und Schmelze je Tag",
+      "gelaende-core.js:1420 – eisDicke: Stefan-Integral je Tag",
+      "stamm/wasser-hydro.js:83 – der Tag der Schmelze im Pegel",
+      "gelaende-core.js:5847 – spendeMm = spende·1000·jahrTage"
+    ],
+    "urteil": "gesetzt_anker",
+    "woraus": "das Erd-Jahr",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "planet-core.js:2183 (pruefJahr: Körper-Jahr muss gleich sein)",
+      "stamm/dirigent-kern.js:311 (seasonYearSeconds 2400 s)",
+      "stamm/daten.js:166 (PEGEL_TAG_S 3600 s)"
+    ],
+    "anmerkung": "[Temperatur] Uhren-Widerspruch: die Physik zählt 365 Tage in 2400 s (1 Tag = 6,6 s), der Pegel-Tag ist 3600 s (Faktor 547)."
+  },
+  {
+    "id": "c9",
+    "name": "kuehlungKJeM (Höhen-Gradient der Luft)",
+    "groesse": "temperatur_hoehengradient",
+    "domaene": "klima",
+    "wert": "0.110769",
+    "einheit": "K/m",
+    "ort": "gelaende-core.js:5850",
+    "leser": [
+      "gelaende-core.js:1334 – kuehlung = k·(y − wl) im Temperatur-Feld",
+      "planet-core.js:2307 – Stauchung sv = 0,0065/k = 0,0587 der Reise-Welt (Meer, Höhe)",
+      "stamm/bild-himmel.js:2874 – _temperaturAt: die EINE Naht (Saison, Uhr, Wetter-Feld) zu allen Luft-Lesern",
+      "stamm/feld-brand.js:315 – die Zünd-Wärme des Feuers (Q_ig) gegen die Luft",
+      "stamm/feld-leben.js:2484 – die Lava kühlt gegen die Luft",
+      "stamm/feld-leben.js:2509 – die Esse: der Stahl kühlt gegen die Luft",
+      "stamm/klang.js:492 – die Grillen-Stimme (Wärme mit Trägheit der Röhre)",
+      "stamm/koerper-fahrt.js:2398 – das Brennglas: Zünd-Schwelle minus Luft",
+      "stamm/siedlung-wege.js:581 – der Busch auf der Lava (Zündung gegen Luft)",
+      "gelaende-core.js:1473 – schneePegel: das Tagesmittel minus Kühlung → Schnee-Wasser",
+      "stamm/bild-himmel.js:2930 – schneeVersatz → die Schneegrenze, die Boden, Faden und Sicht färben",
+      "stamm/bild-himmel.js:3015 – eisDicke → das Eis, das Körper trägt",
+      "stamm/wasser-hydro.js:98 – pegelSchmelze → der Spiegel von See und Fluss"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "TEMPERATUR.sommer / ((SCHNEE.start + SCHNEE.voll)/2) = 18/162,5 — aus zwei gesetzten Größen, keine Physik; Anker eigenes Bild (Schnee auf die obersten 1–3 % des Landes, gelaende-core.js:1272)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "planet-core.js:1864 (KLIMA.lapse 6,5 K/km = 0,0065 K/m; die Heimat kühlt 17,04× steiler)"
+    ],
+    "anmerkung": "[Temperatur] Der EINZIGE Ortsbezug der Temperatur. 162,5 m Höhe = Sommer-Tagesmittel 0 °C; 200 m im Winter um 3 Uhr −31,2 °C (c-mess)."
+  },
+  {
+    "id": "c10",
+    "name": "Luft-Temperatur T(y, Saison, Uhr, Wetter)",
+    "groesse": "temperatur_feld",
+    "domaene": "klima",
+    "wert": "7 + 11·cos 2π(s−0,375) + 5·cos 2π(u−0,625)·(1−0,5(1−sun)) − 0,1108·(y−wl) − 3·rain",
+    "einheit": "°C",
+    "ort": "gelaende-core.js:1344",
+    "leser": [
+      "stamm/bild-himmel.js:2874 – _temperaturAt: die EINE Naht (Saison, Uhr, Wetter-Feld) zu allen Luft-Lesern",
+      "stamm/feld-brand.js:315 – die Zünd-Wärme des Feuers (Q_ig) gegen die Luft",
+      "stamm/feld-leben.js:2484 – die Lava kühlt gegen die Luft",
+      "stamm/feld-leben.js:2509 – die Esse: der Stahl kühlt gegen die Luft",
+      "stamm/klang.js:492 – die Grillen-Stimme (Wärme mit Trägheit der Röhre)",
+      "stamm/koerper-fahrt.js:2398 – das Brennglas: Zünd-Schwelle minus Luft",
+      "stamm/siedlung-wege.js:581 – der Busch auf der Lava (Zündung gegen Luft)",
+      "gelaende-core.js:1473 – schneePegel: das Tagesmittel minus Kühlung → Schnee-Wasser",
+      "stamm/bild-himmel.js:2930 – schneeVersatz → die Schneegrenze, die Boden, Faden und Sicht färben",
+      "stamm/bild-himmel.js:3015 – eisDicke → das Eis, das Körper trägt",
+      "stamm/wasser-hydro.js:98 – pegelSchmelze → der Spiegel von See und Fluss"
+    ],
+    "urteil": "folgt",
+    "woraus": "temperaturFeld gelaende-core.js:1321–1338 + temperaturAus :1344–1352; Signatur ohne x, z",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Temperatur] Am Meer: Sommer 15 Uhr 23 °C, 3 Uhr 13 °C; Winter 15 Uhr 1 °C, 3 Uhr −9 °C; Sturm Sommer 15 Uhr 17,9 °C (c-mess). Wetter = das EINE Wort am Spieler (stamm/bild-himmel.js:2880)."
+  },
+  {
+    "id": "c11",
+    "name": "WOLKE.daempft (Wolke dämpft den Tagesgang)",
+    "groesse": "temperatur_wolkendaempfung",
+    "domaene": "klima",
+    "wert": "0.5",
+    "einheit": "Anteil je (1 − sun)",
+    "ort": "gelaende-core.js:1343",
+    "leser": [
+      "gelaende-core.js:1350 – tag × (1 − 0,5·(1 − sun))",
+      "stamm/bild-himmel.js:2874 – _temperaturAt: die EINE Naht (Saison, Uhr, Wetter-Feld) zu allen Luft-Lesern",
+      "stamm/feld-brand.js:315 – die Zünd-Wärme des Feuers (Q_ig) gegen die Luft",
+      "stamm/feld-leben.js:2484 – die Lava kühlt gegen die Luft",
+      "stamm/feld-leben.js:2509 – die Esse: der Stahl kühlt gegen die Luft",
+      "stamm/klang.js:492 – die Grillen-Stimme (Wärme mit Trägheit der Röhre)",
+      "stamm/koerper-fahrt.js:2398 – das Brennglas: Zünd-Schwelle minus Luft",
+      "stamm/siedlung-wege.js:581 – der Busch auf der Lava (Zündung gegen Luft)"
+    ],
+    "urteil": "gesetzt_anker",
+    "woraus": "Dai 1999: bedeckt schrumpft die Tagesspanne um 25–50 % (gelaende-core.js:1340)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Temperatur] sun aus der Wetter-Zeile (phyto-core.js:4288–4293)."
+  },
+  {
+    "id": "c12",
+    "name": "WOLKE.regen (Regen kühlt)",
+    "groesse": "temperatur_regenkuehlung",
+    "domaene": "klima",
+    "wert": "3",
+    "einheit": "K je Regen 1",
+    "ort": "gelaende-core.js:1343",
+    "leser": [
+      "gelaende-core.js:1351 – − 3·rain",
+      "stamm/bild-himmel.js:2874 – _temperaturAt: die EINE Naht (Saison, Uhr, Wetter-Feld) zu allen Luft-Lesern",
+      "stamm/feld-brand.js:315 – die Zünd-Wärme des Feuers (Q_ig) gegen die Luft",
+      "stamm/feld-leben.js:2484 – die Lava kühlt gegen die Luft",
+      "stamm/feld-leben.js:2509 – die Esse: der Stahl kühlt gegen die Luft",
+      "stamm/klang.js:492 – die Grillen-Stimme (Wärme mit Trägheit der Röhre)",
+      "stamm/koerper-fahrt.js:2398 – das Brennglas: Zünd-Schwelle minus Luft",
+      "stamm/siedlung-wege.js:581 – der Busch auf der Lava (Zündung gegen Luft)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante, Kommentar gelaende-core.js:1341 ohne Quelle",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Temperatur] Regen 0,6 → −1,8 K; Sturm 1 → −3 K."
+  },
+  {
+    "id": "c13",
+    "name": "seasonYearSeconds (Länge des Jahrs auf der Welt-Uhr)",
+    "groesse": "jahr_laenge",
+    "domaene": "klima",
+    "wert": "2400",
+    "einheit": "s Welt-Uhr",
+    "ort": "stamm/dirigent-kern.js:311",
+    "leser": [
+      "stamm/bild-himmel.js:933 – _saisonAnkerGilt: das Jahr des Ankers",
+      "stamm/bild-himmel.js:959 – _saisonPhaseZu: seasonPhase = Anker + Δt/2400 → alle Temperatur-, Schnee-, Eis- und Pegel-Leser"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Kommentar „ein Jahr über 40 min Echtzeit (10 min/Saison)“",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "gelaende-core.js:1319 (jahrTage 365)",
+      "stamm/daten.js:160 (Tag 60 min > Jahr 40 min)"
+    ],
+    "anmerkung": "[Temperatur] Das Jahr ist kürzer als der Tag: 1,5 Jahre je Spieltag (c-mess). 20 Wetter-Züge je Jahr."
+  },
+  {
+    "id": "c14",
+    "name": "DAY_LENGTH_DEFAULT_MINUTES (Tag der Uhr)",
+    "groesse": "tageslaenge",
+    "domaene": "klima",
+    "wert": "60",
+    "einheit": "min Welt-Uhr",
+    "ort": "stamm/daten.js:160",
+    "leser": [
+      "stamm/dirigent-kern.js:312 – dayLengthMinutes der Welt → tickDayNight (stamm/bild-himmel.js:2631) → timeOfDay",
+      "gelaende-core.js:1350 – die Tages-Welle der Temperatur liest timeOfDay",
+      "stamm/daten.js:166 – PEGEL_TAG_S"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "TAG_SZENE_MINUTEN 15 × 4 (stamm/daten.js:156–161); Anker eigenes Spiel (eine Szene = Mittag bis Sonnenuntergang)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "stamm/dirigent-kern.js:311 (Jahr 2400 s)",
+      "gelaende-core.js:1319 (jahrTage)"
+    ],
+    "anmerkung": "[Temperatur] Schieber 1–60 min (stamm/daten.js:146–151)."
+  },
+  {
+    "id": "c15",
+    "name": "PEGEL_TAG_S (Spieltag des Pegels und der Nässe-Dosis)",
+    "groesse": "tageslaenge",
+    "domaene": "klima",
+    "wert": "3600",
+    "einheit": "s Welt-Uhr",
+    "ort": "stamm/daten.js:166",
+    "leser": [
+      "stamm/wasser-hydro.js:93 – pegelLauf(…, PEGEL_TAG_S): Lag-Zeit des Regens in Tagen",
+      "stamm/bild-himmel.js:3076 – nassTage += dt/PEGEL_TAG_S · rain"
+    ],
+    "urteil": "folgt",
+    "woraus": "DAY_LENGTH_DEFAULT_MINUTES · 60 (stamm/daten.js:166)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "gelaende-core.js:1319 (Schnee/Eis: 1 Tag = 2400/365 = 6,6 s)"
+    ],
+    "anmerkung": "[Temperatur] Zwei Tage in derselben Welt: Regen-Physik 3600 s, Schnee-/Eis-Physik 6,6 s."
+  },
+  {
+    "id": "c16",
+    "name": "PEGEL.spende (mittlerer Abfluss des Klimas)",
+    "groesse": "abfluss_spende",
+    "domaene": "klima",
+    "wert": "0.0009",
+    "einheit": "m Wasser je Tag",
+    "ort": "gelaende-core.js:1600",
+    "leser": [
+      "gelaende-core.js:1629 – pegelHubVon: Manning-Hub (1 + q/spende)^0,6",
+      "gelaende-core.js:1665 – pegelLauf: q = spende·(B − 1) + regen·F",
+      "gelaende-core.js:5847 – spendeMm der Heimat"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Kommentar gelaende-core.js:1566 „330 mm im Jahr, gemäßigt-kontinental“, ohne Quelle",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "planet-core.js:2333 (spendeMm = K.abflussMm; am Anker 932,7 mm/a, Heimat 328,5 = 0,35×)"
+    ],
+    "anmerkung": "[Niederschlag] Erste von drei Verkörperungen des Niederschlags; vom Regen der Front entkoppelt."
+  },
+  {
+    "id": "c17",
+    "name": "klimaHeute.spendeMm (Jahres-Abfluss der Tafel)",
+    "groesse": "niederschlag_jahr",
+    "domaene": "klima",
+    "wert": "328.5",
+    "einheit": "mm/a",
+    "ort": "gelaende-core.js:5847",
+    "leser": [],
+    "urteil": "folgt",
+    "woraus": "PEGEL.spende·1000·jahrTage = 0,0009·1000·365; Reise: × spendeVerh (gelaende-core.js:5904)",
+    "technik": false,
+    "ohne_leser": true,
+    "zwilling": [
+      "planet-core.js:2333 (spendeMm = abflussMm)"
+    ],
+    "anmerkung": "[Niederschlag] Nur geprüft (planet-core.js:2179) und Memo-Schlüssel (planet-core.js:2194) — kein Leser ändert die Welt."
+  },
+  {
+    "id": "c18",
+    "name": "spendeVerh (Verhältnis der Spende zur Heimat)",
+    "groesse": "niederschlag_jahr",
+    "domaene": "klima",
+    "wert": "1 (Heimat)",
+    "einheit": "Verhältnis",
+    "ort": "gelaende-core.js:5854",
+    "leser": [
+      "gelaende-core.js:1778 – pegelTafel verh → pegelReihe :1792 (der Hub der Schmelze je Spende)"
+    ],
+    "urteil": "folgt",
+    "woraus": "Reise: abflussMm(Ort)/abflussMm(Anker), planet-core.js:2298 → gelaende-core.js:5918",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "voxel-worker.js:1199"
+    ],
+    "anmerkung": "[Niederschlag] In der Reise der einzige Weg, auf dem Planeten-Niederschlag den Pegel erreicht."
+  },
+  {
+    "id": "c19",
+    "name": "PEGEL.regen (Abfluss je Regen 1)",
+    "groesse": "regen_abfluss",
+    "domaene": "klima",
+    "wert": "0.072",
+    "einheit": "m Wasser je Pegel-Tag",
+    "ort": "gelaende-core.js:1600",
+    "leser": [
+      "gelaende-core.js:1665 – pegelLauf: q += regen·F_j → Hub von See und Fluss (stamm/wasser-hydro.js:93)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Regen 1 = 10 mm/h × 24 h × Beiwert 0,3 (Kommentar gelaende-core.js:1579); Faltung Nash-Kaskade",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "gelaende-core.js:1600 (spende)",
+      "gelaende-core.js:1459 (SCHMELZE.fall)"
+    ],
+    "anmerkung": "[Niederschlag] Mittlerer Regen der Front 0,2984 → 26 140 mm/a Niederschlag, Regen-Abfluss 7 842 mm/a = 23,9× spende; die Flüsse stehen 94–100 % der Zeit an der Krone (c-mess)."
+  },
+  {
+    "id": "c20",
+    "name": "WX_GESETZ.rain (Regen-Stärke je Wetter-Zeile)",
+    "groesse": "niederschlag_staerke",
+    "domaene": "klima",
+    "wert": "klar 0 · bewoelkt 0,12 · nebel 0 · regen 0,6 · sturm 1",
+    "einheit": "0…1 (1 = 10 mm/h laut gelaende-core.js:1579)",
+    "ort": "phyto-core.js:4288",
+    "leser": [
+      "stamm/bild-himmel.js:2820 – _weatherFieldFor: das Feld des EINEN Worts state.weather (Übergang 45 s)",
+      "gelaende-core.js:1351 – Regen kühlt die Luft",
+      "stamm/stoff-material.js:2232 – Nässe: Regen benetzt",
+      "stamm/bild-himmel.js:2258 – _luftBeta: Regen trübt die Luft",
+      "stamm/bild-himmel.js:1093 – Deckung der Regen-Schlieren",
+      "stamm/wasser-hydro.js:254 – Regen-Mittel des Klimas → Pegel",
+      "stamm/bild-himmel.js:3076 – nassTage (Alterung der Werke)",
+      "stamm/kreatur-fauna.js:42 – Vogel-Lied",
+      "stamm/klang.js:2057 – Musik-Schicht"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Labor-Preset (phyto-core.js:4285 „Lab weather preset table“)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "worlds/terrain/phytogenesis.js:3286 (Labor, kein Welt-Leser)"
+    ],
+    "anmerkung": "[Niederschlag] Die Welt liest sie über stamm/daten.js:112 WEATHER_FIELD."
+  },
+  {
+    "id": "c21",
+    "name": "front.stufen.regen (Schwelle nass)",
+    "groesse": "regen_quote",
+    "domaene": "klima",
+    "wert": "0.6",
+    "einheit": "Front-Stärke 0…1",
+    "ort": "phyto-core.js:4325",
+    "leser": [
+      "phyto-core.js:4450 – wetterAt: f ≥ 0,6 → regen",
+      "stamm/bild-himmel.js:2846 – _wetterAmOrt → Wetter-Zug"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "kalibriert auf Anteile (Kommentar phyto-core.js:4312: über 300 Saaten regen 25 %)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Niederschlag] Gemessen an (0,0), Saat der Vorgabe: regen 27,9 %, nass (regen+sturm) 38,7 %; 300 Saaten 24,9 % (c-mess)."
+  },
+  {
+    "id": "c22",
+    "name": "front.stufen.sturm (Schwelle Sturm)",
+    "groesse": "sturm_quote",
+    "domaene": "klima",
+    "wert": "0.79",
+    "einheit": "Front-Stärke 0…1",
+    "ort": "phyto-core.js:4325",
+    "leser": [
+      "phyto-core.js:4449 – wetterAt: f ≥ 0,79 → sturm"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "kalibriert (Kommentar phyto-core.js:4312: sturm 13 %)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Niederschlag] Gemessen 10,7 % an (0,0); 12,8 % über 300 Saaten (c-mess)."
+  },
+  {
+    "id": "c23",
+    "name": "front.wellen (drei Bänder: Wellenlänge, Gewicht)",
+    "groesse": "front_wellen",
+    "domaene": "klima",
+    "wert": "[6600 m, 1] · [4100 m, 0,45] · [2500 m, 0,25]",
+    "einheit": "m, Gewicht",
+    "ort": "phyto-core.js:4321",
+    "leser": [
+      "phyto-core.js:4435 – die Front-Stärke f am Ort",
+      "phyto-core.js:4383 – frontVerteilung (Quantile für Δ regen/sturmQuote)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante; Kommentar phyto-core.js:4313 (3 km windab trocken 23–40 % der Zeit)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Niederschlag] Durchzug bei 11 m/s: 600 s · 373 s · 227 s. Das Wort wechselt je 120-s-Zug mit 68,8 % (c-mess)."
+  },
+  {
+    "id": "c24",
+    "name": "front.zugMS (Zug der Fronten im Höhenwind)",
+    "groesse": "front_zug",
+    "domaene": "wind",
+    "wert": "11",
+    "einheit": "m/s",
+    "ort": "phyto-core.js:4320",
+    "leser": [
+      "phyto-core.js:4431 – s = x·dx + z·dz − 11·t (Bänder ziehen längs θ0)",
+      "stamm/bild-himmel.js:1773 – der Zug der Wolken-Schicht"
+    ],
+    "urteil": "gesetzt_anker",
+    "woraus": "850 hPa, 30–50 km/h (phyto-core.js:4314)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Niederschlag] Der einzige Weg, auf dem ein Wind den Niederschlag ortsabhängig macht."
+  },
+  {
+    "id": "c25",
+    "name": "front.biegeM / querM (Biegung der Front-Linie)",
+    "groesse": "front_wellen",
+    "domaene": "klima",
+    "wert": "600 / 21000",
+    "einheit": "m",
+    "ort": "phyto-core.js:4322",
+    "leser": [
+      "phyto-core.js:4431 – quer zur Grundrichtung ±600 m Versatz je 21 km"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Niederschlag] Quer zum Wind ist das Wetter fast gleich: dasselbe Wort 3 km quer 60 %, 10 km quer 81 %; längs 3 km 9,8 % (c-mess)."
+  },
+  {
+    "id": "c26",
+    "name": "Phasen der Front und Feuchte (Saat)",
+    "groesse": "samen",
+    "domaene": "klima",
+    "wert": "FNV-1a(saat+\"-front\") → LCG je Welle, biege, feuchte",
+    "einheit": "rad",
+    "ort": "phyto-core.js:4337",
+    "leser": [
+      "phyto-core.js:4435 – Phase je Band",
+      "phyto-core.js:4439 – Phase der Feuchte-Welle"
+    ],
+    "urteil": "folgt",
+    "woraus": "Saat der Welt (worldMeta.seed, stamm/bild-himmel.js:2847); kein Math.random",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Niederschlag] Das Wetter ist eine Funktion f(Saat, x, z, t, Δ) — deterministisch."
+  },
+  {
+    "id": "c27",
+    "name": "ort.wetter.regenQuote (Δ nasse Zeit der Reise-Welt)",
+    "groesse": "regen_quote",
+    "domaene": "klima",
+    "wert": "null (Heimat); Δ = q(Ort) − q(Anker), q = N/(N+900)",
+    "einheit": "Anteil",
+    "ort": "gelaende-core.js:5920",
+    "leser": [
+      "phyto-core.js:4419 – wetterVersatz: Quantil-Weg der Regen-Stufe",
+      "phyto-core.js:4446 – stRegen += Weg",
+      "stamm/bild-himmel.js:2851 – _wetterAmOrt reicht ort.wetter"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "planet-core.js:2337 regenQuote = niederschlagMm/(niederschlagMm + 900), dort „gesetzt“",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "voxel-worker.js:1203"
+    ],
+    "anmerkung": "[Niederschlag] Am Anker sagt der Planet 0,582; die Heimat-Front trägt nass 0,387 (c-mess). Δ 0,1 hebt nass 0,387 → 0,485."
+  },
+  {
+    "id": "c28",
+    "name": "ort.wetter.sturmQuote (Δ Sturm-Zeit der Reise-Welt)",
+    "groesse": "sturm_quote",
+    "domaene": "klima",
+    "wert": "null (Heimat); 0,03 + 0,25·e^(−v²), v aus Breite/Zellbreite",
+    "einheit": "Anteil",
+    "ort": "gelaende-core.js:5920",
+    "leser": [
+      "phyto-core.js:4419 – wetterVersatz Sturm-Stufe",
+      "phyto-core.js:4445 – stSturm += Weg"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "planet-core.js:2337 (Breite → v = (|φ| − 1,7·zellBreite)/(0,4·zellBreite), :2334), „gesetzt“",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "voxel-worker.js:1203"
+    ],
+    "anmerkung": "[Niederschlag] Der EINZIGE Weg, auf dem die Breite das Wetter berührt — nur bei der Geburt einer Reise-Welt, als Δ zum Anker. Am Anker 0,207."
+  },
+  {
+    "id": "c29",
+    "name": "Regen-Mittel des Klimas (Grund des Pegels)",
+    "groesse": "niederschlag_jahr",
+    "domaene": "klima",
+    "wert": "0.2984",
+    "einheit": "Regen-Einheit (Mittel über 2000 Züge)",
+    "ort": "stamm/wasser-hydro.js:247",
+    "leser": [
+      "stamm/wasser-hydro.js:93 – pegelLauf(…, mittel): der Grund B des Pegels"
+    ],
+    "urteil": "folgt",
+    "woraus": "Mittel von WEATHER_FIELD[_wetterAmOrt(0, 0, k·120)].rain, k < REGEN_KLIMA_ZUEGE 2000 (stamm/wasser-hydro.js:935) — an (0,0), nie am Ort",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Niederschlag] EINE Zahl je Welt; 20 000 Züge: 0,2998 (c-mess)."
+  },
+  {
+    "id": "c30",
+    "name": "SCHMELZE.fall (Schneefall je Frosttag)",
+    "groesse": "schneefall",
+    "domaene": "klima",
+    "wert": "0.0015",
+    "einheit": "m Wasser je Tag",
+    "ort": "gelaende-core.js:1459",
+    "leser": [
+      "gelaende-core.js:1482 – schneePegel: voll = fall·Frosttage",
+      "gelaende-core.js:1488 – Wachsen des Pegels"
+    ],
+    "urteil": "gesetzt_anker",
+    "woraus": "Hock 2003 (gelaende-core.js:1454–1455: Schneefall 1,5 mm Wasser je Frosttag)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "gelaende-core.js:1600 (spende)",
+      "gelaende-core.js:1600 (regen)"
+    ],
+    "anmerkung": "[Niederschlag] Dritte Verkörperung: der Schnee fällt an jedem Frosttag gleich, ob die Front klar oder Sturm sagt."
+  },
+  {
+    "id": "c31",
+    "name": "WETTER_ZUG_SEK (Takt des Wetter-Zugs)",
+    "groesse": "wetter_takt",
+    "domaene": "klima",
+    "wert": "120",
+    "einheit": "s Welt-Uhr",
+    "ort": "stamm/daten.js:170",
+    "leser": [
+      "stamm/dirigent-takt.js:1714 – je Zug EIN neues Wort",
+      "stamm/dirigent-takt.js:1734 – Abtastzeit der Front",
+      "stamm/wasser-hydro.js:254 – Stützstellen des Regen-Mittels"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante (stamm/daten.js:168–169)",
+    "technik": true,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Niederschlag] Mittlere Dauer eines Worts ≈ 174 s (120/0,688)."
+  },
+  {
+    "id": "c32",
+    "name": "WEATHER_TRANSITION_DURATION_MS (Übergang des Worts)",
+    "groesse": "wetter_takt",
+    "domaene": "klima",
+    "wert": "45000",
+    "einheit": "ms",
+    "ort": "stamm/daten.js:144",
+    "leser": [
+      "stamm/bild-himmel.js:2804 – _weatherBlendedValue: Feld-Werte blenden über 45 s",
+      "stamm/bild-himmel.js:3204 – requestWeatherTransition (Gemüt moduliert)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Kommentar „sanft, nicht zu lang“",
+    "technik": true,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Niederschlag] Bild-Übergang; der Pegel rampt mit 45 s (gelaende-core.js:1574–1575 Stempel linear)."
+  },
+  {
+    "id": "c33",
+    "name": "WETTER_ZEILE / WETTER_WORT (Wort ↔ Zeile) und die Wetter-Tafel je Welt",
+    "groesse": "wetter_wort",
+    "domaene": "klima",
+    "wert": "sunny=klar · cloudy=bewoelkt · foggy=nebel · rainy=regen · stormy=sturm",
+    "einheit": "Abbildung",
+    "ort": "stamm/daten.js:53",
+    "leser": [
+      "stamm/bild-himmel.js:2853 – _weltGesetz(wm).wetter[zeile] spricht das Wort",
+      "stamm/speicher-welten.js:102 – Wetter-Tafel einer fernen Welt"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Namens-Abbildung",
+    "technik": true,
+    "ohne_leser": false,
+    "zwilling": [
+      "stamm/daten.js:74 (WELT_GESETZ_ERDE.wetter)",
+      "stamm/daten.js:92 (ULTIVERSUM ferne wetter)"
+    ],
+    "anmerkung": "[Niederschlag] Keine Größe, nur Name."
+  },
+  {
+    "id": "c34",
+    "name": "WEATHER_INTENSITY (Achse des Worts)",
+    "groesse": "wetter_intensitaet",
+    "domaene": "klima",
+    "wert": "sunny 0 · foggy 0,45 · cloudy 0,8 · rainy 1 · stormy 1,35",
+    "einheit": "Achse",
+    "ort": "stamm/daten.js:42",
+    "leser": [
+      "stamm/bild-himmel.js:2863 – _weatherIsWet (≥ 1) → stamm/dienst.js:471, stamm/feld-leben.js:1749, stamm/kreatur-verhalten.js:2366, stamm/werkstatt-hud.js:145",
+      "stamm/bild-himmel.js:1763 – cloudCover = 0,12 + 0,78·I"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "phyto-core.js:4288 (rain-Spalte: dieselbe Nass-Frage, andere Zahlen)"
+    ],
+    "anmerkung": "[Niederschlag] Zweite Achse neben WX_GESETZ: nass ist I ≥ 1, nicht rain > 0 (bewoelkt rain 0,12 ist nicht nass)."
+  },
+  {
+    "id": "c35",
+    "name": "state.weather (das EINE Wetter-Wort der Welt)",
+    "groesse": "wetter_wort",
+    "domaene": "klima",
+    "wert": "eins von fünf Worten, global",
+    "einheit": "Wort",
+    "ort": "stamm/dirigent-takt.js:1740",
+    "leser": [
+      "stamm/bild-himmel.js:2820 – _weatherFieldFor: das Feld des EINEN Worts state.weather (Übergang 45 s)",
+      "stamm/stoff-material.js:239 – Wind-Stärke",
+      "stamm/bild-himmel.js:3068 – Nässe",
+      "stamm/bild-himmel.js:2880 – Temperatur"
+    ],
+    "urteil": "folgt",
+    "woraus": "wetterAt an der Spieler-Position (stamm/dirigent-takt.js:1733–1734) je 120 s; sonst der Wunsch der Welt (DSL/Nexus)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Niederschlag] Die Funktion f(x, z, t) wird nur am Spieler abgetastet: jeder Ort der Welt hat zur selben Zeit dasselbe Wetter."
+  },
+  {
+    "id": "c36",
+    "name": "nassTage (Nässe-Dosis der Welt)",
+    "groesse": "naesse_dosis",
+    "domaene": "klima",
+    "wert": "∫ rain dt / 3600",
+    "einheit": "Regen-Tage",
+    "ort": "stamm/bild-himmel.js:3076",
+    "leser": [
+      "stamm/siedlung-satz.js:797 – das Alter der Werke (Rost, Moos) nach nass/nassTage"
+    ],
+    "urteil": "folgt",
+    "woraus": "Integral des rain-Kanals des globalen Worts über die Welt-Uhr",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Niederschlag] Ein Zähler je Welt, kein Ortsbezug."
+  },
+  {
+    "id": "c37",
+    "name": "Grundrichtung θ0 des Winds",
+    "groesse": "wind_richtung",
+    "domaene": "wind",
+    "wert": "Heimat (0,607, 0,795) — wohin der Wind weht",
+    "einheit": "Einheitsvektor (x Ost, z Süd)",
+    "ort": "phyto-core.js:4343",
+    "leser": [
+      "phyto-core.js:4357 – windRichtung → stamm/stoff-material.js:218 _windDirAt → _windAt",
+      "phyto-core.js:4428 – Zugrichtung der Front",
+      "stamm/bild-himmel.js:1769 – Zug der Wolken",
+      "stamm/siedlung-satz.js:880 – Wetter-Seite der Alterung"
+    ],
+    "urteil": "folgt",
+    "woraus": "t0 = FNV-1a(saat + \"-wind-dir\")/2^32 · 2π (phyto-core.js:4336, :4343)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "planet-core.js:2336 (windX/windZ der Zirkulation; am Anker (0,958, −0,286), 69,2° neben θ0 — ohne Leser)"
+    ],
+    "anmerkung": "[Wind] Ein Hash, keine Zirkulation; eine Richtung für die ganze Welt (keine x, z-Abhängigkeit)."
+  },
+  {
+    "id": "c38",
+    "name": "Mäander der Richtung",
+    "groesse": "wind_richtung",
+    "domaene": "wind",
+    "wert": "0,5·sin(0,009 t + φ1) + 0,22·sin(0,0257 t + φ2)",
+    "einheit": "rad",
+    "ort": "phyto-core.js:4357",
+    "leser": [
+      "stamm/stoff-material.js:218 – _windDirAt → jeder Wind-Leser"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstanten; Phasen aus der Saat (phyto-core.js:4344–4345)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Wind] ±41,3°, Perioden 698 s und 244 s (c-mess)."
+  },
+  {
+    "id": "c39",
+    "name": "Δ windX / windZ (Wind-Richtung des Planeten am Ort)",
+    "groesse": "wind_richtung",
+    "domaene": "wind",
+    "wert": "am Anker (0,958, −0,286); Δ = Ort − Anker",
+    "einheit": "Einheitsvektor",
+    "ort": "planet-core.js:2336",
+    "leser": [],
+    "urteil": "folgt",
+    "woraus": "windOst/windNord des Planeten-Klimas (planet-core.js:2335)",
+    "technik": false,
+    "ohne_leser": true,
+    "zwilling": [
+      "phyto-core.js:4343 (θ0 aus dem Hash)"
+    ],
+    "anmerkung": "[Wind] Fällt am Chokepoint: voxel-worker.js:1203 reicht nur regenQuote/sturmQuote; gelaende-core.js:5701 kennt kein windX; nur scripts/diag-planet.cjs:543 und :1256 prüfen es."
+  },
+  {
+    "id": "c40",
+    "name": "WX_GESETZ.wind (Wind-Kanal je Wetter-Zeile)",
+    "groesse": "wind_staerke",
+    "domaene": "wind",
+    "wert": "klar 0,06 · bewoelkt 0,3 · nebel 0,1 · regen 0,35 · sturm 1",
+    "einheit": "U 0…1",
+    "ort": "phyto-core.js:4288",
+    "leser": [
+      "stamm/stoff-material.js:239 – staerke = wind·wob·form",
+      "stamm/stoff-material.js:2238 – Verdunstung der Nässe",
+      "stamm/dirigent-takt.js:2470 – uWindStrength/uWindDir am AUGE: Gras, Streu, Krone (Shader)",
+      "stamm/bild-himmel.js:2561 – der Wind am Wasser (Kräuseln) am AUGE",
+      "stamm/bild-himmel.js:1098 – die Drift der Regen-Schlieren am AUGE",
+      "stamm/koerper-fahrt.js:1851 – der Wagen im Wind",
+      "stamm/feld-brand.js:321 – das Feuer läuft mit dem Wind",
+      "stamm/koerper-leib.js:1869 – der Leib (Tuch/Haar) im Wind",
+      "stamm/koerper-seele.js:1628 – Rauch/Geruch des Wesens treibt",
+      "stamm/kreatur-fauna.js:622 – die Fauna im Wind",
+      "stamm/siedlung-bewohner.js:116 – Rauch der Bewohner",
+      "stamm/klang.js:411 – das Ohr hört den Wind"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Labor-Preset",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Wind] Ein Wert je Wort, global."
+  },
+  {
+    "id": "c41",
+    "name": "WIND_FELD.sturmMS (Wind am Ort bei U = 1)",
+    "groesse": "wind_staerke",
+    "domaene": "wind",
+    "wert": "24",
+    "einheit": "m/s",
+    "ort": "phyto-core.js:4318",
+    "leser": [
+      "stamm/stoff-material.js:240 – ms = staerke·boe·24 → stamm/koerper-fahrt.js:1851 u. a.",
+      "stamm/bild-sicht.js:1495 – Weißkappen (Monahan) U = staerke·0,7·24"
+    ],
+    "urteil": "gesetzt_anker",
+    "woraus": "Beaufort 9–10 (20,8–28,4 m/s), phyto-core.js:4315",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "foundry-core.js:202 (REGEN_GESETZ.drift 7 m/s je Wind-Einheit gegen 16,8)"
+    ],
+    "anmerkung": "[Wind] Mittlere m/s (Böen-Mitte): klar 1,0 · nebel 1,7 · bewoelkt 5,0 · regen 5,9 · sturm 16,8; Spitze sturm 39,1 (c-mess)."
+  },
+  {
+    "id": "c42",
+    "name": "WIND_GESETZ.boe (die wandernde Böe)",
+    "groesse": "wind_staerke",
+    "domaene": "wind",
+    "wert": "omega 0,4 · k 0,0384 · amp 0,45 · mitte 0,7",
+    "einheit": "1/s · 1/m · – · –",
+    "ort": "phyto-core.js:6598",
+    "leser": [
+      "stamm/stoff-material.js:237 – boe am Ort",
+      "stamm/stoff-material.js:150 – _windSwayOffset (Shader)",
+      "stamm/bild-sicht.js:1495 – mitte für die Weißkappen"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstanten (stamm/daten.js:137–139 „EINE Quelle für Auge und Ohr“)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "stamm/daten.js:140 (WIND_BOE liest sie)"
+    ],
+    "anmerkung": "[Wind] λ 163,6 m, Periode 15,7 s (c-mess)."
+  },
+  {
+    "id": "c43",
+    "name": "_windWob (Böen-Drift der Wind-Uhr)",
+    "groesse": "wind_staerke",
+    "domaene": "wind",
+    "wert": "1 + 0,18·(0,6 sin 0,19t + 0,3 sin(0,47t+1,3) + 0,1 sin(1,13t+3,7))",
+    "einheit": "Faktor",
+    "ort": "stamm/stoff-material.js:266",
+    "leser": [
+      "stamm/stoff-material.js:239 – staerke"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstanten",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Wind] ±18 %, global (nur t)."
+  },
+  {
+    "id": "c44",
+    "name": "WIND_FORM (Lee und Tal-Düse)",
+    "groesse": "wind_staerke",
+    "domaene": "wind",
+    "wert": "lee max −40 % (Abstände 40–320 m); duese max +20 % (Seiten 60/120 m)",
+    "einheit": "Faktor",
+    "ort": "gelaende-core.js:2777",
+    "leser": [
+      "gelaende-core.js:2781 – windForm → stamm/stoff-material.js:285 _windForm → :238 staerke"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Methode: Schutz-Index Sx nach Winstral 2002 (gelaende-core.js:2772); die Beträge (Lee bis −40 %, Düse bis +20 %) gesetzt",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Wind] Der einzige Ortsbezug der Wind-STÄRKE: die Form des Geländes in Windrichtung (Zelle 16 m), nicht die absolute Höhe."
+  },
+  {
+    "id": "c45",
+    "name": "WEATHER_WIND_AMP (Weite der Halm-Biegung)",
+    "groesse": "wind_staerke",
+    "domaene": "wind",
+    "wert": "0.55",
+    "einheit": "Faktor",
+    "ort": "stamm/daten.js:135",
+    "leser": [
+      "stamm/dirigent-takt.js:2470 – uWindStrength = staerke·0,55",
+      "stamm/stoff-material.js:257 – _windWiegen"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "„Browser-tunbar“ (stamm/daten.js:133); Anker eigenes Bild",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Wind] Bild-Verstärker, keine Physik."
+  },
+  {
+    "id": "c46",
+    "name": "WIND_WIEGEN (Takt des Wiegens)",
+    "groesse": "wind_wiegen",
+    "domaene": "wind",
+    "wert": "takt 1,7 · quer 0,7 · laengs 1,5",
+    "einheit": "rad/s · Faktor",
+    "ort": "stamm/stoff-material.js:3865",
+    "leser": [
+      "stamm/stoff-material.js:256 – _windWiegen (Haar, Löser auf der Welt-Uhr)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstanten",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Wind] Pflanze/Haar, nicht Klima — gezählt, weil es die Wind-Stärke trägt."
+  },
+  {
+    "id": "c47",
+    "name": "REGEN_GESETZ.drift (Regen-Drift je Wind-Einheit)",
+    "groesse": "wind_staerke",
+    "domaene": "wind",
+    "wert": "7",
+    "einheit": "m/s je Wind-Einheit (min 0,1)",
+    "ort": "foundry-core.js:202",
+    "leser": [
+      "stamm/bild-himmel.js:1099 – Drift der Regen-Schlieren"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "phyto-core.js:4318 (sturmMS·boe.mitte = 16,8 m/s je Einheit)"
+    ],
+    "anmerkung": "[Wind] Zwei Umrechnungen derselben Wind-Einheit in m/s (7 gegen 16,8)."
+  },
+  {
+    "id": "c48",
+    "name": "WOLKEN_SCHICHT.deckung (Bedeckung klar…Regen)",
+    "groesse": "wolken",
+    "domaene": "klima",
+    "wert": "[0.12, 0.9]",
+    "einheit": "Deckung 0…1",
+    "ort": "welt-licht.js:872",
+    "leser": [
+      "stamm/bild-himmel.js:1763 – cloudCover = 0,12 + 0,78·I",
+      "stamm/bild-himmel.js:151 – _wolkenGewicht"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Anker eigenes Bild (stamm/bild-himmel.js:1760: „0.32 las schon als bewölkt“)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Wolke] Bedeckung: nebel 0,47 · bewoelkt 0,74 · regen 0,9 · sturm 1 (geklemmt)."
+  },
+  {
+    "id": "c49",
+    "name": "cloudCover (Bedeckung des Himmels)",
+    "groesse": "wolken",
+    "domaene": "klima",
+    "wert": "0,12 + 0,78·WEATHER_INTENSITY",
+    "einheit": "0…1",
+    "ort": "stamm/bild-himmel.js:1763",
+    "leser": [
+      "welt-licht.js:934 – wolkenFeld: Schwelle des fbm-Felds",
+      "stamm/bild-himmel.js:133 – Wolken-Schatten am Boden (_wolkenGewicht :151)"
+    ],
+    "urteil": "folgt",
+    "woraus": "_weatherBlendedValue(0,12, 0,9) über die Achse des globalen Worts",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Wolke] EINE Zahl für den ganzen Himmel."
+  },
+  {
+    "id": "c50",
+    "name": "wolkenFeld (Ort der Wolken)",
+    "groesse": "wolken",
+    "domaene": "klima",
+    "wert": "fbm-Rauschen, Schwelle aus cloudCover, Zug mit zugMS längs θ0",
+    "einheit": "Dichte",
+    "ort": "welt-licht.js:901",
+    "leser": [
+      "welt-licht.js:950 – wolkenMenge → Himmel, Schatten, Licht"
+    ],
+    "urteil": "folgt",
+    "woraus": "Rauschen + Wolken-Uhr aus der Saat (stamm/dirigent-takt.js:1745 _wolkenSaat)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Wolke] Nicht mit der Front gekoppelt: wo die Front regnet, zeigt das Feld nicht dichter; geteilt nur zugMS/θ0."
+  },
+  {
+    "id": "c51",
+    "name": "WOLKEN_SCHICHT.hoeheM (Höhe der Wolken)",
+    "groesse": "wolken",
+    "domaene": "klima",
+    "wert": "800",
+    "einheit": "m",
+    "ort": "welt-licht.js:865",
+    "leser": [
+      "stamm/bild-himmel.js:1773 – Winkel-Zug der Wolke",
+      "welt-licht.js:901 – Projektion des Felds"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Wolke]"
+  },
+  {
+    "id": "c52",
+    "name": "WX_GESETZ.sun (Sonne durch die Wolke)",
+    "groesse": "wolken",
+    "domaene": "klima",
+    "wert": "klar 1 · bewoelkt 0,32 · nebel 0,48 · regen 0,55 · sturm 0,15",
+    "einheit": "0…1",
+    "ort": "phyto-core.js:4288",
+    "leser": [
+      "gelaende-core.js:1350 – Tagesgang der Luft",
+      "stamm/stoff-material.js:2238 – Verdunstung",
+      "stamm/daten.js:24 – skyMul / lightMul (Licht)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Labor-Preset",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Wolke] regen (0,55) läßt mehr Sonne durch als bewoelkt (0,32)."
+  },
+  {
+    "id": "c53",
+    "name": "WX_GESETZ.grey (Decke)",
+    "groesse": "wolken",
+    "domaene": "klima",
+    "wert": "klar 0 · bewoelkt 0,74 · nebel 0,46 · regen 0,6 · sturm 0,88",
+    "einheit": "0…1",
+    "ort": "phyto-core.js:4288",
+    "leser": [
+      "stamm/daten.js:26 – direkt/himmel/grau des Lichts",
+      "stamm/bild-himmel.js:1290 – Richtlicht ergraut (WEATHER_GREY_K 0,7)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Labor-Preset",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Wolke] Licht-Leser (b), hier nur als Wolken-Größe."
+  },
+  {
+    "id": "c54",
+    "name": "WX_GESETZ.fog (Dunst je Zeile)",
+    "groesse": "nebel",
+    "domaene": "klima",
+    "wert": "klar 0,15 · bewoelkt 0,4 · nebel 1 · regen 0,4 · sturm 0,7",
+    "einheit": "0…1",
+    "ort": "phyto-core.js:4288",
+    "leser": [
+      "stamm/bild-himmel.js:2258 – _luftBeta: Extinktion der Luft → Sichtweite"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Labor-Preset",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Nebel] Kommentar stamm/daten.js:108 „fog multipliziert fogMult; rain/sun Reserve“ — fogMult gibt es nicht, rain und sun werden gelesen (Karte ≠ Code)."
+  },
+  {
+    "id": "c55",
+    "name": "LUFT.sichtKlarM / sichtSturmM (Sichtweite)",
+    "groesse": "nebel",
+    "domaene": "klima",
+    "wert": "20000 / 1500",
+    "einheit": "m",
+    "ort": "foundry-core.js:305",
+    "leser": [
+      "stamm/bild-himmel.js:2255 – Dunst- und Regen-Koeffizient aus den zwei Ankern"
+    ],
+    "urteil": "gesetzt_anker",
+    "woraus": "Koschmieder (Kontrast 0,02), foundry-core.js:286",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Nebel]"
+  },
+  {
+    "id": "c56",
+    "name": "LUFT.skalenHoeheM (Skalenhöhe des Dunsts)",
+    "groesse": "nebel",
+    "domaene": "klima",
+    "wert": "1000",
+    "einheit": "m",
+    "ort": "foundry-core.js:305",
+    "leser": [
+      "stamm/bild-himmel.js:2521 – U.hoehe",
+      "stamm/bild-himmel.js:2287 – β·e^(−(y−bezug)/1000): Sicht wächst mit der Höhe"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante (Aerosol-Skalenhöhe ~1 km)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Nebel] Der einzige Höhenbezug außerhalb der Temperatur — Licht, nicht Klima."
+  },
+  {
+    "id": "c57",
+    "name": "front.stufen.nebel / feuchteM (Nebel aus der Feuchte-Welle)",
+    "groesse": "nebel",
+    "domaene": "klima",
+    "wert": "0.72 / 31000",
+    "einheit": "Feuchte 0…1 / m",
+    "ort": "phyto-core.js:4324",
+    "leser": [
+      "phyto-core.js:4452 – nebel, wo f < 0,43 und Feuchte ≥ 0,72"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstanten",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Nebel] nebel 14,3 % der Zeit an (0,0) (c-mess)."
+  },
+  {
+    "id": "c58",
+    "name": "Feuchte der Front (einzige Luftfeuchte-Größe)",
+    "groesse": "luftfeuchte",
+    "domaene": "klima",
+    "wert": "0,5 + 0,5·sin(2π s/31000 + φ)",
+    "einheit": "0…1",
+    "ort": "phyto-core.js:4439",
+    "leser": [
+      "phyto-core.js:4452 – wählt nebel"
+    ],
+    "urteil": "folgt",
+    "woraus": "Saat-Phase w.feuchte (phyto-core.js:4348) längs der Zugachse s",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Feuchte] Der Rückgabewert .feuchte hat keinen Leser (nur .zeile: stamm/bild-himmel.js:2852); relative Luftfeuchte gibt es nicht."
+  },
+  {
+    "id": "c59",
+    "name": "NAESSE.verdunstS + sonne/wind/luft (Trocknen)",
+    "groesse": "verdunstung",
+    "domaene": "klima",
+    "wert": "480 s; 0,6·sun + 0,4·wind + 0,15",
+    "einheit": "s; Gewichte",
+    "ort": "stamm/stoff-material.js:3791",
+    "leser": [
+      "stamm/stoff-material.js:2238 – _trockenRate",
+      "stamm/bild-himmel.js:3082 – U.naesse: Albedo und Rauheit der Welt"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Penman nur als Bild (stamm/stoff-material.js:3779); Zahlen kalibriert: Klar trocknet 0,91 in 9,4 min (Anker eigenes Bild)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Feuchte] Gemessen: klar 9,4 · nebel 15,2 · bewoelkt 15,8 min (c-mess). Liest den Wind-KANAL des Worts, nicht den Wind am Ort."
+  },
+  {
+    "id": "c60",
+    "name": "NAESSE.benetzenS / regenAb (Benetzen)",
+    "groesse": "benetzung",
+    "domaene": "klima",
+    "wert": "150 s / 0,05",
+    "einheit": "s / rain",
+    "ort": "stamm/stoff-material.js:3790",
+    "leser": [
+      "stamm/stoff-material.js:2232 – 1 + (n0 − 1)·e^(−t·rain/150)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Kommentar: Regen 0,6 nach 10 min 0,91",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Feuchte]"
+  },
+  {
+    "id": "c61",
+    "name": "NAESSE.versickern (Poren des Bodens)",
+    "groesse": "verdunstung",
+    "domaene": "klima",
+    "wert": "0.3",
+    "einheit": "Anteil",
+    "ort": "stamm/stoff-material.js:3795",
+    "leser": [
+      "stamm/stoff-material.js:2239 – × (1 − 0,3 + 0,3·poren)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Feuchte]"
+  },
+  {
+    "id": "c62",
+    "name": "state.naesse (Nässe der Welt)",
+    "groesse": "naesse",
+    "domaene": "klima",
+    "wert": "0…1, EINE Zahl",
+    "einheit": "Film-Anteil",
+    "ort": "stamm/bild-himmel.js:3080",
+    "leser": [
+      "stamm/bild-himmel.js:3082 – Uniform naesse (Albedo, Rauheit, Reifen-Haft)"
+    ],
+    "urteil": "folgt",
+    "woraus": "exakt je Schritt integriert aus dem Feld des globalen Worts (stamm/stoff-material.js:2229–2234)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Feuchte] Ein Zustand, der vorwärts geschrieben wird — global, nicht je Ort."
+  },
+  {
+    "id": "c63",
+    "name": "FEUCHTE (Boden-Feuchte, nicht Luft)",
+    "groesse": "boden_feuchte",
+    "domaene": "klima",
+    "wert": "flussReichweite 26 m · hoeheNah 1,5 · hoeheFern 7 · Gewicht 0,85",
+    "einheit": "m / Gewicht",
+    "ort": "stamm/gelaende-boden.js:3220",
+    "leser": [
+      "stamm/gelaende-boden.js:1538 – _feuchteAt → Boden-Farbe :1584, stamm/feld-brand.js:268, stamm/vegetation-baum.js:1342, stamm/siedlung-satz.js:792"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Fluss-Abstand und Höhe über dem Wasser",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Feuchte] Gehört zum Blatt Boden; liest weder Regen noch Front."
+  },
+  {
+    "id": "c64",
+    "name": "SCHNEE.start / voll (Band der Schneegrenze)",
+    "groesse": "schnee_grenze",
+    "domaene": "klima",
+    "wert": "140 / 185",
+    "einheit": "m über dem Meer",
+    "ort": "gelaende-core.js:1283",
+    "leser": [
+      "stamm/gelaende-boden.js:2602 – die Schnee-Farbe des Bodens (Stamm)",
+      "stamm/gelaende-chunks.js:396 – der Versatz reist in den Faden (voxel-worker.js:1581 → :3343 Feld-Farbe)",
+      "stamm/bild-sicht.js:2323 – die Sicht färbt mit demselben Versatz",
+      "gelaende-core.js:1297 – schnee(): Weiß-Anteil",
+      "gelaende-core.js:5850 – bestimmt kuehlungKJeM"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Anker eigenes Bild: Schnee auf den obersten 1–3 % des Landes (gelaende-core.js:1272–1273)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Schnee] Die Höhe der Schneegrenze trägt den Temperatur-Gradienten, nicht umgekehrt."
+  },
+  {
+    "id": "c65",
+    "name": "SCHNEE.zungen (Rauschen der Grenze)",
+    "groesse": "schnee_grenze",
+    "domaene": "klima",
+    "wert": "λ≈330 m ±18 m; λ≈45 m ±7 m",
+    "einheit": "m",
+    "ort": "gelaende-core.js:1285",
+    "leser": [
+      "gelaende-core.js:1296 – zunge je (x, z)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstanten (Prüfung Runde 2, gelaende-core.js:1275)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Schnee] Der einzige x, z-Bezug des Schnees — Rauschen, keine Lage."
+  },
+  {
+    "id": "c66",
+    "name": "schneeLinie (Linie des Schnee-Pegels)",
+    "groesse": "schnee_grenze",
+    "domaene": "klima",
+    "wert": "Sommer 140,6 · Herbst 117,1 · Frühling 33,6 · Winter-Mitte −20,2 · tiefst −32,0 (Phase 0,92)",
+    "einheit": "m über dem Meer",
+    "ort": "gelaende-core.js:1491",
+    "leser": [
+      "gelaende-core.js:1506 – schneeVersatz",
+      "gelaende-core.js:5915 – schneeBandM der Reise"
+    ],
+    "urteil": "folgt",
+    "woraus": "tiefste Höhe mit schneePegel ≥ deckt, Halbierung (gelaende-core.js:1494–1503)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Schnee] Kommentar gelaende-core.js:1457 nennt „im Winter am Meer (−31 m)“; gemessen −32,0 m (Minimum) bzw. −20,2 m (Winter-Mitte)."
+  },
+  {
+    "id": "c67",
+    "name": "schneeVersatz (Weg der Grenze seit der Sommer-Mitte)",
+    "groesse": "schnee_grenze",
+    "domaene": "klima",
+    "wert": "Winter-Mitte −160",
+    "einheit": "m (Stufe 2 m)",
+    "ort": "gelaende-core.js:1505",
+    "leser": [
+      "stamm/gelaende-boden.js:2602 – die Schnee-Farbe des Bodens (Stamm)",
+      "stamm/gelaende-chunks.js:396 – der Versatz reist in den Faden (voxel-worker.js:1581 → :3343 Feld-Farbe)",
+      "stamm/bild-sicht.js:2323 – die Sicht färbt mit demselben Versatz"
+    ],
+    "urteil": "folgt",
+    "woraus": "linie(saison) − linie(sommerPhase), gerundet auf SCHMELZE.stufe",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Schnee] Gilt global: EIN Versatz für die ganze Welt (stamm/bild-himmel.js:2934)."
+  },
+  {
+    "id": "c68",
+    "name": "SCHMELZE.stufe (Rasten des Versatzes)",
+    "groesse": "schnee_grenze",
+    "domaene": "klima",
+    "wert": "2",
+    "einheit": "m",
+    "ort": "gelaende-core.js:1463",
+    "leser": [
+      "gelaende-core.js:1507 – Rundung des Versatzes"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante",
+    "technik": true,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Schnee] Bremst Neubau der Farbe."
+  },
+  {
+    "id": "c69",
+    "name": "schneeBandM (Band der Reise-Welt)",
+    "groesse": "schnee_grenze",
+    "domaene": "klima",
+    "wert": "0 (Heimat)",
+    "einheit": "m",
+    "ort": "gelaende-core.js:5855",
+    "leser": [
+      "gelaende-core.js:1294 – band in schnee()"
+    ],
+    "urteil": "folgt",
+    "woraus": "Reise: linie(Ort) − linie(Heimat), gelaende-core.js:5919",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Schnee]"
+  },
+  {
+    "id": "c70",
+    "name": "SCHMELZE.gradTag (Grad-Tag-Faktor)",
+    "groesse": "schmelz_faktor",
+    "domaene": "klima",
+    "wert": "0.006",
+    "einheit": "m Wasser je K·Tag",
+    "ort": "gelaende-core.js:1460",
+    "leser": [
+      "gelaende-core.js:1481 – zehrt im schneePegel",
+      "gelaende-core.js:1617 – abfluss der Schmelze → Pegel"
+    ],
+    "urteil": "gesetzt_anker",
+    "woraus": "Braithwaite 1995 / Hock 2003: 3–6 mm/(K·d) (gelaende-core.js:1446, :1454) — gesetzt am oberen Rand",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Schnee]"
+  },
+  {
+    "id": "c71",
+    "name": "SCHMELZE.deckt (Schnee deckt ab)",
+    "groesse": "schnee_grenze",
+    "domaene": "klima",
+    "wert": "0.05",
+    "einheit": "m Wasser",
+    "ort": "gelaende-core.js:1461",
+    "leser": [
+      "gelaende-core.js:1494 – schneeLinie"
+    ],
+    "urteil": "gesetzt_anker",
+    "woraus": "Hock 2003 (gelaende-core.js:1455)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Schnee] Am Meer liegt an 84 von 365 Tagen ≥ 5 cm (c-mess)."
+  },
+  {
+    "id": "c72",
+    "name": "SCHMELZE.firn (Firn über dem Jahr)",
+    "groesse": "firn",
+    "domaene": "klima",
+    "wert": "2",
+    "einheit": "m Wasser",
+    "ort": "gelaende-core.js:1462",
+    "leser": [
+      "gelaende-core.js:1486 – Pegel des Firns, wo der Sommer nicht zehrt"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Schnee]"
+  },
+  {
+    "id": "c73",
+    "name": "schneePegel (Schnee-Wasser-Äquivalent)",
+    "groesse": "schnee_pegel",
+    "domaene": "klima",
+    "wert": "f(y, Saison); Meer Winter-Mitte 0,077",
+    "einheit": "m Wasser",
+    "ort": "gelaende-core.js:1467",
+    "leser": [
+      "gelaende-core.js:1494 – schneeLinie",
+      "gelaende-core.js:1525 – schneeTiefe → Tritt (stamm/koerper-bewegung.js:1112, stamm/koerper-leib.js:597, stamm/kreatur-leben.js:1584)",
+      "gelaende-core.js:1614 – abfluss der Schmelze → Pegel (stamm/wasser-hydro.js:98)"
+    ],
+    "urteil": "folgt",
+    "woraus": "Grad-Tag geschlossen auf der Jahres-Welle (gelaende-core.js:1471–1489)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [
+      "stamm/bild-himmel.js:2912 (_schneePegelAt — nur scripts/lib/wasser-linse.cjs:459)"
+    ],
+    "anmerkung": "[Schnee] Ein Wert je Höhe, nicht je Ort."
+  },
+  {
+    "id": "c74",
+    "name": "DECKE.dichte / tritt / knie (Schnee-Decke)",
+    "groesse": "schnee_dichte",
+    "domaene": "klima",
+    "wert": "250 / 500 / 0,45",
+    "einheit": "kg/m³ / kg/m³ / m",
+    "ort": "gelaende-core.js:1524",
+    "leser": [
+      "gelaende-core.js:1525 – schneeTiefe",
+      "gelaende-core.js:1532 – schneeTritt → stamm/bild-himmel.js:2890 _schneeTrittAt"
+    ],
+    "urteil": "gesetzt_anker",
+    "woraus": "Sturm 2010: saisonale Decke 220–350 kg/m³ (gelaende-core.js:1514)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Schnee]"
+  },
+  {
+    "id": "c75",
+    "name": "Tafel-Raster DECKE/PEGEL (unter 40, ueber 300, dy 1, stufe 0,01)",
+    "groesse": "schnee_pegel",
+    "domaene": "klima",
+    "wert": "−40…300 m je 1 m; Hub-Stufe 0,01 m",
+    "einheit": "m",
+    "ort": "gelaende-core.js:1600",
+    "leser": [
+      "gelaende-core.js:1630 – Hub gerundet",
+      "gelaende-core.js:1535 – schneeTafel"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Raster",
+    "technik": true,
+    "ohne_leser": false,
+    "zwilling": [
+      "gelaende-core.js:1524"
+    ],
+    "anmerkung": "[Schnee]"
+  },
+  {
+    "id": "c76",
+    "name": "EIS.salzMeer / gefrierJeSalz (Gefrierpunkt)",
+    "groesse": "frost",
+    "domaene": "klima",
+    "wert": "35 g/kg · −0,054 K·kg/g → −1,9 °C",
+    "einheit": "g/kg, K·kg/g",
+    "ort": "gelaende-core.js:1377",
+    "leser": [
+      "gelaende-core.js:1400 – Gefrierpunkt des Wasserkörpers → eisDicke → stamm/bild-himmel.js:3015 / stamm/wasser-hydro.js:703 _eisAt → stamm/gelaende-kollision.js:1124, stamm/koerper-bewegung.js:1053, stamm/koerper-leib.js:595, stamm/kreatur-leben.js:1582"
+    ],
+    "urteil": "gesetzt_anker",
+    "woraus": "Gefrierpunkt-Senkung des Meerwassers (gelaende-core.js:1359)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Frost]"
+  },
+  {
+    "id": "c77",
+    "name": "EIS.brack (Übergang Meer → Süßwasser)",
+    "groesse": "frost",
+    "domaene": "klima",
+    "wert": "[0.8, 2.8]",
+    "einheit": "m über dem Meer",
+    "ort": "gelaende-core.js:1379",
+    "leser": [
+      "gelaende-core.js:1388 – wasserKoerper: Meer-Anteil"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Frost] Höhe über dem Meer, keine Meer-Ferne."
+  },
+  {
+    "id": "c78",
+    "name": "EIS.kopplung / meerSchicht / saeule (Wärme-Trägheit des Wassers)",
+    "groesse": "frost",
+    "domaene": "klima",
+    "wert": "25 W/(m²K) · 50 m · [0,1, 30] m",
+    "einheit": "W/(m²K), m",
+    "ort": "gelaende-core.js:1380",
+    "leser": [
+      "gelaende-core.js:1401 – traegTage τ = ρc·h/α → Tiefpass der Luft"
+    ],
+    "urteil": "folgt",
+    "woraus": "τ = ρc·h/α (gelaende-core.js:1360); Teich 1 m 1,9 d, Meer 97 d",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Frost] α und h gesetzt, die Formel Physik."
+  },
+  {
+    "id": "c79",
+    "name": "EIS.uebergang (Übergang H des Eises an die Luft)",
+    "groesse": "frost",
+    "domaene": "klima",
+    "wert": "20",
+    "einheit": "W/(m²K)",
+    "ort": "gelaende-core.js:1383",
+    "leser": [
+      "gelaende-core.js:1404 – eisDicke (Stefan: h²/2k + h/H)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Frost]"
+  },
+  {
+    "id": "c80",
+    "name": "EIS.traegt (Dicke, die den Menschen trägt)",
+    "groesse": "frost",
+    "domaene": "klima",
+    "wert": "0.05",
+    "einheit": "m",
+    "ort": "gelaende-core.js:1384",
+    "leser": [
+      "stamm/bild-himmel.js:3027 – _eisLinien: Linie, über der das Eis trägt"
+    ],
+    "urteil": "gesetzt_anker",
+    "woraus": "GOLD P = A·h², A = 3,5 kg/cm² — 80 kg auf 4,8 cm (gelaende-core.js:1375)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Frost]"
+  },
+  {
+    "id": "c81",
+    "name": "ORT_WUCHS.frost (Dauer-Frost: Sommer am Meer)",
+    "groesse": "frost",
+    "domaene": "klima",
+    "wert": "[-3, 3]",
+    "einheit": "°C",
+    "ort": "gelaende-core.js:5727",
+    "leser": [
+      "gelaende-core.js:5740 – ortWuchs: oase, decke, wald × frost"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Schwelle des Dauer-Schnees im Atlas des Planeten (gelaende-core.js:5738)",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Frost] Heimat: sommer 18 → 1 (wirkungslos)."
+  },
+  {
+    "id": "c82",
+    "name": "ORT_WUCHS.sand (Trocken-Bogen aus dem Jahresmittel)",
+    "groesse": "biom",
+    "domaene": "klima",
+    "wert": "[0, 24]",
+    "einheit": "°C",
+    "ort": "gelaende-core.js:5729",
+    "leser": [
+      "gelaende-core.js:5749 – wuchs.sand → kahlGrund (stamm/gelaende-boden.js:2589)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Frost] Heimat sand 0,206, aber kahl = 0 (stamm/gelaende-boden.js:2588) → ohne Wirkung; die Heimat-Prüfung :5865 lässt sand aus."
+  },
+  {
+    "id": "c83",
+    "name": "FOREST_PACK.bestand.waldgrenze (Waldgrenze am Schnee)",
+    "groesse": "wald_deckung",
+    "domaene": "klima",
+    "wert": "0.1",
+    "einheit": "Schnee-Anteil",
+    "ort": "phyto-core.js:3202",
+    "leser": [
+      "phyto-core.js:3232 – forestWaldgrenze ← stamm/vegetation-wiese.js:2808 und voxel-worker.js:1421 (Schnee mit Versatz 0)"
+    ],
+    "urteil": "gesetzt",
+    "woraus": "Konstante",
+    "technik": false,
+    "ohne_leser": false,
+    "zwilling": [],
+    "anmerkung": "[Frost] Die Waldgrenze liest die Sommer-Schneegrenze (Versatz 0), nie die laufende Saison."
+  }
+]

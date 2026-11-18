@@ -1,0 +1,2042 @@
+[
+ {
+  "leiter": "planet.geologie.platten",
+  "titel": "Gestalt aus Platten — Kugel, Kontinente, Drift",
+  "sprosse": 1,
+  "kennung": "planet.geologie.platten/S1",
+  "text": "Region 10⁴ km² — Gebirge liegen in Gürteln, Gräben an Rissen — die Gestalt hat eine Ursache (P im Überflug)",
+  "richter": "30 Saaten: Gebirgsfläche > 2 km liegt in Gürteln mit Achsen ≥ 4:1 in ≥ 70 %; Blindpaar Schummerung gegen reale Region"
+ },
+ {
+  "leiter": "planet.geologie.platten",
+  "titel": "Gestalt aus Platten — Kugel, Kontinente, Drift",
+  "sprosse": 2,
+  "kennung": "planet.geologie.platten/S2",
+  "text": "Kontinent 10⁶ km² — bimodale Hypsometrie, Schelf, Tiefseegraben (P im Überflug)",
+  "richter": "100 Saaten: Höhenhistogramm mit zwei Gipfeln im Abstand 3–6 km in ≥ 90 %"
+ },
+ {
+  "leiter": "planet.geologie.platten",
+  "titel": "Gestalt aus Platten — Kugel, Kontinente, Drift",
+  "sprosse": 3,
+  "kennung": "planet.geologie.platten/S3",
+  "text": "Kugel von Mondgröße 4·10⁷ km², Orbit bis Boden ohne Ladebild — Horizont krümmt sich, Gürtel umspannen die Kugel (P im ganzen Abstieg)",
+  "richter": "Horizont-Senkung im Bild = acos(R/(R+h)) ±0,1° bei 1, 10, 100 km; Blindpaar Orbitbild gegen Relief-Globus"
+ },
+ {
+  "leiter": "planet.geologie.platten",
+  "titel": "Gestalt aus Platten — Kugel, Kontinente, Drift",
+  "sprosse": 4,
+  "kennung": "planet.geologie.platten/S4",
+  "text": "erdgroß 5·10⁸ km² — Hypsometrie wie die Erde, Rücken und Inselbögen bilden EIN Netz, Hochgebirge an Konvergenz (P an 100 Zufallsorten)",
+  "richter": "100 erdähnliche Saaten: KS ≤ 0,1 gegen Erd-Hypsometrie und geschlossenes Rücken-Netz in ≥ 80 %; Gipfel > 2 km an Konvergenz ≥ 90 %"
+ },
+ {
+  "leiter": "planet.geologie.platten",
+  "titel": "Gestalt aus Platten — Kugel, Kontinente, Drift",
+  "sprosse": 5,
+  "kennung": "planet.geologie.platten/S5",
+  "text": "Drift über 10⁷ Jahre — Ozeane öffnen sich, Gebirge wachsen und vergehen (P, Zeitsprung ≤ 5 s)",
+  "richter": "im Spiel gemessene Plattengeschwindigkeit 1–15 cm/a an 100 Saaten; Bilddifferenz benachbarter Zeiten ≤ Plattenrate"
+ },
+ {
+  "leiter": "planet.geologie.platten",
+  "titel": "Gestalt aus Platten — Kugel, Kontinente, Drift",
+  "sprosse": 6,
+  "kennung": "planet.geologie.platten/S6",
+  "text": "10⁹ Jahre, Superkontinent-Zyklen — Superkontinente bilden sich und zerbrechen, Kontinente wachsen durch Akkretion (P im Zeitsprung an 20 Zufallsaltern)",
+  "richter": "100 Saaten: ≥ 1 Superkontinent (≥ 70 % des Landes zusammenhängend) je Ga in ≥ 80 %"
+ },
+ {
+  "leiter": "planet.geologie.platten",
+  "titel": "Gestalt aus Platten — Kugel, Kontinente, Drift",
+  "sprosse": 7,
+  "kennung": "planet.geologie.platten/S7",
+  "text": "die Erd-Saat — Rodinia, Pannotia, Pangäa und die Gegenwart erkennbar (P an jeder Stichzeit · Schlüssel im Byte-Preis)",
+  "richter": "Erd-Saat mit Schlüssel (R4): an 10 Stichzeiten Kontinentlage gegen PALEOMAP, Flächen-Deckung IoU ≥ 0,6; Fach-Panel erkennt „dieselbe Erde“ in ≥ 8 von 10"
+ },
+ {
+  "leiter": "planet.geologie.platten",
+  "titel": "Gestalt aus Platten — Kugel, Kontinente, Drift",
+  "sprosse": 8,
+  "kennung": "planet.geologie.platten/S8",
+  "text": "4,5·10⁹ Jahre ab dem Magma-Ozean — Tektonik-Regime wechseln (Deckel → Platten), Hadaikum mit erster Kruste (P im Zeitsprung)",
+  "richter": "1 000 Saaten: Ursachen-Probe Wärmefluss und Alter aus dem Orbitbild, Rang ≥ 0,7; ≥ 50 % der Saatenpaare mit auffallend verschiedener Geschichte"
+ },
+ {
+  "leiter": "planet.geologie.platten",
+  "titel": "Gestalt aus Platten — Kugel, Kontinente, Drift",
+  "sprosse": 9,
+  "kennung": "planet.geologie.platten/S9",
+  "text": "10⁶ Saaten von 0,01 bis 10 Erdmassen — Erd-, Deckel-, Venus-, Io- und Eiswelten folgen aus Masse, Wärme und Wasser (P je Saat, auch auf der größten)",
+  "richter": "Ursachen-Probe an 1 000 Saaten Rang ≥ 0,7; 0 Saaten mit Naht oder Loch"
+ },
+ {
+  "leiter": "planet.geologie.vulkan",
+  "titel": "Vulkanismus — Magma, das fließt und Land macht",
+  "sprosse": 1,
+  "kennung": "planet.geologie.vulkan/S1",
+  "text": "Lava als Decke einer Zelle — Newton-Abkühlung, Glut über dem Draper-Punkt, erstarrt zu Stein, Dampf am Wasser; fließt nicht (P am Guss)",
+  "richter": "Kruste bildet sich und die Glut verlischt im Bild nach der Abkühlkurve gemessener Laven ±30 %; Blindpaar Glutbild gegen Lava-Foto (2AFC ≤ 85 %)"
+ },
+ {
+  "leiter": "planet.geologie.vulkan",
+  "titel": "Vulkanismus — Magma, das fließt und Land macht",
+  "sprosse": 2,
+  "kennung": "planet.geologie.vulkan/S2",
+  "text": "ein Strom 1 km, ein Ausbruch — Strom fließt, bildet Front und Kruste (P neben dem Strom)",
+  "richter": "Frontgeschwindigkeit auf 10°-Hang 0,01–10 km/h; Blindpaar Clip gegen Ausbruchsfilm"
+ },
+ {
+  "leiter": "planet.geologie.vulkan",
+  "titel": "Vulkanismus — Magma, das fließt und Land macht",
+  "sprosse": 3,
+  "kennung": "planet.geologie.vulkan/S3",
+  "text": "ein Vulkan 10 km wächst aus seinen Ausbrüchen — Schild, Strato, Caldera, Kegel ENTSTEHEN aus der Zähigkeit (P am Kegel)",
+  "richter": "30 Saaten verschiedener Zähigkeit: Flankenneigung folgt ihr (Schild 2–10°, Strato 25–35°) in ≥ 90 %; Profil gegen reales Gegenstück ≤ 15 %"
+ },
+ {
+  "leiter": "planet.geologie.vulkan",
+  "titel": "Vulkanismus — Magma, das fließt und Land macht",
+  "sprosse": 4,
+  "kennung": "planet.geologie.vulkan/S4",
+  "text": "Ausbruch formt bleibend: neues Land, Röhren — Pāhoehoe/ʻAʻā, begehbare Röhre, Küstenbank (P in der Röhre)",
+  "richter": "nach dem Ausbruch wächst die Landfläche messbar; Röhre ≥ 500 m begehbar; Blindpaar Oberfläche"
+ },
+ {
+  "leiter": "planet.geologie.vulkan",
+  "titel": "Vulkanismus — Magma, das fließt und Land macht",
+  "sprosse": 5,
+  "kennung": "planet.geologie.vulkan/S5",
+  "text": "Vulkanprovinz 10⁵ km² — Hotspot-Kette mit Altersfolge, Bögen über Subduktion (P im Überflug)",
+  "richter": "30 Saaten: ≥ 90 % der Vulkane an Rändern oder Hotspots; Alter längs der Kette Rang ≥ 0,8"
+ },
+ {
+  "leiter": "planet.geologie.vulkan",
+  "titel": "Vulkanismus — Magma, das fließt und Land macht",
+  "sprosse": 6,
+  "kennung": "planet.geologie.vulkan/S6",
+  "text": "planetar 10³ aktive Vulkane — Ausbruchsstärke folgt einem Potenzgesetz (P an 100 Zufallsorten)",
+  "richter": "500–3 000 aktive Vulkane je erdgroßer Saat; je VEI-Stufe etwa zehnmal seltener ±50 %"
+ },
+ {
+  "leiter": "planet.geologie.vulkan",
+  "titel": "Vulkanismus — Magma, das fließt und Land macht",
+  "sprosse": 7,
+  "kennung": "planet.geologie.vulkan/S7",
+  "text": "Äonen und fremde Welten — Magma-Ozean erstarrt, Flutbasalte, Io-Welten, Kryovulkane; Vulkanhöhe wächst mit sinkender Schwere (P je Saat und im Zeitsprung)",
+  "richter": "Ursachen-Probe an 1 000 Saaten: Wärmefluss aus der Vulkanlandschaft Rang ≥ 0,7; höchster Vulkan gegen 1/Schwere Rang ≥ 0,7"
+ },
+ {
+  "leiter": "planet.geologie.gebirge",
+  "titel": "Gebirge und Bruch — Orogenese, Verwerfung, Beben",
+  "sprosse": 1,
+  "kennung": "planet.geologie.gebirge/S1",
+  "text": "jede Felswand trägt ihre Verformung — gefaltet, gekippt, versetzt nach der Geschichte des Orts (P an der Wand)",
+  "richter": "Blindpaar Felswand gegen Foto; in Kollisionszonen ≥ 80 % der Wände verformt, im alten Kraton ≤ 20 %"
+ },
+ {
+  "leiter": "planet.geologie.gebirge",
+  "titel": "Gebirge und Bruch — Orogenese, Verwerfung, Beben",
+  "sprosse": 2,
+  "kennung": "planet.geologie.gebirge/S2",
+  "text": "ein Orogen 10⁵ km² — Kammhöhe, Breite, Isostasie (P im Überflug)",
+  "richter": "Hypsometrie des Orogens gegen Alpen-/Himalaya-Profil ≤ 20 %"
+ },
+ {
+  "leiter": "planet.geologie.gebirge",
+  "titel": "Gebirge und Bruch — Orogenese, Verwerfung, Beben",
+  "sprosse": 3,
+  "kennung": "planet.geologie.gebirge/S3",
+  "text": "Beben einer Region über ein Spieljahr, fühlbar — Gutenberg-Richter, Herd an Verwerfungen (P im Beben, in der Stadt)",
+  "richter": "b-Wert 0,8–1,2; ≥ 90 % der Epizentren an Verwerfungen; Boden und Häuser bewegen sich mit der Magnitude"
+ },
+ {
+  "leiter": "planet.geologie.gebirge",
+  "titel": "Gebirge und Bruch — Orogenese, Verwerfung, Beben",
+  "sprosse": 4,
+  "kennung": "planet.geologie.gebirge/S4",
+  "text": "Bruch formt bleibend — Versatz wächst mit der Magnitude, Hangrutsch (P im Ereignis)",
+  "richter": "nach M7: Geländestufe 1–5 m, Rutschungen an steilen Hängen; Blindpaar gegen Feldfoto"
+ },
+ {
+  "leiter": "planet.geologie.gebirge",
+  "titel": "Gebirge und Bruch — Orogenese, Verwerfung, Beben",
+  "sprosse": 5,
+  "kennung": "planet.geologie.gebirge/S5",
+  "text": "planetar 10⁴ Beben M ≥ 4 je Jahr — Bebengürtel = Plattenränder (P an 100 Zufallsorten)",
+  "richter": "Epizentren eines Spieljahrs ≥ 85 % an Plattenrändern"
+ },
+ {
+  "leiter": "planet.geologie.gebirge",
+  "titel": "Gebirge und Bruch — Orogenese, Verwerfung, Beben",
+  "sprosse": 6,
+  "kennung": "planet.geologie.gebirge/S6",
+  "text": "Gebirge wachsen und vergehen über 10⁸ Jahre — junge Hochgebirge, alte Rumpfgebirge (P im Zeitsprung)",
+  "richter": "50 Saaten: Alter erklärt Höhe, Rang ≥ 0,7"
+ },
+ {
+  "leiter": "planet.geologie.gebirge",
+  "titel": "Gebirge und Bruch — Orogenese, Verwerfung, Beben",
+  "sprosse": 7,
+  "kennung": "planet.geologie.gebirge/S7",
+  "text": "jede Saat, 10³ Welten — Gipfelhöhe folgt der Schwere (P je Saat)",
+  "richter": "1 000 Saaten: höchster Gipfel gegen 1/Schwere Rang ≥ 0,7"
+ },
+ {
+  "leiter": "planet.geologie.unterwelt",
+  "titel": "Die Unterwelt — Höhle, Karst, Röhre",
+  "sprosse": 1,
+  "kennung": "planet.geologie.unterwelt/S1",
+  "text": "Höhlen-Feld bis ~28 m unter Basis, Mündung im Fels — Wurm, Kaverne, Halle; Mund nur an der Felsflanke (P beim Betreten und in der Höhle)",
+  "richter": "Mündungen je km² an 3 Saaten im Band; Mund im Bild an ≥ 90 % im Fels"
+ },
+ {
+  "leiter": "planet.geologie.unterwelt",
+  "titel": "Die Unterwelt — Höhle, Karst, Röhre",
+  "sprosse": 2,
+  "kennung": "planet.geologie.unterwelt/S2",
+  "text": "Karsthöhle 1 km — nur in löslichem Gestein; Tropfstein, Quelle am Ausgang, Doline über dem Hohlraum (P in der Höhle)",
+  "richter": "≥ 90 % der Höhlen in Karbonat; ≥ 80 % entwässern zu einer Quelle; Dolinen- gegen Höhlendichte r ≥ 0,7; Blindpaar Karstfeld"
+ },
+ {
+  "leiter": "planet.geologie.unterwelt",
+  "titel": "Die Unterwelt — Höhle, Karst, Röhre",
+  "sprosse": 3,
+  "kennung": "planet.geologie.unterwelt/S3",
+  "text": "System 10 km — unterirdischer Fluss, Siphon, Einsturzdoline (P ohne Ladebild)",
+  "richter": "10 km am Stück begehbar; Höhlenplan-Statistik (Verzweigung, Querschnitt) im Band realer Systeme"
+ },
+ {
+  "leiter": "planet.geologie.unterwelt",
+  "titel": "Die Unterwelt — Höhle, Karst, Röhre",
+  "sprosse": 4,
+  "kennung": "planet.geologie.unterwelt/S4",
+  "text": "jede Gesteinsart ihre Unterwelt, 10³ Höhlen — Lavaröhre im Basalt, Gletscherhöhle, Brandungshöhle, Gips-Labyrinth (P je Typ)",
+  "richter": "1 000 Zufallshöhlen aus 30 Saaten: Typ passt zu Gestein und Lösungsmittel in ≥ 90 %"
+ },
+ {
+  "leiter": "planet.geologie.unterwelt",
+  "titel": "Die Unterwelt — Höhle, Karst, Röhre",
+  "sprosse": 5,
+  "kennung": "planet.geologie.unterwelt/S5",
+  "text": "Systeme 10² km, Hallen 10⁷ m³ — Mammoth- und Son-Doong-Klasse, Halle mit Wald und Wolke (P in der Halle)",
+  "richter": "längstes System ≥ 100 km in ≥ 20 % der Karstsaaten; Blindpaar Halle"
+ },
+ {
+  "leiter": "planet.geologie.unterwelt",
+  "titel": "Die Unterwelt — Höhle, Karst, Röhre",
+  "sprosse": 6,
+  "kennung": "planet.geologie.unterwelt/S6",
+  "text": "jede Welt — Lavaröhren weiter bei kleiner Schwere, Eishöhlen, Methan-Karst (P je Saat)",
+  "richter": "1 000 Saaten: Röhrenweite gegen 1/Schwere Rang ≥ 0,7; Höhlentyp folgt Gestein in ≥ 80 %"
+ },
+ {
+  "leiter": "planet.geologie.lagerstaette",
+  "titel": "Gestein und Lagerstätte — die Kraft, Funde vorherzusagen",
+  "sprosse": 1,
+  "kennung": "planet.geologie.lagerstaette/S1",
+  "text": "Gestein je Ort aus seiner Genese — magmatisch, sedimentär, metamorph sichtbar verschieden und passend zum Ort (P an der Wand)",
+  "richter": "Jury trennt drei Genesen ≥ 80 %; Genese passt zur Geschichte des Orts ≥ 85 %"
+ },
+ {
+  "leiter": "planet.geologie.lagerstaette",
+  "titel": "Gestein und Lagerstätte — die Kraft, Funde vorherzusagen",
+  "sprosse": 2,
+  "kennung": "planet.geologie.lagerstaette/S2",
+  "text": "geologische Karte einer Region 10⁴ km² — Gestein folgt Tektonik und Alter (P im Überflug)",
+  "richter": "Blindpaar geologische Karte gegen reale"
+ },
+ {
+  "leiter": "planet.geologie.lagerstaette",
+  "titel": "Gestein und Lagerstätte — die Kraft, Funde vorherzusagen",
+  "sprosse": 3,
+  "kennung": "planet.geologie.lagerstaette/S3",
+  "text": "Lagerstätten eines Kontinents — Kohle, Salz, Kupfer, Seifengold, Öl, Bändereisen entstehen aus Becken- und Erzgeschichte (P beim Suchen)",
+  "richter": "Prospektor-Probe an 30 Saaten: Fundquote nach Zeichen ≥ 5× blindes Bohren"
+ },
+ {
+  "leiter": "planet.geologie.lagerstaette",
+  "titel": "Gestein und Lagerstätte — die Kraft, Funde vorherzusagen",
+  "sprosse": 4,
+  "kennung": "planet.geologie.lagerstaette/S4",
+  "text": "Abbau verändert die Welt bleibend — Grube, Halde, Senkung, Salzstock (P am Abbau)",
+  "richter": "Abbau sichtbar und nach Reload bleibend; Senkung über Kohle messbar"
+ },
+ {
+  "leiter": "planet.geologie.lagerstaette",
+  "titel": "Gestein und Lagerstätte — die Kraft, Funde vorherzusagen",
+  "sprosse": 5,
+  "kennung": "planet.geologie.lagerstaette/S5",
+  "text": "Minerale als Stoff aus Gesetz, 10³ Fundstufen — Kristallsystem × Chemie ergibt Habitus, Farbe, Glanz, Härte (P an der Stufe)",
+  "richter": "100 Zufallsfunde: Jury nennt das Kristallsystem blind ≥ 80 %; Blindpaar Stufe gegen Mineralfoto"
+ },
+ {
+  "leiter": "planet.geologie.lagerstaette",
+  "titel": "Gestein und Lagerstätte — die Kraft, Funde vorherzusagen",
+  "sprosse": 6,
+  "kennung": "planet.geologie.lagerstaette/S6",
+  "text": "fremde Chemie jeder Saat, 10³ Welten — andere Elementverteilung, andere Lagerstätten (P je Saat)",
+  "richter": "Prospektor-Probe an 1 000 Saaten ≥ 3× blindes Bohren"
+ },
+ {
+  "leiter": "planet.geologie.inneres",
+  "titel": "Das Innere spricht — Feld, Wärme, Schalen",
+  "sprosse": 1,
+  "kennung": "planet.geologie.inneres/S1",
+  "text": "Kompass auf einem Dipol-Planeten, 20 Orte — Deklination und Inklination nach Ort (P (keine Zusatzkosten))",
+  "richter": "Inklination ≤ 5° gegen Dipol an 20 Orten; Deklination ändert sich mit dem Ort"
+ },
+ {
+  "leiter": "planet.geologie.inneres",
+  "titel": "Das Innere spricht — Feld, Wärme, Schalen",
+  "sprosse": 2,
+  "kennung": "planet.geologie.inneres/S2",
+  "text": "Umpolung über 10⁶ Jahre — Feldgeschichte im Gestein des Ozeanbodens (P im Messflug)",
+  "richter": "Magnetometer-Flug über den Rücken: Streifen spiegelsymmetrisch in ≥ 90 % der Saaten"
+ },
+ {
+  "leiter": "planet.geologie.inneres",
+  "titel": "Das Innere spricht — Feld, Wärme, Schalen",
+  "sprosse": 3,
+  "kennung": "planet.geologie.inneres/S3",
+  "text": "Wärme an der Oberfläche, 10² Quellen — Geysire, heiße Quellen, Schwarze Raucher nur über Wärme-Anomalien (P am Geysir)",
+  "richter": "≥ 95 % der Geysire über Anomalien; Intervalle Minuten bis Stunden"
+ },
+ {
+  "leiter": "planet.geologie.inneres",
+  "titel": "Das Innere spricht — Feld, Wärme, Schalen",
+  "sprosse": 4,
+  "kennung": "planet.geologie.inneres/S4",
+  "text": "Bohrung und Stollen 10 km — Temperatur 25–30 K/km, Gestein nach Tiefe (P im Stollen, ohne Naht)",
+  "richter": "Bohrloch-Temperatur folgt dem Gradienten ±20 %; Stollen 10 km ohne Naht"
+ },
+ {
+  "leiter": "planet.geologie.inneres",
+  "titel": "Das Innere spricht — Feld, Wärme, Schalen",
+  "sprosse": 5,
+  "kennung": "planet.geologie.inneres/S5",
+  "text": "der Planet im Schnitt bis zum Kern — Schalen in Dichte-Reihenfolge (P im Abstieg durch den Schnitt)",
+  "richter": "Erd-Saat: Kern-Mantel-Grenze bei 0,5–0,6 Radius; Flug durch den Schnitt ohne Bild > 100 ms"
+ },
+ {
+  "leiter": "planet.geologie.inneres",
+  "titel": "Das Innere spricht — Feld, Wärme, Schalen",
+  "sprosse": 6,
+  "kennung": "planet.geologie.inneres/S6",
+  "text": "fremde Innere, 10³ Welten — feldlose Welten, Mehrpol-Felder, Monde ohne Kern (P je Saat)",
+  "richter": "Ursachen-Probe an 1 000 Saaten: Feldstärke aus Kern und Rotation; erstarrter Kern → kein Feld in ≥ 95 %"
+ },
+ {
+  "leiter": "planet.geologie.einschlag",
+  "titel": "Einschlag und Krater — die Haut als Uhr",
+  "sprosse": 1,
+  "kennung": "planet.geologie.einschlag/S1",
+  "text": "ein Krater als Form — Napf ↔ komplexer Krater mit Zentralberg, Übergang nach der Schwere (P am Kraterrand)",
+  "richter": "einfache Krater Tiefe/Durchmesser 1:5 ±20 %; Profil gegen reale Krater ≤ 15 %"
+ },
+ {
+  "leiter": "planet.geologie.einschlag",
+  "titel": "Einschlag und Krater — die Haut als Uhr",
+  "sprosse": 2,
+  "kennung": "planet.geologie.einschlag/S2",
+  "text": "ein Einschlag als Ereignis — Feuerball, Druckwelle, Auswurf, Strahlen (P im Ereignis)",
+  "richter": "Krater-Durchmesser gegen Energie nach Pi-Skalierung ±30 %; Blindpaar gegen Kraterfoto"
+ },
+ {
+  "leiter": "planet.geologie.einschlag",
+  "titel": "Einschlag und Krater — die Haut als Uhr",
+  "sprosse": 3,
+  "kennung": "planet.geologie.einschlag/S3",
+  "text": "Kraterfeld einer Region 10⁴ km² — Größen-Häufigkeit nach Potenzgesetz (P im Überflug)",
+  "richter": "N(> D) ∝ D^−2 ±0,5"
+ },
+ {
+  "leiter": "planet.geologie.einschlag",
+  "titel": "Einschlag und Krater — die Haut als Uhr",
+  "sprosse": 4,
+  "kennung": "planet.geologie.einschlag/S4",
+  "text": "Einschlagsrate über 10³ Spieljahre — Rate je Größe aus den Kleinkörpern der Saat (P im Zeitraffer)",
+  "richter": "Rate je Größe gegen die Einschlags-Statistik der Erde ±Faktor 2"
+ },
+ {
+  "leiter": "planet.geologie.einschlag",
+  "titel": "Einschlag und Krater — die Haut als Uhr",
+  "sprosse": 5,
+  "kennung": "planet.geologie.einschlag/S5",
+  "text": "planetar — Hochland gesättigt, junge Ebenen leer, Wetter und Tektonik löschen Krater (P je Saat)",
+  "richter": "1 000 Saaten: erhaltene Krater je Fläche fallen mit Erosion und Tektonik, Rang ≥ 0,7"
+ },
+ {
+  "leiter": "planet.geologie.einschlag",
+  "titel": "Einschlag und Krater — die Haut als Uhr",
+  "sprosse": 6,
+  "kennung": "planet.geologie.einschlag/S6",
+  "text": "Kraterchronologie 10⁹ Jahre — Kraterdichte jeder Fläche = ihr Alter (P vom Boden einer Mondoberfläche)",
+  "richter": "Kraterdichte im Bild gegen das wahre Alter der Fläche ±Faktor 2, Rang ≥ 0,8"
+ },
+ {
+  "leiter": "planet.geologie.einschlag",
+  "titel": "Einschlag und Krater — die Haut als Uhr",
+  "sprosse": 7,
+  "kennung": "planet.geologie.einschlag/S7",
+  "text": "jede Welt — Atmosphäre und Kleinkörper-Dichte setzen das Kraterbild (P je Saat)",
+  "richter": "1 000 Welten: Kraterdichte gegen Kleinkörper-Dichte und Atmosphäre Rang ≥ 0,8"
+ },
+ {
+  "leiter": "planet.relief.grossform",
+  "titel": "Relief aus Abtrag — die Großform gegen die Erde",
+  "sprosse": 1,
+  "kennung": "planet.relief.grossform/S1",
+  "text": "1 Saat, Flussnetz bis zum Horizont — jeder Lauf endet in See oder Meer (P)",
+  "richter": "im Spiel an 20 Orten nachgefahren: 100 % der Läufe enden in See oder Meer"
+ },
+ {
+  "leiter": "planet.relief.grossform",
+  "titel": "Relief aus Abtrag — die Großform gegen die Erde",
+  "sprosse": 2,
+  "kennung": "planet.relief.grossform/S2",
+  "text": "10² km², 20 Saaten — Hack-Gesetz L ∝ A^0,5–0,6, Bifurkation 3–5 (P, Fernsicht 10 km)",
+  "richter": "≥ 80 % der Saaten tragen beide Kennzahlen im sichtbaren Netz"
+ },
+ {
+  "leiter": "planet.relief.grossform",
+  "titel": "Relief aus Abtrag — die Großform gegen die Erde",
+  "sprosse": 3,
+  "kennung": "planet.relief.grossform/S3",
+  "text": "10⁴ km², 50 Saaten — Hangverteilung und Hypsometrie-Integral wie ein Erd-DEM gleichen Klimas (P, Fernsicht 30 km)",
+  "richter": "Wasserstein-Abstand der Hangverteilung ≤ 3° in ≥ 80 %"
+ },
+ {
+  "leiter": "planet.relief.grossform",
+  "titel": "Relief aus Abtrag — die Großform gegen die Erde",
+  "sprosse": 4,
+  "kennung": "planet.relief.grossform/S4",
+  "text": "10⁵ km² Küsten und Seen — Küsten-Fraktalität, Seen nach Potenzgesetz (P von Korn- bis Satellitenpose, Kosten nie an Küstenlänge)",
+  "richter": "Box-Counting D ±0,05 gegen Erd-Küsten; Seen je Größenklasse Steigung ±20 %"
+ },
+ {
+  "leiter": "planet.relief.grossform",
+  "titel": "Relief aus Abtrag — die Großform gegen die Erde",
+  "sprosse": 5,
+  "kennung": "planet.relief.grossform/S5",
+  "text": "Kontinent 10⁶–10⁷ km² — Relief = Gleichgewicht Hebung × Abtrag; Abflussregime mit Binnenbecken (P im Flug 2 km hoch, 300 m/s)",
+  "richter": "Blindpaar Luftbild gegen Satellit: Fehlerquote ≥ 35 %; 10 Saaten: endorheische Fläche 10–25 %, größter Strom ≥ 10 % des Abflusses"
+ },
+ {
+  "leiter": "planet.relief.grossform",
+  "titel": "Relief aus Abtrag — die Großform gegen die Erde",
+  "sprosse": 6,
+  "kennung": "planet.relief.grossform/S6",
+  "text": "Planet 5·10⁸ km², 100 Saaten — Anteile der 10 Geomorphon-Klassen wie die Erde (P vom Orbit bis zum Boden an jedem Ort)",
+  "richter": "Geomorphon-Histogramm ±20 % der Erde; Orbit-Blindpaar Fehlerquote ≥ 35 %"
+ },
+ {
+  "leiter": "planet.relief.grossform",
+  "titel": "Relief aus Abtrag — die Großform gegen die Erde",
+  "sprosse": 7,
+  "kennung": "planet.relief.grossform/S7",
+  "text": "100 Welten beliebiger Konstanten — fremde Agenzien erzeugen stimmige Großformen (P je Planet, Wechsel ≤ 5 s)",
+  "richter": "≥ 80 % der Welten tragen Kennzahlen in den aus ihren Konstanten vorhergesagten Bändern"
+ },
+ {
+  "leiter": "planet.relief.formschatz",
+  "titel": "Formschatz — Land- und Küstenformen aus Prozessen",
+  "sprosse": 1,
+  "kennung": "planet.relief.formschatz/S1",
+  "text": "3 Klassen — V-Tal/Trog, Aue, Schichtstufe aus dem Profil-Gesetz (P)",
+  "richter": "Blind-Klassifikation von Ego-Bildern an 20 Saaten ≥ 80 %"
+ },
+ {
+  "leiter": "planet.relief.formschatz",
+  "titel": "Formschatz — Land- und Küstenformen aus Prozessen",
+  "sprosse": 2,
+  "kennung": "planet.relief.formschatz/S2",
+  "text": "10 Klassen, Wasser voll; Region 2 km — Mäander mit Prall/Gleithang, Schwemmfächer, Talsee, Wasserfall, Terrasse; das Ufer liest als Ufer (P)",
+  "richter": "Blind-Klassifikation ≥ 80 % je Klasse; plausible Ufer-Bilder an 50 Zufallsorten ≥ 70 %"
+ },
+ {
+  "leiter": "planet.relief.formschatz",
+  "titel": "Formschatz — Land- und Küstenformen aus Prozessen",
+  "sprosse": 3,
+  "kennung": "planet.relief.formschatz/S3",
+  "text": "30 Klassen, 4 Agenzien, 10 km Küste und Binnenland — Delta, Lagune, Strand, Kliff, Kar, Moräne, Barchan, Badlands — wo Wellenenergie, Tidenhub, Sediment, Gefälle sie verlangen (P)",
+  "richter": "200 Orte aus 20 Saaten: Bild-Klasse = Klasse, die die Prozessgrößen vorhersagen, ≥ 70 %"
+ },
+ {
+  "leiter": "planet.relief.formschatz",
+  "titel": "Formschatz — Land- und Küstenformen aus Prozessen",
+  "sprosse": 4,
+  "kennung": "planet.relief.formschatz/S4",
+  "text": "~100 Klassen, 7 Agenzien, 10⁵ km² — Vielfalt emergent: Fjord nur nach Eis, Atoll nur über sinkender Insel, Mangrove nur in den Tropen (P)",
+  "richter": "gegen eine EXTERNE Taxonomie: in 100 Saaten tauchen ≥ 80 % der Klassen ungefragt auf; Fehlplatzierung < 5 % in 1 000 Fundorten"
+ },
+ {
+  "leiter": "planet.relief.formschatz",
+  "titel": "Formschatz — Land- und Küstenformen aus Prozessen",
+  "sprosse": 5,
+  "kennung": "planet.relief.formschatz/S5",
+  "text": "Klima-Antwort an 50 Saaten — dieselbe Saat bei arid, humid, glazial trägt den Formschatz ihres Klimas (P)",
+  "richter": "Klima-Tausch: Klassenverteilung gegen Erd-Referenz gleichen Klimas Rang ≥ 0,8; Foto-Blindpaar Fehler ≥ 35 %"
+ },
+ {
+  "leiter": "planet.relief.formschatz",
+  "titel": "Formschatz — Land- und Küstenformen aus Prozessen",
+  "sprosse": 6,
+  "kennung": "planet.relief.formschatz/S6",
+  "text": "jede Klasse über 4 Größenordnungen — vom 1-m-Rippel bis zur 100-km-Draa, vom Rinnsal-Delta bis zum Ganges-Delta (P)",
+  "richter": "Längen-Breiten-Gesetz je Klasse über 4 Größenordnungen im Bild gehalten"
+ },
+ {
+  "leiter": "planet.relief.formschatz",
+  "titel": "Formschatz — Land- und Küstenformen aus Prozessen",
+  "sprosse": 7,
+  "kennung": "planet.relief.formschatz/S7",
+  "text": "Planet: ~10⁸ Seen, ~10⁶ Flüsse, ~10⁶ km Küste, jede begehbar — jede Form aus Platte, Klima, Gezeit und Meeresspiegel erklärbar (P überall)",
+  "richter": "1 000 zufällige Gewässer- und Landform-Posen aus 100 Saaten: ≥ 80 % im Blindtest gegen Fotos als echt bewertet"
+ },
+ {
+  "leiter": "planet.relief.formschatz",
+  "titel": "Formschatz — Land- und Küstenformen aus Prozessen",
+  "sprosse": 8,
+  "kennung": "planet.relief.formschatz/S8",
+  "text": "100 fremde Welten — Formen, die die Erde nicht kennt, die Physik aber verlangt (Sublimationsmulden, Methan-Flussnetze, Niedrig-g-Rutschungen) (P je Planet)",
+  "richter": "Konstanten-Tausch ändert die Formen vorhergesagt; Kanalbreite skaliert mit Schwere und Viskosität ±25 %"
+ },
+ {
+  "leiter": "planet.relief.boden",
+  "titel": "Boden — Gestein wird Boden mit Horizonten",
+  "sprosse": 1,
+  "kennung": "planet.relief.boden/S1",
+  "text": "Fels und Erdboden eines Orts — Schutt, Flechte, Moos nach Steile und Feuchte; Erdboden in der Farbe seines Klimas (P)",
+  "richter": "Blindpaar Ego-Bild gegen Foto gleichen Hangs und Klimas (2AFC ≤ 85 %); an 30 Zufallsposen liegt Schutt am Steilen und Moos im Feuchten wie im Foto-Korpus (Anteile ±20 %)"
+ },
+ {
+  "leiter": "planet.relief.boden",
+  "titel": "Boden — Gestein wird Boden mit Horizonten",
+  "sprosse": 2,
+  "kennung": "planet.relief.boden/S2",
+  "text": "1 Bodenart-Feld, Planet — Korngröße aus Herkunft (Hang, Aue, Wind) (P)",
+  "richter": "Korngröße im Bild nimmt stromab ab: Rang ≥ 0,7 an 20 Läufen"
+ },
+ {
+  "leiter": "planet.relief.boden",
+  "titel": "Boden — Gestein wird Boden mit Horizonten",
+  "sprosse": 3,
+  "kennung": "planet.relief.boden/S3",
+  "text": "Horizonte überall — O/A/B/C im Anschnitt, Mächtigkeit aus Bodenproduktion − Abtrag (P, Anschnitt ≤ 2 s nach dem Graben)",
+  "richter": "Graben an 50 Zufallsorten: Horizonte sichtbar; Kuppe dünner als Unterhang in ≥ 90 %"
+ },
+ {
+  "leiter": "planet.relief.boden",
+  "titel": "Boden — Gestein wird Boden mit Horizonten",
+  "sprosse": 4,
+  "kennung": "planet.relief.boden/S4",
+  "text": "10 Referenz-Bodengruppen — Podsol, Schwarzerde, Gley, Moor, Rendzina … nach Klima × Gestein (P)",
+  "richter": "Graben an 100 Zufallsorten: Bodentyp aus dem Anschnitt-Bild blind klassiert gegen die WRB-Referenzprofile; Anteile je Klima gegen SoilGrids ±25 %"
+ },
+ {
+  "leiter": "planet.relief.boden",
+  "titel": "Boden — Gestein wird Boden mit Horizonten",
+  "sprosse": 5,
+  "kennung": "planet.relief.boden/S5",
+  "text": "32 Referenz-Bodengruppen — Munsell-Farbe und Gefüge im Anschnitt (P)",
+  "richter": "Bildpaar Anschnitt gegen Referenzprofil-Foto: ΔE ≤ 10, Blind-Fehler ≥ 35 %"
+ },
+ {
+  "leiter": "planet.relief.boden",
+  "titel": "Boden — Gestein wird Boden mit Horizonten",
+  "sprosse": 6,
+  "kennung": "planet.relief.boden/S6",
+  "text": "Planet × Epoche × fremde Welt — begrabene Paläoböden, Löss der Kaltzeit, Regolith, Perchlorat-Böden (P, Zeitsprung ≤ 5 s)",
+  "richter": "Anschnitt zeigt begrabene Böden in richtiger Folge an ≥ 90 % der Stichproben; Regolith-Blindpaar gegen Mond-/Mars-Fotos Fehler ≥ 35 %"
+ },
+ {
+  "leiter": "planet.relief.wandel",
+  "titel": "Lebendige Form — das Relief ändert sich in Spielzeit und über Epochen",
+  "sprosse": 1,
+  "kennung": "planet.relief.wandel/S1",
+  "text": "1 Graben — Wasser im Spieler-Graben vertieft ihn, Sediment setzt sich am Fuß ab (P während des Ereignisses)",
+  "richter": "Volumen-Bilanz Abtrag = Ablagerung ±10 %, sichtbar in ≤ 10 min Spielzeit"
+ },
+ {
+  "leiter": "planet.relief.wandel",
+  "titel": "Lebendige Form — das Relief ändert sich in Spielzeit und über Epochen",
+  "sprosse": 2,
+  "kennung": "planet.relief.wandel/S2",
+  "text": "1 ha, 1 Starkregen — Rinnen, Schwemmkegel, Hangrutsch an Übersteilung (P während des Regens)",
+  "richter": "Zahl neuer Rinnen wächst mit der Regenmenge, Rang ≥ 0,8 an 10 Läufen; Bildpaar vorher/nachher"
+ },
+ {
+  "leiter": "planet.relief.wandel",
+  "titel": "Lebendige Form — das Relief ändert sich in Spielzeit und über Epochen",
+  "sprosse": 3,
+  "kennung": "planet.relief.wandel/S3",
+  "text": "10 km Fluss, 10² Jahre — Mäander wandert, schnürt Altarm ab, Hochwasser legt Auenlehm ab (P im Zeitraffer)",
+  "richter": "Migrationsrate 1–5 % Breite/Jahr; Abschnürung tritt ein; Bildfolge gegen Landsat-Zeitreihe"
+ },
+ {
+  "leiter": "planet.relief.wandel",
+  "titel": "Lebendige Form — das Relief ändert sich in Spielzeit und über Epochen",
+  "sprosse": 4,
+  "kennung": "planet.relief.wandel/S4",
+  "text": "10² km², 10³ Jahre — Delta wächst, Düne wandert, Küste verlagert sich (P im Zeitraffer)",
+  "richter": "Delta-Wachstum gegen Sedimentfracht ±30 %; Barchan 10–30 m/a"
+ },
+ {
+  "leiter": "planet.relief.wandel",
+  "titel": "Lebendige Form — das Relief ändert sich in Spielzeit und über Epochen",
+  "sprosse": 5,
+  "kennung": "planet.relief.wandel/S5",
+  "text": "10⁴ km², 10⁵ Jahre — Eiszeit-Zyklus schleift Trog, Fjord, Kar, hinterlässt Moräne, Findling, See, Löss (P, Zeitsprung ≤ 5 s)",
+  "richter": "nach dem Zyklus ≥ 8 glaziale Formklassen, ≥ 90 % oberhalb der Kaltzeit-Schneegrenze; ≥ 80 % der Fjorde unter ehemaligem Eis, 0 in nie vereisten Breiten"
+ },
+ {
+  "leiter": "planet.relief.wandel",
+  "titel": "Lebendige Form — das Relief ändert sich in Spielzeit und über Epochen",
+  "sprosse": 6,
+  "kennung": "planet.relief.wandel/S6",
+  "text": "Planet, 10⁹ Jahre — Gebirge entsteht und wird abgetragen, Rumpfflächen (P, Zeitsprung an jeden Ort und jede Epoche ≤ 5 s)",
+  "richter": "100 Orte × 10 Epochen: Relief-Kennzahlen in den Bändern von planet.relief.grossform"
+ },
+ {
+  "leiter": "planet.relief.wandel",
+  "titel": "Lebendige Form — das Relief ändert sich in Spielzeit und über Epochen",
+  "sprosse": 7,
+  "kennung": "planet.relief.wandel/S7",
+  "text": "100 Welten × 10 Epochen — jede Welt trägt ihre eigene Abtragsgeschichte (P)",
+  "richter": "100 Welten × 10 Epochen: Fremdwelt-Probe (R10) an der Abtragsgeschichte — Agens und Alter aus dem Bild gelesen Rang ≥ 0,7"
+ },
+ {
+  "leiter": "planet.wasser.seegang",
+  "titel": "Seegang — die See, wie ein Seemann sie liest",
+  "sprosse": 1,
+  "kennung": "planet.wasser.seegang/S1",
+  "text": "eine Wasserfläche, 12 Posen — spiegelt Ufer und Himmel (P an beiden Geräten)",
+  "richter": "spiegelTreue ≥ 0,6 an 12 Posen (Uhr × Wetter) in Ausgabe-Größe"
+ },
+ {
+  "leiter": "planet.wasser.seegang",
+  "titel": "Seegang — die See, wie ein Seemann sie liest",
+  "sprosse": 2,
+  "kennung": "planet.wasser.seegang/S2",
+  "text": "Meer, See, Fluss je eigene Bewegung — Weißkappen-Anteil wächst mit dem Wind (P, beide Geräte)",
+  "richter": "Weißkappen-Anteil im Bild bei 5/10/20 m/s gegen Monahan ±30 %"
+ },
+ {
+  "leiter": "planet.wasser.seegang",
+  "titel": "Seegang — die See, wie ein Seemann sie liest",
+  "sprosse": 3,
+  "kennung": "planet.wasser.seegang/S3",
+  "text": "offene See bis 2 km Sicht — Seegang aus Wind × Fetch, Beaufort 0–12 (P im Sturm)",
+  "richter": "Blindtest 10 Bilder je Beaufort-Stufe, ≥ 70 % richtig zugeordnet"
+ },
+ {
+  "leiter": "planet.wasser.seegang",
+  "titel": "Seegang — die See, wie ein Seemann sie liest",
+  "sprosse": 4,
+  "kennung": "planet.wasser.seegang/S4",
+  "text": "jede Küste einer 10-km-Region — Brandung aus der Tiefe, Brechertyp nach Strandneigung (P am Strand bei Brandung)",
+  "richter": "Brechlinie bei Tiefe 1,3·H ±20 %; Brechertyp gegen Iribarren-Zahl ≥ 80 % an 20 Stränden"
+ },
+ {
+  "leiter": "planet.wasser.seegang",
+  "titel": "Seegang — die See, wie ein Seemann sie liest",
+  "sprosse": 5,
+  "kennung": "planet.wasser.seegang/S5",
+  "text": "Ozean bis 50 km Sicht — Dünung eines fernen Sturms läuft ein, Wellen kreuzen sich, Kelvin-Keil (P mit Sicht 50 km)",
+  "richter": "Sturm 500 km weg gesetzt: Ankunft der Dünung ±15 % der Gruppenlaufzeit; Kelvin-Winkel 19,5° ±2°"
+ },
+ {
+  "leiter": "planet.wasser.seegang",
+  "titel": "Seegang — die See, wie ein Seemann sie liest",
+  "sprosse": 6,
+  "kennung": "planet.wasser.seegang/S6",
+  "text": "Orkan, Kaventsmann, Tsunami — Wellen ≥ 25 m mit realer Häufigkeit; Tsunami läuft mit √(g·h) (P im Orkan und beim Auflaufen)",
+  "richter": "H > 2·Hs in 1 h gegen Rayleigh ±50 %; Tsunami-Laufzeit über 1 000 km ±10 %"
+ },
+ {
+  "leiter": "planet.wasser.seegang",
+  "titel": "Seegang — die See, wie ein Seemann sie liest",
+  "sprosse": 7,
+  "kennung": "planet.wasser.seegang/S7",
+  "text": "ganzer Planet, jede Küste, jede Stunde — jede Welle ist die Fortsetzung desselben Ozean-Felds (P an jeder Pose, Flug Schiff → Strand ohne Bildriss)",
+  "richter": "100 Küstenposen aus 10 Saaten × 12 Uhr/Wetter: ≥ 80 % im Blindtest nicht sicher von Fotos unterschieden; dieselbe Wellengruppe vom Schiff und vom Strand, Kreuzkorrelation ≥ 0,7"
+ },
+ {
+  "leiter": "planet.wasser.seegang",
+  "titel": "Seegang — die See, wie ein Seemann sie liest",
+  "sprosse": 8,
+  "kennung": "planet.wasser.seegang/S8",
+  "text": "fremde Meere — Methan-See, Wasserwelt, Lava-Meer gehorchen ihrer Schwere, Dichte, Zähigkeit (P)",
+  "richter": "Wellenlänge-Periode-Paar gegen die Dispersionsrelation mit deren g und ρ ±10 %"
+ },
+ {
+  "leiter": "planet.wasser.gezeiten",
+  "titel": "Gezeiten und Sturmflut — der Spiegel in der Stunde",
+  "sprosse": 1,
+  "kennung": "planet.wasser.gezeiten/S1",
+  "text": "1 Küste, 24 h — halbtägliche Mondgezeit 12 h 25 min (P über 24 h Spielzeit)",
+  "richter": "Watt fällt sichtbar trocken: benetzte Fläche Ebbe gegen Flut im Bild, Periode ±2 %"
+ },
+ {
+  "leiter": "planet.wasser.gezeiten",
+  "titel": "Gezeiten und Sturmflut — der Spiegel in der Stunde",
+  "sprosse": 2,
+  "kennung": "planet.wasser.gezeiten/S2",
+  "text": "30 Tage — Spring- und Nipptide aus Mond und Sonne (P)",
+  "richter": "Pegel über 30 Tage: Spring-Nipp-Takt 14,8 d ±2 %"
+ },
+ {
+  "leiter": "planet.wasser.gezeiten",
+  "titel": "Gezeiten und Sturmflut — der Spiegel in der Stunde",
+  "sprosse": 3,
+  "kennung": "planet.wasser.gezeiten/S3",
+  "text": "jede Küste einer Region 10³ km — Tidenhub aus Schelfbreite und Buchtform, amphidromische Punkte (P)",
+  "richter": "20 Küsten aus 5 Saaten: Hub gegen Resonanz-Vorhersage ±30 %; ≥ 1 Bucht > 8 m je 10⁴ km² Küste"
+ },
+ {
+  "leiter": "planet.wasser.gezeiten",
+  "titel": "Gezeiten und Sturmflut — der Spiegel in der Stunde",
+  "sprosse": 4,
+  "kennung": "planet.wasser.gezeiten/S4",
+  "text": "Sturmflut — Windstau + Luftdruck + Gezeit addieren sich, Wasser dringt in Ebenen (P während der Flut)",
+  "richter": "Windstau gegen ∝ U²·Fetch/h ±30 %; überflutete Fläche deckt die Tiefenkarte ≥ 90 %"
+ },
+ {
+  "leiter": "planet.wasser.gezeiten",
+  "titel": "Gezeiten und Sturmflut — der Spiegel in der Stunde",
+  "sprosse": 5,
+  "kennung": "planet.wasser.gezeiten/S5",
+  "text": "10² Saaten mit anderem Mond — Hub aus Mondmasse und Abstand (P)",
+  "richter": "Hub ∝ M/r³ zwischen Saaten ±10 % über 5 Konfigurationen"
+ },
+ {
+  "leiter": "planet.wasser.gezeiten",
+  "titel": "Gezeiten und Sturmflut — der Spiegel in der Stunde",
+  "sprosse": 6,
+  "kennung": "planet.wasser.gezeiten/S6",
+  "text": "Äonen: der nahe Mond — früher Mond näher, Hub größer (P im Zeitsprung)",
+  "richter": "Erd-Saat bei −3 Ga: Tidenhub an der Spiel-Küste wächst mit dem Mondabstand wie M/r³ ±20 %"
+ },
+ {
+  "leiter": "planet.wasser.gezeiten",
+  "titel": "Gezeiten und Sturmflut — der Spiegel in der Stunde",
+  "sprosse": 7,
+  "kennung": "planet.wasser.gezeiten/S7",
+  "text": "fremde Monde — Doppelmonde, Gezeitenheizung von Eismonden (P)",
+  "richter": "Bild der Gezeit eines Doppelmond-Planeten; Wärmefluss eines Eismonds gegen Exzentrizität Rang ≥ 0,7"
+ },
+ {
+  "leiter": "planet.wasser.stroemung",
+  "titel": "Strömung — das Wasser, das Dinge und Wärme trägt",
+  "sprosse": 1,
+  "kennung": "planet.wasser.stroemung/S1",
+  "text": "Flüsse einer Region — Strömung längs Gefälle trägt Schwimmer, Boot, Tier (P)",
+  "richter": "Treibgut-Probe an 4 Fluss-Orten > 0,5 m in 90 Takten, im Spiel mit Bild"
+ },
+ {
+  "leiter": "planet.wasser.stroemung",
+  "titel": "Strömung — das Wasser, das Dinge und Wärme trägt",
+  "sprosse": 2,
+  "kennung": "planet.wasser.stroemung/S2",
+  "text": "sichtbares Fließen — Strähnen, Wirbel hinter Steinen, Kehrwasser (P, beide Geräte)",
+  "richter": "optischer Fluss zweier Bilder 0,5 s auseinander: längs/quer ≥ 1,5, Richtung ±20° an 12 Posen"
+ },
+ {
+  "leiter": "planet.wasser.stroemung",
+  "titel": "Strömung — das Wasser, das Dinge und Wärme trägt",
+  "sprosse": 3,
+  "kennung": "planet.wasser.stroemung/S3",
+  "text": "Küste und Mündung, 10 km — Brandungsrückstrom, Küstenlängsstrom, Gezeitenstrom, Salzkeil (P)",
+  "richter": "Rip-Ströme ≥ 1 je 500 m brandender Küste; Treibrichtung gegen Welleneinfall ±20°"
+ },
+ {
+  "leiter": "planet.wasser.stroemung",
+  "titel": "Strömung — das Wasser, das Dinge und Wärme trägt",
+  "sprosse": 4,
+  "kennung": "planet.wasser.stroemung/S4",
+  "text": "Ozeanbecken 10³ km — Wirbel mit verstärkter Westrand-Strömung (P)",
+  "richter": "100 Treibkörper, 1 Spieljahr: ≥ 70 % folgen dem Wirbel; Westrand ≥ 3× schneller als Ostrand"
+ },
+ {
+  "leiter": "planet.wasser.stroemung",
+  "titel": "Strömung — das Wasser, das Dinge und Wärme trägt",
+  "sprosse": 5,
+  "kennung": "planet.wasser.stroemung/S5",
+  "text": "über Becken hinweg, 10⁴ km — Treibgut und Eisberge kreuzen Ozeane (P)",
+  "richter": "3 Spieljahre: ≥ 70 % des Treibguts landet an den Küsten, die die Strömung vorhersagt"
+ },
+ {
+  "leiter": "planet.wasser.stroemung",
+  "titel": "Strömung — das Wasser, das Dinge und Wärme trägt",
+  "sprosse": 6,
+  "kennung": "planet.wasser.stroemung/S6",
+  "text": "Strömung in der Zeit — Umwälzung kippt bei Süßwasser-Puls (P, Zeitsprung ≤ 5 s)",
+  "richter": "Süßwasser über Schwelle → Umwälzung −50 %, Küstentemperatur fällt im Bild"
+ },
+ {
+  "leiter": "planet.wasser.stroemung",
+  "titel": "Strömung — das Wasser, das Dinge und Wärme trägt",
+  "sprosse": 7,
+  "kennung": "planet.wasser.stroemung/S7",
+  "text": "fremde Ozeane — andere Rotation, andere Kontinente, Ozean unter Eis (P)",
+  "richter": "Wirbelzahl je Halbkugel folgt der Rotationsrate ±1 über 5 Welten"
+ },
+ {
+  "leiter": "planet.wasser.eis",
+  "titel": "Eis — vom Schnee zum Eisschild",
+  "sprosse": 1,
+  "kennung": "planet.wasser.eis/S1",
+  "text": "Schnee einer Region — Decke kommt und geht mit Saison und Höhe, trägt und gibt nach (P im Schneefall)",
+  "richter": "Schneegrenze gegen Nullgrad-Höhe ±150 m an 10 Posen × 4 Jahreszeiten; Fuß sinkt ≥ 5 cm"
+ },
+ {
+  "leiter": "planet.wasser.eis",
+  "titel": "Eis — vom Schnee zum Eisschild",
+  "sprosse": 2,
+  "kennung": "planet.wasser.eis/S2",
+  "text": "Seen frieren zu — Eis wächst mit Frost, Salz senkt den Gefrierpunkt, trägt erst ab tragender Dicke (P)",
+  "richter": "Spieler geht bei Frost auf dem See, bricht bei Tauwetter ein; Einsetzen gegen Frostgrad-Summe ±20 %"
+ },
+ {
+  "leiter": "planet.wasser.eis",
+  "titel": "Eis — vom Schnee zum Eisschild",
+  "sprosse": 3,
+  "kennung": "planet.wasser.eis/S3",
+  "text": "Meereis 10⁶ km² — Packeis, Schollen, Rinnen; Fläche folgt der Saison (P)",
+  "richter": "Verhältnis Winter/Sommer gegen Arktis ±30 %; Blindpaar Scholle"
+ },
+ {
+  "leiter": "planet.wasser.eis",
+  "titel": "Eis — vom Schnee zum Eisschild",
+  "sprosse": 4,
+  "kennung": "planet.wasser.eis/S4",
+  "text": "Gletscher — fließt, schneller wo dick und steil; Spalten, Gletschertor (P, Zeitsprung ≤ 5 s)",
+  "richter": "Fließgeschwindigkeit 10–200 m/a; Spalten quer zur Zugspannung ±20°"
+ },
+ {
+  "leiter": "planet.wasser.eis",
+  "titel": "Eis — vom Schnee zum Eisschild",
+  "sprosse": 5,
+  "kennung": "planet.wasser.eis/S5",
+  "text": "Eiskappe und Schelfeis — Eisberg kalbt, treibt, schmilzt (P beim Kalben)",
+  "richter": "Kalbungs-Ereignis im Bild; Eisberg treibt ≥ 100 km in 1 Spieljahr"
+ },
+ {
+  "leiter": "planet.wasser.eis",
+  "titel": "Eis — vom Schnee zum Eisschild",
+  "sprosse": 6,
+  "kennung": "planet.wasser.eis/S6",
+  "text": "Eisschild 10⁶–10⁷ km², 3 km dick — Eis bindet Meer, Kruste sinkt ein und federt nach (P, Zeitsprung ≤ 5 s)",
+  "richter": "ΔV_Eis / A_Ozean = Δh ±5 %"
+ },
+ {
+  "leiter": "planet.wasser.eis",
+  "titel": "Eis — vom Schnee zum Eisschild",
+  "sprosse": 7,
+  "kennung": "planet.wasser.eis/S7",
+  "text": "Schneeball-Planet und Eismonde — ganzer Planet friert (Albedo-Kippe), Ozean unter 20 km Eis (P)",
+  "richter": "Albedo-Kippe unter Strahlungs-Schwelle in 10 Saaten reproduzierbar; Blindpaar Eismond gegen Sondenfoto"
+ },
+ {
+  "leiter": "planet.wasser.kreislauf",
+  "titel": "Der Kreislauf — EINE Bilanz vom Meer bis zum Aquifer",
+  "sprosse": 1,
+  "kennung": "planet.wasser.kreislauf/S1",
+  "text": "Region 2 km — Sturm hebt den Fluss mit Verzug, Dürre senkt ihn; Bilanz geht auf (P, beide Geräte)",
+  "richter": "Pegel nach Sturm im Bild; Scheitel-Verzug gegen Einzugsgebiet im Erd-Band; Regen × Fläche ↔ ΔVolumen ±10 %"
+ },
+ {
+  "leiter": "planet.wasser.kreislauf",
+  "titel": "Der Kreislauf — EINE Bilanz vom Meer bis zum Aquifer",
+  "sprosse": 2,
+  "kennung": "planet.wasser.kreislauf/S2",
+  "text": "Aquifer als Volumen — Quellen, Brunnen, Feuchtgebiet, wo der Spiegel das Gelände schneidet; Brunnen senkt den Spiegel (P an der Bohrung)",
+  "richter": "Grube unter dem Spiegel füllt sich bis zu ihm ±0,1 m; Quellen ≥ 90 % an Spiegel-Austritten; Entnahme: Absenkungstrichter, Quelle flussab versiegt"
+ },
+ {
+  "leiter": "planet.wasser.kreislauf",
+  "titel": "Der Kreislauf — EINE Bilanz vom Meer bis zum Aquifer",
+  "sprosse": 3,
+  "kennung": "planet.wasser.kreislauf/S3",
+  "text": "Monate — Bodenfeuchte als Gedächtnis (P)",
+  "richter": "nach 60 Tagen ohne Regen: Wiese braun gegen Dürrefoto, Fluss ≥ 50 % Querschnitt verloren"
+ },
+ {
+  "leiter": "planet.wasser.kreislauf",
+  "titel": "Der Kreislauf — EINE Bilanz vom Meer bis zum Aquifer",
+  "sprosse": 4,
+  "kennung": "planet.wasser.kreislauf/S4",
+  "text": "Kontinent — Regen kommt aus Verdunstung über dem Meer (P)",
+  "richter": "markiertes Meerwasser erscheint als Regen im Binnenland; Niederschlag fällt mit dem Meeresabstand, Rang ≥ 0,7"
+ },
+ {
+  "leiter": "planet.wasser.kreislauf",
+  "titel": "Der Kreislauf — EINE Bilanz vom Meer bis zum Aquifer",
+  "sprosse": 5,
+  "kennung": "planet.wasser.kreislauf/S5",
+  "text": "Planet — Verdunstung = Niederschlag, Verweilzeiten je Speicher (P)",
+  "richter": "markierte Wassermenge folgt der Verweilzeit (Atmosphäre ~9 d, Ozean ~10³ a) ±30 %"
+ },
+ {
+  "leiter": "planet.wasser.kreislauf",
+  "titel": "Der Kreislauf — EINE Bilanz vom Meer bis zum Aquifer",
+  "sprosse": 6,
+  "kennung": "planet.wasser.kreislauf/S6",
+  "text": "fremde Kreisläufe — Methan-Kreislauf, Wüstenplanet mit Polkappen, Treibhaus-Ozeanverlust (P)",
+  "richter": "je Welt Bilanz geschlossen ±1 %; Phasen folgen deren Druck und Temperatur"
+ },
+ {
+  "leiter": "planet.wasser.tiefsee",
+  "titel": "Unter dem Spiegel — der Raum, der 70 % des Planeten ist",
+  "sprosse": 1,
+  "kennung": "planet.wasser.tiefsee/S1",
+  "text": "See, Fluss 0–10 m — Licht verliert je Kanal, Sicht nach Trübung (P unter Wasser)",
+  "richter": "Rot-Anteil fällt bis 5 m auf ≤ 30 %; Sicht gegen Secchi-Referenz ±30 %"
+ },
+ {
+  "leiter": "planet.wasser.tiefsee",
+  "titel": "Unter dem Spiegel — der Raum, der 70 % des Planeten ist",
+  "sprosse": 2,
+  "kennung": "planet.wasser.tiefsee/S2",
+  "text": "Küstenmeer 0–40 m — Kaustik, Sandrippel, Dünung spürbar (P beim Tauchen in Brandung)",
+  "richter": "Blindtest 50 Posen gegen Taucherfotos ≥ 60 %; Rippel-Abstand gegen Wellen-Orbital ±30 %"
+ },
+ {
+  "leiter": "planet.wasser.tiefsee",
+  "titel": "Unter dem Spiegel — der Raum, der 70 % des Planeten ist",
+  "sprosse": 3,
+  "kennung": "planet.wasser.tiefsee/S3",
+  "text": "Schelf bis 200 m — Dämmerung, Sprungschicht, Kälte (P im Abtauchen)",
+  "richter": "Lichtrest bei 200 m ≤ 1 %; Sprungschicht im Temperaturprofil des Tauchgangs"
+ },
+ {
+  "leiter": "planet.wasser.tiefsee",
+  "titel": "Unter dem Spiegel — der Raum, der 70 % des Planeten ist",
+  "sprosse": 4,
+  "kennung": "planet.wasser.tiefsee/S4",
+  "text": "Tiefsee bis 11 km — Ebene, Graben, Rücken mit Schloten; Dunkelheit unter 1 000 m (P, Abtauchen ohne Ladepause)",
+  "richter": "Tiefen-Hypsometrie eines 100-km-Profils gegen Erde ±20 %; Schlote nur an Spreizungsrücken"
+ },
+ {
+  "leiter": "planet.wasser.tiefsee",
+  "titel": "Unter dem Spiegel — der Raum, der 70 % des Planeten ist",
+  "sprosse": 5,
+  "kennung": "planet.wasser.tiefsee/S5",
+  "text": "jeder Meeresboden ~3,6·10⁸ km² — stetig vom Satelliten bis zum Kiesel (P überall)",
+  "richter": "500 Bodenposen aus 50 Saaten: Blindtest gegen Tiefsee-Fotos ≥ 60 %; 0 Löcher"
+ },
+ {
+  "leiter": "planet.wasser.tiefsee",
+  "titel": "Unter dem Spiegel — der Raum, der 70 % des Planeten ist",
+  "sprosse": 6,
+  "kennung": "planet.wasser.tiefsee/S6",
+  "text": "fremde Ozeane — unter 20 km Eis, Methan-See, Hochdruck-Ozean (P)",
+  "richter": "Licht, Druck und Phasen gegen deren Stoff ±20 %"
+ },
+ {
+  "leiter": "planet.wetter.lagen",
+  "titel": "Wetterlagen — das synoptische Wetter vom Orbit bis zum Ort",
+  "sprosse": 1,
+  "kennung": "planet.wetter.lagen/S1",
+  "text": "5 Wetter-Zeilen, Bänder ziehen über wenige km — Wetter wandert (P)",
+  "richter": "Regen an A bei trockenem B ≥ 20 % der Zeit, Lag ±20 %"
+ },
+ {
+  "leiter": "planet.wetter.lagen",
+  "titel": "Wetterlagen — das synoptische Wetter vom Orbit bis zum Ort",
+  "sprosse": 2,
+  "kennung": "planet.wetter.lagen/S2",
+  "text": "Region 10² km — Frontpassage in Erd-Abfolge (P)",
+  "richter": "50 Frontpassagen aus 50 Saaten: Abfolge Cirrus → Nimbostratus → Schauer, Druckfall, Winddrehung stimmt ≥ 80 %"
+ },
+ {
+  "leiter": "planet.wetter.lagen",
+  "titel": "Wetterlagen — das synoptische Wetter vom Orbit bis zum Ort",
+  "sprosse": 3,
+  "kennung": "planet.wetter.lagen/S3",
+  "text": "Kontinent 10³ km — Tief mit Lebenslauf 3–7 Tage (P, Draufsicht 400 km)",
+  "richter": "Blindtest 20 Draufsichten gegen Satellitenbild: Trefferquote ≤ 60 %"
+ },
+ {
+  "leiter": "planet.wetter.lagen",
+  "titel": "Wetterlagen — das synoptische Wetter vom Orbit bis zum Ort",
+  "sprosse": 4,
+  "kennung": "planet.wetter.lagen/S4",
+  "text": "Planet 10⁴ km — Wolkenbänder, Wüstengürtel, Passat aus Rotation und Neigung (P, Orbit ↔ Boden ohne Bruch)",
+  "richter": "Breitenprofil der Bedeckung r ≥ 0,7; Passatrichtung ±30° in ≥ 70 % von 500 Proben"
+ },
+ {
+  "leiter": "planet.wetter.lagen",
+  "titel": "Wetterlagen — das synoptische Wetter vom Orbit bis zum Ort",
+  "sprosse": 5,
+  "kennung": "planet.wetter.lagen/S5",
+  "text": "Planet × Jahr — Monsun, Blockierlagen, Wirbelstürme mit Auge (P auch im Zeitraffer)",
+  "richter": "Wirbelsturm-Zahl und -Bahnen gegen IBTrACS ±30 %, 100 Erd-Saaten"
+ },
+ {
+  "leiter": "planet.wetter.lagen",
+  "titel": "Wetterlagen — das synoptische Wetter vom Orbit bis zum Ort",
+  "sprosse": 6,
+  "kennung": "planet.wetter.lagen/S6",
+  "text": "jede Skala zugleich 10⁷ m bis 1 m — Superzelle, Böenfront, Hagel, Blitz, Tornado aus demselben Feld (P unter der Superzelle)",
+  "richter": "Blindtest gegen Sturmfotos ≤ 60 %; Donner-Lag = Abstand/343 m/s ±10 %"
+ },
+ {
+  "leiter": "planet.wetter.lagen",
+  "titel": "Wetterlagen — das synoptische Wetter vom Orbit bis zum Ort",
+  "sprosse": 7,
+  "kennung": "planet.wetter.lagen/S7",
+  "text": "10⁶ Saaten — bei Erd-Parametern ununterscheidbar von einer Reanalyse (P je Saat)",
+  "richter": "1 000 Saaten: Druck, Wind, Niederschlag im KS-Test ununterscheidbar von ERA5 in ≥ 90 %"
+ },
+ {
+  "leiter": "planet.wetter.wolken",
+  "titel": "Wolken, Niederschlag und Luft im Bild",
+  "sprosse": 1,
+  "kennung": "planet.wetter.wolken/S1",
+  "text": "EINE Wolkenschicht 800 m, Karte ≈ 8 km — Licht aus der Atmosphäre, Schatten ziehen (P)",
+  "richter": "Zeitraffer der Schicht gegen Zeitraffer-Film realer Schichtwolken (2AFC ≤ 85 %); Zuggeschwindigkeit der Schatten am Boden im Band realer Wolkenzüge (2–20 m/s) und gleich der Wolke darüber (Versatz ≤ 5 %)"
+ },
+ {
+  "leiter": "planet.wetter.wolken",
+  "titel": "Wolken, Niederschlag und Luft im Bild",
+  "sprosse": 2,
+  "kennung": "planet.wetter.wolken/S2",
+  "text": "Himmel bis zum Horizont, drei Stockwerke — Silberrand, dunkle Basis, Gegenlicht (P)",
+  "richter": "Blindtest 20 Himmelsbilder gegen Foto ≤ 70 %; Gattung vom Bildmodell erkannt ≥ 80 %"
+ },
+ {
+  "leiter": "planet.wetter.wolken",
+  "titel": "Wolken, Niederschlag und Luft im Bild",
+  "sprosse": 3,
+  "kennung": "planet.wetter.wolken/S3",
+  "text": "jede Wolke entsteht und vergeht — Gattung folgt aus Feuchte, Hebung, Stabilität (P)",
+  "richter": "200 Momente × 20 Saaten: sichtbare Gattung = verlangte ≥ 80 %; Cumulus-Gipfel 14–17 Uhr in ≥ 80 %"
+ },
+ {
+  "leiter": "planet.wetter.wolken",
+  "titel": "Wolken, Niederschlag und Luft im Bild",
+  "sprosse": 4,
+  "kennung": "planet.wetter.wolken/S4",
+  "text": "Niederschlag sichtbar aus 2–20 km — Phase folgt dem Temperaturprofil (P)",
+  "richter": "Phase am Boden passt zum Profil ≥ 90 %; Regenvorhang auf 5 km Kontrast ≥ 0,1"
+ },
+ {
+  "leiter": "planet.wetter.wolken",
+  "titel": "Wolken, Niederschlag und Luft im Bild",
+  "sprosse": 5,
+  "kennung": "planet.wetter.wolken/S5",
+  "text": "die Luft selbst, Sicht 10 m – 200 km — Dunst, Talnebel, Staub, Regenbogen, Halo, Blitz wo die Physik sie verlangt (P)",
+  "richter": "Sichtweite gegen Feuchte und Aerosol ±30 %; 0 Erscheinungen ohne Ursache, ≥ 80 % der Ursachen zeigen ihre"
+ },
+ {
+  "leiter": "planet.wetter.wolken",
+  "titel": "Wolken, Niederschlag und Luft im Bild",
+  "sprosse": 6,
+  "kennung": "planet.wetter.wolken/S6",
+  "text": "durchfliegbar, Boden bis Orbit — dieselbe Wolke von oben und von unten (P im Flug)",
+  "richter": "Zoom 400 km → 2 m: Positionsfehler ≤ 1 % der Höhe, kein Sprung > 5 % Luma"
+ },
+ {
+  "leiter": "planet.wetter.wolken",
+  "titel": "Wolken, Niederschlag und Luft im Bild",
+  "sprosse": 7,
+  "kennung": "planet.wetter.wolken/S7",
+  "text": "10⁶ Wolken zugleich, jede Saat, jede Epoche — ununterscheidbar von Fotografie (P)",
+  "richter": "100 Himmelsbilder gegen Fotos: Trefferquote ≤ 60 %"
+ },
+ {
+  "leiter": "planet.wetter.klimazonen",
+  "titel": "Klimazonen und Jahreszeiten",
+  "sprosse": 1,
+  "kennung": "planet.wetter.klimazonen/S1",
+  "text": "1 Klima, Höhe gestaucht — Jahres- und Tagesgang, Schneegrenze (P)",
+  "richter": "Temperatur am Meer 18/−4 °C, Schneegrenze folgt der Saison"
+ },
+ {
+  "leiter": "planet.wetter.klimazonen",
+  "titel": "Klimazonen und Jahreszeiten",
+  "sprosse": 2,
+  "kennung": "planet.wetter.klimazonen/S2",
+  "text": "1 Gebirge in Erd-Höhe — Höhenstufen wie auf der Erde (P)",
+  "richter": "Baum- und Schneegrenze im Bild auf Erd-Höhe ihrer Breite ±20 %"
+ },
+ {
+  "leiter": "planet.wetter.klimazonen",
+  "titel": "Klimazonen und Jahreszeiten",
+  "sprosse": 3,
+  "kennung": "planet.wetter.klimazonen/S3",
+  "text": "3 Klimata in einer Welt — Kontinentalität: Jahresamplitude wächst mit der Meeresferne (P)",
+  "richter": "Jahresamplitude gegen Meeresabstand Rang ≥ 0,7 an 30 Orten"
+ },
+ {
+  "leiter": "planet.wetter.klimazonen",
+  "titel": "Klimazonen und Jahreszeiten",
+  "sprosse": 4,
+  "kennung": "planet.wetter.klimazonen/S4",
+  "text": "Jahreszeit-Typen nach Breite — Polarnacht, Monsun, Regen- und Trockenzeit (P)",
+  "richter": "Bildpaar Juli/Januar an 3 Breiten: Tageslänge, Sonnenhöhe, Laub, Eis ändern sich in die richtige Richtung"
+ },
+ {
+  "leiter": "planet.wetter.klimazonen",
+  "titel": "Klimazonen und Jahreszeiten",
+  "sprosse": 5,
+  "kennung": "planet.wetter.klimazonen/S5",
+  "text": "Klimaraum eines Planeten — Köppen-Klasse aus Breite, Meer, Höhe (P)",
+  "richter": "50 Zufallsorte: Klasse aus Spieldaten = Klasse aus Lage ≥ 80 %; Flächenanteile über 100 Saaten ±50 % der Erde"
+ },
+ {
+  "leiter": "planet.wetter.klimazonen",
+  "titel": "Klimazonen und Jahreszeiten",
+  "sprosse": 6,
+  "kennung": "planet.wetter.klimazonen/S6",
+  "text": "ganzer Planet im Orbitbild — Farbe des Landes folgt dem Klima (P)",
+  "richter": "Farbverteilung je Breite r ≥ 0,7 gegen Blue-Marble-Mosaik"
+ },
+ {
+  "leiter": "planet.wetter.klimazonen",
+  "titel": "Klimazonen und Jahreszeiten",
+  "sprosse": 7,
+  "kennung": "planet.wetter.klimazonen/S7",
+  "text": "10⁶ Planeten-Klimata — plausibel ohne Erd-Parameter (P je Planet)",
+  "richter": "1 000 Saaten × 50 Orte: kein sichtbarer Widerspruch in ≥ 95 %"
+ },
+ {
+  "leiter": "planet.wetter.extreme",
+  "titel": "Extreme und Wiederkehr",
+  "sprosse": 1,
+  "kennung": "planet.wetter.extreme/S1",
+  "text": "Flut über Tage, ein Fluss — Fluss verlässt das Bett (P)",
+  "richter": "nach 100 mm Starkregen: Überflutung ≥ Aue, Bildpaar"
+ },
+ {
+  "leiter": "planet.wetter.extreme",
+  "titel": "Extreme und Wiederkehr",
+  "sprosse": 2,
+  "kennung": "planet.wetter.extreme/S2",
+  "text": "Hitze- und Kältewelle, eine Region — Welle aus Blockierlage (P)",
+  "richter": "Dauer und Amplitude gegen Erd-Statistik gleichen Klimas ±50 %"
+ },
+ {
+  "leiter": "planet.wetter.extreme",
+  "titel": "Extreme und Wiederkehr",
+  "sprosse": 3,
+  "kennung": "planet.wetter.extreme/S3",
+  "text": "Wiederkehr über 10² Jahre — Jahrhundertflut, Jahrhundert-Hitze (P, Zeitsprung 100 a ≤ 5 s)",
+  "richter": "GEV-Anpassung der Jahresmaxima: 100-a-Wert innerhalb Faktor 2 der Erd-Erwartung"
+ },
+ {
+  "leiter": "planet.wetter.extreme",
+  "titel": "Extreme und Wiederkehr",
+  "sprosse": 4,
+  "kennung": "planet.wetter.extreme/S4",
+  "text": "Schwankung über Jahrzehnte, 5 000 km — Telekonnektion: Ozean warm hier → Dürre dort (P)",
+  "richter": "Index ↔ Regen 5 000 km entfernt |r| ≥ 0,3 über 100 Saaten"
+ },
+ {
+  "leiter": "planet.wetter.extreme",
+  "titel": "Extreme und Wiederkehr",
+  "sprosse": 5,
+  "kennung": "planet.wetter.extreme/S5",
+  "text": "Extreme jeder Klimazone — Sandsturm, Blizzard, Monsunflut, Wirbelsturm-Landfall (P im Sturm)",
+  "richter": "Sicht im Sandsturm < 100 m; Blindtest gegen Sturmfotos ≤ 60 %"
+ },
+ {
+  "leiter": "planet.wetter.extreme",
+  "titel": "Extreme und Wiederkehr",
+  "sprosse": 6,
+  "kennung": "planet.wetter.extreme/S6",
+  "text": "Katastrophe in der Megastadt, 10⁵ sichtbare Dinge — Hurrikan landet, Sandsturm verschluckt die Stadt (P über die ganze Durchfahrt)",
+  "richter": "p95 ≤ 33 ms über die Durchfahrt; Blindtest ≤ 60 %"
+ },
+ {
+  "leiter": "planet.wetter.vorhersage",
+  "titel": "Der lesbare Himmel — bis an die Grenze des Chaos",
+  "sprosse": 1,
+  "kennung": "planet.wetter.vorhersage/S1",
+  "text": "Stunden — Regen kommt aus der Windrichtung (P)",
+  "richter": "100 Regenbeginne: Bedeckung stieg in den 60 min davor aus der Windrichtung in ≥ 70 %"
+ },
+ {
+  "leiter": "planet.wetter.vorhersage",
+  "titel": "Der lesbare Himmel — bis an die Grenze des Chaos",
+  "sprosse": 2,
+  "kennung": "planet.wetter.vorhersage/S2",
+  "text": "ein Tag — Zeichen der Front 6–24 h vorher (P)",
+  "richter": "Bildmodell, das NUR den Himmel sieht: Regen in 12 h mit Skill ≥ 0,3 über Persistenz"
+ },
+ {
+  "leiter": "planet.wetter.vorhersage",
+  "titel": "Der lesbare Himmel — bis an die Grenze des Chaos",
+  "sprosse": 3,
+  "kennung": "planet.wetter.vorhersage/S3",
+  "text": "Tage — Druck und Wind am Ort lesbar (P)",
+  "richter": "Vorhersage aus Spiel-Beobachtung: Skill ≥ 0,2 über Klimatologie bei 3 Tagen"
+ },
+ {
+  "leiter": "planet.wetter.vorhersage",
+  "titel": "Der lesbare Himmel — bis an die Grenze des Chaos",
+  "sprosse": 4,
+  "kennung": "planet.wetter.vorhersage/S4",
+  "text": "Wochen — ehrliches Chaos (P)",
+  "richter": "winzige Störung: Skill fällt bis 14 Tage auf ≈ 0"
+ },
+ {
+  "leiter": "planet.wetter.vorhersage",
+  "titel": "Der lesbare Himmel — bis an die Grenze des Chaos",
+  "sprosse": 5,
+  "kennung": "planet.wetter.vorhersage/S5",
+  "text": "Planet — Sturmbahnen vom Orbit lesbar (P)",
+  "richter": "Bahn-Vorhersage 48 h aus dem Orbitbild: Fehler ≤ 300 km"
+ },
+ {
+  "leiter": "planet.wetter.vorhersage",
+  "titel": "Der lesbare Himmel — bis an die Grenze des Chaos",
+  "sprosse": 6,
+  "kennung": "planet.wetter.vorhersage/S6",
+  "text": "10 Welten — Vorhersagegrenze folgt der Dynamik der Welt (P je Welt)",
+  "richter": "Zeit bis Skill ≈ 0 gegen Fehlerwachstum aus Rotation und Wärmegefälle ±50 %"
+ },
+ {
+  "leiter": "planet.wetter.fremde-atmosphaeren",
+  "titel": "Fremde Atmosphären — dasselbe Gesetz, andere Welten",
+  "sprosse": 1,
+  "kennung": "planet.wetter.fremde-atmosphaeren/S1",
+  "text": "1 Atmosphäre (Erde), parametrisch — Rayleigh, Aerosol, Ozon (P)",
+  "richter": "Himmelsfarbe Mittag/Abend gegen Foto"
+ },
+ {
+  "leiter": "planet.wetter.fremde-atmosphaeren",
+  "titel": "Fremde Atmosphären — dasselbe Gesetz, andere Welten",
+  "sprosse": 2,
+  "kennung": "planet.wetter.fremde-atmosphaeren/S2",
+  "text": "Gas, Druck, Stern als Zufallsparameter — Himmelsfarbe folgt aus ihnen (P)",
+  "richter": "Mars-Parameter: blaue Dämmerung, butterfarbener Tag gegen Rover-Fotos; Titan: oranger Dunst gegen Huygens, Farbton ±10°"
+ },
+ {
+  "leiter": "planet.wetter.fremde-atmosphaeren",
+  "titel": "Fremde Atmosphären — dasselbe Gesetz, andere Welten",
+  "sprosse": 3,
+  "kennung": "planet.wetter.fremde-atmosphaeren/S3",
+  "text": "10³ Welten: was eine Welt hält — Atmosphäre aus Fluchtgeschwindigkeit und Einstrahlung (P)",
+  "richter": "1 000 Welten: Atmosphäre gegen die Zahnle-Catling-Grenze richtig eingeordnet ≥ 90 %"
+ },
+ {
+  "leiter": "planet.wetter.fremde-atmosphaeren",
+  "titel": "Fremde Atmosphären — dasselbe Gesetz, andere Welten",
+  "sprosse": 4,
+  "kennung": "planet.wetter.fremde-atmosphaeren/S4",
+  "text": "Zirkulation aus Rotation — Zahl der Zellen folgt der Rotation (P)",
+  "richter": "Rotation ×0,1 / ×1 / ×5: Bänder je Halbkugel 1 / 3 / ≥ 4 im Orbitbild"
+ },
+ {
+  "leiter": "planet.wetter.fremde-atmosphaeren",
+  "titel": "Fremde Atmosphären — dasselbe Gesetz, andere Welten",
+  "sprosse": 5,
+  "kennung": "planet.wetter.fremde-atmosphaeren/S5",
+  "text": "gebundene und dichte Welten — Superrotation, Tag-Nacht-Grenze (P)",
+  "richter": "Venus-Parameter: Wolkendecke umläuft ≈ 60× schneller als der Boden"
+ },
+ {
+  "leiter": "planet.wetter.fremde-atmosphaeren",
+  "titel": "Fremde Atmosphären — dasselbe Gesetz, andere Welten",
+  "sprosse": 6,
+  "kennung": "planet.wetter.fremde-atmosphaeren/S6",
+  "text": "Gasriesen von außen und innen — Bänder, langlebige Wirbel, Abstieg bis zur Zerstörung (P im ganzen Abstieg)",
+  "richter": "Bänderzahl nach Rhines-Skala ±30 %; Wirbel lebt ≥ 100 Spieljahre; Blindtest gegen Juno/Cassini ≤ 70 %"
+ },
+ {
+  "leiter": "planet.wetter.fremde-atmosphaeren",
+  "titel": "Fremde Atmosphären — dasselbe Gesetz, andere Welten",
+  "sprosse": 7,
+  "kennung": "planet.wetter.fremde-atmosphaeren/S7",
+  "text": "10⁶ Planeten, ein Sonnensystem in Reise — jede Saat eine geschlossene Atmosphäre, Wetter läuft während der Reise (P je Ankunft)",
+  "richter": "1 000 Planeten × 20 Orte ohne sichtbaren Widerspruch ≥ 95 %; Wolke über dem Landeplatz steht, wo man sie vom Orbit sah (≤ 1 %)"
+ },
+ {
+  "leiter": "planet.zeit.klimageschichte",
+  "titel": "Klima, Eis und Meeresspiegel über die Äonen",
+  "sprosse": 1,
+  "kennung": "planet.zeit.klimageschichte/S1",
+  "text": "10² Jahre — Treibhaus-Drift verschiebt Schneegrenze und Küste (P, Sprung ≤ 5 s)",
+  "richter": "+100 a bei +2 °C: Schneegrenze +300 m ±30 %; Küste wandert um Δh/Strandneigung ±25 %"
+ },
+ {
+  "leiter": "planet.zeit.klimageschichte",
+  "titel": "Klima, Eis und Meeresspiegel über die Äonen",
+  "sprosse": 2,
+  "kennung": "planet.zeit.klimageschichte/S2",
+  "text": "10⁴ Jahre — Eiszeit: Meer −120 m, Landbrücken, Eisrand (P, Sprung ≤ 5 s)",
+  "richter": "Erd-Saat −21 ka: Meer −120 ±10 m, Landbrücke begehbar, Eisrand gegen LGM-Rekonstruktion, global −6 ±2 °C"
+ },
+ {
+  "leiter": "planet.zeit.klimageschichte",
+  "titel": "Klima, Eis und Meeresspiegel über die Äonen",
+  "sprosse": 3,
+  "kennung": "planet.zeit.klimageschichte/S3",
+  "text": "10⁶ Jahre — Glazialtakt 41/100 ka (P)",
+  "richter": "Spektrum der im Spiel gemessenen Eisbedeckung über 3 Ma: Gipfel bei 41 ±5 und 100 ±15 ka; Eis gegen Meeresspiegel r ≤ −0,8"
+ },
+ {
+  "leiter": "planet.zeit.klimageschichte",
+  "titel": "Klima, Eis und Meeresspiegel über die Äonen",
+  "sprosse": 4,
+  "kennung": "planet.zeit.klimageschichte/S4",
+  "text": "10⁷ Jahre — Becken trocknet aus und flutet, Meer +70 m ohne Eis (P, Ereignis abspielbar)",
+  "richter": "Becken mit negativer Bilanz fällt in V/(E−P) ±30 % trocken, Salzschicht sichtbar"
+ },
+ {
+  "leiter": "planet.zeit.klimageschichte",
+  "titel": "Klima, Eis und Meeresspiegel über die Äonen",
+  "sprosse": 5,
+  "kennung": "planet.zeit.klimageschichte/S5",
+  "text": "10⁸ Jahre — Treibhaus und Eishaus aus Kontinentlage und CO₂ (P)",
+  "richter": "Erd-Saat über 540 Ma: Mitteltemperatur im Band der Scotese-Kurve ±3 °C; Kreide-Hochstand flutet 20–40 % des Kontinents; Pangäa-Inneres Wüste"
+ },
+ {
+  "leiter": "planet.zeit.klimageschichte",
+  "titel": "Klima, Eis und Meeresspiegel über die Äonen",
+  "sprosse": 6,
+  "kennung": "planet.zeit.klimageschichte/S6",
+  "text": "10⁹ Jahre — Schneeball-Episoden und Ausstieg (P im Eis)",
+  "richter": "Schneeball ≥ 90 % Eisfläche im Bild; in ≥ 30 % der fähigen Saaten tritt eine Episode auf und endet aus dem Gesetz"
+ },
+ {
+  "leiter": "planet.zeit.klimageschichte",
+  "titel": "Klima, Eis und Meeresspiegel über die Äonen",
+  "sprosse": 7,
+  "kennung": "planet.zeit.klimageschichte/S7",
+  "text": "4,5·10⁹ Jahre — schwache junge Sonne, Dunst-Himmel des Archaikums, Ozeanverlust der Zukunft (P)",
+  "richter": "Erd-Saat: flüssiges Wasser ≥ 90 % der Zeit seit 4 Ga bei 70–100 % Leuchtkraft; Ozeanverlust zwischen +0,5 und +2 Ga; Himmel bei −4 Ga gegen Strahlungsrechnung"
+ },
+ {
+  "leiter": "planet.zeit.klimageschichte",
+  "titel": "Klima, Eis und Meeresspiegel über die Äonen",
+  "sprosse": 8,
+  "kennung": "planet.zeit.klimageschichte/S8",
+  "text": "die ferne Zukunft: +250 Ma, +1 Ga, +5 Ga — nächster Superkontinent, hellere Sonne, Ozeane verdampfen, die Biosphäre schwindet, Roter Riese (P, Sprung ≤ 5 s)",
+  "richter": "drei Halte im Bild: Land zu ≥ 70 % zusammenhängend um +250 Ma (±100 Ma); Ozeanfläche → 0 zwischen +0,5 und +2 Ga; Sonnenscheibe bei +5 Ga ≥ 100× Fläche — die Zeitpunkte folgen aus der Saat (Saat-Tausch verschiebt sie)"
+ },
+ {
+  "leiter": "planet.zeit.klimageschichte",
+  "titel": "Klima, Eis und Meeresspiegel über die Äonen",
+  "sprosse": 9,
+  "kennung": "planet.zeit.klimageschichte/S9",
+  "text": "jede Epoche jedes Planeten, nahtlos — Klimageschichte konsistent mit der Geologie (P je Sprung)",
+  "richter": "heute → Eiszeit → heute: Moränen liegen am Eisrand der Eiszeit (Lagefehler ≤ 5 %), 100 Saaten; 1 000 Planeten: Fremdwelt-Probe (R10) an Eisrand, Meeresspiegel und Klimazonen"
+ },
+ {
+  "leiter": "planet.zeit.archiv",
+  "titel": "Die Welt als Archiv — Schicht, Wand, lesbare Geschichte",
+  "sprosse": 1,
+  "kennung": "planet.zeit.archiv/S1",
+  "text": "Schicht als Form im Tafelland — harte und weiche Bank: Kliff, Schutthang am Ruhewinkel (P am Kliff)",
+  "richter": "Kliff 60–85° und Schutthang im Bild an Tafelland-Saaten"
+ },
+ {
+  "leiter": "planet.zeit.archiv",
+  "titel": "Die Welt als Archiv — Schicht, Wand, lesbare Geschichte",
+  "sprosse": 2,
+  "kennung": "planet.zeit.archiv/S2",
+  "text": "Schichten mit Gesteinsart, 1 Wand — Farbe und Korn je Lage aus dem Ablagerungsmilieu (P an der Wand)",
+  "richter": "Bildvergleich gegen Fotos des Colorado-Plateaus (Farbbänder, Rhythmus)"
+ },
+ {
+  "leiter": "planet.zeit.archiv",
+  "titel": "Die Welt als Archiv — Schicht, Wand, lesbare Geschichte",
+  "sprosse": 3,
+  "kennung": "planet.zeit.archiv/S3",
+  "text": "Schichten mit Alter, 10⁴ a am Ort — Absetzrate, Warven; Grenzen setzen sich stetig fort (P beim Graben)",
+  "richter": "Grabung 3 m: Lagen = Ablagerungs-Episoden der bereisten Geschichte ±10 %; Grenzen stetig über ≥ 100 m"
+ },
+ {
+  "leiter": "planet.zeit.archiv",
+  "titel": "Die Welt als Archiv — Schicht, Wand, lesbare Geschichte",
+  "sprosse": 4,
+  "kennung": "planet.zeit.archiv/S4",
+  "text": "Diskordanz, Faltung, Verwerfung, 10³ Säulen — Lücken, wo Erosion fraß (P)",
+  "richter": "1 000 Zufallssäulen: jede Lücke = eine Hebungs- oder Abtragsphase der Geschichte (100 %)"
+ },
+ {
+  "leiter": "planet.zeit.archiv",
+  "titel": "Die Welt als Archiv — Schicht, Wand, lesbare Geschichte",
+  "sprosse": 5,
+  "kennung": "planet.zeit.archiv/S5",
+  "text": "jede Säule bis 10 km, 10⁸ a — marin wo Meer war, Evaporit wo Wüste, Kohle wo Sumpf (P beim Bohren, Ergebnis ≤ 1 s)",
+  "richter": "Zeitreise an den Ort → Milieu; Bohrung → Gestein der Lage jenes Alters stimmt ≥ 95 %"
+ },
+ {
+  "leiter": "planet.zeit.archiv",
+  "titel": "Die Welt als Archiv — Schicht, Wand, lesbare Geschichte",
+  "sprosse": 6,
+  "kennung": "planet.zeit.archiv/S6",
+  "text": "Kilometer-Wände aus der Ferne — Canyon, Kliffküste: 10⁹ a in einer Wand (P an der Fernsicht-Pose)",
+  "richter": "Spiel-Wand aus 2 km gegen Grand-Canyon-Fotos: Fachleute ordnen ≥ 80 % der Lagen dem richtigen Milieu zu"
+ },
+ {
+  "leiter": "planet.zeit.archiv",
+  "titel": "Die Welt als Archiv — Schicht, Wand, lesbare Geschichte",
+  "sprosse": 7,
+  "kennung": "planet.zeit.archiv/S7",
+  "text": "der Spieler als Geologe, 50 Orte — Agens, Abfolge und Alter von Wand UND Landform lesbar (P)",
+  "richter": "Fachjury bestimmt aus 50 Ego-Bildern das Agens ≥ 70 % (Zufall 25 %), die Abfolge ≥ 60 %, das Alter Rang ≥ 0,6"
+ },
+ {
+  "leiter": "planet.zeit.archiv",
+  "titel": "Die Welt als Archiv — Schicht, Wand, lesbare Geschichte",
+  "sprosse": 8,
+  "kennung": "planet.zeit.archiv/S8",
+  "text": "jede Säule jeder Welt über 4,5 Ga — ein Gesteinsgedächtnis, das sich liest wie ein Feldbuch (P je Saat)",
+  "richter": "100 Welten: aus 5 Aufschlüssen die Geschichte (Meer/Land/Eis/Vulkan je Epoche) ≥ 80 % getroffen"
+ },
+ {
+  "leiter": "planet.erde.gestalt",
+  "titel": "Die echte Erde — erkannt und vermessen",
+  "sprosse": 1,
+  "kennung": "planet.erde.gestalt/S1",
+  "text": "EINE Region der Erde, 10⁴ km² (ein Golf mit Vulkan) — Küste, Hauptgipfel, Hauptfluss liegen, wo sie liegen (P · Schlüssel ≤ 10 kB)",
+  "richter": "Küstenlinie gegen das Höhenmodell: mittlerer Lagefehler ≤ 5 km; Ortskundige wählen die Region aus 10 Kandidaten an 3 Ego-Bildern ≥ 70 %"
+ },
+ {
+  "leiter": "planet.erde.gestalt",
+  "titel": "Die echte Erde — erkannt und vermessen",
+  "sprosse": 2,
+  "kennung": "planet.erde.gestalt/S2",
+  "text": "ein Kontinent — Gebirgsgürtel, Ströme, Wüsten, Klimazonen an ihrem Ort (P · Schlüssel ≤ 100 kB)",
+  "richter": "Lagefehler der 100 größten Formen ≤ 50 km; Köppen-Klasse an 1 000 Punkten richtig ≥ 80 %"
+ },
+ {
+  "leiter": "planet.erde.gestalt",
+  "titel": "Die echte Erde — erkannt und vermessen",
+  "sprosse": 3,
+  "kennung": "planet.erde.gestalt/S3",
+  "text": "die ganze Erde heute, Orbit bis Boden — Kontinente, Meere, Eis, Biome (P · Schlüssel ≤ 1 MB)",
+  "richter": "Orbitbild gegen Satellitenmosaik: Panel-2AFC ≤ 70 %; Küstenlinie p90 ≤ 20 km"
+ },
+ {
+  "leiter": "planet.erde.gestalt",
+  "titel": "Die echte Erde — erkannt und vermessen",
+  "sprosse": 4,
+  "kennung": "planet.erde.gestalt/S4",
+  "text": "10⁴ benannte Orte (Gipfel, Seen, Pässe, Mündungen) — jeder ≤ 1 km neben seinem Ort, die Form wahr im Typ (P · Schlüssel ≤ 5 MB)",
+  "richter": "1 000 Zufallsorte aus dem Ortsverzeichnis: Lagefehler p90 ≤ 1 km; Ego-Blindpaar gegen ein Foto des Orts ≤ 70 %"
+ },
+ {
+  "leiter": "planet.erde.gestalt",
+  "titel": "Die echte Erde — erkannt und vermessen",
+  "sprosse": 5,
+  "kennung": "planet.erde.gestalt/S5",
+  "text": "die Erde der Menschen heute: 10⁴ Städte an ihrem Ort — Größe, Lage am Wasser und Netz-Typ jeder Stadt (P · Schlüssel ≤ 10 MB)",
+  "richter": "100 Zufallsstädte: Lage ≤ 2 km, Einwohner ±30 %, Orientierungs-Entropie und Blockgröße ±20 % gegen den realen Plan"
+ },
+ {
+  "leiter": "planet.erde.gestalt",
+  "titel": "Die echte Erde — erkannt und vermessen",
+  "sprosse": 6,
+  "kennung": "planet.erde.gestalt/S6",
+  "text": "jeder Ort, den ein Mensch Heimat nennt — „das ist mein Tal, meine Straße“ (P · Schlüssel je besuchtem km² ≤ 50 kB, am Ort geladen und gezählt)",
+  "richter": "Heimat-Probe: 100 Menschen suchen ihren Wohnort — Tal, Flusslauf und Straßenzug erkannt ≥ 80 %; 2AFC Ego-Bild gegen eigenes Foto ≤ 75 %"
+ },
+ {
+  "leiter": "same.entfaltung.gleichheit",
+  "titel": "Gleichheit über Geräte und Peers",
+  "sprosse": 1,
+  "kennung": "same.entfaltung.gleichheit/S1",
+  "text": "Gelände am Spawn — Höhenform gleich (P je Gerät)",
+  "richter": "Bild G2 ↔ G3 gleiche Pose: Horizont-Linie ≤ 2 px Abweichung"
+ },
+ {
+  "leiter": "same.entfaltung.gleichheit",
+  "titel": "Gleichheit über Geräte und Peers",
+  "sprosse": 2,
+  "kennung": "same.entfaltung.gleichheit/S2",
+  "text": "Dorf: Häuser, Bäume, 10 Taten eines Spielers — Klassen gleich; Spieler B sieht die Taten von A, auch nach Reload (P)",
+  "richter": "Klassen-Masken-Diff ≤ 1 % (A ↔ B, vor ↔ nach Reload, Radeon ↔ GTX)"
+ },
+ {
+  "leiter": "same.entfaltung.gleichheit",
+  "titel": "Gleichheit über Geräte und Peers",
+  "sprosse": 3,
+  "kennung": "same.entfaltung.gleichheit/S3",
+  "text": "Stadt mit Bewohnern in Bewegung, alle Teil-Simulationen, 20 min — Personen ≤ 0,5 m nach 10 min; Wetter, Leben, Pegel, Brand ohne Zustands-Nachricht (P)",
+  "richter": "zwei Geräte in EINER Sitzung: Masken + Positionen; Netz-Log zeigt nur Akten"
+ },
+ {
+  "leiter": "same.entfaltung.gleichheit",
+  "titel": "Gleichheit über Geräte und Peers",
+  "sprosse": 4,
+  "kennung": "same.entfaltung.gleichheit/S4",
+  "text": "Startwelt (~10 km²), 100 zufällige Posen — bild-gleich auch zu Nacht, bei Regen, im Winter (P)",
+  "richter": "Klassen-Diff ≤ 1 % an ≥ 99 % der Posen"
+ },
+ {
+  "leiter": "same.entfaltung.gleichheit",
+  "titel": "Gleichheit über Geräte und Peers",
+  "sprosse": 5,
+  "kennung": "same.entfaltung.gleichheit/S5",
+  "text": "100 Saaten × 10 Posen; Megastadt mit Wetter und Verkehr — gleich über G0–G6 (P)",
+  "richter": "wie 4, über Saaten und Geräteklassen"
+ },
+ {
+  "leiter": "same.entfaltung.gleichheit",
+  "titel": "Gleichheit über Geräte und Peers",
+  "sprosse": 6,
+  "kennung": "same.entfaltung.gleichheit/S6",
+  "text": "ein Planet: 1 000 Koordinaten, nach Tagen Weltzeit und Edits — jede Uhrzeit und Jahreszeit, zwei Geräte, zwei Peers (P)",
+  "richter": "Klassen-Diff ≤ 1 % an ≥ 99 % der Stichproben"
+ },
+ {
+  "leiter": "same.entfaltung.gleichheit",
+  "titel": "Gleichheit über Geräte und Peers",
+  "sprosse": 7,
+  "kennung": "same.entfaltung.gleichheit/S7",
+  "text": "ein Ort in 10 Epochen (−10⁹ … +10³ a) — dieselbe Epoche gleich auf beiden Geräten und nach Reload (P)",
+  "richter": "Diff ≤ 1 % je Epoche; Zeitreise hin und zurück: Diff = 0"
+ },
+ {
+  "leiter": "same.entfaltung.gleichheit",
+  "titel": "Gleichheit über Geräte und Peers",
+  "sprosse": 8,
+  "kennung": "same.entfaltung.gleichheit/S8",
+  "text": "Galaxie: 10¹¹ Systeme × Planeten × Äonen, fusionierte Welten — gleich ohne Zustands-Strom (P)",
+  "richter": "10 000 zufällige (System, Planet, Ort, Jahr): Diff ≤ 1 % an ≥ 99,9 %"
+ },
+ {
+  "leiter": "same.entfaltung.schirm",
+  "titel": "Schirm statt Sack",
+  "sprosse": 1,
+  "kennung": "same.entfaltung.schirm/S1",
+  "text": "Wiese und Genesis, Sicht 8 km — Wiese trägt bis ~20 m, Häuser als Kästen (P stehend)",
+  "richter": "Frame p95 je Gerät, Wiese und Genesis, Ego und Third"
+ },
+ {
+  "leiter": "same.entfaltung.schirm",
+  "titel": "Schirm statt Sack",
+  "sprosse": 2,
+  "kennung": "same.entfaltung.schirm/S2",
+  "text": "10³ Häuser im Blick (heute 300 am Marktplatz) — ≥ 50 % der Häuser im Blindtest gegen Fotos echter Altstädte plausibel (P; Inhalt ×10 kostet ≤ 10 % mehr)",
+  "richter": "p95(×10) ÷ p95(×1) ≤ 1,10; Blindtest Bildpaar Spiel ↔ Foto"
+ },
+ {
+  "leiter": "same.entfaltung.schirm",
+  "titel": "Schirm statt Sack",
+  "sprosse": 3,
+  "kennung": "same.entfaltung.schirm/S3",
+  "text": "10⁴ Gebäude und 10⁴ Menschen im Bild (Kreuzung einer Großstadt) — jeder Mensch mit eigenem Leib und Gang (P, Steigung ≤ 10 %)",
+  "richter": "wie 2; Dichte-Histogramm gegen Foto einer Großstadt-Kreuzung"
+ },
+ {
+  "leiter": "same.entfaltung.schirm",
+  "titel": "Schirm statt Sack",
+  "sprosse": 4,
+  "kennung": "same.entfaltung.schirm/S4",
+  "text": "Skyline mit 10⁵ Gebäuden bis 30 km — Fensterlicht je Wohnung, Dunst; Silhouette und Nachtlicht-Statistik gegen Hongkong, Manhattan, Shanghai (P; ≤ 1,1 × leere Ebene derselben Pose)",
+  "richter": "p95 Skyline ÷ p95 leere Ebene ≤ 1,10; Blindtest ≥ 40 % „Foto\""
+ },
+ {
+  "leiter": "same.entfaltung.schirm",
+  "titel": "Schirm statt Sack",
+  "sprosse": 5,
+  "kennung": "same.entfaltung.schirm/S5",
+  "text": "Tokio-Maß: 10⁷ Gebäude, 3,7·10⁷ Menschen, Blick aus 1 km und auf der Straße — Ströme als Verkehr und Menge; Luftbild ≥ 40 % „Foto\" gegen Tokio (P, Abstieg ohne Kosten-Sprung > 10 %)",
+  "richter": "wie 4 entlang des Abstiegs"
+ },
+ {
+  "leiter": "same.entfaltung.schirm",
+  "titel": "Schirm statt Sack",
+  "sprosse": 6,
+  "kennung": "same.entfaltung.schirm/S6",
+  "text": "Hyperstadt: 10⁷ Gebäude, 10⁹ Menschen über 1 000 km, Türme bis 2 km, Ebenen übereinander — aus jedem Fenster, jeder Ebene und 5 km Höhe glaubhaft; keine zwei Viertel gleich (P; Steigung 10⁷ → 10⁹ Menschen ≤ 10 %)",
+  "richter": "p95 je Ebene und Höhe; Kosten-Kurve über zwei Größenordnungen flach; Blindtest ≥ 40 %"
+ },
+ {
+  "leiter": "same.entfaltung.schirm",
+  "titel": "Schirm statt Sack",
+  "sprosse": 7,
+  "kennung": "same.entfaltung.schirm/S7",
+  "text": "jede Pose einer Galaxie, 10¹⁰ Menschen je Welt — so wahr wie Sprosse 6 (P; Steigung über 10⁰ … 10⁹ Weltinhalt ≤ 10 %)",
+  "richter": "Kosten-Kurve p95 über neun Größenordnungen bei fester Pose ≤ 1,10"
+ },
+ {
+  "leiter": "same.entfaltung.reise",
+  "titel": "Reise ohne Bruch",
+  "sprosse": 1,
+  "kennung": "same.entfaltung.reise/S1",
+  "text": "Gehen 1 km durch die Wiese — Bilder ganz, sichtbares Nachwachsen nur fern (P an G2 + G3)",
+  "richter": "Gang-Bahn: Anteil ganzer Bilder ≥ 98 %"
+ },
+ {
+  "leiter": "same.entfaltung.reise",
+  "titel": "Reise ohne Bruch",
+  "sprosse": 2,
+  "kennung": "same.entfaltung.reise/S2",
+  "text": "Fahrt 30 km/h, 10 km durchs Dorf — ≥ 90 % der Bilder ganz (P)",
+  "richter": "Fahrt-Bahn, Bild-Diff je Bild gegen Ruhe-Referenz"
+ },
+ {
+  "leiter": "same.entfaltung.reise",
+  "titel": "Reise ohne Bruch",
+  "sprosse": 3,
+  "kennung": "same.entfaltung.reise/S3",
+  "text": "Fahrt 120 km/h, 100 km am Stück — ≥ 98 % ganz, kein Aufploppen in 50 m, Zittern ≤ 0,5 px (P)",
+  "richter": "wie 2 über 100 km"
+ },
+ {
+  "leiter": "same.entfaltung.reise",
+  "titel": "Reise ohne Bruch",
+  "sprosse": 4,
+  "kennung": "same.entfaltung.reise/S4",
+  "text": "Flug 1 000 km/h, 1 000 km (ein Kontinent) — Klimazonen wechseln entlang der Bahn, ganz bis 10 km Sicht (P)",
+  "richter": "Lücken-Bilder ≤ 0,1 %"
+ },
+ {
+  "leiter": "same.entfaltung.reise",
+  "titel": "Reise ohne Bruch",
+  "sprosse": 5,
+  "kennung": "same.entfaltung.reise/S5",
+  "text": "40 000 km: einmal um den Planeten — Krümmung wahr: Horizont aus 1,7 m ≈ 4,7 km (P)",
+  "richter": "Horizont-Distanz ±5 % gegen die Geometrie; die Reise schließt sich ohne Naht"
+ },
+ {
+  "leiter": "same.entfaltung.reise",
+  "titel": "Reise ohne Bruch",
+  "sprosse": 6,
+  "kennung": "same.entfaltung.reise/S6",
+  "text": "Planet → Mond (3,8·10⁵ km), Landung — Mond aus der Bahnmechanik des Samens, kein Ladebild (P)",
+  "richter": "Flug mit Landung: Zittern, Pause, Lücke wie 3"
+ },
+ {
+  "leiter": "same.entfaltung.reise",
+  "titel": "Reise ohne Bruch",
+  "sprosse": 7,
+  "kennung": "same.entfaltung.reise/S7",
+  "text": "ein Sonnensystem, 10¹⁰ km — Flug zwischen Planeten, Bahnen nach Kepler (P)",
+  "richter": "Reise Planet A → B wie 3; Bahnlage gegen die analytische Lösung"
+ },
+ {
+  "leiter": "same.entfaltung.reise",
+  "titel": "Reise ohne Bruch",
+  "sprosse": 8,
+  "kennung": "same.entfaltung.reise/S8",
+  "text": "eine Galaxie, 10⁵ Lj; Sprung zwischen Planeten und Epochen im Flug — jeder Stern ein Landeort; Ziel ganz ≤ 1 s, kein schwarzes Bild (P an G0–G7)",
+  "richter": "100 zufällige Ziele: 100 % ohne Bruch nach den Maßen von 3"
+ },
+ {
+  "leiter": "same.entfaltung.abwesenheit",
+  "titel": "Rechnung ohne Zuschauer",
+  "sprosse": 1,
+  "kennung": "same.entfaltung.abwesenheit/S1",
+  "text": "118 Bewohner einer Test-Stadt, ein Tag — nach der Abwesenheit steht jeder, wo er gestanden hätte (P)",
+  "richter": "Ort sehen, gehen, nach N h zurück: Lage jedes Bewohners gegen den Lauf mit Zuschauer ≤ 1 m"
+ },
+ {
+  "leiter": "same.entfaltung.abwesenheit",
+  "titel": "Rechnung ohne Zuschauer",
+  "sprosse": 2,
+  "kennung": "same.entfaltung.abwesenheit/S2",
+  "text": "10⁴ Wesen (Menschen, Tiere, Wuchs), 1 Tag — Widersprüche = 0 (niemand an zwei Orten, gefällt bleibt gefällt) (P)",
+  "richter": "Klassen-Statistik Rückkehr ↔ Zuschauer-Lauf ≤ 5 %; Widerspruchs-Zähler = 0"
+ },
+ {
+  "leiter": "same.entfaltung.abwesenheit",
+  "titel": "Rechnung ohne Zuschauer",
+  "sprosse": 3,
+  "kennung": "same.entfaltung.abwesenheit/S3",
+  "text": "10⁶: eine Metropole, 1 Jahr — Ströme, Märkte und Bauten wachsen nach Gesetz (P)",
+  "richter": "wie 2 an 100 Stichproben; Bildpaar Stadtteil vorher ↔ nachher zeigt die Veränderung"
+ },
+ {
+  "leiter": "same.entfaltung.abwesenheit",
+  "titel": "Rechnung ohne Zuschauer",
+  "sprosse": 4,
+  "kennung": "same.entfaltung.abwesenheit/S4",
+  "text": "10⁸: ein Kontinent, 100 Jahre — Bevölkerung, Wälder und Flüsse verschieben sich gekoppelt (P)",
+  "richter": "Statistik ≤ 10 % gegen Stichproben-Lauf mit Zuschauer; Widersprüche = 0"
+ },
+ {
+  "leiter": "same.entfaltung.abwesenheit",
+  "titel": "Rechnung ohne Zuschauer",
+  "sprosse": 5,
+  "kennung": "same.entfaltung.abwesenheit/S5",
+  "text": "10¹⁰: ein Planet, Jahrhunderte — Städte wachsen und fallen, Kulturen wandern (P)",
+  "richter": "100 Zufallsorte nach 300 Jahren: Stadtgrößen folgen Zipf (Exponent 0,8–1,2), Wachstum je Stadt im Band historischer Kurven; ≥ 50 % der Orte zeigen im Bildpaar eine benennbare Veränderung"
+ },
+ {
+  "leiter": "same.entfaltung.abwesenheit",
+  "titel": "Rechnung ohne Zuschauer",
+  "sprosse": 6,
+  "kennung": "same.entfaltung.abwesenheit/S6",
+  "text": "Äonen: 10⁶–10⁹ Jahre — Platten, Erosion und Evolution geschlossen verdichtet (P)",
+  "richter": "Zeitsprung hin und zurück: Bild gleich (Diff ≤ 1 %) UND am Ziel anders — Küstenlinie an ≥ 50 % der Stichproben messbar verschoben, Rate unter der physikalischen Grenze; Küste und Biome im Band der Paläo-Rekonstruktionen an ≥ 90 % von 100 Saaten"
+ },
+ {
+  "leiter": "same.entfaltung.abwesenheit",
+  "titel": "Rechnung ohne Zuschauer",
+  "sprosse": 7,
+  "kennung": "same.entfaltung.abwesenheit/S7",
+  "text": "eine Galaxie, jede Welt lebt ohne Zuschauer — Besuch nach beliebiger Zeit ohne Widerspruch (P)",
+  "richter": "1 000 Besuche an zufälligen (Welt, Ort, Zeit): Widersprüche = 0, Statistik ≤ 10 %"
+ },
+ {
+  "leiter": "same.entfaltung.vielfalt",
+  "titel": "Jede Saat eine eigene Welt",
+  "sprosse": 1,
+  "kennung": "same.entfaltung.vielfalt/S1",
+  "text": "10 Orte EINER Welt — jeder Ort aus einem Bild erkannt; das Merkmal hat eine Ursache (Gestein, Klima, Kultur) (P)",
+  "richter": "aus einem Zufallsbild den richtigen von 10 Orten ≥ 80 % (Panel); der Prüfer nennt das Merkmal, Gegenlauf: Ursache getauscht → Merkmal weg ≥ 80 %"
+ },
+ {
+  "leiter": "same.entfaltung.vielfalt",
+  "titel": "Jede Saat eine eigene Welt",
+  "sprosse": 2,
+  "kennung": "same.entfaltung.vielfalt/S2",
+  "text": "10² Orte: Stadtteile und Biome mit eigenem Charakter — ≥ 3 Gesetze tragen den Unterschied zugleich (Bau, Wuchs, Tracht) (P)",
+  "richter": "richtiger von 10 Zufalls-Orten aus 10² ≥ 80 %; Unterschied in ≥ 3 Domänen benannt"
+ },
+ {
+  "leiter": "same.entfaltung.vielfalt",
+  "titel": "Jede Saat eine eigene Welt",
+  "sprosse": 3,
+  "kennung": "same.entfaltung.vielfalt/S3",
+  "text": "10³ Orte, 10 Regionen einer Welt — Region aus einem Bild; Nachbar-Regionen gehen ohne Naht ineinander über (P)",
+  "richter": "Region ≥ 80 %; Übergangs-Bilder werden zwischen die Nachbarn eingeordnet, nie zu einer dritten"
+ },
+ {
+  "leiter": "same.entfaltung.vielfalt",
+  "titel": "Jede Saat eine eigene Welt",
+  "sprosse": 4,
+  "kennung": "same.entfaltung.vielfalt/S4",
+  "text": "10 Welten aus 10 Saaten — jede Welt aus EINEM Bodenbild erkannt (P · Welt-Sprung ≤ 5 s)",
+  "richter": "aus einem Zufallsbild die richtige von 10 Saaten ≥ 90 %; effektive Zahl der Wahrnehmungs-Cluster über alle Bilder ≥ 10"
+ },
+ {
+  "leiter": "same.entfaltung.vielfalt",
+  "titel": "Jede Saat eine eigene Welt",
+  "sprosse": 5,
+  "kennung": "same.entfaltung.vielfalt/S5",
+  "text": "10² Welten — Eigenheit jeder Welt aus ihrer Saat erklärt (Stern, Schwere, Geschichte) (P)",
+  "richter": "richtige von 10 Zufalls-Welten aus 10² ≥ 90 %; Ursachen-Probe Rang ≥ 0,7"
+ },
+ {
+  "leiter": "same.entfaltung.vielfalt",
+  "titel": "Jede Saat eine eigene Welt",
+  "sprosse": 6,
+  "kennung": "same.entfaltung.vielfalt/S6",
+  "text": "10³ Welten, darunter die Erde und ihre Epochen — die Erd-nahen halten dem Foto stand, die fremden der Fremdwelt-Probe (P)",
+  "richter": "Erd-nahe: 2AFC gegen Fotos ≤ 70 %; fremde: Fremdwelt-Probe (R10); Chao1 der Welt-Typen aus Zufalls-Sprüngen ≥ 10³"
+ },
+ {
+  "leiter": "same.entfaltung.vielfalt",
+  "titel": "Jede Saat eine eigene Welt",
+  "sprosse": 7,
+  "kennung": "same.entfaltung.vielfalt/S7",
+  "text": "10⁴ Welten, ≥ 30 % jenseits jeder Erd-Epoche — jede Welt aus einem Bild erkennbar UND aus ihrem Gesetz erklärt (P)",
+  "richter": "aus einem Zufallsbild die richtige von 10 Zufalls-Saaten aus 10⁴ ≥ 95 %; Fremdwelt-Probe ganz: Ursache Rang ≥ 0,7, Gegenlauf ≥ 80 %, Neuheit ≥ 30 %"
+ },
+ {
+  "leiter": "same.entfaltung.akte",
+  "titel": "Die Tat bleibt",
+  "sprosse": 1,
+  "kennung": "same.entfaltung.akte/S1",
+  "text": "10² Taten einer Sitzung — nach dem Reload steht jede Tat sichtbar an ihrem Ort (P)",
+  "richter": "Bildpaar vor ↔ nach Reload ≤ 1 % Diff mit Pflicht-Inhalt, beide Geräte"
+ },
+ {
+  "leiter": "same.entfaltung.akte",
+  "titel": "Die Tat bleibt",
+  "sprosse": 2,
+  "kennung": "same.entfaltung.akte/S2",
+  "text": "10³ Edits eines Spielers — Stand ≤ 100 kB, Ankunft unverändert (P)",
+  "richter": "Bildpaar ≤ 1 %; Median ≤ 100 B je Tat; Ankunft mit ↔ ohne Taten"
+ },
+ {
+  "leiter": "same.entfaltung.akte",
+  "titel": "Die Tat bleibt",
+  "sprosse": 3,
+  "kennung": "same.entfaltung.akte/S3",
+  "text": "10⁴ Edits, 2 Peers, jede alte Version — gleich ohne Zustands-Nachricht, alte Stände laden (P)",
+  "richter": "Bild zweier Gäste ≤ 1 % Diff; Anteil ladender alter Stände = 100 %"
+ },
+ {
+  "leiter": "same.entfaltung.akte",
+  "titel": "Die Tat bleibt",
+  "sprosse": 4,
+  "kennung": "same.entfaltung.akte/S4",
+  "text": "10⁶ Taten von 10³ Spielern, eine Stadt — keine Tat geht bei gleichzeitigen Taten verloren, geladen nur Taten im Schirm (P am Ort mit 10⁵ fremden Edits; Speicher ∝ Taten, nie ∝ Fläche)",
+  "richter": "Stichprobe 1 000 Taten sichtbar 100 %; Bytes-Kurve gegen Taten und gegen Fläche"
+ },
+ {
+  "leiter": "same.entfaltung.akte",
+  "titel": "Die Tat bleibt",
+  "sprosse": 5,
+  "kennung": "same.entfaltung.akte/S5",
+  "text": "eine Gesetzes-Version weiter (N → N+1) — die alte Welt bleibt wiedererkennbar, jede Tat am selben Ort (P)",
+  "richter": "100 Saaten: Welt-Erkennung (Richter von vielfalt Sprosse 7) ≥ 95 %, Taten-Lage 100 %"
+ },
+ {
+  "leiter": "same.entfaltung.akte",
+  "titel": "Die Tat bleibt",
+  "sprosse": 6,
+  "kennung": "same.entfaltung.akte/S6",
+  "text": "10⁹ Akte: 10⁵ Spieler + 10⁷ KI-Bewohner, ein Planet — Konflikte deterministisch aufgelöst (P, ≤ 1 MB je Ankunft)",
+  "richter": "1 000 Zufallsorte: Ankunft, Sichtbarkeit, zwei Gäste byte-gleich"
+ },
+ {
+  "leiter": "same.entfaltung.akte",
+  "titel": "Die Tat bleibt",
+  "sprosse": 7,
+  "kennung": "same.entfaltung.akte/S7",
+  "text": "10¹² Akte, 10 Jahre Gesetzes-Wandel (≥ 50 Versionen) — ein Werk von heute steht in 10 Jahren, gealtert nach gedaechtnis.alter · Besitz signiert, Erbe über Generationen von Spielern im Spiel lesbar (P)",
+  "richter": "Korpus aller Versionen eines Jahrzehnts: 100 % laden und zeigen ihr Alter · Besitzkette eines Werks am Ort abrufbar und wahr"
+ },
+ {
+  "leiter": "same.entfaltung.akte",
+  "titel": "Die Tat bleibt",
+  "sprosse": 8,
+  "kennung": "same.entfaltung.akte/S8",
+  "text": "eine Galaxie: jede Tat jedes Spielers je — an jeder Koordinate (Bild ganz ≤ 1 s; Bytes je Welt ∝ Taten)",
+  "richter": "10 000 zufällige Taten: sichtbar 100 %, Ankunft ≤ 1 s"
+ },
+ {
+  "leiter": "same.massstab.spanne",
+  "titel": "Die Spanne ohne Bruch",
+  "sprosse": 1,
+  "kennung": "same.massstab.spanne/S1",
+  "text": "3 Größenordnungen: Bildbreite ~1 m bis ~1 km — Wiese, Baum, Haus, Gelände wechseln Stufen unsichtbar (P)",
+  "richter": "N = 20 Saaten × Steigflug 0,5 m → 700 m Auge in 30 s, hin und zurück: alle Bruch-Bedingungen gehalten"
+ },
+ {
+  "leiter": "same.massstab.spanne",
+  "titel": "Die Spanne ohne Bruch",
+  "sprosse": 2,
+  "kennung": "same.massstab.spanne/S2",
+  "text": "5: 1 cm bis 1 km; Sicht bis ~20 km ohne Kante — Halm und Blatt mit Parallaxe und Eigenschatten; Landschaft ohne Farbsprung (P)",
+  "richter": "wie 1, Spanne 1 cm → 1 km"
+ },
+ {
+  "leiter": "same.massstab.spanne",
+  "titel": "Die Spanne ohne Bruch",
+  "sprosse": 3,
+  "kennung": "same.massstab.spanne/S3",
+  "text": "8: 1 mm bis 100 km; der Planet krümmt sich — Korn als Körper; Horizont sinkt wie auf einer Kugel (P)",
+  "richter": "wie 1; Horizont-Absenkung aus 10 km gegen √(2h/R) ±10 %"
+ },
+ {
+  "leiter": "same.massstab.spanne",
+  "titel": "Die Spanne ohne Bruch",
+  "sprosse": 4,
+  "kennung": "same.massstab.spanne/S4",
+  "text": "10: Korn bis ganzer Planet (10⁷ m) — Atmosphäre von innen wird Atmosphäre von außen, Tag-Nacht-Grenze, Wolken, Ozeane (P)",
+  "richter": "Flug Boden → Orbit → Boden auf der anderen Seite, N = 20 Saaten"
+ },
+ {
+  "leiter": "same.massstab.spanne",
+  "titel": "Die Spanne ohne Bruch",
+  "sprosse": 5,
+  "kennung": "same.massstab.spanne/S5",
+  "text": "13: bis Sonnensystem (10¹³ m), wahre Abstände — Planeten in Bahnen aus der Mechanik des Samens, nicht geschrumpft (P)",
+  "richter": "Bahnabstand ±1 %; Jitter eines Objekts 10¹² m vom Ursprung < 0,5 px bis zum Ranflug auf 1 m"
+ },
+ {
+  "leiter": "same.massstab.spanne",
+  "titel": "Die Spanne ohne Bruch",
+  "sprosse": 6,
+  "kennung": "same.massstab.spanne/S6",
+  "text": "17: bis Nachbarsterne (10¹⁷ m) — jeder Lichtpunkt ein System mit Planeten (P)",
+  "richter": "Flug zu 10 zufälligen Nachbarsternen mit Landung, Bruch-Bedingungen gehalten"
+ },
+ {
+  "leiter": "same.massstab.spanne",
+  "titel": "Die Spanne ohne Bruch",
+  "sprosse": 7,
+  "kennung": "same.massstab.spanne/S7",
+  "text": "21: bis Galaxie (10²¹ m) — Stern → Punkt → Feld → Arm; Gesamtfluss bleibt beim Wegzoomen (P)",
+  "richter": "Spanne 1 mm → 10²¹ m; Gesamtfluss ±5 %, kein Aufblitzen"
+ },
+ {
+  "leiter": "same.massstab.spanne",
+  "titel": "Die Spanne ohne Bruch",
+  "sprosse": 8,
+  "kennung": "same.massstab.spanne/S8",
+  "text": "26: 10 µm bis 10²¹ m, beide Richtungen — dieselben Gesetze auf jeder Stufe, jede Stufe begehbar (P)",
+  "richter": "EIN Flug Pollenkorn → Galaxie → Pollenkorn eines anderen Planeten in ≤ 120 s, N = 20: Pop ≤ 0,1 %"
+ },
+ {
+  "leiter": "same.massstab.spanne",
+  "titel": "Die Spanne ohne Bruch",
+  "sprosse": 9,
+  "kennung": "same.massstab.spanne/S9",
+  "text": "31: 10 µm bis 10²⁶ m — andere Galaxien, Haufen, das kosmische Netz — jede Galaxie ein Ziel mit eigenen Sternen und Welten, keine Kulisse (P)",
+  "richter": "Flug zu 10 Zufallsgalaxien mit Landung auf einem Planeten dort, alle Bruch-Bedingungen gehalten; Verteilung der Galaxien im Flug gezählt gegen Durchmusterungs-Karten im Band"
+ },
+ {
+  "leiter": "same.massstab.nahe",
+  "titel": "Die Tiefe am kleinen Ende",
+  "sprosse": 1,
+  "kennung": "same.massstab.nahe/S1",
+  "text": "2 m (Blick vor die Füße), N = 100 Orte — Boden mit Halmen und Steinen (P)",
+  "richter": "Spektrum gegen Foto der Bodenklasse: Energie über 1/20 der Bildbreite ≥ 50 % der Referenz in ≥ 80 %"
+ },
+ {
+  "leiter": "same.massstab.nahe",
+  "titel": "Die Tiefe am kleinen Ende",
+  "sprosse": 2,
+  "kennung": "same.massstab.nahe/S2",
+  "text": "50 cm — einzelne Halme, Kiesel, Laubstreu (P)",
+  "richter": "wie 1 gegen Foto 50 cm; Gram-Statistik im Band"
+ },
+ {
+  "leiter": "same.massstab.nahe",
+  "titel": "Die Tiefe am kleinen Ende",
+  "sprosse": 3,
+  "kennung": "same.massstab.nahe/S3",
+  "text": "10 cm — Blattadern, Rindenrisse, Bodenkrümel mit Eigenschatten (P)",
+  "richter": "wie 1 gegen Makrofoto 10 cm"
+ },
+ {
+  "leiter": "same.massstab.nahe",
+  "titel": "Die Tiefe am kleinen Ende",
+  "sprosse": 4,
+  "kennung": "same.massstab.nahe/S4",
+  "text": "1 cm — Ameise, Korn, Moospflänzchen (P)",
+  "richter": "bei 1 cm Kamera-Versatz: optischer Fluss gegen Tiefe eines Makro-Stereopaars, Fehler ≤ 20 %"
+ },
+ {
+  "leiter": "same.massstab.nahe",
+  "titel": "Die Tiefe am kleinen Ende",
+  "sprosse": 5,
+  "kennung": "same.massstab.nahe/S5",
+  "text": "1 mm — Sandkörner mit Form und Farbe aus dem Gestein (P)",
+  "richter": "Korngrößen am Ufer gegen die Sortierung des Flusses: Wentworth-Klasse richtig an ≥ 90 % von 100 Uferorten"
+ },
+ {
+  "leiter": "same.massstab.nahe",
+  "titel": "Die Tiefe am kleinen Ende",
+  "sprosse": 6,
+  "kennung": "same.massstab.nahe/S6",
+  "text": "0,1 mm, überall auf jedem Planeten — Korn, Kristall, Pollen aus dem Gesetz des Ortes (P)",
+  "richter": "N = 100 Orte auf 10 Planeten-Saaten: Bildvergleich gegen Makrofoto plausibel ≥ 90 %"
+ },
+ {
+  "leiter": "same.massstab.nahe",
+  "titel": "Die Tiefe am kleinen Ende",
+  "sprosse": 7,
+  "kennung": "same.massstab.nahe/S7",
+  "text": "10 µm: der Mikroskop-Blick — Zelle, Pollenwand, Milbe — das Leben des Ortes (P)",
+  "richter": "N = 100 Orte: gegen Lichtmikroskopie derselben Klasse plausibel ≥ 80 %; das Leben passt zum Biom"
+ },
+ {
+  "leiter": "same.massstab.sprung",
+  "titel": "Der Sprung",
+  "sprosse": 1,
+  "kennung": "same.massstab.sprung/S1",
+  "text": "Teleport 1 km — Bild ganz, die Welt steht (ganz ≤ 30 s, p95 ≤ 33 ms an beiden Geräten)",
+  "richter": "Spielgang-Station Sprung: p95, t(ganz), Lücke"
+ },
+ {
+  "leiter": "same.massstab.sprung",
+  "titel": "Der Sprung",
+  "sprosse": 2,
+  "kennung": "same.massstab.sprung/S2",
+  "text": "Teleport 1 km — wie 1 (ganz ≤ 5 s, P)",
+  "richter": "wie 1 an beiden Geräten"
+ },
+ {
+  "leiter": "same.massstab.sprung",
+  "titel": "Der Sprung",
+  "sprosse": 3,
+  "kennung": "same.massstab.sprung/S3",
+  "text": "Zufallsort im Umkreis 10–100 km — volles Bild am Boden (ganz ≤ 2 s, P)",
+  "richter": "N = 20 Sprünge: p95 t(ganz)"
+ },
+ {
+  "leiter": "same.massstab.sprung",
+  "titel": "Der Sprung",
+  "sprosse": 4,
+  "kennung": "same.massstab.sprung/S4",
+  "text": "jeder Ort eines Planeten (10⁸ Orte à 100 m) — volles Bild am Boden (ganz ≤ 2 s, P)",
+  "richter": "wie 3, Ziel überall auf dem Planeten"
+ },
+ {
+  "leiter": "same.massstab.sprung",
+  "titel": "Der Sprung",
+  "sprosse": 5,
+  "kennung": "same.massstab.sprung/S5",
+  "text": "eine andere Zeit desselben Orts (10²–10⁹ a zurück) — Land, Leben und Siedlung jener Zeit (ganz ≤ 3 s, P)",
+  "richter": "10 Epochen × 10 Orte"
+ },
+ {
+  "leiter": "same.massstab.sprung",
+  "titel": "Der Sprung",
+  "sprosse": 6,
+  "kennung": "same.massstab.sprung/S6",
+  "text": "ein anderer Planet des Systems — Himmel, Schwerkraft und Leben nach seinem Gesetz (ganz ≤ 2 s, P)",
+  "richter": "20 zufällige Planeten"
+ },
+ {
+  "leiter": "same.massstab.sprung",
+  "titel": "Der Sprung",
+  "sprosse": 7,
+  "kennung": "same.massstab.sprung/S7",
+  "text": "ein beliebiger Stern der Galaxie (10¹¹) oder einer anderen Galaxie — volles Bild am Boden eines seiner Planeten (ganz ≤ 2 s, P)",
+  "richter": "N = 20 zufällige Sterne"
+ },
+ {
+  "leiter": "same.massstab.sprung",
+  "titel": "Der Sprung",
+  "sprosse": 8,
+  "kennung": "same.massstab.sprung/S8",
+  "text": "jeder Ort, Maßstab (10 µm … 10²⁶ m) und Zeit, als Ort-Wort oder Satz an die KI — volles Bild (ganz ≤ 1 s, 0 B, P)",
+  "richter": "N = 100 Zufalls-Sprünge: p95 ≤ 1 s bis ganz, danach Frame p95 ≤ 33 ms"
+ },
+ {
+  "leiter": "same.massstab.physik",
+  "titel": "Die Physik des Maßstabs",
+  "sprosse": 1,
+  "kennung": "same.massstab.physik/S1",
+  "text": "1 Größenordnung (0,5–5 m: Mensch, Wagen, Kiste) — Fall, Stoß, Fahrt plausibel (P)",
+  "richter": "Fallzeit aus 10 m gegen √(2h/g) ±5 %; Bremsweg gegen μ ±10 %"
+ },
+ {
+  "leiter": "same.massstab.physik",
+  "titel": "Die Physik des Maßstabs",
+  "sprosse": 2,
+  "kennung": "same.massstab.physik/S2",
+  "text": "3 (Ameise bis Haus) — die Ameise überlebt den Sturz, der Mensch nicht (P)",
+  "richter": "Endgeschwindigkeit eines 5-mm-Körpers ±20 % gegen ~6 m/s; Sturzfolge passend zur Größe"
+ },
+ {
+  "leiter": "same.massstab.physik",
+  "titel": "Die Physik des Maßstabs",
+  "sprosse": 3,
+  "kennung": "same.massstab.physik/S3",
+  "text": "Flüssigkeit über den Maßstab — Tropfen unter der Kapillarlänge kugelig, darüber flach (P)",
+  "richter": "Tropfenform gegen Bond-Zahl ±15 % bei 0,5 / 2,7 / 10 mm"
+ },
+ {
+  "leiter": "same.massstab.physik",
+  "titel": "Die Physik des Maßstabs",
+  "sprosse": 4,
+  "kennung": "same.massstab.physik/S4",
+  "text": "Bahn (Mond, Raumschiff) — Umlauf aus der Schwere des Samens, nicht aus Schienen (P)",
+  "richter": "Umlaufzeit gegen Kepler ±1 %; Wurf aus dem Orbit fällt, wo die Mechanik sagt"
+ },
+ {
+  "leiter": "same.massstab.physik",
+  "titel": "Die Physik des Maßstabs",
+  "sprosse": 5,
+  "kennung": "same.massstab.physik/S5",
+  "text": "Planet als Körper — Gezeiten aus Mond und Sonne, Abplattung aus Drehung (P)",
+  "richter": "Tidenhub-Periode ±5 %; Abplattung ±10 %"
+ },
+ {
+  "leiter": "same.massstab.physik",
+  "titel": "Die Physik des Maßstabs",
+  "sprosse": 6,
+  "kennung": "same.massstab.physik/S6",
+  "text": "10 µm bis 10⁷ m, jede Größe — EIN Gesetzessatz trägt Staub, Ameise, Mensch, Schiff, Mond (P)",
+  "richter": "N = 100 Körper log-gleichverteilt über 12 Größenordnungen: Verhalten im Band der dimensionslosen Gesetze ≥ 90 %"
+ }
+]

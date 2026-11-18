@@ -1,0 +1,4397 @@
+[
+ {
+  "id": "e1",
+  "name": "PLANET_ERDE.radiusKm",
+  "groesse": "planet_radius",
+  "domaene": "planet",
+  "wert": 6371,
+  "einheit": "km",
+  "ort": "planet-core.js:263",
+  "leser": [
+   "planet-core.js:329 R → jede km→rad-Umrechnung (Rauschen, Ränder, Feuchte-Takt) → hoeheM · kont → voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt",
+   "planet-core.js:1910–1911 Held-Hou φH ∝ 1/a → zellBreite → Gürtel, Wind, sturmQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Erd-Schlüssel (Literatur), ENTSCHEID §2 :136; Saat-Weg 2500 + 9500·Z :311",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Spiel liest nur PLANET_ERDE (voxel-worker.js:1159). Kosten unabhängig von R gemessen (§2)."
+ },
+ {
+  "id": "e2",
+  "name": "PLANET_ERDE.g",
+  "groesse": "schwere",
+  "domaene": "planet",
+  "wert": 9.81,
+  "einheit": "m/s²",
+  "ort": "planet-core.js:263",
+  "leser": [
+   "planet-core.js:330 gS = 9,81/g skaliert jede Höhe (Erde: gS = 1) → voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt",
+   "planet-core.js:1910–1911 Tropopause H ∝ 1/g, φH ∝ √(gH) → Zellen → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Erd-Schlüssel (Literatur), ENTSCHEID §2 :136; Saat-Weg 9,81·R/6371·(0,8 + 0,4Z) :314",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "stamm/daten.js:72 WELT_GESETZ_ERDE.schwere −9,81 (Schwere des Spiels, nie aus dem Planeten)",
+   "stamm/netz-portal.js:701 schwere der Reise-Welt = schwere der Heimat"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e3",
+  "name": "PLANET_ERDE.wasserKm",
+  "groesse": "wasser_anteil",
+  "domaene": "wasser",
+  "wert": 2.62,
+  "einheit": "km Wassersäule",
+  "ort": "planet-core.js:263",
+  "leser": [
+   "planet-core.js:1607–1612 meerLoesen → :1628 meerKm → :2331 waterLevelM → planet-core.js:2331 → voxel-worker.js:1201 → gelaende-core.js:5910 meerUnterBasisM → stamm/bild-himmel.js:485 waterLevel · gelaende-core.js:5816",
+   "planet-core.js:1649 hoeheKm (Spiegel) → voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Erd-Schlüssel (Literatur), ENTSCHEID §2 :136; Saat-Weg 1,9 + 1,2Z :315",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "flüssiges Wasser = wasserKm − eisKm (:1612)"
+ },
+ {
+  "id": "e4",
+  "name": "PLANET_ERDE.krustenAnteil",
+  "groesse": "kruste",
+  "domaene": "planet",
+  "wert": 0.41,
+  "einheit": "1 (Flächenanteil)",
+  "ort": "planet-core.js:263",
+  "leser": [
+   "planet-core.js:342 Schollen-Fläche · :799 Q (Quantil) → Küste → voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt",
+   "planet-core.js:1556 kont → voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\""
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Erd-Schlüssel (Literatur), ENTSCHEID §2 :136; Saat-Weg 0,33 + 0,15Z :316",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e5",
+  "name": "freibordKm",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "0,25 + 0,5·Z (erde-01 0,324 · erde-05 0,417 · erde-09 0,381)",
+  "einheit": "km",
+  "ort": "planet-core.js:317",
+  "leser": [
+   "planet-core.js:1430 Profil S2·fb (Kontinent-Inneres) → planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm",
+   "planet-core.js:1427 Becken-Amplitude BECKEN_C·fb",
+   "planet-core.js:1640 kuesteF (Küste im Krustenfeld) → voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\"",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen: fehlt im Erd-Schlüssel PLANET_ERDE :263 und in ENTSCHEID §2 :136 — die Saat wählt ihn auch für die „Erde\"",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "ENTSCHEID §2 :109 nennt freibordKm im koerper, der Erd-Schlüssel nicht."
+ },
+ {
+  "id": "e6",
+  "name": "PLANET_ERDE.neigungRad",
+  "groesse": "achsneigung",
+  "domaene": "jahr",
+  "wert": 0.4091,
+  "einheit": "rad (23,44°)",
+  "ort": "planet-core.js:263",
+  "leser": [
+   "planet-core.js:1891 s2 = −0,625·P2(cos β) → T2 → Zonen-Temperatur → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz",
+   "planet-core.js:2052/2056 Gürtel wandern ±β (Monsun) → planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2067 amp ∝ sin β/0,39782 → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Erd-Schlüssel (Literatur), ENTSCHEID §2 :136; Saat-Weg 0,7Z :318",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "welt-licht.js:711 sonnenRichtung — Bahn ohne Breite und ohne Achsneigung (Meeus-Bahn gebaut und gefallen :702–710): die Neigung erreicht die Sonne des Spiels nie"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e7",
+  "name": "PLANET_ERDE.tagStunden",
+  "groesse": "tageslaenge",
+  "domaene": "tag",
+  "wert": 24,
+  "einheit": "h",
+  "ort": "planet-core.js:263",
+  "leser": [
+   "planet-core.js:1910 Ω = 2π/(tagStunden·3600) → φH → zellBreite :1913 → Wind, Gürtel, sturmQuote :2334 → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Erd-Schlüssel (Literatur), ENTSCHEID §2 :136; Saat-Weg 10 + 40Z :319",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "stamm/werkstatt-hud.js:1988–2003 dayLengthMinutes (Einstellung des Spielers, nie aus dem Planeten)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e8",
+  "name": "PLANET_ERDE.jahrTage",
+  "groesse": "jahr_laenge",
+  "domaene": "jahr",
+  "wert": 365,
+  "einheit": "d",
+  "ort": "planet-core.js:263",
+  "leser": [
+   "planet-core.js:2063 fJ (Jahreslänge gegen die Erde, hier 1) → amp → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz",
+   "planet-core.js:2182 pruefJahr R5: bricht, wenn ≠ ortGesetz().klimaHeute.jahrTage"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Erd-Schlüssel ENTSCHEID §2 :136 sagt 365,25; Code 365 = Jahr des Ort-Gesetzes (R5, Kommentar :264); Saat-Weg 100 + 700Z :320",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:1319 TEMPERATUR.jahrTage 365 (das Jahr des Spiels; R5 erzwingt Gleichheit)"
+  ],
+  "anmerkung": "ENTSCHEID ≠ Code (365,25 ↔ 365)."
+ },
+ {
+  "id": "e9",
+  "name": "PLANET_ERDE.drehsinn",
+  "groesse": "wind_richtung",
+  "domaene": "klima",
+  "wert": 1,
+  "einheit": "±1",
+  "ort": "planet-core.js:263",
+  "leser": [
+   "planet-core.js:1960 Passat/Westwind-Vorzeichen → Luv-Integral → planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2038 Wirbel-Ast der Randströme → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Erd-Schlüssel ENTSCHEID §2 :136; Saat-Weg Z < 0,5 ? −1 : 1 :321",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e10",
+  "name": "PLANET_ERDE.sternFluss",
+  "groesse": "sternleistung",
+  "domaene": "klima",
+  "wert": 1,
+  "einheit": "× Erde",
+  "ort": "planet-core.js:263",
+  "leser": [
+   "planet-core.js:1889 fluss → :1890 Q → :1904 T0/T2 → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Erd-Schlüssel ENTSCHEID §2 :136 (Erde = 1 per Definition); Saat-Weg 0,8 + 0,4Z :322",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e11",
+  "name": "PLANET_ERDE.alterMa",
+  "groesse": "zeit_ma",
+  "domaene": "planet",
+  "wert": 4570,
+  "einheit": "Ma",
+  "ort": "planet-core.js:263",
+  "leser": [
+   "planet-core.js:1889 Gough: Fluss der Zeit t → T0 der Vorzeit → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Erd-Schlüssel ENTSCHEID §2 :136; Saat-Weg 3000 + 3000Z :323",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "wirkt nur bei zeitMa ≠ 0 (bei t = 0 kürzt es sich)"
+ },
+ {
+  "id": "e12",
+  "name": "bodenAlterMaxMa",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "180 + 20·Z (195,7 · 182,5 · 186,7)",
+  "einheit": "Ma",
+  "ort": "planet-core.js:324",
+  "leser": [
+   "planet-core.js:1398–1399 alterAusSumme Deckel → :1410 −GDH1(Alter) Ozean-Tiefe → Hüll-Proben → planet-core.js:1607–1612 meerLoesen → :1628 meerKm → :2331 waterLevelM → planet-core.js:2331 → voxel-worker.js:1201 → gelaende-core.js:5910 meerUnterBasisM → stamm/bild-himmel.js:485 waterLevel · gelaende-core.js:5816"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen: fehlt im Erd-Schlüssel :263 (ENTSCHEID §2 :109 nennt ihn im koerper, :136 nicht)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e13",
+  "name": "shelfKm",
+  "groesse": "schelf",
+  "domaene": "relief",
+  "wert": "0,12 + 0,18·Z (0,236 · 0,236 · 0,161)",
+  "einheit": "km",
+  "ort": "planet-core.js:325",
+  "leser": [
+   "planet-core.js:1430 Schelf-Tiefe −sd im Profil → planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm",
+   "planet-core.js:1640 kuesteF → voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\""
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen: weder im Erd-Schlüssel :263 noch in ENTSCHEID §2 :109/:136",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "ENTSCHEID kennt shelfKm nicht."
+ },
+ {
+  "id": "e14",
+  "name": "regime",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": "\"platten\"",
+  "einheit": "–",
+  "ort": "planet-core.js:326",
+  "leser": [
+   "planet-core.js:328 Prüfung: anderes Regime bricht (K10)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code: nur „platten\" gebaut",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "Prüfung, kein Wert-Leser; Kern-Ausgang keiner"
+ },
+ {
+  "id": "e15",
+  "name": "nS Schollen-Zahl",
+  "groesse": "platten_zahl",
+  "domaene": "planet",
+  "wert": "20 + ⌊21·Z⌋ (21 · 24 · 21)",
+  "einheit": "Schollen",
+  "ort": "planet-core.js:331",
+  "leser": [
+   "planet-core.js:336 ff. Schollen-Geometrie → Krustenfeld → voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt",
+   "planet-core.js:1556 kont → voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\""
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e16",
+  "name": "nO Ozean-Platten",
+  "groesse": "platten_zahl",
+  "domaene": "planet",
+  "wert": "3 + ⌊4·Z⌋ (6 · 6 · 6)",
+  "einheit": "Platten",
+  "ort": "planet-core.js:332",
+  "leser": [
+   "planet-core.js:357 gmax = 19 − nO Gruppen · Ozean-Kinematik → Ränder → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e17",
+  "name": "Gesetzes-Band nS 4–48, nO 2–16",
+  "groesse": "platten_zahl",
+  "domaene": "planet",
+  "wert": "4…48 / 2…16",
+  "einheit": "Stück",
+  "ort": "planet-core.js:333",
+  "leser": [
+   "planet-core.js:333 Bruch beim Namen"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e18",
+  "name": "gS = 9,81/g",
+  "groesse": "schwere",
+  "domaene": "relief",
+  "wert": "1 (Erde)",
+  "einheit": "1",
+  "ort": "planet-core.js:330",
+  "leser": [
+   "planet-core.js:1273/1306/1438/1497/1518 jede Relief-Höhe × gS → planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus g: gS = 9,81/g",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e19",
+  "name": "MAX_P",
+  "groesse": "platten_zahl",
+  "domaene": "planet",
+  "wert": 64,
+  "einheit": "Platten",
+  "ort": "planet-core.js:275",
+  "leser": [
+   "planet-core.js:812 Bruch bei nP > 64"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "ENTSCHEID §4 :208: „ab nP > 40 ein Kandidaten-Index je Scheibe\"; der Code bricht bei 64 und hat keinen Index."
+ },
+ {
+  "id": "e20",
+  "name": "nachbarKm(R)",
+  "groesse": "koordinate",
+  "domaene": "planet",
+  "wert": "1300 + 650 + 2·√(4π/4096)·R",
+  "einheit": "km",
+  "ort": "planet-core.js:302",
+  "leser": [
+   "planet-core.js:855 Nachbar-Liste der Scheibe"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus PLATTEN_VERZUG_KM und der Proben-Dichte 4096",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e21",
+  "name": "VERSION",
+  "groesse": "samen",
+  "domaene": "planet",
+  "wert": "\"planet-h2-4\"",
+  "einheit": "–",
+  "ort": "planet-core.js:57",
+  "leser": [
+   "voxel-worker.js:1168/1186 → stamm/netz-portal.js:668 ort.version → gelaende-core.js:5881 Pflicht · stamm/netz-portal.js:682 worldId-Hash"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e22",
+  "name": "planetHash FNV-1a + mix32",
+  "groesse": "samen",
+  "domaene": "planet",
+  "wert": "Samen-String → 32 bit",
+  "einheit": "–",
+  "ort": "planet-core.js:149",
+  "leser": [
+   "planet-core.js:308 k → jede Zufallszahl des Plans → voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus dem Samen",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e23",
+  "name": "Samen des Planeten im Spiel",
+  "groesse": "samen",
+  "domaene": "planet",
+  "wert": "\"anazh-realm-seed\" (Heim-Saat)",
+  "einheit": "–",
+  "ort": "planet-core.js:149",
+  "leser": [
+   "stamm/gelaende-chunks.js:672–675 _planetSamen = teil ? teil.samen : L.seed → voxel-worker.js:1159 planetPlan",
+   "gelaende-core.js:2736 LAGE_GRUND.seed"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus der Welt-Saat",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Heim-Anker gemessen: 43,43° N 12,08° O, Küste 289 km, Dfc auf 1 197 m (e-mess.cjs §H)."
+ },
+ {
+  "id": "e24",
+  "name": "T_START / T_ENDE",
+  "groesse": "zeit_ma",
+  "domaene": "planet",
+  "wert": "−4000 / +1000",
+  "einheit": "Ma",
+  "ort": "planet-core.js:271",
+  "leser": [
+   "planet-core.js:576/600 Zeitachse des Plans · :611/623 Hotspots, Trapps",
+   "stamm/feld-leben.js:1278 Satz prüft −4000…1000"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code (ENTSCHEID §0)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "stamm/feld-leben.js:1278 Literal −4000 … 1000 (Zwilling der Grenzen, nicht gelesen)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e25",
+  "name": "Schollen-Gewicht Pareto α 4/3",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": "v^(−3/4)",
+  "einheit": "1",
+  "ort": "planet-core.js:339",
+  "leser": [
+   "planet-core.js:342 Schollen-Fläche → Krustenfeld → voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code :338 („gestutzt Pareto α 4/3\"), keine Quelle",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e26",
+  "name": "SCHOLLE_DECKEL",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": 6,
+  "einheit": "× Median-Gewicht",
+  "ort": "planet-core.js:277",
+  "leser": [
+   "planet-core.js:339 Deckel der größten Scholle"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e27",
+  "name": "Flächen-Faktor 1,22",
+  "groesse": "kruste",
+  "domaene": "planet",
+  "wert": 1.22,
+  "einheit": "1",
+  "ort": "planet-core.js:342",
+  "leser": [
+   "planet-core.js:342 Schollen-Radius (Überdeckung) → :799 Q"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e28",
+  "name": "Schollen-Alter",
+  "groesse": "gestein_art",
+  "domaene": "planet",
+  "wert": "1500 + 2500·Z",
+  "einheit": "Ma",
+  "ort": "planet-core.js:344",
+  "leser": [
+   "planet-core.js:289 schildFaktor → Becken → planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm",
+   "planet-core.js:2327 tafel glatt(1500, 3500, Alter) → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e29",
+  "name": "schildFaktor",
+  "groesse": "landform",
+  "domaene": "relief",
+  "wert": "1,9 − 1,8·(Alter − 1500)/2500",
+  "einheit": "1",
+  "ort": "planet-core.js:289",
+  "leser": [
+   "planet-core.js:1425/1540 Becken-Gewicht → planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e30",
+  "name": "Lappen-Gewicht",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": "0,8 + 0,4·Z",
+  "einheit": "1",
+  "ort": "planet-core.js:346",
+  "leser": [
+   "planet-core.js:1043/1046 Küsten-fBm × lap → voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\""
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e31",
+  "name": "GRUPPE_NEU",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": 0.25,
+  "einheit": "p",
+  "ort": "planet-core.js:277",
+  "leser": [
+   "planet-core.js:359 neue Kontinent-Gruppe"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e32",
+  "name": "GRUPPE_DOM",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": 0.4,
+  "einheit": "× nS",
+  "ort": "planet-core.js:277",
+  "leser": [
+   "planet-core.js:357 größte Gruppe ≤ 0,4·nS"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "ENTSCHEID §4 :57/:206: Kontinent = 2–6 Schollen; Code deckelt bei ⌊0,4·nS⌋ (8–16)."
+ },
+ {
+  "id": "e33",
+  "name": "Gruppen höchstens 19 − nO",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": "19 − nO",
+  "einheit": "Gruppen",
+  "ort": "planet-core.js:357",
+  "leser": [
+   "planet-core.js:359"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e34",
+  "name": "Start-Baum Abstand",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": "(r_a + r_b)·(0,72 + 0,25·Z)",
+  "einheit": "rad",
+  "ort": "planet-core.js:377",
+  "leser": [
+   "planet-core.js:377 Lage im Superkontinent"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e35",
+  "name": "verstreuen: 28 Kandidaten, Wertung min(l, 0,35) − 0,12·w",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": "28 / 0,35 / 0,12",
+  "einheit": "–",
+  "ort": "planet-core.js:438",
+  "leser": [
+   "planet-core.js:442 Wahl der verstreuten Lage"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e36",
+  "name": "versammeln: Lichte 0,86",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": 0.86,
+  "einheit": "× Radien",
+  "ort": "planet-core.js:466",
+  "leser": [
+   "planet-core.js:466 Packung des Superkontinents"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e37",
+  "name": "Ozean-Zug",
+  "groesse": "drift_tempo",
+  "domaene": "planet",
+  "wert": 25,
+  "einheit": "km/Ma",
+  "ort": "planet-core.js:509",
+  "leser": [
+   "planet-core.js:509 Richtung der Ozean-Platte → Rand-Art → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e38",
+  "name": "Ozean-Richtung Streuung",
+  "groesse": "drift_tempo",
+  "domaene": "planet",
+  "wert": 1.75,
+  "einheit": "rad",
+  "ort": "planet-core.js:513",
+  "leser": [
+   "planet-core.js:513"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e39",
+  "name": "Ozean-Platten-Rate",
+  "groesse": "drift_tempo",
+  "domaene": "planet",
+  "wert": "35 + 60·Z (3,5–9,5 cm/a)",
+  "einheit": "km/Ma",
+  "ort": "planet-core.js:514",
+  "leser": [
+   "planet-core.js:518 Drehung je Abschnitt → konv/offen der Ränder :1263 → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)",
+   "planet-core.js:2319 konv → ks → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "ENTSCHEID §4 :207: „Rate aus dem Samen im Band 2–8 cm/a\"."
+ },
+ {
+  "id": "e40",
+  "name": "Drehung je Schlüsselbild ≤ 0,9π",
+  "groesse": "drift_tempo",
+  "domaene": "planet",
+  "wert": "0,9π",
+  "einheit": "rad",
+  "ort": "planet-core.js:518",
+  "leser": [
+   "planet-core.js:518"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e41",
+  "name": "Naht-Kontakt-Lücke",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": 0.02,
+  "einheit": "rad",
+  "ort": "planet-core.js:528",
+  "leser": [
+   "planet-core.js:528 Naht nur bei Lücke ≤ 0,02"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e42",
+  "name": "Naht-Höhe H0",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "3,2 + 2,0·Z",
+  "einheit": "km",
+  "ort": "planet-core.js:544",
+  "leser": [
+   "planet-core.js:1190 nahtTafel → :1463 Gedächtnis-Höhe → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e43",
+  "name": "Naht-Breite",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "80 + 50·Z (wächst ≤ 2× bis 300 Ma :1461)",
+  "einheit": "km",
+  "ort": "planet-core.js:544",
+  "leser": [
+   "planet-core.js:1461–1463 gauss(quer, breite) → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e44",
+  "name": "Naht-Zeit t − 30",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": -30,
+  "einheit": "Ma vor dem versammelten Bild",
+  "ort": "planet-core.js:596",
+  "leser": [
+   "planet-core.js:596 nahtSchreiben"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e45",
+  "name": "Kontinent-Rate",
+  "groesse": "drift_tempo",
+  "domaene": "planet",
+  "wert": "45 + 40·Z (4,5–8,5 cm/a)",
+  "einheit": "km/Ma",
+  "ort": "planet-core.js:580",
+  "leser": [
+   "planet-core.js:581/590 Dauer = Winkel·R/Rate → Lage der Schollen → voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt",
+   "planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "ENTSCHEID §4 :207: 2–8 cm/a. Linse drift.cm_a ROT: p05 0,57 · Median 2,77 · p95 7,62 cm/a (Schwelle p05 ≥ 1)."
+ },
+ {
+  "id": "e46",
+  "name": "Mindest-Dauer eines Abschnitts",
+  "groesse": "zeit_ma",
+  "domaene": "planet",
+  "wert": 40,
+  "einheit": "Ma",
+  "ort": "planet-core.js:581",
+  "leser": [
+   "planet-core.js:581"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e47",
+  "name": "Verweildauer versammelt",
+  "groesse": "zeit_ma",
+  "domaene": "planet",
+  "wert": "50 + 100·Z",
+  "einheit": "Ma",
+  "ort": "planet-core.js:584",
+  "leser": [
+   "planet-core.js:584"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "ENTSCHEID §4 :207 (50–150 Ma)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e48",
+  "name": "Drift des Superkontinents",
+  "groesse": "drift_tempo",
+  "domaene": "planet",
+  "wert": "15 + 15·Z",
+  "einheit": "km/Ma",
+  "ort": "planet-core.js:586",
+  "leser": [
+   "planet-core.js:586"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e49",
+  "name": "Schlüsselbilder höchstens 80",
+  "groesse": "zeit_ma",
+  "domaene": "planet",
+  "wert": 80,
+  "einheit": "Bilder",
+  "ort": "planet-core.js:576",
+  "leser": [
+   "planet-core.js:600 Bruch, wenn +1000 Ma nicht erreicht"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e50",
+  "name": "tempo(u)",
+  "groesse": "drift_tempo",
+  "domaene": "planet",
+  "wert": "0,4u + 0,6·u²(3 − 2u)",
+  "einheit": "1",
+  "ort": "planet-core.js:683",
+  "leser": [
+   "planet-core.js:683 Bewegung im Abschnitt → Lage → voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "ENTSCHEID §4 :207",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e51",
+  "name": "TAU_W (Reife)",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": 20,
+  "einheit": "Ma",
+  "ort": "planet-core.js:271",
+  "leser": [
+   "planet-core.js:739/848 reife = 1 − e^(−Dauer/20) → :1273 s → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)",
+   "planet-core.js:1190 Naht-Aufbau"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "ENTSCHEID K4 :77 (τw)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e52",
+  "name": "TAU_A (Abbau)",
+  "groesse": "erosion",
+  "domaene": "relief",
+  "wert": 120,
+  "einheit": "Ma",
+  "ort": "planet-core.js:271",
+  "leser": [
+   "planet-core.js:1159 gedaechtnisHoehe e^(−a/120) → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "ENTSCHEID K4 :77 (τa)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e53",
+  "name": "WURZEL_ANTEIL / WURZEL_TAU",
+  "groesse": "erosion",
+  "domaene": "relief",
+  "wert": "0,15 / 1500",
+  "einheit": "1 / Ma",
+  "ort": "planet-core.js:1158",
+  "leser": [
+   "planet-core.js:1159 + 0,15·e^(−a/1500) → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "ENTSCHEID K4 :77 und Kopf :21 kennen den Wurzel-Term nicht."
+ },
+ {
+  "id": "e54",
+  "name": "Schürze",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": "150 + 300·Z",
+  "einheit": "km",
+  "ort": "planet-core.js:711",
+  "leser": [
+   "planet-core.js:1281 xAnden = Schürze·R + 300 → Anden-Kamm → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e55",
+  "name": "hinten",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": "2200 + 1600·Z",
+  "einheit": "km",
+  "ort": "planet-core.js:711",
+  "leser": [
+   "planet-core.js:711 Rückseite des Kontinents"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e56",
+  "name": "tOffen 1,05",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": 1.05,
+  "einheit": "× Radien",
+  "ort": "planet-core.js:722",
+  "leser": [
+   "planet-core.js:722 Öffnungs-Zeit eines Paars"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e57",
+  "name": "Rand-Gedächtnis 32 Fächer",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": 32,
+  "einheit": "Fächer",
+  "ort": "planet-core.js:740",
+  "leser": [
+   "planet-core.js:1473 Lesen je Fach"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e58",
+  "name": "Rand-Gedächtnis H0",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "4,4·s0·reife·gS·glatt(0,35; 0,7; Front)",
+  "einheit": "km",
+  "ort": "planet-core.js:762",
+  "leser": [
+   "planet-core.js:1168 randTafel → :1486 hR → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e59",
+  "name": "Q Krusten-Schwelle",
+  "groesse": "kruste",
+  "domaene": "planet",
+  "wert": "0,1177 · 0,0882 · 0,1314",
+  "einheit": "Feldwert",
+  "ort": "planet-core.js:787",
+  "leser": [
+   "planet-core.js:1413 S1/S2 Profil → planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm",
+   "voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\""
+  ],
+  "urteil": "folgt",
+  "woraus": "aus krustenAnteil: Quantil über 4096 Fibonacci-Proben (:795–:799)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e60",
+  "name": "Nachbar-Liste 4096 Proben",
+  "groesse": "koordinate",
+  "domaene": "planet",
+  "wert": 4096,
+  "einheit": "Proben",
+  "ort": "planet-core.js:853",
+  "leser": [
+   "planet-core.js:853 Nachbarn der Scheibe"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e61",
+  "name": "Paar-Konvergenz aus Proben < 250 km",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": 250,
+  "einheit": "km",
+  "ort": "planet-core.js:861",
+  "leser": [
+   "planet-core.js:861 paarC → Versatz-Treppe :1388"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e62",
+  "name": "Schollen-Ellipse Achsen",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": "1 + 0,6·Z",
+  "einheit": "1",
+  "ort": "planet-core.js:1016",
+  "leser": [
+   "planet-core.js:1016 Form der Scholle → Küste"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e63",
+  "name": "Platten-Verzug λ / A / Schranke",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": "[2600, 800, 260] / [900, 280, 80] / 650",
+  "einheit": "km",
+  "ort": "planet-core.js:299",
+  "leser": [
+   "planet-core.js:960–963 Grenzen der Platten verzogen → Ränder → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code (Gegner 3)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e64",
+  "name": "K1 Krusten-Vorrang ×12",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": 12,
+  "einheit": "1",
+  "ort": "planet-core.js:999",
+  "leser": [
+   "planet-core.js:999 Wahl der Platte"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e65",
+  "name": "paarRelativC Fenster",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": "glatt(0,3; 0,8)",
+  "einheit": "1",
+  "ort": "planet-core.js:1110",
+  "leser": [
+   "planet-core.js:1110"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e66",
+  "name": "Rand-Art Schwellen",
+  "groesse": "platte",
+  "domaene": "planet",
+  "wert": "konv/offen > 0,35·Rate und > 2 km/Ma",
+  "einheit": "km/Ma",
+  "ort": "planet-core.js:1266",
+  "leser": [
+   "planet-core.js:1552 randArt → :2215 Anker-Kriterium · :2319 konv → ks → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e67",
+  "name": "Rand-Reichweite der Schablonen",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": 1300,
+  "einheit": "km",
+  "ort": "planet-core.js:1268",
+  "leser": [
+   "planet-core.js:1268"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e68",
+  "name": "Kontinent-Gewicht wkI/wkJ",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": "glatt(500, 900)",
+  "einheit": "km",
+  "ort": "planet-core.js:1271",
+  "leser": [
+   "planet-core.js:1271 Schablonen-Wahl"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e69",
+  "name": "NACHKLANG_MA",
+  "groesse": "zeit_ma",
+  "domaene": "planet",
+  "wert": 10,
+  "einheit": "Ma",
+  "ort": "planet-core.js:1209",
+  "leser": [
+   "planet-core.js:1212–1214 Überblendung nach einem Schlüsselbild → hoeheM"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e70",
+  "name": "lamCut = max(32, 2·fuss)",
+  "groesse": "relief_wellenlaenge",
+  "domaene": "relief",
+  "wert": "32 (fuss 16)",
+  "einheit": "km",
+  "ort": "planet-core.js:1057",
+  "leser": [
+   "planet-core.js:1057 Band der Kruste · :1411/:1421 → voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "K8 (Kopf :1–53)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e71",
+  "name": "fuss der Brücke",
+  "groesse": "relief_wellenlaenge",
+  "domaene": "relief",
+  "wert": 16,
+  "einheit": "km",
+  "ort": "planet-core.js:2309",
+  "leser": [
+   "planet-core.js:2309 planetPunkt(…, 16) → alles im Ort"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "K8: Band ≥ 32 km",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:1182 fuss 16 (dieselbe Zahl im Faden, als Literal)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e72",
+  "name": "rausch ×0,7 · fbm 2,03/Oktave, ≤ 12 Oktaven, ×1,6",
+  "groesse": "relief_wellenlaenge",
+  "domaene": "relief",
+  "wert": "0,7 / 2,03 / 12 / 1,6",
+  "einheit": "1",
+  "ort": "planet-core.js:175",
+  "leser": [
+   "planet-core.js:191–201 jedes Rausch-Feld"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e73",
+  "name": "gratKm (1 − |n|)², zwei Oktaven",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "2 Oktaven",
+  "einheit": "1",
+  "ort": "planet-core.js:202",
+  "leser": [
+   "planet-core.js:1278/1315"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e74",
+  "name": "Schollen-Wellen lam0 / lamG / lamF",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": "min(3000, rs·R) / min(6000, 2rs·R) / 0,45·lam0",
+  "einheit": "km",
+  "ort": "planet-core.js:1032",
+  "leser": [
+   "planet-core.js:1043/1046 Küsten-fBm → voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\"",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e75",
+  "name": "Schollen-Warp",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": "0,45·lam0",
+  "einheit": "km",
+  "ort": "planet-core.js:1040",
+  "leser": [
+   "planet-core.js:1040"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e76",
+  "name": "LAPPEN_GROB / LAPPEN_FEIN",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": "1,5 / 0,45",
+  "einheit": "Feld",
+  "ort": "planet-core.js:279",
+  "leser": [
+   "planet-core.js:1043/1046 → voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\""
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e77",
+  "name": "KUESTE_GEWINN",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": 0.75,
+  "einheit": "je Oktave",
+  "ort": "planet-core.js:295",
+  "leser": [
+   "planet-core.js:1043/1046 → voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\""
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild (gemessen D 1,18, kueste.dimension)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e78",
+  "name": "RAMPE0 / RAMPE1",
+  "groesse": "schelf",
+  "domaene": "relief",
+  "wert": "0,04 / 0,25",
+  "einheit": "Feld",
+  "ort": "planet-core.js:272",
+  "leser": [
+   "planet-core.js:1413 S2 Schelf → Inneres · :1642 kuesteF → voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\"",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e79",
+  "name": "Hang glatt(Q − 0,05; Q)",
+  "groesse": "schelf",
+  "domaene": "relief",
+  "wert": 0.05,
+  "einheit": "Feld",
+  "ort": "planet-core.js:1413",
+  "leser": [
+   "planet-core.js:1413 S1"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e80",
+  "name": "BECKEN_C / BECKEN_GEWINN / BECKEN_TIEF",
+  "groesse": "landform",
+  "domaene": "relief",
+  "wert": "3,0 × Freibord / 0,62 / 2",
+  "einheit": "1",
+  "ort": "planet-core.js:284",
+  "leser": [
+   "planet-core.js:1425–1427 Becken → planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm",
+   "planet-core.js:1543 kont an Becken-Küsten → voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\""
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "ENTSCHEID §4 :210: „träge Tafel-Welle ±0,3 km\"; der Code hat das Becken-Feld 3·Freibord."
+ },
+ {
+  "id": "e81",
+  "name": "Becken-Spektrum",
+  "groesse": "relief_wellenlaenge",
+  "domaene": "relief",
+  "wert": "4000 … max(32, 2·fuss) (Hülle 800)",
+  "einheit": "km",
+  "ort": "planet-core.js:1421",
+  "leser": [
+   "planet-core.js:1425"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e82",
+  "name": "DYN_KM dynamische Topographie",
+  "groesse": "relief_amplitude",
+  "domaene": "relief",
+  "wert": "2,0 × fbm (λ 5000–1200, Gewinn 0,55)",
+  "einheit": "km",
+  "ort": "planet-core.js:293",
+  "leser": [
+   "planet-core.js:1438–1439 → planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code „gesetzt (Erde ±0,5…1 km, Flament et al. 2013, ungeprüft)\" :1434",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e83",
+  "name": "Mantel-Drehung",
+  "groesse": "drift_tempo",
+  "domaene": "planet",
+  "wert": 10,
+  "einheit": "km/Ma (1 cm/a)",
+  "ort": "planet-core.js:1436",
+  "leser": [
+   "planet-core.js:1436"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e84",
+  "name": "SEDIMENT_FUELLT",
+  "groesse": "sediment",
+  "domaene": "relief",
+  "wert": 0.3,
+  "einheit": "1",
+  "ort": "planet-core.js:294",
+  "leser": [
+   "planet-core.js:1439 Kontinent-Becken × (1 − 0,7·S2) → planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code (gesetzt)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e85",
+  "name": "GDH1 Ozean-Tiefe",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "2,6 + 0,365√a (a < 20) · 5,651 − 2,473e^(−0,0278a)",
+  "einheit": "km",
+  "ort": "planet-core.js:1152",
+  "leser": [
+   "planet-core.js:1410 Ozean-Boden → Spiegel-Lösung → planet-core.js:1607–1612 meerLoesen → :1628 meerKm → :2331 waterLevelM → planet-core.js:2331 → voxel-worker.js:1201 → gelaende-core.js:5910 meerUnterBasisM → stamm/bild-himmel.js:485 waterLevel · gelaende-core.js:5816"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Stein & Stein 1992 (GDH1), ENTSCHEID §1 :83",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e86",
+  "name": "Tiefsee-Hügel",
+  "groesse": "relief_amplitude",
+  "domaene": "relief",
+  "wert": "0,08 km, λ 130",
+  "einheit": "km",
+  "ort": "planet-core.js:1411",
+  "leser": [
+   "planet-core.js:1411 (nur Punkt, nicht Hülle)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "nur Meeresboden: ändert weder land noch kont (Hülle ohne Hügel)"
+ },
+ {
+  "id": "e87",
+  "name": "alterAusSumme p = 4, weicher Deckel",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "p = 4",
+  "einheit": "1",
+  "ort": "planet-core.js:1145",
+  "leser": [
+   "planet-core.js:1399 Ozean-Alter → :1410"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e88",
+  "name": "graben",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "−3,0·s·gauss(ξ−40, 45) + 0,25·s·gauss(ξ−170, 70)",
+  "einheit": "km",
+  "ort": "planet-core.js:1151",
+  "leser": [
+   "planet-core.js:1285–1288 Graben-Profil → hoeheM (Meer)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e89",
+  "name": "Orogen-Stärke s",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "min(1,6; konv/25)·reife·gS",
+  "einheit": "1",
+  "ort": "planet-core.js:1273",
+  "leser": [
+   "planet-core.js:1282–1288 Schablonen → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e90",
+  "name": "Grat-Faktor",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "1 + 0,38·(grat − 1), λ 210 km, Fenster 700 km",
+  "einheit": "1",
+  "ort": "planet-core.js:1278",
+  "leser": [
+   "planet-core.js:1282–1288 → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "ENTSCHEID §4 :210: „0,45 + 0,55·Grat\"; Code 0,62–1."
+ },
+ {
+  "id": "e91",
+  "name": "Kontinent-Kollision",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "5,0·gauss(x−110, 200) − 0,35·gauss(x−440, 120)",
+  "einheit": "km",
+  "ort": "planet-core.js:1282",
+  "leser": [
+   "planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e92",
+  "name": "Anden-Profil",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "4,4·gauss(x − xAnden, 85), xAnden = Schürze·R + 300",
+  "einheit": "km",
+  "ort": "planet-core.js:1285",
+  "leser": [
+   "planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e93",
+  "name": "Insel-Bogen",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "3,2·gauss(x−190, 55)",
+  "einheit": "km",
+  "ort": "planet-core.js:1288",
+  "leser": [
+   "planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e94",
+  "name": "Rift",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "−1,2·dv·e^(−x/130), dv = min(1, offen/20)",
+  "einheit": "km",
+  "ort": "planet-core.js:1314",
+  "leser": [
+   "planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e95",
+  "name": "Rücken",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "−0,35e^(−x/14) + 0,35e^(−x/60)(grat−0,45), λ 90, < 250 km",
+  "einheit": "km",
+  "ort": "planet-core.js:1315",
+  "leser": [
+   "planet-core.js:1315 (Meer, nicht Hülle)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "nur Ozean-Rücken, nur Punkt: ändert land/kont nicht"
+ },
+ {
+  "id": "e96",
+  "name": "Transform",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "−0,6·tr·e^(−x/45), tr ∝ scher/30",
+  "einheit": "km",
+  "ort": "planet-core.js:1334",
+  "leser": [
+   "planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e97",
+  "name": "Versatz-Treppe",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "L 260 + 300·Z km, ≤ 80 km",
+  "einheit": "km",
+  "ort": "planet-core.js:1384",
+  "leser": [
+   "planet-core.js:1388 Platten-Grenze versetzt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e98",
+  "name": "NAHT_KM",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": 100,
+  "einheit": "km",
+  "ort": "planet-core.js:1341",
+  "leser": [
+   "planet-core.js:1404–1407 Mittel beider Platten"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e99",
+  "name": "randTafel Breite",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "85·(1 + min(a, 400)/200)",
+  "einheit": "km",
+  "ort": "planet-core.js:1168",
+  "leser": [
+   "planet-core.js:1486 → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e100",
+  "name": "randForm Lage und Erhalt",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "150 + 450·u km (+0,6 km/Ma, ≤ 0,5·r) · glatt(0,1; 0,3)·(0,75–1)",
+  "einheit": "km",
+  "ort": "planet-core.js:1184",
+  "leser": [
+   "planet-core.js:1482–1486 → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e101",
+  "name": "nahtTafel",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "gedaechtnisHoehe·(1 − e^(−a/20))·gS",
+  "einheit": "km",
+  "ort": "planet-core.js:1190",
+  "leser": [
+   "planet-core.js:1459 → planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus TAU_W, TAU_A, WURZEL (K4)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e102",
+  "name": "Trapp-Höhe",
+  "groesse": "magma",
+  "domaene": "relief",
+  "wert": "st·e^(−a/150)·glatt(0, 1, a), a ≤ 400",
+  "einheit": "km",
+  "ort": "planet-core.js:1497",
+  "leser": [
+   "planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code (gesetzt)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e103",
+  "name": "orogenStaerke",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "min(1, hGeb/5)",
+  "einheit": "1",
+  "ort": "planet-core.js:1553",
+  "leser": [
+   "planet-core.js:1553 orogenStaerke → :2322 wildnis.hoehe · :2324 rauhLambda → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e104",
+  "name": "orogenAktiv",
+  "groesse": "gebirge",
+  "domaene": "relief",
+  "wert": "hOro ≥ hMem und hOro > 0,2 km",
+  "einheit": "km",
+  "ort": "planet-core.js:1554",
+  "leser": [
+   "planet-core.js:2215 Anker meidet aktive Gebirge → planet-core.js:2238 → voxel-worker.js:1168 breite/laenge/kuesteKm → stamm/feld-leben.js:1230 Satz „reise\" · :1292 Heim-Erkennung"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e105",
+  "name": "kont an Becken-Küsten",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": "d0 60 km, glatt(0,5; 0,9)",
+  "einheit": "km",
+  "ort": "planet-core.js:1533",
+  "leser": [
+   "planet-core.js:1556 kont → voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\"",
+   "planet-core.js:2321 landAus → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)",
+   "planet-core.js:1977/2021 Feuchte, Kontinentalität → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e106",
+  "name": "Höhe h = hA + hB·refKm − sigmaKm",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "K7",
+  "einheit": "km",
+  "ort": "planet-core.js:1649",
+  "leser": [
+   "planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt",
+   "planet-core.js:2332 Lapse-Korrektur (hk) → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz",
+   "planet-core.js:2071 tJ − lapse·h → planetBiom/pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "folgt",
+  "woraus": "K7: Kontinent relativ zum Bezugs-Spiegel",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e107",
+  "name": "Krusten-Klasse",
+  "groesse": "kruste",
+  "domaene": "relief",
+  "wert": "S2 > 0,5 Kontinent · S1 > 0,5 Schelf · Hang · Ozean",
+  "einheit": "–",
+  "ort": "planet-core.js:1550",
+  "leser": [
+   "planet-core.js:1650 o.kruste (Atlas)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e108",
+  "name": "Hotspots nH",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": 300,
+  "einheit": "Stück",
+  "ort": "planet-core.js:608",
+  "leser": [
+   "planet-core.js:880 Ketten → :1518 Kegel → planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e109",
+  "name": "Hotspot-Beginn",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "−4300 … +1100",
+  "einheit": "Ma",
+  "ort": "planet-core.js:611",
+  "leser": [
+   "planet-core.js:886"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e110",
+  "name": "Hotspot-Leben",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "120 + 480·Z",
+  "einheit": "Ma",
+  "ort": "planet-core.js:611",
+  "leser": [
+   "planet-core.js:886"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e111",
+  "name": "Hotspot-Stärke",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "0,6 + 0,6·Z",
+  "einheit": "1",
+  "ort": "planet-core.js:612",
+  "leser": [
+   "planet-core.js:1518"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e112",
+  "name": "Ketten-Takt",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": 3.5,
+  "einheit": "Ma",
+  "ort": "planet-core.js:883",
+  "leser": [
+   "planet-core.js:890 Stützen im Takt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e113",
+  "name": "Ketten-Stützen",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": 24,
+  "einheit": "Stützen",
+  "ort": "planet-core.js:881",
+  "leser": [
+   "planet-core.js:889"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e114",
+  "name": "Ketten-Ausblenden",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "glatt(80,5; 84)",
+  "einheit": "Ma",
+  "ort": "planet-core.js:904",
+  "leser": [
+   "planet-core.js:904"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e115",
+  "name": "Ausbruchs-Versatz",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "0 … 3",
+  "einheit": "Ma",
+  "ort": "planet-core.js:895",
+  "leser": [
+   "planet-core.js:895"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e116",
+  "name": "Ausbruchs-Stärke, Ausfall",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "0,35–1,25, jeder 8. fällt aus",
+  "einheit": "1",
+  "ort": "planet-core.js:896",
+  "leser": [
+   "planet-core.js:904"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e117",
+  "name": "Ketten-Breite",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "0,7 + 0,55·Z",
+  "einheit": "× σ",
+  "ort": "planet-core.js:906",
+  "leser": [
+   "planet-core.js:1515"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e118",
+  "name": "Ketten-Abklingen Ozean / Kontinent",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "e^(−τ/32) / e^(−τ/4)",
+  "einheit": "Ma",
+  "ort": "planet-core.js:905",
+  "leser": [
+   "planet-core.js:1518"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e119",
+  "name": "Ketten-Kappe Rand",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "320 / 300",
+  "einheit": "km",
+  "ort": "planet-core.js:918",
+  "leser": [
+   "planet-core.js:1509/1513"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e120",
+  "name": "Hotspot-Kegel",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "σ = (30 + 90·S1)·Breite; 4,2·Ozean + 0,6·Kontinent",
+  "einheit": "km",
+  "ort": "planet-core.js:1506",
+  "leser": [
+   "planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e121",
+  "name": "Bogen-Kegel",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "Takt 70 km, 1,2–3,0 km, r 26 km, 10 % Lücke",
+  "einheit": "km",
+  "ort": "planet-core.js:1299",
+  "leser": [
+   "planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e122",
+  "name": "Rift-Kegel",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "0,8–2,4 km, r 20 km, 30 % Lücke",
+  "einheit": "km",
+  "ort": "planet-core.js:1318",
+  "leser": [
+   "planet-core.js:1649 hoeheKm = hA + hB·refKm − sigmaKm",
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e123",
+  "name": "Trapps nE",
+  "groesse": "magma",
+  "domaene": "relief",
+  "wert": 28,
+  "einheit": "Ereignisse",
+  "ort": "planet-core.js:615",
+  "leser": [
+   "planet-core.js:1490–1499"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e124",
+  "name": "Trapp-Radius",
+  "groesse": "magma",
+  "domaene": "relief",
+  "wert": "250 + 500·Z",
+  "einheit": "km",
+  "ort": "planet-core.js:624",
+  "leser": [
+   "planet-core.js:1496"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e125",
+  "name": "Trapp-Stärke",
+  "groesse": "magma",
+  "domaene": "relief",
+  "wert": "0,3 + 0,4·Z",
+  "einheit": "km",
+  "ort": "planet-core.js:624",
+  "leser": [
+   "planet-core.js:1497"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e126",
+  "name": "Trapp-Zeit",
+  "groesse": "magma",
+  "domaene": "relief",
+  "wert": "T_START … T_ENDE gleichverteilt",
+  "einheit": "Ma",
+  "ort": "planet-core.js:623",
+  "leser": [
+   "planet-core.js:1493"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Samen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e127",
+  "name": "vulkanAktiv Schwellen",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "s·wBogen > 0,12 · dv·wRift > 0,15 · τ < 3,5 Ma · Trapp a < 2 Ma",
+  "einheit": "1",
+  "ort": "planet-core.js:1307",
+  "leser": [
+   "planet-core.js:2352 ortRoh vulkan.foerder",
+   "planet-core.js:1710 planetVulkane"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser: voxel-worker.js:1184–1206 reicht vulkan nicht weiter"
+ },
+ {
+  "id": "e128",
+  "name": "Förderung",
+  "groesse": "magma",
+  "domaene": "relief",
+  "wert": "8 (Hotspot) / 0,6 (sonst)",
+  "einheit": "km³/Ma",
+  "ort": "planet-core.js:2352",
+  "leser": [
+   "planet-core.js:2351 ortRoh.vulkan",
+   "planet-core.js:1710 planetVulkane (Atlas)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code („dieselbe Regel wie planetVulkane\")",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser"
+ },
+ {
+  "id": "e129",
+  "name": "planetVulkane Gitter",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "22 km, Treffer ≤ 0,75·22",
+  "einheit": "km",
+  "ort": "planet-core.js:1680",
+  "leser": [
+   "planet-core.js:1676–1712 Liste (Atlas, Richter)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e130",
+  "name": "ortRoh.vulkan (Art, Abstand, Alter)",
+  "groesse": "vulkan",
+  "domaene": "relief",
+  "wert": "Art · km · Ma",
+  "einheit": "–",
+  "ort": "planet-core.js:2351",
+  "leser": [
+   "planet-core.js:2351"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus dem Punkt",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser"
+ },
+ {
+  "id": "e131",
+  "name": "meerLoesen",
+  "groesse": "meeresspiegel",
+  "domaene": "wasser",
+  "wert": "±15 km, 64 Halbierungen",
+  "einheit": "km",
+  "ort": "planet-core.js:1561",
+  "leser": [
+   "planet-core.js:1607–1612 meerLoesen → :1628 meerKm → :2331 waterLevelM → planet-core.js:2331 → voxel-worker.js:1201 → gelaende-core.js:5910 meerUnterBasisM → stamm/bild-himmel.js:485 waterLevel · gelaende-core.js:5816",
+   "planet-core.js:1649 hoeheKm (Spiegel) → voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "folgt",
+  "woraus": "Volumen-Gleichung Σ max(0, σ − h)/n = Wasser (K7)",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "ENTSCHEID §4 :213 „einmal sortiert, Volumen-Kurve\"; Code halbiert 64-mal."
+ },
+ {
+  "id": "e132",
+  "name": "PROBEN_SPIEGEL",
+  "groesse": "meeresspiegel",
+  "domaene": "wasser",
+  "wert": 4096,
+  "einheit": "Proben",
+  "ort": "planet-core.js:1574",
+  "leser": [
+   "planet-core.js:1604"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e133",
+  "name": "PROBEN_BEZUG",
+  "groesse": "meeresspiegel",
+  "domaene": "wasser",
+  "wert": 1024,
+  "einheit": "Proben",
+  "ort": "planet-core.js:1574",
+  "leser": [
+   "planet-core.js:1590"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code (gemessen Entscheid-2 §0.3, Kommentar :1572)",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e134",
+  "name": "Hüll-Proben fuss",
+  "groesse": "meeresspiegel",
+  "domaene": "wasser",
+  "wert": 400,
+  "einheit": "km",
+  "ort": "planet-core.js:1580",
+  "leser": [
+   "planet-core.js:1580"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e135",
+  "name": "BEZUG_MA",
+  "groesse": "meeresspiegel",
+  "domaene": "wasser",
+  "wert": 100,
+  "einheit": "Ma",
+  "ort": "planet-core.js:273",
+  "leser": [],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "toter Name: nie gelesen; sigmaRef rechnet 5 Stützen × 20 Ma als Literal (:1596–1597)"
+ },
+ {
+  "id": "e136",
+  "name": "sigmaRef Erosionsbasis",
+  "groesse": "meeresspiegel",
+  "domaene": "wasser",
+  "wert": "5 Stützen × 20 Ma",
+  "einheit": "Ma",
+  "ort": "planet-core.js:1595",
+  "leser": [
+   "planet-core.js:1628 refKm → :1649 Kontinent-Höhe → voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "K7",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e137",
+  "name": "EIS_DICKE_KM",
+  "groesse": "eis",
+  "domaene": "wasser",
+  "wert": 2,
+  "einheit": "km",
+  "ort": "planet-core.js:274",
+  "leser": [
+   "planet-core.js:1611 eisKm → :1612 Spiegel → planet-core.js:1607–1612 meerLoesen → :1628 meerKm → :2331 waterLevelM → planet-core.js:2331 → voxel-worker.js:1201 → gelaende-core.js:5910 meerUnterBasisM → stamm/bild-himmel.js:485 waterLevel · gelaende-core.js:5816"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code „gesetzt (Antarktis ~2,1 km, Literatur, ungeprüft)\"",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e138",
+  "name": "EIS_RHO",
+  "groesse": "eis",
+  "domaene": "wasser",
+  "wert": 0.917,
+  "einheit": "ρEis/ρWasser",
+  "ort": "planet-core.js:274",
+  "leser": [
+   "planet-core.js:1611"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Physik: Dichte Eis/Wasser",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e139",
+  "name": "Land-Eis polwärts der Eis-Linie",
+  "groesse": "eis",
+  "domaene": "wasser",
+  "wert": "G.eisBreite",
+  "einheit": "rad",
+  "ort": "planet-core.js:1608",
+  "leser": [
+   "planet-core.js:1610 eisN → :1611"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus der Energiebilanz (planetKlimaGlobal)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e140",
+  "name": "planetMeer Fach",
+  "groesse": "meeresspiegel",
+  "domaene": "wasser",
+  "wert": 10,
+  "einheit": "Ma",
+  "ort": "planet-core.js:1622",
+  "leser": [
+   "planet-core.js:1625–1626 linear zwischen Fächern"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "ENTSCHEID §4 :169",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e141",
+  "name": "kuesteF Halbierung",
+  "groesse": "kueste",
+  "domaene": "wasser",
+  "wert": 40,
+  "einheit": "Schritte",
+  "ort": "planet-core.js:1641",
+  "leser": [
+   "planet-core.js:1642 → voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\""
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e142",
+  "name": "meerKm",
+  "groesse": "meeresspiegel",
+  "domaene": "wasser",
+  "wert": "0,033 · −0,176 · 0,227 (t = 0)",
+  "einheit": "km",
+  "ort": "planet-core.js:1628",
+  "leser": [
+   "planet-core.js:2331 Δ zur Zeit 0 → planet-core.js:2331 → voxel-worker.js:1201 → gelaende-core.js:5910 meerUnterBasisM → stamm/bild-himmel.js:485 waterLevel · gelaende-core.js:5816"
+  ],
+  "urteil": "folgt",
+  "woraus": "σ − σRef (K7)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e143",
+  "name": "waterLevelM",
+  "groesse": "meeresspiegel",
+  "domaene": "wasser",
+  "wert": "−3 + s_v·(meerKm(t) − meerKm(0))·1000; Δ bei −100 Ma +5,51 · +23,18 · −18,32",
+  "einheit": "m",
+  "ort": "planet-core.js:2331",
+  "leser": [
+   "planet-core.js:2331 → voxel-worker.js:1201 → gelaende-core.js:5910 meerUnterBasisM → stamm/bild-himmel.js:485 waterLevel · gelaende-core.js:5816"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus meerKm und der Stauchung s_v",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:5679 GRUND.meerUnterBasis 3 (Heimat)"
+  ],
+  "anmerkung": "eine Zahl je Zeit, nie je Ort: über 150 Land-Orte genau 1 Wert (§2 D)"
+ },
+ {
+  "id": "e144",
+  "name": "MEEREIS_WINTER_C",
+  "groesse": "eis",
+  "domaene": "wasser",
+  "wert": -12,
+  "einheit": "°C",
+  "ort": "planet-core.js:292",
+  "leser": [
+   "planet-core.js:2104 planetBiom o.eis (Meer)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code (Gegner 3)",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser; Ausgang: Atlas-Schicht biom/koeppen"
+ },
+ {
+  "id": "e145",
+  "name": "KLIMA.q0",
+  "groesse": "sternleistung",
+  "domaene": "klima",
+  "wert": 334.4,
+  "einheit": "W/m²",
+  "ort": "planet-core.js:1858",
+  "leser": [
+   "planet-core.js:1890 Q → :1904 T0 → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "North & Coakley 1979 (S0 = 1337,6/4)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e146",
+  "name": "KLIMA.olrA / olrB",
+  "groesse": "temperatur_jahresmittel",
+  "domaene": "klima",
+  "wert": "203,3 / 2,09",
+  "einheit": "W/m², W/m²K",
+  "ort": "planet-core.js:1859",
+  "leser": [
+   "planet-core.js:1904 → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "North & Coakley 1979",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e147",
+  "name": "KLIMA.diffD",
+  "groesse": "temperatur_jahresmittel",
+  "domaene": "klima",
+  "wert": 0.5,
+  "einheit": "W/m²K",
+  "ort": "planet-core.js:1859",
+  "leser": [
+   "planet-core.js:1904 T2 → Pol-Äquator-Gefälle → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code: Literatur 0,649 verworfen („trägt keine Eis-Kappe\")",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e148",
+  "name": "KLIMA.coA0 / coA2",
+  "groesse": "temperatur_jahresmittel",
+  "domaene": "klima",
+  "wert": "0,697 / −0,0779",
+  "einheit": "1",
+  "ort": "planet-core.js:1860",
+  "leser": [
+   "planet-core.js:1900 → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "North 1975",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e149",
+  "name": "KLIMA.coEis",
+  "groesse": "eis",
+  "domaene": "klima",
+  "wert": 0.38,
+  "einheit": "1",
+  "ort": "planet-core.js:1860",
+  "leser": [
+   "planet-core.js:1900 Eis-Albedo → T0/T2 → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "North 1975",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e150",
+  "name": "KLIMA.tEisC",
+  "groesse": "eis",
+  "domaene": "klima",
+  "wert": -10,
+  "einheit": "°C",
+  "ort": "planet-core.js:1861",
+  "leser": [
+   "planet-core.js:1905 Eis-Linie → :1608 Land-Eis → planet-core.js:1607–1612 meerLoesen → :1628 meerKm → :2331 waterLevelM → planet-core.js:2331 → voxel-worker.js:1201 → gelaende-core.js:5910 meerUnterBasisM → stamm/bild-himmel.js:485 waterLevel · gelaende-core.js:5816",
+   "planet-core.js:2066 Schnee dämpft amp"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "North 1975",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e151",
+  "name": "KLIMA.walker",
+  "groesse": "temperatur_jahresmittel",
+  "domaene": "klima",
+  "wert": 0.9,
+  "einheit": "1",
+  "ort": "planet-core.js:1862",
+  "leser": [
+   "planet-core.js:1894 (bei t = 0 genau 0)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code „γ gesetzt\" (Mechanismus Walker et al. 1981)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "wirkt nur bei zeitMa ≠ 0"
+ },
+ {
+  "id": "e152",
+  "name": "Gough-Faktor",
+  "groesse": "sternleistung",
+  "domaene": "klima",
+  "wert": 0.4,
+  "einheit": "1",
+  "ort": "planet-core.js:1889",
+  "leser": [
+   "planet-core.js:1889 → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Gough 1981",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e153",
+  "name": "Einstrahlung s2",
+  "groesse": "sonnenstand",
+  "domaene": "klima",
+  "wert": "−0,625·P2(cos β) (Erde −0,482)",
+  "einheit": "1",
+  "ort": "planet-core.js:1891",
+  "leser": [
+   "planet-core.js:1899 → T2 → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "folgt",
+  "woraus": "Jahresmittel der Einstrahlung, 2. Legendre-Mode aus β (North 1975)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e154",
+  "name": "Energiebilanz-Gitter",
+  "groesse": "temperatur_jahresmittel",
+  "domaene": "klima",
+  "wert": "N 256, 80 Iterationen, Relaxation 0,5",
+  "einheit": "–",
+  "ort": "planet-core.js:1894",
+  "leser": [
+   "planet-core.js:1896–1907"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e155",
+  "name": "T0 / T2",
+  "groesse": "temperatur_jahresmittel",
+  "domaene": "klima",
+  "wert": "Zonen-Temperatur T0 + T2·P2",
+  "einheit": "°C",
+  "ort": "planet-core.js:1904",
+  "leser": [
+   "planet-core.js:1969 tZ → planet-core.js:2076 tS/tW → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz",
+   "planet-core.js:2213 Anker-Zone"
+  ],
+  "urteil": "folgt",
+  "woraus": "Energiebilanz (North 1975)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e156",
+  "name": "Held-Hou ΔH",
+  "groesse": "wind_richtung",
+  "domaene": "klima",
+  "wert": "max(0,01; −1,5·T2r/T0K)",
+  "einheit": "1",
+  "ort": "planet-core.js:1909",
+  "leser": [
+   "planet-core.js:1911 φH"
+  ],
+  "urteil": "folgt",
+  "woraus": "Held & Hou 1980",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e157",
+  "name": "KLIMA.tropoKm",
+  "groesse": "wind_richtung",
+  "domaene": "klima",
+  "wert": "10 (× 9,81/g × T/288)",
+  "einheit": "km",
+  "ort": "planet-core.js:1863",
+  "leser": [
+   "planet-core.js:1910 H → φH"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code „gesetzt\"",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e158",
+  "name": "Hadley-Rand φH (zellBreite)",
+  "groesse": "wind_richtung",
+  "domaene": "klima",
+  "wert": "29,6° (Erde) · 59,3° (R/2) · 14,8° (2R)",
+  "einheit": "°",
+  "ort": "planet-core.js:1911",
+  "leser": [
+   "planet-core.js:1959–1960 Wind · :1926–1936 Gürtel → planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2334 sturmQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)"
+  ],
+  "urteil": "folgt",
+  "woraus": "Held & Hou 1980: √(5/3·gHΔ/(Ω²a²))",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e159",
+  "name": "Zellen je Halbkugel",
+  "groesse": "wind_richtung",
+  "domaene": "klima",
+  "wert": "3 (Erde) · 2 · 6",
+  "einheit": "Zellen",
+  "ort": "planet-core.js:1913",
+  "leser": [
+   "planet-core.js:1930 Sturmbahnen"
+  ],
+  "urteil": "folgt",
+  "woraus": "⌊π/2/φH + 0,5⌋",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e160",
+  "name": "KLIMA.lapse",
+  "groesse": "temperatur_hoehengradient",
+  "domaene": "klima",
+  "wert": 6.5,
+  "einheit": "K/km",
+  "ort": "planet-core.js:1864",
+  "leser": [
+   "planet-core.js:2071 tJ − lapse·h → planet-core.js:2076 tS/tW → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz",
+   "planet-core.js:2217 Anker auf Meeres-Niveau reduziert",
+   "planet-core.js:2307 s_v = 0,0065/kuehlungKJeM"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Standard-Atmosphäre",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:5850 kuehlungKJeM = 18/162,5 = 0,1108 K/m (17× steiler; s_v = 0,0587 übersetzt die Höhen)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e161",
+  "name": "Gürtel: grund / itcz, Breite 0,4w",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": "250 / 2600",
+  "einheit": "mm/a",
+  "ort": "planet-core.js:1872",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code „gegen Köppen gerichtet\"",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e162",
+  "name": "Sturmbahn sturm, Lage 0,75·k·w, Breite 0,55w",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": 1100,
+  "einheit": "mm/a",
+  "ort": "planet-core.js:1872",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e163",
+  "name": "Absinken Hadley-Rand",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": "0,85 bei 0,85w, Breite 0,3w",
+  "einheit": "1",
+  "ort": "planet-core.js:1873",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e164",
+  "name": "Meridional-Wind",
+  "groesse": "wind_richtung",
+  "domaene": "klima",
+  "wert": 0.3,
+  "einheit": "× zonal",
+  "ort": "planet-core.js:1960",
+  "leser": [
+   "planet-core.js:1982 Luv-Richtung → planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2075 advW → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e165",
+  "name": "stehende Wellen der Zirkulation",
+  "groesse": "wind_richtung",
+  "domaene": "klima",
+  "wert": "0,9 rad × fbm λ 6000–2500",
+  "einheit": "rad",
+  "ort": "planet-core.js:1965",
+  "leser": [
+   "planet-core.js:1966 Wind gedreht → planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e166",
+  "name": "Clausius-Clapeyron kalt-seitig",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": "e^(0,05·(tZ − 15)), ≥ 0,08",
+  "einheit": "1/K",
+  "ort": "planet-core.js:1970",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e167",
+  "name": "feuchteLand0 / feuchteLand1",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": "0,35 / 0,5, glatt(5, 25)",
+  "einheit": "1",
+  "ort": "planet-core.js:1870",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e168",
+  "name": "mNeutral Küstenferne",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": "e^(−kont/1000)",
+  "einheit": "km",
+  "ort": "planet-core.js:1977",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e169",
+  "name": "Wind-Gewicht om",
+  "groesse": "wind_staerke",
+  "domaene": "klima",
+  "wert": "wl/1,044",
+  "einheit": "1",
+  "ort": "planet-core.js:1979",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e170",
+  "name": "KLIMA.schritte",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": "[75, 150, 225, 300]",
+  "einheit": "km",
+  "ort": "planet-core.js:1865",
+  "leser": [
+   "planet-core.js:1986 Kamm-Schranke, Hub → planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "ENTSCHEID §4 :214 und Kopf :1853/:1973: „sechs Schritte\"; Code 4 + 14."
+ },
+ {
+  "id": "e171",
+  "name": "FEUCHTE_KM / FEUCHTE_N",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": "150 / 14 (bis 2100 km)",
+  "einheit": "km",
+  "ort": "planet-core.js:1941",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code (G2.3)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e172",
+  "name": "kontGrob fuss, Rückfall-Radius",
+  "groesse": "kueste",
+  "domaene": "klima",
+  "wert": "400 km / 0,2",
+  "einheit": "–",
+  "ort": "planet-core.js:1945",
+  "leser": [
+   "planet-core.js:1997"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e173",
+  "name": "KLIMA.meerKm",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": 300,
+  "einheit": "km",
+  "ort": "planet-core.js:1868",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e174",
+  "name": "KLIMA.recycleKm",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": 6000,
+  "einheit": "km",
+  "ort": "planet-core.js:1869",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e175",
+  "name": "maritim",
+  "groesse": "temperatur_jahresamplitude",
+  "domaene": "klima",
+  "wert": "e^(−sk/600)",
+  "einheit": "km",
+  "ort": "planet-core.js:2000",
+  "leser": [
+   "planet-core.js:2021 c → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz",
+   "planet-core.js:2333 tagAmp → voxel-worker.js:1197 → gelaende-core.js:5902 → gelaende-core.js:1321 temperaturFeld (Tagesgang)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e176",
+  "name": "KLIMA.leeKm",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": 800,
+  "einheit": "km",
+  "ort": "planet-core.js:1867",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e177",
+  "name": "KLIMA.schattenKm",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": 1.5,
+  "einheit": "km",
+  "ort": "planet-core.js:1866",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "ENTSCHEID §4 :214",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e178",
+  "name": "Luv-Hub",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": "0,9·min(1,5; Anstieg)",
+  "einheit": "1",
+  "ort": "planet-core.js:2014",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e179",
+  "name": "Kontinentalität c",
+  "groesse": "temperatur_jahresamplitude",
+  "domaene": "klima",
+  "wert": "glatt(0, 1500, kont)·(1 − 0,6·maritim)",
+  "einheit": "1",
+  "ort": "planet-core.js:2021",
+  "leser": [
+   "planet-core.js:2066 amp → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz",
+   "planet-core.js:2080 tagAmpC → planet-core.js:2333 tagAmp → voxel-worker.js:1197 → gelaende-core.js:5902 → gelaende-core.js:1321 temperaturFeld (Tagesgang)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e180",
+  "name": "Randströme",
+  "groesse": "temperatur_jahresmittel",
+  "domaene": "klima",
+  "wert": "Subtropen 0,8w/0,3w (−4/+1,5 K) · Westwind 1,6w/0,35w (+5/−4, −1,5/+1 K) · Abklingen 350/500/1500/700 km",
+  "einheit": "K",
+  "ort": "planet-core.js:2040",
+  "leser": [
+   "planet-core.js:2071/2076 → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz",
+   "planet-core.js:2048 pF → planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e181",
+  "name": "Monsun-Schub",
+  "groesse": "saison_phase",
+  "domaene": "klima",
+  "wert": "(0,3 + 0,4c)·(1 − 0,5·|φ|/(π/2))",
+  "einheit": "× β",
+  "ort": "planet-core.js:2052",
+  "leser": [
+   "planet-core.js:2056/2060 Sommer-Anteil → pJahr → planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e182",
+  "name": "Gürtel-Versatz φG",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": "0,035 rad × fbm",
+  "einheit": "rad",
+  "ort": "planet-core.js:2055",
+  "leser": [
+   "planet-core.js:2059 pJahr → :2085 abflussMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)",
+   "planet-core.js:2337 regenQuote → planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)",
+   "planet-core.js:2340 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e183",
+  "name": "fJ Jahres-Normierung",
+  "groesse": "jahr_laenge",
+  "domaene": "jahr",
+  "wert": "1 (Erde)",
+  "einheit": "1",
+  "ort": "planet-core.js:2063",
+  "leser": [
+   "planet-core.js:2067 amp"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus jahrTage und PLANET_ERDE.jahrTage",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e184",
+  "name": "Land-/Meer-Schwingung cL, kontiMeerKm",
+  "groesse": "temperatur_jahresamplitude",
+  "domaene": "klima",
+  "wert": "0,3 + 0,7c, Schnee −0,85 · Meer 0,3·e^(−/600)",
+  "einheit": "1",
+  "ort": "planet-core.js:2066",
+  "leser": [
+   "planet-core.js:2067 amp → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e185",
+  "name": "Jahres-Amplitude amp",
+  "groesse": "temperatur_jahresamplitude",
+  "domaene": "klima",
+  "wert": "(5 + 28cL)·(sin β/0,39782)·|sin φ|·fJ",
+  "einheit": "K",
+  "ort": "planet-core.js:2067",
+  "leser": [
+   "planet-core.js:2076 tS/tW → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:1314–1315 TEMPERATUR sommer 18 / winter −4 (Heimat; reist als Δ)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e186",
+  "name": "PET",
+  "groesse": "regen_quote",
+  "domaene": "klima",
+  "wert": "400 + 45·T",
+  "einheit": "mm/a",
+  "ort": "planet-core.js:2069",
+  "leser": [
+   "planet-core.js:2070 trocken",
+   "planet-core.js:2144 pflanzenDeckung → planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Zwilling im Kern: :2069 (petZ) und :2144 (pet) dieselbe Formel zweimal geschrieben"
+ },
+ {
+  "id": "e187",
+  "name": "KLIMA.trockenK",
+  "groesse": "temperatur_jahresmittel",
+  "domaene": "klima",
+  "wert": "6, glatt(0,6; 0,2; P/PET)",
+  "einheit": "K",
+  "ort": "planet-core.js:1874",
+  "leser": [
+   "planet-core.js:2071 → planet-core.js:2076 tS/tW → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code „Literatur aus dem Gedächtnis, ungeprüft\"",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e188",
+  "name": "advW Winter-Advektion",
+  "groesse": "temperatur_jahresamplitude",
+  "domaene": "klima",
+  "wert": "−12 je Einheit",
+  "einheit": "K",
+  "ort": "planet-core.js:2075",
+  "leser": [
+   "planet-core.js:2076 tW → planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e189",
+  "name": "Turc-Pike",
+  "groesse": "niederschlag_jahr",
+  "domaene": "wasser",
+  "wert": "L = 300 + 25T + 0,05T³ (≥ 50, T ≥ −10); ET = P/√(0,9 + (P/L)²)",
+  "einheit": "mm/a",
+  "ort": "planet-core.js:2078",
+  "leser": [
+   "planet-core.js:2085 abflussMm → :2333 spendeMm → planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Turc 1954 / Pike 1964 (im Code benannt :2077)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:1600 PEGEL.spende 0,0009 m/d = 328,5 mm/a (Heimat; reist als Verhältnis)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e190",
+  "name": "tagAmpC",
+  "groesse": "temperatur_tagesamplitude",
+  "domaene": "tag",
+  "wert": "4 + 10c·(1 − min(1, P/1500))",
+  "einheit": "K",
+  "ort": "planet-core.js:2080",
+  "leser": [
+   "planet-core.js:2333 tagAmp = 0,5·tagAmpC → planet-core.js:2333 tagAmp → voxel-worker.js:1197 → gelaende-core.js:5902 → gelaende-core.js:1321 temperaturFeld (Tagesgang)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:1317 TEMPERATUR.tagAmp 5 K"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e191",
+  "name": "abflussMm",
+  "groesse": "niederschlag_jahr",
+  "domaene": "wasser",
+  "wert": "max(0, P − ET)",
+  "einheit": "mm/a",
+  "ort": "planet-core.js:2085",
+  "leser": [
+   "planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)"
+  ],
+  "urteil": "folgt",
+  "woraus": "Turc-Pike",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e192",
+  "name": "schneeKm",
+  "groesse": "eis",
+  "domaene": "klima",
+  "wert": "h + tS/lapse",
+  "einheit": "km",
+  "ort": "planet-core.js:2084",
+  "leser": [
+   "planet-core.js:2084 (nur Ausgang planetKlima)"
+  ],
+  "urteil": "folgt",
+  "woraus": "Null-Grad-Höhe des Sommers",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [
+   "gelaende-core.js:1282–1284 SCHNEE start 140 / voll 185 · :5919 schneeBandM (rechnet die Linie selbst)"
+  ],
+  "anmerkung": "kein Spiel-Leser"
+ },
+ {
+  "id": "e193",
+  "name": "Phasen-Verzug lag",
+  "groesse": "saison_phase",
+  "domaene": "jahr",
+  "wert": "0,04 + 0,04·(1 − c)",
+  "einheit": "Jahr",
+  "ort": "planet-core.js:2088",
+  "leser": [
+   "planet-core.js:2089 tJetztC (nur saison ≥ 0)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [
+   "gelaende-core.js:1316 TEMPERATUR.sommerPhase 0,375"
+  ],
+  "anmerkung": "kein Spiel-Leser: ortRoh ruft saison −1 (:2310)"
+ },
+ {
+  "id": "e194",
+  "name": "windOst / windNord → windX / windZ",
+  "groesse": "wind_richtung",
+  "domaene": "klima",
+  "wert": "Einheitsvektor",
+  "einheit": "1",
+  "ort": "planet-core.js:2082",
+  "leser": [
+   "planet-core.js:2336 Δ wetter.windX/Z"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus Wind-Modell",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [
+   "phyto-core.js:4334 windSaat (Wind des Spiels aus der Welt-Saat)"
+  ],
+  "anmerkung": "kein Spiel-Leser: voxel-worker.js:1202 reicht nur regenQuote/sturmQuote weiter"
+ },
+ {
+  "id": "e195",
+  "name": "luv / lee / stromK / meerWest / meerLuv / feuchte / kontinental / tJetztC / pJetztMm",
+  "groesse": "niederschlag_jahr",
+  "domaene": "klima",
+  "wert": "Lese-Ausgänge",
+  "einheit": "–",
+  "ort": "planet-core.js:2083",
+  "leser": [
+   "planet-core.js:1819 planetKarte (Atlas-Schichten)"
+  ],
+  "urteil": "folgt",
+  "woraus": "Zwischenwerte des Klimas",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser"
+ },
+ {
+  "id": "e196",
+  "name": "KOEPPEN Tafel",
+  "groesse": "biom",
+  "domaene": "biom",
+  "wert": "30 Klassen Af … EF",
+  "einheit": "–",
+  "ort": "planet-core.js:1878",
+  "leser": [
+   "planet-core.js:2338 ortRoh.biom",
+   "planet-core.js:1819 Atlas"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Peel et al. 2007 (:2097)",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser"
+ },
+ {
+  "id": "e197",
+  "name": "Köppen-Schwellen",
+  "groesse": "biom",
+  "domaene": "biom",
+  "wert": "tS 10 · pth = 20tJ + 280/140/0 · tW 18 · pDry 60, 100 − P/25, 40, pWet/3, /10 · 22 °C · 4 Monate · −38 °C",
+  "einheit": "°C, mm",
+  "ort": "planet-core.js:2108",
+  "leser": [
+   "planet-core.js:2122 koeppen → :2338"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Peel et al. 2007",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser. Am Anker 3/30 Saaten ET (Tundra), 1/30 Meer (Köppen −1, erde-29)."
+ },
+ {
+  "id": "e198",
+  "name": "WHITTAKER Tafel und Schwellen",
+  "groesse": "biom",
+  "domaene": "biom",
+  "wert": "11 Klassen; tJ 3/10/15/20, P 250/300/500/700/2200/2400",
+  "einheit": "°C, mm",
+  "ort": "planet-core.js:1880",
+  "leser": [
+   "planet-core.js:2130 biom → :2338"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code „Whittaker als reine Tafel\", Schwellen ohne Quelle",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser"
+ },
+ {
+  "id": "e199",
+  "name": "pflanzenDeckung veg",
+  "groesse": "kraut_deckung",
+  "domaene": "biom",
+  "wert": "glatt(0,1; 0,85; P/PET)",
+  "einheit": "1",
+  "ort": "planet-core.js:2145",
+  "leser": [
+   "planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e200",
+  "name": "decke",
+  "groesse": "kraut_deckung",
+  "domaene": "biom",
+  "wert": "glatt(0; 0,55; veg)",
+  "einheit": "1",
+  "ort": "planet-core.js:2146",
+  "leser": [
+   "planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:5723 ORT_WUCHS.decke (Zeit-Schwelle) · :5743 min(1, Verhältnis)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e201",
+  "name": "wald",
+  "groesse": "wald_deckung",
+  "domaene": "biom",
+  "wert": "glatt(0,45; 1; veg)",
+  "einheit": "1",
+  "ort": "planet-core.js:2146",
+  "leser": [
+   "planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:5745 min(1, Verhältnis)·Zeit·Frost"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e202",
+  "name": "Biom-Farben, KOEPPEN_FARBE, Karten-Rampen",
+  "groesse": "biom",
+  "domaene": "biom",
+  "wert": "RGB",
+  "einheit": "–",
+  "ort": "planet-core.js:2136",
+  "leser": [
+   "planet-core.js:2149 biomFarbe · :1819 planetKarte"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Anker eigenes Bild",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser"
+ },
+ {
+  "id": "e203",
+  "name": "Eis-Codes (Meereis 2, EF 1)",
+  "groesse": "eis",
+  "domaene": "biom",
+  "wert": "0/1/2",
+  "einheit": "–",
+  "ort": "planet-core.js:2104",
+  "leser": [
+   "planet-core.js:2123"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser"
+ },
+ {
+  "id": "e204",
+  "name": "ORT_KLIMA Pflichtfelder",
+  "groesse": "temperatur_jahresmittel",
+  "domaene": "klima",
+  "wert": "7 Felder",
+  "einheit": "–",
+  "ort": "planet-core.js:2172",
+  "leser": [
+   "planet-core.js:2172 pruefOrtGesetz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e205",
+  "name": "pruefJahr R5",
+  "groesse": "jahr_laenge",
+  "domaene": "jahr",
+  "wert": "Körper-Jahr = Ort-Gesetz-Jahr",
+  "einheit": "d",
+  "ort": "planet-core.js:2182",
+  "leser": [
+   "planet-core.js:2206/2291 Bruch beim Namen"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "R5",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e206",
+  "name": "Anker-Zone",
+  "groesse": "breite_ort",
+  "domaene": "klima",
+  "wert": "|tZ − (18 + −4)/2| ≤ 14",
+  "einheit": "K",
+  "ort": "planet-core.js:2213",
+  "leser": [
+   "planet-core.js:2238 → voxel-worker.js:1168 breite/laenge/kuesteKm → stamm/feld-leben.js:1230 Satz „reise\" · :1292 Heim-Erkennung",
+   "planet-core.js:2288 ortAnkerRoh – Nullpunkt jedes Δ (Δ = Ort − Anker, :2295–2301)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e207",
+  "name": "Anker-Bedingungen",
+  "groesse": "breite_ort",
+  "domaene": "planet",
+  "wert": "Land, Küste 0–300 km, kein konvergenter Rand < 500 km, kein aktives Orogen",
+  "einheit": "km",
+  "ort": "planet-core.js:2215",
+  "leser": [
+   "planet-core.js:2238 → voxel-worker.js:1168 breite/laenge/kuesteKm → stamm/feld-leben.js:1230 Satz „reise\" · :1292 Heim-Erkennung",
+   "planet-core.js:2288 ortAnkerRoh – Nullpunkt jedes Δ (Δ = Ort − Anker, :2295–2301)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "ENTSCHEID §6",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e208",
+  "name": "Anker-Wertung",
+  "groesse": "breite_ort",
+  "domaene": "klima",
+  "wert": "((ΔS/4)² + (ΔW/6)²) gegen 18 / −4 °C",
+  "einheit": "K",
+  "ort": "planet-core.js:2217",
+  "leser": [
+   "planet-core.js:2238 → voxel-worker.js:1168 breite/laenge/kuesteKm → stamm/feld-leben.js:1230 Satz „reise\" · :1292 Heim-Erkennung",
+   "planet-core.js:2288 ortAnkerRoh – Nullpunkt jedes Δ (Δ = Ort − Anker, :2295–2301)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:1314–1315 TEMPERATUR 18 / −4 (die Konstanten, die der Anker wahr macht)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e209",
+  "name": "Anker-Suche",
+  "groesse": "breite_ort",
+  "domaene": "planet",
+  "wert": "512 Fibonacci-Proben + 3 Runden 240/120/60 km, fuss 40",
+  "einheit": "km",
+  "ort": "planet-core.js:2210",
+  "leser": [
+   "planet-core.js:2238 → voxel-worker.js:1168 breite/laenge/kuesteKm → stamm/feld-leben.js:1230 Satz „reise\" · :1292 Heim-Erkennung"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Suche bei fuss 40 (:2214), Ort bei fuss 16 (:2309): erde-29 Anker +74 m (fuss 40) / −84 m (fuss 16) → Köppen −1, Spende 0 → 135/200 Land-Ziele mit spendeVerh ∞, ortGesetz lehnt ab (e-mess.cjs §H)."
+ },
+ {
+  "id": "e210",
+  "name": "Anker-Lage breite / laenge / kuesteKm",
+  "groesse": "breite_ort",
+  "domaene": "planet",
+  "wert": "−45,4°/−129,6° · 49,4°/−55,5° · −47,1°/43,5° (Küste 199/291/102 km)",
+  "einheit": "rad, km",
+  "ort": "planet-core.js:2237",
+  "leser": [
+   "planet-core.js:2238 → voxel-worker.js:1168 breite/laenge/kuesteKm → stamm/feld-leben.js:1230 Satz „reise\" · :1292 Heim-Erkennung"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus der Suche",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e211",
+  "name": "Anker sommerC / winterC / randKm / randArt / wertung",
+  "groesse": "temperatur_jahresmittel",
+  "domaene": "klima",
+  "wert": "17,66/−3,85 · 16,41/−6,61 · 16,85/−4,17 °C",
+  "einheit": "°C, km",
+  "ort": "planet-core.js:2238",
+  "leser": [
+   "planet-core.js:2238"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus dem Klima am Anker",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser: voxel-worker.js:1168 reicht nur breite/laenge/kuesteKm"
+ },
+ {
+  "id": "e212",
+  "name": "Würfel-Karte um den Anker",
+  "groesse": "koordinate",
+  "domaene": "planet",
+  "wert": "6 Flächen, ξ = R·atan",
+  "einheit": "m",
+  "ort": "planet-core.js:2244",
+  "leser": [
+   "planet-core.js:2343–2346 leit"
+  ],
+  "urteil": "folgt",
+  "woraus": "winkeltreue Würfel-Abbildung",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser"
+ },
+ {
+  "id": "e213",
+  "name": "landAus(kont)",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": "−0,2 + 0,4·max(−1, kont/300) · −0,2 + 0,55 glatt(0, 300) + 0,55 glatt(300, 2000)",
+  "einheit": "1",
+  "ort": "planet-core.js:2200",
+  "leser": [
+   "planet-core.js:2321 wildnis.land → planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "ENTSCHEID §6",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e214",
+  "name": "Stauchung s_v",
+  "groesse": "temperatur_hoehengradient",
+  "domaene": "relief",
+  "wert": 0.0586806,
+  "einheit": "1",
+  "ort": "planet-core.js:2307",
+  "leser": [
+   "planet-core.js:2331 waterLevelM → planet-core.js:2331 → voxel-worker.js:1201 → gelaende-core.js:5910 meerUnterBasisM → stamm/bild-himmel.js:485 waterLevel · gelaende-core.js:5816",
+   "planet-core.js:2348 leit"
+  ],
+  "urteil": "folgt",
+  "woraus": "0,0065/ortGesetz().kuehlungKJeM (0,110769)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Feld o.stauchung :2354 selbst ohne Spiel-Leser"
+ },
+ {
+  "id": "e215",
+  "name": "wildnis.land",
+  "groesse": "landform",
+  "domaene": "relief",
+  "wert": "klemm(landAus(kont)); Δ −0,95 … +0,88",
+  "einheit": "1",
+  "ort": "planet-core.js:2321",
+  "leser": [
+   "planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "ENTSCHEID §6",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:381 LANDFORM_REGLER land def 0,35"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e216",
+  "name": "wildnis.hoehe",
+  "groesse": "relief_amplitude",
+  "domaene": "relief",
+  "wert": "0,6 + 1,0·orogenStaerke; Δ −0,09 … +1,0",
+  "einheit": "1",
+  "ort": "planet-core.js:2322",
+  "leser": [
+   "planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:383 hoehe def 1"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e217",
+  "name": "wildnis.kontinentLambda",
+  "groesse": "relief_wellenlaenge",
+  "domaene": "relief",
+  "wert": "def → Δ ≡ 0",
+  "einheit": "m",
+  "ort": "planet-core.js:2323",
+  "leser": [
+   "planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [
+   "gelaende-core.js:382"
+  ],
+  "anmerkung": "gelesen von ortErbgut, Δ immer 0 (150 Orte × 3 Saaten × 2 Zeiten): ändert nichts"
+ },
+ {
+  "id": "e218",
+  "name": "wildnis.rauhLambda",
+  "groesse": "relief_wellenlaenge",
+  "domaene": "relief",
+  "wert": "def + (lam − def)·glatt(0,05; 0,3; st), lam = min…max·glatt(0, 400, Orogen-Alter); Δ −1680 … +3771",
+  "einheit": "m",
+  "ort": "planet-core.js:2324",
+  "leser": [
+   "planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:384 rauhLambda def 3200"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e219",
+  "name": "wildnis.trog",
+  "groesse": "landform",
+  "domaene": "relief",
+  "wert": "glatt(16, −2, tJ auf Meeres-Niveau); Δ −0,68 … +0,54",
+  "einheit": "1",
+  "ort": "planet-core.js:2325",
+  "leser": [
+   "planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:388 trog def 0,7"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e220",
+  "name": "wildnis.ks",
+  "groesse": "erosion",
+  "domaene": "relief",
+  "wert": "3 + 12·konv, konv = glatt(0, 8, Rate)·e^(−d/600); Δ −1,4 … +12",
+  "einheit": "m^0,9",
+  "ort": "planet-core.js:2326",
+  "leser": [
+   "planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:390 ks def 6"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e221",
+  "name": "wildnis.tafel",
+  "groesse": "landform",
+  "domaene": "relief",
+  "wert": "glatt(400, 1500, Rand-Abstand)·glatt(1500, 3500, Schollen-Alter); Δ −0,77 … +0,85",
+  "einheit": "1",
+  "ort": "planet-core.js:2327",
+  "leser": [
+   "planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:393 tafel def 0,5"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e222",
+  "name": "wildnis.schichtDicke",
+  "groesse": "gestein_art",
+  "domaene": "relief",
+  "wert": "def → Δ ≡ 0",
+  "einheit": "m",
+  "ort": "planet-core.js:2328",
+  "leser": [
+   "planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [
+   "gelaende-core.js:397"
+  ],
+  "anmerkung": "Δ immer 0: ändert nichts"
+ },
+ {
+  "id": "e223",
+  "name": "wildnis.hartAnteil",
+  "groesse": "gestein_art",
+  "domaene": "relief",
+  "wert": "def → Δ ≡ 0",
+  "einheit": "1",
+  "ort": "planet-core.js:2329",
+  "leser": [
+   "planet-core.js:2320 wildnis → voxel-worker.js:1204 → stamm/netz-portal.js:704 ortErbgut → gelaende-core.js:5951 Regler der Reise-Welt (geklemmt auf LANDFORM_REGLER :379)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [
+   "gelaende-core.js:398"
+  ],
+  "anmerkung": "Δ immer 0: ändert nichts"
+ },
+ {
+  "id": "e224",
+  "name": "klima.sommer / winter (Meeres-Niveau)",
+  "groesse": "temperatur_jahresamplitude",
+  "domaene": "klima",
+  "wert": "tS/tW + lapse·h; Δ −21,8 … +24,3 / −33,5 … +40,4",
+  "einheit": "°C",
+  "ort": "planet-core.js:2332",
+  "leser": [
+   "planet-core.js:2332 klima → voxel-worker.js:1195–1196 → gelaende-core.js:5900–5901 klimaHeute → gelaende-core.js:1321 temperaturFeld · :1294 Schneeband · stamm/feld-leben.js:1315 Satz"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus planetKlimaR, auf Meeres-Niveau reduziert",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:1314–1315 TEMPERATUR 18 / −4"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e225",
+  "name": "klima.sommerPhase (Süd + 0,5)",
+  "groesse": "saison_phase",
+  "domaene": "jahr",
+  "wert": "0,375 (+0,5 südlich); Δ 0 / ±0,5",
+  "einheit": "Jahr",
+  "ort": "planet-core.js:2333",
+  "leser": [
+   "planet-core.js:2333 sommerPhase → voxel-worker.js:1198 → gelaende-core.js:5903 → stamm/bild-himmel.js:2899 · gelaende-core.js:1506 Schnee-Weg"
+  ],
+  "urteil": "folgt",
+  "woraus": "Halbkugel",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:1316 TEMPERATUR.sommerPhase 0,375 (kopiert aus dem Ort-Gesetz, nicht gerechnet)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "e226",
+  "name": "klima.tagGipfel / jahrTage (Kopie)",
+  "groesse": "saison_phase",
+  "domaene": "tag",
+  "wert": "0,625 / 365",
+  "einheit": "–",
+  "ort": "planet-core.js:2333",
+  "leser": [
+   "planet-core.js:2333"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Kopie von ortGesetz().klimaHeute",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [
+   "gelaende-core.js:1318–1319 TEMPERATUR tagGipfel 0,625 / jahrTage 365"
+  ],
+  "anmerkung": "kein Spiel-Leser: nicht in ORT_DELTA_KLIMA :2278"
+ },
+ {
+  "id": "e227",
+  "name": "klima.spendeMm → spendeVerh",
+  "groesse": "niederschlag_jahr",
+  "domaene": "wasser",
+  "wert": "Abfluss_Ort/Abfluss_Anker; Δ 0 … 51,5; Anker 0 → ∞",
+  "einheit": "1",
+  "ort": "planet-core.js:2298",
+  "leser": [
+   "planet-core.js:2298 spendeVerh → voxel-worker.js:1199 → gelaende-core.js:5904/5918 → gelaende-core.js:1778 pegelTafel (Abflussspende)"
+  ],
+  "urteil": "folgt",
+  "woraus": "Turc-Pike-Abfluss als Verhältnis",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "gelaende-core.js:1600 PEGEL.spende (328,5 mm/a)"
+  ],
+  "anmerkung": "∞ bricht ortGesetz :5887 (Number.isFinite): erde-29"
+ },
+ {
+  "id": "e228",
+  "name": "wetter.regenQuote",
+  "groesse": "regen_quote",
+  "domaene": "klima",
+  "wert": "P/(P + 900); Δ −0,39 … +0,57",
+  "einheit": "1",
+  "ort": "planet-core.js:2337",
+  "leser": [
+   "planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code „gesetzt\"",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e229",
+  "name": "wetter.sturmQuote",
+  "groesse": "wind_staerke",
+  "domaene": "klima",
+  "wert": "0,03 + 0,25·e^(−v²), v = (|φ| − 1,7w)/(0,4w); Δ −0,25 … +0,04",
+  "einheit": "1",
+  "ort": "planet-core.js:2337",
+  "leser": [
+   "planet-core.js:2337 → voxel-worker.js:1202 → gelaende-core.js:5920 → phyto-core.js:4407 wetterVersatz (Regen-/Sturm-Anteil der Fronten)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code „gesetzt\"",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e230",
+  "name": "Wuchs-Verhältnis (Anker 0 → 1)",
+  "groesse": "wald_deckung",
+  "domaene": "biom",
+  "wert": "o/a, bei a = 0 genau 1",
+  "einheit": "1",
+  "ort": "planet-core.js:2300",
+  "leser": [
+   "planet-core.js:2340 → voxel-worker.js:1203 → gelaende-core.js:5921 ortWuchs → stamm/vegetation-wiese.js:2087/2513 · stamm/vegetation-baum.js:1354 · voxel-worker.js:4332 · gelaende-core.js:6041 seeBilanz"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "8/30 Erd-Anker haben wald = 0: dort trägt jeder Ort den Wald der Heimat (Feld tot)."
+ },
+ {
+  "id": "e231",
+  "name": "leit 9×9 Stützen",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "81 × 8000 m (huelleM, landC)",
+  "einheit": "m",
+  "ort": "planet-core.js:2342",
+  "leser": [
+   "planet-core.js:2350 o.leit"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser (voxel-worker.js:1184–1206 ohne leit)"
+ },
+ {
+  "id": "e232",
+  "name": "o.rand (Art, Abstand, Rate)",
+  "groesse": "platte",
+  "domaene": "relief",
+  "wert": "Art · km · cm/a",
+  "einheit": "–",
+  "ort": "planet-core.js:2353",
+  "leser": [
+   "planet-core.js:2353"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus dem Punkt",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser"
+ },
+ {
+  "id": "e233",
+  "name": "o.biom (Köppen, Hauptklasse, Whittaker)",
+  "groesse": "biom",
+  "domaene": "biom",
+  "wert": "Codes",
+  "einheit": "–",
+  "ort": "planet-core.js:2338",
+  "leser": [
+   "planet-core.js:2338"
+  ],
+  "urteil": "folgt",
+  "woraus": "planetBiom",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "kein Spiel-Leser"
+ },
+ {
+  "id": "e234",
+  "name": "Δ-Listen ORT_DELTA_KLIMA / ORT_DELTA_WETTER / ORT_WUCHS",
+  "groesse": "koordinate",
+  "domaene": "planet",
+  "wert": "4 + 4 + 2 Felder",
+  "einheit": "–",
+  "ort": "planet-core.js:2278",
+  "leser": [
+   "planet-core.js:2297–2300"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Code",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "e235",
+  "name": "hoeheM im Auftrag",
+  "groesse": "relief_hoehe",
+  "domaene": "relief",
+  "wert": "m",
+  "einheit": "m",
+  "ort": "planet-core.js:1650",
+  "leser": [
+   "voxel-worker.js:1191 hoeheM"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus dem Punkt",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "weitergereicht, kein Leser in stamm/ (grep hoeheM)"
+ },
+ {
+  "id": "e236",
+  "name": "land / kuesteKm im Auftrag",
+  "groesse": "kueste",
+  "domaene": "relief",
+  "wert": "hoeheM > 0 · kont",
+  "einheit": "bool, km",
+  "ort": "planet-core.js:1650",
+  "leser": [
+   "voxel-worker.js:1190 – land = hoeheM > 0 → stamm/feld-leben.js:1299 Meer-Satz statt Geburt der Reise-Welt",
+   "voxel-worker.js:1192 – kuesteKm = kont → stamm/feld-leben.js:1302 Satz „Meer, Küste x km\""
+  ],
+  "urteil": "folgt",
+  "woraus": "aus dem Punkt, fuss 16",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ }
+]

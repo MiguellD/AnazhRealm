@@ -1,0 +1,1857 @@
+[
+ {
+  "id": "d1",
+  "name": "Welt-Stimme lebendig (Wellenlänge)",
+  "groesse": "biom",
+  "domaene": "biom",
+  "wert": 200,
+  "einheit": "m",
+  "ort": "stamm/feld-leben.js:2972",
+  "leser": [
+   "stamm/gelaende-boden.js:2567 (Boden Erde↔Stein)",
+   "stamm/vegetation-wiese.js:1325",
+   "stamm/vegetation-wiese.js:2335",
+   "stamm/vegetation-wiese.js:2363",
+   "stamm/vegetation-baum.js:1487",
+   "stamm/kreatur-leben.js:1963"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Simplex-Rauschen des Samens (seed + \"-veg-lebendig\", stamm/feld-leben.js:1800); „Erst-Wurf aus genese-plan §Γ3“ (:2971) — keine Biom-Tafel (:1788-1792)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:2018 FC_LAMBDA_LEBENDIG = 200 (hart)"
+  ],
+  "anmerkung": "Das Feld, das „Wald“ heißt (lebendig → Wald), ist Rauschen; es färbt den Boden Erde statt Stein und damit die Wiesen-Wache."
+ },
+ {
+  "id": "d2",
+  "name": "Welt-Stimmen dichte · glut · magieleitung (Wellenlängen)",
+  "groesse": "biom",
+  "domaene": "biom",
+  "wert": "340 · 520 · 160",
+  "einheit": "m",
+  "ort": "stamm/feld-leben.js:2973-2975",
+  "leser": [
+   "stamm/gelaende-boden.js:2592 (Flechte × dichte)",
+   "stamm/gelaende-boden.js:2596 (Basalt × glut)",
+   "stamm/gelaende-boden.js:2599 (Violett × magie)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Simplex-Rauschen des Samens, je Stimme eigener Strom (stamm/feld-leben.js:1801-1803)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:2019-2021 FC_LAMBDA_* (hart)"
+  ],
+  "anmerkung": "Der „Boden-Typ“ der Welt ist das argmax von vier Rauschen, kein Gestein und kein Klima."
+ },
+ {
+  "id": "d3",
+  "name": "Domain-Warp der Welt-Stimmen",
+  "groesse": "biom",
+  "domaene": "biom",
+  "wert": "40 · 1/600",
+  "einheit": "m · 1/m",
+  "ort": "stamm/feld-leben.js:2979-2980",
+  "leser": [
+   "stamm/feld-leben.js:1823-1826"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Rauschen (seed + \"-veg-warp\") verschiebt die Koordinate vor den Stimmen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:2023-2024 FC_WARP_* (hart)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "d4",
+  "name": "Samen der Welt (Vorgabe)",
+  "groesse": "samen",
+  "domaene": "biom",
+  "wert": "\"anazh-realm-seed\"",
+  "einheit": "Text",
+  "ort": "stamm/feld-leben.js:1794",
+  "leser": [
+   "stamm/feld-leben.js:1800-1806 (Stimmen)",
+   "stamm/vegetation-wiese.js:2433 (Stand :forest/:meadow)",
+   "stamm/vegetation-wiese.js:2530 (Wald-fbm :forest)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "worldMeta.seed, sonst die Vorgabe",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:1405 (Wald-Rausch seed + \":forest\")"
+  ],
+  "anmerkung": "Jede Größe des Bioms außer Höhe und Feuchte ist eine Funktion dieses Samens."
+ },
+ {
+  "id": "d5",
+  "name": "GEN_VERSION (Schleuse der Felder)",
+  "groesse": "gen_version",
+  "domaene": "biom",
+  "wert": 9,
+  "einheit": "—",
+  "ort": "stamm/speicher-laden.js:2706",
+  "leser": [
+   "stamm/feld-leben.js:1815 (≥ 3: Wellen-Fächer)",
+   "stamm/gelaende-boden.js:1539 (≥ 2: Feuchte)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Versions-Schleuse alter Welten",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d6",
+  "name": "Feuchte des Bodens (Feld)",
+  "groesse": "feuchte_boden",
+  "domaene": "biom",
+  "wert": "0…1",
+  "einheit": "—",
+  "ort": "stamm/gelaende-boden.js:1538-1563",
+  "leser": [
+   "phyto-core.js:3055 (forestNische feu)",
+   "stamm/vegetation-wiese.js:164 (Wiese m)",
+   "stamm/gelaende-boden.js:2571-2572 (dampEarth)",
+   "stamm/vegetation-baum.js:1342 (Strauch)"
+  ],
+  "urteil": "folgt",
+  "woraus": "max(Fluss-Nähe ss über Segment-Abstand, Höhe über Wasser-Band) aus der Hydrosphäre (_hydroDistAt, _waterLevelAt) — nie aus Niederschlag",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:2097 feuchteAt (Faden-Spiegel)"
+  ],
+  "anmerkung": "„die fünfte Welt-Stimme (aus der Hydrosphäre abgeleitet, nicht Noise)“ (stamm/gelaende-boden.js:3219)."
+ },
+ {
+  "id": "d7",
+  "name": "FEUCHTE flussReichweite · hoeheNah · hoeheFern · hoeheGewicht",
+  "groesse": "feuchte_boden",
+  "domaene": "biom",
+  "wert": "26 · 1,5 · 7 · 0,85",
+  "einheit": "m · m · m · —",
+  "ort": "stamm/gelaende-boden.js:3221-3224",
+  "leser": [
+   "stamm/gelaende-boden.js:1546-1559"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Eichung am Bild („V6 Look-Finale: 0.6→0.85 — breitere, sattere Niederungen“, :3224)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:2090-2093 FEUCHTE_* (hart, „bei Änderung hier mit-ziehen“)"
+  ],
+  "anmerkung": "Anker eigenes Bild."
+ },
+ {
+  "id": "d8",
+  "name": "FEUCHTE sichtbarLo · sichtbarHi",
+  "groesse": "feuchte_boden",
+  "domaene": "biom",
+  "wert": "0,3 · 0,85",
+  "einheit": "—",
+  "ort": "stamm/gelaende-boden.js:3231-3232",
+  "leser": [
+   "stamm/gelaende-boden.js:2571",
+   "stamm/gelaende-boden.js:1582-1586 (_ortNass → ortKraut/ortBaum)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Sichtbarkeits-Kurve der nassen Erde",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:3322 ss(0.3, 0.85, feuchte) (hart)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "d9",
+  "name": "FEUCHTE affinitaetGewicht · erdeGewicht",
+  "groesse": "feuchte_boden",
+  "domaene": "biom",
+  "wert": "0,8 · 0,35",
+  "einheit": "—",
+  "ort": "stamm/gelaende-boden.js:3225-3226",
+  "leser": [
+   "stamm/vegetation-wiese.js:2355 (Spawn-Affinität)",
+   "stamm/vegetation-wiese.js:2370 (Erde beim Graben)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d10",
+  "name": "Abflussspende der Heimat (Niederschlag-Ersatz)",
+  "groesse": "niederschlag_jahr",
+  "domaene": "biom",
+  "wert": "0,0009 m/Tag → 328,5",
+  "einheit": "mm/a",
+  "ort": "gelaende-core.js:1600 · :5847",
+  "leser": [
+   "gelaende-core.js:1629 (Pegel-Hub)",
+   "planet-core.js:2298 (spendeVerh, Leser e)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "„330 mm im Jahr, gemäßigt-kontinental“ (gelaende-core.js:1566); spendeMm = spende·1000·jahrTage",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Erreicht den Bewuchs der Heimat nicht: ihr Wuchs nimmt verh {decke 1, wald 1} (gelaende-core.js:5857), nie den Niederschlag."
+ },
+ {
+  "id": "d11",
+  "name": "Temperatur Sommer · Winter (Tagesmittel am Meer)",
+  "groesse": "temperatur_jahresmittel",
+  "domaene": "biom",
+  "wert": "18 · −4 (Mittel 7)",
+  "einheit": "°C",
+  "ort": "gelaende-core.js:1314-1315",
+  "leser": [
+   "gelaende-core.js:1321-1338 (temperaturFeld)",
+   "gelaende-core.js:5736 (ortWuchs tJ, frost)",
+   "stamm/bild-himmel.js:2874 (Grillen, Esse, Lava, Zünd-Wärme)",
+   "stamm/bild-himmel.js:2905 (Schnee-Tafel)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "„Das Klima ist gemäßigt-kontinental“ (gelaende-core.js:1302) — ohne Quelle",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "planet-core.js:2333 (Ort-Klima der Reise, Leser e)"
+  ],
+  "anmerkung": "Wirkt auf den Bewuchs der Heimat nur gesättigt (Wuchs 1)."
+ },
+ {
+  "id": "d12",
+  "name": "Höhen-Kühlung",
+  "groesse": "temperatur_jahresmittel",
+  "domaene": "biom",
+  "wert": 0.11077,
+  "einheit": "K/m",
+  "ort": "gelaende-core.js:5850",
+  "leser": [
+   "gelaende-core.js:1334 (kuehlung im temperaturFeld)"
+  ],
+  "urteil": "folgt",
+  "woraus": "sommer / Mitte des Schneebands = 18 / ((140 + 185)/2) = 18/162,5 (gelaende-core.js:5850)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "17× steiler als die Normatmosphäre 0,0065 K/m (planet-core.js:48 nennt s_v = 0,0065 / kuehlungKJeM) — „die Welt staucht die Höhe“ (gelaende-core.js:1304-1305)."
+ },
+ {
+  "id": "d13",
+  "name": "Schneegrenze start · voll (über dem Meer)",
+  "groesse": "schnee_grenze",
+  "domaene": "biom",
+  "wert": "140 · 185",
+  "einheit": "m",
+  "ort": "gelaende-core.js:1283-1284",
+  "leser": [
+   "gelaende-core.js:1290 schnee → stamm/gelaende-boden.js:2600 (Weiß)",
+   "phyto-core.js:3660 (Waldgrenze)",
+   "gelaende-core.js:5850 (Kühlung)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Band K16 (Form der Grenze zur Sommer-Mitte), Eichung am Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Anker eigenes Bild."
+ },
+ {
+  "id": "d14",
+  "name": "Schnee-Zungen (Rauschen der Grenze)",
+  "groesse": "schnee_grenze",
+  "domaene": "biom",
+  "wert": "f 0,003 / 0,022 · a 18 / 7",
+  "einheit": "1/m · m",
+  "ort": "gelaende-core.js:1285-1288",
+  "leser": [
+   "gelaende-core.js:1296"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Rauschen des Gelände-Samens",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d15",
+  "name": "ORT_WUCHS frost (Dauer-Frost)",
+  "groesse": "frost",
+  "domaene": "biom",
+  "wert": "[−3, 3]",
+  "einheit": "°C (Sommer am Meer)",
+  "ort": "gelaende-core.js:5727",
+  "leser": [
+   "gelaende-core.js:5740 (oase, wald)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "„die Schwelle des Dauer-Schnees im Atlas des Planeten“ (:5738-5739)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Heimat Sommer 18 °C → 1."
+ },
+ {
+  "id": "d16",
+  "name": "ORT_WUCHS nadel (Nadelholz meidet die Tropen)",
+  "groesse": "baum_art",
+  "domaene": "biom",
+  "wert": "[24, 16]",
+  "einheit": "°C (Jahresmittel)",
+  "ort": "gelaende-core.js:5728",
+  "leser": [
+   "gelaende-core.js:5748 → phyto-core.js:3081-3082 (wF, wT × nadel)",
+   "stamm/vegetation-streu.js:224"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Heimat tJ 7 °C → 1."
+ },
+ {
+  "id": "d17",
+  "name": "ORT_WUCHS sand (Wärme-Achse des kahlen Grunds)",
+  "groesse": "biom",
+  "domaene": "biom",
+  "wert": "[0, 24] → Heimat 0,2056",
+  "einheit": "°C · —",
+  "ort": "gelaende-core.js:5729",
+  "leser": [
+   "gelaende-core.js:5835-5837 kahlGrund ← stamm/gelaende-boden.js:2589"
+  ],
+  "urteil": "folgt",
+  "woraus": "glatt(0, 24, tJ = 7) = 0,2056 (Messung d-mess #5)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:3331 (bodenFarbe liest state.ort.wuchs)"
+  ],
+  "anmerkung": "In der Heimat ohne Wirkung: kahl = 1 − decke = 0, der Leser ruft kahlGrund nur bei kahl > 0 (stamm/gelaende-boden.js:2588-2589)."
+ },
+ {
+  "id": "d18",
+  "name": "ORT_WUCHS Zeiten decke · wald · laub · gras",
+  "groesse": "biom",
+  "domaene": "biom",
+  "wert": "[−470,−420] · [−390,−360] · [−110,−66] · [−66,−23]",
+  "einheit": "Ma",
+  "ort": "gelaende-core.js:5723-5726",
+  "leser": [
+   "gelaende-core.js:5737-5746"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Landpflanzen Ordovizium/Silur, Wälder Devon, Bedecktsamer späte Kreide, Gräser K-Pg/Miozän (Strömberg 2011, gelaende-core.js:5717-5718)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Heimat zeitMa 0 → 1."
+ },
+ {
+  "id": "d19",
+  "name": "Wuchs der Heimat (decke, oase, wald, gras, laub, nadel, bilanz)",
+  "groesse": "biom",
+  "domaene": "biom",
+  "wert": "1 (alle sieben)",
+  "einheit": "—",
+  "ort": "gelaende-core.js:5857 · Wand :5865-5867",
+  "leser": [
+   "phyto-core.js:3227 forestWaldgrenze (wald)",
+   "phyto-core.js:3081-3085 (nadel, laub)",
+   "stamm/vegetation-wiese.js:2476 · :2513",
+   "stamm/gelaende-boden.js:2586-2588",
+   "stamm/vegetation-baum.js:1354",
+   "stamm/vegetation-streu.js:32 · :224 · :242",
+   "stamm/siedlung-ort.js:1699 · :2550",
+   "stamm/siedlung-wege.js:2525 · :2670",
+   "voxel-worker.js:1469 · :3331 · :4332"
+  ],
+  "urteil": "folgt",
+  "woraus": "ortWuchs(TEMPERATUR, zeitMa 0, verh {1, 1}) — gesättigt: Sommer 18 ≫ frost 3, tJ 7 < nadel 16, Zeit 0 ≫ alle Schwellen; die Wand bricht, wäre einer ≠ 1",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Klima geht ein, aber als EINE Zahl je Welt (am Meer), nie als Feld über die Höhe — innerhalb der Heimat bewegt das Klima den Bewuchs nicht."
+ },
+ {
+  "id": "d20",
+  "name": "Wuchs eines Reise-Orts",
+  "groesse": "biom",
+  "domaene": "biom",
+  "wert": "ortWuchs(klima + Δ, zeitMa, Δ.wuchs)",
+  "einheit": "—",
+  "ort": "gelaende-core.js:5921",
+  "leser": [
+   "dieselben Leser wie „Wuchs der Heimat“ (state.ort.wuchs)"
+  ],
+  "urteil": "folgt",
+  "woraus": "Δ.wuchs.decke/wald = Niederschlag gegen Verdunstung des Planeten (planet-core pflanzenDeckung, Leser e), klimaHeute + Δ (gelaende-core.js:5898-5906)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:1203 (Δ.wuchs im Faden)"
+  ],
+  "anmerkung": "Der einzige Weg, auf dem Klima das Biom setzt — eine Konstante je Reise-Welt."
+ },
+ {
+  "id": "d21",
+  "name": "Boden Erde ↔ Stein",
+  "groesse": "biom",
+  "domaene": "biom",
+  "wert": "ss(0,25, 0,85, lebendig)",
+  "einheit": "—",
+  "ort": "stamm/gelaende-boden.js:2567",
+  "leser": [
+   "stamm/gelaende-boden.js:2641-2652 (Wiesen-Grund liest das Grün)",
+   "stamm/vegetation-wiese.js:162 (_wieseGrund)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Rauschen lebendig (Zeile d1), Schwellen gesetzt",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "voxel-worker.js:3300-3322 bodenFarbe (Faden-Spiegel)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "d22",
+  "name": "Wald-Stand st (Wald ↔ Lichtung), Frequenz",
+  "groesse": "wald_deckung",
+  "domaene": "biom",
+  "wert": "0,006 (λ ≈ 167)",
+  "einheit": "1/m (m)",
+  "ort": "stamm/vegetation-wiese.js:3220",
+  "leser": [
+   "phyto-core.js:3653 · :3655 (forestLichtung)",
+   "stamm/vegetation-wiese.js:2461 · :2501 (clump)",
+   "voxel-worker.js:1515 (Faden-Spiegel)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Simplex seed + \":forest\" (stamm/vegetation-wiese.js:2431-2441)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Messung: 41,7 % des Lands ±2 km ohne jede Geburt (Lichtung 0) — der größte Faktor des Walds ist dieses Rauschen."
+ },
+ {
+  "id": "d23",
+  "name": "Lichtung · Schluss · min des Bestands",
+  "groesse": "wald_deckung",
+  "domaene": "biom",
+  "wert": "[−0,1, 0,15] · [0,15, 0,6] · 0,6",
+  "einheit": "Stand · Stand · —",
+  "ort": "phyto-core.js:3202",
+  "leser": [
+   "phyto-core.js:3204-3215 → :3655 · :3736 (schluss)"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Stammzahl wie die Ertragstafel (BWI 4, phyto-core.js:3190), REF spec/abnahme/real-mischwald.json 370–900 Stämme/ha (phyto-core.js:3175)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d24",
+  "name": "Bestandsdichte sd (zwei fbm-Oktaven, host contrast · mid)",
+  "groesse": "baum_dichte",
+  "domaene": "biom",
+  "wert": "f 0,014 / 0,038 · 0,55/0,45 · 1,35 · 0,72",
+  "einheit": "1/m · — · — · —",
+  "ort": "phyto-core.js:2728-2731 · :2788-2810",
+  "leser": [
+   "phyto-core.js:3652 → forestGeburt :3655",
+   "phyto-core.js:3058 · :2856 (open = 1 − sd → Birke)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Rauschen _forestFbm (stamm/vegetation-wiese.js:2528-2537)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "phyto-core.js:2729 FOREST_STAND.lab 1,9 · 0,5 (Labor)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "d25",
+  "name": "Geburt aus der Dichte",
+  "groesse": "baum_dichte",
+  "domaene": "biom",
+  "wert": "0,3 + 0,7·ss(0,18, 0,8, sd)",
+  "einheit": "—",
+  "ort": "phyto-core.js:2814-2818",
+  "leser": [
+   "phyto-core.js:3655",
+   "phyto-core.js:2912 (forestBestand, Ferne)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Lichtungs-Boden 0,04 → 0,30",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d26",
+  "name": "„Klima“ clim (Arten-Gradient)",
+  "groesse": "baum_art",
+  "domaene": "biom",
+  "wert": "fbm(x·0,012) (λ ≈ 83)",
+  "einheit": "1/m (m)",
+  "ort": "phyto-core.js:3059",
+  "leser": [
+   "phyto-core.js:2837-2839 (sF, sT, aC)",
+   "phyto-core.js:3716 (Mammut-Wurf)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Rauschen des Samens (+ \":forest\"); der Name sagt Klima, es liest keine Temperatur",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Messung: clim und patch bewegen die Arten-Verteilung um TV 0,412 (dominante Art wechselt an 66 % der Orte)."
+ },
+ {
+  "id": "d27",
+  "name": "Bestands-Mosaik patch · Zentren · Breite",
+  "groesse": "baum_art",
+  "domaene": "biom",
+  "wert": "fbm(x·0,05) · 0,15/0,36/0,58/0,82 · 0,14",
+  "einheit": "1/m · — · —",
+  "ort": "phyto-core.js:3060 · :2833-2836",
+  "leser": [
+   "phyto-core.js:2853-2856"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Rauschen (λ 20 m), Reinbestände je Patch-Zentrum",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d28",
+  "name": "Trockenheit dry aus der Höhe",
+  "groesse": "baum_art",
+  "domaene": "biom",
+  "wert": "(relH + 6) / 40",
+  "einheit": "m / m",
+  "ort": "phyto-core.js:3056 · stamm/vegetation-wiese.js:3267",
+  "leser": [
+   "phyto-core.js:2853-2857 (wF, wT, wE, wW)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Höhe über der Basis als Trockenheit, Skala „Vorlage e/18 → AnazhRealm-Höhen-Skala“ (stamm/vegetation-wiese.js:3267)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Messung: Standort (dry, feu) bewegt die Arten um TV 0,116 (Wechsel 10,5 %)."
+ },
+ {
+  "id": "d29",
+  "name": "Nischen-Gewichte wF · wT · wE · wB · wW",
+  "groesse": "baum_art",
+  "domaene": "biom",
+  "wert": "(sF·0,45 + dry·0,5 + 0,04)·(0,18 + 4,8·pF) … (s. Ort)",
+  "einheit": "—",
+  "ort": "phyto-core.js:2853-2858",
+  "leser": [
+   "phyto-core.js:3047-3090 forestNische → :3689-3706 planForestCell",
+   "voxel-worker.js:1295 (Faden)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Vorlage phytogenesis (Labor), EINE Formel für Labor und Wirt",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Mittel ±2 km: Kiefer 0,206 · Tanne 0,377 · Eiche 0,26 · Birke 0,143 · Erle 0,014."
+ },
+ {
+  "id": "d30",
+  "name": "Nass-Nische: Erle feu²·6, andere Arten ≥ 1,2 m über Wasser",
+  "groesse": "baum_art",
+  "domaene": "biom",
+  "wert": "6 · 1,2",
+  "einheit": "— · m",
+  "ort": "phyto-core.js:3085 · :3708",
+  "leser": [
+   "phyto-core.js:3693 · :3708"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d31",
+  "name": "Kein Baum im Wasser",
+  "groesse": "baum_dichte",
+  "domaene": "biom",
+  "wert": 0.4,
+  "einheit": "m über Wasser",
+  "ort": "phyto-core.js:3663",
+  "leser": [
+   "phyto-core.js:3663"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "„Vorlage _de<-0.2“",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d32",
+  "name": "Hang-Grenze des Walds slopeLo · slopeHi",
+  "groesse": "hang",
+  "domaene": "biom",
+  "wert": "0,35 · 1,25",
+  "einheit": "|∇h|",
+  "ort": "stamm/vegetation-wiese.js:3265-3266",
+  "leser": [
+   "phyto-core.js:3666"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "„die AnazhRealm-Boden-Tauglichkeit“",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Messung: Überleben < 0,5 an 1,6 % des Lands."
+ },
+ {
+  "id": "d33",
+  "name": "Waldgrenze (Schnee-Anteil des Sommers)",
+  "groesse": "schnee_grenze",
+  "domaene": "biom",
+  "wert": 0.1,
+  "einheit": "—",
+  "ort": "phyto-core.js:3202 · :3227-3235",
+  "leser": [
+   "phyto-core.js:3660"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Körner 2012, Alpine Treelines: die Baumgrenze liegt unter der Schneegrenze (phyto-core.js:3193-3197)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Die einzige Höhen-Klima-Kopplung des Walds; wirkt (< 0,5) an 0,1 % des Lands ±2 km."
+ },
+ {
+  "id": "d34",
+  "name": "Saum am Siedlungsrand",
+  "groesse": "wald_rand",
+  "domaene": "biom",
+  "wert": 40,
+  "einheit": "m",
+  "ort": "phyto-core.js:3202",
+  "leser": [
+   "phyto-core.js:3243-3249 → :3735",
+   "stamm/vegetation-baum.js:1113 (_saumRaeumen)"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Krautsaum 5–10 m, Strauchgürtel ≥ 5 m, Waldmantel 15–20 m: WWF Schweiz 2012, Naturschutzbund AT 2017, Bio Austria 2023 (phyto-core.js:3198-3201)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d35",
+  "name": "Reichweite eines Orts (Rand des Saums)",
+  "groesse": "wald_rand",
+  "domaene": "biom",
+  "wert": "30 + 22·√nH",
+  "einheit": "m",
+  "ort": "fachwerk-core.js:3678 · :3713-3715",
+  "leser": [
+   "stamm/gelaende-boden.js:880 (_ortRandSetzen) → :886 _ortRaender → phyto-core.js:3252 forestOrtAbstand"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Ort-Gesetz der Siedlung",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d36",
+  "name": "Kronen-Radien je Art (Größe 1)",
+  "groesse": "baum_art",
+  "domaene": "biom",
+  "wert": "Eiche 4,0 · Birke 3,45 · Buche 4,05 · Karst 4,2 · Weide 5,65 · Tanne 2,95 · Fichte 2,75 · Mammut 9,2",
+  "einheit": "m",
+  "ort": "phyto-core.js:3159-3168",
+  "leser": [
+   "stamm/vegetation-wiese.js:3271-3279 (FOREST.crown) → phyto-core.js:3720"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "gemessen an der gewachsenen Gestalt (Atlas-Alpha ≥ 0,5, 8 Azimute, phyto-core.js:3151-3154)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Anker eigenes Bild."
+ },
+ {
+  "id": "d37",
+  "name": "Darts je Zelle · Zelle · Packung",
+  "groesse": "baum_dichte",
+  "domaene": "biom",
+  "wert": "36 · 12 · 1,16",
+  "einheit": "— · m · —",
+  "ort": "stamm/vegetation-wiese.js:3264 · phyto-core.js:3156-3158",
+  "leser": [
+   "phyto-core.js:3643-3645"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Poisson-Sättigung im dichten Kern",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d38",
+  "name": "dartsPerM2 des Labors",
+  "groesse": "baum_dichte",
+  "domaene": "biom",
+  "wert": 1.2,
+  "einheit": "1/m²",
+  "ort": "phyto-core.js:3157",
+  "leser": [],
+  "urteil": "gesetzt",
+  "woraus": "Labor PORTAL_RENDER_CONFIG.density (phyto-core.js:3146)",
+  "technik": true,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "Kein Leser im Spielpfad (grep: nur der Kommentar :3146)."
+ },
+ {
+  "id": "d39",
+  "name": "Auto-Arten: Nische aus dem Namens-Hash",
+  "groesse": "baum_art",
+  "domaene": "biom",
+  "wert": "w0·(0,2 + 3,6·pf(center))",
+  "einheit": "—",
+  "ort": "phyto-core.js:3678-3684",
+  "leser": [
+   "phyto-core.js:3700-3706",
+   "stamm/vegetation-wiese.js:2568-2594 (_forestExtraSpecies)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Hash des Namens, nicht der Standort",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Eine neue Art wächst in Hainen nach ihrem Namen."
+ },
+ {
+  "id": "d40",
+  "name": "Platzierungs-Dichte clump · wet · high",
+  "groesse": "baum_dichte",
+  "domaene": "biom",
+  "wert": "0,25–2,6 · 0,7 + 0,9·wet · 12–45 m",
+  "einheit": "— · — · m",
+  "ort": "stamm/vegetation-wiese.js:3219-3232",
+  "leser": [
+   "stamm/vegetation-baum.js:1609 · :1622 (_placementDensityFactor)",
+   "stamm/vegetation-baum.js:1343 (_canopyLightAt)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "„die Verteilung wird Ökologie“ (:3217) — Feuchte, Hang, Höhe und das Stand-Rauschen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "stamm/vegetation-wiese.js:2461-2472 ↔ :2501-2511 (dieselben drei Faktoren zweimal gerechnet)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "d41",
+  "name": "Wiesen-Deckung grass",
+  "groesse": "wiese",
+  "domaene": "biom",
+  "wert": "clamp(1,12·clamp(1,08·L − 0,85·rk + 0,22·m))",
+  "einheit": "—",
+  "ort": "foundry-core.js:3146-3148",
+  "leser": [
+   "stamm/vegetation-wiese.js:172 (Wurf der Nah-Wiese)"
+  ],
+  "urteil": "folgt",
+  "woraus": "Licht der stehenden Kronen L (_bodenLichtFeld) × Feuchte m (Hydrosphäre) × Hang rk; Beiwerte gesetzt (Labor FIX v27)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Folgt dem Ort — aber nur × Wiesen-Grund (Grün des Bodens), und das Grün erbt das Rauschen lebendig."
+ },
+ {
+  "id": "d42",
+  "name": "Strauch-Glocke des Kerns",
+  "groesse": "kraut_deckung",
+  "domaene": "biom",
+  "wert": "exp(−(L − 0,4)²/(2·0,16²))·(1 − rk)·0,42",
+  "einheit": "—",
+  "ort": "foundry-core.js:3150",
+  "leser": [],
+  "urteil": "gesetzt",
+  "woraus": "Halbschatten-Glocke (Labor)",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [
+   "stamm/vegetation-baum.js:1346 · :1354 (der Wirt tippt Glocke und 0,42 neu)"
+  ],
+  "anmerkung": "Kein Spielpfad-Leser des Kern-Felds shrub (grep .shrub: nur Kommentar stamm/vegetation-baum.js:1310) — der Zwilling fährt."
+ },
+ {
+  "id": "d43",
+  "name": "Gras-Hang lo · hi",
+  "groesse": "hang",
+  "domaene": "biom",
+  "wert": "0,7 · 1,3",
+  "einheit": "|∇h| (≈ 35° · 52°)",
+  "ort": "stamm/vegetation-wiese.js:3284",
+  "leser": [
+   "stamm/vegetation-wiese.js:171",
+   "stamm/vegetation-baum.js:1352"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d44",
+  "name": "Wiesen-Grund: die Grün-Wache des Bodens",
+  "groesse": "wiese",
+  "domaene": "biom",
+  "wert": "ss(0, gruenSchwelle, g − (r+b)/2)",
+  "einheit": "—",
+  "ort": "stamm/gelaende-boden.js:2641-2652 · stamm/daten.js:571-590",
+  "leser": [
+   "stamm/vegetation-wiese.js:162 (_wieseGrund)",
+   "voxel-worker.js:679 · :3968 (Boden-Karte)"
+  ],
+  "urteil": "folgt",
+  "woraus": "aus der Bodenfarbe (Erde aus Rauschen lebendig, Feuchte, Schnee, Pfad)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d45",
+  "name": "Wiesenarten nach Zeigerwerten L · F",
+  "groesse": "wiese",
+  "domaene": "biom",
+  "wert": "Glatthafer L8 F5 · Knaulgras L7 F5 · Honiggras L7 F6 · Rotschwingel L8 F4 · Rispengras L6 F7",
+  "einheit": "Ellenberg-Stufen",
+  "ort": "foundry-core.js:3069-3078",
+  "leser": [
+   "foundry-core.js:3085 wiesenTint ← stamm/vegetation-wiese.js:181",
+   "stamm/daten.js:575-579 (WIESEN_GRUND.tint)"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Ellenberg et al. 2001; der Ort liest L = 1 + 8·Licht, F = 5 + 4·Feuchte (gesetzt, foundry-core.js:3064)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d46",
+  "name": "Wiesen-Fleck",
+  "groesse": "wiese",
+  "domaene": "biom",
+  "wert": "1/0,13 = 7,7",
+  "einheit": "m",
+  "ort": "stamm/daten.js:587 · stamm/gelaende-boden.js:2644",
+  "leser": [
+   "stamm/gelaende-boden.js:2652"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Rauschen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d47",
+  "name": "Unterwuchs-Frequenz meadowFreq",
+  "groesse": "kraut_deckung",
+  "domaene": "biom",
+  "wert": "0,025 (λ 40)",
+  "einheit": "1/m (m)",
+  "ort": "stamm/vegetation-wiese.js:3221",
+  "leser": [
+   "stamm/vegetation-baum.js:1622"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Simplex seed + \":meadow\"",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d48",
+  "name": "Dach-Dämpfung des Bodenlichts canopyK",
+  "groesse": "kraut_deckung",
+  "domaene": "biom",
+  "wert": 0.85,
+  "einheit": "—",
+  "ort": "stamm/vegetation-wiese.js:3240",
+  "leser": [
+   "stamm/vegetation-wiese.js:2515 (_canopyLightAt)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Labor phytogenesis canopyLight: L = exp(−canopyK·Deckung)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d49",
+  "name": "Uhr beim Start (timeOfDay)",
+  "groesse": "uhr_start",
+  "domaene": "tag",
+  "wert": 0.5,
+  "einheit": "Tag (Mittag)",
+  "ort": "stamm/dirigent-kern.js:300",
+  "leser": [
+   "stamm/bild-himmel.js:2648 (tickDayNight)",
+   "stamm/bild-himmel.js:1141"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "„eine frische Welt beginnt am Mittag“ (stamm/daten.js:152)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Anker eigenes Bild (Leben-Schau 2)."
+ },
+ {
+  "id": "d50",
+  "name": "Tag-Länge Standard",
+  "groesse": "tageslaenge",
+  "domaene": "tag",
+  "wert": 60,
+  "einheit": "min Echtzeit",
+  "ort": "stamm/daten.js:159-161",
+  "leser": [
+   "stamm/bild-himmel.js:2639-2640",
+   "stamm/siedlung-bewohner.js:2423"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "4 × Szene 15 min; Szenen der Leben-Schau 2 dauerten 9–12,3 min (stamm/daten.js:152-158)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Anker eigenes Bild."
+ },
+ {
+  "id": "d51",
+  "name": "Tag-Länge Regler · Boden",
+  "groesse": "uhr_tempo",
+  "domaene": "tag",
+  "wert": "1–60 · 60 s",
+  "einheit": "min · s",
+  "ort": "stamm/daten.js:146-151 · stamm/bild-himmel.js:2640",
+  "leser": [
+   "stamm/bild-himmel.js:2774-2786 setDayLength",
+   "stamm/werkstatt-hud.js:1988-2007"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Wahl des Spielers (localStorage), nie im Stand (stamm/speicher-laden.js:555-556)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Zwei Seiten einer Welt können verschieden lange Tage sehen."
+ },
+ {
+  "id": "d52",
+  "name": "Tag der Prozesse (PEGEL_TAG_S)",
+  "groesse": "prozess_tag",
+  "domaene": "tag",
+  "wert": 3600,
+  "einheit": "s Welt-Uhr",
+  "ort": "stamm/daten.js:165-167",
+  "leser": [
+   "stamm/feld-leben.js:2604-2607 (_weltTag)",
+   "stamm/feld-leben.js:2619 (_weltStunde: Lava, Taten, Nachwuchs, Sukzession)",
+   "stamm/wasser-hydro.js:93 · :140 · :211 · :239 (pegelLauf/pegelZustand: Pegel, Regen, Dürre)",
+   "stamm/bild-himmel.js:3076 (nassTage)"
+  ],
+  "urteil": "folgt",
+  "woraus": "DAY_LENGTH_DEFAULT · 60",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "stamm/bild-himmel.js:2640 (Tag der Uhr, Spielerwahl)"
+  ],
+  "anmerkung": "Zweiter Tag neben dem der Uhr."
+ },
+ {
+  "id": "d53",
+  "name": "Tag der Welt (Mitternachts-Zähler)",
+  "groesse": "welt_tag",
+  "domaene": "tag",
+  "wert": "worldMeta.tag + ganze Tage",
+  "einheit": "Tage",
+  "ort": "stamm/bild-himmel.js:2738-2742",
+  "leser": [
+   "stamm/feld-leben.js:2614 (_weltTagEichen, alte Stände)"
+  ],
+  "urteil": "folgt",
+  "woraus": "zählt jede Mitternacht der Uhr",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d54",
+  "name": "Etikett der Uhr Nacht · Morgen · Tag · Abend",
+  "groesse": "tag_achse",
+  "domaene": "tag",
+  "wert": "0,22 · 0,35 · 0,65 · 0,85",
+  "einheit": "Tag",
+  "ort": "stamm/bild-himmel.js:2762-2768",
+  "leser": [],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [
+   "welt-licht.js:728 tagAchse"
+  ],
+  "anmerkung": "Einzige Leser stamm/bild-himmel.js:2666 · :2671 schreiben nur die Anzeige (HUD); „Nacht“ bis 05:17 (Sonne −10,8°), ab 20:24 (−33,3°)."
+ },
+ {
+  "id": "d55",
+  "name": "Tagesplan der Bewohner wach · werk · ruhe",
+  "groesse": "tag_achse",
+  "domaene": "tag",
+  "wert": "6,5 · 8–17 · 22",
+  "einheit": "h der Uhr",
+  "ort": "koerper-core.js:5126-5130",
+  "leser": [
+   "stamm/siedlung-bewohner.js:2157 · :2223 (tagesPlan)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Stunde = timeOfDay·24 (Uhr, nicht Sonne)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "welt-licht.js:728 tagAchse"
+  ],
+  "anmerkung": "Wach bei Sonne +7,5°; hält nur, weil der Aufgang fest 06:00 ist."
+ },
+ {
+  "id": "d56",
+  "name": "Sternfeld-Drehung",
+  "groesse": "tag_achse",
+  "domaene": "tag",
+  "wert": "Euler (0,4, tod·2π, 0,15)",
+  "einheit": "rad",
+  "ort": "stamm/dirigent-takt.js:2422",
+  "leser": [
+   "stamm/dirigent-takt.js:2422"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Uhr × 2π um eine fest geneigte Achse",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "welt-licht.js:711-717 (die Sonne dreht um eine andere Achse)"
+  ],
+  "anmerkung": "Der Himmelspol ist nicht der der Sonnenbahn."
+ },
+ {
+  "id": "d57",
+  "name": "Temperatur-Tagesgang tagAmp · tagGipfel",
+  "groesse": "temperatur_tag",
+  "domaene": "tag",
+  "wert": "5 · 0,625",
+  "einheit": "K · Tag (15:00)",
+  "ort": "gelaende-core.js:1317-1318",
+  "leser": [
+   "gelaende-core.js:1336 · :1346",
+   "stamm/bild-himmel.js:2874-2880"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "gemäßigt-kontinental (gelaende-core.js:1302); liest die Uhr, nicht die Sonnenhöhe",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "welt-licht.js:728 tagAchse",
+   "planet-core.js:2333 (tagGipfel der Reise)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "d58",
+  "name": "Wolke dämpft den Tagesgang · Regen kühlt",
+  "groesse": "temperatur_tag",
+  "domaene": "tag",
+  "wert": "0,5 · 3",
+  "einheit": "— · K",
+  "ort": "gelaende-core.js:1343",
+  "leser": [
+   "gelaende-core.js:1350-1351"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "bedeckt schrumpft die Tagesspanne um 25–50 % (Dai 1999, gelaende-core.js:1340)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d59",
+  "name": "Winkel der Sonne zur Uhr",
+  "groesse": "sonnenstand",
+  "domaene": "tag",
+  "wert": "w = t·2π − π/2",
+  "einheit": "rad",
+  "ort": "welt-licht.js:699-701",
+  "leser": [
+   "stamm/bild-himmel.js:1328 (_sonnenWinkel → Licht, Schatten, Himmelskörper)",
+   "welt-licht.js:1117-1120 (Bühne der Studios)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Kurve der Uhr — ohne Breite, Deklination, Jahr",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d60",
+  "name": "Neigung der Bahn",
+  "groesse": "sonnenstand",
+  "domaene": "tag",
+  "wert": "z = 0,4·sin(w/2)",
+  "einheit": "—",
+  "ort": "welt-licht.js:714",
+  "leser": [
+   "welt-licht.js:711-717"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "planet-core.js:263 neigungRad 0,4091 (Erde, Leser e — die Bahn liest sie nicht)"
+  ],
+  "anmerkung": "4π-periodisch in w, die Uhr 2π: Sprung 31,6° um Mitternacht; Untergang 21,8° neben dem Gegenpunkt des Aufgangs."
+ },
+ {
+  "id": "d61",
+  "name": "Mittagshöhe der Sonne",
+  "groesse": "sonnenstand",
+  "domaene": "tag",
+  "wert": 74.21,
+  "einheit": "°",
+  "ort": "welt-licht.js:711-717 (gerechnet, d-mess #1)",
+  "leser": [
+   "dieselben Leser wie „Winkel der Sonne zur Uhr“"
+  ],
+  "urteil": "folgt",
+  "woraus": "asin(1/√1,08) aus der gesetzten Bahn; Gipfel 74,35° um 11:52",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Jeden Tag des Jahres gleich; äquivalente Breite 15,8° zur Tag-und-Nacht-Gleiche."
+ },
+ {
+  "id": "d62",
+  "name": "Aufgang · Untergang · Lichtdauer",
+  "groesse": "tageslaenge",
+  "domaene": "tag",
+  "wert": "06:00 · 18:00 · 12",
+  "einheit": "Uhr · Uhr · h",
+  "ort": "welt-licht.js:713 (y = sin w)",
+  "leser": [
+   "stamm/dirigent-kern.js:1885-1886 (Leuchtquellen morgen/abend: t < 0,5)"
+  ],
+  "urteil": "folgt",
+  "woraus": "y > 0 genau für t ∈ (0,25, 0,75)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Keine veränderliche Tageslänge; Meeus bei 47°: 8,3–15,7 h."
+ },
+ {
+  "id": "d63",
+  "name": "Breite der Heimat",
+  "groesse": "breite_ort",
+  "domaene": "tag",
+  "wert": "fehlt (implizit 15,8)",
+  "einheit": "°",
+  "ort": "welt-licht.js:697-717 · gelaende-core.js:5882 (nur der Reise-Teil)",
+  "leser": [],
+  "urteil": "gesetzt",
+  "woraus": "die Kurve trägt keine Breite; 90° − 74,2° gerechnet",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "planet-core.js:1664 planetRichtung(breite, laenge) (Ort des Planeten, Leser e)"
+  ],
+  "anmerkung": "Die Sonne liest teil.breite nie."
+ },
+ {
+  "id": "d64",
+  "name": "Deklination · Tag des Jahres in der Sonne",
+  "groesse": "sonnen_deklination",
+  "domaene": "tag",
+  "wert": "fehlt (immer 0)",
+  "einheit": "°",
+  "ort": "welt-licht.js:702-710 (OFFEN)",
+  "leser": [],
+  "urteil": "gesetzt",
+  "woraus": "Die Meeus-Bahn (Jahr × Breite) stand gebaut, Mittag 74,2° → 74,6°, und fiel an gate:tag-achse:echt",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Die Saison erreicht die Sonne nicht."
+ },
+ {
+  "id": "d65",
+  "name": "Achsneigung in der Sonne",
+  "groesse": "achsneigung",
+  "domaene": "tag",
+  "wert": "fehlt",
+  "einheit": "rad",
+  "ort": "welt-licht.js:711-717",
+  "leser": [],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "planet-core.js:263 neigungRad 0,4091 (23,44°)",
+   "welt-licht.js:714 (0,4 als Bahn-Neigung, ohne Bezug)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "d66",
+  "name": "Länge · Ortszeit",
+  "groesse": "laenge_ort",
+  "domaene": "tag",
+  "wert": "fehlt (Mittag = 12:00 der Uhr)",
+  "einheit": "°",
+  "ort": "welt-licht.js:699-701",
+  "leser": [],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Gipfel der Bahn 8 min vor 12:00 aus der Neigung, nicht aus einer Länge."
+ },
+ {
+  "id": "d67",
+  "name": "Stufe der Sonne (Schattierung)",
+  "groesse": "sonnenstand",
+  "domaene": "tag",
+  "wert": "1/255",
+  "einheit": "rad",
+  "ort": "stamm/bild-himmel.js:3404",
+  "leser": [
+   "stamm/bild-himmel.js:1353-1373 → :1331-1333"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "8-bit-Stufe von N·L; Schirm-Pixel und Kaskaden-Texel kappen",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d68",
+  "name": "DIE EINE Tag-Achse: Anker der Grenzgröße",
+  "groesse": "tag_achse",
+  "domaene": "tag",
+  "wert": "[10,−5] [2,−4,5] [0,−3] [−6,1,5] [−12,4] [−18,6]",
+  "einheit": "° · mag",
+  "ort": "welt-licht.js:92-101 · :728-761",
+  "leser": [
+   "stamm/bild-himmel.js:1130 (_tagAchse) ← :1153 · :1396 · :1515 · :1901 · :2605 (Licht, Godrays, Nachthimmel, Mond)",
+   "stamm/dirigent-kern.js:1885",
+   "stamm/klang.js:2066"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "Grenzgröße an bürgerlicher/nautischer/astronomischer Dämmerung (welt-licht.js:89-91)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d69",
+  "name": "Kanal nacht der Tag-Achse",
+  "groesse": "tag_achse",
+  "domaene": "tag",
+  "wert": "0° → −6°",
+  "einheit": "°",
+  "ort": "welt-licht.js:749 · :758",
+  "leser": [
+   "stamm/bild-himmel.js:1396 (Godrays)",
+   "stamm/dirigent-kern.js:1885 (Leuchtquellen)",
+   "stamm/klang.js:2066"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "bürgerliche Dämmerung 0° … −6°",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d70",
+  "name": "Kanal tag (Nacht-Auge) nachtGrad",
+  "groesse": "tag_achse",
+  "domaene": "tag",
+  "wert": -32,
+  "einheit": "°",
+  "ort": "welt-licht.js:87",
+  "leser": [
+   "welt-licht.js:756"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Belichtung, Eichung am Bild",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Anker eigenes Bild."
+ },
+ {
+  "id": "d71",
+  "name": "Kanal hell (Leuchtdichte des Tageshimmels)",
+  "groesse": "tag_achse",
+  "domaene": "tag",
+  "wert": "0,045 + 0,955·ss((s + 0,18)/0,6)",
+  "einheit": "—",
+  "ort": "welt-licht.js:743 · :759",
+  "leser": [
+   "stamm/bild-himmel.js:2605 (Mondblässe)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d72",
+  "name": "Tiere: Lichtphase nacht · dämmerung",
+  "groesse": "tag_achse",
+  "domaene": "tag",
+  "wert": "sin −0,15 · 0,25 (−8,63° · 14,48°)",
+  "einheit": "sin der Höhe",
+  "ort": "tetrapoda-core.js:131 · :2118 · :2133-2135",
+  "leser": [
+   "stamm/kreatur-leben.js:2065"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "welt-licht.js:728 tagAchse (nacht 0° … −6°)"
+  ],
+  "anmerkung": "Zwilling: eigene Schwellen auf derselben Sonnenhöhe (05:25 · 06:58)."
+ },
+ {
+  "id": "d73",
+  "name": "Vögel: Morgenchor-Stützen",
+  "groesse": "tag_achse",
+  "domaene": "tag",
+  "wert": "[−0,15,0] [0,0,7] [0,12,1] [0,4,0,6] [1,0,55]",
+  "einheit": "sin → Anteil",
+  "ort": "tetrapoda-core.js:2381",
+  "leser": [
+   "stamm/kreatur-fauna.js:42 (vogelLied)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "„das Maximum kurz nach Sonnenaufgang, mittags gut die Hälfte“ (tetrapoda-core.js:2366)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "welt-licht.js:728 tagAchse"
+  ],
+  "anmerkung": "Zwilling."
+ },
+ {
+  "id": "d74",
+  "name": "Vogel-Schwarm sonneMin",
+  "groesse": "tag_achse",
+  "domaene": "tag",
+  "wert": 0.05,
+  "einheit": "sin (2,87°)",
+  "ort": "tetrapoda-core.js:2458",
+  "leser": [
+   "stamm/kreatur-fauna.js:69 → tetrapoda-core.js:2528"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "welt-licht.js:728 tagAchse"
+  ],
+  "anmerkung": "Zwilling."
+ },
+ {
+  "id": "d75",
+  "name": "Bestäuber: Sonnen-Stützen",
+  "groesse": "tag_achse",
+  "domaene": "tag",
+  "wert": "[−0,1,0] [0,05,0,25] [0,3,1] [1,1]",
+  "einheit": "sin → Aktivität",
+  "ort": "tetrapoda-core.js:2916",
+  "leser": [
+   "stamm/kreatur-fauna.js:624 (bestaeuberAktiv)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "welt-licht.js:728 tagAchse"
+  ],
+  "anmerkung": "Zwilling."
+ },
+ {
+  "id": "d76",
+  "name": "Grille: nachtAb · nachtVoll",
+  "groesse": "tag_achse",
+  "domaene": "tag",
+  "wert": "0,05 · −0,15 (2,87° · −8,63°)",
+  "einheit": "sin der Höhe",
+  "ort": "klang-core.js:492 · :932",
+  "leser": [
+   "stamm/klang.js:488 (Sonnenhöhe → klang-core)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "welt-licht.js:728 tagAchse",
+   "stamm/klang.js:2066 (dieselbe Datei liest nacht der EINEN Achse)"
+  ],
+  "anmerkung": "Zwilling."
+ },
+ {
+  "id": "d77",
+  "name": "Länge des Jahrs",
+  "groesse": "jahr_laenge",
+  "domaene": "jahr",
+  "wert": 2400,
+  "einheit": "s Welt-Uhr",
+  "ort": "stamm/dirigent-kern.js:311",
+  "leser": [
+   "stamm/bild-himmel.js:933 (_saisonAnkerGilt) → :955-960 _saisonPhaseZu",
+   "stamm/bild-himmel.js:970 (setSeason)",
+   "stamm/speicher-laden.js:543"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "„ein Jahr ueber 40 min Echtzeit (10 min/Saison)“",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "stamm/bild-himmel.js:933 · :970 · stamm/speicher-laden.js:543 (Rückfall 2400 als Literal ×3)"
+  ],
+  "anmerkung": "Messung: 0,667 Tage der Uhr (Standard) … 40 Tage (1-min-Tag); 0,667 Prozess-Tage."
+ },
+ {
+  "id": "d78",
+  "name": "Tage im Jahr der Temperatur (jahrTage)",
+  "groesse": "jahr_laenge",
+  "domaene": "jahr",
+  "wert": 365,
+  "einheit": "Tage",
+  "ort": "gelaende-core.js:1319",
+  "leser": [
+   "gelaende-core.js:1336 (Trägheit der Jahres-Welle)",
+   "stamm/bild-himmel.js:2897 (Schnee-Tafel je Tag)",
+   "stamm/bild-himmel.js:2926 · :3006 (Welt-Stunde der Saison, Eis)",
+   "gelaende-core.js:5847 (spendeMm)"
+  ],
+  "urteil": "gesetzt_anker",
+  "woraus": "das Erdjahr",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "planet-core.js:264 PLANET_ERDE.jahrTage 365 (Wand R5 planet-core.js:2183)"
+  ],
+  "anmerkung": "Ein Tag dieses Jahrs = 2400/365 = 6,58 s; der Tag der Uhr ist 547,5× länger."
+ },
+ {
+  "id": "d79",
+  "name": "Phase beim Start (Sommer-Mitte)",
+  "groesse": "saison_phase",
+  "domaene": "jahr",
+  "wert": 0.375,
+  "einheit": "Jahr",
+  "ort": "stamm/dirigent-kern.js:305",
+  "leser": [
+   "stamm/bild-himmel.js:898-924 (_tickSeason)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "stamm/bild-himmel.js:900 · :966",
+   "stamm/gelaende-fern.js:1187 · :1193",
+   "stamm/stoff-karte.js:2066",
+   "gelaende-core.js:1316 (0,375 als Literal ×7)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "d80",
+  "name": "Jahr läuft (autoSeason)",
+  "groesse": "saison_tempo",
+  "domaene": "jahr",
+  "wert": "true",
+  "einheit": "—",
+  "ort": "stamm/dirigent-kern.js:306",
+  "leser": [
+   "stamm/bild-himmel.js:906-909"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d81",
+  "name": "Anker des Jahrs (Phase + Welt-Uhr)",
+  "groesse": "saison_phase",
+  "domaene": "jahr",
+  "wert": "Phase = Anker + (t − t₀)/2400",
+  "einheit": "Jahr",
+  "ort": "stamm/bild-himmel.js:931-960",
+  "leser": [
+   "stamm/bild-himmel.js:908 (Phase je Takt)",
+   "stamm/speicher-laden.js:533-545 (Stand)"
+  ],
+  "urteil": "folgt",
+  "woraus": "Funktion der Welt-Uhr spielZeit",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d82",
+  "name": "Lage zwischen den Stützen (Mitten-Versatz)",
+  "groesse": "saison_phase",
+  "domaene": "jahr",
+  "wert": "Studio-t = Phase − 0,125",
+  "einheit": "Jahr",
+  "ort": "stamm/bild-himmel.js:3307-3312",
+  "leser": [
+   "stamm/bild-himmel.js:859 · :882"
+  ],
+  "urteil": "folgt",
+  "woraus": "die Welt zählt Saison-Mitten, das Studio Stützen",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d83",
+  "name": "Saison-Mitten des Worts (setSeason)",
+  "groesse": "saison_phase",
+  "domaene": "jahr",
+  "wert": "0,125 · 0,375 · 0,625 · 0,875",
+  "einheit": "Jahr",
+  "ort": "stamm/bild-himmel.js:966",
+  "leser": [
+   "stamm/bild-himmel.js:963-974"
+  ],
+  "urteil": "folgt",
+  "woraus": "k/4 + 1/8",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d84",
+  "name": "Laub-Präsenz pr (Frühling · Sommer · Herbst · Winter)",
+  "groesse": "laub_praesenz",
+  "domaene": "jahr",
+  "wert": "0,72 · 1 · 0,55 · 0,06",
+  "einheit": "—",
+  "ort": "foundry-core.js:255-258",
+  "leser": [
+   "stamm/bild-himmel.js:885 (uLaubPraesenz.x)",
+   "stamm/stoff-karte.js:1973 (Karte)",
+   "stamm/gelaende-fern.js:2032 · :1053",
+   "voxel-worker.js:4785"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Tafel des Studios über der Phase — liest weder Temperatur noch Tageslänge",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d85",
+  "name": "Blüte bl",
+  "groesse": "bluete_praesenz",
+  "domaene": "jahr",
+  "wert": "0,85 · 0,12 · 0 · 0",
+  "einheit": "—",
+  "ort": "foundry-core.js:255-258",
+  "leser": [
+   "stamm/bild-himmel.js:886 (uLaubPraesenz.y)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Tafel über der Phase",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d86",
+  "name": "Halm-Länge ha",
+  "groesse": "halm_jahr",
+  "domaene": "jahr",
+  "wert": "0,7 · 1 · 0,8 · 0,35",
+  "einheit": "× Sommer",
+  "ort": "foundry-core.js:255-258",
+  "leser": [
+   "stamm/bild-himmel.js:887 (uLaubPraesenz.z)",
+   "phyto-core.js:6748 halmImJahr"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Eichung LAI (Radeon 8ef49bef, foundry-core.js:270-273)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Anker eigenes Bild."
+ },
+ {
+  "id": "d87",
+  "name": "Tönung ti · bau · mulMin · mulMax",
+  "groesse": "saison_toenung",
+  "domaene": "jahr",
+  "wert": "4 Farben · 0x4f7a30 · 0,25 · 4,0",
+  "einheit": "sRGB · —",
+  "ort": "foundry-core.js:255-261",
+  "leser": [
+   "stamm/bild-himmel.js:859-872 (uSeasonMul)",
+   "stamm/daten.js:605-611 (GRAS_SPITZE aus ac des Sommers)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d88",
+  "name": "kartenGewicht · karteSchwelle",
+  "groesse": "saison_toenung",
+  "domaene": "jahr",
+  "wert": "0,8 · 0,5",
+  "einheit": "—",
+  "ort": "foundry-core.js:262 · :279",
+  "leser": [],
+  "urteil": "gesetzt",
+  "woraus": "Impostor des Labors (worlds/terrain)",
+  "technik": false,
+  "ohne_leser": true,
+  "zwilling": [],
+  "anmerkung": "„liest die Welt seit w21 nicht mehr“ (stamm/bild-himmel.js:3284-3285)."
+ },
+ {
+  "id": "d89",
+  "name": "Stufen der Karte im Jahr",
+  "groesse": "saison_phase",
+  "domaene": "jahr",
+  "wert": "32 (je 75 s)",
+  "einheit": "Stufen",
+  "ort": "stamm/stoff-karte.js:2066",
+  "leser": [
+   "stamm/stoff-karte.js:1973-1985"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Bake-Raster",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [
+   "sommer 0,375 (Literal, s. Phase beim Start)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "d90",
+  "name": "Saison-Drift der Ferne",
+  "groesse": "saison_phase",
+  "domaene": "jahr",
+  "wert": 0.05,
+  "einheit": "je Kanal",
+  "ort": "stamm/gelaende-chunks.js:3442",
+  "leser": [
+   "stamm/bild-sicht.js:2368"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Neu-Mal-Schwelle",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ },
+ {
+  "id": "d91",
+  "name": "Gipfel der Jahres-Welle (sommerPhase)",
+  "groesse": "saison_phase",
+  "domaene": "jahr",
+  "wert": 0.375,
+  "einheit": "Jahr",
+  "ort": "gelaende-core.js:1316",
+  "leser": [
+   "gelaende-core.js:1335",
+   "stamm/bild-himmel.js:2899 (Rückfall)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "gleich der Sommer-Mitte der Phänologie",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [
+   "planet-core.js:2333 (Süd-Halbkugel +0,5, Leser e)"
+  ],
+  "anmerkung": ""
+ },
+ {
+  "id": "d92",
+  "name": "Raster der Schnee-Tafel und des Schnee-Versatzes",
+  "groesse": "jahr_laenge",
+  "domaene": "jahr",
+  "wert": "je Tag 6,58 · je Stunde 0,274",
+  "einheit": "s",
+  "ort": "stamm/bild-himmel.js:2897-2899 · :2926-2927",
+  "leser": [
+   "stamm/bild-himmel.js:2891 (_schneeTrittAt)",
+   "stamm/gelaende-boden.js:2600 (_schneeGilt)"
+  ],
+  "urteil": "folgt",
+  "woraus": "2400 s / 365 bzw. / (365·24)",
+  "technik": true,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Die „Welt-STUNDE der Saison“ (stamm/bild-himmel.js:2919) ist 0,274 s, die Stunde der Uhr 150 s."
+ },
+ {
+  "id": "d93",
+  "name": "Holz der kahlen Krone (KRONE_JAHR)",
+  "groesse": "laub_praesenz",
+  "domaene": "jahr",
+  "wert": 0.05,
+  "einheit": "—",
+  "ort": "phyto-core.js:6728",
+  "leser": [
+   "phyto-core.js:6729-6735 ← stamm/gelaende-fern.js:1053 · :2032",
+   "stamm/stoff-karte.js:718",
+   "voxel-worker.js:4785"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "gemessen an der Gestalt: Eiche 0,061 · Birke 0,048 · Weide 0,047 (phyto-core.js:6720-6722)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Anker eigenes Bild."
+ },
+ {
+  "id": "d94",
+  "name": "Richtung des Monds (immer Vollmond)",
+  "groesse": "mond_phase",
+  "domaene": "tag",
+  "wert": "−Sonne",
+  "einheit": "—",
+  "ort": "welt-licht.js:720-722",
+  "leser": [
+   "stamm/bild-himmel.js:1150 (Licht der Nacht)",
+   "stamm/bild-himmel.js:2599-2602 (Körper)",
+   "welt-licht.js:1119 (Bühne)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Vollmond als Gesetz",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Keine Mondphase im Spielpfad; der Mond springt mit der Sonne um Mitternacht 31,6° — in 74,2° Höhe (gerechnet)."
+ },
+ {
+  "id": "d95",
+  "name": "Stärke des Mondlichts",
+  "groesse": "mond_licht",
+  "domaene": "tag",
+  "wert": 0.65,
+  "einheit": "—",
+  "ort": "welt-licht.js:74",
+  "leser": [
+   "welt-licht.js:108-113 (MOONLIGHT)",
+   "welt-licht.js:77 (MOND_E → Belichtung)"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Luma ≥ 22 am Boden (Radeon, welt-licht.js:106-107)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": "Anker eigenes Bild."
+ },
+ {
+  "id": "d96",
+  "name": "Mondblässe gegen den Himmel",
+  "groesse": "mond_licht",
+  "domaene": "tag",
+  "wert": 0.5,
+  "einheit": "—",
+  "ort": "stamm/bild-himmel.js:3338",
+  "leser": [
+   "stamm/bild-himmel.js:2606"
+  ],
+  "urteil": "gesetzt",
+  "woraus": "Deckung 0,98/(1 + hell/0,5)",
+  "technik": false,
+  "ohne_leser": false,
+  "zwilling": [],
+  "anmerkung": ""
+ }
+]
