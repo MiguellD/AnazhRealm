@@ -823,7 +823,11 @@ async function rollen(n) {
         const je = knochen.map(() => []);
         leib.traverse((o) => {
             const ebene = o.userData._maskeVorEgo !== undefined ? o.userData._maskeVorEgo : o.layers.mask;
-            if (!o.isSkinnedMesh || !(ebene & 1)) return;
+            // DIE SOHLE IST DIE HAUT, nie das Fell (das Gesetz des Stands, koerper-leib `_ofenKreatur` „die Sohle steht auf dem
+            // Boden, nie das Fell darunter“, und tetrapoda `tierBeinMass`): die Fell-Schalen (aSchale) reichen unter der Pfote um
+            // ihre Länge tiefer — bis leben-erbe las die Linse sie mit, und der Bär (Fell 2,0) „sank“ um sein Fell (bs 1: Median
+            // −2,8 cm, p95 3,4; bs 1,31: −3,7 / 4,4), während seine Haut stand
+            if (!o.isSkinnedMesh || !(ebene & 1) || o.geometry.attributes.aSchale) return;
             const si = o.geometry.attributes.skinIndex;
             const sw = o.geometry.attributes.skinWeight;
             const bi = knochen.map((b) => o.skeleton.bones.indexOf(b));
