@@ -519,18 +519,38 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             // nach Rang, nie in der Reihe der Ankunft. `out.rang` = die Abstände (m) in der Reihe der Lieferung. Der Fund (GTX 1050
             // kalt, main 63655917): die Reihe des Fadens reichte seiner Schlange je Takt EINEN Auftrag, die Wahl hatte nie eine
             // Wahl — die 16 Zellen unter dem Spieler kamen hinter acht Aufträgen in 210–424 m, sein Wald-Stück pflanzte zuletzt.
+            // DER RIEGEL (w28-rang-riegel): die Wahl hat nur eine Wahl, wenn alle vier im Faden WARTEN — vier `postMessage` einer
+            // Aufgabe kommen nicht als ein Stück an. Der Fund (CI 44233399519, voll 16/18 am w28-haus-stoff 509212d6): geliefert
+            // 500 · 1 · 300 · 400 — der Faden hatte den ersten Auftrag allein und rechnete ihn, gesetzestreu; die Linse urteilte den
+            // Abstand zweier Sendungen am Läufer (nachgestellt: 40 ms Lücke nach der ersten Sendung → dieselbe Reihe). Darum reist
+            // ein Riegel voraus (8 × 8 Zellen, Rang 0): solange der Faden ihn rechnet, kommen die vier an und warten zusammen —
+            // der Fall des Funds (nahe Aufträge treffen auf einen Faden in Arbeit). `out.riegel` = [Dauer des Riegels ms, Spanne
+            // des Sendens ms, Versuch]. Hielt er nicht (Dauer ≤ 2 × Spanne: die vier kamen nicht sicher in seiner Zeit), wächst er
+            // und die Probe fährt an frischen Zellen neu, höchstens dreimal — danach bleibt `out.rang` leer: die Probe ist LEER
+            // (rot beim Namen), nie ein Urteil über die Wahl.
             if (r._getVoxelWorker() && r._forestGesetzWahr()) {
                 const seedInt = r._forestSeedInt();
                 const C = AnazhRealm.FOREST.cell;
                 const [gx0, gz0] = [Math.floor(orte[0].x / C), Math.floor(orte[0].z / C)];
-                const kam = (out.rang = []);
-                await Promise.all(
-                    RANG_REIHE.map((m, k) => {
+                const auftrag = (zellen, rang) => r._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, r._forestExtraSpecies(), rang);
+                for (let versuch = 0; versuch < 3 && !out.rang; versuch++) {
+                    const kam = [];
+                    const z0 = gz0 + 40 * versuch;
+                    const riegel = [];
+                    for (let i = 0; i < 8 << versuch; i++) for (let j = 0; j < 8; j++) riegel.push(gx0 + 120 + i, z0 + j);
+                    const t0 = performance.now();
+                    let dauer = 0;
+                    const vor = auftrag(riegel, 0).then(() => (dauer = performance.now() - t0));
+                    const vier = RANG_REIHE.map((m, k) => {
                         const zellen = [];
-                        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) zellen.push(gx0 + 40 + 10 * k + i, gz0 + j);
-                        return r._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, r._forestExtraSpecies(), m * m).then(() => kam.push(m));
-                    })
-                );
+                        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) zellen.push(gx0 + 40 + 10 * k + i, z0 + j);
+                        return auftrag(zellen, m * m).then(() => kam.push(m));
+                    });
+                    const spanne = performance.now() - t0;
+                    await Promise.all([vor, ...vier]);
+                    out.riegel = [Math.round(dauer), +spanne.toFixed(2), versuch + 1];
+                    if (dauer > 2 * spanne) out.rang = kam;
+                }
             }
             // TEIL B — DER WUCHS IM FADEN (w4-b-pflanzen): jedes Skelett im Vorrat (`_wuchsVorrat`: gepackt vom Wald-Faden im Boot,
             // die Saat wartet auf ihn; Schlüssel `<Art>|<Same>|…`) gegen den Wuchs desselben Plans im Haupt-Faden (`_wuchsPlan` →
@@ -664,6 +684,17 @@ const KERN_MODUS = { haupt: null, faden: null, probe: null, wald: false }; // je
 // (der Selbsttest nimmt sie ihm: er muss in der Reihe der Ankunft liefern)
 const RANG_REIHE = [500, 400, 300, 1];
 const RANG_SOLL = RANG_REIHE.slice().sort((a, b) => a - b).join(" · ");
+// Das Urteil über Teil R → [gut, Satz]: die Wahl wird nur geurteilt, wo der Riegel hielt (`rep.rang` steht); sonst ist die Probe
+// LEER — beim Namen, mit Dauer und Spanne, nie als RANG (der wäre ein Urteil über den Läufer).
+function rangUrteil(rep) {
+    const rg = rep.riegel;
+    if (!rg) return [false, "⛔ LEER: kein Wald-Faden oder kein Wald-Gesetz — die Wahl blieb ungeprüft"];
+    const hinter = `hinter dem Riegel (${rg[0]} ms, Senden ${rg[1]} ms, Versuch ${rg[2]})`;
+    if (!rep.rang) return [false, `⛔ LEER: der Riegel hielt den Faden in ${rg[2]} Versuchen nicht ${hinter} — die Wahl blieb ungeprüft`];
+    const kam = rep.rang.join(" · ");
+    if (kam === RANG_SOLL) return [true, `geliefert ${kam} ${hinter} — nah zuerst`];
+    return [false, `geliefert ${kam || "nichts"} ${hinter} — ⛔ RANG: der Wald-Faden liefert nicht nah zuerst (Soll ${RANG_SOLL})`];
+}
 const WALD_REIHE_ZUERST = "if (reihe.length && !reiheHaelt) return void waldWecken();";
 // DIE MASCHE DES FELDS (w28-feld-fuss): die drei Zeilen des Fern-Fadens, die der Selbsttest ihm im selben Boot nimmt — der
 // Ring nennt dem Gesetz einen Fuß (ROT am bit-Diff) · die Reihe an der Naht fragt mit einem Fuß (ROT an der Naht) · das Feld
@@ -2815,11 +2846,8 @@ hauptLauf(async () => {
         );
         if (welt === "standard" && (!wa || !(wa.darts > 0) || wa.abweichend > 0 || !wu[0] || wu[1])) rot = true;
         if (welt === "standard") {
-            const kam = (rep.rang || []).join(" · ");
-            const gut = kam === RANG_SOLL;
-            console.log(
-                `    Wahl des Wald-Fadens (Teil R, gesendet ${RANG_REIHE.join(" · ")} m): geliefert ${kam || "nichts"} — ${gut ? "nah zuerst" : "⛔ RANG: der Wald-Faden liefert nicht nah zuerst (Soll " + RANG_SOLL + ")"}`
-            );
+            const [gut, satz] = rangUrteil(rep);
+            console.log(`    Wahl des Wald-Fadens (Teil R, gesendet ${RANG_REIHE.join(" · ")} m): ${satz}`);
             if (!gut) rot = true;
         }
         if (rep.abweichend > 0 || rep.befunde.length) rot = true;
@@ -2878,8 +2906,21 @@ hauptLauf(async () => {
     if (SELBSTTEST) {
         // die Höhen der Ferne (K60) fallen mit demselben verfälschten Worker-Term rot, der Zwilling der Form beim Namen
         console.log(`  SELBSTTEST Zwilling der Form: rot ${selbst ? selbst.namen : "?"} (Soll FERN-RING)`);
+        // das Urteil über Teil R an vier Fällen: der Riegel hielt und die Wahl stimmt · er hielt und der fernste kam zuerst (der
+        // Fund im Faden) · er hielt in drei Versuchen nicht · es gab keinen Faden — nur der zweite heißt RANG
+        const riegelFaelle = [
+            { rang: RANG_REIHE.slice().sort((a, b) => a - b), riegel: [300, 1, 1] },
+            { rang: [500, 1, 300, 400], riegel: [300, 1, 1] },
+            { riegel: [5, 40, 3] },
+            {},
+        ]
+            .map((f) => rangUrteil(f))
+            .map(([gut, satz]) => (gut ? "nah" : satz.includes("⛔ LEER") ? "LEER" : satz.includes("⛔ RANG") ? "RANG" : "?"))
+            .join(" · ");
+        console.log(`  SELBSTTEST Urteil über die Wahl (hielt · Faden wählt falsch · Riegel hielt nicht · kein Faden): ${riegelFaelle} (Soll nah · RANG · LEER · LEER)`);
         pass =
             !rot &&
+            riegelFaelle === "nah · RANG · LEER · LEER" &&
             selbst &&
             selbst.abweichend > 0 &&
             selbst.ferne > 0 &&
