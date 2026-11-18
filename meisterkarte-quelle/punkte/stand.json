@@ -5274,7 +5274,7 @@
   },
   "karte2.leben.tiere.mensch": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.576 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.916 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.576 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.923 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] nvidia/pascal an 21f279f5 gtx",
+   "beleg": "Maschine: gehalten: Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.576 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.916 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.575 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.939 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] nvidia/pascal an 18058dba gtx",
    "stationen": [
     {
      "id": "karte2.leben.tiere.mensch#1",
@@ -5291,10 +5291,9 @@
      "id": "karte2.leben.tiere.mensch#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.576 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.923 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] nvidia/pascal",
-     "sha": "21f279f5f5b87f86c0bea764dab99fb36670725e",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/shader-kosten.cjs +12)",
-     "gehalten": true,
+     "zahl": "Annäherung im Fenster: deer flieht ab 113.93 m (Feld 120 m, Band 60–180; Gesetz 120 m; im Blick 1, 10 Stufen) · wolf flieht ab 100.575 m (Feld 106 m, Band 53–159; Gesetz 106 m; im Blick 1, 10 Stufen) · bear flieht ab 52.152 m (Feld 55 m, Band 27.5–82.5; Gesetz 55 m; im Blick 1, 10 Stufen) · fox flieht ab 37.939 m (Feld 40 m, Band 20–60; Gesetz 40 m; im Blick 1, 10 Stufen) · [linse-gpu] nvidia/pascal",
+     "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
+     "grund": null,
      "r6": "konsum",
      "beide": true
     }
@@ -6506,7 +6505,7 @@
   "ohne": 149
  },
  "kopfVoll": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
- "zeit": "2026-11-18T18:05:09.727Z",
+ "zeit": "2026-11-18T18:11:32.494Z",
  "vorher": "18058dba",
  "bilanz": {
   "gewinn": [],
