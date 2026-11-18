@@ -60,7 +60,7 @@
         reifeMasse: 0.9, // reif ⇔ m ≥ 0,9·M∞ (Definition der Reife auf der WBE-Kurve)
         reifeAnteil: 0.2, // Eichung: der Anker-Wolf ist reif bei 0,2·t_max (Charnov 1993, α/t_max 0,1–0,25) — unsicher
         refKg: 64, // DER Zeit-Anker der Welt: der Wolf (KAMPF.refKg, tetrapoda-core.js) …
-        refS: 2100, // … lebt die bisherige Spiel-Spanne (35 min, stamm/daten.js FAUNA_MAX_AGE_MS). Die eine Raffung der Welt — unsicher
+        refS: 2100, // … lebt die bisherige Spiel-Spanne (35 min, bis leben-erbe der eine Alterstod jeder Art). Die eine Raffung der Welt — unsicher
     });
 
     // Abgeleitet (kein eigener Stellwert): je Achse VA = h2·sdP², VE = (1−h2)·sdP²; die Wachstums-Konstante q^¼ und das

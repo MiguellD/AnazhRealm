@@ -2384,7 +2384,9 @@ class AnazhRealm_kreatur_leben {
     _lebenUmweltAus(id) {
         const L = AnazhRealm._lebenKern();
         const g = this._rollGenome(String(id), "erbe");
-        return L.umwelt(L.gesetz().achsen.map((x) => L.normal(g.axis("e:" + x.name + ":1"), g.axis("e:" + x.name + ":2"))));
+        return L.umwelt(
+            L.gesetz().achsen.map((x) => L.normal(g.axis("e:" + x.name + ":1"), g.axis("e:" + x.name + ":2")))
+        );
     }
     // DIE MASSE DES GUSSES einer Gattung (kg): das Volumen ihrer Gestalt bei Größe 1 (`_gattungLeib`) × ρ — M̄ der Art in Welle 1:
     // das mittlere erwachsene Tier IST der Guss (bs = 1).
@@ -2407,7 +2409,17 @@ class AnazhRealm_kreatur_leben {
         if (!e || e.a !== t.a || e.id !== t.id || e.g !== t.g) {
             const L = AnazhRealm._lebenKern();
             const M = L.masseAdult(this._gattungKg(t.g), t.a, this._lebenUmweltAus(t.id));
-            e = { a: t.a, id: t.id, g: t.g, M, tod: L.lebensdauerS(M), reif: L.reifeS(M), alter: NaN, kg: 0, wild: null };
+            e = {
+                a: t.a,
+                id: t.id,
+                g: t.g,
+                M,
+                tod: L.lebensdauerS(M),
+                reif: L.reifeS(M),
+                alter: NaN,
+                kg: 0,
+                wild: null,
+            };
             W.set(t, e);
         }
         return e;
@@ -2527,8 +2539,7 @@ class AnazhRealm_kreatur_leben {
         }
         this._creatureNaturalBirth(bestand, key, rng, !still);
         const frei = this._bestandFreie(R);
-        for (const t of frei.slice())
-            if (t.alterS > this._bestandErbe(t).tod) this._bestandStirbt(R, t, "alter", tode);
+        for (const t of frei.slice()) if (t.alterS > this._bestandErbe(t).tod) this._bestandStirbt(R, t, "alter", tode);
         if (frei !== R.tiere) this._gehegeSchritt(R, tode);
     }
     // DIE FREIEN DER REGION R: ihr Verzeichnis ohne die Tiere eines Geheges (der Term `gehege`); ohne Gehege dieselbe Liste.

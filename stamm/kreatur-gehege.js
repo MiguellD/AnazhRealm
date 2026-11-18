@@ -133,7 +133,8 @@ class AnazhRealm_kreatur_gehege {
         return false;
     }
     // EIN TAKT DER GEHEGE der Region R (tetrapoda GEHEGE_GESETZ): je Gehege seine Gemeinschaft — das Altern mit raten.alter, der
-    // Tod am Hunger mit raten.hunger (das Älteste), der Riss NUR unter seinen Tieren (`_bestandJagd`, bestandRiss) — aus seinem
+    // Tod am Hunger mit raten.hunger (wem die Reserve zuerst ausgeht, `_bestandHungerOpfer`), der Riss NUR unter seinen Tieren
+    // (`_bestandJagd`, bestandRiss) nach dem Ertrag (`_bestandRissOpfer`) — aus seinem
     // eigenen Strom dieses Takts (`gehege:<Nummer>@<Zeit>`: ein Wurf im Gehege re-rollt nie den wilden Strom der Region). Geboren
     // wird nie (die Zeile ist der Bestand); unter Raten 0 und ohne Beute ändert der Takt nichts.
     _gehegeSchritt(R, tode) {
@@ -146,12 +147,12 @@ class AnazhRealm_kreatur_gehege {
             for (const t of tiere) t.alterS += BG.B.taktS * G.raten.alter;
             const rng = this._faunaRng("gehege:" + id + "@" + R.t, true);
             const lebt = () => tiere.filter((t) => R.tiere.includes(t));
-            const alt = G.raten.hunger > 0 && rng() < G.raten.hunger && this._bestandAeltester(tiere);
-            if (alt) this._bestandStirbt(R, alt, "hunger", tode);
+            const hunger = G.raten.hunger > 0 && rng() < G.raten.hunger && this._bestandHungerOpfer(tiere);
+            if (hunger) this._bestandStirbt(R, hunger, "hunger", tode);
             const { jaeger, gejagt, beuteVon } = this._bestandJagd(lebt(), diet);
             for (const g in diet) {
                 const riss = BG.riss(jaeger[g], gejagt[g] / BG.B.beuteVoll, BG.B);
-                const opfer = riss > 0 && rng() < riss && this._bestandAeltester(lebt(), g, beuteVon);
+                const opfer = riss > 0 && rng() < riss && this._bestandRissOpfer(lebt(), g, beuteVon, rng);
                 if (opfer) this._bestandStirbt(R, opfer, "jagd", tode, beuteVon.get(opfer));
             }
         }

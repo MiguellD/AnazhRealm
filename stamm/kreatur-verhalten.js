@@ -610,14 +610,24 @@ class AnazhRealm_kreatur_verhalten {
             if (ctx && ctx.log) ctx.log.push({ event: "invalid_groesse_hauch", faktor });
             return;
         }
-        let n = 0;
+        // Der Hauch trifft nur Leiber OHNE Tier im Bestand (Boot, DSL, Hof): ein Tier des Bestands trägt die Größe seines Erbes
+        // über das Alter (`_bestandBs`, leben-erbe) — sie hat EINEN Schreiber, das Wachstum je Takt; die übrigen zählt `erbe`.
+        let n = 0,
+            erbe = 0;
         for (const cr of this.state.creatures) {
             const ud = cr && cr.userData;
             if (!ud) continue;
+            if (ud._bestand) {
+                erbe++;
+                continue;
+            }
             if (this._kreaturGroesseSetzen(cr, (Number.isFinite(ud.bodySize) ? ud.bodySize : 1) * f)) n++;
         }
-        if (ctx && ctx.log) ctx.log.push({ event: "groesse_hauch", faktor: f, tiere: n });
-        this.log(`Größen-Hauch (${(ctx && ctx.source) || "dsl"}): ${n} Tiere ×${f} auf der bodySize-Achse`, "INFO");
+        if (ctx && ctx.log) ctx.log.push({ event: "groesse_hauch", faktor: f, tiere: n, erbe });
+        this.log(
+            `Größen-Hauch (${(ctx && ctx.source) || "dsl"}): ${n} Tiere ×${f} auf der bodySize-Achse, ${erbe} tragen ihr Erbe`,
+            "INFO"
+        );
     }
 
     // DER PERSÖNLICHE RAUM eines Leibs (m, Welle LF 08.10.): die Körper-Kugel des Leibs (halb + Radius — die waagrechte
