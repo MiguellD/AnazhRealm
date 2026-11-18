@@ -433,12 +433,31 @@ async function s0Probe(page, station, schein) {
             await takt(45);
             const nachtL = laterneAn();
             uhr(0.5);
+            await takt(2); // der Messer liest den Mittag (`_augeLux`)
+            if (r._leuchtPool) r._leuchtPool.t = -Infinity; // die Wahl fällt neu (sonst erst nach `LICHT_POOL.wahlS`)
+            await takt(2);
+            // ohne Zeitplan fällt die Stärke am Mittag nicht mehr auf 0: die abgewählte Laterne blendet an der Uhr des Pools aus
+            // (`LICHT_POOL.blendeS`) — die Linse stellt sie um 1,1 Blenden zurück, kein Warten an der Wanduhr
+            if (r._leuchtPool) r._leuchtPool.uhr -= 1.1 * AnazhRealm.LICHT_POOL.blendeS;
             await takt(45);
             const mittagL = laterneAn();
-            out.laterne = { nachts: nachtL, mittags: mittagL };
-            if (nachtL !== 1 || mittagL !== 0)
+            // DAS SOLL DES MITTAGS FOLGT DEM GESETZ (w28-strahler, kein Zeitplan): die Laterne steht zur Wahl, solange ihre
+            // Reichweite über der Umgebung der Stunde (`augeReichweite` über ihre Candela) ihren Kern übertrifft — unter dem
+            // vollen Mittag (115 000 lx) nie, unter dem Mittag der Bühne (ihre Lux trägt die Zeile) höchstens mit dem halben
+            // Meter um ihr Glas: ein Platz, der dann weiter trägt als 0,5 m, ist der Befund
+            const LD = window.__fachwerkCore.LICHT_GESETZ.laterne;
+            const rwGesetz = window.__weltLicht.augeReichweite(LD.candela, r._augeLux);
+            const mittagSoll = rwGesetz > LD.kernM ? 1 : 0;
+            const rwMittag = Math.max(
+                0,
+                ...(r._leuchtPool?.plaetze || [])
+                    .filter((p) => p.quelle === "laterne_dorf" && Math.hypot(p.x - lp.x, p.z - lp.z) < 1)
+                    .map((p) => p.reichweite)
+            );
+            out.laterne = { nachts: nachtL, mittags: mittagL, mittagSoll, mittagLux: +r._augeLux.toFixed(0), mittagM: rwMittag };
+            if (nachtL !== 1 || mittagL !== mittagSoll || rwMittag > 0.5)
                 out.befunde.push(
-                    `S0 Laterne: die Laterne des Plans trägt nachts ${nachtL} und mittags ${mittagL} Plätze (Soll 1 und 0) — ` +
+                    `S0 Laterne: die Laterne des Plans trägt nachts ${nachtL} und mittags ${mittagL} Plätze (Soll 1 und ${mittagSoll} nach augeReichweite über ${Math.round(r._augeLux)} lx, Reichweite ${rwMittag} m ≤ 0,5) — ` +
                         "die Studio-Gestalt `laterne_dorf` (laternen[] im Hebe-Chokepoint `_spawnSettlementErlebnis`, ihr Datum `_lichtDatumDerGestalt`)"
                 );
             // die Fenster-Glut folgt dem Auge: ihre Leuchtdichte über der Umgebung der Stunde (`augeGlut`), mittags fast nichts
@@ -511,7 +530,7 @@ function zeigeS0(rep, schein) {
         );
     }
     if (rep.laterne)
-        console.log(`    Laterne des Plans: nachts ${rep.laterne.nachts} · mittags ${rep.laterne.mittags} Plätze`);
+        console.log(`    Laterne des Plans: nachts ${rep.laterne.nachts} · mittags ${rep.laterne.mittags} Plätze (Gesetz ${rep.laterne.mittagSoll} über ${rep.laterne.mittagLux} lx, Reichweite ${rep.laterne.mittagM} m)`);
     if (rep.fenster) console.log(`    Fenster-Glut: nachts ${rep.fenster.nachts} · mittags ${rep.fenster.mittags}`);
     if (rep.stoffe)
         console.log(
