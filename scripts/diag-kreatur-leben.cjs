@@ -985,8 +985,9 @@ async function lebenBuehnen() {
             const soll = { x: t.x + t.aus.x * A.BEWOHNER.vorM, z: t.z + t.aus.z * A.BEWOHNER.vorM };
             const [nebenM, knoten] = [ab(b.orte.vor, soll), r._bewohnerAnschluss(netz, b.orte.vor)];
             if (nebenM > 0.05 || !(knoten >= 0))
-                eingang.push(`${t.rolle} #${t.k.slice(5)}: ${q3(nebenM)} m neben dem Eingang${knoten >= 0 ? "" : ", ohne Knoten des Netzes"}`); // prettier-ignore
+                eingang.push([nebenM, `${t.rolle} #${t.k.slice(5)}: ${q3(nebenM)} m neben dem Eingang${knoten >= 0 ? "" : ", ohne Knoten des Netzes"}`]); // prettier-ignore
         }
+        eingang.sort((a, b) => b[0] - a[0]); // der fernste zuerst: er steht in der Zeile
         // im gedrehten Rechteck q (Mitte, Halbachsen, phi) samt Rand — der Platz dreht wie der Wirt ihn liest, der Acker längs phi
         const im = (q, x, z, rand, acker) => {
             const [c, sn, dx, dz] = [Math.cos(q.phi || 0), Math.sin(q.phi || 0), x - S.ox - q.cx, z - S.oz - q.cz];
@@ -1137,7 +1138,7 @@ async function lebenBuehnen() {
             fernN: fern.length,
             fern: fern.slice(0, 3).map((f) => f.text),
             eingangN: eingang.length,
-            eingang: eingang.slice(0, 3),
+            eingang: eingang.slice(0, 3).map((e) => e[1]),
         };
     });
     // ── gehege (Pflicht F, w28-gehege; tetrapoda GEHEGE_GESETZ): das Wolfs-Gehege des Ort-Plans, wie die Welt es liest
