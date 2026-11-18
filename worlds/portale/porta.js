@@ -190,6 +190,8 @@ function init() {
     setParams(ORDNUNGEN.Kathedrale);
     updateLaw();
     updatePrompt();
+    // den ersten Bau stellt das Studio selbst; die Leiste misst die Öffnung (H4/H7 lesen sie vor dem ersten Zug)
+    kostenLeiste.neu();
 }
 addEventListener("keydown", function (e) {
     if (e.repeat) return;
