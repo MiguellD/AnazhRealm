@@ -7,6 +7,11 @@ case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /
 cd /c/Users/micha/AnazhRealm-profiband
 TOK=$(printf 'protocol=https\nhost=github.com\n\n' | git credential fill 2>/dev/null | sed -n 's/^password=//p')
 API=https://api.github.com/repos/MiguellD/AnazhRealm
+# „    voll: n/m“ eines Laufs — wie viele Gruppen der VOLLEN Batterie er grün trug (0/0 = nur der Puls)
+voll_zahl() {
+  curl -s -H "Authorization: Bearer $TOK" "$API/actions/runs/$1/jobs?per_page=100&filter=latest" | node -e '
+let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let v=[];try{v=(JSON.parse(s).jobs||[]).filter(x=>/^voll /.test(x.name));}catch(e){}console.log("    voll: "+v.filter(x=>x.conclusion==="success").length+"/"+v.length);})'
+}
 for z in "$@"; do
   sha=$(git ls-remote origin "refs/heads/$z" | cut -c1-40)
   echo "== $z ${sha:0:8}"
@@ -29,8 +34,33 @@ else{console.log("  Code-Check: completed failure");console.log("    rot ("+f.le
     echo "  $name: $st $co"
     # „voll: n/m“ — wie viele Gruppen der VOLLEN Batterie dieser grüne Lauf trug (0/0 = nur der Puls); der Leser ist zug-dienst.sh bereit()
     if [ "$name" = "Code-Check" ] && [ "$co" = success ]; then
-      curl -s -H "Authorization: Bearer $TOK" "$API/actions/runs/$id/jobs?per_page=100&filter=latest" | node -e '
-let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let v=[];try{v=(JSON.parse(s).jobs||[]).filter(x=>/^voll /.test(x.name));}catch(e){}console.log("    voll: "+v.filter(x=>x.conclusion==="success").length+"/"+v.length);})'
+      vz=$(voll_zahl "$id")
+      # DER KOPF IST SEIN INHALT (18.11., scripts/ci-kopf.cjs `kopfKette` — derselbe Richter wie der Job `kopf` der check.yml, EINE
+      # Regel für CI und Dienst): ein Stempel ohne Inhalt (EIN Elter, derselbe Baum) auf einem geprüften Kopf fährt die volle
+      # Batterie nicht selbst, sein grüner Lauf trägt „voll: 0/n“. Dann gilt das Urteil des leeren Vorfahren; ohne diese Zeile
+      # stieß der Dienst für jeden solchen Stempel die Batterie neu an (e840849a und 4717fc65 um 16:01, je 15 min und 18 Plätze).
+      # Trägt der Haupt-Baum die Kette noch nicht oder trug kein Vorfahr die Batterie, bleibt „voll: 0/n“ stehen wie bisher.
+      erbe=
+      case "$vz" in *"voll: 0/"*)
+        for v in $(node -e '
+const { execFileSync } = require("child_process");
+let K = null; try { K = require(process.cwd() + "/scripts/ci-kopf.cjs"); } catch (e) {}
+if (K && K.kopfKette) { const g = (...a) => execFileSync("git", a, { encoding: "utf8" }).trim(); const c = {};
+for (let s = process.argv[1], n = 0; s && n <= K.KETTE; n++) { const z = g("rev-list", "--parents", "-n", "1", s).split(" "); c[z[0]] = { sha: z[0], tree: { sha: g("rev-parse", z[0] + "^{tree}") }, parents: z.slice(1).map((sha) => ({ sha })) }; s = z.length === 2 ? z[1] : null; }
+console.log(K.kopfKette(process.argv[1], c).slice(1).join(" ")); }' "$sha" 2>/dev/null </dev/null); do
+          for rid in $(curl -s -H "Authorization: Bearer $TOK" "$API/actions/workflows/check.yml/runs?head_sha=$v&per_page=20" | node -e '
+let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let r=[];try{r=JSON.parse(s).workflow_runs||[];}catch(e){}console.log(r.filter(x=>x.conclusion==="success"&&["push","schedule","workflow_dispatch"].includes(x.event)).map(x=>x.id).join(" "));})'); do
+            ez=$(voll_zahl "$rid")
+            if echo "$ez" | grep -qE "^    voll: ([1-9][0-9]*)/\1$"; then
+              vz=$ez
+              erbe="    geerbt: vom leeren Vorfahr ${v:0:8} (Lauf $rid) — der Kopf ist sein Inhalt"
+              break 2
+            fi
+          done
+        done ;;
+      esac
+      echo "$vz"
+      [ -n "$erbe" ] && echo "$erbe"
     fi
     if [ "$co" = failure ]; then
       curl -s -H "Authorization: Bearer $TOK" "$API/actions/runs/$id/jobs?per_page=100&filter=latest" | node -e '
