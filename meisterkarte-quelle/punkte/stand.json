@@ -5084,7 +5084,7 @@
   },
   "karte2.erleben.spieler.praesenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#1 gtx: Station seit der Messung geändert — zuletzt an c50e6b61: Last: Referenz f 1,643 (Faden 1,643 · alle Kerne 1,468; vor 148,5/339,5 ms, nach 93,9/267,3 ms, Ruhe 90,4/231,3 ms seit 2026-11-15) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#1 gtx: Station seit der Messung geändert — zuletzt an 18058dba: Last: Referenz f 1,991 (Faden 1,991 · alle Kerne 1,621; vor 179/370,3 ms, nach 172,8/300,1 ms, Ruhe 89,9/228,5 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.praesenz#1",
@@ -5102,7 +5102,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an c50e6b61: Last: Referenz f 1,643 (Faden 1,643 · alle Kerne 1,468; vor 148,5/339,5 ms, nach 93,9/267,3 ms, Ruhe 90,4/231,3 ms seit 2026-11-15) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core",
+     "grund": "Station seit der Messung geändert — zuletzt an 18058dba: Last: Referenz f 1,991 (Faden 1,991 · alle Kerne 1,621; vor 179/370,3 ms, nach 172,8/300,1 ms, Ruhe 89,9/228,5 ms seit 2026-11-16) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.",
      "ungemessen": true,
      "beide": true
     }
@@ -6511,7 +6511,7 @@
   "ohne": 149
  },
  "kopfVoll": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
- "zeit": "2026-11-18T17:33:13.852Z",
+ "zeit": "2026-11-18T17:44:22.224Z",
  "vorher": "18058dba",
  "bilanz": {
   "gewinn": [],
