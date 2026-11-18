@@ -1322,8 +1322,23 @@ async function rolleSeite(o) {
         R.php = st.player.hp;
         r.setGameMode("pfad");
         const q = vorn(8);
-        const c = r.spawnCreatureAt(q.x, boden(q), q.z, "calm", "wolf", { absage: (g) => (R.absage = g) });
-        if (!c) return { fehler: "kein Wolf am Ort (spawnCreatureAt wolf: " + R.absage + ")" };
+        // DER WOLF, DEM DER SPIELER BEUTE IST (18.11., GTX e4e3f363: der EINE gestellte Wolf war klein — hp 72, seine Größe kommt aus
+        // seiner netId —, der Spieler war ihm keine Beute, er floh nach dem Gesetz, 3/4 ROT; am d3ddb51c hp 165, 4/4): die Aufstellung
+        // wirft Wölfe, bis das Gesetz einen führt, dem der Spieler Beute ist (wild · `_kreaturIstBeute`), höchstens WUERFE; jeder
+        // andere geht wieder. Führt es keinen, sagt die Probe es laut (`messort` → die Marke MESSORT) — nie still ein anderes Tier.
+        const WUERFE = 8, kg = [];
+        let c = null;
+        for (let i = 0; i < WUERFE && !c; i++) {
+            const w = r.spawnCreatureAt(q.x, boden(q), q.z, "calm", "wolf", { absage: (g) => (R.absage = g) });
+            if (!w) return { fehler: "kein Wolf am Ort (spawnCreatureAt wolf: " + R.absage + ")" };
+            kg.push(Math.round(r._leibMasse(w)));
+            if (r._creatureTemperament(w) === "wild" && r._kreaturIstBeute(w, st.playerMesh)) c = w;
+            else r.removeCreature(w);
+        }
+        if (!c) {
+            const grund = "kein Wolf, dem der Spieler Beute ist: " + WUERFE + " Würfe, Wolf " + kg.join("/") + " kg, Spieler " + Math.round(r._leibMasse(st.playerMesh)) + " kg";
+            return { fehler: grund, messort: "rolle kämpfen: " + grund };
+        }
         R.ziel = c;
         R.hp0 = c.userData.hp;
         // DER LEIB DES ZIELS IN DER KLINGE (Vorarbeiter 9, 17.11.; GTX 7de938ab: ein Wolf mit hp 754 statt 127 hetzte und hielt in
@@ -1332,7 +1347,7 @@ async function rolleSeite(o) {
         const leib = r._kreaturLeib(c, 0, {});
         R.schlag = { schwuenge: 0, dHieb: null, dMin: null, reach: +r._kampfBladeReach().toFixed(2), leibR: +leib.reichweite.toFixed(2), jagt: false, zustaende: [] };
         st.player.stamina = st.player.staminaMax;
-        return { ...kam(q), hp: R.hp0, seele: "wolf", temperament: r._creatureTemperament(c), beute: r._kreaturIstBeute(c, st.playerMesh), modus: r.getGameMode() };
+        return { ...kam(q), hp: R.hp0, seele: "wolf", temperament: r._creatureTemperament(c), beute: r._kreaturIstBeute(c, st.playerMesh), modus: r.getGameMode(), wuerfe: kg.length, kg: kg[kg.length - 1] };
     }
     // EIN TAKT DES KÄMPFERS (je 100 ms aus der Probe): Blick auf den Wolf, sein Abstand und Zustand; steht er in der Klinge und läuft
     // kein Schwung, der Hieb. `nah` sagt der Probe, ob die Taste W ruhen soll (der Spieler geht nur auf den fernen Wolf zu).
@@ -1409,6 +1424,7 @@ async function probeRolle(H) {
             const tA = Date.now();
             const an = await seite({ schritt: { gehen: "gehenAn", bauen: "bauenAn", fahren: "fahrenAn", kaempfen: "kampfAn" }[g], seele: "wesen", name: g === "fahren" ? WERKE.GT : "bank_sitzbank" });
             z.aufstellungS = +((Date.now() - tA) / 1000).toFixed(2);
+            if (an.messort) console.log("@@PUNKTE@@ MESSORT " + String(an.messort).replace(/\s+/g, " ").slice(0, 280));
             if (an.fehler) throw new Error(an.fehler);
             const A = await schuss(an, g + "-vor");
             z.rausch = diff(A, await schuss(an, g + "-vor-2"));
@@ -1438,7 +1454,7 @@ async function probeRolle(H) {
                 z.aenderung = z.sitzt === true && z.welt.m >= S.fahrM;
             } else {
                 H.beimAbbau(() => seite({ schritt: "kampfZurueck" }));
-                z.ziel = { seele: an.seele, temperament: an.temperament, beute: an.beute, modus: an.modus };
+                z.ziel = { seele: an.seele, temperament: an.temperament, beute: an.beute, modus: an.modus, wuerfe: an.wuerfe, kg: an.kg };
                 let w = false, k = null, getroffenS = null;
                 try {
                     while (Date.now() - t0 < S.kampfS * 1000) {
@@ -3225,6 +3241,10 @@ const alle = [
             { name: "das Ziel flieht vor der Klinge, kein Treffer (3,39 m beim Hieb, Klinge 0,66 m)", j: rolleRoh({ kaempfen: { aenderung: false, welt: { schwung: true, hp: 30, hp0: 30, dHieb: 3.39, reach: 0.66, zustand: "flucht" } } }), stdout: PAAR_KARTE, gruen: false },
             { name: "der große Wolf hält vor der Klinge, kein Schwung (GTX 7de938ab: hp 754, dMin 1,80 m, Klinge 0,66 m)", j: rolleRoh({ kaempfen: { aenderung: false, welt: { schwung: false, schwuenge: 0, hp: 754.4, hp0: 754.4, dMin: 1.8, reach: 0.66, leibR: 1.2, jagt: true, zustand: "hetzen" } } }), stdout: PAAR_KARTE, gruen: false },
             { name: "ein gestelltes Ziel (sanft, im frieden): der Treffer zählt nicht", j: rolleRoh({ kaempfen: { ziel: { seele: "wesen", temperament: "sanft", beute: false, modus: "frieden" } } }), stdout: PAAR_KARTE, gruen: false, zahl: /gestelltes Ziel/ },
+            // der Mutant „nächstes Tier“ (18.11., GTX e4e3f363): die Aufstellung nimmt den ersten Wolf — klein, der Spieler ihm keine Beute, er flieht
+            { name: "der Mutant „nächstes Tier“: der erste Wolf (hp 72), der Spieler ihm keine Beute — ROT am Wolf", j: rolleRoh({ kaempfen: { aenderung: false, ziel: { seele: "wolf", temperament: "wild", beute: false, modus: "pfad", wuerfe: 1, kg: 31 }, welt: { schwung: false, schwuenge: 0, hp: 72.2, hp0: 72.2, dMin: 6.07, reach: 0.66, leibR: 1.22, jagt: true, zustand: "flucht" } } }), stdout: PAAR_KARTE, gruen: false, zahl: /3\/4 Verb-Gruppen .*gestelltes Ziel \(\{"seele":"wolf","temperament":"wild","beute":false/ },
+            { name: "der dritte Wurf führt den Wolf, dem der Spieler Beute ist — der Kampf zählt", j: rolleRoh({ kaempfen: { ziel: { seele: "wolf", temperament: "wild", beute: true, modus: "pfad", wuerfe: 3, kg: 64 } } }), stdout: PAAR_KARTE, gruen: true },
+            { name: "kein Wolf, dem der Spieler Beute ist (8 Würfe) — kein GRÜN, der Grund wörtlich, Marke MESSORT", j: rolleRoh({ kaempfen: { fehler: "kein Wolf, dem der Spieler Beute ist: 8 Würfe, Wolf 31/28/35/30/33/29/36/32 kg, Spieler 80 kg", diff: undefined, aenderung: undefined } }), stdout: PAAR_KARTE + "\n@@PUNKTE@@ MESSORT rolle kämpfen: kein Wolf, dem der Spieler Beute ist: 8 Würfe, Wolf 31/28/35/30/33/29/36/32 kg, Spieler 80 kg", gruen: false, zahl: /kaempfen kein Wolf, dem der Spieler Beute ist/ },
             { name: "die Aufstellung des Wagens 12,5 s — der Befund steht beim Namen, das Urteil bleibt", j: rolleRoh({ fahren: { aufstellungS: 12.5 } }), stdout: PAAR_KARTE, gruen: true, zahl: /Aufstellung > 10 s: fahren 12\.5 s/ },
         ],
         pfad: ROLLE_PFAD,
