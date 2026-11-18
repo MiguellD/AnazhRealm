@@ -5488,7 +5488,7 @@
   },
   "karte2.mensch.menge.bevoelkerung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs +2) · karte2.mensch.menge.bevoelkerung#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs +2) · karte2.mensch.menge.bevoelkerung#1 gtx: ROT: 77 Bewohner, 20 Stichproben (5 Orte × 4 Uhren) + 6 Fahrer am Steuer (6 sitzen), Σ Soll 18 · ✗ Σ Soll 18 < 20 (die Zählung trägt zu wenig Soll) · jede Stichprobe ±10 %, niemand fehlt · Ankunft 3 Uhr 1.5 s/10 Uhr 1.5 s/15 Uhr 1.5 s/20 Uhr 0 s · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] nvidia/pascal an c50e6b61",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bevoelkerung#1",
@@ -5505,10 +5505,10 @@
      "id": "karte2.mensch.menge.bevoelkerung#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "zahl": "77 Bewohner, 20 Stichproben (5 Orte × 4 Uhren) + 6 Fahrer am Steuer (6 sitzen), Σ Soll 18 · ✗ Σ Soll 18 < 20 (die Zählung trägt zu wenig Soll) · jede Stichprobe ±10 %, niemand fehlt · Ankunft 3 Uhr 1.5 s/10 Uhr 1.5 s/15 Uhr 1.5 s/20 Uhr 0 s · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] nvidia/pascal",
+     "sha": "c50e6b61b445196a2316565e29a8e4989a939eef",
+     "grund": "ROT: 77 Bewohner, 20 Stichproben (5 Orte × 4 Uhren) + 6 Fahrer am Steuer (6 sitzen), Σ Soll 18 · ✗ Σ Soll 18 < 20 (die Zählung trägt zu wenig Soll) · jede Stichprobe ±10 %, niemand fehlt · Ankunft 3 Uhr 1.5 s/10 Uhr 1.5 s/15 Uhr 1.5 s/20 Uhr 0 s · doppelt 0 Hüllen / 0 Samen · third · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6326,7 +6326,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 186,
+  "konsum": 187,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6488,10 +6488,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 162
+  "ohne": 161
  },
  "kopfVoll": "c50e6b61b445196a2316565e29a8e4989a939eef",
- "zeit": "2026-11-18T00:05:07.327Z",
+ "zeit": "2026-11-18T00:12:04.244Z",
  "vorher": "c50e6b61",
  "bilanz": {
   "gewinn": [],
