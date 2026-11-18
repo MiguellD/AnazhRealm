@@ -491,11 +491,17 @@ class AnazhRealm_bild_schatten {
             const farbe = atmo.lichtFarbe[k].value;
             if (!q || !(lage.w > 0) || q.quelle === "auge" || (q.L && q.L.ersatz)) continue;
             if (!F.intersectsSphere(kugel.set(kugel.center.set(lage.x, lage.y, lage.z), lage.w))) continue;
-            const d = LW.bezugM / lage.w;
-            const eBezug =
+            // was die Quelle in `bezugM` ZEIGT (w28-strahler): ihre Lux dort (Candela ÷ (d² + k²), der Saum der Reichweite) über
+            // der Umgebung der Stunde auf der Skala des Auges (welt-licht.js `augeZeig`)
+            const sm = Math.min(1, Math.max(0, (1 - LW.bezugM / lage.w) / AnazhRealm.AUGE.saum));
+            const eBezug = __weltLicht.augeZeig(
                 (0.2126 * farbe.x + 0.7152 * farbe.y + 0.0722 * farbe.z) *
-                Math.pow(LW.bezugM * LW.bezugM + atmo.lichtKern[k].value, -farbe.w / 2) *
-                Math.max(0, 1 - d ** 4) ** 2;
+                    Math.pow(LW.bezugM * LW.bezugM + atmo.lichtKern[k].value, -farbe.w / 2) *
+                    sm *
+                    sm *
+                    (3 - 2 * sm),
+                this._augeLux ?? 1
+            );
             if (!(eBezug >= LW.wichtigAb * eWelt)) continue;
             const ab = Math.max(1, Math.hypot(lage.x - cp.x, lage.y - cp.y, lage.z - cp.z));
             const w = eBezug * (lage.w / ab) ** 2;

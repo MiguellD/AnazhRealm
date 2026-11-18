@@ -2991,7 +2991,8 @@ AnazhRealm._atmoKern = function () {
     return G;
 };
 // DAS AUGE DER NACHT (K66, die Post-Kette `_ensurePostProcessing`: die Sättigung je Pixel unter der Nacht): das mesopische Band
-// der CIE 191:2010 — unter `staebchenCd` sieht das Auge ohne Farbe (Stäbchen), über `zapfenCd` voll (Zapfen); `luxJeEinheit`
+// der CIE 191:2010 (welt-licht.js `MESOPISCH`, die EINE Quelle — auch das Knie des Auges liest sie) — unter `staebchenCd` sieht
+// das Auge ohne Farbe (Stäbchen), über `zapfenCd` voll (Zapfen); `luxJeEinheit`
 // die Eichung der Nacht (Vollmond 0,26 lx ≙ der Nacht-Bestrahlung der Welt 0,224, fachwerk LICHT_GESETZ) — eine Leuchtdichte
 // der Welt (Albedo/π · Bestrahlung) mal ihr ist cd/m².
 // `bildZapfen`: die Helligkeit am Bild (Leuchtdichte × Belichtung), von der an bis zu der das Auge ganz mit den Zapfen
@@ -3005,8 +3006,8 @@ AnazhRealm._atmoKern = function () {
 // `umkehrSchritte`: so oft liest die Umkehr den Stäbchen-Anteil an ihrem Urbild neu (Fixpunkt; gemessen an der Linse (j)).
 AnazhRealm.NACHT_AUGE = Object.freeze({
     luxJeEinheit: 0.26 / 0.224,
-    staebchenCd: 0.005,
-    zapfenCd: 5,
+    staebchenCd: __weltLicht.MESOPISCH.staebchenCd,
+    zapfenCd: __weltLicht.MESOPISCH.zapfenCd,
     bildZapfen: Object.freeze([0.18, 1]),
     skotopisch: Object.freeze([0, 0.5437, 0.3599]),
     staebchenStaerke: 1.22,

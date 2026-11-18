@@ -3371,6 +3371,8 @@ AnazhRealm.KEY_BASE = __weltLicht.KEY_BASE; // welt-licht.js — 2,6
 // r128-Studio kopierten Rig-Werte (Key · Hemi-Tag) laufen durch diesen EINEN Faktor;
 // die Nacht bleibt unberührt (Mond-Pfad eigen, Hemi-Nacht-Floor außerhalb). Kein Tuning-Knopf.
 AnazhRealm.LEGACY_LICHT = __weltLicht.LEGACY_LICHT; // welt-licht.js — π
+// DAS AUGE (welt-licht.js `AUGE`): die EINE Skala Lux → Zahl der Welt (Anpassung p, Helligkeit in der Szene q, das Knie)
+AnazhRealm.AUGE = __weltLicht.AUGE;
 // DIE BELICHTUNG (licht.K1, `_dayNightApplyBelichtung`) — EINE Eichung mit der Tonkurve (F1): `kurve` ist die Tonkurve des
 // Renderers (25a liest sie, three r184: Khronos PBR Neutral), `zielKarte` das k·L der 18-%-Karte, das DIESE Kurve auf Mittelgrau
 // legt (sRGB 118, der absolute Anker des Mittags: Luma 110–130; Neutral gibt unter der Schulter x − 0,04 aus, linear 0,18 braucht

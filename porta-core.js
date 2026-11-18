@@ -1724,6 +1724,9 @@
         pulseBase: 0.8,
         pulseAmp: 0.28,
         ySpring: 0.55,
+        // w28-strahler: die Lichtstärke der Membran je Einheit `glutIntensity` (cd) — das offene Tor (4,0) trägt 60 cd, weniger
+        // als eine Gaslaterne; ihr Bild und ihre Reichweite rechnet das Auge der Welt (welt-licht.js `AUGE`)
+        candela: 15,
     };
     function glutIntensity(openM, pulse) {
         var G = GLUT_GESETZ;

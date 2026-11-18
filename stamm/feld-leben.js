@@ -2545,9 +2545,9 @@ class AnazhRealm_feld_leben {
         return null;
     }
 
-    // Das Licht des glühenden Geräts (`_leuchtQuellen`) oder null: an der Hand, das Herdfeuer des Gesetzbuchs (LICHT_GESETZ.feuer)
-    // in der Farbtemperatur des Stahls, ohne Flackern, mit dem Kern der Klinge; die Masse folgt der Glut über die strahlende
-    // Fläche der Klinge gegen das Glutbett der Studio-Feuerstelle (klang `bettRefM`, der Bezug jeder Glut).
+    // Das Licht des glühenden Geräts (`_leuchtQuellen`) oder null: an der Hand, ein Strahler seiner Temperatur über die strahlende
+    // Fläche der Klinge (`ESSE.flaecheM2`). Bis w28-strahler trug es das Herdfeuer des Gesetzbuchs in der Farbe des Stahls, die
+    // Masse aus T⁴ gegen das Glutbett der Feuerstelle.
     _stahlGlut() {
         const s = this._stahl;
         const pm = this.state.playerMesh;
@@ -2556,27 +2556,21 @@ class AnazhRealm_feld_leben {
         const K = globalThis.__gelaendeCore;
         const g = K.glutAus(s.T + 273.15, E.feuerK);
         if (!(g > 0)) return null;
-        const L = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
-        const q =
-            this._stahlLicht ||
-            (this._stahlLicht = {
-                quelle: "stahl",
-                phase: 0,
-                L: Object.assign({}, L, { kernM: E.kernM, flacker: null }),
-            });
+        const q = this._stahlLicht || (this._stahlLicht = { quelle: "stahl", phase: 0, L: null });
         const hand = pm.userData && pm.userData.heldMesh;
         const v = this._stahlLage || (this._stahlLage = new THREE.Vector3());
         if (hand) hand.getWorldPosition(v);
         else v.set(pm.position.x, pm.position.y + E.handHoeheM, pm.position.z);
-        const bett = AnazhRealm._umweltGesetz().UMWELT.stimmen.glut.bettRefM;
-        q.L.kelvin = s.T + 273.15;
-        return Object.assign(q, {
-            x: v.x,
-            y: v.y,
-            z: v.z,
-            masse: (g * E.flaecheM2) / ((Math.PI / 4) * bett * bett),
-            glut: g,
-        });
+        // der Stahl ist ein Strahler SEINER Temperatur (`_strahler`: Planck im Sichtbaren × die Emissivität des glühenden Stahls
+        // × die strahlende Fläche der Klinge, ohne Flackern)
+        q.L = this._strahler(
+            s.T + 273.15,
+            E.flaecheM2,
+            false,
+            AnazhRealm.ESSE_FEST,
+            globalThis.__fachwerkCore.STRAHLER.emissiv.stahl
+        );
+        return Object.assign(q, { x: v.x, y: v.y, z: v.z, masse: 1, glut: g });
     }
 
     // === DIE TAT BLEIBT (feld.K4): das Gedächtnis der Taten — die EINE Quelle von Narbe, Ernte und Fällung ===
@@ -3114,6 +3108,7 @@ AnazhRealm.FELD_LEER = Object.freeze({});
 // mehr), der Übergang im Glutbett (Strahlung und Kontakt der Kohle, W/(m²·K)) und an der Luft (Strahlung und Konvektion über den
 // Gang gemittelt), die Reichweite des Arms über den Rand des Betts, der Umkreis der Suche, die Ruhe (K über der Luft: darunter
 // ist sie kalt), die strahlende Fläche und der Kern der Klinge (ihr Licht) und die Hand über dem Fuß ohne Gerät-Netz.
+AnazhRealm.ESSE_FEST = Object.freeze({ fest: true }); // die Fläche der Klinge gilt genau (`_strahler`)
 AnazhRealm.ESSE = Object.freeze({
     feuerK: 1573,
     dickeM: 0.005,
@@ -3123,7 +3118,6 @@ AnazhRealm.ESSE = Object.freeze({
     suchM: 4,
     ruheK: 1,
     flaecheM2: 0.06,
-    kernM: 0.25,
     handHoeheM: 1.1,
 });
 

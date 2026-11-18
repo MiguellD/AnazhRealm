@@ -702,6 +702,8 @@ class AnazhRealm_stoff_material {
             // 1: der Platz ist eine waagrechte Scheibe mit dem Radius seines Kerns, die nach oben strahlt (fachwerk `strahler`
             // `flach`: die Decke der Lava), 0: ein Punkt mit Kern
             lichtFlach: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
+            // DIE UMGEBUNG DER STUNDE für das Auge (welt-licht.js `AUGE`, Schreiber `_leuchtTakt`): x = ihre Lux + das Knie, y = S(x)
+            lichtAuge: TSL.uniform(new THREE.Vector2(1, __weltLicht.augeS(1))),
             // DER SCHIRM-PIXEL JE SZENEN-PIXEL (w4-wiese-nah, `_szeneSkalaWirk`): unter dem zeitlichen Hochskalierer rendert die
             // Szene in 0,75 × Ausgabe, ihr `fwidth` und ihr `screenSize` messen den Pixel der SZENE — das Mikro-Detail der Stoffe
             // (`_mikroRelief`, `_halmStoff`, das Schutt-Korn) gilt dem Pixel des SCHIRMS: die Geschichte löst welt-feste Oktaven
@@ -2303,7 +2305,12 @@ class AnazhRealm_stoff_material {
             Te.normalView.toVar();
             Te.positionView.toVar();
             const wurf = W.faktor.toVar();
-            const summe = Te.vec3(0).toVar();
+            // DAS AUGE (w28-strahler, welt-licht.js `AUGE`) — die EINE Stelle der Stauchung: die Quellen der Welt tragen Candela, ihr
+            // Beitrag steht in Lux (`summe`: rgb das Licht samt BRDF, a die Beleuchtungsstärke), und das Bild zeigt die SUMME über
+            // der Umgebung A der Stunde:   S(A + knie) · ((1 + E ÷ (A + knie))^q − 1)   — nie je Quelle (zwei Feuer sind kein
+            // doppeltes Bild). Das Licht des Auges (`ersatz`) ist keine Quelle der Welt: es steht in der Zahl des Bilds daneben.
+            const summe = Te.vec4(0).toVar();
+            const auge = Te.vec3(0).toVar();
             Te.Loop(atmo.lichtLage.length, ({ i: k }) => {
                 const [lage, farbe, ersatz, kern, flach] = AnazhRealm._jePlatz(
                     Te,
@@ -2311,13 +2318,15 @@ class AnazhRealm_stoff_material {
                     k
                 );
                 const platz = { lage, farbe, ersatz, kern, flach };
-                summe.addAssign(
-                    this._lichtPlatz(Te, platz, himmel, volumen).mul(
-                        Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k)))
-                    )
-                );
+                const b = this._lichtPlatz(Te, platz, himmel, volumen, true)
+                    .mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
+                    .toVar();
+                summe.addAssign(b.mul(ersatz.oneMinus()));
+                auge.addAssign(b.rgb.mul(ersatz));
             });
-            return summe;
+            const A = atmo.lichtAuge;
+            const zeig = A.y.mul(summe.a.div(A.x).add(1).pow(AnazhRealm.AUGE.q).sub(1));
+            return auge.add(summe.rgb.mul(zeig.div(summe.a.max(1e-9))));
         })();
     }
 
@@ -2343,7 +2352,7 @@ class AnazhRealm_stoff_material {
     // der Fläche (der Boden: `aHimmel`) oder nichts. Der Abfall des Gesetzes, das Gewicht des Himmels-Ersatzes, die Bedingung
     // (Reichweite, Gewicht, Fläche in ihr und ihm zugewandt — sie liest `positionView` und `normalView`) und die EINE BRDF
     // (`_punktLichtBrdf`). → der Beitrag des Platzes ohne den Faktor des Wurfs.
-    _lichtPlatz(Te, platz, himmel, volumen = null) {
+    _lichtPlatz(Te, platz, himmel, volumen = null, mitLux = false) {
         const N = Te.normalView;
         const P = Te.positionView;
         const { lage, farbe, ersatz, kern } = platz;
@@ -2376,7 +2385,16 @@ class AnazhRealm_stoff_material {
                 .sub(oben.mul(S.sub(kern.mul(2)).div(w).oneMinus()))
                 .div(kern.max(1e-6).mul(2)),
             Te.float(flach)
-        ).mul(d.div(lage.w).pow2().pow2().oneMinus().clamp().pow2());
+        ).mul(
+            // DER SAUM DER REICHWEITE: eine Quelle der Welt fällt über die äußeren `AUGE.saum` ihrer Reichweite weich auf null
+            // (dort hebt ihr gezeigtes Licht die Umgebung noch um `AUGE.eps`, `_leuchtReichweite`); das Licht des Auges hält
+            // den Saum des Punktlichts (1 − (d/R)⁴)²
+            Te.mix(
+                Te.smoothstep(0, 1, d.div(lage.w).oneMinus().div(AnazhRealm.AUGE.saum)),
+                d.div(lage.w).pow2().pow2().oneMinus().clamp().pow2(),
+                ersatz
+            )
+        );
         // DER VOLUMEN-LESER (w28-strahler, `volumen` = das Dach der Wiese 0 → 1): Gras ist kein Boden, es ist ein Volumen stehender
         // Halme — eine ebene Fläche bestrahlt den ebenen Boden in ihrer Ebene mit null, ein Halm am Rand sieht sie fast frontal.
         // Wo der Pixel viele Halme trägt, liest er das Mittel über ihre Stellungen (Azimut gleichverteilt, beidseitig):
@@ -2402,7 +2420,10 @@ class AnazhRealm_stoff_material {
         const beitrag = farbe.rgb
             .mul(E.mul(gewicht))
             .mul(this._punktLichtBrdf(Te, N, F.div(betrag), P.negate().normalize(), E.div(betrag).clamp()));
-        return Te.select(bedingung, beitrag, Te.vec3(0));
+        // → der Beitrag des Platzes; `mitLux` (die Schleife des Pools): dazu seine Beleuchtungsstärke — die Luma seiner Farbe ist
+        // seine Lichtstärke (Candela, `_leuchtTakt`), × die Bestrahlung seiner Geometrie = Lux
+        if (!mitLux) return Te.select(bedingung, beitrag, Te.vec3(0));
+        return Te.select(bedingung, Te.vec4(beitrag, Te.luminance(farbe.rgb).mul(E.mul(gewicht))), Te.vec4(0));
     }
 
     // DIE EINE BRDF EINES PUNKTLICHTS (K11, jeder Platz des Licht-Pools): r184s Lambert + GGX ausgeschrieben — BRDF_Lambert,

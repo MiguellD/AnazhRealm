@@ -764,7 +764,7 @@ class AnazhRealm_siedlung_tor {
             this._portalLeuchte ||
             (this._portalLeuchte = {
                 quelle: "tor",
-                L: { farbe: G.color, staerke: 0, reichweiteM: G.dist, abfall: G.decay, kernM: 0 },
+                L: { farbe: G.color, candela: 0, abfall: G.decay, kernM: 0 },
                 masse: 1,
                 phase: 0,
             });
@@ -772,7 +772,8 @@ class AnazhRealm_siedlung_tor {
         q.x = e.position.x;
         q.y = e.position.y - 0.5 + mu.springY * G.ySpring * sc;
         q.z = e.position.z;
-        q.L.staerke = PC.glutIntensity(rec._act, rec.puls);
+        // die Lichtstärke der Membran (porta `GLUT_GESETZ.candela` je Einheit ihrer Glut); Bild und Reichweite rechnet das Auge
+        q.L.candela = PC.glutIntensity(rec._act, rec.puls) * G.candela;
     }
 
     // Eine Membran für einen Eintrag bauen (fail-LAUT: schlägt der TSL-Bau fehl, bricht er beim Namen —

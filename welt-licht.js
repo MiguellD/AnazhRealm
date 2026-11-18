@@ -51,6 +51,49 @@ var __weltLicht = (function () {
     // physikalische Lichter sind bei gleicher Zahl ~π-fach dunkler. Die aus dem r128-Studio kopierten Rig-Werte (Key · Hemi-Tag)
     // laufen durch diesen EINEN Faktor; die Nacht bleibt unberührt. Kein Tuning-Knopf.
     const LEGACY_LICHT = Math.PI;
+    // DAS AUGE (w28-strahler) — DIE EINE SKALA zwischen dem Licht der Welt in Lux und der Zahl, die das Bild trägt, in zwei Gliedern:
+    //   · DIE ANPASSUNG   S(lux) = welt × (lux ÷ lux₀)^p   — zwischen den Zuständen des Auges (Sonne ↔ Mond). Der Mittag der
+    //     Mess-Wiese trägt `welt` 7,83 Einheiten waagrechte Bestrahlung (Sonne 6,39 + Himmel 1,44, `werkbank licht --uhr 0.5`)
+    //     bei `lux` 115 000 lx; die Vollmond-Nacht trägt 0,598 — das Verhältnis 13,1 : 1 steht für ehrliche 385 000 : 1,
+    //     p = ln 13,1 ÷ ln 385 000 = 0,200. Mond, Sternenlicht, Umgebung und Hemisphäre der Nacht STEHEN schon auf dieser Skala
+    //     (der Vollmond 0,26 lx → 0,58).
+    //   · DIE HELLIGKEIT IN DER SZENE   über der Umgebung A der Stunde zeigt eine Beleuchtungsstärke E
+    //         zeig(E) = S(A + knie) × ((1 + E ÷ (A + knie))^q − 1)
+    //     `q`: die Antwort des Auges INNERHALB eines Zustands ist steiler als die Anpassung (die Helligkeit nach CIE L* folgt der
+    //     Kubikwurzel; das Feld 0,30–0,42); `knieLux`: das Knie Stäbchen → Zapfen — darunter (Mondnacht, Höhle) zählt jedes Lux
+    //     gegen das Knie, nicht gegen die Dunkelheit: ohne es hob ein Feuer mit p allein (r^−0,4) die Wiese noch in 20 m um ×1,9,
+    //     eine Farb-Wäsche ohne Kreis (GTX 1050, 18.11.). Im Dunkeln (A → 0) bleibt S(knie) × ((1 + E ÷ knie)^q − 1), nichts
+    //     teilt durch null; am Mittag trägt ein Feuer 0,04 % — ohne Zeitplan.
+    // Jede Quelle des Licht-Pools trägt darum CANDELA; der Stoff summiert ihre Beleuchtungsstärke in Lux und zeigt die SUMME
+    // (`_lichtPoolTerm`, die EINE Stelle). `eps`: eine Quelle reicht, so weit ihr GEZEIGTES Licht die Umgebung um diesen Anteil
+    // hebt (zeig(E) = eps · S(A); `augeReichweite`), über die äußeren `saum` ihrer Reichweite fällt sie weich auf null.
+    // DIE KAMERA schließt für das Becken NICHT: die Anpassung des Auges an die Quelle IST dieses Gesetz (S(A + knie) in der
+    // Summe) — ein Messer, der das Becken dazu las, zählte sie doppelt (eine Stufe am Herdfeuer: der Kreis ×3,3 fiel auf ×2,2,
+    // die Straße in 40 m auf ×0,46; GTX 1050, 18.11.). Leser: `_leuchtTakt` (A, Reichweite), `_lichtPoolTerm` (die Stauchung der Summe).
+    // DAS MESOPISCHE BAND (CIE 191:2010): unter `staebchenCd` sieht das Auge mit den Stäbchen, über `zapfenCd` mit den Zapfen.
+    // EINE Quelle für das Knie des Auges und für die Sättigung der Nacht (`AnazhRealm.NACHT_AUGE` liest sie): das Knie liegt in
+    // der Mitte des Bands (geometrisch) als Beleuchtungsstärke der Karte — E = π · L ÷ `karte`, 2,76 lx.
+    const MESOPISCH = Object.freeze({ staebchenCd: 0.005, zapfenCd: 5, karte: 0.18 });
+    const AUGE = Object.freeze({
+        p: 0.2,
+        q: 0.42,
+        knieLux: (Math.sqrt(MESOPISCH.staebchenCd * MESOPISCH.zapfenCd) * Math.PI) / MESOPISCH.karte,
+        welt: 7.83,
+        lux: 115000,
+        eps: 0.1,
+        saum: 0.3,
+    });
+    const augeS = (lux) => AUGE.welt * Math.pow(Math.max(0, lux) / AUGE.lux, AUGE.p);
+    // die Umkehr: die Lux, die eine Zahl der Welt auf der Skala trägt (die Umgebung der Stunde aus dem Lichtmesser)
+    const augeLux = (welt) => AUGE.lux * Math.pow(Math.max(0, welt) / AUGE.welt, 1 / AUGE.p);
+    // das gezeigte Licht einer Beleuchtungsstärke `lux` über der Umgebung `aLux`
+    const augeZeig = (lux, aLux) =>
+        augeS(aLux + AUGE.knieLux) * (Math.pow(1 + Math.max(0, lux) / (aLux + AUGE.knieLux), AUGE.q) - 1);
+    // die Reichweite (m) einer Quelle von `candela` über der Umgebung `aLux`: wo zeig(candela ÷ d²) unter eps · S(aLux) fällt
+    const augeReichweite = (candela, aLux) => {
+        const x = Math.pow(1 + (AUGE.eps * augeS(aLux)) / augeS(aLux + AUGE.knieLux), 1 / AUGE.q) - 1;
+        return Math.sqrt(Math.max(0, candela) / Math.max(1e-9, x * (aLux + AUGE.knieLux)));
+    };
     // DIE BELICHTUNG (licht.K1) — EINE Eichung mit der Tonkurve (F1): `kurve` ist die Tonkurve des Renderers (three r184: Khronos
     // PBR Neutral), `zielKarte` das k·L der 18-%-Karte, das DIESE Kurve auf Mittelgrau legt (sRGB 118; `kartenEichung(kurve, 0)`
     // in scripts/lib/licht-linsen.cjs rechnet es nach). `min` ist nur die Wand gegen ein entartetes Licht. `steigung` ist die
@@ -1329,6 +1372,12 @@ var __weltLicht = (function () {
         ATMO_BODEN,
         KEY_BASE,
         LEGACY_LICHT,
+        AUGE,
+        MESOPISCH,
+        augeS,
+        augeLux,
+        augeZeig,
+        augeReichweite,
         BELICHTUNG,
         GRENZGROESSE,
         GPU_FRAMES_IM_FLUG,

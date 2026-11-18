@@ -1603,6 +1603,16 @@ class AnazhRealm {
         if (!atmo || !cam) return; // vor der Welt: kein Stoff liest den Pool
         const LP = AnazhRealm.LICHT_POOL;
         const LG = globalThis.__fachwerkCore.LICHT_GESETZ;
+        // DIE UMGEBUNG DER STUNDE (welt-licht.js `AUGE`): die waagrechte Beleuchtungsstärke unter freiem Himmel — die Lesung des
+        // EINEN Lichtmessers OHNE das Becken (`_belichtungE`, `_belichtungAusLicht` las sie in diesem Takt) — in Lux auf der
+        // EINEN Skala; über ihr zeigt der Stoff jede Quelle (`_lichtPoolTerm`: `lichtAuge` trägt A + Knie und S davon), aus ihr folgt ihre
+        // Reichweite (`_leuchtReichweite`). Ohne Lesung hält sie die letzte (`_augeLux`).
+        const aE = this._belichtungGelesen ? this._belichtungE : null;
+        if (aE) {
+            const aLux = (this._augeLux = __weltLicht.augeLux(0.2126 * aE[0] + 0.7152 * aE[1] + 0.0722 * aE[2]));
+            const ak = aLux + AnazhRealm.AUGE.knieLux;
+            atmo.lichtAuge.value.set(ak, __weltLicht.augeS(ak));
+        }
         for (const k in atmo.lichtGlut)
             this._lichtLinear(LG[k], atmo.lichtGlut[k].value).multiplyScalar(this._lichtZeitplan(LG[k].zeit));
         const pool =
@@ -1659,7 +1669,8 @@ class AnazhRealm {
             const q = H[k];
             const lage = atmo.lichtLage[k].value;
             const farbe = atmo.lichtFarbe[k].value;
-            const I = q ? this._leuchtStaerke(q, t) * pool.blende[k] : 0;
+            const R = q ? this._leuchtReichweite(q) : 0;
+            const I = R > 0 ? this._leuchtCandela(q, t) * pool.blende[k] : 0;
             if (!(I > 0)) {
                 lage.set(0, 0, 0, 0);
                 farbe.set(0, 0, 0, 0);
@@ -1676,11 +1687,14 @@ class AnazhRealm {
                 q.y = cp.y;
                 q.z = cp.z;
             }
-            lage.set(q.x, q.y, q.z, L.reichweiteM);
+            lage.set(q.x, q.y, q.z, R);
             this._lichtLinear(L, c);
-            // der Bezug des Abfalls in 1 m (fachwerk `lichtAbfall`): der Stoff rechnet (d² + k²)^(−abfall/2), die Stärke trägt (1 + k²)^(abfall/2)
+            // EINE QUELLE DER WELT trägt Candela: ihre Farbe auf Leuchtdichte 1 (die Luma des Platzes IST seine Lichtstärke), der
+            // Stoff rechnet E = candela ÷ (d² + k²) in Lux und staucht die Summe (`_lichtPoolTerm`). Das Licht des Auges
+            // (`ersatz`) ist keine Quelle der Welt: es steht in der Zahl des Bilds außerhalb der Summe, sein Bezug des Abfalls in
+            // 1 m wie bisher (der Stoff rechnet (d² + k²)^(−abfall/2), die Stärke trägt (1 + k²)^(abfall/2)).
             const k2 = L.kernM * L.kernM;
-            const In = I * Math.pow(1 + k2, L.abfall / 2);
+            const In = L.ersatz ? I * Math.pow(1 + k2, L.abfall / 2) : I / (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b);
             farbe.set(c.r * In, c.g * In, c.b * In, L.abfall);
             atmo.lichtErsatz[k].value = L.ersatz ? 1 : 0;
             atmo.lichtKern[k].value = k2;
@@ -1691,7 +1705,7 @@ class AnazhRealm {
                 y: q.y,
                 z: q.z,
                 staerke: I,
-                reichweite: L.reichweiteM,
+                reichweite: R,
                 abfall: L.abfall,
                 kern: L.kernM,
                 flach: L.flach || 0,
@@ -1722,7 +1736,7 @@ class AnazhRealm {
     // Datum (der Pool liest es je Bild). Bis hier trug `_flammenLicht(r)` die Flamme als Herdfeuer-Datum mit `schein` 7,5 und
     // festen 2 000 K — auch für die Lava, deren Decke ihre eigene Temperatur hat; davor leuchtete der Brand als Herdfeuer-Punkt
     // × `BRAND.licht` 4 × Zeitplan (nachts 565 in 1 m: das Gras brannte weiß aus).
-    _strahler(TK, A, flach = false, mit = null) {
+    _strahler(TK, A, flach = false, mit = null, emissiv = globalThis.__fachwerkCore.STRAHLER.emissiv.flamme) {
         const FC = globalThis.__fachwerkCore;
         // die Fläche der Flamme je Viertelmeter ihres Kerns (sie wächst je Bild), die einer Decke genau (ihre Seite ist die Zelle)
         const k4 = Math.max(1, Math.round(Math.sqrt(A / Math.PI) * 4));
@@ -1737,26 +1751,40 @@ class AnazhRealm {
             "|" +
             (mit && mit.flacker ? 1 : 0) +
             "|" +
-            ((mit && mit.leucht) || 0) +
+            (mit && mit.cdM2 != null ? "c" + mit.cdM2 : "e" + emissiv) +
             "|" +
             ((mit && mit.hoeheM) || 0);
         const M = this._strahlerDaten || (this._strahlerDaten = new Map());
         let L = M.get(key);
         if (!L) {
             if (M.size > 512) M.clear();
-            const glut = globalThis.__gelaendeCore.glutAus(T, FC.STRAHLER.ankerK);
-            L = FC.strahler(Object.assign({ kelvin: T, flaecheM2, glut, flach }, mit));
-            L.reichweiteM = Math.min(AnazhRealm.LICHT_POOL.umkreisM, L.reichweiteM);
+            L = FC.strahler(Object.assign({ kelvin: T, flaecheM2, emissiv, flach }, mit));
             M.set(key, Object.freeze(L));
         }
         return L;
     }
 
-    // DIE STÄRKE einer Quelle zur Bild-Uhr t (K11, A9): Datum × Flackern × Zeitplan über die EINE Übersetzung Labor → Welt × Masse.
-    _leuchtStaerke(q, t) {
+    // DIE LICHTSTÄRKE einer Quelle zur Bild-Uhr t (K11, A9 · w28-strahler): ihre CANDELA × Masse × Flackern (`t` null: ohne
+    // Flackern, ihr Mittel) — kein Zeitplan: was sie zeigt, entscheidet das Auge über der Umgebung der Stunde (`AUGE`). Das
+    // Licht des Auges (`ersatz`) ist keine Quelle der Welt: es trägt seine Stärke in der Zahl des Bilds über die EINE
+    // Übersetzung Labor → Welt. Ein Datum ohne Candela ist ein Bruch des Vertrags (laut).
+    _leuchtCandela(q, t) {
         const L = q.L;
-        const fl = L.flacker ? L.flacker.amp * globalThis.__fachwerkCore.lichtFlackern(L, t, q.phase) : 0;
-        return this._laborLichtStaerke(L.staerke * (1 + fl)) * q.masse * this._lichtZeitplan(L.zeit);
+        if (L.ersatz) return this._laborLichtStaerke(L.staerke) * q.masse;
+        if (!(L.candela >= 0)) throw new Error("_leuchtCandela: die Quelle " + q.quelle + " trägt keine Candela");
+        const fl = L.flacker && t != null ? L.flacker.amp * globalThis.__fachwerkCore.lichtFlackern(L, t, q.phase) : 0;
+        return L.candela * q.masse * (1 + fl);
+    }
+
+    // DIE REICHWEITE einer Quelle (m, w28-strahler): so weit ihr GEZEIGTES Licht die Umgebung der Stunde um `AUGE.eps` hebt
+    // (welt-licht.js `augeReichweite` über ihre Candela ohne Flackern und die Lux der Stunde, `atmo.lichtAuge`), höchstens der
+    // Umkreis des Pools, je halbem Meter (die Karte des Wurfs liest sie als Stand). 0, wo sie nicht über ihren eigenen Kern
+    // hinaus trägt — am Mittag jede Flamme: sie steht nicht zur Wahl, ihr Platz ist frei. Das Licht des Auges trägt die seine.
+    _leuchtReichweite(q) {
+        const L = q.L;
+        if (L.ersatz) return this._laborLichtStaerke(L.staerke) > 0 ? L.reichweiteM : 0;
+        const R = __weltLicht.augeReichweite(this._leuchtCandela(q, null), this._augeLux ?? 1);
+        return R > L.kernM ? Math.min(AnazhRealm.LICHT_POOL.umkreisM, Math.ceil(R * 2) / 2) : 0;
     }
 
     // DER SICHTKEGEL der Licht-Wahl (K10 × K11): das Frustum der Kamera des Bildes, je Wahl aus ihren Matrizen.
@@ -1782,13 +1810,13 @@ class AnazhRealm {
     // vor dem Auge (die Gasse nachts: 1 von 6 Laternen im Bild hell). Freie Plätze nehmen sie weiter (das Drehen blendet).
     _leuchtQuellen(x, y, z, R, F) {
         const out = [];
-        const t = this._bildZeit; // das Flackern auf der Bild-Uhr (A9)
         const kugel = F ? this._leuchtKugel || (this._leuchtKugel = new THREE.Sphere()) : null;
         const nimm = (id, q) => {
             const d = Math.hypot(q.x - x, q.y - y, q.z - z);
-            if (d > R + q.L.reichweiteM || !(this._leuchtStaerke(q, t) > 0)) return;
-            const imBild = !F || F.intersectsSphere(kugel.set(kugel.center.set(q.x, q.y, q.z), q.L.reichweiteM));
-            out.push(Object.assign(q, { id, rang: (imBild ? 0 : 1e9) + Math.max(0, d - q.L.reichweiteM) * 1e3 + d }));
+            const rw = this._leuchtReichweite(q);
+            if (!(rw > 0) || d > R + rw) return;
+            const imBild = !F || F.intersectsSphere(kugel.set(kugel.center.set(q.x, q.y, q.z), rw));
+            out.push(Object.assign(q, { id, rang: (imBild ? 0 : 1e9) + Math.max(0, d - rw) * 1e3 + d }));
         };
         const auge = this._augenLeuchte;
         if (auge) nimm(auge, Object.assign({}, auge, { x, y, z }));
@@ -1856,11 +1884,11 @@ class AnazhRealm {
             const D = this._lavaScheibe(a);
             if (!(D.flaecheM2 > 0) || (D.x - x) * (D.x - x) + (D.z - z) * (D.z - z) > R * R) continue;
             const TK = this._lavaZustand(a).temperatur + 273.15;
-            const leucht = this._lavaLeucht(TK);
-            if (!(leucht > 0)) continue;
+            const cdM2 = this._lavaLeucht(TK);
+            if (!(cdM2 > 0)) continue;
             // die Fläche je halbem Meter ihres Radius (ein Datum je Stufe, `_strahler`)
             const r2 = Math.max(1, Math.round(Math.sqrt(D.flaecheM2 / Math.PI) * 2)) / 2;
-            const L = this._strahler(TK, Math.PI * r2 * r2, true, { leucht });
+            const L = this._strahler(TK, Math.PI * r2 * r2, true, { cdM2 });
             nimm(a, { quelle: "lava", x: D.x, y: a.y, z: D.z, L, masse: 1, phase: 0 });
         }
         // DER STAHL DER ESSE (stoffe.K3-2): das glühende Gerät leuchtet an der Hand in der Farbe seiner Temperatur (`_stahlGlut`)

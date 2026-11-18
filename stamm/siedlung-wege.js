@@ -580,6 +580,8 @@ class AnazhRealm_siedlung_wege {
     // Kanal Rot (der Planck-Ort der Spanne trägt Rot 1), je 5 K ein Wert (je 25 K sprang sie beim Erkalten um ein Fünftel). Bis hier strahlte der Pool mit der Leuchtdichte der
     // Temperatur des INNERN über die ganze Fläche (7,5 × glutAus = 3,16 bei 1 635 K) — das Bild der Decke trägt im Riss 2,2, auf
     // der Scholle 0,07: das Gras am Rand stand heller als die Lava, die es beleuchtet, mittags färbte sie die Wiese gelb.
+    // IN CANDELA JE m² (w28-strahler): je Stelle der Decke Planck im Sichtbaren bei IHRER Temperatur (fachwerk `leuchtdichte`)
+    // × die Emissivität der Lava — dasselbe Feld der Risse und Schollen, das ihr Bild malt.
     _lavaLeucht(TK) {
         const T = Math.round(TK / 5) * 5;
         const M = this._lavaLeuchtJe || (this._lavaLeuchtJe = new Map());
@@ -587,7 +589,7 @@ class AnazhRealm_siedlung_wege {
         if (L === undefined) {
             const [td, t0] = this._lavaSpanne();
             const K = AnazhRealm.LAVA_KRUSTE;
-            const Z = this._lavaGlutZahlen()[0];
+            const FC = globalThis.__fachwerkCore;
             const w = Math.min(1, Math.max(0, (T - td) / (t0 - td)));
             let [s, g] = [0, 0];
             for (let i = 0; i < 128; i++) {
@@ -596,7 +598,7 @@ class AnazhRealm_siedlung_wege {
                 const e = Math.min(1, n / Math.max(1e-9, w * K.offen));
                 const riss = 1 - e * e * (3 - 2 * e);
                 const Ts = td + w * (K.platte + (1 - K.platte) * riss) * (t0 - td);
-                s += p * Z.amp * Math.exp(Z.c * (1 / t0 - 1 / Ts));
+                s += p * FC.leuchtdichte(Ts) * FC.STRAHLER.emissiv.lava;
                 g += p;
             }
             M.set(T, (L = w > 0 ? s / g : 0));

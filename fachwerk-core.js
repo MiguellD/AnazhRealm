@@ -5884,7 +5884,8 @@
     // und der Fuß der ACES-Kurve kippt ein schwach beleuchtetes Orange ins Rot (Farbton 14,5°, lava-rot);
     // `fenster` das Nachtlicht der Glas-Stoffe (die Glut je Tageszeit; 2 800 K, der
     // Farbort, den das Auge V18.542 an den Fenstern richtig fand), `laterne` das Gaslicht der Gasse (1 900 K, Nordstern
-    // Fachwerk-Soll: der Kopf auf der Lichthöhe des Labors bei 3,7 m Straße; unter ihr dieselbe Bestrahlung wie bis K11b,
+    // Fachwerk-Soll: der Kopf auf der Lichthöhe des Labors bei 3,7 m Straße; `candela` 100 — das Gaslicht mit Glühstrumpf, die
+    // Zahl der Welt (w28-strahler: ihr Bild und ihre Reichweite rechnet das Auge, welt-licht.js `AUGE`; `staerke` und `zeit` liest das Labor); unter ihr dieselbe Bestrahlung wie bis K11b,
     // zwischen zwei Laternen im Abstand 9 m 0,44 davon — das Band 2–5 lx). Leser: das Labor (Herdfeuer, Fenster) und die
     // Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit Datum — die Laternen eines Plans, K10; `_leuchtStoff`:
     // Fenster). Das Labor (r128, Legacy-Licht) zeichnet den Abfall als (1 − d/R)^abfall — r128 kennt 1/d² nur für die ganze
@@ -5896,7 +5897,7 @@
     var LICHT_GESETZ = {
         feuer: { kelvin: 2000, staerke: 1, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
         fenster: { kelvin: 2800, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
-        laterne: { kelvin: 1900, staerke: 19, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
+        laterne: { kelvin: 1900, candela: 100, staerke: 19, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
     };
     // DIE WANDLATERNE (K66-2): die Leuchte der dichten Gasse hängt an der Hauswand, wo kein Mast vor der Wand und neben dem Weg
     // steht — ihr Licht ist das der Laterne (Farbtemperatur, Zeitplan, Reichweite, Abfall), abgeleitet aus zwei Maßen ihres Leibs:
@@ -5914,6 +5915,8 @@
         return {
             kelvin: L.kelvin,
             staerke: r3(boden * Math.pow((h * h + k2) / (1 + k2), L.abfall / 2)),
+            // die Candela aus demselben Maß: unter ihr trägt die Gasse die Lux des Masts (E = candela ÷ (h² + k²))
+            candela: r3((L.candela * (h * h + k2)) / (L.hoeheM * L.hoeheM + L.kernM * L.kernM)),
             reichweiteM: L.reichweiteM,
             abfall: L.abfall,
             kernM: r3(Math.sqrt(k2)),
@@ -5949,26 +5952,40 @@
         var q = (d / R) * (d / R), saum = (1 - q * q) * (1 - q * q);
         return saum * Math.pow((1 + k2) / (d * d + k2), (L.abfall || 0) / 2);
     }
-    // DAS STRAHLER-GESETZ (w28-strahler) — EINE Funktion für alles, was leuchtet: LEUCHTDICHTE × FLÄCHE. Die Leuchtdichte L
-    // (Welt-Einheit: an der Fläche trägt sie die Bestrahlung π·L; der Mond trägt 0,224) kommt aus EINER von zwei Quellen:
-    //   · `glut` (0…1): der Körper, dessen Temperatur ZUSTAND ist (Flamme, Bett, Lava, Stahl, Funke) — seine Strahlung über dem
-    //     Draper-Punkt relativ zum Anker (gelaende-core `glutAus(T, STRAHLER.ankerK)`, der Wirt reicht sie: `_strahler`), mal dem
-    //     EINEN Anker `STRAHLER.leucht` (die Flamme bei 2 000 K: an ihr die Bestrahlung π·7,5 — bei Tag und Nacht dieselbe);
-    //   · `leucht`: das Datum einer Lampe (Laterne, Fenster, Tor, Fahrzeug) — Glühstrumpf und Lampe hinter Glas sind keine
-    //     Schwarzkörper ihrer Farbtemperatur: ihre Farbe ist Planck (`kelvin`), ihre Leuchtdichte nicht.
-    // Aus L und der Fläche `flaecheM2` folgt ALLES Weitere, für beide gleich: der Kern k = √(A/π) (die Ausdehnung der Quelle),
-    // die Stärke des Punktlicht-Datums in 1 m, L·A/(π·(1 + k²)) (`lichtAbfall`: an der Fläche π·L, fern L·A/d²), die Reichweite
-    // √(L·A/eMin) (wo ihre Bestrahlung unter `eMin` fällt; der Wirt deckelt sie am Umkreis seines Pools) und — mit `flach` —
-    // eine waagrechte SCHEIBE dieser Fläche, die nach oben strahlt (Lambert; ihr Radius ist der Kern — die Decke der Lava, das
-    // Bett: der Stoff rechnet sie als Fläche, nicht als Punkt). `kelvin` trägt die Farbe (`lichtFarbe`), `flacker` · `hoeheM` · `zeit` (AN/AUS einer Lampe) reisen mit.
-    // Bis hier setzten zwölf Wege eine Stärke (feuer.staerke × Zeitplan nacht 45 · schein × k²/(1 + k²) · LEUCHT_FEUER · …).
-    var STRAHLER = Object.freeze({ ankerK: 2000, leucht: 7.5, eMin: 0.05 });
+    // DAS STRAHLER-GESETZ (w28-strahler) — EINE Funktion für alles, was leuchtet: LEUCHTDICHTE × FLÄCHE = CANDELA. Die
+    // Leuchtdichte (cd/m²) kommt aus EINER von zwei Quellen:
+    //   · der Körper, dessen Temperatur ZUSTAND ist (Flamme, Bett, Lava, Stahl): Planck im Sichtbaren, `leuchtdichte(T)` — der
+    //     schwarze Strahler, gewogen mit der Hellempfindung V(λ), 683 lm/W: 1 400 K 2,4·10³, 1 650 K 3,3·10⁴, 2 000 K
+    //     4,6·10⁵ cd/m² — mal seiner EMISSIVITÄT (`STRAHLER.emissiv`, das EINE Datum je Stoff: Lava und glühender Stahl sind
+    //     fast schwarz; die Flamme ist dünner Ruß über einem Bett, das sie nur zum Teil deckt — ihr Mittel über die Fläche des
+    //     Betts so, dass ein Lagerfeuer Ø 0,76 m um 250 cd trägt: die Kerze brennt 80 W für 13 lm, 0,16 lm je W Brand —
+    //     ein Feuer von 10–20 kW trägt 1 600–3 200 lm, rundum 130–250 cd).
+    //     T⁴ trägt nur die WÄRME (gelaende-core `glutAus`), nie das Licht;
+    //   · `cdM2`: das Datum einer Fläche, deren Bild schon gemittelt ist (die Decke der Lava aus Rissen und Schollen).
+    // Aus Leuchtdichte und Fläche `flaecheM2` folgt ALLES Weitere: die Lichtstärke `candela`, der Kern k = √(A/π) (die
+    // Ausdehnung der Quelle; `lichtAbfall`: E = candela ÷ (d² + k²) Lux) und — mit `flach` — eine waagrechte SCHEIBE dieser
+    // Fläche, die nach oben strahlt (Lambert; der Stoff rechnet sie als Fläche). Was die Quelle im BILD zeigt und wie weit sie
+    // reicht, entscheidet das Auge der Welt (welt-licht.js `AUGE`: S(A + E) − S(A)) — hier steht keine Stärke, keine Reichweite,
+    // kein Zeitplan. `kelvin` trägt die Farbe (`lichtFarbe`), `flacker` · `hoeheM` reisen mit. Eine Lampe (Laterne) trägt
+    // ihre Candela als Datum (`LICHT_GESETZ.*.candela`). Bis hier trug der Strahler einen Anker in Welt-Einheiten (`leucht`
+    // 7,5 bei 2 000 K, × T⁴ über dem Draper-Punkt) und eine Reichweite aus einer linearen Schwelle (`eMin`).
+    var STRAHLER = Object.freeze({ abfall: 2, emissiv: Object.freeze({ flamme: 0.0012, lava: 0.95, stahl: 0.8 }) });
+    // DIE LEUCHTDICHTE DES SCHWARZEN STRAHLERS (cd/m²) bei T (K): 683 · ∫ B_λ(T) · V(λ) dλ über 380–780 nm in 5-nm-Schritten,
+    // V(λ) die Hellempfindung des Tages (CIE 1924 in der Gauß-Näherung 1,019 · e^(−285,4 · (λ/µm − 0,559)²)).
+    function leuchtdichte(T) {
+        var s = 0;
+        for (var nm = 380; nm <= 780; nm += 5) {
+            var l = nm * 1e-9, u = nm * 1e-3 - 0.559;
+            s += (1.1910429e-16 / (l * l * l * l * l) / (Math.exp(0.014387769 / (l * T)) - 1)) * 1.019 * Math.exp(-285.4 * u * u) * 5e-9;
+        }
+        return 683 * s;
+    }
     function strahler(q) {
-        var L = q.leucht != null ? +q.leucht : STRAHLER.leucht * q.glut, A = +q.flaecheM2;
-        if (!(q.kelvin > 0) || !(A > 0) || !(L >= 0)) throw new Error("fachwerk strahler: kelvin, flaecheM2 und glut oder leucht fehlen");
-        var k = Math.sqrt(A / Math.PI);
-        return { kelvin: +q.kelvin, leucht: L, flaecheM2: A, kernM: k, flach: q.flach ? 1 : 0, staerke: (L * A) / (Math.PI * (1 + k * k)),
-            reichweiteM: Math.sqrt((L * A) / STRAHLER.eMin), abfall: 2, flacker: q.flacker || null, hoeheM: q.hoeheM || 0, zeit: q.zeit || null };
+        var e = q.emissiv != null ? +q.emissiv : null, A = +q.flaecheM2;
+        var L = q.cdM2 != null ? +q.cdM2 : e != null ? leuchtdichte(+q.kelvin) * e : NaN;
+        if (!(q.kelvin > 0) || !(A > 0) || !(L >= 0)) throw new Error("fachwerk strahler: kelvin, flaecheM2 und emissiv oder cdM2 fehlen");
+        return { kelvin: +q.kelvin, cdM2: L, flaecheM2: A, kernM: Math.sqrt(A / Math.PI), flach: q.flach ? 1 : 0, candela: L * A,
+            abfall: STRAHLER.abfall, flacker: q.flacker || null, hoeheM: q.hoeheM || 0 };
     }
     // Das Flackern einer Quelle zur Zeit t (s) mit der Phase `phase`: −1 … 1 aus zwei Sinus in `flacker.hz` (die Flamme atmet
     // in 6–10 Hz; die Schwebung beider bricht die Periode). Ohne `flacker` 0.
@@ -11796,6 +11813,7 @@
         lichtAbfall: lichtAbfall,
         STRAHLER: STRAHLER,
         strahler: strahler,
+        leuchtdichte: leuchtdichte,
         // schatten.K5 — der Leib einer Leuchte (der Glas-Kopf): die nahe Ebene ihres Wurfs
         lichtLeib: lichtLeib,
         EXPL_GESETZ: EXPL_GESETZ,
