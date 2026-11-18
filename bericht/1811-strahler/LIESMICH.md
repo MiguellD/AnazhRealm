@@ -1,5 +1,7 @@
 # w28-strahler — ZIELBILD vor dem ersten Schnitt (GTX 1050, 18.11., gemessen an main c50e6b61, V18.546.329)
 
+**BEREIT ZUM BLICK, Stück 1, Kopf 3147ee40** (18.11. 04:55; WIP gepusht, nicht abgegeben) — die herd-freien Paare `{main,kopf}-h-lava-{nah,fern}-{nacht,tag}.png` und die vier Zahlen stehen im Abschnitt „Stand 18.11. 04:50“ unten; ältere Abschnitte sind Verlauf.
+
 Dieses Blatt steht für sich: ein neuer Koordinator liest hier Auftrag, Stand und nächsten Schritt ohne die Sitzung, die es schrieb.
 
 ## Auftrag (Koordinator, 17.11. 23:05; ersetzt die Idee `w28-auge-quelle`)
@@ -170,3 +172,78 @@ nicht; gepusht wird erst auf einem main, das sie trägt).
 
 Werkzeug (lokal, GTX 1050): Befehls-Dateien `gtx1050-werkzeug/tmp/sz-main-{wiese,tor,dorf,dorf2,lava3}.bef` über
 `werkbank-ort.sh` (ORT=wiese · genesis · dorf); für den Kopf dieselben Posen mit anderem Vorsatz der Datei-Namen.
+
+## Stand 18.11. 04:50 — Kopf 3147ee40 (WIP, gepusht, NICHT abgegeben): Stück 1 bis an den Blick
+
+**Was am Zielbild falsch war, und was davon fällt.** Das Maß „Saum-Gras nah-nacht ≥ main (46)" fällt offen: die 46 an main und
+die 69,8 am Kopf b5be3ff6 waren das Licht ZWEIER GLUTBRUNNEN im Bild (je 144 in 1 m), nicht der Lava. Alle alten Bilder
+`*-b-lava-allein-*` und `kopf-b-*` sind kein Beweis mehr; es gelten nur die herd-freien Paare `*-h-lava-*` unten.
+
+**Geschnitten seit b5be3ff6 (vier Commits, 1c40614e · eb1e550e · 3147ee40):**
+- Die Quelle im Pool ist die Quelle im Bild: die Lava strahlt als waagrechte SCHEIBE (geschlossene Sichtfaktoren im Stoff,
+  `_lichtPlatz`), an Mitte und Fläche IHRER GEMALTEN DECKE (`_lavaScheibe` liest das Rand-Gesetz `_brandNarbeFn`), mit der
+  MITTLEREN Leuchtdichte des Bildes der Decke (`_lavaLeucht`: dieselben Zahlen `_lavaGlutZahlen`, die `_lavaGlutNode` malt) über
+  `_strahler` mit `leucht`. Vorher: ein Quadrat der Zelle am Ort des Gusses mit der Leuchtdichte des Risses — Gras stand IN der
+  Strahler-Fläche.
+- Das Herdfeuer (Glutbrunnen, Esse, Feuerstelle) leuchtet durch `_strahler` aus Temperatur × Bett-Fläche: 144 → 2,97 in 1 m,
+  bei Tag und Nacht dasselbe.
+- Die Linse des Feuerkreises (Entscheid 04:02, Weg A): ZWEI Urteile am Bild. (1) Gesetz: Licht des Feuers im Kreis (linear, mit
+  minus ohne Feuer) gegen den Eich-Schuss, dessen Stärke die Linse aus fachwerk `strahler` rechnet (7,5 × 0,454 m² = 2,97 in
+  1 m) — ≤ 15 %, gemessen 0 %. Ein absolutes E(2 m) → Luma hätte einen Zwilling der Foto-Kette in der Linse verlangt; am
+  Eich-Schuss kürzen sich Boden, Belichtung und Tonkurve. Die Linse fing beim Bau sofort zwei eigene Fehler (falsches Bett
+  0,385 statt 0,454 m², fehlender Labor-Faktor π). (2) Kontrast mit ÷ ohne Feuer ≥ 1,5: gemessen **1,539 und 1,562** in zwei
+  Läufen — Abstand 0,04–0,06, DÜNN. Mutanten, beide ROT beim Namen: Feuer aus (Gesetz −100 %, Kontrast 1,0), alte Stärke 144
+  (Gesetz +4465 %). Zwei alte Selbsttests standen am schwachen Feuer blind (Glut-Palette, Auge des Tages) und sehen wieder.
+
+**Gemessen (GTX 1050, Mess-Wiese, Sommer sonnig, 960 × 540, herd-frei = `_leuchtQuellen` ohne `glutbrunnen`, gleiche Kamera,
+main = 21f279f5, der Stand, den der Zweig trägt):**
+
+| Bild | Region | main Luma · R/G | Kopf Luma · R/G |
+|---|---|---|---|
+| nah-nacht | Saum-Gras (200,400–560,470) | 40,7 · 1,10 | 31,7 · 0,94 |
+| nah-nacht | nackter Grund am Rand (420,395–520,420) | 47,5 · 1,38 | 29,8 · 1,24 |
+| nah-nacht | Decke (300,280–800,380) | 64,2 | 63,5 |
+| nah-tag | Saum-Gras | 107,1 · 0,947 | 104,3 · 0,911 |
+| nah-tag | Wiese links (0,290–190,370) | 119,0 · 0,976 | 118,1 · 0,968 |
+| fern-nacht | Saum | 35,3 · 0,87 | 34,0 · 0,83 |
+| fern-tag | Saum | 114,6 · 0,911 | 114,3 · 0,911 |
+
+Ohne jedes Licht trägt derselbe Saum nachts 29,4 (R/G 0,84): die Lava hebt ihn am Kopf um 2,3 Luma und färbt ihn warm. Der
+Pool trägt an main 22,3 in 1 m (Kern 8 m), am Kopf 1,06–1,30 (Kern 7,5 m; die Decke kühlt im Lauf).
+
+Die vier Zahlen des Entscheids:
+1. **Halm gegen das Integral** über die gemalte Decke (CPU-Richter, Halm 0,4 m hoch): 0,5 m vor dem Rand ≤ 17 % (Soll 15 %
+   — REISST um 2 Punkte), 2 m ≤ 5 %, 5 m ≤ 1 %. Als Quadrat der Zelle: −64 % … +938 %.
+2. **Farbdrift am Mittag** R/G Saum-Gras: main 0,947 → Kopf 0,911 (das Orange am Rand fällt); abseits 0,976 → 0,968.
+3. **ms an der Lava-Pose** (`gpu-bank` 60 × 3, Ego, Blick auf die Decke, gleicher Ablauf, je EIN Lauf): Nacht main 8,92 →
+   Kopf 6,65 ms · Mittag 7,63 → 7,09 ms. Kein Aufpreis; die Zahl ist CPU-nah (CPU je Frame 8,77 → 6,47), kein reines GPU-Maß.
+4. **S0-Boden-Text**: 99 821 → 99 593 Zeichen (Ratsche 100 062). Der Text des Gras-Programms ist UNGEMESSEN.
+
+Rückfall-Proben am Kopf gegen die main-Bilder (c50e6b61): Tor nah/fern nacht und nah tag, Gasse nah2 nacht/tag — Luma des
+ganzen Bildes je ≤ 0,4 Stufen von 255 auseinander (Dateien `kopf-d-tor-*`, `kopf-e-gasse-nah2-*`). (c) Rauch am Kopf nicht
+aufgenommen. Paar (a) Herd: `kopf-a-herd-*` (die weiße Scheibe um den Glutbrunnen ist weg, die Flamme hat Gestalt).
+
+**Mein Blick auf die Paare.** nah-nacht main: orange gesprenkelter Grund am Rand, der Stein vorn glüht. Kopf: der Rand ist
+ruhig, Gras und Stein tragen einen schwachen warmen Hauch. Gesetzestreu (die Decke trägt im Mittel 0,5, der Riss 2,2–2,5), aber
+EHRLICH: dem Auge leuchten helle Risse, die ihre Umgebung fast nicht erhellen — die Nacht ohne Lava ist schon 29 Luma hell.
+nah-tag: main und Kopf sind am Auge gleich, bis auf den orangen Stich am Rand, der fällt.
+
+**FUND für das nächste Glied der Licht-Kette (nicht dieses Stück): die gehobene Nacht.** Der Boden ohne Feuer trägt um
+Mitternacht 0,083 in der Ausgabe; ein gesetzestreues Herdfeuer hebt seinen Kreis nur auf das 1,54–1,56-Fache, die Lava ihren
+Saum um 8 %. Das Maß, das dort fallen muss: **Feuerkreis in 2 m gegen die Nacht NACH der Tonkurve** (heute die Unterkante
+1,5 der Linse, kein Ziel). Täter-Kandidaten: Belichtung der Nacht (`_belichtungStufen`), Auge der Nacht, Tonkurve.
+
+**Rest der Strahler auf alten Wegen (Stück 2 und 3), 7 beim Namen:** Stahl (`feld-leben` LICHT_GESETZ.feuer), Laterne,
+Wandlaterne, Fenster, Tor, Fahrzeug, Funken. Durch `_strahler` laufen: Brand, Lava, Herd/Glutbrunnen/Esse/Feuerstelle.
+Absenz-Grep ≠ 0: `LICHT_GESETZ.feuer.zeit/.staerke` und `LEUCHT_FEUER` leben noch in fachwerk-core, dirigent-kern,
+siedlung-wege und diag-stand-takt.
+
+**Offen an diesem Kopf:** die Shader-Linse der Scheibe gegen das Integral (heute CPU-Richter + narbe L5 an Ort, Kern,
+Leuchtdichte); eine Linse `HALM_VOLUMEN` gegen die Geometrie; Text des Gras-Programms; (c) Rauch; kaskade/ereignis; Ankunft
+kalt; Planck je Kanal für die FLAMME mit Emissivität als EINEM Datum (Entscheid 03:55, Stück 3).
+
+**Tore am Kopf 3147ee40 (GTX 1050):** format:check GRÜN · check:statik GRÜN (war ROT an zwei Stellen dieses Zweigs: Modul-Karte
+nicht kanonisch, `_brandMasken` ohne Zeile in der Wanduhr-Liste — beide geschnitten) · gate:pruefbuehne-licht auf der Karte
+GRÜN (63 s) · am Schnitt 1c40614e (derselbe Stamm): stand-takt --narbe auf der Karte GRÜN (L5 Leuchtdichte 0,51, Kern 8 gegen
+7,64, neben 0,035 m), gate:hoehlen-sicht GRÜN, gate:post-kette GRÜN. Der ganze Satz (check, welt-boot, playtest, stand-takt,
+post-kette) läuft am Kopf; sein Ergebnis steht in der nächsten Zeile dieses Blatts, sobald er durch ist.
