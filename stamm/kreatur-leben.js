@@ -2016,6 +2016,8 @@ class AnazhRealm_kreatur_leben {
     // Suche ohne Wasser ruht er suchPauseS.
     _kreaturDurstig(creature) {
         const ud = creature.userData;
+        // das Tier eines Geheges dürstet mit raten.durst (tetrapoda GEHEGE_GESETZ: der Pfleger tränkt, es sucht kein Wasser)
+        if (ud._bestand && ud._bestand.gehege && !(AnazhRealm._gehegeGesetz().G.raten.durst > 0)) return false;
         const now = this.state.creatureAnimationTime;
         if (!Number.isFinite(ud._getrunken)) ud._getrunken = now;
         if (now < ud._durstSucheBis) return false;
@@ -2114,37 +2116,13 @@ class AnazhRealm_kreatur_leben {
         const B = BG.B;
         const LG = AnazhRealm._lebensraumGesetz();
         const pflanz = AnazhRealm._verhaltenGesetz().temperament.gattung.pflanzDiet;
-        const beuteMasse = AnazhRealm._verhaltenGesetz().jagd.beuteMasse;
         const R = this._bestandRegionen().regionen[key];
-        const tiere = R ? R.tiere : [];
+        const tiere = R ? this._bestandFreie(R) : [];
         const n = {};
-        const diet = {};
-        const jaeger = {};
-        const gejagt = {};
-        for (const g in LG.L.gattung) {
-            n[g] = jaeger[g] = gejagt[g] = 0;
-            const d = this._ofenKreaturDials(g);
-            if (!d || !d.dials || !Number.isFinite(d.dials.diet))
-                return AnazhRealm._kernPflichtBruch("tetrapoda:GATTUNGEN." + g + ".diet");
-            diet[g] = d.dials.diet;
-        }
+        const diet = this._bestandDiet();
+        for (const g in diet) n[g] = 0;
         for (const t of tiere) n[t.g]++;
-        // der Riss: wer einem wilden Jäger Beute ist (nicht wild, höchstens beuteMasse × seine Masse), je Gattung gezählt, mit
-        // seinen Jägern, und die Kost der Jäger je Gattung, die sie jagen
-        const beuteVon = new Map();
-        for (const h of tiere) {
-            if (!(diet[h.g] > 0) || !this._bestandWild(h)) continue;
-            const jagt = new Set();
-            for (const o of tiere) {
-                if (o === h || this._bestandWild(o) || this._bestandKg(o) > beuteMasse * this._bestandKg(h)) continue;
-                jagt.add(o.g);
-                const j = beuteVon.get(o);
-                if (j) j.push(h);
-                else beuteVon.set(o, [h]);
-            }
-            for (const g of jagt) jaeger[g] += diet[h.g];
-        }
-        for (const o of beuteVon.keys()) gejagt[o.g]++;
+        const { jaeger, gejagt, beuteVon } = this._bestandJagd(tiere, diet);
         let beuteN = 0;
         for (const g in n) if (diet[g] <= pflanz) beuteN += n[g];
         const beute = Math.min(1, beuteN / B.beuteVoll);
@@ -2169,6 +2147,41 @@ class AnazhRealm_kreatur_leben {
             );
         }
         return aus;
+    }
+    // DIE KOST JE GATTUNG (GATTUNGEN diet über die EINE Übergabe der Dials, `_ofenKreaturDials`), fail-closed.
+    _bestandDiet() {
+        const diet = {};
+        for (const g in AnazhRealm._lebensraumGesetz().L.gattung) {
+            const d = this._ofenKreaturDials(g);
+            if (!d || !d.dials || !Number.isFinite(d.dials.diet))
+                return AnazhRealm._kernPflichtBruch("tetrapoda:GATTUNGEN." + g + ".diet");
+            diet[g] = d.dials.diet;
+        }
+        return diet;
+    }
+    // DER RISS EINER GEMEINSCHAFT (`tiere`: die Freien einer Region, `_bestandFreie`, oder die Tiere EINES Geheges): wer einem
+    // wilden Jäger Beute ist (nicht wild, höchstens beuteMasse × seine Masse), je Gattung gezählt (gejagt), mit seinen Jägern
+    // (beuteVon), und die Kost der Jäger je Gattung, die sie jagen (jaeger).
+    _bestandJagd(tiere, diet) {
+        const beuteMasse = AnazhRealm._verhaltenGesetz().jagd.beuteMasse;
+        const jaeger = {};
+        const gejagt = {};
+        for (const g in diet) jaeger[g] = gejagt[g] = 0;
+        const beuteVon = new Map();
+        for (const h of tiere) {
+            if (!(diet[h.g] > 0) || !this._bestandWild(h)) continue;
+            const jagt = new Set();
+            for (const o of tiere) {
+                if (o === h || this._bestandWild(o) || this._bestandKg(o) > beuteMasse * this._bestandKg(h)) continue;
+                jagt.add(o.g);
+                const j = beuteVon.get(o);
+                if (j) j.push(h);
+                else beuteVon.set(o, [h]);
+            }
+            for (const g of jagt) jaeger[g] += diet[h.g];
+        }
+        for (const o of beuteVon.keys()) gejagt[o.g]++;
+        return { jaeger, gejagt, beuteVon };
     }
 
     // DER FRASS (Ökologie K1, tetrapoda bestandFrass): je Takt nimmt jede äsende Gattung n × frass vom Jungwuchs der Zellen, die
@@ -2275,6 +2288,7 @@ class AnazhRealm_kreatur_leben {
         const AH = AnazhRealm.BESTAND_REGION.aufholS;
         const fern = jetzt < AH ? -AH : Math.floor((jetzt - AH) / B.taktS) * B.taktS;
         const R = F.regionen[key] || (F.regionen[key] = { t: fern, seq: 0, tiere: [] });
+        this._gehegeEinsetzen(key, R);
         if (R.t < fern) R.t = fern;
         if (!aufholen) return R;
         const fall = tode || [];
@@ -2386,7 +2400,9 @@ class AnazhRealm_kreatur_leben {
     }
     _bestandTakt(key, R, still, tode) {
         const B = AnazhRealm._bestandGesetz().B;
-        for (const t of R.tiere) t.alterS += B.taktS;
+        // die Freien liest das wilde Gesetz (`_bestandFreie`, frisch an jeder Stelle: ein Tod und eine Geburt dieses Takts zählen);
+        // die Tiere eines Geheges gehen ihren eigenen Takt (`_gehegeSchritt`) — eine Region ohne Gehege liest dieselbe Liste
+        for (const t of this._bestandFreie(R)) t.alterS += B.taktS;
         const rng = this._faunaRng("bestand:" + key + "@" + R.t, true);
         const zellen = [];
         const bestand = this._kreaturBestand(zellen, key);
@@ -2394,15 +2410,21 @@ class AnazhRealm_kreatur_leben {
         for (const g in bestand) {
             const { tod: p, riss, beute } = bestand[g];
             if (p > 0 && rng() < p) {
-                const alt = this._bestandAeltester(R.tiere, g);
+                const alt = this._bestandAeltester(this._bestandFreie(R), g);
                 if (alt) this._bestandStirbt(R, alt, "hunger", tode);
             }
-            const opfer = riss > 0 && rng() < riss && this._bestandAeltester(R.tiere, g, beute);
+            const opfer = riss > 0 && rng() < riss && this._bestandAeltester(this._bestandFreie(R), g, beute);
             if (opfer) this._bestandStirbt(R, opfer, "jagd", tode, beute.get(opfer));
         }
         this._creatureNaturalBirth(bestand, key, rng, !still);
-        const alt = R.tiere.length > 2 && this._bestandAeltester(R.tiere);
+        const frei = this._bestandFreie(R);
+        const alt = frei.length > 2 && this._bestandAeltester(frei);
         if (alt && alt.alterS * 1000 > AnazhRealm.FAUNA_MAX_AGE_MS) this._bestandStirbt(R, alt, "alter", tode);
+        if (frei !== R.tiere) this._gehegeSchritt(R, tode);
+    }
+    // DIE FREIEN DER REGION R: ihr Verzeichnis ohne die Tiere eines Geheges (der Term `gehege`); ohne Gehege dieselbe Liste.
+    _bestandFreie(R) {
+        return R.tiere.some((t) => t.gehege) ? R.tiere.filter((t) => !t.gehege) : R.tiere;
     }
 
     // EIN TIER DES BESTANDS STIRBT: es verlässt das Verzeichnis jetzt; der Tod am Hunger und am Alter nährt das Feld an seinem
@@ -2540,11 +2562,13 @@ class AnazhRealm_kreatur_leben {
         const gruppen = new Map();
         for (const key of this._bestandNah())
             for (const t of F.regionen[key] ? F.regionen[key].tiere : []) {
+                if (t.gehege) continue; // das Gehege zeichnet nach seinem Term (`_gehegeGruppen`)
                 const gk = key + "|" + (t.v != null ? t.v : "e" + t.id);
                 let G = gruppen.get(gk);
                 if (!G) gruppen.set(gk, (G = { d: Math.hypot(t.x - p.x, t.z - p.z), tiere: [] }));
                 G.tiere.push(t);
             }
+        this._gehegeGruppen(gruppen, p);
         // eine Gruppe, die gezeichnet steht, hält ihren Platz um eine halbe Kachel (kein Flattern, wenn eine nähere geboren wird)
         const S = this._bestandSeite();
         for (const G of gruppen.values()) if (G.tiere.some((t) => t.leib)) G.d -= S / 2;
@@ -2569,6 +2593,10 @@ class AnazhRealm_kreatur_leben {
         for (const G of reihe) {
             const fehlt = G.tiere.filter((t) => soll.has(t) && !t.leib);
             if (!fehlt.length || fehlt[0]._ohneOrt > st.spielZeit) continue;
+            if (G.gehege) {
+                this._gehegeLeiber(fehlt, G.tiere, G.ankunft);
+                continue;
+            }
             if (this._bestandLeiber(fehlt, G.tiere).length || !--suchen) break;
             fehlt[0]._ohneOrt = st.spielZeit + 6 * AnazhRealm._bestandGesetz().B.taktS;
         }
@@ -2595,7 +2623,11 @@ class AnazhRealm_kreatur_leben {
     // nur, wenn der Leib selbst außer Blick steht — seine Kugel samt Saum und dem Rand des Blicks (`_kreaturAusserBlick`,
     // `_kreaturBlickRand`). Bis w13-pegel-heil fragte das Weichen (`_bestandWeicht`) den Fuß-Punkt (`_kreaturImBlick`): ein Leib
     // am Rand des Blicks, dessen Fuß eben draußen lag, verschwand an der vollen Kappe vor dem Auge.
+    // Ein Leib jenseits seines Pixel-Horizonts (geparkt, `_weltLeibTakt`: `_kzFern` −1, unsichtbar) trägt kein Bild — er steht
+    // außer Blick, auch im Kegel. Bis w28-halter-register hielt ihn der Frustum: nach der Runde reise standen 5 Leiber 2,6 bis
+    // 5,7 km fern im Bestand und in `leibFern` (Radeon, Wiese; samt `_tierBaum` im Heap), kein Grund hielt sie.
     _bestandAusserBlick(c) {
+        if (c.userData._kzFern === -1) return true;
         const fr = this._frustumCache;
         const rand = this._kreaturBlickRand();
         return !fr || (rand >= 0 && this._kreaturAusserBlick(c, fr, rand));
@@ -2686,7 +2718,9 @@ class AnazhRealm_kreatur_leben {
         const B = AnazhRealm._bestandGesetz().B;
         if (!this._kreaturenBereit()) return;
         this._feldTakt();
-        if (st.spielZeit - (L.lastTick || 0) < B.taktS) return;
+        // zwischen zwei Takten zeichnet nur die Ankunft eines Geheges (`_gehegeKommtAn`: seine Tiere stehen im selben Bild)
+        if (st.spielZeit - (L.lastTick || 0) < B.taktS)
+            return void (this._gehegeKommtAn() && this._bestandVerkoerpern());
         L.lastTick = st.spielZeit;
         this._bestandAdoptieren();
         // DIE OFFENEN RISSE (oekologie.K2): ein Leib, den ein Riss im Nah-Kreis seinem Jäger nannte (sein Tier starb im Gesetz),
@@ -3192,6 +3226,9 @@ class AnazhRealm_kreatur_leben {
     // außerhalb (ein Akt, der anderswo setzt — wie der Wurf, `_kreaturWurf`) bleibt und ist FREI: sein Tier zieht in der Leine,
     // wohin es will. Liefert den gelegten Anker { x, z, revier, frei? }.
     _kreaturRevier(creature, a, leash) {
+        // das Revier des Gehege-Tiers ist sein Gehege, der Anker sein Ruhe-Platz (`_gehegeRevierTraegt`, `_gehegeLeine`)
+        const t = creature.userData._bestand;
+        if (t && t.gehege) return { x: a.x, z: a.z, revier: true, gehege: t.gehege };
         const LG = AnazhRealm._lebensraumGesetz();
         const g = this._kreaturGattung(creature);
         const traegt = (x, z) => LG.lebensraum(g, this._bodenKlasseAt(x, z), LG.L) > 0 && !this._nassAt(x, z);
@@ -3288,9 +3325,10 @@ class AnazhRealm_kreatur_leben {
     }
 
     // trägt das Revier des Tiers den Ort (x, z): sein Lebensraum auf trockenem Grund — auf dem Weg (`weg`) auch sein Wasser —,
-    // am freien Anker jeder Ort
+    // am freien Anker jeder Ort, am Anker eines Geheges jeder Ort in seinem Rand
     _kreaturRevierTraegt(creature, x, z, weg = false) {
         if (creature.userData.wanderAnchor.frei) return true;
+        if (creature.userData.wanderAnchor.gehege) return this._gehegeRevierTraegt(creature, x, z);
         const LG = AnazhRealm._lebensraumGesetz();
         return (
             LG.lebensraum(this._kreaturGattung(creature), this._bodenKlasseAt(x, z), LG.L) > 0 &&
@@ -3307,7 +3345,7 @@ class AnazhRealm_kreatur_leben {
     _kreaturRevierNetz(creature, leash) {
         const ud = creature.userData;
         const a = ud.wanderAnchor;
-        if (!a || a.frei) return null;
+        if (!a || a.frei || a.gehege) return null; // (der Rand eines Geheges ist konvex: jeder Weg in ihm ist gerade)
         const g = this._kreaturGattung(creature);
         const gleich = (M) => M && M.x === a.x && M.z === a.z && M.leine === leash && M.g === g;
         let N = ud._revierNetz;

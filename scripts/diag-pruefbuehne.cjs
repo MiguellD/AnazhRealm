@@ -839,8 +839,11 @@ const s0TonPasst = (t) => s0TonImBand(t) && t.sat <= S0_TON.satMax;
 // `wieseRelief` las den Rausch-Atlas und vererbte seinen Namen in jedes weitere Programm — auf der Bühne sagte swiftshader die
 // Pipeline ab. Der Selbsttest (Mutante c) lässt eine Hilfs-Funktion eine Bindung des gezeichneten Programms lesen. DIE RATSCHE
 // DER GRÖSSE (`zeichenMax`, `S0_ZEICHEN`): das Programm wächst nicht — am 12.11. (main f46b9e81) 95 297 Zeichen auf Radeon 890M
-// und GTX 1060, die Decke der Stand + 5 %; sie fällt nur (schrumpft das Programm, sinkt die Zahl hier mit).
-const S0_ZEICHEN = { stand: 95297, luft: 1.05 };
+// und GTX 1060, die Decke der Stand + Luft (bis 18.11. 5 %); sie fällt nur (schrumpft das Programm, sinkt die Zahl hier mit).
+// 18.11. GEHOBEN FÜR DEN WEG-KÖRPER (w28-weg-koerper, Wort des Koordinators): 102 120 Zeichen am Kopf (GTX 1060) — wegBord +2 499,
+// Aufruf/Kante +480, Belag +500, wegAn +96 über main 1f300260 (98 747). Davor hatte main seit 12.11. 3 450 Zeichen still
+// gefressen (95 297 → 98 747), ohne dass eine Abgabe es nannte: die Luft ist darum ENGER, 2 % statt 5 % — sie feuert früher.
+const S0_ZEICHEN = { stand: 102120, luft: 1.02 };
 const S0_STOFF = (() => {
     const SK = require("./lib/shader-kosten.cjs");
     const budget = { bindungInFunktionMax: 0, zeichenMax: Math.round(S0_ZEICHEN.stand * S0_ZEICHEN.luft) };

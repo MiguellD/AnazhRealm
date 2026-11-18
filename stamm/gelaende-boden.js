@@ -640,8 +640,10 @@ class AnazhRealm_gelaende_boden {
     }
     // DIE REICHWEITE DER KACHEL-LESER um den Spieler (m): der Takt der Wache (Ring + ½ Chunk + 300 m), das Fern-Wasser
     // (`_ensureFarWaterSheet`: Ring + 2,5 Chunks, mindestens `FAR_WATER.maxRadius`), die Streu bis an ihren Horizont samt
-    // Region und Polster (`_scatterRegion`), der Wald-Plan an ihrem Rand (`_forestCellDarts`: Urteil + 1 Zelle). Der Fern-Ring
-    // bestellt keine Kachel (jenseits trägt er den Meeresspiegel) — er liest, was diese Reichweite hält.
+    // Region und Polster (`_scatterRegion`), der Wald-Plan an ihrem Rand (`_forestCellDarts`: Urteil + 1 Zelle), die Stelle des
+    // Orts (`_zellOrt`: die Probe-Ringe jeder Zelle im Reich, `_siedlungReichweite` — Radeon 17.11.: sie bestellte die Kachel
+    // 1 248 m fern 27-mal nach, als die Reichweite sie bei 720 m räumte). Der Fern-Ring bestellt keine Kachel (jenseits trägt er
+    // den Meeresspiegel) — er liest, was diese Reichweite hält.
     _hydroReichweite() {
         const span = this._voxelChunkConfig(0).span;
         const R = this._voxelChunkConfig().ringRadius;
@@ -649,7 +651,8 @@ class AnazhRealm_gelaende_boden {
             (R + 0.5) * span + 300,
             (R + 2.5) * span,
             AnazhRealm.FAR_WATER.maxRadius,
-            this._streuReichweite()
+            this._streuReichweite(),
+            AnazhRealm._siedlungReichweite(this)
         );
     }
     // DER HORIZONT DER STREU um den Spieler (m): ihre Regionen bis `SCATTER.outerM` samt halber Region und Polster
