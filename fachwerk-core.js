@@ -1558,7 +1558,11 @@
       if(ROOFMODE==='flat'){ hb(g,cx,baseY+wH+0.06,cz,lx,0.12,lz,'putz'); }   // flaches Hof-Arm-Dach (Mediterran) statt Pultdach
       else { const half=(alongZ?lx:lz)/2, dy=rY-(baseY+wH), ang=Math.atan2(dy,half), len=Math.hypot(half,dy);
       [1,-1].forEach(s=>{ if(alongZ) hb(g,cx+s*half/2,(baseY+wH+rY)/2,cz,len,0.10,lz+0.3,'ziegel',[0,0,-s*ang]);
-                          else hb(g,cx,(baseY+wH+rY)/2,cz+s*half/2,lx+0.3,0.10,len,'ziegel',[s*ang,0,0]); }); } };
+                          else hb(g,cx,(baseY+wH+rY)/2,cz+s*half/2,lx+0.3,0.10,len,'ziegel',[s*ang,0,0]); });
+        // DER GIEBEL DES RINGS: das Dreieck unter dem First ist Wand wie am Flügel (tri, EIN Ton bei glatter Wand) — vorher stand es offen, man sah von der Gasse in die Unterseite der Dachhaut. Der Riegel schließt an beiden Stirnen, der Arm über dem Dach des Riegels; am Haus schließt die Hauswand
+        if(!_fern){ const ey=baseY+wH, gt=(a,b,c)=>{ const m=tri(g,a,b,c,wr); if(GLATT) eben(m); };
+          if(alongZ) gt([x1,ey,z0],[x0,ey,z0],[cx,rY,z0]);
+          else { gt([x0-0.11,ey,z0],[x0-0.11,ey,z1],[x0-0.11,rY,cz]); gt([x1+0.11,ey,z1],[x1+0.11,ey,z0],[x1+0.11,rY,cz]); } } } };
     bar(-W/2,-W/2+armW,zC+gateW,zF,true);            // linker Arm (First entlang z)   // Arm stößt an den Torriegel — kein Dach-Kreuz
     bar(W/2-armW,W/2,zC+gateW,zF,true);              // rechter Arm
     bar(-W/2,W/2,zC,zC+gateW,false,{x:doorX, w:doorW+0.9, h:P.doorH+0.3});           // Torriegel vorne (First entlang x)
