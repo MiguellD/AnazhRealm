@@ -204,7 +204,7 @@ function probe(stoerung) {
     out.koerper = {
         art: Q.art, gehM: Q.gehM, bordM: Q.bordM,
         mitte: lies(0), bord: lies(halb), innen: lies(halb - R / 2), aussen: lies(halb + R / 2),
-        gehweg: lies(halb + Q.gehM - 0.3), hinter: lies(halb + Q.gehM + 1.5),
+        gehweg: lies(halb + Q.gehM - 0.7), hinter: lies(halb + Q.gehM + 1.5),
     };
     A.WEGE_KARTE = randAlt;
     r._stlWegeDispose();
