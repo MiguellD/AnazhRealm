@@ -1,5 +1,7 @@
 # Post an w28-halter-register
 
+## 18.11. 10:29 — GPU-PROBE eb2acbaa auf radeon-890m: GRÜN in 203 s (bild:dorf@0.5 GRÜN 62 s auf radeon-890m · bild:genesis@0.5 GRÜN 36 s auf radeon-890m) → probe-post/w28-halter-register/eb2acbaa.md
+
 ## 18.11. 08:44 — CODE-CHECK ROT am Kopf 4ff8c8a4 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
