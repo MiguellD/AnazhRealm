@@ -210,7 +210,8 @@ async function studioLauf() {
             await page.setViewport({ width: W, height: H });
             await page.evaluateOnNewDocument(HALT);
             await s.zeige(page, 120000, `worlds/${STUDIO}/index.html`, "networkidle0");
-            await page.waitForFunction(A.bereit, { timeout: 120000 });
+            // Takt-Abfrage, nie raf: HALT hält requestAnimationFrame, die raf-Abfrage fragte nur einmal
+            await page.waitForFunction(A.bereit, { timeout: 120000, polling: 100 });
             await page.evaluate((e) => (window.__epoche = e), argOpt("--epoche", ""));
             const r = await page.evaluate(`(${schuss})(${A.ruhe}, "${an}", ${W}, ${H}, ${JSON.stringify({ uhr: argOpt("--uhr", ""), nackt: process.argv.includes("--nackt") })})`),
                 mit = pixel(r.mit);
