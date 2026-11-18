@@ -7415,9 +7415,19 @@ function __leibRaumFeld(prims, vox, x, y, z) {
     }
     return a;
 }
+// DER RAHMEN EINES PRIMITIVS (w28-raum-ofen): Mi/r — die drei oberen Zeilen durch den Radius, die Einheits-Kugel des Primitivs. Das
+// Feld ist homogen in (Mi, r) (`__tierAbstand`: (|Mi·x| − r)/|Miᵀ·q̂|), der Rahmen trägt damit die GRÖSSE der Kugel, die bauTier
+// und bauMensch als Radius der Geometrie legen (`s(r, …)`), nie in Mi. Bis w28-raum-ofen trug der Re-Fit eine Ecke mit Mi_q⁻¹·Mi_p:
+// beim Leib mit dem kleineren Radius blieb sie um r_p statt r_q vom Zentrum und fiel neben jedes Feld (gemessen am Hirsch-Kalb der
+// Stufe 1, gate:tier-anatomie S11: 18,6 % der 2 371 Ecken > 10 mm neben der Fläche, max 121,5 mm; mit dem Radius 0,0 %). Der Mensch
+// der Menge trägt je Knoten dieselben Radien: seine Tafel bleibt byte-gleich (Stufe 2 und 3).
+function __leibRaumRahmen(p) {
+    const s = 1 / p.r;
+    return new THREE.Matrix4().fromArray(Array.from(p.Mi)).premultiply(new THREE.Matrix4().makeScale(s, s, s));
+}
 // Die Ecken V (x, y, z je Ecke, Spreiz-Pose) vom Leib mit den Primitiven P0 auf den Leib mit P1 (gepaart über `ti`): getragen von
-// den nächsten Primitiven (Gewicht e^(−Abstand/LEIB_RAUM.tragen) über dem nächsten), dann `LEIB_RAUM.newton` Schritte auf das
-// Nullniveau des Felds von P1 (Schritt höchstens `LEIB_RAUM.schritt`).
+// den nächsten Primitiven (Gewicht e^(−Abstand/LEIB_RAUM.tragen) über dem nächsten, im Rahmen `__leibRaumRahmen` (Mi_q/r_q)⁻¹·
+// (Mi_p/r_p)), dann `LEIB_RAUM.newton` Schritte auf das Nullniveau des Felds von P1 (Schritt höchstens `LEIB_RAUM.schritt`).
 function __leibRaumRefit(V, P0, P1, vox) {
     const LR = LEIB_RAUM;
     const nach = new Map(P1.map((p) => [p.ti, p]));
@@ -7425,7 +7435,7 @@ function __leibRaumRefit(V, P0, P1, vox) {
     for (const p of P0) {
         const q = nach.get(p.ti);
         if (!q) continue;
-        const A = new THREE.Matrix4().fromArray(Array.from(q.Mi)).invert().multiply(new THREE.Matrix4().fromArray(Array.from(p.Mi)));
+        const A = __leibRaumRahmen(q).invert().multiply(__leibRaumRahmen(p));
         paare.push({ p, e: A.elements });
     }
     if (!paare.length) throw new Error("LEIB-RAUM: kein Primitiv des Leibs findet seinen Partner (fail-closed)");
@@ -7555,6 +7565,188 @@ function __leibRaumTafel(kern, geo, P0, dials, achsen, leibVon, skinJoints, vox,
 // Die Zahlen des Re-Fits: `tragen` die Weite (m), über die das nächste Primitiv eine Ecke trägt; `newton` die Schritte auf das
 // Nullniveau, `schritt` (m) ihr größter, `gradient` (m) die Weite des Differenzen-Gradienten.
 var LEIB_RAUM = Object.freeze({ tragen: 0.03, newton: 8, schritt: 0.05, gradient: 1e-3 });
+
+// ── DER LEIB-RAUM DES TIERS (w28-raum-ofen; Leben Welle 2, Zweig `koordination` `vision/leben/spike-leibraum.md`): eine Art, ein
+// Individuum, ein Jungtier ist ein PUNKT auf EINER Vorlage je Bauplan, kein eigener Guss — dieselbe Maschine wie der Leib-Raum der
+// Menge (`__leibRaumRefit`, der Rahmen trägt den Radius), ohne Fett-Depot und ohne Spreiz-Pose (das Tier steht in seiner Ruhe).
+// DIE VORLAGE (`__tierRaumVorlage`): der bauTier-Baum an den Dials der Art, ihre Haut wie der Guss sie gießt (`__tierHaut`: dieselben
+// Primitive, dieselbe Rasterweite samt Ziel der Dreiecke, dieselbe Hülle `__huelleAusFeld` — ihre Ecken sind die des Gusses) und
+// IHR PRIMITIV-SATZ: jeder Knoten trägt genau die Primitive der Vorlage (`ti` = Platz im Baum). Die Raster-Schwelle
+// `TIER_HAUT.minVox` nimmt am Knoten nichts heraus und nichts hinzu — gemessen fielen am Kalb die Ohren unter sie (Ecken bis
+// 211 mm neben der Fläche), bei +2σ traten die Pfoten in die Haut. Ein Knoten mit anderem Baum (Glieder-Zahl, Wort) bricht laut.
+// Die Fabrik des Baums trägt, was die Primitive lesen (Klasse, Radius, Höhe, Lage); die Raster der Kugeln gießt nie ein Knoten.
+function __tierRaumBaum(kern, d, namen) {
+    const mat = {};
+    const M = (k) => mat[k] || (mat[k] = Object.assign(new THREE.MeshBasicMaterial(), { userData: { __klasse: k } }));
+    const kugel = (r, k, sc) => {
+        if (k === "hornhaut") return new THREE.Group();
+        const m = new THREE.Mesh(new THREE.SphereGeometry(r, 4, 3), M(k));
+        if (sc) m.scale.set(sc[0], sc[1], sc[2]);
+        return m;
+    };
+    const B = kern.bauTier(
+        {
+            gruppe: () => new THREE.Group(),
+            kugel,
+            kugelFein: (r, k) => kugel(r, k),
+            zylinder: (rt, rb, h, k) => new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 4, 1), M(k)),
+            v3: (x, y, z) => new THREE.Vector3(x, y, z),
+            richte: (node, dir) => node.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize()),
+            fellSchweif: () => {},
+        },
+        d
+    );
+    const root = B.teile.wolf;
+    root.updateMatrixWorld(true);
+    // die Gelenke nach den Namen des Skeletts der Vorlage (die Rute: tailSeg<i>)
+    const nodeName = new Map();
+    for (const nm of namen) {
+        const t = /^tailSeg(\d+)$/.exec(nm);
+        const node = t ? (B.tailSegs || [])[+t[1]] : B.teile[nm];
+        if (node) nodeName.set(node, nm);
+    }
+    const gelenkVon = (n) => {
+        for (let c = n; c; c = c.parent) if (nodeName.has(c)) return nodeName.get(c);
+        return "wolf";
+    };
+    // die Gestalt des Baums: je Knoten Mesh-Typ und Klasse in traverse-Reihenfolge (gleiche Gestalt ⇒ gleicher Platz `ti`)
+    const gestalt = [];
+    root.traverse((o) => gestalt.push(o.isMesh ? o.geometry.type + ":" + o.material.userData.__klasse : "g"));
+    const H = (B.masse && B.masse.H) || kern.deriveTierParams(d).size || 2.4;
+    return { B, root, nodeName, gelenkVon, gestalt: gestalt.join(","), H };
+}
+// Die Rasterweite der Haut eines Baums, wie `__tierHaut` sie wählt (das Ziel der Dreiecke weitet sie), und ihre Primitive.
+function __tierRaumRaster(b, nimm, fein) {
+    const TH = TIER_HAUT;
+    let vox = (fein ? TH.voxFern : TH.voxNah) * b.H;
+    const blend = TH.blend * b.H;
+    let prims = __tierPrims(b.root, b.root, nimm, vox, blend, b.gelenkVon);
+    let feld = __tierFeld(prims, vox, blend);
+    const ziel = fein ? TH.dreieckeFern : TH.dreieckeNah;
+    const dreiecke = 2 * __tierKanten(feld.f, feld.nx, feld.ny, feld.nz);
+    if (dreiecke > ziel) {
+        vox *= Math.sqrt(dreiecke / ziel);
+        prims = __tierPrims(b.root, b.root, nimm, vox, blend, b.gelenkVon);
+        feld = __tierFeld(prims, vox, blend);
+    }
+    return { vox, blend, prims, feld };
+}
+// DIE VORLAGE eines Bauplans: die Art `art` (tetrapoda GATTUNGEN) mit den Dials `ov` auf der Stufe `lod` (0 nah: der Leib ohne den
+// Kopf, der seine starren Häute trägt; 1 die Grobstufe: der ganze Leib in EINER Haut). Rückgabe { kern, dials, fein, nimm, namen,
+// b, vox, P (der Primitiv-Satz), geo (die Haut, Ecken wie der Guss), H }.
+function __tierRaumVorlage(kern, art, ov, lod) {
+    const dials0 = (kern.GATTUNGEN && kern.GATTUNGEN[art]) || null;
+    if (!dials0) throw new Error("TIER-RAUM: die Art " + art + " steht nicht im Gesetzbuch (fail-closed)");
+    const dials = Object.assign({}, dials0, ov || {});
+    const fein = (lod | 0) >= 1;
+    // die Namen der Gelenke und ihre Bone-Ordnung: das Skelett des Gusses selbst
+    const sk = bakeTierInstance(kern, art, 0, lod, ov || null).userData.__skelett;
+    const namen = sk.joints.map((j) => j.name);
+    const b = __tierRaumBaum(kern, dials, namen);
+    const kopf = b.B.teile.headGroup || null;
+    // wie `__tierHaut` `nimmHaut`: die nahe Stufe gießt den Kopf nicht in die Leib-Haut
+    const nimm = (n) => {
+        if (fein) return true;
+        for (let c = n; c; c = c.parent) if (c === kopf) return false;
+        return true;
+    };
+    const R = __tierRaumRaster(b, nimm, fein);
+    const platz = new Map();
+    let i = 0;
+    b.root.traverse((o) => platz.set(o, i++));
+    for (const p of R.prims) {
+        p.ti = platz.get(p.node);
+        p.blend = R.blend; // `__leibRaumFeld` liest die Verrundung des Primitivs (sonst die der Menge)
+    }
+    const genutzt = new Set(R.prims.map((p) => p.j));
+    const skinJoints = namen.filter((nm) => genutzt.has(nm)); // die Bone-Ordnung der Haut (`__tierHaut`: Baum-Ordnung, nur getragene)
+    const { zentren, kandidaten } = __primGewichte(R.prims, b.H, R.blend, R.vox, R.feld.lo, R.feld.hi);
+    const hk =
+        kern && typeof kern.surfaceNets === "function"
+            ? kern
+            : typeof __koerperCore !== "undefined" && __koerperCore && typeof __koerperCore.surfaceNets === "function"
+              ? __koerperCore
+              : null;
+    if (!hk) throw new Error("TIER-RAUM: Hüllen-Maschine (koerper-core.surfaceNets) fehlt (fail-closed)");
+    const eW = TIER_HAUT.eW * b.H;
+    const F = R.feld;
+    const geo = __huelleAusFeld(hk, F.f, F.nx, F.ny, F.nz, F.lo, R.vox, 0, 0, zentren, skinJoints, eW * eW, kandidaten, fein);
+    if (!geo) throw new Error("TIER-RAUM: die Haut der Vorlage " + art + " ohne Fläche (fail-closed)");
+    return { kern, art, dials, fein, nimm, namen, b, vox: R.vox, blend: R.blend, P: R.prims, geo, H: b.H };
+}
+// DER LEIB AN DEN DIALS d im Primitiv-Satz der Vorlage: die Ecken der Vorlage auf sein Feld getragen (`__leibRaumRefit`), Ecken und
+// Gelenke im Maßstab der Vorlage (× H_Vorlage / H_d: die Größe trägt die Instanz-Matrix, der Raum nur die Form). Rückgabe
+// { X (Float64Array 3n), P, vox, H, gelenke (Float64Array 3 je Name der Vorlage) }.
+function __tierRaumLeib(V, d) {
+    const b = __tierRaumBaum(V.kern, d, V.namen);
+    if (b.gestalt !== V.b.gestalt)
+        throw new Error("TIER-RAUM: der Baum an den Dials " + JSON.stringify(d) + " ist nicht der der Vorlage " + V.art + " (Glieder-Zahl oder Wort; fail-closed)"); // prettier-ignore
+    // die Rasterweite des Knotens (wie sein Guss sie wählte) und ALLE Primitive seines Baums (vox 0: keines fällt unter die Schwelle)
+    const R = __tierRaumRaster(b, V.nimm, V.fein);
+    const vox = R.vox,
+        blend = R.blend;
+    const platz = new Map();
+    let i = 0;
+    b.root.traverse((o) => platz.set(o, i++));
+    const alle = new Map();
+    for (const p of __tierPrims(b.root, b.root, V.nimm, 0, blend, b.gelenkVon)) alle.set(platz.get(p.node), p);
+    const M = new THREE.Matrix4();
+    const P = V.P.map((p0) => {
+        const p = alle.get(p0.ti);
+        if (!p) throw new Error("TIER-RAUM: das Primitiv " + p0.ti + " (" + p0.j + ") der Vorlage fehlt am Knoten (fail-closed)");
+        // Reichweite und Auflage wie `__tierPrims` an der Rasterweite des Knotens (die Halbachsen aus dem Rahmen)
+        const e = M.fromArray(Array.from(p.Mi)).invert().elements;
+        const sx = Math.hypot(e[0], e[1], e[2]),
+            sy = Math.hypot(e[4], e[5], e[6]),
+            sz = Math.hypot(e[8], e[9], e[10]);
+        const auf = Math.max(0, TIER_HAUT.minDicke * vox - p.r * Math.min(sx, sy, sz));
+        return Object.assign(p, { ti: p0.ti, blend, auf, ext: p.r * Math.max(sx, sy, sz) + blend + 2 * vox + auf });
+    });
+    P.sort((a, c) => c.ext - a.ext);
+    const s = V.H / b.H;
+    const W = __leibRaumRefit(Float64Array.from(V.geo.attributes.position.array), V.P, P, vox);
+    for (let k = 0; k < W.length; k++) W[k] *= s;
+    const inv = new THREE.Matrix4().copy(b.root.matrixWorld).invert();
+    const gelenke = new Float64Array(V.namen.length * 3);
+    const lage = new THREE.Vector3();
+    for (const [node, nm] of b.nodeName) {
+        lage.setFromMatrixPosition(node.matrixWorld).applyMatrix4(inv).multiplyScalar(s);
+        gelenke.set([lage.x, lage.y, lage.z], V.namen.indexOf(nm) * 3);
+    }
+    return { X: W, P, vox, H: b.H, gelenke };
+}
+// DIE TAFEL DES TIER-RAUMS: `achsen` = [{ achse, knoten: [Werte], dials? }] — `achse` ein Dial des Gesetzbuchs (size, neck, leg,
+// build …), oder `dials(wert)` legt den Knoten als Dials (eine Achse über mehrere Dials: das Alter, die Art). Je Knoten der Weg
+// jeder Ecke der Vorlage und jedes Gelenks (die Gelenk-Formziele: der Satz dreht das Individuum um SEINE Gelenke — mit den Knochen
+// der Vorlage lag der Drehpunkt bis 43 mm (±2σ) und 58 mm (Kalb) falsch), Ruhe gegen Ruhe, im Maßstab der Vorlage. Rückgabe
+// { achsen, n, ziele: Float32Array [Ecke][Knoten][xyz], lage: die Vorlage auf ihrem eigenen Feld, gelenke: { namen, lage, ziele:
+// Float32Array [Gelenk][Knoten][xyz] } } — jede Zahl auf dem Raster des Leib-Raums (`__leibRaumRaster`).
+function __tierRaumTafel(kern, vorlage, achsen) {
+    if (!Array.isArray(achsen) || !achsen.length) throw new Error("TIER-RAUM: ohne Achsen keine Tafel (fail-closed)");
+    if (!vorlage || vorlage.kern !== kern) throw new Error("TIER-RAUM: die Vorlage gehört nicht zu diesem Kern (fail-closed)");
+    const n = vorlage.geo.attributes.position.count,
+        nj = vorlage.namen.length;
+    const L0 = __tierRaumLeib(vorlage, vorlage.dials);
+    const slots = achsen.reduce((s, a) => s + a.knoten.length, 0);
+    const ziele = new Float32Array(n * slots * 3),
+        gz = new Float32Array(nj * slots * 3);
+    let slot = 0;
+    for (const a of achsen)
+        for (const wert of a.knoten) {
+            const d = Object.assign({}, vorlage.dials, typeof a.dials === "function" ? a.dials(wert) : { [a.achse]: wert });
+            const Lk = __tierRaumLeib(vorlage, d);
+            for (let i = 0; i < n; i++) for (let c = 0; c < 3; c++) ziele[(i * slots + slot) * 3 + c] = Lk.X[i * 3 + c] - L0.X[i * 3 + c];
+            for (let j = 0; j < nj; j++) for (let c = 0; c < 3; c++) gz[(j * slots + slot) * 3 + c] = Lk.gelenke[j * 3 + c] - L0.gelenke[j * 3 + c];
+            slot++;
+        }
+    return {
+        achsen: achsen.map((a) => ({ achse: a.achse, knoten: a.knoten.slice() })),
+        n,
+        ziele: __leibRaumRaster(ziele),
+        lage: __leibRaumRaster(Float32Array.from(L0.X)),
+        gelenke: { namen: vorlage.namen.slice(), lage: __leibRaumRaster(Float32Array.from(L0.gelenke)), ziele: __leibRaumRaster(gz) },
+    };
+}
 
 // ── DIE HAUT IST EIN GUSS (w21-leib-bau, koerper MENSCH_GESTALT.leibHaut): die Haut der Nah- und der Grobstufe ist EIN glattes
 // Feld über JEDEM ihrer Primitive — Rumpf, Hals, Glieder (die Muskeln unter der Haut: `dicke` darüber) und der Kopf (Schädel,

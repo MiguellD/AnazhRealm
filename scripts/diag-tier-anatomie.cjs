@@ -409,6 +409,105 @@ function zeige(ergebnis) {
     }
 }
 
+// DER LEIB-RAUM DES TIERS (w28-raum-ofen; Zweig `koordination` `vision/leben/spike-leibraum.md`): eine Gestalt ist ein PUNKT auf
+// EINER Vorlage (foundry `__tierRaumVorlage` · `__tierRaumTafel` · `__tierRaumLeib`, der Re-Fit `__leibRaumRefit`). Die Linse mischt
+// die Tafel wie der Satz (je Achse stückweise linear zwischen zwei Knoten) und misst die gemischten Ecken an der WAHREN Fläche des
+// Leibs an diesem Punkt (sein Feld ohne Raster, `__leibRaumFeld`, im Primitiv-Satz der Vorlage), in mm beim Maßstab des Ziels:
+//   F1 das Individuum: Wolf, Hals · Bein · Statur · Größe zugleich an ±2σ, je Achse die Knoten −2σ · 0 · +2σ → max ≤ 2 mm, die
+//      Gelenk-Formziele ebenso;
+//   F3 das Jungtier: Hirsch → Kalb auf EINER Alters-Achse (Knoten Kalb · ½ · erwachsen), am Kalb und bei ¼ · ¾ → max ≤ 10 mm.
+// Rot nennt den Täter: `__leibRaumRefit: Kalb 21,6 % der Ecken > 10 mm neben der Fläche` (der Rahmen ohne Radius),
+// `__tierRaumTafel: F1 +2σ max 3,1 mm > 2` (die Mischung). σ 5 % (Hals, Bein, Größe) und 0,05 (Statur) sind gewählt (Spike), bis
+// die Achsen ihre σ aus leben-core lesen; das Kalb: Masse q = 0,06 der Mutter (Entscheid §1.1, Größe × q^⅓), Läufe relativ × 1,4.
+const RAUM = { f1MaxMm: 2, kalbMaxMm: 10, nebenMm: 10, sigma: 0.05, kalbQ: 0.06, kalbBein: 1.4 };
+// der Punkt eines Werts auf einer Achse (Knoten-Index samt Bruch) und die Mischung der Tafel an einem Punkt (je Achse ein Bruch)
+const raumBruch = (K, v) => {
+    if (v <= K[0]) return 0;
+    for (let j = 0; j < K.length - 1; j++) if (v <= K[j + 1]) return j + (v - K[j]) / (K[j + 1] - K[j]);
+    return K.length - 1;
+};
+function raumMisch(lage, ziele, achsen, punkt) {
+    const n = lage.length / 3,
+        breite = ziele.length / 3 / n;
+    const X = Float64Array.from(lage);
+    let s0 = 0;
+    achsen.forEach((a, ai) => {
+        const K = a.knoten.length;
+        const j = Math.max(0, Math.min(K - 2, Math.floor(punkt[ai])));
+        const u = punkt[ai] - j;
+        for (let i = 0; i < n; i++)
+            for (let c = 0; c < 3; c++) {
+                const o = (i * breite + s0 + j) * 3 + c;
+                X[i * 3 + c] += (1 - u) * ziele[o] + u * ziele[o + 3];
+            }
+        s0 += K;
+    });
+    return X;
+}
+function raumUrteil(sb, nurKalb) {
+    const TC = sb.__tetrapodaCore;
+    const mm = (u) => u * TC.MASSSTAB.meterJeEinheit * 1000;
+    const t0 = Date.now();
+    const v = [],
+        roh = {};
+    // je gemischte Ecke ihr Abstand zur wahren Fläche des Leibs L (mm beim Maßstab des Ziels) und je Gelenk sein Fehler
+    const miss = (V, T, punkt, L) => {
+        const s = L.H / V.H;
+        const X = raumMisch(T.lage, T.ziele, T.achsen, punkt);
+        const d = new Float64Array(T.n);
+        for (let i = 0; i < T.n; i++) d[i] = mm(Math.abs(sb.__leibRaumFeld(L.P, L.vox, X[i * 3] * s, X[i * 3 + 1] * s, X[i * 3 + 2] * s)));
+        const J = raumMisch(T.gelenke.lage, T.gelenke.ziele, T.achsen, punkt);
+        let gmax = 0;
+        for (let j = 0; j < J.length / 3; j++)
+            gmax = Math.max(gmax, mm(s * Math.hypot(J[j * 3] - L.gelenke[j * 3], J[j * 3 + 1] - L.gelenke[j * 3 + 1], J[j * 3 + 2] - L.gelenke[j * 3 + 2])));
+        const a = Float64Array.from(d).sort();
+        let neben = 0;
+        for (const x of d) if (x > RAUM.nebenMm) neben++;
+        return { p95: a[Math.floor(a.length * 0.95)], max: a[a.length - 1], neben: neben / d.length, gelenk: gmax };
+    };
+    const f1 = (x) => x.toFixed(1);
+    // F1 — das Individuum Wolf an ±2σ
+    if (!nurKalb) {
+        const g = TC.GATTUNGEN.wolf;
+        const sig = { neck: RAUM.sigma * g.neck, leg: RAUM.sigma * g.leg, build: RAUM.sigma, size: RAUM.sigma * g.size };
+        const achsen = Object.entries(sig).map(([k, s]) => ({ achse: k, knoten: [g[k] - 2 * s, g[k], g[k] + 2 * s] }));
+        const V = sb.__tierRaumVorlage(TC, "wolf", null, 1);
+        const T = sb.__tierRaumTafel(TC, V, achsen);
+        roh.f1 = { ecken: T.n, tafelKB: Math.round((T.ziele.byteLength + T.gelenke.ziele.byteLength) / 1024) };
+        for (const vz of [2, -2]) {
+            const d = Object.fromEntries(achsen.map((a) => [a.achse, g[a.achse] + vz * sig[a.achse]]));
+            const r = miss(V, T, achsen.map((a) => raumBruch(a.knoten, d[a.achse])), sb.__tierRaumLeib(V, d));
+            const nm = (vz > 0 ? "+" : "−") + "2σ";
+            roh.f1[nm] = r;
+            if (!(r.max <= RAUM.f1MaxMm)) v.push(`__tierRaumTafel: F1 Wolf ${nm} max ${f1(r.max)} mm > ${RAUM.f1MaxMm} neben der Fläche (p95 ${f1(r.p95)})`);
+            if (!(r.gelenk <= RAUM.f1MaxMm)) v.push(`__tierRaumTafel: F1 Wolf ${nm} Gelenk-Formziel ${f1(r.gelenk)} mm > ${RAUM.f1MaxMm}`);
+        }
+    }
+    // F3 — das Kalb auf der Alters-Achse des Hirschs
+    {
+        const g = TC.GATTUNGEN.deer;
+        const q3 = Math.cbrt(RAUM.kalbQ);
+        const alter = { achse: "alter", knoten: [0, 0.5, 1], dials: (t) => ({ size: g.size * (q3 + (1 - q3) * t), leg: g.leg * (RAUM.kalbBein - (RAUM.kalbBein - 1) * t) }) };
+        const V = sb.__tierRaumVorlage(TC, "deer", null, 1);
+        const T = sb.__tierRaumTafel(TC, V, [alter]);
+        roh.kalb = { ecken: T.n };
+        for (const t of [0, 0.25, 0.75]) {
+            const r = miss(V, T, [raumBruch(alter.knoten, t)], sb.__tierRaumLeib(V, Object.assign({}, V.dials, alter.dials(t))));
+            roh.kalb["t" + t] = r;
+            if (t === 0 && r.neben > 0)
+                v.push(`__leibRaumRefit: Kalb ${(100 * r.neben).toFixed(1)} % der Ecken > ${RAUM.nebenMm} mm neben der Fläche (max ${f1(r.max)} mm)`);
+            else if (!(r.max <= RAUM.kalbMaxMm)) v.push(`__tierRaumTafel: Kalb t ${t} max ${f1(r.max)} mm > ${RAUM.kalbMaxMm} neben der Fläche`);
+        }
+    }
+    roh.s = (Date.now() - t0) / 1000;
+    return { roh, v };
+}
+function zeigeRaum(roh) {
+    const z = (r) => `p95 ${r.p95.toFixed(1)} · max ${r.max.toFixed(1)} mm · Gelenke max ${r.gelenk.toFixed(1)} mm`;
+    console.log(`  Leib-Raum F1 Wolf (${roh.f1.ecken} Ecken, Tafel ${roh.f1.tafelKB} KB): +2σ ${z(roh.f1["+2σ"])} | −2σ ${z(roh.f1["−2σ"])}`);
+    console.log(`  Leib-Raum F3 Kalb (${roh.kalb.ecken} Ecken): Kalb ${z(roh.kalb.t0)} · ¼ ${z(roh.kalb["t0.25"])} · ¾ ${z(roh.kalb["t0.75"])} · ${roh.s.toFixed(1)} s`);
+}
+
 if (SELBSTTEST) {
     console.log("=== SELBST-TEST: die Anatomie-Linse feuert ===");
     let rot = 0;
@@ -512,6 +611,12 @@ if (SELBSTTEST) {
         const r = lauf(ladeWelt(), { verzerre });
         pruefe(name, r.fehler, muster);
     }
+    // S11: der Rahmen des Re-Fits ohne Radius (Mi_q⁻¹·Mi_p, der Stand vor w28-raum-ofen) — das Kalb fällt neben seine Fläche
+    {
+        const sb = ladeWelt();
+        sb.__leibRaumRahmen = (p) => new sb.THREE.Matrix4().fromArray(Array.from(p.Mi));
+        pruefe("S11 der Rahmen ohne Radius wird erkannt", raumUrteil(sb, true).v, /^__leibRaumRefit: Kalb/);
+    }
     urteilEnde(rot, `\n❌ SELBST-TEST ROT — ${rot} Linse(n) vakuös.`, "\n✅ SELBST-TEST GRÜN.");
 }
 
@@ -519,5 +624,8 @@ console.log("=== DIE ANATOMIE-LINSE: die gebackene Gestalt gegen das Soll der Ar
 const sb = ladeWelt();
 const { ergebnis, fehler } = lauf(sb);
 zeige(ergebnis);
+const raum = raumUrteil(sb);
+zeigeRaum(raum.roh);
+fehler.push(...raum.v);
 if (process.argv.includes("--json")) console.log(JSON.stringify(ergebnis, null, 1));
 urteilEnde(fehler.length, `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "), "\n✅ GRÜN — jede Art steht in ihren Natur-Bändern (Gestalt + Fell-Muster) und hält ihr Budget.");
