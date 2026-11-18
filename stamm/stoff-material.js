@@ -2357,11 +2357,9 @@ class AnazhRealm_stoff_material {
                 });
             });
             const A = atmo.lichtAuge;
-            // der obere Ast (welt-licht.js `augeZeig`): die Summe zeigt höchstens ihren Anteil an der Anpassung, S(A + E) × E ÷ (A + E)
-            const U = AnazhRealm.AUGE;
-            const zeig = A.y
-                .mul(summe.a.div(A.x).add(1).pow(U.q).sub(1))
-                .min(summe.a.mul(A.x.add(summe.a).pow(U.p - 1)).mul(A.z));
+            // EIN ZUSTAND JE SICHT (welt-licht.js `augeZeig`): das Licht am Ort steht im VERHÄLTNIS zur Umgebung, S(A) × E ÷ A — wie
+            // am Tag Sonne gegen Schatten; das Niveau des Bilds setzt die Kamera am Zustand der Sicht (`augeBlende`)
+            const zeig = A.y.mul(summe.a).div(A.x);
             return auge.add(summe.rgb.mul(zeig.div(summe.a.max(1e-9))));
         })();
     }

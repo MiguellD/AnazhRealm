@@ -468,8 +468,12 @@ async function s0Probe(page, station, schein) {
             // … in der Zahl, die die Welt jetzt trägt (`augeMass` über der Lesung des Messers: nachts 1, am Mittag der Bühne 0,82)
             const glutSoll = () =>
                 +(
-                    window.__weltLicht.augeGlut(window.__fachwerkCore.LICHT_GESETZ.fenster.cdM2, r._augeLux) *
-                    window.__weltLicht.augeMass(luma709(r._belichtungE), r._belichtungTag)
+                    window.__weltLicht.augeGlut(
+                        window.__fachwerkCore.LICHT_GESETZ.fenster.cdM2,
+                        window.__weltLicht.augeSicht(r._beckenAmAuge(), r._augeLux)
+                    ) *
+                    window.__weltLicht.augeMass(luma709(r._belichtungE), r._belichtungTag) *
+                    window.__weltLicht.augeBlende(r._beckenAmAuge(), r._augeLux)
                 ).toFixed(5);
             uhr(0);
             await takt(2);
@@ -1228,7 +1232,7 @@ async function himmelProbe(page, taub) {
 // Probe-Post liest sie).
 const S0_NACHT = { nacht: { luma: 22, schwarz: 0.05 } };
 // DER LICHTMESSER AM BECKEN (w28-strahler-2, `S0_MESSER`): die Kamera liest das Becken am Auge STETIG — `AUGE.anteil` × sein
-// gezeigtes Licht über der Umgebung (welt-licht.js `augeMesser`; die Linse rechnet das Gesetz selbst aus `augeZeig`). Am
+// gezeigtes Licht über der Umgebung (welt-licht.js `augeBlende`: die Kamera schließt um die Blende des Zustands der Sicht). Am
 // Feuerkreis der Bühne aus 2 m steht die Belichtung des Schreibers an diesem Gesetz (`ev` EV), an der Lava (`ueberLux` am Auge
 // gestellt: die Mess-Wiese, 2 157 lx) am selben Gesetz und tiefer. Die Nacht OHNE Feuer ist ohne Feuer auch im Messer.
 // Selbsttest: der Messer liest das Becken einer Lava, wo der Stoff kein Feuer trägt (Schuss); der Schreiber taub (gestellt).
@@ -1642,14 +1646,14 @@ async function lichtLauf() {
                                 const kGesetz = (E) => {
                                     const w = r._belichtungE;
                                     const lu = luma709(w);
-                                    const bz =
-                                        WL.AUGE.anteil * WL.augeZeig(E, WL.augeLux(lu, r._belichtungTag)) * WL.augeMass(lu, r._belichtungTag);
-                                    return WL.belichtung(
-                                        w.map((x) => x + bz),
-                                        r._belichtungAnker(),
-                                        r._sonnenRichtung().y,
-                                        (h, q) => AR._belichtungStufen(h, q),
-                                        AR.BELICHTUNG
+                                    return (
+                                        WL.belichtung(
+                                            w,
+                                            r._belichtungAnker(),
+                                            r._sonnenRichtung().y,
+                                            (h, q) => AR._belichtungStufen(h, q),
+                                            AR.BELICHTUNG
+                                        ) / WL.augeBlende(E, WL.augeLux(lu, r._belichtungTag))
                                     );
                                 };
                                 const becken = beckenAlt.call(r);

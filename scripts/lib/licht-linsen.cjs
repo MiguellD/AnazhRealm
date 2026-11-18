@@ -1109,8 +1109,8 @@ function tagKurve(o) {
             const w = r._belichtungE,
                 EA = r._belichtungAnker();
             if (!w || !EA) return NaN;
-            const bz = mit ? WL.AUGE.anteil * WL.augeZeig(r._beckenAmAuge(), WL.augeLux(luma709(w), r._belichtungTag)) * WL.augeMass(luma709(w), r._belichtungTag) : 0;
-            return WL.belichtung(w.map((x) => x + bz), EA, r._sonnenRichtung().y, (h, q) => C._belichtungStufen(h, q), C.BELICHTUNG);
+            const bl = mit ? WL.augeBlende(r._beckenAmAuge(), WL.augeLux(luma709(w), r._belichtungTag)) : 1;
+            return WL.belichtung(w, EA, r._sonnenRichtung().y, (h, q) => C._belichtungStufen(h, q), C.BELICHTUNG) / bl;
         };
         const C = r.constructor;
         try {

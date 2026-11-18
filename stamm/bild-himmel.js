@@ -1950,20 +1950,18 @@ class AnazhRealm_bild_himmel {
         const EA = w && this._belichtungAnker();
         if (!EA) return null;
         // das Gesetz der Kamera (welt-licht.js `belichtung`) mit den Stufen am Glied der Welt (die Linsen prüfen ihren Schein dort)
-        // DER MESSER LIEST DAS BECKEN STETIG (w28-strahler-2): Σ E der Quellen am Auge (`_beckenAmAuge`, Lux), durch das Auge
-        // gezeigt wie auf jeder Fläche, zu seinem `AUGE.anteil` (welt-licht.js `augeMesser`) als Licht der Lesung — an Laterne
-        // und Herdfeuer schließt die Kamera ein wenig, an der Lava weit, nie mit einem Sprung
+        // EIN ZUSTAND JE SICHT (w28-strahler-2, welt-licht.js `augeSicht` · `augeBlende`): Σ E der Quellen am Auge
+        // (`_beckenAmAuge`, Lux) hebt den Zustand der Sicht über die Umgebung, die Kamera schließt um seine Blende — NACH dem
+        // Boden der Belichtung (`BELICHTUNG.min` gilt dem Licht der Stunde: unter ihm stand die Lava weiß, k 0,05 statt 0,003)
         const lu = 0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2];
-        const bz = (this._belichtungBecken =
-            __weltLicht.augeMesser(this._beckenAmAuge(), __weltLicht.augeLux(lu, this._belichtungTag)) *
-            __weltLicht.augeMass(lu, this._belichtungTag));
-        const k = __weltLicht.belichtung(
-            [w[0] + bz, w[1] + bz, w[2] + bz],
-            EA,
-            e,
-            (h, q) => AnazhRealm._belichtungStufen(h, q),
-            AnazhRealm.BELICHTUNG
-        );
+        const k =
+            __weltLicht.belichtung(
+                w,
+                EA,
+                e,
+                (h, q) => AnazhRealm._belichtungStufen(h, q),
+                AnazhRealm.BELICHTUNG
+            ) / __weltLicht.augeBlende(this._beckenAmAuge(), __weltLicht.augeLux(lu, this._belichtungTag));
         // DER RAUM AM AUGE (w28-innenlicht): unter einer Decke misst die Kamera das Licht des Raums — das Licht von draußen ×
         // F (`_raumBlendeTakt`: das Raum-Licht der Decke × der Anteil des Himmels am Licht, die Sonne erreicht den Messer im
         // Raum nicht), `_raumStufen` = log2 F. Dasselbe Gesetz der Kamera wie für jedes Licht des Tags, dasselbe Glied wie das

@@ -1618,15 +1618,20 @@ class AnazhRealm {
             const U = AnazhRealm.AUGE;
             atmo.lichtAuge.value.set(A, __weltLicht.augeS(A) * m, (U.welt / U.lux ** U.p) * m);
         }
-        const mass = this._augeMass ?? 1;
+        // DIE GLUT STEHT IM ZUSTAND DER SICHT (w28-strahler-2, welt-licht.js `augeSicht` · `augeBlende`): ihre S-Form rechnet über
+        // der Umgebung MIT dem Becken am Auge, und die Blende, um die die Kamera vor ihm schließt, hebt sie in der Welt — die
+        // Flamme, das Fenster, die Lava stehen im Bild, wo die Kamera am Feuer weit schließt
+        const becken = this._beckenAmAuge();
+        const aSicht = __weltLicht.augeSicht(becken, this._augeLux ?? 1);
+        const mass = (this._augeMass ?? 1) * __weltLicht.augeBlende(becken, this._augeLux ?? 1);
         // DIE HÖHE DER GLUT DER LAVA: die Leuchtdichte ihres Ausbruchs (Planck im Sichtbaren × Emissivität) durch dasselbe Auge
-        atmo.lavaGlut.value = __weltLicht.augeGlut(this._lavaAusbruchCdM2(), this._augeLux ?? 1) * mass;
+        atmo.lavaGlut.value = __weltLicht.augeGlut(this._lavaAusbruchCdM2(), aSicht) * mass;
         // DIE GLUT JE DATUM (Fenster, Laternen-Kopf, das gemalte Glutbett): seine Leuchtdichte `cdM2` durch das Auge (welt-licht.js `augeGlut`) in der
         // Farbe seiner Temperatur, auf Luma 1 genormt — kein Zeitplan: über dem Mittag trägt sie nichts, die Dämmerung zündet sie
         for (const k in atmo.lichtGlut) {
             const c = this._lichtLinear(LG[k], atmo.lichtGlut[k].value);
             c.multiplyScalar(
-                (__weltLicht.augeGlut(LG[k].cdM2, this._augeLux ?? 1) * mass) /
+                (__weltLicht.augeGlut(LG[k].cdM2, aSicht) * mass) /
                     (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b)
             );
         }
