@@ -406,8 +406,15 @@ function pruefeStationen(liste, karte) {
         else ok.push(st);
     }
     const kr = new Set(ok.map((s) => s.kriterium));
+    // KARTE 2 (18.11., richter-planet-leben-zusammenspiel): staffel = die Sprosse — trägt eine Zeile „gleich“ der Tafel die Sprosse 1 einer
+    // Leiter (eine Station der alten Karte urteilt sie, der Leiter-Richter baut dort keinen Zwilling), steht ihre 1 ohne eigene Station
+    let tafelEins = null;
+    const eins = (k) => {
+        if (!tafelEins) tafelEins = new Set(JSON.parse(fs.readFileSync(path.join(KOORD, "vision", "richter-tafel.json"), "utf8")).zeilen.filter((z) => z.richter === "gleich" && z.sprosse === 1).map((z) => "karte2." + z.leiter));
+        return tafelEins.has(k);
+    };
     for (const k of kr)
-        if (!ok.some((s) => s.kriterium === k && s.staffel === 1)) fehler.push(k + ": keine Staffel-1-Station (eine 2 ohne 1 zählt nie)");
+        if (!ok.some((s) => s.kriterium === k && s.staffel === 1) && !(ok.some((s) => s.kriterium === k && istKarte2(s)) && eins(k))) fehler.push(k + ": keine Staffel-1-Station (eine 2 ohne 1 zählt nie)");
     fehler.push(...fahrtUrteil(ok));
     return { stationen: ok, fehler };
 }
@@ -6181,6 +6188,14 @@ async function selbsttest(o = {}) {
         const r = pruefeStationen([{ ...st0, staffel: 2, geraet: ["radeon", "gtx"], gpu: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 },
             quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" }], karte);
         pruef("FORMAT-ROT Staffel 2 ohne Staffel 1", r.fehler.some((f) => /keine Staffel-1-Station/.test(f)), r.fehler.join(" | "));
+        // KARTE 2: die Sprosse 1 von leben.pflanzen.jahreslauf trägt die Tafel (vegetation.K5#2 „gleich“) — eine Station ihrer Sprosse 2 steht;
+        // planet.erde.gestalt trägt die Tafel nicht — ihre Sprosse 2 ohne Sprosse 1 fällt wie zuvor
+        const k2 = (leiter) => ({ ...st0, karte2: true, kriterium: "karte2." + leiter, staffel: 2, geraet: ["radeon", "gtx"], gpu: true, befehl: undefined,
+            probe: { befehl: ["node", "-e", "0"], sek: 30 }, quelle: "KARTE2 " + leiter + " S2 = " + karte2Richter(leiter, 2) });
+        const t2 = pruefeStationen([k2("leben.pflanzen.jahreslauf")], karte), e2 = pruefeStationen([k2("planet.erde.gestalt")], karte);
+        pruef("KARTE2 Sprosse 2 steht, wenn die Tafel die Sprosse 1 trägt; ohne sie ROT „keine Staffel-1-Station“",
+            !t2.fehler.some((f) => /keine Staffel-1-Station/.test(f)) && e2.fehler.some((f) => /karte2\.planet\.erde\.gestalt: keine Staffel-1-Station/.test(f)),
+            t2.fehler.concat(e2.fehler).join(" | "));
         const d = pruefeStationen([st0, st0], karte);
         pruef("FORMAT-ROT doppelte Station", d.fehler.some((f) => /doppelt/.test(f)), d.fehler.join(" | "));
         // eine Staffel mit headless-Hälfte und Karten-Hälfte ist EINE Staffel auf drei Geräten, nie doppelt — ihre zweite headless-Hälfte schon
