@@ -65,7 +65,7 @@ class AnazhRealm_siedlung_satz {
 
     // DER SATZ-STOFF EINES STUDIO-STOFFS (K43-2): derselbe Bau des Wirts (`_foundryTreeMaterial`) ohne die Regler, die je
     // Ecke reisen — Rauheit, Metall, Emissiv × Stärke, die Deckkraft (ein durchsichtiger bleibt durchsichtig, die Zahl
-    // reist). Was den Stoff sonst trägt (Art · Seh-Klasse · Seite · flach · Umgebung · Gewebe · Leucht-Gesetz · Zeitplan ·
+    // reist). Was den Stoff sonst trägt (Art · Seh-Klasse · Seite · flach · Umgebung · Gewebe · Leucht-Gesetz · Licht-Datum ·
     // Klarlack) bleibt seine Identität. Fail-closed: ein Stoff ohne Studio-Herkunft ist ein Bruch.
     _satzStoff(mat) {
         const u = mat && mat.userData;

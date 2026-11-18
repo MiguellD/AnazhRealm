@@ -689,7 +689,7 @@ class AnazhRealm_stoff_material {
             // lineare Farbe × Stärke (rgb) mit dem Abfall (a), der Himmels-Ersatz (0 | 1: ein Licht, das nur trägt, wo der
             // Himmel fehlt — das Licht des Auges) und der Kern der Quelle (k², K11b `lichtAbfall`) — eine feste Zahl ab dem Boot (`LICHT_POOL.plaetze`): ein Wechsel der
             // Quellen baut kein Programm. Der Welt-Ort gilt jedem Renderer der Seite (der Stoff rechnet ihn mit der Kamera
-            // SEINES Renderers in den Blick-Raum). Dazu die Glut der wachen Fenster (lineare Farbe × Glut des Zeitplans).
+            // SEINES Renderers in den Blick-Raum). Dazu die Glut der wachen Fenster (lineare Farbe × die Höhe ihrer Leuchtdichte durch das Auge, `lichtGlut`).
             // EIN Schreiber: `_leuchtTakt`.
             lichtLage: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () =>
                 TSL.uniform(new THREE.Vector4(0, 0, 0, 0))
@@ -2084,14 +2084,14 @@ class AnazhRealm_stoff_material {
     // — der Stoff-Bau `_buildPbrNodeMaterial` (und mit ihm jeder Toon-Aufruf), der Foundry-Stoff `_foundryTreeMaterial` und
     // jeder Stoff, den eine Schicht selbst baut (Gras, Fern-Ring, Sockel, Wege und Zaun, Rauch, Schatten-Zwilling, Vorschau);
     // die Wand: die S0-Probe der Mess-Bühne (Zensus der Bauer im Stamm UND jedes beleuchteten Stoffs der Szene). Ein Stoff, dessen
-    // Gesetzbuch ein Datum mit Zeitplan stempelt (`mp.licht`: "fenster" am fachwerk `glas`, "laterne" am `laternenglas`),
+    // Gesetzbuch ein Licht-Datum stempelt (`mp.licht`: "fenster" am fachwerk `glas`, "laterne" am `laternenglas`),
     // glüht in der Glut SEINES Datums (`atmoUniforms.lichtGlut[licht]`, Farbe aus `kelvin` × seine Leuchtdichte durch das Auge); die Glut selbst (Seh-Klasse glut, das Leucht-Gesetz) ist Quelle und liest den Pool nicht.
     // `himmel` (ein Knoten 0…1, der Boden: `aHimmel`) ist die Himmels-Sicht der Fläche — ein Platz mit Himmels-Ersatz (das
     // Licht des Auges) trägt nur, wo sie fehlt; ohne sie gilt der Stoff als offen. KEIN Szenen-Licht: r184 sammelt jedes
     // Szenen-Licht in den Licht-Hash jedes beleuchteten Stoffs und rechnet seine BRDF auch auf Stärke 0 — der Pool ist eine
     // feste Zahl geteilter Uniforms ab dem Boot (EIN Schreiber `_leuchtTakt`), ein Wechsel der Quellen baut kein Programm.
     // EIN KNOTEN JE GRAPH (1310-18): dasselbe Leuchten über derselben Basis (dem Leucht-Knoten des Stoffs oder r184s
-    // `materialEmissive`), demselben Zeitplan und derselben Himmels-Sicht ist DERSELBE Knoten — Stoffe mit geteiltem Graphen
+    // `materialEmissive`), demselben Licht-Datum und derselben Himmels-Sicht ist DERSELBE Knoten — Stoffe mit geteiltem Graphen
     // (`_foundryTreeMaterial`) teilen so auch ihr Leuchten und mit ihm ihr Programm (r184 schlüsselt nach der Knoten-Identität).
     // DIE HÖHE DER GLUT EINES DATUMS (w28-strahler, Leser: der Studio-Stoff des gemalten Glühens, die Decke der Lava): die
     // Strahldichte, die seine Leuchtdichte im Bild zeigt (`atmoUniforms.lichtGlut[datum]`, Schreiber `_leuchtTakt` über

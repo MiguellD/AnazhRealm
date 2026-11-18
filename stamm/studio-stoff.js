@@ -738,7 +738,7 @@ class AnazhRealm_studio_stoff {
             // und eines ohne (Farn, Blüte, Schilf) bauen eigene Graphen
             _krone ? "krone" : "",
             // NACH DEM TEILEN VERZWEIGT DAS LEUCHTEN (`_leuchtStoff` unten): die Glut ist Quelle (ohne Pool und Nässe), das
-            // Durchsichtige trägt keine Nässe, ein Licht-Datum glüht nach seinem Zeitplan — bis w22-ankunft-kalt teilten sie die
+            // Durchsichtige trägt keine Nässe, ein Licht-Datum glüht mit seiner Leuchtdichte durch das Auge — bis w22-ankunft-kalt teilten sie die
             // Signatur des Bau-Stoffs, und die Linse 1310-18 nannte sie getrennt (Glut, Glas, Laterne neben `v:stoff`)
             mp && mp.seh === "glut" ? "glut" : "",
             R.op < 1 ? "durch" : "",
@@ -747,7 +747,7 @@ class AnazhRealm_studio_stoff {
         this._graphTeilen(mat, _sig);
         mat.userData.foundrySignatur = _sig;
         mat.userData.foundryKind = kind; // die Art vor dem Leuchten: die Nässe liest ihre Poren (`_naesseImStoff`)
-        // das Leuchtquellen-Gesetz: der Licht-Pool und der Zeitplan des Gesetzbuchs (`mp.licht`) im Leuchten (K11)
+        // das Leuchtquellen-Gesetz: der Licht-Pool und das Licht-Datum des Gesetzbuchs (`mp.licht`) im Leuchten (K11)
         this._leuchtStoff(mat, mp);
         mat.userData.foundryMp = mp || null; // die Regler reisen mit: die Nah-Streu baut denselben Stoff wiegend
         // Kein stiller Rückfall: ein Stoff, der nicht baut, wirft laut (bis K11 fing ein Fang jeden Fehler und baute einen

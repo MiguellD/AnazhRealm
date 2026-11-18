@@ -214,7 +214,7 @@ function ortUrteil(v2, hoehe, o) {
     };
 }
 // DIE PLÄTZE DES LICHT-POOLS, DIE DEM ORT GEHÖREN (O Akt, rein — dieselbe Funktion in der Seite und im Selbsttest): `pool` die
-// Plätze ({x, z, staerke}), `je` die sichtbaren Quellen der Gasse ([x, z, …]), `qs` jede brennende Quelle des Orts ([x, z]),
+// Plätze ({x, z, staerke} — `_leuchtPool.plaetze`: die Candela der Quelle × Blende, 0 = dunkel), `je` die sichtbaren Quellen der Gasse ([x, z, …]), `qs` jede brennende Quelle des Orts ([x, z]),
 // `rang` die Wahl des Pools selbst ({x, z, rang} aus `_leuchtQuellen` mit dem Sichtkegel), `horizont` die sichtbaren im Umkreis
 // des Pools, `ausser` der Rang, ab dem eine Quelle außer dem Kegel liegt. Gezählt: jeder helle Platz an einer sichtbaren Quelle,
 // dazu (`poolNaeher`) der an einer Quelle des Orts ohne sichtbaren Kopf, deren Kugel den Kegel berührt (Rang < `ausser`) und

@@ -401,8 +401,11 @@ async function probeLeben(expected) {
     // W (feld.K1) DIE WETTER-KETTE: das Wort Sturm, 20 min per Sprung des Nässe-Schreibers; je Lage Regen-Feld, Nässe (= Uniform
     // des Stoffs), Grip (der Bremsweg `s` der Vollbremsung ab 50 km/h bis bremsV in Sim-Schritten), Brand und Licht: ein Herd
     // am Start fängt trocken (`_brandEntfachen`), glüht `aufS` Spielzeit lang auf, dann fällt das Wort und der Brand tut EINEN
-    // Schritt auf seinem Takt (`_tickBrand`) — gemessen die Glut des Herds und die Stärke seines Feuers im Licht der Welt
-    // (`_leuchtQuellen`, zur festen Bild-Uhr 0); Brand und Taten fallen vor der Bremsung. Gehalten wird der VORGÄNGER
+    // Schritt auf seinem Takt (`_tickBrand`) — gemessen die Glut des Herds und die Candela seines Feuers im Licht der Welt
+    // (`_leuchtQuellen` · `_leuchtCandela`, zur festen Bild-Uhr 0). Gefragt wird um Mitternacht (`zurStunde`: die Uhr, der
+    // angewandte Tag, der Licht-Takt schreibt die Umgebung in Lux): eine Quelle steht nur im Licht der Welt, wo sie über der
+    // Umgebung der Stunde weiter trägt als ihr Kern (`_leuchtReichweite`) — am Mittag keine Flamme; danach steht die Stunde
+    // der Probe wieder. Brand und Taten fallen vor der Bremsung. Gehalten wird der VORGÄNGER
     // (`festBrand`: der Takt des Brands); `stern` liest das Wort. K8 (fahrzeug.K1) auf demselben Gras: μ(gras) halb in der
     // Stoff-Zeile, dann derselbe Streifen als Weg über den Hebel der Dörfer (`_stlWegeBuild`) trocken und im Sturm, darauf S1
     // (Labor = Welt, Takt).
@@ -426,6 +429,11 @@ async function probeLeben(expected) {
             weg(e);
             return { s };
         };
+        const zurStunde = (t) => {
+            if (!r._uhrSetzen(t, "regler")) throw new Error("die Uhr nimmt die Stunde " + t + " nicht");
+            r._applyDayNightToScene();
+            r._leuchtTakt();
+        };
         const lage = async (name, wort, halt) => {
             wetter("sunny", 1e6);
             const [n0, herd] = [(st.worldMeta.taten ||= []).length, r._brandEntfachen(start.x, start.z)];
@@ -435,7 +443,11 @@ async function probeLeben(expected) {
             wetter(wort, K.sprungS);
             st.spielZeit += A.BRAND.schrittS;
             r._tickBrand();
+            const uhr0 = st.timeOfDay;
+            zurStunde(0);
             const q = r._leuchtQuellen(start.x, 0, start.z, 1e3).find((l) => l.id === herd);
+            const candela = q ? r._leuchtCandela(q, 0) : 0;
+            zurStunde(uhr0);
             const m = {
                 regen: r._weatherFieldFor(st.weather).rain,
                 naesse: st.naesse,
@@ -443,7 +455,7 @@ async function probeLeben(expected) {
             };
             Object.assign(m, {
                 brand: [...st.brandFeld.values()].includes(herd) ? herd.glut : 0,
-                licht: q ? r._leuchtStaerke(q, 0) : 0,
+                licht: candela,
             });
             st.brandFeld.clear();
             st.worldMeta.taten.length = n0;

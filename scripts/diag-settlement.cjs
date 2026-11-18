@@ -15,6 +15,7 @@ const {
     wandEnde,
     selbsttestEnde,
     studioKern,
+    fadenScope,
     SELBSTTEST,
     path,
     fs,
@@ -1279,7 +1280,7 @@ hauptLauf(async () => {
             `groesse=${stadt.groesse} · brandwand-Slots=${bwSlots}`
         );
         // DAS DORF-LICHT: gemessen wird das Licht je METER der Gasse, nie die Zahl der Laternen. Gemessen wird jeder Meter der Weg-Achse, sein Maß der Abstand zur
-        // nächsten Quelle des Plans, die nachts brennt (Mast und Wandlaterne, Zeitplan `nacht` > 0): in der Gasse (eine Kern-Wand
+        // nächsten Quelle des Plans, die nachts brennt (Mast und Wandlaterne, `brenntBei`): in der Gasse (eine Kern-Wand
         // näher als LICHT_MARKE_M − armM, dort trägt die Wand ihr Licht) jeder ≤ LICHT_MARKE_M (das Gesetz des Kerns,
         // wandLaternen), über alle Meter p90 ≤ 10 m. Je
         // Laterne bleibt ihr Stand: der Mast vor der Wand (LATERNE_WAND aus LICHT_GESETZ.laterne, die Wand trägt höchstens das
@@ -1296,7 +1297,15 @@ hauptLauf(async () => {
             const tu = sl.tuer;
             return tu && tu.W > 0 && tu.D > 0 ? kasten(sl.x, sl.z, sl.phi, tu.W / 2, tu.D / 2, x, z) : Infinity;
         };
-        const brennt = (l) => ((l.wand ? LWd : LGd) || { zeit: {} }).zeit.nacht > 0;
+        // EINE QUELLE BRENNT, wo ihr gezeigtes Licht über ihren Kern hinaus trägt (w28-strahler, der Stamm: `_leuchtReichweite`):
+        // ihre Candela durch das Auge der Welt (welt-licht.js `augeReichweite`) über der Umgebung der Stunde — keine Tafel je
+        // Tageszeit. Die Nacht des Plans ist die Vollmond-Nacht des Gesetzes (`BELICHTUNG.nachtKnotenE` in Lux, `augeLux`), der
+        // Mittag `AUGE.lux`: dort trägt keine Laterne über ihren Kern.
+        const WL = fadenScope(["foundry-core.js", "welt-licht.js"]).__weltLicht;
+        const [NACHT_LUX, MITTAG_LUX] = [WL.augeLux(WL.BELICHTUNG.nachtKnotenE), WL.AUGE.lux];
+        const reichweiteBei = (D, aLux) => (D && D.candela > 0 ? WL.augeReichweite(D.candela, aLux) : 0);
+        const brenntBei = (D, aLux) => !!D && reichweiteBei(D, aLux) > D.kernM;
+        const brennt = (l) => brenntBei(l.wand ? LWd : LGd, NACHT_LUX);
         const wegPunkt = (rd, u) => {
             const P = rd.pts || [];
             let acc = 0;
@@ -1593,7 +1602,21 @@ hauptLauf(async () => {
             : Infinity;
         check(
             `Das Licht der Wandlaterne hält das Wand-Gesetz: die Wand in ${LWd ? LWd.armM : "?"} m trägt ${wandGesetz.toFixed(2)} × die Gasse unter ihr (Soll ≤ 2), ${LWd ? LWd.kelvin : "?"} K wie die Laterne`,
-            wandGesetz <= 2.001 && !!LWd && LWd.zeit.nacht > 0 && LWd.kelvin === LGd.kelvin
+            wandGesetz <= 2.001 && brenntBei(LWd, NACHT_LUX) && LWd.kelvin === LGd.kelvin
+        );
+        // DAS BRENNEN FOLGT AUS DEM AUGE: in der Nacht des Gesetzes trägt jede Quelle des Plans bis zur Marke je Meter (ihr
+        // Licht erreicht den Meter, den der Setzer ihr zuweist), am Mittag trägt keine über ihren Kern, und ohne Candela brennt
+        // keine — der Schein der Urteile oben (`brennt`): eine Quelle, die immer brennt, fiele hier.
+        const rw = (D, aLux) => reichweiteBei(D, aLux).toFixed(2);
+        check(
+            `DAS DORF-LICHT brennt aus dem Auge: nachts (${NACHT_LUX.toFixed(3)} lx) reicht der Mast ${rw(LGd, NACHT_LUX)} m, die Wandlaterne ${rw(LWd, NACHT_LUX)} m (Soll ≥ ${MARKE_SOLL} m, die Marke je Meter), am Mittag (${MITTAG_LUX} lx) ${rw(LGd, MITTAG_LUX)} m und ${rw(LWd, MITTAG_LUX)} m (Soll ≤ Kern ${LGd.kernM} m und ${LWd ? LWd.kernM : "?"} m), ohne Candela brennt keine`,
+            [LGd, LWd].every(
+                (D) =>
+                    brenntBei(D, NACHT_LUX) &&
+                    reichweiteBei(D, NACHT_LUX) >= MARKE_SOLL &&
+                    !brenntBei(D, MITTAG_LUX) &&
+                    !brenntBei({ ...D, candela: 0 }, NACHT_LUX)
+            )
         );
         // DIE WANDLATERNE IM ORTPLAN (K66-2 N1): fällt ein Slot ins Wasser (ortPlan, auch der Rückfall von `_ortWahl`), hängt jede
         // Wandlaterne armM vor der Wand des Hauses, mit dem die Welt sie hebt (`v2.slots[l.slot]`, `_spawnSettlementSlot`), und die
@@ -3011,12 +3034,25 @@ hauptLauf(async () => {
                         }
                     res.fremdBauten = fremd;
                     // DAS DORF-LICHT DER GASSE (Pflicht-OFFEN C): Mitternacht über den EINEN Uhr-Schreiber, die brennenden Quellen aus
-                    // dem EINEN Licht-Gesetz der Welt (`_leuchtQuellen`: Datum × Zeitplan > 0) — gezählt wird jede mit Leib (Studio-
-                    // Gestalt mit Licht-Datum oder Glut) im Ort; die Gasse und ihre Sicht rechnet `gassenLicht` (Node), den Licht-Pool
-                    // der Gasse liest `gassenPool`. Der Schein: derselbe Ort mit dunklem Zeitplan.
+                    // dem EINEN Licht-Gesetz der Welt (`_leuchtQuellen`: jede Quelle, deren Candela durch das Auge über der Umgebung
+                    // der Stunde weiter trägt als ihr Kern, `_leuchtReichweite`) — gezählt wird jede mit Leib (Studio-Gestalt mit
+                    // Licht-Datum oder Glut) im Ort; die Gasse und ihre Sicht rechnet `gassenLicht` (Node), den Licht-Pool der Gasse
+                    // liest `poolZaehlen`. Die Umgebung der Stunde schreibt der Spielpfad selbst: der Tag wird angewandt
+                    // (`_applyDayNightToScene`: der Lichtmesser liest Mitternacht), der Licht-Takt rechnet sie in Lux (`_augeLux`) —
+                    // mit der Lesung der alten Stunde (Mittag) stünde keine Laterne zur Wahl. Der Schein: derselbe Ort, das Feuer
+                    // aus (jede Quelle 0 Candela).
                     if (anker) {
                         const uhr0 = st.timeOfDay;
-                        if (!r._uhrSetzen(0, "regler")) throw new Error("die Uhr nimmt Mitternacht nicht");
+                        const zurStunde = (t) => {
+                            if (!r._uhrSetzen(t, "regler")) throw new Error("die Uhr nimmt die Stunde " + t + " nicht");
+                            r._applyDayNightToScene();
+                            r._leuchtPool = null;
+                            r._leuchtTakt();
+                            r._leuchtPool = null;
+                            return r._augeLux;
+                        };
+                        const tagLux = r._augeLux;
+                        const nachtLux = zurStunde(0);
                         const brennend = () =>
                             r
                                 ._leuchtQuellen(anker.x, H(anker.x, anker.z), anker.z, 250, null)
@@ -3028,17 +3064,22 @@ hauptLauf(async () => {
                                 )
                                 .map((q) => [q.x, q.z]);
                         const qs = brennend();
-                        r._lichtZeitplan = () => 0;
+                        r._leuchtCandela = () => 0;
                         let dunkel;
                         try {
                             dunkel = brennend();
                         } finally {
-                            delete r._lichtZeitplan;
+                            delete r._leuchtCandela;
                         }
-                        r._uhrSetzen(uhr0, "regler");
+                        // dieselben Quellen über der Umgebung des Mittags (`AUGE.lux`): keine trägt über ihren Kern
+                        r._augeLux = AnazhRealm.AUGE.lux;
+                        const mittag = brennend();
+                        zurStunde(uhr0);
                         res.gasseIn = {
                             qs,
                             dunkel,
+                            mittag,
+                            lux: [tagLux, nachtLux, AnazhRealm.AUGE.knieLux],
                             wege: (P.roads || []).map((w) => (w.pts || []).map((p) => [anker.x + p.x, anker.z + p.z])),
                             haeuser: dachW,
                             hfov: 2 * Math.atan(Math.tan((st.camera.fov * Math.PI) / 360) * (16 / 9)),
@@ -3082,6 +3123,9 @@ hauptLauf(async () => {
                 verdeckt: g.verdeckt,
                 brennend: gi.qs.length,
                 schein: gassenLicht(gi.dunkel, gi.wege, gi.haeuser, gi.hfov).n,
+                mittag: gi.mittag.length,
+                // die Umgebung in Lux: die Stunde der Welt vor der Probe, Mitternacht, das Knie des Auges
+                lux: gi.lux.map((v) => (Number.isFinite(v) ? +v.toPrecision(3) : null)),
             };
             if (g.pose)
                 Object.assign(
@@ -3093,7 +3137,10 @@ hauptLauf(async () => {
                             const uhr0 = st.timeOfDay;
                             const cam0 = { p: cam.position.clone(), q: cam.quaternion.clone(), a: cam.aspect };
                             const [px, pz, lx, lz] = pose;
+                            // Mitternacht über den Spielpfad: die Uhr, der angewandte Tag (der Lichtmesser liest die Stunde), dann
+                            // schreibt der Licht-Takt unten die Umgebung in Lux und wählt über ihr
                             r._uhrSetzen(0, "regler");
+                            r._applyDayNightToScene();
                             cam.aspect = 16 / 9;
                             cam.updateProjectionMatrix();
                             cam.position.set(px, H(px, pz) + 1.7, pz);
@@ -3142,10 +3189,14 @@ hauptLauf(async () => {
                                 poolNaeher: gezaehlt.poolNaeher,
                             };
                             r._uhrSetzen(uhr0, "regler");
+                            r._applyDayNightToScene();
                             cam.position.copy(cam0.p);
                             cam.quaternion.copy(cam0.q);
                             cam.aspect = cam0.a;
                             cam.updateProjectionMatrix();
+                            // die Umgebung der alten Stunde steht wieder (`_augeLux`), der Pool beginnt frisch
+                            r._leuchtPool = null;
+                            r._leuchtTakt();
                             r._leuchtPool = null;
                             return out;
                         },
@@ -3389,10 +3440,18 @@ hauptLauf(async () => {
             fehlO.join(" · ") || "gehalten"
         );
         check(
-            // die Zahl liest das Licht-Gesetz der Welt
-            `O ${modusName}: Selbst-Schein — der Zeitplan dunkel, die Gasse sieht keine Quelle`,
-            !!outO.gasse && outO.gasse.schein === 0 && outO.gasse.n > 0,
-            outO.gasse ? `hell ${outO.gasse.n} · dunkel ${outO.gasse.schein}` : "keine Gasse"
+            // die Zahl liest das Licht-Gesetz der Welt: das Feuer aus (jede Quelle 0 Candela) lässt der Gasse keine Quelle, und
+            // über der Umgebung des Mittags (`AUGE.lux`) steht keine zur Wahl — Mitternacht selbst liegt unter dem Knie des Auges
+            `O ${modusName}: Selbst-Schein — das Feuer aus, die Gasse sieht keine Quelle; am Mittag brennt keine, Mitternacht liegt unter dem Knie`,
+            !!outO.gasse &&
+                outO.gasse.schein === 0 &&
+                outO.gasse.n > 0 &&
+                outO.gasse.mittag === 0 &&
+                typeof outO.gasse.lux[1] === "number" &&
+                outO.gasse.lux[1] < outO.gasse.lux[2],
+            outO.gasse
+                ? `hell ${outO.gasse.n} · Feuer aus ${outO.gasse.schein} · Mittag ${outO.gasse.mittag} von ${outO.gasse.brennend} · Mitternacht ${outO.gasse.lux[1]} lx (Knie ${outO.gasse.lux[2]} lx)`
+                : "keine Gasse"
         );
     };
     pruefeOrt("Dorf 7/18 Gründerzeit am Hang", "Akt", O.outO, O.gtO);

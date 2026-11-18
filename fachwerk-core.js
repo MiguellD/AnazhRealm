@@ -1952,8 +1952,8 @@
       for(const _k in M) _roleByMat.set(M[_k],_k);
       for(const _k in M) if(SEH_DER_ROLLE[_k]) M[_k].userData.__seh=SEH_DER_ROLLE[_k];
       for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); _karteEins(M[_k]); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
-      M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 1900 K, Zeitplan abends 1) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
-      M.glas.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
+      M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 1900 K, 960 cd/m² durch das Auge der Stunde) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
+      M.glas.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen mit der Leuchtdichte LICHT_GESETZ.fenster durch das Auge der Stunde (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
       M.feuer.userData.__leucht=1/GLUT_LUMA; M.feuer.userData.__licht='feuer';                 // DAS LEUCHT-GESETZ (05.10. · w28-strahler): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht und mat.licht: die Welt webt emissiveNode = Farbe × leucht × die Glut ihres Datums LICHT_GESETZ.feuer, die das Auge rechnet)
       return M; }
     // Das Maß des Gemalten (w28-strahler): die gemalte Luma, die die Leuchtdichte des Datums trägt (LICHT_GESETZ.feuer `cdM2`) —
@@ -7032,7 +7032,7 @@
     // Glas-Kasten 0,26 × 0,40 m mit dem Licht-Mittelpunkt auf LICHT_GESETZ.laterne `hoeheM` (3,6 m), die Haube eine flache
     // Pyramide (0,40 m breit, 0,2 m hoch), nah mit Kranz und Knauf. ZWEI Rollen (das Budget der Ausstattung: der Stoff und
     // eine Seh-Klasse): metall und laternenglas — der Kopf ist Glas der Seh-Klasse glas mit dem Datum der Laterne (`__licht` laterne): sein
-    // Glühen und das Licht auf Boden und Wand tragen EIN Datum (fx.licht = LICHT_GESETZ.laterne, 1900 K, Zeitplan) — der Kopf
+    // Glühen und das Licht auf Boden und Wand tragen EIN Datum (fx.licht = LICHT_GESETZ.laterne, 1900 K, Candela und cd/m²) — der Kopf
     // im Stoff, das Licht im EINEN Licht-Pool der Welt. Stufe 1: dieselbe Silhouette, vier Seiten, ohne Rahmen und Knauf.
     function ausLaterne(g, p, seed, stufe) {
         var m = AUS_MASS.laterne(p.groesse),
@@ -10739,7 +10739,7 @@
 
     // ZEIT_VIS — intentional Lab dayparts (Feel-Entscheid .228). Host: das Licht (K11).
     // lab:"dayparts-4" = ZEIT_GESETZ mittag/morgen/abend/nacht (Sonne, Himmel, Nebel bleiben Lab-lokal). Herdfeuer und
-    // Fenster-Glut liest der Wirt aus LICHT_GESETZ (Zeitplan `zeit` auf der Tag-Achse der Welt, `_lichtZeitplan`).
+    // Fenster-Glut liest der Wirt aus LICHT_GESETZ (`cdM2` durch das Auge der Stunde, welt-licht.js `augeGlut`).
     var ZEIT_VIS = { lab: "dayparts-4", host: "licht" };
 
     // ── EXPLODE-Y (.229) — Lab Fachwerk subsystem explode Y offsets als DATEN.

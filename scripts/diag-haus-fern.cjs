@@ -34,7 +34,7 @@
 // der langen Achse — der Befund vor dem Akt) MUSS in A, F und I rot werden; eine Stufe ohne Werfer in W.
 //   node scripts/diag-haus-fern.cjs [--selftest] [--nur <regex>] [--zeilen]
 "use strict";
-const { wandEnde, studioKern } = require("./lib/welt-boot.cjs");
+const { wandEnde, studioKern, fadenScope } = require("./lib/welt-boot.cjs");
 const { rasterDreieck, wechselProbe, wurfIou } = require("./lib/kronen-linse.cjs");
 
 const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
@@ -376,12 +376,18 @@ const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 //    nur Vorderseiten, wie die Welt einen einseitigen Stoff zeichnet, durch den Raum bis zur Gegenwand (14 m) —, von vorn
 //    gemischt (Deckkraft des Stoffs, ein opaker Stoff schließt) — TAG die Stoff-Antwort (lineare Albedo × Vertex-
 //    Farbe, die Mischung der Scheibe über dem Raum), NACHT die Glut (ein Stoff mit `__licht` "fenster" glüht in
-//    LICHT_GESETZ.fenster: Farbe aus `kelvin` × Zeitplan nacht). Je gezeigter Stufe gegen die L0 desselben Hauses: Glut
+//    LICHT_GESETZ.fenster: die Farbe aus `kelvin` auf Luma 1 × die Höhe, die das Auge der Welt seiner Leuchtdichte `cdM2`
+//    in der Vollmond-Nacht des Gesetzes gibt — welt-licht.js `augeGlut` über `BELICHTUNG.nachtKnotenE` in Lux, wie der
+//    Licht-Takt der Welt sie schreibt, `_leuchtTakt` → `lichtGlut.fenster`). Je gezeigter Stufe gegen die L0 desselben Hauses: Glut
 //    L/L0 in [2/3, 3/2], Tag L/L0 in [1/4, 4] (die Albedo sieht kein Licht), Farbe (Anteile r/g/b) höchstens 0,15 entfernt
 //    — zwei Samen derselben Kultur liegen schon in der L0 bis 0,074 auseinander (holzhuette), eine Stufe darf zwei solche
 //    Schritte.
-const GLUT = FC.lichtFarbe(FC.LICHT_GESETZ.fenster.kelvin).map((c) => c * FC.LICHT_GESETZ.fenster.zeit.nacht);
 const { luma709: luma } = require("./lib/abnahme-urteil.cjs"); // die EINE Luma der Linsen
+const GLUT = ((WL, D) => {
+    const [farbe, hoehe] = [FC.lichtFarbe(D.kelvin), WL.augeGlut(D.cdM2, WL.augeLux(WL.BELICHTUNG.nachtKnotenE))];
+    if (!(hoehe > 0)) throw new Error("G: das Fenster des Gesetzes trägt nachts keine Glut (fenster.cdM2)");
+    return farbe.map((c) => (c * hoehe) / luma(farbe));
+})(fadenScope(["foundry-core.js", "welt-licht.js"]).__weltLicht, FC.LICHT_GESETZ.fenster);
 const GLAS_R = 0.05;
 const stoffFlaechen = (g) => dreiecke(g, false, true);
 // ein Fenster: je Pixel die Mischung von vorn → Summen (Tag-Farbe, Glut) über das Rechteck
