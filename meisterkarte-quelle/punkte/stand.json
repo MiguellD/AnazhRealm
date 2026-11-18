@@ -4937,7 +4937,7 @@
   },
   "karte2.erleben.kopplung.bild": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.bild#1 radeon: Station seit der Messung geändert · karte2.erleben.kopplung.bild#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.bild#1 radeon: Station seit der Messung geändert — zuletzt an 31d156e8: Deckel 117 s gerissen: Stille seit 115.3 s nach 117 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · karte2.erleben.kopplung.bild#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.bild#1",
@@ -4945,7 +4945,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 31d156e8: Deckel 117 s gerissen: Stille seit 115.3 s nach 117 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
      "ungemessen": true,
      "beide": true
     },
@@ -5108,8 +5108,9 @@
      "gruen": true,
      "zahl": "4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.2 s, kaempfen 0.01 s · gehen Änderung Δ 3.32 % (Rauschen 0.05 %) · bauen Änderung Δ 2.12 % (Rauschen 0.00 %) · fahren Änderung Δ 3.55 % (Rauschen 0.04 %) · kaempfen Änderung Δ 0.82 % (Rauschen 0.20 %) · [linse-gpu] amd/rdna-3",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs)",
      "gehalten": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -5487,7 +5488,7 @@
   },
   "karte2.mensch.menge.bevoelkerung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Station seit der Messung geändert · karte2.mensch.menge.bevoelkerung#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs +2) · karte2.mensch.menge.bevoelkerung#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bevoelkerung#1",
@@ -5495,8 +5496,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/werkbank.cjs +2)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6324,7 +6326,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 184,
+  "konsum": 186,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6486,10 +6488,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 164
+  "ohne": 162
  },
  "kopfVoll": "c50e6b61b445196a2316565e29a8e4989a939eef",
- "zeit": "2026-11-17T23:57:26.065Z",
+ "zeit": "2026-11-18T00:05:07.327Z",
  "vorher": "c50e6b61",
  "bilanz": {
   "gewinn": [],
