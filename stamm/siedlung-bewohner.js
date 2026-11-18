@@ -90,15 +90,11 @@ class AnazhRealm_siedlung_bewohner {
         je.clear();
         for (const t of dr.teilchen) je.set(t.q, (je.get(t.q) || 0) + 1);
         const p = 1 - Math.pow(1 - G.spawnChance, f);
-        // DER WURF DES RAUCHS IST EINE FUNKTION DER WELT (w28-funktion-welt, Lehre 7): je Kamin und Takt EIN Strom aus Saat, Ort
-        // des Kamins und Welt-Uhr (`_streamRng`) — zwei Seiten derselben Welt zur selben Spiel-Zeit sehen denselben Rauch. Bis
-        // hier würfelte Math.random: derselbe Kopf, zweimal gebaut, legte am Dorf 204 und 196 Teilchen (werkbank abdruck).
-        const saat = (st.worldMeta && st.worldMeta.seed) || "anazh-realm-seed";
-        const uhr = Math.round((st.spielZeit || 0) * 1000);
+        // DER WURF DES RAUCHS IST EINE FUNKTION DER WELT (w28-funktion-welt): je Kamin und Takt EIN Strom (Saat, Uhr, Kamin)
+        const uhr = `${(st.worldMeta && st.worldMeta.seed) || "anazh-realm-seed"}-rauch:${Math.round((st.spielZeit || 0) * 1000)}`;
         for (const [, qq] of nah) {
-            if ((je.get(qq.id) || 0) >= G.maxTeilchen) continue;
-            const w = this._streamRng(`${saat}-rauch:${Math.round(qq.x * 10)},${Math.round(qq.z * 10)}:${uhr}`);
-            if (w() < p)
+            const w = this._streamRng(`${uhr}:${Math.round(qq.x * 10)},${Math.round(qq.z * 10)}`);
+            if ((je.get(qq.id) || 0) < G.maxTeilchen && w() < p)
                 dr.teilchen.push({
                     x: qq.x,
                     y: qq.y,
@@ -1618,12 +1614,8 @@ class AnazhRealm_siedlung_bewohner {
             // Gang), und der Tag danach hing an der Geschichte der Seite: #724672 steckte um 12,62 Uhr in einem von 8 Läufen.
             const dU = Math.abs(stunde - S.uhrStunde);
             S.uhrStunde = stunde;
-            // der Sprung der Welt-Uhr (`_weltUhrNimm`: ein Mitspieler, ein Stand) ist derselbe Sprung — bis w28-funktion-welt
-            // ging der Takt danach mit dem Gang der Takte davor weiter, und zwei Seiten derselben Uhr sahen zwei Dörfer
-            const welt = this._weltUhrSprung | 0;
-            const sprung =
-                Math.min(dU, 24 - dU) >= BW.sprungH || (S.weltUhrSprung !== undefined && S.weltUhrSprung !== welt);
-            S.weltUhrSprung = welt;
+            const wu = this._weltUhrSprung | 0; // der Sprung der Welt-Uhr (`_weltUhrNimm`) ist derselbe Sprung (w28-funktion-welt)
+            const sprung = (S.weltUhrSprung ?? wu) !== (S.weltUhrSprung = wu) || Math.min(dU, 24 - dU) >= BW.sprungH;
             if (sprung || S.aktivListe !== S.liste) {
                 [S.aktivListe, S.aktiv, S.ruhend, S.raster, S.taktUhr] = [S.liste, S.liste.slice(), [], new Map(), 0];
                 [S.planI, S.ruhSoll] = [0, 0];
