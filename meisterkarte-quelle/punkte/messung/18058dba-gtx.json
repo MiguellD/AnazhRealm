@@ -1,7 +1,7 @@
 {
  "sha": "18058dba13bbeaf1756ba31e236b694eaa4f608d",
  "geraet": "gtx",
- "zeit": "2026-11-18T18:29:56.179Z",
+ "zeit": "2026-11-18T18:34:06.101Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -766,6 +766,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "karte2.erleben.kopplung.bild#1": {
+   "gruen": false,
+   "zahl": "❌ größter Sprung an markierten Stufenwechseln 8.1 % (2 Wechsel) · an den übrigen Schritten — (Soll an jedem ≤ 5 %) · der größte bei 50 m · 4/40 Schritte mit Fenster und freier Sicht · UNGEMESSEN 36 (Sicht auf den Fleck): 2000 m welt_portal in 22.03 m, 1950 m Laub baum_tanne in 48.57 m, 1900 m Laub baum_eiche in 30.82 m, 1850 m Laub baum_kiefer in 12.63 m, … · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · UNGÜLTIG · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.79,
+   "grund": "ROT: ❌ größter Sprung an markierten Stufenwechseln 8.1 % (2 Wechsel) · an den übrigen Schritten — (Soll an jedem ≤ 5 %) · der größte bei 50 m · 4/40 Schritte mit Fenster und freier Sicht · UNGEMESSEN 36 (Sicht auf den Fleck): 2000 m welt_portal in 22.03 m, 1950 m Laub baum_tanne in 48.57 m, 1900 m Laub baum_eiche in 30.82 m, 1850 m Laub baum_kiefer in 12.63 m, … · Gefälle 0.137 · Ziel 1000/53.4/1732.1 · UNGÜLTIG · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kf0129812061d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k07740f03b59d",
+   "s": 106.7,
+   "fremd": {
+    "s": 111.3,
+    "takte": 51,
+    "fremdS": 24.8,
+    "kerne": 0.223,
+    "fensterKerne": 0.436,
+    "namen": [
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.44
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      4.22
+     ],
+     [
+      "Explorer.EXE",
+      3.2
+     ]
+    ],
+    "dienerS": 45.41,
+    "diener": [
+     [
+      "System",
+      22.11
+     ],
+     [
+      "dwm.exe",
+      17.31
+     ]
+    ],
+    "geraetS": 35.86,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.73
+     ],
+     [
+      "svchost.exe",
+      11.61
+     ],
+     [
+      "SearchIndexer.exe",
+      3.72
+     ]
+    ],
+    "eigenS": 339.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T18:34:06.101Z",
+   "abdruck": "77ebc23a50d3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1069,20 +1139,20 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-18T18:29:28.773Z",
-  "ordner": "sitzung-20261118-192928",
+  "start": "2026-11-18T18:33:36.761Z",
+  "ordner": "sitzung-20261118-193336",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.7,
+  "bootS": 5.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "genesis",
-    "vor": "karte2.mensch.menge.kollektiv#1",
-    "s": 19.6,
-    "takte": 597,
+    "vor": "karte2.erleben.kopplung.bild#1",
+    "s": 20.9,
+    "takte": 591,
     "chunks": 81,
     "nach": null
    }
@@ -1090,7 +1160,7 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "karte2.mensch.menge.kollektiv#1",
+    "probe": "karte2.erleben.kopplung.bild#1",
     "anders": [
      "window.__ortSchritt"
     ],
@@ -1099,24 +1169,18 @@
     },
     "haelt": [],
     "heap": [
-     223.1,
-     359.3
+     226.2,
+     311.7
     ],
     "ungemessen": null
    }
   ],
-  "wanderung": [
-   {
-    "probe": "karte2.mensch.menge.kollektiv#1",
-    "ort": "genesis",
-    "m": 184.13,
-    "dreh": 0
-   }
-  ],
   "messHalt": [
    {
-    "probe": "karte2.mensch.menge.kollektiv#1",
+    "probe": "karte2.erleben.kopplung.bild#1",
     "gehalten": [
+     "skala",
+     "spiegel",
      "tiere"
     ],
     "offen": []
@@ -1125,20 +1189,27 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2603,
-   "frameP95": 33.33,
-   "taktP95": 25.13,
-   "vramMax": 164,
+   "bilder": 3221,
+   "frameP95": 25.02,
+   "taktP95": 13.32,
+   "vramMax": 140.7,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 134,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.erleben.kopplung.bild#1",
+     "m": 1950,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 206,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 139.1,
-  "minuten": 2.38
+  "fahrtS": 212.3,
+  "minuten": 3.64
  }
 }
