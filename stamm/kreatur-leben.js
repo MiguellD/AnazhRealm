@@ -330,9 +330,10 @@ class AnazhRealm_kreatur_leben {
         const restoreDials = this._standGussDials(snap);
         const c = this.spawnCreatureAt(snap.position.x, snap.position.y, snap.position.z, emotion, snap.soul, {
             precise: true,
-            // S7 — die persistierte Körpergröße zurück (sonst würfelte der Restore aus der
-            // neuen netId eine andere Größe).
-            bodySize: Number.isFinite(snap.bodySize) ? snap.bodySize : undefined,
+            // S7 — die persistierte Körpergröße zurück; ein Leib, der sein Tier sucht (`snap.bestand`), trägt gleich danach
+            // dessen Größe, einer ohne Tier ist kein Gesetz: er klemmt auf die Grenzen des Gesetzes (`_lebenSpanne` — ein Stand
+            // von vor leben-erbe trug Band-Größen bis 2,7)
+            bodySize: Number.isFinite(snap.bodySize) ? this._lebenSpanne(snap.bodySize) : undefined,
             dialsOv: restoreDials,
         });
         if (!c) return null;
@@ -1981,11 +1982,13 @@ class AnazhRealm_kreatur_leben {
                   .filter((g) => bilanz[g].geburt > 0 && bester[g] && rng() < bilanz[g].geburt)
                   .map((g) => bester[g]);
         // DIE GEBURT AUS MUTTER UND VATER (leben-erbe, das Gesetz des Lebens `__lebenCore`): je Kind eine Mutter, gezogen aus den
-        // REIFEN ihrer Art in der Region (`_bestandReif`); der Vater ist das reife Tier derselben Art mit dem kleinsten Abstand zur
-        // Mutter (bei Gleichstand das frühere im Verzeichnis), ohne ihn zieht `kind` einen Gründer-Zug für ihn. Das Kind trägt
-        // `kind(aM, aV, …)`, steht am Anker der Mutter in ihrem Verband und beginnt bei alterS 0 — es WÄCHST (masseZurZeit). Ohne
-        // reife Mutter tritt eine Gründer-Gruppe am Kandidaten-Ort ein (`gruender`, erwachsen: alterS = reifeS(M∞)). Den Zufall
-        // trägt der Strom des Takts, die Umwelt-Streuung die Kennung (`_lebenUmweltAus`). DIE KENNUNG ist eine Adresse:
+        // REIFEN ihrer Art in der Region (`_bestandReif`) nach ihrer Wurf-Rate (`wurfGewicht`: ihr Haushalt m^¾ je Kind q·m — die
+        // große Mutter gebiert seltener, Fenchel); der Vater ist das reife Tier derselben Art mit dem kleinsten Abstand zur Mutter
+        // (bei Gleichstand zieht der Strom: die Tiere einer Herde teilen den Anker, die Reihe des Verzeichnisses machte sonst EIN
+        // Tier zum Vater jedes Kinds), ohne ihn zieht `kind` einen Gründer-Zug für ihn. Das Kind trägt `kind(aM, aV, …)` und
+        // seine Umwelt-Streuung `umwelt`, steht am Anker der Mutter in ihrem Verband und beginnt bei alterS 0 — es WÄCHST
+        // (masseZurZeit). Ohne reife Mutter tritt eine Gründer-Gruppe am Kandidaten-Ort ein (`gruender`, erwachsen: alterS =
+        // reifeS(M∞)). Den Zufall trägt der Strom des Takts (Saat, Region, Zeit). DIE KENNUNG ist eine Adresse:
         // `indId(Region, Welt-Takt, j)`, j die Lauf-Nummer der Geburt in diesem Takt dieser Region (aus dem Verzeichnis gelesen,
         // eine Kennung ist Zustand). Bis leben-erbe zählte ein Zähler der Region die Kennung, und ein Wurf der Größe aus vier
         // Bändern gab erwachsene Tiere ohne Eltern, die lebenslang gleich groß blieben.
@@ -2006,18 +2009,27 @@ class AnazhRealm_kreatur_leben {
             for (let k = 0; k < kopf; k++) {
                 const id = L.indId(key, R.t, j++);
                 if (reife.length) {
-                    const mu = reife[Math.floor(rng() * reife.length)];
-                    let va = null,
+                    const mu = this._lebenZug(
+                        reife,
+                        (t) => L.wurfGewicht(this._bestandKg(t)) * this._bestandEignung(t),
+                        rng
+                    );
+                    let nah = [],
                         d2 = Infinity;
                     for (const t of reife) {
-                        const d = t === mu ? Infinity : (t.x - mu.x) ** 2 + (t.z - mu.z) ** 2;
-                        if (d < d2) [va, d2] = [t, d];
+                        if (t === mu) continue;
+                        const d = (t.x - mu.x) ** 2 + (t.z - mu.z) ** 2;
+                        if (d < d2) [nah, d2] = [[t], d];
+                        else if (d === d2) nah.push(t);
                     }
+                    const va = this._lebenZug(nah, (t) => this._bestandEignung(t), rng);
                     const a = L.kind(mu.a, va ? va.a : null, n(), n(), n());
-                    wurf.push({ id, soul: mu.soul, g, a, m: mu.id, alterS: 0, x: mu.x, z: mu.z, v: mu.v });
+                    const e = L.umwelt(n());
+                    wurf.push({ id, soul: mu.soul, g, a, e, m: mu.id, alterS: 0, x: mu.x, z: mu.z, v: mu.v });
                     continue;
                 }
-                const t = { id, soul: best.soul, g, a: L.gruender(n()), m: null, alterS: 0, x: best.x, z: best.z };
+                const [a, e] = [L.gruender(n()), L.umwelt(n())];
+                const t = { id, soul: best.soul, g, a, e, m: null, alterS: 0, x: best.x, z: best.z };
                 t.v = wurf.length ? wurf[0].id : id;
                 t.alterS = this._bestandErbe(t).reif;
                 wurf.push(t);
@@ -2187,8 +2199,9 @@ class AnazhRealm_kreatur_leben {
         return diet;
     }
     // DER RISS EINER GEMEINSCHAFT (`tiere`: die Freien einer Region, `_bestandFreie`, oder die Tiere EINES Geheges): wer einem
-    // wilden Jäger Beute ist (nicht wild, höchstens beuteMasse × seine Masse), je Gattung gezählt (gejagt), mit seinen Jägern
-    // (beuteVon), und die Kost der Jäger je Gattung, die sie jagen (jaeger).
+    // wilden Jäger Beute ist (einer anderen Gattung, nicht wild, höchstens beuteMasse × seine Masse), je Gattung gezählt (gejagt),
+    // mit seinen Jägern (beuteVon), und die Kost der Jäger je Gattung, die sie jagen (jaeger). Die eigene Art ist keine Beute: seit
+    // leben-erbe wächst jedes Junge heran und ist bis jagdKg „scheu“ — der Riss fraß sonst jeden Welpen des eigenen Rudels.
     _bestandJagd(tiere, diet) {
         const beuteMasse = AnazhRealm._verhaltenGesetz().jagd.beuteMasse;
         const jaeger = {};
@@ -2199,7 +2212,8 @@ class AnazhRealm_kreatur_leben {
             if (!(diet[h.g] > 0) || !this._bestandWild(h)) continue;
             const jagt = new Set();
             for (const o of tiere) {
-                if (o === h || this._bestandWild(o) || this._bestandKg(o) > beuteMasse * this._bestandKg(h)) continue;
+                if (o.g === h.g || this._bestandWild(o) || this._bestandKg(o) > beuteMasse * this._bestandKg(h))
+                    continue;
                 jagt.add(o.g);
                 const j = beuteVon.get(o);
                 if (j) j.push(h);
@@ -2370,31 +2384,23 @@ class AnazhRealm_kreatur_leben {
     // Ein Tier des Bestands ist eine ADRESSE (`id` = `indId(Region, Welt-Takt der Geburt, Lauf-Nummer)`), trägt ein ERBE (`a`, der
     // Zuchtwert-Vektor aus Mutter und Vater, `m` = die Mutter) und sein Leib ist PHYSIK seines Erbes über das Alter: M∞ =
     // masseAdult(M_guss, a, e), die Masse zur Zeit masseZurZeit(M∞, alterS), die Skala des Gusses bs = (m / M_guss)^⅓. Gespeichert
-    // wird nur {id, soul, g, a, m, alterS, x, z, v}; e (die Umwelt-Streuung, nie vererbt) ist eine Funktion der Kennung
-    // (`_rollGenome(id, "erbe")`), Masse, Größe und Temperament sind Ableitung. Den Kern liest der EINE Leser
-    // `AnazhRealm._lebenKern()` (fail-closed), den Gründer einer Kennung `_erbeGruender`.
+    // wird nur {id, soul, g, a, e, m, alterS, x, z, v}: e (die Umwelt-Streuung, nie vererbt) zieht die Geburt aus dem Strom ihres
+    // Takts (Saat, Region, Zeit) und trägt sie wie a — bis zur Heilung von leben-erbe war e eine Funktion der Kennung ohne die
+    // Saat der Welt (jede junge Welt trug dieselben ersten Tiere), und der angenommene Leib musste a = −e tragen. Masse, Größe und
+    // Temperament sind Ableitung. Den Kern liest der EINE Leser `AnazhRealm._lebenKern()` (fail-closed), den Gründer einer
+    // Kennung `_erbeGruender`.
     // Normalverteilte je Achse des Erbes aus dem Strom eines Takts (`rng`: Gleichverteilte u ∈ [0, 1), zwei je Achse).
     _lebenNormale(rng) {
         const L = AnazhRealm._lebenKern();
         return L.gesetz().achsen.map(() => L.normal(rng(), rng()));
-    }
-    // DIE UMWELT-STREUUNG e eines Individuums: fest je Kennung, nie vererbt — derselbe Genom-Strom wie der Gründer
-    // (`_rollGenome(id, "erbe")`, `_erbeGruender` liest die Achsen „a:…“, hier „e:…“): dieselbe Kennung, dieselbe Streuung auf
-    // jeder Seite und nach jedem Laden.
-    _lebenUmweltAus(id) {
-        const L = AnazhRealm._lebenKern();
-        const g = this._rollGenome(String(id), "erbe");
-        return L.umwelt(
-            L.gesetz().achsen.map((x) => L.normal(g.axis("e:" + x.name + ":1"), g.axis("e:" + x.name + ":2")))
-        );
     }
     // DIE MASSE DES GUSSES einer Gattung (kg): das Volumen ihrer Gestalt bei Größe 1 (`_gattungLeib`) × ρ — M̄ der Art in Welle 1:
     // das mittlere erwachsene Tier IST der Guss (bs = 1).
     _gattungKg(g) {
         return this._gattungLeib(g).v * this._leibRho(false);
     }
-    // DAS LEBEN EINES TIERS (Memo je Datensatz, nie im Datensatz: kein Feld reist in Stand oder Akt): M∞ hängt nur an Kennung,
-    // Gattung und Erbe; Masse und Temperament am Alter — gerechnet einmal je Alter (der Takt rückt es), nie als gespeicherter Wert.
+    // DAS LEBEN EINES TIERS (Memo je Datensatz, nie im Datensatz: kein Feld reist in Stand oder Akt): M∞ hängt nur an Gattung,
+    // Erbe und Umwelt-Streuung; Masse und Temperament am Alter — gerechnet einmal je Alter (der Takt rückt es), nie als gespeicherter Wert.
     _bestandLeben(t) {
         const e = this._bestandErbe(t);
         if (e.alter !== t.alterS) {
@@ -2406,12 +2412,12 @@ class AnazhRealm_kreatur_leben {
     _bestandErbe(t) {
         const W = this._bestandLebenMemo || (this._bestandLebenMemo = new WeakMap());
         let e = W.get(t);
-        if (!e || e.a !== t.a || e.id !== t.id || e.g !== t.g) {
+        if (!e || e.a !== t.a || e.e !== t.e || e.g !== t.g) {
             const L = AnazhRealm._lebenKern();
-            const M = L.masseAdult(this._gattungKg(t.g), t.a, this._lebenUmweltAus(t.id));
+            const M = L.masseAdult(this._gattungKg(t.g), t.a, t.e);
             e = {
                 a: t.a,
-                id: t.id,
+                e: t.e,
                 g: t.g,
                 M,
                 tod: L.lebensdauerS(M),
@@ -2446,51 +2452,72 @@ class AnazhRealm_kreatur_leben {
         }
         return e.wild;
     }
-    // DAS ALTER EINES GEZEICHNETEN LEIBS (die Annahme, `_bestandAdoptieren`): die Umkehr des Wachstums an der Masse seiner Größe
-    // (`__lebenCore.alterZurMasse(M∞, bs³·M_guss)`) — trägt er weniger als sein M∞, ist er so alt, wie sein Leib es sagt; ein Leib,
-    // der innerhalb der Toleranz des Wachstums (`LEIB_WUCHS_TOLERANZ`) ausgewachsen ist, ist so alt, wie diese Grenze sagt, oder
-    // älter, wenn er sein Alter schon trug (`alterS` des Leibs). Bis hierher trat jeder angenommene Leib erwachsen ein: ein Kitz
-    // (bs 0,6) sprang im nächsten Takt auf die Größe des Erwachsenen.
-    _bestandAlterAusLeib(t, bs, alterS) {
-        const e = this._bestandErbe(t);
-        const b = Number.isFinite(bs) && bs > 0 ? bs : 1;
-        const [m, voll] = [b * b * b * this._gattungKg(t.g), e.M * (1 - AnazhRealm.LEIB_WUCHS_TOLERANZ) ** 3];
-        const s = AnazhRealm._lebenKern().alterZurMasse(e.M, Math.min(m, voll));
-        return m >= voll ? Math.max(s, alterS > 0 ? alterS : 0) : s;
+    // DAS ERBE UND DAS ALTER EINES GEZEICHNETEN LEIBS OHNE HERKUNFT (die Annahme, `_bestandAdoptieren`): sein Leib ist gemessen,
+    // seine Geschichte nicht. Ein ausgewachsener Leib (bs ≥ 1 − `LEIB_WUCHS_TOLERANZ`) trägt den Phänotyp P = ln(bs³) — der Boot-Leib
+    // das Art-Mittel (P = 0), ein Leib nach dem Größen-Hauch seine Größe — und daraus Zuchtwert und Umwelt-Streuung als ihren
+    // Erwartungswert (`__lebenCore.erbeAusLeib`: a = h²·P, e = (1 − h²)·P, a + e = P: kein Sprung, und der Leib vererbt nur seinen
+    // h²-Anteil); sein Alter ist, wie die Grenze des Wachstums sagt, oder älter, wenn er es schon trug. Ein kleinerer Leib ist ein
+    // junges Tier des Art-Mittels (P = 0), so alt, wie seine Masse sagt (`alterZurMasse`), und wächst weiter. Ein Leib ohne
+    // gültige Größe bricht laut. Bis zur Heilung von leben-erbe trug der Angenommene a = −e seiner Kennung (die Umwelt-Streuung
+    // als Erbe in der Linie), und ein Hauch-Leib schrumpfte bei der Annahme auf das Art-Mittel.
+    _bestandErbeAusLeib(t, bs, alterS) {
+        if (!(Number.isFinite(bs) && bs > 0))
+            throw new Error("leben: der Leib " + t.id + " trägt keine Größe (" + bs + ")");
+        const L = AnazhRealm._lebenKern();
+        const tol = (1 - AnazhRealm.LEIB_WUCHS_TOLERANZ) ** 3;
+        const [Mbar, m] = [this._gattungKg(t.g), bs * bs * bs * this._gattungKg(t.g)];
+        const gross = m >= Mbar * tol;
+        const P = L.gesetz().achsen.map((x) => (gross && x.name === "lnM" ? Math.log(m / Mbar) : 0));
+        Object.assign(t, L.erbeAusLeib(P));
+        const M = this._bestandErbe(t).M;
+        t.alterS = gross ? Math.max(L.alterZurMasse(M, M * tol), alterS > 0 ? alterS : 0) : L.alterZurMasse(M, m);
+        return t;
+    }
+    // DIE EIGNUNG EINES TIERS in der Nische seiner Art (`__lebenCore.eignung`): sein Phänotyp P = ln(M∞ / M_guss) gegen das
+    // Optimum der Art (Welle 1: der Guss).
+    _bestandEignung(t) {
+        const E = this._bestandErbe(t);
+        if (E.eignung === undefined) {
+            const L = AnazhRealm._lebenKern();
+            const P = Math.log(E.M / this._gattungKg(t.g));
+            E.eignung = L.eignung(L.gesetz().achsen.map((x) => (x.name === "lnM" ? P : 0)));
+        }
+        return E.eignung;
     }
     // REIF ist ein Tier, dessen Leib reifeMasse × M∞ trägt (alterS ≥ reifeS(M∞)) — nur ein reifes wird Mutter oder Vater.
     _bestandReif(t) {
         return t.alterS >= this._bestandErbe(t).reif;
     }
-    // DAS OPFER DES HUNGERS: wem die Reserve zuerst ausgeht — der kleinste `fastenRang` seiner Masse (Fasten-Ausdauer ∝ M^¼), mit
-    // g nur seiner Gattung; bei Gleichstand das frühere im Verzeichnis.
-    _bestandHungerOpfer(tiere, g) {
-        const L = AnazhRealm._lebenKern();
-        let wer = null,
-            min = Infinity;
-        for (const t of tiere) {
-            if (g && t.g !== g) continue;
-            const r = L.fastenRang(this._bestandKg(t));
-            if (r < min) [wer, min] = [t, r];
-        }
-        return wer;
-    }
-    // DAS OPFER DES RISSES: gezogen aus der Beute (`beute`: Map/Set der Gejagten, mit g nur seiner Gattung) mit dem Gewicht
-    // `rissGewicht` seiner Masse (der Ertrag des Jägers ∝ Masse) über EINEN Zug des Stroms `rng`, in der Reihe des Verzeichnisses.
-    _bestandRissOpfer(tiere, g, beute, rng) {
-        const L = AnazhRealm._lebenKern();
+    // DER ZUG DES GESETZES: ein Tier aus `tiere`, gezogen mit dem Gewicht `w(t)` über EINEN Zug des Stroms `rng`, in der Reihe des
+    // Verzeichnisses (null ohne Kandidaten). Hunger, Riss und Mutter ziehen hier — ein Tod und eine Geburt sind ein Risiko, nie eine
+    // Rangliste: bis zur Heilung von leben-erbe nahm der Hunger immer genau den Leichtesten (das argmin), eine Auslese unendlicher
+    // Schärfe auf das jüngste Kalb mit dem kleinsten M∞ — ohne Wölfe lief ln M̄ der Hirsche in 46 000 Takten auf +4,8.
+    _lebenZug(tiere, w, rng) {
         const kand = [];
         let summe = 0;
         for (const t of tiere) {
-            if ((g && t.g !== g) || (beute && !beute.has(t))) continue;
-            const w = L.rissGewicht(this._bestandKg(t));
-            kand.push([t, w]);
-            summe += w;
+            const x = w(t);
+            if (!(x > 0)) continue;
+            kand.push([t, x]);
+            summe += x;
         }
         if (!kand.length) return null;
         let r = rng() * summe;
-        for (const [t, w] of kand) if ((r -= w) < 0) return t;
+        for (const [t, x] of kand) if ((r -= x) < 0) return t;
         return kand[kand.length - 1][0];
+    }
+    // DAS OPFER DES HUNGERS: wem die Reserve zuerst ausgeht — gezogen mit dem Gewicht 1 / `fastenRang` seiner Masse (die
+    // Fasten-Ausdauer ∝ m^¼ ist die Zeit bis zur leeren Reserve, ihr Kehrwert das Risiko je Takt), mit g nur seiner Gattung.
+    _bestandHungerOpfer(tiere, g, rng) {
+        const L = AnazhRealm._lebenKern();
+        return this._lebenZug(tiere, (t) => (g && t.g !== g ? 0 : 1 / L.fastenRang(this._bestandKg(t))), rng);
+    }
+    // DAS OPFER DES RISSES: gezogen aus der Beute (`beute`: Map/Set der Gejagten, mit g nur seiner Gattung) mit dem Gewicht
+    // `rissGewicht` seiner Masse (der Ertrag des Jägers ∝ Masse).
+    _bestandRissOpfer(tiere, g, beute, rng) {
+        const L = AnazhRealm._lebenKern();
+        const ist = (t) => !(g && t.g !== g) && !(beute && !beute.has(t));
+        return this._lebenZug(tiere, (t) => (ist(t) ? L.rissGewicht(this._bestandKg(t)) : 0), rng);
     }
     // DIE GESTALT EINER GATTUNG bei Größe 1 (`_tierBaum`): ihr Volumen (m³, `leibV` — die Masse liest es) und ihre Hüft-Höhe
     // (m, `beinL` — der Leib, `_kreaturLeib`, und mit ihm die Frage der Geburt an den Blick); einmal je Gattung aus dem Ofen
@@ -2543,7 +2570,7 @@ class AnazhRealm_kreatur_leben {
         for (const g in bestand) {
             const { tod: p, riss, beute } = bestand[g];
             if (p > 0 && rng() < p) {
-                const hunger = this._bestandHungerOpfer(this._bestandFreie(R), g);
+                const hunger = this._bestandHungerOpfer(this._bestandFreie(R), g, rng);
                 if (hunger) this._bestandStirbt(R, hunger, "hunger", tode);
             }
             const opfer = riss > 0 && rng() < riss && this._bestandRissOpfer(this._bestandFreie(R), g, beute, rng);
@@ -2621,23 +2648,11 @@ class AnazhRealm_kreatur_leben {
             const key = this._bestandKey(a.x, a.z);
             const v = ud.verband != null ? "n" + ud.verband : null;
             const id = this._annahmeKennung(key);
-            // DAS ERBE DES ANGENOMMENEN (leben-erbe): ein Leib ohne Bestand ist das Art-Mittel — sein Leib a + e = 0: die
-            // Umwelt-Streuung e ist die seiner Kennung (`_lebenUmweltAus`, nie gespeichert), also trägt er a = −e (verteilt wie
-            // ein Gründer-Zug, √VE statt √VA), keine Mutter, kein Wurf. SEIN ALTER IST SEINE GRÖSSE (`_bestandAlterAusLeib`): ein
-            // kleiner Leib ist ein junges Tier und wächst weiter, ein ausgewachsener ist erwachsen. Seine Größe liest danach sein
-            // Tier (`_bestandBs`) — ohne Sprung. Mit a = 0 sprang ein Leib der Größe 1 im nächsten Takt auf e^(e/3) (gemessen 0,91).
-            const tier = {
-                soul: ud.soul,
-                g,
-                a: this._lebenUmweltAus(id).map((e) => -e),
-                m: null,
-                alterS: 0,
-                x: a.x,
-                z: a.z,
-                v,
-                name: ud.name,
-            };
-            tier.alterS = this._bestandAlterAusLeib(Object.assign({ id }, tier), ud.bodySize, ud.alterS);
+            // DAS ERBE DES ANGENOMMENEN (leben-erbe): sein gemessener Leib (`_bestandErbeAusLeib`: Erbe, Umwelt-Streuung und
+            // Alter aus seiner Größe), keine Mutter, kein Wurf — seine Größe liest danach sein Tier (`_bestandBs`), ohne Sprung.
+            const tier = { soul: ud.soul, g, a: null, e: null, m: null, alterS: 0, x: a.x, z: a.z, v, name: ud.name };
+            this._bestandErbeAusLeib(Object.assign(tier, { id }), ud.bodySize, ud.alterS);
+            delete tier.id;
             const t = Object.assign({ id }, tier, { leib: c, zu: true });
             ud._bestand = t;
             (this._annahmeOffen || (this._annahmeOffen = new Map())).set(id, t);
@@ -2847,6 +2862,8 @@ class AnazhRealm_kreatur_leben {
               )
             : this.spawnCreatureAt(x, y, z, "happy", t.soul, { bodySize });
         if (!c) return null;
+        // die Wiederkehr klemmt den Stand auf die Spanne (`_lebenSpanne`); das Tier trägt seine eine Masse ungeklemmt
+        if (c.userData.bodySize !== bodySize) this._kreaturGroesseSetzen(c, bodySize);
         Object.assign(c.userData, { alterS: t.alterS, wanderAnchor: { x: t.x, z: t.z }, name: this._bestandName(t) });
         [c.userData._bestand, t.leib, t.snap] = [t, c, null];
         return c;
@@ -3862,7 +3879,7 @@ AnazhRealm.ERINNERUNG_GEWICHT = Object.freeze({
 AnazhRealm.CREATURE_SPAWN_CLEAR_M = 3;
 // leben-erbe — DIE TOLERANZ DES GEZEICHNETEN WACHSTUMS: der Leib eines Bestand-Tiers bekommt die Größe seines Erbes zur Zeit
 // (`_kreaturGroesseSetzen`), sobald sie um mehr als diesen Anteil von der gezeichneten abweicht (je Takt, `_bestandVerkoerpern`);
-// eine Annahme (`_bestandAlterAusLeib`) liest einen Leib, der innerhalb dieser Toleranz ausgewachsen ist, als ausgewachsen.
+// eine Annahme (`_bestandErbeAusLeib`) liest einen Leib, der innerhalb dieser Toleranz ausgewachsen ist, als ausgewachsen.
 AnazhRealm.LEIB_WUCHS_TOLERANZ = 0.02;
 // V18.301 — DER LADE-RHYTHMUS-RING: der beim Boot aktive Terrain-Chunk-Ring startet KLEIN
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.

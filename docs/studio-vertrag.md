@@ -576,8 +576,7 @@ hopHochM hopBasisM }` · `sprung { impulsProM }` (VERTRAGS-AKT Welle L
 gefallen — DAS SPRUNG-GESETZ: die Huepf-Hoehe der Freude ist die
   EINE Quelle eines Sprungs, froh `hopHochM`, sonst `hopBasisM`, der Abflug
   v0 = √(2·g·h) mit `GANG_GESETZ.g` im Wirt `creatureJump`; eine Aktion
-  trägt nur `hop: true`, der Abflug in m/s fiel mit) · `groessen[]`
-  (Körpergrößen-Bänder) · `separation { raumKugel strength }` (der
+  trägt nur `hop: true`, der Abflug in m/s fiel mit) · `separation { raumKugel strength }` (der
   Stamm-Zwilling `CREATURE_SEPARATION` fiel, Absenz-Wand; VERTRAGS-AKT Welle LF
 DER PERSÖNLICHE RAUM — je Leib die Körper-Kugel × `raumKugel`, der
   Paar-Raum ist die Summe, der feste Paar-Radius `radiusBaseM` fiel) · `aufgaben`
@@ -1133,10 +1132,10 @@ im Faden: die Quelle der Fäden lädt ihn spät (`FADEN_QUELLE.spaet`), der Auft
 dem ersten Weltbild den Anker der Welt (`_planetAnker`), der Satz „reise“ der Konsole sagt ihn — die Seite trägt keinen
 Skript-Stempel für ihn.
 `leben-core.js` (`__lebenCore`) — DAS GESETZ DES LEBENS: die Konstanten `gesetz` (LEBEN_GESETZ: Erb-Achsen mit h² und sdP,
-Mutation, die Exponenten von Lebensdauer, Wachstum und Fasten, Geburts-Anteil, Reife, der Zeit-Anker Wolf), die Normale aus zwei
+Mutation, die Exponenten von Lebensdauer, Wachstum, Fasten und Wurf, die Breite der Nische, Geburts-Anteil, Reife, der Zeit-Anker Wolf), die Normale aus zwei
 Gleichverteilten `normal`, das Erbe nach dem Infinitesimal-Modell — der Gründer `gruender`, das Kind aus Mutter und Vater `kind`,
-die Umwelt-Streuung `umwelt` —, der Leib als Physik des Erbes über das Alter — die Masse `masseAdult`, die Lebensdauer
+die Umwelt-Streuung `umwelt`, der gemessene Leib ohne Herkunft `erbeAusLeib` —, der Leib als Physik des Erbes über das Alter — die Masse `masseAdult`, die Lebensdauer
 `lebensdauerS`, die Zeit-Konstante `tau`, das Wachstum `masseZurZeit` und seine Umkehr `alterZurMasse`, die Reife `reifeS` —, die Auslese nach dem Leib
-`fastenRang`/`rissGewicht`, die Größen-Grenzen des Gesetzes `spanne` und die Adresse `artId`/`indId`; sein Selbsttest
+`fastenRang`/`rissGewicht`/`wurfGewicht` und die Nische der Art `eignung`, die Größen-Grenzen des Gesetzes `spanne` und die Adresse `artId`/`indId`; sein Selbsttest
 `selbsttest`. Rein: der Zufall kommt aus den Strömen des Wirts. Geladen vom Stamm (Script-Zeile neben `tetrapoda-core.js`) und
 vom Foundry-Worker. DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.

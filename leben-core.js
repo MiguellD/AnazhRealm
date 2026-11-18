@@ -25,8 +25,13 @@
 //   masseZurZeit(M∞, alterS)               → kg  M∞·[1 − (1 − q^¼)·e^(−alterS/tau(M∞))]⁴
 //   reifeS(M∞)                             → s   tau(M∞)·ln((1−q^¼)/(1−reifeMasse^¼))
 //   alterZurMasse(M∞, m)                   → s   die Umkehr von masseZurZeit: 0 für m ≤ q·M∞, Infinity für m ≥ M∞ (additiv)
-//   fastenRang(m)                          → m^0,25            (relativ; der Kleinste zuerst)
+//   erbeAusLeib(P)                         → { a, e }  ein Leib, dessen Phänotyp P (Vektor, lnM = ln(m/M̄)) gemessen ist, ohne
+//                                            Herkunft: a = h²·P, e = (1 − h²)·P — der Erwartungswert von Zuchtwert und Umwelt
+//                                            gegeben P (additiv; die Annahme eines Leibs ohne Bestand, kein Wurf, kein Sprung)
+//   fastenRang(m)                          → m^0,25            (Fasten-Ausdauer; das Risiko des Hungers ∝ 1/fastenRang)
 //   rissGewicht(m)                         → m                 (Energie-Ertrag des Jägers ∝ Masse)
+//   wurfGewicht(m)                         → m^−0,25           (Wurf-Rate der Mutter: Haushalt m^¾ je Kind q·m; additiv)
+//   eignung(P)                             → exp(−Σ P²/2ω²)    (die Nische der Art um ihr Optimum, ω² = omegaJeVP·sdP²; additiv)
 //   spanne()                               → [q^⅓·e^(−4·sdP/3), e^(4·sdP/3)]   die Größen-Grenzen DES GESETZES (bs)
 //   artId(wurzel, pfad = "")               → wurzel + (pfad ? "/" + pfad : "")  Welle 1: pfad leer, die Wurzel ist die Gattung
 //   indId(key, tS, j)                      → key + ":" + tS + ":" + j
@@ -35,7 +40,7 @@
 //       steigungAus  dieselbe Regression mit `gruender` statt `kind` (die Mutante), Soll 0 ± 0,02
 //       masseMonoton masseZurZeit steigt streng über das Leben (0 … lebensdauerS), danach nie fallend, nie über M∞ (vier Massen)
 //       reifeTreffer masseZurZeit(M, 0) = q·M und masseZurZeit(M, reifeS(M)) = 0,9·M auf 1e−9 (relativ), die Umkehr
-//                    alterZurMasse(M, 0,9·M) = reifeS(M) ebenso
+//                    alterZurMasse(M, 0,9·M) = reifeS(M) ebenso, erbeAusLeib(P): a + e = P und a = h²·P
 //       lebenWolf    lebensdauerS(64) (Soll 2100)
 //     Verfehlt eine Zahl ihr Soll, wirft selbsttest() mit dem Namen des Felds (fail-closed); sonst liefert es die Zahlen.
 //
@@ -58,6 +63,10 @@
         lebenExp: 0.2, // t_max ∝ M^0,20 (Sacher 1959; Calder 1984)
         wachsExp: 0.25, // ontogenetisches Wachstum (m/M)^¼ = 1 − (1 − q^¼)·e^(−t/τ), τ ∝ M^¼ (West, Brown & Enquist 2001, Nature 413:628)
         fastenExp: 0.25, // Fasten-Ausdauer ∝ M^0,25 (Lindstedt & Boyce 1985)
+        wurfExp: -0.25, // Wurf-Rate der Mutter ∝ M^−0,25: Haushalt ∝ M^¾ (Kleiber) je Kind q·M (Fenchel 1974, r_max ∝ M^−0,26)
+        // Die Nische hält die Art: Eignung exp(−P²/2ω²) um das Optimum der Art (Welle 1: der Guss, P = 0), ω² = omegaJeVP·sdP²
+        // (Lande 1976, Evolution 30:314; Kingsolver et al. 2001, Am Nat 157:245: Median |γ| ≈ 0,1 → ω² ≈ 10·VP) — unsicher
+        omegaJeVP: 10,
         geburtAnteil: 0.06, // q = m0/M∞ (Blueweiss et al. 1978, Huftier-Ordnung) — unsicher, für Nesthocker (Wolf, Bär) zu groß
         reifeMasse: 0.9, // reif ⇔ m ≥ 0,9·M∞ (Definition der Reife auf der WBE-Kurve)
         reifeAnteil: 0.2, // Eichung: der Anker-Wolf ist reif bei 0,2·t_max (Charnov 1993, α/t_max 0,1–0,25) — unsicher
@@ -75,6 +84,7 @@
     const SD_SEG = VA.map((v) => Math.sqrt(v / 2));
     const SD_MUT = VE.map((v) => Math.sqrt(G.vmJeVE * v));
     const SD_E = VE.map(Math.sqrt);
+    const OMEGA2 = G.achsen.map((x) => G.omegaJeVP * x.sdP * x.sdP);
     const LN_M = G.achsen.findIndex((x) => x.name === "lnM");
     const Q_W = Math.pow(G.geburtAnteil, G.wachsExp); // q^¼
     const REIFE_MASS = Math.log((1 - Q_W) / (1 - Math.pow(G.reifeMasse, G.wachsExp)));
@@ -166,8 +176,31 @@
         return tau(M) * Math.log((1 - Q_W) / (1 - x));
     }
 
+    // Der gemessene Leib ohne Herkunft (die Annahme): Zuchtwert und Umwelt-Streuung als ihr Erwartungswert gegeben den
+    // Phänotyp P — die Regression des Infinitesimal-Modells, a = h²·P, e = (1 − h²)·P; a + e = P (der Leib springt nicht).
+    function erbeAusLeib(P) {
+        vektor(P, "P");
+        const a = new Array(ACHSEN),
+            e = new Array(ACHSEN);
+        for (let i = 0; i < ACHSEN; i++) [a[i], e[i]] = [G.achsen[i].h2 * P[i], (1 - G.achsen[i].h2) * P[i]];
+        return { a, e };
+    }
+
     function fastenRang(m) {
         return Math.pow(masse(m, "m"), G.fastenExp);
+    }
+
+    function wurfGewicht(m) {
+        return Math.pow(masse(m, "m"), G.wurfExp);
+    }
+
+    // Die Eignung eines Phänotyps P (Vektor, je Achse die Abweichung vom Optimum der Art) — das Gewicht der Mutter neben ihrer
+    // Wurf-Rate: die Nische der Art kostet jede Abweichung (stabilisierende Auslese, Lande 1976).
+    function eignung(P) {
+        vektor(P, "P");
+        let q = 0;
+        for (let i = 0; i < ACHSEN; i++) q += (P[i] * P[i]) / (2 * OMEGA2[i]);
+        return Math.exp(-q);
     }
 
     function rissGewicht(m) {
@@ -242,6 +275,10 @@
             // die Umkehr trifft das Alter zurück (alterZurMasse ∘ masseZurZeit = Identität im Wachstum)
             if (Math.abs(alterZurMasse(M, masseZurZeit(M, reifeS(M))) / reifeS(M) - 1) > 1e-9) reifeTreffer = false;
         }
+        // die Annahme eines gemessenen Leibs trifft seinen Phänotyp (a + e = P), der Zuchtwert ist sein h²-Anteil
+        const leib = erbeAusLeib([0.37]);
+        if (Math.abs(leib.a[LN_M] + leib.e[LN_M] - 0.37) > 1e-12 || Math.abs(leib.a[LN_M] - G.achsen[LN_M].h2 * 0.37) > 1e-12)
+            reifeTreffer = false;
         const lebenWolf = lebensdauerS(64);
         const h2 = G.achsen[LN_M].h2;
         const fehl = [];
@@ -269,8 +306,11 @@
         masseZurZeit: masseZurZeit,
         reifeS: reifeS,
         alterZurMasse: alterZurMasse,
+        erbeAusLeib: erbeAusLeib,
         fastenRang: fastenRang,
         rissGewicht: rissGewicht,
+        wurfGewicht: wurfGewicht,
+        eignung: eignung,
         spanne: spanne,
         artId: artId,
         indId: indId,

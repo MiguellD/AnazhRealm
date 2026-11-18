@@ -1520,13 +1520,13 @@ class AnazhRealm_netz_p2p {
             const ey = this._fremdeZahl(e.y);
             const ez = this._fremdeZahl(e.z);
             if (!Number.isFinite(ex) || !Number.isFinite(ey) || !Number.isFinite(ez)) continue;
-            // DIE GRÖSSE DES SENDERS (leben-erbe): die Sicht-Kopie trägt die Skala des Originals, wie sie reist (`b`, 3 Stellen,
-            // in den Grenzen des Gesetzes `__lebenCore.spanne`) — sie würfelt nie und folgt dem Wachstum. Ein Eintrag ohne Größe
-            // ist kein Leib (wie ein Ort ohne Zahl): keine Kopie entsteht, eine bestehende hält ihre letzte Größe. Bis leben-erbe
-            // würfelte der Empfänger sie aus der netId — dasselbe Tier stand beim Mitspieler bis ×4,5 anders groß.
+            // DIE GRÖSSE DES SENDERS (leben-erbe): die Sicht-Kopie trägt die Skala des Originals, wie sie reist (`b`, 3 Stellen) —
+            // sie würfelt nie, klemmt nie (das Original trägt die EINE Masse seines Tiers) und folgt dem Wachstum. Ein Eintrag ohne
+            // Größe oder über der doppelten Spanne des Gesetzes (`__lebenCore.spanne`) ist kein Leib (wie ein Ort ohne Zahl): keine
+            // Kopie entsteht, eine bestehende hält ihre letzte Größe. Bis leben-erbe würfelte der Empfänger sie aus der netId —
+            // dasselbe Tier stand beim Mitspieler bis ×4,5 anders groß.
             const eb = this._fremdeZahl(e.b);
-            const [bLo, bHi] = AnazhRealm._lebenKern().spanne();
-            const b = eb > 0 ? Math.min(bHi, Math.max(bLo, eb)) : NaN;
+            const b = eb > 0 && eb <= 2 * AnazhRealm._lebenKern().spanne()[1] ? eb : NaN;
             let rc = remote.get(key);
             if (!rc) {
                 if (!Number.isFinite(b)) continue;

@@ -2542,14 +2542,18 @@ class AnazhRealm_koerper_leib {
 
     // DAS ERBE EINES GRÜNDERS AUS SEINER KENNUNG (leben-erbe): ein Tier ohne Mutter, dessen Erbe keine Geburt im Bestand zog —
     // das Tier eines Geheges (`_gehegeEinsetzen`) und das Tier eines Stands von vor dem Erbe (`_lebenWandeln`) —, trägt den
-    // Gründer-Zug des Gesetzes (`__lebenCore.gruender`) aus dem Genom-Strom seiner Kennung (`_rollGenome(seed, "erbe")`, je Achse
-    // des Gesetzes ein Paar Gleichverteilter → Box-Muller): dieselbe Kennung, dasselbe Erbe in jedem Boot und auf jeder Seite.
+    // Gründer-Zug des Gesetzes (`__lebenCore.gruender`) und seine Umwelt-Streuung (`umwelt`) aus dem Genom-Strom der Saat der Welt
+    // und seiner Kennung (`_rollGenome(Saat/Kennung, "erbe")`, je Achse des Gesetzes zwei Paare Gleichverteilter → Box-Muller):
+    // dieselbe Welt und Kennung, dasselbe Tier in jedem Boot und auf jeder Seite; eine andere Saat, ein anderes. Liefert { a, e }.
     // Die Größe würfelt hier nichts mehr: sie ist Physik dieses Erbes über das Alter (`__lebenCore.masseZurZeit`).
-    _erbeGruender(seed) {
+    _erbeGruender(kennung) {
         const L = AnazhRealm._lebenKern();
-        const g = this._rollGenome(String(seed), "erbe");
-        const n = L.gesetz().achsen.map((x) => L.normal(g.axis("a:" + x.name + ":1"), g.axis("a:" + x.name + ":2")));
-        return L.gruender(n);
+        const welt = (this.state.worldMeta && this.state.worldMeta.seed) || "";
+        // der Sub-Strom (`seq`), nie zwei Achsen: Achsen-Namen, die sich nur im letzten Zeichen unterscheiden, tragen fast dieselbe
+        // Gleichverteilte (FNV, r ≈ 0,96) — ein Paar daraus ist keine Normale
+        const u = this._rollGenome(welt + "/" + String(kennung), "erbe").seq("erbe");
+        const n = () => L.gesetz().achsen.map(() => L.normal(u(), u()));
+        return { a: L.gruender(n()), e: L.umwelt(n()) };
     }
 
     // Der size-Dial braucht KEINE eigene Achse (ein Doppel-Faktor wäre falsch): er reist durch die EINE

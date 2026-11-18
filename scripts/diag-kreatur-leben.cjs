@@ -213,15 +213,26 @@ async function lebenBuehnen() {
             const f = wfa.call(r, x, z);
             return halb ? Object.assign({}, f, { lebendig: f.lebendig / 2 }) : f;
         });
-        const tod = { n: 0, trauer: 0, journal: 0, bestand: 0, reserve: 0 };
-        // DAS OPFER DES HUNGERS im Verzeichnis (leben-erbe): wem die Reserve zuerst ausgeht — kein Freier seiner Gattung in seiner
-        // Region trägt im Augenblick der Wahl weniger Masse (Fasten-Ausdauer ∝ M^¼ ist monoton in der Masse). Bis leben-erbe nahm
-        // der Hunger das Älteste.
+        const tod = { n: 0, trauer: 0, journal: 0, bestand: 0, leicht: 0, pLeicht: 0, kg: 0, kgSoll: 0 };
+        // DAS OPFER DES HUNGERS im Verzeichnis (leben-erbe): wem die Reserve zuerst ausgeht — gezogen mit dem Risiko 1/fastenRang
+        // seiner Masse unter den Freien seiner Gattung in seiner Region; gemessen gegen die Erwartung dieses Zugs je Wahl (wie oft
+        // das Leichteste, welche Masse). Bis leben-erbe nahm der Hunger das Älteste, bis zur Heilung von leben-erbe immer genau
+        // das Leichteste (eine Auslese unendlicher Schärfe: ohne Wölfe lief die Größe davon).
+        const LK = A._lebenKern();
         decke("_bestandStirbt", (alt) => (R, t, ursache, ...rest) => {
-            if (ursache === "hunger") {
-                const kg = r._bestandKg(t);
-                const leerste = r._bestandFreie(R).every((o) => o.g !== t.g || !(r._bestandKg(o) < kg));
-                Object.assign(tod, { bestand: tod.bestand + 1, reserve: tod.reserve + leerste });
+            const kand = ursache === "hunger" ? r._bestandFreie(R).filter((o) => o.g === t.g) : [];
+            if (kand.length > 1) {
+                const m = kand.map((o) => r._bestandKg(o));
+                const w = m.map((x) => 1 / LK.fastenRang(x));
+                const W = w.reduce(addiere, 0);
+                const il = m.indexOf(Math.min(...m));
+                Object.assign(tod, {
+                    bestand: tod.bestand + 1,
+                    leicht: tod.leicht + (kand[il] === t),
+                    pLeicht: tod.pLeicht + w[il] / W,
+                    kg: tod.kg + r._bestandKg(t),
+                    kgSoll: tod.kgSoll + m.reduce((q, x, i) => q + (x * w[i]) / W, 0),
+                });
             }
             return alt.call(r, R, t, ursache, ...rest);
         });
@@ -1391,6 +1402,14 @@ async function lebenBuehnen() {
                 for (const t of tiere) if ((!g || t.g === g) && (!beute || beute.has(t)) && (!o || t.alterS > o.alterS)) o = t; // prettier-ignore
                 return o;
             });
+        // der Täter: der Hunger nimmt wieder genau das Leichteste (das argmin bis zur Heilung von leben-erbe) — ohne Rückkraft
+        if (taeter === "hunger-kleinster")
+            decke("_bestandHungerOpfer", () => (tiere, g, rng) => {
+                rng();
+                let o = null;
+                for (const t of tiere) if ((!g || t.g === g) && (!o || r._bestandKg(t) < r._bestandKg(o))) o = t; // prettier-ignore
+                return o;
+            });
         const riss = { n: 0, aeltest: 0, pAeltest: 0, vAeltest: 0, kg: 0, kgSoll: 0, kgVar: 0 };
         decke("_bestandRissOpfer", (alt) => (tiere, g, beute, rng) => {
             const kand = tiere.filter((t) => (!g || t.g === g) && (!beute || beute.has(t)));
@@ -1569,6 +1588,10 @@ function lebenUrteil(name, z, soll) {
             `der Riss wählt sein Opfer nicht nach dem Ertrag (rissGewicht): ${Rz.aeltest} von ${Rz.n} das Älteste (Soll ${Rz.aeltestSoll}, ${Rz.aeltestRel}, z ${Rz.aeltestZ}), Masse ${Rz.kgRel} gegen die Erwartung (z ${Rz.kgZ}; Soll je |·| ≤ 0,05 — gleichverteilt wiche die Masse um den CV² der Beute)`
         );
         soll(z.wanduhrMaxS <= 60, `ein Lauf von ${z.takte} Takten dauert ${z.wanduhrMaxS} s (Soll ≤ 60 s)`);
+        // DIE GRÖSSE BLEIBT IM GESETZ: mit und ohne Räuber trägt höchstens jeder zwanzigste reife Hirsch ein M∞ jenseits der
+        // Spanne des Gesetzes (+4σ, bs 1,31) — der Hunger zieht nach dem Risiko 1/fastenRang, die Nische (`eignung`) hält die Art
+        const weg = z.saaten.flatMap((q, i) => [["an", q.an], ["aus", q.aus]].filter(([, l]) => !(l.ueberSpanne <= 0.05)).map(([k, l]) => `Saat ${i + 1} ${k}: ln M̄ ${l.lnM}, ${l.ueberSpanne} jenseits`)); // prettier-ignore
+        soll(!weg.length, `die Größe läuft davon (Rückkraft fastenRang · eignung): ${weg.join(" · ")} (Soll ≤ 0,05 der reifen Hirsche jenseits der Spanne)`);
     }
     if (name === "kaskade") {
         soll(
@@ -1576,9 +1599,10 @@ function lebenUrteil(name, z, soll) {
             `der Bestand bricht über seine Nahrung aus: ${z.kappe} Takte über 3 × K (Soll 0 — die Nahrung begrenzt, die Kappe zeichnet nur)`
         );
         const T = z.hungertod;
+        const [leichtRel, kgRel] = [T.leicht / Math.max(1e-9, T.pLeicht) - 1, T.kg / Math.max(1e-9, T.kgSoll) - 1];
         soll(
-            T.n >= 1 && T.trauer === T.n && T.journal === T.n && T.bestand >= 1 && T.reserve === T.bestand,
-            `der Hungertod nimmt nicht, wem die Reserve zuerst ausgeht (fastenRang), trauert nicht oder schreibt kein Journal: ${T.bestand} Tode im Bestand, ${T.reserve} die Leichtesten; gezeichnet ${T.n}, ${T.trauer} betrauert, ${T.journal} im Journal`
+            T.n >= 1 && T.trauer === T.n && T.journal === T.n && T.bestand >= 30 && Math.abs(leichtRel) <= 0.1 && Math.abs(kgRel) <= 0.05,
+            `der Hungertod nimmt nicht, wem die Reserve zuerst ausgeht (Risiko 1/fastenRang), trauert nicht oder schreibt kein Journal: ${T.bestand} Wahlen im Bestand (Soll ≥ 30), das Leichteste ${T.leicht}-mal gegen ${Math.round(T.pLeicht)} erwartet (${leichtRel.toFixed(3)}, Soll |·| ≤ 0,1), Masse ${kgRel.toFixed(3)} gegen die Erwartung (Soll |·| ≤ 0,05); gezeichnet ${T.n}, ${T.trauer} betrauert, ${T.journal} im Journal`
         );
         const paare = z.saaten.flatMap((je, i) =>
             Object.entries(je).map(([g, [a, e]]) => ({ wo: `Saat ${i + 1} ${g} ${a} → ${e}`, a, e }))
@@ -1744,7 +1768,10 @@ module.exports = {
     PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen", "gehege", "erbe", "muster"],
     TAETER: {
         erbe: [["erbe-kind", /das Erbe reist nicht von den Eltern zum Kind \(kind\)/]],
-        muster: [["riss-aeltester", /nicht nach dem Ertrag \(rissGewicht\)/]],
+        muster: [
+            ["riss-aeltester", /nicht nach dem Ertrag \(rissGewicht\)/],
+            ["hunger-kleinster", /die Größe läuft davon/],
+        ],
         gehege: [
             ["gehege-rand", /Ausbruch: [1-9]/],
             ["gehege-term", /das wilde Gesetz zählt das Gehege: [1-9]/],

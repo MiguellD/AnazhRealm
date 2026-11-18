@@ -581,15 +581,16 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // DIE GRÖSSE EINES TIERS nur über seine bodySize-Achse (Leben-Schau 07.10., Neu 1 — die Klasse von D2): der EINE
-    // Schreiber nach der Geburt (und des Wachstums), in den Grenzen des Gesetzes des Lebens (`__lebenCore.spanne`: das
-    // Neugeborene des −4σ-Tiers bis das +4σ-Erwachsene); die Skala IST die Achse, die Größen-Gedächtnisse (Körperlänge,
-    // Hang-Spanne, Stats) fallen mit. Vorher skalierte creatures_size_mul die Skala ohne Achse (16 von 16 Tieren ×1,11,
-    // bodySize blieb 1); bis leben-erbe klemmten die vier Wurf-Bänder (0,6–2,7).
+    // Schreiber nach der Geburt (und des Wachstums); die Skala IST die Achse, die Größen-Gedächtnisse (Körperlänge, Hang-Spanne,
+    // Stats) fallen mit. Er schreibt, was er bekommt: die Größe eines Tiers des Bestands ist sein Erbe zur Zeit (`_bestandBs`) —
+    // EINE Masse für Leib und Bestand. Was kein Gesetz ist (der Größen-Hauch, der Leib eines Stands ohne sein Tier), klemmt
+    // vorher auf die Grenzen des Gesetzes (`_lebenSpanne`). Vorher skalierte creatures_size_mul die Skala ohne Achse (16 von 16
+    // Tieren ×1,11, bodySize blieb 1); bis leben-erbe klemmten die vier Wurf-Bänder (0,6–2,7), bis zu seiner Heilung klemmte
+    // dieser Schreiber jede Größe still auf die Spanne — ein Tier jenseits trug zwei Massen (Leib geklemmt, Bestand voll).
     _kreaturGroesseSetzen(cr, bs) {
         const ud = cr && cr.userData;
-        if (!ud || !Number.isFinite(bs)) return false;
-        const [lo, hi] = AnazhRealm._lebenKern().spanne();
-        const neu = Math.min(hi, Math.max(lo, bs));
+        if (!ud || !(Number.isFinite(bs) && bs > 0)) return false;
+        const neu = bs;
         const hpAnteil = Number.isFinite(ud.hp) && ud.hpMax > 0 ? ud.hp / ud.hpMax : null;
         ud.bodySize = neu;
         cr.scale.setScalar(neu);
@@ -602,6 +603,13 @@ class AnazhRealm_kreatur_verhalten {
             if (hpAnteil !== null) ud.hp = hpAnteil * hpMax;
         }
         return true;
+    }
+
+    // DIE GRENZEN DES GESETZES für eine Größe, die kein Gesetz trägt (`__lebenCore.spanne`: das Neugeborene des −4σ-Tiers bis
+    // das +4σ-Erwachsene): der Wunsch eines Programms und der Leib eines Stands ohne sein Tier.
+    _lebenSpanne(bs) {
+        const [lo, hi] = AnazhRealm._lebenKern().spanne();
+        return Math.min(hi, Math.max(lo, bs));
     }
 
     _kreaturGroesseHauch(faktor, ctx) {
@@ -621,7 +629,7 @@ class AnazhRealm_kreatur_verhalten {
                 erbe++;
                 continue;
             }
-            if (this._kreaturGroesseSetzen(cr, (Number.isFinite(ud.bodySize) ? ud.bodySize : 1) * f)) n++;
+            if (this._kreaturGroesseSetzen(cr, this._lebenSpanne(ud.bodySize * f))) n++;
         }
         if (ctx && ctx.log) ctx.log.push({ event: "groesse_hauch", faktor: f, tiere: n, erbe });
         this.log(
@@ -3770,7 +3778,7 @@ AnazhRealm._verhaltenGesetz = function () {
 AnazhRealm._lebenKern = function () {
     if (AnazhRealm._lebenKernMemo) return AnazhRealm._lebenKernMemo;
     const k = typeof globalThis !== "undefined" ? globalThis.__lebenCore : null;
-    const erbe = ["gesetz", "normal", "gruender", "kind", "umwelt", "artId", "indId"];
+    const erbe = ["gesetz", "normal", "gruender", "kind", "umwelt", "erbeAusLeib", "artId", "indId"];
     const leib = [
         "masseAdult",
         "lebensdauerS",
@@ -3779,6 +3787,8 @@ AnazhRealm._lebenKern = function () {
         "reifeS",
         "fastenRang",
         "rissGewicht",
+        "wurfGewicht",
+        "eignung",
         "spanne",
     ];
     if (k && [...erbe, ...leib].every((n) => typeof k[n] === "function")) return (AnazhRealm._lebenKernMemo = k);

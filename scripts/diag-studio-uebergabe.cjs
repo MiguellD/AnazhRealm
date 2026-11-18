@@ -304,7 +304,9 @@ async function weltPruefen() {
             const c = r.spawnCreatureAt(pm.x + 30, pm.y + 1, pm.z, "happy", "wolf", { precise: true });
             s.maxCreatures = alt;
             if (!c) return null;
-            const n = hoehe(c) / (c.userData.bodySize || 1);
+            // ein Leib trägt immer seine Größe (spawnCreatureAt) — fehlt sie, bricht die Probe laut, nie still bei 1
+            if (!(c.userData.bodySize > 0)) throw new Error("Übergabe: der Leib trägt keine Größe (" + c.userData.bodySize + ")");
+            const n = hoehe(c) / c.userData.bodySize;
             r.removeCreature(c);
             return n;
         };

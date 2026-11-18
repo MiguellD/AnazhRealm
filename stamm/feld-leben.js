@@ -2155,11 +2155,12 @@ class AnazhRealm_feld_leben {
         const t = f.tier;
         const L = AnazhRealm._lebensraumGesetz().L.gattung;
         if (f.art !== "annahme" || !t || typeof t.soul !== "string" || !(t.g in L)) return false;
-        // das Tier reist mit seinem Erbe (`a`, ein Vektor über die Achsen des Gesetzes des Lebens) und seiner Mutter (`m`,
-        // null = Gründer) — nie mit einer Größe: die ist Physik des Erbes über das Alter auf jeder Seite (leben-erbe)
-        if (!this._lebenErbeGilt(t.a) || ![t.alterS, t.x, t.z].every(zahl)) return false;
+        // das Tier reist mit seinem Erbe (`a`, ein Vektor über die Achsen des Gesetzes des Lebens), seiner Umwelt-Streuung (`e`,
+        // ebenso) und seiner Mutter (`m`, null = Gründer) — nie mit einer Größe: die ist Physik des Erbes über das Alter auf jeder
+        // Seite (leben-erbe)
+        if (!this._lebenErbeGilt(t.a) || !this._lebenErbeGilt(t.e) || ![t.alterS, t.x, t.z].every(zahl)) return false;
         if (t.m != null && !(typeof t.m === "string" && t.m.length <= 96)) return false;
-        const tier = { soul: t.soul.slice(0, 48), g: t.g, a: t.a.slice(), m: t.m == null ? null : t.m };
+        const tier = { soul: t.soul.slice(0, 48), g: t.g, a: t.a.slice(), e: t.e.slice(), m: t.m == null ? null : t.m };
         Object.assign(tier, { alterS: t.alterS, x: t.x, z: t.z });
         tier.v = typeof t.v === "string" ? t.v.slice(0, 48) : null;
         tier.name = typeof t.name === "string" ? t.name.slice(0, 48) : undefined;
@@ -2181,14 +2182,22 @@ class AnazhRealm_feld_leben {
         return Array.isArray(a) && a.length === n && a.every((x) => typeof x === "number" && Number.isFinite(x));
     }
     // DIE WANDLUNG DES ALTEN STANDS (leben-erbe — benannt, deterministisch, nie still): ein Tier eines Stands von vor dem Erbe
-    // trägt kein `a`, nur seine gewürfelte Größe `bs` — es wird als GRÜNDER SEINER KENNUNG gelesen (`_erbeGruender(id)`, `m`
-    // null): derselbe alte Stand ergibt auf jeder Seite und in jedem Boot dasselbe Tier, Alter und Anker bleiben seine. Die
-    // alte Größe fällt ungelesen (sie war ein Wurf der Bänder, kein Erbe). Ein Tier mit Erbe kehrt wieder, wie es reiste.
+    // trägt kein `a`, nur seine gewürfelte Größe `bs` — es wird als GRÜNDER SEINER KENNUNG gelesen (`_erbeGruender(id)`: a und e
+    // aus Saat und Kennung, `m` null; ein Tier eines Geheges ebenso wie bei seinem Einsetzen, `_gehegeEinsetzen`), derselbe alte
+    // Stand ergibt auf jeder Seite und in jedem Boot dasselbe Tier. SEIN ALTER ist sein Anteil am Leben: im alten Stand trat jedes
+    // Tier ERWACHSEN bei alterS 0 ein und lebte die eine Spanne refS (35 min) — es steht jetzt reif plus derselbe Anteil seines
+    // eigenen erwachsenen Lebens, reifeS + (alterS / refS)·(lebensdauerS − reifeS): kein altes Tier schrumpft beim Laden zum
+    // Kalb, und keines stirbt im ersten Takt nur, weil seine Art kürzer lebt. Die alte Größe fällt ungelesen (sie war ein Wurf
+    // der Bänder, kein Erbe). Ein Tier mit Erbe kehrt wieder, wie es reiste.
     _lebenWandeln(t) {
         const tier = Object.assign({}, t, { v: t.v == null ? null : String(t.v) });
         delete tier.bs;
-        if (t.a === undefined) [tier.a, tier.m] = [this._erbeGruender(t.id), null];
-        else [tier.a, tier.m] = [t.a.slice(), t.m == null ? null : t.m];
+        if (t.a !== undefined)
+            return Object.assign(tier, { a: t.a.slice(), e: t.e.slice(), m: t.m == null ? null : t.m });
+        Object.assign(tier, this._erbeGruender(t.id), { m: null });
+        const L = AnazhRealm._lebenKern();
+        const [E, anteil] = [this._bestandErbe(tier), Math.min(1, Math.max(0, t.alterS) / L.gesetz().refS)];
+        tier.alterS = E.reif + anteil * (E.tod - E.reif);
         return tier;
     }
     _lebenImStand(nahe = this._bestandReist()) {
@@ -2203,11 +2212,12 @@ class AnazhRealm_feld_leben {
             kacheln.push([ix * S - cs, iz * S - cs, (ix + 1) * S + cs, (iz + 1) * S + cs]);
             const R = F[key];
             if (!R) continue;
-            const tiere = R.tiere.map(({ id, soul, g, a, m, alterS, x, z, v, name, gehege }) => ({
+            const tiere = R.tiere.map(({ id, soul, g, a, e, m, alterS, x, z, v, name, gehege }) => ({
                 id,
                 soul,
                 g,
                 a, // das Erbe (leben-erbe) — die Größe reist nie, sie ist Physik des Erbes über das Alter
+                e, // die Umwelt-Streuung (nie vererbt, gezogen bei der Geburt)
                 m, // die Mutter (null = Gründer)
                 alterS,
                 x,
@@ -2273,7 +2283,7 @@ class AnazhRealm_feld_leben {
                         typeof t.soul === "string" &&
                         t.g in LG &&
                         [t.alterS, t.x, t.z].every(zahl) &&
-                        (t.a === undefined || this._lebenErbeGilt(t.a)) &&
+                        (t.a === undefined || (this._lebenErbeGilt(t.a) && this._lebenErbeGilt(t.e))) &&
                         (t.m == null || (typeof t.m === "string" && t.m.length <= 96))
                 )
                 .map((t) => this._lebenWandeln(t));

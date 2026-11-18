@@ -587,7 +587,7 @@ function abdruckKern(G) {
         const tier = (c, tot) => {
             const u = c.userData || {};
             const t = u._bestand || null;
-            return W({ s: u.soul, g: u.gattung, k: u.kind, n: t && t.id, a: t && t.a, b: u.bodySize, h: u.gehege, tot }, 2); // prettier-ignore
+            return W({ s: u.soul, g: u.gattung, k: u.kind, n: t && t.id, a: t && t.a, e: t && t.e, b: u.bodySize, h: u.gehege, tot }, 2); // prettier-ignore
         };
         (st.creatures || []).forEach((c) => (art[(c.userData && c.userData.soul) || "?"] ||= []).push(tier(c, 0)));
         (st.leichname || []).forEach((c) => (art[(c.userData && c.userData.soul) || "?"] ||= []).push(tier(c, 1)));
