@@ -1,8 +1,8 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
 **STAB-WECHSEL 18.11. (Vorarbeiter 13, Systemuhr 02:40) — main 21f279f5 (V18.546.330, trägt w28-probe-wirt + w28-lava-nachlauf)**
-- **Zähler:** Karte 2 **36 von 1 718, Kern 9** (35 → 36: `erleben.spieler.rolle` S1, Radeon am d3ddb51c GRÜN/GRÜN zur GTX-Hälfte dort). Alte Karte 220/330.
-- **Hälften (koord/haelften.md im Stand-Blatt):** fehlende GTX-Hälften bringen **+1** (`same.kopplung.ereignis` S1, GTX `run --sha d39e0d6e… --geraet gtx --nur karte2.same.kopplung.ereignis#1`); fehlende Radeon-Hälften brachten +2 (rolle gebucht, `wetter.K1#2` am c50e6b61 fährt). Alle übrigen 140 Spiegel bewegen nichts.
+- **Zähler:** Karte 2 **35 von 1 718, Kern 9** (+1 `erleben.spieler.rolle` S1: Radeon am d3ddb51c GRÜN/GRÜN zur GTX-Hälfte dort · −1 `same.kopplung.stoerung` S1: Richter ROT an der GTX am 21f279f5, nach w28-lava-nachlauf). Alte Karte 220/330.
+- **Hälften (koord/haelften.md im Stand-Blatt):** fehlende GTX-Hälften bringen **+1** (`same.kopplung.ereignis` S1, GTX `run --sha d39e0d6e… --geraet gtx --nur karte2.same.kopplung.ereignis#1`); fehlende Radeon-Hälften +2 möglich, +1 gebucht (rolle); `wetter.K1#2` am c50e6b61 Richter GRÜN, Preis UNGEMESSEN unter Last ×1,37 (p95 41,9 ms) → bleibt KERN. Alle übrigen 140 Spiegel bewegen nichts.
 - **LINIEN** (Kopf per ls-remote 02:35):
   - Stadt: `vorrat11-stadt-netz` daf57354 (Merge main c50e6b61, 00:20) → Stempel `w28-stadt-netz` f23138ba (16.11., alt) · nächster: Stempel am vereinten Kopf, OMEN misst 5×5 und 15×15; danach K2–K5 und `w28-weg-koerper` b1ffbea3 (13.11.) als Neubau, Bild zuerst.
   - Bau: `vorrat12-bau-rezept` 36dfe5c9 (WIP Kopf 2, 02:28: Raumprogramm auf Flügel/Anbauten/Geschosse) · nächster: gate:settlement, Golden neu minten, Tore, Bildpaar (Blatt bau-rezept.md).
