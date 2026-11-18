@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-18T22:46:20.069Z",
+ "zeit": "2026-11-18T22:50:18.155Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -1389,6 +1389,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "luftwasser.K3#1": {
+   "gruen": true,
+   "zahl": "Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 3745 / 0 px (unter dem Spiegel Bett 0.6 % aus 0.8 m, vom Ufer)",
+   "exit": 0,
+   "minuten": 0.63,
+   "gpu": "nvidia/pascal",
+   "konsum": "ke11fb2fc7c6d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k2bbe263ca652",
+   "s": 36.5,
+   "fremd": {
+    "s": 40.1,
+    "takte": 18,
+    "fremdS": 48.61,
+    "kerne": 1.213,
+    "fensterKerne": 1.353,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      23.83
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.75
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      2.72
+     ]
+    ],
+    "dienerS": 22.91,
+    "diener": [
+     [
+      "System",
+      11.44
+     ],
+     [
+      "dwm.exe",
+      8.38
+     ]
+    ],
+    "geraetS": 40.41,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      15.53
+     ],
+     [
+      "MsMpEng.exe",
+      12.11
+     ],
+     [
+      "svchost.exe",
+      7.56
+     ]
+    ],
+    "eigenS": 112.91,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-18T22:50:18.155Z",
+   "abdruck": "cfb59a1027d2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1414,20 +1483,20 @@
   "k5767402a13c1": "bVXbbqMwEP2XPO4udbi4GEt9cEKkVGql9BPGZgw0BCIbym5W+++rkDgJ0HkCdMZz5szx8HdxBLWHHJ8+bVMv+OLH4tfCwhd6Fs0XmqdPu+CLpYqAMi4uQYQQ6zNMmfLYWlKVkoCsoTig15kWy+pJDWm+YgjISb8R/Y6QHYnJqhe3WImXl+kxlcSs8VrQ6A6RWRCHwKfAzuYg0YNOD4WvYBr5UUg5GYKlYvdJXIgPIUi/mVaUUGdj1joEqn3++keIzZxhVgK2XlXW1tVUGZVhwG+F+nmOgd47ARYVmmsS+DH40hEd5Oh3CZkk6qqzdlSMhRkNGCdkhs3RlqpovaNpJNZOvCSIfeCrOaf82Hl6xEhKYHKqcwFY52jGHOKIqoiT32x66B4OaMCrobhCk2UYB/KuDSFkO+dSDcSHEo44y2QS61EiISTfDvZJ2fBy+8y2F0Ol+d1c4mNSxKqiNIexPFrTDJb8bU7JFpCh8faNbe+cIgB0tyAdDCV2UTrNvDdzzQvk85Kyh14YEduZdrbRbQ8GvfzYXRMxQhpTLsTrDNzC4eCaUAEyOh2cbc/GfqRBI/SfY+6U+2YOl2vgnbCsXFKslB8iX7+LaZ9fBg4eyNyUWrtpS6p08p05e6xaTzZN65BhBqHiJCT1TZWEXZbCLdK+UZt1/iHGsTK5mHMfKjSmvXUrn5c64nq4kWqGLk3r9aCK24y0REj4N9ATmgpzHEmZRTKE7Ix+YBu5h58jz55mkz6VeBa5tp11zkriLLm6/bogX8erp0ezl1DvHV0qQ+rzs+Xffgpn/2VKUrLrH8VaC31+X6/YSMN3MRx+REWOptHleQuSAjpbQNXefwX//gM="
  },
  "sitzung": {
-  "start": "2026-11-18T22:45:42.860Z",
-  "ordner": "sitzung-20261118-234542",
+  "start": "2026-11-18T22:49:38.201Z",
+  "ordner": "sitzung-20261118-234938",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 8,
+  "warten": 0.01,
+  "bootS": 9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "wetter.K1#2",
-    "s": 26.1,
-    "takte": 585,
+    "vor": "luftwasser.K3#1",
+    "s": 27.4,
+    "takte": 622,
     "chunks": 81,
     "nach": null
    }
@@ -1435,7 +1504,7 @@
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "wetter.K1#2",
+    "probe": "luftwasser.K3#1",
     "anders": [
      "window.__wieseMessen",
      "window.__wieseUrteil",
@@ -1448,15 +1517,23 @@
     },
     "haelt": [],
     "heap": [
-     231,
-     236.3
+     231.6,
+     277.6
     ],
     "ungemessen": null
    }
   ],
+  "wanderung": [
+   {
+    "probe": "luftwasser.K3#1",
+    "ort": "wiese",
+    "m": 223.27,
+    "dreh": 0
+   }
+  ],
   "messHalt": [
    {
-    "probe": "wetter.K1#2",
+    "probe": "luftwasser.K3#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -1468,21 +1545,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2322,
-   "frameP95": 33.36,
-   "taktP95": 19.71,
-   "vramMax": 136.4,
+   "bilder": 3339,
+   "frameP95": 25.01,
+   "taktP95": 14.45,
+   "vramMax": 128.4,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 110,
+   "zapfen": 140,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 119.3,
-  "minuten": 2.06
+  "fahrtS": 153.1,
+  "minuten": 2.66
  },
  "ungemessen": {
   "mensch.K5#1": {
