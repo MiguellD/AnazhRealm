@@ -96,9 +96,12 @@ LOD 2 · Herde am Hang (tetrapoda-core.js:46) · CPU-Takt der Bewohner in der St
 · lineare Laternen-Suche (`_leuchtQuellen`, stamm/dirigent-kern.js:1777) · STILMODE klemmt die griechische Dachneigung
 (fachwerk-core.js:183) · stiller catch am Flügel (fachwerk-core.js:1755, fail-soft). Bergung: 21 Familien ungeurteilt.
 
-## 7. Eine Frage an den Schöpfer (gestellt am 18.11.)
+## 7. Aufräumen der Alt-Zweige (Wort des Schöpfers 18.11.: „Ja, die 35 löschen")
 
-Neben main liegen 582 Zweige, darunter die alten Namen bereits gelandeter Squashes. Aufräumen ja oder nein — niemand löscht ohne sein Wort.
+Gelöscht sind 33 Zweige, deren hinzugefügte Zeilen zu ≥ 85 % wörtlich in main stehen (Liste mit Kopf-SHA:
+`bericht/1811-geloeschte-zweige.md`); jeder Kopf bleibt am Ursprung unter `refs/archiv/1811/<zweig>` erreichbar. Stehen blieben
+`zug-b` (Kopf seit der Messung bewegt) und `zug-a` (Schwester-Zweig des Zugs). Am Ursprung liegen danach 1 146 Zweige; für alle
+übrigen gilt weiter: niemand löscht ohne sein Wort.
 
 ## 8. Werkzeuge, erprobt — Befehl · Zweck · Falle
 
