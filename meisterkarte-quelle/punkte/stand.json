@@ -1477,7 +1477,7 @@
   },
   "klang.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: gras 6169 Hz (n 6) · laub 8867 Hz (n 6) · stein 4735 Hz (n 5) — kleinster Abstand 1434 Hz an 4ee205bd radeon · gehalten: ✅ Schritte gras 6208 Hz (n 6) · laub 8919 Hz (n 6) · stein 4798 Hz (n 6), kleinster Abstand 1410 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9710/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505) an c8c840c9 radeon · gehalten: ✅ Schritte gras 6119 Hz (n 6) · laub 8714 Hz (n 6) · stein 4756 Hz (n 5), kleinster Abstand 1363 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 1.0001 r 1.0000 (-9 m 21.4 m/s 1.0665/1.0665 · -4.5 m 16.4 m/s 1.0504/1.0504 · -2 m 9.8 m/s 1.0294/1.0294 · 2 m -9.9 m/s 0.9719/0.9719 · 4.5 m -15.9 m/s 0.9557/0.9557 · 9 m -18.7 m/s 0.9484/0.9484) an d39e0d6e gtx",
+   "beleg": "Maschine: gehalten: gras 6169 Hz (n 6) · laub 8867 Hz (n 6) · stein 4735 Hz (n 5) — kleinster Abstand 1434 Hz an 4ee205bd radeon · gehalten: ✅ Schritte gras 6208 Hz (n 6) · laub 8919 Hz (n 6) · stein 4798 Hz (n 6), kleinster Abstand 1410 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9710/0.9709 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505) an c8c840c9 radeon · ✅ Schritte gras 6102 Hz (n 6) · laub 8861 Hz (n 6) · stein 4787 Hz (n 5), kleinster Abstand 1315 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.4 m/s 1.0665/1.0665 · -4.5 m 16.4 m/s 1.0504/1.0504 · -2 m 9.8 m/s 1.0294/1.0294 · 2 m -9.9 m/s 0.9719/0.9719 · 4.5 m -15.9 m/s 0.9557/0.9556 · 9 m -18.7 m/s 0.9484/0.9484) an 21f279f5 gtx",
    "stationen": [
     {
      "id": "klang.K4#1",
@@ -1511,10 +1511,10 @@
      "id": "klang.K4#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "✅ Schritte gras 6119 Hz (n 6) · laub 8714 Hz (n 6) · stein 4756 Hz (n 5), kleinster Abstand 1363 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 1.0001 r 1.0000 (-9 m 21.4 m/s 1.0665/1.0665 · -4.5 m 16.4 m/s 1.0504/1.0504 · -2 m 9.8 m/s 1.0294/1.0294 · 2 m -9.9 m/s 0.9719/0.9719 · 4.5 m -15.9 m/s 0.9557/0.9557 · 9 m -18.7 m/s 0.9484/0.9484)",
-     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "✅ Schritte gras 6102 Hz (n 6) · laub 8861 Hz (n 6) · stein 4787 Hz (n 5), kleinster Abstand 1315 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.4 m/s 1.0665/1.0665 · -4.5 m 16.4 m/s 1.0504/1.0504 · -2 m 9.8 m/s 1.0294/1.0294 · 2 m -9.9 m/s 0.9719/0.9719 · 4.5 m -15.9 m/s 0.9557/0.9556 · 9 m -18.7 m/s 0.9484/0.9484)",
+     "sha": "21f279f5f5b87f86c0bea764dab99fb36670725e",
+     "grund": null,
+     "r6": "konsum"
     }
    ]
   },
@@ -6007,7 +6007,7 @@
   },
   "karte2.same.kopplung.ereignis": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3 an e489088a radeon — offen: karte2.same.kopplung.ereignis#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Guss -268,-1046: Glut R/G 2.483 (Soll ≥ 2), Luma 0.122, glut-Achse 1 · erstarrt nach 2 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 10 Schritten = 4 h Welt (Soll 1–60), Schuss bei 24 h, Gesetz-glut 0 (Soll 0): R/G 0.98 (Soll ≤ 1,25), Luma 0.062, Stoff stein · [linse-gpu] amd/rdna-3 an e489088a radeon · Guss -268,-1046: Glut R/G 2.732 (Soll ≥ 2), Luma 0.119, glut-Achse 1 · erstarrt nach 1 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 1 Schritten = 0.007 h Welt (Soll 1–60), Schuss bei 0.498 h, Gesetz-glut 0 (Soll 0): R/G 0.989 (Soll ≤ 1,25), Luma 0.053, Stoff stein · Brand am Guss 8 Zellen, auf seiner Uhr 20000 s, danach um den Guss 0 brennend (die Front lebt fern: 35 Zellen) · [linse-gpu] nvidia/pascal an 21f279f5 gtx",
    "stationen": [
     {
      "id": "karte2.same.kopplung.ereignis#1",
@@ -6022,11 +6022,11 @@
     {
      "id": "karte2.same.kopplung.ereignis#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "Guss -268,-1046: Glut R/G 2.732 (Soll ≥ 2), Luma 0.119, glut-Achse 1 · erstarrt nach 1 Schritten (Soll 1–15) · dunkel nach dem Gesetz nach 1 Schritten = 0.007 h Welt (Soll 1–60), Schuss bei 0.498 h, Gesetz-glut 0 (Soll 0): R/G 0.989 (Soll ≤ 1,25), Luma 0.053, Stoff stein · Brand am Guss 8 Zellen, auf seiner Uhr 20000 s, danach um den Guss 0 brennend (die Front lebt fern: 35 Zellen) · [linse-gpu] nvidia/pascal",
+     "sha": "21f279f5f5b87f86c0bea764dab99fb36670725e",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6060,7 +6060,7 @@
   },
   "karte2.same.kopplung.stoerung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.058 (÷ 0.320, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an d39e0d6e radeon · gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 884c6a25 gtx",
+   "beleg": "Maschine: gehalten: Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.058 (÷ 0.320, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] amd/rdna-3 an d39e0d6e radeon — offen: karte2.same.kopplung.stoerung#1 gtx: ROT: Herd -248,-1080: Luma der Zelle vor 0.142 → nach 0.104 (÷ 0.732, Soll ≤ 0,5) · Asche 0 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal an 21f279f5",
    "stationen": [
     {
      "id": "karte2.same.kopplung.stoerung#1",
@@ -6076,11 +6076,11 @@
     {
      "id": "karte2.same.kopplung.stoerung#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Herd -248,-1064: Luma der Zelle vor 0.181 → nach 0.06 (÷ 0.331, Soll ≤ 0,5) · Asche 1 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
-     "sha": "884c6a25c7125ccb50678de22a29e6584ca498de",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true,
+     "gruen": false,
+     "zahl": "Herd -248,-1080: Luma der Zelle vor 0.142 → nach 0.104 (÷ 0.732, Soll ≤ 0,5) · Asche 0 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
+     "sha": "21f279f5f5b87f86c0bea764dab99fb36670725e",
+     "grund": "ROT: Herd -248,-1080: Luma der Zelle vor 0.142 → nach 0.104 (÷ 0.732, Soll ≤ 0,5) · Asche 0 (Soll ≥ 0,99), 1 Aschen · [linse-gpu] nvidia/pascal",
+     "r6": "konsum",
      "beide": true
     }
    ]
@@ -6333,7 +6333,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 507,
-  "konsum": 188,
+  "konsum": 191,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -6495,10 +6495,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 160
+  "ohne": 157
  },
  "kopfVoll": "21f279f5f5b87f86c0bea764dab99fb36670725e",
- "zeit": "2026-11-18T00:56:13.568Z",
+ "zeit": "2026-11-18T01:22:56.806Z",
  "vorher": "21f279f5",
  "bilanz": {
   "gewinn": [],
