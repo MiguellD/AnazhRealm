@@ -173,11 +173,15 @@ class AnazhRealm_stoff_instanz {
         const skala = this._foundryWorldScaleMatrix(preset).elements[5];
         const delta = globalThis.__phytoCore.windSchlankheit(rinde, top, skala);
         if (!(delta > 0)) throw new Error("_baumWindDaten: " + preset + " liefert keinen Stamm-Ring für den Wind");
+        // je Art die schlankste ihrer gelieferten Gestalten, das Mittel in der Folge der Werte (w28-funktion-welt): eine Funktion
+        // der gelieferten Gestalten, nie ihrer Ankunft — bis hier galt die ERSTE Gestalt je Art, summiert in der Folge der Arten,
+        // und zwei Läufe zum selben Ort neigten die Karten mit δ 0,03279 und 0,03274
         if (!this._windDeltaJeArt) this._windDeltaJeArt = new Map();
-        if (!this._windDeltaJeArt.has(preset)) {
+        const alt = this._windDeltaJeArt.get(preset);
+        if (alt === undefined || delta < alt) {
             this._windDeltaJeArt.set(preset, delta);
             let s = 0;
-            for (const d of this._windDeltaJeArt.values()) s += d;
+            for (const d of [...this._windDeltaJeArt.values()].sort((a, b) => a - b)) s += d;
             this._karteWindDelta().value = s / this._windDeltaJeArt.size;
         }
         return { ht: top, delta, an };
