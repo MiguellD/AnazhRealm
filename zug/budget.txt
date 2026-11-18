@@ -770,3 +770,4 @@
 2026-11-18T05:16 karte=220 (gebucht am c1e6f29a, buche.sh)
 2026-11-18T05:58 karte=220 (gebucht am af7a1bbe, buche.sh)
 2026-11-18T06:03 karte=220 (gebucht am af7a1bbe, buche.sh)
+2026-11-18T06:25 karte=220 (gebucht am 1f300260, buche.sh)
