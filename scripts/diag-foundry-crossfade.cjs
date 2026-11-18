@@ -390,30 +390,30 @@ async function runPartB() {
             st.camera.updateMatrixWorld(true);
             pm.position.copy(streuPm);
         };
-        await window
-            .__gebautNach("die Streu-Zellen in L1 und L2", {
-                fertig: () => {
-                    let kalt = false;
-                    for (const z of streuOrte) {
-                        const reg = streuGeburt(z, false);
-                        kalt = kalt || !reg || reg._deferredFoundry === true;
-                        for (const c of (reg && reg.cells) || []) {
-                            if (!Number.isFinite(c.dient)) continue;
-                            const L = SC.layers.find((l) => l.name === c.layer);
-                            const tf = r._scatterCellTransform(c.cellX, c.cellZ, c.cellM, L.scaleBase, L.scaleVar);
-                            const wo = { seed: r._scatterFoundrySeed(c.cellX, c.cellZ, c.variantIndex, c.species, tf), wo: tf };
-                            for (const l of [1, 2]) {
-                                const fl = r._foundryFlattenFor(wo, r._foundryPresetFor(c.species), l);
-                                kalt = kalt || !fl?.instanceable;
-                            }
-                        }
+        const streuWarm = () => {
+            let kalt = false;
+            for (const z of streuOrte) {
+                const reg = streuGeburt(z, false);
+                kalt = kalt || !reg || reg._deferredFoundry === true;
+                for (const c of (reg && reg.cells) || []) {
+                    if (!Number.isFinite(c.dient)) continue;
+                    const L = SC.layers.find((l) => l.name === c.layer);
+                    const tf = r._scatterCellTransform(c.cellX, c.cellZ, c.cellM, L.scaleBase, L.scaleVar);
+                    const wo = { seed: r._scatterFoundrySeed(c.cellX, c.cellZ, c.variantIndex, c.species, tf), wo: tf };
+                    for (const l of [1, 2]) {
+                        const fl = r._foundryFlattenFor(wo, r._foundryPresetFor(c.species), l);
+                        kalt = kalt || !fl?.instanceable;
                     }
-                    streuZurueck();
-                    return !kalt;
-                },
-                takt: async () => (r._tickWaldPlan(Infinity), await loopTakt()),
-                max: 500,
-            });
+                }
+            }
+            streuZurueck();
+            return !kalt;
+        };
+        await window.__gebautNach("die Streu-Zellen in L1 und L2", {
+            fertig: streuWarm,
+            takt: async () => (r._tickWaldPlan(Infinity), await loopTakt()),
+            max: 500,
+        });
         // DER STRAUCH (kindStages [0, 1, 2], die Kette wie der Baum): Nah-Stufe L0 (aLodLevel 1), Mittel-Stufe L1
         // (aLodLevel 2) und das Billboard. Eigener Ort,
         // eigener Sweep.
@@ -464,6 +464,18 @@ async function runPartB() {
             });
             if (oE) r.removeArchitecture(oE);
         }
+        // DER PROBEN-BAUM IM BLICK, BEVOR ER STEHT (w28-register-b): die Darts seines Walds gehen mit der Reichweite ihrer Leser
+        // um den Spieler (`ZELL_GEDAECHTNISSE` _forestDartMemo, stamm/gelaende-fern.js, ihr Abschied nimmt `_waldPlanVoll`) — die
+        // Wärme von Strauch und Kette lief mit dem Spieler am Boot-Ort, 12 km fern, sein Plan fiel. Der Spieler tritt an den Baum,
+        // die Probe pumpt die Schlange wie oben, bis seine Gestalt und die Streu-Zellen seines Walds wieder stehen: der Plan
+        // wächst aus Same und Zelle neu, dieselbe (die Pumpe treibt keinen Takt — kein Räumer, keine Stufen-Wahl vor der Baseline).
+        pm.position.set(px, py, pz);
+        for (let i = 0; i < 2000 && !(r._foundryGestaltFor(entry, preset) != null && streuWarm()); i++) {
+            pm.position.set(px, py, pz);
+            r._tickWaldPlan(Infinity);
+            await sleep(0);
+        }
+        res.gestaltWieder = r._foundryGestaltFor(entry, preset);
         // Quieszenz: keine offenen Worker-Anfragen mehr → keine async-Placements im Sweep.
         await __weltDa(() => !(f.pending && f.pending.size > 0));
         res.pendingAtSweep = f.pending ? f.pending.size : -1;
@@ -1428,6 +1440,11 @@ async function main() {
             "alle drei Stufen warm vor der Baseline (L0/L1/Impostor)",
             !!(out.warm?.l0 && out.warm.l1 && out.warm.l2),
             out.warm
+        );
+        check(
+            "der Plan des Proben-Baums wächst nach seinem Abschied (Spieler 12 km fern) als DIESELBE Gestalt neu",
+            Number.isInteger(out.gestalt) && out.gestaltWieder === out.gestalt,
+            `${out.gestalt} → ${out.gestaltWieder}`
         );
         check("der Proben-Baum platziert (instanced)", out.placed === true);
         let holes = 0,
