@@ -935,6 +935,12 @@ function geburtZensus() {
 // ein Behälter wächst von Runde 1 zu Runde 2 (beim Namen und der Zeile seiner Anlage, `anlage(pfad)`) · ein Bild der Runde über
 // 101 ms. Die Tafel trägt jeden Wachser mit Start → Runde 1 → Runde 2.
 const RUNDE = { heapMB: 5, bildMs: 101, wachsMin: 16, wachsAnteil: 0.05, halterMB: 1 };
+// WAS MIT DEM WEG WÄCHST, WÄCHST IN JEDER RUNDE (w28-halter-register): ein Behälter oder Halter ist rot, wenn er in BEIDEN Runden um
+// die Schwelle wächst (`schwelle(vorher)`, Start → Runde 1 und Runde 1 → Runde 2) — jede Runde fährt neue Orte, der Sack wächst
+// je Ort. Ein Halter, der über die Runde sinkt oder schwankt, ist nie rot: zwei Läufe am selben Stamm (Radeon 18.11., d7f31d1a und
+// 99421fca, Stamm byte-gleich) nannten `_foundry.cache` 16,4 → 3,2 → 4,4 MB, `renderer.info.memoryMap` 22,5 → 20,8 → 23,4 MB und
+// `_teilVolumenMemo` 1 600 → 1 680 → 1 918 einmal rot, einmal nicht — bis hier urteilte allein Runde 1 → Runde 2.
+const RUNDE_WACHS = { wachsend: ([s, a, b], schwelle) => a - s >= schwelle(s) && b - a >= schwelle(a) };
 function rundenUrteil({ name, stand }, anlage) {
     const [s, a, b] = stand;
     const f = [];
@@ -942,7 +948,7 @@ function rundenUrteil({ name, stand }, anlage) {
     if (dh > RUNDE.heapMB) f.push(`${name}: Heap Runde 2 − Runde 1 = +${dh.toFixed(1)} MB > ${RUNDE.heapMB}`);
     const tafel = Object.entries(b.zensus)
         .map(([k, n2]) => ({ name: k, start: s.zensus[k] || 0, r1: a.zensus[k] || 0, r2: n2 }))
-        .filter((t) => t.r2 - t.r1 >= Math.max(RUNDE.wachsMin, t.r1 * RUNDE.wachsAnteil))
+        .filter((t) => RUNDE_WACHS.wachsend([t.start, t.r1, t.r2], (v) => Math.max(RUNDE.wachsMin, v * RUNDE.wachsAnteil)))
         .sort((p, q) => q.r2 - q.r1 - (p.r2 - p.r1));
     const un = (b.zell && b.zell.unangemeldet) || {};
     for (const t of tafel) {
@@ -958,7 +964,7 @@ function rundenUrteil({ name, stand }, anlage) {
         f.push(`${name}: ${b.ro.fremd + b.ro.alt} Render-Objekte halten getauschte Puffer (fremde Geometrie ${b.ro.fremd}, alte Attribute ${b.ro.alt}, ${b.ro.mb} MB; Soll 0, \`_renderObjekteFolgen\`)`); // prettier-ignore
     const mb = (x, k) => new Map(x.halter || []).get(k) || 0;
     for (const [k, x] of b.halter || [])
-        if (x - mb(a, k) >= RUNDE.halterMB)
+        if (RUNDE_WACHS.wachsend([mb(s, k), mb(a, k), x], () => RUNDE.halterMB))
             f.push(`${name}: Halter ${k} (${anlage(k)}) ${mb(s, k).toFixed(1)} → ${mb(a, k).toFixed(1)} → ${x.toFixed(1)} MB`);
     if (b.geometries > a.geometries) {
         const g = Object.entries(b.geburt)
@@ -985,8 +991,8 @@ function jsHeapUrteil(name, [s, a, b], dh) {
     const benannt = new Set();
     for (const sicht of ["besteller", "stelle"])
         for (const [k, x] of b[sicht] || []) {
-            // in BEIDEN Runden um die Schwelle (was mit dem Weg wächst, wächst je Runde; ein Cache, der in Runde 1 voll lief, nie)
-            if (mb(a, sicht, k) - mb(s, sicht, k) < RUNDE.halterMB || x - mb(a, sicht, k) < RUNDE.halterMB || benannt.has(k)) continue; // prettier-ignore
+            // in BEIDEN Runden um die Schwelle — dasselbe EINE Wachs-Urteil wie Behälter und Halter (`RUNDE_WACHS`), kein Zwilling
+            if (benannt.has(k) || !RUNDE_WACHS.wachsend([mb(s, sicht, k), mb(a, sicht, k), x], () => RUNDE.halterMB)) continue; // prettier-ignore
             benannt.add(k);
             f.push(`${name}: JS-Heap ${sicht === "besteller" ? "beim Besteller" : "an der Stelle"} ${k} ${mb(s, sicht, k).toFixed(1)} → ${mb(a, sicht, k).toFixed(1)} → ${x.toFixed(1)} MB`); // prettier-ignore
         }
@@ -1071,6 +1077,10 @@ function rundenSelbsttest() {
             // die Kachel der Fernreise (1 MB je Eintrag, zwei je Runde): geräumt bleibt die am Start
             for (const k of [runde * 2, runde * 2 + 1]) r.state.kacheln.set(k, new Float32Array(262144));
             if (!mutant) for (const k of r.state.kacheln.keys()) if (k > 0) r.state.kacheln.delete(k);
+            // ein Halter und ein Behälter, die über die Runde sinken und in Runde 2 wieder steigen (der Cache des Buchs, die Karte
+            // des Renderers): nie rot, in keiner Fahrt
+            r.state.sinkt = new Map(Array.from({ length: [100, 20, 60][runde] }, (_, i) => [i, 1]));
+            r.state.sinktPuffer = new Float32Array([4, 1, 2.5][runde] * 262144);
             if (mutant && runde) geburt["stamm/gelaende-fern.js:741"] = { gezaehlt: 8 * runde, lebend: 8 * runde, verwaist: 0 };
             geom = 10 + (mutant ? 8 * runde : 0);
             const halter = heapHalter(r, 3).map(([k, x]) => [k, x / 1048576]);
@@ -1092,6 +1102,18 @@ function rundenSelbsttest() {
         f.push("der Mutant des Halters der Zeichnung ist nicht rot beim Namen: " + (rot || "GRÜN"));
     if (!/1 Render-Objekte halten getauschte Puffer \(fremde Geometrie 1/.test(rot))
         f.push("der Mutant der Render-Objekte ist nicht rot: " + (rot || "GRÜN"));
+    if (/sinkt/.test(rot)) f.push("ein sinkender Halter ist rot: " + rot);
+    const alt = RUNDE_WACHS.wachsend;
+    RUNDE_WACHS.wachsend = ([, a, b], schwelle) => b - a >= schwelle(a); // der Mutant: das Urteil allein über Runde 1 → Runde 2
+    const einSchritt = fahrt(false);
+    // der JS-Heap urteilt am selben Wachs-Urteil: ein Besteller, der erst in Runde 2 zulegt, ist nur im Mutanten rot
+    const spaet = () => jsHeapUrteil("j", [{ besteller: [] }, { besteller: [] }, { besteller: [["spaet · stamm/y.js:1", 1.5]] }], 0).join(" | "); // prettier-ignore
+    const heapEin = spaet();
+    RUNDE_WACHS.wachsend = alt;
+    if (!/Halter r\.state\.sinktPuffer/.test(einSchritt) || !/r\.state\.sinkt /.test(einSchritt))
+        f.push("der Mutant des Ein-Schritt-Urteils nennt die sinkenden Halter nicht: " + (einSchritt || "GRÜN"));
+    if (!/JS-Heap beim Besteller spaet/.test(heapEin) || spaet())
+        f.push("der JS-Heap urteilt nicht am EINEN Wachs-Urteil: Mutant " + (heapEin || "GRÜN") + " · richtig " + (spaet() || "GRÜN"));
     return f;
 }
 
