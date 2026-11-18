@@ -1449,11 +1449,21 @@ class AnazhRealm_siedlung_wege {
     // DER GANG DER LEIBER im Sim-Schritt: jedes Tier und der Spieler zu Fuß (dieselben Leiber wie im Leib-Löser
     // `_leibKontakte`, an ihrer Lage vor ihm) treten den Pfad; der Spieler tritt, wo er steht, ein Tier geht am Boden. Bis zum
     // Merge von main f69a7305 lag dieser Schreib-Akt im Leib-Löser (stamm/kreatur-verhalten.js riss die Decke von 4 000 Zeilen).
+    // EIN Tier tritt nur in der Reichweite des Gedächtnisses (`_trittReichweite`, w28-halter-register): jenseits fiele seine Zelle
+    // am nächsten Gang des Registers (Radeon 18.11., Runde reise: Tiere 2,6–6,5 km fern hielten 70 von 789 Einträgen außerhalb).
     _trittDerLeiber() {
         const st = this.state;
-        for (const c of st.creatures || AnazhRealm.STAND_LEER)
-            if (c && c.position && c.userData) this._tritt(c, c.position.x, c.position.z, true, false);
         const pm = st.playerMesh;
+        const p = pm && pm.position;
+        const rw = p ? AnazhRealm._trittReichweite(this) : Infinity;
+        for (const c of st.creatures || AnazhRealm.STAND_LEER)
+            if (
+                c &&
+                c.position &&
+                c.userData &&
+                !(p && Math.max(Math.abs(c.position.x - p.x), Math.abs(c.position.z - p.z)) > rw)
+            )
+                this._tritt(c, c.position.x, c.position.z, true, false);
         if (!pm || !pm.position || (st.player && st.player.mountedArch != null)) return;
         const K = this._spielerKapsel(this._trittKapsel || (this._trittKapsel = {}));
         this._tritt(pm, K.x, K.z, st.isInAir !== true && st.playerUnderwater !== true, true);
