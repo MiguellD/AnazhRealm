@@ -58,6 +58,7 @@ window.__spike = (() => {
         r._feuchteMerk = null;
         r._windDirMerk = null;
         S.protokoll = [];
+        S.absagen = [];
     };
 
     // DAS PROTOKOLL: jede Zelle, die fängt (`_brandZuenden` gibt sie zurück) — Ort, Eintritt, Zeit, Tempo, Feuchte und Wind,
@@ -70,12 +71,20 @@ window.__spike = (() => {
         const P = Object.getPrototypeOf(r);
         const echt = P._brandZuenden;
         r._brandZuenden = function (cx, cz, t, ex, ez, ein) {
+            r._tempoLetzt = null;
+            const vor = this.state.brandFeld && this.state.brandFeld.get(cx + "," + cz);
+            const von = vor && vor.t0 === null ? vor.von || null : null; // die Quelle der Wartenden (die Absage löscht den Eintrag)
             const z = echt.call(this, cx, cz, t, ex, ez, ein);
+            // die Glieder, die `_brandTempo` dieser Zelle las (Mess-Ersetzung `diag-tempo-glieder`): M, U10 am Ort, I_R, u, Deckel
+            const T = r._tempoLetzt;
             if (z && S.protokoll) {
+                if (!T) throw new Error("lauschen: die Mess-Ersetzung diag-tempo-glieder fehlt (kein _tempoLetzt)");
+                S.protokoll.push({ cx, cz, t, ex, ez, R: z.R, ecc: z.ecc, M: T.M, U: T.U10, deckel: T.deckel, IR: T.IR, u: T.u, leb: T.leb, stoff: z.stoff });
+            }
+            if (!z && S.absagen) {
                 const [xc, zc] = [(cx + 0.5) * cs(), (cz + 0.5) * cs()];
-                const w = r._windAt(xc, zc, t);
-                const M = S.gesetz() ? r._feuchteAm(xc, zc, z.y, t)[z.stoff] : r._brandFeuchte(z.boden);
-                S.protokoll.push({ cx, cz, t, ex, ez, R: z.R, ecc: z.ecc, M, U: w.ms / (w.boe * r._windWob(t)), stoff: z.stoff });
+                const M = S.gesetz() ? r._feuchteAm(xc, zc, r._voxelSurfaceY(xc, zc), t).gras : T ? T.M : null;
+                S.absagen.push({ cx, cz, t, M, von, bett: !!r._brandStoff(cx, cz) });
             }
             return z;
         };

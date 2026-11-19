@@ -126,6 +126,9 @@ lauf(
                 R_ls: r3(gerade(120, Math.min(300, bis))),
                 R_lang: bis > 300 ? r3((reihe[bis] - reihe[120]) / (bis - 120)) : undefined,
                 Rz: Object.fromEntries(P.map((p) => [p.cx + "," + p.cz, p.R])),
+                reihe,
+                deckelAnteil: P.length ? r3(P.filter((p) => p.deckel).length / P.length) : null,
+                leb: P.length ? r3(P.reduce((a, p) => a + p.leb, 0) / P.length) : null,
                 bettStueck: [ta, tb, r3(reihe[ta]), r3(reihe[tb])],
                 R_zelleMax: P.length ? r3(Math.max(...P.map((p) => p.R))) : null,
                 M: P.length ? [r3(Math.min(...MM)), r3(MM.reduce((a, b) => a + b, 0) / MM.length), r3(Math.max(...MM))] : null,
@@ -163,7 +166,15 @@ lauf(
         // der Vergleich zweier Läufe: Kopf (Soll-Maß), Gerade, Bett-Stück, und je GLEICHER Zelle das R des Kerns (`_brandTempo`)
         const vergleich = (a, b) => {
             const gem = Object.keys(a.Rz).filter((k) => k in b.Rz && b.Rz[k] > 0);
+            // DAS GEMEINSAME STÜCK: der Kopf beider Läufe auf DEMSELBEN Stück Bett [40 m, s1], s1 = min(300 m, die Reichweite beider)
+            const reich = (L) => Math.max(...L.reihe.filter(Number.isFinite));
+            const s1 = Math.min(300, reich(a), reich(b));
+            const tAn = (L, s) => L.reihe.findIndex((v) => v >= s);
+            const seg = (L) => (s1 - 40) / (tAn(L, s1) - tAn(L, 40));
             return {
+                seg: [40, r3a(s1)],
+                R_seg: s1 > 60 ? r3a(seg(a) / seg(b)) : null,
+                R_seg_hi_lo: s1 > 60 ? [r3a(seg(a)), r3a(seg(b))] : null,
                 R_kopf: r3a(a.R_kopf / b.R_kopf),
                 R_ls: r3a(a.R_ls / b.R_ls),
                 R_bett: a.R_bett && b.R_bett ? r3a(a.R_bett / b.R_bett) : null,
@@ -175,21 +186,26 @@ lauf(
         const laeufe = (aus.laeufe = []);
         if (A.teil === "a") {
             const Us = [2.4, 7.2, 24];
-            const Ms = gesetz ? [0.06, 0.09] : [null];
+            // VORHER trägt die zweite Feuchte nur über die Welt-Nässe: M = trocken 0,06 + nass 2,5 · Nässe (feld-brand.js:284, Boden 0)
+            const Ms = [0.06, 0.09];
+            const NAESSE_FUER = { 0.06: 0, 0.09: 0.012 };
             for (const Mziel of Ms)
                 for (const U10 of Us) {
                     const L = { U10, Mziel };
                     if (gesetz) Object.assign(L, feuchteFuer(U10, Mziel));
                     else {
-                        // VORHER (a): das Wort mit der Nässe, die main ihm gibt (`_naesseTakt` eingeschwungen)
                         L.wort = S.wort(WORT[U10]);
-                        st.naesse = 0;
-                        r._naesseTakt(3600);
-                        L.naesseMain = st.naesse;
-                        L.mitNaesse = brand(linie);
-                        delete L.mitNaesse.Rz;
-                        // VORHER (b): dasselbe Wort, Nässe 0 (der Stub der Brand-Linsen) — das Tempo, das main dem Wort gibt
-                        st.naesse = 0;
+                        if (Mziel === 0.06) {
+                            // VORHER (a): das Wort mit der Nässe, die main ihm gibt (`_naesseTakt` eingeschwungen)
+                            st.naesse = 0;
+                            r._naesseTakt(3600);
+                            L.naesseMain = st.naesse;
+                            L.mitNaesse = brand(linie);
+                            for (const k of ["Rz", "reihe"]) delete L.mitNaesse[k];
+                        }
+                        // VORHER (b): dasselbe Wort, die Nässe des Stubs (0 bzw. 0,012 für M 0,09) — das Tempo, das main dem Wort gibt
+                        st.naesse = NAESSE_FUER[Mziel];
+                        L.naesse = st.naesse;
                     }
                     Object.assign(L, brand(linie, U10 === 2.4 ? 900 : 300));
                     const Mr = L.M ? L.M[1] : null;
@@ -205,12 +221,31 @@ lauf(
                     [24, 7.2],
                 ])
                     aus.verhaeltnis.push(Object.assign({ art: "wind", Mziel, hi, lo }, vergleich(g(hi, Mziel), g(lo, Mziel))));
-            if (gesetz)
-                for (const U10 of Us)
+            for (const U10 of Us)
                     aus.verhaeltnis.push(
                         Object.assign({ art: "feuchte", U10, M: [g(U10, 0.06).M && g(U10, 0.06).M[1], g(U10, 0.09).M && g(U10, 0.09).M[1]] }, vergleich(g(U10, 0.06), g(U10, 0.09)))
                     );
-            for (const L of laeufe) delete L.Rz;
+            for (const L of laeufe) (delete L.Rz, delete L.reihe);
+            // DAS BETT LÄNGS DES WINDS: das kleinste leb·anteil (`_brandStoff` des geladenen Moduls) der drei mittleren Zellen quer,
+            // je 16 m bis 640 m windab der Linie; bettEnde = das erste s mit Wert < 0,9 bzw. < minStoff
+            {
+                const L0 = laeufe[0];
+                const [dx, dz] = [L0.dx, L0.dz];
+                S.leer();
+                const prof = [];
+                for (let s = 0; s <= 640; s += 16) {
+                    let m = Infinity;
+                    for (const k of [-1, 0, 1]) {
+                        const [px, pz] = [ort.x + s * dx - k * cs * dz, ort.z + s * dz + k * cs * dx];
+                        const f = r._brandStoff(Math.floor(px / cs), Math.floor(pz / cs));
+                        m = Math.min(m, f ? f.leb * f.anteil : 0);
+                    }
+                    prof.push([s, r3a(m)]);
+                }
+                aus.bettProfil = prof;
+                const ende = (g) => (prof.find((q) => q[1] < g) || [Infinity])[0];
+                aus.bettEnde = { unter09: ende(0.9), unterMinStoff: ende(AnazhRealm.BRAND.minStoff) };
+            }
         }
         if (A.teil === "m") {
             // Die Mutanten bei U10 7,2, M 0,06: (c) das Wort stormy | sunny, (d) die Welt-Nässe 1. Im Modus "fest" schirmt der Kreis
@@ -245,7 +280,7 @@ lauf(
             const mn = brand(linie);
             laeufe.push(Object.assign({ mutante: "naesse:1", MHerd: Mn, dMHerd: Mn - MH0 }, ab(mn), mn));
             st.naesse = 0;
-            for (const L of laeufe) delete L.Rz;
+            for (const L of laeufe) (delete L.Rz, delete L.reihe);
         }
         if (A.teil === "p") {
             // (1) Der Preis je Bild in Fall I: Linien-Zündung bei U10 7,2, M 0,06 (vorher: das Wort cloudy, Nässe 0); nach 300 s und
@@ -285,7 +320,7 @@ lauf(
                 };
             };
             const bl = brand(linie);
-            delete bl.Rz;
+            (delete bl.Rz, delete bl.reihe);
             aus.linie300 = Object.assign({ bilder: bilder() }, bl);
             const nAlt = S.protokoll.length;
             const tA = performance.now();
@@ -299,7 +334,7 @@ lauf(
             };
             // (2) Punkt-Zündung (Bericht): L/B nach 300 s
             const b = brand([{ x: ort.x, z: ort.z }]);
-            delete b.Rz;
+            (delete b.Rz, delete b.reihe);
             const P = S.protokoll;
             const pr = (p, ax, az) => (p.ex - ort.x) * ax + (p.ez - ort.z) * az;
             const laengs = P.map((p) => pr(p, b.dx, b.dz)),

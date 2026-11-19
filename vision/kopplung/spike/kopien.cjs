@@ -477,6 +477,23 @@ const FELD_BRAND = [
     },
 ];
 
+// ---------------------------------------------------------------------------------------------------------------------------
+// MESS-ERSETZUNG (in JEDEM Modus, auch "vorher"; ändert keine Zahl der Physik): `_brandTempo` legt vor seiner Rückgabe die
+// Glieder ab, die der Spike liest — I_R, der Wind auf Flammenhöhe u, ob der Wind-Deckel 0,9·I_R (feld-brand.js:330) greift,
+// das U10 am Ort (ohne Böe) und das M, das die Zelle las. Beweis „keine Zahl ändert sich“: vorher-a mit und ohne diese Ersetzung
+// gibt dieselben R (spike.md, Fall I).
+const DIAG = {
+    "stamm/feld-brand.js": [
+        {
+            name: "diag-tempo-glieder",
+            such: "        return { R: R0 * (1 + phi) * 0.00508, ecc, px: phi ? vx / phi : 1, pz: phi ? vz / phi : 0, tr: 23040 / sig };",
+            ersatz:
+                "        this._tempoLetzt = { IR, u, deckel: u > 0.9 * IR, U10: w.ms / (w.boe * this._windWob(t)), M, leb: f.leb };\n" +
+                "        return { R: R0 * (1 + phi) * 0.00508, ecc, px: phi ? vx / phi : 1, pz: phi ? vz / phi : 0, tr: 23040 / sig };",
+        },
+    ],
+};
+
 const DATEIEN = {
     "phyto-core.js": PHYTO,
     "gelaende-core.js": GELAENDE,
@@ -490,13 +507,16 @@ const DATEIEN = {
 };
 
 // → { modus, ordner, karte: { "/phyto-core.js": "<temp>/phyto-core.kopplung.js", … }, log }
+// "vorher": nur die Mess-Ersetzung DIAG an der Kopie von feld-brand.js (die Physik des Originals); "gesetz"/"fest": die Kopien.
 function bauKopien(modus) {
-    if (modus === "vorher") return { modus, ordner: null, karte: {}, log: [] };
-    if (modus !== "gesetz" && modus !== "fest") throw new Error("bauKopien: Modus vorher | gesetz | fest, nicht " + modus);
+    if (!["vorher", "gesetz", "fest"].includes(modus)) throw new Error("bauKopien: Modus vorher | gesetz | fest, nicht " + modus);
     const ordner = fs.mkdtempSync(path.join(os.tmpdir(), "kopplung-spike-"));
     const karte = {},
         log = [];
-    for (const [datei, liste] of Object.entries(DATEIEN)) {
+    const dateien = [...new Set([...Object.keys(DATEIEN), ...Object.keys(DIAG)])];
+    for (const datei of dateien) {
+        const liste = [...(modus === "vorher" ? [] : DATEIEN[datei] || []), ...(DIAG[datei] || [])];
+        if (!liste.length) continue;
         const roh = fs.readFileSync(path.join(REPO, datei), "utf8");
         let { src, log: l } = anwenden(roh, liste, datei);
         log.push(...l);
@@ -505,7 +525,9 @@ function bauKopien(modus) {
             src = f.src;
             log.push(...f.log);
         }
-        const name = path.basename(datei, ".js") + (datei === "phyto-core.js" && modus === "fest" ? ".kopplung-fest.js" : ".kopplung.js");
+        const name =
+            path.basename(datei, ".js") +
+            (modus === "vorher" ? ".vorher-diag.js" : datei === "phyto-core.js" && modus === "fest" ? ".kopplung-fest.js" : ".kopplung.js");
         const ziel = path.join(ordner, name);
         fs.writeFileSync(ziel, src);
         karte["/" + datei] = ziel;
@@ -520,6 +542,10 @@ if (require.main === module) {
     for (const e of k.log) console.log(`${e.datei} · ${e.name} · Such ${e.suchZeichen} Z → Ersatz ${e.ersatzZeichen} Z`);
     for (const [p, f] of Object.entries(k.karte)) console.log(`${p} → ${f}`);
     // die Kopien laufen durch den Parser
-    for (const f of Object.values(k.karte)) new (require("vm").Script)(fs.readFileSync(f, "utf8"), { filename: f });
-    console.log("Parser: " + Object.keys(k.karte).length + " Kopien ok");
+    try {
+        for (const f of Object.values(k.karte)) new (require("vm").Script)(fs.readFileSync(f, "utf8"), { filename: f });
+        console.log("Parser: " + Object.keys(k.karte).length + " Kopien ok");
+    } finally {
+        fs.rmSync(k.ordner, { recursive: true, force: true }); // wie die Bühne: die Kopien leben nur für den Lauf
+    }
 }
