@@ -149,6 +149,14 @@
             "lies": "den Ausgabe-Pfad der Welt (scripts/lib/ausgabe-aufnahme.cjs) oder das EINE Mess-Ziel der Seite (`__messZiel`, scripts/lib/welt-boot.cjs)",
             "beobachter": true,
             "mutant": "const rt = new T.RenderTarget(64, 64);"
+        },
+        "verdeckt": {
+            "groesse": "beobachter",
+            "rx": "\\.(?:timeOfDay|spielZeit|tagNull|gravity|toneMappingExposure)\\b(?:\\s*,[^\\]=\\n;]*)?\\]\\s*=(?!=)|Object\\.assign\\(\\s*[\\w.]+\\s*,\\s*\\{[^}\\n]*\\b(?:timeOfDay|spielZeit|tagNull|gravity|toneMappingExposure)\\s*:",
+            "was": "setzt eine Grundgröße verdeckt (im Ziel einer Zerlegung oder in Object.assign) — die Muster je Feld sahen sie nicht",
+            "lies": "den Schreiber der Welt (`_uhrSetzen` · `_weltUhrNimm` · `_weltUhrNeu` · `_blendeBestellen` · DSL `gravity`)",
+            "beobachter": true,
+            "mutant": "[st.spielZeit, st.weatherEffectTime] = [0, 0];"
         }
     },
     "groessen": {

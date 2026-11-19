@@ -1774,10 +1774,11 @@ class AnazhRealm_dirigent_takt {
         this.state.spielZeit = t;
     }
 
-    // DIE UHR EINER NEUEN WELT (`_weltUhrNeu(t)`): nur die Geburt stellt die Welt-Uhr zurück — eine Messung, die je Saat ab der
-    // Welt-Uhr 0 misst (gate:kreatur-leben), bestellt sie hier. Der Anker des Tags springt mit (`_uhrSpielZeit`: sonst stünde der Tag,
-    // bis die Uhr den alten Anker einholt), und wer seinen Tag aus der Uhr liest, stellt sich neu wie bei jedem Sprung
-    // (`_weltUhrSprung`). Bis beobachter-ein-weg schrieb die Probe `spielZeit = 0` selbst, und der Tag stand.
+    // DIE UHR EINER NEUEN WELT (`_weltUhrNeu(t)`): nur die Geburt stellt die Welt-Uhr zurück — eine Messung, die je Saat ab einer
+    // festen Welt-Uhr misst (gate:kreatur-leben, gate:wetter-wache, die Stunde der Fahr-Probe) oder zu ihrem Anfang zurückkehrt,
+    // bestellt sie hier. Der Anker des Tags springt mit (`_uhrSpielZeit`: sonst stünde der Tag, bis die Uhr den alten Anker
+    // einholt), und wer seinen Tag aus der Uhr liest, stellt sich neu wie bei jedem Sprung (`_weltUhrSprung`). Bis
+    // beobachter-ein-weg schrieben acht Proben die Welt-Uhr selbst (auch rückwärts), und der Tag stand.
     _weltUhrNeu(t = 0) {
         this._weltUhrSprung = (this._weltUhrSprung | 0) + 1;
         this.state._uhrSpielZeit = t;

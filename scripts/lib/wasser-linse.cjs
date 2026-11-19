@@ -461,7 +461,8 @@ function wasserSchmelze(r, x, z, P) {
                 Object.assign(w[k - 1], { h: R(r._atlasWaterLevelAt(...P.see, g) - P.ruhe), a: a > 0, f: (r._hydroRiverAt(...P.fluss) || {}).surfaceY, s: st.seasonPhase });
             }
         } finally {
-            [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, st.spielZeit] = alt;
+            [st.seasonPhase, st.autoSeason, st.seasonYearSeconds] = alt;
+            r._weltUhrNeu(alt[3]); // die Messung kehrt zu ihrem Anfang zurück (über die Welt)
             r._tickSeason();
         }
         const n = (f) => w.filter((b, i) => i && f(w[i - 1], b)).length;
@@ -555,7 +556,10 @@ function wasserErstarrung(r, orte) {
     } finally {
         wm.taten.splice(n);
         r._tatGen = (r._tatGen | 0) + 1;
-        [st.timeOfDay, wm.tag, st.dayLengthMinutes, st._uhrSpielZeit, st.spielZeit] = alt;
+        // der Stand vor der Messung zurück über die Schreiber der Welt: die Welt-Uhr neu, die Stunde wie beim Laden (der Tag reist mit)
+        r._weltUhrNeu(alt[4]);
+        r._uhrSetzen(alt[0], "laden");
+        [wm.tag, st.dayLengthMinutes, st._uhrSpielZeit] = alt.slice(1, 4);
     }
     for (const o of aus) o.ab = o.reihe.findIndex((s) => s.erstarrt);
     return aus;

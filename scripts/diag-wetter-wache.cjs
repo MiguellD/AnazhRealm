@@ -280,7 +280,8 @@ function probe(o) {
     const P = globalThis.__phytoCore;
     const zug = (saat, d) => {
         const g = P.windGrund(saat);
-        [wm.seed, pm.x, pm.z, st.spielZeit] = [saat, x0 + d * g.x, y0 + d * g.z, 0];
+        [wm.seed, pm.x, pm.z] = [saat, x0 + d * g.x, y0 + d * g.z];
+        r._weltUhrNeu(0); // je Lauf eine neue Welt-Uhr, bestellt bei der Welt
         window.__wetterSetzen("sunny");
         r.dslRun(["weather", "frei"], { source: "human" });
     };
@@ -289,7 +290,8 @@ function probe(o) {
         const [folge, s0] = [[], window.__wetterSpion().seq];
         for (let i = 0; i < o.zuege; i++) {
             performance.now = () => pn.call(performance) + uhr * (i + 1);
-            [st.spielZeit, st.weatherEffectTime] = [Z * (i + 1), 0];
+            r._weltUhrNimm(Z * (i + 1));
+            st.weatherEffectTime = 0;
             r._loopWeatherAndGrowth(0);
             folge.push(st.weather);
             window.__uebergangFaellt(r);
@@ -309,14 +311,16 @@ function probe(o) {
     const kern = P.wetterAt;
     P.wetterAt = () => ({ zeile: "sturm" });
     zug("saat-a", 0);
-    [st.spielZeit, st.weatherEffectTime] = [Z, 0];
+    r._weltUhrNimm(Z);
+    st.weatherEffectTime = 0;
     r._loopWeatherAndGrowth(0);
     P.wetterAt = kern;
     const nass = (w) => r._weatherIsWet(w);
     aus.front = { nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length, lag: Z * lag, worte: [...worte] };
     Object.assign(aus.front, { soll: 3000 / P.WIND_FELD.front.zugMS, welt: st.weather });
     window.__uebergangFaellt(r);
-    [wm.seed, pm.x, pm.z, st.spielZeit] = [saat0, x0, y0, uhr0];
+    [wm.seed, pm.x, pm.z] = [saat0, x0, y0];
+    r._weltUhrNeu(uhr0); // die Messung kehrt zu ihrem Anfang zurück
     window.__buehne();
     aus.ende = { wetter: st.weather, uhr: st.weatherEffectTime };
     // (Q) der Zwilling `time_of_day` ist fort

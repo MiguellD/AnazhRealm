@@ -1590,7 +1590,8 @@ async function checkBandWeltUhr({ page, check }) {
         const [S0, ox, oz] = [st.spielZeit + 100, pm.x + 40, pm.z - 25]; // ein fester Ort der Böe
         const start = (t0) => {
             r._gameLoopTick(t0); // der Anker der Wanduhr
-            [st.spielZeit, st._fixedSimTime, st._fixedAccumulator] = [S0, undefined, 0];
+            r._weltUhrNeu(S0); // die Welt-Uhr der Böe, bestellt bei der Welt
+            [st._fixedSimTime, st._fixedAccumulator] = [undefined, 0];
             for (let i = 1; i <= 30; i++) r._gameLoopTick(t0 + 20 * i);
             const w = r._windAt(ox, oz, r._bildZeit);
             const d = W?.uWindDir.value;

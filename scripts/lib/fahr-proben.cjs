@@ -848,7 +848,8 @@ async function probeLeben(expected) {
             // jedem Lauf) und weit genug vor jedem Bild davor (der Takt deckelt den Sprung, `TAKT_DECKEL_S`). Bis hier zählte `tMs`
             // ab `performance.now()` beim Start der Seite: die Wanduhr der Probe ging ins letzte Bit jedes Takts (der Gang der
             // Bewohner, `_tickBewohner(delta)`; die Uhr des Tags) und von dort ins Gedränge der Wagen
-            [tMs, st.spielZeit] = [1e7 + 1e6 * lauf, 86400 * stunde];
+            tMs = 1e7 + 1e6 * lauf;
+            r._weltUhrNeu(86400 * stunde); // die Welt-Uhr der Stunde neu, bestellt bei der Welt (nie in den Zustand)
             for (const h of [stunde + 6, stunde]) {
                 r._uhrSetzen((h % 24) / 24, "regler");
                 frame(i++);

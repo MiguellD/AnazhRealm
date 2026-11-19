@@ -425,15 +425,23 @@ function buehne(o) {
 // wo sie stand.
 function buehneSelbsttest() {
     const v = [], tiere = [], w0 = global.window;
+    let uhr0; // die Uhr der Attrappe: ihr Zustand liest sie, nur ihr Schreiber (`_uhrSetzen`) stellt sie
     const r = {
-        state: { creatures: tiere, maxCreatures: 10, playerMesh: { position: { x: 5, z: 7 } } },
+        state: {
+            creatures: tiere,
+            maxCreatures: 10,
+            playerMesh: { position: { x: 5, z: 7 } },
+            get timeOfDay() {
+                return uhr0;
+            },
+        },
         setSeason: () => true,
         _naesseTakt() {},
         _tickRain() {},
         _tickSeason() {},
         _applyDayNightToScene() {},
         _leuchtTakt() {},
-        _uhrSetzen: (t) => !!Object.assign(r.state, { timeOfDay: t }), // der Schreiber der Attrappe (die Welt hat ihren)
+        _uhrSetzen: (t) => ((uhr0 = t), true),
         getTerrainHeightAt: () => 0,
         _landAt: (x) => x > 5,
         spawnCreatureAt: (x, y, z) => tiere[tiere.push({ position: { x, z }, userData: {} }) - 1],
