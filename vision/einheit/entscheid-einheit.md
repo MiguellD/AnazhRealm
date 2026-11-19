@@ -60,3 +60,33 @@ am Kopf nachgelesen, bevor er schneidet.
 - `PLAN-1712.md` trägt 0 der 14 Wörter des Schöpfers vom 19.11.; die Reihenfolge E2 gehört dorthin (Zeile 33) — ich trage sie nach.
 - Galaxien, Zeit vor −5000 und nach 2150: weder Gesetz noch Zensus (61 Sprossen, 1 gebucht). Offen, Messname `kosmos-zensus`.
 - Kein Bild und kein GPU-Lauf in diesem Blatt; jede Zahl ist am Code gelesen, nicht gemessen.
+
+## E6 — nach Schritt 0 (19.11., Blatt `stufe-kurve.md`, Zahlen `stufe-kurve.json`; Node, Samen 1, ohne GPU)
+
+Gemessen mit `wechselProbe`, derselben Messung wie gate:haus-fern P: alle 69 Wechsel lägen mit max(b, w) NÄHER als heute, keiner
+ferner, im Median beim 0,31-fachen (Haus L1 3,0 m statt 12, L2 11,5 m statt 26); bei 27 Zeilen liegt `b` unter 3 m. Dreiecke im
+Blick rechnerisch (1 Haus je 400 m², Ring 6–100 m): Haus 68 125 → 45 909 (−32,6 %), Wagen −2,0 %.
+Meine drei Vorhersagen: zwei getroffen (Limousine `b` < 12 m; 31 von 32 Häusern unter 1 px bei 12 m), eine verfehlt — der Versatz
+fällt jenseits 26 m etwa wie 1/d (Median 0,89), nicht langsamer.
+
+Was die Messung an Gesetz und Soll ändert (kein Soll wird bewegt; zwei Zeilen fallen als Richter, mit Grund):
+1. **`b` misst heute nur die Silhouette** (`kantenVersatz`), keine inneren Kanten — Fachwerk, Fensterkreuz, Sprosse. Gerade bei
+   `b` < 3 m ist der Farbbild-Versatz damit ungemessen. **Entscheid: `b_k` ist der Abstand, an dem das BILD der Stufe k vom Bild
+   der L0 nicht mehr zu unterscheiden ist** — gemessen am gezeichneten Bild beider Stufen an derselben Kamera, nicht am Umriss.
+   Die Silhouetten-Messung bleibt als untere Schranke.
+2. **S1 fällt als Richter:** die Grenze liegt genau dort, wo dieselbe Messung 1 px trägt — die Zeile kann nicht rot werden.
+   **S2 fällt am Haus als Richter:** `w` ist an allen 64 Zeilen 0, weil L0, L1 und L2 denselben Werfer (Stufe 3) tragen
+   (`fachwerk-core.js:100–102`). Damit ist auch der Satz des Blatts „ohne `w` verlören 15 Häuser ihren Schatten“ widerlegt.
+3. **Fund, sichtbar:** der Werfer des Hauses weicht bei 12 m um 9,4 px vom Umriss der L0 ab, gleich für jede Stufe — der Schatten
+   passt nah nicht zum Haus. Der Wurf ist selbst eine Stufe und folgt demselben Gesetz: `w_k` wählt den WERFER, nicht nur die Grenze.
+4. **Der Spike wird ein Bild-Spike an echter GPU** (Radeon, nach dem Rest des Lichtmessers). Soll, gesetzt VOR der Messung:
+   - B1 Umschalt-Bild: am Wechsel-Abstand der Stufe k ändert das Umschalten L0 ↔ Lk an derselben Kamera höchstens 1 % der
+     Pixel der Objekt-Maske um mehr als 8 / 255 (Luma), an 6 Vorlagen (3 Häuser verschiedener Stile, darunter japanisch; 3 Wagen).
+   - B2 Werfer: der Schatten des Hauses bei 12 m weicht ≤ 1 px vom Schatten der L0 ab (heute 9,4 px am Umriss).
+   - B3 Handlung: Tür und Sitz stehen innerhalb `haelt` in L0, 100 %.
+   - B4 Dreiecke im Blick an der Pose stadt-voll: gemessen, nicht gerechnet; die Rechnung −32,6 % ist die Vorhersage.
+   - B5 Frame p95 im ABAB: Differenz ≤ Rauschen der zwei A-Läufe.
+   Meine Vorhersage: B1 reißt an den Fachwerk-Stilen bei der Silhouetten-Grenze (das innere Fachwerk fehlt der L1) und `b` aus dem
+   Bild liegt bei ihnen zwischen 6 und 12 m; B2 ist heute ROT; B4 landet zwischen −15 und −30 %.
+5. Unbelegt und so benannt: nur Samen 1 · japanisch/chinesisch L2 springen bei 6 m auf 40 px ohne Erklärung · `fachwerk-core.js`
+   weicht am gelesenen Baum um 361 Zeilen von main ab · `haelt`, `g` und die Hysterese sind ungemessen.
