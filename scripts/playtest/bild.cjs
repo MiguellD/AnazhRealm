@@ -1705,9 +1705,9 @@ async function checkBandLookPhysik({ page, check }) {
 // 4 NACHT genau die Punkte der Funktion, mindestens 90 % (ein Veränderlicher im Minimum fällt unter die Grenze) · 5 MOND die Scheibe
 // in der EINEN Skala (`HIMMEL.mondCd` ÷ `EINHEIT_LX`, additiv über dem Himmel — blass am Tag, deckend nachts trägt der Himmel vor
 // ihr) · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN Unendlich-Knoten ·
-// 8 STAFFEL das Pixel des Szenen-Ziels auf der Kugel, und jeder Punkt trägt die Kante seiner Streu-Scheibe aus seiner Größe
-// (`HIMMEL.sternBild`: der Moffat-Saum fällt auf 1/saum des Kerns der Feldgrenze) — der hellste reicht mindestens dreimal so weit
-// wie der schwächste · 9 KOSMOS jeder Punkt IST ein Stern der Funktion (Richtung vom Heim-Stern, Größe am Tag des Felds) oder ein
+// 8 STAFFEL das Pixel des Szenen-Ziels auf der Kugel, und jeder Punkt trägt den Halbmesser seiner Streu-Scheibe aus seiner Größe
+// (`HIMMEL.sternBild`: θ0 · 10^(0,2·(G − m)), der Saum des Auges ∝ θ⁻²) — der hellste reicht mindestens dreimal so weit wie der
+// schwächste · 9 KOSMOS jeder Punkt IST ein Stern der Funktion (Richtung vom Heim-Stern, Größe am Tag des Felds) oder ein
 // Planet des Heim-Systems auf seiner Bahn, die Zahl ist die der Funktion, die Saat die des Planeten (`_planetSamen`) · 10 CHROMA
 // das Licht jedes Sterns ist sein Strom in der Farbe SEINER Temperatur (der Planck-Ort fachwerk `lichtFarbe`, Luma 1; bis
 // stern-bild ein eigener milder Ton: 4–8 von 1 000 Punkten getönt) · 11 BAND die Uniforms des Himmels tragen das Band der Funktion
@@ -1754,7 +1754,7 @@ async function checkBandHimmelTag({ page, check }) {
         // die Mutanten von stern-bild: die gleiche Kante (jeder Punkt 2 · kernPx), der graue Ton (jede Farbe auf ihre Luma), kein Band
         const sfM = st.starField;
         const kanteWar = sfM && stoerung === "staffel" ? sfM.userData.kante.array.slice() : null;
-        if (kanteWar) sfM.userData.kante.array.fill(2 * AnazhRealm.HIMMEL.sternBild.kernPx);
+        if (kanteWar) sfM.userData.kante.array.fill(AnazhRealm.HIMMEL.sternBild.theta0);
         const farbeWar = sfM && stoerung === "grau" ? sfM.instanceColor.array.slice() : null;
         if (farbeWar) {
             const a = sfM.instanceColor.array;
@@ -1853,7 +1853,7 @@ async function checkBandHimmelTag({ page, check }) {
             return { additiv: m.blending === window.THREE.AdditiveBlending, ab: +ab.toExponential(2) };
         };
         // 8 STAFFEL: das Pixel (`pixel`) = 2 tan(fov/2) ÷ Zeilen des Szenen-Ziels × Radius der Kugel; die Kante je Punkt aus seiner
-        // Größe (Moffat: α · √((saum · 10^(0,4·(G − m)))^(1/β) − 1), mindestens kernPx — selbst gerechnet aus `HIMMEL.sternBild`)
+        // Größe (θ0 · 10^(0,2·(G − m)) in Grad — selbst gerechnet aus `HIMMEL.sternBild`)
         const fussStand = () => {
             // das Ziel, in das die Szene zeichnet: das Szenen-Ziel, ohne Post-Kette der Zeichenpuffer (`_schirm`)
             const [cam, ziel] = [st.camera, st.scenePass && st.scenePass.renderTarget];
@@ -1868,11 +1868,10 @@ async function checkBandHimmelTag({ page, check }) {
                 kMin = Infinity,
                 kMax = 0;
             for (let i = 0; ka && i < mags.length; i++) {
-                const v = Math.pow(SB.saum * Math.pow(10, 0.4 * (G - mags[i])), 1 / SB.beta) - 1;
-                const k = 2 * Math.max(SB.kernPx, v > 0 ? SB.alpha * Math.sqrt(v) : 0);
+                const k = SB.theta0 * Math.pow(10, 0.2 * (G - mags[i]));
                 if (Math.abs(ka[i] / k - 1) > 1e-4) {
                     falsch++;
-                    if (!arg) arg = { i, ist: +ka[i].toFixed(3), soll: +k.toFixed(3), m: +mags[i].toFixed(2) };
+                    if (!arg) arg = { i, ist: +ka[i].toFixed(4), soll: +k.toFixed(4), m: +mags[i].toFixed(2) };
                 }
                 kMin = Math.min(kMin, ka[i]);
                 kMax = Math.max(kMax, ka[i]);
@@ -1988,7 +1987,7 @@ async function checkBandHimmelTag({ page, check }) {
             rot.push(`8 STAFFEL: das Pixel auf der Kugel ${S.fuss ? `${S.fuss.ist} ↔ Soll ${S.fuss.soll}` : "ungelesen (kein pixel, keine Kamera oder kein Szenen-Ziel)"}`);
         else if (!S.fuss.kante || S.fuss.falsch > 0 || !(S.fuss.staffel >= 3))
             rot.push(
-                `8 STAFFEL: ${!S.fuss.kante ? "kein aKante je Punkt" : `${S.fuss.falsch} Punkte neben der Kante ihrer Größe${S.fuss.arg ? ` (Punkt ${S.fuss.arg.i}, m ${S.fuss.arg.m}: ${S.fuss.arg.ist} ↔ ${S.fuss.arg.soll} px)` : ""}, hellster ÷ schwächster ${S.fuss.staffel.toFixed(2)} (Soll ≥ 3)`}`
+                `8 STAFFEL: ${!S.fuss.kante ? "kein aKante je Punkt" : `${S.fuss.falsch} Punkte neben der Kante ihrer Größe${S.fuss.arg ? ` (Punkt ${S.fuss.arg.i}, m ${S.fuss.arg.m}: ${S.fuss.arg.ist} ↔ ${S.fuss.arg.soll}°)` : ""}, hellster ÷ schwächster ${S.fuss.staffel.toFixed(2)} (Soll ≥ 3)`}`
             );
         if (S.chroma.fehl || S.chroma.falsch > 0)
             rot.push(

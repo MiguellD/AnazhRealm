@@ -391,29 +391,55 @@ class AnazhRealm_bild_himmel {
         const uPixel = uniform(1);
 
         const planeGeo = new THREE.PlaneGeometry(1, 1);
-        // DIE KANTE JE PUNKT in Pixeln (`aKante`, `_sternPunkt` schreibt sie mit seinem Licht): so weit, wie sein Bild reicht
+        // DER HALBMESSER JE PUNKT in Grad (`aKante`, `_sternPunkt` schreibt ihn mit seinem Licht): so weit, wie sein Bild reicht
         const aKante = new THREE.InstancedBufferAttribute(new Float32Array(STAR_COUNT), 1);
         planeGeo.setAttribute("aKante", aKante);
-        const kante = attribute("aKante", "float");
+        const SB = AnazhRealm.HIMMEL.sternBild;
+        const GRAD = 180 / Math.PI;
+        // die Scheibe in Welt-Einheiten auf der Kugel: der Halbmesser des Punkts, mindestens `minPx` Pixel
+        const halb = TSL.max(attribute("aKante", "float").mul(RADIUS / GRAD), uPixel.mul(SB.minPx));
 
         const starMat = new THREE.MeshBasicNodeMaterial();
         // die Vorlage des Quads wächst VOR der Instanz-Matrix (Lehre 22): die Instanz trägt Ort und Blick, der Stoff die Kante
-        starMat.positionNode = TSL.positionLocal.mul(uPixel.mul(kante));
-        // DAS BILD EINES PUNKTS IST SEINE STREU-SCHEIBE (stern-bild; Moffat 1969, das Profil jeder Stern-Photometrie, IRAF/DAOPHOT):
-        // PSF(r) = (β − 1) ÷ (π α²) · (1 + r²/α²)^(−β) in Pixeln (`HIMMEL.sternBild`), auf der Kreis-Scheibe der Kante auf 1
-        // normiert — die Scheibe trägt GENAU das Licht der Größenklasse (Fläche × Leuchtdichte = Lichtstrom). Der schwache Punkt
-        // ist ein Sub-Pixel-Kern, dessen Deckung mit dem Strom fällt; der helle reicht mit seinem Saum weit über die Grenze des
-        // Sichtbaren: er steht als größere, weichere Scheibe. Bis stern-bild trug jeder Punkt dieselbe Fläche (smoothstep 0,5 →
-        // 0,08 auf 2 Pixeln Kante, `sternPixel`) — die Tonkurve sättigte jeden hellen Kern zum selben Punkt: Helligkeits-Spanne
-        // im Bild 1,2–1,4 Größenklassen.
-        const SB = AnazhRealm.HIMMEL.sternBild;
+        starMat.positionNode = TSL.positionLocal.mul(halb.mul(2));
+        // DAS BILD EINES PUNKTS IST DIE STREU-FUNKTION DES AUGES (stern-bild; Spencer, Shirley, Zimmerman, Greenberg 1995,
+        // „Physically-Based Glare Effects for Digital Images“): ein Kern (e^(−(θ/0,02°)²), unter dem Pixel als Gauß des Pixels) und
+        // zwei Säume des Streulichts im Auge, (θ + a)^(−3) und (θ + a)^(−2) — ihre Anteile am Licht bis 10° (`HIMMEL.sternBild`
+        // kern · nah · fern) wie im Gesetz des Papiers, jeder Saum auf der Scheibe des Punkts auf 1 normiert (geschlossen), a um
+        // das halbe Pixel weicher. Die Scheibe trägt GENAU das Licht der Größenklasse (Fläche × Leuchtdichte = Lichtstrom): der
+        // schwache Punkt ist ein Kern im Pixel, dessen Deckung mit dem Strom fällt; der helle trägt seinen Saum weit über die
+        // Grenze des Sichtbaren — er steht als größere, weich glühende Scheibe, wie das Auge Sirius sieht. Bis stern-bild trug
+        // jeder Punkt dieselbe Fläche (smoothstep 0,5 → 0,08 auf 2 Pixeln Kante, `sternPixel`) — die Tonkurve sättigte jeden
+        // hellen Kern zum selben Punkt: Helligkeits-Spanne im Bild 1,2–1,4 Größenklassen.
         const uv = attribute("uv", "vec2");
-        const r = length(uv.sub(vec2(float(0.5), float(0.5)))).mul(kante);
-        const halb = kante.mul(0.5);
-        const q = r.mul(r).mul(1 / (SB.alpha * SB.alpha));
-        const qR = halb.mul(halb).mul(1 / (SB.alpha * SB.alpha));
-        const psf = TSL.pow(q.add(1), -SB.beta).mul((SB.beta - 1) / (Math.PI * SB.alpha * SB.alpha));
-        const scheibe = float(1).sub(TSL.pow(qR.add(1), 1 - SB.beta));
+        const dw = length(uv.sub(vec2(float(0.5), float(0.5)))).mul(halb.mul(2)); // Abstand zur Mitte auf der Kugel
+        const gp = uPixel.mul(GRAD / RADIUS); // Grad je Pixel
+        const rPx = dw.div(uPixel);
+        const th = dw.mul(GRAD / RADIUS);
+        const thR = halb.mul(GRAD / RADIUS);
+        const a = gp.mul(0.5).add(SB.a);
+        // der Kern: σ² = (0,02°/√2)² + das Pixel (1/12), in Pixeln
+        const s2 = float((SB.a * SB.a) / 2)
+            .div(gp.mul(gp))
+            .add(1 / 12);
+        const kern = TSL.exp(rPx.mul(rPx).div(s2.mul(-2))).div(s2.mul(2 * Math.PI));
+        // ∫ 2πθ (θ + a)^(−3) dθ und ∫ 2πθ (θ + a)^(−2) dθ von 0 bis θR
+        const aR = thR.add(a);
+        const I3 = float(1)
+            .div(a.mul(2))
+            .sub(float(1).div(aR))
+            .add(a.div(aR.mul(aR).mul(2)))
+            .mul(2 * Math.PI);
+        const I2 = TSL.log(aR.div(a))
+            .add(a.div(aR))
+            .sub(1)
+            .mul(2 * Math.PI);
+        const ta = th.add(a);
+        const saum = float(SB.nah)
+            .div(ta.mul(ta).mul(ta).mul(I3))
+            .add(float(SB.fern).div(ta.mul(ta).mul(I2)))
+            .mul(gp.mul(gp));
+        const psf = kern.mul(SB.kern).add(saum); // je Pixel², auf der Scheibe Σ = 1
         // DAS LICHT JE PUNKT trägt die Instanz-Farbe (`setColorAt`): r184 multipliziert sie selbst in die Farbe des Stoffs
         // (NodeMaterial.setupDiffuseColor, `vInstanceColor`) — EINMAL. Bis licht-eine-skala las der Knoten sie zusätzlich als
         // Attribut: die Farbe stand im Quadrat (bei Tönen um 1 unsichtbar; mit dem Licht in der EINEN Skala, 10⁻¹⁰ je Punkt,
@@ -421,7 +447,7 @@ class AnazhRealm_bild_himmel {
         // DIE LEUCHTDICHTE AM PIXEL: sein Licht am Auge (die Instanz-Farbe, lx in der EINEN Skala) × PSF ÷ der Raumwinkel eines
         // Pixels (Pixel² ÷ Radius²) — außerhalb der Scheibe nichts (der Kreis, der die Normierung trägt)
         const raumwinkel = uPixel.mul(uPixel).mul(1 / (RADIUS * RADIUS));
-        starMat.colorNode = vec4(TSL.vec3(psf.div(scheibe.mul(raumwinkel))), TSL.step(r, halb).mul(uOpacity));
+        starMat.colorNode = vec4(TSL.vec3(psf.div(raumwinkel)), TSL.step(dw, halb).mul(uOpacity));
 
         // Material-Properties: identisch zur V10.0-f-2-PointsMaterial-Variante.
         starMat.transparent = true;
@@ -482,7 +508,7 @@ class AnazhRealm_bild_himmel {
     // DER PUNKT i DES FELDS, der EINE Schreiber seines Bilds (licht-eine-skala, stern-bild): sein Licht am Auge in der EINEN Skala —
     // die Farbe des Sterns ist die seiner Temperatur (`kelvin`, der Planck-Ort über `_lichtLinear`, Luma 1), die des Planeten sein
     // Ton (rgb, das Licht der Sonne von seiner Fläche) — × die Beleuchtungsstärke seiner Größenklasse `KOSMOS.sternLx0` · 10^(−0,4·m)
-    // (die Instanz-Farbe), und die Kante seiner Streu-Scheibe (`aKante`, `_sternKante`).
+    // (die Instanz-Farbe), und der Halbmesser seiner Streu-Scheibe (`aKante`, `_sternKante`).
     _sternPunkt(sf, i, ton, m) {
         const c = this._sternPunktFarbe || (this._sternPunktFarbe = new THREE.Color());
         const L = typeof ton === "number" ? { kelvin: ton } : { farbe: c.setRGB(ton[0], ton[1], ton[2]) };
@@ -3369,11 +3395,11 @@ AnazhRealm._schirmDreieck = __weltLicht.schirmDreieck; // der Baustein der Engin
 AnazhRealm.HIMMEL = Object.freeze({
     grenzgroesse: __weltLicht.GRENZGROESSE, // die Anker der EINEN Tag-Achse (welt-licht.js `tagAchse`)
     kosmosSchrittTage: 1 / 96,
-    // DIE STREU-SCHEIBE EINES PUNKTS (stern-bild, `_buildStarField`): das Moffat-Profil in Pixeln des Szenen-Ziels — Breite `alpha`
-    // (FWHM 2α·√(2^(1/β) − 1) = 0,77 Pixel: der Kern trägt im Mittel so viel Leuchtdichte wie der 2-Pixel-Abfall bis stern-bild),
-    // der Saum `beta` (r^(−2β)); die Scheibe reicht, bis ihr Saum unter ein `saum`-tel des Kerns eines Sterns der Feldgrenze fällt
-    // (`_sternKante`), mindestens `kernPx` Pixel weit (dort trägt die Scheibe ≥ 91 % des Profils, die Normierung den Rest)
-    sternBild: Object.freeze({ alpha: 0.6, beta: 2, saum: 4, kernPx: 2 }),
+    // DIE STREU-FUNKTION DES AUGES (stern-bild, `_buildStarField`; Spencer u. a. 1995): f(θ) = 2,61·10⁶ e^(−(θ/a)²) + 20,91/(θ + a)³
+    // + 72,37/(θ + a)² (θ in Grad, a 0,02°) — die Anteile bis 10° Kern 3 280 · nah 3 284 · fern 2 365 von 8 929. Der Halbmesser der
+    // Scheibe eines Punkts (`_sternKante`) wächst mit √Licht — dort fällt sein fernster Saum (∝ θ⁻²) auf den eines Sterns der
+    // Feldgrenze in `theta0`: 0,1° an der Feldgrenze, 2° bei m 0, 15° für Venus; mindestens `minPx` Pixel
+    sternBild: Object.freeze({ a: 0.02, kern: 0.367, nah: 0.368, fern: 0.265, theta0: 0.1, minPx: 2 }),
     // die Leuchtdichte der Vollmond-Scheibe in cd/m² (≈ 2 500; ihr Licht ADDIERT sich zum Himmel vor ihr — am Tag steht sie
     // als blasser Schleier im Blau, 2 500 gegen ≈ 5 000–8 000 cd/m², nachts als die hellste Fläche des Bilds)
     mondCd: 2500,
@@ -3384,13 +3410,12 @@ AnazhRealm.HIMMEL = Object.freeze({
     sonneWinkelGrad: 0.53,
     sonneCd: 1.6e9,
 });
-// DIE KANTE DER STREU-SCHEIBE eines Punkts der Größenklasse m in Pixeln (`_sternPunkt`): der Radius, an dem sein Moffat-Saum auf
-// 1/saum des Kerns eines Sterns der Feldgrenze fällt (α · √((saum · 10^(0,4·(G − m)))^(1/β) − 1)), mindestens `kernPx` — der
-// hellste Punkt (Venus −4,4) reicht 10 Pixel weit, Sirius-gleich (−1,5) 5, die Feldgrenze 2. Die Fläche wächst mit dem Licht.
+// DER HALBMESSER DER SCHEIBE eines Punkts der Größenklasse m in Grad (`_sternPunkt`): θ0 · 10^(0,2·(G − m)) — der ferne Saum des
+// Auges fällt mit θ⁻², so steht er am Rand jeder Scheibe gleich hell (der eines Sterns der Feldgrenze G in θ0). Die Fläche wächst
+// mit dem Licht.
 AnazhRealm._sternKante = (m) => {
     const S = AnazhRealm.HIMMEL.sternBild;
-    const v = Math.pow(S.saum * Math.pow(10, 0.4 * (__weltLicht.KOSMOS.feldGrenze - m)), 1 / S.beta) - 1;
-    return 2 * Math.max(S.kernPx, v > 0 ? S.alpha * Math.sqrt(v) : 0);
+    return S.theta0 * Math.pow(10, 0.2 * (__weltLicht.KOSMOS.feldGrenze - m));
 };
 // DIE MATRIX EINES PUNKTS (`_buildStarField`, `_kosmosFeldZeit`): der Punkt (x, y, z) auf der Kuppel des Felds, das Quad zur
 // Mitte gewandt (die Kamera — starField folgt ihr), Kante 1 — die Kante der Streu-Scheibe trägt der Stoff (`uPixel` × `aKante`, Lehre 22)
