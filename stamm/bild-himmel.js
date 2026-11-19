@@ -2488,7 +2488,9 @@ class AnazhRealm_bild_himmel {
     _dayNightApplyWaterMaterials(lightDir) {
         if (!this.state.directionalLight) return;
         const dl = this.state.directionalLight;
-        const lightVal = Math.max(0.22, dl.intensity);
+        // das Licht des Himmelskörpers selbst, in der EINEN Skala: bis licht-eine-skala hielt ein Boden 0,22 den Glitzer der
+        // Nacht — im Mondlicht (0,26 lx) das 13 000-Fache, ein weißer Fleck auf jedem Wasser (GTX 1050, Dorf, 00 Uhr)
+        const lightVal = dl.intensity;
         // Das Licht des Orts für Körper und Schaum ist das Licht der Welt (`_weltLicht`): sein Schreiber folgt der Uhr sofort
         this._weltLichtTakt();
         // Die Uniforms leben in state.hydroSurfaceUniforms.
