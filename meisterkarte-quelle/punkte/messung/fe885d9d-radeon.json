@@ -1476,6 +1476,495 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.007 · Median 0.017 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.005669636273816779/undefined · haus_schwarzwald 0.008145415041473569/0.8549240975511525 · haus_schwarzwald 0.012803419825892911/0.8691313064567742 · haus_schwarzwald 0.01932293302628296/undefined · haus_schwarzwald 0.008852778068101074/0.9438434959542159 · haus_schwarzwald 0.012210958337580735/0.734640724771158 · haus_schwarzwald 0.00609762154012458/0.8740977446714471 · haus_alpenchalet 0.028719204992897353/undefined · haus_alpenchalet 0.01636334376131761/0.8850077448213388 · haus_alpenchalet 0.009787923598351775/undefined · haus_schwarzwald 0.015030201412914718/0.8410212361029319 · haus_schwarzwald 0.016304603780254005/0.9315550144951729 · haus_schwarzwald 0.018633135369187658/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.018951486417467585/undefined · haus_skandinavisch 0.011180283997975304/undefined",
+   "exit": 0,
+   "minuten": 2.36,
+   "grund": "ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.007 · Median 0.017 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.005669636273816779/undefined · haus_schwarzwald 0.008145415041473569/0.8549240975511525 · haus_schwarzwald 0.012803419825892911/0.8691313064567742 · haus_schwarzwald 0.01932293302628296/undefined · haus_schwarzwald 0.008852778068101074/0.9438434959542159 · haus_schwarzwald 0.012210958337580735/0.734640724771158 · haus_schwarzwald 0.00609762154012458/0.8740977446714471 · haus_alpenchalet 0.028719204992897353/undefined · haus_alpenchalet 0.01636334376131761/0.8850077448213388 · haus_alpenchalet 0.009787923598351775/undefined · haus_schwarzwald 0.015030201412914718/0.8410212361029319 · haus_schwarzwald 0.016304603780254005/0.9315550144951729 · haus_schwarzwald 0.018633135369187658/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.018951486417467585/undefined · haus_skandinavisch 0.011180283997975304/undefined",
+   "gpu": "amd/rdna-3",
+   "konsum": "k174e5860f58c",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k74431547df92",
+   "s": 141.2,
+   "fremd": {
+    "s": 146.2,
+    "takte": 54,
+    "fremdS": 367.31,
+    "kerne": 2.513,
+    "fensterKerne": 3.146,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      45.03
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      43.55
+     ],
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      38.23
+     ]
+    ],
+    "dienerS": 144.09,
+    "diener": [
+     [
+      "System",
+      62.95
+     ],
+     [
+      "WmiPrvSE.exe",
+      43.78
+     ]
+    ],
+    "geraetS": 126.13,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      77.33
+     ],
+     [
+      "svchost.exe",
+      45.52
+     ],
+     [
+      "SearchIndexer.exe",
+      2.91
+     ]
+    ],
+    "eigenS": 415.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-16T14:07:26.436Z",
+   "abdruck": "18955c96c766",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.bau.innen#1": {
+   "gruen": true,
+   "zahl": "6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet",
+   "exit": 0,
+   "minuten": 2.36,
+   "gpu": "amd/rdna-3",
+   "konsum": "k174e5860f58c",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k74431547df92",
+   "s": 141.2,
+   "fremd": {
+    "s": 146.2,
+    "takte": 54,
+    "fremdS": 367.31,
+    "kerne": 2.513,
+    "fensterKerne": 3.146,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      45.03
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      43.55
+     ],
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      38.23
+     ]
+    ],
+    "dienerS": 144.09,
+    "diener": [
+     [
+      "System",
+      62.95
+     ],
+     [
+      "WmiPrvSE.exe",
+      43.78
+     ]
+    ],
+    "geraetS": 126.13,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      77.33
+     ],
+     [
+      "svchost.exe",
+      45.52
+     ],
+     [
+      "SearchIndexer.exe",
+      2.91
+     ]
+    ],
+    "eigenS": 415.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-16T14:07:26.436Z",
+   "abdruck": "eeba18766334",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K1#2",
+   "modus": "session"
+  },
+  "vegetation.K4#1": {
+   "gruen": true,
+   "zahl": "44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20582 px",
+   "exit": 0,
+   "minuten": 3.73,
+   "gpu": "amd/rdna-3",
+   "konsum": "k5d77630f403a",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k74431547df92",
+   "s": 223.6,
+   "fremd": {
+    "s": 227.8,
+    "takte": 82,
+    "fremdS": 786.31,
+    "kerne": 3.451,
+    "fensterKerne": 4.934,
+    "namen": [
+     [
+      "node scripts/diag-kamera-laub.cjs --selftest",
+      84.91
+     ],
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      81.14
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      71.97
+     ]
+    ],
+    "dienerS": 200.66,
+    "diener": [
+     [
+      "System",
+      77.31
+     ],
+     [
+      "WmiPrvSE.exe",
+      68.42
+     ]
+    ],
+    "geraetS": 285.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      185.09
+     ],
+     [
+      "svchost.exe",
+      95.59
+     ],
+     [
+      "SearchIndexer.exe",
+      3.53
+     ]
+    ],
+    "eigenS": 622.66,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-16T14:11:28.101Z",
+   "abdruck": "dffd8e797752",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": true,
+   "zahl": "Krone sommer 104462 px · winter 1911 px · fruehling 76646 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer",
+   "exit": 0,
+   "minuten": 2.96,
+   "gpu": "amd/rdna-3",
+   "konsum": "kac0f9d3ba739",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kaae491f57b8b",
+   "s": 176.6,
+   "fremd": {
+    "s": 181.2,
+    "takte": 60,
+    "fremdS": 490.67,
+    "kerne": 2.708,
+    "fensterKerne": 5.596,
+    "namen": [
+     [
+      "git reset --hard --no-recurse-submodules",
+      127.52
+     ],
+     [
+      "git.exe -C micha/AnazhRealm-profiband grep -l 1,826/|1.826 origin/koordination -- .",
+      126
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      49.52
+     ]
+    ],
+    "dienerS": 280.48,
+    "diener": [
+     [
+      "System",
+      148.5
+     ],
+     [
+      "WmiPrvSE.exe",
+      69.63
+     ]
+    ],
+    "geraetS": 284.75,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      145.84
+     ],
+     [
+      "MsMpEng.exe",
+      117.02
+     ],
+     [
+      "svchost.exe",
+      21.78
+     ]
+    ],
+    "eigenS": 152.73,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-16T14:24:01.115Z",
+   "abdruck": "b31a5ff799f4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 406.5 über Rausch-Boden 0.000 (×406.5), Tal 68.5 — Kamm/Tal 5.93 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.56,
+   "gpu": "amd/rdna-3",
+   "konsum": "k3558f4d8d119",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kaae491f57b8b",
+   "s": 30.4,
+   "fremd": {
+    "s": 37.9,
+    "takte": 11,
+    "fremdS": 83,
+    "kerne": 2.192,
+    "fensterKerne": 2.618,
+    "namen": [
+     [
+      "git reset --hard --no-recurse-submodules",
+      17.28
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      12.3
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      7.27
+     ]
+    ],
+    "dienerS": 34.27,
+    "diener": [
+     [
+      "System",
+      14.33
+     ],
+     [
+      "WmiPrvSE.exe",
+      14.33
+     ]
+    ],
+    "geraetS": 30.19,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.09
+     ],
+     [
+      "SearchIndexer.exe",
+      8.28
+     ],
+     [
+      "svchost.exe",
+      4.77
+     ]
+    ],
+    "eigenS": 13.38,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-16T14:28:49.795Z",
+   "abdruck": "e70ca47e767e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K5#1": {
+   "gruen": true,
+   "zahl": "ego (first) 6 Sichtungen in 600 Spiel-s (wesen 263 px 53 m 376 s · wesen 482 px 48 m 382 s · wesen 310 px 69 m 422 s · wesen 218 px 63 m 422 s · wolf 273 px 21 m 576 s · wolf 219 px 24 m 576 s), 621 Prüfungen, 42 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 7 Sichtungen in 600 Spiel-s (wolf 9788 px 4 m 1 s · baer 222 px 91 m 144 s · wesen 206 px 75 m 564 s · wesen 688 px 68 m 576 s · wesen 318 px 74 m 576 s · wolf 222 px 14 m 589 s · wolf 471 px 11 m 591 s), 616 Prüfungen, 32 Masken, Bestand bis 20, im Blick erschienen 0",
+   "exit": 0,
+   "minuten": 2.84,
+   "gpu": "amd/rdna-3",
+   "konsum": "k660340e70f5e",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "kaae491f57b8b",
+   "s": 165.6,
+   "teile": [
+    165.6
+   ],
+   "fremd": {
+    "s": 173,
+    "takte": 49,
+    "fremdS": 306.09,
+    "kerne": 1.769,
+    "fensterKerne": 2.613,
+    "namen": [
+     [
+      "git reset --hard --no-recurse-submodules",
+      63.64
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      51.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      35.38
+     ]
+    ],
+    "dienerS": 156.41,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      60.89
+     ],
+     [
+      "System",
+      57.27
+     ]
+    ],
+    "geraetS": 131,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      77.61
+     ],
+     [
+      "SearchIndexer.exe",
+      34
+     ],
+     [
+      "svchost.exe",
+      19.17
+     ]
+    ],
+    "eigenS": 253.28,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-16T14:30:52.345Z",
+   "abdruck": "8d3f76d336ff",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#2": {
+   "gruen": false,
+   "zahl": "❌ Schritte , kleinster Abstand — Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.8 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.0 m/s 0.9718/0.9718 · 4.5 m -14.6 m/s 0.9591/0.9591 · 9 m -16.8 m/s 0.9534/0.9534)",
+   "exit": 0,
+   "minuten": 0.63,
+   "grund": "ROT: ❌ Schritte , kleinster Abstand — Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.8 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.0 m/s 0.9718/0.9718 · 4.5 m -14.6 m/s 0.9591/0.9591 · 9 m -16.8 m/s 0.9534/0.9534)",
+   "gpu": "amd/rdna-3",
+   "konsum": "ka4ecdba5fd32",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kaae491f57b8b",
+   "s": 36,
+   "fremd": {
+    "s": 44.1,
+    "takte": 14,
+    "fremdS": 98.27,
+    "kerne": 2.23,
+    "fensterKerne": 2.591,
+    "namen": [
+     [
+      "git reset --hard --no-recurse-submodules",
+      19.83
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      15.59
+     ],
+     [
+      "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $__claudeCodeSc",
+      9.34
+     ]
+    ],
+    "dienerS": 38.83,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      15.64
+     ],
+     [
+      "System",
+      14.44
+     ]
+    ],
+    "geraetS": 42.97,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.92
+     ],
+     [
+      "SearchIndexer.exe",
+      10.69
+     ],
+     [
+      "svchost.exe",
+      4.33
+     ]
+    ],
+    "eigenS": 41.81,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-16T14:35:17.453Z",
+   "abdruck": "39097feaa0f9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {

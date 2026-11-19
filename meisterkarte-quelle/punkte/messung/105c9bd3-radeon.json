@@ -665,69 +665,69 @@
   },
   "luftwasser.K3#2": {
    "gruen": true,
-   "zahl": "Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px",
-   "exit": 1,
-   "minuten": 0.38,
+   "zahl": "Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.512 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch 4995 / 0 px",
+   "exit": 0,
+   "minuten": 0.41,
    "gpu": "amd/rdna-3",
-   "konsum": "kf46239ad8adb",
+   "konsum": "k467af0e913fa",
    "konsumN": 28,
    "konsumSeite": false,
    "konsumGanz": {
     "gelesen": 2
    },
-   "konsumBoot": "k9271cdf6ff93",
-   "s": 22.9,
+   "konsumBoot": "k12a520b5868e",
+   "s": 24.3,
    "fremd": {
-    "s": 26.4,
+    "s": 27.4,
     "takte": 11,
-    "fremdS": 23.45,
-    "kerne": 0.887,
-    "fensterKerne": 1.047,
+    "fremdS": 39.92,
+    "kerne": 1.455,
+    "fensterKerne": 1.576,
     "namen": [
      [
+      "sh.exe dienst/zug-dienst.sh",
+      8.55
+     ],
+     [
       "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
-      6.25
+      8.31
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      3.84
-     ],
-     [
-      "sh.exe dienst/radeon-dienst.sh",
-      1.83
+      5.44
      ]
     ],
-    "dienerS": 16.3,
+    "dienerS": 17.19,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      6.67
+      "System",
+      6.3
      ],
      [
       "dwm.exe",
-      5.64
+      5.63
      ]
     ],
-    "geraetS": 8.39,
+    "geraetS": 17.81,
     "geraet": [
      [
-      "svchost.exe",
-      4.38
+      "MsMpEng.exe",
+      12.42
      ],
      [
-      "MsMpEng.exe",
-      3.48
+      "svchost.exe",
+      4.77
      ],
      [
       "SearchIndexer.exe",
-      0.38
+      0.55
      ]
     ],
-    "eigenS": 45.77,
+    "eigenS": 61.44,
     "rechnerKerne": 24
    },
-   "zeit": "2026-11-16T04:04:27.034Z",
-   "abdruck": "33332da885f9",
+   "zeit": "2026-11-16T06:28:56.350Z",
+   "abdruck": "9792b0616d3c",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"

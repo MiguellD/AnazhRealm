@@ -1637,7 +1637,9 @@ function referenzRuheAus(werte, jetzt = Date.now()) {
 // der Pool liest NUR die Ablagen (alle Dateien referenz-*.json, je Rechner und Umfeld) — der `referenz`-Vermerk im Eintrag ist Bericht,
 // nie Quelle. DIE AUFFÜLLUNG: `run` fährt vor der ersten Station (allein) und `fahreSitzung` nach dem Start der Welt (sitzung) so viele
 // Fahrten nach, bis REFERENZ_RUHE_MIN frische im Pool liegen (≤ 10 × 0,6 s) — die Ruhe steht in Sekunden, nie erst nach Stationen.
-const referenzAblageVon = (mdir, host = os.hostname()) => path.join(mdir, "referenz-" + String(host).replace(/[^A-Za-z0-9_-]/g, "_") + ".json");
+// PUNKTE_REFERENZ_NAME (19.11., Gesetz der Runde): der Name des GERÄTS im Dienst (gtx · radeon) statt des Rechners — auf dem Laptop schrieben
+// Radeon-Dienst und andere Läufe desselben Rechners dieselbe referenz-MiguellD.json, ihr Rebase-Konflikt hielt den Mess-Push 3 Tage still
+const referenzAblageVon = (mdir, host = process.env.PUNKTE_REFERENZ_NAME || os.hostname()) => path.join(mdir, "referenz-" + String(host).replace(/[^A-Za-z0-9_-]/g, "_") + ".json");
 function referenzPoolLaden(mdir) {
     const pool = new Map();
     let dateien = [];

@@ -380,6 +380,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "vegetation.K4#1": {
+   "gruen": true,
+   "zahl": "44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20587 px",
+   "exit": 0,
+   "minuten": 3.43,
+   "gpu": "amd/rdna-3",
+   "konsum": "k0dd11f4949ab",
+   "konsumN": 31,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "ka6dc719da81b",
+   "s": 205.1,
+   "fremd": {
+    "s": 207.6,
+    "takte": 87,
+    "fremdS": 391.67,
+    "kerne": 1.886,
+    "fensterKerne": 4.803,
+    "namen": [
+     [
+      "node scripts/diag-kamera-laub.cjs --selftest",
+      47.56
+     ],
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      41.48
+     ],
+     [
+      "node scripts/diag-altlasten.cjs",
+      36.77
+     ]
+    ],
+    "dienerS": 169.66,
+    "diener": [
+     [
+      "System",
+      87.5
+     ],
+     [
+      "WmiPrvSE.exe",
+      63.2
+     ]
+    ],
+    "geraetS": 219.31,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      137.06
+     ],
+     [
+      "svchost.exe",
+      61.16
+     ],
+     [
+      "SearchIndexer.exe",
+      17.38
+     ]
+    ],
+    "eigenS": 592.55,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-18T02:59:06.678Z",
+   "abdruck": "dffd8e797752",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {

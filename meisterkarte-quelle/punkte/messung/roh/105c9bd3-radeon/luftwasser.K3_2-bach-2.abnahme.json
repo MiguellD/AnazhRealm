@@ -46,7 +46,7 @@
   "vor": null,
   "vorAbstand": null,
   "leiber": null,
-  "abstand": 6.02,
+  "abstand": 6.01,
   "gestalt": [
    "wasser"
   ],
@@ -54,27 +54,27 @@
  },
  "pose": {
   "kamera": [
-   -305.413,
-   28.831,
-   -812.756
+   -305.22,
+   28.818,
+   -812.839
   ],
   "blick": [
-   0.55977,
-   -0.55695,
-   -0.61357
+   0.56044,
+   -0.55545,
+   -0.61431
   ]
  },
  "seitenfehler": 0,
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 57.9,
-  "sigma": 38.6,
+  "mittel": 55.1,
+  "sigma": 37.5,
   "schwarz": 0.0003,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6.02 m · Luma 57.9 σ 38.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6.01 m · Luma 55.1 σ 37.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.299 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
  "rot": [],
  "urteil": "GRÜN",
  "klasse": {
@@ -90,8 +90,8 @@
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 891,
-   "wechsel": 1163081
+   "ms": 788,
+   "wechsel": 1163031
   },
   "rinde": null,
   "toene": [
