@@ -321,7 +321,12 @@ function pageHtml() {
       if (mitTeilen)
         o.teile = (r.meshes || [])
           .filter((m) => m && m.position && m.position.array)
-          .map((m) => ({ kind: m.kind, mat: m.mat ? { seh: m.mat.seh, opacity: m.mat.opacity } : null, tris: window.__phytoCore.budgetSippen([m]).tris }));
+          .map((m) => ({
+            kind: m.kind,
+            // das Leuchten der Lieferung (gate:asset-contract, Leuchten-Wand Z3): Emitter-Datum · Leucht-Gesetz · Emissiv
+            mat: m.mat ? { seh: m.mat.seh, opacity: m.mat.opacity, licht: m.mat.licht, leucht: m.mat.leucht, unbeleuchtet: m.mat.unbeleuchtet, emissive: m.mat.emissive, emissiveIntensity: m.mat.emissiveIntensity } : null, // prettier-ignore
+            tris: window.__phytoCore.budgetSippen([m]).tris,
+          }));
       if (mitAbdruck && mitAbdruck[i]) {
         const a = await bauAbdruck(r.meshes || []);
         o.abdruck = a.teile > 0 ? a.hash : null;

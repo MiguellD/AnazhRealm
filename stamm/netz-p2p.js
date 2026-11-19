@@ -2170,9 +2170,15 @@ class AnazhRealm_netz_p2p {
         for (let i = 0; i < peerId.length; i++) hash = (hash * 31 + peerId.charCodeAt(i)) >>> 0;
         const color = new THREE.Color().setHSL((hash % 360) / 360, 0.7, 0.55);
         const group = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.4, 8), new THREE.MeshBasicMaterial({ color }));
+        const body = new THREE.Mesh(
+            new THREE.ConeGeometry(0.4, 1.4, 8),
+            this._erscheinungStoff(new THREE.MeshBasicNodeMaterial({ color }))
+        );
         body.position.y = 0.7;
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), new THREE.MeshBasicMaterial({ color }));
+        const head = new THREE.Mesh(
+            new THREE.SphereGeometry(0.3, 12, 8),
+            this._erscheinungStoff(new THREE.MeshBasicNodeMaterial({ color }))
+        );
         head.position.y = 1.55;
         group.add(body, head);
         return group;
@@ -2250,7 +2256,12 @@ class AnazhRealm_netz_p2p {
         // V12.0-vendor.3 — Canvas-Inhalt ist sRGB-encoded (fillStyle="#xxx").
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.needsUpdate = true;
-        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false });
+        // DAS SCHILD IST ERSCHEINUNG (licht-eine-skala, der neunte Name): seine Karte ist ein BILDWERT (sRGB des Canvas, kein
+        // Datum einer Quelle) — es steht im Maß des Auges, Bildwert ÷ k über die EINE Stelle (`_erscheinungStoff`). Bis hier
+        // trug es seine Karte roh in die EINE Skala: die Schrift #f0e6d2 Luma 0,80 Einheiten (12 830 cd/m²) × k — nachts weiß gebrannt.
+        const mat = this._erscheinungStoff(
+            new THREE.SpriteNodeMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false })
+        );
         const sprite = new THREE.Sprite(mat);
         sprite.name = "p2p-namensschild";
         sprite.scale.set(2.6, hasFp ? 0.98 : 0.65, 1);

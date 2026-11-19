@@ -287,7 +287,10 @@ class AnazhRealm_siedlung_tor {
             Z.tex,
             TSL.vec2(eq.x, zielZeile.add(TSL.clamp(eq.y, F(zv), F(1 - zv))).div(Z.uZeilen))
         );
-        const ziel = this._nachtAuge(zielTex.rgb.mul(Z.uBelicht), true);
+        // DIE BELICHTUNG DER HEIMAT TEILT DAS ZIELBILD (licht-eine-skala P8): die EINE Belichtung des Bilds selbst
+        // (`_vorBelichtung`), nie ihre Kopie je Takt — die Kopie hinkte einem Bild nach, dessen Uhr zwischen zwei Takten sprang
+        // (Mittag 0,527 → Mondnacht 47 000: die Öffnung stand weiß, das 89 000-Fache)
+        const ziel = this._erscheinung(zielTex.rgb);
         // ── DER SEIFENFILM: Dicke aus Bogen-Radius (die Ellipse rimAx × rimAy) und Welle, Gangunterschied je Blickwinkel ──
         const rr = TSL.length(xy.sub(centerXY).div(TSL.vec2(ga.y, ga.z)));
         const cosI = TSL.max(TSL.dot(N, Vd), F(0.0));
@@ -353,6 +356,12 @@ class AnazhRealm_siedlung_tor {
     // Licht: `_tickPortalMembranes`), nur das FENSTER wartet darauf — ohne Ziel kein Zwischen-Bild. Eine Welt, die der Export
     // benannt ohne Panorama führt (`ohne`: die sandgesicherten Welten ohne Skript), zeigt keins; eine, die er nicht kennt, bricht
     // laut beim Namen (`_bruchMelden`).
+    // DIE LICHTSTÄRKE DES TORS (licht-eine-skala P8): Candela je Einheit der Stärke des Labors (porta `glutIntensity`) — das
+    // offene Tor (3,7) leuchtet wie ein Herdfeuer, 10 cd. HYPOTHESE mit Band 5–20 cd: das Tor hat kein Vorbild in der Welt.
+    static get PORTAL_LICHT_CD() {
+        return 2.7;
+    }
+
     static get TOR_ZIEL() {
         return this._einmal("TOR_ZIEL", { w: 512, h: 256, format: 1, karte: "worlds/tor-ziele.json" });
     }
@@ -378,7 +387,6 @@ class AnazhRealm_siedlung_tor {
                 n: 0,
                 tex: null,
                 uZeilen: TSL.uniform(1),
-                uBelicht: TSL.uniform(1),
                 buendel: null,
             }))
         );
@@ -653,9 +661,6 @@ class AnazhRealm_siedlung_tor {
         }
         // ── pro Frame: Atem + Hindurchgehen ──
         const reach = AnazhRealm.PORTAL_REACH_M;
-        // die Belichtung der Heimat teilt die Bild-Werte des Ziels (die Heimat tont sie danach, wie die Welt sich zeigt)
-        if (this._torZielAtlas && st.renderer)
-            this._torZielAtlas.uBelicht.value = 1 / Math.max(1e-3, st.renderer.toneMappingExposure || 1);
         for (const rec of reg.values()) {
             const entry = rec.entry;
             const mu = rec.tor.mu;
@@ -776,7 +781,7 @@ class AnazhRealm_siedlung_tor {
             this._portalLeuchte ||
             (this._portalLeuchte = {
                 quelle: "tor",
-                L: { farbe: G.color, staerke: 0, reichweiteM: G.dist, abfall: G.decay, kernM: 0 },
+                L: { farbe: G.color, cd: 0, reichweiteM: G.dist, abfall: G.decay, kernM: 0 },
                 masse: 1,
                 phase: 0,
             });
@@ -784,7 +789,7 @@ class AnazhRealm_siedlung_tor {
         q.x = e.position.x;
         q.y = e.position.y - 0.5 + mu.springY * G.ySpring * sc;
         q.z = e.position.z;
-        q.L.staerke = PC.glutIntensity(rec._act, rec.puls);
+        q.L.cd = PC.glutIntensity(rec._act, rec.puls) * AnazhRealm.PORTAL_LICHT_CD;
     }
 
     // Eine Membran für einen Eintrag bauen (fail-LAUT: schlägt der TSL-Bau fehl, bricht er beim Namen —

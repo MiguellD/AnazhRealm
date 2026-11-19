@@ -343,7 +343,7 @@ const FORBIDDEN = [
     ["LUFT_GESETZ", "D3 — die Luftmassen-Sonne fiel, die Nacht trägt ATMO_GESETZ.nacht", ["phyto-core.js", "worlds/terrain/phytogenesis.js"]],
     ["_AIR_SOFT", "D3 — keine Luftmassen-Glättung, der Durchlass ist Hillaire", ["worlds/terrain/phytogenesis.js"]],
     ["_moonCol", "D3 — der Mond-Hue ist ATMO_GESETZ.nacht.mond", ["worlds/terrain/phytogenesis.js"]],
-    ["_dayNightApplyHemiAndFog", "V18.530 — _dayNightApplyHemiUndLuft"],
+    ["_dayNightApplyHemiAndFog", "V18.530 — _dayNightApplyLuft"],
     ["_smoothFogEdge", "V18.530 — kein Lade-Nebel, der Fern-Ring deckt Ungebautes"],
     ["_fogEdgeSmooth", "V18.530"],
     ["_builtGrassRingRadius", "V18.530 — die Gras-Front trieb nur den Lade-Nebel"],
@@ -820,6 +820,16 @@ const FORBIDDEN = [
     // seinen Zahlen in `TERRAIN_BUMP` — im Schlagschatten sprang es je Kiesel 1 : 5,8 (gate:schatten-terminator (K) misst das Bild)
     // … und das Korn ist eine Spalte des Stoffs (die Stoff-Tafel, Zeilen erde und stein), nie wieder EINE Zahl in `TERRAIN_BUMP`
     ...["krume", "kavitaet:", "BUMP.korn"].map((t) => [t, "w28-himmel-korn — das Korn der Albedo ist das EINE Bild der Höhe (_mikroStoff)"]),
+    // licht-eine-skala — DIE ERSATZ-LICHTER DER NACHT FIELEN: Ambient (0,04 × nacht + Gefühl) und Hemisphäre (0,1 × nacht) waren
+    // Zahlen ohne Quelle; die Nacht nimmt ihr Licht aus der Himmels-Umgebung wie jede Stunde (Def, Maschine, Spiegel, Uniforms)
+    ...["ambientLight", "hemiLight", "_dayNightApplyAmbient", "_dayNightApplyHemiUndLuft", "ambientFarbe", "hemiOben", "hemiUnten"].map((t) => [t, "licht-eine-skala — die Nacht trägt die Himmels-Umgebung, kein Ersatz-Licht", ["scripts/playtest.cjs", "welt-licht.js"]]), // prettier-ignore
+    // licht-eine-skala P7/P8 — JEDE QUELLE IN DER EINEN SKALA (Wert ÷ `EINHEIT_LX`): die Übersetzung Labor → Welt eines
+    // Punktlichts, der zweite Maßstab der Nacht, die Schwelle und Größe der Sterne (ein Punkt im Fußabdruck des Pixels, die
+    // Größenklasse in `starField.userData.mags`), die Zahlen ohne Quelle für Sonne, Mond, Funken und Tor
+    ...["_laborLichtStaerke", "luxJeEinheit", "sternKontrast", "uGrenze", '"aMag"', "sonneLeucht", "mondGegenHimmel", "FUNKEN.leucht", "uBelicht"].map((t) => [t, "licht-eine-skala — jede Quelle in der EINEN Skala (cd ÷ EINHEIT_LX), die Klasse Erscheinung durch `_erscheinung`", ["scripts/playtest.cjs", "welt-licht.js"]]), // prettier-ignore
+    // kosmos-umfang — DER HIMMEL IST EINE FUNKTION DER SAAT (welt-licht.js `kosmos` · `kosmosHimmel` · `kosmosZeit`): der Würfel-Himmel
+    // (Mulberry32 aus worldMeta.seed, 2 800 gleichverteilte Punkte, Größen aus einer Zählungs-Kurve) und die drei festen Wandelsterne fielen
+    ...["_sternMag", "STERN_HELLSTE", "sternMagSchwach", "sternZaehlung", "wandelsterne", "_sternPixel", "FIX_COUNT"].map((t) => [t, "kosmos-umfang — die Punkte des Himmels sind die Sicht der Kosmos-Funktion (_kosmosJetzt)", ["scripts/playtest.cjs", "welt-licht.js"]]), // prettier-ignore
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -1516,7 +1526,7 @@ const METHODEN_OHNE = [
     ["_buildPbrNodeMaterial", ["__structAerialError"]], // die Luft aus EINER Quelle
     ["_ensureHydroSurfaceMaterial", ["gerstnerWave", "uSkyCol", "d.x).mul(cos(phase))"]], // die Dünung, der EINE Himmel
     ["_wasserBlick", ["uSkyCol"]],
-    ["_dayNightApplyHemiUndLuft", ["playerEyesUnderwater"]],
+    ["_dayNightApplyLuft", ["playerEyesUnderwater"]],
     ["_workshopInstallShapeDragDrop", ["cards.forEach"]], // EIN delegierter Zieh-Hörer
     ["_p2pMsgCreaturePos", ["_cpRate"]], // die Kappe lebt im Takt, nie im Empfänger
     ["updateCreatures", ["_runRaycast(", "_fieldRaycast("]], // das Tier stößt mit dem Leib, nie mit dem Strahl
@@ -1533,6 +1543,241 @@ function scanAbsenzErbe(srcRoh, liste = METHODEN_OHNE) {
         }
         const rumpf = code.slice(a, b);
         for (const t of verboten) if (rumpf.includes(t)) errs.push(`Absenz-Erbe: \`${name}\` trägt wieder "${t}"`);
+    }
+    return errs;
+}
+
+// DIE KLASSE ERSCHEINUNG (licht-eine-skala P8): die EINE Skala gilt für alles außer der Klasse Erscheinung — ihr EINER
+// Mechanismus ist `_erscheinung(bildwert)` (stamm/bild-kosten.js: der Bildwert ÷ `_vorBelichtung().k`, vor dem Auge der
+// Nacht) samt `_erscheinungStoff(mat)`. (a) Die Mitglieder stehen hier beim NAMEN (Glied, gerufener Name, Zahl der Bezüge):
+// jeder Bezug auf einen der zwei Namen in einem anderen Glied (oder einer mehr) ist ROT mit Datei, Zeile und Glied, eine
+// Zeile ohne ihre Bezüge ist tot. (b) Wer die Belichtung HERAUSTEILT (`.div(…)`, `/`, `/=` mit `toneMappingExposure`,
+// `_vorBelichtung().k | .kBild` im Teiler — auch über einen Namen dafür: eine Variable, das Vor-Belichtungs-Objekt, den
+// Parameter eines Glieds, das ein Rufer mit der Belichtung füllt), steht in `BELICHTUNG_TEILER` mit seinem Grund; jeder
+// weitere ist ROT. Gelesen am AST (acorn über `stammLib.glieder`, Lehre 6): Kommentare tragen keinen Knoten.
+// (Z1) DIE KLASSE HAT GENAU NEUN NAMEN (Entscheid des Koordinators, licht-eine-skala): die Vereinigung der Namen aller
+// Ruf-Stellen ist genau `ERSCHEINUNG_KLASSE`. KORREKTUR (die Daten-Leser): bis hier „genau acht" — das Namensschild eines
+// Mitspielers (netz-p2p `_p2pBuildNameLabel`, eine Canvas-Karte, Bildwert) trug seine Karte roh in die EINE Skala; es ist
+// der neunte Name, kein weiterer. (Z2) DER REST OHNE GESETZ ist genau EINER: das Tierauge (tetrapoda-core
+// Seh-Klasse `auge`; physisch Rückstrahl, kein Strahler) — es läuft durch `_erscheinung`, ist aber kein Mitglied.
+const ERSCHEINUNG_KLASSE = ["Membran-Zielbild", "Filigran", "Saum", "Scheibe", "Rahmen-Glut", "Tor-Beschläge", "Kreatur-Aura", "Platzhalter eines Mitspielers", "Namensschild eines Mitspielers"];
+const ERSCHEINUNG_REST = ["Tierauge"];
+// je Ruf-Stelle: [Glied, gerufener Name, Zahl der Rufe, die Stelle, ihre Namen der Klasse, ihr Rest ohne Gesetz] — die Rufe
+// eines Glieds zählen über seine Stellen zusammen
+const ERSCHEINUNG_MITGLIEDER = [
+    ["_erscheinungStoff", "_erscheinung", 1, "bild-kosten.js — der Marker (unbeleuchtet, mit oder ohne Karte) durch die EINE Stelle", [], []],
+    ["_membranGraph", "_erscheinung", 1, "siedlung-tor.js — das Zielbild der Tor-Membran", ["Membran-Zielbild"], []],
+    ["_foundryTreeMaterial", "_erscheinung", 1, "studio-stoff.js — der unbeleuchtete Stoff", ["Filigran", "Saum", "Scheibe"], []],
+    ["_foundryTreeMaterial", "_erscheinung", 1, "studio-stoff.js — das Emissiv ohne Lichtquelle", ["Rahmen-Glut", "Tor-Beschläge"], ["Tierauge"]],
+    ["_foundryTreeMaterial", "_erscheinung", 1, "studio-stoff.js — die Glut je Ecke im Bau-Satz (dieselben Tor-Stoffe im Satz)", ["Rahmen-Glut", "Tor-Beschläge"], []],
+    ["_refreshCreatureTaskAura", "_erscheinungStoff", 1, "kreatur-verhalten.js — die Aura der Aufgabe einer Kreatur", ["Kreatur-Aura"], []],
+    ["_refreshCreatureCarryingVisual", "_erscheinungStoff", 1, "kreatur-verhalten.js — die Aura der tragenden Kreatur", ["Kreatur-Aura"], []],
+    ["_p2pBuildPlaceholderMesh", "_erscheinungStoff", 2, "netz-p2p.js — der Platzhalter eines Mitspielers (Leib, Kopf)", ["Platzhalter eines Mitspielers"], []],
+    ["_p2pBuildNameLabel", "_erscheinungStoff", 1, "netz-p2p.js — das Namensschild eines Mitspielers (Canvas-Karte)", ["Namensschild eines Mitspielers"], []],
+];
+const BELICHTUNG_TEILER = [
+    ["_erscheinung", 1, "bild-kosten.js — der EINE Mechanismus der Klasse Erscheinung: Bildwert ÷ k, vor dem Auge der Nacht"],
+    ["_nachtAuge", 1, "bild-kosten.js — das Auge der Nacht liest die LEUCHTDICHTE des vor-belichteten Bilds (L × k ÷ k) an seiner Stäbchen-Schwelle"],
+    // KORREKTUR (die Daten-Leser): seit a3663ef5f teilt die Kette dreimal, die Zeile nannte 1 — die Wand stand ROT am Kopf
+    ["_ensurePostProcessing", 3, "bild-kosten.js — das Ende der Post-Kette nimmt die Vor-Belichtung zurück (÷ k) an BEIDEN Ausgaben (aus · farbsicht), die Tonkurve des Renderers belichtet; die Differenz des lokalen Kontrasts steht in L (÷ k), sonst wüchse ihr Term mit k²"],
+    ["_rueckstrahlPass", 1, "bild-schatten.js — der Rückstrahl liest das Szenen-Ziel als Strahldichte zurück, ÷ das k seines Schreibens (kBild)"],
+    // KORREKTUR (die Daten-Leser): seit a3663ef5f liest der Spiegel zweimal zurück, die Zeile nannte 1 — die Wand stand ROT am Kopf
+    ["_spiegelPass", 2, "bild-sicht.js — der Spiegel-Pass liest das Szenen-Ziel als Strahldichte zurück, ÷ kBild: am Treffer (vier Abgriffe) und am Himmel des Bilds"],
+    ["_augenLichtStaerke", 1, "bild-himmel.js — das Licht des Auges eicht die 18-%-Karte der Höhle bei der Belichtung k auf Mittelgrau (das Auge adaptiert wie die Kamera)"],
+];
+const BELICHTUNG_TERM = /\btoneMappingExposure\b|_vorBelichtung\(\)\s*\.\s*k(?:Bild)?\b/;
+function scanErscheinungsWand(t, mitglieder = ERSCHEINUNG_MITGLIEDER, teiler = BELICHTUNG_TEILER, klasse = ERSCHEINUNG_KLASSE, rest = ERSCHEINUNG_REST) {
+    const root = path.join(__dirname, "..");
+    const gl = stammLib.glieder(t);
+    const baum = stammLib.ast(t);
+    const namen = new Set(gl.map((g) => g.name));
+    const wo = (n) => stammLib.ort(root, stammLib.zeileVon(t, n.start));
+    const text = (n) => t.slice(n.start, n.end);
+    const leer = { al: new Set(), obj: new Set() };
+    const namenVon = new Map(gl.map((g) => [g, { al: new Set(), obj: new Set() }]));
+    const nameIn = (n) => namenVon.get(stammLib.gliedAn(gl, n.start)) || leer;
+    // trägt der Knoten die Belichtung (einen Term oder einen Namen für sie)? Eine Eigenschaft `x.k` liest nur ihr Objekt.
+    const traegt = (n, A) => {
+        if (BELICHTUNG_TERM.test(text(n).replace(/\s+/g, ""))) return true;
+        let r = false;
+        const geh = (m) => {
+            if (r || !m || typeof m.type !== "string") return;
+            if (m.type === "Identifier") return void (r = A.al.has(m.name));
+            if (m.type === "MemberExpression" && !m.computed) {
+                if (m.object.type === "Identifier" && A.obj.has(m.object.name) && /^k(?:Bild)?$/.test(m.property.name)) r = true;
+                return geh(m.object);
+            }
+            if (m.type === "Property" && !m.computed) return geh(m.value);
+            stammLib.kinder(m, geh);
+        };
+        geh(n);
+        return r;
+    };
+    // ein Argument IST die Belichtung (nicht: eine Rechnung, die sie enthält)
+    const istSie = (a, A) =>
+        (a.type === "Identifier" && A.al.has(a.name)) ||
+        (a.type === "MemberExpression" && /^(?:[\w$]+\.)*toneMappingExposure$|_vorBelichtung\(\)\.k(?:Bild)?$/.test(text(a).replace(/\s+/g, ""))) ||
+        (a.type === "MemberExpression" && !a.computed && a.object.type === "Identifier" && A.obj.has(a.object.name) && /^k(?:Bild)?$/.test(a.property.name));
+    const ALIAS_ART = new Set(["MemberExpression", "ConditionalExpression", "LogicalExpression", "Identifier"]);
+    const aliase = (g, A) =>
+        stammLib.wandere(g.knoten, (n) => {
+            if (n.type !== "VariableDeclarator" || n.id.type !== "Identifier" || !n.init) return true;
+            if (/^this\._vorBelichtung\(\)$/.test(text(n.init).replace(/\s+/g, ""))) A.obj.add(n.id.name);
+            else if (ALIAS_ART.has(n.init.type) && traegt(n.init, A)) A.al.add(n.id.name);
+            return true;
+        });
+    for (const g of gl) aliase(g, namenVon.get(g));
+    // die Parameter, die ein Rufer mit der Belichtung füllt (EINE Ebene: `AnazhRealm._augenLichtStaerke(h, k)`)
+    const param = new Map();
+    stammLib.wandere(baum, (n) => {
+        if (n.type !== "CallExpression" || n.callee.type !== "MemberExpression" || n.callee.computed) return true;
+        const name = n.callee.property.name;
+        if (!namen.has(name)) return true;
+        const A = nameIn(n);
+        n.arguments.forEach((a, i) => {
+            if (!istSie(a, A)) return;
+            if (!param.has(name)) param.set(name, new Set());
+            param.get(name).add(i);
+        });
+        return true;
+    });
+    for (const g of gl) {
+        const fn = g.knoten.value;
+        if (!param.has(g.name) || !fn || !fn.params) continue;
+        for (const i of param.get(g.name)) if (fn.params[i] && fn.params[i].type === "Identifier") namenVon.get(g).al.add(fn.params[i].name);
+        aliase(g, namenVon.get(g));
+    }
+    // (a) die Bezüge der Klasse, (b) die Teiler — je Glied gezählt
+    const bezug = new Map();
+    const teilt = new Map();
+    const merke = (M, schl, n) => {
+        if (!M.has(schl)) M.set(schl, []);
+        M.get(schl).push(n);
+    };
+    stammLib.wandere(baum, (n) => {
+        const g = stammLib.gliedAn(gl, n.start);
+        const gn = g ? g.name : "(außerhalb jedes Glieds)";
+        if (n.type === "MemberExpression" && !n.computed && (n.property.name === "_erscheinung" || n.property.name === "_erscheinungStoff"))
+            merke(bezug, `${gn}|${n.property.name}`, n);
+        const A = nameIn(n);
+        const istDiv = n.type === "CallExpression" && n.callee.type === "MemberExpression" && !n.callee.computed && n.callee.property.name === "div";
+        if ((istDiv && n.arguments[0] && traegt(n.arguments[0], A)) || ((n.type === "BinaryExpression" && n.operator === "/") || (n.type === "AssignmentExpression" && n.operator === "/=")) && traegt(n.right, A))
+            merke(teilt, gn, n);
+        return true;
+    });
+    const errs = [];
+    const soll = new Map();
+    for (const [g, name, z] of mitglieder) soll.set(`${g}|${name}`, (soll.get(`${g}|${name}`) || 0) + z);
+    // (Z1) die Vereinigung der Namen ist genau die Klasse, (Z2) der Rest genau einer
+    const vereint = (i) => [...new Set(mitglieder.flatMap((m) => m[i] || []))];
+    const [namenIst, restIst] = [vereint(4), vereint(5)];
+    const fremd = namenIst.filter((n) => !klasse.includes(n));
+    const fehlend = klasse.filter((n) => !namenIst.includes(n));
+    for (const n of fremd)
+        errs.push(`Klasse Erscheinung (Z1): „${n}" an ${mitglieder.filter((m) => (m[4] || []).includes(n)).map((m) => `\`${m[0]}\` (${m[3]})`).join(" · ")} ist kein Name der Klasse — sie hat genau ${klasse.length} (${klasse.join(" · ")})`); // prettier-ignore
+    for (const n of fehlend) errs.push(`Klasse Erscheinung (Z1): „${n}" trägt keine Ruf-Stelle — die Klasse hat genau ${klasse.length} Namen beim Ruf`);
+    if (restIst.length !== rest.length || restIst.some((n) => !rest.includes(n)))
+        errs.push(`Klasse Erscheinung (Z2): der Rest ohne Gesetz ist ${restIst.length} (${restIst.join(" · ") || "keiner"}) an ${mitglieder.filter((m) => (m[5] || []).length).map((m) => `\`${m[0]}\` (${m[3]})`).join(" · ") || "keiner Stelle"} — erlaubt ist genau ${rest.length} (${rest.join(" · ")})`); // prettier-ignore
+    for (const [schl, ns] of bezug) {
+        const [g, name] = schl.split("|");
+        if (ns.length > (soll.get(schl) || 0))
+            for (const n of ns)
+                errs.push(`Klasse Erscheinung: ${wo(n)} \`${g}\` ruft \`${name}\` — ${soll.has(schl) ? `${ns.length}× (die Liste nennt ${soll.get(schl)})` : "kein Mitglied der Klasse"}: die EINE Skala gilt für alles außer ihr (ERSCHEINUNG_MITGLIEDER)`); // prettier-ignore
+    }
+    for (const [schl, z] of soll)
+        if ((bezug.get(schl) || []).length < z) errs.push(`Klasse Erscheinung: tote Zeile \`${schl.replace("|", "` → `")}\` (${(bezug.get(schl) || []).length} von ${z} Bezügen) — die Liste schrumpft mit dem Code`); // prettier-ignore
+    const erlaubt = new Map(teiler.map(([g, z]) => [g, z]));
+    for (const [g, ns] of teilt)
+        if (ns.length > (erlaubt.get(g) || 0))
+            for (const n of ns)
+                errs.push(`Belichtungs-Teiler: ${wo(n)} \`${g}\` teilt die Belichtung heraus (\`${text(n).replace(/\s+/g, " ").slice(0, 80)}\`) — ${erlaubt.has(g) ? `${ns.length}× (die Liste nennt ${erlaubt.get(g)})` : "keine erlaubte Stelle"}: Bildwerte gehen durch \`_erscheinung\` (BELICHTUNG_TEILER)`); // prettier-ignore
+    for (const [g, z] of erlaubt)
+        if ((teilt.get(g) || []).length < z) errs.push(`Belichtungs-Teiler: tote Zeile \`${g}\` (${(teilt.get(g) || []).length} von ${z} Teilern) — die Liste schrumpft mit dem Code`); // prettier-ignore
+    return errs;
+}
+
+// DIE KLASSE SCHEIN-EMISSIV (licht-eine-skala, 35f5a1013): ein Look-Term, der kein Datum einer Quelle trägt, ist RÜCKWURF des
+// Lichts am Ort, nie Emission — als Emission stand er in der EINEN Skala nachts × k (die Figur glühte ohne Quelle, der Regen
+// leuchtete weiß). (L) Die Look-Addition des Studio-Stoffs (`_foundryTreeMaterial`: `add` aus Haut-Saum, Fell-Rim, Sheen,
+// Strähnen-Glanz, samt jedem Namen für sie) geht nie an `emissiveNode`, und ein Lichtmodell liest sie (`setupLightingModel` →
+// `_saumLichtModell`). (R) Die Regen-Schliere (`_ensureRainSystem`) streut das Licht des Orts: ihr `colorNode` liest `uLicht`, und
+// der Takt (`_tickRain`) schreibt es aus der Lesung des Lichtmessers (`_belichtungE`). Gelesen am AST (Kommentare tragen keinen
+// Knoten); ein Name zählt nur als Leser, nie als Eigenschaft (`.add(` ist ein Ruf, nicht die Look-Addition).
+const SCHEIN_WAND = Object.freeze({ look: ["_foundryTreeMaterial", "add"], regen: ["_ensureRainSystem", "uLicht", "_tickRain", "_belichtungE"] });
+function scanScheinWand(t, W = SCHEIN_WAND) {
+    const root = path.join(__dirname, "..");
+    const gl = stammLib.glieder(t);
+    stammLib.ast(t);
+    const wo = (n) => stammLib.ort(root, stammLib.zeileVon(t, n.start));
+    const errs = [];
+    const glied = (name) => {
+        const g = gl.filter((x) => x.name === name);
+        if (g.length !== 1) errs.push(`Schein-Emissiv: das Glied \`${name}\` steht ${g.length}× im Stamm — die Wand zieht mit um`);
+        return g.length === 1 ? g[0] : null;
+    };
+    // liest der Knoten einen der Namen (als Wert, nie als Eigenschaft oder Schlüssel)?
+    const liest = (n, namen) => {
+        let r = false;
+        const geh = (m) => {
+            if (r || !m || typeof m.type !== "string") return;
+            if (m.type === "Identifier") return void (r = namen.has(m.name));
+            if (m.type === "MemberExpression" && !m.computed) return geh(m.object);
+            if (m.type === "Property" && !m.computed) return geh(m.value);
+            stammLib.kinder(m, geh);
+        };
+        geh(n);
+        return r;
+    };
+    const ziel = (n, eig) => n.type === "AssignmentExpression" && n.left.type === "MemberExpression" && !n.left.computed && n.left.property.name === eig;
+    // (L) die Look-Addition
+    const gL = glied(W.look[0]);
+    if (gL) {
+        const namen = new Set([W.look[1]]);
+        for (let neu = true; neu; ) {
+            neu = false;
+            stammLib.wandere(gL.knoten, (n) => {
+                // ein Name FÜR sie (nie die Funktion, die sie schreibt: `term`)
+                if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && !/Function/.test(n.init.type) && !namen.has(n.id.name) && liest(n.init, namen)) {
+                    namen.add(n.id.name);
+                    neu = true;
+                }
+                return true;
+            });
+        }
+        let gelesen = false;
+        stammLib.wandere(gL.knoten, (n) => {
+            if (ziel(n, "emissiveNode") && liest(n.right, namen))
+                errs.push(`Schein-Emissiv: ${wo(n)} \`${W.look[0]}\` setzt die Look-Addition (${[...namen].join(" · ")}) wieder als \`emissiveNode\` — der Saum ist Rückwurf des Lichts am Ort (\`_saumLichtModell\`), nie Emission: in der EINEN Skala glüht die Figur nachts × k`); // prettier-ignore
+            if (ziel(n, "setupLightingModel") && liest(n.right, namen)) gelesen = true;
+            return true;
+        });
+        if (!gelesen)
+            errs.push(`Schein-Emissiv: \`${W.look[0]}\` (${wo(gL.knoten)}) reicht die Look-Addition (${[...namen].join(" · ")}) keinem Lichtmodell — kein \`setupLightingModel\` liest sie (\`_saumLichtModell\`): Haut-Saum, Fell-Rim und Strähnen-Glanz fallen still`); // prettier-ignore
+    }
+    // (R) die Regen-Schliere
+    const [bau, u, takt, messer] = W.regen;
+    const gR = glied(bau);
+    if (gR) {
+        let farbe = false;
+        stammLib.wandere(gR.knoten, (n) => {
+            if (ziel(n, "colorNode") && liest(n.right, new Set([u]))) farbe = true;
+            return true;
+        });
+        if (!farbe)
+            errs.push(`Schein-Emissiv: \`${bau}\` (${wo(gR.knoten)}) — die Regen-Schliere ohne Licht-Leser: ihr \`colorNode\` liest \`${u}\` nicht, sie zeichnet ihren Ton als Konstante (nachts × k ein weißer Regen)`); // prettier-ignore
+    }
+    const gT = glied(takt);
+    if (gT) {
+        let schreibt = false;
+        let misst = false;
+        const quelle = t.slice(gT.start, gT.ende);
+        stammLib.wandere(gT.knoten, (n) => {
+            if (n.type === "CallExpression" && t.slice(n.callee.start, n.callee.end).replace(/\s+/g, "").endsWith(`.${u}.value.set`)) schreibt = true; // prettier-ignore
+            if (n.type === "MemberExpression" && !n.computed && n.property.name === messer) misst = true;
+            return true;
+        });
+        if (!(schreibt && misst && quelle.includes(u)))
+            errs.push(`Schein-Emissiv: \`${takt}\` (${wo(gT.knoten)}) — die Regen-Schliere ohne Licht-Leser: der Takt schreibt \`${u}\` nicht aus der Lesung des Lichtmessers (\`${messer}\`)`); // prettier-ignore
     }
     return errs;
 }
@@ -3635,7 +3880,7 @@ function main() {
         const mulde = "tarns.push({ x, z, reach2: r * r, twoSig2: 2 * s * s });";
         // K16b: das Schicht-Verfahren im Makro-Worker des Studios, das Raster im Panel und in der Linse
         const schicht = "maske[k] = G.grossform(L, x, z).stil >= 0.8 ? 1 : 0;";
-        const LAMBERT_ZEILE = '"return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)), pT.a);"';
+        const LAMBERT_ZEILE = '"return vec4<f32>(pT.rgb * (l0c * max(l0d.y, 0.0) * (1.0 / PI)), pT.a);"';
         const zwillingFeuert =
             feuert("worlds/gelaende/makro-worker.js", schicht, "Schicht-Ort der Messung") &&
             feuert("worlds/gelaende/studio.js", "const k = cv.width / (268 * 30);", "Mess-Raster der Statistik") &&
@@ -3663,6 +3908,63 @@ function main() {
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);
+        // Die Wand der Klasse Erscheinung muss feuern — je Mutante am Text des Stamms (im Speicher) beim NAMEN des Glieds:
+        // ein Rufer `_erscheinung` in einem fremden Glied · ein `farbe.div(this._vorBelichtung().k)` in einem fremden Glied ·
+        // derselbe Teiler über einen Namen (`1 / kk`); ein Kommentar mit beiden bleibt still, eine Zeile ohne Bezug ist tot.
+        const anker = "const Lf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;";
+        const amLicht = (zeilen) => stammLib.ersetze(stamm, "_flammenLicht", anker, anker + zeilen);
+        const erscheinung = {
+            heute: scanErscheinungsWand(stamm),
+            rufer: scanErscheinungsWand(stammLib.ersetze(stamm, "_leuchtStaerke", "const L = q.L;", "const L = q.L;\n        this._erscheinung(x);")),
+            teiler: scanErscheinungsWand(amLicht("\n        farbe.div(this._vorBelichtung().k);")),
+            name: scanErscheinungsWand(amLicht("\n        const kk = this.state.renderer.toneMappingExposure;\n        const w = 1 / kk;")),
+            kommentar: scanErscheinungsWand(amLicht("\n        // this._erscheinung(x); farbe.div(this._vorBelichtung().k)")),
+            tot: scanErscheinungsWand(stamm, ERSCHEINUNG_MITGLIEDER.concat([["_gibtEsNicht", "_erscheinung", 1, "Selbsttest"]])),
+            // (Z1) ein zehnter Name an einer Stelle · (Z2) ein zweiter Rest ohne Gesetz
+            zehnter: scanErscheinungsWand(stamm, ERSCHEINUNG_MITGLIEDER.map((m) => (m[0] === "_membranGraph" ? [...m.slice(0, 4), [...m[4], "Laternen-Kopf"], m[5]] : m))), // prettier-ignore
+            zweiterRest: scanErscheinungsWand(stamm, ERSCHEINUNG_MITGLIEDER.map((m) => (m[3].includes("Bau-Satz") ? [...m.slice(0, 5), ["Funken"]] : m))), // prettier-ignore
+        };
+        const einer = (e, rx) => e.length === 1 && rx.test(e[0]);
+        const erscheinungFeuert =
+            erscheinung.heute.length === 0 &&
+            einer(erscheinung.rufer, /^Klasse Erscheinung: stamm\/dirigent-kern\.js:\d+ `_leuchtStaerke` ruft `_erscheinung` — kein Mitglied/) &&
+            einer(erscheinung.teiler, /^Belichtungs-Teiler: stamm\/dirigent-kern\.js:\d+ `_flammenLicht` teilt die Belichtung heraus \(`farbe\.div\(this\._vorBelichtung\(\)\.k\)`\)/) &&
+            einer(erscheinung.name, /^Belichtungs-Teiler: stamm\/dirigent-kern\.js:\d+ `_flammenLicht` teilt die Belichtung heraus \(`1 \/ kk`\)/) &&
+            erscheinung.kommentar.length === 0 &&
+            einer(erscheinung.tot, /tote Zeile `_gibtEsNicht` → `_erscheinung`/) &&
+            einer(erscheinung.zehnter, /^Klasse Erscheinung \(Z1\): „Laternen-Kopf" an `_membranGraph`/) &&
+            einer(erscheinung.zweiterRest, /^Klasse Erscheinung \(Z2\): der Rest ohne Gesetz ist 2 \(Tierauge · Funken\)/);
+        console.log(
+            erscheinungFeuert
+                ? `✅ SELBST-TEST: die Wand der Klasse Erscheinung feuert (fremder Rufer · fremder Teiler · Teiler über einen Namen · tote Zeile · zehnter Name · zweiter Rest, je beim Glied; der Kommentar still; heute 0: Erscheinung ${ERSCHEINUNG_KLASSE.length} Namen · Rest ohne Gesetz ${ERSCHEINUNG_REST.length} (${ERSCHEINUNG_REST.join(", ")}) · ${BELICHTUNG_TEILER.length} Belichtungs-Teiler) — ${erscheinung.rufer[0]} · ${erscheinung.teiler[0]} · ${erscheinung.zehnter[0]} · ${erscheinung.zweiterRest[0]}`
+                : `❌ SELBST-TEST: die Wand der Klasse Erscheinung feuert nicht — ${JSON.stringify(erscheinung).slice(0, 900)}`
+        );
+        if (!erscheinungFeuert) process.exit(1);
+        // Die Wand der Klasse Schein-Emissiv muss feuern — je Mutante beim NAMEN des Glieds: die Look-Addition wieder als
+        // `emissiveNode` (über ihren Namen `saum`) · kein Lichtmodell liest sie · die Schliere ohne `uLicht` im colorNode · der Takt
+        // ohne die Lesung des Lichtmessers; derselbe Satz im Kommentar bleibt still.
+        const lichtModell = "return AnazhRealm._saumLichtModell(eigen.call(this, builder), saum);";
+        const schein = {
+            heute: scanScheinWand(stamm),
+            emissiv: scanScheinWand(stammLib.ersetze(stamm, "_foundryTreeMaterial", lichtModell, "mat.emissiveNode = saum;\n " + lichtModell)),
+            ohneModell: scanScheinWand(stammLib.ersetze(stamm, "_foundryTreeMaterial", lichtModell, "return AnazhRealm._saumLichtModell(eigen.call(this, builder), null);")),
+            schliere: scanScheinWand(stammLib.ersetze(stamm, "_ensureRainSystem", "T.materialColor.mul(uLicht).mul(1 / Math.PI)", "T.materialColor")),
+            takt: scanScheinWand(stammLib.ersetze(stamm, "_tickRain", "if (E) sys.uLicht.value.set(E[0], E[1], E[2]);", "")),
+            kommentar: scanScheinWand(stammLib.ersetze(stamm, "_foundryTreeMaterial", lichtModell, lichtModell + "\n // mat.emissiveNode = saum;")),
+        };
+        const scheinFeuert =
+            schein.heute.length === 0 &&
+            einer(schein.emissiv, /^Schein-Emissiv: stamm\/studio-stoff\.js:\d+ `_foundryTreeMaterial` setzt die Look-Addition \(add · saum\) wieder als `emissiveNode`/) &&
+            einer(schein.ohneModell, /^Schein-Emissiv: `_foundryTreeMaterial` \(stamm\/studio-stoff\.js:\d+\) reicht die Look-Addition .* keinem Lichtmodell/) &&
+            einer(schein.schliere, /^Schein-Emissiv: `_ensureRainSystem` \(stamm\/bild-himmel\.js:\d+\) — die Regen-Schliere ohne Licht-Leser: ihr `colorNode` liest `uLicht` nicht/) &&
+            einer(schein.takt, /^Schein-Emissiv: `_tickRain` \(stamm\/bild-himmel\.js:\d+\) — die Regen-Schliere ohne Licht-Leser: der Takt schreibt `uLicht` nicht/) &&
+            schein.kommentar.length === 0;
+        console.log(
+            scheinFeuert
+                ? `✅ SELBST-TEST: die Wand der Klasse Schein-Emissiv feuert (Look-Addition als Emission · ohne Lichtmodell · Schliere ohne uLicht · Takt ohne Lichtmesser, je beim Glied; der Kommentar still; heute 0) — ${schein.emissiv[0]} · ${schein.schliere[0]}`
+                : `❌ SELBST-TEST: die Wand der Klasse Schein-Emissiv feuert nicht — ${JSON.stringify(schein).slice(0, 900)}`
+        );
+        if (!scheinFeuert) process.exit(1);
         // Die Stamm-Leser-Wand muss feuern: ein kanonischer Leser am Namen vorbei, ein Server-Patcher am Pfad und ein
         // Stapel-Leser ohne die Zonen-Dateien in einer Kopie — je beim Namen samt Zeile; Kommentar und Meldung bleiben still.
         const leserDatei = "scripts/diag-stamm-leser-probe.cjs";
@@ -3702,6 +4004,8 @@ function main() {
         .concat(scanEntsorgungsWand(stammLib.text(root)))
         .concat(scanKartenWand(stammLib.text(root)))
         .concat(scanAbsenzErbe(stammLib.text(root)))
+        .concat(scanErscheinungsWand(stammLib.text(root)))
+        .concat(scanScheinWand(stammLib.text(root)))
         .concat(scanNormalWand(stammLib.text(root)))
         .concat(scanStoffWand(stammLib.text(root)))
         .concat(toteMarker(markerDateien(root)))
@@ -3720,7 +4024,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau, keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, keine Probe setzt Spieler, Kamera oder Tier an ein Zahlen-Literal ohne BÜHNE, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup), der Name der Stamm-Datei steht als Lese-Ziel nur in scripts/lib/stamm.cjs (${stammLeserDateien(root).length} Dateien gesehen).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, Erscheinung ${ERSCHEINUNG_KLASSE.length} Namen · Rest ohne Gesetz ${ERSCHEINUNG_REST.length} (${ERSCHEINUNG_REST.join(", ")}) · ${BELICHTUNG_TEILER.length} Belichtungs-Teiler (je Ruf-Stelle beim Glied), kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau, keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, keine Probe setzt Spieler, Kamera oder Tier an ein Zahlen-Literal ohne BÜHNE, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup), der Name der Stamm-Datei steht als Lese-Ziel nur in scripts/lib/stamm.cjs (${stammLeserDateien(root).length} Dateien gesehen).`
     );
 }
 

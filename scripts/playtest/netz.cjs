@@ -1570,7 +1570,7 @@ async function checkBandPhiArchipel({ page, check }) {
         delete st.blueprints["phi_test_portal"];
 
         // (P8) Visibility-Setter wirkt + gelistet ruft die Lobby-BRIDGE (am Ruf). Den echten Round-Trip
-        // deckt smoke-multiuser; headless returnt publishToLobby früh {ok:false, reason:"not_connected"}.
+        // misst der Richter von erleben.spieler.gemeinsam S 1 (smoke-multiuser fiel 19.11. ohne Leser); headless returnt publishToLobby früh {ok:false, reason:"not_connected"}.
         const visBefore = st.worldMeta.visibility;
         r.setWorldVisibility("gelistet");
         out.visGelistet = st.worldMeta.visibility === "gelistet";
@@ -1641,7 +1641,7 @@ async function checkBandPhiArchipel({ page, check }) {
         res.portalSetOk && res.portalCarriesAddress && res.portalSigPreserved && res.portalClearOk
     );
     check(
-        "Φ2 (P8): setWorldVisibility wirkt (gelistet · privat) + gelistet ruft die Lobby-BRIDGE publishToLobby — der echte Connected-Trip lebt im smoke-multiuser",
+        "Φ2 (P8): setWorldVisibility wirkt (gelistet · privat) + gelistet ruft die Lobby-BRIDGE publishToLobby — der echte Connected-Trip ist der Richter von erleben.spieler.gemeinsam S 1",
         res.visGelistet && res.visPrivat && res.lobbyBridgePublishes
     );
     check(
@@ -1739,8 +1739,8 @@ async function checkBandPhiArchipelV2({ page, check }) {
         out.presenceUnknownNull = r.worldPresence("never-polled") === null;
 
         // (Q11) _p2pMsgWorldPresence schreibt in den Cache (manuelle Injektion —
-        // im Headless rennt kein echter Broker; smoke-multiuser deckt den
-        // End-to-End-Trip).
+        // im Headless rennt kein echter Broker; den
+        // End-to-End-Trip misst der Richter von erleben.spieler.gemeinsam S 1).
         r._p2pMsgWorldPresence(
             {
                 worldId: "welt-test",
