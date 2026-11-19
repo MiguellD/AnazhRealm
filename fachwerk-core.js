@@ -2822,7 +2822,7 @@
       [[P(u-rw,y0,d0),P(u-rw,y1,d0),P(u-rw,y1,d1),P(u-rw,y0,d1)],uR.map(c=>-c)], [[P(u+rw,y0,d0),P(u+rw,y1,d0),P(u+rw,y1,d1),P(u+rw,y0,d1)],uR]], rahmenM, rahmenF);
     const pw=Math.max(0.1,o.w/2-SCHEIBE_RAND), ph=Math.max(0.1,o.h/2-SCHEIBE_RAND), scheibe=(d)=>[[P(u-pw,o.cy-ph,d),P(u+pw,o.cy-ph,d),P(u+pw,o.cy+ph,d),P(u-pw,o.cy+ph,d)],aus];
     if(schlaf) teile([scheibe(d1+0.01)], M.putz, schlafF);
-    else { teile([scheibe(d1+0.01)], M.putz, innen); teile([scheibe(d1+0.02)], M.glas, eins); }
+    else { teile([scheibe(d1+0.01)], M.putz, innen); if(Math.sign(z?o.cz:o.cx)!==s) teile([scheibe(d1+0.02)], M.glas, eins); }   // DAS GLAS STEHT IM FLÜGEL, NICHT IN DER ÖFFNUNG (licht-eine-skala): schwenkt der Flügel aus (unten, wie an der L0: fensterAt dreht jeden um 0,62 rad), ist die Öffnung leer — man sieht den Raum; bis hier glühte dort eine zweite Scheibe (gate:haus-fern G: Glut L2/L0 1,274)
     const k=d1+0.03, q=(ua,ub,ya,yb)=>[[P(ua,ya,k),P(ub,ya,k),P(ub,yb,k),P(ua,yb,k)],aus];   // das Kreuz: der Pfosten durchgehend, der Kämpfer links und rechts von ihm
     teile([q(u-KREUZ,u+KREUZ,o.cy-ph,o.cy+ph), q(u-pw,u-KREUZ,o.cy-KREUZ,o.cy+KREUZ), q(u+KREUZ,u+pw,o.cy-KREUZ,o.cy+KREUZ)], rahmenM, rahmenF);
     if(Math.sign(z?o.cz:o.cx)!==s) continue;   // der Flügel der L0 dreht nach dem Vorzeichen seiner Lage: zeigt die Wand dagegen, schlägt er in den Körper
