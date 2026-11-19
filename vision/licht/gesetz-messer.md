@@ -181,3 +181,27 @@ Schatten-Funktion, dieselbe Maske, dieselben Körper) · M3 die Klasse der eigen
 · M6 die Stichprobe ist die FLÄCHE der unteren Bildhälfte · die Linse tastet jeden reißenden Schritt 0,01 im Feinschritt nach.
 Zurückgezogen beim Namen: M2' („dieselbe Normale“), M5 (Zeitkonstante), M7 (Kuppel), „der Himmel ist ein Zwilling“, „der Messer
 liest, was im Blick LEUCHTET“.
+
+## ASYNC — Entscheid des Koordinators VOR dem Bau (19.11., nach der Vor-Probe des Schneiders)
+
+Befund der Vor-Probe: die Linse tastet `sofort` direkt nach `setTimeOfDay`, VOR jedem Frame (`scripts/lib/licht-linsen.cjs:1102`,
+geurteilt :1204, Schwelle 0,05 EV). M2 macht das unmöglich, und zwar aus dem Bau, nicht aus der Faulheit: die Schattenkarte der neuen
+Uhr gibt es erst, wenn der erste Frame an der neuen Uhr gezeichnet ist; die Lesung kommt 1–2 Frames danach. Ein Messer, der liest,
+was das Bild zeichnet, kann dem Bild nicht vorausgehen. Gerechnet: Wiese Uhr 0,27, wörtlicher `sofort`-Wert 0,2–0,3 EV.
+
+Entscheid:
+- **Der Zweck von ASYNC bleibt** (Belichtung und Licht aus DERSELBEN Uhr, kein nachhinkender Schreiber). Die Schwelle 0,05 EV bleibt.
+- **Der Tast-Punkt wandert**: ASYNC urteilt am ersten Frame NACH der Lesung der neuen Uhr gegen das eingeschwungene Bild.
+- **Neue Schranke (B9): Frames von `setTimeOfDay` bis zur Lesung ≤ 3.** Reißt sie, ist ASYNC ROT, gleich wie klein der Wert ist.
+- **Der wörtliche `sofort`-Wert bleibt als Zahl in der TAG-Zeile** (nicht geurteilt) — damit niemand den alten Richter für still
+  gefallen hält.
+- **Kein Zwilling:** kein synchroner Ersatz-Messer für den Sprung. Ohne Lesung gilt die letzte Lesung; ganz ohne (erster Frame der
+  Welt, Null-Renderer, Kienspan) Sicht 1.
+- **B10, im Spiel:** jeder Rufer eines Uhr-SPRUNGS (Ankunft, Stand laden, Schlaf/Zeitsprung, Schöpfer-Regler) steht mit Datei:Zeile
+  in der Abgabe, mit dem Satz, ob ein Vorhang ihn deckt. An der Ankunft und beim Laden hebt der Vorhang erst NACH der Lesung
+  (Ankunft B darf dadurch nicht messbar wachsen: ≤ 3 Frames). Der fließende Tag ist kein Sprung: 3 Frames Verzug sind dort
+  < 0,001 EV.
+- **Mutant der Linse:** Lesung um 8 Frames verzögert → ASYNC ROT. Zweiter Mutant: der Himmel des Messers eine Uhr hinterher → ROT.
+
+Vorhersage (vor dem Bau): Frames bis zur Lesung 2–3 · wörtlich `sofort` an der Wiese Uhr 0,27: 0,2–0,3 EV, am Mittag < 0,05 ·
+ASYNC am neuen Tast-Punkt ≤ 0,02.
