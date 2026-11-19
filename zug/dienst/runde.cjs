@@ -16,7 +16,7 @@
 //   lies <repo> <geraet>                    → "<n> <kopf40> <vorher40|-> <zustand> <liste>" oder "-" (keine Runde)
 //   anlegen <repo> <kopf40>                 die erste Runde aus dem Bestand (nur, wenn die Datei keine traegt)
 //   stand <repo> <geraet> <kopf40> <zustand> [--erledigt n] [--gesamt n] [--station id] [--liste L]   die eigene Zeile
-//   durch <repo> <geraet> <kopf40> <main40>  die eigene Liste ist durch; sind alle durch und main weiter: die naechste Runde
+//   durch <repo> <geraet> <kopf40> <main40> [--erledigt n]  die eigene Liste ist durch; sind alle durch und main weiter: die naechste Runde
 //   weiter <repo> <main40>                  sind alle durch und main weiter als der Kopf: die naechste Runde
 //   alarm <repo> <melder>                   jedes Geraet > RUNDE_ALARM_MIN ohne Fortschritt: Feld alarm + EINE Zeile zug/erledigt.txt
 //   reihe <messung-dir> <geraet> <liste>    → "<ungebucht,..>|<gebucht gruen,..>" (stderr: die Reihe mit Grund)
@@ -180,6 +180,7 @@ if (was === "lies") {
             if (r.runde.kopf !== kopf) { anders = true; return false; }
             const e = r.g[g] || leer(r.runde.start);
             if (e.zustand !== "durch") { e.zustand = "durch"; e.station = "-"; e.fortschritt = iso(jetzt()); e.alarm = "-"; r.g[g] = e; neu = true; }
+            if (opt("erledigt") !== null && e.erledigt !== Number(opt("erledigt"))) { e.erledigt = Number(opt("erledigt")); neu = true; } // der Endstand: was am Kopf einen Eintrag trägt
         }
         if (alleDurch(r) && /^[0-9a-f]{40}$/.test(String(main)) && main !== r.runde.kopf) { oeffne(r, main); neu = true; }
         return neu ? {} : false;
