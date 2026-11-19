@@ -24,7 +24,7 @@
   "haeuser": [
    {
     "typ": "haus_provenzalisch",
-    "id": 1076,
+    "id": 19675,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -53,7 +53,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1077,
+    "id": 19676,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -82,7 +82,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1078,
+    "id": 19677,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -111,7 +111,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1079,
+    "id": 19678,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -140,7 +140,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1081,
+    "id": 19680,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -169,7 +169,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1082,
+    "id": 19681,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -198,7 +198,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1083,
+    "id": 19682,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -227,7 +227,7 @@
    },
    {
     "typ": "haus_barock",
-    "id": 1087,
+    "id": 19686,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -267,7 +267,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1091,
+    "id": 19690,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -296,7 +296,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1093,
+    "id": 19692,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -325,7 +325,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1095,
+    "id": 19694,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -354,7 +354,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1097,
+    "id": 19696,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -383,7 +383,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1099,
+    "id": 19698,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -423,7 +423,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1123,
+    "id": 19722,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -452,7 +452,7 @@
    },
    {
     "typ": "haus_gotisch",
-    "id": 1124,
+    "id": 19723,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -481,7 +481,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1125,
+    "id": 19724,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -510,7 +510,7 @@
    },
    {
     "typ": "haus_gotisch",
-    "id": 1126,
+    "id": 19725,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -539,7 +539,7 @@
    },
    {
     "typ": "haus_gotisch",
-    "id": 1128,
+    "id": 19727,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -579,7 +579,7 @@
    },
    {
     "typ": "haus_gotisch",
-    "id": 1142,
+    "id": 19741,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -608,7 +608,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1150,
+    "id": 19749,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -637,7 +637,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1156,
+    "id": 19755,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -677,7 +677,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1159,
+    "id": 19758,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -706,7 +706,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1160,
+    "id": 19759,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -735,7 +735,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1163,
+    "id": 19762,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -775,7 +775,7 @@
    },
    {
     "typ": "haus_italienisch",
-    "id": 1164,
+    "id": 19763,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -804,7 +804,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1166,
+    "id": 19765,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -844,7 +844,7 @@
    },
    {
     "typ": "haus_provenzalisch",
-    "id": 1167,
+    "id": 19766,
     "start": false,
     "spieler": false,
     "sc": 1,
@@ -873,7 +873,7 @@
    },
    {
     "typ": "haus_gotisch",
-    "id": 1243,
+    "id": 19842,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -924,7 +924,7 @@
    },
    {
     "typ": "haus_alpenchalet",
-    "id": 1255,
+    "id": 19854,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -964,7 +964,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1241,
+    "id": 19840,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -993,7 +993,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1268,
+    "id": 19867,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1022,7 +1022,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1257,
+    "id": 19856,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1062,7 +1062,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1266,
+    "id": 19865,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1091,7 +1091,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1269,
+    "id": 19868,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1120,7 +1120,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1263,
+    "id": 19862,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1160,7 +1160,7 @@
    },
    {
     "typ": "haus_alpenchalet",
-    "id": 1260,
+    "id": 19859,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1189,7 +1189,7 @@
    },
    {
     "typ": "haus_alpenchalet",
-    "id": 1265,
+    "id": 19864,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1229,7 +1229,7 @@
    },
    {
     "typ": "haus_alpenchalet",
-    "id": 1252,
+    "id": 19851,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1258,7 +1258,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1272,
+    "id": 19871,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1287,7 +1287,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1247,
+    "id": 19846,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1316,7 +1316,7 @@
    },
    {
     "typ": "haus_schwarzwald",
-    "id": 1270,
+    "id": 19869,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1345,7 +1345,7 @@
    },
    {
     "typ": "haus_skandinavisch",
-    "id": 1250,
+    "id": 19849,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1374,7 +1374,7 @@
    },
    {
     "typ": "haus_alpenchalet",
-    "id": 1245,
+    "id": 19844,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1414,7 +1414,7 @@
    },
    {
     "typ": "haus_skandinavisch",
-    "id": 1254,
+    "id": 19853,
     "start": true,
     "spieler": false,
     "sc": 1,
@@ -1491,7 +1491,7 @@
      "innen": 0,
      "png": null
     },
-    "gegenprobe": 20484
+    "gegenprobe": 20583
    }
   ],
   "suche": {
@@ -1524,19 +1524,19 @@
     "blicke": [
      {
       "sicht": "ego",
-      "spiegel": 0,
-      "halm": 0,
-      "boden": 0,
-      "gegen": 13247,
+      "spiegel": 58971,
+      "halm": 1116,
+      "boden": 18641,
+      "gegen": 12069,
       "innen": 0,
       "png": "wasser-see-ego"
      },
      {
       "sicht": "third",
-      "spiegel": 0,
-      "halm": 0,
-      "boden": 0,
-      "gegen": 27542,
+      "spiegel": 35374,
+      "halm": 680,
+      "boden": 5920,
+      "gegen": 27001,
       "innen": 0,
       "png": "wasser-see-third"
      }
@@ -1551,19 +1551,19 @@
     "blicke": [
      {
       "sicht": "ego",
-      "spiegel": 0,
-      "halm": 0,
-      "boden": 0,
-      "gegen": 15901,
+      "spiegel": 88328,
+      "halm": 157,
+      "boden": 87636,
+      "gegen": 15878,
       "innen": 0,
       "png": "wasser-fluss-ego"
      },
      {
       "sicht": "third",
-      "spiegel": 0,
-      "halm": 0,
-      "boden": 0,
-      "gegen": 42668,
+      "spiegel": 36942,
+      "halm": 667,
+      "boden": 36101,
+      "gegen": 41927,
       "innen": 0,
       "png": "wasser-fluss-third"
      }
@@ -1616,7 +1616,7 @@
    "zugOffen": false,
    "ausstattung": null,
    "verblasst": false,
-   "ms": 6
+   "ms": 2
   }
  },
  "werkstatt": false,
