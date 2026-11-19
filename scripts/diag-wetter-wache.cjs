@@ -282,7 +282,8 @@ function kalenderProbe(o) {
     const lauf = K.pegelLauf;
     const spion = { value: (...a) => ((arg = { t: a[2], tagS: a[3] }), lauf.apply(K, a)) };
     globalThis.__gelaendeCore = Object.create(K, { pegelLauf: spion });
-    const [tag0, jeTag] = [st.dayLengthMinutes, AnazhRealm.WELT_GESETZ_ERDE.kalender.jahreJeTag];
+    const [tag0, jahr0, jeTag] = [st.dayLengthMinutes, st.autoSeason, AnazhRealm.WELT_GESETZ_ERDE.kalender.jahreJeTag];
+    st.autoSeason = true; // das Jahr des Spiels läuft (die Aufnahme hält es beim Boot an, `saisonFest`)
     const lies = () => {
         r._pegelStand = null;
         r._pegelTafel();
@@ -316,7 +317,7 @@ function kalenderProbe(o) {
         }
     } finally {
         globalThis.__gelaendeCore = K;
-        st.dayLengthMinutes = tag0;
+        [st.dayLengthMinutes, st.autoSeason] = [tag0, jahr0];
     }
     return je;
 }
