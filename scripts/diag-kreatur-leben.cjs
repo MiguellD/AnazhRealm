@@ -1931,16 +1931,20 @@ function bestandTreiber(T, L, gesetz) {
     // DIE WELT VON LAUF 4 — das Feld des Spikes als Leser: 16 Zellen je Revier, 9 von 16 tragen Äsung 0,2–0,42 (Wiese), darüber
     // das Leben-Overlay des Felds (Halbwert 8,66 Takte); vor dem Schritt zerfällt es und K liest die Äsung (takt), nach dem
     // Schritt äst die Herde den Fraß des Kerns hinein (aesen). Dieselbe Welt für jede Saat.
-    function welt(W, H, von) {
+    // `quelle` (B4, `--bestand-welt`): das Feld einer ECHTEN Welt statt des Spike-Felds — je Revier die Zellen mit Lebensraum (C),
+    // ihr Substrat (S) und ihr Lebensraum je Zelle (LR); ohne `quelle` rechnet jede Zeile wie zuvor (Lauf 4 zahlengleich).
+    function welt(W, H, von, quelle) {
         const [n, Z, HA] = [W * H, 16, (SEITE / 4) ** 2 / 1e4];
         const FELD = { decayPerSec: 0.008, kahl: -1, max: 0.7, epsilon: 0.004 };
         const LR = T.lebensraum("deer", "wiese", T.LEBENSRAUM_GESETZ);
         const aesVon = (s, o) => Math.min(1, Math.max(0, s + o));
-        const kZelle = (aes) => LR * HA * T.bestandNahrung(DIET.deer, aes, 0);
-        const [C, S] = von ? [von.C, von.S] : [new Uint8Array(n), new Float64Array(n * Z)];
+        const LRz = von ? von.LRz : quelle ? quelle.LR : null;
+        const lrVon = LRz ? (j) => LRz[j] : () => LR;
+        const kZelle = (aes, lr) => lr * HA * T.bestandNahrung(DIET.deer, aes, 0);
+        const [C, S] = von ? [von.C, von.S] : quelle ? [quelle.C, quelle.S] : [new Uint8Array(n), new Float64Array(n * Z)];
         const O = von ? von.O.slice() : new Float64Array(n * Z);
         const [Kap, je] = [new Float64Array(n), new Float64Array(Z)];
-        if (!von) {
+        if (!von && !quelle) {
             const fr = L.strom(1, 0, 9, W * 1000 + H);
             for (let i = 0; i < n; i++) {
                 let c = 0;
@@ -1956,6 +1960,7 @@ function bestandTreiber(T, L, gesetz) {
             C,
             S,
             O,
+            LRz,
             land: (i) => C[i] > 0,
             futter: (i) => Kap[i],
             takt() {
@@ -1966,7 +1971,7 @@ function bestandTreiber(T, L, gesetz) {
                         let o = O[b + c] * zerfall;
                         if (Math.abs(o) < FELD.epsilon) o = 0;
                         O[b + c] = o;
-                        summe += kZelle(aesVon(S[b + c], o));
+                        summe += kZelle(aesVon(S[b + c], o), lrVon(b + c));
                     }
                     Kap[i] = B.kopfJeHa * summe;
                 }
@@ -1976,7 +1981,7 @@ function bestandTreiber(T, L, gesetz) {
                     const [F, b] = [frass[i], i * Z];
                     if (!(F > 0)) continue;
                     let jeSumme = 0;
-                    for (let c = 0; c < C[i]; c++) jeSumme += je[c] = LR * aesVon(S[b + c], O[b + c]);
+                    for (let c = 0; c < C[i]; c++) jeSumme += je[c] = lrVon(b + c) * aesVon(S[b + c], O[b + c]);
                     if (jeSumme > 0)
                         for (let c = 0; c < C[i]; c++)
                             if (je[c] > 0) O[b + c] = Math.max(FELD.kahl, Math.min(FELD.max, O[b + c] - (F * je[c]) / jeSumme));
@@ -2022,6 +2027,133 @@ function bestandUrteil(L, gesetz) {
             if (ist[f].join(" ") !== soll[f].join(" ")) fehl.push("Saat " + saat + " " + f + ": Kern " + ist[f].join(" ") + " ≠ Vorlage " + soll[f].join(" "));
     }
     return fehl.join(" · ");
+}
+// B4 — DIE WELT-BINDUNG (`--bestand-welt [--aus <datei>]`): derselbe Lauf wie der Gesetz-Beweis (48 × 48 Reviere, 40 Jahre, Saaten
+// 1–4), aber land und futter kommen vom ECHTEN Äsungs-Leser der Heimat um den Start-Anker — eine Seite ohne GPU liest je Revier
+// ihre 16 Zellen wie `_bestandFeld` (Boden-Klasse `_bodenKlasseAt` über stehender Hydro-Wahrheit, Substrat `_kreaturNahrung` bei
+// leerem Leben-Feld), K je Revier ist die Formel des Stamms für das Rotwild. Kein Maßstabs-Faktor. Soll (vor der Rechnung):
+// W1 Wolf lebt am Ende 4 von 4 · W2 2–8 Wölfe je 1 000 Beute · W3 180–390 WÄ je Wolf (Mittel der zweiten Hälfte, wie S2 und S15).
+if (process.argv.includes("--bestand-welt")) {
+    const fs = require("fs");
+    const { statikServer, nullWelt, hauptLauf, argOpt } = require("./lib/welt-boot.cjs");
+    const { K, TJ, welt, zaehl } = bestandTreiber(core, LK);
+    const [W, JAHRE, SAATEN] = [48, 40, [1, 2, 3, 4]];
+    const TAKTE = Math.round(JAHRE * TJ);
+    const rund = (x, d = 2) => (Number.isFinite(x) ? +x.toFixed(d) : x);
+    hauptLauf(async () => {
+        const server = statikServer();
+        const port = Number(process.env.KREATUR_TAKT_PORT || 4478);
+        const { browser, page } = await nullWelt(server, { port, frist: 3600000 }, 120000, "index.html", "networkidle0");
+        page.setDefaultTimeout(3500000);
+        let F;
+        try {
+            await page.evaluate(() => window.__weltDa((r) => r.state.voxelWorkerReady && r.state.playerMesh));
+            F = await page.evaluate(async (N) => {
+                const [s, A] = [r.state, r.constructor];
+                const [S, zn, LG] = [r._bestandSeite(), A.BESTAND_REGION.zellen, A._lebensraumGesetz()];
+                const p = s.playerMesh.position;
+                const [x0, z0] = [Math.floor(p.x / S) - N / 2, Math.floor(p.z / S) - N / 2];
+                // die stehende Hydro-Wahrheit über dem ganzen Gau (`_bestandBereit` bestellt die fehlenden Kacheln im Faden)
+                const t0 = performance.now();
+                for (let fehlt = 1; fehlt > 0; ) {
+                    fehlt = 0;
+                    for (let i = 0; i < N * N; i++) if (!r._bestandBereit(x0 + (i % N) + "," + (z0 + Math.floor(i / N)))) fehlt++;
+                    if (fehlt && performance.now() - t0 > 1500000) throw new Error("B4: " + fehlt + " Regionen ohne Hydro-Wahrheit nach 25 min");
+                    if (fehlt) await new Promise((q) => setTimeout(q, 500));
+                }
+                const hydroS = (performance.now() - t0) / 1000;
+                s.lifeField = undefined; // das Substrat: die Äsung ohne das Overlay dieser Sitzung
+                const [C, Sub, LR, klassen, wolfZellen] = [[], [], [], {}, []];
+                for (let i = 0; i < N * N; i++) {
+                    const [ix, iz] = [x0 + (i % N), z0 + Math.floor(i / N)];
+                    let [c, w] = [0, 0];
+                    for (let a = 0; a < zn; a++)
+                        for (let b = 0; b < zn; b++) {
+                            const [x, z] = [(ix + (a + 0.5) / zn) * S, (iz + (b + 0.5) / zn) * S];
+                            const kl = r._bodenKlasseAt(x, z);
+                            klassen[kl] = (klassen[kl] || 0) + 1;
+                            if (LG.lebensraum("wolf", kl, LG.L) > 0) w++;
+                            const lr = LG.lebensraum("deer", kl, LG.L);
+                            if (!(lr > 0)) continue;
+                            Sub[i * zn * zn + c] = r._kreaturNahrung(x, z);
+                            LR[i * zn * zn + c++] = lr;
+                        }
+                    C.push(c);
+                    wolfZellen.push(w);
+                }
+                const kg = {};
+                for (const g of ["deer", "wolf"])
+                    try {
+                        kg[g] = r._gattungKg(g);
+                    } catch (e) {
+                        kg[g] = String(e.message || e);
+                    }
+                return { C, Sub, LR, klassen, wolfZellen, kg, S, zn, anker: [p.x, p.z], x0, z0, hydroS, saat: s.worldMeta && s.worldMeta.seed };
+            }, W);
+        } finally {
+            await browser.close();
+            server.close();
+        }
+        const [n, Z] = [W * W, F.zn * F.zn];
+        const quelle = { C: Uint8Array.from(F.C), S: new Float64Array(n * Z), LR: new Float64Array(n * Z) };
+        for (let j = 0; j < n * Z; j++) [quelle.S[j], quelle.LR[j]] = [F.Sub[j] || 0, F.LR[j] || 0];
+        const feld0 = welt(W, W, null, quelle);
+        feld0.takt();
+        const Ks = Array.from({ length: n }, (_, i) => feld0.futter(i));
+        const land = Ks.filter((_, i) => feld0.land(i));
+        const med = (v) => (v.length ? v.slice().sort((a, b) => a - b)[Math.floor(v.length / 2)] : NaN);
+        const sumK = Ks.reduce((a, b) => a + b, 0);
+        const aes = Array.from(quelle.S).filter((_, j) => quelle.LR[j] > 0);
+        const Z0 = [
+            `B4 — die Welt-Bindung · Welt-Samen ${JSON.stringify(F.saat)} · Start-Anker (${rund(F.anker[0], 1)}, ${rund(F.anker[1], 1)}) · Gau ${W} × ${W} Regionen ab (${F.x0}, ${F.z0}), Seite ${rund(F.S)} m · Hydro-Wahrheit nach ${rund(F.hydroS, 1)} s`,
+            `Soll (vor der Rechnung, nicht bewegt): W1 Wolf lebt am Ende 4 von 4 · W2 2–8 Wölfe je 1 000 Beute · W3 180–390 WÄ je Wolf`,
+            `Boden-Klassen der ${n * Z} Zellen: ${Object.entries(F.klassen).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + " " + v).join(" · ")}`,
+            `Land (Revier mit Rotwild-Lebensraum): ${land.length} von ${n} = ${rund((100 * land.length) / n, 1)} % · Zellen mit Rotwild-Lebensraum ${aes.length} von ${n * Z} = ${rund((100 * aes.length) / (n * Z), 1)} % · Äsung dort Median ${rund(med(aes), 3)} (min ${rund(Math.min(...aes), 3)}, max ${rund(Math.max(...aes), 3)})`,
+            `K je Revier (Köpfe Rotwild, Fraß-Schicht leer): Median über Land ${rund(med(land))} · Median über alle ${rund(med(Ks))} · Summe ${rund(sumK, 0)} — der Gesetz-Beweis stand bei ≈ 17 000 Köpfen; V_halt ${K.RAUM.vHalt} WÄ je Wolf trüge am Stand K ${rund(sumK / K.RAUM.vHalt, 1)} Wölfe`,
+            `Wald-Zellen (Lebensraum des Wolfs im Tier-Buch): ${F.wolfZellen.reduce((a, b) => a + b, 0)} von ${n * Z} · Masse des Gusses in der Seite: ${JSON.stringify(F.kg)} (der Lauf rechnet mit der Masse von Lauf 4)`,
+        ];
+        const zeilen = [];
+        const P = [];
+        for (const saat of SAATEN) {
+            const feld = welt(W, W, null, quelle);
+            let z = K.anfang({ W, H: W, saat }, feld);
+            const [d0, w0] = zaehl(z);
+            const spur = { wolf: [], reh: [] };
+            let [wS, dS, m, ms] = [0, 0, 0, 0];
+            for (let k = 0; k < TAKTE; k++) {
+                feld.takt();
+                const t0 = performance.now();
+                z = K.schritt(z, saat, k, feld);
+                ms += performance.now() - t0;
+                feld.aesen(z.frass);
+                const [d, w] = zaehl(z);
+                if (!(k % 105)) (spur.wolf.push(w), spur.reh.push(d));
+                if (k >= TAKTE / 2) [wS, dS, m] = [wS + w, dS + d, m + 1];
+            }
+            const [d, w] = zaehl(z);
+            const rudel = z.rudel.filter((R) => R.tiere.length >= 2).length;
+            const p = { saat, lebt: rudel >= 1 && w > 0, wolfEnde: w, rehEnde: d, W2: dS > 0 ? (1000 * wS) / dS : NaN, W3: wS > 0 ? dS / wS : NaN };
+            P.push(p);
+            zeilen.push(
+                `Saat ${saat}: Anfang Beute ${d0} · Wolf ${w0} → Ende Beute ${d} · Wolf ${w} in ${z.rudel.length} Rudeln (${rudel} mit ≥ 2) · zweite Hälfte: ${rund(p.W2)} Wölfe je 1 000 Beute, ${rund(p.W3, 1)} WÄ je Wolf · ${rund(ms / JAHRE, 1)} ms je Jahres-Schritt`,
+                `        Wolf je 4 Jahre ${spur.wolf.join(" ")} · Beute ${spur.reh.join(" ")}`
+            );
+        }
+        const lebt = P.filter((p) => p.lebt).length;
+        const mittel = (f) => P.reduce((a, p) => a + (Number.isFinite(p[f]) ? p[f] : 0), 0) / Math.max(1, P.filter((p) => Number.isFinite(p[f])).length);
+        const [W2, W3] = [mittel("W2"), mittel("W3")];
+        const ok = [lebt === SAATEN.length, W2 >= 2 && W2 <= 8, lebt > 0 && W3 >= 180 && W3 <= 390];
+        const urteil = [
+            `${ok[0] ? "GRÜN" : "ROT"} W1 Wolf lebt am Ende: ${lebt} von ${SAATEN.length} (Soll 4 von 4; Wolf am Ende ${P.map((p) => p.wolfEnde).join(" ")})`,
+            `${ok[1] ? "GRÜN" : "ROT"} W2 Wölfe je 1 000 Beute: ${rund(W2)} (Soll 2–8; je Saat ${P.map((p) => rund(p.W2)).join(" ")})`,
+            `${ok[2] ? "GRÜN" : "ROT"} W3 WÄ je Wolf: ${rund(W3, 1)} (Soll 180–390; je Saat ${P.map((p) => rund(p.W3, 1)).join(" ")})`,
+        ];
+        const text = [...Z0, "", ...zeilen, "", ...urteil].join("\n");
+        console.log(text);
+        const aus = argOpt("--aus", "");
+        if (aus) fs.writeFileSync(aus, text + "\n");
+    });
+    return;
 }
 if (process.argv.includes("--bestand")) {
     const fs = require("fs");
