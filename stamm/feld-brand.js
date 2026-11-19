@@ -845,7 +845,18 @@ class AnazhRealm_feld_brand {
             mat.colorNode = T.vec4(
                 // die Zunge leuchtet in der Leuchtdichte der Flamme (fachwerk `FEUER_LEUCHTDICHTE`, licht-eine-skala P8) — bis
                 // hier trug sie einen Bild-Ton `ziel` ÷ Belichtung: bei Tag und Nacht dasselbe Bild, nie dieselbe Flamme
-                this._nachtAuge(ton.mul(globalThis.__fachwerkCore.FEUER_LEUCHTDICHTE / __weltLicht.EINHEIT_LX), true),
+                // (die Tafel trägt die Lichtfarbe auf den hellsten Kanal 1: ÷ die Luma der heißesten Zeile, die Wurzel steht
+                // bei der Leuchtdichte des Gesetzes)
+                this._nachtAuge(
+                    ton.mul(
+                        globalThis.__fachwerkCore.FEUER_LEUCHTDICHTE /
+                            __weltLicht.EINHEIT_LX /
+                            ((c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2])(
+                                globalThis.__fachwerkCore.lichtFarbe(BF.kelvin[0])
+                            )
+                    ),
+                    true
+                ),
                 T.float(1)
                     .sub(T.exp(dicke.mul(BF.dicke).negate()))
                     .mul(this._tiefenSaum(BF.saumM))

@@ -1705,10 +1705,15 @@ class AnazhRealm {
     // fachwerk `lichtFarbe` über den Planck-Ort) — das Feuer, die Glut, die Laterne, die Fenster und das Licht des Auges. Das
     // Tor ist kein Wärmestrahler: sein Datum (porta GLUT_GESETZ) trägt die Farbe als sRGB-Absicht, die das FARB-GESETZ linear
     // rechnet. Ein Datum ohne beides ist ein Bruch des Vertrags (laut, kein stiller Ersatz).
+    // DIE FARBE TRÄGT DIE LEUCHTDICHTE 1 (licht-eine-skala, S10): ein Datum in cd, cd/m² oder lx ist photometrisch — die Farbe,
+    // die es trägt, hat die Luma 1, sonst steht nur Y(Farbe) seines Werts im Bild. Bis hier kam die Farbe auf den hellsten
+    // Kanal 1 (fachwerk `lichtFarbe`): der Herd trug 1,39 lx statt 3,5 lx in 2 m (Y 0,396 bei 2 000 K), die Laterne 0,76 statt
+    // 2,0 lx am Boden.
     _lichtLinear(L, c) {
-        if (L.kelvin > 0) return c.setRGB(...globalThis.__fachwerkCore.lichtFarbe(L.kelvin));
-        if (L.farbe == null) throw new Error("_lichtLinear: die Leuchtquelle trägt weder kelvin noch farbe");
-        return c.set(L.farbe);
+        if (L.kelvin > 0) c.setRGB(...globalThis.__fachwerkCore.lichtFarbe(L.kelvin));
+        else if (L.farbe == null) throw new Error("_lichtLinear: die Leuchtquelle trägt weder kelvin noch farbe");
+        else c.set(L.farbe);
+        return c.multiplyScalar(1 / (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b));
     }
 
     // DAS LICHT EINER FLAMMEN-FLÄCHE (w28-brand-nacht) vom Halbmesser `r` m → { L, masse }. AN der Flamme (d → 0) trägt eine

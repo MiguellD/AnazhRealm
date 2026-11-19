@@ -2108,7 +2108,9 @@ class AnazhRealm_stoff_material {
             if (licht) {
                 const glut = atmo.lichtGlut[licht];
                 if (!glut) throw new Error(`_leuchtStoff: das Licht-Datum „${licht}“ fehlt im Leuchtquellen-Gesetz`);
-                em = em.add(glut);
+                // die Leuchtdichte des Datums steht im Bild: ein durchsichtiges Glas mischt sein Fragment mit seiner Deckkraft
+                // (0,42) — ohne die Teilung trüge das Fenster 42 % seiner cd/m²
+                em = em.add(glut.div(Te.materialOpacity));
             }
             knoten[licht] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
         }
