@@ -1152,7 +1152,7 @@ class AnazhRealm {
     // aufgenommenes Bündel die alte Textur bindet; der ganze Befehls-Puffer fiel aus. Die EINE Regel für jede solche Textur, an
     // der KLASSE der Textur-Verwaltung (jeder Renderer der Seite): die alte GPU-Textur fällt erst nach den Submits dieser Aufgabe,
     // und jedes Bündel der Welt nimmt neu auf (seine Aufnahme hält die alte Bindegruppe); die losen Leser frischt der Wächter der
-    // Diät auf (`_diaetVorTextur`). Die Wand: gate:fenster-wechsel (jeder Größen-Schritt, jede Meldung beim Namen).
+    // Diät auf (`_diaetVorTextur`). Die frühere Fenster-Linse (jeder Größen-Schritt, jede Meldung beim Namen) fiel am 19.11.
     // DIE GEWACHSENE TEXTUR (Karten-Atlas, Bogen- und Ziel-Atlas der Tore): ein Atlas wächst IN SEINER Textur (neues Bild,
     // needsUpdate) und geht denselben Weg — r184 lädt eine gewöhnliche Textur in ihre alte GPU-Form, die neue Form legt diese
     // Regel an (die Schichten-Updates fallen: die neue Form lädt ganz). Bis 16.10. baute jedes Wachsen eine NEUE Textur, tauschte

@@ -2879,7 +2879,7 @@ class AnazhRealm_vegetation_baum {
             if (distSq <= radiusSq || (distSq <= (radius + totband) ** 2 && this._archIsRendered(entry))) {
                 // Der Ziegel-Ruf hängt NICHT am Mesh-Budget — er taktet sich selbst (Bake-Garantie, memoisiert).
                 // Lebende Slots aktivieren sofort; ungebackene Bauten warten in DERSELBEN Distanz-Schlange wie die
-                // fernen (Befund 02.10., gate:arch-feld: in Listen-Reihenfolge fraß das Dorf den überbuchten
+                // fernen (Befund 02.10., die frühere Feld-Linse der Bauten: in Listen-Reihenfolge fraß das Dorf den überbuchten
                 // Bake-Takt, 24 von 226 Anfragen bewilligt — ein frisch gesetztes Haus in 27 m blieb 200 Takte
                 // ohne Feld UND ohne Mesh, unsichtbar).
                 entry._ziegelNah = true;
@@ -2943,7 +2943,7 @@ class AnazhRealm_vegetation_baum {
         // Versuche sind gedeckelt (ARCH_NAH_VERSUCHE je Takt). WER LÄDT, VERBRAUCHT KEINEN VERSUCH: ein Bau, dessen
         // Flat zuletzt null lieferte, wartet, bis die Foundry etwas Neues liefert (Ankunfts-Generation), höchstens
         // 1 s — sonst fraßen 24 nähere Wartende hinter einem ausgelasteten Worker jeden Takt die Kappe, und ein
-        // sofort baubares Haus dahinter blieb 800 Takte ohne Mesh (gemessen 03.10., gate:arch-feld: 17 offene
+        // sofort baubares Haus dahinter blieb 800 Takte ohne Mesh (gemessen 03.10., die frühere Feld-Linse der Bauten: 17 offene
         // Worker-Aufträge, Haus „grammatik", mesh false).
         if (nahOffen.length) {
             nahOffen.sort((a, b) => a._nahD2 - b._nahD2);

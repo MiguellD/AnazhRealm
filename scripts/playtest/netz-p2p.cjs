@@ -241,7 +241,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
     // ### WebRTC-Mesh (Compute-Sharing) ###
     // Signaling ist nur Handshake-Rendezvous; Position/DSL/Soul fließen über RTCDataChannels P2P.
     // Geprüft: Datenstruktur, Mesh-Komplett-Wand (_p2pMeshReady), peerId-Stempelung am Kanal
-    // (anti-spoof), Transport-Wechsel in p2pSend, RTC-Handler + CSP; zwei Browser: smoke-webrtc.cjs.
+    // (anti-spoof), Transport-Wechsel in p2pSend, RTC-Handler + CSP; zwei Browser: der Connected-Trip von erleben.spieler.gemeinsam S 1.
     const w7Results = await safeEvaluate(page, () => {
         const out = {};
         const p2p = st.p2p;
@@ -410,7 +410,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
     // ### Welt-Snapshot über das Mesh ###
     // Ein Guest holt die Host-Welt in P2P_WORLD_CHUNK_SIZE-Stücken; Annahme-Wand: nur Stücke vom
     // gepullten Peer + nur bei pending. Geprüft: Reassembly, worldRole im soul-Kanal,
-    // _p2pApplyWorldSnapshot, Resync-Fehlerpfade; echter Transfer: smoke-webrtc.cjs.
+    // _p2pApplyWorldSnapshot, Resync-Fehlerpfade; echter Transfer: der Connected-Trip von erleben.spieler.gemeinsam S 1.
     const w7p2Results = await safeEvaluate(page, () => {
         const out = {};
         const p2p = st.p2p;
@@ -604,7 +604,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
 async function checkBandW16Distribution({ page, check }) {
     // ### Mesh-Welt-Verteilung ###
     // Eine vendorte Welt reist P2P (Transport spiegelt den W7-P2-world-pull). Geprüft: Sender,
-    // Empfänger, Annahme-Wand, Rate-Limit, kanal-exklusiv; Zwei-Browser-Transfer: smoke-webrtc.cjs.
+    // Empfänger, Annahme-Wand, Rate-Limit, kanal-exklusiv; Zwei-Browser-Transfer: der Connected-Trip von erleben.spieler.gemeinsam S 1.
     const w16Results = await safeEvaluate(page, async () => {
         const out = {};
         const p2p = st.p2p;
