@@ -1,0 +1,128 @@
+SPIKE Lichtmesser — „die Sicht des Messers ist die des Bildes“ · Radeon 890M · Wald-Kopf 70539e9e (Inhalt 15f8d5a4) · Ego, Mess-Wiese + Genesis
+
+RÜCK-PROBE (unveränderte Sicht des Messers)
+  Zerlegung E = Richtlicht·Sicht + Himmel + Hemi + Ambient: Rest ≤ 0.00 % · Sicht nachgerechnet (Σ hs·kw·nl/n) ≤ 3.7e-5
+  k aus dem Gesetz (welt-licht.js:674) gegen k des Renderers ≤ 0.0000 EV · Tonkurve zurück+vor (Faktor 1) ≤ 0.0530 EV
+  Sprung Wiese, Spike-Messung gegen TAG-Zeile des Schneiders (mess-15f8d5a4e6-b): größte Abweichung 0.001 EV (≤ 0,02: trägt)
+    Uhr    0.260  0.262  0.264  0.266  0.268  0.270  0.272  0.274  0.276  0.278  0.280
+    Spike   0.08   0.08   0.09   0.12   0.16   0.15   0.16   0.13   0.07   0.05   0.03 
+    TAG     0.08   0.08   0.09   0.12   0.16   0.15   0.16   0.13   0.07   0.05   0.03 
+  Basis e4e3f363 (TAG-Datei, unverändert gelesen): größter Sprung  0.09 EV (Uhr 0.276)
+
+WIESE: Uhr  h°    | Sicht Messer · Bild32 · BildHalb | E alt → E32  (Himmel-Anteil) | k alt → k32 · kHalb | Sprung alt · 32 · Halb | EV/Mittag alt · 32
+  0.258   2.9 | 0.000 · 0.000 · 0.000 | 0.146 → 0.146 (1.00) | 11.608 → 11.608 · 11.608 | — · — · — | -1.74 · -1.72
+  0.260   3.6 | 0.000 · 0.000 · 0.000 | 0.176 → 0.176 (1.00) | 9.843 → 9.843 · 9.843 |  0.08 ·  0.08 ·  0.08 | -1.66 · -1.64
+  0.262   4.3 | 0.000 · 0.000 · 0.000 | 0.207 → 0.207 (1.00) | 8.563 → 8.562 · 8.559 |  0.08 ·  0.08 ·  0.08 | -1.58 · -1.56
+  0.264   5.0 | 0.000 · 0.003 · 0.003 | 0.239 → 0.240 (1.00) | 7.584 → 7.530 · 7.540 |  0.09 ·  0.08 ·  0.08 | -1.49 · -1.48
+  0.266   5.8 | 0.000 · 0.011 · 0.007 | 0.271 → 0.279 (1.00) | 6.834 → 6.630 · 6.708 |  0.12 ·  0.08 ·  0.10 | -1.37 · -1.40
+  0.268   6.5 | 0.000 · 0.023 · 0.016 | 0.302 → 0.323 (1.00) | 6.260 → 5.848 · 5.970 |  0.16 ·  0.10 ·  0.11 | -1.22 · -1.31
+  0.270   7.2 | 0.001 · 0.034 · 0.028 | 0.335 → 0.373 (1.00) | 5.764 → 5.178 · 5.272 |  0.15 ·  0.09 ·  0.09 | -1.06 · -1.21
+  0.272   7.9 | 0.005 · 0.047 · 0.044 | 0.371 → 0.428 (0.98) | 5.318 → 4.610 · 4.652 |  0.16 ·  0.11 ·  0.09 | -0.90 · -1.11
+  0.274   8.6 | 0.011 · 0.066 · 0.064 | 0.411 → 0.499 (0.96) | 4.832 → 4.016 · 4.037 |  0.13 ·  0.06 ·  0.06 | -0.77 · -1.05
+  0.276   9.4 | 0.017 · 0.081 · 0.082 | 0.454 → 0.568 (0.93) | 4.407 → 3.588 · 3.575 |  0.07 ·  0.04 ·  0.02 | -0.70 · -1.01
+  0.278  10.1 | 0.023 · 0.101 · 0.101 | 0.499 → 0.652 (0.91) | 4.037 → 3.198 · 3.193 |  0.05 ·  0.01 ·  0.01 | -0.65 · -1.00
+  0.280  10.8 | 0.038 · 0.118 · 0.123 | 0.562 → 0.735 (0.85) | 3.606 → 2.887 · 2.850 |  0.03 ·  0.05 ·  0.03 | -0.62 · -0.95
+  0.282  11.5 | 0.060 · 0.145 · 0.154 | 0.648 → 0.846 (0.78) | 3.195 → 2.593 · 2.545 |  0.01 ·  0.03 ·  0.03 | -0.60 · -0.91
+  0.330  28.6 | 0.452 · 0.496 · 0.495 | 3.144 → 3.359 (0.31) | 0.975 → 0.928 · 0.929 | — · — · — | -0.42 · -0.48
+  0.500  74.2 | 0.937 · 0.954 · 0.954 | 7.273 → 7.382 (0.19) | 0.520 → 0.514 · 0.514 | — · — · — |  0.00 ·  0.00
+
+GENESIS: Uhr  h°    | Sicht Messer · Bild32 · BildHalb | E alt → E32  (Himmel-Anteil) | k alt → k32 · kHalb | Sprung alt · 32 · Halb | EV/Mittag alt · 32
+  0.280  10.8 | 0.001 · 0.008 · 0.008 | 0.477 → 0.493 (1.00) | 4.128 → 4.015 · 4.018 | — · — · — | -0.48 · -0.54
+  0.290  14.4 | 0.014 · 0.031 · 0.028 | 0.640 → 0.690 (0.93) | 3.218 → 3.041 · 3.071 |  0.07 ·  0.03 ·  0.04 | -0.41 · -0.51
+  0.300  18.0 | 0.041 · 0.039 · 0.037 | 0.853 → 0.843 (0.82) | 2.593 → 2.617 · 2.629 | -0.02 ·  0.08 ·  0.07 | -0.44 · -0.43
+  0.310  21.5 | 0.070 · 0.088 · 0.080 | 1.083 → 1.160 (0.73) | 2.169 → 2.060 · 2.107 |  0.16 ·  0.07 ·  0.10 | -0.28 · -0.36
+  0.320  25.1 | 0.150 · 0.246 · 0.230 | 1.555 → 1.999 (0.56) | 1.653 → 1.369 · 1.409 |  0.34 ·  0.12 ·  0.13 |  0.06 · -0.25
+  0.330  28.6 | 0.350 · 0.420 · 0.413 | 2.656 → 3.001 (0.35) | 1.107 → 1.010 · 1.018 | -0.01 ·  0.13 ·  0.10 |  0.05 · -0.11
+  0.340  32.2 | 0.506 · 0.517 · 0.502 | 3.613 → 3.668 (0.27) | 0.878 → 0.868 · 0.883 | -0.10 ·  0.03 ·  0.05 | -0.05 · -0.08
+  0.350  35.7 | 0.554 · 0.567 · 0.550 | 4.026 → 4.096 (0.26) | 0.810 → 0.800 · 0.813 |  0.01 ·  0.01 ·  0.01 | -0.04 · -0.07
+  0.360  39.2 | 0.599 · 0.614 · 0.597 | 4.418 → 4.503 (0.25) | 0.755 → 0.745 · 0.757 |  0.01 ·  0.01 ·  0.01 | -0.03 · -0.06
+  0.500  74.2 | 0.932 · 0.924 · 0.894 | 7.243 → 7.190 (0.18) | 0.521 → 0.524 · 0.535 | — · — · — |  0.00 ·  0.00
+
+P1–P6 (Soll aus gesetz-messer.md, unbewegt)                                  Ist                                   Vorhersage
+P1 Wiese 0,264–0,280, Sicht = Bild 32 Strahl-Pixel, Sprung ≤ 0,10   ROT   0.11 EV (Uhr 0.272; alt  0.16 @0.272)   0,05–0,09: Fehlschuss
+P2 wie P1, Sicht = Bild ganze untere Hälfte, Sprung ≤ 0,10         ROT   0.11 EV (Uhr 0.268)                      P1 ± 0,02: Treffer
+P3 Genesis 0,30–0,36, Buckel ≤ 0,15 · Sprung ≤ 0,10                ROT  Buckel -0.06 (@0.36; alt  0.06) · Sprung  0.13 (alt  0.34)   Buckel ≤ 0,05: Treffer
+P4 Wiese am Inhalt von main (e4e3f363), Sprung ≤ 0,10              UNGEMESSEN — fehlt: Bild-Sicht an den 32 Strahlen + Zerlegung E an e4e3f363 (gemessen dort nur alt  0.09)   0,09 ± 0,02: offen
+P5 Mittag Wiese + Genesis, k bewegt ≤ 0,05 EV                      GRÜN Wiese -0.02 · Genesis  0.01 (Hälfte -0.02 ·  0.04)   ≤ 0,02: Treffer
+P6 Himmel (nur Zahl): Bild ohne Sonne, alle 73 Instanz-Gruppen (Wald als Teilmenge) sichtbar ÷ unsichtbar, Pixel-Verhältnis
+   Uhr 0.268: nah (15×15 um die Strahlen j≥2, Median) 1.000 · untere Hälfte Summe 1.000 · Himmel-Anteil an E 1.00 → Verdeckung im Bild 0.0 % des Himmels, 0.0 % E
+   Uhr 0.33: nah (15×15 um die Strahlen j≥2, Median) 1.000 · untere Hälfte Summe 1.000 · Himmel-Anteil an E 0.31 → Verdeckung im Bild 0.0 % des Himmels, 0.0 % E
+   Uhr 0.5: nah (15×15 um die Strahlen j≥2, Median) 1.000 · untere Hälfte Summe 0.996 · Himmel-Anteil an E 0.19 → Verdeckung im Bild 0.0 % des Himmels, 0.0 % E
+
+SCHNEIDER-TAFEL gegen Spike (Bild an den 32 Strahlen, messer-profil2 → spike): 0.26: 0.000→0.000 0.264: 0.023→0.023 0.266: 0.076→0.076 0.268: 0.144→0.143 0.27: 0.204→0.204 0.272: 0.261→0.264 0.276: 0.403→0.412 0.28: 0.520→0.539
+GENESIS TAG des Schneiders (mess-15f8d5a4e6-b) Uhr 0,33 EV/Mittag  0.02 · Spike  0.05
+GENAU: P1 0.108 · P2 0.110 · P3 Sprung 0.133 (@0.33) · Buckel -0.063
+BEFUND Wiese, Sonnen-Anteil am Bild (profil2) ↔ an E32: 0.264: 0.020 ↔ 0.007 · 0.266: 0.050 ↔ 0.030 · 0.268: 0.097 ↔ 0.066 · 0.27: 0.148 ↔ 0.106 · 0.272: 0.205 ↔ 0.149 · 0.276: 0.291 ↔ 0.254 · 0.28: 0.350 ↔ 0.348
+  (unter 8° gilt k ∝ 1/E ganz: belichtungStufen t = 0, welt-licht.js:659 — der Zensus-Satz k ∝ E^−0,75 gilt erst ab 12°)
+
+VORHERSAGEN: P1 0,05–0,09 Fehlschuss (0,11) · P2 = P1 ± 0,02 Treffer · P3 Buckel ≤ 0,05 Treffer (Sprung 0,13 nicht vorhergesagt) · P4 offen · P5 ≤ 0,02 Treffer
+  Benanntes Risiko „die Wahrheit springt selbst über 0,10“: eingetreten an der Wiese (0,272) und an Genesis (0,32/0,33) — P1 und P3 gefallen mit Grund.
+
+SETZUNGEN
+  S1 Sicht Bild32 = Σ bild_i · nl_i / n: bild_i = Anteil Sonnen-Pixel (an > 1,3·aus, Luma der Tonkurve zurück) im 15×15-Fenster am Strahl-Pixel,
+     nl_i = N·L des Messers je Strahl (Nachbar-Normale wie dirigent-ankunft.js:1842–1848); der Grat steckt im Bild, hs entfällt.
+  S2 Sicht BildHalb = Anteil Sonnen-Pixel der ganzen unteren Hälfte × mittleres nl der 32 Strahlen (keine N·L je Pixel).
+  S3 E neu = E − Richtlicht·Sicht_Messer + Richtlicht·Sicht_Bild (rgb, Farbe des Richtlichts gleich); k neu aus DEMSELBEN Gesetz in der Seite
+     (__weltLicht.belichtung, EA gemessen 7,741). Himmel/Hemi/Ambient unverändert (Hemi = Ambient = 0 am Tag, gemessen).
+  S4 Die Szene bleibt (kein Leser von k ändert das Bild am Tag); Bild neu = Y_gemessen × T(f·T⁻¹(px)) ÷ T(T⁻¹(px)), f = k_neu/k, je Pixel;
+     T = Khronos PBR Neutral exakt, T⁻¹ exakt unter der Schulter (Ausgabe < 0,76), darüber die Luma-Umkehr der Linse (licht-linsen.cjs:1093).
+     Fehler T⁻¹∘T an Genesis bis 0,053 EV (Schulter-Pixel), Wiese ≤ 0,0005 EV — durch den Quotienten herausgekürzt, Rest ungemessen.
+  S5 Sprung/Buckel wie die Linse (EV(Y) gegen Mittag, Schritt bei ΔUhr < 0,0105); Wiese im Feinschritt 0,002, Genesis 0,01.
+  S6 Eine Welt, Genesis zuerst, dann Wiese, Uhren aufsteigend — nicht die Reihenfolge der Linse (Genesis 0,33 alt +0,05 gegen TAG +0,02).
+  S7 P6: alle 73 Instanz-Gruppen unsichtbar (Wald + Zacken + Feuerstelle; das Muster griff weiter als gemeint), je zwei Bilder ohne Sonne.
+
+UNGEMESSEN
+  P4 (Basis e4e3f363): Bild-Sicht an den 32 Strahlen und Zerlegung E fehlen — nicht durch Checkout nachgemessen (Auftrag).
+  Genesis-Bahn außerhalb 0,28–0,36 (Abend, Feinschritt 0,002 um den Horizont); Third-Sicht; GTX; die ganze Bahn (100 Uhren).
+  Geometrische Himmels-Verdeckung des Walds (physikalisch): P6 misst nur, was das BILD verdeckt (aHimmel Gelände + GTAO).
+
+═══ SPIKE 2 — der Messer liest die BESTRAHLUNG des Bildes (M2'); Soll Q1–Q4 aus gesetz-messer.md, unbewegt ═══
+RÜCK-PROBE: Gesetz nachgebaut gegen k des Renderers ≤ 0.0000 EV · Sprünge Fahrt 2 gegen Fahrt 1 (Wiese, unverändert) ≤ 0.001 EV
+WIESE: Uhr  h°   | Sonne÷Himmel Messer · Bild | E alt → E Bild | k alt → k Bild | Steig. | Sprung alt · Bild | EV/Mittag alt · Bild
+  0.258   2.9 | 0.000 · 0.000 | 0.146 → 0.146 | 11.608 → 11.607 | 1.09 | — · — | -1.74 · -1.53
+  0.260   3.6 | 0.000 · 0.000 | 0.176 → 0.176 | 9.843 → 9.841 | 1.09 |  0.08 ·  0.07 | -1.66 · -1.45
+  0.262   4.3 | 0.000 · 0.005 | 0.207 → 0.208 | 8.563 → 8.525 | 1.09 |  0.08 ·  0.07 | -1.58 · -1.38
+  0.264   5.0 | 0.000 · 0.026 | 0.239 → 0.245 | 7.584 → 7.388 | 1.09 |  0.09 ·  0.06 | -1.49 · -1.32
+  0.266   5.8 | 0.000 · 0.076 | 0.271 → 0.291 | 6.834 → 6.353 | 1.09 |  0.12 ·  0.04 | -1.37 · -1.28
+  0.268   6.5 | 0.000 · 0.145 | 0.302 → 0.345 | 6.260 → 5.471 | 1.09 |  0.16 ·  0.06 | -1.22 · -1.22
+  0.270   7.2 | 0.005 · 0.231 | 0.335 → 0.410 | 5.764 → 4.705 | 1.09 |  0.15 ·  0.05 | -1.06 · -1.17
+  0.272   7.9 | 0.019 · 0.312 | 0.371 → 0.478 | 5.318 → 4.130 | 1.09 |  0.16 ·  0.08 | -0.90 · -1.09
+  0.274   8.6 | 0.043 · 0.427 | 0.411 → 0.563 | 4.832 → 3.575 | 1.08 |  0.13 ·  0.05 | -0.77 · -1.04
+  0.276   9.4 | 0.071 · 0.497 | 0.454 → 0.634 | 4.407 → 3.245 | 1.08 |  0.07 ·  0.06 | -0.70 · -0.97
+  0.278  10.1 | 0.103 · 0.574 | 0.499 → 0.711 | 4.037 → 2.963 | 1.08 |  0.05 ·  0.05 | -0.65 · -0.93
+  0.280  10.8 | 0.171 · 0.663 | 0.562 → 0.797 | 3.606 → 2.699 | 1.08 |  0.03 ·  0.07 | -0.62 · -0.86
+  0.282  11.5 | 0.280 · 0.787 | 0.648 → 0.905 | 3.195 → 2.462 | 1.08 |  0.01 ·  0.06 | -0.60 · -0.80
+  0.330  28.6 | 2.278 · 2.711 | 3.144 → 3.560 | 0.975 → 0.888 | 1.10 | — · — | -0.42 · -0.36
+  0.500  74.2 | 4.251 · 5.249 | 7.273 → 8.655 | 0.520 → 0.456 | 1.11 | — · — |  0.00 ·  0.00
+GENESIS: Uhr  h°   | Sonne÷Himmel Messer · Bild | E alt → E Bild | k alt → k Bild | Steig. | Sprung alt · Bild | EV/Mittag alt · Bild
+  0.280  10.8 | 0.005 · 0.036 | 0.477 → 0.491 | 4.128 → 4.025 | 1.08 | — · — | -0.48 · -0.59
+  0.290  14.4 | 0.075 · 0.136 | 0.640 → 0.676 | 3.218 → 3.087 | 1.07 |  0.07 ·  0.04 | -0.41 · -0.55
+  0.300  18.0 | 0.221 · 0.176 | 0.853 → 0.821 | 2.593 → 2.668 | 1.04 | -0.02 ·  0.08 | -0.44 · -0.46
+  0.310  21.5 | 0.375 · 0.436 | 1.083 → 1.131 | 2.169 → 2.100 | 1.02 |  0.16 ·  0.07 | -0.28 · -0.39
+  0.320  25.1 | 0.798 · 1.286 | 1.555 → 1.977 | 1.653 → 1.381 | 1.11 |  0.34 ·  0.10 |  0.06 · -0.29
+  0.330  28.6 | 1.850 · 2.332 | 2.656 → 3.105 | 1.107 → 0.984 | 1.18 | -0.01 ·  0.08 |  0.05 · -0.21
+  0.340  32.2 | 2.648 · 2.865 | 3.613 → 3.828 | 0.878 → 0.841 | 1.21 | -0.10 ·  0.02 | -0.05 · -0.19
+  0.350  35.7 | 2.862 · 3.065 | 4.026 → 4.238 | 0.810 → 0.779 | 1.22 |  0.01 ·  0.02 | -0.04 · -0.17
+  0.360  39.2 | 3.060 · 3.242 | 4.418 → 4.616 | 0.755 → 0.731 | 1.22 |  0.01 ·  0.02 | -0.03 · -0.15
+  0.500  74.2 | 4.440 · 4.168 | 7.243 → 6.881 | 0.521 → 0.542 | 1.22 | — · — |  0.00 ·  0.00
+Q1 Wiese 0,260–0,280, Sprung ≤ 0,10              GRÜN 0.085 EV (Uhr 0.272)   Vorhersage ≤ 0,03: Fehlschuss
+Q2 Genesis 0,30–0,36, Sprung ≤ 0,10 · Buckel ≤ 0,15 ROT  Sprung 0.101 (Uhr 0.32) · Buckel -0.154 (Uhr 0.36)   Vorhersage Sprung 0,06–0,10: Fehlschuss
+Q3 Mittag, k bewegt ≤ 0,05 EV                    ROT  Wiese -0.188 · Genesis 0.055 EV; Anker: zielKarte 0,22 → 0.251 (Wiese) / 0.212 (Genesis) hielte die Karte   Vorhersage 0,05–0,15: Fehlschuss
+Q4 unter 8° (Uhr ≤ 0,272) bleibt 0.085 EV (Uhr 0.272); vor der Sonne je Schritt (0,258–0,264):
+   0.26: Y  0.08 = k·L  0.06 durch den Fuß der Tonkurve · k·E  0.03 (Knoten n(h)  0.03) · Szene des Bildes  0.29 gegen Himmel des Messers  0.27
+   0.262: Y  0.08 = k·L  0.06 durch den Fuß der Tonkurve · k·E  0.03 (Knoten n(h)  0.03) · Szene des Bildes  0.26 gegen Himmel des Messers  0.23
+   0.264: Y  0.09 = k·L  0.07 durch den Fuß der Tonkurve · k·E  0.03 (Knoten n(h)  0.03) · Szene des Bildes  0.22 gegen Himmel des Messers  0.21
+   Ursache: (1) die Knoten der Dämmerung welt-licht.js:84 [10°: −0,87, −20°: −2,17], gerechnet :651–656, wirken bis 8° ganz (:659) —
+   das Gesetz HEBT die Karte je 0,002 Uhr um ~0,031 EV (gewollt, k ∝ 2^n/E); (2) der Himmel des Bildes steigt je Schritt ~0,02 EV schneller als
+   `_himmelsBestrahlung` (bild-himmel.js:2193) — Herkunft ungelesen; (3) der Fuß der Tonkurve (6,25·x², licht-linsen.cjs:1093) dehnt die
+   dunklen Pixel: k·L +0,05 → Y +0,07–0,08. Hemi = Ambient = 0 (gemessen), Nacht-Knoten aus (h > 0: s = 0, welt-licht.js:676).
+FUND Genesis 0,31 → 0,32 (+0,34 EV): 11 Strahlen werden im Bild frei (04@7 m 05@6 m 06@5 m 07@5 m 12@9 m 13@7 m 14@6 m 15@5 m 16@4 m 17@4 m 32@13 m), Grat hs = 1 an allen — der Schatten
+   einer Karten-Krone verlässt den nahen Boden 4–13 m (Spalten 0–1); der Messer kennt den Körper, aber als Ellipse: kw dort 0.49 0.36 0.28 0.22 0.46 0.28 0.20 0.14 0.10 0.08 0.36 (Bild 1).
+   Sein Wurf auf die Strahlen ist der Ellipsen-Zwilling (stoff-karte.js:664, :672); welche Art es ist: ungelesen.
+SETZUNGEN 2 (Vorhersagen je Q-Zeile oben; Q2-Buckel −0,154 liegt UNTER dem Mittag, im Soll — ROT trägt allein der Sprung 0,101)
+  T1 Sonne des Bildes in E-Einheit: E_Sonne,Bild = E_Himmel+Hemi+Amb (Messer) × R, R = Mittel der 32 Fenster (an − aus)/aus — die Albedo kürzt
+     sich je Fenster; gesetzt: der Himmel des Bildes am Fenster IST der waagrechte Himmel des Messers (P6: keine Verdeckung im Bild).
+     aus = Richtlicht 0, sonst alles (Rückstrahl, Lichter); an/aus bei demselben k, Szene-Luma exakt durch die Tonkurve zurück (S4).
+  T2 k aus dem nachgebauten Gesetz (Knick 8°/12°, EA 7,741 gemessen); Bild neu = Y · (k_neu/k)^Steigung, die Steigung der Tonkurve
+     je Uhr aus der Pixel-Rechnung der Seite bei kA bzw. kB (die näher an k_neu), 1,02–1,22 — kein Pixel für k_neu selbst gerechnet.
+  T3 EINE neue Fahrt (gpu-lauf, Radeon, gleiche Uhren und Reihenfolge wie Spike 1; die Dateien trugen an/aus je Fenster nicht).
