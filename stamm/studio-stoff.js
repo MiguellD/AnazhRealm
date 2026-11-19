@@ -45,27 +45,23 @@ class AnazhRealm_studio_stoff {
     // zurückwirft — Term × Bestrahlung ÷ π, je direktem Licht (lightColor trägt den Schatten) und für die Umgebung (Bestrahlung
     // der Lichter + des Himmels). Bis hier standen sie als Emission: eine Konstante, die in der EINEN Skala nachts × k leuchtete
     // (die Figur glühte ohne Quelle) und am Mittag unter der Belichtung verschwand.
-    static _saumLichtModell() {
-        if (AnazhRealm._saumLichtK) return AnazhRealm._saumLichtK;
-        const Basis = THREE.MeshStandardNodeMaterial.prototype.setupLightingModel.call(null).constructor;
-        class SaumLicht extends Basis {
-            constructor(saum) {
-                super();
-                this.saum = saum;
-            }
-            direct(e, builder) {
-                super.direct(e, builder);
-                // der Saum hat die Richtung seines Lichts: N·L wie jeder Rückwurf — bis hier trug ihn auch die Schattenseite
-                const nl = THREE.TSL.normalView.dot(e.lightDirection).clamp(0.0, 1.0);
-                e.reflectedLight.directDiffuse.addAssign(e.lightColor.mul(this.saum).mul(nl).mul(1 / Math.PI));
-            }
-            indirectSpecular(builder) {
-                super.indirectSpecular(builder);
-                const { irradiance, iblIrradiance, reflectedLight } = builder.context;
-                reflectedLight.indirectDiffuse.addAssign(irradiance.add(iblIrradiance).mul(this.saum).mul(1 / Math.PI));
-            }
-        }
-        return (AnazhRealm._saumLichtK = SaumLicht);
+    // DAS MODELL DES STOFFS SELBST trägt den Saum (`_saumLichtModell` setzt ihn auf das Lichtmodell, das der Stoff baut — Standard
+    // oder Physical): bis hier erbte der Saum vom Standard-Modell, die Menschen-Haut verlor mit ihm ihren Klarlack.
+    static _saumLichtModell(modell, saum) {
+        const direkt = modell.direct;
+        const umgebung = modell.indirectSpecular;
+        modell.direct = function (e, builder) {
+            direkt.call(this, e, builder);
+            // der Saum hat die Richtung seines Lichts: N·L wie jeder Rückwurf — bis hier trug ihn auch die Schattenseite
+            const nl = THREE.TSL.normalView.dot(e.lightDirection).clamp(0.0, 1.0);
+            e.reflectedLight.directDiffuse.addAssign(e.lightColor.mul(saum).mul(nl).mul(1 / Math.PI));
+        };
+        modell.indirectSpecular = function (builder) {
+            umgebung.call(this, builder);
+            const { irradiance, iblIrradiance, reflectedLight } = builder.context;
+            reflectedLight.indirectDiffuse.addAssign(irradiance.add(iblIrradiance).mul(saum).mul(1 / Math.PI));
+        };
+        return modell;
     }
     static _haarLichtModell() {
         if (AnazhRealm._haarLichtK) return AnazhRealm._haarLichtK;
@@ -694,9 +690,11 @@ class AnazhRealm_studio_stoff {
                     } else if (add) {
                         // DER SAUM IST LICHT (licht-eine-skala, die Klasse Schein-Emissiv fällt): Haut-Saum, Fell-Rim, Sheen und
                         // Strähnen-Glanz sind Rückwurf des Lichts am Ort (`_saumLichtModell`), nie Emission
-                        const K = AnazhRealm._saumLichtModell();
                         const saum = add;
-                        mat.setupLightingModel = () => new K(saum);
+                        const eigen = Object.getPrototypeOf(mat).setupLightingModel;
+                        mat.setupLightingModel = function (builder) {
+                            return AnazhRealm._saumLichtModell(eigen.call(this, builder), saum);
+                        };
                         const schluessel = mat.customProgramCacheKey;
                         mat.customProgramCacheKey = function () {
                             return schluessel.call(this) + "|saumLicht:" + kind;
