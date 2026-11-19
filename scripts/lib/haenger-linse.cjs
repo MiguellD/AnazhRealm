@@ -155,7 +155,7 @@ const KLASSEN = ["TAKT", "NEBEN", "GC", "GPU"];
 // EINEN Ersatz „(Knoten verloren)" (ohne Eltern, in keiner Klasse), jeder Knoten ohne seinen Eltern hängt an ihm — nie still, nie
 // ein Absturz. `verlust` nennt die Proben unter ihm, jedes Urteil über dem Profil trägt die Zahl (die Halter, die Hänger, die
 // Takt-Spitze); über VERLUST_SOLL ist es ROT beim Namen statt einer Zahl, die lügt: 5 % ist die Streuung der Kalt-Zeile von Boot
-// zu Boot (GTX 16,1–17,0 s um 16,6 s, Pflicht-OFFEN B) — darunter verschiebt der Verlust keine Summe weiter als zwei gleiche Boots.
+// zu Boot (GTX 16,1–17,0 s um 16,6 s, Leiter same.preis.ankunft) — darunter verschiebt der Verlust keine Summe weiter als zwei gleiche Boots.
 const VERLOREN = "(Knoten verloren)",
     VERLUST_SOLL = 0.05;
 function profilLesen(p) {
@@ -698,7 +698,7 @@ function linseWerten(roh, spur, b) {
     return Object.assign(a, { befunde: haengerLinsenBefunde(a), tabelle: haengerTabelle(a) });
 }
 
-// DIE HALTER DER ANKUNFT (Pflicht-OFFEN B, die Kalt-Zeile `diag-boot-stage --kalt`): jede Aufgabe des Haupt-Fadens vor dem
+// DIE HALTER DER ANKUNFT (Leiter same.preis.ankunft, die Kalt-Zeile `diag-boot-stage --kalt`): jede Aufgabe des Haupt-Fadens vor dem
 // ersten Weltbild über ANKUNFT_HALT_MS (die lange Aufgabe des Browsers, `longtask`) mit den Funktionen, die sie hielten, beim
 // Namen: je Aufgabe der Rahmen-Baum ihrer Stichproben (ohne die Hüllen, `rahmenBaum`), Halter ist der tiefste Rahmen, der in
 // ihr ≥ ANKUNFT_HALT_MS trägt, während keines seiner Kinder es tut — trägt ein Rahmen über seinen haltenden Kindern noch

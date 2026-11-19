@@ -786,7 +786,7 @@ jobs:
               # Statische Wand: der Sitz lebt im Sim-Schritt, der Frame-Tick schreibt nie den Reiter. Inklusive Selbst-Test.
               # RM (fahrzeug.K5): Glatt · Drift · Hang — die Federung im gezeichneten Bild antwortet dem Boden-Stoß und wankt im
               # Drift, das Rumble am Stub-Pad folgt Schlupf und Stoß, die Stimme schweigt nach dem Absteigen; die Mutante ROT.
-              # VK (PFLICHT-OFFEN C, das ganze Kriterium): der Verkehr der Metropole (stadt-voll) um 10 und 23 Uhr je 10 min, der Spieler
+              # VK (Leiter mensch.netz.verkehr, das ganze Kriterium): der Verkehr der Metropole (stadt-voll) um 10 und 23 Uhr je 10 min, der Spieler
               # steht am Ort des Messorts (in der Kreuzung am Markt) — ≥ 20 Wagen mit Bewohner am Steuer, jeder fährt je Minute ≥ 30 m
               # (die kürzeste Minute nennt den Kopf ihrer Reihe), keiner steht länger als 20 s vor EINEM Bewohner (die Querung hält
               # ihn ihre Dauer, wer die Bahn nicht verlässt, gibt sie frei — der längste Halt beim Namen), jeder erreicht sein Ziel
@@ -887,7 +887,7 @@ jobs:
               # die Slots positions-deterministisch, wasser-bewacht (_fundamentLand: das ganze Fundament auf dem Land) und
               # fail-closed in die Welt (haus_<kultur> aus der KIND_POLICY-Tabelle, kein
               # Literal; Anker durch _structureSpawnPos; Chat "dorf"). Inkl. Selbst-Test.
-              # Teil O (K10, Pflicht-OFFEN C): der Ort am Hang haelt Sockel 0, jede Tuer, Kronen 0, Plan-Hash Studio = Welt,
+              # Teil O (K10, Leiter mensch.netz.verkehr): der Ort am Hang haelt Sockel 0, jede Tuer, Kronen 0, Plan-Hash Studio = Welt,
               # den GT auf dem Dorfweg und DAS DORF-LICHT DER GASSE: nachts >= 4 brennende Quellen mit Leib (_leuchtQuellen)
               # im Sichtkegel der Gasse, kein Grundriss dazwischen (gassenLicht), der Licht-Pool der Gasse traegt sie; der
               # Schein mit dunklem Zeitplan muss 0 zaehlen (Selbst-Test 16 und O: Selbst-Schein).

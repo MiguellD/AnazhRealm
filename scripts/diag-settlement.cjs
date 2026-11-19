@@ -610,7 +610,7 @@ function feldWurfImOrt(anker, defekt) {
     return res;
 }
 
-// ===== TEIL K (PFLICHT-OFFEN C): DIE KREUZUNG IST EINE FLÄCHE — je Fixture (T · X · Knick · Fort · Schräg) über einem Hang
+// ===== TEIL K (Leiter mensch.netz.verkehr): DIE KREUZUNG IST EINE FLÄCHE — je Fixture (T · X · Knick · Fort · Schräg) über einem Hang
 // von 6, 12 und 20 % der Plan v2 (fachwerk `ortPlan`), sein Erdbau wie die Welt ihn liest (gelaende-core `erdbauY`, der Leser
 // jeder Höhe: Körper, Rad, die Stufen-Probe des Verkehrs `_verkehrAnlegen`): auf jeder Fahrbahn (den Kernen) springt der Boden
 // je 0,5 m höchstens um das Gefälle des Gesetzes (`ORT_GESETZ.gefaelle` 12 % → 0,06 m). Bis K hatte jeder Weg an der
@@ -1001,7 +1001,7 @@ hauptLauf(async () => {
                 JSON.stringify({ br, freiN, yMit, yOhne, deck: mit.roads[0].ys[10] })
             );
         }
-        // V-K (PFLICHT-OFFEN C): die Kreuzung — das Gesetz GRÜN, eine um 0,3 m gehobene Fahrbahn des zweiten Wegs ROT beim Namen
+        // V-K (Leiter mensch.netz.verkehr): die Kreuzung — das Gesetz GRÜN, eine um 0,3 m gehobene Fahrbahn des zweiten Wegs ROT beim Namen
         {
             require(path.join(root, "gelaende-core.js"));
             const [k0, k1] = [{}, { stoer: 1 }].map((o) => kreuzungsUrteil(FC, globalThis.__gelaendeCore, o));
@@ -1200,7 +1200,7 @@ hauptLauf(async () => {
         );
         if (process.argv.includes("--nur-z")) process.exit(errs.length ? 1 : 0);
 
-        console.log("=== TEIL K: DIE KREUZUNG IST EINE FLÄCHE (PFLICHT-OFFEN C) ===");
+        console.log("=== TEIL K: DIE KREUZUNG IST EINE FLÄCHE (Leiter mensch.netz.verkehr) ===");
         require(path.join(root, "gelaende-core.js"));
         const K = kreuzungsUrteil(FC, globalThis.__gelaendeCore);
         console.log("KREUZUNG " + JSON.stringify({ max: +K.max.toFixed(3), wo: K.wo, je: K.je }));
@@ -1351,7 +1351,7 @@ hauptLauf(async () => {
             }
             return P[P.length - 1];
         };
-        // DER RAND DES WEGS FÜR DEN FUSS DER AUSSTATTUNG (w28-stadt-grammatik, PFLICHT-OFFEN C): die halbe Fahrbahn — an der
+        // DER RAND DES WEGS FÜR DEN FUSS DER AUSSTATTUNG (w28-stadt-grammatik, Leiter mensch.netz.verkehr): die halbe Fahrbahn — an der
         // Fahrstraße der Stadt (`staedtisch`, ab VERKEHR_GESETZ.breiteM) samt ihrem Gehweg (STADT_DICHTE.gehwegFahrM): der Raum, in
         // den der Wagen ausschert, der einen Stehenden umfährt. Die Linse rechnet ihn aus den Zahlen des Gesetzbuchs, nie aus dem
         // Setzer (fachwerk `wegRand`)
@@ -1520,7 +1520,7 @@ hauptLauf(async () => {
             if (t.length) trassenFehl.push(`${seed}/${nH}: ${t.length} — ${t.slice(0, 2).join(" · ")}`);
         }
         check(
-            `DER RAUM DER TRASSE (PFLICHT-OFFEN C): an der Fahrstraße der Stadt steht kein Mast und kein Brunnen im Gehweg (${FC.STADT_DICHTE.gehwegFahrM} m: der Raum des Wagens, der einen Stehenden umfährt) und keiner auf einem Torplatz (4 Städte, ${trassenN} Masten und Brunnen)`,
+            `DER RAUM DER TRASSE (Leiter mensch.netz.verkehr): an der Fahrstraße der Stadt steht kein Mast und kein Brunnen im Gehweg (${FC.STADT_DICHTE.gehwegFahrM} m: der Raum des Wagens, der einen Stehenden umfährt) und keiner auf einem Torplatz (4 Städte, ${trassenN} Masten und Brunnen)`,
             trassenFehl.length === 0,
             trassenFehl.slice(0, 3).join(" · ")
         );
@@ -2587,7 +2587,7 @@ hauptLauf(async () => {
                     const zellenVor = new Set(Object.keys(st.worldMeta?.settlementCells || {}));
                     let plan;
                     if (modus === "auto") {
-                        // DAS AUTO-DORF DER WELT (Pflicht-OFFEN C): der Dorf-Zug, wie er im Spiel läuft — der Spieler steht am
+                        // DAS AUTO-DORF DER WELT (Leiter mensch.netz.verkehr): der Dorf-Zug, wie er im Spiel läuft — der Spieler steht am
                         // Mess-Ort `dorf` (spec/profiband/haushalt.json), der Takt (`_tickAutoSettlement`) wählt die Zelle, holt den
                         // Export, legt den Plan v2 und baut die Häuser budgetiert über seine Takte
                         const pm = st.playerMesh;
@@ -3068,7 +3068,7 @@ hauptLauf(async () => {
                             (res.fremdArten || (res.fremdArten = {}))[e.type] = (res.fremdArten[e.type] || 0) + 1;
                         }
                     res.fremdBauten = fremd;
-                    // DAS DORF-LICHT DER GASSE (Pflicht-OFFEN C): Mitternacht über den EINEN Uhr-Schreiber, die brennenden Quellen aus
+                    // DAS DORF-LICHT DER GASSE (Leiter mensch.netz.verkehr): Mitternacht über den EINEN Uhr-Schreiber, die brennenden Quellen aus
                     // dem EINEN Licht-Gesetz der Welt (`_leuchtQuellen`: Datum × Zeitplan > 0) — gezählt wird jede mit Leib (Studio-
                     // Gestalt mit Licht-Datum oder Glut) im Ort; die Gasse und ihre Sicht rechnet `gassenLicht` (Node), den Licht-Pool
                     // der Gasse liest `gassenPool`. Der Schein: derselbe Ort mit dunklem Zeitplan.

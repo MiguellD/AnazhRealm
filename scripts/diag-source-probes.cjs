@@ -5,7 +5,7 @@
  *     Absenz an einem toten Symbol passte vakuös (die c1c1271-Klasse); seit D3d wirft der Absenz-Helfer dort auch im Lauf.
  *  2) NEBENWELT-QUELL-WAND (Studio-Welle S1): keine Richter-Datei liest eine Datei unter worlds/ (readFile*, fetch,
  *     require) — eine Welt beweist ihr KONSUM (gate:portal-konformanz), nie ein Quelltext-Zitat.
- *  3) QUELLTEXT-WAND (PFLICHT-OFFEN D3 Teil 3, Karte D3d): keine Präsenz-Probe liest Quelltext. Ein LESER ist in scripts/
+ *  3) QUELLTEXT-WAND (Klarheit D3 Teil 3, Karte D3d): keine Präsenz-Probe liest Quelltext. Ein LESER ist in scripts/
  *     (ohne Kommentare, Literale bleiben) jeder Griff nach Spiel-Quelltext als Text — in der Seite `__codeOf`/`__dokuOf`
  *     (Ruf oder Alias), `<r|P|A|…>.x.toString()` und `String(r._x)`; in Node der virtuelle Stamm (`stammLib.text`,
  *     `textAusRev`) und `readFileSync` bzw. `ausDatei` auf Spiel-Code (*.js, index.html). Eine Absenz liest über den EINEN Helfer

@@ -81,4 +81,4 @@ Zeit-Differenz kalt/warm.
 
 - **V18.484 — DER GRUNDSTEIN:** Doktrin (dies) · dritter Spiegel + Linse ·
   Hitch-Telemetrie · Stufe-1-Erstkonsument (Dither-Wal) · Fern-Ring v1 ·
-  Warm-Start v1. Chronik = git log; Offenes = `docs/PFLICHT-OFFEN.md`.
+  Warm-Start v1. Chronik = git log; Offenes = die Meisterkarte 2.

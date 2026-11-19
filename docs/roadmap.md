@@ -2,7 +2,7 @@
 
 > **Der Entscheidungs-Kompass.** Vier Fragen vor dem nächsten Schritt: **Wohin?** (§0) · **Wurde das schon
 > probiert?** (§2 Narben) · **Existiert das schon?** (§3 Teilsysteme) · **Schneide ich einen
-> Samen?** (§4 Samen). Was offen ist, trägt allein `docs/PFLICHT-OFFEN.md` — dieser Kompass führt keine eigene
+> Samen?** (§4 Samen). Was offen ist, trägt allein die Meisterkarte 2 (Zweig `punkte-maschine`) — dieser Kompass führt keine eigene
 > Offen-Liste. Alles Erledigte lebt in der git-Historie (`git log` = die Chronik; die gefallenen Plan-Docs sind dort
 > durchsuchbar: `git log --all --oneline -- docs/`).
 
@@ -35,8 +35,8 @@ Schritte oder den FPS-Boden trägt.
 
 ### §0.offen · Was offen ist
 
-Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md` (Einträge setzt nur der Schöpfer, je Eintrag Status und Kriterium; der
-Spiegel steht im Stand von `CLAUDE.md`). Eine Probe sinkt nur mit Konsum-Urteil, nie blind (die typeof-Ratsche in
+Die EINE Offen-Wahrheit ist die Meisterkarte 2 (Zweig `punkte-maschine`) (Leitern setzt nur der Schöpfer, je Sprosse Umfang, Tiefe, Preis und Richter; die
+Zuordnung der früheren Liste A–F steht in `docs/README.md`). Eine Probe sinkt nur mit Konsum-Urteil, nie blind (die typeof-Ratsche in
 `gate:apparat`).
 
 ## §1 · Das Fischer-Prinzip (über allem — „Regel #0" GESTRICHEN V18.356)

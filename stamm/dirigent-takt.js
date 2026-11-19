@@ -4,7 +4,7 @@ class AnazhRealm_dirigent_takt {
         // ### Spiel-Loop ###
         let lastTime = performance.now();
         const loop = (time) => {
-            // DER KOPF DES TAKTS (w28-takt-frist, PFLICHT-OFFEN E): die EINE Frist der Bau-Arbeit zählt ab hier (`_fristStellen`,
+            // DER KOPF DES TAKTS (w28-takt-frist, Leiter same.preis.takt): die EINE Frist der Bau-Arbeit zählt ab hier (`_fristStellen`,
             // unten, sobald die Phase des Takts steht) — was der Takt vor seinem ersten Bauer rechnet, zählt mit
             const kopf = performance.now();
             // NaN-WAND am Loop-Eingang: ein argloser Aufruf (`_gameLoopTick()`, jeder Test-Warmup) liefert time
@@ -1177,7 +1177,7 @@ class AnazhRealm_dirigent_takt {
         this._rittSchritt(dt);
         // ein im Flug verlassener Gesetz-Wagen fällt auf der Vertikale des Kerns, bis er steht (Gegenprüfung 07.10.)
         if (this._fahrLos && this._fahrLos.size) this._fahrNachlauf(dt);
-        this._verkehrSchritt(dt); // die Wagen der Städte mit ihren Fahrern (PFLICHT-OFFEN C)
+        this._verkehrSchritt(dt); // die Wagen der Städte mit ihren Fahrern (Leiter mensch.netz.verkehr)
         // DER GESTOSSENE LEIB und LEIB AN LEIB im Sim-Schritt (0710-5): was einen Körper bewegt, läuft im festen Schritt.
         this._kreaturStossSchritt(dt);
         this._trittDerLeiber(); // der Gang der Leiber tritt den Pfad (stoffe.K4), an ihrer Lage vor dem Leib-Löser
@@ -1707,7 +1707,7 @@ class AnazhRealm_dirigent_takt {
         const _ct = performance.now();
         this.updateCreatures(delta);
         this._tickBewohner(delta); // die Bewohner der Siedlungen (Meisterkarte mensch.K1)
-        this._tickVerkehr(); // wer einsteigt, heimfährt, aussteigt; der Leib am Steuer (PFLICHT-OFFEN C)
+        this._tickVerkehr(); // wer einsteigt, heimfährt, aussteigt; der Leib am Steuer (Leiter mensch.netz.verkehr)
         this._vogelTakt(); // die Vögel des Hör-Kreises (Klang K1: jeder Ruf hat einen Leib)
         this._fischTakt(delta); // die Fische lesen die Strömung (luftwasser.K3)
         this._bestaeuberTakt(delta); // die Bestäuber lesen Blüte, Wind, Feuchte und Tag (luftwasser.K4)
@@ -1866,7 +1866,7 @@ class AnazhRealm_dirigent_takt {
         return n < kappe || (frist && performance.now() < this._ladeFrist());
     }
 
-    // DIE EINE FRIST DER BAU-ARBEIT (w28-takt-frist, PFLICHT-OFFEN E — die Idee von w16-haenger und w19-gang-hitch zu Ende): jede
+    // DIE EINE FRIST DER BAU-ARBEIT (w28-takt-frist, Leiter same.preis.takt — die Idee von w16-haenger und w19-gang-hitch zu Ende): jede
     // Bau-Arbeit des Takts, die in Raten geht, arbeitet bis zu EINER Frist, und die zählt ab dem KOPF des Takts (`loop`):
     //     Frist = Takt-Kopf + Takt-Soll − Render
     // Das Soll ist das des Profi-Bands (TAKT_FRIST: 5,8 ms im Stand, 8 ms, sobald die Bahn Tempo trägt, `_bedarfTempo`), der Render
@@ -2659,7 +2659,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_dirigent_takt]);
 // deterministisch aus pcg2d-Integer-Hash (bit-identisch CPU↔GPU), ohne Architektur-Einträge; NAH
 // kristallisiert ein Baum im promoteRadius zu einem echten Bauplan (harvestbar) mit IDENTISCHER
 // Geometrie (derselbe `grown_<species>_v<idx>`-Pool) → kein Sprung. Dieselben archInstanceGroups.
-// DIE EINE FRIST DER BAU-ARBEIT (`_fristStellen`): das Soll des Takts ab seinem Kopf in ms — das des Profi-Bands (PFLICHT-OFFEN E:
+// DIE EINE FRIST DER BAU-ARBEIT (`_fristStellen`): das Soll des Takts ab seinem Kopf in ms — das des Profi-Bands (Leiter same.preis.takt:
 // CPU-Takt p95 ≤ 5,8 ms im Stand; die Station profiband.K2 verlangt bewegt ≤ 8 ms). `bewegtAb`: ab diesem Tempo der Bahn (m/s,
 // `_bedarfTempo`) gilt das Soll der Bewegung. `stueckAb`: ab so vielen ms hat ein Gang durch das Tor gebaut (`_bauer`), auch wenn
 // er die Frist nicht fragte. `vortritt`: die Scheibe des EINEN mit Vortritt (`_bauPflichtGang`; bis w28-takt-frist BAU_ALTER_MS).

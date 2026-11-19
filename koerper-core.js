@@ -5146,7 +5146,7 @@
             // dem Fahrer, `_bewohnerListe`) — von früh bis zum Abend, das Mittag hält er durch: kein Stand steht leer
             // (`regenfest`: unter dem Dach seines Stands bleibt er auch im Regen, TAGES_GESETZ.regen)
             haendler: Object.freeze({ werk: Object.freeze([7, 18.5]), mittagAmWerk: true, regenfest: true }),
-            // DER FAHRER (PFLICHT-OFFEN C): wer einen Wagen der Stadt fährt (der Wirt gibt ihm die Rolle, `_verkehrAnlegen`), ist
+            // DER FAHRER (Leiter mensch.netz.verkehr): wer einen Wagen der Stadt fährt (der Wirt gibt ihm die Rolle, `_verkehrAnlegen`), ist
             // von früh bis spät am Steuer — sein Werk ist der Platz seines Wagens, das Mittag fährt er durch; DER NACHTFAHRER
             // lebt denselben Tag um `versatzH` Stunden versetzt (am Steuer von 19 bis 7 Uhr: der Wagen der Stadt fährt bei Tag
             // und bei Nacht, am Platz wechselt die Schicht)
@@ -5158,7 +5158,7 @@
                 haltung: false,
                 regenfest: true,
             }),
-            // DIE WACHE (PFLICHT-OFFEN A, der Prüfplatz): wer am Platz Wache steht (der Wirt gibt die Rolle zwei Bewohnern, wie
+            // DIE WACHE (Soll-Tafel am Prüfplatz): wer am Platz Wache steht (der Wirt gibt die Rolle zwei Bewohnern, wie
             // dem Fahrer), steht von 6 bis 20 Uhr an seinem Punkt — sein Werk und sein Platz sind der Wache-Punkt, das Mittag hält
             // er durch; DER NACHTWÄCHTER lebt denselben Tag um `versatzH` Stunden versetzt (18 bis 8 Uhr) — zu jeder Stunde steht
             // einer draußen, auch um Mitternacht, wenn jeder andere drinnen schläft (`ruhe`)
