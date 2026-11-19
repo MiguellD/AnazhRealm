@@ -2143,10 +2143,11 @@ class AnazhRealm_kreatur_leben {
     }
 
     // DIE NAHRUNG EINES ORTS für den Bestand (Ökologie K2): die Äsung = das Leben des Felds (`auraAt`.lebendig — das Substrat
-    // und das Leben-Overlay, das die Taten schreiben), 0..1.
+    // und das Leben-Overlay, das die Taten schreiben) plus der Fraß des Gaus an der Zelle (`_gauFrassAt`, E3: was die Herde des
+    // Gesetzes ließ, steht im Gau, nie im Overlay), 0..1.
     _kreaturNahrung(x, z) {
         const a = this.auraAt(x, z);
-        return a && a.lebendig > 0 ? Math.min(1, a.lebendig) : 0;
+        return Math.min(1, Math.max(0, (a && a.lebendig > 0 ? a.lebendig : 0) + this._gauFrassAt(x, z)));
     }
 
     // DER BESTAND EINER REGION (Ökologie K2, tetrapoda BESTAND_GESETZ): je Gattung der Bestand n (die Tiere ihres Verzeichnisses,
@@ -2166,10 +2167,13 @@ class AnazhRealm_kreatur_leben {
         const tiere = R ? this._bestandFreie(R) : [];
         const n = {};
         const diet = this._bestandDiet();
-        for (const g in diet) n[g] = 0;
-        for (const t of tiere) n[t.g]++;
+        // DIE BILANZ RECHNET NUR DIE ALTLAST (Leben C2b): die Gattungen des Gesetzes (`_gauRolle`) stehen im Gau — für sie fährt
+        // hier kein Zwilling; ihre Köpfe LIEST die Altlast als Beute aus dem Bild des Gaus (`_gauRevier`), nie schreibt sie hinein.
+        for (const g in diet) if (!this._gauRolle(g)) n[g] = 0;
+        for (const t of tiere) if (t.g in n) n[t.g]++;
         const { jaeger, gejagt, beuteVon } = this._bestandJagd(tiere, diet);
-        let beuteN = 0;
+        const gau = this._gauRevier(key);
+        let beuteN = gau ? gau.koepfe.beute : 0;
         for (const g in n) if (diet[g] <= pflanz) beuteN += n[g];
         const beute = Math.min(1, beuteN / B.beuteVoll);
         const K = {};
@@ -2337,10 +2341,17 @@ class AnazhRealm_kreatur_leben {
         const fern = jetzt < AH ? -AH : Math.floor((jetzt - AH) / B.taktS) * B.taktS;
         const R = F.regionen[key] || (F.regionen[key] = { t: fern, tiere: [] });
         this._gehegeEinsetzen(key, R);
+        // KEIN ZWILLING (Leben C2b): ein freies Tier der Gattungen des Gesetzes steht nie im Verzeichnis der Region — eines aus
+        // einem Stand von vor dem Gau verlässt es hier, sein Leib wird in den Gau angenommen (`_bestandAdoptieren`).
+        if (R.tiere.some((t) => !t.gehege && this._gauRolle(t.g))) {
+            for (const t of R.tiere)
+                if (!t.gehege && this._gauRolle(t.g) && t.leib) [t.leib.userData._bestand, t.leib] = [null, null];
+            R.tiere = R.tiere.filter((t) => t.gehege || !this._gauRolle(t.g));
+        }
         if (R.t < fern) R.t = fern;
         if (!aufholen) return R;
         const fall = tode || [];
-        for (let k = 0; k < max && jetzt - R.t >= (bis + 1) * B.taktS && this._bestandBereit(key); k++)
+        for (let k = 0; k < max && jetzt - R.t >= (bis + 1) * B.taktS && this._bestandGauSteht(key); k++)
             this._bestandSchritt(key, R, true, fall);
         if (!tode) this._bestandTode(fall);
         return R;
@@ -2358,6 +2369,11 @@ class AnazhRealm_kreatur_leben {
         const S = this._bestandSeite();
         const [ix, iz] = key.split(",").map(Number);
         return this._ensureHydroTilesAround((ix + 0.5) * S, (iz + 0.5) * S, S / 2 + 1) === 0;
+    }
+    // … UND ÜBER DEM BILD IHRES GAUS (Leben C2b): der Takt der Altlast liest die Köpfe der Beute und den Fraß aus dem Bild des
+    // Gaus (`_gauRevier`) — ohne Antwort des Fadens wartet die Folge geordnet, wie auf die Hydro-Wahrheit.
+    _bestandGauSteht(key) {
+        return this._bestandBereit(key) && !!this._gauRevier(key);
     }
 
     // DAS FELD DER REGION: ihre zellen × zellen Zellen (je Zelle ihre Mitte), die Boden-Klasse (eine Funktion der Welt — EINMAL
@@ -2396,7 +2412,9 @@ class AnazhRealm_kreatur_leben {
     _bestandLeben(t) {
         const e = this._bestandErbe(t);
         if (e.alter !== t.alterS) {
-            [e.alter, e.kg, e.wild] = [t.alterS, AnazhRealm._lebenKern().masseZurZeit(e.M, t.alterS), null];
+            // ein Kopf des Gaus trägt den Leib am Takt aus dem Zustand des Fadens (`kg`, Leben C2b), nie eine zweite Rechnung
+            const kg = t.kg > 0 ? t.kg : AnazhRealm._lebenKern().masseZurZeit(e.M, t.alterS);
+            [e.alter, e.kg, e.wild] = [t.alterS, kg, null];
         }
         return e;
     }
@@ -2533,8 +2551,15 @@ class AnazhRealm_kreatur_leben {
         for (const c of this.state.creatures) {
             const ud = c.userData;
             const g = AnazhRealm.TETRAPODA_SOUL_MAP[ud.soul];
-            if (ud._bestand || ud._rissVon || ud._faelltNach || ud._ohneTier || !(g in L)) continue;
+            if (ud._bestand || ud._rissVon || ud._faelltNach || ud._ohneTier || ud._gauWartet || !(g in L)) continue;
             const a = ud.wanderAnchor || c.position;
+            // DIE GATTUNGEN DES GESETZES TRETEN IN DEN GAU (Leben C2b, E2): der Akt „ein“ mit Takt-Stempel (`_gauAnnahme`) — nie
+            // in das Verzeichnis der Region (dort führe der Zwilling)
+            const rolle = this._gauRolle(g);
+            if (rolle) {
+                this._gauAnnahme(c, g, rolle, a);
+                continue;
+            }
             const key = this._bestandKey(a.x, a.z);
             const v = ud.verband != null ? "n" + ud.verband : null;
             const id = this._annahmeKennung(key);
@@ -2579,6 +2604,12 @@ class AnazhRealm_kreatur_leben {
             if ((t = R.tiere.find((x) => x.id === id))) break;
         const a = !t && (this.state.feldAkte || []).find((x) => x.art === "annahme" && x.id === id);
         const tier = t || (a && Object.assign({ id }, a.tier, { zu: true }));
+        // ein Leib der Gattungen des Gesetzes (Leben C2b) sucht sein Tier im Bild seines Gaus (`_gauAntwort`); trägt er die
+        // Kennung eines Stands von vor dem Gau (ohne dessen Kopf), ist er ein Leib ohne Tier und wird angenommen
+        if (!tier && this._gauRolle(AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul])) {
+            if (typeof id === "string" && id[0] === "g" && id.indexOf("/") > 1) c.userData._gauWartet = id;
+            return;
+        }
         if (!tier || tier.leib) return void (c.userData._ohneTier = true);
         [tier.leib, c.userData._bestand] = [c, tier];
         if (a) (this._annahmeOffen || (this._annahmeOffen = new Map())).set(id, tier);
@@ -2590,6 +2621,7 @@ class AnazhRealm_kreatur_leben {
         const t = c.userData && c.userData._bestand;
         if (!t) return;
         [c.userData._bestand, t.leib] = [null, null];
+        if (t.gau) return void this._gauAus(t); // ein Kopf des Gaus: der Akt „aus“ mit Takt-Stempel (Leben C2b, E2)
         this._feldAkt({ art: "aus", w: this.state.spielZeit, key: this._bestandKey(t.x, t.z), id: t.id }, true);
     }
 
@@ -2604,7 +2636,7 @@ class AnazhRealm_kreatur_leben {
         const F = this._bestandRegionen();
         const p = st.playerMesh.position;
         const gruppen = new Map();
-        for (const key of this._bestandNah())
+        for (const key of this._bestandNah()) {
             for (const t of F.regionen[key] ? F.regionen[key].tiere : []) {
                 if (t.gehege) continue; // das Gehege zeichnet nach seinem Term (`_gehegeGruppen`)
                 const gk = key + "|" + (t.v != null ? t.v : "e" + t.id);
@@ -2612,6 +2644,15 @@ class AnazhRealm_kreatur_leben {
                 if (!G) gruppen.set(gk, (G = { d: Math.hypot(t.x - p.x, t.z - p.z), tiere: [] }));
                 G.tiere.push(t);
             }
+            // DIE GATTUNGEN DES GESETZES LIEST DIE ZEICHNUNG AUS DEM BILD DES GAUS (Leben C2b, `_gauRevier`): je Verband des
+            // Fadens (die Herde des Reviers, das Rudel) eine Gruppe — Köpfe, Alter, Geschlecht und Mutter aus seinem Zustand
+            const gau = this._gauRevier(key);
+            for (const t of gau ? gau.tiere : []) {
+                let G = gruppen.get(t.v);
+                if (!G) gruppen.set(t.v, (G = { d: Math.hypot(t.x - p.x, t.z - p.z), tiere: [] }));
+                G.tiere.push(t);
+            }
+        }
         this._gehegeGruppen(gruppen, p);
         // eine Gruppe, die gezeichnet steht, hält ihren Platz um eine halbe Kachel (kein Flattern, wenn eine nähere geboren wird)
         const S = this._bestandSeite();
@@ -2629,7 +2670,8 @@ class AnazhRealm_kreatur_leben {
         // ein Leib ohne Tier (sein Tier fiel im Gesetz ohne Jäger am Leib, `_bestandTode`) geht, sobald er außer Blick steht
         for (const c of st.creatures.slice())
             if (c.userData._ohneTier) {
-                if (this._bestandAusserBlick(c)) this.removeCreature(c);
+                // der gebundene Leib bleibt (sein Kopf verließ das Bild des Gaus: er geht mit dem Spieler, außerhalb des Gesetzes)
+                if (!(c.userData.bond > 0) && this._bestandAusserBlick(c)) this.removeCreature(c);
             } else if (!bleibt.has(c) && !soll.has(c.userData._bestand) && this._bestandAusserBlick(c))
                 this._bestandEntkoerpern(c);
         // je Takt höchstens drei Orts-Suchen; eine Gruppe ohne Ort (fern, außer Blick, frei) fragt erst sechs Takte später wieder
@@ -2708,6 +2750,7 @@ class AnazhRealm_kreatur_leben {
         [t.snap, t.name, c.userData._bestand] = [this._serializeCreature(c), c.userData.name, null];
         this.removeCreature(c);
         t.leib = null;
+        if (t.gau) this._gauMerken(t);
     }
 
     // DIE GRUPPE WIRD GEZEICHNET: ihr erster Leib steht am nächsten Ort der Spirale um den Anker, der fern vom Spieler, außer
@@ -2769,6 +2812,7 @@ class AnazhRealm_kreatur_leben {
             name: this._bestandName(t),
         });
         [c.userData._bestand, t.leib, t.snap] = [t, c, null];
+        if (t.gau && this._gauMerk) this._gauMerk.delete(t.id);
         return c;
     }
 
@@ -2790,6 +2834,7 @@ class AnazhRealm_kreatur_leben {
         if (!this._kreaturenBereit()) return;
         const wu = this._weltUhrSprung | 0; // der Sprung der Welt-Uhr (`_weltUhrNimm`) nimmt die Leiber (`_bestandSprung`)
         if ((this._faunaUhrSprung ?? wu) !== (this._faunaUhrSprung = wu)) this._bestandSprung();
+        this._gauTakt(); // der Leser des Gaus bestellt das Bild der Gattungen des Gesetzes (Leben C2b)
         this._feldTakt();
         // zwischen zwei Takten zeichnet nur die Ankunft eines Geheges (`_gehegeKommtAn`: seine Tiere stehen im selben Bild)
         if (st.spielZeit - (L.lastTick || 0) < B.taktS)
@@ -2826,7 +2871,11 @@ class AnazhRealm_kreatur_leben {
         for (const c of st.creatures.slice()) {
             const ud = c.userData;
             if (ud._bestand && !(ud.bond > 0) && !ud._rissVon && !jagen.has(c)) this._bestandEntkoerpern(c);
+            // ein Leib, der bleibt, sucht seinen Kopf im Bild der neuen Uhr (Leben C2b: die Bilder der Gaue fallen mit dem Sprung)
+            else if (ud._bestand && ud._bestand.gau && !ud._bestand.zu)
+                [ud._gauWartet, ud._bestand.leib, ud._bestand] = [ud._bestand.id, null, null];
         }
+        [this._gauBildStand, this._gauMerk, this._gauJaegerOrt] = [null, null, null];
         for (const R of Object.values(this._bestandRegionen().regionen))
             for (const t of R.tiere) {
                 t._ohneOrt = undefined;
@@ -2867,7 +2916,7 @@ class AnazhRealm_kreatur_leben {
                 continue;
             }
             // die Folge wartet GEORDNET: der früheste Takt steht an, seine Region noch ohne ihre Hydro-Wahrheit (`_bestandBereit`)
-            if (!wahl || budget-- <= 0 || !this._bestandBereit(wahl[0])) break;
+            if (!wahl || budget-- <= 0 || !this._bestandGauSteht(wahl[0])) break;
             this._bestandSchritt(wahl[0], wahl[1], bis - wahl[1].t >= 2 * B.taktS, tode);
             L.feldLetzt = wahl[1].t; // das zuletzt gerechnete Ereignis der Folge (der Moment des Felds, gate:mp-sync (f))
         }

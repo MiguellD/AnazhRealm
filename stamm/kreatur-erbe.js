@@ -20,7 +20,8 @@ class AnazhRealm_kreatur_erbe {
         let e = W.get(t);
         if (!e || e.a !== t.a || e.e !== t.e || e.g !== t.g) {
             const L = AnazhRealm._lebenKern();
-            const M = L.masseAdult(this._gattungKg(t.g), t.a, t.e);
+            // ein Kopf des Gaus trägt M∞ aus dem Zustand des Fadens (`M`, Leben C2b)
+            const M = t.M > 0 ? t.M : L.masseAdult(this._gattungKg(t.g), t.a, t.e);
             e = {
                 a: t.a,
                 e: t.e,
@@ -343,6 +344,269 @@ class AnazhRealm_kreatur_erbe {
                 this._gauAkt(gx, gz, { ...a });
             }
         }
+    }
+
+    // ═══ DER LESER DES GAUS (Leben C2b) — die Seite LIEST den Bestand der Gattungen des Gesetzes, sie rechnet ihn nie ═══
+    // Für `GAU.beute` und `GAU.jaeger` steht kein Tier im Verzeichnis einer Region (`state.faunaBestand`: dort lebt nur die
+    // ALTLAST — Fuchs, Bär und die Tiere der Gehege, unter der alten Bilanz je Region, `_bestandTakt`). Ihr Bestand ist das BILD
+    // des Gaus: die letzte Antwort des Fadens je Gau (`_gauAntwort`), bestellt je Takt des Gesetzes für die Reviere am Schirm
+    // (`_gauTakt`). Die Zeichnung (`_bestandVerkoerpern`), die Beute-Zahl der Altlast (`_kreaturBestand`) und die Äsung
+    // (`_kreaturNahrung`) lesen dieses Bild, nie synchron den Faden. Die Seite schreibt in den Gau NUR über den Akt (`_gauAkt`).
+    // DIE ROLLE EINER GATTUNG IM GESETZ: „beute“ · „jaeger“ — oder null: die Gattung ist Altlast.
+    _gauRolle(g) {
+        const G = AnazhRealm.GAU;
+        return g === G.beute ? "beute" : g === G.jaeger ? "jaeger" : null;
+    }
+    // DER KOPF DER WELT-KENNUNG: die Kennungen des Kerns sind Gau-lokal, die Welt setzt den Gau davor („g<gx>,<gz>/“).
+    _gauKopf(gx, gz) {
+        return "g" + gx + "," + gz + "/";
+    }
+    // DIE BILDER DER GAUE (je Gau „gx,gz“ eines; sie fallen mit der Saat der Welt und mit dem Sprung der Welt-Uhr).
+    _gauBilder() {
+        const seed = this._gelaende().seed;
+        if (!this._gauBildStand || this._gauBildStand.seed !== seed) this._gauBildStand = { seed, gaue: new Map() };
+        return this._gauBildStand.gaue;
+    }
+    // DAS BILD EINES GAUS: `takt` der letzten Antwort (−1 = keine) · `bestellt` der höchste bestellte Takt · `reviere` je
+    // gelesenem Revier { i, key, koepfe, frass, tiere } · `tiere` je Welt-Kennung der Datensatz der Zeichnung · `gefallen` die
+    // Köpfe, deren Akt „aus“ noch reist.
+    _gauBild(gx, gz) {
+        const B = this._gauBilder();
+        const k = gx + "," + gz;
+        if (!B.has(k))
+            B.set(k, {
+                gx,
+                gz,
+                takt: -1,
+                bestellt: -1,
+                flug: false,
+                sig: "",
+                aktN: -1,
+                sperre: -1,
+                reviere: new Map(),
+                tiere: new Map(),
+                gefallen: new Map(),
+                zahl: null,
+                zeit: null,
+            });
+        return B.get(k);
+    }
+    // DAS REVIER DER REGION `key` IM BILD SEINES GAUS — oder null: der Faden hat es (noch) nicht geantwortet.
+    _gauRevier(key) {
+        const [ix, iz] = key.split(",").map(Number);
+        const o = this._gauOrt(ix, iz);
+        const b = this._gauBildStand && this._gauBilder().get(o.gx + "," + o.gz);
+        return (b && b.reviere.get(o.revier)) || null;
+    }
+    // DER FRASS DES GAUS AM ORT (Feld-Einheiten wie das Leben-Overlay: ≤ 0 abgeäst; E3 — die Fraß-Schicht gehört dem Gau): die
+    // Zelle des Reviers aus dem Bild, 0 ohne Bild.
+    _gauFrassAt(x, z) {
+        const [S, zn] = [this._bestandSeite(), AnazhRealm.BESTAND_REGION.zellen];
+        const [ix, iz] = [Math.floor(x / S), Math.floor(z / S)];
+        const R = this._gauRevier(ix + "," + iz);
+        if (!R) return 0;
+        const [a, c] = [Math.floor((x / S - ix) * zn), Math.floor((z / S - iz) * zn)];
+        return R.frass[Math.min(zn - 1, a) * zn + Math.min(zn - 1, c)] || 0;
+    }
+    // DER TAKT-STEMPEL EINES AKTS (E2): der Takt NACH dem höchsten, den die Seite je bestellte — der Akt liegt nie vor dem Stand
+    // des Gaus im Faden (ein Akt davor ließe ihn ab Takt 0 neu rechnen).
+    _gauAktTakt(gx, gz) {
+        const T = AnazhRealm._bestandGesetz().B.taktS;
+        return Math.max(this._gauBild(gx, gz).bestellt, Math.max(0, Math.floor(this._feldHorizont() / T))) + 1;
+    }
+    // DER TAKT DES LESERS (je Bild des Spiels, vor der Folge des Felds): je Gau am Schirm EINE Bestellung im Flug — bis zum Takt
+    // des Horizonts (`_feldHorizont` ÷ taktS), gelesen werden die nahen Reviere (`_bestandNah`) und das Revier jedes Tiers, das ein
+    // Leib zeichnet oder sucht. Bestellt wird nur, wenn Takt, Reviere oder Akte sich änderten; ein Gau ohne Revier am Schirm geht
+    // (`_gauGeht`). `_gauMs` trägt die längste Arbeit des Haupt-Fadens je Ruf und je Antwort (das Maß des Bands).
+    _gauTakt() {
+        const [T, S] = [AnazhRealm._bestandGesetz().B.taktS, this._bestandSeite()];
+        const takt = Math.max(0, Math.floor(this._feldHorizont() / T));
+        const je = new Map();
+        const halte = (gx, gz, revier) => {
+            const k = gx + "," + gz;
+            (je.get(k) || je.set(k, { gx, gz, lesen: new Set() }).get(k)).lesen.add(revier);
+        };
+        const ort = (x, z) => {
+            const o = this._gauOrt(Math.floor(x / S), Math.floor(z / S));
+            halte(o.gx, o.gz, o.revier);
+        };
+        for (const key of this._bestandNah()) {
+            const [ix, iz] = key.split(",").map(Number);
+            ort((ix + 0.5) * S, (iz + 0.5) * S);
+        }
+        for (const c of this.state.creatures) {
+            const [ud, t] = [c.userData, c.userData._bestand];
+            if (t && t.gau) halte(t.gx, t.gz, t.revier);
+            else if (ud._gauWartet && ud.wanderAnchor) ort(ud.wanderAnchor.x, ud.wanderAnchor.z);
+        }
+        const H = this._gauHalt();
+        const ms = this._gauMs || (this._gauMs = { ruf: 0, antwort: 0, rufe: 0 });
+        for (const e of je.values()) {
+            const b = this._gauBild(e.gx, e.gz);
+            const lesen = [...e.lesen].sort((p, q) => p - q);
+            const sig = lesen.join();
+            const aktN = (H.get(e.gx + "," + e.gz) || []).length;
+            if (b.flug || b.sperre === takt || (b.takt === takt && b.sig === sig && b.aktN === aktN)) continue;
+            const t0 = performance.now();
+            b.flug = true;
+            b.bestellt = Math.max(b.bestellt, takt);
+            this._gauBis(e.gx, e.gz, takt, { lesen }).then(
+                (a) => this._gauAntwort(b, a, sig, aktN),
+                () => ((b.flug = false), (b.sperre = takt)) // der Wurf steht beim Namen (`_gauFrage`); der nächste Takt fragt wieder
+            );
+            ms.rufe++;
+            ms.ruf = Math.max(ms.ruf, performance.now() - t0);
+        }
+        for (const [k, b] of this._gauBilder())
+            if (!je.has(k) && !b.flug) {
+                this._gauGeht(b.gx, b.gz);
+                this._gauBilder().delete(k);
+            }
+    }
+    // DIE ANTWORT DES FADENS WIRD DAS BILD: je gelesenem Revier Köpfe, Fraß und die Tiere als Datensätze der Zeichnung — Kennung
+    // (Gau davor), Gattung, Verband (`v`: die Herde des Reviers, das Rudel), Mutter (`m`), Geschlecht (`w`), Alter, Leib (`kg`,
+    // `M`), Erbe: alles aus dem Zustand des Fadens. Die Seite fügt nur hinzu, was Zeichnung ist: den ANKER des Verbands (die
+    // Herde auf der Zelle ihres Reviers mit dem meisten Lebensraum × Substrat — beide aus der Saat, die Antwort trägt sie; das
+    // Rudel auf der Zelle mit dem meisten Lebensraum des Jägers), Seele, Name, Leib und dessen Stand. Ein Datensatz bleibt
+    // derselbe, solange sein Kopf im Bild steht (der Leib hält ihn). EIN KOPF, DER DAS BILD VERLIESS (er starb im Gesetz, oder
+    // sein Rudel riss anderswo): sein Leib fällt am Alter, wenn seine Spanne um ist (`lebensdauerS(M)`), sonst bleibt er Zeichnung
+    // ohne Tier, bis er außer Blick geht (`_ohneTier`) — die Lese-Naht nennt weder Ursache noch Jäger eines Tods.
+    _gauAntwort(b, a, sig, aktN) {
+        b.flug = false;
+        if (!this._gauBildStand || this._gauBilder().get(b.gx + "," + b.gz) !== b) return; // das Bild fiel (Sprung, andere Welt)
+        const t0 = performance.now();
+        Object.assign(b, { takt: a.takt, sig, aktN, zeit: a.zeit });
+        b.zahl = { beute: a.beute, jaeger: a.jaeger, rudel: a.rudel };
+        const [G, n, S, zn] = [
+            AnazhRealm.GAU,
+            AnazhRealm.GAU.n,
+            this._bestandSeite(),
+            AnazhRealm.BESTAND_REGION.zellen,
+        ];
+        const T = AnazhRealm._bestandGesetz().B.taktS;
+        const kopf = this._gauKopf(b.gx, b.gz);
+        const [alt, neu, offen, merk] = [b.tiere, new Map(), this._gauOffen, this._gauMerk];
+        for (const [id, tk] of b.gefallen) if (a.takt >= tk) b.gefallen.delete(id);
+        b.reviere = new Map();
+        const AJ = this._gauJaegerOrt || (this._gauJaegerOrt = new Map());
+        for (const rv of a.reviere || []) {
+            const [ix, iz] = [b.gx * n - n / 2 + (rv.i % n), b.gz * n - n / 2 + Math.floor(rv.i / n)];
+            const key = ix + "," + iz;
+            const R = { i: rv.i, key, koepfe: rv.koepfe, frass: rv.frass, tiere: [] };
+            b.reviere.set(rv.i, R);
+            const zelle = (c) => ({
+                x: (ix + (Math.floor(c / zn) + 0.5) / zn) * S,
+                z: (iz + ((c % zn) + 0.5) / zn) * S,
+            });
+            let [cb, wb] = [0, -1];
+            for (let c = 0; c < rv.lr.length; c++) if (rv.lr[c] * rv.s[c] > wb) [cb, wb] = [c, rv.lr[c] * rv.s[c]];
+            const anker = { beute: zelle(cb), jaeger: null };
+            for (const q of rv.tiere) {
+                const id = kopf + q.id;
+                if (b.gefallen.has(id)) continue; // sein Akt „aus“ reist noch: die Seite zeichnet ihn nicht wieder
+                if (q.g === "jaeger" && !anker.jaeger && !(anker.jaeger = AJ.get(key))) {
+                    const LG = AnazhRealm._lebensraumGesetz();
+                    let [cj, wj] = [0, -1];
+                    for (let c = 0; c < zn * zn; c++) {
+                        const o = zelle(c);
+                        const w = LG.lebensraum(G.jaeger, this._bodenKlasseAt(o.x, o.z), LG.L);
+                        if (w > wj) [cj, wj] = [c, w];
+                    }
+                    AJ.set(key, (anker.jaeger = zelle(cj)));
+                }
+                let t = alt.get(id) || (offen && offen.get(id));
+                if (!t) {
+                    const g = G[q.g];
+                    const m = merk && merk.get(id);
+                    t = { id, gau: kopf, gx: b.gx, gz: b.gz, lokal: q.id, soul: this._gauSeele(g), g, leib: null };
+                    Object.assign(t, { name: m ? m.name : undefined, snap: m ? m.snap : null });
+                }
+                if (offen) offen.delete(id);
+                delete t.zu;
+                const o = anker[q.g];
+                Object.assign(t, { revier: rv.i, v: kopf + q.v, m: q.m == null ? null : kopf + q.m, w: q.w, r: q.r });
+                Object.assign(t, { alterS: q.alterS, kg: q.kg, M: q.M, a: q.a, e: q.e, x: o.x, z: o.z });
+                neu.set(id, t);
+                R.tiere.push(t);
+            }
+        }
+        const ohne = (t) => {
+            const c = t.leib;
+            if (!c) return;
+            [c.userData._bestand, t.leib] = [null, null];
+            if (!this.state.creatures.includes(c)) return;
+            c.userData.alterS = t.alterS;
+            if (t.M > 0 && t.alterS + T > this._bestandErbe(t).tod) this._creatureNaturalDeath(c, "alter", false);
+            else c.userData._ohneTier = true;
+        };
+        for (const [id, t] of alt) if (!neu.has(id)) ohne(t);
+        // eine Annahme, deren Takt die Antwort trägt und deren Kopf im Bild fehlt, trat nicht ein (oder ihr Rudel steht fern)
+        if (offen)
+            for (const [id, t] of offen)
+                if (t.gau === kopf && t.einTakt <= a.takt && !neu.has(id)) (offen.delete(id), ohne(t));
+        b.tiere = neu;
+        // ein Leib, der sein Tier sucht (ein Stand kehrte wieder, `_bestandLeibWieder`), findet es im Bild seines Reviers
+        for (const c of this.state.creatures) {
+            const [ud, id] = [c.userData, c.userData._gauWartet];
+            if (!id || !id.startsWith(kopf) || !ud.wanderAnchor) continue;
+            const w = this._gauOrt(Math.floor(ud.wanderAnchor.x / S), Math.floor(ud.wanderAnchor.z / S));
+            if (w.gx !== b.gx || w.gz !== b.gz || !b.reviere.has(w.revier)) continue;
+            const t = neu.get(id);
+            ud._gauWartet = undefined;
+            if (t && !t.leib) [t.leib, ud._bestand] = [c, t];
+            else ud._ohneTier = true;
+        }
+        const ms = this._gauMs || (this._gauMs = { ruf: 0, antwort: 0, rufe: 0 });
+        ms.antwort = Math.max(ms.antwort, performance.now() - t0);
+    }
+    // DIE SEELE EINER GATTUNG DES GESETZES (die eine Seele ihres Gusses, wie `_gattungLeib`).
+    _gauSeele(g) {
+        const M = this._gauSeeleMemo || (this._gauSeeleMemo = {});
+        if (M[g]) return M[g];
+        const soul = AnazhRealm.CREATURE_SOUL_NAMES.find((n) => AnazhRealm.TETRAPODA_SOUL_MAP[n] === g);
+        return soul ? (M[g] = soul) : AnazhRealm._kernPflichtBruch("leben:Seele der Gattung " + g);
+    }
+    // DIE ANNAHME IN DEN GAU (E2, der Ruf von `_bestandAdoptieren` für die Gattungen des Gesetzes): der Leib `c` am Anker `a`
+    // tritt als Akt „ein“ mit Takt-Stempel in das Revier seines Ankers — Erbe und Alter aus seinem gemessenen Leib
+    // (`_bestandErbeAusLeib`), die Kennung aus der Reihe der Akte seines Gaus gelesen (eine Kennung ist Zustand: die nächste Zahl
+    // der Seite im Revier). Bis die Antwort seines Takts ihn trägt, hält der Leib den Datensatz offen (`zu`).
+    _gauAnnahme(c, g, rolle, a) {
+        const S = this._bestandSeite();
+        const o = this._gauOrt(Math.floor(a.x / S), Math.floor(a.z / S));
+        const p2p = this.state.p2p;
+        const vorn = "a" + o.revier + "." + ((p2p && p2p.peerId) || "ich") + ".";
+        let nr = 0;
+        for (const x of this._gauHalt().get(o.gx + "," + o.gz) || [])
+            if (x.art === "ein" && x.id.startsWith(vorn)) nr = Math.max(nr, Number(x.id.slice(vorn.length)) || 0);
+        const [kopf, lokal, ud] = [this._gauKopf(o.gx, o.gz), vorn + (nr + 1), c.userData];
+        const t = { id: kopf + lokal, gau: kopf, gx: o.gx, gz: o.gz, lokal, revier: o.revier, soul: ud.soul, g };
+        Object.assign(t, { a: null, e: null, m: null, alterS: 0, x: a.x, z: a.z, v: null, name: ud.name });
+        this._bestandErbeAusLeib(t, ud.bodySize, ud.alterS);
+        Object.assign(t, { leib: c, zu: true, einTakt: this._gauAktTakt(o.gx, o.gz) });
+        ud._bestand = t;
+        (this._gauOffen || (this._gauOffen = new Map())).set(t.id, t);
+        const akt = { takt: t.einTakt, art: "ein", g: rolle, revier: o.revier, id: lokal, a: t.a, e: t.e };
+        this._gauAkt(o.gx, o.gz, Object.assign(akt, { alterS: t.alterS }));
+    }
+    // EIN KOPF DES GAUS FÄLLT AUSSERHALB DES GESETZES (E2, der Ruf von `_bestandAus`): der Akt „aus“ mit Takt-Stempel; die Seite
+    // zeichnet ihn nicht wieder, während der Akt reist (`gefallen`). Eine offene Annahme fällt einen Takt nach ihrem Eintritt.
+    _gauAus(t) {
+        const takt = Math.max(this._gauAktTakt(t.gx, t.gz), (t.einTakt | 0) + 1);
+        const b = this._gauBild(t.gx, t.gz);
+        if (this._gauOffen) this._gauOffen.delete(t.id);
+        b.tiere.delete(t.id);
+        b.gefallen.set(t.id, takt);
+        const R = b.reviere.get(t.revier);
+        if (R) R.tiere = R.tiere.filter((x) => x !== t);
+        this._gauAkt(t.gx, t.gz, { takt, art: "aus", id: t.lokal });
+    }
+    // DER STAND EINES GEGANGENEN LEIBS (Gedächtnis, Wunde, Name) überdauert sein Revier am Schirm: je Kennung gemerkt
+    // (höchstens 256, der älteste fällt), gelesen, wenn der Kopf wieder ins Bild tritt.
+    _gauMerken(t) {
+        const M = this._gauMerk || (this._gauMerk = new Map());
+        M.delete(t.id);
+        M.set(t.id, { snap: t.snap, name: t.name });
+        if (M.size > 256) M.delete(M.keys().next().value);
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_kreatur_erbe]);
