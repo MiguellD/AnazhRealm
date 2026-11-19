@@ -2143,11 +2143,11 @@ class AnazhRealm_kreatur_leben {
     }
 
     // DIE NAHRUNG EINES ORTS für den Bestand (Ökologie K2): die Äsung = das Leben des Felds (`auraAt`.lebendig — das Substrat
-    // und das Leben-Overlay, das die Taten schreiben) plus der Fraß des Gaus an der Zelle (`_gauFrassAt`, E3: was die Herde des
-    // Gesetzes ließ, steht im Gau, nie im Overlay), 0..1.
+    // das Leben-Overlay, das die Taten schreiben, und der Fraß des Gaus an der Zelle: `auraAt` liest ihn selbst, `_gauFrassAt`,
+    // E3 — was die Herde des Gesetzes ließ, steht im Gau, nie im Overlay, und EIN Leser trägt es für jeden), 0..1.
     _kreaturNahrung(x, z) {
         const a = this.auraAt(x, z);
-        return Math.min(1, Math.max(0, (a && a.lebendig > 0 ? a.lebendig : 0) + this._gauFrassAt(x, z)));
+        return a && a.lebendig > 0 ? Math.min(1, a.lebendig) : 0;
     }
 
     // DER BESTAND EINER REGION (Ökologie K2, tetrapoda BESTAND_GESETZ): je Gattung der Bestand n (die Tiere ihres Verzeichnisses,

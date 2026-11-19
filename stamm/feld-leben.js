@@ -1812,6 +1812,10 @@ class AnazhRealm_feld_leben {
         const overlay = this._lifeOverlayAt(x, z);
         // DIE NARBE DER TAT (feld.K4) senkt es am Ort der Tat, bis sie heilt (`_narbeAt`) — leer → lebendig == frozen + overlay.
         const narbe = this._narbeAt(x, z);
+        // DER FRASS DES GAUS (Leben C2b, E3): was die Herde des Gesetzes ließ, steht als Schicht im Zustand des Gaus — das nahe
+        // Feld LIEST sie am Ort (`_gauFrassAt`: die Zelle des Reviers aus dem letzten Bild, ≤ 0 abgeäst, 0 ohne Bild), nie schreibt
+        // der Stamm sie ins Overlay. Bis hier las sie nur die Nahrung der Altlast (`_kreaturNahrung`): der Spieler sah keine Äsung.
+        const gau = this._gauFrassAt(x, z);
         // V17.32 — die emotion-Achse ist RÄUMLICH: der lokale emotionale Abdruck
         // (das Gedächtnis des Ortes) blendet ÜBER die globale Stimmung. Leerer
         // Abdruck → emotion == globale Stimmung (backward-compatible, kein Alloc).
@@ -1829,7 +1833,8 @@ class AnazhRealm_feld_leben {
             }
         }
         return {
-            lebendig: overlay || narbe > 0 ? Math.max(0, Math.min(1, f.lebendig + overlay - narbe)) : f.lebendig,
+            lebendig:
+                overlay || narbe > 0 || gau ? Math.max(0, Math.min(1, f.lebendig + overlay + gau - narbe)) : f.lebendig,
             dichte: f.dichte,
             glut: brand || lava ? Math.min(1, f.glut + (brand ? brand.glut : 0) + (lava ? lava.glut : 0)) : f.glut,
             magieleitung: f.magieleitung,
@@ -2352,10 +2357,12 @@ class AnazhRealm_feld_leben {
 
     // DIE LEBEN-STUFE am Ort (feld.K5): das Leben-Overlay in Stufen (`LIFE_FIELD.stufen` je Einheit) — die Nah-Streu liest sie
     // (`_nahStreuKachel`, das Boden-Gesetz `leben`: die gepflegte Wiese blüht), nie den stetigen Zerfall; so baut sie nur, wo
-    // eine Stufe springt. Ohne Overlay 0: die Streu steht byte-gleich.
+    // eine Stufe springt. Ohne Overlay 0: die Streu steht byte-gleich. DER FRASS DES GAUS (Leben C2b, E3) zählt in dieselbe Stufe
+    // (`_gauFrassAt`, die Zelle des Reviers): springt seine Stufe mit einer Antwort des Fadens, wächst die Streu der Zelle neu
+    // (`_gauAntwort` ruft `_nahStreuNeuIn`) — die abgeäste Wiese der Herde steht im Bild.
     _lebenStufe(x, z) {
         const S = AnazhRealm.LIFE_FIELD.stufen;
-        return Math.round(this._lebenStufeHalt(x, z)[0] * S) / S;
+        return Math.round((this._lebenStufeHalt(x, z)[0] + this._gauFrassAt(x, z)) * S) / S;
     }
     // DIE STUFE HÄLT ZWEI TAKTE DES BESTANDS (w27-tiere-sicht): ihr Zerfall zählt erst zwei Takte (`taktS`) nach der letzten Schrift
     // der Zelle — der Fraß der Herde schreibt je Takt, und die Stufe folgt dem Takt des Gesetzes, das sie schreibt, nie dem Zerfall

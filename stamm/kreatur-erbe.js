@@ -482,13 +482,24 @@ class AnazhRealm_kreatur_erbe {
         const kopf = this._gauKopf(b.gx, b.gz);
         const [alt, neu, offen, merk] = [b.tiere, new Map(), this._gauOffen, this._gauMerk];
         for (const [id, tk] of b.gefallen) if (a.takt >= tk) b.gefallen.delete(id);
+        const vorher = b.reviere;
         b.reviere = new Map();
         const AJ = this._gauJaegerOrt || (this._gauJaegerOrt = new Map());
+        const stufen = AnazhRealm.LIFE_FIELD.stufen;
         for (const rv of a.reviere || []) {
             const [ix, iz] = [b.gx * n - n / 2 + (rv.i % n), b.gz * n - n / 2 + Math.floor(rv.i / n)];
             const key = ix + "," + iz;
             const R = { i: rv.i, key, koepfe: rv.koepfe, frass: rv.frass, tiere: [] };
             b.reviere.set(rv.i, R);
+            // DIE ÄSUNG IM BILD (E3): springt die Stufe des Fraßes einer Zelle gegen das Bild davor (ohne Bild: gegen 0), wächst
+            // die Nah-Streu dieser Zelle neu — sie liest die Stufe am Ort (`_lebenStufe`); gebaut wird nur, wo eine Stufe springt
+            const davor = vorher.get(rv.i);
+            for (let c = 0; c < rv.frass.length; c++) {
+                if (Math.round((rv.frass[c] || 0) * stufen) === Math.round(((davor && davor.frass[c]) || 0) * stufen))
+                    continue;
+                const [x0, z0] = [(ix + Math.floor(c / zn) / zn) * S, (iz + (c % zn) / zn) * S];
+                this._nahStreuNeuIn(x0, z0, x0 + S / zn, z0 + S / zn);
+            }
             const zelle = (c) => ({
                 x: (ix + (Math.floor(c / zn) + 0.5) / zn) * S,
                 z: (iz + ((c % zn) + 0.5) / zn) * S,
