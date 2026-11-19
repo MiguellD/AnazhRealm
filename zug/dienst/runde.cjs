@@ -174,7 +174,7 @@ if (was === "lies") {
     const { r } = aendere(repo, "Runde " + g + ": " + zustand + (opt("erledigt") ? " " + opt("erledigt") + "/" + (opt("gesamt") || "?") : "") + " am " + k8(kopf), (r) => {
         if (!r.runde || r.runde.kopf !== kopf) { anders = true; return false; }
         const e = r.g[g] || leer(r.runde.start), z = iso(jetzt());
-        const vor = e.erledigt;
+        const vor = e.erledigt, vorG = e.gesamt;
         const vorZ = e.zustand;
         e.zustand = zustand;
         if (opt("erledigt") !== null) e.erledigt = Number(opt("erledigt"));
@@ -184,7 +184,7 @@ if (was === "lies") {
             // DER LISTEN-BRUCH (19.11. 05:53, `laeuft 0/0 … liste |`): trug die Zeile eine Liste OHNE Station, während sie schon lief, ist
             // die leere Fahrt keine Messung — die Runde sagt es selbst in einer Notiz, sobald die Zeile ihre Liste neu bekommt
             if (vorZ !== "offen" && e.liste !== "-" && !liste(e.liste).length)
-                (r.notizen = r.notizen || []).push("notiz " + z + " " + g + " neu gebaut nach Listen-Bruch: vorher " + vorZ + " " + vor + "/" + e.gesamt + " liste " + e.liste + " seit " + e.fortschritt + " — die leere Fahrt gilt nicht als gemessen");
+                (r.notizen = r.notizen || []).push("notiz " + z + " " + g + " neu gebaut nach Listen-Bruch: vorher " + vorZ + " " + vor + "/" + vorG + " liste " + e.liste + " seit " + e.fortschritt + " — die leere Fahrt gilt nicht als gemessen");
             e.liste = listenText(opt("liste")).replace(/\s+/g, "") || "-";
         }
         // FORTSCHRITT: eine Station mehr, der Beginn der Liste, das Ende — nie das blosse Halten oder Weichen

@@ -695,14 +695,15 @@ STUMMEL
 selbsttest() {
     local echt m r rot=0 mz=0 mr=0 O
     O=$(mktemp -d)
+    local MUT=${ST_MUTANTEN-"von-vorn rest warter pid reihe ziel bild still-push referenz-rechner liste-als-argument"} # ST_MUTANTEN="" fährt nur die Fälle (die Mutanten getrennt, wenn der Zug wenig Zeit lässt)
     # echt und jede Mutante in ihrem eigenen Sandkasten, nebeneinander
-    for m in echt von-vorn rest warter pid reihe ziel bild still-push referenz-rechner liste-als-argument; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
+    for m in echt $MUT; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
     wait
     echt=$(grep -E "^(OK|ROT)" "$O/echt")
     echo "$echt" | sed 's/^/  /'
     echo "$echt" | grep -q "^ROT" && rot=1
     [ "$(echo "$echt" | grep -c "^OK")" = 13 ] || rot=1
-    for m in von-vorn rest warter pid reihe ziel bild still-push referenz-rechner liste-als-argument; do
+    for m in $MUT; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
