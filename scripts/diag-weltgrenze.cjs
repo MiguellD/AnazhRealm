@@ -23,7 +23,10 @@
 //   saat                DIE SAAT IM LAUF (saat-im-lauf): der Satz des Spielers „neue welt saat <Saat>“ in EINER Sitzung, Saat A → B → B
 //                       → A am Ort. Jede Welt trägt die genannte Saat in jedem Leser (worldMeta, Voxel-Faden, Planet, Anker, der
 //                       Rausch-Strom `this._voxelNoise` gegen den frisch aus der Saat gebauten), und dieselbe Saat ergibt dieselben
-//                       Kennzahlen (Höhen, Rausch, Genesis-Ort, Plan des Start-Dorfs) — ein Halter der alten Saat fällt beim Namen
+//                       Kennzahlen (Höhen, Rausch, Genesis-Ort, Plan des Start-Dorfs) — ein Halter der alten Saat fällt beim Namen.
+//                       DER NULL-PUNKT (welt-tag-null): jede Welt trägt `worldMeta.tagNull` 0 ab der Geburt, auch nach ihrem
+//                       Laden am Ort; zurück in der Welt des Boots springt der Tag der Prozesse nicht (Δ 0), und ein Alt-Stand
+//                       ohne Null-Punkt eicht genau einmal
 // Dazu je Tür: A trägt nach dem letzten Autosave noch MARKER-A-SPAET (Fortschritt) — die Tür sichert A vor der Sperre.
 // Und statisch (Absenz): eine ganze Welt schreibt in den Speicher nur saveState (die lebende) und `_weltAblegen` (die EINE
 // Ablage), `location.reload` steht nur im lauten Rückfall des Wechsels `_weltWechsel` — jeder andere Schreiber fällt beim Namen.
@@ -45,7 +48,8 @@
 //                                      „laden" MUSS rot werden), saveState ohne die Sperre des Welt-Wechsels (der Weg
 //                                      „ersetzen" MUSS rot werden: die Seite erwacht in A), die Geburt, die die Saat des
 //                                      Spielers verwirft (der Weg „saat" MUSS die gewürfelte Saat nennen), und der Rausch-Strom
-//                                      der alten Welt, der den Abschied überlebt (der Weg „saat" MUSS `this._voxelNoise` nennen)
+//                                      der alten Welt, der den Abschied überlebt (der Weg „saat" MUSS `this._voxelNoise` nennen),
+//                                      und die Geburt ohne Null-Punkt (der Weg „saat" MUSS `worldMeta.tagNull` an B nennen)
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
 const { frageJa, statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, weltTor, waitFor, jsonLesen, jsonSchreiben, jsonKlon, path, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
@@ -644,6 +648,7 @@ async function fahreSaat(browser, schein) {
     const t0 = Date.now();
     const A = "anazh-realm-seed";
     const B = "grenze-saat-b";
+    const scheine = String(schein || "").split(",");
     try {
         await page.evaluateOnNewDocument(frageJa);
         await nullRenderer(page);
@@ -653,12 +658,12 @@ async function fahreSaat(browser, schein) {
         if (!a.ok) throw new Error("Welt A nicht bereit");
         let navigationen = 0;
         page.on("framenavigated", (f) => f === page.mainFrame() && navigationen++);
-        if (schein === "zufall")
+        if (scheine.includes("zufall"))
             await page.evaluate(() => {
                 const roh = r._generateFreshWorldMeta.bind(r);
                 r._generateFreshWorldMeta = (slug) => roh(slug);
             });
-        if (schein === "rausch")
+        if (scheine.includes("rausch"))
             await page.evaluate(() => {
                 const roh = r._weltAbschied.bind(r);
                 r._weltAbschied = () => {
@@ -667,6 +672,15 @@ async function fahreSaat(browser, schein) {
                     r._voxelNoise = n;
                 };
             });
+        if (scheine.includes("tagnull")) await page.evaluate(() => void (AnazhRealm._weltGeburt = (m) => m));
+        // DER NULL-PUNKT DER GEBURT (welt-tag-null): jede Welt trägt ihn ab der Geburt (`_weltGeburt`) — die frische Welt des Boots
+        // und jede Welt des Satzes, nach ihrem Laden am Ort (dort eichte ein fehlender Null-Punkt auf den Tag der Sicht, +0,4999)
+        const nullPunkt = (wann) =>
+            page.evaluate(() => r.state.worldMeta.tagNull).then((n) => {
+                if (n !== 0) rep.befunde.push(`${wann}: worldMeta.tagNull ${n} statt 0 — die Welt trägt den Null-Punkt ihrer Geburt nicht`);
+            });
+        const heim = await page.evaluate(() => ({ id: r.state.worldMeta.worldId, tagNull: r.state.worldMeta.tagNull }));
+        if (!scheine.includes("tagnull")) await nullPunkt("der Boot");
         const k0 = await page.evaluate(saatKennzahlen);
         rep.saaten.push([A, k0.leser["worldMeta.seed"]]);
         const je = new Map([[A, k0]]);
@@ -696,7 +710,28 @@ async function fahreSaat(browser, schein) {
             const k = await page.evaluate(saatKennzahlen);
             rep.saaten.push([saat, k.leser["worldMeta.seed"]]);
             pruefe(saat, k, wann);
+            await nullPunkt(wann);
         }
+        // DER TAG DER PROZESSE ÜBER SPEICHERN + LADEN: zurück in die Welt des Boots (`switchToWorld`, ihr Stand liegt gespeichert
+        // seit dem ersten Satz) — ihr Null-Punkt springt nicht (Δ 0; vor welt-tag-null +0,4999 am ersten Laden)
+        const zurueck = await page.evaluate(async (id) => r.switchToWorld(id, { reload: true }) && (await r.erwacht), heim.id);
+        const nach = await page.evaluate(() => r.state.worldMeta.tagNull);
+        rep.tagSprung = zurueck ? (Number(nach) || 0) - (Number(heim.tagNull) || 0) : null;
+        if (!zurueck) rep.befunde.push("die Welt des Boots kehrt nicht zurück (switchToWorld)");
+        else if (rep.tagSprung !== 0) rep.befunde.push(`Speichern + Laden: der Tag der Prozesse springt um ${rep.tagSprung} (tagNull ${heim.tagNull} → ${nach})`);
+        // DER ALT-STAND (ohne Null-Punkt, von vor w28-lava-nachlauf): sein Laden eicht GENAU einmal — das erste Laden legt den
+        // Null-Punkt, das zweite Laden desselben Stands lässt ihn stehen
+        const alt = await page.evaluate(() => {
+            const lade = (s) => (r._loadStateRestoreWorldMeta(s), r._loadStateRestoreSoulAndAtmosphere(s), r.state.worldMeta.tagNull);
+            const s = r.buildStateSnapshot();
+            delete s.worldMeta.tagNull;
+            s.timeOfDay = 0.375;
+            const erst = lade(s);
+            return { erst, zweit: lade(r.buildStateSnapshot()) };
+        });
+        rep.altStand = alt;
+        if (!Number.isFinite(alt.erst) || alt.erst === 0 || alt.zweit !== alt.erst)
+            rep.befunde.push(`der Alt-Stand eicht nicht genau einmal (erstes Laden ${alt.erst}, zweites ${alt.zweit})`);
         if (je.has(B) && JSON.stringify(je.get(B).wuchs.hoehen) === JSON.stringify(k0.wuchs.hoehen))
             rep.befunde.push(`die Saat ${B} wächst dieselben Höhen wie ${A} — die Saat wirkt nicht`);
         rep.navigiert = navigationen > 0;
@@ -756,15 +791,18 @@ hauptLauf(async () => {
         const proto = stand.befunde.filter((f) => /_dslPositionsCache/.test(f));
         // die Scheine der Saat: die Geburt verwirft die Saat (die Welt trägt eine gewürfelte) · der Rausch-Strom der alten Welt bleibt
         const zufallRep = await fahreSaat(browser, "zufall");
-        const rauschRep = await fahreSaat(browser, "rausch");
+        // der Rausch-Strom und die Geburt ohne Null-Punkt fahren in EINER Sitzung (zwei Scheine, je einer beim eigenen Namen)
+        const rauschRep = await fahreSaat(browser, "rausch,tagnull");
         const zufall = zufallRep.befunde.filter((f) => /worldMeta\.seed trägt w-[0-9a-f]{12}-\w+ statt der Saat grenze-saat-b/.test(f));
         const rausch = rauschRep.befunde.filter((f) => /this\._voxelNoise .*trägt ein Strom einer anderen Saat/.test(f));
+        const tagnull = rauschRep.befunde.filter((f) => /Saat grenze-saat-b\): worldMeta\.tagNull [-\d.e]+ statt 0 — die Welt trägt den Null-Punkt/.test(f));
         selbst = {
             spread: namen,
             sperre: fenster,
             stand: proto,
             zufall,
             rausch,
+            tagnull,
             befunde: { spread: spread.befunde, sperre: sperre.befunde, zufall: zufallRep.befunde, rausch: rauschRep.befunde },
         };
         console.log(
@@ -779,6 +817,7 @@ hauptLauf(async () => {
         console.log(`  SELBSTTEST 3 (der Prototyp trägt Stand zum Schein): ${proto[0] || "BLIND"}`);
         console.log(`  SELBSTTEST 4 (die Geburt verwirft die Saat des Spielers zum Schein): ${zufall[0] || "BLIND"}`);
         console.log(`  SELBSTTEST 5 (der Rausch-Strom der alten Welt überlebt den Abschied zum Schein): ${rausch[0] || "BLIND"}`);
+        console.log(`  SELBSTTEST 6 (die Geburt ohne Null-Punkt zum Schein): ${tagnull[0] || "BLIND"}`);
     }
     if (JSON_AUS) jsonSchreiben(JSON_AUS, { root, absenz: abs, berichte, selbst });
     let pass;
@@ -790,9 +829,10 @@ hauptLauf(async () => {
             selbst.sperre.length > 0 &&
             selbst.stand.length > 0 &&
             selbst.zufall.length > 0 &&
-            selbst.rausch.length > 0;
+            selbst.rausch.length > 0 &&
+            selbst.tagnull.length > 0;
         console.log(
-            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren, jede Saat wächst in jedem Leser — und alle fünf Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "ein Schein blieb unentdeckt (die Linse ist blind)")}`
+            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren, jede Saat wächst in jedem Leser — und alle sechs Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "ein Schein blieb unentdeckt (die Linse ist blind)")}`
         );
     } else {
         pass = !rot;
